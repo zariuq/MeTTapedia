@@ -8,6 +8,7 @@ import Mettapedia.Logic.HOL.HenkinizationInfinity
 import Mettapedia.Logic.HOL.Semantics.HeytingHenkin
 import Mettapedia.Logic.HOL.Semantics.Henkin
 import Mettapedia.Logic.HOL.Semantics.Extensionality
+import Mettapedia.Logic.HOL.Semantics.Reduct
 import Mettapedia.Logic.HOL.Semantics.SetBased
 import Mettapedia.Logic.HOL.Probabilistic
 import Mettapedia.Logic.HOL.Derivation
@@ -22,6 +23,7 @@ import Mettapedia.Logic.HOL.HenkinAxiomsInfinity
 import Mettapedia.Logic.HOL.CanonicalKripke
 import Mettapedia.Logic.HOL.CanonicalSemantics
 import Mettapedia.Logic.HOL.CanonicalModel
+import Mettapedia.Logic.HOL.PlainIntuitionistic
 import Mettapedia.Logic.HOL.IntuitionisticCompleteness
 import Mettapedia.Logic.HOL.OriginalReflectionReduction
 import Mettapedia.Logic.HOL.OriginalReflectionObstruction
@@ -58,11 +60,13 @@ Public entrypoint for the real Church-style HOL layer:
 - a canonical truth-event semantics for closed formulas over those worlds,
 - a typed companion canonical model semantics over closed substitutions into the
   cumulative Henkin language,
+- a plain-intuitionistic mainline entrypoint exposing the already formalized
+  soundness theorem and the internal cumulative-Henkin completeness milestone,
 - an internal finite closed-context completeness theorem for the cumulative
   Henkin language over canonical Henkin worlds,
-- a proof-theoretic reduction theorem isolating the exact remaining original
-  reflection blockers as finite-stage reduction plus one-step stage reflection,
-- a certified obstruction showing that naive constant-based original reflection
+- an auxiliary proof-theoretic reduction theorem isolating the exact remaining
+  blockers in the constant-based original-reflection detour,
+- an auxiliary obstruction showing that naive constant-based original reflection
   is false for empty-signature source semantics with empty admissible domains,
 - a witnessed-source replacement layer showing that base-type source witnesses
   recursively yield closed terms at every simple type and recover existential
@@ -75,13 +79,14 @@ Important status boundary:
 - the corrected intuitionistic-extensional HOL core, soundness layer, cumulative
   Henkinization infrastructure, world-level canonical truth machinery, and an
   internal cumulative-Henkin finite-context completeness theorem are real;
+- `/home/zar/claude/lean-projects/mettapedia/Mettapedia/Logic/HOL/PlainIntuitionistic.lean`
+  is the intended public entrypoint for the plain intuitionistic metatheory;
 - the old constant-based original-signature reflection target is now formally
   known to fail against the current source semantics;
-- the mathematically clean replacement target is a witnessed-source
-  original-signature theorem, and the witness infrastructure for that restated
-  target is now formalized;
-- the final typed original-signature canonical-model bridge and restated HOL
-  completeness theorem are still in progress;
+- the original-reflection files remain auxiliary diagnostics / strengthened
+  detours rather than the main route to plain intuitionistic completeness;
+- the final typed original-signature canonical-model bridge and plain
+  intuitionistic HOL completeness theorem are still in progress;
 - the logical-induction and planner-facing belief/process files imported here are
   experimental overlays rather than part of the mature HOL metatheory.
 -/

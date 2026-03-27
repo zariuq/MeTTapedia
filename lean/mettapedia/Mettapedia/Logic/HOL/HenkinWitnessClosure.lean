@@ -71,6 +71,73 @@ theorem all_counterexample_of_not_mem_lift_all
   simpa [allCounterexampleInstance] using
     hT hAll
 
+/--
+Any one-step canonical world containing the exact Henkin axioms is automatically
+existentially witness-closed over the lifted base signature.
+
+Positive example:
+membership of the exact witness implication plus membership of the existential
+formula forces the designated witness instance by modus ponens.
+
+Negative example:
+this only closes over formulas lifted from the base signature; it does not yet
+say anything about arbitrary one-step formulas with fresh constants in them.
+-/
+theorem exWitnessClosed_of_world_exactHenkinAxioms
+    {W : ClosedTheorySet.World (OneStepHenkinConst Base Const)}
+    (hExact :
+      ExactHenkinAxioms (Base := Base) (Const := Const) ⊆ W.carrier) :
+    ExWitnessClosed (Base := Base) (Const := Const) W.carrier := by
+  intro σ φ hEx
+  have hAxiom :
+      (.imp
+        (.ex (liftFormula (Base := Base) (Const := Const) φ))
+        (exWitnessInstance (Base := Base) (Const := Const) φ) :
+          ClosedFormula (OneStepHenkinConst Base Const)) ∈ W.carrier := by
+    exact hExact (Or.inl ⟨σ, φ, rfl⟩)
+  exact ClosedTheorySet.World.mp (W := W) hAxiom hEx
+
+/--
+Any one-step canonical world containing the exact Henkin axioms is automatically
+universally counterexample-closed over the lifted base signature.
+
+Positive example:
+if the designated counterexample instance were present, the exact implication
+axiom would force the lifted universal formula itself into the world.
+
+Negative example:
+this is still only closure over lifted base formulas, not over arbitrary
+one-step formulas.
+-/
+theorem allCounterexampleClosed_of_world_exactHenkinAxioms
+    {W : ClosedTheorySet.World (OneStepHenkinConst Base Const)}
+    (hExact :
+      ExactHenkinAxioms (Base := Base) (Const := Const) ⊆ W.carrier) :
+    AllCounterexampleClosed (Base := Base) (Const := Const) W.carrier := by
+  intro σ φ hAll hInst
+  have hAxiom :
+      (.imp
+        (allCounterexampleInstance (Base := Base) (Const := Const) φ)
+        (.all (liftFormula (Base := Base) (Const := Const) φ)) :
+          ClosedFormula (OneStepHenkinConst Base Const)) ∈ W.carrier := by
+    exact hExact (Or.inr ⟨σ, φ, rfl⟩)
+  have hAllMem :
+      (.all (liftFormula (Base := Base) (Const := Const) φ) :
+        ClosedFormula (OneStepHenkinConst Base Const)) ∈ W.carrier :=
+    ClosedTheorySet.World.mp (W := W) hAxiom hInst
+  exact hAll hAllMem
+
+/-- Exact one-step Henkin worlds are Henkin-closed over the lifted base signature. -/
+theorem henkinClosedOverBase_of_world_exactHenkinAxioms
+    {W : ClosedTheorySet.World (OneStepHenkinConst Base Const)}
+    (hExact :
+      ExactHenkinAxioms (Base := Base) (Const := Const) ⊆ W.carrier) :
+    HenkinClosedOverBase (Base := Base) (Const := Const) W.carrier :=
+  ⟨exWitnessClosed_of_world_exactHenkinAxioms
+      (Base := Base) (Const := Const) hExact,
+    allCounterexampleClosed_of_world_exactHenkinAxioms
+      (Base := Base) (Const := Const) hExact⟩
+
 end OneStepHenkinConst
 
 end Mettapedia.Logic.HOL

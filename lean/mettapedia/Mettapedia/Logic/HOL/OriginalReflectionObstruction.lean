@@ -9,10 +9,11 @@ universe u
 namespace HenkinConstInfinity
 
 /-!
-# Original Reflection Obstruction
+# Original Reflection Obstruction  [AUXILIARY]
 
 This file certifies the concrete obstruction discovered in the current
-original-signature reflection program.
+original-signature reflection program. It justifies the mainline pivot to
+growing-domain Kripke completeness (see `ParamWorld.lean`).
 
 If the original signature has no constants at a base type, the cumulative
 Henkin signature still introduces fresh witness constants. As a result, the

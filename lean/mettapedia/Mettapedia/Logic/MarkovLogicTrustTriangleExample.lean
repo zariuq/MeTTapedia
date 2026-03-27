@@ -1,4 +1,5 @@
 import Mettapedia.Logic.MarkovLogicIndividuation
+import Mettapedia.Logic.MarkovLogicDynamicIndividuation
 import Mettapedia.Logic.MarkovLogicInfiniteVariableNeighborhoodWorldOfViews
 
 /-!
@@ -42,6 +43,7 @@ open Mettapedia.Logic.MarkovLogicInfiniteUniqueness.ClassicalInfiniteGroundMLNSp
 open Mettapedia.Logic.MarkovLogicInfiniteWorldModel
 open Mettapedia.Logic.MarkovLogicOntologyGrowth
 open Mettapedia.Logic.MarkovLogicIndividuation
+open Mettapedia.Logic.MarkovLogicDynamicIndividuation
 open Mettapedia.Logic.MarkovLogicInfiniteVariableNeighborhoodWorldOfViews
 open Mettapedia.Logic.PLNWorldModel
 open Mettapedia.Logic.MarkovLogicAbstract
@@ -339,6 +341,54 @@ theorem trust_triangle_wmStrength_stable
     (specs_agree_on_triangle wt wc₁ wc₂)
     (triangleCore_interactionClosed wt wc₁)
     (triangleCore_interactionClosed wt wc₂)
+    (triangleChainSpec_budget wt wc₁ hwt hwc₁)
+    (triangleChainSpec_budget wt wc₂ hwt hwc₂)
+    μ₁ μ₂ hμ₁ hμ₂ agent1Query agent1Query_supported
+
+/-- Closure witness at depth `0` for the trust triangle core. -/
+noncomputable def trustTriangleClosure (wt wc : ℝ) :
+    DynamicIndividuationClosure (triangleChainSpec wt wc) where
+  proto :=
+    { seed := coreTriangle
+      seed_nonempty := ⟨0, by simp [coreTriangle]⟩ }
+  closureDepth := 0
+  shell_closed := by
+    simpa [ClassicalInfiniteGroundMLNSpec.iterExpandRegion]
+      using (triangleCore_interactionClosed wt wc)
+
+/-- The trust-triangle capstone, routed through dynamic-individuation closure:
+once closure is witnessed (here at depth 0), extension-stability is exact. -/
+theorem trust_triangle_wmStrength_stable_via_dynamicIndividuationClosure
+    (wt wc₁ wc₂ : ℝ)
+    (hwt : |wt| < 1 / 2) (hwc₁ : |wc₁| < 1 / 2) (hwc₂ : |wc₂| < 1 / 2)
+    (μ₁ : ProbabilityMeasure (InfiniteWorld Nat))
+    (μ₂ : ProbabilityMeasure (InfiniteWorld Nat))
+    (hμ₁ : FixedRegionCylinderDLR
+      (triangleChainSpec wt wc₁).toStrictlyPositiveInfiniteGroundMLNSpec
+      (μ₁ : Measure (InfiniteWorld Nat)))
+    (hμ₂ : FixedRegionCylinderDLR
+      (triangleChainSpec wt wc₂).toStrictlyPositiveInfiniteGroundMLNSpec
+      (μ₂ : Measure (InfiniteWorld Nat))) :
+    BinaryWorldModel.queryStrength
+      ({infiniteMLNMassSemantics (triangleChainSpec wt wc₁) μ₁ hμ₁} :
+        MassState (ConstraintQuery Nat)) agent1Query =
+    BinaryWorldModel.queryStrength
+      ({infiniteMLNMassSemantics (triangleChainSpec wt wc₂) μ₂ hμ₂} :
+        MassState (ConstraintQuery Nat)) agent1Query := by
+  let w : DynamicIndividuationClosure (triangleChainSpec wt wc₁) :=
+    trustTriangleClosure wt wc₁
+  have hAgree :
+      SpecAgreesOnRegion (triangleChainSpec wt wc₁) (triangleChainSpec wt wc₂)
+        ((triangleChainSpec wt wc₁).iterExpandRegion w.proto.seed w.closureDepth) := by
+    simpa [w, trustTriangleClosure, ClassicalInfiniteGroundMLNSpec.iterExpandRegion]
+      using specs_agree_on_triangle wt wc₁ wc₂
+  have hClosed₂ :
+      InteractionClosed (triangleChainSpec wt wc₂)
+        ((triangleChainSpec wt wc₁).iterExpandRegion w.proto.seed w.closureDepth) := by
+    simpa [w, trustTriangleClosure, ClassicalInfiniteGroundMLNSpec.iterExpandRegion]
+      using triangleCore_interactionClosed wt wc₂
+  exact w.seed_wmStrength_exact_under_extension
+    hAgree hClosed₂
     (triangleChainSpec_budget wt wc₁ hwt hwc₁)
     (triangleChainSpec_budget wt wc₂ hwt hwc₂)
     μ₁ μ₂ hμ₁ hμ₂ agent1Query agent1Query_supported

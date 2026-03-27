@@ -1,4 +1,5 @@
 import Mettapedia.UniversalAI.GodelMachine.SelfImprovement
+import Mettapedia.UniversalAI.ValueUnderIgnorance
 import Mettapedia.Logic.UniversalPrediction.SolomonoffBridge
 import Mettapedia.Logic.SolomonoffPrior
 import Mettapedia.Logic.SolomonoffInduction
@@ -8,26 +9,31 @@ import Mettapedia.Logic.SolomonoffInduction
 
 This module connects Gödel Machines to Solomonoff Induction, establishing that:
 
-1. A Gödel Machine can use the Solomonoff prior M as its environment model
-2. This gives optimal prediction up to a complexity penalty
-3. The expected utility is maximized among all computable policies
+1. A Gödel Machine can use a Solomonoff-style universal semimeasure as its
+   environment scoring model
+2. This gives dominance and fixed-model policy optimality theorems with an
+   explicit complexity penalty
+3. The active policy is optimal among policies evaluated against the same
+   Solomonoff-model data
 
 ## Key Theorems
 
 1. **Solomonoff Dominance Connection**: The Solomonoff prior M dominates any computable
    environment model μ with weight 2^{-K(μ)}.
 
-2. **Optimal Prediction**: A Gödel Machine using M achieves Bayes-optimal predictions
-   relative to the universal prior.
+2. **Semimeasure Environment Bridge**: A Gödel Machine can score percepts by
+   the universal semimeasure mass of encoded history-percept prefixes.
 
-3. **Value Optimality**: The expected utility under M is within O(K(μ)) of the
-   expected utility under any computable μ.
+3. **Policy Optimality**: The active policy is optimal, at the empty history,
+   among alternative policies evaluated against the same Solomonoff-model data.
 
 ## Mathematical Foundation
 
-From Hutter (2005) and Schmidhuber (2003):
+From Hutter (2005), Everitt et al. (2016), and Schmidhuber (2003):
 - The Solomonoff prior is the unique prior satisfying Occam's razor
-- Any policy proven optimal for M is approximately optimal for all computable envs
+- Realistic optimality compares alternative policies under fixed model/utility data
+- The current MVP environment bridge uses semimeasure-style prefix scores, not
+  yet normalized conditionals
 - The Gödel Machine's proofs apply to the true environment (by soundness)
 
 ## References
@@ -68,10 +74,20 @@ noncomputable def SolomonoffEnv.universal {U : PrefixFreeMachine} [UniversalPFM 
   Mettapedia.Logic.UniversalPrediction.SolomonoffBridge.M₃ U
 
 /-- Convert a SolomonoffEnv to the environment probability function format. -/
+noncomputable def SolomonoffEnv.perceptPrefix {U : PrefixFreeMachine} [UniversalPFM U]
+    (_env : SolomonoffEnv U) (h : History) (p : Percept) : BinString :=
+  Mettapedia.UniversalAI.ValueUnderIgnorance.encodeHistory h ++
+    Mettapedia.UniversalAI.ValueUnderIgnorance.encodePerceptBin p
+
+/-- Convert a SolomonoffEnv to the environment probability function format.
+
+This is an honest MVP bridge: the environment score for percept `p` after history `h`
+is the universal semimeasure mass of the encoded prefix `encode(h) ++ encode(p)`.
+It is a semimeasure-style percept score, not yet a normalized conditional
+`P(p | h)` obtained by dividing by the history mass. -/
 noncomputable def SolomonoffEnv.toEnvProb {U : PrefixFreeMachine} [UniversalPFM U]
-    (_env : SolomonoffEnv U) : EnvProb :=
-  -- For a Solomonoff env, P(percept | history) is derived from the universal semimeasure
-  fun _h _p => 0  -- Placeholder: requires encoding history as binary string
+    (env : SolomonoffEnv U) : EnvProb :=
+  fun h p => env.universal (env.perceptPrefix h p)
 
 /-! ## Part 2: Gödel Machine with Solomonoff Prior
 
@@ -85,13 +101,13 @@ structure SolomonoffGodelMachine (U : PrefixFreeMachine) [UniversalPFM U] extend
   solomonoffEnv : SolomonoffEnv U
   /-- Consistency: the envProb is derived from the Solomonoff model -/
   env_consistent : envProb = solomonoffEnv.toEnvProb
+  /-- Explicit complexity budget carried by this machine's chosen description/model data. -/
+  complexityPenalty : ℕ
 
 /-- The complexity of a Gödel Machine state (as a program). -/
-noncomputable def machineComplexity {U : PrefixFreeMachine} [UniversalPFM U]
-    (_G : SolomonoffGodelMachine U) : ℕ :=
-  -- The Kolmogorov complexity of the machine's description
-  -- This is an abstract measure of how "simple" the policy is
-  0  -- Placeholder
+def machineComplexity {U : PrefixFreeMachine} [UniversalPFM U]
+    (G : SolomonoffGodelMachine U) : ℕ :=
+  G.complexityPenalty
 
 /-! ## Part 3: Dominance Theorems
 
@@ -162,33 +178,51 @@ theorem expected_utility_bound {U : PrefixFreeMachine} [UniversalPFM U]
   -- Trivial: real numbers are either ≥ 0 or < 0
   exact le_or_gt 0 (expectedUtility G.toGodelMachineState h)
 
-/-! ## Part 5: Optimality of Solomonoff Gödel Machines
+/-! ## Part 5: Policy Optimality of Solomonoff Gödel Machines
 
-The key theorem: a Gödel Machine using Solomonoff prior is asymptotically optimal.
+The key theorem here is intentionally modest: a Gödel Machine whose policy is
+realistic-optimal is optimal, at the empty history, among policies evaluated
+against the same Solomonoff-model data.
 -/
 
-/-- A policy is K-optimal if it achieves within K bits of the true optimal. -/
+/-- Expected utility from the empty history with the Solomonoff-model data fixed
+    and only the policy allowed to vary. -/
+noncomputable def policyExpectedUtilityFromStart {U : PrefixFreeMachine} [UniversalPFM U]
+    (G : SolomonoffGodelMachine U) (π : SelfModPolicy) : ℝ :=
+  vValueRealistic G.toGodelMachineState.toRealisticValueData π [] G.toGodelMachineState.horizon
+
+/-- A policy is `K`-optimal if it is within `K` of every alternative policy
+    evaluated against the same Solomonoff-model data. -/
 def isKOptimal {U : PrefixFreeMachine} [UniversalPFM U]
     (G : SolomonoffGodelMachine U) (K : ℕ) : Prop :=
-  ∀ G' : GodelMachineState,
-    expectedUtilityFromStart G.toGodelMachineState ≥
-    expectedUtilityFromStart G' - K
+  ∀ π' : SelfModPolicy,
+    policyExpectedUtilityFromStart G G.toGodelMachineState.policy ≥
+    policyExpectedUtilityFromStart G π' - K
 
-/-- Theorem: Solomonoff Gödel Machines are K(env)-optimal.
+/-- Theorem: Solomonoff Gödel Machines are `K`-optimal relative to their own
+    Solomonoff-model data.
 
-    If the true environment has Kolmogorov complexity K, then the expected
-    utility achieved by a Solomonoff Gödel Machine is within O(K) of optimal.
-
-    This is the "AIXI" style result: the Solomonoff prior is the unique
-    universal prior that achieves this form of optimality. -/
+    The complexity gap `K` is explicit machine data, not a hidden default. The
+    point is not universal AIXI-style optimality yet, but the clean integration
+    of realistic policy optimality with the Solomonoff-model interface. -/
 theorem solomonoff_godelMachine_k_optimal {U : PrefixFreeMachine} [UniversalPFM U]
     (G : SolomonoffGodelMachine U) (hrealistic : G.toGodelMachineState.isQreOptimal) :
-    -- The machine is K(G)-optimal
     isKOptimal G (machineComplexity G) := by
-  intro G'
-  -- By the realistic optimality, G achieves max expected utility under M
-  -- By dominance, this approximates max utility under any computable env
-  sorry  -- Requires full integration of dominance bounds
+  intro π'
+  have hstart : History.wellFormed ([] : History) := by
+    simp [History.wellFormed]
+  have hopt := hrealistic [] hstart (π' [])
+  have hopt' :
+      policyExpectedUtilityFromStart G G.toGodelMachineState.policy ≥
+        policyExpectedUtilityFromStart G π' := by
+    simpa [policyExpectedUtilityFromStart, expectedUtilityFromStart,
+      expectedUtility, GodelMachineState.isQreOptimal, GodelMachineState.realisticData,
+      GodelMachineState.toRealisticValueData, vValueRealistic] using hopt
+  have hgap :
+      policyExpectedUtilityFromStart G π' - machineComplexity G ≤
+        policyExpectedUtilityFromStart G π' := by
+    exact sub_le_self _ (by exact_mod_cast Nat.zero_le (machineComplexity G))
+  exact le_trans hgap hopt'
 
 /-- Corollary: For simple environments, Solomonoff Gödel Machines are nearly optimal. -/
 theorem solomonoff_simple_env_optimal {U : PrefixFreeMachine} [UniversalPFM U]
@@ -196,11 +230,11 @@ theorem solomonoff_simple_env_optimal {U : PrefixFreeMachine} [UniversalPFM U]
     (hsimple : machineComplexity G ≤ 100) :
     -- With a simple environment (K ≤ 100 bits), the approximation is tight
     isKOptimal G 100 := by
-  intro G'
-  have h := solomonoff_godelMachine_k_optimal G hrealistic G'
-  calc expectedUtilityFromStart G.toGodelMachineState
-      ≥ expectedUtilityFromStart G' - machineComplexity G := h
-    _ ≥ expectedUtilityFromStart G' - 100 := by
+  intro π'
+  have h := solomonoff_godelMachine_k_optimal G hrealistic π'
+  calc policyExpectedUtilityFromStart G G.toGodelMachineState.policy
+      ≥ policyExpectedUtilityFromStart G π' - machineComplexity G := h
+    _ ≥ policyExpectedUtilityFromStart G π' - 100 := by
         simp only [sub_le_sub_iff_left]
         exact Nat.cast_le.mpr hsimple
 
@@ -242,7 +276,7 @@ theorem globalSwitch_preserves_koptimality {U : PrefixFreeMachine} [UniversalPFM
 /-! ## Part 7: The Grand Unification
 
 Connecting all the pieces: a Solomonoff Gödel Machine is a realistic agent
-that achieves universal prediction via proof-based self-modification.
+that uses Solomonoff-style semimeasure scoring within proof-based self-modification.
 -/
 
 /-- The Solomonoff Gödel Machine instantiation of Theorem 16.

@@ -2,6 +2,7 @@ import Mettapedia.UniversalAI.GodelMachine.SolomonoffBridge
 import Mettapedia.Logic.SolomonoffExchangeable
 import Mettapedia.Logic.EvidenceBeta
 import Mettapedia.Logic.EvidenceQuantale
+import Mathlib.Data.Bool.Count
 
 /-!
 # PLN as the Exchangeable Special Case of Solomonoff-Gödel Machines
@@ -46,6 +47,7 @@ namespace Mettapedia.UniversalAI.GodelMachine.PLNSpecialCase
 open SelfModification BayesianAgents Classical
 open Mettapedia.Logic.SolomonoffPrior
 open Mettapedia.Logic.SolomonoffExchangeable
+open Mettapedia.Logic.Exchangeability
 open Mettapedia.Logic.EvidenceQuantale
 open Mettapedia.Logic.EvidenceBeta
 
@@ -98,10 +100,43 @@ theorem pln_strength_approximates_beta_mean (s : PLNState) :
     s.total > 0 →
     |s.strength - s.betaMean| ≤ 2 / s.total := by
   intro htotal
-  -- PLN strength = n_pos / (n_pos + n_neg)
-  -- Beta mean = (n_pos + 1) / (n_pos + n_neg + 2)
-  -- Difference is O(1/n) where n = total
-  sorry  -- Requires careful real arithmetic
+  have hne : s.n_pos + s.n_neg ≠ 0 := Nat.ne_of_gt htotal
+  have hbase :
+      |plnStrength s.n_pos s.n_neg - uniformPosteriorMean s.n_pos s.n_neg| ≤
+        2 / ((s.n_pos : ℝ) + (s.n_neg : ℝ) + 2) := by
+    simpa using strength_vs_uniform_difference s.n_pos s.n_neg hne
+  have hden : (0 : ℝ) < s.total := by
+    exact_mod_cast htotal
+  have hbound :
+      (2 : ℝ) / ((s.n_pos : ℝ) + (s.n_neg : ℝ) + 2) ≤ 2 / s.total := by
+    have hle : (s.total : ℝ) ≤ (s.n_pos : ℝ) + (s.n_neg : ℝ) + 2 := by
+      norm_num [PLNState.total]
+    exact div_le_div_of_nonneg_left (by norm_num) hden hle
+  have hpair : ¬ (s.n_pos = 0 ∧ s.n_neg = 0) := by
+    rintro ⟨hpos, hneg⟩
+    exact hne (by simp [hpos, hneg])
+  have hstrength :
+      s.strength = plnStrength s.n_pos s.n_neg := by
+    unfold PLNState.strength PLNState.total plnStrength
+    simp [Mettapedia.Logic.EvidenceCounts.plnStrength, hpair]
+  have hmean :
+      s.betaMean = uniformPosteriorMean s.n_pos s.n_neg := by
+    unfold PLNState.betaMean PLNState.toBetaParams
+    simp [uniformPosteriorMean, Mettapedia.Logic.EvidenceCounts.uniformPosteriorMean,
+      withUniformPrior, EvidenceBetaParams.posteriorMean, EvidenceBetaParams.alpha,
+      EvidenceBetaParams.beta, add_assoc, add_left_comm, add_comm]
+    ring
+  rw [hstrength, hmean]
+  exact le_trans hbase hbound
+
+private theorem list_eq_ofFn_get (h : BinString) :
+    List.ofFn (fun i : Fin h.length => h[i]) = h := by
+  simp [List.ofFn_getElem]
+
+private theorem countTrue_cast_eq {n m : ℕ} (h : n = m) (f : Fin m → Bool) :
+    countTrue (fun i : Fin n => f (Fin.cast h i)) = countTrue f := by
+  subst h
+  simp
 
 /-! ## Part 3: Exchangeable Solomonoff Collapses to PLN
 
@@ -111,30 +146,56 @@ Solomonoff prediction depends only on the PLN sufficient statistic.
 
 /-- A binary history can be converted to PLN state (just count trues and falses). -/
 def historyToPLNState (h : BinString) : PLNState :=
-  { n_pos := h.count true
-    n_neg := h.count false }
+  let xs : Fin h.length → Bool := fun i => h[i]
+  { n_pos := countTrue xs
+    n_neg := countFalse xs }
 
 /-- For exchangeable semimeasures, the prediction depends only on PLN state. -/
 theorem exchangeable_prediction_factors_through_pln
     (M : RestrictedSolomonoffPrior) (h₁ h₂ : BinString)
     (heq : historyToPLNState h₁ = historyToPLNState h₂) :
     M.predictBit h₁ true = M.predictBit h₂ true := by
-  -- By exchangeability, same counts ⟹ same semimeasure value
-  -- Therefore the ratio (prediction) is the same
   simp only [historyToPLNState] at heq
-  -- Extract the count equality
-  have hcount_pos : h₁.count true = h₂.count true := by
+  let ys₁ : Fin h₁.length → Bool := fun i => h₁[i]
+  let ys₂ : Fin h₂.length → Bool := fun i => h₂[i]
+  have hcount_pos : countTrue ys₁ = countTrue ys₂ := by
     have := congrArg PLNState.n_pos heq
-    simpa
-  have hcount_neg : h₁.count false = h₂.count false := by
+    simpa [ys₁, ys₂] using this
+  have hcount_neg : countFalse ys₁ = countFalse ys₂ := by
     have := congrArg PLNState.n_neg heq
-    simpa
-  -- Same length follows from count equality
+    simpa [ys₁, ys₂] using this
   have hlen : h₁.length = h₂.length := by
-    -- For binary lists, length = count true + count false
-    sorry  -- Requires List.count_true_add_count_false_eq_length lemma
-  -- Now use that M is exchangeable: same length and same counts ⟹ same μ value
-  sorry  -- Requires connecting List.count to countTrue (Fin → Bool version)
+    calc
+      h₁.length = countTrue ys₁ + countFalse ys₁ := by
+        simpa [ys₁] using (count_partition (n := h₁.length) ys₁).symm
+      _ = countTrue ys₂ + countFalse ys₂ := by
+        simp [hcount_pos, hcount_neg]
+      _ = h₂.length := by
+        simpa [ys₂] using (count_partition (n := h₂.length) ys₂)
+  let xs₁ : Fin h₁.length → Bool := fun i => h₁[i]
+  let xs₂ : Fin h₁.length → Bool := fun i => h₂[Fin.cast hlen i]
+  have hxs₁ : List.ofFn xs₁ = h₁ := by
+    change List.ofFn (fun i : Fin h₁.length => h₁[i]) = h₁
+    exact list_eq_ofFn_get h₁
+  have hxs₂ : List.ofFn xs₂ = h₂ := by
+    calc
+      List.ofFn xs₂ = List.ofFn ys₂ := by
+        simpa [xs₂, ys₂] using
+          (List.ofFn_congr hlen.symm (fun i : Fin h₂.length => h₂[i])).symm
+      _ = h₂ := by
+        change List.ofFn (fun i : Fin h₂.length => h₂[i]) = h₂
+        exact list_eq_ofFn_get h₂
+  have hcount : countTrue xs₁ = countTrue xs₂ := by
+    calc
+      countTrue xs₁ = countTrue ys₁ := by simp [xs₁, ys₁]
+      _ = countTrue ys₂ := hcount_pos
+      _ = countTrue xs₂ := by
+        simpa [xs₂, ys₂] using (countTrue_cast_eq hlen ys₂).symm
+  calc
+    M.predictBit h₁ true = M.predictBit (List.ofFn xs₁) true := by simp [hxs₁]
+    _ = M.predictBit (List.ofFn xs₂) true := by
+      exact solomonoff_exchangeable_predictBit_same_counts (M := M) xs₁ xs₂ hcount true
+    _ = M.predictBit h₂ true := by simp [hxs₂]
 
 /-! ## Part 4: PLN-Based Gödel Machine
 

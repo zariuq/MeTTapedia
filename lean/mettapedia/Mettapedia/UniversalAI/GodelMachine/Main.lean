@@ -8,18 +8,22 @@ import Mettapedia.UniversalAI.GodelMachine.PLNSpecialCase
 -- above keeps GödelMachine changes minimal while ensuring the dependency stays buildable.
 
 /-!
-# The Gödel Machine: Provably Optimal Self-Improvement
+# GödelMachine Main: Honest MVP Core
 
-This module provides a complete formalization of Schmidhuber's Gödel Machine,
-connecting it to Solomonoff Induction (universal prediction) and PLN
-(exchangeable binary special case).
+This module re-exports the active GödelMachine core in its current honest MVP form:
+
+- an abstract formal-system / proof-search shell for proof-backed self-modification
+- safety and soundness theorems for the global switch
+- a Solomonoff-model bridge giving policy optimality relative to fixed model data
+- an exchangeable-binary PLN special case with count-sufficient prediction and
+  O(1) update rules
 
 ## The Vision
 
 ```
 Gödel Machine = Realistic Agent + Proof-Based Self-Modification
                           ↓
-            Uses Solomonoff Induction for prediction
+        Uses Solomonoff-style semimeasure scoring for prediction
                           ↓
             PLN is the exchangeable binary special case
 ```
@@ -36,24 +40,28 @@ that are proven to improve expected utility.
   expectedUtility (globalSwitch G t) ≥ expectedUtility G
 ```
 
-### 2. Optimality (from SolomonoffBridge.lean)
+### 2. Fixed-Model Policy Optimality (from SolomonoffBridge.lean)
 
 **Theorem (solomonoff_godelMachine_k_optimal)**: A Gödel Machine using the
-Solomonoff prior achieves K(env)-optimal expected utility.
+Solomonoff bridge is optimal, at the empty history, among policies evaluated
+against the same Solomonoff-model data.
 
 ```
-∀ G : SolomonoffGodelMachine, ∀ G' : GodelMachineState,
-  expectedUtility G ≥ expectedUtility G' - K(env)
+∀ G : SolomonoffGodelMachine, ∀ π' : SelfModPolicy,
+  policyExpectedUtilityFromStart G G.policy ≥
+    policyExpectedUtilityFromStart G π' - machineComplexity G
 ```
 
-### 3. Efficiency (from PLNSpecialCase.lean)
+### 3. Exchangeable Collapse + Efficiency (from PLNSpecialCase.lean)
 
-**Theorem (pln_godelMachine_optimal_for_exchangeable)**: For exchangeable binary
-domains, a PLN-based Gödel Machine achieves O(1) prediction complexity.
+**Theorems**: For exchangeable binary domains, prediction factors through the
+PLN sufficient statistic `(n⁺, n⁻)`, and PLN updates remain O(1).
 
 ```
-∀ s : PLNState, ∀ b : Bool,
-  (s.update b).total = s.total + 1
+historyToPLNState h₁ = historyToPLNState h₂ →
+  M.predictBit h₁ true = M.predictBit h₂ true
+
+∀ s : PLNState, ∀ b : Bool, (s.update b).total = s.total + 1
 ```
 
 ## Module Structure
@@ -70,7 +78,7 @@ GodelMachine/
 
 ## Connection to Existing Infrastructure
 
-This formalization builds on:
+This MVP core builds on:
 
 1. **SelfModification** (Everitt et al. Theorems 14-16)
    - Realistic agents, Q^re-optimality
@@ -97,12 +105,12 @@ This formalization builds on:
 The formalization aims to satisfy:
 - **Knuth/Skilling**: Information-theoretic foundations are rigorous
 - **Kolmogorov/Solomonoff**: Universal prior correctly formalized
-- **Russell**: Logical self-reference handled via Gödel numbering
+- **Russell**: logical self-reference is handled honestly at the current abstraction layer
 - **Chad Brown/Buzzard**: Lean 4 proofs compile cleanly
 - **Mike Stay**: Category-theoretic structure is clean
 - **Tao**: Mathematical rigor throughout
 - **Goertzel**: PLN connection is precise and useful
-- **Schmidhuber**: The essence of the Gödel Machine is captured
+- **Schmidhuber**: the proof-backed self-modification essence is captured in MVP form
 -/
 
 namespace Mettapedia.UniversalAI.GodelMachine.Main
@@ -134,31 +142,33 @@ theorem godelMachine_properties : GodelMachineProperties where
 
 The formalization captures the key insight of the Gödel Machine:
 
-1. **Self-Reference**: The machine can prove statements about its own code
-   (via Gödel numbering and the diagonal lemma)
+1. **Abstract Self-Reference / Provability Shell**: the machine carries an
+   explicit formal-system and proof-search interface strong enough for the
+   active proof-backed modification theorems.
 
 2. **Proof-Based Modification**: Modifications are only executed when proven
    beneficial (soundness ensures correctness)
 
-3. **Universal Prediction**: Using Solomonoff prior achieves asymptotic
-   optimality over all computable environments
+3. **Universal-Model Bridge**: using a Solomonoff-style semimeasure environment
+   model gives policy optimality relative to fixed Solomonoff-model data
 
-4. **Efficient Special Cases**: For exchangeable binary domains, PLN provides
-   O(1) updates while maintaining optimality within that class
+4. **Efficient Special Cases**: for exchangeable binary domains, PLN provides
+   count-sufficient prediction plus O(1) updates
 
 The connection:
 
 ```
 LLMs ≈ Solomonoff Induction (arXiv:2505.15784)
    ↓
-Value-aligned LLMs ≈ Safe Gödel Machines (this formalization)
+Proof-backed self-modifying agents can be analyzed through this stack
    ↓
-For exchangeable domains: PLN (O(1) updates)
+For exchangeable binary domains: PLN (count-sufficient, O(1) updates)
 ```
 
 This provides a theoretical foundation for understanding:
 - Why LLMs work well (they approximate universal prediction)
 - How to make them safe (realistic agent + proof verification)
+- How fixed-model policy optimality and protected self-modification fit together
 - When simpler methods suffice (exchangeable domains → PLN)
 -/
 

@@ -243,6 +243,79 @@ abbrev liftBaseClosedFormula :
     ClosedFormula Const → ClosedFormula (HenkinConstInfinity Base Const) :=
   mapConst HenkinConstInfinity.base
 
+/--
+Recursive closed witness terms in the cumulative Henkin signature.
+
+Positive example:
+every simple type over `HenkinConstInfinity` is syntactically inhabited.
+
+Negative example:
+this does not say anything about the original source signature, whose base types
+may still be syntactically empty.
+-/
+def witnessTerm : (τ : Ty Base) → ClosedTerm (HenkinConstInfinity Base Const) τ
+  | .prop => .top
+  | .base b =>
+      .const (.exWitness
+        (n := 0)
+        (.top : Formula (HenkinConstStage Base Const 0) [.base b]))
+  | .arr σ τ =>
+      .lam (weaken
+        (Base := Base)
+        (Const := HenkinConstInfinity Base Const)
+        (σ := σ)
+        (witnessTerm τ))
+
+@[simp] theorem witnessTerm_prop :
+    witnessTerm (Base := Base) (Const := Const) .prop =
+      (.top : ClosedFormula (HenkinConstInfinity Base Const)) :=
+  rfl
+
+@[simp] theorem witnessTerm_base (b : Base) :
+    witnessTerm (Base := Base) (Const := Const) (.base b) =
+      (.const (.exWitness
+        (n := 0)
+        (.top : Formula (HenkinConstStage Base Const 0) [.base b])) :
+          ClosedTerm (HenkinConstInfinity Base Const) (.base b)) :=
+  rfl
+
+@[simp] theorem witnessTerm_arr (σ τ : Ty Base) :
+    witnessTerm (Base := Base) (Const := Const) (σ ⇒ τ) =
+      .lam (weaken
+        (Base := Base)
+        (Const := HenkinConstInfinity Base Const)
+        (σ := σ)
+        (witnessTerm (Base := Base) (Const := Const) τ)) :=
+  rfl
+
+/-- Every simple type in the cumulative Henkin signature has a closed witness term. -/
+theorem nonempty_closedTerm (τ : Ty Base) :
+    Nonempty (ClosedTerm (HenkinConstInfinity Base Const) τ) :=
+  ⟨witnessTerm (Base := Base) (Const := Const) τ⟩
+
+/--
+The cumulative Henkin calculus proves `∃ x : τ, ⊤` at every simple type.
+
+Positive example:
+this is the syntactic inhabitance needed for default values in cumulative-Henkin
+semantic constructions.
+
+Negative example:
+it does not imply that the original signature already had such witnesses.
+-/
+theorem theorem_existsTop (τ : Ty Base) :
+    ExtDerivation.Theorem
+      (HenkinConstInfinity Base Const)
+      (.ex (.top : Formula (HenkinConstInfinity Base Const) [τ])) := by
+  refine ExtDerivation.exI
+    (witnessTerm (Base := Base) (Const := Const) τ) ?_
+  simpa using
+    (ExtDerivation.topI :
+      ExtDerivation
+        (HenkinConstInfinity Base Const)
+        []
+        (.top : ClosedFormula (HenkinConstInfinity Base Const)))
+
 /-- Lift a finite-stage term into the canonical cumulative Henkin signature. -/
 abbrev liftTerm {n : Nat} {Γ : Ctx Base} {τ : Ty Base} :
     Term (HenkinConstStage Base Const n) Γ τ →

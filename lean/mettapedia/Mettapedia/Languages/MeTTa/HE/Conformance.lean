@@ -297,6 +297,48 @@ theorem mettaCall_equation_rhs_substitution :
     · left; rfl
     · show _ ∈ typeCast _ _ _ _ fuel; decide
 
+/-! ## 6b. Equation RHS Fuel Drift Regression
+
+The coarse declarative `MettaCall.equation_match` constructor can recurse on a
+low-fuel `merged.apply rhs fuel` result that has not stabilized yet. This is
+exactly why the aligned completeness bridge in `Correctness.lean` uses the
+stronger `ApplyStableEventually` witness instead of naively mirroring the
+public constructor one-for-one.
+-/
+
+private def unstableChainB : Bindings :=
+  (emptyB.assign "z#0" (.var "y")).assign "y" (.symbol "a")
+
+private def unstableChainSpace : Space := Space.ofList [
+  .expression [.symbol "=", .symbol "q", .var "z"]]
+
+/-- Low fuel can leave the equation RHS only partially substituted. -/
+theorem equation_rhs_apply_fuel2_unstable :
+    unstableChainB.apply (.var "z#0") 2 = .var "z#0" := rfl
+
+/-- Larger fuel resolves the same RHS all the way to the final symbol. -/
+theorem equation_rhs_apply_fuel4_stabilized :
+    unstableChainB.apply (.var "z#0") 4 = .symbol "a" := rfl
+
+/-- The coarse public spec admits an equation-match derivation through the
+    unstable low-fuel RHS. This is a real derivation, not a hypothetical one. -/
+theorem mettaCall_equation_rhs_unstable_low_fuel :
+    MettaCall unstableChainSpace noDispatch
+      (.symbol "q") Atom.undefinedType unstableChainB
+      (.var "z#0", unstableChainB) := by
+  apply MettaCall.equation_match (fuel := 2)
+    (rhs := .var "z#0") (queryBindings := emptyB) (merged := unstableChainB)
+  case h_not_error => rfl
+  case h_not_grounded => trivial
+  case h_query => decide
+  case h_merge => decide
+  case h_no_loop => rfl
+  case h_recurse =>
+    change EvalAtom _ _ (.var "z#0") _ _ _
+    apply EvalAtom.type_pass
+    · rfl
+    · exact Or.inr (Or.inr rfl)
+
 /-! ## 7. MinimalStep derivation witnesses -/
 
 /-- cons-atom builds an expression. -/
@@ -358,7 +400,8 @@ non-error at high fuel, so a low-fuel error does NOT justify "no non-error deriv
 exists at any depth."
 
 This witness prevents regression to the false global filtered soundness claim.
-The honest fuel-indexed version is `EvalAtomFilteredAtFuel` in Correctness.lean. -/
+The honest fuel-indexed version is `EvalAtomFilteredAtFuel` in Correctness.lean,
+where it lives because it talks about the evaluator's computed subfuel results. -/
 
 private def fuelTestSpace := Space.ofList [
   .expression [.symbol ":", .symbol "x", .symbol "Int"],

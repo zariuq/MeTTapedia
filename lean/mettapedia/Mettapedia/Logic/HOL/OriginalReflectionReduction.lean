@@ -12,14 +12,19 @@ namespace HenkinConstInfinity
 /-!
 # Original-Signature Reflection Reduction
 
-This file does not prove the final original-signature completeness theorem.
-Instead, it packages the exact remaining proof-theoretic bridge:
+This file is auxiliary. It does not prove the final plain intuitionistic
+original-signature completeness theorem.
+
+Instead, it packages the exact remaining proof-theoretic bridge for the
+constant-based original-reflection detour:
 
 - a finite-stage reduction of lifted `HInf` provability, and
 - an iterated one-step stage-reflection principle.
 
-Once those two ingredients are supplied, reflection back to the original
-signature is immediate.
+That detour is useful for diagnostics and strengthened reflection theorems, but
+it is not the mainline route to plain intuitionistic completeness. The intended
+public entrypoint for the plain mainline is
+`Mettapedia.Logic.HOL.PlainIntuitionistic`.
 
 Important status boundary after the certified obstruction:
 
@@ -339,8 +344,12 @@ theorem sourceUniversalSchemeProvable_of_sourceSchemeProvable
         hψ)
 
 /--
-Route 2 final target: reflection back to the original signature lands in
-source HOL augmented by the Hε / DP schemes forced by one-step Henkinization.
+Auxiliary strengthened reflection target.
+
+This is NOT plain intuitionistic original-signature completeness.
+It records the strongest theorem currently known to compose through the
+constant-based one-step Henkin bridge: reflection lands in source HOL
+augmented by the Hε / DP schemes forced by one-step Henkinization.
 -/
 structure SchemeExtendedReflectionTarget where
   witnesses : BaseWitnesses Base Const
@@ -350,8 +359,11 @@ structure SchemeExtendedReflectionTarget where
         SourceSchemeProvable (Base := Base) (Const := Const) Δ φ
 
 /--
-Corrected final Route 2 target: reflection lands in source HOL plus the
-universally closed parameterized Hε / DP schemes.
+Auxiliary strengthened reflection target at the universal-scheme boundary.
+
+This is still NOT plain intuitionistic original-signature completeness.
+It is the strengthened Route 2 target in which reflection lands in source HOL
+plus the universally closed parameterized Hε / DP schemes.
 -/
 structure UniversalSchemeExtendedReflectionTarget where
   witnesses : BaseWitnesses Base Const
@@ -365,6 +377,9 @@ The corrected one-step reflection theorem boundary (GPT-5.4 Pro route).
 
 Replaces `WitnessedTheoryConservativityGoal` (which is FALSE for intuitionistic HOL).
 The conclusion lands in source HOL + Hε + DP, not plain source HOL.
+
+So this theorem is only relevant for the strengthened Route 2 program, not for
+plain intuitionistic original-signature completeness.
 
 This is the closest TRUE theorem to the original conservativity target:
 - exact witness axioms eliminate to source Hε instances,
@@ -391,8 +406,11 @@ def SchemeReflectionGoal
       φ
 
 /--
-Corrected one-step reflection target for the final Route 2 architecture:
+Corrected one-step reflection target for the strengthened Route 2 architecture:
 the conclusion lands in the universal scheme set.
+
+Again, this is an auxiliary strengthened target, not a statement of plain
+intuitionistic completeness.
 -/
 def UniversalSchemeReflectionGoal
     (_W : BaseWitnesses Base Const) : Prop :=
@@ -539,105 +557,31 @@ def keepSuffixSubst
     {Ξ Γ : Ctx Base} →
       Subst Const' Ξ [] →
         Subst Const' (Ξ ++ Γ) Γ
-  | [], Γ, _ => fun v => .var v
+  | [], _, _ => fun v => .var v
   | _ :: Ξ, Γ, σs => fun
-      | .vz => σs .vz
+      | .vz => weakenCtx Γ (σs .vz)
       | .vs v =>
-          keepSuffixSubst (Base := Base) (Const' := Const') (Ξ := Ξ) (Γ := Γ)
+          keepSuffixSubst (Ξ := Ξ) (Γ := Γ)
             (fun {_τ} v => σs (.vs v))
             v
+
+/-- First substitute the front parameter block `Ξ₁`, then substitute the
+remaining parameter block `Ξ₂`, leaving the final suffix context `Γ`
+untouched. -/
+def prefixThenSuffixSubst
+    {Const' : Ty Base → Type w} :
+    {Ξ₁ Ξ₂ Γ : Ctx Base} →
+      Subst Const' Ξ₁ [] →
+        Subst Const' Ξ₂ [] →
+          Subst Const' (Ξ₁ ++ (Ξ₂ ++ Γ)) Γ
+  | Ξ₁, Ξ₂, Γ, σs, τs =>
+      Subst.comp
+        (keepSuffixSubst (Base := Base) (Const' := Const') (Ξ := Ξ₂) (Γ := Γ) τs)
+        (keepSuffixSubst (Base := Base) (Const' := Const') (Ξ := Ξ₁) (Γ := Ξ₂ ++ Γ) σs)
 
 @[simp] theorem appendPrefixRen_nil
     {Δ : Ctx Base} {τ : Ty Base} (v : Var Δ τ) :
     appendPrefixRen (Base := Base) (Γ := []) (Δ := Δ) v = v := rfl
-
-@[simp] theorem keepSuffixSubst_appendPrefixRen_var
-    {Const' : Ty Base → Type w}
-    {Ξ₁ Ξ₂ Γ : Ctx Base}
-    (σs : Subst Const' Ξ₁ [])
-    (τs : Subst Const' Ξ₂ []) :
-    ∀ {τ : Ty Base} (v : Var (Ξ₂ ++ Γ) τ),
-      keepSuffixSubst (Base := Base) (Const' := Const') (Ξ := Ξ₁ ++ Ξ₂) (Γ := Γ)
-          (appendClosedSubst (Base := Base) (Const' := Const') (Ξ₁ := Ξ₁) (Ξ₂ := Ξ₂) σs τs)
-          (appendPrefixRen (Base := Base) (Γ := Ξ₁) (Δ := Ξ₂ ++ Γ) v) =
-        keepSuffixSubst (Base := Base) (Const' := Const') (Ξ := Ξ₂) (Γ := Γ) τs v
-  | _, v => by
-      induction Ξ₁ generalizing τ with
-      | nil =>
-          simp [appendClosedSubst, keepSuffixSubst]
-      | cons α Ξ₁ ih =>
-          simp [appendPrefixRen, keepSuffixSubst, ih]
-
-@[simp] theorem keepSuffixSubst_appendAfterPrefixRen_var
-    {Const' : Ty Base → Type w}
-    {Ξ₁ Ξ₂ Γ : Ctx Base}
-    (σs : Subst Const' Ξ₁ [])
-    (τs : Subst Const' Ξ₂ []) :
-    ∀ {τ : Ty Base} (v : Var (Ξ₁ ++ Γ) τ),
-      keepSuffixSubst (Base := Base) (Const' := Const') (Ξ := Ξ₁ ++ Ξ₂) (Γ := Γ)
-          (appendClosedSubst (Base := Base) (Const' := Const') (Ξ₁ := Ξ₁) (Ξ₂ := Ξ₂) σs τs)
-          (appendAfterPrefixRen (Base := Base) (Γ := Ξ₁) (Ξ₁ := Ξ₂) (Ξ₂ := Γ) v) =
-        keepSuffixSubst (Base := Base) (Const' := Const') (Ξ := Ξ₁) (Γ := Γ) σs v
-  | _, v => by
-      induction Ξ₁ generalizing τ with
-      | nil =>
-          simpa [appendAfterPrefixRen, appendPrefixRen] using
-            (keepSuffixSubst_appendPrefixRen_var
-              (Base := Base)
-              (Const' := Const')
-              (Ξ₁ := Ξ₂)
-              (Ξ₂ := [])
-              (Γ := Γ)
-              τs
-              σs
-              v)
-      | cons α Ξ₁ ih =>
-          cases v with
-          | vz =>
-              simp [appendAfterPrefixRen, keepSuffixSubst]
-          | vs v =>
-              simpa [appendAfterPrefixRen, keepSuffixSubst] using
-                (ih (τ := _) v)
-
-theorem subst_keepSuffix_appendPrefixRen
-    {Const' : Ty Base → Type w}
-    {Ξ₁ Ξ₂ Γ : Ctx Base}
-    (σs : Subst Const' Ξ₁ [])
-    (τs : Subst Const' Ξ₂ [])
-    {τ : Ty Base}
-    (t : Term Const' (Ξ₂ ++ Γ) τ) :
-    subst
-        (keepSuffixSubst (Base := Base) (Const' := Const') (Ξ := Ξ₁ ++ Ξ₂) (Γ := Γ)
-          (appendClosedSubst (Base := Base) (Const' := Const') (Ξ₁ := Ξ₁) (Ξ₂ := Ξ₂) σs τs))
-        (rename (appendPrefixRen (Base := Base) (Γ := Ξ₁) (Δ := Ξ₂ ++ Γ)) t) =
-      subst
-        (keepSuffixSubst (Base := Base) (Const' := Const') (Ξ := Ξ₂) (Γ := Γ) τs)
-        t := by
-  rw [subst_rename]
-  apply subst_ext
-  intro τ v
-  exact keepSuffixSubst_appendPrefixRen_var
-    (Base := Base) (Const' := Const') (Ξ₁ := Ξ₁) (Ξ₂ := Ξ₂) (Γ := Γ) σs τs v
-
-theorem subst_keepSuffix_appendAfterPrefixRen
-    {Const' : Ty Base → Type w}
-    {Ξ₁ Ξ₂ Γ : Ctx Base}
-    (σs : Subst Const' Ξ₁ [])
-    (τs : Subst Const' Ξ₂ [])
-    {τ : Ty Base}
-    (t : Term Const' (Ξ₁ ++ Γ) τ) :
-    subst
-        (keepSuffixSubst (Base := Base) (Const' := Const') (Ξ := Ξ₁ ++ Ξ₂) (Γ := Γ)
-          (appendClosedSubst (Base := Base) (Const' := Const') (Ξ₁ := Ξ₁) (Ξ₂ := Ξ₂) σs τs))
-        (rename (appendAfterPrefixRen (Base := Base) (Γ := Ξ₁) (Ξ₁ := Ξ₂) (Ξ₂ := Γ)) t) =
-      subst
-        (keepSuffixSubst (Base := Base) (Const' := Const') (Ξ := Ξ₁) (Γ := Γ) σs)
-        t := by
-  rw [subst_rename]
-  apply subst_ext
-  intro τ v
-  exact keepSuffixSubst_appendAfterPrefixRen_var
-    (Base := Base) (Const' := Const') (Ξ₁ := Ξ₁) (Ξ₂ := Ξ₂) (Γ := Γ) σs τs v
 
 @[simp] theorem liftBaseClosedFormula_closeAll
     {n : Nat}
@@ -2803,8 +2747,11 @@ def WitnessedStageReductionPackage.toWitnessedOriginalReflectionTarget
     P.zero
 
 /--
-Route 2 stage-reduction package: the stage-`0` collapse lands in source HOL
-with the Hε / DP schemes available as assumptions.
+Strengthened Route 2 stage-reduction package.
+
+Stage `0` collapses only to source HOL with the Hε / DP schemes available as
+assumptions. This package is therefore auxiliary to the main intuitionistic
+completeness program, not its final endpoint.
 -/
 structure SchemeStageReductionPackage where
   witnesses : BaseWitnesses Base Const
@@ -2878,7 +2825,10 @@ def OneStepUniversalSchemeStageReflectionGoal
   OneStepStageReflection (Base := Base) (Const := Const) P.StageProvable
 
 /--
-Final Route 2 target at the corrected universal-scheme boundary.
+Final strengthened Route 2 target at the corrected universal-scheme boundary.
+
+This packages an auxiliary proof-theoretic reflection theorem. It should not be
+read as plain intuitionistic original-signature completeness.
 -/
 def universalSchemeExtendedReflection_of_stageReduction
     (W : BaseWitnesses Base Const)
@@ -3240,8 +3190,10 @@ theorem recursiveStageUniversalSchemeFiniteReduction :
       hn⟩
 
 /--
-Corrected concrete Route 2 stage-reduction package built from the recursive
-stage predicate seeded with universal schemes at stage `0`.
+Corrected strengthened Route 2 stage-reduction package built from the
+recursive stage predicate seeded with universal schemes at stage `0`.
+
+This is retained as auxiliary infrastructure for the strengthened theorem.
 -/
 def recursiveStageUniversalSchemeReductionPackage
     (W : BaseWitnesses Base Const) :
@@ -3255,10 +3207,14 @@ def recursiveStageUniversalSchemeReductionPackage
   zero := recursiveStageUniversalSchemeProvable_zero (Base := Base) (Const := Const)
 
 /--
-Corrected final Route 2 export theorem. Once one-step reflection is proved for
-the universal-scheme recursive stage package, reflection back to the original
-signature lands in source HOL plus the universally closed parameterized
-schemes.
+Corrected final strengthened Route 2 export theorem.
+
+Once one-step reflection is proved for the universal-scheme recursive stage
+package, reflection back to the original signature lands in source HOL plus the
+universally closed parameterized schemes.
+
+This is not the same theorem as plain intuitionistic original-signature
+completeness.
 -/
 def universalSchemeExtendedReflectionTarget_proved
     (W : BaseWitnesses Base Const)
@@ -3277,8 +3233,7 @@ def universalSchemeExtendedReflectionTarget_proved
     W).toUniversalSchemeExtendedReflectionTarget hStep
 
 /--
-Pointwise corrected Route 2 corollary of the final universal-scheme reflection
-target.
+Pointwise corollary of the strengthened universal-scheme reflection target.
 -/
 theorem sourceUniversalSchemeProvable_of_recursiveStageUniversalSchemeReflection
     (W : BaseWitnesses Base Const)

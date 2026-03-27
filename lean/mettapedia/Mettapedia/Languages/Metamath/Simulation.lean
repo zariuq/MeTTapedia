@@ -254,6 +254,156 @@ theorem metamath_engine_context_iff_decl
     exact (declReducesWithPremises_iff_langReducesWithPremises
       (lang := metamathCore) (p := p) (q := q)).1 h
 
+/-! ## Engine-Level Acceptance Layer (DeclReducesWithPremises) -/
+
+/-- One-step authored Metamath engine reduction at the declarative layer. -/
+abbrev LanguageDefStep (p q : Pattern) : Prop :=
+  DeclReducesWithPremises RelationEnv.empty metamathCore p q
+
+/-- Many-step authored Metamath engine reduction (reflexive-transitive closure). -/
+abbrev LanguageDefAccepts (start finish : Pattern) : Prop :=
+  Relation.ReflTransGen LanguageDefStep start finish
+
+/-- Finite list witness for step-by-step declarative reduction. -/
+def ReducesAlong : List Pattern → Prop
+  | [] => False
+  | [_] => True
+  | p :: q :: rest => LanguageDefStep p q ∧ ReducesAlong (q :: rest)
+
+/-- Explicit trace witness at the engine layer. -/
+structure LanguageDefEngineTraceWitness (start finish : Pattern) where
+  trace : List Pattern
+  head_eq : trace.head? = some start
+  last_eq : trace.getLast? = some finish
+  reduces : ReducesAlong trace
+
+/-- Engine-labeled top-step witnesses produce declarative one-step reductions. -/
+theorem engineLabeledTopStep_languageDefStep
+    {p q : Pattern} {label : String}
+    (h : EngineLabeledTopStep p q label) :
+    LanguageDefStep p q := by
+  exact engineLabeledTopStep_decl h
+
+/-- A single engine-labeled step is a many-step acceptance witness. -/
+theorem engineLabeledTopStep_accepts
+    {p q : Pattern} {label : String}
+    (h : EngineLabeledTopStep p q label) :
+    LanguageDefAccepts p q := by
+  exact Relation.ReflTransGen.single (engineLabeledTopStep_languageDefStep h)
+
+/-- `LanguageDefStep` is equivalent to contextual engine membership. -/
+theorem languageDefStep_iff_engineContext
+    {p q : Pattern} :
+    LanguageDefStep p q ↔ q ∈ rewriteWithContextWithPremises metamathCore p := by
+  simpa [LanguageDefStep] using (metamath_engine_context_iff_decl (p := p) (q := q)).symm
+
+private theorem reducesAlong_cons_to_accepts
+    (p : Pattern) (tail : List Pattern) (finish : Pattern)
+    (hLast : (p :: tail).getLast? = some finish)
+    (hRed : ReducesAlong (p :: tail)) :
+    LanguageDefAccepts p finish := by
+  induction tail generalizing p finish with
+  | nil =>
+      simp [ReducesAlong] at hRed
+      have hFinish : p = finish := by simpa using hLast
+      simpa [hFinish] using (Relation.ReflTransGen.refl : LanguageDefAccepts p p)
+  | cons q tail ih =>
+      simp [ReducesAlong] at hRed
+      rcases hRed with ⟨hpq, hTail⟩
+      have hLastTail : (q :: tail).getLast? = some finish := by simpa using hLast
+      have hTailAcc : LanguageDefAccepts q finish :=
+        ih q finish hLastTail hTail
+      exact Relation.ReflTransGen.trans
+        (Relation.ReflTransGen.single hpq) hTailAcc
+
+/-- Any explicit declarative trace witness yields engine-level acceptance. -/
+theorem languageDefEngineTraceWitness_accepts
+    {start finish : Pattern}
+    (hTrace : LanguageDefEngineTraceWitness start finish) :
+    LanguageDefAccepts start finish := by
+  rcases hTrace with ⟨trace, hHead, hLast, hRed⟩
+  cases trace with
+  | nil =>
+      simp at hHead
+  | cons p tail =>
+      have hStart : p = start := by simpa using hHead
+      have hAcc : LanguageDefAccepts p finish :=
+        reducesAlong_cons_to_accepts p tail finish hLast hRed
+      simpa [hStart] using hAcc
+
+/-- A labeled engine trace that records which authored rewrite fires at each
+step. -/
+def LabeledReducesAlong : List Pattern → List String → Prop
+  | [], _ => False
+  | [_], [] => True
+  | [_], _ :: _ => False
+  | _ :: _ :: _, [] => False
+  | p :: q :: rest, lbl :: labels =>
+      EngineLabeledTopStep p q lbl ∧ LabeledReducesAlong (q :: rest) labels
+
+private theorem labeledReducesAlong_to_reducesAlong :
+    ∀ {states labels},
+      LabeledReducesAlong states labels → ReducesAlong states
+  | [], _, h => False.elim h
+  | [_], [], _ => by
+      simp [ReducesAlong]
+  | [_], _ :: _, h => False.elim h
+  | _ :: _ :: _, [], h => False.elim h
+  | p :: q :: rest, _lbl :: labels, h => by
+      rcases h with ⟨hStepLbl, hTail⟩
+      have hStep : LanguageDefStep p q :=
+        engineLabeledTopStep_languageDefStep hStepLbl
+      have hTailRed : ReducesAlong (q :: rest) :=
+        labeledReducesAlong_to_reducesAlong hTail
+      simpa [ReducesAlong] using And.intro hStep hTailRed
+
+private theorem labeledReducesAlong_labels_authored :
+    ∀ {states labels},
+      LabeledReducesAlong states labels →
+      ∀ label ∈ labels, AuthoredRewriteLabel label
+  | [], _, h => False.elim h
+  | [_], [], h => by
+      intro label hMem
+      cases hMem
+  | [_], _ :: _, h => False.elim h
+  | _ :: _ :: _, [], h => by
+      intro label hMem
+      cases hMem
+  | _p :: _q :: rest, lbl :: labels, h => by
+      rcases h with ⟨hStepLbl, hTail⟩
+      intro label hMem
+      simp at hMem
+      rcases hMem with rfl | hTailMem
+      · exact engineLabeledTopStep_authored hStepLbl
+      · exact labeledReducesAlong_labels_authored hTail label hTailMem
+
+/-- Explicit engine trace witness carrying both state path and fired rewrite
+labels. -/
+structure LabeledLanguageDefEngineTraceWitness (start finish : Pattern) where
+  trace : List Pattern
+  labels : List String
+  head_eq : trace.head? = some start
+  last_eq : trace.getLast? = some finish
+  reduces : LabeledReducesAlong trace labels
+
+/-- Any labeled engine trace witness induces declarative engine acceptance. -/
+theorem labeledLanguageDefEngineTraceWitness_accepts
+    {start finish : Pattern}
+    (hTrace : LabeledLanguageDefEngineTraceWitness start finish) :
+    LanguageDefAccepts start finish := by
+  rcases hTrace with ⟨trace, labels, hHead, hLast, hRedLbl⟩
+  have hRed : ReducesAlong trace :=
+    labeledReducesAlong_to_reducesAlong hRedLbl
+  exact languageDefEngineTraceWitness_accepts ⟨trace, hHead, hLast, hRed⟩
+
+/-- Labels carried by a labeled engine trace are all authored rewrite names. -/
+theorem labeledLanguageDefEngineTraceWitness_labels_authored
+    {start finish : Pattern}
+    (hTrace : LabeledLanguageDefEngineTraceWitness start finish) :
+    ∀ label ∈ hTrace.labels, AuthoredRewriteLabel label := by
+  rcases hTrace with ⟨trace, labels, _hHead, _hLast, hRedLbl⟩
+  exact labeledReducesAlong_labels_authored hRedLbl
+
 example : hasRewriteByName "BeginLower" = true := by native_decide
 example : hasRewriteByName "CompileLinearizeDone" = true := by native_decide
 example : hasRewriteByName "DefinitelyMissingRule" = false := by native_decide

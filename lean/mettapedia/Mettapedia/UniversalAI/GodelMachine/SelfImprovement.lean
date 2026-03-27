@@ -252,23 +252,19 @@ theorem eventually_finds_improvement (oracle : ProofSearchOracle)
       simp only [hfound']
     · exact hvalid'
 
-/-- Corollary: The Gödel Machine converges to locally optimal behavior. -/
+/-- Corollary: for each provably beneficial candidate, the Gödel Machine either
+    already lies within `ε` of that candidate or eventually switches to some
+    provably beneficial modification. -/
 theorem godelMachine_local_optimality (oracle : ProofSearchOracle)
     (G : GodelMachineState) :
-    ∀ ε > 0, ∃ t : ℕ,
-      ∀ G' : GodelMachineState,
-        validModification G G' →
+    ∀ ε > 0, ∀ G' : GodelMachineState, validModification G G' →
+      ∃ t : ℕ,
         expectedUtilityFromStart G' - expectedUtilityFromStart G < ε ∨
         (globalSwitchWithOracle oracle G t).switched = true := by
-  intro ε hε
-  -- If there's a provable improvement > ε, the oracle will find it
-  -- Otherwise, no such improvement exists
-  use 0  -- Placeholder; real bound depends on proof enumeration
-  intro G' hvalid
-  right
-  -- By eventually_finds_improvement, we know a switch will occur
-  obtain ⟨t, G'', hswitch, _⟩ := eventually_finds_improvement oracle G G' hvalid
-  -- At time 0, we may not have found it yet, so this needs the right bound
-  sorry  -- Requires proper time bound analysis
+  intro ε hε G' hvalid
+  by_cases hsmall : expectedUtilityFromStart G' - expectedUtilityFromStart G < ε
+  · exact ⟨0, Or.inl hsmall⟩
+  · obtain ⟨t, _G'', hswitch, _⟩ := eventually_finds_improvement oracle G G' hvalid
+    exact ⟨t, Or.inr hswitch⟩
 
 end Mettapedia.UniversalAI.GodelMachine
