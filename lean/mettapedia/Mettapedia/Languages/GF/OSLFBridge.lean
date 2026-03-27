@@ -32,7 +32,7 @@ GFCore.GrammarSig ──→ LanguageDef ──→ langOSLF ──→ OSLFTypeSys
 ```
 -/
 
-namespace Mettapedia.Languages.GF.OSLFBridge
+namespace Mettapedia.Languages.GF.GFCoreOSLFBridge
 
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.Formula
@@ -47,16 +47,15 @@ open Mettapedia.Languages.GF.SemanticKernelDSL
 -- ═══════════════════════════════════════════════════════════════════
 
 /-- Convert a GFCore.CheckedExpr (verified parse tree) to an OSLF Pattern.
-    Leaves (lexical items) become free variables; applications become
-    Pattern.apply with the function name.
+    GF declarations lower to constructor applications, including nullary
+    declarations such as `TPres` or lexical constants like `man_N`.
 
     This is the central bridge — all downstream semantic evaluation
     passes through this function. -/
 def gfCheckedExprToPattern (e : CheckedExpr) : Pattern :=
   match e with
   | .node decl args =>
-    if args.isEmpty then .fvar decl.name
-    else .apply decl.name (args.toList.map fun a => gfCheckedExprToPattern a)
+    .apply decl.name (args.toList.map fun a => gfCheckedExprToPattern a)
 termination_by sizeOf e
 decreasing_by
   simp_wf
@@ -81,6 +80,33 @@ def gfFunDeclToGrammarRule (d : FunDecl) : GrammarRule :=
   , category := d.resultCat
   , params := params
   , syntaxPattern := synPat }
+
+private def internalGrammarRule
+    (label category : String)
+    (params : List (String × TypeExpr)) : GrammarRule :=
+  { label := label
+  , category := category
+  , params := params.map (fun pair => TermParam.simple pair.1 pair.2)
+  , syntaxPattern := [] }
+
+private def gfSemanticSupportTypes : List TypeDecl :=
+  [TypeDecl.plain "TimeOffset"]
+
+private def gfPassV2GrammarRule : GrammarRule :=
+  internalGrammarRule "PassV2" "VP" [("v", .base "V2")]
+
+private def gfTemporalGrammarRule : GrammarRule :=
+  internalGrammarRule "⊛temporal" "S"
+    [("cl", .base "Cl"), ("offset", .base "TimeOffset")]
+
+private def gfTimeOffsetGrammarRules : List GrammarRule :=
+  [ internalGrammarRule "0" "TimeOffset" []
+  , internalGrammarRule "-1" "TimeOffset" []
+  , internalGrammarRule "1" "TimeOffset" []
+  ]
+
+private def gfSemanticSupportTerms : List GrammarRule :=
+  gfPassV2GrammarRule :: gfTemporalGrammarRule :: gfTimeOffsetGrammarRules
 
 -- ═══════════════════════════════════════════════════════════════════
 -- Phase 2: Shared GF semantic kernel (authored via languageDef!)
@@ -157,6 +183,8 @@ def gfFunDeclToGrammarRule (d : FunDecl) : GrammarRule :=
     Rewrites and equations are passed in (default: RGL semantics). -/
 def gfSigToLanguageDef
     (sig : GrammarSig)
+    (extraTypes : List TypeDecl := [])
+    (extraTerms : List GrammarRule := [])
     (rwRules : List RewriteRule := [])
     (eqRules : List Equation := []) : LanguageDef :=
   let allCats := sig.funs.fold (init := ([] : List String)) fun acc _ d =>
@@ -165,17 +193,63 @@ def gfSigToLanguageDef
       gfFunDeclToGrammarRule d :: acc
   LanguageDef.mk
     sig.grammar
-    (allCats.eraseDups.map TypeDecl.plain)
-    termRules
+    ((allCats.eraseDups.map TypeDecl.plain) ++ extraTypes).eraseDups
+    (termRules ++ extraTerms)
     eqRules
     rwRules
     [.vec, .hashBag, .hashSet]
     []
     []
 
-/-- Build the RGL LanguageDef with standard semantic rewrites. -/
+private def gfSemanticValidationSeed (sig : GrammarSig) : LanguageDef :=
+  gfSigToLanguageDef sig gfSemanticSupportTypes gfSemanticSupportTerms [] []
+
+private def equationSupportedBySig (sig : GrammarSig) (eqn : Equation) : Bool :=
+  let baseLang : LanguageDef := gfSemanticValidationSeed sig;
+  let testLang : LanguageDef :=
+    LanguageDef.mk
+      baseLang.name
+      baseLang.types
+      baseLang.terms
+      [eqn]
+      baseLang.rewrites
+      baseLang.congruenceCollections
+      baseLang.logic
+      baseLang.oracles;
+  LanguageDef.validate testLang = []
+
+private def rewriteSupportedBySig (sig : GrammarSig) (rw : RewriteRule) : Bool :=
+  let baseLang : LanguageDef := gfSemanticValidationSeed sig;
+  let testLang : LanguageDef :=
+    LanguageDef.mk
+      baseLang.name
+      baseLang.types
+      baseLang.terms
+      baseLang.equations
+      [rw]
+      baseLang.congruenceCollections
+      baseLang.logic
+      baseLang.oracles;
+  LanguageDef.validate testLang = []
+
+/-- Semantic equations supported by a concrete generated GF signature, after
+    adding the small internal semantic extension used by the OSLF bridge. -/
+def gfSemanticEquationsForSig (sig : GrammarSig) : List Equation :=
+  [useNIdentityEquation].filter (equationSupportedBySig sig)
+
+/-- Semantic rewrites supported by a concrete generated GF signature, after
+    adding the small internal semantic extension used by the OSLF bridge. -/
+def gfSemanticRewritesForSig (sig : GrammarSig) : List RewriteRule :=
+  allSemanticRewrites.filter (rewriteSupportedBySig sig)
+
+/-- Build the RGL LanguageDef with the semantic fragment actually supported by
+    a given real GF signature plus the bridge's internal semantic constructors. -/
 def gfRGLLanguageDef (sig : GrammarSig) : LanguageDef :=
-  gfSigToLanguageDef sig allSemanticRewrites [useNIdentityEquation]
+  gfSigToLanguageDef sig
+    gfSemanticSupportTypes
+    gfSemanticSupportTerms
+    (gfSemanticRewritesForSig sig)
+    (gfSemanticEquationsForSig sig)
 
 -- ═══════════════════════════════════════════════════════════════════
 -- Phase 4: Derived OSLF constructions
@@ -245,4 +319,4 @@ theorem gfCheckedExpr_diamond_of_exec
     langDiamond lang φ (gfCheckedExprToPattern node) :=
   gfCheckedExpr_diamond_of_reduces (gfCheckedExpr_exec_implies_reduces hExec) hφ
 
-end Mettapedia.Languages.GF.OSLFBridge
+end Mettapedia.Languages.GF.GFCoreOSLFBridge

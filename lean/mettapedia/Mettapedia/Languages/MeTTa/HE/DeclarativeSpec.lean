@@ -15,19 +15,24 @@ mirroring the style of `PeTTa/DeclarativeSpec.lean`. It is simultaneously:
 
 - `https://trueagi-io.github.io/hyperon-experimental/metta/`
 
-## 3-Layer HE Spec Pack (Audit View)
+## 4-Layer HE Spec Pack (Audit View)
 
 1. **Evaluation relations** (`EvalSpec.lean`):
    Six mutually inductive relations mapping 1:1 to the spec pseudocode:
    `EvalAtom`, `InterpretExpression`, `InterpretFunction`,
    `InterpretArgs`, `InterpretTuple`, `MettaCall`.
 
-2. **Stateful instruction layer** (`MinimalMeTTa.lean`):
+2. **Implementation-refined top-level executable boundary**
+   (`ExecutableBoundary.lean`):
+   `EvalAtomStablyReaches` and `EvalAtomCertified`, which sharpen the
+   top-level evaluator story without replacing the coarse declarative spec.
+
+3. **Stateful instruction layer** (`MinimalMeTTa.lean`):
    `MinimalStep` relation for `eval`, `evalc`, `chain`, `unify`,
    `cons-atom`, `decons-atom`, `collapse-bind`, `superpose-bind`,
    `function`/`return`, `metta`, `context-space`, `call-native`.
 
-3. **Properties & Conformance** (`Properties.lean`, `Conformance.lean`):
+4. **Properties & Conformance** (`Properties.lean`, `Conformance.lean`):
    Universal theorems by induction and derivation-tree witnesses.
 
 ## Spec Coverage Map

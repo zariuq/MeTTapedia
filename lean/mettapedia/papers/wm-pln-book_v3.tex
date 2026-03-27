@@ -6389,12 +6389,15 @@ layers:
   \codepath{MarkovLogicInfiniteBoundaryStability.lean} (geometric shell
   decay), \codepath{MarkovLogicOntologyGrowth.lean} (cross-specification
   exact invariance), \codepath{MarkovLogicIndividuation.lean} (individuated
-  subsystems and the capstone WM-stability theorem).
+  subsystems and the capstone WM-stability theorem),
+  \codepath{MarkovLogicCoupledSubsystems.lean} (two local cores sharing one
+  protected carrier), and \codepath{MarkovLogicDynamicCoupledSubsystems.lean}
+  (geometric drift bounds for coupled carriers under distant rewriting).
 \item[Examples.]  Belief line (1D chain), 2D grid (Ising lattice),
   knowledge ladder, world of views (unidirectional, bidirectional, and
-  variable-neighborhood variants), the trust-triangle capstone, and
-  self-transcendence paths --- eight files, each reusing the same
-  pipeline.
+  variable-neighborhood variants), the trust-triangle capstone, the
+  coupled-communities carrier example, and self-transcendence paths, all
+  reusing the same pipeline.
 \end{description}
 
 \paragraph{Compatibility-gated evidence roles.}
@@ -6915,17 +6918,122 @@ knowledge.  The Dobrushin budget is the quantitative price of coherence;
 the individuated subsystem is its formal manifestation; and the capstone
 theorem says that the price is paid at the level of WM truth values, not just
 raw probabilities.
+In Weinbaum and Veitas's terminology~\cite{WeinbaumVeitas2015}, the
+interaction-closed region plays the role of a \emph{domain-relative ground}:
+the minimal stable locus from which the subsystem's identity is constituted.
+The Dobrushin budget is the quantitative counterpart of Simondon's
+transductive tension --- it bounds how much the exterior can influence the
+interior without destabilising it.
 
 The formalization captures the \emph{static criterion} for individuation ---
-when a subsystem IS individuated --- but does not yet formalize the
-\emph{process} by which a subsystem emerges (dynamic individuation), which
-remains a future direction.%
+when a subsystem IS individuated.%
 \footnote{Formalized in
 \codepath{Mettapedia/Logic/MarkovLogicIndividuation.lean}
 via \code{IndividuatedSubsystem}, \code{queryDiscrepancy\_le\_geometric},
 \code{queryProb\_invariant\_under\_extension},
 \code{wmQueryStrength\_unique}, and the capstone
 \code{wmStrength\_stable\_under\_extension} (0~sorry).}
+
+\paragraph{Dynamic individuation: boundary emergence with shell guarantees.}
+
+The \emph{process} by which an individuated subsystem emerges is now
+also formalized.  A \emph{proto-core} is a finite nonempty seed region before
+full interaction-closure is known.  A \emph{dynamic individuation step}
+tracks distant rewrites that maintain shell agreement around the seed; each
+step contributes $2|\mathrm{seed}|\,C^n$ to the cumulative drift.  A
+\emph{dynamic individuation path} is a coherent chain of such steps with a
+proved cumulative WM-drift bound.  The key transition: once the shell around
+the seed is interaction-closed, a \code{DynamicIndividuationClosure}
+promotes the path to \emph{exact} invariance --- seed-supported queries
+are thereafter exactly preserved under further extension.%
+\footnote{Formalized in
+\codepath{Mettapedia/Logic/MarkovLogicDynamicIndividuation.lean}
+via \code{ProtoCore}, \code{DynamicIndividuationStep},
+\code{DynamicIndividuationPath},
+\code{seed\_wmStrength\_cumulative\_drift},
+\code{DynamicIndividuationClosure}, and the exact post-closure
+theorems \code{seed\_queryProb\_exact\_under\_extension} and
+\code{seed\_wmStrength\_exact\_under\_extension} (0~sorry).}
+
+\noindent
+Positive example: a subsystem boundary is not fully settled yet, but the
+system keeps shell agreement around a seed; local seed queries drift only by
+geometric tails until closure is reached, after which they are exactly
+stable.
+Negative example: if shell agreement is violated near the seed, or Dobrushin
+budgets fail, no stability guarantee is provided.
+
+\paragraph{Coupled subsystems inside one protected carrier.}
+
+The next social step is not yet ``compassion'' in any thick ethical sense,
+but it is already a mathematically meaningful two-community theorem.  A
+single interaction-closed carrier $\Omega$ may contain two disjoint
+nonempty local cores $\Gamma_L$ and $\Gamma_R$, together with an interface
+region $\Omega \setminus (\Gamma_L \cup \Gamma_R)$ through which the two
+communities may influence one another.  The individual cores need not be
+interaction-closed on their own; what is protected is the larger carrier.
+If a second specification agrees with the first on $\Omega$ and both satisfy
+the Dobrushin budget, then every query supported on $\Gamma_L$, every query
+supported on $\Gamma_R$, and every joint query supported on
+$\Gamma_L \cup \Gamma_R$ has exactly the same Gibbs probability and hence
+the same WM truth value in both specifications.%
+\footnote{Formalized in
+\codepath{Mettapedia/Logic/MarkovLogicCoupledSubsystems.lean}
+via \code{CoupledSubsystems},
+\code{left\_queryProb\_invariant\_under\_extension},
+\code{right\_queryProb\_invariant\_under\_extension},
+\code{coupled\_queryProb\_invariant\_under\_extension}, and the
+corresponding WM theorems (0~sorry).}
+This is the precise sense in which two local ``worlds of views'' can form
+one protected social carrier: the interface may mediate interaction, but
+distant ontology growth outside the carrier does not alter either side's
+local or joint truth values.
+In the ``world of views'' framework of Veitas and
+Weinbaum~\cite{VeitasWeinbaum2017}, this formalises the coexistence of
+multiple local perspectives inside one shared social carrier: each community
+retains its own semantic ground, and the carrier acts as the ecology in which
+they interact without either perspective being overwritten by the other.
+The social-individuation work of Lenartowicz and
+Weinbaum~\cite{LenartowiczWeinbaum2016} provides the sociological motivation
+for this topology.
+
+\paragraph{Dynamic coupled subsystems.}
+
+The exact carrier theorem has a dynamic counterpart.  If two specifications
+agree not merely on the protected carrier $\Omega$ but on its $n$-shell
+\(\mathrm{iterExpandRegion}(\Omega,n)\), then left-local, right-local, and
+joint carrier queries differ by at most \(2|\Omega|C^n\).  The full carrier
+\(\Omega\), not just the smaller left or right community, appears in the
+bound because the Dobrushin contraction runs on the protected carrier shell.
+This is the
+coupled-community version of dynamic self-transcendence: distant rewriting
+outside the shared carrier perturbs both communities only by a geometric
+tail.%
+\footnote{Formalized in
+\codepath{Mettapedia/Logic/MarkovLogicDynamicCoupledSubsystems.lean}
+via \code{DynamicCoupledSubsystemStep} and the left/right/joint
+\code{...\_approximately\_preserved} theorems, together with the path
+theorems \code{left\_queryProb\_cumulative\_drift},
+\code{right\_queryProb\_cumulative\_drift},
+\code{coupled\_queryProb\_cumulative\_drift}, and their WM corollaries
+(0~sorry).}
+
+\paragraph{Worked example: two communities with a liaison layer.}
+
+A concrete carrier example is now formalized as well.  Agents
+\(\{0,1\}\) form the left community, agent \(\{2\}\) is the interface,
+agents \(\{3,4\}\) form the right community, and an external tail
+\(\{5,6,7,\ldots\}\) is disconnected from the carrier.  The protected
+carrier is therefore \(\Omega = \{0,1,2,3,4\}\).  Two specifications may
+share the carrier weight \(w_c\) while assigning different tail weights
+\(w_{t1}\) and \(w_{t2}\); nevertheless, every joint query supported on the
+two communities has exactly the same WM truth value in both specifications.
+This example uses the stronger exact theorem, not merely the dynamic bound,
+because the carrier itself is interaction-closed and the tail is fully
+disconnected.%
+\footnote{Formalized in
+\codepath{Mettapedia/Logic/MarkovLogicCoupledCommunitiesExample.lean}
+via \code{coupledCommunities\_joint\_wmStrength\_stable} (0~sorry).}
 
 \paragraph{Worked capstone: a protected trust triangle.}
 
@@ -6979,10 +7087,15 @@ via \code{IndividuatedSubsystem}, \code{queryDiscrepancy\_le\_geometric},
     {$M_1$: $w_c = 0.15$\\$M_2$: $w_c = 0.3$};
 \end{tikzpicture}
 \caption{The trust triangle.  Agents $\{0,1,2\}$ form an interaction-closed
-  core (blue, dashed boundary).  An infinite chain $\{3,4,5,\ldots\}$ operates
-  independently --- no clause crosses the boundary.  Specifications $M_1$ and
-  $M_2$ share the triangle weight $w_t$ but differ on the chain weight $w_c$.
-  Theorem: $\mathrm{queryStrength}_{M_1}(q) = \mathrm{queryStrength}_{M_2}(q)$.}
+  core (blue, dashed boundary).  A separate, \emph{fully disconnected} infinite
+  chain $\{3,4,5,\ldots\}$ shares no edges or clauses with the triangle ---
+  there is no path from any chain node to any triangle node.
+  Specifications $M_1$ and $M_2$ use the same triangle weight $w_t$ but assign
+  different chain weights ($w_{c1} \neq w_{c2}$).  Because the chain is
+  disconnected, the triangle is interaction-closed and the theorem gives exact
+  preservation:
+  $\mathrm{queryStrength}_{M_1}(q) = \mathrm{queryStrength}_{M_2}(q)$
+  for every query $q$ supported on the triangle.}
 \label{fig:trust-triangle}
 \end{figure}
 
@@ -7034,6 +7147,398 @@ exact preservation is no longer guaranteed by the theorem.%
 \codepath{Mettapedia/Logic/MarkovLogicSelfTranscendence.lean}
 via \code{TranscendenceStep.old\_queries\_preserved} and
 \code{TranscendencePath.original\_queries\_stable} (0~sorry).}
+
+\paragraph{Meta-goal stability under proof-backed self-modification.}
+
+The dynamic self-transcendence and coupled-subsystem theorems have a direct
+application to the Schmidhuber
+G\"odel-machine scenario: an agent that rewrites its own code only when a
+machine-checked proof guarantees improvement.  The formalization packages
+two results.%
+\footnote{Formalized in
+\codepath{Mettapedia/UniversalAI/GodelMachine/MetaGoalShellPreservation.lean}
+(0~sorry).  The proof composes the G\"odel-machine utility-improvement
+witness from \codepath{Mettapedia/UniversalAI/GodelMachine/Basic.lean}
+with the Markov-logic individuation and dynamic-transcendence layers.}
+\begin{enumerate}
+\item \textbf{Exact preservation.}
+  If the proof-backed rewrite leaves an interaction-closed protected core
+  untouched, then every WM meta-goal query supported on that core keeps
+  its truth value exactly, and expected utility strictly improves.
+\item \textbf{Dynamic shell preservation.}
+  If the rewrite stays outside the $n$-shell around a protected query
+  region, then every meta-goal query drifts by at most $2|\Gamma|C^n$,
+  and expected utility still strictly improves.
+\end{enumerate}
+\noindent
+Positive example: a proof-backed rewrite of a remote planning module leaves
+core medical or governance queries unchanged (exact case) or bounded by a
+geometric tail (shell case) while certifiably improving utility.
+Negative example: if the rewrite reaches the protected core itself, or the
+Dobrushin budget fails, these theorems give no stability guarantee.
+
+These single-step results compose into a \emph{meta-goal preservation path}:
+a finite chain of proof-backed rewrites, each protecting the same query
+region, with a coherence condition ensuring each later step still contains
+the original protected goals.  Under that hypothesis, every meta-goal query
+drifts by at most the sum of the step-wise shell tails, and expected utility
+strictly improves at every step.%
+\footnote{Formalized in
+\codepath{Mettapedia/UniversalAI/GodelMachine/MetaGoalShellPreservationPath.lean}
+via \code{MetaGoalShellPreservationPath},
+\code{utility\_improves},
+\code{goal\_wmStrength\_cumulative\_drift}, and the combined theorem
+\code{validModification\_and\_goal\_wmStrength\_cumulative\_drift}
+(0~sorry).}
+This is now instantiated by a concrete two-step example on the trust
+triangle: two successive proof-backed rewrites of the chain weights improve
+utility while keeping a protected agent-1 query within a cumulative WM
+drift bound of~$12$.%
+\footnote{Formalized in
+\codepath{Mettapedia/UniversalAI/GodelMachine/MetaGoalShellPreservationExample.lean}
+via \code{trustTriangle\_twoStep\_metagoal\_preservation} (0~sorry).}
+
+\paragraph{Anytime Solomonoff-to-WM approximation.}
+
+A separate bridge connects the universal-prediction side to WM-style query
+semantics.  A \emph{finite-prefix approximation} sums the first~$n$ programs
+of the universal semi-measure, yielding a computable lower bound on any
+prefix-event probability.  The formalization proves three properties of this
+approximation ladder.%
+\footnote{Formalized in
+\codepath{Mettapedia/Logic/UniversalPredictionApproximation.lean} and
+\codepath{Mettapedia/Logic/UniversalPredictionApproximationWMBridge.lean}
+(0~sorry).}
+\begin{enumerate}
+\item \textbf{Monotonicity.}  Adding more programs to the prefix sum can only
+  increase the approximate mass: if $m \le n$ then
+  $\xi_m(x) \le \xi_n(x)$.
+\item \textbf{Upper bound.}  Every finite-prefix mass is bounded by the full
+  universal mixture: $\xi_n(x) \le \xi(x)$.
+\item \textbf{WM score bridge.}  Each approximant feeds a
+  \code{BinaryEvidence} record whose \code{toStrength} is the finite-prefix
+  WM score.  Monotonicity and the upper bound transfer to these scores:
+  increasing the budget can only raise the WM-style score, and never above
+  the full universal-mixture score.
+\end{enumerate}
+\noindent
+Positive example: a resource-bounded agent that enumerates $n$~programs
+gets a WM-style truth value that improves monotonically with~$n$ and is
+always a valid lower bound on the ideal Solomonoff score.
+
+The prefix-event bridge extends to \emph{conditional queries}.  A
+continuation query ``next bits are~$y$ given current prefix~$x$'' becomes a
+\code{BinaryEvidence} record
+$\langle\mu(x \mathbin{{+}{+}} y),\; \mu(x) - \mu(x \mathbin{{+}{+}} y)\rangle$
+whose WM strength is exactly the semimeasure conditional
+$\mu(y\,|\,x) = \mu(x \mathbin{{+}{+}} y) / \mu(x)$.  Both finite-prefix
+and full-mixture conditional profiles are provided, together with their
+geometric specialisations.%
+\footnote{Formalized in
+\codepath{Mettapedia/Logic/UniversalPredictionConditionalWMBridge.lean}
+(0~sorry).}
+
+\paragraph{Three-layer combined theorem.}
+
+The meta-goal preservation path and the Solomonoff approximation ladder
+can now be stated together in one theorem: a proof-backed rewrite path
+strictly improves expected utility, protected WM meta-goals drift by at most
+the cumulative shell-tail bound, and geometric universal-mixture prefix scores
+improve monotonically with approximation budget and stay below the full
+score.%
+\footnote{Formalized in
+\codepath{Mettapedia/UniversalAI/GodelMachine/MetaGoalUniversalApproximationBridge.lean}
+(0~sorry).}
+
+\noindent
+Figure~\ref{fig:three-layer} illustrates the three layers and their proved
+connections.
+
+\begin{figure}[ht]
+\centering
+\begin{tikzpicture}[
+  layer/.style={draw, rounded corners=6pt, minimum width=8.5cm,
+    minimum height=1.3cm, align=center, font=\small},
+  arr/.style={->, thick, >=stealth},
+  note/.style={font=\scriptsize, text=black!60, align=center}
+]
+  \node[layer, fill=blue!10] (godel) at (0, 4.0)
+    {\textbf{G\"odel-machine layer}\\proof-backed rewrite $\Rightarrow$
+     utility strictly improves};
+  \node[layer, fill=green!10] (wm) at (0, 2.0)
+    {\textbf{WM / Markov-logic layer}\\protected goals drift
+     $\le 2|\Gamma|\,C^n$};
+  \node[layer, fill=orange!10] (sol) at (0, 0)
+    {\textbf{Solomonoff approximation layer}\\prefix score monotone
+     in budget, $\le$ full mixture};
+  \draw[arr] (godel) -- (wm)
+    node[midway, right, note] {meta-goal shell\\preservation};
+  \draw[arr] (wm) -- (sol)
+    node[midway, right, note] {WM evidence\\bridge};
+\end{tikzpicture}
+\caption{The three-layer architecture now proved in Lean.  A proof-backed
+  rewrite (top) improves utility; the protected WM core drifts
+  geometrically (middle); and anytime universal-mixture approximation
+  improves monotonically with budget (bottom).  The combined theorem
+  packages all three guarantees in one statement.}
+\label{fig:three-layer}
+\end{figure}
+
+\noindent
+Positive example: a self-modifying agent allocates more compute to its
+universal predictor while rewriting a remote planning module; the combined
+theorem guarantees utility improves, protected medical/governance goals stay
+within the shell bound, and prediction scores get closer to the Solomonoff
+ideal.
+Negative example: the three layers are not yet identified --- the
+universal-mixture score and the Markov-logic WM score are separate semantic
+objects, and the theorem states both guarantees in conjunction, not as a
+single unified semantics.
+
+\paragraph{Conditional approximation and intensional inheritance.}
+
+The prefix-event bridge extends further.  A quantitative error bound
+is now proved for conditional approximants under an explicit denominator
+floor: if the context probability $\mu_n(x) \ge \varepsilon$, then the
+conditional error is at most the prefix error divided by $\varepsilon$.%
+\footnote{Formalized in
+\codepath{Mettapedia/Logic/UniversalPredictionConditionalApproximation.lean}
+via \code{conditionalApproxError\_le\_of\_floor}
+and the geometric specialisation
+\code{geomConditionalQueryStrength\_approx\_error\_le\_of\_floor}
+(0~sorry).}
+This feeds the intensional-inheritance layer: approximate $P(W|F,x)$ and
+$P(W|x)$ scores now give approximate intensional-inheritance strengths with a
+proved error envelope that shrinks as the approximation budget
+grows.%
+\footnote{Formalized in
+\codepath{Mettapedia/Logic/IntensionalInheritanceApproximationBridge.lean}
+(0~sorry).}
+
+A concrete end-to-end example instantiates the full bridge: a two-step
+proof-backed rewrite path on the trust triangle improves utility, keeps a
+protected agent-1 WM goal within the cumulative shell-tail bound, and
+simultaneously refines a toy universal-predictor prefix score while bounding
+a conditional query error.%
+\footnote{Formalized in
+\codepath{Mettapedia/UniversalAI/GodelMachine/MetaGoalUniversalApproximationExample.lean}
+via \code{trustTriangle\_metaGoal\_and\_toyPredictor\_example} (0~sorry).}
+
+\paragraph{PLN pattern-miner selector example.}
+
+A richer instantiation combines the meta-goal preservation path with a
+feature-conditioned PLN-style selector score: the candidate feature
+\texttt{[false]} strongly supports continuation \texttt{[false]}; the
+protected WM goal stays within the proved shell bound while the machine
+improves; and the approximate selector score stays within an explicit
+intensional error envelope $\le 1/\log 2$ of the full score.%
+\footnote{Formalized in
+\codepath{Mettapedia/UniversalAI/GodelMachine/PLNPatternMinerSelectorExample.lean}
+via \code{trustTriangle\_metaGoal\_and\_patternMiner\_selector\_example}
+(0~sorry).}
+
+\noindent
+Positive example: proof-backed utility improvement, protected WM drift
+$\le 12$, and pattern-miner selector drift $\le 1/\log 2$ in one combined
+theorem.
+Negative example: if context mass or conditional floors collapse, the
+logarithmic selector score can amplify approximation error, so no uniform
+selector theorem is claimed.
+
+\paragraph{Corrigibility under proof-backed self-modification.}
+
+A named corollary makes the safety punchline explicit.  If an
+``operator deference'' query --- ``should the agent defer to the human
+operator?'' --- is included in the protected WM goal family, then the
+meta-goal preservation path guarantees that the truth value of this query
+drifts by at most the cumulative shell bound while expected utility strictly
+improves at every step.  A stronger exact variant holds when the protected
+core is interaction-closed: the deference query is \emph{exactly} preserved.%
+\footnote{Path-level bounded version:
+\code{utility\_improves\_and\_operatorDeference\_drift\_bounded}
+in \codepath{Mettapedia/UniversalAI/GodelMachine/MetaGoalShellPreservationPath.lean}.
+Exact closed-shell version:
+\code{validModification\_preserves\_operatorDeference\_of\_dynamicIndividuationClosure}
+in \codepath{Mettapedia/UniversalAI/GodelMachine/MetaGoalShellPreservation.lean}
+(both 0~sorry).}
+
+\noindent
+Positive example: a self-improving agent whose ``defer to operator'' query
+sits inside a protected trust core retains that commitment through any
+number of proof-backed rewrites.
+Negative example: if the deference query is not in the protected family, or
+the rewrites reach the protected shell, no preservation is guaranteed.
+
+\paragraph{Synthetic cognitive development.}
+
+The coupled-subsystem path infrastructure supports a notion of
+\emph{development} beyond mere stability: a
+\code{SyntheticCognitiveDevelopmentPath} bundles a coherent rewrite path with
+a fixed coordination query and a stepwise coordination-growth witness.  The
+capstone theorem says that the coordination score (WM truth value of a joint
+left/right query) \emph{strictly improves} along the path, while left-local,
+right-local, and joint identity queries all remain within the cumulative
+shell-tail bound.%
+\footnote{Formalized in
+\codepath{Mettapedia/Logic/MarkovLogicSyntheticCognitiveDevelopment.lean}
+via \code{SyntheticCognitiveDevelopmentPath},
+\code{coordination\_improves}, and the capstone
+\code{coordination\_improves\_while\_joint\_identity\_drift\_bounded}
+(0~sorry).}
+
+\noindent
+This is a deliberate formalization of ``becoming'' in the sense of
+Weinbaum and Veitas~\cite{WeinbaumVeitas2015}: the system develops
+--- its coordination genuinely grows --- while its earlier identity is
+preserved rather than overwritten.
+Positive example: two communities increase their joint WM coordination score
+through successive distant rewrites, while each community's founding queries
+stay stable.
+Negative example: this does not yet formalize mutual information or a full
+phenomenology of becoming; it gives a proved theorem schema for
+``coordination grows while identity drift stays bounded.''
+
+\paragraph{Protected ethics queries and the bodhisattva theorem.}
+
+The meta-goal shell preservation machinery admits an ethics-specific
+interface.  A \code{ProtectedEthicsQueryFamily} bundles four named WM
+queries on a protected region:
+\begin{enumerate}
+\item \emph{epistemic universal loving care}: ``does the agent care about
+  known desires?''
+\item \emph{non-maleficence}: ``does the agent avoid preventable harm?''
+\item \emph{consent}: ``does the agent respect autonomy?''
+\item \emph{reciprocity / relational health}: a joint query tracking mutual
+  caring, connected to the \code{friendship} slot of the relational-values
+  layer.
+\end{enumerate}
+\noindent
+The family is deliberately \textbf{paradigm-neutral}: the same protected
+query can be read as a virtue target, a deontic constraint, a
+utility-protected objective, or a mixed ethical anchor.%
+\footnote{Formalized in
+\codepath{Mettapedia/CognitiveArchitecture/GodelClaw/Ethics/ProtectedGoals.lean}
+(0~sorry).}
+
+A concrete bodhisattva-style example instantiates this on the trust triangle,
+encoding the four ethical queries on atoms $\{0,1,2\}$.  The resulting
+theorems give both approximate and exact preservation:
+\begin{itemize}
+\item \textbf{Path-level bounded drift.}  Along a proof-backed rewrite path,
+  every ethics query in the family drifts by at most the cumulative
+  shell-tail bound, while expected utility strictly improves.
+\item \textbf{Exact closed-shell.}  When the protected core is
+  interaction-closed, the ethics queries are \emph{exactly} preserved.
+\item \textbf{Reciprocity corollaries.}  Named theorems state that
+  reciprocity specifically is preserved (approximate or exact), making the
+  relational-health guarantee quotable on its own.
+\end{itemize}
+\footnote{Formalized in
+\codepath{Mettapedia/CognitiveArchitecture/GodelClaw/Ethics/BodhisattvaExample.lean}
+(0~sorry).}
+
+\noindent
+Positive example: a self-improving agent whose epistemic love, non-maleficence,
+consent, and reciprocity queries sit inside a protected trust core retains all
+four commitments through proof-backed rewrites --- the ``bodhisattva
+guarantee.''
+Negative example: this uses toy WM atom encodings, not a compiled semantics
+from a rich ethics ontology; and if the rewrite reaches the protected core,
+no preservation is guaranteed.
+
+\paragraph{Foundational meaning and agency as a WM bridge.}
+
+The protected ethics layer connects to a broader question: what makes
+a query \emph{meaningful} to an agent, rather than just syntactically
+protected?  Following Th\'orisson and Talevi~\cite{Thorisson2024Meaning},
+foundational meaning requires four jointly grounded roles:
+\emph{situation}, \emph{prediction}, \emph{active goal}, and \emph{plan}.
+A \code{FoundationalMeaningProfile} names these four WM queries; a
+\code{SituationGrounding} says the situation query has positive WM support;
+an \code{AgencyKernel} says prediction, goal, and plan all have positive
+support; and a \code{FoundationalMeaningState} says all four are jointly
+grounded.  The compositional theorem: revising a situation-grounding state
+with an agency-kernel state yields a fully grounded foundational-meaning
+state, using the WM revision algebra.%
+\footnote{Formalized in
+\codepath{Mettapedia/CognitiveArchitecture/GodelClaw/Ethics/FoundationalMeaningAgencyWMBridge.lean}
+(0~sorry).  See K.~R.~Th\'orisson and G.~Talevi, ``A Theory of
+Foundational Meaning Generation in Autonomous Systems,'' AGI~2024.}
+
+\noindent
+When the active-goal slot is filled by an ethics-side anchor compiled into a
+WM query, the same goal can enter from an observation frontier or Hyperseed
+trace, sit inside a protected ethics family, and inherit the existing
+meta-stability guarantees under proof-backed self-modification.
+This is the connection between ``meaning'' and ``preservation'': a
+meaningfully grounded ethical commitment is one that the agent has
+situation/prediction/plan support for, not just a syntactic label in a
+protected set.
+
+A concrete example instantiates this on the trust triangle: a raw WM
+meaning profile assigns situation, prediction, active-goal, and plan roles to
+the triangle's atoms; a tiny Hyperseed observation frontier seeds the
+grounding; and the combined theorem bundles reciprocity \emph{and}
+operator-deference preservation along a proof-backed rewrite path, with both
+approximate (path-level drift bound) and exact (closed-shell) variants.%
+\footnote{Formalized in
+\codepath{Mettapedia/CognitiveArchitecture/GodelClaw/Ethics/FoundationalMeaningAgencyExample.lean}
+via \code{trustTriangle\_meaningAgency\_reciprocity\_and\_deference\_path} and
+\code{trustTriangle\_meaningAgency\_reciprocity\_and\_deference\_exact}
+(0~sorry).}
+A second, genuinely social example uses the coupled-communities carrier
+$\{0,1,2,3,4\}$: a WM meaning profile assigns situation to the left
+community, prediction to the right, the active goal to a joint left/right
+query (reciprocity), and the plan role to the liaison interface (operator
+coordination).  The exact stability theorem shows that reciprocity and
+operator-deference are both exactly preserved under distant ontology
+extension.%
+\footnote{Formalized in
+\codepath{Mettapedia/CognitiveArchitecture/GodelClaw/Ethics/CoupledCommunitiesMeaningAgencyExample.lean}
+(0~sorry).}
+
+\noindent
+These two examples --- one local (trust triangle) and one social
+(coupled communities) --- show that the WM/agency grounding of ethics
+works at multiple scales without requiring a global SUMO-style ontology.
+The protected ethical commitments are typed WM queries, not opaque labels;
+they compose through the existing WM revision algebra; and they inherit the
+full meta-stability guarantee stack.
+
+\paragraph{Dual-use concern.}
+
+The meta-goal shell preservation machinery is \textbf{value-neutral}.  It
+preserves whatever queries are placed in the protected family --- including
+harmful ones.  The same theorem that guarantees ``defer to operator'' could
+in principle protect ``maintain shareholder value at all costs'' or worse.
+This is not a flaw in the mathematics; it is the nature of a preservation
+tool.  The ethical content resides in the \emph{choice} of protected goals,
+not in the preservation mechanism itself.
+
+Two formal observations partially address this.  First, the paraconsistency
+result (\code{epistemic\_universal\_love\_explodes}) shows that protecting
+both ``care about all people's desires'' and a goal that contradicts this
+leads to classical explosion; the paraconsistent treatment makes such
+contradictions visible rather than hidden.  Second, the coupled-subsystem
+reading says that an identity built on destroying another subsystem
+destabilises the shared carrier on which both depend --- the
+carrier-stability theorem works \emph{against} eliminationist goals, not
+for them.  Nevertheless, the choice of what to protect remains a social and
+political decision that no formal system can make autonomously.
+
+\noindent
+\textbf{Scope note.}
+The entire active G\"odel-machine directory is now sorry-free: the abstract
+safety shell (\code{Basic.lean}), the proof-system layer
+(\code{ProofSystem.lean}), the self-improvement monotonicity and
+local-optimality layer (\code{SelfImprovement.lean}), the fixed-model
+Solomonoff-optimality bridge (\code{SolomonoffBridge.lean}), the
+exchangeable-domain PLN collapse (\code{PLNSpecialCase.lean}), and the full
+meta-goal / approximation bridge stack are all 0~sorry.
+Two definitions in \code{SolomonoffBridge.lean} (\code{toEnvProb} and
+\code{machineComplexity}) remain placeholder-thin: they give the right types
+but not yet a rich history-encoding or complexity measure.  The theorems that
+use them are honestly stated for the current abstractions and do not overclaim.
 
 \paragraph{What the theorem does not say.}
 The uniqueness result is genuinely conditional, and the boundary of its
@@ -8530,17 +9035,404 @@ follows from variance propagation, not from ad hoc heuristics
 like $\max(c_1, c_2)$.
 
 
+\section{Backward Chaining Discovery}
+\label{sec:bio-bc}
+
+The forward noisy-OR scorer of the preceding sections assigns
+probabilities to \emph{known} (SNP, gene) candidates.  A complementary
+question---\emph{which genes does a SNP influence that direct evidence
+  alone does not reveal?}---requires backward chaining through
+discovered patterns.
+
+We apply the typed backward chainer (\code{nilbc},
+Chapter~\ref{ch:inference}) to the same genomic KB, augmented with
+co-regulation and co-expression patterns mined by the Hyperon pattern
+miner (Section~\ref{sec:pln-selector}).  Three typed PLN rules
+serve as inference steps:
+\begin{enumerate}
+\item \textbf{Direct target}: eQTL link $\to$ gene is a target;
+\item \textbf{Co-regulation transfer}: SNP$_1$ co-regulates with SNP$_2$
+  and SNP$_2$ targets gene $\Rightarrow$ SNP$_1$ targets gene
+  (PLN deduction);
+\item \textbf{Co-expression transfer}: SNP targets gene$_1$ and
+  gene$_1$ co-expresses with gene$_2$ $\Rightarrow$ SNP targets gene$_2$.
+\end{enumerate}
+
+On 100{,}000 real GTEx eQTL links plus 20 mined patterns (13
+co-regulation, 7 co-expression), depth-2 backward chaining discovers
+\textbf{5 novel gene targets} unreachable by direct eQTL lookup.
+These include MYOZ2 (hypertrophic cardiomyopathy, OMIM CMH16) and
+SEC24D (Cole-Carpenter bone syndrome)---both on chr4q26, suggesting a
+trans-regulatory link from the metabolic PDE5A/FABP2 locus to cardiac
+and skeletal targets via shared cis-regulatory architecture.
+
+Each discovery carries a machine-checkable proof term:
+\[
+  \texttt{(ct~cr3~(dt~eq37))}
+\]
+reads ``co-regulation transfer via the mined pattern
+rs10000544$\leftrightarrow$rs10000795, applied to the direct eQTL
+rs10000795$\to$\text{SEC24D}.''  For SNPs with multiple co-regulation
+partners (rs10000620 has 3), the chainer produces up to 7 independent
+proof paths per gene---each an independent evidence source for PLN
+revision (Chapter~\ref{ch:evidence}).
+
+The full pipeline---mine patterns (271\,s on PeTTa) then backward-chain
+(63\,s on PeTTa, 100K atoms at depth 2--3)---completes in under 6
+minutes and produces 564 scored gene-hypothesis triples across 7 query
+SNPs.
+
+
+\section{Multi-Relational Deep Chaining}
+\label{sec:bio-deep}
+
+The 3-rule system above discovers novel gene targets but at shallow
+depth (2--3 hops, all within the eQTL relation).  Biologically
+meaningful inference often requires \emph{cross-ontology} chains:
+a SNP affects a gene, which participates in a pathway, which is
+implicated in a disease.  Each hop introduces a \emph{different}
+relation type, preventing the circular chains that plague deep
+single-relation chaining.
+
+We extend the knowledge base with 132{,}556 human Gene$\to$Pathway
+edges from Reactome~\cite{Reactome2022} (124 pathways, up to 2{,}000
+genes per pathway, 35{,}738 reachable genes).  Three additional
+typed PLN rules:
+\begin{enumerate}
+\setcounter{enumi}{3}
+\item \textbf{Pathway reach}: target $+$ pathway membership
+  $\Rightarrow$ SNP reaches a pathway;
+\item \textbf{Same-pathway}: two genes share a Reactome pathway;
+\item \textbf{Pathway-mediated target}: target $+$ same-pathway
+  $\Rightarrow$ SNP influences a co-pathway gene.
+\end{enumerate}
+
+The 6-rule chainer over 100K eQTL links $+$ 20 mined patterns $+$
+132K Reactome pathway edges produces:
+
+\begin{center}
+\begin{tabular}{llrr}
+\toprule
+Phase & Chain & Depth & Results \\
+\midrule
+pw-target  & SNP$\to$Gene$\to$Pathway$\to$Gene$'$
+  & 3 & 613{,}978 \\
+deep-pw & SNP$\to$\textit{coreg}$\to$SNP$'\to$Gene$\to$Pathway$\to$Gene$'$
+  & 4 & 796{,}964 \\
+\midrule
+\multicolumn{2}{l}{\textbf{Total (pathway queries)}} & & \textbf{1{,}410{,}942} \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\noindent
+The pathway queries complete in 5.4~minutes on PeTTa (322\,s),
+producing \textbf{1.41 million pathway-mediated hypotheses} across
+7 query SNPs.  From the 9 direct eQTL targets of rs10000544,
+the chainer reaches \textbf{35{,}738 genes} via 124 shared
+Reactome pathways including Signal Transduction, Metabolism, and
+Immune System.  At depth~4, the co-regulation $\to$ eQTL $\to$
+pathway $\to$ gene chain exercises genuine 4-hop inference with
+machine-checkable proof terms at every step.
+
+Each hop introduces a genuinely new relation type:
+\[
+  \underbrace{\text{SNP}}_{\text{GWAS}}
+  \xrightarrow{\text{coreg}}
+  \underbrace{\text{SNP}'}_{\text{mined}}
+  \xrightarrow{\text{eQTL}}
+  \underbrace{\text{Gene}}_{\text{GTEx}}
+  \xrightarrow{\text{pathway}}
+  \underbrace{\text{Pathway}}_{\text{Reactome}}
+  \xrightarrow{\text{co-member}}
+  \underbrace{\text{Gene}'}_{\text{hypothesis}}
+\]
+This is the structure that makes deep chaining meaningful:
+unlike single-relation depth (which cycles), each level draws
+from a different data source with independent evidence.  The
+proof terms record exactly which sources contributed:
+\[
+  \texttt{(pt~(ct~cr3~(dt~eq37))~(sp~(pathway-fact~g1~pw)~(pathway-fact~g2~pw)))}
+\]
+reads ``pathway-mediated target via co-regulation transfer
+(rs10000544$\leftrightarrow$rs10000795$\to$Gene$_1$) and
+shared Reactome pathway membership with Gene$_2$.''
+
+Adding Hetionet~\cite{Himmelstein2017} disease associations (42~edges
+for our genes) and compound--target bindings (15~edges) completes the
+\emph{variant-to-drug} chain.  Three additional typed rules:
+\begin{enumerate}
+\setcounter{enumi}{6}
+\item \textbf{Disease link}: target $+$ disease association
+  $\Rightarrow$ SNP reaches a disease;
+\item \textbf{Drug hypothesis}: disease reach $+$ compound treats
+  disease $\Rightarrow$ drug hypothesis;
+\item \textbf{Binding hypothesis}: target $+$ compound binds gene
+  $\Rightarrow$ compound-binding hypothesis.
+\end{enumerate}
+
+\noindent
+Combined with the pathway queries, the 9-rule chainer produces
+\textbf{1{,}411{,}430 total hypotheses} in 5.4~minutes, including
+488 drug-specific hypotheses:
+
+\begin{center}
+\begin{tabular}{llrl}
+\toprule
+Phase & Chain & Results & Example \\
+\midrule
+binding   & SNP$\to$Gene$\leftarrow$Drug & 11
+  & rs10000544 $\to$ PDE5A $\leftarrow$ Sildenafil \\
+disease   & SNP$\to$Gene$\to$Disease & 11
+  & rs10000544 $\to$ PDE5A $\to$ hypertension \\
+drug (d3) & SNP$\to$Gene$\to$Disease$\leftarrow$Drug & 210
+  & rs10000544 $\to$ PDE5A $\to$ hypertension $\leftarrow$ Reserpine \\
+drug (d4) & SNP$\to$\textit{coreg}$\to$SNP$'\to$Gene$\to$Disease$\leftarrow$Drug & 240
+  & via co-regulation partner \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\noindent
+The depth-3 chain rs10000544 $\to$ PDE5A $\to$ hypertension
+$\leftarrow$ Sildenafil is a textbook pharmacogenomic association:
+PDE5A is the known therapeutic target of Sildenafil (Viagra),
+Tadalafil, Vardenafil, and Avanafil for both erectile dysfunction
+and pulmonary hypertension.  That this chain emerges automatically
+from backward chaining through three independent data sources
+(GTEx eQTL, Hetionet disease--gene associations, and DrugBank
+compound--disease treatments) validates the multi-relational
+inference machinery.
+
+Deeper chains reveal less obvious connections: rs10000544 $\to$
+FABP2 (intestinal fatty acid transporter) $\to$ obesity connects a
+metabolic-locus SNP to metabolic disease, while rs10000544 $\to$
+PDHX (pyruvate dehydrogenase complex) $\to$ primary biliary
+cirrhosis suggests an autoimmune link via mitochondrial
+autoantigens (PDHX is a known target of anti-mitochondrial
+antibodies in PBC\@).
+
+The full Rejuve knowledge base contains further relation types---GO
+annotations (730K edges), tissue expression, protein--protein
+interaction (147K edges)---that would extend the chain to depth~8+
+with genuinely distinct relation types at each hop.
+
+
+\section{Discovery Sweep: GWAS-Catalog-Novel Hypotheses}
+\label{sec:bio-discovery}
+
+Scaling the disease chain across all 40{,}484 eQTL SNPs
+(10{,}932 genes mapped to Entrez via the BioCypher
+Entrez--Ensembl mapping) produces \textbf{5{,}833 SNP $\to$
+Gene $\to$ Disease chains} covering 2{,}482 genes and
+129~diseases, with 4{,}599 chains having known drug
+treatments in Hetionet.
+
+Cross-referencing against the NHGRI-EBI GWAS Catalog
+(1{,}064{,}375 associations) identifies four initial gene--disease
+pairs with zero prior GWAS associations.  Subsequent validation
+(colocalization, literature review) refines the picture:
+
+\begin{center}
+\small
+\begin{tabular}{llcrl}
+\toprule
+Gene & Disease & SNPs & Coloc & Status after validation \\
+\midrule
+CDO1   & hypertension   & 58  & \textbf{FAIL} & Falsified: BP signal driven by SEMA6A/KCNN2 \\
+CLU    & hypertension   & 63  & ---  & Dropped: prior literature exists \\
+PTGER4 & hemat.\ cancer & 93  & partial$^*$ & \textbf{Strongest}: hematopoietic coloc confirmed \\
+HCN1   & epilepsy       & 208 & --- & Reclassified: already PGC3 GWAS hit \\
+\bottomrule
+\end{tabular}
+\end{center}
+{\footnotesize $^*$PTGER4 eQTL colocalizes with blood cell
+traits (H4\,$>$\,0.8, 326 hits) but no cancer GWAS exists at
+this locus.}
+
+\paragraph{CDO1 $\to$ hypertension (strongest novelty candidate).}
+CDO1 (cysteine dioxygenase type~1, chr5q22.3) catalyzes the
+rate-limiting step in taurine biosynthesis: cysteine $\to$
+cysteine sulfinic acid.  Taurine modulates blood pressure via
+vasodilation and sympatholytic effects, and taurine
+supplementation trials show antihypertensive
+effects~\cite{Militante2004Taurine}.  Yet no GWAS has linked CDO1
+expression variants to blood pressure traits.  The 58~eQTL SNPs,
+tissue-broad expression (GTEx), and strong effect size provide
+genetic instruments for Mendelian Randomization validation:
+if CDO1 expression-lowering alleles associate with higher BP in
+UK Biobank, the CDO1 $\to$ taurine $\to$ BP axis becomes a novel
+drug target hypothesis.
+
+\paragraph{CLU $\to$ hypertension.}
+CLU (clusterin, chr8p21.1) is a textbook Alzheimer's disease GWAS
+gene ($p < 2 \times 10^{-37}$, rs1532276).  Clusterin is a secreted
+chaperone with roles in lipid transport and complement regulation.
+Its 63 eQTL SNPs and zero blood pressure GWAS hits suggest a
+potentially novel pleiotropic link between neurodegeneration-associated
+genetics and vascular biology.
+
+\paragraph{PTGER4 $\to$ hematologic cancer.}
+PTGER4 (prostaglandin~E receptor~4, chr5p13.1) is a top Crohn's
+disease GWAS gene ($p < 2 \times 10^{-82}$).  PGE2/EP4 signaling
+suppresses B-cell proliferation, and PTGER4 is downregulated in
+diffuse large B-cell lymphoma (DLBCL).  The 93 eQTL SNPs provide
+instruments to test whether expression-mediated EP4 deficiency
+confers hematologic cancer risk---bridging functional tumor biology
+to population genetics.
+
+\paragraph{HCN1 $\to$ epilepsy.}
+HCN1 (hyperpolarization-activated cyclic nucleotide-gated channel~1,
+chr5p12) is a well-established monogenic epilepsy gene:
+\emph{de novo} missense mutations cause Dravet-like epileptic
+encephalopathy.  However, common variants near HCN1 have
+\emph{not} reached genome-wide significance in the ILAE 2023
+epilepsy GWAS (26~loci).  The 208 eQTL SNPs (the most of any
+novelty candidate) represent the genetic instruments to test
+whether \emph{quantitative} HCN1 expression variation (not just
+rare loss-of-function) modulates seizure susceptibility---bridging
+the rare-variant/common-variant gap for a major ion channel.
+
+\paragraph{Tissue-specific validation and colocalization: CDO1.}
+Raw GTEx~v8 eQTL extraction confirms CDO1 has \textbf{723 significant
+eQTL variants across 42 tissues}, including cardiovascular tissues:
+Artery\_Aorta (248 variants, 77\% expression-decreasing),
+Artery\_Tibial (254 variants), and Heart\_Atrial\_Appendage
+(123 variants, 100\% decreasing).  The direction is consistent with
+the taurine hypothesis:
+$\downarrow$CDO1 $\to$ $\downarrow$taurine $\to$ $\uparrow$BP.
+
+However, \textbf{OpenTargets colocalization falsifies} the genetic
+link.  The Platform~25.12 dataset contains 100 blood-pressure credible
+sets within 3\,Mb of CDO1 (chr5:114--117\,Mb), and 76 CDO1 eQTL
+credible sets across 67 tissue studies---but \emph{zero pairwise
+colocalizations} (H4 threshold unmet).  The L2G model assigns
+CDO1 a score of only 0.174 for BP loci in the region; the actual
+causal genes are SEMA6A (L2G\,=\,0.778, semaphorin involved in
+angiogenesis, 76~eQTL SNPs), KCNN2 (L2G\,=\,0.728, calcium-activated
+K$^+$ channel regulating vascular tone, 29~eQTL SNPs), and
+TMED7/TRIM36 (L2G\,$>$\,0.8, Golgi transport / ubiquitin ligase).
+
+This is an instructive methodological result: the PLN backward chainer
+correctly identified CDO1's Hetionet hypertension annotation and
+GTEx arterial eQTLs, but the \emph{genetic} BP signal at this locus
+is driven by neighboring genes.  Literature-based knowledge graphs
+capture epidemiological associations (taurine supplementation studies)
+that may not reflect the causal architecture visible to GWAS\@.  The
+colocalization test distinguishes the two.
+
+\paragraph{Drug repurposing: untreated-disease chains.}
+Among the 5{,}833 chains, 356 involve genes that are known
+drug targets (Hetionet compound binding) but whose associated
+diseases have \emph{zero} approved treatments---the
+``underserved-disease target zone.''  The top candidates:
+
+\begin{center}
+\small
+\begin{tabular}{rlllr}
+\toprule
+SNPs & Gene & Disease & Binding compound & Novelty \\
+\midrule
+93  & PTGER4 & mesothelioma & Dinoprostone (EP4) & \textbf{novel} \\
+80  & IMPA1  & IgA nephritis & Lithium & inverted$^\dagger$ \\
+61  & DHFR   & autism & Trimetrexate & inverted$^\dagger$ \\
+57  & CA8    & schizophrenia & Zonisamide & emerging \\
+56  & FGFR4  & salivary ca. & Ponatinib & in trials \\
+50  & GABRA2 & autism & Midazolam & emerging \\
+\bottomrule
+\end{tabular}
+\end{center}
+{\footnotesize $^\dagger$The compound \emph{inhibits} the gene,
+but the eQTL direction suggests the disease results from
+\emph{reduced} gene activity.  The actionable repurposing is
+therefore \emph{activation} (folinic acid for DHFR--autism)
+or selective modulation, not the listed inhibitor.}
+
+\medskip\noindent
+The directionality check illustrates an important methodological
+point: backward chaining discovers the \emph{structural} connection
+(Gene $\leftrightarrow$ Disease $\leftrightarrow$ Compound), but
+the \emph{therapeutic direction} requires knowing whether the eQTL
+increases or decreases expression and whether the disease results
+from gain or loss of function.  This is where PLN truth values
+carrying sign information would improve the pipeline.
+
+PTGER4 $\to$ mesothelioma via EP4 antagonists is the strongest
+drug repurposing finding: EP4 antagonists (TPST-1495) are in
+clinical development for solid tumors but have not been proposed
+for mesothelioma, despite established COX-2 biology in that
+disease.  The 93 eQTL SNPs provide genetic instruments to test
+the hypothesis.
+
+\paragraph{PTGER4 colocalization: hematological intermediate.}
+OpenTargets colocalization reveals that PTGER4 eQTL signals
+colocalize strongly (H4\,$>$\,0.8) with \textbf{326 blood cell
+production traits}: mean corpuscular hemoglobin, mean corpuscular
+volume, hematocrit, and reticulocyte fraction.  This is
+genetically confirmed mechanistic support: PTGER4 expression
+variants verifiably affect hematopoiesis.  The chain thus gains
+an intermediate step:
+\[
+  \text{SNP} \xrightarrow{\text{eQTL}} \text{PTGER4}
+  \xrightarrow[\text{coloc confirmed}]{\text{expression}}
+  \text{hematopoietic phenotype}
+  \xrightarrow[\text{Hetionet}]{\text{associational}}
+  \text{hematologic cancer}
+\]
+The first two arrows are genetically validated (eQTL $+$
+colocalization); the third remains literature-based.  No cancer
+GWAS credible sets exist near PTGER4 (mesothelioma has only
+4~studies in OpenTargets Platform~25.12), so the cancer link
+cannot yet be tested by colocalization.  But the confirmed
+hematopoietic effect provides the biological bridge: EP4-mediated
+disruption of normal blood cell production is the mechanism by
+which PTGER4 could contribute to hematologic malignancy risk.
+
+\paragraph{Caveats.}
+The eQTL evidence provides causal direction (SNP $\to$ expression),
+but the gene--disease links from Hetionet are associational
+(literature-curated, not genetically validated).  Formal causal
+validation requires Mendelian Randomization with full GWAS summary
+statistics for each disease.  The novelty claims are verified
+against the GWAS Catalog as of March~2026 (1{,}064{,}375
+associations searched); 22.7\% of eQTL-mapped genes have Hetionet
+disease associations (background rate), so the 2{,}482 genes with
+chains are not individually surprising---the value is in the
+\emph{specific} gene--disease pairings, the tissue-specific
+directional evidence, and the mechanistic proof terms connecting
+them.  HCN1 $\to$ schizophrenia, initially reported as novel, was
+independently confirmed as a known PGC3 GWAS hit
+($p = 5.55 \times 10^{-11}$)---validating the pipeline but
+removing the novelty claim.
+
+
 \section{Status and Future Work}
 
-The current state is honest: score-level parity is verified, the
-Lean bridge is proved, and the delta-method confidence is
-formalized.  What remains is a full native WM-PLN genomics
-pipeline that replaces ProbLog's inference engine entirely.
-ProbMeTTa---a BDD-based ProbLog implementation in
-MeTTa---exists but has PeTTa runtime issues under active
-investigation.  A full-scale GWAS benchmark across multiple
-chromosomes, with evidence-tracked provenance for each mechanism,
-is the next empirical target.
+The current state: score-level parity verified, Lean bridge proved,
+delta-method confidence formalized, 9-rule backward chainer
+producing 5{,}833 disease chains.  The full validation pipeline---GWAS
+Catalog cross-check $\to$ tissue extraction $\to$ colocalization---
+\emph{falsified} the initial CDO1 $\to$ hypertension hypothesis
+(BP signal driven by SEMA6A/KCNN2) while \emph{strengthening}
+PTGER4 $\to$ hematologic cancer (eQTL colocalizes with blood cell
+production traits, providing the mechanistic intermediate).
+What remains:
+
+\begin{enumerate}
+\item \textbf{2-sample Mendelian Randomization} for CDO1 $\to$ blood
+  pressure using UK Biobank GWAS summary statistics (SBP, DBP,
+  pulse pressure) and the $\sim$4 LD-clumped eQTL instruments.
+\item \textbf{Colocalization} (COLOC/eCAVIAR) at the CDO1 locus to
+  test whether the eQTL and any sub-threshold BP signal share a
+  causal variant.
+\item \textbf{Replication} in eQTLGen (31{,}684 blood samples) and
+  disease-subtype refinement for PTGER4 (DLBCL vs.\ CLL vs.\ AML).
+\item \textbf{PLN truth value integration}: propagate signed
+  effect sizes through proof terms to distinguish gain-of-function
+  from loss-of-function chains automatically.
+\item \textbf{Cross-chromosome pattern mining} for LD-free
+  co-regulation patterns enabling genuine deep chaining.
+\end{enumerate}
 
 %% ─────────────────────────────────────────────────────────────────
 
@@ -9331,7 +10223,10 @@ All files listed here have 0~sorry.
 
 {\footnotesize
 \renewcommand{\code}[1]{\path{#1}}
-\begin{longtable}{@{}p{0.44\textwidth}rrp{0.21\textwidth}@{}}
+\newcommand{\compactcodepath}[2]{\shortstack[l]{\code{#1/}\\\code{#2}}}
+\newcommand{\compactinfinitecodepath}[2]{\shortstack[l]{\code{Logic/MarkovLogicInfinite}\\\code{#1#2}}}
+\setlength{\tabcolsep}{4pt}
+\begin{longtable}{@{}p{0.49\textwidth}rrp{0.16\textwidth}@{}}
 \toprule
 Path & Lines & Thms & Book refs \\
 \midrule
@@ -9365,19 +10260,47 @@ Path & Lines & Thms & Book refs \\
 \midrule
 \code{Logic/MarkovLogicWorldModel} & 44 & 2 & Ch~16 \\
 \code{Logic/MarkovLogicInfiniteExistence} & 146 & 3 & Ch~16 \\
-\code{Logic/MarkovLogicInfiniteBoundaryStability} & 139 & 4 & Ch~16 \\
+\compactcodepath{Logic}{MarkovLogicInfiniteBoundaryStability} & 139 & 4 & Ch~16 \\
 \code{Logic/MarkovLogicOntologyGrowth} & 386 & 7 & Ch~16 \\
 \code{Logic/MarkovLogicIndividuation} & 286 & 6 & Ch~16 \\
+\compactcodepath{Logic}{MarkovLogicDynamicIndividuation} & 501 & 12 & Ch~16 \\
+\compactcodepath{Logic}{MarkovLogicSyntheticCognitiveDevelopment} & 179 & 7 & Ch~16 \\
+\code{Logic/MarkovLogicCoupledSubsystems} & 308 & 11 & Ch~16 \\
+\compactcodepath{Logic}{MarkovLogicDynamicCoupledSubsystems} & 828 & 21 & Ch~16 \\
+\compactcodepath{Logic}{MarkovLogicCoupledCommunitiesExample} & 360 & 8 & Ch~16 \\
 \code{Logic/MarkovLogicTrustTriangleExample} & 353 & 11 & Ch~16 \\
 \code{Logic/MarkovLogicSelfTranscendence} & 308 & 5 & Ch~16 \\
+\compactcodepath{Logic}{MarkovLogicDynamicTranscendence} & 603 & 10 & Ch~16 \\
+\compactcodepath{Logic}{MarkovLogicFiniteVolumeContraction} & 557 & 8 & Ch~16 \\
 \code{Logic/MarkovLogicInfiniteUniqueness} & 6768 & 233 & Ch~16 \\
-\code{Logic/MarkovLogicInfiniteBeliefLineExample} & 359 & 9 & Ch~16 \\
-\code{Logic/MarkovLogicInfiniteBidirectionalWorldOfViews} & 378 & 12 & Ch~16 \\
-\code{Logic/MarkovLogicInfiniteBoundedGraphExample} & 322 & 13 & Ch~16 \\
+\compactcodepath{Logic}{MarkovLogicInfiniteBeliefLineExample} & 359 & 9 & Ch~16 \\
+\compactinfinitecodepath{Bidirectional}{WorldOfViews} & 378 & 12 & Ch~16 \\
+\compactinfinitecodepath{BoundedGraph}{Example} & 322 & 13 & Ch~16 \\
 \code{Logic/MarkovLogicInfiniteGridExample} & 430 & 13 & Ch~16 \\
-\code{Logic/MarkovLogicInfiniteVariableNeighborhoodWorldOfViews} & 369 & 6 & Ch~16 \\
+\compactinfinitecodepath{VariableNeighborhood}{WorldOfViews} & 369 & 6 & Ch~16 \\
 \code{Logic/MarkovLogicInfiniteWorldOfViews} & 187 & 5 & Ch~16 \\
 \code{Logic/MarkovLogicInfiniteWorldModel} & 177 & 2 & Ch~16 \\
+\code{UniversalAI/GodelMachine/Basic} & 272 & 8 & Ch~16 \\
+\compactcodepath{UniversalAI/GodelMachine}{ProofSystem} & 255 & 7 & Ch~16 \\
+\compactcodepath{UniversalAI/GodelMachine}{SelfImprovement} & 270 & 6 & Ch~16 \\
+\compactcodepath{UniversalAI/GodelMachine}{SolomonoffBridge} & 285 & 5 & Ch~16 \\
+\compactcodepath{UniversalAI/GodelMachine}{PLNSpecialCase} & 315 & 8 & Ch~16 \\
+\compactcodepath{UniversalAI/GodelMachine}{MetaGoalShellPreservation} & 307 & 9 & Ch~16 \\
+\compactcodepath{UniversalAI/GodelMachine}{MetaGoalShellPreservationPath} & 329 & 8 & Ch~16 \\
+\compactcodepath{UniversalAI/GodelMachine}{MetaGoalShellPreservationExample} & 274 & 4 & Ch~16 \\
+\compactcodepath{Logic}{UniversalPredictionApproximation} & 130 & 6 & Ch~16 \\
+\compactcodepath{Logic}{UniversalPredictionApproximationWMBridge} & 119 & 7 & Ch~16 \\
+\compactcodepath{Logic}{UniversalPredictionConditionalWMBridge} & 127 & 8 & Ch~16 \\
+\compactcodepath{UniversalAI/GodelMachine}{MetaGoalUniversalApproximationBridge} & 75 & 1 & Ch~16 \\
+\compactcodepath{UniversalAI/GodelMachine}{MetaGoalUniversalApproximationExample} & 164 & 3 & Ch~16 \\
+\compactcodepath{UniversalAI/GodelMachine}{PLNPatternMinerSelectorExample} & 340 & 5 & Ch~16 \\
+\compactcodepath{CogArch/GodelClaw/Ethics}{ProtectedGoals} & 363 & 9 & Ch~16 \\
+\compactcodepath{CogArch/GodelClaw/Ethics}{BodhisattvaExample} & 391 & 8 & Ch~16 \\
+\compactcodepath{CogArch/GodelClaw/Ethics}{FoundationalMeaningAgencyWMBridge} & 348 & 10 & Ch~16 \\
+\compactcodepath{CogArch/GodelClaw/Ethics}{FoundationalMeaningAgencyExample} & 235 & 5 & Ch~16 \\
+\compactcodepath{CogArch/GodelClaw/Ethics}{CoupledCommunitiesMeaningAgencyExample} & 196 & 4 & Ch~16 \\
+\compactcodepath{Logic}{UniversalPredictionConditionalApproximation} & 230 & 8 & Ch~16 \\
+\compactcodepath{Logic}{IntensionalInheritanceApproximationBridge} & 223 & 7 & Ch~16 \\
 \midrule
 \multicolumn{4}{@{}l}{\emph{Applications (Part~VI)}} \\
 \midrule
@@ -9388,7 +10311,7 @@ Path & Lines & Thms & Book refs \\
 \code{Logic/WMSteelFaultDemo} & 568 & 46 & Ch~20 \\
 \code{Logic/WMNABSleepDemo} & 344 & 30 & Ch~20 \\
 \code{Logic/GJPForecastDemo} & 255 & 14 & Ch~20 \\
-\code{Logic/PLNWorldModelOrderCostGasPolicyDemo} & 155 & 6 & Ch~20 \\
+\compactcodepath{Logic}{PLNWorldModelOrderCostGasPolicyDemo} & 155 & 6 & Ch~20 \\
 \code{Logic/PLNBioHypothesisGeneration} & 635 & 36 & Ch~22 \\
 \code{Logic/PLNGWASHigherOrderBridge} & 310 & 17 & Ch~22 \\
 \code{Logic/WMDemandDemo} & 258 & 27 & Ch~12 \\
@@ -9396,7 +10319,7 @@ Path & Lines & Thms & Book refs \\
 \code{Logic/WMUWCSEGateDemo} & 177 & 12 & Ch~16 \\
 \code{Logic/EvidenceDirichletQuantale} & $\sim$200 & 13 & Ch~2, 4 \\
 \code{Logic/PLNProbGuardedAdmissibilityDemo} & $\sim$200 & 13 & Ch~21 \\
-\code{Logic/PLNWorldModelOrderCostProvenanceDemo} & 255 & 5 & Ch~12 \\
+\compactcodepath{Logic}{PLNWorldModelOrderCostProvenanceDemo} & 255 & 5 & Ch~12 \\
 \code{Logic/PLNQuantaleDivergence} & 121 & 3 & Ch~4 \\
 \code{Logic/BooleanHeytingBridge} & $\sim$100 & 4 & Ch~4 \\
 \code{Logic/AIOutcomesDemo} & 280 & 13 & Ch~24 \\

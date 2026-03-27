@@ -179,7 +179,7 @@ theorem IndividuatedSubsystem.queryProb_invariant_under_extension
     an artifact of which Gibbs measure was selected. -/
 theorem IndividuatedSubsystem.wmQueryStrength_unique
     {M : ClassicalInfiniteGroundMLNSpec Atom ClauseId}
-    (S : IndividuatedSubsystem M)
+    (_S : IndividuatedSubsystem M)
     (hM : M.PaperUniformSmallTotalInfluence)
     (μ ν : ProbabilityMeasure (InfiniteWorld Atom))
     (hμ : FixedRegionCylinderDLR M.toStrictlyPositiveInfiniteGroundMLNSpec

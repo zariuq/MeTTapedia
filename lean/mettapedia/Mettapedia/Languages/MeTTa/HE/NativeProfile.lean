@@ -21,7 +21,8 @@ contract are the contracts. Rust implements what's listed here and nothing else.
 - **Execution lanes**: `ContractCatalog.lean` (heExecutionEntries)
 - **Scope info**: `ScopeContract.lean` (heScopeContractArtifact)
 - **Op classification**: `OpProfile.lean` (tier1Ops)
-- **Computable spec**: `EvalSpec.lean` + `MinimalMeTTa.lean`
+- **Canonical semantics**: `EvalSpec.lean` + `MinimalMeTTa.lean`
+- **Executable-refined top-level boundary**: `ExecutableBoundary.lean`
 - **Backend**: MM2/MORK (NOT Datalog/Ascent)
 
 ## What This Exports

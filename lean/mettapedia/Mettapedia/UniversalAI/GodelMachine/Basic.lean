@@ -69,6 +69,8 @@ structure FormalSystem where
   axioms_provable : ∀ φ ∈ axioms, provable φ
   /-- Modus ponens: if φ and φ → ψ are provable, then ψ is provable -/
   modus_ponens : ∀ φ ψ, provable φ → provable (φ → ψ) → provable ψ
+  /-- Tautologies are provable (needed for self-description). -/
+  provable_true : provable True
 
 /-- A formal system is consistent if it cannot prove False. -/
 def FormalSystem.isConsistent (F : FormalSystem) : Prop :=
@@ -140,8 +142,9 @@ def GodelMachineState.withSelfDescription (G : GodelMachineState) : GodelMachine
         | inr h =>
           simp only [Set.mem_singleton_iff] at h
           subst h
-          -- selfDescriptionAxiom is provable (it's a tautology)
-          sorry  -- Requires proof system refinement
+          -- selfDescriptionAxiom is godelNumber G = godelNumber G = (0 = 0) = True
+          simp [selfDescriptionAxiom, godelNumber]
+          exact G.formalSystem.provable_true
   }}
 
 /-! ## Expected Utility

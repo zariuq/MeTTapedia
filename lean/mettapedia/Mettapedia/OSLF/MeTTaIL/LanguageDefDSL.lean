@@ -763,29 +763,23 @@ private def expandTermDecl : TSyntax `langDefTermDecl → MacroM (TSyntax `term)
 
 private def mkEquationTerm
     (nm : Syntax)
-    (ctxTerm premisesTerm premiseSurfaceTerm lhsTerm rhsTerm lhsSurface rhsSurface : TSyntax `term) :
+    (ctxTerm premisesTerm lhsTerm rhsTerm : TSyntax `term) :
     MacroM (TSyntax `term) :=
   `(Equation.mk $(mkStrTerm nm.getId.toString)
       $ctxTerm
       $premisesTerm
       $lhsTerm
-      $rhsTerm
-      $premiseSurfaceTerm
-      (some $lhsSurface)
-      (some $rhsSurface))
+      $rhsTerm)
 
 private def mkRewriteTerm
     (nm : Syntax)
-    (ctxTerm premisesTerm premiseSurfaceTerm lhsTerm rhsTerm lhsSurface rhsSurface : TSyntax `term) :
+    (ctxTerm premisesTerm lhsTerm rhsTerm : TSyntax `term) :
     MacroM (TSyntax `term) :=
   `(RewriteRule.mk $(mkStrTerm nm.getId.toString)
       $ctxTerm
       $premisesTerm
       $lhsTerm
-      $rhsTerm
-      $premiseSurfaceTerm
-      (some $lhsSurface)
-      (some $rhsSurface))
+      $rhsTerm)
 
 private def expandEquationDecl (stx : TSyntax `langDefEquationDecl) : MacroM (TSyntax `term) := do
   let raw := unwrapChoiceSyntax stx.raw
@@ -799,24 +793,20 @@ private def expandEquationDecl (stx : TSyntax `langDefEquationDecl) : MacroM (TS
         | some _ => pure []
         | none => expandPremisesNodeInfo ctxOrPremisesNode
       let premisesTerm ← mkTermList (premisesInfo.map (·.term))
-      let premiseSurfaceTerm ← mkTermList (premisesInfo.map (fun p => mkStrTerm p.surface))
       let ctxTerm ←
         match ctxTerm? with
         | some term => pure term
         | none => `([])
       let lhs' ← expandPatternInfo ⟨args[4]!⟩
       let rhs' ← expandPatternInfo ⟨args[6]!⟩
-      mkEquationTerm args[0]! ctxTerm premisesTerm premiseSurfaceTerm lhs'.term rhs'.term
-        (mkStrTerm lhs'.surface) (mkStrTerm rhs'.surface)
+      mkEquationTerm args[0]! ctxTerm premisesTerm lhs'.term rhs'.term
   | 10 =>
       let ctxTerm ← expandTypeBindingsNode args[2]!
       let premisesInfo ← expandPremisesNodeInfo args[4]!
       let premisesTerm ← mkTermList (premisesInfo.map (·.term))
-      let premiseSurfaceTerm ← mkTermList (premisesInfo.map (fun p => mkStrTerm p.surface))
       let lhs' ← expandPatternInfo ⟨args[6]!⟩
       let rhs' ← expandPatternInfo ⟨args[8]!⟩
-      mkEquationTerm args[0]! ctxTerm premisesTerm premiseSurfaceTerm lhs'.term rhs'.term
-        (mkStrTerm lhs'.surface) (mkStrTerm rhs'.surface)
+      mkEquationTerm args[0]! ctxTerm premisesTerm lhs'.term rhs'.term
   | _ =>
       Macro.throwErrorAt raw "unsupported equation declaration"
 
@@ -832,24 +822,20 @@ private def expandRewriteDecl (stx : TSyntax `langDefRewriteDecl) : MacroM (TSyn
         | some _ => pure []
         | none => expandPremisesNodeInfo ctxOrPremisesNode
       let premisesTerm ← mkTermList (premisesInfo.map (·.term))
-      let premiseSurfaceTerm ← mkTermList (premisesInfo.map (fun p => mkStrTerm p.surface))
       let ctxTerm ←
         match ctxTerm? with
         | some term => pure term
         | none => `([])
       let lhs' ← expandPatternInfo ⟨args[4]!⟩
       let rhs' ← expandPatternInfo ⟨args[6]!⟩
-      mkRewriteTerm args[0]! ctxTerm premisesTerm premiseSurfaceTerm lhs'.term rhs'.term
-        (mkStrTerm lhs'.surface) (mkStrTerm rhs'.surface)
+      mkRewriteTerm args[0]! ctxTerm premisesTerm lhs'.term rhs'.term
   | 10 =>
       let ctxTerm ← expandTypeBindingsNode args[2]!
       let premisesInfo ← expandPremisesNodeInfo args[4]!
       let premisesTerm ← mkTermList (premisesInfo.map (·.term))
-      let premiseSurfaceTerm ← mkTermList (premisesInfo.map (fun p => mkStrTerm p.surface))
       let lhs' ← expandPatternInfo ⟨args[6]!⟩
       let rhs' ← expandPatternInfo ⟨args[8]!⟩
-      mkRewriteTerm args[0]! ctxTerm premisesTerm premiseSurfaceTerm lhs'.term rhs'.term
-        (mkStrTerm lhs'.surface) (mkStrTerm rhs'.surface)
+      mkRewriteTerm args[0]! ctxTerm premisesTerm lhs'.term rhs'.term
   | _ =>
       Macro.throwErrorAt raw "unsupported rewrite declaration"
 

@@ -14,7 +14,8 @@ import Mettapedia.Languages.MeTTa.HE.TransitionSpec
 import Mettapedia.Languages.MeTTa.HE.RewriteIR
 import Mettapedia.Languages.MeTTa.HE.RewriteIRV2
 import Mettapedia.Languages.MeTTa.HE.Eval
-import Mettapedia.Languages.MeTTa.HE.Correctness
+import Mettapedia.Languages.MeTTa.HE.ExecutableBoundary
+import Mettapedia.Languages.MeTTa.HE.Certification
 import Mettapedia.Languages.MeTTa.HE.CoreFragment
 
 /-!
@@ -39,6 +40,9 @@ Authoritative Lean 4 formalization of the HE MeTTa evaluation specification.
 - `Conformance` — Derivation-tree conformance witnesses
 - `Properties` — Universal theorems by induction on derivations
 - `DeclarativeSpec` — Unified spec surface (clause forms, examples, audit index)
+- `ExecutableBoundary` — Additive implementation-refined top-level HE boundary
+- `Certification` — Light public entry point for the exported top-level
+                   `EvalAtomCertified` theorem boundary
 
 ## Key Design Decisions
 - Declarative inductive relations (no fuel, nondeterminism-native)

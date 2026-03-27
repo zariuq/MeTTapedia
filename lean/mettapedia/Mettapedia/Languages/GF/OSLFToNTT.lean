@@ -9,7 +9,7 @@ import Mettapedia.CategoryTheory.PLNInstance
 import Mettapedia.Languages.GF.Examples.EveryManWalks
 
 /-!
-# OSLF → NTT Composition
+# Legacy HandCrafted OSLF → NTT Composition
 
 Composes the OSLF evidence semantics with NativeTypeTheory (Grothendieck
 construction ∫ Sub), completing the pipeline:
@@ -20,6 +20,15 @@ construction ∫ Sub), completing the pipeline:
 
 The bridge exploits `PLNFiber X = BinaryEvidence`, making the Grothendieck
 fiber directly the evidence value from `qsemE2`/`gsemE2Full`.
+
+Positive example:
+- downstream GF world-model modules still depend on this handcrafted evidence
+  pipeline, so it remains a real compatibility surface.
+
+Negative example:
+- this is not the canonical NTT story for the real GFCore bridge.
+- the real generated-grammar OSLF→NTT diagnostics now live in
+  `Mettapedia.Languages.GF.GFCoreNTTDiagnostics`.
 -/
 
 namespace Mettapedia.Languages.GF.OSLFToNTT

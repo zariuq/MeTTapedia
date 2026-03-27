@@ -192,17 +192,11 @@ private def renderPremise (overloaded : List String) : Premise → String
   | .forAll collection param body =>
       s!"forAll({collection}, {param}, {renderPremise overloaded body})"
 
-private def renderPremisesWithSurface (overloaded : List String) (premises : List Premise)
-    (surface : List String) : String :=
+private def renderPremises (overloaded : List String) (premises : List Premise) : String :=
   if premises.isEmpty then
     "|-"
   else
-    let rendered :=
-      if surface.length = premises.length then
-        surface
-      else
-        premises.map (renderPremise overloaded)
-    s!"| {String.intercalate ", " rendered} |-"
+    s!"| {String.intercalate ", " (premises.map (renderPremise overloaded))} |-"
 
 private def renderGrammarRule (rule : GrammarRule) : String :=
   let renderedParams := (indexed rule.params).map fun (idx, p) => renderTermParam idx p
@@ -225,16 +219,12 @@ private def renderGrammarRuleWithUserSyntax (rule : GrammarRule) : String :=
   s!"        {ctorName rule.label} . {paramBlock}|- {syntaxText} : {rule.category};"
 
 private def renderEquation (overloaded : List String) (_idx : Nat) (eqn : Equation) : String :=
-  let gate := renderPremisesWithSurface overloaded eqn.premises eqn.premiseSurface
-  let lhs := eqn.leftSurface?.getD (renderPattern eqn.left)
-  let rhs := eqn.rightSurface?.getD (renderPattern eqn.right)
-  s!"        {eqn.name} . {gate} {lhs} = {rhs};"
+  let gate := renderPremises overloaded eqn.premises
+  s!"        {eqn.name} . {gate} {renderPattern eqn.left} = {renderPattern eqn.right};"
 
 private def renderRewrite (overloaded : List String) (_idx : Nat) (rw : RewriteRule) : String :=
-  let gate := renderPremisesWithSurface overloaded rw.premises rw.premiseSurface
-  let lhs := rw.leftSurface?.getD (renderPattern rw.left)
-  let rhs := rw.rightSurface?.getD (renderPattern rw.right)
-  s!"        {rw.name} . {gate} {lhs} ~> {rhs};"
+  let gate := renderPremises overloaded rw.premises
+  s!"        {rw.name} . {gate} {renderPattern rw.left} ~> {renderPattern rw.right};"
 
 private def renderSection (title : String) (lines : List String) : String :=
   let body :=

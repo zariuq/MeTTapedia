@@ -3,7 +3,7 @@ import Mettapedia.Logic.HOL.OriginalReflectionWitnessed
 
 namespace Mettapedia.Logic.HOL
 
-universe u v
+universe u v w
 
 variable {Base : Type u} {Const : Ty Base → Type v}
 
@@ -12,14 +12,19 @@ namespace HenkinConstInfinity
 /-!
 # Original-Signature Reflection Reduction
 
-This file does not prove the final original-signature completeness theorem.
-Instead, it packages the exact remaining proof-theoretic bridge:
+This file is auxiliary. It does not prove the final plain intuitionistic
+original-signature completeness theorem.
+
+Instead, it packages the exact remaining proof-theoretic bridge for the
+constant-based original-reflection detour:
 
 - a finite-stage reduction of lifted `HInf` provability, and
 - an iterated one-step stage-reflection principle.
 
-Once those two ingredients are supplied, reflection back to the original
-signature is immediate.
+That detour is useful for diagnostics and strengthened reflection theorems, but
+it is not the mainline route to plain intuitionistic completeness. The intended
+public entrypoint for the plain mainline is
+`Mettapedia.Logic.HOL.PlainIntuitionistic`.
 
 Important status boundary after the certified obstruction:
 
@@ -251,11 +256,46 @@ after abstracting the fresh counterexample constant. NOT intuitionistically prov
 def DPScheme {σ : Ty Base} (φ : Formula Const [σ]) : ClosedFormula Const :=
   .ex (.imp φ (weaken (Base := Base) (σ := σ) (.all φ)))
 
+/--
+Context-indexed Hε scheme.
+
+This is the parameterized form needed for the final Route 2 boundary:
+after recursive descent, closed scheme instances may still mention earlier
+Henkin constants, so the correct source-side target is a universally closed
+parameterized scheme, not just a closed one-variable instance.
+-/
+def HεSchemeCtx
+    {Γ : Ctx Base} {σ : Ty Base}
+    (φ : Formula Const (σ :: Γ)) : Formula Const Γ :=
+  .ex (.imp (weaken (Base := Base) (Const := Const) (σ := σ) (.ex φ)) φ)
+
+/-- Context-indexed drinker paradox scheme. -/
+def DPSchemeCtx
+    {Γ : Ctx Base} {σ : Ty Base}
+    (φ : Formula Const (σ :: Γ)) : Formula Const Γ :=
+  .ex (.imp φ (weaken (Base := Base) (Const := Const) (σ := σ) (.all φ)))
+
+/-- Universally close every remaining free variable in a formula. -/
+def closeAll : {Γ : Ctx Base} → Formula Const Γ → ClosedFormula Const
+  | [], φ => φ
+  | _ :: _Γ, φ => closeAll (.all φ)
+
 /-- The set of all source-language Hε and DP scheme instances. -/
 def SourceStepSchemes : ClosedTheorySet Const :=
   fun ψ =>
     (∃ (σ : Ty Base) (φ : Formula Const [σ]), ψ = HεScheme (Base := Base) φ) ∨
     (∃ (σ : Ty Base) (φ : Formula Const [σ]), ψ = DPScheme (Base := Base) φ)
+
+/--
+The corrected source-side Route 2 scheme set: universally closed parameterized
+Hε / DP schemes.
+-/
+def UniversalSourceStepSchemes : ClosedTheorySet Const :=
+  fun ψ =>
+    (∃ (_Γ : Ctx Base) (σ : Ty Base) (φ : Formula Const (σ :: _Γ)),
+      ψ = closeAll (Base := Base) (Const := Const) (HεSchemeCtx (Base := Base) (Const := Const) φ)) ∨
+    (∃ (_Γ : Ctx Base) (σ : Ty Base) (φ : Formula Const (σ :: _Γ)),
+      ψ = closeAll (Base := Base) (Const := Const) (DPSchemeCtx (Base := Base) (Const := Const) φ))
 
 /-- Original-signature provability with the Route 2 source schemes available
 as additional assumptions. -/
@@ -267,9 +307,49 @@ def SourceSchemeProvable
     (fun ψ => ψ ∈ Δ ∨ ψ ∈ SourceStepSchemes (Base := Base) (Const := Const))
     φ
 
+/-- Route 2 provability with the universally closed parameterized schemes. -/
+def SourceUniversalSchemeProvable
+    (Δ : List (ClosedFormula Const))
+    (φ : ClosedFormula Const) : Prop :=
+  ClosedTheorySet.Provable
+    (Const := Const)
+    (fun ψ => ψ ∈ Δ ∨ ψ ∈ UniversalSourceStepSchemes (Base := Base) (Const := Const))
+    φ
+
+theorem mem_universalSourceStepSchemes_of_mem_sourceStepSchemes
+    {ψ : ClosedFormula Const}
+    (hψ : ψ ∈ SourceStepSchemes (Base := Base) (Const := Const)) :
+    ψ ∈ UniversalSourceStepSchemes (Base := Base) (Const := Const) := by
+  rcases hψ with hψ | hψ
+  · rcases hψ with ⟨σ, φ, rfl⟩
+    left
+    refine ⟨[], σ, φ, rfl⟩
+  · rcases hψ with ⟨σ, φ, rfl⟩
+    right
+    refine ⟨[], σ, φ, rfl⟩
+
+theorem sourceUniversalSchemeProvable_of_sourceSchemeProvable
+    {Δ : List (ClosedFormula Const)}
+    {φ : ClosedFormula Const} :
+    SourceSchemeProvable (Base := Base) (Const := Const) Δ φ →
+      SourceUniversalSchemeProvable (Base := Base) (Const := Const) Δ φ := by
+  apply ClosedTheorySet.provable_mono
+  intro ψ hψ
+  rcases hψ with hψ | hψ
+  · exact Or.inl hψ
+  · exact Or.inr
+      (mem_universalSourceStepSchemes_of_mem_sourceStepSchemes
+        (Base := Base)
+        (Const := Const)
+        hψ)
+
 /--
-Route 2 final target: reflection back to the original signature lands in
-source HOL augmented by the Hε / DP schemes forced by one-step Henkinization.
+Auxiliary strengthened reflection target.
+
+This is NOT plain intuitionistic original-signature completeness.
+It records the strongest theorem currently known to compose through the
+constant-based one-step Henkin bridge: reflection lands in source HOL
+augmented by the Hε / DP schemes forced by one-step Henkinization.
 -/
 structure SchemeExtendedReflectionTarget where
   witnesses : BaseWitnesses Base Const
@@ -279,10 +359,27 @@ structure SchemeExtendedReflectionTarget where
         SourceSchemeProvable (Base := Base) (Const := Const) Δ φ
 
 /--
+Auxiliary strengthened reflection target at the universal-scheme boundary.
+
+This is still NOT plain intuitionistic original-signature completeness.
+It is the strengthened Route 2 target in which reflection lands in source HOL
+plus the universally closed parameterized Hε / DP schemes.
+-/
+structure UniversalSchemeExtendedReflectionTarget where
+  witnesses : BaseWitnesses Base Const
+  reflect :
+    ∀ {Δ : List (ClosedFormula Const)} {φ : ClosedFormula Const},
+      OriginalLiftProvable (Base := Base) (Const := Const) Δ φ →
+        SourceUniversalSchemeProvable (Base := Base) (Const := Const) Δ φ
+
+/--
 The corrected one-step reflection theorem boundary (GPT-5.4 Pro route).
 
 Replaces `WitnessedTheoryConservativityGoal` (which is FALSE for intuitionistic HOL).
 The conclusion lands in source HOL + Hε + DP, not plain source HOL.
+
+So this theorem is only relevant for the strengthened Route 2 program, not for
+plain intuitionistic original-signature completeness.
 
 This is the closest TRUE theorem to the original conservativity target:
 - exact witness axioms eliminate to source Hε instances,
@@ -307,6 +404,198 @@ def SchemeReflectionGoal
       (Const := Const)
       (fun ψ => ψ ∈ T ∨ ψ ∈ SourceStepSchemes (Base := Base) (Const := Const))
       φ
+
+/--
+Corrected one-step reflection target for the strengthened Route 2 architecture:
+the conclusion lands in the universal scheme set.
+
+Again, this is an auxiliary strengthened target, not a statement of plain
+intuitionistic completeness.
+-/
+def UniversalSchemeReflectionGoal
+    (_W : BaseWitnesses Base Const) : Prop :=
+  ∀ {T : ClosedTheorySet Const} {φ : ClosedFormula Const},
+    ClosedTheorySet.Provable
+      (Const := OneStepHenkinConst Base Const)
+      (fun ψ =>
+        (∃ χ : ClosedFormula Const,
+            χ ∈ T ∧
+            OneStepHenkinConst.liftClosedFormula
+              (Base := Base) (Const := Const) χ = ψ) ∨
+          ψ ∈ OneStepHenkinConst.ExactHenkinAxioms
+            (Base := Base) (Const := Const))
+      (OneStepHenkinConst.liftClosedFormula
+        (Base := Base) (Const := Const) φ) →
+    ClosedTheorySet.Provable
+      (Const := Const)
+      (fun ψ => ψ ∈ T ∨ ψ ∈ UniversalSourceStepSchemes (Base := Base) (Const := Const))
+      φ
+
+/--
+From the universal closure `closeAll φ`, derive any closed instance obtained by
+substituting closed terms for the free variables of `φ`.
+
+This is the reusable repeated-`allE` spine needed for the universal-scheme
+Route 2 endpoint.
+-/
+theorem closeAll_subst_provable
+    {Γ : Ctx Base}
+    (σs : Subst Const Γ [])
+    (φ : Formula Const Γ) :
+    ExtDerivation Const
+      [closeAll (Base := Base) (Const := Const) φ]
+      (subst (Base := Base) (Const := Const) σs φ) := by
+  induction Γ with
+  | nil =>
+      have hsubst :
+          subst (Base := Base) (Const := Const) σs φ = φ := by
+        calc
+          subst (Base := Base) (Const := Const) σs φ
+            = subst (Base := Base) (Const := Const)
+                (Subst.id (Base := Base) (Const := Const) (Γ := [])) φ := by
+                  apply subst_ext
+                  intro τ v
+                  cases v
+          _ = φ := subst_id (Base := Base) (Const := Const) φ
+      simpa [closeAll, hsubst] using
+        (ExtDerivation.hyp
+          (Const := Const)
+          (show φ ∈ [φ] by simp))
+  | cons σ Γ ih =>
+      let t : ClosedTerm Const σ := σs .vz
+      let σs' : Subst Const Γ [] := fun {τ} v => σs (.vs v)
+      have hall :
+          ExtDerivation Const
+            [closeAll (Base := Base) (Const := Const) (.all φ)]
+            (.all (subst (Base := Base) (Const := Const)
+              (Subst.lift (Base := Base) (Const := Const) σs') φ)) :=
+        ih (φ := .all φ) (σs := σs')
+      have hall' :
+          ExtDerivation Const
+            [closeAll (Base := Base) (Const := Const) φ]
+            (.all (subst (Base := Base) (Const := Const)
+              (Subst.lift (Base := Base) (Const := Const) σs') φ)) := by
+        simpa [closeAll, subst, t, σs'] using hall
+      have hallE := ExtDerivation.allE t hall'
+      have hsubst :
+          instantiate (Base := Base) t
+              (subst (Base := Base) (Const := Const)
+                (Subst.lift (Base := Base) (Const := Const) σs') φ) =
+            subst (Base := Base) (Const := Const) σs φ := by
+        rw [show instantiate (Base := Base) t
+            (subst (Base := Base) (Const := Const)
+              (Subst.lift (Base := Base) (Const := Const) σs') φ) =
+              subst (Base := Base) (Const := Const)
+                (Subst.single (Base := Base) (Const := Const) t)
+                (subst (Base := Base) (Const := Const)
+                  (Subst.lift (Base := Base) (Const := Const) σs') φ) by
+                  rfl]
+        rw [subst_comp]
+        apply subst_ext
+        intro τ v
+        cases v with
+        | vz => rfl
+        | vs v =>
+            simpa [instantiate, weaken, t, σs'] using
+              (instantiate_weaken (Base := Base) (Const := Const) t (σs' v))
+      simpa [hsubst] using hallE
+
+def appendPrefixRen :
+    {Γ Δ : Ctx Base} → Rename Base Δ (Γ ++ Δ)
+  | [], _ => Rename.id
+  | _ :: Γ, Δ => fun v => .vs (appendPrefixRen (Γ := Γ) (Δ := Δ) v)
+
+def appendSuffixRen :
+    {Γ Δ : Ctx Base} → Rename Base Γ (Γ ++ Δ)
+  | [], _ => fun v => nomatch v
+  | _ :: Γ, Δ => fun
+      | .vz => .vz
+      | .vs v => .vs (appendSuffixRen (Γ := Γ) (Δ := Δ) v)
+
+/-- Keep the prefix context `Γ` as variables, and substitute closed terms for the
+suffix context `Ξ`. -/
+def keepPrefixSubst
+    {Const' : Ty Base → Type w} :
+    {Γ Ξ : Ctx Base} →
+      Subst Const' Ξ [] →
+        Subst Const' (Γ ++ Ξ) Γ
+  | [], Ξ, σs => by
+      simpa using σs
+  | _ :: Γ, Ξ, σs =>
+      Subst.lift (Base := Base) (Const := Const') (σ := _)
+        (keepPrefixSubst (Γ := Γ) (Ξ := Ξ) σs)
+
+/-- Concatenate two closed substitutions. -/
+def appendClosedSubst
+    {Const' : Ty Base → Type w} :
+    {Ξ₁ Ξ₂ : Ctx Base} →
+      Subst Const' Ξ₁ [] →
+        Subst Const' Ξ₂ [] →
+          Subst Const' (Ξ₁ ++ Ξ₂) []
+  | [], _, _, τs => τs
+  | _ :: Ξ₁, Ξ₂, σs, τs => fun
+      | .vz => σs .vz
+      | .vs v =>
+          appendClosedSubst
+            (Ξ₁ := Ξ₁)
+            (Ξ₂ := Ξ₂)
+            (fun {_τ} v => σs (.vs v))
+            τs
+            v
+
+def appendAfterPrefixRen :
+    {Γ Ξ₁ Ξ₂ : Ctx Base} → Rename Base (Γ ++ Ξ₂) (Γ ++ Ξ₁ ++ Ξ₂)
+  | [], Ξ₁, Ξ₂ => appendPrefixRen (Base := Base) (Γ := Ξ₁) (Δ := Ξ₂)
+  | _ :: Γ, Ξ₁, Ξ₂ =>
+      Rename.lift (Base := Base) (σ := _)
+        (appendAfterPrefixRen (Γ := Γ) (Ξ₁ := Ξ₁) (Ξ₂ := Ξ₂))
+
+/-- Substitute the prepended parameter block `Ξ`, while preserving the suffix
+context `Γ` as variables. -/
+def keepSuffixSubst
+    {Const' : Ty Base → Type w} :
+    {Ξ Γ : Ctx Base} →
+      Subst Const' Ξ [] →
+        Subst Const' (Ξ ++ Γ) Γ
+  | [], _, _ => fun v => .var v
+  | _ :: Ξ, Γ, σs => fun
+      | .vz => weakenCtx Γ (σs .vz)
+      | .vs v =>
+          keepSuffixSubst (Ξ := Ξ) (Γ := Γ)
+            (fun {_τ} v => σs (.vs v))
+            v
+
+/-- First substitute the front parameter block `Ξ₁`, then substitute the
+remaining parameter block `Ξ₂`, leaving the final suffix context `Γ`
+untouched. -/
+def prefixThenSuffixSubst
+    {Const' : Ty Base → Type w} :
+    {Ξ₁ Ξ₂ Γ : Ctx Base} →
+      Subst Const' Ξ₁ [] →
+        Subst Const' Ξ₂ [] →
+          Subst Const' (Ξ₁ ++ (Ξ₂ ++ Γ)) Γ
+  | Ξ₁, Ξ₂, Γ, σs, τs =>
+      Subst.comp
+        (keepSuffixSubst (Base := Base) (Const' := Const') (Ξ := Ξ₂) (Γ := Γ) τs)
+        (keepSuffixSubst (Base := Base) (Const' := Const') (Ξ := Ξ₁) (Γ := Ξ₂ ++ Γ) σs)
+
+@[simp] theorem appendPrefixRen_nil
+    {Δ : Ctx Base} {τ : Ty Base} (v : Var Δ τ) :
+    appendPrefixRen (Base := Base) (Γ := []) (Δ := Δ) v = v := rfl
+
+@[simp] theorem liftBaseClosedFormula_closeAll
+    {n : Nat}
+    {Γ : Ctx Base}
+    (φ : Formula Const Γ) :
+    HenkinConstStage.liftBaseClosedFormula (Base := Base) (Const := Const) n
+      (closeAll (Base := Base) (Const := Const) φ) =
+    closeAll (Base := Base) (Const := HenkinConstStage Base Const n)
+      (HenkinConstStage.liftBaseFormula (Base := Base) (Const := Const) n φ) := by
+  induction Γ with
+  | nil =>
+      rfl
+  | cons σ Γ ih =>
+      simpa [closeAll] using ih (φ := .all φ)
 /-- The abstraction of the exWitness axiom equals the Hε body. -/
 theorem abstractConst_exWitnessAxiom
     {σ : Ty Base} (φ : Formula Const [σ]) :
@@ -595,7 +884,7 @@ theorem liftedSchemeElimination
           have d_reorder : ExtDerivation _ ((acc ++ rest) ++ [χ])
               (OneStepHenkinConst.liftClosedFormula φ) :=
             ExtDerivation.mono (fun {ψ} hψ => by
-              simp only [List.mem_append, List.mem_cons, List.mem_singleton] at hψ ⊢
+              simp only [List.mem_append, List.mem_cons] at hψ ⊢
               tauto) d
           -- Classify the exact axiom
           rcases hχ_exact with ⟨σ₀, φ₀, hχ_eq_ex⟩ | ⟨σ₀, φ₀, hχ_eq_all⟩
@@ -1229,6 +1518,7 @@ theorem liftBaseClosedFormula_mem_recursiveStageTheory
           (Base := Base) (Const := Const) (m := n) (n := n + 1)
           (Nat.le_succ n) φ).symm ▸ hLift
 
+
 theorem stageLanguageHenkinAxioms_mem_recursiveStageTheory
     {n : Nat}
     {Δ : List (ClosedFormula Const)}
@@ -1334,6 +1624,237 @@ Concrete future one-step reflection goal for the recursive finite-stage theory.
 def RecursiveStageOneStepReflectionGoal : Prop :=
   OneStepStageReflection (Base := Base) (Const := Const)
     (RecursiveStageProvable (Base := Base) (Const := Const))
+
+/--
+Corrected Route 2 recursive stage theory: stage `0` is seeded not only with the
+lifted original assumptions, but also with the universally closed parameterized
+schemes. Later stages then lift this corrected theory and add only the exact
+fresh Henkin axioms for that step.
+-/
+def RecursiveStageUniversalSchemeTheory :
+    (n : Nat) → List (ClosedFormula Const) →
+      ClosedTheorySet (HenkinConstStage Base Const n)
+  | 0, Δ =>
+      fun ψ =>
+        ψ ∈ Δ.map
+          (HenkinConstStage.liftBaseClosedFormula (Base := Base) (Const := Const) 0) ∨
+        ∃ θ : ClosedFormula Const,
+          θ ∈ UniversalSourceStepSchemes (Base := Base) (Const := Const) ∧
+            HenkinConstStage.liftBaseClosedFormula (Base := Base) (Const := Const) 0 θ = ψ
+  | n + 1, Δ =>
+      fun ψ =>
+        (∃ χ : ClosedFormula (HenkinConstStage Base Const n),
+          χ ∈ RecursiveStageUniversalSchemeTheory n Δ ∧
+            HenkinConstStage.liftClosedFormula (Base := Base) (Const := Const)
+              (Nat.le_succ n) χ = ψ) ∨
+        ψ ∈ ExactStepHenkinAxioms (Base := Base) (Const := Const) n
+
+/--
+Provability over the corrected recursive finite-stage Route 2 theory.
+-/
+def RecursiveStageUniversalSchemeProvable
+    (n : Nat)
+    (Δ : List (ClosedFormula Const))
+    (φ : ClosedFormula Const) : Prop :=
+  ClosedTheorySet.Provable
+    (Const := HenkinConstStage Base Const n)
+    (RecursiveStageUniversalSchemeTheory (Base := Base) (Const := Const) n Δ)
+    (HenkinConstStage.liftBaseClosedFormula (Base := Base) (Const := Const) n φ)
+
+theorem recursiveStageUniversalSchemeTheory_lift_mem
+    {n : Nat}
+    {Δ : List (ClosedFormula Const)}
+    {ψ : ClosedFormula (HenkinConstStage Base Const n)} :
+    ψ ∈ RecursiveStageUniversalSchemeTheory n Δ →
+      HenkinConstStage.liftClosedFormula (Base := Base) (Const := Const)
+        (Nat.le_succ n) ψ ∈
+        RecursiveStageUniversalSchemeTheory (n + 1) Δ := by
+  intro hψ
+  exact Or.inl ⟨ψ, hψ, rfl⟩
+
+theorem liftBaseClosedFormula_mem_recursiveStageUniversalSchemeTheory
+    {n : Nat}
+    {Δ : List (ClosedFormula Const)}
+    {φ : ClosedFormula Const}
+    (hφ : φ ∈ Δ ∨ φ ∈ UniversalSourceStepSchemes (Base := Base) (Const := Const)) :
+    HenkinConstStage.liftBaseClosedFormula (Base := Base) (Const := Const) n φ ∈
+      RecursiveStageUniversalSchemeTheory n Δ := by
+  induction n generalizing φ with
+  | zero =>
+      rcases hφ with hφ | hφ
+      · exact Or.inl (List.mem_map.mpr ⟨φ, hφ, rfl⟩)
+      · exact Or.inr ⟨φ, hφ, rfl⟩
+  | succ n ih =>
+      have hLift :
+          HenkinConstStage.liftClosedFormula (Base := Base) (Const := Const)
+              (Nat.le_succ n)
+              (HenkinConstStage.liftBaseClosedFormula (Base := Base) (Const := Const) n φ) ∈
+            RecursiveStageUniversalSchemeTheory (n + 1) Δ :=
+        recursiveStageUniversalSchemeTheory_lift_mem (ih hφ)
+      simpa using
+        (HenkinConstStage.liftBaseClosedFormula_comp
+          (Base := Base) (Const := Const) (m := n) (n := n + 1)
+          (Nat.le_succ n) φ).symm ▸ hLift
+
+theorem recursiveStageUniversalSchemeTheory_provable_of_mem
+    {n : Nat}
+    {Δ : List (ClosedFormula Const)}
+    {ψ : ClosedFormula (HenkinConstStage Base Const n)}
+    (hψ : ψ ∈ RecursiveStageUniversalSchemeTheory n Δ) :
+    ClosedTheorySet.Provable
+      (Const := HenkinConstStage Base Const n)
+      (RecursiveStageUniversalSchemeTheory n Δ)
+      ψ := by
+  refine ClosedTheorySet.provable_of_closedTheory
+    (Const := HenkinConstStage Base Const n)
+    (T := RecursiveStageUniversalSchemeTheory n Δ)
+    (Δ := [ψ])
+    ?_ ?_
+  · intro χ hχ
+    rcases List.mem_singleton.mp hχ with rfl
+    exact hψ
+  · exact .hyp (by simp)
+
+theorem recursiveStageUniversalSchemeTheory_subst_instance
+    {n : Nat}
+    {Δ : List (ClosedFormula Const)}
+    {Γ : Ctx Base}
+    {θ : Formula Const Γ}
+    (hθ : closeAll (Base := Base) (Const := Const) θ ∈
+      UniversalSourceStepSchemes (Base := Base) (Const := Const))
+    (σs : Subst (HenkinConstStage Base Const n) Γ []) :
+    ClosedTheorySet.Provable
+      (Const := HenkinConstStage Base Const n)
+      (RecursiveStageUniversalSchemeTheory (Base := Base) (Const := Const) n Δ)
+      (subst (Base := Base) (Const := HenkinConstStage Base Const n) σs
+        (HenkinConstStage.liftBaseFormula (Base := Base) (Const := Const) n θ)) := by
+  refine ClosedTheorySet.provable_of_closedTheory
+    (Const := HenkinConstStage Base Const n)
+    (T := RecursiveStageUniversalSchemeTheory (Base := Base) (Const := Const) n Δ)
+    (Δ := [closeAll (Base := Base) (Const := HenkinConstStage Base Const n)
+      (HenkinConstStage.liftBaseFormula (Base := Base) (Const := Const) n θ)])
+    ?_ ?_
+  · intro ψ hψ
+    rcases List.mem_singleton.mp hψ with rfl
+    simpa [liftBaseClosedFormula_closeAll] using
+      (liftBaseClosedFormula_mem_recursiveStageUniversalSchemeTheory
+        (Base := Base)
+        (Const := Const)
+        (n := n)
+        (Δ := Δ)
+        (φ := closeAll (Base := Base) (Const := Const) θ)
+        (Or.inr hθ))
+  · simpa using
+      (closeAll_subst_provable
+        (Base := Base)
+        (Const := HenkinConstStage Base Const n)
+        σs
+        (HenkinConstStage.liftBaseFormula (Base := Base) (Const := Const) n θ))
+
+theorem recursiveStageUniversalSchemeTheory_provable_Hε_instance
+    {n : Nat}
+    {Δ : List (ClosedFormula Const)}
+    {Γ : Ctx Base}
+    {σ : Ty Base}
+    (φ : Formula Const (σ :: Γ))
+    (σs : Subst (HenkinConstStage Base Const n) Γ []) :
+    ClosedTheorySet.Provable
+      (Const := HenkinConstStage Base Const n)
+      (RecursiveStageUniversalSchemeTheory (Base := Base) (Const := Const) n Δ)
+      (subst (Base := Base) (Const := HenkinConstStage Base Const n) σs
+        (HenkinConstStage.liftBaseFormula (Base := Base) (Const := Const) n
+          (HεSchemeCtx (Base := Base) (Const := Const) φ))) := by
+  apply recursiveStageUniversalSchemeTheory_subst_instance
+    (Base := Base)
+    (Const := Const)
+    (n := n)
+    (Δ := Δ)
+    (θ := HεSchemeCtx (Base := Base) (Const := Const) φ)
+  exact Or.inl ⟨Γ, σ, φ, rfl⟩
+
+theorem recursiveStageUniversalSchemeTheory_provable_DP_instance
+    {n : Nat}
+    {Δ : List (ClosedFormula Const)}
+    {Γ : Ctx Base}
+    {σ : Ty Base}
+    (φ : Formula Const (σ :: Γ))
+    (σs : Subst (HenkinConstStage Base Const n) Γ []) :
+    ClosedTheorySet.Provable
+      (Const := HenkinConstStage Base Const n)
+      (RecursiveStageUniversalSchemeTheory (Base := Base) (Const := Const) n Δ)
+      (subst (Base := Base) (Const := HenkinConstStage Base Const n) σs
+        (HenkinConstStage.liftBaseFormula (Base := Base) (Const := Const) n
+          (DPSchemeCtx (Base := Base) (Const := Const) φ))) := by
+  apply recursiveStageUniversalSchemeTheory_subst_instance
+    (Base := Base)
+    (Const := Const)
+    (n := n)
+    (Δ := Δ)
+    (θ := DPSchemeCtx (Base := Base) (Const := Const) φ)
+  exact Or.inr ⟨Γ, σ, φ, rfl⟩
+
+theorem recursiveStageTheory_subset_recursiveStageUniversalSchemeTheory
+    {n : Nat}
+    {Δ : List (ClosedFormula Const)}
+    {ψ : ClosedFormula (HenkinConstStage Base Const n)} :
+    ψ ∈ RecursiveStageTheory (Base := Base) (Const := Const) n Δ →
+      ψ ∈ RecursiveStageUniversalSchemeTheory (Base := Base) (Const := Const) n Δ := by
+  induction n with
+  | zero =>
+      intro hψ
+      exact Or.inl hψ
+  | succ n ih =>
+      intro hψ
+      rcases hψ with ⟨χ, hχ, rfl⟩ | hψ
+      · exact Or.inl ⟨χ, ih hχ, rfl⟩
+      · exact Or.inr hψ
+
+theorem recursiveStageUniversalSchemeProvable_of_recursiveStageProvable
+    {n : Nat}
+    {Δ : List (ClosedFormula Const)}
+    {φ : ClosedFormula Const} :
+    RecursiveStageProvable (Base := Base) (Const := Const) n Δ φ →
+      RecursiveStageUniversalSchemeProvable (Base := Base) (Const := Const) n Δ φ := by
+  exact
+    ClosedTheorySet.provable_mono
+      (Const := HenkinConstStage Base Const n)
+      (T := RecursiveStageTheory (Base := Base) (Const := Const) n Δ)
+      (U := RecursiveStageUniversalSchemeTheory (Base := Base) (Const := Const) n Δ)
+      (φ := HenkinConstStage.liftBaseClosedFormula (Base := Base) (Const := Const) n φ)
+      (by
+        intro ψ hψ
+        exact recursiveStageTheory_subset_recursiveStageUniversalSchemeTheory
+          (Base := Base)
+          (Const := Const)
+          hψ)
+
+theorem recursiveStageUniversalSchemeProvable_zero
+    {Δ : List (ClosedFormula Const)}
+    {φ : ClosedFormula Const} :
+    RecursiveStageUniversalSchemeProvable (Base := Base) (Const := Const) 0 Δ φ →
+      SourceUniversalSchemeProvable (Base := Base) (Const := Const) Δ φ := by
+  rintro ⟨Γ, hΓ, hDeriv⟩
+  have hReflect :
+      ExtDerivation Const
+        (Γ.map (Mettapedia.Logic.HOL.mapClosedFormula (fun c => c.down)))
+        (Mettapedia.Logic.HOL.mapClosedFormula (fun c => c.down)
+          (HenkinConstStage.liftBaseClosedFormula (Base := Base) (Const := Const) 0 φ)) :=
+    HenkinConstStage.reflectZero_formulaProvable (Base := Base) (Const := Const) hDeriv
+  refine ClosedTheorySet.provable_of_closedTheory
+    (Const := Const)
+    (T := fun ψ => ψ ∈ Δ ∨ ψ ∈ UniversalSourceStepSchemes (Base := Base) (Const := Const))
+    (Δ := Γ.map (Mettapedia.Logic.HOL.mapClosedFormula (fun c => c.down)))
+    ?_ ?_
+  · intro ψ hψ
+    rcases List.mem_map.mp hψ with ⟨χ, hχ, rfl⟩
+    rcases hΓ χ hχ with hχ | hχ
+    · rcases List.mem_map.mp hχ with ⟨θ, hθ, rfl⟩
+      exact Or.inl (by
+        simpa [Mettapedia.Logic.HOL.mapClosedFormula, HenkinConstStage.ofBase] using hθ)
+    · rcases hχ with ⟨θ, hθU, rfl⟩
+      exact Or.inr (by
+        simpa [Mettapedia.Logic.HOL.mapClosedFormula, HenkinConstStage.ofBase] using hθU)
+  · simpa [Mettapedia.Logic.HOL.mapClosedFormula, HenkinConstStage.ofBase] using hReflect
 
 /--
 The recursive-stage one-step reflection theorem is an immediate specialization
@@ -1995,6 +2516,19 @@ theorem sourceSchemeProvable_of_original
         exact Or.inl hψ)
       (hφ := hProv)
 
+theorem sourceUniversalSchemeProvable_of_original
+    {Δ : List (ClosedFormula Const)}
+    {φ : ClosedFormula Const}
+    (hProv : ExtDerivation Const Δ φ) :
+    SourceUniversalSchemeProvable (Base := Base) (Const := Const) Δ φ :=
+  sourceUniversalSchemeProvable_of_sourceSchemeProvable
+    (Base := Base)
+    (Const := Const)
+    (sourceSchemeProvable_of_original
+      (Base := Base)
+      (Const := Const)
+      hProv)
+
 theorem sourceSchemeProvable_of_stageZero
     {Δ : List (ClosedFormula Const)}
     {φ : ClosedFormula Const} :
@@ -2035,6 +2569,36 @@ theorem sourceSchemeProvable_of_stageReduction
       ∀ {n : Nat} {Δ : List (ClosedFormula Const)} {φ : ClosedFormula Const},
         StageProvable n Δ φ →
           SourceSchemeProvable (Base := Base) (Const := Const) Δ φ := by
+    intro n
+    induction n with
+    | zero =>
+        intro Δ φ hStage
+        exact hZero hStage
+    | succ n ih =>
+        intro Δ φ hStage
+        exact ih (hStep n hStage)
+  exact hCollapse hn
+
+theorem sourceUniversalSchemeProvable_of_stageReduction
+    (StageProvable : Nat → List (ClosedFormula Const) → ClosedFormula Const → Prop)
+    (hZero :
+      ∀ {Δ : List (ClosedFormula Const)} {φ : ClosedFormula Const},
+        StageProvable 0 Δ φ →
+          SourceUniversalSchemeProvable (Base := Base) (Const := Const) Δ φ)
+    (hFinite :
+      FiniteStageReduction (Base := Base) (Const := Const) StageProvable)
+    (hStep :
+      OneStepStageReflection (Base := Base) (Const := Const) StageProvable)
+    {Δ : List (ClosedFormula Const)}
+    {φ : ClosedFormula Const} :
+    OriginalLiftProvable (Base := Base) (Const := Const) Δ φ →
+      SourceUniversalSchemeProvable (Base := Base) (Const := Const) Δ φ := by
+  intro hLift
+  rcases hFinite hLift with ⟨n, hn⟩
+  have hCollapse :
+      ∀ {n : Nat} {Δ : List (ClosedFormula Const)} {φ : ClosedFormula Const},
+        StageProvable n Δ φ →
+          SourceUniversalSchemeProvable (Base := Base) (Const := Const) Δ φ := by
     intro n
     induction n with
     | zero =>
@@ -2183,8 +2747,11 @@ def WitnessedStageReductionPackage.toWitnessedOriginalReflectionTarget
     P.zero
 
 /--
-Route 2 stage-reduction package: the stage-`0` collapse lands in source HOL
-with the Hε / DP schemes available as assumptions.
+Strengthened Route 2 stage-reduction package.
+
+Stage `0` collapses only to source HOL with the Hε / DP schemes available as
+assumptions. This package is therefore auxiliary to the main intuitionistic
+completeness program, not its final endpoint.
 -/
 structure SchemeStageReductionPackage where
   witnesses : BaseWitnesses Base Const
@@ -2210,6 +2777,88 @@ def SchemeStageReductionPackage.toSchemeExtendedReflectionTarget
     (hStep : OneStepSchemeStageReflectionGoal (Base := Base) (Const := Const) P) :
     SchemeExtendedReflectionTarget (Base := Base) (Const := Const) :=
   schemeExtendedReflection_of_stageReduction
+    (Base := Base)
+    (Const := Const)
+    P.witnesses
+    P.StageProvable
+    P.zero
+    P.finite
+    hStep
+
+theorem universalSchemeReflectionGoal_of_schemeReflectionGoal
+    (W : BaseWitnesses Base Const)
+    (hScheme : SchemeReflectionGoal (Base := Base) (Const := Const) W) :
+    UniversalSchemeReflectionGoal (Base := Base) (Const := Const) W := by
+  intro T φ hProv
+  exact ClosedTheorySet.provable_mono
+    (T := fun ψ => ψ ∈ T ∨ ψ ∈ SourceStepSchemes (Base := Base) (Const := Const))
+    (U := fun ψ => ψ ∈ T ∨ ψ ∈ UniversalSourceStepSchemes (Base := Base) (Const := Const))
+    (φ := φ)
+    (by
+      intro ψ hψ
+      rcases hψ with hψ | hψ
+      · exact Or.inl hψ
+      · exact Or.inr
+          (mem_universalSourceStepSchemes_of_mem_sourceStepSchemes
+            (Base := Base)
+            (Const := Const)
+            hψ))
+    (hScheme hProv)
+
+/--
+Corrected Route 2 stage package: stage `0` collapses to source HOL plus the
+universally closed parameterized schemes.
+-/
+structure UniversalSchemeStageReductionPackage where
+  witnesses : BaseWitnesses Base Const
+  StageProvable : Nat → List (ClosedFormula Const) → ClosedFormula Const → Prop
+  finite :
+    FiniteStageReduction (Base := Base) (Const := Const) StageProvable
+  zero :
+    ∀ {Δ : List (ClosedFormula Const)} {φ : ClosedFormula Const},
+      StageProvable 0 Δ φ →
+        SourceUniversalSchemeProvable (Base := Base) (Const := Const) Δ φ
+
+/-- Universal-scheme reformulation of the remaining stage-reflection blocker. -/
+def OneStepUniversalSchemeStageReflectionGoal
+    (P : UniversalSchemeStageReductionPackage (Base := Base) (Const := Const)) : Prop :=
+  OneStepStageReflection (Base := Base) (Const := Const) P.StageProvable
+
+/--
+Final strengthened Route 2 target at the corrected universal-scheme boundary.
+
+This packages an auxiliary proof-theoretic reflection theorem. It should not be
+read as plain intuitionistic original-signature completeness.
+-/
+def universalSchemeExtendedReflection_of_stageReduction
+    (W : BaseWitnesses Base Const)
+    (StageProvable : Nat → List (ClosedFormula Const) → ClosedFormula Const → Prop)
+    (hZero :
+      ∀ {Δ : List (ClosedFormula Const)} {φ : ClosedFormula Const},
+        StageProvable 0 Δ φ →
+          SourceUniversalSchemeProvable (Base := Base) (Const := Const) Δ φ)
+    (hFinite :
+      FiniteStageReduction (Base := Base) (Const := Const) StageProvable)
+    (hStep :
+      OneStepStageReflection (Base := Base) (Const := Const) StageProvable) :
+    UniversalSchemeExtendedReflectionTarget (Base := Base) (Const := Const) where
+  witnesses := W
+  reflect := by
+    intro Δ φ hLift
+    exact sourceUniversalSchemeProvable_of_stageReduction
+      (Base := Base)
+      (Const := Const)
+      StageProvable
+      hZero
+      hFinite
+      hStep
+      hLift
+
+def UniversalSchemeStageReductionPackage.toUniversalSchemeExtendedReflectionTarget
+    (P : UniversalSchemeStageReductionPackage (Base := Base) (Const := Const))
+    (hStep : OneStepUniversalSchemeStageReflectionGoal (Base := Base) (Const := Const) P) :
+    UniversalSchemeExtendedReflectionTarget (Base := Base) (Const := Const) :=
+  universalSchemeExtendedReflection_of_stageReduction
     (Base := Base)
     (Const := Const)
     P.witnesses
@@ -2518,6 +3167,93 @@ def recursiveStageSchemeReductionPackage
         (Const := Const)
         (Δ := Δ)
         (φ := φ)).1 hStage)
+
+/--
+Finite-stage reduction for the corrected universal-scheme recursive stage
+predicate follows by monotonicity from the already-proved exact-axiom recursive
+stage reduction.
+-/
+theorem recursiveStageUniversalSchemeFiniteReduction :
+    FiniteStageReduction (Base := Base) (Const := Const)
+      (RecursiveStageUniversalSchemeProvable (Base := Base) (Const := Const)) := by
+  intro Δ φ hLift
+  rcases (recursiveStageFiniteReduction_of_supportedOriginalLift
+      (Base := Base)
+      (Const := Const)
+      (supportedOriginalLiftConstructionGoal_proved
+        (Base := Base) (Const := Const))
+      hLift) with ⟨n, hn⟩
+  exact ⟨n,
+    recursiveStageUniversalSchemeProvable_of_recursiveStageProvable
+      (Base := Base)
+      (Const := Const)
+      hn⟩
+
+/--
+Corrected strengthened Route 2 stage-reduction package built from the
+recursive stage predicate seeded with universal schemes at stage `0`.
+
+This is retained as auxiliary infrastructure for the strengthened theorem.
+-/
+def recursiveStageUniversalSchemeReductionPackage
+    (W : BaseWitnesses Base Const) :
+    UniversalSchemeStageReductionPackage (Base := Base) (Const := Const) where
+  witnesses := W
+  StageProvable := RecursiveStageUniversalSchemeProvable (Base := Base) (Const := Const)
+  finite :=
+    recursiveStageUniversalSchemeFiniteReduction
+      (Base := Base)
+      (Const := Const)
+  zero := recursiveStageUniversalSchemeProvable_zero (Base := Base) (Const := Const)
+
+/--
+Corrected final strengthened Route 2 export theorem.
+
+Once one-step reflection is proved for the universal-scheme recursive stage
+package, reflection back to the original signature lands in source HOL plus the
+universally closed parameterized schemes.
+
+This is not the same theorem as plain intuitionistic original-signature
+completeness.
+-/
+def universalSchemeExtendedReflectionTarget_proved
+    (W : BaseWitnesses Base Const)
+    (hStep :
+      OneStepUniversalSchemeStageReflectionGoal
+        (Base := Base)
+        (Const := Const)
+        (recursiveStageUniversalSchemeReductionPackage
+          (Base := Base)
+          (Const := Const)
+          W)) :
+    UniversalSchemeExtendedReflectionTarget (Base := Base) (Const := Const) :=
+  (recursiveStageUniversalSchemeReductionPackage
+    (Base := Base)
+    (Const := Const)
+    W).toUniversalSchemeExtendedReflectionTarget hStep
+
+/--
+Pointwise corollary of the strengthened universal-scheme reflection target.
+-/
+theorem sourceUniversalSchemeProvable_of_recursiveStageUniversalSchemeReflection
+    (W : BaseWitnesses Base Const)
+    (hStep :
+      OneStepUniversalSchemeStageReflectionGoal
+        (Base := Base)
+        (Const := Const)
+        (recursiveStageUniversalSchemeReductionPackage
+          (Base := Base)
+          (Const := Const)
+          W))
+    {Δ : List (ClosedFormula Const)}
+    {φ : ClosedFormula Const} :
+    OriginalLiftProvable (Base := Base) (Const := Const) Δ φ →
+      SourceUniversalSchemeProvable (Base := Base) (Const := Const) Δ φ :=
+  (universalSchemeExtendedReflectionTarget_proved
+    (Base := Base)
+    (Const := Const)
+    W
+    hStep).reflect
 
 /--
 Council-backed final composition theorem for Route 2 proof-theoretic reflection.

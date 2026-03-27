@@ -717,13 +717,6 @@ structure Equation where
   premises : List Premise
   left : Pattern
   right : Pattern
-  /-- Optional authored spellings for preserving exact surface details that are
-      not structurally represented in `Pattern`, such as quoted nullary heads
-      or uppercase metavariable spellings. Binder names themselves are already
-      stored structurally in `Pattern`. -/
-  premiseSurface : List String := []
-  leftSurface? : Option String := none
-  rightSurface? : Option String := none
 deriving Repr
 
 /-! ## Rewrite Rules -/
@@ -735,13 +728,6 @@ structure RewriteRule where
   premises : List Premise
   left : Pattern
   right : Pattern
-  /-- Optional authored spellings for preserving exact surface details that are
-      not structurally represented in `Pattern`, such as quoted nullary heads
-      or uppercase metavariable spellings. Binder names themselves are already
-      stored structurally in `Pattern`. -/
-  premiseSurface : List String := []
-  leftSurface? : Option String := none
-  rightSurface? : Option String := none
 deriving Repr
 
 /-! ## Complete Language Definition -/

@@ -7,6 +7,7 @@ import Mettapedia.Languages.MeTTa.RuntimeSpec
 import Mettapedia.Languages.MeTTa.RuntimeExec
 import Mettapedia.Languages.MeTTa.ExecutionContract
 import Mettapedia.Languages.MeTTa.ScopeContract
+import Mettapedia.Languages.MeTTa.SearchPolicyContract
 import Mettapedia.Languages.MeTTa.PureCheckingService
 import Mettapedia.Languages.MeTTa.PureNormalizationService
 import Mettapedia.Languages.MeTTa.PureCanonicalEvaluation

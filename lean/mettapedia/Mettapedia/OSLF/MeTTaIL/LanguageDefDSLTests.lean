@@ -159,12 +159,8 @@ example :
   native_decide
 example : firstRewriteFreshnessOk = true := by
   native_decide
-example : firstRewrite.leftSurface? = some "Scope(^x.Keep (X), {X, ...rest})" := by
-  native_decide
-example : firstRewrite.rightSurface? = some "Scope(^y.Keep (X), {X})" := by
-  native_decide
-example : firstRewrite.premiseSurface = ["X # ...rest"] := by
-  native_decide
+-- Surface string fields removed: Pattern.lambda now carries binder names
+-- structurally, so export uses renderPattern directly.
 private def firstRewriteHasBinderX : Bool :=
   match firstRewrite.left with
   | .apply "Scope" [.lambda (some binder) _, _] => binder == "x"

@@ -8,6 +8,7 @@ import Mettapedia.Languages.MeTTa.HE.ScopeContract
 import Mettapedia.Languages.MeTTa.HE.NativeProfile
 import Mettapedia.Languages.MeTTa.HE.RuntimeContract
 import Mettapedia.Languages.MeTTa.HE.ArtifactBundle
+import Mettapedia.Languages.MeTTa.SearchPolicyContract
 
 private def usage : String :=
   String.intercalate "\n"
@@ -48,6 +49,10 @@ private def usage : String :=
     , "  runtime-contract export-he           (default out-dir: artifacts/transition)"
     , "  runtime-contract check-he <out-dir>"
     , "  runtime-contract check-he            (default out-dir: artifacts/transition)"
+    , "  search-policy export-metta <out-dir>"
+    , "  search-policy export-metta           (default out-dir: artifacts/transition)"
+    , "  search-policy check-metta <out-dir>"
+    , "  search-policy check-metta            (default out-dir: artifacts/transition)"
     , "  bundle export-he"
     , "  bundle check-he"
     ]
@@ -135,6 +140,14 @@ def main (args : List String) : IO UInt32 := do
       Mettapedia.Languages.MeTTa.HE.RuntimeContract.checkHeRuntimeContract outDir
   | ["runtime-contract", "check-he"] =>
       Mettapedia.Languages.MeTTa.HE.RuntimeContract.checkHeRuntimeContract defaultTransitionOutDir
+  | ["search-policy", "export-metta", outDir] =>
+      Mettapedia.Languages.MeTTa.SearchPolicyContract.exportMeTTaSearchPolicyContract outDir
+  | ["search-policy", "export-metta"] =>
+      Mettapedia.Languages.MeTTa.SearchPolicyContract.exportMeTTaSearchPolicyContract defaultTransitionOutDir
+  | ["search-policy", "check-metta", outDir] =>
+      Mettapedia.Languages.MeTTa.SearchPolicyContract.checkMeTTaSearchPolicyContract outDir
+  | ["search-policy", "check-metta"] =>
+      Mettapedia.Languages.MeTTa.SearchPolicyContract.checkMeTTaSearchPolicyContract defaultTransitionOutDir
   | ["bundle", "export-he"] =>
       Mettapedia.Languages.MeTTa.HE.ArtifactBundle.exportHeManifest
         defaultTransitionOutDir defaultLookupOutDir defaultSyntaxOutDir

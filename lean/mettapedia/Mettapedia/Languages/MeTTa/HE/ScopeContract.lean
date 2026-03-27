@@ -12,7 +12,7 @@ variable hygiene and substitution.
 ## Source of Truth
 
 - MinimalMeTTa.lean: the 13 minimal instructions (chain, unify, etc.)
-- EvalSpec.lean: the 6 computable evaluation functions
+- EvalSpec.lean: the 6 declarative evaluation relations
 - metta.md: the upstream HE spec
 
 ## Operator Coverage

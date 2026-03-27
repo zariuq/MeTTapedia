@@ -92,6 +92,10 @@ abbrev DeonticSentence (World : Type u) : Type (max u 1) :=
 abbrev ValueJudgmentSentence (World : Type u) : Type (max u 1) :=
   ModalSentence World MoralValueAttribute
 
+/-- A theory of value-judgment sentences. -/
+abbrev ValueJudgmentTheory (World : Type u) : Type (max u 1) :=
+  Theory (ValueJudgmentSentence World)
+
 /-! ## §4 Deontic and Value Semantics Structures -/
 
 /-- A minimal semantics for value-judgment sentences:

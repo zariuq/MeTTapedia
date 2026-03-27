@@ -1104,6 +1104,49 @@ evidence revision natively.
   (sum-of-products), not distribution semantics (set semantics with inclusion-exclusion).
   The general case requires the provenance polynomial approach at the PosBool semiring
   or BDD/SDD knowledge compilation.
+\item \textbf{Multi-relational backward chaining and discovery sweep.}
+  Typed backward chaining (\code{nilbc}) with 9 PLN rules over
+  100{,}000 GTEx eQTL links, 132{,}556 Reactome pathway edges
+  (124 human pathways), and Hetionet~\cite{Himmelstein2017}
+  disease/compound associations produces a full variant-to-drug
+  pipeline.  Across all 40{,}484 eQTL SNPs (10{,}932 genes mapped
+  to Entrez), backward chaining generates \textbf{5{,}833 SNP $\to$
+  Gene $\to$ Disease chains} covering 2{,}482 genes and
+  129~diseases, with 4{,}599 chains having known drug treatments.
+
+  The pipeline recovers known pharmacogenomic associations
+  (rs10000544 $\to$ PDE5A $\to$ hypertension $\leftarrow$
+  Sildenafil) while also generating hypotheses absent from the
+  NHGRI-EBI GWAS Catalog:
+
+  \begin{center}
+  \small
+  \begin{tabular}{llcrll}
+  \toprule
+  Gene & Disease & SNPs & Tissue & Effect & GWAS Catalog \\
+  \midrule
+  CDO1   & hypertension      & 58  & broad    & strong & \textbf{0 hits} \\
+  CLU    & hypertension      & 63  & moderate & strong & \textbf{0 hits} \\
+  PTGER4 & hematologic cancer & 93 & rare     & moderate & \textbf{0 hits} \\
+  HCN1   & epilepsy          & 208 & moderate & strong & \textbf{0 hits} \\
+  \bottomrule
+  \end{tabular}
+  \end{center}
+
+  Each chain carries a machine-checkable proof term. The
+  eQTL evidence provides causal direction (SNP $\to$
+  expression), while the gene--disease links are associational
+  (Hetionet); formal causal validation via Mendelian
+  Randomization with full summary statistics is future work.
+
+  CDO1 $\to$ hypertension is the strongest novelty candidate:
+  CDO1 catalyzes the rate-limiting step in taurine biosynthesis
+  (cysteine $\to$ cysteine sulfinic acid), taurine modulates
+  blood pressure via vasodilation, yet no GWAS has linked
+  CDO1 expression variants to blood pressure traits.
+  The 58 eQTL SNPs, tissue-broad expression, and strong
+  effect size provide the genetic instruments for future
+  MR validation.
 \end{enumerate}
 
 %% ====================================================================

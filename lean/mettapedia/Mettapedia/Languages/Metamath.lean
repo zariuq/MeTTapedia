@@ -6,6 +6,9 @@ import Mettapedia.Languages.Metamath.Fixtures
 import Mettapedia.Languages.Metamath.CommentConformance
 import Mettapedia.Languages.Metamath.Simulation
 import Mettapedia.Languages.Metamath.AcceptanceEquivalence
+import Mettapedia.Languages.Metamath.CrownJewelAPI
+import Mettapedia.Languages.Metamath.CrownJewelFixtures
+import Mettapedia.Languages.Metamath.NTTDiagnostics
 
 /-!
 # Metamath Bridge Surface
