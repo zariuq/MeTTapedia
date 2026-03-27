@@ -4651,37 +4651,14 @@ private theorem mettaCallAligned_to_MettaCall
 
 end
 
-private theorem evalAtomAligned_to_EvalAtomFiltered
-    (space : Space) (dispatch : GroundedDispatch)
-    {atom type_ : Atom} {b : Bindings} {r : ResultPair}
-    (h : EvalAtomAligned space dispatch atom type_ b r) :
-    EvalAtomFiltered space dispatch atom type_ b r := by
-  refine ⟨evalAtomAligned_to_EvalAtom space dispatch h, ?_⟩
-  intro h_is_error r' h_interp
-  cases h with
-  | empty_or_error atom type_ b h_empty =>
-      exfalso
-      cases atom <;> simp [isEmptyOrError, isErrorAtom] at h_empty h_is_error
-  | type_pass atom type_ b h_not_empty h_pass =>
-      exfalso
-      cases atom <;> simp [isErrorAtom] at h_is_error
-  | type_cast atom type_ b r h_not_empty h_not_pass h_cast_branch h_result_eventual =>
-      exfalso
-      cases h : isErrorAtom r.1 <;> simp_all
-  | interpret_success atom type_ b r h_not_empty h_not_pass h_expr h_not_unit h_interp' h_not_error =>
-      exfalso
-      cases h : isErrorAtom r.1 <;> simp_all
-  | interpret_error atom type_ b r h_not_empty h_not_pass h_expr h_not_unit h_interp' h_is_error' h_all_errors =>
-      exact h_all_errors r' h_interp
-
 private theorem evalAtomAligned_public_bridge
     (space : Space) (dispatch : GroundedDispatch)
     {atom type_ : Atom} {b : Bindings} {r : ResultPair}
     (h : EvalAtomAligned space dispatch atom type_ b r) :
-    EvalAtomFiltered space dispatch atom type_ b r ∧
+    EvalAtom space dispatch atom type_ b r ∧
     ∃ fuel0, ∀ fuel, fuel ≥ fuel0 →
       r ∈ evalAtom space dispatch atom type_ b fuel := by
-  exact ⟨evalAtomAligned_to_EvalAtomFiltered space dispatch h,
+  exact ⟨evalAtomAligned_to_EvalAtom space dispatch h,
     evalAtomAligned_eventually_reaches space dispatch h⟩
 
 private theorem interpretExpressionAligned_public_bridge
