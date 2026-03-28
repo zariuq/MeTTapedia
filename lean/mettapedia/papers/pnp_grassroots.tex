@@ -1,0 +1,729 @@
+\documentclass[11pt]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage{microtype}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{mathtools}
+\usepackage{hyperref}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage{listings}
+\usepackage{xcolor}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue!50!black,
+  citecolor=blue!50!black,
+  urlcolor=blue!50!black
+}
+
+\lstdefinelanguage{Lean4}{
+  morekeywords={
+    import,namespace,end,open,section,noncomputable,abbrev,
+    def,theorem,lemma,where,by,fun,let,in,have,show,exact,
+    intro,apply,simpa,calc
+  },
+  sensitive=true,
+  morecomment=[l]{--},
+  morecomment=[s]{/-}{-/},
+  morestring=[b]"
+}
+
+\lstset{
+  language=Lean4,
+  basicstyle=\ttfamily\small,
+  keywordstyle=\bfseries\color{blue!50!black},
+  commentstyle=\itshape\color{green!40!black},
+  stringstyle=\color{red!50!black},
+  showstringspaces=false,
+  breaklines=true,
+  frame=single,
+  framerule=0.3pt,
+  xleftmargin=0.5em,
+  xrightmargin=0.5em,
+  keepspaces=true,
+  columns=fullflexible,
+  literate=
+    {¬}{{$\neg$}}1
+    {∃}{{$\exists$}}1
+    {→}{{$\to$}}1
+    {≤}{{$\leq$}}1
+}
+
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}[theorem]{Lemma}
+\theoremstyle{remark}
+\newtheorem{remark}[theorem]{Remark}
+
+\title{P vs NP Grassroots:\\
+Ground-Up Background Theory for the Goertzel Program}
+\author{Oruzi / Codex collaboration}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+This note records the \emph{grassroots} side of the current Lean work around Ben
+Goertzel's proposed route to $P \neq NP$.  It is intentionally not the blocker note.
+The companion crux-first analysis lives separately in \texttt{pnp\_crux.tex}.
+
+The goal here is narrower and more constructive: build reusable background theory
+from the ground up, using mathlib and existing Mettapedia infrastructure wherever
+possible, so that if the high-level proof strategy can be repaired, it lands in a
+clean machine-checked framework rather than in ad hoc prose.
+
+The current grassroots state now includes explicit encoded hypothesis classes,
+finite empirical-risk minimization, finite deceptive-sample bounds, threshold
+recovery lemmas, a rational uniform-rate layer, and explicit uniform success
+bounds for exact ERM recovery under finite sampling.  It now also includes the
+first weighted finite-sampling steps beyond uniform draws: an exact
+one-predictor agreement law and a family-level weighted union bound over finite
+encoded classes, together with weighted exact-recovery lower bounds for ERM.
+This isolates the exact positive shape that a successful switching theorem would
+need: not mere locality, but locality together with a concrete compression
+theorem and a clean finite learning interface.
+\end{abstract}
+
+\tableofcontents
+
+\section{Scope}
+
+The October 2025 Goertzel manuscript
+\emph{``P != NP: A Non-Relativizing Proof via Quantale Weakness and Geometric
+Complexity''} proposes a route from a structured Unique-SAT ensemble to a
+distributional lower bound, and then to a contradiction with the upper bound that
+would follow from $P=NP$.
+
+This document does \emph{not} ask where that route fails.  That is the job of the
+companion crux note.  Instead it asks a different question:
+
+\begin{quote}
+What background theory would we want in Lean even if the final proof still needs
+repair?
+\end{quote}
+
+That question leads to a program with three design constraints:
+\begin{enumerate}[leftmargin=1.5em]
+  \item Prefer general infrastructure over one-off rebuttal lemmas.
+  \item Reuse mathlib computability and existing Mettapedia semantics rather than
+  inventing parallel foundations.
+  \item State optimistic bridge theorems in a way that makes missing hypotheses
+  explicit, so later fixes can slot into them cleanly.
+\end{enumerate}
+
+\section{Existing Lean Base}
+
+Several ingredients already exist in the local formalization and are useful for a
+ground-up PNP effort.
+
+\begin{center}
+\begin{tabular}{ll}
+\toprule
+\textbf{Module} & \textbf{Grassroots role} \\
+\midrule
+\texttt{Mathlib.Computability.Partrec} & partial recursive computation infrastructure \\
+\texttt{KolmogorovComplexity/Basic.lean} & universal algorithm and plain complexity \\
+\texttt{Hyperseed/Ultrainfinitism.lean} & observer-relative available-region semantics \\
+\texttt{Hyperseed/Basic.lean} & closure/cascade interfaces on accessible observations \\
+\texttt{PNP/HypothesisClass.lean} & encoded classifier families and code-budget bounds \\
+\texttt{PNP/FiniteERM.lean} & empirical-risk minimization kernel for finite encoded families \\
+\texttt{PNP/FiniteConsistencyBound.lean} & finite uniform consistency bound for deceptive samples \\
+\texttt{PNP/FiniteUniformRecovery.lean} & threshold corollary guaranteeing exact recovery on some sample \\
+\texttt{PNP/FiniteUniformRate.lean} & rational uniform-rate bounds for deception and exact recovery \\
+\texttt{PNP/FiniteUniformSuccess.lean} & miss-ratio decay and explicit uniform success bounds \\
+\texttt{PNP/FiniteIIDAgreement.lean} & exact weighted one-predictor agreement mass under a finite PMF \\
+\texttt{PNP/FiniteIIDFamilyBound.lean} & weighted deceptive-mass union bound for finite encoded families \\
+\texttt{PNP/FiniteIIDRecovery.lean} & weighted exact ERM recovery lower bounds under finite PMFs \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The point of the table is simple: the grassroots route is not starting from zero.
+We already have a serious computability substrate, an observer-relative semantics
+layer, and a new optimistic interface for small hypothesis classes.
+
+\section{Encoded Hypothesis Families}
+
+The key new grassroots abstraction is that a hypothesis class should be represented
+by a finite code space together with a decoder.
+
+\begin{quote}
+code budget first, realized class second.
+\end{quote}
+
+Formally, \texttt{HypothesisClass.lean} introduces an \emph{encoded family}
+\[
+  \mathrm{decode} : \mathrm{Code} \to (\mathrm{Input} \to \mathrm{Output}),
+\]
+where \(\mathrm{Code}\) is finite.  The realized hypothesis class is the range of
+\(\mathrm{decode}\).
+
+\begin{theorem}[Realized class is bounded by code space]
+For any encoded family \(H\),
+\[
+  |\mathrm{realized}(H)| \le |\mathrm{Code}(H)|.
+\]
+\end{theorem}
+
+\noindent
+This is the theorem \texttt{EncodedFamily.card\_realized\_le} in Lean.
+
+The specialization relevant to the Goertzel program is the bit-coded case.
+
+\begin{theorem}[Bit-budget bound]
+If a family of Boolean classifiers is decoded from \(s\) bits, then it realizes at
+most \(2^s\) distinct classifiers.
+\end{theorem}
+
+\noindent
+This is formalized as
+\texttt{BitEncodedClassifierFamily.card\_realized\_le}.
+
+This theorem is elementary, but it captures the exact shape of the optimistic
+repair that would be needed later.  A switching theorem cannot stop at ``the new
+predictor is local.''  It must continue to a statement of the form:
+
+\begin{quote}
+the switched predictors lie in a family decoded from \(\mathrm{polylog}(m)\) bits.
+\end{quote}
+
+Only then does finite-class learning theory become genuinely available.
+
+\section{Finite-Class ERM Kernel}
+
+The next honest step after a finite encoded family is not yet a PAC theorem.
+It is the finite combinatorial kernel of empirical risk minimization.
+
+The new module \texttt{FiniteERM.lean} defines labeled samples as finite lists of
+pairs \((x,y)\), empirical error as the number of misclassified examples in the
+sample, and exact sample consistency as zero empirical error.
+
+\begin{theorem}[Finite ERM existence]
+Let \(H\) be a nonempty encoded family.  For every finite labeled sample \(S\),
+there exists a realized predictor \(h^\star \in \mathrm{realized}(H)\) such that
+\[
+  \mathrm{err}_S(h^\star) \le \mathrm{err}_S(g)
+  \qquad
+  \text{for all } g \in \mathrm{realized}(H).
+\]
+\end{theorem}
+
+\noindent
+This is formalized as
+\texttt{EncodedFamily.exists\_realized\_empiricalRiskMinimizer}.
+
+\begin{theorem}[Zero-error transfer through ERM]
+If some code in the family fits the sample exactly, then the chosen ERM
+predictor also fits the sample exactly.
+\end{theorem}
+
+\noindent
+This is formalized as
+\texttt{EncodedFamily.empiricalRiskPredictor\_fitsSample\_of\_exists\_code\_fits}.
+
+This is still modest, but it matters.  Combined with the code-budget theorem
+from \texttt{HypothesisClass.lean}, it gives the first clean bridge from
+``small encoded family'' to an actual learning-theoretic construction.
+
+\section{Finite Uniform Consistency Bound}
+
+The next step now formalized is a fully combinatorial finite-domain bound.  We
+do not yet assume an arbitrary distribution or invoke measure theory.  Instead,
+we count how many length-\(m\) input samples can make a wrong predictor look
+perfectly consistent with the target labels.
+
+\begin{theorem}[Wrong predictors fit only exponentially few samples]
+Let \(X\) be a finite input domain.  If \(h \neq f\), then the number of
+length-\(m\) samples on which \(h\) agrees with the target \(f\) at every sampled
+point is at most
+\[
+  (|X|-1)^m.
+\]
+\end{theorem}
+
+\noindent
+This is formalized as
+\texttt{card\_consistentSamples\_le\_of\_exists\_disagreement} in
+\texttt{FiniteConsistencyBound.lean}.
+
+\begin{theorem}[Finite encoded families have few deceptive samples]
+Let \(H\) be an encoded family over a finite input domain \(X\).  The number of
+length-\(m\) samples on which some wrong code in \(H\) still matches all target
+labels is at most
+\[
+  |\mathrm{Code}(H)| \cdot (|X|-1)^m.
+\]
+\end{theorem}
+
+\noindent
+This is formalized as
+\texttt{EncodedFamily.card\_deceptiveSamples\_le}.
+
+\begin{theorem}[ERM recovers the target off the deceptive set]
+If the target predictor is realized by the encoded family, then on every
+non-deceptive sample the chosen ERM predictor equals the target predictor
+exactly.
+\end{theorem}
+
+\noindent
+This is formalized as
+\texttt{EncodedFamily.empiricalRiskPredictor\_eq\_target\_of\_not\_deceptive}.
+
+This is not yet the full finite-class generalization theorem one would state in
+terms of \(\log |H|\) and an arbitrary data distribution.  But it is already the
+right union-bound skeleton in a completely concrete finite setting.
+
+\section{Finite Uniform Recovery Threshold}
+
+The next corollary is the cleanest possible extraction from the deceptive-sample
+bound.  If the deceptive set is strictly smaller than the whole length-\(m\)
+sample space, then at least one non-deceptive sample exists.
+
+\begin{theorem}[Threshold for existence of a good sample]
+Let \(H\) be an encoded family over a finite input domain \(X\).  If
+\[
+  |\mathrm{Code}(H)| \cdot (|X|-1)^m < |X|^m,
+\]
+then there exists a length-\(m\) sample outside the deceptive set.
+\end{theorem}
+
+\noindent
+This is formalized as
+\texttt{EncodedFamily.exists\_nondeceptiveSample\_of\_bound\_lt} in
+\texttt{FiniteUniformRecovery.lean}.
+
+\begin{theorem}[Threshold corollary for exact ERM recovery]
+If the target predictor is realized by the encoded family and
+\[
+  |\mathrm{Code}(H)| \cdot (|X|-1)^m < |X|^m,
+\]
+then there exists a length-\(m\) sample on which the chosen ERM predictor equals
+the target predictor exactly.
+\end{theorem}
+
+\noindent
+This is formalized as
+\texttt{EncodedFamily.exists\_sample\_empiricalRiskPredictor\_eq\_target\_of\_bound\_lt}.
+
+This is still finite and non-asymptotic, but it clarifies the next job.  To move
+from existence to a real learning theorem, we now need a probability interface
+that turns the combinatorial ratio behind the threshold into an explicit success
+bound under sampling assumptions.
+
+\section{Finite Uniform Rate Layer}
+
+The next natural refinement is still finite, but no longer purely existential.
+Instead of asking only whether some good sample exists, we measure how large the
+good and bad regions are inside the finite sample space.
+
+The module \texttt{FiniteUniformRate.lean} defines rational uniform densities on
+the point-sample space:
+\begin{enumerate}[leftmargin=1.5em]
+  \item the deceptive rate,
+  \item the non-deceptive rate,
+  \item the exact-recovery rate for ERM.
+\end{enumerate}
+
+\begin{theorem}[Uniform deceptive-rate bound]
+Let \(H\) be an encoded family over a nonempty finite input domain \(X\).  Then
+the uniform fraction of length-\(m\) samples that are deceptive is at most
+\[
+  \frac{|\mathrm{Code}(H)| \cdot (|X|-1)^m}{|X|^m}.
+\]
+\end{theorem}
+
+\noindent
+This is formalized as
+\texttt{EncodedFamily.deceptiveRate\_le\_bound} in
+\texttt{FiniteUniformRate.lean}.
+
+\begin{theorem}[Exact recovery dominates the non-deceptive region]
+If the target predictor is realized by the encoded family, then the uniform exact
+recovery rate of the chosen ERM predictor is at least
+\[
+  1 - \mathrm{rate}_{\mathrm{deceptive}}.
+\]
+\end{theorem}
+
+\noindent
+This is formalized as
+\texttt{EncodedFamily.exactRecoveryRate\_ge\_one\_sub\_deceptiveRate}.
+
+\begin{theorem}[Positive exact recovery rate under the threshold]
+If the target predictor is realized and
+\[
+  |\mathrm{Code}(H)| \cdot (|X|-1)^m < |X|^m,
+\]
+then the exact recovery rate is strictly positive.
+\end{theorem}
+
+\noindent
+This is formalized as
+\texttt{EncodedFamily.exactRecoveryRate\_pos\_of\_bound\_lt}.
+
+This is still not a full PAC-style theorem under arbitrary distributions.  But it
+does close the uniform finite-sampling gap between ``some good sample exists'' and
+``good samples occupy an explicitly bounded fraction of the sample space.''
+
+\section{Finite Uniform Success Bounds}
+
+The next cleanup step is to express the finite uniform rate bound using the
+single-step miss ratio
+\[
+  \rho_X := \frac{|X|-1}{|X|}.
+\]
+For any nonempty finite input domain, \(\rho_X < 1\), so the finite deceptive
+rate decays exponentially in the sample length \(m\).
+
+The module \texttt{FiniteUniformSuccess.lean} packages the previous rate theorem
+into this cleaner interface.
+
+\begin{theorem}[Miss-ratio deceptive bound]
+Let \(H\) be an encoded family over a nonempty finite input domain \(X\).  Then
+\[
+  \mathrm{rate}_{\mathrm{deceptive}}
+  \le
+  |\mathrm{Code}(H)| \cdot \rho_X^m.
+\]
+\end{theorem}
+
+\noindent
+This is formalized as
+\texttt{EncodedFamily.deceptiveRate\_le\_codeMul\_uniformMissRatio\_pow}.
+
+\begin{theorem}[Uniform exact recovery lower bound]
+If the target predictor is realized by the encoded family, then
+\[
+  \mathrm{rate}_{\mathrm{exact\ recovery}}
+  \ge
+  1 - |\mathrm{Code}(H)| \cdot \rho_X^m.
+\]
+\end{theorem}
+
+\noindent
+This is formalized as
+\texttt{EncodedFamily.exactRecoveryRate\_ge\_one\_sub\_codeMul\_uniformMissRatio\_pow}.
+
+\begin{theorem}[\(\varepsilon\)-style corollary]
+If
+\[
+  |\mathrm{Code}(H)| \cdot \rho_X^m \le \varepsilon,
+\]
+then the exact recovery rate is at least \(1 - \varepsilon\).
+\end{theorem}
+
+\noindent
+This is formalized as
+\texttt{EncodedFamily.exactRecoveryRate\_ge\_one\_sub\_of\_codeMul\_uniformMissRatio\_pow\_le}.
+
+This is still uniform finite-sample learning rather than full distributional
+generalization.  But it is the first version of the grassroots story with an
+explicit success lower bound of the form ``one minus an exponentially decaying
+failure term.''
+
+\section{Finite Weighted Agreement and Family Bounds}
+
+The next honest move is to relax the uniform-sampling assumption while still
+staying fully finite.  Instead of sampling uniformly from a finite input domain,
+we let one finite probability mass function \(\mu\) weight the inputs.
+
+The module \texttt{FiniteIIDAgreement.lean} handles the one-predictor case.  For
+one target \(f\) and one predictor \(h\), it defines:
+\begin{enumerate}[leftmargin=1.5em]
+  \item the one-step agreement mass of \(h\) with \(f\) under \(\mu\),
+  \item the product mass of a length-\(m\) sample under independent draws from \(\mu\),
+  \item the total mass of samples on which \(h\) agrees with \(f\) everywhere.
+\end{enumerate}
+
+\begin{theorem}[Exact weighted agreement law]
+For any finite input type and finite PMF \(\mu\),
+\[
+  \mathrm{mass}_{\mu}(\text{all-$m$-point samples consistent with } h)
+  =
+  \bigl(\mathrm{agreementMass}_{\mu}(f,h)\bigr)^m.
+\]
+\end{theorem}
+
+\noindent
+This is formalized as
+\texttt{consistentSampleMass\_eq\_agreementMass\_pow}.
+
+\begin{theorem}[Weighted decay corollary]
+If the one-step agreement mass is at most \(q\), then the total mass of
+length-\(m\) consistent samples is at most \(q^m\).
+\end{theorem}
+
+\noindent
+This is formalized as
+\texttt{consistentSampleMass\_le\_pow\_of\_agreementMass\_le}.
+
+The new module \texttt{FiniteIIDFamilyBound.lean} lifts this to the encoded-family
+level.
+
+\begin{theorem}[Weighted deceptive-family union bound]
+Let \(H\) be a finite encoded family and \(\mu\) a finite PMF on the input type.
+Then the total \(\mu^m\)-mass of deceptive samples is at most
+\[
+  \sum_{c \in \mathrm{BadCodes}(H,f)}
+    \bigl(\mathrm{agreementMass}_{\mu}(f,\mathrm{decode}(c))\bigr)^m.
+\]
+\end{theorem}
+
+\noindent
+This is formalized as
+\texttt{EncodedFamily.deceptiveSampleMass\_le\_badCodeAgreementMassSum}.
+
+\begin{theorem}[Uniform weighted family corollary]
+If every bad code in the family has one-step agreement mass at most \(q\), then
+the total deceptive mass is at most
+\[
+  |\mathrm{Code}(H)| \cdot q^m.
+\]
+\end{theorem}
+
+\noindent
+This is formalized as
+\texttt{EncodedFamily.deceptiveSampleMass\_le\_codeCard\_mul\_pow\_of\_agreementMass\_le}.
+
+This is the first genuinely family-level finite distributional theorem in the
+grassroots development.  The next real probabilistic step is no longer a union
+bound itself, but a recovery or generalization theorem built on top of this
+weighted family bound.
+
+\section{Finite Weighted Recovery Bounds}
+
+The module \texttt{FiniteIIDRecovery.lean} closes the next natural loop.  It
+turns the weighted deceptive-mass bound into a weighted success statement for the
+chosen ERM predictor.
+
+\begin{theorem}[Weighted exact recovery dominates the nondeceptive mass]
+If the target predictor is realized by the encoded family, then the total
+\(\mu^m\)-mass of exact ERM recovery is at least
+\[
+  1 - \mathrm{deceptiveMass}_{\mu}.
+\]
+\end{theorem}
+
+\noindent
+This is formalized as
+\texttt{EncodedFamily.exactRecoverySampleMass\_ge\_one\_sub\_deceptiveSampleMass}.
+
+\begin{theorem}[Weighted exact recovery from bad-code agreement masses]
+If the target predictor is realized by the encoded family, then the exact
+recovery mass is at least
+\[
+  1 - \sum_{c \in \mathrm{BadCodes}(H,f)}
+    \bigl(\mathrm{agreementMass}_{\mu}(f,\mathrm{decode}(c))\bigr)^m.
+\]
+\end{theorem}
+
+\noindent
+This is formalized as
+\texttt{EncodedFamily.exactRecoverySampleMass\_ge\_one\_sub\_badCodeAgreementMassSum}.
+
+\begin{theorem}[Uniform weighted exact recovery corollary]
+If every bad code has one-step agreement mass at most \(q\), then the exact
+recovery mass is at least
+\[
+  1 - |\mathrm{Code}(H)| \cdot q^m.
+\]
+\end{theorem}
+
+\noindent
+This is formalized as
+\texttt{EncodedFamily.exactRecoverySampleMass\_ge\_one\_sub\_codeCard\_mul\_pow\_of\_agreementMass\_le}.
+
+At this point the grassroots development has reached a fully finite,
+distribution-weighted recovery theorem for ERM over encoded families.  The next
+step is to lift this from exact recovery on a finite sample space to a genuine
+finite-class generalization statement.
+
+\section{Hyperseed as a Local-View Surface}
+
+The existing Hyperseed formalization already provides a clean observer-relative
+semantics.
+
+Given a perspective \(P\), a budget \(B\), and a guard region \(G\), it defines
+an \emph{available region}
+\[
+  \mathrm{availableRegion}(P,B,G)
+  =
+  \mathrm{observableUniverse}(P)
+  \cap
+  \mathrm{nearEurycosm}(P,B)
+  \cap
+  G.
+\]
+
+For the grassroots PNP program, this matters because it gives a principled way to
+talk about what a decoder can even access.  Instead of treating locality as an
+informal phrase, we can work with a typed input surface:
+\[
+  \mathrm{AvailableInput}(P,B,G)
+  := \{x : \mathrm{World} \mid x \in \mathrm{availableRegion}(P,B,G)\}.
+\]
+
+The new Lean module proves the corresponding encoded-family bound on such an
+available input surface:
+
+\begin{theorem}[Available-region code-budget bound]
+An \(s\)-bit classifier family over one Hyperseed available region still realizes
+at most \(2^s\) classifiers.
+\end{theorem}
+
+\noindent
+This is formalized as
+\texttt{card\_realized\_availableFamily\_le\_of\_bitBudget}.
+
+The theorem is intentionally modest.  It does not claim that the Goertzel local
+view \emph{is} a Hyperseed perspective.  It says that Hyperseed already gives us a
+good general language for bounded observational access, and that this language can
+interoperate with the encoded-hypothesis-class infrastructure.
+
+\section{Kolmogorov Foundations Already Present}
+
+The local repository also already contains a substantial Kolmogorov-complexity seed
+under \texttt{Mettapedia/Computability/KolmogorovComplexity/}.
+
+In particular, \texttt{Basic.lean} defines:
+\begin{enumerate}[leftmargin=1.5em]
+  \item binary strings as \texttt{List Bool},
+  \item partial algorithms,
+  \item plain Kolmogorov complexity \(C[U](x)\),
+  \item a universal algorithm built from mathlib's partial-recursive code,
+  \item the usual invariance theorem for universal algorithms.
+\end{enumerate}
+
+This is not yet the time-bounded conditional complexity \(K_{\mathrm{poly}}\)
+that the Goertzel program uses.  But it matters for the grassroots route because it
+means the eventual \(K_{\mathrm{poly}}\) development should be an extension of an
+existing computability layer rather than a fresh bespoke definition dropped into a
+late-stage contradiction proof.
+
+In practical terms, the next computability milestone is:
+
+\begin{quote}
+define conditional and polynomial-time-bounded complexity on top of the existing
+universal-machine layer, instead of axiomatizing them only at the paper level.
+\end{quote}
+
+\section{What the Grassroots Program Needs Next}
+
+The current background theory suggests a fairly crisp optimistic roadmap.
+
+\subsection{Finite-Class Learning Layer}
+
+The ERM existence layer, finite uniform consistency bound, threshold recovery
+corollary, rational uniform-rate layer, miss-ratio success bound, and weighted
+one-predictor and finite-family weighted bounds are now in place.  The next
+finite-class learning
+steps are:
+\begin{enumerate}[leftmargin=1.5em]
+  \item a generalization bound stated in terms of \(\log |H|\),
+  \item a probability interface for i.i.d. or distributional assumptions at the family level,
+  \item concentration-style control beyond the exact finite-space formulas,
+  \item a clean interface separating statistical assumptions from coding facts.
+\end{enumerate}
+
+In other words, the current Lean state already handles:
+\begin{enumerate}[leftmargin=1.5em]
+  \item empirical error on finite samples,
+  \item existence of ERM predictors in nonempty finite encoded families,
+  \item exact-fit transfer when some code in the family is sample-consistent,
+  \item a finite uniform bound on the deceptive sample set,
+  \item exact ERM recovery of the target off that deceptive set,
+  \item a strict-cardinality threshold guaranteeing the existence of a good sample,
+  \item a rational upper bound on the deceptive sample rate,
+  \item a rational lower bound on the exact recovery rate,
+  \item strict positivity of that exact recovery rate under the threshold,
+  \item an explicit miss-ratio success bound of the form \(1 - |H|\rho_X^m\),
+  \item an exact weighted one-predictor law of the form \(\mathrm{mass} = \alpha^m\),
+  \item a weighted family union bound of the form
+  \(\mathrm{deceptiveMass} \le \sum_{h \in H_{\mathrm{bad}}}\alpha_h^m\),
+  \item a weighted exact recovery bound of the form
+  \(\mathrm{recoveryMass} \ge 1 - \sum_{h \in H_{\mathrm{bad}}}\alpha_h^m\).
+\end{enumerate}
+
+\noindent
+What remains is to lift that finite uniform rate layer into a real finite-class
+generalization theorem.
+
+\subsection{Concrete Decoder Subclasses}
+
+The encoded-family theorem is only an interface.  It still needs a nontrivial
+source of small classes.  The likely optimistic candidates are concrete local
+decoders on tree-like neighborhoods:
+\begin{enumerate}[leftmargin=1.5em]
+  \item belief-propagation style update rules,
+  \item GF(2)-linear constraint summaries from the VV layer,
+  \item bounded-depth compositions of those primitives.
+\end{enumerate}
+
+If those can be encoded uniformly in \(\mathrm{polylog}(m)\) bits, then the
+switching theorem has a plausible landing zone.
+
+\subsection{Bridging to the Full PNP Route}
+
+Only after those layers are built does it make sense to reconnect to the full
+proof program:
+\begin{enumerate}[leftmargin=1.5em]
+  \item define the distributional ensemble cleanly,
+  \item define local views as typed accessible surfaces,
+  \item prove the switched family lies in a small encoded subclass,
+  \item connect success bounds to a properly formalized \(K_{\mathrm{poly}}\),
+  \item finally compare with the upper bound under \(P=NP\).
+\end{enumerate}
+
+\section{Current Status}
+
+At present, the grassroots side has several real machine-checked gains and one
+major pre-existing base layer:
+
+\begin{center}
+\begin{tabular}{lll}
+\toprule
+\textbf{Layer} & \textbf{Status} & \textbf{Artifact} \\
+\midrule
+encoded hypothesis families & proved & \texttt{HypothesisClass.lean} \\
+finite-class ERM kernel & proved & \texttt{FiniteERM.lean} \\
+finite uniform consistency bound & proved & \texttt{FiniteConsistencyBound.lean} \\
+finite uniform recovery threshold & proved & \texttt{FiniteUniformRecovery.lean} \\
+finite uniform rate layer & proved & \texttt{FiniteUniformRate.lean} \\
+finite uniform success bounds & proved & \texttt{FiniteUniformSuccess.lean} \\
+finite weighted one-predictor agreement law & proved & \texttt{FiniteIIDAgreement.lean} \\
+finite weighted family union bound & proved & \texttt{FiniteIIDFamilyBound.lean} \\
+finite weighted recovery bounds & proved & \texttt{FiniteIIDRecovery.lean} \\
+Hyperseed available-region reuse & proved & \texttt{HypothesisClass.lean} + \texttt{Hyperseed} \\
+plain Kolmogorov infrastructure & already present & \texttt{KolmogorovComplexity/Basic.lean} \\
+finite-class generalization bounds & not yet formalized & next target \\
+\(K_{\mathrm{poly}}\) layer & not yet formalized & later target \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+This is not the final proof.  It is the right sort of groundwork.
+
+\section{Conclusion}
+
+The grassroots program should stay separate from the crux program.
+
+The crux note asks where the present paper overreaches.  This note asks what
+general machinery we would still want even if Ben patches the overreach later.
+On that constructive side, the current Lean result is that small encoded
+hypothesis families, finite empirical-risk minimizers, finite deceptive-sample
+bounds, finite uniform recovery thresholds, rational exact-recovery rates,
+explicit miss-ratio success bounds, weighted one-predictor agreement laws,
+weighted family deceptive-mass bounds, weighted exact recovery bounds, and
+observer-relative input surfaces can already be handled cleanly inside one
+coherent Mettapedia/mathlib formal background layer.
+
+That is enough to sharpen the next optimistic task.  We should not try to prove
+\(P \neq NP\) in one jump.  We should first prove that the intended switched
+predictors live in a genuinely small encoded class, and only then lift the rest
+of the argument on top of that foundation.
+
+\end{document}
