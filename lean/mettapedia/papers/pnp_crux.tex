@@ -1,0 +1,1722 @@
+\documentclass[11pt]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage{microtype}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{mathtools}
+\usepackage{hyperref}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage{listings}
+\usepackage{xcolor}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue!50!black,
+  citecolor=blue!50!black,
+  urlcolor=blue!50!black
+}
+
+\lstdefinelanguage{Lean4}{
+  morekeywords={
+    import,namespace,end,open,section,noncomputable,abbrev,
+    def,theorem,lemma,where,by,fun,let,in,have,show,exact,
+    intro,apply,simpa,calc
+  },
+  sensitive=true,
+  morecomment=[l]{--},
+  morecomment=[s]{/-}{-/},
+  morestring=[b]"
+}
+
+\lstset{
+  language=Lean4,
+  basicstyle=\ttfamily\small,
+  keywordstyle=\bfseries\color{blue!50!black},
+  commentstyle=\itshape\color{green!40!black},
+  stringstyle=\color{red!50!black},
+  showstringspaces=false,
+  breaklines=true,
+  frame=single,
+  framerule=0.3pt,
+  xleftmargin=0.5em,
+  xrightmargin=0.5em,
+  keepspaces=true,
+  columns=fullflexible,
+  literate=
+    {¬}{{$\neg$}}1
+    {∃}{{$\exists$}}1
+    {→}{{$\to$}}1
+    {≤}{{$\leq$}}1
+}
+
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}[theorem]{Lemma}
+\theoremstyle{remark}
+\newtheorem{remark}[theorem]{Remark}
+
+\title{P vs NP Proof Attempts:\\
+Crux-First and Steelman Lean Notes on the Goertzel Weakness Program}
+\author{Oruzi / Codex collaboration}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+This note records the current Lean work around Ben Goertzel's claimed proof of
+$P \neq NP$ via ``quantale weakness and geometric complexity.''  The project now
+proceeds on two tracks in parallel.
+
+The \emph{blocker} track asks where the argument must fail unless an additional theorem
+is supplied.  The \emph{optimistic} track assumes the high-level strategy may work and
+builds the missing background theory from the ground up so that any genuine repair can
+plug into a machine-checked scaffold.
+
+The current Lean work proves concrete obstructions.  First, a decoder that is merely
+``local on a bounded-degree neighborhood of radius $\Theta(\log m)$'' is \emph{not} thereby
+polylogarithmic in size: the visible neighborhood already has polynomial size in $m$.
+Second, if one does not prove an additional compression theorem, then the class of all local
+rules on that neighborhood is doubly exponential in the neighborhood size, so it cannot be
+uniformly represented by a polylogarithmic code budget.
+
+Before the switching story even starts, the sampler already carries another burden.  The
+manuscript fixes the VV width at \(k=c_1\log m\), but the cited \(\Omega(1/m)\) uniqueness
+probability comes from averaging over many scales of \(k\).  The new Lean obstruction packages the
+fixed-width variance bound: if the retained-solution count has mean \(\mu>1\) and variance at most
+\(\mu\), then exact isolation occurs on at most a \(\mu/(\mu-1)^2\) fraction of hash choices.
+So fixed logarithmic width can only isolate often when the pre-hash solution set is already
+essentially polynomial in size.
+
+Third, even one natural repair to the calibration step has a sharp failure mode: if an
+involution flips the target bit while preserving the retained local features, then every
+classifier using only those invariant features has exactly \(1/2\) average accuracy.  So one
+cannot repair the sign-flip calibration bug merely by dropping the involution-sensitive part of
+the local input and hoping marginalization will preserve a domination claim.
+
+Even before that charitable repair, the manuscript's exact local input formula already has a hard
+consistency problem: it defines the post-switch input as \(u=(z,a_i,b)\) while the involution
+\(T_i\) toggles \(b\) by \(a_i\).  So full-input invariance can hold only on the zero-column case
+\(a_i=0\).
+
+The new bridge module sharpens that fork: on the exact same \(T_i\)-action, the reduced projection
+\((z,a_i)\) is invariant and therefore carries zero symmetry-respecting signed signal, while any
+advantage obtained by also retaining \(b\) is bounded by the mass on nonzero VV columns, since
+those are exactly the points where \(b\) resolves an involution pair.
+
+Sharper still, the same involution hypotheses force every retained feature fiber to contain
+exactly half target-\(1\) and half target-\(0\) points.  So even soft scores or conditional-mean
+estimators on those invariant features have zero margin on every feature value.
+
+And this is not just a uniform-counting artifact: any involution-invariant finite weighting still
+assigns equal total mass to the target-\(1\) and target-\(0\) parts of every retained feature
+fiber.  So non-uniform but symmetry-respecting sampling does not restore a usable margin.
+
+In fact, any soft score computed only from those involution-invariant retained features has zero
+weighted signed correlation with the target.  So even a richer invariant scoring statistic carries
+no usable directional signal before genuine symmetry breaking is introduced.
+
+More sharply, even when the weighting is not exactly involution-invariant, the entire invariant-score
+signal is still carried only by the antisymmetric part of that weighting.  So this rescue route now
+needs a real theorem that substantial useful mass lives in the weight asymmetry itself.
+
+Likewise, if one augments the invariant local view by a side channel, then any advantage gained by
+classifying on the pair \((u,v)\) is still bounded by the total mass where the side channel actually
+separates an orbit point from its involution partner.
+
+Equivalently, any claimed domination gap over chance now forces a matching amount of orbit-resolving
+mass.  So one cannot even state a serious advantage theorem without simultaneously proving a serious
+resolution theorem.
+
+More generally, keeping a controlled amount of non-invariant information only helps on the slice
+where it really breaks the symmetry.  Any residual slice on which the retained features are still
+involution-invariant remains exactly at chance under symmetry-respecting weights.
+
+Quantitatively, any excess over chance is bounded by the weight of the
+symmetry-broken region.  So a proof that keeps only a little non-invariant information must also
+show that almost all relevant mass actually lies outside the unresolved symmetric slice.
+
+Fourth, the natural ``short global program'' rescue also fails on its own: if the switched input
+really has only \(n = O(\log m)\) visible bits, then an arbitrary local rule on those bits can be
+hard-wired by a truth table of size \(2^n = \mathrm{poly}(m)\).  So polynomial-size decoders do
+not by themselves force any small subclass inside the full local-rule space.
+
+Fifth, the most creative metagraph-style rescue faces its own exactness barrier: if a quotient
+state must capture the full interface behavior of a \(k\)-bit local gadget, then there are
+\(2^{k2^k}\) such boundary transducers.  At binary-log width this already forces at least linear
+code size in \(m\), so a small exact metagraph/message quotient cannot appear by default.
+
+Sixth, even the tree-message route does not follow from tree-likeness alone: a fixed perfect
+binary tree architecture of depth \(n\) already realizes every Boolean rule on \(n\) visible bits,
+just by changing its leaf labels.
+
+At the same time, the optimistic Lean work now isolates the precise positive interface one
+would need for the switching lemma to go through: a \emph{small explicitly encoded
+hypothesis family} whose realized classifier class is bounded by its code budget, together
+with a perspective-relative notion of accessible input surface inspired by the existing
+Hyperseed formalization.
+
+These results do not by themselves disprove the whole paper.  They do isolate an essential gap:
+the switching/locality step must be strengthened by a real theorem showing that the specific
+switched predictors lie in an exceptionally small subclass, not merely in the class of all local
+functions.
+\end{abstract}
+
+\tableofcontents
+
+\section{Context}
+
+The proof strategy under review is the October 2025 Goertzel manuscript
+\emph{``P != NP: A Non-Relativizing Proof via Quantale Weakness and Geometric Complexity.''}
+At a high level, the paper proposes the following chain:
+\begin{enumerate}[leftmargin=1.5em]
+  \item Construct a masked random Unique-SAT ensemble.
+  \item Show that every short polynomial-time decoder can be wrapped into a predictor that is
+  local on a constant fraction of blocks.
+  \item Use neutrality and sparsification to show local predictors succeed only with exponentially
+  small probability across many independent blocks.
+  \item Convert that small-success statement into a lower bound on time-bounded Kolmogorov
+  complexity.
+  \item Contradict the $P=NP$ upper bound obtained from Unique-SAT self-reduction.
+\end{enumerate}
+
+The current crux-first effort does not attempt the full chain at once.  Instead it attacks the
+most fragile inference in the middle:
+
+\begin{quote}
+``Switched predictor is local at logarithmic radius'' $\Longrightarrow$
+``switched predictor belongs to a polylogarithmic hypothesis class.''
+\end{quote}
+
+That implication is not automatic.  It needs either a structural theorem about the switched
+predictor or a direct circuit/description-length bound.  The Lean work below shows why.
+
+\section{Current Lean Files}
+
+The current Lean modules under
+\texttt{Mettapedia/Computability/PNP/}:
+\begin{center}
+\begin{tabular}{ll}
+\toprule
+\textbf{File} & \textbf{Role} \\
+\midrule
+\texttt{HypothesisClass.lean} & optimistic code-indexed hypothesis families and Hyperseed-visible inputs \\
+\texttt{LocalityObstruction.lean} & Log-radius locality is larger than polylog size \\
+\texttt{CompressionObstruction.lean} & Arbitrary local rules do not admit short uniform encodings \\
+\texttt{FixedWidthIsolationObstruction.lean} & fixed-width hashing isolates only on a small fraction once the expected survivor count exceeds \(1\) \\
+\texttt{PairwiseSurvivorMoments.lean} & pairwise first and factorial-second moment bounds imply the fixed-width variance budget \\
+\texttt{PairwiseCandidateBridge.lean} & candidate-wise \(0/1\) hits plus pairwise off-diagonal bounds instantiate the survivor-moment model \\
+\texttt{SymmetrizationObstruction.lean} & unbiased majority does not beat Bayes without a margin \\
+\texttt{PostSwitchInputObstruction.lean} & exact \(u=(z,a_i,b)\) is \(T_i\)-invariant iff \(a_i=0\) \\
+\texttt{PostSwitchForkObstruction.lean} & exact \(T_i\)-fork: invariant \((z,a_i)\) has zero signal, \(b\)-side-channel gain needs nonzero-column mass \\
+\texttt{OrbitNeutralityObstruction.lean} & involution-invariant feature collapse forces exact half accuracy \\
+\texttt{FiberNeutralityObstruction.lean} & invariant feature fibers have exact zero conditional margin \\
+\texttt{WeightedFiberNeutralityObstruction.lean} & symmetry-respecting weights still give zero conditional margin \\
+\texttt{InvariantScoreObstruction.lean} & invariant soft scores have zero weighted signed signal \\
+\texttt{WeightAsymmetryObstruction.lean} & invariant-score signal comes only from antisymmetric weight mass \\
+\texttt{SideChannelResolutionObstruction.lean} & side channels help only on orbit-resolving mass \\
+\texttt{ResolutionDemandObstruction.lean} & any domination gap forces matching orbit-resolving mass \\
+\texttt{ResidualSymmetryObstruction.lean} & any unresolved symmetric slice still stays at chance \\
+\texttt{AsymmetryBudgetObstruction.lean} & advantage is bounded by the symmetry-broken mass \\
+\texttt{ShortProgramObstruction.lean} & polynomial-size programs already realize all log-width local rules \\
+\texttt{MetagraphObstruction.lean} & exact metagraph/interface quotients have state explosion \\
+\texttt{TreeMessageObstruction.lean} & fixed tree architectures already realize all local rules \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+These compile in the current \texttt{mettapedia} workspace via \texttt{lake env lean}
+(with selected files also built to \texttt{.olean} artifacts).
+
+\section{Two Parallel Programs}
+
+\subsection{The Blocker Program}
+
+The blocker program is adversarial.  It asks:
+\begin{enumerate}[leftmargin=1.5em]
+  \item Is the visible radius already too large for any naive \texttt{poly(log m)} claim?
+  \item Is the full class of local rules too large for a short description?
+  \item Can the manuscript's fixed \(k=c_1\log m\) VV layer really achieve \(\Omega(1/m)\)
+  uniqueness probability on large solution sets, or does fixed-width isolation already collapse
+  once the expected survivor count is bigger than \(1\)?
+  \item Does majority symmetrization fail whenever the local conditional mean has zero margin?
+  \item Is the exact post-switch input \(u=(z,a_i,b)\) really preserved by the paper's involution,
+  or only in the zero-column case \(a_i=0\)?
+  \item Once that exact fork is made explicit, does the charitable repair reduce either to zero
+  invariant-feature signal on \((z,a_i)\) or to advantage bounded by the mass on nonzero VV columns?
+  \item Does the obvious ``drop the bad coordinate'' calibration patch collapse any feature-only
+  classifier back to exact neutrality?
+  \item Does the softer ``estimate the conditional mean on invariant features'' repair still have
+  exact zero margin on every retained feature fiber?
+  \item Does non-uniform but involution-symmetric weighting avoid that zero-margin collapse?
+  \item Can an arbitrary invariant soft score recover directional signal, or does it also have zero
+  signed correlation with the target?
+  \item If the weighting is not exactly symmetric, does invariant-score signal come only from the
+  antisymmetric part of that weighting?
+  \item If one keeps a non-invariant side channel, is total advantage still bounded by the mass
+  where that side channel actually resolves involution pairs?
+  \item Conversely, does any claimed domination advantage force a comparably large orbit-resolving
+  mass for that side channel?
+  \item If one keeps some controlled non-invariant information, do residual unresolved slices still
+  remain exact-chance unless their mass is proved negligible?
+  \item Can a small symmetry-breaking slice still yield a large global advantage, or is the excess
+  over chance quantitatively bounded by the symmetry-broken mass?
+  \item Does ``short global decoder'' alone still allow the full local-rule class at log-width?
+  \item Does an exact finite-state metagraph/message quotient on a log-width interface already
+  require too many states?
+  \item Does tree-likeness alone force a small exact message/interpreter class?
+\end{enumerate}
+
+The current Lean answer to all eighteen is ``yes.''  Therefore the published proof cannot be
+accepted \emph{as written} unless it supplies additional structural theorems.
+
+\subsection{The Optimistic Program}
+
+The optimistic program asks what would be enough to save the route.
+The current working answer is:
+\begin{quote}
+locality alone is not enough, but \emph{locality plus explicit compressibility} may be.
+\end{quote}
+
+Concretely, the switching theorem would need to produce not merely a local rule on a
+radius-$O(\log m)$ neighborhood, but a family of predictors realized by a code space of
+size at most \(\mathrm{polylog}(m)\) bits.  In that case the realized hypothesis class is
+small, and standard finite-class learning bounds become plausible again.
+
+The new module \texttt{HypothesisClass.lean} formalizes exactly this interface:
+\begin{enumerate}[leftmargin=1.5em]
+  \item an \emph{encoded family} is a decoder from a finite code space into classifiers;
+  \item the realized class has cardinality at most the size of the code space;
+  \item therefore an $s$-bit family realizes at most $2^s$ classifiers;
+  \item no such family can surject onto the full local-rule class once $s < 2^n$.
+\end{enumerate}
+
+This is the correct positive abstraction: if Ben's switching argument is salvageable, it must
+land in one of these small encoded subclasses rather than in the full local-rule space.
+
+\subsection{Hyperseed Perspective Surface}
+
+The Hyperseed formalization in \texttt{Mettapedia/Hyperseed/} already provides a useful
+observer-relative interface:
+\begin{itemize}[leftmargin=1.5em]
+  \item a \emph{perspective} determines what is observable,
+  \item a budget determines what is affordable,
+  \item a guard determines what is admitted.
+\end{itemize}
+
+The optimistic PNP background layer reuses this by treating a decoder's \emph{available
+input surface} as a subtype of the Hyperseed \texttt{availableRegion}.  This does not solve
+switching.  It does provide a clean ground-up semantics for what a bounded observer can even
+use as input, without baking in a bespoke notion of locality for every later argument.
+
+\section{Optimistic Background Theorem}
+
+The basic positive theorem is elementary but indispensable:
+
+\begin{theorem}[Code budget bounds realized hypothesis class]
+Let \(H\) be a family of Boolean classifiers realized by decoding an \(s\)-bit code:
+\[
+  \mathrm{decode} : \{0,1\}^s \to \mathcal{F}.
+\]
+Then the realized class satisfies
+\[
+  |\mathrm{range}(\mathrm{decode})| \le 2^s.
+\]
+\end{theorem}
+
+\noindent
+This is formalized in \texttt{HypothesisClass.lean} as
+\texttt{BitEncodedClassifierFamily.card\_realized\_le}.
+
+The contrapositive is equally important:
+
+\begin{theorem}[Short codes cannot cover the full local-rule class]
+If \(s < 2^n\), then no \(s\)-bit decoder can surject onto the full set of Boolean rules on
+\(n\) visible bits.
+\end{theorem}
+
+\noindent
+This is formalized as
+\texttt{not\_surjective\_decode\_to\_fullLocalRule\_of\_lt}.
+
+These statements are not the final theorem.  They are the right \emph{background theory} for
+the optimistic route: they tell us exactly what shape of compression theorem the switching
+step must deliver.
+
+\section{Obstruction I: Log-Radius Locality Is Already Polynomial}
+
+Suppose a factor graph has bounded degree $d \ge 2$, and a predictor is allowed to inspect a
+radius-$r$ neighborhood around one target bit.  A rough but unavoidable upper/lower size model is
+\[
+  \text{visible nodes} \asymp d^r.
+\]
+If $r = \Theta(\log m)$, then this is
+\[
+  d^{c \log m} = m^{c \log d},
+\]
+which is polynomial in $m$, not polylogarithmic in $m$.
+
+The Lean module \texttt{LocalityObstruction.lean} records this in several exact forms.
+
+\begin{theorem}[Binary-log lower bound]
+For every $d,m \in \mathbb{N}$ with $d \ge 2$,
+\[
+  m \le d^{\log_2 m + 1}.
+\]
+\end{theorem}
+
+\noindent
+This is formalized as the theorem
+\texttt{inputSize\_le\_neighborhoodSize\_at\_binaryLogRadius}.
+
+\begin{theorem}[Power-of-two specialization]
+For every $d,n \in \mathbb{N}$ with $d \ge 2$,
+\[
+  2^n \le d^{\log_2(2^n)} = d^n.
+\]
+\end{theorem}
+
+\noindent
+This appears as
+\texttt{powerOfTwo\_le\_neighborhoodSize\_at\_exactBinaryLogRadius}.
+
+\begin{theorem}[Asymptotic dominance]
+Fix $k \in \mathbb{N}$ and real constants $d>1$, $c>0$.  Then
+\[
+  (\log x)^k = o\!\left(d^{c \log x}\right)
+\]
+as $x \to \infty$.
+\end{theorem}
+
+\noindent
+This is formalized as
+\texttt{polylog\_isLittleO\_logRadiusNeighborhood}, and the corresponding negative
+Big-O statement appears as
+\texttt{logRadiusNeighborhood\_not\_isBigO\_polylog}.
+
+\subsection{Interpretation}
+
+This does \emph{not} say that every local rule requires polynomial-size circuits.
+It says something weaker but still decisive: locality at logarithmic radius, by itself, does not
+justify a \texttt{poly(log m)} complexity claim.  The radius already exposes a polynomial-sized
+input window.
+
+So if the paper wants a tiny post-switch hypothesis class, it must prove a \emph{compression
+theorem} about the specific local rules that arise after switching.  That is a separate and
+nontrivial burden.
+
+\section{Obstruction Ib: Fixed-Width VV Isolation Does Not Follow from the Cited Lemma}
+
+The manuscript's main ensemble fixes
+\[
+  k=c_1\log m
+\]
+in the VV layer.  But the cited isolation lemma proving uniqueness probability \(\Omega(1/m)\)
+chooses \(k\) \emph{uniformly across all scales} \(0,\dots,m-1\).  Those are not the same claim.
+
+The new Lean module \texttt{FixedWidthIsolationObstruction.lean} packages the exact finite bound
+one needs at fixed width.
+
+\subsection{Lean theorem}
+
+\begin{theorem}[Variance-budget bound for exact isolation]
+Let \(Y\) be the number of candidates retained by a random hash choice, on a finite hash space.
+If
+\[
+  \mathbb E[Y]=\mu>1
+  \qquad\text{and}\qquad
+  \mathrm{Var}(Y)\le \mu,
+\]
+then
+\[
+  \Pr[Y=1]\ \le\ \frac{\mu}{(\mu-1)^2}.
+\]
+\end{theorem}
+
+\noindent
+This is formalized as
+\texttt{exactOneProb\_le\_of\_variance\_budget}.
+
+The new companion module \texttt{PairwiseSurvivorMoments.lean} formalizes the abstract bridge from
+pairwise-survivor moments to this variance budget.  In that file, a finite model satisfying
+\[
+  \mathbb E[Y]=\mu
+  \qquad\text{and}\qquad
+  \mathbb E[Y(Y-1)]\le \mu^2
+\]
+is shown to obey \(\mathrm{Var}(Y)\le \mu\), and therefore the same exact-isolation upper bound.
+This separates the remaining manuscript obligation cleanly: one still has to prove that the actual
+fixed-width VV sampler instantiates those pairwise moments.
+
+The newer bridge module \texttt{PairwiseCandidateBridge.lean} takes one more step toward the actual
+VV picture.  It proves that if the retained-candidate indicators are \(0/1\)-valued, all have the
+same marginal hit rate \(p\), and distinct candidates satisfy the pairwise upper bound
+\[
+  \mathbb E[X_a X_b] \le p^2,
+  \qquad a\neq b,
+\]
+then the total survivor count satisfies the exact abstract interface of
+\texttt{PairwiseSurvivorMomentModel}.  Concretely:
+\begin{itemize}[leftmargin=1.5em]
+  \item \texttt{candidateHitCount\_sum} proves the first moment formula;
+  \item \texttt{candidateHitCount\_factorialSecondMoment\_le} proves the factorial second-moment
+  bound;
+  \item \texttt{pairwiseCandidateMomentModel} packages these into the survivor-moment model used by
+  the fixed-width isolation theorem.
+\end{itemize}
+
+So the remaining gap has narrowed again.  To recover the manuscript's fixed-width uniqueness claim,
+one now needs an end-to-end theorem that the actual VV hash family satisfies these candidate-wise
+marginal and pairwise bounds at the fixed logarithmic width used later in the paper.
+
+\subsection{Why this hits the manuscript}
+
+In the source text, the supporting VV lemma states the classical bound
+\[
+  \Pr[|S\cap h^{-1}(0^k)|=1]\ge c/m
+\]
+only after choosing \(k\) uniformly from \(0,\dots,m-1\).  But the actual ensemble later fixes
+\(k=c_1\log m\) and then still says isolation succeeds with \(\Omega(1/m)\) probability.
+
+That gap is not cosmetic.  Under the standard pairwise-independent VV heuristic, if a formula has
+\(N\) satisfying assignments and the fixed hash width is \(k\), then the retained-count random
+variable has mean
+\[
+  \mu = N/2^k
+\]
+and variance at most \(\mu\).  The Lean theorem above therefore yields
+\[
+  \Pr[\text{exact isolation}]
+  \ \lesssim\
+  \frac{1}{\mu}
+  \ =\
+  \frac{2^k}{N},
+\]
+up to a universal constant once \(\mu\) is bounded away from \(1\).
+
+So with fixed \(k=O(\log m)\), the sampler can isolate with noticeable probability only when the
+pre-hash solution set is already \(N=O(2^k)=\mathrm{poly}(m)\).  The manuscript, however, only
+cites a much weaker upper bound of the form \(N\le 2^{\alpha m}\), which still permits an
+exponential solution set.  On such instances, fixed logarithmic width gives exponentially small
+exact-isolation probability rather than \(\Omega(1/m)\).
+
+\subsection{Consequence}
+
+This means the paper now needs a real theorem of one of the following forms:
+\begin{enumerate}[leftmargin=1.5em]
+  \item on the relevant random-3CNF mass, the satisfiable formulas entering the VV stage already
+  have only \(\mathrm{poly}(m)\) satisfying assignments; or
+  \item the ensemble does not actually use fixed \(k=c_1\log m\), and the later local-input and
+  finite-alphabet claims must be rewritten accordingly.
+\end{enumerate}
+
+Without one of those repairs, the promised block distribution \(D_m\) is not supported by the
+cited VV argument.
+
+\section{Obstruction II: The Full Local Rule Class Is Enormous}
+
+Let $n$ be the number of visible Boolean features after switching.  Then the unconstrained class of
+local predictors is simply
+\[
+  \{0,1\}^{\{0,1\}^n},
+\]
+the set of all Boolean functions on $n$ bits.  Its size is
+\[
+  2^{2^n}.
+\]
+Therefore any \emph{uniform} code space that represents all such rules injectively must have at
+least $2^n$ bits.
+
+This is formalized in \texttt{CompressionObstruction.lean}.
+
+\begin{theorem}[Counting bound for local rules]
+Let \texttt{LocalRule n} denote the type of Boolean functions on \texttt{n} visible bits, and
+\texttt{BitCode s} the type of \texttt{s}-bit codewords.  If
+\[
+  s < 2^n,
+\]
+then there is no injective map
+\[
+  \texttt{LocalRule n} \to \texttt{BitCode s}.
+\]
+\end{theorem}
+
+\noindent
+This is the theorem \texttt{no\_injective\_bitCode\_of\_lt}.
+
+\begin{theorem}[Binary-log neighborhood corollary]
+If $d \ge 2$ and
+\[
+  s < 2^m,
+\]
+then there is no injective map
+\[
+  \texttt{LocalRule}\!\left(d^{\log_2 m + 1}\right) \to \texttt{BitCode s}.
+\]
+\end{theorem}
+
+\noindent
+This is the theorem
+\texttt{no\_uniform\_code\_below\_expInput\_for\_binaryLogNeighborhood}.
+
+\begin{theorem}[Size lower bound on the full class]
+For $d \ge 2$,
+\[
+  2^{2^m} \le
+  \left|\texttt{LocalRule}\!\left(d^{\log_2 m + 1}\right)\right|.
+\]
+\end{theorem}
+
+\noindent
+This is the theorem
+\texttt{expExpInput\_le\_card\_localRule\_binaryLogNeighborhood}.
+
+\subsection{Interpretation}
+
+Again, this does not say that the switched rule class \emph{is} the full local rule class.  It says
+that without a theorem proving otherwise, one cannot pass from
+``local on $n$ visible bits'' to ``describable by only $\mathrm{polylog}(m)$ bits.''
+
+That gap is exactly where the Goertzel program remains vulnerable.
+
+\section{What These Results Break}
+
+The present Lean work targets the following inference schema:
+\[
+  \text{short decoder}
+  \Longrightarrow
+  \text{switched local predictor}
+  \Longrightarrow
+  \text{tiny ACC$^0$/ERM hypothesis}.
+\]
+
+The first arrow is the paper's switching claim.  The second arrow is where the present obstruction
+lands.
+
+\begin{remark}
+If the switched predictor is only known to be some arbitrary function of a log-radius neighborhood,
+then:
+\begin{enumerate}[leftmargin=1.5em]
+  \item the neighborhood already has polynomial size in the ambient parameter, and
+  \item the class of all such local rules is far too large to admit a polylogarithmic uniform code.
+\end{enumerate}
+\end{remark}
+
+Therefore a successful proof attempt must supply one of the following:
+\begin{enumerate}[leftmargin=1.5em]
+  \item a theorem that the switched predictors belong to a very special subclass
+  (for example, a family with explicit circuit/description bound), or
+  \item a direct compression algorithm showing that the relevant local rules can be encoded in
+  \(\mathrm{polylog}(m)\) bits for reasons stronger than locality.
+\end{enumerate}
+
+Without such a theorem, the proof's route from locality to tiny hypothesis class is unsupported.
+
+\section{Obstruction III: Zero-Margin Symmetrization Cannot Concentrate}
+
+The symmetrization route in the paper makes a stronger claim than the two counting obstructions
+above.  It says, roughly, that after taking a polylogarithmic number of promise-preserving sign
+flips and then taking a majority vote, the resulting surrogate label agrees with the Bayes rule on
+the local $\sigma$-field for all but a negligible fraction of blocks.
+
+There is a direct obstruction here when the conditional surrogate mean lands at exactly
+\(\tfrac12\).
+
+\subsection{Lean counting lemma}
+
+The Lean module \texttt{SymmetrizationObstruction.lean} formalizes the following fact.
+
+\begin{theorem}[Odd-majority is exactly balanced on unbiased bits]
+Let \(s\) be odd.  Among the \(2^s\) bit-vectors of length \(s\), exactly half have strict majority
+\texttt{true} and half have strict majority \texttt{false}.
+\end{theorem}
+
+\noindent
+The key formal statements are:
+\begin{itemize}[leftmargin=1.5em]
+  \item \texttt{majority\_compl}: complementing all bits flips the majority bit when \(s\) is odd;
+  \item \texttt{card\_majority\_true\_eq\_card\_majority\_false}: the majority-\texttt{true} and
+  majority-\texttt{false} classes have equal cardinality;
+  \item \texttt{majority\_tie\_break\_not\_high\_probability}: if a Bayes rule breaks a
+  \(p=\tfrac12\) tie toward \texttt{true}, then majority on \(s\) unbiased samples matches that rule
+  on only half the sample space.
+\end{itemize}
+
+\subsection{Application to the Goertzel symmetrization wrapper}
+
+Now consider the paper's symmetrized surrogate label for a fixed block \(j\) and bit \(i\).  Take
+the simplest possible decoder \(P\): the decoder that always outputs \(0\).
+
+Under a sign flip \(\sigma\), the paper's own back-mapping rule gives
+\[
+  Y^{(r)}_{j,i} = \langle a_{j,i}, \sigma^{(r)} \rangle
+\]
+over \(\mathbb{F}_2\), because the decoder output is \(0\) and the back-map xors in the VV shift.
+
+If \(a_{j,i} \neq 0\), then \(\langle a_{j,i}, \sigma \rangle\) is an unbiased bit under uniform random
+\(\sigma\).  Hence the sequence
+\[
+  Y^{(1)}_{j,i}, \dots, Y^{(s)}_{j,i}
+\]
+is a fair sample of surrogate bits, and for odd \(s\) the majority vote is exactly balanced.
+
+But the paper's Bayes rule is written with threshold \(1[p \ge \tfrac12]\), which at \(p=\tfrac12\)
+chooses the value \(1\).  Therefore, in this zero-margin case, the majority vote matches the stated
+Bayes rule on only half the seed choices, not with probability \(1 - m^{-\Omega(1)}\).
+
+\subsection{Consequence}
+
+This is materially stronger than the earlier ``local does not imply simple'' objection.  It says:
+
+\begin{quote}
+The concentration-to-Bayes step in the symmetrization argument is false unless an additional
+margin theorem is proved.
+\end{quote}
+
+In other words, one must show that for the relevant blocks and bits,
+\[
+  \left| p_{j,i} - \tfrac12 \right|
+\]
+is bounded below by more than the sampling noise scale.  Without such a margin, majority voting
+cannot recover the Bayes rule uniformly, even for the constant-zero decoder.
+
+\section{Obstruction IIIb: The Exact Post-Switch Input Is Not \(T_i\)-Invariant}
+
+Before moving to a charitable repair, the manuscript's own exact definitions already create a
+direct problem.
+
+Section 3.2 defines the promise-preserving involution
+\[
+  T_i(F^h, A, b) = (F^{\tau_i h}, A, b \oplus a_i),
+\]
+while Section 3.3 defines the post-switch local input
+\[
+  u_i(\Phi) = (z(F^h), a_i, b).
+\]
+Appendix A.5 then says this same involution preserves \(u=(z,a_i,b)\).  The new Lean module
+\texttt{PostSwitchInputObstruction.lean} formalizes the exact contradiction point.
+
+\subsection{Lean theorem}
+
+\begin{theorem}[Full-input invariance holds only on zero VV columns]
+Let \(u = (z,a,b)\) be the exact post-switch local input, and let \(T\) act on it by
+\[
+  T(z,a,b) = (z,a,b \oplus a).
+\]
+Then
+\[
+  T(u) = u
+  \qquad\Longleftrightarrow\qquad
+  a = 0.
+\]
+Equivalently, if the VV column \(a\) is nonzero, then the involution necessarily changes the
+right-hand side coordinate \(b\).
+\end{theorem}
+
+\noindent
+The key formal statements are:
+\begin{itemize}[leftmargin=1.5em]
+  \item \texttt{vvToggle\_eq\_self\_iff\_zero}: \(b \oplus a = b\) iff \(a=0\);
+  \item \texttt{tiInputMap\_eq\_self\_iff\_zeroColumn}: the exact local input is \(T_i\)-invariant
+  iff the VV column is zero;
+  \item \texttt{invariantProjection\_tiInputMap}: the reduced projection \((z,a)\) is always
+  preserved;
+  \item \texttt{tiInputMap\_changes\_b\_of\_nonzeroColumn}: if \(a \neq 0\), then \(b\) really
+  changes.
+\end{itemize}
+
+\subsection{Why this matters}
+
+This is not a soft complaint about omitted detail.  It is a direct incompatibility between the
+paper's own formulas:
+\begin{enumerate}[leftmargin=1.5em]
+  \item the exact local input keeps \(b\),
+  \item the involution toggles \(b\) by \(a_i\),
+  \item yet the calibration appendix says the involution preserves \(u=(z,a_i,b)\).
+\end{enumerate}
+
+That can only be true on the special case \(a_i=0\).  So the calibration argument cannot be right
+as written on the full local input.
+
+\subsection{Consequence}
+
+This forces the proof into a fork:
+\begin{enumerate}[leftmargin=1.5em]
+  \item either keep the full input \((z,a_i,b)\), in which case the involution is not feature
+  preserving and a new calibration theorem is needed;
+  \item or drop the changing coordinate \(b\), in which case one lands in the invariant-feature
+  regime attacked next.
+\end{enumerate}
+
+\section{Obstruction IIIc: The Exact Manuscript Fork Already Lands in the Symmetry Budget}
+
+The previous section exposed the formula-level inconsistency in the manuscript as written.  The new
+Lean module \texttt{PostSwitchForkObstruction.lean} shows that the most charitable exact repair is
+already constrained by the later symmetry-budget files.
+
+\subsection{Lean theorems}
+
+\begin{theorem}[The exact \(T_i\)-action is an involution and \(b\) resolves exactly the nonzero columns]
+On the exact local input \(u=(z,a,b)\) with
+\[
+  T(z,a,b) = (z,a,b \oplus a),
+\]
+the map \(T\) is an involution.  Moreover,
+\[
+  b(Tu) \neq b(u)
+  \qquad\Longleftrightarrow\qquad
+  a \neq 0.
+\]
+Equivalently, the \(b\)-coordinate distinguishes an involution pair exactly on the nonzero-column
+slice.
+\end{theorem}
+
+\begin{theorem}[The exact fork]
+Let the target bit flip under the exact involution \(T\), and let the weighting be \(T\)-invariant.
+Then:
+\begin{enumerate}[leftmargin=1.5em]
+  \item every soft score depending only on the reduced invariant projection \((z,a)\) has zero
+  weighted signed correlation with the target;
+  \item every classifier using \(((z,a),b)\) has success advantage over chance bounded by the
+  total weight of the nonzero-column slice.
+\end{enumerate}
+\end{theorem}
+
+\noindent
+The key formal statements are:
+\begin{itemize}[leftmargin=1.5em]
+  \item \texttt{tiInputMap\_involutive}: the manuscript's exact local update really is an
+  involution;
+  \item \texttt{resolvedBySideChannel\_tiInputMap\_b\_iff\_nonzeroColumn}: the \(b\)-side channel
+  resolves an orbit pair exactly when \(a \neq 0\);
+  \item \texttt{weighted\_signedScore\_sum\_eq\_zero\_on\_invariantProjection}: the reduced exact
+  input \((z,a)\) has zero signed signal under symmetry-respecting weights;
+  \item \texttt{doubledAdvantage\_invariantProjection\_with\_b\_le\_nonzeroColumnMass}: any
+  classifier on \(((z,a),b)\) pays for its domination gap with nonzero-column mass.
+\end{itemize}
+
+\subsection{Why this matters}
+
+This turns the manuscript fork into a direct quantitative obligation.
+
+If one drops \(b\), then the surviving exact input is already inside the invariant-feature regime:
+no symmetry-respecting signed signal remains.  If one keeps \(b\), then the proof is no longer
+allowed to say merely that ``a small side channel helps.''  It must prove that the resulting
+domination gap is supported by a sufficiently large nonzero-column slice in the actual weighted
+domain.
+
+So this exact bridge does not merely identify a local inconsistency.  It shows that the natural
+repair lands immediately in the later neutrality and resolution-budget obstructions.
+
+\section{Obstruction IV: Involution-Invariant Feature Collapse Forces Exact Neutrality}
+
+Once the exact full-input inconsistency is noticed, the most natural charitable repair is to drop
+the involution-sensitive coordinate \(b\) and keep only the involution-fixed part of the local view,
+say a feature map of the form
+\[
+  u' = (z, a_i).
+\]
+
+This repair looks attractive because it restores feature invariance.  The new Lean module
+\texttt{OrbitNeutralityObstruction.lean} shows why this move cannot, by itself, support a
+domination theorem.
+
+\subsection{Lean theorem}
+
+\begin{theorem}[Feature-preserving involutions force exact half accuracy]
+Let \(\alpha\) be a finite sample space, let \(\tau : \alpha \to \alpha\) be an involution, let
+\(u : \alpha \to U\) be a feature map, and let \(y : \alpha \to \{0,1\}\) be the target bit.
+Assume
+\[
+  u(\tau x) = u(x)
+  \qquad\text{and}\qquad
+  y(\tau x) = 1 - y(x)
+\]
+for every \(x \in \alpha\).  Then for every classifier \(h : U \to \{0,1\}\),
+\[
+  2 \cdot \#\{x : h(u(x)) = y(x)\} = |\alpha|.
+\]
+Equivalently, the average accuracy of \(h \circ u\) is exactly \(1/2\).
+\end{theorem}
+
+\noindent
+The key formal statements are:
+\begin{itemize}[leftmargin=1.5em]
+  \item \texttt{correct\_under\_pair\_iff\_incorrect}: correctness at \(x\) is equivalent to
+  incorrectness at \(\tau x\);
+  \item \texttt{card\_correct\_eq\_card\_incorrect}: the correct and incorrect classes have equal
+  cardinality;
+  \item \texttt{two\_mul\_card\_correct\_eq\_card}: exactly half the finite sample space is
+  classified correctly.
+\end{itemize}
+
+\subsection{Why this hits the charitable calibration patch}
+
+Suppose the repair to the calibration bug is:
+\begin{enumerate}[leftmargin=1.5em]
+  \item remove the involution-sensitive coordinate \(b\) from the local input;
+  \item prove neutrality by pairing each instance with its \(T_i\)-flipped partner;
+  \item then learn or evaluate a classifier using only the reduced feature map \(u'\).
+\end{enumerate}
+
+If the paired instances really preserve \(u'\) and flip the target bit, then the theorem above
+applies immediately.  Every feature-only classifier on \(u'\) has exact \(1/2\) average accuracy.
+So this route cannot yield a strict domination statement, a high-probability Bayes recovery
+statement, or any per-block success advantage above chance.
+
+\subsection{Consequence}
+
+This is a stronger objection than ``the paper needs more detail.''  It says:
+
+\begin{quote}
+If the calibration fix works by dropping the coordinate changed by the involution and then
+classifying from the invariant remainder alone, that fix destroys any chance of beating
+\(1/2\) accuracy on the paired finite domain.
+\end{quote}
+
+So a viable rescue must do something more subtle than mere feature collapse.  For example, it
+would have to:
+\begin{enumerate}[leftmargin=1.5em]
+  \item keep some controlled non-invariant information,
+  \item switch from hard classification to a softer statistic whose expectation matters,
+  \item or show that the actual learning/evaluation domain is not the balanced finite orbit space
+  modeled by the theorem above.
+\end{enumerate}
+
+\section{Obstruction IVb: Invariant Feature Fibers Have Zero Margin}
+
+The most natural council reply to Obstruction IV is:
+\begin{quote}
+Fine, hard classification on the invariant features fails.  But one can still estimate a
+\emph{soft score} or conditional mean on those features and only use high-margin feature values.
+\end{quote}
+
+This is the right stronger target.  The new Lean module
+\texttt{FiberNeutralityObstruction.lean} blocks that repair under the same involution
+hypotheses.
+
+\subsection{Lean theorem}
+
+\begin{theorem}[Every invariant feature fiber is exactly balanced]
+Let \(\alpha\) be a finite sample space, let \(\tau : \alpha \to \alpha\) be an involution, let
+\(u : \alpha \to U\) be a feature map, and let \(y : \alpha \to \{0,1\}\) be the target bit.
+Assume
+\[
+  u(\tau x) = u(x)
+  \qquad\text{and}\qquad
+  y(\tau x) = 1 - y(x)
+\]
+for every \(x \in \alpha\).  Then for every retained feature value \(v \in U\),
+\[
+  2 \cdot \#\{x : u(x)=v \text{ and } y(x)=1\}
+  =
+  \#\{x : u(x)=v\}.
+\]
+Equivalently, conditioned on any retained feature value \(v\), the target bit has exact mean
+\(1/2\).
+\end{theorem}
+
+\noindent
+The key formal statements are:
+\begin{itemize}[leftmargin=1.5em]
+  \item \texttt{featureFiberTrueEquivFalse}: on each fiber \(u^{-1}(v)\), the involution pairs
+  the \texttt{true} points with the \texttt{false} points;
+  \item \texttt{card\_featureFiberTrue\_eq\_card\_featureFiberFalse}: the two parts of each fiber
+  have equal cardinality;
+  \item \texttt{two\_mul\_card\_featureFiberTrue\_eq\_card\_featureFiber}: the \texttt{true}
+  points occupy exactly half of each fiber.
+\end{itemize}
+
+\subsection{Why this hits the soft-score repair}
+
+This is stronger than the hard-classifier obstruction.  It says the retained feature map does not
+merely fail to support a good classifier; it fails to support \emph{any nonzero conditional
+margin}.  On every retained feature value \(v\), the exact local average is already
+\[
+  \mathbb{E}[\,y \mid u=v\,] = \tfrac12.
+\]
+
+So if the repair route is:
+\begin{enumerate}[leftmargin=1.5em]
+  \item drop the involution-sensitive coordinate,
+  \item keep only the invariant summary \(u'\),
+  \item estimate a soft score or conditional mean from \(u'\),
+  \item then use only ``high-margin'' \(u'\)-values,
+\end{enumerate}
+it fails immediately on the balanced finite orbit model.  There are no high-margin retained
+feature values at all.
+
+\subsection{Consequence}
+
+This narrows the remaining rescue space again.  A successful patch now has to do more than
+``replace hard labels by soft scores.''  It must either:
+\begin{enumerate}[leftmargin=1.5em]
+  \item retain some controlled non-invariant information,
+  \item show that the actual averaging domain is not fiberwise balanced under the involution,
+  \item or use a structure theorem stronger than feature-invariant orbit pairing.
+\end{enumerate}
+
+\section{Obstruction IVc: Symmetry-Respecting Weights Still Have Zero Margin}
+
+Another natural reply is:
+\begin{quote}
+The real evaluation or training average is not uniform on the finite orbit space.  Once one uses
+the correct non-uniform weighting, the invariant features may regain a useful soft margin.
+\end{quote}
+
+The new Lean module \texttt{WeightedFiberNeutralityObstruction.lean} blocks that repair whenever
+the weighting itself respects the same involution symmetry.
+
+\subsection{Lean theorem}
+
+\begin{theorem}[Orbit-symmetric weights preserve zero fiber margin]
+Let \(\alpha\) be a finite sample space, let \(\tau : \alpha \to \alpha\) be an involution, let
+\(u : \alpha \to U\) be a retained feature map, let \(y : \alpha \to \{0,1\}\) be the target bit,
+and let \(w : \alpha \to M\) be a weight into any additive commutative monoid.  Assume
+\[
+  u(\tau x) = u(x), \qquad y(\tau x) = 1-y(x), \qquad w(\tau x) = w(x)
+\]
+for every \(x \in \alpha\).  Then for every retained feature value \(v\),
+\[
+  \sum_{x : u(x)=v,\ y(x)=1} w(x)
+  =
+  \sum_{x : u(x)=v,\ y(x)=0} w(x).
+\]
+\end{theorem}
+
+\noindent
+The key formal statements are:
+\begin{itemize}[leftmargin=1.5em]
+  \item \texttt{weightedFeatureFiberTrueMass}: the weighted mass of the \texttt{true} part of one
+  feature fiber;
+  \item \texttt{weightedFeatureFiberFalseMass}: the weighted mass of the \texttt{false} part;
+  \item \texttt{weightedFeatureFiberTrueMass\_eq\_weightedFeatureFiberFalseMass}: the exact balance
+  theorem under involution-invariant weights.
+\end{itemize}
+
+\subsection{Why this closes the non-uniform averaging reply}
+
+This matters because it removes a very common escape hatch.  The council can no longer say:
+\begin{quote}
+The balanced finite orbit space was just a counting toy model.  The real proof uses a more
+careful empirical or distributional weighting, so the invariant local statistic may still have a
+nonzero expectation gap.
+\end{quote}
+
+Not if that weighting respects the same sign-flip involution.  The theorem shows that every such
+weighting still gives exact zero conditional margin on every retained feature fiber.  In
+particular, normalizing an involution-invariant finite weight into a probability distribution
+still leaves
+\[
+  \mathbb{E}[\,y \mid u=v\,] = \tfrac12
+\]
+for every retained feature value \(v\) with nonzero mass.
+
+\subsection{Consequence}
+
+So the remaining escape routes are narrower again.  To revive a margin on the retained local
+input, one must now do something stronger than:
+\begin{enumerate}[leftmargin=1.5em]
+  \item pass from hard labels to soft scores,
+  \item pass from uniform counts to non-uniform but symmetry-respecting weights,
+  \item or restrict attention to invariant-feature fibers alone.
+\end{enumerate}
+
+What survives must either break the involution symmetry in the weighting/domain, retain some
+controlled non-invariant information, or prove a much stronger ensemble-specific structural
+theorem.
+
+\section{Obstruction IVd: Residual Symmetric Slices Still Stay At Chance}
+
+The next natural council reply is:
+\begin{quote}
+Fine.  We keep a little non-invariant information, so the exact sign-flip symmetry is broken.  We
+do not need to resolve every orbit, only enough of them.
+\end{quote}
+
+This is the right next theorem to ask for.  The new Lean module
+\texttt{ResidualSymmetryObstruction.lean} makes the burden precise: every residual slice on which
+the retained information still fails to distinguish the involution partners remains exact-chance
+under symmetry-respecting weights.
+
+\subsection{Lean theorem}
+
+\begin{theorem}[Any unresolved symmetric slice remains balanced]
+Let \(\alpha\) be a finite sample space, let \(\tau : \alpha \to \alpha\) be an involution, let
+\(p \subseteq \alpha\) be a \(\tau\)-stable slice, let \(u : \alpha \to U\) be the retained local
+features, let \(y : \alpha \to \{0,1\}\) be the target bit, let \(w : \alpha \to M\) be a weight
+into an additive commutative monoid, and let \(h : U \to \{0,1\}\) be any classifier.  Assume on
+the slice \(p\) that
+\[
+  u(\tau x) = u(x), \qquad y(\tau x) = 1-y(x), \qquad w(\tau x) = w(x).
+\]
+Then the total weighted mass of correctly classified points in \(p\) equals the total weighted
+mass of incorrectly classified points in \(p\).
+\end{theorem}
+
+\noindent
+The key formal statements are:
+\begin{itemize}[leftmargin=1.5em]
+  \item \texttt{weightedCorrectMass}: total weighted correct mass for a feature-only classifier;
+  \item \texttt{weightedIncorrectMass}: total weighted incorrect mass;
+  \item \texttt{weightedCorrectMass\_eq\_weightedIncorrectMass}: the global weighted half-accuracy
+  theorem under exact involution symmetry;
+  \item \texttt{weightedCorrectMass\_eq\_weightedIncorrectMass\_on\_slice}: the residual-slice
+  version obtained by restricting to a \(\tau\)-stable subtype.
+\end{itemize}
+
+\subsection{Why this hits the ``controlled non-invariant info'' reply}
+
+This is the right quantitative obstruction.  A small amount of non-invariant information can only
+help on the part of the domain where it actually breaks the orbit symmetry.  Every remaining
+slice on which the feature map is still involution-invariant contributes only chance performance.
+
+So the paper can no longer get by with a vague statement of the form:
+\begin{quote}
+We keep a little symmetry-breaking local information, and that should be enough to restore a
+useful predictor.
+\end{quote}
+
+To make that route work, one now needs a real theorem that the unresolved symmetric slice carries
+negligible weight, or else a theorem that the retained information breaks the involution on almost
+all of the relevant mass.
+
+\subsection{Consequence}
+
+This does not yet show that \emph{every} controlled symmetry-breaking repair fails.  It does show
+that such a repair only helps to the extent that it resolves most of the mass.  What remains must
+therefore prove one of:
+\begin{enumerate}[leftmargin=1.5em]
+  \item the residual symmetric slice has negligible weight,
+  \item the retained non-invariant information separates almost all involution pairs,
+  \item or the actual evaluation domain is not well-modeled by a symmetry-respecting weighted
+  slice at all.
+\end{enumerate}
+
+\section{Obstruction IVe: Advantage Is Bounded By Symmetry-Broken Mass}
+
+The next creative rescue move is the quantitative version of the previous one:
+\begin{quote}
+Maybe we only break the symmetry on a relatively small region, but that is enough because the
+classifier can exploit that region very efficiently and still gain a substantial global advantage.
+\end{quote}
+
+The new Lean module \texttt{AsymmetryBudgetObstruction.lean} blocks that move in the natural
+finite weighted model.
+
+\subsection{Lean theorem}
+
+\begin{theorem}[Asymmetry budget bound]
+Let \(\alpha\) be a finite sample space with weight \(w : \alpha \to \mathbb{N}\).  Let
+\(p \subseteq \alpha\) be a \(\tau\)-stable slice on which the retained feature map is still
+invariant under an involution \(\tau\), the target bit is flipped by \(\tau\), and the weights are
+\(\tau\)-invariant.  Then for every classifier \(h\),
+\[
+  2 \cdot \mathrm{CorrectMass}(h)
+  \;\le\;
+  \mathrm{TotalMass} + \mathrm{OutsideMass}(p).
+\]
+Equivalently, the global excess over chance is bounded by the total mass outside the unresolved
+symmetric slice.
+\end{theorem}
+
+\noindent
+The key formal statements are:
+\begin{itemize}[leftmargin=1.5em]
+  \item \texttt{two\_mul\_correctSliceMass\_eq\_sliceMass}: on the unresolved symmetric slice, the
+  correct mass is exactly half of the slice mass;
+  \item \texttt{weightedCorrectMass\_eq\_correctSlice\_add\_correctOutside}: total correct mass
+  splits into the unresolved slice contribution plus the symmetry-broken contribution;
+  \item \texttt{correctOutsideMass\_le\_outsideMass}: outside the unresolved slice, even perfect
+  classification cannot use more mass than is actually there;
+  \item \texttt{two\_mul\_weightedCorrectMass\_le\_total\_plus\_outside}: the final asymmetry-budget
+  inequality.
+\end{itemize}
+
+\subsection{Why this hits the last soft escape}
+
+This is stronger than saying ``the residual slice is still at chance.''  It says the \emph{entire
+global advantage} is quantitatively budgeted by the part of the domain where symmetry is actually
+broken.
+
+So the council can no longer say:
+\begin{quote}
+We only need a little symmetry-breaking local information.  Perhaps it affects a small region, but
+that small region could still be enough to drive the whole lower-bound argument.
+\end{quote}
+
+Not without a theorem that the symmetry-broken region itself carries substantial mass.  The Lean
+bound shows that if the unresolved symmetric slice has mass close to the total, then the global
+accuracy remains close to \(1/2\).
+
+\subsection{Consequence}
+
+At this point, the remaining route is no longer merely ``add some asymmetry.''  It must prove a
+real mass-transfer statement:
+\begin{enumerate}[leftmargin=1.5em]
+  \item either almost all relevant mass leaves the involution-symmetric slice after the repair,
+  \item or the weighted domain relevant to the proof is not symmetry-respecting in the sense used
+  above,
+  \item or the real predictor uses stronger ensemble-specific information than the current local
+  symmetry analysis captures.
+\end{enumerate}
+
+\section{Obstruction IVf: Invariant Soft Scores Have Zero Signed Signal}
+
+Another creative council move is:
+\begin{quote}
+Perhaps the proof should not be phrased as conditional means on feature fibers at all.  Maybe one
+can compute a richer soft score from the invariant local summary and then feed that score into a
+more delicate downstream argument.
+\end{quote}
+
+This is a real strengthening of the repair attempt.  The new Lean module
+\texttt{InvariantScoreObstruction.lean} blocks the core signal claim under the same involution
+symmetry.
+
+\subsection{Lean theorem}
+
+\begin{theorem}[Invariant soft scores have zero signed correlation]
+Let \(\alpha\) be a finite sample space, let \(\tau : \alpha \to \alpha\) be an involution, let
+\(u : \alpha \to U\) be a retained feature map, let \(y : \alpha \to \{0,1\}\) be the target bit,
+let \(w : \alpha \to \mathbb{N}\) be a \(\tau\)-invariant weight, and let
+\(\mathrm{score} : U \to \mathbb{Z}\) be any soft score computed only from the retained features.
+Assume
+\[
+  u(\tau x) = u(x), \qquad y(\tau x) = 1-y(x), \qquad w(\tau x) = w(x)
+\]
+for every \(x \in \alpha\).  Writing
+\[
+  \mathrm{sgnTarget}(y) =
+  \begin{cases}
+    1 & y=1, \\
+    -1 & y=0,
+  \end{cases}
+\]
+one has
+\[
+  \sum_{x \in \alpha} w(x)\,\mathrm{score}(u(x))\,\mathrm{sgnTarget}(y(x)) = 0.
+\]
+\end{theorem}
+
+\noindent
+The key formal statements are:
+\begin{itemize}[leftmargin=1.5em]
+  \item \texttt{targetSign}: the \(\{\pm 1\}\)-encoding of a Boolean target;
+  \item \texttt{targetSign\_flip}: flipping the Boolean target negates that signed encoding;
+  \item \texttt{weighted\_signedScore\_sum\_eq\_zero}: the weighted zero-correlation theorem for
+  any invariant soft score.
+\end{itemize}
+
+\subsection{Why this hits the richer invariant-scoring repair}
+
+This closes a subtler loophole than the earlier fiber-balance statements.  Those showed that the
+conditional mean on each invariant feature value is exactly \(1/2\), and therefore that hard
+classifiers or direct mean estimators on those features cannot beat chance.  The new theorem says
+more: even before one thresholds or calibrates anything, \emph{the score itself} has zero signed
+signal against the target.
+
+So the council can no longer say:
+\begin{quote}
+We are not really using a classifier on the invariant features.  We only need a good enough
+numerical score from those features, and then a later nonlinear step can extract the useful
+signal.
+\end{quote}
+
+Not under the same involution symmetry.  Any score depending only on the invariant retained
+features is paired with its involution partner at equal weight and opposite signed target.  The
+positive and negative contributions cancel exactly.
+
+\subsection{Consequence}
+
+Taken together with the previous sections, this leaves very little room for an invariant-feature
+rescue.  The remaining route must now prove something outside the invariant scoring model:
+\begin{enumerate}[leftmargin=1.5em]
+  \item either the actual score retains genuinely non-invariant information,
+  \item or the relevant domain/weighting is not symmetry-respecting,
+  \item or the ensemble has a stronger special structure that invalidates the involution pairing
+  hypotheses on the real predictor family.
+\end{enumerate}
+
+\section{Obstruction IVg: Invariant-Score Signal Comes Only From Weight Asymmetry}
+
+The next and now very natural council reply is:
+\begin{quote}
+Fine.  Perhaps the retained score inputs stay involution-invariant, but the real training or
+evaluation weighting is not exactly symmetric.  Then an invariant soft score may still pick up a
+useful signed signal.
+\end{quote}
+
+This is the last serious invariant-score escape hatch.  The new Lean module
+\texttt{WeightAsymmetryObstruction.lean} makes that route exact: any invariant-score signal comes
+entirely from the antisymmetric part of the weighting.
+
+\subsection{Lean theorem}
+
+\begin{theorem}[Only antisymmetric weight mass contributes to invariant-score signal]
+Let \(\alpha\) be a finite sample space, let \(\tau : \alpha \to \alpha\) be an involution, let
+\(u : \alpha \to U\) be a retained feature map, let \(y : \alpha \to \{0,1\}\) be the target bit,
+let \(w : \alpha \to \mathbb{N}\) be an arbitrary weight, and let
+\(\mathrm{score} : U \to \mathbb{Z}\) be any soft score on the retained features.  Assume
+\[
+  u(\tau x) = u(x), \qquad y(\tau x) = 1-y(x)
+\]
+for every \(x \in \alpha\).  Then
+\[
+  2 \sum_{x \in \alpha} w(x)\,\mathrm{score}(u(x))\,\mathrm{sgnTarget}(y(x))
+  =
+  \sum_{x \in \alpha} (w(x)-w(\tau x))\,\mathrm{score}(u(x))\,\mathrm{sgnTarget}(y(x)).
+\]
+\end{theorem}
+
+\noindent
+The key formal statements are:
+\begin{itemize}[leftmargin=1.5em]
+  \item \texttt{signedScoreContribution}: one point's contribution to the invariant signed-score
+  sum;
+  \item \texttt{antisymmetricWeightContribution}: the corresponding contribution of the
+  weight-difference term \(w(x)-w(\tau x)\);
+  \item \texttt{two\_mul\_signedScore\_sum\_eq\_antisymmetricWeight\_sum}: the exact decomposition
+  identity.
+\end{itemize}
+
+\subsection{Why this narrows the weighting rescue}
+
+This is stronger than the earlier exact-symmetry obstruction.  It says not just that symmetric
+weights give zero signal, but that \emph{all} invariant-score signal is sourced only by the
+antisymmetric part of the weighting.  The involution-invariant part cancels exactly.
+
+So the council can no longer say:
+\begin{quote}
+The true weighting is probably a little asymmetric, and that may be enough.
+\end{quote}
+
+Not without quantifying that asymmetry.  The theorem shows that the proof now needs a real bound of
+the form:
+\begin{quote}
+the antisymmetric weight budget is large enough on the relevant domain to support the claimed
+advantage.
+\end{quote}
+
+\subsection{Consequence}
+
+This pushes the remaining route into a much narrower quantitative corner.  To save invariant local
+scoring, one must now prove one of:
+\begin{enumerate}[leftmargin=1.5em]
+  \item the actual proof-relevant weighting has a substantial antisymmetric component,
+  \item the score retains genuinely non-invariant information, or
+  \item the real ensemble/predictor pair is not governed by the involution model above.
+\end{enumerate}
+
+\section{Obstruction IVh: Side Channels Help Only On Orbit-Resolving Mass}
+
+At this point the natural council pivot is:
+\begin{quote}
+Fine.  We stop asking invariant features alone to do the whole job.  We keep a controlled
+involution-sensitive side channel \(v\), and classify on the pair \((u,v)\).
+\end{quote}
+
+This is the right next charitable target.  The new Lean module
+\texttt{SideChannelResolutionObstruction.lean} packages the earlier symmetry budget results into the
+exact theorem that this move needs to face.
+
+\subsection{Lean theorem}
+
+\begin{theorem}[Side-channel advantage is bounded by orbit-resolving mass]
+Let \(\alpha\) be a finite sample space, let \(\tau : \alpha \to \alpha\) be an involution, let
+\(u : \alpha \to U\) be a retained invariant feature map, let \(v : \alpha \to V\) be an arbitrary
+side channel, let \(y : \alpha \to \{0,1\}\) be the target bit, let \(w : \alpha \to \mathbb{N}\)
+be a \(\tau\)-invariant weight, and let \(h : U \times V \to \{0,1\}\) be any classifier.  Assume
+\[
+  u(\tau x) = u(x), \qquad y(\tau x) = 1-y(x), \qquad w(\tau x) = w(x)
+\]
+for every \(x \in \alpha\).  Define the \emph{resolved mass} to be the total weight of the points
+for which the side channel separates the involution pair:
+\[
+  \mathrm{ResolvedMass}(v)
+  =
+  \sum_{x : v(\tau x) \neq v(x)} w(x).
+\]
+Then
+\[
+  2 \cdot \mathrm{CorrectMass}(h \circ (u,v))
+  \;\le\;
+  \mathrm{TotalMass} + \mathrm{ResolvedMass}(v).
+\]
+Equivalently, the entire global excess over chance is bounded by the weight of the domain where the
+side channel actually resolves the orbit pairing.
+\end{theorem}
+
+\noindent
+The key formal statements are:
+\begin{itemize}[leftmargin=1.5em]
+  \item \texttt{unresolvedBySideChannel}: the slice on which \(v(\tau x)=v(x)\);
+  \item \texttt{resolvedMass}: the weight outside that unresolved slice;
+  \item \texttt{two\_mul\_weightedCorrectMass\_pair\_le\_total\_plus\_resolvedMass}: the final
+  resolution-budget inequality for classifiers on \((u,v)\).
+\end{itemize}
+
+\subsection{Why this hits the controlled-side-channel rescue}
+
+This is stronger than the earlier residual-symmetry prose, because it says exactly what the side
+channel must buy.  Keeping some involution-sensitive information does \emph{not} by itself create a
+large advantage.  The benefit is quantitatively capped by the mass where that side channel really
+separates involution partners.
+
+So the council can no longer say:
+\begin{quote}
+We only need a small side channel.  Once it is present, a clever classifier on \((u,v)\) may still
+recover a substantial domination advantage.
+\end{quote}
+
+Not without a theorem that the side channel resolves involution pairs on a substantial fraction of
+the relevant mass.  The unresolved slice remains chance, and the total excess over chance is budgeted
+by what lies outside it.
+
+\subsection{Consequence}
+
+This leaves the controlled-side-channel route in a much sharper form.  To save it, one must now
+prove one of:
+\begin{enumerate}[leftmargin=1.5em]
+  \item the retained side channel separates involution pairs on most of the proof-relevant mass,
+  \item the weighting itself has a large antisymmetric component that can be exploited,
+  \item or the real predictor is not well-modeled by this involution-paired finite setup.
+\end{enumerate}
+
+\section{Obstruction IVi: Any Domination Gap Forces Matching Resolution}
+
+The previous section bounded success by resolved mass.  The converse reading is now just as
+important:
+\begin{quote}
+if the proof claims a real domination gap over chance from a retained side channel, that claim
+already commits it to a quantitatively comparable orbit-resolution theorem.
+\end{quote}
+
+The new Lean module \texttt{ResolutionDemandObstruction.lean} packages that commitment as a direct
+corollary.
+
+\subsection{Lean theorem}
+
+\begin{theorem}[Doubled advantage is bounded by resolved mass]
+For a weighted classifier \(h\), define the \emph{doubled advantage}
+\[
+  \mathrm{DoubledAdv}(h)
+  =
+  2 \cdot \mathrm{CorrectMass}(h) - \mathrm{TotalMass}.
+\]
+Under the same involution hypotheses as in Obstruction IVh, one has
+\[
+  \mathrm{DoubledAdv}(h \circ (u,v))
+  \le
+  \mathrm{ResolvedMass}(v).
+\]
+\end{theorem}
+
+\noindent
+The key formal statements are:
+\begin{itemize}[leftmargin=1.5em]
+  \item \texttt{doubledAdvantage}: twice the weighted success gap over chance;
+  \item \texttt{doubledAdvantage\_pair\_le\_resolvedMass}: the final converse bound.
+\end{itemize}
+
+\subsection{Why this matters}
+
+This is the strongest current version of the side-channel blocker.  It no longer says only that
+resolved mass is \emph{sufficient} for advantage.  It says a claimed advantage is itself evidence
+that substantial resolution must already be present.
+
+So the council can no longer say:
+\begin{quote}
+Perhaps the predictor gets a modest but important edge from a very small side channel, and only
+later amplifies that edge through clever structure.
+\end{quote}
+
+Not unless that modest edge is matched by actual orbit-resolving mass.  The theorem makes the
+burden explicit: any nontrivial domination statement already entails a nontrivial local resolution
+statement.
+
+\subsection{Consequence}
+
+This is close to the form needed to challenge the route in Ben's own terms.  To save the current
+style of proof, one now needs a theorem of the form:
+\begin{quote}
+the switched predictor's retained side channel resolves involution pairs on enough mass to support
+the claimed lower-bound-driving advantage.
+\end{quote}
+
+Without that, the claimed domination gap has no quantitative room to exist.
+
+\section{Obstruction V: Short Programs Still Cover the Full Log-Width Local Rule Class}
+
+Another natural council reply is:
+\begin{quote}
+The switched predictor comes from a short global program, so even if arbitrary local rules are
+huge, only a much smaller subclass can actually arise from polynomial-time decoders.
+\end{quote}
+
+This is not true without an additional restriction beyond mere global shortness.
+
+\subsection{Lean theorem}
+
+The new module \texttt{ShortProgramObstruction.lean} formalizes the basic truth-table fact.
+
+\begin{theorem}[Truth tables realize all local rules]
+For every \(n\), there is a surjective decoder
+\[
+  \{0,1\}^{2^n} \twoheadrightarrow \{\,f : \{0,1\}^n \to \{0,1\}\,\}.
+\]
+Equivalently, every Boolean rule on \(n\) visible bits can be hard-wired by a truth table of
+length \(2^n\).
+\end{theorem}
+
+\noindent
+The key formal statements are:
+\begin{itemize}[leftmargin=1.5em]
+  \item \texttt{truthTableDecode\_surjective}: every local rule is realized by a
+  \(2^n\)-bit truth table;
+  \item \texttt{truthTableFamily\_realizes\_all}: the realized class of the truth-table family is
+  the full local-rule space;
+  \item \texttt{card\_realized\_truthTableFamily}: this realized class has exactly cardinality
+  \(2^{2^n}\).
+\end{itemize}
+
+\subsection{Binary-log consequence}
+
+At binary-log width the truth-table size is already linear in the ambient parameter:
+\[
+  2^{\lfloor \log_2 m \rfloor + 1} \le 2m \qquad (m \ne 0).
+\]
+This is formalized as
+\texttt{truthTableBits\_binaryLogWidth\_le\_twoMul}.
+
+So if the switched interface really has only \(n = \lfloor \log_2 m \rfloor + 1\) visible bits,
+then a merely linear-size code budget already suffices to realize the \emph{entire} local-rule
+class on that interface.
+
+\subsection{Consequence}
+
+This directly blocks the short-program rescue in its naive form:
+
+\begin{quote}
+``The global decoder is polynomial-size'' does not imply
+``the induced local rule lies in a tiny subclass.''
+\end{quote}
+
+On the contrary, polynomial-size descriptions are already large enough to hard-wire every Boolean
+rule on \(O(\log m)\) visible bits.  So if Ben wants a true small subclass theorem, it must use
+something much stronger than global shortness alone: symmetry, algebraic normal form, a tree
+interpreter with bounded message alphabet, or some other genuine structural restriction.
+
+\section{Obstruction VI: Exact Metagraph Quotients Have Interface-State Explosion}
+
+The strongest remaining charitable rescue is roughly this:
+\begin{quote}
+The switched neighborhood first collapses to a canonical metagraph or message-passing quotient,
+and the witness bit is computed by a fixed interpreter on that quotient.
+\end{quote}
+
+This is a serious idea.  It is also constrained by a generic exactness barrier.
+
+\subsection{Lean theorem}
+
+The new module \texttt{MetagraphObstruction.lean} models a quotient state by its exact interface
+behavior on \(k\) visible boundary bits.  The semantic object is then a boundary transducer
+\[
+  (\{0,1\}^k \to \{0,1\}^k).
+\]
+
+\begin{theorem}[Boundary transducers are exponentially numerous]
+There are exactly
+\[
+  2^{k 2^k}
+\]
+boundary transducers on \(k\) visible bits.
+\end{theorem}
+
+\noindent
+The key formal statements are:
+\begin{itemize}[leftmargin=1.5em]
+  \item \texttt{card\_boundaryMap}: exact \(k\)-bit interface semantics have cardinality
+  \(2^{k2^k}\);
+  \item \texttt{no\_surjective\_bitCode\_to\_boundaryMap\_of\_lt}: no \(s\)-bit code can cover the
+  full interface-semantic space when \(s < k2^k\);
+  \item \texttt{no\_exact\_metagraphQuotient\_below\_inputSize\_binaryLogWidth}: at
+  \(k = \lfloor \log_2 m \rfloor + 1\), there is no exact quotient with fewer than \(m\) code bits.
+\end{itemize}
+
+\subsection{Why this matters}
+
+If a metagraph/message quotient is meant to be \emph{exact}, then it must preserve enough state to
+reconstruct the gadget's interface behavior under gluing.  The theorem above says that, in the
+absence of an additional structural restriction, the exact interface-semantic space is already far
+too large for a tiny finite-state algebra.
+
+This does not yet show that the Goertzel ensemble realizes the full transducer class.  What it
+does show is that a small exact quotient theorem cannot follow from tree-likeness or locality
+alone.  To survive, the metagraph route needs a new theorem that the actual switched/VV gadgets
+lie in a drastically smaller semantic subclass.
+
+\subsection{Consequence}
+
+So the metagraph rescue is now narrowed to something like:
+\begin{quote}
+not ``there is an exact small quotient of all local interfaces,''
+but ``the specific random masked+isolated interfaces collapse to a much smaller algebra for
+ensemble-specific reasons.''
+\end{quote}
+
+That is a legitimate possible theorem.  It is also substantially stronger than anything currently
+written in the paper, and it is the next point where a decisive break may occur.
+
+\section{Obstruction VII: Tree-Likeness Alone Does Not Yield a Small Message Class}
+
+Another natural repair is:
+\begin{quote}
+On locally tree-like neighborhoods, the witness bit is computed by a small message-passing or
+dynamic-program interpreter on the tree.
+\end{quote}
+
+This too needs a stronger premise than mere tree structure.
+
+\subsection{Lean theorem}
+
+The new module \texttt{TreeMessageObstruction.lean} defines a fixed perfect binary tree
+architecture of depth \(n\), where internal nodes merely branch on the next input bit and only the
+leaves carry data.
+
+\begin{theorem}[Perfect binary trees realize all local rules]
+For every Boolean rule
+\[
+  f : \{0,1\}^n \to \{0,1\},
+\]
+there is a depth-\(n\) perfect binary decision tree whose evaluation equals \(f\).
+\end{theorem}
+
+\noindent
+The key formal statements are:
+\begin{itemize}[leftmargin=1.5em]
+  \item \texttt{eval\_encodeDecisionTree}: every local rule is exactly realized by a leaf-labeled
+  depth-\(n\) perfect tree;
+  \item \texttt{evalDecisionTree\_surjective}: the semantics map from such trees onto
+  \texttt{LocalRule n} is surjective;
+  \item \texttt{no\_surjective\_bitCode\_to\_decisionTreeSemantics\_of\_lt}: therefore no
+  \(s\)-bit exact code can cover all depth-\(n\) tree semantics when \(s < 2^n\).
+\end{itemize}
+
+\subsection{Why this matters}
+
+This is a direct answer to the naive tree-message rescue:
+
+\begin{quote}
+tree-likeness by itself does \emph{not} imply semantic simplicity.
+\end{quote}
+
+Even with an extremely rigid tree architecture, the semantic class is already the full Boolean
+function space on the visible inputs.  So if Ben wants a genuine tree-message theorem, it must use
+special properties of the actual SAT+VV messages, not just the fact that the underlying graph is a
+tree.
+
+\subsection{Consequence}
+
+The surviving charitable tree route is now much narrower:
+\begin{quote}
+not ``all tree-like local neighborhoods admit a tiny interpreter,''
+but ``the specific masked+isolated tree messages belong to a sharply smaller algebra.''
+\end{quote}
+
+That is again a real possible theorem.  It is also much stronger than the current text, and it is
+precisely the kind of statement that now has to be made explicit to keep this proof approach alive.
+
+\section{What These Results Do Not Yet Prove}
+
+The current Lean modules do \emph{not} prove that the full Goertzel argument fails.  In particular,
+they do not yet address:
+\begin{enumerate}[leftmargin=1.5em]
+  \item whether the masking and isolation ensemble enforces extra algebraic structure on local rules;
+  \item whether the switched predictors might collapse to a subclass analogous to low-depth message
+  passing or tree computations;
+  \item whether the neutrality and sparsification lemmas are themselves correct in the precise form
+  used in the paper;
+  \item whether a different, stronger switching theorem could bypass the present obstruction.
+\end{enumerate}
+
+So the current status is best described as:
+\begin{quote}
+The proof attempt is not yet broken in full, but one of its central complexity-compression
+transitions has not been justified, and the default combinatorics point in the opposite direction.
+\end{quote}
+
+\section{Next Attack Surface}
+
+The next natural formal target is the paper's implicit compression claim:
+
+\begin{quote}
+After switching, the witness-bit predictor is not merely local; it is simple enough to lie in a
+small explicit class.
+\end{quote}
+
+To make that rigorous, one would want a theorem of the shape:
+\begin{enumerate}[leftmargin=1.5em]
+  \item define the exact visible post-switch data carried by the masked Unique-SAT ensemble;
+  \item define the induced witness-bit function on that data;
+  \item prove that this function belongs to a sharply bounded class
+  (for example, bounded-depth circuits of size \(\mathrm{polylog}(m)\), or a code family of
+  description length \(\mathrm{polylog}(m)\));
+  \item verify that this bound is strong enough to feed the later union-bound and compression steps.
+\end{enumerate}
+
+If such a theorem cannot be proved, then the proof attempt should be regarded as stalled at a real
+mathematical gap, not a missing editorial detail.
+
+\section{Lean Excerpts}
+
+\begin{lstlisting}[caption={Core asymptotic obstruction}]
+theorem polylog_isLittleO_logRadiusNeighborhood (k : Nat) {d c : Real}
+    (hd : 1 < d) (hc : 0 < c) :
+    polylog k =o[atTop] logRadiusNeighborhood d c
+
+theorem logRadiusNeighborhood_not_isBigO_polylog (k : Nat) {d c : Real}
+    (hd : 1 < d) (hc : 0 < c) :
+    ¬ logRadiusNeighborhood d c =O[atTop] polylog k
+\end{lstlisting}
+
+\begin{lstlisting}[caption={Core counting obstruction}]
+theorem no_injective_bitCode_of_lt {n s : Nat} (hs : s < 2 ^ n) :
+    ¬ ∃ f : LocalRule n → BitCode s, Function.Injective f
+
+theorem no_uniform_code_below_expInput_for_binaryLogNeighborhood
+    {d m s : Nat} (hd : 2 ≤ d) (hs : s < 2 ^ m) :
+    ¬ ∃ f : LocalRule (d ^ (Nat.log 2 m + 1)) → BitCode s,
+      Function.Injective f
+\end{lstlisting}
+
+\section{Conclusion}
+
+The present crux-first formal work yields a clean conditional diagnosis.
+
+\begin{enumerate}[leftmargin=1.5em]
+  \item Logarithmic-radius locality is \emph{not} the same thing as polylogarithmic complexity.
+  \item The full class of local Boolean rules on that visible data is far too large to fit into a
+  polylogarithmic coding budget.
+  \item Therefore the Goertzel program needs a separate theorem proving exceptional compressibility
+  of the particular switched predictors it generates.
+\end{enumerate}
+
+That is currently the sharpest formally checked crux we have in Lean.
+
+\begin{thebibliography}{9}
+\bibitem{goertzel2025}
+Ben Goertzel.
+\newblock \emph{P != NP: A Non-Relativizing Proof via Quantale Weakness and Geometric Complexity}.
+\newblock October 2025.
+
+\bibitem{mettapedia-pnp}
+Mettapedia formal notes.
+\newblock \texttt{Mettapedia/Computability/PNP/LocalityObstruction.lean} and
+\texttt{Mettapedia/Computability/PNP/CompressionObstruction.lean}.
+\end{thebibliography}
+
+\end{document}

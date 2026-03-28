@@ -13,6 +13,7 @@
 | `MeTTaIL.pdf` | MeTTa Intermediate Language |
 | `modal-bridges.pdf` | Modal logic bridges |
 | `mq-calculus-lean-formalization.pdf` | MQ-calculus Lean formalization |
+| `pnp_crux.pdf` | Crux-first Lean notes on Goertzel's P vs NP proof attempt: locality, fixed-width VV isolation, the pairwise-survivor and candidate-wise moment bridges, compression, symmetrization, exact post-switch-input inconsistency, exact post-switch fork, orbit-neutrality, fiber-neutrality, weighted fiber-neutrality, invariant-score, weight-asymmetry, side-channel-resolution, resolution-demand, residual-symmetry, asymmetry-budget, short-program, metagraph/interface, and tree-message obstructions |
 | `native-grammatical-formalism.pdf` | Native grammatical formalism |
 | `lp-core-petta.pdf` | LP core PeTTa |
 | `ks-math-foundations.pdf` | Knuth-Skilling mathematical foundations |
