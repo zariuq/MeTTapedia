@@ -88,11 +88,10 @@ private def dress_V2 : FunDecl :=
 private def PredVP : FunDecl :=
   { name := "PredVP", argCats := #["NP", "VP"], resultCat := "Cl", status := .primitive }
 
-def sig : GrammarSig where
-  grammar := "PaperAmbiguity"
-  startCats := #["S"]
-  sourceHash := ""
-  funs := Std.HashMap.ofList [
+/-- The list of function declarations (kernel-reducible).
+    Use this for proofs; `sig.funs` (HashMap) is for runtime lookup. -/
+def funsList : List (String × FunDecl) :=
+  [
     ("see_V2", see_V2),
     ("baby_N", baby_N),
     ("AdvVP", AdvVP),
@@ -120,5 +119,11 @@ def sig : GrammarSig where
     ("dress_V2", dress_V2),
     ("PredVP", PredVP),
   ]
+
+def sig : GrammarSig where
+  grammar := "PaperAmbiguity"
+  startCats := #["S"]
+  sourceHash := ""
+  funs := Std.HashMap.ofList funsList
 
 end Algorithms.GF.Generated.PaperAmbiguitySig

@@ -332,9 +332,34 @@ private def gfSemanticSupportTerms : List GrammarRule :=
 -- Phase 3: LanguageDef construction from GrammarSig
 -- ═══════════════════════════════════════════════════════════════════
 
+/-- Build an OSLF LanguageDef from a list of function declarations.
+    This is the kernel-reducible version (no HashMap.fold). -/
+def gfFunsListToLanguageDef
+    (grammarName : String)
+    (funs : List (String × FunDecl))
+    (extraTypes : List TypeDecl := [])
+    (extraTerms : List GrammarRule := [])
+    (rwRules : List RewriteRule := [])
+    (eqRules : List Equation := []) : LanguageDef :=
+  let allCats := funs.foldl (init := ([] : List String)) fun acc (_, d) =>
+    acc ++ d.argCats.toList ++ [d.resultCat]
+  let termRules := funs.foldl (init := []) fun acc (_, d) =>
+      gfFunDeclToGrammarRule d :: acc
+  LanguageDef.mk
+    grammarName
+    ((allCats.eraseDups.map TypeDecl.plain) ++ extraTypes).eraseDups
+    (termRules ++ extraTerms)
+    eqRules
+    rwRules
+    [.vec, .hashBag, .hashSet]
+    []
+    []
+
 /-- Build an OSLF LanguageDef from a real GFCore GrammarSig.
     Categories are extracted from function declarations.
-    Rewrites and equations are passed in (default: RGL semantics). -/
+    Rewrites and equations are passed in (default: RGL semantics).
+    NOTE: Uses HashMap.fold — not kernel-reducible. For kernel-checked
+    proofs, use gfFunsListToLanguageDef with a literal funsList. -/
 def gfSigToLanguageDef
     (sig : GrammarSig)
     (extraTypes : List TypeDecl := [])
@@ -357,6 +382,11 @@ def gfSigToLanguageDef
 
 private def gfSemanticValidationSeed (sig : GrammarSig) : LanguageDef :=
   gfSigToLanguageDef sig gfSemanticSupportTypes gfSemanticSupportTerms [] []
+
+/-- Kernel-reducible validation seed from a literal function list. -/
+private def gfSemanticValidationSeedFromList
+    (grammarName : String) (funs : List (String × FunDecl)) : LanguageDef :=
+  gfFunsListToLanguageDef grammarName funs gfSemanticSupportTypes gfSemanticSupportTerms [] []
 
 private def equationSupportedBySig (sig : GrammarSig) (eqn : Equation) : Bool :=
   let baseLang : LanguageDef := gfSemanticValidationSeed sig;
@@ -404,6 +434,37 @@ def gfRGLLanguageDef (sig : GrammarSig) : LanguageDef :=
     gfSemanticSupportTerms
     (gfSemanticRewritesForSig sig)
     (gfSemanticEquationsForSig sig)
+
+/-! ### Kernel-reducible parallel (for proofs on literal function lists)
+
+These functions mirror the HashMap-based bridge but work on `List (String × FunDecl)`,
+enabling `decide`-based proofs without `native_decide`. Use when the generated sig
+provides a `funsList` alongside its `HashMap`. -/
+
+private def equationSupportedByList
+    (grammarName : String) (funs : List (String × FunDecl)) (eqn : Equation) : Bool :=
+  let baseLang := gfSemanticValidationSeedFromList grammarName funs
+  let testLang := LanguageDef.mk
+    baseLang.name baseLang.types baseLang.terms
+    [eqn] baseLang.rewrites baseLang.congruenceCollections baseLang.logic baseLang.oracles
+  LanguageDef.validate testLang = []
+
+private def rewriteSupportedByList
+    (grammarName : String) (funs : List (String × FunDecl)) (rw : RewriteRule) : Bool :=
+  let baseLang := gfSemanticValidationSeedFromList grammarName funs
+  let testLang := LanguageDef.mk
+    baseLang.name baseLang.types baseLang.terms
+    baseLang.equations [rw] baseLang.congruenceCollections baseLang.logic baseLang.oracles
+  LanguageDef.validate testLang = []
+
+/-- Kernel-reducible RGL LanguageDef from a literal function list. -/
+def gfRGLLanguageDefFromList
+    (grammarName : String) (funs : List (String × FunDecl)) : LanguageDef :=
+  gfFunsListToLanguageDef grammarName funs
+    gfSemanticSupportTypes
+    gfSemanticSupportTerms
+    (allSemanticRewrites.filter (rewriteSupportedByList grammarName funs))
+    ([useNIdentityEquation].filter (equationSupportedByList grammarName funs))
 
 -- ═══════════════════════════════════════════════════════════════════
 -- Phase 4: Derived OSLF constructions
