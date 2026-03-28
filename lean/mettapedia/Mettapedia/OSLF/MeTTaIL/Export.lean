@@ -117,6 +117,13 @@ private def renderUserSyntax (rule : GrammarRule) : String :=
   else
     String.intercalate " " tokens
 
+private def renderEvalPolicySuffix (policy? : Option TermEvalPolicy) : String :=
+  match policy? with
+  | none => ""
+  | some .rewrite => " ![rewrite]"
+  | some .fold => " ![fold]"
+  | some .oracle => " ![oracle]"
+
 partial def renderPattern : Pattern → String
   | .bvar n => s!"bvar{n}"
   | .fvar x => x
@@ -206,7 +213,7 @@ private def renderGrammarRule (rule : GrammarRule) : String :=
     else
       String.intercalate ", " renderedParams ++ " "
   let syntaxText := renderCtorSyntax rule.label rule.params
-  s!"        {ctorName rule.label} . {paramBlock}|- {syntaxText} : {rule.category};"
+  s!"        {ctorName rule.label} . {paramBlock}|- {syntaxText} : {rule.category}{renderEvalPolicySuffix rule.evalPolicy?};"
 
 private def renderGrammarRuleWithUserSyntax (rule : GrammarRule) : String :=
   let renderedParams := (indexed rule.params).map fun (idx, p) => renderTermParam idx p
@@ -216,7 +223,7 @@ private def renderGrammarRuleWithUserSyntax (rule : GrammarRule) : String :=
     else
       String.intercalate ", " renderedParams ++ " "
   let syntaxText := renderUserSyntax rule
-  s!"        {ctorName rule.label} . {paramBlock}|- {syntaxText} : {rule.category};"
+  s!"        {ctorName rule.label} . {paramBlock}|- {syntaxText} : {rule.category}{renderEvalPolicySuffix rule.evalPolicy?};"
 
 private def renderEquation (overloaded : List String) (_idx : Nat) (eqn : Equation) : String :=
   let gate := renderPremises overloaded eqn.premises

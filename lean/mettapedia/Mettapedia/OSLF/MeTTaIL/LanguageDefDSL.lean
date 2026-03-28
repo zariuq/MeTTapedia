@@ -61,6 +61,7 @@ declare_syntax_cat langDefPatternOpSource
 declare_syntax_cat langDefRestVar
 declare_syntax_cat langDefTypeBinding
 declare_syntax_cat langDefPremise
+declare_syntax_cat langDefEvalPolicy
 declare_syntax_cat langDefTermDecl
 declare_syntax_cat langDefEquationDecl
 declare_syntax_cat langDefRewriteDecl
@@ -143,7 +144,12 @@ scoped syntax ident "(" langDefPattern,* ")" : langDefPremise
 scoped syntax ident ".*map(" "|" ident "|" langDefPremise ")" : langDefPremise
 scoped syntax "forAll(" ident "," ident "," langDefPremise ")" : langDefPremise
 
+scoped syntax "rewrite" : langDefEvalPolicy
+scoped syntax "fold" : langDefEvalPolicy
+scoped syntax "oracle" : langDefEvalPolicy
+
 scoped syntax ident "." langDefTermParam,* "|-" langDefSyntaxAtom* ":" ident ";" : langDefTermDecl
+scoped syntax ident "." langDefTermParam,* "|-" langDefSyntaxAtom* ":" ident "![" langDefEvalPolicy "]" ";" : langDefTermDecl
 scoped syntax ident "." langDefTypeBinding,* "|-" langDefPattern "=" langDefPattern ";" : langDefEquationDecl
 scoped syntax ident "." langDefPremise,* "|-" langDefPattern "=" langDefPattern ";" : langDefEquationDecl
 scoped syntax ident "." langDefTypeBinding,* "|" langDefPremise,* "|-" langDefPattern "=" langDefPattern ";" : langDefEquationDecl
@@ -185,6 +191,14 @@ private def collTerm (ct : CollType) : TSyntax `term :=
     | .hashSet => ``CollType.hashSet
   ⟩
 
+private def evalPolicyTerm (policy : TermEvalPolicy) : TSyntax `term :=
+  ⟨mkIdent <|
+    match policy with
+    | .rewrite => ``TermEvalPolicy.rewrite
+    | .fold => ``TermEvalPolicy.fold
+    | .oracle => ``TermEvalPolicy.oracle
+  ⟩
+
 private def resolveCarrierName (stx : Syntax) : MacroM CarrierKind := do
   let carrierName := stx.getId.toString
   match carrierName with
@@ -209,6 +223,12 @@ private def resolveCollName (stx : Syntax) : MacroM CollType := do
   | "HashSet" => pure .hashSet
   | other =>
       Macro.throwErrorAt stx s!"unsupported congruence collection `{other}`"
+
+private def resolveEvalPolicyName : TSyntax `langDefEvalPolicy → MacroM TermEvalPolicy
+  | `(langDefEvalPolicy| rewrite) => pure .rewrite
+  | `(langDefEvalPolicy| fold) => pure .fold
+  | `(langDefEvalPolicy| oracle) => pure .oracle
+  | stx => Macro.throwErrorAt stx "unsupported term eval policy"
 
 private structure ExpandedPattern where
   term : TSyntax `term
@@ -758,7 +778,16 @@ private def expandTermDecl : TSyntax `langDefTermDecl → MacroM (TSyntax `term)
       let syns' := synArrays.foldl (init := #[]) (fun acc arr => acc ++ arr)
       let paramsTerm ← mkTermList params'
       let synsTerm ← mkTermList syns'.toList
-      `(GrammarRule.mk $(mkStrTerm label.getId.toString) $(mkStrTerm category.getId.toString) $paramsTerm $synsTerm)
+      `(GrammarRule.mk $(mkStrTerm label.getId.toString) $(mkStrTerm category.getId.toString) $paramsTerm $synsTerm none)
+  | `(langDefTermDecl| $label:ident . $params:langDefTermParam,* |- $syns:langDefSyntaxAtom* : $category:ident ![ $policy:langDefEvalPolicy ] ; ) => do
+      let params' ← params.getElems.toList.mapM expandTermParam
+      let synArrays ← syns.toList.mapM expandSyntaxAtom
+      let syns' := synArrays.foldl (init := #[]) (fun acc arr => acc ++ arr)
+      let paramsTerm ← mkTermList params'
+      let synsTerm ← mkTermList syns'.toList
+      let resolvedPolicy ← resolveEvalPolicyName policy
+      let policyTerm := evalPolicyTerm resolvedPolicy
+      `(GrammarRule.mk $(mkStrTerm label.getId.toString) $(mkStrTerm category.getId.toString) $paramsTerm $synsTerm (some $policyTerm))
   | stx => Macro.throwErrorAt stx "unsupported term declaration"
 
 private def mkEquationTerm
@@ -930,19 +959,21 @@ macro_rules
 
 /-! ## Generic Builders -/
 
-def gRule (label category : String) (params : List TermParam) (syntaxPattern : List SyntaxItem) :
+def gRule (label category : String) (params : List TermParam) (syntaxPattern : List SyntaxItem)
+    (evalPolicy? : Option TermEvalPolicy := none) :
     GrammarRule :=
   { label := label
     category := category
     params := params
-    syntaxPattern := syntaxPattern }
+    syntaxPattern := syntaxPattern
+    evalPolicy? := evalPolicy? }
 
 def rwRule
     (ruleName : String)
     (typeContext : List (String × TypeExpr))
     (premises : List Premise)
     (left right : Pattern) : RewriteRule :=
-  RewriteRule.mk ruleName typeContext premises left right [] none none
+  RewriteRule.mk ruleName typeContext premises left right
 
 def mkLang
     (langName : String)

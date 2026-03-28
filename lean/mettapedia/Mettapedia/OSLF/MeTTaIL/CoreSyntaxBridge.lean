@@ -71,6 +71,13 @@ def specToCoreSyntaxItem : SpecSyntaxItem → Except String CoreSyntaxItem
       throw "Cannot lower syntax metasyntax operators (*zip/*map/*opt/*sep chains) to core SyntaxItem; core only supports flat syntax items."
 
 def specToCoreGrammarRule (g : SpecGrammarRule) : Except String CoreGrammarRule := do
+  match g.evalPolicy? with
+  | none => pure ()
+  | some .rewrite => pure ()
+  | some .fold =>
+      throw s!"Cannot lower fold term `{g.label}` to core GrammarRule; core has no fold/native eval-policy form."
+  | some .oracle =>
+      throw s!"Cannot lower oracle term `{g.label}` to core GrammarRule; core has no oracle eval-policy form."
   let syntaxPattern ← g.syntaxPattern.mapM specToCoreSyntaxItem
   pure
     { label := g.label

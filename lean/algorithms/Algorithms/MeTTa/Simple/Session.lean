@@ -1236,6 +1236,46 @@ mutual
     | .apply "()" [] => true
     | _ => false
 
+  private partial def conditionQueryVarNames : Pattern → List String
+    | .fvar name => [name]
+    | .apply ctor [] =>
+        if ctor.startsWith "$" then
+          let name := (ctor.drop 1).toString
+          if name.isEmpty then [] else [name]
+        else
+          []
+    | .apply _ args =>
+        args.foldl (fun acc arg => acc ++ conditionQueryVarNames arg) []
+    | .lambda body => conditionQueryVarNames body
+    | .multiLambda _ body => conditionQueryVarNames body
+    | .subst body repl => conditionQueryVarNames body ++ conditionQueryVarNames repl
+    | .collection _ elems _ =>
+        elems.foldl (fun acc arg => acc ++ conditionQueryVarNames arg) []
+    | .bvar _ => []
+
+  private partial def conditionQueryVars (p : Pattern) : List String :=
+    ((conditionQueryVarNames (normalizeDollarVars p)).foldl
+      (fun acc name => if acc.contains name then acc else name :: acc)
+      []).reverse
+
+  private partial def informativeConditionBinding
+      (cond : Pattern) (bs : Bindings) : Bool :=
+    let vars := conditionQueryVars cond
+    if vars.isEmpty then
+      true
+    else
+      vars.any (fun name => applyBindingsCompat bs (.fvar name) != .fvar name)
+
+  private partial def informativeConditionBindings
+      (cond : Pattern) (xs : List Bindings) : List Bindings :=
+    dedupBindings (xs.filter (informativeConditionBinding cond))
+
+  private partial def conditionQueryTemplate? (cond : Pattern) : Option Pattern :=
+    match conditionQueryVars cond with
+    | [] => none
+    | [name] => some (.fvar name)
+    | names => some (.apply "Expr" (names.map Pattern.fvar))
+
   private partial def bindingsForConditionLeaf? (s : Session) : Pattern → Option (List Bindings)
     | .apply "find" [space, pat] =>
         some (findBindingsInSpace s space pat)
@@ -1320,6 +1360,32 @@ mutual
                   (intrinsicStep s (.apply op [lv, rv])).any
                     (fun p => boolOfPattern? p == some true)))
             some (if ok then ([[]] : List Bindings) else [])
+    | cond@(.apply _ (_ :: _)) =>
+        match decodePredicateSpacePattern? s cond with
+        | some (space, pat) =>
+            let eqPat := .apply "=" [pat, .apply "T" []]
+            let directBs := findBindingsInSpace s space eqPat
+            let informativeDirect := informativeConditionBindings cond directBs
+            if !informativeDirect.isEmpty then
+              some informativeDirect
+            else
+              let queryWitnessBs :=
+                match conditionQueryTemplate? cond with
+                | some tmpl =>
+                    let (_sMatch, witnessOut) := evalMatchIntrinsic s space eqPat tmpl
+                    witnessOut.flatMap (fun witness =>
+                      matchPatternMeTTa (normalizeDollarVars tmpl) (normalizeDollarVars witness))
+                | none =>
+                    []
+              let informativeWitness := informativeConditionBindings cond queryWitnessBs
+              if !informativeWitness.isEmpty then
+                some informativeWitness
+              else if !directBs.isEmpty && (conditionQueryVars cond).isEmpty then
+                some (dedupBindings directBs)
+              else
+                none
+        | none =>
+            none
     | _ => none
 
   private partial def booleanConditionBindings? (s : Session) (cond : Pattern) :
@@ -1333,11 +1399,89 @@ mutual
     }
     Algorithms.MeTTa.Simple.Semantics.ConditionSolver.satisfyingBindingsForBoolCondition I s cond
 
+  private partial def mergeBindingSets (lhs rhs : List Bindings) : List Bindings :=
+    dedupBindings <|
+      lhs.flatMap (fun b1 =>
+        rhs.filterMap (fun b2 => mergeBindings b1 b2))
+
   private partial def bindingsForCondition? (s : Session) : Pattern → Option (List Bindings)
     | cond =>
         match bindingsForConditionLeaf? s cond with
         | some bs => some bs
-        | none => booleanConditionBindings? s cond
+        | none =>
+            match booleanConditionBindings? s cond with
+            | some bs => some bs
+            | none =>
+                match cond with
+                | .apply "And" args =>
+                    match args with
+                    | [] => some [[]]
+                    | first :: rest =>
+                        match bindingsForCondition? s first with
+                        | none => none
+                        | some firstBs =>
+                            let merged :=
+                              rest.foldl
+                                (fun acc arg =>
+                                  match acc with
+                                  | none => none
+                                  | some accBs =>
+                                      match bindingsForCondition? s arg with
+                                      | none => none
+                                      | some nextBs =>
+                                          some (mergeBindingSets accBs nextBs))
+                                (some firstBs)
+                            merged
+                | .apply _ (_ :: _) =>
+                    let pairBs :=
+                      (constrainedCallBindingsAndValues s cond).2.flatMap (fun pair =>
+                        let baseBs := pair.1
+                        let producedSub := applyBindingsCompat baseBs pair.2
+                        let recursive :=
+                          if producedSub == cond then
+                            []
+                          else
+                            match bindingsForCondition? s producedSub with
+                            | some solved =>
+                                solved.filterMap (fun more => mergeBindings baseBs more)
+                            | none => []
+                        if Algorithms.MeTTa.Simple.Semantics.PredicateControl.isTruthy producedSub then
+                          baseBs :: recursive
+                        else
+                          recursive)
+                    let enumBs :=
+                      let (_sEnum, enumOut0) := enumerateCallByRulesQuery s cond
+                      enumOut0.flatMap (fun out =>
+                        if out == cond then
+                          []
+                        else
+                          match bindingsForCondition? s out with
+                          | some solved => solved
+                          | none => [])
+                    let evalBs :=
+                      let (_sEval, condOut0) := evalWithStateCore s cond
+                      condOut0.flatMap (fun out =>
+                        if Algorithms.MeTTa.Simple.Semantics.PredicateControl.isTruthy out then
+                          ([[]] : List Bindings)
+                        else if out == cond then
+                          []
+                        else
+                          match bindingsForCondition? s out with
+                          | some solved => solved
+                          | none => [])
+                    let allBs := dedupBindings (pairBs ++ enumBs ++ evalBs)
+                    let informativeBs :=
+                      if hasFreeVars cond then
+                        let informative := allBs.filter (fun bs => !bs.isEmpty)
+                        if informative.isEmpty then allBs else informative
+                      else
+                        allBs
+                    if informativeBs.isEmpty then none else some informativeBs
+                | _ => none
+
+  private partial def truthBindingsForCall? (s : Session)
+      (term : Pattern) : Option (List Bindings) :=
+    bindingsForCondition? s term
 
   private partial def evalThenForBindings (s : Session) (thenBr : Pattern)
       (bindings : List Bindings) : Session × List Pattern :=
@@ -1576,6 +1720,7 @@ mutual
       matchPattern := matchPatternMeTTa
       normalizePattern := normalizeDollarVars
       dedupBindings := dedupBindings
+      truthBindingsForCall? := truthBindingsForCall?
     }
     Algorithms.MeTTa.Simple.Semantics.Dispatch.evalCallableApply iface s callable args
 
@@ -1631,8 +1776,24 @@ mutual
       matchPattern := matchPatternMeTTa
       normalizePattern := normalizeDollarVars
       dedupBindings := dedupBindings
+      truthBindingsForCall? := truthBindingsForCall?
     }
     Algorithms.MeTTa.Simple.Semantics.Dispatch.enumerateCallByRules iface s expr
+
+  private partial def enumerateCallByRulesQuery (s : Session) (expr : Pattern) :
+      Session × List Pattern :=
+    let iface : Algorithms.MeTTa.Simple.Semantics.Dispatch.Interface Session := {
+      rewrites := fun s => s.bundle.language.rewrites
+      premiseFreeRulesForHeadArity := premiseFreeRulesForHeadArity
+      eval := evalWithStateCore
+      evalForRuleEnumeration := evalForRuleEnumeration
+      applyBindings := applyBindingsCompat
+      matchPattern := matchPatternMeTTa
+      normalizePattern := normalizeDollarVars
+      dedupBindings := dedupBindings
+      truthBindingsForCall? := truthBindingsForCall?
+    }
+    Algorithms.MeTTa.Simple.Semantics.Dispatch.enumerateCallByRulesQuery iface s expr
 
   private partial def refineCallableOutWithArgEnumeration (s : Session)
       (expr : Pattern) (baseOut : List Pattern) : Session × List Pattern :=
@@ -1645,6 +1806,7 @@ mutual
       matchPattern := matchPatternMeTTa
       normalizePattern := normalizeDollarVars
       dedupBindings := dedupBindings
+      truthBindingsForCall? := truthBindingsForCall?
     }
     Algorithms.MeTTa.Simple.Semantics.Dispatch.refineCallableOutWithArgEnumeration
       iface s expr baseOut
@@ -1660,6 +1822,7 @@ mutual
       matchPattern := matchPatternMeTTa
       normalizePattern := normalizeDollarVars
       dedupBindings := dedupBindings
+      truthBindingsForCall? := truthBindingsForCall?
     }
     Algorithms.MeTTa.Simple.Semantics.Dispatch.evalGeneratorValues iface s genExpr
 
@@ -1705,6 +1868,7 @@ mutual
       matchPattern := matchPatternMeTTa
       normalizePattern := normalizeDollarVars
       dedupBindings := dedupBindings
+      truthBindingsForCall? := truthBindingsForCall?
     }
     Algorithms.MeTTa.Simple.Semantics.Dispatch.matchHeadArgWithEval iface s patArg termArg
 
@@ -1719,6 +1883,7 @@ mutual
       matchPattern := matchPatternMeTTa
       normalizePattern := normalizeDollarVars
       dedupBindings := dedupBindings
+      truthBindingsForCall? := truthBindingsForCall?
     }
     Algorithms.MeTTa.Simple.Semantics.Dispatch.matchHeadArgsWithEval
       iface s patArgs termArgs states
@@ -1734,6 +1899,7 @@ mutual
       matchPattern := matchPatternMeTTa
       normalizePattern := normalizeDollarVars
       dedupBindings := dedupBindings
+      truthBindingsForCall? := truthBindingsForCall?
     }
     Algorithms.MeTTa.Simple.Semantics.Dispatch.compatFunctionHeadRewrite iface s term
 
@@ -1752,6 +1918,7 @@ mutual
         matchPattern := matchPatternMeTTa
         normalizePattern := normalizeDollarVars
         dedupBindings := dedupBindings
+        truthBindingsForCall? := truthBindingsForCall?
       }
       Algorithms.MeTTa.Simple.Semantics.Dispatch.hasCompatHeadConstraintRule iface s ctor arity
 
@@ -1817,6 +1984,7 @@ mutual
       matchPattern := matchPatternMeTTa
       normalizePattern := normalizeDollarVars
       dedupBindings := dedupBindings
+      truthBindingsForCall? := truthBindingsForCall?
     }
     Algorithms.MeTTa.Simple.Semantics.Dispatch.constrainedCallBindingsAndValues iface s expr
 
@@ -2523,6 +2691,33 @@ def rewriteAritiesForHeadPub (s : Session) (ctor : String) : List Nat :=
 /-- Public wrapper for `partialPattern`. -/
 def partialPatternPub (ctor : String) (args : List Pattern) : Pattern :=
   partialPattern ctor args
+
+/-- Public wrapper for `matchHeadArgWithEval`.
+    Used for tracing compat-head truth binding behavior on real runtime cases. -/
+def matchHeadArgWithEvalPub (s : Session)
+    (patArg termArg : Pattern) : List Bindings :=
+  matchHeadArgWithEval s patArg termArg
+
+/-- Public wrapper for `matchHeadArgsWithEval`.
+    Used for tracing multi-argument compat-head binding propagation. -/
+def matchHeadArgsWithEvalPub (s : Session)
+    (patArgs termArgs : List Pattern) (states : List Bindings := [[]]) : List Bindings :=
+  matchHeadArgsWithEval s patArgs termArgs states
+
+/-- Public wrapper for `applyBindingsCompat`.
+    Used for tracing whether compat-head bindings are composed transitively. -/
+def applyBindingsCompatPub (bs : Bindings) (p : Pattern) : Pattern :=
+  applyBindingsCompat bs p
+
+/-- Public wrapper for `bindingsForCondition?`.
+    Used for tracing intrinsic `if`/`ift` condition witness production. -/
+def bindingsForConditionPub (s : Session) (cond : Pattern) : Option (List Bindings) :=
+  bindingsForCondition? s cond
+
+/-- Public wrapper for `compatFunctionHeadRewrite`.
+    Used for tracing compat-head rule outputs before the outer evaluator consumes them. -/
+def compatFunctionHeadRewritePub (s : Session) (term : Pattern) : Session × List Pattern :=
+  compatFunctionHeadRewrite s term
 
 /-- If `step s a = []` then `intrinsicStepT s a = []`.
     (intrinsicStepT is one component of step's concatenation.) -/

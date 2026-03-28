@@ -360,6 +360,16 @@ end SyntaxItem
 
 /-! ## Grammar Rules (Constructors) -/
 
+/-- Evaluation policy for authored grammar rules.
+    - `.rewrite`: pure rewrite-driven term
+    - `.fold`: host-native fold implementation (typed contract in LanguageDef)
+    - `.oracle`: external/host effectful implementation boundary -/
+inductive TermEvalPolicy where
+  | rewrite
+  | fold
+  | oracle
+deriving Repr, DecidableEq
+
 /-- A grammar rule defines a constructor. `syntaxPattern` is the single
     authored syntax authority and may contain both plain tokens/nonterminals and
     Rust-style metasyntax operators. -/
@@ -368,6 +378,7 @@ structure GrammarRule where
   category : String
   params : List TermParam
   syntaxPattern : List SyntaxItem
+  evalPolicy? : Option TermEvalPolicy := none
 deriving Repr, DecidableEq
 
 /-! ## Patterns (Locally Nameless) -/

@@ -37,6 +37,18 @@ structure Interface (σ : Type) where
   matchPattern : Pattern → Pattern → List Bindings
   dedupPatterns : List Pattern → List Pattern
 
+structure MatchInterface where
+  applyBindings : Bindings → Pattern → Pattern
+  normalizePattern : Pattern → Pattern
+  normalizeForSpaceMatch : Pattern → Pattern
+  matchPattern : Pattern → Pattern → List Bindings
+
+private def Interface.toMatchInterface (I : Interface σ) : MatchInterface :=
+  { applyBindings := I.applyBindings
+    normalizePattern := I.normalizePattern
+    normalizeForSpaceMatch := I.normalizeForSpaceMatch
+    matchPattern := I.matchPattern }
+
 structure Preservation (I : Interface σ) (P : σ → Prop) where
   eval_preserves :
     ∀ {s : σ} {term : Pattern} {s' : σ} {out : List Pattern},
@@ -49,6 +61,9 @@ private def dedupBindings (xs : List Bindings) : List Bindings :=
   (xs.foldl
     (fun acc x => if acc.contains x then acc else x :: acc)
     []).reverse
+
+private def bindingLookup? (bs : Bindings) (name : String) : Option Pattern :=
+  bs.find? (fun b => b.1 == name) |>.map Prod.snd
 
 private def eqBindingsFromRules (I : Interface σ) (lhs rhs : Pattern)
     (rules : List RewriteRule) : List Bindings :=
@@ -115,6 +130,167 @@ def factsForSpace (I : Interface σ) (P : Policy) (s : σ) (space : Pattern) : L
         | [fact] => some fact
         | _ => none).reverse
 
+private partial def dedupNames (xs : List String) : List String :=
+  (xs.foldl (fun acc x => if acc.contains x then acc else x :: acc) []).reverse
+
+mutual
+private partial def patternVarNames : Pattern → List String
+  | .fvar x => [x]
+  | .bvar _ => []
+  | .apply ctor args =>
+      let headNames :=
+        if ctor.startsWith "$" then
+          let name := (ctor.drop 1).toString
+          if name.isEmpty then [] else [name]
+        else
+          []
+      headNames ++ patternVarNamesList args
+  | .lambda body => patternVarNames body
+  | .multiLambda _ body => patternVarNames body
+  | .subst body repl => patternVarNames body ++ patternVarNames repl
+  | .collection _ elems rest =>
+      let restNames := rest.toList
+      restNames ++ patternVarNamesList elems
+
+private partial def patternVarNamesList : List Pattern → List String
+  | [] => []
+  | x :: xs => patternVarNames x ++ patternVarNamesList xs
+end
+
+mutual
+private partial def freshenVarsWithTag (tag : String) : Pattern → Pattern
+  | .fvar x => .fvar (tag ++ x)
+  | .bvar n => .bvar n
+  | .apply ctor args =>
+      let ctor' :=
+        if ctor.startsWith "$" then
+          let name := (ctor.drop 1).toString
+          if name.isEmpty then ctor else "$" ++ tag ++ name
+        else
+          ctor
+      .apply ctor' (freshenVarsWithTagList tag args)
+  | .lambda body => .lambda (freshenVarsWithTag tag body)
+  | .multiLambda n body => .multiLambda n (freshenVarsWithTag tag body)
+  | .subst body repl => .subst (freshenVarsWithTag tag body) (freshenVarsWithTag tag repl)
+  | .collection ct elems rest =>
+      .collection ct (freshenVarsWithTagList tag elems) (rest.map (tag ++ ·))
+
+private partial def freshenVarsWithTagList (tag : String) : List Pattern → List Pattern
+  | [] => []
+  | x :: xs => freshenVarsWithTag tag x :: freshenVarsWithTagList tag xs
+end
+
+mutual
+private partial def hasAnyPatternVar : Pattern → Bool
+  | .fvar _ => true
+  | .bvar _ => false
+  | .apply ctor args =>
+      ctor.startsWith "$" || hasAnyPatternVarList args
+  | .lambda body => hasAnyPatternVar body
+  | .multiLambda _ body => hasAnyPatternVar body
+  | .subst body repl => hasAnyPatternVar body || hasAnyPatternVar repl
+  | .collection _ elems rest =>
+      rest.isSome || hasAnyPatternVarList elems
+
+private partial def hasAnyPatternVarList : List Pattern → Bool
+  | [] => false
+  | x :: xs => hasAnyPatternVar x || hasAnyPatternVarList xs
+end
+
+private def isBarePatternVar : Pattern → Bool
+  | .fvar _ => true
+  | .apply ctor [] =>
+      if ctor.startsWith "$" then
+        let name := (ctor.drop 1).toString
+        !name.isEmpty
+      else
+        false
+  | _ => false
+
+private partial def reachableBindingNames (bs : Bindings) :
+    List String → List String → List String
+  | [], seen => seen.reverse
+  | name :: rest, seen =>
+      if seen.contains name then
+        reachableBindingNames bs rest seen
+      else
+        match bindingLookup? bs name with
+        | none =>
+            reachableBindingNames bs rest (name :: seen)
+        | some value =>
+            let deps := dedupNames (patternVarNames value)
+            reachableBindingNames bs (deps ++ rest) (name :: seen)
+
+private def supportBindingsForQueryVars (bs : Bindings) (queryVars : List String) : Bindings :=
+  let names := reachableBindingNames bs queryVars []
+  bs.filter (fun b => names.contains b.1)
+
+private def informativeQueryWitness (I : MatchInterface)
+    (supportBs : Bindings) (name : String) : Bool :=
+  let value := I.applyBindings supportBs (.fvar name)
+  !(value == .fvar name || isBarePatternVar value)
+
+private def mergeCompatibleDirect (I : MatchInterface) (baseBs : Bindings)
+    (lhs rhs : Pattern) : List Bindings :=
+  let byL := I.matchPattern lhs rhs
+  let byR := I.matchPattern rhs lhs
+  let byEq := if lhs == rhs then ([[]] : List Bindings) else []
+  (byL ++ byR ++ byEq).filterMap (fun extraBs => mergeBindings baseBs extraBs)
+
+mutual
+private partial def compatibleBindings (I : MatchInterface) (baseBs : Bindings)
+    (lhs rhs : Pattern) : List Bindings :=
+  let direct := mergeCompatibleDirect I baseBs lhs rhs
+  if !direct.isEmpty then
+    dedupBindings direct
+  else if !(hasAnyPatternVar lhs || hasAnyPatternVar rhs) then
+    []
+  else
+    match lhs, rhs with
+    | .apply lCtor lArgs, .apply rCtor rArgs =>
+        if lCtor == rCtor && lArgs.length == rArgs.length then
+          solveCompatibleArgPairs I [baseBs] (List.zip lArgs rArgs)
+        else
+          []
+    | _, _ =>
+        []
+
+private partial def solveCompatibleArgPairs (I : MatchInterface) (states : List Bindings)
+    (pairs : List (Pattern × Pattern)) : List Bindings :=
+  match pairs with
+  | [] =>
+      dedupBindings states
+  | (lhs, rhs) :: rest =>
+      let nextStates :=
+        states.flatMap (fun bs =>
+          let lhsSub := I.applyBindings bs lhs
+          let rhsSub := I.applyBindings bs rhs
+          compatibleBindings I bs lhsSub rhsSub)
+      solveCompatibleArgPairs I (dedupBindings nextStates) rest
+end
+
+private def queryWitnessBindings? (I : MatchInterface)
+    (queryVars : List String) (bs : Bindings) : Option Bindings :=
+  let supportBs := supportBindingsForQueryVars bs queryVars
+  if queryVars.isEmpty then
+    some []
+  else if queryVars.any (informativeQueryWitness I supportBs) then
+    some supportBs
+  else
+    none
+
+private def compatibleBindingsAgainstFact (I : MatchInterface)
+    (tag : String) (queryPat fact : Pattern) : List Bindings :=
+  let queryVars := dedupNames (patternVarNames queryPat)
+  let factFresh := freshenVarsWithTag tag fact
+  (compatibleBindings I [] queryPat factFresh).filterMap
+    (queryWitnessBindings? I queryVars)
+
+private def indexedFacts : List Pattern → List (Nat × Pattern)
+  | [] => []
+  | fact :: rest =>
+      (0, fact) :: (indexedFacts rest).map (fun (idx, p) => (idx + 1, p))
+
 private def matchFactsAgainstSpaceDepth : Pattern → Nat
   | .bvar _ => 1
   | .fvar _ => 1
@@ -129,143 +305,32 @@ private def matchFactsAgainstSpaceDepth : Pattern → Nat
   | .collection _ elems _ =>
       1 + elems.foldl (fun h a => Nat.max h (matchFactsAgainstSpaceDepth a)) 0
 
-def matchFactsAgainstSpace (I : Interface σ) (facts : List Pattern) : Pattern → List Bindings
+private partial def matchFactsAgainstSpaceCore (I : MatchInterface)
+    (facts : List Pattern) : Pattern → List Bindings
   | .apply "," [lhs, rhs] =>
-      (matchFactsAgainstSpace I facts lhs).flatMap fun bL =>
-        (matchFactsAgainstSpace I facts rhs).filterMap fun bR =>
-          mergeBindings bL bR
-  | .apply ctor [] =>
-      if ctor.startsWith "$" then
-        let name := (ctor.drop 1).toString
-        if name.isEmpty then
-          []
-        else
-          facts.filterMap fun fact =>
-            match I.normalizeForSpaceMatch fact with
-            | .apply head _ => some [(name, .apply head [])]
-            | _ => none
-      else
-        let patN := I.normalizeForSpaceMatch (I.normalizePattern (.apply ctor []))
-        facts.flatMap fun fact =>
-          I.matchPattern patN (I.normalizeForSpaceMatch fact)
+      let leftFirst :=
+        (matchFactsAgainstSpaceCore I facts lhs).flatMap fun bL =>
+          let rhsSub := I.applyBindings bL rhs
+          (matchFactsAgainstSpaceCore I facts rhsSub).filterMap fun bR =>
+            mergeBindings bL bR
+      dedupBindings leftFirst
   | pat =>
       let patN := I.normalizeForSpaceMatch (I.normalizePattern pat)
-      match patN with
-      | .fvar x =>
-          facts.map (fun fact => [(x, fact)])
-      | _ =>
-          facts.flatMap fun fact =>
-            I.matchPattern patN (I.normalizeForSpaceMatch fact)
-termination_by pat => matchFactsAgainstSpaceDepth pat
-decreasing_by
-  all_goals
-    simp [matchFactsAgainstSpaceDepth]
-    first
-    | have h :
-          matchFactsAgainstSpaceDepth lhs ≤
-            (matchFactsAgainstSpaceDepth lhs).max (matchFactsAgainstSpaceDepth rhs) :=
-          Nat.le_max_left _ _
-      omega
-    | have h :
-          matchFactsAgainstSpaceDepth rhs ≤
-            (matchFactsAgainstSpaceDepth lhs).max (matchFactsAgainstSpaceDepth rhs) :=
-          Nat.le_max_right _ _
-      omega
+      indexedFacts facts |>.flatMap fun pair =>
+        let idx := pair.1
+        let fact := pair.2
+        compatibleBindingsAgainstFact I s!"__space::{idx}::"
+          patN (I.normalizeForSpaceMatch fact)
+def matchFactsAgainstSpace (I : Interface σ) (facts : List Pattern) : Pattern → List Bindings :=
+  matchFactsAgainstSpaceCore I.toMatchInterface facts
 
 private theorem matchFactsAgainstSpace_eval_irrelevant
     (I : Interface σ) (eval' : σ → Pattern → σ × List Pattern)
     (facts : List Pattern) (pat : Pattern) :
     matchFactsAgainstSpace I facts pat =
       matchFactsAgainstSpace ({ I with eval := eval' }) facts pat := by
-  have hMain :
-      ∀ n, ∀ pat : Pattern,
-        matchFactsAgainstSpaceDepth pat ≤ n →
-        matchFactsAgainstSpace I facts pat =
-          matchFactsAgainstSpace ({ I with eval := eval' }) facts pat := by
-    intro n
-    induction n using Nat.strongRecOn with
-    | _ n ih =>
-        intro pat hDepth
-        cases pat with
-        | bvar m =>
-            cases I
-            unfold matchFactsAgainstSpace
-            simp
-        | fvar x =>
-            cases I
-            unfold matchFactsAgainstSpace
-            simp
-        | apply ctor args =>
-            cases args with
-            | nil =>
-                cases I
-                unfold matchFactsAgainstSpace
-                simp
-            | cons a rest =>
-                cases rest with
-                | nil =>
-                    cases I
-                    unfold matchFactsAgainstSpace
-                    simp
-                | cons b rest2 =>
-                    cases rest2 with
-                    | nil =>
-                        by_cases hComma : ctor = ","
-                        · subst hComma
-                          have hLtA :
-                              matchFactsAgainstSpaceDepth a <
-                                matchFactsAgainstSpaceDepth (.apply "," [a, b]) := by
-                            simp [matchFactsAgainstSpaceDepth]
-                            have hLe :
-                                matchFactsAgainstSpaceDepth a ≤
-                                  (matchFactsAgainstSpaceDepth a).max
-                                    (matchFactsAgainstSpaceDepth b) :=
-                              Nat.le_max_left _ _
-                            omega
-                          have hLtB :
-                              matchFactsAgainstSpaceDepth b <
-                                matchFactsAgainstSpaceDepth (.apply "," [a, b]) := by
-                            simp [matchFactsAgainstSpaceDepth]
-                            have hLe :
-                                matchFactsAgainstSpaceDepth b ≤
-                                  (matchFactsAgainstSpaceDepth a).max
-                                    (matchFactsAgainstSpaceDepth b) :=
-                              Nat.le_max_right _ _
-                            omega
-                          have hA :=
-                            ih (matchFactsAgainstSpaceDepth a)
-                              (Nat.lt_of_lt_of_le hLtA hDepth)
-                              a (Nat.le_refl _)
-                          have hB :=
-                            ih (matchFactsAgainstSpaceDepth b)
-                              (Nat.lt_of_lt_of_le hLtB hDepth)
-                              b (Nat.le_refl _)
-                          unfold matchFactsAgainstSpace
-                          simp [hA, hB]
-                        · cases I
-                          unfold matchFactsAgainstSpace
-                          simp [hComma]
-                    | cons c rest3 =>
-                        cases I
-                        unfold matchFactsAgainstSpace
-                        simp
-        | lambda body =>
-            cases I
-            unfold matchFactsAgainstSpace
-            simp
-        | multiLambda m body =>
-            cases I
-            unfold matchFactsAgainstSpace
-            simp
-        | subst body repl =>
-            cases I
-            unfold matchFactsAgainstSpace
-            simp
-        | collection ct elems rest =>
-            cases I
-            unfold matchFactsAgainstSpace
-            simp
-  exact hMain (matchFactsAgainstSpaceDepth pat) pat (Nat.le_refl _)
+  cases I
+  simp [matchFactsAgainstSpace, Interface.toMatchInterface]
 
 def findBindingsInSpace (I : Interface σ) (P : Policy) (s : σ) (space pat : Pattern) :
     List Bindings :=

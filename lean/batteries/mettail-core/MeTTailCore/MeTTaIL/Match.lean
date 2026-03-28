@@ -41,6 +41,15 @@ def tupleOfElems : List Pattern → Pattern
       | .apply ctor [] => .apply ctor tl
       | _ => .apply "Expr" (h :: tl)
 
+private def dollarVarName? : Pattern → Option String
+  | .apply ctor [] =>
+      if ctor.startsWith "$" then
+        let name := (ctor.drop 1).toString
+        if name.isEmpty then none else some name
+      else
+        none
+  | _ => none
+
 mutual
 
 def matchArgs : List Pattern → List Pattern → List Bindings
@@ -71,6 +80,18 @@ def matchPattern (pat term : Pattern) : List Bindings :=
   | .apply c1 pargs, .apply c2 targs =>
     if c1 == c2 && pargs.length == targs.length then
       matchArgs pargs targs
+    else if !pargs.isEmpty then
+      match dollarVarName? (.apply c1 []) with
+      | some name =>
+          match tupleElems (.apply c2 targs) with
+          | [] => []
+          | head :: tail =>
+              if pargs.length == tail.length then
+                (matchArgs pargs tail).filterMap fun tb =>
+                  mergeBindings [(name, head)] tb
+              else
+                []
+      | none => []
     else []
   | .lambda bodyPat, .lambda bodyConcrete =>
     matchPattern bodyPat bodyConcrete
@@ -108,6 +129,20 @@ def matchPatternMeTTa (pat term : Pattern) : List Bindings :=
                 mergeBindings bsHead bsTail
     | _ => []
 termination_by sizeOf pat
+
+theorem matchPatternMeTTa_dollar_head_application :
+    matchPatternMeTTa
+        (.apply "$pred" [.fvar "x"])
+        (.apply "frog" [.apply "sam" []]) =
+      [[("x", .apply "sam" []), ("pred", .apply "frog" [])]] := by
+  native_decide
+
+theorem matchPatternMeTTa_nested_dollar_head_application :
+    matchPatternMeTTa
+        (.apply "Expr" [.apply "$f" [.apply "leaf2" []], .apply "leaf3" []])
+        (.apply "Expr" [.apply "leaf1" [.apply "leaf2" []], .apply "leaf3" []]) =
+      [[("f", .apply "leaf1" [])]] := by
+  native_decide
 
 def applyBindings (bindings : Bindings) (rhs : Pattern) : Pattern :=
   match rhs with

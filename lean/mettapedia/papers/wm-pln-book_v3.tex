@@ -7540,6 +7540,86 @@ Two definitions in \code{SolomonoffBridge.lean} (\code{toEnvProb} and
 but not yet a rich history-encoding or complexity measure.  The theorems that
 use them are honestly stated for the current abstractions and do not overclaim.
 
+\paragraph{Compilation correctness: from Gewirth PGC to WM positive evidence.}
+
+The chain from source-side ethical justification to target-side WM support is
+now a single proved theorem.  Given PGC assumptions and a purposive-agency
+witness, the headline result delivers BOTH ontology-side satisfaction of the
+Gewirth non-interference claim AND DDL-grounded WM positive evidence for the
+corresponding obligation.%
+\footnote{Formalized in
+\codepath{Mettapedia/CognitiveArchitecture/GodelClaw/Ethics/WMGrounding.lean}
+via \code{gewirthTrustTriangle\_primaryWMGrounding\_of\_PPA} (0~sorry).
+The DDL$+$ $\to$ WM bridge at
+\codepath{Mettapedia/Logic/DDLPlus/WMBridge.lean}
+provides the intermediate step
+\code{pgc\_nonInterference\_wmPositiveEvidence}
+(0~sorry, 0~axioms).}
+
+\noindent
+This composes three already-proved bridges:
+\begin{enumerate}
+\item Ethics $\to$ DDL$+$: PGC IS DDLPlus ideal obligation (\code{pgc\_is\_governance\_norm}).
+\item DDL$+$ $\to$ WM: deontic satisfaction $=$ WM positive evidence (\code{wmPositiveEvidence\_of\_deonticSat}).
+\item WM $\to$ meta-stability: positive evidence inherits the full protected-goal stack.
+\end{enumerate}
+\noindent
+The ethical model now uses \textbf{graded regulative ideals} rather than
+boolean predicates: each dispositional, duty, and relational ideal carries a
+degree of realization in $[0,1]$.  Satisfaction is ``degree $> 0$,'' connecting
+naturally to WM's graded evidence.  The trust-triangle model realizes non-harm
+to degree $0.9$, autonomy respect to $0.8$, epistemic universal love to $0.7$,
+and friendship to $0.6$ --- honest partial realization rather than the earlier
+all-or-nothing encoding.%
+\footnote{Graded model in
+\codepath{Mettapedia/CognitiveArchitecture/GodelClaw/Ethics/Ontology/ESOUpperShard.lean}
+via \code{ESOUpperShardModel} with \code{UnitValue} degrees (0~sorry).}
+
+\paragraph{Computational ethics: theory-guided decision problems.}
+
+The GenEth-style practical resolver is now instantiated as a
+\code{TheoryGuidedDecisionProblem} on the trust triangle.  The resolver
+recommends safe escalation, the recommended action is admissible under the
+top-down conflict discipline, and the decision budget (21~comparisons) is
+explicitly bounded.  The deontic/value lowering equivalence is proved through
+an explicit labeler-alignment hypothesis --- now instantiated on a live
+labeler/encoder pair with proved end-to-end deontic/value query equalities.
+The practical action-rendering bridges into the meaning/WM layer, and the
+public WM-grounding surface now covers three lanes, not just one: Gewirth PGC,
+universal-duty/non-maleficence, and universal-duty/consent.  All five ethical
+grounds (asserted, Gewirth PGC, universal duty, care relation, consequentialist)
+now carry non-trivial witnesses via \code{Witnessed₀}.%
+\footnote{Formalized in
+\codepath{Mettapedia/CognitiveArchitecture/GodelClaw/Ethics/MetaEthicsTrustTriangleExample.lean}
+and
+\codepath{Mettapedia/CognitiveArchitecture/GodelClaw/Ethics/WMGrounding.lean}
+(0~sorry).}
+
+Three further case studies verify that the pipeline generalises beyond the
+trust triangle:
+\begin{itemize}
+\item \textbf{Privacy vs.\ emergency disclosure.}  Actions: keep private /
+  ask consent / alert trusted contact / broadcast widely.  Duties: privacy,
+  autonomy, non-maleficence.  Resolver recommends \emph{alert trusted
+  contact}, budget 52~comparisons.
+\item \textbf{Shutdown instructability.}  Actions: continue / override /
+  pause and ask / hard shutdown.  Duties: obedience, safety,
+  non-disruption.  Resolver recommends \emph{pause and ask}, budget
+  52~comparisons.
+\item \textbf{Home-security force escalation.}  Actions: observe / warn /
+  lock down / deploy force.  Duties: safety, proportionality,
+  non-maleficence.  Resolver recommends \emph{lock down}, budget
+  52~comparisons.  This case also exercises the candidate-local
+  consequentialist witness, verifying that the
+  \code{WitnessedForCandidateSet₀} machinery works on a live choice set.
+\end{itemize}
+\noindent
+Each case provides a proved dominant admissible action, an explicit polynomial
+comparison-count budget, and negative certificates for the losing candidates.%
+\footnote{Formalized in
+\codepath{Mettapedia/CognitiveArchitecture/GodelClaw/Ethics/EthicalDecisionProblemCaseStudies.lean}
+(973~lines, 0~sorry).}
+
 \paragraph{What the theorem does not say.}
 The uniqueness result is genuinely conditional, and the boundary of its
 applicability is mathematically sharp.  If the total incoming Dobrushin
@@ -9242,7 +9322,7 @@ Gene & Disease & SNPs & Coloc & Status after validation \\
 CDO1   & hypertension   & 58  & \textbf{FAIL} & Falsified: BP signal driven by SEMA6A/KCNN2 \\
 CLU    & hypertension   & 63  & ---  & Dropped: prior literature exists \\
 PTGER4 & hemat.\ cancer & 93  & partial$^*$ & \textbf{Strongest}: hematopoietic coloc confirmed \\
-HCN1   & epilepsy       & 208 & --- & Reclassified: already PGC3 GWAS hit \\
+HCN1   & epilepsy       & 208 & --- & Schizophrenia is PGC3 hit; epilepsy untested \\
 \bottomrule
 \end{tabular}
 \end{center}
@@ -9250,19 +9330,21 @@ HCN1   & epilepsy       & 208 & --- & Reclassified: already PGC3 GWAS hit \\
 traits (H4\,$>$\,0.8, 326 hits) but no cancer GWAS exists at
 this locus.}
 
-\paragraph{CDO1 $\to$ hypertension (strongest novelty candidate).}
+\paragraph{CDO1 $\to$ hypertension (falsified by colocalization).}
 CDO1 (cysteine dioxygenase type~1, chr5q22.3) catalyzes the
 rate-limiting step in taurine biosynthesis: cysteine $\to$
 cysteine sulfinic acid.  Taurine modulates blood pressure via
-vasodilation and sympatholytic effects, and taurine
-supplementation trials show antihypertensive
-effects~\cite{Militante2004Taurine}.  Yet no GWAS has linked CDO1
-expression variants to blood pressure traits.  The 58~eQTL SNPs,
-tissue-broad expression (GTEx), and strong effect size provide
-genetic instruments for Mendelian Randomization validation:
-if CDO1 expression-lowering alleles associate with higher BP in
-UK Biobank, the CDO1 $\to$ taurine $\to$ BP axis becomes a novel
-drug target hypothesis.
+vasodilation, and taurine supplementation trials show
+antihypertensive effects~\cite{Militante2004Taurine}.  The
+backward chainer identified this chain from 58~eQTL SNPs
+(tissue-broad, effect-strong) and Hetionet's CDO1--hypertension
+annotation.  Tissue extraction confirmed 723 eQTL variants
+across 42~tissues, with 248 in aorta (77\% expression-decreasing).
+However, OpenTargets colocalization \emph{falsified} the causal
+link: the BP GWAS signals at this locus are driven by SEMA6A
+and KCNN2, not CDO1 (see above).  This illustrates the gap between
+literature-derived associations and genetic causality---the
+central methodological point of this chapter.
 
 \paragraph{CLU $\to$ hypertension.}
 CLU (clusterin, chr8p21.1) is a textbook Alzheimer's disease GWAS
@@ -9321,11 +9403,15 @@ capture epidemiological associations (taurine supplementation studies)
 that may not reflect the causal architecture visible to GWAS\@.  The
 colocalization test distinguishes the two.
 
-\paragraph{Drug repurposing: untreated-disease chains.}
+\paragraph{Drug repurposing: compound-binding chains without Hetionet treatment edges.}
 Among the 5{,}833 chains, 356 involve genes that are known
 drug targets (Hetionet compound binding) but whose associated
-diseases have \emph{zero} approved treatments---the
-``underserved-disease target zone.''  The top candidates:
+diseases have no compound--disease treatment edge in
+Hetionet~v1.0 (2017).  This does \emph{not} mean these
+diseases lack treatment---mesothelioma, for example, has
+guideline-backed chemotherapy and immunotherapy
+regimens---but rather that Hetionet's edge coverage is
+incomplete.  With that caveat, the top candidates:
 
 \begin{center}
 \small
@@ -9357,12 +9443,17 @@ increases or decreases expression and whether the disease results
 from gain or loss of function.  This is where PLN truth values
 carrying sign information would improve the pipeline.
 
-PTGER4 $\to$ mesothelioma via EP4 antagonists is the strongest
-drug repurposing finding: EP4 antagonists (TPST-1495) are in
-clinical development for solid tumors but have not been proposed
-for mesothelioma, despite established COX-2 biology in that
-disease.  The 93 eQTL SNPs provide genetic instruments to test
-the hypothesis.
+PTGER4 $\to$ mesothelioma is the strongest drug repurposing
+finding, but the therapeutic direction requires care.
+In hematologic biology, EP4 \emph{agonism} promotes
+hematopoietic stem cell expansion (Misoprostol); in
+solid-tumor immuno-oncology, EP4 \emph{antagonism} suppresses
+PGE2-mediated immune evasion (TPST-1495).  These are
+opposite interventions for the same receptor, depending on
+disease context.  The 93 eQTL SNPs provide genetic instruments,
+but the therapeutic hypothesis must be split by cell type:
+hematopoietic (agonist logic) vs.\ tumor-immune (antagonist
+logic).
 
 \paragraph{PTGER4 colocalization: hematological intermediate.}
 OpenTargets colocalization reveals that PTGER4 eQTL signals
@@ -9400,10 +9491,13 @@ disease associations (background rate), so the 2{,}482 genes with
 chains are not individually surprising---the value is in the
 \emph{specific} gene--disease pairings, the tissue-specific
 directional evidence, and the mechanistic proof terms connecting
-them.  HCN1 $\to$ schizophrenia, initially reported as novel, was
-independently confirmed as a known PGC3 GWAS hit
-($p = 5.55 \times 10^{-11}$)---validating the pipeline but
-removing the novelty claim.
+them.  HCN1 $\to$ schizophrenia (a separate Hetionet association)
+was independently confirmed as a known PGC3 GWAS hit
+($p = 5.55 \times 10^{-11}$), validating the pipeline's ability
+to recover established genetics.  The HCN1 $\to$ epilepsy chain
+(common-variant expression modulation of a known rare-variant
+epilepsy gene) remains untested by colocalization and is
+scientifically distinct from the schizophrenia association.
 
 
 \section{Status and Future Work}
@@ -9419,17 +9513,28 @@ production traits, providing the mechanistic intermediate).
 What remains:
 
 \begin{enumerate}
-\item \textbf{2-sample Mendelian Randomization} for CDO1 $\to$ blood
-  pressure using UK Biobank GWAS summary statistics (SBP, DBP,
-  pulse pressure) and the $\sim$4 LD-clumped eQTL instruments.
-\item \textbf{Colocalization} (COLOC/eCAVIAR) at the CDO1 locus to
-  test whether the eQTL and any sub-threshold BP signal share a
-  causal variant.
-\item \textbf{Replication} in eQTLGen (31{,}684 blood samples) and
-  disease-subtype refinement for PTGER4 (DLBCL vs.\ CLL vs.\ AML).
-\item \textbf{PLN truth value integration}: propagate signed
-  effect sizes through proof terms to distinguish gain-of-function
-  from loss-of-function chains automatically.
+\item \textbf{Systematic disease-specific colocalization.}
+  Of 2{,}482 genes in the discovery sweep, 98\% have OpenTargets
+  eQTL studies with 3.4M strong colocalizations.  Matching these
+  against disease-specific GWAS requires a DOID$\to$EFO ontology
+  bridge to identify which chains are colocalization-supported,
+  falsified, or untestable.  This calibration table is the key
+  deliverable for a methods paper.
+\item \textbf{PTGER4 disease-subtype refinement}: split ``hematologic
+  cancer'' into DLBCL, CLL, AML, MM, MDS.  The hematopoietic
+  colocalization is confirmed; cancer subtype resolution determines
+  the translational path.
+\item \textbf{KB freshness}: the CDO1 locus redirected to
+  SEMA6A/KCNN2, but these genes are absent from Hetionet~v1.0
+  (2017).  Integrating OpenTargets L2G predictions as an
+  additional knowledge source would capture the current GWAS
+  landscape and unlock genes that post-date Hetionet.
+\item \textbf{PLN signed truth values}: propagate effect direction
+  (expression increase/decrease) through proof terms to
+  automatically distinguish gain-of-function from
+  loss-of-function chains and flag wrong-directional drug
+  repurposing candidates (as occurred with IMPA1/lithium and
+  DHFR/methotrexate).
 \item \textbf{Cross-chromosome pattern mining} for LD-free
   co-regulation patterns enabling genuine deep chaining.
 \end{enumerate}
@@ -10251,6 +10356,7 @@ Path & Lines & Thms & Book refs \\
 \midrule
 \code{Logic/PLNBayesNetInference} & 404 & 7 & Ch~10 \\
 \code{Logic/DDLPlus/Core} & 410 & 11 & Ch~15 \\
+\code{Logic/DDLPlus/WMBridge} & 133 & 4 & Ch~16 \\
 \code{Logic/DDLPlus/Theorems} & 319 & 31 & Ch~15 \\
 \code{Ethics/GewirthPGC} & 491 & 4 & Ch~15 \\
 \code{OSLF/Framework/GovernanceInstance} & 268 & 11 & Ch~15 \\
@@ -10298,6 +10404,8 @@ Path & Lines & Thms & Book refs \\
 \compactcodepath{CogArch/GodelClaw/Ethics}{BodhisattvaExample} & 391 & 8 & Ch~16 \\
 \compactcodepath{CogArch/GodelClaw/Ethics}{FoundationalMeaningAgencyWMBridge} & 348 & 10 & Ch~16 \\
 \compactcodepath{CogArch/GodelClaw/Ethics}{FoundationalMeaningAgencyExample} & 235 & 5 & Ch~16 \\
+\compactcodepath{CogArch/GodelClaw/Ethics}{EthicalDecisionProblems} & 161 & 5 & Ch~16 \\
+\compactcodepath{CogArch/GodelClaw/Ethics}{EthicalDecisionProblemCaseStudies} & 973 & 18 & Ch~16 \\
 \compactcodepath{CogArch/GodelClaw/Ethics}{CoupledCommunitiesMeaningAgencyExample} & 196 & 4 & Ch~16 \\
 \compactcodepath{Logic}{UniversalPredictionConditionalApproximation} & 230 & 8 & Ch~16 \\
 \compactcodepath{Logic}{IntensionalInheritanceApproximationBridge} & 223 & 7 & Ch~16 \\

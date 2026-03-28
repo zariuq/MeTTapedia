@@ -8,7 +8,9 @@ import Mettapedia.Languages.MeTTa.HE.ScopeContract
 import Mettapedia.Languages.MeTTa.HE.NativeProfile
 import Mettapedia.Languages.MeTTa.HE.RuntimeContract
 import Mettapedia.Languages.MeTTa.HE.ArtifactBundle
+import Mettapedia.Languages.MeTTa.HE.FileRunner
 import Mettapedia.Languages.MeTTa.SearchPolicyContract
+import Mettapedia.Conformance.HECoreFiles
 
 private def usage : String :=
   String.intercalate "\n"
@@ -55,6 +57,8 @@ private def usage : String :=
     , "  search-policy check-metta            (default out-dir: artifacts/transition)"
     , "  bundle export-he"
     , "  bundle check-he"
+    , "  he-run <file.metta>"
+    , "  he-core-check"
     ]
 
 private def defaultLookupOutDir : System.FilePath :=
@@ -154,6 +158,10 @@ def main (args : List String) : IO UInt32 := do
   | ["bundle", "check-he"] =>
       Mettapedia.Languages.MeTTa.HE.ArtifactBundle.checkHeManifest
         defaultTransitionOutDir defaultLookupOutDir defaultSyntaxOutDir
+  | ["he-run", file] =>
+      Mettapedia.Languages.MeTTa.HE.runHEFileCommand file
+  | ["he-core-check"] =>
+      Mettapedia.Conformance.HECoreFiles.printCoreCheckSummary
   | _ =>
       IO.println usage
       pure 1

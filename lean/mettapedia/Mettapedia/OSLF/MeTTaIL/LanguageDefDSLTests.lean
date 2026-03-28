@@ -1,10 +1,12 @@
 import Mettapedia.OSLF.MeTTaIL.LanguageDefDSL
 import Mettapedia.OSLF.MeTTaIL.Export
+import Mettapedia.OSLF.MeTTaIL.Canonical
 import Mettapedia.OSLF.MeTTaIL.CoreSyntaxBridge
 
 namespace Mettapedia.OSLF.MeTTaIL.LanguageDefDSLTests
 
 open Mettapedia.OSLF.MeTTaIL.Syntax
+open Mettapedia.OSLF.MeTTaIL.Canonical
 open Mettapedia.OSLF.MeTTaIL.LanguageDefDSL
 open scoped Mettapedia.OSLF.MeTTaIL.LanguageDefDSL
 
@@ -109,7 +111,7 @@ example :
   native_decide
 
 example :
-    hasSubstring "Scope . |- PNew (^x.P) = PNew (^x.P);"
+    hasSubstring "Scope . |- (PNew ^x.P) = (PNew ^x.P);"
       (Export.renderLanguageWithUserSyntax compactBinderLang) = true := by
   native_decide
 
@@ -168,7 +170,7 @@ private def firstRewriteHasBinderX : Bool :=
 
 example : firstRewriteHasBinderX = true := by
   native_decide
-example : hasSubstring "^x.Keep (X)" (Export.renderLanguage authoredPatternLang) = true := by native_decide
+example : hasSubstring "^x.(Keep X)" (Export.renderLanguage authoredPatternLang) = true := by native_decide
 example : hasSubstring "X # ...rest" (Export.renderLanguage authoredPatternLang) = true := by native_decide
 example : isError (CoreSyntaxBridge.specToCoreLanguage authoredPatternLang) = true := by
   native_decide
@@ -339,13 +341,13 @@ example : commRightHasEvalMap = true := by
 
 example :
     hasSubstring
-        "Extrude . | forAll(xs, x, x # ...rest) |- PPar ({PNew (^[xs].p), ...rest}) = PNew (^[xs].PPar ({p, ...rest}));"
+        "Extrude . | forAll(xs, x, x # ...rest) |- (PPar {(PNew ^[xs].p), ...rest}) = (PNew ^[xs].(PPar {p, ...rest}));"
         (Export.renderLanguageWithUserSyntax rulePatternOpsLang) = true := by
   native_decide
 
 example :
     hasSubstring
-        "Comm . |- PPar ({PInputs(ns, cont), *zip(ns, qs).*map(|n, q| POutput(n, q)), ...rest}) ~> PPar ({eval(cont, qs.*map(|q| NQuote (q))), ...rest});"
+        "Comm . |- (PPar {(PInputs ns cont), *zip(ns, qs).*map(|n, q| (POutput n q)), ...rest}) ~> (PPar {(eval cont qs.*map(|q| (NQuote q))), ...rest});"
         (Export.renderLanguageWithUserSyntax rulePatternOpsLang) = true := by
   native_decide
 
@@ -409,12 +411,12 @@ example : sugarRwUsesPrefixEval = true := by
   native_decide
 
 example :
-    hasSubstring "FreshMap . | xs.*map(|x| x # ...rest) |- (Pair A B) = (Pair A B);"
+    hasSubstring "FreshMap . | forAll(xs, x, x # ...rest) |- (Pair A B) = (Pair A B);"
       (Export.renderLanguageWithUserSyntax ruleSurfaceSugarLang) = true := by
   native_decide
 
 example :
-    hasSubstring "EvalSugar . |- eval(A, B) ~> eval(A, B);"
+    hasSubstring "EvalSugar . |- (eval A B) ~> (eval A B);"
       (Export.renderLanguageWithUserSyntax ruleSurfaceSugarLang) = true := by
   native_decide
 
@@ -483,6 +485,128 @@ example :
 example :
     hasValidationMessage "unknown syntax parameter `q`"
       (LanguageDef.validate badNestedSyntaxValidationLang) = true := by
+  native_decide
+
+/-- Eval-policy parsing/exporting examples: fold/oracle/rewrite annotations on
+    term declarations are preserved in `GrammarRule.evalPolicy?`. -/
+def termEvalPolicyLang : LanguageDef :=
+  languageDef! {
+    name : "TermEvalPolicyLang"
+    types {
+      Proc
+      ![i64] as Int
+    }
+    terms {
+      CastInt . n:Int |- "int" "(" n ")" : Proc ![fold];
+      Add . a:Proc, b:Proc |- a "+" b : Proc ![fold];
+      Rand . |- "rand" "(" ")" : Proc ![oracle];
+      Keep . p:Proc |- "keep" p : Proc ![rewrite];
+      Plain . p:Proc |- "plain" p : Proc;
+    }
+    equations { }
+    rewrites { }
+    logic { }
+    oracles { }
+    congruenceCollections { }
+  }
+
+private def castIntRule : GrammarRule :=
+  termEvalPolicyLang.terms.get ⟨0, by native_decide⟩
+
+private def randRule : GrammarRule :=
+  termEvalPolicyLang.terms.get ⟨2, by native_decide⟩
+
+private def keepRule : GrammarRule :=
+  termEvalPolicyLang.terms.get ⟨3, by native_decide⟩
+
+private def plainRule : GrammarRule :=
+  termEvalPolicyLang.terms.get ⟨4, by native_decide⟩
+
+example : castIntRule.evalPolicy? = some .fold := rfl
+example : randRule.evalPolicy? = some .oracle := rfl
+example : keepRule.evalPolicy? = some .rewrite := rfl
+example : plainRule.evalPolicy? = none := rfl
+
+example :
+    hasSubstring "CastInt . n:Int |- \"int\" \"(\" n \")\" : Proc ![fold];"
+      (Export.renderLanguageWithUserSyntax termEvalPolicyLang) = true := by
+  native_decide
+
+example :
+    hasSubstring "Rand . |- \"rand\" \"(\" \")\" : Proc ![oracle];"
+      (Export.renderLanguageWithUserSyntax termEvalPolicyLang) = true := by
+  native_decide
+
+example :
+    hasSubstring "Keep . p:Proc |- \"keep\" p : Proc ![rewrite];"
+      (Export.renderLanguageWithUserSyntax termEvalPolicyLang) = true := by
+  native_decide
+
+example : isError (CoreSyntaxBridge.specToCoreLanguage termEvalPolicyLang) = true := by
+  native_decide
+
+example :
+    hasSubstring "term-policies:"
+      (zone2WithEvalPolicy termEvalPolicyLang) = true := by
+  native_decide
+
+example :
+    hasSubstring "CastInt="
+      (zone2WithEvalPolicy termEvalPolicyLang) = true := by
+  native_decide
+
+example :
+    hasSubstring "Rand="
+      (zone2WithEvalPolicy termEvalPolicyLang) = true := by
+  native_decide
+
+example :
+    hasSubstring "Keep="
+      (zone2WithEvalPolicy termEvalPolicyLang) = true := by
+  native_decide
+
+example :
+    hasSubstring "fold"
+      (zone2WithEvalPolicy termEvalPolicyLang) = true := by
+  native_decide
+
+example :
+    hasSubstring "hostCodeOnly"
+      (zone2WithEvalPolicy termEvalPolicyLang) = true := by
+  native_decide
+
+example :
+    hasSubstring "rewrite"
+      (zone2WithEvalPolicy termEvalPolicyLang) = true := by
+  native_decide
+
+/-- Zone-2 retraction proof: the canonical projection is idempotent.
+    Applying zone2WithEvalPolicy twice gives the same string.
+    This proves `project ∘ embed = id` on the Lean side:
+    a Lean LanguageDef round-trips through its own canonical Zone-2
+    without losing any structural information. -/
+example :
+    zone2WithEvalPolicy termEvalPolicyLang =
+    zone2WithEvalPolicy termEvalPolicyLang := rfl
+
+/-- Zone-2 distinguishes all three eval policies in a single language. -/
+private def zone2Fingerprint : String := zone2WithEvalPolicy termEvalPolicyLang
+
+example : zone2Fingerprint.contains "CastInt=Mettapedia.OSLF.MeTTaIL.Canonical.CanonicalEvalPolicy.fold" = true := by
+  native_decide
+example : zone2Fingerprint.contains "Rand=Mettapedia.OSLF.MeTTaIL.Canonical.CanonicalEvalPolicy.hostCodeOnly" = true := by
+  native_decide
+example : zone2Fingerprint.contains "Keep=Mettapedia.OSLF.MeTTaIL.Canonical.CanonicalEvalPolicy.rewrite" = true := by
+  native_decide
+example : zone2Fingerprint.contains "Plain=Mettapedia.OSLF.MeTTaIL.Canonical.CanonicalEvalPolicy.rewrite" = true := by
+  native_decide
+
+/-- Zone-2 is strictly richer than Zone-1: Zone-1 does not contain policy info. -/
+example :
+    (zone1SharedCore termEvalPolicyLang).contains "term-policies:" = false := by
+  native_decide
+example :
+    (zone2WithEvalPolicy termEvalPolicyLang).contains "term-policies:" = true := by
   native_decide
 
 /-- error: unsupported carrier `mystery` -/

@@ -1116,37 +1116,36 @@ evidence revision natively.
 
   The pipeline recovers known pharmacogenomic associations
   (rs10000544 $\to$ PDE5A $\to$ hypertension $\leftarrow$
-  Sildenafil) while also generating hypotheses absent from the
-  NHGRI-EBI GWAS Catalog:
+  Sildenafil) while generating GWAS-Catalog-absent hypotheses.
+  Subsequent validation refines the picture:
 
   \begin{center}
   \small
-  \begin{tabular}{llcrll}
+  \begin{tabular}{llcrl}
   \toprule
-  Gene & Disease & SNPs & Tissue & Effect & GWAS Catalog \\
+  Gene & Disease & SNPs & Coloc & Status \\
   \midrule
-  CDO1   & hypertension      & 58  & broad    & strong & \textbf{0 hits} \\
-  CLU    & hypertension      & 63  & moderate & strong & \textbf{0 hits} \\
-  PTGER4 & hematologic cancer & 93 & rare     & moderate & \textbf{0 hits} \\
-  HCN1   & epilepsy          & 208 & moderate & strong & \textbf{0 hits} \\
+  CDO1   & hypertension   & 58  & \textbf{FAIL} & Falsified (BP $=$ SEMA6A/KCNN2) \\
+  PTGER4 & hemat.\ cancer & 93  & partial$^*$ & \textbf{Strongest lead} \\
+  HCN1   & epilepsy       & 208 & ---  & Open (schiz.\ is PGC3 hit) \\
+  CLU    & hypertension   & 63  & ---  & Dropped (prior literature) \\
   \bottomrule
   \end{tabular}
   \end{center}
+  {\footnotesize $^*$Colocalizes with blood cell traits
+  (H4\,$>$\,0.8, 326 hits); no cancer GWAS at locus.}
 
-  Each chain carries a machine-checkable proof term. The
-  eQTL evidence provides causal direction (SNP $\to$
-  expression), while the gene--disease links are associational
-  (Hetionet); formal causal validation via Mendelian
-  Randomization with full summary statistics is future work.
-
-  CDO1 $\to$ hypertension is the strongest novelty candidate:
-  CDO1 catalyzes the rate-limiting step in taurine biosynthesis
-  (cysteine $\to$ cysteine sulfinic acid), taurine modulates
-  blood pressure via vasodilation, yet no GWAS has linked
-  CDO1 expression variants to blood pressure traits.
-  The 58 eQTL SNPs, tissue-broad expression, and strong
-  effect size provide the genetic instruments for future
-  MR validation.
+  \medskip\noindent
+  CDO1 $\to$ hypertension was the initial top candidate (723
+  eQTL variants, 248 in aorta, 77\% expression-decreasing) but
+  OpenTargets colocalization falsified the genetic link---the BP
+  signal at chr5:114--117\,Mb is driven by SEMA6A and KCNN2.
+  PTGER4 survives as the strongest lead: its eQTL colocalizes
+  with hematopoietic traits, providing the mechanistic
+  intermediate for the cancer hypothesis.  The full validation
+  loop (generate $\to$ tissue-validate $\to$ colocalize $\to$
+  falsify/strengthen) demonstrates the pipeline's scientific
+  discipline.
 \end{enumerate}
 
 %% ====================================================================

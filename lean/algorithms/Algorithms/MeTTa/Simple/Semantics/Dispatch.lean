@@ -14,6 +14,7 @@ structure Interface (σ : Type) where
   matchPattern : Pattern → Pattern → List Bindings
   normalizePattern : Pattern → Pattern
   dedupBindings : List Bindings → List Bindings
+  truthBindingsForCall? : σ → Pattern → Option (List Bindings) := fun _ _ => none
 
 structure Preservation (I : Interface σ) (P : σ → Prop) where
   eval_preserves :
@@ -82,6 +83,12 @@ private partial def hasFreeVar : Pattern → Bool
   | .multiLambda _ body => hasFreeVar body
   | .subst body repl => hasFreeVar body || hasFreeVar repl
   | .collection _ elems _ => elems.any hasFreeVar
+
+private def isTruthTarget : Pattern → Bool
+  | .apply "T" [] => true
+  | .apply "True" [] => true
+  | .apply "true" [] => true
+  | _ => false
 
 private def isVarLikePattern : Pattern → Bool
   | .fvar _ => true
@@ -208,6 +215,42 @@ def enumerateCallByRules (I : Interface σ) (s : σ) (expr : Pattern) :
                     let outBs := accBs.2
                     let rhs := I.applyBindings bs rule.right
                     let (sessRhs, rhsOut) := I.evalForRuleEnumeration sessBs rhs
+                    (sessRhs, outBs ++ rhsOut))
+                  (sess, outAcc)
+              else
+                (sess, outAcc)
+          | _ =>
+              (sess, outAcc))
+        (s, [])
+  | _ =>
+      (s, [])
+
+/-- Query-driven rule enumeration: match rule heads against the query expression so
+query variables are preserved into the enumerated rhs terms. This is the right
+direction for binding-producing truth queries such as `(green $x)`. -/
+def enumerateCallByRulesQuery (I : Interface σ) (s : σ) (expr : Pattern) :
+    σ × List Pattern :=
+  match expr with
+  | .apply rel _ =>
+      (I.rewrites s).foldl
+        (fun (acc : σ × List Pattern) rule =>
+          let sess := acc.1
+          let outAcc := acc.2
+          match rule.left with
+          | .apply relL _ =>
+              if relL == rel then
+                let subs := I.matchPattern rule.left expr
+                subs.foldl
+                  (fun (accBs : σ × List Pattern) bs =>
+                    let sessBs := accBs.1
+                    let outBs := accBs.2
+                    let rhs := I.applyBindings bs rule.right
+                    let (sessRhs, rhsOut) :=
+                      if hasFreeVar rhs then
+                        (sessBs, [rhs])
+                      else
+                        let (sessRhs, rhsOut0) := I.evalForRuleEnumeration sessBs rhs
+                        (sessRhs, if rhsOut0.isEmpty then [rhs] else rhsOut0)
                     (sessRhs, outBs ++ rhsOut))
                   (sess, outAcc)
               else
@@ -498,6 +541,10 @@ def matchHeadArgWithEval (I : Interface σ) (s : σ)
     match patN with
     | .apply _ (_ :: _) => true
     | _ => false
+  let callLikeTermArg :=
+    match termN with
+    | .apply _ (_ :: _) => true
+    | _ => false
   let variableLikeTermArg := isVarLikePattern termN
   let reverseCapture :=
     if variableLikeTermArg then
@@ -521,8 +568,32 @@ def matchHeadArgWithEval (I : Interface σ) (s : σ)
     else
       []
   let directAll := I.dedupBindings (direct ++ directRev)
-  if !callLikePatternArg && !directAll.isEmpty then
-    directAll
+  let truthBindings :=
+    if directAll.isEmpty && isTruthTarget patN && callLikeTermArg && !variableLikeTermArg then
+      match I.truthBindingsForCall? s termArg with
+      | some bs => I.dedupBindings bs
+      | none => []
+    else
+      []
+  let termEvalMatches :=
+    if directAll.isEmpty && truthBindings.isEmpty && callLikeTermArg && !variableLikeTermArg then
+      let (_sEval, termOut0) := I.eval s termArg
+      let termVals := if termOut0.isEmpty then [termArg] else termOut0
+      I.dedupBindings <|
+        termVals.flatMap (fun v =>
+          let vN := I.normalizePattern v
+          (I.matchPattern patN vN) ++ (I.matchPattern vN patN))
+    else
+      []
+  let directOrEval := I.dedupBindings (directAll ++ truthBindings ++ termEvalMatches)
+  let informativeDirectOrEval :=
+    if isTruthTarget patN && callLikeTermArg && !variableLikeTermArg && hasFreeVar termN then
+      let informative := directOrEval.filter (fun bs => !bs.isEmpty)
+      if informative.isEmpty then directOrEval else informative
+    else
+      directOrEval
+  if !callLikePatternArg && !informativeDirectOrEval.isEmpty then
+    informativeDirectOrEval
   else
     match patN with
     | .apply rel callArgs =>

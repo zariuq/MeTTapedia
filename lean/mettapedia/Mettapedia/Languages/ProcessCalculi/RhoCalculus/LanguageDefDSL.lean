@@ -1,5 +1,6 @@
 import Mettapedia.OSLF.MeTTaIL.LanguageDefDSL
 import Mettapedia.OSLF.MeTTaIL.Export
+import Mettapedia.OSLF.MeTTaIL.CoreSyntaxBridge
 
 /-!
 # RhoCalc Process Fragment in `languageDef!` Form
@@ -62,13 +63,61 @@ def rhoCalcProcessCore : LanguageDef :=
     congruenceCollections { HashBag }
   }
 
+/-- RhoCalc extension with authored native fold-term contracts.
+    The fold implementations remain host-native; Lean captures the typed term
+    contracts and eval policy explicitly through `![fold]`. -/
+def rhoCalcWithNativeFolds : LanguageDef :=
+  languageDef! {
+    name : "RhoCalc"
+    types {
+      Proc
+      Name
+      ![i64] as Int
+    }
+    terms {
+      PZero . |- "{}" : Proc;
+      PDrop . n:Name |- "*" "(" n ")" : Proc;
+      PPar . ps:HashBag(Proc) |- "{" ps.*sep("|") "}" : Proc;
+      POutput . n:Name, q:Proc |- n "!" "(" q ")" : Proc;
+      PInputs . ns:Vec(Name), ^[xs].p:[Name* -> Proc]
+        |- "(" *zip(ns, xs).*map(|n, x| n "?" x).*sep(",") ")" "." "{" p "}" : Proc;
+      NQuote . p:Proc |- "@" "(" p ")" : Name;
+      PNew . ^[xs].p:[Name* -> Proc]
+        |- "new" "(" xs.*sep(",") ")" "in" "{" p "}" : Proc;
+      CastInt . n:Int |- "int" "(" n ")" : Proc ![fold];
+      Add . a:Proc, b:Proc |- a "+" b : Proc ![fold];
+    }
+    equations {
+      QuoteDrop . |- (NQuote (PDrop N)) = N;
+      Extrude . xs.*map(|x| x # ...rest)
+        |- (PPar {(PNew ^[xs].p), ...rest}) = (PNew ^[xs].(PPar {p, ...rest}));
+    }
+    rewrites {
+      Comm . |- (PPar {(PInputs ns cont), *zip(ns,qs).*map(|n,q| (POutput n q)), ...rest})
+        ~> (PPar {(eval cont qs.*map(|q| (NQuote q))), ...rest});
+      Exec . |- (PDrop (NQuote P)) ~> P;
+      ParCong . | S ~> T |- (PPar {S, ...rest}) ~> (PPar {T, ...rest});
+      NewCong . | S ~> T |- (PNew ^[xs].S) ~> (PNew ^[xs].T);
+    }
+    logic { }
+    oracles { }
+    congruenceCollections { HashBag }
+  }
+
 abbrev rhoCalcProcessFragment : LanguageDef := rhoCalcProcessCore
 
 private def hasSubstring (needle haystack : String) : Bool :=
   haystack.contains needle
 
+private def isError {α : Type} : Except String α → Bool
+  | .error _ => true
+  | .ok _ => false
+
 def exportedRustSurface : String :=
   renderLanguageWithUserSyntax rhoCalcProcessCore
+
+def exportedRustSurfaceWithFolds : String :=
+  renderLanguageWithUserSyntax rhoCalcWithNativeFolds
 
 example : LanguageDef.validate rhoCalcProcessCore = [] := by
   native_decide
@@ -109,7 +158,7 @@ example :
 
 example :
     hasSubstring
-        "Extrude . | xs.*map(|x| x # ...rest) |- (PPar {(PNew ^[xs].p), ...rest}) = (PNew ^[xs].(PPar {p, ...rest}));"
+        "Extrude . | forAll(xs, x, x # ...rest) |- (PPar {(PNew ^[xs].p), ...rest}) = (PNew ^[xs].(PPar {p, ...rest}));"
         exportedRustSurface = true := by
   native_decide
 
@@ -131,6 +180,22 @@ example :
 example :
     hasSubstring "NewCong . | S ~> T |- (PNew ^[xs].S) ~> (PNew ^[xs].T);"
       exportedRustSurface = true := by
+  native_decide
+
+example : LanguageDef.validate rhoCalcWithNativeFolds = [] := by
+  native_decide
+
+example :
+    hasSubstring "CastInt . n:Int |- \"int\" \"(\" n \")\" : Proc ![fold];"
+      exportedRustSurfaceWithFolds = true := by
+  native_decide
+
+example :
+    hasSubstring "Add . a:Proc, b:Proc |- a \"+\" b : Proc ![fold];"
+      exportedRustSurfaceWithFolds = true := by
+  native_decide
+
+example : isError (Mettapedia.OSLF.MeTTaIL.CoreSyntaxBridge.specToCoreLanguage rhoCalcWithNativeFolds) = true := by
   native_decide
 
 end Mettapedia.Languages.ProcessCalculi.RhoCalculus.LanguageDefDSL
