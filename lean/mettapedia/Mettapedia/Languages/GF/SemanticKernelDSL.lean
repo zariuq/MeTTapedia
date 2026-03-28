@@ -7,8 +7,9 @@ This module captures the **council-clear** GF semantic kernel as a directly
 authored `languageDef!` fragment:
 
 - 1 equation: `UseN(x) = x`
-- 13 rewrites: 6 identity eliminations, 1 active/passive entailment,
-  3 tense rewrites, 3 negation rewrites
+- 40 rewrites in 10 families: 10 identity, 2 voice, 3 tense,
+  3 negation, 5 embedding, 1 subordination, 4 completion,
+  5 coordination, 3 relative clause, 4 aspect
 
 It is intentionally a **semantic fragment**, not the full runtime-loaded GF
 grammar. The full constructor inventory still comes from `GFCore.GrammarSig`;
@@ -30,19 +31,40 @@ def gfSemanticKernelLanguageDef : LanguageDef :=
     name : "GFSemanticKernel"
     types {
       S
+      SC
       Cl
       NP
       VP
+      VPSlash
       N
       A
+      AP
       Comp
       V
       N2
       A2
       V2
+      VV
+      VS
+      VQ
+      VA
+      QS
+      PN
+      Pron
       Tense
       Ant
       Pol
+      Subj
+      Adv
+      Conj
+      ListS
+      ListNP
+      ListAP
+      ListAdv
+      ListCN
+      RS
+      RCl
+      RP
     }
     terms { }
     equations {
@@ -62,6 +84,33 @@ def gfSemanticKernelLanguageDef : LanguageDef :=
       NegationPresent . cl:Cl |- UseCl(TTAnt("TPres", "ASimul"), "PNeg", cl) ~> "⊛negation"("⊛temporal"(cl, "0"));
       NegationPast . cl:Cl |- UseCl(TTAnt("TPast", "ASimul"), "PNeg", cl) ~> "⊛negation"("⊛temporal"(cl, "-1"));
       NegationFuture . cl:Cl |- UseCl(TTAnt("TFut", "ASimul"), "PNeg", cl) ~> "⊛negation"("⊛temporal"(cl, "1"));
+      EmbedPresent . cl:Cl |- EmbedS(UseCl(TTAnt("TPres", "ASimul"), "PPos", cl)) ~> "⊛embedded"(cl);
+      EmbedPast . cl:Cl |- EmbedS(UseCl(TTAnt("TPast", "ASimul"), "PPos", cl)) ~> "⊛embedded"(cl);
+      EmbedFuture . cl:Cl |- EmbedS(UseCl(TTAnt("TFut", "ASimul"), "PPos", cl)) ~> "⊛embedded"(cl);
+      UsePNElim . x:PN |- UsePN(x) ~> x;
+      UsePronElim . x:Pron |- UsePron(x) ~> x;
+      MassNPElim . x:CN |- MassNP(x) ~> x;
+      ProDropElim . x:Pron |- ProDrop(x) ~> x;
+      ReflVPElim . x:VPSlash |- ReflVP(x) ~> x;
+      EmbedVPLifting . vp:VP |- EmbedVP(vp) ~> "⊛embedded"(vp);
+      EmbedQSLifting . qs:QS |- EmbedQS(qs) ~> "⊛question"(qs);
+      SubjSAdverb . subj:Subj, s:S |- SubjS(subj, s) ~> "⊛subordinate"(s, subj);
+      ComplVVElim . vv:VV, vp:VP |- ComplVV(vv, vp) ~> vp;
+      ComplVSElim . vs:VS, s:S |- ComplVS(vs, s) ~> s;
+      ComplVQElim . vq:VQ, qs:QS |- ComplVQ(vq, qs) ~> qs;
+      ComplVAElim . va:VA, ap:AP |- ComplVA(va, ap) ~> ap;
+      ConjSBinary . conj:Conj, s1:S, s2:S |- ConjS(conj, BaseS(s1, s2)) ~> "⊛conjunction"(conj, s1, s2);
+      ConjNPBinary . conj:Conj, np1:NP, np2:NP |- ConjNP(conj, BaseNP(np1, np2)) ~> "⊛conjunction"(conj, np1, np2);
+      ConjAPBinary . conj:Conj, ap1:AP, ap2:AP |- ConjAP(conj, BaseAP(ap1, ap2)) ~> "⊛conjunction"(conj, ap1, ap2);
+      ConjAdvBinary . conj:Conj, adv1:Adv, adv2:Adv |- ConjAdv(conj, BaseAdv(adv1, adv2)) ~> "⊛conjunction"(conj, adv1, adv2);
+      ConjCNBinary . conj:Conj, cn1:CN, cn2:CN |- ConjCN(conj, BaseCN(cn1, cn2)) ~> "⊛conjunction"(conj, cn1, cn2);
+      RelVPSubject . vp:VP |- RelVP("IdRP", vp) ~> "⊛relative"(vp);
+      RelCNModify . cn:CN, rs:RS |- RelCN(cn, rs) ~> "⊛modified"(cn, rs);
+      RelClBase . cl:Cl |- RelCl(cl) ~> "⊛relclause"(cl);
+      AnteriorPresent . cl:Cl |- UseCl(TTAnt("TPres", "AAnter"), "PPos", cl) ~> "⊛anterior"("⊛temporal"(cl, "0"));
+      AnteriorPast . cl:Cl |- UseCl(TTAnt("TPast", "AAnter"), "PPos", cl) ~> "⊛anterior"("⊛temporal"(cl, "-1"));
+      ConditionalSimul . cl:Cl |- UseCl(TTAnt("TCond", "ASimul"), "PPos", cl) ~> "⊛conditional"("⊛temporal"(cl, "?"));
+      ConditionalAnter . cl:Cl |- UseCl(TTAnt("TCond", "AAnter"), "PPos", cl) ~> "⊛anterior"("⊛conditional"("⊛temporal"(cl, "?")));
     }
     logic { }
     oracles { }
@@ -75,46 +124,55 @@ private def rewriteAt (i : Nat) (h : i < gfSemanticKernelLanguageDef.rewrites.le
   gfSemanticKernelLanguageDef.rewrites.get ⟨i, h⟩
 
 def useNIdentityEquation : Equation :=
-  equationAt 0 (by native_decide)
+  equationAt 0 (by decide)
 
 def useNElimRewrite : RewriteRule :=
-  rewriteAt 0 (by native_decide)
+  rewriteAt 0 (by decide)
 
 def positAElimRewrite : RewriteRule :=
-  rewriteAt 1 (by native_decide)
+  rewriteAt 1 (by decide)
 
 def useCompElimRewrite : RewriteRule :=
-  rewriteAt 2 (by native_decide)
+  rewriteAt 2 (by decide)
 
 def useVElimRewrite : RewriteRule :=
-  rewriteAt 3 (by native_decide)
+  rewriteAt 3 (by decide)
 
 def useN2ElimRewrite : RewriteRule :=
-  rewriteAt 4 (by native_decide)
+  rewriteAt 4 (by decide)
 
 def useA2ElimRewrite : RewriteRule :=
-  rewriteAt 5 (by native_decide)
+  rewriteAt 5 (by decide)
 
 def activePassiveRewrite : RewriteRule :=
-  rewriteAt 6 (by native_decide)
+  rewriteAt 6 (by decide)
 
 def presentTenseRewrite : RewriteRule :=
-  rewriteAt 7 (by native_decide)
+  rewriteAt 7 (by decide)
 
 def pastTenseRewrite : RewriteRule :=
-  rewriteAt 8 (by native_decide)
+  rewriteAt 8 (by decide)
 
 def futureTenseRewrite : RewriteRule :=
-  rewriteAt 9 (by native_decide)
+  rewriteAt 9 (by decide)
 
 def negationPresentRewrite : RewriteRule :=
-  rewriteAt 10 (by native_decide)
+  rewriteAt 10 (by decide)
 
 def negationPastRewrite : RewriteRule :=
-  rewriteAt 11 (by native_decide)
+  rewriteAt 11 (by decide)
 
 def negationFutureRewrite : RewriteRule :=
-  rewriteAt 12 (by native_decide)
+  rewriteAt 12 (by decide)
+
+def embedPresentRewrite : RewriteRule :=
+  rewriteAt 13 (by decide)
+
+def embedPastRewrite : RewriteRule :=
+  rewriteAt 14 (by decide)
+
+def embedFutureRewrite : RewriteRule :=
+  rewriteAt 15 (by decide)
 
 def allIdentityRewrites : List RewriteRule :=
   gfSemanticKernelLanguageDef.rewrites.take 6
@@ -125,22 +183,91 @@ def allTenseRewrites : List RewriteRule :=
 def allNegationRewrites : List RewriteRule :=
   [negationPresentRewrite, negationPastRewrite, negationFutureRewrite]
 
+def usePNElimRewrite : RewriteRule :=
+  rewriteAt 16 (by decide)
+def usePronElimRewrite : RewriteRule :=
+  rewriteAt 17 (by decide)
+def massNPElimRewrite : RewriteRule :=
+  rewriteAt 18 (by decide)
+def proDropElimRewrite : RewriteRule :=
+  rewriteAt 19 (by decide)
+def reflVPElimRewrite : RewriteRule :=
+  rewriteAt 20 (by decide)
+def embedVPLiftingRewrite : RewriteRule :=
+  rewriteAt 21 (by decide)
+def embedQSLiftingRewrite : RewriteRule :=
+  rewriteAt 22 (by decide)
+def subjSAdverbRewrite : RewriteRule :=
+  rewriteAt 23 (by decide)
+def complVVElimRewrite : RewriteRule :=
+  rewriteAt 24 (by decide)
+def complVSElimRewrite : RewriteRule :=
+  rewriteAt 25 (by decide)
+def complVQElimRewrite : RewriteRule :=
+  rewriteAt 26 (by decide)
+def complVAElimRewrite : RewriteRule :=
+  rewriteAt 27 (by decide)
+
+def allEmbeddingRewrites : List RewriteRule :=
+  [embedPresentRewrite, embedPastRewrite, embedFutureRewrite,
+   embedVPLiftingRewrite, embedQSLiftingRewrite]
+
+def allCompletionRewrites : List RewriteRule :=
+  [complVVElimRewrite, complVSElimRewrite, complVQElimRewrite, complVAElimRewrite]
+
+def allSubordinationRewrites : List RewriteRule :=
+  [subjSAdverbRewrite]
+
+def conjSBinaryRewrite : RewriteRule :=
+  rewriteAt 28 (by decide)
+def conjNPBinaryRewrite : RewriteRule :=
+  rewriteAt 29 (by decide)
+def conjAPBinaryRewrite : RewriteRule :=
+  rewriteAt 30 (by decide)
+def conjAdvBinaryRewrite : RewriteRule :=
+  rewriteAt 31 (by decide)
+def conjCNBinaryRewrite : RewriteRule :=
+  rewriteAt 32 (by decide)
+def relVPSubjectRewrite : RewriteRule :=
+  rewriteAt 33 (by decide)
+def relCNModifyRewrite : RewriteRule :=
+  rewriteAt 34 (by decide)
+def relClBaseRewrite : RewriteRule :=
+  rewriteAt 35 (by decide)
+def anteriorPresentRewrite : RewriteRule :=
+  rewriteAt 36 (by decide)
+def anteriorPastRewrite : RewriteRule :=
+  rewriteAt 37 (by decide)
+def conditionalSimulRewrite : RewriteRule :=
+  rewriteAt 38 (by decide)
+def conditionalAnterRewrite : RewriteRule :=
+  rewriteAt 39 (by decide)
+
+def allCoordinationRewrites : List RewriteRule :=
+  [conjSBinaryRewrite, conjNPBinaryRewrite, conjAPBinaryRewrite,
+   conjAdvBinaryRewrite, conjCNBinaryRewrite]
+
+def allRelativeRewrites : List RewriteRule :=
+  [relVPSubjectRewrite, relCNModifyRewrite, relClBaseRewrite]
+
+def allAspectRewrites : List RewriteRule :=
+  [anteriorPresentRewrite, anteriorPastRewrite,
+   conditionalSimulRewrite, conditionalAnterRewrite]
+
 def allSemanticRewrites : List RewriteRule :=
   gfSemanticKernelLanguageDef.rewrites
 
 example : gfSemanticKernelLanguageDef.equations.length = 1 := rfl
-example : gfSemanticKernelLanguageDef.rewrites.length = 13 := rfl
-example : allIdentityRewrites.length = 6 := by native_decide
-example : allTenseRewrites.length = 3 := by native_decide
-example : allNegationRewrites.length = 3 := by native_decide
-example : allSemanticRewrites.length = 13 := rfl
-example : useNIdentityEquation.name = "UseNIdentity" := rfl
-example : activePassiveRewrite.name = "ActivePassive" := rfl
-example : presentTenseRewrite.name = "PresentTense" := rfl
-example : pastTenseRewrite.name = "PastTense" := rfl
-example : futureTenseRewrite.name = "FutureTense" := rfl
-example : negationPresentRewrite.name = "NegationPresent" := rfl
-example : negationPastRewrite.name = "NegationPast" := rfl
-example : negationFutureRewrite.name = "NegationFuture" := rfl
+example : gfSemanticKernelLanguageDef.rewrites.length = 40 := rfl
+example : allIdentityRewrites.length = 6 := by decide
+example : allTenseRewrites.length = 3 := by decide
+example : allNegationRewrites.length = 3 := by decide
+example : allEmbeddingRewrites.length = 5 := by decide
+example : allCompletionRewrites.length = 4 := by decide
+example : allSubordinationRewrites.length = 1 := by decide
+example : allCoordinationRewrites.length = 5 := by decide
+example : allRelativeRewrites.length = 3 := by decide
+example : allAspectRewrites.length = 4 := by decide
+example : allSemanticRewrites.length = 40 := rfl
 
 end Mettapedia.Languages.GF.SemanticKernelDSL

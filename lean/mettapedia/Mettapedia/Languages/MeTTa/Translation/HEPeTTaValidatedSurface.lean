@@ -316,67 +316,67 @@ theorem stableCommonForm_cons_of_head (hd : Atom) (args : List Atom)
       by_cases hchain : c = "chain"
       · subst hchain
         have hfalse : False := by
-          simpa [isStableCommonHead, isStableCommonForm, isForbiddenHeadSymbol] using hhd
+          simp [isStableCommonHead, isStableCommonForm, isForbiddenHeadSymbol] at hhd
         exact False.elim hfalse
       · by_cases hcollapse : c = "collapse-bind"
         · subst hcollapse
           have hfalse : False := by
-            simpa [isStableCommonHead, isStableCommonForm, isForbiddenHeadSymbol] using hhd
+            simp [isStableCommonHead, isStableCommonForm, isForbiddenHeadSymbol] at hhd
           exact False.elim hfalse
         · by_cases hsuperpose : c = "superpose-bind"
           · subst hsuperpose
             have hfalse : False := by
-              simpa [isStableCommonHead, isStableCommonForm, isForbiddenHeadSymbol] using hhd
+              simp [isStableCommonHead, isStableCommonForm, isForbiddenHeadSymbol] at hhd
             exact False.elim hfalse
           · by_cases hswitch : c = "switch"
             · subst hswitch
               have hfalse : False := by
-                simpa [isStableCommonHead, isStableCommonForm, isForbiddenHeadSymbol] using hhd
+                simp [isStableCommonHead, isStableCommonForm, isForbiddenHeadSymbol] at hhd
               exact False.elim hfalse
             · by_cases hswitchm : c = "switch-minimal"
               · subst hswitchm
                 have hfalse : False := by
-                  simpa [isStableCommonHead, isStableCommonForm, isForbiddenHeadSymbol] using hhd
+                  simp [isStableCommonHead, isStableCommonForm, isForbiddenHeadSymbol] at hhd
                 exact False.elim hfalse
               · by_cases hatomsubst : c = "atom-subst"
                 · subst hatomsubst
                   have hfalse : False := by
-                    simpa [isStableCommonHead, isStableCommonForm, isForbiddenHeadSymbol] using hhd
+                    simp [isStableCommonHead, isStableCommonForm, isForbiddenHeadSymbol] at hhd
                   exact False.elim hfalse
                 · by_cases hnop : c = "nop"
                   · subst hnop
                     have hfalse : False := by
-                      simpa [isStableCommonHead, isStableCommonForm, isForbiddenHeadSymbol] using hhd
+                      simp [isStableCommonHead, isStableCommonForm, isForbiddenHeadSymbol] at hhd
                     exact False.elim hfalse
                   · by_cases hfunction : c = "function"
                     · subst hfunction
                       have hfalse : False := by
-                        simpa [isStableCommonHead, isStableCommonForm, isForbiddenHeadSymbol] using hhd
+                        simp [isStableCommonHead, isStableCommonForm, isForbiddenHeadSymbol] at hhd
                       exact False.elim hfalse
                     · by_cases hprogn : c = "progn"
                       · subst hprogn
                         have hfalse : False := by
-                          simpa [isStableCommonHead, isStableCommonForm, isForbiddenHeadSymbol] using hhd
+                          simp [isStableCommonHead, isStableCommonForm, isForbiddenHeadSymbol] at hhd
                         exact False.elim hfalse
                       · by_cases hprog1 : c = "prog1"
                         · subst hprog1
                           have hfalse : False := by
-                            simpa [isStableCommonHead, isStableCommonForm, isForbiddenHeadSymbol] using hhd
+                            simp [isStableCommonHead, isStableCommonForm, isForbiddenHeadSymbol] at hhd
                           exact False.elim hfalse
                         · by_cases hfoldall : c = "foldall"
                           · subst hfoldall
                             have hfalse : False := by
-                              simpa [isStableCommonHead, isStableCommonForm, isForbiddenHeadSymbol] using hhd
+                              simp [isStableCommonHead, isStableCommonForm, isForbiddenHeadSymbol] at hhd
                             exact False.elim hfalse
                           · by_cases hlt : c = "@<"
                             · subst hlt
                               have hfalse : False := by
-                                simpa [isStableCommonHead, isStableCommonForm, isForbiddenHeadSymbol] using hhd
+                                simp [isStableCommonHead, isStableCommonForm, isForbiddenHeadSymbol] at hhd
                               exact False.elim hfalse
                             · by_cases hgt : c = "@>"
                               · subst hgt
                                 have hfalse : False := by
-                                  simpa [isStableCommonHead, isStableCommonForm, isForbiddenHeadSymbol] using hhd
+                                  simp [isStableCommonHead, isStableCommonForm, isForbiddenHeadSymbol] at hhd
                                 exact False.elim hfalse
                               · simp [isStableCommonForm, isStableCommonExpr, isStableCommonHead,
                                   isForbiddenHeadSymbol, isStableCommonList, hchain, hcollapse,

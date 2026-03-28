@@ -1,4 +1,5 @@
 import Mettapedia.Logic.HOL.OriginalReflectionReduction
+import Mettapedia.Logic.HOL.ParamTruthLemma
 import Mettapedia.Logic.HOL.IntuitionisticSoundness
 import Mathlib.Order.UpperLower.CompleteLattice
 
@@ -137,6 +138,81 @@ abbrev witnessedTarget : ClosedFormula WitnessedConst :=
 /-- The source signature is witnessed by the base constant `w`. -/
 def witnessedBaseWitnesses : BaseWitnesses Unit WitnessedConst where
   witness _ := .const WitnessedConst.w
+
+/-- Total root chooser induced by the witnessed source signature.
+
+At context `[]`, `ParamConst WitnessedConst []` has no fresh parameters, so we
+can simply lift the recursive source witness term chosen by `BaseWitnesses`. -/
+def witnessedParamChoose :
+    {σ : Ty Unit} →
+      Formula (ParamConst WitnessedConst ([] : Ctx Unit)) [σ] →
+        ClosedTerm (ParamConst WitnessedConst ([] : Ctx Unit)) σ
+  | σ, _ =>
+      liftParamTerm (Base := Unit) (Const := WitnessedConst) ([] : Ctx Unit)
+        (BaseWitnesses.witnessTerm witnessedBaseWitnesses σ)
+
+@[simp] theorem rootChoose_witnessedParamChoose
+    {σ : Ty Unit} (φ : Formula WitnessedConst [σ]) :
+    rootChoose (Base := Unit) (Const := WitnessedConst) witnessedParamChoose φ =
+      BaseWitnesses.witnessTerm witnessedBaseWitnesses σ := by
+  unfold rootChoose witnessedParamChoose
+  simp [liftParamTerm]
+
+/--
+The root witness-axiom theory for `witnessedParamChoose` already proves the
+source sentence `witnessedTarget`.
+
+This is the exact positive half of the new root-bridge obstruction. -/
+theorem witnessedTarget_rootExWitnessProvable :
+    ClosedTheorySet.Provable
+      (Const := WitnessedConst)
+      (RootExWitnessAxioms
+        (Base := Unit) (Const := WitnessedConst) witnessedParamChoose)
+      witnessedTarget := by
+  refine ⟨
+    [(.imp
+        (.ex witnessedAtom)
+        (instantiate (Base := Unit)
+          (rootChoose
+            (Base := Unit)
+            (Const := WitnessedConst)
+            witnessedParamChoose
+            witnessedAtom)
+          witnessedAtom))],
+    ?_,
+    ?_⟩
+  · intro ψ hψ
+    simp [RootExWitnessAxioms] at hψ ⊢
+    subst hψ
+    exact ⟨witnessedBaseTy, witnessedAtom, rfl⟩
+  · apply ExtDerivation.exI
+      (rootChoose
+        (Base := Unit)
+        (Const := WitnessedConst)
+        witnessedParamChoose
+        witnessedAtom)
+    simpa [witnessedTarget, instantiate, weaken] using
+      (ExtDerivation.hyp
+        (Const := WitnessedConst)
+        (show
+          (.imp
+            (.ex witnessedAtom)
+            (instantiate (Base := Unit)
+              (rootChoose
+                (Base := Unit)
+                (Const := WitnessedConst)
+                witnessedParamChoose
+                witnessedAtom)
+              witnessedAtom)) ∈
+            [(.imp
+                (.ex witnessedAtom)
+                (instantiate (Base := Unit)
+                  (rootChoose
+                    (Base := Unit)
+                    (Const := WitnessedConst)
+                    witnessedParamChoose
+                    witnessedAtom)
+                  witnessedAtom))] from by simp))
 
 /--
 The one-step exact witness theory already proves the lifted old-language target.
@@ -1002,6 +1078,131 @@ theorem witnessedTarget_not_theorem :
     ¬ ExtDerivation.Theorem OneStepHenkinConst.WitnessedConst witnessedTarget := by
   intro d
   exact vFrameModel_not_models (IntuitionisticSoundness.theorem_sound d vFrameModel)
+
+/--
+The bare source-side root witness bridge is false for the concrete witnessed
+chooser `witnessedParamChoose`.
+
+This is the corrected analogue of the older one-step obstruction: fixed chosen
+witness axioms already force `witnessedTarget`, while `witnessedTarget` is not a
+source theorem. -/
+theorem witnessed_rootExWitness_notProvable_false :
+    ¬
+      (∀ {Δ : List (ClosedFormula OneStepHenkinConst.WitnessedConst)}
+          {φ : ClosedFormula OneStepHenkinConst.WitnessedConst},
+        ¬ ExtDerivation OneStepHenkinConst.WitnessedConst Δ φ →
+          ¬ ClosedTheorySet.Provable
+              (Const := OneStepHenkinConst.WitnessedConst)
+              (fun ψ =>
+                ψ ∈ Δ ∨
+                  ψ ∈ RootExWitnessAxioms
+                    (Base := Unit)
+                    (Const := OneStepHenkinConst.WitnessedConst)
+                    OneStepHenkinConst.witnessedParamChoose)
+              φ) := by
+  intro hBridge
+  have hNot :
+      ¬ ExtDerivation OneStepHenkinConst.WitnessedConst []
+          OneStepHenkinConst.witnessedTarget :=
+    witnessedTarget_not_theorem
+  have hNotProv :=
+    hBridge (Δ := []) (φ := OneStepHenkinConst.witnessedTarget) hNot
+  have hProvAug :
+      ClosedTheorySet.Provable
+        (Const := OneStepHenkinConst.WitnessedConst)
+        (fun ψ =>
+          ψ ∈ ([] : List (ClosedFormula OneStepHenkinConst.WitnessedConst)) ∨
+            ψ ∈ RootExWitnessAxioms
+              (Base := Unit)
+              (Const := OneStepHenkinConst.WitnessedConst)
+              OneStepHenkinConst.witnessedParamChoose)
+        OneStepHenkinConst.witnessedTarget := by
+    exact ClosedTheorySet.provable_mono
+      (Const := OneStepHenkinConst.WitnessedConst)
+      (T := RootExWitnessAxioms
+        (Base := Unit)
+        (Const := OneStepHenkinConst.WitnessedConst)
+        OneStepHenkinConst.witnessedParamChoose)
+      (U := fun ψ =>
+        ψ ∈ ([] : List (ClosedFormula OneStepHenkinConst.WitnessedConst)) ∨
+          ψ ∈ RootExWitnessAxioms
+            (Base := Unit)
+            (Const := OneStepHenkinConst.WitnessedConst)
+            OneStepHenkinConst.witnessedParamChoose)
+      (φ := OneStepHenkinConst.witnessedTarget)
+      (by
+        intro ψ hψ
+        exact Or.inr hψ)
+      OneStepHenkinConst.witnessedTarget_rootExWitnessProvable
+  exact hNotProv hProvAug
+
+/-- No `RootExWitnessBridge` can use `witnessedParamChoose` as its chooser. -/
+theorem no_rootExWitnessBridge_with_witnessedParamChoose :
+    ¬ ∃ B : RootExWitnessBridge Unit OneStepHenkinConst.WitnessedConst,
+        ∀ {σ : Ty Unit},
+          (ψ : Formula
+            (ParamConst OneStepHenkinConst.WitnessedConst ([] : Ctx Unit)) [σ]) →
+            B.choose ψ = OneStepHenkinConst.witnessedParamChoose ψ := by
+  intro hB
+  rcases hB with ⟨B, hEq⟩
+  exact witnessed_rootExWitness_notProvable_false
+    (by
+      intro Δ φ hNot
+      have hchoose :
+          RootExWitnessAxioms
+              (Base := Unit)
+              (Const := OneStepHenkinConst.WitnessedConst)
+              (fun {σ} =>
+                B.choose
+                  (σ := σ)) =
+            RootExWitnessAxioms
+              (Base := Unit)
+              (Const := OneStepHenkinConst.WitnessedConst)
+              OneStepHenkinConst.witnessedParamChoose := by
+        funext χ
+        unfold RootExWitnessAxioms
+        apply propext
+        constructor <;> intro hχ <;> rcases hχ with ⟨σ, ψ, hχ⟩
+        · refine ⟨σ, ψ, ?_⟩
+          have hroot :
+              rootChoose
+                  (Base := Unit)
+                  (Const := OneStepHenkinConst.WitnessedConst)
+                  (fun {σ} => B.choose (σ := σ))
+                  ψ =
+                rootChoose
+                  (Base := Unit)
+                  (Const := OneStepHenkinConst.WitnessedConst)
+                  OneStepHenkinConst.witnessedParamChoose
+                  ψ := by
+            unfold rootChoose
+            simp [hEq (liftParam
+              (Base := Unit)
+              (Const := OneStepHenkinConst.WitnessedConst)
+              (Γ' := ([] : Ctx Unit))
+              ψ)]
+          simpa [hroot] using hχ
+        · refine ⟨σ, ψ, ?_⟩
+          have hroot :
+              rootChoose
+                  (Base := Unit)
+                  (Const := OneStepHenkinConst.WitnessedConst)
+                  (fun {σ} => B.choose (σ := σ))
+                  ψ =
+                rootChoose
+                  (Base := Unit)
+                  (Const := OneStepHenkinConst.WitnessedConst)
+                  OneStepHenkinConst.witnessedParamChoose
+                  ψ := by
+            unfold rootChoose
+            simp [hEq (liftParam
+              (Base := Unit)
+              (Const := OneStepHenkinConst.WitnessedConst)
+              (Γ' := ([] : Ctx Unit))
+              ψ)]
+          simpa [hroot] using hχ
+      simpa [hchoose] using
+        (B.rootExWitness_notProvable (Δ := Δ) (φ := φ) hNot))
 
 /-- WitnessedTheoryConservativityGoal is FALSE for the concrete witnessed signature. -/
 theorem witnessedTheoryConservativityGoal_false :

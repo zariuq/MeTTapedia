@@ -13,7 +13,8 @@ The key scope boundary is honest:
 - shared atomspace surface: `match`, `get-atoms`, `add-atom`, `remove-atom`
 - explicit handles are allowed as long as the handle itself is already in the
   stable/common fragment
-- allocation of new spaces is still outside this theorem file
+- allocation of new spaces is modeled by `SpaceAllocStep` with
+  translation-preservation theorems for both directions
 
 The proof strategy is intentionally lightweight: the executable translators are
 already identity on these validated fragments, so translation preservation of
@@ -495,6 +496,35 @@ theorem spaceAllocStep_preserves_nonInterference
       have hneq : ref ≠ ref' := by intro hEq; subst hEq; exact hrefNotMem href'
       simp [lookupSpace, atom_beq_false_of_ne hneq, hold]
 
+/-- `(new-space)` is a stable common form: both translators leave it unchanged.
+    The fixed-point follows because `new-space` is not a rewrite head for either
+    translator, and its single-symbol child list is trivially stable. -/
+private theorem translateHE_newSpace_id (s : Nat) :
+    translateHE (.expression [.symbol "new-space"]) s =
+      (.expression [.symbol "new-space"], s) := by
+  simp [translateHE, translateHE.translateHEList]
+
+private theorem translatePeTTa_newSpace_id (s : Nat) :
+    translatePeTTa (.expression [.symbol "new-space"]) s =
+      (.expression [.symbol "new-space"], s) := by
+  simp [translatePeTTa, translatePeTTa.translatePeTTaList]
+
+theorem translateHE_preserves_spaceAllocStep
+    {cfg cfg' : SpaceAllocConfig} {cmd : Atom} {obs : SpaceObservation} {s : Nat}
+    (hstep : SpaceAllocStep cfg cmd cfg' obs) :
+    SpaceAllocStep cfg (translateHE cmd s).1 cfg' obs := by
+  cases hstep with
+  | newSpace ref freshTail hfresh hmiss =>
+    simpa [translateHE_newSpace_id] using SpaceAllocStep.newSpace cfg ref freshTail hfresh hmiss
+
+theorem translatePeTTa_preserves_spaceAllocStep
+    {cfg cfg' : SpaceAllocConfig} {cmd : Atom} {obs : SpaceObservation} {s : Nat}
+    (hstep : SpaceAllocStep cfg cmd cfg' obs) :
+    SpaceAllocStep cfg (translatePeTTa cmd s).1 cfg' obs := by
+  cases hstep with
+  | newSpace ref freshTail hfresh hmiss =>
+    simpa [translatePeTTa_newSpace_id] using SpaceAllocStep.newSpace cfg ref freshTail hfresh hmiss
+
 inductive SpaceTrace : SpaceConfig → List Atom → SpaceConfig → List SpaceObservation → Prop where
   | nil (cfg : SpaceConfig) :
       SpaceTrace cfg [] cfg []
@@ -639,5 +669,76 @@ theorem translatePeTTa_preserves_defaultAtomSpaceStep
     SpaceStep cfg (translatePeTTa cmd s).1 cfg' obs := by
   exact translatePeTTa_preserves_spaceStep
     (sharedAtomSpaceFragment_of_default cmd hcmd) hstep
+
+/-! ## Module Import Formalization
+
+A module is a list of atoms loaded from a `.metta` file.
+`!(import! &self M)` expands M's atoms into the importing space.
+
+The key theorem: for a module whose atoms are all in the stable common
+fragment, translating before or after import produces the same space
+contents. This follows from the fixed-point property: both translators
+are identity on stable-common atoms. -/
+
+/-- A module is a list of atoms (the contents of a .metta file). -/
+abbrev ModuleAtoms := List Atom
+
+/-- All atoms in a module are stable common forms (no dialect-specific constructs). -/
+def StableCommonModule (atoms : ModuleAtoms) : Prop :=
+  ∀ a, a ∈ atoms → isStableCommonForm a = true
+
+/-- Import a module into a space by adding all atoms. -/
+noncomputable def importModule (space : Atomspace) (atoms : ModuleAtoms) : Atomspace :=
+  atoms.foldl (fun s a => s.add a) space
+
+/-- Translating a stable-common module with translateHE is identity.
+    Each atom is unchanged, so the translated list equals the original. -/
+theorem translateHE_stableCommonModule_id
+    (atoms : ModuleAtoms) (s : Nat)
+    (hmod : StableCommonModule atoms) :
+    (translateHE.translateHEList atoms s).1 = atoms := by
+  induction atoms generalizing s with
+  | nil => rfl
+  | cons x xs ih =>
+    have hx_stable : isStableCommonForm x = true := hmod x (by simp)
+    have hx : translateHE x s = (x, s) :=
+      translateHE_id_of_stableCommonForm x s hx_stable
+    have hxs := ih s (fun a ha => hmod a (by simp [ha]))
+    simp [translateHE.translateHEList, hx, hxs]
+
+/-- Translating a stable-common module with translatePeTTa is identity. -/
+theorem translatePeTTa_stableCommonModule_id
+    (atoms : ModuleAtoms) (s : Nat)
+    (hmod : StableCommonModule atoms) :
+    (translatePeTTa.translatePeTTaList atoms s).1 = atoms := by
+  induction atoms generalizing s with
+  | nil => rfl
+  | cons x xs ih =>
+    have hx_stable : isStableCommonForm x = true := hmod x (by simp)
+    have hx : translatePeTTa x s = (x, s) :=
+      translatePeTTa_id_of_stableCommonForm x s hx_stable
+    have hxs := ih s (fun a ha => hmod a (by simp [ha]))
+    simp [translatePeTTa.translatePeTTaList, hx, hxs]
+
+/-- Import commutativity for HE: importing a stable-common module then
+    translating produces the same space as translating then importing.
+
+    More precisely: since the translator is identity on stable-common
+    atoms, the translated module IS the original module, so the import
+    result is identical regardless of translation order. -/
+theorem importModule_translateHE_commutes
+    (space : Atomspace) (atoms : ModuleAtoms) (s : Nat)
+    (hmod : StableCommonModule atoms) :
+    importModule space (translateHE.translateHEList atoms s).1 =
+    importModule space atoms := by
+  rw [translateHE_stableCommonModule_id atoms s hmod]
+
+/-- Import commutativity for PeTTa. -/
+theorem importModule_translatePeTTa_commutes
+    (space : Atomspace) (atoms : ModuleAtoms) (s : Nat)
+    (hmod : StableCommonModule atoms) :
+    importModule space (translatePeTTa.translatePeTTaList atoms s).1 =
+    importModule space atoms := by
+  rw [translatePeTTa_stableCommonModule_id atoms s hmod]
 
 end Mettapedia.Languages.MeTTa.Translation

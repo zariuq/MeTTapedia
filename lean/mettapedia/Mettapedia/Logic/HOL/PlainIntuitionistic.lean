@@ -1,5 +1,6 @@
 import Mettapedia.Logic.HOL.IntuitionisticSoundness
 import Mettapedia.Logic.HOL.IntuitionisticCompleteness
+import Mettapedia.Logic.HOL.ParamCompleteness
 import Mettapedia.Logic.HOL.Semantics.Reduct
 
 namespace Mettapedia.Logic.HOL
@@ -146,6 +147,118 @@ theorem liftBase_validFrom_of_validFrom
       Δ
       φ
       (fun v => nomatch v)).mp hBase
+
+/--
+Direct growing-domain endgame reduction:
+if a saturated root counterworld can always be turned into a standard
+`HeytingHenkinModel` countermodel, then the corrected root witness bridge already
+implies original-signature completeness.
+
+Positive example:
+this is the intended mainline interface for the `ParamWorld` / `ParamTruthLemma`
+route.
+
+Negative example:
+this does NOT assume the too-strong lifted cumulative-Henkin non-provability
+principle from the auxiliary obstruction files.
+-/
+theorem provable_of_rootExWitness_bridge_and_rootCounterworld_countermodel
+    (hCounter :
+      ∀ {Δ : List (ClosedFormula Const)} {φ : ClosedFormula Const},
+        ParamCompleteness.RootCounterworld Base Const Δ φ →
+          ∃ M : HeytingHenkinModel.{u, v, w} Base Const,
+            ¬ HeytingHenkinModel.modelsFrom M Δ φ (fun v => nomatch v))
+    (B : RootExWitnessBridge Base Const)
+    {Δ : List (ClosedFormula Const)}
+    {φ : ClosedFormula Const}
+    (hValid :
+      ∀ M : HeytingHenkinModel.{u, v, w} Base Const,
+        HeytingHenkinModel.modelsFrom M Δ φ (fun v => nomatch v)) :
+    ExtDerivation Const Δ φ := by
+  classical
+  by_contra hNot
+  have hRoot :
+      ParamCompleteness.RootCounterworld Base Const Δ φ :=
+    Classical.choice <|
+      ParamCompleteness.hasRootCounterworld_of_not_provable
+        (Base := Base)
+        (Const := Const)
+        B
+        hNot
+  rcases hCounter hRoot with ⟨M, hM⟩
+  exact hM (hValid M)
+
+theorem provable_of_rootExWitness_bridge_and_root_countermodel
+    (hCounter :
+      ∀ {Δ : List (ClosedFormula Const)} {φ : ClosedFormula Const},
+        (∃ W : PrimeTheory.Saturated Const ([] : Ctx Base),
+            (∀ ψ, ψ ∈ Δ → liftParamFormula [] ψ ∈ W.carrier) ∧
+            liftParamFormula [] φ ∉ W.carrier) →
+          ∃ M : HeytingHenkinModel.{u, v, w} Base Const,
+            ¬ HeytingHenkinModel.modelsFrom M Δ φ (fun v => nomatch v))
+    (B : RootExWitnessBridge Base Const)
+    {Δ : List (ClosedFormula Const)}
+    {φ : ClosedFormula Const}
+    (hValid :
+      ∀ M : HeytingHenkinModel.{u, v, w} Base Const,
+        HeytingHenkinModel.modelsFrom M Δ φ (fun v => nomatch v)) :
+    ExtDerivation Const Δ φ := by
+  exact provable_of_rootExWitness_bridge_and_rootCounterworld_countermodel
+    (Base := Base)
+    (Const := Const)
+    (hCounter := by
+      intro Δ φ C
+      exact hCounter C.to_exists_world)
+    B
+    hValid
+
+/--
+The direct growing-domain completeness reduction stated as validity iff
+provability at the corrected root witness boundary.
+-/
+theorem validFrom_iff_provable_of_rootExWitness_bridge_and_rootCounterworld_countermodel
+    (hCounter :
+      ∀ {Δ : List (ClosedFormula Const)} {φ : ClosedFormula Const},
+        ParamCompleteness.RootCounterworld Base Const Δ φ →
+          ∃ M : HeytingHenkinModel.{u, v, w} Base Const,
+            ¬ HeytingHenkinModel.modelsFrom M Δ φ (fun v => nomatch v))
+    (B : RootExWitnessBridge Base Const)
+    {Δ : List (ClosedFormula Const)}
+    {φ : ClosedFormula Const} :
+    (∀ M : HeytingHenkinModel.{u, v, w} Base Const,
+      HeytingHenkinModel.modelsFrom M Δ φ (fun v => nomatch v)) ↔
+      ExtDerivation Const Δ φ := by
+  constructor
+  · intro hValid
+    exact provable_of_rootExWitness_bridge_and_rootCounterworld_countermodel
+      (Base := Base)
+      (Const := Const)
+      hCounter
+      B
+      hValid
+  · exact validFrom_of_provable (Base := Base) (Const := Const)
+
+theorem validFrom_iff_provable_of_rootExWitness_bridge_and_root_countermodel
+    (hCounter :
+      ∀ {Δ : List (ClosedFormula Const)} {φ : ClosedFormula Const},
+        (∃ W : PrimeTheory.Saturated Const ([] : Ctx Base),
+            (∀ ψ, ψ ∈ Δ → liftParamFormula [] ψ ∈ W.carrier) ∧
+            liftParamFormula [] φ ∉ W.carrier) →
+          ∃ M : HeytingHenkinModel.{u, v, w} Base Const,
+            ¬ HeytingHenkinModel.modelsFrom M Δ φ (fun v => nomatch v))
+    (B : RootExWitnessBridge Base Const)
+    {Δ : List (ClosedFormula Const)}
+    {φ : ClosedFormula Const} :
+    (∀ M : HeytingHenkinModel.{u, v, w} Base Const,
+      HeytingHenkinModel.modelsFrom M Δ φ (fun v => nomatch v)) ↔
+      ExtDerivation Const Δ φ := by
+  exact validFrom_iff_provable_of_rootExWitness_bridge_and_rootCounterworld_countermodel
+    (Base := Base)
+    (Const := Const)
+    (hCounter := by
+      intro Δ φ C
+      exact hCounter C.to_exists_world)
+    B
 
 /--
 If a lifted canonical counterworld can always be turned into a standard

@@ -89,8 +89,23 @@ private def internalGrammarRule
   , params := params.map (fun pair => TermParam.simple pair.1 pair.2)
   , syntaxPattern := [] }
 
+-- Semantic support types: only types needed by support constructors.
+-- Added conservatively — each type must be referenced by at least one
+-- support constructor, and all support constructors must be self-consistent.
+-- NEVER add constructors for functions that might exist in generated grammars
+-- (duplicate constructors break LanguageDef.validate).
 private def gfSemanticSupportTypes : List TypeDecl :=
-  [TypeDecl.plain "TimeOffset"]
+  [ TypeDecl.plain "TimeOffset", TypeDecl.plain "SC"
+  , TypeDecl.plain "QS", TypeDecl.plain "AP"
+  , TypeDecl.plain "VPSlash", TypeDecl.plain "PN", TypeDecl.plain "Pron"
+  , TypeDecl.plain "CN", TypeDecl.plain "Adv"
+  , TypeDecl.plain "VV", TypeDecl.plain "VS", TypeDecl.plain "VQ"
+  , TypeDecl.plain "VA", TypeDecl.plain "Subj"
+  , TypeDecl.plain "Conj"
+  , TypeDecl.plain "ListS", TypeDecl.plain "ListNP"
+  , TypeDecl.plain "ListAP", TypeDecl.plain "ListAdv"
+  , TypeDecl.plain "ListCN"
+  , TypeDecl.plain "RS", TypeDecl.plain "RCl", TypeDecl.plain "RP" ]
 
 private def gfPassV2GrammarRule : GrammarRule :=
   internalGrammarRule "PassV2" "VP" [("v", .base "V2")]
@@ -108,8 +123,103 @@ private def gfTimeOffsetGrammarRules : List GrammarRule :=
 private def gfNegationGrammarRule : GrammarRule :=
   internalGrammarRule "⊛negation" "S" [("inner", .base "S")]
 
+/-- EmbedS : S → SC — the GF RGL's sentential complement constructor.
+    This is the **quotation operator**: it takes a live sentence (which can
+    reduce via tense/voice/negation rewrites) and freezes it as a sentential
+    complement (SC). In NTT, this is a **quoting** arrow (domain = S = procSort),
+    giving typing action ◇.
+
+    Linguistically: "that John sees Anna" embeds the sentence as an SC,
+    available to be the subject of "is true" or complement of "believe". -/
+private def gfEmbedSGrammarRule : GrammarRule :=
+  internalGrammarRule "EmbedS" "SC" [("s", .base "S")]
+
+/-- ⊛embedded : Cl → SC — the bare propositional content of an embedded sentence.
+    When a sentence UseCl(tense, pol, cl) is embedded, the tense and polarity
+    are stripped, leaving the bare clause as the semantic content of the quotation. -/
+private def gfEmbeddedGrammarRule : GrammarRule :=
+  internalGrammarRule "⊛embedded" "SC" [("cl", .base "Cl")]
+
+private def gfEmbedVPGrammarRule : GrammarRule :=
+  internalGrammarRule "EmbedVP" "SC" [("vp", .base "VP")]
+
+private def gfEmbedQSGrammarRule : GrammarRule :=
+  internalGrammarRule "EmbedQS" "SC" [("qs", .base "QS")]
+
+private def gfQuestionGrammarRule : GrammarRule :=
+  internalGrammarRule "⊛question" "SC" [("qs", .base "QS")]
+
+private def gfSubordinateGrammarRule : GrammarRule :=
+  internalGrammarRule "⊛subordinate" "Adv"
+    [("s", .base "S"), ("subj", .base "Subj")]
+
+private def gfSubjSGrammarRule : GrammarRule :=
+  internalGrammarRule "SubjS" "Adv"
+    [("subj", .base "Subj"), ("s", .base "S")]
+
+private def gfMassNPGrammarRule : GrammarRule :=
+  internalGrammarRule "MassNP" "NP" [("cn", .base "CN")]
+
+private def gfUsePNGrammarRule : GrammarRule :=
+  internalGrammarRule "UsePN" "NP" [("pn", .base "PN")]
+
+private def gfUsePronGrammarRule : GrammarRule :=
+  internalGrammarRule "UsePron" "NP" [("pron", .base "Pron")]
+
+private def gfProDropGrammarRule : GrammarRule :=
+  internalGrammarRule "ProDrop" "Pron" [("pron", .base "Pron")]
+
+private def gfReflVPGrammarRule : GrammarRule :=
+  internalGrammarRule "ReflVP" "VP" [("vps", .base "VPSlash")]
+
+private def gfComplVVGrammarRule : GrammarRule :=
+  internalGrammarRule "ComplVV" "VP" [("vv", .base "VV"), ("vp", .base "VP")]
+
+private def gfComplVSGrammarRule : GrammarRule :=
+  internalGrammarRule "ComplVS" "VP" [("vs", .base "VS"), ("s", .base "S")]
+
+private def gfComplVQGrammarRule : GrammarRule :=
+  internalGrammarRule "ComplVQ" "VP" [("vq", .base "VQ"), ("qs", .base "QS")]
+
+private def gfComplVAGrammarRule : GrammarRule :=
+  internalGrammarRule "ComplVA" "VP" [("va", .base "VA"), ("ap", .base "AP")]
+
+-- Semantic output constructors for Tier 3 (coordination, relative, aspect).
+private def gfConjunctionGrammarRule : GrammarRule :=
+  internalGrammarRule "⊛conjunction" "S"
+    [("conj", .base "Conj"), ("a", .base "S"), ("b", .base "S")]
+
+private def gfRelativeGrammarRule : GrammarRule :=
+  internalGrammarRule "⊛relative" "RS" [("vp", .base "VP")]
+
+private def gfModifiedGrammarRule : GrammarRule :=
+  internalGrammarRule "⊛modified" "CN"
+    [("cn", .base "CN"), ("rs", .base "RS")]
+
+private def gfRelclauseGrammarRule : GrammarRule :=
+  internalGrammarRule "⊛relclause" "RCl" [("cl", .base "Cl")]
+
+private def gfAnteriorGrammarRule : GrammarRule :=
+  internalGrammarRule "⊛anterior" "S" [("s", .base "S")]
+
+private def gfConditionalGrammarRule : GrammarRule :=
+  internalGrammarRule "⊛conditional" "S" [("s", .base "S")]
+
+private def gfCondTimeOffsetGrammarRule : GrammarRule :=
+  internalGrammarRule "?" "TimeOffset" []
+
+-- Only include support constructors that are genuinely NEW (not in any GF grammar).
+-- Constructors like UsePN, UsePron, ConjS, BaseS, etc. are provided by the grammar
+-- itself and must NOT be duplicated here (duplicate constructors break validate).
 private def gfSemanticSupportTerms : List GrammarRule :=
-  gfPassV2GrammarRule :: gfTemporalGrammarRule :: gfNegationGrammarRule :: gfTimeOffsetGrammarRules
+  [ gfPassV2GrammarRule, gfTemporalGrammarRule, gfNegationGrammarRule
+  , gfEmbedSGrammarRule, gfEmbeddedGrammarRule
+  , gfEmbedVPGrammarRule, gfEmbedQSGrammarRule, gfQuestionGrammarRule
+  , gfSubordinateGrammarRule
+  , gfConjunctionGrammarRule
+  , gfRelativeGrammarRule, gfModifiedGrammarRule, gfRelclauseGrammarRule
+  , gfAnteriorGrammarRule, gfConditionalGrammarRule, gfCondTimeOffsetGrammarRule
+  ] ++ gfTimeOffsetGrammarRules
 
 -- ═══════════════════════════════════════════════════════════════════
 -- Phase 2: Shared GF semantic kernel (authored via languageDef!)
@@ -189,7 +299,32 @@ private def gfSemanticSupportTerms : List GrammarRule :=
 @[reducible] def allNegationRewrites : List RewriteRule :=
   SemanticKernelDSL.allNegationRewrites
 
-/-- All semantic entailment rewrites (identity + active-passive + tense + negation). -/
+/-- Embedding + present tense: EmbedS(UseCl(TPres, PPos, cl)) ⇝ ⊛embedded(cl).
+    Sentential complement embedding strips tense/polarity to bare clause. -/
+@[reducible] def embedPresentRewrite : RewriteRule :=
+  SemanticKernelDSL.embedPresentRewrite
+
+/-- Embedding + past tense. -/
+@[reducible] def embedPastRewrite : RewriteRule :=
+  SemanticKernelDSL.embedPastRewrite
+
+/-- Embedding + future tense. -/
+@[reducible] def embedFutureRewrite : RewriteRule :=
+  SemanticKernelDSL.embedFutureRewrite
+
+/-- All embedding rewrites. -/
+@[reducible] def allEmbeddingRewrites : List RewriteRule :=
+  SemanticKernelDSL.allEmbeddingRewrites
+
+/-- All completion rewrites (ComplVV, ComplVS, ComplVQ, ComplVA). -/
+@[reducible] def allCompletionRewrites : List RewriteRule :=
+  SemanticKernelDSL.allCompletionRewrites
+
+/-- All subordination rewrites. -/
+@[reducible] def allSubordinationRewrites : List RewriteRule :=
+  SemanticKernelDSL.allSubordinationRewrites
+
+/-- All semantic entailment rewrites (7 families, 29 rules). -/
 @[reducible] def allSemanticRewrites : List RewriteRule :=
   SemanticKernelDSL.allSemanticRewrites
 

@@ -32,25 +32,52 @@ open Mettapedia.OSLF.Framework
 /-- GF rewrite labels in the compact semantic kernel. -/
 inductive GFRewriteLabel where
   | useN | positA | useV | useComp | useN2 | useA2
-  | activePassive
+  | usePN | usePron | massNP | proDrop
+  | activePassive | reflVP
   | presentTense | pastTense | futureTense
   | negationPresent | negationPast | negationFuture
+  | embedPresent | embedPast | embedFuture
+  | embedVPLifting | embedQSLifting
+  | subjSAdverb
+  | complVV | complVS | complVQ | complVA
+  | conjSBinary | conjNPBinary | conjAPBinary | conjAdvBinary | conjCNBinary
+  | relVPSubject | relCNModify | relClBase
+  | anteriorPresent | anteriorPast | conditionalSimul | conditionalAnter
   deriving DecidableEq, Repr
 
-/-- Rewrite families for independence reasoning. -/
+/-- Rewrite families for independence reasoning.
+    Seven families: wrapper (identity elimination), voice (active/passive/reflexive),
+    tense (temporal tagging), negation (polarity), embedding (quotation ◇),
+    subordination (clause → adverbial), completion (verb frame projection). -/
 inductive GFRewriteFamily where
   | wrapper
   | voice
   | tense
   | negation
+  | embedding
+  | subordination
+  | completion
+  | coordination
+  | relative
+  | aspect
   deriving DecidableEq, Repr
 
 /-- Family classification of GF rewrite labels. -/
 def labelFamily : GFRewriteLabel → GFRewriteFamily
-  | .useN | .positA | .useV | .useComp | .useN2 | .useA2 => .wrapper
-  | .activePassive => .voice
+  | .useN | .positA | .useV | .useComp | .useN2 | .useA2
+  | .usePN | .usePron | .massNP | .proDrop => .wrapper
+  | .activePassive | .reflVP => .voice
   | .presentTense | .pastTense | .futureTense => .tense
   | .negationPresent | .negationPast | .negationFuture => .negation
+  | .embedPresent | .embedPast | .embedFuture
+  | .embedVPLifting | .embedQSLifting => .embedding
+  | .subjSAdverb => .subordination
+  | .complVV | .complVS | .complVQ | .complVA => .completion
+  | .conjSBinary | .conjNPBinary | .conjAPBinary
+  | .conjAdvBinary | .conjCNBinary => .coordination
+  | .relVPSubject | .relCNModify | .relClBase => .relative
+  | .anteriorPresent | .anteriorPast
+  | .conditionalSimul | .conditionalAnter => .aspect
 
 /-- One-step top-level GF semantic rewrite relation by explicit label. -/
 inductive GFTopStep : GFRewriteLabel → Pattern → Pattern → Prop where
@@ -112,6 +139,116 @@ inductive GFTopStep : GFRewriteLabel → Pattern → Pattern → Prop where
           , .apply "PNeg" []
           , cl ])
         (.apply "⊛negation" [.apply "⊛temporal" [cl, .apply "1" []]])
+  | embedPresent (cl : Pattern) :
+      GFTopStep .embedPresent
+        (.apply "EmbedS"
+          [ .apply "UseCl"
+            [ .apply "TTAnt" [.apply "TPres" [], .apply "ASimul" []]
+            , .apply "PPos" []
+            , cl ]])
+        (.apply "⊛embedded" [cl])
+  | embedPast (cl : Pattern) :
+      GFTopStep .embedPast
+        (.apply "EmbedS"
+          [ .apply "UseCl"
+            [ .apply "TTAnt" [.apply "TPast" [], .apply "ASimul" []]
+            , .apply "PPos" []
+            , cl ]])
+        (.apply "⊛embedded" [cl])
+  | embedFuture (cl : Pattern) :
+      GFTopStep .embedFuture
+        (.apply "EmbedS"
+          [ .apply "UseCl"
+            [ .apply "TTAnt" [.apply "TFut" [], .apply "ASimul" []]
+            , .apply "PPos" []
+            , cl ]])
+        (.apply "⊛embedded" [cl])
+  | usePN (p : Pattern) :
+      GFTopStep .usePN (.apply "UsePN" [p]) p
+  | usePron (p : Pattern) :
+      GFTopStep .usePron (.apply "UsePron" [p]) p
+  | massNP (p : Pattern) :
+      GFTopStep .massNP (.apply "MassNP" [p]) p
+  | proDrop (p : Pattern) :
+      GFTopStep .proDrop (.apply "ProDrop" [p]) p
+  | reflVP (p : Pattern) :
+      GFTopStep .reflVP (.apply "ReflVP" [p]) p
+  | embedVPLifting (vp : Pattern) :
+      GFTopStep .embedVPLifting (.apply "EmbedVP" [vp]) (.apply "⊛embedded" [vp])
+  | embedQSLifting (qs : Pattern) :
+      GFTopStep .embedQSLifting (.apply "EmbedQS" [qs]) (.apply "⊛question" [qs])
+  | subjSAdverb (subj s : Pattern) :
+      GFTopStep .subjSAdverb
+        (.apply "SubjS" [subj, s])
+        (.apply "⊛subordinate" [s, subj])
+  | complVV (vv vp : Pattern) :
+      GFTopStep .complVV (.apply "ComplVV" [vv, vp]) vp
+  | complVS (vs s : Pattern) :
+      GFTopStep .complVS (.apply "ComplVS" [vs, s]) s
+  | complVQ (vq qs : Pattern) :
+      GFTopStep .complVQ (.apply "ComplVQ" [vq, qs]) qs
+  | complVA (va ap : Pattern) :
+      GFTopStep .complVA (.apply "ComplVA" [va, ap]) ap
+  | conjSBinary (conj s1 s2 : Pattern) :
+      GFTopStep .conjSBinary
+        (.apply "ConjS" [conj, .apply "BaseS" [s1, s2]])
+        (.apply "⊛conjunction" [conj, s1, s2])
+  | conjNPBinary (conj np1 np2 : Pattern) :
+      GFTopStep .conjNPBinary
+        (.apply "ConjNP" [conj, .apply "BaseNP" [np1, np2]])
+        (.apply "⊛conjunction" [conj, np1, np2])
+  | conjAPBinary (conj ap1 ap2 : Pattern) :
+      GFTopStep .conjAPBinary
+        (.apply "ConjAP" [conj, .apply "BaseAP" [ap1, ap2]])
+        (.apply "⊛conjunction" [conj, ap1, ap2])
+  | conjAdvBinary (conj adv1 adv2 : Pattern) :
+      GFTopStep .conjAdvBinary
+        (.apply "ConjAdv" [conj, .apply "BaseAdv" [adv1, adv2]])
+        (.apply "⊛conjunction" [conj, adv1, adv2])
+  | conjCNBinary (conj cn1 cn2 : Pattern) :
+      GFTopStep .conjCNBinary
+        (.apply "ConjCN" [conj, .apply "BaseCN" [cn1, cn2]])
+        (.apply "⊛conjunction" [conj, cn1, cn2])
+  | relVPSubject (vp : Pattern) :
+      GFTopStep .relVPSubject
+        (.apply "RelVP" [.apply "IdRP" [], vp])
+        (.apply "⊛relative" [vp])
+  | relCNModify (cn rs : Pattern) :
+      GFTopStep .relCNModify
+        (.apply "RelCN" [cn, rs])
+        (.apply "⊛modified" [cn, rs])
+  | relClBase (cl : Pattern) :
+      GFTopStep .relClBase
+        (.apply "RelCl" [cl])
+        (.apply "⊛relclause" [cl])
+  | anteriorPresent (cl : Pattern) :
+      GFTopStep .anteriorPresent
+        (.apply "UseCl"
+          [ .apply "TTAnt" [.apply "TPres" [], .apply "AAnter" []]
+          , .apply "PPos" []
+          , cl ])
+        (.apply "⊛anterior" [.apply "⊛temporal" [cl, .apply "0" []]])
+  | anteriorPast (cl : Pattern) :
+      GFTopStep .anteriorPast
+        (.apply "UseCl"
+          [ .apply "TTAnt" [.apply "TPast" [], .apply "AAnter" []]
+          , .apply "PPos" []
+          , cl ])
+        (.apply "⊛anterior" [.apply "⊛temporal" [cl, .apply "-1" []]])
+  | conditionalSimul (cl : Pattern) :
+      GFTopStep .conditionalSimul
+        (.apply "UseCl"
+          [ .apply "TTAnt" [.apply "TCond" [], .apply "ASimul" []]
+          , .apply "PPos" []
+          , cl ])
+        (.apply "⊛conditional" [.apply "⊛temporal" [cl, .apply "?" []]])
+  | conditionalAnter (cl : Pattern) :
+      GFTopStep .conditionalAnter
+        (.apply "UseCl"
+          [ .apply "TTAnt" [.apply "TCond" [], .apply "AAnter" []]
+          , .apply "PPos" []
+          , cl ])
+        (.apply "⊛anterior" [.apply "⊛conditional" [.apply "⊛temporal" [cl, .apply "?" []]]])
 
 /-- Unlabeled top-step reduction relation for the semantic kernel. -/
 def GFTopReduces (x y : Pattern) : Prop := ∃ ℓ, GFTopStep ℓ x y
@@ -156,6 +293,72 @@ def topStepOut : Pattern → Option Pattern
       , .apply "PNeg" []
       , cl ] =>
       some (.apply "⊛negation" [.apply "⊛temporal" [cl, .apply "1" []]])
+  | .apply "EmbedS"
+      [ .apply "UseCl"
+        [ .apply "TTAnt" [.apply "TPres" [], .apply "ASimul" []]
+        , .apply "PPos" []
+        , cl ]] =>
+      some (.apply "⊛embedded" [cl])
+  | .apply "EmbedS"
+      [ .apply "UseCl"
+        [ .apply "TTAnt" [.apply "TPast" [], .apply "ASimul" []]
+        , .apply "PPos" []
+        , cl ]] =>
+      some (.apply "⊛embedded" [cl])
+  | .apply "EmbedS"
+      [ .apply "UseCl"
+        [ .apply "TTAnt" [.apply "TFut" [], .apply "ASimul" []]
+        , .apply "PPos" []
+        , cl ]] =>
+      some (.apply "⊛embedded" [cl])
+  | .apply "UsePN" [p] => some p
+  | .apply "UsePron" [p] => some p
+  | .apply "MassNP" [p] => some p
+  | .apply "ProDrop" [p] => some p
+  | .apply "ReflVP" [p] => some p
+  | .apply "EmbedVP" [vp] => some (.apply "⊛embedded" [vp])
+  | .apply "EmbedQS" [qs] => some (.apply "⊛question" [qs])
+  | .apply "SubjS" [subj, s] => some (.apply "⊛subordinate" [s, subj])
+  | .apply "ComplVV" [_, vp] => some vp
+  | .apply "ComplVS" [_, s] => some s
+  | .apply "ComplVQ" [_, qs] => some qs
+  | .apply "ComplVA" [_, ap] => some ap
+  | .apply "ConjS" [conj, .apply "BaseS" [s1, s2]] =>
+      some (.apply "⊛conjunction" [conj, s1, s2])
+  | .apply "ConjNP" [conj, .apply "BaseNP" [np1, np2]] =>
+      some (.apply "⊛conjunction" [conj, np1, np2])
+  | .apply "ConjAP" [conj, .apply "BaseAP" [ap1, ap2]] =>
+      some (.apply "⊛conjunction" [conj, ap1, ap2])
+  | .apply "ConjAdv" [conj, .apply "BaseAdv" [adv1, adv2]] =>
+      some (.apply "⊛conjunction" [conj, adv1, adv2])
+  | .apply "ConjCN" [conj, .apply "BaseCN" [cn1, cn2]] =>
+      some (.apply "⊛conjunction" [conj, cn1, cn2])
+  | .apply "RelVP" [.apply "IdRP" [], vp] =>
+      some (.apply "⊛relative" [vp])
+  | .apply "RelCN" [cn, rs] =>
+      some (.apply "⊛modified" [cn, rs])
+  | .apply "RelCl" [cl] =>
+      some (.apply "⊛relclause" [cl])
+  | .apply "UseCl"
+      [ .apply "TTAnt" [.apply "TPres" [], .apply "AAnter" []]
+      , .apply "PPos" []
+      , cl ] =>
+      some (.apply "⊛anterior" [.apply "⊛temporal" [cl, .apply "0" []]])
+  | .apply "UseCl"
+      [ .apply "TTAnt" [.apply "TPast" [], .apply "AAnter" []]
+      , .apply "PPos" []
+      , cl ] =>
+      some (.apply "⊛anterior" [.apply "⊛temporal" [cl, .apply "-1" []]])
+  | .apply "UseCl"
+      [ .apply "TTAnt" [.apply "TCond" [], .apply "ASimul" []]
+      , .apply "PPos" []
+      , cl ] =>
+      some (.apply "⊛conditional" [.apply "⊛temporal" [cl, .apply "?" []]])
+  | .apply "UseCl"
+      [ .apply "TTAnt" [.apply "TCond" [], .apply "AAnter" []]
+      , .apply "PPos" []
+      , cl ] =>
+      some (.apply "⊛anterior" [.apply "⊛conditional" [.apply "⊛temporal" [cl, .apply "?" []]]])
   | _ => none
 
 /-- Family selected by the top-step matcher. -/
@@ -197,6 +400,64 @@ def topStepFamily : Pattern → Option GFRewriteFamily
       , .apply "PNeg" []
       , _ ] =>
       some .negation
+  | .apply "EmbedS"
+      [ .apply "UseCl"
+        [ .apply "TTAnt" [.apply "TPres" [], .apply "ASimul" []]
+        , .apply "PPos" []
+        , _ ]] =>
+      some .embedding
+  | .apply "EmbedS"
+      [ .apply "UseCl"
+        [ .apply "TTAnt" [.apply "TPast" [], .apply "ASimul" []]
+        , .apply "PPos" []
+        , _ ]] =>
+      some .embedding
+  | .apply "EmbedS"
+      [ .apply "UseCl"
+        [ .apply "TTAnt" [.apply "TFut" [], .apply "ASimul" []]
+        , .apply "PPos" []
+        , _ ]] =>
+      some .embedding
+  | .apply "UsePN" [_] => some .wrapper
+  | .apply "UsePron" [_] => some .wrapper
+  | .apply "MassNP" [_] => some .wrapper
+  | .apply "ProDrop" [_] => some .wrapper
+  | .apply "ReflVP" [_] => some .voice
+  | .apply "EmbedVP" [_] => some .embedding
+  | .apply "EmbedQS" [_] => some .embedding
+  | .apply "SubjS" [_, _] => some .subordination
+  | .apply "ComplVV" [_, _] => some .completion
+  | .apply "ComplVS" [_, _] => some .completion
+  | .apply "ComplVQ" [_, _] => some .completion
+  | .apply "ComplVA" [_, _] => some .completion
+  | .apply "ConjS" [_, .apply "BaseS" [_, _]] => some .coordination
+  | .apply "ConjNP" [_, .apply "BaseNP" [_, _]] => some .coordination
+  | .apply "ConjAP" [_, .apply "BaseAP" [_, _]] => some .coordination
+  | .apply "ConjAdv" [_, .apply "BaseAdv" [_, _]] => some .coordination
+  | .apply "ConjCN" [_, .apply "BaseCN" [_, _]] => some .coordination
+  | .apply "RelVP" [.apply "IdRP" [], _] => some .relative
+  | .apply "RelCN" [_, _] => some .relative
+  | .apply "RelCl" [_] => some .relative
+  | .apply "UseCl"
+      [ .apply "TTAnt" [.apply "TPres" [], .apply "AAnter" []]
+      , .apply "PPos" []
+      , _ ] =>
+      some .aspect
+  | .apply "UseCl"
+      [ .apply "TTAnt" [.apply "TPast" [], .apply "AAnter" []]
+      , .apply "PPos" []
+      , _ ] =>
+      some .aspect
+  | .apply "UseCl"
+      [ .apply "TTAnt" [.apply "TCond" [], .apply "ASimul" []]
+      , .apply "PPos" []
+      , _ ] =>
+      some .aspect
+  | .apply "UseCl"
+      [ .apply "TTAnt" [.apply "TCond" [], .apply "AAnter" []]
+      , .apply "PPos" []
+      , _ ] =>
+      some .aspect
   | _ => none
 
 theorem topStepOut_of_GFTopStep

@@ -114,14 +114,12 @@ example : paperLang.rewrites = gfSemanticRewritesForSig paperSig := rfl
 example : paperLang.equations.length = 1 := by
   native_decide
 
--- Exact rewrite count: 8 of 13 kernel rewrites pass validation.
--- UseN + ActivePassive + 3 tense + 3 negation = 8.
--- 5 excluded: PositA, UseComp, UseV, UseN2, UseA2 (constructors absent from sig).
--- Note: negation rewrites pass validation via the arity-0 exemption in
--- validatePatternConstructors (PNeg has arity 0 so isn't checked against the
--- known constructor list). They are included but never fire on PaperAmbiguitySig
--- parse trees because PNeg is not a declared function in the grammar.
-example : paperLang.rewrites.length = 8 := by
+-- Rewrite count: of 40 kernel rewrites, 18 pass validation for PaperAmbiguitySig.
+-- Tier 1-2: UseN, ActivePassive, 3 tense, 3 negation, 3 tense-embed, UsePN,
+--   EmbedVPLifting, EmbedQSLifting = 14.
+-- Tier 3: AnteriorPresent, AnteriorPast, ConditionalSimul, ConditionalAnter = +4.
+-- Coordination/relative/subordination/completion filtered (absent constructors).
+example : paperLang.rewrites.length = 18 := by
   native_decide
 
 example : paperLang.equations.map (·.name) = ["UseNIdentity"] := by
@@ -227,16 +225,51 @@ example :
   native_decide
 
 /- ═══════════════════════════════════════════════════════════════════
+   Embedding: the quoting arrow (◇ in NTT)
+   ═══════════════════════════════════════════════════════════════════ -/
+
+-- Positive: embedding rewrites are in the semantic kernel
+example : "EmbedPresent" ∈ paperLang.rewrites.map (·.name) := by
+  native_decide
+
+-- Positive: embedding a present-tense sentence reduces to stripped content.
+-- EmbedS(UseCl(TPres, PPos, PredVP(john, ComplSlash(SlashV2a(see), anna))))
+--   ~> ⊛embedded(PredVP(john, ComplSlash(SlashV2a(see), anna)))
+def embedSPresentSentencePattern : Pattern :=
+  .apply "EmbedS" [presentSentencePattern]
+
+def embeddedActiveClausePattern : Pattern :=
+  .apply "⊛embedded" [activeClausePattern]
+
+example :
+    embeddedActiveClausePattern ∈
+      rewriteWithContextWithPremises paperLang embedSPresentSentencePattern := by
+  native_decide
+
+-- Positive: DeclReduces witness for the embedding reduction.
+example :
+    DeclReducesWithPremises RelationEnv.empty paperLang
+      embedSPresentSentencePattern embeddedActiveClausePattern := by
+  exact engineWithPremises_sound (lang := paperLang)
+    (p := embedSPresentSentencePattern) (q := embeddedActiveClausePattern)
+    (by native_decide)
+
+/- ═══════════════════════════════════════════════════════════════════
    Exact rewrite name inventory
    ═══════════════════════════════════════════════════════════════════ -/
 
 -- The exact set of rewrite names included for PaperAmbiguitySig.
 -- This serves as a regression fixture: any change to the semantic kernel
 -- or validation logic that alters this set will break this test.
+-- Exact inventory pinned by native_decide. Any kernel/validation change breaks this.
 example : paperLang.rewrites.map (·.name) =
     [ "UseNElim", "ActivePassive"
     , "PresentTense", "PastTense", "FutureTense"
     , "NegationPresent", "NegationPast", "NegationFuture"
+    , "EmbedPresent", "EmbedPast", "EmbedFuture"
+    , "UsePNElim", "EmbedVPLifting", "EmbedQSLifting"
+    , "AnteriorPresent", "AnteriorPast"
+    , "ConditionalSimul", "ConditionalAnter"
     ] := by
   native_decide
 

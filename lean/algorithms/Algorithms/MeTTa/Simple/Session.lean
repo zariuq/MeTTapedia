@@ -2981,6 +2981,7 @@ mutual
           matchPattern := matchPatternMeTTa
           normalizePattern := normalizeDollarVars
           dedupBindings := dedupBindings
+          truthBindingsForCall? := truthBindingsForCall?
         }
         match callable with
         | .apply "partial" [base, bound] =>
@@ -3074,6 +3075,7 @@ mutual
       matchPattern := matchPatternMeTTa
       normalizePattern := normalizeDollarVars
       dedupBindings := dedupBindings
+      truthBindingsForCall? := truthBindingsForCall?
     }
     match builtinPartialMinArity? ctor with
     | some minArity =>
@@ -3166,6 +3168,7 @@ mutual
                   matchPattern := matchPatternMeTTa
                   normalizePattern := normalizeDollarVars
                   dedupBindings := dedupBindings
+                  truthBindingsForCall? := truthBindingsForCall?
                 }
                 let (sEnum, extra) :=
                   Algorithms.MeTTa.Simple.Semantics.Dispatch.enumerateCallByRules
@@ -3792,6 +3795,7 @@ private def referenceDispatchInterfaceN (fuel : Nat) :
   matchPattern := matchPatternMeTTa
   normalizePattern := normalizeDollarVars
   dedupBindings := dedupBindings
+  truthBindingsForCall? := truthBindingsForCall?
 }
 
 private theorem compiledConsistent_of_referenceEvalWithStateCoreN_of_intrinsic
@@ -9297,7 +9301,8 @@ theorem referenceIntrinsicStatefulN_none_of_builtin_strict
           applyBindings := applyBindingsCompat
           matchPattern := matchPatternMeTTa
           normalizePattern := normalizeDollarVars
-          dedupBindings := dedupBindings }
+          dedupBindings := dedupBindings
+          truthBindingsForCall? := truthBindingsForCall? }
         s (.apply ctor argsV) = (s, []))
     (hNoConstraint : Algorithms.MeTTa.Simple.Semantics.Dispatch.hasCompatHeadConstraintRule
         { rewrites := fun s => s.bundle.language.rewrites
@@ -9307,7 +9312,8 @@ theorem referenceIntrinsicStatefulN_none_of_builtin_strict
           applyBindings := applyBindingsCompat
           matchPattern := matchPatternMeTTa
           normalizePattern := normalizeDollarVars
-          dedupBindings := dedupBindings }
+          dedupBindings := dedupBindings
+          truthBindingsForCall? := truthBindingsForCall? }
         s ctor argsV.length = false)
     (hIrreducible : ∀ a ∈ argsV,
         (match referenceIntrinsicStatefulN fuel s a with
@@ -9407,7 +9413,8 @@ theorem referenceIntrinsicStatefulN_none_of_builtin_strict
           applyBindings := applyBindingsCompat
           matchPattern := matchPatternMeTTa
           normalizePattern := normalizeDollarVars
-          dedupBindings := dedupBindings }
+          dedupBindings := dedupBindings
+          truthBindingsForCall? := truthBindingsForCall? }
         s ctor argsV = none := by
     unfold referenceIntrinsicApplyDispatchTailN
     -- After unfold + simp [hNoCompat, hNoConstraint], the foldl was reduced to map/flatten.
@@ -9629,6 +9636,7 @@ private def dispatchInterface :
   matchPattern := matchPatternMeTTa
   normalizePattern := normalizeDollarVars
   dedupBindings := dedupBindings
+  truthBindingsForCall? := truthBindingsForCall?
 }
 
 private theorem dispatchInterface_preservation
@@ -9710,6 +9718,7 @@ private def referenceDispatchInterface :
   matchPattern := matchPatternMeTTa
   normalizePattern := normalizeDollarVars
   dedupBindings := dedupBindings
+  truthBindingsForCall? := truthBindingsForCall?
 }
 
 private def referenceEvalCallableApply (s : Session)
