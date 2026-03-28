@@ -13,7 +13,8 @@
 | `MeTTaIL.pdf` | MeTTa Intermediate Language |
 | `modal-bridges.pdf` | Modal logic bridges |
 | `mq-calculus-lean-formalization.pdf` | MQ-calculus Lean formalization |
-| `pnp_crux.pdf` | Crux-first Lean notes on Goertzel's P vs NP proof attempt: locality, fixed-width VV isolation, the pairwise-survivor and candidate-wise moment bridges, compression, symmetrization, exact post-switch-input inconsistency, exact post-switch fork, orbit-neutrality, fiber-neutrality, weighted fiber-neutrality, invariant-score, weight-asymmetry, side-channel-resolution, resolution-demand, residual-symmetry, asymmetry-budget, short-program, metagraph/interface, and tree-message obstructions |
+| `pnp_crux.pdf` | Crux-first Lean notes on Goertzel's P vs NP proof attempt: locality, fixed-width VV isolation, the pairwise-survivor and candidate-wise moment bridges, the pairwise-columns hashing obstruction, RHS-bias irrelevance under uniform labels and under exact finite 2-universality, the conditioning obstruction for post-uniqueness label collapse, compression, symmetrization, exact post-switch-input inconsistency, exact post-switch fork, orbit-neutrality, fiber-neutrality, weighted fiber-neutrality, invariant-score, weight-asymmetry, side-channel-resolution, resolution-demand, residual-symmetry, asymmetry-budget, short-program, metagraph/interface, and tree-message obstructions |
+| `pnp_grassroots.pdf` | Ground-up Lean background theory for the Goertzel program: encoded hypothesis classes, finite ERM and weighted recovery bounds, the same-route certificate, and the current Meredith/GSLT limits that weakness summaries are global, the exact HML layer is infinitary by default, and the exact rho present-moment surface already realizes powerset-like finite probe slices |
 | `native-grammatical-formalism.pdf` | Native grammatical formalism |
 | `lp-core-petta.pdf` | LP core PeTTa |
 | `ks-math-foundations.pdf` | Knuth-Skilling mathematical foundations |

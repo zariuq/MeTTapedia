@@ -83,9 +83,26 @@ bounds for exact ERM recovery under finite sampling.  It now also includes the
 first weighted finite-sampling steps beyond uniform draws: an exact
 one-predictor agreement law and a family-level weighted union bound over finite
 encoded classes, together with weighted exact-recovery lower bounds for ERM.
-This isolates the exact positive shape that a successful switching theorem would
-need: not mere locality, but locality together with a concrete compression
-theorem and a clean finite learning interface.
+It also now packages the exact \emph{same-route interface}: a repair that still
+intends to use switching plus ERM must produce a bit-encoded family over an
+available input surface and therefore inherits the current finite weighted
+recovery theorem.
+The Meredith-side limit is now considerably sharper.  The currently formalized
+weakness bridge exports only global evidence scalars, so any predictor factoring
+only through those summaries is constant on the whole state space.  The current
+exact HML layer is infinitary by default: if the certified minimal-context type
+is infinite, then even the depth-1 fragment is infinite, and the concrete rho
+instance already realizes that case.  And one layer below exact HML, the
+concrete rho present-moment surface already realizes arbitrary finite
+membership patterns on a natural probe slice: a single-output probe state
+against a flat bag of input guards records exactly which channels are present in
+the environment.
+On the semantic side, it now includes a depth-bounded GSLT/HML observational
+kernel, a bridge from bisimulation quotients to quantale weakness, and a first
+concrete minimal-context instance for the rho calculus.  This isolates the exact
+positive shape that a successful switching theorem would need: not mere
+locality, but locality together with a concrete compression theorem, a clean
+finite learning interface, and an explicit observational/evidence semantics.
 \end{abstract}
 
 \tableofcontents
@@ -129,6 +146,9 @@ ground-up PNP effort.
 \texttt{KolmogorovComplexity/Basic.lean} & universal algorithm and plain complexity \\
 \texttt{Hyperseed/Ultrainfinitism.lean} & observer-relative available-region semantics \\
 \texttt{Hyperseed/Basic.lean} & closure/cascade interfaces on accessible observations \\
+\texttt{GSLT/Logic/LogicalMetric.lean} & finite-depth observational distinction kernel \\
+\texttt{GSLT/Meredith/WeaknessBridge.lean} & operational distinguishability $\to$ weakness/evidence \\
+\texttt{GSLT/Meredith/RhoMinimalContext.lean} & first concrete minimal-context / HML anchor \\
 \texttt{PNP/HypothesisClass.lean} & encoded classifier families and code-budget bounds \\
 \texttt{PNP/FiniteERM.lean} & empirical-risk minimization kernel for finite encoded families \\
 \texttt{PNP/FiniteConsistencyBound.lean} & finite uniform consistency bound for deceptive samples \\
@@ -138,6 +158,10 @@ ground-up PNP effort.
 \texttt{PNP/FiniteIIDAgreement.lean} & exact weighted one-predictor agreement mass under a finite PMF \\
 \texttt{PNP/FiniteIIDFamilyBound.lean} & weighted deceptive-mass union bound for finite encoded families \\
 \texttt{PNP/FiniteIIDRecovery.lean} & weighted exact ERM recovery lower bounds under finite PMFs \\
+\texttt{PNP/SameRouteInterface.lean} & exact certificate for when a repair still counts as the same switching/ERM route \\
+\texttt{PNP/GlobalWeaknessObstruction.lean} & current weakness summaries alone cannot yield a nonconstant predictor surface \\
+\texttt{PNP/InfinitaryHMLObstruction.lean} & infinite minimal contexts force an infinite depth-1 HML observable surface \\
+\texttt{PNP/PresentMomentShattering.lean} & exact rho present-moment probes already realize arbitrary finite membership slices \\
 \bottomrule
 \end{tabular}
 \end{center}
@@ -542,6 +566,73 @@ distribution-weighted recovery theorem for ERM over encoded families.  The next
 step is to lift this from exact recovery on a finite sample space to a genuine
 finite-class generalization statement.
 
+\section{What Still Counts as the Same Route}
+
+At this stage the grassroots theory can also say something more conceptual, but
+in a machine-checked way.  If a proposed rescue still wants to be \emph{the same
+route} as the current switching/ERM program, then it cannot merely gesture at
+weakness, GSLTs, or observer-relative semantics.  It must still instantiate the
+existing finite learning interface.
+
+The new module \texttt{SameRouteInterface.lean} packages exactly that point.  A
+\emph{same-route family} is just:
+\begin{enumerate}[leftmargin=1.5em]
+  \item one available input surface \(\mathrm{AvailableInput}(P,B,G)\),
+  \item one \(s\)-bit encoded boolean predictor family on that surface,
+  \item one target predictor realized by some code in that family.
+\end{enumerate}
+
+\begin{theorem}[Same-route weighted recovery certificate]
+Let \(F\) be an \(s\)-bit encoded classifier family and suppose the target
+predictor is realized by some code in \(F\).  If every bad code has one-step
+agreement mass at most \(q\), then the exact ERM recovery mass is at least
+\[
+  1 - 2^s q^m.
+\]
+\end{theorem}
+
+\noindent
+This is formalized as
+\texttt{BitEncodedClassifierFamily.exactRecoverySampleMass\_ge\_one\_sub\_bitBudget\_mul\_pow\_of\_agreementMass\_le}.
+
+The point is not that this theorem proves the Goertzel switching step.  The
+point is that it now marks the boundary of the current route.  A weakness/GSLT
+idea that still intends to be a \emph{repair} of the present program must hand
+over this sort of certificate: an explicit visible input surface, an explicit
+small code space, and explicit agreement-mass control for the bad codes.  If it
+does not, then it is no longer filling a gap in the current route.  It is
+starting a different route.
+
+The new module \texttt{GlobalWeaknessObstruction.lean} makes the first exact
+Meredith-side pressure point equally explicit.  In the current Lean bridge,
+\texttt{distinctionWeakness ev} and \texttt{nonDistinctionWeakness ev} are
+global scalars attached to the whole finite evidence assignment \(ev\).  They do
+not vary with the underlying state \(u \in U\).
+
+\begin{theorem}[Weakness-only factoring is constant]
+If a boolean predictor \(h : U \to \{\mathrm{false},\mathrm{true}\}\) factors
+through either of the current global summaries
+\[
+  \mathrm{distinctionWeakness}(ev)
+  \qquad \text{or} \qquad
+  \mathrm{nonDistinctionWeakness}(ev),
+\]
+then \(h\) is constant on \(U\):
+\[
+  \forall u,v \in U,\; h(u) = h(v).
+\]
+\end{theorem}
+
+\noindent
+This is formalized as
+\texttt{factorsThroughDistinctionWeakness\_constant} and
+\texttt{factorsThroughNonDistinctionWeakness\_constant}.  So the current
+weakness bridge is real semantic infrastructure, but by itself it does not yet
+instantiate the same-route learning interface.  Any GSLT/weakness rescue that
+still wants to count as the current switching/ERM route must add genuinely
+per-instance observables or side information beyond these present global
+summaries.
+
 \section{Hyperseed as a Local-View Surface}
 
 The existing Hyperseed formalization already provides a clean observer-relative
@@ -583,6 +674,174 @@ The theorem is intentionally modest.  It does not claim that the Goertzel local
 view \emph{is} a Hyperseed perspective.  It says that Hyperseed already gives us a
 good general language for bounded observational access, and that this language can
 interoperate with the encoded-hypothesis-class infrastructure.
+
+\section{Operational Distinction and Weakness}
+
+My own mathematical and computationalist intuition is that if there is an elegant
+route through the real blockers, it will likely come from a semantics of
+\emph{distinguishability} rather than from ad hoc local-rule counting alone.
+That is the reason the Meredith lane is worth treating as part of the grassroots
+background theory, at least optimistically.
+
+At the abstract level, the bridge has three layers:
+\begin{enumerate}[leftmargin=1.5em]
+  \item a GSLT supplies an operational state space together with its bisimulation
+  quotient;
+  \item context-decorated HML supplies a language of experiments or observations;
+  \item quantale weakness measures the mass of distinction events on that quotient.
+\end{enumerate}
+
+In slogan form:
+\begin{quote}
+operational behavior gives the ontology, HML gives the observables, and weakness
+turns distinguishability into evidence.
+\end{quote}
+
+This is now more than a philosophical analogy in the local Lean state.
+
+\begin{theorem}[Depth-bounded observational equivalence]
+For each modal depth \(n\), the Lean development defines a relation
+\[
+  \mathrm{hmlEquivUpTo}_n(t,u),
+\]
+meaning that no context-decorated HML formula of modal depth at most \(n\)
+distinguishes \(t\) from \(u\).
+\end{theorem}
+
+\noindent
+This is formalized in \texttt{GSLT/Logic/LogicalMetric.lean}.  The same file also
+defines a binary-valued depth-\(n\) logical-distance approximation
+\[
+  d_n(t,u) \in \{0,1\},
+\]
+and proves the corresponding pseudoultrametric inequality.
+
+\begin{theorem}[Finite-depth witness forces quotient-level distinction under adequacy]
+Assume the sound direction of Meredith's adequacy theorem for a GSLT \(S\).  If
+some depth-\(n\) context-decorated HML formula distinguishes \(t\) from \(u\),
+then \(t\) and \(u\) are genuinely distinct in the bisimulation quotient of
+\(S\).  Equivalently, if
+\[
+  d_n(t,u) = 1,
+\]
+then the bisimulation classes \([t]\) and \([u]\) are different.
+\end{theorem}
+
+\noindent
+This is now formalized in \texttt{GSLT/Meredith/WeaknessBridge.lean} as
+\texttt{distinguishingWitness\_implies\_distinguished\_of\_adequacySound} and
+\texttt{logicalDistanceApprox\_eq\_one\_implies\_classes\_ne\_of\_adequacySound}.
+
+\begin{theorem}[Weakness on the bisimulation quotient]
+For a finite bisimulation quotient \(U\) equipped with a quantale-valued weight
+assignment \(\mu\), the Lean bridge defines the weakness of the distinction event
+\[
+  \mathrm{weakness}_{\mu}(\mathrm{distinctionEvent}(U)),
+\]
+interpreting operational distinguishability as an evidence quantity.
+\end{theorem}
+
+\noindent
+This is the content of \texttt{GSLT/Meredith/WeaknessBridge.lean}, building on
+\texttt{GSLT/Meredith/Bisimulation.lean}.  In the finite probabilistic case, this
+has exactly the Bennett/Ellerman logical-entropy shape.
+
+The new concrete step is that the abstract minimal-context interface now has an
+actual process-calculus instance.
+
+\begin{theorem}[Concrete rho-calculus minimal-context bridge]
+The rho-calculus evaluation contexts from
+\texttt{Languages/ProcessCalculi/RhoCalculus/Context.lean} now induce a concrete
+\texttt{HasMinimalContexts} instance for the rho GSLT, and for each rho context
+\(K\),
+\[
+  \mathrm{contextStep}(p,K,q)
+  \iff
+  p \mathrel{\rightsquigarrow[K]} q.
+\]
+\end{theorem}
+
+\noindent
+This is formalized in \texttt{GSLT/Meredith/RhoMinimalContext.lean}.  That file
+also proves concrete HML diamonds for matching COMM interactions.
+
+For the PNP grassroots route, the optimistic use of this material is not that it
+proves the switching theorem by itself.  Rather, it offers a clean semantics for
+coarse observational views.  If a decoder is only sensitive to finite-depth local
+experiments, then one can hope to represent that by an HML fragment and then ask
+how much evidence survives under the induced quotient.  That is exactly the sort
+of elegant abstraction that may help disentangle the real compression/locality
+story from the current proof's more brittle prose.  The bridge is now one step
+tighter than before: finite-depth observational separation no longer just lives
+as a metric-like approximation, but already certifies distinct quotient classes
+once adequacy-soundness is available.
+
+The honest limit is equally important: this is still background theory.  It does
+\emph{not} yet produce the switched small class, the generalization theorem, or
+the \(K_{\mathrm{poly}}\) contradiction step.  But it is now a real machine-checked
+background layer, not merely an idea.
+The new obstruction above sharpens this limit: the currently formalized
+weakness summaries are quotient-level evidence scalars, not a per-instance
+predictor surface.  So any Meredith-style rescue that remains close to the
+current switching/ERM route still needs an extra layer that turns operational
+semantics into state-indexed encoded observables.
+
+The next obstruction is sharper still.  The new module
+\texttt{InfinitaryHMLObstruction.lean} proves:
+\begin{enumerate}[leftmargin=1.5em]
+  \item if \(\mathrm{MinimalContext}(S)\) is infinite, then \(\mathrm{HMLFormula}(S)\)
+  is infinite;
+  \item under the same hypothesis, even the depth-1 fragment
+  \(\mathrm{DepthFragment}_1(S)\) is infinite;
+  \item in the concrete rho instance, there is an explicit infinite ladder of
+  certified minimal contexts, so the rho depth-1 HML fragment is already
+  infinite;
+  \item therefore no finite code space can surject onto the current exact
+  depth-1 probe family, abstractly or in the concrete rho instance.
+\end{enumerate}
+
+So the current Meredith semantic layer is now pinned down even more tightly:
+before one can talk about \(\mathrm{polylog}(m)\)-bit encoded predictor families,
+one first needs a separate theorem that compresses or finitizes the relevant
+observational probe family.  The present HML/context layer does not supply that
+for free.
+
+The Meredith-side trilemma is now simple.
+\begin{enumerate}[leftmargin=1.5em]
+  \item Use the current weakness summaries: then the predictor is constant.
+  \item Use the current exact HML/context probes: then the observable family is
+  already too large, even at depth \(1\).
+  \item Use the current exact present-moment surface directly: then one already
+  encounters powerset-like finite probe slices.
+\end{enumerate}
+
+So any close-form repair now has to do something genuinely new.  It is no
+longer enough to say ``use current weakness'' or ``use current HML probes a bit
+more cleverly.''  One needs a new compressed observational layer together with
+an explicit theorem showing that the switched predictor factors through it.
+
+The new module \texttt{PresentMomentShattering.lean} tightens this further on a
+very concrete slice of the current rho semantics.  Let state \(i\) be a single
+output on channel \(i\), and let environment \(S\) be a flat bag of input
+guards on the channels in a finite list \(S\).  Then the file proves:
+\begin{enumerate}[leftmargin=1.5em]
+  \item channel \(i\) lies in
+  \(\mathrm{surfaceChannels}(\mathrm{state}_i,\mathrm{env}_S)\) iff \(i \in S\);
+  \item the concrete external-present-moment pair
+  \((\mathrm{par}(\mathrm{env}_S,\Box), i)\) is present iff \(i \in S\).
+\end{enumerate}
+
+So even before passing to the exact HML layer, the currently formalized
+state-indexed observational surface already realizes arbitrary finite
+membership patterns on a natural probe family.  This is not yet a full
+``depth-1 HML shattering'' theorem, but it means the large-observable-surface
+pressure is already visible one layer earlier in the exact present-moment
+semantics.  In fact, the file now packages this as an injective finite-signature
+map \(S \mapsto (i \mapsto \mathrm{observable}_S(i))\) on
+\(\mathrm{Finset}(\mathrm{Fin}\,n)\): distinct finite probe sets yield distinct
+exact present-moment signatures on the \(n\) probe states.  Any close-form
+Meredith rescue now has to compress not only an infinitary exact HML layer, but
+already a powerset-like concrete probe family in the rho present-moment surface.
 
 \section{Kolmogorov Foundations Already Present}
 
@@ -697,6 +956,13 @@ finite uniform success bounds & proved & \texttt{FiniteUniformSuccess.lean} \\
 finite weighted one-predictor agreement law & proved & \texttt{FiniteIIDAgreement.lean} \\
 finite weighted family union bound & proved & \texttt{FiniteIIDFamilyBound.lean} \\
 finite weighted recovery bounds & proved & \texttt{FiniteIIDRecovery.lean} \\
+same-route switching/ERM certificate & proved & \texttt{SameRouteInterface.lean} \\
+weakness-globality obstruction & proved & \texttt{GlobalWeaknessObstruction.lean} \\
+infinitary HML obstruction & proved & \texttt{InfinitaryHMLObstruction.lean} \\
+present-moment shattering slice & proved & \texttt{PresentMomentShattering.lean} \\
+depth-bounded HML distinction kernel & proved & \texttt{LogicalMetric.lean} \\
+GSLT bisimulation-to-weakness bridge & proved & \texttt{WeaknessBridge.lean} \\
+concrete rho minimal-context instance & proved & \texttt{RhoMinimalContext.lean} \\
 Hyperseed available-region reuse & proved & \texttt{HypothesisClass.lean} + \texttt{Hyperseed} \\
 plain Kolmogorov infrastructure & already present & \texttt{KolmogorovComplexity/Basic.lean} \\
 finite-class generalization bounds & not yet formalized & next target \\
@@ -719,7 +985,15 @@ bounds, finite uniform recovery thresholds, rational exact-recovery rates,
 explicit miss-ratio success bounds, weighted one-predictor agreement laws,
 weighted family deceptive-mass bounds, weighted exact recovery bounds, and
 observer-relative input surfaces can already be handled cleanly inside one
-coherent Mettapedia/mathlib formal background layer.
+coherent Mettapedia/mathlib formal background layer.  Optimistically, the same is
+now becoming true for the observational-semantics side: finite-depth HML
+distinction, weakness on operational quotients, and a concrete rho-calculus
+minimal-context instance are landing as reusable infrastructure rather than as
+one-off prose.  But the current Meredith bridge is now also honest about its own
+shape: it produces global evidence summaries, not yet a nontrivial per-state
+learning surface.  And even once one moves from those global summaries to the
+HML/context layer, the current observable family is infinitary by default and
+already concretely infinitary in the rho instance.
 
 That is enough to sharpen the next optimistic task.  We should not try to prove
 \(P \neq NP\) in one jump.  We should first prove that the intended switched
