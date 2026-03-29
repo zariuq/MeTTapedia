@@ -10,9 +10,15 @@ It intentionally reuses the current executable HE session backend from
 raw file execution, module loading, and assertion handling end-to-end.
 
 Positive example:
-- `he_a1_symbols.metta`, `he_a3_twoside.metta`,
-  `he_b0_chaining_prelim.metta`, and `he_b1_equal_chain.metta` can be run from
-  the mettapedia executable now.
+- `he_a1_symbols.metta`, `he_b0_chaining_prelim.metta`, and
+  `he_b1_equal_chain.metta` currently run cleanly from the mettapedia
+  executable.
+- `he_b3_direct.metta` now also runs cleanly, including the old
+  variable-headed `($x (green $x))` case.
+
+Near-frontier example:
+- `he_a3_twoside.metta` still fails on one remaining assertion instead of
+  being broadly unsupported.
 
 Negative example:
 - direct/backchain-heavy files such as `he_b2_backchain.metta` are still

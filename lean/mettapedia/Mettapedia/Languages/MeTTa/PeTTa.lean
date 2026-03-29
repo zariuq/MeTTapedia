@@ -12,6 +12,8 @@ import Mettapedia.Languages.MeTTa.PeTTa.GroundedOracle
 import Mettapedia.Languages.MeTTa.PeTTa.PrologBridge
 import Mettapedia.Languages.MeTTa.PeTTa.TranslateExpr
 import Mettapedia.Languages.MeTTa.PeTTa.DeclarativeSpec
+import Mettapedia.Languages.MeTTa.PeTTa.ExecutableBoundary
+import Mettapedia.Languages.MeTTa.PeTTa.SemanticForms
 import Mettapedia.Languages.MeTTa.PeTTa.ProfileBridge
 import Mettapedia.Languages.MeTTa.PeTTa.OSLFInstance
 import Mettapedia.Languages.MeTTa.PeTTa.GSLTVertex
@@ -30,3 +32,26 @@ import Mettapedia.Languages.MeTTa.PeTTa.OSLFPackage
 import Mettapedia.Languages.MeTTa.PeTTa.StageFiber
 import Mettapedia.Languages.MeTTa.PeTTa.BoundaryContract
 import Mettapedia.Languages.MeTTa.PeTTa.SemanticBundle
+
+/-!
+# PeTTa MeTTa Semantics
+
+Public import surface for the PeTTa semantic stack.
+
+## Semantic Layers
+
+- `DeclarativeSpec` — readable declarative expression and command semantics
+- `MinimalInstructions` — operational instruction semantics
+- `ExecutableBoundary` — implementation-facing executable boundary artifacts
+- `SemanticForms` — named public facade over the major semantic layers
+- `SemanticBundle` — canonical stage-indexed semantic object for runtime/proof
+                    alignment
+
+Positive example:
+- PeTTa now exposes a clear declarative layer and a separate executable
+  boundary layer, instead of burying everything in contract internals.
+
+Negative example:
+- the executable boundary does not replace the declarative meaning of PeTTa
+  programs; it refines how the live runtime is organized.
+-/

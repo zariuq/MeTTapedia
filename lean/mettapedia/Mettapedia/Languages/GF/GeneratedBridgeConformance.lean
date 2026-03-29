@@ -91,8 +91,8 @@ def embeddedActiveClausePattern : Pattern :=
 -- Layer 1: Kernel-checked properties (authored semantic kernel)
 -- ═══════════════════════════════════════════════════════════════════
 
--- The authored kernel has exactly 40 rewrites in 10 families
-example : gfSemanticKernelLanguageDef.rewrites.length = 40 := by decide
+-- The authored kernel has exactly 44 rewrites in 11 families
+example : gfSemanticKernelLanguageDef.rewrites.length = 44 := by decide
 example : gfSemanticKernelLanguageDef.equations.length = 1 := by decide
 
 -- Structural equality on RGL definitions
@@ -118,7 +118,7 @@ private def assertBool (label : String) (b : Bool) : IO Unit :=
   -- Equation count
   assertEq "equation count" (toString paperLang.equations.length) "1"
   -- Rewrite count (40 kernel rewrites, 18 pass validation for PaperAmbiguitySig)
-  assertEq "rewrite count" (toString paperLang.rewrites.length) "18"
+  assertEq "rewrite count" (toString paperLang.rewrites.length) "22"
   -- Validation clean
   assertBool "validation clean" (LanguageDef.validate paperLang == [])
   -- Exact rewrite inventory
@@ -129,7 +129,8 @@ private def assertBool (label : String) (b : Bool) : IO Unit :=
     , "EmbedPresent", "EmbedPast", "EmbedFuture"
     , "UsePNElim", "EmbedVPLifting", "EmbedQSLifting"
     , "AnteriorPresent", "AnteriorPast"
-    , "ConditionalSimul", "ConditionalAnter" ]
+    , "ConditionalSimul", "ConditionalAnter"
+    , "DetEveryElim", "DetSomeElim", "DetTheElim", "DetNoElim" ]
   assertEq "rewrite names" (toString rwNames) (toString expected)
 
 #eval do

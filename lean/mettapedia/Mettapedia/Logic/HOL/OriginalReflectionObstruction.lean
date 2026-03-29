@@ -2,6 +2,7 @@ import Mettapedia.Logic.HOL.OriginalReflectionReduction
 import Mettapedia.Logic.HOL.ParamTruthLemma
 import Mettapedia.Logic.HOL.IntuitionisticSoundness
 import Mathlib.Order.UpperLower.CompleteLattice
+import Mathlib.Order.UpperLower.Closure
 
 namespace Mettapedia.Logic.HOL
 
@@ -159,15 +160,19 @@ def witnessedParamChoose :
   simp [liftParamTerm]
 
 /--
-The root witness-axiom theory for `witnessedParamChoose` already proves the
-source sentence `witnessedTarget`.
+For any root witness chooser, the induced root witness-axiom theory already
+proves the source sentence `witnessedTarget`.
 
 This is the exact positive half of the new root-bridge obstruction. -/
-theorem witnessedTarget_rootExWitnessProvable :
+theorem witnessedTarget_rootExWitnessProvable_of_choose
+    (choose :
+      {σ : Ty Unit} →
+        Formula (ParamConst WitnessedConst ([] : Ctx Unit)) [σ] →
+          ClosedTerm (ParamConst WitnessedConst ([] : Ctx Unit)) σ) :
     ClosedTheorySet.Provable
       (Const := WitnessedConst)
       (RootExWitnessAxioms
-        (Base := Unit) (Const := WitnessedConst) witnessedParamChoose)
+        (Base := Unit) (Const := WitnessedConst) choose)
       witnessedTarget := by
   refine ⟨
     [(.imp
@@ -176,7 +181,7 @@ theorem witnessedTarget_rootExWitnessProvable :
           (rootChoose
             (Base := Unit)
             (Const := WitnessedConst)
-            witnessedParamChoose
+            choose
             witnessedAtom)
           witnessedAtom))],
     ?_,
@@ -189,7 +194,7 @@ theorem witnessedTarget_rootExWitnessProvable :
       (rootChoose
         (Base := Unit)
         (Const := WitnessedConst)
-        witnessedParamChoose
+        choose
         witnessedAtom)
     simpa [witnessedTarget, instantiate, weaken] using
       (ExtDerivation.hyp
@@ -201,7 +206,7 @@ theorem witnessedTarget_rootExWitnessProvable :
               (rootChoose
                 (Base := Unit)
                 (Const := WitnessedConst)
-                witnessedParamChoose
+                choose
                 witnessedAtom)
               witnessedAtom)) ∈
             [(.imp
@@ -210,9 +215,22 @@ theorem witnessedTarget_rootExWitnessProvable :
                   (rootChoose
                     (Base := Unit)
                     (Const := WitnessedConst)
-                    witnessedParamChoose
+                    choose
                     witnessedAtom)
                   witnessedAtom))] from by simp))
+
+/--
+The old concrete witnessed chooser is a special case of the generic root
+witness obstruction above.
+-/
+theorem witnessedTarget_rootExWitnessProvable :
+    ClosedTheorySet.Provable
+      (Const := WitnessedConst)
+      (RootExWitnessAxioms
+        (Base := Unit) (Const := WitnessedConst) witnessedParamChoose)
+      witnessedTarget :=
+  witnessedTarget_rootExWitnessProvable_of_choose
+    (choose := witnessedParamChoose)
 
 /--
 The one-step exact witness theory already proves the lifted old-language target.
@@ -1062,11 +1080,170 @@ noncomputable def vFrameModel :
   app_respects_eq {σ τ f} hf {x y} hx hy := by
     rw [preEqv_eq_vEqv, preEqv_eq_vEqv]; exact hf.2 x y hx hy
 
+open Classical
+open OneStepHenkinConst in
+private noncomputable def vFrameEmptyVal :
+    HeytingPreModel.Valuation vFramePreModel ([] : Ctx Unit) :=
+  fun {τ} v => nomatch v
+
+open OneStepHenkinConst in
+private def leftRightAntecedent : UpperSet VWorld :=
+  sInf
+    (⇑OrderDual.toDual ⁻¹'
+      Set.range fun y : {x : VD OneStepHenkinConst.witnessedBaseTy //
+          vFramePreModel.adm OneStepHenkinConst.witnessedBaseTy x} =>
+        if y.1 = (show VD OneStepHenkinConst.witnessedBaseTy from ⟨0⟩) then
+          leftOnly
+        else
+          rightOnly)
+
+open OneStepHenkinConst in
+private theorem left_mem_leftRightAntecedent :
+    VWorld.left ∈ leftRightAntecedent := by
+  refine UpperSet.mem_sInf_iff.mpr ?_
+  refine ⟨(show UpperSet VWorld from leftOnly), ?_, ?_⟩
+  · refine ⟨⟨(show VD witnessedBaseTy from ⟨0⟩), trivial⟩, ?_⟩
+    change
+      (if
+          (show VD witnessedBaseTy from ⟨0⟩) =
+            (show VD witnessedBaseTy from ⟨0⟩) then
+          leftOnly
+        else
+          rightOnly : VΩ) =
+        OrderDual.toDual (show UpperSet VWorld from leftOnly)
+    rw [if_pos rfl]
+    rfl
+  · simp [leftOnly]
+
+open OneStepHenkinConst in
+private theorem right_mem_leftRightAntecedent :
+    VWorld.right ∈ leftRightAntecedent := by
+  refine UpperSet.mem_sInf_iff.mpr ?_
+  refine ⟨(show UpperSet VWorld from rightOnly), ?_, ?_⟩
+  · refine ⟨⟨(show VD witnessedBaseTy from ⟨1⟩), trivial⟩, ?_⟩
+    have hneq : (show VD witnessedBaseTy from ⟨1⟩) ≠ ⟨0⟩ := by
+      intro h
+      have : ((show VD witnessedBaseTy from ⟨1⟩).down : Fin 2) = 0 := by
+        simpa using congrArg ULift.down h
+      cases this
+    change
+      (if
+          (show VD witnessedBaseTy from ⟨1⟩) =
+            (show VD witnessedBaseTy from ⟨0⟩) then
+          leftOnly
+        else
+          rightOnly : VΩ) =
+        OrderDual.toDual (show UpperSet VWorld from rightOnly)
+    rw [if_neg hneq]
+    rfl
+  · simp [rightOnly]
+
+private theorem root_not_mem_left_sdiff (A : Set VWorld) :
+    VWorld.root ∉ ((show UpperSet VWorld from leftOnly).sdiff A : UpperSet VWorld) := by
+  intro hsroot
+  have hsub :
+      ((((show UpperSet VWorld from leftOnly).sdiff A : UpperSet VWorld)) : Set VWorld) ⊆
+        (((show UpperSet VWorld from leftOnly) : UpperSet VWorld) : Set VWorld) := by
+    exact UpperSet.le_sdiff_left
+  have hleft : VWorld.root ∈ (show UpperSet VWorld from leftOnly) := hsub hsroot
+  simpa [leftOnly] using hleft
+
+private theorem root_not_mem_right_sdiff (A : Set VWorld) :
+    VWorld.root ∉ ((show UpperSet VWorld from rightOnly).sdiff A : UpperSet VWorld) := by
+  intro hsroot
+  have hsub :
+      ((((show UpperSet VWorld from rightOnly).sdiff A : UpperSet VWorld)) : Set VWorld) ⊆
+        (((show UpperSet VWorld from rightOnly) : UpperSet VWorld) : Set VWorld) := by
+    exact UpperSet.le_sdiff_left
+  have hright : VWorld.root ∈ (show UpperSet VWorld from rightOnly) := hsub hsroot
+  simpa [rightOnly] using hright
+
+open OneStepHenkinConst in
+private theorem pred_upper_at_head (a : VD witnessedBaseTy) :
+    OrderDual.ofDual
+      (if
+          (HeytingPreModel.extend vFramePreModel vFrameEmptyVal a Var.vz) =
+            (show VD witnessedBaseTy from ⟨0⟩) then
+          leftOnly
+        else
+          rightOnly : VΩ) =
+      (if a = (show VD witnessedBaseTy from ⟨0⟩) then
+        (show UpperSet VWorld from leftOnly)
+      else
+        (show UpperSet VWorld from rightOnly)) := by
+  unfold vFramePreModel
+  simp [HeytingPreModel.extend]
+  by_cases h : a = (show VD witnessedBaseTy from ⟨0⟩)
+  · simp [h, leftOnly]
+    rfl
+  · simp [h, rightOnly]
+    rfl
+
 open OneStepHenkinConst in
 /-- The V-frame model does NOT model `witnessedTarget`. -/
 private theorem vFrameModel_not_models :
     ¬ HeytingHenkinModel.models vFrameModel witnessedTarget := by
-  sorry -- semantic computation: ⟦∃x.(∃y.Py)→Px⟧ = {left,right} ≠ ⊤
+  intro hmodels
+  have hroot :
+      VWorld.root ∈
+        ((show UpperSet VWorld from
+          HeytingPreModel.denoteFormula vFrameModel.toHeytingPreModel witnessedTarget
+            vFrameEmptyVal) : Set VWorld) := by
+    have htop :
+        ((show UpperSet VWorld from
+          HeytingPreModel.denoteFormula vFrameModel.toHeytingPreModel witnessedTarget
+            vFrameEmptyVal) : Set VWorld) =
+        ((show UpperSet VWorld from (⊤ : VΩ)) : Set VWorld) := by
+      simpa [vFrameEmptyVal] using congrArg
+        (fun z : VΩ => ((show UpperSet VWorld from z) : Set VWorld)) hmodels
+    rw [htop]
+    change True
+    trivial
+  let body : VΩ :=
+    HeytingPreModel.anyAdmissible vFramePreModel (σ := witnessedBaseTy)
+      (fun x =>
+        (HeytingPreModel.anyAdmissible vFramePreModel (σ := witnessedBaseTy)
+            (fun y => vFramePreModel.constDen WitnessedConst.p
+              (HeytingPreModel.extend vFramePreModel vFrameEmptyVal y.1 Var.vz))) ⇨
+          vFramePreModel.constDen WitnessedConst.p
+            (HeytingPreModel.extend vFramePreModel vFrameEmptyVal x.1 Var.vz))
+  have hroot' : VWorld.root ∈ ((show UpperSet VWorld from body) : Set VWorld) := by
+    simpa [body, HeytingPreModel.denoteFormula, HeytingPreModel.denote, vFrameEmptyVal] using hroot
+  change VWorld.root ∈ (OrderDual.ofDual body : UpperSet VWorld) at hroot'
+  unfold body at hroot'
+  unfold HeytingPreModel.anyAdmissible at hroot'
+  rw [ofDual_sSup] at hroot'
+  simp [UpperSet.mem_sInf_iff] at hroot'
+  rcases hroot' with ⟨s, ⟨a, ha, hEq⟩, hsroot⟩
+  cases hEq
+  by_cases h0 : a = ⟨0⟩
+  · subst h0
+    simp [vFramePreModel, leftOnly, rightOnly] at hsroot
+    rcases hsroot with ⟨i, hle, hrooti⟩
+    have hle' : (show UpperSet VWorld from leftOnly) ≤ leftRightAntecedent ⊔ i := by
+      simpa [leftRightAntecedent, vFramePreModel, HeytingPreModel.extend, vFrameEmptyVal,
+        leftOnly, rightOnly] using hle
+    have hsub :
+        (((leftRightAntecedent ⊔ i : UpperSet VWorld)) : Set VWorld) ⊆
+          (((show UpperSet VWorld from leftOnly) : UpperSet VWorld) : Set VWorld) := hle'
+    have hrighti : VWorld.right ∈ i := i.upper (by trivial) hrooti
+    have hrightAi : VWorld.right ∈ (leftRightAntecedent ⊔ i : UpperSet VWorld) :=
+      UpperSet.mem_sup_iff.mpr ⟨right_mem_leftRightAntecedent, hrighti⟩
+    have hrightLeft : VWorld.right ∈ (show UpperSet VWorld from leftOnly) := hsub hrightAi
+    simpa [leftOnly] using hrightLeft
+  · simp [vFramePreModel, leftOnly, rightOnly] at hsroot
+    rcases hsroot with ⟨i, hle, hrooti⟩
+    have hle' : (show UpperSet VWorld from rightOnly) ≤ leftRightAntecedent ⊔ i := by
+      simpa [leftRightAntecedent, vFramePreModel, HeytingPreModel.extend, vFrameEmptyVal,
+        leftOnly, rightOnly, h0] using hle
+    have hsub :
+        (((leftRightAntecedent ⊔ i : UpperSet VWorld)) : Set VWorld) ⊆
+          (((show UpperSet VWorld from rightOnly) : UpperSet VWorld) : Set VWorld) := hle'
+    have hlefti : VWorld.left ∈ i := i.upper (by trivial) hrooti
+    have hleftAi : VWorld.left ∈ (leftRightAntecedent ⊔ i : UpperSet VWorld) :=
+      UpperSet.mem_sup_iff.mpr ⟨left_mem_leftRightAntecedent, hlefti⟩
+    have hleftRight : VWorld.left ∈ (show UpperSet VWorld from rightOnly) := hsub hleftAi
+    simpa [rightOnly] using hleftRight
 
 open OneStepHenkinConst in
 /-- witnessedTarget is NOT a theorem of the source calculus.
@@ -1203,6 +1380,54 @@ theorem no_rootExWitnessBridge_with_witnessedParamChoose :
           simpa [hroot] using hχ
       simpa [hchoose] using
         (B.rootExWitness_notProvable (Δ := Δ) (φ := φ) hNot))
+
+/--
+The corrected source-side root witness bridge is impossible for the concrete
+witnessed signature itself, regardless of chooser.
+
+The reason is semantic and chooser-independent: for the concrete formula
+`witnessedTarget`, *any* induced root witness axiom already gives the exact
+instance needed for existential introduction.
+-/
+theorem no_rootExWitnessBridge :
+    ¬ Nonempty (RootExWitnessBridge Unit OneStepHenkinConst.WitnessedConst) := by
+  intro hB
+  rcases hB with ⟨B⟩
+  have hNot :
+      ¬ ExtDerivation OneStepHenkinConst.WitnessedConst []
+          OneStepHenkinConst.witnessedTarget :=
+    witnessedTarget_not_theorem
+  have hNotProv :=
+    B.rootExWitness_notProvable (Δ := []) (φ := OneStepHenkinConst.witnessedTarget) hNot
+  have hProvAug :
+      ClosedTheorySet.Provable
+        (Const := OneStepHenkinConst.WitnessedConst)
+        (fun ψ =>
+          ψ ∈ ([] : List (ClosedFormula OneStepHenkinConst.WitnessedConst)) ∨
+            ψ ∈ RootExWitnessAxioms
+              (Base := Unit)
+              (Const := OneStepHenkinConst.WitnessedConst)
+              B.choose)
+        OneStepHenkinConst.witnessedTarget := by
+    exact ClosedTheorySet.provable_mono
+      (Const := OneStepHenkinConst.WitnessedConst)
+      (T := RootExWitnessAxioms
+        (Base := Unit)
+        (Const := OneStepHenkinConst.WitnessedConst)
+        B.choose)
+      (U := fun ψ =>
+        ψ ∈ ([] : List (ClosedFormula OneStepHenkinConst.WitnessedConst)) ∨
+          ψ ∈ RootExWitnessAxioms
+            (Base := Unit)
+            (Const := OneStepHenkinConst.WitnessedConst)
+            B.choose)
+      (φ := OneStepHenkinConst.witnessedTarget)
+      (by
+        intro ψ hψ
+        exact Or.inr hψ)
+      (OneStepHenkinConst.witnessedTarget_rootExWitnessProvable_of_choose
+        (choose := B.choose))
+  exact hNotProv hProvAug
 
 /-- WitnessedTheoryConservativityGoal is FALSE for the concrete witnessed signature. -/
 theorem witnessedTheoryConservativityGoal_false :

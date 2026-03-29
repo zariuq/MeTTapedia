@@ -162,13 +162,6 @@ Negative example:
 this does NOT assume the too-strong lifted cumulative-Henkin non-provability
 principle from the auxiliary obstruction files.
 -/
-structure RootCountermodelBridge
-    (Base : Type u) (Const : Ty Base → Type v) where
-  countermodel_of_not_provable :
-    ∀ {Δ : List (ClosedFormula Const)} {φ : ClosedFormula Const},
-      ¬ ExtDerivation Const Δ φ →
-        ∃ M : HeytingHenkinModel.{u, v, w} Base Const,
-          ¬ HeytingHenkinModel.modelsFrom M Δ φ (fun v => nomatch v)
 
 theorem provable_of_rootCountermodel
     (hCountermodel :
@@ -207,52 +200,6 @@ theorem validFrom_iff_provable_of_rootCountermodel
       hValid
   · exact validFrom_of_provable (Base := Base) (Const := Const)
 
-def ParamCompleteness.RootCounterworldBridge.toRootCountermodelBridge
-    (R : ParamCompleteness.RootCounterworldBridge Base Const)
-    (hCounter :
-      ∀ {Δ : List (ClosedFormula Const)} {φ : ClosedFormula Const},
-        ParamCompleteness.RootCounterworld Base Const Δ φ →
-          ∃ M : HeytingHenkinModel.{u, v, w} Base Const,
-            ¬ HeytingHenkinModel.modelsFrom M Δ φ (fun v => nomatch v)) :
-    RootCountermodelBridge Base Const where
-  countermodel_of_not_provable := by
-    intro Δ φ hNot
-    let C : ParamCompleteness.RootCounterworld Base Const Δ φ :=
-      Classical.choice (R.hasRootCounterworld_of_not_provable hNot)
-    exact
-      show ∃ M : HeytingHenkinModel.{u, v, w} Base Const,
-          ¬ HeytingHenkinModel.modelsFrom M Δ φ (fun v => nomatch v) from
-        hCounter C
-
-theorem provable_of_rootCountermodelBridge
-    (B : RootCountermodelBridge Base Const)
-    {Δ : List (ClosedFormula Const)}
-    {φ : ClosedFormula Const}
-    (hValid :
-      ∀ M : HeytingHenkinModel.{u, v, w} Base Const,
-        HeytingHenkinModel.modelsFrom M Δ φ (fun v => nomatch v)) :
-    ExtDerivation Const Δ φ := by
-  classical
-  by_contra hNot
-  rcases B.countermodel_of_not_provable hNot with ⟨M, hM⟩
-  exact hM (hValid M)
-
-theorem validFrom_iff_provable_of_rootCountermodelBridge
-    (B : RootCountermodelBridge Base Const)
-    {Δ : List (ClosedFormula Const)}
-    {φ : ClosedFormula Const} :
-    (∀ M : HeytingHenkinModel.{u, v, w} Base Const,
-      HeytingHenkinModel.modelsFrom M Δ φ (fun v => nomatch v)) ↔
-      ExtDerivation Const Δ φ := by
-  constructor
-  · intro hValid
-    exact provable_of_rootCountermodelBridge
-      (Base := Base)
-      (Const := Const)
-      B
-      hValid
-  · exact validFrom_of_provable (Base := Base) (Const := Const)
-
 theorem provable_of_rootCounterworld_bridge_and_rootCounterworld_countermodel
     (R : ParamCompleteness.RootCounterworldBridge Base Const)
     (hCounter :
@@ -266,14 +213,14 @@ theorem provable_of_rootCounterworld_bridge_and_rootCounterworld_countermodel
       ∀ M : HeytingHenkinModel.{u, v, w} Base Const,
         HeytingHenkinModel.modelsFrom M Δ φ (fun v => nomatch v)) :
     ExtDerivation Const Δ φ := by
-  exact provable_of_rootCountermodelBridge
+  exact provable_of_rootCountermodel
     (Base := Base)
     (Const := Const)
-    (B := ParamCompleteness.RootCounterworldBridge.toRootCountermodelBridge
-      (Base := Base)
-      (Const := Const)
-      R
-      hCounter)
+    (hCountermodel := by
+      intro Δ φ hNot
+      let C : ParamCompleteness.RootCounterworld Base Const Δ φ :=
+        Classical.choice (R.hasRootCounterworld_of_not_provable hNot)
+      exact hCounter C)
     hValid
 
 theorem validFrom_iff_provable_of_rootCounterworld_bridge_and_rootCounterworld_countermodel
@@ -288,31 +235,15 @@ theorem validFrom_iff_provable_of_rootCounterworld_bridge_and_rootCounterworld_c
     (∀ M : HeytingHenkinModel.{u, v, w} Base Const,
       HeytingHenkinModel.modelsFrom M Δ φ (fun v => nomatch v)) ↔
       ExtDerivation Const Δ φ := by
-  exact validFrom_iff_provable_of_rootCountermodelBridge
-    (Base := Base)
-    (Const := Const)
-    (B := ParamCompleteness.RootCounterworldBridge.toRootCountermodelBridge
+  constructor
+  · intro hValid
+    exact provable_of_rootCounterworld_bridge_and_rootCounterworld_countermodel
       (Base := Base)
       (Const := Const)
       R
-      hCounter)
-
-def RootExWitnessBridge.toRootCountermodelBridge
-    (B : RootExWitnessBridge Base Const)
-    (hCounter :
-      ∀ {Δ : List (ClosedFormula Const)} {φ : ClosedFormula Const},
-        ParamCompleteness.RootCounterworld Base Const Δ φ →
-          ∃ M : HeytingHenkinModel.{u, v, w} Base Const,
-            ¬ HeytingHenkinModel.modelsFrom M Δ φ (fun v => nomatch v)) :
-    RootCountermodelBridge Base Const :=
-  ParamCompleteness.RootCounterworldBridge.toRootCountermodelBridge
-    (Base := Base)
-    (Const := Const)
-    (R := ParamCompleteness.RootExWitnessBridge.toRootCounterworldBridge
-      (Base := Base)
-      (Const := Const)
-      B)
-    hCounter
+      hCounter
+      hValid
+  · exact validFrom_of_provable (Base := Base) (Const := Const)
 
 theorem provable_of_rootExWitness_bridge_and_rootCounterworld_countermodel
     (hCounter :
@@ -327,14 +258,14 @@ theorem provable_of_rootExWitness_bridge_and_rootCounterworld_countermodel
       ∀ M : HeytingHenkinModel.{u, v, w} Base Const,
         HeytingHenkinModel.modelsFrom M Δ φ (fun v => nomatch v)) :
     ExtDerivation Const Δ φ := by
-  exact provable_of_rootCountermodelBridge
+  exact provable_of_rootCounterworld_bridge_and_rootCounterworld_countermodel
     (Base := Base)
     (Const := Const)
-    (B := RootExWitnessBridge.toRootCountermodelBridge
+    (R := ParamCompleteness.RootExWitnessBridge.toRootCounterworldBridge
       (Base := Base)
       (Const := Const)
-      B
-      hCounter)
+      B)
+    hCounter
     hValid
 
 theorem provable_of_rootExWitness_bridge_and_root_countermodel
@@ -377,14 +308,14 @@ theorem validFrom_iff_provable_of_rootExWitness_bridge_and_rootCounterworld_coun
     (∀ M : HeytingHenkinModel.{u, v, w} Base Const,
       HeytingHenkinModel.modelsFrom M Δ φ (fun v => nomatch v)) ↔
       ExtDerivation Const Δ φ := by
-  exact validFrom_iff_provable_of_rootCountermodelBridge
+  exact validFrom_iff_provable_of_rootCounterworld_bridge_and_rootCounterworld_countermodel
     (Base := Base)
     (Const := Const)
-    (B := RootExWitnessBridge.toRootCountermodelBridge
+    (R := ParamCompleteness.RootExWitnessBridge.toRootCounterworldBridge
       (Base := Base)
       (Const := Const)
-      B
-      hCounter)
+      B)
+    hCounter
 
 theorem validFrom_iff_provable_of_rootExWitness_bridge_and_root_countermodel
     (hCounter :

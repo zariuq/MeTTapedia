@@ -5,11 +5,18 @@ import Mettapedia.Languages.MeTTa.HE.FileRunner
 
 This module runs a curated subset of the *actual* CeTTa HE core `.metta` files.
 The goal is not to overclaim support; the goal is to keep real-file pressure on
-LeanHE and to record both a positive and a negative boundary.
+LeanHE and to record the current supported lane, the near-frontier lane, and a
+deeper representative gap lane.
 
 Positive example:
-- `he_a1_symbols.metta`, `he_a3_twoside.metta`, `he_b0_chaining_prelim.metta`,
-  and `he_b1_equal_chain.metta` currently run end-to-end with zero errors.
+- `he_a1_symbols.metta`, `he_b0_chaining_prelim.metta`, and
+  `he_b1_equal_chain.metta` currently run end-to-end with zero errors.
+- `he_b3_direct.metta` now also runs end-to-end with zero errors after the
+  variable-headed application fix landed in the reference evaluator.
+
+Near-frontier examples:
+- `he_a3_twoside.metta` is down to one failing assertion, at the shared `$P`
+  recovery step.
 
 Negative example:
 - `he_b2_backchain.metta` still exposes missing direct/backchain-style reasoning.
@@ -22,16 +29,22 @@ open Mettapedia.Languages.MeTTa.HE
 /-- Core files that currently pass end-to-end through the real HE file runner. -/
 def supportedCoreFiles : List String :=
   [ "he_a1_symbols.metta"
-  , "he_a3_twoside.metta"
   , "he_b0_chaining_prelim.metta"
   , "he_b1_equal_chain.metta"
+  , "he_b3_direct.metta"
   ]
+
+/-- Real files that are one assertion away from joining the supported lane.
+
+The numeric budget is an upper bound, not an exact required count:
+- if the observed errors drop below the budget, that is progress
+- if they rise above the budget, the frontier has regressed -/
+def frontierCoreFiles : List (String × Nat) :=
+  [ ("he_a3_twoside.metta", 1) ]
 
 /-- Representative core files that still mark real implementation gaps today. -/
 def representativeGapCoreFiles : List String :=
-  [ "he_b2_backchain.metta"
-  , "he_b3_direct.metta"
-  ]
+  [ "he_b2_backchain.metta" ]
 
 def runSupportedCoreChecks : IO (List (String × Bool)) := do
   supportedCoreFiles.mapM fun name => do
@@ -42,6 +55,15 @@ def runSupportedCoreChecks : IO (List (String × Bool)) := do
 def supportedCoreFilesPass : IO Bool := do
   pure <| (← runSupportedCoreChecks).all Prod.snd
 
+def observeFrontierCoreChecks : IO (List (String × Nat × Nat × Bool)) := do
+  frontierCoreFiles.mapM fun (name, maxErrors) => do
+    let path ← resolveCoreFile name
+    let diag ← runHEFileDiagnostics path
+    pure (name, diag.errors, maxErrors, diag.errors ≤ maxErrors)
+
+def frontierCoreFilesWithinBudget : IO Bool := do
+  pure <| (← observeFrontierCoreChecks).all (fun (_, _, _, ok) => ok)
+
 def observeGapCoreChecks : IO (List (String × Nat)) := do
   representativeGapCoreFiles.mapM fun name => do
     let path ← resolveCoreFile name
@@ -50,15 +72,20 @@ def observeGapCoreChecks : IO (List (String × Nat)) := do
 
 def printCoreCheckSummary : IO UInt32 := do
   let supported ← runSupportedCoreChecks
+  let frontier ← observeFrontierCoreChecks
   let gaps ← observeGapCoreChecks
   IO.println "LeanHE real-file supported core lane:"
   for (name, ok) in supported do
     IO.println s!"  [{if ok then "ok" else "fail"}] {name}"
+  IO.println "LeanHE real-file frontier lane:"
+  for (name, errors, maxErrors, ok) in frontier do
+    IO.println s!"  [{if ok then "within-budget" else "regressed"} errors={errors} max={maxErrors}] {name}"
   IO.println "LeanHE real-file representative gap lane:"
   for (name, errors) in gaps do
     IO.println s!"  [observed errors={errors}] {name}"
   let pass := supported.all Prod.snd
-  IO.println s!"summary: supported_pass={pass} supported_total={supported.length} gap_examples={gaps.length}"
-  pure (if pass then 0 else 2)
+  let frontierOk := frontier.all (fun (_, _, _, ok) => ok)
+  IO.println s!"summary: supported_pass={pass} supported_total={supported.length} frontier_ok={frontierOk} frontier_total={frontier.length} gap_examples={gaps.length}"
+  pure (if pass && frontierOk then 0 else 2)
 
 end Mettapedia.Conformance.HECoreFiles

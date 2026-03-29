@@ -7,9 +7,9 @@ This module captures the **council-clear** GF semantic kernel as a directly
 authored `languageDef!` fragment:
 
 - 1 equation: `UseN(x) = x`
-- 40 rewrites in 10 families: 10 identity, 2 voice, 3 tense,
+- 44 rewrites in 11 families: 10 identity, 2 voice, 3 tense,
   3 negation, 5 embedding, 1 subordination, 4 completion,
-  5 coordination, 3 relative clause, 4 aspect
+  5 coordination, 3 relative clause, 4 aspect, 4 quantifier
 
 It is intentionally a **semantic fragment**, not the full runtime-loaded GF
 grammar. The full constructor inventory still comes from `GFCore.GrammarSig`;
@@ -65,6 +65,7 @@ def gfSemanticKernelLanguageDef : LanguageDef :=
       RS
       RCl
       RP
+      Det
     }
     terms { }
     equations {
@@ -111,6 +112,10 @@ def gfSemanticKernelLanguageDef : LanguageDef :=
       AnteriorPast . cl:Cl |- UseCl(TTAnt("TPast", "AAnter"), "PPos", cl) ~> "⊛anterior"("⊛temporal"(cl, "-1"));
       ConditionalSimul . cl:Cl |- UseCl(TTAnt("TCond", "ASimul"), "PPos", cl) ~> "⊛conditional"("⊛temporal"(cl, "?"));
       ConditionalAnter . cl:Cl |- UseCl(TTAnt("TCond", "AAnter"), "PPos", cl) ~> "⊛anterior"("⊛conditional"("⊛temporal"(cl, "?")));
+      DetEveryElim . cn:CN |- DetCN("every_Det", cn) ~> "⊛universal"(cn);
+      DetSomeElim . cn:CN |- DetCN("someSg_Det", cn) ~> "⊛existential"(cn);
+      DetTheElim . cn:CN |- DetCN("the_Det", cn) ~> "⊛definite"(cn);
+      DetNoElim . cn:CN |- DetCN("no_Det", cn) ~> "⊛negUniversal"(cn);
     }
     logic { }
     oracles { }
@@ -254,11 +259,24 @@ def allAspectRewrites : List RewriteRule :=
   [anteriorPresentRewrite, anteriorPastRewrite,
    conditionalSimulRewrite, conditionalAnterRewrite]
 
+def detEveryElimRewrite : RewriteRule :=
+  rewriteAt 40 (by decide)
+def detSomeElimRewrite : RewriteRule :=
+  rewriteAt 41 (by decide)
+def detTheElimRewrite : RewriteRule :=
+  rewriteAt 42 (by decide)
+def detNoElimRewrite : RewriteRule :=
+  rewriteAt 43 (by decide)
+
+def allQuantifierRewrites : List RewriteRule :=
+  [detEveryElimRewrite, detSomeElimRewrite, detTheElimRewrite, detNoElimRewrite]
+
 def allSemanticRewrites : List RewriteRule :=
   gfSemanticKernelLanguageDef.rewrites
 
 example : gfSemanticKernelLanguageDef.equations.length = 1 := rfl
-example : gfSemanticKernelLanguageDef.rewrites.length = 40 := rfl
+example : gfSemanticKernelLanguageDef.rewrites.length = 44 := rfl
+example : allQuantifierRewrites.length = 4 := by decide
 example : allIdentityRewrites.length = 6 := by decide
 example : allTenseRewrites.length = 3 := by decide
 example : allNegationRewrites.length = 3 := by decide
@@ -268,6 +286,6 @@ example : allSubordinationRewrites.length = 1 := by decide
 example : allCoordinationRewrites.length = 5 := by decide
 example : allRelativeRewrites.length = 3 := by decide
 example : allAspectRewrites.length = 4 := by decide
-example : allSemanticRewrites.length = 40 := rfl
+example : allSemanticRewrites.length = 44 := rfl
 
 end Mettapedia.Languages.GF.SemanticKernelDSL

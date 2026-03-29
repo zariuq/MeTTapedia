@@ -105,7 +105,8 @@ private def gfSemanticSupportTypes : List TypeDecl :=
   , TypeDecl.plain "ListS", TypeDecl.plain "ListNP"
   , TypeDecl.plain "ListAP", TypeDecl.plain "ListAdv"
   , TypeDecl.plain "ListCN"
-  , TypeDecl.plain "RS", TypeDecl.plain "RCl", TypeDecl.plain "RP" ]
+  , TypeDecl.plain "RS", TypeDecl.plain "RCl", TypeDecl.plain "RP"
+  , TypeDecl.plain "Det" ]
 
 private def gfPassV2GrammarRule : GrammarRule :=
   internalGrammarRule "PassV2" "VP" [("v", .base "V2")]
@@ -219,6 +220,10 @@ private def gfSemanticSupportTerms : List GrammarRule :=
   , gfConjunctionGrammarRule
   , gfRelativeGrammarRule, gfModifiedGrammarRule, gfRelclauseGrammarRule
   , gfAnteriorGrammarRule, gfConditionalGrammarRule, gfCondTimeOffsetGrammarRule
+  , internalGrammarRule "⊛universal" "NP" [("cn", .base "CN")]
+  , internalGrammarRule "⊛existential" "NP" [("cn", .base "CN")]
+  , internalGrammarRule "⊛definite" "NP" [("cn", .base "CN")]
+  , internalGrammarRule "⊛negUniversal" "NP" [("cn", .base "CN")]
   ] ++ gfTimeOffsetGrammarRules
 
 -- ═══════════════════════════════════════════════════════════════════

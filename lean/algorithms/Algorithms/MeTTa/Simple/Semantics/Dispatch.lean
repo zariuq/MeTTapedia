@@ -390,6 +390,23 @@ private theorem enumerateArgCallVariants_preserves
               simp [enumerateArgCallVariants, hEnumA, hEnumRest]
               simpa using hsR
 
+private def truthBindingVariantsForArgs (I : Interface σ) (s : σ)
+    (args : List Pattern) : List Bindings :=
+  args.foldl
+    (fun states arg =>
+      I.dedupBindings <|
+        states.flatMap (fun bs =>
+          let argSub := I.applyBindings bs arg
+          match I.truthBindingsForCall? s argSub with
+          | some found =>
+              let informative := found.filter (fun more => !more.isEmpty)
+              let chosen := if informative.isEmpty then found else informative
+              let merged := chosen.filterMap (fun more => mergeBindings bs more)
+              if merged.isEmpty then [bs] else merged
+          | none =>
+              [bs]))
+    [[]]
+
 def refineCallableOutWithArgEnumeration (I : Interface σ) (s : σ)
     (expr : Pattern) (baseOut : List Pattern) : σ × List Pattern :=
   if !(baseOut.any hasFreeVar) then
@@ -485,6 +502,28 @@ theorem refineCallableOutWithArgEnumeration_preserves
                   simpa [hFoldRun] using hFinal
                 simpa [refineCallableOutWithArgEnumeration, hFree, hEnumArgs, folded] using hFinalFolded
 
+private def refineDollarHeadCallableOut (I : Interface σ) (s : σ)
+    (expr : Pattern) : σ × List Pattern :=
+  match expr with
+  | .apply ctor args =>
+      match dollarHeadVarName? (.apply ctor []) with
+      | some _ =>
+          let informativeBindings :=
+            (truthBindingVariantsForArgs I s args).filter (fun (bs : Bindings) => !bs.isEmpty)
+          informativeBindings.foldl
+            (fun (acc : σ × List Pattern) bs =>
+              let sess := acc.1
+              let outRev := acc.2
+              let exprSub := I.applyBindings bs expr
+              let (sess', outV0) := I.eval sess exprSub
+              let outV := if outV0.isEmpty then [exprSub] else outV0
+              (sess', outV.reverse ++ outRev))
+            (s, [])
+      | none =>
+          (s, [])
+  | _ =>
+      (s, [])
+
 partial def evalCallableApply (I : Interface σ) (s : σ)
     (callable : Pattern) (args : List Pattern) : σ × List Pattern :=
   match callable with
@@ -507,7 +546,9 @@ partial def evalCallableApply (I : Interface σ) (s : σ)
       let (sEval, out0) := I.eval s call
       let (sEnum, extra) := enumerateCallByRules I sEval call
       let out := if extra.isEmpty then out0 else extra
-      refineCallableOutWithArgEnumeration I sEnum call out
+      let refined := refineCallableOutWithArgEnumeration I sEnum call out
+      let headRefined := refineDollarHeadCallableOut I sEnum call
+      if headRefined.2.isEmpty then refined else (headRefined.1, headRefined.2.reverse)
   | .apply name boundArgs =>
       evalCallableApply I s (.apply name []) (boundArgs ++ args)
   | .fvar name =>

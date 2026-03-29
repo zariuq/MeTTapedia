@@ -1483,6 +1483,87 @@ mutual
       (term : Pattern) : Option (List Bindings) :=
     bindingsForCondition? s term
 
+  private partial def isExprVariableHead : Pattern → Bool
+    | .fvar _ => true
+    | .apply ctor [] =>
+        (dollarHeadVarName? (.apply ctor [])).isSome
+    | _ => false
+
+  private partial def exprHeadBindingsFromArgs (s : Session)
+      (args : List Pattern) : List Bindings :=
+    let raw :=
+      args.foldl
+        (fun states arg =>
+          states.flatMap (fun bs =>
+            let argSub := applyBindingsCompat bs arg
+            match bindingsForCondition? s argSub with
+            | some found =>
+                let informative := found.filter (fun more => !more.isEmpty)
+                let chosen := if informative.isEmpty then found else informative
+                let merged := chosen.filterMap (fun more => mergeBindings bs more)
+                if merged.isEmpty then [bs] else merged
+            | none =>
+                [bs]))
+        [[]]
+    let informative := raw.filter (fun bs => !bs.isEmpty)
+    if informative.isEmpty then
+      dedupBindings raw
+    else
+      dedupBindings informative
+
+  private partial def evalExprSharedHeadBindings (s : Session)
+      (elems : List Pattern) : Session × List Pattern :=
+    match elems with
+    | [] => (s, [])
+    | head :: args =>
+        if !isExprVariableHead head then
+          (s, [])
+        else
+          let bindings := exprHeadBindingsFromArgs s args
+          if bindings.isEmpty then
+            (s, [])
+          else
+            bindings.foldl
+              (fun (acc : Session × List Pattern) bs =>
+                let sess := acc.1
+                let outAcc := acc.2
+                let exprSub := applyBindingsCompat bs (.apply "Expr" elems)
+                match exprSub with
+                | .apply "Expr" elemsSub =>
+                    let (sess', out0) :=
+                      evalTupleIntrinsicWith evalWithStateCore evalCallableApply
+                        isRuleCallableHead sess elemsSub
+                    let out := if out0.isEmpty then [exprSub] else out0
+                    (sess', outAcc ++ out)
+                | other =>
+                    let (sess', out0) := evalWithStateCore sess other
+                    let out := if out0.isEmpty then [other] else out0
+                    (sess', outAcc ++ out))
+              (s, [])
+
+  private partial def evalVariableHeadApplicationBindings (s : Session)
+      (term : Pattern) (args : List Pattern) : Session × List Pattern :=
+    let bindings := exprHeadBindingsFromArgs s args
+    let informative :=
+      bindings.filter (fun bs =>
+        !bs.isEmpty && applyBindingsCompat bs term != term)
+    let chosen := if informative.isEmpty then bindings else informative
+    if chosen.isEmpty then
+      (s, [])
+    else
+      chosen.foldl
+        (fun (acc : Session × List Pattern) bs =>
+          let sess := acc.1
+          let outAcc := acc.2
+          let termSub := applyBindingsCompat bs term
+          if termSub == term then
+            (sess, outAcc)
+          else
+            let (sess', out0) := evalWithStateCore sess termSub
+            let out := if out0.isEmpty then [termSub] else out0
+            (sess', outAcc ++ out))
+        (s, [])
+
   private partial def evalThenForBindings (s : Session) (thenBr : Pattern)
       (bindings : List Bindings) : Session × List Pattern :=
     bindings.foldl
@@ -2552,8 +2633,12 @@ mutual
         some (sR, combos)
     | .apply "Expr" elems =>
         let termExpr := .apply "Expr" elems
+        let (sPre, preOut) := evalExprSharedHeadBindings s elems
         let (s', out0) :=
-          evalTupleIntrinsicWith evalWithStateCore evalCallableApply isRuleCallableHead s elems
+          if preOut.isEmpty then
+            evalTupleIntrinsicWith evalWithStateCore evalCallableApply isRuleCallableHead s elems
+          else
+            (sPre, dedupPatternList preOut)
         let out1 := out0
         let outNonRefl := out1.filter (fun p => p != termExpr)
         let heLoweredHead :=
@@ -2579,6 +2664,15 @@ mutual
         if needsPartial then
           some (s, [partialPattern ctor args])
         else
+          let (sVarHead, varHeadOut) :=
+            match dollarHeadVarName? (.apply ctor []) with
+            | some _ =>
+                evalVariableHeadApplicationBindings s (.apply ctor args) args
+            | none =>
+                (s, [])
+          if !varHeadOut.isEmpty then
+            some (sVarHead, dedupPatternList varHeadOut)
+          else
           let fallback : Session × List Pattern :=
             let (sFH, fromHeads) := compatFunctionHeadRewrite s (.apply ctor args)
             if !fromHeads.isEmpty then
@@ -3024,44 +3118,143 @@ mutual
         | _ =>
             (s, [])
 
+  private def referenceEvalVariableHeadApplicationBindingsN
+      (fuel : Nat) (s : Session) (term : Pattern) (args : List Pattern) :
+      List Pattern :=
+    let ordinaryReducts : List Pattern :=
+      (List.range args.length).foldl (fun acc i =>
+        let a := args.getD i (.apply "" [])
+        let aRed0 :=
+          match referenceIntrinsicStatefulN fuel s a with
+          | some (_sA, outA) =>
+              if outA.isEmpty then step s a else outA
+          | none => step s a
+        let aRed := aRed0.filter (fun a' => a' != a)
+        let built :=
+          aRed.map (fun a' =>
+            match term with
+            | .apply ctor _ =>
+                .apply ctor (args.take i ++ [a'] ++ args.drop (i + 1))
+            | _ => term)
+        acc ++ built) []
+    if ordinaryReducts.isEmpty then
+      []
+    else
+      let bindings := exprHeadBindingsFromArgs s args
+      let informative :=
+        bindings.filter (fun bs =>
+          !bs.isEmpty && applyBindingsCompat bs term != term)
+      let chosen := if informative.isEmpty then bindings else informative
+      if chosen.isEmpty then
+        []
+      else
+        let out :=
+          chosen.foldl
+            (fun outAcc bs =>
+          let termSub := applyBindingsCompat bs term
+          if termSub == term then
+            outAcc
+          else
+            let out0 :=
+              match termSub with
+              | .apply subCtor subArgs =>
+                  (List.range subArgs.length).foldl (fun acc i =>
+                    let a := subArgs.getD i (.apply "" [])
+                    let aRed0 :=
+                      match referenceIntrinsicStatefulN fuel s a with
+                      | some (_sA, outA) =>
+                          if outA.isEmpty then step s a else outA
+                      | none => step s a
+                    let aRed := aRed0.filter (fun a' => a' != a)
+                    let built :=
+                      aRed.map (fun a' =>
+                        .apply subCtor (subArgs.take i ++ [a'] ++ subArgs.drop (i + 1)))
+                    acc ++ built) []
+              | _ => []
+            let produced := if out0.isEmpty then [termSub] else out0
+            outAcc ++ produced)
+            []
+        dedupPatternList out
+
   private def referenceIntrinsicApplyDispatchTailN
       (fuel : Nat)
       (dispatchIface : Algorithms.MeTTa.Simple.Semantics.Dispatch.Interface Session)
       (s : Session) (ctor : String) (args : List Pattern) :
       Option (Session × List Pattern) :=
+    match dollarHeadVarName? (.apply ctor []) with
+    | some _ =>
+        let outVarHead :=
+          referenceEvalVariableHeadApplicationBindingsN fuel s (.apply ctor args) args
+        if !outVarHead.isEmpty then
+          some (s, dedupPatternList outVarHead)
+        else
+          let (sFH, fromHeads) :=
+            Algorithms.MeTTa.Simple.Semantics.Dispatch.compatFunctionHeadRewrite
+              dispatchIface s (.apply ctor args)
+          match fromHeads with
+          | _ :: _ => some (sFH, fromHeads)
+          | [] =>
+              if Algorithms.MeTTa.Simple.Semantics.Dispatch.hasCompatHeadConstraintRule
+                  dispatchIface s ctor args.length then
+                none
+              else
+                let reducts : List Pattern :=
+                  (List.range args.length).foldl (fun acc i =>
+                    let a := args.getD i (.apply "" [])
+                    let aRed0 :=
+                      match referenceIntrinsicStatefulN fuel s a with
+                      | some (_sA, outA) =>
+                          if outA.isEmpty then step s a else outA
+                      | none => step s a
+                    let aRed := aRed0.filter (fun a' => a' != a)
+                    let built :=
+                      aRed.map (fun a' =>
+                        .apply ctor (args.take i ++ [a'] ++ args.drop (i + 1)))
+                    acc ++ built) []
+                match reducts with
+                | _ :: _ => some (s, reducts)
+                | [] =>
+                    let arities := rewriteAritiesForHead s ctor
+                    let hasExact := arities.any (fun n => n == args.length)
+                    let hasLarger := arities.any (fun n => n > args.length)
+                    if hasLarger && !hasExact && !args.isEmpty then
+                      some (s, [partialPattern ctor args])
+                    else
+                      none
+    | none =>
     let (sFH, fromHeads) :=
       Algorithms.MeTTa.Simple.Semantics.Dispatch.compatFunctionHeadRewrite
         dispatchIface s (.apply ctor args)
-    match fromHeads with
-    | _ :: _ => some (sFH, fromHeads)
-    | [] =>
-        if Algorithms.MeTTa.Simple.Semantics.Dispatch.hasCompatHeadConstraintRule
-            dispatchIface s ctor args.length then
-          none
-        else
-          let reducts : List Pattern :=
-            (List.range args.length).foldl (fun acc i =>
-              let a := args.getD i (.apply "" [])
-              let aRed0 :=
-                match referenceIntrinsicStatefulN fuel s a with
-                | some (_sA, outA) =>
-                    if outA.isEmpty then step s a else outA
-                | none => step s a
-              let aRed := aRed0.filter (fun a' => a' != a)
-              let built :=
-                aRed.map (fun a' =>
-                  .apply ctor (args.take i ++ [a'] ++ args.drop (i + 1)))
-              acc ++ built) []
-          match reducts with
-          | _ :: _ => some (s, reducts)
-          | [] =>
-              let arities := rewriteAritiesForHead s ctor
-              let hasExact := arities.any (fun n => n == args.length)
-              let hasLarger := arities.any (fun n => n > args.length)
-              if hasLarger && !hasExact && !args.isEmpty then
-                some (s, [partialPattern ctor args])
-              else
-                none
+      match fromHeads with
+      | _ :: _ => some (sFH, fromHeads)
+      | [] =>
+          if Algorithms.MeTTa.Simple.Semantics.Dispatch.hasCompatHeadConstraintRule
+              dispatchIface s ctor args.length then
+            none
+          else
+            let reducts : List Pattern :=
+              (List.range args.length).foldl (fun acc i =>
+                let a := args.getD i (.apply "" [])
+                let aRed0 :=
+                  match referenceIntrinsicStatefulN fuel s a with
+                  | some (_sA, outA) =>
+                      if outA.isEmpty then step s a else outA
+                  | none => step s a
+                let aRed := aRed0.filter (fun a' => a' != a)
+                let built :=
+                  aRed.map (fun a' =>
+                    .apply ctor (args.take i ++ [a'] ++ args.drop (i + 1)))
+                acc ++ built) []
+            match reducts with
+            | _ :: _ => some (s, reducts)
+            | [] =>
+                let arities := rewriteAritiesForHead s ctor
+                let hasExact := arities.any (fun n => n == args.length)
+                let hasLarger := arities.any (fun n => n > args.length)
+                if hasLarger && !hasExact && !args.isEmpty then
+                  some (s, [partialPattern ctor args])
+                else
+                  none
 
   private def referenceIntrinsicApplyFallbackN
       (fuel : Nat) (s : Session) (ctor : String) (args : List Pattern) :
@@ -3980,40 +4173,83 @@ private theorem referenceIntrinsicApplyDispatchTailN_stateCases
       (Algorithms.MeTTa.Simple.Semantics.Dispatch.compatFunctionHeadRewrite
         dispatchIface s (.apply ctor args)).1 := by
   unfold referenceIntrinsicApplyDispatchTailN at h
-  cases hCompat :
-      Algorithms.MeTTa.Simple.Semantics.Dispatch.compatFunctionHeadRewrite
-        dispatchIface s (.apply ctor args) with
-  | mk sFH fromHeads =>
-      cases fromHeads with
-      | nil =>
-          by_cases hConstraint :
-              Algorithms.MeTTa.Simple.Semantics.Dispatch.hasCompatHeadConstraintRule
-                dispatchIface s ctor args.length
-          · simp [hCompat, hConstraint] at h
-          · have hTail := h
-            simp [hCompat, hConstraint] at hTail
-            cases hReducts :
-                (List.map
-                    (fun x2 =>
-                      List.map
-                        (fun a' =>
-                          Pattern.apply ctor (List.take x2 args ++ a' :: List.drop (x2 + 1) args))
-                        (List.filter (fun a' => a' != args[x2]?.getD (Pattern.apply "" []))
-                          (match referenceIntrinsicStatefulN fuel s (args[x2]?.getD (Pattern.apply "" [])) with
-                          | some (_sA, outA) =>
-                              if outA = [] then s.step (args[x2]?.getD (Pattern.apply "" [])) else outA
-                          | none => s.step (args[x2]?.getD (Pattern.apply "" [])))))
-                    (List.range args.length)).flatten with
+  cases hHead : dollarHeadVarName? (.apply ctor []) with
+  | some _ =>
+      by_cases hVar :
+          referenceEvalVariableHeadApplicationBindingsN fuel s (.apply ctor args) args = []
+      · simp [hHead, hVar] at h
+        cases hCompat :
+            Algorithms.MeTTa.Simple.Semantics.Dispatch.compatFunctionHeadRewrite
+              dispatchIface s (.apply ctor args) with
+        | mk sFH fromHeads =>
+            cases fromHeads with
             | nil =>
-                simp [hReducts] at hTail
-                exact Or.inl hTail.2.1.symm
+                by_cases hConstraint :
+                    Algorithms.MeTTa.Simple.Semantics.Dispatch.hasCompatHeadConstraintRule
+                      dispatchIface s ctor args.length
+                · simp [hCompat, hConstraint] at h
+                · have hTail := h
+                  simp [hCompat, hConstraint] at hTail
+                  cases hReducts :
+                      (List.map
+                          (fun x2 =>
+                            List.map
+                              (fun a' =>
+                                Pattern.apply ctor (List.take x2 args ++ a' :: List.drop (x2 + 1) args))
+                              (List.filter (fun a' => a' != args[x2]?.getD (Pattern.apply "" []))
+                                (match referenceIntrinsicStatefulN fuel s (args[x2]?.getD (Pattern.apply "" [])) with
+                                | some (_sA, outA) =>
+                                    if outA = [] then s.step (args[x2]?.getD (Pattern.apply "" [])) else outA
+                                | none => s.step (args[x2]?.getD (Pattern.apply "" [])))))
+                          (List.range args.length)).flatten with
+                  | nil =>
+                      simp [hReducts] at hTail
+                      exact Or.inl hTail.2.1.symm
+                  | cons hd tl =>
+                      simp [hReducts] at hTail
+                      exact Or.inl hTail.1.symm
             | cons hd tl =>
-                simp [hReducts] at hTail
-                exact Or.inl hTail.1.symm
-      | cons hd tl =>
-          simp [hCompat] at h
-          exact Or.inr (by
-            simpa [hCompat] using h.1.symm)
+                simp [hCompat] at h
+                exact Or.inr (by
+                  simpa [hCompat] using h.1.symm)
+      · simp [hHead, hVar] at h
+        exact Or.inl (by simpa using h.1.symm)
+  | none =>
+      simp [hHead] at h
+      cases hCompat :
+          Algorithms.MeTTa.Simple.Semantics.Dispatch.compatFunctionHeadRewrite
+            dispatchIface s (.apply ctor args) with
+      | mk sFH fromHeads =>
+          cases fromHeads with
+          | nil =>
+              by_cases hConstraint :
+                  Algorithms.MeTTa.Simple.Semantics.Dispatch.hasCompatHeadConstraintRule
+                    dispatchIface s ctor args.length
+              · simp [hCompat, hConstraint] at h
+              · have hTail := h
+                simp [hCompat, hConstraint] at hTail
+                cases hReducts :
+                    (List.map
+                        (fun x2 =>
+                          List.map
+                            (fun a' =>
+                              Pattern.apply ctor (List.take x2 args ++ a' :: List.drop (x2 + 1) args))
+                            (List.filter (fun a' => a' != args[x2]?.getD (Pattern.apply "" []))
+                              (match referenceIntrinsicStatefulN fuel s (args[x2]?.getD (Pattern.apply "" [])) with
+                              | some (_sA, outA) =>
+                                  if outA = [] then s.step (args[x2]?.getD (Pattern.apply "" [])) else outA
+                              | none => s.step (args[x2]?.getD (Pattern.apply "" [])))))
+                        (List.range args.length)).flatten with
+                | nil =>
+                    simp [hReducts] at hTail
+                    exact Or.inl hTail.2.1.symm
+                | cons hd tl =>
+                    simp [hReducts] at hTail
+                    exact Or.inl hTail.1.symm
+          | cons hd tl =>
+              simp [hCompat] at h
+              exact Or.inr (by
+                simpa [hCompat] using h.1.symm)
 
 private theorem referenceIntrinsicApplyFallbackN_stateCases
     (fuel : Nat)
@@ -9396,12 +9632,15 @@ theorem referenceIntrinsicStatefulN_none_of_builtin_strict
         · have hHasLarger' := hHasLarger
           rw [List.any_eq_true] at hHasLarger'
           obtain ⟨x, hxMem, hxGt⟩ := hHasLarger'
-          have hxLt : argsV.length < x := by simpa using hxGt
+          have hxLt : argsV.length < x := by
+            have hxGt' := hxGt
+            simp at hxGt'
+            exact hxGt'
           have hNoExact' := hHasExact
           rw [List.any_eq_true, not_exists] at hNoExact'
           have hNoExact : ∀ y, y ∈ s.rewriteAritiesForHead ctor → ¬ y = argsV.length := by
             intro y hy hyEq
-            exact hNoExact' y ⟨hy, by simpa [hyEq]⟩
+            exact hNoExact' y ⟨hy, by simp [hyEq]⟩
           exact False.elim (hEmpty (hNoArityPartial x hxMem hxLt hNoExact))
       · simp [hHasLarger]
   have hDispatchNone :
@@ -9425,15 +9664,19 @@ theorem referenceIntrinsicStatefulN_none_of_builtin_strict
       rw [List.mem_map] at hl
       obtain ⟨i, hi, rfl⟩ := hl
       exact hBranchNil i hi
-    simp [hNoCompat, hNoConstraint, hFlat, hArityGuardFalse, branchAt, redAt]
+    have hVarHeadNil :
+        referenceEvalVariableHeadApplicationBindingsN fuel s (.apply ctor argsV) argsV = [] := by
+      simp [referenceEvalVariableHeadApplicationBindingsN, hFlat, branchAt, redAt]
+    cases hHead : dollarHeadVarName? (.apply ctor []) <;>
+      simp [hVarHeadNil, hNoCompat, hNoConstraint, hFlat, hArityGuardFalse, branchAt, redAt]
   show referenceIntrinsicApplyFallbackN fuel s ctor argsV = none
   unfold referenceIntrinsicApplyFallbackN
   split
   · rename_i minA hMinA
     have hGe : argsV.length ≥ minA := by simp [hMinA] at hNoPartialArity; exact hNoPartialArity
     have hNotLt : ¬ argsV.length < minA := Nat.not_lt_of_ge hGe
-    simpa [hNotLt, hDispatchNone]
-  · simpa [hDispatchNone]
+    simp [hNotLt, hDispatchNone]
+  · simp [hDispatchNone]
 
 
 /-- Unconditional session-WF preservation for the fuel-indexed evaluator. -/

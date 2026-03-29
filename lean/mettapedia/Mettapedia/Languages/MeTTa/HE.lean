@@ -16,6 +16,7 @@ import Mettapedia.Languages.MeTTa.HE.RewriteIRV2
 import Mettapedia.Languages.MeTTa.HE.Eval
 import Mettapedia.Languages.MeTTa.HE.ExecutableBoundary
 import Mettapedia.Languages.MeTTa.HE.Certification
+import Mettapedia.Languages.MeTTa.HE.SemanticForms
 import Mettapedia.Languages.MeTTa.HE.CoreFragment
 
 /-!
@@ -43,6 +44,8 @@ Authoritative Lean 4 formalization of the HE MeTTa evaluation specification.
 - `ExecutableBoundary` — Additive implementation-refined top-level HE boundary
 - `Certification` — Light public entry point for the exported top-level
                    `EvalAtomCertified` theorem boundary
+- `SemanticForms` — Named public facade for HE declarative, operational,
+                   executable, and certified semantic layers
 
 ## Key Design Decisions
 - Declarative inductive relations (no fuel, nondeterminism-native)

@@ -43,6 +43,7 @@ inductive GFRewriteLabel where
   | conjSBinary | conjNPBinary | conjAPBinary | conjAdvBinary | conjCNBinary
   | relVPSubject | relCNModify | relClBase
   | anteriorPresent | anteriorPast | conditionalSimul | conditionalAnter
+  | detEvery | detSome | detThe | detNo
   deriving DecidableEq, Repr
 
 /-- Rewrite families for independence reasoning.
@@ -60,6 +61,7 @@ inductive GFRewriteFamily where
   | coordination
   | relative
   | aspect
+  | quantifier
   deriving DecidableEq, Repr
 
 /-- Family classification of GF rewrite labels. -/
@@ -78,6 +80,7 @@ def labelFamily : GFRewriteLabel → GFRewriteFamily
   | .relVPSubject | .relCNModify | .relClBase => .relative
   | .anteriorPresent | .anteriorPast
   | .conditionalSimul | .conditionalAnter => .aspect
+  | .detEvery | .detSome | .detThe | .detNo => .quantifier
 
 /-- One-step top-level GF semantic rewrite relation by explicit label. -/
 inductive GFTopStep : GFRewriteLabel → Pattern → Pattern → Prop where
@@ -249,6 +252,22 @@ inductive GFTopStep : GFRewriteLabel → Pattern → Pattern → Prop where
           , .apply "PPos" []
           , cl ])
         (.apply "⊛anterior" [.apply "⊛conditional" [.apply "⊛temporal" [cl, .apply "?" []]]])
+  | detEvery (cn : Pattern) :
+      GFTopStep .detEvery
+        (.apply "DetCN" [.apply "every_Det" [], cn])
+        (.apply "⊛universal" [cn])
+  | detSome (cn : Pattern) :
+      GFTopStep .detSome
+        (.apply "DetCN" [.apply "someSg_Det" [], cn])
+        (.apply "⊛existential" [cn])
+  | detThe (cn : Pattern) :
+      GFTopStep .detThe
+        (.apply "DetCN" [.apply "the_Det" [], cn])
+        (.apply "⊛definite" [cn])
+  | detNo (cn : Pattern) :
+      GFTopStep .detNo
+        (.apply "DetCN" [.apply "no_Det" [], cn])
+        (.apply "⊛negUniversal" [cn])
 
 /-- Unlabeled top-step reduction relation for the semantic kernel. -/
 def GFTopReduces (x y : Pattern) : Prop := ∃ ℓ, GFTopStep ℓ x y
@@ -323,6 +342,10 @@ def topStepOut : Pattern → Option Pattern
   | .apply "ComplVS" [_, s] => some s
   | .apply "ComplVQ" [_, qs] => some qs
   | .apply "ComplVA" [_, ap] => some ap
+  | .apply "DetCN" [.apply "every_Det" [], cn] => some (.apply "⊛universal" [cn])
+  | .apply "DetCN" [.apply "someSg_Det" [], cn] => some (.apply "⊛existential" [cn])
+  | .apply "DetCN" [.apply "the_Det" [], cn] => some (.apply "⊛definite" [cn])
+  | .apply "DetCN" [.apply "no_Det" [], cn] => some (.apply "⊛negUniversal" [cn])
   | .apply "ConjS" [conj, .apply "BaseS" [s1, s2]] =>
       some (.apply "⊛conjunction" [conj, s1, s2])
   | .apply "ConjNP" [conj, .apply "BaseNP" [np1, np2]] =>
@@ -430,6 +453,10 @@ def topStepFamily : Pattern → Option GFRewriteFamily
   | .apply "ComplVS" [_, _] => some .completion
   | .apply "ComplVQ" [_, _] => some .completion
   | .apply "ComplVA" [_, _] => some .completion
+  | .apply "DetCN" [.apply "every_Det" [], _] => some .quantifier
+  | .apply "DetCN" [.apply "someSg_Det" [], _] => some .quantifier
+  | .apply "DetCN" [.apply "the_Det" [], _] => some .quantifier
+  | .apply "DetCN" [.apply "no_Det" [], _] => some .quantifier
   | .apply "ConjS" [_, .apply "BaseS" [_, _]] => some .coordination
   | .apply "ConjNP" [_, .apply "BaseNP" [_, _]] => some .coordination
   | .apply "ConjAP" [_, .apply "BaseAP" [_, _]] => some .coordination
