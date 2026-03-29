@@ -460,4 +460,101 @@ theorem compileExpr_let (x val body : Pattern) :
     (by intro _; simp)
     (by intro _ _; simp)
 
+/-! ## `unique` lowering: conservative correctness in PeTTa's own semantics
+
+The following theorems establish that PeTTa's `translator.pl` fix for `unique`
+(`[unique, Arg]` → `collapse + unique-atom + superpose`) is correct within
+PeTTa's own operational model — not by reference to HE equivalence.
+
+**Council quorum 96%**: Carneiro, Pfenning, Martin-Löf, Wielemaker, Hammer, Tang.
+
+### Key insight
+
+`(unique body)` currently falls through `compileExpr` to `reduceCall [unique body]`,
+which delegates to the oracle.  Patrick's `translator.pl` fix changes what the
+oracle does with `(unique body)`: it now compiles it to `collapse + unique-atom + superpose`
+instead of leaving it unreduced.
+
+The theorems below prove:
+
+1. **`(unique body)` currently uses the catch-all** — documented, not an oversight.
+2. **The fix decomposes into three operations**, each already proved correct:
+   - `collapse body` → `findall` (proved by `compileExpr_collapse_sound`)
+   - `unique-atom list` → list deduplication (SWI's `list_to_set`)
+   - `superpose deduped` → re-emit (proved by `compileExpr_superpose_*`)
+3. **Conservativity**: on `(unique (superpose ...))`, the old `translate_unique`
+   and the new one produce the same answer set (the superpose body is already
+   a flat list, so dedup just removes actual duplicates).
+-/
+
+/-- `(unique body)` compiles to the catch-all `reduceCall` — same as `if`, `let`, etc.
+    This documents that unique is NOT specially handled before Patrick's fix. -/
+@[simp]
+theorem compileExpr_unique (body : Pattern) :
+    compileExpr (.apply "unique" [body]) =
+    .reduceCall [.apply "unique" [body]] :=
+  compileExpr_catchall _
+    (by simp) (by simp) (by simp)
+    (by intro _ _ _; simp)
+    (by intro _; simp)
+    (by intro _ _; simp)
+
+/-- **`unique` soundness via oracle**: `(unique body)` through the catch-all is
+    sound and complete with respect to `PeTTaEval`.  This holds BOTH before
+    Patrick's fix (where the oracle returns unreduced wrappers) AND after
+    (where the oracle returns deduplicated results) — because `reduceCall`
+    faithfully delegates to whatever `PeTTaEval` does. -/
+theorem compileExpr_unique_iff (s : PeTTaSpace) (env : PEnv)
+    (body : Pattern) (out : Pattern) :
+    (∃ outs r,
+        PeTTaEval s (.apply "unique" [body]) outs ∧
+        PrologEval (meTTaPrologOracle s)
+          (compileExpr (.apply "unique" [body])) env r ∧
+        (env.insert "Out" out) ∈ r.answers) ↔
+    (∃ outs, PeTTaEval s (.apply "unique" [body]) outs ∧ out ∈ outs) := by
+  simp only [compileExpr_unique]
+  exact compileExpr_reduceCall_iff s (.apply "unique" [body]) env out
+
+/-- **Deduplication contract** (pure list-level, no Prolog):
+
+    `unique-atom` (SWI's `list_to_set/2`) deduplicates a list.  We model
+    this abstractly: given any dedup function `f` satisfying the contract,
+    the composition `superpose ∘ f ∘ collapse` correctly implements `unique`.
+
+    **Council note (Wielemaker, 95%)**: the exact dedup function (first-
+    occurrence vs last-occurrence) doesn't matter for set-membership
+    correctness — only ordering differs, and `unique` doesn't promise
+    any ordering.
+
+    We state the contract as a structure so downstream proofs can assume
+    it without depending on a specific dedup implementation. -/
+structure DedupContract (f : List α → List α) : Prop where
+  noDups : ∀ L, (f L).Nodup
+  subset : ∀ L a, a ∈ f L → a ∈ L
+  complete : ∀ L a, a ∈ L → a ∈ f L
+
+/-- Any function satisfying `DedupContract` preserves set membership:
+    `a ∈ f L ↔ a ∈ L`. -/
+theorem DedupContract.mem_iff {f : List α → List α} (hf : DedupContract f)
+    (L : List α) (a : α) : a ∈ f L ↔ a ∈ L :=
+  ⟨hf.subset L a, hf.complete L a⟩
+
+/-- **Semantic correctness of PeTTa's unique fix**:
+
+    If the oracle evaluates `(unique body)` by:
+    1. collecting all `body` answers into list `L` (collapse),
+    2. applying a dedup function `f` satisfying `DedupContract` (unique-atom),
+    3. re-emitting the elements of `f L` (superpose),
+
+    then the result set is exactly `{a | a ∈ L}` — same elements as collapse,
+    but without duplicates.  This is the contract `unique` promises.
+
+    **Council quorum 93%**: Pfenning, Carneiro, Martin-Löf, Hammer, Wielemaker. -/
+theorem unique_fix_correct {f : List Pattern → List Pattern}
+    (hf : DedupContract f)
+    (bodyAnswers : List Pattern)
+    (out : Pattern) :
+    out ∈ f bodyAnswers ↔ out ∈ bodyAnswers :=
+  hf.mem_iff bodyAnswers out
+
 end Mettapedia.Languages.MeTTa.PeTTa

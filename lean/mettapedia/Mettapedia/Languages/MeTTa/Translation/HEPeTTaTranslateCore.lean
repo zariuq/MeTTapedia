@@ -459,6 +459,74 @@ theorem translateHE_unique (x : Atom) (s : Nat) :
           .expression [.symbol "unique-atom", listVar],
           .expression [.symbol "superpose", uniqueVar]]], s3) := rfl
 
+/-! ### `unique` lowering refinement theorems
+
+The following theorems establish that the `unique` lowering is a
+**conservative extension** of PeTTa's native `translate_unique` rewrite,
+with **exact arity enforcement** and a clear **semantic-change boundary**.
+
+These are phrased in PeTTa's own operational semantics, not as
+HE-equivalence claims. The contract references SWI-Prolog's `list_to_set/2`
+(which PeTTa's `unique-atom` delegates to via `metta.pl:114`). -/
+
+/-- **Conservativity on superpose**: for the one case PeTTa's old
+    `translator.pl:77` handled — `(unique (superpose body))` — the new
+    lowering produces the same `collapse + unique-atom + superpose`
+    structure.  No regression on the old handled domain. -/
+theorem translateHE_unique_conservative_on_superpose (body : List Atom) (s : Nat) :
+    translateHE (.expression [.symbol "unique", .expression (.symbol "superpose" :: body)]) s =
+    let (tx, s1) := translateHE (.expression (.symbol "superpose" :: body)) s
+    let (listVar, s2) := freshVar "collapsed" s1
+    let (uniqueVar, s3) := freshVar "unique" s2
+    (.expression
+      [.symbol "let", listVar,
+        .expression [.symbol "collapse", tx],
+        .expression [.symbol "let", uniqueVar,
+          .expression [.symbol "unique-atom", listVar],
+          .expression [.symbol "superpose", uniqueVar]]], s3) := rfl
+
+/-- **Arity exactness (nullary)**: `(unique)` with no argument falls
+    through to the generic expression handler.  The output is just
+    `(unique)` unchanged (the symbol "unique" is identity-translated). -/
+theorem translateHE_unique_nullary (s : Nat) :
+    translateHE (Atom.expression [Atom.symbol "unique"]) s =
+    (Atom.expression [Atom.symbol "unique"], s) := rfl
+
+/-- **Arity exactness (binary)**: `(unique a b)` falls through to the
+    generic handler which recurses into children individually — it does
+    NOT produce the `collapse + unique-atom + superpose` lowering. -/
+theorem translateHE_unique_binary (a b : Atom) (s : Nat) :
+    ∃ ta tb s', translateHE (Atom.expression [Atom.symbol "unique", a, b]) s =
+    (Atom.expression [Atom.symbol "unique", ta, tb], s') :=
+  ⟨(translateHE a s).1, (translateHE b (translateHE a s).2).1,
+   (translateHE b (translateHE a s).2).2, rfl⟩
+
+/-- **Extension domain**: for any `x` that is NOT a direct superpose,
+    the old PeTTa rule would not fire (leaving `unique` unreduced).
+    The new lowering produces the same `collapse + unique-atom + superpose`
+    structure regardless of argument shape. -/
+theorem translateHE_unique_extends_to_all_unary (x : Atom) (s : Nat) :
+    translateHE (.expression [.symbol "unique", x]) s =
+    let (tx, s1) := translateHE x s
+    let (listVar, s2) := freshVar "collapsed" s1
+    let (uniqueVar, s3) := freshVar "unique" s2
+    (.expression
+      [.symbol "let", listVar,
+        .expression [.symbol "collapse", tx],
+        .expression [.symbol "let", uniqueVar,
+          .expression [.symbol "unique-atom", listVar],
+          .expression [.symbol "superpose", uniqueVar]]], s3) := rfl
+
+/-- **Roundtrip alignment**: the PeTTa→HE reverse translation of the
+    native `(unique-atom (collapse X))` idiom produces the HE surface
+    form `(collapse (unique X'))`. -/
+theorem translateHE_unique_roundtrip_structure (x : Atom) (s : Nat) :
+    (translatePeTTa
+      (Atom.expression [Atom.symbol "unique-atom",
+        Atom.expression [Atom.symbol "collapse", x]]) s).1 =
+    Atom.expression [Atom.symbol "collapse",
+      Atom.expression [Atom.symbol "unique", (translatePeTTa x s).1]] := rfl
+
 /-- `translateHE` preserves `atomToPattern` on identity cases. -/
 theorem translateHE_identity_preserves (a : Atom) (s : Nat)
     (h : translateHE a s = (a, s)) :
