@@ -203,6 +203,7 @@ ground-up PNP effort.
 \texttt{PNP/CanonicalZABERMInterface.lean} & final manuscript-facing ERM interface: samples, equality to the ERM wrapper, and an agreement bound imply compression and recovery \\
 \texttt{PNP/BitVecZABVisibleSurface.lean} & when $z$ is already bit-valued, the full exact visible surface $(z,a,b)$ becomes one raw bitvector of length $r+2k$ \\
 \texttt{PNP/BitVecZABERMInterface.lean} & concrete identity-extractor specialization of the final exact ERM interface on the raw full visible bit surface \\
+\texttt{PNP/ProjectedZABERMInterface.lean} & coordinate-projection specialization: the extractor burden is reduced to choosing finitely many coordinates of a bit-valued $z$ \\
 \texttt{PNP/GlobalWeaknessObstruction.lean} & current weakness summaries alone cannot yield a nonconstant predictor surface \\
 \texttt{PNP/InfinitaryHMLObstruction.lean} & infinite minimal contexts force an infinite depth-1 HML observable surface \\
 \texttt{PNP/PresentMomentShattering.lean} & exact rho present-moment probes already realize arbitrary finite membership slices \\
@@ -1329,7 +1330,9 @@ already a bitvector \(z : \mathrm{BitVec}\, r\), so the full visible input
 to the identity extractor on that raw full visible bit surface.  So in that
 case the remaining burden is no longer “choose \(\mathsf{zfeat}\)”; it is only
 “choose the samples, prove equality to the ERM wrapper, and control the bad
-codes.”
+codes.”  The new module \texttt{ProjectedZABERMInterface.lean} narrows the same
+burden in a different concrete way: when \(z\) is bit-valued, it is enough to
+choose finitely many coordinates of \(z\) as the local summary extractor.
 
 \subsection{Bridging to the Full PNP Route}
 
@@ -1396,6 +1399,7 @@ ERM-to-canonical bridge for the exact $(zfeat(z),a,b)$ route & proved & \texttt{
 final ERM interface for the canonical exact $(zfeat(z),a,b)$ route & proved & \texttt{CanonicalZABERMInterface.lean} \\
 raw full visible bit surface when $z : \mathrm{BitVec}\, r$ & proved & \texttt{BitVecZABVisibleSurface.lean} \\
 identity-extractor ERM interface on the raw full visible bit surface & proved & \texttt{BitVecZABERMInterface.lean} \\
+coordinate-projection ERM interface on bit-valued local data & proved & \texttt{ProjectedZABERMInterface.lean} \\
 weakness-globality obstruction & proved & \texttt{GlobalWeaknessObstruction.lean} \\
 infinitary HML obstruction & proved & \texttt{InfinitaryHMLObstruction.lean} \\
 present-moment shattering slice & proved & \texttt{PresentMomentShattering.lean} \\
