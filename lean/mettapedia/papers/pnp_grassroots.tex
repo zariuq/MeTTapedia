@@ -200,6 +200,7 @@ ground-up PNP effort.
 \texttt{PNP/CanonicalZABCodeWitness.lean} & explicit code-witness reduction: one exact $(zfeat(z),a,b)$ decision-list code assignment per index suffices \\
 \texttt{PNP/CanonicalZABRecoveryInterface.lean} & final direct exact-route interface: code assignment plus agreement bound imply compression and recovery \\
 \texttt{PNP/CanonicalZABERMRoute.lean} & ERM-to-canonical bridge: the exact ERM wrapper itself supplies the canonical code witness and recovery interface \\
+\texttt{PNP/CanonicalZABERMInterface.lean} & final manuscript-facing ERM interface: samples, equality to the ERM wrapper, and an agreement bound imply compression and recovery \\
 \texttt{PNP/GlobalWeaknessObstruction.lean} & current weakness summaries alone cannot yield a nonconstant predictor surface \\
 \texttt{PNP/InfinitaryHMLObstruction.lean} & infinite minimal contexts force an infinite depth-1 HML observable surface \\
 \texttt{PNP/PresentMomentShattering.lean} & exact rho present-moment probes already realize arbitrary finite membership slices \\
@@ -1313,7 +1314,10 @@ ingredient: one agreement-mass upper bound.  So even on the less sharp
 \texttt{CanonicalZABERMRoute.lean} removes the last administrative gap between
 the honest ERM wrapper and that final direct route: once the wrapper is really
 ERM over the raw exact \((\mathsf{zfeat}(z),a,b)\) decision-list class, the
-canonical code witness is exactly the ERM-selected code.
+canonical code witness is exactly the ERM-selected code.  The new module
+\texttt{CanonicalZABERMInterface.lean} packages the same conclusion in the most
+manuscript-facing form: one sample assignment, one proof that the switched
+family is exactly that ERM wrapper, and one bad-code agreement bound.
 
 \subsection{Bridging to the Full PNP Route}
 
@@ -1377,6 +1381,7 @@ canonical direct exact-route candidate interface & proved & \texttt{CanonicalZAB
 explicit direct exact-route code-witness reduction & proved & \texttt{CanonicalZABCodeWitness.lean} \\
 final direct exact-route recovery interface & proved & \texttt{CanonicalZABRecoveryInterface.lean} \\
 ERM-to-canonical bridge for the exact $(zfeat(z),a,b)$ route & proved & \texttt{CanonicalZABERMRoute.lean} \\
+final ERM interface for the canonical exact $(zfeat(z),a,b)$ route & proved & \texttt{CanonicalZABERMInterface.lean} \\
 weakness-globality obstruction & proved & \texttt{GlobalWeaknessObstruction.lean} \\
 infinitary HML obstruction & proved & \texttt{InfinitaryHMLObstruction.lean} \\
 present-moment shattering slice & proved & \texttt{PresentMomentShattering.lean} \\
