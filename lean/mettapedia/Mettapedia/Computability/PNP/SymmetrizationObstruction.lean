@@ -6,7 +6,7 @@ import Mathlib.Tactic
 /-!
 # P vs NP crux: majority symmetrization fails at zero margin
 
-The Goertzel switching paper claims that a majority over only polylogarithmically many
+The switching manuscript claims that a majority over only polylogarithmically many
 symmetrized surrogate labels concentrates to the Bayes rule on the local sigma-field.
 
 This file isolates a sharp obstruction to that step: if the surrogate labels are unbiased

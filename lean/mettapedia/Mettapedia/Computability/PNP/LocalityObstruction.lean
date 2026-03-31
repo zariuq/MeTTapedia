@@ -7,7 +7,7 @@ import Mathlib.Analysis.SpecialFunctions.Pow.Real
 /-!
 # P vs NP crux: logarithmic-radius locality is not polylog-size by itself
 
-This file isolates a concrete obstruction in the Goertzel P≠NP proof strategy.
+This file isolates a concrete obstruction in the current P≠NP switching strategy.
 
 If a "local decoder" must inspect a bounded-degree neighborhood of radius `Θ(log m)`,
 then the number of nodes visible in that neighborhood is already polynomial in `m`,

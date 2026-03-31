@@ -59,15 +59,15 @@
 \newtheorem{remark}[theorem]{Remark}
 
 \title{P vs NP Proof Attempts:\\
-Crux-First and Steelman Lean Notes on the Goertzel Weakness Program}
-\author{Oruzi / Codex collaboration}
+Crux-First and Steelman Lean Notes on a Weakness-Based Route}
+\author{}
 \date{\today}
 
 \begin{document}
 \maketitle
 
 \begin{abstract}
-This note records the current Lean work around Ben Goertzel's claimed proof of
+This note records the current Lean work around a claimed proof of
 $P \neq NP$ via ``quantale weakness and geometric complexity.''  The project now
 proceeds on two tracks in parallel.
 
@@ -90,6 +90,25 @@ fixed-width variance bound: if the retained-solution count has mean \(\mu>1\) an
 \(\mu\), then exact isolation occurs on at most a \(\mu/(\mu-1)^2\) fraction of hash choices.
 So fixed logarithmic width can only isolate often when the pre-hash solution set is already
 essentially polynomial in size.
+
+And even the manuscript's repeated \emph{pairwise-independent columns} language cannot shoulder the
+hashing argument by itself.  A separate Lean countermodel shows that pairwise-independent columns do
+not imply universal hashing: one can have pairwise-uniform columns together with a deterministic
+three-column linear dependency, so a nonzero difference hashes to zero with probability \(1\).
+
+Nor can the manuscript's \(\delta\)-biased right-hand side rescue the hash moments by itself.
+Another Lean module shows that once a candidate's label map is genuinely uniform over the hash-label
+space, its average hit mass against \emph{any} finite probability weight on labels is exactly the
+uniform value \(1/|L|\); and if a pair of candidates has jointly uniform labels, then the weighted
+average joint-hit mass is exactly \(1/|L|^2\).  So any useful effect of the \(\delta\)-biased
+right-hand side must come from failure of the underlying label maps to be genuinely uniform, not
+from the bias itself.
+
+And even exact pre-conditioning uniformity is not enough by itself.  A further Lean countermodel
+shows that conditioning on a label-dependent event can collapse a perfectly uniform label map to a
+point mass.  So any appeal to pre-conditioning \(2\)-universality or uniform labels must be
+supplemented by a separate theorem about what survives the manuscript's later conditioning on
+uniqueness.
 
 Third, even one natural repair to the calibration step has a sharp failure mode: if an
 involution flips the target bit while preserving the retained local features, then every
@@ -169,7 +188,7 @@ functions.
 
 \section{Context}
 
-The proof strategy under review is the October 2025 Goertzel manuscript
+The proof strategy under review is the October 2025 manuscript
 \emph{``P != NP: A Non-Relativizing Proof via Quantale Weakness and Geometric Complexity.''}
 At a high level, the paper proposes the following chain:
 \begin{enumerate}[leftmargin=1.5em]
@@ -209,9 +228,16 @@ The current Lean modules under
 \texttt{FixedWidthIsolationObstruction.lean} & fixed-width hashing isolates only on a small fraction once the expected survivor count exceeds \(1\) \\
 \texttt{PairwiseSurvivorMoments.lean} & pairwise first and factorial-second moment bounds imply the fixed-width variance budget \\
 \texttt{PairwiseCandidateBridge.lean} & candidate-wise \(0/1\) hits plus pairwise off-diagonal bounds instantiate the survivor-moment model \\
+\texttt{PairwiseColumnsObstruction.lean} & pairwise-independent columns still need not form a universal hash family \\
+\texttt{RhsBiasIrrelevance.lean} & once label maps are uniform, any finite RHS bias averages to the same single-hit and pair-hit moments \\
+\texttt{TwoUniversalRhsIrrelevance.lean} & exact finite \(2\)-universality of the hash family makes RHS bias irrelevant to the first two hit moments \\
+\texttt{ConditioningObstruction.lean} & conditioning can collapse a perfectly uniform label map to a point mass \\
 \texttt{SymmetrizationObstruction.lean} & unbiased majority does not beat Bayes without a margin \\
 \texttt{PostSwitchInputObstruction.lean} & exact \(u=(z,a_i,b)\) is \(T_i\)-invariant iff \(a_i=0\) \\
 \texttt{PostSwitchForkObstruction.lean} & exact \(T_i\)-fork: invariant \((z,a_i)\) has zero signal, \(b\)-side-channel gain needs nonzero-column mass \\
+\texttt{VisiblePostSwitchSurface.lean} & isolates the exact visible surface, invariant projection, and fork-visible projection \\
+\texttt{ExactSwitchedFamily.lean} & isolates the exact switched-family compression target and ERM reuse theorem \\
+\texttt{ExactVisibleCompressionObstruction.lean} & if the exact family spans all exact visible rules, no sub-surface-cardinality code budget can cover it \\
 \texttt{OrbitNeutralityObstruction.lean} & involution-invariant feature collapse forces exact half accuracy \\
 \texttt{FiberNeutralityObstruction.lean} & invariant feature fibers have exact zero conditional margin \\
 \texttt{WeightedFiberNeutralityObstruction.lean} & symmetry-respecting weights still give zero conditional margin \\
@@ -242,6 +268,13 @@ The blocker program is adversarial.  It asks:
   \item Can the manuscript's fixed \(k=c_1\log m\) VV layer really achieve \(\Omega(1/m)\)
   uniqueness probability on large solution sets, or does fixed-width isolation already collapse
   once the expected survivor count is bigger than \(1\)?
+  \item Is the manuscript's weaker \emph{pairwise-independent columns} language alone enough to
+  justify universal hashing, or can higher-order linear dependencies still make a nonzero
+  difference hash to zero deterministically?
+  \item If the hash labels are already uniform or pairwise-uniform, can the \(\delta\)-biased
+  right-hand side still change the first and pair hit moments at all?
+  \item Even if the pre-conditioning label map is uniform, can later conditioning on uniqueness
+  still collapse the local label distribution completely?
   \item Does majority symmetrization fail whenever the local conditional mean has zero margin?
   \item Is the exact post-switch input \(u=(z,a_i,b)\) really preserved by the paper's involution,
   or only in the zero-column case \(a_i=0\)?
@@ -270,7 +303,7 @@ The blocker program is adversarial.  It asks:
   \item Does tree-likeness alone force a small exact message/interpreter class?
 \end{enumerate}
 
-The current Lean answer to all eighteen is ``yes.''  Therefore the published proof cannot be
+The current Lean answer to all twenty-one is ``yes.''  Therefore the published proof cannot be
 accepted \emph{as written} unless it supplies additional structural theorems.
 
 \subsection{The Optimistic Program}
@@ -294,7 +327,7 @@ The new module \texttt{HypothesisClass.lean} formalizes exactly this interface:
   \item no such family can surject onto the full local-rule class once $s < 2^n$.
 \end{enumerate}
 
-This is the correct positive abstraction: if Ben's switching argument is salvageable, it must
+This is the correct positive abstraction: if this switching argument is salvageable, it must
 land in one of these small encoded subclasses rather than in the full local-rule space.
 
 \subsection{Hyperseed Perspective Surface}
@@ -516,6 +549,109 @@ This means the paper now needs a real theorem of one of the following forms:
 Without one of those repairs, the promised block distribution \(D_m\) is not supported by the
 cited VV argument.
 
+\section{Obstruction Ic: Pairwise-Independent Columns Do Not Imply Universal Hashing}
+
+The ensemble definition samples \(A\) from ``any \(2\)-universal distribution with
+pairwise-independent columns,'' and the later robustness discussion repeatedly foregrounds the
+\emph{pairwise-independent columns} part.  The new Lean module
+\texttt{PairwiseColumnsObstruction.lean} shows that this weaker condition is not enough on its own.
+
+\subsection{Lean theorem}
+
+\begin{theorem}[Pairwise columns need not be universal]
+There exists a one-bit linear hash family with three columns such that:
+\begin{enumerate}[leftmargin=1.5em]
+  \item each pair of columns is jointly uniform over \(\mathbb{F}_2^2\); but
+  \item some nonzero input difference hashes to \(0\) on \emph{every} seed.
+\end{enumerate}
+Hence pairwise-independent columns do not by themselves imply the universal-hashing bound required
+for VV isolation.
+\end{theorem}
+
+\noindent
+This is formalized by the bijectivity theorems
+\texttt{col12\_bijective}, \texttt{col13\_bijective}, and \texttt{col23\_bijective}, together with
+\texttt{threeColumnHash\_badDifference} and
+\texttt{threeColumnHash\_not\_universal}.
+
+\subsection{Why this matters}
+
+This does \emph{not} refute a hash family that is genuinely \(2\)-universal.  It does refute a
+common informal shortcut: one cannot replace real universal hashing by mere pairwise independence
+of the columns.  Higher-order linear dependencies can survive that weaker condition and completely
+destroy the needed collision bound.
+
+So the manuscript now owes a sharper statement here too:
+\begin{enumerate}[leftmargin=1.5em]
+  \item either prove that the actual fixed-width VV family is genuinely \(2\)-universal in the
+  sense needed for the candidate-wise moment bridge; or
+  \item stop appealing to pairwise-independent columns as if that weaker property alone carried the
+  isolation argument.
+\end{enumerate}
+
+\section{Obstruction Id: RHS Bias Is Irrelevant Once The Label Maps Are Uniform}
+
+The manuscript samples the VV right-hand side \(b\) from a \(\delta\)-biased source and suggests
+that this robustness can be folded into the collision/isolation analysis.  The new Lean module
+\texttt{RhsBiasIrrelevance.lean} isolates the exact point where that can and cannot matter.
+
+\subsection{Lean theorems}
+
+\begin{theorem}[Uniform labels erase single-hit bias]
+Let \(L\) be a finite label space with any probability weight \(w\) on \(L\), and suppose a finite
+seed space \(S\) splits as \(S \cong \{1,\dots,d\} \times L\) with \(d>0\), so that a candidate's
+label map is exactly the projection onto \(L\).  Then
+\[
+  \frac{1}{|S|}\sum_{s \in S} w(f(s)) = \frac{1}{|L|}.
+\]
+\end{theorem}
+
+\noindent
+This is formalized by \texttt{average\_mass\_of\_uniform\_labels}.
+
+\begin{theorem}[Jointly uniform labels erase pair-hit bias]
+Under the same hypotheses, if a pair of candidates has jointly uniform labels
+\(S \cong \{1,\dots,d\} \times L \times L\) with \(d>0\), then
+\[
+  \frac{1}{|S|}
+  \sum_{s \in S} \mathbf{1}_{f(s)=g(s)}\, w(f(s))
+  = \frac{1}{|L|^2}.
+\]
+\end{theorem}
+
+\noindent
+This is formalized by \texttt{average\_joint\_mass\_of\_uniform\_label\_pairs}.
+
+\subsection{Why this matters}
+
+This does not prove that the manuscript's actual fixed-width VV family has perfectly uniform label
+maps.  It proves the sharper conditional statement: \emph{if} the candidate-wise and pairwise label
+maps are genuinely uniform, then the choice of a \(\delta\)-biased right-hand-side distribution is
+irrelevant to the first and pair-hit moments.  The averaged values are exactly the same as under a
+uniform right-hand side.
+
+So the manuscript cannot get extra collision-control power from \(\delta\)-bias alone.  Any real
+effect of the right-hand side must come from a failure of the underlying label maps to be uniform in
+the first place.  This narrows the burden again:
+\begin{enumerate}[leftmargin=1.5em]
+  \item either prove that the actual fixed-width family's label maps are \emph{not} uniform in a
+  way that helps the needed moment bounds; or
+  \item stop treating \(\delta\)-bias itself as if it repaired the missing universal-hashing step.
+\end{enumerate}
+
+The new bridge module \texttt{TwoUniversalRhsIrrelevance.lean} sharpens this one step further in
+the manuscript's own language: if the actual \(A\)-family is genuinely finite \(2\)-universal, then
+the weighted single-hit and pair-hit averages are exactly the uniform values for \emph{every}
+finite right-hand-side distribution \(w\).  So on the first two VV moments, the entire burden sits
+on the \(A\)-family, not on the \(\delta\)-biased choice of \(b\).
+
+But even this sharper bridge is only a \emph{pre-conditioning} statement.  The new module
+\texttt{ConditioningObstruction.lean} shows that this is the end of what one can get for free:
+conditioning a perfectly uniform label map on a single label fiber makes the conditional label
+distribution a point mass.  So no argument may pass from pre-conditioning uniformity to the
+distribution conditioned on uniqueness without an additional theorem controlling that conditioning
+step.
+
 \section{Obstruction II: The Full Local Rule Class Is Enormous}
 
 Let $n$ be the number of visible Boolean features after switching.  Then the unconstrained class of
@@ -580,7 +716,7 @@ Again, this does not say that the switched rule class \emph{is} the full local r
 that without a theorem proving otherwise, one cannot pass from
 ``local on $n$ visible bits'' to ``describable by only $\mathrm{polylog}(m)$ bits.''
 
-That gap is exactly where the Goertzel program remains vulnerable.
+That gap is exactly where the current program remains vulnerable.
 
 \section{What These Results Break}
 
@@ -645,7 +781,7 @@ The key formal statements are:
   on only half the sample space.
 \end{itemize}
 
-\subsection{Application to the Goertzel symmetrization wrapper}
+\subsection{Application to the Current Symmetrization Wrapper}
 
 Now consider the paper's symmetrized surrogate label for a fixed block \(j\) and bit \(i\).  Take
 the simplest possible decoder \(P\): the decoder that always outputs \(0\).
@@ -888,7 +1024,7 @@ would have to:
 
 \section{Obstruction IVb: Invariant Feature Fibers Have Zero Margin}
 
-The most natural council reply to Obstruction IV is:
+The most natural reply to Obstruction IV is:
 \begin{quote}
 Fine, hard classification on the invariant features fails.  But one can still estimate a
 \emph{soft score} or conditional mean on those features and only use high-margin feature values.
@@ -999,7 +1135,7 @@ The key formal statements are:
 
 \subsection{Why this closes the non-uniform averaging reply}
 
-This matters because it removes a very common escape hatch.  The council can no longer say:
+This matters because it removes a very common escape hatch.  One can no longer say:
 \begin{quote}
 The balanced finite orbit space was just a counting toy model.  The real proof uses a more
 careful empirical or distributional weighting, so the invariant local statistic may still have a
@@ -1031,7 +1167,7 @@ theorem.
 
 \section{Obstruction IVd: Residual Symmetric Slices Still Stay At Chance}
 
-The next natural council reply is:
+The next natural reply is:
 \begin{quote}
 Fine.  We keep a little non-invariant information, so the exact sign-flip symmetry is broken.  We
 do not need to resolve every orbit, only enough of them.
@@ -1142,7 +1278,7 @@ This is stronger than saying ``the residual slice is still at chance.''  It says
 global advantage} is quantitatively budgeted by the part of the domain where symmetry is actually
 broken.
 
-So the council can no longer say:
+So one can no longer say:
 \begin{quote}
 We only need a little symmetry-breaking local information.  Perhaps it affects a small region, but
 that small region could still be enough to drive the whole lower-bound argument.
@@ -1166,7 +1302,7 @@ real mass-transfer statement:
 
 \section{Obstruction IVf: Invariant Soft Scores Have Zero Signed Signal}
 
-Another creative council move is:
+Another creative move is:
 \begin{quote}
 Perhaps the proof should not be phrased as conditional means on feature fibers at all.  Maybe one
 can compute a richer soft score from the invariant local summary and then feed that score into a
@@ -1219,7 +1355,7 @@ classifiers or direct mean estimators on those features cannot beat chance.  The
 more: even before one thresholds or calibrates anything, \emph{the score itself} has zero signed
 signal against the target.
 
-So the council can no longer say:
+So one can no longer say:
 \begin{quote}
 We are not really using a classifier on the invariant features.  We only need a good enough
 numerical score from those features, and then a later nonlinear step can extract the useful
@@ -1243,7 +1379,7 @@ rescue.  The remaining route must now prove something outside the invariant scor
 
 \section{Obstruction IVg: Invariant-Score Signal Comes Only From Weight Asymmetry}
 
-The next and now very natural council reply is:
+The next and now very natural reply is:
 \begin{quote}
 Fine.  Perhaps the retained score inputs stay involution-invariant, but the real training or
 evaluation weighting is not exactly symmetric.  Then an invariant soft score may still pick up a
@@ -1289,7 +1425,7 @@ This is stronger than the earlier exact-symmetry obstruction.  It says not just 
 weights give zero signal, but that \emph{all} invariant-score signal is sourced only by the
 antisymmetric part of the weighting.  The involution-invariant part cancels exactly.
 
-So the council can no longer say:
+So one can no longer say:
 \begin{quote}
 The true weighting is probably a little asymmetric, and that may be enough.
 \end{quote}
@@ -1313,7 +1449,7 @@ scoring, one must now prove one of:
 
 \section{Obstruction IVh: Side Channels Help Only On Orbit-Resolving Mass}
 
-At this point the natural council pivot is:
+At this point the natural pivot is:
 \begin{quote}
 Fine.  We stop asking invariant features alone to do the whole job.  We keep a controlled
 involution-sensitive side channel \(v\), and classify on the pair \((u,v)\).
@@ -1366,7 +1502,7 @@ channel must buy.  Keeping some involution-sensitive information does \emph{not}
 large advantage.  The benefit is quantitatively capped by the mass where that side channel really
 separates involution partners.
 
-So the council can no longer say:
+So one can no longer say:
 \begin{quote}
 We only need a small side channel.  Once it is present, a clever classifier on \((u,v)\) may still
 recover a substantial domination advantage.
@@ -1428,7 +1564,7 @@ This is the strongest current version of the side-channel blocker.  It no longer
 resolved mass is \emph{sufficient} for advantage.  It says a claimed advantage is itself evidence
 that substantial resolution must already be present.
 
-So the council can no longer say:
+So one can no longer say:
 \begin{quote}
 Perhaps the predictor gets a modest but important edge from a very small side channel, and only
 later amplifies that edge through clever structure.
@@ -1440,7 +1576,7 @@ statement.
 
 \subsection{Consequence}
 
-This is close to the form needed to challenge the route in Ben's own terms.  To save the current
+This is close to the form needed to challenge the route on its own terms.  To save the current
 style of proof, one now needs a theorem of the form:
 \begin{quote}
 the switched predictor's retained side channel resolves involution pairs on enough mass to support
@@ -1451,7 +1587,7 @@ Without that, the claimed domination gap has no quantitative room to exist.
 
 \section{Obstruction V: Short Programs Still Cover the Full Log-Width Local Rule Class}
 
-Another natural council reply is:
+Another natural reply is:
 \begin{quote}
 The switched predictor comes from a short global program, so even if arbitrary local rules are
 huge, only a much smaller subclass can actually arise from polynomial-time decoders.
@@ -1506,7 +1642,7 @@ This directly blocks the short-program rescue in its naive form:
 \end{quote}
 
 On the contrary, polynomial-size descriptions are already large enough to hard-wire every Boolean
-rule on \(O(\log m)\) visible bits.  So if Ben wants a true small subclass theorem, it must use
+rule on \(O(\log m)\) visible bits.  So if one wants a true small subclass theorem, it must use
 something much stronger than global shortness alone: symmetry, algebraic normal form, a tree
 interpreter with bounded message alphabet, or some other genuine structural restriction.
 
@@ -1554,7 +1690,7 @@ reconstruct the gadget's interface behavior under gluing.  The theorem above say
 absence of an additional structural restriction, the exact interface-semantic space is already far
 too large for a tiny finite-state algebra.
 
-This does not yet show that the Goertzel ensemble realizes the full transducer class.  What it
+This does not yet show that the current ensemble realizes the full transducer class.  What it
 does show is that a small exact quotient theorem cannot follow from tree-likeness or locality
 alone.  To survive, the metagraph route needs a new theorem that the actual switched/VV gadgets
 lie in a drastically smaller semantic subclass.
@@ -1615,7 +1751,7 @@ tree-likeness by itself does \emph{not} imply semantic simplicity.
 \end{quote}
 
 Even with an extremely rigid tree architecture, the semantic class is already the full Boolean
-function space on the visible inputs.  So if Ben wants a genuine tree-message theorem, it must use
+function space on the visible inputs.  So if one wants a genuine tree-message theorem, it must use
 special properties of the actual SAT+VV messages, not just the fact that the underlying graph is a
 tree.
 
@@ -1632,7 +1768,7 @@ precisely the kind of statement that now has to be made explicit to keep this pr
 
 \section{What These Results Do Not Yet Prove}
 
-The current Lean modules do \emph{not} prove that the full Goertzel argument fails.  In particular,
+The current Lean modules do \emph{not} prove that the full argument fails.  In particular,
 they do not yet address:
 \begin{enumerate}[leftmargin=1.5em]
   \item whether the masking and isolation ensemble enforces extra algebraic structure on local rules;
@@ -1651,7 +1787,13 @@ transitions has not been justified, and the default combinatorics point in the o
 
 \section{Next Attack Surface}
 
-The next natural formal target is the paper's implicit compression claim:
+The next natural formal target is the paper's implicit compression claim.  The
+first and third interface steps are now isolated in Lean:
+\texttt{VisiblePostSwitchSurface.lean} defines the exact manuscript-visible
+surface \(u=(z,a,b)\) together with its invariant and fork projections, and
+\texttt{ExactSwitchedFamily.lean} packages the exact bit-budget theorem needed
+to reuse the same-route ERM bound.  The remaining mathematical burden is now
+sharper:
 
 \begin{quote}
 After switching, the witness-bit predictor is not merely local; it is simple enough to lie in a
@@ -1667,6 +1809,13 @@ To make that rigorous, one would want a theorem of the shape:
   description length \(\mathrm{polylog}(m)\));
   \item verify that this bound is strong enough to feed the later union-bound and compression steps.
 \end{enumerate}
+
+The new module \texttt{ExactVisibleCompressionObstruction.lean} records the
+fallback counting barrier on that exact object: if the switched family on
+\(u=(z,a,b)\) is still rich enough to realize \emph{all} Boolean rules on the
+exact visible surface, then no \(s\)-bit code can cover it when
+\(s < |\text{surface}|\).  So any same-route rescue must now prove a genuine
+strict subclass theorem for the \emph{actual} switched predictors.
 
 If such a theorem cannot be proved, then the proof attempt should be regarded as stalled at a real
 mathematical gap, not a missing editorial detail.
@@ -1701,15 +1850,15 @@ The present crux-first formal work yields a clean conditional diagnosis.
   \item Logarithmic-radius locality is \emph{not} the same thing as polylogarithmic complexity.
   \item The full class of local Boolean rules on that visible data is far too large to fit into a
   polylogarithmic coding budget.
-  \item Therefore the Goertzel program needs a separate theorem proving exceptional compressibility
+  \item Therefore the program needs a separate theorem proving exceptional compressibility
   of the particular switched predictors it generates.
 \end{enumerate}
 
 That is currently the sharpest formally checked crux we have in Lean.
 
 \begin{thebibliography}{9}
-\bibitem{goertzel2025}
-Ben Goertzel.
+\bibitem{manuscript2025}
+Anonymous manuscript under study.
 \newblock \emph{P != NP: A Non-Relativizing Proof via Quantale Weakness and Geometric Complexity}.
 \newblock October 2025.
 

@@ -5,7 +5,7 @@ import Mathlib.Data.Fintype.EquivFin
 /-!
 # P vs NP background theory: encoded hypothesis classes
 
-This file develops an optimistic background layer for the Goertzel switching
+This file develops an optimistic background layer for the current switching
 program.  The adversarial files show that the *full* class of local rules on a
 log-radius neighborhood is far too large.  The optimistic route therefore needs
 an explicit theorem that the switched predictors lie in a much smaller,

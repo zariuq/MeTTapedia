@@ -1,0 +1,751 @@
+\documentclass[11pt]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage{microtype}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{mathtools}
+\usepackage{hyperref}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage{listings}
+\usepackage{xcolor}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue!50!black,
+  citecolor=blue!50!black,
+  urlcolor=blue!50!black
+}
+
+\lstdefinelanguage{Lean4}{
+  morekeywords={
+    import,namespace,end,open,section,noncomputable,abbrev,
+    def,theorem,lemma,where,by,fun,let,in,have,show,exact,
+    intro,apply,simpa,calc
+  },
+  sensitive=true,
+  morecomment=[l]{--},
+  morecomment=[s]{/-}{-/},
+  morestring=[b]"
+}
+
+\lstset{
+  language=Lean4,
+  basicstyle=\ttfamily\small,
+  keywordstyle=\bfseries\color{blue!50!black},
+  commentstyle=\itshape\color{green!40!black},
+  stringstyle=\color{red!50!black},
+  showstringspaces=false,
+  breaklines=true,
+  frame=single,
+  framerule=0.3pt,
+  xleftmargin=0.5em,
+  xrightmargin=0.5em,
+  keepspaces=true,
+  columns=fullflexible,
+  literate=
+    {¬}{{$\neg$}}1
+    {∃}{{$\exists$}}1
+    {→}{{$\to$}}1
+    {≤}{{$\leq$}}1
+}
+
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}[theorem]{Lemma}
+\theoremstyle{remark}
+\newtheorem{remark}[theorem]{Remark}
+
+\title{Navier--Stokes Grassroots:\\
+Ground-Up Background Theory for the Goertzel SG-Cole-Hopf Program}
+\author{}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+This note records the \emph{grassroots} side of the current work around Ben
+Goertzel's December 11, 2025 Navier--Stokes manuscript.  It is intentionally
+not the blocker note.  The companion crux-first analysis lives separately in
+\texttt{ns\_crux.tex}.
+
+The goal here is narrower and more constructive: isolate reusable background
+theory that would still matter even if the SG-Cole-Hopf route needs revision.
+The first machine-checked kernel now formalizes the exact algebraic inequalities
+behind the manuscript's identity-energy route: finite carré-du-champ energy,
+log-gradient reduction under a positive lower bound, the \(-2\nu \log\) scaling
+factor, and the Cauchy--Schwarz push-down from coefficient energy at the
+identity to pointwise vorticity/frame bounds.  It now also includes an abstract
+Cole--Hopf identity interface: if one can supply uniform positivity, an
+identity-energy bound for \(P_t\phi\), and a frame-curl bound, the whole
+algebraic chain to a uniform vorticity estimate is derived in Lean.  And it now
+adds a local kernel-founded semigroup shell on top of Mettapedia's own
+Markov-kernel infrastructure, so the next NS layer can stay inside the local
+library rather than reaching outward prematurely.  The newest pass also adds a
+positive approximation shell: if a future finite-mode or truncation theorem
+shows convergence of the manuscript's radius and statistic observables, then
+the induced cutoff potential and Cole--Hopf field convergence now follow
+automatically, and any eventual absolute truncation bound on those quantities
+passes to the limit as well.  On the identity-energy side, a new finite-mode
+limit shell now says that eventual truncation positivity and eventual
+truncation coefficient-energy bounds promote to honest limiting
+\texttt{ColeHopfIdentityData}, so the existing vorticity bridge can be reused on
+the limit object.  And the same finite-mode transfer layer now fuses with the
+local kernel-semigroup shell, so the kernel-founded NS interface can also be
+recovered directly on the limit data.  The newest pass packages the whole
+manuscript-shaped truncation target in one Lean structure: chart-observable
+convergence, cutoff/Cole--Hopf convergence, finite-mode positivity and
+identity-energy transfer, and kernel-founded vorticity consequences now sit in
+one explicit object.  And the newest concrete step lands the D.4 chart side in
+an actual finite-mode model: a squared weighted chart radius, a bounded linear
+observable, the chart-cutoff datum \(W_0 = \chi \cdot \ell\), the heat datum
+\(\phi = \exp(-W_0/(2\nu))\), explicit \(W_0/\phi\) bounds, and truncation
+convergence for both \(W_0\) and \(\phi\) are now machine-checked in one local
+module.  The latest pass then packages the first genuinely Cole--Hopf-shaped
+shared truncation instance into direct named kernel and vorticity objects, so
+the cutoff-convergence and uniform vorticity consequences can now be cited from
+one concrete package instead of from the whole abstraction stack.  The newest
+step then replaces the static selected-coefficient \(d\Phi\) surrogate by a
+nonnegative-time heat-decayed one, while preserving the same shared
+truncation, positivity, and coefficient-energy consequences.
+
+This does \emph{not} prove 3D Navier--Stokes regularity.  What it does is make
+the positive architecture cleaner: if the hard analytic bridges can be supplied,
+the identity-energy argument now lands in a small Lean-checked interface rather
+than in manuscript prose alone.
+\end{abstract}
+
+\tableofcontents
+
+\section{Scope}
+
+The December 2025 manuscript
+\emph{``Global Regularity of 3D Navier--Stokes via SG-Cole-Hopf Program''}
+proposes a route with four main layers:
+\begin{enumerate}[leftmargin=1.5em]
+  \item a polynomially weighted divergence-free Fourier frame on the torus;
+  \item an SG diffusion and Cole--Hopf transform on the diffeomorphism group;
+  \item an identity-based push-down back to Eulerian velocity fields;
+  \item a first-order energy estimate at the identity strong enough to control
+  vorticity and close the BKM criterion.
+\end{enumerate}
+
+The companion crux note asks where this route may fail.  This note asks a
+different question:
+\begin{quote}
+What mathematical infrastructure do we want in Lean even if the final
+regularity proof still needs serious repair?
+\end{quote}
+
+That changes the work style.  We prefer small exact interfaces over speculative
+closure.  In particular:
+\begin{enumerate}[leftmargin=1.5em]
+  \item separate algebraic identities from heavy infinite-dimensional analysis;
+  \item formalize the inequalities the manuscript repeatedly reuses;
+  \item make the hard analytic inputs explicit, so future repairs can plug into
+  them rather than hiding them.
+\end{enumerate}
+
+There is also a build-sanity rule now:
+\begin{quote}
+build from Mettapedia plus the locally pinned \texttt{v4.28.0} mathlib first,
+and treat outside Lean repos as reference material only unless a direct local
+need appears.
+\end{quote}
+
+\section{Existing Base}
+
+The grassroots route is not starting from zero.  The project already has:
+\begin{center}
+\begin{tabular}{p{0.46\textwidth}p{0.42\textwidth}}
+\toprule
+\textbf{Module} & \textbf{Grassroots role} \\
+\midrule
+\texttt{Mathlib} finite sums / real inequalities & Cauchy--Schwarz and square-root algebra \\
+\shortstack[l]{\texttt{Mettapedia/ProbabilityTheory/}\\\texttt{MarkovCategory/Kernels.lean}} & stable local kernel semantics \\
+\shortstack[l]{\texttt{Mettapedia/FluidDynamics/}\\\texttt{NavierStokes/IdentityEnergy.lean}} & new NS identity-energy kernel \\
+\shortstack[l]{\texttt{Mettapedia/FluidDynamics/}\\\texttt{NavierStokes/ColeHopfInterface.lean}} & abstract manuscript-shaped identity bridge \\
+\shortstack[l]{\texttt{Mettapedia/FluidDynamics/}\\\texttt{NavierStokes/KernelSemigroupInterface.lean}} & local kernel-founded semigroup shell \\
+\shortstack[l]{\texttt{Mettapedia/FluidDynamics/}\\\texttt{NavierStokes/CutoffContinuity.lean}} & generic cutoff continuity / instability shell \\
+\shortstack[l]{\texttt{Mettapedia/FluidDynamics/}\\\texttt{NavierStokes/ColeHopfTopology.lean}} & local \(W \mapsto \phi\) continuity / instability shell \\
+\shortstack[l]{\texttt{Mettapedia/FluidDynamics/}\\\texttt{NavierStokes/ApproximationInterface.lean}} & positive truncation / approximation shell \\
+\shortstack[l]{\texttt{Mettapedia/FluidDynamics/}\\\texttt{NavierStokes/ManuscriptChartDatum.lean}} & concrete D.4-style chart datum on a finite-mode model \\
+\shortstack[l]{\texttt{Mettapedia/FluidDynamics/}\\\texttt{NavierStokes/ManuscriptChartPackage.lean}} & concrete chart datum plugged into the combined truncation package \\
+\shortstack[l]{\texttt{Mettapedia/FluidDynamics/}\\\texttt{NavierStokes/SharedApproximationPackage.lean}} & one shared `approx` for chart and identity lanes \\
+\shortstack[l]{\texttt{Mettapedia/FluidDynamics/}\\\texttt{NavierStokes/GeometricSharedApproximation.lean}} & first explicit shared truncation instance with positivity and energy bounds \\
+\shortstack[l]{\texttt{Mettapedia/FluidDynamics/}\\\texttt{NavierStokes/GeometricColeHopfSharedApproximation.lean}} & Cole--Hopf-shaped shared instance driven by the actual chart heat datum \\
+\shortstack[l]{\texttt{Mettapedia/FluidDynamics/}\\\texttt{NavierStokes/GeometricColeHopfPackage.lean}} & direct concrete package-level kernel and vorticity consequences for that instance \\
+\shortstack[l]{\texttt{Mettapedia/FluidDynamics/}\\\texttt{NavierStokes/GeometricColeHopfHeatApproximation.lean}} & nonnegative-time heat-decayed \(d\Phi\) model on the same shared truncation family \\
+\shortstack[l]{\texttt{Mettapedia/FluidDynamics/}\\\texttt{NavierStokes/FiniteModeLimit.lean}} & finite-mode positivity / energy transfer to the limit \\
+\shortstack[l]{\texttt{Mettapedia/FluidDynamics/}\\\texttt{NavierStokes/FiniteModeKernelLimit.lean}} & finite-mode limit transfer into the local kernel shell \\
+\shortstack[l]{\texttt{Mettapedia/FluidDynamics/}\\\texttt{NavierStokes/ManuscriptTruncationPackage.lean}} & combined manuscript-shaped truncation target \\
+\texttt{ns\_crux.tex} & companion blocker note, kept separate on purpose \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+So the honest answer to ``how much can we build on Mettapedia?'' is:
+\begin{quote}
+quite a lot for the finite algebra and interface design, not much yet for the
+heavy PDE/stochastic geometry itself.
+\end{quote}
+
+The current NS-specific Lean files are deliberately modest.  They do not attempt
+Kunita theory, infinite-dimensional geometry, or PDE well-posedness.  They
+extract the clean finite algebra, the exact hypothesis interface that the
+manuscript's identity-only argument depends on, and now a local kernel shell
+for future semigroup-facing work.
+
+\section{The New Lean Kernel}
+
+The new module
+\texttt{Mettapedia/FluidDynamics/NavierStokes/IdentityEnergy.lean}
+defines a finite carré-du-champ style energy
+\[
+  \Gamma(D) := \sum_i D_i^2
+\]
+for a finite family of directional derivatives or coefficients.
+
+\subsection{Log-Energy Reduction}
+
+The first kernel theorem is the exact positivity estimate used in the manuscript
+when passing from \(\Phi\) to \(\log \Phi\).
+
+\begin{theorem}[Finite log-gradient bound]
+If \(m > 0\) and \(m \le F\), then
+\[
+  \Gamma(D/F) \le \Gamma(D) / m^2.
+\]
+\end{theorem}
+
+\noindent
+This is formalized as \texttt{gamma\_div\_le}.  It is elementary, but it
+extracts one of the manuscript's recurrent steps into a reusable statement with
+no stochastic or geometric baggage.
+
+The second theorem packages the specific Cole--Hopf scaling used in the NS
+route.
+
+\begin{theorem}[The \(-2\nu \log\) energy factor]
+If \(m > 0\) and \(m \le \Phi\), then
+\[
+  \Gamma\!\left((-2\nu)\,D/\Phi\right)
+  \le \frac{4\nu^2}{m^2}\,\Gamma(D).
+\]
+\end{theorem}
+
+\noindent
+This is \texttt{gamma\_negTwoNuLog\_le}.  It is exactly the algebraic part of
+the passage from a bound on \(\Gamma(P_t \phi)(\mathrm{id})\) to a bound on
+\(\Gamma(W(t))(\mathrm{id})\) once \(W(t) = -2\nu \log(P_t \phi)\) and a
+positive lower bound for \(P_t \phi\) are available.
+
+\subsection{Frame Push-Down and Vorticity}
+
+The second half of the file formalizes the finite Cauchy--Schwarz step behind
+the vorticity estimate.  Given coefficients \(a_i\) and a frame \(E_i(x)\), define
+\[
+  \mathrm{frameEval}(a,E,x) := \sum_i a_i E_i(x).
+\]
+
+\begin{theorem}[Finite frame Cauchy--Schwarz]
+For every \(x\),
+\[
+  |\mathrm{frameEval}(a,E,x)|
+  \le \sqrt{\Gamma(a)}\;\sqrt{\Gamma(E(\cdot,x))}.
+\]
+\end{theorem}
+
+\noindent
+This appears in Lean as \texttt{abs\_frameEval\_le}.  The specialized theorem
+\texttt{abs\_vorticity\_le} is the manuscript-shaped version where the frame
+components are \(\mathrm{curl}\,E_i(x)\).
+
+So the current Lean kernel already isolates the exact positive shape:
+\begin{quote}
+identity coefficient energy + uniform frame-curl energy
+\(\Longrightarrow\) pointwise vorticity bound.
+\end{quote}
+
+That is not the whole Navier--Stokes proof.  It is the algebraic spine that the
+hard analytic work has to feed.
+
+\subsection{The Cole--Hopf Identity Interface}
+
+The second new module,
+\texttt{Mettapedia/FluidDynamics/NavierStokes/ColeHopfInterface.lean},
+packages the manuscript-shaped hypotheses into one structure:
+\begin{itemize}[leftmargin=1.5em]
+  \item a positive profile \(\Phi(t)\),
+  \item directional derivatives \(D_i\Phi(t)\) at the identity,
+  \item a uniform lower bound \(m_\phi\),
+  \item a uniform identity-energy bound on \(\Gamma(D\Phi(t))\),
+  \item a curl frame with a uniform frame-energy bound.
+\end{itemize}
+
+From that interface, Lean now derives the full algebraic bridge:
+\begin{enumerate}[leftmargin=1.5em]
+  \item \texttt{gamma\_Wcoeff\_le}: a uniform bound on the coefficients of
+  \(W(t) = -2\nu\log\Phi(t)\);
+  \item \texttt{abs\_vorticity\_le}: a pointwise vorticity bound at any time and
+  point;
+  \item \texttt{abs\_vorticity\_le\_uniform}: the uniform version over all times
+  and points.
+\end{enumerate}
+
+This is exactly the kind of reuse Mettapedia is already good at: small abstract
+interfaces with derived consequences, leaving the deep analytic hypotheses
+explicit rather than implicit.
+
+\subsection{A Local Kernel-Founded Semigroup Shell}
+
+The next new module,
+\texttt{Mettapedia/FluidDynamics/NavierStokes/KernelSemigroupInterface.lean},
+does not try to prove SG diffusion facts.  It does something more conservative:
+it re-expresses the NS evolution layer in terms of Mettapedia's own stable
+kernel semantics from
+\texttt{Mettapedia/ProbabilityTheory/MarkovCategory/Kernels.lean}.
+
+Concretely, the file introduces a minimal local structure:
+\begin{itemize}[leftmargin=1.5em]
+  \item a measurable state object \(\Omega\),
+  \item time-indexed endokernels \(P_t : \Omega \rightsquigarrow \Omega\),
+  \item identity and composition laws for the kernel family,
+  \item the same identity-only Cole--Hopf fields already used in the algebraic
+  interface.
+\end{itemize}
+
+Lean then proves that all existing coefficient and vorticity consequences are
+recovered unchanged from this kernel-founded package.  So the current NS lane
+is now grounded on a local semigroup shell without pretending that the hard
+analytic semigroup estimates are already done.
+
+\subsection{A Generic Cutoff Continuity Repair Shell}
+
+The newest local helper,
+\texttt{Mettapedia/FluidDynamics/NavierStokes/CutoffContinuity.lean},
+extracts the exact mechanism behind the chart-cutoff issue without committing
+to any SG-specific geometry.
+
+It defines a generic cutoff potential
+\[
+  W(x) = \eta(r(x))\,s(x)
+\]
+and proves two small but useful facts:
+\begin{enumerate}[leftmargin=1.5em]
+  \item if the cutoff, radius observable, and statistic are continuous, then
+  \(W\) is continuous;
+  \item if a convergent sequence has the cutoff factor tending to the wrong
+  limit, then \(W\) cannot be continuous at the limit point.
+\end{enumerate}
+
+This helps the route constructively.  The grassroots side can now say:
+\begin{quote}
+any repair of the chart-cutoff step must supply continuity of the actual radius
+observable in the chosen topology, or replace the cutoff construction entirely.
+\end{quote}
+
+That does not solve the crux.  It does turn the crux into a local reusable
+interface theorem instead of leaving it as manuscript-level warning prose.
+
+\subsection[A Local W-to-phi Topology Shell]{A Local \(W \mapsto \phi\) Topology Shell}
+
+The next new module,
+\texttt{Mettapedia/FluidDynamics/NavierStokes/ColeHopfTopology.lean},
+pushes the same idea one step further.  It formalizes the real Cole--Hopf map
+\[
+  \phi = \exp\!\left(-\frac{W}{2\nu}\right)
+\]
+as a local topological wrapper over the generic cutoff potential.
+
+Its role is again deliberately modest:
+\begin{enumerate}[leftmargin=1.5em]
+  \item prove that if \(W\) is continuous, then the induced \(\phi\) is
+  continuous;
+  \item prove that if a sequence forces the wrong limit for \(W\), then it also
+  forces the wrong limit for \(\phi\), provided \(\nu \neq 0\);
+  \item specialize this to the chart-cutoff potential
+  \(W(x)=\eta(r(x))\,s(x)\).
+\end{enumerate}
+
+This matters because the crux note's instability is not only about \(W_0\).  It
+propagates through the manuscript's actual Cole--Hopf transform.  The new file
+turns that propagation into a local reusable theorem rather than leaving it as
+an informal remark.
+
+\subsection{A Positive Approximation Repair Shell}
+
+The newest module,
+\texttt{Mettapedia/FluidDynamics/NavierStokes/ApproximationInterface.lean},
+records the constructive side of the same issue.
+
+It introduces a tiny structure
+\texttt{CutoffApproximationData(radius, statistic)}
+whose content is exactly this:
+\begin{itemize}[leftmargin=1.5em]
+  \item an approximant family \(x \mapsto x_n\),
+  \item convergence of the radius observable \(r(x_n) \to r(x)\),
+  \item convergence of the statistic \(s(x_n) \to s(x)\).
+\end{itemize}
+
+From those hypotheses Lean now derives:
+\begin{enumerate}[leftmargin=1.5em]
+  \item convergence of the cutoff factor \(\eta(r(x_n)) \to \eta(r(x))\);
+  \item convergence of the cutoff potential
+  \(W(x_n)=\eta(r(x_n))\,s(x_n)\to W(x)\);
+  \item convergence of the corresponding Cole--Hopf field
+  \(\phi(x_n) \to \phi(x)\);
+  \item inheritance of any eventual absolute truncation bound for \(W(x_n)\) or
+  \(\phi(x_n)\) by the limit object.
+\end{enumerate}
+
+This is the clean positive counterpart to the crux note's mismatch argument.
+It says the route does not need vague reassurance about truncations.  It needs
+a theorem of one specific shape:
+\begin{quote}
+the manuscript's actual finite-mode approximants must force convergence of the
+radius and statistic observables in the topology being used.
+\end{quote}
+
+If that theorem exists, the cutoff/Cole--Hopf passage is no longer handwavy.
+The new Lean shell is where such a repair theorem plugs in.  It also means that
+``finite-mode first, infinite-mode later'' is no longer just a strategy slogan:
+once the finite truncations have a uniform bound and the relevant observables
+converge, the same bound transfers to the limit inside Lean.
+
+\subsection{A Concrete D.4 Chart Datum}
+
+The new module
+\texttt{Mettapedia/FluidDynamics/NavierStokes/ManuscriptChartDatum.lean}
+turns the manuscript's D.4 formula shape into an actual finite-mode Lean model
+instead of leaving it only as an interface.
+
+It starts from the existing geometric mode state and defines:
+\begin{enumerate}[leftmargin=1.5em]
+  \item a squared weighted chart radius \(r^2\), closer to the manuscript's
+  \(\|\kappa(g)\|_{H^m}^2\);
+  \item a bounded linear observable \(\ell\) with explicit envelope control;
+  \item the concrete chart datum \(W_0 = \chi(r^2)\,\ell\);
+  \item the concrete heat datum
+  \(\phi = \exp(-W_0/(2\nu))\).
+\end{enumerate}
+
+Lean then proves three kinds of facts.
+\begin{enumerate}[leftmargin=1.5em]
+  \item Finite-mode truncation convergence: the squared radius, the bounded
+  observable, \(W_0\), and \(\phi\) all converge along truncations.
+  \item Boundedness of the observable and the chart datum: once the cutoff
+  \(\chi\) is bounded, the resulting \(W_0\) is bounded explicitly.
+  \item Lower and upper bounds for \(\phi\): the local D.4 positivity envelope
+  is now derived inside Lean from the \(W_0\) bound.
+\end{enumerate}
+
+This is still not the manuscript's full SG chart.  But it is a meaningful
+upgrade in fidelity.  The chart side is no longer only ``some abstract radius
+and statistic.''  There is now a concrete local model where the D.4
+construction is correct, bounded, and truncation-stable.
+
+The follow-up file
+\texttt{Mettapedia/FluidDynamics/NavierStokes/ManuscriptChartPackage.lean}
+then plugs this concrete D.4 chart model straight into the already-existing
+\texttt{ManuscriptTruncationPackage.lean}.  So the chart side is not only
+concrete in isolation; it now lands directly in the combined package that also
+carries the kernel-founded vorticity consequences.
+
+The next new file,
+\texttt{Mettapedia/FluidDynamics/NavierStokes/SharedApproximationPackage.lean},
+then removes the last interface duplication.  It records one shared
+\(\mathrm{approx} : \mathbb{N} \to G \to G\) and derives from that same family:
+\begin{enumerate}[leftmargin=1.5em]
+  \item the chart-side cutoff/Cole--Hopf approximation package;
+  \item the finite-mode identity-energy package;
+  \item the combined manuscript-shaped truncation package.
+\end{enumerate}
+
+So the current grassroots architecture is now cleaner:
+\begin{quote}
+one approximation family, one chart side, one identity side, one combined
+package.
+\end{quote}
+
+The next file,
+\texttt{Mettapedia/FluidDynamics/NavierStokes/GeometricSharedApproximation.lean},
+is the first actual instance of that architecture.  It takes the concrete D.4
+chart datum from the geometric mode state, uses the same truncation family
+\texttt{truncateModes}, reads \(d\Phi\) off finitely many selected coefficients
+of the same truncated state, and proves:
+\begin{enumerate}[leftmargin=1.5em]
+  \item eventual positivity for the same \(\Phi\)-family;
+  \item eventual finite \(\Gamma(d\Phi)\) bounds for the same family;
+  \item direct inhabitation of the full
+  \texttt{SharedApproximationPackage.lean}.
+\end{enumerate}
+
+So the current grassroots lane no longer says only
+``if someone supplies a shared truncation family, we know what to do.''  It now
+says:
+\begin{quote}
+here is one concrete shared family, and here are the positivity and energy
+bounds for that same family.
+\end{quote}
+
+The next file,
+\texttt{Mettapedia/FluidDynamics/NavierStokes/GeometricColeHopfSharedApproximation.lean},
+pushes one step closer to the manuscript.  It replaces the toy positive-offset
+\(\Phi\) with the actual chart heat datum
+\[
+  \phi = \exp\!\left(-\frac{W_0}{2\nu}\right)
+\]
+from the D.4-style chart model, and it defines \(d\Phi\) as that same heat
+datum multiplied by finitely selected coefficients of the same truncated state.
+
+That matters because the positivity and energy bounds are now proved for a
+family whose \(\Phi\)-side is genuinely Cole--Hopf-shaped.  Concretely, Lean
+now proves for the same shared truncation family:
+\begin{enumerate}[leftmargin=1.5em]
+  \item eventual lower positivity of \(\phi\) from the explicit \(W_0\) bound;
+  \item eventual finite \(\Gamma(d\Phi)\) bounds for the \(\phi\)-scaled
+  selected-coefficient model;
+  \item direct inhabitation of the full
+  \texttt{SharedApproximationPackage.lean} by this more faithful choice.
+\end{enumerate}
+
+So the situation is now better than before:
+\begin{quote}
+we no longer have only a shared truncation toy model; we also have a shared
+Cole--Hopf-shaped heat-datum model.
+\end{quote}
+
+The follow-up file
+\texttt{Mettapedia/FluidDynamics/NavierStokes/GeometricColeHopfPackage.lean}
+then turns that instance into named concrete package objects.  It exposes:
+\begin{enumerate}[leftmargin=1.5em]
+  \item the concrete manuscript-shaped truncation package for the geometric
+  Cole--Hopf instance;
+  \item the associated concrete finite-mode kernel data and kernel semigroup
+  data;
+  \item the named vorticity field for that package;
+  \item direct theorems for cutoff-potential convergence, Cole--Hopf
+  convergence, coefficient-energy control, and uniform vorticity bounds.
+\end{enumerate}
+
+That is a real usability step.  Later formalization no longer needs to unpack
+the whole shared-approximation tower just to cite the first concrete
+Cole--Hopf-shaped NS package.
+
+The newest file,
+\texttt{Mettapedia/FluidDynamics/NavierStokes/GeometricColeHopfHeatApproximation.lean},
+then takes one more real step toward the manuscript's evolution story without
+pretending to have proved the full SG semigroup.  It keeps the same D.4 chart
+heat datum \(\phi\), keeps the same shared truncation family, but replaces the
+static selected-coefficient identity model by
+\[
+  d\Phi_i(t) = \phi \, e^{-t\,k_i}\, a_{k_i}
+\]
+for nonnegative time and selected modes \(k_i\).  Lean proves:
+\begin{enumerate}[leftmargin=1.5em]
+  \item truncation convergence for the heat-decayed coefficient model;
+  \item a uniform finite \(\Gamma(d\Phi(t))\) bound, since the heat factors are
+  bounded by \(1\) for \(t \ge 0\);
+  \item direct inhabitation of the same
+  \texttt{SharedApproximationPackage.lean} by this more genuinely
+  time-dependent family.
+\end{enumerate}
+
+So the identity side is no longer only
+\begin{quote}
+static selected coefficients multiplied by \(\phi\).
+\end{quote}
+It is now
+\begin{quote}
+selected coefficients with an explicit nonnegative-time heat decay, still tied
+to the same concrete chart datum and the same finite-mode truncation family.
+\end{quote}
+
+\subsection{A Finite-Mode Identity-Energy Limit Shell}
+
+The next new module,
+\texttt{Mettapedia/FluidDynamics/NavierStokes/FiniteModeLimit.lean},
+does the same kind of cleanup for the manuscript's identity-energy lane.
+
+It proves three things:
+\begin{enumerate}[leftmargin=1.5em]
+  \item pointwise convergence of a finite coefficient family implies convergence
+  of its finite carré-du-champ energy \(\Gamma\);
+  \item eventual finite-mode energy bounds \(\Gamma(D_n)\le A\) pass to the
+  limit coefficients;
+  \item eventual positivity lower bounds \(m \le \Phi_n\) also pass to the
+  limit profile.
+\end{enumerate}
+
+Those ingredients are then packaged into a structure
+\texttt{FiniteModeColeHopfData} whose theorem
+\texttt{toColeHopfIdentityData} produces the exact existing
+\texttt{ColeHopfIdentityData} interface on the limit object.  So once a future
+analytic argument supplies:
+\begin{quote}
+finite-mode convergence, eventual lower positivity, and eventual coefficient
+energy bounds,
+\end{quote}
+the already verified vorticity bridge applies to the limit automatically.
+
+This is the manuscript's ``finite-mode first, infinite-mode later'' pattern in
+a sharper form than before.  It no longer stops at convergence of observables.
+It also transfers the actual identity-energy hypotheses needed by the current
+Lean vorticity route.
+
+The follow-up module
+\texttt{Mettapedia/FluidDynamics/NavierStokes/FiniteModeKernelLimit.lean}
+then combines this limit-transfer shell with the already local
+\texttt{KernelSemigroupInterface.lean}.  So if a future analytic argument
+supplies both a kernel semigroup and the finite-mode convergence/bound package,
+the present kernel-founded vorticity estimate is available on the limit object
+with no further algebra.
+
+Finally,
+\texttt{Mettapedia/FluidDynamics/NavierStokes/ManuscriptTruncationPackage.lean}
+packages the full current target in one place.  It combines:
+\begin{enumerate}[leftmargin=1.5em]
+  \item chart-observable convergence for the cutoff side;
+  \item cutoff-potential and Cole--Hopf convergence consequences;
+  \item finite-mode positivity and identity-energy transfer to the limit;
+  \item the resulting kernel-founded vorticity bound on the limit data.
+\end{enumerate}
+
+That matters because the next analytic theorem no longer has to be described
+vaguely as ``something feeding several shells.''  It now has one exact Lean
+landing point.
+
+\section{Why This Matters}
+
+The value of this kernel is not that it proves a Millennium problem.  The value
+is that it separates the route into two layers.
+
+\begin{enumerate}[leftmargin=1.5em]
+  \item \textbf{Reusable algebraic layer.}
+  Once one has a lower bound on \(P_t \phi\), an identity-energy bound for
+  \(\Gamma(P_t\phi)(\mathrm{id})\), and a frame-curl constant, the rest of the
+  vorticity estimate is just these finite inequalities.
+  \item \textbf{Hard analytic input layer.}
+  The real burden is now explicit: produce those bounds in the actual infinite-
+  dimensional SG setting, justify the semigroup/flow passage, and justify the
+  push-down theorem analytically.
+\end{enumerate}
+
+That split is precisely what a grassroots program should want.  If the SG route
+survives, these lemmas will still be needed.  If the SG route mutates, the same
+identity-energy interface may survive even then.
+
+\section{Positive Manuscript Infrastructure}
+
+Even on a charitable read, not every part of the manuscript deserves the same
+confidence.  But the positive architecture is real enough to build around.
+
+\subsection{Polynomial Fourier Frame}
+
+The manuscript gives a concrete divergence-free Fourier frame with polynomial
+orbit weights on \(T^3\).  This is not just inspirational prose.  It is a
+specific normalization scheme designed to make the relevant \(\ell^2\)-type
+sums finite for \(m \ge 5\).  Grassroots formalization can treat this as a real
+mathematical object, separate from the later stochastic and geometric layers.
+
+\subsection{Finite-Mode First, Infinite-Mode Later}
+
+The manuscript repeatedly follows a sensible proof pattern:
+\begin{quote}
+prove the estimate for finite truncations first, then pass to the full
+infinite-mode object.
+\end{quote}
+
+That is exactly the right shape for formalization.  It suggests that future Lean
+work should not start with the full diffeomorphism-group diffusion.  It should
+start with finite coefficient families, finite frame sums, and explicit
+truncation interfaces.
+
+\subsection{Schwartz Exhaustion Is Background, Not Center Stage}
+
+On a closer read, the manuscript's periodization and torus-exhaustion appendix
+is more substantial than a first skim suggests.  For grassroots purposes, the
+important point is structural:
+\begin{quote}
+the \(\mathbb{R}^3\) step mostly wants uniform control of the same torus-side
+constants already needed earlier.
+\end{quote}
+
+So the best constructive work remains the torus-side background theory, not an
+early jump to the Euclidean limit.
+
+\section{What Still Needs Heavy Analysis}
+
+The new Lean kernel also clarifies what it does \emph{not} solve.
+
+\begin{enumerate}[leftmargin=1.5em]
+  \item It does not prove the local propagation estimate for
+  \(\Gamma(P_t \phi)(\mathrm{id})\).
+  \item It does not prove the manuscript-shaped truncation theorem that would
+  feed convergence of the radius and statistic observables into the new
+  approximation shell, or the eventual positivity / coefficient-energy bounds
+  into the new finite-mode limit shell.
+  \item It does not justify the manuscript's push-down theorem at a fully
+  analytic infinite-dimensional level.
+  \item It does not close BKM by itself; it only packages the algebraic part of
+  that closure once the analytic hypotheses are supplied.
+\end{enumerate}
+
+That honesty is a feature, not a weakness.  The point of grassroots work is to
+shrink the unknown region and expose the remaining burden sharply.
+
+\section{Next Grassroots Targets}
+
+The next constructive steps are fairly clear.
+
+\begin{enumerate}[leftmargin=1.5em]
+  \item Instantiate the new shared approximation package with a genuinely
+  manuscript-shaped truncation family: the chart-side D.4 datum and the
+  finite-mode identity-energy datum should come from the same explicit
+  truncation family, with convergence of the actual radius/statistic
+  observables and eventual lower positivity / coefficient-energy bounds for the
+  identity data.  That now feeds directly into
+  \texttt{ApproximationInterface.lean} and
+  \texttt{FiniteModeLimit.lean}, or equivalently into the combined
+  \texttt{ManuscriptTruncationPackage.lean} through
+  \texttt{SharedApproximationPackage.lean}.  The new geometric and geometric
+  Cole--Hopf instances are now explicit realizations of this pattern, and the
+  new heat-decayed Cole--Hopf instance is a more time-aware one, but the next
+  goal is still a more faithful manuscript-shaped package in which the chosen
+  \(d\Phi\) coefficients are justified by the actual SG/identity differential
+  story rather than by a finite selected-coefficient heat surrogate.
+  \item Strengthen the new local kernel-founded shell from ``kernel semigroup +
+  identity interface'' to ``kernel semigroup + positivity/energy propagation''.
+  That is the next honest place where a real analytic theorem can plug in.
+  \item Formalize finite-frame Sobolev-to-vorticity constants cleanly, so the
+  current \texttt{abs\_vorticity\_le} theorem can be plugged into an explicit
+  frame family rather than an abstract coefficient system.
+\end{enumerate}
+
+The reason for this order is straightforward: land a small exact kernel before
+spending effort on a speculative infinite-dimensional closure.
+
+\section{Conclusion}
+
+The SG-Cole-Hopf route is not formally closed.  But it is already structured
+enough that its algebraic core can be extracted and verified independently.
+
+That is what the current grassroots pass accomplishes.  The new Lean module does
+not prove global regularity, but it does prove that the manuscript's
+identity-energy route has a small reusable spine:
+\[
+  \Gamma(P_t \phi)(\mathrm{id})
+  \Longrightarrow
+  \Gamma(W(t))(\mathrm{id})
+  \Longrightarrow
+  |\omega(t,x)|
+\]
+once the hard analytic hypotheses are fed in.
+
+That is exactly the kind of background theory we want from the ground up.
+
+\end{document}

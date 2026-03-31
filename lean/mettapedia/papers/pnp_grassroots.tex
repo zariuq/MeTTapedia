@@ -59,16 +59,16 @@
 \newtheorem{remark}[theorem]{Remark}
 
 \title{P vs NP Grassroots:\\
-Ground-Up Background Theory for the Goertzel Program}
-\author{Oruzi / Codex collaboration}
+Ground-Up Background Theory for a Structured Switching Route}
+\author{}
 \date{\today}
 
 \begin{document}
 \maketitle
 
 \begin{abstract}
-This note records the \emph{grassroots} side of the current Lean work around Ben
-Goertzel's proposed route to $P \neq NP$.  It is intentionally not the blocker note.
+This note records the \emph{grassroots} side of the current Lean work around a
+proposed route to $P \neq NP$.  It is intentionally not the blocker note.
 The companion crux-first analysis lives separately in \texttt{pnp\_crux.tex}.
 
 The goal here is narrower and more constructive: build reusable background theory
@@ -87,6 +87,17 @@ It also now packages the exact \emph{same-route interface}: a repair that still
 intends to use switching plus ERM must produce a bit-encoded family over an
 available input surface and therefore inherits the current finite weighted
 recovery theorem.
+It also now isolates the exact post-switch visible surface and proves a clean
+finite-summary kernel: any switched family that truly factors through a finite
+summary surface automatically inherits an explicit truth-table bit budget equal
+to the cardinality of that summary type.
+It now also ties the four current exact-surface affine candidate classes
+directly to the weighted recovery backbone: once the target lies in one of
+those classes, the finite-sampling lower bound is available immediately with the
+matching explicit bit budget.
+It now also isolates a sharper shared-basis regime: if one fixed affine feature
+extractor is reused across the switched family and only the downstream combiner
+varies, then the code budget collapses to the combiner alone.
 The Meredith-side limit is now considerably sharper.  The currently formalized
 weakness bridge exports only global evidence scalars, so any predictor factoring
 only through those summaries is constant on the whole state space.  The current
@@ -109,7 +120,7 @@ finite learning interface, and an explicit observational/evidence semantics.
 
 \section{Scope}
 
-The October 2025 Goertzel manuscript
+The October 2025 manuscript
 \emph{``P != NP: A Non-Relativizing Proof via Quantale Weakness and Geometric
 Complexity''} proposes a route from a structured Unique-SAT ensemble to a
 distributional lower bound, and then to a contradiction with the upper bound that
@@ -159,6 +170,35 @@ ground-up PNP effort.
 \texttt{PNP/FiniteIIDFamilyBound.lean} & weighted deceptive-mass union bound for finite encoded families \\
 \texttt{PNP/FiniteIIDRecovery.lean} & weighted exact ERM recovery lower bounds under finite PMFs \\
 \texttt{PNP/SameRouteInterface.lean} & exact certificate for when a repair still counts as the same switching/ERM route \\
+\texttt{PNP/ExactSwitchedFamily.lean} & exact post-switch surface plus finite-summary compression kernel \\
+\texttt{PNP/ABVisibleSurface.lean} & reduced raw visible surface $(a,b)$ and its explicit cardinality \\
+\texttt{PNP/AffineColumnFamily.lean} & concrete affine GF(2)-style column family with $k+1$ bit budget \\
+\texttt{PNP/AffineFeatureFamily.lean} & bounded affine-feature family with budget $r(k+1)+2^r$ \\
+\texttt{PNP/SparseThresholdAffineFamily.lean} & sparse-threshold affine-feature family with linear budget $r(k+3)$ \\
+\texttt{PNP/AffineDecisionListFamily.lean} & affine decision-list family with linear budget $r(k+2)+1$ \\
+\texttt{PNP/ExactAffineRecovery.lean} & exact-surface weighted recovery bounds for the current affine candidate classes \\
+\texttt{PNP/SharedAffineFeatureFamilies.lean} & shared-basis exact-surface families with combiner-only budgets and recovery bounds \\
+\texttt{PNP/ExactABDecisionListFamily.lean} & concrete raw exact-surface decision-list family on $(a,b)$ with budget $2k+1$ \\
+\texttt{PNP/ABDecisionListRoute.lean} & pullback certificate from reduced $(a,b)$ decision lists to exact-surface compression/recovery \\
+\texttt{PNP/ExactABAffineFamilies.lean} & affine-feature, sparse-threshold, and decision-list ladders on the raw $(a,b)$ surface \\
+\texttt{PNP/SharedExactABFeatureFamilies.lean} & shared-basis affine ladders on the raw $(a,b)$ surface with combiner-only budgets \\
+\texttt{PNP/SharedABFeatureRoutes.lean} & quotient-route transfer from reduced $(a,b)$ families to shared-basis exact-surface budgets \\
+\texttt{PNP/SharedABTargetInterface.lean} & unified target data packages for the shared raw $(a,b)$ route \\
+\texttt{PNP/CanonicalABTargetRoute.lean} & canonical-coordinate specialization reducing the target interface back to raw $(a,b)$ decision lists \\
+\texttt{PNP/CanonicalABCandidateInterface.lean} & single candidate-data package for the canonical raw $(a,b)$ decision-list route, with recovery consequence \\
+\texttt{PNP/CanonicalABCodeWitness.lean} & explicit code-witness reduction: the route follows automatically from one raw $(a,b)$ decision-list code assignment per index \\
+\texttt{PNP/CanonicalABRecoveryInterface.lean} & final generic interface: explicit code assignment plus agreement bound imply compression and recovery \\
+\texttt{PNP/BitFamilyERM.lean} & ERM transport layer: one fixed local class yields one selected code per sample/index \\
+\texttt{PNP/ExactZABDecisionListFamily.lean} & exact-surface decision-list family on $(zfeat(z),a,b)$ with budget $r+2k+1$ \\
+\texttt{PNP/ExactZABTargetInterface.lean} & target and recovery interfaces for the shared $(zfeat(z),a,b)$ decision-list route \\
+\texttt{PNP/ExactZABERMRoute.lean} & ERM specialization: the selected code itself witnesses the shared $(zfeat(z),a,b)$ route \\
+\texttt{PNP/SharedExactZABFeatureFamilies.lean} & shared-basis affine ladders on $(zfeat(z),a,b)$ with combiner-only budgets \\
+\texttt{PNP/SharedExactZABTargetInterface.lean} & unified target and recovery interfaces for the shared-basis $(zfeat(z),a,b)$ route \\
+\texttt{PNP/SharedExactZABERMRoute.lean} & ERM specialization of the shared-basis $(zfeat(z),a,b)$ route with combiner-only budget \\
+\texttt{PNP/CanonicalZABTargetRoute.lean} & canonical-coordinate specialization reducing the shared-basis exact route back to raw $(zfeat(z),a,b)$ decision lists \\
+\texttt{PNP/CanonicalZABCandidateInterface.lean} & concrete candidate package for the direct exact $(zfeat(z),a,b)$ route, with recovery consequence \\
+\texttt{PNP/CanonicalZABCodeWitness.lean} & explicit code-witness reduction: one exact $(zfeat(z),a,b)$ decision-list code assignment per index suffices \\
+\texttt{PNP/CanonicalZABRecoveryInterface.lean} & final direct exact-route interface: code assignment plus agreement bound imply compression and recovery \\
 \texttt{PNP/GlobalWeaknessObstruction.lean} & current weakness summaries alone cannot yield a nonconstant predictor surface \\
 \texttt{PNP/InfinitaryHMLObstruction.lean} & infinite minimal contexts force an infinite depth-1 HML observable surface \\
 \texttt{PNP/PresentMomentShattering.lean} & exact rho present-moment probes already realize arbitrary finite membership slices \\
@@ -196,7 +236,7 @@ For any encoded family \(H\),
 \noindent
 This is the theorem \texttt{EncodedFamily.card\_realized\_le} in Lean.
 
-The specialization relevant to the Goertzel program is the bit-coded case.
+The specialization relevant to the present route is the bit-coded case.
 
 \begin{theorem}[Bit-budget bound]
 If a family of Boolean classifiers is decoded from \(s\) bits, then it realizes at
@@ -595,13 +635,91 @@ agreement mass at most \(q\), then the exact ERM recovery mass is at least
 This is formalized as
 \texttt{BitEncodedClassifierFamily.exactRecoverySampleMass\_ge\_one\_sub\_bitBudget\_mul\_pow\_of\_agreementMass\_le}.
 
-The point is not that this theorem proves the Goertzel switching step.  The
+The point is not that this theorem proves the current switching step.  The
 point is that it now marks the boundary of the current route.  A weakness/GSLT
 idea that still intends to be a \emph{repair} of the present program must hand
 over this sort of certificate: an explicit visible input surface, an explicit
 small code space, and explicit agreement-mass control for the bad codes.  If it
 does not, then it is no longer filling a gap in the current route.  It is
 starting a different route.
+
+\section{Exact Post-Switch Summary Compression}
+
+The next optimistic cleanup is to isolate the exact object that still needs to
+be compressed.  The module \texttt{ExactSwitchedFamily.lean} now makes that
+object explicit.
+
+The manuscript-visible post-switch datum is the exact local surface
+\[
+  u = (z,a,b).
+\]
+The Lean file separates:
+\begin{enumerate}[leftmargin=1.5em]
+  \item the full exact visible surface \(u=(z,a,b)\),
+  \item the invariant projection \((z,a)\),
+  \item the fork projection \(((z,a),b)\).
+\end{enumerate}
+
+The main positive result is not yet a proof that the actual switched family is
+small.  It is the next honest theorem underneath that goal.
+
+\begin{theorem}[Finite summary implies explicit bit budget]
+Let \(G\) be an indexed Boolean predictor family on some input type \(U\).  If
+\(G\) factors through a map
+\[
+  \mathrm{view} : U \to V
+\]
+to a finite summary surface \(V\), then \(G\) admits a concrete truth-table bit
+budget of size \(|V|\).
+\end{theorem}
+
+\noindent
+This is formalized as
+\texttt{IndexedPredictorFamily.hasBitBudget\_card\_of\_factorsThrough\_fintype}.
+
+So the optimistic burden is now cleaner.  It is no longer
+\begin{quote}
+compress the switched family somehow.
+\end{quote}
+It is:
+\begin{quote}
+prove that the switched family depends only on a genuinely small finite summary
+surface.
+\end{quote}
+
+The exact post-switch specializations are now also explicit.
+
+\begin{theorem}[Invariant-view compression kernel]
+If the exact switched family on \(u=(z,a,b)\) factors through the invariant
+projection \((z,a)\), then it has an exact visible compression target with bit
+budget
+\[
+  |Z| \cdot 2^k.
+\]
+\end{theorem}
+
+\noindent
+This is formalized by
+\texttt{card\_invariantVisiblePostSwitchSurface} together with
+\texttt{exactVisibleCompressionTarget\_of\_factorsThrough\_invariant\_fintype}.
+
+\begin{theorem}[Fork-view compression kernel]
+If the exact switched family factors through the fork projection
+\(((z,a),b)\), then it has an exact visible compression target with bit budget
+\[
+  |Z| \cdot 2^k \cdot 2^k.
+\]
+\end{theorem}
+
+\noindent
+This is formalized by
+\texttt{card\_forkVisiblePostSwitchSurface} together with
+\texttt{exactVisibleCompressionTarget\_of\_factorsThrough\_fork\_fintype}.
+
+This does \emph{not} defeat the crux.  Those summary surfaces may still be far
+too large.  But it does give the ground-up reduction we wanted: a successful
+repair must now prove an actually small finite summary theorem, not merely a
+slogan about switched locality.
 
 The new module \texttt{GlobalWeaknessObstruction.lean} makes the first exact
 Meredith-side pressure point equally explicit.  In the current Lean bridge,
@@ -670,7 +788,7 @@ at most \(2^s\) classifiers.
 This is formalized as
 \texttt{card\_realized\_availableFamily\_le\_of\_bitBudget}.
 
-The theorem is intentionally modest.  It does not claim that the Goertzel local
+The theorem is intentionally modest.  It does not claim that the current local
 view \emph{is} a Hyperseed perspective.  It says that Hyperseed already gives us a
 good general language for bounded observational access, and that this language can
 interoperate with the encoded-hypothesis-class infrastructure.
@@ -744,7 +862,7 @@ interpreting operational distinguishability as an evidence quantity.
 \noindent
 This is the content of \texttt{GSLT/Meredith/WeaknessBridge.lean}, building on
 \texttt{GSLT/Meredith/Bisimulation.lean}.  In the finite probabilistic case, this
-has exactly the Bennett/Ellerman logical-entropy shape.
+has the expected logical-entropy shape.
 
 The new concrete step is that the abstract minimal-context interface now has an
 actual process-calculus instance.
@@ -782,7 +900,7 @@ the \(K_{\mathrm{poly}}\) contradiction step.  But it is now a real machine-chec
 background layer, not merely an idea.
 The new obstruction above sharpens this limit: the currently formalized
 weakness summaries are quotient-level evidence scalars, not a per-instance
-predictor surface.  So any Meredith-style rescue that remains close to the
+predictor surface.  So any semantic rescue that remains close to the
 current switching/ERM route still needs an extra layer that turns operational
 semantics into state-indexed encoded observables.
 
@@ -858,7 +976,7 @@ In particular, \texttt{Basic.lean} defines:
 \end{enumerate}
 
 This is not yet the time-bounded conditional complexity \(K_{\mathrm{poly}}\)
-that the Goertzel program uses.  But it matters for the grassroots route because it
+that the present route uses.  But it matters for the grassroots route because it
 means the eventual \(K_{\mathrm{poly}}\) development should be an extension of an
 existing computability layer rather than a fresh bespoke definition dropped into a
 late-stage contradiction proof.
@@ -922,8 +1040,275 @@ decoders on tree-like neighborhoods:
   \item bounded-depth compositions of those primitives.
 \end{enumerate}
 
-If those can be encoded uniformly in \(\mathrm{polylog}(m)\) bits, then the
+The first concrete instance of that second lane now exists.  The new module
+\texttt{AffineColumnFamily.lean} formalizes affine GF(2)-style predictors on the
+retained VV column bits and proves:
+\begin{quote}
+if the exact switched family collapses to affine parity tests on the column
+view \(a\), then the exact visible compression target is only \(k+1\) bits.
+\end{quote}
+
+\noindent
+The key formal statement is
+\texttt{exactVisibleCompressionTarget\_of\_realizedByExactAffineColumnFamily}.
+This does not prove that the real switched family is affine.  It does give the
+optimistic route its first genuinely nontrivial concrete landing zone below the
+full truth-table class.
+
+The next concrete step is now also formalized.  The new module
+\texttt{AffineFeatureFamily.lean} allows a bounded number \(r\) of affine
+GF(2)-style VV-column features, followed by an arbitrary truth table on the
+resulting \(r\) feature bits.  Its exact raw bit budget is
+\[
+  r(k+1) + 2^r.
+\]
+The key formal statement is
+\texttt{exactVisibleCompressionTarget\_of\_realizedByExactAffineFeatureFamily}.
+So if the switched family collapses not to a single affine probe but to a
+bounded affine-feature algebra, the code budget is still explicit and still far
+below the full truth-table class on \(u=(z,a,b)\).
+
+The next concrete step is sharper and more useful.  The new module
+\texttt{SparseThresholdAffineFamily.lean} keeps the same \(r\) affine
+GF(2)-style VV-column features but replaces the full truth table by a much
+smaller combiner: an \(r\)-bit mask selecting active features and an \(r\)-bit
+threshold code.  Its exact raw bit budget is now linear:
+\[
+  r(k+3).
+\]
+The key formal statement is
+\texttt{exactVisibleCompressionTarget\_of\_realizedByExactSparseThresholdAffineFamily}.
+So if the switched family collapses to a sparse-threshold affine algebra on the
+retained VV column view, the optimistic route now has a concrete candidate
+class whose coding cost no longer contains the exponential \(2^r\) blow-up.
+
+If one of these affine / sparse-threshold families can be shown to encode the
+actual switched predictors uniformly in \(\mathrm{polylog}(m)\) bits, then the
 switching theorem has a plausible landing zone.
+
+The next refinement is now also formalized.  The new module
+\texttt{AffineDecisionListFamily.lean} keeps the same \(r\) affine GF(2)-style
+VV-column features, but replaces the combiner by a fixed-order decision list:
+each feature carries one response bit, and there is one default output bit if
+no feature fires.  Its exact raw bit budget is
+\[
+  r(k+2) + 1.
+\]
+The key formal statement is
+\texttt{exactVisibleCompressionTarget\_of\_realizedByExactAffineDecisionListFamily}.
+So if the switched family collapses to an ordered affine decision-list algebra
+on the retained VV column view, the optimistic route now has an even smaller
+explicit candidate class than the sparse-threshold family.
+
+The next layer is now also formalized.  The new module
+\texttt{ExactAffineRecovery.lean} turns those four exact-surface candidate
+classes into direct weighted finite-sampling recovery theorems.  Once the
+target lies in one of the concrete exact-surface affine families, the existing
+recovery backbone from \texttt{SameRouteInterface.lean} applies immediately
+with one of the four explicit budgets
+\[
+  k+1, \qquad r(k+1)+2^r, \qquad r(k+3), \qquad r(k+2)+1.
+\]
+So the current small-class ladder is no longer only a compression interface.
+It is now a direct recovery interface too.
+
+The next big refinement is now also formalized.  The new module
+\texttt{SharedAffineFeatureFamilies.lean} isolates the regime where one fixed
+affine feature basis is shared across the switched family and only the
+downstream combiner varies.  In that case the feature extractor no longer has
+to be re-encoded per predictor, so the exact visible compression target drops
+to the combiner alone:
+\[
+  2^r, \qquad 2r, \qquad r+1
+\]
+for the shared truth-table, shared sparse-threshold, and shared decision-list
+regimes respectively.  The same module also proves the corresponding weighted
+exact-recovery lower bounds on the exact post-switch surface.
+
+This is the first genuinely sharp improvement in the optimistic lane.  If the
+real switched family uses a common low-complexity feature extractor and varies
+only in a light combiner, then the coding burden is much smaller than in the
+previous per-predictor affine-family models.
+
+The next concrete step is now also formalized.  The new module
+\texttt{ExactABDecisionListFamily.lean} fixes the shared extractor to the raw
+exact visible bits themselves: concatenate the retained VV column bits \(a\)
+with the side-channel bits \(b\), then run a fixed-order decision list on those
+\(2k\) raw bits.  This yields a completely concrete exact-surface candidate
+class with budget
+\[
+  2k + 1.
+\]
+The key point is that the feature extractor is no longer existential or
+parameterized.  It is the literal raw exact visible surface restricted to the
+bit coordinates \((a,b)\).  The same module also proves the corresponding
+weighted exact-recovery lower bound for that family.
+
+The route is now factored one step more cleanly.  The new modules
+\texttt{ABVisibleSurface.lean} and \texttt{ABDecisionListRoute.lean} isolate the
+reduced raw visible surface \((a,b)\) as an explicit quotient candidate and
+prove the pullback statement one actually wants: if the switched family factors
+through that reduced surface and the reduced family is realized by fixed-order
+decision lists there, then the exact-surface compression and weighted recovery
+theorems follow immediately.  This is also the natural insertion point for any
+future observational-equivalence argument: a semantic quotient can help justify
+the map to \((a,b)\), but it does not need to alter the learning-theoretic
+backbone once that map is fixed.  The same route file now also proves the
+slightly stronger lift: if an exact-surface family is invariant under the
+\((a,b)\) quotient, then a canonical reduced family can be reconstructed and
+the same \(2k+1\)-bit decision-list target follows from that invariance alone.
+
+The raw \((a,b)\) route is now richer than a single fixed-order decision list.
+The new module \texttt{ExactABAffineFamilies.lean} reuses the existing affine
+machinery on the same raw extractor and proves exact-surface compression and
+weighted recovery bounds for three further candidate classes on the raw
+\((a,b)\) bits:
+\[
+  r((2k)+1)+2^r, \qquad r((2k)+3), \qquad r((2k)+2)+1
+\]
+for bounded affine features, sparse-threshold affine predictors, and affine
+decision lists respectively.  So the reduced raw surface is now a whole
+candidate-family ladder, not just one isolated family.
+
+The next refinement is now in place as well.  The new module
+\texttt{SharedExactABFeatureFamilies.lean} adds the shared-basis collapse on
+that same raw \((a,b)\) surface.  If one fixed affine basis on the \(2k\) raw
+bits is reused across the whole switched family and only the downstream
+combiner varies, the exact visible compression target drops all the way to
+combiner-only budgets:
+\[
+  2^r, \qquad 2r, \qquad r+1
+\]
+for arbitrary truth tables, sparse-threshold combiners, and fixed-order
+decision lists respectively.  So the raw \((a,b)\) quotient now supports both a
+per-predictor affine ladder and a sharper shared-basis ladder.
+
+That bridge is now factored explicitly too.  The new module
+\texttt{SharedABFeatureRoutes.lean} proves that if the switched family factors
+through the reduced raw surface \((a,b)\) and the reduced family is realized by
+one of those shared-basis raw affine classes, then the exact-surface family
+inherits the same combiner-only budget immediately.  This is the sharpest
+current handoff point between any future observational quotient theorem and the
+small-class recovery machinery.  The same file now also proves the invariance
+version: if the exact-surface family is already invariant under the raw
+\((a,b)\) quotient, then the canonical reduced family inherits those same
+shared-basis combiner-only budgets without any separately supplied
+factorization witness.
+
+The target statement itself is now packaged in that style too.  The new module
+\texttt{SharedABTargetInterface.lean} bundles the current route bottleneck into
+explicit data packages: one shared raw \((a,b)\) feature basis, one quotient
+invariance hypothesis, and one realization hypothesis for the lifted reduced
+family.  From that package it derives the exact visible compression target with
+budget \(2^r\), \(2r\), or \(r+1\) depending on the combiner class.  This is
+the cleanest current formal statement of what the optimistic route actually
+needs.
+
+There is now also a clean backward step from that generic target statement back
+toward the most concrete current route.  The module
+\texttt{CanonicalABTargetRoute.lean} specializes the shared raw \((a,b)\)
+feature basis to the canonical coordinate probes on the raw visible bits.  In
+that specialization, the generic shared-basis decision-list target collapses
+exactly to the older raw \((a,b)\) decision-list route.  So the current formal
+burden can now be read in two equivalent ways:
+\begin{enumerate}[leftmargin=1.5em]
+  \item as a generic shared-basis target interface on the reduced raw surface,
+  \item or as quotient invariance plus realization by fixed-order decision
+  lists on the literal raw visible bits.
+\end{enumerate}
+This is the clearest backward-chaining reach from the cleaned-up target
+statement back to the existing concrete work.
+
+That concrete work is now packaged directly as well.  The new module
+\texttt{CanonicalABCandidateInterface.lean} takes the canonical raw-bit route
+and bundles it into one explicit candidate-data object: quotient invariance
+under the raw \((a,b)\) projection together with realization of the lifted
+reduced family by fixed-order decision lists on the raw visible bits.  From
+that single package it derives both the exact visible compression target with
+budget \(2k+1\) and, for each indexed predictor in the family, the matching
+weighted exact-recovery lower bound through the already-existing raw decision
+list bit family.  So the optimistic burden is now even sharper: produce one
+such candidate-data witness, then prove the needed agreement-mass estimate.
+
+That burden has now been reduced one step further.  The new module
+\texttt{CanonicalABCodeWitness.lean} proves that if the switched family is
+exactly the family induced by an explicit assignment of one raw \((a,b)\)
+decision-list code to each index, then the canonical candidate-data package,
+the \(2k+1\) compression target, and the per-index recovery theorem all follow
+automatically.  So the route bottleneck is now close to its simplest concrete
+form: show that the real switched family equals one such code-induced family,
+then prove the corresponding agreement-mass estimate.
+
+The last generic layer is now also in place.  The new module
+\texttt{CanonicalABRecoveryInterface.lean} packages exactly the remaining
+generic information needed by the route:
+\begin{enumerate}[leftmargin=1.5em]
+  \item one explicit raw \((a,b)\) decision-list code assignment per index,
+  \item equality between the switched family and the induced code family,
+  \item one agreement-mass upper bound.
+\end{enumerate}
+From that single recovery-data package, the \(2k+1\) compression target and the
+weighted exact-recovery lower bound both follow automatically.  At that point,
+the remaining work is no longer background theory; it is the actual
+candidate-specific switched-family theorem.
+
+The next manuscript-facing extension is now in place as well.  The paper's real
+local input is not just \((a,b)\), but \(u=(z,a,b)\), where \(z\) comes from one
+fixed shared extractor on the masked block.  The new module
+\texttt{ExactZABDecisionListFamily.lean} formalizes the corresponding candidate
+class directly: for any shared extractor \(\mathsf{zfeat}: Z \to \{0,1\}^r\), one
+concatenates \(\mathsf{zfeat}(z)\), \(a\), and \(b\), then applies the same
+fixed-order decision-list family as before.  The exact-surface budget is then
+\(r+2k+1\), and the matching weighted exact-recovery bound is proved on that
+larger visible surface.
+
+That new route is then packaged in \texttt{ExactZABTargetInterface.lean}.  The
+burden is exactly what one would want it to be: prove that the switched family
+is realized by fixed-order decision lists on \((\mathsf{zfeat}(z),a,b)\), then
+prove one bad-code agreement-mass estimate.  No extra generic machinery is
+needed beyond that package.
+
+Finally, the manuscript's constructive wrapper now plugs into the route
+directly.  The new module \texttt{BitFamilyERM.lean} turns any fixed bit-encoded
+local class into an indexed ERM-selected family together with its selected code
+at each sample.  Then \texttt{ExactZABERMRoute.lean} specializes that statement
+to the shared \((\mathsf{zfeat}(z),a,b)\) decision-list class: if the wrapper is
+honestly specified as ERM over that class, then the selected code itself is the
+route witness, and the compression target follows immediately.  At that point,
+the remaining burden is even sharper: identify the right shared extractor
+\(\mathsf{zfeat}\), show the wrapper is using that class, and control the
+agreement mass of the bad codes.
+
+There is now one more collapse on top of that manuscript-facing route.  The new
+module \texttt{SharedExactZABFeatureFamilies.lean} assumes that the local bits
+\((\mathsf{zfeat}(z),a,b)\) first pass through one fixed shared affine-feature
+basis of width \(p\), and only the final combiner varies across predictors.  On
+that shared-basis route, the exact-surface budgets fall to \(2^p\) for arbitrary
+truth tables, \(2p\) for sparse thresholds, and \(p+1\) for fixed-order
+decision lists.  Then \texttt{SharedExactZABTargetInterface.lean} packages the
+corresponding target and recovery interfaces, and
+\texttt{SharedExactZABERMRoute.lean} shows that if the wrapper is honestly ERM
+over that shared-basis decision-list class, then the selected code itself again
+is the route witness, now with the sharper \(p+1\) budget.
+
+So the remaining burden is now split cleanly into two candidate routes on the
+real local surface \(u=(z,a,b)\):
+\begin{enumerate}[leftmargin=1.5em]
+  \item the direct decision-list route on \((\mathsf{zfeat}(z),a,b)\), with budget \(r+2k+1\),
+  \item the shared-basis route, where one fixed affine basis on \((\mathsf{zfeat}(z),a,b)\) reduces the decision-list budget to \(p+1\).
+\end{enumerate}
+The second route is now the sharper optimistic landing point.
+
+The direct route has now been backward-chained as far as it can go generically.
+The new module \texttt{CanonicalZABTargetRoute.lean} specializes the
+shared-basis statement to the canonical coordinate basis on the raw exact bits,
+so the shared-basis route collapses back to the direct exact decision-list
+route.  Then \texttt{CanonicalZABCandidateInterface.lean} packages that direct
+route as one concrete candidate object, \texttt{CanonicalZABCodeWitness.lean}
+reduces it to one explicit exact decision-list code assignment per index, and
+\texttt{CanonicalZABRecoveryInterface.lean} packages the last direct-route
+ingredient: one agreement-mass upper bound.  So even on the less sharp
+\(r+2k+1\) route, the remaining burden is now completely explicit.
 
 \subsection{Bridging to the Full PNP Route}
 
@@ -957,6 +1342,35 @@ finite weighted one-predictor agreement law & proved & \texttt{FiniteIIDAgreemen
 finite weighted family union bound & proved & \texttt{FiniteIIDFamilyBound.lean} \\
 finite weighted recovery bounds & proved & \texttt{FiniteIIDRecovery.lean} \\
 same-route switching/ERM certificate & proved & \texttt{SameRouteInterface.lean} \\
+exact post-switch finite-summary kernel & proved & \texttt{ExactSwitchedFamily.lean} \\
+reduced raw visible surface $(a,b)$ & proved & \texttt{ABVisibleSurface.lean} \\
+affine GF(2)-style column candidate class & proved & \texttt{AffineColumnFamily.lean} \\
+bounded affine-feature candidate class & proved & \texttt{AffineFeatureFamily.lean} \\
+sparse-threshold affine candidate class & proved & \texttt{SparseThresholdAffineFamily.lean} \\
+affine decision-list candidate class & proved & \texttt{AffineDecisionListFamily.lean} \\
+exact-surface affine recovery ladder & proved & \texttt{ExactAffineRecovery.lean} \\
+shared-basis affine family ladder & proved & \texttt{SharedAffineFeatureFamilies.lean} \\
+raw exact-surface decision-list family on $(a,b)$ & proved & \texttt{ExactABDecisionListFamily.lean} \\
+pullback route from reduced $(a,b)$ families & proved & \texttt{ABDecisionListRoute.lean} \\
+affine candidate ladder on raw $(a,b)$ bits & proved & \texttt{ExactABAffineFamilies.lean} \\
+shared-basis affine ladder on raw $(a,b)$ bits & proved & \texttt{SharedExactABFeatureFamilies.lean} \\
+quotient-route transfer to shared raw $(a,b)$ ladders & proved & \texttt{SharedABFeatureRoutes.lean} \\
+unified shared raw $(a,b)$ target interface & proved & \texttt{SharedABTargetInterface.lean} \\
+canonical raw $(a,b)$ specialization of the target interface & proved & \texttt{CanonicalABTargetRoute.lean} \\
+canonical raw $(a,b)$ candidate-data interface with recovery consequence & proved & \texttt{CanonicalABCandidateInterface.lean} \\
+explicit canonical raw $(a,b)$ code-witness reduction & proved & \texttt{CanonicalABCodeWitness.lean} \\
+final canonical raw $(a,b)$ recovery interface & proved & \texttt{CanonicalABRecoveryInterface.lean} \\
+ERM transport layer for fixed bit-encoded local classes & proved & \texttt{BitFamilyERM.lean} \\
+exact decision-list family on $(zfeat(z),a,b)$ & proved & \texttt{ExactZABDecisionListFamily.lean} \\
+shared $(zfeat(z),a,b)$ target and recovery interfaces & proved & \texttt{ExactZABTargetInterface.lean} \\
+ERM specialization of the shared $(zfeat(z),a,b)$ route & proved & \texttt{ExactZABERMRoute.lean} \\
+shared-basis affine ladder on $(zfeat(z),a,b)$ & proved & \texttt{SharedExactZABFeatureFamilies.lean} \\
+shared-basis $(zfeat(z),a,b)$ target and recovery interfaces & proved & \texttt{SharedExactZABTargetInterface.lean} \\
+ERM specialization of the shared-basis $(zfeat(z),a,b)$ route & proved & \texttt{SharedExactZABERMRoute.lean} \\
+canonical specialization of the shared-basis exact route & proved & \texttt{CanonicalZABTargetRoute.lean} \\
+canonical direct exact-route candidate interface & proved & \texttt{CanonicalZABCandidateInterface.lean} \\
+explicit direct exact-route code-witness reduction & proved & \texttt{CanonicalZABCodeWitness.lean} \\
+final direct exact-route recovery interface & proved & \texttt{CanonicalZABRecoveryInterface.lean} \\
 weakness-globality obstruction & proved & \texttt{GlobalWeaknessObstruction.lean} \\
 infinitary HML obstruction & proved & \texttt{InfinitaryHMLObstruction.lean} \\
 present-moment shattering slice & proved & \texttt{PresentMomentShattering.lean} \\
@@ -978,12 +1392,14 @@ This is not the final proof.  It is the right sort of groundwork.
 The grassroots program should stay separate from the crux program.
 
 The crux note asks where the present paper overreaches.  This note asks what
-general machinery we would still want even if Ben patches the overreach later.
+general machinery we would still want even if the overreach is patched later.
 On that constructive side, the current Lean result is that small encoded
 hypothesis families, finite empirical-risk minimizers, finite deceptive-sample
 bounds, finite uniform recovery thresholds, rational exact-recovery rates,
 explicit miss-ratio success bounds, weighted one-predictor agreement laws,
-weighted family deceptive-mass bounds, weighted exact recovery bounds, and
+weighted family deceptive-mass bounds, weighted exact recovery bounds, exact
+post-switch finite-summary compression kernels, one concrete affine GF(2)-style
+candidate family, one bounded affine-feature candidate family, and
 observer-relative input surfaces can already be handled cleanly inside one
 coherent Mettapedia/mathlib formal background layer.  Optimistically, the same is
 now becoming true for the observational-semantics side: finite-depth HML
@@ -997,7 +1413,16 @@ already concretely infinitary in the rho instance.
 
 That is enough to sharpen the next optimistic task.  We should not try to prove
 \(P \neq NP\) in one jump.  We should first prove that the intended switched
-predictors live in a genuinely small encoded class, and only then lift the rest
-of the argument on top of that foundation.
+predictors live in a genuinely small encoded class.  The current best concrete
+landing point is now sharper than the earlier raw \((a,b)\) route and sharper
+than the first direct \((\mathsf{zfeat}(z),a,b)\) route: prove that the real
+wrapper operates inside one shared-basis decision-list class on
+\((\mathsf{zfeat}(z),a,b)\), and then prove the corresponding bad-code
+agreement bound.  The direct \(r+2k+1\) route remains available, but the
+shared-basis \(p+1\) route is now the best optimistic target.  Still, the
+direct route is no longer vague: it has been reduced all the way to an explicit
+code assignment plus an agreement bound.  Only after one of those routes is
+instantiated should the rest of the argument be lifted on top of the
+foundation.
 
 \end{document}

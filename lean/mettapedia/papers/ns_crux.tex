@@ -1,0 +1,522 @@
+\documentclass[11pt]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage{microtype}
+\usepackage{amsmath,amssymb}
+\usepackage{hyperref}
+\usepackage{enumitem}
+\usepackage{xcolor}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue!50!black,
+  citecolor=blue!50!black,
+  urlcolor=blue!50!black
+}
+
+\title{Lean-Backed NS Interface Note}
+\author{}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+This note records only the Navier--Stokes material currently backed by Lean in
+the MeTTapedia repository.  It intentionally omits manuscript-specific claims
+about Ben Goertzel's December 11, 2025 SG-Cole-Hopf draft unless they have been
+encoded and checked in Lean.
+
+The present Lean status is interface-level rather than proof-complete.  The
+formalized material isolates reusable shells for cutoff continuity, topological
+Cole--Hopf transport, approximation interfaces, finite identity-energy
+algebra, abstract vorticity bounds, a kernel-semigroup wrapper, and two small
+concrete models showing both positive approximation instantiations and wrong
+topology obstructions, including one exact same-state-space split where a
+summable geometric observable is continuous and a stronger tail detector is
+not.  It also now contains an abstract good observable class, an abstract
+tail-spike no-go theorem, and a first concrete soft-vs-hard chart fork on that
+same shared mode space, together with more manuscript-shaped Sobolev-style and
+energy-style soft-vs-hard forks on that same space, plus a log-energy fork
+showing that a smoother radial profile still lands on the same good/bad split,
+and finally a generic energy-profile theorem packaging that split for any
+continuous radial profile dominated by the identity on nonnegative inputs.  It
+does \emph{not} yet formalize the manuscript's specific chart, local
+hypotheses \((H1)\), \((H2)\), or the BKM-closing analytic bridge.
+\end{abstract}
+
+\section{Scope}
+
+The Navier--Stokes Lean work currently lives in:
+\begin{enumerate}[leftmargin=1.5em]
+  \item \texttt{FluidDynamics/NavierStokes/CutoffContinuity.lean},
+  \item \texttt{FluidDynamics/NavierStokes/WeakTopologyCountermodel.lean},
+  \item \texttt{FluidDynamics/NavierStokes/ProductTopologyL1Countermodel.lean},
+  \item \texttt{FluidDynamics/NavierStokes/ColeHopfTopology.lean},
+  \item \texttt{FluidDynamics/NavierStokes/ApproximationInterface.lean},
+  \item \texttt{FluidDynamics/NavierStokes/ChartApproximationModel.lean},
+  \item \texttt{FluidDynamics/NavierStokes/GeometricModeApproximation.lean},
+  \item \texttt{FluidDynamics/NavierStokes/ModeStateProductTopologyObstruction.lean},
+  \item \texttt{FluidDynamics/NavierStokes/ModeStateProductTopologyContinuity.lean},
+  \item \texttt{FluidDynamics/NavierStokes/ModeStateObservableClass.lean},
+  \item \texttt{FluidDynamics/NavierStokes/ModeStateTailSensitivityObstruction.lean},
+  \item \texttt{FluidDynamics/NavierStokes/ModeStateChartFork.lean},
+  \item \texttt{FluidDynamics/NavierStokes/ModeStateSobolevChartFork.lean},
+  \item \texttt{FluidDynamics/NavierStokes/ModeStateEnergyChartFork.lean},
+  \item \texttt{FluidDynamics/NavierStokes/ModeStateLogEnergyChartFork.lean},
+  \item \texttt{FluidDynamics/NavierStokes/ModeStateEnergyProfileFork.lean},
+  \item \texttt{FluidDynamics/NavierStokes/IdentityEnergy.lean},
+  \item \texttt{FluidDynamics/NavierStokes/ColeHopfInterface.lean},
+  \item \texttt{FluidDynamics/NavierStokes/KernelSemigroupInterface.lean}.
+\end{enumerate}
+
+These modules compile without \texttt{sorry}.  They provide a formal shell for
+what a future SG-Cole-Hopf proof attempt would need to instantiate.
+
+\section{Lean-Backed Results}
+
+\subsection{Cutoff Continuity Shell}
+
+In \texttt{CutoffContinuity.lean}, the generic cutoff-shaped potential
+\[
+\mathrm{cutoffPotential}(x) = \mathrm{cutoff}(\mathrm{radius}(x))
+\cdot \mathrm{statistic}(x)
+\]
+is formalized together with:
+\begin{enumerate}[leftmargin=1.5em]
+  \item continuity of the cutoff potential when the scalar pieces are
+  continuous;
+  \item a sequential obstruction theorem: if the cutoff factor and statistic
+  converge to the wrong product, then the cutoff potential cannot converge to
+  its claimed value;
+  \item the corresponding pointwise non-continuity criterion.
+\end{enumerate}
+
+So Lean already captures the generic shape of a chart-cutoff continuity
+argument and its failure mode.
+
+\subsection{Concrete Weak-Topology Countermodel}
+
+In \texttt{WeakTopologyCountermodel.lean}, the abstract cutoff/Cole--Hopf shell
+is instantiated on the concrete state space \(\mathbb{R}\times\mathbb{R}\)
+equipped with the topology induced by the first coordinate.  Lean proves:
+\begin{enumerate}[leftmargin=1.5em]
+  \item a sequence can converge in the ambient topology while changing a hidden
+  coordinate;
+  \item a cutoff potential depending on that hidden coordinate is not
+  continuous;
+  \item the associated Cole--Hopf transform is likewise not continuous.
+\end{enumerate}
+
+This is a formal countermodel for the generic wrong-topology failure mode:
+ambient convergence can be too weak for the cutoff datum it is supposed to
+control.
+
+\subsection{Infinite-Mode Product-Topology Countermodel}
+
+In \texttt{ProductTopologyL1Countermodel.lean}, Lean moves the same mismatch to
+the raw infinite-mode sequence space \(\mathbb{N}\to\mathbb{R}\) with the
+product topology.  It proves:
+\begin{enumerate}[leftmargin=1.5em]
+  \item finite-mode truncations converge coordinatewise in the product
+  topology;
+  \item a tail spike moving to higher and higher coordinates converges to the
+  zero sequence in that topology;
+  \item the stronger tail-sensitive observable
+  \(\sum_n |x_n|\) stays equal to \(1\) on that spike sequence and is therefore
+  not continuous at zero;
+  \item the associated Cole--Hopf datum is likewise not continuous.
+\end{enumerate}
+
+This is the first Lean-backed infinite-mode obstruction in the NS lane that
+directly separates weak coordinatewise convergence from a stronger tail norm.
+
+\subsection{Topological Cole--Hopf Shell}
+
+In \texttt{ColeHopfTopology.lean}, Lean formalizes:
+\begin{enumerate}[leftmargin=1.5em]
+  \item continuity of the scalar map \(y \mapsto \exp(-y/(2\nu))\);
+  \item continuity of the induced field-level Cole--Hopf transform;
+  \item injectivity when \(\nu \neq 0\);
+  \item transfer of potential-limit mismatch into Cole--Hopf-limit mismatch;
+  \item the same obstruction specialized to cutoff-shaped potentials.
+\end{enumerate}
+
+This means the topological \(W \mapsto \phi\) step is already packaged in Lean,
+provided one supplies continuity or convergence of the underlying potential.
+
+\subsection{Approximation Interface}
+
+In \texttt{ApproximationInterface.lean}, Lean packages an abstract positive
+repair obligation:
+\begin{quote}
+if an approximation scheme makes the chart radius observable and the chart
+statistic converge, then the cutoff potential and the Cole--Hopf datum also
+converge.
+\end{quote}
+
+This is useful because it isolates exactly what an approximation/truncation
+theorem would have to prove in order for the cutoff/Cole--Hopf layer to behave
+well.
+
+\subsection{Concrete Chart/Truncation Model}
+
+In \texttt{ChartApproximationModel.lean}, the abstract approximation interface
+is instantiated on the concrete chart state space \(\mathbb{R}\times\mathbb{R}\)
+with:
+\begin{enumerate}[leftmargin=1.5em]
+  \item a hidden-coordinate radius observable;
+  \item a simple mixed chart statistic;
+  \item a truncation map that drops the hidden coordinate only at stage \(0\)
+  and is exact thereafter.
+\end{enumerate}
+
+Lean then proves:
+\begin{enumerate}[leftmargin=1.5em]
+  \item convergence of the radius observable under truncation;
+  \item convergence of the chart statistic under truncation;
+  \item the resulting convergence of the cutoff potential;
+  \item the resulting convergence of the induced Cole--Hopf datum.
+\end{enumerate}
+
+So the approximation interface is now backed by a concrete positive model, not
+just an abstract shell.
+
+\subsection{Geometric Finite-Mode Approximation Model}
+
+In \texttt{GeometricModeApproximation.lean}, the same approximation interface is
+instantiated on bounded infinite coefficient sequences.  Lean formalizes:
+\begin{enumerate}[leftmargin=1.5em]
+  \item a geometrically weighted mode radius;
+  \item a chart statistic built from the zeroth visible mode plus that radius;
+  \item finite-mode truncation keeping only the first \(N\) coefficients;
+  \item summability of the weighted mode series under the uniform coefficient
+  bound;
+  \item convergence of the weighted radius under finite-mode truncation;
+  \item convergence of the derived chart statistic, the cutoff potential, and
+  the induced Cole--Hopf datum.
+\end{enumerate}
+
+This is the first genuinely infinite-mode positive instantiation in the NS Lean
+lane: the approximation is not just ``wrong at stage \(0\), exact thereafter,''
+but a real truncation-to-limit model on an infinite sequence state space.
+
+\subsection{Same-State-Space Product-Topology Obstruction}
+
+In \texttt{ModeStateProductTopologyObstruction.lean}, Lean returns to the exact
+\texttt{ModeState} and \texttt{truncateModes} objects from
+\texttt{GeometricModeApproximation.lean}, but equips that same state space with
+the coordinatewise product topology induced by the coefficient map.  It proves:
+\begin{enumerate}[leftmargin=1.5em]
+  \item the existing finite-mode truncations \(\texttt{truncateModes}\) do
+  converge to the target state in this product topology;
+  \item a spike sequence still converges to the zero state in that same
+  topology;
+  \item a stronger tail-presence observable, which records whether any
+  nonzero coefficient exists, is not continuous there;
+  \item the associated Cole--Hopf datum is likewise not continuous.
+\end{enumerate}
+
+So Lean now contains a positive and a negative result on one common
+infinite-mode object: the geometric weighted radius behaves well under
+truncation, while a stronger tail-sensitive observable on the same state space
+does not.
+
+\subsection{Same-State-Space Product-Topology Continuity}
+
+In \texttt{ModeStateProductTopologyContinuity.lean}, Lean proves the matching
+positive theorem on the exact same \texttt{ModeState} equipped with the exact
+same coordinatewise product topology:
+\begin{enumerate}[leftmargin=1.5em]
+  \item each coordinate observable \(x \mapsto x_n\) is continuous;
+  \item each weighted mode term \(x \mapsto |x_n| 2^{-n}\) is continuous;
+  \item the summable geometric radius \(\sum_n |x_n| 2^{-n}\) is continuous;
+  \item the derived chart statistic, cutoff potential, and Cole--Hopf datum are
+  therefore continuous as well.
+\end{enumerate}
+
+So the current NS Lean lane now cleanly separates two observables on one common
+infinite-mode state space: a summably dominated geometric radius that behaves
+well in the product topology, and a stronger tail detector that does not.
+
+\subsection{Abstract Good Observable Class}
+
+In \texttt{ModeStateObservableClass.lean}, Lean packages the good side on the
+shared \texttt{ModeState}: nonnegative summable mode weights.  For that whole
+class, Lean proves:
+\begin{enumerate}[leftmargin=1.5em]
+  \item continuity of the weighted radius observable;
+  \item continuity of the derived statistic, cutoff potential, and Cole--Hopf
+  datum;
+  \item convergence of all of these along the existing truncations
+  \(\texttt{truncateModes}\);
+  \item recovery of the earlier geometric radius model as a special case.
+\end{enumerate}
+
+So the good side is no longer just one geometric example.  It is now an
+abstract summable observable class on the shared mode space.
+
+\subsection{Abstract Tail-Spike No-Go Theorem}
+
+In \texttt{ModeStateTailSensitivityObstruction.lean}, Lean packages the bad
+side abstractly too.  If an observable is constant on every remote
+single-spike state \(\texttt{tailSpikeMode}(N)\) but takes a different value at
+\(\texttt{modeZero}\), Lean proves:
+\begin{enumerate}[leftmargin=1.5em]
+  \item the raw observable is not continuous at \(\texttt{modeZero}\);
+  \item the same obstruction lifts to cutoff potentials;
+  \item the same obstruction lifts further to Cole--Hopf data.
+\end{enumerate}
+
+So the bad side is no longer tied only to the one hand-built
+\texttt{tailPresenceRadius}.  It is now a reusable theorem pattern.
+
+\subsection{First Concrete Chart Fork}
+
+In \texttt{ModeStateChartFork.lean}, Lean forces the first explicit chart-style
+fork on the shared mode space:
+\begin{enumerate}[leftmargin=1.5em]
+  \item the soft support observable
+  \(t \mapsto |t|/(1+|t|)\), combined with summable mode weights, lies on the
+  good side and yields a continuous truncation-friendly chart radius, statistic,
+  cutoff potential, and Cole--Hopf datum;
+  \item the hard support observable, which only asks whether any coefficient is
+  nonzero, lies on the bad side and fails continuity at \(\texttt{modeZero}\),
+  together with its cutoff and Cole--Hopf lifts.
+\end{enumerate}
+
+This is the first genuine theorem-level NS fork in Lean:
+\begin{quote}
+soft support belongs to the good summable side, hard support belongs to the
+bad tail-sensitive side.
+\end{quote}
+
+\subsection{Sobolev-Style Chart Fork}
+
+In \texttt{ModeStateSobolevChartFork.lean}, Lean pushes that fork one step
+closer to manuscript shape by amplifying each mode by the polynomial factor
+\(((n+1)^m)\) before applying the chart cutoff:
+\begin{enumerate}[leftmargin=1.5em]
+  \item the soft Sobolev observable, built from the bounded scalar
+  \(t \mapsto |t|/(1+|t|)\) together with a concrete inverse-square envelope,
+  is continuous and truncation-friendly;
+  \item the corresponding hard Sobolev observable, which only asks whether any
+  amplified mode is nonzero, is proved equal to the earlier hard support
+  detector and is therefore not continuous at \(\texttt{modeZero}\), together
+  with its cutoff and Cole--Hopf lifts.
+\end{enumerate}
+
+So the current Lean fork is now sharper:
+\begin{quote}
+even after Sobolev-style high-frequency amplification, the soft bounded version
+lands on the good summable side, while the hard support version still lands on
+the bad side.
+\end{quote}
+
+\subsection{Energy-Style Chart Fork}
+
+In \texttt{ModeStateEnergyChartFork.lean}, Lean pushes the same shared-state
+fork one step further toward an energy-style observable:
+\begin{enumerate}[leftmargin=1.5em]
+  \item the soft energy observable squares the Sobolev-amplified modes and
+  then applies a compensating inverse-power envelope; Lean proves that this
+  radius is continuous and truncation-friendly, and so are its cutoff and
+  Cole--Hopf lifts;
+  \item the hard energy observable asks whether any amplified squared mode
+  crosses the threshold \(1\); Lean proves that this detector is stable on the
+  remote spike family, disagrees at \(\texttt{modeZero}\), and is therefore not
+  continuous, again together with its cutoff and Cole--Hopf lifts.
+\end{enumerate}
+
+So the current shared-mode-space fork is now sharper:
+\begin{quote}
+if the chart observable keeps enough inverse-power compensation to remain
+summable after Sobolev amplification and squaring, Lean puts it on the good
+approximation-friendly side; if it turns into a hard energy threshold on those
+amplified modes, Lean puts it on the bad tail-sensitive side.
+\end{quote}
+
+\subsection{Log-Energy Chart Fork}
+
+In \texttt{ModeStateLogEnergyChartFork.lean}, Lean tests a smoother radial
+profile on the same shared mode space by replacing raw squared Sobolev energy by
+\(\log(1+\mathrm{energy})\):
+\begin{enumerate}[leftmargin=1.5em]
+  \item the soft log-energy observable is continuous and truncation-friendly;
+  the key formal domination is \(\log(1+u) \le u\), which lets Lean compare the
+  log-energy terms to the already-controlled soft energy terms;
+  \item the hard-side analogue asking whether \(\log(1+\mathrm{energy}) > 0\)
+  still lands on the bad side: it is stable on the remote spike family,
+  disagrees at \(\texttt{modeZero}\), and therefore its cutoff and Cole--Hopf
+  lifts are also not continuous.
+\end{enumerate}
+
+So the shared-mode-space fork is now sharper again:
+\begin{quote}
+even replacing raw energy by the smoother profile \(\log(1+\mathrm{energy})\)
+does not escape the same dichotomy: the summably compensated soft version stays
+on the good side, while the hard detection version stays on the bad side.
+\end{quote}
+
+\subsection{Generic Energy-Profile Fork}
+
+In \texttt{ModeStateEnergyProfileFork.lean}, Lean abstracts the preceding
+examples into one theorem pattern.  An \texttt{EnergyProfile} is a globally
+continuous radial profile \(\rho : \mathbb{R} \to \mathbb{R}\) satisfying, on
+nonnegative inputs:
+\begin{enumerate}[leftmargin=1.5em]
+  \item \(0 \le \rho(u)\),
+  \item \(\rho(u) \le u\),
+  \item \(\rho(0)=0\),
+  \item \(u>0 \Rightarrow \rho(u)>0\).
+\end{enumerate}
+
+For every such profile, Lean proves:
+\begin{enumerate}[leftmargin=1.5em]
+  \item the summably compensated soft radius is continuous and
+  truncation-friendly;
+  \item the induced hard detector agrees with the raw hard Sobolev support
+  detector;
+  \item that hard detector is tail-spike stable and therefore not
+  continuous at \(\texttt{modeZero}\), together with its cutoff and Cole--Hopf
+  lifts.
+\end{enumerate}
+
+The file also includes canonical instances:
+\begin{enumerate}[leftmargin=1.5em]
+  \item the identity profile, recovering the raw soft energy radius;
+  \item the clipped log profile \(u \mapsto \log(1+\max(u,0))\), recovering the
+  soft and hard log-energy constructions on the nonnegative energy inputs that
+  actually occur;
+  \item a bounded rational saturation profile
+  \(u \mapsto \max(u,0)/(1+\max(u,0))\), which is closer to a chart-cutoff
+  saturation shape and whose hard detector Lean proves collapses back to the
+  hard Sobolev support detector;
+  \item a smooth exponential saturation profile
+  \(u \mapsto 1-\exp(-\max(u,0))\), again with the same hard-detector collapse;
+  \item a smooth-transition profile
+  \(u \mapsto u \cdot \mathrm{smoothTransition}(u)\), using mathlib's
+  \texttt{Real.smoothTransition}, again with the same hard-detector collapse;
+  \item more strongly, a positive-parameter family
+  \(u \mapsto u \cdot \mathrm{smoothTransition}(cu)\) for \(c>0\), all with the
+  same hard-detector collapse.
+\end{enumerate}
+
+So the current shared-mode-space NS fork is now theorem-level rather than
+example-level:
+\begin{quote}
+every continuous radial profile that stays nonnegative, vanishes only at zero,
+and is dominated by the identity on nonnegative inputs lands on the same
+good/bad fork.
+\end{quote}
+
+\subsection{Finite Identity-Energy Algebra}
+
+In \texttt{IdentityEnergy.lean}, Lean formalizes a finite
+carr\'e-du-champ-style energy
+\[
+\gamma(D) = \sum_i D_i^2
+\]
+and proves:
+\begin{enumerate}[leftmargin=1.5em]
+  \item basic positivity and scaling laws for \(\gamma\);
+  \item the log-gradient comparison used in the identity-only
+  Cole--Hopf calculation;
+  \item the finite Cauchy--Schwarz frame-evaluation bound;
+  \item the resulting pointwise vorticity-style estimate after push-down
+  through a curl frame.
+\end{enumerate}
+
+So the finite algebraic spine of the identity-only bound is already Lean-backed.
+
+\subsection{Abstract Cole--Hopf/Vorticity Interface}
+
+In \texttt{ColeHopfInterface.lean}, the finite identity-energy algebra is
+packaged into an abstract structure carrying:
+\begin{enumerate}[leftmargin=1.5em]
+  \item uniform positivity of \(\Phi(t)\);
+  \item a uniform identity-energy bound on its directional derivatives;
+  \item a uniform frame-curl bound.
+\end{enumerate}
+
+From those hypotheses, Lean derives:
+\begin{enumerate}[leftmargin=1.5em]
+  \item a bound on the log-potential coefficients
+  \(W(t) = -2\nu \log \Phi(t)\);
+  \item a pointwise abstract vorticity bound;
+  \item the uniform-in-time version of the same estimate.
+\end{enumerate}
+
+\subsection{Kernel-Semigroup Wrapper}
+
+In \texttt{KernelSemigroupInterface.lean}, the same identity-only
+Cole--Hopf/vorticity algebra is wrapped around a local Markov-kernel semigroup.
+This does not add new analytic content.  It says that if a future NS evolution
+is encoded as a local kernel semigroup, then the existing identity-energy
+bridge can be reused unchanged.
+
+\section{Current Boundary}
+
+The following are \emph{not} yet formalized in Lean in the present NS lane:
+\begin{enumerate}[leftmargin=1.5em]
+  \item the manuscript's specific chart-cutoff datum on
+  \(\mathrm{SDiff}^m\);
+  \item the finite-mode truncation / approximation theorem actually needed for
+  that datum;
+  \item the local hypotheses \((H1)\), \((H2)\);
+  \item the manuscript's claimed identity-only propagation lemma;
+  \item the BKM-closing bridge for the full infinite-dimensional argument.
+\end{enumerate}
+
+So the honest current status is:
+\begin{quote}
+Lean has formalized the generic interface shell that a proof attempt would need,
+but not the manuscript-specific analytic instantiations.
+\end{quote}
+
+\section{Verification}
+
+The currently relevant NS modules were checked with:
+\begin{verbatim}
+lake build \
+  Mettapedia.FluidDynamics.NavierStokes.ModeStateEnergyProfileFork \
+  Mettapedia.FluidDynamics.NavierStokes.ModeStateLogEnergyChartFork \
+  Mettapedia.FluidDynamics.NavierStokes.ModeStateEnergyChartFork \
+  Mettapedia.FluidDynamics.NavierStokes.ModeStateSobolevChartFork \
+  Mettapedia.FluidDynamics.NavierStokes.ModeStateChartFork \
+  Mettapedia.FluidDynamics.NavierStokes.ModeStateTailSensitivityObstruction \
+  Mettapedia.FluidDynamics.NavierStokes.ModeStateObservableClass \
+  Mettapedia.FluidDynamics.NavierStokes.ModeStateProductTopologyObstruction \
+  Mettapedia.FluidDynamics.NavierStokes.ModeStateProductTopologyContinuity \
+  Mettapedia.FluidDynamics.NavierStokes.ProductTopologyL1Countermodel \
+  Mettapedia.FluidDynamics.NavierStokes.GeometricModeApproximation \
+  Mettapedia.FluidDynamics.NavierStokes.ChartApproximationModel \
+  Mettapedia.FluidDynamics.NavierStokes.IdentityEnergy \
+  Mettapedia.FluidDynamics.NavierStokes.WeakTopologyCountermodel \
+  Mettapedia.FluidDynamics.NavierStokes.KernelSemigroupInterface \
+  Mettapedia.FluidDynamics.NavierStokes.ApproximationInterface \
+  Mettapedia.FluidDynamics.NavierStokes.CutoffContinuity \
+  Mettapedia.FluidDynamics.NavierStokes.ColeHopfTopology \
+  Mettapedia.FluidDynamics.NavierStokes.ColeHopfInterface
+\end{verbatim}
+
+\section{Next Lean Target}
+
+The natural next formal step is no longer more prose.  It is to instantiate one
+of the current abstract fork with manuscript-specific data:
+\begin{enumerate}[leftmargin=1.5em]
+  \item formalize a manuscript-shaped chart observable on the shared mode space
+  whose shape is \emph{closer} than the current Sobolev-style soft/hard toy,
+  and prove whether it belongs to the good summable class or the bad
+  tail-sensitive class;
+  \item if it lands on the good side, formalize the approximation/truncation
+  theorem needed to feed \texttt{ApproximationInterface.lean};
+  \item formalize the manuscript's local identity-energy bridge inside the
+  abstract shell already provided by \texttt{IdentityEnergy.lean} and
+  \texttt{ColeHopfInterface.lean}.
+\end{enumerate}
+
+\end{document}

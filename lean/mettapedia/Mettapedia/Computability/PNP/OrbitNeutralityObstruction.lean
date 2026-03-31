@@ -4,7 +4,7 @@ import Mathlib.Tactic
 /-!
 # P vs NP crux: feature-preserving involutions force exact `1/2` accuracy
 
-This file abstracts a recurring obstruction pattern in the Goertzel proof attempt.
+This file abstracts a recurring obstruction pattern in the current proof attempt.
 
 Suppose a finite sample space carries an involution `τ` such that:
 

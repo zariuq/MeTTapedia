@@ -3,7 +3,7 @@ import Mettapedia.Computability.PNP.LocalityObstruction
 /-!
 # P vs NP crux: arbitrary local rules do not admit short uniform encodings
 
-This file isolates the missing compression theorem behind the Goertzel switching step.
+This file isolates the missing compression theorem behind the current switching step.
 
 Once a decoder is only known to be "local" on `n` visible bits, the unconstrained class of
 local rules is the full Boolean function space `(Fin n → Bool) → Bool`, which has cardinality
