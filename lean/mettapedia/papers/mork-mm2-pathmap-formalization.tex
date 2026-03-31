@@ -69,8 +69,9 @@
 \newcommand{\PathMap}{\textup{PathMap}}
 
 \title{MORK, MM2, and PathMap: A Lean~4 Formalization\\
-\large Syntax, Space Semantics, Trie Data Structure,\\
-Conformance Testing, and Cross-System Bridges}
+\large Syntax, Space Semantics, Trie Data Structure, Zipper Execution Model,\\
+OSLF Language Instance, Evidence Bridges, Conformance Testing,\\
+and Cross-System Bridges}
 \author{Zar \and Oru\v{z}i\footnote{%
 ``Oru\v{z}i'' denotes AI-assisted collaboration
 using Claude Code (Anthropic), ChatGPT, and Codex (OpenAI).}}
@@ -88,51 +89,26 @@ The formalization covers MM2 syntax, space semantics with pattern matching
 execution protocol, the \PathMap{} algebraic lattice hierarchy with a
 concrete finite trie instance (\texttt{FTrie\,V}) satisfying
 \texttt{PathMapQuantale}, a bridge to \MeTTaIL{}'s declarative reduction
-semantics, and a bridge to MQ-calculus COMM non-determinism.
-A conformance test suite of 47 kernel-checked theorems is verified against
+semantics, a bridge to MQ-calculus COMM non-determinism,
+a Z3 oracle semantics module,
+an invertible compat-head fragment compiler for PeTTa evaluation-during-matching,
+and a direct-exec surface packaging scheduler-level exactness.
+%
+The \PathMap{} library provides a six-class zipper typeclass hierarchy
+mirroring the Rust \texttt{pathmap::zipper} trait stack, with a Zipper Abstract
+Machine (ZAM) soundness theorem, a complete OSLF language instance with
+NTT soundness covering all four algebraic operations via 10~conditional
+rewrite rules, PLN \texttt{BinaryEvidence} bridges with Knuth--Skilling
+valuations, Solomonoff semimeasure weighting, and a \texttt{PathMapValuation}
+typeclass with counting and weighted instances.
+%
+A conformance test suite of kernel-checked theorems is verified against
 the \MORK{} CLI (\texttt{mork run}) on 9+ \texttt{.mm2} test programs.
-The \MORK{}/MM2 development comprises 9{,}456 lines across 17 files with
+The \MORK{}/MM2 development comprises 12{,}373 lines across 19 files with
 0~sorries and 0~custom axioms.
-Since the initial formalization, the development has grown from 8 files
-(1{,}911 lines) to 17 files (9{,}456 lines), adding:
-a faithful work-queue scheduler with read-copy semantics,
-fold-level aggregation (\texttt{FoldAggregator}: selectAll, selectFirst,
-count, sum), an idempotent \texttt{head} sink, sink persistence theorems,
-N-ary fold non-determinism generalization, an execution boundary
-packaging (\texttt{morkTranslatable}), full scheduler-level
-correspondence between computable and spec-level work-queue execution
-(including multi-match firing, bounded-run equivalence, and an explicit
-\texttt{WorkQueueInvariant} bundle), source-side input semantics
-covering \texttt{BTM}, \texttt{==} (equality constraint), and
-\texttt{!=} (inequality/exclusion constraint) source factors,
-a multi-premise \MeTTaIL{} bridge with \texttt{PremiseChain} induction
-and freshness guards (\texttt{SourceGuard}), concrete PLN inference
-rules (transitivity, modus ponens, abduction, guarded deduction) as
-end-to-end GSLT routing witnesses, and a collection congruence bridge
-(\texttt{congElem}) proving that sub-element rewriting inside
-collections factors through a Huet zipper/lens decomposition
-(\texttt{AtomZipper}, \texttt{LensRel}) and corresponds to \MORK{}
-rule firings via ground atom self-matching,
-proven \texttt{matchAtom} round-trip theorems for compound command
-patterns (closing the \texttt{add-atom}/\texttt{remove-atom} MM2
-compiler invariant gap),
-a pattern normalization function (\texttt{normalize}) that eliminates
-\texttt{.subst} nodes via \texttt{openBVar},
-an extended \MeTTaIL{} bridge (\texttt{ExtendedBridge.lean})
-proving that rewrite rules whose RHS contains \texttt{.subst} nodes
-or rest-variable collections still fire through \MORK{}, by showing
-that \texttt{applyBindings} always produces \texttt{morkTranslatable}
-output (\texttt{morkTranslatable\_applyBindings}),
-and a runtime-kernel packaging layer (\texttt{RuntimeKernel.lean},
-\texttt{RuntimeResource.lean}) that bridges the \MORK{}/MM2 execution
-triad to the \texttt{EffectClass} hierarchy from \texttt{mettail-core}
-and classifies current proved fragments by effect class
-(\texttt{pureStructural}, \texttt{readOnlyLookup}, \texttt{writesState}),
-resource class (\texttt{defaultAtomSpace}), and backend provenance,
-with honest descriptors for not-yet-formalized resources (named
-atomspaces, Z3 solver, ACT external files).
-The \PathMap{} library adds 1{,}262 lines across 5 core files with
-54~theorems/instances.
+The \PathMap{} library adds 4{,}279 lines across 16 files with
+104~theorems and 40~instances.
+The combined development totals 16{,}652 lines across 35 files.
 All proofs are checked by Lean~4.28 with Mathlib~v4.28.
 \end{abstract}
 
@@ -180,6 +156,23 @@ covering:
         routing witnesses (\S\ref{sec:mettail});
   \item An MQ-calculus bridge: binary and N-ary fold non-determinism
         corresponds to \texttt{CommReduction} (\S\ref{sec:mqbridge});
+  \item A \PathMap{} zipper typeclass hierarchy with six classes
+        (\texttt{ZipperMoving}\ldots\texttt{ZipperComplexity}) mirroring
+        the Rust \texttt{pathmap::zipper} trait stack, with ZAM
+        (Zipper Abstract Machine) soundness (\S\ref{sec:zipper});
+  \item A complete \PathMap{} OSLF language instance with 10~conditional
+        rewrite rules and NTT completeness biconditionals for all four
+        algebraic operations (\S\ref{sec:oslf});
+  \item PLN \texttt{BinaryEvidence} bridges from \PathMap{} stores with
+        Knuth--Skilling valuations, Solomonoff semimeasure weighting,
+        and a \texttt{PathMapValuation} typeclass (\S\ref{sec:evidence});
+  \item Z3 oracle semantics: \texttt{OracleEnv}, payload-to-space
+        conversion, and oracle-level pattern matching (\S\ref{sec:z3oracle});
+  \item An invertible compat-head fragment formalizing the compilation
+        of PeTTa evaluation-during-matching to standard MORK three-phase
+        execution via staged inverse compilation (\S\ref{sec:invertiblehead});
+  \item A direct-exec surface packaging scheduler-level exactness with
+        PeTTa eval fragment composition (\S\ref{sec:directexec});
   \item A conformance test suite verified against the \MORK{} CLI
         (\S\ref{sec:conformance});
   \item An execution boundary packaging (\texttt{morkTranslatable}) that
@@ -194,46 +187,66 @@ formal development.
 \centering
 \caption{\MORK{}/MM2 formalization files.}
 \label{tab:morkfiles}
-\begin{tabular}{@{}llrl@{}}
+\begin{tabular}{@{}llr@{}}
 \toprule
 \textbf{File} & \textbf{Key Content} & \textbf{Lines} \\
 \midrule
-\texttt{Syntax.lean}              & \texttt{Sink}, \texttt{FoldAggregator}, \texttt{ExecRule}, \texttt{SourceFactor}, \texttt{InputSpec} & 264 \\
+\texttt{Syntax.lean}              & \texttt{Sink}, \texttt{FoldAggregator}, \texttt{ExecRule}, \texttt{SourceFactor}, \texttt{InputSpec} & 318 \\
 \texttt{Space.lean}               & \texttt{Space}, \texttt{matchAtom}, \texttt{applySink}, source-aware matching & 432 \\
 \texttt{MatchSpec.lean}           & \texttt{MatchAtomRel}, soundness/completeness & 133 \\
 \texttt{ThreePhaseExec.lean}      & Phase protocol, aggregator theorems, canaries & 381 \\
-\texttt{ThreePhaseRefinement.lean}& Sink persistence, phase$\leftrightarrow$scheduler & 230 \\
-\texttt{WorkQueueOrder.lean}      & \texttt{atomKey}, shortlex ordering, \texttt{lexLt\_iff\_lex} & 241 \\
+\texttt{ThreePhaseRefinement.lean}& Sink persistence, phase$\leftrightarrow$scheduler, exactness & 519 \\
+\texttt{WorkQueueOrder.lean}      & \texttt{atomKey}, shortlex ordering, location-based exec ordering & 561 \\
 \texttt{WorkQueueExec.lean}       & Read-copy scheduler, source-aware firing, correspondence & 1{,}192 \\
 \texttt{MORKCommBridge.lean}      & MQ correspondence, N-ary generalization & 300 \\
 \texttt{PathMapBridge.lean}       & Base/fold = \texttt{pjoin}/\texttt{psubtract} & 174 \\
-\texttt{MeTTaILBridge.lean}       & Multi-premise bridge, \texttt{PremiseChain}, ext bridge & 1{,}624 \\
-\texttt{PLNRules.lean}            & Concrete PLN rules, guarded bridge instantiation & 383 \\
+\texttt{MeTTaILBridge.lean}       & Multi-premise bridge, \texttt{PremiseChain}, ext bridge & 1{,}430 \\
+\texttt{PLNRules.lean}            & Concrete PLN rules, guarded bridge instantiation & 378 \\
 \texttt{Conformance.lean}         & Computable evaluator, source conformance, correspondence & 1{,}694 \\
 \texttt{AtomZipper.lean}          & Huet zipper, \texttt{LensRel}, lens laws, collection specialization & 283 \\
-\texttt{CollectionBridge.lean}    & Zipper/lens \texttt{congElem} bridge, \texttt{declReduces\_implies\_mork\_fire\_full} & 319 \\
-\texttt{ExecutionBoundary.lean}   & \texttt{morkTranslatable} + scheduler + source + ext + zipper/lens re-exports & 439 \\
+\texttt{CollectionBridge.lean}    & Zipper/lens \texttt{congElem} bridge, Layer~A--H theorems & 638 \\
+\texttt{ExtendedBridge.lean}      & Extended bridge for \texttt{.subst} + rest-variable resolution & 83 \\
+\texttt{ExecutionBoundary.lean}   & \texttt{morkTranslatable} + scheduler + source + ext re-exports & 510 \\
+\texttt{Z3Oracle.lean}            & Z3 oracle semantics, payload-to-space, conformance & 347 \\
+\texttt{DirectExecSurface.lean}   & Scheduler exactness package, PeTTa fragment bridge & 234 \\
+\texttt{InvertibleHead.lean}      & PeTTa compat-head compilation, staged inverse soundness & 2{,}766 \\
 \midrule
-\textbf{Total} & & \textbf{8{,}089} \\
+\textbf{Total} & & \textbf{12{,}373} \\
 \bottomrule
 \end{tabular}
 \end{table}
 
 \begin{table}[ht]
 \centering
-\caption{\PathMap{} library files (core theory).}
+\caption{\PathMap{} library files.}
 \label{tab:pathmapfiles}
-\begin{tabular}{@{}llrl@{}}
+\begin{tabular}{@{}llr@{}}
 \toprule
-\textbf{File} & \textbf{Key Content} & \textbf{Lines} & \textbf{Thms/Inst} \\
+\textbf{File} & \textbf{Key Content} & \textbf{Lines} \\
 \midrule
-\texttt{Core.lean}              & \texttt{AlgebraicResult}, lattice hierarchy, \texttt{Finset} instance & 440 & 5 / 13 \\
-\texttt{CoinductiveTrie.lean}   & \texttt{CTrie V}, pointwise operations, bisimilarity laws & 226 & 30 \\
-\texttt{FiniteTrie.lean}        & \texttt{FTrie V}, computable trie operations & 224 & 5 \\
-\texttt{TrieRefinement.lean}    & \texttt{Sorted}, \texttt{join\_lookup}, \texttt{toCTrie} & 243 & 5 \\
-\texttt{TriePathMapInstance.lean} & \texttt{PathMapQuantale (FTrie V)}, \texttt{JoinIdem}, \texttt{MeetIdem} & 129 & 0 / 4 \\
+\multicolumn{3}{@{}l}{\textit{Core Algebraic Theory}} \\
+\texttt{Core.lean}              & \texttt{AlgebraicResult}, lattice hierarchy, \texttt{Finset} instance & 440 \\
+\texttt{CoinductiveTrie.lean}   & \texttt{CTrie V}, pointwise operations, bisimilarity laws & 226 \\
+\texttt{FiniteTrie.lean}        & \texttt{FTrie V}, computable trie operations & 224 \\
+\texttt{TrieRefinement.lean}    & \texttt{Sorted}, \texttt{join\_lookup}, \texttt{toCTrie} & 243 \\
+\texttt{TriePathMapInstance.lean} & \texttt{PathMapQuantale (FTrie V)}, \texttt{JoinIdem}, \texttt{MeetIdem} & 129 \\
 \midrule
-\textbf{Total} & & \textbf{1{,}262} & \textbf{45 + 17 inst} \\
+\multicolumn{3}{@{}l}{\textit{Zipper Hierarchy and ZAM}} \\
+\texttt{Zipper.lean}            & 6-class typeclass hierarchy (\texttt{ZipperMoving}\ldots\texttt{ZipperComplexity}) & 482 \\
+\texttt{ZipperExecution.lean}   & \texttt{ZipperIterationSound}, ZAM soundness & 216 \\
+\texttt{FlatZipperInstance.lean} & Reference list-cursor zipper, all contracts proved & 117 \\
+\texttt{TrieZipper.lean}        & \texttt{SimpleTrieZipper V}, trie-backed soundness & 148 \\
+\texttt{ZamContracts.lean}      & ZAM soundness contracts, compositionality & 193 \\
+\midrule
+\multicolumn{3}{@{}l}{\textit{OSLF Instance and Bridges}} \\
+\texttt{OSLFInstance.lean}       & \texttt{pathMapLang}, 10 rewrite rules, NTT completeness & 853 \\
+\texttt{RelationBridge.lean}    & \texttt{RelationalSpace} typeclass, \texttt{toRelationEnv} & 200 \\
+\texttt{PLNBridge.lean}         & \texttt{finsetPathEvidence}, K\&S sum rule, disjoint additivity & 275 \\
+\texttt{SolomonoffBridge.lean}  & Weighted evidence, Solomonoff posterior additivity & 239 \\
+\texttt{Measure.lean}           & \texttt{PathMapValuation}, counting/weighted instances & 143 \\
+\texttt{WorldModelBridge.lean}  & \texttt{BinaryWorldModel} via \texttt{Multiset} lifting & 151 \\
+\midrule
+\textbf{Total} & & \textbf{4{,}279} \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -513,7 +526,7 @@ fold.subResults.head?}.
 \label{sec:workqueue}
 %% ============================================================
 
-The work-queue scheduler (\texttt{WorkQueueExec.lean}, 1{,}143~lines)
+The work-queue scheduler (\texttt{WorkQueueExec.lean}, 1{,}192~lines)
 formalizes \MORK{}'s actual runtime model from \texttt{mork\_backend.rs}.
 This replaces the abstract three-phase view with the concrete execution
 loop:
@@ -551,7 +564,7 @@ and \texttt{(head ...)} forms.
 
 \subsection{Ordering}
 
-\texttt{WorkQueueOrder.lean} (119~lines) defines the
+\texttt{WorkQueueOrder.lean} (561~lines) defines the
 \texttt{atomKey} serialization and \texttt{lexLt} comparison used to
 determine exec-fact firing order:
 
@@ -698,8 +711,11 @@ inequality exclusion, and multi-match non-determinism.
 \label{sec:persistence}
 %% ============================================================
 
-\texttt{ThreePhaseRefinement.lean} (212~lines) proves that atoms persist
-through sink pipelines unless explicitly removed:
+\texttt{ThreePhaseRefinement.lean} (519~lines) proves that atoms persist
+through sink pipelines unless explicitly removed, and provides
+phase$\leftrightarrow$scheduler exactness theorems
+(\texttt{base\_step\_exactness}, \texttt{unfold\_step\_exactness},
+\texttt{fold\_step\_exactness}):
 
 \begin{theorem}[\texttt{applySink\_mem\_of\_mem}]
 If $b \in s$ and the sink is not a remove of~$b$ (after substitution),
@@ -841,6 +857,245 @@ Full commutativity holds for \texttt{V = Unit} (the \MORK{} use case where
 \texttt{PathMap<()>} stores set membership).
 
 %% ============================================================
+\section{PathMap Zipper Hierarchy and ZAM Soundness}
+\label{sec:zipper}
+%% ============================================================
+
+The Rust \texttt{pathmap} crate exposes a \emph{zipper}~\cite{Huet1997}
+cursor model:
+a cursor navigates a byte-indexed trie, reading or writing values at the
+current focus, and advancing via depth-first
+iteration~\cite{McBride2001}.
+The Lean formalization mirrors this trait hierarchy with a six-class
+typeclass stack (\texttt{Zipper.lean}, 482~lines):
+
+\begin{lstlisting}[caption={Zipper typeclass hierarchy (excerpt).}]
+class ZipperMoving (Z : Type*) where
+  descendFirstByte : Z -> Option Z
+  ascend           : Z -> Option Z
+  currentPath      : Z -> TriePath
+  atLeaf           : Z -> Bool
+  atRoot           : Z -> Bool
+
+class ZipperBounded (Z : Type*) [ZipperMoving Z] : Prop where
+  ascend_none_at_root : @$\forall$@ z, atRoot z = true -> ascend z = none
+
+class ZipperValues (Z : Type*) (V : Type*)
+    extends ZipperMoving Z where
+  valueAt : Z -> Option V
+
+class ZipperIteration (Z : Type*) [ZipperMoving Z] where
+  toNextVal       : Z -> Z @$\times$@ Bool
+  descendLastPath : Z -> Z @$\times$@ Bool
+
+class ZipperComplexity (Z : Type*) [ZipperMoving Z]
+    [ZipperIteration Z] : Prop where
+  descendFirstKPath_depth_le : ...  -- path grows by at most k
+  toNextVal_depth_bounded    : ...  -- depth grows by at most 1
+\end{lstlisting}
+
+\noindent
+The key invariant, encoded by \texttt{ZipperBounded}, is that
+\texttt{ascend} never moves above the zipper's root.
+The dual property \texttt{ZipperLiveness} asserts that ascending
+from a non-root position always succeeds.
+\texttt{ZipperComplexity} formalizes O($k$)/O(depth) structural depth
+bounds---necessary preconditions for the time-complexity claims in the
+Rust implementation.
+
+\subsection{ZAM Soundness}
+
+\texttt{ZipperExecution.lean} (216~lines) connects the zipper cursor model
+to the OSLF engine's \texttt{RelationalSpace} query interface.
+The central inductive predicate \texttt{ZipperReachableValue} defines which
+values a depth-first iteration can reach:
+
+\begin{lstlisting}[caption={Reachability and soundness contract.}]
+inductive ZipperReachableValue [ZipperMoving Z]
+    [ZipperValues Z V] [ZipperIteration Z] :
+    Z -> V -> Prop where
+  | here  (hv : valueAt z = some v)
+  | step  (hnext : (toNextVal z).2 = true)
+          (hreach : ZipperReachableValue (toNextVal z).1 v)
+
+class ZipperIterationSound (Z V : Type*) ... : Prop where
+  reachable_in_store : @$\forall$@ root v, atRoot root -> Reachable root v
+      -> v @$\in$@ allValues root
+  store_in_reachable : @$\forall$@ root v, atRoot root -> v @$\in$@ allValues root
+      -> Reachable root v
+\end{lstlisting}
+
+\noindent
+The main theorems lift this contract to OSLF:
+
+\begin{theorem}[\texttt{zam\_oslf\_sound}]
+If a \texttt{ZipperSpace} agrees with a flat \texttt{RelationEnv}, then
+the OSLF reduction relation is identical for both:
+$\texttt{langReducesUsing}\;\mathit{zs}\;\mathit{lang}\;p\;q
+\iff
+\texttt{langReducesUsing}\;\mathit{flat}\;\mathit{lang}\;p\;q$.
+\end{theorem}
+
+\begin{theorem}[\texttt{zam\_diamond\_sound} / \texttt{zam\_box\_sound}]
+The modal operators $\Diamond$ and $\Box$ are preserved by the
+zipper-to-flat correspondence.
+\end{theorem}
+
+\subsection{Concrete Instances}
+
+Two concrete implementations satisfy the full contract:
+\begin{itemize}[nosep]
+  \item \texttt{FlatZipper}~$\alpha$ (\texttt{FlatZipperInstance.lean},
+        117~lines): a degenerate list-cursor serving as reference implementation.
+  \item \texttt{SimpleTrieZipper V} (\texttt{TrieZipper.lean}, 148~lines):
+        wraps \texttt{FTrie V} with an entries list, proving
+        \texttt{ZipperIterationSound}.
+\end{itemize}
+
+\noindent
+\texttt{ZamContracts.lean} (193~lines) provides compositionality theorems
+for transferring ZAM soundness across cursor transformations.
+
+%% ============================================================
+\section{PathMap OSLF Language Instance}
+\label{sec:oslf}
+%% ============================================================
+
+\texttt{OSLFInstance.lean} (853~lines) instantiates the OSLF pipeline for
+the \PathMap{} algebraic language, yielding complete NTT (Native Type Theory)
+soundness theorems~\cite{WilliamsStayNTT2021}.
+The language definition \texttt{pathMapLang} has:
+\begin{itemize}[nosep]
+  \item \textbf{Types}: one sort \texttt{"V"} for \PathMap{} node values.
+  \item \textbf{Constructors}: four algebraic operations (\texttt{PJoin},
+        \texttt{PMeet}, \texttt{PSubtract}, \texttt{PRestrict}) plus four
+        result constructors (\texttt{PUnion}, \texttt{PIntersect},
+        \texttt{PDiff}, \texttt{PFilter}).
+  \item \textbf{Rewrite rules}: 10~conditional rules gated by
+        \texttt{relationQuery} premises encoding algebraic conditions:
+\end{itemize}
+
+\begin{center}
+\begin{tabular}{@{}llll@{}}
+\toprule
+\textbf{Premise} & \textbf{Meaning} & \textbf{Used by} \\
+\midrule
+\texttt{"sub" [x,y]}   & $x \subseteq y$          & PJoin, PMeet, PRestrict \\
+\texttt{"nsub" [x,y]}  & $\neg(x \subseteq y)$    & PJoin \\
+\texttt{"ndisj" [x,y]} & $x \cap y \neq \emptyset$ & PMeet \\
+\texttt{"disj" [x,y]}  & $x \cap y = \emptyset$    & PSubtract \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\noindent
+For each operation, the \texttt{AlgebraicResult} cases are exhaustively
+covered:
+\begin{itemize}[nosep]
+  \item \textbf{Identity} (\texttt{self}/\texttt{other}): a rewrite rule fires,
+        reducing to the operand.
+  \item \textbf{Element}: a rewrite rule fires, reducing to the result
+        constructor (e.g., \texttt{PUnion}).
+  \item \textbf{None}: \emph{no rule fires}---the diamond is vacuously false.
+\end{itemize}
+
+\begin{theorem}[\texttt{pathMap\_pjoin\_complete} et al.]
+For each of the four operations, the NTT completeness theorem is an exact
+biconditional:
+$\Diamond_{\mathit{relEnv}}\;\texttt{PJoin}(a,b)\;\phi
+\;\iff\;$
+the correct \texttt{AlgebraicResult}-determined rule fires.
+All four theorems (\texttt{pjoin}, \texttt{pmeet}, \texttt{psubtract},
+\texttt{prestrict}) are proved with 0~sorries.
+\end{theorem}
+
+\noindent
+The \texttt{RelationBridge.lean} module (200~lines) provides the abstract
+\texttt{RelationalSpace} typeclass that decouples the OSLF engine from
+concrete backends, with a canonical embedding \texttt{toRelationEnv}.
+
+%% ============================================================
+\section{PathMap Evidence Bridges}
+\label{sec:evidence}
+%% ============================================================
+
+Three modules connect \PathMap{} stores to probabilistic reasoning
+frameworks, grounding the evidence semantics for
+PLN~\cite{GoertzelPLN2009} and Solomonoff
+induction~\cite{Solomonoff1964}.
+
+\subsection{PLN BinaryEvidence (\texttt{PLNBridge.lean}, 275~lines)}
+
+For a \PathMap{} store $W : \texttt{Finset}\;\alpha$ and query
+$q : \texttt{Finset}\;\alpha$, define:
+\[
+  \texttt{finsetPathEvidence}\;W\;q \;=\; \bigl(\lvert W \cap q\rvert,\;
+  \lvert W \setminus q \rvert\bigr)
+\]
+where $n^+ = \lvert W \cap q\rvert$ is positive evidence and
+$n^- = \lvert W \setminus q\rvert$ is negative evidence.
+
+\begin{theorem}[\texttt{evidence\_total} (K\&S sum rule)]
+$n^+ + n^- = \lvert W \rvert$.
+\end{theorem}
+
+\begin{theorem}[\texttt{pjoin\_evidence\_additive}]
+For disjoint $W_1, W_2$:
+$\texttt{ev}(W_1 \cup W_2, q) = \texttt{ev}(W_1, q) \oplus \texttt{ev}(W_2, q)$.
+\end{theorem}
+
+\noindent
+Additional theorems cover boundary conditions (\texttt{evidence\_empty\_store},
+\texttt{evidence\_self\_query}), monotonicity (\texttt{evidence\_monotone}),
+and Bayesian strength interpretation.
+
+\begin{remark}[Honest scope]
+\texttt{Finset} union is idempotent ($W \cup W = W$), so full additivity
+fails.  A true \texttt{BinaryWorldModel} instance requires replacing
+\texttt{Finset} with \texttt{Multiset} (allowing duplicates); this
+extension is in \texttt{WorldModelBridge.lean}.
+\end{remark}
+
+\subsection{Solomonoff Weighting (\texttt{SolomonoffBridge.lean}, 239~lines)}
+
+Generalizes counting evidence to arbitrary weight functions
+$w : \alpha \to \mathbb{R}_{\ge 0}^{\infty}$:
+\[
+  \texttt{weightedPathEvidence}\;w\;W\;q \;=\;
+  \Bigl(\sum_{p \in W \cap q} w(p),\;\sum_{p \in W \setminus q} w(p)\Bigr)
+\]
+
+\begin{theorem}[\texttt{solomonoffPathEvidence\_additive}]
+Disjoint additivity holds for the Solomonoff semimeasure instantiation.
+\end{theorem}
+
+\begin{theorem}[\texttt{finsetPathEvidence\_eq\_uniform}]
+Uniform weight $w \equiv 1$ recovers counting evidence.
+\end{theorem}
+
+\subsection{Valuations and World Model (\texttt{Measure.lean}, 143~lines;
+\texttt{WorldModelBridge.lean}, 151~lines)}
+
+\texttt{PathMapValuation}~$\alpha$ is a typeclass with Knuth--Skilling
+axioms (zero store $\to$ zero weight, disjoint additivity):
+
+\begin{lstlisting}[caption={PathMapValuation typeclass (excerpt).}]
+class PathMapValuation (@$\alpha$@ : Type*) [DecidableEq @$\alpha$@] where
+  weight : Finset @$\alpha$@ -> @$\mathbb{R}_{\ge 0}^{\infty}$@
+  weight_empty : weight @$\emptyset$@ = 0
+  weight_disjoint_add : Disjoint W1 W2 ->
+    weight (W1 @$\cup$@ W2) = weight W1 + weight W2
+\end{lstlisting}
+
+\noindent
+Two instances are proved: \texttt{countingPathMapValuation}
+($\texttt{weight}\;W = \lvert W\rvert$) and \texttt{mkWeightedValuation}\;$w$
+($\texttt{weight}\;W = \sum_{p\in W} w(p)$).
+\texttt{WorldModelBridge.lean} lifts \texttt{Finset} evidence to
+\texttt{Multiset}-based \texttt{BinaryWorldModel} instances where full
+(non-disjoint) additivity holds.
+
+%% ============================================================
 \section{MORK--PathMap Bridge}
 \label{sec:pathmapbridge}
 %% ============================================================
@@ -876,8 +1131,8 @@ engine to the data-structural semantics.
 \label{sec:mettail}
 %% ============================================================
 
-The \MeTTaIL{} bridge (\texttt{MeTTaILBridge.lean}, 1{,}635~lines, plus
-\texttt{CollectionBridge.lean}, 217~lines) connects \MORK{}'s execution
+The \MeTTaIL{} bridge (\texttt{MeTTaILBridge.lean}, 1{,}430~lines, plus
+\texttt{CollectionBridge.lean}, 638~lines) connects \MORK{}'s execution
 model to the declarative reduction semantics of \MeTTaIL{}
 (\texttt{DeclReduces} and \texttt{DeclReducesWithPremises}).
 
@@ -976,7 +1231,7 @@ concrete PLN rules below), this hypothesis is trivially dischargeable.
 
 \subsection{Concrete PLN Rules as GSLT Routing Witnesses}
 
-\texttt{PLNRules.lean} (379~lines, 23~theorems) instantiates the bridge for
+\texttt{PLNRules.lean} (378~lines, 23~theorems) instantiates the bridge for
 concrete PLN inference rules, providing end-to-end GSLT routing witnesses:
 
 \begin{center}
@@ -1016,7 +1271,7 @@ boundary.
 \subsection{Collection Congruence Bridge}
 \label{sec:collbridge}
 
-\texttt{CollectionBridge.lean} (319~lines) and \texttt{AtomZipper.lean}
+\texttt{CollectionBridge.lean} (638~lines) and \texttt{AtomZipper.lean}
 (283~lines) prove that \MeTTaIL{}'s \texttt{congElem} constructor---which
 rewrites a single element inside a \texttt{.collection ct elems rest}---corresponds
 to a \MORK{}-side space update via a principled zipper/lens factorization.
@@ -1258,11 +1513,203 @@ Any N-ary fold with $\geq 2$ sub-results has both COMM outcomes available.
 Seven canary theorems protect these invariants.
 
 %% ============================================================
+\section{Z3 Oracle Semantics}
+\label{sec:z3oracle}
+%% ============================================================
+
+\texttt{Z3Oracle.lean} (347~lines, 27~theorems) formalizes the oracle seam
+of the \MORK{} runtime, connecting abstract oracle queries to concrete Z3
+behavior.
+The Z3 subprocess interaction in the Rust runtime follows a three-step
+protocol:
+(i)~sink-side: buffer SMT-LIB statements and write to Z3 stdin;
+(ii)~source-side: send \texttt{(check-sat)} and \texttt{(get-model)}, parse
+the response;
+(iii)~pattern-match against the parsed model using the existing
+\texttt{matchOneInSpace} infrastructure.
+
+\begin{definition}[\texttt{OracleEnv}]
+An oracle environment is a pure function
+$\texttt{OracleQuery} \to \texttt{OracleResponse}$
+abstracting the Z3 subprocess lifecycle.
+\end{definition}
+
+\noindent
+The key bridge function \texttt{oraclePayloadSpace} converts an oracle
+response's payload atoms into a \texttt{Space} ($\texttt{Finset Atom}$),
+enabling reuse of the existing pattern matching infrastructure:
+
+\begin{theorem}[\texttt{oracleMatchPattern\_sound}]
+Oracle pattern matching agrees with \texttt{matchOneInSpace} on the
+payload space: a match against the oracle response succeeds iff it
+succeeds against the flattened space.
+\end{theorem}
+
+\noindent
+Oracle queries are routed by resource type (\texttt{z3}/\texttt{act}):
+
+\begin{theorem}[\texttt{routeOracleQuery\_z3\_routes}]
+A query with resource tag \texttt{"z3"} routes to the Z3 oracle
+environment.
+\end{theorem}
+
+\noindent
+A mock Z3 environment (\texttt{mockZ3Env}) with 7~conformance tests
+validates the architecture against the \MORK{} Rust test
+\texttt{sink\_z3\_basic}.
+
+\begin{remark}[Honest scope]
+This file does NOT model the Z3 subprocess lifecycle (spawn/kill),
+SMT-LIB parsing, or PathMap zipper internals.  The oracle is a pure
+function parameter---the implementation gap is the Lean--Rust FFI for
+subprocess I/O.
+\end{remark}
+
+%% ============================================================
+\section{Invertible Compat-Head Fragment}
+\label{sec:invertiblehead}
+%% ============================================================
+
+\texttt{InvertibleHead.lean} (2{,}766~lines, 61~theorems) is the largest
+module in the formalization.  It formalizes the compilation of PeTTa's
+\emph{evaluation-during-matching} (\texttt{matchHeadArgWithEval} in the
+PeTTa Dispatch module) to standard \MORK{} three-phase execution.
+
+\subsection{Problem}
+
+PeTTa's pattern matcher can \emph{evaluate} subterms during matching:
+when matching \texttt{(f \$x)} against a query, PeTTa calls the
+interpreter to evaluate \texttt{f} and matches the result against the
+query.  \MORK{}'s \texttt{matchAtom} is purely structural---it cannot
+evaluate during matching.
+
+\subsection{Key Insight}
+
+For a significant subfragment---head functions that are \emph{pure,
+structurally recursive, and produce constructor-wrapped outputs}---the
+evaluation-during-matching can be compiled to standard \MORK{}/MM2 by
+\emph{reversing} the computation: instead of evaluating $f(x)$ forward
+and matching, we reverse-match the query argument against $f$'s output
+structure to recover~$x$.
+
+\subsection{Formalization}
+
+The file defines:
+
+\begin{lstlisting}[caption={Core definitions (\texttt{InvertibleHead.lean}).}]
+structure HeadEquation where
+  funcName : String
+  lhsArgs  : List Atom       -- LHS patterns
+  rhs      : Atom             -- RHS expression
+
+structure HeadFuncDef where
+  funcName  : String
+  equations : List HeadEquation
+  consistent : @$\forall$@ eq @$\in$@ equations, eq.funcName = funcName
+
+structure InvertibleHead (def_ : HeadFuncDef) : Prop where
+  hasBase              : @$\exists$@ eq @$\in$@ def_.equations, eq.isBase
+  varsCovered          : ...  -- RHS vars @$\subseteq$@ LHS vars
+  basesAreCtorApps     : ...  -- base RHS = ctor application
+  stepsWrapRecursion   : ...  -- step RHS wraps one recursive call
+  lhsVarsRecoverableBase : ...  -- LHS vars recoverable from RHS
+  lhsVarsRecoverableStep : ...  -- LHS vars recoverable from shell
+\end{lstlisting}
+
+\noindent
+The compilation proceeds in layers:
+
+\begin{enumerate}[nosep]
+  \item \textbf{Forward evaluation} (\texttt{forwardEval}): fuel-bounded
+        recursive evaluation following the defining equations.
+  \item \textbf{Reverse matching}: \texttt{reverseMatchBase} decomposes a
+        constructor application to recover LHS variables;
+        \texttt{reverseMatchStep} strips the outer constructor shell and
+        extracts the recursive sub-query.
+  \item \textbf{Staged compilation}: the three-phase UNFOLD/BASE/FOLD
+        architecture maps to: UNFOLD~=~strip outer shell and emit
+        recursive sub-query + wait token; BASE~=~reverse-match base case;
+        FOLD~=~reassemble original input from sub-result.
+\end{enumerate}
+
+The main soundness chain:
+
+\begin{theorem}[\texttt{reverseEval\_inverts\_forwardEval}]
+For a deterministic invertible fragment: if \texttt{forwardEval} on a
+ground input produces output~\texttt{out}, then \texttt{reverseEval} on
+\texttt{out} recovers the original input.
+\end{theorem}
+
+\begin{theorem}[\texttt{staged\_inverse\_sound}]
+Every successful forward evaluation gives rise to a
+\texttt{StagedInverseTrace}---a structured proof object recording the
+UNFOLD/BASE/FOLD decomposition that recovers the original input.
+\end{theorem}
+
+\begin{theorem}[\texttt{staged\_inverse\_exec\_sound}]
+The staged trace refines to a concrete scheduler-facing
+\texttt{StagedInverseExecTrace}, provided explicit singleton witnesses
+are supplied for each base/unfold/fold node.
+\end{theorem}
+
+\begin{remark}[Honest scope]
+The bridge to \texttt{matchHeadArgWithEval} (PeTTa Dispatch module) is
+not yet formalized.  The current scope covers the \emph{fragment boundary}
+and \emph{compilation scheme soundness}; the connection to the PeTTa
+surface language is future work.  Non-injective head functions are
+excluded by the \texttt{InvertibleHead} predicate.
+\end{remark}
+
+%% ============================================================
+\section{Direct-Exec Surface}
+\label{sec:directexec}
+%% ============================================================
+
+\texttt{DirectExecSurface.lean} (234~lines) packages the scheduler-level
+exactness theorems (Tasks~A/B/C from \texttt{ThreePhaseRefinement.lean})
+into a single reusable \texttt{SchedulerSeam} and composes the first
+real PeTTa fragment through it.
+
+\subsection{Scheduler Seam}
+
+\begin{definition}[\texttt{SchedulerSeam}]
+A coherent family of re-exported theorems:
+\begin{itemize}[nosep]
+  \item \texttt{orderAgreement}: scheduler byte-key order agrees with
+        shortlex on (priority, name).
+  \item \texttt{baseExactness} / \texttt{unfoldExactness} /
+        \texttt{foldExactness}: each phase's scheduler step equals the
+        corresponding phase operation.
+  \item \texttt{sourceRelation}: \texttt{fireExecFact} = source $-$ exec
+        atom.
+  \item \texttt{progress}: if \texttt{selectNextExec} returns \texttt{some},
+        then \texttt{cWorkQueueStep} succeeds.
+\end{itemize}
+\end{definition}
+
+\subsection{PeTTa Fragment Bridge}
+
+The key theorem lands a PeTTa eval/evalc step on the MM2 scheduler:
+
+\begin{theorem}[\texttt{pettaEvalStep\_schedulerFires}]
+A PeTTa \texttt{evalStep} that translates to a \MORK{} exec rule fires
+through the scheduler seam.
+\end{theorem}
+
+\begin{remark}[Honest scope]
+This file explicitly lists what is NOT covered:
+\texttt{add-atom}/\texttt{remove-atom} (MORK sinks ready, MeTTaIL-level
+rule missing), collection-pattern matching (excluded by
+\texttt{morkTranslatable}), and beta-reduction (\texttt{.subst} nodes
+rejected).
+\end{remark}
+
+%% ============================================================
 \section{Conformance Testing}
 \label{sec:conformance}
 %% ============================================================
 
-The conformance test suite (\texttt{Conformance.lean}, 1{,}407 lines)
+The conformance test suite (\texttt{Conformance.lean}, 1{,}694 lines)
 provides 13 kernel-checked conformance theorems verified against the
 \MORK{} CLI (\texttt{mork run}), plus bidirectional match-pattern and
 fire-rule correspondence theorems between the computable and spec levels.
@@ -1360,30 +1807,38 @@ This enables conformance tests with real MM2 S-expressions (tests 1, 3--8).
 Table~\ref{tab:coverage} summarizes the boundary between formalized and
 unformalized aspects.
 
-\begin{table}[ht]
+\begin{table}[ht!]
 \centering
+\small
 \caption{Formal coverage boundary.}
 \label{tab:coverage}
-\begin{tabular}{@{}lll@{}}
+\begin{tabular}{@{}lp{5cm}p{4cm}@{}}
 \toprule
 \textbf{Aspect} & \textbf{Formalized} & \textbf{Not Formalized} \\
 \midrule
 MM2 syntax                     & add/remove/head sinks, FoldAggregator, SourceFactor & Remaining 11 Rust sink types \\
-Pattern matching (spec)        & Soundness + completeness (expressions) & Coreferential matching \\
-Pattern matching (evaluator)   & Expressions, nested, variables & --- \\
+Pattern matching               & Soundness + completeness (expressions), computable evaluator & Coreferential matching \\
 Space transitions              & Yes + sink persistence & Nested collection rewrite \\
-Three-phase protocol           & Priority bands + aggregator & --- \\
+Three-phase protocol           & Priority bands + aggregator + phase$\leftrightarrow$scheduler exactness & --- \\
 Work-queue scheduler           & Read-copy, self-respawn, ordering, full correspondence & Concurrent scheduling \\
-Source-side input              & BTM, == (equality), != (inequality) & ACT (external file), z3 \\
-Conformance testing            & 24 kernel-checked theorems, 9+ MM2 tests & --- \\
-\PathMap{} algebra             & Quantale hierarchy + laws & --- \\
-\PathMap{} trie (\texttt{FTrie}) & Join/meet/subtract/restrict + refinement & Full commutativity (non-Unit) \\
+Source-side input              & BTM, == (equality), != (inequality) & ACT (external file) \\
+Oracle semantics               & Z3 query routing, payload-to-space, oracle pattern matching, mock conformance & Z3 subprocess lifecycle, SMT-LIB parsing \\
+Conformance testing            & Kernel-checked theorems, 9+ MM2 tests & --- \\
+\PathMap{} algebra             & Quantale hierarchy + laws (Finset, CTrie, FTrie instances) & --- \\
+\PathMap{} trie                & Join/meet/subtract/restrict + refinement & Full commutativity (non-Unit), concrete node types (Dense/Line/Tiny) \\
+\PathMap{} zipper              & 6-class typeclass hierarchy, ZAM soundness, 2 concrete instances & Mutation ops (\texttt{ZipperWriting}), product/overlay zippers, conflict detection \\
+\PathMap{} serialization       & --- & Paths serialization (19k Rust LOC), ACT on-disk format, round-trip correctness \\
+\PathMap{} morphisms           & --- & Catamorphism/anamorphism, fusion laws \\
+\PathMap{} OSLF instance       & \texttt{pathMapLang}, 10 rewrite rules, NTT completeness & --- \\
+\PathMap{} evidence            & PLN BinaryEvidence, Solomonoff weighting, K\&S valuations, world-model bridge & Full BinaryWorldModel on Finset \\
 \MORK{}--\PathMap{} bridge     & Algebraic (join/subtract) & --- \\
-\MeTTaIL{} bridge              & Flat rules (\texttt{.fvar}), multi-premise, freshness guards, \texttt{congElem} (zipper/lens + ad-hoc), \texttt{LensRel} laws, \texttt{matchAtom} round-trips for compound patterns, extended bridge (\texttt{.subst}/rest-var resolution via \texttt{applyBindings}) & Source-level positional congruence \\
+\MeTTaIL{} bridge              & Flat rules, multi-premise, freshness guards, \texttt{congElem} (zipper/lens), extended bridge (\texttt{.subst}/rest-var) & Source-level positional congruence \\
 PLN routing witnesses          & 6 rules (transitivity, MP, abduction, guarded) & --- \\
 MQ bridge                      & Binary + N-ary fold $\leftrightarrow$ COMM & Real process witnesses \\
-Execution boundary             & \texttt{morkTranslatable} packaging, pattern normalization (\texttt{normalize}), \texttt{morkTranslatable\_applyBindings} & --- \\
-Runtime kernel packaging       & Effect-class bridge, classified fragments (exec/query/spaceEffect), memoization safety, resource descriptors (4 resources) & Named atomspace exec, Z3/ACT exec seams \\
+Compat-head compilation        & Invertible fragment boundary, staged inverse, forward/reverse roundtrip (61 thms) & PeTTa Dispatch bridge, non-injective heads \\
+Direct-exec surface            & Scheduler exactness, PeTTa eval fragment & add-atom/remove-atom bridge, collection patterns, beta-reduction \\
+Execution boundary             & \texttt{morkTranslatable} packaging, pattern normalization, \texttt{morkTranslatable\_applyBindings} & --- \\
+Runtime kernel packaging       & Effect-class bridge, classified fragments, memoization safety, resource descriptors (4 resources) & Named atomspace exec, ACT exec seam \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -1451,6 +1906,43 @@ Runtime kernel packaging       & Effect-class bridge, classified fragments (exec
     path-aware source factors (\texttt{SourceFactor.focus}) and sink
     actions (\texttt{SinkAction.replaceAtPath}), which would discharge
     the \texttt{hnotcoll} hypothesis from source-aware bridges.
+
+  \item \textbf{PathMap Rust coverage.}
+    The \PathMap{} Lean formalization covers the algebraic semantics
+    (\texttt{AlgebraicResult}, lattice/quantale hierarchy) and adds
+    OSLF/evidence bridges not present in Rust.
+    However, significant Rust subsystems are not formalized:
+    \texttt{ZipperWriting} mutation operations (444~Rust LOC),
+    paths serialization (19{,}000~Rust LOC),
+    catamorphism/anamorphism morphisms (800~Rust LOC),
+    the Arena-Compact on-disk format,
+    merkleization/deduplication,
+    product/overlay zipper composition,
+    and concrete node type selection (Dense/Line/Tiny).
+    The Lean formalization targets \emph{algebraic correctness and
+    semantic soundness}, not full Rust implementation verification.
+
+  \item \textbf{Invertible head scope.}
+    The \texttt{InvertibleHead} predicate
+    (\S\ref{sec:invertiblehead}) covers pure, structurally recursive
+    functions with constructor-wrapped outputs and injective
+    base cases.  Non-injective heads, multi-argument recursive calls,
+    and the bridge to PeTTa's \texttt{matchHeadArgWithEval} are not
+    yet formalized.
+
+  \item \textbf{PathMap OSLF completeness.}
+    The NTT completeness theorems (\S\ref{sec:oslf}) are exact
+    biconditionals parameterized by a \texttt{relEnv : RelationEnv}.
+    The connection from a concrete \PathMap{} store to a
+    \texttt{RelationEnv} satisfying the required premises is handled by
+    \texttt{RelationBridge.lean}, but automatic instantiation (given a
+    concrete \texttt{Finset}) is not yet provided.
+
+  \item \textbf{Zipper complexity.}
+    \texttt{ZipperComplexity} (\S\ref{sec:zipper}) formalizes
+    structural depth bounds (path length grows by at most~$k$).
+    Actual time-complexity proofs require a cost model not available
+    in Lean.
 \end{enumerate}
 
 %% ============================================================
@@ -1458,7 +1950,7 @@ Runtime kernel packaging       & Effect-class bridge, classified fragments (exec
 \label{sec:execboundary}
 %% ============================================================
 
-\texttt{ExecutionBoundary.lean} (529~lines) provides a thin re-export
+\texttt{ExecutionBoundary.lean} (510~lines) provides a thin re-export
 surface packaging the proven \texttt{morkTranslatable} execution boundary,
 the scheduler correspondence chain, the extended bridge infrastructure,
 the zipper/lens congruence infrastructure (\texttt{AtomZipper},
@@ -1576,8 +2068,12 @@ Four descriptors are defined, aligned with the \MORK{} Rust implementation:
 The \texttt{solverResource} and \texttt{externalResource} descriptors
 acknowledge that \MORK{}'s Rust runtime actively uses Z3 subprocesses
 (\texttt{ResourceRequest::Z3} in \texttt{space.rs}) and ACT
-file-backed external datasets, but their Lean formalization remains
-future work (\texttt{Syntax.lean}: ``NOT yet formalized: ACT, z3'').
+file-backed external datasets.
+The Z3 oracle semantics are now partially formalized
+(\texttt{Z3Oracle.lean}, \S\ref{sec:z3oracle}): query routing,
+payload-to-space conversion, and pattern matching are proved, but the
+subprocess lifecycle and SMT-LIB parsing remain unformalized.
+ACT external files are not yet formalized.
 Named atomspaces are not supported by \MORK{}'s single-space-per-instance
 architecture.
 
@@ -1616,6 +2112,36 @@ Zar and Oru\v{z}i.
 \newblock Process calculi formalized in {Lean}~4: {Rho}, {Pi}, {MQ}, and
   modal mu-calculus with cross-calculus bridges.
 \newblock Technical note, March 2026.
+
+\bibitem{Huet1997}
+G.~Huet.
+\newblock The Zipper.
+\newblock \emph{Journal of Functional Programming}, 7(5):549--554, 1997.
+
+\bibitem{McBride2001}
+C.~McBride.
+\newblock The derivative of a regular type is its type of one-hole contexts.
+\newblock Unpublished manuscript, 2001.
+
+\bibitem{WilliamsStayNTT2021}
+M.~Williams and M.~Stay.
+\newblock Native Type Theory.
+\newblock In \emph{Applied Category Theory (ACT)}, 2021.
+
+\bibitem{MeredithStayOSLF}
+L.~G.~Meredith and M.~Stay.
+\newblock Operational Semantics in Logical Form.
+\newblock Technical report.
+
+\bibitem{GoertzelPLN2009}
+B.~Goertzel, M.~Ikl\'e, I.~F.~Goertzel, and A.~Heljakka.
+\newblock \emph{Probabilistic Logic Networks}.
+\newblock Springer, 2009.
+
+\bibitem{Solomonoff1964}
+R.~J.~Solomonoff.
+\newblock A formal theory of inductive inference, {Part~I}.
+\newblock \emph{Information and Control}, 7(1):1--22, 1964.
 
 \end{thebibliography}
 

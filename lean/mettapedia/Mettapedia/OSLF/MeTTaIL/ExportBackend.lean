@@ -49,7 +49,7 @@ private def ctorCategoryFor (lang : LanguageDef) (ctorName : String) : Option St
 private def lookupVarSubst (subst : List (String × PExpr)) (name : String) : Option PExpr :=
   (subst.find? (fun (n, _) => n == name)).map (·.2)
 
-private partial def substExpr (subst : List (String × PExpr)) : PExpr → PExpr
+private def substExpr (subst : List (String × PExpr)) : PExpr → PExpr
   | .var n =>
       match lookupVarSubst subst n with
       | some e => e
@@ -102,8 +102,21 @@ private def computeWitnessEmptyGuard? (prog : PremiseProgram) (rel : String)
 
 /-! ## 1. Ascent Expression Rendering -/
 
+/-- Render a Pattern as an Ascent expression (Rust code). -/
+def renderAscentPattern (lang : LanguageDef) (atomTy : String := "Atom") : Pattern → String
+  | .apply name [] =>
+      let ctorTy := (ctorCategoryFor lang name).getD atomTy
+      s!"{ctorTy}::C_{name}"
+  | .apply name args =>
+      let ctorTy := (ctorCategoryFor lang name).getD atomTy
+      let argStrs := args.map (renderAscentPattern lang atomTy)
+      s!"{ctorTy}::C_{name}({", ".intercalate argStrs})"
+  | .fvar x => x
+  | .bvar n => s!"_b{n}"
+  | _ => "/* unsupported pattern */"
+
 /-- Render a PExpr as an Ascent expression (Rust code). -/
-partial def renderAscentExpr (lang : LanguageDef) (atomTy : String := "Atom") : PExpr → String
+def renderAscentExpr (lang : LanguageDef) (atomTy : String := "Atom") : PExpr → String
   | .var name => name
   | .ctor ctorName args =>
       let ctorTy := (ctorCategoryFor lang ctorName).getD atomTy
@@ -117,18 +130,6 @@ partial def renderAscentExpr (lang : LanguageDef) (atomTy : String := "Atom") : 
       let argStrs := args.map (renderAscentExpr lang atomTy)
       s!"{fnName}({", ".intercalate argStrs})"
   | .wild => "_"
-where
-  renderAscentPattern (lang : LanguageDef) (atomTy : String) : Pattern → String
-    | .apply name [] =>
-        let ctorTy := (ctorCategoryFor lang name).getD atomTy
-        s!"{ctorTy}::C_{name}"
-    | .apply name args =>
-        let ctorTy := (ctorCategoryFor lang name).getD atomTy
-        let argStrs := args.map (renderAscentPattern lang atomTy)
-        s!"{ctorTy}::C_{name}({", ".intercalate argStrs})"
-    | .fvar x => x
-    | .bvar n => s!"_b{n}"
-    | _ => "/* unsupported pattern */"
 
 /-! ## 2. Ascent Guard Rendering -/
 
@@ -206,16 +207,16 @@ def renderAscentGuard (lang : LanguageDef) (prog : PremiseProgram)
 
 /-! ## 3. Ascent Rule Rendering -/
 
-private partial def varsInExpr : PExpr → List String
+private def varsInPattern : Pattern → List String
+  | .apply _ args => args.flatMap varsInPattern
+  | .fvar x => [x]
+  | _ => []
+
+private def varsInExpr : PExpr → List String
   | .var n => [n]
-  | .ctor _ args | .call _ args => listFlatMap args varsInExpr
+  | .ctor _ args | .call _ args => args.flatMap varsInExpr
   | .literal pat => varsInPattern pat
   | .wild => []
-where
-  varsInPattern : Pattern → List String
-    | .apply _ args => listFlatMap args varsInPattern
-    | .fvar x => [x]
-    | _ => []
 
 private def varsUsedInGuard : PGuard → List String
   | .eq l r | .neq l r => varsInExpr l ++ varsInExpr r

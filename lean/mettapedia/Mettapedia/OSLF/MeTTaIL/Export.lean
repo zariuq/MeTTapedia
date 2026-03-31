@@ -14,8 +14,13 @@ open Mettapedia.OSLF.MeTTaIL.Syntax
 private def quote (s : String) : String :=
   "\"" ++ (s.replace "\\" "\\\\").replace "\"" "\\\"" ++ "\""
 
+/-- Sanitize an identifier for Rust compatibility.
+    Replaces Unicode semantic operators with ASCII prefixes. -/
+private def sanitizeForRust (s : String) : String :=
+  s.replace "⊛" "sem_"
+
 private def ctorName (raw : String) : String :=
-  raw
+  sanitizeForRust raw
 
 private def renderCollType : CollType → String
   | .vec => "Vec"
@@ -34,7 +39,7 @@ private def renderTypeDecl (typeDecl : TypeDecl) : String :=
   | .builtinString => s!"![str] as {typeDecl.name}"
   | .builtinBool => s!"![bool] as {typeDecl.name}"
 
-partial def renderTypeExpr : TypeExpr → String
+def renderTypeExpr : TypeExpr → String
   | .base n => n
   | .arrow d c => s!"[{renderTypeExpr d} -> {renderTypeExpr c}]"
   | .multiBinder t => s!"{renderTypeExpr t}*"
@@ -88,7 +93,7 @@ private def renderCtorSyntax (label : String) (params : List TermParam) : String
 
 mutual
 
-private partial def renderSyntaxOp : SyntaxPatternOp → String
+private def renderSyntaxOp : SyntaxPatternOp → String
   | .var name => name
   | .sep collection separator none => s!"{collection}.*sep({quote separator})"
   | .sep _ separator (some source) => s!"{renderSyntaxOp source}.*sep({quote separator})"
@@ -101,7 +106,7 @@ private partial def renderSyntaxOp : SyntaxPatternOp → String
       let renderedInner := String.intercalate " " (inner.map renderSyntaxItem)
       s!"*opt({renderedInner})"
 
-private partial def renderSyntaxItem : SyntaxItem → String
+private def renderSyntaxItem : SyntaxItem → String
   | .terminal t => quote t
   | .nonTerminal n => n
   | .separator s => quote s
@@ -124,28 +129,36 @@ private def renderEvalPolicySuffix (policy? : Option TermEvalPolicy) : String :=
   | some .fold => " ![fold]"
   | some .oracle => " ![oracle]"
 
-partial def renderPattern : Pattern → String
+private theorem args_elem_lt_apply (c : String) (args : List Pattern) (a : Pattern)
+    (h : a ∈ args) : sizeOf a < sizeOf (Pattern.apply c args) := by
+  have := List.sizeOf_lt_of_mem h
+  simp [Pattern.apply.sizeOf_spec]
+  omega
+
+def renderPattern : Pattern → String
   | .bvar n => s!"bvar{n}"
   | .fvar x => x
-  | pat@(.apply c args) =>
-      match Pattern.zipArgs? pat with
-      | some (first, second) =>
-          s!"*zip({renderPattern first}, {renderPattern second})"
-      | none =>
-          match Pattern.mapArgs? pat with
-          | some (source, params, body) =>
-              let renderedParams := String.intercalate ", " params
-              s!"{renderPattern source}.*map(|{renderedParams}| {renderPattern body})"
-          | none =>
-              match Pattern.evalArgs? pat with
-              | some (scope, repl) =>
-                  s!"(eval {renderPattern scope} {renderPattern repl})"
-              | none =>
-                  match args with
-                  | [] => ctorName c
-                  | _ =>
-                      let renderedArgs := args.map renderPattern
-                      s!"({ctorName c} {String.intercalate " " renderedArgs})"
+  | .apply c [] => ctorName c
+  | .apply c [arg] => s!"({ctorName c} {renderPattern arg})"
+  -- map: more specific binary pattern (second arg is multiLambda)
+  | .apply c [source, .multiLambda _ params body] =>
+      if c == Pattern.mapHead then
+        let renderedParams := String.intercalate ", " params
+        s!"{renderPattern source}.*map(|{renderedParams}| {renderPattern body})"
+      else
+        s!"({ctorName c} {renderPattern source} {renderPattern (.multiLambda 0 params body)})"
+  -- zip/eval/generic binary
+  | .apply c [first, second] =>
+      if c == Pattern.zipHead then
+        s!"*zip({renderPattern first}, {renderPattern second})"
+      else if c == Pattern.evalHead then
+        s!"(eval {renderPattern first} {renderPattern second})"
+      else
+        s!"({ctorName c} {renderPattern first} {renderPattern second})"
+  -- n-ary (3+)
+  | .apply c args =>
+      let renderedArgs := args.map renderPattern
+      s!"({ctorName c} {String.intercalate " " renderedArgs})"
   | .lambda (some nm) body => s!"^{nm}.{renderPattern body}"
   | .lambda none body => s!"^x.{renderPattern body}"
   | .multiLambda _ nms body =>
@@ -182,6 +195,14 @@ partial def renderPattern : Pattern → String
             "#{..." ++ r ++ "}"
           else
             "#{" ++ core ++ ", ..." ++ r ++ "}"
+termination_by p => sizeOf p
+decreasing_by
+  all_goals simp_wf
+  all_goals
+    first
+    | omega
+    | (exact Nat.lt_trans (List.sizeOf_lt_of_mem ‹_›) (by omega))
+    | (exact Nat.lt_of_lt_of_le (List.sizeOf_lt_of_mem ‹_›) (by omega))
 
 private def renderFreshnessTarget (pat : Pattern) : String :=
   match pat.collectionRestName? with
@@ -261,14 +282,40 @@ private def overloadedRelations (lang : LanguageDef) : List String :=
     let arities := (pairs.filter (fun p => p.1 == name)).map Prod.snd |>.eraseDups
     arities.length > 1
 
-/-- Render a Lean `LanguageDef` into Rust `language! { ... }` macro text. -/
+/-- Render a DatalogTerm to Ascent-compatible syntax. -/
+private def renderDatalogTerm : DatalogTerm → String
+  | .var v => v
+  | .const c => c
+
+/-- Render a DatalogAtom to Ascent-compatible syntax. -/
+private def renderDatalogAtom (a : DatalogAtom) : String :=
+  s!"{a.rel}({String.intercalate ", " (a.args.map renderDatalogTerm)})"
+
+/-- Render a DatalogClause to Ascent-compatible syntax. -/
+private def renderDatalogClause (dc : DatalogClause) : String :=
+  let head := renderDatalogAtom dc.head
+  if dc.body.isEmpty then
+    s!"        {head}."
+  else
+    let body := String.intercalate ", " (dc.body.map renderDatalogAtom)
+    s!"        {head} :- {body}."
+
+/-- Render a LogicDecl to Ascent-compatible syntax. -/
+private def renderLogicDecl : LogicDecl → Option String
+  | .relation sig =>
+    let types := String.intercalate ", " (sig.argTypes.map renderTypeExpr)
+    some s!"        relation {sig.name}({types});"
+  | .ruleText t => some s!"        {t}"
+  | .datalogClause dc => some (renderDatalogClause dc)
+
 def renderLanguage (lang : LanguageDef) : String :=
   let overloaded := overloadedRelations lang
   let typeLines := lang.types.map (fun t => s!"        {renderTypeDecl t}")
   let termLines := lang.terms.map renderGrammarRule
   let eqLines := (indexed lang.equations).map (fun (idx, eqn) => renderEquation overloaded idx eqn)
   let rwLines := (indexed lang.rewrites).map (fun (idx, rw) => renderRewrite overloaded idx rw)
-  String.intercalate "\n"
+  let logicLines := lang.logic.filterMap renderLogicDecl
+  let sections :=
     [ "language! {"
     , s!"    name: {lang.name},"
     , ""
@@ -279,8 +326,12 @@ def renderLanguage (lang : LanguageDef) : String :=
     , renderSection "equations" eqLines ++ ","
     , ""
     , renderSection "rewrites" rwLines ++ ","
-    , "}"
-    ]
+    ] ++ (if logicLines.isEmpty then [] else
+    [ ""
+    , renderSection "logic" logicLines ++ ","
+    ]) ++
+    [ "}" ]
+  String.intercalate "\n" sections
 
 /-- Render a Lean `LanguageDef` into Rust `language! { ... }` macro text,
 using `syntaxPattern` for concrete term parsing when provided. -/

@@ -351,14 +351,10 @@ def gfFunsListToLanguageDef
   let termRules := funs.foldl (init := []) fun acc (_, d) =>
       gfFunDeclToGrammarRule d :: acc
   LanguageDef.mk
-    grammarName
+    grammarName [] -- options
     ((allCats.eraseDups.map TypeDecl.plain) ++ extraTypes).eraseDups
-    (termRules ++ extraTerms)
-    eqRules
-    rwRules
-    [.vec, .hashBag, .hashSet]
-    []
-    []
+    (termRules ++ extraTerms) eqRules rwRules
+    [.vec, .hashBag, .hashSet] [] []
 
 /-- Build an OSLF LanguageDef from a real GFCore GrammarSig.
     Categories are extracted from function declarations.
@@ -376,14 +372,10 @@ def gfSigToLanguageDef
   let termRules := sig.funs.fold (init := []) fun acc _ d =>
       gfFunDeclToGrammarRule d :: acc
   LanguageDef.mk
-    sig.grammar
+    sig.grammar [] -- options
     ((allCats.eraseDups.map TypeDecl.plain) ++ extraTypes).eraseDups
-    (termRules ++ extraTerms)
-    eqRules
-    rwRules
-    [.vec, .hashBag, .hashSet]
-    []
-    []
+    (termRules ++ extraTerms) eqRules rwRules
+    [.vec, .hashBag, .hashSet] [] []
 
 private def gfSemanticValidationSeed (sig : GrammarSig) : LanguageDef :=
   gfSigToLanguageDef sig gfSemanticSupportTypes gfSemanticSupportTerms [] []
@@ -394,31 +386,19 @@ private def gfSemanticValidationSeedFromList
   gfFunsListToLanguageDef grammarName funs gfSemanticSupportTypes gfSemanticSupportTerms [] []
 
 private def equationSupportedBySig (sig : GrammarSig) (eqn : Equation) : Bool :=
-  let baseLang : LanguageDef := gfSemanticValidationSeed sig;
-  let testLang : LanguageDef :=
-    LanguageDef.mk
-      baseLang.name
-      baseLang.types
-      baseLang.terms
-      [eqn]
-      baseLang.rewrites
-      baseLang.congruenceCollections
-      baseLang.logic
-      baseLang.oracles;
+  let baseLang := gfSemanticValidationSeed sig
+  let testLang := LanguageDef.mk
+    baseLang.name baseLang.options baseLang.types baseLang.terms
+    [eqn] baseLang.rewrites baseLang.congruenceCollections
+    baseLang.logic baseLang.oracles
   LanguageDef.validate testLang = []
 
 private def rewriteSupportedBySig (sig : GrammarSig) (rw : RewriteRule) : Bool :=
-  let baseLang : LanguageDef := gfSemanticValidationSeed sig;
-  let testLang : LanguageDef :=
-    LanguageDef.mk
-      baseLang.name
-      baseLang.types
-      baseLang.terms
-      baseLang.equations
-      [rw]
-      baseLang.congruenceCollections
-      baseLang.logic
-      baseLang.oracles;
+  let baseLang := gfSemanticValidationSeed sig
+  let testLang := LanguageDef.mk
+    baseLang.name baseLang.options baseLang.types baseLang.terms
+    baseLang.equations [rw] baseLang.congruenceCollections
+    baseLang.logic baseLang.oracles
   LanguageDef.validate testLang = []
 
 /-- Semantic equations supported by a concrete generated GF signature, after
@@ -450,16 +430,18 @@ private def equationSupportedByList
     (grammarName : String) (funs : List (String × FunDecl)) (eqn : Equation) : Bool :=
   let baseLang := gfSemanticValidationSeedFromList grammarName funs
   let testLang := LanguageDef.mk
-    baseLang.name baseLang.types baseLang.terms
-    [eqn] baseLang.rewrites baseLang.congruenceCollections baseLang.logic baseLang.oracles
+    baseLang.name baseLang.options baseLang.types baseLang.terms
+    [eqn] baseLang.rewrites baseLang.congruenceCollections
+    baseLang.logic baseLang.oracles
   LanguageDef.validate testLang = []
 
 private def rewriteSupportedByList
     (grammarName : String) (funs : List (String × FunDecl)) (rw : RewriteRule) : Bool :=
   let baseLang := gfSemanticValidationSeedFromList grammarName funs
   let testLang := LanguageDef.mk
-    baseLang.name baseLang.types baseLang.terms
-    baseLang.equations [rw] baseLang.congruenceCollections baseLang.logic baseLang.oracles
+    baseLang.name baseLang.options baseLang.types baseLang.terms
+    baseLang.equations [rw] baseLang.congruenceCollections
+    baseLang.logic baseLang.oracles
   LanguageDef.validate testLang = []
 
 /-- Kernel-reducible RGL LanguageDef from a literal function list. -/

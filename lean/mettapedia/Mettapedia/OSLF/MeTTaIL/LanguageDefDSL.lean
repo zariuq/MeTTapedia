@@ -921,6 +921,7 @@ macro
     let collDeclsTerm ← mkTermList collDecls'
     `(LanguageDef.mk
         $langName
+        []  -- options (default empty; DSL options support is future work)
         $typeDeclsTerm
         $termDeclsTerm
         $eqDeclsTerm
@@ -955,7 +956,7 @@ macro_rules
       oracles : $ors,
       congruenceCollections : $ccs
     }) =>
-      `(LanguageDef.mk $langName $tys $tmRules $eqns $rws $ccs $lgs $ors)
+      `(LanguageDef.mk $langName [] $tys $tmRules $eqns $rws $ccs $lgs $ors)
 
 /-! ## Generic Builders -/
 
@@ -984,6 +985,7 @@ def mkLang
     (congCollections : List CollType := []) : LanguageDef :=
   LanguageDef.mk
     langName
+    []  -- options (default empty)
     typeDecls
     termRules
     eqRules

@@ -749,12 +749,66 @@ structure LogicRelationDecl where
   argTypes : List TypeExpr
 deriving Repr
 
+/-! ### Typed Datalog rules (function-free LP)
+
+These types provide a properly typed Datalog (function-free Horn clause) AST
+for LanguageDef logic rules. They bridge to `Mettapedia.Logic.LP.Core` for
+proven semantics (T_P operator, least Herbrand model, fixpoint theorems).
+
+Using String names for relations, variables, and constants matches the
+LanguageDef surface and the OSLF `RelationEnv` encoding. The bridge to
+LP.Core converts List→Fin and String→abstract types. -/
+
+/-- A Datalog term: variable or constant (function-free, no compound terms). -/
+inductive DatalogTerm where
+  | var : String → DatalogTerm
+  | const : String → DatalogTerm
+deriving Repr, DecidableEq
+
+/-- A Datalog atom: relation name applied to argument terms. -/
+structure DatalogAtom where
+  rel : String
+  args : List DatalogTerm
+deriving Repr, DecidableEq
+
+namespace DatalogAtom
+
+/-- Variable names occurring in an atom. -/
+def vars (a : DatalogAtom) : List String :=
+  a.args.filterMap fun | .var v => some v | .const _ => none
+
+end DatalogAtom
+
+/-- A Datalog clause: `head :- body₁, body₂, ...` (definite Horn clause).
+    When `body` is empty, this is a fact. -/
+structure DatalogClause where
+  head : DatalogAtom
+  body : List DatalogAtom
+  /-- Optional clause name for traceability. -/
+  name : String := ""
+deriving Repr, DecidableEq
+
+namespace DatalogClause
+
+/-- A clause is safe (range-restricted) when every head variable appears in the body.
+    This is the standard Datalog safety condition. -/
+def isSafe (c : DatalogClause) : Bool :=
+  c.head.vars.all fun v => c.body.any fun b => v ∈ b.vars
+
+/-- A fact: a clause with empty body. -/
+def isFact (c : DatalogClause) : Bool :=
+  c.body.isEmpty
+
+end DatalogClause
+
 /-- Backend-agnostic logic declarations authored alongside rules.
-    `ruleText` is intentionally plain text for now so we can migrate authoring
-    style first without forcing an immediate backend-specific AST. -/
+    - `relation`: declares a relation signature (name + arg types)
+    - `ruleText`: legacy plain-text rules (deprecated, opaque to Lean)
+    - `datalogClause`: typed Datalog rule with proven LP.Core semantics -/
 inductive LogicDecl where
   | relation : LogicRelationDecl → LogicDecl
   | ruleText : String → LogicDecl
+  | datalogClause : DatalogClause → LogicDecl
 deriving Repr
 
 /-- Signature for host/runtime-provided oracle operations. -/
@@ -764,11 +818,50 @@ structure OracleDecl where
   resultType : TypeExpr
 deriving Repr
 
+/-! ### Language Options
+
+Options classify runtime/backend/semantic behavior, matching Rust's
+`options { ... }` block in `language!`. Classified per GPT-Pro's
+recommendation:
+- **semantic**: change what language is being defined (e.g., `higher_order`)
+- **operational**: affect execution strategy, not denotation (e.g., `dispatch`)
+- **backend**: host integration (e.g., `mork_backend`)
+- **debug**: observability only (e.g., `log_semiring_model_path`) -/
+
+/-- Classification of a language option's semantic weight.
+    Determines whether the option changes the language denotation
+    or only affects operational/backend behavior. -/
+inductive OptionClass where
+  | semantic      -- changes what language is defined
+  | operational   -- affects execution strategy, not denotation
+  | backend       -- host integration
+  | debug         -- observability only
+deriving Repr, DecidableEq
+
+/-- A typed option value, matching Rust's `AttributeValue` variants. -/
+inductive OptionValue where
+  | bool : Bool → OptionValue
+  | int : Int → OptionValue
+  | float : Float → OptionValue
+  | keyword : String → OptionValue
+  | str : String → OptionValue
+deriving Repr
+
+/-- A single language option: key + value + semantic classification. -/
+structure LangOption where
+  key : String
+  value : OptionValue
+  class_ : OptionClass := .operational
+deriving Repr
+
 /-- Single authoritative language definition.
     This matches the Rust `language!` design: one `LanguageDef`, with the
     macro/DSL providing the human-facing surface syntax directly. -/
 structure LanguageDef where
   name : String
+  /-- Language options (beam_width, dispatch, higher_order, etc.).
+      Matches Rust's `options { ... }` block. Default empty. -/
+  options : List LangOption := []
   types : List TypeDecl
   terms : List GrammarRule
   equations : List Equation
@@ -1019,7 +1112,8 @@ def validate (lang : LanguageDef) : List ValidationError :=
       (fun acc decl =>
         match decl with
         | .relation sig => sig.name :: acc
-        | .ruleText _ => acc)
+        | .ruleText _ => acc
+        | .datalogClause _ => acc)
       []
   let checkConstructors := !knownConstructors.isEmpty
   let typeDupErrs := duplicateErrors lang.name "type" knownTypes
@@ -1030,7 +1124,8 @@ def validate (lang : LanguageDef) : List ValidationError :=
         (fun acc decl =>
           match decl with
           | .relation sig => s!"{sig.name}/{sig.argTypes.length}" :: acc
-          | .ruleText _ => acc)
+          | .ruleText _ => acc
+          | .datalogClause _ => acc)
         [])
   let oracleDupErrs := duplicateErrors lang.name "oracle" (lang.oracles.map (·.name))
   let termErrs :=
@@ -1066,6 +1161,10 @@ def validate (lang : LanguageDef) : List ValidationError :=
       | .relation sig =>
           sig.argTypes.flatMap fun ty => validateTypeExpr knownTypes s!"logic relation {sig.name}" ty
       | .ruleText _ => []
+      | .datalogClause dc =>
+          -- Check safety: every head variable appears in body
+          if dc.isSafe then []
+          else [mkValidationError lang.name s!"unsafe Datalog clause {dc.name}: head variable not in body"]
   let oracleTypeErrs :=
     lang.oracles.flatMap fun oracle =>
       let ctx := s!"oracle {oracle.name}"
