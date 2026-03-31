@@ -129,7 +129,7 @@ def nilProcess : Pattern := .apply "PZero" []
     `{n!(q) | for(<-n){p}} ⇝ {commSubst p q}` -/
 example (n q p : Pattern) :
     rhoGSLT.Step
-      (.collection .hashBag [.apply "POutput" [n, q], .apply "PInput" [n, .lambda p]] none)
+      (.collection .hashBag [.apply "POutput" [n, q], .apply "PInput" [n, .lambda none p]] none)
       (.collection .hashBag [Mettapedia.OSLF.MeTTaIL.Substitution.commSubst p q] none) :=
   ⟨Reduces.comm⟩
 
