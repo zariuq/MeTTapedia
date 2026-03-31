@@ -201,6 +201,8 @@ ground-up PNP effort.
 \texttt{PNP/CanonicalZABRecoveryInterface.lean} & final direct exact-route interface: code assignment plus agreement bound imply compression and recovery \\
 \texttt{PNP/CanonicalZABERMRoute.lean} & ERM-to-canonical bridge: the exact ERM wrapper itself supplies the canonical code witness and recovery interface \\
 \texttt{PNP/CanonicalZABERMInterface.lean} & final manuscript-facing ERM interface: samples, equality to the ERM wrapper, and an agreement bound imply compression and recovery \\
+\texttt{PNP/BitVecZABVisibleSurface.lean} & when $z$ is already bit-valued, the full exact visible surface $(z,a,b)$ becomes one raw bitvector of length $r+2k$ \\
+\texttt{PNP/BitVecZABERMInterface.lean} & concrete identity-extractor specialization of the final exact ERM interface on the raw full visible bit surface \\
 \texttt{PNP/GlobalWeaknessObstruction.lean} & current weakness summaries alone cannot yield a nonconstant predictor surface \\
 \texttt{PNP/InfinitaryHMLObstruction.lean} & infinite minimal contexts force an infinite depth-1 HML observable surface \\
 \texttt{PNP/PresentMomentShattering.lean} & exact rho present-moment probes already realize arbitrary finite membership slices \\
@@ -1319,6 +1321,16 @@ canonical code witness is exactly the ERM-selected code.  The new module
 manuscript-facing form: one sample assignment, one proof that the switched
 family is exactly that ERM wrapper, and one bad-code agreement bound.
 
+There is now also one fully concrete specialization of that exact route.
+\texttt{BitVecZABVisibleSurface.lean} fixes the case where the local datum is
+already a bitvector \(z : \mathrm{BitVec}\, r\), so the full visible input
+\((z,a,b)\) becomes one raw bitvector of length \(r+2k\).  Then
+\texttt{BitVecZABERMInterface.lean} specializes the final exact ERM interface
+to the identity extractor on that raw full visible bit surface.  So in that
+case the remaining burden is no longer “choose \(\mathsf{zfeat}\)”; it is only
+“choose the samples, prove equality to the ERM wrapper, and control the bad
+codes.”
+
 \subsection{Bridging to the Full PNP Route}
 
 Only after those layers are built does it make sense to reconnect to the full
@@ -1382,6 +1394,8 @@ explicit direct exact-route code-witness reduction & proved & \texttt{CanonicalZ
 final direct exact-route recovery interface & proved & \texttt{CanonicalZABRecoveryInterface.lean} \\
 ERM-to-canonical bridge for the exact $(zfeat(z),a,b)$ route & proved & \texttt{CanonicalZABERMRoute.lean} \\
 final ERM interface for the canonical exact $(zfeat(z),a,b)$ route & proved & \texttt{CanonicalZABERMInterface.lean} \\
+raw full visible bit surface when $z : \mathrm{BitVec}\, r$ & proved & \texttt{BitVecZABVisibleSurface.lean} \\
+identity-extractor ERM interface on the raw full visible bit surface & proved & \texttt{BitVecZABERMInterface.lean} \\
 weakness-globality obstruction & proved & \texttt{GlobalWeaknessObstruction.lean} \\
 infinitary HML obstruction & proved & \texttt{InfinitaryHMLObstruction.lean} \\
 present-moment shattering slice & proved & \texttt{PresentMomentShattering.lean} \\
