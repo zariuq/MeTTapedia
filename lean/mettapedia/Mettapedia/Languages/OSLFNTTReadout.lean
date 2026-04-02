@@ -12,7 +12,7 @@ actually seeing in the current real GF and Metamath language lanes.
 
 Positive examples:
 - for real GFCore-backed GF, NTT sees constructor-category structure, a genuine
-  modal reduction witness, and a representable presheaf fiber on a real checked
+  checked/witnessed syntax lane with no fake reductions, and a representable presheaf fiber on a real checked
   sentence;
 - for the authored Metamath DSL, NTT sees the compiler phase graph, a genuine
   modal transition from `Compile` into the lowering phase, and a representable
@@ -40,16 +40,18 @@ open Mettapedia.Languages.Metamath.NTTDiagnostics
 open Mettapedia.Languages.Metamath.LanguageDefDSL
 
 abbrev GFRealNTTReadout : Prop :=
-    GaloisConnection (langDiamond paperLang) (langBox paperLang) ∧
-      (("UseN", "N", "CN") ∈ unaryCrossings paperLang) ∧
-      temporalReachabilityPred presentSentencePattern ∧
+    GaloisConnection (langDiamond paperLangKR) (langBox paperLangKR) ∧
+      (("UseN", "N", "CN") ∈ unaryCrossings paperLangKR) ∧
+      ¬ langDiamond paperLangKR
+          (fun q => q = Mettapedia.Languages.GF.GFCoreNTTDiagnostics.temporalPresentPattern)
+          Mettapedia.Languages.GF.GFCoreNTTDiagnostics.presentSentencePattern ∧
       paperSId ∈
         paperPresentSentenceOrbitFiber.obj
           (Opposite.op (ConstructorObj.mk paperSSort))
 
 theorem gf_real_ntt_readout :
     GFRealNTTReadout := by
-  refine ⟨gfGrammar_galois paperSig, useN_crossing, presentSentence_diamond_temporal,
+  refine ⟨langGalois paperLangKR, useN_crossing, presentSentence_not_diamond_temporal,
     paperPresentSentenceOrbitFiber_contains_seed⟩
 
 abbrev MetamathNTTReadout : Prop :=

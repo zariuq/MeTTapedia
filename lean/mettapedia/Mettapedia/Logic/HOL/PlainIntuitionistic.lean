@@ -271,9 +271,10 @@ theorem provable_of_rootExWitness_bridge_and_rootCounterworld_countermodel
 theorem provable_of_rootExWitness_bridge_and_root_countermodel
     (hCounter :
       ∀ {Δ : List (ClosedFormula Const)} {φ : ClosedFormula Const},
-        (∃ W : PrimeTheory.Saturated Const ([] : Ctx Base),
-            (∀ ψ, ψ ∈ Δ → liftParamFormula [] ψ ∈ W.carrier) ∧
-            liftParamFormula [] φ ∉ W.carrier) →
+        (∃ Γ : Ctx Base,
+            ∃ W : PrimeTheory.Saturated Const Γ,
+              (∀ ψ, ψ ∈ Δ → liftParamFormula Γ ψ ∈ W.carrier) ∧
+              liftParamFormula Γ φ ∉ W.carrier) →
           ∃ M : HeytingHenkinModel.{u, v, w} Base Const,
             ¬ HeytingHenkinModel.modelsFrom M Δ φ (fun v => nomatch v))
     (B : RootExWitnessBridge Base Const)
@@ -320,9 +321,10 @@ theorem validFrom_iff_provable_of_rootExWitness_bridge_and_rootCounterworld_coun
 theorem validFrom_iff_provable_of_rootExWitness_bridge_and_root_countermodel
     (hCounter :
       ∀ {Δ : List (ClosedFormula Const)} {φ : ClosedFormula Const},
-        (∃ W : PrimeTheory.Saturated Const ([] : Ctx Base),
-            (∀ ψ, ψ ∈ Δ → liftParamFormula [] ψ ∈ W.carrier) ∧
-            liftParamFormula [] φ ∉ W.carrier) →
+        (∃ Γ : Ctx Base,
+            ∃ W : PrimeTheory.Saturated Const Γ,
+              (∀ ψ, ψ ∈ Δ → liftParamFormula Γ ψ ∈ W.carrier) ∧
+              liftParamFormula Γ φ ∉ W.carrier) →
           ∃ M : HeytingHenkinModel.{u, v, w} Base Const,
             ¬ HeytingHenkinModel.modelsFrom M Δ φ (fun v => nomatch v))
     (B : RootExWitnessBridge Base Const)

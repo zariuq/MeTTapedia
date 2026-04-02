@@ -15,7 +15,7 @@ theorem level. Provides:
 ```
 AbstractNode →[gfNodeCategory]→ String (sort)
   →[gfNativeType]→ NativeTypeOf (sort, predicate)
-  →[gfSatisfiesType]→ (langOSLF gfRGLLanguageDef).satisfies p φ
+  →[gfSatisfiesType]→ (langOSLF gfLegacySemanticLanguageDef).satisfies p φ
 ```
 
 ## References
@@ -69,9 +69,9 @@ def patternSort (lang : LanguageDef) : Pattern → Option String
     category as `gfCategoryResult f.type`, and `gfAbstractToPattern`
     preserves the function name. -/
 theorem patternSort_of_apply (f : FunctionSig) (args : List AbstractNode)
-    (hFind : findGrammarRule gfRGLLanguageDef f.name =
+    (hFind : findGrammarRule gfLegacySemanticLanguageDef f.name =
              some (gfFunctionSigToGrammarRule f)) :
-    patternSort gfRGLLanguageDef (gfAbstractToPattern (.apply f args)) =
+    patternSort gfLegacySemanticLanguageDef (gfAbstractToPattern (.apply f args)) =
     some (gfCategoryResult f.type) := by
   simp only [gfAbstractToPattern, patternSort, hFind, Option.map,
              gfFunctionSigToGrammarRule]
@@ -84,8 +84,8 @@ or that satisfy a modal property.
 -/
 
 /-- A GF native type: a sort name and a predicate on patterns.
-    This is `NativeTypeOf (langOSLF gfRGLLanguageDef "S")`. -/
-abbrev GFNativeType := langNativeType gfRGLLanguageDef "S"
+    This is `NativeTypeOf (langOSLF gfLegacySemanticLanguageDef "S")`. -/
+abbrev GFNativeType := langNativeType gfLegacySemanticLanguageDef "S"
 
 /-- Bool check: was a pattern built by a specific grammar rule? -/
 def gfConstructorCheck (label : String) : Pattern → Bool
@@ -108,7 +108,7 @@ def gfPredicateType (sort : String) (φ : Pattern → Prop) : GFNativeType :=
     This follows from `langOSLF`'s definition:
     `satisfies := fun t φ => φ t`. -/
 theorem gfSatisfiesType (p : Pattern) (nt : GFNativeType) :
-    (langOSLF gfRGLLanguageDef "S").satisfies p nt.pred ↔ nt.pred p :=
+    (langOSLF gfLegacySemanticLanguageDef "S").satisfies p nt.pred ↔ nt.pred p :=
   Iff.rfl
 
 /-! ## General Theorems about Constructor Types
@@ -149,8 +149,8 @@ theorem constructor_types_exclusive (l₁ l₂ : String) (h : l₁ ≠ l₂) (p 
 /-- Corollary: constructor type predicates are disjoint in the OSLF
     type system. No pattern can satisfy two different constructor types. -/
 theorem constructor_types_disjoint (s₁ s₂ l₁ l₂ : String) (h : l₁ ≠ l₂) (p : Pattern) :
-    (langOSLF gfRGLLanguageDef "S").satisfies p (gfConstructorType s₁ l₁).pred →
-    ¬ (langOSLF gfRGLLanguageDef "S").satisfies p (gfConstructorType s₂ l₂).pred := by
+    (langOSLF gfLegacySemanticLanguageDef "S").satisfies p (gfConstructorType s₁ l₁).pred →
+    ¬ (langOSLF gfLegacySemanticLanguageDef "S").satisfies p (gfConstructorType s₂ l₂).pred := by
   intro h₁ h₂
   -- satisfies = pred applied to p
   change gfConstructorCheck l₁ p = true at h₁
@@ -191,9 +191,9 @@ theorem sort_independent_of_args (f : FunctionSig) (args₁ args₂ : List Abstr
     This connects the modal layer (◇) with the type layer (constructor types):
     behavioral properties (reachability) determine structural properties (shape). -/
 theorem diamond_constructor_implies_reduct (label : String) (p : Pattern)
-    (h : langDiamond gfRGLLanguageDef
+    (h : langDiamond gfLegacySemanticLanguageDef
       (fun q => gfConstructorCheck label q = true) p) :
-    ∃ q args, langReduces gfRGLLanguageDef p q ∧ q = .apply label args := by
+    ∃ q args, langReduces gfLegacySemanticLanguageDef p q ∧ q = .apply label args := by
   rw [langDiamond_spec] at h
   obtain ⟨q, hred, hq⟩ := h
   obtain ⟨args, rfl⟩ := (gfConstructorCheck_iff label q).mp hq
@@ -205,9 +205,9 @@ theorem diamond_constructor_implies_reduct (label : String) (p : Pattern)
     Box is the backward modality: □φ(p) ↔ ∀ q, q ⇝ p → φ(q).
     This connects predecessor structure to constructor types. -/
 theorem box_constructor_means_all_predecessors (label : String) (p : Pattern)
-    (h : langBox gfRGLLanguageDef
+    (h : langBox gfLegacySemanticLanguageDef
       (fun q => gfConstructorCheck label q = true) p) :
-    ∀ q, langReduces gfRGLLanguageDef q p →
+    ∀ q, langReduces gfLegacySemanticLanguageDef q p →
       ∃ args, q = .apply label args := by
   rw [langBox_spec] at h
   intro q hred
@@ -276,21 +276,21 @@ private def predVP_Type : GFNativeType :=
 
 -- Satisfaction: UseN(house) satisfies useN_Type
 theorem useN_house_satisfies :
-    (langOSLF gfRGLLanguageDef "S").satisfies
+    (langOSLF gfLegacySemanticLanguageDef "S").satisfies
       (gfAbstractToPattern useN_house) useN_Type.pred := by
   show gfConstructorCheck "UseN" (gfAbstractToPattern useN_house) = true
   simp [gfConstructorCheck, useN_house, mkApp1, house_tree, mkLeaf]
 
 -- Satisfaction: theHouse satisfies detCN_Type
 theorem theHouse_satisfies :
-    (langOSLF gfRGLLanguageDef "S").satisfies
+    (langOSLF gfLegacySemanticLanguageDef "S").satisfies
       (gfAbstractToPattern theHouse) detCN_Type.pred := by
   show gfConstructorCheck "DetCN" (gfAbstractToPattern theHouse) = true
   simp [gfConstructorCheck, theHouse, mkApp2, mkApp1, mkLeaf, useN_house, house_tree]
 
 -- Satisfaction: theHouseWalks satisfies predVP_Type
 theorem theHouseWalks_satisfies :
-    (langOSLF gfRGLLanguageDef "S").satisfies
+    (langOSLF gfLegacySemanticLanguageDef "S").satisfies
       (gfAbstractToPattern theHouseWalks) predVP_Type.pred := by
   show gfConstructorCheck "PredVP" (gfAbstractToPattern theHouseWalks) = true
   simp [gfConstructorCheck, theHouseWalks, mkApp2, mkApp1, mkLeaf, theHouse, useN_house, house_tree]
@@ -334,27 +334,27 @@ theorem both_parses_sort_Cl :
 -- But the CN subtrees have different constructors:
 -- parse1 uses AdjCN, parse2 uses UseN
 theorem parse1_cn_is_AdjCN :
-    (langOSLF gfRGLLanguageDef "S").satisfies
+    (langOSLF gfLegacySemanticLanguageDef "S").satisfies
       (gfAbstractToPattern parse1_cn) adjCN_Type.pred := by
   show gfConstructorCheck "AdjCN" (gfAbstractToPattern parse1_cn) = true
   simp [gfConstructorCheck, parse1_cn, mkApp2, mkApp1, mkLeaf]
 
 theorem parse2_cn_is_UseN :
-    (langOSLF gfRGLLanguageDef "S").satisfies
+    (langOSLF gfLegacySemanticLanguageDef "S").satisfies
       (gfAbstractToPattern parse2_cn) useN_Type.pred := by
   show gfConstructorCheck "UseN" (gfAbstractToPattern parse2_cn) = true
   simp [gfConstructorCheck, parse2_cn, mkApp1, mkLeaf]
 
 -- parse1's CN does NOT satisfy the UseN type (it's AdjCN)
 theorem parse1_cn_not_UseN :
-    ¬ (langOSLF gfRGLLanguageDef "S").satisfies
+    ¬ (langOSLF gfLegacySemanticLanguageDef "S").satisfies
       (gfAbstractToPattern parse1_cn) useN_Type.pred := by
   show ¬ (gfConstructorCheck "UseN" (gfAbstractToPattern parse1_cn) = true)
   simp [gfConstructorCheck, parse1_cn, mkApp2, mkApp1, mkLeaf]
 
 -- parse2's CN does NOT satisfy the AdjCN type (it's UseN)
 theorem parse2_cn_not_AdjCN :
-    ¬ (langOSLF gfRGLLanguageDef "S").satisfies
+    ¬ (langOSLF gfLegacySemanticLanguageDef "S").satisfies
       (gfAbstractToPattern parse2_cn) adjCN_Type.pred := by
   show ¬ (gfConstructorCheck "AdjCN" (gfAbstractToPattern parse2_cn) = true)
   simp [gfConstructorCheck, parse2_cn, mkApp1, mkLeaf]
@@ -366,13 +366,13 @@ theorem parse2_cn_not_AdjCN :
     Parse 2's CN subtree satisfies UseN-type but not AdjCN-type.
     Therefore they are distinguishable by the OSLF type system. -/
 theorem garden_path_disambiguation :
-    (langOSLF gfRGLLanguageDef "S").satisfies
+    (langOSLF gfLegacySemanticLanguageDef "S").satisfies
       (gfAbstractToPattern parse1_cn) adjCN_Type.pred ∧
-    ¬ (langOSLF gfRGLLanguageDef "S").satisfies
+    ¬ (langOSLF gfLegacySemanticLanguageDef "S").satisfies
       (gfAbstractToPattern parse1_cn) useN_Type.pred ∧
-    (langOSLF gfRGLLanguageDef "S").satisfies
+    (langOSLF gfLegacySemanticLanguageDef "S").satisfies
       (gfAbstractToPattern parse2_cn) useN_Type.pred ∧
-    ¬ (langOSLF gfRGLLanguageDef "S").satisfies
+    ¬ (langOSLF gfLegacySemanticLanguageDef "S").satisfies
       (gfAbstractToPattern parse2_cn) adjCN_Type.pred :=
   ⟨parse1_cn_is_AdjCN, parse1_cn_not_UseN, parse2_cn_is_UseN, parse2_cn_not_AdjCN⟩
 
@@ -391,7 +391,7 @@ then connecting to denotational semantics via soundness.
 -- Checker verifies: UseN(house) |= ◇(is_house) → sat
 #eval! do
   let pat := gfAbstractToPattern useN_house
-  let result := checkLangUsing .empty gfRGLLanguageDef
+  let result := checkLangUsing .empty gfLegacySemanticLanguageDef
     (gfAtomCheck_isName "house") 3 pat (.dia (.atom "is_house"))
   IO.println s!"UseN(house) |= ◇(is_house): {repr result}"
   -- .sat
@@ -399,17 +399,17 @@ then connecting to denotational semantics via soundness.
 -- Checker verifies: house |= ◇(is_house) → unsat
 #eval! do
   let pat := Pattern.fvar "house"
-  let result := checkLangUsing .empty gfRGLLanguageDef
+  let result := checkLangUsing .empty gfLegacySemanticLanguageDef
     (gfAtomCheck_isName "house") 3 pat (.dia (.atom "is_house"))
   IO.println s!"house |= ◇(is_house): {repr result}"
   -- .unsat (irreducible)
 
 -- Checker-to-semantics: proved-sound type assignment
 -- If the checker says sat, semantics hold (by gfAbstract_checkSat_sound)
-example (h : checkLangUsing .empty gfRGLLanguageDef
+example (h : checkLangUsing .empty gfLegacySemanticLanguageDef
     (gfAtomCheck_isName "house") 3
     (gfAbstractToPattern useN_house) (.dia (.atom "is_house")) = .sat) :
-    sem (langReduces gfRGLLanguageDef) (gfAtomSem_isName "house")
+    sem (langReduces gfLegacySemanticLanguageDef) (gfAtomSem_isName "house")
       (.dia (.atom "is_house")) (gfAbstractToPattern useN_house) :=
   gfAbstract_checkSat_sound (gfAtomCheck_isName_sound "house") h
 
@@ -474,9 +474,9 @@ goes beyond surface string matching.
     A French translation of "the cat sleeps" would have a different
     surface form but the SAME abstract tree, so ◇(is_cat) still holds. -/
 theorem semantic_presence_is_structural (tree : AbstractNode) (name : String)
-    (h : langDiamond gfRGLLanguageDef
+    (h : langDiamond gfLegacySemanticLanguageDef
       (fun p => p = .fvar name) (gfAbstractToPattern tree)) :
-    ∃ q, langReduces gfRGLLanguageDef (gfAbstractToPattern tree) q ∧
+    ∃ q, langReduces gfLegacySemanticLanguageDef (gfAbstractToPattern tree) q ∧
       q = .fvar name := by
   rw [langDiamond_spec] at h
   exact h

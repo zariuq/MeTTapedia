@@ -277,7 +277,7 @@ def allSemanticRewrites : List RewriteRule :=
     elimination rewrites so that ◇/□ are non-vacuous:
     terms like `UseN(house)` can reduce to `house`, giving the modal
     operators actual behavioral content. -/
-def gfRGLLanguageDef : LanguageDef :=
+def gfLegacySemanticLanguageDef : LanguageDef :=
   { name := "GF_RGL"
   , types := Category.allCategoryNames.map TypeDecl.plain
   , terms := allGFGrammarRules
@@ -286,7 +286,7 @@ def gfRGLLanguageDef : LanguageDef :=
   , congruenceCollections := [] }
 
 /-- Czech GF grammar — same abstract syntax as full RGL but named for Czech. -/
-def czechGFLanguageDef : LanguageDef := gfRGLLanguageDef
+def czechGFLanguageDef : LanguageDef := gfLegacySemanticLanguageDef
 
 /-! ## Phase 3: OSLF Type System for Czech GF
 
@@ -322,15 +322,15 @@ open Mettapedia.OSLF.MeTTaIL.Engine
 
 -- Verify: 169 core grammar functions, 70+ categories
 #eval! do
-  IO.println s!"GF RGL categories: {gfRGLLanguageDef.types.length}"
-  IO.println s!"GF RGL grammar rules: {gfRGLLanguageDef.terms.length}"
-  IO.println s!"GF RGL rewrites: {gfRGLLanguageDef.rewrites.length}"
+  IO.println s!"GF RGL categories: {gfLegacySemanticLanguageDef.types.length}"
+  IO.println s!"GF RGL grammar rules: {gfLegacySemanticLanguageDef.terms.length}"
+  IO.println s!"GF RGL rewrites: {gfLegacySemanticLanguageDef.rewrites.length}"
   IO.println s!"FunctionSig.allCoreFunctions: {FunctionSig.allCoreFunctions.length}"
 
 -- Test: UseN(house) reduces to house via UseNElim.
 #eval! do
   let term := Pattern.apply "UseN" [.fvar "house"]
-  let reducts := rewriteWithContextWithPremises gfRGLLanguageDef term
+  let reducts := rewriteWithContextWithPremises gfLegacySemanticLanguageDef term
   IO.println s!"UseN(house) reducts ({reducts.length}):"
   for r in reducts do
     IO.println s!"  -> {r}"
@@ -339,7 +339,7 @@ open Mettapedia.OSLF.MeTTaIL.Engine
 -- Test: PositA(big) reduces to big via PositAElim.
 #eval! do
   let term := Pattern.apply "PositA" [.fvar "big"]
-  let reducts := rewriteWithContextWithPremises gfRGLLanguageDef term
+  let reducts := rewriteWithContextWithPremises gfLegacySemanticLanguageDef term
   IO.println s!"PositA(big) reducts ({reducts.length}):"
   for r in reducts do
     IO.println s!"  -> {r}"
@@ -347,7 +347,7 @@ open Mettapedia.OSLF.MeTTaIL.Engine
 -- Test: UseV(sleep) reduces to sleep via UseVElim.
 #eval! do
   let term := Pattern.apply "UseV" [.fvar "sleep"]
-  let reducts := rewriteWithContextWithPremises gfRGLLanguageDef term
+  let reducts := rewriteWithContextWithPremises gfLegacySemanticLanguageDef term
   IO.println s!"UseV(sleep) reducts ({reducts.length}):"
   for r in reducts do
     IO.println s!"  -> {r}"
@@ -355,7 +355,7 @@ open Mettapedia.OSLF.MeTTaIL.Engine
 -- Test: UseComp(warm) reduces to warm via UseCompElim.
 #eval! do
   let term := Pattern.apply "UseComp" [.fvar "warm"]
-  let reducts := rewriteWithContextWithPremises gfRGLLanguageDef term
+  let reducts := rewriteWithContextWithPremises gfLegacySemanticLanguageDef term
   IO.println s!"UseComp(warm) reducts ({reducts.length}):"
   for r in reducts do
     IO.println s!"  -> {r}"
@@ -363,7 +363,7 @@ open Mettapedia.OSLF.MeTTaIL.Engine
 -- Test: bare leaf fvar "house" is irreducible (no ◇⊤).
 #eval! do
   let term := Pattern.fvar "house"
-  let reducts := rewriteWithContextWithPremises gfRGLLanguageDef term
+  let reducts := rewriteWithContextWithPremises gfLegacySemanticLanguageDef term
   IO.println s!"house reducts ({reducts.length}): irreducible = {reducts.isEmpty}"
 
 -- Test: Active-passive rewrite.
@@ -371,7 +371,7 @@ open Mettapedia.OSLF.MeTTaIL.Engine
 #eval! do
   let term := Pattern.apply "PredVP" [.fvar "john",
     .apply "ComplSlash" [.apply "SlashV2a" [.fvar "love"], .fvar "mary"]]
-  let reducts := rewriteWithContextWithPremises gfRGLLanguageDef term
+  let reducts := rewriteWithContextWithPremises gfLegacySemanticLanguageDef term
   IO.println s!"Active->Passive reducts ({reducts.length}):"
   for r in reducts do
     IO.println s!"  -> {r}"
@@ -384,7 +384,7 @@ open Mettapedia.OSLF.MeTTaIL.Engine
     .apply "TTAnt" [.apply "TPast" [], .apply "ASimul" []],
     .apply "PPos" [],
     .fvar "walk_cl"]
-  let reducts := rewriteWithContextWithPremises gfRGLLanguageDef term
+  let reducts := rewriteWithContextWithPremises gfLegacySemanticLanguageDef term
   IO.println s!"PastTense reducts ({reducts.length}):"
   for r in reducts do
     IO.println s!"  -> {r}"
@@ -396,7 +396,7 @@ open Mettapedia.OSLF.MeTTaIL.Engine
     .apply "TTAnt" [.apply "TPres" [], .apply "ASimul" []],
     .apply "PPos" [],
     .fvar "walk_cl"]
-  let reducts := rewriteWithContextWithPremises gfRGLLanguageDef term
+  let reducts := rewriteWithContextWithPremises gfLegacySemanticLanguageDef term
   IO.println s!"PresTense reducts ({reducts.length}):"
   for r in reducts do
     IO.println s!"  -> {r}"
@@ -481,7 +481,7 @@ noncomputable def gfGrammarOSLF
   langOSLF (gfGrammarLanguageDef name cats funs) procSort
 
 /-- Any GF grammar gets a Galois connection for free. -/
-theorem gfGrammar_galois
+theorem gfLegacyGrammar_galois
     (name : String)
     (cats : List Category)
     (funs : List FunctionSig) :
@@ -506,7 +506,7 @@ the differentiation happens at the concrete linearization level.
 
 /-- English GF grammar — same abstract syntax, named for English. -/
 def englishGFLanguageDef : LanguageDef :=
-  { gfRGLLanguageDef with name := "EnglishGF" }
+  { gfLegacySemanticLanguageDef with name := "EnglishGF" }
 
 /-- The rewrite system generated from English GF grammar. -/
 def englishGFRewriteSystem : RewriteSystem :=
@@ -535,7 +535,7 @@ noncomputable def englishGFPresheafLambdaTheory :=
   languagePresheafLambdaTheory englishGFLanguageDef
 
 -- Verify key constructions type-check
-#check gfRGLLanguageDef
+#check gfLegacySemanticLanguageDef
 #check czechGFOSLF
 #check czechGF_galois
 #check czechGFNativeType
@@ -545,7 +545,7 @@ noncomputable def englishGFPresheafLambdaTheory :=
 #check englishGFNativeType
 #check englishGFOSLFFiberFamily
 #check @gfGrammarOSLF
-#check @gfGrammar_galois
+#check @gfLegacyGrammar_galois
 
 /-! ## Phase 8: GF Abstract Trees → OSLF Semantic Bridge
 
@@ -556,8 +556,8 @@ GF term predicates to `checkLangUsing` / `sem`.
 Pipeline:
 ```
 AbstractNode →[gfAbstractToPattern]→ Pattern
-  →[checkLangUsing gfRGLLanguageDef]→ CheckResult
-  →[checkLangUsing_sat_sound]→ sem (langReduces gfRGLLanguageDef) I φ p
+  →[checkLangUsing gfLegacySemanticLanguageDef]→ CheckResult
+  →[checkLangUsing_sat_sound]→ sem (langReduces gfLegacySemanticLanguageDef) I φ p
   →[langDiamond_spec]→ ◇/□ modal satisfaction
 ```
 -/
@@ -653,7 +653,7 @@ end GFCheckerDemo
     [.leaf "house" (.base "N")]
   let pat := gfAbstractToPattern tree
   let φ := OSLFFormula.dia (.atom "is_house")
-  let result := checkLangUsing .empty gfRGLLanguageDef
+  let result := checkLangUsing .empty gfLegacySemanticLanguageDef
     (gfAtomCheck_isName "house") 3 pat φ
   IO.println s!"UseN(house) |= ◇(is_house): {repr result}"
 
@@ -665,7 +665,7 @@ end GFCheckerDemo
     [.leaf "big" (.base "A")]
   let pat := gfAbstractToPattern tree
   let φ := OSLFFormula.dia (.atom "is_big")
-  let result := checkLangUsing .empty gfRGLLanguageDef
+  let result := checkLangUsing .empty gfLegacySemanticLanguageDef
     (gfAtomCheck_isName "big") 3 pat φ
   IO.println s!"PositA(big) |= ◇(is_big): {repr result}"
 
@@ -674,7 +674,7 @@ end GFCheckerDemo
 #eval! do
   let pat := Pattern.fvar "house"
   let φ := OSLFFormula.dia (.atom "is_house")
-  let result := checkLangUsing .empty gfRGLLanguageDef
+  let result := checkLangUsing .empty gfLegacySemanticLanguageDef
     (gfAtomCheck_isName "house") 3 pat φ
   IO.println s!"house |= ◇(is_house): {repr result}"
   -- Expected: .unsat (no reducts to check)

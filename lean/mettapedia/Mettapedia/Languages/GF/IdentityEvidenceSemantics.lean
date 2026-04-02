@@ -68,7 +68,7 @@ noncomputable def gfWMFormulaSemE_withIdentity
     (W : State)
     (φ : OSLFFormula)
     (p : Pattern) : BinaryEvidence :=
-  semE (langReduces gfRGLLanguageDef) (gfEvidenceAtomSemFromWM_withIdentity cfg W) φ p
+  semE (langReduces gfLegacySemanticLanguageDef) (gfEvidenceAtomSemFromWM_withIdentity cfg W) φ p
 
 /-- Identity-aware Prop-valued formula semantics. -/
 noncomputable def gfWMFormulaSem_withIdentity
@@ -77,7 +77,7 @@ noncomputable def gfWMFormulaSem_withIdentity
     (threshold : ℝ≥0∞)
     (φ : OSLFFormula)
     (p : Pattern) : Prop :=
-  sem (langReduces gfRGLLanguageDef) (gfAtomSemFromWM_withIdentity cfg W threshold) φ p
+  sem (langReduces gfLegacySemanticLanguageDef) (gfAtomSemFromWM_withIdentity cfg W threshold) φ p
 
 /-- Pointwise-equivalent atom interpretations induce equivalent formula semantics. -/
 theorem sem_iff_of_atomSem_pointwise
@@ -170,7 +170,7 @@ theorem gfWMFormulaSem_withIdentity_disabled
     gfWMFormulaSem_withIdentity cfg W threshold φ p ↔
       gfWMFormulaSem W threshold φ p := by
   refine sem_iff_of_atomSem_pointwise
-    (R := langReduces gfRGLLanguageDef)
+    (R := langReduces gfLegacySemanticLanguageDef)
     (I := gfAtomSemFromWM_withIdentity cfg W threshold)
     (J := gfAtomSemFromWM W threshold)
     (hIJ := ?_) φ p
@@ -196,7 +196,7 @@ theorem oslf_sat_implies_wm_semantics_withIdentity_unused
       ∀ a p, I_check a p = true →
         gfAtomSemFromWM_withIdentity cfg W threshold a p)
     {fuel : Nat} {p : Pattern} {φ : OSLFFormula}
-    (hSat : checkLangUsing .empty gfRGLLanguageDef I_check fuel p φ = .sat) :
+    (hSat : checkLangUsing .empty gfLegacySemanticLanguageDef I_check fuel p φ = .sat) :
     gfWMFormulaSem_withIdentity cfg W threshold φ p := by
   have h_atoms_base :
       ∀ a p, I_check a p = true →

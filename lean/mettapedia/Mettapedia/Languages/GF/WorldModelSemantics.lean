@@ -213,12 +213,12 @@ noncomputable def gfAtomSemFromWM (W : State) (threshold : ℝ≥0∞) : AtomSem
 
 /-- Full OSLF formula semantics grounded in a world-model state.
 
-Uses `langReduces gfRGLLanguageDef` (= `langReducesUsing .empty gfRGLLanguageDef`)
+Uses `langReduces gfLegacySemanticLanguageDef` (= `langReducesUsing .empty gfLegacySemanticLanguageDef`)
 as the reduction relation, matching `checkLangUsing_sat_sound`. -/
 noncomputable def gfWMFormulaSem
     (W : State) (threshold : ℝ≥0∞)
     (φ : OSLFFormula) (p : Pattern) : Prop :=
-  sem (langReduces gfRGLLanguageDef) (gfAtomSemFromWM W threshold) φ p
+  sem (langReduces gfLegacySemanticLanguageDef) (gfAtomSemFromWM W threshold) φ p
 
 /-! ## 3. Checker Soundness → WM Semantics
 
@@ -237,7 +237,7 @@ theorem oslf_sat_implies_wm_semantics
     (h_atoms : ∀ a p, I_check a p = true →
       (gfAtomSemFromWM W threshold) a p)
     {fuel : Nat} {p : Pattern} {φ : OSLFFormula}
-    (h : checkLangUsing .empty gfRGLLanguageDef I_check fuel p φ = .sat) :
+    (h : checkLangUsing .empty gfLegacySemanticLanguageDef I_check fuel p φ = .sat) :
     gfWMFormulaSem W threshold φ p :=
   checkLangUsing_sat_sound h_atoms h
 
@@ -352,7 +352,7 @@ The threshold-Prop semantics `gfWMFormulaSem` is a corollary obtained by
 thresholding this. -/
 noncomputable def gfWMFormulaSemE
     (W : State) (φ : OSLFFormula) (p : Pattern) : BinaryEvidence :=
-  semE (langReduces gfRGLLanguageDef) (gfEvidenceAtomSemFromWM W) φ p
+  semE (langReduces gfLegacySemanticLanguageDef) (gfEvidenceAtomSemFromWM W) φ p
 
 /-- The threshold-Prop atom semantics is recovered by thresholding the
 evidence-valued atom semantics on `BinaryEvidence.toStrength`. -/
@@ -377,7 +377,7 @@ theorem gfWMFormulaSemE_and_le_left (W : State) (φ ψ : OSLFFormula) (p : Patte
 
 /-- Diamond witnesses inject into evidence diamond. -/
 theorem gfWMFormulaSemE_dia_le (W : State) (φ : OSLFFormula) (p q : Pattern)
-    (h : langReduces gfRGLLanguageDef p q) :
+    (h : langReduces gfLegacySemanticLanguageDef p q) :
     gfWMFormulaSemE W φ q ≤ gfWMFormulaSemE W (.dia φ) p := by
   exact semE_dia_le _ _ _ _ _ h
 
@@ -396,16 +396,16 @@ one frozen interface.  Agreement theorems verify that the record's derived
 operations coincide with the existing hand-written definitions. -/
 
 /-- The standard GF RGL semantics configuration.
-    Uses `queryOfAtom` for atom-query encoding and `gfRGLLanguageDef`
+    Uses `queryOfAtom` for atom-query encoding and `gfLegacySemanticLanguageDef`
     for the reduction relation. -/
 def gfRGLSemantics : GFSemantics where
   atomQuery := queryOfAtom
-  lang := gfRGLLanguageDef
+  lang := gfLegacySemanticLanguageDef
   atomQuery_injective := queryOfAtom_injective_name
 
-/-- Agreement: gfRGLSemantics.reduces = langReduces gfRGLLanguageDef. -/
+/-- Agreement: gfRGLSemantics.reduces = langReduces gfLegacySemanticLanguageDef. -/
 @[simp] theorem gfRGLSemantics_reduces :
-    gfRGLSemantics.reduces = langReduces gfRGLLanguageDef := rfl
+    gfRGLSemantics.reduces = langReduces gfLegacySemanticLanguageDef := rfl
 
 /-- Agreement: record atom semantics = hand-written definition. -/
 theorem gfRGLSemantics_evidenceAtomSem (W : State) :
@@ -420,7 +420,7 @@ theorem gfRGLSemantics_formulaSemE (W : State) (φ : OSLFFormula) (p : Pattern) 
 theorem gfRGLSemantics_formulaSem (W : State) (τ : BinaryEvidence)
     (φ : OSLFFormula) (p : Pattern) :
     gfRGLSemantics.formulaSem W τ φ p =
-      sem (langReduces gfRGLLanguageDef)
+      sem (langReduces gfLegacySemanticLanguageDef)
         (threshAtomSem (gfEvidenceAtomSemFromWM W) τ) φ p := rfl
 
 /-! ## 10. Constructor Compositionality
@@ -448,15 +448,15 @@ open Mettapedia.OSLF.MeTTaIL.Engine
 
 /-- Generic identity-wrapper reduction: a rewrite rule with pattern
 `apply name [fvar v]` ⇝ `fvar v` and no premises induces
-`langReduces gfRGLLanguageDef (.apply name [p]) p` for all p. -/
+`langReduces gfLegacySemanticLanguageDef (.apply name [p]) p` for all p. -/
 theorem langReduces_identityWrapper
     (rw : RewriteRule) (wrapperName varName : String)
-    (hrw : rw ∈ gfRGLLanguageDef.rewrites)
+    (hrw : rw ∈ gfLegacySemanticLanguageDef.rewrites)
     (hleft : rw.left = .apply wrapperName [.fvar varName])
     (hright : rw.right = .fvar varName)
     (hprem : rw.premises = [])
     (p : Pattern) :
-    langReduces gfRGLLanguageDef (.apply wrapperName [p]) p := by
+    langReduces gfLegacySemanticLanguageDef (.apply wrapperName [p]) p := by
   unfold langReduces langReducesUsing
   exact .topRule rw hrw
     [(varName, p)]
@@ -467,48 +467,48 @@ theorem langReduces_identityWrapper
     (by simp [hright, applyBindings, List.find?, BEq.beq])
 
 private theorem mem_rewrites (rw : RewriteRule) (h : rw ∈ allIdentityRewrites) :
-    rw ∈ gfRGLLanguageDef.rewrites := by
-  simp [gfRGLLanguageDef]
+    rw ∈ gfLegacySemanticLanguageDef.rewrites := by
+  simp [gfLegacySemanticLanguageDef]
   exact Or.inl h
 
 private theorem mem_semantic_rewrites (rw : RewriteRule) (h : rw ∈ allSemanticRewrites) :
-    rw ∈ gfRGLLanguageDef.rewrites := by
-  simp [gfRGLLanguageDef]
+    rw ∈ gfLegacySemanticLanguageDef.rewrites := by
+  simp [gfLegacySemanticLanguageDef]
   exact Or.inr h
 
 /-- UseN(p) ⇝ p -/
 theorem langReduces_UseN (p : Pattern) :
-    langReduces gfRGLLanguageDef (.apply "UseN" [p]) p :=
+    langReduces gfLegacySemanticLanguageDef (.apply "UseN" [p]) p :=
   langReduces_identityWrapper useNElimRewrite "UseN" "x"
     (mem_rewrites _ (by simp [allIdentityRewrites])) rfl rfl rfl p
 
 /-- PositA(p) ⇝ p -/
 theorem langReduces_PositA (p : Pattern) :
-    langReduces gfRGLLanguageDef (.apply "PositA" [p]) p :=
+    langReduces gfLegacySemanticLanguageDef (.apply "PositA" [p]) p :=
   langReduces_identityWrapper positAElimRewrite "PositA" "x"
     (mem_rewrites _ (by simp [allIdentityRewrites])) rfl rfl rfl p
 
 /-- UseV(p) ⇝ p -/
 theorem langReduces_UseV (p : Pattern) :
-    langReduces gfRGLLanguageDef (.apply "UseV" [p]) p :=
+    langReduces gfLegacySemanticLanguageDef (.apply "UseV" [p]) p :=
   langReduces_identityWrapper useVElimRewrite "UseV" "x"
     (mem_rewrites _ (by simp [allIdentityRewrites])) rfl rfl rfl p
 
 /-- UseComp(p) ⇝ p -/
 theorem langReduces_UseComp (p : Pattern) :
-    langReduces gfRGLLanguageDef (.apply "UseComp" [p]) p :=
+    langReduces gfLegacySemanticLanguageDef (.apply "UseComp" [p]) p :=
   langReduces_identityWrapper useCompElimRewrite "UseComp" "x"
     (mem_rewrites _ (by simp [allIdentityRewrites])) rfl rfl rfl p
 
 /-- UseN2(p) ⇝ p -/
 theorem langReduces_UseN2 (p : Pattern) :
-    langReduces gfRGLLanguageDef (.apply "UseN2" [p]) p :=
+    langReduces gfLegacySemanticLanguageDef (.apply "UseN2" [p]) p :=
   langReduces_identityWrapper useN2ElimRewrite "UseN2" "x"
     (mem_rewrites _ (by simp [allIdentityRewrites])) rfl rfl rfl p
 
 /-- UseA2(p) ⇝ p -/
 theorem langReduces_UseA2 (p : Pattern) :
-    langReduces gfRGLLanguageDef (.apply "UseA2" [p]) p :=
+    langReduces gfLegacySemanticLanguageDef (.apply "UseA2" [p]) p :=
   langReduces_identityWrapper useA2ElimRewrite "UseA2" "x"
     (mem_rewrites _ (by simp [allIdentityRewrites])) rfl rfl rfl p
 
@@ -521,7 +521,7 @@ This captures the semantic entailment: active → agentless passive. -/
 /-- Active → passive reduction at the clause level.
     PredVP(np₁, ComplSlash(SlashV2a(v), np₂)) ⇝ PredVP(np₂, PassV2(v)) -/
 theorem langReduces_activePassive (np₁ np₂ v : Pattern) :
-    langReduces gfRGLLanguageDef
+    langReduces gfLegacySemanticLanguageDef
       (Pattern.apply "PredVP" [np₁,
         Pattern.apply "ComplSlash" [Pattern.apply "SlashV2a" [v], np₂]])
       (Pattern.apply "PredVP" [np₂, Pattern.apply "PassV2" [v]]) := by
@@ -560,7 +560,7 @@ evidence of φ at the inner tree is accessible through the wrapper via ◇.
 `semE R I φ (pattern inner) ≤ semE R I (◇φ) (pattern (f inner))` -/
 theorem gfWMFormulaSemE_wrapper_transparent
     (W : State) (φ : OSLFFormula) (f : FunctionSig) (inner : AbstractNode)
-    (hReduce : langReduces gfRGLLanguageDef
+    (hReduce : langReduces gfLegacySemanticLanguageDef
       (Pattern.apply f.name [gfAbstractToPattern inner])
       (gfAbstractToPattern inner)) :
     gfWMFormulaSemE W φ (gfAbstractToPattern inner) ≤
@@ -656,8 +656,8 @@ theorem checker_sat_implies_evidence_bound
     (h_atoms : ∀ a p, I_check a p = true → threshAtomSem I τ a p)
     {fuel : Nat} {p : Pattern} {φ : OSLFFormula}
     (hImpFree : impFree φ)
-    (hSat : checkLangUsing .empty gfRGLLanguageDef I_check fuel p φ = .sat) :
-    τ ≤ semE (langReduces gfRGLLanguageDef) I φ p :=
+    (hSat : checkLangUsing .empty gfLegacySemanticLanguageDef I_check fuel p φ = .sat) :
+    τ ≤ semE (langReduces gfLegacySemanticLanguageDef) I φ p :=
   threshold_reverse_impFree I τ _ φ hImpFree p
     (checkLangUsing_sat_sound h_atoms hSat)
 
@@ -670,18 +670,18 @@ Full chain: GF tree → Pattern → checker `.sat` → `sem` → `τ ≤ semE`. 
 theorem useN_house_evidence_bound
     (I : EvidenceAtomSem) (τ : BinaryEvidence)
     (hI : ∀ a, τ ≤ I a (.fvar "house")) :
-    τ ≤ semE (langReduces gfRGLLanguageDef) I
+    τ ≤ semE (langReduces gfLegacySemanticLanguageDef) I
       (.dia (.atom "is_house"))
       (gfAbstractToPattern (.apply FunctionSig.UseN [.leaf "house" (.base "N")])) := by
   -- Direct semantic proof via langReduces_UseN (no native_decide needed)
-  have hR : langReduces gfRGLLanguageDef
+  have hR : langReduces gfLegacySemanticLanguageDef
       (gfAbstractToPattern (.apply FunctionSig.UseN [.leaf "house" (.base "N")]))
       (.fvar "house") := by
     simp only [gfAbstractToPattern, List.map, FunctionSig.UseN]
     exact langReduces_UseN _
   calc τ ≤ I "is_house" (.fvar "house") := hI "is_house"
-    _ = semE (langReduces gfRGLLanguageDef) I (.atom "is_house") (.fvar "house") := rfl
-    _ ≤ semE (langReduces gfRGLLanguageDef) I (.dia (.atom "is_house"))
+    _ = semE (langReduces gfLegacySemanticLanguageDef) I (.atom "is_house") (.fvar "house") := rfl
+    _ ≤ semE (langReduces gfLegacySemanticLanguageDef) I (.dia (.atom "is_house"))
           (gfAbstractToPattern (.apply FunctionSig.UseN [.leaf "house" (.base "N")])) :=
         semE_dia_le _ _ _ _ _ hR
 
@@ -708,7 +708,7 @@ Present ↛ past: a present-tense clause does NOT reduce to a past-tense clause
 
 /-- Past tense reduction: UseCl(TTAnt(TPast, ASimul), PPos, cl) ⇝ ⊛temporal(cl, -1). -/
 theorem langReduces_pastTense (cl : Pattern) :
-    langReduces gfRGLLanguageDef
+    langReduces gfLegacySemanticLanguageDef
       (Pattern.apply "UseCl" [
         Pattern.apply "TTAnt" [Pattern.apply "TPast" [], Pattern.apply "ASimul" []],
         Pattern.apply "PPos" [],
@@ -727,7 +727,7 @@ theorem langReduces_pastTense (cl : Pattern) :
 
 /-- Present tense reduction: UseCl(TTAnt(TPres, ASimul), PPos, cl) ⇝ ⊛temporal(cl, 0). -/
 theorem langReduces_presentTense (cl : Pattern) :
-    langReduces gfRGLLanguageDef
+    langReduces gfLegacySemanticLanguageDef
       (Pattern.apply "UseCl" [
         Pattern.apply "TTAnt" [Pattern.apply "TPres" [], Pattern.apply "ASimul" []],
         Pattern.apply "PPos" [],
@@ -746,7 +746,7 @@ theorem langReduces_presentTense (cl : Pattern) :
 
 /-- Future tense reduction: UseCl(TTAnt(TFut, ASimul), PPos, cl) ⇝ ⊛temporal(cl, 1). -/
 theorem langReduces_futureTense (cl : Pattern) :
-    langReduces gfRGLLanguageDef
+    langReduces gfLegacySemanticLanguageDef
       (Pattern.apply "UseCl" [
         Pattern.apply "TTAnt" [Pattern.apply "TFut" [], Pattern.apply "ASimul" []],
         Pattern.apply "PPos" [],
@@ -802,11 +802,11 @@ private theorem matchPattern_apply_ne_nil {c1 c2 : String} {args1 args2 : List P
     - Semantic: PredVP (active-passive)
     - Tense: UseCl (present, past, future) -/
 private theorem gfRGL_rule_lhs_ne_temporal (r : RewriteRule)
-    (hr : r ∈ gfRGLLanguageDef.rewrites) :
+    (hr : r ∈ gfLegacySemanticLanguageDef.rewrites) :
     ∀ (cl t : Pattern),
       matchPattern r.left (.apply "⊛temporal" [cl, t]) = [] := by
   intro cl t
-  simp only [gfRGLLanguageDef, allIdentityRewrites, allSemanticRewrites,
+  simp only [gfLegacySemanticLanguageDef, allIdentityRewrites, allSemanticRewrites,
     allTenseRewrites, List.mem_append, List.mem_cons,
     List.mem_nil_iff, or_false] at hr
   -- Each disjunct fixes r to a specific rewrite rule with a known LHS
@@ -817,8 +817,8 @@ private theorem gfRGL_rule_lhs_ne_temporal (r : RewriteRule)
 
 /-- GF RGL does not allow congruence rewriting in any collection type. -/
 private theorem gfRGL_no_congruence (ct : CollType) :
-    ¬ LanguageDef.allowsCongruenceIn gfRGLLanguageDef ct := by
-  simp [LanguageDef.allowsCongruenceIn, gfRGLLanguageDef]
+    ¬ LanguageDef.allowsCongruenceIn gfLegacySemanticLanguageDef ct := by
+  simp [LanguageDef.allowsCongruenceIn, gfLegacySemanticLanguageDef]
 
 /-- **Semantic negative result**: Temporal patterns are terminal in GF RGL.
     No rewrite rule has `⊛temporal(...)` as its LHS, so temporal patterns
@@ -828,7 +828,7 @@ private theorem gfRGL_no_congruence (ct : CollType) :
     (e.g., present → past), one must go through the world model, not
     through the rewrite engine. -/
 theorem temporal_irreducible (cl t : Pattern) (q : Pattern) :
-    ¬ langReduces gfRGLLanguageDef (.apply "⊛temporal" [cl, t]) q := by
+    ¬ langReduces gfLegacySemanticLanguageDef (.apply "⊛temporal" [cl, t]) q := by
   intro hred
   -- langReduces = DeclReducesWithPremises with empty RelationEnv
   -- Only topRule can apply (.apply patterns don't match congElem which needs .collection)
@@ -841,9 +841,9 @@ theorem temporal_irreducible (cl t : Pattern) (q : Pattern) :
     Since temporal patterns are irreducible, `sem R I (◇ φ) present_pattern`
     requires a WM-level connection, not a rewrite-level one.
 
-    Specifically: for any formula φ, `¬ sem (langReduces gfRGLLanguageDef) I (◇ φ) (⊛temporal(cl, 0))`. -/
+    Specifically: for any formula φ, `¬ sem (langReduces gfLegacySemanticLanguageDef) I (◇ φ) (⊛temporal(cl, 0))`. -/
 theorem present_does_not_entail_past_sem (cl : Pattern) (I : AtomSem) (φ : OSLFFormula) :
-    ¬ sem (langReduces gfRGLLanguageDef) I (.dia φ)
+    ¬ sem (langReduces gfLegacySemanticLanguageDef) I (.dia φ)
       (Pattern.apply "⊛temporal" [cl, Pattern.apply "0" []]) := by
   intro ⟨q, hR, _⟩
   exact absurd hR (temporal_irreducible cl _ q)
@@ -880,7 +880,7 @@ def temporalStep : TemporalPolicy → Pattern → Pattern → Prop
 
 /-- Combined relation: GF syntax rewrites + optional temporal evolution. -/
 def gfReducesTemporal (π : TemporalPolicy) : Pattern → Pattern → Prop :=
-  fun p q => langReduces gfRGLLanguageDef p q ∨ temporalStep π p q
+  fun p q => langReduces gfLegacySemanticLanguageDef p q ∨ temporalStep π p q
 
 /-- Predicate: pattern is a temporal-tagged node `⊛temporal(cl, t)`. -/
 def isTemporalNode : Pattern → Prop
@@ -902,7 +902,7 @@ theorem syntaxOnly_laws : TemporalStepLaws .syntaxOnly :=
 
 /-- Syntax reduction is always included in the combined relation. -/
 theorem syntax_in_gfReducesTemporal (π : TemporalPolicy) {p q : Pattern}
-    (h : langReduces gfRGLLanguageDef p q) :
+    (h : langReduces gfLegacySemanticLanguageDef p q) :
     gfReducesTemporal π p q :=
   Or.inl h
 
@@ -1002,11 +1002,11 @@ theorem sem_antitone_box
   intro q hR2qp
   exact (sem_modalFree_irrel I hmf).mp (h q (hR q p hR2qp))
 
-/-- Corollary: any `sem (langReduces gfRGLLanguageDef)` result on a positive formula
+/-- Corollary: any `sem (langReduces gfLegacySemanticLanguageDef)` result on a positive formula
     lifts to `sem (gfReducesTemporal π)`. -/
 theorem sem_syntax_lifts_to_temporal (π : TemporalPolicy)
     (I : AtomSem) {φ : OSLFFormula} (hpos : positiveFormula φ)
-    {p : Pattern} (h : sem (langReduces gfRGLLanguageDef) I φ p) :
+    {p : Pattern} (h : sem (langReduces gfLegacySemanticLanguageDef) I φ p) :
     sem (gfReducesTemporal π) I φ p :=
   sem_mono_rel_positive (fun _ _ => syntax_in_gfReducesTemporal π) I hpos h
 
@@ -1081,7 +1081,7 @@ theorem definiteDescription_presup_failure
     regardless of whether the assertion is negated (via `φ → ⊥`). -/
 theorem negation_preserves_definite_presup
     (W : State) (cn_pat : Pattern) (assertFormula : OSLFFormula) :
-    presupGatedSemE (langReduces gfRGLLanguageDef)
+    presupGatedSemE (langReduces gfLegacySemanticLanguageDef)
       (gfEvidenceAtomSemFromWM W)
       (.atom "exists") (.imp assertFormula .bot) cn_pat =
     gfWMFormulaSemE W (.atom "exists") cn_pat *
@@ -1264,7 +1264,7 @@ theorem checker_sat_implies_wm_semantics_general
     {I_check : AtomCheck}
     (h_atoms : ∀ a p, I_check a p = true → (gfAtomSemFromWM W threshold) a p)
     {fuel : Nat} {p : Pattern} {φ : OSLFFormula}
-    (hSat : checkLangUsing .empty gfRGLLanguageDef I_check fuel p φ = .sat) :
+    (hSat : checkLangUsing .empty gfLegacySemanticLanguageDef I_check fuel p φ = .sat) :
     gfWMFormulaSem W threshold φ p :=
   oslf_sat_implies_wm_semantics W threshold h_atoms hSat
 
@@ -1274,7 +1274,7 @@ theorem checker_sat_atom_implies_wm_semantics
     {I_check : AtomCheck}
     (h_atoms : ∀ a p, I_check a p = true → (gfAtomSemFromWM W threshold) a p)
     {fuel : Nat} {p : Pattern} {a : String}
-    (hSat : checkLangUsing .empty gfRGLLanguageDef I_check fuel p (.atom a) = .sat) :
+    (hSat : checkLangUsing .empty gfLegacySemanticLanguageDef I_check fuel p (.atom a) = .sat) :
     gfWMFormulaSem W threshold (.atom a) p :=
   oslf_sat_implies_wm_semantics W threshold h_atoms hSat
 
@@ -1296,7 +1296,7 @@ theorem checker_sat_atom_implies_wm_query_judgment
     (h_atoms : ∀ a p, I_check a p = true → (gfAtomSemFromWM W threshold) a p)
     (hW : WMJudgment W)
     {fuel : Nat} {p : Pattern} {a : String}
-    (hSat : checkLangUsing .empty gfRGLLanguageDef I_check fuel p (.atom a) = .sat) :
+    (hSat : checkLangUsing .empty gfLegacySemanticLanguageDef I_check fuel p (.atom a) = .sat) :
     gfWMFormulaSem W threshold (.atom a) p ∧
     WMQueryJudgment W (queryOfAtom a p) (BinaryWorldModel.evidence W (queryOfAtom a p)) :=
   ⟨checker_sat_atom_implies_wm_semantics W threshold h_atoms hSat,

@@ -60,6 +60,15 @@ structure WitnessBundle where
 namespace ExportedTree
 
 mutual
+  private def toRawTermList : List ExportedTree → List GFCore.RawTerm
+    | [] => []
+    | t :: ts => toRawTerm t :: toRawTermList ts
+
+  /-- Convert a GF/PGF-exported application tree into a `GFCore.RawTerm`.
+      This is the direct witness lane back into `GFCore.check`. -/
+  def toRawTerm : ExportedTree → GFCore.RawTerm
+    | .node name args => .mk name ((toRawTermList args).toArray)
+
   def buildApply? (f : FunctionSig) (args : List ExportedTree) : Option AbstractNode := do
     let converted ← args.mapM toAbstractNode?
     if converted.length = FunctionSig.arity f then

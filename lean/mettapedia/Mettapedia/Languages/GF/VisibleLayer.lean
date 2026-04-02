@@ -12,7 +12,7 @@ meaning-bearing grammatical actions that operate on **state = term + semantic st
 ## Architecture
 
 The GF→OSLF pipeline has three layers of reduction:
-1. **Internal** (τ): Syntax rewrites (`langReduces gfRGLLanguageDef`) — wrapper
+1. **Internal** (τ): Syntax rewrites (`langReduces gfLegacySemanticLanguageDef`) — wrapper
    elimination, canonicalization. Silent; no semantic choices.
 2. **Temporal**: Policy-based evolution of `⊛temporal` nodes (reuses `TemporalPolicy`
    from WorldModelSemantics.lean).
@@ -175,7 +175,7 @@ def gfReducesFull (cfg : VisibleCfg) (π : TemporalPolicy) :
     GrammarState → GrammarState → Prop :=
   fun s1 s2 =>
     -- Layer 1: internal syntax rewrites (store unchanged)
-    (langReduces gfRGLLanguageDef s1.term s2.term ∧ s1.store = s2.store)
+    (langReduces gfLegacySemanticLanguageDef s1.term s2.term ∧ s1.store = s2.store)
     -- Layer 2: temporal policy steps (store unchanged)
     ∨ (temporalStep π s1.term s2.term ∧ s1.store = s2.store)
     -- Layer 3: visible semantic steps (V1-V4)
@@ -214,7 +214,7 @@ theorem scope_choice_nondet {cfg : VisibleCfg}
 /-- Syntax reduction lifts to the full combined relation (store unchanged). -/
 theorem syntax_in_gfReducesFull (cfg : VisibleCfg) (π : TemporalPolicy)
     {t1 t2 : Pattern} (σ : Multiset StoreAtom)
-    (h : langReduces gfRGLLanguageDef t1 t2) :
+    (h : langReduces gfLegacySemanticLanguageDef t1 t2) :
     gfReducesFull cfg π ⟨t1, σ⟩ ⟨t2, σ⟩ :=
   Or.inl ⟨h, rfl⟩
 
@@ -226,7 +226,7 @@ theorem syntax_in_gfReducesFull (cfg : VisibleCfg) (π : TemporalPolicy)
     transitions that preserve the store unchanged. -/
 def gfReducesBase (π : TemporalPolicy) : GrammarState → GrammarState → Prop :=
   fun s1 s2 =>
-    (langReduces gfRGLLanguageDef s1.term s2.term ∧ s1.store = s2.store)
+    (langReduces gfLegacySemanticLanguageDef s1.term s2.term ∧ s1.store = s2.store)
     ∨ (temporalStep π s1.term s2.term ∧ s1.store = s2.store)
 
 /-- Base reduction preserves the store: no base step can change the store. -/

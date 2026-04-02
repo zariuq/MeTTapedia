@@ -13,6 +13,7 @@
 \usepackage{longtable}
 \usepackage{booktabs}
 \usepackage{listings}
+\usepackage{multirow}
 \usepackage{array}
 \usepackage{amsmath}
 \usepackage{amssymb}
@@ -28,6 +29,7 @@
 \newcommand{\PeTTa}{\textup{PeTTa}}
 \newcommand{\HE}{\textup{HE}}
 \newcommand{\CeTTa}{\textup{CeTTa}}
+\newcommand{\PathMap}{\textup{PathMap}}
 
 \title{\CeTTa{}:\\
 \large A Direct C Runtime for MeTTa with Verified Translation}
@@ -614,6 +616,104 @@ Language profiles (\code{he\_compat}, \code{he\_extended},
 \code{he\_prime}, future \code{petta}) are compositional assemblies
 over these machines, not ad-hoc forks in the evaluator.
 
+\subsection{Faithful Backend Obligations}
+
+The indexed shared-space machine needs a sharper correctness contract than
+``the backend is fast and seems to return the same answers.''  Recent Lean
+work factors the backend story into three explicit runtime seams:
+\begin{enumerate}
+\item \textbf{Candidate selection.}
+  The index narrows candidate atoms, while \CeTTa{}'s native matcher performs
+  exact variable-sensitive matching.  This is the two-phase architecture now
+  validated by concrete selector theorems over \PathMap{} tries and by a
+  concrete matcher instantiation on the \HE{} side.
+\item \textbf{Canonical storage.}
+  Storage may quotient results to canonical support, but it must preserve
+  co-reference.  Repeated source variables must remain repeated after storage
+  and materialization; distinct variables must remain distinct.
+\item \textbf{Revision-based caching.}
+  Cached query answers are valid only across mutations that preserve the
+  relevant support boundary.  Duplicate adds or high-count decrements may
+  preserve cache validity; first adds and last removes must invalidate.
+  Variant-normalized cache keys must also preserve right-hand-side answers and
+  result shape under materialization.
+\end{enumerate}
+
+This yields a practical division of labor for the PathMap/MORK backend:
+\begin{enumerate}
+\item \PathMap{} stores canonical support and performs prefix-based candidate
+  narrowing;
+\item the native matcher remains the source of truth for exact bindings and
+  binder hygiene;
+\item count metadata, not trie-key distortion, carries bag semantics.
+\end{enumerate}
+
+\paragraph{Verified runtime contracts.}
+Recent Lean work extends the backend correctness story with three new contract files:
+\begin{itemize}
+\item \code{CeTTaRuntimeContracts.lean} (20 theorems): canonicalization injectivity and BEq preservation (\code{term\_canon.c}), search-context save/rollback correctness (\code{search\_machine.c}), effect classification safety (\code{runtime\_effect\_classes.json}), and profile hierarchy (\code{session.c}).  Each theorem maps to a concrete refactoring risk it reduces.
+\item \code{IncrementalTableSemantics.lean} (15 theorems): specifies partial-table soundness, answer monotonicity, and completion for future tabling in \code{table\_store.c}.  Any correct implementation must satisfy \code{TableEntry.Sound} (partial reads are genuine) and \code{TableEntry.Exact} (completed tables equal \code{queryEquations}).
+\item \code{ProducerChoicePoint.lean} (10 theorems): formalizes the search-machine save/rollback/nested-choice-point protocol with combined bindings+scratch state.
+\end{itemize}
+
+Crucially, \CeTTa{}'s imported backend is binding-correct not through trusted direct bridge bindings, but because candidate narrowing is followed by seeded native rematch (\code{space\_subst\_match\_with\_seed}).  The theorem \code{imported\_seedRematch\_binding\_parity} in \code{SeedRematchContract.lean} formalizes this: when imported candidates are sound, the two-phase query produces the same result set as direct matching.
+
+\paragraph{Positive example.}
+Adding an existing atom to a counted space may increment multiplicity without
+changing trie support or invalidating unrelated cached queries.
+
+\paragraph{Negative example.}
+Letting the backend bridge perform full unification over serialized query
+terms invites exactly the binder-hygiene failures that arise when
+canonicalization preserves shape but breaks co-reference.
+
+These obligations are now mapped one-for-one to runtime seams:
+\code{space\_match\_backend.c} for candidate selection, \code{term\_universe.c}
+for canonical storage, and \code{table\_store.c} for cache invalidation.  The
+companion note \emph{Faithful Backends for HE MeTTa} develops the full proof
+story, including the variant-query and binding-cache lemmas; the present
+paper uses those results to justify the architecture of \CeTTa{}'s indexed
+shared-space machine.
+
+\subsection{MM2 Integration}
+
+MM2 is a deterministic, priority-scheduled, forward-chaining term rewriting
+language implemented by MORK\@.  Its programs are not a separate execution
+layer---they are atoms in MORK-backed spaces, stepped by MeTTa via
+\code{step!}.  The hybrid interaction requires no special protocol: MeTTa
+creates spaces, adds data, steps MM2 rules, and reads results through ordinary
+\code{match}.
+
+\begin{verbatim}
+!(bind! &ws (new-space mork))
+!(add-atom &ws (exec (0 step)
+  (, (edge $x $y) (edge $y $z))
+  (O (+ (path $x $z)))))
+!(add-atom &ws (edge a b))
+!(add-atom &ws (edge b c))
+!(step! &ws)
+!(match &ws (path $x $y) ($x $y)) ; -> (a c)
+\end{verbatim}
+
+Three import paths exist: \code{.mm2} file import (\code{import!} or
+\code{include} into a target space, which auto-enables the MORK backend),
+inline \code{add-atom} of exec rules from MeTTa, and compiled \code{.act}
+artifact loading via \code{mork:open-act}.
+
+Because MM2 rules are ordinary atoms, MeTTa can pattern-match over them as
+data---inspecting priorities, rewriting source/sink templates, or extracting
+rules for analysis:
+\begin{verbatim}
+!(match &ws (exec $p $src $snk) (rule $p))
+\end{verbatim}
+
+\CeTTa{}'s \code{mm2\_lower.c} handles bidirectional
+surface$\leftrightarrow$IR lowering
+(\code{exec}$\leftrightarrow$\code{mm2\_exec},
+\code{,}$\leftrightarrow$\code{mm2\_pattern\_and}, etc.), preserving
+round-trip fidelity between MM2 surface syntax and \CeTTa{}'s internal
+representation.
+
 %% ────────────────────────────────────────────────────────────────────
 \section{The MeTTa Dialect Landscape}
 
@@ -888,11 +988,27 @@ ambient, or user-visible.}
   from 30$\times$ to $\sim$6--10$\times$).
 \item \textbf{Indexed shared-space engine:} leapfrog triejoin
   (from Vandervorst's \code{trie\_synth.py}), conjunction query
-  planning, SpaceEngine boundary.  Target: 10--100$\times$ on
-  large-KB multi-pattern conjunctions.
-\item \textbf{MORK/PathMap bridge:} \code{lib/mork.metta} as
-  primary user surface, stable C ABI with space/program/context
-  families, orthogonal discipline$\times$engine axes.
+  planning, SpaceEngine boundary (formalized in
+  \code{SpaceEngineBoundary.lean}: native $\subset$ pathmap $\subset$ mork,
+  with ACT as artifact-only surface; \code{ACTArtifactBoundary.lean}
+  classifies \code{open-act}/\code{load-act!}/\code{dump!} as storage seams).
+  Target: 10--100$\times$ on large-KB multi-pattern conjunctions.
+\item \textbf{MM2 as MeTTa data (working):} MM2 exec rules are atoms in
+  MORK-backed spaces.  MeTTa creates, inspects, rewrites, and steps them
+  through the ordinary space API\@.  \code{step!} is the execution interface;
+  \code{.mm2} files import via \code{include}/\code{import!}.  MeTTa can
+  pattern-match over MM2 code to analyze or transform programs---the
+  meta-language relationship is native.
+\item \textbf{morkl: expert \PathMap{} algebra (future):}  Direct access to
+  \PathMap{}'s zipper navigation (5{,}800 lines of Rust), product-zipper
+  Cartesian joins (2{,}000 lines), and lattice operations
+  (\code{pjoin}/\code{pmeet}/\code{psubtract}/\code{prestrict}, 1{,}600
+  lines).  MORK's kernel already implements 15+ sink types (count, sum, head,
+  hash, and, Z3, WASM) and source types (BTM, ACT, equality/inequality
+  constraints).  The Lean formalization (46 files, 19K+ lines) proves the
+  three-phase execution protocol, fold-level aggregation, and \PathMap{}
+  lattice correspondence.  The gap is FFI exposure and MeTTa surface: the
+  Rust substrate exists, \code{lib/morkl.metta} does not yet.
 \item \textbf{HO search engine:} Lash-inspired SAT-driven proof
   search for PLN and type-directed synthesis.  PicoSAT as
   embedded SAT solver.  Separate from the evaluator.

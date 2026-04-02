@@ -309,7 +309,7 @@ theorem english_czech_operational_fields_eq :
     englishGFLanguageDef.rewrites = czechGFLanguageDef.rewrites ∧
     englishGFLanguageDef.congruenceCollections =
       czechGFLanguageDef.congruenceCollections := by
-  simp [englishGFLanguageDef, czechGFLanguageDef, gfRGLLanguageDef]
+  simp [englishGFLanguageDef, czechGFLanguageDef, gfLegacySemanticLanguageDef]
 
 theorem english_czech_reduces_iff (p q : Pattern) :
     langReduces englishGFLanguageDef p q ↔

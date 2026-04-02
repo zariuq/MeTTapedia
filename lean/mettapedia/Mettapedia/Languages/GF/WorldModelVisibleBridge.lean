@@ -485,7 +485,7 @@ noncomputable abbrev gsemE2Full (cfg : VisibleCfg) (π : TemporalPolicy)
 /-- Syntax rewrites give term-level accessibility. -/
 theorem syntax_gives_term_accessible (cfg : VisibleCfg) (π : TemporalPolicy)
     {t1 t2 : Pattern} (σ : Multiset StoreAtom)
-    (h : langReduces gfRGLLanguageDef t1 t2) :
+    (h : langReduces gfLegacySemanticLanguageDef t1 t2) :
     gfTermAccessible cfg π t1 t2 :=
   ⟨σ, σ, Or.inl ⟨h, rfl⟩⟩
 

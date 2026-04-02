@@ -37,6 +37,19 @@ Mettapedia/Algebra/OrderedSemigroups/
 Mettapedia/Metatheory/
 Mettapedia/Logic/Foundation/
 
+# Nested repos with parent-owned Lean 4 wrapper files
+Mettapedia/CategoricalLogic/*
+!Mettapedia/CategoricalLogic/CategoricalLogic.lean
+!Mettapedia/CategoricalLogic/lakefile.toml
+Mettapedia/SetTheory/BorelDeterminacy/*
+!Mettapedia/SetTheory/BorelDeterminacy/BorelDeterminacy.lean
+!Mettapedia/SetTheory/BorelDeterminacy/lakefile.toml
+
+# Nested repo containers with no parent-owned files
+Mettapedia/external/prolog-formalization/papers/
+Mettapedia/external/prolog-formalization/repos/
+Mettapedia/external/wam-references/
+
 # LaTeX build artifacts
 *.aux
 *.bbl

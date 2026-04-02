@@ -15,6 +15,17 @@ Replaces the hand-crafted bridge (OSLFBridge_handcrafted.lean) which
 used manually transcribed function signatures. This version works with
 GFCore.GrammarSig loaded at runtime from ParseEng (115K functions).
 
+## Authority boundary
+
+`gfSyntaxLanguageDef` / `gfSyntaxLanguageDefFromList` are the authoritative
+"real GF in LanguageDef" entry points. They contain exactly the categories
+and constructors present in the checked/generated GF signature, with no
+invented equations or rewrites.
+
+`gfRGLLanguageDef` is retained only as a legacy authored semantic overlay for
+downstream compatibility. It should not be used for trust-critical claims
+about the actual GF→IR→Lean pipeline.
+
 ## Hypercube connection (Stay, Meredith, Wells 2026)
 
 A GF grammar is an operational theory in the hypercube sense:
@@ -377,6 +388,19 @@ def gfSigToLanguageDef
     (termRules ++ extraTerms) eqRules rwRules
     [.vec, .hashBag, .hashSet] [] []
 
+/-- Authoritative syntax-only `LanguageDef` from a literal GF function list.
+    This is the real GF surface in the MeTTaIL DSL: categories + constructors,
+    with no authored semantic overlay. -/
+def gfSyntaxLanguageDefFromList
+    (grammarName : String)
+    (funs : List (String × FunDecl)) : LanguageDef :=
+  gfFunsListToLanguageDef grammarName funs [] [] [] []
+
+/-- Authoritative syntax-only `LanguageDef` from a real GFCore `GrammarSig`.
+    This is the entry point for "actual GF through the DSL". -/
+def gfSyntaxLanguageDef (sig : GrammarSig) : LanguageDef :=
+  gfSigToLanguageDef sig [] [] [] []
+
 private def gfSemanticValidationSeed (sig : GrammarSig) : LanguageDef :=
   gfSigToLanguageDef sig gfSemanticSupportTypes gfSemanticSupportTerms [] []
 
@@ -411,14 +435,23 @@ def gfSemanticEquationsForSig (sig : GrammarSig) : List Equation :=
 def gfSemanticRewritesForSig (sig : GrammarSig) : List RewriteRule :=
   allSemanticRewrites.filter (rewriteSupportedBySig sig)
 
-/-- Build the RGL LanguageDef with the semantic fragment actually supported by
-    a given real GF signature plus the bridge's internal semantic constructors. -/
-def gfRGLLanguageDef (sig : GrammarSig) : LanguageDef :=
+/-- Legacy authored semantic overlay on top of a real GF signature.
+    This combines the actual GF constructors with hand-written support terms,
+    equations, and rewrites. It is preserved only for downstream legacy modules
+    that still study the authored OSLF semantics.
+
+    Prefer `gfSyntaxLanguageDef` for any trust-critical real-GF claim. -/
+def gfLegacySemanticLanguageDef (sig : GrammarSig) : LanguageDef :=
   gfSigToLanguageDef sig
     gfSemanticSupportTypes
     gfSemanticSupportTerms
     (gfSemanticRewritesForSig sig)
     (gfSemanticEquationsForSig sig)
+
+/-- Compatibility alias for downstream legacy GF semantic modules.
+    Non-authoritative: prefer `gfLegacySemanticLanguageDef` or
+    `gfSyntaxLanguageDef` depending on intent. -/
+abbrev gfRGLLanguageDef := gfLegacySemanticLanguageDef
 
 /-! ### Kernel-reducible parallel (for proofs on literal function lists)
 
@@ -444,8 +477,9 @@ private def rewriteSupportedByList
     baseLang.logic baseLang.oracles
   LanguageDef.validate testLang = []
 
-/-- Kernel-reducible RGL LanguageDef from a literal function list. -/
-def gfRGLLanguageDefFromList
+/-- Kernel-reducible legacy authored semantic overlay from a literal function
+    list. -/
+def gfLegacySemanticLanguageDefFromList
     (grammarName : String) (funs : List (String × FunDecl)) : LanguageDef :=
   gfFunsListToLanguageDef grammarName funs
     gfSemanticSupportTypes
@@ -453,25 +487,53 @@ def gfRGLLanguageDefFromList
     (allSemanticRewrites.filter (rewriteSupportedByList grammarName funs))
     ([useNIdentityEquation].filter (equationSupportedByList grammarName funs))
 
+/-- Compatibility alias for downstream legacy GF semantic modules. -/
+abbrev gfRGLLanguageDefFromList := gfLegacySemanticLanguageDefFromList
+
+/-- Rewrite system induced by the authoritative syntax-only GF grammar.
+    Since the real syntax lane contains no authored rewrites, this exposes the
+    OSLF structure attached to actual GF constructors alone. -/
+noncomputable def gfSyntaxRewriteSystem (sig : GrammarSig) :=
+  langRewriteSystem (gfSyntaxLanguageDef sig) "S"
+
+/-- OSLF type system induced by the authoritative syntax-only GF grammar. -/
+noncomputable def gfSyntaxOSLF (sig : GrammarSig) :=
+  langOSLF (gfSyntaxLanguageDef sig) "S"
+
+/-- Galois connection ◇ ⊣ □ for the authoritative syntax-only GF grammar. -/
+theorem gfSyntaxGrammar_galois (sig : GrammarSig) :
+    GaloisConnection
+      (langDiamond (gfSyntaxLanguageDef sig))
+      (langBox (gfSyntaxLanguageDef sig)) :=
+  langGalois (gfSyntaxLanguageDef sig)
+
 -- ═══════════════════════════════════════════════════════════════════
 -- Phase 4: Derived OSLF constructions
 -- ═══════════════════════════════════════════════════════════════════
 
-/-- Rewrite system induced by a GF grammar with process sort "S". -/
-noncomputable def gfRewriteSystem (sig : GrammarSig) :=
-  langRewriteSystem (gfRGLLanguageDef sig) "S"
+/-- Rewrite system induced by the legacy authored semantic overlay. -/
+noncomputable def gfLegacyRewriteSystem (sig : GrammarSig) :=
+  langRewriteSystem (gfLegacySemanticLanguageDef sig) "S"
 
-/-- Full OSLF type system for a GF grammar. -/
-noncomputable def gfOSLF (sig : GrammarSig) :=
-  langOSLF (gfRGLLanguageDef sig) "S"
+/-- Full OSLF type system for the legacy authored semantic overlay. -/
+noncomputable def gfLegacyOSLF (sig : GrammarSig) :=
+  langOSLF (gfLegacySemanticLanguageDef sig) "S"
 
-/-- Galois connection ◇ ⊣ □ for any GF grammar.
-    Comes for free from the OSLF framework (langGalois). -/
-theorem gfGrammar_galois (sig : GrammarSig) :
+/-- Galois connection ◇ ⊣ □ for the legacy authored semantic overlay. -/
+theorem gfLegacyGrammar_galois (sig : GrammarSig) :
     GaloisConnection
-      (langDiamond (gfRGLLanguageDef sig))
-      (langBox (gfRGLLanguageDef sig)) :=
-  langGalois (gfRGLLanguageDef sig)
+      (langDiamond (gfLegacySemanticLanguageDef sig))
+      (langBox (gfLegacySemanticLanguageDef sig)) :=
+  langGalois (gfLegacySemanticLanguageDef sig)
+
+/-- Compatibility alias for downstream legacy GF semantic modules. -/
+noncomputable abbrev gfRewriteSystem := gfLegacyRewriteSystem
+
+/-- Compatibility alias for downstream legacy GF semantic modules. -/
+noncomputable abbrev gfOSLF := gfLegacyOSLF
+
+/-- Compatibility alias for downstream legacy GF semantic modules. -/
+abbrev gfGrammar_galois := gfLegacyGrammar_galois
 
 -- ═══════════════════════════════════════════════════════════════════
 -- Phase 5: Soundness theorems

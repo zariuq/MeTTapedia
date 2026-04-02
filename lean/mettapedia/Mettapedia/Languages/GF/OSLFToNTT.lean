@@ -6,13 +6,33 @@ import Mettapedia.Languages.GF.OSLFBridge_handcrafted
 import Mettapedia.OSLF.QuantifiedFormula2
 import Mettapedia.CategoryTheory.NativeTypeTheory
 import Mettapedia.CategoryTheory.PLNInstance
-import Mettapedia.Languages.GF.Examples.EveryManWalks
 
 /-!
 # Legacy HandCrafted OSLF → NTT Composition
 
-Composes the OSLF evidence semantics with NativeTypeTheory (Grothendieck
-construction ∫ Sub), completing the pipeline:
+This file remains a legacy compatibility lane over the handcrafted GF semantic
+stack. It is useful for preserving older evidence/world-model experiments, but
+it is not part of the authoritative real-GF path.
+
+The authoritative real-GF path is now:
+
+`PGF witness / GFCore.check -> Pattern -> gfSyntaxLanguageDef -> OSLF/NTT diagnostics`
+
+with the current grounded coverage boundary given by the generated
+English/Czech `PaperAmbiguity` slice.
+
+What this file still does:
+- packages the handcrafted evidence semantics with NativeTypeTheory;
+- supports downstream modules that still depend on the legacy world-model lane.
+
+What this file does not do:
+- certify the real generated GF bridge;
+- justify Lean↔Rust authority claims for GF;
+- expand grounded Czech coverage.
+
+Within that explicit legacy scope, it composes the handcrafted OSLF evidence
+semantics with NativeTypeTheory (Grothendieck construction ∫ Sub), completing
+the pipeline:
 
 ```
   GF → Pattern → GrammarState → QFormula2 → BinaryEvidence → NativeTypeTheory
@@ -28,7 +48,8 @@ Positive example:
 Negative example:
 - this is not the canonical NTT story for the real GFCore bridge.
 - the real generated-grammar OSLF→NTT diagnostics now live in
-  `Mettapedia.Languages.GF.GFCoreNTTDiagnostics`.
+  `Mettapedia.Languages.GF.GFCoreNTTDiagnostics` and
+  `Mettapedia.Languages.GF.GFRealSyntaxNTTDiagnostics`.
 -/
 
 namespace Mettapedia.Languages.GF.OSLFToNTT
@@ -41,7 +62,6 @@ open Mettapedia.Languages.GF.StoreToLogicalForm
 open Mettapedia.Languages.GF.WorldModelVisibleBridge
 open Mettapedia.CategoryTheory.PLNInstance
 open Mettapedia.CategoryTheory.NativeTypeTheory
-open Mettapedia.Languages.GF.Examples.EveryManWalks
 open Mettapedia.Logic.EvidenceQuantale
 
 /-! ## 1. BinaryEvidence → NT Object -/
@@ -132,20 +152,7 @@ theorem formulaToNT_closed_env_irrel
   simp only [formulaToNT, evidenceToNT]
   exact congrArg (Sigma.mk X) (qsemE2_closed_env_irrel R I Dom hcl env₁ env₂ p)
 
-/-! ## 5. Concrete Example: "Every man walks" → NT -/
-
-/-- "Every man walks" produces the expected NT object:
-    the evidence fiber is `⨅ d, (man(d) ⇨ walks(d))`. -/
-theorem emw_NT
-    (R : Pattern → Pattern → Prop) (I : QEvidenceAtomSem) (Dom : Domain2)
-    (X : PLNObj) :
-    formulaToNT R I Dom emptyEnv2 emw_formula emw_afterV1_term X =
-    evidenceToNT X (⨅ (d : Dom), (I "man_N" [d.val] emw_afterV1_term ⇨
-                                   I "walk_V" [d.val] emw_afterV1_term)) := by
-  simp only [formulaToNT, emw_formula, qsemE2, extendEnv2, evalTerms, evalTerm, emptyEnv2]
-  rfl
-
-/-! ## 6. WM-Dynamics → NTT Morphisms -/
+/-! ## 5. WM-Dynamics → NTT Morphisms -/
 
 /-- V4 (pronoun binding) produces an NT morphism: pre-state has ⊥ evidence
     (unresolved pronoun), post-state has real evidence, so `⊥ ≤ real`. -/
@@ -180,12 +187,12 @@ theorem closed_frame_NT_eq
   simp only [grammarStateToNT, evidenceToNT]
   exact congrArg (Sigma.mk X) (frame_closed_any_atom I Dom φ hcl a s)
 
-/-! ## 7. Categorical Perspective
+/-! ## 6. Categorical Perspective
 
 ```
-  languagePresheafLambdaTheory gfRGLLanguageDef   -- Presheaf category (OSLF)
+  languagePresheafLambdaTheory gfLegacySemanticLanguageDef   -- Presheaf category (OSLF)
          ↓ languageSortFiber                      -- Sort-fiber extraction
-  languageSortFiber gfRGLLanguageDef s            -- Subobjects at sort s
+  languageSortFiber gfLegacySemanticLanguageDef s            -- Subobjects at sort s
          ↓ qsemE2 evaluation                     -- BinaryEvidence semantics
   BinaryEvidence                                         -- Frame-valued truth
          ↓ evidenceToNT                           -- Grothendieck pairing

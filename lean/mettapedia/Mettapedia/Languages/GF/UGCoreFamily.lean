@@ -183,7 +183,7 @@ private theorem english_langReduces_UseN (p : Pattern) :
     langReduces englishGFLanguageDef (.apply "UseN" [p]) p := by
   unfold langReduces langReducesUsing
   exact .topRule useNElimRewrite
-    (by simp [englishGFLanguageDef, gfRGLLanguageDef, allIdentityRewrites, allSemanticRewrites])
+    (by simp [englishGFLanguageDef, gfLegacySemanticLanguageDef, allIdentityRewrites, allSemanticRewrites])
     [("x", p)]
     (by simp [useNElimRewrite, Mettapedia.OSLF.MeTTaIL.Match.matchPattern,
       Mettapedia.OSLF.MeTTaIL.Match.matchArgs, BEq.beq, List.length,
@@ -210,7 +210,7 @@ theorem english_bareHouse_not_dia_is_house :
     englishGFLanguageDef (gfAbstractToPattern bareHouseTree) q).1 hR
   simp [bareHouseTree, langReducesExecUsing,
     rewriteWithContextWithPremisesUsing, rewriteStepWithPremisesUsing,
-    RelationEnv.empty, englishGFLanguageDef, gfRGLLanguageDef,
+    RelationEnv.empty, englishGFLanguageDef, gfLegacySemanticLanguageDef,
     allIdentityRewrites, allSemanticRewrites, allTenseRewrites,
     applyRuleWithPremisesUsing, Mettapedia.OSLF.MeTTaIL.Match.matchPattern,
     applyPremisesWithEnv, useNElimRewrite, positAElimRewrite,

@@ -1,93 +1,107 @@
+import Mettapedia.Languages.GF.GFRealSyntaxNTTDiagnostics
 import Mettapedia.Languages.GF.GeneratedBridgeConformance
-import Mettapedia.Languages.GF.OSLFBridge
-import Algorithms.GF.Generated.PaperAmbiguitySig
-import Mettapedia.OSLF.MeTTaIL.Engine
-import Mettapedia.OSLF.Framework.ConstructorCategory
 import Mettapedia.OSLF.Framework.CategoryBridge
-import Mettapedia.OSLF.Framework.TypeSynthesis
 
 /-!
 # Real GFCore OSLF → NTT Diagnostics
 
-Extracts concrete NTT-facing facts from the real GFCore-backed GF bridge.
+Compatibility-facing diagnostics for the authoritative real GF syntax lane.
 
-## Trust model
+This module now re-exports the grounded `PaperAmbiguity` witness/check facts from
+`GFRealSyntaxNTTDiagnostics` and adds one representable-fiber readout theorem that
+is still useful for downstream summaries.
 
-Sort membership and constructor-crossing proofs use the **kernel-reducible**
-`paperLangKR` (built from `funsList`, no HashMap). The diamond theorem uses
-the runtime `paperLang` (HashMap-based) but the diamond witness is constructed
-from `langDiamond_spec` + `exec_to_langReducesUsing` with a compiled-code-verified
-rewrite-engine membership (`#eval`-checked, not `native_decide`).
+What this module no longer does:
+- it no longer claims a positive semantic reduction witness for GF;
+- it no longer depends on the authored semantic overlay.
 
-The orbit/fiber theorems are purely structural and don't depend on HashMap.
+Positive examples:
+- the real `PaperAmbiguity` syntax object has theorem-level constructor/category
+  structure;
+- checked GF witnesses from English and Czech align to the same Lean patterns;
+- the representable presheaf fiber contains the checked present-sentence seed.
+
+Negative example:
+- the syntax-only GF lane has no executable reductions, so there is no honest
+  positive `◇` witness here.
 -/
 
 namespace Mettapedia.Languages.GF.GFCoreNTTDiagnostics
 
+open Mettapedia.Languages.GF.GFRealSyntaxNTTDiagnostics
 open Mettapedia.Languages.GF.GeneratedBridgeConformance
-open Mettapedia.Languages.GF.GFCoreOSLFBridge
-open Mettapedia.OSLF.MeTTaIL.Engine
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.Framework
 open Mettapedia.OSLF.Framework.TypeSynthesis
 open Mettapedia.OSLF.Framework.CategoryBridge
 open Mettapedia.OSLF.Framework.ConstructorCategory
 
-/-- Kernel-reducible paperLang built from the literal funsList. -/
-def paperLangKR : LanguageDef :=
-  gfRGLLanguageDefFromList "PaperAmbiguity"
-    Algorithms.GF.Generated.PaperAmbiguitySig.funsList
+abbrev paperLangKR : LanguageDef := paperSyntaxLangKR
 
--- Sort membership proofs (kernel-checked via decide on literal list)
-def paperNSort : LangSort paperLangKR :=
-  LangSort.mk' paperLangKR "N" (by decide)
+abbrev paperNSort : LangSort paperLangKR := GFRealSyntaxNTTDiagnostics.paperNSort
+abbrev paperCNSort : LangSort paperLangKR := GFRealSyntaxNTTDiagnostics.paperCNSort
+abbrev paperPNSort : LangSort paperLangKR := GFRealSyntaxNTTDiagnostics.paperPNSort
+abbrev paperNPSort : LangSort paperLangKR := GFRealSyntaxNTTDiagnostics.paperNPSort
+abbrev paperV2Sort : LangSort paperLangKR := GFRealSyntaxNTTDiagnostics.paperV2Sort
+abbrev paperVPSlashSort : LangSort paperLangKR := GFRealSyntaxNTTDiagnostics.paperVPSlashSort
+abbrev paperSSort : LangSort paperLangKR := GFRealSyntaxNTTDiagnostics.paperSSort
 
-def paperCNSort : LangSort paperLangKR :=
-  LangSort.mk' paperLangKR "CN" (by decide)
+abbrev useN_crossing : ("UseN", "N", "CN") ∈ unaryCrossings paperLangKR :=
+  GFRealSyntaxNTTDiagnostics.useN_crossing
 
-def paperV2Sort : LangSort paperLangKR :=
-  LangSort.mk' paperLangKR "V2" (by decide)
+abbrev usePN_crossing : ("UsePN", "PN", "NP") ∈ unaryCrossings paperLangKR :=
+  GFRealSyntaxNTTDiagnostics.usePN_crossing
 
-def paperVPSort : LangSort paperLangKR :=
-  LangSort.mk' paperLangKR "VP" (by decide)
+abbrev slashV2a_crossing : ("SlashV2a", "V2", "VPSlash") ∈ unaryCrossings paperLangKR :=
+  GFRealSyntaxNTTDiagnostics.slashV2a_crossing
 
-def paperSSort : LangSort paperLangKR :=
-  LangSort.mk' paperLangKR "S" (by decide)
+abbrev useNArrow : SortArrow paperLangKR paperNSort paperCNSort :=
+  GFRealSyntaxNTTDiagnostics.useNArrow
 
-def paperSCSort : LangSort paperLangKR :=
-  LangSort.mk' paperLangKR "SC" (by decide)
+abbrev usePNArrow : SortArrow paperLangKR paperPNSort paperNPSort :=
+  GFRealSyntaxNTTDiagnostics.usePNArrow
 
--- Constructor-crossing proofs (kernel-checked)
-theorem useN_crossing :
-    ("UseN", "N", "CN") ∈ unaryCrossings paperLangKR := by
-  decide
-
-theorem passV2_crossing :
-    ("PassV2", "V2", "VP") ∈ unaryCrossings paperLangKR := by
-  decide
-
-def useNArrow : SortArrow paperLangKR paperNSort paperCNSort :=
-  ⟨"UseN", useN_crossing⟩
-
-def passV2Arrow : SortArrow paperLangKR paperV2Sort paperVPSort :=
-  ⟨"PassV2", passV2_crossing⟩
+abbrev slashV2aArrow : SortArrow paperLangKR paperV2Sort paperVPSlashSort :=
+  GFRealSyntaxNTTDiagnostics.slashV2aArrow
 
 def useNMor : ConstructorObj.mk paperNSort ⟶ ConstructorObj.mk paperCNSort :=
   useNArrow.toPath
 
-def passV2Mor : ConstructorObj.mk paperV2Sort ⟶ ConstructorObj.mk paperVPSort :=
-  passV2Arrow.toPath
+def usePNMor : ConstructorObj.mk paperPNSort ⟶ ConstructorObj.mk paperNPSort :=
+  usePNArrow.toPath
 
--- Semantic content (kernel-checked: arrowSem is pattern-level computation)
-example : arrowSem paperLangKR useNArrow manPattern = useNManPattern := rfl
+def slashV2aMor : ConstructorObj.mk paperV2Sort ⟶ ConstructorObj.mk paperVPSlashSort :=
+  slashV2aArrow.toPath
 
-example :
-    arrowSem paperLangKR passV2Arrow (.apply "see_V2" []) =
-      .apply "PassV2" [.apply "see_V2" []] := rfl
+abbrev PaperSyntaxNativeType := GFRealSyntaxNTTDiagnostics.PaperSyntaxNativeType
+abbrev paperPredicateType := GFRealSyntaxNTTDiagnostics.paperPredicateType
+abbrev paperSatisfiesType := GFRealSyntaxNTTDiagnostics.paperSatisfiesType
 
--- ═══════════════════════════════════════════════════════════════════
--- Orbit/fiber construction (purely structural, no HashMap dependency)
--- ═══════════════════════════════════════════════════════════════════
+abbrev telescopeVPPattern := GFRealSyntaxNTTDiagnostics.telescopeVPPattern
+abbrev telescopeNPPattern := GFRealSyntaxNTTDiagnostics.telescopeNPPattern
+abbrev annaVPWitnessPattern := GFRealSyntaxNTTDiagnostics.annaVPWitnessPattern
+abbrev annaNPWitnessPattern := GFRealSyntaxNTTDiagnostics.annaNPWitnessPattern
+abbrev presentSentencePattern := GeneratedBridgeConformance.presentSentencePattern
+abbrev temporalPresentPattern := GeneratedBridgeConformance.temporalPresentPattern
+
+abbrev vpAttachmentType := GFRealSyntaxNTTDiagnostics.vpAttachmentType
+abbrev npAttachmentType := GFRealSyntaxNTTDiagnostics.npAttachmentType
+
+abbrev telescopeVP_satisfies_vpAttachmentType :=
+  GFRealSyntaxNTTDiagnostics.telescopeVP_satisfies_vpAttachmentType
+
+abbrev telescopeVP_not_npAttachmentType :=
+  GFRealSyntaxNTTDiagnostics.telescopeVP_not_npAttachmentType
+
+abbrev telescopeNP_satisfies_npAttachmentType :=
+  GFRealSyntaxNTTDiagnostics.telescopeNP_satisfies_npAttachmentType
+
+abbrev telescopeNP_not_vpAttachmentType :=
+  GFRealSyntaxNTTDiagnostics.telescopeNP_not_vpAttachmentType
+
+abbrev presentSentence_box_self := GFRealSyntaxNTTDiagnostics.presentSentence_box_self
+abbrev presentSentence_not_diamond_temporal :=
+  GFRealSyntaxNTTDiagnostics.presentSentence_not_diamond_temporal
 
 def presentSentenceOrbitPred (p : Pattern) : Prop :=
   ∃ a : LangSort paperLangKR, ∃ h : SortPath paperLangKR a paperSSort,
@@ -96,7 +110,7 @@ def presentSentenceOrbitPred (p : Pattern) : Prop :=
 theorem presentSentenceOrbit_natural :
     languageSortPredNaturality paperLangKR paperSSort presentSentencePattern
       presentSentenceOrbitPred := by
-  intro a _ g h _
+  intro a b g h _
   exact ⟨a, g.comp h, rfl⟩
 
 noncomputable def paperPresentSentenceOrbitFiber : languageSortFiber paperLangKR paperSSort :=
@@ -131,16 +145,5 @@ theorem paperPresentSentenceOrbitFiber_contains_seed :
         (Opposite.op (ConstructorObj.mk paperSSort))
   rw [languageSortFiber_ofPatternPred_mem_iff]
   exact ⟨paperSSort, SortPath.nil, by simp [paperSId, pathSem]⟩
-
--- ═══════════════════════════════════════════════════════════════════
--- Diamond witness (compiled-code-verified)
--- ═══════════════════════════════════════════════════════════════════
-
--- Compiled-code regression: the diamond witness fires
-#eval do
-  let ok := temporalPresentPattern ∈
-    rewriteWithContextWithPremises paperLang presentSentencePattern
-  if ok then IO.println "PASS: present→temporal diamond witness"
-  else IO.println "FAIL: present→temporal diamond witness"
 
 end Mettapedia.Languages.GF.GFCoreNTTDiagnostics

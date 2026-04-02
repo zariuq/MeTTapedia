@@ -1,3 +1,4 @@
+import Mettapedia.Languages.MeTTa.HE.BindingComposition
 import Mettapedia.Languages.MeTTa.HE.EvalSpec
 import Mettapedia.Languages.MeTTa.HE.Properties
 import Mettapedia.Languages.MeTTa.PeTTa.MeTTaEval
@@ -488,19 +489,15 @@ private theorem atomToPattern_never_bvar (a : Atom) (n : Nat) :
 The key insight: prove `applyBindings (heBindingsToOSLF qb) pl = pa` (the commutation),
 then derive matchPattern nonemptiness via `matchPattern_applyBindings_complete`. -/
 
-/-! ### Step A: HEBindingsExtends -/
+/-! ### Step A: HEBindingsExtends — now in BindingComposition.lean
 
-/-- Monotonicity predicate: `b'` extends `b` (preserves all lookups). -/
-private def HEBindingsExtends (b b' : Bindings) : Prop :=
-  ∀ x a, b.lookup x = some a → b'.lookup x = some a
+`Bindings.Extends`, `Bindings.extends_refl`, `Bindings.extends_trans`,
+`extends_assign_of_lookup_none`, and `simpleMatch_extends` are all
+imported from `Mettapedia.Languages.MeTTa.HE.BindingComposition`. -/
 
-private theorem heExt_refl (b : Bindings) : HEBindingsExtends b b :=
-  fun _ _ h => h
-
-private theorem heExt_trans {b1 b2 b3 : Bindings}
-    (h12 : HEBindingsExtends b1 b2) (h23 : HEBindingsExtends b2 b3) :
-    HEBindingsExtends b1 b3 :=
-  fun x a hx => h23 x a (h12 x a hx)
+private abbrev HEBindingsExtends := Bindings.Extends
+private abbrev heExt_refl := Bindings.extends_refl
+private abbrev heExt_trans := @Bindings.extends_trans
 
 /-! ### Step B: PureTranslatable isMatchCorrect extraction -/
 
@@ -621,97 +618,16 @@ private theorem pure_args_of_expr_translation
   exact ⟨q, hq, isMatchCorrectAux_of_mem_list hlistmc
     (hfm ▸ List.mem_filterMap.mpr ⟨a, ha, hq⟩)⟩
 
-/-! ### Step H: HE Bindings assign helpers -/
+/-! ### Step H + simpleMatch_extends — now in BindingComposition.lean
 
-private theorem isBound_false_of_lookup_none {b : Bindings} {v : String}
-    (h : b.lookup v = none) : b.isBound v = false := by
-  simp [Bindings.isBound, h]
-
-private theorem lookup_assign_of_lookup_none
-    (b : Bindings) (v : String) (a : Atom)
-    (hnone : b.lookup v = none) :
-    (b.assign v a).lookup v = some a := by
-  have hnotbound := isBound_false_of_lookup_none hnone
-  simp only [Bindings.assign, Bindings.lookup, hnotbound, Bool.false_eq_true, ↓reduceIte,
-    List.lookup_append, Bindings.lookup] at hnone ⊢
-  simp [hnone]
-
-private theorem extends_assign_of_lookup_none
-    (b : Bindings) (v : String) (a : Atom)
-    (hnone : b.lookup v = none) :
-    HEBindingsExtends b (b.assign v a) := by
-  intro x val hx
-  have hnotbound := isBound_false_of_lookup_none hnone
-  simp only [Bindings.assign, Bindings.lookup, hnotbound, Bool.false_eq_true, ↓reduceIte,
-    List.lookup_append] at hx ⊢
-  simp [hx]
+All imported: `isBound_false_of_lookup_none`, `lookup_assign_of_lookup_none`,
+`extends_assign_of_lookup_none`, `simpleMatch_extends`. -/
 
 /-! ### Step J+K: The commutation theorem (GPT-5.4 Pro architecture)
 
 Council (Martin-Löf, Tao, Carneiro, 87%): The right invariant is
 `applyBindings (heBindingsToOSLF qb) pl = pa`, not "matchPattern nonempty".
 Then `matchPattern_applyBindings_complete` finishes the job. -/
-
-/-- **Part 1: simpleMatch extends bindings** — output bindings extend input. -/
-private theorem simpleMatch_extends (fuel : Nat) :
-    (∀ lhs target b qb,
-      Mettapedia.Languages.MeTTa.HE.simpleMatch lhs target b fuel = some qb →
-      HEBindingsExtends b qb) ∧
-    (∀ ps ts b qb,
-      Mettapedia.Languages.MeTTa.HE.simpleMatch.simpleMatchList ps ts b fuel = some qb →
-      HEBindingsExtends b qb) := by
-  induction fuel with
-  | zero =>
-    exact ⟨fun _ _ _ _ h => by simp [Mettapedia.Languages.MeTTa.HE.simpleMatch] at h,
-           fun ps ts b qb h => by
-             cases ps <;> cases ts <;>
-               simp [Mettapedia.Languages.MeTTa.HE.simpleMatch.simpleMatchList,
-                     Mettapedia.Languages.MeTTa.HE.simpleMatch] at h
-             subst h; exact heExt_refl _⟩
-  | succ n ih =>
-    obtain ⟨ih_match, ih_list⟩ := ih
-    -- Define atom extends first, then list extends using it
-    have hpat : ∀ lhs target b qb,
-        Mettapedia.Languages.MeTTa.HE.simpleMatch lhs target b (n + 1) = some qb →
-        HEBindingsExtends b qb := by
-      intro lhs target b qb hmatch
-      cases lhs with
-      | var v =>
-        cases hlookup : b.lookup v <;>
-          simp [Mettapedia.Languages.MeTTa.HE.simpleMatch, hlookup] at hmatch
-        · subst hmatch; exact extends_assign_of_lookup_none b v target hlookup
-        · obtain ⟨_, rfl⟩ := hmatch; exact heExt_refl _
-      | symbol s =>
-        cases target <;> simp [Mettapedia.Languages.MeTTa.HE.simpleMatch] at hmatch
-        obtain ⟨_, rfl⟩ := hmatch; exact heExt_refl _
-      | grounded g =>
-        cases target <;> simp [Mettapedia.Languages.MeTTa.HE.simpleMatch] at hmatch
-        obtain ⟨_, rfl⟩ := hmatch; exact heExt_refl _
-      | expression ps =>
-        cases target <;> simp [Mettapedia.Languages.MeTTa.HE.simpleMatch] at hmatch
-        exact ih_list ps _ b qb hmatch.2
-    have hlist : ∀ ps ts b qb,
-        Mettapedia.Languages.MeTTa.HE.simpleMatch.simpleMatchList ps ts b (n + 1) = some qb →
-        HEBindingsExtends b qb := by
-      intro ps'
-      induction ps' with
-      | nil =>
-        intro ts' b' qb' h'
-        cases ts' <;>
-          simp [Mettapedia.Languages.MeTTa.HE.simpleMatch.simpleMatchList] at h'
-        subst h'; exact heExt_refl _
-      | cons p' ps' ihps =>
-        intro ts' b' qb' h'
-        cases ts' with
-        | nil => simp [Mettapedia.Languages.MeTTa.HE.simpleMatch.simpleMatchList] at h'
-        | cons t' ts' =>
-          unfold Mettapedia.Languages.MeTTa.HE.simpleMatch.simpleMatchList at h'
-          cases hhd : Mettapedia.Languages.MeTTa.HE.simpleMatch p' t' b' (n + 1) with
-          | none => simp [hhd] at h'
-          | some b'' =>
-            simp [hhd] at h'
-            exact heExt_trans (hpat p' t' b' b'' hhd) (ihps ts' b'' qb' h')
-    exact ⟨hpat, hlist⟩
 
 /-- **Part 2: The commutation theorem** (GPT-Pro architecture, council 87%). -/
 private theorem simpleMatch_applyBindings_all (fuel : Nat) :
@@ -752,7 +668,7 @@ private theorem simpleMatch_applyBindings_all (fuel : Nat) :
           simp [Mettapedia.Languages.MeTTa.HE.simpleMatch, hlookup] at hmatch
         · subst hmatch
           have hlookup' : qb'.lookup v = some target :=
-            hext v target (lookup_assign_of_lookup_none b v target hlookup)
+            hext v target (Mettapedia.Languages.MeTTa.HE.lookup_assign_of_lookup_none b v target hlookup)
           exact applyBindings_fvar_of_lookup qb' v target pa hlookup' hpa
         · rename_i old; obtain ⟨hold, rfl⟩ := hmatch
           subst hold
@@ -794,7 +710,7 @@ private theorem simpleMatch_applyBindings_all (fuel : Nat) :
                   | some b'' =>
                     simp [hsym] at hmatch
                     have hext_tail : HEBindingsExtends b'' qb :=
-                      (simpleMatch_extends n).2 args targs b'' qb hmatch
+                      (Mettapedia.Languages.MeTTa.HE.simpleMatch_extends n).2 args targs b'' qb hmatch
                     have hext_head : HEBindingsExtends b'' qb' :=
                       heExt_trans hext_tail hext
                     have hheadComm :
@@ -873,7 +789,7 @@ private theorem simpleMatch_applyBindings_all (fuel : Nat) :
             obtain ⟨pp, hpp, hmc_pp⟩ := hpP
             obtain ⟨pt, hpt, hmc_pt⟩ := htP
             have hext_tail : HEBindingsExtends b'' qb' :=
-              (simpleMatch_extends (n + 1)).2 ps' ts' b'' qb' h'
+              (Mettapedia.Languages.MeTTa.HE.simpleMatch_extends (n + 1)).2 ps' ts' b'' qb' h'
             have hhead :=
               hpat p' t' b' b'' hhd ⟨pp, hpp, hmc_pp⟩ ⟨pt, hpt, hmc_pt⟩
                 qb'' (heExt_trans hext_tail hext') pp pt hpp hpt

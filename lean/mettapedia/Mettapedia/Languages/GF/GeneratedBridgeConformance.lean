@@ -1,42 +1,36 @@
 import GFCore.Check
 import Algorithms.GF.Generated.PaperAmbiguitySig
-import Mettapedia.Languages.GF.OSLFBridge
+import Mettapedia.Languages.GF.GFRealSyntaxBridge
+import Mettapedia.Languages.GF.ConformanceCertificate
 import Mettapedia.OSLF.MeTTaIL.DeclReducesWithPremises
 
 /-!
 # GF Generated-Bridge Conformance
 
-Pins the GF→OSLF bridge to `PaperAmbiguitySig`, a real auto-generated GrammarSig.
+Pins the real GF→IR→Lean bridge to `PaperAmbiguitySig`, a generated grammar.
 
-## Trust model
+This file is intentionally limited to the authoritative syntax-only path:
 
-`paperLang` involves `HashMap.fold` which the Lean kernel cannot reduce, so
-kernel-checked `decide` proofs are not possible on HashMap-derived values.
-Instead we use a two-layer approach:
+- `GFCore.check` validates raw GF terms against the real signature
+- `gfCheckedExprToPattern` lowers checked trees to OSLF patterns
+- `gfSyntaxLanguageDef` captures the same generated grammar in the MeTTaIL DSL
 
-1. **Kernel-checked** (`decide`): properties of the authored semantic kernel
-   (SemanticKernelDSL) and pre-computed literal pattern values.
-2. **Compiled-code-verified** (`#eval`): regression checks that the actual
-   bridge output matches expected values. These run in compiled Lean code
-   (same as `native_decide`) but are NOT kernel-checked. They guard against
-   drift between the kernel definition and the generated signature.
-
-This is honest: we kernel-check what we CAN (the semantic rules themselves),
-and compiled-code-verify what we MUST (the HashMap-dependent bridge output).
+No invented semantic equations or rewrites are part of this contract.
 -/
 
 namespace Mettapedia.Languages.GF.GeneratedBridgeConformance
 
 open GFCore
 open Mettapedia.Languages.GF.GFCoreOSLFBridge
+open Mettapedia.Languages.GF.ConformanceCertificate
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.Engine
 
 def paperSig : GrammarSig :=
   Algorithms.GF.Generated.PaperAmbiguitySig.sig
 
-def paperLang : LanguageDef :=
-  gfRGLLanguageDef paperSig
+def paperSyntaxLang : LanguageDef :=
+  gfSyntaxLanguageDef paperSig
 
 def checkedPattern? (t : RawTerm) : Option Pattern :=
   match check paperSig t with
@@ -44,7 +38,7 @@ def checkedPattern? (t : RawTerm) : Option Pattern :=
   | .error _ => none
 
 -- ═══════════════════════════════════════════════════════════════════
--- Structural definitions (kernel-reducible Pattern literals)
+-- Structural pattern literals for real checked parses
 -- ═══════════════════════════════════════════════════════════════════
 
 def useNManRaw : RawTerm := .mk "UseN" #[.leaf "man_N"]
@@ -64,9 +58,6 @@ def activeClausePattern : Pattern :=
     [ johnNPPattern
     , .apply "ComplSlash" [.apply "SlashV2a" [.apply "see_V2" []], annaNPPattern]]
 
-def passiveClausePattern : Pattern :=
-  .apply "PredVP" [annaNPPattern, .apply "PassV2" [.apply "see_V2" []]]
-
 def presentSentenceRaw : RawTerm :=
   .mk "UseCl" #[.mk "TTAnt" #[.leaf "TPres", .leaf "ASimul"], .leaf "PPos", activeClauseRaw]
 
@@ -75,95 +66,66 @@ def presentSentencePattern : Pattern :=
     [ .apply "TTAnt" [.apply "TPres" [], .apply "ASimul" []]
     , .apply "PPos" [], activeClausePattern]
 
+def badTypeRaw : RawTerm := .mk "UseN" #[.leaf "see_V2"]
+
+-- A semantic target that should NOT be reachable in the syntax-only lane.
 def temporalPresentPattern : Pattern :=
   .apply "⊛temporal" [activeClausePattern, .apply "0" []]
 
-def negTemporalPresentPattern : Pattern :=
-  .apply "⊛negation" [.apply "⊛temporal" [activeClausePattern, .apply "0" []]]
-
-def embedSPresentSentencePattern : Pattern :=
-  .apply "EmbedS" [presentSentencePattern]
-
-def embeddedActiveClausePattern : Pattern :=
-  .apply "⊛embedded" [activeClausePattern]
-
 -- ═══════════════════════════════════════════════════════════════════
--- Layer 1: Kernel-checked properties (authored semantic kernel)
+-- Layer 1: Kernel-checked facts about the certificate literals
 -- ═══════════════════════════════════════════════════════════════════
 
--- The authored kernel has exactly 44 rewrites in 11 families
-example : gfSemanticKernelLanguageDef.rewrites.length = 44 := by decide
-example : gfSemanticKernelLanguageDef.equations.length = 1 := by decide
-
--- Structural equality on RGL definitions
-example : paperLang.equations = gfSemanticEquationsForSig paperSig := rfl
-example : paperLang.rewrites = gfSemanticRewritesForSig paperSig := rfl
+example : paperTypeNames.length = 16 := by decide
+example : paperTermNames.length = 26 := by decide
+example : paperEquationCount = 0 := rfl
+example : paperRewriteCount = 0 := rfl
 
 -- ═══════════════════════════════════════════════════════════════════
--- Layer 2: Compiled-code-verified regression (HashMap-dependent)
---
--- These #eval checks run in compiled code and print PASS/FAIL.
--- They are NOT kernel-checked but guard against bridge drift.
+-- Layer 2: Compiled-code-verified exact bridge checks
 -- ═══════════════════════════════════════════════════════════════════
 
-private def assertEq (label : String) (actual expected : String) : IO Unit :=
-  if actual == expected then IO.println s!"PASS: {label}"
-  else IO.println s!"FAIL: {label}: got {actual}, expected {expected}"
+private def ensureEq (label : String) (actual expected : String) : IO Unit :=
+  if actual == expected then
+    IO.println s!"PASS: {label}"
+  else
+    throw <| IO.userError s!"FAIL: {label}: got {actual}, expected {expected}"
 
-private def assertBool (label : String) (b : Bool) : IO Unit :=
-  if b then IO.println s!"PASS: {label}"
-  else IO.println s!"FAIL: {label}"
-
-#eval do
-  -- Equation count
-  assertEq "equation count" (toString paperLang.equations.length) "1"
-  -- Rewrite count (40 kernel rewrites, 18 pass validation for PaperAmbiguitySig)
-  assertEq "rewrite count" (toString paperLang.rewrites.length) "22"
-  -- Validation clean
-  assertBool "validation clean" (LanguageDef.validate paperLang == [])
-  -- Exact rewrite inventory
-  let rwNames := paperLang.rewrites.map (fun rw => RewriteRule.name rw)
-  let expected := [ "UseNElim", "ActivePassive"
-    , "PresentTense", "PastTense", "FutureTense"
-    , "NegationPresent", "NegationPast", "NegationFuture"
-    , "EmbedPresent", "EmbedPast", "EmbedFuture"
-    , "UsePNElim", "EmbedVPLifting", "EmbedQSLifting"
-    , "AnteriorPresent", "AnteriorPast"
-    , "ConditionalSimul", "ConditionalAnter"
-    , "DetEveryElim", "DetSomeElim", "DetTheElim", "DetNoElim" ]
-  assertEq "rewrite names" (toString rwNames) (toString expected)
+private def ensureBool (label : String) (b : Bool) : IO Unit :=
+  if b then
+    IO.println s!"PASS: {label}"
+  else
+    throw <| IO.userError s!"FAIL: {label}"
 
 #eval do
-  -- GFCore.check + gfCheckedExprToPattern roundtrip
-  assertBool "UseN(man_N) check" (checkedPattern? useNManRaw == some useNManPattern)
-  assertBool "active clause check" (checkedPattern? activeClauseRaw == some activeClausePattern)
-  assertBool "present sentence check" (checkedPattern? presentSentenceRaw == some presentSentencePattern)
+  ensureEq "type count" (toString paperSyntaxLang.types.length) "16"
+  ensureEq "term count" (toString paperSyntaxLang.terms.length) "26"
+  ensureEq "equation count" (toString paperSyntaxLang.equations.length) "0"
+  ensureEq "rewrite count" (toString paperSyntaxLang.rewrites.length) "0"
+  ensureBool "validation clean" (LanguageDef.validate paperSyntaxLang == [])
+  ensureEq "type names"
+    (toString (paperSyntaxLang.types.map (fun t : TypeDecl => t.name)))
+    (toString paperTypeNames)
+  ensureEq "term names"
+    (toString (paperSyntaxLang.terms.map GrammarRule.label))
+    (toString paperTermNames)
 
 #eval do
-  -- Rewrite engine: positive reductions
-  assertBool "UseN(man_N) reduces to man_N"
-    (manPattern ∈ rewriteWithContextWithPremises paperLang useNManPattern)
-  assertBool "active→passive fires"
-    (passiveClausePattern ∈ rewriteWithContextWithPremises paperLang activeClausePattern)
-  assertBool "present tense fires"
-    (temporalPresentPattern ∈ rewriteWithContextWithPremises paperLang presentSentencePattern)
-  assertBool "embedding fires"
-    (embeddedActiveClausePattern ∈ rewriteWithContextWithPremises paperLang embedSPresentSentencePattern)
+  ensureBool "UseN(man_N) check"
+    (checkedPattern? useNManRaw == some useNManPattern)
+  ensureBool "active clause check"
+    (checkedPattern? activeClauseRaw == some activeClausePattern)
+  ensureBool "present sentence check"
+    (checkedPattern? presentSentenceRaw == some presentSentencePattern)
+  ensureBool "ill-typed UseN(see_V2) rejected"
+    (checkedPattern? badTypeRaw == none)
 
 #eval do
-  -- Rewrite engine: negative (directional) checks
-  assertBool "passive→active does NOT fire"
-    (activeClausePattern ∉ rewriteWithContextWithPremises paperLang passiveClausePattern)
-  assertBool "negation does NOT fire on PPos sentence"
-    (negTemporalPresentPattern ∉ rewriteWithContextWithPremises paperLang presentSentencePattern)
-
-#eval do
-  -- Excluded rewrites (constructors absent from PaperAmbiguitySig)
-  let rwNames := paperLang.rewrites.map (fun rw => RewriteRule.name rw)
-  assertBool "PositAElim excluded" ("PositAElim" ∉ rwNames)
-  assertBool "UseCompElim excluded" ("UseCompElim" ∉ rwNames)
-  assertBool "ConjSBinary excluded" ("ConjSBinary" ∉ rwNames)
-  assertBool "RelVPSubject excluded" ("RelVPSubject" ∉ rwNames)
-  assertBool "ComplVVElim excluded" ("ComplVVElim" ∉ rwNames)
+  ensureBool "syntax lane has no authored reductions"
+    (rewriteWithContextWithPremises paperSyntaxLang presentSentencePattern == [])
+  ensureBool "no temporal target produced in syntax lane"
+    (temporalPresentPattern ∉ rewriteWithContextWithPremises paperSyntaxLang presentSentencePattern)
+  ensureBool "UseN(man_N) does not reduce in syntax lane"
+    (manPattern ∉ rewriteWithContextWithPremises paperSyntaxLang useNManPattern)
 
 end Mettapedia.Languages.GF.GeneratedBridgeConformance

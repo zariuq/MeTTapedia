@@ -14,8 +14,10 @@ proving the complete operational + semantic chain:
 3. **BinaryEvidence**: Before V4, evidence for `sleep_V(pr1)` = ⊥; after V4, = real
 
 Working at the `GrammarState` level with explicit patterns, this complements:
-- `EveryManWalks.lean` (single quantifier, V1)
-- `ScopeAmbiguity.lean` (two quantifiers, V1+V2 scope choice)
+- the retired single-quantifier legacy example formerly carried by
+  `EveryManWalks.lean`
+- the retired two-quantifier legacy scope study formerly carried by
+  `ScopeAmbiguity.lean`
 -/
 
 namespace Mettapedia.Languages.GF.Examples.AnaphoraBinding

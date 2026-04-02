@@ -66,6 +66,7 @@
 \newcommand{\MORK}{\textup{MORK}}
 \newcommand{\MeTTa}{\textup{MeTTa}}
 \newcommand{\MeTTaIL}{\textup{MeTTaIL}}
+\newcommand{\HE}{\textup{HE}}
 \newcommand{\PathMap}{\textup{PathMap}}
 
 \title{MORK, MM2, and PathMap: A Lean~4 Formalization\\
@@ -106,9 +107,12 @@ A conformance test suite of kernel-checked theorems is verified against
 the \MORK{} CLI (\texttt{mork run}) on 9+ \texttt{.mm2} test programs.
 The \MORK{}/MM2 development comprises 12{,}373 lines across 19 files with
 0~sorries and 0~custom axioms.
-The \PathMap{} library adds 4{,}279 lines across 16 files with
-104~theorems and 40~instances.
-The combined development totals 16{,}652 lines across 35 files.
+The \PathMap{} library adds 7{,}165 lines across 27 files with
+160+~theorems and 40+~instances, including a Huet zipper with
+navigation round-trips, catamorphism/anamorphism framework,
+graft correctness, and a candidate-selection architecture for
+\HE{} backends.
+The combined development totals 19{,}538 lines across 46 files.
 All proofs are checked by Lean~4.28 with Mathlib~v4.28.
 \end{abstract}
 
@@ -227,7 +231,7 @@ formal development.
 \multicolumn{3}{@{}l}{\textit{Core Algebraic Theory}} \\
 \texttt{Core.lean}              & \texttt{AlgebraicResult}, lattice hierarchy, \texttt{Finset} instance & 440 \\
 \texttt{CoinductiveTrie.lean}   & \texttt{CTrie V}, pointwise operations, bisimilarity laws & 226 \\
-\texttt{FiniteTrie.lean}        & \texttt{FTrie V}, computable trie operations & 224 \\
+\texttt{FiniteTrie.lean}        & \texttt{FTrie V}, operations, \texttt{upsertChild}, \texttt{graftAtPath} & 470 \\
 \texttt{TrieRefinement.lean}    & \texttt{Sorted}, \texttt{join\_lookup}, \texttt{toCTrie} & 243 \\
 \texttt{TriePathMapInstance.lean} & \texttt{PathMapQuantale (FTrie V)}, \texttt{JoinIdem}, \texttt{MeetIdem} & 129 \\
 \midrule
@@ -237,8 +241,17 @@ formal development.
 \texttt{FlatZipperInstance.lean} & Reference list-cursor zipper, all contracts proved & 117 \\
 \texttt{TrieZipper.lean}        & \texttt{SimpleTrieZipper V}, trie-backed soundness & 148 \\
 \texttt{ZamContracts.lean}      & ZAM soundness contracts, compositionality & 193 \\
+\texttt{HuetZipper.lean}        & Huet zipper, round-trip, \texttt{focus\_lookup\_general} & 324 \\
 \midrule
-\multicolumn{3}{@{}l}{\textit{OSLF Instance and Bridges}} \\
+\multicolumn{3}{@{}l}{\textit{Morphisms and Correctness}} \\
+\texttt{Morphisms.lean}         & \texttt{cata}/\texttt{cataChildren}, count/depth/hash algebras & 149 \\
+\texttt{Anamorphism.lean}       & \texttt{ana}/\texttt{anaChildren}, singleton coalgebra & 81 \\
+\texttt{MorphismCorrectness.lean} & \texttt{cata\_recCount}, \texttt{cata\_rebuild\_lookup} & 167 \\
+\texttt{GraftCorrectness.lean}  & \texttt{setValueAt\_lookup}, \texttt{ftrieWritingSpec\_root} & 87 \\
+\texttt{SortedPreservation.lean} & \texttt{singleton\_lookup\_ne}, sortedness infrastructure & 68 \\
+\texttt{UnitBridge.lean}        & \texttt{FTrie Unit} $\leftrightarrow$ path sets, \texttt{fromPathList} & 132 \\
+\midrule
+\multicolumn{3}{@{}l}{\textit{OSLF Instance and Evidence Bridges}} \\
 \texttt{OSLFInstance.lean}       & \texttt{pathMapLang}, 10 rewrite rules, NTT completeness & 853 \\
 \texttt{RelationBridge.lean}    & \texttt{RelationalSpace} typeclass, \texttt{toRelationEnv} & 200 \\
 \texttt{PLNBridge.lean}         & \texttt{finsetPathEvidence}, K\&S sum rule, disjoint additivity & 275 \\
@@ -246,7 +259,13 @@ formal development.
 \texttt{Measure.lean}           & \texttt{PathMapValuation}, counting/weighted instances & 143 \\
 \texttt{WorldModelBridge.lean}  & \texttt{BinaryWorldModel} via \texttt{Multiset} lifting & 151 \\
 \midrule
-\textbf{Total} & & \textbf{4{,}279} \\
+\multicolumn{3}{@{}l}{\textit{HE Backend Bridge}} \\
+\texttt{ZipperWritingLaws.lean} & In-place ops, \texttt{InPlaceStatusSpec} & 118 \\
+\texttt{HEBridge.lean}          & \texttt{supportToTrie}, \texttt{same\_support\_same\_trie} & 126 \\
+\texttt{HEInterface.lean}       & Monad morphism chain, \texttt{SpaceQuerySupport} & 152 \\
+\texttt{CandidateArchitecture.lean} & Two-phase correctness, zero-crossing, invalidation & 481 \\
+\midrule
+\textbf{Total} & & \textbf{7{,}165} \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -575,6 +594,20 @@ determine exec-fact firing order:
 \begin{theorem}[\texttt{order\_1\_lt\_10}]
 Shortlex ordering: single-digit priorities fire before double-digit.
 \end{theorem}
+
+\paragraph{Byte-order refinement.}
+\texttt{PathMapByteOrderRefinement.lean} closes the gap noted in
+\texttt{WorkQueueOrder.lean}: ``This is NOT byte-identical to PathMap
+serialization.''  On the scheduler exec-location fragment
+(\texttt{schedulerLocFragment}: two-symbol expressions), the theorem
+\texttt{scheduler\_byte\_faithful} proves that the abstract ordering
+\texttt{lexLt} $\circ$ \texttt{atomKey} agrees with the concrete PathMap
+byte-order traversal used by the Rust \texttt{metta\_calculus}.
+The companion theorem \texttt{scheduler\_pop\_order\_correct} says:
+if \texttt{locLt loc\textsubscript{1} loc\textsubscript{2} = true}, then the
+abstract key ordering confirms loc\textsubscript{1} is popped first.
+The unsupported remainder (nested expressions, non-ASCII, length $\geq 64$)
+is stated explicitly.
 
 \subsection{Ground Self-Respawn}
 
@@ -1125,6 +1158,63 @@ $s \setminus \{a\}$.
 These theorems confirm that \MORK{}'s operational transitions are expressible
 as algebraic operations on the \PathMap{} lattice, connecting the execution
 engine to the data-structural semantics.
+
+\paragraph{Seeded rematch correctness.}
+When the PathMap bridge provides candidate atoms for an imported space,
+\CeTTa{} rematches each candidate natively with \texttt{space\_subst\_match\_with\_seed}.
+The theorem \texttt{seedRematch\_extends\_seed} (\texttt{SeedRematchContract.lean})
+proves that the resulting bindings extend the incoming seed from prior
+conjunction steps---prior bindings are never dropped.  The companion theorem
+\texttt{seedRematchSafe\_no\_loop} guarantees that binding loops are detected
+and rejected before entering the conjunction accumulator.  Together with
+\texttt{importedFallbackParity} from \texttt{ImportedRowContract.lean},
+these establish that \CeTTa{}'s imported-backend path is binding-correct
+under its current always-rematch policy.
+
+\subsection{Candidate Selection, Support, and Counts}
+
+Recent companion work on faithful backends for \HE{}~\MeTTa{} sharpens what
+this bridge should and should not claim.  A trie such as \PathMap{} is
+responsible for \emph{support-level} duties:
+\begin{enumerate}[nosep]
+  \item maintain the canonical support of stored atoms;
+  \item narrow queries to sound candidate sets;
+  \item remain unchanged under duplicate adds or non-last removes.
+\end{enumerate}
+It is \emph{not} the whole semantic carrier of a MeTTa space.  Bag-level
+multiplicity remains a separate refinement layer.
+
+The concrete selector development in
+\texttt{CandidateArchitecture.lean} now proves:
+\begin{enumerate}[nosep]
+  \item \texttt{concrete\_twoPhase\_eq\_direct}: trie candidate selection
+        followed by native exact matching agrees with direct querying;
+  \item \texttt{trieCandidates\_subset\_support}: trie candidates are
+        phantom-free;
+  \item \texttt{realPrefixSelector\_sound}: real subtrie descent under an
+        encoded prefix is sound for candidate narrowing;
+  \item add/remove zero-crossing theorems: duplicate adds and non-last
+        removes do not change trie support, while first adds and last
+        removes do.
+\end{enumerate}
+
+\paragraph{Positive example.}
+If a space stores two copies of the same atom, \PathMap{} should still hold
+one canonical support element while a counted-space refinement records
+multiplicity~2.
+
+\paragraph{Negative example.}
+Encoding multiplicity by inventing different trie keys for duplicates would
+destroy the structural-sharing and canonical-support story that makes
+\PathMap{} valuable in the first place.
+
+This division of labor is useful for \MORK{} as well.  The trie should
+perform prefix descent and support-level candidate narrowing; exact
+variable-sensitive matching belongs in the native matcher that consumes those
+candidates.  \texttt{PathMapMatcherInstance.lean} now makes that bridge
+explicit by instantiating the abstract two-phase theorem with the concrete
+\HE{} matcher.  The broader binder-hygiene and cache-correctness obligations
+remain in the companion backend note rather than in this trie-focused paper.
 
 %% ============================================================
 \section{MeTTaIL Bridge}
@@ -1839,6 +1929,7 @@ Compat-head compilation        & Invertible fragment boundary, staged inverse, f
 Direct-exec surface            & Scheduler exactness, PeTTa eval fragment & add-atom/remove-atom bridge, collection patterns, beta-reduction \\
 Execution boundary             & \texttt{morkTranslatable} packaging, pattern normalization, \texttt{morkTranslatable\_applyBindings} & --- \\
 Runtime kernel packaging       & Effect-class bridge, classified fragments, memoization safety, resource descriptors (4 resources) & Named atomspace exec, ACT exec seam \\
+MM2 bridge round-trip          & \texttt{mm2\_raise\_lower}, \texttt{mm2\_lower\_injective}, \texttt{mm2\_raise\_surjective} (\texttt{Mm2BridgeRoundTrip.lean}, companion boundary result) & Context-sensitive lowering (ACT dual mapping) \\
 \bottomrule
 \end{tabular}
 \end{table}
