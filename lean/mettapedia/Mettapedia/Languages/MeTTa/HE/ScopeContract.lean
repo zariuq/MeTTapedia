@@ -43,6 +43,8 @@ establish the binding semantics for each operator. -/
 private def chainTheoremRefs : List String :=
   [ "Mettapedia.Languages.MeTTa.HE.MinimalStep.chain"
   , "Mettapedia.Languages.MeTTa.HE.MinimalStep.chain_empty"
+  , "Mettapedia.Languages.MeTTa.HE.LetChainFrame.run_source_eq_flatMap"
+  , "Mettapedia.Languages.MeTTa.HE.LetChainFrame.resume?_decompose"
   ]
 
 private def unifyTheoremRefs : List String :=
@@ -65,17 +67,21 @@ private def switchTheoremRefs : List String :=
   ]
 
 private def letTheoremRefs : List String :=
-  [ "Mettapedia.Languages.MeTTa.HE.Conformance.eval_symbol_typecast"
+  [ "Mettapedia.Languages.MeTTa.HE.LetChainFrame.run_source_eq_flatMap"
+  , "Mettapedia.Languages.MeTTa.HE.LetChainFrame.resume?_decompose"
   ]
 
 private def letStarTheoremRefs : List String :=
-  [ "Mettapedia.Languages.MeTTa.HE.Conformance.eval_symbol_typecast"
+  [ "Mettapedia.Languages.MeTTa.HE.LetChainFrame.resume?_decompose"
+  , "Mettapedia.Languages.MeTTa.HE.LetChainFrame.resume?_none_iff_run_nil"
   ]
 
 /-! ## Scope Entries -/
 
 /-- `(chain <atom> <var> <template>)` — evaluate atom, bind result to var,
     substitute in template. Ref: MinimalMeTTa.lean chain constructor.
+    For the resumable source/body sequencing refinement used by a heap-framed
+    evaluator, see LetChainResumption.lean.
     Binder position 1 ($var), value position 0 (atom to evaluate),
     body position 2 (template where $var is in scope). -/
 def chainScopeEntry : ScopeContractEntry where
@@ -162,7 +168,9 @@ def switchMinimalScopeEntry : ScopeContractEntry where
 
 /-- `(let <var> <value> <body>)` — surface sugar that desugars to case,
     but scope info is needed for hygiene before desugaring.
-    Ref: OpProfile.lean classifies let as surfaceSugar.
+    Ref: OpProfile.lean classifies let as surfaceSugar, and
+    LetChainResumption.lean packages the resumable source/body sequencing
+    structure that preserves the same observable binding behavior.
     Binder position 0 ($var), value position 1, body position 2. -/
 def letScopeEntry : ScopeContractEntry where
   head := "let"
@@ -176,7 +184,9 @@ def letScopeEntry : ScopeContractEntry where
   theoremRefs := letTheoremRefs
 
 /-- `(let* <bindings> <body>)` — sequential binding surface sugar.
-    Ref: OpProfile.lean classifies let* as surfaceSugar.
+    Ref: OpProfile.lean classifies let* as surfaceSugar, and
+    LetChainResumption.lean packages the resumable step-by-step sequencing
+    boundary needed to drain one binding body before resuming the next.
     Value position 0 (bindings list), body position 1. -/
 def letStarScopeEntry : ScopeContractEntry where
   head := "let*"

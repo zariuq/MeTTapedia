@@ -6,6 +6,11 @@ import Mettapedia.Languages.ProcessCalculi.MORK.WorkQueueExec
 import Mettapedia.Languages.ProcessCalculi.MORK.WorkQueueOrder
 import Mettapedia.Languages.ProcessCalculi.MORK.ThreePhaseRefinement
 import Mettapedia.Languages.ProcessCalculi.MORK.Conformance
+import Mettapedia.Languages.ProcessCalculi.MORK.ArithmeticExtension
+import Mettapedia.Languages.ProcessCalculi.MORK.BridgeWorkspaceSurfaceRefinement
+import Mettapedia.Languages.ProcessCalculi.MORK.BridgeCursorSurfaceRefinement
+import Mettapedia.Languages.ProcessCalculi.MORK.BridgeAlgebraSurfaceRefinement
+import Mettapedia.Languages.ProcessCalculi.MORK.PathOfAtomEncodingContract
 import Mettapedia.Languages.ProcessCalculi.MORK.ExecutionBoundary
 
 /-!
@@ -26,6 +31,11 @@ MORK/
   WorkQueueExec.lean       — Faithful work-queue scheduler with read-copy semantics
   ThreePhaseRefinement.lean — Phase steps ↔ scheduler steps; applySubst_nil identity
   Conformance.lean         — 27 kernel-checked conformance + correspondence theorems
+  ArithmeticExtension.lean — Int/float sink lowering + `CmpSource` packaging
+  BridgeWorkspaceSurfaceRefinement.lean — Live insert/match/step workspace surface
+  BridgeCursorSurfaceRefinement.lean — Bridge cursor API ↔ PathMap cursor semantics
+  BridgeAlgebraSurfaceRefinement.lean — Live stepping vs structural export boundary
+  PathOfAtomEncodingContract.lean — `path-of-atom` render/parse/traverse contract
   MORKCommBridge.lean  — Bridge: MORK binary fold ↔ MQ-calculus CommReduction
   PathMapBridge.lean   — Bridge: MORK space transitions ↔ PathMap lattice ops
   MatchSpec.lean       — Relational spec of atom matching (sound/complete fragment)
@@ -128,6 +138,16 @@ MORK/
 - `cmatchSourceFactors_toFinset_complete`: matchSourceFactors → cmatchSourceFactors (backward)
 - `cmatchInputSpec_toFinset_complete`: matchInputSpec → cmatchInputSpec (backward)
 - `fireSourceRule_toFinset_complete`: fireSourceRule → cfireSourceRule (backward)
+- `applySinks_intArithTemplate`: decoded integer arithmetic lowers to a single core add effect
+- `applySinks_floatArithTemplate`: decoded float arithmetic lowers to a single core add effect
+- `matchInputSpec_cmpSourceInput`: `CmpSource` is the explicit core source seam `eqConstraint` / `neqConstraint`
+- `cfireSourceRule_cmpSourceRule_noGuards`: single comparison-source rules execute through the existing computable source-rule pipeline
+- `liveInsert_then_exactMatch`: explicit live insertion makes an exact live match immediately visible
+- `liveRemove_then_noExactMatch`: absent atoms do not survive exact live matching
+- `liveRun_steps_le_fuel`: live scheduler execution is bounded by its fuel
+- `pathSupport_readPrefixRestrict_eq_restrictPaths`: read-side `prefix-restrict` is a structural export law
+- `rootedSnapshotExport_lookup_nil`: rooted snapshot export preserves the focused root value
+- `structuralSubtrieExport_lookup_nil`: structural subtrie export clears the focused root value
 - `fireExecFact_card_lt_of_removeOnly`: remove-only templates → cardinality strictly decreases
 - `workQueueRunN_steps_le_fuel`: scheduler takes at most `fuel` steps
 
@@ -147,6 +167,7 @@ The spec intentionally covers:
 - Source-side input: `(I (BTM pat) (== pat witness) ...)` with `SourceFactor`/`InputSpec`
 - Source-side conformance: 5 kernel-checked `rfl` tests for BTM and `==` constraints
 - Source-side work-queue: 6 canary tests for extraction + firing through scheduler
+- Arithmetic/comparison extension surface: int/float sink lowerings and explicit `CmpSource` packaging
 
 Details likely to change in future MORK versions (NOT formalized here):
 - Exact sub-query naming convention (`(sub-k qid)` format)

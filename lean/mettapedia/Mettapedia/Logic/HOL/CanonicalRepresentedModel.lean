@@ -1851,6 +1851,283 @@ theorem represents_not_formula
   rw [represents_prop_iff] at hp ⊢
   rw [henkinTruthSet_not_eq_sdiff, hp]
 
+/-- Equality of closed function codes propagates to equality of their outputs
+at any closed argument inside a Henkin world. -/
+theorem mem_henkinTruthSet_eqApp_of_mem
+    {σ τ : Ty Base}
+    {W : HenkinWorld Base Const}
+    {t u : ClosedTerm (HInf Base Const) (σ ⇒ τ)}
+    {c : ClosedTerm (HInf Base Const) σ}
+    (htu : W ∈ henkinTruthSet (Base := Base) (Const := Const) (.eq t u)) :
+    W ∈ henkinTruthSet (Base := Base) (Const := Const)
+      (.eq (.app t c) (.app u c)) := by
+  have htu' :
+      (.eq t u : ClosedFormula (HInf Base Const)) ∈ W.1.carrier :=
+    (mem_henkinTruthSet_iff (Base := Base) (Const := Const) (W := W)).1 htu
+  have hProv :
+      ClosedTheorySet.Provable
+        (Const := HInf Base Const)
+        W.1.carrier
+        (.eq (.app t c) (.app u c)) := by
+    refine
+      ClosedTheorySet.provable_of_closedTheory
+        (Const := HInf Base Const)
+        (T := W.1.carrier)
+        (Δ := [.eq t u])
+        ?_
+        ?_
+    · intro ψ hψ
+      rcases List.mem_singleton.mp hψ with rfl
+      exact htu'
+    · exact
+        ExtDerivation.eqApp c
+          (ExtDerivation.hyp
+            (Δ := [.eq t u])
+            (φ := (.eq t u : ClosedFormula (HInf Base Const)))
+            (by simp))
+  exact
+    (mem_henkinTruthSet_iff (Base := Base) (Const := Const) (W := W)).2
+      (W.1.mem_of_provable hProv)
+
+/-- Equality of closed argument codes propagates through application by a fixed
+closed function code inside a Henkin world. -/
+theorem mem_henkinTruthSet_eqAppArg_of_mem
+    {σ τ : Ty Base}
+    {W : HenkinWorld Base Const}
+    {f : ClosedTerm (HInf Base Const) (σ ⇒ τ)}
+    {u v : ClosedTerm (HInf Base Const) σ}
+    (huv : W ∈ henkinTruthSet (Base := Base) (Const := Const) (.eq u v)) :
+    W ∈ henkinTruthSet (Base := Base) (Const := Const)
+      (.eq (.app f u) (.app f v)) := by
+  have huv' :
+      (.eq u v : ClosedFormula (HInf Base Const)) ∈ W.1.carrier :=
+    (mem_henkinTruthSet_iff (Base := Base) (Const := Const) (W := W)).1 huv
+  have hProv :
+      ClosedTheorySet.Provable
+        (Const := HInf Base Const)
+        W.1.carrier
+        (.eq (.app f u) (.app f v)) := by
+    refine
+      ClosedTheorySet.provable_of_closedTheory
+        (Const := HInf Base Const)
+        (T := W.1.carrier)
+        (Δ := [.eq u v])
+        ?_
+        ?_
+    · intro ψ hψ
+      rcases List.mem_singleton.mp hψ with rfl
+      exact huv'
+    · exact
+        ExtDerivation.eqAppArg f
+          (ExtDerivation.hyp
+            (Δ := [.eq u v])
+            (φ := (.eq u v : ClosedFormula (HInf Base Const)))
+            (by simp))
+  exact
+    (mem_henkinTruthSet_iff (Base := Base) (Const := Const) (W := W)).2
+      (W.1.mem_of_provable hProv)
+
+/-- Equality formulas represent the extensional semantic equality object on
+represented canonical values. -/
+theorem represents_eq_formula :
+    ∀ {τ : Ty Base}
+      {t u : ClosedTerm (HInf Base Const) τ}
+      {x y : RepresentedCarrier Base Const τ},
+      Represents (Base := Base) (Const := Const) τ t x →
+      Represents (Base := Base) (Const := Const) τ u y →
+        Represents (Base := Base) (Const := Const) .prop (.eq t u)
+          (RepEqv (Base := Base) (Const := Const) τ x y)
+  | .prop, _, _, _, _, ht, hu =>
+      represents_eq_formula_prop
+        (Base := Base)
+        (Const := Const)
+        ht
+        hu
+  | .base b, _, _, _, _, ht, hu =>
+      represents_eq_formula_base
+        (Base := Base)
+        (Const := Const)
+        (b := b)
+        ht
+        hu
+  | .arr σ τ, t, u, f, g, ht, hu => by
+      rw [represents_prop_iff, repEqv_arr]
+      ext W
+      constructor
+      · intro htuW
+        change W ∈ sSup
+          (Set.range
+            (fun x : {x : RepresentedCarrier Base Const σ //
+                Admissible (Base := Base) (Const := Const) σ x} =>
+              RepEqv (Base := Base) (Const := Const) τ (f x.1) (g x.1)))
+        rw [UpperSet.mem_sSup_iff]
+        intro s hs
+        rcases hs with ⟨x, rfl⟩
+        have hChoose :
+            Represents (Base := Base) (Const := Const) σ
+              (chooseCode (Base := Base) (Const := Const) x.1)
+              x.1 :=
+          chooseCode_represents (Base := Base) (Const := Const) x.2
+        have htApp :
+            Represents (Base := Base) (Const := Const) τ
+              (.app t (chooseCode (Base := Base) (Const := Const) x.1))
+              (f x.1) :=
+          represents_app (Base := Base) (Const := Const) ht hChoose
+        have huApp :
+            Represents (Base := Base) (Const := Const) τ
+              (.app u (chooseCode (Base := Base) (Const := Const) x.1))
+              (g x.1) :=
+          represents_app (Base := Base) (Const := Const) hu hChoose
+        have hEqAppW :
+            W ∈ henkinTruthSet (Base := Base) (Const := Const)
+              (.eq
+                (.app t (chooseCode (Base := Base) (Const := Const) x.1))
+                (.app u (chooseCode (Base := Base) (Const := Const) x.1))) :=
+          mem_henkinTruthSet_eqApp_of_mem
+            (Base := Base)
+            (Const := Const)
+            (c := chooseCode (Base := Base) (Const := Const) x.1)
+            htuW
+        have hRepApp :
+            Represents (Base := Base) (Const := Const) .prop
+              (.eq
+                (.app t (chooseCode (Base := Base) (Const := Const) x.1))
+                (.app u (chooseCode (Base := Base) (Const := Const) x.1)))
+              (RepEqv (Base := Base) (Const := Const) τ (f x.1) (g x.1)) :=
+          represents_eq_formula htApp huApp
+        simpa [(represents_prop_iff (Base := Base) (Const := Const)).1 hRepApp] using hEqAppW
+      · intro hfgW
+        have hfgW' : W ∈ sSup
+            (Set.range
+              (fun x : {x : RepresentedCarrier Base Const σ //
+                  Admissible (Base := Base) (Const := Const) σ x} =>
+                RepEqv (Base := Base) (Const := Const) τ (f x.1) (g x.1))) := by
+          simpa [repEqv_arr] using hfgW
+        change
+          W ∈ henkinTruthSet (Base := Base) (Const := Const) (.eq t u)
+        rw [mem_henkinTruthSet_iff]
+        let body : Formula (HInf Base Const) (σ :: ([] : Ctx Base)) :=
+          .eq
+            (.app (weaken (Base := Base) (Const := HInf Base Const) (σ := σ) t) (.var .vz))
+            (.app (weaken (Base := Base) (Const := HInf Base Const) (σ := σ) u) (.var .vz))
+        have hAllMem :
+            (.all body : ClosedFormula (HInf Base Const)) ∈ W.1.carrier := by
+          have hAllTruth :
+              W.1 ∈ ClosedTheorySet.World.truthSet (Const := HInf Base Const) (.all body) := by
+            rw [ClosedTheorySet.World.mem_truthSet_all_iff]
+            intro c
+            let xc : {x : RepresentedCarrier Base Const σ //
+                Admissible (Base := Base) (Const := Const) σ x} :=
+              ⟨representedInput (Base := Base) (Const := Const) c,
+                admissible_of_represents
+                  (Base := Base)
+                  (Const := Const)
+                  (representedInput_spec (Base := Base) (Const := Const) c)⟩
+            have hEqvW :
+                W ∈ RepEqv (Base := Base) (Const := Const) τ (f xc.1) (g xc.1) := by
+              rw [UpperSet.mem_sSup_iff] at hfgW'
+              exact hfgW' _ ⟨xc, rfl⟩
+            have htApp :
+                Represents (Base := Base) (Const := Const) τ (.app t c) (f xc.1) :=
+              represents_app
+                (Base := Base)
+                (Const := Const)
+                ht
+                (representedInput_spec (Base := Base) (Const := Const) c)
+            have huApp :
+                Represents (Base := Base) (Const := Const) τ (.app u c) (g xc.1) :=
+              represents_app
+                (Base := Base)
+                (Const := Const)
+                hu
+                (representedInput_spec (Base := Base) (Const := Const) c)
+            have hRepApp :
+                Represents (Base := Base) (Const := Const) .prop
+                  (.eq (.app t c) (.app u c))
+                  (RepEqv (Base := Base) (Const := Const) τ (f xc.1) (g xc.1)) :=
+              represents_eq_formula htApp huApp
+            have hEqAppW :
+                W ∈ henkinTruthSet (Base := Base) (Const := Const)
+                  (.eq (.app t c) (.app u c)) := by
+              simpa [(represents_prop_iff (Base := Base) (Const := Const)).1 hRepApp] using hEqvW
+            have hBodyEval :
+                instantiate (Base := Base) c body =
+                  (.eq (.app t c) (.app u c) : ClosedFormula (HInf Base Const)) := by
+              have hAppLeft :
+                  subst (Subst.single (Base := Base) (Const := HInf Base Const) c)
+                    (weaken (Base := Base) (Const := HInf Base Const) (σ := σ) t) = t := by
+                simpa [instantiate, weaken] using
+                  (instantiate_weaken
+                    (Base := Base)
+                    (Const := HInf Base Const)
+                    c
+                    t)
+              have hAppRight :
+                  subst (Subst.single (Base := Base) (Const := HInf Base Const) c)
+                    (weaken (Base := Base) (Const := HInf Base Const) (σ := σ) u) = u := by
+                simpa [instantiate, weaken] using
+                  (instantiate_weaken
+                    (Base := Base)
+                    (Const := HInf Base Const)
+                    c
+                    u)
+              have hVar :
+                  subst (Subst.single (Base := Base) (Const := HInf Base Const) c)
+                    (.var (.vz : Var (σ :: ([] : Ctx Base)) σ)) = c := by
+                rfl
+              change
+                (.eq
+                  (.app
+                    (subst (Subst.single (Base := Base) (Const := HInf Base Const) c)
+                      (weaken (Base := Base) (Const := HInf Base Const) (σ := σ) t))
+                    (subst (Subst.single (Base := Base) (Const := HInf Base Const) c)
+                      (.var .vz)))
+                  (.app
+                    (subst (Subst.single (Base := Base) (Const := HInf Base Const) c)
+                      (weaken (Base := Base) (Const := HInf Base Const) (σ := σ) u))
+                    (subst (Subst.single (Base := Base) (Const := HInf Base Const) c)
+                      (.var .vz)))) =
+                  (.eq (.app t c) (.app u c) : ClosedFormula (HInf Base Const))
+              rw [hAppLeft, hAppRight, hVar]
+            exact
+              (ClosedTheorySet.World.mem_truthSet_iff
+                (Const := HInf Base Const)
+                (W := W.1)
+                (φ := instantiate (Base := Base) c body)).2 <|
+                by
+                  simpa [hBodyEval] using
+                    (mem_henkinTruthSet_iff
+                      (Base := Base)
+                      (Const := Const)
+                      (W := W)).1 hEqAppW
+          exact
+            (ClosedTheorySet.World.mem_truthSet_iff
+              (Const := HInf Base Const)
+              (W := W.1)
+              (φ := .all body)).1 hAllTruth
+        have hProv :
+            ClosedTheorySet.Provable
+              (Const := HInf Base Const)
+              W.1.carrier
+              (.eq t u) := by
+          refine
+            ClosedTheorySet.provable_of_closedTheory
+              (Const := HInf Base Const)
+              (T := W.1.carrier)
+              (Δ := [.all body])
+              ?_
+              ?_
+          · intro ψ hψ
+            rcases List.mem_singleton.mp hψ with rfl
+            exact hAllMem
+          · exact
+              ExtDerivation.funExt
+                (ExtDerivation.hyp
+                  (Δ := [.all body])
+                  (φ := (.all body : ClosedFormula (HInf Base Const)))
+                  (by simp))
+        exact W.1.mem_of_provable hProv
+
 /--
 Universe-stable proposition object for the represented canonical bridge.
 
@@ -1956,6 +2233,20 @@ abbrev lowerLiftedRepresented
     LiftedRepresentedCarrier Base Const τ →
       RepresentedCarrier Base Const τ :=
   (representedEquiv (Base := Base) (Const := Const) τ).invFun
+
+/-- Lower a lifted proposition truth value to the raw Henkin truth algebra. -/
+abbrev lowerLiftedTruth
+    (p : LiftedHenkinTruthVal Base Const) :
+    HenkinTruthVal Base Const :=
+  show HenkinTruthVal Base Const from
+    (p.down : OrderDual (HenkinTruthVal Base Const))
+
+/-- Lower a lifted base object to the underlying closed cumulative-Henkin term. -/
+abbrev lowerLiftedBase
+    {b : Base}
+    (x : LiftedHenkinBaseCarrier Base Const b) :
+    ClosedTerm (HInf Base Const) (.base b) :=
+  x.down
 
 @[simp] theorem lowerLiftedRepresented_liftRepresented :
     ∀ (τ : Ty Base) (x : RepresentedCarrier Base Const τ),
@@ -2074,6 +2365,27 @@ abbrev toLiftedHeyting
         (fromLiftedHeyting (Base := Base) (Const := Const) τ x) = x :=
   (liftedHeytingEquiv (Base := Base) (Const := Const) τ).left_inv x
 
+@[simp] theorem lowerLiftedRepresented_prop_fromLiftedHeyting
+    (p : LiftedHenkinTruthVal Base Const) :
+    lowerLiftedRepresented (Base := Base) (Const := Const) .prop
+        (fromLiftedHeyting (Base := Base) (Const := Const) .prop p) =
+      lowerLiftedTruth p := by
+  simp [lowerLiftedTruth, lowerLiftedRepresented, fromLiftedHeyting,
+    representedEquiv, liftedHeytingEquiv]
+  change (Equiv.refl _ p) = p
+  rfl
+
+@[simp] theorem lowerLiftedRepresented_base_fromLiftedHeyting
+    {b : Base}
+    (x : LiftedHenkinBaseCarrier Base Const b) :
+    lowerLiftedRepresented (Base := Base) (Const := Const) (.base b)
+        (fromLiftedHeyting (Base := Base) (Const := Const) (.base b) x) =
+      lowerLiftedBase x := by
+  simp [lowerLiftedBase, lowerLiftedRepresented, fromLiftedHeyting,
+    representedEquiv, liftedHeytingEquiv]
+  change (Equiv.refl _ x) = x
+  rfl
+
 /-- Admissibility on the standard `Ty.denoteHeyting` interpretation, transported
 through the lifted represented staging layer. -/
 def LiftedHeytingAdmissible
@@ -2085,6 +2397,19 @@ def LiftedHeytingAdmissible
         τ) : Prop :=
   LiftedAdmissible (Base := Base) (Const := Const) τ
     (fromLiftedHeyting (Base := Base) (Const := Const) τ x)
+
+@[simp] theorem admissible_lowerLiftedRepresented_fromLiftedHeyting_iff
+    {τ : Ty Base}
+    {x :
+      Ty.denoteHeyting
+        (LiftedHenkinBaseCarrier Base Const)
+        (LiftedHenkinTruthVal Base Const)
+        τ} :
+    LiftedHeytingAdmissible (Base := Base) (Const := Const) τ x ↔
+      Admissible (Base := Base) (Const := Const) τ
+        (lowerLiftedRepresented (Base := Base) (Const := Const) τ
+          (fromLiftedHeyting (Base := Base) (Const := Const) τ x)) := by
+  rfl
 
 @[simp] theorem liftedHeytingAdmissible_toLiftedHeyting_iff
     {τ : Ty Base}
@@ -2427,6 +2752,44 @@ noncomputable def liftedRepresentedPreModel
         v := by
   cases v <;> rfl
 
+@[simp] theorem lowerLiftedHeytingValuation_extend_liftRepresented
+    (D : LiftedRepresentedConstDenotation Base Const)
+    {Γ : Ctx Base} {σ : Ty Base}
+    (ρ : HeytingPreModel.Valuation (liftedRepresentedPreModel D) Γ)
+    (x : RepresentedCarrier Base Const σ)
+    {τ : Ty Base}
+    (v : Var (σ :: Γ) τ) :
+    lowerLiftedHeytingValuation
+        (Base := Base)
+        (Const := Const)
+        (HeytingPreModel.extend
+          (liftedRepresentedPreModel D)
+          ρ
+          (toLiftedHeyting
+            (Base := Base)
+            (Const := Const)
+            σ
+            (liftRepresented (Base := Base) (Const := Const) σ x)))
+        v =
+      Valuation.extend
+        (Base := Base)
+        (Const := Const)
+        (lowerLiftedHeytingValuation (Base := Base) (Const := Const) ρ)
+        x
+        v := by
+  simpa [lowerLiftedHeytingValuation_extend] using
+    (lowerLiftedHeytingValuation_extend
+      (Base := Base)
+      (Const := Const)
+      (D := D)
+      (ρ := ρ)
+      (x := toLiftedHeyting
+        (Base := Base)
+        (Const := Const)
+        σ
+        (liftRepresented (Base := Base) (Const := Const) σ x))
+      (v := v))
+
 theorem valuationAdmissible_lower_of_liftedRepresentedPreModel
     (D : LiftedRepresentedConstDenotation Base Const)
     {Γ : Ctx Base}
@@ -2465,6 +2828,2067 @@ theorem substRep_chooseLiftedClosedSubst_of_liftedRepresentedPreModel
       (Const := Const)
       (ρ := ρ)
       hρ
+
+theorem lowerLiftedTruth_sInf_range_eq_sSup
+    {α : Type*}
+    (p : α → LiftedHenkinTruthVal Base Const) :
+    (show HenkinTruthVal Base Const from
+      ((sInf (Set.range p)).down : OrderDual (HenkinTruthVal Base Const))) =
+      sSup (OrderDual.toDual ⁻¹' (ULift.down '' Set.range p)) := by
+  let e : LiftedHenkinTruthVal Base Const ≃o OrderDual (HenkinTruthVal Base Const) :=
+    ULift.orderIso
+  have hdown :
+      (show HenkinTruthVal Base Const from
+        ((sInf (Set.range p)).down : OrderDual (HenkinTruthVal Base Const))) =
+        OrderDual.ofDual
+          (sInf (ULift.down '' Set.range p) :
+            OrderDual (HenkinTruthVal Base Const)) := by
+    simpa [e, sInf_image] using
+      congrArg OrderDual.ofDual (e.map_sInf (s := Set.range p))
+  exact hdown.trans <| by
+    simp [ofDual_sInf]
+
+theorem lowerLiftedTruth_sSup_range_eq_sInf
+    {α : Type*}
+    (p : α → LiftedHenkinTruthVal Base Const) :
+    (show HenkinTruthVal Base Const from
+      ((sSup (Set.range p)).down : OrderDual (HenkinTruthVal Base Const))) =
+      sInf (OrderDual.toDual ⁻¹' (ULift.down '' Set.range p)) := by
+  let e : LiftedHenkinTruthVal Base Const ≃o OrderDual (HenkinTruthVal Base Const) :=
+    ULift.orderIso
+  have hdown :
+      (show HenkinTruthVal Base Const from
+        ((sSup (Set.range p)).down : OrderDual (HenkinTruthVal Base Const))) =
+        OrderDual.ofDual
+          (sSup (ULift.down '' Set.range p) :
+            OrderDual (HenkinTruthVal Base Const)) := by
+    simpa [e, sSup_image] using
+      congrArg OrderDual.ofDual (e.map_sSup (s := Set.range p))
+  exact hdown.trans <| by
+    simp [ofDual_sSup]
+
+theorem valuationAdmissible_of_substRep_lowerLifted
+    (D : LiftedRepresentedConstDenotation Base Const)
+    {Γ : Ctx Base}
+    {σs : ClosedSubst Base Const Γ}
+    {ρ : HeytingPreModel.Valuation (liftedRepresentedPreModel D) Γ}
+    (hσ :
+      SubstRep
+        (Base := Base)
+        (Const := Const)
+        σs
+        (lowerLiftedHeytingValuation (Base := Base) (Const := Const) ρ)) :
+    HeytingPreModel.ValuationAdmissible
+      (liftedRepresentedPreModel D)
+      ρ := by
+  intro τ v
+  exact
+    liftedHeytingAdmissible_of_represents
+      (Base := Base)
+      (Const := Const)
+      (hσ v)
+
+@[simp] theorem lowerLiftedTruth_eqv_prop
+    (D : LiftedRepresentedConstDenotation Base Const)
+    (p q : LiftedHenkinTruthVal Base Const) :
+    lowerLiftedTruth
+        (HeytingPreModel.Eqv (liftedRepresentedPreModel D) .prop p q) =
+      RepEqv
+        (Base := Base)
+        (Const := Const)
+        .prop
+        (lowerLiftedTruth p)
+        (lowerLiftedTruth q) := by
+  simpa [HeytingPreModel.eqv_prop, repEqv_prop, lowerLiftedTruth, bihimp_def,
+    symmDiff, inf_comm] using
+    (ofDual_bihimp p.down q.down)
+
+@[simp] theorem lowerLiftedTruth_eqv_base
+    (D : LiftedRepresentedConstDenotation Base Const)
+    {b : Base}
+    (x y : LiftedHenkinBaseCarrier Base Const b) :
+    lowerLiftedTruth
+        (HeytingPreModel.Eqv (liftedRepresentedPreModel D) (.base b) x y) =
+      RepEqv
+        (Base := Base)
+        (Const := Const)
+        (.base b)
+        (lowerLiftedBase x)
+        (lowerLiftedBase y) := by
+  cases x with
+  | up tx =>
+      cases y with
+      | up ty =>
+          simp [HeytingPreModel.eqv_base, repEqv_base, liftedRepresentedPreModel,
+            lowerLiftedTruth, lowerLiftedBase, liftedRepresentedBaseEq, representedBaseEq]
+
+@[simp] theorem lowerLiftedRepresented_fromLiftedHeyting_eqv
+    (D : LiftedRepresentedConstDenotation Base Const) :
+    ∀ {τ : Ty Base}
+      (x y :
+        Ty.denoteHeyting
+          (LiftedHenkinBaseCarrier Base Const)
+          (LiftedHenkinTruthVal Base Const)
+          τ),
+      lowerLiftedRepresented
+          (Base := Base)
+          (Const := Const)
+          .prop
+          (fromLiftedHeyting
+            (Base := Base)
+            (Const := Const)
+            .prop
+            (HeytingPreModel.Eqv (liftedRepresentedPreModel D) τ x y)) =
+        RepEqv
+          (Base := Base)
+          (Const := Const)
+          τ
+          (lowerLiftedRepresented
+            (Base := Base)
+            (Const := Const)
+            τ
+            (fromLiftedHeyting
+              (Base := Base)
+              (Const := Const)
+              τ
+              x))
+          (lowerLiftedRepresented
+            (Base := Base)
+            (Const := Const)
+            τ
+            (fromLiftedHeyting
+              (Base := Base)
+              (Const := Const)
+              τ
+              y))
+  | .prop, x, y => by
+      simpa [lowerLiftedRepresented, fromLiftedHeyting, representedEquiv,
+        liftedHeytingEquiv, lowerLiftedTruth] using
+        (lowerLiftedTruth_eqv_prop (Base := Base) (Const := Const) D x y)
+  | .base b, x, y => by
+      simpa [lowerLiftedRepresented, fromLiftedHeyting, representedEquiv,
+        liftedHeytingEquiv, lowerLiftedTruth, lowerLiftedBase] using
+        (lowerLiftedTruth_eqv_base (Base := Base) (Const := Const) D x y)
+  | .arr σ τ, f, g => by
+      let pEq :
+          {x :
+            Ty.denoteHeyting
+              (LiftedHenkinBaseCarrier Base Const)
+              (LiftedHenkinTruthVal Base Const)
+              σ //
+            HeytingPreModel.adm (liftedRepresentedPreModel D) σ x} →
+            LiftedHenkinTruthVal Base Const :=
+        fun x => HeytingPreModel.Eqv (liftedRepresentedPreModel D) τ (f x.1) (g x.1)
+      rw [HeytingPreModel.eqv_arr, HeytingPreModel.allAdmissible]
+      rw [repEqv_arr]
+      have hLift :
+          lowerLiftedRepresented
+              (Base := Base)
+              (Const := Const)
+              .prop
+              (fromLiftedHeyting
+                (Base := Base)
+                (Const := Const)
+                .prop
+                ((sInf (Set.range pEq)) : LiftedHenkinTruthVal Base Const)) =
+            sSup (OrderDual.toDual ⁻¹' (ULift.down '' Set.range pEq)) := by
+        simpa [lowerLiftedRepresented, fromLiftedHeyting, representedEquiv,
+          liftedHeytingEquiv, pEq] using
+          (lowerLiftedTruth_sInf_range_eq_sSup
+            (Base := Base)
+            (Const := Const)
+            (p := pEq))
+      refine hLift.trans <| by
+        congr 1
+        ext s
+        constructor
+        · intro hs
+          rcases hs with ⟨t, ⟨x, rfl⟩, rfl⟩
+          have hxRaw :
+              Admissible (Base := Base) (Const := Const) σ
+                (lowerLiftedRepresented
+                  (Base := Base)
+                  (Const := Const)
+                  σ
+                  (fromLiftedHeyting (Base := Base) (Const := Const) σ x.1)) := by
+            simpa [LiftedHeytingAdmissible, LiftedAdmissible] using x.2
+          refine
+            ⟨⟨lowerLiftedRepresented
+                  (Base := Base)
+                  (Const := Const)
+                  σ
+                  (fromLiftedHeyting (Base := Base) (Const := Const) σ x.1),
+                hxRaw⟩, ?_⟩
+          simpa [pEq, lowerLiftedRepresented, representedEquiv, fromLiftedHeyting,
+            liftedHeytingEquiv, lowerLiftedRepresented_app, fromLiftedHeyting_app] using
+            (lowerLiftedRepresented_fromLiftedHeyting_eqv
+              (D := D)
+              (τ := τ)
+              (x := f x.1)
+              (y := g x.1)).symm
+        · intro hs
+          rcases hs with ⟨x, rfl⟩
+          let xLift :=
+            toLiftedHeyting
+              (Base := Base)
+              (Const := Const)
+              σ
+              (liftRepresented (Base := Base) (Const := Const) σ x.1)
+          have hxLift :
+              HeytingPreModel.adm (liftedRepresentedPreModel D) σ xLift := by
+            change
+              LiftedHeytingAdmissible (Base := Base) (Const := Const) σ xLift
+            unfold xLift
+            rw [liftedHeytingAdmissible_toLiftedHeyting_iff]
+            simpa using
+              ((liftedAdmissible_liftRepresented_iff
+                (Base := Base)
+                (Const := Const)
+                (τ := σ)
+                (x := x.1)).2
+                x.2)
+          refine ⟨pEq ⟨xLift, hxLift⟩, ⟨⟨xLift, hxLift⟩, rfl⟩, ?_⟩
+          simpa [xLift, pEq, lowerLiftedRepresented, representedEquiv,
+            fromLiftedHeyting, liftedHeytingEquiv, toLiftedHeyting,
+            lowerLiftedRepresented_app, fromLiftedHeyting_app] using
+            congrArg OrderDual.toDual
+              (lowerLiftedRepresented_fromLiftedHeyting_eqv
+                (D := D)
+                (τ := τ)
+                (x := f xLift)
+                (y := g xLift))
+
+theorem represents_subst_of_liftedRepresentedPreModel
+    (D : LiftedRepresentedConstDenotation Base Const) :
+    ∀ {Γ : Ctx Base} {τ : Ty Base}
+      (t : Term (HInf Base Const) Γ τ)
+      {σs : ClosedSubst Base Const Γ}
+      {ρ : HeytingPreModel.Valuation (liftedRepresentedPreModel D) Γ},
+      SubstRep
+        (Base := Base)
+        (Const := Const)
+        σs
+        (lowerLiftedHeytingValuation (Base := Base) (Const := Const) ρ) →
+        Represents (Base := Base) (Const := Const) τ
+          (subst σs t)
+          (lowerLiftedRepresented
+            (Base := Base)
+            (Const := Const)
+            τ
+            (fromLiftedHeyting
+              (Base := Base)
+              (Const := Const)
+              τ
+              (HeytingPreModel.denote (liftedRepresentedPreModel D) t ρ)))
+  | _, _, .var v, σs, ρ, hσ => by
+      simpa [HeytingPreModel.denote, lowerLiftedHeytingValuation] using hσ v
+  | _, _, .const c, σs, ρ, _hσ => by
+      simpa [HeytingPreModel.denote] using D.toLiftedHeyting_spec c
+  | _, _, .app f t, σs, ρ, hσ => by
+      simpa [Represents, subst, HeytingPreModel.denote, lowerLiftedRepresented,
+        fromLiftedHeyting, representedEquiv, liftedHeytingEquiv] using
+        represents_app
+          (Base := Base)
+          (Const := Const)
+          (represents_subst_of_liftedRepresentedPreModel
+            (D := D)
+            (t := f)
+            (σs := σs)
+            (ρ := ρ)
+            hσ)
+          (represents_subst_of_liftedRepresentedPreModel
+            (D := D)
+            (t := t)
+            (σs := σs)
+            (ρ := ρ)
+            hσ)
+  | _, _, .lam body, σs, ρ, hσ => by
+      rw [represents_arr_iff]
+      intro u x hx
+      let xLift :=
+        toLiftedHeyting
+          (Base := Base)
+          (Const := Const)
+          _
+          (liftRepresented (Base := Base) (Const := Const) _ x)
+      have hσx :
+          SubstRep
+            (Base := Base)
+            (Const := Const)
+            (ClosedSubst.extend (Base := Base) (Const := Const) σs u)
+            (lowerLiftedHeytingValuation
+              (Base := Base)
+              (Const := Const)
+                (HeytingPreModel.extend (liftedRepresentedPreModel D) ρ xLift)) := by
+        intro τ v
+        simpa [xLift] using
+          (substRep_extend
+            (Base := Base)
+            (Const := Const)
+            (σ := _)
+            (hρ := hσ)
+            (hx := hx)
+            (v := v))
+      have hBody :
+          Represents (Base := Base) (Const := Const) _
+            (subst (ClosedSubst.extend (Base := Base) (Const := Const) σs u) body)
+            (lowerLiftedRepresented
+              (Base := Base)
+              (Const := Const)
+              _
+              (fromLiftedHeyting
+                (Base := Base)
+                (Const := Const)
+                _
+                (HeytingPreModel.denote
+                  (liftedRepresentedPreModel D)
+                  body
+                  (HeytingPreModel.extend (liftedRepresentedPreModel D) ρ xLift)))) :=
+        represents_subst_of_liftedRepresentedPreModel
+          (D := D)
+          (t := body)
+          (σs := ClosedSubst.extend (Base := Base) (Const := Const) σs u)
+          (ρ := HeytingPreModel.extend (liftedRepresentedPreModel D) ρ xLift)
+          hσx
+      have hBeta :
+          HenkinProvable (Base := Base) (Const := Const)
+            (.eq
+              (.app (.lam (subst (Subst.lift (Base := Base) (σ := _) σs) body)) u)
+              (instantiate (Base := Base) u
+                (subst (Subst.lift (Base := Base) (σ := _) σs) body))) :=
+        henkinProvable_of_theorem
+          (Base := Base)
+          (Const := Const)
+          (.beta u (subst (Subst.lift (Base := Base) (σ := _) σs) body))
+      have hBetaCode :
+          CodeEq (Base := Base) (Const := Const) _
+            (.app (.lam (subst (Subst.lift (Base := Base) (σ := _) σs) body)) u)
+            (instantiate (Base := Base) u
+              (subst (Subst.lift (Base := Base) (σ := _) σs) body)) :=
+        codeEq_of_henkinProvable_eq
+          (Base := Base)
+          (Const := Const)
+          hBeta
+      have hBodyInst :
+          Represents (Base := Base) (Const := Const) _
+            (instantiate (Base := Base) u
+              (subst (Subst.lift (Base := Base) (σ := _) σs) body))
+            (lowerLiftedRepresented
+              (Base := Base)
+              (Const := Const)
+              _
+              (fromLiftedHeyting
+                (Base := Base)
+                (Const := Const)
+                _
+                (HeytingPreModel.denote
+                  (liftedRepresentedPreModel D)
+                  body
+                  (HeytingPreModel.extend (liftedRepresentedPreModel D) ρ xLift)))) := by
+        simpa [subst_extend_eq_instantiate_term] using hBody
+      exact
+        by
+          simpa [Represents, subst, HeytingPreModel.denote, xLift,
+            lowerLiftedRepresented, fromLiftedHeyting, representedEquiv, liftedHeytingEquiv] using
+            (represents_of_codeEq_right
+              (Base := Base)
+              (Const := Const)
+              hBetaCode
+              hBodyInst)
+  | _, .prop, .top, σs, ρ, _hσ => by
+      rw [represents_prop_iff]
+      simp [subst, HeytingPreModel.denote, lowerLiftedRepresented,
+        fromLiftedHeyting, representedEquiv, liftedHeytingEquiv]
+      rfl
+  | _, .prop, .bot, σs, ρ, _hσ => by
+      rw [represents_prop_iff]
+      simp [subst, HeytingPreModel.denote, lowerLiftedRepresented,
+        fromLiftedHeyting, representedEquiv, liftedHeytingEquiv]
+      rfl
+  | _, .prop, .and φ ψ, σs, ρ, hσ => by
+      simpa [subst, HeytingPreModel.denote, lowerLiftedRepresented, representedEquiv,
+        fromLiftedHeyting, liftedHeytingEquiv] using
+        represents_and_formula
+          (Base := Base)
+          (Const := Const)
+          (represents_subst_of_liftedRepresentedPreModel
+            (D := D)
+            (t := φ)
+            (σs := σs)
+            (ρ := ρ)
+            hσ)
+          (represents_subst_of_liftedRepresentedPreModel
+            (D := D)
+            (t := ψ)
+            (σs := σs)
+            (ρ := ρ)
+            hσ)
+  | _, .prop, .or φ ψ, σs, ρ, hσ => by
+      simpa [subst, HeytingPreModel.denote, lowerLiftedRepresented, representedEquiv,
+        fromLiftedHeyting, liftedHeytingEquiv] using
+        represents_or_formula
+          (Base := Base)
+          (Const := Const)
+          (represents_subst_of_liftedRepresentedPreModel
+            (D := D)
+            (t := φ)
+            (σs := σs)
+            (ρ := ρ)
+            hσ)
+          (represents_subst_of_liftedRepresentedPreModel
+            (D := D)
+            (t := ψ)
+            (σs := σs)
+            (ρ := ρ)
+            hσ)
+  | _, .prop, .imp φ ψ, σs, ρ, hσ => by
+      simpa [subst, HeytingPreModel.denote, lowerLiftedRepresented, representedEquiv,
+        fromLiftedHeyting, liftedHeytingEquiv] using
+        represents_imp_formula
+          (Base := Base)
+          (Const := Const)
+          (represents_subst_of_liftedRepresentedPreModel
+            (D := D)
+            (t := φ)
+            (σs := σs)
+            (ρ := ρ)
+            hσ)
+          (represents_subst_of_liftedRepresentedPreModel
+            (D := D)
+            (t := ψ)
+            (σs := σs)
+            (ρ := ρ)
+            hσ)
+  | _, .prop, .not φ, σs, ρ, hσ => by
+      simpa [subst, HeytingPreModel.denote, lowerLiftedRepresented, representedEquiv,
+        fromLiftedHeyting, liftedHeytingEquiv] using
+        represents_not_formula
+          (Base := Base)
+          (Const := Const)
+          (represents_subst_of_liftedRepresentedPreModel
+            (D := D)
+            (t := φ)
+            (σs := σs)
+            (ρ := ρ)
+            hσ)
+  | _, .prop, .eq t u, σs, ρ, hσ => by
+      rw [represents_prop_iff]
+      simp [subst, HeytingPreModel.denote]
+      have hEqv :
+          (representedEquiv (Base := Base) (Const := Const) .prop).symm
+              ((liftedHeytingEquiv (Base := Base) (Const := Const) .prop)
+                ((liftedRepresentedPreModel D).Eqv _
+                  ((liftedRepresentedPreModel D).denote t fun {τ} => ρ)
+                  ((liftedRepresentedPreModel D).denote u fun {τ} => ρ))) =
+            RepEqv
+              (Base := Base)
+              (Const := Const)
+              _
+              ((representedEquiv (Base := Base) (Const := Const) _).symm
+                ((liftedHeytingEquiv (Base := Base) (Const := Const) _)
+                  ((liftedRepresentedPreModel D).denote t fun {τ} => ρ)))
+              ((representedEquiv (Base := Base) (Const := Const) _).symm
+                ((liftedHeytingEquiv (Base := Base) (Const := Const) _)
+                  ((liftedRepresentedPreModel D).denote u fun {τ} => ρ))) := by
+        simpa [lowerLiftedRepresented, fromLiftedHeyting,
+          representedEquiv, liftedHeytingEquiv] using
+          (lowerLiftedRepresented_fromLiftedHeyting_eqv
+            (Base := Base)
+            (Const := Const)
+            (D := D)
+            (τ := _)
+            ((liftedRepresentedPreModel D).denote t fun {τ} => ρ)
+            ((liftedRepresentedPreModel D).denote u fun {τ} => ρ))
+      rw [hEqv]
+      exact
+        (represents_prop_iff (Base := Base) (Const := Const)).1 <|
+          represents_eq_formula
+            (Base := Base)
+            (Const := Const)
+            (represents_subst_of_liftedRepresentedPreModel
+              (D := D)
+              (t := t)
+              (σs := σs)
+              (ρ := ρ)
+              hσ)
+            (represents_subst_of_liftedRepresentedPreModel
+              (D := D)
+              (t := u)
+              (σs := σs)
+              (ρ := ρ)
+              hσ)
+  | _, .prop, .all φ, σs, ρ, hσ => by
+      let M := liftedRepresentedPreModel D
+      have hρ :
+          HeytingPreModel.ValuationAdmissible M ρ :=
+        valuationAdmissible_of_substRep_lowerLifted
+          (Base := Base)
+          (Const := Const)
+          (D := D)
+          hσ
+      rw [represents_prop_iff]
+      simp [HeytingPreModel.denote, lowerLiftedRepresented, representedEquiv,
+        fromLiftedHeyting, liftedHeytingEquiv]
+      rw [HeytingPreModel.allAdmissible]
+      let p :
+          {x :
+            Ty.denoteHeyting
+              (LiftedHenkinBaseCarrier Base Const)
+              (LiftedHenkinTruthVal Base Const)
+              _ //
+            HeytingPreModel.adm M _ x} →
+            LiftedHenkinTruthVal Base Const :=
+        fun x => HeytingPreModel.denoteFormula M φ (HeytingPreModel.extend M ρ x.1)
+      have hAllLift :
+          (show HenkinTruthVal Base Const from
+            ((sInf (Set.range p)).down :
+              OrderDual (HenkinTruthVal Base Const))) =
+            sSup
+              (OrderDual.toDual ⁻¹' (ULift.down '' Set.range p)) := by
+        simpa [p] using
+          (lowerLiftedTruth_sInf_range_eq_sSup
+            (Base := Base)
+            (Const := Const)
+            (p := p))
+      refine Eq.trans ?_ hAllLift.symm
+      ext W
+      constructor
+      · intro hAll
+        change W ∈ (sSup (OrderDual.toDual ⁻¹' (ULift.down '' Set.range p)) :
+          HenkinTruthVal Base Const)
+        rw [UpperSet.mem_sSup_iff]
+        intro s hs
+        rcases hs with ⟨sd, hs', rfl⟩
+        rcases hs' with ⟨x, rfl⟩
+        have hxRaw :
+            Admissible (Base := Base) (Const := Const) _
+              (lowerLiftedRepresented
+                (Base := Base)
+                (Const := Const)
+                _
+                (fromLiftedHeyting (Base := Base) (Const := Const) _ x.1)) := by
+          exact x.2
+        have hChoose :
+            Represents (Base := Base) (Const := Const) _
+              (chooseCode
+                (Base := Base)
+                (Const := Const)
+                (lowerLiftedRepresented
+                  (Base := Base)
+                  (Const := Const)
+                  _
+                  (fromLiftedHeyting (Base := Base) (Const := Const) _ x.1)))
+              (lowerLiftedRepresented
+                (Base := Base)
+                (Const := Const)
+                _
+                (fromLiftedHeyting (Base := Base) (Const := Const) _ x.1)) :=
+          chooseCode_represents
+            (Base := Base)
+            (Const := Const)
+            hxRaw
+        have hσx :
+            SubstRep
+              (Base := Base)
+              (Const := Const)
+              (ClosedSubst.extend
+                (Base := Base)
+                (Const := Const)
+                σs
+                (chooseCode
+                  (Base := Base)
+                  (Const := Const)
+                  (lowerLiftedRepresented
+                    (Base := Base)
+                    (Const := Const)
+                    _
+                    (fromLiftedHeyting (Base := Base) (Const := Const) _ x.1))))
+              (lowerLiftedHeytingValuation
+                (Base := Base)
+                (Const := Const)
+                (HeytingPreModel.extend M ρ x.1)) := by
+          intro τ v
+          simpa [M, lowerLiftedHeytingValuation_extend] using
+            (substRep_extend
+              (Base := Base)
+              (Const := Const)
+              (σ := _)
+              (hρ := hσ)
+              (hx := hChoose)
+              (v := v))
+        have hBody :
+            Represents (Base := Base) (Const := Const) .prop
+              (subst
+                (ClosedSubst.extend
+                  (Base := Base)
+                  (Const := Const)
+                  σs
+                  (chooseCode
+                    (Base := Base)
+                    (Const := Const)
+                    (lowerLiftedRepresented
+                      (Base := Base)
+                      (Const := Const)
+                      _
+                      (fromLiftedHeyting (Base := Base) (Const := Const) _ x.1))))
+                φ)
+              (lowerLiftedRepresented
+                (Base := Base)
+                (Const := Const)
+                .prop
+                (fromLiftedHeyting
+                  (Base := Base)
+                  (Const := Const)
+                  .prop
+                  (HeytingPreModel.denote
+                    M
+                    φ
+                    (HeytingPreModel.extend M ρ x.1)))) :=
+          represents_subst_of_liftedRepresentedPreModel
+            (D := D)
+            (t := φ)
+            (σs := ClosedSubst.extend
+              (Base := Base)
+              (Const := Const)
+              σs
+              (chooseCode
+                (Base := Base)
+                (Const := Const)
+                (lowerLiftedRepresented
+                  (Base := Base)
+                  (Const := Const)
+                  _
+                  (fromLiftedHeyting (Base := Base) (Const := Const) _ x.1))))
+            (ρ := HeytingPreModel.extend M ρ x.1)
+            hσx
+        have hAllInst :
+            W.1 ∈
+              Mettapedia.Logic.HOL.HenkinConstInfinity.denoteFormula
+              (Base := Base)
+              (Const := Const)
+              φ
+              (ClosedSubst.extend
+                (Base := Base)
+                (Const := Const)
+                σs
+                (chooseCode
+                  (Base := Base)
+                  (Const := Const)
+                  (lowerLiftedRepresented
+                    (Base := Base)
+                    (Const := Const)
+                    _
+                    (fromLiftedHeyting (Base := Base) (Const := Const) _ x.1)))) := by
+          exact
+            (mem_denoteFormula_all_iff
+              (Base := Base)
+              (Const := Const)
+              (W := W.1)
+              (φ := φ)
+              (σs := σs)).1 hAll _
+        have hBodyEq :
+            henkinTruthSet
+                (Base := Base)
+                (Const := Const)
+                (subst
+                  (ClosedSubst.extend
+                    (Base := Base)
+                    (Const := Const)
+                    σs
+                    (chooseCode
+                      (Base := Base)
+                      (Const := Const)
+                      (lowerLiftedRepresented
+                        (Base := Base)
+                        (Const := Const)
+                        _
+                        (fromLiftedHeyting (Base := Base) (Const := Const) _ x.1))))
+                  φ) =
+              lowerLiftedRepresented
+                (Base := Base)
+                (Const := Const)
+                .prop
+                (fromLiftedHeyting
+                  (Base := Base)
+                  (Const := Const)
+                  .prop
+                  (HeytingPreModel.denote M φ (HeytingPreModel.extend M ρ x.1))) :=
+          (represents_prop_iff (Base := Base) (Const := Const)).1 hBody
+        have hAllInst' :
+            W ∈ henkinTruthSet
+              (Base := Base)
+              (Const := Const)
+              (subst
+                (ClosedSubst.extend
+                  (Base := Base)
+                  (Const := Const)
+                  σs
+                  (chooseCode
+                    (Base := Base)
+                    (Const := Const)
+                    (lowerLiftedRepresented
+                      (Base := Base)
+                      (Const := Const)
+                      _
+                      (fromLiftedHeyting (Base := Base) (Const := Const) _ x.1))))
+                φ) := by
+          simpa [Mettapedia.Logic.HOL.HenkinConstInfinity.denoteFormula, subst] using hAllInst
+        have hAllBody :
+            W ∈
+              (show HenkinTruthVal Base Const from
+                lowerLiftedRepresented
+                  (Base := Base)
+                  (Const := Const)
+                  .prop
+                  (fromLiftedHeyting
+                    (Base := Base)
+                    (Const := Const)
+                    .prop
+                    (HeytingPreModel.denote M φ (HeytingPreModel.extend M ρ x.1)))) := by
+          rwa [hBodyEq] at hAllInst'
+        simpa [p, lowerLiftedRepresented, representedEquiv, fromLiftedHeyting,
+          liftedHeytingEquiv] using hAllBody
+      · intro hAll
+        have hAll' :
+            W.1 ∈
+              Mettapedia.Logic.HOL.HenkinConstInfinity.denoteFormula
+                (Base := Base)
+                (Const := Const)
+                (.all φ)
+                σs := by
+          rw [mem_denoteFormula_all_iff]
+          intro c
+          let xLift :=
+            toLiftedHeyting
+              (Base := Base)
+              (Const := Const)
+              _
+              (liftRepresented
+                (Base := Base)
+                (Const := Const)
+                _
+                (representedInput (Base := Base) (Const := Const) c))
+          have hxLift :
+              HeytingPreModel.adm M _ xLift := by
+            change
+              LiftedHeytingAdmissible (Base := Base) (Const := Const) _ xLift
+            unfold xLift
+            rw [liftedHeytingAdmissible_toLiftedHeyting_iff]
+            simpa using
+              ((liftedAdmissible_liftRepresented_iff
+                (Base := Base)
+                (Const := Const)
+                (τ := _)
+                (x := representedInput (Base := Base) (Const := Const) c)).2
+                (admissible_of_represents
+                  (Base := Base)
+                  (Const := Const)
+                  (representedInput_spec
+                    (Base := Base)
+                    (Const := Const)
+                    c)))
+          have hAllAt :
+              W ∈
+                (show HenkinTruthVal Base Const from
+                  (((fun x :
+                      {x :
+                        Ty.denoteHeyting
+                          (LiftedHenkinBaseCarrier Base Const)
+                          (LiftedHenkinTruthVal Base Const)
+                          _ //
+                        HeytingPreModel.adm M _ x} =>
+                      HeytingPreModel.denoteFormula
+                        M
+                        φ
+                        (HeytingPreModel.extend M ρ x.1)) ⟨xLift, hxLift⟩).down :
+                    OrderDual (HenkinTruthVal Base Const))) := by
+            change
+              W ∈ (sSup (OrderDual.toDual ⁻¹' (ULift.down '' Set.range p)) :
+                HenkinTruthVal Base Const) at hAll
+            rw [UpperSet.mem_sSup_iff] at hAll
+            have hsMem :
+                (show HenkinTruthVal Base Const from
+                  (((fun x :
+                      {x :
+                        Ty.denoteHeyting
+                          (LiftedHenkinBaseCarrier Base Const)
+                          (LiftedHenkinTruthVal Base Const)
+                          _ //
+                        HeytingPreModel.adm M _ x} =>
+                      HeytingPreModel.denoteFormula
+                        M
+                        φ
+                        (HeytingPreModel.extend M ρ x.1)) ⟨xLift, hxLift⟩).down :
+                    OrderDual (HenkinTruthVal Base Const))) ∈
+                  OrderDual.toDual ⁻¹' (ULift.down '' Set.range p) := by
+              change
+                (((fun x :
+                    {x :
+                      Ty.denoteHeyting
+                        (LiftedHenkinBaseCarrier Base Const)
+                        (LiftedHenkinTruthVal Base Const)
+                        _ //
+                      HeytingPreModel.adm M _ x} =>
+                    HeytingPreModel.denoteFormula
+                      M
+                      φ
+                      (HeytingPreModel.extend M ρ x.1)) ⟨xLift, hxLift⟩).down :
+                  OrderDual (HenkinTruthVal Base Const)) ∈
+                  ULift.down '' Set.range p
+              refine ⟨((fun x :
+                    {x :
+                      Ty.denoteHeyting
+                        (LiftedHenkinBaseCarrier Base Const)
+                        (LiftedHenkinTruthVal Base Const)
+                        _ //
+                      HeytingPreModel.adm M _ x} =>
+                    HeytingPreModel.denoteFormula
+                      M
+                      φ
+                      (HeytingPreModel.extend M ρ x.1)) ⟨xLift, hxLift⟩), ?_⟩
+              exact ⟨⟨⟨xLift, hxLift⟩, rfl⟩, rfl⟩
+            exact hAll _ hsMem
+          have hσx :
+              SubstRep
+                (Base := Base)
+                (Const := Const)
+                (ClosedSubst.extend (Base := Base) (Const := Const) σs c)
+                (lowerLiftedHeytingValuation
+                  (Base := Base)
+                  (Const := Const)
+                  (HeytingPreModel.extend M ρ xLift)) := by
+            intro τ v
+            simpa [M, xLift, lowerLiftedHeytingValuation_extend_liftRepresented] using
+              (substRep_extend
+                (Base := Base)
+                (Const := Const)
+                (σ := _)
+                (hρ := hσ)
+                (hx := representedInput_spec (Base := Base) (Const := Const) c)
+                (v := v))
+          have hBody :
+              Represents (Base := Base) (Const := Const) .prop
+                (subst
+                  (ClosedSubst.extend (Base := Base) (Const := Const) σs c)
+                  φ)
+                (lowerLiftedRepresented
+                  (Base := Base)
+                  (Const := Const)
+                  .prop
+                  (fromLiftedHeyting
+                    (Base := Base)
+                    (Const := Const)
+                    .prop
+                    (HeytingPreModel.denote
+                      M
+                      φ
+                      (HeytingPreModel.extend M ρ xLift)))) :=
+            represents_subst_of_liftedRepresentedPreModel
+              (D := D)
+              (t := φ)
+              (σs := ClosedSubst.extend (Base := Base) (Const := Const) σs c)
+              (ρ := HeytingPreModel.extend M ρ xLift)
+              hσx
+          have hBodyEq :
+              henkinTruthSet
+                  (Base := Base)
+                  (Const := Const)
+                  (subst
+                    (ClosedSubst.extend (Base := Base) (Const := Const) σs c)
+                    φ) =
+                lowerLiftedRepresented
+                  (Base := Base)
+                  (Const := Const)
+                  .prop
+                  (fromLiftedHeyting
+                    (Base := Base)
+                    (Const := Const)
+                    .prop
+                    (HeytingPreModel.denote
+                      M
+                      φ
+                      (HeytingPreModel.extend M ρ xLift))) :=
+            (represents_prop_iff (Base := Base) (Const := Const)).1 hBody
+          have hAllAt' :
+              W ∈ henkinTruthSet
+                (Base := Base)
+                (Const := Const)
+                (subst
+                  (ClosedSubst.extend (Base := Base) (Const := Const) σs c)
+                  φ) := by
+            have hAllBody :
+                W ∈
+                  (show HenkinTruthVal Base Const from
+                    lowerLiftedRepresented
+                      (Base := Base)
+                      (Const := Const)
+                      .prop
+                      (fromLiftedHeyting
+                        (Base := Base)
+                        (Const := Const)
+                        .prop
+                        (HeytingPreModel.denote
+                          M
+                          φ
+                          (HeytingPreModel.extend M ρ xLift)))) := by
+              simpa [p, lowerLiftedRepresented, representedEquiv, fromLiftedHeyting,
+                liftedHeytingEquiv] using hAllAt
+            rwa [← hBodyEq] at hAllBody
+          simpa [Mettapedia.Logic.HOL.HenkinConstInfinity.denoteFormula, subst] using hAllAt'
+        simpa using hAll'
+  | _, .prop, .ex φ, σs, ρ, hσ => by
+      let M := liftedRepresentedPreModel D
+      rw [represents_prop_iff]
+      simp [HeytingPreModel.denote, lowerLiftedRepresented, representedEquiv,
+        fromLiftedHeyting, liftedHeytingEquiv]
+      rw [HeytingPreModel.anyAdmissible]
+      let p :
+          {x :
+            Ty.denoteHeyting
+              (LiftedHenkinBaseCarrier Base Const)
+              (LiftedHenkinTruthVal Base Const)
+              _ //
+            HeytingPreModel.adm M _ x} →
+            LiftedHenkinTruthVal Base Const :=
+        fun x => HeytingPreModel.denoteFormula M φ (HeytingPreModel.extend M ρ x.1)
+      have hExLift :
+          (show HenkinTruthVal Base Const from
+            ((sSup (Set.range p)).down :
+              OrderDual (HenkinTruthVal Base Const))) =
+            sInf
+              (OrderDual.toDual ⁻¹' (ULift.down '' Set.range p)) := by
+        simpa [p] using
+          (lowerLiftedTruth_sSup_range_eq_sInf
+            (Base := Base)
+            (Const := Const)
+            (p := p))
+      refine Eq.trans ?_ hExLift.symm
+      ext W
+      constructor
+      · intro hEx
+        change W ∈ (sInf (OrderDual.toDual ⁻¹' (ULift.down '' Set.range p)) :
+          HenkinTruthVal Base Const)
+        rw [UpperSet.mem_sInf_iff]
+        rcases (mem_denoteFormula_ex_iff
+          (Base := Base)
+          (Const := Const)
+          (W := W.1)
+          (φ := φ)
+          (σs := σs)).1 hEx with ⟨c, hc⟩
+        let xLift :=
+          toLiftedHeyting
+            (Base := Base)
+            (Const := Const)
+            _
+            (liftRepresented
+              (Base := Base)
+              (Const := Const)
+              _
+              (representedInput (Base := Base) (Const := Const) c))
+        have hxLift :
+            HeytingPreModel.adm M _ xLift := by
+          change
+            LiftedHeytingAdmissible (Base := Base) (Const := Const) _ xLift
+          unfold xLift
+          rw [liftedHeytingAdmissible_toLiftedHeyting_iff]
+          simpa using
+            ((liftedAdmissible_liftRepresented_iff
+              (Base := Base)
+              (Const := Const)
+              (τ := _)
+              (x := representedInput (Base := Base) (Const := Const) c)).2
+              (admissible_of_represents
+                (Base := Base)
+                (Const := Const)
+                (representedInput_spec
+                  (Base := Base)
+                  (Const := Const)
+                  c)))
+        have hσx :
+            SubstRep
+              (Base := Base)
+              (Const := Const)
+              (ClosedSubst.extend (Base := Base) (Const := Const) σs c)
+                (lowerLiftedHeytingValuation
+                  (Base := Base)
+                  (Const := Const)
+                  (HeytingPreModel.extend M ρ xLift)) := by
+          intro τ v
+          simpa [M, xLift, lowerLiftedHeytingValuation_extend_liftRepresented] using
+            (substRep_extend
+              (Base := Base)
+              (Const := Const)
+              (σ := _)
+              (hρ := hσ)
+              (hx := representedInput_spec (Base := Base) (Const := Const) c)
+              (v := v))
+        have hBody :
+            Represents (Base := Base) (Const := Const) .prop
+              (subst
+                (ClosedSubst.extend (Base := Base) (Const := Const) σs c)
+                φ)
+              (lowerLiftedRepresented
+                (Base := Base)
+                (Const := Const)
+                .prop
+                (fromLiftedHeyting
+                  (Base := Base)
+                  (Const := Const)
+                  .prop
+                  (HeytingPreModel.denote
+                    M
+                    φ
+                    (HeytingPreModel.extend M ρ xLift)))) :=
+          represents_subst_of_liftedRepresentedPreModel
+            (D := D)
+            (t := φ)
+            (σs := ClosedSubst.extend (Base := Base) (Const := Const) σs c)
+            (ρ := HeytingPreModel.extend M ρ xLift)
+            hσx
+        refine ⟨(show HenkinTruthVal Base Const from
+          (((fun x :
+              {x :
+                Ty.denoteHeyting
+                  (LiftedHenkinBaseCarrier Base Const)
+                  (LiftedHenkinTruthVal Base Const)
+                  _ //
+                HeytingPreModel.adm M _ x} =>
+              HeytingPreModel.denoteFormula
+                M
+                φ
+                (HeytingPreModel.extend M ρ x.1)) ⟨xLift, hxLift⟩).down :
+            OrderDual (HenkinTruthVal Base Const))), ?_, ?_⟩
+        · change
+            OrderDual.toDual
+              (show HenkinTruthVal Base Const from
+                (((fun x :
+                    {x :
+                      Ty.denoteHeyting
+                        (LiftedHenkinBaseCarrier Base Const)
+                        (LiftedHenkinTruthVal Base Const)
+                        _ //
+                      HeytingPreModel.adm M _ x} =>
+                    HeytingPreModel.denoteFormula
+                      M
+                      φ
+                      (HeytingPreModel.extend M ρ x.1)) ⟨xLift, hxLift⟩).down :
+                  OrderDual (HenkinTruthVal Base Const))) ∈
+              ULift.down ''
+                Set.range
+                  (fun x :
+                    {x :
+                      Ty.denoteHeyting
+                        (LiftedHenkinBaseCarrier Base Const)
+                        (LiftedHenkinTruthVal Base Const)
+                        _ //
+                      HeytingPreModel.adm M _ x} =>
+                    HeytingPreModel.denoteFormula
+                      M
+                      φ
+                      (HeytingPreModel.extend M ρ x.1))
+          have hsMem :
+              OrderDual.toDual
+                (show HenkinTruthVal Base Const from
+                  (((fun x :
+                      {x :
+                        Ty.denoteHeyting
+                          (LiftedHenkinBaseCarrier Base Const)
+                          (LiftedHenkinTruthVal Base Const)
+                          _ //
+                        HeytingPreModel.adm M _ x} =>
+                      HeytingPreModel.denoteFormula
+                        M
+                        φ
+                        (HeytingPreModel.extend M ρ x.1)) ⟨xLift, hxLift⟩).down :
+                    OrderDual (HenkinTruthVal Base Const))) ∈
+                ULift.down '' Set.range p := by
+            refine ⟨((fun x :
+                  {x :
+                    Ty.denoteHeyting
+                      (LiftedHenkinBaseCarrier Base Const)
+                      (LiftedHenkinTruthVal Base Const)
+                      _ //
+                    HeytingPreModel.adm M _ x} =>
+                  HeytingPreModel.denoteFormula
+                    M
+                    φ
+                    (HeytingPreModel.extend M ρ x.1)) ⟨xLift, hxLift⟩), ?_⟩
+            exact ⟨⟨(⟨xLift, hxLift⟩ :
+              {x :
+                Ty.denoteHeyting
+                  (LiftedHenkinBaseCarrier Base Const)
+                  (LiftedHenkinTruthVal Base Const)
+                  _ //
+                HeytingPreModel.adm M _ x}), rfl⟩, rfl⟩
+          exact hsMem
+        · have hBodyEq :
+              henkinTruthSet
+                  (Base := Base)
+                  (Const := Const)
+                  (subst
+                    (ClosedSubst.extend (Base := Base) (Const := Const) σs c)
+                    φ) =
+                lowerLiftedRepresented
+                  (Base := Base)
+                  (Const := Const)
+                  .prop
+                  (fromLiftedHeyting
+                    (Base := Base)
+                    (Const := Const)
+                    .prop
+                    (HeytingPreModel.denote
+                      M
+                      φ
+                      (HeytingPreModel.extend M ρ xLift))) :=
+            (represents_prop_iff (Base := Base) (Const := Const)).1 hBody
+          have hc' :
+              W ∈ henkinTruthSet
+                (Base := Base)
+                (Const := Const)
+                (subst
+                  (ClosedSubst.extend (Base := Base) (Const := Const) σs c)
+                  φ) := by
+            simpa [Mettapedia.Logic.HOL.HenkinConstInfinity.denoteFormula, subst] using hc
+          have hBodyW :
+              W ∈
+                (show HenkinTruthVal Base Const from
+                  lowerLiftedRepresented
+                    (Base := Base)
+                    (Const := Const)
+                    .prop
+                    (fromLiftedHeyting
+                      (Base := Base)
+                      (Const := Const)
+                      .prop
+                      (HeytingPreModel.denote
+                        M
+                        φ
+                        (HeytingPreModel.extend M ρ xLift)))) := by
+            rwa [hBodyEq] at hc'
+          simpa [p, lowerLiftedRepresented, representedEquiv, fromLiftedHeyting,
+            liftedHeytingEquiv] using hBodyW
+      · intro hEx
+        change
+          W.1 ∈
+            Mettapedia.Logic.HOL.HenkinConstInfinity.denoteFormula
+              (Base := Base)
+              (Const := Const)
+              (.ex φ)
+              σs
+        rw [mem_denoteFormula_ex_iff]
+        rcases hEx with ⟨s, hs, hWs⟩
+        rcases hs with ⟨s', rfl⟩
+        rw [Set.mem_iUnion] at hWs
+        rcases hWs with ⟨hs', hWs⟩
+        have hs'' : OrderDual.toDual s' ∈ ULift.down '' Set.range p := by
+          simpa using hs'
+        rcases hs'' with ⟨x, hx, hxEq⟩
+        rcases hx with ⟨x, rfl⟩
+        have hsEq :
+            (show HenkinTruthVal Base Const from
+              (((fun x :
+                  {x :
+                    Ty.denoteHeyting
+                      (LiftedHenkinBaseCarrier Base Const)
+                      (LiftedHenkinTruthVal Base Const)
+                      _ //
+                    HeytingPreModel.adm M _ x} =>
+                  HeytingPreModel.denoteFormula
+                    M
+                    φ
+                    (HeytingPreModel.extend M ρ x.1)) x).down :
+                OrderDual (HenkinTruthVal Base Const))) = s' := by
+          exact congrArg OrderDual.ofDual hxEq
+        have hxRaw :
+            Admissible (Base := Base) (Const := Const) _
+              (lowerLiftedRepresented
+                (Base := Base)
+                (Const := Const)
+                _
+                (fromLiftedHeyting (Base := Base) (Const := Const) _ x.1)) := by
+          exact x.2
+        have hChoose :
+            Represents (Base := Base) (Const := Const) _
+              (chooseCode
+                (Base := Base)
+                (Const := Const)
+                (lowerLiftedRepresented
+                  (Base := Base)
+                  (Const := Const)
+                  _
+                  (fromLiftedHeyting (Base := Base) (Const := Const) _ x.1)))
+              (lowerLiftedRepresented
+                (Base := Base)
+                (Const := Const)
+                _
+                (fromLiftedHeyting (Base := Base) (Const := Const) _ x.1)) :=
+          chooseCode_represents
+            (Base := Base)
+            (Const := Const)
+            hxRaw
+        refine
+          ⟨chooseCode
+            (Base := Base)
+            (Const := Const)
+            (lowerLiftedRepresented
+              (Base := Base)
+              (Const := Const)
+              _
+              (fromLiftedHeyting (Base := Base) (Const := Const) _ x.1)), ?_⟩
+        have hσx :
+            SubstRep
+              (Base := Base)
+              (Const := Const)
+              (ClosedSubst.extend
+                (Base := Base)
+                (Const := Const)
+                σs
+                (chooseCode
+                  (Base := Base)
+                  (Const := Const)
+                  (lowerLiftedRepresented
+                    (Base := Base)
+                    (Const := Const)
+                    _
+                    (fromLiftedHeyting (Base := Base) (Const := Const) _ x.1))))
+              (lowerLiftedHeytingValuation
+                (Base := Base)
+                (Const := Const)
+                (HeytingPreModel.extend M ρ x.1)) := by
+          intro τ v
+          simpa [M, lowerLiftedHeytingValuation_extend] using
+            (substRep_extend
+              (Base := Base)
+              (Const := Const)
+              (σ := _)
+              (hρ := hσ)
+              (hx := hChoose)
+              (v := v))
+        have hBody :
+            Represents (Base := Base) (Const := Const) .prop
+              (subst
+                (ClosedSubst.extend
+                  (Base := Base)
+                  (Const := Const)
+                  σs
+                  (chooseCode
+                    (Base := Base)
+                    (Const := Const)
+                    (lowerLiftedRepresented
+                      (Base := Base)
+                      (Const := Const)
+                      _
+                      (fromLiftedHeyting (Base := Base) (Const := Const) _ x.1))))
+                φ)
+              (show HenkinTruthVal Base Const from
+                (((fun x :
+                    {x :
+                      Ty.denoteHeyting
+                        (LiftedHenkinBaseCarrier Base Const)
+                        (LiftedHenkinTruthVal Base Const)
+                        _ //
+                      HeytingPreModel.adm M _ x} =>
+                    HeytingPreModel.denoteFormula
+                      M
+                      φ
+                      (HeytingPreModel.extend M ρ x.1)) x).down :
+                  OrderDual (HenkinTruthVal Base Const))) :=
+          by
+            simpa [p, lowerLiftedRepresented, representedEquiv, fromLiftedHeyting,
+              liftedHeytingEquiv] using
+              (represents_subst_of_liftedRepresentedPreModel
+                (D := D)
+                (t := φ)
+                (σs := ClosedSubst.extend
+                  (Base := Base)
+                  (Const := Const)
+                  σs
+                  (chooseCode
+                    (Base := Base)
+                    (Const := Const)
+                    (lowerLiftedRepresented
+                      (Base := Base)
+                      (Const := Const)
+                      _
+                      (fromLiftedHeyting (Base := Base) (Const := Const) _ x.1))))
+                (ρ := HeytingPreModel.extend M ρ x.1)
+                hσx)
+        have hWs' :
+            W ∈
+              (show HenkinTruthVal Base Const from
+                (((fun x :
+                    {x :
+                      Ty.denoteHeyting
+                        (LiftedHenkinBaseCarrier Base Const)
+                        (LiftedHenkinTruthVal Base Const)
+                        _ //
+                      HeytingPreModel.adm M _ x} =>
+                    HeytingPreModel.denoteFormula
+                      M
+                      φ
+                      (HeytingPreModel.extend M ρ x.1)) x).down :
+                  OrderDual (HenkinTruthVal Base Const))) := by
+          simpa [hsEq] using hWs
+        have hBodyEq :
+            henkinTruthSet
+                (Base := Base)
+                (Const := Const)
+                (subst
+                  (ClosedSubst.extend
+                    (Base := Base)
+                    (Const := Const)
+                    σs
+                    (chooseCode
+                      (Base := Base)
+                      (Const := Const)
+                      (lowerLiftedRepresented
+                        (Base := Base)
+                        (Const := Const)
+                        _
+                        (fromLiftedHeyting (Base := Base) (Const := Const) _ x.1))))
+                  φ) =
+              (show HenkinTruthVal Base Const from
+                (((fun x :
+                    {x :
+                      Ty.denoteHeyting
+                        (LiftedHenkinBaseCarrier Base Const)
+                        (LiftedHenkinTruthVal Base Const)
+                        _ //
+                      HeytingPreModel.adm M _ x} =>
+                    HeytingPreModel.denoteFormula
+                      M
+                      φ
+                      (HeytingPreModel.extend M ρ x.1)) x).down :
+                  OrderDual (HenkinTruthVal Base Const))) :=
+          (represents_prop_iff (Base := Base) (Const := Const)).1 hBody
+        have hWs'' :
+            W ∈
+              henkinTruthSet
+                (Base := Base)
+                (Const := Const)
+                (subst
+                  (ClosedSubst.extend
+                    (Base := Base)
+                    (Const := Const)
+                    σs
+                    (chooseCode
+                      (Base := Base)
+                      (Const := Const)
+                      (lowerLiftedRepresented
+                        (Base := Base)
+                        (Const := Const)
+                        _
+                        (fromLiftedHeyting (Base := Base) (Const := Const) _ x.1))))
+                  φ) := by
+          rwa [← hBodyEq] at hWs'
+        simpa [Mettapedia.Logic.HOL.HenkinConstInfinity.denoteFormula, subst] using hWs''
+
+theorem represents_chooseLiftedClosedSubst_of_liftedRepresentedPreModel
+    (D : LiftedRepresentedConstDenotation Base Const)
+    {Γ : Ctx Base}
+    {τ : Ty Base}
+    (t : Term (HInf Base Const) Γ τ)
+    {ρ : HeytingPreModel.Valuation (liftedRepresentedPreModel D) Γ}
+    (hρ :
+      HeytingPreModel.ValuationAdmissible
+        (liftedRepresentedPreModel D)
+        ρ) :
+    Represents (Base := Base) (Const := Const) τ
+      (subst (chooseLiftedClosedSubst (Base := Base) (Const := Const) ρ) t)
+      (lowerLiftedRepresented
+        (Base := Base)
+        (Const := Const)
+        τ
+        (fromLiftedHeyting
+          (Base := Base)
+          (Const := Const)
+          τ
+          (HeytingPreModel.denote
+            (liftedRepresentedPreModel D)
+            t
+            ρ))) := by
+  exact
+    represents_subst_of_liftedRepresentedPreModel
+      (Base := Base)
+      (Const := Const)
+      (D := D)
+      (t := t)
+      (σs := chooseLiftedClosedSubst (Base := Base) (Const := Const) ρ)
+      (ρ := ρ)
+      (substRep_chooseLiftedClosedSubst_of_liftedRepresentedPreModel
+        (Base := Base)
+        (Const := Const)
+        (D := D)
+        (ρ := ρ)
+        hρ)
+
+theorem repEqv_app_le_of_admissible
+    {σ τ : Ty Base}
+    {f : RepresentedCarrier Base Const (σ ⇒ τ)}
+    {x y : RepresentedCarrier Base Const σ}
+    (hf : Admissible (Base := Base) (Const := Const) (σ ⇒ τ) f)
+    (hx : Admissible (Base := Base) (Const := Const) σ x)
+    (hy : Admissible (Base := Base) (Const := Const) σ y) :
+    RepEqv (Base := Base) (Const := Const) τ (f x) (f y) ≤
+      RepEqv (Base := Base) (Const := Const) σ x y := by
+  let tf := chooseCode (Base := Base) (Const := Const) f
+  let tx := chooseCode (Base := Base) (Const := Const) x
+  let ty := chooseCode (Base := Base) (Const := Const) y
+  have hfRep :
+      Represents (Base := Base) (Const := Const) (σ ⇒ τ) tf f :=
+    chooseCode_represents (Base := Base) (Const := Const) hf
+  have hxRep :
+      Represents (Base := Base) (Const := Const) σ tx x :=
+    chooseCode_represents (Base := Base) (Const := Const) hx
+  have hyRep :
+      Represents (Base := Base) (Const := Const) σ ty y :=
+    chooseCode_represents (Base := Base) (Const := Const) hy
+  have hEqIn :
+      Represents (Base := Base) (Const := Const) .prop (.eq tx ty)
+        (RepEqv (Base := Base) (Const := Const) σ x y) :=
+    represents_eq_formula
+      (Base := Base)
+      (Const := Const)
+      hxRep
+      hyRep
+  have hEqOut :
+      Represents (Base := Base) (Const := Const) .prop
+        (.eq (.app tf tx) (.app tf ty))
+        (RepEqv (Base := Base) (Const := Const) τ (f x) (f y)) :=
+    represents_eq_formula
+      (Base := Base)
+      (Const := Const)
+      (represents_app (Base := Base) (Const := Const) hfRep hxRep)
+      (represents_app (Base := Base) (Const := Const) hfRep hyRep)
+  rw [represents_prop_iff] at hEqIn hEqOut
+  intro W hW
+  have hEqInW :
+      W ∈ henkinTruthSet (Base := Base) (Const := Const) (.eq tx ty) := by
+    simpa [hEqIn] using hW
+  have hEqOutW :
+      W ∈ henkinTruthSet (Base := Base) (Const := Const)
+        (.eq (.app tf tx) (.app tf ty)) :=
+    mem_henkinTruthSet_eqAppArg_of_mem
+      (Base := Base)
+      (Const := Const)
+      (f := tf)
+      hEqInW
+  simpa [hEqOut] using hEqOutW
+
+theorem term_closed_of_liftedRepresentedPreModel
+    (D : LiftedRepresentedConstDenotation Base Const)
+    {Γ : Ctx Base}
+    {τ : Ty Base}
+    (t : Term (HInf Base Const) Γ τ)
+    {ρ : HeytingPreModel.Valuation (liftedRepresentedPreModel D) Γ}
+    (hρ :
+      HeytingPreModel.ValuationAdmissible
+        (liftedRepresentedPreModel D)
+        ρ) :
+    HeytingPreModel.adm (liftedRepresentedPreModel D) τ
+      (HeytingPreModel.denote (liftedRepresentedPreModel D) t ρ) := by
+  change LiftedHeytingAdmissible (Base := Base) (Const := Const) τ
+    (HeytingPreModel.denote (liftedRepresentedPreModel D) t ρ)
+  rw [admissible_lowerLiftedRepresented_fromLiftedHeyting_iff]
+  exact
+    admissible_of_represents
+      (represents_chooseLiftedClosedSubst_of_liftedRepresentedPreModel
+        (Base := Base)
+        (Const := Const)
+        (D := D)
+        (t := t)
+        (ρ := ρ)
+        hρ)
+
+theorem app_respects_eq_of_liftedRepresentedPreModel
+    (D : LiftedRepresentedConstDenotation Base Const)
+    {σ τ : Ty Base}
+    {f :
+      Ty.denoteHeyting
+        (LiftedHenkinBaseCarrier Base Const)
+        (LiftedHenkinTruthVal Base Const)
+        (σ ⇒ τ)}
+    (hf : HeytingPreModel.adm (liftedRepresentedPreModel D) (σ ⇒ τ) f)
+    {x y :
+      Ty.denoteHeyting
+        (LiftedHenkinBaseCarrier Base Const)
+        (LiftedHenkinTruthVal Base Const)
+        σ}
+    (hx : HeytingPreModel.adm (liftedRepresentedPreModel D) σ x)
+    (hy : HeytingPreModel.adm (liftedRepresentedPreModel D) σ y) :
+    HeytingPreModel.Eqv (liftedRepresentedPreModel D) σ x y ≤
+      HeytingPreModel.Eqv (liftedRepresentedPreModel D) τ (f x) (f y) := by
+  change LiftedHeytingAdmissible (Base := Base) (Const := Const) (σ ⇒ τ) f at hf
+  change LiftedHeytingAdmissible (Base := Base) (Const := Const) σ x at hx
+  change LiftedHeytingAdmissible (Base := Base) (Const := Const) σ y at hy
+  have hfRaw :
+      Admissible (Base := Base) (Const := Const) (σ ⇒ τ)
+        (lowerLiftedRepresented
+          (Base := Base)
+          (Const := Const)
+          (σ ⇒ τ)
+          (fromLiftedHeyting (Base := Base) (Const := Const) (σ ⇒ τ) f)) := by
+    simpa using
+      (admissible_lowerLiftedRepresented_fromLiftedHeyting_iff
+        (Base := Base)
+        (Const := Const)
+        (τ := (σ ⇒ τ))
+        (x := f)).1 hf
+  have hxRaw :
+      Admissible (Base := Base) (Const := Const) σ
+        (lowerLiftedRepresented
+          (Base := Base)
+          (Const := Const)
+          σ
+          (fromLiftedHeyting (Base := Base) (Const := Const) σ x)) := by
+    simpa using
+      (admissible_lowerLiftedRepresented_fromLiftedHeyting_iff
+        (Base := Base)
+        (Const := Const)
+        (τ := σ)
+        (x := x)).1 hx
+  have hyRaw :
+      Admissible (Base := Base) (Const := Const) σ
+        (lowerLiftedRepresented
+          (Base := Base)
+          (Const := Const)
+          σ
+          (fromLiftedHeyting (Base := Base) (Const := Const) σ y)) := by
+    simpa using
+      (admissible_lowerLiftedRepresented_fromLiftedHeyting_iff
+        (Base := Base)
+        (Const := Const)
+        (τ := σ)
+        (x := y)).1 hy
+  change
+    lowerLiftedTruth
+      (HeytingPreModel.Eqv (liftedRepresentedPreModel D) τ (f x) (f y)) ≤
+      lowerLiftedTruth
+        (HeytingPreModel.Eqv (liftedRepresentedPreModel D) σ x y)
+  rw [← lowerLiftedRepresented_prop_fromLiftedHeyting
+    (Base := Base)
+    (Const := Const)
+    (p := HeytingPreModel.Eqv (liftedRepresentedPreModel D) τ (f x) (f y))]
+  rw [← lowerLiftedRepresented_prop_fromLiftedHeyting
+    (Base := Base)
+    (Const := Const)
+    (p := HeytingPreModel.Eqv (liftedRepresentedPreModel D) σ x y)]
+  rw [lowerLiftedRepresented_fromLiftedHeyting_eqv
+    (Base := Base)
+    (Const := Const)
+    (D := D)
+    (τ := τ)
+    (x := f x)
+    (y := f y)]
+  rw [lowerLiftedRepresented_fromLiftedHeyting_eqv
+    (Base := Base)
+    (Const := Const)
+    (D := D)
+    (τ := σ)
+    (x := x)
+    (y := y)]
+  have hfx :
+      lowerLiftedRepresented
+          (Base := Base)
+          (Const := Const)
+          (σ ⇒ τ)
+          (fromLiftedHeyting (Base := Base) (Const := Const) (σ ⇒ τ) f)
+          (lowerLiftedRepresented
+            (Base := Base)
+            (Const := Const)
+            σ
+            (fromLiftedHeyting (Base := Base) (Const := Const) σ x)) =
+        lowerLiftedRepresented
+          (Base := Base)
+          (Const := Const)
+          τ
+          (fromLiftedHeyting (Base := Base) (Const := Const) τ (f x)) := by
+    calc
+      lowerLiftedRepresented
+          (Base := Base)
+          (Const := Const)
+          (σ ⇒ τ)
+          (fromLiftedHeyting (Base := Base) (Const := Const) (σ ⇒ τ) f)
+          (lowerLiftedRepresented
+            (Base := Base)
+            (Const := Const)
+            σ
+            (fromLiftedHeyting (Base := Base) (Const := Const) σ x)) =
+        lowerLiftedRepresented
+          (Base := Base)
+          (Const := Const)
+          τ
+          ((fromLiftedHeyting (Base := Base) (Const := Const) (σ ⇒ τ) f)
+            (fromLiftedHeyting (Base := Base) (Const := Const) σ x)) := by
+              simpa using
+                (lowerLiftedRepresented_app
+                  (Base := Base)
+                  (Const := Const)
+                  (f := fromLiftedHeyting (Base := Base) (Const := Const) (σ ⇒ τ) f)
+                  (x := fromLiftedHeyting (Base := Base) (Const := Const) σ x))
+      _ = lowerLiftedRepresented
+            (Base := Base)
+            (Const := Const)
+            τ
+            (fromLiftedHeyting (Base := Base) (Const := Const) τ (f x)) := by
+              rw [fromLiftedHeyting_app]
+  have hfy :
+      lowerLiftedRepresented
+          (Base := Base)
+          (Const := Const)
+          (σ ⇒ τ)
+          (fromLiftedHeyting (Base := Base) (Const := Const) (σ ⇒ τ) f)
+          (lowerLiftedRepresented
+            (Base := Base)
+            (Const := Const)
+            σ
+            (fromLiftedHeyting (Base := Base) (Const := Const) σ y)) =
+        lowerLiftedRepresented
+          (Base := Base)
+          (Const := Const)
+          τ
+          (fromLiftedHeyting (Base := Base) (Const := Const) τ (f y)) := by
+    calc
+      lowerLiftedRepresented
+          (Base := Base)
+          (Const := Const)
+          (σ ⇒ τ)
+          (fromLiftedHeyting (Base := Base) (Const := Const) (σ ⇒ τ) f)
+          (lowerLiftedRepresented
+            (Base := Base)
+            (Const := Const)
+            σ
+            (fromLiftedHeyting (Base := Base) (Const := Const) σ y)) =
+        lowerLiftedRepresented
+          (Base := Base)
+          (Const := Const)
+          τ
+          ((fromLiftedHeyting (Base := Base) (Const := Const) (σ ⇒ τ) f)
+            (fromLiftedHeyting (Base := Base) (Const := Const) σ y)) := by
+              simpa using
+                (lowerLiftedRepresented_app
+                  (Base := Base)
+                  (Const := Const)
+                  (f := fromLiftedHeyting (Base := Base) (Const := Const) (σ ⇒ τ) f)
+                  (x := fromLiftedHeyting (Base := Base) (Const := Const) σ y))
+      _ = lowerLiftedRepresented
+            (Base := Base)
+            (Const := Const)
+            τ
+            (fromLiftedHeyting (Base := Base) (Const := Const) τ (f y)) := by
+              rw [fromLiftedHeyting_app]
+  have hRaw :=
+    repEqv_app_le_of_admissible
+      (Base := Base)
+      (Const := Const)
+      (f := lowerLiftedRepresented
+        (Base := Base)
+        (Const := Const)
+        (σ ⇒ τ)
+        (fromLiftedHeyting (Base := Base) (Const := Const) (σ ⇒ τ) f))
+      (x := lowerLiftedRepresented
+        (Base := Base)
+        (Const := Const)
+        σ
+        (fromLiftedHeyting (Base := Base) (Const := Const) σ x))
+      (y := lowerLiftedRepresented
+        (Base := Base)
+        (Const := Const)
+        σ
+        (fromLiftedHeyting (Base := Base) (Const := Const) σ y))
+      hfRaw
+      hxRaw
+      hyRaw
+  rw [hfx, hfy] at hRaw
+  exact hRaw
+
+noncomputable def liftedRepresentedHenkinModel
+    (D : LiftedRepresentedConstDenotation Base Const) :
+    HeytingHenkinModel Base (HInf Base Const) where
+  toHeytingPreModel := liftedRepresentedPreModel D
+  term_closed t ρ hρ :=
+    term_closed_of_liftedRepresentedPreModel
+      (Base := Base)
+      (Const := Const)
+      (D := D)
+      (t := t)
+      (ρ := ρ)
+      hρ
+  app_respects_eq {σ} {τ} {f} hf {x} {y} hx hy :=
+    app_respects_eq_of_liftedRepresentedPreModel
+      (Base := Base)
+      (Const := Const)
+      (D := D)
+      (σ := σ)
+      (τ := τ)
+      (f := f)
+      (x := x)
+      (y := y)
+      hf
+      hx
+      hy
+
+/-- The canonical lifted represented constant interpretation. -/
+noncomputable abbrev canonicalLiftedRepresentedConstDenotation :
+    LiftedRepresentedConstDenotation Base Const :=
+  (canonicalRepresentedConstDenotation (Base := Base) (Const := Const)).toLifted
+
+/-- The standard `HeytingHenkinModel` packaged from the canonical represented
+bridge with the canonical cumulative-Henkin constants. -/
+noncomputable abbrev canonicalLiftedRepresentedHenkinModel :
+    HeytingHenkinModel Base (HInf Base Const) :=
+  liftedRepresentedHenkinModel
+    (Base := Base)
+    (Const := Const)
+    (canonicalLiftedRepresentedConstDenotation (Base := Base) (Const := Const))
+
+@[simp] theorem mem_lowerLiftedTruth_inf_iff
+    {p q : LiftedHenkinTruthVal Base Const}
+    {W : HenkinWorld Base Const} :
+    W ∈ lowerLiftedTruth (Base := Base) (Const := Const) (p ⊓ q) ↔
+      W ∈ lowerLiftedTruth (Base := Base) (Const := Const) p ∧
+        W ∈ lowerLiftedTruth (Base := Base) (Const := Const) q := by
+  change
+      W ∈
+        ((lowerLiftedTruth (Base := Base) (Const := Const) p) ⊔
+          (lowerLiftedTruth (Base := Base) (Const := Const) q) :
+            HenkinTruthVal Base Const) ↔
+      _
+  rw [UpperSet.mem_sup_iff]
+
+@[simp] theorem mem_lowerLiftedTruth_top
+    {W : HenkinWorld Base Const} :
+    W ∈ lowerLiftedTruth (Base := Base) (Const := Const)
+        (⊤ : LiftedHenkinTruthVal Base Const) := by
+  change W ∈ (⊥ : HenkinTruthVal Base Const)
+  simp
+
+/-- Closed-formula denotation in the canonical lifted represented model lowers
+back to the expected canonical Henkin truth set. -/
+theorem mem_canonicalLiftedRepresentedHenkin_denote_iff
+    {φ : ClosedFormula (HInf Base Const)}
+    {W : HenkinWorld Base Const} :
+    W ∈ lowerLiftedTruth
+          (Base := Base)
+          (Const := Const)
+          (HeytingHenkinModel.denote
+            (canonicalLiftedRepresentedHenkinModel
+              (Base := Base)
+              (Const := Const))
+            φ
+            (fun v => nomatch v)) ↔
+      W.1 ∈ HenkinConstInfinity.denoteFormula
+          (Base := Base)
+          (Const := Const)
+          φ
+          (HenkinConstInfinity.emptyClosedSubst Base Const) := by
+  let M :=
+    canonicalLiftedRepresentedHenkinModel
+      (Base := Base)
+      (Const := Const)
+  let ρ0 : HeytingPreModel.Valuation M.toHeytingPreModel ([] : Ctx Base) :=
+    fun {τ} (v : Var ([] : Ctx Base) τ) => nomatch v
+  have hρ :
+      HeytingPreModel.ValuationAdmissible
+        M.toHeytingPreModel
+        ρ0 := by
+    intro τ v
+    cases v
+  have hRep' :=
+    represents_chooseLiftedClosedSubst_of_liftedRepresentedPreModel
+      (Base := Base)
+      (Const := Const)
+      (D := canonicalLiftedRepresentedConstDenotation
+        (Base := Base)
+        (Const := Const))
+      (t := φ)
+      (ρ := ρ0)
+      hρ
+  have hSubst :
+      subst
+        (chooseLiftedClosedSubst
+          (Base := Base)
+          (Const := Const)
+          (Γ := ([] : Ctx Base))
+          (ρ := ρ0))
+        φ = φ := by
+    calc
+      subst
+          (chooseLiftedClosedSubst
+            (Base := Base)
+            (Const := Const)
+            (Γ := ([] : Ctx Base))
+            (ρ := ρ0))
+          φ =
+        subst
+          (HenkinConstInfinity.emptyClosedSubst Base Const : ClosedSubst Base Const [])
+          φ := by
+            apply subst_ext
+            intro τ v
+            cases v
+      _ = φ := HenkinConstInfinity.subst_emptyClosedSubst
+        (Base := Base)
+        (Const := Const)
+        φ
+  have hEq' :
+      henkinTruthSet
+          (Base := Base)
+          (Const := Const)
+          (subst
+            (chooseLiftedClosedSubst
+              (Base := Base)
+              (Const := Const)
+              (Γ := ([] : Ctx Base))
+              (ρ := ρ0))
+            φ) =
+      lowerLiftedRepresented
+        (Base := Base)
+        (Const := Const)
+        .prop
+        (fromLiftedHeyting
+          (Base := Base)
+          (Const := Const)
+          .prop
+          (HeytingPreModel.denote
+            (liftedRepresentedPreModel
+              (canonicalLiftedRepresentedConstDenotation
+                (Base := Base)
+                (Const := Const)))
+            φ
+            ρ0)) := by
+    exact (represents_prop_iff (Base := Base) (Const := Const)).1 hRep'
+  have hEq :
+      henkinTruthSet (Base := Base) (Const := Const) φ =
+        lowerLiftedTruth
+          (Base := Base)
+          (Const := Const)
+          (HeytingHenkinModel.denote M φ ρ0) := by
+    have hEq'' :
+        henkinTruthSet (Base := Base) (Const := Const) φ =
+          lowerLiftedRepresented
+            (Base := Base)
+            (Const := Const)
+            .prop
+            (fromLiftedHeyting
+              (Base := Base)
+              (Const := Const)
+              .prop
+              (HeytingPreModel.denote
+                (liftedRepresentedPreModel
+                  (canonicalLiftedRepresentedConstDenotation
+                    (Base := Base)
+                    (Const := Const)))
+                φ
+                ρ0)) := by
+      simpa [hSubst] using hEq'
+    simpa [M, canonicalLiftedRepresentedHenkinModel, HeytingHenkinModel.denote,
+      lowerLiftedTruth, lowerLiftedRepresented, fromLiftedHeyting,
+      representedEquiv, liftedHeytingEquiv] using hEq''
+  constructor
+  · intro h
+    have h' :
+        W ∈ henkinTruthSet (Base := Base) (Const := Const) φ := by
+      simpa [hEq] using h
+    exact
+      (HenkinConstInfinity.mem_denoteFormula_empty_iff
+        (Base := Base)
+        (Const := Const)
+        (W := W.1)
+        (φ := φ)).2 <|
+        (mem_henkinTruthSet_iff (Base := Base) (Const := Const) (W := W)).1 h'
+  · intro h
+    have h' :
+        W ∈ henkinTruthSet (Base := Base) (Const := Const) φ := by
+      exact
+        (mem_henkinTruthSet_iff (Base := Base) (Const := Const) (W := W)).2 <|
+          (HenkinConstInfinity.mem_denoteFormula_empty_iff
+            (Base := Base)
+            (Const := Const)
+            (W := W.1)
+            (φ := φ)).1 h
+    simpa [hEq] using h'
+
+/-- Closed-context semantics in the canonical lifted represented model lowers
+back to canonical cumulative-Henkin context semantics on Henkin worlds. -/
+theorem mem_canonicalLiftedRepresentedHenkin_contextDenote_iff
+    {Δ : List (ClosedFormula (HInf Base Const))}
+    {W : HenkinWorld Base Const} :
+    W ∈ lowerLiftedTruth
+          (Base := Base)
+          (Const := Const)
+          (HeytingHenkinModel.contextDenote
+            (canonicalLiftedRepresentedHenkinModel
+              (Base := Base)
+              (Const := Const))
+            Δ
+            (fun v => nomatch v)) ↔
+      W.1 ∈ HenkinConstInfinity.contextDenote
+          (Base := Base)
+          (Const := Const)
+          Δ
+          (HenkinConstInfinity.emptyClosedSubst Base Const) := by
+  let M :=
+    canonicalLiftedRepresentedHenkinModel
+      (Base := Base)
+      (Const := Const)
+  induction Δ with
+  | nil =>
+      constructor
+      · intro _h
+        simpa using
+          (HenkinConstInfinity.mem_contextDenote_empty_iff
+            (Base := Base)
+            (Const := Const)
+            (W := W.1)
+            (Δ := ([] : List (ClosedFormula (HInf Base Const))))).2
+            (by
+              intro ψ hψ
+              cases hψ)
+      · intro _h
+        simpa using
+          (mem_lowerLiftedTruth_top
+            (Base := Base)
+            (Const := Const)
+            (W := W))
+  | cons ψ Δ ih =>
+      have ih' :
+          W ∈ lowerLiftedTruth
+            (Base := Base)
+            (Const := Const)
+            (HeytingHenkinModel.contextDenote M Δ (fun v => nomatch v)) ↔
+          W.1 ∈ HenkinConstInfinity.contextDenote
+            (Base := Base)
+            (Const := Const)
+            Δ
+            (HenkinConstInfinity.emptyClosedSubst Base Const) := by
+        simpa [M, canonicalLiftedRepresentedHenkinModel, HeytingHenkinModel.contextDenote]
+          using ih
+      change
+          W ∈ lowerLiftedTruth
+            (Base := Base)
+            (Const := Const)
+            (HeytingHenkinModel.denote M ψ (fun v => nomatch v) ⊓
+              HeytingHenkinModel.contextDenote M Δ (fun v => nomatch v)) ↔
+          W.1 ∈ HenkinConstInfinity.contextDenote
+            (Base := Base)
+            (Const := Const)
+            (ψ :: Δ)
+            (HenkinConstInfinity.emptyClosedSubst Base Const)
+      rw [mem_lowerLiftedTruth_inf_iff]
+      constructor
+      · rintro ⟨hψ, hΔ⟩
+        rw [HenkinConstInfinity.contextDenote_cons]
+        refine ⟨?_, ih'.1 hΔ⟩
+        exact
+          (mem_canonicalLiftedRepresentedHenkin_denote_iff
+            (Base := Base)
+            (Const := Const)
+            (W := W)
+            (φ := ψ)).1 hψ
+      · intro h
+        rw [HenkinConstInfinity.contextDenote_cons] at h
+        refine ⟨?_, ih'.2 h.2⟩
+        exact
+          (mem_canonicalLiftedRepresentedHenkin_denote_iff
+            (Base := Base)
+            (Const := Const)
+            (W := W)
+            (φ := ψ)).2 h.1
+
+/-- An explicit canonical Henkin counterexample yields a standard
+`HeytingHenkinModel` countermodel via the canonical represented package. -/
+theorem not_modelsFrom_canonicalLiftedRepresentedHenkinModel_of_counterexample
+    {Δ : List (ClosedFormula (HInf Base Const))}
+    {φ : ClosedFormula (HInf Base Const)}
+    {W : HenkinWorld Base Const}
+    (hWΔ :
+      W.1 ∈ HenkinConstInfinity.contextDenote
+        (Base := Base)
+        (Const := Const)
+        Δ
+        (HenkinConstInfinity.emptyClosedSubst Base Const))
+    (hWφ :
+      W.1 ∉ HenkinConstInfinity.denoteFormula
+        (Base := Base)
+        (Const := Const)
+        φ
+        (HenkinConstInfinity.emptyClosedSubst Base Const)) :
+    ¬ HeytingHenkinModel.modelsFrom
+        (canonicalLiftedRepresentedHenkinModel
+          (Base := Base)
+          (Const := Const))
+        Δ
+        φ
+        (fun v => nomatch v) := by
+  let M :=
+    canonicalLiftedRepresentedHenkinModel
+      (Base := Base)
+      (Const := Const)
+  intro hModels
+  have hModelsRaw :
+      lowerLiftedTruth
+          (Base := Base)
+          (Const := Const)
+          (HeytingHenkinModel.denote M φ (fun v => nomatch v)) ≤
+        lowerLiftedTruth
+          (Base := Base)
+          (Const := Const)
+          (HeytingHenkinModel.contextDenote M Δ (fun v => nomatch v)) := by
+    change _ ≤ _ at hModels
+    exact hModels
+  have hCtx :
+      W ∈ lowerLiftedTruth
+        (Base := Base)
+        (Const := Const)
+        (HeytingHenkinModel.contextDenote M Δ (fun v => nomatch v)) :=
+    (mem_canonicalLiftedRepresentedHenkin_contextDenote_iff
+      (Base := Base)
+      (Const := Const)
+      (W := W)
+      (Δ := Δ)).2 hWΔ
+  have hFormula :
+      W ∈ lowerLiftedTruth
+        (Base := Base)
+        (Const := Const)
+        (HeytingHenkinModel.denote M φ (fun v => nomatch v)) :=
+    hModelsRaw hCtx
+  exact
+    hWφ <|
+      (mem_canonicalLiftedRepresentedHenkin_denote_iff
+        (Base := Base)
+        (Const := Const)
+        (W := W)
+        (φ := φ)).1 hFormula
+
+/-- Canonical Henkin counterexamples can be exported to standard
+`HeytingHenkinModel` countermodels using the canonical represented package. -/
+theorem exists_countermodel_of_henkin_counterexample
+    {Δ : List (ClosedFormula (HInf Base Const))}
+    {φ : ClosedFormula (HInf Base Const)} :
+    (∃ W : HenkinWorld Base Const,
+        W.1 ∈ HenkinConstInfinity.contextDenote
+              (Base := Base)
+              (Const := Const)
+              Δ
+              (HenkinConstInfinity.emptyClosedSubst Base Const) ∧
+        W.1 ∉ HenkinConstInfinity.denoteFormula
+              (Base := Base)
+              (Const := Const)
+              φ
+              (HenkinConstInfinity.emptyClosedSubst Base Const)) →
+      ∃ M : HeytingHenkinModel.{u, max u (v + 1), v + 1}
+          Base (HInf Base Const),
+        ¬ HeytingHenkinModel.modelsFrom M Δ φ (fun v => nomatch v) := by
+  intro hCounter
+  rcases hCounter with ⟨W, hWΔ, hWφ⟩
+  refine ⟨canonicalLiftedRepresentedHenkinModel (Base := Base) (Const := Const), ?_⟩
+  exact
+    not_modelsFrom_canonicalLiftedRepresentedHenkinModel_of_counterexample
+      (Base := Base)
+      (Const := Const)
+      (W := W)
+      hWΔ
+      hWφ
 
 end HenkinConstInfinity
 

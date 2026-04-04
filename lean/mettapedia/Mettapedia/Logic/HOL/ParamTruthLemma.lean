@@ -226,6 +226,49 @@ theorem exists_saturated_world_separating_of_notProvable
     hExtAxioms
     hEx
 
+/-- Exact arbitrary-context bridge for saturation preserving omission.
+
+This packages a chooser together with the only missing local conservativity
+premise needed to saturate a prime theory while preserving omission of a
+designated formula. -/
+structure SaturationBridge (Base : Type u) (Const : Ty Base → Type v) where
+  choose :
+    {Γ : Ctx Base} →
+      {σ : Ty Base} →
+        Formula (ParamConst Const Γ) [σ] →
+          ClosedTerm (ParamConst Const Γ) σ
+  augmented_notProvable :
+    ∀ {Γ : Ctx Base}
+      {W : PrimeTheory Const Γ}
+      {χ : ClosedFormula (ParamConst Const Γ)},
+      χ ∉ W.carrier →
+        ¬ ClosedTheorySet.Provable
+            (fun φ =>
+              φ ∈ W.carrier ∨
+                φ ∈ ExWitnessAxioms (Γ := Γ) choose)
+            χ
+
+/-- A saturation bridge immediately yields omission-preserving saturation for
+arbitrary prime theories. -/
+theorem SaturationBridge.saturate
+    (B : SaturationBridge Base Const)
+    {Γ : Ctx Base}
+    {W : PrimeTheory Const Γ}
+    {χ : ClosedFormula (ParamConst Const Γ)}
+    (hOmit : χ ∉ W.carrier) :
+    ∃ Ws : PrimeTheory.Saturated Const Γ,
+      (∀ {ψ : ClosedFormula (ParamConst Const Γ)},
+        ψ ∈ W.carrier → ψ ∈ Ws.carrier) ∧
+      χ ∉ Ws.carrier := by
+  exact exists_saturated_extension_separating_of_notProvable
+    (Base := Base)
+    (Const := Const)
+    (Γ := Γ)
+    (choose := B.choose)
+    (W := W)
+    (χ := χ)
+    (B.augmented_notProvable hOmit)
+
 end PrimeTheory
 
 /-! ### Propositional truth lemma -/
@@ -958,6 +1001,29 @@ theorem exists_root_world_saturated_of
   refine ⟨Ws, ?_, hOmitS⟩
   intro ψ hψ
   exact hMono (hΔ ψ hψ)
+
+/-- Consumer theorem: an arbitrary-context saturation bridge already yields a
+saturated root world for every non-provable original sequent. -/
+theorem exists_root_world_saturated_of_saturationBridge
+    (B : PrimeTheory.SaturationBridge Base Const)
+    {Δ : List (ClosedFormula Const)} {φ : ClosedFormula Const}
+    (hNotProv : ¬ ExtDerivation Const Δ φ) :
+    ∃ W : PrimeTheory.Saturated Const ([] : Ctx Base),
+      (∀ ψ, ψ ∈ Δ → liftParamFormula [] ψ ∈ W.carrier) ∧
+      liftParamFormula [] φ ∉ W.carrier := by
+  exact exists_root_world_saturated_of
+    (Base := Base)
+    (Const := Const)
+    (hSaturate := fun W hOmit =>
+      PrimeTheory.SaturationBridge.saturate
+        (Base := Base)
+        (Const := Const)
+        B
+        (W := W)
+        hOmit)
+    (Δ := Δ)
+    (φ := φ)
+    hNotProv
 
 end RootWorld
 

@@ -185,6 +185,27 @@ structure WitnessedOriginalReflectionTarget where
         ExtDerivation Const Δ φ
 
 /--
+Minimal proof-theoretic boundary actually consumed by the represented-canonical
+plain completeness route.
+
+Unlike full witnessed reflection, this asks only for the contrapositive payload:
+source non-derivability must force non-provability of the lifted cumulative
+Henkin formula. This is strictly weaker than constructing an outright source
+reflection theorem.
+-/
+def WitnessedLiftNotProvableGoal
+    (_W : BaseWitnesses Base Const) : Prop :=
+  ∀ {Δ : List (ClosedFormula Const)} {φ : ClosedFormula Const},
+    ¬ ExtDerivation Const Δ φ →
+      ¬ ClosedTheorySet.Provable
+          (Const := HInf Base Const)
+          (fun ψ =>
+            ψ ∈ Δ.map
+              (liftBaseClosedFormula (Base := Base) (Const := Const)) ∨
+              ψ ∈ HenkinAxioms (Base := Base) (Const := Const))
+          (liftBaseClosedFormula (Base := Base) (Const := Const) φ)
+
+/--
 The corrected one-step conservativity theorem boundary (GPT-5.4 Pro route).
 
 Parameterized by `BaseWitnesses` to avoid the empty-signature obstruction.
@@ -1624,6 +1645,104 @@ Concrete future one-step reflection goal for the recursive finite-stage theory.
 def RecursiveStageOneStepReflectionGoal : Prop :=
   OneStepStageReflection (Base := Base) (Const := Const)
     (RecursiveStageProvable (Base := Base) (Const := Const))
+
+/--
+The recursive-stage one-step reflection goal reduces directly to the local
+exact-step reflection theorem.
+
+This is the clean constructive boundary: a stage `n + 1` recursive proof uses
+only
+- lifted assumptions from `RecursiveStageTheory n Δ`, and
+- the genuinely fresh exact-step axioms.
+
+So once exact-step reflection is available, the recursive stage theorem follows
+without appealing to the stronger global witnessed conservativity shell.
+-/
+theorem recursiveStageOneStepReflection_of_exactStepReflection
+    (hExact : ExactStepReflectionGoal (Base := Base) (Const := Const)) :
+    RecursiveStageOneStepReflectionGoal (Base := Base) (Const := Const) := by
+  classical
+  intro n Δ φ hStep
+  let T : ClosedTheorySet (HenkinConstStage Base Const n) :=
+    RecursiveStageTheory (Base := Base) (Const := Const) n Δ
+  let ψ : ClosedFormula (HenkinConstStage Base Const n) :=
+    HenkinConstStage.liftBaseClosedFormula (Base := Base) (Const := Const) n φ
+  rcases hStep with ⟨Γ, hΓ, hDeriv⟩
+  let priorSource? :
+      ClosedFormula (HenkinConstStage Base Const (n + 1)) →
+        Option (ClosedFormula (HenkinConstStage Base Const n)) :=
+    fun ξ =>
+      if hξ :
+          ∃ χ : ClosedFormula (HenkinConstStage Base Const n),
+            χ ∈ T ∧
+              HenkinConstStage.liftClosedFormula (Base := Base) (Const := Const)
+                (Nat.le_succ n) χ = ξ then
+        some (Classical.choose hξ)
+      else
+        none
+  let Θ : List (ClosedFormula (HenkinConstStage Base Const n)) :=
+    Γ.filterMap priorSource?
+  let Γexact : List (ClosedFormula (HenkinConstStage Base Const (n + 1))) :=
+    Γ.filter (fun ξ => ξ ∈ ExactStepHenkinAxioms (Base := Base) (Const := Const) n)
+  have hψEq :
+      HenkinConstStage.liftClosedFormula (Base := Base) (Const := Const)
+        (Nat.le_succ n) ψ =
+      HenkinConstStage.liftBaseClosedFormula (Base := Base) (Const := Const) (n + 1) φ := by
+    exact HenkinConstStage.liftBaseClosedFormula_comp
+      (Base := Base)
+      (Const := Const)
+      (m := n)
+      (n := n + 1)
+      (Nat.le_succ n)
+      φ
+  have hDeriv' :
+      ExtDerivation (HenkinConstStage Base Const (n + 1))
+        (Θ.map
+            (HenkinConstStage.liftClosedFormula (Base := Base) (Const := Const)
+              (Nat.le_succ n)) ++
+          Γexact)
+        (HenkinConstStage.liftClosedFormula (Base := Base) (Const := Const)
+          (Nat.le_succ n) ψ) := by
+    refine ExtDerivation.mono ?_ (hψEq.symm ▸ hDeriv)
+    intro ξ hξ
+    have hξT := hΓ ξ hξ
+    rcases hξT with hprior | hexact
+    · refine List.mem_append.mpr <| Or.inl ?_
+      apply List.mem_map.mpr
+      refine ⟨Classical.choose hprior, ?_, ?_⟩
+      · apply List.mem_filterMap.mpr
+        refine ⟨ξ, hξ, ?_⟩
+        dsimp [priorSource?]
+        split_ifs with h
+        · have hProof : h = hprior := Subsingleton.elim _ _
+          simpa [hProof]
+        · exact (h hprior).elim
+      · exact (Classical.choose_spec hprior).2
+    · refine List.mem_append.mpr <| Or.inr ?_
+      exact List.mem_filter.mpr ⟨hξ, by simpa using hexact⟩
+  have hExactProv :
+      ExactStepProvable (Base := Base) (Const := Const) n Θ ψ := by
+    refine ⟨Γexact, ?_, ?_⟩
+    · intro ξ hξ
+      simpa using (List.mem_filter.mp hξ).2
+    · simpa [ψ] using hDeriv'
+  have hReflect : ExtDerivation (HenkinConstStage Base Const n) Θ ψ :=
+    hExact n hExactProv
+  refine ClosedTheorySet.provable_of_closedTheory
+    (Const := HenkinConstStage Base Const n)
+    (T := T)
+    (Δ := Θ)
+    ?_
+    ?_
+  · intro χ hχ
+    rcases List.mem_filterMap.mp hχ with ⟨ξ, hξ, hEq⟩
+    have hξT := hΓ ξ hξ
+    dsimp [priorSource?] at hEq
+    split_ifs at hEq with hprior
+    · injection hEq with hχeq
+      subst hχeq
+      exact (Classical.choose_spec hprior).1
+  · simpa [ψ] using hReflect
 
 /--
 Corrected Route 2 recursive stage theory: stage `0` is seeded not only with the
@@ -3169,6 +3288,30 @@ def recursiveStageSchemeReductionPackage
         (φ := φ)).1 hStage)
 
 /--
+The local exact-step reflection theorem also supplies the corrected Route 2
+one-step stage reflection theorem, because the recursive scheme package uses
+the same recursive stage predicate and differs only in its stage-`0` collapse.
+
+This makes the abstraction layer honest: `ExactStepReflectionGoal` is an
+internal stage theorem, not yet a claim about plain source-language
+conservativity.
+-/
+theorem recursiveStageSchemeReflection_of_exactStepReflection
+    (W : BaseWitnesses Base Const)
+    (hExact : ExactStepReflectionGoal (Base := Base) (Const := Const)) :
+    OneStepSchemeStageReflectionGoal
+      (Base := Base)
+      (Const := Const)
+      (recursiveStageSchemeReductionPackage
+        (Base := Base)
+        (Const := Const)
+        W) := by
+  exact recursiveStageOneStepReflection_of_exactStepReflection
+    (Base := Base)
+    (Const := Const)
+    hExact
+
+/--
 Finite-stage reduction for the corrected universal-scheme recursive stage
 predicate follows by monotonicity from the already-proved exact-axiom recursive
 stage reduction.
@@ -3302,6 +3445,30 @@ theorem sourceSchemeProvable_of_recursiveStageSchemeReflection
     hStep).reflect
 
 /--
+Pointwise Route 2 corollary specialized to the local exact-step reflection
+theorem.
+
+This is the corrected source-side payoff of `ExactStepReflectionGoal`: source
+HOL plus the Hε / DP schemes, not plain source HOL by itself.
+-/
+theorem sourceSchemeProvable_of_exactStepReflection
+    (W : BaseWitnesses Base Const)
+    (hExact : ExactStepReflectionGoal (Base := Base) (Const := Const))
+    {Δ : List (ClosedFormula Const)}
+    {φ : ClosedFormula Const} :
+    OriginalLiftProvable (Base := Base) (Const := Const) Δ φ →
+      SourceSchemeProvable (Base := Base) (Const := Const) Δ φ :=
+  sourceSchemeProvable_of_recursiveStageSchemeReflection
+    (Base := Base)
+    (Const := Const)
+    W
+    (recursiveStageSchemeReflection_of_exactStepReflection
+      (Base := Base)
+      (Const := Const)
+      W
+      hExact)
+
+/--
 Council-backed final composition theorem for original-signature reflection.
 
 Once the generic witnessed one-step conservativity theorem is available at each
@@ -3340,6 +3507,101 @@ theorem originalProvable_of_witnessedTheoryConservativity
       ExtDerivation Const Δ φ :=
   (witnessedOriginalReflectionTarget_proved
     (Base := Base) (Const := Const) W hCons).reflect
+
+/--
+Contrapositive export of a witnessed original-reflection target.
+
+This is the exact proof-theoretic premise needed by the represented-canonical
+Route 1 completeness theorems in `PlainIntuitionistic`: original
+non-derivability forces non-provability in the lifted cumulative-Henkin theory.
+-/
+theorem liftBase_notProvable_of_witnessedOriginalReflectionTarget
+    (R : WitnessedOriginalReflectionTarget (Base := Base) (Const := Const))
+    {Δ : List (ClosedFormula Const)}
+    {φ : ClosedFormula Const}
+    (hNot : ¬ ExtDerivation Const Δ φ) :
+    ¬ ClosedTheorySet.Provable
+        (Const := HInf Base Const)
+        (fun ψ =>
+          ψ ∈ Δ.map
+            (liftBaseClosedFormula (Base := Base) (Const := Const)) ∨
+            ψ ∈ HenkinAxioms (Base := Base) (Const := Const))
+        (liftBaseClosedFormula (Base := Base) (Const := Const) φ) := by
+  intro hLift
+  exact hNot (R.reflect hLift)
+
+/--
+Any witnessed original-reflection target immediately supplies the weaker
+lifted-nonprovability boundary needed by the represented-canonical route.
+-/
+theorem witnessedLiftNotProvableGoal_of_witnessedOriginalReflectionTarget
+    (R : WitnessedOriginalReflectionTarget (Base := Base) (Const := Const)) :
+    WitnessedLiftNotProvableGoal
+      (Base := Base)
+      (Const := Const)
+      R.witnesses := by
+  intro Δ φ hNot
+  exact liftBase_notProvable_of_witnessedOriginalReflectionTarget
+    (Base := Base)
+    (Const := Const)
+    R
+    hNot
+
+/--
+Concrete contrapositive corollary of the witnessed conservativity package.
+
+Once the recursive witnessed conservativity theorem is available at every stage,
+the proof-theoretic premise required by the direct represented-canonical Route 1
+completeness reduction follows immediately.
+-/
+theorem liftBase_notProvable_of_witnessedTheoryConservativity
+    (W : BaseWitnesses Base Const)
+    (hCons :
+      ∀ n : Nat,
+        WitnessedTheoryConservativityGoal
+          (Base := Base)
+          (Const := HenkinConstStage Base Const n)
+          (baseWitnessesOf (Base := Base) (Const := Const) W n))
+    {Δ : List (ClosedFormula Const)}
+    {φ : ClosedFormula Const}
+    (hNot : ¬ ExtDerivation Const Δ φ) :
+    ¬ ClosedTheorySet.Provable
+        (Const := HInf Base Const)
+        (fun ψ =>
+          ψ ∈ Δ.map
+            (liftBaseClosedFormula (Base := Base) (Const := Const)) ∨
+            ψ ∈ HenkinAxioms (Base := Base) (Const := Const))
+        (liftBaseClosedFormula (Base := Base) (Const := Const) φ) := by
+  exact liftBase_notProvable_of_witnessedOriginalReflectionTarget
+    (Base := Base)
+    (Const := Const)
+    (R := witnessedOriginalReflectionTarget_proved
+      (Base := Base)
+      (Const := Const)
+      W
+      hCons)
+    hNot
+
+/--
+Concrete weakening of the witnessed conservativity package to the minimal
+lifted-nonprovability boundary used by the represented-canonical route.
+-/
+theorem witnessedLiftNotProvableGoal_of_witnessedTheoryConservativity
+    (W : BaseWitnesses Base Const)
+    (hCons :
+      ∀ n : Nat,
+        WitnessedTheoryConservativityGoal
+          (Base := Base)
+          (Const := HenkinConstStage Base Const n)
+          (baseWitnessesOf (Base := Base) (Const := Const) W n)) :
+    WitnessedLiftNotProvableGoal (Base := Base) (Const := Const) W := by
+  intro Δ φ hNot
+  exact liftBase_notProvable_of_witnessedTheoryConservativity
+    (Base := Base)
+    (Const := Const)
+    W
+    hCons
+    hNot
 
 end HenkinConstInfinity
 

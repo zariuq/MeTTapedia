@@ -1,0 +1,83 @@
+{
+  "scopeName": "RGL Simple Semantic Core",
+  "projectCoreCount": 359,
+  "projectCorePlusSymbolCount": 372,
+  "targets": {
+    "english": {
+      "source": "/home/zar/claude/gf-rgl/src/english/GrammarEng.gf",
+      "json": "/home/zar/claude/lean-projects/algorithms/gf_fragments/generated/GrammarEng.project_core.json",
+      "pgf": "/home/zar/claude/lean-projects/algorithms/gf_fragments/generated/GrammarEng.project_core.pgf",
+      "summary": {
+        "abstractName": "Grammar",
+        "startcat": "S",
+        "abstractFunctionCount": 384,
+        "projectCoreOverlap": 358,
+        "projectCoreMissing": [
+          "the_Det"
+        ],
+        "projectCorePlusSymbolOverlap": 358,
+        "projectCorePlusSymbolMissing": [
+          "BaseSymb",
+          "CNIntNP",
+          "CNNumNP",
+          "CNSymbNP",
+          "ConsSymb",
+          "FloatPN",
+          "IntPN",
+          "MkSymb",
+          "NumPN",
+          "SymbNum",
+          "SymbOrd",
+          "SymbPN",
+          "SymbS",
+          "the_Det"
+        ],
+        "concretes": {
+          "GrammarEng": {
+            "productions": 269,
+            "functions": 897,
+            "categories": 94
+          }
+        }
+      }
+    },
+    "czech": {
+      "source": "/home/zar/claude/gf-rgl/src/czech/GrammarCze.gf",
+      "json": "/home/zar/claude/lean-projects/algorithms/gf_fragments/generated/GrammarCze.project_core.json",
+      "pgf": "/home/zar/claude/lean-projects/algorithms/gf_fragments/generated/GrammarCze.project_core.pgf",
+      "summary": {
+        "abstractName": "Grammar",
+        "startcat": "S",
+        "abstractFunctionCount": 384,
+        "projectCoreOverlap": 358,
+        "projectCoreMissing": [
+          "the_Det"
+        ],
+        "projectCorePlusSymbolOverlap": 358,
+        "projectCorePlusSymbolMissing": [
+          "BaseSymb",
+          "CNIntNP",
+          "CNNumNP",
+          "CNSymbNP",
+          "ConsSymb",
+          "FloatPN",
+          "IntPN",
+          "MkSymb",
+          "NumPN",
+          "SymbNum",
+          "SymbOrd",
+          "SymbPN",
+          "SymbS",
+          "the_Det"
+        ],
+        "concretes": {
+          "GrammarCze": {
+            "productions": 288,
+            "functions": 428,
+            "categories": 92
+          }
+        }
+      }
+    }
+  }
+}

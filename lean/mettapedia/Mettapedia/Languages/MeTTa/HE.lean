@@ -18,6 +18,7 @@ import Mettapedia.Languages.MeTTa.HE.ExecutableBoundary
 import Mettapedia.Languages.MeTTa.HE.Certification
 import Mettapedia.Languages.MeTTa.HE.SemanticForms
 import Mettapedia.Languages.MeTTa.HE.CoreFragment
+import Mettapedia.Languages.MeTTa.HE.LetChainResumption
 
 /-!
 # Hyperon Experimental MeTTa Semantics
@@ -42,6 +43,7 @@ Authoritative Lean 4 formalization of the HE MeTTa evaluation specification.
 - `Properties` — Universal theorems by induction on derivations
 - `DeclarativeSpec` — Unified spec surface (clause forms, examples, audit index)
 - `ExecutableBoundary` — Additive implementation-refined top-level HE boundary
+- `LetChainResumption` — Resumable source/body frame refinement for `let`/`chain`
 - `Certification` — Light public entry point for the exported top-level
                    `EvalAtomCertified` theorem boundary
 - `SemanticForms` — Named public facade for HE declarative, operational,

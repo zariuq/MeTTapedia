@@ -1,6 +1,7 @@
 import Mettapedia.Logic.HOL.IntuitionisticSoundness
 import Mettapedia.Logic.HOL.IntuitionisticCompleteness
 import Mettapedia.Logic.HOL.ParamCompleteness
+import Mettapedia.Logic.HOL.CanonicalRepresentedModel
 import Mettapedia.Logic.HOL.Semantics.Reduct
 
 namespace Mettapedia.Logic.HOL
@@ -245,6 +246,287 @@ theorem validFrom_iff_provable_of_rootCounterworld_bridge_and_rootCounterworld_c
       hValid
   · exact validFrom_of_provable (Base := Base) (Const := Const)
 
+/--
+Current strongest public mainline theorem at the direct root-counterworld
+boundary.
+
+The only remaining premise is the honest semantic export from parameterized
+root counterworlds to standard `HeytingHenkinModel` countermodels.
+-/
+theorem plain_intuitionistic_completeness_of_rootCounterworld_bridge_and_rootCounterworld_countermodel
+    (R : ParamCompleteness.RootCounterworldBridge Base Const)
+    (hCounter :
+      ∀ {Δ : List (ClosedFormula Const)} {φ : ClosedFormula Const},
+        ParamCompleteness.RootCounterworld Base Const Δ φ →
+          ∃ M : HeytingHenkinModel.{u, v, w} Base Const,
+            ¬ HeytingHenkinModel.modelsFrom M Δ φ (fun v => nomatch v))
+    {Δ : List (ClosedFormula Const)}
+    {φ : ClosedFormula Const} :
+    (∀ M : HeytingHenkinModel.{u, v, w} Base Const,
+      HeytingHenkinModel.modelsFrom M Δ φ (fun v => nomatch v)) ↔
+      ExtDerivation Const Δ φ := by
+  exact
+    validFrom_iff_provable_of_rootCounterworld_bridge_and_rootCounterworld_countermodel
+      (Base := Base)
+      (Const := Const)
+      R
+      hCounter
+      (Δ := Δ)
+      (φ := φ)
+
+/--
+Current cleanest public theorem surface for the direct growing-domain route:
+a proof-theoretic root-counterworld bridge plus a semantic root-countermodel
+bridge yield plain intuitionistic completeness.
+-/
+theorem plain_intuitionistic_completeness_of_rootCounterworld_bridges
+    (R : ParamCompleteness.RootCounterworldBridge Base Const)
+    (C : ParamCompleteness.RootCounterworldCountermodelBridge.{u, v, w} Base Const)
+    {Δ : List (ClosedFormula Const)}
+    {φ : ClosedFormula Const} :
+    (∀ M : HeytingHenkinModel.{u, v, w} Base Const,
+      HeytingHenkinModel.modelsFrom M Δ φ (fun v => nomatch v)) ↔
+      ExtDerivation Const Δ φ := by
+  exact
+    plain_intuitionistic_completeness_of_rootCounterworld_bridge_and_rootCounterworld_countermodel
+      (Base := Base)
+      (Const := Const)
+      R
+      (hCounter := by
+        intro Δ φ Cw
+        exact C.countermodel_of_rootCounterworld Cw)
+      (Δ := Δ)
+      (φ := φ)
+
+theorem provable_of_rootSaturation_bridge_and_rootCounterworld_countermodel
+    (hCounter :
+      ∀ {Δ : List (ClosedFormula Const)} {φ : ClosedFormula Const},
+        ParamCompleteness.RootCounterworld Base Const Δ φ →
+          ∃ M : HeytingHenkinModel.{u, v, w} Base Const,
+            ¬ HeytingHenkinModel.modelsFrom M Δ φ (fun v => nomatch v))
+    (B : RootSaturationBridge Base Const)
+    {Δ : List (ClosedFormula Const)}
+    {φ : ClosedFormula Const}
+    (hValid :
+      ∀ M : HeytingHenkinModel.{u, v, w} Base Const,
+        HeytingHenkinModel.modelsFrom M Δ φ (fun v => nomatch v)) :
+    ExtDerivation Const Δ φ := by
+  exact provable_of_rootCounterworld_bridge_and_rootCounterworld_countermodel
+    (Base := Base)
+    (Const := Const)
+    (R := ParamCompleteness.RootSaturationBridge.toRootCounterworldBridge
+      (Base := Base)
+      (Const := Const)
+      B)
+    hCounter
+    hValid
+
+theorem validFrom_iff_provable_of_rootSaturation_bridge_and_rootCounterworld_countermodel
+    (hCounter :
+      ∀ {Δ : List (ClosedFormula Const)} {φ : ClosedFormula Const},
+        ParamCompleteness.RootCounterworld Base Const Δ φ →
+          ∃ M : HeytingHenkinModel.{u, v, w} Base Const,
+            ¬ HeytingHenkinModel.modelsFrom M Δ φ (fun v => nomatch v))
+    (B : RootSaturationBridge Base Const)
+    {Δ : List (ClosedFormula Const)}
+    {φ : ClosedFormula Const} :
+    (∀ M : HeytingHenkinModel.{u, v, w} Base Const,
+      HeytingHenkinModel.modelsFrom M Δ φ (fun v => nomatch v)) ↔
+      ExtDerivation Const Δ φ := by
+  exact validFrom_iff_provable_of_rootCounterworld_bridge_and_rootCounterworld_countermodel
+    (Base := Base)
+    (Const := Const)
+    (R := ParamCompleteness.RootSaturationBridge.toRootCounterworldBridge
+      (Base := Base)
+      (Const := Const)
+      B)
+    hCounter
+
+/--
+Current strongest public theorem at the root-saturation boundary.
+
+This removes the older source witness-shell packaging from the public statement;
+the only remaining premises are the honest saturation bridge and the semantic
+export from root counterworlds.
+-/
+theorem plain_intuitionistic_completeness_of_rootSaturation_bridge_and_rootCounterworld_countermodel
+    (hCounter :
+      ∀ {Δ : List (ClosedFormula Const)} {φ : ClosedFormula Const},
+        ParamCompleteness.RootCounterworld Base Const Δ φ →
+          ∃ M : HeytingHenkinModel.{u, v, w} Base Const,
+            ¬ HeytingHenkinModel.modelsFrom M Δ φ (fun v => nomatch v))
+    (B : RootSaturationBridge Base Const)
+    {Δ : List (ClosedFormula Const)}
+    {φ : ClosedFormula Const} :
+    (∀ M : HeytingHenkinModel.{u, v, w} Base Const,
+      HeytingHenkinModel.modelsFrom M Δ φ (fun v => nomatch v)) ↔
+      ExtDerivation Const Δ φ := by
+  exact validFrom_iff_provable_of_rootSaturation_bridge_and_rootCounterworld_countermodel
+    (Base := Base)
+    (Const := Const)
+    hCounter
+    B
+
+theorem provable_of_saturate_and_rootCounterworld_countermodel
+    (hSaturate :
+      ∀ {Γ : Ctx Base} {χ : ClosedFormula (ParamConst Const Γ)},
+        (W : PrimeTheory Const Γ) →
+        χ ∉ W.carrier →
+        ∃ Ws : PrimeTheory.Saturated Const Γ,
+          (∀ {ψ : ClosedFormula (ParamConst Const Γ)},
+            ψ ∈ W.carrier → ψ ∈ Ws.carrier) ∧
+          χ ∉ Ws.carrier)
+    (hCounter :
+      ∀ {Δ : List (ClosedFormula Const)} {φ : ClosedFormula Const},
+        ParamCompleteness.RootCounterworld Base Const Δ φ →
+          ∃ M : HeytingHenkinModel.{u, v, w} Base Const,
+            ¬ HeytingHenkinModel.modelsFrom M Δ φ (fun v => nomatch v))
+    {Δ : List (ClosedFormula Const)}
+    {φ : ClosedFormula Const}
+    (hValid :
+      ∀ M : HeytingHenkinModel.{u, v, w} Base Const,
+        HeytingHenkinModel.modelsFrom M Δ φ (fun v => nomatch v)) :
+    ExtDerivation Const Δ φ := by
+  exact provable_of_rootCounterworld_bridge_and_rootCounterworld_countermodel
+    (Base := Base)
+    (Const := Const)
+    (R := ParamCompleteness.rootCounterworldBridgeOfSaturate
+      (Base := Base)
+      (Const := Const)
+      hSaturate)
+    hCounter
+    hValid
+
+theorem validFrom_iff_provable_of_saturate_and_rootCounterworld_countermodel
+    (hSaturate :
+      ∀ {Γ : Ctx Base} {χ : ClosedFormula (ParamConst Const Γ)},
+        (W : PrimeTheory Const Γ) →
+        χ ∉ W.carrier →
+        ∃ Ws : PrimeTheory.Saturated Const Γ,
+          (∀ {ψ : ClosedFormula (ParamConst Const Γ)},
+            ψ ∈ W.carrier → ψ ∈ Ws.carrier) ∧
+          χ ∉ Ws.carrier)
+    (hCounter :
+      ∀ {Δ : List (ClosedFormula Const)} {φ : ClosedFormula Const},
+        ParamCompleteness.RootCounterworld Base Const Δ φ →
+          ∃ M : HeytingHenkinModel.{u, v, w} Base Const,
+            ¬ HeytingHenkinModel.modelsFrom M Δ φ (fun v => nomatch v))
+    {Δ : List (ClosedFormula Const)}
+    {φ : ClosedFormula Const} :
+    (∀ M : HeytingHenkinModel.{u, v, w} Base Const,
+      HeytingHenkinModel.modelsFrom M Δ φ (fun v => nomatch v)) ↔
+      ExtDerivation Const Δ φ := by
+  exact validFrom_iff_provable_of_rootCounterworld_bridge_and_rootCounterworld_countermodel
+    (Base := Base)
+    (Const := Const)
+    (R := ParamCompleteness.rootCounterworldBridgeOfSaturate
+      (Base := Base)
+      (Const := Const)
+      hSaturate)
+    hCounter
+
+/--
+Current cleanest public theorem at the saturation-preserving extension
+boundary.
+
+The remaining mainline gap is now exposed as one specific theorem:
+prime theories must admit saturation preserving omission of a designated
+formula.
+-/
+theorem plain_intuitionistic_completeness_of_saturate_and_rootCounterworld_countermodel
+    (hSaturate :
+      ∀ {Γ : Ctx Base} {χ : ClosedFormula (ParamConst Const Γ)},
+        (W : PrimeTheory Const Γ) →
+        χ ∉ W.carrier →
+        ∃ Ws : PrimeTheory.Saturated Const Γ,
+          (∀ {ψ : ClosedFormula (ParamConst Const Γ)},
+            ψ ∈ W.carrier → ψ ∈ Ws.carrier) ∧
+          χ ∉ Ws.carrier)
+    (hCounter :
+      ∀ {Δ : List (ClosedFormula Const)} {φ : ClosedFormula Const},
+        ParamCompleteness.RootCounterworld Base Const Δ φ →
+          ∃ M : HeytingHenkinModel.{u, v, w} Base Const,
+            ¬ HeytingHenkinModel.modelsFrom M Δ φ (fun v => nomatch v))
+    {Δ : List (ClosedFormula Const)}
+    {φ : ClosedFormula Const} :
+    (∀ M : HeytingHenkinModel.{u, v, w} Base Const,
+      HeytingHenkinModel.modelsFrom M Δ φ (fun v => nomatch v)) ↔
+      ExtDerivation Const Δ φ := by
+  exact validFrom_iff_provable_of_saturate_and_rootCounterworld_countermodel
+    (Base := Base)
+    (Const := Const)
+    hSaturate
+    hCounter
+
+theorem provable_of_saturationBridge_and_rootCounterworld_countermodel
+    (B : PrimeTheory.SaturationBridge Base Const)
+    (hCounter :
+      ∀ {Δ : List (ClosedFormula Const)} {φ : ClosedFormula Const},
+        ParamCompleteness.RootCounterworld Base Const Δ φ →
+          ∃ M : HeytingHenkinModel.{u, v, w} Base Const,
+            ¬ HeytingHenkinModel.modelsFrom M Δ φ (fun v => nomatch v))
+    {Δ : List (ClosedFormula Const)}
+    {φ : ClosedFormula Const}
+    (hValid :
+      ∀ M : HeytingHenkinModel.{u, v, w} Base Const,
+        HeytingHenkinModel.modelsFrom M Δ φ (fun v => nomatch v)) :
+    ExtDerivation Const Δ φ := by
+  exact provable_of_rootCounterworld_bridge_and_rootCounterworld_countermodel
+    (Base := Base)
+    (Const := Const)
+    (R := ParamCompleteness.PrimeTheory.SaturationBridge.toRootCounterworldBridge
+      (Base := Base)
+      (Const := Const)
+      B)
+    hCounter
+    hValid
+
+theorem validFrom_iff_provable_of_saturationBridge_and_rootCounterworld_countermodel
+    (B : PrimeTheory.SaturationBridge Base Const)
+    (hCounter :
+      ∀ {Δ : List (ClosedFormula Const)} {φ : ClosedFormula Const},
+        ParamCompleteness.RootCounterworld Base Const Δ φ →
+          ∃ M : HeytingHenkinModel.{u, v, w} Base Const,
+            ¬ HeytingHenkinModel.modelsFrom M Δ φ (fun v => nomatch v))
+    {Δ : List (ClosedFormula Const)}
+    {φ : ClosedFormula Const} :
+    (∀ M : HeytingHenkinModel.{u, v, w} Base Const,
+      HeytingHenkinModel.modelsFrom M Δ φ (fun v => nomatch v)) ↔
+      ExtDerivation Const Δ φ := by
+  exact validFrom_iff_provable_of_rootCounterworld_bridge_and_rootCounterworld_countermodel
+    (Base := Base)
+    (Const := Const)
+    (R := ParamCompleteness.PrimeTheory.SaturationBridge.toRootCounterworldBridge
+      (Base := Base)
+      (Const := Const)
+      B)
+    hCounter
+
+/--
+Current strongest public theorem at the arbitrary-context saturation-bridge
+boundary.
+
+The only remaining premises are now the exact local saturation bridge and the
+semantic export from root counterworlds.
+-/
+theorem plain_intuitionistic_completeness_of_saturationBridge_and_rootCounterworld_countermodel
+    (B : PrimeTheory.SaturationBridge Base Const)
+    (hCounter :
+      ∀ {Δ : List (ClosedFormula Const)} {φ : ClosedFormula Const},
+        ParamCompleteness.RootCounterworld Base Const Δ φ →
+          ∃ M : HeytingHenkinModel.{u, v, w} Base Const,
+            ¬ HeytingHenkinModel.modelsFrom M Δ φ (fun v => nomatch v))
+    {Δ : List (ClosedFormula Const)}
+    {φ : ClosedFormula Const} :
+    (∀ M : HeytingHenkinModel.{u, v, w} Base Const,
+      HeytingHenkinModel.modelsFrom M Δ φ (fun v => nomatch v)) ↔
+      ExtDerivation Const Δ φ := by
+  exact validFrom_iff_provable_of_saturationBridge_and_rootCounterworld_countermodel
+    (Base := Base)
+    (Const := Const)
+    B
+    hCounter
+
 theorem provable_of_rootExWitness_bridge_and_rootCounterworld_countermodel
     (hCounter :
       ∀ {Δ : List (ClosedFormula Const)} {φ : ClosedFormula Const},
@@ -407,6 +689,130 @@ theorem liftBase_countermodel_of_canonical_counterworld
   intro Δ φ hNot
   rcases hCanonicalCounter hNot with ⟨W, hWΔ, hWNot⟩
   exact hBridge ⟨W, hWΔ, hWNot⟩
+
+/--
+Direct represented-canonical bridge:
+lifted cumulative-Henkin non-provability yields an explicit canonical Henkin
+counterexample, and the represented canonical package exports that
+counterexample to a standard `HeytingHenkinModel`.
+-/
+theorem liftBase_countermodel_of_liftBase_notProvable_via_canonicalRepresented
+    (hLiftNotProvable :
+      ∀ {Δ : List (ClosedFormula Const)} {φ : ClosedFormula Const},
+        ¬ ExtDerivation Const Δ φ →
+          ¬ ClosedTheorySet.Provable
+              (Const := HenkinConstInfinity.HInf Base Const)
+              (fun ψ =>
+                ψ ∈ Δ.map
+                  (HenkinConstInfinity.liftBaseClosedFormula
+                    (Base := Base) (Const := Const)) ∨
+                  ψ ∈ HenkinConstInfinity.HenkinAxioms
+                    (Base := Base) (Const := Const))
+              (HenkinConstInfinity.liftBaseClosedFormula
+                (Base := Base) (Const := Const) φ)) :
+    ∀ {Δ : List (ClosedFormula Const)} {φ : ClosedFormula Const},
+      ¬ ExtDerivation Const Δ φ →
+        ∃ M : HeytingHenkinModel.{u, max u (v + 1), v + 1}
+            Base (HenkinConstInfinity.HInf Base Const),
+          ¬ HeytingHenkinModel.modelsFrom M
+              (Δ.map
+                (HenkinConstInfinity.liftBaseClosedFormula
+                  (Base := Base) (Const := Const)))
+              (HenkinConstInfinity.liftBaseClosedFormula
+                (Base := Base) (Const := Const) φ)
+              (fun v => nomatch v) := by
+  intro Δ φ hNot
+  rcases HenkinConstInfinity.exists_canonical_counterworld_of_list_notProvable
+      (Base := Base)
+      (Const := Const)
+      (Δ := Δ.map
+        (HenkinConstInfinity.liftBaseClosedFormula
+          (Base := Base) (Const := Const)))
+      (φ := HenkinConstInfinity.liftBaseClosedFormula
+        (Base := Base) (Const := Const) φ)
+      (hNot := hLiftNotProvable hNot) with
+    ⟨W, hWΔ, hWHenkin, hWNotφ⟩
+  have hWCtx :
+      W ∈ HenkinConstInfinity.contextDenote
+            (Base := Base)
+            (Const := Const)
+            (Δ.map
+              (HenkinConstInfinity.liftBaseClosedFormula
+                (Base := Base) (Const := Const)))
+            (HenkinConstInfinity.emptyClosedSubst Base Const) := by
+    apply (HenkinConstInfinity.mem_contextDenote_empty_iff
+      (Base := Base)
+      (Const := Const)
+      (W := W)
+      (Δ := Δ.map
+        (HenkinConstInfinity.liftBaseClosedFormula
+          (Base := Base) (Const := Const)))).2
+    intro ψ hψ
+    exact (HenkinConstInfinity.mem_denoteFormula_empty_iff
+      (Base := Base)
+      (Const := Const)
+      (W := W)
+      (φ := ψ)).1 <|
+      hWΔ hψ
+  exact
+    HenkinConstInfinity.exists_countermodel_of_henkin_counterexample
+      (Base := Base)
+      (Const := Const)
+      (Δ := Δ.map
+        (HenkinConstInfinity.liftBaseClosedFormula
+          (Base := Base) (Const := Const)))
+      (φ := HenkinConstInfinity.liftBaseClosedFormula
+        (Base := Base) (Const := Const) φ)
+      ⟨⟨W, hWHenkin⟩, hWCtx, hWNotφ⟩
+
+/--
+The represented-canonical lifted countermodel theorem descends back to an
+original-signature countermodel by reduct along the base embedding.
+-/
+theorem countermodel_of_liftBase_notProvable_via_canonicalRepresented
+    (hLiftNotProvable :
+      ∀ {Δ : List (ClosedFormula Const)} {φ : ClosedFormula Const},
+        ¬ ExtDerivation Const Δ φ →
+          ¬ ClosedTheorySet.Provable
+              (Const := HenkinConstInfinity.HInf Base Const)
+              (fun ψ =>
+                ψ ∈ Δ.map
+                  (HenkinConstInfinity.liftBaseClosedFormula
+                    (Base := Base) (Const := Const)) ∨
+                  ψ ∈ HenkinConstInfinity.HenkinAxioms
+                    (Base := Base) (Const := Const))
+              (HenkinConstInfinity.liftBaseClosedFormula
+                (Base := Base) (Const := Const) φ)) :
+    ∀ {Δ : List (ClosedFormula Const)} {φ : ClosedFormula Const},
+      ¬ ExtDerivation Const Δ φ →
+        ∃ M : HeytingHenkinModel.{u, v, v + 1} Base Const,
+          ¬ HeytingHenkinModel.modelsFrom M Δ φ (fun v => nomatch v) := by
+  intro Δ φ hNot
+  rcases liftBase_countermodel_of_liftBase_notProvable_via_canonicalRepresented
+      (Base := Base)
+      (Const := Const)
+      hLiftNotProvable
+      hNot with
+    ⟨M, hM⟩
+  let Mred : HeytingHenkinModel.{u, v, v + 1} Base Const :=
+    HeytingHenkinModel.reduct
+      (Base := Base)
+      (Const := Const)
+      (Const' := HenkinConstInfinity.HInf Base Const)
+      (fun {τ} c => HenkinConstInfinity.base c)
+      M
+  refine ⟨Mred, ?_⟩
+  intro hModels
+  exact hM <|
+    (HeytingHenkinModel.modelsFrom_mapConst_iff
+      (Base := Base)
+      (Const := Const)
+      (Const' := HenkinConstInfinity.HInf Base Const)
+      (fun {τ} c => HenkinConstInfinity.base c)
+      M
+      Δ
+      φ
+      (fun v => nomatch v)).mp hModels
 
 /--
 Stronger diagnostic reduction:
@@ -631,6 +1037,156 @@ theorem provable_of_liftBase_notProvable_and_canonical_counterworld
         (Const := Const)
         hLiftNotProvable)
       hValid
+
+/--
+The fully split Henkin endgame, stated as validity iff provability.
+-/
+theorem validFrom_iff_provable_of_liftBase_notProvable_and_canonical_counterworld
+    (hBridge :
+      ∀ {Δ : List (ClosedFormula (HenkinConstInfinity.HInf Base Const))}
+        {φ : ClosedFormula (HenkinConstInfinity.HInf Base Const)},
+        (∃ W : HenkinConstInfinity.World Base Const,
+            W ∈ HenkinConstInfinity.contextDenote
+                  (Base := Base)
+                  (Const := Const)
+                  Δ
+                  (HenkinConstInfinity.emptyClosedSubst Base Const) ∧
+            ¬ HenkinConstInfinity.modelsFrom
+                  (Base := Base)
+                  (Const := Const)
+                  Δ
+                  φ
+                  (HenkinConstInfinity.emptyClosedSubst Base Const)) →
+          ∃ M : HeytingHenkinModel.{u, max u (v + 1), w}
+              Base (HenkinConstInfinity.HInf Base Const),
+            ¬ HeytingHenkinModel.modelsFrom M Δ φ (fun v => nomatch v))
+    (hLiftNotProvable :
+      ∀ {Δ : List (ClosedFormula Const)} {φ : ClosedFormula Const},
+        ¬ ExtDerivation Const Δ φ →
+          ¬ ClosedTheorySet.Provable
+              (Const := HenkinConstInfinity.HInf Base Const)
+              (fun ψ =>
+                ψ ∈ Δ.map
+                  (HenkinConstInfinity.liftBaseClosedFormula
+                    (Base := Base) (Const := Const)) ∨
+                  ψ ∈ HenkinConstInfinity.HenkinAxioms
+                    (Base := Base) (Const := Const))
+              (HenkinConstInfinity.liftBaseClosedFormula
+                (Base := Base) (Const := Const) φ))
+    {Δ : List (ClosedFormula Const)}
+    {φ : ClosedFormula Const} :
+    (∀ M : HeytingHenkinModel.{u, v, w} Base Const,
+      HeytingHenkinModel.modelsFrom M Δ φ (fun v => nomatch v)) ↔
+      ExtDerivation Const Δ φ := by
+  constructor
+  · intro hValid
+    exact
+      provable_of_liftBase_notProvable_and_canonical_counterworld
+        (Base := Base)
+        (Const := Const)
+        hBridge
+        hLiftNotProvable
+        hValid
+  · exact validFrom_of_provable (Base := Base) (Const := Const)
+
+/--
+Represented-canonical version of the split Henkin endgame: the only remaining
+input is the lifted non-provability theorem.
+-/
+theorem provable_of_liftBase_notProvable_via_canonicalRepresented
+    (hLiftNotProvable :
+      ∀ {Δ : List (ClosedFormula Const)} {φ : ClosedFormula Const},
+        ¬ ExtDerivation Const Δ φ →
+          ¬ ClosedTheorySet.Provable
+              (Const := HenkinConstInfinity.HInf Base Const)
+              (fun ψ =>
+                ψ ∈ Δ.map
+                  (HenkinConstInfinity.liftBaseClosedFormula
+                    (Base := Base) (Const := Const)) ∨
+                  ψ ∈ HenkinConstInfinity.HenkinAxioms
+                    (Base := Base) (Const := Const))
+              (HenkinConstInfinity.liftBaseClosedFormula
+                (Base := Base) (Const := Const) φ))
+    {Δ : List (ClosedFormula Const)}
+    {φ : ClosedFormula Const}
+    (hValid :
+      ∀ M : HeytingHenkinModel.{u, v, v + 1} Base Const,
+        HeytingHenkinModel.modelsFrom M Δ φ (fun v => nomatch v)) :
+    ExtDerivation Const Δ φ := by
+  exact
+    provable_of_liftBase_countermodel
+      (Base := Base)
+      (Const := Const)
+      (hCounter :=
+        liftBase_countermodel_of_liftBase_notProvable_via_canonicalRepresented
+          (Base := Base)
+          (Const := Const)
+          hLiftNotProvable)
+      hValid
+
+/--
+Represented-canonical split Henkin completeness reduction stated as validity iff
+provability.
+-/
+theorem validFrom_iff_provable_of_liftBase_notProvable_via_canonicalRepresented
+    (hLiftNotProvable :
+      ∀ {Δ : List (ClosedFormula Const)} {φ : ClosedFormula Const},
+        ¬ ExtDerivation Const Δ φ →
+          ¬ ClosedTheorySet.Provable
+              (Const := HenkinConstInfinity.HInf Base Const)
+              (fun ψ =>
+                ψ ∈ Δ.map
+                  (HenkinConstInfinity.liftBaseClosedFormula
+                    (Base := Base) (Const := Const)) ∨
+                  ψ ∈ HenkinConstInfinity.HenkinAxioms
+                    (Base := Base) (Const := Const))
+              (HenkinConstInfinity.liftBaseClosedFormula
+                (Base := Base) (Const := Const) φ))
+    {Δ : List (ClosedFormula Const)}
+    {φ : ClosedFormula Const} :
+    (∀ M : HeytingHenkinModel.{u, v, v + 1} Base Const,
+      HeytingHenkinModel.modelsFrom M Δ φ (fun v => nomatch v)) ↔
+      ExtDerivation Const Δ φ := by
+  constructor
+  · intro hValid
+    exact
+      provable_of_liftBase_notProvable_via_canonicalRepresented
+        (Base := Base)
+        (Const := Const)
+        hLiftNotProvable
+        hValid
+  · exact validFrom_of_provable (Base := Base) (Const := Const)
+
+/--
+Current strongest public completeness theorem on the represented-canonical
+Route 1 surface.
+
+The semantic/export side is fully discharged; the sole remaining premise is the
+proof-theoretic lifted non-provability bridge.
+-/
+theorem plain_intuitionistic_completeness_of_liftBase_notProvable_via_canonicalRepresented
+    (hLiftNotProvable :
+      ∀ {Δ : List (ClosedFormula Const)} {φ : ClosedFormula Const},
+        ¬ ExtDerivation Const Δ φ →
+          ¬ ClosedTheorySet.Provable
+              (Const := HenkinConstInfinity.HInf Base Const)
+              (fun ψ =>
+                ψ ∈ Δ.map
+                  (HenkinConstInfinity.liftBaseClosedFormula
+                    (Base := Base) (Const := Const)) ∨
+                  ψ ∈ HenkinConstInfinity.HenkinAxioms
+                    (Base := Base) (Const := Const))
+              (HenkinConstInfinity.liftBaseClosedFormula
+                (Base := Base) (Const := Const) φ))
+    {Δ : List (ClosedFormula Const)}
+    {φ : ClosedFormula Const} :
+    (∀ M : HeytingHenkinModel.{u, v, v + 1} Base Const,
+      HeytingHenkinModel.modelsFrom M Δ φ (fun v => nomatch v)) ↔
+      ExtDerivation Const Δ φ := by
+  exact validFrom_iff_provable_of_liftBase_notProvable_via_canonicalRepresented
+    (Base := Base)
+    (Const := Const)
+    hLiftNotProvable
 
 /--
 Plain intuitionistic original-signature completeness follows from the lifted
