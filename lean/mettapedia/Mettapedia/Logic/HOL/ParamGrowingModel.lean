@@ -164,6 +164,31 @@ theorem nonempty_baseSection_of_param_world
     Nonempty (BaseSection Base Const b) :=
   ⟨freshParamSection (Base := Base) (Const := Const) W⟩
 
+/-- Truth value of worldwise availability for a supported base section.
+
+This packages `support` as an `Ω`-truth value using the same order convention
+as the growing-world truth object.
+-/
+def supportTruth
+    {b : Base}
+    (x : BaseSection Base Const b) :
+    GrowingWorld.Ω (Base := Base) (Const := Const) :=
+  OrderDual.ofDual x.support
+
+/-- Universe-lifted availability truth for supported base sections. -/
+def baseAvailability
+    {b : Base}
+    (x : BaseSection Base Const b) :
+    ModelΩ (Base := Base) (Const := Const) :=
+  liftTruth (Base := Base) (Const := Const)
+    (supportTruth (Base := Base) (Const := Const) x)
+
+@[simp] theorem down_baseAvailability
+    {b : Base}
+    (x : BaseSection Base Const b) :
+    (baseAvailability x).down = supportTruth x :=
+  rfl
+
 /-- Transporting an original base constant across a context equality is trivial.
 
 Positive example:
@@ -208,6 +233,22 @@ noncomputable def constSection
       .const (ParamConst.base c) :=
   rfl
 
+@[simp] theorem supportTruth_constSection
+    {b : Base}
+    (c : Const (.base b)) :
+    supportTruth (constSection c) =
+        OrderDual.ofDual
+          (⊤ : UpperSet (GrowingWorld Base Const)) := by
+  rfl
+
+@[simp] theorem supportTruth_freshParamSection
+    {Γ : Ctx Base} {b : Base}
+    (W : PrimeTheory Const (.base b :: Γ)) :
+    supportTruth (freshParamSection W) =
+        OrderDual.ofDual
+          (principalSupport ⟨.base b :: Γ, W⟩) := by
+  rfl
+
 /-- The local equality formula comparing two supported base sections at a world
 where both are available. -/
 def eqFormulaAt
@@ -232,6 +273,179 @@ def eqFormulaAt
         hd =
       .eq (.const (ParamConst.base c)) (.const (ParamConst.base d)) :=
   rfl
+
+/-- Equality reflexivity is always present in a prime-theory world. -/
+theorem eq_refl_mem_at_world
+    {τ : Ty Base}
+    (W : GrowingWorld Base Const)
+    (t : ClosedTerm (ParamConst Const W.ctx) τ) :
+    (.eq t t : ClosedFormula (ParamConst Const W.ctx)) ∈ W.theory.carrier := by
+  exact W.theory.closed <|
+    ClosedTheorySet.provable_of_closedTheory
+      (Const := ParamConst Const W.ctx)
+      (T := W.theory.carrier)
+      (Δ := [])
+      (hΔ := by
+        intro ψ hψ
+        cases hψ)
+      (.eqRefl t)
+
+/-- Equality symmetry is closed in every prime-theory world. -/
+theorem eq_symm_mem_at_world
+    {τ : Ty Base}
+    {W : GrowingWorld Base Const}
+    {t u : ClosedTerm (ParamConst Const W.ctx) τ}
+    (h : (.eq t u : ClosedFormula (ParamConst Const W.ctx)) ∈ W.theory.carrier) :
+    (.eq u t : ClosedFormula (ParamConst Const W.ctx)) ∈ W.theory.carrier := by
+  have hProv : ClosedTheorySet.Provable
+      (Const := ParamConst Const W.ctx)
+      W.theory.carrier
+      (.eq u t : ClosedFormula (ParamConst Const W.ctx)) := by
+    rcases ClosedTheorySet.provable_of_mem
+      (Const := ParamConst Const W.ctx)
+      (T := W.theory.carrier)
+      h with ⟨support, hSup, d⟩
+    exact ⟨support, hSup, .eqSymm d⟩
+  exact W.theory.closed hProv
+
+/-- Equality transitivity is closed in every prime-theory world. -/
+theorem eq_trans_mem_at_world
+    {τ : Ty Base}
+    {W : GrowingWorld Base Const}
+    {t u v : ClosedTerm (ParamConst Const W.ctx) τ}
+    (htu : (.eq t u : ClosedFormula (ParamConst Const W.ctx)) ∈ W.theory.carrier)
+    (huv : (.eq u v : ClosedFormula (ParamConst Const W.ctx)) ∈ W.theory.carrier) :
+    (.eq t v : ClosedFormula (ParamConst Const W.ctx)) ∈ W.theory.carrier := by
+  have hProv : ClosedTheorySet.Provable
+      (Const := ParamConst Const W.ctx)
+      W.theory.carrier
+      (.eq t v : ClosedFormula (ParamConst Const W.ctx)) := by
+    rcases ClosedTheorySet.provable_of_mem
+      (Const := ParamConst Const W.ctx)
+      (T := W.theory.carrier)
+      htu with ⟨support₁, hSup₁, d₁⟩
+    rcases ClosedTheorySet.provable_of_mem
+      (Const := ParamConst Const W.ctx)
+      (T := W.theory.carrier)
+      huv with ⟨support₂, hSup₂, d₂⟩
+    exact ⟨support₁ ++ support₂, by
+      intro φ hφ
+      rcases List.mem_append.mp hφ with hφ | hφ
+      · exact hSup₁ φ hφ
+      · exact hSup₂ φ hφ,
+      .eqTrans
+        (ExtDerivation.mono
+          (Δ := support₁)
+          (Δ' := support₁ ++ support₂)
+          (φ := .eq t u)
+          (by
+            intro ξ hξ
+            exact List.mem_append.mpr (.inl hξ))
+          d₁)
+        (ExtDerivation.mono
+          (Δ := support₂)
+          (Δ' := support₁ ++ support₂)
+          (φ := .eq u v)
+          (by
+            intro ξ hξ
+            exact List.mem_append.mpr (.inr hξ))
+          d₂)⟩
+  exact W.theory.closed hProv
+
+/-- Base-equality support for supported sections.
+
+A world belongs to `eqSupport x y` when every honest future world:
+1. agrees on availability of `x` and `y`, and
+2. validates their local equality formula whenever both are available.
+
+This support-coherence strengthening is the key repair ensuring transitivity.
+-/
+def eqSupport
+    {b : Base}
+    (x y : BaseSection Base Const b) :
+    UpperSet (GrowingWorld Base Const) :=
+  ⟨
+    {W | ∀ {V : GrowingWorld Base Const}, W ≤ V →
+      (V ∈ x.support ↔ V ∈ y.support) ∧
+      ∀ (hx : V ∈ x.support) (hy : V ∈ y.support),
+        eqFormulaAt (Base := Base) (Const := Const) x y hx hy ∈ V.theory.carrier},
+    by
+      intro U V hUV hU X hVX
+      exact hU (le_trans hUV hVX)
+  ⟩
+
+/-- Truth value of base equality support in the growing-world truth object. -/
+def eqTruth
+    {b : Base}
+    (x y : BaseSection Base Const b) :
+    GrowingWorld.Ω (Base := Base) (Const := Const) :=
+  OrderDual.ofDual (eqSupport (Base := Base) (Const := Const) x y)
+
+/-- Universe-lifted base equality support truth for supported sections. -/
+def baseEq
+    {b : Base}
+    (x y : BaseSection Base Const b) :
+    ModelΩ (Base := Base) (Const := Const) :=
+  liftTruth (Base := Base) (Const := Const)
+    (eqTruth (Base := Base) (Const := Const) x y)
+
+@[simp] theorem down_baseEq
+    {b : Base}
+    (x y : BaseSection Base Const b) :
+    (baseEq (Base := Base) (Const := Const) x y).down =
+      eqTruth (Base := Base) (Const := Const) x y :=
+  rfl
+
+/-- Reflexive membership of supported-section equality support. -/
+theorem mem_eqSupport_refl
+    {b : Base}
+    (x : BaseSection Base Const b)
+    (W : GrowingWorld Base Const) :
+    W ∈ eqSupport (Base := Base) (Const := Const) x x := by
+  intro V hWV
+  refine ⟨Iff.rfl, ?_⟩
+  intro hx hy
+  have hxy : hx = hy := Subsingleton.elim hx hy
+  subst hxy
+  simpa [eqFormulaAt] using
+    eq_refl_mem_at_world (Base := Base) (Const := Const) V (x.termAt hx)
+
+/-- Symmetric membership transfer for supported-section equality support. -/
+theorem mem_eqSupport_symm
+    {b : Base}
+    {x y : BaseSection Base Const b}
+    {W : GrowingWorld Base Const}
+    (hxy : W ∈ eqSupport (Base := Base) (Const := Const) x y) :
+    W ∈ eqSupport (Base := Base) (Const := Const) y x := by
+  intro V hWV
+  have hxyV := hxy hWV
+  refine ⟨hxyV.1.symm, ?_⟩
+  intro hy hx
+  exact eq_symm_mem_at_world (Base := Base) (Const := Const)
+    (h := hxyV.2 hx hy)
+
+/-- Transitive membership transfer for supported-section equality support. -/
+theorem mem_eqSupport_trans
+    {b : Base}
+    {x y z : BaseSection Base Const b}
+    {W : GrowingWorld Base Const}
+    (hxy : W ∈ eqSupport (Base := Base) (Const := Const) x y)
+    (hyz : W ∈ eqSupport (Base := Base) (Const := Const) y z) :
+    W ∈ eqSupport (Base := Base) (Const := Const) x z := by
+  intro V hWV
+  have hxyV := hxy hWV
+  have hyzV := hyz hWV
+  refine ⟨?_, ?_⟩
+  · constructor
+    · intro hx
+      exact hyzV.1.mp (hxyV.1.mp hx)
+    · intro hz
+      exact hxyV.1.mpr (hyzV.1.mpr hz)
+  · intro hx hz
+    let hy : V ∈ y.support := hxyV.1.mp hx
+    exact eq_trans_mem_at_world (Base := Base) (Const := Const)
+      (htu := hxyV.2 hx hy)
+      (huv := hyzV.2 hy hz)
 
 end GrowingWorld
 

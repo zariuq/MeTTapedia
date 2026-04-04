@@ -98,16 +98,20 @@ def generateSigLean (sig : GrammarSig) (namespace_ : String) : String := Id.run 
     out := out ++ s!"private def {sanitizeName name} : FunDecl :=\n"
     out := out ++ s!"  {lbrace} name := {q name}, argCats := #[{argCatsStr}],"
     out := out ++ s!" resultCat := {q decl.resultCat}, status := .primitive {rbrace}\n\n"
+  out := out ++ "/-- The list of function declarations (kernel-reducible).\n"
+  out := out ++ "    Use this for proofs; `sig.funs` (HashMap) is for runtime lookup. -/\n"
+  out := out ++ "def funsList : List (String × FunDecl) :=\n"
+  out := out ++ "  [\n"
+  for (name, _) in sig.funs.toList do
+    out := out ++ s!"    ({q name}, {sanitizeName name}),\n"
+  out := out ++ "  ]\n\n"
   -- The signature definition
   let startCatsStr := String.intercalate ", " (sig.startCats.toList.map q)
   out := out ++ "def sig : GrammarSig where\n"
   out := out ++ s!"  grammar := {q sig.grammar}\n"
   out := out ++ s!"  startCats := #[{startCatsStr}]\n"
   out := out ++ s!"  sourceHash := {q sig.sourceHash}\n"
-  out := out ++ "  funs := Std.HashMap.ofList [\n"
-  for (name, _) in sig.funs.toList do
-    out := out ++ s!"    ({q name}, {sanitizeName name}),\n"
-  out := out ++ "  ]\n\n"
+  out := out ++ "  funs := Std.HashMap.ofList funsList\n\n"
   out := out ++ s!"end {namespace_}\n"
   return out
 

@@ -13,12 +13,17 @@ import GFCore.Syntax
 
 namespace GFCore
 
-/-- Check a RawTerm against a GrammarSig, producing a CheckedExpr or an error.
-    This is the trust boundary: RawTerm is untyped wire data from GF;
-    CheckedExpr is verified and safe to reason over in Lean. -/
-partial def check (sig : GrammarSig) (t : RawTerm) : Except CheckError CheckedExpr := do
+/-- Look up a function declaration by name in a kernel-reducible declaration list. -/
+def findFunInList? : List (String × FunDecl) → String → Option FunDecl
+  | [], _ => none
+  | (nm, decl) :: rest, target =>
+      if nm == target then some decl else findFunInList? rest target
+
+/-- Generic checker parameterized by a function-declaration lookup. -/
+partial def checkUsing (lookup : String → Option FunDecl) (t : RawTerm) :
+    Except CheckError CheckedExpr := do
   let funName := t.funName
-  let decl ← match sig.findFun? funName with
+  let decl ← match lookup funName with
     | some d => pure d
     | none   => throw (.unknownFun funName)
   let rawArgs := t.args
@@ -29,12 +34,24 @@ partial def check (sig : GrammarSig) (t : RawTerm) : Except CheckError CheckedEx
       throw (.inconsistentCatHint funName hint decl.resultCat)
   let mut checkedArgs : Array CheckedExpr := #[]
   for i in [:rawArgs.size] do
-    let child ← check sig rawArgs[i]!
+    let child ← checkUsing lookup rawArgs[i]!
     let expectedCat := decl.argCats[i]!
     if child.resultCat != expectedCat then
       throw (.catMismatch funName i expectedCat child.resultCat)
     checkedArgs := checkedArgs.push child
   pure (.node decl checkedArgs)
+
+/-- Check a RawTerm against a GrammarSig, producing a CheckedExpr or an error.
+    This is the trust boundary: RawTerm is untyped wire data from GF;
+    CheckedExpr is verified and safe to reason over in Lean. -/
+partial def check (sig : GrammarSig) (t : RawTerm) : Except CheckError CheckedExpr := do
+  checkUsing sig.findFun? t
+
+/-- Check a RawTerm against a kernel-reducible declaration list. This is
+    theorem-friendly and pairs well with generated `funsList` signatures. -/
+partial def checkFromFunsList (funsList : List (String × FunDecl)) (t : RawTerm) :
+    Except CheckError CheckedExpr := do
+  checkUsing (findFunInList? funsList) t
 
 /-- Check a ParseCandidate, returning a checked tree or error. -/
 def checkCandidate (sig : GrammarSig) (pc : ParseCandidate) : Except CheckError CheckedExpr :=

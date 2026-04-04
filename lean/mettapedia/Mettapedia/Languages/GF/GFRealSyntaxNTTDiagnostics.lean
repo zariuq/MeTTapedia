@@ -276,6 +276,70 @@ theorem telescopeNP_not_vpAttachmentType :
   show ¬ containsLabel "AdvVP" telescopeNPPattern = true
   decide
 
+theorem telescope_patterns_distinct :
+    telescopeVPPattern ≠ telescopeNPPattern := by
+  decide
+
+theorem anna_patterns_distinct :
+    annaVPWitnessPattern ≠ annaNPWitnessPattern := by
+  decide
+
+theorem telescope_reading1_ir_bilingual_preserved :
+    englishTelescopeAbstractNode1 = czechTelescopeAbstractNode1 := by
+  decide
+
+theorem telescope_reading2_ir_bilingual_preserved :
+    englishTelescopeAbstractNode2 = czechTelescopeAbstractNode2 := by
+  decide
+
+theorem anna_reading1_ir_bilingual_preserved :
+    englishAnnaAbstractNode1 = czechAnnaAbstractNode1 := by
+  decide
+
+theorem anna_reading2_ir_bilingual_preserved :
+    englishAnnaAbstractNode2 = czechAnnaAbstractNode2 := by
+  decide
+
+theorem telescope_ir_readings_distinct :
+    englishTelescopeAbstractNode1 ≠ englishTelescopeAbstractNode2 := by
+  decide
+
+theorem anna_ir_readings_distinct :
+    englishAnnaAbstractNode1 ≠ englishAnnaAbstractNode2 := by
+  decide
+
+theorem telescope_ambiguity_pipeline_summary :
+    englishTelescopeAbstractNode1 = czechTelescopeAbstractNode1 ∧
+    englishTelescopeAbstractNode2 = czechTelescopeAbstractNode2 ∧
+    englishTelescopeAbstractNode1 ≠ englishTelescopeAbstractNode2 ∧
+    telescopeVPPattern ≠ telescopeNPPattern ∧
+    (langOSLF paperSyntaxLangKR "S").satisfies telescopeVPPattern vpAttachmentType.pred ∧
+    ¬ (langOSLF paperSyntaxLangKR "S").satisfies telescopeVPPattern npAttachmentType.pred ∧
+    (langOSLF paperSyntaxLangKR "S").satisfies telescopeNPPattern npAttachmentType.pred ∧
+    ¬ (langOSLF paperSyntaxLangKR "S").satisfies telescopeNPPattern vpAttachmentType.pred := by
+  refine ⟨telescope_reading1_ir_bilingual_preserved,
+    telescope_reading2_ir_bilingual_preserved,
+    telescope_ir_readings_distinct,
+    telescope_patterns_distinct,
+    telescopeVP_satisfies_vpAttachmentType,
+    telescopeVP_not_npAttachmentType,
+    telescopeNP_satisfies_npAttachmentType,
+    telescopeNP_not_vpAttachmentType⟩
+
+theorem anna_ambiguity_pipeline_summary :
+    englishAnnaAbstractNode1 = czechAnnaAbstractNode1 ∧
+    englishAnnaAbstractNode2 = czechAnnaAbstractNode2 ∧
+    englishAnnaAbstractNode1 ≠ englishAnnaAbstractNode2 ∧
+    annaVPWitnessPattern ≠ annaNPWitnessPattern ∧
+    containsLabel "AdvVP" annaVPWitnessPattern = true ∧
+    containsLabel "AdvCN" annaNPWitnessPattern = true := by
+  refine ⟨anna_reading1_ir_bilingual_preserved,
+    anna_reading2_ir_bilingual_preserved,
+    anna_ir_readings_distinct,
+    anna_patterns_distinct,
+    by decide,
+    by decide⟩
+
 theorem presentSentence_box_self :
     langBox paperSyntaxLangKR (fun q => q = presentSentencePattern) presentSentencePattern :=
   paperSyntax_vacuous_box _ _

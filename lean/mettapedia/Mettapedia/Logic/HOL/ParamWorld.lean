@@ -1785,6 +1785,52 @@ theorem ctx_eq_ctxPrefixOfExtends_append
     Classical.choose_spec
       (exists_ctxPrefix_of_extends (Base := Base) (Const := Const) hUV)
 
+/-- The chosen left prefix is unique for a fixed growth boundary. -/
+theorem ctxPrefixOfExtends_eq
+    {U V : GrowingWorld Base Const}
+    (h₁ h₂ : U ≤ V) :
+    ctxPrefixOfExtends (Base := Base) (Const := Const) h₁ =
+      ctxPrefixOfExtends (Base := Base) (Const := Const) h₂ := by
+  have hctx₁ := ctx_eq_ctxPrefixOfExtends_append (Base := Base) (Const := Const) h₁
+  have hctx₂ := ctx_eq_ctxPrefixOfExtends_append (Base := Base) (Const := Const) h₂
+  have happ :
+      ctxPrefixOfExtends (Base := Base) (Const := Const) h₁ ++ U.ctx =
+        ctxPrefixOfExtends (Base := Base) (Const := Const) h₂ ++ U.ctx := by
+    calc
+      ctxPrefixOfExtends (Base := Base) (Const := Const) h₁ ++ U.ctx = V.ctx := by
+        simp [hctx₁]
+      _ = ctxPrefixOfExtends (Base := Base) (Const := Const) h₂ ++ U.ctx := by
+        simp [hctx₂]
+  exact (List.append_left_injective U.ctx) happ
+
+/-- Prefix decomposition of a composed growth chain. -/
+theorem ctxPrefixOfExtends_trans
+    {U V W : GrowingWorld Base Const}
+    (hUV : U ≤ V) (hVW : V ≤ W) :
+    ctxPrefixOfExtends (Base := Base) (Const := Const) (le_trans hUV hVW) =
+      ctxPrefixOfExtends (Base := Base) (Const := Const) hVW ++
+        ctxPrefixOfExtends (Base := Base) (Const := Const) hUV := by
+  have hctxUV := ctx_eq_ctxPrefixOfExtends_append (Base := Base) (Const := Const) hUV
+  have hctxVW := ctx_eq_ctxPrefixOfExtends_append (Base := Base) (Const := Const) hVW
+  have hctxUW := ctx_eq_ctxPrefixOfExtends_append (Base := Base) (Const := Const)
+    (le_trans hUV hVW)
+  have happ :
+      ctxPrefixOfExtends (Base := Base) (Const := Const) (le_trans hUV hVW) ++ U.ctx =
+        (ctxPrefixOfExtends (Base := Base) (Const := Const) hVW ++
+          ctxPrefixOfExtends (Base := Base) (Const := Const) hUV) ++ U.ctx := by
+    calc
+      ctxPrefixOfExtends (Base := Base) (Const := Const) (le_trans hUV hVW) ++ U.ctx
+          = W.ctx := by simp [hctxUW]
+      _ = ctxPrefixOfExtends (Base := Base) (Const := Const) hVW ++ V.ctx := by
+            simp [hctxVW]
+      _ = ctxPrefixOfExtends (Base := Base) (Const := Const) hVW ++
+            (ctxPrefixOfExtends (Base := Base) (Const := Const) hUV ++ U.ctx) := by
+            simp [hctxUV]
+      _ = (ctxPrefixOfExtends (Base := Base) (Const := Const) hVW ++
+            ctxPrefixOfExtends (Base := Base) (Const := Const) hUV) ++ U.ctx := by
+            simp [List.append_assoc]
+  exact (List.append_left_injective U.ctx) happ
+
 @[simp] theorem ctxPrefixOfExtends_same
     {Γ : Ctx Base}
     {W V : PrimeTheory Const Γ}
@@ -1816,36 +1862,219 @@ theorem ctx_eq_ctxPrefixOfExtends_append
     simpa using hctx
   exact (List.append_left_injective Γ) happ.symm
 
-/-- Transport a local closed term along a growth chain, using the chosen left
-prefix of its target context. -/
+/-- Computational witness for one honest growth step. -/
+inductive StepChain : GrowingWorld Base Const → GrowingWorld Base Const → Type (max u v)
+  | same
+      {Γ : Ctx Base}
+      {W V : PrimeTheory Const Γ}
+      (hWV : PrimeTheory.SameCtxExt W V) :
+      StepChain ⟨Γ, W⟩ ⟨Γ, V⟩
+  | param
+      {Γ : Ctx Base} {σ : Ty Base}
+      {W : PrimeTheory Const Γ}
+      {V : PrimeTheory Const (σ :: Γ)}
+      (hWV : PrimeTheory.ParamExt W V) :
+      StepChain ⟨Γ, W⟩ ⟨σ :: Γ, V⟩
+
+/-- Forgetful map from computational one-step witnesses to propositional steps. -/
+def StepChain.toStep : StepChain (Base := Base) (Const := Const) U V → Step U V
+  | .same hWV => .same hWV
+  | .param hWV => .param hWV
+
+/-- Any propositional one-step growth has a computational witness. -/
+theorem StepChain.nonempty_of_step
+    {U V : GrowingWorld Base Const}
+    (hUV : Step U V) :
+    Nonempty (StepChain (Base := Base) (Const := Const) U V) := by
+  cases hUV with
+  | same hWV => exact ⟨.same hWV⟩
+  | param hWV => exact ⟨.param hWV⟩
+
+/-- Strengthened bridge: one-step propositional growth to a computational
+witness with exact forgetful equality. -/
+theorem StepChain.exists_of_step
+    {U V : GrowingWorld Base Const}
+    (hUV : Step U V) :
+    ∃ c : StepChain (Base := Base) (Const := Const) U V, c.toStep = hUV := by
+  cases hUV with
+  | same hWV =>
+      exact ⟨.same hWV, rfl⟩
+  | param hWV =>
+      exact ⟨.param hWV, rfl⟩
+
+/-- Computational witness for an honest growth chain. -/
+inductive ExtendsChain : GrowingWorld Base Const → GrowingWorld Base Const → Type (max u v)
+  | refl (W : GrowingWorld Base Const) : ExtendsChain W W
+  | tail {U V W : GrowingWorld Base Const} :
+      StepChain (Base := Base) (Const := Const) U V →
+      ExtendsChain V W →
+      ExtendsChain U W
+
+/-- Forgetful map from computational chains to propositional growth. -/
+def ExtendsChain.toExtends :
+    ExtendsChain (Base := Base) (Const := Const) U V → U ≤ V
+  | .refl _ => .refl U
+  | .tail hStep hTail => .tail hStep.toStep hTail.toExtends
+
+/-- Concatenate computational growth chains. -/
+def ExtendsChain.trans
+    (hUV : ExtendsChain (Base := Base) (Const := Const) U V)
+    (hVW : ExtendsChain (Base := Base) (Const := Const) V W) :
+    ExtendsChain (Base := Base) (Const := Const) U W :=
+  match hUV with
+  | .refl _ => hVW
+  | .tail hStep hTail => .tail hStep (ExtendsChain.trans hTail hVW)
+
+/-- Any propositional growth proof has a computational witness. -/
+theorem ExtendsChain.nonempty_of_extends
+    {U V : GrowingWorld Base Const}
+    (hUV : U ≤ V) :
+    Nonempty (ExtendsChain (Base := Base) (Const := Const) U V) := by
+  induction hUV with
+  | refl U =>
+      exact ⟨.refl U⟩
+  | tail hStep hTail ih =>
+      rcases StepChain.nonempty_of_step (Base := Base) (Const := Const) hStep with ⟨hStepC⟩
+      rcases ih with ⟨hTailC⟩
+      exact ⟨.tail hStepC hTailC⟩
+
+/-- Strengthened bridge: propositional growth to a computational witness with
+exact forgetful equality. -/
+theorem ExtendsChain.exists_of_extends
+    {U V : GrowingWorld Base Const}
+    (hUV : U ≤ V) :
+    ∃ c : ExtendsChain (Base := Base) (Const := Const) U V, c.toExtends = hUV := by
+  induction hUV with
+  | refl U =>
+      exact ⟨.refl U, rfl⟩
+  | tail hStep hTail ih =>
+      rcases StepChain.exists_of_step (Base := Base) (Const := Const) hStep with
+        ⟨hStepC, hStepEq⟩
+      rcases ih with ⟨hTailC, hTailEq⟩
+      refine ⟨.tail hStepC hTailC, ?_⟩
+      cases hStepEq
+      cases hTailEq
+      rfl
+
+/-- Transport parameter constants along one computational step. -/
+def stepParamConstChain :
+    {U V : GrowingWorld Base Const} →
+      StepChain (Base := Base) (Const := Const) U V →
+        ∀ {τ : Ty Base}, ParamConst Const U.ctx τ → ParamConst Const V.ctx τ
+  | _, _, .same _, _, c => c
+  | _, _, .param (σ := σ) _, _, c =>
+      paramWeaken (Base := Base) (Const := Const) (σ := σ) c
+
+/-- Cast-free transport of parameter constants along a computational growth chain. -/
+def transportParamConstChain :
+    {U V : GrowingWorld Base Const} →
+      ExtendsChain (Base := Base) (Const := Const) U V →
+        ∀ {τ : Ty Base}, ParamConst Const U.ctx τ → ParamConst Const V.ctx τ
+  | _, _, .refl _, _, c => c
+  | _, _, .tail hStep hTail, _, c =>
+      transportParamConstChain hTail (stepParamConstChain hStep c)
+
+/-- Chain transport composes definitionally. -/
+theorem transportParamConstChain_trans
+    {U V W : GrowingWorld Base Const}
+    (hUV : ExtendsChain (Base := Base) (Const := Const) U V)
+    (hVW : ExtendsChain (Base := Base) (Const := Const) V W)
+    {τ : Ty Base}
+    (c : ParamConst Const U.ctx τ) :
+    transportParamConstChain (Base := Base) (Const := Const) (hUV.trans hVW) c =
+      transportParamConstChain (Base := Base) (Const := Const) hVW
+        (transportParamConstChain (Base := Base) (Const := Const) hUV c) := by
+  induction hUV generalizing W with
+  | refl U =>
+      rfl
+  | tail hStep hTail ih =>
+      simp [ExtendsChain.trans, transportParamConstChain, ih]
+
+/-- Cast-free term transport along a computational growth chain. -/
+abbrev transportClosedTermChain
+    {U V : GrowingWorld Base Const}
+    (hUV : ExtendsChain (Base := Base) (Const := Const) U V) :
+    {τ : Ty Base} →
+      ClosedTerm (ParamConst Const U.ctx) τ →
+      ClosedTerm (ParamConst Const V.ctx) τ :=
+  mapConst (transportParamConstChain (Base := Base) (Const := Const) hUV)
+
+/-- Cast-free closed-formula transport along a computational growth chain. -/
+abbrev transportClosedFormulaChain
+    {U V : GrowingWorld Base Const}
+    (hUV : ExtendsChain (Base := Base) (Const := Const) U V) :
+    ClosedFormula (ParamConst Const U.ctx) →
+      ClosedFormula (ParamConst Const V.ctx) :=
+  mapConst (transportParamConstChain (Base := Base) (Const := Const) hUV)
+
+theorem transportClosedTermChain_trans
+    {U V W : GrowingWorld Base Const}
+    (hUV : ExtendsChain (Base := Base) (Const := Const) U V)
+    (hVW : ExtendsChain (Base := Base) (Const := Const) V W)
+    {τ : Ty Base}
+    (t : ClosedTerm (ParamConst Const U.ctx) τ) :
+    transportClosedTermChain (Base := Base) (Const := Const) (hUV.trans hVW) t =
+      transportClosedTermChain (Base := Base) (Const := Const) hVW
+        (transportClosedTermChain (Base := Base) (Const := Const) hUV t) := by
+  unfold transportClosedTermChain
+  rw [Mettapedia.Logic.HOL.mapConst_comp]
+  apply mapConst_ext
+  intro τ c
+  exact transportParamConstChain_trans (Base := Base) (Const := Const) hUV hVW c
+
+theorem transportClosedFormulaChain_trans
+    {U V W : GrowingWorld Base Const}
+    (hUV : ExtendsChain (Base := Base) (Const := Const) U V)
+    (hVW : ExtendsChain (Base := Base) (Const := Const) V W)
+    (χ : ClosedFormula (ParamConst Const U.ctx)) :
+    transportClosedFormulaChain (Base := Base) (Const := Const) (hUV.trans hVW) χ =
+      transportClosedFormulaChain (Base := Base) (Const := Const) hVW
+        (transportClosedFormulaChain (Base := Base) (Const := Const) hUV χ) := by
+  unfold transportClosedFormulaChain
+  rw [Mettapedia.Logic.HOL.mapConst_comp]
+  apply mapConst_ext
+  intro τ c
+  exact transportParamConstChain_trans (Base := Base) (Const := Const) hUV hVW c
+
+/-- Proof-indexed transport used by existing API boundaries.
+
+This keeps the original interface while the cast-free chain transport above is
+available for coherence-sensitive proofs.
+-/
+noncomputable abbrev chooseExtendsChain
+    {U V : GrowingWorld Base Const}
+    (hUV : U ≤ V) :
+    ExtendsChain (Base := Base) (Const := Const) U V :=
+  Classical.choose
+    (ExtendsChain.exists_of_extends (Base := Base) (Const := Const) hUV)
+
+@[simp] theorem chooseExtendsChain_toExtends
+    {U V : GrowingWorld Base Const}
+    (hUV : U ≤ V) :
+    (chooseExtendsChain (Base := Base) (Const := Const) hUV).toExtends = hUV :=
+  Classical.choose_spec
+    (ExtendsChain.exists_of_extends (Base := Base) (Const := Const) hUV)
+
+/-- Proof-indexed closed-term transport, implemented through cast-free chain
+transport. -/
 noncomputable def transportClosedTerm
     {U V : GrowingWorld Base Const}
     (hUV : U ≤ V) :
     {τ : Ty Base} →
       ClosedTerm (ParamConst Const U.ctx) τ →
-      ClosedTerm (ParamConst Const V.ctx) τ := by
-  classical
-  let Ξ := ctxPrefixOfExtends (Base := Base) (Const := Const) hUV
-  have hctx : V.ctx = Ξ ++ U.ctx :=
-    ctx_eq_ctxPrefixOfExtends_append (Base := Base) (Const := Const) hUV
-  intro τ t
-  simpa [Ξ, hctx] using
-    (liftParamPrefix (Base := Base) (Const := Const) (Ξ := Ξ) (Γ := U.ctx) t)
+      ClosedTerm (ParamConst Const V.ctx) τ :=
+  transportClosedTermChain (Base := Base) (Const := Const)
+    (chooseExtendsChain (Base := Base) (Const := Const) hUV)
 
-/-- Transport a local closed formula along a growth chain, using the chosen
-left prefix of its target context. -/
+/-- Proof-indexed closed-formula transport, implemented through cast-free chain
+transport. -/
 noncomputable def transportClosedFormula
     {U V : GrowingWorld Base Const}
     (hUV : U ≤ V) :
     ClosedFormula (ParamConst Const U.ctx) →
-      ClosedFormula (ParamConst Const V.ctx) := by
-  classical
-  let Ξ := ctxPrefixOfExtends (Base := Base) (Const := Const) hUV
-  have hctx : V.ctx = Ξ ++ U.ctx :=
-    ctx_eq_ctxPrefixOfExtends_append (Base := Base) (Const := Const) hUV
-  intro χ
-  simpa [Ξ, hctx] using
-    (liftParamPrefixFormula (Base := Base) (Const := Const) (Ξ := Ξ) (Γ := U.ctx) χ)
+      ClosedFormula (ParamConst Const V.ctx) :=
+  transportClosedFormulaChain (Base := Base) (Const := Const)
+    (chooseExtendsChain (Base := Base) (Const := Const) hUV)
 
 /-- One-step transport of original closed-formula membership along honest world
 growth.

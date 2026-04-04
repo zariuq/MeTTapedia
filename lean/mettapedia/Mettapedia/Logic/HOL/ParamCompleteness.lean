@@ -77,6 +77,44 @@ structure RootCounterworldCountermodelBridge
         ∃ M : HeytingHenkinModel.{u, v, w} Base Const,
           ¬ HeytingHenkinModel.modelsFrom M Δ φ (fun v => nomatch v)
 
+/-- Availability-aware semantic export boundary for the direct route. -/
+structure RootCounterworldCountermodelWithAvailabilityBridge
+    (Base : Type u) (Const : Ty Base → Type v) where
+  countermodel_of_rootCounterworld :
+    ∀ {Δ : List (ClosedFormula Const)} {φ : ClosedFormula Const},
+      RootCounterworld Base Const Δ φ →
+        ∃ M : HeytingHenkinModel.{u, v, w} Base Const,
+          ∃ avail : HeytingPreModel.QuantifierAvailability M.toHeytingPreModel,
+            HeytingHenkinModel.AdmissibleAvailability M avail ∧
+              ¬ HeytingPreModel.modelsFromWithAvailability
+                  M.toHeytingPreModel
+                  avail
+                  Δ
+                  φ
+                  (fun v => nomatch v)
+
+/-- Legacy countermodel export induces an availability-aware bridge via
+`topAvailability`. -/
+def RootCounterworldCountermodelBridge.toWithTopAvailability
+    (C : RootCounterworldCountermodelBridge.{u, v, w} Base Const) :
+    RootCounterworldCountermodelWithAvailabilityBridge.{u, v, w} Base Const where
+  countermodel_of_rootCounterworld := by
+    intro Δ φ Cw
+    rcases C.countermodel_of_rootCounterworld Cw with
+      ⟨(M : HeytingHenkinModel.{u, v, w} Base Const), hNotModels⟩
+    refine ⟨M, HeytingPreModel.topAvailability M.toHeytingPreModel, ?_⟩
+    refine ⟨HeytingHenkinModel.topAvailability_admissible M, ?_⟩
+    intro hTopModels
+    have hModels :
+        HeytingHenkinModel.modelsFrom M Δ φ (fun v => nomatch v) :=
+      (HeytingPreModel.modelsFromWithAvailability_top_iff_modelsFrom
+        M.toHeytingPreModel
+        (Δ := Δ)
+        (φ := φ)
+        (ρ := fun v => nomatch v)).1
+        hTopModels
+    exact hNotModels hModels
+
 theorem RootCounterworld.to_exists_world
     {Δ : List (ClosedFormula Const)} {φ : ClosedFormula Const}
     (C : RootCounterworld Base Const Δ φ) :

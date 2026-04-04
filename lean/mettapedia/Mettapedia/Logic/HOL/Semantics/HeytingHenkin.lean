@@ -85,6 +85,198 @@ def anyAdmissible (M : HeytingPreModel Base Const) {σ : Ty Base}
     (p : {x : Ty.denoteHeyting M.Carrier M.Ω σ // M.adm σ x} → M.Ω) : M.Ω :=
   sSup (Set.range p)
 
+/-- Availability-weighted universal quantification over admissible elements.
+
+This is the honest growing-domain variant: each admissible element `x` carries
+an `Ω`-valued availability guard, so worlds where `x` is unavailable only
+require the implication premise vacuously.
+-/
+def allAvailable (M : HeytingPreModel Base Const) {σ : Ty Base}
+    (avail : {x : Ty.denoteHeyting M.Carrier M.Ω σ // M.adm σ x} → M.Ω)
+    (p : {x : Ty.denoteHeyting M.Carrier M.Ω σ // M.adm σ x} → M.Ω) : M.Ω :=
+  sInf (Set.range (fun x => avail x ⇨ p x))
+
+/-- Availability-weighted existential quantification over admissible elements.
+
+This is the honest growing-domain variant: a witness contributes only where it
+is available.
+-/
+def anyAvailable (M : HeytingPreModel Base Const) {σ : Ty Base}
+    (avail : {x : Ty.denoteHeyting M.Carrier M.Ω σ // M.adm σ x} → M.Ω)
+    (p : {x : Ty.denoteHeyting M.Carrier M.Ω σ // M.adm σ x} → M.Ω) : M.Ω :=
+  sSup (Set.range (fun x => avail x ⊓ p x))
+
+@[simp] theorem allAvailable_top (M : HeytingPreModel Base Const) {σ : Ty Base}
+    (p : {x : Ty.denoteHeyting M.Carrier M.Ω σ // M.adm σ x} → M.Ω) :
+    allAvailable M (σ := σ) (fun _ => (⊤ : M.Ω)) p = allAdmissible M p := by
+  simp [allAvailable, allAdmissible]
+
+@[simp] theorem anyAvailable_top (M : HeytingPreModel Base Const) {σ : Ty Base}
+    (p : {x : Ty.denoteHeyting M.Carrier M.Ω σ // M.adm σ x} → M.Ω) :
+    anyAvailable M (σ := σ) (fun _ => (⊤ : M.Ω)) p = anyAdmissible M p := by
+  simp [anyAvailable, anyAdmissible]
+
+/-- Legacy universal quantification is below availability-weighted universal
+quantification.
+
+Positive example:
+adding availability guards weakens the universal requirement at worlds where an
+element is unavailable.
+
+Negative example:
+this does not prove any converse inequality in general.
+-/
+theorem allAdmissible_le_allAvailable
+    (M : HeytingPreModel Base Const) {σ : Ty Base}
+    (avail : {x : Ty.denoteHeyting M.Carrier M.Ω σ // M.adm σ x} → M.Ω)
+    (p : {x : Ty.denoteHeyting M.Carrier M.Ω σ // M.adm σ x} → M.Ω) :
+    allAdmissible M p ≤ allAvailable M (σ := σ) avail p := by
+  unfold allAdmissible allAvailable
+  refine le_sInf ?_
+  rintro _ ⟨x, rfl⟩
+  refine (le_himp_iff).2 ?_
+  exact inf_le_left.trans (sInf_le (by exact ⟨x, rfl⟩))
+
+theorem le_allAvailable (M : HeytingPreModel Base Const) {σ : Ty Base}
+    {a : M.Ω}
+    {avail : {x : Ty.denoteHeyting M.Carrier M.Ω σ // M.adm σ x} → M.Ω}
+    {p : {x : Ty.denoteHeyting M.Carrier M.Ω σ // M.adm σ x} → M.Ω}
+    (h : ∀ x, a ⊓ avail x ≤ p x) :
+    a ≤ allAvailable M (σ := σ) avail p := by
+  unfold allAvailable
+  refine le_sInf ?_
+  rintro _ ⟨x, rfl⟩
+  exact (le_himp_iff).2 (h x)
+
+theorem allAvailable_le (M : HeytingPreModel Base Const) {σ : Ty Base}
+    {avail : {x : Ty.denoteHeyting M.Carrier M.Ω σ // M.adm σ x} → M.Ω}
+    {p : {x : Ty.denoteHeyting M.Carrier M.Ω σ // M.adm σ x} → M.Ω}
+    (x : {x : Ty.denoteHeyting M.Carrier M.Ω σ // M.adm σ x}) :
+    allAvailable M (σ := σ) avail p ≤ avail x ⇨ p x :=
+  sInf_le (by exact ⟨x, rfl⟩)
+
+/-- Elimination shape for availability-weighted universals.
+
+Positive example:
+from `c ≤ ∀[avail] x, p x`, we can always conclude `c ⊓ avail x ≤ p x`.
+
+Negative example:
+without a separate proof that `c ≤ avail x`, this does not imply `c ≤ p x`.
+-/
+theorem allAvailable_elim
+    (M : HeytingPreModel Base Const) {σ : Ty Base}
+    {a : M.Ω}
+    {avail : {x : Ty.denoteHeyting M.Carrier M.Ω σ // M.adm σ x} → M.Ω}
+    {p : {x : Ty.denoteHeyting M.Carrier M.Ω σ // M.adm σ x} → M.Ω}
+    (hAll : a ≤ allAvailable M (σ := σ) avail p)
+    (x : {x : Ty.denoteHeyting M.Carrier M.Ω σ // M.adm σ x}) :
+    a ⊓ avail x ≤ p x := by
+  exact (le_himp_iff).1 (le_trans hAll (allAvailable_le M (x := x)))
+
+/-- Availability-weighted universal elimination with an explicit availability
+premise for the witness.
+
+Positive example:
+if `c ≤ avail x`, then the guard from `allAvailable_elim` disappears.
+
+Negative example:
+without `c ≤ avail x`, this specialization is invalid in general.
+-/
+theorem allAvailable_elim_of_available
+    (M : HeytingPreModel Base Const) {σ : Ty Base}
+    {a : M.Ω}
+    {avail : {x : Ty.denoteHeyting M.Carrier M.Ω σ // M.adm σ x} → M.Ω}
+    {p : {x : Ty.denoteHeyting M.Carrier M.Ω σ // M.adm σ x} → M.Ω}
+    (hAll : a ≤ allAvailable M (σ := σ) avail p)
+    (x : {x : Ty.denoteHeyting M.Carrier M.Ω σ // M.adm σ x})
+    (hAvail : a ≤ avail x) :
+    a ≤ p x := by
+  exact le_trans (le_inf le_rfl hAvail) (allAvailable_elim M hAll x)
+
+/-- Availability-weighted existential quantification is below legacy existential
+quantification.
+
+Positive example:
+availability can only remove witness contributions, never add new ones.
+
+Negative example:
+this does not prove equality unless availability is `⊤`.
+-/
+theorem anyAvailable_le_anyAdmissible
+    (M : HeytingPreModel Base Const) {σ : Ty Base}
+    (avail : {x : Ty.denoteHeyting M.Carrier M.Ω σ // M.adm σ x} → M.Ω)
+    (p : {x : Ty.denoteHeyting M.Carrier M.Ω σ // M.adm σ x} → M.Ω) :
+    anyAvailable M (σ := σ) avail p ≤ anyAdmissible M p := by
+  unfold anyAvailable anyAdmissible
+  refine sSup_le ?_
+  rintro _ ⟨x, rfl⟩
+  exact inf_le_right.trans (le_sSup (by exact ⟨x, rfl⟩))
+
+theorem anyAvailable_le (M : HeytingPreModel Base Const) {σ : Ty Base}
+    {a : M.Ω}
+    {avail : {x : Ty.denoteHeyting M.Carrier M.Ω σ // M.adm σ x} → M.Ω}
+    {p : {x : Ty.denoteHeyting M.Carrier M.Ω σ // M.adm σ x} → M.Ω}
+    (h : ∀ x, avail x ⊓ p x ≤ a) :
+    anyAvailable M (σ := σ) avail p ≤ a := by
+  unfold anyAvailable
+  refine sSup_le ?_
+  rintro _ ⟨x, rfl⟩
+  exact h x
+
+theorem le_anyAvailable (M : HeytingPreModel Base Const) {σ : Ty Base}
+    {avail : {x : Ty.denoteHeyting M.Carrier M.Ω σ // M.adm σ x} → M.Ω}
+    {p : {x : Ty.denoteHeyting M.Carrier M.Ω σ // M.adm σ x} → M.Ω}
+    (x : {x : Ty.denoteHeyting M.Carrier M.Ω σ // M.adm σ x}) :
+    avail x ⊓ p x ≤ anyAvailable M (σ := σ) avail p :=
+  le_sSup (by exact ⟨x, rfl⟩)
+
+/-- Availability-weighted existential introduction from an explicit witness.
+
+Positive example:
+if `c` proves both witness availability and body truth, then `c` proves the
+existential.
+
+Negative example:
+without availability, body truth alone is not enough for `anyAvailable`.
+-/
+theorem le_anyAvailable_of_available
+    (M : HeytingPreModel Base Const) {σ : Ty Base}
+    {a : M.Ω}
+    {avail : {x : Ty.denoteHeyting M.Carrier M.Ω σ // M.adm σ x} → M.Ω}
+    {p : {x : Ty.denoteHeyting M.Carrier M.Ω σ // M.adm σ x} → M.Ω}
+    (x : {x : Ty.denoteHeyting M.Carrier M.Ω σ // M.adm σ x})
+    (hAvail : a ≤ avail x)
+    (hBody : a ≤ p x) :
+    a ≤ anyAvailable M (σ := σ) avail p := by
+  exact le_trans (le_inf hAvail hBody) (le_anyAvailable M (x := x))
+
+/-- Pathological boundary check: if everything is unavailable, availability-
+weighted universal quantification collapses to `⊤`. -/
+theorem allAvailable_eq_top_of_forall_bot
+    (M : HeytingPreModel Base Const) {σ : Ty Base}
+    {avail : {x : Ty.denoteHeyting M.Carrier M.Ω σ // M.adm σ x} → M.Ω}
+    {p : {x : Ty.denoteHeyting M.Carrier M.Ω σ // M.adm σ x} → M.Ω}
+    (hbot : ∀ x, avail x = (⊥ : M.Ω)) :
+    allAvailable M (σ := σ) avail p = (⊤ : M.Ω) := by
+  apply le_antisymm le_top
+  refine le_allAvailable M (a := (⊤ : M.Ω)) ?_
+  intro x
+  simp [hbot x]
+
+/-- Pathological boundary check: if everything is unavailable, availability-
+weighted existential quantification collapses to `⊥`. -/
+theorem anyAvailable_eq_bot_of_forall_bot
+    (M : HeytingPreModel Base Const) {σ : Ty Base}
+    {avail : {x : Ty.denoteHeyting M.Carrier M.Ω σ // M.adm σ x} → M.Ω}
+    {p : {x : Ty.denoteHeyting M.Carrier M.Ω σ // M.adm σ x} → M.Ω}
+    (hbot : ∀ x, avail x = (⊥ : M.Ω)) :
+    anyAvailable M (σ := σ) avail p = (⊥ : M.Ω) := by
+  apply le_antisymm
+  · refine anyAvailable_le M (a := (⊥ : M.Ω)) ?_
+    intro x
+    simp [hbot x]
+  · exact bot_le
+
 theorem le_allAdmissible (M : HeytingPreModel Base Const) {σ : Ty Base}
     {a : M.Ω} {p : {x : Ty.denoteHeyting M.Carrier M.Ω σ // M.adm σ x} → M.Ω}
     (h : ∀ x, a ≤ p x) :
@@ -148,6 +340,31 @@ theorem eqv_refl (M : HeytingPreModel Base Const) :
       refine le_allAdmissible M ?_
       intro x
       exact (eqv_refl M (τ := τ) (x := f x.1) (M.app_mem hf x.2)).ge
+
+/-- Reflexive equality under availability-weighted existential quantification
+reduces to the supremum of availability.
+
+Positive example:
+when `avail` encodes worldwise support of a local witness section, this theorem
+states that `∃ x, x = x` denotes exactly the union of those supports.
+
+Negative example:
+if one keeps the old unweighted `anyAdmissible`, the same formula collapses to
+`⊤` as soon as any admissible element exists globally.
+-/
+theorem anyAvailable_eqv_refl_eq_sSup_avail
+    (M : HeytingPreModel Base Const) {σ : Ty Base}
+    (avail : {x : Ty.denoteHeyting M.Carrier M.Ω σ // M.adm σ x} → M.Ω) :
+    anyAvailable M (σ := σ) avail (fun x => Eqv M σ x.1 x.1) =
+      sSup (Set.range avail) := by
+  have hfun :
+      (fun x =>
+          avail x ⊓ Eqv M σ x.1 x.1) = avail := by
+    funext x
+    have hrefl : Eqv M σ x.1 x.1 = (⊤ : M.Ω) :=
+      eqv_refl M (τ := σ) (x := x.1) x.2
+    simp [hrefl]
+  simp [anyAvailable, hfun]
 
 theorem eqv_symm (M : HeytingPreModel Base Const) :
     ∀ {τ : Ty Base} {x y : Ty.denoteHeyting M.Carrier M.Ω τ},
@@ -231,6 +448,94 @@ theorem eqv_trans (M : HeytingPreModel Base Const) :
                 exact inf_le_inf hxy hyz
           _ ≤ Eqv M τ (f x.1) (h x.1) := eqv_trans M
 
+/-- Availability assignment for quantifier domains at each type.
+
+Positive example:
+in growing-domain semantics, this can encode worldwise support of a local
+witness section.
+
+Negative example:
+using only `⊤` availability recovers fixed-domain quantification and cannot
+express local birth of individuals.
+-/
+abbrev QuantifierAvailability (M : HeytingPreModel Base Const) :=
+  (σ : Ty Base) →
+    {x : Ty.denoteHeyting M.Carrier M.Ω σ // M.adm σ x} →
+      M.Ω
+
+/-- Trivial availability assignment: every admissible element is available
+everywhere. -/
+abbrev topAvailability (M : HeytingPreModel Base Const) :
+    QuantifierAvailability M :=
+  fun _ _ => ⊤
+
+/-- Denotation with explicit availability-weighted quantifier semantics.
+
+Positive example:
+`all`/`ex` clauses can use world-sensitive availability guards.
+
+Negative example:
+this does not replace the legacy denotation; it is an additive bridge layer for
+the growing-domain route.
+-/
+def denoteWithAvailability (M : HeytingPreModel Base Const)
+    (avail : QuantifierAvailability M) :
+    {Γ : Ctx Base} → {τ : Ty Base} →
+      Term Const Γ τ → Valuation M Γ → Ty.denoteHeyting M.Carrier M.Ω τ
+  | _, _, .var v, ρ => ρ v
+  | _, _, .const c, _ => M.constDen c
+  | _, _, .app f t, ρ => (denoteWithAvailability M avail f ρ) (denoteWithAvailability M avail t ρ)
+  | _, _, .lam t, ρ => fun x => denoteWithAvailability M avail t (extend M ρ x)
+  | _, .prop, .top, _ =>
+      show Ty.denoteHeyting M.Carrier M.Ω .prop from (⊤ : M.Ω)
+  | _, .prop, .bot, _ =>
+      show Ty.denoteHeyting M.Carrier M.Ω .prop from (⊥ : M.Ω)
+  | _, .prop, .and φ ψ, ρ =>
+      show Ty.denoteHeyting M.Carrier M.Ω .prop from
+        ((show M.Ω from denoteWithAvailability M avail (τ := .prop) φ ρ) ⊓
+          (show M.Ω from denoteWithAvailability M avail (τ := .prop) ψ ρ) : M.Ω)
+  | _, .prop, .or φ ψ, ρ =>
+      show Ty.denoteHeyting M.Carrier M.Ω .prop from
+        ((show M.Ω from denoteWithAvailability M avail (τ := .prop) φ ρ) ⊔
+          (show M.Ω from denoteWithAvailability M avail (τ := .prop) ψ ρ) : M.Ω)
+  | _, .prop, .imp φ ψ, ρ =>
+      show Ty.denoteHeyting M.Carrier M.Ω .prop from
+        ((show M.Ω from denoteWithAvailability M avail (τ := .prop) φ ρ) ⇨
+          (show M.Ω from denoteWithAvailability M avail (τ := .prop) ψ ρ) : M.Ω)
+  | _, .prop, .not φ, ρ =>
+      show Ty.denoteHeyting M.Carrier M.Ω .prop from
+        (((show M.Ω from denoteWithAvailability M avail (τ := .prop) φ ρ) ⇨ (⊥ : M.Ω)) : M.Ω)
+  | _, .prop, .eq t u, ρ =>
+      show Ty.denoteHeyting M.Carrier M.Ω .prop from
+        ((show M.Ω from Eqv M _ (denoteWithAvailability M avail t ρ) (denoteWithAvailability M avail u ρ)) : M.Ω)
+  | _, .prop, .all (σ := σ) φ, ρ =>
+      show Ty.denoteHeyting M.Carrier M.Ω .prop from
+        (allAvailable M (σ := σ) (avail σ) (fun x =>
+          (show M.Ω from denoteWithAvailability M avail (τ := .prop) φ (extend M ρ x.1))) : M.Ω)
+  | _, .prop, .ex (σ := σ) φ, ρ =>
+      show Ty.denoteHeyting M.Carrier M.Ω .prop from
+        (anyAvailable M (σ := σ) (avail σ) (fun x =>
+          (show M.Ω from denoteWithAvailability M avail (τ := .prop) φ (extend M ρ x.1))) : M.Ω)
+
+/-- Denotation with availability, specialized to proposition-valued terms. -/
+abbrev denoteFormulaWithAvailability (M : HeytingPreModel Base Const)
+    (avail : QuantifierAvailability M) {Γ : Ctx Base}
+    (φ : Formula Const Γ) (ρ : Valuation M Γ) : M.Ω :=
+  show M.Ω from denoteWithAvailability M avail (τ := .prop) φ ρ
+
+/-- Context denotation under availability-weighted quantifier semantics. -/
+def contextDenoteWithAvailability (M : HeytingPreModel Base Const)
+    (avail : QuantifierAvailability M) {Γ : Ctx Base}
+    (Δ : List (Formula Const Γ)) (ρ : Valuation M Γ) : M.Ω :=
+  Δ.foldr (fun φ acc => denoteFormulaWithAvailability M avail φ ρ ⊓ acc) ⊤
+
+/-- `modelsFrom` under availability-weighted quantifier semantics. -/
+def modelsFromWithAvailability (M : HeytingPreModel Base Const)
+    (avail : QuantifierAvailability M) {Γ : Ctx Base}
+    (Δ : List (Formula Const Γ)) (φ : Formula Const Γ) (ρ : Valuation M Γ) : Prop :=
+  contextDenoteWithAvailability M avail Δ ρ ≤
+    denoteFormulaWithAvailability M avail φ ρ
+
 /-- Denotation of HOL terms in an intuitionistic/extensional premodel. -/
 def denote (M : HeytingPreModel Base Const) :
     {Γ : Ctx Base} → {τ : Ty Base} →
@@ -270,6 +575,36 @@ def denote (M : HeytingPreModel Base Const) :
         (anyAdmissible M (fun x =>
           (show M.Ω from denote M (τ := .prop) φ (extend M ρ x.1))) : M.Ω)
 
+/-- Legacy denotation is the `topAvailability` specialization. -/
+theorem denoteWithAvailability_top_eq_denote
+    (M : HeytingPreModel Base Const) :
+    ∀ {Γ : Ctx Base} {τ : Ty Base}
+      (t : Term Const Γ τ) (ρ : Valuation M Γ),
+        denoteWithAvailability M (topAvailability M) t ρ = denote M t ρ
+  | _, _, .var v, ρ => rfl
+  | _, _, .const c, ρ => rfl
+  | _, _, .app f t, ρ => by
+      simp [denoteWithAvailability, denote, denoteWithAvailability_top_eq_denote, *]
+  | _, _, .lam t, ρ => by
+      funext x
+      simp [denoteWithAvailability, denote, denoteWithAvailability_top_eq_denote, *]
+  | _, .prop, .top, ρ => rfl
+  | _, .prop, .bot, ρ => rfl
+  | _, .prop, .and φ ψ, ρ => by
+      simp [denoteWithAvailability, denote, denoteWithAvailability_top_eq_denote, *]
+  | _, .prop, .or φ ψ, ρ => by
+      simp [denoteWithAvailability, denote, denoteWithAvailability_top_eq_denote, *]
+  | _, .prop, .imp φ ψ, ρ => by
+      simp [denoteWithAvailability, denote, denoteWithAvailability_top_eq_denote, *]
+  | _, .prop, .not φ, ρ => by
+      simp [denoteWithAvailability, denote, denoteWithAvailability_top_eq_denote, *]
+  | _, .prop, .eq t u, ρ => by
+      simp [denoteWithAvailability, denote, denoteWithAvailability_top_eq_denote, *]
+  | _, .prop, .all (σ := σ) φ, ρ => by
+      simp [denoteWithAvailability, denote, denoteWithAvailability_top_eq_denote, *]
+  | _, .prop, .ex (σ := σ) φ, ρ => by
+      simp [denoteWithAvailability, denote, denoteWithAvailability_top_eq_denote, *]
+
 /-- Denotation specialized to proposition-valued terms. -/
 abbrev denoteFormula (M : HeytingPreModel Base Const) {Γ : Ctx Base}
     (φ : Formula Const Γ) (ρ : Valuation M Γ) : M.Ω :=
@@ -293,6 +628,49 @@ def models (M : HeytingPreModel Base Const) (φ : ClosedFormula Const) : Prop :=
 @[simp] theorem contextDenote_cons (M : HeytingPreModel Base Const) {Γ : Ctx Base}
     (φ : Formula Const Γ) (Δ : List (Formula Const Γ)) (ρ : Valuation M Γ) :
     contextDenote M (φ :: Δ) ρ = denoteFormula M φ ρ ⊓ contextDenote M Δ ρ := rfl
+
+@[simp] theorem denoteFormulaWithAvailability_top_eq_denoteFormula
+    (M : HeytingPreModel Base Const) {Γ : Ctx Base}
+    (φ : Formula Const Γ) (ρ : Valuation M Γ) :
+    denoteFormulaWithAvailability M (topAvailability M) φ ρ =
+      denoteFormula M φ ρ := by
+  simpa [denoteFormulaWithAvailability, denoteFormula] using
+    (denoteWithAvailability_top_eq_denote M (t := φ) (ρ := ρ))
+
+@[simp] theorem contextDenoteWithAvailability_nil
+    (M : HeytingPreModel Base Const) (avail : QuantifierAvailability M)
+    {Γ : Ctx Base} (ρ : Valuation M Γ) :
+    contextDenoteWithAvailability M avail [] ρ = ⊤ :=
+  rfl
+
+@[simp] theorem contextDenoteWithAvailability_cons
+    (M : HeytingPreModel Base Const) (avail : QuantifierAvailability M)
+    {Γ : Ctx Base} (φ : Formula Const Γ) (Δ : List (Formula Const Γ))
+    (ρ : Valuation M Γ) :
+    contextDenoteWithAvailability M avail (φ :: Δ) ρ =
+      denoteFormulaWithAvailability M avail φ ρ ⊓
+        contextDenoteWithAvailability M avail Δ ρ :=
+  rfl
+
+theorem contextDenoteWithAvailability_top_eq_contextDenote
+    (M : HeytingPreModel Base Const) {Γ : Ctx Base}
+    (Δ : List (Formula Const Γ)) (ρ : Valuation M Γ) :
+    contextDenoteWithAvailability M (topAvailability M) Δ ρ =
+      contextDenote M Δ ρ := by
+  induction Δ with
+  | nil =>
+      simp [contextDenoteWithAvailability, contextDenote]
+  | cons φ Δ ih =>
+      simp [contextDenoteWithAvailability, contextDenote]
+
+theorem modelsFromWithAvailability_top_iff_modelsFrom
+    (M : HeytingPreModel Base Const) {Γ : Ctx Base}
+    (Δ : List (Formula Const Γ)) (φ : Formula Const Γ) (ρ : Valuation M Γ) :
+    modelsFromWithAvailability M (topAvailability M) Δ φ ρ ↔
+      modelsFrom M Δ φ ρ := by
+  constructor <;> intro h <;>
+    simpa [modelsFromWithAvailability, modelsFrom,
+      contextDenoteWithAvailability_top_eq_contextDenote] using h
 
 theorem contextDenote_le_of_mem (M : HeytingPreModel Base Const) {Γ : Ctx Base}
     {Δ : List (Formula Const Γ)} {φ : Formula Const Γ} (ρ : Valuation M Γ)
@@ -351,6 +729,33 @@ abbrev Eqv (M : HeytingHenkinModel Base Const) := HeytingPreModel.Eqv M.toHeytin
 abbrev denote (M : HeytingHenkinModel Base Const) {Γ : Ctx Base} {τ : Ty Base}
     (t : Term Const Γ τ) (ρ : Valuation M Γ) : Ty.denoteHeyting M.Carrier M.Ω τ :=
   HeytingPreModel.denote M.toHeytingPreModel t ρ
+
+/-- Availability assignments that respect the term-construction discipline of
+the model: constants are available everywhere, and application preserves
+availability. -/
+structure AdmissibleAvailability
+    (M : HeytingHenkinModel Base Const)
+    (avail : HeytingPreModel.QuantifierAvailability M.toHeytingPreModel) : Prop where
+  const_available :
+    ∀ {τ : Ty Base} (c : Const τ),
+      avail τ ⟨M.constDen c, M.const_mem c⟩ = (⊤ : M.Ω)
+  app_available :
+    ∀ {σ τ : Ty Base}
+      {f : Ty.denoteHeyting M.Carrier M.Ω (σ ⇒ τ)}
+      {x : Ty.denoteHeyting M.Carrier M.Ω σ}
+      (hf : M.adm (σ ⇒ τ) f) (hx : M.adm σ x),
+        avail (σ ⇒ τ) ⟨f, hf⟩ ⊓ avail σ ⟨x, hx⟩ ≤
+          avail τ ⟨f x, M.app_mem hf hx⟩
+
+/-- The trivial `topAvailability` assignment is always admissible. -/
+theorem topAvailability_admissible (M : HeytingHenkinModel Base Const) :
+    AdmissibleAvailability M
+      (HeytingPreModel.topAvailability M.toHeytingPreModel) := by
+  refine ⟨?_, ?_⟩
+  · intro τ c
+    rfl
+  · intro σ τ f x hf hx
+    simp [HeytingPreModel.topAvailability]
 
 abbrev contextDenote (M : HeytingHenkinModel Base Const) {Γ : Ctx Base}
     (Δ : List (Formula Const Γ)) (ρ : Valuation M Γ) : M.Ω :=

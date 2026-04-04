@@ -13,6 +13,13 @@ abbrev denoteFormula (M : HeytingHenkinModel.{u, v, w} Base Const) {Γ : Ctx Bas
     (φ : Formula Const Γ) (ρ : HeytingHenkinModel.Valuation M Γ) : M.Ω :=
   show M.Ω from HeytingHenkinModel.denote M φ ρ
 
+abbrev denoteFormulaWithAvailability
+    (M : HeytingHenkinModel.{u, v, w} Base Const)
+    (avail : HeytingPreModel.QuantifierAvailability M.toHeytingPreModel)
+    {Γ : Ctx Base}
+    (φ : Formula Const Γ) (ρ : HeytingHenkinModel.Valuation M Γ) : M.Ω :=
+  HeytingPreModel.denoteFormulaWithAvailability M.toHeytingPreModel avail φ ρ
+
 /-- Precompose a valuation with a variable renaming. -/
 def renameVal (M : HeytingHenkinModel.{u, v, w} Base Const)
     (ρr : Rename Base Γ Δ) (ν : HeytingHenkinModel.Valuation M Δ) :
@@ -226,6 +233,259 @@ theorem denote_subst (M : HeytingHenkinModel.{u, v, w} Base Const) :
             rw [ih]
         _ = HeytingHenkinModel.contextDenote M (φ :: Δ) ρ := by
             simp [HeytingHenkinModel.contextDenote, HeytingPreModel.contextDenote]
+
+theorem denoteWithAvailability_rename
+    (M : HeytingHenkinModel.{u, v, w} Base Const)
+    (avail : HeytingPreModel.QuantifierAvailability M.toHeytingPreModel) :
+    ∀ {Γ Δ : Ctx Base} {τ : Ty Base}
+      (ρr : Rename Base Γ Δ) (t : Term Const Γ τ)
+      (ν : HeytingHenkinModel.Valuation M Δ),
+      HeytingPreModel.denoteWithAvailability M.toHeytingPreModel avail (rename ρr t) ν =
+        HeytingPreModel.denoteWithAvailability M.toHeytingPreModel avail t (renameVal M ρr ν)
+  | _, _, _, ρr, .var v, ν => rfl
+  | _, _, _, ρr, .const c, ν => rfl
+  | _, _, _, ρr, .app f t, ν => by
+      simp [rename, HeytingPreModel.denoteWithAvailability,
+        denoteWithAvailability_rename M avail ρr f ν,
+        denoteWithAvailability_rename M avail ρr t ν]
+  | _, _, _, ρr, .lam t, ν => by
+      funext x
+      change
+        HeytingPreModel.denoteWithAvailability M.toHeytingPreModel avail
+            (rename (Rename.lift (σ := _) ρr) t)
+            (HeytingHenkinModel.extend M ν x) =
+          HeytingPreModel.denoteWithAvailability M.toHeytingPreModel avail t
+            (HeytingHenkinModel.extend M (renameVal M ρr ν) x)
+      simpa [renameVal_lift] using
+        (denoteWithAvailability_rename M avail (Rename.lift (σ := _) ρr) t
+          (HeytingHenkinModel.extend M ν x))
+  | _, _, _, ρr, .top, ν => rfl
+  | _, _, _, ρr, .bot, ν => rfl
+  | _, _, _, ρr, .and φ ψ, ν => by
+      simp [rename, HeytingPreModel.denoteWithAvailability,
+        denoteWithAvailability_rename M avail ρr φ ν,
+        denoteWithAvailability_rename M avail ρr ψ ν]
+  | _, _, _, ρr, .or φ ψ, ν => by
+      simp [rename, HeytingPreModel.denoteWithAvailability,
+        denoteWithAvailability_rename M avail ρr φ ν,
+        denoteWithAvailability_rename M avail ρr ψ ν]
+  | _, _, _, ρr, .imp φ ψ, ν => by
+      simp [rename, HeytingPreModel.denoteWithAvailability,
+        denoteWithAvailability_rename M avail ρr φ ν,
+        denoteWithAvailability_rename M avail ρr ψ ν]
+  | _, _, _, ρr, .not φ, ν => by
+      simp [rename, HeytingPreModel.denoteWithAvailability,
+        denoteWithAvailability_rename M avail ρr φ ν]
+  | _, _, _, ρr, .eq t u, ν => by
+      simp [rename, HeytingPreModel.denoteWithAvailability,
+        denoteWithAvailability_rename M avail ρr t ν,
+        denoteWithAvailability_rename M avail ρr u ν]
+  | _, _, _, ρr, .all (σ := σ) φ, ν => by
+      apply congrArg (HeytingPreModel.allAvailable M.toHeytingPreModel (σ := σ) (avail σ))
+      funext x
+      simpa [renameVal_lift] using
+        (denoteWithAvailability_rename M avail (Rename.lift (σ := _) ρr) φ
+          (HeytingHenkinModel.extend M ν x.1))
+  | _, _, _, ρr, .ex (σ := σ) φ, ν => by
+      apply congrArg (HeytingPreModel.anyAvailable M.toHeytingPreModel (σ := σ) (avail σ))
+      funext x
+      simpa [renameVal_lift] using
+        (denoteWithAvailability_rename M avail (Rename.lift (σ := _) ρr) φ
+          (HeytingHenkinModel.extend M ν x.1))
+
+@[simp] theorem denoteWithAvailability_weaken
+    (M : HeytingHenkinModel.{u, v, w} Base Const)
+    (avail : HeytingPreModel.QuantifierAvailability M.toHeytingPreModel)
+    {Γ : Ctx Base} {τ : Ty Base}
+    (t : Term Const Γ τ)
+    (ρ : HeytingHenkinModel.Valuation M Γ)
+    (x : Ty.denoteHeyting M.Carrier M.Ω σ) :
+    HeytingPreModel.denoteWithAvailability M.toHeytingPreModel avail
+        (weaken (Base := Base) (σ := σ) t)
+        (HeytingHenkinModel.extend M ρ x) =
+      HeytingPreModel.denoteWithAvailability M.toHeytingPreModel avail t ρ := by
+  simpa [weaken, renameVal, renameVal_lift] using
+    (denoteWithAvailability_rename M avail
+      (Rename.weaken (Base := Base) (Γ := Γ) (σ := σ))
+      t
+      (HeytingHenkinModel.extend M ρ x))
+
+/-- Substitute denotations (under availability semantics) of a term
+substitution into a valuation. -/
+def substValWithAvailability
+    (M : HeytingHenkinModel.{u, v, w} Base Const)
+    (avail : HeytingPreModel.QuantifierAvailability M.toHeytingPreModel)
+    (σs : Subst Const Γ Δ) (ν : HeytingHenkinModel.Valuation M Δ) :
+    HeytingHenkinModel.Valuation M Γ :=
+  fun v => HeytingPreModel.denoteWithAvailability M.toHeytingPreModel avail (σs v) ν
+
+theorem substValWithAvailability_lift
+    (M : HeytingHenkinModel.{u, v, w} Base Const)
+    (avail : HeytingPreModel.QuantifierAvailability M.toHeytingPreModel)
+    (σs : Subst Const Γ Δ) (ν : HeytingHenkinModel.Valuation M Δ)
+    (x : Ty.denoteHeyting M.Carrier M.Ω σ) :
+    (substValWithAvailability M avail
+        (Subst.lift (Base := Base) (σ := σ) σs)
+        (HeytingHenkinModel.extend M ν x) :
+        HeytingHenkinModel.Valuation M (σ :: Γ)) =
+      (HeytingHenkinModel.extend M (substValWithAvailability M avail σs ν) x :
+        HeytingHenkinModel.Valuation M (σ :: Γ)) := by
+  funext τ v
+  cases v with
+  | vz =>
+      rfl
+  | vs v =>
+      have h := denoteWithAvailability_weaken
+        (M := M) (avail := avail) (t := σs v) (ρ := ν) (x := x)
+      simpa [substValWithAvailability, Subst.lift, weaken] using h
+
+theorem denoteWithAvailability_subst
+    (M : HeytingHenkinModel.{u, v, w} Base Const)
+    (avail : HeytingPreModel.QuantifierAvailability M.toHeytingPreModel) :
+    ∀ {Γ Δ : Ctx Base} {τ : Ty Base}
+      (σs : Subst Const Γ Δ) (t : Term Const Γ τ)
+      (ν : HeytingHenkinModel.Valuation M Δ),
+      HeytingPreModel.denoteWithAvailability M.toHeytingPreModel avail (subst σs t) ν =
+        HeytingPreModel.denoteWithAvailability M.toHeytingPreModel avail t
+          (substValWithAvailability M avail σs ν)
+  | _, _, _, σs, .var v, ν => rfl
+  | _, _, _, σs, .const c, ν => rfl
+  | _, _, _, σs, .app f t, ν => by
+      simp [subst, HeytingPreModel.denoteWithAvailability,
+        denoteWithAvailability_subst M avail σs f ν,
+        denoteWithAvailability_subst M avail σs t ν]
+  | _, _, _, σs, .lam t, ν => by
+      funext x
+      change
+        HeytingPreModel.denoteWithAvailability M.toHeytingPreModel avail
+            (subst (Subst.lift (Base := Base) (σ := _) σs) t)
+            (HeytingHenkinModel.extend M ν x) =
+          HeytingPreModel.denoteWithAvailability M.toHeytingPreModel avail t
+            (HeytingHenkinModel.extend M
+              (substValWithAvailability M avail σs ν) x)
+      simpa [substValWithAvailability_lift] using
+        (denoteWithAvailability_subst M avail
+          (Subst.lift (Base := Base) (σ := _) σs)
+          t
+          (HeytingHenkinModel.extend M ν x))
+  | _, _, _, σs, .top, ν => rfl
+  | _, _, _, σs, .bot, ν => rfl
+  | _, _, _, σs, .and φ ψ, ν => by
+      simp [subst, HeytingPreModel.denoteWithAvailability,
+        denoteWithAvailability_subst M avail σs φ ν,
+        denoteWithAvailability_subst M avail σs ψ ν]
+  | _, _, _, σs, .or φ ψ, ν => by
+      simp [subst, HeytingPreModel.denoteWithAvailability,
+        denoteWithAvailability_subst M avail σs φ ν,
+        denoteWithAvailability_subst M avail σs ψ ν]
+  | _, _, _, σs, .imp φ ψ, ν => by
+      simp [subst, HeytingPreModel.denoteWithAvailability,
+        denoteWithAvailability_subst M avail σs φ ν,
+        denoteWithAvailability_subst M avail σs ψ ν]
+  | _, _, _, σs, .not φ, ν => by
+      simp [subst, HeytingPreModel.denoteWithAvailability,
+        denoteWithAvailability_subst M avail σs φ ν]
+  | _, _, _, σs, .eq t u, ν => by
+      simp [subst, HeytingPreModel.denoteWithAvailability,
+        denoteWithAvailability_subst M avail σs t ν,
+        denoteWithAvailability_subst M avail σs u ν]
+  | _, _, _, σs, .all (σ := σ) φ, ν => by
+      apply congrArg (HeytingPreModel.allAvailable M.toHeytingPreModel (σ := σ) (avail σ))
+      funext x
+      simpa [substValWithAvailability_lift] using
+        (denoteWithAvailability_subst M avail
+          (Subst.lift (Base := Base) (σ := _) σs)
+          φ
+          (HeytingHenkinModel.extend M ν x.1))
+  | _, _, _, σs, .ex (σ := σ) φ, ν => by
+      apply congrArg (HeytingPreModel.anyAvailable M.toHeytingPreModel (σ := σ) (avail σ))
+      funext x
+      simpa [substValWithAvailability_lift] using
+        (denoteWithAvailability_subst M avail
+          (Subst.lift (Base := Base) (σ := _) σs)
+          φ
+          (HeytingHenkinModel.extend M ν x.1))
+
+@[simp] theorem denoteWithAvailability_instantiate_term
+    (M : HeytingHenkinModel.{u, v, w} Base Const)
+    (avail : HeytingPreModel.QuantifierAvailability M.toHeytingPreModel)
+    {Γ : Ctx Base} {σ τ : Ty Base}
+    (t : Term Const Γ σ) (u : Term Const (σ :: Γ) τ)
+    (ρ : HeytingHenkinModel.Valuation M Γ) :
+    HeytingPreModel.denoteWithAvailability M.toHeytingPreModel avail
+        (instantiate (Base := Base) t u) ρ =
+      HeytingPreModel.denoteWithAvailability M.toHeytingPreModel avail u
+        (HeytingHenkinModel.extend M ρ
+          (HeytingPreModel.denoteWithAvailability M.toHeytingPreModel avail t ρ)) := by
+  have hsubst := denoteWithAvailability_subst M avail (Subst.single t) u ρ
+  have hsingle :
+      (substValWithAvailability M avail (Subst.single t) ρ :
+          HeytingHenkinModel.Valuation M (σ :: Γ)) =
+        (HeytingHenkinModel.extend M ρ
+          (HeytingPreModel.denoteWithAvailability M.toHeytingPreModel avail t ρ) :
+          HeytingHenkinModel.Valuation M (σ :: Γ)) := by
+    funext τ v
+    cases v with
+    | vz => rfl
+    | vs v => rfl
+  rw [hsingle] at hsubst
+  exact hsubst
+
+@[simp] theorem denoteWithAvailability_instantiate_formula
+    (M : HeytingHenkinModel.{u, v, w} Base Const)
+    (avail : HeytingPreModel.QuantifierAvailability M.toHeytingPreModel)
+    {Γ : Ctx Base} {σ : Ty Base} (t : Term Const Γ σ)
+    (φ : Formula Const (σ :: Γ)) (ρ : HeytingHenkinModel.Valuation M Γ) :
+    denoteFormulaWithAvailability M avail (instantiate (Base := Base) t φ) ρ =
+      denoteFormulaWithAvailability M avail φ
+        (HeytingHenkinModel.extend M ρ
+          (HeytingPreModel.denoteWithAvailability M.toHeytingPreModel avail t ρ)) := by
+  exact denoteWithAvailability_instantiate_term
+    (M := M) (avail := avail) (t := t) (u := φ) (ρ := ρ)
+
+@[simp] theorem contextDenoteWithAvailability_weakenHyps
+    (M : HeytingHenkinModel.{u, v, w} Base Const)
+    (avail : HeytingPreModel.QuantifierAvailability M.toHeytingPreModel)
+    {Γ : Ctx Base} (Δ : List (Formula Const Γ))
+    (ρ : HeytingHenkinModel.Valuation M Γ)
+    (x : Ty.denoteHeyting M.Carrier M.Ω σ) :
+    HeytingPreModel.contextDenoteWithAvailability M.toHeytingPreModel avail
+        (weakenHyps (Base := Base) (σ := σ) Δ)
+        (HeytingHenkinModel.extend M ρ x) =
+      HeytingPreModel.contextDenoteWithAvailability M.toHeytingPreModel avail Δ ρ := by
+  induction Δ with
+  | nil =>
+      rfl
+  | cons φ Δ ih =>
+      have hφw :
+          denoteFormulaWithAvailability M avail
+              (weaken (Base := Base) (σ := σ) φ)
+              (HeytingHenkinModel.extend M ρ x) =
+            denoteFormulaWithAvailability M avail φ ρ := by
+        exact denoteWithAvailability_weaken
+          (M := M) (avail := avail) (t := φ) (ρ := ρ) (x := x)
+      calc
+        HeytingPreModel.contextDenoteWithAvailability M.toHeytingPreModel avail
+            (weakenHyps (Base := Base) (σ := σ) (φ :: Δ))
+            (HeytingHenkinModel.extend M ρ x) =
+          denoteFormulaWithAvailability M avail
+              (weaken (Base := Base) (σ := σ) φ)
+              (HeytingHenkinModel.extend M ρ x) ⊓
+            HeytingPreModel.contextDenoteWithAvailability M.toHeytingPreModel avail
+              (weakenHyps (Base := Base) (σ := σ) Δ)
+              (HeytingHenkinModel.extend M ρ x) := by
+            simp [HeytingPreModel.contextDenoteWithAvailability, weakenHyps]
+        _ =
+          denoteFormulaWithAvailability M avail φ ρ ⊓
+            HeytingPreModel.contextDenoteWithAvailability M.toHeytingPreModel avail
+              (weakenHyps (Base := Base) (σ := σ) Δ)
+              (HeytingHenkinModel.extend M ρ x) := by
+            rw [hφw]
+        _ = denoteFormulaWithAvailability M avail φ ρ ⊓
+              HeytingPreModel.contextDenoteWithAvailability M.toHeytingPreModel avail Δ ρ := by
+            rw [ih]
+        _ = HeytingPreModel.contextDenoteWithAvailability M.toHeytingPreModel avail (φ :: Δ) ρ := by
+            simp [HeytingPreModel.contextDenoteWithAvailability]
 
 theorem derivation_sound
     {Γ : Ctx Base} {Δ : List (Formula Const Γ)} {φ : Formula Const Γ}
@@ -517,6 +777,44 @@ theorem theorem_sound {φ : ClosedFormula Const}
     simpa [HeytingHenkinModel.contextDenote, HeytingPreModel.contextDenote, denoteFormula] using
       (derivation_sound d (M := M) (ρ := fun v => nomatch v) (by intro τ v; nomatch v))
   exact le_antisymm le_top hs
+
+/-- Compatibility wrapper: the existing soundness proof directly yields
+soundness for the availability-weighted semantics specialized to `top`.
+
+This is the safe bridge point while non-top availability soundness is developed
+separately.
+-/
+theorem derivation_sound_with_topAvailability
+    {Γ : Ctx Base} {Δ : List (Formula Const Γ)} {φ : Formula Const Γ}
+    (d : ExtDerivation Const Δ φ) :
+    ∀ {M : HeytingHenkinModel.{u, v, w} Base Const}
+      {ρ : HeytingHenkinModel.Valuation M Γ},
+      HeytingHenkinModel.ValuationAdmissible M ρ →
+      HeytingPreModel.modelsFromWithAvailability
+        M.toHeytingPreModel
+        (HeytingPreModel.topAvailability M.toHeytingPreModel)
+        Δ φ ρ := by
+  intro M ρ hρ
+  have h := derivation_sound (Base := Base) (Const := Const) d (M := M) (ρ := ρ) hρ
+  exact
+    (HeytingPreModel.modelsFromWithAvailability_top_iff_modelsFrom
+      M.toHeytingPreModel
+      (Δ := Δ)
+      (φ := φ)
+      (ρ := ρ)).2 h
+
+/-- Closed-theorem soundness into top-availability weighted semantics. -/
+theorem theorem_sound_with_topAvailability
+    {φ : ClosedFormula Const}
+    (d : ExtDerivation.Theorem Const φ)
+    (M : HeytingHenkinModel.{u, v, w} Base Const) :
+    HeytingPreModel.modelsFromWithAvailability
+      M.toHeytingPreModel
+      (HeytingPreModel.topAvailability M.toHeytingPreModel)
+      [] φ (fun v => nomatch v) := by
+  exact derivation_sound_with_topAvailability
+    (Base := Base) (Const := Const) d
+    (M := M) (ρ := fun v => nomatch v) (by intro τ v; nomatch v)
 
 end IntuitionisticSoundness
 

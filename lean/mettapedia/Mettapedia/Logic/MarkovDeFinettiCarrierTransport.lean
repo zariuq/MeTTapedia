@@ -982,31 +982,6 @@ theorem rawSwap_bwd_mem {N : ℕ}
     have := Finset.sum_le_sum_of_subset (f := fun s => if (prefixExtend (k := k) N ys) s = i then 1 else 0) (Finset.range_mono h)
     change visitCountBefore (k := k) _ i _ ≤ visitCountBefore (k := k) _ i _ at this
     rw [h1.2, h2.2] at this; omega
-  -- rawSwap(ys) = segmentSwap(ys, t₀, L1_ys, L2_ys) where L1_ys = t₁-t₀, L2_ys = t₂-t₁
-  -- segmentSwap_carrier_mem_adjacent_reverse expects (a, L1, L2) where visit n+1 is at a+L2
-  -- Here: a = t₀, and we need (n+1)-th visit at a + L2_param
-  -- The (n+1)-th visit in ys is at t₁. So L2_param = t₁ - t₀ = L1_ys.
-  -- And L1_param = L2_ys = t₂ - t₁.
-  -- So _reverse params: (t₀, L2_ys, L1_ys) = (t₀, t₂-t₁, t₁-t₀)
-  -- But rawSwap uses (t₀, L1_ys, L2_ys) = (t₀, t₁-t₀, t₂-t₁)
-  -- These are DIFFERENT. rawSwap produces segmentSwap(ys, t₀, t₁-t₀, t₂-t₁)
-  -- while the inverse should be segmentSwap(ys, t₀, t₂-t₁, t₁-t₀).
-  -- BUT: rawSwap IS the inverse because L1_ys = L2_original and L2_ys = L1_original
-  -- (the visit times in the swapped trajectory are naturally reversed).
-  -- When ys = rawSwap(xs), L1_ys = L2 and L2_ys = L1 (from the plan analysis).
-  -- So rawSwap(ys) = segmentSwap(ys, t₀, L2, L1) = inverse. ✓
-  -- For an ARBITRARY carrier_{n+1} member ys (not necessarily rawSwap of something),
-  -- rawSwap(ys) = segmentSwap(ys, t₀_ys, t₁_ys-t₀_ys, t₂_ys-t₁_ys)
-  -- We need this to be in carrier_n.
-  -- Use segmentSwap_carrier_mem_adjacent_reverse with:
-  --   a = t₀_ys, L1 = t₂_ys - t₁_ys, L2 = t₁_ys - t₀_ys
-  -- Then visit n+1 is at a + L2 = t₀_ys + (t₁_ys - t₀_ys) = t₁_ys ✓
-  -- And visit n+2 is at a + L1 + L2 = t₀_ys + (t₂_ys-t₁_ys) + (t₁_ys-t₀_ys) = t₂_ys ✓
-  -- The segmentSwap in _reverse: segmentSwap(ys, a, L2, L1) = segmentSwap(ys, t₀, t₁-t₀, t₂-t₁)
-  -- Wait, _reverse applies segmentSwap(ys, a, L2, L1). With our params:
-  -- segmentSwap(ys, t₀, L2=t₁-t₀, L1=t₂-t₁) — that's the SAME as rawSwap(ys)! ✓
-  -- So _reverse with params (t₀, t₂-t₁, t₁-t₀) gives membership for
-  -- segmentSwap(ys, t₀, t₁-t₀, t₂-t₁) = rawSwap(ys). ✓
   have h_aL2 : isNthVisitTime (k := k) (prefixExtend (k := k) N ys) i (n + 1)
       (extractVisitTime ys i n hex0 + (extractVisitTime ys i (n + 1) hex1 - extractVisitTime ys i n hex0)) := by
     convert h1 using 1; exact Nat.add_sub_cancel' (Nat.le_of_lt ht01)
@@ -1140,6 +1115,259 @@ theorem carrierTransportEquivAdjacent {N : ℕ}
     (carrier_mem_visit_exists xs i n b hxs) (S n xs hxs).1 (S n xs hxs).2.1
     ((S n xs hxs).2.2 (S n xs hxs).1 (S n xs hxs).2.1).1
     ((S n xs hxs).2.2 (S n xs hxs).1 (S n xs hxs).2.1).2).symm⟩
+
+/-! ## Section 15: General carrier transport via composition -/
+
+/-- Abbreviation for the hSuff hypothesis type used throughout carrier transport. -/
+abbrev CarrierSuffHyp (i : Fin k) (b : Fin k) (N : ℕ) : Prop :=
+  ∀ (m : ℕ) (xs : Fin (N + 1) → Fin k),
+    xs ∈ rowVisitCylinderEventUpToPrefixCarrier (k := k)
+      i ({m} : Finset ℕ) (fun j => if j = m then b else i) N →
+    nthVisitTimeExists (k := k) (prefixExtend (k := k) N xs) i (m + 1) ∧
+    nthVisitTimeExists (k := k) (prefixExtend (k := k) N xs) i (m + 2) ∧
+    (∀ (h1 : nthVisitTimeExists (k := k) (prefixExtend (k := k) N xs) i (m + 1))
+       (h2 : nthVisitTimeExists (k := k) (prefixExtend (k := k) N xs) i (m + 2)),
+      extractVisitTime xs i (m + 1) h1 < N ∧ extractVisitTime xs i (m + 2) h2 < N)
+
+/-- Compose `d` adjacent carrier transport Equivs to build carrier(n) ≃ carrier(n+d).
+Uses `n + 0 = n` and `n + (d+1) = (n+d) + 1` definitionally. -/
+@[reducible] noncomputable def carrierTransportEquivAscendingChain {N : ℕ}
+    (i : Fin k) (b : Fin k) (hbi : b ≠ i) (n : ℕ)
+    (hSuff : CarrierSuffHyp (k := k) i b N) :
+    (d : ℕ) →
+      ↥(rowVisitCylinderEventUpToPrefixCarrier (k := k) i ({n} : Finset ℕ)
+          (fun m => if m = n then b else i) N) ≃
+      ↥(rowVisitCylinderEventUpToPrefixCarrier (k := k) i ({n + d} : Finset ℕ)
+          (fun m => if m = n + d then b else i) N)
+  | 0 => Equiv.refl _
+  | d + 1 =>
+    (carrierTransportEquivAscendingChain i b hbi n hSuff d).trans
+      (carrierTransportEquivAdjacent i b hbi (n + d) hSuff).choose
+
+/-- Evidence preservation for the ascending chain, by induction on `d`. -/
+lemma carrierTransportEquivAscendingChain_evidence {N : ℕ}
+    (i : Fin k) (b : Fin k) (hbi : b ≠ i) (n : ℕ)
+    (hSuff : CarrierSuffHyp (k := k) i b N) :
+    ∀ (d : ℕ) (xs : ↥(rowVisitCylinderEventUpToPrefixCarrier (k := k) i ({n} : Finset ℕ)
+        (fun m => if m = n then b else i) N)),
+      evidenceOf (n := N) xs.1 =
+        evidenceOf (n := N) (carrierTransportEquivAscendingChain i b hbi n hSuff d xs).1
+  | 0, _ => rfl
+  | d + 1, xs => by
+    simp only [carrierTransportEquivAscendingChain, Equiv.trans_apply]
+    exact (carrierTransportEquivAscendingChain_evidence i b hbi n hSuff d xs).trans
+      ((carrierTransportEquivAdjacent i b hbi (n + d) hSuff).choose_spec
+        (carrierTransportEquivAscendingChain i b hbi n hSuff d xs))
+
+/-- **GENERAL CARRIER TRANSPORT EQUIV**: for arbitrary visit indices n, n'.
+Composes adjacent Equivs via Nat induction; uses `.symm` for the descending case. -/
+theorem carrierTransportEquivGeneral {N : ℕ}
+    (i : Fin k) (b : Fin k) (hbi : b ≠ i) (n n' : ℕ)
+    (hSuff : CarrierSuffHyp (k := k) i b N) :
+    ∃ e :
+      ↥(rowVisitCylinderEventUpToPrefixCarrier (k := k) i ({n} : Finset ℕ)
+          (fun m => if m = n then b else i) N) ≃
+      ↥(rowVisitCylinderEventUpToPrefixCarrier (k := k) i ({n'} : Finset ℕ)
+          (fun m => if m = n' then b else i) N),
+      ∀ xs :
+        ↥(rowVisitCylinderEventUpToPrefixCarrier (k := k) i ({n} : Finset ℕ)
+            (fun m => if m = n then b else i) N),
+        evidenceOf (n := N) xs.1 = evidenceOf (n := N) (e xs).1 := by
+  by_cases h : n ≤ n'
+  · -- Case n ≤ n': ascending chain of length (n' - n)
+    obtain ⟨d, rfl⟩ : ∃ d, n' = n + d := ⟨n' - n, (Nat.add_sub_cancel' h).symm⟩
+    exact ⟨carrierTransportEquivAscendingChain i b hbi n hSuff d,
+           carrierTransportEquivAscendingChain_evidence i b hbi n hSuff d⟩
+  · -- Case n' < n: ascending chain from n' to n, then .symm
+    push_neg at h
+    obtain ⟨d, rfl⟩ : ∃ d, n = n' + d + 1 := ⟨n - n' - 1, by omega⟩
+    let chain := carrierTransportEquivAscendingChain i b hbi n' hSuff (d + 1)
+    refine ⟨chain.symm, fun xs => ?_⟩
+    have hev := carrierTransportEquivAscendingChain_evidence i b hbi n' hSuff (d + 1)
+      (chain.symm xs)
+    rw [chain.apply_symm_apply] at hev
+    exact hev.symm
+
+/-! ## Section 16: Multi-index carrier transport for single state
+
+The Level 2 infrastructure (`measure_start_inter_rowVisitCylinderEventUpTo_eq_...`)
+takes an Equiv between carriers with ARBITRARY S (Finset of visit indices).
+For per-row PE, we need: given S containing both n and n+1, an evidence-preserving
+Equiv between carrier(i, S, v, N) and carrier(i, S, v ∘ swap(n, n+1), N).
+
+This is built from rawSwap: the adjacent carrier transport transposes
+queue entries n ↔ n+1 and leaves others unchanged, so it maps the multi-index
+carrier with value function v to the carrier with v ∘ swap(n, n+1). -/
+
+/-- Adjacent value swap for multi-index carrier via segmentSwap (not rawSwap!):
+segmentSwap maps carrier(i, S, v, N) → carrier(i, S, v', N) where v' swaps at n, n+1.
+Uses segmentSwap DIRECTLY with external parameters — no rawSwap indirection. -/
+theorem segmentSwap_multiIndex_carrier_mem {N : ℕ}
+    (i : Fin k) (n : ℕ) (a L1 L2 : ℕ)
+    (hL1 : 0 < L1) (hL2 : 0 < L2) (hcN : a + L1 + L2 ≤ N)
+    (S : Finset ℕ) (v : ℕ → Fin k)
+    (hn : n ∈ S) (hn1 : n + 1 ∈ S)
+    (xs : Fin (N + 1) → Fin k)
+    (hxs : xs ∈ rowVisitCylinderEventUpToPrefixCarrier (k := k) i S v N)
+    -- Visit-time data: a is the n-th visit time, a+L1 is (n+1)-th, a+L1+L2 is (n+2)-th
+    (h_a : isNthVisitTime (k := k) (prefixExtend (k := k) N xs) i n a)
+    (h_aL1 : isNthVisitTime (k := k) (prefixExtend (k := k) N xs) i (n + 1) (a + L1))
+    (h_aL1L2 : isNthVisitTime (k := k) (prefixExtend (k := k) N xs) i (n + 2) (a + L1 + L2)) :
+    segmentSwap xs a L1 L2 hL1 hL2 hcN ∈
+      rowVisitCylinderEventUpToPrefixCarrier (k := k) i S
+        (fun m => if m = n then v (n + 1)
+                  else if m = n + 1 then v n
+                  else v m) N := by
+  -- Unfold carrier membership
+  simp only [rowVisitCylinderEventUpToPrefixCarrier, Finset.mem_filter, Finset.mem_univ,
+    true_and] at hxs ⊢
+  -- Visit-time lemmas for the swapped trajectory
+  have hnt_n := nthVisitTime_prefixExtend_segmentSwap_eq_of_le
+    xs i n a L1 L2 hL1 hL2 hcN h_a (by omega : a < N)
+  have hnt_n1 := nthVisitTime_segmentSwap_n1 xs i n a L1 L2
+    hL1 hL2 hcN h_a h_aL1 h_aL1L2
+  -- Original successor witnesses
+  rcases hxs n hn with ⟨tn, htnN, htimen, hsuccn⟩
+  rcases hxs (n + 1) hn1 with ⟨tn1, htn1N, htimen1, hsuccn1⟩
+  have htn_eq : tn = a := isNthVisitTime_unique (k := k) _ i n tn a
+    ((nthVisitTime_eq_some_iff (k := k) _ i n tn).mp htimen) h_a
+  have htn1_eq : tn1 = a + L1 := isNthVisitTime_unique (k := k) _ i (n + 1) tn1 (a + L1)
+    ((nthVisitTime_eq_some_iff (k := k) _ i (n + 1) tn1).mp htimen1) h_aL1
+  rw [htn_eq] at hsuccn; rw [htn1_eq] at hsuccn1
+  -- For each m ∈ S, produce the witness
+  intro m hmS
+  by_cases hmn : m = n
+  · -- m = n: successor at visit n becomes v(n+1) (by segmentSwap_successor_at_a)
+    simp only [hmn, ite_true]
+    refine ⟨a, by omega, hmn ▸ hnt_n, ?_⟩
+    simp only [successorAt, prefixExtend_apply_le' _ (by omega : a + 1 ≤ N)]
+    rw [segmentSwap_successor_at_a xs a L1 L2 hL1 hL2 hcN]
+    have := hsuccn1; simp only [successorAt] at this
+    rwa [prefixExtend_apply_le' xs (by omega : a + L1 + 1 ≤ N)] at this
+  · by_cases hmn1 : m = n + 1
+    · -- m = n+1: successor at visit n+1 becomes v(n) (by segmentSwap_successor_at_mid)
+      have hne : n + 1 ≠ n := by omega
+      simp only [hmn1, hne, ite_true, ite_false]
+      refine ⟨a + L2, by omega, hmn1 ▸ hnt_n1, ?_⟩
+      simp only [successorAt, prefixExtend_apply_le' _ (by omega : a + L2 + 1 ≤ N)]
+      rw [segmentSwap_successor_at_mid xs a L1 L2 hL1 hL2 hcN]
+      have := hsuccn; simp only [successorAt] at this
+      rw [prefixExtend_apply_le' xs (by omega : a + 1 ≤ N)] at this; exact this
+    · -- m ∉ {n, n+1}: visit time outside swap region → identity
+      simp only [hmn, hmn1, ite_false]
+      rcases hxs m hmS with ⟨t, htN, htime, hsucc⟩
+      have hm_time := (nthVisitTime_eq_some_iff (k := k) _ i m t).mp htime
+      -- Case split: m < n (visit before swap) or m > n+1 (visit after swap)
+      by_cases hm_lt : m < n
+      · -- m < n: visit time t < a → all positions ≤ t+1 are ≤ a → identity
+        have ht_lt : t < a := by
+          by_contra hge; push_neg at hge
+          have := Finset.sum_le_sum_of_subset
+            (f := fun s => if (prefixExtend (k := k) N xs) s = i then 1 else 0)
+            (Finset.range_mono hge)
+          change visitCountBefore (k := k) _ i _ ≤ visitCountBefore (k := k) _ i _ at this
+          rw [hm_time.2, h_a.2] at this; omega
+        refine ⟨t, htN, ?_, ?_⟩
+        · rw [nthVisitTime_eq_some_iff (k := k)]; constructor
+          · rw [prefixExtend_apply_le' _ (by omega),
+                segmentSwap_eq_of_le xs a L1 L2 hL1 hL2 hcN ⟨t, by omega⟩ (by simp; omega)]
+            have := hm_time.1; rwa [prefixExtend_apply_le' xs (by omega)] at this
+          · -- visitCountBefore: all positions < t have same trajectory value
+            change visitCountBefore (k := k)
+              (prefixExtend (k := k) N (segmentSwap xs a L1 L2 hL1 hL2 hcN)) i t = m
+            rw [← hm_time.2]; simp only [visitCountBefore]
+            apply Finset.sum_congr rfl
+            intro s hs; simp only [Finset.mem_range] at hs
+            congr 1
+            rw [prefixExtend_apply_le' _ (by omega),
+                segmentSwap_eq_of_le xs a L1 L2 hL1 hL2 hcN ⟨s, by omega⟩ (by simp; omega),
+                prefixExtend_apply_le' xs (by omega)]
+        · simp only [successorAt]
+          rw [prefixExtend_apply_le' _ (by omega),
+              segmentSwap_eq_of_le xs a L1 L2 hL1 hL2 hcN ⟨t + 1, by omega⟩ (by simp; omega)]
+          have := hsucc; simp only [successorAt] at this
+          rwa [prefixExtend_apply_le' xs (by omega)] at this
+      · -- m > n+1: visit time t ≥ a+L1+L2 → positions t, t+1 are > a+L1+L2 → identity
+        have hm_ge : m ≥ n + 2 := by omega
+        have ht_ge : t ≥ a + L1 + L2 := by
+          by_contra hlt; push_neg at hlt
+          have := Finset.sum_le_sum_of_subset
+            (f := fun s => if (prefixExtend (k := k) N xs) s = i then 1 else 0)
+            (Finset.range_mono (by omega : t ≤ a + L1 + L2))
+          change visitCountBefore (k := k) _ i _ ≤ visitCountBefore (k := k) _ i _ at this
+          rw [hm_time.2, h_aL1L2.2] at this
+          have hmeq : m = n + 2 := by omega
+          rw [hmeq] at hm_time
+          exact absurd (isNthVisitTime_unique (k := k) _ i (n + 2) t (a + L1 + L2)
+            hm_time h_aL1L2) (by omega)
+        refine ⟨t, htN, ?_, ?_⟩
+        · rw [nthVisitTime_eq_some_iff (k := k)]; constructor
+          · rw [prefixExtend_apply_le' _ (by omega)]
+            by_cases ht_eq : t = a + L1 + L2
+            · -- t exactly at the boundary: use segmentSwap_at_end
+              rw [show (⟨t, _⟩ : Fin (N + 1)) = ⟨a + L1 + L2, by omega⟩ from Fin.ext (by simp [ht_eq])]
+              rw [segmentSwap_at_end xs a L1 L2 hL1 hL2 hcN]
+              have := h_aL1.1; rwa [prefixExtend_apply_le' xs (by omega)] at this
+            · -- t strictly past the boundary
+              rw [segmentSwap_eq_of_gt xs a L1 L2 hL1 hL2 hcN ⟨t, by omega⟩ (by simp; omega)]
+              have := hm_time.1; rwa [prefixExtend_apply_le' xs (by omega)] at this
+          · -- visitCountBefore at t: positions < a+L1+L2 have same count (by swap symmetry),
+            -- positions ≥ a+L1+L2 are identity.
+            -- The key: visitCountBefore_segmentSwap_at_endpoint gives equality at a+L1+L2,
+            -- and identity after that gives equality at t.
+            have hvc_end := visitCountBefore_segmentSwap_at_endpoint xs i n a L1 L2
+              hL1 hL2 hcN h_a h_aL1 h_aL1L2
+            -- visitCountBefore(swapped, t) = visitCountBefore(original, t)
+            -- Split at cutpoint a+L1+L2 using additive decomposition
+            change visitCountBefore (k := k) (prefixExtend (k := k) N
+              (segmentSwap xs a L1 L2 hL1 hL2 hcN)) i t = m
+            rw [← hm_time.2]
+            -- Both sides split as: sum over [0, a+L1+L2) + sum over [a+L1+L2, t)
+            -- First parts agree by hvc_end/h_aL1L2.2
+            -- Second parts agree by identity after swap region
+            simp only [visitCountBefore]
+            rw [← Finset.sum_filter_add_sum_filter_not (Finset.range t)
+              (fun s => s < a + L1 + L2)]
+            rw [← Finset.sum_filter_add_sum_filter_not (Finset.range t)
+              (fun s => s < a + L1 + L2)]
+            congr 1
+            · -- [0, a+L1+L2) part: totals agree
+              have : (Finset.range t).filter (fun s => s < a + L1 + L2) =
+                  Finset.range (a + L1 + L2) := by
+                ext s; simp [Finset.mem_filter, Finset.mem_range]; omega
+              rw [this]
+              -- Both = n + 2
+              rw [show (∑ x ∈ Finset.range (a + L1 + L2),
+                if prefixExtend (k := k) N (segmentSwap xs a L1 L2 hL1 hL2 hcN) x = i then 1 else 0)
+                = n + 2 from hvc_end,
+                show (∑ x ∈ Finset.range (a + L1 + L2),
+                if prefixExtend (k := k) N xs x = i then 1 else 0)
+                = n + 2 from h_aL1L2.2]
+            · -- [a+L1+L2, t) part: identity region
+              apply Finset.sum_congr rfl; intro s hs
+              simp only [Finset.mem_filter, Finset.mem_range, not_lt] at hs
+              -- hs : s < t ∧ ¬(s < a + L1 + L2), i.e. s ≥ a + L1 + L2
+              congr 1
+              rw [prefixExtend_apply_le' _ (by omega)]
+              by_cases hseq : s = a + L1 + L2
+              · subst hseq
+                -- Both sides: segmentSwap at a+L1+L2 gives xs(a+L1) = i,
+                -- prefixExtend xs at a+L1+L2 gives xs(a+L1+L2) = i. Both = i.
+                simp only [segmentSwap_at_end xs a L1 L2 hL1 hL2 hcN,
+                  prefixExtend_apply_le' xs (by omega)]
+                have hlhs : xs ⟨a + L1, by omega⟩ = i := by
+                  have := h_aL1.1; rwa [prefixExtend_apply_le' xs (by omega)] at this
+                have hrhs : xs ⟨a + L1 + L2, by omega⟩ = i := by
+                  have := h_aL1L2.1; rwa [prefixExtend_apply_le' xs (by omega)] at this
+                simp [hlhs, hrhs]
+              · congr 1
+                rw [segmentSwap_eq_of_gt xs a L1 L2 hL1 hL2 hcN ⟨s, by omega⟩ (by simp; omega),
+                    prefixExtend_apply_le' xs (by omega)]
+        · simp only [successorAt]
+          rw [prefixExtend_apply_le' _ (by omega),
+              segmentSwap_eq_of_gt xs a L1 L2 hL1 hL2 hcN ⟨t + 1, by omega⟩ (by simp; omega)]
+          have := hsucc; simp only [successorAt] at this
+          rwa [prefixExtend_apply_le' xs (by omega)] at this
 
 end CarrierTransportBridge
 

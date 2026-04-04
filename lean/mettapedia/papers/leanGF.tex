@@ -878,6 +878,9 @@ Two grounded slices are currently in the live lane:
   functions over 90 categories, with start category \code{S}.  Lowering
   either export through \code{gfSyntaxLanguageDef} yields the same
   syntax-only \code{LanguageDef}, again with 0 equations and 0 rewrites.
+  We additionally generate a theorem-usable \code{ProjectCoreSig.funsList},
+  so the larger slice is not only regression-checked but also available to
+  Lean as a kernel-reducible constructor surface.
   On the Rust side, the same artifact is already checked structurally via
   Lean-exported \code{language!} fixtures and exact shared-core comparison;
   compiling the full generated Rust module is presently an engineering-scale
@@ -889,9 +892,20 @@ Two grounded slices are currently in the live lane:
 For the real syntax-only lane, the NTT/OSLF layer presently supports:
 \begin{itemize}
 \item type-theoretic classification by real GF sort;
-\item bilingual English/Czech agreement after \code{GFCore.check};
-\item constructor-level examples over larger real grammar slices such as
-  \code{ExistNP}, \code{QuestCl}/\code{UseQCl}, and \code{ProgrVP};
+\item theorem-level ambiguity separation on real witness families:
+  the telescope and Anna pairs are distinct abstract readings, and the
+  corresponding Lean patterns inhabit different native predicates
+  (VP-attachment versus NP-attachment) in the same \code{S} fiber;
+\item theorem-level bilingual preservation at the real GF$\to$IR layer:
+  the recovered English and Czech abstract nodes agree reading-by-reading
+  for both telescope and Anna witnesses;
+\item theorem-level constructor-family facts over the larger
+  \code{project\_core} slice, including unary crossings such as
+  \code{ExistNP : NP \to Cl}, \code{QuestCl : Cl \to QCl}, and
+  \code{UsePron : Pron \to NP};
+\item theorem-level native-type classification of larger real patterns,
+  including existential sentences, interrogatives (\code{QS}), and
+  progressive clauses, all still on the syntax-only lane;
 \item explicit proofs and regression checks that the syntax-only lane
   has no executable reductions.
 \item exact structural export into the Rust \code{language!} surface for both

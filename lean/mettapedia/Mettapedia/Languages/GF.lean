@@ -66,3 +66,4 @@ import Mettapedia.Languages.GF.GeneratedBridgeConformance
 import Mettapedia.Languages.GF.ConformanceCertificate
 import Mettapedia.Languages.GF.GFRoundTripTest
 import Mettapedia.Languages.GF.GFRealSyntaxNTTDiagnostics
+import Mettapedia.Languages.GF.GFProjectCoreNTTDiagnostics

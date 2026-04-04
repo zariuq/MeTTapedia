@@ -247,6 +247,307 @@ theorem validFrom_iff_provable_of_rootCounterworld_bridge_and_rootCounterworld_c
   · exact validFrom_of_provable (Base := Base) (Const := Const)
 
 /--
+Availability-weighted semantic validity from finite assumptions.
+
+This is the honest semantic target for the growing-domain route: both model and
+availability assignment are part of the validity quantification.
+
+Warning: this unrestricted form is generally too strong to pair with a
+non-top soundness theorem. For the repaired mainline boundary, use
+`OriginalValidFromAdmissibleAvailability`.
+-/
+def OriginalValidFromWithAvailability
+    (Δ : List (ClosedFormula Const))
+    (φ : ClosedFormula Const) : Prop :=
+  ∀ M : HeytingHenkinModel.{u, v, w} Base Const,
+    ∀ avail : HeytingPreModel.QuantifierAvailability M.toHeytingPreModel,
+      HeytingPreModel.modelsFromWithAvailability
+        M.toHeytingPreModel
+        avail
+        Δ
+        φ
+        (fun v => nomatch v)
+
+/--
+Availability-weighted validity restricted to availability assignments that
+respect the model's term-construction discipline.
+-/
+def OriginalValidFromAdmissibleAvailability
+    (Δ : List (ClosedFormula Const))
+    (φ : ClosedFormula Const) : Prop :=
+  ∀ M : HeytingHenkinModel.{u, v, w} Base Const,
+    ∀ avail : HeytingPreModel.QuantifierAvailability M.toHeytingPreModel,
+      HeytingHenkinModel.AdmissibleAvailability M avail →
+        HeytingPreModel.modelsFromWithAvailability
+          M.toHeytingPreModel
+          avail
+          Δ
+          φ
+          (fun v => nomatch v)
+
+/--
+Top-availability validity for closed sequents.
+
+This is the soundness-complete availability boundary available immediately from
+the existing legacy soundness proof.
+-/
+def OriginalValidFromTopAvailability
+    (Δ : List (ClosedFormula Const))
+    (φ : ClosedFormula Const) : Prop :=
+  ∀ M : HeytingHenkinModel.{u, v, w} Base Const,
+    HeytingPreModel.modelsFromWithAvailability
+      M.toHeytingPreModel
+      (HeytingPreModel.topAvailability M.toHeytingPreModel)
+      Δ
+      φ
+      (fun v => nomatch v)
+
+@[simp] theorem originalValidFromTopAvailability_iff_originalValidFrom
+    {Δ : List (ClosedFormula Const)}
+    {φ : ClosedFormula Const} :
+    OriginalValidFromTopAvailability.{u, v, w}
+      (Base := Base) (Const := Const) Δ φ ↔
+      OriginalValidFrom.{u, v, w}
+        (Base := Base) (Const := Const) Δ φ := by
+  constructor
+  · intro hTop (M : HeytingHenkinModel.{u, v, w} Base Const)
+    exact
+      (HeytingPreModel.modelsFromWithAvailability_top_iff_modelsFrom
+        M.toHeytingPreModel
+        (Δ := Δ)
+        (φ := φ)
+        (ρ := fun v => nomatch v)).1
+        (hTop M)
+  · intro hLegacy (M : HeytingHenkinModel.{u, v, w} Base Const)
+    exact
+      (HeytingPreModel.modelsFromWithAvailability_top_iff_modelsFrom
+        M.toHeytingPreModel
+        (Δ := Δ)
+        (φ := φ)
+        (ρ := fun v => nomatch v)).2
+        (hLegacy M)
+
+theorem originalValidFromAdmissibleAvailability_implies_originalValidFrom
+    {Δ : List (ClosedFormula Const)}
+    {φ : ClosedFormula Const}
+    (hValid :
+      OriginalValidFromAdmissibleAvailability.{u, v, w}
+        (Base := Base) (Const := Const) Δ φ) :
+    OriginalValidFrom.{u, v, w} (Base := Base) (Const := Const) Δ φ := by
+  intro M
+  have hTop :
+      HeytingPreModel.modelsFromWithAvailability
+        M.toHeytingPreModel
+        (HeytingPreModel.topAvailability M.toHeytingPreModel)
+        Δ
+        φ
+        (fun v => nomatch v) :=
+    hValid M
+      (HeytingPreModel.topAvailability M.toHeytingPreModel)
+      (HeytingHenkinModel.topAvailability_admissible M)
+  exact
+    (HeytingPreModel.modelsFromWithAvailability_top_iff_modelsFrom
+      M.toHeytingPreModel
+      (Δ := Δ)
+      (φ := φ)
+      (ρ := fun v => nomatch v)).1
+      hTop
+
+/--
+Safe availability boundary:
+under `topAvailability`, completeness is equivalent to the legacy
+countermodel bridge and requires no additional soundness assumptions.
+-/
+theorem validFromTopAvailability_iff_provable_of_rootCounterworld_bridge_and_rootCounterworld_countermodel
+    (R : ParamCompleteness.RootCounterworldBridge Base Const)
+    (hCounter :
+      ∀ {Δ : List (ClosedFormula Const)} {φ : ClosedFormula Const},
+        ParamCompleteness.RootCounterworld Base Const Δ φ →
+          ∃ M : HeytingHenkinModel.{u, v, w} Base Const,
+            ¬ HeytingHenkinModel.modelsFrom M Δ φ (fun v => nomatch v))
+    {Δ : List (ClosedFormula Const)}
+    {φ : ClosedFormula Const} :
+    OriginalValidFromTopAvailability.{u, v, w}
+      (Base := Base) (Const := Const) Δ φ ↔
+      ExtDerivation Const Δ φ := by
+  constructor
+  · intro hValidTop
+    by_contra hNot
+    let C : ParamCompleteness.RootCounterworld Base Const Δ φ :=
+      Classical.choice (R.hasRootCounterworld_of_not_provable hNot)
+    rcases hCounter C with ⟨M, hNotModels⟩
+    have hTopM := hValidTop M
+    have hModels :
+        HeytingHenkinModel.modelsFrom M Δ φ (fun v => nomatch v) :=
+      (HeytingPreModel.modelsFromWithAvailability_top_iff_modelsFrom
+        M.toHeytingPreModel
+        (Δ := Δ)
+        (φ := φ)
+        (ρ := fun v => nomatch v)).1
+        hTopM
+    exact hNotModels hModels
+  · intro hProv (M : HeytingHenkinModel.{u, v, w} Base Const)
+    exact
+      IntuitionisticSoundness.derivation_sound_with_topAvailability
+        (Base := Base)
+        (Const := Const)
+        hProv
+        (M := M)
+        (ρ := fun v => nomatch v)
+        (by intro τ v; nomatch v)
+
+/--
+Availability-semantics completeness boundary.
+
+This theorem avoids the unsafe availability-to-legacy transfer: it states
+completeness directly against `modelsFromWithAvailability`, with soundness for
+that semantics supplied as an explicit premise.
+-/
+theorem validFromWithAvailability_iff_provable_of_rootCounterworld_bridge_and_rootCounterworld_countermodel_withAvailability
+    (R : ParamCompleteness.RootCounterworldBridge Base Const)
+    (hCounterAvail :
+      ∀ {Δ : List (ClosedFormula Const)} {φ : ClosedFormula Const},
+        ParamCompleteness.RootCounterworld Base Const Δ φ →
+          ∃ M : HeytingHenkinModel.{u, v, w} Base Const,
+            ∃ avail : HeytingPreModel.QuantifierAvailability M.toHeytingPreModel,
+              HeytingHenkinModel.AdmissibleAvailability M avail ∧
+                ¬ HeytingPreModel.modelsFromWithAvailability
+                    M.toHeytingPreModel
+                    avail
+                    Δ
+                    φ
+                    (fun v => nomatch v))
+    (hSoundAvail :
+      ∀ {Δ : List (ClosedFormula Const)} {φ : ClosedFormula Const}
+        (_d : ExtDerivation Const Δ φ)
+        {M : HeytingHenkinModel.{u, v, w} Base Const}
+        (avail : HeytingPreModel.QuantifierAvailability M.toHeytingPreModel)
+        (_hAvail : HeytingHenkinModel.AdmissibleAvailability M avail),
+          HeytingPreModel.modelsFromWithAvailability
+            M.toHeytingPreModel
+            avail
+            Δ
+            φ
+            (fun v => nomatch v))
+    {Δ : List (ClosedFormula Const)}
+    {φ : ClosedFormula Const} :
+    OriginalValidFromAdmissibleAvailability.{u, v, w}
+      (Base := Base) (Const := Const) Δ φ ↔
+      ExtDerivation Const Δ φ := by
+  constructor
+  · intro hValid
+    by_contra hNot
+    let C : ParamCompleteness.RootCounterworld Base Const Δ φ :=
+      Classical.choice (R.hasRootCounterworld_of_not_provable hNot)
+    rcases hCounterAvail C with ⟨M, avail, hAvail, hNotModel⟩
+    exact hNotModel (hValid M avail hAvail)
+  · intro hProv M avail hAvail
+    exact hSoundAvail hProv (M := M) avail hAvail
+
+/--
+One-way admissible-availability completeness boundary.
+
+This is the honest `validity ⇒ provability` direction and does not depend on
+any non-top availability soundness premise.
+-/
+theorem provable_of_validFromAdmissibleAvailability_of_rootCounterworld_bridge_and_rootCounterworld_countermodel_withAvailability
+    (R : ParamCompleteness.RootCounterworldBridge Base Const)
+    (hCounterAvail :
+      ∀ {Δ : List (ClosedFormula Const)} {φ : ClosedFormula Const},
+        ParamCompleteness.RootCounterworld Base Const Δ φ →
+          ∃ M : HeytingHenkinModel.{u, v, w} Base Const,
+            ∃ avail : HeytingPreModel.QuantifierAvailability M.toHeytingPreModel,
+              HeytingHenkinModel.AdmissibleAvailability M avail ∧
+                ¬ HeytingPreModel.modelsFromWithAvailability
+                    M.toHeytingPreModel
+                    avail
+                    Δ
+                    φ
+                    (fun v => nomatch v))
+    {Δ : List (ClosedFormula Const)}
+    {φ : ClosedFormula Const}
+    (hValid :
+      OriginalValidFromAdmissibleAvailability.{u, v, w}
+        (Base := Base) (Const := Const) Δ φ) :
+    ExtDerivation Const Δ φ := by
+  by_contra hNot
+  let C : ParamCompleteness.RootCounterworld Base Const Δ φ :=
+    Classical.choice (R.hasRootCounterworld_of_not_provable hNot)
+  rcases hCounterAvail C with ⟨M, avail, hAvail, hNotModel⟩
+  exact hNotModel (hValid M avail hAvail)
+
+/--
+One-way admissible-availability completeness from the existing legacy
+countermodel bridge.
+
+This wrapper is immediately usable now: it transports a legacy countermodel to
+top-availability (which is admissible) and applies the one-way theorem above.
+-/
+theorem provable_of_validFromAdmissibleAvailability_of_rootCounterworld_bridge_and_legacyCountermodel
+    (R : ParamCompleteness.RootCounterworldBridge Base Const)
+    (C : ParamCompleteness.RootCounterworldCountermodelBridge.{u, v, w} Base Const)
+    {Δ : List (ClosedFormula Const)}
+    {φ : ClosedFormula Const}
+    (hValid :
+      OriginalValidFromAdmissibleAvailability.{u, v, w}
+        (Base := Base) (Const := Const) Δ φ) :
+    ExtDerivation Const Δ φ := by
+  exact
+    provable_of_validFromAdmissibleAvailability_of_rootCounterworld_bridge_and_rootCounterworld_countermodel_withAvailability
+      (Base := Base)
+      (Const := Const)
+      R
+      (hCounterAvail := by
+        intro Δ φ Cw
+        exact (C.toWithTopAvailability.countermodel_of_rootCounterworld Cw))
+      (Δ := Δ)
+      (φ := φ)
+      hValid
+
+/-- Explicitly named alias of the repaired availability boundary (with
+admissibility side condition). -/
+theorem validFromAdmissibleAvailability_iff_provable_of_rootCounterworld_bridge_and_rootCounterworld_countermodel_withAvailability
+    (R : ParamCompleteness.RootCounterworldBridge Base Const)
+    (hCounterAvail :
+      ∀ {Δ : List (ClosedFormula Const)} {φ : ClosedFormula Const},
+        ParamCompleteness.RootCounterworld Base Const Δ φ →
+          ∃ M : HeytingHenkinModel.{u, v, w} Base Const,
+            ∃ avail : HeytingPreModel.QuantifierAvailability M.toHeytingPreModel,
+              HeytingHenkinModel.AdmissibleAvailability M avail ∧
+                ¬ HeytingPreModel.modelsFromWithAvailability
+                    M.toHeytingPreModel
+                    avail
+                    Δ
+                    φ
+                    (fun v => nomatch v))
+    (hSoundAvail :
+      ∀ {Δ : List (ClosedFormula Const)} {φ : ClosedFormula Const}
+        (_d : ExtDerivation Const Δ φ)
+        {M : HeytingHenkinModel.{u, v, w} Base Const}
+        (avail : HeytingPreModel.QuantifierAvailability M.toHeytingPreModel)
+        (_hAvail : HeytingHenkinModel.AdmissibleAvailability M avail),
+          HeytingPreModel.modelsFromWithAvailability
+            M.toHeytingPreModel
+            avail
+            Δ
+            φ
+            (fun v => nomatch v))
+    {Δ : List (ClosedFormula Const)}
+    {φ : ClosedFormula Const} :
+    OriginalValidFromAdmissibleAvailability.{u, v, w}
+      (Base := Base) (Const := Const) Δ φ ↔
+      ExtDerivation Const Δ φ := by
+  exact
+    validFromWithAvailability_iff_provable_of_rootCounterworld_bridge_and_rootCounterworld_countermodel_withAvailability
+      (Base := Base)
+      (Const := Const)
+      R
+      hCounterAvail
+      hSoundAvail
+      (Δ := Δ)
+      (φ := φ)
+
+/--
 Current strongest public mainline theorem at the direct root-counterworld
 boundary.
 
@@ -297,6 +598,220 @@ theorem plain_intuitionistic_completeness_of_rootCounterworld_bridges
         exact C.countermodel_of_rootCounterworld Cw)
       (Δ := Δ)
       (φ := φ)
+
+/--
+Top-availability variant of the direct root-counterworld bridge theorem.
+
+This gives an immediately usable availability-semantics completeness statement
+without any extra non-top soundness assumption.
+-/
+theorem plain_intuitionistic_topAvailability_completeness_of_rootCounterworld_bridges
+    (R : ParamCompleteness.RootCounterworldBridge Base Const)
+    (C : ParamCompleteness.RootCounterworldCountermodelBridge.{u, v, w} Base Const)
+    {Δ : List (ClosedFormula Const)}
+    {φ : ClosedFormula Const} :
+    OriginalValidFromTopAvailability.{u, v, w}
+      (Base := Base) (Const := Const) Δ φ ↔
+      ExtDerivation Const Δ φ := by
+  exact
+    validFromTopAvailability_iff_provable_of_rootCounterworld_bridge_and_rootCounterworld_countermodel
+      (Base := Base)
+      (Const := Const)
+      R
+      (hCounter := by
+        intro Δ φ Cw
+        exact C.countermodel_of_rootCounterworld Cw)
+      (Δ := Δ)
+      (φ := φ)
+
+/--
+Availability-native public boundary over direct root-counterworld bridges.
+
+This is the direct endgame interface for growing-domain semantics: the
+countermodel bridge already carries availability explicitly.
+-/
+theorem plain_intuitionistic_withAvailability_completeness_of_rootCounterworld_bridges
+    (R : ParamCompleteness.RootCounterworldBridge Base Const)
+    (C : ParamCompleteness.RootCounterworldCountermodelWithAvailabilityBridge.{u, v, w} Base Const)
+    (hSoundAvail :
+      ∀ {Δ : List (ClosedFormula Const)} {φ : ClosedFormula Const}
+        (_d : ExtDerivation Const Δ φ)
+        {M : HeytingHenkinModel.{u, v, w} Base Const}
+        (avail : HeytingPreModel.QuantifierAvailability M.toHeytingPreModel)
+        (_hAvail : HeytingHenkinModel.AdmissibleAvailability M avail),
+          HeytingPreModel.modelsFromWithAvailability
+            M.toHeytingPreModel
+            avail
+            Δ
+            φ
+            (fun v => nomatch v))
+    {Δ : List (ClosedFormula Const)}
+    {φ : ClosedFormula Const} :
+    OriginalValidFromAdmissibleAvailability.{u, v, w}
+      (Base := Base) (Const := Const) Δ φ ↔
+      ExtDerivation Const Δ φ := by
+  simpa [OriginalValidFromAdmissibleAvailability] using
+    validFromWithAvailability_iff_provable_of_rootCounterworld_bridge_and_rootCounterworld_countermodel_withAvailability
+      (Base := Base)
+      (Const := Const)
+      R
+      (hCounterAvail := by
+        intro Δ φ Cw
+        exact C.countermodel_of_rootCounterworld Cw)
+      hSoundAvail
+      (Δ := Δ)
+      (φ := φ)
+
+/-- Explicitly named alias for the admissible-availability completeness
+surface. -/
+theorem plain_intuitionistic_admissibleAvailability_completeness_of_rootCounterworld_bridges
+    (R : ParamCompleteness.RootCounterworldBridge Base Const)
+    (C : ParamCompleteness.RootCounterworldCountermodelWithAvailabilityBridge.{u, v, w} Base Const)
+    (hSoundAvail :
+      ∀ {Δ : List (ClosedFormula Const)} {φ : ClosedFormula Const}
+        (_d : ExtDerivation Const Δ φ)
+        {M : HeytingHenkinModel.{u, v, w} Base Const}
+        (avail : HeytingPreModel.QuantifierAvailability M.toHeytingPreModel)
+        (_hAvail : HeytingHenkinModel.AdmissibleAvailability M avail),
+          HeytingPreModel.modelsFromWithAvailability
+            M.toHeytingPreModel
+            avail
+            Δ
+            φ
+            (fun v => nomatch v))
+    {Δ : List (ClosedFormula Const)}
+    {φ : ClosedFormula Const} :
+    OriginalValidFromAdmissibleAvailability.{u, v, w}
+      (Base := Base) (Const := Const) Δ φ ↔
+      ExtDerivation Const Δ φ := by
+  exact
+    plain_intuitionistic_withAvailability_completeness_of_rootCounterworld_bridges
+      (Base := Base)
+      (Const := Const)
+      R
+      C
+      hSoundAvail
+      (Δ := Δ)
+      (φ := φ)
+
+/--
+Availability-native completeness using the existing legacy countermodel bridge.
+
+This compatibility theorem allows the new availability boundary to be used
+before a dedicated availability-aware countermodel construction is available.
+-/
+theorem plain_intuitionistic_withAvailability_completeness_of_rootCounterworld_bridges_of_legacyCountermodel
+    (R : ParamCompleteness.RootCounterworldBridge Base Const)
+    (C : ParamCompleteness.RootCounterworldCountermodelBridge.{u, v, w} Base Const)
+    (hSoundAvail :
+      ∀ {Δ : List (ClosedFormula Const)} {φ : ClosedFormula Const}
+        (_d : ExtDerivation Const Δ φ)
+        {M : HeytingHenkinModel.{u, v, w} Base Const}
+        (avail : HeytingPreModel.QuantifierAvailability M.toHeytingPreModel)
+        (_hAvail : HeytingHenkinModel.AdmissibleAvailability M avail),
+          HeytingPreModel.modelsFromWithAvailability
+            M.toHeytingPreModel
+            avail
+            Δ
+            φ
+            (fun v => nomatch v))
+    {Δ : List (ClosedFormula Const)}
+    {φ : ClosedFormula Const} :
+    OriginalValidFromAdmissibleAvailability.{u, v, w}
+      (Base := Base) (Const := Const) Δ φ ↔
+      ExtDerivation Const Δ φ := by
+  exact
+    plain_intuitionistic_withAvailability_completeness_of_rootCounterworld_bridges
+      (Base := Base)
+      (Const := Const)
+      R
+      (C := C.toWithTopAvailability)
+      hSoundAvail
+      (Δ := Δ)
+      (φ := φ)
+
+/-- Legacy-countermodel compatibility theorem, explicitly named for the
+admissible-availability boundary. -/
+theorem plain_intuitionistic_admissibleAvailability_completeness_of_rootCounterworld_bridges_of_legacyCountermodel
+    (R : ParamCompleteness.RootCounterworldBridge Base Const)
+    (C : ParamCompleteness.RootCounterworldCountermodelBridge.{u, v, w} Base Const)
+    (hSoundAvail :
+      ∀ {Δ : List (ClosedFormula Const)} {φ : ClosedFormula Const}
+        (_d : ExtDerivation Const Δ φ)
+        {M : HeytingHenkinModel.{u, v, w} Base Const}
+        (avail : HeytingPreModel.QuantifierAvailability M.toHeytingPreModel)
+        (_hAvail : HeytingHenkinModel.AdmissibleAvailability M avail),
+          HeytingPreModel.modelsFromWithAvailability
+            M.toHeytingPreModel
+            avail
+            Δ
+            φ
+            (fun v => nomatch v))
+    {Δ : List (ClosedFormula Const)}
+    {φ : ClosedFormula Const} :
+    OriginalValidFromAdmissibleAvailability.{u, v, w}
+      (Base := Base) (Const := Const) Δ φ ↔
+      ExtDerivation Const Δ φ := by
+  exact
+    plain_intuitionistic_withAvailability_completeness_of_rootCounterworld_bridges_of_legacyCountermodel
+      (Base := Base)
+      (Const := Const)
+      R
+      C
+      hSoundAvail
+      (Δ := Δ)
+      (φ := φ)
+
+/--
+Public one-way admissible-availability theorem for direct root-counterworld
+bridges.
+
+This packages the currently sound half of the availability-native boundary:
+countermodels plus admissible-availability validity imply provability.
+-/
+theorem plain_intuitionistic_provable_of_admissibleAvailability_validity_of_rootCounterworld_bridges
+    (R : ParamCompleteness.RootCounterworldBridge Base Const)
+    (C : ParamCompleteness.RootCounterworldCountermodelWithAvailabilityBridge.{u, v, w} Base Const)
+    {Δ : List (ClosedFormula Const)}
+    {φ : ClosedFormula Const}
+    (hValid :
+      OriginalValidFromAdmissibleAvailability.{u, v, w}
+        (Base := Base) (Const := Const) Δ φ) :
+    ExtDerivation Const Δ φ := by
+  exact
+    provable_of_validFromAdmissibleAvailability_of_rootCounterworld_bridge_and_rootCounterworld_countermodel_withAvailability
+      (Base := Base)
+      (Const := Const)
+      R
+      (hCounterAvail := by
+        intro Δ φ Cw
+        exact C.countermodel_of_rootCounterworld Cw)
+      (Δ := Δ)
+      (φ := φ)
+      hValid
+
+/--
+Public one-way admissible-availability theorem using the existing legacy
+countermodel bridge.
+-/
+theorem plain_intuitionistic_provable_of_admissibleAvailability_validity_of_rootCounterworld_bridges_of_legacyCountermodel
+    (R : ParamCompleteness.RootCounterworldBridge Base Const)
+    (C : ParamCompleteness.RootCounterworldCountermodelBridge.{u, v, w} Base Const)
+    {Δ : List (ClosedFormula Const)}
+    {φ : ClosedFormula Const}
+    (hValid :
+      OriginalValidFromAdmissibleAvailability.{u, v, w}
+        (Base := Base) (Const := Const) Δ φ) :
+    ExtDerivation Const Δ φ := by
+  exact
+    provable_of_validFromAdmissibleAvailability_of_rootCounterworld_bridge_and_legacyCountermodel
+      (Base := Base)
+      (Const := Const)
+      R
+      C
+      (Δ := Δ)
+      (φ := φ)
+      hValid
 
 theorem provable_of_rootSaturation_bridge_and_rootCounterworld_countermodel
     (hCounter :

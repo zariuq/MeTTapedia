@@ -316,4 +316,26 @@ lemma segmentSwap_successor_at_mid {N : ℕ} (xs : Fin (N + 1) → Fin k) (a L1 
   · congr 1; ext; simp; omega
   · omega
 
+/-! ## Section 7: segmentSwap is identity on positions outside [a+1, a+L1+L2]
+
+This gives the queue transposition property: segmentSwap at the n-th and (n+1)-th
+visits to state i only affects the successors at those two visits. All other
+successor values are unchanged (their times are outside the swap region). -/
+
+/-- segmentSwap preserves the value at any position t with t+1 ≤ a (successor before swap). -/
+lemma segmentSwap_successor_preserved_before {N : ℕ} (xs : Fin (N + 1) → Fin k) (a L1 L2 : ℕ)
+    (hL1 : 0 < L1) (hL2 : 0 < L2) (hcN : a + L1 + L2 ≤ N)
+    (t : ℕ) (ht : t + 1 ≤ a) (htN : t + 1 ≤ N) :
+    segmentSwap xs a L1 L2 hL1 hL2 hcN ⟨t + 1, by omega⟩ =
+      xs ⟨t + 1, by omega⟩ :=
+  segmentSwap_eq_of_le xs a L1 L2 hL1 hL2 hcN ⟨t + 1, by omega⟩ (by omega)
+
+/-- segmentSwap preserves the value at any position t+1 with t ≥ a+L1+L2. -/
+lemma segmentSwap_successor_preserved_after {N : ℕ} (xs : Fin (N + 1) → Fin k) (a L1 L2 : ℕ)
+    (hL1 : 0 < L1) (hL2 : 0 < L2) (hcN : a + L1 + L2 ≤ N)
+    (t : ℕ) (ht : a + L1 + L2 ≤ t) (htN : t + 1 ≤ N) :
+    segmentSwap xs a L1 L2 hL1 hL2 hcN ⟨t + 1, by omega⟩ =
+      xs ⟨t + 1, by omega⟩ :=
+  segmentSwap_eq_of_gt xs a L1 L2 hL1 hL2 hcN ⟨t + 1, by omega⟩ (by simp; omega)
+
 end Mettapedia.Logic.MarkovDeFinettiCarrierTransport
