@@ -1,0 +1,748 @@
+%% CeTTa Development Roadmap
+%%
+%% Living document: what works, what's broken, what's planned.
+%% Build: pdflatex cetta_roadmap.tex
+
+\documentclass[11pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage{geometry}
+\geometry{margin=1in}
+\usepackage{hyperref}
+\usepackage{longtable}
+\usepackage{booktabs}
+\usepackage{listings}
+\usepackage{array}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{enumitem}
+\setlength{\emergencystretch}{3em}
+\lstset{
+  basicstyle=\ttfamily\small,
+  breaklines=true,
+  frame=single,
+  columns=fullflexible
+}
+
+\newcommand{\code}[1]{\texttt{#1}}
+\newcommand{\PeTTa}{\textup{PeTTa}}
+\newcommand{\HE}{\textup{HE}}
+\newcommand{\CeTTa}{\textup{CeTTa}}
+\newcommand{\PathMap}{\textup{PathMap}}
+\newcommand{\MORK}{\textup{MORK}}
+\newcommand{\WAM}{\textup{WAM}}
+
+\title{\CeTTa{} Development Roadmap\\
+\large What Works, What's Broken, What's Planned}
+\author{Zar Goertzel \and Oru\v{z}i}
+\date{2026-04-07 (living document)}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+This document tracks the development state of \CeTTa{}, a direct C
+runtime for the MeTTa language.  It consolidates information from
+the published \CeTTa{} paper, the conceptual architecture primer,
+7~runtime specification files, 10~review bundles produced during
+development, Lean formalization artifacts, a full audit of the
+\code{core-opt} branch conducted 2026-04-07, and an independent
+GPT-5.4~Pro triage of the same branch.  Its purpose is to prevent
+feature loss, regression blindness, and duplicated work across
+development sessions.  It includes a \emph{capability ledger}
+(\S\ref{sec:ledger}) that tracks every nontrivial evaluator guarantee
+with its semantic witness, performance witness, and code anchor.
+\end{abstract}
+
+\tableofcontents
+
+%% ────────────────────────────────────────────────────────────────────
+\section{Current State: \CeTTa{} Main (v1.3.2-dev)}
+\label{sec:current}
+
+Branch \code{main}, commit \code{c3f5e67}.
+
+\subsection{Test Suite}
+
+\begin{center}
+\begin{tabular}{lrrr}
+\toprule
+Suite & Passed & Failed & Skipped \\
+\midrule
+\code{make test} (oracle + profile) & 340 & 0 & 50 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The 50 skipped break down into: 17~MM2/MORK-specific, 2~pathmap
+regressions, 1~pretty-vars surface, 27~probe/translation files without
+\code{.expected} goldens, 3~Python-dependent tests in core builds.
+
+\subsection{Implemented Features}
+
+\begin{description}[style=nextline]
+\item[Arena allocation]
+  64\,KB blocks, batch deallocation at scope exit.  No per-atom
+  \code{malloc}/\code{free}.
+
+\item[HashConsTable]
+  Global term sharing on the persistent arena.  Hash-consed atoms
+  enable O(1) structural equality.  The eval arena does \emph{not}
+  have its own hashcons (see \S\ref{sec:coreopt}).
+
+\item[SymbolId dispatch]
+  Symbol strings are interned into unique IDs at parse time.
+  All dispatch is integer comparison, not \code{strcmp}.  38\%
+  instruction reduction vs.\ string-based dispatch.
+
+\item[Equation index]
+  Equations \code{(= lhs rhs)} are hashed by head symbol into 256
+  buckets, with a \code{SubstTree} discrimination trie within each
+  bucket.  Epoch-tagged variables eliminate per-candidate renaming.
+
+\item[Tail-call optimization]
+  \code{TAIL\_REENTER} trampoline (\code{goto tail\_call}) for
+  single-result \code{let}, \code{chain}, \code{let*}, \code{if},
+  \code{case}, \code{function}/\code{return}.  15~call sites in
+  \code{eval.c}.
+
+\item[Structured space kinds]
+  Queue (FIFO), hash (O(1) lookup), stack (LIFO), in addition to
+  the default equation-indexed space.
+
+\item[Pluggable match backends]
+  Native hash-indexed, \PathMap{}/\MORK{}-backed, and compiled-space
+  backends, selected per-space via \code{space-set-match-backend!}.
+
+\item[Two-stage stdlib]
+  Standard library precompiled into a binary blob at build time
+  (\code{cetta-stage0} $\to$ \code{--compile-stdlib} $\to$ blob $\to$
+  \code{cetta}).  6\,ms startup.
+
+\item[Unlimited fuel]
+  Default fuel is $-1$ (unlimited).  Stack overflow caught via
+  \code{sigaltstack} + \code{SIGSEGV} handler.
+
+\item[Effect classification]
+  \code{cetta\_effect\_policy.h}: 13 effect classes with memo policy,
+  scheduler policy, and lowering eligibility.  Backed by Lean contracts.
+
+\item[Runtime counters]
+  50 counters (hashcons inserts/hits, bindings operations, table
+  hits/misses, space revision bumps, etc.) exposed via
+  \code{runtime-stats!}.
+
+\item[Module system]
+  \code{import!}, \code{include}, \code{register-module!},
+  \code{git-module!}, module inventory.
+
+\item[Python FFI]
+  Default build links Python 3; \code{call-native!} dispatches to
+  Python callables.
+
+\item[\MORK{} bridge]
+  Optional static or dynamic link to \MORK{}/\PathMap{} for
+  persistent indexed spaces via \code{.act} format.
+\end{description}
+
+\subsection{Lean Verification State}
+
+5,400+ lines of sorry-free Lean proof establishing:
+\begin{itemize}
+\item \HE{}$\leftrightarrow$\PeTTa{} semantic correspondence on the pure
+  fragment, including import commutativity.
+\item \code{EvalSpec} inductive operational semantics (\code{EvalAtom},
+  \code{MettaCall}, \code{InterpretExpression}, \code{InterpretArgs},
+  \code{InterpretFunction}, \code{InterpretTuple}).
+\item Typed-apply machine: 7 invariants, \code{ProvenanceInvariant},
+  \code{applyComplete\_sound\_structure}.
+\item \code{BindingConsistency}: loop-freedom preserved through evaluation.
+\item \code{OwnershipInvariant}: 3-way target safety classification
+  for the running-stack contract.
+\item \code{TypedApplySoundness}: machine emissions $\to$
+  \code{InterpretArgs} derivations via \code{MachineArgChain}.
+\end{itemize}
+
+%% ────────────────────────────────────────────────────────────────────
+\section{Performance Baseline}
+\label{sec:perf}
+
+All measurements on the same machine, 2026-04-07.
+
+\begin{center}
+\begin{tabular}{lrrrrr}
+\toprule
+Benchmark & \PeTTa{} & \CeTTa{} main & \HE{} & Notes \\
+\midrule
+countdown 100k   & 0.15\,s / 17\,MB  & 1.70\,s / 347\,MB & ---          & tail recursion \\
+fib 25           & 0.23\,s / 17\,MB  & 5.48\,s / 1023\,MB & timeout      & exponential \\
+N-queens 8 [92]  & ---               & 2.69\,s / 586\,MB  & timeout      & nondeterministic \\
+metamath d5 bc   & 31\,s / 3.7\,GB   & OOM @ 6\,GB        & timeout      & 85K proof trees \\
+backchain 60 ent & ---               & correct             & correct      & depth-1 \\
+matchjoin 6$\times$6 & ---           & correct (216)       & correct      & 2-hop join \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\paragraph{Key gap.}
+\PeTTa{} is 10--30$\times$ faster on recursive workloads.  The advantage
+comes from the \WAM{} (last-call optimization, heap-allocated environments,
+efficient backtracking) and SWI-Prolog's tabling infrastructure.
+\CeTTa{}'s \code{TAIL\_REENTER} handles the single-result case but
+multi-result nondeterministic evaluation still allocates \code{OutcomeSet}
+arrays on every recursive call.
+
+%% ────────────────────────────────────────────────────────────────────
+\section{Core-Opt Epoch: Attempted Optimizations}
+\label{sec:coreopt}
+
+Branch \code{core-opt}, commit \code{2b4b826} (``PROBABLY BUGGY WIP'').
+Test suite: 259 passed, 99 failed, 28 skipped.  \textbf{95 extra failures}
+vs.\ main.
+
+\subsection{Features Attempted}
+
+\begin{center}
+\begin{longtable}{p{4cm}p{3cm}p{1.2cm}p{5cm}}
+\toprule
+Feature & File(s) & Status & Bug \\
+\midrule
+\endhead
+Query cache with interleaved staging &
+  \code{eval.c} &
+  Buggy &
+  \code{QueryCacheVisitCtx} interleaves staging and forwarding.
+  \textbf{Caution:} GPT-5.4~Pro found that query caching is only
+  active when \code{search-table-mode} is set to \code{variant}
+  (not the default).  The plain countdown O($n^2$) regression has
+  a \emph{different, unidentified} root cause
+  (\S\ref{sec:stale}). \\
+\addlinespace
+\code{bindings\_clone\_merge\_ground\_simple} fast path &
+  \code{eval.c} &
+  Buggy &
+  Silent wrong merges.  N-queens, unique, metamath return empty
+  or wrong results. \\
+\addlinespace
+Bindings lookup index (open-addressed hash) &
+  \code{match.c} &
+  Buggy &
+  ``Unsound in long-running workloads.''  Incorrect lookups. \\
+\addlinespace
+\code{match\_pattern\_candidate} + \code{needs\_loop\_check} skip &
+  \code{space.c}, \code{space\_match\_backend.c} &
+  Buggy &
+  Skips \code{bindings\_has\_loop} when it shouldn't.
+  Produces looping bindings. \\
+\addlinespace
+HashConsTable on eval arena (owned) &
+  \code{main.c}, \code{atom.c} &
+  Buggy &
+  Invalidated on arena reset between \code{!}~commands.
+  hashcons-insert counter shows 0. \\
+\addlinespace
+NativeResumeStack for \code{let}/\code{chain} &
+  \code{eval.c} &
+  Regression &
+  Replaced \code{TAIL\_REENTER} with full stack frame allocation.
+  \textbf{Destroys TCO} that main already has.
+  GPT-5.4~Pro confirmed this is a \emph{semantic} regression, not
+  merely a performance one: \code{countdown-let~5000} returns
+  wrong answers, not just slowly.  The \code{borrowed\_hashcons}
+  test failure was actually masked by this bug, not a real hashcons
+  issue. \\
+\bottomrule
+\end{longtable}
+\end{center}
+
+\subsection{Collateral Damage}
+
+In addition to the 6 buggy features, core-opt:
+\begin{itemize}
+\item Deleted \code{metta\_eval\_bind\_typed} (type-directed evaluation
+  used in 3 call sites on main).
+\item Deleted \code{cetta\_effect\_policy.h} (Lean-contract-backed effect
+  classification).
+\item Deleted the 28-line canonicalization boundary comment in
+  \code{term\_universe.c} (with Lean verification references).
+\item Bloated \code{eval.c} from 7,320 to 12,596 lines (+72\%) by adding
+  55 NativeResumeStack consumer/frame functions.
+\item Changed \code{bindings\_clone} to \code{bindings\_move} in
+  \code{subst\_tree.c} (potential use-after-free).
+\end{itemize}
+
+\subsection{Codex ``Fix'' Session (Reverted)}
+
+A subsequent Codex session attempted to fix the bugs by \emph{disabling
+all 6 optimizations}: hardcoding \code{return false} for the lookup index,
+removing the fast merge call, replacing \code{match\_pattern\_candidate}
+with \code{match\_atoms}, and disabling the eval-arena hashcons entirely.
+This made tests pass (336/3/47) but produced a branch functionally
+identical to main --- zero net-new work.  The TCO for \code{let}/\code{chain}
+that Codex ``re-added'' already existed on main.  These changes were reverted.
+
+\subsection{GPT-5.4 Pro Triage (2026-04-07)}
+\label{sec:stale}
+
+An independent GPT-5.4~Pro review of the same bundle found that the
+bug ordering in our original diagnosis had drifted:
+
+\begin{enumerate}
+\item \textbf{The query-cache O($n^2$) diagnosis is stale.}
+  Query caching is gated behind \code{search-table-mode = variant},
+  which is off by default.  The plain \code{countdown 100k} regression
+  has a \emph{different, unidentified root cause} that persists even
+  after restoring the \code{let}/\code{chain} fast path.  After
+  GPT-5.4~Pro's surgical patch: countdown 5K = 0.98\,s, 10K = 5.82\,s
+  --- still quadratic, but from a different subsystem.
+
+\item \textbf{The \code{let}/\code{chain} regression is semantic.}
+  \code{countdown-let 5000} returns assertion mismatches (wrong answers),
+  not just slowness.  The \code{borrowed\_hashcons} test was a false red:
+  it passed once \code{let}/\code{chain} were restored.
+
+\item \textbf{One surgical patch fixes 6/6 bundled tests.}
+  Restoring main's eager-eval + \code{TAIL\_REENTER} path for
+  \code{let} and \code{chain} in \code{metta\_call} moves the
+  bundled fence from 3/6 to 6/6.  Patch provided:
+  \code{cetta\_let\_chain\_tco\_salvage.patch}.
+
+\item \textbf{The NativeResumeStack work is not junk.}
+  The mistake was applying the general stack machine where the cheap
+  deterministic fast path already existed and was correct.  The right
+  design is hybrid: \code{TAIL\_REENTER} for single-result fast paths,
+  \code{NativeResumeStack} only for genuinely deferred/multi-result
+  paths.
+
+\item \textbf{Benchmark claims must be regenerated, not hand-carried.}
+  If a root-cause story changes, the bug documentation must change
+  with it.  The current branch demonstrates exactly why.
+\end{enumerate}
+
+\subsection{Verdict}
+
+The core-opt branch is not mergeable.  Treat it as a quarry of ideas
+and code, not a trustworthy head.  The recommended path is to start a
+salvage branch from main and cherry-pick proven pieces one at a time
+(\S\ref{sec:cherrypick}), with every step gated by the capability
+ledger (\S\ref{sec:ledger}).
+
+%% ────────────────────────────────────────────────────────────────────
+\section{Planned: Cherry-Pick Roadmap}
+\label{sec:cherrypick}
+
+Start a salvage branch from main (340/0/50).  Each step ports one piece,
+gated by the full capability ledger (\S\ref{sec:ledger}).
+
+\begin{enumerate}[label=\textbf{Step \arabic*.}]
+\item \textbf{Restore \code{let}/\code{chain} TCO + add canaries.}
+  Apply GPT-5.4~Pro's \code{cetta\_let\_chain\_tco\_salvage.patch}:
+  restore main's eager-eval + \code{TAIL\_REENTER} path in
+  \code{metta\_call}.  Add \code{countdown-let~5000} and
+  \code{countdown-chain~5000} as permanent regression tests.
+  Then \emph{re-measure plain countdown} to identify the real root
+  cause of the remaining quadratic scaling.
+
+\item \textbf{Diagnose the real countdown regression.}
+  GPT-5.4~Pro confirmed the query cache is not the cause (it is
+  off by default).  Profile the actual hot path.  Candidates:
+  \code{OutcomeSet} reallocation, \code{bindings\_clone} in equation
+  dispatch, arena fragmentation, or a different quadratic interaction.
+  Do not proceed to further optimizations until this is understood.
+
+\item \textbf{TableStore / tabling.}
+  Self-contained (\code{table\_store.c}, 209-line diff).  Biggest
+  potential win: variant tabling can memoize repeated subgoals in
+  backward chaining, closing the metamath d5 gap with \PeTTa{}.
+  Requires the collect-then-visit query cache pattern (already on main).
+
+\item \textbf{HashCons ownership model.}
+  Port \code{ARENA\_HASHCONS\_BORROWED} / \code{ARENA\_HASHCONS\_OWNED\_LOCAL}
+  from \code{atom.c}/\code{atom.h} (86-line diff).  Fix the arena-reset
+  invalidation bug \emph{before} porting: the owned hashcons must survive
+  \code{arena\_reset} between \code{!}~commands.
+
+\item \textbf{Bindings lookup index.}
+  Port the open-addressed hash table from \code{match.c} (816-line diff).
+  Fix the soundness bug first: write a C-level unit test that exercises
+  large binding sets ($\geq 64$ entries) with collisions, then fix the
+  index before enabling it.
+
+\item \textbf{\code{match\_pattern\_candidate}.}
+  Port from \code{space.c} and \code{space\_match\_backend.c} (326 + 383
+  line diffs).  Fix the \code{needs\_loop\_check} invariant: if the
+  function says no loop check is needed, it must be \emph{impossible}
+  for the resulting bindings to contain a loop.
+
+\item \textbf{Query cache streaming} (if needed).
+  Main's collect-then-visit is correct and O($n$).  Defer unless
+  profiling shows it as a bottleneck.
+\end{enumerate}
+
+\paragraph{Gate.} Each step must satisfy:
+\begin{itemize}
+\item Full test suite: $\geq 340$ passed, 0 failed.
+\item Benchmark matrix: no regression $> 10$\% vs.\ main on any
+  benchmark in \S\ref{sec:perf}.
+\item No feature deletions (no removing \code{cetta\_effect\_policy.h},
+  \code{metta\_eval\_bind\_typed}, documentation, etc.).
+\end{itemize}
+
+%% ────────────────────────────────────────────────────────────────────
+\section{Planned: Typed Ordinary Application}
+\label{sec:typed}
+
+The remaining deep-benchmark blocker: typed ordinary-function application
+falls out of the native control flow into direct-style recursive C,
+causing stack overflow on \code{bench\_bio\_bc\_deep.metta}.
+
+\subsection{Problem}
+
+When the evaluator encounters a typed application \code{(f arg1 arg2)}
+where \code{f} has a function type, it dispatches through
+\code{metta\_call}, which re-enters evaluation recursively.  For deep
+constructor-shaped typed terms (common in PLN backward chaining), this
+amplifies C stack usage until overflow.
+
+\subsection{Solution Direction}
+
+An explicit-stack typed argument evaluator:
+\begin{enumerate}
+\item Evaluate each argument with explicit accumulation (no C recursion).
+\item Join barrier: wait for all arguments before call-term reconstruction.
+\item Redispatch through the main evaluation loop (not \code{metta\_call}).
+\end{enumerate}
+
+This is the \emph{right} place for the NativeResumeStack infrastructure ---
+typed application is genuinely complex and needs frame-based control.
+But it must \emph{not} replace the working \code{TAIL\_REENTER} paths
+for \code{let}/\code{chain}/\code{if}/\code{case}.
+
+\subsection{Lean Oracle Support}
+
+From the Lean formalization side (per \code{CLAUDE\_LEAN\_SUPPORT.md}):
+\begin{enumerate}
+\item Formalize \code{IsValue} vs.\ \code{IsReducible} --- make
+  ``no equations $=$ value'' formally impossible.
+\item Formalize direct vs.\ frame-based typed application as two
+  evaluators, prove they agree on outcomes.
+\item Formalize the ownership invariant for deferred targets.
+\item Formalize visible-binding projection / branch-delta correctness.
+\end{enumerate}
+
+Existing Lean artifacts (\code{TypedApplyMachine.lean},
+\code{OwnershipInvariant.lean}, \code{BindingConsistency.lean})
+provide foundations; the gap is the \code{IsValue} split and the
+direct$\approx$frame equivalence.
+
+%% ────────────────────────────────────────────────────────────────────
+\section{Planned: Demand-Driven Evaluation}
+\label{sec:demand}
+
+The 4-phase roadmap from the April~5 development checkpoint:
+
+\begin{description}[style=nextline]
+\item[Phase 0: Bug-first cleanup]
+  \code{match.c} memo audit, conjunction lowering audit.
+  Semantic fence only.
+
+\item[Phase 1: Conjunction ordering]
+  Order conjuncts by selectivity estimate.  Measure on medium ladder
+  + variant bio.
+
+\item[Phase 2: Tabling cost reduction]
+  Optimize the \code{TableStore} so tabling is a net win on medium and
+  deep bio workloads.  Measure variant vs.\ plain on medium + one deep
+  PLN witness.
+
+\item[Phase 3: Demand-driven visitor path]
+  Visitor as primary seam, explicit frame/worklist.
+  Deep bio gate, PLN witnesses, then milestone ladder.
+
+\item[Phase 4: Trail/watermark execution spine]
+  Reusable \code{SearchContext} threading.
+  Full convergence to one canonical evaluator.
+\end{description}
+
+\paragraph{Red flags.}
+Any binding mutation without exact rollback proof.
+Any speedup that breaks FC/bio witnesses.
+Letting medium benchmarks alone steer architectural choices.
+Mid-phase constant-factor measurement churn.
+
+%% ────────────────────────────────────────────────────────────────────
+\section{Planned: \MORK{} and \PathMap{}}
+\label{sec:mork}
+
+From the MorkSpace boundary review (April~3):
+
+\begin{itemize}
+\item \code{mork:} is now a distinct public lane with explicit boundary.
+  Generic \code{(new-space mork)} is disabled; use \code{mork:open-act!}.
+\item \textbf{Open:} \code{mork:close-space!} handle pool lifecycle.
+\item \textbf{Open:} Write-side public surgery semantics.
+\item \textbf{Open:} \PathMap{} bridge ABI v2 (query-side-only bindings,
+  varid dictionary, binary value encoding).
+  Spec draft in \code{specs/pathmap\_bridge\_varid\_abi.json}.
+\item \MORK{}/\PathMap{} should share semantics with the native backend ---
+  ``a premium backend, not a second language'' (architecture primer).
+\end{itemize}
+
+%% ────────────────────────────────────────────────────────────────────
+\section{Lean Formalization Frontier}
+\label{sec:lean}
+
+\subsection{Completed (sorry-free)}
+
+\begin{itemize}
+\item \code{EvalSpec.lean}: inductive operational semantics (6 mutual relations).
+\item \code{Eval.lean} + \code{Correctness.lean}: computable evaluator +
+  soundness (\code{evalAtom\_sound}, \code{interpretArgs\_sound}).
+\item \code{TypedApplyMachine.lean}: abstract machine with 7 invariants.
+\item \code{TypedApplyDirect.lean}: direct recursive evaluator with
+  \code{mergeEnv}/\code{extendBinder}.
+\item \code{TypedApplySoundness.lean}: \code{MachineArgChain} $\to$
+  \code{InterpretArgs} bridge.
+\item \code{BindingConsistency.lean}: loop-freedom preservation.
+\item \code{OwnershipInvariant.lean}: 3-way target safety.
+\item \code{ArgFrameMachine.lean}: argument-processing frame machine.
+\item HE$\leftrightarrow$PeTTa translation correspondence (5,400+ lines).
+\end{itemize}
+
+\subsection{Needed}
+
+\begin{enumerate}
+\item \textbf{\code{IsValue}/\code{IsReducible} formalization.}
+  Precise definition of which atoms are values vs.\ reducible.
+  Must rule out ``no equations $=$ value'' as unsound.
+  Positive examples (symbols, grounded values) and negative examples
+  (arithmetic expressions, nested \code{if}).
+
+\item \textbf{Direct $\approx$ frame-based equivalence.}
+  Prove that direct recursive typed application and frame-based
+  typed application agree on observable outcomes.
+  Supports the C refactor in \S\ref{sec:typed}.
+
+\item \textbf{Visible-binding projection correctness.}
+  Formalize the branch-delta transport discipline: rewriting bodies
+  with visible bindings and carrying only the local delta forward.
+
+\item \textbf{Tabling correctness.}
+  Connect \code{TableStore} semantics to \code{EvalSpec}: cached
+  answers are sound (subset of complete evaluation).
+\end{enumerate}
+
+%% ────────────────────────────────────────────────────────────────────
+\section{Specification Artifacts}
+\label{sec:specs}
+
+Seven JSON specification files in \code{specs/}:
+
+\begin{center}
+\begin{tabular}{lp{8cm}}
+\toprule
+File & Contents \\
+\midrule
+\code{runtime\_callables.json} &
+  100+ callable registry with arity, effect class, profile membership,
+  oracle status. \\
+\code{runtime\_effect\_classes.json} &
+  13 effect classes with memo and scheduler policies. \\
+\code{he\_runtime\_3layer\_matrix.json} &
+  25/25 kernel, 69/69 grounded, 70/70 stdlib implemented. \\
+\code{runtime\_surface\_audit.json} &
+  Positive/negative test coverage for MinimalMeTTa surfaces. \\
+\code{he\_backend\_choice\_audit.json} &
+  Compatibility policy for HE-facing surfaces. \\
+\code{pathmap\_bridge\_varid\_abi.json} &
+  Draft ABI v2 for the \CeTTa{}$\leftrightarrow$\MORK{} bridge. \\
+\code{he\_runtime\_impl\_matrix.json} &
+  Cross-layer implementation status matrix. \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+%% ────────────────────────────────────────────────────────────────────
+\section{Capability Ledger}
+\label{sec:ledger}
+
+A capability ledger tracks every nontrivial evaluator guarantee as a
+named contract with witnesses and a code anchor.  Every serious branch
+update must preserve the entire ledger.  This prevents the failure mode
+where ``the model optimizes for the last thing it touched''
+(GPT-5.4~Pro).
+
+\begin{center}
+\begin{longtable}{p{3.8cm}p{3.5cm}p{2.5cm}p{3cm}}
+\toprule
+Guarantee & Semantic witness & Perf witness & Code anchor \\
+\midrule
+\endhead
+
+\code{let} single-result TCO &
+  \code{countdown-let 5000} $\to$ \code{done} &
+  wall time, no stack overflow &
+  \code{metta\_call} let fast path, \code{TAIL\_REENTER} \\
+\addlinespace
+
+\code{chain} single-result TCO &
+  \code{countdown-chain 5000} $\to$ \code{done} &
+  wall time, no stack overflow &
+  \code{metta\_call} chain fast path, \code{TAIL\_REENTER} \\
+\addlinespace
+
+\code{let*} desugaring TCO &
+  nested \code{let*} $\to$ \code{let} chain &
+  tail special forms test &
+  \code{metta\_call} let* handler \\
+\addlinespace
+
+\code{if} single-result TCO &
+  \code{countdown 100k} $\to$ \code{done} &
+  $< 2$\,s on main &
+  \code{metta\_call} if handler, \code{TAIL\_REENTER} \\
+\addlinespace
+
+\code{select}/\code{once} stop &
+  \code{test\_select\_match\_stop} &
+  terminates &
+  select consumer stop propagation \\
+\addlinespace
+
+Match transport order &
+  \code{test\_match\_transport\_order} &
+  correct order &
+  match source delivery \\
+\addlinespace
+
+\code{let*} visible env &
+  \code{test\_let\_star\_visible\_env\_many\_vars} &
+  correct bindings &
+  body-visible projection \\
+\addlinespace
+
+Equation dispatch &
+  \code{he\_b1\_equal\_chain} &
+  correct chaining &
+  \code{query\_equations} \\
+\addlinespace
+
+Typed application &
+  \code{he\_d5\_auto\_types} &
+  correct &
+  \code{metta\_eval\_bind\_typed} \\
+\addlinespace
+
+Grounded ops &
+  \code{he\_c1\_grounded\_basic} &
+  correct &
+  grounded dispatch \\
+\addlinespace
+
+Build cleanliness &
+  \code{make BUILD=core} &
+  zero warnings &
+  Makefile + all headers \\
+\addlinespace
+
+Effect classification &
+  compile-time &
+  --- &
+  \code{cetta\_effect\_policy.h} \\
+\addlinespace
+
+Hashcons sharing &
+  \code{test\_borrowed\_hashcons} &
+  insert count $> 0$ &
+  \code{HashConsTable} on persistent arena \\
+\addlinespace
+
+Full test suite &
+  \code{make test} $\geq 340$/0 &
+  $< 5$\,min &
+  Makefile test target \\
+
+\bottomrule
+\end{longtable}
+\end{center}
+
+\paragraph{Usage.}
+Before any branch update that touches the evaluator core, generate a
+report covering:
+\begin{itemize}
+\item build status,
+\item canary test matrix (every semantic witness above),
+\item benchmark mini-matrix (every perf witness above),
+\item changed files touching evaluator core,
+\item which optimization flags are on.
+\end{itemize}
+If any row in the ledger regresses, the update does not land until the
+regression is fixed or explicitly approved.
+
+%% ────────────────────────────────────────────────────────────────────
+\section{Principles}
+\label{sec:principles}
+
+Extracted from review bundle guidance and development experience:
+
+\begin{enumerate}
+\item \textbf{No shortcuts for speed.}
+  The ``no equations $=$ constructor value'' hack broke arithmetic and
+  nested evaluation.  Speed improvements that violate semantics always
+  regress later.
+
+\item \textbf{Semantic fence first.}
+  Before optimizing, run the witness set (medium benchmarks, deep
+  benchmarks, structural canaries).  Never let one benchmark steer
+  architecture.
+
+\item \textbf{Ablate optimizations.}
+  Never bundle 6 features.  Port and verify them one at a time so
+  breakage is isolated.
+
+\item \textbf{Lean as oracle.}
+  Formalize the right invariants first, then implement in C.
+  Not the other way around.
+
+\item \textbf{Phase discipline.}
+  Don't optimize until the previous phase terminates correctly.
+  Measurement mid-phase is churn.
+
+\item \textbf{Keep default healthy.}
+  Experimental gates (\code{CETTA\_EXPERIMENT\_*}) let two paths
+  coexist safely during refactoring.
+
+\item \textbf{Preserve what works.}
+  Do not delete working features (\code{TAIL\_REENTER},
+  \code{cetta\_effect\_policy.h}, \code{metta\_eval\_bind\_typed})
+  to ``make room'' for new code.  Add, don't replace, until the
+  replacement is proven correct.
+
+\item \textbf{Capability ledger, not just a roadmap.}
+  Track guarantees you already had, not just features you hope to add.
+  Every guarantee needs a semantic witness, a performance witness, and
+  a code anchor.  The ledger is mandatory for every evaluator-touching
+  branch update (\S\ref{sec:ledger}).  ``The model will optimize for the
+  last thing it touched unless the branch itself tells the truth''
+  (GPT-5.4~Pro).
+
+\item \textbf{Regenerate, don't hand-carry.}
+  Benchmark claims and bug root-cause stories must be regenerated from
+  the actual current source, not inherited from prior sessions.  If the
+  code changed, the diagnosis may have changed with it.  The core-opt
+  triage demonstrated this: the query-cache O($n^2$) diagnosis was
+  correct for an earlier state but stale for the current code.
+
+\item \textbf{Hybrid fast-path / frame-machine design.}
+  Use \code{TAIL\_REENTER} for deterministic single-result fast paths
+  (\code{let}, \code{chain}, \code{if}, \code{case}).  Use
+  \code{NativeResumeStack} only for genuinely deferred, multi-result,
+  or owned-state paths (typed application, collapse, fold, select).
+  Never replace the cheap path with the general mechanism.
+\end{enumerate}
+
+%% ────────────────────────────────────────────────────────────────────
+%% No \bibliography --- this is a development document, not a paper.
+
+\end{document}
