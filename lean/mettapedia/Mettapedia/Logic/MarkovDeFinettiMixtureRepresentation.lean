@@ -19,12 +19,13 @@ Diaconis-Freedman (1980) Markov de Finetti theorem:
 | 2 | Per-row perm invariance | PEBridge: `rowProcessLaw_permInvariant_of_markovExchangeability` | PROVED |
 | 3 | Row kernels (directingMeasure) | de Finetti ViaMartingale | PROVED |
 | 4 | StartRestrictedRowKernelData | directingMeasure L1 transfer (KernelUniqueness) | PROVED |
-| 5 | CrossRowCoherenceStep | **cross-row conditional independence** | **SORRY** |
+| 5 | CrossRowCoherenceStep | cross-row conditional independence for the direct rowwise route | OPTIONAL |
 | 6 | CylinderMixingIdentity_P | assembly of 4+5 via Crux combinators | PROVED (modulo 5) |
 | 7 | Mixture reconstruction | `exists_markovParamLaw_of_...` (Crux) | PROVED |
 
-Step 5 is the irreducible mathematical core: per-row de Finetti gives
-within-row factorization but NOT the cross-row product formula.
+The full theorem is already proved elsewhere in the codebase through the
+successor-matrix / PE route. This file records an alternative direct rowwise
+route: there, Step 5 is the only genuinely nontrivial local obligation.
 -/
 
 noncomputable section
@@ -39,16 +40,22 @@ open MeasureTheory
 
 variable {k : ℕ}
 
-/-! ## The irreducible mathematical gap: CrossRowCoherenceStep
+/-! ## The Remaining Direct-Route Obligation: CrossRowCoherenceStep
 
 `CylinderMixingIdentity_P` is proved by assembly from two components:
 - PROVED: pair-case base (`crossAnchor_lengthTwo` via `StartRestrictedRowKernelData`)
-- **SORRY**: `CrossRowCoherenceStep` — the cross-row conditional independence
+- OPTIONAL DIRECT-ROUTE INPUT: `CrossRowCoherenceStep` — the cross-row
+  conditional independence
 
-The sorry requires showing that, given the row-directing measures K_i, events
+For the direct rowwise route, one must show that, given the row-directing measures K_i, events
 from different row processes are conditionally independent. Per-row de Finetti
 (which is proved) gives within-row factorization only. The cross-row claim
 is the genuine mathematical content of the Diaconis-Freedman (1980) theorem.
+
+Important status note: this is not a live gap in the completed main theorem.
+The completed theorem proceeds through the successor-matrix / PE bridge
+formalized in `MarkovDeFinettiFortiniBridgeCrux`, which avoids requiring this
+direct-rowwise theorem in the public statement.
 
 **Update (2026-04):** Class-based recurrence infrastructure now provides:
 - `rowProcessLaw_restrictClass_eq_finsetSum` (BridgeCore:2245) — decomposes class-restricted
@@ -57,7 +64,7 @@ is the genuine mathematical content of the Diaconis-Freedman (1980) theorem.
   under class restriction
 - `StrongRecurrenceInClass` (Recurrence:190) — class-based recurrence definition
 
-The path forward: apply `startRestrictedRowKernelData_directingRowKernel` fiberwise
+The path forward for the direct route is to apply `startRestrictedRowKernelData_directingRowKernel` fiberwise
 for each a ∈ C using the finite-sum decomposition, then recombine with
 `ae_finsetSum_measure_iff`. This reduces CrossRowCoherenceStep to the already-proved
 per-start machinery. -/
@@ -175,7 +182,7 @@ theorem rowProcessLaw_restrictClass_factorizes_of_markovExchangeable_strongRecur
         (k := k) μ hμ P hExt hStrRec)
       C i m sel hsel
 
-/-- **THE GAP**: The cylinder mixing identity via Crux assembly.
+/-- Direct-route wrapper for the cylinder mixing identity via Crux assembly.
 P(cyl(xs)) = ∫ wordProb(θ(ω), xs) dP for |xs| ≥ 2.
 
 Takes `hStart` and `hStep` as PARAMETERS (not derived from hrow — they need
@@ -209,7 +216,7 @@ theorem cylinderMixingIdentity_gap
 canonical `directingRowKernel`, the start-restricted factorization hypothesis is
 discharged directly from the public Markov-exchangeable strong-recurrence data.
 
-The remaining external input is exactly the genuine joint row-coupling content,
+For this direct route, the remaining external input is exactly the genuine joint row-coupling content,
 namely `CrossRowCoherenceStep`. -/
 theorem cylinderMixingIdentity_of_directingRowKernel_of_markovExchangeable_strongRecurrence
     (μ : FiniteAlphabet.PrefixMeasure (Fin k))

@@ -1,0 +1,2 @@
+import Mettapedia.AutoBooks.Codex.SevenSketches.Chapter1.PowerSetAdjunction
+import Mettapedia.AutoBooks.Codex.SevenSketches.Chapter1.GaloisConnections
