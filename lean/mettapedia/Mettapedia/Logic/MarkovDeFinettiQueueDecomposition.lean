@@ -39,7 +39,7 @@ lemma sum_outVisitCount_eq {N : ℕ} (xs : Fin (N + 1) → Fin k) :
   have h := Finset.sum_card_fiberwise_eq_card_filter
     (univ : Finset (Fin N)) (univ : Finset (Fin k))
     (fun t => xs (Fin.castSucc t))
-  simp only [Finset.mem_univ, forall_const, Finset.filter_True] at h
+  simp only [Finset.mem_univ, Finset.filter_true] at h
   simpa [Finset.card_univ, Fintype.card_fin] using h
 
 /-! ## Section 2: 1D start-restricted perm invariance from carrier transport -/

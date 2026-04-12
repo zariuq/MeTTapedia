@@ -11,9 +11,9 @@ import Mettapedia.Logic.MarkovExchangeability
 # Carrier Transport Core: Segment Swap Infrastructure
 
 Ported from `_archive/MarkovDeFinetti/Logic/MarkovDeFinettiHardExcursionBridge.lean`
-(1,206 lines, 0 sorry) into the active framework. Only the core segment-swap
-definitions and properties are ported; the fiber/prefixFiber/stateOfTraj infrastructure
-from the archive is NOT needed because the active framework uses `evidenceOf` directly.
+(1,206 lines, 0 sorry) into the active framework. This file focuses on the
+core segment-swap definitions and properties. The finite evidence/fiber layer
+now lives separately in `Mettapedia.Logic.MarkovDeFinettiEvidenceBasis`.
 
 ## Archived files referenced but not imported
 

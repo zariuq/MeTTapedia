@@ -913,7 +913,7 @@ theorem rawSwap_selfInverse {N : ℕ}
 
 /-- Forward membership: rawSwap of carrier_n member lands in carrier_{n+1}. -/
 theorem rawSwap_fwd_mem {N : ℕ}
-    (i : Fin k) (b : Fin k) (hbi : b ≠ i) (n : ℕ)
+    (i : Fin k) (b : Fin k) (_hbi : b ≠ i) (n : ℕ)
     (xs : Fin (N + 1) → Fin k)
     (hxs : xs ∈ rowVisitCylinderEventUpToPrefixCarrier (k := k)
       i ({n} : Finset ℕ) (fun j => if j = n then b else i) N)
@@ -957,7 +957,7 @@ theorem rawSwap_fwd_mem {N : ℕ}
 
 /-- Reverse membership: rawSwap of carrier_{n+1} member lands in carrier_n. -/
 theorem rawSwap_bwd_mem {N : ℕ}
-    (i : Fin k) (b : Fin k) (hbi : b ≠ i) (n : ℕ)
+    (i : Fin k) (b : Fin k) (_hbi : b ≠ i) (n : ℕ)
     (ys : Fin (N + 1) → Fin k)
     (hys : ys ∈ rowVisitCylinderEventUpToPrefixCarrier (k := k)
       i ({n + 1} : Finset ℕ) (fun j => if j = n + 1 then b else i) N)
@@ -1038,7 +1038,8 @@ theorem rawSwap_fwd_evid {N : ℕ}
     apply Fin.ext; show _ = extractVisitTime xs i (n + 2) hex2
     have heq1 : extractVisitTime xs i n hex0 + (extractVisitTime xs i (n + 1) hex1 - extractVisitTime xs i n hex0) = extractVisitTime xs i (n + 1) hex1 := Nat.add_sub_cancel' (Nat.le_of_lt ht01)
     have heq2 : extractVisitTime xs i (n + 1) hex1 + (extractVisitTime xs i (n + 2) hex2 - extractVisitTime xs i (n + 1) hex1) = extractVisitTime xs i (n + 2) hex2 := Nat.add_sub_cancel' (Nat.le_of_lt ht12)
-    simp only [Fin.val_mk]; omega
+    simp
+    omega
   have val1 : xs ⟨extractVisitTime xs i (n + 1) hex1, by omega⟩ = i := by
     have := h1.1; rwa [prefixExtend_apply_le' xs (Nat.le_of_lt hbd1)] at this
   have val2 : xs ⟨extractVisitTime xs i (n + 2) hex2, by omega⟩ = i := by

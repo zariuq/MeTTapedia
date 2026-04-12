@@ -854,7 +854,18 @@ exchangeability$\to$sufficiency story from the binary/Beta case
 (proved above) to Dirichlet-Multinomial and continuous Normal-Gamma
 cases---but the terminal \code{WorldModel}~\code{(Measure}~$\Omega$%
 \code{)}~\code{Query} instance assembling these pieces remains future
-work.}
+work.  \textbf{Markov extension (April 2026):} The Diaconis--Freedman
+(1980) theorem---the Markov-exchangeable analogue where transition
+counts replace binary counts---is now fully formalized in
+\codepath{Mettapedia/Logic/MarkovDeFinetti*.lean} (28~files,
+${\sim}$23{,}900~lines, 0~sorry).  The crown theorem
+\code{startRestrictedRowKernelData\_directingRowKernel} establishes
+that the canonical directing kernel satisfies start-restricted
+row-kernel data, completing the representation theorem for
+Markov-exchangeable recurrent prefix measures.  This extends the
+evidence-sufficiency story: under Markov exchangeability, the
+transition-count matrix $N(i,j)$ is sufficient for Bayesian updating
+over finite-state Markov chains.}
 
 
 \section{The Universal Property of the World-Model Interface}

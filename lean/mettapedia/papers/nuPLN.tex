@@ -443,9 +443,13 @@ the sufficient statistics are transition-count style (Fortini/Markov exchangeabi
 and the predictor-performance side is still controlled by Solomonoff-style universal
 mixture bounds.
 
-Current scope note: the bridge theorem is conditional on the recurrent latent-coherence
-constructor interface used in the Fortini development.  This keeps the theorem honest and
-machine-checkable while isolating the exact remaining derivation gap to be minimized.
+\textbf{Status (April 2026):} The Markov de~Finetti formalization is now
+\emph{complete} with zero \texttt{sorry} across 23,899 lines. The crown theorem
+\texttt{startRestrictedRowKernelData\_directingRowKernel} establishes that the
+canonical directing kernel satisfies the start-restricted row-kernel data
+conditions, closing the final gap in the derivation chain. See the companion
+paper ``Directing Measures and Markov Mixtures: Formalizing Diaconis--Freedman
+1980 in Lean~4'' for full documentation.
 
 \section{conclusion}
 

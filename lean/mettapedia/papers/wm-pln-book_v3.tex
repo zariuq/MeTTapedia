@@ -2354,7 +2354,15 @@ exchangeability.%
 \footnote{See
 \codepath{Mettapedia/ProbabilityTheory/GiryMonad.lean}
 and
-\codepath{Mettapedia/ProbabilityTheory/DeFinettiConnection.lean}
+\codepath{Mettapedia/ProbabilityTheory/DeFinettiConnection.lean}.
+\textbf{Markov extension (April 2026):} The Diaconis--Freedman (1980)
+theorem---extending de~Finetti from i.i.d.\ to Markov-exchangeable
+sequences---is now fully formalized in
+\codepath{Mettapedia/Logic/MarkovDeFinetti*.lean} (28~files,
+${\sim}$23{,}900~lines, 0~sorry).  Under Markov exchangeability, the
+transition-count matrix $N(i,j)$ is the sufficient statistic,
+extending the chain: Markov exchangeability $\to$ Markov mixture
+$\to$ Dirichlet-per-row conjugacy $\to$ transition-count sufficiency.
 }%
 \footnote{Open program: the terminal
 \code{WorldModel (Measure $\Omega$) Query} instance remains future

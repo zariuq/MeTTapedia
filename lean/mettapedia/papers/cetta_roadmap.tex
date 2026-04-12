@@ -1,7 +1,10 @@
-%% CeTTa Development Roadmap
+%% CeTTa Project Roadmap
 %%
-%% Living document: what works, what's broken, what's planned.
-%% Build: pdflatex cetta_roadmap.tex
+%% A territory map, not a prescription.  Describes the landscape of
+%% PL design decisions, marks where we stand, acknowledges what we
+%% don't know, and points toward an idealized destination.
+%%
+%% Build: pdflatex cetta_roadmap.tex (3 passes)
 
 \documentclass[11pt]{article}
 \usepackage[T1]{fontenc}
@@ -14,16 +17,11 @@
 \usepackage{booktabs}
 \usepackage{listings}
 \usepackage{array}
-\usepackage{amsmath}
-\usepackage{amssymb}
+\usepackage{amsmath,amssymb}
 \usepackage{enumitem}
+\usepackage{xcolor}
 \setlength{\emergencystretch}{3em}
-\lstset{
-  basicstyle=\ttfamily\small,
-  breaklines=true,
-  frame=single,
-  columns=fullflexible
-}
+\lstset{basicstyle=\ttfamily\small,breaklines=true,frame=single,columns=fullflexible}
 
 \newcommand{\code}[1]{\texttt{#1}}
 \newcommand{\PeTTa}{\textup{PeTTa}}
@@ -32,717 +30,1367 @@
 \newcommand{\PathMap}{\textup{PathMap}}
 \newcommand{\MORK}{\textup{MORK}}
 \newcommand{\WAM}{\textup{WAM}}
+\newcommand{\XSB}{\textup{XSB}}
 
-\title{\CeTTa{} Development Roadmap\\
-\large What Works, What's Broken, What's Planned}
+\title{\CeTTa{} Project Roadmap:\\
+  \large A Territory Map for MeTTa Runtime Design}
 \author{Zar Goertzel \and Oru\v{z}i}
-\date{2026-04-07 (living document)}
+\date{Living document, started 2026-04-08}
 
 \begin{document}
 \maketitle
 
 \begin{abstract}
-This document tracks the development state of \CeTTa{}, a direct C
-runtime for the MeTTa language.  It consolidates information from
-the published \CeTTa{} paper, the conceptual architecture primer,
-7~runtime specification files, 10~review bundles produced during
-development, Lean formalization artifacts, a full audit of the
-\code{core-opt} branch conducted 2026-04-07, and an independent
-GPT-5.4~Pro triage of the same branch.  Its purpose is to prevent
-feature loss, regression blindness, and duplicated work across
-development sessions.  It includes a \emph{capability ledger}
-(\S\ref{sec:ledger}) that tracks every nontrivial evaluator guarantee
-with its semantic witness, performance witness, and code anchor.
+This document describes the \emph{territory} of programming language
+design decisions relevant to \CeTTa{}, a direct C runtime for MeTTa.
+It is not a checklist of steps to complete, but a map of the landscape:
+regions to explore, peaks worth climbing, valleys to avoid, and clouds
+of possibility where the best path remains uncertain.  We begin with
+an idealized vision of what \CeTTa{} could become at its very best,
+then survey the terrain of term representation, evaluation semantics,
+search control, and storage.  The journey so far is described as a
+continuous narrative, and future directions are presented as open
+questions rather than prescribed stages.
 \end{abstract}
 
 \tableofcontents
 
-%% ────────────────────────────────────────────────────────────────────
-\section{Current State: \CeTTa{} Main (v1.3.2-dev)}
-\label{sec:current}
+%% ════════════════════════════════════════════════════════════════════
+\part{The Ideal}
+%% ════════════════════════════════════════════════════════════════════
 
-Branch \code{main}, commit \code{c3f5e67}.
+\section{What Is the Very Best CeTTa Can Be?}
+\label{sec:ideal}
 
-\subsection{Test Suite}
+Before examining techniques, trade-offs, or current status, we ask the
+fundamental question: if we could design \CeTTa{} perfectly, what would
+it look like?  This is the \emph{Way of the Dotts}---define the idealized
+endpoint first, then work backwards.  The destination shapes the journey.
 
-\begin{center}
-\begin{tabular}{lrrr}
-\toprule
-Suite & Passed & Failed & Skipped \\
-\midrule
-\code{make test} (oracle + profile) & 340 & 0 & 50 \\
-\bottomrule
-\end{tabular}
-\end{center}
+\subsection{The Vision}
 
-The 50 skipped break down into: 17~MM2/MORK-specific, 2~pathmap
-regressions, 1~pretty-vars surface, 27~probe/translation files without
-\code{.expected} goldens, 3~Python-dependent tests in core builds.
+At its best, \CeTTa{} would be a \textbf{semantically authoritative,
+high-performance MeTTa runtime} with these properties:
 
-\subsection{Implemented Features}
+\paragraph{HE Fidelity as Baseline.}
+The Hyperon Experimental (\HE{}) semantics is not an aspiration but the
+foundation.  Every well-typed MeTTa program that runs correctly in \HE{}
+should produce the same observable results in \CeTTa{}.  Where \CeTTa{}
+extends beyond \HE{} (and it may), those extensions are explicit and
+documented, never silent behavioral drift.
 
-\begin{description}[style=nextline]
-\item[Arena allocation]
-  64\,KB blocks, batch deallocation at scope exit.  No per-atom
-  \code{malloc}/\code{free}.
+\paragraph{Three Cleanly Separated Concerns.}
+The mature systems we admire---E~Prover, \XSB{}, SWI-Prolog, Vampire---all
+eventually separate:
+\begin{itemize}
+\item \textbf{Semantics}: what the language means, independent of how
+  results are computed.
+\item \textbf{Search and control}: how the runtime explores the space of
+  possible reductions, manages nondeterminism, and returns results.
+\item \textbf{Storage and indexing}: where terms live, how they are
+  retrieved, and what backends support them.
+\end{itemize}
+These concerns interact, but they are not the same thing.  A clean
+separation means you can improve indexing without touching semantics,
+or change search strategy without breaking storage invariants.
 
-\item[HashConsTable]
-  Global term sharing on the persistent arena.  Hash-consed atoms
-  enable O(1) structural equality.  The eval arena does \emph{not}
-  have its own hashcons (see \S\ref{sec:coreopt}).
+\paragraph{One Shared Term Universe.}
+Every persistent term should have a stable identity owned by one canonical
+store.  Spaces are views or membership layers over that universe, not
+separate physical heaps.  This is what Schulz discovered after years of
+``a mess'' with multiple mutable term banks in E~Prover: the converged
+design uses one immutable term bank with multiple specialized indices.
 
-\item[SymbolId dispatch]
-  Symbol strings are interned into unique IDs at parse time.
-  All dispatch is integer comparison, not \code{strcmp}.  38\%
-  instruction reduction vs.\ string-based dispatch.
+\paragraph{Specialized Engines as Extensions, Not Core.}
+PLN backward chaining, ATP integration, factor-graph demand propagation,
+\MORK{} algebraic operations---these are valuable, but they are not the
+evaluator core.  They plug in through explicit interfaces.  The evaluator
+itself is one coherent substrate, not a patchwork of special cases.
 
-\item[Equation index]
-  Equations \code{(= lhs rhs)} are hashed by head symbol into 256
-  buckets, with a \code{SubstTree} discrimination trie within each
-  bucket.  Epoch-tagged variables eliminate per-candidate renaming.
+\paragraph{Performance Competitive with \PeTTa{}.}
+On recursive search benchmarks that exercise the \WAM{}'s strengths,
+\CeTTa{} should be competitive with \PeTTa{} while preserving \HE{}
+semantics that \PeTTa{} diverges from.  This is an engineering challenge,
+not a compromise of correctness.
 
-\item[Tail-call optimization]
-  \code{TAIL\_REENTER} trampoline (\code{goto tail\_call}) for
-  single-result \code{let}, \code{chain}, \code{let*}, \code{if},
-  \code{case}, \code{function}/\code{return}.  15~call sites in
-  \code{eval.c}.
+\paragraph{Formal Verification as Confidence Anchor.}
+Key invariants should be backed by Lean theorems: term canonicity,
+evaluator path equivalence, binding safety.  Not as checkboxes to tick,
+but as anchors that give us confidence when we're uncertain.
 
-\item[Structured space kinds]
-  Queue (FIFO), hash (O(1) lookup), stack (LIFO), in addition to
-  the default equation-indexed space.
+\subsection{One Semantic Contract, Many Execution Lanes}
 
-\item[Pluggable match backends]
-  Native hash-indexed, \PathMap{}/\MORK{}-backed, and compiled-space
-  backends, selected per-space via \code{space-set-match-backend!}.
+The best possible \CeTTa{} is not ``a faster C port of \HE{}.''  It is
+a \textbf{family of semantically equivalent execution engines} living
+under one contract.  At minimum, we envision:
 
-\item[Two-stage stdlib]
-  Standard library precompiled into a binary blob at build time
-  (\code{cetta-stage0} $\to$ \code{--compile-stdlib} $\to$ blob $\to$
-  \code{cetta}).  6\,ms startup.
-
-\item[Unlimited fuel]
-  Default fuel is $-1$ (unlimited).  Stack overflow caught via
-  \code{sigaltstack} + \code{SIGSEGV} handler.
-
-\item[Effect classification]
-  \code{cetta\_effect\_policy.h}: 13 effect classes with memo policy,
-  scheduler policy, and lowering eligibility.  Backed by Lean contracts.
-
-\item[Runtime counters]
-  50 counters (hashcons inserts/hits, bindings operations, table
-  hits/misses, space revision bumps, etc.) exposed via
-  \code{runtime-stats!}.
-
-\item[Module system]
-  \code{import!}, \code{include}, \code{register-module!},
-  \code{git-module!}, module inventory.
-
-\item[Python FFI]
-  Default build links Python 3; \code{call-native!} dispatches to
-  Python callables.
-
-\item[\MORK{} bridge]
-  Optional static or dynamic link to \MORK{}/\PathMap{} for
-  persistent indexed spaces via \code{.act} format.
+\begin{description}
+\item[Reference evaluator:] Small, clear, easy to compare with Meta-MeTTa /
+  \HE{} ideas.  Used for semantic reference and differential testing.
+\item[Production evaluator:] Preserves direct tail reentry for singleton
+  deterministic positions; uses resumable frames only where semantically
+  necessary; supports streaming, bounded demand, and multiple results.
+\item[Tabled evaluator:] Adds SLG-style suspension/resumption for recursive
+  and cyclic search.  Can grow from revision-aware caching toward full
+  variant/subsumptive tabling.
+\item[Compiled/derived machines:] Bytecode interpreter, WAM-like compiled
+  control, or generated specialized evaluators for hot paths.  Highest
+  performance ceiling, greatest implementation complexity.
 \end{description}
 
-\subsection{Lean Verification State}
+The core obligation: \textbf{all lanes must agree on observable results
+where they overlap}.  This is what makes it one system, not a patchwork.
 
-5,400+ lines of sorry-free Lean proof establishing:
+\subsection{What We Don't Know}
+
+The vision above describes properties, not implementations.  We have
+beliefs about how to achieve them, but we acknowledge uncertainty:
+
 \begin{itemize}
-\item \HE{}$\leftrightarrow$\PeTTa{} semantic correspondence on the pure
-  fragment, including import commutativity.
-\item \code{EvalSpec} inductive operational semantics (\code{EvalAtom},
-  \code{MettaCall}, \code{InterpretExpression}, \code{InterpretArgs},
-  \code{InterpretFunction}, \code{InterpretTuple}).
-\item Typed-apply machine: 7 invariants, \code{ProvenanceInvariant},
-  \code{applyComplete\_sound\_structure}.
-\item \code{BindingConsistency}: loop-freedom preserved through evaluation.
-\item \code{OwnershipInvariant}: 3-way target safety classification
-  for the running-stack contract.
-\item \code{TypedApplySoundness}: machine emissions $\to$
-  \code{InterpretArgs} derivations via \code{MachineArgChain}.
+\item \textbf{Eval-local term sharing}: Borrowing canonical identity into
+  evaluation arenas could reduce memory pressure significantly.  Or it
+  could introduce lifetime complexity that costs more than it saves.
+  The Conchon--Filliâtre weak-reference model~\cite{ConchonFilliâtre2006}
+  suggests a path, but we haven't walked it yet.
+\item \textbf{The right tabling granularity}: Full SLG
+  suspension/resumption/completion (\XSB{}-style) is powerful but complex.
+  Simpler revision-aware memoization may suffice for many workloads.  We
+  don't know where the sweet spot lies.
+\item \textbf{Contextual normal-form}: The question ``is this term a
+  value?'' depends on expected type, evaluation context, and space contents.
+  The literature on dependent types (Martin-Löf, Coquand) treats this
+  carefully; we're still learning how it applies to MeTTa's specific
+  type discipline.
+\item \textbf{Demand propagation}: When a bounded consumer (like
+  \code{select}) needs only one result, the producer should stop.
+  How to thread this demand through nondeterministic evaluation is an
+  open research question.
 \end{itemize}
 
-%% ────────────────────────────────────────────────────────────────────
-\section{Performance Baseline}
-\label{sec:perf}
+The roadmap that follows describes the \emph{territory} where these
+questions live, not definitive answers.
 
-All measurements on the same machine, 2026-04-07.
+\subsection{What CeTTa Users Can Do}
 
-\begin{center}
-\begin{tabular}{lrrrrr}
-\toprule
-Benchmark & \PeTTa{} & \CeTTa{} main & \HE{} & Notes \\
-\midrule
-countdown 100k   & 0.15\,s / 17\,MB  & 1.70\,s / 347\,MB & ---          & tail recursion \\
-fib 25           & 0.23\,s / 17\,MB  & 5.48\,s / 1023\,MB & timeout      & exponential \\
-N-queens 8 [92]  & ---               & 2.69\,s / 586\,MB  & timeout      & nondeterministic \\
-metamath d5 bc   & 31\,s / 3.7\,GB   & OOM @ 6\,GB        & timeout      & 85K proof trees \\
-backchain 60 ent & ---               & correct             & correct      & depth-1 \\
-matchjoin 6$\times$6 & ---           & correct (216)       & correct      & 2-hop join \\
-\bottomrule
-\end{tabular}
-\end{center}
+The vision above is architectural.  But a runtime exists for users, not
+architects.  At its best, \CeTTa{} lets you:
 
-\paragraph{Key gap.}
-\PeTTa{} is 10--30$\times$ faster on recursive workloads.  The advantage
-comes from the \WAM{} (last-call optimization, heap-allocated environments,
-efficient backtracking) and SWI-Prolog's tabling infrastructure.
-\CeTTa{}'s \code{TAIL\_REENTER} handles the single-result case but
-multi-result nondeterministic evaluation still allocates \code{OutcomeSet}
-arrays on every recursive call.
-
-%% ────────────────────────────────────────────────────────────────────
-\section{Core-Opt Epoch: Attempted Optimizations}
-\label{sec:coreopt}
-
-Branch \code{core-opt}, commit \code{2b4b826} (``PROBABLY BUGGY WIP'').
-Test suite: 259 passed, 99 failed, 28 skipped.  \textbf{95 extra failures}
-vs.\ main.
-
-\subsection{Features Attempted}
-
-\begin{center}
-\begin{longtable}{p{4cm}p{3cm}p{1.2cm}p{5cm}}
-\toprule
-Feature & File(s) & Status & Bug \\
-\midrule
-\endhead
-Query cache with interleaved staging &
-  \code{eval.c} &
-  Buggy &
-  \code{QueryCacheVisitCtx} interleaves staging and forwarding.
-  \textbf{Caution:} GPT-5.4~Pro found that query caching is only
-  active when \code{search-table-mode} is set to \code{variant}
-  (not the default).  The plain countdown O($n^2$) regression has
-  a \emph{different, unidentified} root cause
-  (\S\ref{sec:stale}). \\
-\addlinespace
-\code{bindings\_clone\_merge\_ground\_simple} fast path &
-  \code{eval.c} &
-  Buggy &
-  Silent wrong merges.  N-queens, unique, metamath return empty
-  or wrong results. \\
-\addlinespace
-Bindings lookup index (open-addressed hash) &
-  \code{match.c} &
-  Buggy &
-  ``Unsound in long-running workloads.''  Incorrect lookups. \\
-\addlinespace
-\code{match\_pattern\_candidate} + \code{needs\_loop\_check} skip &
-  \code{space.c}, \code{space\_match\_backend.c} &
-  Buggy &
-  Skips \code{bindings\_has\_loop} when it shouldn't.
-  Produces looping bindings. \\
-\addlinespace
-HashConsTable on eval arena (owned) &
-  \code{main.c}, \code{atom.c} &
-  Buggy &
-  Invalidated on arena reset between \code{!}~commands.
-  hashcons-insert counter shows 0. \\
-\addlinespace
-NativeResumeStack for \code{let}/\code{chain} &
-  \code{eval.c} &
-  Regression &
-  Replaced \code{TAIL\_REENTER} with full stack frame allocation.
-  \textbf{Destroys TCO} that main already has.
-  GPT-5.4~Pro confirmed this is a \emph{semantic} regression, not
-  merely a performance one: \code{countdown-let~5000} returns
-  wrong answers, not just slowly.  The \code{borrowed\_hashcons}
-  test failure was actually masked by this bug, not a real hashcons
-  issue. \\
-\bottomrule
-\end{longtable}
-\end{center}
-
-\subsection{Collateral Damage}
-
-In addition to the 6 buggy features, core-opt:
 \begin{itemize}
-\item Deleted \code{metta\_eval\_bind\_typed} (type-directed evaluation
-  used in 3 call sites on main).
-\item Deleted \code{cetta\_effect\_policy.h} (Lean-contract-backed effect
-  classification).
-\item Deleted the 28-line canonicalization boundary comment in
-  \code{term\_universe.c} (with Lean verification references).
-\item Bloated \code{eval.c} from 7,320 to 12,596 lines (+72\%) by adding
-  55 NativeResumeStack consumer/frame functions.
-\item Changed \code{bindings\_clone} to \code{bindings\_move} in
-  \code{subst\_tree.c} (potential use-after-free).
+\item \textbf{Load very large knowledge bases}---millions of atoms across
+  distributed backends (DAS-scale)---without reimplementing your application.
+\item \textbf{Run deep recursive backward chaining} without stack failure.
+  Recursive PLN queries over large knowledge graphs should complete, not crash.
+\item \textbf{Get bounded-demand answers} without overproduction.  If you need
+  only the first result, the evaluator should not compute thousands.
+\item \textbf{Switch backends without changing semantics}.  Move from in-memory
+  testing to \PathMap{} persistence to distributed \MORK{} without altering
+  your MeTTa code or expecting different answers.
+\item \textbf{Stream aggregations} without full materialization.  Fold over
+  results as they arrive, not after collecting them all.
+\item \textbf{Trust theorem-backed invariants} on critical seams.  When a Lean
+  theorem says binding projection is sound, you can rely on it.
+\item \textbf{Run concurrent queries} over immutable snapshots.  Parallel
+  exploration of a frozen space state should be safe and deterministic.
 \end{itemize}
 
-\subsection{Codex ``Fix'' Session (Reverted)}
+These are user powers, not implementation checkboxes.  The endgame is not
+``we have tabling'' but ``you can query recursive knowledge without crashing.''
 
-A subsequent Codex session attempted to fix the bugs by \emph{disabling
-all 6 optimizations}: hardcoding \code{return false} for the lookup index,
-removing the fast merge call, replacing \code{match\_pattern\_candidate}
-with \code{match\_atoms}, and disabling the eval-arena hashcons entirely.
-This made tests pass (336/3/47) but produced a branch functionally
-identical to main --- zero net-new work.  The TCO for \code{let}/\code{chain}
-that Codex ``re-added'' already existed on main.  These changes were reverted.
+%% ════════════════════════════════════════════════════════════════════
+\part{The Landscape}
+%% ════════════════════════════════════════════════════════════════════
 
-\subsection{GPT-5.4 Pro Triage (2026-04-07)}
-\label{sec:stale}
+\section{Term Representation and Identity}
+\label{sec:terms}
 
-An independent GPT-5.4~Pro review of the same bundle found that the
-bug ordering in our original diagnosis had drifted:
+Every operation in a term-rewriting runtime---pattern matching, binding
+application, result collection, memoization---operates on terms.  The
+representation of terms therefore determines the cost of everything
+built on top.  This is not speculation; it is the consensus of Knuth,
+Ritchie, Warren, Schulz, and every systems researcher who has built a
+mature symbolic runtime.
 
-\begin{enumerate}
-\item \textbf{The query-cache O($n^2$) diagnosis is stale.}
-  Query caching is gated behind \code{search-table-mode = variant},
-  which is off by default.  The plain \code{countdown 100k} regression
-  has a \emph{different, unidentified root cause} that persists even
-  after restoring the \code{let}/\code{chain} fast path.  After
-  GPT-5.4~Pro's surgical patch: countdown 5K = 0.98\,s, 10K = 5.82\,s
-  --- still quadratic, but from a different subsystem.
+\subsection{Why Representation Comes First}
 
-\item \textbf{The \code{let}/\code{chain} regression is semantic.}
-  \code{countdown-let 5000} returns assertion mismatches (wrong answers),
-  not just slowness.  The \code{borrowed\_hashcons} test was a false red:
-  it passed once \code{let}/\code{chain} were restored.
+If terms are not shared, every \code{bindings\_clone}, every pattern
+match, every result-set entry pays a representation tax that no local
+optimization can eliminate.  You can tune individual operations, but
+you cannot escape the fundamental cost of copying.
 
-\item \textbf{One surgical patch fixes 6/6 bundled tests.}
-  Restoring main's eager-eval + \code{TAIL\_REENTER} path for
-  \code{let} and \code{chain} in \code{metta\_call} moves the
-  bundled fence from 3/6 to 6/6.  Patch provided:
-  \code{cetta\_let\_chain\_tco\_salvage.patch}.
+Schulz's E~Prover provides the clearest case study.  It began with
+mutable shared terms and multiple term banks.  This was, in Schulz's
+words at IWIL~2025, ``a mess.''  The mature E design converged on
+\emph{one immutable term bank} with garbage collection, cached rewriting,
+and multiple specialized retrieval indices.  The lesson: the architecture
+you resist at the start is the one you'll eventually need.
 
-\item \textbf{The NativeResumeStack work is not junk.}
-  The mistake was applying the general stack machine where the cheap
-  deterministic fast path already existed and was correct.  The right
-  design is hybrid: \code{TAIL\_REENTER} for single-result fast paths,
-  \code{NativeResumeStack} only for genuinely deferred/multi-result
-  paths.
+Zhu et al.~(JuliaSymbolics, 2025) quantified this.  They bolted hash-consing
+onto an existing dynamically-typed symbolic runtime and measured 3.2$\times$
+speedup and 2$\times$ memory reduction on a real biological signaling model
+(1,122 ODEs, 24,388 reactions).  \XSB{}'s manual states it directly:
+``interned ground terms are stored once in a global area; when tables are
+declared \texttt{intern}, those ground terms need not be copied into and
+out of tables.''
 
-\item \textbf{Benchmark claims must be regenerated, not hand-carried.}
-  If a root-cause story changes, the bug documentation must change
-  with it.  The current branch demonstrates exactly why.
-\end{enumerate}
+\subsection{Hash-Consing: The Foundation}
 
-\subsection{Verdict}
+Hash-consing is the technique of storing structurally identical terms
+exactly once, returning the same pointer for equal structures.  The
+benefits compound: equality becomes pointer comparison, copying becomes
+aliasing, and memory usage becomes proportional to structural diversity
+rather than usage count.
 
-The core-opt branch is not mergeable.  Treat it as a quarry of ideas
-and code, not a trustworthy head.  The recommended path is to start a
-salvage branch from main and cherry-pick proven pieces one at a time
-(\S\ref{sec:cherrypick}), with every step gated by the capability
-ledger (\S\ref{sec:ledger}).
+The canonical reference is Conchon and Filliâtre's 2006 paper on
+type-safe, modular hash-consing in OCaml.  Their key insight: strong
+references in a hash table prevent collection and create dangling pointers
+when referents die.  The solution is weak-reference hash tables where
+the garbage collector sweeps dead entries.
 
-%% ────────────────────────────────────────────────────────────────────
-\section{Planned: Cherry-Pick Roadmap}
-\label{sec:cherrypick}
+For a C runtime without GC, the question becomes: how do we get the
+benefits of hash-consing without the lifetime bugs?  Two approaches
+appear in the literature:
 
-Start a salvage branch from main (340/0/50).  Each step ports one piece,
-gated by the full capability ledger (\S\ref{sec:ledger}).
+\paragraph{Persistent-only hash-consing.}
+Terms in the persistent arena are hash-consed; evaluation-local terms
+are not.  Simple, but pays the copy tax during evaluation.
 
-\begin{enumerate}[label=\textbf{Step \arabic*.}]
-\item \textbf{Restore \code{let}/\code{chain} TCO + add canaries.}
-  Apply GPT-5.4~Pro's \code{cetta\_let\_chain\_tco\_salvage.patch}:
-  restore main's eager-eval + \code{TAIL\_REENTER} path in
-  \code{metta\_call}.  Add \code{countdown-let~5000} and
-  \code{countdown-chain~5000} as permanent regression tests.
-  Then \emph{re-measure plain countdown} to identify the real root
-  cause of the remaining quadratic scaling.
+\paragraph{Arena-disciplined hash-consing.}
+Evaluation arenas can borrow canonical terms from the persistent universe.
+Terms created during evaluation are local to that arena; when the arena
+resets, they vanish.  Terms that need to persist are ``promoted'' to the
+persistent arena (and hash-consed there) before the evaluation arena dies.
 
-\item \textbf{Diagnose the real countdown regression.}
-  GPT-5.4~Pro confirmed the query cache is not the cause (it is
-  off by default).  Profile the actual hot path.  Candidates:
-  \code{OutcomeSet} reallocation, \code{bindings\_clone} in equation
-  dispatch, arena fragmentation, or a different quadratic interaction.
-  Do not proceed to further optimizations until this is understood.
+The second approach is more powerful but requires careful lifetime
+discipline.  An \code{ArenaResetSafety} theorem---formalizing that
+published terms survive arena rewind---would give confidence before
+attempting it.
 
-\item \textbf{TableStore / tabling.}
-  Self-contained (\code{table\_store.c}, 209-line diff).  Biggest
-  potential win: variant tabling can memoize repeated subgoals in
-  backward chaining, closing the metamath d5 gap with \PeTTa{}.
-  Requires the collect-then-visit query cache pattern (already on main).
+\subsection{SymbolId: A Representational Cutover}
 
-\item \textbf{HashCons ownership model.}
-  Port \code{ARENA\_HASHCONS\_BORROWED} / \code{ARENA\_HASHCONS\_OWNED\_LOCAL}
-  from \code{atom.c}/\code{atom.h} (86-line diff).  Fix the arena-reset
-  invalidation bug \emph{before} porting: the owned hashcons must survive
-  \code{arena\_reset} between \code{!}~commands.
+Profiling in March~2026 showed $\sim$40\% of CPU time in symbol string
+operations: interning, checking atom type, comparing strings.  The fix
+was not a local optimization but a \emph{representational cutover}:
+\code{SymbolId} (\code{uint32\_t}) for global spellings, strings only
+at I/O boundaries.
 
-\item \textbf{Bindings lookup index.}
-  Port the open-addressed hash table from \code{match.c} (816-line diff).
-  Fix the soundness bug first: write a C-level unit test that exercises
-  large binding sets ($\geq 64$ entries) with collisions, then fix the
-  index before enabling it.
+This mirrors Rust's own \code{Symbol} (interned index) and first-order
+prover functor-code disciplines (Vampire, E).  The result: 38\% instruction
+reduction on typical workloads.
 
-\item \textbf{\code{match\_pattern\_candidate}.}
-  Port from \code{space.c} and \code{space\_match\_backend.c} (326 + 383
-  line diffs).  Fix the \code{needs\_loop\_check} invariant: if the
-  function says no loop check is needed, it must be \emph{impossible}
-  for the resulting bindings to contain a loop.
+\subsection{The One-Universe Question}
 
-\item \textbf{Query cache streaming} (if needed).
-  Main's collect-then-visit is correct and O($n$).  Defer unless
-  profiling shows it as a bottleneck.
-\end{enumerate}
+The ideal described in Part~I calls for one canonical term universe with
+spaces as views over it.  Currently, \code{Space} still owns
+\code{Atom **atoms}, and the \code{TermUniverse}/\code{term\_canon}
+seam is a storage-policy shim rather than the one true store.
 
-\paragraph{Gate.} Each step must satisfy:
-\begin{itemize}
-\item Full test suite: $\geq 340$ passed, 0 failed.
-\item Benchmark matrix: no regression $> 10$\% vs.\ main on any
-  benchmark in \S\ref{sec:perf}.
-\item No feature deletions (no removing \code{cetta\_effect\_policy.h},
-  \code{metta\_eval\_bind\_typed}, documentation, etc.).
-\end{itemize}
+An important nuance from \PathMap{} investigation: because \PathMap{} is
+a prefix-sharing trie, naively encoding space membership as a leading
+prefix can \emph{reduce} cross-space sharing (two otherwise identical
+terms diverge at the first path component).  Canonical term storage should
+be separated from space membership indexing.
 
-%% ────────────────────────────────────────────────────────────────────
-\section{Planned: Typed Ordinary Application}
-\label{sec:typed}
+\subsection{Clouds of Possibility}
 
-The remaining deep-benchmark blocker: typed ordinary-function application
-falls out of the native control flow into direct-style recursive C,
-causing stack overflow on \code{bench\_bio\_bc\_deep.metta}.
-
-\subsection{Problem}
-
-When the evaluator encounters a typed application \code{(f arg1 arg2)}
-where \code{f} has a function type, it dispatches through
-\code{metta\_call}, which re-enters evaluation recursively.  For deep
-constructor-shaped typed terms (common in PLN backward chaining), this
-amplifies C stack usage until overflow.
-
-\subsection{Solution Direction}
-
-An explicit-stack typed argument evaluator:
-\begin{enumerate}
-\item Evaluate each argument with explicit accumulation (no C recursion).
-\item Join barrier: wait for all arguments before call-term reconstruction.
-\item Redispatch through the main evaluation loop (not \code{metta\_call}).
-\end{enumerate}
-
-This is the \emph{right} place for the NativeResumeStack infrastructure ---
-typed application is genuinely complex and needs frame-based control.
-But it must \emph{not} replace the working \code{TAIL\_REENTER} paths
-for \code{let}/\code{chain}/\code{if}/\code{case}.
-
-\subsection{Lean Oracle Support}
-
-From the Lean formalization side (per \code{CLAUDE\_LEAN\_SUPPORT.md}):
-\begin{enumerate}
-\item Formalize \code{IsValue} vs.\ \code{IsReducible} --- make
-  ``no equations $=$ value'' formally impossible.
-\item Formalize direct vs.\ frame-based typed application as two
-  evaluators, prove they agree on outcomes.
-\item Formalize the ownership invariant for deferred targets.
-\item Formalize visible-binding projection / branch-delta correctness.
-\end{enumerate}
-
-Existing Lean artifacts (\code{TypedApplyMachine.lean},
-\code{OwnershipInvariant.lean}, \code{BindingConsistency.lean})
-provide foundations; the gap is the \code{IsValue} split and the
-direct$\approx$frame equivalence.
-
-%% ────────────────────────────────────────────────────────────────────
-\section{Planned: Demand-Driven Evaluation}
-\label{sec:demand}
-
-The 4-phase roadmap from the April~5 development checkpoint:
-
-\begin{description}[style=nextline]
-\item[Phase 0: Bug-first cleanup]
-  \code{match.c} memo audit, conjunction lowering audit.
-  Semantic fence only.
-
-\item[Phase 1: Conjunction ordering]
-  Order conjuncts by selectivity estimate.  Measure on medium ladder
-  + variant bio.
-
-\item[Phase 2: Tabling cost reduction]
-  Optimize the \code{TableStore} so tabling is a net win on medium and
-  deep bio workloads.  Measure variant vs.\ plain on medium + one deep
-  PLN witness.
-
-\item[Phase 3: Demand-driven visitor path]
-  Visitor as primary seam, explicit frame/worklist.
-  Deep bio gate, PLN witnesses, then milestone ladder.
-
-\item[Phase 4: Trail/watermark execution spine]
-  Reusable \code{SearchContext} threading.
-  Full convergence to one canonical evaluator.
+\begin{description}
+\item[Persistent-only vs.\ eval-local sharing:]
+  The conservative path hash-conses only persistent terms; the aggressive
+  path borrows canonical identity into evaluation.  We don't know which
+  is better for \CeTTa{}'s workloads.  Positive witnesses would include:
+  backward chaining benchmarks completing where they currently OOM,
+  hashcons-hit counters rising, and memory usage approaching \PeTTa{}'s
+  levels on comparable workloads.
+\item[Explicit substitutions:]
+  Krishnaswami (citing Abadi et al.) proposes deferring
+  \code{bindings\_apply} by representing \code{(term, substitution)}
+  closures instead of eagerly copying.  This eliminates the most expensive
+  per-call operation but requires the evaluator to handle closures
+  throughout.  A long-term direction, not a near-term change.
 \end{description}
 
-\paragraph{Red flags.}
-Any binding mutation without exact rollback proof.
-Any speedup that breaks FC/bio witnesses.
-Letting medium benchmarks alone steer architectural choices.
-Mid-phase constant-factor measurement churn.
+\subsection{Reflective Evaluation}
 
-%% ────────────────────────────────────────────────────────────────────
-\section{Planned: \MORK{} and \PathMap{}}
-\label{sec:mork}
+MeTTa can quote and evaluate arbitrary expressions, including expressions
+that describe its own evaluator.  This creates what Smith~\cite{Smith1984}
+called a \emph{reflective tower}: a conceptually infinite stack of
+meta-circular interpreters, each interpreted by the one above.
 
-From the MorkSpace boundary review (April~3):
+Amin and Rompf~\cite{AminRompf2018} showed that such towers can be
+\emph{collapsed}---stage polymorphism allows interpreters to compose in a
+way that eliminates interpretive overhead.  Their Pink and Purple languages
+demonstrate that arbitrarily deep self-interpretation can be optimized away.
 
+For \CeTTa{}, reflection raises practical questions:
 \begin{itemize}
-\item \code{mork:} is now a distinct public lane with explicit boundary.
-  Generic \code{(new-space mork)} is disabled; use \code{mork:open-act!}.
-\item \textbf{Open:} \code{mork:close-space!} handle pool lifecycle.
-\item \textbf{Open:} Write-side public surgery semantics.
-\item \textbf{Open:} \PathMap{} bridge ABI v2 (query-side-only bindings,
-  varid dictionary, binary value encoding).
-  Spec draft in \code{specs/pathmap\_bridge\_varid\_abi.json}.
-\item \MORK{}/\PathMap{} should share semantics with the native backend ---
-  ``a premium backend, not a second language'' (architecture primer).
+\item \textbf{Tabling and self-modification}: If a tabled query's definition
+  changes mid-evaluation (via \code{add-atom}), what happens to cached answers?
+  This is not hypothetical---PLN rule learning can modify the space while
+  reasoning proceeds.
+\item \textbf{Meta-circular invariants}: When MeTTa evaluates a MeTTa
+  evaluator, which invariants (typing, binding safety) transfer to the
+  inner evaluation?
+\item \textbf{Collapsing for performance}: Can we detect when nested
+  \code{eval!} calls are semantically equivalent to direct evaluation and
+  optimize accordingly?
 \end{itemize}
 
-%% ────────────────────────────────────────────────────────────────────
-\section{Lean Formalization Frontier}
-\label{sec:lean}
+We do not have answers.  But ignoring reflection would be ignoring one of
+MeTTa's distinctive features.  The reflective tower is not a bug or an edge
+case; it is the language's design center for AGI self-improvement scenarios.
 
-\subsection{Completed (sorry-free)}
+%% ════════════════════════════════════════════════════════════════════
+\section{Evaluation Semantics}
+\label{sec:eval}
+
+The evaluator is the heart of the runtime.  It takes an atom (or outcome)
+and produces a stream of reduced atoms.  Everything else---REPL, file
+loading, FFI---feeds into or out of the evaluator.
+
+\subsection{HE's Principal Evaluation Stages}
+
+The \HE{} specification in \code{metta.md} describes evaluation through
+mutually recursive functions.  The principal stages are:
+
+\begin{description}
+\item[\code{metta}:] Entry point; handles special forms, dispatches to
+  interpretation.
+\item[\code{interpret\_expression}:] Inspects types, checks function-type
+  applicability, dispatches.
+\item[\code{interpret\_function}:] Typed head/argument evaluation.
+\item[\code{interpret\_args}:] Evaluates arguments according to their
+  declared strictness.
+\item[\code{interpret\_tuple}:] Handles tuple construction.
+\item[\code{metta\_call}:] Grounded execution and equation lookup.
+\end{description}
+
+These are the actual \HE{} names.  Prose labels like ``EvalAtom'' or
+``InterpretExpression'' are fine for discussion, but the spec names
+matter when checking fidelity.
+
+The key insight: \code{if} should not be a hardcoded C handler.  The
+function type \code{(: if (-> Bool Atom Atom \$t))} declares that the
+condition (\code{Bool}) is strict and the branches (\code{Atom}) are lazy.
+\code{interpret\_args} reads the type and evaluates accordingly.  The
+stdlib equation \code{(= (if True \$t \$e) \$t)} then works through the
+general path.  Per-op handlers are a tempting shortcut that becomes
+architectural debt.
+
+\subsection{The Contextual Nature of ``Value''}
+
+When is a term fully reduced?  The naive answer---``when no equations
+match''---is incomplete.  In \HE{}, the answer depends on:
 
 \begin{itemize}
-\item \code{EvalSpec.lean}: inductive operational semantics (6 mutual relations).
-\item \code{Eval.lean} + \code{Correctness.lean}: computable evaluator +
-  soundness (\code{evalAtom\_sound}, \code{interpretArgs\_sound}).
-\item \code{TypedApplyMachine.lean}: abstract machine with 7 invariants.
-\item \code{TypedApplyDirect.lean}: direct recursive evaluator with
-  \code{mergeEnv}/\code{extendBinder}.
-\item \code{TypedApplySoundness.lean}: \code{MachineArgChain} $\to$
-  \code{InterpretArgs} bridge.
-\item \code{BindingConsistency.lean}: loop-freedom preservation.
-\item \code{OwnershipInvariant.lean}: 3-way target safety.
-\item \code{ArgFrameMachine.lean}: argument-processing frame machine.
-\item HE$\leftrightarrow$PeTTa translation correspondence (5,400+ lines).
+\item The \textbf{expected type}: an expression may be returned unchanged
+  if the expected type is \code{Atom}.
+\item \textbf{Evaluated markers}: an expression already marked evaluated
+  is not re-evaluated.
+\item \textbf{Atom category}: variables, errors, and empty are immediately
+  returned.
+\item \textbf{Grounded dispatch}: a grounded function may apply even
+  though no equations match.
+\item \textbf{Space contents}: the same term may reduce in one space and
+  not another.
 \end{itemize}
 
-\subsection{Needed}
+The dependent types literature (Martin-Löf, Coquand, Pfenning) treats
+normalization carefully because type checking depends on it.  The principled
+answer comes from \emph{normalization by evaluation} (NbE): evaluate into a
+semantic domain, then read back to syntax~\cite{BergerSchwichtenberg1991}.
+MeTTa's type discipline is softer, but the same contextual structure applies.
+A bare predicate \code{IsValue(t)} is probably the wrong abstraction;
+something like \code{NormalFormAt(space, expectedType, atom, bindings)}
+captures the dependencies more faithfully.
 
-\begin{enumerate}
-\item \textbf{\code{IsValue}/\code{IsReducible} formalization.}
-  Precise definition of which atoms are values vs.\ reducible.
-  Must rule out ``no equations $=$ value'' as unsound.
-  Positive examples (symbols, grounded values) and negative examples
-  (arithmetic expressions, nested \code{if}).
+\subsection{TCO: A Constraint, Not a Checkbox}
 
-\item \textbf{Direct $\approx$ frame-based equivalence.}
-  Prove that direct recursive typed application and frame-based
-  typed application agree on observable outcomes.
-  Supports the C refactor in \S\ref{sec:typed}.
+Tail-call optimization for deterministic single-result forms (\code{let},
+\code{chain}, \code{let*}, \code{if}, \code{case}, \code{function}/\code{return})
+is not an optional performance feature.  It is a semantic constraint:
+deeply recursive MeTTa programs must not blow the C stack.
 
-\item \textbf{Visible-binding projection correctness.}
-  Formalize the branch-delta transport discipline: rewriting bodies
-  with visible bindings and carrying only the local delta forward.
+The \code{TAIL\_REENTER} macro in \CeTTa{}'s \code{eval.c} implements
+this as a \code{goto tail\_call} trampoline.  It is cheap, correct, and
+\emph{must be preserved} in any refactoring.  The core-opt epoch's
+central mistake was replacing \code{TAIL\_REENTER} for \code{let}/\code{chain}
+with full frame allocation---a semantic regression that produced wrong
+answers, not just slowdowns.
 
-\item \textbf{Tabling correctness.}
-  Connect \code{TableStore} semantics to \code{EvalSpec}: cached
-  answers are sound (subset of complete evaluation).
-\end{enumerate}
+\subsection{Unification and Cyclic Terms}
 
-%% ────────────────────────────────────────────────────────────────────
-\section{Specification Artifacts}
-\label{sec:specs}
+What counts as a valid binding?  Logic runtimes differ materially here.
+SWI-Prolog supports rational trees (cyclic structures) and exposes
+\code{unify\_with\_occurs\_check/2} for those who want to reject cycles.
+\XSB{} takes a different approach.  This is not a performance detail---it
+changes what programs mean.
 
-Seven JSON specification files in \code{specs/}:
-
-\begin{center}
-\begin{tabular}{lp{8cm}}
-\toprule
-File & Contents \\
-\midrule
-\code{runtime\_callables.json} &
-  100+ callable registry with arity, effect class, profile membership,
-  oracle status. \\
-\code{runtime\_effect\_classes.json} &
-  13 effect classes with memo and scheduler policies. \\
-\code{he\_runtime\_3layer\_matrix.json} &
-  25/25 kernel, 69/69 grounded, 70/70 stdlib implemented. \\
-\code{runtime\_surface\_audit.json} &
-  Positive/negative test coverage for MinimalMeTTa surfaces. \\
-\code{he\_backend\_choice\_audit.json} &
-  Compatibility policy for HE-facing surfaces. \\
-\code{pathmap\_bridge\_varid\_abi.json} &
-  Draft ABI v2 for the \CeTTa{}$\leftrightarrow$\MORK{} bridge. \\
-\code{he\_runtime\_impl\_matrix.json} &
-  Cross-layer implementation status matrix. \\
-\bottomrule
-\end{tabular}
-\end{center}
-
-%% ────────────────────────────────────────────────────────────────────
-\section{Capability Ledger}
-\label{sec:ledger}
-
-A capability ledger tracks every nontrivial evaluator guarantee as a
-named contract with witnesses and a code anchor.  Every serious branch
-update must preserve the entire ledger.  This prevents the failure mode
-where ``the model optimizes for the last thing it touched''
-(GPT-5.4~Pro).
-
-\begin{center}
-\begin{longtable}{p{3.8cm}p{3.5cm}p{2.5cm}p{3cm}}
-\toprule
-Guarantee & Semantic witness & Perf witness & Code anchor \\
-\midrule
-\endhead
-
-\code{let} single-result TCO &
-  \code{countdown-let 5000} $\to$ \code{done} &
-  wall time, no stack overflow &
-  \code{metta\_call} let fast path, \code{TAIL\_REENTER} \\
-\addlinespace
-
-\code{chain} single-result TCO &
-  \code{countdown-chain 5000} $\to$ \code{done} &
-  wall time, no stack overflow &
-  \code{metta\_call} chain fast path, \code{TAIL\_REENTER} \\
-\addlinespace
-
-\code{let*} desugaring TCO &
-  nested \code{let*} $\to$ \code{let} chain &
-  tail special forms test &
-  \code{metta\_call} let* handler \\
-\addlinespace
-
-\code{if} single-result TCO &
-  \code{countdown 100k} $\to$ \code{done} &
-  $< 2$\,s on main &
-  \code{metta\_call} if handler, \code{TAIL\_REENTER} \\
-\addlinespace
-
-\code{select}/\code{once} stop &
-  \code{test\_select\_match\_stop} &
-  terminates &
-  select consumer stop propagation \\
-\addlinespace
-
-Match transport order &
-  \code{test\_match\_transport\_order} &
-  correct order &
-  match source delivery \\
-\addlinespace
-
-\code{let*} visible env &
-  \code{test\_let\_star\_visible\_env\_many\_vars} &
-  correct bindings &
-  body-visible projection \\
-\addlinespace
-
-Equation dispatch &
-  \code{he\_b1\_equal\_chain} &
-  correct chaining &
-  \code{query\_equations} \\
-\addlinespace
-
-Typed application &
-  \code{he\_d5\_auto\_types} &
-  correct &
-  \code{metta\_eval\_bind\_typed} \\
-\addlinespace
-
-Grounded ops &
-  \code{he\_c1\_grounded\_basic} &
-  correct &
-  grounded dispatch \\
-\addlinespace
-
-Build cleanliness &
-  \code{make BUILD=core} &
-  zero warnings &
-  Makefile + all headers \\
-\addlinespace
-
-Effect classification &
-  compile-time &
-  --- &
-  \code{cetta\_effect\_policy.h} \\
-\addlinespace
-
-Hashcons sharing &
-  \code{test\_borrowed\_hashcons} &
-  insert count $> 0$ &
-  \code{HashConsTable} on persistent arena \\
-\addlinespace
-
-Full test suite &
-  \code{make test} $\geq 340$/0 &
-  $< 5$\,min &
-  Makefile test target \\
-
-\bottomrule
-\end{longtable}
-\end{center}
-
-\paragraph{Usage.}
-Before any branch update that touches the evaluator core, generate a
-report covering:
+For \CeTTa{}, this remains an \textbf{open design question}:
 \begin{itemize}
-\item build status,
-\item canary test matrix (every semantic witness above),
-\item benchmark mini-matrix (every perf witness above),
-\item changed files touching evaluator core,
-\item which optimization flags are on.
+\item Does \CeTTa{} reject cyclic bindings by default?  \HE{} appears to
+  reject them (no rational tree support), but whether this is fundamental
+  or could be relaxed remains open.
+\item Should rational trees ever be supported as an opt-in mode?
+\item Is occurs-check always semantic, or configurable per-lane?
+\item How do compiled/tabled lanes preserve unification policy consistently?
 \end{itemize}
-If any row in the ledger regresses, the update does not land until the
-regression is fixed or explicitly approved.
 
-%% ────────────────────────────────────────────────────────────────────
-\section{Principles}
-\label{sec:principles}
+The answer affects what matchers must reject, what tables can store safely,
+and what alpha-equivalence means.  Settling this is prerequisite to
+serious tabling and compiled-lane work.
 
-Extracted from review bundle guidance and development experience:
+\subsection{Clouds of Possibility}
 
-\begin{enumerate}
-\item \textbf{No shortcuts for speed.}
-  The ``no equations $=$ constructor value'' hack broke arithmetic and
-  nested evaluation.  Speed improvements that violate semantics always
-  regress later.
+\begin{description}
+\item[Frame-based evaluation for typed-apply:]
+  Typed ordinary application with multi-step argument evaluation benefits
+  from heap-allocated frames.  The question is: can we isolate this to
+  typed-apply only, preserving \code{TAIL\_REENTER} for everything else?
+\item[Direct vs.\ stack equivalence:]
+  If we have both recursive and frame-based evaluation paths, they must
+  produce identical results on the overlapping subset.  A Lean theorem
+  (\code{DirectVsStackEquivalence}) would anchor this.
+\item[Demand propagation:]
+  When \code{select} or \code{once} bounds the consumer, the producer
+  should stop producing.  This requires either generator-style
+  suspension or explicit demand threading.  Neither is fully designed.
+\end{description}
 
-\item \textbf{Semantic fence first.}
-  Before optimizing, run the witness set (medium benchmarks, deep
-  benchmarks, structural canaries).  Never let one benchmark steer
-  architecture.
+%% ════════════════════════════════════════════════════════════════════
+\section{Search and Control}
+\label{sec:search}
 
-\item \textbf{Ablate optimizations.}
-  Never bundle 6 features.  Port and verify them one at a time so
-  breakage is isolated.
+MeTTa is nondeterministic: a single expression can reduce to multiple
+outcomes.  Search and control determine how the runtime explores this
+space and returns results.
 
-\item \textbf{Lean as oracle.}
-  Formalize the right invariants first, then implement in C.
-  Not the other way around.
+\subsection{WAM Foundations}
 
-\item \textbf{Phase discipline.}
-  Don't optimize until the previous phase terminates correctly.
-  Measurement mid-phase is churn.
+The Warren Abstract Machine (\WAM{}) remains the gold standard for
+efficient Prolog execution after four decades.  Its core ideas:
 
-\item \textbf{Keep default healthy.}
-  Experimental gates (\code{CETTA\_EXPERIMENT\_*}) let two paths
-  coexist safely during refactoring.
+\begin{description}
+\item[Choicepoints:] Snapshots of state before nondeterministic choices.
+\item[Trail:] A log of bindings made since the last choicepoint.
+\item[Backtracking:] Undo the trail, restore the choicepoint, try the
+  next alternative.
+\item[Last-call optimization:] If no choicepoint remains in the current
+  frame, reuse the frame for the tail call.
+\end{description}
 
-\item \textbf{Preserve what works.}
-  Do not delete working features (\code{TAIL\_REENTER},
-  \code{cetta\_effect\_policy.h}, \code{metta\_eval\_bind\_typed})
-  to ``make room'' for new code.  Add, don't replace, until the
-  replacement is proven correct.
+These ideas transfer to any nondeterministic language, though MeTTa's
+type-directed evaluation adds complexity the \WAM{} doesn't face.
 
-\item \textbf{Capability ledger, not just a roadmap.}
-  Track guarantees you already had, not just features you hope to add.
-  Every guarantee needs a semantic witness, a performance witness, and
-  a code anchor.  The ledger is mandatory for every evaluator-touching
-  branch update (\S\ref{sec:ledger}).  ``The model will optimize for the
-  last thing it touched unless the branch itself tells the truth''
-  (GPT-5.4~Pro).
+A crucial \WAM{} distinction: \textbf{environments} (AND-nodes) are call frames
+holding local variables and return addresses; \textbf{choicepoints} (OR-nodes)
+are snapshots taken before nondeterministic choices~\cite{Warren1983}.
+Environments grow and shrink with deterministic calls; choicepoints freeze the
+stack until backtracking.  In \CeTTa{}, \code{SearchContext}/\code{ChoicePoint}
+map to OR-nodes, while \code{NativeResumeStack}/\code{EvalFrame} serve as
+AND-nodes for streaming evaluation.  Keeping this distinction clear prevents
+frame-management bugs that plagued early implementations.
 
-\item \textbf{Regenerate, don't hand-carry.}
-  Benchmark claims and bug root-cause stories must be regenerated from
-  the actual current source, not inherited from prior sessions.  If the
-  code changed, the diagnosis may have changed with it.  The core-opt
-  triage demonstrated this: the query-cache O($n^2$) diagnosis was
-  correct for an earlier state but stale for the current code.
+\subsection{Tabling: The Ladder of Capabilities}
 
-\item \textbf{Hybrid fast-path / frame-machine design.}
-  Use \code{TAIL\_REENTER} for deterministic single-result fast paths
-  (\code{let}, \code{chain}, \code{if}, \code{case}).  Use
-  \code{NativeResumeStack} only for genuinely deferred, multi-result,
-  or owned-state paths (typed application, collapse, fold, select).
-  Never replace the cheap path with the general mechanism.
-\end{enumerate}
+Tabling (memoization of goals and their answers) eliminates redundant
+computation and handles left-recursive predicates that would loop in
+naive evaluation.  \XSB{} is the reference implementation; SWI-Prolog
+provides a modern alternative with delimited continuations.  Scryer-Prolog
+implements tabling via the Desouter et al.\ approach~\cite{DesouterTabling2016}.
 
-%% ────────────────────────────────────────────────────────────────────
-%% No \bibliography --- this is a development document, not a paper.
+The tabling landscape forms a \textbf{ladder of capabilities}:
+
+\begin{description}
+\item[Level 1: Revision-aware caching.]
+  Store query results keyed by \code{(space, revision, pattern)}.
+  Invalidate when the space changes.  Simple, but coarse-grained---any
+  change invalidates all entries for that space.
+
+\item[Level 2: Variant tabling.]
+  Cache based on structural equivalence of query patterns (ignoring
+  variable names).  \code{foo(X, Y)} and \code{foo(A, B)} share results.
+  More reuse than simple memoization.
+
+\item[Level 3: Suspension/resumption/completion.]
+  Consumers block on incomplete tables; producers resume when new answers
+  arrive.  When all producers finish, tables are marked complete.  This
+  is full SLG resolution---required for recursive queries that don't
+  terminate under naive evaluation.
+
+\item[Level 4: Subsumptive tabling.]
+  Reuse answers from more general queries for more specific instances.
+  If \code{foo(X)} is cached, \code{foo(bar)} can reuse those results
+  filtered by unification.  Greater sharing, more complex implementation.
+
+\item[Level 5: Answer subsumption.]
+  Remove redundant cached answers when one subsumes another.  Important
+  for lattice-valued or aggregating queries (shortest path, best proof).
+
+\item[Level 6: Incremental tabling.]
+  Track dependencies between facts and cached queries.  When a fact
+  changes, invalidate only transitively-dependent entries.  Essential
+  for applications with frequent updates (dynamic knowledge graphs,
+  belief refinement).
+
+\item[Level 7: Monotonic/shared/parallel tabling.]
+  Monotonic tabling restricts queries to return monotonically increasing
+  sets (terminates earlier).  Shared tables across threads enable
+  parallel search.  These are advanced features in mature systems.
+\end{description}
+
+\CeTTa{} need not climb the full ladder immediately.  For many workloads,
+Level 1--2 suffice.  But for recursive PLN chaining over large knowledge
+bases, Level 3+ becomes essential.  The question is: which workloads
+justify which levels?
+
+\subsection{Current Seams}
+
+\CeTTa{}'s \code{SearchContext} and \code{ChoicePoint} structures in
+\code{search\_machine.h} are real, small abstractions.  They're not
+full SLG, but they're not nothing either.  \code{TableStore} provides
+revision-aware memoization infrastructure.
+
+The \code{OrderedOutcomeVisitor} and ordered-visitation seam handle
+streaming results in the current evaluator.  This is the path where
+\code{collapse}, \code{fold}, and \code{select} operate.
+
+\subsection{Search Fairness and Completeness}
+
+Depth-first search is simple and memory-efficient, but incomplete: it can
+loop forever on infinite branches, never reaching solutions on other paths.
+Breadth-first search is complete---it finds every solution---but uses
+memory exponential in depth.  This is not an abstract concern; recursive
+PLN queries can easily produce infinite search spaces.
+
+The literature offers several solutions:
+\begin{description}
+\item[Iterative deepening~\cite{Korf1985}:] Run depth-limited DFS with
+  increasing limits.  Achieves BFS completeness with DFS memory.  The
+  overhead of re-expansion is $\sim b/(b{-}1)$ where $b$ is branching
+  factor---acceptable for most workloads.
+\item[Interleaving (miniKanren)~\cite{FriedmanByrd2005}:] Interleave
+  exploration of disjuncts, guaranteeing no branch starves indefinitely.
+  Complete even with infinite branches, as long as some delay occurs
+  in recursive cycles.
+\item[Bounded-depth with tabling:] Use cycle detection in the table to
+  prevent infinite loops.  SLG resolution (Level~3) handles this naturally.
+\end{description}
+
+\CeTTa{} currently uses essentially depth-first evaluation with some
+ordered-streaming structure.  This is not a bug but a known limitation.
+The tabling ladder provides the path to completeness for recursive queries.
+Whether to adopt interleaving (which changes observable result order) or
+rely entirely on tabling (which adds infrastructure) remains an open
+design question.
+
+\subsection{Parallel and Concurrent Execution}
+
+The scale story matters.  A runtime that can only use one core on a 128-core
+machine is leaving performance on the table.  Options for parallelism:
+
+\begin{description}
+\item[Snapshot-parallel query:] Freeze the space as an immutable snapshot,
+  then run multiple query threads with thread-local scratch.  No locks
+  needed for reads; writes are forbidden.  Simple and effective for
+  read-heavy workloads.
+\item[Shared tabling:] \XSB{}-style thread-shared tables enable parallel
+  producers feeding shared consumers.  Coordination overhead exists but
+  can be amortized over large result sets.
+\item[Rho-calculus concurrency:] Meredith's reflective higher-order process
+  calculus~\cite{Meredith2005} provides formal process-algebraic semantics
+  for concurrent rewriting.  MeTTa's quote/unquote naturally maps to rho's
+  \code{@} and \code{*} operators, offering a principled foundation for
+  parallel execution without ad-hoc concurrency semantics.
+\item[DAS distribution:] The Distributed Atomspace~\cite{DAS} shards
+  knowledge across machines.  For million-atom scales, this is not
+  optional but necessary.
+\end{description}
+
+A fundamental question: is MeTTa evaluation deterministic?  If so, parallel
+execution is semantic-preserving and result order can be relaxed.  If not
+(as with \code{random} or concurrent space mutation), the semantics of
+parallel evaluation must be carefully defined.
+
+\subsection{Bounded Demand and Streaming}
+
+Many queries need only partial results:
+\begin{itemize}
+\item \code{select k} --- return first $k$ answers, stop producing
+\item \code{once} --- return first answer only
+\item \code{fold} --- aggregate results incrementally without full materialization
+\item Streaming consumers --- process answers as they arrive
+\end{itemize}
+
+These are not mere conveniences.  For large nondeterministic searches,
+bounded demand is the difference between ``finishes in milliseconds'' and
+``runs forever computing unused results.''
+
+The challenge: threading demand through an eager evaluator.  Options include
+generator-style suspension (yield and resume), explicit demand tokens
+propagated through choicepoints, or pengines-style incremental retrieval.
+None is fully designed for \CeTTa{}.
+
+\subsection{Clouds of Possibility}
+
+\begin{description}
+\item[Full SLG vs.\ simpler caching:]
+  Implementing full suspension/resumption/completion is substantial work.
+  For which workloads would it matter?  Recursive PLN chaining?  Large
+  knowledge-base queries?  We should identify concrete witnesses before
+  committing.
+\item[Demand termination:]
+  Bounded consumers should stop unbounded producers.  This is easy to
+  state, hard to implement in an eager evaluator.  Lazy streaming or
+  explicit demand tokens are two approaches.
+\item[Parallel search:]
+  Snapshot-parallel query over immutable space snapshots with thread-local
+  scratch enables parallelism without locks.  But MeTTa's semantics
+  currently assume deterministic ordering in some places.  Relaxing this
+  requires semantic clarity first.
+\end{description}
+
+\subsection{Result Ordering}
+
+Result ordering depends on the search strategy and engine selected.
+\CeTTa{} does not promise a fixed presentation order by default---only
+multiset equality of results.  A deterministic-order mode could be offered
+as an explicit option for reproducibility-sensitive workloads.
+
+The \HE{} spec is authoritative here; \CeTTa{} follows whatever ordering
+guarantees \HE{} makes (or doesn't make).  If \HE{} specifies deterministic
+order for certain operations, \CeTTa{} must match.  If \HE{} leaves order
+unspecified, \CeTTa{} may relax it for parallelism or other optimizations.
+
+%% ════════════════════════════════════════════════════════════════════
+\section{Storage and Indexing}
+\label{sec:storage}
+
+Where do terms live?  How are they retrieved?  These questions intersect
+with term representation but are not identical.
+
+\subsection{Discrimination Trees and Substitution Trees}
+
+First-order theorem provers index their clause sets for fast retrieval.
+Two structures dominate:
+
+\paragraph{Discrimination trees (E~Prover).}
+Index by functor, then by argument structure.  Fast for forward reasoning
+and rewriting.  Good when you want all terms matching a pattern.
+
+\paragraph{Substitution trees (Graf 1994).}
+Combine discrimination-tree speed with abstraction-tree generality.
+Crucially, they produce bindings during traversal, not just matching terms.
+This is exactly what pattern matching in MeTTa needs.
+
+\CeTTa{}'s \code{subst\_tree.c} explicitly says it produces partial
+bindings during the walk---Graf-style.
+
+\subsection{One Universe, Many Spaces}
+
+The ideal: one canonical term universe, with spaces as membership layers
+indexed separately.  The current reality: \code{Space} owns its own
+\code{Atom **atoms}, and migration hasn't begun.
+
+\PathMap{} offers an alternative storage backend: a prefix-compressed
+trie where common prefixes share nodes.  It supports algebraic operations
+(union, intersection, difference) that native arrays don't.
+
+The Distributed Atomspace (DAS)~\cite{DAS} represents another backend
+direction: very large knowledge bases across machines, with a MeTTa-integrated
+query API and multiple persistence engines.  For million-atom scales,
+DAS-style distributed backends become essential.
+
+The question for all backends is \textbf{semantic parity}: given the same
+logical space contents, do native, \PathMap{}, \MORK{}, and DAS backends
+produce identical evaluation results?  This is a formal obligation, not
+just a testing goal.
+
+\subsection{Revision-Aware Caching}
+
+When evidence is added or removed, which cached results invalidate?
+The \code{space\_revision} counter (bumped on every logical content change)
+supports lazy invalidation: cache entries include a revision number;
+lookup misses if the space has moved on.
+
+This is coarse-grained (any change invalidates all entries for that space).
+Fine-grained invalidation (tracking which terms changed and which caches
+depended on them) is an open research area.
+
+\subsection{Data Integrity and Security}
+
+For distributed backends, integrity becomes load-bearing infrastructure:
+
+\begin{description}
+\item[Revision vectors:] Causal ordering of space mutations.  When multiple
+  nodes can write, version vectors or Lamport timestamps establish which
+  update happened ``before'' another.  Without this, ``eventual consistency''
+  is meaningless.
+\item[Immutable logs:] Append-only logs of facts provide provenance and
+  enable replay.  DAS uses this pattern; so do blockchain-inspired
+  knowledge graphs.
+\item[Backend parity testing:] Same logical contents must produce identical
+  results across backends.  This is not just a test suite but a formal
+  obligation---the \code{BackendSemanticParity} theorem.
+\item[Access control:] Who can read or write which spaces?  For AGI systems
+  with self-modification, this is not a nice-to-have but a safety
+  requirement.
+\end{description}
+
+This is not ``security theater.''  A distributed knowledge base without
+integrity guarantees is a distributed bug generator.
+
+%% ════════════════════════════════════════════════════════════════════
+\section{Formal Backing}
+\label{sec:formal}
+
+Key invariants should be mechanically verified, not just believed.
+This section surveys what formal obligations exist, where Lean
+formalization fits, and how confidence layers build upon each other.
+
+\subsection{The Layered Confidence Model}
+
+Verification is not all-or-nothing.  We envision three layers:
+
+\paragraph{Layer 1: Executable conformance.}
+Cross-implementation test suites (e.g., \code{logicmoo/metta-testsuite}),
+differential testing against \HE{}/\PeTTa{}, property-based tests for
+evaluator equivalence, randomized backend parity tests.  This is the
+foundation---without passing tests, nothing else matters.
+
+\paragraph{Layer 2: Mechanized theorems.}
+Lean proofs of load-bearing invariants: observable equivalence, TCO
+preservation, binding safety, hash-cons invariants, cache coherence,
+backend parity.  These are confidence anchors: when a theorem is proved,
+we know with certainty that the property holds.  When a theorem has
+\code{sorry}, we know exactly where our confidence stops.
+
+\paragraph{Layer 3: Proof-producing reasoning.}
+Selected external reasoners (ATP systems, specialized engines) return
+proof objects that \CeTTa{} can consume or reconstruct.  MeTTaMath and
+Lean integration provide bridges from reasoning to verification.  This
+is the far horizon---genuinely exciting for AGI self-auditing scenarios.
+
+More broadly, \textbf{derivation tracking} is an open question: can a user
+ask ``how was this result derived?''  Even E~Prover has \code{-p} mode for
+proof output.  Options range from simple unification traces to full proof
+terms.  Whether this is optional (enabled by flag) or always available,
+and how much overhead it costs, remain design questions worth exploring.
+
+\subsection{Observable Equivalence}
+
+Two evaluation paths are equivalent if they produce the same result
+multiset (order may differ).  This is the fundamental correctness
+criterion: if we have both recursive and frame-based evaluators, they
+must be observably equivalent.
+
+\subsection{Evaluator Path Theorems}
+
+\begin{description}
+\item[\code{DirectVsStackEquivalence}:]
+  The recursive evaluator and the frame-based evaluator produce
+  identical results on their shared domain.
+\item[\code{TCOPreservation}:]
+  The \code{TAIL\_REENTER} path does not change semantics, only
+  stack usage.
+\end{description}
+
+\subsection{Binding and Substitution Safety}
+
+\begin{description}
+\item[\code{VisibleBindingProjection}:]
+  Projecting only body-visible bindings does not change the outcome.
+\item[\code{BranchDeltaMerge}:]
+  Merging branch-local binding deltas back into the outer environment
+  is sound.
+\item[\code{TypeDirectedArgumentOrder}:]
+  Evaluating arguments in type-directed order (strict first, lazy
+  deferred) matches \HE{} semantics.
+\end{description}
+
+\subsection{Term and Storage Invariants}
+
+\begin{description}
+\item[\code{HashConsInvariant}:]
+  Structurally equal terms share identity.
+\item[\code{ArenaResetSafety}:]
+  Published terms survive eval-arena rewind.
+\item[\code{SpaceRevisionCoherence}:]
+  Revision bumps and cache keys agree with logical mutation boundaries.
+\item[\code{BackendSemanticParity}:]
+  Same logical space contents produce identical results across backends.
+\end{description}
+
+\subsection{Tabling and Cache Theorems}
+
+\begin{description}
+\item[\code{SoundCaching}:]
+  Cached answers are correct answers (no false positives).
+\item[\code{CompleteAnswers}:]
+  When a table is marked complete, no additional answers exist.
+\item[\code{IncrementalInvalidationSoundness}:]
+  Dependency-based invalidation removes all affected entries.
+\end{description}
+
+%% ════════════════════════════════════════════════════════════════════
+\part{The Journey}
+%% ════════════════════════════════════════════════════════════════════
+
+\section{The Path We've Walked}
+\label{sec:journey}
+
+This section describes what \CeTTa{} has done, written as if we
+envisioned it from the start.  The narrative is continuous because
+the work is continuous; we didn't know everything at the beginning,
+but each step followed from the previous.
+
+\subsection{Starting with HE Fidelity}
+
+The earliest decision: \CeTTa{} would be a \emph{direct \HE{} runtime},
+shaped around the \HE{} evaluation structure.  Not an interpreter for
+a different language that happens to parse MeTTa.  Not a re-implementation
+that diverges where convenient.  The \HE{} spec is the contract.
+
+This meant structuring \code{eval.c} around the mutual recursion of
+\code{metta}, \code{interpret\_expression}, \code{interpret\_function},
+and friends.  It meant threading expected type throughout, even when
+that was awkward.  It meant implementing type-directed argument
+evaluation even though a simpler eager strategy would have been faster
+in some cases.
+
+\subsection{Arena Allocation and SymbolId}
+
+The first representation work: arena allocation for evaluation-local
+terms, avoiding malloc/free overhead.  Then the \code{SymbolId} cutover,
+replacing string comparisons with integer comparisons.  38\% instruction
+reduction.  These were low-hanging fruit, but they set the pattern:
+representation changes pay off more than local optimizations.
+
+\subsection{SearchContext and ChoicePoint}
+
+As nondeterminism became more important, we introduced
+\code{SearchContext} and \code{ChoicePoint} as explicit structures.
+Small, real abstractions---not full SLG, but the beginning of it.
+\code{TableStore} followed, providing revision-aware memoization.
+
+\subsection{TAIL\_REENTER and TCO}
+
+The \code{TAIL\_REENTER} pattern emerged from necessity: deeply recursive
+programs were blowing the stack.  A \code{goto tail\_call} trampoline
+for deterministic single-result forms solved it.  Now 15 call sites
+in \code{eval.c} use this pattern.
+
+\subsection{Where We Stand}
+
+The current position on the map:
+
+\begin{itemize}
+\item \textbf{Term representation}: Arena allocation, \code{SymbolId},
+  persistent hashcons---all working.  Eval-local hashcons not attempted
+  (needs arena-reset-safety confidence first).
+\item \textbf{Evaluation}: Type-directed, \code{TAIL\_REENTER} for TCO,
+  15+ sites.  Frame-based evaluation exists for streaming
+  (\code{NativeResumeStack}), but typed-apply still recursive.
+\item \textbf{Search}: \code{SearchContext}/\code{ChoicePoint} as seams.
+  \code{TableStore} for revision-aware memoization.  Not full SLG.
+\item \textbf{Storage}: Native and \MORK{} backends via
+  \code{SpaceMatchBackend}.  \MORK{} read-side works; write-side deferred.
+\item \textbf{Formal}: Some Lean infrastructure in mettapedia.  Key
+  theorems have \code{sorry}s or are not started.
+\end{itemize}
+
+This is a mark on the map, not a redrawing of the map.
+
+%% ════════════════════════════════════════════════════════════════════
+\part{The Horizon}
+%% ════════════════════════════════════════════════════════════════════
+
+\section{Clouds of Possibility}
+\label{sec:clouds}
+
+What might we explore next?  These are not stages to complete but
+regions where the landscape is promising and uncertain.
+
+\subsection{Eval-Local Term Sharing}
+
+Borrowing canonical identity into evaluation arenas could significantly
+reduce memory pressure on proof-heavy workloads.  Positive witnesses include:
+recursive PLN chaining over medium knowledge bases, metamath proof search
+at various depths, pattern-heavy stdlib operations, and cross-backend parity
+tests.  No single benchmark defines success; the workloads reveal which
+optimizations matter.
+
+But it could also introduce lifetime complexity that costs more than
+it saves.  The Conchon--Filliâtre model suggests a path, but the path
+is not walked.
+
+\subsection{Full SLG Tabling}
+
+\XSB{}-style suspension/resumption/completion would handle recursive
+queries that currently loop or produce incomplete answers.  The
+infrastructure is substantial.  The question: which workloads need it?
+Recursive PLN chaining over large knowledge bases is the obvious
+candidate.
+
+\subsection{Dependent Types as Extension}
+
+MeTTa's type system could grow toward dependent types, where types
+can depend on values.  This would enable richer verification and
+more precise staging.  But it also complicates the ``is this a value?''
+question significantly.  A cloud to explore, not a near-term commitment.
+
+\subsection{\code{--lang petta} Mode}
+
+\PeTTa{} diverges from \HE{} in specific ways.  A \code{--lang petta}
+flag could enable those divergences intentionally, allowing \CeTTa{}
+to run \PeTTa{} benchmarks without claiming they're \HE{}-compliant.
+Useful for performance comparison and migration.
+
+\subsection{PLN/ATP as Optional Lanes}
+
+Backward chaining, forward chaining, ATP integration (Lash-style or
+otherwise)---these are specialized inference modes.  They should
+integrate through explicit lane interfaces, not as modifications to
+the core evaluator.  The \code{mork:} lane prefix is a start.
+
+\subsection{Rho-Calculus Lane}
+
+Meredith's reflective higher-order process calculus~\cite{Meredith2005}
+provides formal process-algebraic semantics for concurrent computation
+with reflection.  MeTTa's quote/unquote semantics map naturally to
+rho-calculus's \code{@} and \code{*} operators, suggesting a principled
+foundation for concurrent MeTTa execution.
+
+This could enable:
+\begin{itemize}
+\item \textbf{Decentralized execution}: RChain-style distributed computation
+  where processes run on different nodes and communicate via channels.
+\item \textbf{Formal concurrency semantics}: No ad-hoc parallelism.  The
+  process algebra defines what ``concurrent evaluation'' means.
+\item \textbf{Reflection as first-class}: In rho-calculus, code-as-data is
+  native, not an encoding.  This aligns with MeTTa's reflective design.
+\end{itemize}
+
+Open question: how much rho-calculus machinery does \CeTTa{} need versus
+borrow?  Full Rholang compilation?  A lightweight embedding?  A translation
+layer that preserves key properties?
+
+%% ════════════════════════════════════════════════════════════════════
+\section{The Cloud of Forks}
+\label{sec:forks}
+
+The endgame is not a single design point.  It is a region of design
+space with multiple viable paths.  Here we enumerate the major decision
+axes where multiple options remain open.
+
+\subsection{Representation Fork}
+
+\begin{description}
+\item[Option A: Persistent-only hash-consing.]
+  Simplest ownership story.  Fastest to stabilize.  But leaves
+  evaluation-time copying costs.
+\item[Option B: Arena-disciplined borrowed sharing.]
+  Stronger memory savings.  Aligns with one-universe ideal.  Needs
+  airtight publication/lifetime rules and formal proof.
+\item[Option C: Mostly canonical + local wrappers.]
+  Deepest sharing.  Strongest long-term symbolic performance.  Hardest
+  implementation and proof burden.
+\end{description}
+
+\subsection{Substitution Fork}
+
+\begin{description}
+\item[Option A: Eager substitution.]
+  Simple mental model.  Can be expensive on deep substitution chains.
+\item[Option B: Selective delayed substitution.]
+  Middle ground, focusing on hot cases only.
+\item[Option C: Explicit substitutions everywhere.]
+  Radically improved copying behavior.  Evaluator and normal-form logic
+  become more complex (Abadi et al.\ $\lambda\sigma$-calculus).
+\end{description}
+
+\subsection{Evaluator/Machine Fork}
+
+\begin{description}
+\item[Option A: Direct recursive/trampoline.]
+  Clearest semantics, easiest to debug.  May suffice for deterministic paths.
+\item[Option B: Explicit resumable frame machine.]
+  Supports streaming and bounded consumers.  Risk of destroying tail-path
+  performance if not careful.
+\item[Option C: Derived/compiled machine family.]
+  Best performance ceiling.  Greatest need for observable-equivalence proofs.
+\end{description}
+
+\subsection{Tabling Fork}
+
+\begin{description}
+\item[Option A: Revision-aware cache only.]
+  Lowest complexity.  Insufficient for serious recursion/cycles.
+\item[Option B: Variant tabling.]
+  Strong step up, simpler than subsumption.
+\item[Option C: Subsumptive tabling.]
+  More reuse, more subtle semantics/performance tradeoffs.
+\item[Option D: Incremental tabling.]
+  Strongest fit for changing knowledge bases.  Higher complexity.
+\end{description}
+
+\subsection{Ordering/Demand Fork}
+
+\begin{description}
+\item[Option A: Strict ordered eager results.]
+  Simplest user story.  Can overcompute badly.
+\item[Option B: Ordered but bounded-demand streaming.]
+  Likely best near-term target.  Pengines-style on-demand.
+\item[Option C: Relaxed-order parallel modes.]
+  Strongest scalability.  Must be explicit semantically.
+\end{description}
+
+\subsection{Backend/Storage Fork}
+
+\begin{description}
+\item[Option A: Native array/set backend as baseline.]
+  Simple, clear benchmark baseline.
+\item[Option B: \PathMap{}/trie-heavy backend.]
+  Good algebraic/path operations.  Risk of conflating membership with identity.
+\item[Option C: \MORK{}/graph DB backend.]
+  High ceiling for graph-native workloads.  Requires strong parity discipline.
+\item[Option D: Distributed (DAS) backend.]
+  Very large knowledge bases across machines.  Explicit cost/consistency model.
+\item[Option E: Hybrid multi-backend.]
+  Likely true endgame.  Requires clean interfaces and parity tests.
+\end{description}
+
+\subsection{Verification Fork}
+
+\begin{description}
+\item[Option A: Tests only.]
+  Insufficient long-term confidence.
+\item[Option B: Tests + selected Lean theorems.]
+  Practical and high value.  The near-term sweet spot.
+\item[Option C: Proof-producing kernel / checked delegations.]
+  Strongest long-term trust story.  More ambitious but strategically valuable.
+\end{description}
+
+%% ════════════════════════════════════════════════════════════════════
+\appendix
+\section{Research Annex}
+\label{sec:research}
+
+Ideas that inspire creativity but aren't on the main map.
+
+\paragraph{Factor-Graph Demand/Supply.}
+Ben's factor-graph approach to PLN inference, where demand flows backward
+and supply flows forward through a graph of inference rules.  Promising
+for large-scale reasoning, but not the evaluator core.
+
+\paragraph{ECAN-Style Attention.}
+Economic attention allocation for focusing computational resources on
+important atoms.  Interesting for AGI applications, orthogonal to the
+runtime's core concerns.
+
+\paragraph{E-Graphs and Equality Saturation.}
+The \code{egg} and \code{egglog} projects show how congruence closure,
+equality saturation, and Datalog can combine for powerful rewrite
+optimization.  A potential lane, not the evaluator core.
+
+\paragraph{Compiled Datalog (Soufflé).}
+For monotone or stratified logical fragments, Soufflé-style compilation
+into parallel C++ can yield dramatic speedups.  Recognizing when a
+subproblem has Datalog shape and compiling it aggressively is a
+long-term optimization opportunity.
+
+\paragraph{OSLF and Type Hypercubes.}
+The OSLF framework~\cite{OSLF2026} shows how to extract a family of type
+systems (organized as a hypercube) from operational rewrite rules.  The
+modal layer with $\langle K_j \rangle$ modalities and equational center
+$\mathcal{Z}$ can help classify which operations are pure vs.\ effectful
+and which rewrites commute (enabling safe parallelism).  MeTTa's
+spatial-behavioral type annotations could interface with this framework,
+deriving effect structure from the rules themselves rather than imposing
+it externally.
+
+\paragraph{Worst-Case Optimal Joins.}
+For large conjunctive matching, Leapfrog Triejoin~\cite{Veldhuizen2014}
+and related worst-case optimal join algorithms matter.  Variable ordering
+and multiway join planning become important when MeTTa queries involve
+multiple patterns over large spaces.
+
+\paragraph{Historical Notes.}
+A git-generated timeline of major commits and version tags would go here.
+The main roadmap describes territory, not chronology.
+
+%% ════════════════════════════════════════════════════════════════════
+\section{Source Corpus}
+\label{sec:sources}
+
+This section catalogs the primary sources for \CeTTa{} implementation,
+organized by role.  Each entry explains \emph{why it matters} for the
+endgame.
+
+\subsection{Hyperon / MeTTa Semantics}
+
+\begin{description}
+\item[\code{trueagi-io/hyperon-experimental}]
+  The main public MeTTa implementation.  Contains the \HE{} spec in
+  \code{docs/metta.md}.  The semantic reference against which \CeTTa{}
+  must be compared.
+
+\item[Meta-MeTTa (arXiv 2305.17218)]
+  Operational semantics for MeTTa.  Provides a formal foundation for
+  what evaluation \emph{means}.
+
+\item[Reflective Metagraph Rewriting (arXiv 2112.08272)]
+  Conceptual framing for MeTTa as reflective metagraph rewriting.
+  Important for understanding the broader Hyperon vision.
+\end{description}
+
+\subsection{Comparative Implementations}
+
+\begin{description}
+\item[\code{trueagi-io/PeTTa}]
+  Efficient Prolog/SWI-based MeTTa.  Performance comparator and
+  interoperability target.  Shows what \WAM{}-style efficiency looks like.
+
+\item[\code{trueagi-io/metta-wam}]
+  WAM-targeting MeTTa implementation.  Useful for understanding
+  compiled control flow.
+
+\item[\code{logicmoo/metta-testsuite}]
+  Cross-implementation compatibility harness.  Essential for
+  conformance testing.
+
+\item[\code{singnet/das}]
+  Distributed Atomspace.  Large-scale backend with MeTTa-integrated
+  query API.  Shows how \CeTTa{} could scale to million-atom KBs.
+\end{description}
+
+\subsection{Search/Control/Tabling}
+
+\begin{description}
+\item[Warren 1983]
+  The WAM paper.  Classic machine model for efficient Prolog.
+  Choicepoints, trail, last-call optimization.
+
+\item[\XSB{} Manual]
+  SLG-WAM, tries, call subsumption, incremental maintenance, shared
+  tables.  The reference for serious tabling implementation.
+
+\item[SWI-Prolog Tabling Docs]
+  Modern production view: JIT indexing, delimited continuations,
+  incremental tabling.
+
+\item[Desouter et al.\ 2016]
+  ``Tabling as a Library with Delimited Control.''  Shows how tabling
+  can be implemented cleanly with delimited continuations.
+\end{description}
+
+\subsection{Term Representation / Indexing}
+
+\begin{description}
+\item[Conchon \& Filliâtre 2006]
+  Type-safe modular hash-consing.  Canonical reference for safe
+  structural sharing.  Weak references, GC integration, lifetime safety.
+
+\item[Graf 1994]
+  Substitution tree indexing.  Produces bindings during traversal---
+  exactly what MeTTa pattern matching needs.
+
+\item[Schulz (E Prover)]
+  One shared term bank plus multiple specialized indices.  The
+  converged architecture after years of ``mess.''
+
+\item[Zhu et al.\ 2025]
+  Modern hash-consing in JuliaSymbolics.  3.2$\times$ speedup, 2$\times$
+  memory reduction on real biological models.  Validates the payoff.
+\end{description}
+
+\subsection{Evaluator/Machine Design}
+
+\begin{description}
+\item[Ager et al.\ (Danvy)]
+  ``A Functional Correspondence between Evaluators and Abstract Machines.''
+  Derive machine structure from evaluator semantics systematically.
+
+\item[Maurer et al.\ (``Compiling without continuations'')]
+  Join points as first-class optimization concept.  Preserves non-escaping
+  tail paths as direct jumps.
+
+\item[Leijen \& Lorenzen (``Tail Recursion Modulo Context'')]
+  Advanced tail-call optimization that supports structured hot paths
+  without losing abstraction.
+\end{description}
+
+\subsection{Optional Reasoning Lanes}
+
+\begin{description}
+\item[\code{egraphs-good/egg}]
+  High-performance equality saturation.  E-graph lane for congruence
+  closure and rewrite optimization.
+
+\item[\code{egglog}]
+  Unifies Datalog and equality saturation.  Incremental execution,
+  cooperating analyses, lattice reasoning.
+
+\item[\code{souffle-lang/souffle}]
+  Highly optimized Datalog with parallel native compilation.  Shows
+  how to compile logical fragments aggressively.
+
+\item[Differential Dataflow]
+  ``Incremental updates with millisecond propagation.''  Inspiration
+  for incremental knowledge maintenance.
+
+\item[\code{trueagi-io/hyperon-pln}]
+  MeTTa-native PLN.  The uncertain reasoning lane.
+\end{description}
+
+\subsection{Verification / Proof}
+
+\begin{description}
+\item[Lean 4 + mathlib]
+  Target environment for mechanized theorems.  Metaprogramming book
+  for tactic development.
+
+\item[MeTTaMath]
+  Bridge between MeTTa and verifiable proof kernels.  Metamath-style
+  checking.
+
+\item[\code{vprover/vamplean}]
+  Proof-producing ATP import into Lean.  Model for trusted external
+  reasoning integration.
+
+\item[E Prover, Vampire]
+  Mature ATP systems.  Potential coprocessors for delegated theorem
+  proving.
+
+\item[TPTP]
+  Benchmark/format/evaluation backbone for ATP work.  Common problems
+  and standards.
+\end{description}
+
+%% ════════════════════════════════════════════════════════════════════
+
+\begin{thebibliography}{99}
+
+\bibitem{ConchonFilliâtre2006}
+S.~Conchon and J.-C.~Filliâtre.
+\newblock Type-safe modular hash-consing.
+\newblock In \emph{ML Workshop}, 2006.
+\newblock \url{https://usr.lmf.cnrs.fr/~jcf/publis/hash-consing2.pdf}
+
+\bibitem{Graf1994}
+P.~Graf.
+\newblock Substitution tree indexing.
+\newblock In \emph{RTA}, 1994.
+\newblock \url{https://pure.mpg.de/rest/items/item_1834191_2/component/file_1857890/content}
+
+\bibitem{Warren1983}
+D.H.D.~Warren.
+\newblock An abstract Prolog instruction set.
+\newblock Technical Note 309, SRI International, 1983.
+\newblock \url{https://www.sri.com/wp-content/uploads/2021/12/641.pdf}
+
+\bibitem{XSBManual}
+The XSB System, Version 4.0, 2022.
+\newblock \url{https://xsb.sourceforge.net/}
+
+\bibitem{EProver}
+S.~Schulz.
+\newblock E---a brainiac theorem prover (Version 3.x, 2024).
+\newblock \emph{AI Communications}, 2002 (original).
+\newblock \url{https://github.com/eprover/eprover}
+
+\bibitem{DesouterTabling2016}
+B.~Desouter, M.~van Dooren, and T.~Schrijvers.
+\newblock Tabling as a library with delimited control.
+\newblock \emph{IJCAI}, 2016.
+\newblock \url{https://www.ijcai.org/Proceedings/16/Papers/619.pdf}
+
+\bibitem{HyperonExp}
+TrueAGI.
+\newblock Hyperon Experimental.
+\newblock \url{https://github.com/trueagi-io/hyperon-experimental}
+
+\bibitem{PeTTa}
+TrueAGI.
+\newblock PeTTa: Prolog-based MeTTa.
+\newblock \url{https://github.com/trueagi-io/PeTTa}
+
+\bibitem{DAS}
+SingularityNET.
+\newblock Distributed Atomspace (DAS).
+\newblock \url{https://github.com/singnet/das}
+
+\bibitem{PathMap}
+A.~Vandervorst.
+\newblock PathMap: Prefix-compressed structural sharing.
+\newblock \url{https://github.com/Adam-Vandervorst/PathMap}
+
+\bibitem{MORK}
+TrueAGI.
+\newblock MORK: High-performance hypergraph kernel.
+\newblock \url{https://github.com/trueagi-io/MORK}
+
+\bibitem{Egg}
+egg: E-graphs good.
+\newblock \url{https://github.com/egraphs-good/egg}
+
+\bibitem{Souffle}
+Soufflé: High-performance Datalog.
+\newblock \url{https://souffle-lang.github.io/}
+
+\bibitem{Lean4}
+Lean 4 theorem prover.
+\newblock \url{https://github.com/leanprover/lean4}
+
+\bibitem{Smith1984}
+B.~C.~Smith.
+\newblock Reflection and semantics in Lisp.
+\newblock In \emph{POPL}, 1984.
+
+\bibitem{AminRompf2018}
+N.~Amin and T.~Rompf.
+\newblock Collapsing towers of interpreters.
+\newblock In \emph{POPL}, 2018.
+\newblock \url{https://dl.acm.org/doi/10.1145/3158140}
+
+\bibitem{BergerSchwichtenberg1991}
+U.~Berger and H.~Schwichtenberg.
+\newblock An inverse of the evaluation functional for typed $\lambda$-calculus.
+\newblock In \emph{LICS}, 1991.
+
+\bibitem{Korf1985}
+R.~E.~Korf.
+\newblock Depth-first iterative-deepening: An optimal admissible tree search.
+\newblock \emph{Artificial Intelligence}, 27(1):97--109, 1985.
+
+\bibitem{FriedmanByrd2005}
+D.~P.~Friedman, W.~E.~Byrd, and O.~Kiselyov.
+\newblock \emph{The Reasoned Schemer}.
+\newblock MIT Press, 2005.
+
+\bibitem{Meredith2005}
+L.~G.~Meredith and M.~Radestock.
+\newblock A reflective higher-order calculus.
+\newblock In \emph{ENTCS}, 2005.
+
+\bibitem{OSLF2026}
+M.~Stay, L.~G.~Meredith, and C.~Wells.
+\newblock Generating Hypercubes of Type Systems.
+\newblock 2026.
+
+\bibitem{Veldhuizen2014}
+T.~L.~Veldhuizen.
+\newblock Leapfrog Triejoin: A Simple, Worst-Case Optimal Join Algorithm.
+\newblock In \emph{ICDT}, 2014.
+\newblock \url{https://openproceedings.org/2014/conf/icdt/Veldhuizen14.pdf}
+
+\bibitem{Abadi1991}
+M.~Abadi, L.~Cardelli, P.-L.~Curien, and J.-J.~L\'{e}vy.
+\newblock Explicit substitutions.
+\newblock \emph{Journal of Functional Programming}, 1(4):375--416, 1991.
+
+\bibitem{Pengines}
+SWI-Prolog Pengines: Web Logic Programming Made Easy.
+\newblock \url{https://www.swi-prolog.org/pldoc/doc_for?object=section(%27packages/pengines.html%27)}
+
+\end{thebibliography}
 
 \end{document}

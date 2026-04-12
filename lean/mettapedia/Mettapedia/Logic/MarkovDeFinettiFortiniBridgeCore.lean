@@ -1,4 +1,5 @@
 import Mettapedia.Logic.MarkovDeFinettiAnchorAdapter
+import Mettapedia.Logic.MarkovDeFinettiRecurrence
 import Exchangeability.DeFinetti.Theorem
 import Mathlib.Data.Nat.Nth
 import Mathlib.Topology.Basic
@@ -41,6 +42,71 @@ noncomputable def nthVisitTime (ω : ℕ → Fin k) (i : Fin k) (n : ℕ) : Opti
   by
     classical
     exact if h : nthVisitTimeExists (k := k) ω i n then some (Nat.find h) else none
+
+/-! ### Class-Based Visit Infrastructure
+
+Generalizes visit-time machinery from single states to state classes.
+-/
+
+section ClassVisits
+
+variable (C : Set (Fin k))
+
+/-- Count of visits to any state in class C before time t. -/
+noncomputable def classVisitCountBefore (ω : ℕ → Fin k) (t : ℕ) : ℕ := by
+  classical
+  exact Finset.sum (Finset.range t) (fun s => if ω s ∈ C then (1 : ℕ) else (0 : ℕ))
+
+/-- Time t is the n-th visit to class C. -/
+def isNthClassVisitTime (ω : ℕ → Fin k) (n t : ℕ) : Prop :=
+  ω t ∈ C ∧ classVisitCountBefore (k := k) C ω t = n
+
+/-- There exists an n-th visit time to class C. -/
+def nthClassVisitTimeExists (ω : ℕ → Fin k) (n : ℕ) : Prop :=
+  ∃ t : ℕ, isNthClassVisitTime (k := k) C ω n t
+
+/-- The actual time of the n-th visit to class C. -/
+noncomputable def nthClassVisitTime (ω : ℕ → Fin k) (n : ℕ) : Option ℕ := by
+  classical
+  exact if h : nthClassVisitTimeExists (k := k) C ω n then some (Nat.find h) else none
+
+/-- Singleton class visit count equals state visit count. -/
+lemma classVisitCountBefore_singleton (i : Fin k) (ω : ℕ → Fin k) (t : ℕ) :
+    classVisitCountBefore (k := k) ({i} : Set (Fin k)) ω t = visitCountBefore (k := k) ω i t := by
+  classical
+  simp only [classVisitCountBefore, visitCountBefore, Set.mem_singleton_iff]
+
+/-- Singleton class n-th visit time equals state n-th visit time. -/
+lemma isNthClassVisitTime_singleton (i : Fin k) (ω : ℕ → Fin k) (n t : ℕ) :
+    isNthClassVisitTime (k := k) ({i} : Set (Fin k)) ω n t ↔ isNthVisitTime (k := k) ω i n t := by
+  simp only [isNthClassVisitTime, isNthVisitTime, Set.mem_singleton_iff,
+             classVisitCountBefore_singleton]
+
+/-- Singleton class n-th visit existence equals state n-th visit existence. -/
+lemma nthClassVisitTimeExists_singleton (i : Fin k) (ω : ℕ → Fin k) (n : ℕ) :
+    nthClassVisitTimeExists (k := k) ({i} : Set (Fin k)) ω n ↔
+    nthVisitTimeExists (k := k) ω i n := by
+  simp only [nthClassVisitTimeExists, nthVisitTimeExists, isNthClassVisitTime_singleton]
+
+/-- Singleton class n-th visit time equals state n-th visit time. -/
+lemma nthClassVisitTime_singleton (i : Fin k) (ω : ℕ → Fin k) (n : ℕ) :
+    nthClassVisitTime (k := k) ({i} : Set (Fin k)) ω n = nthVisitTime (k := k) ω i n := by
+  classical
+  unfold nthClassVisitTime nthVisitTime
+  have hiff : nthClassVisitTimeExists (k := k) ({i} : Set (Fin k)) ω n ↔
+              nthVisitTimeExists (k := k) ω i n :=
+    nthClassVisitTimeExists_singleton (k := k) i ω n
+  by_cases h : nthVisitTimeExists (k := k) ω i n
+  · simp only [dif_pos h, dif_pos (hiff.2 h)]
+    congr 1
+    apply Nat.le_antisymm
+    · apply Nat.find_le
+      exact (isNthClassVisitTime_singleton (k := k) i ω n _).2 (Nat.find_spec h)
+    · apply Nat.find_le
+      exact (isNthClassVisitTime_singleton (k := k) i ω n _).1 (Nat.find_spec (hiff.2 h))
+  · simp only [dif_neg h, dif_neg (fun hc => h (hiff.1 hc))]
+
+end ClassVisits
 
 noncomputable def rowSuccessorAtNthVisit (i : Fin k) (n : ℕ) (ω : ℕ → Fin k) : Fin k :=
   match nthVisitTime (k := k) ω i n with
@@ -254,6 +320,19 @@ lemma nthVisitTimeExists_of_infinite_visits
           = Nat.count p (Nat.nth p n) := by
               simpa [p] using (visitCountBefore_eq_natCount (k := k) ω i (Nat.nth p n))
       _ = n := Nat.count_nth_of_infinite hinf' n
+
+/-- Strong recurrence in a class implies all visit indices exist for class members.
+This connects the measure-theoretic `StrongRecurrenceInClass` to the combinatorial
+`nthVisitTimeExists`. -/
+lemma nthVisitTimeExists_of_StrongRecurrenceInClass
+    (C : Set (Fin k)) (P : Measure (ℕ → Fin k)) (_hP : IsProbabilityMeasure P)
+    (hstrong :
+      ∀ i ∈ C, ∀ᵐ ω ∂P, (∃ t : ℕ, ω t ∈ C) → Set.Infinite {t : ℕ | ω t = i})
+    (i : Fin k) (hi : i ∈ C) (n : ℕ) :
+    ∀ᵐ ω ∂P, (∃ t : ℕ, ω t ∈ C) → nthVisitTimeExists (k := k) ω i n := by
+  have hae : ∀ᵐ ω ∂P, (∃ t : ℕ, ω t ∈ C) → Set.Infinite {t : ℕ | ω t = i} := hstrong i hi
+  filter_upwards [hae] with ω hω henter
+  exact nthVisitTimeExists_of_infinite_visits (k := k) ω i n (hω henter)
 
 lemma visitCountBefore_strict_mono_of_visit
     (ω : ℕ → Fin k) (i : Fin k) {t u : ℕ}
@@ -592,6 +671,292 @@ lemma measure_cylinder_pair_eq_start_and_rowSuccessorZero
     P (cylinder (k := k) [a, b]) =
       P ({ω : ℕ → Fin k | ω 0 = a} ∩ rowSuccessorValueEvent (k := k) a 0 b) := by
   simp [cylinder_pair_eq_start_and_rowSuccessorZero (k := k) a b]
+
+/-- The visit index of position `n` inside a finite word: the number of previous
+occurrences of the symbol at `n`. -/
+def wordVisitIndex
+    (xs : List (Fin k)) (d : Fin k) (n : ℕ) : ℕ :=
+  Nat.count (fun m => xs.getD m d = xs.getD n d) n
+
+/-- The ordered list of tuple coordinates in `ys` whose anchor symbol in the
+word `a :: ys` is `i`. The order is inherited from `List.finRange ys.length`. -/
+def wordAnchorFiberList
+    (a : Fin k) (ys : List (Fin k)) (i : Fin k) : List (Fin ys.length) :=
+  (List.finRange ys.length).filter fun j => (a :: ys).getD j.1 a = i
+
+lemma mem_wordAnchorFiberList_iff
+    (a : Fin k) (ys : List (Fin k)) (i : Fin k) (j : Fin ys.length) :
+    j ∈ wordAnchorFiberList (k := k) a ys i ↔ (a :: ys).getD j.1 a = i := by
+  simp [wordAnchorFiberList, List.mem_filter, List.mem_finRange]
+
+lemma getElem_wordAnchorFiberList_eq_anchor
+    (a : Fin k) (ys : List (Fin k)) (i : Fin k) {n : ℕ}
+    (hn : n < (wordAnchorFiberList (k := k) a ys i).length) :
+    (a :: ys).getD ((wordAnchorFiberList (k := k) a ys i)[n]).1 a = i := by
+  simpa [wordAnchorFiberList] using
+    (List.getElem_filter
+      (xs := List.finRange ys.length)
+      (p := fun j : Fin ys.length => (a :: ys).getD j.1 a = i)
+      hn)
+
+lemma length_wordAnchorFiberList_eq_countP
+    (a : Fin k) (ys : List (Fin k)) (i : Fin k) :
+    (wordAnchorFiberList (k := k) a ys i).length =
+      (List.finRange ys.length).countP (fun j : Fin ys.length => (a :: ys).getD j.1 a = i) := by
+  simp [wordAnchorFiberList, List.countP_eq_length_filter]
+
+lemma idxOf_filter_eq_countP_take_idxOf
+    {α : Type*} [DecidableEq α] (p : α → Bool) :
+    ∀ {l : List α}, l.Nodup → ∀ {x : α}, x ∈ l.filter p →
+      (l.filter p).idxOf x = (l.take (l.idxOf x)).countP p
+  | [], _, x, hx => by simp at hx
+  | a :: l, hnd, x, hx => by
+      rcases List.nodup_cons.mp hnd with ⟨ha, hnd'⟩
+      by_cases hp : p a
+      · have hx' : x = a ∨ x ∈ l.filter p := by
+          simpa [hp] using hx
+        rcases hx' with rfl | hx'
+        · simp [hp]
+        · have hxa : x ≠ a := by
+            intro hax
+            subst hax
+            exact ha (List.mem_of_mem_filter hx')
+          rw [List.filter_cons, if_pos hp]
+          rw [List.idxOf_cons_ne (a := x) (b := a) (l := List.filter p l) hxa.symm,
+            List.idxOf_cons_ne (a := x) (b := a) (l := l) hxa.symm]
+          simp [hp, idxOf_filter_eq_countP_take_idxOf p hnd' hx']
+      · have hx' : x ∈ l.filter p := by
+          simpa [hp] using hx
+        have hxa : x ≠ a := by
+          intro hax
+          subst hax
+          simp [hp] at hx'
+        rw [List.filter_cons, if_neg hp]
+        rw [List.idxOf_cons_ne (a := x) (b := a) (l := l) hxa.symm]
+        simp [hp, idxOf_filter_eq_countP_take_idxOf p hnd' hx']
+
+lemma take_finRange_eq_map_castLT
+    {n : ℕ} (j : Fin n) :
+    (List.finRange n).take j.1 =
+      (List.finRange j.1).map (fun i : Fin j.1 => Fin.castLT i (Nat.lt_trans i.2 j.2)) := by
+  apply List.ext_getElem <;> simp [List.getElem_map, List.getElem_finRange]
+
+lemma countP_take_finRange_eq_wordVisitIndex
+    (a : Fin k) (ys : List (Fin k)) (i : Fin k) (j : Fin ys.length)
+    (hj : (a :: ys).getD j.1 a = i) :
+    ((List.finRange ys.length).take j.1).countP
+        (fun m : Fin ys.length => (a :: ys).getD m.1 a = i) =
+      wordVisitIndex (k := k) (a :: ys) a j.1 := by
+  rw [take_finRange_eq_map_castLT j, wordVisitIndex, hj]
+  calc
+    ((List.finRange j.1).map (fun m : Fin j.1 => Fin.castLT m (Nat.lt_trans m.2 j.2))).countP
+        (fun m : Fin ys.length => decide ((a :: ys).getD m.1 a = i)) =
+      (List.finRange j.1).countP
+        (((fun m : Fin ys.length => decide ((a :: ys).getD m.1 a = i)) ∘
+          fun m : Fin j.1 => Fin.castLT m (Nat.lt_trans m.2 j.2))) := by
+        exact
+          (List.countP_map
+            (p := fun m : Fin ys.length => decide ((a :: ys).getD m.1 a = i))
+            (f := fun m : Fin j.1 => Fin.castLT m (Nat.lt_trans m.2 j.2))
+            (l := List.finRange j.1))
+    _ = (List.finRange j.1).countP (fun m : Fin j.1 => decide ((a :: ys).getD m.1 a = i)) := by
+        rfl
+    _ = ((List.finRange j.1).map (fun m : Fin j.1 => m.1)).countP
+          (fun m => decide ((a :: ys).getD m a = i)) := by
+        exact
+          (List.countP_map
+            (p := fun m => decide ((a :: ys).getD m a = i))
+            (f := fun m : Fin j.1 => m.1)
+            (l := List.finRange j.1)).symm
+    _ = (List.range j.1).countP (fun m => (a :: ys).getD m a = i) := by
+        exact congrArg
+          (fun l => l.countP (fun m => (a :: ys).getD m a = i))
+          (List.map_coe_finRange_eq_range (n := j.1))
+    _ = Nat.count (fun m => (a :: ys).getD m a = i) j.1 := by
+        rfl
+
+lemma wordVisitIndex_getElem_wordAnchorFiberList
+    (a : Fin k) (ys : List (Fin k)) (i : Fin k)
+    (t : Fin (wordAnchorFiberList (k := k) a ys i).length) :
+    wordVisitIndex (k := k) (a :: ys) a
+        ((wordAnchorFiberList (k := k) a ys i)[t]).1 = t := by
+  let p : Fin ys.length → Bool := fun j => (a :: ys).getD j.1 a = i
+  let x : Fin ys.length := (wordAnchorFiberList (k := k) a ys i)[t]
+  have hx : x ∈ (List.finRange ys.length).filter p := by
+    simp [wordAnchorFiberList, p, x]
+  have hidx_filter :
+      ((List.finRange ys.length).filter p).idxOf x = t := by
+    simpa [wordAnchorFiberList, p, x] using
+      ((List.nodup_finRange ys.length).filter p).idxOf_getElem t.1 t.2
+  have hcount :
+      ((List.finRange ys.length).take ((List.finRange ys.length).idxOf x)).countP p = t := by
+    rw [← hidx_filter]
+    exact (idxOf_filter_eq_countP_take_idxOf p (List.nodup_finRange ys.length) hx).symm
+  have hcount' :
+      ((List.finRange ys.length).take x.1).countP p = t := by
+    simpa [x, List.idxOf_finRange] using hcount
+  have hx_anchor : (a :: ys).getD x.1 a = i := by
+    simpa [x] using getElem_wordAnchorFiberList_eq_anchor (k := k) a ys i t.2
+  simpa [p, x] using
+    (countP_take_finRange_eq_wordVisitIndex (k := k) a ys i x hx_anchor).symm.trans hcount'
+
+/-- If a path agrees with a finite word up to position `n`, then position `n` is
+the `wordVisitIndex`-th visit of its current symbol. -/
+lemma nthVisitTime_eq_some_of_wordPrefix
+    (xs : List (Fin k)) (ω : ℕ → Fin k) {n : ℕ}
+    (d : Fin k)
+    (hprefix : ∀ m ≤ n, ω m = xs.getD m d) :
+    nthVisitTime (k := k) ω (xs.getD n d) (wordVisitIndex (k := k) xs d n) = some n := by
+  have hvisit : ω n = xs.getD n d := hprefix n le_rfl
+  have hcount :
+      visitCountBefore (k := k) ω (xs.getD n d) n =
+        wordVisitIndex (k := k) xs d n := by
+    rw [visitCountBefore_eq_natCount (k := k) ω (xs.getD n d) n, wordVisitIndex]
+    rw [Nat.count_eq_card_filter_range, Nat.count_eq_card_filter_range]
+    congr 1
+    refine Finset.filter_congr ?_
+    intro m hm
+    simp [hprefix m (Nat.le_of_lt (Finset.mem_range.mp hm))]
+  exact
+    (nthVisitTime_eq_some_iff (k := k) ω (xs.getD n d) (wordVisitIndex (k := k) xs d n) n).2
+      ⟨hvisit, hcount⟩
+
+/-- Membership in a nonempty cylinder is equivalent to matching the start state
+and every successor constraint encoded by the word's visit indices. -/
+lemma mem_cylinder_cons_iff_rowSuccessor_constraints
+    (ω : ℕ → Fin k) (a : Fin k) (ys : List (Fin k)) :
+    ω ∈ cylinder (k := k) (a :: ys) ↔
+      ω 0 = a ∧
+      ∀ n, n + 1 < (a :: ys).length →
+        rowSuccessorAtNthVisit (k := k) ((a :: ys).getD n a)
+          (wordVisitIndex (k := k) (a :: ys) a n) ω
+          = (a :: ys).getD (n + 1) a := by
+  let xs := a :: ys
+  constructor
+  · intro hω
+    have hcoords : ∀ i : Fin xs.length, ω i.1 = xs[i.1] := by
+      simpa [xs, MarkovDeFinettiRecurrence.cylinder] using hω
+    refine ⟨?_, ?_⟩
+    · simpa [xs] using hcoords ⟨0, by simp [xs]⟩
+    · intro n hn
+      have hprefix : ∀ m ≤ n, ω m = xs.getD m a := by
+        intro m hm
+        have hm_lt : m < xs.length := Nat.lt_of_le_of_lt hm (Nat.lt_of_succ_lt hn)
+        calc
+          ω m = xs[m] := hcoords ⟨m, hm_lt⟩
+          _ = xs.getD m a := (List.getD_eq_getElem (l := xs) (d := a) hm_lt).symm
+      have hNth :
+          nthVisitTime (k := k) ω (xs.getD n a)
+            (wordVisitIndex (k := k) xs a n) = some n :=
+        nthVisitTime_eq_some_of_wordPrefix (k := k) xs ω a hprefix
+      have hnext : ω (n + 1) = xs.getD (n + 1) a := by
+        have hnext' : ω (n + 1) = xs[n + 1] := hcoords ⟨n + 1, hn⟩
+        exact hnext'.trans (List.getD_eq_getElem (l := xs) (d := a) hn).symm
+      have hrow :
+          rowSuccessorAtNthVisit (k := k) (xs.getD n a) (wordVisitIndex (k := k) xs a n) ω =
+            xs.getD (n + 1) a := by
+        rw [rowSuccessorAtNthVisit, hNth]
+        simpa [successorAt] using hnext
+      simpa [xs] using hrow
+  · rintro ⟨hstart, hrows⟩
+    have hprefix :
+        ∀ n, n < xs.length → ∀ m ≤ n, ω m = xs.getD m a := by
+      intro n hn
+      induction n with
+      | zero =>
+          intro m hm
+          have hm0 : m = 0 := Nat.eq_zero_of_le_zero hm
+          simpa [xs, hm0] using hstart
+      | succ n ih =>
+          intro m hm
+          rcases lt_or_eq_of_le hm with hm_lt | rfl
+          · exact ih (Nat.lt_of_succ_lt hn) m (Nat.lt_succ_iff.mp hm_lt)
+          · have hprefix_n : ∀ m ≤ n, ω m = xs.getD m a := ih (Nat.lt_of_succ_lt hn)
+            have hNth :
+                nthVisitTime (k := k) ω (xs.getD n a)
+                  (wordVisitIndex (k := k) xs a n) = some n :=
+              nthVisitTime_eq_some_of_wordPrefix (k := k) xs ω a hprefix_n
+            have hrow :
+                rowSuccessorAtNthVisit (k := k) (xs.getD n a)
+                  (wordVisitIndex (k := k) xs a n) ω = xs.getD (n + 1) a := by
+              simpa [xs] using hrows n hn
+            rw [rowSuccessorAtNthVisit, hNth] at hrow
+            simpa [successorAt] using hrow
+    refine Set.mem_iInter.mpr ?_
+    intro i
+    calc
+      ω i.1 = xs.getD i.1 a := hprefix i.1 i.2 i.1 le_rfl
+      _ = xs[i.1] := List.getD_eq_getElem (l := xs) (d := a) i.2
+
+/-- Set-level form of `mem_cylinder_cons_iff_rowSuccessor_constraints`. -/
+lemma cylinder_cons_eq_start_and_rowSuccessor_constraints
+    (a : Fin k) (ys : List (Fin k)) :
+    cylinder (k := k) (a :: ys) =
+      {ω : ℕ → Fin k |
+        ω 0 = a ∧
+        ∀ n, n + 1 < (a :: ys).length →
+          rowSuccessorAtNthVisit (k := k) ((a :: ys).getD n a)
+            (wordVisitIndex (k := k) (a :: ys) a n) ω
+            = (a :: ys).getD (n + 1) a} := by
+  ext ω
+  exact mem_cylinder_cons_iff_rowSuccessor_constraints (k := k) ω a ys
+
+/-- Tuple-valued measurable map collecting the row-successor constraints encoded
+by a finite word `a :: ys`. -/
+def wordSuccessorTupleMap
+    (a : Fin k) (ys : List (Fin k)) :
+    (ℕ → Fin k) → Fin ys.length → Fin k :=
+  fun ω j =>
+    rowSuccessorAtNthVisit (k := k) ((a :: ys).getD j.1 a)
+      (wordVisitIndex (k := k) (a :: ys) a j.1) ω
+
+/-- Target tuple of successor values encoded by a finite word `a :: ys`. -/
+def wordSuccessorTuple
+    (a : Fin k) (ys : List (Fin k)) :
+    Fin ys.length → Fin k :=
+  fun j => (a :: ys).getD (j.1 + 1) a
+
+lemma measurable_wordSuccessorTupleMap
+    (a : Fin k) (ys : List (Fin k)) :
+    Measurable (wordSuccessorTupleMap (k := k) a ys) := by
+  refine measurable_pi_lambda _ ?_
+  intro j
+  simpa [wordSuccessorTupleMap] using
+    measurable_rowSuccessorAtNthVisit (k := k) ((a :: ys).getD j.1 a)
+      (wordVisitIndex (k := k) (a :: ys) a j.1)
+
+/-- Tuple form of `mem_cylinder_cons_iff_rowSuccessor_constraints`. -/
+lemma mem_cylinder_cons_iff_start_and_wordSuccessorTuple
+    (ω : ℕ → Fin k) (a : Fin k) (ys : List (Fin k)) :
+    ω ∈ cylinder (k := k) (a :: ys) ↔
+      ω 0 = a ∧
+        wordSuccessorTupleMap (k := k) a ys ω = wordSuccessorTuple (k := k) a ys := by
+  constructor
+  · intro hω
+    rcases (mem_cylinder_cons_iff_rowSuccessor_constraints (k := k) ω a ys).1 hω with
+      ⟨hstart, hrows⟩
+    refine ⟨hstart, funext ?_⟩
+    intro j
+    have hj : j.1 + 1 < (a :: ys).length := by
+      exact Nat.succ_lt_succ j.2
+    simpa [wordSuccessorTupleMap, wordSuccessorTuple] using hrows j.1 hj
+  · rintro ⟨hstart, htuple⟩
+    refine (mem_cylinder_cons_iff_rowSuccessor_constraints (k := k) ω a ys).2 ?_
+    refine ⟨hstart, ?_⟩
+    intro n hn
+    have htuple_n := congrFun htuple ⟨n, by simpa using hn⟩
+    simpa [wordSuccessorTupleMap, wordSuccessorTuple] using htuple_n
+
+/-- Set-level tuple form of the cylinder decomposition for a nonempty word. -/
+lemma cylinder_cons_eq_start_inter_preimage_wordSuccessorTuple
+    (a : Fin k) (ys : List (Fin k)) :
+    cylinder (k := k) (a :: ys) =
+      {ω : ℕ → Fin k | ω 0 = a} ∩
+        (wordSuccessorTupleMap (k := k) a ys) ⁻¹'
+          ({wordSuccessorTuple (k := k) a ys} : Set (Fin ys.length → Fin k)) := by
+  ext ω
+  rw [mem_cylinder_cons_iff_start_and_wordSuccessorTuple (k := k) ω a ys]
+  simp [Set.preimage, Set.mem_setOf_eq]
 
 lemma measurableSet_rowVisitCylinderEventUpTo
     (i : Fin k) (S : Finset ℕ) (v : ℕ → Fin k) (N : ℕ) :
@@ -1071,14 +1436,12 @@ lemma measure_start_inter_rowSuccessorValueEvent_eq_of_evidencePreservingEquiv_s
       S0 ∩ rowSuccessorValueEvent (k := k) i n b
         =
       ⋃ N : ℕ, S0 ∩ A N := by
-    simpa [hrowA, Set.inter_iUnion] using (rfl :
-      S0 ∩ (⋃ N : ℕ, A N) = ⋃ N : ℕ, S0 ∩ A N)
+    rw [hrowA, Set.inter_iUnion]
   have hintB :
       S0 ∩ rowSuccessorValueEvent (k := k) i n' b
         =
       ⋃ N : ℕ, S0 ∩ B N := by
-    simpa [hrowB, Set.inter_iUnion] using (rfl :
-      S0 ∩ (⋃ N : ℕ, B N) = ⋃ N : ℕ, S0 ∩ B N)
+    rw [hrowB, Set.inter_iUnion]
   have hmonoA : Monotone (fun N : ℕ => S0 ∩ A N) := by
     intro N M hNM ω hω
     refine ⟨hω.1, ?_⟩
@@ -1107,11 +1470,11 @@ lemma measure_start_inter_rowSuccessorValueEvent_eq_of_evidencePreservingEquiv_s
   calc
     P ({ω : ℕ → Fin k | ω 0 = j} ∩ rowSuccessorValueEvent (k := k) i n b)
         = P (S0 ∩ rowSuccessorValueEvent (k := k) i n b) := by simp [S0]
-    _ = P (⋃ N : ℕ, S0 ∩ A N) := by simpa [hintA]
+    _ = P (⋃ N : ℕ, S0 ∩ A N) := by rw [hintA]
     _ = ⨆ N : ℕ, P (S0 ∩ A N) := hmonoA.measure_iUnion
     _ = ⨆ N : ℕ, P (S0 ∩ B N) := hSupEq
     _ = P (⋃ N : ℕ, S0 ∩ B N) := (hmonoB.measure_iUnion).symm
-    _ = P (S0 ∩ rowSuccessorValueEvent (k := k) i n' b) := by simpa [hintB]
+    _ = P (S0 ∩ rowSuccessorValueEvent (k := k) i n' b) := by rw [hintB]
     _ = P ({ω : ℕ → Fin k | ω 0 = j} ∩ rowSuccessorValueEvent (k := k) i n' b) := by simp [S0]
 
 def rowPermute (σ : Equiv.Perm ℕ) (r : ℕ → Fin k) : ℕ → Fin k :=
@@ -1838,6 +2201,128 @@ lemma pair_identity_of_constancy_and_cesaro_limit
   have hconstlim : Filter.Tendsto (fun _ : ℕ => c) Filter.atTop (nhds c) :=
     tendsto_const_nhds
   exact (tendsto_nhds_unique hconstlim hlim')
+
+/-! ### Class-Based Row Process Infrastructure
+
+Extends row process machinery to handle recurrent classes rather than single states.
+-/
+
+section ClassRowProcess
+
+variable (C : Set (Fin k))
+
+/-- The row process law restricted to trajectories starting in class C. -/
+noncomputable def rowProcessLaw_restrictClass (P : Measure (ℕ → Fin k)) (i : Fin k) :
+    Measure (ℕ → Fin k) :=
+  rowProcessLaw (k := k) (P.restrict {ω : ℕ → Fin k | ω 0 ∈ C}) i
+
+/-- Measurability of the class membership event. -/
+lemma measurableSet_start_mem_class :
+    MeasurableSet {ω : ℕ → Fin k | ω 0 ∈ C} := by
+  show MeasurableSet ((fun ω : ℕ → Fin k => ω 0) ⁻¹' C)
+  exact (measurable_pi_apply 0) (Set.Finite.measurableSet (Set.toFinite C))
+
+/-- Class restriction is dominated by the full measure. -/
+lemma rowProcessLaw_restrictClass_le (P : Measure (ℕ → Fin k)) (i : Fin k) :
+    rowProcessLaw_restrictClass (k := k) C P i ≤ rowProcessLaw (k := k) P i := by
+  simp only [rowProcessLaw_restrictClass, rowProcessLaw]
+  have hle : P.restrict {ω | ω 0 ∈ C} ≤ P := Measure.restrict_le_self
+  have hmeas : AEMeasurable (rowSuccessorVisitProcess (k := k) i) P :=
+    (measurable_rowSuccessorVisitProcess (k := k) i).aemeasurable
+  exact Measure.map_mono_of_aemeasurable hle hmeas
+
+/-- If a state `a` is in class C, then restricting to {ω₀ = a} is finer than {ω₀ ∈ C}. -/
+lemma restrict_singleton_le_restrict_class (P : Measure (ℕ → Fin k)) (a : Fin k) (ha : a ∈ C) :
+    P.restrict {ω : ℕ → Fin k | ω 0 = a} ≤ P.restrict {ω : ℕ → Fin k | ω 0 ∈ C} := by
+  have hsub : {ω : ℕ → Fin k | ω 0 = a} ⊆ {ω : ℕ → Fin k | ω 0 ∈ C} := by
+    intro ω hω
+    simp only [Set.mem_setOf_eq] at hω ⊢
+    rw [hω]; exact ha
+  exact Measure.restrict_mono hsub le_rfl
+
+/-- The class-restricted row process law decomposes as a finite sum of the
+singleton-start restricted row process laws inside the class. -/
+lemma rowProcessLaw_restrictClass_eq_finsetSum
+    (P : Measure (ℕ → Fin k)) (i : Fin k) :
+    rowProcessLaw_restrictClass (k := k) C P i
+      =
+    (by
+      classical
+      exact
+        ∑ a : Fin k,
+          if a ∈ C then
+            rowProcessLaw (k := k) (P.restrict {ω : ℕ → Fin k | ω 0 = a}) i
+          else 0) := by
+  classical
+  let S : Set (ℕ → Fin k) := {ω : ℕ → Fin k | ω 0 ∈ C}
+  let s : Fin k → Set (ℕ → Fin k) := fun a => {ω : ℕ → Fin k | ω 0 = a} ∩ S
+  have hs_meas : ∀ a : Fin k, MeasurableSet (s a) := by
+    intro a
+    exact ((measurable_pi_apply 0) (measurableSet_singleton a)).inter
+      (measurableSet_start_mem_class (k := k) (C := C))
+  have hs_disj : Pairwise (fun a b : Fin k => Disjoint (s a) (s b)) := by
+    intro a b hab
+    rw [Set.disjoint_iff]
+    intro ω hω
+    exact hab (hω.1.1.symm.trans hω.2.1)
+  have hs_union : (⋃ a : Fin k, s a) = S := by
+    ext ω
+    simp only [s, S, Set.mem_iUnion, Set.mem_inter_iff, Set.mem_setOf_eq]
+    constructor
+    · intro hω
+      exact hω.choose_spec.2
+    · intro hω
+      exact ⟨ω 0, by simp [hω]⟩
+  have hsum :
+      P.restrict S = Measure.sum (fun a : Fin k => P.restrict (s a)) := by
+    calc
+      P.restrict S = P.restrict (⋃ a : Fin k, s a) := by simp [hs_union]
+      _ = Measure.sum (fun a : Fin k => P.restrict (s a)) := by
+            simpa using
+              (Measure.restrict_iUnion (μ := P) hs_disj hs_meas)
+  calc
+    rowProcessLaw_restrictClass (k := k) C P i
+        = Measure.map (rowSuccessorVisitProcess (k := k) i) (P.restrict S) := rfl
+    _ = Measure.map (rowSuccessorVisitProcess (k := k) i)
+          (Measure.sum (fun a : Fin k => P.restrict (s a))) := by
+            simpa using congrArg
+              (Measure.map (rowSuccessorVisitProcess (k := k) i)) hsum
+    _ = Measure.sum
+          (fun a : Fin k =>
+            Measure.map (rowSuccessorVisitProcess (k := k) i) (P.restrict (s a))) := by
+              rw [MeasureTheory.Measure.map_sum
+                ((measurable_rowSuccessorVisitProcess (k := k) i).aemeasurable)]
+    _ = ∑ a : Fin k,
+          if a ∈ C then
+            rowProcessLaw (k := k) (P.restrict {ω : ℕ → Fin k | ω 0 = a}) i
+          else 0 := by
+            rw [Measure.sum_fintype]
+            refine Finset.sum_congr rfl ?_
+            intro a ha
+            by_cases hCa : a ∈ C
+            · have hs_eq : s a = {ω : ℕ → Fin k | ω 0 = a} := by
+                ext ω
+                constructor
+                · intro hω
+                  exact hω.1
+                · intro hω
+                  refine ⟨hω, ?_⟩
+                  change ω 0 ∈ C
+                  rw [hω]
+                  exact hCa
+              simp [rowProcessLaw, hs_eq, hCa]
+            · have hs_eq : s a = ∅ := by
+                ext ω
+                constructor
+                · intro hω
+                  have hωC : ω 0 ∈ C := hω.2
+                  rw [hω.1] at hωC
+                  exact (hCa hωC).elim
+                · intro hω
+                  exact False.elim hω
+              simp [hs_eq, hCa]
+
+end ClassRowProcess
 
 end MarkovDeFinettiHard
 end Mettapedia.Logic

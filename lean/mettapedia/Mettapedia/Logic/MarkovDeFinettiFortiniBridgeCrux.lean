@@ -37,6 +37,194 @@ def rowKernelStepProd
       (rowKernel a (rowSuccessorVisitProcess (k := k) a ω) ({b} : Set (Fin k))) *
         rowKernelStepProd rowKernel ω (b :: xs)
 
+/-- AE-measurability of `rowKernelStepProd` on path space from singleton-eval
+AE-measurability for the row-kernel family. -/
+lemma aemeasurable_rowKernelStepProd
+    (P : Measure (ℕ → Fin k)) [IsProbabilityMeasure P]
+    (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k))
+    (hEval :
+      ∀ i : Fin k, ∀ b : Fin k,
+        AEMeasurable
+          (fun r : ℕ → Fin k => (rowKernel i r : Measure (Fin k)) ({b} : Set (Fin k)))
+          (rowProcessLaw (k := k) P i)) :
+    ∀ xs : List (Fin k),
+      AEMeasurable (fun ω : ℕ → Fin k => rowKernelStepProd (k := k) rowKernel ω xs) P := by
+  intro xs
+  induction xs with
+  | nil =>
+      simp [rowKernelStepProd]
+  | cons a rest ih =>
+      cases rest with
+      | nil =>
+          simp [rowKernelStepProd]
+      | cons b tail =>
+          have hfactor :
+              AEMeasurable
+                (fun ω : ℕ → Fin k =>
+                  (rowKernel a (rowSuccessorVisitProcess (k := k) a ω) : Measure (Fin k))
+                    ({b} : Set (Fin k))) P :=
+            (hEval a b).comp_measurable (measurable_rowSuccessorVisitProcess (k := k) a)
+          have htail :
+              AEMeasurable
+                (fun ω : ℕ → Fin k =>
+                  rowKernelStepProd (k := k) rowKernel ω (b :: tail)) P := by
+            simpa using ih
+          simpa [rowKernelStepProd] using hfactor.mul htail
+
+/-- The step-product is uniformly bounded by `1`. -/
+lemma rowKernelStepProd_le_one
+    (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k))
+    (ω : ℕ → Fin k) :
+    ∀ xs : List (Fin k), rowKernelStepProd (k := k) rowKernel ω xs ≤ 1 := by
+  intro xs
+  induction xs with
+  | nil =>
+      simp [rowKernelStepProd]
+  | cons a rest ih =>
+      cases rest with
+      | nil =>
+          simp [rowKernelStepProd]
+      | cons b tail =>
+          have hfactor :
+              (rowKernel a (rowSuccessorVisitProcess (k := k) a ω) : Measure (Fin k))
+                ({b} : Set (Fin k)) ≤ 1 := by
+            calc
+              (rowKernel a (rowSuccessorVisitProcess (k := k) a ω) : Measure (Fin k))
+                  ({b} : Set (Fin k))
+                  ≤
+                (rowKernel a (rowSuccessorVisitProcess (k := k) a ω) : Measure (Fin k))
+                  Set.univ :=
+                    measure_mono (Set.subset_univ _)
+              _ = 1 := by simp
+          have htail :
+              rowKernelStepProd (k := k) rowKernel ω (b :: tail) ≤ 1 := by
+            simpa using ih
+          calc
+            rowKernelStepProd (k := k) rowKernel ω (a :: b :: tail)
+                =
+              (rowKernel a (rowSuccessorVisitProcess (k := k) a ω) : Measure (Fin k))
+                  ({b} : Set (Fin k)) *
+                  rowKernelStepProd (k := k) rowKernel ω (b :: tail) := by
+                    simp [rowKernelStepProd]
+            _ 
+                ≤ 1 * 1 := by
+                    exact mul_le_mul' hfactor htail
+            _ = 1 := by simp
+
+/-- The real-valued step-product is integrable on any probability law. -/
+lemma integrable_rowKernelStepProd_toReal
+    (P : Measure (ℕ → Fin k)) [IsProbabilityMeasure P]
+    (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k))
+    (hEval :
+      ∀ i : Fin k, ∀ b : Fin k,
+        AEMeasurable
+          (fun r : ℕ → Fin k => (rowKernel i r : Measure (Fin k)) ({b} : Set (Fin k)))
+          (rowProcessLaw (k := k) P i))
+    (xs : List (Fin k)) :
+    Integrable (fun ω : ℕ → Fin k => (rowKernelStepProd (k := k) rowKernel ω xs).toReal) P := by
+  have hmeas :
+      AEMeasurable
+        (fun ω : ℕ → Fin k => (rowKernelStepProd (k := k) rowKernel ω xs).toReal) P :=
+    (aemeasurable_rowKernelStepProd (k := k) P rowKernel hEval xs).ennreal_toReal
+  refine Integrable.of_bound hmeas.aestronglyMeasurable 1 ?_
+  refine ae_of_all P ?_
+  intro ω
+  have hnonneg : 0 ≤ (rowKernelStepProd (k := k) rowKernel ω xs).toReal :=
+    ENNReal.toReal_nonneg
+  have hle :
+      (rowKernelStepProd (k := k) rowKernel ω xs).toReal ≤ 1 := by
+    exact ENNReal.toReal_le_of_le_ofReal (by positivity)
+      (by simpa using rowKernelStepProd_le_one (k := k) rowKernel ω xs)
+  simp [Real.norm_eq_abs, abs_of_nonneg hnonneg, hle]
+
+/-- AE-measurability of the start-indicator integrand form used in cross-anchor
+identities. -/
+lemma aemeasurable_startIndicator_rowKernelStepProd
+    (P : Measure (ℕ → Fin k)) [IsProbabilityMeasure P]
+    (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k))
+    (hEval :
+      ∀ i : Fin k, ∀ b : Fin k,
+        AEMeasurable
+          (fun r : ℕ → Fin k => (rowKernel i r : Measure (Fin k)) ({b} : Set (Fin k)))
+          (rowProcessLaw (k := k) P i))
+    (a : Fin k) (xs : List (Fin k)) :
+    AEMeasurable
+      (fun ω : ℕ → Fin k =>
+        if ω 0 = a then rowKernelStepProd (k := k) rowKernel ω xs else 0) P := by
+  have hprod :
+      AEMeasurable
+        (fun ω : ℕ → Fin k => rowKernelStepProd (k := k) rowKernel ω xs) P :=
+    aemeasurable_rowKernelStepProd (k := k) P rowKernel hEval xs
+  have hind :
+      AEMeasurable
+        ({ω : ℕ → Fin k | ω 0 = a}.indicator
+          (fun ω : ℕ → Fin k => rowKernelStepProd (k := k) rowKernel ω xs)) P :=
+    hprod.indicator (show MeasurableSet {ω : ℕ → Fin k | ω 0 = a} from by
+      change MeasurableSet ((fun ω : ℕ → Fin k => ω 0) ⁻¹' Set.singleton a)
+      exact (measurable_pi_apply 0) (MeasurableSet.singleton a))
+  refine hind.congr ?_
+  filter_upwards with ω
+  by_cases hω : ω 0 = a <;> simp [Set.indicator, hω]
+
+/-- Rewrite the start-indicator step-product integral as an integral over the
+start-restricted law. -/
+lemma lintegral_startIndicator_rowKernelStepProd_eq_restrict
+    (P : Measure (ℕ → Fin k)) [IsProbabilityMeasure P]
+    (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k))
+    (a b : Fin k) (xs : List (Fin k)) :
+    ∫⁻ ω,
+      (if ω 0 = a then rowKernelStepProd (k := k) rowKernel ω (a :: b :: xs) else 0) ∂P
+      =
+    ∫⁻ ω, rowKernelStepProd (k := k) rowKernel ω (a :: b :: xs)
+      ∂(P.restrict {ω : ℕ → Fin k | ω 0 = a}) := by
+  let s : Set (ℕ → Fin k) := {ω : ℕ → Fin k | ω 0 = a}
+  have hs : MeasurableSet s := by
+    change MeasurableSet ((fun ω : ℕ → Fin k => ω 0) ⁻¹' Set.singleton a)
+    exact (measurable_pi_apply 0) (MeasurableSet.singleton a)
+  calc
+    ∫⁻ ω,
+      (if ω 0 = a then rowKernelStepProd (k := k) rowKernel ω (a :: b :: xs) else 0) ∂P
+        = ∫⁻ ω, s.indicator
+            (fun ω => rowKernelStepProd (k := k) rowKernel ω (a :: b :: xs)) ω ∂P := by
+              refine lintegral_congr_ae ?_
+              filter_upwards with ω
+              by_cases hω : ω 0 = a <;> simp [s, Set.indicator, hω]
+    _ = ∫⁻ ω in s, rowKernelStepProd (k := k) rowKernel ω (a :: b :: xs) ∂P := by
+          exact lintegral_indicator hs _
+    _ =
+      ∫⁻ ω, rowKernelStepProd (k := k) rowKernel ω (a :: b :: xs)
+        ∂(P.restrict {ω : ℕ → Fin k | ω 0 = a}) := by
+          simp [s]
+
+/-- Restricted-space form of the cons decomposition for start-indicator
+step-product integrals. -/
+lemma lintegral_startIndicator_rowKernelStepProd_cons_eq_restrict
+    (P : Measure (ℕ → Fin k)) [IsProbabilityMeasure P]
+    (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k))
+    (a b : Fin k) (xs : List (Fin k)) :
+    ∫⁻ ω,
+      (if ω 0 = a then rowKernelStepProd (k := k) rowKernel ω (a :: b :: xs) else 0) ∂P
+      =
+    ∫⁻ ω,
+      (rowKernel a (rowSuccessorVisitProcess (k := k) a ω) : Measure (Fin k)) ({b} : Set (Fin k)) *
+        rowKernelStepProd (k := k) rowKernel ω (b :: xs)
+      ∂(P.restrict {ω : ℕ → Fin k | ω 0 = a}) := by
+  calc
+    ∫⁻ ω,
+      (if ω 0 = a then rowKernelStepProd (k := k) rowKernel ω (a :: b :: xs) else 0) ∂P
+        =
+      ∫⁻ ω, rowKernelStepProd (k := k) rowKernel ω (a :: b :: xs)
+        ∂(P.restrict {ω : ℕ → Fin k | ω 0 = a}) :=
+      lintegral_startIndicator_rowKernelStepProd_eq_restrict (k := k) P rowKernel a b xs
+    _ =
+      ∫⁻ ω,
+        (rowKernel a (rowSuccessorVisitProcess (k := k) a ω) : Measure (Fin k)) ({b} : Set (Fin k)) *
+          rowKernelStepProd (k := k) rowKernel ω (b :: xs)
+        ∂(P.restrict {ω : ℕ → Fin k | ω 0 = a}) := by
+          refine lintegral_congr_ae ?_
+          filter_upwards with ω
+          simp [rowKernelStepProd]
+
 /-- Cross-anchor product identity (explicit integrand form).
 
 This is the *missing joint-law hypothesis*: it asserts that for every finite
@@ -1441,12 +1629,18 @@ lemma sum_start_inter_rowSuccessorValueEvent_eq_start
               (measurable_rowSuccessorAtNthVisit (k := k) i n)
               (MeasurableSet.singleton b))
       _ = ν Set.univ := by
-        simpa using
-          (sum_measure_singleton
-            (μ := ν)
-            (s := (Finset.univ : Finset (Fin k))))
+        calc
+          (∑ b : Fin k, ν ({b} : Set (Fin k))) = ν (↑(Finset.univ : Finset (Fin k)) : Set (Fin k)) := by
+            exact
+              (sum_measure_singleton
+                (μ := ν)
+                (s := (Finset.univ : Finset (Fin k))))
+          _ = ν Set.univ := by simp
       _ = (P.restrict s) Set.univ := by
-        simpa [ν] using
+        change
+          (Measure.map (fun ω : ℕ → Fin k => rowSuccessorAtNthVisit (k := k) i n ω)
+            (P.restrict s)) Set.univ = (P.restrict s) Set.univ
+        exact
           (Measure.map_apply
             (μ := P.restrict s)
             (f := fun ω : ℕ → Fin k => rowSuccessorAtNthVisit (k := k) i n ω)
@@ -1454,8 +1648,8 @@ lemma sum_start_inter_rowSuccessorValueEvent_eq_start
             (measurable_rowSuccessorAtNthVisit (k := k) i n)
             MeasurableSet.univ)
   have hs_univ : (P.restrict s) Set.univ = P s := by
-    simpa using
-      (Measure.restrict_apply (μ := P) (s := s) (t := Set.univ) MeasurableSet.univ)
+    rw [Measure.restrict_apply (μ := P) (s := s) (t := Set.univ) MeasurableSet.univ]
+    simp
   calc
     (∑ b : Fin k,
       P ({ω : ℕ → Fin k | ω 0 = a} ∩ rowSuccessorValueEvent (k := k) i n b))
@@ -1646,10 +1840,15 @@ lemma sum_start_inter_eq_measure
     (∑ a : Fin k, P ({ω : ℕ → Fin k | ω 0 = a} ∩ E)) = P E := by
   let ν : Measure (Fin k) := Measure.map (fun ω : ℕ → Fin k => ω 0) (P.restrict E)
   have hsumν : (∑ a : Fin k, ν ({a} : Set (Fin k))) = ν Set.univ := by
-    simpa using
-      (sum_measure_singleton (μ := ν) (s := (Finset.univ : Finset (Fin k))))
+    calc
+      (∑ a : Fin k, ν ({a} : Set (Fin k))) = ν (↑(Finset.univ : Finset (Fin k)) : Set (Fin k)) := by
+        exact
+          (sum_measure_singleton (μ := ν) (s := (Finset.univ : Finset (Fin k))))
+      _ = ν Set.univ := by simp
   have hνuniv : ν Set.univ = (P.restrict E) Set.univ := by
-    simpa [ν] using
+    change
+      (Measure.map (fun ω : ℕ → Fin k => ω 0) (P.restrict E)) Set.univ = (P.restrict E) Set.univ
+    exact
       (Measure.map_apply
         (μ := P.restrict E)
         (f := fun ω : ℕ → Fin k => ω 0)
@@ -1657,8 +1856,8 @@ lemma sum_start_inter_eq_measure
         (measurable_pi_apply 0)
         MeasurableSet.univ)
   have hrestrict_univ : (P.restrict E) Set.univ = P E := by
-    simpa using
-      (Measure.restrict_apply (μ := P) (s := E) (t := Set.univ) MeasurableSet.univ)
+    rw [Measure.restrict_apply (μ := P) (s := E) (t := Set.univ) MeasurableSet.univ]
+    simp
   have hνa :
       ∀ a : Fin k, ν ({a} : Set (Fin k)) = P ({ω : ℕ → Fin k | ω 0 = a} ∩ E) := by
     intro a
@@ -2269,6 +2468,49 @@ theorem fortiniSuccessorMatrixInvarianceTheoremStrongRecurrence_of_successorMatr
   intro xs
   rw [hExt xs]
   exact hreprP xs
+
+/-- Strong-recurrence Route-A theorem with reduced PE-builder assumptions:
+`hEval`/`hPi` are derived from successor-matrix PE, leaving only the
+start-restricted factorization and row-successor-matrix-invariance builders as
+explicit downstream obligations. This isolates the honest post-PE interface for
+the strong-recurrence route. -/
+theorem fortiniSuccessorMatrixInvarianceTheoremStrongRecurrence_of_successorMatrixPE_reduced
+    (hk : 0 < k)
+    (hPEStrong : SuccessorMatrixPE_of_markovExchangeable_strongRecurrence k)
+    (hStartFromPE :
+      ∀ (P : Measure (ℕ → Fin k)) (_hP : IsProbabilityMeasure P)
+        (_hPE : SuccessorMatrixPartialExchangeable (k := k) P)
+        (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k)),
+          (∀ i : Fin k, ∀ b : Fin k,
+            AEMeasurable
+              (fun r : ℕ → Fin k => (rowKernel i r : Measure (Fin k)) ({b} : Set (Fin k)))
+              (rowProcessLaw (k := k) P i)) →
+          (∀ i : Fin k,
+            AEMeasurable
+              (fun r : ℕ → Fin k =>
+                Measure.pi (fun _ : Fin 1 => (rowKernel i r : Measure (Fin k))))
+              (rowProcessLaw (k := k) P i)) →
+          StartRestrictedRowKernelData (k := k) P rowKernel)
+    (hInvFromPE :
+      ∀ (P : Measure (ℕ → Fin k)) (_hP : IsProbabilityMeasure P)
+        (_hPE : SuccessorMatrixPartialExchangeable (k := k) P)
+        (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k)),
+          (∀ i : Fin k, ∀ b : Fin k,
+            AEMeasurable
+              (fun r : ℕ → Fin k => (rowKernel i r : Measure (Fin k)) ({b} : Set (Fin k)))
+              (rowProcessLaw (k := k) P i)) →
+          (∀ i : Fin k,
+            AEMeasurable
+              (fun r : ℕ → Fin k =>
+                Measure.pi (fun _ : Fin 1 => (rowKernel i r : Measure (Fin k))))
+              (rowProcessLaw (k := k) P i)) →
+          RowSuccessorMatrixInvariance (k := k) P rowKernel) :
+    FortiniSuccessorMatrixInvarianceTheoremStrongRecurrence k := by
+  have hBuildFromPE : ExistsBuiltRowKernel_of_successorMatrixPE k :=
+    successorMatrixPEToBuiltRowKernelOnExtension_of_start_and_invariance
+      (k := k) hk hStartFromPE hInvFromPE
+  exact fortiniSuccessorMatrixInvarianceTheoremStrongRecurrence_of_successorMatrixPE
+    (k := k) hPEStrong hBuildFromPE
 
 /-- Row-wise recurrence corollary:
 if we can bridge strong recurrence to successor-matrix PE and then extract the

@@ -81,6 +81,9 @@ theorem setHolEvidence_add
 noncomputable instance : BinaryWorldModel SetState SetHOLQuery where
   evidence := setHolEvidence
   evidence_add := setHolEvidence_add
+  evidence_zero q := by
+    classical
+    simp only [setHolEvidence, Multiset.countP_zero, Nat.cast_zero]; rfl
 
 theorem setHolEvidence_singleton_of_satisfies
     (S : SetPointed) (φ : SetHOLQuery) (h : setHolSatisfies S φ) :

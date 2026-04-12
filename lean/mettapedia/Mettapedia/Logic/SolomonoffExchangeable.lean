@@ -2,6 +2,9 @@ import Mettapedia.Logic.Exchangeability
 import Mettapedia.Logic.EvidenceQuantale
 import Mettapedia.Logic.SolomonoffMeasure
 import Mettapedia.Logic.SolomonoffPrior
+import Mettapedia.Logic.UniversalPrediction.MarkovExchangeabilityBridge
+import Mettapedia.Logic.MarkovDeFinettiRecurrence
+import Mettapedia.Logic.MarkovDeFinettiMixtureRepresentation
 import Mathlib.Data.List.OfFn
 
 /-!
@@ -94,8 +97,104 @@ def ProgramsExchangeable (U : MonotoneMachine) (programs : Finset BinString) : P
 -- *mixture semimeasure* over a program set, not of a single deterministic program.
 -- We therefore work with `ProgramsExchangeable` instead of a per-program predicate.
 
-/- TODO: connect `ProgramsExchangeable` to concrete program classes (e.g. samplers implementing
-   i.i.d. Bernoulli, or Beta-Bernoulli mixtures) once a probabilistic program semantics is in place. -/
+/-! ### Markov de Finetti Bridge
+
+The theorem below packages the class-restricted row-process consequences already
+proved in the Markov de Finetti development at a surface that downstream
+Solomonoff-style predictor results can call directly.
+-/
+
+section MarkovDeFinettiBridge
+
+open MeasureTheory
+open Mettapedia.Logic.UniversalPrediction
+open Mettapedia.Logic.UniversalPrediction.MarkovExchangeabilityBridge
+open MarkovDeFinettiHard
+open MarkovDeFinettiRecurrence
+
+variable {k : ℕ}
+
+/-- Under Markov exchangeability plus strong recurrence, one-step prediction
+depends only on the transition-count summary of a nonempty history. -/
+theorem markovExchangeable_strongRecurrence_predictor_eq_of_same_summary
+    (μ : FiniteAlphabet.PrefixMeasure (Fin k))
+    (hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
+    (xs ys : List (Fin k)) (hlen : xs.length = ys.length) (hx : 0 < xs.length)
+    (hstart : xs.get ⟨0, hx⟩ = ys.get ⟨0, by simpa [hlen] using hx⟩)
+    (hsum : TransCounts.summary (k := k) xs = TransCounts.summary (k := k) ys)
+    (x : Fin k) :
+    μ (xs ++ [x]) = μ (ys ++ [x]) := by
+  exact
+    mu_append_singleton_eq_of_same_summary_list
+      (k := k) (μ := μ) (hμ := hμ) xs ys hlen hx hstart hsum x
+
+/-- Under Markov exchangeability plus strong recurrence, the class-restricted
+row law factors through the canonical directing row kernel on finite coordinate
+projections. -/
+theorem markovExchangeable_strongRecurrence_restrictClass_rowLaw_factorizes
+    (μ : FiniteAlphabet.PrefixMeasure (Fin k))
+    (hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
+    (P : Measure (ℕ → Fin k)) [IsProbabilityMeasure P]
+    (hExt : ∀ xs : List (Fin k), μ xs = P (cylinder (k := k) xs))
+    (hStrRec : StrongRecurrence (k := k) P)
+    (C : Set (Fin k))
+    (i : Fin k) (m : ℕ) (sel : Fin m → ℕ) (hsel : StrictMono sel) :
+    Measure.map
+        (fun r : ℕ → Fin k => fun j : Fin m => r (sel j))
+        (rowProcessLaw_restrictClass (k := k) C P i)
+      =
+    (rowProcessLaw_restrictClass (k := k) C P i).bind
+      (fun r =>
+        Measure.pi
+          (fun _ : Fin m =>
+            (directingRowKernel (k := k) P i r : Measure (Fin k)))) := by
+  exact
+    rowProcessLaw_restrictClass_factorizes_of_markovExchangeable_strongRecurrence
+      (k := k) μ hμ P hExt hStrRec C i m sel hsel
+
+/-- Public bridge from Markov-exchangeable strong-recurrence data to two
+class-restricted consequences used by downstream predictor arguments:
+
+1. predictor equality depends only on the transition-count state;
+2. the class-restricted row law factors through the canonical directing row
+   kernel on all finite coordinate selections.
+
+This theorem packages the new public `MixtureRepresentation` wrappers at the
+same abstraction level as the predictor story, instead of leaving the rowwise
+factorization only as internal bridge infrastructure. -/
+theorem markovExchangeable_strongRecurrence_class_transition_structure
+    (μ : FiniteAlphabet.PrefixMeasure (Fin k))
+    (hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
+    (P : Measure (ℕ → Fin k)) [IsProbabilityMeasure P]
+    (hExt : ∀ xs : List (Fin k), μ xs = P (cylinder (k := k) xs))
+    (hStrRec : StrongRecurrence (k := k) P)
+    (C : Set (Fin k)) :
+    (∀ (xs ys : List (Fin k)) (hlen : xs.length = ys.length) (hx : 0 < xs.length)
+      (_hstart : xs.get ⟨0, hx⟩ = ys.get ⟨0, by simpa [hlen] using hx⟩)
+      (_hsum : TransCounts.summary (k := k) xs = TransCounts.summary (k := k) ys)
+      (x : Fin k),
+      μ (xs ++ [x]) = μ (ys ++ [x])) ∧
+    (∀ (i : Fin k) (m : ℕ) (sel : Fin m → ℕ), StrictMono sel →
+      Measure.map
+          (fun r : ℕ → Fin k => fun j : Fin m => r (sel j))
+          (rowProcessLaw_restrictClass (k := k) C P i)
+        =
+      (rowProcessLaw_restrictClass (k := k) C P i).bind
+        (fun r =>
+          Measure.pi
+            (fun _ : Fin m =>
+              (directingRowKernel (k := k) P i r : Measure (Fin k))))) := by
+  refine ⟨?_, ?_⟩
+  · intro xs ys hlen hx hstart hsum x
+    exact
+      markovExchangeable_strongRecurrence_predictor_eq_of_same_summary
+        (k := k) (μ := μ) (hμ := hμ) xs ys hlen hx hstart hsum x
+  · intro i m sel hsel
+    exact
+      markovExchangeable_strongRecurrence_restrictClass_rowLaw_factorizes
+        (k := k) μ hμ P hExt hStrRec C i m sel hsel
+
+end MarkovDeFinettiBridge
 
 end ExchangeablePrograms
 
@@ -487,7 +586,7 @@ theorem evidenceOfFn_snoc {n : ℕ} (xs : Fin n → Bool) (b : Bool) :
             n + 1 := by
         simpa [htrue] using hpart₂
       have hpart₁' : countTrue xs + (countFalse xs + 1) = n + 1 := by
-        simpa [Nat.add_assoc] using congrArg (fun t => t + 1) hpart₁
+        simpa only [Nat.add_assoc] using congrArg (fun t => t + 1) hpart₁
       have heq :
           countTrue xs +
               countFalse (Fin.snoc (α := fun _ : Fin (n + 1) => Bool) xs false) =
@@ -513,17 +612,17 @@ theorem evidenceOfFn_snoc {n : ℕ} (xs : Fin n → Bool) (b : Bool) :
       have hpart₂' : (countTrue xs + 1) +
             countFalse (Fin.snoc (α := fun _ : Fin (n + 1) => Bool) xs true) =
           n + 1 := by
-        simpa [htrue, Nat.add_assoc] using hpart₂
+        simpa only [htrue, Nat.add_assoc] using hpart₂
       have hpart₁' : (countTrue xs + 1) + countFalse xs = n + 1 := by
         -- Add one to the count partition equation and reassociate to match the LHS of `hpart₂'`.
         have h1 : (countTrue xs + countFalse xs) + 1 = n + 1 :=
           congrArg (fun t => t + 1) hpart₁
         -- Reassociate and commute to put the `+ 1` next to `countTrue xs`.
         have h2 : countTrue xs + countFalse xs + 1 = n + 1 := by
-          simpa [Nat.add_assoc] using h1
+          simpa only [Nat.add_assoc] using h1
         have h3 : countTrue xs + 1 + countFalse xs = n + 1 := by
-          simpa [Nat.add_right_comm] using h2
-        simpa [Nat.add_assoc] using h3
+          simpa only [Nat.add_right_comm] using h2
+        simpa only [Nat.add_assoc] using h3
       have heq :
           (countTrue xs + 1) +
               countFalse (Fin.snoc (α := fun _ : Fin (n + 1) => Bool) xs true) =
