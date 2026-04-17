@@ -1196,6 +1196,36 @@ We axiomatize them as a typeclass that interpretations must satisfy.
 -/
 
 /--
+Pointwise coherence data for `fullEval`.
+
+This is the bridge-friendly form of the coherence interface: concrete models and
+one-point carriers naturally prove equalities after evaluating at a context
+point, and `CtxTerm.ext` then lifts those pointwise equalities to section
+equalities.
+-/
+class FullEvalPointwiseCoherent (I : HeytingTopologicalInterpretation Base Const X) where
+  /-- Pointwise weakening coherence. -/
+  fullEval_weaken_pointwise :
+    ∀ {σ : Ty Base} {Γ : Ctx Base} (φ : Formula Const Γ)
+      (γ : (I.toTopologicalInterpretation.ctxSpace (σ :: Γ)).Carrier),
+      (fullEval I (weaken (σ := σ) φ)).toContinuousMap γ =
+        (I.evalWeaken σ Γ (fullEval I φ)).toContinuousMap γ
+  /-- Pointwise instantiation coherence. -/
+  fullEval_instantiate_pointwise :
+    ∀ {σ : Ty Base} {Γ : Ctx Base}
+      (t : Term Const Γ σ) (φ : Formula Const (σ :: Γ))
+      (γ : (I.toTopologicalInterpretation.ctxSpace Γ).Carrier),
+      (fullEval I (instantiate t φ)).toContinuousMap γ =
+        (I.evalInstantiate t (fullEval I φ)).toContinuousMap γ
+  /-- Pointwise beta-eta invariance. -/
+  fullEval_betaEtaEq_pointwise :
+    ∀ {Γ : Ctx Base} {φ ψ : Formula Const Γ},
+      BetaEtaEq φ ψ →
+      ∀ (γ : (I.toTopologicalInterpretation.ctxSpace Γ).Carrier),
+      (fullEval I φ).toContinuousMap γ =
+        (fullEval I ψ).toContinuousMap γ
+
+/--
 Coherence axioms for fullEval with respect to syntactic operations.
 
 Any valid topological interpretation satisfies these conditions, which express
@@ -1220,6 +1250,23 @@ class FullEvalCoherent (I : HeytingTopologicalInterpretation Base Const X) where
       syntactic category (quotiented by beta-eta) to étale spaces. -/
   fullEval_betaEtaEq : ∀ {Γ : Ctx Base} {φ ψ : Formula Const Γ},
     BetaEtaEq φ ψ → fullEval I φ = fullEval I ψ
+
+instance instFullEvalCoherentOfPointwise
+    (I : HeytingTopologicalInterpretation Base Const X)
+    [hpt : FullEvalPointwiseCoherent I] :
+    FullEvalCoherent I where
+  fullEval_weaken := by
+    intro σ Γ φ
+    ext γ
+    exact hpt.fullEval_weaken_pointwise φ γ
+  fullEval_instantiate := by
+    intro σ Γ t φ
+    ext γ
+    exact hpt.fullEval_instantiate_pointwise t φ γ
+  fullEval_betaEtaEq := by
+    intro Γ φ ψ h
+    ext γ
+    exact hpt.fullEval_betaEtaEq_pointwise h γ
 
 end HeytingTopologicalInterpretation
 
@@ -1358,6 +1405,30 @@ theorem fullEval_betaEtaEq (I : HeytingTopologicalInterpretation Base Const X)
   hcoh.fullEval_betaEtaEq h
 
 /--
+Semantic instantiation agrees with the beta-reduced reindexing path for one
+explicit beta redex.
+-/
+theorem evalInstantiate_eq_reindex_cons
+    (I : HeytingTopologicalInterpretation Base Const X)
+    [hcoh : FullEvalCoherent I]
+    {Γ : Ctx Base} {σ : Ty Base}
+    (t : Term Const Γ σ) (φ : Formula Const (σ :: Γ)) :
+    (fullEval I φ).reindex
+        (TopologicalInterpretation.CtxHom.cons (fullEval I t)
+          (TopologicalInterpretation.CtxHom.id I.toTopologicalInterpretation Γ)) =
+      I.evalInstantiate t (fullEval I φ) := by
+  calc
+    (fullEval I φ).reindex
+        (TopologicalInterpretation.CtxHom.cons (fullEval I t)
+          (TopologicalInterpretation.CtxHom.id I.toTopologicalInterpretation Γ)) =
+        fullEval I (.app (.lam φ) t) := by
+          rw [fullEval_app_lam]
+    _ = fullEval I (instantiate t φ) := by
+          exact fullEval_betaEtaEq I (BetaEtaEq.beta t φ)
+    _ = I.evalInstantiate t (fullEval I φ) := by
+          rw [fullEval_instantiate]
+
+/--
 Evaluate the conjunction of a list of antecedents.
 
 The empty list evaluates to ⊤; otherwise we fold with conjunction.
@@ -1463,6 +1534,31 @@ theorem formulaEval_imp (I : HeytingTopologicalInterpretation Base Const X)
     I.formulaEval (Term.ex φ) γ =
       I.toTopologicalInterpretation.propCtxEval (I.quantEx σ Γ (fullEval I φ)) γ := by
   rfl
+
+/--
+Pointwise beta reduction agrees with evaluation through semantic instantiation.
+-/
+@[simp] theorem formulaEval_beta
+    (I : HeytingTopologicalInterpretation Base Const X)
+    [hcoh : FullEvalCoherent I]
+    {Γ : Ctx Base} {σ : Ty Base}
+    (t : Term Const Γ σ)
+    (φ : Formula Const (σ :: Γ))
+    (γ : (I.ctxSpace Γ).Carrier) :
+    I.formulaEval (.app (.lam φ) t) γ =
+      I.formulaEval (instantiate t φ) γ := by
+  calc
+    I.formulaEval (.app (.lam φ) t) γ =
+        I.toTopologicalInterpretation.propCtxEval
+          ((fullEval I φ).reindex
+            (TopologicalInterpretation.CtxHom.cons (fullEval I t)
+              (TopologicalInterpretation.CtxHom.id I.toTopologicalInterpretation Γ))) γ := by
+          rw [formulaEval, fullEval_app_lam]
+    _ = I.toTopologicalInterpretation.propCtxEval
+          (I.evalInstantiate t (fullEval I φ)) γ := by
+          rw [evalInstantiate_eq_reindex_cons]
+    _ = I.formulaEval (instantiate t φ) γ := by
+          rw [formulaEval, ← fullEval_instantiate]
 
 /--
 Weakening antecedents agrees pointwise with semantic weakening:
@@ -1582,6 +1678,21 @@ def FullValidSequent (I : HeytingTopologicalInterpretation Base Const X)
     have h : I.propSpace.proj antEval = I.propSpace.proj succEval := by
       exact (I.antecedentsEval_proj antecedents γ).trans (I.formulaEval_proj succedent γ).symm
     I.fiberLe ⟨(antEval, succEval), h⟩
+
+/--
+Validity is preserved across a single beta redex in the succedent.
+-/
+theorem FullValidSequent.beta
+    (I : HeytingTopologicalInterpretation Base Const X)
+    [hcoh : FullEvalCoherent I]
+    {Γ : Ctx Base} (Δ : List (Formula Const Γ))
+    {σ : Ty Base}
+    (t : Term Const Γ σ)
+    (φ : Formula Const (σ :: Γ))
+    (hValid : I.FullValidSequent Δ (instantiate t φ)) :
+    I.FullValidSequent Δ (.app (.lam φ) t) := by
+  intro γ
+  simpa [formulaEval_beta (I := I) t φ γ] using hValid γ
 
 /--
 **Soundness**: Derivable sequents are valid in all Heyting topological models
@@ -2311,11 +2422,20 @@ theorem fullSoundness (I : HeytingTopologicalInterpretation Base Const X)
     intro γ
     -- By coherence: evalAntecedents Δ = evalAntecedents Δ'
     have h_ant_eq := evalAntecedents_betaEtaEq I hΔ
-    -- By coherence: fullEval φ = fullEval φ'
-    have h_succ_eq := fullEval_betaEtaEq I hφ
     have h_ant_point := congrArg (fun term => I.toTopologicalInterpretation.propCtxEval term γ) h_ant_eq
-    have h_succ_point := congrArg (fun term => I.toTopologicalInterpretation.propCtxEval term γ) h_succ_eq
-    simpa [h_ant_point, h_succ_point] using ih γ
+    match hφ with
+    | .beta t u =>
+        have h_beta :
+            I.FullValidSequent _ (.app (.lam u) t) :=
+          HeytingTopologicalInterpretation.FullValidSequent.beta
+            (I := I) (Δ := _) (t := t) (φ := u) ih
+        simpa [h_ant_point] using h_beta γ
+    | hφ =>
+        -- Eta and the other congruence/symmetry/transitivity cases still use
+        -- the general beta-eta coherence theorem.
+        have h_succ_eq := fullEval_betaEtaEq I hφ
+        have h_succ_point := congrArg (fun term => I.toTopologicalInterpretation.propCtxEval term γ) h_succ_eq
+        simpa [h_ant_point, h_succ_point] using ih γ
 
 instance instHasSequentSemantics
     (I : HeytingTopologicalInterpretation Base Const X)

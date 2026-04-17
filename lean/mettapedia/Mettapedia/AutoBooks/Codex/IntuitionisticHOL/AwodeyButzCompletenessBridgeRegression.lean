@@ -76,4 +76,114 @@ theorem certified_candidate_exists_semantics_path
       C.frontier.antecedents C.frontier.succedent := by
   exact C.awodey_butz_completeness_of_exists_candidateClosedHintikkaSemantics hSem
 
+theorem beta_exists_truth_counterexample_path
+    {Δ : List (Formula Const Γ)} {σ : Ty Base}
+    (t : Term Const Γ σ)
+    (φ : Formula Const (σ :: Γ))
+    (hCounter :
+      ∃ (M : GlobalModel Base Const)
+        (γ :
+          (HigherOrderPointTopologicalGlobalModelBridge.basicInterp.ctxSpace
+            (M := M) Γ).Carrier),
+        HigherOrderPointTopologicalGlobalModelBridge.basicInterp.truthAntecedent
+            (M := M) Δ γ = ⊤ ∧
+          HigherOrderPointTopologicalGlobalModelBridge.basicInterp.truthEval
+            (M := M) (instantiate t φ) γ ≠ ⊤) :
+    ¬ Derivable (Base := Base) (Const := Const) Δ (.app (.lam φ) t) := by
+  exact awodey_butz_completeness_of_exists_beta_truth_counterexample
+    (Base := Base) (Const := Const) t φ hCounter
+
+theorem beta_exists_truth_counterexample_bridge_path
+    {Δ : List (Formula Const Γ)} {σ : Ty Base}
+    (t : Term Const Γ σ)
+    (φ : Formula Const (σ :: Γ))
+    (hCounter :
+      ∃ (M : GlobalModel Base Const)
+        (γ :
+          (HigherOrderPointTopologicalGlobalModelBridge.basicInterp.ctxSpace
+            (M := M) Γ).Carrier),
+        HigherOrderPointTopologicalGlobalModelBridge.basicInterp.truthAntecedent
+            (M := M) Δ γ = ⊤ ∧
+          HigherOrderPointTopologicalGlobalModelBridge.basicInterp.truthEval
+            (M := M) (instantiate t φ) γ ≠ ⊤) :
+    ¬ Derivable (Base := Base) (Const := Const) Δ (.app (.lam φ) t) := by
+  exact awodey_butz_completeness_bridge_of_exists_beta_truth_counterexample
+    (Base := Base) (Const := Const) t φ hCounter
+
+theorem frontier_beta_exists_truth_counterexample_path
+    (F : CompletenessFrontier Const Γ)
+    {σ : Ty Base}
+    (t : Term Const Γ σ)
+    (φ : Formula Const (σ :: Γ))
+    (hCounter :
+      ∃ (M : GlobalModel Base Const)
+        (γ :
+          (HigherOrderPointTopologicalGlobalModelBridge.basicInterp.ctxSpace
+            (M := M) Γ).Carrier),
+        HigherOrderPointTopologicalGlobalModelBridge.basicInterp.truthAntecedent
+            (M := M) F.antecedents γ = ⊤ ∧
+          HigherOrderPointTopologicalGlobalModelBridge.basicInterp.truthEval
+            (M := M) (instantiate t φ) γ ≠ ⊤) :
+    ¬ Derivable (Base := Base) (Const := Const) F.antecedents (.app (.lam φ) t) := by
+  exact F.awodey_butz_completeness_of_exists_beta_truth_counterexample
+    (Base := Base) (Const := Const) t φ hCounter
+
+theorem certifiedCandidate_beta_exists_truth_counterexample_path
+    (C : CertifiedCountermodelCandidate Const Γ)
+    {σ : Ty Base}
+    (t : Term Const Γ σ)
+    (φ : Formula Const (σ :: Γ))
+    (hCounter :
+      ∃ (M : GlobalModel Base Const)
+        (γ :
+          (HigherOrderPointTopologicalGlobalModelBridge.basicInterp.ctxSpace
+            (M := M) Γ).Carrier),
+        HigherOrderPointTopologicalGlobalModelBridge.basicInterp.truthAntecedent
+            (M := M) C.frontier.antecedents γ = ⊤ ∧
+          HigherOrderPointTopologicalGlobalModelBridge.basicInterp.truthEval
+            (M := M) (instantiate t φ) γ ≠ ⊤) :
+    ¬ Derivable (Base := Base) (Const := Const)
+      C.frontier.antecedents (.app (.lam φ) t) := by
+  exact C.awodey_butz_completeness_of_exists_beta_truth_counterexample
+    (Base := Base) (Const := Const) t φ hCounter
+
+theorem closedCertifiedCandidate_beta_exists_truth_counterexample_path
+    (C : CertifiedCountermodelCandidate Const [])
+    {σ : Ty Base}
+    (t : Term Const [] σ)
+    (φ : Formula Const [σ])
+    (hCounter :
+      ∃ (M : GlobalModel Base Const)
+        (γ :
+          (HigherOrderPointTopologicalGlobalModelBridge.basicInterp.ctxSpace
+            (M := M) []).Carrier),
+        HigherOrderPointTopologicalGlobalModelBridge.basicInterp.truthAntecedent
+            (M := M) C.frontier.antecedents γ = ⊤ ∧
+          HigherOrderPointTopologicalGlobalModelBridge.basicInterp.truthEval
+            (M := M) (instantiate t φ) γ ≠ ⊤) :
+    ¬ Derivable (Base := Base) (Const := Const)
+      C.frontier.antecedents (.app (.lam φ) t) := by
+  exact C.awodey_butz_completeness_of_exists_closed_beta_truth_counterexample
+    (Base := Base) (Const := Const) t φ hCounter
+
+theorem closedCertifiedCandidate_exists_beta_succedent_counterexample_path
+    (C : CertifiedCountermodelCandidate Const [])
+    {σ : Ty Base}
+    (t : Term Const [] σ)
+    (φ : Formula Const [σ])
+    (hSucc : C.frontier.succedent = (.app (.lam φ) t))
+    (hCounter :
+      ∃ (M : GlobalModel Base Const)
+        (γ :
+          (HigherOrderPointTopologicalGlobalModelBridge.basicInterp.ctxSpace
+            (M := M) []).Carrier),
+        HigherOrderPointTopologicalGlobalModelBridge.basicInterp.truthAntecedent
+            (M := M) C.frontier.antecedents γ = ⊤ ∧
+          HigherOrderPointTopologicalGlobalModelBridge.basicInterp.truthEval
+            (M := M) (instantiate t φ) γ ≠ ⊤) :
+    ¬ Derivable (Base := Base) (Const := Const)
+      C.frontier.antecedents C.frontier.succedent := by
+  exact C.awodey_butz_completeness_of_exists_closed_beta_succedent_counterexample
+    (Base := Base) (Const := Const) t φ hSucc hCounter
+
 end Mettapedia.AutoBooks.Codex.IntuitionisticHOL.AwodeyButzCompletenessBridgeRegression

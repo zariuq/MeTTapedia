@@ -100,25 +100,31 @@ theorem validatedPeTTaSource_of_headSource_aux
                     · by_cases hunique : c = "unique"
                       · subst hunique
                         simp [isValidatedPeTTaHeadSource, isValidatedPeTTaSource] at h
-                      · by_cases hprogn : c = "progn"
-                        · subst hprogn
+                      · by_cases huniqueatom : c = "unique-atom"
+                        · subst huniqueatom
                           simp [isValidatedPeTTaHeadSource] at h
-                        · by_cases hprog1 : c = "prog1"
-                          · subst hprog1
+                        · by_cases hprogn : c = "progn"
+                          · subst hprogn
                             simp [isValidatedPeTTaHeadSource] at h
-                          · by_cases hfoldall : c = "foldall"
-                            · subst hfoldall
+                          · by_cases hprog1 : c = "prog1"
+                            · subst hprog1
                               simp [isValidatedPeTTaHeadSource] at h
-                            · by_cases hlt : c = "@<"
-                              · subst hlt
+                            · by_cases hfoldall : c = "foldall"
+                              · subst hfoldall
                                 simp [isValidatedPeTTaHeadSource] at h
-                              · by_cases hgt : c = "@>"
-                                · subst hgt
+                              · by_cases hfoldl : c = "foldl-atom"
+                                · subst hfoldl
                                   simp [isValidatedPeTTaHeadSource] at h
-                                · simp [isValidatedPeTTaHeadSource, isValidatedPeTTaSource,
-                                    hchain, hcollapse, hsuperpose, hswitch, hswitchm,
-                                    hatomsubst, hnop, hfunction, hunique, hprogn, hprog1,
-                                    hfoldall, hlt, hgt] at h ⊢
+                                · by_cases hlt : c = "@<"
+                                  · subst hlt
+                                    simp [isValidatedPeTTaHeadSource] at h
+                                  · by_cases hgt : c = "@>"
+                                    · subst hgt
+                                      simp [isValidatedPeTTaHeadSource] at h
+                                    · simp [isValidatedPeTTaHeadSource, isValidatedPeTTaSource,
+                                        hchain, hcollapse, hsuperpose, hswitch, hswitchm,
+                                        hatomsubst, hnop, hfunction, hunique, huniqueatom, hprogn,
+                                        hprog1, hfoldall, hfoldl, hlt, hgt] at h ⊢
   | grounded _ => simp [isValidatedPeTTaHeadSource, isValidatedPeTTaSource]
   | expression es =>
       cases es with
@@ -135,74 +141,165 @@ theorem validatedPeTTaSource_of_headSource_aux
               · by_cases hunique : c = "unique"
                 · subst hunique
                   simp [isValidatedPeTTaHeadSource, isValidatedPeTTaSource] at h
-                · by_cases hprog1 : c = "prog1"
-                  · subst hprog1
-                    have hargs : isValidatedPeTTaProg1HeadArgs args = true := by
-                      simpa [isValidatedPeTTaHeadSource, hprogn, hunique] using h
-                    simpa [isValidatedPeTTaSource] using
-                      validatedPeTTaList_of_prog1HeadArgs_aux args hargs
-                  · by_cases hfoldall : c = "foldall"
-                    · subst hfoldall
-                      cases args with
-                      | nil =>
-                          simp [isValidatedPeTTaHeadSource, isValidatedPeTTaSource, hprogn, hunique, hprog1] at h
-                      | cons agg rest =>
-                          cases rest with
-                          | nil =>
-                              simp [isValidatedPeTTaHeadSource, isValidatedPeTTaSource, hprogn, hunique, hprog1] at h
-                          | cons goal rest =>
-                              cases rest with
-                              | nil =>
-                                  simp [isValidatedPeTTaHeadSource, isValidatedPeTTaSource, hprogn, hunique, hprog1] at h
-                              | cons init rest =>
-                                  cases rest with
-                                  | nil =>
-                                      simpa [isValidatedPeTTaHeadSource, isValidatedPeTTaSource,
-                                        hprogn, hunique, hprog1]
-                                        using h
-                                  | cons _ _ =>
-                                      simp [isValidatedPeTTaHeadSource, isValidatedPeTTaSource,
-                                        hprogn, hunique, hprog1] at h
-                    · by_cases hlt : c = "@<"
-                      · subst hlt
+                · by_cases huniqueatom : c = "unique-atom"
+                  · subst huniqueatom
+                    cases args with
+                    | nil =>
+                        simp [isValidatedPeTTaHeadSource, isValidatedPeTTaSource,
+                          hprogn, hunique] at h
+                    | cons a rest =>
+                        cases rest with
+                        | nil =>
+                            cases a with
+                            | expression aes =>
+                                cases aes with
+                                | nil =>
+                                    simp [isValidatedPeTTaHeadSource, isValidatedPeTTaSource,
+                                      hprogn, hunique] at h
+                                | cons ahd atail =>
+                                    cases ahd with
+                                    | symbol name =>
+                                        by_cases hcollapse : name = "collapse"
+                                        · subst hcollapse
+                                          cases atail with
+                                          | nil =>
+                                              simp [isValidatedPeTTaHeadSource, isValidatedPeTTaSource,
+                                                hprogn, hunique] at h
+                                          | cons x xs =>
+                                              cases xs with
+                                              | nil =>
+                                                  simpa [isValidatedPeTTaHeadSource, isValidatedPeTTaSource,
+                                                    hprogn, hunique] using h
+                                              | cons _ _ =>
+                                                  simp [isValidatedPeTTaHeadSource, isValidatedPeTTaSource,
+                                                    hprogn, hunique] at h
+                                        · simp [isValidatedPeTTaHeadSource, isValidatedPeTTaSource,
+                                            hprogn, hunique, hcollapse] at h
+                                    | var _ =>
+                                        simp [isValidatedPeTTaHeadSource, isValidatedPeTTaSource,
+                                          hprogn, hunique] at h
+                                    | grounded _ =>
+                                        simp [isValidatedPeTTaHeadSource, isValidatedPeTTaSource,
+                                          hprogn, hunique] at h
+                                    | expression _ =>
+                                        simp [isValidatedPeTTaHeadSource, isValidatedPeTTaSource,
+                                          hprogn, hunique] at h
+                            | var _ =>
+                                simp [isValidatedPeTTaHeadSource, isValidatedPeTTaSource,
+                                  hprogn, hunique] at h
+                            | symbol _ =>
+                                simp [isValidatedPeTTaHeadSource, isValidatedPeTTaSource,
+                                  hprogn, hunique] at h
+                            | grounded _ =>
+                                simp [isValidatedPeTTaHeadSource, isValidatedPeTTaSource,
+                                  hprogn, hunique] at h
+                        | cons _ _ =>
+                            simp [isValidatedPeTTaHeadSource, isValidatedPeTTaSource,
+                              hprogn, hunique] at h
+                  · by_cases hprog1 : c = "prog1"
+                    · subst hprog1
+                      have hargs : isValidatedPeTTaProg1HeadArgs args = true := by
+                        simpa [isValidatedPeTTaHeadSource, hprogn, hunique, huniqueatom] using h
+                      simpa [isValidatedPeTTaSource] using
+                        validatedPeTTaList_of_prog1HeadArgs_aux args hargs
+                    · by_cases hfoldall : c = "foldall"
+                      · subst hfoldall
                         cases args with
                         | nil =>
                             simp [isValidatedPeTTaHeadSource, isValidatedPeTTaSource,
-                              hprogn, hunique, hprog1, hfoldall] at h
-                        | cons a rest =>
+                              hprogn, hunique, huniqueatom, hprog1] at h
+                        | cons agg rest =>
                             cases rest with
                             | nil =>
                                 simp [isValidatedPeTTaHeadSource, isValidatedPeTTaSource,
-                                  hprogn, hunique, hprog1, hfoldall] at h
-                            | cons b rest =>
+                                  hprogn, hunique, huniqueatom, hprog1] at h
+                            | cons goal rest =>
                                 cases rest with
                                 | nil =>
-                                    simpa [isValidatedPeTTaHeadSource, isValidatedPeTTaSource,
-                                      hprogn, hunique, hprog1, hfoldall] using h
-                                | cons _ _ =>
                                     simp [isValidatedPeTTaHeadSource, isValidatedPeTTaSource,
-                                      hprogn, hunique, hprog1, hfoldall] at h
-                      · by_cases hgt : c = "@>"
-                        · subst hgt
+                                      hprogn, hunique, huniqueatom, hprog1] at h
+                                | cons init rest =>
+                                    cases rest with
+                                    | nil =>
+                                        simpa [isValidatedPeTTaHeadSource, isValidatedPeTTaSource,
+                                          hprogn, hunique, huniqueatom, hprog1] using h
+                                    | cons _ _ =>
+                                        simp [isValidatedPeTTaHeadSource, isValidatedPeTTaSource,
+                                          hprogn, hunique, huniqueatom, hprog1] at h
+                      · by_cases hfoldl : c = "foldl-atom"
+                        · subst hfoldl
                           cases args with
                           | nil =>
                               simp [isValidatedPeTTaHeadSource, isValidatedPeTTaSource,
-                                hprogn, hunique, hprog1, hfoldall, hlt] at h
-                          | cons a rest =>
+                                hprogn, hunique, huniqueatom, hprog1, hfoldall] at h
+                          | cons xs rest =>
                               cases rest with
                               | nil =>
                                   simp [isValidatedPeTTaHeadSource, isValidatedPeTTaSource,
-                                    hprogn, hunique, hprog1, hfoldall, hlt] at h
-                              | cons b rest =>
+                                    hprogn, hunique, huniqueatom, hprog1, hfoldall] at h
+                              | cons init rest =>
                                   cases rest with
                                   | nil =>
-                                      simpa [isValidatedPeTTaHeadSource, isValidatedPeTTaSource,
-                                        hprogn, hunique, hprog1, hfoldall, hlt] using h
-                                  | cons _ _ =>
                                       simp [isValidatedPeTTaHeadSource, isValidatedPeTTaSource,
-                                        hprogn, hunique, hprog1, hfoldall, hlt] at h
-                        · simpa [isValidatedPeTTaHeadSource, isValidatedPeTTaSource,
-                            hprogn, hunique, hprog1, hfoldall, hlt, hgt] using h
+                                        hprogn, hunique, huniqueatom, hprog1, hfoldall] at h
+                                  | cons third rest =>
+                                      cases rest with
+                                      | nil =>
+                                          simpa [isValidatedPeTTaHeadSource, isValidatedPeTTaSource,
+                                            hprogn, hunique, huniqueatom, hprog1, hfoldall] using h
+                                      | cons fourth rest =>
+                                          cases rest with
+                                          | nil =>
+                                              simp [isValidatedPeTTaHeadSource, isValidatedPeTTaSource,
+                                                hprogn, hunique, huniqueatom, hprog1, hfoldall] at h
+                                          | cons fifth rest =>
+                                              cases rest with
+                                              | nil =>
+                                                  simpa [isValidatedPeTTaHeadSource, isValidatedPeTTaSource,
+                                                    hprogn, hunique, huniqueatom, hprog1, hfoldall] using h
+                                              | cons _ _ =>
+                                                  simp [isValidatedPeTTaHeadSource, isValidatedPeTTaSource,
+                                                    hprogn, hunique, huniqueatom, hprog1, hfoldall] at h
+                        · by_cases hlt : c = "@<"
+                          · subst hlt
+                            cases args with
+                            | nil =>
+                                simp [isValidatedPeTTaHeadSource, isValidatedPeTTaSource,
+                                  hprogn, hunique, huniqueatom, hprog1, hfoldall, hfoldl] at h
+                            | cons a rest =>
+                                cases rest with
+                                | nil =>
+                                    simp [isValidatedPeTTaHeadSource, isValidatedPeTTaSource,
+                                      hprogn, hunique, huniqueatom, hprog1, hfoldall, hfoldl] at h
+                                | cons b rest =>
+                                    cases rest with
+                                    | nil =>
+                                        simpa [isValidatedPeTTaHeadSource, isValidatedPeTTaSource,
+                                          hprogn, hunique, huniqueatom, hprog1, hfoldall, hfoldl] using h
+                                    | cons _ _ =>
+                                        simp [isValidatedPeTTaHeadSource, isValidatedPeTTaSource,
+                                          hprogn, hunique, huniqueatom, hprog1, hfoldall, hfoldl] at h
+                          · by_cases hgt : c = "@>"
+                            · subst hgt
+                              cases args with
+                              | nil =>
+                                  simp [isValidatedPeTTaHeadSource, isValidatedPeTTaSource,
+                                    hprogn, hunique, huniqueatom, hprog1, hfoldall, hfoldl, hlt] at h
+                              | cons a rest =>
+                                  cases rest with
+                                  | nil =>
+                                      simp [isValidatedPeTTaHeadSource, isValidatedPeTTaSource,
+                                        hprogn, hunique, huniqueatom, hprog1, hfoldall, hfoldl, hlt] at h
+                                  | cons b rest =>
+                                      cases rest with
+                                      | nil =>
+                                          simpa [isValidatedPeTTaHeadSource, isValidatedPeTTaSource,
+                                            hprogn, hunique, huniqueatom, hprog1, hfoldall, hfoldl, hlt] using h
+                                      | cons _ _ =>
+                                          simp [isValidatedPeTTaHeadSource, isValidatedPeTTaSource,
+                                            hprogn, hunique, huniqueatom, hprog1, hfoldall, hfoldl, hlt] at h
+                            · simpa [isValidatedPeTTaHeadSource, isValidatedPeTTaSource,
+                                hprogn, hunique, huniqueatom, hprog1, hfoldall, hfoldl, hlt, hgt] using h
           | var _ => simpa [isValidatedPeTTaHeadSource] using h
           | grounded _ => simpa [isValidatedPeTTaHeadSource] using h
           | expression _ => simpa [isValidatedPeTTaHeadSource] using h
@@ -272,24 +369,30 @@ theorem headSourcePeTTaSymbol_notForbidden_aux
                 · by_cases hunique : c = "unique"
                   · subst hunique
                     simp [isValidatedPeTTaHeadSource] at h
-                  · by_cases hprogn : c = "progn"
-                    · subst hprogn
+                  · by_cases huniqueatom : c = "unique-atom"
+                    · subst huniqueatom
                       simp [isValidatedPeTTaHeadSource] at h
-                    · by_cases hprog1 : c = "prog1"
-                      · subst hprog1
+                    · by_cases hprogn : c = "progn"
+                      · subst hprogn
                         simp [isValidatedPeTTaHeadSource] at h
-                      · by_cases hfoldall : c = "foldall"
-                        · subst hfoldall
+                      · by_cases hprog1 : c = "prog1"
+                        · subst hprog1
                           simp [isValidatedPeTTaHeadSource] at h
-                        · by_cases hlt : c = "@<"
-                          · subst hlt
+                        · by_cases hfoldall : c = "foldall"
+                          · subst hfoldall
                             simp [isValidatedPeTTaHeadSource] at h
-                          · by_cases hgt : c = "@>"
-                            · subst hgt
+                          · by_cases hfoldl : c = "foldl-atom"
+                            · subst hfoldl
                               simp [isValidatedPeTTaHeadSource] at h
-                            · simp [isForbiddenHeadSymbol, hchain, hcollapse, hsuperpose,
-                                hswitch, hswitchm, hatomsubst, hnop, hfunction, hunique, hprogn,
-                                hprog1, hfoldall, hlt, hgt]
+                            · by_cases hlt : c = "@<"
+                              · subst hlt
+                                simp [isValidatedPeTTaHeadSource] at h
+                              · by_cases hgt : c = "@>"
+                                · subst hgt
+                                  simp [isValidatedPeTTaHeadSource] at h
+                                · simp [isForbiddenHeadSymbol, hchain, hcollapse, hsuperpose,
+                                    hswitch, hswitchm, hatomsubst, hnop, hfunction, hunique,
+                                    huniqueatom, hprogn, hprog1, hfoldall, hfoldl, hlt, hgt]
 
 
 

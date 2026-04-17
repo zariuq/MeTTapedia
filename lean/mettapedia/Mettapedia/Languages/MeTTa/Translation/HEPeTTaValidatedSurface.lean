@@ -23,7 +23,8 @@ set_option maxHeartbeats 800000
 mutual
 /-- A recursive common fragment that neither translator rewrites.
     Positive example: shared `let`/`match` terms whose subterms are also stable.
-    Negative example: any nested `chain`, `unique`, `progn`, or `@<` headed expression. -/
+    Negative example: any nested `chain`, `unique`, special `unique-atom (collapse X)`,
+    short 3-argument `foldl-atom`, `progn`, or `@<` headed expression. -/
 def isStableCommonForm : Atom → Bool
   | .expression (.symbol "chain" :: _) => false
   | .expression (.symbol "collapse-bind" :: _) => false
@@ -34,9 +35,13 @@ def isStableCommonForm : Atom → Bool
   | .expression (.symbol "nop" :: _) => false
   | .expression (.symbol "function" :: _) => false
   | .expression (.symbol "unique" :: _) => false
+  | .expression (.symbol "unique-atom" :: _) => false
+  | .expression [.symbol "foldl-atom", xs, init, acc, item, step] =>
+      isStableCommonList [xs, init, acc, item, step]
   | .expression (.symbol "progn" :: _) => false
   | .expression (.symbol "prog1" :: _) => false
   | .expression (.symbol "foldall" :: _) => false
+  | .expression [.symbol "foldl-atom", _, _, _] => false
   | .expression (.symbol "@<" :: _) => false
   | .expression (.symbol "@>" :: _) => false
   | .expression es => isStableCommonExpr es
@@ -53,6 +58,8 @@ def isForbiddenHeadSymbol : Atom → Bool
   | .symbol "nop" => true
   | .symbol "function" => true
   | .symbol "unique" => true
+  | .symbol "unique-atom" => true
+  | .symbol "foldl-atom" => true
   | .symbol "progn" => true
   | .symbol "prog1" => true
   | .symbol "foldall" => true
@@ -81,7 +88,7 @@ mutual
 
     It enforces two semantic side conditions:
     1. HE binder slots contain only variables or `_`.
-    2. PeTTa-only heads (`progn`, `prog1`, `@<`, `@>`) do not already appear in
+    2. PeTTa-only heads (`progn`, `prog1`, short `foldl-atom`, `@<`, `@>`) do not already appear in
        the source tree.
 
     Positive example: `(chain e $x body)` with recursively validated subterms.
@@ -104,8 +111,11 @@ def isValidatedHESource : Atom → Bool
       isValidatedHESource x
   | .expression [.symbol "function", .expression [.symbol "return", x]] =>
       isValidatedHESource x
-  | .expression [.symbol "unique", x] =>
-      isValidatedHESource x
+  | .expression [.symbol "unique", _] =>
+      false
+  | .expression [.symbol "foldl-atom", xs, init, acc, item, step] =>
+      isValidatedHESource xs && isValidatedHESource init &&
+        isHEBinderAtom acc && isHEBinderAtom item && isValidatedHESource step
   | .expression (.symbol "chain" :: _) => false
   | .expression (.symbol "collapse-bind" :: _) => false
   | .expression (.symbol "superpose-bind" :: _) => false
@@ -115,9 +125,11 @@ def isValidatedHESource : Atom → Bool
   | .expression (.symbol "nop" :: _) => false
   | .expression (.symbol "function" :: _) => false
   | .expression (.symbol "unique" :: _) => false
+  | .expression (.symbol "unique-atom" :: _) => false
   | .expression (.symbol "progn" :: _) => false
   | .expression (.symbol "prog1" :: _) => false
   | .expression (.symbol "foldall" :: _) => false
+  | .expression (.symbol "foldl-atom" :: _) => false
   | .expression (.symbol "@<" :: _) => false
   | .expression (.symbol "@>" :: _) => false
   | .expression [] => true
@@ -135,6 +147,8 @@ def isValidatedHEHeadSource : Atom → Bool
   | .symbol "nop" => false
   | .symbol "function" => false
   | .symbol "unique" => false
+  | .symbol "unique-atom" => false
+  | .symbol "foldl-atom" => false
   | .symbol "progn" => false
   | .symbol "prog1" => false
   | .symbol "foldall" => false
@@ -159,8 +173,21 @@ example : isStableCommonForm (.expression [.symbol "progn", .symbol "a", .symbol
 example : isStableCommonForm (.expression [.symbol "unique", .symbol "goal"]) = false := by
   native_decide
 
+example : isStableCommonForm (.expression
+    [.symbol "unique-atom", .expression [.symbol "collapse", .symbol "xs"]]) = false := by
+  native_decide
+
 example : isStableCommonForm (.expression [.symbol "foldall",
     .symbol "merge", .symbol "goal", .symbol "0"]) = false := by
+  native_decide
+
+example : isStableCommonForm (.expression [.symbol "foldl-atom",
+    .symbol "xs", .symbol "0", .symbol "merge"]) = false := by
+  native_decide
+
+example : isStableCommonForm (.expression
+    [.symbol "foldl-atom", .symbol "xs", .symbol "0", .var "$acc", .var "$item",
+      .expression [.symbol "eval", .expression [.symbol "merge", .var "$acc", .var "$item"]]]) = true := by
   native_decide
 
 example : isValidatedHESource (.expression [.symbol "chain",
@@ -178,6 +205,12 @@ example : isValidatedHESource (.expression
      .symbol "arg"]) = false := by
   native_decide
 
+example : isValidatedHESource (.expression [.symbol "unique-atom", .symbol "xs"]) = false := by
+  native_decide
+
+example : isValidatedHESource (.expression [.symbol "unique", .symbol "xs"]) = false := by
+  native_decide
+
 /-- PeTTa `foldall` reducers that remain first-order callable after lowering to
     HE's ordinary application surface. -/
 def isFirstOrderReducerAtom : Atom → Bool
@@ -186,16 +219,22 @@ def isFirstOrderReducerAtom : Atom → Bool
 
 mutual
 /-- Executable validator for the PeTTa source fragment on which the new
-    `foldall` lowering stays inside the common stable form.
+    `foldall` and raw 3-argument `foldl-atom` lowerings stay inside the common
+    stable form.
 
-    The key extra side condition is that `foldall` reducers must be first-order
+    The key extra side condition is that these reducers must be first-order
     symbols, so the lowered HE application `(Agg acc item)` stays symbol-headed.
 -/
 def isValidatedPeTTaSource : Atom → Bool
   | .expression (.symbol "progn" :: args) => isValidatedPeTTaList args
   | .expression (.symbol "prog1" :: args) => isValidatedPeTTaList args
+  | .expression [.symbol "foldl-atom", xs, init, acc, item, step] =>
+      isValidatedPeTTaSource xs && isValidatedPeTTaSource init &&
+        isHEBinderAtom acc && isHEBinderAtom item && isValidatedPeTTaSource step
   | .expression [.symbol "foldall", agg, goal, init] =>
       isFirstOrderReducerAtom agg && isValidatedPeTTaSource goal && isValidatedPeTTaSource init
+  | .expression [.symbol "foldl-atom", xs, init, agg] =>
+      isFirstOrderReducerAtom agg && isValidatedPeTTaSource xs && isValidatedPeTTaSource init
   | .expression [.symbol "@<", a, b] =>
       isValidatedPeTTaSource a && isValidatedPeTTaSource b
   | .expression [.symbol "@>", a, b] =>
@@ -210,6 +249,7 @@ def isValidatedPeTTaSource : Atom → Bool
   | .expression (.symbol "function" :: _) => false
   | .expression (.symbol "unique" :: _) => false
   | .expression (.symbol "foldall" :: _) => false
+  | .expression (.symbol "foldl-atom" :: _) => false
   | .expression (.symbol "@<" :: _) => false
   | .expression (.symbol "@>" :: _) => false
   | .expression [] => true
@@ -241,6 +281,8 @@ def isValidatedPeTTaHeadSource : Atom → Bool
   | .symbol "nop" => false
   | .symbol "function" => false
   | .symbol "unique" => false
+  | .symbol "unique-atom" => false
+  | .symbol "foldl-atom" => false
   | .symbol "progn" => false
   | .symbol "prog1" => false
   | .symbol "foldall" => false
@@ -248,8 +290,13 @@ def isValidatedPeTTaHeadSource : Atom → Bool
   | .symbol "@>" => false
   | .expression (.symbol "progn" :: args) => isValidatedPeTTaPrognHeadArgs args
   | .expression (.symbol "prog1" :: args) => isValidatedPeTTaProg1HeadArgs args
+  | .expression [.symbol "foldl-atom", xs, init, acc, item, step] =>
+      isValidatedPeTTaSource xs && isValidatedPeTTaSource init &&
+        isHEBinderAtom acc && isHEBinderAtom item && isValidatedPeTTaSource step
   | .expression [.symbol "foldall", agg, goal, init] =>
       isFirstOrderReducerAtom agg && isValidatedPeTTaSource goal && isValidatedPeTTaSource init
+  | .expression [.symbol "foldl-atom", xs, init, agg] =>
+      isFirstOrderReducerAtom agg && isValidatedPeTTaSource xs && isValidatedPeTTaSource init
   | .expression [.symbol "@<", a, b] =>
       isValidatedPeTTaSource a && isValidatedPeTTaSource b
   | .expression [.symbol "@>", a, b] =>
@@ -275,6 +322,22 @@ example : isValidatedPeTTaSource (.expression
   native_decide
 
 example : isValidatedPeTTaSource (.expression
+    [.symbol "foldl-atom", .expression [.symbol "collapse", .symbol "xs"], .symbol "0",
+      .symbol "merge"]) = true := by
+  native_decide
+
+example : isValidatedPeTTaSource (.expression
+    [.symbol "foldl-atom", .expression [.symbol "collapse", .symbol "xs"], .symbol "0",
+      .var "$acc", .var "$item",
+      .expression [.symbol "eval", .expression [.symbol "merge", .var "$acc", .var "$item"]]]) = true := by
+  native_decide
+
+example : isValidatedPeTTaSource (.expression
+    [.symbol "foldl-atom", .expression [.symbol "collapse", .symbol "xs"], .symbol "0",
+      .var "$f"]) = false := by
+  native_decide
+
+example : isValidatedPeTTaSource (.expression
     [.symbol "prog1", .expression [.symbol "foldall", .symbol "merge",
       .expression [.symbol "twohop-item"], .symbol "0"], .symbol "done"]) = true := by
   native_decide
@@ -284,6 +347,13 @@ example : isValidatedPeTTaSource (.expression
   native_decide
 
 example : isValidatedPeTTaSource (.expression [.symbol "unique", .symbol "goal"]) = false := by
+  native_decide
+
+example : isValidatedPeTTaSource (.expression
+    [.symbol "unique-atom", .expression [.symbol "collapse", .symbol "xs"]]) = false := by
+  native_decide
+
+example : isValidatedPeTTaSource (.expression [.symbol "unique-atom", .symbol "xs"]) = false := by
   native_decide
 
 example : isValidatedPeTTaSource (.expression
@@ -382,25 +452,36 @@ theorem stableCommonForm_cons_of_head (hd : Atom) (args : List Atom)
                             have hfalse : False := by
                               simp [isStableCommonHead, isStableCommonForm, isForbiddenHeadSymbol] at hhd
                             exact False.elim hfalse
-                          · by_cases hlt : c = "@<"
-                            · subst hlt
+                          · by_cases hfoldl : c = "foldl-atom"
+                            · subst hfoldl
                               have hfalse : False := by
                                 simp [isStableCommonHead, isStableCommonForm, isForbiddenHeadSymbol] at hhd
                               exact False.elim hfalse
-                            · by_cases hgt : c = "@>"
-                              · subst hgt
+                            · by_cases huniqueatom : c = "unique-atom"
+                              · subst huniqueatom
                                 have hfalse : False := by
                                   simp [isStableCommonHead, isStableCommonForm, isForbiddenHeadSymbol] at hhd
                                 exact False.elim hfalse
-                              · by_cases hunique : c = "unique"
-                                · subst hunique
+                              · by_cases hlt : c = "@<"
+                                · subst hlt
                                   have hfalse : False := by
                                     simp [isStableCommonHead, isStableCommonForm, isForbiddenHeadSymbol] at hhd
                                   exact False.elim hfalse
-                                · simp [isStableCommonForm, isStableCommonExpr, isStableCommonHead,
-                                    isForbiddenHeadSymbol, isStableCommonList, hchain, hcollapse,
-                                    hsuperpose, hswitch, hswitchm, hatomsubst, hnop, hfunction,
-                                    hprogn, hprog1, hfoldall, hlt, hgt, hunique]
+                                · by_cases hgt : c = "@>"
+                                  · subst hgt
+                                    have hfalse : False := by
+                                      simp [isStableCommonHead, isStableCommonForm, isForbiddenHeadSymbol] at hhd
+                                    exact False.elim hfalse
+                                  · by_cases hunique : c = "unique"
+                                    · subst hunique
+                                      have hfalse : False := by
+                                        simp [isStableCommonHead, isStableCommonForm, isForbiddenHeadSymbol] at hhd
+                                      exact False.elim hfalse
+                                    · simp [isStableCommonForm, isStableCommonExpr, isStableCommonHead,
+                                        isForbiddenHeadSymbol, isStableCommonList, hchain, hcollapse,
+                                        hsuperpose, hswitch, hswitchm, hatomsubst, hnop, hfunction,
+                                        hprogn, hprog1, hfoldall, hfoldl, huniqueatom, hlt, hgt,
+                                        hunique]
   | grounded _ =>
       simp [isStableCommonForm, isStableCommonExpr, isStableCommonHead, isForbiddenHeadSymbol]
   | expression es =>

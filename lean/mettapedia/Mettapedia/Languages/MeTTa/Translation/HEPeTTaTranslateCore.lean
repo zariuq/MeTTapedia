@@ -147,6 +147,7 @@ Mirrors `petta_to_he/4` from `he_petta_relational.pl`. -/
     | `(prog1 A)`                   | `A'`                     |
     | `(prog1 A ... Z)`             | capture first, eval rest |
     | `(foldall F G I)`             | `let(collapse G') + fold`|
+    | `(foldl-atom X I F)`          | binder-form `foldl-atom` |
     | `(unique-atom (collapse X))`  | `(collapse (unique X'))` |
     | `(@< A B)`                    | `(<s A' B')`             |
     | `(@> A B)`                    | `(not (<s A' B'))`       |
@@ -174,6 +175,16 @@ def translatePeTTa (a : Atom) (supply : Nat) : Atom × Nat :=
         .expression
           [.symbol "foldl-atom", listVar, tinit, accVar, itemVar,
             .expression [.symbol "eval", .expression [tagg, accVar, itemVar]]]], s6)
+  -- raw PeTTa foldl-atom List Init Agg → HE binder-form foldl-atom
+  | .expression [.symbol "foldl-atom", xs, init, agg] =>
+    let (txs, s1) := translatePeTTa xs supply
+    let (tinit, s2) := translatePeTTa init s1
+    let (tagg, s3) := translatePeTTa agg s2
+    let (accVar, s4) := freshVar "acc" s3
+    let (itemVar, s5) := freshVar "item" s4
+    (.expression
+      [.symbol "foldl-atom", txs, tinit, accVar, itemVar,
+        .expression [.symbol "eval", .expression [tagg, accVar, itemVar]]], s5)
   -- PeTTa unique workaround surface → list-preserving HE unique surface
   | .expression [.symbol "unique-atom", .expression [.symbol "collapse", x]] =>
     let (tx, s1) := translatePeTTa x supply
@@ -286,6 +297,24 @@ theorem translatePeTTa_uniqueWorkaround (x : Atom) (s : Nat) :
       [.symbol "unique-atom", .expression [.symbol "collapse", x]]) s =
     let (tx, s1) := translatePeTTa x s
     (.expression [.symbol "collapse", .expression [.symbol "unique", tx]], s1) := rfl
+
+/-- Raw PeTTa 3-argument `foldl-atom` is lowered to the public HE binder form.
+
+    Positive example: `(foldl-atom xs init merge)` becomes
+    `(foldl-atom xs' init' $acc $item (eval (merge' $acc $item)))`.
+
+    Negative example: this is not a claim about HE runtime semantics for raw
+    `reduce`; it only covers the short `foldl-atom` surface. -/
+theorem translatePeTTa_foldlAtomShort (xs init agg : Atom) (s : Nat) :
+    translatePeTTa (.expression [.symbol "foldl-atom", xs, init, agg]) s =
+    let (txs, s1) := translatePeTTa xs s
+    let (tinit, s2) := translatePeTTa init s1
+    let (tagg, s3) := translatePeTTa agg s2
+    let (accVar, s4) := freshVar "acc" s3
+    let (itemVar, s5) := freshVar "item" s4
+    (.expression
+      [.symbol "foldl-atom", txs, tinit, accVar, itemVar,
+        .expression [.symbol "eval", .expression [tagg, accVar, itemVar]]], s5) := rfl
 
 /-! ## Optional HE optimization for translated PeTTa→HE output
 

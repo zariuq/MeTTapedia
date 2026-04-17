@@ -40,6 +40,62 @@ theorem awodey_butz_completeness_of_exists_semantics
     (D.exists_semilocal_truth_counterexample_of_exists_semantics
       terminal branchClosed hSem)
 
+/--
+Expose the beta-specialized one-point completeness witness through the main
+completeness-facing bridge module.
+
+This keeps downstream consumers on the same archive-free bridge stack as the
+generic completeness wrappers, while reusing the stronger beta-only packaging
+already proved in `AwodeyButzSemantics`.
+-/
+theorem awodey_butz_completeness_bridge_of_exists_beta_truth_counterexample
+    {antecedents : List (Formula Const Γ)}
+    {σ : Ty Base}
+    (t : Term Const Γ σ)
+    (body : Formula Const (σ :: Γ))
+    (hCounter :
+      ∃ (M : GlobalModel Base Const)
+        (γ :
+          (HigherOrderPointTopologicalGlobalModelBridge.basicInterp.ctxSpace
+            (M := M) Γ).Carrier),
+        HigherOrderPointTopologicalGlobalModelBridge.basicInterp.truthAntecedent
+            (M := M) antecedents γ = ⊤ ∧
+          HigherOrderPointTopologicalGlobalModelBridge.basicInterp.truthEval
+            (M := M) (instantiate t body) γ ≠ ⊤) :
+    ¬ Derivable (Base := Base) (Const := Const) antecedents (.app (.lam body) t) := by
+  exact awodey_butz_completeness_of_exists_beta_truth_counterexample
+    (Base := Base) (Const := Const) t body hCounter
+
+namespace CompletenessFrontier
+
+/--
+Frontier-level repackaging of the beta-specialized one-point counterexample
+route.
+
+This is the next completeness-facing wrapper above the raw bridge theorem:
+consumers carrying a `CompletenessFrontier` can stay at that abstraction level
+while using the proved beta-only path.
+-/
+theorem awodey_butz_completeness_of_exists_beta_truth_counterexample
+    (F : CompletenessFrontier Const Γ)
+    {σ : Ty Base}
+    (t : Term Const Γ σ)
+    (body : Formula Const (σ :: Γ))
+    (hCounter :
+      ∃ (M : GlobalModel Base Const)
+        (γ :
+          (HigherOrderPointTopologicalGlobalModelBridge.basicInterp.ctxSpace
+            (M := M) Γ).Carrier),
+        HigherOrderPointTopologicalGlobalModelBridge.basicInterp.truthAntecedent
+            (M := M) F.antecedents γ = ⊤ ∧
+          HigherOrderPointTopologicalGlobalModelBridge.basicInterp.truthEval
+            (M := M) (instantiate t body) γ ≠ ⊤) :
+    ¬ Derivable (Base := Base) (Const := Const) F.antecedents (.app (.lam body) t) := by
+  exact awodey_butz_completeness_bridge_of_exists_beta_truth_counterexample
+    (Base := Base) (Const := Const) t body hCounter
+
+end CompletenessFrontier
+
 namespace SoundLocalCountermodel
 
 /--
@@ -156,6 +212,84 @@ theorem awodey_butz_completeness_of_exists_candidateClosedHintikkaSemantics
       C.frontier.antecedents C.frontier.succedent := by
   rcases hSem with ⟨M, env, global, ⟨S⟩, hM⟩
   exact S.awodey_butz_completeness global hM
+
+/--
+Candidate-level forwarder for the beta-specialized one-point counterexample
+route.
+
+This lets downstream completeness consumers stay on the
+`CertifiedCountermodelCandidate` interface while reusing the already-packaged
+frontier-level beta theorem.
+-/
+theorem awodey_butz_completeness_of_exists_beta_truth_counterexample
+    (C : CertifiedCountermodelCandidate Const Γ)
+    {σ : Ty Base}
+    (t : Term Const Γ σ)
+    (body : Formula Const (σ :: Γ))
+    (hCounter :
+      ∃ (M : GlobalModel Base Const)
+        (γ :
+          (HigherOrderPointTopologicalGlobalModelBridge.basicInterp.ctxSpace
+            (M := M) Γ).Carrier),
+        HigherOrderPointTopologicalGlobalModelBridge.basicInterp.truthAntecedent
+            (M := M) C.frontier.antecedents γ = ⊤ ∧
+          HigherOrderPointTopologicalGlobalModelBridge.basicInterp.truthEval
+            (M := M) (instantiate t body) γ ≠ ⊤) :
+    ¬ Derivable (Base := Base) (Const := Const)
+      C.frontier.antecedents (.app (.lam body) t) := by
+  exact C.frontier.awodey_butz_completeness_of_exists_beta_truth_counterexample
+    (Base := Base) (Const := Const) t body hCounter
+
+/--
+Closed candidate-level specialization of the beta-specialized one-point
+counterexample route.
+
+This is the next thin wrapper above the generic candidate-level theorem for the
+closed-frontier completeness branch.
+-/
+theorem awodey_butz_completeness_of_exists_closed_beta_truth_counterexample
+    (C : CertifiedCountermodelCandidate Const [])
+    {σ : Ty Base}
+    (t : Term Const [] σ)
+    (body : Formula Const [σ])
+    (hCounter :
+      ∃ (M : GlobalModel Base Const)
+        (γ :
+          (HigherOrderPointTopologicalGlobalModelBridge.basicInterp.ctxSpace
+            (M := M) []).Carrier),
+        HigherOrderPointTopologicalGlobalModelBridge.basicInterp.truthAntecedent
+            (M := M) C.frontier.antecedents γ = ⊤ ∧
+          HigherOrderPointTopologicalGlobalModelBridge.basicInterp.truthEval
+            (M := M) (instantiate t body) γ ≠ ⊤) :
+    ¬ Derivable (Base := Base) (Const := Const)
+      C.frontier.antecedents (.app (.lam body) t) := by
+  exact C.awodey_butz_completeness_of_exists_beta_truth_counterexample
+    (Base := Base) (Const := Const) t body hCounter
+
+/--
+Closed candidates whose succedent is literally a beta redex can consume the
+beta-specialized point counterexample route directly at the frontier succedent.
+-/
+theorem awodey_butz_completeness_of_exists_closed_beta_succedent_counterexample
+    (C : CertifiedCountermodelCandidate Const [])
+    {σ : Ty Base}
+    (t : Term Const [] σ)
+    (body : Formula Const [σ])
+    (hSucc : C.frontier.succedent = (.app (.lam body) t))
+    (hCounter :
+      ∃ (M : GlobalModel Base Const)
+        (γ :
+          (HigherOrderPointTopologicalGlobalModelBridge.basicInterp.ctxSpace
+            (M := M) []).Carrier),
+        HigherOrderPointTopologicalGlobalModelBridge.basicInterp.truthAntecedent
+            (M := M) C.frontier.antecedents γ = ⊤ ∧
+          HigherOrderPointTopologicalGlobalModelBridge.basicInterp.truthEval
+            (M := M) (instantiate t body) γ ≠ ⊤) :
+    ¬ Derivable (Base := Base) (Const := Const)
+      C.frontier.antecedents C.frontier.succedent := by
+  simpa [hSucc] using
+    (C.awodey_butz_completeness_of_exists_closed_beta_truth_counterexample
+      (Base := Base) (Const := Const) t body hCounter)
 
 /--
 Closed certified countermodel candidates can feed the Awodey-Butz semilocal

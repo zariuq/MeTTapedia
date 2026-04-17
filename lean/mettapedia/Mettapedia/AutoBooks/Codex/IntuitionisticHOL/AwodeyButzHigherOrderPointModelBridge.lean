@@ -231,6 +231,50 @@ noncomputable def truthEval
         (decodeEnv (M := M) γ) φ := by
   simp [truthEval, SemilocalModel.formulaTruth, eval_val_decode]
 
+@[simp] theorem decodeEnv_consCtx
+    {Γ : Ctx Base} {σ : Ty Base}
+    (x : M.Carrier σ)
+    (γ : (ctxSpace (M := M) Γ).Carrier) :
+    (decodeEnv (M := M) (consCtx (M := M) x γ) :
+        NativeEnv (M := M) (σ :: Γ)) =
+      (ApplicativeStructure.Env.extend M.toApplicativeStructure
+        (decodeEnv (M := M) γ) x :
+          NativeEnv (M := M) (σ :: Γ)) := by
+  funext τ
+  funext v
+  exact decodeEnv_consCtx_apply (M := M) x γ v
+
+/-- Pointwise truth in an extended one-point context is semilocal truth in the
+corresponding extended native environment. -/
+@[simp] theorem truthEval_consCtx_eq_formulaTruth
+    {Γ : Ctx Base} {σ : Ty Base}
+    (φ : Formula Const (σ :: Γ))
+    (x : M.Carrier σ)
+    (γ : (ctxSpace (M := M) Γ).Carrier) :
+    truthEval (M := M) φ (consCtx (M := M) x γ) =
+      SemilocalModel.formulaTruth M.toSemilocalModel
+        (ApplicativeStructure.Env.extend M.toApplicativeStructure
+          (decodeEnv (M := M) γ) x) φ := by
+  rw [truthEval_eq_formulaTruth]
+  rw [decodeEnv_consCtx (M := M) x γ]
+
+@[simp] theorem truthEval_weaken
+    {Γ : Ctx Base} {σ : Ty Base}
+    (φ : Formula Const Γ)
+    (x : M.Carrier σ)
+    (γ : (ctxSpace (M := M) Γ).Carrier) :
+    truthEval (M := M) (weaken (Base := Base) (Const := Const) (σ := σ) φ)
+        (consCtx (M := M) x γ) =
+      truthEval (M := M) φ γ := by
+  rw [truthEval_consCtx_eq_formulaTruth
+        (M := M)
+        (φ := weaken (Base := Base) (Const := Const) (σ := σ) φ)
+        x γ,
+      truthEval_eq_formulaTruth]
+  exact
+    (SemilocalModel.formulaTruth_weaken M.toSemilocalModel
+      (decodeEnv (M := M) γ) x φ)
+
 @[simp] theorem truthEval_subst
     {Γ Δ : Ctx Base}
     (σs : Subst Const Γ Δ)
@@ -248,6 +292,40 @@ noncomputable def truthEval
         (SemilocalModel.substEnv M.toSemilocalModel σs (decodeEnv (M := M) γ))
         φ)
   rw [eval_val_decode_subst]
+
+@[simp] theorem truthEval_instantiate
+    {Γ : Ctx Base} {σ : Ty Base}
+    (t : Term Const Γ σ)
+    (φ : Formula Const (σ :: Γ))
+    (γ : (ctxSpace (M := M) Γ).Carrier) :
+    truthEval (M := M) (instantiate t φ) γ =
+      truthEval (M := M) φ
+        (consCtx (M := M)
+          (SemilocalModel.eval M.toSemilocalModel
+            (decodeEnv (M := M) γ) t) γ) := by
+  rw [truthEval_eq_formulaTruth, truthEval_consCtx_eq_formulaTruth]
+  exact
+    (SemilocalModel.formulaTruth_instantiate M.toSemilocalModel
+      t φ (decodeEnv (M := M) γ))
+
+@[simp] theorem truthEval_betaEtaEq
+    {Γ : Ctx Base}
+    {φ ψ : Formula Const Γ}
+    (h : BetaEtaEq (Base := Base) (Const := Const) φ ψ)
+    (γ : (ctxSpace (M := M) Γ).Carrier) :
+    truthEval (M := M) φ γ = truthEval (M := M) ψ γ := by
+  rw [truthEval_eq_formulaTruth, truthEval_eq_formulaTruth]
+  exact SemilocalModel.formulaTruth_betaEtaEq
+    M.toSemilocalModel (decodeEnv (M := M) γ) h
+
+@[simp] theorem truthEval_beta
+    {Γ : Ctx Base} {σ : Ty Base}
+    (t : Term Const Γ σ)
+    (φ : Formula Const (σ :: Γ))
+    (γ : (ctxSpace (M := M) Γ).Carrier) :
+    truthEval (M := M) (.app (.lam φ) t) γ =
+      truthEval (M := M) (instantiate t φ) γ := by
+  exact truthEval_betaEtaEq (M := M) (BetaEtaEq.beta t φ) γ
 
 /-- Meet of antecedent truth values in the one-point higher-order model. -/
 noncomputable def truthAntecedent
@@ -314,6 +392,23 @@ theorem not_derivable_of_truth_counterexample
     exact hvalid
   exact hφ (le_antisymm le_top htop_le)
 
+theorem not_derivable_of_beta_truth_counterexample
+    {Γ : Ctx Base}
+    {Δ : List (Formula Const Γ)}
+    {σ : Ty Base}
+    (t : Term Const Γ σ)
+    (φ : Formula Const (σ :: Γ))
+    (γ : (ctxSpace (M := M) Γ).Carrier)
+    (hΔ : truthAntecedent (M := M) Δ γ = ⊤)
+    (hφ : truthEval (M := M) (instantiate t φ) γ ≠ ⊤) :
+    ¬ Derivable (Base := Base) (Const := Const) Δ (.app (.lam φ) t) := by
+  exact not_derivable_of_truth_counterexample (M := M) (Δ := Δ) (φ := .app (.lam φ) t) γ hΔ
+    (by
+      intro hAppTop
+      apply hφ
+      rw [← truthEval_beta (M := M) t φ γ]
+      exact hAppTop)
+
 theorem not_derivable_of_closed_truth_ne_top
     {φ : Formula Const []}
     (hφ : truthEval (M := M) φ () ≠ ⊤) :
@@ -338,6 +433,21 @@ theorem not_derivable_of_exists_truth_counterexample
     ¬ Derivable (Base := Base) (Const := Const) Δ φ := by
   rcases hCounter with ⟨M, γ, hΔ, hφ⟩
   exact basicInterp.not_derivable_of_truth_counterexample (M := M) γ hΔ hφ
+
+theorem not_derivable_of_exists_beta_truth_counterexample
+    {Γ : Ctx Base}
+    {Δ : List (Formula Const Γ)}
+    {σ : Ty Base}
+    (t : Term Const Γ σ)
+    (φ : Formula Const (σ :: Γ))
+    (hCounter :
+      ∃ (M : GlobalModel Base Const)
+        (γ : (basicInterp.ctxSpace (M := M) Γ).Carrier),
+        basicInterp.truthAntecedent (M := M) Δ γ = ⊤ ∧
+          basicInterp.truthEval (M := M) (instantiate t φ) γ ≠ ⊤) :
+    ¬ Derivable (Base := Base) (Const := Const) Δ (.app (.lam φ) t) := by
+  rcases hCounter with ⟨M, γ, hΔ, hφ⟩
+  exact basicInterp.not_derivable_of_beta_truth_counterexample (M := M) t φ γ hΔ hφ
 
 end HigherOrderPointTopologicalGlobalModelBridge
 

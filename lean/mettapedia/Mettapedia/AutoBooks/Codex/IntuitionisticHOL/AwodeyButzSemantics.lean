@@ -466,6 +466,33 @@ theorem awodey_butz_completeness
     (Base := Base) (Const := Const) hCounter
 
 /--
+Any existential one-point higher-order beta counterexample refutes
+derivability.
+
+This is the beta-specialized packaged form of the live point-model bridge:
+instead of exhibiting failure of an arbitrary succedent directly, the witness
+exhibits failure of the instantiated body of a beta redex.
+-/
+theorem awodey_butz_completeness_of_exists_beta_truth_counterexample
+    {Base : Type u} {Const : Ty Base → Type v}
+    {Γ : Ctx Base} {antecedents : List (Formula Const Γ)}
+    {σ : Ty Base}
+    (t : Term Const Γ σ)
+    (body : Formula Const (σ :: Γ))
+    (hCounter :
+      ∃ (M : GlobalModel Base Const)
+        (γ :
+          (HigherOrderPointTopologicalGlobalModelBridge.basicInterp.ctxSpace
+            (M := M) Γ).Carrier),
+        HigherOrderPointTopologicalGlobalModelBridge.basicInterp.truthAntecedent
+            (M := M) antecedents γ = ⊤ ∧
+          HigherOrderPointTopologicalGlobalModelBridge.basicInterp.truthEval
+            (M := M) (instantiate t body) γ ≠ ⊤) :
+    ¬ Derivable (Base := Base) (Const := Const) antecedents (.app (.lam body) t) :=
+  HigherOrderPointTopologicalGlobalModelBridge.not_derivable_of_exists_beta_truth_counterexample
+    (Base := Base) (Const := Const) t body hCounter
+
+/--
 Any existential semilocal global-environment truth counterexample refutes
 derivability.
 

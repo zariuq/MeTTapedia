@@ -1,5 +1,6 @@
-import Algorithms.MeTTa.PeTTa.LegacySessionBridge
+import Algorithms.MeTTa.PeTTa.Lowering
 import Algorithms.MeTTa.ProfileChecksum
+import Algorithms.MeTTa.Simple.Session
 import Mettapedia.Languages.MeTTa.PeTTa.SpaceSemantics
 import Mettapedia.OSLF.MeTTaIL.Engine
 
@@ -330,6 +331,9 @@ private def runSpec (cfg : FrozenPeTTaConfig) (query : CPattern) : List CPattern
   let querySpec := coreToSpecPattern query
   let outSpec := evalSpecAux cfg cfg.maxNodes [(querySpec, 0)] []
   outSpec.map specToCorePattern
+
+private def toSession (cfg : FrozenPeTTaConfig) : Algorithms.MeTTa.Simple.Session :=
+  Algorithms.MeTTa.Simple.Session.new (toSpecBundle cfg)
 
 private def runSimple (cfg : FrozenPeTTaConfig) (query : CPattern) : List CPattern :=
   let sess := toSession cfg

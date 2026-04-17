@@ -44,46 +44,101 @@ private theorem translateHE_id_of_stableCommonForm_aux
                     · subst hnop; simp [isStableCommonForm] at h
                     · by_cases hfunction : c = "function"
                       · subst hfunction; simp [isStableCommonForm] at h
-                      · by_cases hfoldall : c = "foldall"
-                        · subst hfoldall
-                          simp [isStableCommonForm] at h
-                        · have hunique : c ≠ "unique" := by
-                            intro hc
-                            subst hc
+                      · by_cases hfoldl : c = "foldl-atom"
+                        · subst hfoldl
+                          cases args with
+                          | nil => simp [isStableCommonForm, isStableCommonExpr,
+                              isStableCommonHead, isForbiddenHeadSymbol] at h
+                          | cons xs rest =>
+                              cases rest with
+                              | nil => simp [isStableCommonForm, isStableCommonExpr,
+                                  isStableCommonHead, isForbiddenHeadSymbol] at h
+                              | cons init rest =>
+                                  cases rest with
+                                  | nil => simp [isStableCommonForm, isStableCommonExpr,
+                                      isStableCommonHead, isForbiddenHeadSymbol] at h
+                                  | cons a3 rest =>
+                                      cases rest with
+                                      | nil => simp [isStableCommonForm, isStableCommonExpr,
+                                          isStableCommonHead, isForbiddenHeadSymbol] at h
+                                      | cons a4 rest =>
+                                          cases rest with
+                                          | nil =>
+                                              simp [isStableCommonForm, isStableCommonExpr,
+                                                isStableCommonHead, isForbiddenHeadSymbol] at h
+                                          | cons step rest =>
+                                              cases rest with
+                                              | nil =>
+                                                  have hargs :
+                                                      isStableCommonList
+                                                        [xs, init, a3, a4, step] = true := by
+                                                    simpa [isStableCommonForm] using h
+                                                  simp [isStableCommonList,
+                                                    Bool.and_eq_true] at hargs
+                                                  have hxs :=
+                                                    translateHE_id_of_stableCommonForm_aux xs s
+                                                      hargs.1
+                                                  have hinit :=
+                                                    translateHE_id_of_stableCommonForm_aux init s
+                                                      hargs.2.1
+                                                  have ha3 :=
+                                                    translateHE_id_of_stableCommonForm_aux a3 s
+                                                      hargs.2.2.1
+                                                  have ha4 :=
+                                                    translateHE_id_of_stableCommonForm_aux a4 s
+                                                      hargs.2.2.2.1
+                                                  have hstep :=
+                                                    translateHE_id_of_stableCommonForm_aux step s
+                                                      hargs.2.2.2.2
+                                                  simp [translateHE, translateHE.translateHEList,
+                                                    hxs, hinit, ha3, ha4, hstep]
+                                              | cons extra rest =>
+                                                  simp [isStableCommonForm, isStableCommonExpr,
+                                                    isStableCommonHead, isForbiddenHeadSymbol] at h
+                        · by_cases hfoldall : c = "foldall"
+                          · subst hfoldall
                             simp [isStableCommonForm] at h
-                          have hargs : isStableCommonList args = true := by
-                            have hprogn : c ≠ "progn" := by
+                          · have hunique : c ≠ "unique" := by
                               intro hc
                               subst hc
                               simp [isStableCommonForm] at h
-                            have hprog1 : c ≠ "prog1" := by
+                            have huniqueatom : c ≠ "unique-atom" := by
                               intro hc
                               subst hc
                               simp [isStableCommonForm] at h
-                            have hlt : c ≠ "@<" := by
-                              intro hc
-                              subst hc
-                              simp [isStableCommonForm] at h
-                            have hgt : c ≠ "@>" := by
-                              intro hc
-                              subst hc
-                              simp [isStableCommonForm] at h
-                            have hparts :
-                                isStableCommonHead (.symbol c) = true ∧
-                                  isStableCommonList args = true := by
-                              simpa [isStableCommonForm, isStableCommonExpr, isStableCommonHead,
-                                isForbiddenHeadSymbol, hchain, hcollapse, hsuperpose, hswitch,
-                                hswitchm, hatomsubst, hnop, hfunction, hfoldall, hunique, hprogn,
-                                hprog1, hlt, hgt] using h
-                            exact hparts.2
-                          have htail := translateHEList_id_of_stableCommonList_aux args s hargs
-                          have htail₁ : (translateHE.translateHEList args s).1 = args := by
-                            exact congrArg Prod.fst htail
-                          have htail₂ : (translateHE.translateHEList args s).2 = s := by
-                            exact congrArg Prod.snd htail
-                          simp [translateHE, translateHE.translateHEList, hchain, hcollapse,
-                            hsuperpose, hswitch, hswitchm, hatomsubst, hnop, hfunction,
-                            hfoldall, hunique, htail₁, htail₂]
+                            have hargs : isStableCommonList args = true := by
+                              have hprogn : c ≠ "progn" := by
+                                intro hc
+                                subst hc
+                                simp [isStableCommonForm] at h
+                              have hprog1 : c ≠ "prog1" := by
+                                intro hc
+                                subst hc
+                                simp [isStableCommonForm] at h
+                              have hlt : c ≠ "@<" := by
+                                intro hc
+                                subst hc
+                                simp [isStableCommonForm] at h
+                              have hgt : c ≠ "@>" := by
+                                intro hc
+                                subst hc
+                                simp [isStableCommonForm] at h
+                              have hparts :
+                                  isStableCommonHead (.symbol c) = true ∧
+                                    isStableCommonList args = true := by
+                                simpa [isStableCommonForm, isStableCommonExpr, isStableCommonHead,
+                                  isForbiddenHeadSymbol, hchain, hcollapse, hsuperpose, hswitch,
+                                  hswitchm, hatomsubst, hnop, hfunction, hfoldl, hfoldall,
+                                  hunique, huniqueatom, hprogn, hprog1, hlt, hgt] using h
+                              exact hparts.2
+                            have htail := translateHEList_id_of_stableCommonList_aux args s hargs
+                            have htail₁ : (translateHE.translateHEList args s).1 = args := by
+                              exact congrArg Prod.fst htail
+                            have htail₂ : (translateHE.translateHEList args s).2 = s := by
+                              exact congrArg Prod.snd htail
+                            simp [translateHE, translateHE.translateHEList, hchain, hcollapse,
+                              hsuperpose, hswitch, hswitchm, hatomsubst, hnop, hfunction,
+                              hfoldl, hfoldall, hunique, huniqueatom, htail₁, htail₂]
       | var v =>
         have hargs : isStableCommonList args = true := by
           simpa [isStableCommonForm, isStableCommonExpr, isStableCommonHead,
@@ -141,62 +196,116 @@ private theorem translatePeTTa_id_of_stableCommonForm_aux
         · subst hprogn; simp [isStableCommonForm] at h
         · by_cases hprog1 : c = "prog1"
           · subst hprog1; simp [isStableCommonForm] at h
-          · by_cases hfoldall : c = "foldall"
-            · subst hfoldall; simp [isStableCommonForm] at h
-            · by_cases hlt : c = "@<"
-              · subst hlt; simp [isStableCommonForm] at h
-              · by_cases hgt : c = "@>"
-                · subst hgt; simp [isStableCommonForm] at h
-                · have hchain : c ≠ "chain" := by
-                    intro hc
-                    subst hc
-                    simp [isStableCommonForm] at h
-                  have hcollapse : c ≠ "collapse-bind" := by
-                    intro hc
-                    subst hc
-                    simp [isStableCommonForm] at h
-                  have hsuperpose : c ≠ "superpose-bind" := by
-                    intro hc
-                    subst hc
-                    simp [isStableCommonForm] at h
-                  have hswitch : c ≠ "switch" := by
-                    intro hc
-                    subst hc
-                    simp [isStableCommonForm] at h
-                  have hswitchm : c ≠ "switch-minimal" := by
-                    intro hc
-                    subst hc
-                    simp [isStableCommonForm] at h
-                  have hatomsubst : c ≠ "atom-subst" := by
-                    intro hc
-                    subst hc
-                    simp [isStableCommonForm] at h
-                  have hnop : c ≠ "nop" := by
-                    intro hc
-                    subst hc
-                    simp [isStableCommonForm] at h
-                  have hfunction : c ≠ "function" := by
-                    intro hc
-                    subst hc
-                    simp [isStableCommonForm] at h
-                  have hunique : c ≠ "unique" := by
-                    intro hc
-                    subst hc
-                    simp [isStableCommonForm] at h
-                  have hparts :
-                      isStableCommonHead (.symbol c) = true ∧
-                        isStableCommonList args = true := by
-                    simpa [isStableCommonForm, isStableCommonExpr, isStableCommonHead,
-                      isForbiddenHeadSymbol, hchain, hcollapse, hsuperpose, hswitch,
-                      hswitchm, hatomsubst, hnop, hfunction, hunique, hprogn, hprog1, hfoldall,
-                      hlt, hgt] using h
-                  have htail := translatePeTTaList_id_of_stableCommonList_aux args s hparts.2
-                  have htail₁ : (translatePeTTa.translatePeTTaList args s).1 = args := by
-                    exact congrArg Prod.fst htail
-                  have htail₂ : (translatePeTTa.translatePeTTaList args s).2 = s := by
-                    exact congrArg Prod.snd htail
-                  simp [translatePeTTa, translatePeTTa.translatePeTTaList, hprogn, hprog1,
-                    hfoldall, hlt, hgt, htail₁, htail₂]
+          · by_cases hfoldl : c = "foldl-atom"
+            · subst hfoldl
+              cases args with
+              | nil => simp [isStableCommonForm, isStableCommonExpr,
+                  isStableCommonHead, isForbiddenHeadSymbol] at h
+              | cons xs rest =>
+                  cases rest with
+                  | nil => simp [isStableCommonForm, isStableCommonExpr,
+                      isStableCommonHead, isForbiddenHeadSymbol] at h
+                  | cons init rest =>
+                      cases rest with
+                      | nil => simp [isStableCommonForm, isStableCommonExpr,
+                          isStableCommonHead, isForbiddenHeadSymbol] at h
+                      | cons a3 rest =>
+                          cases rest with
+                          | nil =>
+                              simp [isStableCommonForm, isStableCommonExpr,
+                                isStableCommonHead, isForbiddenHeadSymbol] at h
+                          | cons a4 rest =>
+                              cases rest with
+                              | nil =>
+                                  simp [isStableCommonForm, isStableCommonExpr,
+                                    isStableCommonHead, isForbiddenHeadSymbol] at h
+                              | cons step rest =>
+                                  cases rest with
+                                  | nil =>
+                                      have hargs :
+                                          isStableCommonList
+                                            [xs, init, a3, a4, step] = true := by
+                                        simpa [isStableCommonForm] using h
+                                      simp [isStableCommonList,
+                                        Bool.and_eq_true] at hargs
+                                      have hxs :=
+                                        translatePeTTa_id_of_stableCommonForm_aux xs s hargs.1
+                                      have hinit :=
+                                        translatePeTTa_id_of_stableCommonForm_aux init s
+                                          hargs.2.1
+                                      have ha3 :=
+                                        translatePeTTa_id_of_stableCommonForm_aux a3 s
+                                          hargs.2.2.1
+                                      have ha4 :=
+                                        translatePeTTa_id_of_stableCommonForm_aux a4 s
+                                          hargs.2.2.2.1
+                                      have hstep :=
+                                        translatePeTTa_id_of_stableCommonForm_aux step s
+                                          hargs.2.2.2.2
+                                      simp [translatePeTTa, translatePeTTa.translatePeTTaList,
+                                        hxs, hinit, ha3, ha4, hstep]
+                                  | cons extra rest =>
+                                      simp [isStableCommonForm, isStableCommonExpr,
+                                        isStableCommonHead, isForbiddenHeadSymbol] at h
+            · by_cases hfoldall : c = "foldall"
+              · subst hfoldall; simp [isStableCommonForm] at h
+              · by_cases huniqueatom : c = "unique-atom"
+                · subst huniqueatom
+                  simp [isStableCommonForm] at h
+                · by_cases hlt : c = "@<"
+                  · subst hlt; simp [isStableCommonForm] at h
+                  · by_cases hgt : c = "@>"
+                    · subst hgt; simp [isStableCommonForm] at h
+                    · have hchain : c ≠ "chain" := by
+                        intro hc
+                        subst hc
+                        simp [isStableCommonForm] at h
+                      have hcollapse : c ≠ "collapse-bind" := by
+                        intro hc
+                        subst hc
+                        simp [isStableCommonForm] at h
+                      have hsuperpose : c ≠ "superpose-bind" := by
+                        intro hc
+                        subst hc
+                        simp [isStableCommonForm] at h
+                      have hswitch : c ≠ "switch" := by
+                        intro hc
+                        subst hc
+                        simp [isStableCommonForm] at h
+                      have hswitchm : c ≠ "switch-minimal" := by
+                        intro hc
+                        subst hc
+                        simp [isStableCommonForm] at h
+                      have hatomsubst : c ≠ "atom-subst" := by
+                        intro hc
+                        subst hc
+                        simp [isStableCommonForm] at h
+                      have hnop : c ≠ "nop" := by
+                        intro hc
+                        subst hc
+                        simp [isStableCommonForm] at h
+                      have hfunction : c ≠ "function" := by
+                        intro hc
+                        subst hc
+                        simp [isStableCommonForm] at h
+                      have hunique : c ≠ "unique" := by
+                        intro hc
+                        subst hc
+                        simp [isStableCommonForm] at h
+                      have hparts :
+                          isStableCommonHead (.symbol c) = true ∧
+                            isStableCommonList args = true := by
+                        simpa [isStableCommonForm, isStableCommonExpr, isStableCommonHead,
+                          isForbiddenHeadSymbol, hchain, hcollapse, hsuperpose, hswitch,
+                          hswitchm, hatomsubst, hnop, hfunction, hunique, huniqueatom, hprogn,
+                          hprog1, hfoldl, hfoldall, hlt, hgt] using h
+                      have htail := translatePeTTaList_id_of_stableCommonList_aux args s hparts.2
+                      have htail₁ : (translatePeTTa.translatePeTTaList args s).1 = args := by
+                        exact congrArg Prod.fst htail
+                      have htail₂ : (translatePeTTa.translatePeTTaList args s).2 = s := by
+                        exact congrArg Prod.snd htail
+                      simp [translatePeTTa, translatePeTTa.translatePeTTaList, hprogn, hprog1,
+                        huniqueatom, hfoldl, hfoldall, hlt, hgt, htail₁, htail₂]
       | var v =>
         have hargs : isStableCommonList args = true := by
           simpa [isStableCommonForm, isStableCommonExpr, isStableCommonHead,
@@ -344,6 +453,32 @@ theorem translatePeTTa_foldall_preserves_stableCommonForm
     simp [accVar, itemVar, isStableCommonList, isStableCommonForm]
   simp [translatePeTTa, freshVar, isStableCommonForm, isStableCommonExpr,
     isStableCommonHead, isForbiddenHeadSymbol, isStableCommonList, hgoal, hinit,
+    hnot, accVar, itemVar, happ]
+
+/-- First-order short `foldl-atom` lowering also lands in the stable common
+    fragment once its recursively translated list and init pieces do. -/
+theorem translatePeTTa_foldlAtomShort_preserves_stableCommonForm
+    (xs init agg : Atom) (s : Nat)
+    (hagg : isFirstOrderReducerAtom agg = true)
+    (hxs : isStableCommonForm (translatePeTTa xs s).1 = true)
+    (hinit : isStableCommonForm (translatePeTTa init (translatePeTTa xs s).2).1 = true) :
+    isStableCommonForm
+      (translatePeTTa (.expression [.symbol "foldl-atom", xs, init, agg]) s).1 = true := by
+  obtain ⟨name, rfl⟩ := firstOrderReducerAtom_eq_symbol agg hagg
+  have hnot : isForbiddenHeadSymbol (.symbol name) = false := by
+    simpa [isFirstOrderReducerAtom] using hagg
+  have hhead : isStableCommonHead (.symbol name) = true := by
+    simpa [isStableCommonHead, isStableCommonForm] using hnot
+  let accVar : Atom :=
+    .var ("$__tr_acc_" ++ toString ((translatePeTTa init (translatePeTTa xs s).2).2 + 1))
+  let itemVar : Atom :=
+    .var ("$__tr_item_" ++ toString ((translatePeTTa init (translatePeTTa xs s).2).2 + 1 + 1))
+  have happ : isStableCommonForm (.expression [.symbol name, accVar, itemVar]) = true := by
+    have hcons := stableCommonForm_cons_of_head (.symbol name) [accVar, itemVar] hhead
+    rw [hcons]
+    simp [accVar, itemVar, isStableCommonList, isStableCommonForm]
+  simp [translatePeTTa, freshVar, isStableCommonForm, isStableCommonExpr,
+    isStableCommonHead, isForbiddenHeadSymbol, isStableCommonList, hxs, hinit,
     hnot, accVar, itemVar, happ]
 
 /-- The lowered first-order `foldall` term is already a fixed point for the
