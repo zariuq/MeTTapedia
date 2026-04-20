@@ -56,6 +56,48 @@ Design note:
   single overloaded `truthConjunction`. The present file exposes the
   conditional/product, independent/evidence-style, and hypergeometric/modal
   regimes separately because they answer different semantic questions.
+
+## Reading this file if you are not a Lean user
+
+The *story* lives in (i) section headers, (ii) theorem and definition
+names, and (iii) their plain-English docstrings (`/-- ... -/`). Proof
+bodies — the blocks starting with `by` — are machine verification and
+can be skipped on first read.
+
+Lean syntax you will see:
+
+* `TV.s`, `TV.c` are accessor dot-notation; for a truth value `t`,
+  `t.s` is its strength and `t.c` its confidence.
+* `Set.Icc a b` is the closed interval `[a, b]`; appears as in-range
+  hypotheses on inputs.
+* `theorem foo : … := by …` is a claim followed by its proof. The
+  claim is everything before `:=`; the proof lives after `by` and can
+  be skipped.
+* `noncomputable def` introduces a real-valued function defined via
+  classical reals; semantically identical to a PLN/MeTTa formula, just
+  not kernel-executable.
+* Anonymous-constructor `⟨a, b⟩` builds a pair / structure value; e.g.
+  `⟨0.7, 0.9⟩` for a TV with strength 0.7 and confidence 0.9.
+
+PLN-adjacent auxiliary symbols used throughout:
+
+* `MAX_CONF = 0.9999` — the hard confidence cap (a confidence of 1 is
+  disallowed so that more evidence can always raise it).
+* `c2w c = c / (1 - c)` — confidence → evidence weight.
+* `w2c w = w / (w + 1)` — evidence weight → confidence (inverse of
+  `c2w`).
+* `capConf c = max 0 (min c MAX_CONF)` — clip into `[0, MAX_CONF]`.
+
+**The running story.** Upstream PeTTa main computes induction/abduction
+confidence as `w2c (min cBA cBC)` — it takes the min of two
+*confidences* and then passes that min *back through* `w2c` as if it
+were a *weight*. That is the "double damping" bug: a confidence of 0.5
+becomes `0.5 / 1.5 ≈ 0.333`. The WM-corrected form is
+`w2c (min (c2w cBA) (c2w cBC))`: the min is taken in weight space,
+then converted back. A theorem in this file
+(`truthInduction_conf_eq_min_capped`) proves that this round-trip
+equals `min (capConf cBA) (capConf cBC)` — the intuitive "your chained
+confidence is the weaker of your two inputs'".
 -/
 
 abbrev TV := Mettapedia.Logic.PeTTaLibPLNTruthFunctions.TV
@@ -63,8 +105,11 @@ abbrev MettaTV := Mettapedia.Logic.PeTTaLibPLNTruthFunctions.TV
 abbrev MAX_CONF := Mettapedia.Logic.PeTTaLibPLNTruthFunctions.MAX_CONF
 abbrev capConf := Mettapedia.Logic.PeTTaLibPLNTruthFunctions.capConf
 
-/-- Identity repackaging into the mirror TV structure used by the bridge
-theorems. -/
+/-- A no-op type coercion. The Lean code has two aliases (`TV` and
+`MettaTV`) for the same `(strength, confidence)` pair, and this is the
+identity between them — nothing numeric happens. It exists only to keep
+bridge-theorem statements readable by avoiding explicit alias-swap
+gymnastics. -/
 def toMettaTV (t : TV) : MettaTV := t
 
 @[simp] theorem toMettaTV_s (t : TV) : (toMettaTV t).s = t.s := rfl
@@ -108,6 +153,16 @@ theorem truthRevision_conf_eq_toConfidence
     Mettapedia.Logic.NuEvidenceQuantaleBridge.Bridge.truthRevision_conf_eq_toConfidence
       (κ := κ) hκ0 hκT (toMettaTV t1) (toMettaTV t2) hs1 hs1' hs2 hs2'
 
+/-- **Revision, read as evidence accumulation.** The revised TV equals
+what you get by translating both inputs into BinaryEvidence count form
+(counts of positive and negative observations, parameterized by the
+evidence-scale `κ`), summing those counts, and translating the sum
+back into a TV.
+
+This is the theorem that justifies using PLN revision as the
+single-parameter aggregator for independent observations of the same
+hypothesis: it is literally "accumulate the counts, then read off the
+(strength, confidence) summary." -/
 theorem truthRevision_eq_toTV_hplus
     (κ : ENNReal) (hκ0 : κ ≠ 0) (hκT : κ ≠ ⊤)
     (t1 t2 : TV)
@@ -147,12 +202,32 @@ theorem truthInduction_strength_eq (a b c ba bc : TV) :
     (truthInduction a b c ba bc).s = plnInductionStrength ba.s bc.s a.s b.s c.s := by
   simp [truthInduction]
 
+/-- **Headline theorem: the weight-space detour collapses.** The
+WM-corrected induction confidence is just the smaller of the two input
+confidences, after each has been clipped to `[0, MAX_CONF]`. In
+symbols: `w2c (min (c2w cBA) (c2w cBC)) = min (capConf cBA) (capConf cBC)`.
+
+Intuition: go into weight space, take the min, come back — the detour
+cancels. The weight-space transform is not adding anything fancy; it is
+exactly the right wrapper to make the obvious answer come out.
+
+**Numeric example.** For `cBA = 0.5, cBC = 0.7`, both `capConf` calls
+are the identity, so this theorem gives `min(0.5, 0.7) = 0.5` — "your
+chained confidence equals your weakest input's." Upstream PeTTa main
+computes `Truth_w2c (min cBA cBC) = w2c(0.5) = 0.5 / 1.5 = 1/3 ≈ 0.333`
+instead: it feeds a raw confidence *back into* `w2c` as if it were a
+weight, double-damping the value. This theorem is where that gap is
+made formal. -/
 theorem truthInduction_conf_eq_min_capped (a b c ba bc : TV) :
     (truthInduction a b c ba bc).c = min (capConf ba.c) (capConf bc.c) := by
   simpa [truthInduction, Mettapedia.Logic.PeTTaLibPLNTruthFunctions.truthInduction] using
     Mettapedia.Logic.NuEvidenceQuantaleBridge.InductionAbductionBridge.inductionAbduction_conf_eq_min_capped
       ba.c bc.c
 
+/-- Consequence of `truthInduction_conf_eq_min_capped`: chained
+induction confidence never exceeds the weakest input confidence. You
+never get *more* confident by chaining than you were on your
+most-uncertain premise. -/
 theorem truthInduction_conf_le_inputs
     (a b c ba bc : TV) (hba : 0 ≤ ba.c) (hbc : 0 ≤ bc.c) :
     (truthInduction a b c ba bc).c ≤ min ba.c bc.c := by
@@ -175,12 +250,19 @@ theorem truthAbduction_strength_eq (a b c ab cb : TV) :
     (truthAbduction a b c ab cb).s = plnAbductionStrength ab.s cb.s a.s b.s c.s := by
   simp [truthAbduction]
 
+/-- Abduction counterpart of the induction headline theorem. The
+WM-corrected abduction confidence also reduces to the plain
+`min (capConf cAB) (capConf cCB)`: same collapse of the weight-space
+round-trip, same intuition ("weaker premise wins"), same correction of
+upstream PeTTa main's double-damping `Truth_w2c (min cAB cCB)`. -/
 theorem truthAbduction_conf_eq_min_capped (a b c ab cb : TV) :
     (truthAbduction a b c ab cb).c = min (capConf ab.c) (capConf cb.c) := by
   simpa [truthAbduction, Mettapedia.Logic.PeTTaLibPLNTruthFunctions.truthAbduction] using
     Mettapedia.Logic.NuEvidenceQuantaleBridge.InductionAbductionBridge.inductionAbduction_conf_eq_min_capped
       ab.c cb.c
 
+/-- Consequence of `truthAbduction_conf_eq_min_capped`: chained
+abduction confidence is capped by the weaker premise confidence. -/
 theorem truthAbduction_conf_le_inputs
     (a b c ab cb : TV) (hab : 0 ≤ ab.c) (hcb : 0 ≤ cb.c) :
     (truthAbduction a b c ab cb).c ≤ min ab.c cb.c := by
@@ -467,26 +549,43 @@ The reasons they stay out of the fully justified TV layer are not uniform:
   confidence is still a hand-tuned attenuation heuristic.
 -/
 
-/-- Standalone PLN-catalog inversion strength: the inverted implication keeps the
-same strength as the original implication. -/
+/-- **Standalone / catalog inversion strength.** In this reading, the
+inverted implication keeps the same strength as the original:
+`s_BA = s_AB`. This matches the compiled rule-catalog form and is
+under-parameterized for Bayes inversion — it does not depend on
+`P(A)` or `P(B)`. -/
 noncomputable def truthInversionStrength (ab : TV) : ℝ :=
   ab.s
 
-/-- Bayes inversion strength used internally by induction/abduction derivations. -/
+/-- **Bayes inversion strength.** The full probabilistic reading:
+`s_BA = P(A|B) = P(B|A) · P(A) / P(B) = s_AB · s_A / s_B`. This is the
+quantity used internally by induction/abduction derivations, and it
+disagrees with `truthInversionStrength` in general (see the
+counterexample `truthInversion_catalog_ne_bayes_example` in the
+analysis file). -/
 noncomputable def truthInversionBayesStrength (a b ab : TV) : ℝ :=
   Mettapedia.Logic.PLN.bayesInversion ab.s a.s b.s
 
-/-- Strength analogue for the mirrored equivalence-to-implication rule:
-remove the threshold hack and interpret the underlying transformation as `sim2inh`. -/
+/-- Strength analogue for the mirrored equivalence-to-implication rule.
+Drops the mirror's 0.99 threshold branch and identifies the underlying
+transformation with `sim2inh` (similarity → inheritance), whose strength
+formula comes out of the Chapter-6 probability reading. -/
 noncomputable def truthEquivalenceToImplicationStrength (a b ab : TV) : ℝ :=
   Mettapedia.Logic.PLNInferenceRules.sim2inh ab.s a.s b.s
 
-/-- Strength analogue for the mirrored transitive-similarity rule. -/
+/-- Strength analogue for the mirrored transitive-similarity rule.
+Delegates to the formal similarity-composition formula from
+`PLNInferenceRules`; the corresponding confidence is still only a
+conservative minimum-style aggregator in the mirror, so this covers the
+strength half only. -/
 noncomputable def truthTransitiveSimilarityStrength (a b c ab bc : TV) : ℝ :=
   Mettapedia.Logic.PLNInferenceRules.transitiveSimilarity ab.s bc.s a.s b.s c.s
 
-/-- Strength analogue for the mirrored evaluation-implication rule:
-the plain deduction-strength formula before heuristic confidence attenuation. -/
+/-- Strength analogue for the mirrored evaluation-implication rule.
+Strips the mirror's `0.9 * 0.9 * …` confidence-attenuation heuristic and
+exposes just the deduction-strength formula that is the proper formal
+core. Confidence remains a hand-tuned heuristic in the mirror and is not
+promoted to a theorem-backed quantity here. -/
 noncomputable def truthEvaluationImplicationStrength (a b c ab ac : TV) : ℝ :=
   Mettapedia.Logic.PLNDeduction.simpleDeductionStrengthFormula b.s a.s c.s ab.s ac.s
 

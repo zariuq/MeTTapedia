@@ -1,0 +1,11 @@
+{
+  "profile_id": "HE-0.2.10",
+  "generated_at_utc": "2026-03-05T11:06:24.401803+00:00",
+  "core_total": 53,
+  "core_missing": 0,
+  "core_decl_anchored": 53,
+  "core_weak_lexical": 0,
+  "core_contract_missing": 0,
+  "extension_total": 6,
+  "extension_lean_absent": 6
+}

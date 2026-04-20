@@ -37,8 +37,60 @@ Reading guide:
 Public upstream-main reference:
 
 * `https://github.com/trueagi-io/PeTTa/blob/main/lib/lib_pln.metta`
+
+## Reading this file if you are not a Lean user
+
+The *story* lives in (i) section headers, (ii) theorem and definition
+names, and (iii) their plain-English docstrings (`/-- ... -/`). Proof
+bodies — the blocks starting with `by` — are machine verification and
+can be skipped on first read.
+
+Lean syntax you will see:
+
+* `TV.s`, `TV.c` are accessor dot-notation; for a truth value `t`,
+  `t.s` is its strength and `t.c` its confidence.
+* `Set.Icc a b` is the closed interval `[a, b]`; appears as in-range
+  hypotheses on inputs.
+* `theorem foo : … := by …` is a claim followed by its proof. The
+  claim is everything before `:=`; the proof lives after `by` and can
+  be skipped.
+* `noncomputable def` introduces a real-valued function defined via
+  classical reals; semantically identical to a PLN/MeTTa formula, just
+  not kernel-executable.
+* Anonymous-constructor `⟨a, b⟩` builds a pair / structure value; e.g.
+  `⟨0.7, 0.9⟩` for a TV with strength 0.7 and confidence 0.9.
+
+PLN-adjacent auxiliary symbols used throughout:
+
+* `MAX_CONF = 0.9999` — the hard confidence cap (a confidence of 1 is
+  disallowed so that more evidence can always raise it).
+* `c2w c = c / (1 - c)` — confidence → evidence weight.
+* `w2c w = w / (w + 1)` — evidence weight → confidence (inverse of
+  `c2w`).
+* `capConf c = max 0 (min c MAX_CONF)` — clip into `[0, MAX_CONF]`.
+
+**The running story.** Upstream PeTTa main computes induction/abduction
+confidence as `w2c (min cBA cBC)` — it takes the min of two
+*confidences* and then passes that min *back through* `w2c` as if it
+were a *weight*. That is the "double damping" bug: a confidence of 0.5
+becomes `0.5 / 1.5 ≈ 0.333`. The WM-corrected form is
+`w2c (min (c2w cBA) (c2w cBC))`: the min is taken in weight space,
+then converted back. A theorem in the WM file
+(`truthInduction_conf_eq_min_capped`) proves that this round-trip
+equals `min (capConf cBA) (capConf cBC)` — the intuitive "your chained
+confidence is the weaker of your two inputs'".
+
+This analysis file is where we *prove* that story against upstream:
+ordering theorems, strict-below theorems, numeric witnesses, and
+revision-is-the-exception theorems all live below.
 -/
 
+/-- **Workhorse lemma.** The weight-to-confidence map
+`w2c(w) = w / (w+1)` never inflates: for nonneg `w`, `w2c(w) ≤ w`.
+This is the single step that drives the canonical-below-PeTTa-below-WM
+ordering proofs lower down in this file. Intuition: as evidence grows,
+confidence approaches but never reaches 1, so the map always lands on
+or below the diagonal. -/
 theorem pettaw2c_le_self (w : ℝ) (hw : 0 ≤ w) :
     Mettapedia.Logic.PeTTaLibPLNTruthFunctions.w2c w ≤ w := by
   rw [Mettapedia.Logic.NuEvidenceQuantaleBridge.Bridge.w2c_eq_div_of_nonneg w hw]
@@ -47,6 +99,10 @@ theorem pettaw2c_le_self (w : ℝ) (hw : 0 ≤ w) :
   rw [div_le_iff₀ hden]
   nlinarith [sq_nonneg w]
 
+/-- On any confidence already in the legal range `[0, MAX_CONF]`,
+clipping does nothing: `capConf c = c`. Used to collapse "min of
+capped confidences" to "min of confidences" in downstream theorems
+without extra qualifiers. -/
 theorem capConf_eq_self_of_mem_core (c : ℝ) (h0 : 0 ≤ c) (h1 : c ≤ MAX_CONF) :
     capConf c = c := by
   have h1' : c ≤ Mettapedia.Logic.PeTTaLibPLNTruthFunctions.MAX_CONF := by
@@ -125,6 +181,15 @@ theorem canonicalInduction_conf_le_inputs
     exact le_min hw_le_ba hw_le_bc
   exact le_trans (pettaw2c_le_self w hw0) hw_le_min
 
+/-- **Ordering step 1 of 2 (induction).** The original canonical PLN
+induction confidence — the strength-mixed form `w2c (sBC · cBC · cBA)`
+— is always ≤ the upstream PeTTa main raw-min form `w2c (min cBA cBC)`,
+on in-range inputs.
+
+Why: `sBC · cBC · cBA` is pointwise ≤ `min cBA cBC` (a product of things
+in `[0,1]` lies below any factor), and `w2c` is monotone. So the
+canonical form is the most cautious of the three induction-confidence
+formulas considered in this file. -/
 theorem canonicalInduction_conf_le_petta_wm
     (a b c ba bc : TV)
     (hbcS : bc.s ∈ Set.Icc (0 : ℝ) 1)
@@ -155,6 +220,18 @@ theorem canonicalInduction_conf_le_petta_wm
     nlinarith [hfac, hbcC.1]
   exact le_min hw_le_ba hw_le_bc
 
+/-- **Ordering step 2 of 2 (induction): the full three-lane chain.**
+For in-range inputs, `canonical ≤ PeTTa-main ≤ WM-justified`:
+
+* canonical is the strength-mixed `w2c (sBC · cBC · cBA)`,
+* PeTTa-main is the raw-min `w2c (min cBA cBC)`,
+* WM-justified is the corrected `min (capConf cBA) (capConf cBC)`.
+
+Combining the previous step with `pettaw2c_le_self` gives the full
+ordering: the WM-justified form is the largest
+(most-confidence-preserving) of the three. In short — upstream
+PeTTa's fix over canonical is real but partial; the WM form closes
+the remaining gap. -/
 theorem canonicalInduction_conf_le_wm_best
     (a b c ba bc : TV)
     (hbcS : bc.s ∈ Set.Icc (0 : ℝ) 1)
@@ -296,6 +373,20 @@ theorem canonicalDeduction_conf_le_edge_inputs
       nlinarith [hmul, hpqC.2]
     nlinarith [hfac, hqrC.1]
 
+/-- **Negative result — deduction is different.**
+
+For induction and abduction, canonical PLN's confidence is always
+below PeTTa's form (proved above). **For deduction, that ordering fails.**
+
+Witness: set `p = q = r = (strength = 1, confidence = 0.1)` and
+`pq = qr = (strength = 1, confidence = 1)`. Then canonical deduction's
+confidence is `1 · 1 · 1 · 1 = 1`, while PeTTa's min-of-five is
+`min(0.1, 0.1, 0.1, 1, 1) = 0.1`. Canonical overshoots.
+
+So no clean "canonical is always more conservative" rule holds for
+deduction; the shapes genuinely disagree, not just in magnitude. This
+is why the four-family table needs to keep deduction as a separate
+story from induction/abduction. -/
 theorem canonicalDeduction_not_le_petta_wm_globally :
     ∃ p q r pq qr : TV,
       CanonicalUpstream.truthDeductionConf pq qr >
@@ -401,6 +492,18 @@ theorem revision_strength_matches_justified (t1 t2 : TV) :
   simp [Mettapedia.Logic.PeTTaLibPLNTruthFunctions.truthRevision,
     Mettapedia.Logic.WMPLNJustifiedTruthFunctions.truthRevision]
 
+/-- **Not all upstream rules are wrong: revision is the exception.**
+
+On strictly positive in-range inputs `(0 < t_i.c < MAX_CONF)`, upstream
+PeTTa main revision already matches the WM-justified form *exactly*.
+The `min 1 (…)` saturation clamp that appears in the justified
+definition is inert on this regime — a defensive guard, not a
+correction of upstream behavior.
+
+The underlying arithmetic ("clamp is redundant") lives in
+`PLNBugAnalysis.max_clamp_redundant`. So the bug catalog is precisely
+induction and abduction, not revision; any public note should say
+"revision is fine, induction/abduction are not." -/
 theorem revision_conf_matches_justified_of_positive_inputs
     (t1 t2 : TV)
     (hc1 : 0 < t1.c) (hc1_lt : t1.c < MAX_CONF)
@@ -521,11 +624,22 @@ theorem negation_matches_justified (t : TV) :
 
 /-! ## Core consequences -/
 
+/-- **The bug, unpacked.** Upstream PeTTa main's induction confidence
+simplifies to `w2c (min cBA cBC)`: take the min of two *confidences*
+(already in `[0, MAX_CONF]`), then feed that min — still a confidence
+— into the weight-to-confidence map as if it were a weight.
+
+That is the double-damping site: a confidence of `0.5` becomes
+`0.5 / (0.5 + 1) = 1/3`. No numerics here, just the equation that makes
+the bug site visible. -/
 theorem induction_conf_eq_raw_min (a b c ba bc : TV) :
     (Mettapedia.Logic.PeTTaLibPLNTruthFunctions.truthInduction a b c ba bc).c =
       Mettapedia.Logic.PeTTaLibPLNTruthFunctions.w2c (min ba.c bc.c) :=
   Mettapedia.Logic.PeTTaLibPLNTruthFunctions.truthInduction_c_eq_raw_min a b c ba bc
 
+/-- Same shape, same bug, for abduction: upstream's confidence unfolds
+to `w2c (min cAB cCB)`, double-damping a confidence through the
+weight-to-confidence map. -/
 theorem abduction_conf_eq_raw_min (a b c ab cb : TV) :
     (Mettapedia.Logic.PeTTaLibPLNTruthFunctions.truthAbduction a b c ab cb).c =
       Mettapedia.Logic.PeTTaLibPLNTruthFunctions.w2c (min ab.c cb.c) :=
@@ -586,6 +700,15 @@ theorem capConf_eq_self_of_mem (c : ℝ) (h0 : 0 ≤ c) (h1 : c ≤ MAX_CONF) :
     simpa [MAX_CONF] using h1
   simp [Mettapedia.Logic.PeTTaLibPLNTruthFunctions.capConf, h0, h1']
 
+/-- **The "obvious right answer" made formal.** The WM-justified
+induction confidence, restricted to the standard input range
+`[0, MAX_CONF]`, reduces to `min ba.c bc.c` — just the smaller of the
+two input confidences.
+
+Both the `capConf` clip and the weight-space round-trip (`c2w` → `min`
+→ `w2c`) are invisible when inputs are already well-formed. What
+remains is exactly "your chained confidence is the weaker of your two
+inputs'." -/
 theorem wm_induction_conf_eq_min_of_bounded_inputs
     (a b c ba bc : TV)
     (hba0 : 0 ≤ ba.c) (hba1 : ba.c ≤ MAX_CONF)
@@ -596,6 +719,14 @@ theorem wm_induction_conf_eq_min_of_bounded_inputs
   change min (capConf ba.c) (capConf bc.c) = min ba.c bc.c
   rw [capConf_eq_self_of_mem ba.c hba0 hba1, capConf_eq_self_of_mem bc.c hbc0 hbc1]
 
+/-- **Bug quantified.** For any strictly-positive in-range input
+confidences, upstream PeTTa main's induction confidence is **strictly
+less than** the WM-justified value.
+
+Mechanism: both values reduce to something involving `m := min ba.c bc.c`.
+The WM value is `m` itself; upstream's is `w2c m = m / (m + 1) < m`
+whenever `m > 0`. So the gap isn't rounding — it's a *systematic*
+under-confidence that appears on every real input. -/
 theorem induction_conf_strictly_below_wm_on_positive_inputs
     (a b c ba bc : TV)
     (hba0 : 0 < ba.c) (hba1 : ba.c ≤ MAX_CONF)
@@ -632,6 +763,9 @@ theorem wm_abduction_conf_eq_min_of_bounded_inputs
   change min (capConf ab.c) (capConf cb.c) = min ab.c cb.c
   rw [capConf_eq_self_of_mem ab.c hab0 hab1, capConf_eq_self_of_mem cb.c hcb0 hcb1]
 
+/-- Same bug, same strict inequality, for abduction: upstream PeTTa
+main is strictly more pessimistic than the WM-justified form on any
+strictly-positive in-range inputs. -/
 theorem abduction_conf_strictly_below_wm_on_positive_inputs
     (a b c ab cb : TV)
     (hab0 : 0 < ab.c) (hab1 : ab.c ≤ MAX_CONF)
@@ -657,6 +791,20 @@ theorem abduction_conf_strictly_below_wm_on_positive_inputs
   have hden : 0 < m + 1 := by linarith
   rw [div_lt_iff₀ hden]
   nlinarith [sq_nonneg m]
+
+/-! ### Concrete anti-bug numerics
+
+Worked side-by-side on identical inputs. With both input confidences
+at `0.9`:
+
+* upstream PeTTa main returns `0.9 / 1.9 ≈ 0.473`,
+* the WM-corrected form returns `0.9`,
+* `PLNBugAnalysis.inductionConfBuggy` agrees with upstream on those
+  inputs (cross-check of the buggy surface).
+
+These are human-checkable numeric witnesses of the strict-below theorem
+just above; together they make the bug concrete without needing to
+follow any definitions. -/
 
 example :
     let zero : TV := ⟨0, 0⟩
@@ -741,6 +889,17 @@ theorem truthInversion_conf_formula (b ab : TV) :
   simp [Mettapedia.Logic.PeTTaLibPLNTruthFunctions.truthInversion]
   ring
 
+/-- **Two inversion-strength meanings disagree.** There are two
+incompatible readings of inversion-strength floating in the PLN
+literature:
+
+* the compiled-rule-catalog form, `s_BA = s_AB` (strength is preserved);
+* Bayes inversion, `s_BA = s_AB · s_A / s_B`.
+
+This theorem exhibits a concrete triple where they differ, so any
+future unification of the two readings has to pick one. (The mirrored
+PeTTa rule implements the catalog form and cannot recover the Bayes
+form, which also needs `s_A` and `s_B` as inputs.) -/
 theorem truthInversion_catalog_ne_bayes_example :
     ∃ a b ab : TV,
       Mettapedia.Logic.WMPLNJustifiedTruthFunctions.truthInversionStrength ab ≠

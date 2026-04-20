@@ -1,0 +1,19 @@
+{
+  "profile_id": "HE-0.2.10",
+  "generated_at_utc": "2026-03-05T11:06:24.401803+00:00",
+  "core_source_file": "/home/zar/claude/lean-projects/mettapedia/Mettapedia/Languages/MeTTa/SpecProfiles/sources/he-core-spec-source.txt",
+  "core_source_origin_hint": "Copied from user-selected HE spec page snapshot; aligns with hyperon/hyperon-experimental/docs/metta.md content.",
+  "core_source_sha256": "aa2657f6785e1c323a965c980d8dfec7632849a7d420d1ff7cc157a3ec5de9be",
+  "core_source_lines": 492,
+  "core_rows": 53,
+  "extension_rows": 6,
+  "matrix_file": "/home/zar/claude/lean-projects/mettapedia/Mettapedia/Languages/MeTTa/SpecProfiles/he-profile-he-0.2.10.csv",
+  "artifact_sources": {
+    "syntax_spec": "/home/zar/claude/lean-projects/algorithms/artifacts/syntax/he.syntax_spec.json",
+    "grammar_spec": "/home/zar/claude/lean-projects/algorithms/artifacts/syntax/he.grammar_spec.json",
+    "lookup_plan": "/home/zar/claude/lean-projects/algorithms/artifacts/lookup/he.lookup_plan.json",
+    "transition_spec": "/home/zar/claude/lean-projects/mettapedia/artifacts/transition/he.transition_spec.json"
+  },
+  "strict_decl_anchor_mode": true,
+  "notes": "Core rows derive strictly from a repo-local HE source snapshot. Core implemented rows should be declaration-anchored."
+}
