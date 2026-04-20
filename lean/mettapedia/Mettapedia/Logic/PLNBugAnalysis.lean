@@ -1,7 +1,7 @@
 import Mathlib.Tactic
 import Mathlib.Data.Real.Basic
 import Mathlib.Analysis.SpecialFunctions.Log.Basic
-import Mettapedia.Logic.PLNMettaTruthFunctions
+import Mettapedia.Logic.PeTTaLibPLNTruthFunctions
 
 /-!
 # PLN Bug Analysis: Formal Proofs and Corrections
@@ -23,7 +23,7 @@ and provides computationally tractable corrections.
 
 namespace Mettapedia.Logic.PLNBugAnalysis
 
-open Mettapedia.Logic.PLNMettaTruthFunctions
+open Mettapedia.Logic.PeTTaLibPLNTruthFunctions
 
 /-! ## Bug 1: Double-Damping in Induction/Abduction
 

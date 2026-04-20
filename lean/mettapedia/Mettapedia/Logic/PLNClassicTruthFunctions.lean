@@ -1,4 +1,4 @@
-import Mettapedia.Logic.PLNMettaTruthFunctions
+import Mettapedia.Logic.PeTTaLibPLNTruthFunctions
 import Mettapedia.Logic.PLNRevision
 import Mettapedia.Logic.PLNProvenanceInference
 import Mettapedia.Logic.EvidenceQuantale
@@ -40,7 +40,7 @@ namespace Mettapedia.Logic.PLNClassicTruthFunctions
 
 open scoped ENNReal
 open Mettapedia.Logic.EvidenceQuantale
-open Mettapedia.Logic.PLNMettaTruthFunctions
+open Mettapedia.Logic.PeTTaLibPLNTruthFunctions
 open Mettapedia.Logic.PLN
 open Mettapedia.Logic.PLNRevision
 open BinaryEvidence
@@ -143,7 +143,7 @@ PLN v0.9's induction and abduction are more complex compositions.
 At the evidence level, they involve the tensor, inversion (swapping
 premise/conclusion roles), and revision.
 
-The strength formulas are already formalized in `PLNMettaTruthFunctions.lean`
+The strength formulas are already formalized in `PeTTaLibPLNTruthFunctions.lean`
 (`truthInduction`, `truthAbduction`).  The theorems below link them to
 the evidence-level operations. -/
 

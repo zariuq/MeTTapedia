@@ -3,29 +3,32 @@ import Mettapedia.Logic.PLNDeduction
 import Mettapedia.Logic.PLNDerivation
 import Mettapedia.Logic.PLNInferenceRules
 
-namespace Mettapedia.Logic.PLNMettaTruthFunctions
+namespace Mettapedia.Logic.PeTTaLibPLNTruthFunctions
 
 open Mettapedia.Logic.PLN
 open Mettapedia.Logic.PLNDeduction
 open Mettapedia.Logic.PLNInferenceRules
 
 /-!
-# PLN Truth Functions (MeTTa / PeTTa `lib_pln.metta`)
+# PeTTa `lib_pln.metta` Truth Functions
 
-This file mirrors the *numerical* truth-value formulas used in the MeTTa PLN library
-(`hyperon/PeTTa/lib/lib_pln.metta`).
+This file is a transparent Lean transcription of the numerical truth-value rules in:
 
-Design:
-- We keep this file purely about formulas and small algebraic facts.
-- We do **not** encode any "missing branch" behavior as `empty`; instead we use `Option`.
-- Derivations from probability / BinaryEvidence live in separate modules.
+* `/home/zar/claude/hyperon/PeTTa/lib/lib_pln.metta`
+
+at PeTTa commit:
+
+* `20dc6937b5790300e5151701a0d3f49aff36b1fa`
+
+This file is intentionally a mirror of that library surface. It is **not** the
+place where canonicity or world-model justification is decided. For the
+theorem-backed WM/evidence account, see
+`Mettapedia.Logic.WMPLNJustifiedTruthFunctions`.
 -/
 
 /-! ## Simple Truth Values -/
 
-/-- A lightweight (strength, confidence) pair.
-
-This intentionally does not enforce bounds `[0,1]`; those are hypotheses in theorems. -/
+/-- A lightweight (strength, confidence) pair. -/
 structure TV where
   s : ℝ
   c : ℝ
@@ -39,13 +42,6 @@ namespace TV
 end TV
 
 /-! ## Utility: confidence ↔ weight -/
-
-/-!
-We treat MeTTa confidences as lying in `[0,1]`, but the raw library may occasionally hand us
-out-of-range values (e.g. `c = 1` leading to division by zero). For νPLN / BinaryEvidence semantics,
-we interpret confidence via the standard weight transform `w = c/(1-c)` with a hard cap
-`MAX_CONF < 1` and a floor at `0`.
--/
 
 def MAX_CONF : ℝ := 0.9999
 
@@ -62,7 +58,6 @@ theorem capConf_lt_one (c : ℝ) : capConf c < 1 := by
     norm_num
   have hmin : min c MAX_CONF ≤ MAX_CONF := min_le_right c MAX_CONF
   have hle : capConf c ≤ MAX_CONF := by
-    -- `max 0 (min c MAX_CONF) ≤ max 0 MAX_CONF = MAX_CONF` since `0 ≤ MAX_CONF`.
     have h : max 0 (min c MAX_CONF) ≤ max 0 MAX_CONF := max_le_max_left 0 hmin
     have hMAX0 : (0 : ℝ) ≤ MAX_CONF := by
       unfold MAX_CONF
@@ -79,20 +74,15 @@ noncomputable def w2c (w : ℝ) : ℝ :=
   let ww := max 0 w
   ww / (ww + 1)
 
-/-! ## PLN Book Formulas (as in `lib_pln.metta`) -/
+/-! ## PeTTa `lib_pln.metta` helpers -/
 
-/-- A Lean helper mirroring MeTTa's `/safe`:
-returns `0` when the denominator is `≤ 0`. -/
+/-- A Lean helper mirroring MeTTa's `/safe`: returns `0` when the denominator is `≤ 0`. -/
 noncomputable def safeDiv (a b : ℝ) : ℝ :=
   if 0 < b then a / b else 0
 
-/-- `Truth_Deduction` (PLN book, and `lib_pln.metta`).
+/-! ## PeTTa `lib_pln.metta` truth functions -/
 
-Inputs:
-- `p`, `q`, `r`: term truth values (only the strengths are used as term probabilities)
-- `pq`, `qr`: link truth values
-
-Output confidence is the minimum of all input confidences (as in the MeTTa code). -/
+/-- `Truth_Deduction` as mirrored from PeTTa `lib_pln.metta`. -/
 noncomputable def truthDeduction (p q r pq qr : TV) : TV :=
 by
   classical
@@ -109,30 +99,17 @@ by
     else
       ⟨1, 0⟩
 
-/-- `Truth_Induction` (PLN book Appendix A, and `lib_pln.metta`).
-
-This is Bayes-inversion on the first premise followed by deduction. -/
+/-- `Truth_Induction` as mirrored from PeTTa `lib_pln.metta`. -/
 noncomputable def truthInduction (a b c ba bc : TV) : TV :=
-  -- Naming matches MeTTa:
-  -- `a` = A, `b` = B, `c` = C, and links `ba : B→A`, `bc : B→C`.
   let s := plnInductionStrength ba.s bc.s a.s b.s c.s
-  -- Fixed: convert confidences to weights before taking `min`, then map back.
   let conf := w2c (min (c2w ba.c) (c2w bc.c))
   ⟨s, conf⟩
 
-/-- `Truth_Abduction` (PLN book Appendix A, and `lib_pln.metta`). -/
+/-- `Truth_Abduction` as mirrored from PeTTa `lib_pln.metta`. -/
 noncomputable def truthAbduction (a b c ab cb : TV) : TV :=
-  -- Links: `ab : A→B`, `cb : C→B`.
   let s := plnAbductionStrength ab.s cb.s a.s b.s c.s
   let conf := w2c (min (c2w ab.c) (c2w cb.c))
   ⟨s, conf⟩
-
-/-! ### SourceRule / SinkRule aliases
-
-These names emphasize the *shape* of the inference pattern:
-- SourceRule: cospan completion `B → A, B → C ⊢ A → C`
-- SinkRule:   span completion  `A → B, C → B ⊢ A → C`
--/
 
 /-- SourceRule (cospan completion): alias of `truthInduction`. -/
 noncomputable abbrev truthSourceRule := truthInduction
@@ -140,12 +117,11 @@ noncomputable abbrev truthSourceRule := truthInduction
 /-- SinkRule (span completion): alias of `truthAbduction`. -/
 noncomputable abbrev truthSinkRule := truthAbduction
 
-/-- `Truth_ModusPonens` (PLN book §5.7.1, and `lib_pln.metta`). -/
+/-- `Truth_ModusPonens` as mirrored from PeTTa `lib_pln.metta`. -/
 noncomputable def truthModusPonens (p pq : TV) : TV :=
-  -- MeTTa hard-codes background probability `c = 0.02`.
   ⟨modusPonens pq.s p.s 0.02, p.c * pq.c⟩
 
-/-- `Truth_SymmetricModusPonens` (OpenCog formula; `lib_pln.metta`). -/
+/-- `Truth_SymmetricModusPonens` as mirrored from PeTTa `lib_pln.metta`. -/
 noncomputable def truthSymmetricModusPonens (a ab : TV) : TV :=
   let snotAB : ℝ := 0.2
   let cnotAB : ℝ := 1.0
@@ -153,7 +129,7 @@ noncomputable def truthSymmetricModusPonens (a ab : TV) : TV :=
   let c := min (min ab.c cnotAB) a.c
   ⟨s, c⟩
 
-/-- `Truth_Revision` (PLN book §5.10.2, and `lib_pln.metta`). -/
+/-- `Truth_Revision` as mirrored from PeTTa `lib_pln.metta`. -/
 noncomputable def truthRevision (t1 t2 : TV) : TV :=
   let w1 := c2w t1.c
   let w2 := c2w t2.c
@@ -162,18 +138,17 @@ noncomputable def truthRevision (t1 t2 : TV) : TV :=
   let c := w2c w
   ⟨min 1 f, min 1 c⟩
 
-/-- `Truth_Negation` (and the PLN "not-elimination" rule) -/
+/-- `Truth_Negation` as mirrored from PeTTa `lib_pln.metta`. -/
 noncomputable def truthNegation (t : TV) : TV :=
   ⟨1 - t.s, t.c⟩
 
-/-! ## Additional `lib_pln.metta` truth functions (WIP/heuristic) -/
+/-! ## Additional OpenCog / PeTTa WIP heuristic rules -/
 
-/-- `Truth_inversion` (OpenCog WIP; `lib_pln.metta`). -/
+/-- `Truth_inversion` as mirrored from PeTTa `lib_pln.metta`. -/
 noncomputable def truthInversion (b ab : TV) : TV :=
-  -- Strength preserved; confidence penalized (MeTTa: `Bc * (ABc * 0.6)`).
   ⟨ab.s, b.c * (ab.c * 0.6)⟩
 
-/-- `Truth_equivalenceToImplication` (OpenCog WIP; `lib_pln.metta`). -/
+/-- `Truth_equivalenceToImplication` as mirrored from PeTTa `lib_pln.metta`. -/
 noncomputable def truthEquivalenceToImplication (a b ab : TV) : TV :=
   let conclS :=
     if 0.99 < ab.s * ab.c then
@@ -182,17 +157,17 @@ noncomputable def truthEquivalenceToImplication (a b ab : TV) : TV :=
       safeDiv ((1 + safeDiv b.s a.s) * ab.s) (1 + ab.s)
   ⟨conclS, ab.c⟩
 
-/-- Strength-level helper corresponding to `TransitiveSimilarityStrength` in `lib_pln.metta`. -/
-noncomputable def transitiveSimilarityStrength (sim_AB sim_BC s_A s_B s_C : ℝ) : ℝ :=
-  transitiveSimilarity sim_AB sim_BC s_A s_B s_C
+/-- Strength-level helper corresponding to `TransitiveSimilarityStrength` in PeTTa `lib_pln.metta`. -/
+noncomputable def transitiveSimilarityStrength (simAB simBC sA sB sC : ℝ) : ℝ :=
+  transitiveSimilarity simAB simBC sA sB sC
 
-/-- `Truth_transitiveSimilarity` (OpenCog WIP; `lib_pln.metta`). -/
+/-- `Truth_transitiveSimilarity` as mirrored from PeTTa `lib_pln.metta`. -/
 noncomputable def truthTransitiveSimilarity (a b c ab bc : TV) : TV :=
   let s := transitiveSimilarityStrength ab.s bc.s a.s b.s c.s
   let conf := min ab.c bc.c
   ⟨s, conf⟩
 
-/-- Partial version of `simpleDeductionStrength` (returns `none` when preconditions fail). -/
+/-- Partial version of the deduction-strength helper used by PeTTa `lib_pln.metta`. -/
 noncomputable def simpleDeductionStrength (sA sB sC sAB sBC : ℝ) : Option ℝ := by
   classical
   exact
@@ -203,7 +178,7 @@ noncomputable def simpleDeductionStrength (sA sB sC sAB sBC : ℝ) : Option ℝ 
     else
       none
 
-/-- `Truth_evaluationImplication` (OpenCog WIP; `lib_pln.metta`). -/
+/-- `Truth_evaluationImplication` as mirrored from PeTTa `lib_pln.metta`. -/
 noncomputable def truthEvaluationImplication (a b c ab ac : TV) : Option TV :=
   match simpleDeductionStrength b.s a.s c.s ab.s ac.s with
   | none => none
@@ -213,14 +188,7 @@ noncomputable def truthEvaluationImplication (a b c ab ac : TV) : Option TV :=
           min b.c (min a.c (min c.c (min ac.c (0.9 * ab.c))))
       some ⟨s, conf⟩
 
-/-! ### Conversions already formalized elsewhere
-
-`lib_pln.metta` contains additional WIP/heuristic truth functions (inversion, equivalence-to-
-implication, transitive similarity, evaluation-implication). We map those to the Lean development
-via `PLNInferenceRules.lean` (where the strength-level parts are already defined).
--/
-
-/-! ## Small correctness shims (strength-level) -/
+/-! ## Small transport lemmas -/
 
 theorem truthInduction_s_eq (a b c ba bc : TV) :
     (truthInduction a b c ba bc).s = plnInductionStrength ba.s bc.s a.s b.s c.s := by
@@ -230,4 +198,49 @@ theorem truthAbduction_s_eq (a b c ab cb : TV) :
     (truthAbduction a b c ab cb).s = plnAbductionStrength ab.s cb.s a.s b.s c.s := by
   simp [truthAbduction]
 
-end Mettapedia.Logic.PLNMettaTruthFunctions
+/-- `w2c (c2w c)` reduces to the capped confidence `capConf c`. -/
+theorem w2c_c2w_eq_capConf (c : ℝ) : w2c (c2w c) = capConf c := by
+  unfold c2w w2c
+  set cc : ℝ := capConf c
+  have hcc0 : 0 ≤ cc := by
+    simp [cc, capConf]
+  have hcc1 : cc < 1 := by
+    simpa [cc] using capConf_lt_one c
+  have hcc1pos : 0 < 1 - cc := by
+    linarith
+  have hw0 : 0 ≤ cc / (1 - cc) := div_nonneg hcc0 (le_of_lt hcc1pos)
+  simp [cc, hw0]
+  have hne : (1 - cc) ≠ 0 := by
+    linarith
+  have hden : cc / (1 - cc) + 1 = 1 / (1 - cc) := by
+    field_simp [hne]
+    ring
+  rw [hden]
+  rw [div_div]
+  have hmul : (1 - cc) * (1 / (1 - cc)) = 1 := by
+    simp [div_eq_mul_inv, hne]
+  rw [hmul]
+  simp
+
+/-- `w2c` is monotone. -/
+theorem w2c_monotone : Monotone w2c := by
+  intro a b hab
+  unfold w2c
+  have hmax : max 0 a ≤ max 0 b := max_le_max_left 0 hab
+  set aa : ℝ := max 0 a
+  set bb : ℝ := max 0 b
+  have haa : 0 ≤ aa := by simp [aa]
+  have hbb : 0 ≤ bb := by simp [bb]
+  have hdenA : 0 < aa + 1 := by linarith
+  have hdenB : 0 < bb + 1 := by linarith
+  have : aa / (aa + 1) ≤ bb / (bb + 1) := by
+    rw [div_le_div_iff₀ hdenA hdenB]
+    nlinarith [hmax]
+  simpa [aa, bb] using this
+
+theorem w2c_min_c2w (c1 c2 : ℝ) :
+    w2c (min (c2w c1) (c2w c2)) = min (capConf c1) (capConf c2) := by
+  have hmono : Monotone w2c := w2c_monotone
+  simpa [w2c_c2w_eq_capConf] using (hmono.map_min (a := c2w c1) (b := c2w c2))
+
+end Mettapedia.Logic.PeTTaLibPLNTruthFunctions

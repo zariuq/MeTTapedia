@@ -1,4 +1,4 @@
-import Mettapedia.Logic.PLNMettaTruthFunctions
+import Mettapedia.Logic.PeTTaLibPLNTruthFunctions
 import Mettapedia.Logic.NARSMettaTruthFunctions
 import Mettapedia.Logic.NARSEvidenceBridge
 import Mettapedia.Logic.NARSPLNGaloisConnection
@@ -21,7 +21,7 @@ namespace Mettapedia.Logic.PLNNARSRuleCorrespondence
 
 open scoped ENNReal
 
-abbrev PLNTV := Mettapedia.Logic.PLNMettaTruthFunctions.TV
+abbrev PLNTV := Mettapedia.Logic.PeTTaLibPLNTruthFunctions.TV
 abbrev NARSTV := Mettapedia.Logic.NARSMettaTruthFunctions.TV
 
 /-! ## TV Views -/
@@ -75,11 +75,11 @@ theorem weightTransformBundle : WeightTransformBundle := by
 
 structure RuleCorrespondenceBundle : Prop where
   pln_sourceRule_alias :
-    Mettapedia.Logic.PLNMettaTruthFunctions.truthSourceRule =
-      Mettapedia.Logic.PLNMettaTruthFunctions.truthInduction
+    Mettapedia.Logic.PeTTaLibPLNTruthFunctions.truthSourceRule =
+      Mettapedia.Logic.PeTTaLibPLNTruthFunctions.truthInduction
   pln_sinkRule_alias :
-    Mettapedia.Logic.PLNMettaTruthFunctions.truthSinkRule =
-      Mettapedia.Logic.PLNMettaTruthFunctions.truthAbduction
+    Mettapedia.Logic.PeTTaLibPLNTruthFunctions.truthSinkRule =
+      Mettapedia.Logic.PeTTaLibPLNTruthFunctions.truthAbduction
   nars_sourceRule_alias :
     Mettapedia.Logic.NARSMettaTruthFunctions.truthSourceRule =
       Mettapedia.Logic.NARSMettaTruthFunctions.truthInduction
@@ -98,11 +98,11 @@ structure RuleCorrespondenceBundle : Prop where
       (Mettapedia.Logic.NARSMettaTruthFunctions.truthInduction t1 t2).f = t1.f
   pln_induction_strength_formula :
     ∀ a b c ba bc : PLNTV,
-      (Mettapedia.Logic.PLNMettaTruthFunctions.truthInduction a b c ba bc).s =
+      (Mettapedia.Logic.PeTTaLibPLNTruthFunctions.truthInduction a b c ba bc).s =
         Mettapedia.Logic.PLN.plnInductionStrength ba.s bc.s a.s b.s c.s
   pln_abduction_strength_formula :
     ∀ a b c ab cb : PLNTV,
-      (Mettapedia.Logic.PLNMettaTruthFunctions.truthAbduction a b c ab cb).s =
+      (Mettapedia.Logic.PeTTaLibPLNTruthFunctions.truthAbduction a b c ab cb).s =
         Mettapedia.Logic.PLN.plnAbductionStrength ab.s cb.s a.s b.s c.s
 
 theorem ruleCorrespondenceBundle : RuleCorrespondenceBundle := by
@@ -116,10 +116,10 @@ theorem ruleCorrespondenceBundle : RuleCorrespondenceBundle := by
     simpa using Mettapedia.Logic.NARSEvidenceBridge.induction_freq_is_f1 t1 t2
   · intro a b c ba bc
     simpa using
-      Mettapedia.Logic.PLNMettaTruthFunctions.truthInduction_s_eq a b c ba bc
+      Mettapedia.Logic.PeTTaLibPLNTruthFunctions.truthInduction_s_eq a b c ba bc
   · intro a b c ab cb
     simpa using
-      Mettapedia.Logic.PLNMettaTruthFunctions.truthAbduction_s_eq a b c ab cb
+      Mettapedia.Logic.PeTTaLibPLNTruthFunctions.truthAbduction_s_eq a b c ab cb
 
 /-! ## Bundle 3: Revision/BinaryEvidence Coherence -/
 

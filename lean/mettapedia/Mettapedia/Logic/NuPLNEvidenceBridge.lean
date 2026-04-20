@@ -1,11 +1,11 @@
 import Mathlib.Tactic
 import Mettapedia.Logic.EvidenceQuantale
-import Mettapedia.Logic.PLNMettaTruthFunctions
+import Mettapedia.Logic.PeTTaLibPLNTruthFunctions
 
 namespace Mettapedia.Logic.NuEvidenceQuantaleBridge
 
 open Mettapedia.Logic.EvidenceQuantale
-open Mettapedia.Logic.PLNMettaTruthFunctions
+open Mettapedia.Logic.PeTTaLibPLNTruthFunctions
 open scoped ENNReal
 
 /-!
@@ -32,69 +32,6 @@ noncomputable def BinaryEvidence.toTV (κ : ℝ≥0∞) (e : BinaryEvidence) : T
 
 end Bridge
 
-/-! ## Weight/Confidence algebra (capped) -/
-
-namespace PLNMettaTruthFunctions
-
-/-- `w2c (c2w c)` reduces to the capped confidence `capConf c`. -/
-theorem w2c_c2w_eq_capConf (c : ℝ) : w2c (c2w c) = capConf c := by
-  -- Unfold and compute using the algebra `w/(w+1)` with `w = c/(1-c)`.
-  unfold c2w w2c
-  -- Name the capped confidence.
-  set cc : ℝ := capConf c
-  have hcc0 : 0 ≤ cc := by
-    simp [cc, capConf]
-  have hcc1 : cc < 1 := by
-    simpa [cc] using capConf_lt_one c
-  have hcc1pos : 0 < 1 - cc := by linarith
-  have hw0 : 0 ≤ cc / (1 - cc) := div_nonneg hcc0 (le_of_lt hcc1pos)
-  -- `max 0 w = w` since `w ≥ 0`.
-  simp [cc, hw0]
-  -- Finish the algebra.
-  have hne : (1 - cc) ≠ 0 := by linarith
-  have hden : cc / (1 - cc) + 1 = 1 / (1 - cc) := by
-    field_simp [hne]
-    ring
-  rw [hden]
-  -- Reduce to the cancellation `(1-cc) * (1 / (1-cc)) = 1`.
-  rw [div_div]
-  have hmul : (1 - cc) * (1 / (1 - cc)) = 1 := by
-    simp [div_eq_mul_inv, hne]
-  rw [hmul]
-  simp
-
-/-- `w2c` is monotone (it is `w ↦ max 0 w / (max 0 w + 1)`). -/
-theorem w2c_monotone : Monotone w2c := by
-  intro a b hab
-  unfold w2c
-  -- Reduce to the monotonicity of `max 0`.
-  have hmax : max 0 a ≤ max 0 b := max_le_max_left 0 hab
-  set aa : ℝ := max 0 a
-  set bb : ℝ := max 0 b
-  have haa : 0 ≤ aa := by simp [aa]
-  have hbb : 0 ≤ bb := by simp [bb]
-  -- Compare `aa/(aa+1)` and `bb/(bb+1)` by cross-multiplication (denominators are positive).
-  have hdenA : 0 < aa + 1 := by linarith
-  have hdenB : 0 < bb + 1 := by linarith
-  -- Rewrite the goal in terms of `aa`, `bb`.
-  -- Note: `simp` will unfold `aa`/`bb` back when needed.
-  have : aa / (aa + 1) ≤ bb / (bb + 1) := by
-    -- `a/(a+1) ≤ b/(b+1)` iff `a*(b+1) ≤ b*(a+1)` for positive denominators.
-    rw [div_le_div_iff₀ hdenA hdenB]
-    -- This simplifies to `aa ≤ bb`.
-    nlinarith [hmax]
-  simpa [aa, bb] using this
-
-/-- Taking `min` in weight-space and mapping back via `w2c` is the same as taking `min` of the
-corresponding capped confidences. -/
-theorem w2c_min_c2w (c1 c2 : ℝ) :
-    w2c (min (c2w c1) (c2w c2)) = min (capConf c1) (capConf c2) := by
-  have hmono : Monotone w2c := w2c_monotone
-  -- `w2c` is monotone, so it preserves `min`.
-  simpa [w2c_c2w_eq_capConf] using (hmono.map_min (a := c2w c1) (b := c2w c2))
-
-end PLNMettaTruthFunctions
-
 /-
 ## Bridge: Revision = BinaryEvidence Aggregation
 
@@ -106,7 +43,7 @@ namespace Bridge
 
 open scoped ENNReal
 
-open Mettapedia.Logic.PLNMettaTruthFunctions
+open Mettapedia.Logic.PeTTaLibPLNTruthFunctions
 
 /-- The `BinaryEvidence.ofSTV` "total evidence" matches the intended `κ * c / (1-c)` when
 `s ∈ [0,1]`. This makes confidence independent of strength, as in the PLN book formulas. -/
@@ -506,7 +443,7 @@ The weight-space minimum `w2c(min(c2w(c1), c2w(c2)))` ensures:
 
 namespace InductionAbductionBridge
 
-open Mettapedia.Logic.PLNMettaTruthFunctions
+open Mettapedia.Logic.PeTTaLibPLNTruthFunctions
 open Mettapedia.Logic.EvidenceQuantale
 open Bridge
 
@@ -543,7 +480,7 @@ theorem capConf_of_capConf (c : ℝ) : capConf (capConf c) = capConf c := by
 /-- The confidence output of induction/abduction equals the minimum of capped input confidences. -/
 theorem inductionAbduction_conf_eq_min_capped (c1 c2 : ℝ) :
     w2c (min (c2w c1) (c2w c2)) = min (capConf c1) (capConf c2) :=
-  PLNMettaTruthFunctions.w2c_min_c2w c1 c2
+  Mettapedia.Logic.PeTTaLibPLNTruthFunctions.w2c_min_c2w c1 c2
 
 /-- Taking min in weight-space preserves the ordering: whichever has lower capped confidence
     also has lower weight. -/
