@@ -19,6 +19,7 @@ import Mettapedia.Languages.MeTTa.HE.Certification
 import Mettapedia.Languages.MeTTa.HE.SemanticForms
 import Mettapedia.Languages.MeTTa.HE.CoreFragment
 import Mettapedia.Languages.MeTTa.HE.LetChainResumption
+import Mettapedia.Languages.MeTTa.HE.BulkTransferSoundness
 
 /-!
 # Hyperon Experimental MeTTa Semantics

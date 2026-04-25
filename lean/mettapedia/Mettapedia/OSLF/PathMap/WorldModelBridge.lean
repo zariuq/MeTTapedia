@@ -118,6 +118,7 @@ noncomputable instance multisetPathWorldModel {α : Type*} [DecidableEq α] :
     BinaryWorldModel (Multiset α) (Finset α) where
   evidence := multisetPathEvidence
   evidence_add := multisetPathEvidence_additive
+  evidence_zero := multisetPathEvidence_zero
 
 /-! ## Section 5: Embedding Finset into the BinaryWorldModel -/
 

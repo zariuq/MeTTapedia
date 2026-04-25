@@ -1,6 +1,8 @@
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.Types
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.Basic
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.StructuralCongruence
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.Reduction
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.BasicBridge
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.MultiStep
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.DerivedRepNu
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.SpiceRule

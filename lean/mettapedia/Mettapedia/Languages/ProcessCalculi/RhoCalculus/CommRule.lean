@@ -124,7 +124,7 @@ inductive SpiceCommReduction (n : ℕ) : Pattern → Pattern → Prop where
       (h_fin : (spiceEval q n).Finite) :
       SpiceCommReduction n
         (.collection .hashBag ([.apply "POutput" [channel, q],
-                                .apply "PInput" [channel, .lambda p]] ++ rest) none)
+                                .apply "PInput" [channel, .lambda none p]] ++ rest) none)
         (.collection .hashBag ([spiceCommSubst p q n h_fin] ++ rest) none)
 
   /-- Structural: reduction under parallel composition (head position) -/
@@ -208,11 +208,11 @@ theorem spice_comm_zero_is_comm {channel q p : Pattern} {rest : List Pattern}
     (h_fin : (spiceEval q 0).Finite) :
     SpiceCommReduction 0
       (.collection .hashBag ([.apply "POutput" [channel, q],
-                              .apply "PInput" [channel, .lambda p]] ++ rest) none)
+                              .apply "PInput" [channel, .lambda none p]] ++ rest) none)
       (.collection .hashBag ([spiceCommSubst p q 0 h_fin] ++ rest) none) →
     Nonempty (Reduces
       (.collection .hashBag ([.apply "POutput" [channel, q],
-                              .apply "PInput" [channel, .lambda p]] ++ rest) none)
+                              .apply "PInput" [channel, .lambda none p]] ++ rest) none)
       (.collection .hashBag ([commSubst p q] ++ rest) none)) := by
   intro _
   exact ⟨Reduces.comm⟩

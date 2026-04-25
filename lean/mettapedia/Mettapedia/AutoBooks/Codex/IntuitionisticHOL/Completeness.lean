@@ -2851,6 +2851,28 @@ theorem exists_closedSoundLocalCountermodel_of_exists_semantics
   exact ⟨C.toCertifiedCountermodelCandidate.toClosedSoundLocalCountermodel
     (M := M) env global true_top false_ne_top hM⟩
 
+theorem exists_semilocal_truth_counterexample_of_exists_semantics
+    (C : CertifiedHeadPriorityCompletion Const Γ F)
+    (hSem :
+      ∃ (M : SemilocalModel.{u, v, w, w'} Base Const) (env : SemilocalModel.Env M Γ),
+        SemilocalModel.IsGlobalEnv M env ∧
+        (∀ {φ : Formula Const Γ},
+            (Sign.trueE, φ) ∈ C.closedHintikka.formulas →
+              SemilocalModel.formulaTruth M env φ = ⊤) ∧
+        (∀ {φ : Formula Const Γ},
+            (Sign.falseE, φ) ∈ C.closedHintikka.formulas →
+              SemilocalModel.formulaTruth M env φ ≠ ⊤) ∧
+        SemilocalModel.SupportsUniformRelativization M) :
+    ∃ (M : SemilocalModel.{u, v, w, w'} Base Const) (env : SemilocalModel.Env M Γ),
+      SemilocalModel.IsGlobalEnv M env ∧
+      SemilocalModel.antecedentTruth M env F.antecedents = ⊤ ∧
+      SemilocalModel.formulaTruth M env F.succedent ≠ ⊤ ∧
+      SemilocalModel.SupportsUniformRelativization M := by
+  rcases C.exists_closedSoundLocalCountermodel_of_exists_semantics hSem with ⟨CM⟩
+  exact ⟨CM.model, CM.agreement.env, CM.agreement.global,
+    CM.agreement.antecedentTruth_eq_top, CM.agreement.succedent_ne_top,
+    CM.supportsUniformRelativization⟩
+
 theorem not_derivable_of_exists_semantics
     (C : CertifiedHeadPriorityCompletion Const Γ F)
     (hSem :
@@ -2954,6 +2976,33 @@ theorem exists_closedSoundLocalCountermodel_of_exists_semantics
     CertifiedHeadPriorityCompletion.hintikka,
     CertifiedHeadPriorityCompletion.closedHintikka] using
     (CertifiedHeadPriorityCompletion.exists_closedSoundLocalCountermodel_of_exists_semantics
+      (C := C.toCertified (Const := Const) (Γ := Γ) hInitial hCompat) hSem)
+
+theorem exists_semilocal_truth_counterexample_of_exists_semantics
+    {F : CompletenessFrontier Const Γ}
+    (C : HeadPriorityCompletion F)
+    (hInitial : F.ClosedNonconflicting)
+    (hCompat : C.derivation.Compatible)
+    (hSem :
+      ∃ (M : SemilocalModel.{u, v, w, w'} Base Const) (env : SemilocalModel.Env M Γ),
+        SemilocalModel.IsGlobalEnv M env ∧
+        (∀ {φ : Formula Const Γ},
+            (Sign.trueE, φ) ∈ C.state.hintikka.close.formulas →
+              SemilocalModel.formulaTruth M env φ = ⊤) ∧
+        (∀ {φ : Formula Const Γ},
+            (Sign.falseE, φ) ∈ C.state.hintikka.close.formulas →
+              SemilocalModel.formulaTruth M env φ ≠ ⊤) ∧
+        SemilocalModel.SupportsUniformRelativization M) :
+    ∃ (M : SemilocalModel.{u, v, w, w'} Base Const) (env : SemilocalModel.Env M Γ),
+      SemilocalModel.IsGlobalEnv M env ∧
+      SemilocalModel.antecedentTruth M env F.antecedents = ⊤ ∧
+      SemilocalModel.formulaTruth M env F.succedent ≠ ⊤ ∧
+      SemilocalModel.SupportsUniformRelativization M := by
+  simpa [SaturationSearchState.HeadPriorityCompletion.toCertified,
+    CertifiedHeadPriorityCompletion.state,
+    CertifiedHeadPriorityCompletion.hintikka,
+    CertifiedHeadPriorityCompletion.closedHintikka] using
+    (CertifiedHeadPriorityCompletion.exists_semilocal_truth_counterexample_of_exists_semantics
       (C := C.toCertified (Const := Const) (Γ := Γ) hInitial hCompat) hSem)
 
 theorem not_derivable_of_exists_semantics
@@ -4021,6 +4070,49 @@ theorem exists_candidateClosedHintikkaSemantics_of_exists_closedLocalAgreementWi
   rcases hW with ⟨M, W, hCert⟩
   exact ⟨M, W.env, W.global,
     ⟨C.toCandidateClosedHintikkaSemanticsOfClosedLocalAgreementWitness (M := M) W hCert⟩⟩
+
+theorem exists_semilocal_truth_counterexample_of_exists_semantics
+    (C : CertifiedCountermodelCandidate Const Γ)
+    (hSem :
+      ∃ (M : SemilocalModel.{u, v, w, w'} Base Const) (env : SemilocalModel.Env M Γ),
+        SemilocalModel.IsGlobalEnv M env ∧
+        (∀ {φ : Formula Const Γ},
+            (Sign.trueE, φ) ∈ C.closedHintikka.formulas →
+              SemilocalModel.formulaTruth M env φ = ⊤) ∧
+        (∀ {φ : Formula Const Γ},
+            (Sign.falseE, φ) ∈ C.closedHintikka.formulas →
+              SemilocalModel.formulaTruth M env φ ≠ ⊤) ∧
+        SemilocalModel.SupportsUniformRelativization M) :
+    ∃ (M : SemilocalModel.{u, v, w, w'} Base Const) (env : SemilocalModel.Env M Γ),
+      SemilocalModel.IsGlobalEnv M env ∧
+      SemilocalModel.antecedentTruth M env C.frontier.antecedents = ⊤ ∧
+      SemilocalModel.formulaTruth M env C.frontier.succedent ≠ ⊤ ∧
+      SemilocalModel.SupportsUniformRelativization M := by
+  rcases hSem with ⟨M, env, global, true_top, false_ne_top, hM⟩
+  let S : CandidateClosedHintikkaSemantics C env :=
+    C.toCandidateClosedHintikkaSemantics env true_top false_ne_top
+  let CM : SoundLocalCountermodel (Base := Base) (Const := Const) C.frontier :=
+    C.toClosedSoundLocalCountermodelOfSemantics env global S hM
+  exact ⟨M, env, global, CM.agreement.antecedentTruth_eq_top,
+    CM.agreement.succedent_ne_top, hM⟩
+
+theorem exists_semilocal_truth_counterexample_of_exists_candidateClosedHintikkaSemantics
+    (C : CertifiedCountermodelCandidate Const Γ)
+    (hSem :
+      ∃ (M : SemilocalModel.{u, v, w, w'} Base Const) (env : SemilocalModel.Env M Γ),
+        SemilocalModel.IsGlobalEnv M env ∧
+        Nonempty (CandidateClosedHintikkaSemantics C env) ∧
+        SemilocalModel.SupportsUniformRelativization M) :
+    ∃ (M : SemilocalModel.{u, v, w, w'} Base Const) (env : SemilocalModel.Env M Γ),
+      SemilocalModel.IsGlobalEnv M env ∧
+      SemilocalModel.antecedentTruth M env C.frontier.antecedents = ⊤ ∧
+      SemilocalModel.formulaTruth M env C.frontier.succedent ≠ ⊤ ∧
+      SemilocalModel.SupportsUniformRelativization M := by
+  rcases hSem with ⟨M, env, global, ⟨S⟩, hM⟩
+  let CM : SoundLocalCountermodel (Base := Base) (Const := Const) C.frontier :=
+    C.toClosedSoundLocalCountermodelOfSemantics env global S hM
+  exact ⟨M, env, global, CM.agreement.antecedentTruth_eq_top,
+    CM.agreement.succedent_ne_top, hM⟩
 
 theorem not_derivable_of_exists_candidateClosedHintikkaSemantics
     (C : CertifiedCountermodelCandidate Const Γ)

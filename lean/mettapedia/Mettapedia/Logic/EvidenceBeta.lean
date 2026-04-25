@@ -800,14 +800,14 @@ noncomputable def betaQuantile_exactInvCDF
 theorem betaQuantile_exactInvCDF_nonneg
     (α β : ℝ) (hα : 0 < α) (hβ : 0 < β) (p : ℝ) :
     0 ≤ betaQuantile_exactInvCDF α β hα hβ p := by
-  simpa [betaQuantile_exactInvCDF] using
+  exact
     (clamp01_nonneg
       (Function.invFun (ProbabilityTheory.cdf (ProbabilityTheory.betaMeasure α β)) p))
 
 theorem betaQuantile_exactInvCDF_le_one
     (α β : ℝ) (hα : 0 < α) (hβ : 0 < β) (p : ℝ) :
     betaQuantile_exactInvCDF α β hα hβ p ≤ 1 := by
-  simpa [betaQuantile_exactInvCDF] using
+  exact
     (clamp01_le_one
       (Function.invFun (ProbabilityTheory.cdf (ProbabilityTheory.betaMeasure α β)) p))
 

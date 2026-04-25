@@ -35,6 +35,10 @@ import Mettapedia.AutoBooks.Codex.IntuitionisticHOL.AwodeyButzApplicativeSubstit
 import Mettapedia.AutoBooks.Codex.IntuitionisticHOL.AwodeyButzApplicativeSubstitutionSemantics
 import Mettapedia.AutoBooks.Codex.IntuitionisticHOL.Completeness
 import Mettapedia.AutoBooks.Codex.IntuitionisticHOL.CompletenessRegression
+import Mettapedia.AutoBooks.Codex.IntuitionisticHOL.SemanticConsequenceBridge
+import Mettapedia.AutoBooks.Codex.IntuitionisticHOL.SemanticConsequenceBridgeRegression
+import Mettapedia.AutoBooks.Codex.IntuitionisticHOL.ConsequenceFloor
+import Mettapedia.AutoBooks.Codex.IntuitionisticHOL.ConsequenceFloorRegression
 import Mettapedia.AutoBooks.Codex.IntuitionisticHOL.AwodeyButzTopologicalRegression
 import Mettapedia.AutoBooks.Codex.IntuitionisticHOL.AwodeyButzSectionsRegression
 import Mettapedia.AutoBooks.Codex.IntuitionisticHOL.AwodeyButzOperationsRegression
@@ -60,6 +64,18 @@ import Mettapedia.AutoBooks.Codex.IntuitionisticHOL.CanonicalBridge
 import Mettapedia.AutoBooks.Codex.IntuitionisticHOL.ExtendedSignatureBridge
 import Mettapedia.AutoBooks.Codex.IntuitionisticHOL.ParametricBridge
 import Mettapedia.AutoBooks.Codex.IntuitionisticHOL.SourceMap
+import Mettapedia.AutoBooks.Codex.IntuitionisticHOL.ClosedTermQuotient
+import Mettapedia.AutoBooks.Codex.IntuitionisticHOL.ClosedTermQuotientRegression
+import Mettapedia.AutoBooks.Codex.IntuitionisticHOL.ClosedTermPreModelBridge
+import Mettapedia.AutoBooks.Codex.IntuitionisticHOL.ClosedTermPreModelBridgeRegression
+import Mettapedia.AutoBooks.Codex.IntuitionisticHOL.ClosedTermWorldModel
+import Mettapedia.AutoBooks.Codex.IntuitionisticHOL.ClosedTermWorldModelRegression
+import Mettapedia.AutoBooks.Codex.IntuitionisticHOL.ClosedTermWorldModelCountermodel
+import Mettapedia.AutoBooks.Codex.IntuitionisticHOL.ClosedTermWorldModelCountermodelRegression
+import Mettapedia.AutoBooks.Codex.IntuitionisticHOL.ClosedTermHenkinWorldBridge
+import Mettapedia.AutoBooks.Codex.IntuitionisticHOL.ClosedTermHenkinWorldBridgeRegression
+import Mettapedia.AutoBooks.Codex.IntuitionisticHOL.ParametricHenkinWorldBridge
+import Mettapedia.AutoBooks.Codex.IntuitionisticHOL.ParametricHenkinWorldBridgeRegression
 
 /-!
 # Intuitionistic HOL in Codex
@@ -80,6 +96,11 @@ Main native files:
   completeness staging modules.
 - `CompletenessRegression`: clean canaries for the surviving completeness-side
   branch.
+- `SemanticConsequenceBridge`, `ConsequenceFloor`: generic HOL semantic
+  consequence, counterexample, and reusable consequence-surface packaging.
+- `ClosedTermQuotient`, `ClosedTermPreModelBridge`,
+  `ClosedTermHenkinWorldBridge`: typed closed-term quotient carrier,
+  pre-model bridge, and Henkin/countermodel extraction staging.
 - `AwodeyButzTopological`, `AwodeyButzSections`, `AwodeyButzSheaf`,
   `AwodeyButzOperations`, `AwodeyButzTypedFragment`,
   `AwodeyButzTypedContexts`, `AwodeyButzGenericPredicates`,

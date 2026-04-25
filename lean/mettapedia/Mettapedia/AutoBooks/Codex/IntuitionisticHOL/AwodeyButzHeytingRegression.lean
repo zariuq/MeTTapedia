@@ -49,6 +49,47 @@ theorem evalInstantiate_eq_reindex_cons_of_pointwise_path
       I.evalInstantiate t (HeytingTopologicalInterpretation.fullEval I φ) := by
   exact HeytingTopologicalInterpretation.evalInstantiate_eq_reindex_cons (I := I) t φ
 
+theorem formulaEval_beta_of_pointwise_path
+    (I : HeytingTopologicalInterpretation Base Const X)
+    [HeytingTopologicalInterpretation.FullEvalPointwiseCoherent I]
+    {Γ : Ctx Base} {σ : Ty Base}
+    (t : Term Const Γ σ)
+    (φ : Formula Const (σ :: Γ))
+    (γ : (I.ctxSpace Γ).Carrier) :
+    I.formulaEval (.app (.lam φ) t) γ =
+      I.formulaEval (instantiate t φ) γ := by
+  exact HeytingTopologicalInterpretation.formulaEval_beta (I := I) t φ γ
+
+theorem fullValidSequent_beta_of_pointwise_path
+    (I : HeytingTopologicalInterpretation Base Const X)
+    [HeytingTopologicalInterpretation.FullEvalPointwiseCoherent I]
+    {Γ : Ctx Base} (Δ : List (Formula Const Γ))
+    {σ : Ty Base}
+    (t : Term Const Γ σ)
+    (φ : Formula Const (σ :: Γ))
+    (h : I.FullValidSequent Δ (instantiate t φ)) :
+    I.FullValidSequent Δ (.app (.lam φ) t) := by
+  exact HeytingTopologicalInterpretation.FullValidSequent.beta (I := I) (Δ := Δ) t φ h
+
+theorem evalAntecedents_betaEtaEq_of_pointwise_path
+    (I : HeytingTopologicalInterpretation Base Const X)
+    [HeytingTopologicalInterpretation.FullEvalPointwiseCoherent I]
+    {Γ : Ctx Base} {Δ Δ' : List (Formula Const Γ)}
+    (h : AntecedentsBetaEtaEq Δ Δ') :
+    HeytingTopologicalInterpretation.evalAntecedents I Δ =
+      HeytingTopologicalInterpretation.evalAntecedents I Δ' := by
+  exact HeytingTopologicalInterpretation.evalAntecedents_betaEtaEq (I := I) h
+
+theorem evalAntecedents_betaEtaEq_of_fullEvalCoherent_path
+    (I : HeytingTopologicalInterpretation Base Const X)
+    [HeytingTopologicalInterpretation.FullEvalCoherent I]
+    {Γ : Ctx Base} {Δ Δ' : List (Formula Const Γ)}
+    (h : AntecedentsBetaEtaEq Δ Δ') :
+    HeytingTopologicalInterpretation.evalAntecedents I Δ =
+      HeytingTopologicalInterpretation.evalAntecedents I Δ' := by
+  exact HeytingTopologicalInterpretation.evalAntecedents_betaEtaEq_of_fullEvalCoherent
+    (I := I) h
+
 theorem beta_soundness_path
     (I : HeytingTopologicalInterpretation Base Const X)
     [HeytingTopologicalInterpretation.FullEvalPointwiseCoherent I]

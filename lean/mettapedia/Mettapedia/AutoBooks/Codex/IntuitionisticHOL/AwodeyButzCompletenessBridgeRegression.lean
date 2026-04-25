@@ -65,6 +65,40 @@ theorem completion_candidate_semantics_path
     ¬ Derivable (Base := Base) (Const := Const) F.antecedents F.succedent := by
   exact S.awodey_butz_completeness C global hM
 
+theorem completion_exists_semantics_path
+    {F : CompletenessFrontier Const Γ}
+    (C : CertifiedHeadPriorityCompletion Const Γ F)
+    (hSem :
+      ∃ (M : SemilocalModel.{u, v, w, w'} Base Const) (env : SemilocalModel.Env M Γ),
+        SemilocalModel.IsGlobalEnv M env ∧
+        (∀ {φ : Formula Const Γ},
+            (Sign.trueE, φ) ∈ C.closedHintikka.formulas →
+              SemilocalModel.formulaTruth M env φ = ⊤) ∧
+        (∀ {φ : Formula Const Γ},
+            (Sign.falseE, φ) ∈ C.closedHintikka.formulas →
+              SemilocalModel.formulaTruth M env φ ≠ ⊤) ∧
+        SemilocalModel.SupportsUniformRelativization M) :
+    ¬ Derivable (Base := Base) (Const := Const) F.antecedents F.succedent := by
+  exact C.awodey_butz_completeness_of_exists_semantics hSem
+
+theorem headPriorityCompletion_exists_semantics_path
+    {F : CompletenessFrontier Const Γ}
+    (C : SaturationSearchState.HeadPriorityCompletion (Const := Const) F)
+    (hInitial : F.ClosedNonconflicting)
+    (hCompat : C.derivation.Compatible)
+    (hSem :
+      ∃ (M : SemilocalModel.{u, v, w, w'} Base Const) (env : SemilocalModel.Env M Γ),
+        SemilocalModel.IsGlobalEnv M env ∧
+        (∀ {φ : Formula Const Γ},
+            (Sign.trueE, φ) ∈ C.state.hintikka.close.formulas →
+              SemilocalModel.formulaTruth M env φ = ⊤) ∧
+        (∀ {φ : Formula Const Γ},
+            (Sign.falseE, φ) ∈ C.state.hintikka.close.formulas →
+              SemilocalModel.formulaTruth M env φ ≠ ⊤) ∧
+        SemilocalModel.SupportsUniformRelativization M) :
+    ¬ Derivable (Base := Base) (Const := Const) F.antecedents F.succedent := by
+  exact C.awodey_butz_completeness_of_exists_semantics hInitial hCompat hSem
+
 theorem derivation_candidate_beta_exists_truth_counterexample_path
     {F : CompletenessFrontier Const Γ}
     {M : SemilocalModel Base Const}
@@ -332,6 +366,22 @@ theorem certified_candidate_exists_semantics_path
     ¬ Derivable (Base := Base) (Const := Const)
       C.frontier.antecedents C.frontier.succedent := by
   exact C.awodey_butz_completeness_of_exists_candidateClosedHintikkaSemantics hSem
+
+theorem certified_candidate_raw_exists_semantics_path
+    (C : CertifiedCountermodelCandidate Const Γ)
+    (hSem :
+      ∃ (M : SemilocalModel.{u, v, w, w'} Base Const) (env : SemilocalModel.Env M Γ),
+        SemilocalModel.IsGlobalEnv M env ∧
+        (∀ {φ : Formula Const Γ},
+            (Sign.trueE, φ) ∈ C.closedHintikka.formulas →
+              SemilocalModel.formulaTruth M env φ = ⊤) ∧
+        (∀ {φ : Formula Const Γ},
+            (Sign.falseE, φ) ∈ C.closedHintikka.formulas →
+              SemilocalModel.formulaTruth M env φ ≠ ⊤) ∧
+        SemilocalModel.SupportsUniformRelativization M) :
+    ¬ Derivable (Base := Base) (Const := Const)
+      C.frontier.antecedents C.frontier.succedent := by
+  exact C.awodey_butz_completeness_of_exists_semantics hSem
 
 theorem completion_candidate_beta_exists_truth_counterexample_path
     {F : CompletenessFrontier Const Γ}

@@ -756,7 +756,58 @@ theorem awodey_butz_imp_witness_top_of_truthValidSequent
 
 end CandidateClosedHintikkaSemantics
 
+/--
+Certified completions can now feed the Awodey-Butz semilocal counterexample
+consumer directly from raw closed-hull semantics, without dropping back to the
+derivation layer.
+-/
+theorem awodey_butz_completeness_of_exists_semantics
+    {F : CompletenessFrontier Const Γ}
+    (C : CertifiedHeadPriorityCompletion Const Γ F)
+    (hSem :
+      ∃ (M : SemilocalModel.{u, v, w, w'} Base Const) (env : SemilocalModel.Env M Γ),
+        SemilocalModel.IsGlobalEnv M env ∧
+        (∀ {φ : Formula Const Γ},
+            (Sign.trueE, φ) ∈ C.closedHintikka.formulas →
+              SemilocalModel.formulaTruth M env φ = ⊤) ∧
+        (∀ {φ : Formula Const Γ},
+            (Sign.falseE, φ) ∈ C.closedHintikka.formulas →
+              SemilocalModel.formulaTruth M env φ ≠ ⊤) ∧
+        SemilocalModel.SupportsUniformRelativization M) :
+    ¬ Derivable (Base := Base) (Const := Const) F.antecedents F.succedent := by
+  exact awodey_butz_completeness_of_exists_semilocal_truth_counterexample
+    (Base := Base) (Const := Const)
+    (C.exists_semilocal_truth_counterexample_of_exists_semantics hSem)
+
 end CertifiedHeadPriorityCompletion
+
+namespace SaturationSearchState.HeadPriorityCompletion
+
+/--
+The search-state completion layer now inherits the same direct Awodey-Butz
+consumer for raw closed-hull semantics as the certified completion layer.
+-/
+theorem awodey_butz_completeness_of_exists_semantics
+    {F : CompletenessFrontier Const Γ}
+    (C : HeadPriorityCompletion F)
+    (hInitial : F.ClosedNonconflicting)
+    (hCompat : C.derivation.Compatible)
+    (hSem :
+      ∃ (M : SemilocalModel.{u, v, w, w'} Base Const) (env : SemilocalModel.Env M Γ),
+        SemilocalModel.IsGlobalEnv M env ∧
+        (∀ {φ : Formula Const Γ},
+            (Sign.trueE, φ) ∈ C.state.hintikka.close.formulas →
+              SemilocalModel.formulaTruth M env φ = ⊤) ∧
+        (∀ {φ : Formula Const Γ},
+            (Sign.falseE, φ) ∈ C.state.hintikka.close.formulas →
+              SemilocalModel.formulaTruth M env φ ≠ ⊤) ∧
+        SemilocalModel.SupportsUniformRelativization M) :
+    ¬ Derivable (Base := Base) (Const := Const) F.antecedents F.succedent := by
+  exact awodey_butz_completeness_of_exists_semilocal_truth_counterexample
+    (Base := Base) (Const := Const)
+    (C.exists_semilocal_truth_counterexample_of_exists_semantics hInitial hCompat hSem)
+
+end SaturationSearchState.HeadPriorityCompletion
 
 namespace CertifiedCountermodelCandidate
 
@@ -790,6 +841,29 @@ theorem awodey_butz_completeness_of_exists_candidateClosedHintikkaSemantics
       C.frontier.antecedents C.frontier.succedent := by
   rcases hSem with ⟨M, env, global, ⟨S⟩, hM⟩
   exact S.awodey_butz_completeness global hM
+
+/--
+Raw certified-candidate semantics can also be consumed directly by the
+Awodey-Butz semilocal counterexample theorem, without first repackaging them as
+classified candidate semantics.
+-/
+theorem awodey_butz_completeness_of_exists_semantics
+    (C : CertifiedCountermodelCandidate Const Γ)
+    (hSem :
+      ∃ (M : SemilocalModel.{u, v, w, w'} Base Const) (env : SemilocalModel.Env M Γ),
+        SemilocalModel.IsGlobalEnv M env ∧
+        (∀ {φ : Formula Const Γ},
+            (Sign.trueE, φ) ∈ C.closedHintikka.formulas →
+              SemilocalModel.formulaTruth M env φ = ⊤) ∧
+        (∀ {φ : Formula Const Γ},
+            (Sign.falseE, φ) ∈ C.closedHintikka.formulas →
+              SemilocalModel.formulaTruth M env φ ≠ ⊤) ∧
+        SemilocalModel.SupportsUniformRelativization M) :
+    ¬ Derivable (Base := Base) (Const := Const)
+      C.frontier.antecedents C.frontier.succedent := by
+  exact awodey_butz_completeness_of_exists_semilocal_truth_counterexample
+    (Base := Base) (Const := Const)
+    (C.exists_semilocal_truth_counterexample_of_exists_semantics hSem)
 
 /--
 Candidate-level transitive consumer of the frontier conjunction witness-validity

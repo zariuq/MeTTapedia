@@ -41,11 +41,11 @@ theorem FTrie.pathList_singleton_nil :
     (FTrie.singleton [] ()).pathList = [[]] := rfl
 
 theorem FTrie.pathList_singleton_cons (b : UInt8) (rest : List UInt8) :
-    (FTrie.singleton (b :: rest) ()).pathList =
+  (FTrie.singleton (b :: rest) ()).pathList =
     ((FTrie.singleton rest ()).pathList.map (fun p => b :: p)) := by
   simp only [FTrie.singleton, FTrie.pathList, FTrie.entries,
-             FTrie.entriesChildren, List.map, List.append, List.nil_append,
-             List.map_map, List.append_nil, Function.comp]
+             FTrie.entriesChildren, List.nil_append,
+             List.map_map, List.append_nil]
   congr 1
 
 /-! ## §2: Singleton Lookup -/
@@ -63,7 +63,7 @@ theorem FTrie.singleton_lookup_diff_head (p : List UInt8) (b q : UInt8)
     (rest : List UInt8) (hne : q ≠ b) :
     (FTrie.singleton (b :: p) ()).lookup (q :: rest) = none := by
   simp only [FTrie.singleton, FTrie.lookup, FTrie.lookupChild]
-  have : (b == q) = false := by simp [beq_iff_eq, Ne.symm hne]
+  have : (b == q) = false := by simp [Ne.symm hne]
   rw [this]; simp
 
 /-! ## §3: Unit Lookup -/

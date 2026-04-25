@@ -30,6 +30,7 @@
 \newcommand{\HE}{\textup{HE}}
 \newcommand{\CeTTa}{\textup{CeTTa}}
 \newcommand{\PathMap}{\textup{PathMap}}
+\newcommand{\RhoCalc}{\textup{RhoCalc}}
 
 \title{\CeTTa{}:\\
 \large A Direct C Runtime for MeTTa with Verified Translation}
@@ -615,6 +616,98 @@ not share mutable state:
 Language profiles (\code{he\_compat}, \code{he\_extended},
 \code{he\_prime}, future \code{petta}) are compositional assemblies
 over these machines, not ad-hoc forks in the evaluator.
+
+\subsection{\RhoCalc{} as a Reaction Machine}
+
+\RhoCalc{} adds a fourth pressure point to the architecture: not a new storage
+backend, and not merely another syntax over atom-space evaluation, but an
+active process language whose basic unit of work is a \emph{reaction}.  The
+current \CeTTa{} branch exposes it as \code{--lang rhocalc}, with both a
+Rholang-like \code{.rho} surface and a MeTTa-style \code{.mrho} surface.  The
+\code{core} profile is treated as an explicit restriction, not as the identity
+of the language.
+
+The executable kernel currently supports the small asynchronous spine:
+\[
+  0,\quad P \mid Q,\quad x!(v),\quad
+  \mathsf{for}(p \leftarrow x)\{P\},\quad
+  \mathsf{new}\;x\;\mathsf{in}\;P,\quad
+  @P,\quad *x
+\]
+together with joins and persistent receives/contracts.  Operationally, this is
+implemented by a \code{RhoMachine} object rather than by scattering rho-specific
+state through the ordinary evaluator.  A machine slice carries its run budget,
+fresh-name counter, last run result, and reusable reaction-index capacity.
+
+The important implementation distinction is between:
+\begin{itemize}
+\item \textbf{semantic freshness}: internally allocated rho fresh names are
+  opaque grounded identities, printed as \code{rho:fresh:N} only for
+  deterministic tests and human inspection; and
+\item \textbf{surface spellings}: a user-written symbol such as
+  \code{rho:fresh:1} is not a capability and does not communicate with the
+  internally allocated name that happens to print the same way.
+\end{itemize}
+
+Quoted process names are similarly treated as names with an opaque boundary.
+Substitution and pattern matching may compare quoted names as whole names, but
+they must not casually bind through the quoted process body.  This is why the
+fast send index only indexes directly comparable names such as free symbols and
+opaque fresh identities; quoted process names remain on the fallback path where
+alpha-normalized process equality is used.
+
+\paragraph{Indexed reactions.}
+The first reaction engine is still single-threaded, but no longer treats every
+step as an undifferentiated scan.  Each slice builds a live index of sends and
+reaction sites over the current normalized process, reusing the underlying
+buffers across steps.  A receive or join first consults the indexed sends for
+direct channels and falls back to a full scan only for quoted or otherwise
+non-direct names.  Persistent receives and joins reuse the same machinery while
+leaving their receive process in the residual process.
+
+This design deliberately separates \emph{persistent capacity} from
+\emph{stale pointers}: the index is rebuilt against the current process after a
+reaction, but its allocated storage is retained.  A later refinement can add
+stable component identities and delta updates, but the present design already
+removes repeated allocation and gives the runtime an explicit place to hang
+slice/resume and future parallel reaction scheduling.
+
+\paragraph{Compatibility benchmark ladder.}
+\CeTTa{} compares its \code{.rho} and lowered \code{.mrho} execution against
+the local \code{f1r3node} \code{rholang-cli}.  The benchmark script runs three
+stages: direct \code{.rho}, translated \code{.mrho}, and external
+\code{rholang-cli}.  Ratios are reported only when both engines actually
+complete; if the external engine panics or times out, the comparison is marked
+\code{NA} rather than smuggling a failed run into a speed ratio.
+
+Representative single-repeat measurements from the current branch:
+\begin{center}
+\begin{tabular}{lrrrl}
+\toprule
+Case & Size & \CeTTa{} \code{.rho} & \code{f1r3node} & Note \\
+\midrule
+pipeline & 1024 & 5.14\,s & 16.94\,s & linear receive/send chain \\
+comm-pairs & 256 & 0.82\,s & 2.05\,s & independent communications \\
+persistent-server & 256 & 0.21\,s & 0.54\,s & one contract serving many sends \\
+join-pairs & 256 & 1.73\,s & 4.91\,s & two-channel joins \\
+join-pairs & 64 & 0.10\,s & fail & external \code{TryFromIntError} \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The persistent-server case is especially informative: it exercises the
+contract/persistent-receive path without requiring blockchain machinery,
+networking, or generalized Rholang effects.  It is therefore a good early
+benchmark for whether the reaction engine handles reusable receive capacity
+without collapsing into materialized intermediate lists.
+
+\paragraph{Relation to the rest of \CeTTa{}.}
+\RhoCalc{} should teach the shared runtime about channels, sources, sinks,
+cancellation, and reaction scheduling, but it should not force every MeTTa
+operation into process-calculus overhead.  The intended direction is to extract
+the reusable substrate---budgets, machine slices, indexed reaction state,
+cancellation tokens, and eventually worker pools---while keeping \HE{},
+\PeTTa{}, and \RhoCalc{} free to choose different surface semantics.
 
 \subsection{Faithful Backend Obligations}
 

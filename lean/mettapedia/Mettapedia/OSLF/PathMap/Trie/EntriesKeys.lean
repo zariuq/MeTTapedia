@@ -118,14 +118,14 @@ mutual
         simp only [Prod.mk.injEq, List.cons.injEq] at heq
         have ⟨⟨h1, h2⟩, h3⟩ := heq
         subst h1; subst h2; subst h3
-        simp only [lookupChild, beq_self_eq_true, ↓reduceIte]
+        simp only [beq_self_eq_true, ↓reduceIte]
         exact FTrie.entries_mem_lookup child _ _ hs hmem
       · -- From rest: pb is a key from rest, so pb > k (by Pairwise)
         have hgt : k < pb := entriesChildren_first_byte_gt k rest pb prest v hall hrest
         have hne : ¬ (k == pb) = true := by
           intro heq
           have hkeq := beq_iff_eq.mp heq; subst hkeq
-          exact absurd hgt (by simp [UInt8.not_lt])
+          exact absurd hgt (by simp)
         rw [if_neg hne]
         exact entriesChildren_to_lookupChild rest pb prest v hpw' hcs' hrest
 end

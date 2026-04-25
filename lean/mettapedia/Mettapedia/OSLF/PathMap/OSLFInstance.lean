@@ -318,6 +318,8 @@ private lemma premiseStep_preserves_find (relEnv : RelationEnv) (lang : Language
   | relationQuery rel args =>
     obtain ⟨bPrem, hmerge⟩ := premiseStepWithEnv_relationQuery_mem h_bs
     exact mergeBindings_find_preserved key val h_find hmerge
+  | forAll _ _ _ =>
+    simp [premiseStepWithEnv] at h_bs
 
 /-- The full foldl chain over premises preserves any initial binding. -/
 private lemma foldl_premises_preserves_find

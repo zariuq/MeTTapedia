@@ -6,6 +6,8 @@ namespace Mettapedia.AutoBooks.Codex.IntuitionisticHOL.CompletenessRegression
 open Mettapedia.Logic.HOL
 open KHintikkaPath
 
+universe u v
+
 inductive BaseSort where
   | atom
   deriving DecidableEq
@@ -83,5 +85,65 @@ theorem falseOrPath_negativeAt_after_extendFalseOr :
       [.or (.top : ClosedProp) (.bot : ClosedProp), (.top : ClosedProp), (.bot : ClosedProp)] := by
   simp [falseOrPath, KHintikkaPath.extendFalseOr, KHintikkaPath.negativeAt,
     KSignedFormula.falseAt]
+
+section CounterexampleWrappers
+
+variable {M : SemilocalModel.{0, 0, u, v} BaseSort Const}
+variable {env : SemilocalModel.Env M []}
+
+theorem certifiedCompletion_exists_semilocal_truth_counterexample_path
+    {C : CertifiedHeadPriorityCompletion Const [] goodFrontier}
+    (global : SemilocalModel.IsGlobalEnv M env)
+    (true_top :
+      ∀ {φ : Formula Const []},
+        (Sign.trueE, φ) ∈ C.closedHintikka.formulas →
+          SemilocalModel.formulaTruth M env φ = ⊤)
+    (false_ne_top :
+      ∀ {φ : Formula Const []},
+        (Sign.falseE, φ) ∈ C.closedHintikka.formulas →
+          SemilocalModel.formulaTruth M env φ ≠ ⊤)
+    (hM : SemilocalModel.SupportsUniformRelativization M) :
+    ∃ (N : SemilocalModel.{0, 0, u, v} BaseSort Const) (ρ : SemilocalModel.Env N []),
+      SemilocalModel.IsGlobalEnv N ρ ∧
+      SemilocalModel.antecedentTruth N ρ goodFrontier.antecedents = ⊤ ∧
+      SemilocalModel.formulaTruth N ρ goodFrontier.succedent ≠ ⊤ ∧
+      SemilocalModel.SupportsUniformRelativization N := by
+  exact C.exists_semilocal_truth_counterexample_of_exists_semantics
+    ⟨M, env, global, true_top, false_ne_top, hM⟩
+
+theorem certifiedCandidate_exists_semilocal_truth_counterexample_path
+    {C : CertifiedCountermodelCandidate Const []}
+    (global : SemilocalModel.IsGlobalEnv M env)
+    (true_top :
+      ∀ {φ : Formula Const []},
+        (Sign.trueE, φ) ∈ C.closedHintikka.formulas →
+          SemilocalModel.formulaTruth M env φ = ⊤)
+    (false_ne_top :
+      ∀ {φ : Formula Const []},
+        (Sign.falseE, φ) ∈ C.closedHintikka.formulas →
+          SemilocalModel.formulaTruth M env φ ≠ ⊤)
+    (hM : SemilocalModel.SupportsUniformRelativization M) :
+    ∃ (N : SemilocalModel.{0, 0, u, v} BaseSort Const) (ρ : SemilocalModel.Env N []),
+      SemilocalModel.IsGlobalEnv N ρ ∧
+      SemilocalModel.antecedentTruth N ρ C.frontier.antecedents = ⊤ ∧
+      SemilocalModel.formulaTruth N ρ C.frontier.succedent ≠ ⊤ ∧
+      SemilocalModel.SupportsUniformRelativization N := by
+  exact C.exists_semilocal_truth_counterexample_of_exists_semantics
+    ⟨M, env, global, true_top, false_ne_top, hM⟩
+
+theorem certifiedCandidate_exists_semilocal_truth_counterexample_of_classified_path
+    {C : CertifiedCountermodelCandidate Const []}
+    {S : C.CandidateClosedHintikkaSemantics env}
+    (global : SemilocalModel.IsGlobalEnv M env)
+    (hM : SemilocalModel.SupportsUniformRelativization M) :
+    ∃ (N : SemilocalModel.{0, 0, u, v} BaseSort Const) (ρ : SemilocalModel.Env N []),
+      SemilocalModel.IsGlobalEnv N ρ ∧
+      SemilocalModel.antecedentTruth N ρ C.frontier.antecedents = ⊤ ∧
+      SemilocalModel.formulaTruth N ρ C.frontier.succedent ≠ ⊤ ∧
+      SemilocalModel.SupportsUniformRelativization N := by
+  exact C.exists_semilocal_truth_counterexample_of_exists_candidateClosedHintikkaSemantics
+    ⟨M, env, global, ⟨S⟩, hM⟩
+
+end CounterexampleWrappers
 
 end Mettapedia.AutoBooks.Codex.IntuitionisticHOL.CompletenessRegression

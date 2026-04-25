@@ -265,7 +265,7 @@ theorem upsertChild_lookupChild_other (b q : UInt8) (f : FTrie V → FTrie V)
   induction children with
   | nil =>
     unfold upsertChild; simp only [lookupChild]
-    have hbq : (b == q) = false := by simp [beq_iff_eq, Ne.symm hne]
+    have hbq : (b == q) = false := by simp [Ne.symm hne]
     rw [hbq]; simp
   | cons hd tl ih =>
     obtain ⟨k, child⟩ := hd
@@ -273,8 +273,9 @@ theorem upsertChild_lookupChild_other (b q : UInt8) (f : FTrie V → FTrie V)
     by_cases hkb : (k == b) = true
     · rw [if_pos hkb]; simp only [lookupChild]
       have hkeq : k = b := beq_iff_eq.mp hkb
-      have hkq : (k == q) = false := by rw [hkeq]; simp [beq_iff_eq, Ne.symm hne]
-      rw [hkq]; simp [hkq, ih]
+      have hkq : (k == q) = false := by rw [hkeq]; simp [Ne.symm hne]
+      rw [hkq]
+      simp only [Bool.false_eq_true, ↓reduceIte]
     · rw [if_neg hkb]; simp only [lookupChild]
       by_cases hkq : (k == q) = true
       · rw [if_pos hkq, if_pos hkq]
@@ -311,7 +312,7 @@ theorem graftAtPath_lookup_diff_head (t replacement : FTrie V)
   match t with
   | .empty =>
     simp only [graftAtPath, lookup, lookupChild]
-    have : (b == q) = false := by simp [beq_iff_eq, Ne.symm hne]
+    have : (b == q) = false := by simp [Ne.symm hne]
     simp [this]
   | .node val children =>
     simp only [graftAtPath, lookup]
@@ -380,7 +381,7 @@ theorem graftAtPath_lookup_prefix_then_diff (t replacement : FTrie V)
     simp only [List.nil_append]
     exact graftAtPath_lookup_diff_head t replacement b₁ _ b₂ rest₂ (Ne.symm hne)
   | cons b rest ih =>
-    simp only [List.cons_append, lookup]
+    simp only [List.cons_append]
     match t with
     | .empty =>
       simp only [graftAtPath, lookup, lookupChild, beq_self_eq_true, ↓reduceIte]

@@ -425,9 +425,7 @@ structure HeytingTopologicalInterpretation
   propMeet_join_distrib : ∀ a b c,
     propMeet a (propJoin b c) = propJoin (propMeet a b) (propMeet a c)
   propHimp_adj : ∀ a b c,
-    propMeet a b = propMeet a (propMeet b (propHimp b c)) →
-    propMeet a b = propMeet a c ∨ propMeet a b ≠ propMeet a (propMeet b c)
-    -- Simplified adjunction property
+    propMeet (propMeet a b) c = propMeet a b ↔ propMeet a (propHimp b c) = a
   /--
   Universal quantification operation.
 
@@ -1540,7 +1538,7 @@ Pointwise beta reduction agrees with evaluation through semantic instantiation.
 -/
 @[simp] theorem formulaEval_beta
     (I : HeytingTopologicalInterpretation Base Const X)
-    [hcoh : FullEvalCoherent I]
+    [FullEvalPointwiseCoherent I]
     {Γ : Ctx Base} {σ : Ty Base}
     (t : Term Const Γ σ)
     (φ : Formula Const (σ :: Γ))
@@ -1643,7 +1641,7 @@ This follows from `fullEval_betaEtaEq` applied to each corresponding pair
 of formulas in the lists, combined with the congruence of `evalAnd`.
 -/
 theorem evalAntecedents_betaEtaEq (I : HeytingTopologicalInterpretation Base Const X)
-    [hcoh : FullEvalCoherent I]
+    [FullEvalPointwiseCoherent I]
     {Γ : Ctx Base} {Δ Δ' : List (Formula Const Γ)}
     (h : AntecedentsBetaEtaEq Δ Δ') : evalAntecedents I Δ = evalAntecedents I Δ' := by
   induction h with
@@ -1653,6 +1651,17 @@ theorem evalAntecedents_betaEtaEq (I : HeytingTopologicalInterpretation Base Con
     -- evalAntecedents (ψ :: Δ') = evalAnd (fullEval ψ) (evalAntecedents Δ')
     -- By fullEval_betaEtaEq: fullEval φ = fullEval ψ
     -- By IH: evalAntecedents Δ = evalAntecedents Δ'
+    simp only [evalAntecedents]
+    rw [fullEval_betaEtaEq I hφ, ih]
+
+theorem evalAntecedents_betaEtaEq_of_fullEvalCoherent
+    (I : HeytingTopologicalInterpretation Base Const X)
+    [FullEvalCoherent I]
+    {Γ : Ctx Base} {Δ Δ' : List (Formula Const Γ)}
+    (h : AntecedentsBetaEtaEq Δ Δ') : evalAntecedents I Δ = evalAntecedents I Δ' := by
+  induction h with
+  | nil => rfl
+  | cons hφ _ ih =>
     simp only [evalAntecedents]
     rw [fullEval_betaEtaEq I hφ, ih]
 
@@ -1681,7 +1690,7 @@ Validity is preserved across a single beta redex in the succedent.
 -/
 theorem FullValidSequent.beta
     (I : HeytingTopologicalInterpretation Base Const X)
-    [hcoh : FullEvalCoherent I]
+    [FullEvalPointwiseCoherent I]
     {Γ : Ctx Base} (Δ : List (Formula Const Γ))
     {σ : Ty Base}
     (t : Term Const Γ σ)
@@ -2418,15 +2427,25 @@ theorem fullSoundness (I : HeytingTopologicalInterpretation Base Const X)
     -- Goal : FullValidSequent Δ φ
     intro γ
     -- By coherence: evalAntecedents Δ = evalAntecedents Δ'
-    have h_ant_eq := evalAntecedents_betaEtaEq I hΔ
+    have h_ant_eq := evalAntecedents_betaEtaEq_of_fullEvalCoherent I hΔ
     have h_ant_point := congrArg (fun term => I.toTopologicalInterpretation.propCtxEval term γ) h_ant_eq
     match hφ with
     | .beta t u =>
-        have h_beta :
-            I.FullValidSequent _ (.app (.lam u) t) :=
-          HeytingTopologicalInterpretation.FullValidSequent.beta
-            (I := I) (Δ := _) (t := t) (φ := u) ih
-        simpa [h_ant_point] using h_beta γ
+        have h_succ_eq :
+            I.formulaEval (.app (.lam u) t) γ =
+              I.formulaEval (instantiate t u) γ := by
+          calc
+            I.formulaEval (.app (.lam u) t) γ =
+                I.toTopologicalInterpretation.propCtxEval
+                  (fullEval I (.app (.lam u) t)) γ := by
+                  rw [formulaEval]
+            _ = I.toTopologicalInterpretation.propCtxEval
+                  (fullEval I (instantiate t u)) γ := by
+                  congr 1
+                  exact fullEval_betaEtaEq I (BetaEtaEq.beta t u)
+            _ = I.formulaEval (instantiate t u) γ := by
+                  rw [formulaEval]
+        simpa [h_ant_point, h_succ_eq] using ih γ
     | hφ =>
         -- Eta and the other congruence/symmetry/transitivity cases still use
         -- the general beta-eta coherence theorem.
