@@ -143,8 +143,8 @@ rg -n "sorry" Mettapedia/
 
 ## External repo policy
 
-- the policy uses godelclaw forks as origin remotes.
-- the policy uses zariuq repos as upstream remotes.
+- the policy uses zariuq forks as origin remotes.
+- the policy uses actual source repos as upstream remotes and uses godelclaw only as a separate named remote when relevant.
 - the policy references EXTERNAL_REPOS.md for exact commands.
 
 Accountability trace: the CertifyingDatalog bridge at `/home/zar/claude/lean-projects/mettapedia/Mettapedia/Logic/LP/CertifyingDatalogBridge.lean` was reviewed by Codex 5.4 and Claude Code Opus 4.6.

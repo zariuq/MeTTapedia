@@ -72,8 +72,8 @@ inductive MettapediaClaim where
   | contributionKeepProofsExplicit
   | contributionDocumentSources
   | contributionBuildFrequently
-  | policyUsesGodelclawOrigin
-  | policyUsesZariuqUpstream
+  | policyUsesZariuqOrigin
+  | policyUsesActualUpstreamAndNamedGodelclawRemote
   | policyReferencesExternalRepos
   deriving Repr, DecidableEq, BEq
 
@@ -176,12 +176,12 @@ def renderMettapediaClaim : MettapediaClaim → String
   | .contributionBuildFrequently =>
       let subj := linDetCN theDefArt (linUseN contribution_N)
       mkPresPos subj (complV2 (mkV2 (regV "require")) (properNameNP "frequent lake build checks"))
-  | .policyUsesGodelclawOrigin =>
+  | .policyUsesZariuqOrigin =>
       let subj := linDetCN theDefArt (linUseN policy_N)
-      mkPresPos subj (complV2 (mkV2 (regV "use")) (properNameNP "godelclaw forks as origin remotes"))
-  | .policyUsesZariuqUpstream =>
+      mkPresPos subj (complV2 (mkV2 (regV "use")) (properNameNP "zariuq forks as origin remotes"))
+  | .policyUsesActualUpstreamAndNamedGodelclawRemote =>
       let subj := linDetCN theDefArt (linUseN policy_N)
-      mkPresPos subj (complV2 (mkV2 (regV "use")) (properNameNP "zariuq repos as upstream remotes"))
+      mkPresPos subj (complV2 (mkV2 (regV "use")) (properNameNP "actual source repos as upstream remotes and godelclaw only as a separate named remote when relevant"))
   | .policyReferencesExternalRepos =>
       let subj := linDetCN theDefArt (linUseN policy_N)
       mkPresPos subj (complV2 (mkV2 (regV "reference")) (properNameNP "EXTERNAL_REPOS.md for exact commands"))
@@ -219,8 +219,8 @@ def allMettapediaClaims : List MettapediaClaim :=
   , .contributionKeepProofsExplicit
   , .contributionDocumentSources
   , .contributionBuildFrequently
-  , .policyUsesGodelclawOrigin
-  , .policyUsesZariuqUpstream
+  , .policyUsesZariuqOrigin
+  , .policyUsesActualUpstreamAndNamedGodelclawRemote
   , .policyReferencesExternalRepos
   ]
 
@@ -339,8 +339,8 @@ def mettapediaReadmeBlocks : List ReadmeBlock :=
       ]
   , .heading 2 (renderMettapediaHeading .externalRepoPolicy)
   , .claimBullets
-      [ claimBullet .policyUsesGodelclawOrigin
-      , claimBullet .policyUsesZariuqUpstream
+      [ claimBullet .policyUsesZariuqOrigin
+      , claimBullet .policyUsesActualUpstreamAndNamedGodelclawRemote
       , claimBullet .policyReferencesExternalRepos
       ]
   ]

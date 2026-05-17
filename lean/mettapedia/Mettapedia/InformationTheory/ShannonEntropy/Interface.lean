@@ -58,7 +58,7 @@ definitions of entropy and KL divergence across all formalization approaches:
 
 ## Main Results
 
-* `faddeev_F_eq_log2` - F(n) = log₂(n) (proven via Lemma 9, no sorry!)
+* `faddeev_F_eq_log2` - F(n) = log₂(n), downstream of Faddeev Lemma 9
 * `faddeev_F_monotone` - Monotonicity derived from F = log₂
 * `faddeev_implies_shannon_monotonicity` - Faddeev implies Shannon's monotonicity axiom
 * `faddeev_implies_sk_maximality` - Faddeev implies S-K's maximality axiom

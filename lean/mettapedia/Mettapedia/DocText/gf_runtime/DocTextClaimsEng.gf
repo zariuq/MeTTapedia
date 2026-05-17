@@ -315,8 +315,8 @@ concrete DocTextClaimsEng of DocTextClaims = {
     Clm_00310 = {s = "the local check runs rg -n \"sorry\" Mettapedia/ to find proof gaps"} ;
     Clm_00311 = {s = "the per-problem limit is 5 seconds for E prover"} ;
     Clm_00312 = {s = "the policy references EXTERNAL_REPOS.md for exact commands"} ;
-    Clm_00313 = {s = "the policy uses godelclaw forks as origin remotes"} ;
-    Clm_00314 = {s = "the policy uses zariuq repos as upstream remotes"} ;
+    Clm_00313 = {s = "the policy uses zariuq forks as origin remotes"} ;
+    Clm_00314 = {s = "the policy uses actual source repos as upstream remotes and godelclaw only as a separate named remote when relevant"} ;
     Clm_00315 = {s = "the proof completeness varies by the subproject"} ;
     Clm_00316 = {s = "the structure presents the high-level Mettapedia directory layout"} ;
     Clm_00317 = {s = "toEvidence_strength is Evidence.strength = expected fraction of 1s"} ;
