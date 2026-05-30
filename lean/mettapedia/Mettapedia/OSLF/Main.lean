@@ -122,7 +122,7 @@ The formalization has two layers:
 - `NativeTypeOf`: native type = (sort, predicate) pair
 
 ### Concrete Layer (RhoCalculus/)
-- `Reduces`: COMM, DROP, PAR, EQUIV rules (Type-valued)
+- `Reduces`: paper-faithful core relation with COMM, PAR, EQUIV rules (Type-valued)
 - `possiblyProp` / `relyProp`: modal operators on `Pattern -> Prop`
 - `galois_connection`: proven diamond -| box
 - `HasType`: Typing judgment with substitutability and progress

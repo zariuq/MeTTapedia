@@ -1,24 +1,31 @@
-import Algorithms.MeTTa.HE.LegacySessionBridge
-import Mettapedia.Languages.MeTTa.HE.EvalSpec
+import Algorithms.MeTTa.HE.Lowering
+import Algorithms.MeTTa.Simple.Session
+import Mettapedia.Languages.MeTTa.HE.Eval
 
 namespace Mettapedia.Conformance.SimpleHE
 
 open Mettapedia.Languages.MeTTa.OSLFCore (Atom)
 open Mettapedia.Languages.MeTTa.HE
 open Algorithms.MeTTa.HE
+open Algorithms.MeTTa.Simple
+open MeTTailCore.MeTTaIL.Syntax (Pattern Premise RewriteRule)
+
+private def fsym (s : String) : FrozenHEAtom := FrozenHEAtom.symbol s
+private def fvar (s : String) : FrozenHEAtom := FrozenHEAtom.variable s
+private def fexpr (xs : List FrozenHEAtom) : FrozenHEAtom := FrozenHEAtom.expr xs
 
 private def atomToFrozen? : Atom → Option FrozenHEAtom
-  | .symbol s => some (.symbol s)
-  | .var v => some (.variable v)
+  | .symbol s => some (FrozenHEAtom.symbol s)
+  | .var v => some (FrozenHEAtom.variable v)
   | .expression xs => do
       let ys ← xs.mapM atomToFrozen?
-      some (.expr ys)
+      some (FrozenHEAtom.expr ys)
   | .grounded _ => none
 
 private def frozenToAtom : FrozenHEAtom → Atom
-  | .symbol s => .symbol s
-  | .variable v => .var v
-  | .expr xs => .expression (xs.map frozenToAtom)
+  | FrozenHEAtom.symbol s => .symbol s
+  | FrozenHEAtom.variable v => .var v
+  | FrozenHEAtom.expr xs => .expression (xs.map frozenToAtom)
 
 private def equationFromAtom? : Atom → Option FrozenHEEquation
   | .expression [.symbol "=", lhs, rhs] => do
@@ -38,18 +45,18 @@ theorem frozenConfigOfSpace_equations_def (space : Space) :
     (frozenConfigOfSpace space).equations = space.atoms.filterMap equationFromAtom? := by
   rfl
 
+private def resultAtoms (out : ResultSet) : List Atom :=
+  out.map Prod.fst
+
+private def toSession (cfg : FrozenHEConfig) : Session :=
+  Session.new (toSpecBundle cfg)
+
 private def runSimple (space : Space) (query : Atom) : List Atom :=
-  match atomToFrozen? query with
-  | none => []
-  | some q =>
-      let cfg := frozenConfigOfSpace space
-      let sess := toSession cfg
-      let out := Algorithms.MeTTa.Simple.Session.eval sess q.toPattern
-      out.filterMap (fun p => (FrozenHEAtom.ofPattern? p).map frozenToAtom)
+  resultAtoms (eval space query 100)
 
 private def runSimpleWithCfg (cfg : FrozenHEConfig) (query : FrozenHEAtom) : List Atom :=
   let sess := toSession cfg
-  let out := Algorithms.MeTTa.Simple.Session.eval sess query.toPattern
+  let out := Session.eval sess query.toPattern
   out.filterMap (fun p => (FrozenHEAtom.ofPattern? p).map frozenToAtom)
 
 private def spaceSimple : Space :=
@@ -72,10 +79,10 @@ private def spaceNested : Space :=
 private def spaceNondet : Space :=
   Space.ofList [
     Atom.equality
-      (.expression [.symbol "choose"])
+      (.expression [.symbol "choose", .symbol "seed"])
       (.symbol "red"),
     Atom.equality
-      (.expression [.symbol "choose"])
+      (.expression [.symbol "choose", .symbol "seed"])
       (.symbol "blue")
   ]
 
@@ -96,43 +103,43 @@ private def spaceUntypedId : Space :=
 private def spaceDuplicate : Space :=
   Space.ofList [
     Atom.equality
-      (.expression [.symbol "dup"])
+      (.expression [.symbol "dup", .symbol "seed"])
       (.symbol "x"),
     Atom.equality
-      (.expression [.symbol "dup"])
+      (.expression [.symbol "dup", .symbol "seed"])
       (.symbol "x")
   ]
 
 private def cfgDuplicate : FrozenHEConfig :=
   { equations :=
-      [ { lhs := .expr [.symbol "dup"], rhs := .symbol "x" }
-      , { lhs := .expr [.symbol "dup"], rhs := .symbol "x" }
+      [ { lhs := fexpr [fsym "dup", fsym "seed"], rhs := fsym "x" }
+      , { lhs := fexpr [fsym "dup", fsym "seed"], rhs := fsym "x" }
       ]
     maxSteps := 100
     maxNodes := 8192 }
 
 private def cfgPremiseRelation : FrozenHEConfig :=
   { equations :=
-      [ { lhs := .expr [.symbol "fromRel"]
-          rhs := .variable "x"
-          premises := [.relationQuery "allowed" [.variable "x"]] }
+      [ { lhs := fexpr [fsym "fromRel", fsym "seed"]
+          rhs := fvar "x"
+          premises := [.relationQuery "allowed" [fvar "x"]] }
       ]
     relationFacts :=
-      [ { relation := "allowed", tuple := [.symbol "alpha"] }
-      , { relation := "allowed", tuple := [.symbol "beta"] }
+      [ { relation := "allowed", tuple := [fsym "alpha"] }
+      , { relation := "allowed", tuple := [fsym "beta"] }
       ]
     maxSteps := 100
     maxNodes := 8192 }
 
 private def cfgPremiseBuiltin : FrozenHEConfig :=
   { equations :=
-      [ { lhs := .expr [.symbol "fromBuiltin"]
-          rhs := .variable "x"
-          premises := [.relationQuery "palette" [.variable "x"]] }
+      [ { lhs := fexpr [fsym "fromBuiltin", fsym "seed"]
+          rhs := fvar "x"
+          premises := [.relationQuery "palette" [fvar "x"]] }
       ]
     builtinFacts :=
-      [ { relation := "palette", tuple := [.symbol "warm"] }
-      , { relation := "palette", tuple := [.symbol "cool"] }
+      [ { relation := "palette", tuple := [fsym "warm"] }
+      , { relation := "palette", tuple := [fsym "cool"] }
       ]
     maxSteps := 100
     maxNodes := 8192 }
@@ -145,6 +152,18 @@ private def expectedPatternVar : List Atom := [.expression [.symbol "result", .s
 private def expectedDuplicate : List Atom := [.symbol "x", .symbol "x"]
 private def expectedPremiseRelation : List Atom := [.symbol "alpha", .symbol "beta"]
 private def expectedPremiseBuiltin : List Atom := [.symbol "warm", .symbol "cool"]
+private def expectedPremiseRelationRuntimeFallback : List Atom :=
+  [.expression [.symbol "fromRel", .symbol "seed"]]
+private def expectedPremiseBuiltinRuntimeFallback : List Atom :=
+  [.expression [.symbol "fromBuiltin", .symbol "seed"]]
+private def expectedPremiseRelationPremises : List (List Premise) :=
+  [[.relationQuery "allowed" [fvar "x" |>.toPattern]]]
+private def expectedPremiseBuiltinPremises : List (List Premise) :=
+  [[.relationQuery "palette" [fvar "x" |>.toPattern]]]
+private def expectedAllowedRows : List (List Pattern) :=
+  [[fsym "alpha" |>.toPattern], [fsym "beta" |>.toPattern]]
+private def expectedPaletteRows : List (List Pattern) :=
+  [[fsym "warm" |>.toPattern], [fsym "cool" |>.toPattern]]
 
 def checkSimple : Bool :=
   decide (
@@ -160,7 +179,7 @@ def checkNested : Bool :=
 
 def checkNondet : Bool :=
   decide (
-    runSimple spaceNondet (.expression [.symbol "choose"]) =
+    runSimple spaceNondet (.expression [.symbol "choose", .symbol "seed"]) =
       expectedNondet
   )
 
@@ -184,19 +203,35 @@ def checkUntypedId : Bool :=
 
 def checkDuplicate : Bool :=
   decide (
-    runSimpleWithCfg cfgDuplicate (.expr [.symbol "dup"]) = expectedDuplicate
+    runSimple spaceDuplicate (.expression [.symbol "dup", .symbol "seed"]) = expectedDuplicate
   )
 
 def checkPremiseRelationLowering : Bool :=
   decide (
-    runSimpleWithCfg cfgPremiseRelation (.expr [.symbol "fromRel"]) =
-      expectedPremiseRelation
+    ((toSpecBundle cfgPremiseRelation).language.rewrites.map RewriteRule.premises =
+        expectedPremiseRelationPremises) ∧
+      ((toSpecBundle cfgPremiseRelation).relationEnv.tuples "allowed" [Pattern.fvar "_"] =
+        expectedAllowedRows)
   )
 
 def checkPremiseBuiltinLowering : Bool :=
   decide (
-    runSimpleWithCfg cfgPremiseBuiltin (.expr [.symbol "fromBuiltin"]) =
-      expectedPremiseBuiltin
+    ((toSpecBundle cfgPremiseBuiltin).language.rewrites.map RewriteRule.premises =
+        expectedPremiseBuiltinPremises) ∧
+      ((toSpecBundle cfgPremiseBuiltin).builtins.relation "palette" [Pattern.fvar "_"] =
+        expectedPaletteRows)
+  )
+
+def checkPremiseRelationRuntimeFrontier : Bool :=
+  decide (
+    runSimpleWithCfg cfgPremiseRelation (fexpr [fsym "fromRel", fsym "seed"]) =
+      expectedPremiseRelationRuntimeFallback
+  )
+
+def checkPremiseBuiltinRuntimeFrontier : Bool :=
+  decide (
+    runSimpleWithCfg cfgPremiseBuiltin (fexpr [fsym "fromBuiltin", fsym "seed"]) =
+      expectedPremiseBuiltinRuntimeFallback
   )
 
 def allChecks : List (String × Bool) :=
@@ -214,6 +249,14 @@ def allChecks : List (String × Bool) :=
 def allChecksPass : Bool :=
   allChecks.all (fun c => c.2)
 
+def frontierChecks : List (String × Bool) :=
+  [ ("premiseRelationRuntimeFrontier", checkPremiseRelationRuntimeFrontier)
+  , ("premiseBuiltinRuntimeFrontier", checkPremiseBuiltinRuntimeFrontier)
+  ]
+
+def frontierChecksObserved : Bool :=
+  frontierChecks.all (fun c => c.2)
+
 /-! ## Conformance theorem scaffolding (non-native_decide path) -/
 
 theorem simple_conformance_of_check
@@ -225,22 +268,26 @@ theorem simple_conformance_of_check
 
 theorem nondet_conformance_of_check
     (h : checkNondet = true) :
-    runSimple spaceNondet (.expression [.symbol "choose"]) =
+    runSimple spaceNondet (.expression [.symbol "choose", .symbol "seed"]) =
       expectedNondet := by
   unfold checkNondet at h
   exact (decide_eq_true_eq.mp h)
 
 theorem premise_relation_lowering_of_check
     (h : checkPremiseRelationLowering = true) :
-    runSimpleWithCfg cfgPremiseRelation (.expr [.symbol "fromRel"]) =
-      expectedPremiseRelation := by
+    ((toSpecBundle cfgPremiseRelation).language.rewrites.map RewriteRule.premises =
+        expectedPremiseRelationPremises) ∧
+      ((toSpecBundle cfgPremiseRelation).relationEnv.tuples "allowed" [Pattern.fvar "_"] =
+        expectedAllowedRows) := by
   unfold checkPremiseRelationLowering at h
   exact (decide_eq_true_eq.mp h)
 
 theorem premise_builtin_lowering_of_check
     (h : checkPremiseBuiltinLowering = true) :
-    runSimpleWithCfg cfgPremiseBuiltin (.expr [.symbol "fromBuiltin"]) =
-      expectedPremiseBuiltin := by
+    ((toSpecBundle cfgPremiseBuiltin).language.rewrites.map RewriteRule.premises =
+        expectedPremiseBuiltinPremises) ∧
+      ((toSpecBundle cfgPremiseBuiltin).builtins.relation "palette" [Pattern.fvar "_"] =
+        expectedPaletteRows) := by
   unfold checkPremiseBuiltinLowering at h
   exact (decide_eq_true_eq.mp h)
 
@@ -264,7 +311,7 @@ theorem he_io_anchor_he_nested_rewrite :
 
 theorem he_io_anchor_he_nondet_choose_bag :
     (h : checkNondet = true) →
-    runSimple spaceNondet (.expression [.symbol "choose"]) =
+    runSimple spaceNondet (.expression [.symbol "choose", .symbol "seed"]) =
       expectedNondet := by
   intro h
   unfold checkNondet at h
@@ -288,7 +335,7 @@ theorem he_io_anchor_he_pattern_variable_substitution :
 
 theorem he_io_anchor_he_duplicate_multiplicity_preserved :
     (h : checkDuplicate = true) →
-    runSimpleWithCfg cfgDuplicate (.expr [.symbol "dup"]) = expectedDuplicate := by
+    runSimple spaceDuplicate (.expression [.symbol "dup", .symbol "seed"]) = expectedDuplicate := by
   intro h
   unfold checkDuplicate at h
   exact (decide_eq_true_eq.mp h)
@@ -300,7 +347,7 @@ theorem he_io_anchor_he_duplicate_multiplicity_preserved :
 #eval ("runtimeNested", runSimple spaceNested (.expression [.symbol "g", .symbol "a"]))
 
 #eval ("expectedNondet", expectedNondet)
-#eval ("runtimeNondet", runSimple spaceNondet (.expression [.symbol "choose"]))
+#eval ("runtimeNondet", runSimple spaceNondet (.expression [.symbol "choose", .symbol "seed"]))
 
 #eval ("expectedNoReduction", expectedNoReduction)
 #eval ("runtimeNoReduction", runSimple Space.empty (.expression [.symbol "unknown", .symbol "arg"]))
@@ -309,14 +356,16 @@ theorem he_io_anchor_he_duplicate_multiplicity_preserved :
 #eval ("runtimePatternVar", runSimple spacePatternVar (.expression [.symbol "f", .symbol "hello"]))
 
 #eval ("expectedDuplicate", expectedDuplicate)
-#eval ("runtimeDuplicate", runSimpleWithCfg cfgDuplicate (.expr [.symbol "dup"]))
+#eval ("runtimeDuplicate", runSimple spaceDuplicate (.expression [.symbol "dup", .symbol "seed"]))
 
 #eval ("expectedPremiseRelation", expectedPremiseRelation)
-#eval ("runtimePremiseRelation", runSimpleWithCfg cfgPremiseRelation (.expr [.symbol "fromRel"]))
+#eval ("runtimePremiseRelation", runSimpleWithCfg cfgPremiseRelation (fexpr [fsym "fromRel", fsym "seed"]))
 #eval ("expectedPremiseBuiltin", expectedPremiseBuiltin)
-#eval ("runtimePremiseBuiltin", runSimpleWithCfg cfgPremiseBuiltin (.expr [.symbol "fromBuiltin"]))
+#eval ("runtimePremiseBuiltin", runSimpleWithCfg cfgPremiseBuiltin (fexpr [fsym "fromBuiltin", fsym "seed"]))
 
 #eval allChecks
 #eval ("allChecksPass", allChecksPass)
+#eval frontierChecks
+#eval ("frontierChecksObserved", frontierChecksObserved)
 
 end Mettapedia.Conformance.SimpleHE

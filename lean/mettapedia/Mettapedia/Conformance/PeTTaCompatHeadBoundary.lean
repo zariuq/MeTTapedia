@@ -1,6 +1,7 @@
 import Algorithms.MeTTa.Simple.Semantics.Dispatch
 import Mettapedia.Languages.MeTTa.PeTTa.GroundedOracle
 import Mettapedia.Languages.ProcessCalculi.MORK.ExecutionBoundary
+import Mettapedia.Languages.MeTTa.Translation.HEPeTTaSound
 import Mettapedia.OSLF.MeTTaIL.MatchSpec
 
 /-!
@@ -29,8 +30,10 @@ namespace Mettapedia.Conformance.PeTTaCompatHeadBoundary
 open Mettapedia.Languages.MeTTa.PeTTa
 open Mettapedia.Languages.ProcessCalculi.MORK
 open Mettapedia.OSLF.MeTTaIL.Match
+open Mettapedia.Languages.MeTTa.Translation
 
 abbrev PeTTaPattern := Mettapedia.OSLF.MeTTaIL.Syntax.Pattern
+abbrev HEAtom := Mettapedia.Languages.MeTTa.OSLFCore.Atom
 
 /-- Local tuple/list view for OSLF PeTTa patterns, matching the runtime list
 convention used by the current PeTTa implementation. -/
@@ -591,8 +594,837 @@ theorem functionhead3Like_deterministicCompatContract
       (ctor := ctor) (varX := varX) (varY := varY) (xs := xs) (ys := ys) (rhs := rhs)
       hNoDollar
 
+/-! ## Finite existence-only once/match boundary
+
+This is the narrow portable fragment behind source families such as:
+
+- positive example: `if (== () (collapse (once (match S P P)))) Then Else`
+- positive example: `if (== () (collapse (once (match S P True)))) Then Else`
+- negative example: witness-returning `once` forms whose selected witness value
+  must remain observable outside the goal itself
+
+The contract here is intentionally about the canonical translated HE shape:
+an emptiness check over the portable `once` lowering. -/
+
+/-- Canonical HE-core emptiness check over a translated `once` surface. -/
+def buildFiniteExistsMatchCondition (translatedOnce : HEAtom) : HEAtom :=
+  .expression
+    [.symbol "==",
+     .symbol "()",
+     .expression [.symbol "collapse", translatedOnce]]
+
+/-- The existence-only once/match fragment is pure whenever the translated
+`once` surface itself is pure. -/
+theorem buildFiniteExistsMatchCondition_pureTranslatable
+    {translatedOnce : HEAtom}
+    (honce : PureTranslatable translatedOnce) :
+    PureTranslatable (buildFiniteExistsMatchCondition translatedOnce) := by
+  simp [buildFiniteExistsMatchCondition]
+  have hcollapse :
+      PureTranslatable (.expression [.symbol "collapse", translatedOnce]) := by
+    exact pureTranslatable_expr "collapse" [translatedOnce]
+      (by decide) (by decide) (by
+        intro a ha
+        simp at ha
+        rcases ha with rfl
+        exact honce)
+  have hempty : PureTranslatable (.symbol "()") := pureTranslatable_symbol "()"
+  exact pureTranslatable_expr "=="
+    [.symbol "()", .expression [.symbol "collapse", translatedOnce]]
+    (by decide) (by decide) (by
+      intro a ha
+      simp at ha
+      rcases ha with rfl | rfl
+      · exact hempty
+      · exact hcollapse)
+
+/-- Conformance contract for the existence-only `once(match ...)` fragment. The
+observable result is just emptiness/non-emptiness, not the identity of a chosen
+witness. -/
+structure PureFiniteExistsMatchContract (translatedOnce : HEAtom) : Prop where
+  translatedPure :
+    PureTranslatable (buildFiniteExistsMatchCondition translatedOnce)
+
+/-- Package an existing pure translated `once` surface as a finite-exists
+compatibility witness. -/
+theorem pureFiniteExistsMatchContract_of_pureOnce
+    {translatedOnce : HEAtom}
+    (honce : PureTranslatable translatedOnce) :
+    PureFiniteExistsMatchContract translatedOnce := by
+  exact ⟨buildFiniteExistsMatchCondition_pureTranslatable honce⟩
+
+/-! ## Singleton visible witness boundary
+
+This is the narrow portable fragment where the observable result of `once` is a
+single visible witness together with its recovered bindings, independent of
+visible result order.
+
+- positive example: `(once (= $x 42))`
+- positive example: a unique truth-value witness whose body binds exactly one
+  translated result tuple
+- negative example: ordered committed choice over multiple visible witnesses
+
+At the current conformance layer, the dedicated
+`singleton-visible-witness` surface is the honest portable contract. We keep it
+explicit rather than pretending it has already been lowered to a more generic
+HE-core form. -/
+
+/-- Canonical HE surface for the unique visible-witness fragment. -/
+def buildSingletonVisibleWitnessSurface (translatedWitness : HEAtom) : HEAtom :=
+  .expression
+    [.symbol "singleton-visible-witness",
+     translatedWitness]
+
+/-- The dedicated singleton visible-witness surface is pure whenever its inner
+translated witness expression is pure. -/
+theorem buildSingletonVisibleWitnessSurface_pureTranslatable
+    {translatedWitness : HEAtom}
+    (hwitness : PureTranslatable translatedWitness) :
+    PureTranslatable (buildSingletonVisibleWitnessSurface translatedWitness) := by
+  simp [buildSingletonVisibleWitnessSurface]
+  exact pureTranslatable_expr "singleton-visible-witness"
+    [translatedWitness]
+    (by decide) (by decide) (by
+      intro a ha
+      simp at ha
+      rcases ha with rfl
+      exact hwitness)
+
+/-- Conformance contract for the unique visible-witness fragment. The
+translated HE surface keeps the binding-carrying singleton witness explicit,
+and does not widen the fragment into ordered first-witness selection. -/
+structure PureSingletonVisibleWitnessContract
+    (translatedWitness : HEAtom) : Prop where
+  translatedPure :
+    PureTranslatable
+      (buildSingletonVisibleWitnessSurface translatedWitness)
+
+/-- Package an existing pure translated witness surface as a singleton
+visible-witness compatibility witness. -/
+theorem pureSingletonVisibleWitnessContract_of_pureWitness
+    {translatedWitness : HEAtom}
+    (hwitness : PureTranslatable translatedWitness) :
+    PureSingletonVisibleWitnessContract translatedWitness := by
+  exact ⟨buildSingletonVisibleWitnessSurface_pureTranslatable hwitness⟩
+
+/-! ## Core portable surface contracts
+
+These rows are already covered executably in the HE profile suite. The
+conformance layer keeps the proof-facing part honest by recording the portable
+surface shape the translator/runtime are allowed to rely on, without pretending
+this file is a full evaluator proof for every operational detail. -/
+
+/-- Opaque user or runtime-added public heads stay explicit HE expressions. -/
+def buildOpaqueHeadSurface (head : String) (args : List HEAtom) : HEAtom :=
+  .expression (.symbol head :: args)
+
+/-- The opaque-head surface is pure whenever all arguments are pure. -/
+theorem buildOpaqueHeadSurface_pureTranslatable
+    {head : String} {args : List HEAtom}
+    (hnotLam : head ≠ "λ")
+    (hnotSubst : head ≠ "subst")
+    (hargs : ∀ a ∈ args, PureTranslatable a) :
+    PureTranslatable (buildOpaqueHeadSurface head args) := by
+  simp [buildOpaqueHeadSurface]
+  exact pureTranslatable_expr head args hnotLam hnotSubst hargs
+
+/-- Conformance contract for the "unknown heads remain data" fragment. -/
+structure PureUnknownHeadDataContract
+    (head : String) (args : List HEAtom) : Prop where
+  headNotLambda : head ≠ "λ"
+  headNotSubst : head ≠ "subst"
+  translatedPure :
+    PureTranslatable (buildOpaqueHeadSurface head args)
+
+/-- Package a pure opaque-head expression as an unknown-head data witness. -/
+theorem pureUnknownHeadDataContract_of_pureArgs
+    {head : String} {args : List HEAtom}
+    (hnotLam : head ≠ "λ")
+    (hnotSubst : head ≠ "subst")
+    (hargs : ∀ a ∈ args, PureTranslatable a) :
+    PureUnknownHeadDataContract head args := by
+  exact ⟨hnotLam, hnotSubst,
+    buildOpaqueHeadSurface_pureTranslatable hnotLam hnotSubst hargs⟩
+
+/-- Explicit `call` surface for known callable heads. -/
+def buildExplicitCallSurface (body : HEAtom) : HEAtom :=
+  .expression [.symbol "call", body]
+
+/-- Explicit `eval` surface for known callable heads. -/
+def buildExplicitEvalSurface (body : HEAtom) : HEAtom :=
+  .expression [.symbol "eval", body]
+
+theorem buildExplicitCallSurface_pureTranslatable
+    {body : HEAtom}
+    (hbody : PureTranslatable body) :
+    PureTranslatable (buildExplicitCallSurface body) := by
+  simp [buildExplicitCallSurface]
+  exact pureTranslatable_expr "call" [body]
+    (by decide) (by decide) (by
+      intro a ha
+      simp at ha
+      rcases ha with rfl
+      exact hbody)
+
+theorem buildExplicitEvalSurface_pureTranslatable
+    {body : HEAtom}
+    (hbody : PureTranslatable body) :
+    PureTranslatable (buildExplicitEvalSurface body) := by
+  simp [buildExplicitEvalSurface]
+  exact pureTranslatable_expr "eval" [body]
+    (by decide) (by decide) (by
+      intro a ha
+      simp at ha
+      rcases ha with rfl
+      exact hbody)
+
+/-- Conformance contract for the explicit known-callable `call`/`eval` surface. -/
+structure PureKnownCallableHeadsReduceContract
+    (body : HEAtom) : Prop where
+  callPure :
+    PureTranslatable (buildExplicitCallSurface body)
+  evalPure :
+    PureTranslatable (buildExplicitEvalSurface body)
+
+/-- Package a pure body as an explicit known-callable surface witness. -/
+theorem pureKnownCallableHeadsReduceContract_of_pureBody
+    {body : HEAtom}
+    (hbody : PureTranslatable body) :
+    PureKnownCallableHeadsReduceContract body := by
+  exact ⟨buildExplicitCallSurface_pureTranslatable hbody,
+    buildExplicitEvalSurface_pureTranslatable hbody⟩
+
+/-- Explicit quoted-data surface. -/
+def buildQuotedDataSurface (body : HEAtom) : HEAtom :=
+  .expression [.symbol "quote", body]
+
+theorem buildQuotedDataSurface_pureTranslatable
+    {body : HEAtom}
+    (hbody : PureTranslatable body) :
+    PureTranslatable (buildQuotedDataSurface body) := by
+  simp [buildQuotedDataSurface]
+  exact pureTranslatable_expr "quote" [body]
+    (by decide) (by decide) (by
+      intro a ha
+      simp at ha
+      rcases ha with rfl
+      exact hbody)
+
+/-- Conformance contract for quoted/data positions that must stay explicit at
+the portable surface. -/
+structure PureQuotedAndDataPositionsContract
+    (quotedBody evalBody : HEAtom) : Prop where
+  quotedPure :
+    PureTranslatable (buildQuotedDataSurface quotedBody)
+  evalPure :
+    PureTranslatable (buildExplicitEvalSurface evalBody)
+
+/-- Package pure quoted/eval bodies as a portable quoted/data witness. -/
+theorem pureQuotedAndDataPositionsContract_of_pureBodies
+    {quotedBody evalBody : HEAtom}
+    (hquoted : PureTranslatable quotedBody)
+    (heval : PureTranslatable evalBody) :
+    PureQuotedAndDataPositionsContract quotedBody evalBody := by
+  exact ⟨buildQuotedDataSurface_pureTranslatable hquoted,
+    buildExplicitEvalSurface_pureTranslatable heval⟩
+
+/-- Conformance contract for the pure lowered shape of PeTTa partial-callable
+idioms. The portable boundary keeps the callable body explicit and routes use
+through ordinary `call` / `eval` surfaces instead of any PeTTa-internal partial
+representation. -/
+structure PurePartialCallableLoweringContract
+    (callableBody : HEAtom) : Prop where
+  bodyPure : PureTranslatable callableBody
+  callPure : PureTranslatable (buildExplicitCallSurface callableBody)
+  evalPure : PureTranslatable (buildExplicitEvalSurface callableBody)
+
+/-- Package a pure lowered callable body as a partial-callable witness. -/
+theorem purePartialCallableLoweringContract_of_pureBody
+    {callableBody : HEAtom}
+    (hbody : PureTranslatable callableBody) :
+    PurePartialCallableLoweringContract callableBody := by
+  exact ⟨hbody,
+    buildExplicitCallSurface_pureTranslatable hbody,
+    buildExplicitEvalSurface_pureTranslatable hbody⟩
+
+/-- Conformance contract for the variable-head boundary.
+
+For the negative/data branch, an unbound head stays an explicit variable plus
+pure data arguments at the portable boundary. For the positive/callable branch,
+the resolved callable body is lowered through ordinary `call` / `eval`
+surfaces rather than through ambient variable-headed search. -/
+structure PureVariableHeadDataAndCallableBindingContract
+    (headVar : String) (dataArgs : List HEAtom) (callableBody : HEAtom) : Prop where
+  variablePure : PureTranslatable (.var headVar)
+  dataArgsPure : ∀ a ∈ dataArgs, PureTranslatable a
+  callableCallPure : PureTranslatable (buildExplicitCallSurface callableBody)
+  callableEvalPure : PureTranslatable (buildExplicitEvalSurface callableBody)
+
+/-- Package pure variable-head data arguments together with a pure lowered
+callable body as the portable variable-head witness. -/
+theorem pureVariableHeadDataAndCallableBindingContract_of_pureArgsAndBody
+    {headVar : String} {dataArgs : List HEAtom} {callableBody : HEAtom}
+    (hargs : ∀ a ∈ dataArgs, PureTranslatable a)
+    (hbody : PureTranslatable callableBody) :
+    PureVariableHeadDataAndCallableBindingContract
+      headVar dataArgs callableBody := by
+  exact ⟨pureTranslatable_var headVar, hargs,
+    buildExplicitCallSurface_pureTranslatable hbody,
+    buildExplicitEvalSurface_pureTranslatable hbody⟩
+
+/-- Conformance contract for runtime-added equations that remain callable under
+their public head names. -/
+structure PureRuntimeAddedEquationPublicHeadContract
+    (head : String) (args : List HEAtom) : Prop where
+  headNotLambda : head ≠ "λ"
+  headNotSubst : head ≠ "subst"
+  translatedPure :
+    PureTranslatable (buildOpaqueHeadSurface head args)
+
+/-- Package a pure opaque-head expression as a runtime-added public-head
+callability witness. -/
+theorem pureRuntimeAddedEquationPublicHeadContract_of_pureArgs
+    {head : String} {args : List HEAtom}
+    (hnotLam : head ≠ "λ")
+    (hnotSubst : head ≠ "subst")
+    (hargs : ∀ a ∈ args, PureTranslatable a) :
+    PureRuntimeAddedEquationPublicHeadContract head args := by
+  exact ⟨hnotLam, hnotSubst,
+    buildOpaqueHeadSurface_pureTranslatable hnotLam hnotSubst hargs⟩
+
+/-- Portable singleton-space pattern surface. -/
+def buildSpacePatternMatchSurface
+    (space pat body : HEAtom) : HEAtom :=
+  .expression [.symbol "match", space, pat, body]
+
+theorem buildSpacePatternMatchSurface_pureTranslatable
+    {space pat body : HEAtom}
+    (hspace : PureTranslatable space)
+    (hpat : PureTranslatable pat)
+    (hbody : PureTranslatable body) :
+    PureTranslatable (buildSpacePatternMatchSurface space pat body) := by
+  simp [buildSpacePatternMatchSurface]
+  exact pureTranslatable_expr "match" [space, pat, body]
+    (by decide) (by decide) (by
+      intro a ha
+      simp at ha
+      rcases ha with rfl | rfl | rfl
+      · exact hspace
+      · exact hpat
+      · exact hbody)
+
+/-- Conformance contract for singleton-space expression-pattern matching. -/
+structure PureSpaceSingletonExpressionPatternContract
+    (space pat body : HEAtom) : Prop where
+  translatedPure :
+    PureTranslatable (buildSpacePatternMatchSurface space pat body)
+
+/-- Package a pure singleton-space pattern surface as a conformance witness. -/
+theorem pureSpaceSingletonExpressionPatternContract_of_pureSurface
+    {space pat body : HEAtom}
+    (hspace : PureTranslatable space)
+    (hpat : PureTranslatable pat)
+    (hbody : PureTranslatable body) :
+    PureSpaceSingletonExpressionPatternContract space pat body := by
+  exact ⟨buildSpacePatternMatchSurface_pureTranslatable hspace hpat hbody⟩
+
+/-- Explicit error payload surface. -/
+def buildErrorSurface (term payload : HEAtom) : HEAtom :=
+  .expression [.symbol "Error", term, payload]
+
+theorem buildErrorSurface_pureTranslatable
+    {term payload : HEAtom}
+    (hterm : PureTranslatable term)
+    (hpayload : PureTranslatable payload) :
+    PureTranslatable (buildErrorSurface term payload) := by
+  simp [buildErrorSurface]
+  exact pureTranslatable_expr "Error" [term, payload]
+    (by decide) (by decide) (by
+      intro a ha
+      simp at ha
+      rcases ha with rfl | rfl
+      · exact hterm
+      · exact hpayload)
+
+/-- Conformance contract for explicit portable type/error surfaces. -/
+structure PureTypeAndErrorContract
+    (term payload : HEAtom) : Prop where
+  translatedPure :
+    PureTranslatable (buildErrorSurface term payload)
+
+/-- Package a pure explicit error payload as a type/error witness. -/
+theorem pureTypeAndErrorContract_of_purePayload
+    {term payload : HEAtom}
+    (hterm : PureTranslatable term)
+    (hpayload : PureTranslatable payload) :
+    PureTypeAndErrorContract term payload := by
+  exact ⟨buildErrorSurface_pureTranslatable hterm hpayload⟩
+
+/-- Explicit `assertEqualToEval` portable surface used by the source test/helper
+policy. -/
+def buildAssertEqualToEvalSurface (lhs rhs : HEAtom) : HEAtom :=
+  .expression [.symbol "assertEqualToEval", lhs, rhs]
+
+theorem buildAssertEqualToEvalSurface_pureTranslatable
+    {lhs rhs : HEAtom}
+    (hlhs : PureTranslatable lhs)
+    (hrhs : PureTranslatable rhs) :
+    PureTranslatable (buildAssertEqualToEvalSurface lhs rhs) := by
+  simp [buildAssertEqualToEvalSurface]
+  exact pureTranslatable_expr "assertEqualToEval" [lhs, rhs]
+    (by decide) (by decide) (by
+      intro a ha
+      simp at ha
+      rcases ha with rfl | rfl
+      · exact hlhs
+      · exact hrhs)
+
+/-- Conformance contract for the pure source-test helper surface. -/
+structure PureSourceTestHelperPolicyContract
+    (lhs rhs : HEAtom) : Prop where
+  translatedPure :
+    PureTranslatable (buildAssertEqualToEvalSurface lhs rhs)
+
+/-- Package a pure `assertEqualToEval` surface as a helper-policy witness. -/
+theorem pureSourceTestHelperPolicyContract_of_pureSurface
+    {lhs rhs : HEAtom}
+    (hlhs : PureTranslatable lhs)
+    (hrhs : PureTranslatable rhs) :
+    PureSourceTestHelperPolicyContract lhs rhs := by
+  exact ⟨buildAssertEqualToEvalSurface_pureTranslatable hlhs hrhs⟩
+
+/-! ## Backend-native HE-profile surface contracts
+
+These rows are profile-lane contracts rather than pure-core claims. The
+conformance layer records the narrow recognized HE surfaces and how larger
+backend-native families decompose into already-named subcontracts, without
+pretending this file proves the backend operational equivalence itself. -/
+
+/-- Supported count consumers in the current counted-match and count-eval
+profile contracts. -/
+def IsCountConsumerName (counter : String) : Prop :=
+  counter = "length" ∨ counter = "size-atom"
+
+theorem countConsumer_notLambda
+    {counter : String}
+    (hcounter : IsCountConsumerName counter) :
+    counter ≠ "λ" := by
+  rcases hcounter with rfl | rfl <;> decide
+
+theorem countConsumer_notSubst
+    {counter : String}
+    (hcounter : IsCountConsumerName counter) :
+    counter ≠ "subst" := by
+  rcases hcounter with rfl | rfl <;> decide
+
+/-- Explicit `collapse` wrapper surface. -/
+def buildCollapseSurface (body : HEAtom) : HEAtom :=
+  .expression [.symbol "collapse", body]
+
+theorem buildCollapseSurface_pureTranslatable
+    {body : HEAtom}
+    (hbody : PureTranslatable body) :
+    PureTranslatable (buildCollapseSurface body) := by
+  simp [buildCollapseSurface]
+  exact pureTranslatable_expr "collapse" [body]
+    (by decide) (by decide) (by
+      intro a ha
+      simp at ha
+      rcases ha with rfl
+      exact hbody)
+
+/-- Explicit `once` wrapper surface. -/
+def buildOnceSurface (body : HEAtom) : HEAtom :=
+  .expression [.symbol "once", body]
+
+theorem buildOnceSurface_pureTranslatable
+    {body : HEAtom}
+    (hbody : PureTranslatable body) :
+    PureTranslatable (buildOnceSurface body) := by
+  simp [buildOnceSurface]
+  exact pureTranslatable_expr "once" [body]
+    (by decide) (by decide) (by
+      intro a ha
+      simp at ha
+      rcases ha with rfl
+      exact hbody)
+
+/-- Explicit `select` wrapper surface. -/
+def buildSelectSurface (body : HEAtom) : HEAtom :=
+  .expression [.symbol "select", body]
+
+theorem buildSelectSurface_pureTranslatable
+    {body : HEAtom}
+    (hbody : PureTranslatable body) :
+    PureTranslatable (buildSelectSurface body) := by
+  simp [buildSelectSurface]
+  exact pureTranslatable_expr "select" [body]
+    (by decide) (by decide) (by
+      intro a ha
+      simp at ha
+      rcases ha with rfl
+      exact hbody)
+
+/-- Explicit equality surface used by recursive numeric/profile rows. -/
+def buildEqualitySurface (lhs rhs : HEAtom) : HEAtom :=
+  .expression [.symbol "==", lhs, rhs]
+
+theorem buildEqualitySurface_pureTranslatable
+    {lhs rhs : HEAtom}
+    (hlhs : PureTranslatable lhs)
+    (hrhs : PureTranslatable rhs) :
+    PureTranslatable (buildEqualitySurface lhs rhs) := by
+  simp [buildEqualitySurface]
+  exact pureTranslatable_expr "==" [lhs, rhs]
+    (by decide) (by decide) (by
+      intro a ha
+      simp at ha
+      rcases ha with rfl | rfl
+      · exact hlhs
+      · exact hrhs)
+
+/-- Explicit unused-binding `let` surface used by the effect-only branching
+profile contract. -/
+def buildUnusedBindingSurface
+    (binder : String) (value body : HEAtom) : HEAtom :=
+  .expression [.symbol "let", .var binder, value, body]
+
+theorem buildUnusedBindingSurface_pureTranslatable
+    {binder : String} {value body : HEAtom}
+    (hvalue : PureTranslatable value)
+    (hbody : PureTranslatable body) :
+    PureTranslatable (buildUnusedBindingSurface binder value body) := by
+  simp [buildUnusedBindingSurface]
+  exact pureTranslatable_expr "let" [.var binder, value, body]
+    (by decide) (by decide) (by
+      intro a ha
+      simp at ha
+      rcases ha with rfl | rfl | rfl
+      · exact pureTranslatable_var binder
+      · exact hvalue
+      · exact hbody)
+
+/-- Conformance contract for deterministic compiled-call surfaces where
+`collapse`, `once`, and `select` observe the same pure underlying body. -/
+structure ProfileDeterministicCompiledCallContract
+    (body : HEAtom) : Prop where
+  collapsePure : PureTranslatable (buildCollapseSurface body)
+  oncePure : PureTranslatable (buildOnceSurface body)
+  selectPure : PureTranslatable (buildSelectSurface body)
+
+/-- Package a pure compiled-call body as the deterministic first-visible
+surface witness. -/
+theorem profileDeterministicCompiledCallContract_of_pureBody
+    {body : HEAtom}
+    (hbody : PureTranslatable body) :
+    ProfileDeterministicCompiledCallContract body := by
+  exact ⟨buildCollapseSurface_pureTranslatable hbody,
+    buildOnceSurface_pureTranslatable hbody,
+    buildSelectSurface_pureTranslatable hbody⟩
+
+/-- Canonical counted visible-match surface: a count/size consumer over a
+collapsed visible `match` result. -/
+def buildCountedVisibleMatchSurface
+    (counter : String) (space pat body : HEAtom) : HEAtom :=
+  .expression
+    [.symbol counter,
+     buildCollapseSurface (buildSpacePatternMatchSurface space pat body)]
+
+theorem buildCountedVisibleMatchSurface_pureTranslatable
+    {counter : String} {space pat body : HEAtom}
+    (hcounter : IsCountConsumerName counter)
+    (hspace : PureTranslatable space)
+    (hpat : PureTranslatable pat)
+    (hbody : PureTranslatable body) :
+    PureTranslatable (buildCountedVisibleMatchSurface counter space pat body) := by
+  have hmatch :
+      PureTranslatable (buildSpacePatternMatchSurface space pat body) := by
+    exact buildSpacePatternMatchSurface_pureTranslatable hspace hpat hbody
+  have hcollapse :
+      PureTranslatable
+        (buildCollapseSurface (buildSpacePatternMatchSurface space pat body)) := by
+    exact buildCollapseSurface_pureTranslatable hmatch
+  simp [buildCountedVisibleMatchSurface]
+  exact pureTranslatable_expr counter
+    [buildCollapseSurface (buildSpacePatternMatchSurface space pat body)]
+    (countConsumer_notLambda hcounter)
+    (countConsumer_notSubst hcounter)
+    (by
+      intro a ha
+      simp at ha
+      rcases ha with rfl
+      exact hcollapse)
+
+/-- Surface predicate for the current counted visible-match family. -/
+def CountedVisibleMatchSurface (expr : HEAtom) : Prop :=
+  ∃ counter space pat body,
+    IsCountConsumerName counter ∧
+    expr = buildCountedVisibleMatchSurface counter space pat body
+
+/-- Conformance contract for counted visible-match profile surfaces. -/
+structure ProfileCountedVisibleMatchContract
+    (counter : String) (space pat body : HEAtom) : Prop where
+  counterAllowed : IsCountConsumerName counter
+  translatedPure :
+    PureTranslatable (buildCountedVisibleMatchSurface counter space pat body)
+
+/-- Package a pure counted visible-match surface as a profile witness. -/
+theorem profileCountedVisibleMatchContract_of_pureSurface
+    {counter : String} {space pat body : HEAtom}
+    (hcounter : IsCountConsumerName counter)
+    (hspace : PureTranslatable space)
+    (hpat : PureTranslatable pat)
+    (hbody : PureTranslatable body) :
+    ProfileCountedVisibleMatchContract counter space pat body := by
+  exact ⟨hcounter,
+    buildCountedVisibleMatchSurface_pureTranslatable hcounter hspace hpat hbody⟩
+
+/-- Canonical `count(eval(...))` profile surface. -/
+def buildCountEvalSurface (counter : String) (body : HEAtom) : HEAtom :=
+  .expression [.symbol counter, buildExplicitEvalSurface body]
+
+theorem buildCountEvalSurface_pureTranslatable
+    {counter : String} {body : HEAtom}
+    (hcounter : IsCountConsumerName counter)
+    (hbody : PureTranslatable body) :
+    PureTranslatable (buildCountEvalSurface counter body) := by
+  have heval : PureTranslatable (buildExplicitEvalSurface body) := by
+    exact buildExplicitEvalSurface_pureTranslatable hbody
+  simp [buildCountEvalSurface]
+  exact pureTranslatable_expr counter [buildExplicitEvalSurface body]
+    (countConsumer_notLambda hcounter)
+    (countConsumer_notSubst hcounter)
+    (by
+      intro a ha
+      simp at ha
+      rcases ha with rfl
+      exact heval)
+
+/-- Conformance contract for the explicit count-eval profile surface. -/
+structure ProfileCountEvalContract
+    (counter : String) (body : HEAtom) : Prop where
+  counterAllowed : IsCountConsumerName counter
+  translatedPure :
+    PureTranslatable (buildCountEvalSurface counter body)
+
+/-- Package a pure count-eval surface as a profile witness. -/
+theorem profileCountEvalContract_of_pureBody
+    {counter : String} {body : HEAtom}
+    (hcounter : IsCountConsumerName counter)
+    (hbody : PureTranslatable body) :
+    ProfileCountEvalContract counter body := by
+  exact ⟨hcounter, buildCountEvalSurface_pureTranslatable hcounter hbody⟩
+
+/-- Conformance contract for unused-binding effect-only branching surfaces. -/
+structure ProfileEffectOnlyBranchingContract
+    (binder : String) (value body : HEAtom) : Prop where
+  translatedPure :
+    PureTranslatable (buildUnusedBindingSurface binder value body)
+
+/-- Package a pure unused-binding branch surface as the effect-only witness. -/
+theorem profileEffectOnlyBranchingContract_of_pureSurface
+    {binder : String} {value body : HEAtom}
+    (hvalue : PureTranslatable value)
+    (hbody : PureTranslatable body) :
+    ProfileEffectOnlyBranchingContract binder value body := by
+  exact ⟨buildUnusedBindingSurface_pureTranslatable hvalue hbody⟩
+
+/-- Conformance contract for ground recursive memo families. The portable
+surface keeps the recursive result under explicit `eval`, while dynamic helper
+heads still obey the public runtime-added-equation head contract. -/
+structure ProfileGroundRecursiveMemoContract
+    (recursiveBody : HEAtom) (mutableHead : String) (mutableArgs : List HEAtom) : Prop where
+  recursiveEvalPure :
+    PureTranslatable (buildExplicitEvalSurface recursiveBody)
+  mutablePublicHead :
+    PureRuntimeAddedEquationPublicHeadContract mutableHead mutableArgs
+
+/-- Package a pure recursive body plus a pure mutable public head as the ground
+recursive memo witness. -/
+theorem profileGroundRecursiveMemoContract_of_pureSurface
+    {recursiveBody : HEAtom} {mutableHead : String} {mutableArgs : List HEAtom}
+    (hbody : PureTranslatable recursiveBody)
+    (hnotLam : mutableHead ≠ "λ")
+    (hnotSubst : mutableHead ≠ "subst")
+    (hargs : ∀ a ∈ mutableArgs, PureTranslatable a) :
+    ProfileGroundRecursiveMemoContract recursiveBody mutableHead mutableArgs := by
+  exact ⟨buildExplicitEvalSurface_pureTranslatable hbody,
+    pureRuntimeAddedEquationPublicHeadContract_of_pureArgs
+      hnotLam hnotSubst hargs⟩
+
+/-- Conformance contract for equality over recursive numeric-call results. -/
+structure ProfileNumericRecursionContract
+    (lhs rhs : HEAtom) : Prop where
+  translatedPure :
+    PureTranslatable (buildEqualitySurface lhs rhs)
+
+/-- Package pure equality sides as the recursive numeric-call witness. -/
+theorem profileNumericRecursionContract_of_pureSides
+    {lhs rhs : HEAtom}
+    (hlhs : PureTranslatable lhs)
+    (hrhs : PureTranslatable rhs) :
+    ProfileNumericRecursionContract lhs rhs := by
+  exact ⟨buildEqualitySurface_pureTranslatable hlhs hrhs⟩
+
+/-- Canonical queue-search contract surface used by the current backend-native
+family. -/
+def buildQueueSearchContractSurface
+    (space seedMode statePlan neighborPlan : HEAtom) : HEAtom :=
+  .expression
+    [.symbol "queue_search_contract", space, seedMode, statePlan, neighborPlan]
+
+theorem buildQueueSearchContractSurface_pureTranslatable
+    {space seedMode statePlan neighborPlan : HEAtom}
+    (hspace : PureTranslatable space)
+    (hseedMode : PureTranslatable seedMode)
+    (hstatePlan : PureTranslatable statePlan)
+    (hneighborPlan : PureTranslatable neighborPlan) :
+    PureTranslatable
+      (buildQueueSearchContractSurface space seedMode statePlan neighborPlan) := by
+  simp [buildQueueSearchContractSurface]
+  exact pureTranslatable_expr "queue_search_contract"
+    [space, seedMode, statePlan, neighborPlan]
+    (by decide) (by decide) (by
+      intro a ha
+      simp at ha
+      rcases ha with rfl | rfl | rfl | rfl
+      · exact hspace
+      · exact hseedMode
+      · exact hstatePlan
+      · exact hneighborPlan)
+
+/-- Conformance contract for the explicit queue-search wrapper surface. -/
+structure ProfileQueueSearchContract
+    (space seedMode statePlan neighborPlan : HEAtom) : Prop where
+  translatedPure :
+    PureTranslatable
+      (buildQueueSearchContractSurface space seedMode statePlan neighborPlan)
+
+/-- Package a pure explicit queue-search wrapper as a profile witness. -/
+theorem profileQueueSearchContract_of_pureSurface
+    {space seedMode statePlan neighborPlan : HEAtom}
+    (hspace : PureTranslatable space)
+    (hseedMode : PureTranslatable seedMode)
+    (hstatePlan : PureTranslatable statePlan)
+    (hneighborPlan : PureTranslatable neighborPlan) :
+    ProfileQueueSearchContract space seedMode statePlan neighborPlan := by
+  exact ⟨buildQueueSearchContractSurface_pureTranslatable
+    hspace hseedMode hstatePlan hneighborPlan⟩
+
+/-- Explicit unique-add profile surface. -/
+def buildExactUniqueAddSurface (space atom : HEAtom) : HEAtom :=
+  .expression [.symbol "add-unique-or-fail", space, atom]
+
+theorem buildExactUniqueAddSurface_pureTranslatable
+    {space atom : HEAtom}
+    (hspace : PureTranslatable space)
+    (hatom : PureTranslatable atom) :
+    PureTranslatable (buildExactUniqueAddSurface space atom) := by
+  simp [buildExactUniqueAddSurface]
+  exact pureTranslatable_expr "add-unique-or-fail" [space, atom]
+    (by decide) (by decide) (by
+      intro a ha
+      simp at ha
+      rcases ha with rfl | rfl
+      · exact hspace
+      · exact hatom)
+
+/-- Conformance contract for the exact-membership/public-unique-add surface. -/
+structure ProfileExactUniqueAddContract
+    (space atom : HEAtom) : Prop where
+  translatedPure :
+    PureTranslatable (buildExactUniqueAddSurface space atom)
+
+/-- Package a pure unique-add surface as a profile witness. -/
+theorem profileExactUniqueAddContract_of_pureSurface
+    {space atom : HEAtom}
+    (hspace : PureTranslatable space)
+    (hatom : PureTranslatable atom) :
+    ProfileExactUniqueAddContract space atom := by
+  exact ⟨buildExactUniqueAddSurface_pureTranslatable hspace hatom⟩
+
+/-- Conformance contract for the indexed-count wrapper family. At this layer we
+record that a pure producer is paired with five counted visible-match
+observations, one for each reported count channel. -/
+structure ProfileIndexedCountContract
+    (producer allQuery firstQuery secondQuery relQuery bothQuery : HEAtom) :
+    Prop where
+  producerPure : PureTranslatable producer
+  allObserved : CountedVisibleMatchSurface allQuery
+  firstObserved : CountedVisibleMatchSurface firstQuery
+  secondObserved : CountedVisibleMatchSurface secondQuery
+  relObserved : CountedVisibleMatchSurface relQuery
+  bothObserved : CountedVisibleMatchSurface bothQuery
+
+/-- Package the indexed-count family from its pure producer and observed
+count-query surfaces. -/
+theorem profileIndexedCountContract_of_surfaces
+    {producer allQuery firstQuery secondQuery relQuery bothQuery : HEAtom}
+    (hproducer : PureTranslatable producer)
+    (hall : CountedVisibleMatchSurface allQuery)
+    (hfirst : CountedVisibleMatchSurface firstQuery)
+    (hsecond : CountedVisibleMatchSurface secondQuery)
+    (hrel : CountedVisibleMatchSurface relQuery)
+    (hboth : CountedVisibleMatchSurface bothQuery) :
+    ProfileIndexedCountContract
+      producer allQuery firstQuery secondQuery relQuery bothQuery := by
+  exact ⟨hproducer, hall, hfirst, hsecond, hrel, hboth⟩
+
+/-- Conformance contract for the seeded unary successor-closure family. At this
+layer the profile-native story is recorded as the combination of:
+- a public seed insertion surface
+- an existence-only once/match expansion fragment
+- a counted visible-match observation over the public `num(...)` facts -/
+structure ProfileSeededUnarySuccessorClosureContract
+    (seedSurface translatedOnce countQuery : HEAtom) : Prop where
+  seedPure : PureTranslatable seedSurface
+  existsObserved : PureFiniteExistsMatchContract translatedOnce
+  countObserved : CountedVisibleMatchSurface countQuery
+
+/-- Package the seeded successor-closure family from its explicit seed,
+existence-only expansion, and counted observation surfaces. -/
+theorem profileSeededUnarySuccessorClosureContract_of_surfaces
+    {seedSurface translatedOnce countQuery : HEAtom}
+    (hseed : PureTranslatable seedSurface)
+    (hexists : PureFiniteExistsMatchContract translatedOnce)
+    (hcount : CountedVisibleMatchSurface countQuery) :
+    ProfileSeededUnarySuccessorClosureContract
+      seedSurface translatedOnce countQuery := by
+  exact ⟨hseed, hexists, hcount⟩
+
+/-- Explicit lane split for function-call inversion.
+
+`pureAppendSuffix` is the fully structural fragment already mirrored in the
+HE translation proofs. `extendedWitness` is the oracle-backed fragment used
+when structural inversion alone is not enough. -/
+inductive FunctionCallInversionLane where
+  | pureAppendSuffix
+  | extendedWitness
+deriving DecidableEq, Repr
+
+/-- Pure function-call inversion contract: the append-suffix lowering itself lives in
+the existing `PureTranslatable` HE fragment. This is the lane for structural
+families such as the recovered-tail `functionhead` form. -/
+structure PureFunctionCallInversionContract
+    (prefixElems : List HEAtom) (actual : HEAtom)
+    (binders : List (HEAtom × HEAtom)) (tailVar applyArg : HEAtom) : Prop where
+  translatedPure :
+    PureTranslatable
+      (buildAppendSuffixHeadExtension prefixElems actual binders tailVar applyArg)
+
+/-- Package an existing pure append-suffix proof as a function-call-inversion
+contract witness. -/
+theorem pureFunctionCallInversionContract_of_pureTranslatable
+    {prefixElems : List HEAtom} {actual : HEAtom}
+    {binders : List (HEAtom × HEAtom)} {tailVar applyArg : HEAtom}
+    (hpure :
+      PureTranslatable
+        (buildAppendSuffixHeadExtension prefixElems actual binders tailVar applyArg)) :
+    PureFunctionCallInversionContract prefixElems actual binders tailVar applyArg := by
+  exact ⟨hpure⟩
+
 /-!
-## Callable Inversion Oracle Contract (functionhead.metta)
+## Function-Call Inversion Oracle Contract (functionhead.metta)
 
 The `functionhead` pattern requires *symbolic inversion*: given an observed
 output and a rule head containing a function call `(f known_args $B)`, the
@@ -613,20 +1445,66 @@ Given a function head `funcHead`, the oracle can:
 2. The runtime unifies each witness result with the observed output to recover
    bindings for free arguments (e.g., `$B` in `(myfunc (10) $B)`).
 
-This reuses `ExternalWitnessPhase` — callable inversion IS a witness phase
+This reuses `ExternalWitnessPhase` — function-call inversion IS a witness phase
 where the generator is the user-defined function itself. -/
-structure CallableInversionOracleContract
+structure FunctionCallInversionOracleContract
     (oracle : GroundedOracle) (funcHead : String) : Prop where
   /-- The function head is evaluable by the oracle. -/
   evaluable : oracle.isExecutable funcHead
 
-/-- Witness phase for callable inversion: the oracle evaluates `(funcHead args)`
+/-- Conformance obligation for a chosen function-call-inversion lane. -/
+def functionCallInversionLaneObligation
+    (oracle : GroundedOracle) (funcHead : String) :
+    FunctionCallInversionLane → Prop
+  | .pureAppendSuffix =>
+      ∃ prefixElems actual binders tailVar applyArg,
+        PureFunctionCallInversionContract prefixElems actual binders tailVar applyArg
+  | .extendedWitness =>
+      FunctionCallInversionOracleContract oracle funcHead
+
+/-- The pure append-suffix lane is discharged by an explicit pure-translation
+contract, independent of any ffi-token phase. -/
+theorem functionCallInversionLaneObligation_of_pureAppendSuffix
+    {oracle : GroundedOracle} {funcHead : String}
+    {prefixElems : List HEAtom} {actual : HEAtom}
+    {binders : List (HEAtom × HEAtom)} {tailVar applyArg : HEAtom}
+    (h :
+      PureFunctionCallInversionContract prefixElems actual binders tailVar applyArg) :
+    functionCallInversionLaneObligation oracle funcHead .pureAppendSuffix := by
+  exact ⟨prefixElems, actual, binders, tailVar, applyArg, h⟩
+
+/-- The witness lane is exactly the existing oracle-backed function-call inversion
+contract. -/
+theorem functionCallInversionLaneObligation_of_extendedWitness
+    {oracle : GroundedOracle} {funcHead : String}
+    (h : FunctionCallInversionOracleContract oracle funcHead) :
+    functionCallInversionLaneObligation oracle funcHead .extendedWitness := by
+  exact h
+
+/-- Arithmetic inversion is witness-lane only.
+
+This deliberately does **not** promise a unique concrete answer: a certified
+oracle may return residual or symbolic witness results, exactly as the current
+PeTTa CLP-backed substrate does for non-singleton inverse families. -/
+structure ArithmeticInversionWitnessContract
+    (oracle : GroundedOracle) (funcHead : String) : Prop where
+  functionCallWitness : FunctionCallInversionOracleContract oracle funcHead
+
+/-- Any certified arithmetic-inversion witness contract discharges the generic
+function-call-inversion witness lane. -/
+theorem functionCallInversionLaneObligation_of_arithmeticWitness
+    {oracle : GroundedOracle} {funcHead : String}
+    (h : ArithmeticInversionWitnessContract oracle funcHead) :
+    functionCallInversionLaneObligation oracle funcHead .extendedWitness := by
+  exact h.functionCallWitness
+
+/-- Witness phase for function-call inversion: the oracle evaluates `(funcHead args)`
 and the runtime unifies the result with the observed output to recover bindings
 for free arguments. -/
-theorem callableInversion_externalWitnessPhase
+theorem functionCallInversion_externalWitnessPhase
     {oracle : GroundedOracle} {space : PeTTaSpace}
     {funcHead : String}
-    (horacle : CallableInversionOracleContract oracle funcHead)
+    (horacle : FunctionCallInversionOracleContract oracle funcHead)
     {rawArgs : List PeTTaPattern} {ty : PeTTaPattern}
     {bindings finalBindings : Bindings}
     {evaledArgs witnessResults : List PeTTaPattern}
@@ -667,12 +1545,12 @@ theorem functionheadLike_ruleShape_hasCompatHeadConstraintRule
   left
   rfl
 
-/-- Full staged lowering for the callable-inversion fragment: external witness
-production via callable inversion followed by residual MORK source firing. -/
-theorem callableInversion_twoPhaseLowering
+/-- Full staged lowering for the function-call-inversion fragment: external witness
+production via function-call inversion followed by residual MORK source firing. -/
+theorem functionCallInversion_twoPhaseLowering
     {oracle : GroundedOracle} {space : PeTTaSpace} {workspace : Space}
     {funcHead : String}
-    (horacle : CallableInversionOracleContract oracle funcHead)
+    (horacle : FunctionCallInversionOracleContract oracle funcHead)
     {rawArgs : List PeTTaPattern} {ty : PeTTaPattern}
     {bindings finalBindings : Bindings}
     {evaledArgs witnessResults : List PeTTaPattern}
@@ -684,7 +1562,7 @@ theorem callableInversion_twoPhaseLowering
       funcHead rawArgs ty
       bindings finalBindings evaledArgs witnessResults
       sourceRule σ := by
-  exact ⟨callableInversion_externalWitnessPhase horacle hargs hcall, hr⟩
+  exact ⟨functionCallInversion_externalWitnessPhase horacle hargs hcall, hr⟩
 
 /-!
 ## Nested Generator Composition Contract (functionhead2.metta)
@@ -704,7 +1582,7 @@ Example rules:
 ```
 Query: `(cat $X)` → expects `(cat42 garfield)`.
 
-This is strictly harder than callable inversion: the inner generator itself
+This is strictly harder than function-call inversion: the inner generator itself
 uses constraint composition, requiring recursive witness evaluation.
 -/
 
@@ -800,9 +1678,9 @@ section Canaries
 #check @DeterministicFunctionhead3CompatContract
 #check @functionhead3Like_deterministicCompatContract
 #check @functionhead3Like_ruleShape_twoWitnessBoundary_sound_of_member
-#check @CallableInversionOracleContract
-#check @callableInversion_externalWitnessPhase
-#check @callableInversion_twoPhaseLowering
+#check @FunctionCallInversionOracleContract
+#check @functionCallInversion_externalWitnessPhase
+#check @functionCallInversion_twoPhaseLowering
 #check @functionheadLike_ruleShape_hasCompatHeadConstraintRule
 #check @NestedGeneratorCompositionContract
 #check @nestedGenerator_externalWitnessPhase
@@ -823,8 +1701,8 @@ section AxiomAudit
 #print axioms tupleMembership_twoWitness_residual_sound_of_member
 #print axioms functionhead3Like_ruleShape_hasCompatHeadConstraintRule
 #print axioms functionhead3Like_ruleShape_twoWitnessBoundary_sound_of_member
-#print axioms callableInversion_externalWitnessPhase
-#print axioms callableInversion_twoPhaseLowering
+#print axioms functionCallInversion_externalWitnessPhase
+#print axioms functionCallInversion_twoPhaseLowering
 #print axioms functionheadLike_ruleShape_hasCompatHeadConstraintRule
 #print axioms nestedGenerator_externalWitnessPhase
 #print axioms nestedGenerator_twoPhaseLowering

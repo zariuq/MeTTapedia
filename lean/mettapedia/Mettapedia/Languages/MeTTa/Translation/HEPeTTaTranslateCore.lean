@@ -357,6 +357,175 @@ theorem translatePeTTa_reduceEval (expr : Atom) (s : Nat) :
     let (texpr, s1) := translatePeTTa expr s
     (.expression [.symbol "eval", texpr], s1) := rfl
 
+/-! ## Append-suffix head-pattern extension boundary
+
+This is the proof-friendly Lean mirror of the narrow operational translator
+extension used for append-suffix function-head lowering.  It intentionally
+stays explicit and local:
+
+- it only handles the structural append-suffix head-pattern family
+- it keeps the recovered-tail application on the named `__tr-raw-apply1`
+  helper surface
+- it does not claim anything about equality-form inversion such as `h_unify`
+-/
+
+/-- Extended-only append-suffix head-pattern lowering.
+
+Positive example: a recovered-tail family like `(h (myfunc (10) $B) $C)` can be
+lowered by structurally deconstructing the concrete prefix and then finishing
+with `(__tr-raw-apply1 $B $C)`.
+
+Negative example: this is not a claim about equality-form inversion over
+`(= (h_unify $A $C) (if (= $A (myfunc (10) $B)) ($B $C) (empty)))`; that
+remains outside this boundary. -/
+def translatePeTTaAppendSuffixHeadExtension
+    (prefixElems : List Atom) (actual tailVar applyArg : Atom) (supply : Nat) :
+    Atom × Nat :=
+  match prefixElems with
+  | [] =>
+      let (targ, s1) := translatePeTTa applyArg supply
+      (.expression
+        [.symbol "let",
+          tailVar,
+          actual,
+          .expression [.symbol "__tr-raw-apply1", tailVar, targ]], s1)
+  | prefixAtom :: rest =>
+      let (tprefix, s1) := translatePeTTa prefixAtom supply
+      let (pairVar, s2) := freshVar "head_pair" s1
+      let (headVar, s3) := freshVar "head_elem" s2
+      let (tailExpr, s4) := freshVar "head_tail" s3
+      let (inner, s5) := translatePeTTaAppendSuffixHeadExtension rest tailExpr tailVar applyArg s4
+      (.expression
+        [.symbol "chain",
+          .expression [.symbol "decons-atom", actual],
+          pairVar,
+          .expression
+            [.symbol "let",
+              headVar,
+              .expression [.symbol "first-from-pair", pairVar],
+              .expression
+                [.symbol "let",
+                  tailExpr,
+                  .expression [.symbol "second-from-pair", pairVar],
+                  .expression [.symbol "unify", headVar, tprefix, inner, .symbol "Empty"]]]], s5)
+
+/-- The zero-prefix append-suffix extension is exactly the recovered-tail helper
+base case after translating the data argument. -/
+theorem translatePeTTa_appendSuffixHeadExtension_nil
+    (actual tailVar applyArg : Atom) (s : Nat) :
+    translatePeTTaAppendSuffixHeadExtension [] actual tailVar applyArg s =
+    let (targ, s1) := translatePeTTa applyArg s
+    (.expression
+      [.symbol "let",
+        tailVar,
+        actual,
+        .expression [.symbol "__tr-raw-apply1", tailVar, targ]], s1) := rfl
+
+/-- The cons step of the append-suffix extension expands to the explicit
+chain/decons helper scaffold used by the executable translator. -/
+theorem translatePeTTa_appendSuffixHeadExtension_cons_shape
+    (prefixAtom : Atom) (rest : List Atom) (actual tailVar applyArg : Atom) (s : Nat) :
+    translatePeTTaAppendSuffixHeadExtension (prefixAtom :: rest) actual tailVar applyArg s =
+    let (tprefix, s1) := translatePeTTa prefixAtom s
+    let (pairVar, s2) := freshVar "head_pair" s1
+    let (headVar, s3) := freshVar "head_elem" s2
+    let (tailExpr, s4) := freshVar "head_tail" s3
+    let (inner, s5) := translatePeTTaAppendSuffixHeadExtension rest tailExpr tailVar applyArg s4
+    (.expression
+      [.symbol "chain",
+        .expression [.symbol "decons-atom", actual],
+        pairVar,
+        .expression
+          [.symbol "let",
+            headVar,
+            .expression [.symbol "first-from-pair", pairVar],
+            .expression
+              [.symbol "let",
+                tailExpr,
+                .expression [.symbol "second-from-pair", pairVar],
+                .expression [.symbol "unify", headVar, tprefix, inner, .symbol "Empty"]]]], s5) := rfl
+
+/-! ## Append-suffix let-pattern extension boundary
+
+This mirrors the executable structural function-call-inversion lowering for pure
+`let`-pattern families such as:
+
+- positive example: `(let (f $Head $Tail) observed ($Head $Tail))`
+- negative example: arithmetic witness families such as
+  `(let (g $X $Y 35) observed ($X $Y 40))`
+
+The body provided here is the already-rawified PeTTa body, so variable-headed
+data application has already been made explicit before the structural guard is
+attached. -/
+
+/-- Extended-only append-suffix `let`-pattern lowering. -/
+def translatePeTTaAppendSuffixLetExtension
+    (prefixElems : List Atom) (observed tailVar rawBody : Atom) (supply : Nat) :
+    Atom × Nat :=
+  match prefixElems with
+  | [] =>
+      let (tbody, s1) := translatePeTTa rawBody supply
+      (.expression
+        [.symbol "let",
+          tailVar,
+          observed,
+          tbody], s1)
+  | prefixAtom :: rest =>
+      let (tprefix, s1) := translatePeTTa prefixAtom supply
+      let (pairVar, s2) := freshVar "head_pair" s1
+      let (headVar, s3) := freshVar "head_elem" s2
+      let (tailExpr, s4) := freshVar "head_tail" s3
+      let (inner, s5) := translatePeTTaAppendSuffixLetExtension rest tailExpr tailVar rawBody s4
+      (.expression
+        [.symbol "chain",
+          .expression [.symbol "decons-atom", observed],
+          pairVar,
+          .expression
+            [.symbol "let",
+              headVar,
+              .expression [.symbol "first-from-pair", pairVar],
+              .expression
+                [.symbol "let",
+                  tailExpr,
+                  .expression [.symbol "second-from-pair", pairVar],
+                  .expression [.symbol "unify", headVar, tprefix, inner, .symbol "Empty"]]]], s5)
+
+/-- The zero-prefix append-suffix `let` extension is the plain recovered-tail
+binding followed by translation of the already-rawified body. -/
+theorem translatePeTTa_appendSuffixLetExtension_nil
+    (observed tailVar rawBody : Atom) (s : Nat) :
+    translatePeTTaAppendSuffixLetExtension [] observed tailVar rawBody s =
+    let (tbody, s1) := translatePeTTa rawBody s
+    (.expression
+      [.symbol "let",
+        tailVar,
+        observed,
+        tbody], s1) := rfl
+
+/-- The cons step of the append-suffix `let` extension expands to the explicit
+chain/decons helper scaffold used by the executable translator. -/
+theorem translatePeTTa_appendSuffixLetExtension_cons_shape
+    (prefixAtom : Atom) (rest : List Atom) (observed tailVar rawBody : Atom) (s : Nat) :
+    translatePeTTaAppendSuffixLetExtension (prefixAtom :: rest) observed tailVar rawBody s =
+    let (tprefix, s1) := translatePeTTa prefixAtom s
+    let (pairVar, s2) := freshVar "head_pair" s1
+    let (headVar, s3) := freshVar "head_elem" s2
+    let (tailExpr, s4) := freshVar "head_tail" s3
+    let (inner, s5) := translatePeTTaAppendSuffixLetExtension rest tailExpr tailVar rawBody s4
+    (.expression
+      [.symbol "chain",
+        .expression [.symbol "decons-atom", observed],
+        pairVar,
+        .expression
+          [.symbol "let",
+            headVar,
+            .expression [.symbol "first-from-pair", pairVar],
+            .expression
+              [.symbol "let",
+                tailExpr,
+                .expression [.symbol "second-from-pair", pairVar],
+                .expression [.symbol "unify", headVar, tprefix, inner, .symbol "Empty"]]]], s5) := rfl
+
 /-! ## Optional HE optimization for translated PeTTa→HE output
 
 This mirrors the executable post-translation optimizer while keeping it separate

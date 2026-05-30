@@ -68,6 +68,9 @@ def worldModelSigmaInheritanceFromUntyped
   evidence_add W₁ W₂ q :=
     BinaryWorldModel.evidence_add (State := State) (Query := Query) W₁ W₂
       (InheritanceQueryFamily.erase q.2)
+  evidence_zero q :=
+    BinaryWorldModel.evidence_zero (State := State) (Query := Query)
+      (InheritanceQueryFamily.erase q.2)
 
 /-- Global typed WMΣ instance for inheritance channels, induced from an untyped WM. -/
 instance instWorldModelSigmaInheritanceFromUntyped

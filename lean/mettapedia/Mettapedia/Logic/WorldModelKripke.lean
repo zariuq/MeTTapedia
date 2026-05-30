@@ -1,5 +1,3 @@
-import Mathlib.Data.Multiset.AddSub
-import Mathlib.Data.Multiset.Count
 import Mettapedia.Logic.PLNWorldModel
 import Foundation.Modal.Kripke.Basic
 

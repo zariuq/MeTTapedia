@@ -6,6 +6,7 @@ import Mettapedia.OSLF.Framework.CategoryBridge
 import Mettapedia.GSLT.Topos.PredicateFibration
 import Mettapedia.OSLF.NativeType.CodomainFibration
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.Soundness
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.SemanticSubstitution
 
 /-!
 # Beck-Chevalley for OSLF: Substitution and Change-of-Base
@@ -67,6 +68,7 @@ open Mettapedia.OSLF.Framework.ConstructorFibration
 open Mettapedia.OSLF.Framework.ModalEquivalence
 open Mettapedia.OSLF.Framework.TypeSynthesis
 open Mettapedia.Languages.ProcessCalculi.RhoCalculus.Soundness
+open Mettapedia.Languages.ProcessCalculi.RhoCalculus
 open Mettapedia.Languages.ProcessCalculi.RhoCalculus.Reduction (possiblyProp)
 
 /-! ## Presheaf Beck–Chevalley Transport into OSLF Layer
@@ -678,10 +680,17 @@ theorem galoisConnection_comp [Preorder α] [Preorder β] [Preorder γ]
 
 /-! ## Substitution-Induced Change-of-Base
 
-The COMM rule substitution `commSubst pBody q = openBVar 0 (NQuote q) pBody`
-is a function `Pattern → Pattern`. Like any function between sets, it induces
-the adjoint triple `∃_σ ⊣ σ* ⊣ ∀_σ` via the generic Set-level change-of-base
-from DerivedModalities.lean. -/
+There are two relevant body maps in the current development:
+
+- `commMap q`, the syntactic locally nameless opener
+  `openBVar 0 (NQuote q) ·`, which supports the exact `typedAt` theorem below;
+- `commMapSemantic q`, the live paper-faithful operational substitution
+  `semanticCommSubst · q`, which still induces the generic set-level adjoint
+  triple but does not preserve exact `typedAt` fibers in general.
+
+Like any function between sets, each induces the adjoint triple
+`∃_σ ⊣ σ* ⊣ ∀_σ` via the generic Set-level change-of-base from
+DerivedModalities.lean. -/
 
 /-- The COMM substitution map (function of the body, with q fixed). -/
 def commMap (q : Pattern) : Pattern → Pattern :=
@@ -690,6 +699,14 @@ def commMap (q : Pattern) : Pattern → Pattern :=
 /-- `commMap` unfolds to `openBVar 0 (NQuote q) ·`. -/
 theorem commMap_def (q pBody : Pattern) :
     commMap q pBody = openBVar 0 (.apply "NQuote" [q]) pBody := rfl
+
+/-- The semantic COMM substitution map (function of the body, with q fixed). -/
+def commMapSemantic (q : Pattern) : Pattern → Pattern :=
+  fun pBody => semanticCommSubst pBody q
+
+/-- `commMapSemantic` unfolds to `semanticCommSubst · q`. -/
+theorem commMapSemantic_def (q pBody : Pattern) :
+    commMapSemantic q pBody = semanticCommSubst pBody q := rfl
 
 /-- Pullback along COMM substitution: `σ*(φ)(p) = φ(commSubst p q)`. -/
 def commPb (q : Pattern) : (Pattern → Prop) → (Pattern → Prop) := pb (commMap q)
@@ -700,6 +717,15 @@ def commDi (q : Pattern) : (Pattern → Prop) → (Pattern → Prop) := di (comm
 /-- Universal image: `∀_σ(ψ)(r) = ∀ p, commSubst p q = r → ψ p`. -/
 def commUi (q : Pattern) : (Pattern → Prop) → (Pattern → Prop) := ui (commMap q)
 
+/-- Pullback along semantic COMM substitution. -/
+def commPbSemantic (q : Pattern) : (Pattern → Prop) → (Pattern → Prop) := pb (commMapSemantic q)
+
+/-- Direct image along semantic COMM substitution. -/
+def commDiSemantic (q : Pattern) : (Pattern → Prop) → (Pattern → Prop) := di (commMapSemantic q)
+
+/-- Universal image along semantic COMM substitution. -/
+def commUiSemantic (q : Pattern) : (Pattern → Prop) → (Pattern → Prop) := ui (commMapSemantic q)
+
 /-- `∃_σ ⊣ σ*` for the COMM substitution. -/
 theorem comm_di_pb_adj (q : Pattern) : GaloisConnection (commDi q) (commPb q) :=
   di_pb_adj (commMap q)
@@ -708,6 +734,16 @@ theorem comm_di_pb_adj (q : Pattern) : GaloisConnection (commDi q) (commPb q) :=
 theorem comm_pb_ui_adj (q : Pattern) : GaloisConnection (commPb q) (commUi q) :=
   pb_ui_adj (commMap q)
 
+/-- `∃_σ ⊣ σ*` for the semantic COMM substitution. -/
+theorem comm_di_pb_adj_semantic (q : Pattern) :
+    GaloisConnection (commDiSemantic q) (commPbSemantic q) :=
+  di_pb_adj (commMapSemantic q)
+
+/-- `σ* ⊣ ∀_σ` for the semantic COMM substitution. -/
+theorem comm_pb_ui_adj_semantic (q : Pattern) :
+    GaloisConnection (commPbSemantic q) (commUiSemantic q) :=
+  pb_ui_adj (commMapSemantic q)
+
 /-- COMM pullback unfolds. -/
 theorem commPb_apply (q : Pattern) (φ : Pattern → Prop) (pBody : Pattern) :
     commPb q φ pBody = φ (commSubst pBody q) := rfl
@@ -715,6 +751,14 @@ theorem commPb_apply (q : Pattern) (φ : Pattern → Prop) (pBody : Pattern) :
 /-- COMM direct image unfolds. -/
 theorem commDi_apply (q : Pattern) (ψ : Pattern → Prop) (r : Pattern) :
     commDi q ψ r = (∃ p, commSubst p q = r ∧ ψ p) := rfl
+
+/-- Semantic COMM pullback unfolds. -/
+theorem commPbSemantic_apply (q : Pattern) (φ : Pattern → Prop) (pBody : Pattern) :
+    commPbSemantic q φ pBody = φ (semanticCommSubst pBody q) := rfl
+
+/-- Semantic COMM direct image unfolds. -/
+theorem commDiSemantic_apply (q : Pattern) (ψ : Pattern → Prop) (r : Pattern) :
+    commDiSemantic q ψ r = (∃ p, semanticCommSubst p q = r ∧ ψ p) := rfl
 
 /-- Representable-fiber Beck-Chevalley instance specialized to the
 COMM substitution direct image predicate `commDi q φ`.
@@ -1493,16 +1537,18 @@ The COMM rule's type preservation expressed using the change-of-base vocabulary.
 This is the key theorem connecting the operational typing to the categorical
 framework. -/
 
-/-- **COMM Beck-Chevalley**: The COMM rule preserves types, expressed as a
-    change-of-base property.
+/-- **Syntactic COMM Beck-Chevalley**: the locally nameless opener preserves
+    exact typing, expressed as a change-of-base property.
 
     Given body typing (cofinite quantification) and argument typing, the
-    COMM substitution result is typeable. In change-of-base terms: the
-    COMM substitution map `commMap q` preserves the body's typing predicate.
+    opened result is typeable. In change-of-base terms: the syntactic
+    substitution map `commMap q` preserves the body's typing predicate.
 
-    This is the operational Beck-Chevalley for the ρ-calculus: it states
-    that the specific substitution arising from the COMM rule is compatible
-    with the typing judgment. -/
+    The live operational map `commMapSemantic q` is intentionally not given the
+    same exact `typedAt` theorem here; the semantic layer keeps only the
+    generic set-level adjunctions until a predicate-normalizing replacement is
+    formalized.
+-/
 theorem comm_beck_chevalley
     {Γ : TypingContext} {pBody q : Pattern}
     {φ : Pattern → Prop}
@@ -1515,6 +1561,122 @@ theorem comm_beck_chevalley
     typedAt Γ ⟨"Proc", φ, by simp⟩ (commMap q pBody) :=
   comm_preserves_type hbody hq hlc_q
 
+/-- Secondary compatibility theorem on the exact agreement fragment.
+
+    The primary semantic Beck-Chevalley story for the live reducer is the
+    representative-transport and saturation layer below, not this overlap
+    theorem. This lemma is retained as a compatibility bridge where semantic
+    and syntactic COMM happen to compute the same residual. -/
+theorem comm_beck_chevalley_semantic_of_agreement
+    {Γ : TypingContext} {pBody q : Pattern}
+    {φ : Pattern → Prop}
+    {L : List String}
+    (hbody : ∀ z, z ∉ L →
+      HasType (Γ.extend z ⟨"Name", possiblyProp (fun _ => True), by simp⟩)
+        (openBVar 0 (.fvar z) pBody) ⟨"Proc", φ, by simp⟩)
+    (hq : HasType Γ q ⟨"Proc", fun _ => True, by simp⟩)
+    (hlc_q : lc q = true)
+    (hagrees : commMapSemantic q pBody = commMap q pBody) :
+    typedAt Γ ⟨"Proc", φ, by simp⟩ (commMapSemantic q pBody) := by
+  rw [hagrees]
+  exact comm_beck_chevalley hbody hq hlc_q
+
+/-- Typed-at modulo the sort-appropriate subject equivalence. -/
+def typedAtUpToSubjectEquiv (Γ : TypingContext) (τ : NativeType) : Pattern → Prop :=
+  fun p => HasTypeUpToSubjectEquiv Γ p τ
+
+/-- For process types, `typedAtUpToSubjectEquiv` is exactly the saturation
+    closure of the raw `typedAt` predicate under `ProcResidualEquiv`. -/
+theorem typedAtUpToSubjectEquiv_eq_saturateTypedAtProc
+    (Γ : TypingContext) (φ : Pattern → Prop) (p : Pattern) :
+    typedAtUpToSubjectEquiv Γ ⟨"Proc", φ, by simp⟩ p
+      ↔
+    saturateProcPred (typedAt Γ ⟨"Proc", φ, by simp⟩) p := by
+  simp [typedAtUpToSubjectEquiv, typedAt, HasTypeUpToSubjectEquiv, saturateProcPred, TypeSubjectEquiv]
+
+/-- Secondary subject-equivalence wrapper on the exact agreement fragment. -/
+theorem comm_beck_chevalley_semantic_upToSubjectEquiv_of_agreement
+    {Γ : TypingContext} {pBody q : Pattern}
+    {φ : Pattern → Prop}
+    {L : List String}
+    (hbody : ∀ z, z ∉ L →
+      HasType (Γ.extend z ⟨"Name", possiblyProp (fun _ => True), by simp⟩)
+        (openBVar 0 (.fvar z) pBody) ⟨"Proc", φ, by simp⟩)
+    (hq : HasType Γ q ⟨"Proc", fun _ => True, by simp⟩)
+    (hlc_q : lc q = true)
+    (hagrees : commMapSemantic q pBody = commMap q pBody) :
+    typedAtUpToSubjectEquiv Γ ⟨"Proc", φ, by simp⟩ (commMapSemantic q pBody) := by
+  simpa [typedAtUpToSubjectEquiv] using
+    (comm_preserves_type_semantic_upToSubjectEquiv_of_agreement hbody hq hlc_q hagrees)
+
+/-- **Primary global semantic Beck-Chevalley theorem for the live reducer**.
+
+    If the no-collapse semantic representative is well-typed, then the live
+    semantic COMM result is also well-typed up to the process subject
+    equivalence generated by structural congruence and matched unquote. -/
+theorem comm_beck_chevalley_semantic_upToSubjectEquiv_of_representative
+    {Γ : TypingContext} {pBody q : Pattern}
+    {φ : Pattern → Prop}
+    (hrep : typedAt Γ ⟨"Proc", φ, by simp⟩ (semanticCommRepresentative pBody q)) :
+    typedAtUpToSubjectEquiv Γ ⟨"Proc", φ, by simp⟩ (commMapSemantic q pBody) := by
+  simpa [typedAt, typedAtUpToSubjectEquiv, commMapSemantic] using
+    (comm_preserves_type_semantic_upToSubjectEquiv_of_representative
+      (Γ := Γ) (p_body := pBody) (q := q) (φ := φ) hrep)
+
+/-- **Primary strict-core Beck-Chevalley theorem for semantic COMM**.
+
+    This is the checkable-fragment Beck-Chevalley entry point: if the body is a
+    strict-core rho term with quote-opacity hygiene, the live semantic COMM
+    result is well-typed up to the process subject equivalence generated by
+    structural congruence and matched unquote. -/
+theorem comm_beck_chevalley_semantic_upToSubjectEquiv_of_strictCoreCommBody
+    {Γ : TypingContext} {pBody q : Pattern}
+    {φ : Pattern → Prop}
+    {L : List String}
+    (hbody : ∀ z, z ∉ L →
+      HasType (Γ.extend z ⟨"Name", possiblyProp (fun _ => True), by simp⟩)
+        (openBVar 0 (.fvar z) pBody) ⟨"Proc", φ, by simp⟩)
+    (hq : HasType Γ q ⟨"Proc", fun _ => True, by simp⟩)
+    (hlc_q : lc q = true)
+    (hstrict : strictCoreCommBody pBody = true)
+    : typedAtUpToSubjectEquiv Γ ⟨"Proc", φ, by simp⟩ (commMapSemantic q pBody) := by
+  simpa [typedAtUpToSubjectEquiv, commMapSemantic] using
+    (comm_preserves_type_semantic_upToSubjectEquiv_of_strictCoreCommBody
+      (Γ := Γ) (p_body := pBody) (q := q) (φ := φ)
+      hbody hq hlc_q hstrict)
+
+/-- **Primary strict-core saturated exactness theorem in the Beck-Chevalley
+    layer**. -/
+theorem comm_beck_chevalley_semantic_saturated_typedAt_of_strictCoreCommBody
+    {Γ : TypingContext} {pBody q : Pattern}
+    {φ : Pattern → Prop}
+    {L : List String}
+    (hbody : ∀ z, z ∉ L →
+      HasType (Γ.extend z ⟨"Name", possiblyProp (fun _ => True), by simp⟩)
+        (openBVar 0 (.fvar z) pBody) ⟨"Proc", φ, by simp⟩)
+    (hq : HasType Γ q ⟨"Proc", fun _ => True, by simp⟩)
+    (hlc_q : lc q = true)
+    (hstrict : strictCoreCommBody pBody = true)
+    : saturateProcPred (typedAt Γ ⟨"Proc", φ, by simp⟩) (commMapSemantic q pBody) := by
+  exact (typedAtUpToSubjectEquiv_eq_saturateTypedAtProc
+      Γ φ (commMapSemantic q pBody)).mp
+    (comm_beck_chevalley_semantic_upToSubjectEquiv_of_strictCoreCommBody
+      (Γ := Γ) (pBody := pBody) (q := q) (φ := φ)
+      hbody hq hlc_q hstrict)
+
+/-- Primary exact semantic theorem in the Beck-Chevalley layer:
+    the live residual lies in the saturation closure of the exact `typedAt`
+    predicate generated by the representative. -/
+theorem comm_beck_chevalley_semantic_saturated_typedAt_of_representative
+    {Γ : TypingContext} {pBody q : Pattern}
+    {φ : Pattern → Prop}
+    (hrep : typedAt Γ ⟨"Proc", φ, by simp⟩ (semanticCommRepresentative pBody q)) :
+    saturateProcPred (typedAt Γ ⟨"Proc", φ, by simp⟩) (commMapSemantic q pBody) := by
+  exact (typedAtUpToSubjectEquiv_eq_saturateTypedAtProc
+      Γ φ (commMapSemantic q pBody)).mp
+    (comm_beck_chevalley_semantic_upToSubjectEquiv_of_representative
+      (Γ := Γ) (pBody := pBody) (q := q) (φ := φ) hrep)
+
 /-- The COMM pullback of the body predicate describes the set of well-typed
     bodies for the COMM rule with argument q.
 
@@ -1523,6 +1685,22 @@ theorem commPb_typedAt (Γ : TypingContext) (q : Pattern) (φ : Pattern → Prop
     (hsort : "Proc" ∈ rhoCalc.types) (pBody : Pattern) :
     commPb q (typedAt Γ ⟨"Proc", φ, hsort⟩) pBody =
     HasType Γ (commSubst pBody q) ⟨"Proc", φ, hsort⟩ := rfl
+
+/-- The semantic COMM pullback unfolds exactly to typing of the live semantic
+    COMM substitution. This is a definitional statement, not an exact
+    preservation theorem. -/
+theorem commPbSemantic_typedAt (Γ : TypingContext) (q : Pattern) (φ : Pattern → Prop)
+    (hsort : "Proc" ∈ rhoCalc.types) (pBody : Pattern) :
+    commPbSemantic q (typedAt Γ ⟨"Proc", φ, hsort⟩) pBody =
+    HasType Γ (semanticCommSubst pBody q) ⟨"Proc", φ, hsort⟩ := rfl
+
+/-- The semantic COMM pullback into subject-equivalence-wrapped typing is also
+    definitional. -/
+theorem commPbSemantic_typedAtUpToSubjectEquiv
+    (Γ : TypingContext) (q : Pattern) (φ : Pattern → Prop)
+    (hsort : "Proc" ∈ rhoCalc.types) (pBody : Pattern) :
+    commPbSemantic q (typedAtUpToSubjectEquiv Γ ⟨"Proc", φ, hsort⟩) pBody =
+    HasTypeUpToSubjectEquiv Γ (semanticCommSubst pBody q) ⟨"Proc", φ, hsort⟩ := rfl
 
 /-! ## NQuote Factoring of COMM Substitution
 

@@ -126,7 +126,7 @@ formalization, connecting:
   Beck--Chevalley condition does not hold for the constructor fibration, plus
   representable-fiber and graph-object square theorems consumed by checker-facing
   corollaries.
-\item Executable reduction engines handling COMM, DROP, and context descent, with
+\item Executable reduction engines handling the paper-faithful COMM core and context descent, with
   machine-checked soundness theorems.
 \item Premise-aware declarative reduction relations
   (\code{DeclReducesWithPremises}) independent of the engine, with proven
@@ -205,9 +205,10 @@ The reduction rules are:
 \begin{align}
   \text{COMM:}\quad & \{n!(q) \mid \mathbf{for}(x \leftarrow n)\{p\} \mid \mathit{rest}\}
     \;\rightsquigarrow\; \{p[@q/x] \mid \mathit{rest}\} \\
-  \text{DROP:}\quad & *(@P) \;\rightsquigarrow\; P
 \end{align}
 plus structural congruence (11 rules) and contextual reduction under parallel composition.
+Free drop is inert in the core relation and only becomes executable through
+semantic substitution when a quoted process is supplied to a bound name.
 
 \section{Formalization Architecture}
 
@@ -668,7 +669,6 @@ The proof proceeds by case analysis:
   specification is proven to identify valid COMM redex positions.  The soundness chain
   is: list permutation (\code{perm\_extract\_two}) $\to$ structural congruence
   (\code{par\_perm}) $\to$ \code{Reduces.comm} $\to$ \code{Reduces.equiv}.
-\item \textbf{DROP}: Direct pattern match yields \code{Reduces.drop}.
 \item \textbf{PAR}: The \code{reduceElemsAux\_spec} lemma extracts the sub-element
   index and recursive reduct.  List decomposition via
   \code{List.set\_eq\_take\_append\_cons\_drop} connects \code{List.set} to the
@@ -793,7 +793,7 @@ a 10-constructor typing judgment \code{HasType} and explicit typing contexts.
 
 \section{\rhocalc{}-Calculus Instance}
 
-The \rhocalc{}-calculus is formalized with full reduction semantics (COMM, DROP),
+The \rhocalc{}-calculus is formalized with the paper-faithful core reduction semantics (COMM with structural congruence/PAR closure),
 structural congruence (11 rules), and multi-step reduction. The OSLF algorithm
 derives its spatial-behavioral type system, with the Galois connection
 $\Dia \dashv \Bx$ proven in \code{RhoCalculus/Soundness.lean} (0 sorries).

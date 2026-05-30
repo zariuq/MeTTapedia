@@ -120,12 +120,15 @@ Portable lowering & Source surface is rewritten to target forms without
 \code{size-atom}. \\
 Translator helper & Generated artifact needs a small helper definition to
 preserve source behavior. & \code{test}, \code{assertEqualToEval},
-\code{quoted-syntax}. \\
+\PeTTa{}-profile \code{quoted-syntax}. \\
+\HE{}-extended compatibility & Uses an \HE{}-family surface present in CeTTa
+\code{he-extended} and \PeTTa{} \code{--he}, but not upstream \HE{} core. &
+\code{select 1} in an explicit extended lane. \\
 \PeTTa{} \HE{} compatibility & Intended for \code{./run.sh --he}; may rely on
 profile behavior outside \HE{} core. & Callable-return application and selected
 quote/eval/reduce compatibility. \\
 \PeTTa{} extension & Useful runtime surface outside the strict portability
-claim. & Python FFI, host resources, selected path/indexing support. \\
+claim. & \code{cut}, native \code{msort}, Python FFI, host resources, selected path/indexing support. \\
 \bottomrule
 \end{longtable}
 
@@ -138,7 +141,7 @@ correct for its intended target while remaining unsuitable as a backend-agnostic
 The \HE{} target surface used by the translator is centered on explicit
 evaluation and binding constructs.  Important target forms include:
 \begin{center}
-\begin{tabular}{ll}
+\begin{tabular}{p{0.38\linewidth}p{0.52\linewidth}}
 \toprule
 Construct & Role \\
 \midrule
@@ -178,7 +181,8 @@ forms. \\
 \code{collapse} plus explicit accumulator/item variables. \\
 \code{length (collapse e)} & Lowered to \code{let tuple (collapse e')
 (size-atom tuple)}. \\
-\code{test} & Preserved because its printed report is observable behavior. \\
+\code{test} & Lowered to self-contained observable test behavior, because its
+printed report is observable behavior. \\
 \code{quote}, \code{eval}, \code{reduce} & Compatibility lane; see
 Section~\ref{sec:quote}. \\
 \code{hyperpose} & Lowered to \code{superpose} by default, preserved only with
@@ -229,7 +233,12 @@ The \PeTTa{}-to-\HE{} direction lowers source conveniences to explicit
 \code{foldall} & \code{collapse} plus \code{foldl-atom} & Make fold explicit. \\
 \code{foldl-atom} & Explicit accumulator/item variables & Avoid implicit agg shape. \\
 \code{length (collapse e)} & \code{let} plus \code{size-atom} & Portable lowering. \\
-\code{test} & \code{test} & Preserve observable test surface. \\
+\code{test} & File-local \code{test} helper &
+Preserve observable test behavior without assuming a target-native
+\PeTTa{} \code{test}. \\
+\code{once} & \code{collapse} plus \code{case}/\code{decons-atom} by default &
+Preserve committed choice without relying on \code{select}; explicit extended
+and \PeTTa{} profile lanes may use their native surfaces. \\
 \code{unique-atom (collapse e)} & \code{collapse (unique e')} & Use target uniqueness. \\
 \code{hyperpose} & \code{superpose}, unless preserved & Drop scheduling, keep values. \\
 \bottomrule
@@ -252,36 +261,43 @@ whereas some \HE{} implementations expose a visible quote wrapper:
 (quote (+ 1 2))
 \end{lstlisting}
 
-The \PeTTa{}-to-\HE{} translator preserves \PeTTa{}-visible behavior by
-inserting a helper when needed:
+The pure \PeTTa{}-to-\HE{} translator lane uses native \HE{} quote and explicit
+unquote evaluation:
 \begin{lstlisting}
-(= (quoted-syntax (quote $expr)) $expr)
-\end{lstlisting}
-and lowering:
-\begin{lstlisting}
-(quote e)   -> (quoted-syntax (quote e'))
+(quote e)   -> (quote e')
+(call e)    -> (unquote (quote e'))
 (eval e)    -> (unquote (quote e'))
 (reduce e)  -> (unquote (quote e'))
 \end{lstlisting}
+When the source expression is a variable expected to contain quoted code, the
+pure lane lowers to \code{(unquote \$code)}.
 
-This is a compatibility translation, not a pure-\HE{} core claim.
-\code{quoted-syntax} is a helper surface.  A backend-agnostic artifact must
-avoid it, supply it explicitly, or replace it with a target-specific
-quote/eval representation whose semantics are specified.
+The \PeTTa{} \code{--he} profile lane may instead preserve \PeTTa{}-visible raw
+quoted syntax by inserting a helper:
+\begin{lstlisting}
+(= (quoted-syntax (quote $expr)) $expr)
+\end{lstlisting}
+and lowering \code{(quote e)} to
+\code{(quoted-syntax (quote e'))}.  That helper is a profile compatibility
+surface, not a pure-\HE{} core claim.
 
 \section{Tests And Assertions}
 
 \PeTTa{}'s \code{test} form prints an actual/expected report before returning
 the assertion result.  That output is observable behavior.  Therefore the
-translator preserves source \code{test} by default:
+translator preserves source \code{test} behavior by default in the generated
+artifact itself by supplying a file-local \code{test} helper when the source
+uses \PeTTa{}'s builtin test.
 
 \begin{lstlisting}
 !(test (+ 1 2) 3)
 \end{lstlisting}
 
-stays:
+lowers to a self-contained helper-backed assertion:
 
 \begin{lstlisting}
+(: test (-> Atom Atom Bool))
+(= (test $actual $expected) ...)
 !(test (+ 1 2) 3)
 \end{lstlisting}
 
@@ -289,6 +305,38 @@ Quiet assertion helpers are appropriate for explicit profile tests.  Examples
 include \code{assertEqualToEval}, \code{assertEqualToResult}, and
 \code{assertAlphaEqualToResult}.  They are not a faithful replacement for a
 source \code{test} whose printed report matters.
+
+Likewise, generated portable artifacts must not rely on another engine
+providing \PeTTa{}'s private \code{test} builtin.  If a generated file contains
+\code{test}, it must also supply the compatible helper definition or import a
+declared compatibility library.
+
+\section{Committed Choice And Cut}
+
+\PeTTa{}'s \code{once} is committed choice over a nondeterministic expression.
+The default pure translator lane lowers it through \HE{} core building blocks:
+\code{collapse}, \code{case}, and \code{decons-atom}.  An explicit extended lane
+may lower \code{(once expr)} to \code{(select 1 expr')}; that is an
+\HE{}-extended compatibility claim, not an upstream-\HE{}-core claim.
+
+The explicit \PeTTa{} profile lane, selected with
+\code{translate.sh petta2he --petta-he}, preserves \code{once}.  That lane is
+for artifacts intended to run under \PeTTa{} \code{--he}, including
+performance-sensitive examples that rely on the profile's direct committed
+choice implementation.
+
+\PeTTa{} \code{cut} is search-control rather than a first-result operator on
+one expression.  A target that preserves \code{cut} is a \PeTTa{}-profile
+target.  The default pure translator rejects general \code{cut} rather than
+lowering it to an ordinary value, \code{once}, or a whole-expression first
+result.  A future portable translation would need a specified ordered-commit
+semantics, not a local value rewrite.
+
+\PeTTa{}-native \code{msort} is likewise outside \HE{} core unless the source
+program defines \code{msort} itself.  It depends on the source runtime's order
+over arbitrary atoms.  The pure translator rejects unprovided \code{msort};
+the \PeTTa{} profile lane may preserve it for runtimes that implement the
+native ordering.
 
 \section{Hyperpose}
 
@@ -350,19 +398,14 @@ syntax is readable by an \HE{} parser.
 
 There are several distinct evidence layers:
 
-\begin{center}
-\begin{tabular}{ll}
-\toprule
-Gate & Evidence \\
-\midrule
-\code{translate.sh --test} & Unit and real-file translator behavior. \\
-\code{run\_he\_profile\_suite.sh} & PeTTa \code{--he} runtime profile behavior. \\
-\code{run\_translator\_survey.sh} & Corpus correctness and performance budget. \\
-\code{check\_generated\_he\_portability.sh} & Cross-engine classification. \\
-Lean translator files & Proof-oriented common-fragment correspondence. \\
-\bottomrule
-\end{tabular}
-\end{center}
+\begin{itemize}
+\item \code{translate.sh --test}: unit and real-file translator behavior.
+\item \code{run\_he\_profile\_suite.sh}: \PeTTa{} \code{--he} runtime profile behavior.
+\item \code{run\_translator\_survey.sh}: corpus correctness and performance budget.
+\item \code{run\_pure\_he\_engine\_bench.sh}: cross-engine checks for freshly generated pure outputs.
+\item \code{check\_generated\_he\_portability.sh}: cross-engine classification for \PeTTa{}-profile artifacts.
+\item Lean translator files: proof-oriented common-fragment correspondence.
+\end{itemize}
 
 These gates answer different questions.  A green \PeTTa{} \code{--he} survey is
 not automatically a cross-engine proof.  A helper-surface classification is not

@@ -1,0 +1,11 @@
+cml/*.S
+cml/*.cake
+cml/metta_m1_runner.cml
+ffi/*.S
+ffi/*.cake
+hol/.hol/
+hol/*.ui
+hol/*.uo
+hol/*Theory.dat
+hol/*Theory.sig
+hol/*Theory.sml

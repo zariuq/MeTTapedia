@@ -100,13 +100,12 @@ formalization. Serves as a traceability matrix for review.
 ## III. ρ-Calculus Concrete Layer
 
 ### Reduction Rules
-- Paper [MR] §2: COMM, DROP, structural congruence
+- Paper [MR] §2: COMM, structural congruence; free drop is inert except under substitution
 - Lean: `Reduces` (RhoCalculus/Reduction.lean:50)
   - Policy note: this low-level relation is intentionally unsplit and includes
     both bag/set congruence constructors; canonical-vs-extension behavior is
     enforced at the `LanguageDef`/`langReduces` layer.
   - `.comm`: {n!(q) | for(<-n){p} | rest} ⇝ {substBVar p (@q) | rest}
-  - `.drop`: *(@q) ⇝ q
   - `.equiv`: p ≡ p' ⇝ q' ≡ q ⇒ p ⇝ q
 
 ### Canonical vs Extension Language Policy

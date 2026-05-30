@@ -1,5 +1,6 @@
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.Basic
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.Reduction
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.SemanticSubstitution
 
 /-!
 # Rho calculus bridge to OSLF reduction
@@ -18,10 +19,10 @@ open Mettapedia.Languages.ProcessCalculi.RhoCalculus.Reduction
 /-!
 The executable rho syntax is intentionally direct: communication payloads are
 `Data`, while the existing OSLF COMM rule substitutes an `NQuote` of a Pattern
-process into a locally nameless Pattern body.  This bridge therefore starts
-with the exact common DROP shape.  Extending it to COMM should first define the
-payload/body encoding relation explicitly, rather than silently identifying
-those two representations.
+process into a locally nameless Pattern body. This bridge therefore focuses on
+the exact common COMM kernel. Executable `dropQuote` behavior in `Basic.lean`
+is a richer operational choice and is not silently identified with the
+paper-faithful core `Reduces` relation here.
 -/
 
 /-- Names whose executable representation has a direct OSLF Pattern name. -/
@@ -58,18 +59,6 @@ inductive EncodesProc : Proc -> Pattern -> Prop where
       EncodesProc (Proc.drop p) (.apply "PDrop" [pp])
 
 /--
-The executable DROP step coincides with the existing OSLF DROP reduction on the
-encoded subset.
--/
-theorem dropQuoteStep_toReduces
-    {p : Proc} {pp : Pattern}
-    (_hp : EncodesProc p pp)
-    (hstep : Step (Proc.drop (Proc.quote p)) p) :
-    Nonempty (Reduces (.apply "PDrop" [.apply "NQuote" [pp]]) pp) := by
-  cases hstep
-  exact ⟨Reduces.drop⟩
-
-/--
 The executable receive-communication constructor and the OSLF COMM rule are
 available from the same checked match/substitution premises when the payload,
 channel, and post-substitution result are related by the explicit encoding
@@ -87,7 +76,7 @@ theorem recvCommBridge
     (hmsg : EncodesData msg msgPattern)
     (hmatch : matchPat pat msg = some s)
     (hcheck : checkedSubstProc s body = some result)
-    (hresult : EncodesProc result (commSubst bodyPattern msgPattern)) :
+    (hresult : EncodesProc result (semanticCommSubst bodyPattern msgPattern)) :
     Step (Proc.par [Proc.send ch msg, Proc.recv ch pat body]) result /\
       EncodesProc (Proc.send ch msg) (.apply "POutput" [chPattern, msgPattern]) /\
       Nonempty
@@ -96,8 +85,8 @@ theorem recvCommBridge
             [.apply "POutput" [chPattern, msgPattern],
              .apply "PInput" [chPattern, .lambda none bodyPattern]]
             none)
-          (.collection .hashBag [commSubst bodyPattern msgPattern] none)) /\
-      EncodesProc result (commSubst bodyPattern msgPattern) := by
+          (.collection .hashBag [semanticCommSubst bodyPattern msgPattern] none)) /\
+      EncodesProc result (semanticCommSubst bodyPattern msgPattern) := by
   exact
     ⟨Step.recvComm hmatch hcheck,
      EncodesProc.send hch hmsg,
@@ -113,7 +102,7 @@ theorem recvCommStep_toReduces
     {chPattern msgPattern bodyPattern : Pattern}
     (hch : EncodesName ch chPattern)
     (hmsg : EncodesData msg msgPattern)
-    (hresult : EncodesProc result (commSubst bodyPattern msgPattern))
+    (hresult : EncodesProc result (semanticCommSubst bodyPattern msgPattern))
     (_hstep : Step (Proc.par [Proc.send ch msg, Proc.recv ch pat body]) result) :
     EncodesProc (Proc.send ch msg) (.apply "POutput" [chPattern, msgPattern]) /\
       Nonempty
@@ -122,15 +111,9 @@ theorem recvCommStep_toReduces
             [.apply "POutput" [chPattern, msgPattern],
              .apply "PInput" [chPattern, .lambda none bodyPattern]]
             none)
-          (.collection .hashBag [commSubst bodyPattern msgPattern] none)) /\
-      EncodesProc result (commSubst bodyPattern msgPattern) := by
+          (.collection .hashBag [semanticCommSubst bodyPattern msgPattern] none)) /\
+      EncodesProc result (semanticCommSubst bodyPattern msgPattern) := by
   exact ⟨EncodesProc.send hch hmsg, ⟨Reduces.comm⟩, hresult⟩
-
-example :
-    Nonempty (Reduces
-      (.apply "PDrop" [.apply "NQuote" [.apply "PZero" []]])
-      (.apply "PZero" [])) := by
-  exact dropQuoteStep_toReduces EncodesProc.nil Step.dropQuote
 
 example :
     EncodesProc (Proc.send (Name.free "ch") (Data.atom "hello"))
@@ -143,7 +126,8 @@ example :
             none)
           (.collection .hashBag [.apply "PZero" []] none)) /\
       EncodesProc Proc.nil (.apply "PZero" []) := by
-  simpa [commSubst, openBVar] using (recvCommBridge
+  simpa [semanticCommSubst, semanticSubstProc, semanticSubstName,
+    semanticSubstNameMark, semanticNormalizeName, semanticNormalizeProc] using (recvCommBridge
     (ch := Name.free "ch")
     (msg := Data.atom "hello")
     (pat := Pat.wild)
@@ -158,7 +142,7 @@ example :
     (by rfl)
     (by simp [checkedSubstProc, substProc, procWF])
     (by
-      unfold commSubst openBVar
+      unfold semanticCommSubst semanticSubstProc semanticSubstName semanticSubstNameMark
       exact EncodesProc.nil)).2
 
 end Mettapedia.Languages.ProcessCalculi.RhoCalculus.Basic

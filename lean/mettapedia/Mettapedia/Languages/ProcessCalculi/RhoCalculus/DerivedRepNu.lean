@@ -1,4 +1,5 @@
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.MultiStep
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.SemanticSubstitution
 
 /-!
 # Derived Operational Layer for Replication/Restriction Wrappers
@@ -397,6 +398,441 @@ theorem hasDerivedHead_commSubst_false {p q : Pattern}
     simp [hasDerivedHead, hq]
   exact hasDerivedHead_openBVar_false hp hquote
 
+mutual
+  private theorem hasDerivedHead_semanticNormalizeName_false :
+      ∀ {p : Pattern}, hasDerivedHead p = false →
+        hasDerivedHead (semanticNormalizeName p) = false
+    | .bvar _, hp => by
+        simp [semanticNormalizeName, hasDerivedHead]
+    | .fvar _, hp => by
+        simp [semanticNormalizeName, hasDerivedHead]
+    | .apply "NQuote" [.apply "PDrop" [n]], hp => by
+        have hn : hasDerivedHead n = false := by
+          simpa [hasDerivedHead, Bool.or_eq_false_iff] using hp
+        simpa [semanticNormalizeName] using hasDerivedHead_semanticNormalizeName_false hn
+    | .apply "NQuote" [p], hp => by
+        by_cases hdropq : ∃ n, p = .apply "PDrop" [n]
+        · rcases hdropq with ⟨n, rfl⟩
+          have hn : hasDerivedHead n = false := by
+            simpa [hasDerivedHead, Bool.or_eq_false_iff] using hp
+          simpa [semanticNormalizeName.eq_3] using hasDerivedHead_semanticNormalizeName_false hn
+        · have hp' : hasDerivedHead p = false := by
+            simpa [hasDerivedHead] using hp
+          have hnorm : hasDerivedHead (semanticNormalizeProc p) = false :=
+            hasDerivedHead_semanticNormalizeProc_false hp'
+          have hpnot : ∀ n, p = .apply "PDrop" [n] → False := by
+            intro n hpdrop
+            exact hdropq ⟨n, hpdrop⟩
+          rw [semanticNormalizeName.eq_4 p hpnot]
+          simpa [hasDerivedHead] using hnorm
+    | .apply c args, hp => by
+        by_cases hqd : c = "NQuote" ∧ ∃ n, args = [.apply "PDrop" [n]]
+        · rcases hqd with ⟨rfl, n, rfl⟩
+          have hn : hasDerivedHead n = false := by
+            simpa [hasDerivedHead, Bool.or_eq_false_iff] using hp
+          simpa [semanticNormalizeName] using hasDerivedHead_semanticNormalizeName_false hn
+        · by_cases hq : c = "NQuote" ∧ ∃ p', args = [p']
+          · rcases hq with ⟨rfl, p', rfl⟩
+            have hp' : hasDerivedHead p' = false := by
+              simpa [hasDerivedHead] using hp
+            have hnorm : hasDerivedHead (semanticNormalizeProc p') = false :=
+              hasDerivedHead_semanticNormalizeProc_false hp'
+            have hpnot : ∀ n, p' = .apply "PDrop" [n] → False := by
+              intro n hpdrop
+              exact hqd ⟨rfl, ⟨n, by simp [hpdrop]⟩⟩
+            rw [semanticNormalizeName.eq_4 p' hpnot]
+            simpa [hasDerivedHead] using hnorm
+          · rw [semanticNormalizeName.eq_5 (.apply c args)
+                (by intro n h; cases h)
+                (by intro x h; cases h)
+                (by
+                  intro n hEq
+                  injection hEq with hc hargs
+                  exact hqd ⟨hc, ⟨n, hargs⟩⟩)
+                (by
+                  intro p' hEq
+                  injection hEq with hc hargs
+                  exact hq ⟨hc, ⟨p', hargs⟩⟩)]
+            exact hp
+    | .lambda _ body, hp => by
+        simpa [semanticNormalizeName] using hp
+    | .multiLambda _ _ body, hp => by
+        simpa [semanticNormalizeName] using hp
+    | .subst body repl, hp => by
+        simpa [semanticNormalizeName] using hp
+    | .collection ct elems rest, hp => by
+        simpa [semanticNormalizeName] using hp
+
+  private theorem hasDerivedHead_semanticNormalizeProc_false :
+      ∀ {p : Pattern}, hasDerivedHead p = false →
+        hasDerivedHead (semanticNormalizeProc p) = false
+    | .bvar _, hp => by
+        simp [semanticNormalizeProc, hasDerivedHead]
+    | .fvar _, hp => by
+        simp [semanticNormalizeProc, hasDerivedHead]
+    | .apply "POutput" [n, q], hp => by
+        have hparts : hasDerivedHead n = false ∧ hasDerivedHead q = false := by
+          simpa [hasDerivedHead, Bool.or_eq_false_iff] using hp
+        simp [semanticNormalizeProc, hasDerivedHead,
+          hasDerivedHead_semanticNormalizeName_false hparts.1,
+          hasDerivedHead_semanticNormalizeProc_false hparts.2]
+    | .apply "PInput" [n, .lambda none body], hp => by
+        have hparts : hasDerivedHead n = false ∧ hasDerivedHead (.lambda none body) = false := by
+          simpa [hasDerivedHead, Bool.or_eq_false_iff] using hp
+        have hbody : hasDerivedHead body = false := by
+          simpa [hasDerivedHead] using hparts.2
+        simp [semanticNormalizeProc, hasDerivedHead,
+          hasDerivedHead_semanticNormalizeName_false hparts.1,
+          hasDerivedHead_semanticNormalizeProc_false hbody]
+    | .apply "PDrop" [n], hp => by
+        have hn : hasDerivedHead n = false := by
+          simpa [hasDerivedHead] using hp
+        simp [semanticNormalizeProc, hasDerivedHead,
+          hasDerivedHead_semanticNormalizeName_false hn]
+    | .apply "NQuote" [p], hp => by
+        have hp' : hasDerivedHead p = false := by
+          simpa [hasDerivedHead] using hp
+        simp [semanticNormalizeProc, hasDerivedHead,
+          hasDerivedHead_semanticNormalizeProc_false hp']
+    | .apply c args, hp => by
+        by_cases hout : c = "POutput" ∧ ∃ n q, args = [n, q]
+        · rcases hout with ⟨rfl, n, q, rfl⟩
+          have hparts : hasDerivedHead n = false ∧ hasDerivedHead q = false := by
+            simpa [hasDerivedHead, Bool.or_eq_false_iff] using hp
+          simp [semanticNormalizeProc, hasDerivedHead,
+            hasDerivedHead_semanticNormalizeName_false hparts.1,
+            hasDerivedHead_semanticNormalizeProc_false hparts.2]
+        · by_cases hin : c = "PInput" ∧ ∃ n body, args = [n, .lambda none body]
+          · rcases hin with ⟨rfl, n, body, rfl⟩
+            have hparts : hasDerivedHead n = false ∧ hasDerivedHead (.lambda none body) = false := by
+              simpa [hasDerivedHead, Bool.or_eq_false_iff] using hp
+            have hbody : hasDerivedHead body = false := by
+              simpa [hasDerivedHead] using hparts.2
+            simp [semanticNormalizeProc, hasDerivedHead,
+              hasDerivedHead_semanticNormalizeName_false hparts.1,
+              hasDerivedHead_semanticNormalizeProc_false hbody]
+          · by_cases hdrop : c = "PDrop" ∧ ∃ n, args = [n]
+            · rcases hdrop with ⟨rfl, n, rfl⟩
+              have hn : hasDerivedHead n = false := by
+                simpa [hasDerivedHead] using hp
+              simp [semanticNormalizeProc, hasDerivedHead,
+                hasDerivedHead_semanticNormalizeName_false hn]
+            · by_cases hquote : c = "NQuote" ∧ ∃ p', args = [p']
+              · rcases hquote with ⟨rfl, p', rfl⟩
+                have hp' : hasDerivedHead p' = false := by
+                  simpa [hasDerivedHead] using hp
+                have hnorm : hasDerivedHead (semanticNormalizeProc p') = false :=
+                  hasDerivedHead_semanticNormalizeProc_false hp'
+                rw [semanticNormalizeProc.eq_6]
+                simpa [hasDerivedHead] using hnorm
+              · rw [semanticNormalizeProc.eq_11 (.apply c args)
+                    (by intro n h; cases h)
+                    (by intro x h; cases h)
+                    (by
+                      intro n q hEq
+                      injection hEq with hc hargs
+                      exact hout ⟨hc, ⟨n, q, hargs⟩⟩)
+                    (by
+                      intro n body hEq
+                      injection hEq with hc hargs
+                      exact hin ⟨hc, ⟨n, body, hargs⟩⟩)
+                    (by
+                      intro n hEq
+                      injection hEq with hc hargs
+                      exact hdrop ⟨hc, ⟨n, hargs⟩⟩)
+                    (by
+                      intro p' hEq
+                      injection hEq with hc hargs
+                      exact hquote ⟨hc, ⟨p', hargs⟩⟩)
+                    (by intro nm body h; cases h)
+                    (by intro n nms body h; cases h)
+                    (by intro body repl h; cases h)
+                    (by intro ct elems rest h; cases h)]
+                exact hp
+    | .lambda _ body, hp => by
+        have hbody : hasDerivedHead body = false := by
+          simpa [hasDerivedHead] using hp
+        simpa [semanticNormalizeProc, hasDerivedHead] using
+          hasDerivedHead_semanticNormalizeProc_false hbody
+    | .multiLambda _ _ body, hp => by
+        have hbody : hasDerivedHead body = false := by
+          simpa [hasDerivedHead] using hp
+        simpa [semanticNormalizeProc, hasDerivedHead] using
+          hasDerivedHead_semanticNormalizeProc_false hbody
+    | .subst body repl, hp => by
+        have hparts : hasDerivedHead body = false ∧ hasDerivedHead repl = false := by
+          simpa [hasDerivedHead, Bool.or_eq_false_iff] using hp
+        simp [semanticNormalizeProc, hasDerivedHead,
+          hasDerivedHead_semanticNormalizeProc_false hparts.1,
+          hasDerivedHead_semanticNormalizeProc_false hparts.2]
+    | .collection ct elems rest, hp => by
+        have hall : ∀ e ∈ elems, hasDerivedHead e = false := by
+          intro e he
+          exact coreCanonical_elem_of_collection (ct := ct) (elems := elems)
+            (by simpa [CoreCanonical, hasDerivedHead] using hp) he
+        simpa [semanticNormalizeProc, hasDerivedHead] using
+          hasDerivedHead_semanticNormalizeProcList_false hall
+
+  private theorem hasDerivedHead_semanticNormalizeProcList_false :
+      ∀ {elems : List Pattern},
+        (∀ e ∈ elems, hasDerivedHead e = false) →
+          ((semanticNormalizeProcList elems).map hasDerivedHead).any (fun b => b) = false
+    | [], _ => by
+        simp [semanticNormalizeProcList]
+    | e :: es, hall => by
+        have he : hasDerivedHead e = false := hall e (by simp)
+        have htail : ∀ e' ∈ es, hasDerivedHead e' = false := by
+          intro e' he'
+          exact hall e' (by simp [he'])
+        simp [semanticNormalizeProcList,
+          hasDerivedHead_semanticNormalizeProc_false he,
+          hasDerivedHead_semanticNormalizeProcList_false htail]
+end
+
+private theorem hasDerivedHead_semanticSubstName_false
+    {k : Nat} {replacementName name : Pattern}
+    (hrepl : hasDerivedHead replacementName = false)
+    (hname : hasDerivedHead name = false) :
+    hasDerivedHead (semanticSubstName k replacementName name) = false := by
+  unfold semanticSubstName semanticSubstNameMark
+  have hnorm : hasDerivedHead (semanticNormalizeName name) = false :=
+    hasDerivedHead_semanticNormalizeName_false hname
+  cases hnm : semanticNormalizeName name with
+  | bvar n =>
+      by_cases hnk : n = k
+      · simp [hnk, hrepl]
+      · simp [hnk, hasDerivedHead]
+  | fvar x =>
+      simpa [hnm] using hnorm
+  | apply c args =>
+      simpa [hnm] using hnorm
+  | lambda nm body =>
+      simpa [hnm] using hnorm
+  | multiLambda n nms body =>
+      simpa [hnm] using hnorm
+  | subst body repl =>
+      simpa [hnm] using hnorm
+  | collection ct elems rest =>
+      simpa [hnm] using hnorm
+
+mutual
+  private theorem hasDerivedHead_semanticSubstProc_false
+      {replacementName : Pattern}
+      (hrepl : hasDerivedHead replacementName = false) :
+      ∀ {p : Pattern} {k : Nat}, hasDerivedHead p = false →
+        hasDerivedHead (semanticSubstProc k replacementName p) = false
+    | .bvar n, k, hp => by
+        by_cases hnk : n = k
+        · simp [semanticSubstProc, hnk, hrepl]
+        · simp [semanticSubstProc, hnk, hasDerivedHead]
+    | .fvar _, _, hp => by
+        simp [semanticSubstProc, hasDerivedHead]
+    | .apply "NQuote" [p], _, hp => by
+        have hp' : hasDerivedHead p = false := by
+          simpa [hasDerivedHead] using hp
+        simp [semanticSubstProc, hasDerivedHead, hp']
+    | .apply "PDrop" [name], k, hp => by
+        have hname : hasDerivedHead name = false := by
+          simpa [hasDerivedHead] using hp
+        have hsubstName :
+            hasDerivedHead (semanticSubstName k replacementName name) = false :=
+          hasDerivedHead_semanticSubstName_false hrepl hname
+        unfold semanticSubstProc
+        cases hnm : semanticSubstNameMark k replacementName name with
+        | mk name' matched =>
+            have hname' : hasDerivedHead name' = false := by
+              simpa [semanticSubstName, hnm] using hsubstName
+            cases matched with
+            | false =>
+                simp [hnm, hasDerivedHead, hname']
+            | true =>
+                cases name' with
+                | apply c args =>
+                    by_cases hquote : c = "NQuote" ∧ ∃ p', args = [p']
+                    · rcases hquote with ⟨rfl, p', rfl⟩
+                      have hp' : hasDerivedHead p' = false := by
+                        simpa [hasDerivedHead] using hname'
+                      simp [hnm, hp']
+                    · have hdrop' : hasDerivedHead (.apply "PDrop" [Pattern.apply c args]) = false := by
+                        simpa [hasDerivedHead] using hname'
+                      have hne : ∀ p', Pattern.apply c args ≠ Pattern.apply "NQuote" [p'] := by
+                        intro p' hEq
+                        injection hEq with hc hargs
+                        exact hquote ⟨hc, ⟨p', hargs⟩⟩
+                      have hmatch :
+                          (match Pattern.apply c args, true with
+                           | Pattern.apply "NQuote" [p], true => p
+                           | x, x_1 => Pattern.apply "PDrop" [Pattern.apply c args]) =
+                            .apply "PDrop" [Pattern.apply c args] := by
+                        simp [hne]
+                      have hgoal :
+                          hasDerivedHead
+                              (match Pattern.apply c args, true with
+                               | Pattern.apply "NQuote" [p], true => p
+                               | x, x_1 => Pattern.apply "PDrop" [Pattern.apply c args]) = false := by
+                        rw [hmatch]
+                        exact hdrop'
+                      simpa [hnm] using hgoal
+                | _ =>
+                    simp [hnm, hasDerivedHead, hname']
+    | .apply "POutput" [n, q], k, hp => by
+        have hparts : hasDerivedHead n = false ∧ hasDerivedHead q = false := by
+          simpa [hasDerivedHead, Bool.or_eq_false_iff] using hp
+        simp [semanticSubstProc, hasDerivedHead,
+          hasDerivedHead_semanticSubstName_false (k := k) hrepl hparts.1,
+          hasDerivedHead_semanticSubstProc_false hrepl hparts.2]
+    | .apply "PInput" [n, .lambda none body], k, hp => by
+        have hparts : hasDerivedHead n = false ∧ hasDerivedHead (.lambda none body) = false := by
+          simpa [hasDerivedHead, Bool.or_eq_false_iff] using hp
+        have hbody : hasDerivedHead body = false := by
+          simpa [hasDerivedHead] using hparts.2
+        simp [semanticSubstProc, hasDerivedHead,
+          hasDerivedHead_semanticSubstName_false (k := k) hrepl hparts.1,
+          hasDerivedHead_semanticSubstProc_false hrepl (k := k + 1) hbody]
+    | .apply c args, k, hp => by
+        by_cases hquote : c = "NQuote" ∧ ∃ p', args = [p']
+        · rcases hquote with ⟨rfl, p', rfl⟩
+          have hp' : hasDerivedHead p' = false := by
+            simpa [hasDerivedHead] using hp
+          simp [semanticSubstProc, hasDerivedHead, hp']
+        · by_cases hdrop : c = "PDrop" ∧ ∃ name, args = [name]
+          · rcases hdrop with ⟨rfl, name, rfl⟩
+            have hname : hasDerivedHead name = false := by
+              simpa [hasDerivedHead] using hp
+            have hsubstName :
+                hasDerivedHead (semanticSubstName k replacementName name) = false :=
+              hasDerivedHead_semanticSubstName_false (k := k) hrepl hname
+            unfold semanticSubstProc
+            cases hnm : semanticSubstNameMark k replacementName name with
+            | mk name' matched =>
+                have hname' : hasDerivedHead name' = false := by
+                  simpa [semanticSubstName, hnm] using hsubstName
+                cases matched with
+                | false =>
+                    simp [hnm, hasDerivedHead, hname']
+                | true =>
+                    cases name' with
+                    | apply c' args' =>
+                        by_cases hq' : c' = "NQuote" ∧ ∃ p', args' = [p']
+                        · rcases hq' with ⟨rfl, p', rfl⟩
+                          have hp'' : hasDerivedHead p' = false := by
+                            simpa [hasDerivedHead] using hname'
+                          simp [hnm, hp'']
+                        · have hdrop' : hasDerivedHead (.apply "PDrop" [Pattern.apply c' args']) = false := by
+                            simpa [hasDerivedHead] using hname'
+                          have hne : ∀ p', Pattern.apply c' args' ≠ Pattern.apply "NQuote" [p'] := by
+                            intro p' hEq
+                            injection hEq with hc hargs
+                            exact hq' ⟨hc, ⟨p', hargs⟩⟩
+                          have hmatch :
+                              (match Pattern.apply c' args', true with
+                               | Pattern.apply "NQuote" [p], true => p
+                               | x, x_1 => Pattern.apply "PDrop" [Pattern.apply c' args']) =
+                                .apply "PDrop" [Pattern.apply c' args'] := by
+                            simp [hne]
+                          have hgoal :
+                              hasDerivedHead
+                                  (match Pattern.apply c' args', true with
+                                   | Pattern.apply "NQuote" [p], true => p
+                                   | x, x_1 => Pattern.apply "PDrop" [Pattern.apply c' args']) = false := by
+                            rw [hmatch]
+                            exact hdrop'
+                          simpa [hnm] using hgoal
+                    | _ =>
+                        simp [hnm, hasDerivedHead, hname']
+          · by_cases hout : c = "POutput" ∧ ∃ n q', args = [n, q']
+            · rcases hout with ⟨rfl, n, q', rfl⟩
+              have hparts : hasDerivedHead n = false ∧ hasDerivedHead q' = false := by
+                simpa [hasDerivedHead, Bool.or_eq_false_iff] using hp
+              simp [semanticSubstProc, hasDerivedHead,
+                hasDerivedHead_semanticSubstName_false (k := k) hrepl hparts.1,
+                hasDerivedHead_semanticSubstProc_false hrepl (k := k) hparts.2]
+            · by_cases hin : c = "PInput" ∧ ∃ n body, args = [n, .lambda none body]
+              · rcases hin with ⟨rfl, n, body, rfl⟩
+                have hparts : hasDerivedHead n = false ∧ hasDerivedHead (.lambda none body) = false := by
+                  simpa [hasDerivedHead, Bool.or_eq_false_iff] using hp
+                have hbody : hasDerivedHead body = false := by
+                  simpa [hasDerivedHead] using hparts.2
+                simp [semanticSubstProc, hasDerivedHead,
+                  hasDerivedHead_semanticSubstName_false (k := k) hrepl hparts.1,
+                  hasDerivedHead_semanticSubstProc_false hrepl (k := k + 1) hbody]
+              · rw [semanticSubstProc.eq_11 (k := k) (replacementName := replacementName) (.apply c args)
+                    (by intro n h; cases h)
+                    (by intro x h; cases h)
+                    (by
+                      intro p' hEq
+                      injection hEq with hc hargs
+                      exact hquote ⟨hc, ⟨p', hargs⟩⟩)
+                    (by
+                      intro name hEq
+                      injection hEq with hc hargs
+                      exact hdrop ⟨hc, ⟨name, hargs⟩⟩)
+                    (by
+                      intro n q' hEq
+                      injection hEq with hc hargs
+                      exact hout ⟨hc, ⟨n, q', hargs⟩⟩)
+                    (by
+                      intro n body hEq
+                      injection hEq with hc hargs
+                      exact hin ⟨hc, ⟨n, body, hargs⟩⟩)
+                    (by intro nm body h; cases h)
+                    (by intro n nms body h; cases h)
+                    (by intro body repl h; cases h)
+                    (by intro ct elems rest h; cases h)]
+                exact hp
+    | .lambda _ body, k, hp => by
+        have hbody : hasDerivedHead body = false := by
+          simpa [hasDerivedHead] using hp
+        simpa [semanticSubstProc, hasDerivedHead] using
+          hasDerivedHead_semanticSubstProc_false hrepl (k := k + 1) hbody
+    | .multiLambda n nms body, k, hp => by
+        have hbody : hasDerivedHead body = false := by
+          simpa [hasDerivedHead] using hp
+        simpa [semanticSubstProc, hasDerivedHead] using
+          hasDerivedHead_semanticSubstProc_false hrepl (k := k + n) hbody
+    | .subst body repl, k, hp => by
+        have hparts : hasDerivedHead body = false ∧ hasDerivedHead repl = false := by
+          simpa [hasDerivedHead, Bool.or_eq_false_iff] using hp
+        simp [semanticSubstProc, hasDerivedHead,
+          hasDerivedHead_semanticSubstProc_false hrepl (k := k + 1) hparts.1,
+          hasDerivedHead_semanticSubstProc_false hrepl (k := k) hparts.2]
+    | .collection ct elems rest, k, hp => by
+        have hall : ∀ e ∈ elems, hasDerivedHead e = false := by
+          intro e he
+          exact coreCanonical_elem_of_collection (ct := ct) (elems := elems)
+            (by simpa [CoreCanonical, hasDerivedHead] using hp) he
+        simpa [semanticSubstProc, hasDerivedHead] using
+          hasDerivedHead_semanticSubstProcList_false hrepl (k := k) hall
+
+  private theorem hasDerivedHead_semanticSubstProcList_false
+      {replacementName : Pattern}
+      (hrepl : hasDerivedHead replacementName = false) :
+      ∀ {elems : List Pattern} {k : Nat},
+        (∀ e ∈ elems, hasDerivedHead e = false) →
+          ((semanticSubstProcList k replacementName elems).map hasDerivedHead).any (fun b => b) = false
+    | [], _, _ => by
+        simp [semanticSubstProcList]
+    | e :: es, k, hall => by
+        have he : hasDerivedHead e = false := hall e (by simp)
+        have htail : ∀ e' ∈ es, hasDerivedHead e' = false := by
+          intro e' he'
+          exact hall e' (by simp [he'])
+        simp [semanticSubstProcList,
+          hasDerivedHead_semanticSubstProc_false hrepl (k := k) he,
+          hasDerivedHead_semanticSubstProcList_false hrepl (k := k) htail]
+end
+
+/-- Semantic COMM substitution preserves no-derived-head shape on canonical inputs. -/
+theorem hasDerivedHead_semanticCommSubst_false {p q : Pattern}
+    (hp : hasDerivedHead p = false) (hq : hasDerivedHead q = false) :
+    hasDerivedHead (semanticCommSubst p q) = false := by
+  have hnormQ : hasDerivedHead (semanticNormalizeProc q) = false :=
+    hasDerivedHead_semanticNormalizeProc_false hq
+  have hrepl : hasDerivedHead (.apply "NQuote" [semanticNormalizeProc q]) = false := by
+    simp [hasDerivedHead, hnormQ]
+  simpa [semanticCommSubst] using
+    hasDerivedHead_semanticSubstProc_false hrepl (k := 0) hp
+
 /-- Conservativity (one-step): derived steps from core-canonical sources are core steps. -/
 noncomputable def ReducesDerived.toCore_of_coreCanonical {p q : Pattern}
     (hc : CoreCanonical p) (h : p ⇝ᵈ q) : p ⇝ q := by
@@ -468,14 +904,10 @@ theorem coreCanonical_of_core_step {p q : Pattern}
           hc (by simp [he])
       have hrestAny : (rest.map hasDerivedHead).any (fun b => b) = false :=
         hasDerivedHead_any_false_of_forall_false hrestAll
-      have hComm : hasDerivedHead (Mettapedia.OSLF.MeTTaIL.Substitution.commSubst p q) = false :=
-        hasDerivedHead_commSubst_false hpBody hq
+      have hComm : hasDerivedHead (semanticCommSubst p q) = false :=
+        hasDerivedHead_semanticCommSubst_false hpBody hq
       unfold CoreCanonical
       simp [hasDerivedHead, hComm, hrestAny]
-  | @drop p =>
-      exact by
-        unfold CoreCanonical at hc ⊢
-        simpa [hasDerivedHead] using hc
   | @equiv p p' q q' hsc hmid hsc' ih =>
       have hc' : CoreCanonical p' := coreCanonical_of_SC hc hsc
       have hq' : CoreCanonical q' := ih hc'
@@ -597,8 +1029,6 @@ noncomputable def ReducesDerivedStar.toCore_of_coreCanonical_of_coreCompatible {
 inductive IsDirectCore : {p q : Pattern} → (p ⇝ q) → Prop where
   | comm {n q p : Pattern} {rest : List Pattern} :
       IsDirectCore (@Reduces.comm n q p rest)
-  | drop {p : Pattern} :
-      IsDirectCore (@Reduces.drop p)
   | par {p q : Pattern} {rest : List Pattern} (h : p ⇝ q) :
       IsDirectCore (@Reduces.par p q rest h)
   | par_any {p q : Pattern} {before after : List Pattern} (h : p ⇝ q) :
@@ -619,7 +1049,6 @@ theorem no_direct_core_step_from_PReplicate {p q : Pattern}
     intro s q0 hs hred hdirect
     cases hdirect with
     | comm => simp at hs
-    | drop => simp at hs
     | par _ => simp at hs
     | par_any _ => simp at hs
     | par_set _ => simp at hs
@@ -637,7 +1066,6 @@ theorem no_direct_core_step_from_PNu {p q : Pattern}
     intro s q0 hs hred hdirect
     cases hdirect with
     | comm => simp at hs
-    | drop => simp at hs
     | par _ => simp at hs
     | par_any _ => simp at hs
     | par_set _ => simp at hs
@@ -657,7 +1085,6 @@ theorem core_step_from_PReplicate_has_equiv_shell {p q : Pattern}
     intro s q0 hs hred
     induction hred generalizing p0 with
     | comm => simp at hs
-    | drop => simp at hs
     | par h ih => simp at hs
     | par_any h ih => simp at hs
     | par_set h ih => simp at hs

@@ -1,5 +1,6 @@
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.Reduction
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.SpiceRule
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.SemanticSubstitution
 import Mettapedia.OSLF.MeTTaIL.Substitution
 import Mathlib.Data.Set.Finite.Basic
 import Mathlib.Data.Finset.Sort
@@ -102,6 +103,13 @@ noncomputable def spiceCommSubst (pBody : Pattern) (q : Pattern) (n : ℕ)
   let futurePattern := futureSetAsPattern (spiceEval q n) h_fin
   openBVar 0 (.apply "NQuote" [futurePattern]) pBody
 
+/-- Semantic spice COMM substitution: the n-step future payload is fed through
+paper-faithful ρ-calculus semantic substitution rather than raw `openBVar`. -/
+noncomputable def spiceCommSubstSemantic (pBody : Pattern) (q : Pattern) (n : ℕ)
+    (h_fin : (spiceEval q n).Finite) : Pattern :=
+  let futurePattern := futureSetAsPattern (spiceEval q n) h_fin
+  semanticCommSubst pBody futurePattern
+
 /-! ## Spice COMM Reduction
 
 The spice COMM rule with n-step lookahead.
@@ -125,7 +133,7 @@ inductive SpiceCommReduction (n : ℕ) : Pattern → Pattern → Prop where
       SpiceCommReduction n
         (.collection .hashBag ([.apply "POutput" [channel, q],
                                 .apply "PInput" [channel, .lambda none p]] ++ rest) none)
-        (.collection .hashBag ([spiceCommSubst p q n h_fin] ++ rest) none)
+        (.collection .hashBag ([spiceCommSubstSemantic p q n h_fin] ++ rest) none)
 
   /-- Structural: reduction under parallel composition (head position) -/
   | par {p q : Pattern} {rest : List Pattern} :
@@ -197,6 +205,17 @@ theorem spiceCommSubst_zero (p : Pattern) (q : Pattern)
     futureSetAsPattern_singleton q (h1 ▸ h_fin)
   simp only [h2]
 
+/-- Semantic spice COMM with n=0 recovers semantic one-step COMM substitution. -/
+theorem spiceCommSubstSemantic_zero (p : Pattern) (q : Pattern)
+    (h_fin : (spiceEval q 0).Finite) :
+    spiceCommSubstSemantic p q 0 h_fin = semanticCommSubst p q := by
+  unfold spiceCommSubstSemantic
+  have h1 : spiceEval q 0 = {q} := spice_zero_is_current q
+  simp only [h1]
+  have h2 : futureSetAsPattern {q} (h1 ▸ h_fin) = q :=
+    futureSetAsPattern_singleton q (h1 ▸ h_fin)
+  simp only [h2]
+
 /-- Spice COMM with n=0 is just standard COMM.
 
     When n=0, the spice rule substitutes the same value as standard COMM,
@@ -209,11 +228,11 @@ theorem spice_comm_zero_is_comm {channel q p : Pattern} {rest : List Pattern}
     SpiceCommReduction 0
       (.collection .hashBag ([.apply "POutput" [channel, q],
                               .apply "PInput" [channel, .lambda none p]] ++ rest) none)
-      (.collection .hashBag ([spiceCommSubst p q 0 h_fin] ++ rest) none) →
+      (.collection .hashBag ([spiceCommSubstSemantic p q 0 h_fin] ++ rest) none) →
     Nonempty (Reduces
       (.collection .hashBag ([.apply "POutput" [channel, q],
                               .apply "PInput" [channel, .lambda none p]] ++ rest) none)
-      (.collection .hashBag ([commSubst p q] ++ rest) none)) := by
+      (.collection .hashBag ([semanticCommSubst p q] ++ rest) none)) := by
   intro _
   exact ⟨Reduces.comm⟩
 
@@ -260,8 +279,8 @@ theorem reactive_is_standard (p : Pattern) :
   -- Induction on the spice reduction derivation with n=0
   induction hpq with
   | @spice_comm channel qpat pbody rest h_fin =>
-    have h_eq : [spiceCommSubst pbody qpat 0 h_fin] = [commSubst pbody qpat] := by
-      rw [spiceCommSubst_zero]
+    have h_eq : [spiceCommSubstSemantic pbody qpat 0 h_fin] = [semanticCommSubst pbody qpat] := by
+      rw [spiceCommSubstSemantic_zero]
     rw [h_eq]
     exact ⟨Reduces.comm⟩
   | @par pinner qinner rest h_inner ih =>

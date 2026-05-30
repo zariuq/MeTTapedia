@@ -28,7 +28,7 @@ communication primitives. Locally nameless representation throughout.
 | `StructuralCongruence.lean` | Locally nameless SC; par-flatten, α-equiv, par-perm, par-comm |
 | `Reduction.lean` | COMM rule with locally nameless substitution |
 | `MultiStep.lean` | `ReducesStar`, `ReducesN` (n-step) |
-| `Engine.lean` | Executable rewrite engine (COMM, DROP, PAR); proven sound |
+| `Engine.lean` | Executable rewrite engine for the paper-faithful COMM/PAR core; proven sound |
 | `Soundness.lean` | Type preservation under substitution |
 | `Context.lean` | Evaluation contexts, labeled transitions |
 | `DerivedRepNu.lean` | Derived replication and restriction |

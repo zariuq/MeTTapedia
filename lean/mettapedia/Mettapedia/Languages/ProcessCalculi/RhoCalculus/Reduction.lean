@@ -1,5 +1,6 @@
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.Types
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.StructuralCongruence
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.SemanticSubstitution
 import Mettapedia.OSLF.MeTTaIL.Substitution
 import Mettapedia.CategoryTheory.LambdaTheory
 
@@ -50,12 +51,18 @@ open Mettapedia.CategoryTheory.LambdaTheories
     `congruenceCollections`, with theorem-level comparison in
     `Framework/TypeSynthesis.lean`.
 
+    **Paper-faithful core (2026-05-28)**:
+    In Meredith-Radestock 2005, free drop is inert except under substitution.
+    The core one-step relation therefore uses COMM as its only primitive
+    computational rule, with EQUIV/PAR providing the standard contextual and
+    structural closure.
+
     **Locally nameless**: The COMM rule no longer carries a binder name.
     Lambda patterns are `lambda body` where BVar 0 is the bound variable.
-    Substitution uses `commSubst` which calls `openBVar 0 (NQuote q) body`.
+    Substitution uses paper-faithful semantic COMM substitution.
 -/
 inductive Reduces : Pattern → Pattern → Type where
-  /-- COMM: {n!(q) | for(<-n){p} | ...rest} ⇝ {commSubst p q | ...rest}
+  /-- COMM: {n!(q) | for(<-n){p} | ...rest} ⇝ {semanticCommSubst p q | ...rest}
 
       In locally nameless: the input pattern `PInput [n, lambda p]` binds
       BVar 0. The COMM rule substitutes `NQuote(q)` for BVar 0 in `p`.
@@ -65,11 +72,7 @@ inductive Reduces : Pattern → Pattern → Type where
       Reduces
         (.collection .hashBag ([.apply "POutput" [n, q],
                                 .apply "PInput" [n, .lambda none p]] ++ rest) none)
-        (.collection .hashBag ([commSubst p q] ++ rest) none)
-
-  /-- DROP: *(@p) ⇝ p -/
-  | drop {p : Pattern} :
-      Reduces (.apply "PDrop" [.apply "NQuote" [p]]) p
+        (.collection .hashBag ([semanticCommSubst p q] ++ rest) none)
 
   /-- EQUIV: Reduction modulo structural congruence -/
   | equiv {p p' q q' : Pattern} :
@@ -141,13 +144,23 @@ theorem rely_pointwise (φ : ProcessPred) (p : Pattern) :
   intro hall q _
   exact hall q
 
+theorem rely_possibly_true_eq_true :
+    relyProp (possiblyProp (fun _ : Pattern => True)) = (fun _ => True) := by
+  funext p
+  apply propext
+  constructor
+  · intro _
+    trivial
+  · intro _ q hqp
+    exact ⟨p, hqp, trivial⟩
+
 /-! ## Properties of COMM -/
 
 /-- COMM reduces synchronizable terms (constructive witness). -/
 def comm_reduces {n q p : Pattern} :
     Σ r, (.collection .hashBag [.apply "POutput" [n, q],
                                 .apply "PInput" [n, .lambda none p]] none) ⇝ r := by
-  use .collection .hashBag [commSubst p q] none
+  use .collection .hashBag [semanticCommSubst p q] none
   have h := @Reduces.comm n q p []
   simp only [List.append_nil] at h
   exact h
@@ -167,11 +180,6 @@ abbrev Value : Pattern → Prop := NormalForm
 
 theorem step_or_normalForm (p : Pattern) : CanStep p ∨ NormalForm p := by
   exact Classical.em (CanStep p)
-
-/-- Normal forms cannot be DROP-redexes. -/
-theorem normalForm_no_drop {q : Pattern}
-    (hnf : NormalForm (.apply "PDrop" [.apply "NQuote" [q]])) : False :=
-  hnf ⟨q, ⟨Reduces.drop⟩⟩
 
 /-! ## IO Count: SC-Invariant Measure
 
@@ -281,7 +289,7 @@ def redWeight : Pattern → Nat
       -- - `NQuote` must decrease by one (`pred`) so `NQuote (PDrop n)` and `n`
       --   have equal weight under the SC rule `quote_drop`.
       -- - all other constructors contribute `+1` to enforce strict positivity
-      --   on genuine redex sources (`comm`, `drop`, and contextual variants).
+      --   on genuine redex sources (`comm` and contextual variants).
       if f = "PZero" then 0
       else if f = "NQuote" then Nat.pred s
       else s + 1
@@ -366,8 +374,6 @@ theorem redWeight_pos_of_reduces {P Q : Pattern} (hred : Reduces P Q) :
   induction hred with
   | comm =>
     simp [redWeight, List.map_cons, List.map_nil, List.sum_cons, List.sum_nil]
-  | drop =>
-    simp [redWeight]
   | @equiv p p' q q' hsc _ _ ih =>
     have hw : redWeight p = redWeight p' := redWeight_SC hsc
     omega

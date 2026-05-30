@@ -27,16 +27,34 @@ def basePat : Pattern := .bvar 0
 /-- Syntactic zero process marker used by SC nil-laws. -/
 def zeroPat : Pattern := .apply "PZero" []
 
+/-- A fixed COMM target pattern for explicit star-image witnesses. -/
+def commBasePat : Pattern := .collection .hashBag [zeroPat] none
+
 /-- Recursively add right-`PZero` wrappers via bag syntax. -/
 def addRightZeroNest : Nat → Pattern
   | 0 => basePat
   | n + 1 => .collection .hashBag [addRightZeroNest n, zeroPat] none
+
+/-- Recursively add right-`PZero` wrappers to the reachable COMM target. -/
+def addRightZeroNestComm : Nat → Pattern
+  | 0 => commBasePat
+  | n + 1 => .collection .hashBag [addRightZeroNestComm n, zeroPat] none
 
 /-- Depth counter for `addRightZeroNest`. -/
 def rightZeroDepth : Pattern → Nat
   | .bvar 0 => 0
   | .collection .hashBag [p, .apply "PZero" []] none => rightZeroDepth p + 1
   | _ => 0
+
+/-- Depth counter for `addRightZeroNestComm`. -/
+def rightZeroDepthComm : Pattern → Nat
+  | .collection .hashBag [p] none => rightZeroDepthCommBase p
+  | _ => 0
+where
+  rightZeroDepthCommBase : Pattern → Nat
+    | .apply "PZero" [] => 0
+    | .collection .hashBag [p, .apply "PZero" []] none => rightZeroDepthCommBase p + 1
+    | _ => 0
 
 theorem rightZeroDepth_addRightZeroNest (n : Nat) :
     rightZeroDepth (addRightZeroNest n) = n := by
@@ -52,69 +70,91 @@ theorem addRightZeroNest_injective : Function.Injective addRightZeroNest := by
     congrArg rightZeroDepth h
   simpa [rightZeroDepth_addRightZeroNest] using hd
 
-/-- Source with a direct DROP reduction to `basePat`. -/
-def dropSource : Pattern := .apply "PDrop" [.apply "NQuote" [basePat]]
+theorem rightZeroDepthComm_addRightZeroNestComm (n : Nat) :
+    rightZeroDepthComm (addRightZeroNestComm n) = n := by
+  induction n with
+  | zero =>
+      simp [addRightZeroNestComm, rightZeroDepthComm, commBasePat, zeroPat]
+  | succ n ih =>
+      simp [addRightZeroNestComm, rightZeroDepthComm, zeroPat, ih]
 
-theorem base_sc_addRightZeroNest : ∀ n, StructuralCongruence basePat (addRightZeroNest n)
+theorem addRightZeroNestComm_injective : Function.Injective addRightZeroNestComm := by
+  intro n m h
+  have hd :
+      rightZeroDepthComm (addRightZeroNestComm n) =
+        rightZeroDepthComm (addRightZeroNestComm m) :=
+    congrArg rightZeroDepthComm h
+  simpa [rightZeroDepthComm_addRightZeroNestComm] using hd
+
+theorem commBase_sc_addRightZeroNestComm : ∀ n, StructuralCongruence commBasePat (addRightZeroNestComm n)
   | 0 => StructuralCongruence.refl basePat
   | n + 1 =>
-      StructuralCongruence.trans basePat (addRightZeroNest n) (addRightZeroNest (n + 1))
-        (base_sc_addRightZeroNest n)
+      StructuralCongruence.trans commBasePat (addRightZeroNestComm n) (addRightZeroNestComm (n + 1))
+        (commBase_sc_addRightZeroNestComm n)
         (by
-          simpa [addRightZeroNest] using
+          simpa [addRightZeroNestComm] using
             (StructuralCongruence.symm _ _
-              (StructuralCongruence.par_nil_right (addRightZeroNest n))))
+              (StructuralCongruence.par_nil_right (addRightZeroNestComm n))))
 
-def dropSource_reduces_to_addRightZeroNest (n : Nat) :
-    Reduces dropSource (addRightZeroNest n) :=
+/-- Source with a direct COMM reduction to `commBasePat`. -/
+def commSource : Pattern :=
+  .collection .hashBag [
+    .apply "POutput" [.fvar "c", zeroPat],
+    .apply "PInput" [.fvar "c", .lambda none zeroPat]
+  ] none
+
+def commSource_reduces_to_addRightZeroNestComm (n : Nat) :
+    Reduces commSource (addRightZeroNestComm n) :=
   Reduces.equiv
-    (p' := dropSource) (q' := basePat)
-    (StructuralCongruence.refl dropSource)
-    (by simpa [dropSource, basePat] using (Reduces.drop (p := basePat)))
-    (by simpa using base_sc_addRightZeroNest n)
+    (p' := commSource) (q' := commBasePat)
+    (StructuralCongruence.refl commSource)
+    (by
+      simpa [commSource, commBasePat, zeroPat, commSubst, openBVar] using
+        (@Reduces.comm (.fvar "c") zeroPat zeroPat []))
+    (by simpa [commBasePat] using commBase_sc_addRightZeroNestComm n)
 
-theorem dropSource_coreStar_to_addRightZeroNest (n : Nat) :
-    rhoCoreStarRel dropSource (addRightZeroNest n) := by
-  exact ⟨ReducesStar.single (dropSource_reduces_to_addRightZeroNest n)⟩
+theorem commSource_coreStar_to_addRightZeroNestComm (n : Nat) :
+    rhoCoreStarRel commSource (addRightZeroNestComm n) := by
+  exact ⟨ReducesStar.single (commSource_reduces_to_addRightZeroNestComm n)⟩
 
-theorem dropSource_derivedStar_to_addRightZeroNest (n : Nat) :
-    rhoDerivedStarRel dropSource (addRightZeroNest n) := by
+theorem commSource_derivedStar_to_addRightZeroNestComm (n : Nat) :
+    rhoDerivedStarRel commSource (addRightZeroNestComm n) := by
   exact ⟨Mettapedia.Languages.ProcessCalculi.RhoCalculus.DerivedRepNu.ReducesStar.toDerived
-    (ReducesStar.single (dropSource_reduces_to_addRightZeroNest n))⟩
+    (ReducesStar.single (commSource_reduces_to_addRightZeroNestComm n))⟩
 
-theorem infinite_image_rhoCoreStarRel_dropSource :
-    Set.Infinite {q : Pattern | rhoCoreStarRel dropSource q} := by
-  let f : Nat → Pattern := addRightZeroNest
+theorem infinite_image_rhoCoreStarRel_commSource :
+    Set.Infinite {q : Pattern | rhoCoreStarRel commSource q} := by
+  let f : Nat → Pattern := addRightZeroNestComm
   have hInfRange : Set.Infinite (Set.range f) :=
-    Set.infinite_range_of_injective addRightZeroNest_injective
-  have hSubset : Set.range f ⊆ {q : Pattern | rhoCoreStarRel dropSource q} := by
+    Set.infinite_range_of_injective addRightZeroNestComm_injective
+  have hSubset : Set.range f ⊆ {q : Pattern | rhoCoreStarRel commSource q} := by
     intro q hq
     rcases hq with ⟨n, rfl⟩
-    exact dropSource_coreStar_to_addRightZeroNest n
+    exact commSource_coreStar_to_addRightZeroNestComm n
   exact hInfRange.mono hSubset
 
-theorem infinite_image_rhoDerivedStarRel_dropSource :
-    Set.Infinite {q : Pattern | rhoDerivedStarRel dropSource q} := by
-  let f : Nat → Pattern := addRightZeroNest
+theorem infinite_image_rhoDerivedStarRel_commSource :
+    Set.Infinite {q : Pattern | rhoDerivedStarRel commSource q} := by
+  let f : Nat → Pattern := addRightZeroNestComm
   have hInfRange : Set.Infinite (Set.range f) :=
-    Set.infinite_range_of_injective addRightZeroNest_injective
-  have hSubset : Set.range f ⊆ {q : Pattern | rhoDerivedStarRel dropSource q} := by
+    Set.infinite_range_of_injective addRightZeroNestComm_injective
+  have hSubset : Set.range f ⊆ {q : Pattern | rhoDerivedStarRel commSource q} := by
     intro q hq
     rcases hq with ⟨n, rfl⟩
-    exact dropSource_derivedStar_to_addRightZeroNest n
+    exact commSource_derivedStar_to_addRightZeroNestComm n
   exact hInfRange.mono hSubset
 
 /-- Concrete witness: the core-star endpoint relation is not globally image-finite. -/
 theorem rhoCoreStarRel_not_imageFinite :
     ∃ p : Pattern, ¬ Set.Finite {q : Pattern | rhoCoreStarRel p q} := by
-  refine ⟨dropSource, ?_⟩
-  exact infinite_image_rhoCoreStarRel_dropSource.not_finite
+  refine ⟨commSource, ?_⟩
+  exact infinite_image_rhoCoreStarRel_commSource.not_finite
 
 /-- Concrete witness: the derived-star endpoint relation is not globally image-finite. -/
 theorem rhoDerivedStarRel_not_imageFinite :
     ∃ p : Pattern, ¬ Set.Finite {q : Pattern | rhoDerivedStarRel p q} := by
-  refine ⟨dropSource, ?_⟩
-  exact infinite_image_rhoDerivedStarRel_dropSource.not_finite
+  refine ⟨commSource, ?_⟩
+  exact infinite_image_rhoDerivedStarRel_commSource.not_finite
 
 /-- Therefore global `hImageFinite` assumptions for star-level HM wrappers are
 not automatically dischargeable for all states. -/

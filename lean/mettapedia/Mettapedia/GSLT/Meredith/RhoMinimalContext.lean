@@ -98,7 +98,7 @@ theorem comm_input_contextStep (x q p : Pattern) :
     GSLT.contextStep rhoGSLT
       (.apply "PInput" [x, .lambda none p])
       (minimalOfEvalContext (.par (.apply "POutput" [x, q]) .hole))
-      (commSubst p q) := by
+      (semanticCommSubst p q) := by
   exact contextStep_of_labeledTransition ⟨LabeledTransition.comm_input⟩
 
 /-- Dually, the output process steps in the matching input context. -/
@@ -106,7 +106,7 @@ theorem comm_output_contextStep (x q p : Pattern) :
     GSLT.contextStep rhoGSLT
       (.apply "POutput" [x, q])
       (minimalOfEvalContext (.par (.apply "PInput" [x, .lambda none p]) .hole))
-      (commSubst p q) := by
+      (semanticCommSubst p q) := by
   exact contextStep_of_labeledTransition ⟨LabeledTransition.comm_output⟩
 
 /-- The rho input process satisfies the corresponding HML diamond formula for a
@@ -115,7 +115,7 @@ theorem comm_input_satisfies_diamond (x q p : Pattern) :
     HMLFormula.satisfies rhoGSLT
       (.apply "PInput" [x, .lambda none p])
       (.diamond (minimalOfEvalContext (.par (.apply "POutput" [x, q]) .hole)) .top) := by
-  refine ⟨commSubst p q, comm_input_contextStep x q p, ?_⟩
+  refine ⟨semanticCommSubst p q, comm_input_contextStep x q p, ?_⟩
   simp [HMLFormula.satisfies]
 
 /-- Dually, the rho output process satisfies the corresponding HML diamond
@@ -124,7 +124,7 @@ theorem comm_output_satisfies_diamond (x q p : Pattern) :
     HMLFormula.satisfies rhoGSLT
       (.apply "POutput" [x, q])
       (.diamond (minimalOfEvalContext (.par (.apply "PInput" [x, .lambda none p]) .hole)) .top) := by
-  refine ⟨commSubst p q, comm_output_contextStep x q p, ?_⟩
+  refine ⟨semanticCommSubst p q, comm_output_contextStep x q p, ?_⟩
   simp [HMLFormula.satisfies]
 
 end Mettapedia.GSLT.Meredith.RhoExample

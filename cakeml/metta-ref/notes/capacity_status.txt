@@ -1,0 +1,175 @@
+CakeML MeTTa capacity prototype status
+======================================
+
+Current date: 2026-05-30
+
+This file tracks the broad easy examples requested before choosing the final
+MeTTa structure/design.
+
+Implemented executable prototypes
+---------------------------------
+
+1. M1 pure symbolic kernel
+   - SML: /home/zar/claude/CakeML/metta-ref/sml/metta_m1.sml
+   - CakeML: /home/zar/claude/CakeML/metta-ref/cml/metta_m1.cml
+   - Tests: /home/zar/claude/CakeML/metta-ref/tests/m1_tests.sml
+
+2. Broad capacity witnesses
+   - SML harness: /home/zar/claude/CakeML/metta-ref/tests/capacity_prototypes.sml
+   - MeTTa witness catalog: /home/zar/claude/CakeML/metta-ref/tests/capacity_prototypes.metta
+   - Local oracle runner: /home/zar/claude/CakeML/metta-ref/oracle/run_local_oracle.sh
+   - CeTTa HE golden runner: /home/zar/claude/CakeML/metta-ref/oracle/run_cetta_goldens.sh
+
+3. Direct .metta script runners
+   - SML runner: /home/zar/claude/CakeML/metta-ref/tests/run_metta_file.sml
+   - CakeML runner generator: /home/zar/claude/CakeML/metta-ref/tools/make_cml_runner.sh
+   - Curated local scripts: /home/zar/claude/CakeML/metta-ref/tests/curated/
+   - SML/CakeML runner oracle: /home/zar/claude/CakeML/metta-ref/oracle/run_curated_local.sh
+   - Selected CeTTa comparison oracle:
+     /home/zar/claude/CakeML/metta-ref/oracle/run_selected_cetta_compare.sh
+
+Covered by runnable tests
+-------------------------
+
+- Accepted parser subset in SML and CakeML: comments/whitespace, symbol,
+  variable, integer/string, nested expression, empty expression, !-prefixed
+  Run command, multi-command program, and malformed-expression rejection.
+- Runner behavior: add atoms to &self, then evaluate a query against them.
+- Metatype witness: Symbol/Variable/Expression/Grounded distinction.
+- Atom matching with repeated-variable constraints.
+- Equality-driven evaluation.
+- Minimal instructions: eval, chain, unify, decons-atom, cons-atom,
+  function/return, plus an evalc-like typed-evaluation sketch.
+- Result handling: Empty filtering, NotReducible, Error, fuel overflow.
+- Branch handling: collapse, superpose, bag comparison.
+- Integer/boolean primitive table and BadArgType witness.
+- Host-call naming prototype: call-ml has a finite local inc witness, and
+  call-native fronts to the same local dispatcher in this implementation
+  profile while unknown host calls remain NotReducible.
+- Type declaration lookup and gradual Atom/%Undefined% match sketch.
+- Typed calls: Nat/Add positive and bad-argument negative witnesses.
+- Dependent type sketch: Vec/Cons result type witness.
+- Meta-type evaluation-order witness: Atom argument is not evaluated.
+- Standard controls: case, switch, let*, quote/noeval, collapse-bind and
+  superpose-bind witnesses.
+- Substitution-shape witnesses in both SML and compiled CakeML: quote-aware
+  substitution, token-splicing substitution, positional substitution, and
+  fuelled dereference over chained bindings and self cycles.
+- Explicit named spaces: add, remove, match, frame example.
+- Explicit states: get after change.
+- Deterministic module import sketch.
+- Open primitive/call-native boundary: unknown external call returns
+  NotReducible in the prototype.
+- Direct execution of curated .metta files in both SML and compiled CakeML.
+- Selected SML/CakeML-vs-CeTTa output comparisons for simple rewrite,
+  pattern-variable substitution, unknown-expression preservation, and basic
+  eval.
+- Selected normalized-bag SML/CakeML-vs-CeTTa comparisons now cover 14 files,
+  including duplicate multiplicity, nondeterministic equality, match branching,
+  chain branching, nested-chain cross products, and evaluated superpose.
+- CakeML FFI byte-protocol witness:
+  /home/zar/claude/CakeML/metta-ref/ffi/ffi_probe.cml and
+  /home/zar/claude/CakeML/metta-ref/ffi/ffi_probe.c exercise call-ml and a
+  call-native-to-call-ml front tag over a small mutable byte request/response.
+
+Proof foothold
+--------------
+
+HOL4 theory:
+- /home/zar/claude/CakeML/metta-ref/hol/metta_m1Script.sml
+- /home/zar/claude/CakeML/metta-ref/hol/substitution_zooScript.sml
+
+Currently proves:
+- atom equality decidability;
+- error atom recognition;
+- visible_results does not contain Empty;
+- visible_results membership is drawn from the input;
+- lookup_bind hit/miss facts;
+- one-step substitution facts for variables;
+- a structurally terminating arbitrary-depth matcher using atom/list depth as
+  the termination measure, replacing the earlier bounded wrapper shape;
+- match facts for variables, symbols, repeated-variable positive/negative
+  examples, and a nested-expression variable witness;
+- match_space member soundness;
+- equality_step monotonicity under consing a space;
+- eval_equalities member soundness against equality_step;
+- a first fuel-indexed evaluator shape theorem;
+- equality-step soundness for non-identity fuel evaluator results;
+- an expanded eval_m1 theorem covering equality evaluation and match-space
+  calls;
+- match-space member soundness for eval_m1 match calls;
+- identity equality-rule and match-call evaluation examples.
+- an extended one-step HOL evaluator branch cluster for let, if, integer
+  addition, integer comparison, unify, decons-atom, cons-atom, collapse,
+  superpose, and primitive bad-argument errors, with a result-classification
+  soundness theorem and concrete positive/negative examples.
+- a recursive HOL evaluator prototype layered over eval_m1_ext for
+  function/return, eval/not-reducible, and chain, with concrete positive and
+  negative examples.
+
+Substitution zoo foothold:
+- substitution extension/refinement facts for association-list bindings;
+- coverage invariants for substitutions over arbitrary nested atoms/lists;
+- full arbitrary-depth match_sound: returned substitutions extend the input,
+  cover the pattern variables, and instantiate the pattern to the matched
+  subject;
+- preservation of already-bound variables across fresh binding extension;
+- explicit-substitution composition facts for inner/outer binding hits;
+- fuelled variable dereference facts for chained bindings and self-cycle
+  cutoff witnesses;
+- branch-local binding trail and rollback facts for speculative match steps;
+- occurs-check binding wrapper with positive and negative variable witnesses;
+- Metamath-style token/list substitution with append and empty-substitution
+  facts;
+- positional substitution witnesses for de Bruijn-like variable indexing;
+- quote-preserving substitution witness matching the PeTTa-to-HE translator's
+  source-level "do not substitute under quote" behavior.
+- first concrete constraint abstraction with equality, match, and abbreviation
+  constraints; append/add preservation facts; positive/negative examples; and
+  a proof that successful matching satisfies the match constraint.
+- constraint queue/defer/simplify facts: simplification preserves exactly the
+  same obligations under a substitution, deferred enqueue preserves the queue
+  obligations, and covered solved constraints remain solved under later
+  substitution extensions.
+- rule-producing constraint simplification: equality/match/abbreviation
+  constraints can produce binding extensions plus residual constraints or an
+  explicit failure; queue-level simplification extends substitutions
+  monotonically and is sound when residual constraints hold.
+- occurs-check-aware rule-producing simplification and solved-form loop:
+  direct and post-substitution cycles are rejected, successful loop results
+  extend the input substitution, and the loop has a final-substitution
+  preservation theorem when residual constraints hold.
+- solved-form extraction from abbreviation constraints, with membership and
+  soundness facts for extracted bindings.
+- first evaluator-to-substitution bridge: equality steps instantiate their
+  left-hand side, and eval_m1 match-call results instantiate the requested
+  pattern.
+
+Literature/source map:
+- /home/zar/claude/literature/substitution_unification_sources_2026-05-30.txt
+
+Next proofs
+-----------
+
+1. Connect occurs-check-aware solved-form loop outputs to matcher/evaluator
+   invariants and extracted binding use sites.
+2. Expand the HOL recursive evaluator toward remaining SML/CakeML M1 branches:
+   evaluated arguments, fuller primitive/type tables, and host-call boundary
+   classification.
+3. Prove eval_total where the evaluator is intended to be nonempty, and full
+   eval_sound for the expanded evaluator.
+4. Increase the selected CeTTa comparison set beyond 8 exact-output files plus
+   6 normalized-bag files as output normalization and evaluator coverage grow.
+5. Move from handwritten SML/CakeML parity toward a verified
+   extraction/translation strategy.
+
+Deferred from first verified kernel
+-----------------------------------
+
+- Full parser and human syntax error behavior.
+- Full HE type system and dependent type inference.
+- Full module/import filesystem behavior.
+- Arbitrary host grounded atoms beyond the finite call-ml/byte-protocol
+  witnesses.
+- Floats.
+- Documentation/assertion helpers.

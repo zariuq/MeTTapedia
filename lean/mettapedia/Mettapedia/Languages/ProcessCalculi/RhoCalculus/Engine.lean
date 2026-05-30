@@ -1,4 +1,5 @@
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.Reduction
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.SemanticSubstitution
 import Mettapedia.OSLF.MeTTaIL.Substitution
 
 /-!
@@ -9,9 +10,8 @@ with respect to the propositional `Reduces` relation from `Reduction.lean`.
 
 ## Architecture
 
-The engine handles three reduction rules:
-- **COMM**: `{n!(q) | for(<-n){p} | ...rest} ⇝ {commSubst p q | ...rest}`
-- **DROP**: `*(@p) ⇝ p`
+The engine handles the paper-faithful core one-step semantics:
+- **COMM**: `{n!(q) | for(<-n){p} | ...rest} ⇝ {semanticCommSubst p q | ...rest}`
 - **PAR**: recursive reduction inside parallel compositions
 
 In locally nameless, input patterns are `PInput [n, lambda body]` where
@@ -55,7 +55,7 @@ def findInputPartner (n : Pattern) (elems : List Pattern) : List (Nat × Pattern
 /-- Find all COMM reducts in a bag.
 
     For each output `n!(q)` at position `i`, and each input `for(<-n){p}` at
-    position `j` (with `i ≠ j`), produce the reduct `{commSubst p q | rest}`.
+    position `j` (with `i ≠ j`), produce the reduct `{semanticCommSubst p q | rest}`.
 -/
 def findAllComm (elems : List Pattern) : List Pattern :=
   (elems.zipIdx.map fun (elem, i) =>
@@ -66,15 +66,7 @@ def findAllComm (elems : List Pattern) : List Pattern :=
       let partners := findInputPartner n withoutOutput
       partners.map fun (j, body) =>
         let rest := withoutOutput.eraseIdx j
-        .collection .hashBag ([commSubst body q] ++ rest) none).flatten
-
-/-! ## DROP Redex Detection -/
-
-/-- Match a DROP redex: `*(@p)` = `PDrop [NQuote [p]]`. Returns the inner process. -/
-def matchDrop (p : Pattern) : Option Pattern :=
-  match p with
-  | .apply "PDrop" [.apply "NQuote" [inner]] => some inner
-  | _ => none
+        .collection .hashBag ([semanticCommSubst body q] ++ rest) none).flatten
 
 /-! ## One-Step Reduction -/
 
@@ -118,8 +110,6 @@ def reduceStep (p : Pattern) (fuel : Nat := 100) : List Pattern :=
     | .collection .hashSet elems none =>
       reduceElemsAux (reduceStep · fuel) elems |>.map fun (i, elem') =>
         .collection .hashSet (elems.set i elem') none
-    | .apply "PDrop" [.apply "NQuote" [inner]] =>
-      [inner]
     | _ => []
 
 /-- Executable irreducibility canary for the empty bag. -/
@@ -212,7 +202,7 @@ private theorem comm_at_positions (elems : List Pattern) (i : Nat) (j : Nat)
     (hout : elems[i] = .apply "POutput" [n, q])
     (hinp : (elems.eraseIdx i)[j] = .apply "PInput" [n, .lambda none body]) :
     Nonempty (Reduces (.collection .hashBag elems none)
-      (.collection .hashBag ([commSubst body q] ++ (elems.eraseIdx i).eraseIdx j) none)) := by
+      (.collection .hashBag ([semanticCommSubst body q] ++ (elems.eraseIdx i).eraseIdx j) none)) := by
   have hperm := perm_extract_two elems i j hi hj
   rw [hout, hinp] at hperm
   have hsc1 := StructuralCongruence.par_perm elems _ hperm
@@ -226,7 +216,7 @@ private theorem findAllComm_spec {elems : List Pattern} {r : Pattern}
       (n q : Pattern) (body : Pattern),
       elems[i] = .apply "POutput" [n, q] ∧
       (elems.eraseIdx i)[j] = .apply "PInput" [n, .lambda none body] ∧
-      r = .collection .hashBag ([commSubst body q] ++ (elems.eraseIdx i).eraseIdx j) none := by
+      r = .collection .hashBag ([semanticCommSubst body q] ++ (elems.eraseIdx i).eraseIdx j) none := by
   unfold findAllComm at hr
   rw [List.mem_flatten] at hr
   obtain ⟨sublist, hsl_mem, hr_in_sl⟩ := hr
@@ -258,9 +248,6 @@ theorem reduceStep_sound (p q : Pattern) (fuel : Nat)
     (h : q ∈ reduceStep p fuel) : Nonempty (p ⇝ q) := by
   match fuel, p with
   | 0, _ => simp [reduceStep] at h
-  | _ + 1, .apply "PDrop" [.apply "NQuote" [inner]] =>
-    simp [reduceStep] at h
-    exact h ▸ ⟨Reduces.drop⟩
   | fuel + 1, .collection .hashBag elems none =>
     simp only [reduceStep, List.mem_append] at h
     rcases h with hcomm | hpar
@@ -301,15 +288,7 @@ theorem reduceStep_sound (p q : Pattern) (fuel : Nat)
   | _ + 1, .collection .vec _ none => simp [reduceStep] at h
   | n + 1, .apply c args =>
     simp only [reduceStep] at h
-    split at h
-    · exact absurd ‹Pattern.apply c args = _› (by intro h; cases h)
-    · exact absurd ‹Pattern.apply c args = _› (by intro h; cases h)
-    · next inner heq =>
-      have := Pattern.apply.inj heq
-      obtain ⟨rfl, rfl⟩ := this
-      simp only [List.mem_singleton] at h
-      exact h ▸ ⟨Reduces.drop⟩
-    · simp at h
+    simp at h
 
 /-! ## Pretty Printing -/
 
@@ -378,11 +357,11 @@ private def ppar (elems : List Pattern) : Pattern :=
   for r in reducts do
     IO.println s!"    → {r}"
 
--- Test 2: DROP — *(@0) should reduce to 0
+-- Test 2: Free DROP is inert in the paper-faithful core relation
 #eval! do
   let term := pdrop (nquote pzero)
   let reducts := reduceStep term
-  IO.println s!"DROP test: {term}"
+  IO.println s!"Free DROP test: {term}"
   IO.println s!"  reducts ({reducts.length}):"
   for r in reducts do
     IO.println s!"    → {r}"
@@ -407,7 +386,7 @@ private def ppar (elems : List Pattern) : Pattern :=
   IO.println s!"Normal form test: 0"
   IO.println s!"  reducts ({reducts.length}): {if reducts.isEmpty then "none (normal form)" else "unexpected!"}"
 
--- Test 5: Nested PAR — reduction inside a bag element
+-- Test 5: Nested PAR with inert free drop
 #eval! do
   let term := ppar [pdrop (nquote pzero), poutput (.fvar "x") pzero]
   let reducts := reduceStep term

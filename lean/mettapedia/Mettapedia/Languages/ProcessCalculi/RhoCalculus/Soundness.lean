@@ -1,5 +1,6 @@
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.Types
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.Reduction
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.SubjectEquiv
 import Mettapedia.OSLF.MeTTaIL.Substitution
 import Mettapedia.CategoryTheory.Topos.InternalLanguage
 import Mathlib.Data.Fintype.EquivFin
@@ -466,10 +467,11 @@ theorem substitutability
 
 /-! ## COMM Rule Preserves Types -/
 
-/-- COMM rule preserves types.
+/-- Syntactic COMM-opening preserves types.
 
-    The COMM rule `{n!(q) | for(<-n){p} | ...rest} ~~> {commSubst p q | ...rest}`
-    preserves the body's type. In locally nameless, `commSubst p q = openBVar 0 (NQuote q) p`.
+    This theorem is about the locally nameless opener
+    `commSubst p q = openBVar 0 (NQuote q) p`, not the paper-faithful
+    operational `semanticCommSubst`.
 
     We take the body typing directly via cofinite quantification:
     for all z outside L, the opened body types in the extended context.
@@ -522,6 +524,204 @@ theorem comm_preserves_type
   rw [hsubst_eq] at hresult
   exact hresult
 
+/-- Semantic COMM-opening preserves exact typing on the common fragment where
+    semantic and syntactic COMM substitution coincide.
+
+    The counterexamples in the semantic microcheck show that exact predicate
+    preservation is false in general for `semanticCommSubst`. This theorem is
+    the honest replacement on the agreement fragment: whenever the live
+    operational substitution computes the same residual as the locally nameless
+    opener, the existing exact typing theorem transfers directly. -/
+theorem comm_preserves_type_semantic_of_agreement
+    {Γ : TypingContext} {p_body : Pattern} {q : Pattern}
+    {φ : ProcPred}
+    {L : List String}
+    (hbody : ∀ z, z ∉ L →
+      HasType (Γ.extend z ⟨"Name", possibly (fun _ => True), by simp⟩)
+        (openBVar 0 (.fvar z) p_body) ⟨"Proc", φ, by simp⟩)
+    (hq : HasType Γ q ⟨"Proc", fun _ => True, by simp⟩)
+    (hlc_q : lc q = true)
+    (hagrees : semanticCommSubst p_body q = commSubst p_body q) :
+    HasType Γ (semanticCommSubst p_body q) ⟨"Proc", φ, by simp⟩ := by
+  rw [hagrees]
+  exact comm_preserves_type hbody hq hlc_q
+
+/-- Exact typing modulo the sort-appropriate subject equivalence. -/
+def HasTypeUpToSubjectEquiv (Γ : TypingContext) (p : Pattern) (τ : NativeType) : Prop :=
+  ∃ p', TypeSubjectEquiv τ.sort p p' ∧ HasType Γ p' τ
+
+theorem HasTypeUpToSubjectEquiv.of_proc_transport
+    {Γ : TypingContext} {p p' : Pattern} {φ : ProcPred}
+    (htransport : ProcResidualEquiv p p')
+    (htype : HasType Γ p' ⟨"Proc", φ, by simp⟩) :
+    HasTypeUpToSubjectEquiv Γ p ⟨"Proc", φ, by simp⟩ := by
+  refine ⟨p', ?_, htype⟩
+  exact TypeSubjectEquiv.of_proc htransport
+
+theorem HasType.toUpToSubjectEquiv {Γ : TypingContext} {p : Pattern} {τ : NativeType}
+    (htype : HasType Γ p τ) :
+    HasTypeUpToSubjectEquiv Γ p τ := by
+  refine ⟨p, ?_, htype⟩
+  have hsort : τ.sort = "Proc" ∨ τ.sort = "Name" := by
+    simpa using τ.sort_valid
+  exact TypeSubjectEquiv.refl hsort
+
+/-- **Primary exact semantic theorem for strict-core COMM**.
+
+    Exact raw predicate preservation is false in general for semantic COMM,
+    because the live residual may differ from the syntactic opener through
+    quote-opacity and matched unquote/normalization behavior. For predicates
+    already saturated under `ProcResidualEquiv`, however, the live semantic
+    COMM residual preserves them exactly. -/
+theorem comm_preserves_saturated_predicate_semantic_of_representative
+    {p_body : Pattern} {q : Pattern} {φ : ProcPred}
+    (hφ : ProcPredRespectsResidualEquiv φ)
+    (hrep : φ (semanticCommRepresentative p_body q)) :
+    φ (semanticCommSubst p_body q) := by
+  exact hφ
+    (ProcResidualEquiv.symm
+      (semanticCommSubst_transport_to_representative p_body q))
+    hrep
+
+/-- The subject-equivalence-wrapped typing judgment is exactly the saturation
+    closure of the raw process typing predicate. -/
+theorem hasTypeUpToSubjectEquiv_eq_saturateHasTypeProc
+    (Γ : TypingContext) (φ : ProcPred) (p : Pattern) :
+    HasTypeUpToSubjectEquiv Γ p ⟨"Proc", φ, by simp⟩
+      ↔
+    saturateProcPred (fun q => HasType Γ q ⟨"Proc", φ, by simp⟩) p := by
+  simp [HasTypeUpToSubjectEquiv, saturateProcPred, TypeSubjectEquiv]
+
+/-- Saturated exactness for process typing: the live semantic COMM residual
+    lies in the saturation closure of the representative's exact typing
+    judgment. -/
+theorem comm_preserves_type_semantic_saturated_typedAt_of_representative
+    {Γ : TypingContext} {p_body : Pattern} {q : Pattern}
+    {φ : ProcPred}
+    (hrep : HasType Γ (semanticCommRepresentative p_body q) ⟨"Proc", φ, by simp⟩) :
+    saturateProcPred (fun p => HasType Γ p ⟨"Proc", φ, by simp⟩)
+      (semanticCommSubst p_body q) := by
+  exact ⟨semanticCommRepresentative p_body q,
+    semanticCommSubst_transport_to_representative p_body q,
+    hrep⟩
+
+/-- Secondary compatibility wrapper: on the exact syntactic agreement fragment,
+    semantic COMM is also well-typed modulo subject equivalence. The primary
+    semantic path for the general live reducer is the representative transport
+    theorem below, not this overlap theorem. -/
+theorem comm_preserves_type_semantic_upToSubjectEquiv_of_agreement
+    {Γ : TypingContext} {p_body : Pattern} {q : Pattern}
+    {φ : ProcPred}
+    {L : List String}
+    (hbody : ∀ z, z ∉ L →
+      HasType (Γ.extend z ⟨"Name", possibly (fun _ => True), by simp⟩)
+        (openBVar 0 (.fvar z) p_body) ⟨"Proc", φ, by simp⟩)
+    (hq : HasType Γ q ⟨"Proc", fun _ => True, by simp⟩)
+    (hlc_q : lc q = true)
+    (hagrees : semanticCommSubst p_body q = commSubst p_body q) :
+    HasTypeUpToSubjectEquiv Γ (semanticCommSubst p_body q) ⟨"Proc", φ, by simp⟩ := by
+  exact (comm_preserves_type_semantic_of_agreement hbody hq hlc_q hagrees).toUpToSubjectEquiv
+
+/-- **Primary global semantic typing theorem for the live reducer**.
+
+    The live semantic COMM result is always related by `ProcResidualEquiv` to
+    the no-collapse semantic representative. Whenever that representative is
+    well-typed, the live result inherits a subject-equivalence-wrapped typing
+    judgment without any syntactic-agreement hypothesis. -/
+theorem comm_preserves_type_semantic_upToSubjectEquiv_of_representative
+    {Γ : TypingContext} {p_body : Pattern} {q : Pattern}
+    {φ : ProcPred}
+    (hrep : HasType Γ (semanticCommRepresentative p_body q) ⟨"Proc", φ, by simp⟩) :
+    HasTypeUpToSubjectEquiv Γ (semanticCommSubst p_body q) ⟨"Proc", φ, by simp⟩ := by
+  exact HasTypeUpToSubjectEquiv.of_proc_transport
+    (semanticCommSubst_transport_to_representative p_body q)
+    hrep
+
+/-- **Primary checkable strict-core fragment theorem for COMM representatives**.
+
+    On strict-core rho bodies with quote-opacity hygiene, the no-collapse
+    representative is related to the rho-local opener by residual equivalence,
+    and therefore inherits a subject-equivalence-wrapped typing judgment from
+    the existing locally nameless opening theorem. -/
+theorem comm_representative_preserves_typeUpToSubjectEquiv_of_strictCoreCommBody
+    {Γ : TypingContext} {p_body : Pattern} {q : Pattern}
+    {φ : ProcPred}
+    {L : List String}
+    (hbody : ∀ z, z ∉ L →
+      HasType (Γ.extend z ⟨"Name", possibly (fun _ => True), by simp⟩)
+        (openBVar 0 (.fvar z) p_body) ⟨"Proc", φ, by simp⟩)
+    (hq : HasType Γ q ⟨"Proc", fun _ => True, by simp⟩)
+    (hlc_q : lc q = true)
+    (hstrict : strictCoreCommBody p_body = true)
+    : HasTypeUpToSubjectEquiv Γ (semanticCommRepresentative p_body q) ⟨"Proc", φ, by simp⟩ := by
+  have hstrict' : rhoProcCoreShape p_body = true ∧ noBoundUnderQuote 0 p_body = true := by
+    exact (strictCoreCommBody_eq_true_iff p_body).mp hstrict
+  have hresid :
+      ProcResidualEquiv
+        (semanticCommRepresentative p_body q)
+        (rhoOpenNameBVar 0 (.apply "NQuote" [q]) p_body) :=
+    semanticCommRepresentative_residual_equiv_rhoOpenNameBVar_of_rhoProcCoreShape
+      hstrict'.1 hstrict'.2
+  have hopen :
+      HasType Γ (rhoOpenNameBVar 0 (.apply "NQuote" [q]) p_body) ⟨"Proc", φ, by simp⟩ := by
+    rw [rhoOpenNameBVar_eq_openBVar_of_noBoundUnderQuote
+      (k := 0) (u := .apply "NQuote" [q]) (p := p_body) hstrict'.2]
+    exact comm_preserves_type hbody hq hlc_q
+  exact HasTypeUpToSubjectEquiv.of_proc_transport hresid hopen
+
+/-- **Primary derived strict-core semantic theorem for the live reducer**.
+
+    This is the checkable-fragment entry point when users want a theorem that
+    starts from the old locally nameless body-typing hypothesis and concludes
+    directly about the live semantic COMM residual. The global representative
+    and saturated theorems above remain more general; this theorem packages the
+    strict-core side conditions into one boolean guard. -/
+theorem comm_preserves_type_semantic_upToSubjectEquiv_of_strictCoreCommBody
+    {Γ : TypingContext} {p_body : Pattern} {q : Pattern}
+    {φ : ProcPred}
+    {L : List String}
+    (hbody : ∀ z, z ∉ L →
+      HasType (Γ.extend z ⟨"Name", possibly (fun _ => True), by simp⟩)
+        (openBVar 0 (.fvar z) p_body) ⟨"Proc", φ, by simp⟩)
+    (hq : HasType Γ q ⟨"Proc", fun _ => True, by simp⟩)
+    (hlc_q : lc q = true)
+    (hstrict : strictCoreCommBody p_body = true)
+    : HasTypeUpToSubjectEquiv Γ (semanticCommSubst p_body q) ⟨"Proc", φ, by simp⟩ := by
+  have hreprUp :
+      HasTypeUpToSubjectEquiv Γ (semanticCommRepresentative p_body q) ⟨"Proc", φ, by simp⟩ :=
+    comm_representative_preserves_typeUpToSubjectEquiv_of_strictCoreCommBody
+      hbody hq hlc_q hstrict
+  rcases hreprUp with ⟨p', hp', htype⟩
+  have htransport :
+      ProcResidualEquiv (semanticCommSubst p_body q) p' := by
+    simpa [TypeSubjectEquiv] using
+      ProcResidualEquiv.trans
+        (semanticCommSubst_transport_to_representative p_body q)
+        hp'
+  exact HasTypeUpToSubjectEquiv.of_proc_transport htransport htype
+
+/-- **Primary strict-core saturated exactness theorem**.
+
+    On the checkable strict-core body fragment, the live semantic COMM residual
+    lies in the saturation closure of the exact typing predicate generated by
+    the old body-opening hypothesis. -/
+theorem comm_preserves_type_semantic_saturated_typedAt_of_strictCoreCommBody
+    {Γ : TypingContext} {p_body : Pattern} {q : Pattern}
+    {φ : ProcPred}
+    {L : List String}
+    (hbody : ∀ z, z ∉ L →
+      HasType (Γ.extend z ⟨"Name", possibly (fun _ => True), by simp⟩)
+        (openBVar 0 (.fvar z) p_body) ⟨"Proc", φ, by simp⟩)
+    (hq : HasType Γ q ⟨"Proc", fun _ => True, by simp⟩)
+    (hlc_q : lc q = true)
+    (hstrict : strictCoreCommBody p_body = true)
+    : saturateProcPred (fun p => HasType Γ p ⟨"Proc", φ, by simp⟩)
+      (semanticCommSubst p_body q) := by
+  exact (hasTypeUpToSubjectEquiv_eq_saturateHasTypeProc
+      Γ φ (semanticCommSubst p_body q)).mp
+    (comm_preserves_type_semantic_upToSubjectEquiv_of_strictCoreCommBody
+      hbody hq hlc_q hstrict)
+
 /-! ## Progress Theorem -/
 
 /-- Syntactic inertness check for elements (recursive) -/
@@ -529,6 +729,7 @@ def isInertElement : Pattern → Bool
   | .apply "PZero" [] => true
   | .apply "POutput" _ => true
   | .apply "PInput" _ => true
+  | .apply "PDrop" _ => true
   | .apply "NQuote" _ => true
   | .collection .hashBag ps none => isInertElementList ps
   | _ => false
@@ -542,6 +743,7 @@ def isInertSyntax : Pattern → Bool
   | .apply "PZero" [] => true
   | .apply "POutput" _ => true
   | .apply "PInput" _ => true
+  | .apply "PDrop" _ => true
   | .apply "NQuote" _ => true
   | .collection .hashBag ps none => isInertElement.isInertElementList ps
   | _ => false
@@ -605,8 +807,7 @@ theorem non_inert_proc_reduces {p : Pattern} {φ : ProcPred}
     | quote _ =>
       simp [NativeType.mk.injEq] at hτ
     | drop hn =>
-      obtain ⟨q, rfl⟩ := empty_context_name_is_quote hn
-      exact ⟨q, ⟨Reduces.drop⟩⟩
+      simp [isInertElement] at hnotval
     | output _ _ =>
       simp [isInertElement] at hnotval
     | input _ _ =>
@@ -650,9 +851,8 @@ theorem progress_proc {p : Pattern} {φ : ProcPred} :
   | quote _ =>
     simp [NativeType.mk.injEq] at hτ
   | drop hn =>
-    right
-    obtain ⟨q, rfl⟩ := empty_context_name_is_quote hn
-    exact ⟨q, ⟨Reduces.drop⟩⟩
+    left
+    rfl
   | output _ _ =>
     left; rfl
   | input _ _ =>

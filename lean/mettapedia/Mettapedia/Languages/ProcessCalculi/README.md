@@ -71,7 +71,7 @@ via quoted names: `@(p)` (quote), `*(n)` (dereference), with the key equation
 | `CommRule.lean` | COMM with n-step lookahead |
 | `Context.lean` | Evaluation contexts and labeled transitions |
 | `PresentMoment.lean` | Present moment: surface + internal channels |
-| `Engine.lean` | Executable rewrite engine (COMM, DROP, PAR), proven sound |
+| `Engine.lean` | Executable rewrite engine for the paper-faithful COMM/PAR core, proven sound |
 | `Soundness.lean` | Type preservation under substitution |
 
 ## MeTTa-Calculus (9 files)

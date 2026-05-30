@@ -1,4 +1,5 @@
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.Reduction
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.SemanticSubstitution
 import Mettapedia.OSLF.MeTTaIL.Syntax
 import Mettapedia.OSLF.MeTTaIL.Substitution
 import Mettapedia.Lists.SetFold
@@ -102,14 +103,14 @@ inductive LabeledTransition : Pattern → EvalContext → Pattern → Type where
       LabeledTransition
         (.apply "PInput" [x, .lambda none p])
         (.par (.apply "POutput" [x, q]) .hole)
-        (commSubst p q)
+        (semanticCommSubst p q)
 
   /-- Output transitions via input context. -/
   | comm_output {p q : Pattern} {x : Pattern} :
       LabeledTransition
         (.apply "POutput" [x, q])
         (.par (.apply "PInput" [x, .lambda none p]) .hole)
-        (commSubst p q)
+        (semanticCommSubst p q)
 
   /-- General labeled transition from reduction. -/
   | from_reduction {p q : Pattern} {k : EvalContext} :
@@ -227,9 +228,9 @@ theorem reduces_of_canInteract {elems : List Pattern} {x : Pattern}
       (by rw [h_split₂]; exact List.perm_middle))
   have h_comm : Reduces
       (.collection .hashBag (output_proc :: input_proc :: other_rest) none)
-      (.collection .hashBag (commSubst p_body q_payload :: other_rest) none) :=
+      (.collection .hashBag (semanticCommSubst p_body q_payload :: other_rest) none) :=
     @Reduces.comm x q_payload p_body other_rest
-  use .collection .hashBag (commSubst p_body q_payload :: other_rest) none
+  use .collection .hashBag (semanticCommSubst p_body q_payload :: other_rest) none
   exact ⟨Reduces.equiv
     (StructuralCongruence.par_perm _ _ h_perm)
     h_comm

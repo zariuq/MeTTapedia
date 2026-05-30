@@ -324,11 +324,11 @@ theorem presentMoment_nonempty_iff {a e : Pattern} :
             have h_comm_step :
                 Reduces
                   (.collection .hashBag (output_proc :: input_proc :: other_rest) none)
-                  (.collection .hashBag (commSubst p_body q_payload :: other_rest) none) :=
+                  (.collection .hashBag (semanticCommSubst p_body q_payload :: other_rest) none) :=
               @Reduces.comm x q_payload p_body other_rest
             -- Combined reduction via structural equivalence
             let result := Pattern.collection .hashBag
-              (commSubst p_body q_payload :: other_rest) none
+              (semanticCommSubst p_body q_payload :: other_rest) none
             have h_reduces :
                 Reduces (.collection .hashBag [agent2, input_proc] none) result :=
               Reduces.equiv h_src_cong h_comm_step (StructuralCongruence.refl _)
@@ -599,20 +599,20 @@ theorem race_nondeterminism {elems : List Pattern} {x : Pattern}
   -- Therefore the "other" lists differ
   have h_others_ne : b₁ ++ a₁ ≠ b₂ ++ a₂ := by
     intro h_eq; rw [h_eq] at h₂_in_other₁; exact h₂_notin_other₂ h₂_in_other₁
-  -- Construct COMM₁: elems ⇝ {commSubst body₁ q, b₁ ++ a₁}
+  -- Construct COMM₁: elems ⇝ {semanticCommSubst body₁ q, b₁ ++ a₁}
   have h_perm₁ : elems.Perm (out :: inp₁ :: (b₁ ++ a₁)) :=
     h_permO.trans (List.Perm.cons out (by rw [h_split₁]; exact List.perm_middle))
   have h_red₁ : Nonempty (Reduces (.collection .hashBag elems none)
-      (.collection .hashBag (commSubst body₁ q :: (b₁ ++ a₁)) none)) :=
+      (.collection .hashBag (semanticCommSubst body₁ q :: (b₁ ++ a₁)) none)) :=
     ⟨Reduces.equiv
       (StructuralCongruence.par_perm _ _ h_perm₁)
       (@Reduces.comm x q body₁ (b₁ ++ a₁))
       (StructuralCongruence.refl _)⟩
-  -- Construct COMM₂: elems ⇝ {commSubst body₂ q, b₂ ++ a₂}
+  -- Construct COMM₂: elems ⇝ {semanticCommSubst body₂ q, b₂ ++ a₂}
   have h_perm₂ : elems.Perm (out :: inp₂ :: (b₂ ++ a₂)) :=
     h_permO.trans (List.Perm.cons out (by rw [h_split₂]; exact List.perm_middle))
   have h_red₂ : Nonempty (Reduces (.collection .hashBag elems none)
-      (.collection .hashBag (commSubst body₂ q :: (b₂ ++ a₂)) none)) :=
+      (.collection .hashBag (semanticCommSubst body₂ q :: (b₂ ++ a₂)) none)) :=
     ⟨Reduces.equiv
       (StructuralCongruence.par_perm _ _ h_perm₂)
       (@Reduces.comm x q body₂ (b₂ ++ a₂))
@@ -620,8 +620,8 @@ theorem race_nondeterminism {elems : List Pattern} {x : Pattern}
   -- Results differ: different tails imply different lists imply different patterns
   refine ⟨_, _, h_red₁, h_red₂, ?_⟩
   intro h_eq
-  have : commSubst body₁ q :: (b₁ ++ a₁) =
-      commSubst body₂ q :: (b₂ ++ a₂) := by
+  have : semanticCommSubst body₁ q :: (b₁ ++ a₁) =
+      semanticCommSubst body₂ q :: (b₂ ++ a₂) := by
     have h := h_eq
     simp only [Pattern.collection.injEq] at h
     exact h.2.1
@@ -816,7 +816,7 @@ def CommRecord.preState (r : CommRecord) : Pattern :=
 -/
 def CommRecord.postState (r : CommRecord) : Pattern :=
   .collection .hashBag
-    ([commSubst r.inputBody r.outputPayload] ++ r.rest) none
+    ([semanticCommSubst r.inputBody r.outputPayload] ++ r.rest) none
 
 /-- **Forward**: a COMM record witnesses a reduction from pre to post.
 
@@ -853,10 +853,10 @@ theorem CommRecord.reconstruct (r : CommRecord) :
 -/
 theorem CommRecord.recipe_consumed (r : CommRecord)
     (h_not_in_rest : .apply "PInput" [r.channel, .lambda none r.inputBody] ∉ r.rest)
-    (h_not_result : commSubst r.inputBody r.outputPayload ≠
+    (h_not_result : semanticCommSubst r.inputBody r.outputPayload ≠
       .apply "PInput" [r.channel, .lambda none r.inputBody]) :
     .apply "PInput" [r.channel, .lambda none r.inputBody] ∉
-      ([commSubst r.inputBody r.outputPayload] ++ r.rest) := by
+      ([semanticCommSubst r.inputBody r.outputPayload] ++ r.rest) := by
   intro hmem
   simp only [List.mem_append, List.mem_cons, List.mem_nil_iff, or_false] at hmem
   cases hmem with
@@ -866,10 +866,10 @@ theorem CommRecord.recipe_consumed (r : CommRecord)
 /-- **Linearity**: after COMM, the consumed fact is absent from the result. -/
 theorem CommRecord.fact_consumed (r : CommRecord)
     (h_not_in_rest : .apply "POutput" [r.channel, r.outputPayload] ∉ r.rest)
-    (h_not_result : commSubst r.inputBody r.outputPayload ≠
+    (h_not_result : semanticCommSubst r.inputBody r.outputPayload ≠
       .apply "POutput" [r.channel, r.outputPayload]) :
     .apply "POutput" [r.channel, r.outputPayload] ∉
-      ([commSubst r.inputBody r.outputPayload] ++ r.rest) := by
+      ([semanticCommSubst r.inputBody r.outputPayload] ++ r.rest) := by
   intro hmem
   simp only [List.mem_append, List.mem_cons, List.mem_nil_iff, or_false] at hmem
   cases hmem with

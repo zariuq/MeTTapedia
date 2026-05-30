@@ -36,13 +36,13 @@ def kripkeFrameToNeighborhood (F : Kripke.Frame) : Neighborhood.Frame where
 /-- Canonical Kripke-to-neighborhood model translation with induced valuation. -/
 def kripkeModelToNeighborhood (M : Kripke.Model) : Neighborhood.Model where
   toFrame := kripkeFrameToNeighborhood M.toFrame
-  Val a := {w : M.World | M w a}
+  Val a := {w : M.World | M a w}
 
 @[simp] theorem kripkeModelToNeighborhood_toFrame (M : Kripke.Model) :
     (kripkeModelToNeighborhood M).toFrame = kripkeFrameToNeighborhood M.toFrame := rfl
 
 @[simp] theorem kripkeModelToNeighborhood_val (M : Kripke.Model) (a : ℕ) :
-    (kripkeModelToNeighborhood M).Val a = {w : M.World | M w a} := rfl
+    (kripkeModelToNeighborhood M).Val a = {w : M.World | M a w} := rfl
 
 /-- Satisfaction preservation under the canonical Kripke-to-neighborhood translation. -/
 theorem satisfies_iff_kripke_toNeighborhood (M : Kripke.Model) :
@@ -52,7 +52,7 @@ theorem satisfies_iff_kripke_toNeighborhood (M : Kripke.Model) :
   intro x φ
   induction φ generalizing x with
   | atom a =>
-      change x ∈ {w : M.World | M w a} ↔ M x a
+      change x ∈ {w : M.World | M a w} ↔ M a x
       simp
   | falsum =>
       change (x ∈ (kripkeModelToNeighborhood M).truthset Formula.falsum) ↔ False

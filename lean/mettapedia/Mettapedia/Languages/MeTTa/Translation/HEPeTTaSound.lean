@@ -362,6 +362,459 @@ theorem PureTranslatable.toTranslatable {a : Atom} (h : PureTranslatable a) :
   obtain ⟨p, hp, _⟩ := h
   simp [Translatable, hp]
 
+/-! ## Append-suffix head-pattern extension boundary
+
+This mirrors the narrow operational translator extension used for successful
+append-suffix function-head lowering.  The key architectural fact is:
+
+- the base recovered-tail helper application stays in the current
+  `PureTranslatable` fragment
+- the recursive structural `case` step does not, because the branch pattern is
+  encoded as a raw non-symbol-headed atom rather than an OSLF `Pattern`
+-/
+
+/-- Proof-oriented builder for the append-suffix head-pattern extension.
+
+Positive example: when `prefixElems = []`, this produces the recovered-tail
+base case `let tailVar actual (__tr-raw-apply1 tailVar applyArg)`.
+
+Negative example: when `prefixElems` is nonempty, the generated `case` branch
+used to leave the bridge. The current shape instead binds the deconstruction
+result to a fresh variable and peels it through symbol-headed helper surfaces
+(`first-from-pair`, `second-from-pair`). -/
+def appendSuffixHeadBinder : Atom → Atom
+  | .var v => .var (v ++ "_head")
+  | _ => .var "$__tr_head_elem"
+
+def buildAppendSuffixHeadExtension
+    (prefixElems : List Atom) (actual : Atom)
+    (binders : List (Atom × Atom)) (tailVar applyArg : Atom) : Atom :=
+  match prefixElems with
+  | List.nil =>
+      Atom.expression
+        [Atom.symbol "let",
+         tailVar,
+         actual,
+         Atom.expression [Atom.symbol "__tr-raw-apply1", tailVar, applyArg]]
+  | List.cons prefixAtom rest =>
+      match binders with
+      | List.cons binder binders' =>
+          let pairVar := binder.1
+          let tailExpr := binder.2
+          let headVar := appendSuffixHeadBinder pairVar
+          let tailBind := Atom.var (match tailExpr with | .var v => v | _ => "$__tr_head_tail")
+          Atom.expression
+            [Atom.symbol "chain",
+             Atom.expression [Atom.symbol "decons-atom", actual],
+             pairVar,
+             Atom.expression
+               [Atom.symbol "let",
+                headVar,
+                Atom.expression [Atom.symbol "first-from-pair", pairVar],
+                Atom.expression
+                  [Atom.symbol "let",
+                   tailBind,
+                   Atom.expression [Atom.symbol "second-from-pair", pairVar],
+                   Atom.expression
+                     [Atom.symbol "unify",
+                      headVar,
+                      prefixAtom,
+                      buildAppendSuffixHeadExtension rest tailBind binders' tailVar applyArg,
+                      Atom.symbol "Empty"]]]]
+      | List.nil => Atom.symbol "Empty"
+
+/-- The recovered-tail base case stays in the current pure bridge fragment. -/
+theorem buildAppendSuffixHeadExtension_nil_pureTranslatable
+    (actual tailVar applyArg : Atom)
+    (hactual : PureTranslatable actual)
+    (htail : PureTranslatable tailVar)
+    (harg : PureTranslatable applyArg) :
+    PureTranslatable (buildAppendSuffixHeadExtension [] actual [] tailVar applyArg) := by
+  simp [buildAppendSuffixHeadExtension]
+  have happ : PureTranslatable
+      (.expression [.symbol "__tr-raw-apply1", tailVar, applyArg]) := by
+    exact pureTranslatable_expr "__tr-raw-apply1" [tailVar, applyArg]
+      (by simp) (by simp)
+      (by
+        intro a ha
+        simp at ha
+        rcases ha with rfl | rfl
+        · exact htail
+        · exact harg)
+  exact pureTranslatable_expr "let"
+    [tailVar, actual, .expression [.symbol "__tr-raw-apply1", tailVar, applyArg]]
+    (by simp) (by simp)
+    (by
+      intro a ha
+      simp at ha
+      rcases ha with rfl | rfl | rfl
+      · exact htail
+      · exact hactual
+      · exact happ)
+
+/-- A structural append-suffix cons step stays in the pure bridge fragment as
+long as its prefix atom and recursive tail stay there. This removes the old
+raw-pair obstruction from the extension itself. -/
+theorem buildAppendSuffixHeadExtension_cons_pureTranslatable
+    (prefixAtom : Atom) (rest : List Atom) (actual : Atom)
+    (pairName tailName : String) (binders : List (Atom × Atom))
+    (tailVar applyArg : Atom)
+    (hprefix : PureTranslatable prefixAtom)
+    (hactual : PureTranslatable actual)
+    (_htailVar : PureTranslatable tailVar)
+    (_harg : PureTranslatable applyArg)
+    (hinner : PureTranslatable
+      (buildAppendSuffixHeadExtension rest (.var tailName) binders tailVar applyArg)) :
+    PureTranslatable
+      (buildAppendSuffixHeadExtension (List.cons prefixAtom rest) actual
+        (List.cons (.var pairName, .var tailName) binders) tailVar applyArg) := by
+  simp [buildAppendSuffixHeadExtension, appendSuffixHeadBinder]
+  have hpair : PureTranslatable (.var pairName) := pureTranslatable_var pairName
+  have hhead : PureTranslatable (appendSuffixHeadBinder (.var pairName)) := by
+    simp [appendSuffixHeadBinder, pureTranslatable_var]
+  have htail : PureTranslatable (.var tailName) := pureTranslatable_var tailName
+  have hdecons : PureTranslatable (.expression [.symbol "decons-atom", actual]) := by
+    exact pureTranslatable_expr "decons-atom" [actual]
+      (by decide) (by decide) (by
+        intro a ha
+        simp at ha
+        rcases ha with rfl
+        exact hactual)
+  have hfirst : PureTranslatable (.expression [.symbol "first-from-pair", .var pairName]) := by
+    exact pureTranslatable_expr "first-from-pair" [.var pairName]
+      (by decide) (by decide) (by
+        intro a ha
+        simp at ha
+        rcases ha with rfl
+        exact hpair)
+  have hsecond : PureTranslatable (.expression [.symbol "second-from-pair", .var pairName]) := by
+    exact pureTranslatable_expr "second-from-pair" [.var pairName]
+      (by decide) (by decide) (by
+        intro a ha
+        simp at ha
+        rcases ha with rfl
+        exact hpair)
+  have hempty : PureTranslatable (.symbol "Empty") := pureTranslatable_symbol "Empty"
+  have hunify : PureTranslatable
+      (.expression
+        [.symbol "unify",
+          appendSuffixHeadBinder (.var pairName),
+          prefixAtom,
+          buildAppendSuffixHeadExtension rest (.var tailName) binders tailVar applyArg,
+          .symbol "Empty"]) := by
+    exact pureTranslatable_expr "unify"
+      [appendSuffixHeadBinder (.var pairName),
+        prefixAtom,
+        buildAppendSuffixHeadExtension rest (.var tailName) binders tailVar applyArg,
+        .symbol "Empty"]
+      (by decide) (by decide) (by
+        intro a ha
+        simp at ha
+        rcases ha with rfl | rfl | rfl | rfl
+        · exact hhead
+        · exact hprefix
+        · exact hinner
+        · exact hempty)
+  have hletTail : PureTranslatable
+      (.expression
+        [.symbol "let",
+          .var tailName,
+          .expression [.symbol "second-from-pair", .var pairName],
+          .expression
+            [.symbol "unify",
+              appendSuffixHeadBinder (.var pairName),
+              prefixAtom,
+              buildAppendSuffixHeadExtension rest (.var tailName) binders tailVar applyArg,
+              .symbol "Empty"]]) := by
+    exact pureTranslatable_expr "let"
+      [.var tailName,
+        .expression [.symbol "second-from-pair", .var pairName],
+        .expression
+          [.symbol "unify",
+            appendSuffixHeadBinder (.var pairName),
+            prefixAtom,
+            buildAppendSuffixHeadExtension rest (.var tailName) binders tailVar applyArg,
+            .symbol "Empty"]]
+      (by decide) (by decide) (by
+        intro a ha
+        simp at ha
+        rcases ha with rfl | rfl | rfl
+        · exact htail
+        · exact hsecond
+        · exact hunify)
+  have hletHead : PureTranslatable
+      (.expression
+        [.symbol "let",
+          appendSuffixHeadBinder (.var pairName),
+          .expression [.symbol "first-from-pair", .var pairName],
+          .expression
+            [.symbol "let",
+              .var tailName,
+              .expression [.symbol "second-from-pair", .var pairName],
+              .expression
+                [.symbol "unify",
+                  appendSuffixHeadBinder (.var pairName),
+                  prefixAtom,
+                  buildAppendSuffixHeadExtension rest (.var tailName) binders tailVar applyArg,
+                  .symbol "Empty"]]]) := by
+    exact pureTranslatable_expr "let"
+      [appendSuffixHeadBinder (.var pairName),
+        .expression [.symbol "first-from-pair", .var pairName],
+        .expression
+          [.symbol "let",
+            .var tailName,
+            .expression [.symbol "second-from-pair", .var pairName],
+            .expression
+              [.symbol "unify",
+                appendSuffixHeadBinder (.var pairName),
+                prefixAtom,
+                buildAppendSuffixHeadExtension rest (.var tailName) binders tailVar applyArg,
+                .symbol "Empty"]]]
+      (by decide) (by decide) (by
+        intro a ha
+        simp at ha
+        rcases ha with rfl | rfl | rfl
+        · exact hhead
+        · exact hfirst
+        · exact hletTail)
+  exact pureTranslatable_expr "chain"
+    [.expression [.symbol "decons-atom", actual],
+      .var pairName,
+      .expression
+        [.symbol "let",
+          appendSuffixHeadBinder (.var pairName),
+          .expression [.symbol "first-from-pair", .var pairName],
+          .expression
+            [.symbol "let",
+              .var tailName,
+              .expression [.symbol "second-from-pair", .var pairName],
+              .expression
+                [.symbol "unify",
+                  appendSuffixHeadBinder (.var pairName),
+                  prefixAtom,
+                  buildAppendSuffixHeadExtension rest (.var tailName) binders tailVar applyArg,
+                  .symbol "Empty"]]]]
+    (by decide) (by decide) (by
+      intro a ha
+      simp at ha
+      rcases ha with rfl | rfl | rfl
+      · exact hdecons
+      · exact hpair
+      · exact hletHead)
+
+/-! ## Append-suffix let-pattern extension boundary
+
+This mirrors the narrow operational translator extension used for structural
+function-call inversion under PeTTa `let`-patterns once the body has already been
+rawified into explicit HE helper surfaces.
+-/
+
+/-- Proof-oriented builder for the append-suffix `let`-pattern extension. -/
+def buildAppendSuffixLetExtension
+    (prefixElems : List Atom) (actual : Atom)
+    (binders : List (Atom × Atom)) (tailVar translatedBody : Atom) : Atom :=
+  match prefixElems with
+  | List.nil =>
+      Atom.expression
+        [Atom.symbol "let",
+         tailVar,
+         actual,
+         translatedBody]
+  | List.cons prefixAtom rest =>
+      match binders with
+      | List.cons binder binders' =>
+          let pairVar := binder.1
+          let tailExpr := binder.2
+          let headVar := appendSuffixHeadBinder pairVar
+          let tailBind := Atom.var (match tailExpr with | .var v => v | _ => "$__tr_head_tail")
+          Atom.expression
+            [Atom.symbol "chain",
+             Atom.expression [Atom.symbol "decons-atom", actual],
+             pairVar,
+             Atom.expression
+               [Atom.symbol "let",
+                headVar,
+                Atom.expression [Atom.symbol "first-from-pair", pairVar],
+                Atom.expression
+                  [Atom.symbol "let",
+                   tailBind,
+                   Atom.expression [Atom.symbol "second-from-pair", pairVar],
+                   Atom.expression
+                     [Atom.symbol "unify",
+                      headVar,
+                      prefixAtom,
+                      buildAppendSuffixLetExtension rest tailBind binders' tailVar translatedBody,
+                      Atom.symbol "Empty"]]]]
+      | List.nil => Atom.symbol "Empty"
+
+/-- The recovered-tail base case for structural `let`-pattern inversion stays
+in the current pure bridge fragment when the translated body does. -/
+theorem buildAppendSuffixLetExtension_nil_pureTranslatable
+    (actual tailVar translatedBody : Atom)
+    (hactual : PureTranslatable actual)
+    (htail : PureTranslatable tailVar)
+    (hbody : PureTranslatable translatedBody) :
+    PureTranslatable (buildAppendSuffixLetExtension [] actual [] tailVar translatedBody) := by
+  simp [buildAppendSuffixLetExtension]
+  exact pureTranslatable_expr "let"
+    [tailVar, actual, translatedBody]
+    (by decide) (by decide) (by
+      intro a ha
+      simp at ha
+      rcases ha with rfl | rfl | rfl
+      · exact htail
+      · exact hactual
+      · exact hbody)
+
+/-- A structural append-suffix `let`-pattern cons step stays in the pure bridge
+fragment as long as its prefix atom and recursive tail stay there. -/
+theorem buildAppendSuffixLetExtension_cons_pureTranslatable
+    (prefixAtom : Atom) (rest : List Atom) (actual : Atom)
+    (pairName tailName : String) (binders : List (Atom × Atom))
+    (tailVar translatedBody : Atom)
+    (hprefix : PureTranslatable prefixAtom)
+    (hactual : PureTranslatable actual)
+    (_htailVar : PureTranslatable tailVar)
+    (_hbody : PureTranslatable translatedBody)
+    (hinner : PureTranslatable
+      (buildAppendSuffixLetExtension rest (.var tailName) binders tailVar translatedBody)) :
+    PureTranslatable
+      (buildAppendSuffixLetExtension (List.cons prefixAtom rest) actual
+        (List.cons (.var pairName, .var tailName) binders) tailVar translatedBody) := by
+  simp [buildAppendSuffixLetExtension, appendSuffixHeadBinder]
+  have hpair : PureTranslatable (.var pairName) := pureTranslatable_var pairName
+  have hhead : PureTranslatable (appendSuffixHeadBinder (.var pairName)) := by
+    simp [appendSuffixHeadBinder, pureTranslatable_var]
+  have htail : PureTranslatable (.var tailName) := pureTranslatable_var tailName
+  have hdecons : PureTranslatable (.expression [.symbol "decons-atom", actual]) := by
+    exact pureTranslatable_expr "decons-atom" [actual]
+      (by decide) (by decide) (by
+        intro a ha
+        simp at ha
+        rcases ha with rfl
+        exact hactual)
+  have hfirst : PureTranslatable (.expression [.symbol "first-from-pair", .var pairName]) := by
+    exact pureTranslatable_expr "first-from-pair" [.var pairName]
+      (by decide) (by decide) (by
+        intro a ha
+        simp at ha
+        rcases ha with rfl
+        exact hpair)
+  have hsecond : PureTranslatable (.expression [.symbol "second-from-pair", .var pairName]) := by
+    exact pureTranslatable_expr "second-from-pair" [.var pairName]
+      (by decide) (by decide) (by
+        intro a ha
+        simp at ha
+        rcases ha with rfl
+        exact hpair)
+  have hempty : PureTranslatable (.symbol "Empty") := pureTranslatable_symbol "Empty"
+  have hunify : PureTranslatable
+      (.expression
+        [.symbol "unify",
+          appendSuffixHeadBinder (.var pairName),
+          prefixAtom,
+          buildAppendSuffixLetExtension rest (.var tailName) binders tailVar translatedBody,
+          .symbol "Empty"]) := by
+    exact pureTranslatable_expr "unify"
+      [appendSuffixHeadBinder (.var pairName),
+        prefixAtom,
+        buildAppendSuffixLetExtension rest (.var tailName) binders tailVar translatedBody,
+        .symbol "Empty"]
+      (by decide) (by decide) (by
+        intro a ha
+        simp at ha
+        rcases ha with rfl | rfl | rfl | rfl
+        · exact hhead
+        · exact hprefix
+        · exact hinner
+        · exact hempty)
+  have hletTail : PureTranslatable
+      (.expression
+        [.symbol "let",
+          .var tailName,
+          .expression [.symbol "second-from-pair", .var pairName],
+          .expression
+            [.symbol "unify",
+              appendSuffixHeadBinder (.var pairName),
+              prefixAtom,
+              buildAppendSuffixLetExtension rest (.var tailName) binders tailVar translatedBody,
+              .symbol "Empty"]]) := by
+    exact pureTranslatable_expr "let"
+      [.var tailName,
+        .expression [.symbol "second-from-pair", .var pairName],
+        .expression
+          [.symbol "unify",
+            appendSuffixHeadBinder (.var pairName),
+            prefixAtom,
+            buildAppendSuffixLetExtension rest (.var tailName) binders tailVar translatedBody,
+            .symbol "Empty"]]
+      (by decide) (by decide) (by
+        intro a ha
+        simp at ha
+        rcases ha with rfl | rfl | rfl
+        · exact htail
+        · exact hsecond
+        · exact hunify)
+  have hletHead : PureTranslatable
+      (.expression
+        [.symbol "let",
+          appendSuffixHeadBinder (.var pairName),
+          .expression [.symbol "first-from-pair", .var pairName],
+          .expression
+            [.symbol "let",
+              .var tailName,
+              .expression [.symbol "second-from-pair", .var pairName],
+              .expression
+                [.symbol "unify",
+                  appendSuffixHeadBinder (.var pairName),
+                  prefixAtom,
+                  buildAppendSuffixLetExtension rest (.var tailName) binders tailVar translatedBody,
+                  .symbol "Empty"]]]) := by
+    exact pureTranslatable_expr "let"
+      [appendSuffixHeadBinder (.var pairName),
+        .expression [.symbol "first-from-pair", .var pairName],
+        .expression
+          [.symbol "let",
+            .var tailName,
+            .expression [.symbol "second-from-pair", .var pairName],
+            .expression
+              [.symbol "unify",
+                appendSuffixHeadBinder (.var pairName),
+                prefixAtom,
+                buildAppendSuffixLetExtension rest (.var tailName) binders tailVar translatedBody,
+                .symbol "Empty"]]]
+      (by decide) (by decide) (by
+        intro a ha
+        simp at ha
+        rcases ha with rfl | rfl | rfl
+        · exact hhead
+        · exact hfirst
+        · exact hletTail)
+  exact pureTranslatable_expr "chain"
+    [.expression [.symbol "decons-atom", actual],
+      .var pairName,
+      .expression
+        [.symbol "let",
+          appendSuffixHeadBinder (.var pairName),
+          .expression [.symbol "first-from-pair", .var pairName],
+          .expression
+            [.symbol "let",
+              .var tailName,
+              .expression [.symbol "second-from-pair", .var pairName],
+              .expression
+                [.symbol "unify",
+                  appendSuffixHeadBinder (.var pairName),
+                  prefixAtom,
+                  buildAppendSuffixLetExtension rest (.var tailName) binders tailVar translatedBody,
+                  .symbol "Empty"]]]]
+    (by decide) (by decide) (by
+      intro a ha
+      simp at ha
+      rcases ha with rfl | rfl | rfl
+      · exact hdecons
+      · exact hpair
+      · exact hletHead)
+
 /-! ## Phase 2, Step 4: Symbol Passthrough -/
 
 /-- **Symbol passthrough soundness**: HE's `EvalAtom` on a symbol with pass-through

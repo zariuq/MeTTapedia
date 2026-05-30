@@ -59,9 +59,12 @@ deriving DecidableEq
 
     The reduction relation includes:
     - COMM: {n!(q) | for(x<-n){p}} reduces {p[@q/x]}
-    - DROP: *(@p) reduces p
     - PAR: congruence under parallel composition
     - EQUIV: reduction modulo structural congruence
+
+    Free drop is inert in the Meredith-Radestock 2005 core relation; it only
+    becomes executable via substitution when a quoted process is supplied to a
+    bound name.
 -/
 def rhoRewriteSystem : RewriteSystem where
   Sorts := RhoSort
