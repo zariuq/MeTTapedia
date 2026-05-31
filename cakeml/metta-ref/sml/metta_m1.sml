@@ -5,6 +5,13 @@ datatype atom =
   | StrLit of string
   | Expr of atom list;
 
+datatype exported_atom =
+    ESym of string
+  | EVar of string
+  | EInt of int
+  | EStr of string
+  | EExpr of exported_atom list;
+
 datatype command =
     Add of atom
   | Run of atom;
@@ -29,6 +36,40 @@ fun var s = Var s;
 fun int_atom n = IntLit n;
 fun str_atom s = StrLit s;
 fun expr xs = Expr xs;
+
+fun export_atom atom =
+  case atom of
+    Sym s => ESym s
+  | Var v => EVar v
+  | IntLit i => EInt i
+  | StrLit s => EStr s
+  | Expr xs => EExpr (export_atom_list xs)
+
+and export_atom_list xs =
+  case xs of
+    [] => []
+  | atom :: rest => export_atom atom :: export_atom_list rest;
+
+fun import_exported_atom atom =
+  case atom of
+    ESym s => Sym s
+  | EVar v => Var v
+  | EInt i => IntLit i
+  | EStr s => StrLit s
+  | EExpr xs => Expr (import_exported_atom_list xs)
+
+and import_exported_atom_list xs =
+  case xs of
+    [] => []
+  | atom :: rest => import_exported_atom atom :: import_exported_atom_list rest;
+
+fun eval_return_fragment atom =
+  case atom of
+    Expr [Sym "return", value] => [Expr [Sym "return", value]]
+  | _ => [atom];
+
+fun export_eval_return_fragment atom =
+  export_atom_list (eval_return_fragment atom);
 
 val true_atom = Sym "True";
 val false_atom = Sym "False";

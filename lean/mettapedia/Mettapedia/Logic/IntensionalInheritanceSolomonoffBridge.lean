@@ -55,10 +55,8 @@ theorem intensionalFromConditional_eq_log2_ratio
       Real.log
         (extensionalFromConditional ξ x F W / priorFromConditional ξ x W) /
       Real.log 2 := by
-  have hPos : priorFromConditional ξ x W > 0 ∧ extensionalFromConditional ξ x F W > 0 :=
-    ⟨hPrior, hExt⟩
-  unfold intensionalFromConditional mutualInfoFromEvidence
-  rw [if_pos hPos]
+  unfold intensionalFromConditional
+  exact logRatioInformationGainFromEvidence_eq_log2_ratio hExt hPrior
 
 /-- Specialized bridge for the generic Bayes mixture `ξ = xiSemimeasure ν w`. -/
 theorem intensionalFromXiSemimeasure_eq_log2_ratio

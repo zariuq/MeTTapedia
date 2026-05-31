@@ -4604,6 +4604,31 @@ $s_{BC} = s_{CB} \cdot s_C / s_B$, then deduction.%
 \code{plnInduction\_eq\_bayes\_deduction},
 \code{plnAbduction\_eq\_bayes\_deduction}.}
 
+\paragraph{Induction as online class induction.}
+A single application of the induction rule is the \emph{atomic step} of a
+statistical class induction.  Read $C$ as an observed individual and $A,B$ as
+classes: the premises $C\!\to\!A$, $C\!\to\!B$ say only that one individual
+instantiates both classes, while the conclusion $A\!\to\!B$ is a class law.
+Each individual deposits evidence into \emph{both} directions ($A\!\to\!B$ and
+$B\!\to\!A$); iterating over independent individuals and combining by revision,
+which is sequential Bayesian updating (\S\ref{sec:additive-regime}), drives
+$s_{AB}\to P(B\mid A)$ with confidence $\to 1$.  The \emph{direction} is fixed
+by the base-rate factor $s_B/s_A$ already present in the inversion: the reverse
+link converges to $P(A\mid B)$, which is diluted by every $B$-instance that is
+not an $A$.  Thus ``ravens are black'' ($P(\mathrm{black}\mid\mathrm{raven})
+\approx 1$) survives while ``black things are ravens''
+($P(\mathrm{raven}\mid\mathrm{black})$) decays toward its base rate---the
+extensional asymmetry of \code{Inheritance} reconstructed dynamically.
+Convergence to the true conditional requires \emph{independent} evidence (else
+revision double-counts); this is the role of the trail-free, fresh-evidence
+discipline of Theorem~\ref{thm:damped-convergence}, and is why
+\code{RavenInduction} assigns its two ravens disjoint provenance stamps.  We
+leave as a target for
+\codepath{Mettapedia/Logic/PLNDistributionalConvergence.lean} the statement
+that iterated induction-plus-revision on i.i.d.\ instance evidence converges in
+strength to $P(B\mid A)$ with confidence $\to 1$, the reverse link to
+$P(A\mid B)$, their ratio fixed by the base rates.
+
 The chain theorem above is stated at the strength (scalar) level.
 At the \emph{distributional level}, the story is cleaner: propagate
 the full Beta or Dirichlet posterior through the chain, and the

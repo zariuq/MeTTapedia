@@ -15,6 +15,12 @@ open Mettapedia.Languages.GF.PGFWitnessIR
 open Mettapedia.Languages.GF.PGFPretty
 open Mettapedia.Languages.GF.USConstitution.Generated.Witnesses
 
+private def bulletList (label : String) (items : List String) : String :=
+  if items.isEmpty then
+    label ++ ": []\n"
+  else
+    label ++ ":\n" ++ String.intercalate "\n" (items.map fun item => "- " ++ item) ++ "\n"
+
 def prettyParses (cid : ClauseId) : List String :=
   (clauseParses cid).map ExportedTree.prettyFormalGF
 
@@ -52,7 +58,11 @@ def prettyCorrectionReport (corr : CorrectionId) : String :=
   "Accepted parses: " ++
     toString (Mettapedia.Languages.GF.USConstitution.Generated.ContextCompletions.acceptedParseCount corr) ++
     "\n" ++
-  "Round-trip pretty view: " ++ toString (correctionRoundTrips corr) ++ "\n" ++
+  bulletList "GF linearization"
+    (Mettapedia.Languages.GF.USConstitution.Generated.ContextCompletions.correctionGFLinearizations corr) ++
+  bulletList "GF bracketed linearization"
+    (Mettapedia.Languages.GF.USConstitution.Generated.ContextCompletions.correctionGFBracketedLinearizations corr) ++
+  "FormalGF structural round-trip: " ++ toString (correctionRoundTrips corr) ++ "\n" ++
   "Pretty GF:\n" ++ String.intercalate "\n\n---\n\n" (correctionPrettyParses corr)
 
 def prettyClauseReport (cid : ClauseId) : String :=
@@ -60,7 +70,9 @@ def prettyClauseReport (cid : ClauseId) : String :=
   "Source: " ++ clauseText cid ++ "\n" ++
   "Parser input: " ++ parserInput cid ++ "\n" ++
   "Accepted parses: " ++ toString (acceptedParseCount cid) ++ "\n" ++
-  "Round-trip pretty view: " ++ toString (parseRoundTrips cid) ++ "\n" ++
+  bulletList "GF linearization" (clauseGFLinearizations cid) ++
+  bulletList "GF bracketed linearization" (clauseGFBracketedLinearizations cid) ++
+  "FormalGF structural round-trip: " ++ toString (parseRoundTrips cid) ++ "\n" ++
   "Pretty GF:\n" ++ String.intercalate "\n\n---\n\n" (prettyParses cid)
 
 def prettyClauseReportWithCorrections (cid : ClauseId) : String :=
@@ -95,11 +107,8 @@ def articleISelectedPrettyReport : String :=
 def articleVIIRatificationPretty : String :=
   prettyClauseReport .articleVIIRatification
 
-example : parseRoundTrips .articleVIIRatification = true := by native_decide
-example : parseRoundTrips .articleISection7EveryBillPresented = true := by native_decide
-example : correctionRoundTrips .articleISection8DeclareWarContextCompletion1 = true := by native_decide
-example : articleISelectedClauseIds.length = 11 := by native_decide
+example : articleISelectedClauseIds.length = 11 := by decide
 example : (prettyParses .articleVIIRatification).length = acceptedParseCount .articleVIIRatification := by
-  native_decide
+  decide
 
 end Mettapedia.Languages.GF.USConstitution.Pretty

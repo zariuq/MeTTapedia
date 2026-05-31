@@ -272,6 +272,18 @@ def acceptedParseCount : CorrectionId → Nat
   | .articleISection8DeclareWarContextCompletion1 => 1
   | .articleVProposeAmendmentsContextCompletion1 => 1
 
+def correctionGFLinearizations : CorrectionId → List String
+  | .articleISection3SenateImpeachmentsExactSubfragment1 => ["the senate shall have the sole power"]
+  | .articleISection3SenateImpeachmentsContextCompletion1 => ["the senate shall try all impeachments"]
+  | .articleISection8DeclareWarContextCompletion1 => ["congress may declare war"]
+  | .articleVProposeAmendmentsContextCompletion1 => ["the congress shall propose amendments to this Constitution"]
+
+def correctionGFBracketedLinearizations : CorrectionId → List String
+  | .articleISection3SenateImpeachmentsExactSubfragment1 => ["(Phr:31 (Utt:29 (S:28 (NP:6 (Det:3 (Quant:1 the)) (CN:5 (N:4 senate))) (VPS:27 (VPS2:17 (VPSlash:16 (VV:11 shall)))) (VPS:27 (VPS2:17 (VPSlash:16 (VPSlash:15 (V2:14 have)))) (NP:26 (Det:20 (Quant:18 the)) (CN:25 (AP:22 (A:21 sole)) (CN:24 (N:23 power))))))))"]
+  | .articleISection3SenateImpeachmentsContextCompletion1 => ["(Phr:30 (Utt:28 (S:27 (NP:6 (Det:3 (Quant:1 the)) (CN:5 (N:4 senate))) (VPS:26 (VPS2:17 (VPSlash:16 (VV:11 shall)))) (VPS:26 (VPS2:17 (VPSlash:16 (VPSlash:15 (V2:14 try)))) (NP:25 (Predet:18 all) (NP:24 (CN:23 (N:22 impeachments))))))))"]
+  | .articleISection8DeclareWarContextCompletion1 => ["(Phr:22 (Utt:20 (S:19 (NP:3 (CN:2 (N:1 congress))) (VPS:18 (VPS2:14 (VPSlash:13 (VV:8 may)))) (VPS:18 (VPS2:14 (VPSlash:13 (VPSlash:12 (V2:11 declare)))) (NP:17 (CN:16 (N:15 war)))))))"]
+  | .articleVProposeAmendmentsContextCompletion1 => ["(Phr:39 (Utt:37 (S:36 (NP:6 (Det:3 (Quant:1 the)) (CN:5 (N:4 congress))) (VPS:35 (VPS2:17 (VPSlash:16 (VV:11 shall)))) (VPS:35 (VPS2:17 (VPSlash:16 (VPSlash:15 (V2:14 propose)))) (NP:34 (CN:33 (CN:30 (CN:22 (N:21 amendments)) (Adv:29 (Prep:23 to) (NP:28 (DAP:27 (Det:26 (Quant:24 this)))))) (NP:32 (PN:31 Constitution))))))))"]
+
 def correctionsForClause : ClauseId → List CorrectionId
   | .preambleEstablishJustice => []
   | .articleISection1Vesting => []

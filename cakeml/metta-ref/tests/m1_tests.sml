@@ -94,6 +94,12 @@ val _ =
     [A];
 
 val _ =
+  assert_bag "export-return-fragment-import"
+    (import_exported_atom_list
+      (export_eval_return_fragment (call "return" [A])))
+    [call "return" [A]];
+
+val _ =
   assert_bag "collapse-superpose"
     (eval_top 40 [] (call "collapse" [call "superpose" [Expr [A, B]]]))
     [Expr [A, B]];

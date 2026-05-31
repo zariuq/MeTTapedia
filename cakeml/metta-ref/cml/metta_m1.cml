@@ -5,6 +5,13 @@ datatype atom =
   | StrLit string
   | Expr (atom list);
 
+datatype exported_atom =
+    ESym string
+  | EVar string
+  | EInt int
+  | EStr string
+  | EExpr (exported_atom list);
+
 datatype command =
     Add atom
   | Run atom;
@@ -29,6 +36,40 @@ fun var s = Var s;
 fun int_atom n = IntLit n;
 fun str_atom s = StrLit s;
 fun expr xs = Expr xs;
+
+fun export_atom atom =
+  case atom of
+    Sym s => ESym s
+  | Var v => EVar v
+  | IntLit i => EInt i
+  | StrLit s => EStr s
+  | Expr xs => EExpr (export_atom_list xs)
+
+and export_atom_list xs =
+  case xs of
+    [] => []
+  | atom :: rest => export_atom atom :: export_atom_list rest;
+
+fun import_exported_atom atom =
+  case atom of
+    ESym s => Sym s
+  | EVar v => Var v
+  | EInt i => IntLit i
+  | EStr s => StrLit s
+  | EExpr xs => Expr (import_exported_atom_list xs)
+
+and import_exported_atom_list xs =
+  case xs of
+    [] => []
+  | atom :: rest => import_exported_atom atom :: import_exported_atom_list rest;
+
+fun eval_return_fragment atom =
+  case atom of
+    Expr [Sym "return", value] => [Expr [Sym "return", value]]
+  | _ => [atom];
+
+fun export_eval_return_fragment atom =
+  export_atom_list (eval_return_fragment atom);
 
 val true_atom = Sym "True";
 val false_atom = Sym "False";
@@ -853,6 +894,10 @@ val failures11 =
 
 val failures12 =
   failures11 +
+  test_bag "export-return-fragment-import-cml"
+    (import_exported_atom_list
+      (export_eval_return_fragment (call "return" [a_atom])))
+    [call "return" [a_atom]] +
   test_bag "collapse-superpose"
     (eval_top 40 [] (call "collapse" [call "superpose" [Expr [a_atom, b_atom]]]))
     [Expr [a_atom, b_atom]];

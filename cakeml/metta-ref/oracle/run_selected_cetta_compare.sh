@@ -41,6 +41,12 @@ normalized_bag_tests=(
   nondet_chain_bag.metta
   nondet_cross_product_bag.metta
   nondet_superpose_eval_bag.metta
+  nondet_eval_arg_add_bag.metta
+  nondet_if_condition_bag.metta
+  nondet_let_value_bag.metta
+  nondet_match_eval_template_bag.metta
+  nondet_collapse_bag.metta
+  nondet_superpose_three_bag.metta
 )
 
 failures=0

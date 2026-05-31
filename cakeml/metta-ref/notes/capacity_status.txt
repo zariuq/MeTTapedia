@@ -1,7 +1,7 @@
 CakeML MeTTa capacity prototype status
 ======================================
 
-Current date: 2026-05-30
+Current date: 2026-05-31
 
 This file tracks the broad easy examples requested before choosing the final
 MeTTa structure/design.
@@ -64,13 +64,16 @@ Covered by runnable tests
 - Selected SML/CakeML-vs-CeTTa output comparisons for simple rewrite,
   pattern-variable substitution, unknown-expression preservation, and basic
   eval.
-- Selected normalized-bag SML/CakeML-vs-CeTTa comparisons now cover 14 files,
+- Selected normalized-bag SML/CakeML-vs-CeTTa comparisons now cover 20 files,
   including duplicate multiplicity, nondeterministic equality, match branching,
-  chain branching, nested-chain cross products, and evaluated superpose.
+  chain branching, nested-chain cross products, evaluated argument arithmetic,
+  nondeterministic if/let, evaluated match templates, collapse, and evaluated
+  superpose.
 - CakeML FFI byte-protocol witness:
   /home/zar/claude/CakeML/metta-ref/ffi/ffi_probe.cml and
   /home/zar/claude/CakeML/metta-ref/ffi/ffi_probe.c exercise call-ml and a
   call-native-to-call-ml front tag over a small mutable byte request/response.
+  The byte protocol now covers inc, dec, and echo opcodes.
 
 Proof foothold
 --------------
@@ -100,12 +103,109 @@ Currently proves:
 - match-space member soundness for eval_m1 match calls;
 - identity equality-rule and match-call evaluation examples.
 - an extended one-step HOL evaluator branch cluster for let, if, integer
-  addition, integer comparison, unify, decons-atom, cons-atom, collapse,
-  superpose, and primitive bad-argument errors, with a result-classification
-  soundness theorem and concrete positive/negative examples.
+  addition, multiplication, subtraction, equality, integer comparison,
+  boolean and/or/not, unify, decons-atom, cons-atom, collapse, superpose,
+  finite call-ml/call-native host-call witnesses, and primitive bad-argument
+  errors, with a result-classification soundness theorem and concrete
+  positive/negative examples.
 - a recursive HOL evaluator prototype layered over eval_m1_ext for
-  function/return, eval/not-reducible, and chain, with concrete positive and
-  negative examples.
+  evaluated arithmetic/boolean/equality primitive arguments, function/return,
+  eval/not-reducible, and chain, with concrete positive and negative examples;
+  recursive add now has nonempty lemmas where both evaluated argument result
+  lists are nonempty, and recursive add/multiply/subtract/less-than/equality
+  have input-sensitive member soundness lemmas connecting each successful
+  output to members of the evaluated argument result lists. Boolean and/or/not
+  now have analogous input-sensitive result provenance, and function/return
+  plus chain have member-soundness and nonempty bridge lemmas.
+- a HOL finite type-call witness for Add/Nat: declared-or-default type lookup,
+  type matching, typed Add rejection for bad arguments, and typed Add success
+  through the equality evaluator.
+- HOL evalc, dependent Vec/Cons, case, switch, and full fuelled multi-binding
+  let* branches are now integrated into the main recursive evaluator. Evalc,
+  case, and switch have branch-level member/provenance lemmas; Vec/Cons and
+  let* have direct evaluator branch/evaluation witnesses, including a
+  sequential two-binding let* example. Full fuelled let* now also has a
+  recursive provenance predicate plus an iff theorem connecting exactly the
+  members of eval_let_star_with to that provenance predicate, lifted to the
+  eval_m1_rec let* branch.
+- HOL host-call profile predicates classifying call-ml/call-native inc as the
+  finite supported host profile while other host names remain NotReducible;
+  the finite profile now has case-splitting and builtin-evaluation boundary
+  theorems for integer success and bad-argument rejection, plus a theorem that
+  call-native and call-ml agree on the supported integer-success profile.
+- evaluator-level evalc type soundness: any non-error result from the
+  integrated evalc branch matches the requested expected type under the
+  declared-or-default type lookup; the branch now also has an explicit
+  typed-or-type-error classification theorem.
+- recursive evaluator branch soundness: arithmetic, comparison, equality,
+  booleans, function/return, recursive eval, chain, evalc, Vec/Cons, case,
+  switch, and full let* are folded into a common branch-result predicate.
+  Valid case and switch results now carry branch/match provenance; invalid
+  chain, case, switch, and let* forms are classified as type errors; Vec/Cons
+  is exact; let* carries fuelled sequential provenance; and fuel-zero timeout
+  has a separate soundness theorem.
+- fuller recursive evaluator result soundness: the top-level branch predicate
+  now matches the evaluator dispatch shape; non-branch atoms have an explicit
+  fallback equality theorem to eval_m1_ext, and eval_m1_rec_result_sound covers
+  fuel-zero timeout, proven recursive branches, and eval_m1_ext fallback
+  results.
+- intended nonempty/totality facts now cover recursive multiply, subtract,
+  less-than, equality, evalc under typed-error-or-nonempty-input conditions,
+  Vec/Cons, invalid chain/case/switch/let* forms, and scoped case/switch
+  branches when a selected branch body is nonempty.
+- let* success-path nonempty now follows directly from let_star_provenance,
+  both for eval_let_star_with and for the integrated eval_m1_rec let* branch.
+- input-sensitive branch soundness is split into arithmetic/comparison and
+  boolean branch families, with refinement theorems back into the common
+  branch-result predicate.
+- host-call byte-profile boundary: the finite call-ml/call-native inc profile
+  now has a HOL byte-response model matching the FFI probe shape for call-ml
+  and the call-native-to-call-ml front tag, including supported-call response
+  classification and unknown-conf rejection.
+- control and structural branch families are now explicit in HOL: control
+  covers function/return, recursive eval, and chain; structural covers evalc,
+  Vec/Cons, case, switch, and full let*. Each family has an input theorem from
+  the recursive evaluator and a refinement theorem back into the common branch
+  soundness predicate.
+- host-call dispatch has a finite HOL table for the supported call-ml and
+  call-native inc profiles, with lookup examples, lookup soundness, profile
+  completeness for supported inc calls, and a table-to-byte-boundary theorem
+  connecting table lookup, host profile classification, eval_m1_ext output,
+  and byte-response shape.
+- recursive evaluator family result soundness now lifts arithmetic/comparison,
+  boolean, control, and structural family predicates into a stronger
+  all-fuel theorem, while retaining the explicit eval_m1_ext fallback for
+  non-family atoms.
+- control/structural family input-sensitive soundness now has branch-specific
+  theorems for chain, evalc, case, switch, and let*. These expose the
+  evaluated nested value, typed evalc value, selected case/switch branch, or
+  let* sequential provenance directly at the family layer.
+- scoped nonempty facts now include return and recursive eval under nonempty
+  input, alongside the existing function/return-payload, arithmetic/boolean,
+  evalc, Vec/Cons, chain, case/switch, and let* conditions.
+- host-call byte profiles now include a finite byte table for inc, dec, and
+  echo on both call-ml and the call-native-to-call-ml front tag. HOL proves
+  concrete lookup examples, lookup soundness/completeness against the byte
+  profile predicate, supported-opcode responses, unknown-opcode rejection for
+  supported host configs, and a table-to-byte-response boundary theorem.
+- host-call byte profiles are now separated from evaluator-level host calls:
+  HOL classifies inc as the evaluator-level host profile, while dec and echo
+  remain byte-only supported profiles. This keeps executable byte-protocol
+  probes from silently expanding the evaluator semantics.
+- a first HOL-to-CakeML representation bridge is checked: exported_atom,
+  export_atom/import_exported_atom, export_eval_m1_rec, and
+  import_export_eval_m1_rec prove that exported recursive evaluator results
+  import back to exactly the HOL result list. The bridge note is
+  /home/zar/claude/CakeML/metta-ref/notes/hol_to_cakeml_extraction_bridge.txt.
+- nested family soundness is now proved for chain, evalc, case, switch, and
+  let*. Chain/case/switch expose family-soundness for the evaluated selector
+  and selected branch result; evalc exposes family-soundness when it evaluates
+  the term rather than taking the typed-error guard; let* records
+  family-soundness through a recursive sequential provenance predicate.
+- a tiny checked HOL-to-executable fragment now covers the return branch:
+  eval_return_fragment agrees with eval_m1_rec on return atoms, exported
+  return-fragment results import back exactly, and matching SML/CakeML tests
+  exercise the same import/export path.
 
 Substitution zoo foothold:
 - substitution extension/refinement facts for association-list bindings;
@@ -141,6 +241,15 @@ Substitution zoo foothold:
   preservation theorem when residual constraints hold.
 - solved-form extraction from abbreviation constraints, with membership and
   soundness facts for extracted bindings.
+- sequential solved-form extraction for occurs-checked residual abbreviation
+  queues: extraction succeeds only when each residual right-hand side is
+  covered by the current substitution, extends the current substitution,
+  satisfies the extracted residuals, and composes with solved_form_loop into
+  a final constraint-soundness bridge theorem.
+- extractor-consuming matcher/evaluator bridge lemmas: successful matching,
+  equality-step matches, and eval_m1 match calls can consume extracted residual
+  abbreviation queues while preserving match constraints and residual
+  constraint satisfaction under the final substitution.
 - first evaluator-to-substitution bridge: equality steps instantiate their
   left-hand side, and eval_m1 match-call results instantiate the requested
   pattern.
@@ -151,16 +260,18 @@ Literature/source map:
 Next proofs
 -----------
 
-1. Connect occurs-check-aware solved-form loop outputs to matcher/evaluator
-   invariants and extracted binding use sites.
-2. Expand the HOL recursive evaluator toward remaining SML/CakeML M1 branches:
-   evaluated arguments, fuller primitive/type tables, and host-call boundary
-   classification.
-3. Prove eval_total where the evaluator is intended to be nonempty, and full
-   eval_sound for the expanded evaluator.
-4. Increase the selected CeTTa comparison set beyond 8 exact-output files plus
-   6 normalized-bag files as output normalization and evaluator coverage grow.
-5. Move from handwritten SML/CakeML parity toward a verified
+1. Strengthen eval_m1_rec_family_result_sound from family/result
+   classification toward input-sensitive end-to-end eval_sound across
+   nested recursive calls.
+2. Connect the byte-profile table to evaluator-level host-call profiles only
+   for operations that the MeTTa evaluator intentionally supports.
+3. Extend eval_total/nonempty coverage to any remaining primitive/result
+   constructors where the intended result set is nonempty.
+4. Grow the HOL-to-CakeML bridge from representation round-trip to one
+   executable evaluator fragment.
+5. Increase the selected CeTTa comparison set beyond 8 exact-output files plus
+   12 normalized-bag files as output normalization and evaluator coverage grow.
+6. Move from handwritten SML/CakeML parity toward a verified
    extraction/translation strategy.
 
 Deferred from first verified kernel

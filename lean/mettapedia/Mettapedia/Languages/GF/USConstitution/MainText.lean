@@ -31,55 +31,55 @@ structure GroundedClause where
   accepted : 0 < acceptedParseCount id
 
 def groundedArticleISection1Vesting : GroundedClause :=
-  ⟨.articleISection1Vesting, by native_decide⟩
+  ⟨.articleISection1Vesting, by decide⟩
 
 def groundedArticleISection2RepresentativeAge : GroundedClause :=
-  ⟨.articleISection2RepresentativeAge, by native_decide⟩
+  ⟨.articleISection2RepresentativeAge, by decide⟩
 
 def groundedArticleISection2HouseComposition : GroundedClause :=
-  ⟨.articleISection2HouseComposition, by native_decide⟩
+  ⟨.articleISection2HouseComposition, by decide⟩
 
 def groundedArticleISection5Rules : GroundedClause :=
-  ⟨.articleISection5Rules, by native_decide⟩
+  ⟨.articleISection5Rules, by decide⟩
 
 def groundedArticleISection7EveryBillPresented : GroundedClause :=
-  ⟨.articleISection7EveryBillPresented, by native_decide⟩
+  ⟨.articleISection7EveryBillPresented, by decide⟩
 
 def groundedArticleISection7PresidentSigns : GroundedClause :=
-  ⟨.articleISection7PresidentSigns, by native_decide⟩
+  ⟨.articleISection7PresidentSigns, by decide⟩
 
 def groundedArticleISection7BecomesLaw : GroundedClause :=
-  ⟨.articleISection7BecomesLaw, by native_decide⟩
+  ⟨.articleISection7BecomesLaw, by decide⟩
 
 def groundedArticleISection9Habeas : GroundedClause :=
-  ⟨.articleISection9Habeas, by native_decide⟩
+  ⟨.articleISection9Habeas, by decide⟩
 
 def groundedArticleISection9NoTitleOfNobility : GroundedClause :=
-  ⟨.articleISection9NoTitleOfNobility, by native_decide⟩
+  ⟨.articleISection9NoTitleOfNobility, by decide⟩
 
 def groundedArticleIISection1ExecutiveVesting : GroundedClause :=
-  ⟨.articleIISection1ExecutiveVesting, by native_decide⟩
+  ⟨.articleIISection1ExecutiveVesting, by decide⟩
 
 def groundedArticleIISection1PresidentAge : GroundedClause :=
-  ⟨.articleIISection1PresidentAge, by native_decide⟩
+  ⟨.articleIISection1PresidentAge, by decide⟩
 
 def groundedArticleIISection2CommanderInChief : GroundedClause :=
-  ⟨.articleIISection2CommanderInChief, by native_decide⟩
+  ⟨.articleIISection2CommanderInChief, by decide⟩
 
 def groundedArticleIIISection3Treason : GroundedClause :=
-  ⟨.articleIIISection3Treason, by native_decide⟩
+  ⟨.articleIIISection3Treason, by decide⟩
 
 def groundedArticleIVSection1FullFaithCredit : GroundedClause :=
-  ⟨.articleIVSection1FullFaithCredit, by native_decide⟩
+  ⟨.articleIVSection1FullFaithCredit, by decide⟩
 
 def groundedArticleVISupremacy : GroundedClause :=
-  ⟨.articleVISupremacy, by native_decide⟩
+  ⟨.articleVISupremacy, by decide⟩
 
 def groundedArticleVINoReligiousTest : GroundedClause :=
-  ⟨.articleVINoReligiousTest, by native_decide⟩
+  ⟨.articleVINoReligiousTest, by decide⟩
 
 def groundedArticleVIIRatification : GroundedClause :=
-  ⟨.articleVIIRatification, by native_decide⟩
+  ⟨.articleVIIRatification, by decide⟩
 
 /--
 Shallow legal semantics for the GF-grounded main-text fragments.
@@ -190,7 +190,7 @@ theorem no_religious_test_for_public_trust {o : D.Office}
     (h : C.publicTrustUnderUS o) : ¬ C.religiousTestRequired o :=
   C.noReligiousTestRule o h
 
-theorem source_hash_nonempty : 0 < sourceHash.length := by native_decide
+theorem source_hash_nonempty : 0 < sourceHash.length := by decide
 
 end ConstitutionMain
 

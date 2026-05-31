@@ -2,6 +2,7 @@ import Mathlib.Data.Real.Basic
 import Mathlib.Data.Finset.Basic
 import Mathlib.Analysis.SpecialFunctions.Log.Basic
 import Mathlib.Analysis.SpecialFunctions.Pow.Real
+import Mettapedia.InformationTheory.MutualInformation
 
 /-!
 # Intensional Inheritance: Information-Theoretic Unification
@@ -11,13 +12,22 @@ unification of intensional and extensional inheritance.
 
 ## Key Insight (Goertzel 2025)
 
-Intensional inheritance I_int(W; F) = mutual information I(F; W)
-- "How much does knowing 'x is F' tell us about 'x is W'?"
+The Chapter-12 surface wants a single scalar information score relating:
+
+- an extensional term `P(W | F)`,
+- a prior term `P(W)`, and
+- an intensional/log-ratio term.
+
+This file keeps that scalar abstract, while
+`Mettapedia/InformationTheory/MutualInformation.lean` now separates:
+
+1. pointwise / log-ratio information gain (the scalar that fits `posterior = prior * 2^score`)
+2. finite Shannon mutual information (an expectation of log-ratio terms)
 
 Extensional inheritance I_ext(W; F) = P(W | F)
 - Standard conditional probability / set overlap
 
-**Unifying formula**: P(W | F) = P(W) · 2^{I(F;W)}
+**Unifying formula surface**: P(W | F) = P(W) · 2^{score(F,W)}
 
 **Key theorem**: When properties are singletons (each property = one element),
 intensional inheritance reduces to extensional inheritance.
@@ -121,9 +131,14 @@ laws as a typeclass. Concrete instances can later be provided by Shannon/Kolmogo
 constructions.
 -/
 
-/-- Interface for Goertzel-style information-theoretic inheritance. -/
+/-- Interface for Goertzel-style information-theoretic inheritance.
+
+The field name `mutualInfo` is kept for backward compatibility with the existing
+Chapter-12 surface, but this interface is intentionally agnostic about whether a
+concrete instance interprets the scalar as a pointwise log-ratio score or as a
+Shannon-style quantity. -/
 class GoertzelModel (α : Type*) where
-  /-- Mutual information `I(F;W)`. -/
+  /-- Chapter-12 scalar information score carried by the model. -/
   mutualInfo : Concept α → Concept α → ℝ
   /-- Symmetry of mutual information. -/
   mutualInfo_symm (F W : Concept α) : mutualInfo F W = mutualInfo W F
@@ -145,8 +160,8 @@ class GoertzelModel (α : Type*) where
 
 /-! ## §4: Inheritance Definitions -/
 
-/-- Intensional inheritance: how much information F provides about W.
-    This IS mutual information. -/
+/-- Intensional inheritance: the Chapter-12 scalar information score associated
+to the pair `(F, W)`. -/
 noncomputable def intensionalInheritance {α : Type*} [GoertzelModel α] (F W : Concept α) : ℝ :=
   GoertzelModel.mutualInfo F W
 
@@ -220,17 +235,36 @@ theorem singleton_reduction {α : Type*} [GoertzelModel α] (F W : Concept α)
 These definitions provide hooks to connect with other modules.
 -/
 
-/-- Hook to PLN BinaryEvidence: Convert evidence counts to mutual information estimate.
+/-- Evidence-level log-ratio information gain in bits.
 
-    Given evidence (n⁺, n⁻), we can estimate mutual information via:
-    - Strength s = n⁺/(n⁺+n⁻) estimates P(W|F)
-    - From Goertzel formula: I(F;W) = log₂(s/P(W))
--/
-noncomputable def mutualInfoFromEvidence (strength prior : ℝ) : ℝ :=
-  if prior > 0 ∧ strength > 0 then
-    Real.log (strength / prior) / Real.log 2
-  else
-    0
+Given:
+- `strength = P(W | F)`
+- `prior = P(W)`
+
+this returns `log₂(strength / prior)` when both terms are positive. -/
+noncomputable abbrev logRatioInformationGainFromEvidence (strength prior : ℝ) : ℝ :=
+  Mettapedia.InformationTheory.logRatioInformationGainBits strength prior
+
+/-- Backward-compatible alias for the older Chapter-12 surface.
+
+This name is kept so existing imports continue to build, but the mathematically
+honest object is `logRatioInformationGainFromEvidence`. -/
+noncomputable abbrev mutualInfoFromEvidence (strength prior : ℝ) : ℝ :=
+  logRatioInformationGainFromEvidence strength prior
+
+theorem logRatioInformationGainFromEvidence_eq_log2_ratio
+    {strength prior : ℝ}
+    (hStrength : 0 < strength) (hPrior : 0 < prior) :
+    logRatioInformationGainFromEvidence strength prior =
+      Real.log (strength / prior) / Real.log 2 :=
+  Mettapedia.InformationTheory.logRatioInformationGainBits_eq_log2_ratio hStrength hPrior
+
+theorem strength_eq_prior_mul_two_rpow_logRatioInformationGainFromEvidence
+    {strength prior : ℝ}
+    (hStrength : 0 < strength) (hPrior : 0 < prior) :
+    strength = prior * (2 : ℝ).rpow (logRatioInformationGainFromEvidence strength prior) :=
+  Mettapedia.InformationTheory.posterior_eq_prior_mul_two_rpow_logRatioInformationGainBits
+    hStrength hPrior
 
 -- Hook to Optimality: Bayes mixture provides the "universal" mutual information.
 --

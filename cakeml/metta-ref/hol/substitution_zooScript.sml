@@ -945,6 +945,177 @@ Proof
   EVAL_TAC \\ rw[]
 QED
 
+Definition extract_solved_bindings_seq_def:
+  extract_solved_bindings_seq bs [] = SOME bs ∧
+  extract_solved_bindings_seq bs (CAbbrev v atom :: cs) =
+    (if subst_covers bs atom then
+       case bind_var_occurs_checked v atom bs of
+       | SOME bs2 => extract_solved_bindings_seq bs2 cs
+       | NONE => NONE
+     else NONE) ∧
+  extract_solved_bindings_seq bs (_ :: cs) = NONE
+End
+
+Theorem extract_solved_bindings_seq_extends:
+  ∀cs bs bs2.
+    extract_solved_bindings_seq bs cs = SOME bs2 ⇒
+    subst_extends bs bs2
+Proof
+  Induct \\ rw[extract_solved_bindings_seq_def, subst_extends_refl] \\
+  Cases_on ‘h’ \\ gvs[extract_solved_bindings_seq_def] \\
+  every_case_tac \\ gvs[] \\
+  imp_res_tac bind_var_occurs_checked_extends \\
+  first_x_assum drule \\
+  rw[] \\
+  imp_res_tac subst_extends_trans
+QED
+
+Theorem extract_solved_bindings_seq_sound_ext:
+  ∀cs bs bs2 final.
+    extract_solved_bindings_seq bs cs = SOME bs2 ∧
+    subst_extends bs2 final ⇒
+    constraints_hold final cs
+Proof
+  Induct \\ rw[extract_solved_bindings_seq_def, constraints_hold_def] \\
+  Cases_on ‘h’ \\ gvs[extract_solved_bindings_seq_def] \\
+  every_case_tac \\ gvs[] \\
+  imp_res_tac bind_var_occurs_checked_extends \\
+  imp_res_tac bind_var_occurs_checked_lookup \\
+  imp_res_tac extract_solved_bindings_seq_extends \\
+  imp_res_tac subst_extends_trans \\
+  imp_res_tac subst_extends_apply_bound_var \\
+  imp_res_tac subst_extends_apply_covers_atom \\
+  gvs[constraint_holds_def] \\
+  metis_tac[subst_extends_trans]
+QED
+
+Theorem extract_solved_bindings_seq_sound:
+  ∀cs bs bs2.
+    extract_solved_bindings_seq bs cs = SOME bs2 ⇒
+    constraints_hold bs2 cs
+Proof
+  metis_tac[extract_solved_bindings_seq_sound_ext, subst_extends_refl]
+QED
+
+Theorem solved_form_loop_extract_sound:
+  ∀fuel bs cs bs2 residual final.
+    solved_form_loop fuel bs cs = RuleOK bs2 residual ∧
+    extract_solved_bindings_seq bs2 residual = SOME final ⇒
+    subst_extends bs final ∧ constraints_hold final cs
+Proof
+  rw[] >-
+    metis_tac[
+      solved_form_loop_extends,
+      extract_solved_bindings_seq_extends,
+      subst_extends_trans] \\
+  metis_tac[
+    solved_form_loop_sound_ext,
+    extract_solved_bindings_seq_extends,
+    extract_solved_bindings_seq_sound]
+QED
+
+Theorem match_atom_extract_solved_residual_sound:
+  ∀p q bs bs2 residual final.
+    match_atom p q bs = SOME bs2 ∧
+    extract_solved_bindings_seq bs2 residual = SOME final ⇒
+    subst_extends bs final ∧
+    constraint_holds final (CMatch p q) ∧
+    constraints_hold final residual
+Proof
+  rw[] >-
+    metis_tac[
+      match_sound_ext,
+      extract_solved_bindings_seq_extends,
+      subst_extends_trans] >-
+    metis_tac[
+      match_sound_ext,
+      extract_solved_bindings_seq_extends,
+      constraint_holds_def] \\
+  metis_tac[extract_solved_bindings_seq_sound]
+QED
+
+Theorem equality_step_extract_solved_residual_sound:
+  ∀space atom out residual.
+    equality_step space atom out ⇒
+    ∃lhs rhs bs.
+      MEM (Expr [Sym 2; lhs; rhs]) space ∧
+      match_atom lhs atom [] = SOME bs ∧
+      out = apply_subst bs rhs ∧
+      ∀final.
+        extract_solved_bindings_seq bs residual = SOME final ⇒
+        subst_extends [] final ∧
+        constraint_holds final (CMatch lhs atom) ∧
+        constraints_hold final residual
+Proof
+  rw[equality_step_def] \\
+  qexists_tac ‘lhs’ \\
+  qexists_tac ‘rhs’ \\
+  qexists_tac ‘bs’ \\
+  rw[] \\
+  metis_tac[match_atom_extract_solved_residual_sound]
+QED
+
+Theorem eval_m1_match_member_extract_solved_residual_sound:
+  ∀fuel space pattern templ out residual.
+    MEM out (eval_m1 (SUC fuel) space (Expr [Sym 4; Sym 5; pattern; templ])) ⇒
+    ∃entry bs.
+      MEM entry space ∧
+      match_atom pattern entry [] = SOME bs ∧
+      out = apply_subst bs templ ∧
+      ∀final.
+        extract_solved_bindings_seq bs residual = SOME final ⇒
+        subst_extends [] final ∧
+        constraint_holds final (CMatch pattern entry) ∧
+        constraints_hold final residual
+Proof
+  rw[] \\
+  imp_res_tac eval_m1_match_member_sound \\
+  qexists_tac ‘entry’ \\
+  qexists_tac ‘bs’ \\
+  rw[] \\
+  metis_tac[match_atom_extract_solved_residual_sound]
+QED
+
+Theorem extract_solved_bindings_seq_simple_example:
+  extract_solved_bindings_seq [] [CAbbrev 0 (Sym 1)] =
+    SOME [Bind 0 (Sym 1)]
+Proof
+  EVAL_TAC \\ rw[]
+QED
+
+Theorem extract_solved_bindings_seq_covered_var_example:
+  extract_solved_bindings_seq [Bind 1 (Sym 2)] [CAbbrev 0 (Var 1)] =
+    SOME [Bind 0 (Sym 2); Bind 1 (Sym 2)]
+Proof
+  ‘subst_covers [Bind 1 (Sym 2)] (Var 1)’ by
+    (rw[subst_covers_def, lookup_bind_def] \\
+     qexists_tac ‘Sym 2’ \\
+     rw[]) \\
+  rw[
+    extract_solved_bindings_seq_def,
+    bind_var_occurs_checked_def,
+    apply_subst_def,
+    lookup_bind_def,
+    occurs_in_def,
+    bind_var_def]
+QED
+
+Theorem extract_solved_bindings_seq_uncovered_var_example:
+  extract_solved_bindings_seq [] [CAbbrev 0 (Var 1)] = NONE
+Proof
+  EVAL_TAC \\ rw[]
+QED
+
+Theorem solved_form_loop_extract_closed_example:
+  solved_form_loop 1 [] [CAbbrev 0 (Sym 1)] =
+      RuleOK [Bind 0 (Sym 1)] [] ∧
+  extract_solved_bindings_seq [Bind 0 (Sym 1)] [] =
+      SOME [Bind 0 (Sym 1)] ∧
+  constraints_hold [Bind 0 (Sym 1)] [CAbbrev 0 (Sym 1)]
+Proof
+  EVAL_TAC \\ rw[]
+QED
+
 Definition apply_token_subst_def:
   apply_token_subst bs [] = [] ∧
   apply_token_subst bs (tok :: rest) =

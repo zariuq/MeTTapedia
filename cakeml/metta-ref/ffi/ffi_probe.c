@@ -24,14 +24,29 @@ void fficall_ml(unsigned char *conf, long conf_len,
     return;
   }
 
-  if (bytes[0] != 1) {
-    bytes[0] = 3;
-    bytes[3] = 255;
+  if (bytes[0] == 1) {
+    bytes[0] = 0;
+    bytes[1] = (unsigned char)(bytes[1] + 1);
+    bytes[2] = (unsigned char)(bytes[2] + conf_len);
+    bytes[3] = 7;
     return;
   }
 
-  bytes[0] = 0;
-  bytes[1] = (unsigned char)(bytes[1] + 1);
-  bytes[2] = (unsigned char)(bytes[2] + conf_len);
-  bytes[3] = 7;
+  if (bytes[0] == 2) {
+    bytes[0] = 0;
+    bytes[1] = (unsigned char)(bytes[1] - 1);
+    bytes[2] = (unsigned char)(bytes[2] + conf_len);
+    bytes[3] = 8;
+    return;
+  }
+
+  if (bytes[0] == 3) {
+    bytes[0] = 0;
+    bytes[2] = (unsigned char)(bytes[2] + conf_len);
+    bytes[3] = 9;
+    return;
+  }
+
+  bytes[0] = 3;
+  bytes[3] = 255;
 }

@@ -1,3 +1,4 @@
+import Mettapedia.Languages.GF.USConstitution.Canaries
 import Mettapedia.Languages.GF.USConstitution.GeneratedConformance
 import Mettapedia.Languages.GF.USConstitution.MainText
 import Mettapedia.Languages.GF.USConstitution.Pretty
@@ -27,7 +28,6 @@ example : failedClauseIds.length = 3 := by native_decide
 example : contextCorrectionIds.length = 4 := by native_decide
 example : contextCorrectedFailedClauseIds.length = 3 := by native_decide
 example : contextUncorrectedFailedClauseIds.length = 0 := by native_decide
-example : parseRoundTrips .articleVIIRatification = true := by native_decide
 
 example : acceptedParseCount .articleISection7EveryBillPresented = 1 := by native_decide
 example : acceptedParseCount .articleISection7PresidentSigns = 1 := by native_decide

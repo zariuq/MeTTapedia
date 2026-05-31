@@ -1,9 +1,9 @@
 fun w8 n = Word8.fromInt n;
 
-fun make_request arg0 arg1 =
+fun make_request opcode arg0 arg1 =
   let
     val buf = Word8Array.array 4 (w8 0)
-    val _ = Word8Array.update buf 0 (w8 1)
+    val _ = Word8Array.update buf 0 (w8 opcode)
     val _ = Word8Array.update buf 1 (w8 arg0)
     val _ = Word8Array.update buf 2 (w8 arg1)
     val _ = Word8Array.update buf 3 (w8 0)
@@ -11,29 +11,33 @@ fun make_request arg0 arg1 =
     buf
   end;
 
-fun render_response label buf =
+fun render_response label op_name buf =
   let
     val status = Word8.toInt (Word8Array.sub buf 0)
     val result0 = Word8.toInt (Word8Array.sub buf 1)
     val result1 = Word8.toInt (Word8Array.sub buf 2)
     val tag = Word8.toInt (Word8Array.sub buf 3)
   in
-    "(" ^ label ^ " inc " ^ Int.toString status ^ " " ^
+    "(" ^ label ^ " " ^ op_name ^ " " ^ Int.toString status ^ " " ^
     Int.toString result0 ^ " " ^ Int.toString result1 ^ " " ^
     Int.toString tag ^ ")"
   end;
 
-fun call_protocol conf label =
+fun call_protocol conf label op_name opcode =
   let
-    val buf = make_request 41 2
+    val buf = make_request opcode 41 2
     val _ = #(call_ml) conf buf
   in
-    render_response label buf
+    render_response label op_name buf
   end;
 
 fun main () =
   TextIO.print
-    (call_protocol "call-ml" "call-ml" ^ "\n" ^
-     call_protocol "call-native:call-ml" "call-native call-ml" ^ "\n");
+    (call_protocol "call-ml" "call-ml" "inc" 1 ^ "\n" ^
+     call_protocol "call-ml" "call-ml" "dec" 2 ^ "\n" ^
+     call_protocol "call-ml" "call-ml" "echo" 3 ^ "\n" ^
+     call_protocol "call-native:call-ml" "call-native call-ml" "inc" 1 ^ "\n" ^
+     call_protocol "call-native:call-ml" "call-native call-ml" "dec" 2 ^ "\n" ^
+     call_protocol "call-native:call-ml" "call-native call-ml" "echo" 3 ^ "\n");
 
 val _ = main ();

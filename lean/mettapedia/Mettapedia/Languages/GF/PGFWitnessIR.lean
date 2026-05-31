@@ -10,7 +10,7 @@ instance : Nonempty AbstractNode := ⟨.leaf "" (.base "")⟩
 
 inductive ExportedTree where
   | node : String → List ExportedTree → ExportedTree
-  deriving Repr
+  deriving Repr, BEq
 
 instance : Inhabited ExportedTree := ⟨.node "" []⟩
 instance : Nonempty ExportedTree := ⟨.node "" []⟩

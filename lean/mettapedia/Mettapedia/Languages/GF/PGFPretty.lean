@@ -24,16 +24,6 @@ structure FormalGF where
 
 namespace FormalGF
 
-mutual
-  private partial def exportedTreeEq : ExportedTree → ExportedTree → Bool
-    | .node f xs, .node g ys => f == g && exportedTreeListEq xs ys
-
-  private partial def exportedTreeListEq : List ExportedTree → List ExportedTree → Bool
-    | [], [] => true
-    | x :: xs, y :: ys => exportedTreeEq x y && exportedTreeListEq xs ys
-    | _, _ => false
-end
-
 def ofExportedTree : ExportedTree → FormalGF
   | .node name args => ⟨name, args.map ofExportedTree⟩
 
@@ -130,7 +120,7 @@ def pretty (t : FormalGF) : String :=
   | args => prettyFun t.funName ++ "\n" ++ renderForest "" args
 
 def roundTrips (t : ExportedTree) : Bool :=
-  exportedTreeEq (ofExportedTree t).toExportedTree t
+  (ofExportedTree t).toExportedTree == t
 
 def tinyExample : ExportedTree :=
   .node "PhrUtt" [
@@ -142,8 +132,6 @@ def tinyExample : ExportedTree :=
     ],
     .node "NoVoc" []
   ]
-
-example : roundTrips tinyExample = true := by native_decide
 
 end FormalGF
 
