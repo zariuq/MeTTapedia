@@ -173,6 +173,13 @@ theorem sigmoid_queryMass_true_eq_three :
     if_neg (by simpa [constraintQueryHolds, satisfiesConstraints] using qTrue_not_holds_valFalse)]
   simp [sigmoid_worldWeight_true]
 
+theorem sigmoid_scopedWeight_true_eq_three :
+    ValuationWorldModel.scopedWeight
+      (fg := GroundMLN.compiledClauseFactorGraph sigmoidMLN ({()} : Finset Unit))
+      (W := clauseWMSource sigmoidMLN ({()} : Finset Unit)) qTrue = 3 := by
+  rw [clauseWM_scopedWeight_eq_queryMass]
+  exact sigmoid_queryMass_true_eq_three
+
 theorem sigmoid_totalMass_eq_four :
     (clauseMassSemantics sigmoidMLN ({()} : Finset Unit)).totalMass = 4 := by
   change CountableMLNSemantics.totalMass

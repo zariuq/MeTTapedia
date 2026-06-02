@@ -366,12 +366,12 @@ def locLt (loc1 loc2 : Atom) : Bool :=
 /-- `lexLt (x :: xs) (x :: ys) = lexLt xs ys`: equal heads cancel. -/
 private theorem lexLt_cons_eq (x : ℕ) (xs ys : List ℕ) :
     lexLt (x :: xs) (x :: ys) = lexLt xs ys := by
-  simp [lexLt, Nat.lt_irrefl]
+  simp [lexLt]
 
 /-- `lexLt` with strictly smaller head = true. -/
 private theorem lexLt_cons_lt (x y : ℕ) (xs ys : List ℕ) (h : x < y) :
     lexLt (x :: xs) (y :: ys) = true := by
-  simp [lexLt, h, Nat.not_lt.mpr (Nat.le_of_lt h)]
+  simp [lexLt, h]
 
 /-- `lexLt` with strictly larger head = false. -/
 private theorem lexLt_cons_gt (x y : ℕ) (xs ys : List ℕ) (h : y < x) :
@@ -381,7 +381,7 @@ private theorem lexLt_cons_gt (x y : ℕ) (xs ys : List ℕ) (h : y < x) :
 /-- When two lists of equal length are lex-equal, `lexLt` returns `false` for both directions. -/
 private theorem lexLt_eq_of_equal : ∀ (l : List ℕ), lexLt l l = false
   | [] => rfl
-  | x :: xs => by simp [lexLt, Nat.lt_irrefl, lexLt_eq_of_equal xs]
+  | x :: xs => by simp [lexLt, lexLt_eq_of_equal xs]
 
 /-- `lexLt` on `x :: l1 ++ rest1` vs `y :: l2 ++ rest2` when `l1.length = l2.length`:
     first compare `x` vs `y`, then lex-compare `l1` vs `l2`, then fall through to rest. -/
@@ -397,12 +397,12 @@ private theorem lexLt_append_of_same_length :
     simp only [List.length_cons, Nat.add_right_cancel_iff] at hlen
     simp only [List.cons_append, lexLt]
     by_cases hxy : x < y
-    · simp [hxy, Nat.not_lt.mpr (Nat.le_of_lt hxy)]
+    · simp [hxy]
     · simp only [hxy, ite_false]
       by_cases hyx : y < x
-      · simp [hyx, Nat.not_lt.mpr (Nat.le_of_lt hyx)]
+      · simp [hyx]
       · have heq : x = y := Nat.le_antisymm (Nat.not_lt.mp hyx) (Nat.not_lt.mp hxy)
-        simp only [hyx, heq, Nat.lt_irrefl, ite_false]
+        simp only [heq, Nat.lt_irrefl, ite_false]
         exact lexLt_append_of_same_length xs ys rest1 rest2 hlen
 
 /-- `lexLt` on length-prefixed segments decomposes into shortlex comparison.

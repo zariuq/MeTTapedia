@@ -16,7 +16,7 @@ Core interpretation:
 - intensional inheritance:
   `log₂ ( Pξ(W|F,x) / Pξ(W|x) )`
 
-encoded via `mutualInfoFromEvidence`.
+encoded via `logRatioInformationGainFromEvidence`.
 -/
 
 namespace Mettapedia.Logic.IntensionalInheritance
@@ -38,10 +38,11 @@ noncomputable def extensionalFromConditional
   (conditionalENN ξ W (x ++ F)).toReal
 
 /-- Universal-mixture intensional inheritance as log-ratio information gain:
-`log₂(Pξ(W|F,x) / Pξ(W|x))` encoded via `mutualInfoFromEvidence`. -/
+`log₂(Pξ(W|F,x) / Pξ(W|x))` encoded via
+`logRatioInformationGainFromEvidence`. -/
 noncomputable def intensionalFromConditional
     (ξ : Semimeasure) (x F W : BinString) : ℝ :=
-  mutualInfoFromEvidence
+  logRatioInformationGainFromEvidence
     (extensionalFromConditional ξ x F W)
     (priorFromConditional ξ x W)
 

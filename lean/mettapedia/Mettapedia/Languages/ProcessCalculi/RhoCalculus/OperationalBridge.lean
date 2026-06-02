@@ -146,4 +146,26 @@ theorem reduceStep_mem_reachableStates_one {p q : Pattern} {fuel : Nat}
   exact (Spice.futureStates_subset_reachable p 1)
     (by simpa [Spice.presentMoment] using reduceStep_mem_presentMoment h)
 
+/-- Exact executable/semantic bridge at the structural-congruence boundary:
+    a semantic one-step successor of `p` is exactly an executable one-step
+    reduct of some structurally congruent representative of `p`, with a
+    structurally congruent residual representative. -/
+theorem mem_presentMoment_iff_exists_reduceStep_structural_representative
+    {p q : Pattern} :
+    q ∈ Spice.presentMoment p ↔
+      ∃ p' fuel q',
+        StructuralCongruence p' p ∧
+        q' ∈ Engine.reduceStep p' fuel ∧
+        StructuralCongruence q' q := by
+  constructor
+  · intro hpm
+    obtain ⟨hred⟩ := (mem_presentMoment_iff_reduces).1 hpm
+    exact Engine.reduceStep_complete_up_to_struct hred
+  · rintro ⟨p', fuel, q', hsrc, hmem, htgt⟩
+    have hred' : Nonempty (Reduces p' q') := Engine.reduceStep_sound p' q' fuel hmem
+    obtain ⟨hred'⟩ := hred'
+    have hred : Nonempty (Reduces p q) := by
+      exact ⟨Reduces.equiv (StructuralCongruence.symm _ _ hsrc) hred' htgt⟩
+    exact (mem_presentMoment_iff_reduces).2 hred
+
 end Mettapedia.Languages.ProcessCalculi.RhoCalculus.OperationalBridge

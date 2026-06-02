@@ -36,9 +36,9 @@ instance instEvidenceTypeWeightedQueryState {Query : Type*} :
   { (inferInstance : AddCommMonoid (WeightedQueryState Query)) with }
 
 instance instGenericWorldModelWeightedQueryState {Query : Type*} :
-    WorldModel (WeightedQueryState Query) Query WeightedNormalGammaEvidence where
-  evidence S q := S q
-  evidence_add W₁ W₂ q := Pi.add_apply W₁ W₂ q
+    AdditiveWorldModel (WeightedQueryState Query) Query WeightedNormalGammaEvidence where
+  extract S q := S q
+  extract_add W₁ W₂ q := Pi.add_apply W₁ W₂ q
 
 /-- Right-biased weighted merge (`latest-wins`). -/
 def weightedRightBiasMerge {Query : Type*}

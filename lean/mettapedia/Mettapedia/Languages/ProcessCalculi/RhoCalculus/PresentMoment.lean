@@ -627,6 +627,106 @@ theorem race_nondeterminism {elems : List Pattern} {x : Pattern}
     exact h.2.1
   exact h_others_ne (List.tail_eq_of_cons_eq this)
 
+/-- **Dual race non-determinism**: two distinct outputs competing for one
+    input also witness genuine one-step branching.
+
+    Under `Nodup`, each COMM choice leaves a different unused output in the
+    residual bag, so the two reducts are distinct even when the input body
+    itself forgets the received payload.
+-/
+theorem dualRace_nondeterminism {elems : List Pattern} {x : Pattern}
+    (h_race : hasDualRace elems x) (h_nodup : elems.Nodup) :
+    ∃ r₁ r₂, Nonempty (Reduces (.collection .hashBag elems none) r₁) ∧
+              Nonempty (Reduces (.collection .hashBag elems none) r₂) ∧
+              r₁ ≠ r₂ := by
+  obtain ⟨⟨body, hbody_mem⟩, ⟨q₁, q₂, hq₁_mem, hq₂_mem, hq_ne⟩⟩ := h_race
+  let inp := Pattern.apply "PInput" [x, .lambda none body]
+  let out₁ := Pattern.apply "POutput" [x, q₁]
+  let out₂ := Pattern.apply "POutput" [x, q₂]
+  have h_inp_ne₁ : inp ≠ out₁ := by
+    intro h
+    injection h with h_name
+    exact absurd h_name (by decide)
+  have h_inp_ne₂ : inp ≠ out₂ := by
+    intro h
+    injection h with h_name
+    exact absurd h_name (by decide)
+  have h_out_ne : out₁ ≠ out₂ := by
+    intro h
+    have : q₁ = q₂ := by
+      injection h with _ h_args
+      simp only [List.cons.injEq] at h_args
+      exact h_args.2.1
+    exact hq_ne this
+  obtain ⟨befI, aftI, h_splitI⟩ := List.mem_iff_append.mp hbody_mem
+  have h_permI : elems.Perm (inp :: (befI ++ aftI)) := by
+    rw [h_splitI]
+    exact List.perm_middle
+  have h_nodup_cons : (inp :: (befI ++ aftI)).Nodup :=
+    h_permI.nodup_iff.mp h_nodup
+  have h_rest_nodup : (befI ++ aftI).Nodup :=
+    (List.nodup_cons.mp h_nodup_cons).2
+  have hq₁_rest : out₁ ∈ befI ++ aftI := by
+    rw [h_splitI] at hq₁_mem
+    simp only [List.mem_append, List.mem_cons] at hq₁_mem
+    rcases hq₁_mem with h | h | h
+    · exact List.mem_append_left _ h
+    · exact absurd h h_inp_ne₁.symm
+    · exact List.mem_append_right _ h
+  have hq₂_rest : out₂ ∈ befI ++ aftI := by
+    rw [h_splitI] at hq₂_mem
+    simp only [List.mem_append, List.mem_cons] at hq₂_mem
+    rcases hq₂_mem with h | h | h
+    · exact List.mem_append_left _ h
+    · exact absurd h h_inp_ne₂.symm
+    · exact List.mem_append_right _ h
+  obtain ⟨b₁, a₁, h_split₁⟩ := List.mem_iff_append.mp hq₁_rest
+  obtain ⟨b₂, a₂, h_split₂⟩ := List.mem_iff_append.mp hq₂_rest
+  have hq₂_other₁ : out₂ ∈ b₁ ++ a₁ := by
+    rw [h_split₁] at hq₂_rest
+    simp only [List.mem_append, List.mem_cons] at hq₂_rest
+    rcases hq₂_rest with h | h | h
+    · exact List.mem_append_left _ h
+    · exact absurd h h_out_ne.symm
+    · exact List.mem_append_right _ h
+  have hq₂_notin_other₂ : out₂ ∉ b₂ ++ a₂ := by
+    have h_perm_rest : (befI ++ aftI).Perm (out₂ :: (b₂ ++ a₂)) := by
+      rw [h_split₂]
+      exact List.perm_middle
+    exact (List.nodup_cons.mp (h_perm_rest.nodup_iff.mp h_rest_nodup)).1
+  have h_others_ne : b₁ ++ a₁ ≠ b₂ ++ a₂ := by
+    intro h_eq
+    rw [h_eq] at hq₂_other₁
+    exact hq₂_notin_other₂ hq₂_other₁
+  have h_perm₁' : elems.Perm (inp :: out₁ :: (b₁ ++ a₁)) :=
+    h_permI.trans (List.Perm.cons inp (by rw [h_split₁]; exact List.perm_middle))
+  have h_perm₁ : elems.Perm (out₁ :: inp :: (b₁ ++ a₁)) :=
+    h_perm₁'.trans (List.Perm.swap inp out₁ (b₁ ++ a₁)).symm
+  have h_red₁ : Nonempty (Reduces (.collection .hashBag elems none)
+      (.collection .hashBag (semanticCommSubst body q₁ :: (b₁ ++ a₁)) none)) :=
+    ⟨Reduces.equiv
+      (StructuralCongruence.par_perm _ _ h_perm₁)
+      (@Reduces.comm x q₁ body (b₁ ++ a₁))
+      (StructuralCongruence.refl _)⟩
+  have h_perm₂' : elems.Perm (inp :: out₂ :: (b₂ ++ a₂)) :=
+    h_permI.trans (List.Perm.cons inp (by rw [h_split₂]; exact List.perm_middle))
+  have h_perm₂ : elems.Perm (out₂ :: inp :: (b₂ ++ a₂)) :=
+    h_perm₂'.trans (List.Perm.swap inp out₂ (b₂ ++ a₂)).symm
+  have h_red₂ : Nonempty (Reduces (.collection .hashBag elems none)
+      (.collection .hashBag (semanticCommSubst body q₂ :: (b₂ ++ a₂)) none)) :=
+    ⟨Reduces.equiv
+      (StructuralCongruence.par_perm _ _ h_perm₂)
+      (@Reduces.comm x q₂ body (b₂ ++ a₂))
+      (StructuralCongruence.refl _)⟩
+  refine ⟨_, _, h_red₁, h_red₂, ?_⟩
+  intro h_eq
+  have : semanticCommSubst body q₁ :: (b₁ ++ a₁) =
+      semanticCommSubst body q₂ :: (b₂ ++ a₂) := by
+    have h := h_eq
+    simp only [Pattern.collection.injEq] at h
+    exact h.2.1
+  exact h_others_ne (List.tail_eq_of_cons_eq this)
+
 /-! ## Episodic Memory Correctness
 
 We prove that `extractMemory` correctly decomposes a parallel composition

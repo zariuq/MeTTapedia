@@ -20,6 +20,20 @@
 \usepackage{url}
 \usetikzlibrary{arrows.meta,positioning,calc,decorations.pathreplacing}
 
+\newcommand{\wmplnincludegraphics}[2][]{%
+  \IfFileExists{#2}{%
+    \includegraphics[#1]{#2}%
+  }{%
+    \fbox{%
+      \parbox[c][0.22\textheight][c]{0.85\linewidth}{%
+        \centering
+        \footnotesize Missing external figure\\
+        \texttt{\detokenize{#2}}%
+      }%
+    }%
+  }%
+}
+
 \title{The World-Model Calculus\\[6pt]
   \large A Sprout from the Formalization of PLN\\[12pt]
   \normalsize\texttt{(v3 --- \today)}}
@@ -3740,9 +3754,23 @@ space.  Every carrier has its own natural views:
 \end{itemize}
 
 \noindent
-No single view suffices to reconstruct the original evidence.  Views
-are useful for display, thresholding, and action.  They are not the
-semantics.
+No single view suffices to reconstruct the original evidence.  The
+pair $(s,c)$ with a fixed evidence scale $k$ can recover the two
+binary counts in the idealized scalar model, but it still does not
+recover provenance, overlap/stamps, context, or the richer posterior
+shape carried by larger world-model states.  Views are useful for
+display, thresholding, and action.  They are not the semantics.
+
+The choice $c=n/(n+k)$ is therefore not forced merely by the
+two-count reconstruction problem.  The formal coordinate theorem in
+\codepath{Mettapedia/Logic/PLNConfidenceWeight.lean} shows that any
+confidence coordinate with a known left inverse on nonnegative evidence
+weights can reconstruct the binary counts from $(s,c)$.  A qualitatively
+different ``reserve-half'' coordinate, $c=n/(2n+k)$, is proved to reconstruct
+the same counts while keeping all displayed confidence below $1/2$.
+What the usual PLN/NARS formula adds is an extra interpretation:
+confidence odds are linear in evidence weight,
+$c/(1-c)=n/k$.
 
 \begin{figure}[htbp]
 \centering
@@ -3767,10 +3795,12 @@ semantics.
   at ($(conf.east) + (16mm, 0)$)
   {Cannot reconstruct\\evidence from\\any single view};
 \end{tikzpicture}
-\caption{Views of binary evidence are lossy projections.  Each carrier
+\caption{Individual views of binary evidence are lossy projections.  Each carrier
 has its own views (Dirichlet: per-category means; Normal-Gamma:
-posterior mean and variance).  No single view reconstructs the
-evidence.}
+posterior mean and variance).  A fixed-$k$ strength--confidence pair
+can recover binary counts in the idealized scalar model, but no scalar
+view reconstructs provenance, overlap, context, or richer posterior
+state.}
 \label{fig:tv-views-projections}
 \end{figure}
 
@@ -3812,8 +3842,11 @@ evidence through inference chains; extract views only at the end.
 
 A \emph{simple truth value} (STV) is a pair $\langle s, c \rangle$
 where $s = n^+ / (n^+ + n^-)$ is the strength and
-$c = n / (n + k)$ is the confidence.  It is compact, intuitive,
-and lossy: two different evidence values can produce the same STV.%
+$c = n / (n + k)$ is the confidence.  It is compact and intuitive.
+With fixed $k$ and ideal real arithmetic, it is equivalent to the two
+binary count coordinates $(n^+,n^-)$.  It is still lossy as a
+world-model view: it discards provenance, overlap/stamps, context, and
+posterior shape beyond the two-count summary.%
 \footnote{Formalized in
 \codepath{Mettapedia/Logic/BinaryEvidence.lean}.}
 
@@ -3826,11 +3859,257 @@ low-strength hypothesis.  The fork query ``Is the room occupied?''
 extracts $(5, 1)$ with $\langle 0.83, 0.38 \rangle$: higher strength,
 similar confidence.  Both views are lossy projections of the same
 underlying evidence.  The strength of $(5, 1)$ exceeds that of
-$(1, 4)$, but neither STV reveals how many observations contributed
----that information lives in the evidence, not the view.%
+$(1, 4)$.  The confidence coordinate can recover the total observation
+count here because $k$ is fixed and the numbers are exact, but the STV
+still does not reveal which observations, stamps, or provenance
+contributed---that information lives in the evidence, not the view.%
 \footnote{Proved in
 \codepath{artifacts/conformance/maple\_court\_bn\_motifs.metta}
 (leak: strength $= 0.2$; fork: strength $\approx 0.833$).}}
+
+\section{Degrees of Freedom Versus Forcing}
+\label{sec:dof-forcing-views}
+
+The formal theory now separates three questions that are often
+conflated when one writes only $\langle s,c\rangle$:
+
+\begin{enumerate}
+\item What is the underlying evidence state?
+\item Which view coordinate is being displayed?
+\item Which extra law, if any, makes that coordinate canonical?
+\end{enumerate}
+
+\noindent
+For binary counts with positive total evidence, the state decomposes
+exactly as a cone point:
+\[
+(n^+,n^-)
+\;\cong\;
+\bigl(s,\; n\bigr)
+\qquad
+s=\frac{n^+}{n^+ + n^-},\quad n=n^+ + n^- .
+\]
+This is the precise ``polar-coordinate'' theorem for binary evidence:
+strength is the simplex direction, and total evidence is the scale.%
+\footnote{Formalized as
+\code{positiveBinaryCountsEquivSimplexScale} and packaged in
+\code{MeanConcentrationProfile}.}
+
+Confidence is different.  It is not the direction; it is a chart on the
+scale axis.  Reconstruction alone says only that the chart must decode
+back to total evidence.  The family of valid confidence charts therefore
+has torsorial freedom: differences between charts are meaningful
+reparametrizations, but no chart is selected until an extra law is named.
+The usual PLN chart becomes distinguished by two independent forcing
+laws:
+
+\begin{itemize}
+\item \textbf{Canonical confidence-odds additivity:}
+  if $c/(1-c)$ is additive under evidence-weight revision, with the
+  stated nonnegative-domain regularity and nonsingularity gates, then
+  $c=n/(n+k)$.
+\item \textbf{Walley width complement:}
+  for binary IDM predictive intervals, imposing
+  credibility $=1-\mathrm{width}$ gives
+  $c = 1 - s/(n+s)=n/(n+s)$.
+\end{itemize}
+
+\noindent
+The two routes name the same horizon parameter: the confidence scale
+$k$ is the concentration or IDM strength parameter.  Other charts are
+not fake.  Exponential/noisy-OR, tanh/Einstein, arctan, and reserve-half
+coordinates are proved valid reconstruction charts when supplied with
+their own transported revision laws.  They simply do not satisfy the
+standard confidence-odds additivity law.
+
+\begin{center}
+\renewcommand{\arraystretch}{1.18}
+\begin{tabular}{@{}p{0.20\textwidth}p{0.29\textwidth}p{0.34\textwidth}@{}}
+\toprule
+\textbf{Coordinate} & \textbf{Free before laws} & \textbf{Forced by extra law} \\
+\midrule
+Strength $s$ &
+Prior mean may shrink the empirical direction &
+Evidence direction $n^+/(n^++n^-)$; revision is weighted mixture \\
+Confidence $c$ &
+Any reconstructive chart on total evidence weight &
+PLN $n/(n+k)$ under canonical-odds additivity or Walley width complement \\
+ITV strength view &
+Selector choice: lower, midpoint, or upper &
+Midpoint is bounded and ordered once selected; Walley fixes width/credibility \\
+Phase &
+Absent from ordinary PLN views &
+Only visible in an amplitude extension with interference semantics \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[
+  >=Stealth,
+  every node/.style={font=\small},
+  state/.style={draw, rounded corners=3pt, fill=blue!8,
+    align=center, minimum width=33mm, minimum height=11mm},
+  view/.style={draw, rounded corners=3pt, fill=green!8,
+    align=center, minimum width=31mm, minimum height=11mm},
+  law/.style={draw, rounded corners=3pt, fill=orange!10,
+    align=center, minimum width=34mm, minimum height=11mm},
+  boundary/.style={draw, dashed, rounded corners=3pt, fill=purple!7,
+    align=center, minimum width=35mm, minimum height=11mm},
+]
+\node[state] (counts) {Binary evidence\\$(n^+,n^-)$};
+\node[view, right=20mm of counts] (polar) {Simplex-scale\\$(s,n)$};
+\node[view, above right=9mm and 20mm of polar] (stv) {Ordinary STV\\$\langle s,c\rangle$};
+\node[law, below right=9mm and 20mm of polar] (laws)
+  {Forcing laws\\Walley / odds-additive};
+\node[boundary, right=34mm of stv] (phase)
+  {Amplitude extension\\Born shadow $+$ phase};
+
+\draw[->, thick] (counts) -- node[above, font=\scriptsize] {equiv.} (polar);
+\draw[->, thick] (polar) -- node[above, sloped, font=\scriptsize]
+  {choose chart $c=\chi(n)$} (stv);
+\draw[->, thick] (laws) -- node[below, sloped, font=\scriptsize]
+  {select PLN chart} (stv);
+\draw[->, dashed, thick] (phase) -- node[above, font=\scriptsize]
+  {forget phase} (stv);
+\draw[->, dashed, thick] (polar) to[bend right=15]
+  node[below, font=\scriptsize] {Hellinger/Born shadow} (phase);
+\end{tikzpicture}
+\caption{The proof-carrying DOF-vs-forcing map.  Evidence first
+decomposes into direction and scale.  Strength is the direction view.
+Confidence is a chart on scale, free until a law selects one chart.
+Amplitude/phase states project back to the same ordinary STV by
+forgetting phase; phase is extra extension structure, not hidden inside
+$s$ or $c$.}
+\label{fig:dof-forcing-map}
+\end{figure}
+
+\noindent
+The bundled Lean surface
+\code{PaperFacingDOFForcingSynthesisProfile} collects this map in one
+place: strength as simplex direction, confidence as chart freedom,
+revision and Walley laws as PLN-chart selectors, Beta prior
+mean/concentration as learnable axes, Bernoulli e/m/Fisher geometry as
+the differential reading, and phase as an explicit extension boundary.%
+\footnote{Formalized in
+\codepath{Mettapedia/Logic/PLNTruthTheoryIndex.lean}, with the
+supporting chart, information-geometry, and amplitude-boundary theorems
+in \codepath{Mettapedia/Logic/PLNConfidenceWeightRevision.lean},
+\codepath{Mettapedia/Logic/PLNInformationGeometry.lean}, and
+\codepath{Mettapedia/Logic/PLNAmplitudePhase.lean}.}
+
+The differential reading is also explicit.  The m-flat Bernoulli
+geodesic is the straight mean-coordinate path
+\[
+  \gamma_m(t)=(1-t)p+tq,
+  \qquad
+  \frac{d\gamma_m}{dt}=q-p .
+\]
+The e-flat Bernoulli geodesic is straight only after applying the
+natural coordinate $\theta=\log(p/(1-p))$:
+\[
+  \theta(\gamma_e(t))=(1-t)\theta(p)+t\theta(q),
+  \qquad
+  \frac{d}{dt}\theta(\gamma_e(t))=\theta(q)-\theta(p).
+\]
+These are formalized as derivative-backed geodesic handles, not just
+as endpoint identities.
+
+The amplitude boundary is now more than a metaphor.  In the formal
+surface, a complex phase factor is identified with $\exp(i\theta)$, a
+complex amplitude is identified with $r\exp(i\theta)$, and Born's rule
+erases the phase for a single path:
+\[
+  \left\lvert \sqrt{p}\,e^{i\theta}\right\rvert^2 = p .
+\]
+For two paths the phase reappears exactly as interference:
+\[
+  \left\lvert r e^{i\theta} + s e^{i\phi}\right\rvert^2
+  = r^2 + s^2 + 2rs\cos(\theta-\phi).
+\]
+So ordinary STV/ITV truth values are not ``missing a better confidence
+formula'' here; they are the phaseless projection of a richer carrier.
+The missing structure is phase, and phase changes how alternatives add.
+
+\paragraph{Five tiny witnesses.}
+The marble-bag witness separates strength from confidence.  With
+horizon $k=2$, one red draw and no blue draw has empirical strength
+$1/(1+0)=1$ but confidence $1/(1+2)=1/3$; one hundred red and one
+hundred blue draws has strength $100/200=1/2$ but confidence
+$200/(200+2)$.  Strength is the direction of the evidence cone.
+Confidence is the scale of the evidence.  Confusing them makes one red
+marble look like certainty.  The formal counterparts are the
+simplex--scale equivalence
+\code{positiveBinaryCountsEquivSimplexScale} and the prior-shift canary
+\code{singlePositive\_uniform\_prior\_changes\_strength}.
+
+The loudspeaker witness separates coherent phase from incoherent
+addition.  Two speakers playing the same tone have two unit-amplitude
+paths.  A phase-blind reader predicts weight $1^2+1^2=2$ everywhere.
+At a point where the waves arrive in phase, however,
+\[
+  \lvert e^{i0}+e^{i0}\rvert^2 = 4;
+\]
+at a point where they arrive half a cycle out of phase,
+\[
+  \lvert e^{i0}+e^{i\pi}\rvert^2 = 0.
+\]
+Forgetting phase therefore confuses perfect reinforcement, ordinary
+incoherent addition, and perfect cancellation.  This is the intuitive
+content of the constructive/destructive interference canaries and the
+two-path theorem
+\code{complexTwoPathBornWeight\_interference}.
+
+The confidence-chart witness separates a displayed number from the
+evidence law that makes it meaningful.  Suppose two sources each display
+confidence $1/2$.  Under the PLN/Mobius count chart, revising them gives
+\[
+  \frac{1/2+1/2-2(1/2)(1/2)}{1-(1/2)(1/2)}
+  = \frac{2}{3}.
+\]
+Under the exponential/noisy-OR chart it gives $3/4$: two independent
+chances to find the key succeed if at least one works.  Under the
+tanh/Einstein chart it gives $4/5$: two half-speed bounded signals
+combine by $(v+w)/(1+vw)$, not by ordinary addition.  Thus the number
+$1/2$ is not self-interpreting.  PLN is the right chart for count-like
+concentration; exponential is natural for hazard or independent
+opportunity; tanh is natural for bounded signed support or trust.  These
+are witnessed by
+\code{plnConfidence\_revision\_closedForm},
+\code{expCoordinate\_revision\_closedForm}, and
+\code{tanhCoordinate\_revision\_closedForm}, with the $2/3$, $3/4$,
+and $4/5$ canaries at one half.
+
+The Goldilocks witness explains why the phase carrier is complex rather
+than an arbitrary two-dimensional number system.  A dual-number carrier
+has a nonzero infinitesimal direction whose conjugate norm cannot be a
+positive-definite Born weight; the extra coordinate can be present while
+the weight fails to see it faithfully.  A split-complex carrier has
+norm $a^2-b^2$, so weights can become negative.  The ordinary complex
+carrier has norm $a^2+b^2$, which is positive-definite and still carries
+phase.  The formal ablation is
+\code{ksComplexPhaseCarrier\_positiveDefinite} versus
+\code{dualCarrier\_not\_positiveDefinite} and
+\code{splitCarrier\_not\_positiveDefinite}.
+
+The pool-versus-chain witness separates the m- and e-connections.
+Start from prior odds $1:1$.  Two independent lab tests each with
+likelihood ratio $3$ should be chained by multiplying odds:
+$1\cdot 3\cdot 3=9$, hence posterior probability $9/10$.  If instead
+one averages the two single-test posterior probabilities, each test
+gives $3/(1+3)=3/4$, and the mixture average remains $3/4$.  Pooling
+rates and chaining independent evidence are different operations.  The
+m-flat story is straight in mean coordinate; the e-flat story is
+straight in log-odds coordinate.  The derivative-backed handles are
+\code{bernoulliMixtureGeodesic\_hasDerivAt} and
+\code{bernoulliLogOdds\_exponentialGeodesic\_hasDerivAt}.  All five
+witnesses are formalized as exact Lean facts in
+\codepath{Mettapedia/Logic/PLNDidacticWitnesses.lean} and mirrored as
+runtime canaries in
+\codepath{/home/zar/claude/hyperon/PeTTa/examples/pln\_didactic\_witnesses.metta}
+and
+\codepath{/home/zar/claude/hyperon/CeTTa/tests/test\_wmpln\_didactic\_witnesses.metta}.
 
 
 \section{Confidence}
@@ -3843,7 +4122,7 @@ A high-confidence negative result is still informative.
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=0.85\textwidth]{../results/figures/confidence_curves.pdf}
+\wmplnincludegraphics[width=0.85\textwidth]{../results/figures/confidence_curves.pdf}
 \caption{Confidence as a function of sample size for the three
   carriers.  All three are monotone: more evidence always means
   higher confidence.  The PPLBench comparison
@@ -3855,7 +4134,8 @@ A high-confidence negative result is still informative.
 
 \section{Indefinite Truth Values}
 
-An interval $[s_L, s_U]$ bounds the strength.  Three semantics
+An interval $[s_L, s_U]$ gives endpoints for a selected uncertainty semantics.
+Three semantics
 exist and must not be conflated:
 
 \begin{enumerate}
@@ -3867,9 +4147,9 @@ exist and must not be conflated:
   Imprecise Dirichlet Model~\cite{Walley1996BagOfMarbles}.
   Prior-free but wider.
 
-\item \textbf{Frequentist confidence intervals}: the true parameter
-  lies within them with specified coverage probability over repeated
-  sampling.
+\item \textbf{Frequentist confidence intervals}: intervals produced by a
+  procedure with specified long-run coverage.  After observing a dataset,
+  they are not posterior probability statements about the parameter.
 \end{enumerate}
 
 \noindent
@@ -3879,6 +4159,28 @@ accordingly.  The Walley connection is developed in
 Chapter~\ref{ch:evidence}, \S``Walley predictive intervals.''%
 \footnote{Formalized in
 \codepath{Mettapedia/Logic/PLNIndefiniteTruth.lean}.}
+
+The degrees of freedom are explicit in the constructors.  Once lower and
+upper bounds are chosen, width is definitionally $s_U-s_L$.  The scalar
+``strength'' exported from an ITV is the midpoint $(s_L+s_U)/2$, a
+display representative rather than a theorem that decisions must use the
+midpoint.  Bayesian ITV constructors choose a prior context, credible
+level, and interval backend; in the current formalization these choices
+affect the bounds, while credibility remains the BinaryEvidence
+concentration with $\kappa=\alpha_0+\beta_0$.  Walley-IDM constructors
+instead choose one strength parameter $s>0$; then lower, upper, width,
+and credibility are fixed by the IDM predictive formulas.
+
+This selector choice matters for the confidence coordinate.  Generic
+ITVs do not require a law relating width and credibility.  But Walley's
+IDM predictive interval has width $s/(n+s)$; if one imposes the
+ITV-compatibility law ``credibility is the complement of predictive
+width,'' then $c = 1 - s/(n+s) = n/(n+s)$.  The Lean theorem
+\code{walley\_width\_complement\_forces\_plnOdds} proves that this
+condition forces the usual PLN/NARS odds coordinate with $k=s$, while the
+reserve-half coordinate is also proved incompatible with this Walley law.
+Thus the ITV route does narrow the viable $c$-values in the Walley-IDM
+case, but not in the generic Bayesian-credible-interval case.
 
 
 \section{Why Views Are Not Proof Objects}
@@ -3893,10 +4195,10 @@ and the raw counts.
 The discipline of the calculus: carry evidence between inference
 steps; extract views only at the end, for display or decision.
 
-\paragraph{A concrete illustration: three PLN confidence bugs.}
-The MeTTa PLN implementation contains three formally proved
+\paragraph{A concrete illustration: historical PLN confidence bugs.}
+The MeTTa-style PLN formulas have had formally proved
 confidence-formula errors that arise precisely from operating on views
-instead of evidence:%
+as if they were evidence:%
 \footnote{Formalized:
 \codepath{Mettapedia/Logic/PLNBugAnalysis.lean}
 (0~sorry, 14~theorems with concrete counterexamples and MeTTa
@@ -3935,13 +4237,13 @@ patches).}
 
 \noindent
 All three bugs disappear when the system works with evidence
-pairs rather than confidence scalars.  In weight space (which is
-isomorphic to evidence counts via the round-trip
-$\code{w2c}(\code{c2w}(c)) = c$, proved), composition is
-multiplication; in confidence space, it is not.  This is the
-practical consequence of D4 (Evidence over Views): the bugs are not
-implementation accidents---they are symptoms of operating on the
-wrong abstraction layer.
+pairs and provenance rather than confidence scalars.  For fixed $k$,
+$\code{c2w}$ and $\code{w2c}$ are inverse coordinate transforms between
+confidence and total evidence weight, but weight is only one coordinate
+of binary evidence and still omits provenance/overlap.  The practical
+consequence of D4 (Evidence over Views) is that confidence is safe as a
+display/query coordinate, not as a substitute for the state that
+generated it.
 
 \begin{quote}
 \emph{Probability is what you query; evidence is what you carry.}
@@ -4628,6 +4930,34 @@ leave as a target for
 that iterated induction-plus-revision on i.i.d.\ instance evidence converges in
 strength to $P(B\mid A)$ with confidence $\to 1$, the reverse link to
 $P(A\mid B)$, their ratio fixed by the base rates.
+
+A first installment of this target is now discharged, sorry-free and
+axiom-free, in \codepath{Mettapedia/Logic/RavenAsymmetricInduction.lean}.
+Modelling induction as iterated revision on \code{BinaryEvidence}, $R$ black
+ravens and $M$ other black items give \code{strength\_ravenBlack}~$=R/R=1$ and
+\code{strength\_blackRaven}~$=R/(R+M)$; the inverse link is antitone in $M$
+(\code{strength\_blackRaven\_antitone}) and \emph{converges to the base rate},
+\code{strength\_blackRaven\_tendsto\_zero} proving $R/(R+M)\to 0$ as
+$M\to\infty$ so that the asymmetry gap tends to $1$.  A dataset layer over
+finite observation lists proves the strengths depend only on the two sufficient
+counts (\code{aggregate\_blackRaven\_eq\_counts}) and are order-insensitive
+(exchangeability, \code{aggregate\_blackRaven\_perm}); what remains open is the
+full i.i.d.\ statement with confidence $\to 1$.  The runnable mirror is
+\codepath{papers/examples/RavenAsymmetricInduction.metta}.
+
+The query-side dual is abduction, formalized in
+\codepath{Mettapedia/Logic/RavenAbduction.lean}.  With the unnormalized
+posterior $\mathrm{score}(h)=\pi(h)\prod_i P(\mathrm{feature}_i\mid h)$, a single
+common feature is dominated by the base rate
+(\code{base\_rate\_dominates\_shared\_feature}): from $\mathrm{black}$ alone the
+\emph{common} species is the better hypothesis (\code{crow\_best\_on\_black}),
+precisely because $P(\mathrm{raven}\mid\mathrm{black})$ is small.  A
+discriminating feature (``croaks'') flips the best explanation
+(\code{raven\_best\_on\_black\_and\_croak}), so the best explanation is
+non-monotone in evidence (\code{best\_explanation\_flips}).  The atomic NARS
+abduction rule (\code{Truth\_Abduction}) generates the hypothesis but does not
+rank competing explanations; ranking needs the prior.  Runnable mirror:
+\codepath{papers/examples/RavenAbduction.metta}.
 
 The chain theorem above is stated at the strength (scalar) level.
 At the \emph{distributional level}, the story is cleaner: propagate
@@ -6511,7 +6841,7 @@ the infinite case, and a clean return map from Gibbs measures back into the
 algebraic WM interface.
 
 \paragraph{The formalization chain.}
-The infinite story is certified across twelve sorry-free files in three
+The infinite story is certified across twelve active Lean files in three
 layers:
 \begin{description}
 \item[Theory.]  \codepath{MarkovLogicInfiniteExistence.lean} (DLR existence
@@ -6690,8 +7020,8 @@ compiled deduction rewrite.}
 
 \paragraph{The semantic pipeline: from specification to truth value.}
 The full chain from an infinite MLN specification to a PLN truth value
-passes through four stages.  Each stage is a single, sorry-free Lean
-definition or theorem; together they form the return map from Gibbs
+passes through four stages.  Each stage is a single Lean
+definition or theorem in the active WM-PLN development; together they form the return map from Gibbs
 semantics back into the algebraic WM interface.
 
 \begin{figure}[htbp]
@@ -8482,6 +8812,33 @@ The \code{universalEnsembleWorldModel} would then provide
 amplitudes for any typed rewrite system---a formal grounding
 for ``It from Bit'' at the evidence layer.
 
+The current formalization has begun this boundary without claiming the
+full quantum calculus.  The file
+\codepath{Mettapedia/Logic/PLNAmplitudePhase.lean} proves that ordinary
+binary PLN strength is recovered as the Born shadow of the Hellinger
+amplitude, that the ordinary typed-STV projection forgets relative
+phase, and that the complex amplitude
+$r\exp(i\theta)$ satisfies the exact two-path interference law
+$|r e^{i\theta}+s e^{i\phi}|^2
+= r^2+s^2+2rs\cos(\theta-\phi)$.  It also reuses the
+two-dimensional Knuth--Skilling-style algebra classification:
+the negative-$\mu$ carrier is equivalent to $\mathbb{C}$ and is exactly
+the positive-definite conjugate-norm regime, while the dual-number and
+split-complex carriers fail that gate.  Thus standard PLN is the real
+phaseless shadow; a waveform or quantum PLN would need a separate phase
+semantics rather than another confidence formula.
+
+A useful future-work witness for the infinitary side is the magnet.
+The same local rule---neighboring spins prefer to agree---can have one
+global Gibbs state above the critical temperature and two extremal
+global Gibbs states below it.  In the shared abstraction sought here,
+that is exactly the place where phase transition, non-unique projective
+extension, and spontaneous imprecision meet: a precise local
+specification has a credal set of global completions.  This is not part
+of the current Walley package; it is the didactic witness for the
+future \code{ProjectiveLimitCredalSet} target connecting infinite MLNs,
+natural extension, Dobrushin uniqueness, and imprecise de~Finetti.
+
 \section{Universality}
 
 The typed world-model encoding
@@ -8715,7 +9072,7 @@ update.  Confidence grows monotonically with observations.%
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=0.85\textwidth]{../results/figures/broken_sensor.pdf}
+\wmplnincludegraphics[width=0.85\textwidth]{../results/figures/broken_sensor.pdf}
 \caption{Broken sensor demo.  Gray dashed: prior predictive.
   Blue: posterior after morning shift ($\sim$16\textdegree{}C).
   Red: posterior after night shift ($\sim$22\textdegree{}C).
@@ -8800,7 +9157,7 @@ underlying update laws}.
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=\textwidth]{../results/figures/gas_sensor_drift.pdf}
+\wmplnincludegraphics[width=\textwidth]{../results/figures/gas_sensor_drift.pdf}
 \caption{Gas sensor array drift.  Solid curves: batch~1
   posterior predictive (2007).  Dashed: consolidated posterior
   after both batches.  Toluene shows dramatic drift: batch~10
@@ -8811,7 +9168,7 @@ underlying update laws}.
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=\textwidth]{../results/figures/gas_drift_protocols.pdf}
+\wmplnincludegraphics[width=\textwidth]{../results/figures/gas_drift_protocols.pdf}
 \caption{Gas sensor drift protocols on the full 128-feature
   representation.  Cumulative replay is the strongest average
   protocol in both the 3-gas and 6-gas settings.}
@@ -8848,7 +9205,7 @@ composition is safe for this lane.%
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=\textwidth]{../results/figures/gas_policy_frontier.pdf}
+\wmplnincludegraphics[width=\textwidth]{../results/figures/gas_policy_frontier.pdf}
 \caption{Sequential gas-drift governance policies.  Each point
   is a batch-level retraining policy over batches~2\ldots10,
   trading sample-weighted accuracy against label budget.
@@ -8892,7 +9249,7 @@ the evidence algebra.%
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=\textwidth]{../results/figures/steel_classification.pdf}
+\wmplnincludegraphics[width=\textwidth]{../results/figures/steel_classification.pdf}
 \caption{Steel fault classification.  \emph{Left:} Student-$t$
   predictive densities for each fault type after 5~observations;
   K\_Scratch (red) is clearly separated rightward.  \emph{Right:}
@@ -8932,7 +9289,7 @@ which are set from the training portion of the NAB stream.%
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=\textwidth]{../results/figures/nab_kalman_tracking.pdf}
+\wmplnincludegraphics[width=\textwidth]{../results/figures/nab_kalman_tracking.pdf}
 \caption{NAB machine temperature: Kalman tracking with anomaly
   detection.  The posterior predictive interval (shaded)
   narrows as evidence accumulates; observations outside the
@@ -8973,7 +9330,7 @@ state as sequential online processing.
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=\textwidth]{../results/figures/gjp_forecasting.pdf}
+\wmplnincludegraphics[width=\textwidth]{../results/figures/gjp_forecasting.pdf}
 \caption{GJP forecast aggregation.  WM reliability weighting
   improves Brier and log scores over unweighted and top-$k$
   pooling baselines on year-4 binary and multi-option questions.}
@@ -9903,7 +10260,7 @@ the WM update took constant time, not $O(N)$ MCMC samples.}
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=\textwidth]{../results/figures/pplbench_normal_holdout.pdf}
+\wmplnincludegraphics[width=\textwidth]{../results/figures/pplbench_normal_holdout.pdf}
 \caption{Normal-Normal holdout comparison.  Stan (NUTS) vs.\
   WM-PLN on held-out data: identical posteriors, $O(1)$~vs.\
   $O(N)$ updates.  The PLL difference is $< 10^{-10}$ across
@@ -9929,7 +10286,7 @@ both the carrier and the full inference procedure are exact.
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=0.85\textwidth]{../results/figures/pplbench_normal_normal_adaptive_pll.png}
+\wmplnincludegraphics[width=0.85\textwidth]{../results/figures/pplbench_normal_normal_adaptive_pll.png}
 \caption{Hook-B Adaptive Normal-Normal: mixture posterior over
   prior-variance hypotheses.  The adaptive lane matches the
   universal prediction bound.}
@@ -9962,7 +10319,7 @@ dimension changes.}
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=0.85\textwidth]{../results/figures/pplbench_dirichlet_categorical_pll.png}
+\wmplnincludegraphics[width=0.85\textwidth]{../results/figures/pplbench_dirichlet_categorical_pll.png}
 \caption{Dirichlet-Categorical lane: WM-PLN predictive
   log-likelihood matches the analytical conjugate posterior.}
 \label{fig:pplbench-dirichlet}
@@ -10065,21 +10422,21 @@ part of the evidence state.
 \centering
 \begin{minipage}{0.48\textwidth}
 \centering
-\includegraphics[width=\textwidth]{../results/figures/pplbench_crowd_sourced_annotation_pll.png}
+\wmplnincludegraphics[width=\textwidth]{../results/figures/pplbench_crowd_sourced_annotation_pll.png}
 \end{minipage}\hfill
 \begin{minipage}{0.48\textwidth}
 \centering
-\includegraphics[width=\textwidth]{../results/figures/pplbench_n_schools_pll.png}
+\wmplnincludegraphics[width=\textwidth]{../results/figures/pplbench_n_schools_pll.png}
 \end{minipage}
 
 \medskip
 \begin{minipage}{0.48\textwidth}
 \centering
-\includegraphics[width=\textwidth]{../results/figures/pplbench_logistic_regression_pll.png}
+\wmplnincludegraphics[width=\textwidth]{../results/figures/pplbench_logistic_regression_pll.png}
 \end{minipage}\hfill
 \begin{minipage}{0.48\textwidth}
 \centering
-\includegraphics[width=\textwidth]{../results/figures/pplbench_robust_regression_pll.png}
+\wmplnincludegraphics[width=\textwidth]{../results/figures/pplbench_robust_regression_pll.png}
 \end{minipage}
 \caption{Remaining PPLBench lanes.
   \emph{Top left:} crowd-sourced annotation (EM scheduler).
@@ -10099,7 +10456,7 @@ comparison.
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=\textwidth]{../results/figures/pplbench_refresh_checks.pdf}
+\wmplnincludegraphics[width=\textwidth]{../results/figures/pplbench_refresh_checks.pdf}
 \caption{Cross-lane refresh verification.  All eight lanes pass
   numerical agreement checks between the Python reference
   implementation and the Lean-specified carrier semantics.}
@@ -10288,7 +10645,7 @@ narrow intervals; reliability filtering mostly reopens them.}
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=\textwidth]{../results/figures/ai_outcomes_assumption_ladder.pdf}
+\wmplnincludegraphics[width=\textwidth]{../results/figures/ai_outcomes_assumption_ladder.pdf}
 \caption{Assumption ladder.  At A1, weak direct-target numerics
   narrow some lenses (colored intervals).  At A2, requiring
   calibrated sources reopens them to full width---the calculus

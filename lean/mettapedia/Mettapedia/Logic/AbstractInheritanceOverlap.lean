@@ -50,18 +50,26 @@ namespace StampedBinaryEvidence
 
 variable {Stamp : Type u} [DecidableEq Stamp]
 
-noncomputable instance : Add (StampedBinaryEvidence Stamp) := ⟨revise⟩
+/-- Raw stamped-packet addition: additive evidence plus union provenance.
+This helper is intentionally explicit rather than a global typeclass instance,
+because overlap-aware code should not discover it accidentally via `+`. -/
+noncomputable def rawAdd : StampedBinaryEvidence Stamp → StampedBinaryEvidence Stamp → StampedBinaryEvidence Stamp :=
+  revise
 
-noncomputable instance : Zero (StampedBinaryEvidence Stamp) := ⟨empty⟩
+/-- Raw stamped-packet zero for the explicit additive helper surface. -/
+noncomputable def rawZero : StampedBinaryEvidence Stamp := empty
 
-@[simp] theorem add_evidence (x y : StampedBinaryEvidence Stamp) :
-    (x + y).evidence = x.evidence + y.evidence := rfl
+@[simp] theorem rawAdd_evidence (x y : StampedBinaryEvidence Stamp) :
+    (rawAdd x y).evidence = x.evidence + y.evidence := rfl
 
-@[simp] theorem add_stamp (x y : StampedBinaryEvidence Stamp) :
-    (x + y).stamp = x.stamp ∪ y.stamp := rfl
+@[simp] theorem rawAdd_stamp (x y : StampedBinaryEvidence Stamp) :
+    (rawAdd x y).stamp = x.stamp ∪ y.stamp := rfl
 
-noncomputable instance : AddCommMonoid (StampedBinaryEvidence Stamp) where
-  add := (· + ·)
+/-- Explicit additive structure for raw stamped packets.
+This is kept available for bridge proofs, but is not exported as a global
+instance because raw stamped addition can double-count overlapping provenance. -/
+noncomputable def rawAddCommMonoid : AddCommMonoid (StampedBinaryEvidence Stamp) where
+  add := rawAdd
   add_assoc x y z := by
     apply StampedBinaryEvidence.ext
     · apply BinaryEvidence.ext'
@@ -74,7 +82,7 @@ noncomputable instance : AddCommMonoid (StampedBinaryEvidence Stamp) where
     · ext a
       change (a ∈ (x.stamp ∪ y.stamp) ∪ z.stamp) ↔ a ∈ x.stamp ∪ (y.stamp ∪ z.stamp)
       simp
-  zero := 0
+  zero := rawZero
   zero_add x := by
     apply StampedBinaryEvidence.ext
     · apply BinaryEvidence.ext'
@@ -95,7 +103,7 @@ noncomputable instance : AddCommMonoid (StampedBinaryEvidence Stamp) where
     · ext a
       change (a ∈ x.stamp ∪ (∅ : Finset Stamp)) ↔ a ∈ x.stamp
       simp
-  nsmul := nsmulRec
+  nsmul n x := Nat.rec rawZero (fun _ acc => rawAdd acc x) n
   nsmul_zero := by
     intro x
     rfl
@@ -110,15 +118,23 @@ noncomputable instance : AddCommMonoid (StampedBinaryEvidence Stamp) where
       · change x.evidence.neg + y.evidence.neg = y.evidence.neg + x.evidence.neg
         simp [add_comm]
     · ext a
-      simp [Finset.mem_union, or_comm]
+      change (a ∈ x.stamp ∪ y.stamp) ↔ a ∈ y.stamp ∪ x.stamp
+      simp [or_comm]
 
-noncomputable instance : EvidenceType (StampedBinaryEvidence Stamp) where
-  toAddCommMonoid := inferInstance
+/-- Explicit `EvidenceType` wrapper for the raw stamped additive packet algebra. -/
+noncomputable def rawEvidenceType : EvidenceType (StampedBinaryEvidence Stamp) where
+  toAddCommMonoid := rawAddCommMonoid
 
-noncomputable instance instAdditiveWorldModel :
-    AdditiveWorldModel (StampedBinaryEvidence Stamp) Unit BinaryEvidence where
-  extract W _ := W.evidence
-  extract_add _ _ _ := rfl
+/-- Explicit additive-world-model view of raw stamped packets. -/
+noncomputable def rawAdditiveWorldModel :
+    letI : EvidenceType (StampedBinaryEvidence Stamp) := rawEvidenceType
+    AdditiveWorldModel (StampedBinaryEvidence Stamp) Unit BinaryEvidence := by
+  letI : EvidenceType (StampedBinaryEvidence Stamp) := rawEvidenceType
+  exact
+    { extract := fun W _ => W.evidence
+      extract_add := by
+        intro _ _ _
+        rfl }
 
 end StampedBinaryEvidence
 
@@ -197,43 +213,52 @@ theorem correctedMerge_eq_revise_of_stampDisjoint
 
 /-- Concrete stamped-overlap layer for inheritance witness packets. -/
 noncomputable def witnessStampOverlapLayer :
+    letI : EvidenceType (StampedBinaryEvidence (WitnessStamp Obj Attr)) :=
+      StampedBinaryEvidence.rawEvidenceType
+    letI : AdditiveWorldModel (StampedBinaryEvidence (WitnessStamp Obj Attr)) Unit BinaryEvidence :=
+      StampedBinaryEvidence.rawAdditiveWorldModel
     OverlapLayer
       (StampedBinaryEvidence (WitnessStamp Obj Attr))
       Unit
       BinaryEvidence
-      BinaryEvidence where
-  merge := correctedMerge
-  overlap := fun x y _ => overlapEvidence x y
-  combine := fun e₁ e₂ ov => e₁ + e₂ - ov
-  independent := fun x y _ => StampedBinaryEvidence.StampDisjoint x y
-  evidence_merge := by
-    intro x y q
-    cases q
-    rfl
-  additive_of_independent := by
-    intro x y q h
-    cases q
-    change (correctedMerge x y).evidence = x.evidence + y.evidence
-    apply BinaryEvidence.ext' <;>
-      simp [correctedMerge, overlapEvidence_eq_zero_of_stampDisjoint, h]
+      BinaryEvidence := by
+  letI : EvidenceType (StampedBinaryEvidence (WitnessStamp Obj Attr)) :=
+    StampedBinaryEvidence.rawEvidenceType
+  letI : AdditiveWorldModel (StampedBinaryEvidence (WitnessStamp Obj Attr)) Unit BinaryEvidence :=
+    StampedBinaryEvidence.rawAdditiveWorldModel
+  exact
+    { merge := correctedMerge
+      overlap := fun x y _ => overlapEvidence x y
+      combine := fun e₁ e₂ ov => e₁ + e₂ - ov
+      independent := fun x y _ => StampedBinaryEvidence.StampDisjoint x y
+      evidence_merge := by
+        intro x y q
+        cases q
+        rfl
+      additive_of_independent := by
+        intro x y q h
+        cases q
+        change (correctedMerge x y).evidence = x.evidence + y.evidence
+        apply BinaryEvidence.ext' <;>
+          simp [correctedMerge, overlapEvidence_eq_zero_of_stampDisjoint, h] }
 
 omit [Fintype Obj] [Fintype Attr] in
 theorem witnessStampOverlapLayer_additive_of_stampDisjoint
     (x y : StampedBinaryEvidence (WitnessStamp Obj Attr))
     (h : StampedBinaryEvidence.StampDisjoint x y) :
-    AdditiveWorldModel.extract
-      (State := StampedBinaryEvidence (WitnessStamp Obj Attr))
-      (Query := Unit) (Ev := BinaryEvidence)
-      ((witnessStampOverlapLayer (Obj := Obj) (Attr := Attr)).merge x y) () =
-    AdditiveWorldModel.extract
-      (State := StampedBinaryEvidence (WitnessStamp Obj Attr))
-      (Query := Unit) (Ev := BinaryEvidence) x () +
-    AdditiveWorldModel.extract
-      (State := StampedBinaryEvidence (WitnessStamp Obj Attr))
-      (Query := Unit) (Ev := BinaryEvidence) y () := by
-  exact OverlapLayer.additive_of_independent'
-    (L := witnessStampOverlapLayer (Obj := Obj) (Attr := Attr))
-    x y () h
+    letI : EvidenceType (StampedBinaryEvidence (WitnessStamp Obj Attr)) :=
+      StampedBinaryEvidence.rawEvidenceType
+    letI : AdditiveWorldModel (StampedBinaryEvidence (WitnessStamp Obj Attr)) Unit BinaryEvidence :=
+      StampedBinaryEvidence.rawAdditiveWorldModel
+    ((witnessStampOverlapLayer (Obj := Obj) (Attr := Attr)).merge x y).evidence =
+      x.evidence + y.evidence := by
+  letI : EvidenceType (StampedBinaryEvidence (WitnessStamp Obj Attr)) :=
+    StampedBinaryEvidence.rawEvidenceType
+  letI : AdditiveWorldModel (StampedBinaryEvidence (WitnessStamp Obj Attr)) Unit BinaryEvidence :=
+    StampedBinaryEvidence.rawAdditiveWorldModel
+  change (correctedMerge x y).evidence = x.evidence + y.evidence
+  apply BinaryEvidence.ext' <;>
+    simp [correctedMerge, overlapEvidence_eq_zero_of_stampDisjoint, h]
 
 theorem correctedMerge_positive_negative_eq_finiteInheritanceStampedEvidence
     (A B : DualConcept Obj Attr) :

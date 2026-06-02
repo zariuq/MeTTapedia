@@ -1,238 +1,215 @@
 import Mathlib.Data.Real.Basic
-import Mathlib.Data.Finset.Basic
+import Mathlib.Data.Fintype.Card
 import Mathlib.Analysis.SpecialFunctions.Log.Basic
 import Mathlib.Analysis.SpecialFunctions.Pow.Real
+import Mettapedia.Logic.AbstractInheritance
+import Mettapedia.Logic.ConceptOntology.Basic
 import Mettapedia.InformationTheory.MutualInformation
 
 /-!
-# Intensional Inheritance: Information-Theoretic Unification
+# Intensional Inheritance: Semantic Base and Information-Theoretic Surface
 
-This file provides a POC formalization of Goertzel's information-theoretic
-unification of intensional and extensional inheritance.
+This module now treats PLN-style inheritance as a specialization of the existing
+abstract inheritance stack:
 
-## Key Insight (Goertzel 2025)
+- `AbstractInheritance.DualConcept` for crisp extent/intent semantics
+- `AbstractInheritance.Interpretation` for semantic meaning of a carrier
+- `ConceptOntology.EvidenceMembershipContext` for graded/additive membership evidence
 
-The Chapter-12 surface wants a single scalar information score relating:
-
-- an extensional term `P(W | F)`,
-- a prior term `P(W)`, and
-- an intensional/log-ratio term.
-
-This file keeps that scalar abstract, while
-`Mettapedia/InformationTheory/MutualInformation.lean` now separates:
-
-1. pointwise / log-ratio information gain (the scalar that fits `posterior = prior * 2^score`)
-2. finite Shannon mutual information (an expectation of log-ratio terms)
-
-Extensional inheritance I_ext(W; F) = P(W | F)
-- Standard conditional probability / set overlap
-
-**Unifying formula surface**: P(W | F) = P(W) · 2^{score(F,W)}
-
-**Key theorem**: When properties are singletons (each property = one element),
-intensional inheritance reduces to extensional inheritance.
-
-## Philosophical Point
-
-"Creatures with hearts" and "creatures with kidneys" seem like different
-concepts (different intensions), but they pick out the same class (same extension)
-because hearts and kidneys co-evolved. The information-theoretic view captures
-this: I(heart; kidney) ≈ 1 because they're nearly perfectly correlated.
-
-## Design for Hookability
-
-This POC is designed to connect to:
-1. `EvidenceQuantale.lean` - BinaryEvidence counts as concrete carrier
-2. `Optimality.lean` - Universal prediction / Bayes mixtures
-3. `MarkovExchangeability.lean` - Sufficient statistics
-4. Future Shannon/Kolmogorov entropy formalizations
-
-## References
-
-- Goertzel, "Intensional Inheritance Between Concepts: An Information-Theoretic
-  Interpretation" (2025) - `/home/zar/claude/literature/Intensional-Inheritance.pdf`
-- Nil Geisweiller, "Towards a Complete Formalization of PLN" (nuPLN draft)
-  - Local copy: `mettapedia/papers/nuPLN.tex`
+The Chapter-12 information-theoretic scalar stays available here, but it is now
+understood as a score layered on top of semantic inheritance rather than as the
+primary semantic object itself.
 -/
 
 namespace Mettapedia.Logic.IntensionalInheritance
 
 open Real
 
-/-! ## §1: Property-Based Concepts
+/-! ## §1: Primary semantic objects -/
 
-A concept is defined by a set of properties, each with a degree (probability
-that an element of the concept has that property).
+/-- Crisp semantic concepts for the inheritance layer. -/
+abbrev DualConcept (Obj : Type*) (Attr : Type*) :=
+  Mettapedia.Logic.AbstractInheritance.DualConcept Obj Attr
+
+/-- A carrier acquires inheritance semantics by interpretation into dual concepts. -/
+abbrev Interpretation (Carrier : Type*) (Obj : Type*) (Attr : Type*) :=
+  Mettapedia.Logic.AbstractInheritance.Interpretation Carrier Obj Attr
+
+/-- Evidence-valued membership is the graded semantic substrate for PLN inheritance. -/
+abbrev EvidenceMembershipContext
+    (State : Type*) (Obj : Type*) (Con : Type*) (Ev : Type*)
+    [Mettapedia.Logic.EvidenceClass.EvidenceType State] [AddCommMonoid Ev] :=
+  Mettapedia.Logic.ConceptOntology.EvidenceMembershipContext State Obj Con Ev
+
+/-- Evidence-valued concepts are fixed points of the extent/intent adjunction. -/
+abbrev EvidenceConcept {Obj : Type*} {Con : Type*} {Q : Type*}
+    [CommSemigroup Q] [CompleteLattice Q] [IsQuantale Q]
+    (M : Obj → Con → Q) :=
+  Mettapedia.Logic.ConceptOntology.EvidenceConcept M
+
+namespace EvidenceMembershipContext
+
+variable {State : Type*} {Obj : Type*} {Con : Type*} {Q : Type*}
+variable [Mettapedia.Logic.EvidenceClass.EvidenceType State] [AddCommMonoid Q] [Preorder Q]
+
+/-- The crisp abstract-inheritance interpretation induced by the membership
+evidence carried by a particular world/model state and evidence gate. -/
+noncomputable def crispInterpretationAt
+    (M : Mettapedia.Logic.ConceptOntology.EvidenceMembershipContext State Obj Con Q)
+    (G : Mettapedia.Logic.ConceptOntology.EvidenceGate Q)
+    (W : State) :
+    Mettapedia.Logic.AbstractInheritance.Interpretation Con Obj Con :=
+  Mettapedia.Logic.AbstractInheritance.crispInterpretation G (M.memberEvidence W)
+
+/-- Extensional inheritance at a fixed world/model state. -/
+def ExtensionalInheritsAt
+    (M : Mettapedia.Logic.ConceptOntology.EvidenceMembershipContext State Obj Con Q)
+    (G : Mettapedia.Logic.ConceptOntology.EvidenceGate Q)
+    (W : State) (c d : Con) : Prop :=
+  (crispInterpretationAt M G W).ExtensionalInherits c d
+
+/-- Intensional inheritance at a fixed world/model state. -/
+def IntensionalInheritsAt
+    (M : Mettapedia.Logic.ConceptOntology.EvidenceMembershipContext State Obj Con Q)
+    (G : Mettapedia.Logic.ConceptOntology.EvidenceGate Q)
+    (W : State) (c d : Con) : Prop :=
+  (crispInterpretationAt M G W).IntensionalInherits c d
+
+/-- Full dual inheritance at a fixed world/model state. -/
+def InheritsAt
+    (M : Mettapedia.Logic.ConceptOntology.EvidenceMembershipContext State Obj Con Q)
+    (G : Mettapedia.Logic.ConceptOntology.EvidenceGate Q)
+    (W : State) (c d : Con) : Prop :=
+  (crispInterpretationAt M G W).Inherits c d
+
+/-- Pairwise monotonicity relation induced from the abstract inheritance base. -/
+def PairSubsetRelAt
+    (M : Mettapedia.Logic.ConceptOntology.EvidenceMembershipContext State Obj Con Q)
+    (G : Mettapedia.Logic.ConceptOntology.EvidenceGate Q)
+    (W : State) (a b c d : Con) : Prop :=
+  (crispInterpretationAt M G W).PairSubsetRel a b c d
+
+theorem extensionalInheritsAt_iff
+    (M : Mettapedia.Logic.ConceptOntology.EvidenceMembershipContext State Obj Con Q)
+    (G : Mettapedia.Logic.ConceptOntology.EvidenceGate Q)
+    (W : State) (c d : Con) :
+    ExtensionalInheritsAt M G W c d ↔
+      Mettapedia.Logic.ConceptOntology.crispExtensionalInherits G (M.memberEvidence W) c d := by
+  simpa [ExtensionalInheritsAt, crispInterpretationAt] using
+    (Mettapedia.Logic.AbstractInheritance.crispInterpretation_extensionalInherits_iff
+      G (M.memberEvidence W) c d)
+
+theorem inheritsAt_iff
+    (M : Mettapedia.Logic.ConceptOntology.EvidenceMembershipContext State Obj Con Q)
+    (G : Mettapedia.Logic.ConceptOntology.EvidenceGate Q)
+    (W : State) (c d : Con) :
+    InheritsAt M G W c d ↔
+      Mettapedia.Logic.ConceptOntology.crispExtensionalInherits G (M.memberEvidence W) c d := by
+  simpa [InheritsAt, crispInterpretationAt] using
+    (Mettapedia.Logic.AbstractInheritance.crispInterpretation_inherits_iff
+      G (M.memberEvidence W) c d)
+
+theorem extensionalInheritsAt_iff_inheritsAt
+    (M : Mettapedia.Logic.ConceptOntology.EvidenceMembershipContext State Obj Con Q)
+    (G : Mettapedia.Logic.ConceptOntology.EvidenceGate Q)
+    (W : State) (c d : Con) :
+    ExtensionalInheritsAt M G W c d ↔ InheritsAt M G W c d := by
+  rw [extensionalInheritsAt_iff, inheritsAt_iff]
+
+theorem pairSubsetRelAt_iff
+    (M : Mettapedia.Logic.ConceptOntology.EvidenceMembershipContext State Obj Con Q)
+    (G : Mettapedia.Logic.ConceptOntology.EvidenceGate Q)
+    (W : State) (a b c d : Con) :
+    PairSubsetRelAt M G W a b c d ↔
+      InheritsAt M G W c a ∧ InheritsAt M G W b d := by
+  rfl
+
+end EvidenceMembershipContext
+
+/-! ## §2: Finite interpreted counting semantics
+
+For Chapter-12-style numeric inheritance, the abstract `Interpretation` needs a
+finite object carrier so we can read probabilities from extent cardinalities.
 -/
 
-/-- A property is abstractly a predicate on some domain.
-    We parameterize by the domain type α. -/
-structure Property (α : Type*) where
-  name : String  -- For debugging/display
-  holds : α → Prop
-  deriving Inhabited
+namespace Interpretation
 
-/-- A concept is defined by a collection of properties with degrees.
-    The degree dᵢ represents P(property Fᵢ holds | x is in concept F). -/
-structure Concept (α : Type*) where
-  name : String
-  properties : List (Property α)
-  degrees : List ℝ
-  degrees_valid : degrees.length = properties.length := by rfl
-  degrees_unit : ∀ d ∈ degrees, 0 ≤ d ∧ d ≤ 1 := by simp
+section FiniteCounting
 
-namespace Concept
+variable {Carrier : Type*} {Obj : Type*} {Attr : Type*}
+variable [Fintype Obj]
 
-/-- Number of properties defining this concept -/
-def numProperties (F : Concept α) : ℕ := F.properties.length
+/-- Cardinality of the interpreted extent of a carrier element. -/
+noncomputable def extentCount
+    (I : Mettapedia.Logic.AbstractInheritance.Interpretation Carrier Obj Attr)
+    (c : Carrier) : ℕ := by
+  classical
+  exact Fintype.card {x : Obj // x ∈ (I.meaning c).extent}
 
-/-- Get the degree of the i-th property -/
-noncomputable def degree (F : Concept α) (i : Fin F.numProperties) : ℝ :=
-  F.degrees.get (i.cast F.degrees_valid.symm)
+/-- Cardinality of the overlap of two interpreted extents. -/
+noncomputable def jointExtentCount
+    (I : Mettapedia.Logic.AbstractInheritance.Interpretation Carrier Obj Attr)
+    (a b : Carrier) : ℕ := by
+  classical
+  exact Fintype.card {x : Obj // x ∈ (I.meaning a).extent ∧ x ∈ (I.meaning b).extent}
 
-end Concept
+/-- Finite prior probability `P(W)` read from an interpreted extent. -/
+noncomputable def finitePriorProb
+    (I : Mettapedia.Logic.AbstractInheritance.Interpretation Carrier Obj Attr)
+    (w : Carrier) : ℝ :=
+  (extentCount I w : ℝ) / Fintype.card Obj
 
-/-! ## §2: Singleton Concepts (Extensional View)
+/-- Finite extensional inheritance `P(W | F)` read from interpreted extents. -/
+noncomputable def finiteExtensionalProb
+    (I : Mettapedia.Logic.AbstractInheritance.Interpretation Carrier Obj Attr)
+    (f w : Carrier) : ℝ :=
+  if _h : extentCount I f = 0 then
+    0
+  else
+    (jointExtentCount I f w : ℝ) / extentCount I f
 
-A singleton concept has each property corresponding to exactly one element.
-This is the "extensional" view where concepts are just sets of instances.
--/
+/-- Pointwise Chapter-12 score derived from finite interpreted counting
+semantics. -/
+noncomputable def finitePointwiseLogRatioBits
+    (I : Mettapedia.Logic.AbstractInheritance.Interpretation Carrier Obj Attr)
+    (f w : Carrier) : ℝ :=
+  Mettapedia.InformationTheory.logRatioInformationGainBits
+    (finiteExtensionalProb I f w) (finitePriorProb I w)
 
-/-- A property is singleton if it holds for exactly one element -/
-def Property.isSingleton (P : Property α) : Prop :=
-  ∃! x, P.holds x
+/-- Finite interpreted Chapter-12 formula. -/
+theorem finite_goertzel_formula
+    (I : Mettapedia.Logic.AbstractInheritance.Interpretation Carrier Obj Attr)
+    {f w : Carrier}
+    (hExt : 0 < finiteExtensionalProb I f w)
+    (hPrior : 0 < finitePriorProb I w) :
+    finiteExtensionalProb I f w =
+      finitePriorProb I w * (2 : ℝ).rpow (finitePointwiseLogRatioBits I f w) := by
+  unfold finitePointwiseLogRatioBits
+  exact
+    Mettapedia.InformationTheory.posterior_eq_prior_mul_two_rpow_logRatioInformationGainBits
+      hExt hPrior
 
-/-- A concept is extensional (singleton) if all its properties are singletons -/
-def Concept.isExtensional (F : Concept α) : Prop :=
-  ∀ P ∈ F.properties, P.isSingleton
-
-/-- Create a singleton property from a single element -/
-def Property.singleton [DecidableEq α] (name : String) (x : α) : Property α where
-  name := name
-  holds := fun y => y = x
-
-/-- Singleton properties are indeed singletons -/
-theorem Property.singleton_isSingleton [DecidableEq α] (name : String) (x : α) :
-    (Property.singleton name x).isSingleton := by
-  use x
-  constructor
-  · rfl
-  · intro y hy; exact hy
-
-/-! ## §3: Mutual Information Interface
-
-We define the interface for mutual information. The actual computation
-can be filled in later with Shannon or Kolmogorov versions.
--/
-
-/-!
-To keep this file axiom-free, we package the needed information-theoretic primitives and
-laws as a typeclass. Concrete instances can later be provided by Shannon/Kolmogorov entropy
-constructions.
--/
-
-/-- Interface for Goertzel-style information-theoretic inheritance.
-
-The field name `mutualInfo` is kept for backward compatibility with the existing
-Chapter-12 surface, but this interface is intentionally agnostic about whether a
-concrete instance interprets the scalar as a pointwise log-ratio score or as a
-Shannon-style quantity. -/
-class GoertzelModel (α : Type*) where
-  /-- Chapter-12 scalar information score carried by the model. -/
-  mutualInfo : Concept α → Concept α → ℝ
-  /-- Symmetry of mutual information. -/
-  mutualInfo_symm (F W : Concept α) : mutualInfo F W = mutualInfo W F
-  /-- Nonnegativity of mutual information. -/
-  mutualInfo_nonneg (F W : Concept α) : 0 ≤ mutualInfo F W
-  /-- Prior probability `P(W)`. -/
-  priorProb : Concept α → ℝ
-  priorProb_unit (W : Concept α) : 0 ≤ priorProb W ∧ priorProb W ≤ 1
-  /-- Extensional inheritance `P(W|F)`. -/
-  extensionalInheritance : Concept α → Concept α → ℝ
-  extensionalInheritance_unit (F W : Concept α) :
-      0 ≤ extensionalInheritance F W ∧ extensionalInheritance F W ≤ 1
-  /-- Goertzel's proposed unifying identity. -/
-  goertzel_formula (F W : Concept α) :
-      extensionalInheritance F W = priorProb W * (2 : ℝ).rpow (mutualInfo F W)
-
--- Note: Mutual information is bounded by min entropy: I(F; W) ≤ min(H(F), H(W))
--- This will need concrete entropy definitions to state properly.
-
-/-! ## §4: Inheritance Definitions -/
-
-/-- Intensional inheritance: the Chapter-12 scalar information score associated
-to the pair `(F, W)`. -/
-noncomputable def intensionalInheritance {α : Type*} [GoertzelModel α] (F W : Concept α) : ℝ :=
-  GoertzelModel.mutualInfo F W
-
-/-- Prior probability of concept W.
-    To be connected to concrete probability measures. -/
-noncomputable def priorProb {α : Type*} [GoertzelModel α] : Concept α → ℝ :=
-  GoertzelModel.priorProb
-
-/-- Extensional inheritance: conditional probability P(W | F).
-    "What fraction of F instances are also W instances?" -/
-noncomputable def extensionalInheritance {α : Type*} [GoertzelModel α] :
-    Concept α → Concept α → ℝ :=
-  GoertzelModel.extensionalInheritance
-
-/-! ## §5: The Goertzel Unifying Formula
-
-The key theorem: P(W | F) = P(W) · 2^{I(F;W)}
-
-This unifies extensional and intensional inheritance under one formula.
--/
-
-/-- **Goertzel's Unifying Formula** (2025)
-
-    Extensional inheritance (conditional probability) equals
-    prior probability scaled by 2^(mutual information).
-
-    P(W | F) = P(W) · 2^{I(F;W)}
-
-    This is stated as an axiom connecting the abstract definitions.
-    A full proof would require:
-    1. Concrete probability space
-    2. Shannon entropy definitions
-    3. Derivation from Bayes' theorem + entropy identities
--/
-theorem goertzel_formula {α : Type*} [GoertzelModel α] (F W : Concept α) :
-    extensionalInheritance F W =
-      priorProb W * (2 : ℝ).rpow (GoertzelModel.mutualInfo F W) :=
-  GoertzelModel.goertzel_formula F W
-
-/-! ## §6: Singleton Reduction Theorem
-
-When concepts are extensional (singleton properties), the intensional
-and extensional views coincide.
--/
-
-/-- **Singleton Reduction Theorem**
-
-    For extensional concepts (singleton properties), intensional inheritance
-    reduces to extensional inheritance.
-
-    This justifies using simpler set-theoretic reasoning when concepts
-    are "just sets of instances" rather than rich property bundles.
--/
-theorem singleton_reduction {α : Type*} [GoertzelModel α] (F W : Concept α)
-    (_hF : F.isExtensional) (_hW : W.isExtensional)
-    (hprior_pos : priorProb W > 0) :
-    -- In the singleton case, mutual information directly gives
-    -- the log of the inheritance ratio
-    (2 : ℝ).rpow (intensionalInheritance F W) =
-    extensionalInheritance F W / priorProb W := by
-  unfold intensionalInheritance
-  -- From goertzel_formula: ext = prior * 2^I
-  -- So 2^I = ext / prior
-  have h := goertzel_formula F W
-  have hprior : priorProb W ≠ 0 := ne_of_gt hprior_pos
-  field_simp [hprior] at h ⊢
+/-- Rearranged finite interpreted Chapter-12 formula. -/
+theorem finite_pointwise_logRatio_reduction
+    (I : Mettapedia.Logic.AbstractInheritance.Interpretation Carrier Obj Attr)
+    {f w : Carrier}
+    (hExt : 0 < finiteExtensionalProb I f w)
+    (hPrior : 0 < finitePriorProb I w) :
+    (2 : ℝ).rpow (finitePointwiseLogRatioBits I f w) =
+      finiteExtensionalProb I f w / finitePriorProb I w := by
+  have h := finite_goertzel_formula I hExt hPrior
+  have hPriorNe : finitePriorProb I w ≠ 0 := ne_of_gt hPrior
+  field_simp [hPriorNe] at h ⊢
   linarith [h]
 
-/-! ## §7: Connection Points for Later Formalization
+end FiniteCounting
 
-These definitions provide hooks to connect with other modules.
+end Interpretation
+
+/-! ## §3: Information-theoretic score surface
+
+The Chapter-12 scalar lives above the semantic base. It is the evidence-level
+log-ratio score relating an observed conditional term to a prior term.
 -/
 
 /-- Evidence-level log-ratio information gain in bits.
@@ -244,13 +221,6 @@ Given:
 this returns `log₂(strength / prior)` when both terms are positive. -/
 noncomputable abbrev logRatioInformationGainFromEvidence (strength prior : ℝ) : ℝ :=
   Mettapedia.InformationTheory.logRatioInformationGainBits strength prior
-
-/-- Backward-compatible alias for the older Chapter-12 surface.
-
-This name is kept so existing imports continue to build, but the mathematically
-honest object is `logRatioInformationGainFromEvidence`. -/
-noncomputable abbrev mutualInfoFromEvidence (strength prior : ℝ) : ℝ :=
-  logRatioInformationGainFromEvidence strength prior
 
 theorem logRatioInformationGainFromEvidence_eq_log2_ratio
     {strength prior : ℝ}
@@ -266,50 +236,52 @@ theorem strength_eq_prior_mul_two_rpow_logRatioInformationGainFromEvidence
   Mettapedia.InformationTheory.posterior_eq_prior_mul_two_rpow_logRatioInformationGainBits
     hStrength hPrior
 
--- Hook to Optimality: Bayes mixture provides the "universal" mutual information.
---
--- The Bayes mixture ξ = Σ w(μ)·μ gives:
--- - condProb_ξ(b|x) as the universal prediction
--- - This relates to mutual information via entropy of the posterior
---
--- To be connected with Optimality.lean's condProb and universalPrediction
+/-! ## §4: Honest Chapter-12 theorems at the evidence level -/
 
--- Hook to MarkovExchangeability: Sufficient statistics reduce mutual information.
---
--- For Markov exchangeable processes, transition counts are sufficient.
--- This means I(F;W) can be computed from count matrices alone.
---
--- To be connected with MarkovExchangeability.lean's TransCounts
+/-- **Goertzel-style unifying formula** at the evidence level.
 
-/-! ## §8: Examples -/
+Given positive prior and conditional terms, the observed conditional equals the
+prior scaled by `2` to the pointwise Chapter-12 log-ratio score. -/
+theorem goertzel_formula
+    {strength prior : ℝ}
+    (hStrength : 0 < strength) (hPrior : 0 < prior) :
+    strength = prior * (2 : ℝ).rpow (logRatioInformationGainFromEvidence strength prior) := by
+  exact strength_eq_prior_mul_two_rpow_logRatioInformationGainFromEvidence hStrength hPrior
+
+/-- Rearranged evidence-level reduction theorem. -/
+theorem pointwise_logRatio_reduction
+    {strength prior : ℝ}
+    (hStrength : 0 < strength) (hPrior : 0 < prior) :
+    (2 : ℝ).rpow (logRatioInformationGainFromEvidence strength prior) = strength / prior := by
+  have h := goertzel_formula hStrength hPrior
+  have hPriorNe : prior ≠ 0 := ne_of_gt hPrior
+  field_simp [hPriorNe] at h ⊢
+  linarith [h]
+
+-- Hook to Optimality: Bayes mixture provides the "universal" information score.
+-- Hook to MarkovExchangeability: sufficient statistics reduce empirical score computation.
+
+/-! ## §5: Small semantic examples -/
 
 section Examples
 
-variable {α : Type*} [DecidableEq α]
+variable {α : Type*}
 
-/-- Example: "Creature with heart" concept -/
-def heartConcept (hasHeart : α → Prop) : Concept α where
-  name := "has_heart"
-  properties := [⟨"heart", hasHeart⟩]
-  degrees := [0.99]  -- 99% of creatures in our domain have hearts
-  degrees_unit := by simp; norm_num
+/-- One-attribute semantic concept, presented directly as extent/intent. -/
+def unaryAttributeConcept (name : String) (holds : α → Prop) :
+    Mettapedia.Logic.AbstractInheritance.DualConcept α String where
+  extent := {x | holds x}
+  intent := {label | label = name}
 
-/-- Example: "Creature with kidney" concept -/
-def kidneyConcept (hasKidney : α → Prop) : Concept α where
-  name := "has_kidney"
-  properties := [⟨"kidney", hasKidney⟩]
-  degrees := [0.99]  -- 99% of creatures in our domain have kidneys
-  degrees_unit := by simp; norm_num
+/-- Example: "creatures with hearts" as a semantic extent/intent object. -/
+def heartConcept (hasHeart : α → Prop) :
+    Mettapedia.Logic.AbstractInheritance.DualConcept α String :=
+  unaryAttributeConcept "heart" hasHeart
 
--- The biological fact: hearts and kidneys co-evolved.
---
--- I(heart; kidney) ≈ H(heart) ≈ H(kidney)
---
--- meaning knowing one tells you almost everything about the other.
--- This is why "creatures with hearts" ≈ "creatures with kidneys"
--- despite being "different concepts" intensionally.
---
--- This would be an empirical/biological axiom in a full formalization
+/-- Example: "creatures with kidneys" as a semantic extent/intent object. -/
+def kidneyConcept (hasKidney : α → Prop) :
+    Mettapedia.Logic.AbstractInheritance.DualConcept α String :=
+  unaryAttributeConcept "kidney" hasKidney
 
 end Examples
 

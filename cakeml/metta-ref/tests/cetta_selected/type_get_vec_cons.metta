@@ -1,0 +1,5 @@
+(: Person Type)
+(: A Person)
+(: Nil (Vec Person Z))
+(: Cons (-> Person (Vec Person $n) (Vec Person (S $n))))
+!(get-type (Cons A Nil))

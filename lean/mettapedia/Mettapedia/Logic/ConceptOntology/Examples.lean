@@ -24,20 +24,20 @@ inductive Creature where
   | tweety
   | pingu
   | plane
-  deriving DecidableEq, Repr
+  deriving DecidableEq, Repr, Fintype
 
 /-- Tiny concept domain separating extensional inheritance from typicality. -/
 inductive Concept where
   | bird
   | penguin
   | fly
-  deriving DecidableEq, Repr
+  deriving DecidableEq, Repr, Fintype
 
 /-- Separate query sorts for membership and typicality/default evidence. -/
 inductive ToySort where
   | membership
   | typicality
-  deriving DecidableEq, Repr
+  deriving DecidableEq, Repr, Fintype
 
 /-- Typed toy query family. -/
 inductive ToyQueryFamily : ToySort → Type where

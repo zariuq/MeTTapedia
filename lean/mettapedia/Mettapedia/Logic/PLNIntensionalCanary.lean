@@ -41,6 +41,8 @@ instance : BinaryWorldModel ToyState ToyInheritanceQuery where
     | .pat _ _ => W.2.2
   evidence_add W₁ W₂ q := by
     cases q <;> simp [Prod.fst_add, Prod.snd_add]
+  evidence_zero q := by
+    cases q <;> rfl
 
 def toyExt (a b : Bool) : ToyInheritanceQuery := .ext a b
 def toyAssoc (a b : Bool) : ToyInheritanceQuery := .assoc a b
@@ -114,6 +116,8 @@ instance : BinaryWorldModel ToyState ToyPatternInheritanceQuery where
     | .pat _ _ => W.2.2
   evidence_add W₁ W₂ q := by
     cases q <;> simp [Prod.fst_add, Prod.snd_add]
+  evidence_zero q := by
+    cases q <;> rfl
 
 def toyPatternExt (a b : Pattern) : ToyPatternInheritanceQuery := .ext a b
 def toyPatternAssoc (a b : Pattern) : ToyPatternInheritanceQuery := .assoc a b

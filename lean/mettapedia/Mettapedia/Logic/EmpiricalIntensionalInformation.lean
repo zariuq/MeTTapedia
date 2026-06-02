@@ -1,4 +1,7 @@
 import Mettapedia.Logic.IntensionalInheritance
+import Mettapedia.Logic.AbstractInheritance
+import Mettapedia.Logic.ConceptOntology.Basic
+import Mettapedia.Logic.BinaryEvidence
 import Mettapedia.InformationTheory.MutualInformation
 
 /-!
@@ -19,6 +22,16 @@ It deliberately keeps two different objects side by side:
 namespace Mettapedia.Logic.IntensionalInheritance
 
 open Mettapedia.InformationTheory
+open Mettapedia.Logic
+open Mettapedia.Logic.EvidenceClass
+open Mettapedia.Logic.EvidenceQuantale
+open Mettapedia.Logic.ConceptOntology
+
+/-- The two concept positions in the empirical 2×2 table. -/
+inductive MembershipConcept
+  | feature
+  | witness
+  deriving DecidableEq, Fintype
 
 /-- Counts for a binary feature/witness contingency table.
 
@@ -36,6 +49,262 @@ structure MembershipCounts where
   total_pos : 0 < neither + witnessOnly + featureOnly + both
 
 namespace MembershipCounts
+
+/-- A finite object domain whose cardinality is exactly the 2×2 table total,
+presented as the four contingency-table regions. -/
+abbrev EmpiricalObject (c : MembershipCounts) :=
+  Sum (Fin c.neither) (Sum (Fin c.witnessOnly) (Sum (Fin c.featureOnly) (Fin c.both)))
+
+/-- Crisp membership evidence contributed by a single empirical object. -/
+def empiricalMembershipAtom
+    (c : MembershipCounts)
+    (x : EmpiricalObject c)
+    (k : MembershipConcept) :
+    BinaryEvidence :=
+  match k, x with
+  | .feature, Sum.inl _ => BinaryEvidence.zero
+  | .feature, Sum.inr (Sum.inl _) => BinaryEvidence.zero
+  | .feature, Sum.inr (Sum.inr (Sum.inl _)) => BinaryEvidence.one
+  | .feature, Sum.inr (Sum.inr (Sum.inr _)) => BinaryEvidence.one
+  | .witness, Sum.inl _ => BinaryEvidence.zero
+  | .witness, Sum.inr (Sum.inl _) => BinaryEvidence.one
+  | .witness, Sum.inr (Sum.inr (Sum.inl _)) => BinaryEvidence.zero
+  | .witness, Sum.inr (Sum.inr (Sum.inr _)) => BinaryEvidence.one
+
+/-- Empirical posterior states are multisets of empirical objects. -/
+abbrev EmpiricalState (c : MembershipCounts) := Multiset (EmpiricalObject c)
+
+/-- Membership evidence is the additive accumulation of single-object evidence
+over an empirical multiset state. -/
+noncomputable def empiricalMemberEvidence
+    (c : MembershipCounts)
+    (σ : EmpiricalState c)
+    (x : EmpiricalObject c)
+    (k : MembershipConcept) :
+    BinaryEvidence :=
+  σ.count x • empiricalMembershipAtom c x k
+
+/-- The empirical 2×2 table as an evidence-membership context. -/
+noncomputable def empiricalMembershipContext
+    (c : MembershipCounts) :
+    letI : EvidenceType (EmpiricalState c) :=
+      PLNWorldModelAdditive.multisetEvidenceType (EmpiricalObject c)
+    EvidenceMembershipContext
+      (EmpiricalState c) (EmpiricalObject c) MembershipConcept BinaryEvidence := by
+  letI : EvidenceType (EmpiricalState c) :=
+    PLNWorldModelAdditive.multisetEvidenceType (EmpiricalObject c)
+  exact
+  { memberEvidence := empiricalMemberEvidence c
+    memberEvidence_add := by
+      intro σ₁ σ₂ x k
+      simp [empiricalMemberEvidence, Multiset.count_add, add_nsmul] }
+
+/-- The full finite observation state containing each empirical object exactly
+once. -/
+noncomputable def fullObservationState (c : MembershipCounts) : EmpiricalState c :=
+  (Finset.univ : Finset (EmpiricalObject c)).1
+
+/-- In the full empirical observation state, each object contributes exactly its
+own single-object membership evidence. -/
+theorem empiricalMemberEvidence_fullObservationState
+    (c : MembershipCounts) (x : EmpiricalObject c) (k : MembershipConcept) :
+    letI : EvidenceType (EmpiricalState c) :=
+      PLNWorldModelAdditive.multisetEvidenceType (EmpiricalObject c)
+    empiricalMemberEvidence c (fullObservationState c) x k =
+      empiricalMembershipAtom c x k := by
+  letI : EvidenceType (EmpiricalState c) :=
+    PLNWorldModelAdditive.multisetEvidenceType (EmpiricalObject c)
+  classical
+  simp [empiricalMemberEvidence, fullObservationState]
+
+/-- The crisp semantic interpretation induced by the empirical 2×2 table. -/
+noncomputable def semanticInterpretation
+    (c : MembershipCounts) :
+    AbstractInheritance.Interpretation
+      MembershipConcept (EmpiricalObject c) MembershipConcept :=
+  AbstractInheritance.crispInterpretation
+    EvidenceGate.positiveSupport
+    (fun x k =>
+      letI : EvidenceType (EmpiricalState c) :=
+        PLNWorldModelAdditive.multisetEvidenceType (EmpiricalObject c)
+      empiricalMemberEvidence c (fullObservationState c) x k)
+
+theorem mem_semanticInterpretation_witness_extent_iff_pos
+    (c : MembershipCounts) (x : EmpiricalObject c) :
+    x ∈ ((semanticInterpretation c).meaning MembershipConcept.witness).extent ↔
+      0 < (empiricalMembershipAtom c x MembershipConcept.witness).pos := by
+  simp [semanticInterpretation,
+    Mettapedia.Logic.AbstractInheritance.crispInterpretation,
+    Mettapedia.Logic.AbstractInheritance.ofCrispBaseConcept,
+    Mettapedia.Logic.AbstractInheritance.crispBaseConcept,
+    empiricalMemberEvidence_fullObservationState]
+
+theorem mem_semanticInterpretation_feature_extent_iff_pos
+    (c : MembershipCounts) (x : EmpiricalObject c) :
+    x ∈ ((semanticInterpretation c).meaning MembershipConcept.feature).extent ↔
+      0 < (empiricalMembershipAtom c x MembershipConcept.feature).pos := by
+  simp [semanticInterpretation,
+    Mettapedia.Logic.AbstractInheritance.crispInterpretation,
+    Mettapedia.Logic.AbstractInheritance.ofCrispBaseConcept,
+    Mettapedia.Logic.AbstractInheritance.crispBaseConcept,
+    empiricalMemberEvidence_fullObservationState]
+
+noncomputable def witnessExtentEquiv
+    (c : MembershipCounts) :
+    {x : EmpiricalObject c //
+        x ∈ ((semanticInterpretation c).meaning MembershipConcept.witness).extent} ≃
+      Fin c.witnessOnly ⊕ Fin c.both where
+  toFun x :=
+    match x with
+    | ⟨Sum.inl n, hx⟩ =>
+        False.elim (by
+          simp [mem_semanticInterpretation_witness_extent_iff_pos,
+            empiricalMembershipAtom, BinaryEvidence.zero] at hx)
+    | ⟨Sum.inr (Sum.inl w), _⟩ => Sum.inl w
+    | ⟨Sum.inr (Sum.inr (Sum.inl f)), hx⟩ =>
+        False.elim (by
+          simp [mem_semanticInterpretation_witness_extent_iff_pos,
+            empiricalMembershipAtom, BinaryEvidence.zero] at hx)
+    | ⟨Sum.inr (Sum.inr (Sum.inr b)), _⟩ => Sum.inr b
+  invFun y :=
+    match y with
+    | Sum.inl w =>
+        ⟨Sum.inr (Sum.inl w), by
+          simp [mem_semanticInterpretation_witness_extent_iff_pos,
+            empiricalMembershipAtom, BinaryEvidence.one]⟩
+    | Sum.inr b =>
+        ⟨Sum.inr (Sum.inr (Sum.inr b)), by
+          simp [mem_semanticInterpretation_witness_extent_iff_pos,
+            empiricalMembershipAtom, BinaryEvidence.one]⟩
+  left_inv x := by
+    rcases x with ⟨x, hx⟩
+    cases x with
+    | inl n =>
+        exact False.elim (by
+          simp [mem_semanticInterpretation_witness_extent_iff_pos,
+            empiricalMembershipAtom, BinaryEvidence.zero] at hx)
+    | inr rest =>
+        cases rest with
+        | inl w => rfl
+        | inr rest =>
+            cases rest with
+            | inl f =>
+                exact False.elim (by
+                  simp [mem_semanticInterpretation_witness_extent_iff_pos,
+                    empiricalMembershipAtom, BinaryEvidence.zero] at hx)
+            | inr b => rfl
+  right_inv y := by
+    cases y <;> rfl
+
+noncomputable def featureExtentEquiv
+    (c : MembershipCounts) :
+    {x : EmpiricalObject c //
+        x ∈ ((semanticInterpretation c).meaning MembershipConcept.feature).extent} ≃
+      Fin c.featureOnly ⊕ Fin c.both where
+  toFun x :=
+    match x with
+    | ⟨Sum.inl n, hx⟩ =>
+        False.elim (by
+          simp [mem_semanticInterpretation_feature_extent_iff_pos,
+            empiricalMembershipAtom, BinaryEvidence.zero] at hx)
+    | ⟨Sum.inr (Sum.inl w), hx⟩ =>
+        False.elim (by
+          simp [mem_semanticInterpretation_feature_extent_iff_pos,
+            empiricalMembershipAtom, BinaryEvidence.zero] at hx)
+    | ⟨Sum.inr (Sum.inr (Sum.inl f)), _⟩ => Sum.inl f
+    | ⟨Sum.inr (Sum.inr (Sum.inr b)), _⟩ => Sum.inr b
+  invFun y :=
+    match y with
+    | Sum.inl f =>
+        ⟨Sum.inr (Sum.inr (Sum.inl f)), by
+          simp [mem_semanticInterpretation_feature_extent_iff_pos,
+            empiricalMembershipAtom, BinaryEvidence.one]⟩
+    | Sum.inr b =>
+        ⟨Sum.inr (Sum.inr (Sum.inr b)), by
+          simp [mem_semanticInterpretation_feature_extent_iff_pos,
+            empiricalMembershipAtom, BinaryEvidence.one]⟩
+  left_inv x := by
+    rcases x with ⟨x, hx⟩
+    cases x with
+    | inl n =>
+        exact False.elim (by
+          simp [mem_semanticInterpretation_feature_extent_iff_pos,
+            empiricalMembershipAtom, BinaryEvidence.zero] at hx)
+    | inr rest =>
+        cases rest with
+        | inl w =>
+            exact False.elim (by
+              simp [mem_semanticInterpretation_feature_extent_iff_pos,
+                empiricalMembershipAtom, BinaryEvidence.zero] at hx)
+        | inr rest =>
+            cases rest with
+            | inl f => rfl
+            | inr b => rfl
+  right_inv y := by
+    cases y <;> rfl
+
+noncomputable def jointFeatureWitnessExtentEquiv
+    (c : MembershipCounts) :
+    {x : EmpiricalObject c //
+        x ∈ ((semanticInterpretation c).meaning MembershipConcept.feature).extent ∧
+        x ∈ ((semanticInterpretation c).meaning MembershipConcept.witness).extent} ≃
+      Fin c.both where
+  toFun x :=
+    match x with
+    | ⟨Sum.inl n, hx⟩ =>
+        False.elim (by
+          simp [mem_semanticInterpretation_feature_extent_iff_pos,
+            empiricalMembershipAtom, BinaryEvidence.zero] at hx)
+    | ⟨Sum.inr (Sum.inl w), hx⟩ =>
+        False.elim (by
+          simp [mem_semanticInterpretation_feature_extent_iff_pos,
+            empiricalMembershipAtom, BinaryEvidence.zero] at hx)
+    | ⟨Sum.inr (Sum.inr (Sum.inl f)), hx⟩ =>
+        False.elim (by
+          simp [mem_semanticInterpretation_witness_extent_iff_pos,
+            empiricalMembershipAtom, BinaryEvidence.zero] at hx)
+    | ⟨Sum.inr (Sum.inr (Sum.inr b)), _⟩ => b
+  invFun b :=
+    ⟨Sum.inr (Sum.inr (Sum.inr b)), by
+      constructor
+      · simp [mem_semanticInterpretation_feature_extent_iff_pos,
+          empiricalMembershipAtom, BinaryEvidence.one]
+      · simp [mem_semanticInterpretation_witness_extent_iff_pos,
+          empiricalMembershipAtom, BinaryEvidence.one]⟩
+  left_inv x := by
+    rcases x with ⟨x, hx⟩
+    cases x with
+    | inl n =>
+        exact False.elim (by
+          simp [mem_semanticInterpretation_feature_extent_iff_pos,
+            empiricalMembershipAtom, BinaryEvidence.zero] at hx)
+    | inr rest =>
+        cases rest with
+        | inl w =>
+            exact False.elim (by
+              simp [mem_semanticInterpretation_feature_extent_iff_pos,
+                empiricalMembershipAtom, BinaryEvidence.zero] at hx)
+        | inr rest =>
+            cases rest with
+            | inl f =>
+                exact False.elim (by
+                  simp [mem_semanticInterpretation_witness_extent_iff_pos,
+                    empiricalMembershipAtom, BinaryEvidence.zero] at hx)
+            | inr b => rfl
+  right_inv b := by
+    rfl
+
+@[simp] theorem empiricalMemberEvidence_feature_featureOnly
+    (c : MembershipCounts) (x : Fin c.featureOnly) :
+    empiricalMembershipAtom c
+        (Sum.inr (Sum.inr (Sum.inl x))) .feature =
+      BinaryEvidence.one := rfl
+
+@[simp] theorem empiricalMemberEvidence_witness_witnessOnly
+    (c : MembershipCounts) (x : Fin c.witnessOnly) :
+    empiricalMembershipAtom c
+        (Sum.inr (Sum.inl x)) .witness =
+      BinaryEvidence.one := rfl
 
 /-- Total number of observations. -/
 def total (c : MembershipCounts) : ℕ :=
@@ -67,6 +336,71 @@ noncomputable def extensionalInheritance (c : MembershipCounts) : ℝ :=
 /-- Chapter-12 pointwise intensional score in bits, read from the empirical table. -/
 noncomputable def pointwiseIntensionalScoreBits (c : MembershipCounts) : ℝ :=
   logRatioInformationGainFromEvidence (extensionalInheritance c) (priorProbWitness c)
+
+theorem empiricalObject_card (c : MembershipCounts) :
+    Fintype.card (EmpiricalObject c) = total c := by
+  simp [EmpiricalObject, total, Fintype.card_sum, add_assoc]
+
+theorem semanticInterpretation_extentCount_witness
+    (c : MembershipCounts) :
+    Interpretation.extentCount (semanticInterpretation c) MembershipConcept.witness =
+      witnessSupport c := by
+  classical
+  unfold Interpretation.extentCount witnessSupport
+  rw [Fintype.card_congr (witnessExtentEquiv c)]
+  simp [Fintype.card_sum]
+
+theorem semanticInterpretation_extentCount_feature
+    (c : MembershipCounts) :
+    Interpretation.extentCount (semanticInterpretation c) MembershipConcept.feature =
+      featureSupport c := by
+  classical
+  unfold Interpretation.extentCount featureSupport
+  rw [Fintype.card_congr (featureExtentEquiv c)]
+  simp [Fintype.card_sum]
+
+theorem semanticInterpretation_jointExtentCount_feature_witness
+    (c : MembershipCounts) :
+    Interpretation.jointExtentCount
+        (semanticInterpretation c)
+        MembershipConcept.feature
+        MembershipConcept.witness =
+      c.both := by
+  classical
+  unfold Interpretation.jointExtentCount
+  rw [Fintype.card_congr (jointFeatureWitnessExtentEquiv c)]
+  simp
+
+theorem finitePriorProb_semanticInterpretation_witness
+    (c : MembershipCounts) :
+    Interpretation.finitePriorProb
+        (semanticInterpretation c)
+        MembershipConcept.witness =
+      priorProbWitness c := by
+  unfold priorProbWitness
+  rw [Interpretation.finitePriorProb, semanticInterpretation_extentCount_witness, empiricalObject_card]
+
+theorem finiteExtensionalProb_semanticInterpretation_feature_witness
+    (c : MembershipCounts) :
+    Interpretation.finiteExtensionalProb
+        (semanticInterpretation c)
+        MembershipConcept.feature
+        MembershipConcept.witness =
+      extensionalInheritance c := by
+  simp [Interpretation.finiteExtensionalProb, extensionalInheritance,
+    semanticInterpretation_extentCount_feature,
+    semanticInterpretation_jointExtentCount_feature_witness]
+
+theorem finitePointwiseLogRatioBits_semanticInterpretation_feature_witness
+    (c : MembershipCounts) :
+    Interpretation.finitePointwiseLogRatioBits
+        (semanticInterpretation c)
+        MembershipConcept.feature
+        MembershipConcept.witness =
+      pointwiseIntensionalScoreBits c := by
+  simp [Interpretation.finitePointwiseLogRatioBits, pointwiseIntensionalScoreBits,
+    finitePriorProb_semanticInterpretation_witness,
+    finiteExtensionalProb_semanticInterpretation_feature_witness]
 
 /-- Fin-2 encoding of the empirical joint distribution.
 
@@ -144,8 +478,65 @@ theorem extensionalInheritance_eq_prior_mul_two_rpow_pointwiseIntensionalScoreBi
     (hPrior : 0 < priorProbWitness c) :
     extensionalInheritance c =
       priorProbWitness c * (2 : ℝ).rpow (pointwiseIntensionalScoreBits c) := by
-  unfold pointwiseIntensionalScoreBits
-  exact strength_eq_prior_mul_two_rpow_logRatioInformationGainFromEvidence hExt hPrior
+  have hExt' :
+      0 <
+        Interpretation.finiteExtensionalProb
+          (semanticInterpretation c)
+          MembershipConcept.feature
+          MembershipConcept.witness := by
+    simpa [finiteExtensionalProb_semanticInterpretation_feature_witness] using hExt
+  have hPrior' :
+      0 <
+        Interpretation.finitePriorProb
+          (semanticInterpretation c)
+          MembershipConcept.witness := by
+    simpa [finitePriorProb_semanticInterpretation_witness] using hPrior
+  simpa [finitePriorProb_semanticInterpretation_witness,
+    finiteExtensionalProb_semanticInterpretation_feature_witness,
+    finitePointwiseLogRatioBits_semanticInterpretation_feature_witness] using
+      (Interpretation.finite_goertzel_formula
+        (I := semanticInterpretation c)
+        (f := MembershipConcept.feature)
+        (w := MembershipConcept.witness)
+        hExt' hPrior')
+
+/-- Concrete Chapter-12 formula for the empirical 2×2 membership table. -/
+theorem empirical_goertzel_formula
+    (c : MembershipCounts)
+    (hExt : 0 < extensionalInheritance c)
+    (hPrior : 0 < priorProbWitness c) :
+    extensionalInheritance c =
+      priorProbWitness c * (2 : ℝ).rpow (pointwiseIntensionalScoreBits c) :=
+  extensionalInheritance_eq_prior_mul_two_rpow_pointwiseIntensionalScoreBits c hExt hPrior
+
+/-- Rearranged empirical reduction theorem for the pointwise Chapter-12 score. -/
+theorem empirical_pointwise_logRatio_reduction
+    (c : MembershipCounts)
+    (hExt : 0 < extensionalInheritance c)
+    (hPrior : 0 < priorProbWitness c) :
+    (2 : ℝ).rpow (pointwiseIntensionalScoreBits c) =
+      extensionalInheritance c / priorProbWitness c := by
+  have hExt' :
+      0 <
+        Interpretation.finiteExtensionalProb
+          (semanticInterpretation c)
+          MembershipConcept.feature
+          MembershipConcept.witness := by
+    simpa [finiteExtensionalProb_semanticInterpretation_feature_witness] using hExt
+  have hPrior' :
+      0 <
+        Interpretation.finitePriorProb
+          (semanticInterpretation c)
+          MembershipConcept.witness := by
+    simpa [finitePriorProb_semanticInterpretation_witness] using hPrior
+  simpa [finitePriorProb_semanticInterpretation_witness,
+    finiteExtensionalProb_semanticInterpretation_feature_witness,
+    finitePointwiseLogRatioBits_semanticInterpretation_feature_witness] using
+      (Interpretation.finite_pointwise_logRatio_reduction
+        (I := semanticInterpretation c)
+        (f := MembershipConcept.feature)
+        (w := MembershipConcept.witness)
+        hExt' hPrior')
 
 /-! ## Positive and negative examples -/
 
@@ -154,6 +545,20 @@ def positiveExample : MembershipCounts where
   witnessOnly := 1
   featureOnly := 1
   both := 6
+  total_pos := by decide
+
+def independenceExample : MembershipCounts where
+  neither := 1
+  witnessOnly := 1
+  featureOnly := 1
+  both := 1
+  total_pos := by decide
+
+def antiCorrelationExample : MembershipCounts where
+  neither := 1
+  witnessOnly := 4
+  featureOnly := 4
+  both := 1
   total_pos := by decide
 
 def zeroFeatureSupportExample : MembershipCounts where
@@ -168,6 +573,21 @@ example : priorProbWitness positiveExample = (7 : ℝ) / 10 := by
 
 example : 0 < extensionalInheritance positiveExample := by
   norm_num [extensionalInheritance, featureSupport, positiveExample]
+
+example : extensionalInheritance independenceExample = priorProbWitness independenceExample := by
+  norm_num [extensionalInheritance, priorProbWitness, featureSupport, witnessSupport, total,
+    independenceExample]
+
+example : pointwiseIntensionalScoreBits independenceExample = 0 := by
+  unfold pointwiseIntensionalScoreBits logRatioInformationGainFromEvidence
+    Mettapedia.InformationTheory.logRatioInformationGainBits
+    Mettapedia.InformationTheory.logBase2
+  norm_num [extensionalInheritance, priorProbWitness, featureSupport, witnessSupport, total,
+    independenceExample, Real.log_one]
+
+example : extensionalInheritance antiCorrelationExample < priorProbWitness antiCorrelationExample := by
+  norm_num [extensionalInheritance, priorProbWitness, featureSupport, witnessSupport, total,
+    antiCorrelationExample]
 
 example : extensionalInheritance zeroFeatureSupportExample = 0 := by
   simp [extensionalInheritance, featureSupport, zeroFeatureSupportExample]

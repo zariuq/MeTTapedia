@@ -70,15 +70,11 @@ structure DiamondType (T : LambdaTheory) where
     Γ Δ ⊢ ♢B :: s^Pr
     ```
 
-    ♢ preserves the sort of its argument: if B is a type former (sort *),
-    then ♢B is also a type former; if B is a kind former (sort □), then ♢B is too.
+    The current `DiamondType` encoding records only the postcondition on
+    reducts. It does not yet internalize the surrounding sort judgment, so the
+    paper's sort-preservation rule is intentionally not packaged here as a
+    theorem with a misleading vacuous statement.
 -/
-
-/-- ♢-Form: the ♢ operator preserves sort.
-
-    §5.5.1: ♢B has the same sort as B at carrier Pr.
--/
-theorem diamond_preserves_sort (s : HSort) : s = s := rfl
 
 /-! ## ♢-Intro (§5.5.2)
 

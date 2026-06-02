@@ -1,6 +1,10 @@
 import Mettapedia.GSLT.Core.GSLT
+import Mathlib.Algebra.Group.Basic
+import Mathlib.Algebra.Ring.Nat
 import Mathlib.Algebra.Order.Monoid.Defs
 import Mathlib.Algebra.Group.Defs
+import Mathlib.Algebra.Group.Pi.Basic
+import Mathlib.Data.Nat.Basic
 
 /-!
 # Resource Algebras and Cost Maps
@@ -98,6 +102,16 @@ instance [Add A] : Add (VectorialAccount A k) where
 instance [LE A] : LE (VectorialAccount A k) where
   le a b := ∀ i, a i ≤ b i
 
+/-- Pointwise commutative additive monoid structure. -/
+instance [AddCommMonoid A] : AddCommMonoid (VectorialAccount A k) := by
+  dsimp [VectorialAccount]
+  infer_instance
+
+/-- Pointwise partial order. -/
+instance [PartialOrder A] : PartialOrder (VectorialAccount A k) := by
+  dsimp [VectorialAccount]
+  infer_instance
+
 /-- The account is affordable if costs don't exceed budget -/
 def affordable [LE A] (cost budget : VectorialAccount A k) : Prop :=
   cost ≤ budget
@@ -111,6 +125,23 @@ def credit [Add A] (budget amount : VectorialAccount A k) : VectorialAccount A k
   budget + amount
 
 end VectorialAccount
+
+/-- Natural numbers form a basic resource algebra under additive accumulation. -/
+instance : ResourceAlgebra Nat where
+  toAddCommMonoid := Nat.instSemiring.toAddCommMonoid
+  toPartialOrder := inferInstance
+  add_le_add_right := by
+    intro a b h c
+    exact Nat.add_le_add_right h c
+
+/-- Vectorial accounts inherit the resource algebra structure pointwise. -/
+instance VectorialAccount.resourceAlgebra {A : Type*} {k : Nat}
+    [ResourceAlgebra A] : ResourceAlgebra (VectorialAccount A k) where
+  toAddCommMonoid := inferInstance
+  toPartialOrder := inferInstance
+  add_le_add_right := by
+    intro a b h c
+    exact fun i => ResourceAlgebra.add_le_add_right (h i) (c i)
 
 /-! ## Weight Maps
 

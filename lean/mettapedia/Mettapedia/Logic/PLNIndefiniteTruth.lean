@@ -1,50 +1,68 @@
 import Mettapedia.Logic.EvidenceQuantale
 import Mettapedia.Logic.EvidenceBeta
 import Mettapedia.Logic.EvidenceClass
+import Mettapedia.Logic.PLNConfidenceWeight
 import Mettapedia.Logic.PLNWeightTV
 import Mettapedia.ProbabilityTheory.KnuthSkilling.Additive.Main
 -- import Mettapedia.Logic.HigherOrder.PLNKyburgReduction  -- TODO: Re-add in Phase 4 for Kyburg theorems
 
 /-!
-# Indefinite Truth Values: Literature-Accurate PLN Model
+# Indefinite Truth Values: Core PLN Record and Constructor Semantics
 
-Implements PLN's full IndefiniteTruthValue as <L, U, credibility> following the
-OpenCog/PLN literature (Goertzel et al. 2009).
+Implements the core PLN `IndefiniteTruthValue` record shape
+`<L, U, credibility>` following the OpenCog/PLN literature
+(Goertzel et al. 2009), together with explicit constructors that supply the
+semantics of the interval endpoints.  The raw record is intentionally not the
+whole theory: `lower` and `upper` become meaningful only relative to a
+constructor/provenance layer such as Walley IDM or a chosen Bayesian credible
+interval backend.
 
 ## The Three-Component Model
 
 ```
 structure ITV where
-  lower : ℝ              -- Lower probability bound
-  upper : ℝ              -- Upper probability bound
-  credibility : ℝ        -- BinaryEvidence concentration (w/(w+1))
+  lower : ℝ              -- Lower endpoint / lower probability under a selected semantics
+  upper : ℝ              -- Upper endpoint / upper probability under a selected semantics
+  credibility : ℝ        -- Evidence-concentration coordinate after a chosen scale/link
 ```
 
 ## Key Property: Orthogonality
 
-**Credibility and interval width are INDEPENDENT**:
+For the general ITV record, credibility and interval width are
+independent coordinates:
 - High credibility + wide interval = much evidence but still uncertain
 - High credibility + narrow interval = much evidence and tight bounds
 - Low credibility + any width = little evidence
 
-Example: `<0.3, 0.7, 0.9>` means:
-- Probability is somewhere in [0.3, 0.7] (wide uncertainty)
-- But we have a lot of evidence (credibility 0.9)
-- This could arise from many observations that are split between outcomes
+Example: under a semantics whose endpoints are lower/upper probabilities,
+`<0.3, 0.7, 0.9>` means:
+- the selected probability quantity lies in the constructor-supplied interval
+  [0.3, 0.7];
+- the evidence-concentration coordinate displays 0.9;
+- this could arise from many observations whose retained model still leaves a
+  wide interval.
+
+Without the constructor semantics, the record is only a bounded triple.
 
 ## Theoretical Foundation
 
 ### Knuth-Skilling Connection
 From `ProbabilityTheory/KnuthSkilling/Additive/*.lean`:
-- K-S axioms lead to probability as additive measure
-- When evidence is incomplete → interval-valued measures
-- `[L, U]` bounds the unique probability satisfying K-S axioms
+- K-S axioms lead to additive valuation/measure representations when the
+  ordering and algebraic hypotheses are strong enough.
+- When the representation is not unique, the natural imprecise reading is a
+  family of admissible completions; lower/upper endpoints are then envelopes
+  over that family.
+- A unique completion collapses the interval to a point; a non-singleton
+  family gives honest interval/credal semantics.
 
 ### Beta Distribution Bridge
-From `PLNKyburgReduction.lean` and `EvidenceBeta.lean`:
+From `EvidenceBeta.lean` and the surrounding evidence files:
 - BinaryEvidence (n⁺, n⁻) encodes Beta(α₀+n⁺, β₀+n⁻)
-- Intervals = Beta credible intervals (HPD or Normal approximation)
-- Credibility = Beta concentration = total/(total+κ) = w/(w+1) where w = total/κ
+- Bayesian constructors use Beta credible intervals, with an explicit backend
+  and interval level.
+- Their credibility field is the evidence concentration
+  `total/(total+κ)` for the chosen prior concentration `κ`.
 
 ### Heyting Algebra Structure
 From `PLNIntuitionisticBridge.lean`:
@@ -58,17 +76,44 @@ From `EvidenceQuantale.lean`:
 - Credibility composes via quantale operations
 - **Separate from** interval arithmetic
 
+## Degrees of Freedom
+
+The record `ITV` only fixes four invariants: `lower ≤ upper`, both bounds
+in `[0,1]`, and credibility in `[0,1]`. Everything else is selected by a
+constructor:
+
+- `width = upper - lower` is fixed once the bounds are chosen.
+- `strength = (lower + upper)/2` is the current midpoint view, not a theorem
+  saying every interval semantics must use the midpoint for decisions.
+- Bayesian constructors choose a prior context, interval level, and backend;
+  their credibility is the BinaryEvidence concentration using
+  `κ = α₀ + β₀`, independent of interval backend/level in this file.
+- Walley IDM predictive intervals choose the IDM strength `s > 0`; then
+  lower, upper, width, and credibility are fixed by the IDM formulas, and
+  credibility is exactly the complement of predictive width.
+
+Thus `lower`/`upper` should not be read as unconditional "true bounds" without
+the constructor semantics.  In Walley's IDM they are lower/upper predictive
+probabilities relative to the IDM credal set.  In Bayesian credible intervals
+they are posterior credible endpoints.  In frequentist intervals they would be
+coverage-procedure endpoints, not a posterior probability statement.
+
 ## Resolution of PLNSoundnessCounterexample
 
 The counterexample in `PLNSoundnessCounterexample.lean` proved that
 BinaryEvidence-based confidence `c = w/(w+1)` and error bounds `|P-s| ≤ e`
 cannot be unified via `e = 1-c` after combination.
 
-**This ITV model resolves the issue**:
-- Intervals [L, U] track probability bounds (from Beta credible intervals)
-- Credibility tracks BinaryEvidence amount (from quantale)
-- No forced relationship `width = 1 - credibility`
-- Both derived from same BinaryEvidence (n⁺, n⁻) via different pathways
+**This ITV model resolves the issue** by separating the axes:
+- Intervals [L, U] track constructor-supplied endpoint semantics, such as
+  Bayesian credible endpoints or Walley lower/upper probabilities.
+- Credibility tracks BinaryEvidence amount / concentration.
+- No forced relationship `width = 1 - credibility` for arbitrary ITVs or
+  Bayesian credible intervals
+- Walley IDM predictive intervals are a special case: their width is
+  `s/(n+s)`, so the precision proxy `n/(n+s)` is exactly `1 - width`
+- In the constructors here, both are derived from the same BinaryEvidence
+  `(n⁺, n⁻)` via different pathways.
 
 ## References
 
@@ -90,12 +135,17 @@ open Mettapedia.Logic.PLNWeightTV
 /-- Indefinite Truth Value: <lower, upper, credibility>
 
 **Semantics**:
-- True probability P ∈ [lower, upper] (with confidence level ~95% or specified)
+- `lower`/`upper` are interval endpoints whose interpretation is supplied by
+  the constructor: Walley lower/upper probabilities, Bayesian credible
+  endpoints, or frequentist coverage endpoints.
 - credibility = w/(w+1) measures BinaryEvidence accumulation (quantale element)
 - Width (upper - lower) measures epistemic uncertainty
 - Credibility measures evidential support (how much data)
 
-**Key**: These are ORTHOGONAL. No relationship width = f(credibility).
+**Key**: For arbitrary ITVs these are orthogonal.  A selected interval
+semantics may impose an extra law: Walley IDM predictive intervals satisfy
+`width + credibility = 1`, while Bayesian credible intervals do not impose
+that simple algebraic complement.
 -/
 structure ITV where
   lower : ℝ
@@ -141,6 +191,65 @@ theorem width_nonneg (itv : ITV) : 0 ≤ itv.width := by
 theorem width_le_one (itv : ITV) : itv.width ≤ 1 := by
   unfold width
   linarith [itv.lower_in_unit.1, itv.upper_in_unit.2]
+
+/-- A full-width ITV with an arbitrary credibility in `[0,1]`.  This is a
+small canary for the generic ITV record: interval width alone does not
+determine credibility unless a particular interval semantics adds that law. -/
+def fullWidthWithCredibility (c : ℝ) (hc : c ∈ Set.Icc 0 1) : ITV where
+  lower := 0
+  upper := 1
+  credibility := c
+  lower_le_upper := by norm_num
+  lower_in_unit := by norm_num
+  upper_in_unit := by norm_num
+  credibility_in_unit := hc
+
+@[simp] theorem fullWidthWithCredibility_width (c : ℝ) (hc : c ∈ Set.Icc 0 1) :
+    (fullWidthWithCredibility c hc).width = 1 := by
+  simp [fullWidthWithCredibility, width]
+
+@[simp] theorem fullWidthWithCredibility_credibility (c : ℝ) (hc : c ∈ Set.Icc 0 1) :
+    (fullWidthWithCredibility c hc).credibility = c := by
+  rfl
+
+/-- A degenerate interval at point `p` with an arbitrary credibility in
+`[0,1]`. -/
+def pointWithCredibility (p c : ℝ) (hp : p ∈ Set.Icc 0 1) (hc : c ∈ Set.Icc 0 1) :
+    ITV where
+  lower := p
+  upper := p
+  credibility := c
+  lower_le_upper := le_rfl
+  lower_in_unit := hp
+  upper_in_unit := hp
+  credibility_in_unit := hc
+
+@[simp] theorem pointWithCredibility_width
+    (p c : ℝ) (hp : p ∈ Set.Icc 0 1) (hc : c ∈ Set.Icc 0 1) :
+    (pointWithCredibility p c hp hc).width = 0 := by
+  simp [pointWithCredibility, width]
+
+@[simp] theorem pointWithCredibility_credibility
+    (p c : ℝ) (hp : p ∈ Set.Icc 0 1) (hc : c ∈ Set.Icc 0 1) :
+    (pointWithCredibility p c hp hc).credibility = c := by
+  rfl
+
+/-- Generic ITVs do not determine credibility from interval width alone:
+there are two ITVs with the same width and different credibility. -/
+theorem generic_width_does_not_determine_credibility :
+    ∃ itv₀ itv₁ : ITV,
+      itv₀.width = itv₁.width ∧ itv₀.credibility ≠ itv₁.credibility := by
+  refine ⟨fullWidthWithCredibility 0 (by norm_num),
+          fullWidthWithCredibility 1 (by norm_num), ?_⟩
+  simp
+
+/-- Generic ITVs also do not determine interval width from credibility alone. -/
+theorem generic_credibility_does_not_determine_width :
+    ∃ itv₀ itv₁ : ITV,
+      itv₀.credibility = itv₁.credibility ∧ itv₀.width ≠ itv₁.width := by
+  refine ⟨fullWidthWithCredibility (1 / 2) (by norm_num),
+          pointWithCredibility 0 (1 / 2) (by norm_num) (by norm_num), ?_⟩
+  simp
 
 /-! ## Construction from BinaryEvidence -/
 
@@ -212,6 +321,27 @@ noncomputable def fromBayesCredibleWithBackend
         apply ENNReal.div_le_of_le_mul
         simp }
 
+@[simp] theorem fromBayesCredibleWithBackend_credibility
+    (backend : CredibleIntervalBackend)
+    (e : BinaryEvidence) (ctx : BinaryContext)
+    (level : ℝ) (hlevel : 0 < level ∧ level < 1) :
+    (fromBayesCredibleWithBackend backend e ctx level hlevel).credibility =
+      (BinaryEvidence.toConfidence (ctx.α₀ + ctx.β₀) e).toReal := by
+  simp [fromBayesCredibleWithBackend]
+
+/-- In this model, the Bayesian ITV credibility coordinate is fixed by the
+evidence concentration and prior sample size. The credible-interval backend
+and level affect the bounds, not this credibility field. -/
+theorem fromBayesCredibleWithBackend_credibility_independent_of_backend_level
+    (backend₁ backend₂ : CredibleIntervalBackend)
+    (e : BinaryEvidence) (ctx : BinaryContext)
+    (level₁ level₂ : ℝ)
+    (hlevel₁ : 0 < level₁ ∧ level₁ < 1)
+    (hlevel₂ : 0 < level₂ ∧ level₂ < 1) :
+    (fromBayesCredibleWithBackend backend₁ e ctx level₁ hlevel₁).credibility =
+      (fromBayesCredibleWithBackend backend₂ e ctx level₂ hlevel₂).credibility := by
+  simp
+
 /-- Construct ITV from BinaryEvidence via Bayesian Beta credible interval
 using normal approximation. -/
 noncomputable def fromBayesCredibleNormalApprox (e : BinaryEvidence) (ctx : BinaryContext)
@@ -224,19 +354,21 @@ noncomputable def fromBayesCredibleExactInvCDF (e : BinaryEvidence) (ctx : Binar
     (level : ℝ) (hlevel : 0 < level ∧ level < 1) : ITV :=
   fromBayesCredibleWithBackend .exactInvCDF e ctx level hlevel
 
-/-- Construct ITV at 95% confidence level -/
+/-- Construct ITV at 95% Bayesian credible-interval level. -/
 noncomputable def fromBayesCredible95 (e : BinaryEvidence) (ctx : BinaryContext) : ITV :=
   fromBayesCredibleNormalApprox e ctx 0.95 ⟨by norm_num, by norm_num⟩
 
-/-- Construct ITV at 90% confidence level -/
+/-- Construct ITV at 90% Bayesian credible-interval level. -/
 noncomputable def fromBayesCredible90 (e : BinaryEvidence) (ctx : BinaryContext) : ITV :=
   fromBayesCredibleNormalApprox e ctx 0.90 ⟨by norm_num, by norm_num⟩
 
-/-- Construct ITV at 95% confidence level (exact-invCDF backend). -/
+/-- Construct ITV at 95% Bayesian credible-interval level
+using the exact-invCDF backend. -/
 noncomputable def fromBayesCredible95ExactInvCDF (e : BinaryEvidence) (ctx : BinaryContext) : ITV :=
   fromBayesCredibleExactInvCDF e ctx 0.95 ⟨by norm_num, by norm_num⟩
 
-/-- Construct ITV at 90% confidence level (exact-invCDF backend). -/
+/-- Construct ITV at 90% Bayesian credible-interval level
+using the exact-invCDF backend. -/
 noncomputable def fromBayesCredible90ExactInvCDF (e : BinaryEvidence) (ctx : BinaryContext) : ITV :=
   fromBayesCredibleExactInvCDF e ctx 0.90 ⟨by norm_num, by norm_num⟩
 
@@ -338,6 +470,34 @@ theorem fromWalleyIDMPredictive_width_add_credibility
     linarith
   field_simp [hden_pos.ne']
   ring
+
+/-- Under the current ITV midpoint view, the Walley IDM predictive interval has
+representative strength `(n⁺ + s/2)/(n⁺+n⁻+s)`. This is a midpoint-view
+choice; the Walley interval itself is carried by the lower/upper bounds. -/
+theorem fromWalleyIDMPredictive_strength_eq
+    (e : BinaryEvidence) (s : ℝ) (hs : 0 < s) :
+    (fromWalleyIDMPredictive e s hs).strength =
+      (e.pos.toReal + s / 2) / (e.pos.toReal + e.neg.toReal + s) := by
+  unfold ITV.strength
+  rw [fromWalleyIDMPredictive_lower, fromWalleyIDMPredictive_upper]
+  have hden_pos : 0 < e.pos.toReal + e.neg.toReal + s := by
+    have hpos_nonneg : 0 ≤ e.pos.toReal := ENNReal.toReal_nonneg
+    have hneg_nonneg : 0 ≤ e.neg.toReal := ENNReal.toReal_nonneg
+    linarith
+  field_simp [hden_pos.ne']
+  ring
+
+/-- Walley's IDM precision proxy is the PLN odds coordinate applied to the total
+evidence count with `k = s`.  This is stronger than generic ITV
+orthogonality: it is a property of the selected Walley predictive
+semantics. -/
+theorem fromWalleyIDMPredictive_credibility_eq_plnOddsCoordinate
+    (e : BinaryEvidence) (s : ℝ) (hs : 0 < s) :
+    (fromWalleyIDMPredictive e s hs).credibility =
+      (Mettapedia.Logic.PLNConfidenceWeight.EvidenceWeightCoordinate.plnOddsCoordinate s hs).encode
+        (e.pos.toReal + e.neg.toReal) := by
+  rw [fromWalleyIDMPredictive_credibility]
+  simp [Mettapedia.Logic.PLNConfidenceWeight.EvidenceWeightCoordinate.plnOddsCoordinate]
 
 theorem fromWalleyIDMPredictive_width_eq_one_sub_credibility
     (e : BinaryEvidence) (s : ℝ) (hs : 0 < s) :

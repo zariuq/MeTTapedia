@@ -285,6 +285,12 @@ def worldModelSigmaPatternEventFromUntyped
         cases s <;>
           simpa using
             (BinaryWorldModel.evidence_add (State := State) (Query := Pattern) W₁ W₂ qs)
+  evidence_zero q := by
+    cases q with
+    | mk s qs =>
+        cases s <;>
+          simpa using
+            (BinaryWorldModel.evidence_zero (State := State) (Query := Pattern) qs)
 
 instance instWorldModelSigmaPatternEvent
     (State : Type*)

@@ -172,7 +172,7 @@ theorem ForgettingLayer.forget_profile_invariant
         (State := State) (Query := Query) (Ev := Ev) (F.forget S W) q)
       (fun q => AdditiveWorldModel.extract
         (State := State) (Query := Query) (Ev := Ev) W q) :=
-  fun q hq => F.outsideInvariant hq
+  fun _ hq => F.outsideInvariant hq
 
 /-- Under exact inverse forgetting, a revision's evidence profile
     vanishes outside the scope.  This is `exactInverse_revision_supported`

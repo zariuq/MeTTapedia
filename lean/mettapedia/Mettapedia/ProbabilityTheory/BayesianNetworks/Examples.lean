@@ -516,11 +516,17 @@ theorem chain_condIndep_CA_given_B_of_localMarkov
     (μ : MeasureTheory.Measure chainBN.JointSpace) [MeasureTheory.IsFiniteMeasure μ]
     [HasLocalMarkovProperty chainBN μ] :
     CondIndepVertices chainBN μ ({Three.C} : Set Three) ({Three.A} : Set Three) ({Three.B} : Set Three) := by
-  have hmarkovC :=
-    HasLocalMarkovProperty.markov_condition (bn := chainBN) (μ := μ) Three.C
-  simpa [BayesianNetwork.LocalMarkovCondition,
-    chain_nonDescExceptParentsSelf_C, chain_graph_parents_C] using hmarkovC
+  have hA :
+      ({Three.A} : Set Three) ⊆ chainBN.nonDescendantsExceptParentsAndSelf Three.C := by
+    simp [chain_nonDescExceptParentsSelf_C]
+  simpa [chain_graph_parents_C] using
+    (BayesianNetwork.condIndepVertices_singleton_of_subset_nonDescendantsExceptParentsAndSelf
+      (bn := chainBN) (μ := μ) Three.C hA)
 
+/-- Compatibility wrapper for the concrete chain bridge.  In this three-node
+parentset case, the target independence `C ⟂ A | B` is exactly the local
+Markov statement at `C`; the d-separation hypothesis is retained by the public
+bridge signature used downstream. -/
 theorem chain_dsep_to_condIndep_CA_given_B
     [StandardBorelSpace chainBN.JointSpace]
     (μ : MeasureTheory.Measure chainBN.JointSpace) [MeasureTheory.IsFiniteMeasure μ]
@@ -722,12 +728,17 @@ theorem fork_condIndep_CA_given_B_of_localMarkov
     (μ : MeasureTheory.Measure forkBN.JointSpace) [MeasureTheory.IsFiniteMeasure μ]
     [HasLocalMarkovProperty forkBN μ] :
     CondIndepVertices forkBN μ ({Three.C} : Set Three) ({Three.A} : Set Three) ({Three.B} : Set Three) := by
-  have hmarkovC :=
-    HasLocalMarkovProperty.markov_condition (bn := forkBN) (μ := μ) Three.C
-  simpa [BayesianNetwork.LocalMarkovCondition,
-    fork_nonDescExceptParentsSelf_C, fork_graph_parents_C] using hmarkovC
+  have hA :
+      ({Three.A} : Set Three) ⊆ forkBN.nonDescendantsExceptParentsAndSelf Three.C := by
+    simp [fork_nonDescExceptParentsSelf_C]
+  simpa [fork_graph_parents_C] using
+    (BayesianNetwork.condIndepVertices_singleton_of_subset_nonDescendantsExceptParentsAndSelf
+      (bn := forkBN) (μ := μ) Three.C hA)
 
-/-- DSeparatedFull + local Markov ⇒ CondIndepVertices for fork. -/
+/-- Compatibility wrapper for the concrete fork bridge.  As in the chain case,
+the target independence `C ⟂ A | B` is already the local Markov statement at
+`C`; the d-separation hypothesis is retained by the public bridge signature
+used downstream. -/
 theorem fork_dsep_to_condIndep_CA_given_B
     [StandardBorelSpace forkBN.JointSpace]
     (μ : MeasureTheory.Measure forkBN.JointSpace) [MeasureTheory.IsFiniteMeasure μ]
@@ -934,10 +945,12 @@ theorem collider_condIndep_AB_given_empty_of_localMarkov
     [MeasureTheory.IsFiniteMeasure μ]
     [HasLocalMarkovProperty colliderBN μ] :
     CondIndepVertices colliderBN μ ({Three.A} : Set Three) ({Three.B} : Set Three) ∅ := by
-  have hmarkovA :=
-    HasLocalMarkovProperty.markov_condition (bn := colliderBN) (μ := μ) Three.A
-  simpa [BayesianNetwork.LocalMarkovCondition,
-    collider_nonDescExceptParentsAndSelf_A, collider_graph_parents_A] using hmarkovA
+  have hB :
+      ({Three.B} : Set Three) ⊆ colliderBN.nonDescendantsExceptParentsAndSelf Three.A := by
+    simp [collider_nonDescExceptParentsAndSelf_A]
+  simpa [collider_graph_parents_A] using
+    (BayesianNetwork.condIndepVertices_singleton_of_subset_nonDescendantsExceptParentsAndSelf
+      (bn := colliderBN) (μ := μ) Three.A hB)
 
 /-! ## Alarm Network (WIP) -/
 

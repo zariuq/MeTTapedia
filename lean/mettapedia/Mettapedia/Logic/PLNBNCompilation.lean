@@ -82,9 +82,13 @@ namespace DSeparationCond
 
 variable (bn : BayesianNetwork V)
 
+/-- Compatibility side-condition: any overlap between `X` and `Y` must already lie in `Z`. -/
+def compatible (cond : DSeparationCond V) : Prop :=
+  cond.X ∩ cond.Y ⊆ cond.Z
+
 /-- Interpretation: the condition holds in `bn` when `X ⟂ Y | Z` by d-separation. -/
 def holds (cond : DSeparationCond V) : Prop :=
-  DSeparatedFull bn.graph cond.X cond.Y cond.Z
+  cond.compatible ∧ DSeparatedFull bn.graph cond.X cond.Y cond.Z
 
 /-- Full trail-based side condition. -/
 def holdsFull (cond : DSeparationCond V) : Prop :=
@@ -192,6 +196,8 @@ These work for *any* BN and any state values, using `eventEq` throughout.
 They connect `queryProb` (VE-based) to `cpt.jointMeasure` (measure-based). -/
 
 -- These lemmas provide their own type-class params to be maximally generic
+omit [DecidableRel bn.graph.edges] [(v : V) → Fintype (bn.stateSpace v)]
+  [(v : V) → DecidableEq (bn.stateSpace v)] in
 /-- `queryProb` for prop at any `val` = marginal measure. -/
 lemma queryProb_prop_eq_jointMeasure [Fintype V] [DecidableEq V]
     [∀ v, Fintype (bn.stateSpace v)] [∀ v, DecidableEq (bn.stateSpace v)]
@@ -203,6 +209,8 @@ lemma queryProb_prop_eq_jointMeasure [Fintype V] [DecidableEq V]
   simp only [queryProb]
   rw [propProbVE_eq_jointMeasure_eventEq]
 
+omit [DecidableRel bn.graph.edges] [(v : V) → Fintype (bn.stateSpace v)]
+  [(v : V) → DecidableEq (bn.stateSpace v)] in
 /-- `queryProb` for link at any `valA`, `valB` = conditional probability ratio. -/
 lemma queryProb_link_eq_jointMeasure [Fintype V] [DecidableEq V]
     [∀ v, Fintype (bn.stateSpace v)] [∀ v, DecidableEq (bn.stateSpace v)]
@@ -219,6 +227,8 @@ lemma queryProb_link_eq_jointMeasure [Fintype V] [DecidableEq V]
   · exact absurd h ha
   · rfl
 
+omit [DecidableRel bn.graph.edges] [(v : V) → Fintype (bn.stateSpace v)]
+  [(v : V) → DecidableEq (bn.stateSpace v)] in
 /-- `queryProb` for prop is at most 1. -/
 lemma queryProb_prop_le_one [Fintype V] [DecidableEq V]
     [∀ v, Fintype (bn.stateSpace v)] [∀ v, DecidableEq (bn.stateSpace v)]
@@ -229,6 +239,8 @@ lemma queryProb_prop_le_one [Fintype V] [DecidableEq V]
     queryProb (bn := bn) cpt (AtomQuery.prop ⟨v, val⟩) ≤ 1 := by
   rw [queryProb_prop_eq_jointMeasure]; exact prob_le_one
 
+omit [DecidableRel bn.graph.edges] [(v : V) → Fintype (bn.stateSpace v)]
+  [(v : V) → DecidableEq (bn.stateSpace v)] in
 /-- `queryProb` for link is at most 1. -/
 lemma queryProb_link_le_one [Fintype V] [DecidableEq V]
     [∀ v, Fintype (bn.stateSpace v)] [∀ v, DecidableEq (bn.stateSpace v)]
@@ -243,6 +255,8 @@ lemma queryProb_link_le_one [Fintype V] [DecidableEq V]
   · exact le_trans (ENNReal.div_le_div_right (measure_mono Set.inter_subset_left) _)
       ENNReal.div_self_le_one
 
+omit [DecidableRel bn.graph.edges] [(v : V) → Fintype (bn.stateSpace v)]
+  [(v : V) → DecidableEq (bn.stateSpace v)] in
 /-- Singleton prop `queryStrength.toReal` = `μ.real(eventEq v val)`. -/
 lemma queryStrength_singleton_prop_toReal [Fintype V] [DecidableEq V]
     [∀ v, Fintype (bn.stateSpace v)] [∀ v, DecidableEq (bn.stateSpace v)]
@@ -258,6 +272,8 @@ lemma queryStrength_singleton_prop_toReal [Fintype V] [DecidableEq V]
   rw [queryProb_prop_eq_jointMeasure]
   simp [Measure.real]
 
+omit [DecidableRel bn.graph.edges] [(v : V) → Fintype (bn.stateSpace v)]
+  [(v : V) → DecidableEq (bn.stateSpace v)] in
 /-- Singleton link `queryStrength.toReal` = μ.real ratio.
 Note: intersection order is `eventEq b valB ∩ eventEq a valA` to match
 the convention where the numerator event is listed first. -/
@@ -486,15 +502,19 @@ variable [DSeparationSoundness bn μ]
 theorem discharge
     (cond : DSeparationCond V)
     (hcond : cond.holds (bn := bn)) :
-    CondIndepVertices bn μ cond.X cond.Y cond.Z :=
-  dsepFull_implies_condIndepVertices (bn := bn) (μ := μ) hcond
+    CondIndepVertices bn μ cond.X cond.Y cond.Z := by
+  let hsound : DSeparationSoundness bn μ := inferInstance
+  have hsound' := hsound.dsep_condIndep (X := cond.X) (Y := cond.Y) (Z := cond.Z)
+  exact hsound' hcond.1 hcond.2
 
 /-- Full trail-based discharge. -/
 theorem dischargeFull
     (cond : DSeparationCond V)
     (hcond : cond.holdsFull (bn := bn)) :
-    CondIndepVertices bn μ cond.X cond.Y cond.Z :=
-  dsepFull_implies_condIndepVertices (bn := bn) (μ := μ) hcond
+    CondIndepVertices bn μ cond.X cond.Y cond.Z := by
+  let hsound : DSeparationSoundness bn μ := inferInstance
+  have hsound' := hsound.dsep_condIndep (X := cond.X) (Y := cond.Y) (Z := cond.Z)
+  exact hsound' hcond.1 hcond.2
 
 /-- d-separation discharge specialized to a BN CPT's joint measure. -/
 theorem discharge_cpt
@@ -503,8 +523,10 @@ theorem discharge_cpt
     [HasLocalMarkovProperty bn cpt.jointMeasure]
     [DSeparationSoundness bn cpt.jointMeasure]
     (hcond : cond.holds (bn := bn)) :
-    CondIndepVertices bn cpt.jointMeasure cond.X cond.Y cond.Z :=
-  dsepFull_implies_condIndepVertices (bn := bn) (μ := cpt.jointMeasure) hcond
+    CondIndepVertices bn cpt.jointMeasure cond.X cond.Y cond.Z := by
+  let hsound : DSeparationSoundness bn cpt.jointMeasure := inferInstance
+  have hsound' := hsound.dsep_condIndep (X := cond.X) (Y := cond.Y) (Z := cond.Z)
+  exact hsound' hcond.1 hcond.2
 
 end DSeparationCond
 
@@ -520,14 +542,12 @@ variable [DecidableRel bn.graph.edges]
 variable [∀ v, Fintype (bn.stateSpace v)] [∀ v, Nonempty (bn.stateSpace v)]
 variable [∀ v, DecidableEq (bn.stateSpace v)]
 variable [∀ v : V, StandardBorelSpace (bn.stateSpace v)]
-variable (μ : Measure bn.JointSpace) [IsFiniteMeasure μ]
-variable [HasLocalMarkovProperty bn μ]
-variable [DSeparationSoundness bn μ]
 
 /-- Package assumption: every BN discrete CPT satisfies local Markov. -/
 class AllDiscreteCPTLocalMarkov : Prop where
   localMarkov : ∀ cpt : bn.DiscreteCPT, HasLocalMarkovProperty bn cpt.jointMeasure
 
+omit [DecidableRel bn.graph.edges] [(v : V) → DecidableEq (bn.stateSpace v)] in
 theorem allDiscreteCPTLocalMarkov_of
     (hLM : ∀ cpt : bn.DiscreteCPT, HasLocalMarkovProperty bn cpt.jointMeasure) :
     AllDiscreteCPTLocalMarkov (bn := bn) :=
@@ -999,6 +1019,7 @@ instance screeningOffProbEq_of_eventEq_mul
       (bn := bn) (A := A) (B := B) (C := C)
       (valA := valA) (valB := valB) (valC := valC) (cpt := cpt)⟩
 
+omit [DecidableRel bn.graph.edges] [(v : V) → DecidableEq (bn.stateSpace v)] in
 theorem screeningOffMulEq_of_condIndepVertices_CA
     [∀ v : V, Inhabited (bn.stateSpace v)]
     [∀ v : V, MeasurableSingletonClass (bn.stateSpace v)]
@@ -1088,8 +1109,6 @@ theorem condIndep_linkProb_eq_of_eq
 /-! ## Screening-off WMQueryEq (d-sep discharge + concrete lemma) -/
 
 theorem wmqueryeq_screeningOff_of_dsep
-    (μ : Measure bn.JointSpace) [IsFiniteMeasure μ]
-    [HasLocalMarkovProperty bn μ] [DSeparationSoundness bn μ]
     (A B C : V) (valA : bn.stateSpace A) (valB : bn.stateSpace B) (valC : bn.stateSpace C)
     [ScreeningOffProbEq (bn := bn) A B C valA valB valC]
     (hci :
@@ -1192,9 +1211,6 @@ variable [DecidableRel bn.graph.edges]
 variable [∀ v, Fintype (bn.stateSpace v)] [∀ v, Nonempty (bn.stateSpace v)]
 variable [∀ v, DecidableEq (bn.stateSpace v)]
 variable [∀ v : V, StandardBorelSpace (bn.stateSpace v)]
-variable (μ : Measure bn.JointSpace) [IsFiniteMeasure μ]
-variable [HasLocalMarkovProperty bn μ]
-variable [DSeparationSoundness bn μ]
 
 /-! ## Screening-off rewrite (non-degenerate, via explicit assumptions) -/
 
@@ -1371,7 +1387,7 @@ theorem chain_hciCA_of_dsep
     CondIndepVertices chainBN cpt.jointMeasure
       ({Three.C} : Set Three) ({Three.A} : Set Three) ({Three.B} : Set Three) := by
   exact Mettapedia.ProbabilityTheory.BayesianNetworks.Examples.chain_dsepFull_to_condIndep_CA_given_B
-    (μ := cpt.jointMeasure) hcond
+    (μ := cpt.jointMeasure) hcond.2
 
 theorem chain_hciCA_of_dsepFull
     (cpt : chainBN.DiscreteCPT)
@@ -1584,12 +1600,19 @@ theorem chain_screeningOff_wmqueryeq_of_dsepFull
         (AtomQuery.linkCond [⟨Three.A, valA⟩, ⟨Three.B, valB⟩] ⟨Three.C, valC⟩)
         (AtomQuery.link ⟨Three.B, valB⟩ ⟨Three.C, valC⟩) := by
   intro hcondFull
+  have hcompat :
+      (CompiledPlan.deductionSide Three.A Three.B Three.C).compatible := by
+    intro x hx
+    simp [CompiledPlan.deductionSide] at hx
+  have hcond :
+      (CompiledPlan.deductionSide Three.A Three.B Three.C).holds (bn := chainBN) :=
+    ⟨hcompat, hcondFull⟩
   exact wmqueryeq_screeningOff_of_dsep_CA (bn := chainBN)
     (A := Three.A) (B := Three.B) (C := Three.C)
     (valA := valA) (valB := valB) (valC := valC)
     (hciCA := fun cpt _hc => chain_hciCA_from_hLM_full (hLM := hLM)
       (hcondFull := hcondFull) cpt)
-    hcondFull
+    hcond
 
 theorem chain_screeningOff_wmqueryeq_of_moralSep
     (valA valB valC : Bool)

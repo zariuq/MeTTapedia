@@ -32,6 +32,11 @@ exact_tests=(
   io_he_ext_if_false.metta
   io_he_ext_collapse_superpose_duplicates.metta
   test_basic_eval.metta
+  test_context_space.metta
+  test_evalc.metta
+  type_get_direct.metta
+  type_get_add_result.metta
+  type_get_vec_cons.metta
 )
 
 normalized_bag_tests=(
@@ -39,6 +44,7 @@ normalized_bag_tests=(
   io_he_nondet_choose_bag.metta
   nondet_match_bag.metta
   nondet_chain_bag.metta
+  verified_chain_slice_bag.metta
   nondet_cross_product_bag.metta
   nondet_superpose_eval_bag.metta
   nondet_eval_arg_add_bag.metta
@@ -47,6 +53,12 @@ normalized_bag_tests=(
   nondet_match_eval_template_bag.metta
   nondet_collapse_bag.metta
   nondet_superpose_three_bag.metta
+  nondet_case_bag.metta
+  nondet_switch_bag.metta
+  switch_no_eval_scrutinee.metta
+  switch_variable_pattern.metta
+  nondet_let_star_seq_bag.metta
+  nondet_function_return_chain_bag.metta
 )
 
 failures=0

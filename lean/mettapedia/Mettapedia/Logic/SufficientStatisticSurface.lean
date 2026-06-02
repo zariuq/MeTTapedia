@@ -1942,7 +1942,7 @@ theorem evidenceDirichletParams_totalConcentration {k : ℕ}
       params.prior.totalConcentration + (params.evidence.total : ℝ) := by
   cases params with
   | mk prior evidence =>
-      simp [EvidenceDirichletParams.toPosterior, DirichletParams.totalConcentration,
+      simp [DirichletParams.totalConcentration,
         EvidenceDirichletParams.posteriorParam, MultiEvidence.total,
         Finset.sum_add_distrib, Nat.cast_sum]
 

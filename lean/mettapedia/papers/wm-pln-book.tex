@@ -3278,9 +3278,22 @@ carrier family has its own natural views:
 \end{itemize}
 
 \noindent
-The pattern is the same: views are lossy projections that discard
-some of the carrier's structure.  No single view suffices to
-reconstruct the original evidence.
+The pattern is the same: views are projections that discard some of the
+carrier's structure.  A fixed-$k$ strength--confidence pair can recover
+the two binary counts in the idealized scalar model, but no single
+view suffices to reconstruct the original evidence state, including
+provenance, overlap/stamps, context, and richer posterior shape.
+
+Consequently, the familiar PLN/NARS formula $c=n/(n+k)$ is not forced
+by the two-count reconstruction problem alone.  The formal coordinate
+theorem in \codepath{Mettapedia/Logic/PLNConfidenceWeight.lean} proves
+that any displayed confidence coordinate with a known left inverse on
+nonnegative evidence weights can recover the binary counts from
+$(s,c)$.  A deliberately different ``reserve-half'' coordinate,
+$c=n/(2n+k)$, is proved to reconstruct the same counts while keeping
+all displayed confidence below $1/2$.  The usual formula is forced only
+after adding a stronger interpretation, such as odds-linearity
+$c/(1-c)=n/k$.
 
 \begin{figure}[htbp]
 \centering
@@ -3309,9 +3322,11 @@ reconstruct the original evidence.
   at ($(conf.east) + (18mm, 0)$)
   {Cannot reconstruct\\$(n^+, n^-)$ from\\any single view};
 \end{tikzpicture}
-\caption{Truth-value views are lossy projections from \Evidence{}.
+\caption{Truth-value views are projections from \Evidence{}.
 Strength, confidence, and interval bounds each discard information.
-No single view suffices to reconstruct the original evidence counts.}
+A fixed-$k$ strength--confidence pair can recover binary counts in the
+idealized scalar model, but no single scalar view reconstructs the full
+evidence state.}
 \label{fig:tv-views-projections}
 \end{figure}
 
@@ -3329,11 +3344,11 @@ A \emph{simple truth value} (STV) is a pair $\STV{s}{c}$ where:
 \end{itemize}
 
 The STV is the most commonly used truth-value representation in PLN
-practice.  It is compact and intuitive.  But it is a \emph{lossy} view:
-two different evidence values can produce the same STV (when they have
-the same ratio $n^+/n$ and the same total $n$), and the STV discards
-information about the shape of the posterior distribution beyond its
-mean.
+practice.  It is compact and intuitive.  With fixed $k$ and ideal real
+arithmetic, it is equivalent to the two binary count coordinates
+$(n^+,n^-)$.  It is still a \emph{lossy} world-model view: it discards
+provenance, overlap/stamps, context, and posterior structure beyond the
+two-count summary.
 
 \maplecourt{%
 Querying ``Is the pipe leaking?'' against Maple Court's apartment state
@@ -3368,8 +3383,8 @@ is still informative.
 
 \section{Indefinite Truth Values}
 
-An \emph{indefinite truth value} (ITV) provides interval bounds on the
-strength:
+An \emph{indefinite truth value} (ITV) provides interval endpoints for a
+selected uncertainty semantics:
 \[
   \mathrm{ITV} = [s_L,\; s_U,\; b,\; w]
 \]
@@ -3390,9 +3405,9 @@ intervals, and they \emph{must not be conflated}:
   which provide robust predictions without committing to a single prior.
   These are prior-free but give wider intervals.
 
-\item \textbf{Frequentist confidence intervals.}  Intervals constructed
-  so that the true parameter lies within them with specified coverage
-  probability over repeated sampling.
+\item \textbf{Frequentist confidence intervals.}  Intervals produced by a
+  procedure with specified long-run coverage.  After observing a dataset,
+  they are not posterior probability statements about the parameter.
 \end{enumerate}
 
 The original PLN book sometimes uses the notation $[L, U]$ without
@@ -3401,6 +3416,27 @@ selector choice: the user declares which interval semantics they want,
 and the system computes accordingly.%
 \footnote{Formalized in \codepath{Mettapedia/Logic/PLNIndefiniteTruth.lean} and
 \codepath{Mettapedia/Logic/PLNWorldModelITV.lean}.}
+
+The degrees of freedom are explicit in the constructors.  Once lower and
+upper bounds are chosen, width is definitionally $s_U-s_L$.  The scalar
+``strength'' exported from an ITV is the midpoint $(s_L+s_U)/2$, a
+display representative rather than a theorem that decisions must use the
+midpoint.  Bayesian ITV constructors choose a prior context, credible
+level, and interval backend; in the current formalization these choices
+affect the bounds, while credibility remains the BinaryEvidence
+concentration with $\kappa=\alpha_0+\beta_0$.  Walley-IDM constructors
+instead choose one strength parameter $s>0$; then lower, upper, width,
+and credibility are fixed by the IDM predictive formulas.
+
+For this reason, ITV compatibility narrows the confidence coordinate
+only after a specific interval semantics is selected.  Generic ITVs and
+Bayesian credible intervals do not impose a simple law between width
+and credibility.  Walley IDM predictive intervals do: their width is
+$s/(n+s)$, and requiring credibility to be the complement of predictive
+width forces $c=1-s/(n+s)=n/(n+s)$.  The Lean theorem
+\code{walley\_width\_complement\_forces\_plnOdds} proves exactly this
+forcing result; the reserve-half coordinate is simultaneously proved to be
+an invertible count coordinate but not Walley-compatible.
 
 \section{Why Views Are Not Proof Objects}
 \label{sec:views-not-proof}
@@ -4258,6 +4294,29 @@ The key result: every classic PLN inference pattern is a specific
 compiled BN rewrite with provenance tracking.  The WM calculus
 \emph{subsumes} PLN v0.9 and \emph{adds} forgetting with proved
 conservation---something PLN v0.9 cannot express.
+
+\medskip\noindent\textbf{Raven asymmetry and abduction, formalized.}
+Beyond the provenance story above, the \emph{dynamical} content of the raven
+paradox---``ravens are black'' survives while ``black things are ravens''
+decays---is now machine-checked in
+\codepath{Mettapedia/Logic/RavenAsymmetricInduction.lean} (0~sorry, 0~axiom).
+Modelling induction as iterated revision on \code{BinaryEvidence}, $R$ black
+ravens and $M$ other black items give \code{strength\_ravenBlack}~$=R/R=1$ and
+\code{strength\_blackRaven}~$=R/(R+M)$; the inverse link is antitone in $M$
+(\code{strength\_blackRaven\_antitone}) and converges to the base rate,
+\code{strength\_blackRaven\_tendsto\_zero} proving $R/(R+M)\to 0$ as
+$M\to\infty$.  A dataset layer over finite observation lists proves the
+strengths depend only on the two sufficient counts
+(\code{aggregate\_blackRaven\_eq\_counts}) and are order-insensitive
+(exchangeability, \code{aggregate\_blackRaven\_perm}).  The query-side dual,
+\codepath{Mettapedia/Logic/RavenAbduction.lean}, casts the same asymmetry as
+inference to the best explanation: from one common feature the base rate wins
+(\code{crow\_best\_on\_black}), and only a discriminating feature flips the best
+explanation (\code{best\_explanation\_flips})---the atomic NARS
+\code{Truth\_Abduction} rule generates the hypothesis, but ranking competing
+explanations needs the prior.  Both have runnable MeTTa mirrors,
+\codepath{papers/examples/RavenAsymmetricInduction.metta} and
+\codepath{papers/examples/RavenAbduction.metta}.
 
 \subsection{Stepped Walkthrough: DeductionRevision with Provenance}
 

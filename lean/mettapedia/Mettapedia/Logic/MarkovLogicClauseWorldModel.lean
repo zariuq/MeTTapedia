@@ -68,6 +68,14 @@ noncomputable instance clauseWorldModel
       List (Σ v, (compiledClauseFactorGraph M support).stateSpace v) := rfl
   this ▸ inferInstance
 
+private instance compiledClauseFactorGraph_stateSpace_nonempty
+    (M : GroundMLN Atom ClauseId)
+    (support : Finset ClauseId) :
+    ∀ v, Nonempty ((compiledClauseFactorGraph M support).stateSpace v) := by
+  intro v
+  change Nonempty Bool
+  infer_instance
+
 /-- The VE weight of the clause source equals the MLN query mass. -/
 theorem clauseWM_weight_eq_queryMass
     (M : GroundMLN Atom ClauseId)
@@ -78,8 +86,21 @@ theorem clauseWM_weight_eq_queryMass
       (clauseMassSemantics M support).queryMass constraints := by
   classical
   unfold ValuationWorldModel.weight clauseWMSource clauseMassSemantics
-  rw [← VariableElimination.weightOfConstraints_eq_list]
-  exact weightOfConstraints_eq_queryMass M support constraints
+  simpa [VariableElimination.veQueryWeight] using
+    veQueryWeight_eq_queryMass M support constraints
+
+/-- The bundled scoped-valuation query lane on the clause WM source also
+recovers the MLN query mass. -/
+theorem clauseWM_scopedWeight_eq_queryMass
+    (M : GroundMLN Atom ClauseId)
+    (support : Finset ClauseId)
+    (constraints : ConstraintQuery Atom) :
+    ValuationWorldModel.scopedWeight (fg := compiledClauseFactorGraph M support)
+      (W := clauseWMSource M support) constraints =
+      (clauseMassSemantics M support).queryMass constraints := by
+  classical
+  rw [ValuationWorldModel.scopedWeight_eq_weight]
+  exact clauseWM_weight_eq_queryMass M support constraints
 
 /-- The total weight of the clause source equals the MLN total mass. -/
 theorem clauseWM_total_eq_totalMass

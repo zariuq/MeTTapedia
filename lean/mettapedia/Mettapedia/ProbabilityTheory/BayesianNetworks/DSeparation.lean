@@ -307,6 +307,38 @@ theorem dsepFull_of_empty_Y (G : DirectedGraph V) (X Z : Set V) :
   intro _ _ y hy _
   exact absurd hy (Set.notMem_empty y)
 
+/-- Full d-separation is monotone in both endpoint sets. -/
+theorem dsepFull_mono (G : DirectedGraph V)
+    {X X' Y Y' Z : Set V}
+    (hXX' : X' ⊆ X) (hYY' : Y' ⊆ Y)
+    (h : DSeparatedFull G X Y Z) :
+    DSeparatedFull G X' Y' Z := by
+  intro x hx y hy hne
+  exact h x (hXX' hx) y (hYY' hy) hne
+
+/-- Finite recursive composition on the graph side: if each singleton `{v}` in
+`S` is d-separated from the rest of `S` together with `Y`, then the whole set
+`S` is d-separated from `Y`. -/
+theorem dsepFull_finset_left_of_singleton_cover (G : DirectedGraph V) [DecidableEq V]
+    (S : Finset V) {Y Z : Set V}
+    (hstep : ∀ v ∈ S,
+      DSeparatedFull G ({v} : Set V) (((↑(S.erase v) : Set V) ∪ Y)) Z) :
+    DSeparatedFull G (↑S : Set V) Y Z := by
+  intro x hx y hy hne
+  have hxS : x ∈ S := by simpa using hx
+  have hxStep :
+      DSeparatedFull G ({x} : Set V) (((↑(S.erase x) : Set V) ∪ Y)) Z :=
+    hstep x hxS
+  have hxMono :
+      DSeparatedFull G ({x} : Set V) Y Z :=
+    dsepFull_mono G
+      (X := ({x} : Set V)) (X' := ({x} : Set V))
+      (Y := (((↑(S.erase x) : Set V) ∪ Y) : Set V)) (Y' := Y) (Z := Z)
+      (by intro u hu; exact hu)
+      (by intro u hu; exact Or.inr hu)
+      hxStep
+  exact hxMono x (by simp) y hy hne
+
 /-! ## Moralized-Ancestral Graph (bridge scaffolding)
 
 This section provides the graph objects used by the standard d-separation
@@ -409,6 +441,19 @@ theorem ancestorClosure_mono (G : DirectedGraph V) {S T : Set V}
   rcases hv with hs | ⟨s, hs, hreach⟩
   · exact Or.inl (hST hs)
   · exact Or.inr ⟨s, hST hs, hreach⟩
+
+theorem relevantVertices_mono (G : DirectedGraph V)
+    {X X' Y Y' Z : Set V}
+    (hXX' : X' ⊆ X) (hYY' : Y' ⊆ Y) :
+    relevantVertices G X' Y' Z ⊆ relevantVertices G X Y Z := by
+  unfold relevantVertices
+  apply ancestorClosure_mono
+  intro v hv
+  rcases hv with hXY | hZ
+  · rcases hXY with hX | hY
+    · exact Or.inl (Or.inl (hXX' hX))
+    · exact Or.inl (Or.inr (hYY' hY))
+  · exact Or.inr hZ
 
 theorem inducedSubgraph_edge_of_edge (G : DirectedGraph V) (W : Set V) {u v : V}
     (hu : W u) (hv : W v) (h : G.edges u v) :
@@ -525,6 +570,28 @@ theorem moralUndirectedEdge_of_induced (G : DirectedGraph V) (W : Set V) {u v : 
   · refine ⟨hne, Or.inr ?_⟩
     exact ⟨c, huc.2.2, hvc.2.2⟩
 
+theorem moralUndirectedEdge_induced_mono (G : DirectedGraph V)
+    {W W' : Set V} (hWW' : W ⊆ W') {u v : V} :
+    moralUndirectedEdge (inducedSubgraph G W) u v →
+      moralUndirectedEdge (inducedSubgraph G W') u v := by
+  intro h
+  rcases h with ⟨hne, huv | ⟨c, huc, hvc⟩⟩
+  · refine ⟨hne, Or.inl ?_⟩
+    rcases huv with huv | hvu
+    · have hu : W' u := hWW' (And.left huv)
+      have hv : W' v := hWW' (And.left (And.right huv))
+      exact Or.inl ⟨hu, hv, And.right (And.right huv)⟩
+    · have hv : W' v := hWW' (And.left hvu)
+      have hu : W' u := hWW' (And.left (And.right hvu))
+      exact Or.inr ⟨hv, hu, And.right (And.right hvu)⟩
+  · refine ⟨hne, Or.inr ?_⟩
+    have hu : W' u := hWW' (And.left huc)
+    have hc₁ : W' c := hWW' (And.left (And.right huc))
+    have hv : W' v := hWW' (And.left hvc)
+    have hc₂ : W' c := hWW' (And.left (And.right hvc))
+    exact ⟨c, ⟨hu, hc₁, And.right (And.right huc)⟩,
+      ⟨hv, hc₂, And.right (And.right hvc)⟩⟩
+
 theorem vertices_of_moralUndirectedEdge_induced (G : DirectedGraph V) (W : Set V) {u v : V} :
     moralUndirectedEdge (inducedSubgraph G W) u v → (W u ∧ W v) := by
   intro h
@@ -545,6 +612,25 @@ theorem isTrail_moral_of_isTrail_moralAncestral (G : DirectedGraph V) (X Y Z : S
           · exact Or.inr (moralUndirectedEdge_of_induced G (relevantVertices G X Y Z) hvu))
         (isTrail_moral_of_isTrail_moralAncestral G X Y Z hTail)
 
+theorem isTrail_moralAncestral_mono (G : DirectedGraph V)
+    {X X' Y Y' Z : Set V}
+    (hXX' : X' ⊆ X) (hYY' : Y' ⊆ Y) :
+    ∀ {p : List V},
+      IsTrail (moralAncestralGraph G X' Y' Z) p →
+      IsTrail (moralAncestralGraph G X Y Z) p
+  | _, IsTrail.single v => IsTrail.single (G := moralAncestralGraph G X Y Z) v
+  | _, IsTrail.cons hEdge hTail =>
+      IsTrail.cons (G := moralAncestralGraph G X Y Z)
+        (by
+          let W' := relevantVertices G X' Y' Z
+          let W := relevantVertices G X Y Z
+          have hWW' : W' ⊆ W :=
+            relevantVertices_mono G hXX' hYY'
+          rcases hEdge with huv | hvu
+          · exact Or.inl (moralUndirectedEdge_induced_mono G hWW' huv)
+          · exact Or.inr (moralUndirectedEdge_induced_mono G hWW' hvu))
+        (isTrail_moralAncestral_mono G hXX' hYY' hTail)
+
 theorem pathVerticesIn_of_isTrail_moralAncestral_of_head
     (G : DirectedGraph V) (X Y Z : Set V) :
     ∀ {x : V} {rest : List V},
@@ -560,6 +646,17 @@ theorem pathVerticesIn_of_isTrail_moralAncestral_of_head
         · exact (vertices_of_moralUndirectedEdge_induced
             (G := G) (W := relevantVertices G X Y Z) hvu).1
       exact ⟨hx, pathVerticesIn_of_isTrail_moralAncestral_of_head G X Y Z hv hTail⟩
+
+/-- Separation in the moral-ancestral graph is monotone in both endpoint sets. -/
+theorem separatedInMoralAncestral_mono (G : DirectedGraph V)
+    {X X' Y Y' Z : Set V}
+    (hXX' : X' ⊆ X) (hYY' : Y' ⊆ Y)
+    (h : SeparatedInMoralAncestral G X Y Z) :
+    SeparatedInMoralAncestral G X' Y' Z := by
+  intro x hx y hy hne hPath
+  rcases hPath with ⟨p, hpne, hEnds, hTrail, hAvoid⟩
+  exact h x (hXX' hx) y (hYY' hy) hne ⟨p, hpne, hEnds,
+    isTrail_moralAncestral_mono G hXX' hYY' hTrail, hAvoid⟩
 
 /-- Any moralized edge can be expanded to a short undirected trail in the original graph. -/
 theorem exists_shortTrail_of_moralUndirectedEdge (G : DirectedGraph V) {u v : V}
@@ -952,6 +1049,73 @@ theorem spouseEdge_in_moralAncestral
   exact moralUndirectedEdge_induced_of_collider G (relevantVertices G X Y Z)
     ha hb hc hcol_ab hcol_cb hac
 
+/-- Any two distinct relevant vertices in the same local BN scope `{v} ∪ Pa(v)`
+are adjacent in the moral-ancestral graph. -/
+theorem undirectedEdge_in_moralAncestral_of_same_headScope
+    (G : DirectedGraph V) (X Y Z : Set V)
+    (hirr : ∀ v : V, ¬G.edges v v)
+    {v u w : V}
+    (hv : relevantVertices G X Y Z v)
+    (hu : relevantVertices G X Y Z u)
+    (hw : relevantVertices G X Y Z w)
+    (huScope : u = v ∨ G.edges u v)
+    (hwScope : w = v ∨ G.edges w v)
+    (huw : u ≠ w) :
+    UndirectedEdge (moralAncestralGraph G X Y Z) u w := by
+  rcases huScope with rfl | huv
+  · rcases hwScope with hEq | hwv
+    · exact (huw hEq.symm).elim
+    · exact undirectedEdge_in_moralAncestral_of_vertices G X Y Z hirr hv hw (Or.inr hwv)
+  · rcases hwScope with rfl | hwv
+    · exact undirectedEdge_in_moralAncestral_of_vertices G X Y Z hirr hu hv (Or.inl huv)
+    · exact spouseEdge_in_moralAncestral G X Y Z hu hv hw huv hwv huw
+
+/-- Any two distinct relevant vertices in the same local BN scope `{v} ∪ Pa(v)`
+admit a short trail in the moral-ancestral graph. This is the graph-side core
+for showing that a single local factor cannot straddle two separated non-`Z`
+blocks. -/
+theorem exists_nonempty_trail_in_moralAncestral_of_same_headScope
+    (G : DirectedGraph V) (X Y Z : Set V)
+    (hirr : ∀ v : V, ¬G.edges v v)
+    {v u w : V}
+    (hv : relevantVertices G X Y Z v)
+    (hu : relevantVertices G X Y Z u)
+    (hw : relevantVertices G X Y Z w)
+    (huScope : u = v ∨ G.edges u v)
+    (hwScope : w = v ∨ G.edges w v)
+    (huw : u ≠ w) :
+    ∃ p : List V,
+      p ≠ [] ∧
+      PathEndpoints p = some (u, w) ∧
+      IsTrail (moralAncestralGraph G X Y Z) p ∧
+      PathAvoidsInternals Z p := by
+  refine ⟨[u, w], by simp, by simp [PathEndpoints], ?_, by simp [PathAvoidsInternals]⟩
+  exact IsTrail.cons (G := moralAncestralGraph G X Y Z)
+    (undirectedEdge_in_moralAncestral_of_same_headScope
+      G X Y Z hirr hv hu hw huScope hwScope huw)
+    (IsTrail.single (G := moralAncestralGraph G X Y Z) _)
+
+/-- Separation forbids a single relevant local BN scope `{v} ∪ Pa(v)` from
+meeting both endpoint blocks at distinct non-conditioned vertices. -/
+theorem same_headScope_not_across_separatedInMoralAncestral
+    (G : DirectedGraph V) (X Y Z : Set V)
+    (hirr : ∀ v : V, ¬G.edges v v)
+    (hSep : SeparatedInMoralAncestral G X Y Z)
+    {v u w : V}
+    (hv : relevantVertices G X Y Z v)
+    (hu : relevantVertices G X Y Z u)
+    (hw : relevantVertices G X Y Z w)
+    (huScope : u = v ∨ G.edges u v)
+    (hwScope : w = v ∨ G.edges w v)
+    (huX : u ∈ X)
+    (hwY : w ∈ Y)
+    (huw : u ≠ w) :
+    False := by
+  rcases exists_nonempty_trail_in_moralAncestral_of_same_headScope
+      G X Y Z hirr hv hu hw huScope hwScope huw with
+    ⟨p, hpne, hEnds, hTrail, hAvoid⟩
+  exact hSep u huX w hwY huw ⟨p, hpne, hEnds, hTrail, hAvoid⟩
+
 theorem endpoint_in_relevant_X (G : DirectedGraph V) (X Y Z : Set V)
     {x : V} (hx : x ∈ X) : x ∈ relevantVertices G X Y Z :=
   (relevantVertices_contains G X Y Z).1 hx
@@ -963,6 +1127,150 @@ theorem endpoint_in_relevant_Y (G : DirectedGraph V) (X Y Z : Set V)
 theorem z_in_relevant (G : DirectedGraph V) (X Y Z : Set V)
     {z : V} (hz : z ∈ Z) : z ∈ relevantVertices G X Y Z :=
   (relevantVertices_contains G X Y Z).2.2 hz
+
+/-- Relevant vertices outside the conditioning set. -/
+def relevantOutsideConditioning (G : DirectedGraph V) (X Y Z : Set V) : Set V :=
+  relevantVertices G X Y Z \ Z
+
+/-- The moral-ancestral graph with the conditioning vertices removed. -/
+def moralAncestralWithoutConditioning
+    (G : DirectedGraph V) (X Y Z : Set V) : DirectedGraph V :=
+  inducedSubgraph (moralAncestralGraph G X Y Z) (relevantOutsideConditioning G X Y Z)
+
+/-- The block reachable from `X` in the moral-ancestral graph with `Z` removed. -/
+def xReachableBlock (G : DirectedGraph V) (X Y Z : Set V) : Set V :=
+  {v | v ∈ relevantOutsideConditioning G X Y Z ∧
+    ∃ x, x ∈ X ∧ x ∉ Z ∧ (moralAncestralWithoutConditioning G X Y Z).Reachable x v}
+
+/-- The block reachable from `Y` in the moral-ancestral graph with `Z` removed. -/
+def yReachableBlock (G : DirectedGraph V) (X Y Z : Set V) : Set V :=
+  {v | v ∈ relevantOutsideConditioning G X Y Z ∧
+    ∃ y, y ∈ Y ∧ y ∉ Z ∧ (moralAncestralWithoutConditioning G X Y Z).Reachable y v}
+
+/-- The residual outside-`Z` block not connected to either endpoint side. -/
+def residualBlock (G : DirectedGraph V) (X Y Z : Set V) : Set V :=
+  relevantOutsideConditioning G X Y Z \
+    (xReachableBlock G X Y Z ∪ yReachableBlock G X Y Z)
+
+theorem endpoint_in_relevantOutsideConditioning_X
+    (G : DirectedGraph V) (X Y Z : Set V)
+    {x : V} (hx : x ∈ X) (hxZ : x ∉ Z) :
+    x ∈ relevantOutsideConditioning G X Y Z := by
+  exact ⟨endpoint_in_relevant_X G X Y Z hx, hxZ⟩
+
+theorem endpoint_in_relevantOutsideConditioning_Y
+    (G : DirectedGraph V) (X Y Z : Set V)
+    {y : V} (hy : y ∈ Y) (hyZ : y ∉ Z) :
+    y ∈ relevantOutsideConditioning G X Y Z := by
+  exact ⟨endpoint_in_relevant_Y G X Y Z hy, hyZ⟩
+
+/-- If every vertex on a path lies outside `Z`, then the path avoids `Z`
+internally. -/
+theorem pathAvoidsInternals_of_pathVerticesIn_notInZ {Z W : Set V}
+    (hW : ∀ v, v ∈ W → v ∉ Z) :
+    ∀ {p : List V}, PathVerticesIn W p → PathAvoidsInternals Z p
+  | [], _ => trivial
+  | [_], _ => trivial
+  | _ :: b :: rest, ⟨_, hTail⟩ => by
+      rcases hTail with ⟨hbW, hrest⟩
+      cases rest with
+      | nil =>
+          trivial
+      | cons c cs =>
+          have hTail' : PathVerticesIn W (b :: c :: cs) := ⟨hbW, hrest⟩
+          exact ⟨hW b hbW, pathAvoidsInternals_of_pathVerticesIn_notInZ hW hTail'⟩
+
+/-- Moral-ancestral graph edges are symmetric. -/
+theorem moralAncestralGraph_edge_symm
+    (G : DirectedGraph V) (X Y Z : Set V) {u v : V}
+    (h : (moralAncestralGraph G X Y Z).edges u v) :
+    (moralAncestralGraph G X Y Z).edges v u := by
+  exact (moralUndirectedEdge_symm
+    (inducedSubgraph G (relevantVertices G X Y Z)) u v).1 h
+
+/-- Removing `Z` preserves symmetry of the moral-ancestral graph. -/
+theorem moralAncestralWithoutConditioning_edge_symm
+    (G : DirectedGraph V) (X Y Z : Set V) {u v : V}
+    (h : (moralAncestralWithoutConditioning G X Y Z).edges u v) :
+    (moralAncestralWithoutConditioning G X Y Z).edges v u := by
+  exact ⟨h.2.1, h.1, moralAncestralGraph_edge_symm G X Y Z h.2.2⟩
+
+theorem reverse_moralAncestralWithoutConditioning
+    (G : DirectedGraph V) (X Y Z : Set V) :
+    (moralAncestralWithoutConditioning G X Y Z).reverse =
+      moralAncestralWithoutConditioning G X Y Z := by
+  ext u v
+  simp [DirectedGraph.reverse, moralAncestralWithoutConditioning,
+    relevantOutsideConditioning]
+  constructor
+  · intro h
+    exact moralAncestralWithoutConditioning_edge_symm G X Y Z h
+  · intro h
+    exact moralAncestralWithoutConditioning_edge_symm G X Y Z h
+
+/-- A same-head-scope step between non-`Z` relevant vertices stays inside the
+`X`-reachable outside-`Z` block. -/
+theorem mem_xReachableBlock_of_same_headScope
+    (G : DirectedGraph V) (X Y Z : Set V)
+    (hirr : ∀ v : V, ¬G.edges v v)
+    {v u w : V}
+    (hv : relevantVertices G X Y Z v)
+    (huBlock : u ∈ xReachableBlock G X Y Z)
+    (hwW : w ∈ relevantOutsideConditioning G X Y Z)
+    (huScope : u = v ∨ G.edges u v)
+    (hwScope : w = v ∨ G.edges w v)
+    (huw : u ≠ w) :
+    w ∈ xReachableBlock G X Y Z := by
+  rcases huBlock with ⟨huW, x, hx, hxZ, hxReach⟩
+  have huRel : relevantVertices G X Y Z u := huW.1
+  have hwRel : relevantVertices G X Y Z w := hwW.1
+  have hEdgeMA :
+      (moralAncestralGraph G X Y Z).edges u w := by
+    rcases undirectedEdge_in_moralAncestral_of_same_headScope
+        G X Y Z hirr hv huRel hwRel huScope hwScope huw with huw' | hwu'
+    · exact huw'
+    · exact moralAncestralGraph_edge_symm G X Y Z hwu'
+  have hEdgeH :
+      (moralAncestralWithoutConditioning G X Y Z).edges u w :=
+    ⟨huW, hwW, hEdgeMA⟩
+  exact ⟨hwW, x, hx, hxZ,
+    DirectedGraph.reachable_trans
+      (moralAncestralWithoutConditioning G X Y Z)
+      hxReach
+      (DirectedGraph.edge_reachable
+        (moralAncestralWithoutConditioning G X Y Z) hEdgeH)⟩
+
+/-- A same-head-scope step between non-`Z` relevant vertices stays inside the
+`Y`-reachable outside-`Z` block. -/
+theorem mem_yReachableBlock_of_same_headScope
+    (G : DirectedGraph V) (X Y Z : Set V)
+    (hirr : ∀ v : V, ¬G.edges v v)
+    {v u w : V}
+    (hv : relevantVertices G X Y Z v)
+    (huBlock : u ∈ yReachableBlock G X Y Z)
+    (hwW : w ∈ relevantOutsideConditioning G X Y Z)
+    (huScope : u = v ∨ G.edges u v)
+    (hwScope : w = v ∨ G.edges w v)
+    (huw : u ≠ w) :
+    w ∈ yReachableBlock G X Y Z := by
+  rcases huBlock with ⟨huW, y, hy, hyZ, hyReach⟩
+  have huRel : relevantVertices G X Y Z u := huW.1
+  have hwRel : relevantVertices G X Y Z w := hwW.1
+  have hEdgeMA :
+      (moralAncestralGraph G X Y Z).edges u w := by
+    rcases undirectedEdge_in_moralAncestral_of_same_headScope
+        G X Y Z hirr hv huRel hwRel huScope hwScope huw with huw' | hwu'
+    · exact huw'
+    · exact moralAncestralGraph_edge_symm G X Y Z hwu'
+  have hEdgeH :
+      (moralAncestralWithoutConditioning G X Y Z).edges u w :=
+    ⟨huW, hwW, hEdgeMA⟩
+  exact ⟨hwW, y, hy, hyZ,
+    DirectedGraph.reachable_trans
+      (moralAncestralWithoutConditioning G X Y Z)
+      hyReach
+      (DirectedGraph.edge_reachable
+        (moralAncestralWithoutConditioning G X Y Z) hEdgeH)⟩
 
 /-- If u → v (directed edge) and v ∈ Anc(S), then u ∈ Anc(S). -/
 theorem edge_source_relevant (G : DirectedGraph V) (X Y Z : Set V)
@@ -1101,6 +1409,117 @@ theorem pathAvoidsInternals_cons_of_head_notInZ {Z : Set V} {a : V} :
   | v :: w :: rest =>
     exact ⟨hHead v (by simp), hAvoid⟩
 
+/-- Append one endpoint to the right end of an undirected trail. -/
+theorem isTrail_append_singleton_of_getLast
+    (G : DirectedGraph V) :
+    ∀ {p : List V} {u v : V},
+      IsTrail G p →
+      p.getLast? = some u →
+      UndirectedEdge G u v →
+      IsTrail G (p ++ [v]) := by
+  intro p u v hTrail
+  induction hTrail with
+  | single w =>
+      intro hLast hEdge
+      simp [List.getLast?] at hLast
+      subst hLast
+      simpa using IsTrail.cons (G := G) hEdge (IsTrail.single (G := G) v)
+  | @cons a b rest hab hTail ih =>
+      intro hLast hEdge
+      have hTailLast : (b :: rest).getLast? = some u := by
+        simpa [List.getLast?] using hLast
+      have hTail' := ih hTailLast hEdge
+      simpa [List.append_assoc] using IsTrail.cons (G := G) hab hTail'
+
+/-- Undirected trails are closed under list reversal. -/
+theorem isTrail_reverse (G : DirectedGraph V) :
+    ∀ {p : List V}, IsTrail G p → IsTrail G p.reverse := by
+  intro p hTrail
+  induction hTrail with
+  | single v =>
+      simpa using IsTrail.single (G := G) v
+  | @cons u v rest hEdge hTail ih =>
+      have hLast : (v :: rest).reverse.getLast? = some v := by
+        rw [← List.head?_reverse, List.reverse_reverse]
+        simp
+      have hEdge' : UndirectedEdge G v u := (undirectedEdge_symm G u v).1 hEdge
+      have hSnoc :=
+        isTrail_append_singleton_of_getLast G ih hLast hEdge'
+      simpa [List.reverse_cons', List.concat_eq_append] using hSnoc
+
+/-- If the current last vertex is outside `Z`, appending a new endpoint preserves
+internal-avoidance. -/
+theorem pathAvoidsInternals_append_singleton_of_getLast_notInZ {Z : Set V} :
+    ∀ {p : List V} {a : V},
+      p ≠ [] →
+      PathAvoidsInternals Z p →
+      (∀ v, p.getLast? = some v → v ∉ Z) →
+      PathAvoidsInternals Z (p ++ [a]) := by
+  intro p a hp hAvoid hLast
+  induction p with
+  | nil =>
+      exact absurd rfl hp
+  | cons x xs ih =>
+      cases xs with
+      | nil =>
+          trivial
+      | cons y ys =>
+          cases ys with
+          | nil =>
+              have hyNotZ : y ∉ Z := by
+                exact hLast y (by simp [List.getLast?])
+              simpa [PathAvoidsInternals] using hyNotZ
+          | cons z zs =>
+              have hAvoid' : y ∉ Z ∧ PathAvoidsInternals Z (y :: z :: zs) := by
+                simpa [PathAvoidsInternals] using
+                  (show PathAvoidsInternals Z (x :: y :: z :: zs) from hAvoid)
+              have hyNotZ : y ∉ Z := by
+                exact hAvoid'.1
+              have hTailAvoid : PathAvoidsInternals Z (y :: z :: zs) := hAvoid'.2
+              have hTailLast : ∀ v, (y :: z :: zs).getLast? = some v → v ∉ Z := by
+                intro v hv
+                exact hLast v (by simpa [List.getLast?] using hv)
+              have hTail' :=
+                ih (List.cons_ne_nil y (z :: zs)) hTailAvoid hTailLast
+              simpa [PathAvoidsInternals, List.append_assoc] using And.intro hyNotZ hTail'
+
+/-- Internal-avoidance depends only on the interior vertices, so it is preserved
+under path reversal. -/
+theorem pathAvoidsInternals_reverse {Z : Set V} :
+    ∀ {p : List V}, PathAvoidsInternals Z p → PathAvoidsInternals Z p.reverse := by
+  intro p hAvoid
+  induction p with
+  | nil =>
+      simp [PathAvoidsInternals]
+  | cons u tail ih =>
+      cases tail with
+      | nil =>
+          simp [PathAvoidsInternals]
+      | cons v rest =>
+          cases rest with
+          | nil =>
+              simp [PathAvoidsInternals]
+          | cons w ws =>
+              have hAvoid' : v ∉ Z ∧ PathAvoidsInternals Z (v :: w :: ws) := by
+                simpa [PathAvoidsInternals] using
+                  (show PathAvoidsInternals Z (u :: v :: w :: ws) from hAvoid)
+              have hvNotZ : v ∉ Z := hAvoid'.1
+              have hTailAvoid : PathAvoidsInternals Z (v :: w :: ws) := hAvoid'.2
+              have hRevTail : PathAvoidsInternals Z (v :: w :: ws).reverse := ih hTailAvoid
+              have hLastNotZ : ∀ x, (v :: w :: ws).reverse.getLast? = some x → x ∉ Z := by
+                intro x hx
+                have hx' : (v :: w :: ws).head? = some x := by
+                  rw [← List.head?_reverse, List.reverse_reverse] at hx
+                  exact hx
+                have hxv : x = v := by
+                  simp at hx'
+                  exact hx'.symm
+                exact hxv ▸ hvNotZ
+              have hSnoc :=
+                pathAvoidsInternals_append_singleton_of_getLast_notInZ
+                  (p := (v :: w :: ws).reverse) (a := u) (by simp) hRevTail hLastNotZ
+              simpa [List.reverse_cons', List.concat_eq_append] using hSnoc
+
 /-- Core compression: transform an active trail in G to a trail in the
     moralized ancestral graph that avoids Z internally.
 
@@ -1237,6 +1656,227 @@ theorem getLast_of_pathEndpoints {p : List V} {x y : V}
     rw [pathEndpoints_cons_cons] at hEnds
     simp at hEnds
     simp [List.getLast?, hEnds.2]
+
+/-- Any reachability witness can be unpacked into a nonempty undirected trail. -/
+theorem exists_trail_of_reachable
+    (G : DirectedGraph V) {x y : V}
+    (h : G.Reachable x y) :
+    ∃ p : List V, p ≠ [] ∧ PathEndpoints p = some (x, y) ∧ IsTrail G p := by
+  induction h with
+  | refl z =>
+      exact ⟨[z], by simp, by simp [PathEndpoints], IsTrail.single (G := G) z⟩
+  | @step u v w huv hreach ih =>
+      rcases ih with ⟨p, hpne, hEnds, hTrail⟩
+      have hHead : p.head? = some v := head_of_pathEndpoints hEnds
+      rcases p with _ | ⟨v', rest⟩
+      · exact (hpne rfl).elim
+      · have hv' : v' = v := by simpa using hHead
+        have huv' : G.edges u v' := by simpa [hv'] using huv
+        refine ⟨u :: v' :: rest, by simp, ?_, ?_⟩
+        · apply pathEndpoints_of_head_last
+          · simp
+          · simp
+          · simpa [List.getLast?] using getLast_of_pathEndpoints hEnds
+        · exact IsTrail.cons (G := G) (Or.inl huv') hTrail
+
+/-- Separation forbids avoid-`Z` reachability from any `X` endpoint to any `Y`
+endpoint in the moral-ancestral graph. -/
+theorem not_reachable_moralAncestralWithoutConditioning_of_separatedInMoralAncestral
+    (G : DirectedGraph V) (X Y Z : Set V)
+    (hSep : SeparatedInMoralAncestral G X Y Z)
+    {x y : V}
+    (hx : x ∈ X) (hy : y ∈ Y)
+    (hxZ : x ∉ Z)
+    (hxy : x ≠ y) :
+    ¬ (moralAncestralWithoutConditioning G X Y Z).Reachable x y := by
+  intro hreach
+  rcases exists_trail_of_reachable
+      (G := moralAncestralWithoutConditioning G X Y Z) hreach with
+    ⟨p, hpne, hEnds, hTrail⟩
+  have hxW : x ∈ relevantOutsideConditioning G X Y Z :=
+    endpoint_in_relevantOutsideConditioning_X G X Y Z hx hxZ
+  rcases p with _ | ⟨x', rest⟩
+  · exact (hpne rfl).elim
+  · have hx' : x' = x := by simpa using head_of_pathEndpoints hEnds
+    subst x'
+    have hVerts :
+        PathVerticesIn (relevantOutsideConditioning G X Y Z) (x :: rest) :=
+      pathVerticesIn_of_isTrail_induced_of_head
+        (G := moralAncestralGraph G X Y Z)
+        (W := relevantOutsideConditioning G X Y Z)
+        hxW hTrail
+    have hTrailMA :
+        IsTrail (moralAncestralGraph G X Y Z) (x :: rest) :=
+      isTrail_of_isTrail_inducedSubgraph
+        (G := moralAncestralGraph G X Y Z)
+        (W := relevantOutsideConditioning G X Y Z) hTrail
+    have hAvoid : PathAvoidsInternals Z (x :: rest) :=
+      pathAvoidsInternals_of_pathVerticesIn_notInZ
+        (W := relevantOutsideConditioning G X Y Z)
+        (fun v hv => hv.2) hVerts
+    exact hSep x hx y hy hxy ⟨x :: rest, hpne, hEnds, hTrailMA, hAvoid⟩
+
+/-- The `X`-reachable and `Y`-reachable outside-`Z` blocks are disjoint under
+separation, once the endpoint sets are disjoint. -/
+theorem xReachableBlock_disjoint_yReachableBlock
+    (G : DirectedGraph V) (X Y Z : Set V)
+    (hXY : Disjoint X Y)
+    (hSep : SeparatedInMoralAncestral G X Y Z) :
+    Disjoint (xReachableBlock G X Y Z) (yReachableBlock G X Y Z) := by
+  rw [Set.disjoint_iff_inter_eq_empty]
+  ext v
+  constructor
+  · intro hv
+    rcases hv with ⟨hxBlock, hyBlock⟩
+    rcases hxBlock with ⟨_, x, hx, hxZ, hxReach⟩
+    rcases hyBlock with ⟨_, y, hy, hyZ, hyReach⟩
+    have hxy : x ≠ y := by
+      intro hEq
+      exact Set.disjoint_left.mp hXY hx (hEq ▸ hy)
+    let H := moralAncestralWithoutConditioning G X Y Z
+    have hvyRev : H.reverse.Reachable y v := by
+      simpa [H, reverse_moralAncestralWithoutConditioning G X Y Z] using hyReach
+    have hvy : H.Reachable v y := by
+      exact (DirectedGraph.reverse_reachable (G := H)).1 hvyRev
+    have hxyReach : H.Reachable x y :=
+      DirectedGraph.reachable_trans H hxReach hvy
+    exact (not_reachable_moralAncestralWithoutConditioning_of_separatedInMoralAncestral
+      G X Y Z hSep hx hy hxZ hxy) hxyReach
+  · intro hv
+    simp at hv
+
+theorem relevantOutsideConditioning_eq_blocks_union_residual
+    (G : DirectedGraph V) (X Y Z : Set V) :
+    relevantOutsideConditioning G X Y Z =
+      xReachableBlock G X Y Z ∪
+        (yReachableBlock G X Y Z ∪ residualBlock G X Y Z) := by
+  ext v
+  constructor
+  · intro hv
+    by_cases hx : v ∈ xReachableBlock G X Y Z
+    · exact Or.inl hx
+    · by_cases hy : v ∈ yReachableBlock G X Y Z
+      · exact Or.inr (Or.inl hy)
+      · exact Or.inr (Or.inr ⟨hv, by simp [hx, hy]⟩)
+  · intro hv
+    rcases hv with hx | hy_or_hr
+    · exact hx.1
+    · rcases hy_or_hr with hy | hr
+      · exact hy.1
+      · exact hr.1
+
+/-- A single local BN scope cannot meet both reachable outside-`Z` endpoint
+blocks under separation. -/
+theorem same_headScope_not_across_reachableBlocks
+    (G : DirectedGraph V) (X Y Z : Set V)
+    (hirr : ∀ v : V, ¬G.edges v v)
+    (hXY : Disjoint X Y)
+    (hSep : SeparatedInMoralAncestral G X Y Z)
+    {v u w : V}
+    (hv : relevantVertices G X Y Z v)
+    (huBlock : u ∈ xReachableBlock G X Y Z)
+    (hwBlock : w ∈ yReachableBlock G X Y Z)
+    (huScope : u = v ∨ G.edges u v)
+    (hwScope : w = v ∨ G.edges w v)
+    (huw : u ≠ w) :
+    False := by
+  have hwW : w ∈ relevantOutsideConditioning G X Y Z := hwBlock.1
+  have hwX : w ∈ xReachableBlock G X Y Z :=
+    mem_xReachableBlock_of_same_headScope
+      G X Y Z hirr hv huBlock hwW huScope hwScope huw
+  exact Set.disjoint_left.mp
+    (xReachableBlock_disjoint_yReachableBlock G X Y Z hXY hSep) hwX hwBlock
+
+/-- If one same-head-scope vertex lies in the `X`-reachable outside-`Z` block,
+then every outside-`Z` vertex in that same local scope lies in the `X` block. -/
+theorem same_headScope_relevantOutsideConditioning_subset_xReachableBlock
+    (G : DirectedGraph V) (X Y Z : Set V)
+    (hirr : ∀ v : V, ¬G.edges v v)
+    {v u : V}
+    (hv : relevantVertices G X Y Z v)
+    (huBlock : u ∈ xReachableBlock G X Y Z)
+    (huScope : u = v ∨ G.edges u v) :
+    ∀ {w : V}, w ∈ relevantOutsideConditioning G X Y Z →
+      (w = v ∨ G.edges w v) → w ∈ xReachableBlock G X Y Z := by
+  intro w hwW hwScope
+  by_cases huw : u = w
+  · simpa [huw] using huBlock
+  · exact mem_xReachableBlock_of_same_headScope
+      G X Y Z hirr hv huBlock hwW huScope hwScope huw
+
+/-- If one same-head-scope vertex lies in the `Y`-reachable outside-`Z` block,
+then every outside-`Z` vertex in that same local scope lies in the `Y` block. -/
+theorem same_headScope_relevantOutsideConditioning_subset_yReachableBlock
+    (G : DirectedGraph V) (X Y Z : Set V)
+    (hirr : ∀ v : V, ¬G.edges v v)
+    {v u : V}
+    (hv : relevantVertices G X Y Z v)
+    (huBlock : u ∈ yReachableBlock G X Y Z)
+    (huScope : u = v ∨ G.edges u v) :
+    ∀ {w : V}, w ∈ relevantOutsideConditioning G X Y Z →
+      (w = v ∨ G.edges w v) → w ∈ yReachableBlock G X Y Z := by
+  intro w hwW hwScope
+  by_cases huw : u = w
+  · simpa [huw] using huBlock
+  · exact mem_yReachableBlock_of_same_headScope
+      G X Y Z hirr hv huBlock hwW huScope hwScope huw
+
+/-- If no outside-`Z` vertex in a relevant local scope lies in the `X`- or
+`Y`-reachable blocks, then every outside-`Z` vertex in that scope lies in the
+residual block. -/
+theorem same_headScope_relevantOutsideConditioning_subset_residualBlock
+    (G : DirectedGraph V) (X Y Z : Set V)
+    {v : V}
+    (hNoX : ∀ {u : V}, u ∈ xReachableBlock G X Y Z → ¬ (u = v ∨ G.edges u v))
+    (hNoY : ∀ {u : V}, u ∈ yReachableBlock G X Y Z → ¬ (u = v ∨ G.edges u v)) :
+    ∀ {w : V}, w ∈ relevantOutsideConditioning G X Y Z →
+      (w = v ∨ G.edges w v) → w ∈ residualBlock G X Y Z := by
+  intro w hwW hwScope
+  refine ⟨hwW, ?_⟩
+  rw [Set.mem_union]
+  intro hxy
+  rcases hxy with hwX | hwY
+  · exact hNoX hwX hwScope
+  · exact hNoY hwY hwScope
+
+/-- Reversing a nonempty path swaps its endpoints. -/
+theorem pathEndpoints_reverse {p : List V} (hp : p ≠ []) {x y : V}
+    (hEnds : PathEndpoints p = some (x, y)) :
+    PathEndpoints p.reverse = some (y, x) := by
+  have hpRev : p.reverse ≠ [] := by
+    intro hRev
+    apply hp
+    have := congrArg List.reverse hRev
+    simpa using this
+  apply pathEndpoints_of_head_last hpRev
+  · rw [List.head?_reverse]
+    exact getLast_of_pathEndpoints hEnds
+  · rw [← List.head?_reverse, List.reverse_reverse]
+    exact head_of_pathEndpoints hEnds
+
+/-- Separation in the moralized ancestral graph is symmetric in the endpoint sets. -/
+theorem separatedInMoralAncestral_symmetric
+    (G : DirectedGraph V) (X Y Z : Set V)
+    (hSep : SeparatedInMoralAncestral G X Y Z) :
+    SeparatedInMoralAncestral G Y X Z := by
+  intro y hy x hx hne hWitness
+  apply hSep x hx y hy hne.symm
+  rcases hWitness with ⟨p, hpne, hEnds, hTrail, hAvoid⟩
+  have hGraph :
+      moralAncestralGraph G Y X Z = moralAncestralGraph G X Y Z := by
+    ext u v
+    simp [moralAncestralGraph, relevantVertices, ancestorClosure,
+      Set.union_left_comm, Set.union_comm]
+  have hTrail' : IsTrail (moralAncestralGraph G X Y Z) p := by
+    simpa [hGraph] using hTrail
+  refine ⟨p.reverse, ?_, ?_, ?_, ?_⟩
+  · intro hRev
+    apply hpne
+    have := congrArg List.reverse hRev
+    simpa using this
+  · simpa using pathEndpoints_reverse hpne hEnds
+  · exact isTrail_reverse (moralAncestralGraph G X Y Z) hTrail'
+  · exact pathAvoidsInternals_reverse hAvoid
 
 /-- The hATtoMoral transform: every active trail in G from x ∈ X to y ∈ Y
     can be compressed to a trail in the moralized ancestral graph with the

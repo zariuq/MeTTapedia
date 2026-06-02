@@ -1,0 +1,5 @@
+(: Nat Type)
+(: Z Nat)
+(: Add (-> Nat Nat Nat))
+(= (Add $x Z) $x)
+!(get-type (Add Z Z))

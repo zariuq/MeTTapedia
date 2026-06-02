@@ -4,7 +4,18 @@ BASIS_FFI ?= /home/zar/claude/CakeML/cake-x64-64/basis_ffi.c
 CC ?= cc
 LDLIBS += -lm
 
-.PHONY: test-sml test-capacity-sml test-cml test-ffi test-hol test-curated-local test-cetta-goldens test-selected-cetta-local test-oracle test clean
+.PHONY: fragment-manifest generate-fragments check-fragments check-generated-match-sexp test-sml test-capacity-sml test-cml test-ffi test-hol test-curated-local test-cetta-goldens test-selected-cetta-local test-oracle test clean
+
+fragment-manifest:
+	python3 tools/check_fragment_exports.py --emit-lint-manifest
+
+generate-fragments: fragment-manifest
+
+check-fragments:
+	python3 tools/check_fragment_exports.py --check
+
+check-generated-match-sexp: generated/bridge_eval_match_fragment.sexp
+	tools/check_generated_match_sexp.sh
 
 test-sml:
 	$(POLY) --script tests/m1_tests.sml
@@ -51,9 +62,9 @@ test-curated-local: cml/metta_m1_runner.cake
 test-selected-cetta-local: cml/metta_m1_runner.cake
 	oracle/run_selected_cetta_compare.sh
 
-test: test-sml test-capacity-sml test-cml test-ffi test-hol
+test: check-fragments check-generated-match-sexp test-sml test-capacity-sml test-cml test-ffi test-hol
 
 test-oracle: test test-curated-local test-cetta-goldens test-selected-cetta-local
 
 clean:
-	$(RM) cml/*.S cml/*.cake cml/metta_m1_runner.cml ffi/ffi_probe.S ffi/ffi_probe.cake
+	$(RM) cml/*.S cml/*.cake cml/metta_m1_runner.cml ffi/ffi_probe.S ffi/ffi_probe.cake generated/*.S

@@ -1,6 +1,7 @@
 import Mettapedia.Logic.MarkovLogicInfiniteFiniteVolume
 import Mettapedia.Logic.MarkovLogicClauseFactorGraph
 import Mettapedia.ProbabilityTheory.BayesianNetworks.VEBridge
+import Mettapedia.ProbabilityTheory.BayesianNetworks.ValuationWorldModel
 
 /-!
 # Infinite MLN Finite-Volume Collapse into Finite Factor-Graph Semantics
@@ -66,6 +67,21 @@ private instance regionFactorGraphStateDecidableEq
   dsimp [regionFactorGraph]
   infer_instance
 
+private instance regionFactorGraphStateNonempty
+    (M : InfiniteGroundMLNSpec Atom ClauseId)
+    (Λ : Region Atom) (ξ : BoundaryCondition Atom) :
+    ∀ a : RegionAtom Atom Λ, Nonempty ((regionFactorGraph M Λ ξ).stateSpace a) := by
+  intro a
+  change Nonempty Bool
+  infer_instance
+
+/-- The factor-list world-model source for the finite region factor graph. -/
+noncomputable def regionFactorGraphWMSource
+    (M : InfiniteGroundMLNSpec Atom ClauseId)
+    (Λ : Region Atom) (ξ : BoundaryCondition Atom) :
+    ValuationWorldModel.WMSource (regionFactorGraph M Λ ξ) :=
+  VariableElimination.factorsOfGraph (fg := regionFactorGraph M Λ ξ)
+
 theorem regionFactorGraph_unnormalizedJoint_eq_finiteVolumeWeight
     (M : InfiniteGroundMLNSpec Atom ClauseId)
     (Λ : Region Atom) (ξ : BoundaryCondition Atom)
@@ -115,6 +131,27 @@ lemma regionFactorGraph_weightOfConstraints_eq_queryMass
   · contradiction
   · rfl
 
+lemma regionFactorGraph_veQueryWeight_eq_queryMass
+    (M : InfiniteGroundMLNSpec Atom ClauseId)
+    (Λ : Region Atom) (ξ : BoundaryCondition Atom)
+    (q : LocalConstraintQuery Atom Λ) :
+    VariableElimination.veQueryWeight (fg := regionFactorGraph M Λ ξ) q =
+      finiteVolumeQueryMass M Λ ξ q := by
+  simpa using regionFactorGraph_weightOfConstraints_eq_queryMass M Λ ξ q
+
+lemma regionFactorGraph_scopedWeight_eq_queryMass
+    (M : InfiniteGroundMLNSpec Atom ClauseId)
+    (Λ : Region Atom) (ξ : BoundaryCondition Atom)
+    (q : LocalConstraintQuery Atom Λ) :
+    ValuationWorldModel.scopedWeight (fg := regionFactorGraph M Λ ξ)
+      (W := regionFactorGraphWMSource M Λ ξ) q =
+      finiteVolumeQueryMass M Λ ξ q := by
+  classical
+  rw [ValuationWorldModel.scopedWeight_eq_weight]
+  unfold ValuationWorldModel.weight regionFactorGraphWMSource
+  simpa [VariableElimination.veQueryWeight] using
+    regionFactorGraph_veQueryWeight_eq_queryMass M Λ ξ q
+
 theorem regionFactorGraph_partitionFunction_eq_finiteVolumePartition
     (M : InfiniteGroundMLNSpec Atom ClauseId)
     (Λ : Region Atom) (ξ : BoundaryCondition Atom) :
@@ -133,11 +170,13 @@ noncomputable def regionFactorGraphMassSemantics
     (M : InfiniteGroundMLNSpec Atom ClauseId)
     (Λ : Region Atom) (ξ : BoundaryCondition Atom) :
     MassSemantics (LocalConstraintQuery Atom Λ) where
-  queryMass := fun q => VariableElimination.weightOfConstraints (fg := regionFactorGraph M Λ ξ) q
+  queryMass := fun q =>
+    ValuationWorldModel.scopedWeight (fg := regionFactorGraph M Λ ξ)
+      (W := regionFactorGraphWMSource M Λ ξ) q
   totalMass := (regionFactorGraph M Λ ξ).partitionFunction
   queryMass_le_total := by
     intro q
-    rw [regionFactorGraph_weightOfConstraints_eq_queryMass]
+    rw [regionFactorGraph_scopedWeight_eq_queryMass]
     rw [regionFactorGraph_partitionFunction_eq_finiteVolumePartition]
     exact finiteVolumeQueryMass_le_partition M Λ ξ q
   totalMass_ne_top := by
@@ -150,9 +189,9 @@ theorem regionFactorGraph_queryProb_eq_finiteVolume_queryProb
     (q : LocalConstraintQuery Atom Λ) :
     (regionFactorGraphMassSemantics M Λ ξ).queryProb q =
       (finiteVolumeMassSemantics M Λ ξ).queryProb q := by
-  simp [regionFactorGraphMassSemantics, finiteVolumeMassSemantics,
-    MassSemantics.queryProb,
-    regionFactorGraph_weightOfConstraints_eq_queryMass,
+  unfold MassSemantics.queryProb
+  dsimp [regionFactorGraphMassSemantics, finiteVolumeMassSemantics]
+  rw [regionFactorGraph_scopedWeight_eq_queryMass,
     regionFactorGraph_partitionFunction_eq_finiteVolumePartition]
 
 end Mettapedia.Logic.MarkovLogicInfiniteCollapse

@@ -3,6 +3,7 @@ cml/*.cake
 cml/metta_m1_runner.cml
 ffi/*.S
 ffi/*.cake
+generated/*.S
 hol/.hol/
 hol/*.ui
 hol/*.uo

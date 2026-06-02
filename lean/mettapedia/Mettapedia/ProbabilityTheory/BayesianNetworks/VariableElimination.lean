@@ -80,6 +80,11 @@ namespace Factor
 
 variable {fg : FactorGraph V K}
 
+/-- Sum a factor over all assignments to its declared scope. -/
+noncomputable def totalWeight (φ : Factor fg)
+    [∀ v, Fintype (fg.stateSpace v)] [AddCommMonoid K] : K :=
+  ∑ x : FactorGraph.Assign (fg := fg) φ.scope, φ.potential x
+
 /-- Convert a factor-graph node into a `Factor`. -/
 noncomputable def ofGraph (f : fg.factors) : Factor fg :=
   ⟨fg.scope f, fg.potential f⟩
@@ -129,6 +134,19 @@ theorem extend_apply_ne (φ : Factor fg) (v : V) (hv : v ∈ φ.scope)
   classical
   simp [Factor.extend, h]
 
+/-- A unary neutral factor that only serves to keep a variable in scope during elimination. -/
+noncomputable def unitVar (v : V) [One K] : Factor fg :=
+  ⟨{v}, fun _ => 1⟩
+
+omit [DecidableEq V] in
+@[simp] theorem unitVar_scope (v : V) [One K] :
+    (unitVar (fg := fg) v).scope = {v} := rfl
+
+omit [DecidableEq V] in
+@[simp] theorem unitVar_potential (v : V) [One K]
+    (x : FactorGraph.Assign (fg := fg) ({v} : Finset V)) :
+    (unitVar (fg := fg) v).potential x = 1 := rfl
+
 /-- Sum out a variable from a factor (exact elimination step).
 If the variable is not in scope, return the factor unchanged. -/
 noncomputable def sumOut (φ : Factor fg) (v : V) [Fintype (fg.stateSpace v)]
@@ -164,6 +182,64 @@ lemma sumOut_scope (φ : Factor fg) (v : V) [Fintype (fg.stateSpace v)]
   · simp [Factor.sumOut, hv]
   · simp [Factor.sumOut, hv]
 
+noncomputable def eraseAssignEquiv (φ : Factor fg) (v : V) (hv : v ∈ φ.scope) :
+    (FactorGraph.Assign (fg := fg) (φ.scope.erase v) × fg.stateSpace v) ≃
+      FactorGraph.Assign (fg := fg) φ.scope where
+  toFun p := Factor.extend (φ := φ) v hv p.1 p.2
+  invFun x :=
+    (fun u hu => x u (Finset.mem_of_mem_erase hu), x v hv)
+  left_inv p := by
+    rcases p with ⟨x, val⟩
+    refine Prod.ext ?_ ?_
+    · funext u hu
+      simpa using
+        Factor.extend_apply_ne (φ := φ) (v := v) (hv := hv) (x := x) (val := val)
+          (hu := Finset.mem_of_mem_erase hu) (h := Finset.ne_of_mem_erase hu)
+    · simpa using Factor.extend_apply_eq (φ := φ) (v := v) (hv := hv) (x := x) (val := val)
+  right_inv x := by
+    funext u hu
+    classical
+    by_cases h : u = v
+    · subst h
+      simp [Factor.extend]
+    · simp [Factor.extend, h]
+
+theorem totalWeight_sumOut (φ : Factor fg) (v : V)
+    [∀ v, Fintype (fg.stateSpace v)] [AddCommMonoid K] :
+    totalWeight (φ := Factor.sumOut (φ := φ) v) = totalWeight (φ := φ) := by
+  classical
+  by_cases hv : v ∈ φ.scope
+  · unfold totalWeight
+    rw [Factor.sumOut_def]
+    let A : (v ∈ φ.scope) → Factor fg := fun hv' =>
+      ⟨φ.scope.erase v, fun x =>
+        (Finset.univ : Finset (fg.stateSpace v)).sum
+          (fun val => φ.potential (Factor.extend (φ := φ) v hv' x val))⟩
+    have hif : (if hv' : v ∈ φ.scope then A hv' else φ) = A hv := by
+      by_cases hv' : v ∈ φ.scope
+      · simp [A, hv']
+      · exact (False.elim (hv' hv))
+    rw [hif]
+    simp [A]
+    rw [← Fintype.sum_prod_type']
+    exact Fintype.sum_equiv (eraseAssignEquiv (φ := φ) v hv)
+      (fun p => φ.potential (Factor.extend (φ := φ) v hv p.1 p.2))
+      (fun x => φ.potential x)
+      (by
+        intro p
+        rfl)
+  · unfold totalWeight
+    rw [Factor.sumOut_def]
+    let A : (v ∈ φ.scope) → Factor fg := fun hv' =>
+      ⟨φ.scope.erase v, fun x =>
+        (Finset.univ : Finset (fg.stateSpace v)).sum
+          (fun val => φ.potential (Factor.extend (φ := φ) v hv' x val))⟩
+    have hif : (if hv' : v ∈ φ.scope then A hv' else φ) = φ := by
+      by_cases hv' : v ∈ φ.scope
+      · exact (False.elim (hv hv'))
+      · simp [A, hv']
+    rw [hif]
+
 end Factor
 
 /-! ## Variable Elimination -/
@@ -183,6 +259,17 @@ noncomputable def combineAll (fs : List (Factor fg)) [One K] [Mul K] : Factor fg
 noncomputable def sumOutAll (f : Factor fg) (order : List V)
     [∀ v, Fintype (fg.stateSpace v)] [AddCommMonoid K] : Factor fg :=
   order.foldl (fun acc v => Factor.sumOut (φ := acc) v) f
+
+theorem totalWeight_sumOutAll (f : Factor fg) (order : List V)
+    [∀ v, Fintype (fg.stateSpace v)] [AddCommMonoid K] :
+    Factor.totalWeight (φ := sumOutAll (fg := fg) f order) = Factor.totalWeight (φ := f) := by
+  classical
+  induction order generalizing f with
+  | nil =>
+      simp [sumOutAll]
+  | cons v vs ih =>
+      simpa [sumOutAll, Factor.totalWeight_sumOut] using
+        ih (f := Factor.sumOut (φ := f) v)
 
 /-! ## Scope bookkeeping for sum-out -/
 
@@ -471,6 +558,210 @@ noncomputable def factorsOfGraph (fg : FactorGraph V K) [Fintype fg.factors] :
     List (Factor fg) :=
   (Finset.univ : Finset fg.factors).toList.map (Factor.ofGraph (fg := fg))
 
+/-- Equality constraints turned into explicit unary indicator factors. -/
+noncomputable def constraintFactors
+    (constraints : List (Σ v : V, fg.stateSpace v))
+    [∀ v, DecidableEq (fg.stateSpace v)] [Zero K] [One K] : List (Factor fg) :=
+  constraints.map (fun c => Factor.indicator (fg := fg) c.1 c.2)
+
+/-- Neutral unary factors on every variable, used to keep scope equal to `univ`
+for fully operational elimination statements. -/
+noncomputable def coveringFactors (fg : FactorGraph V K)
+    [Fintype V] [One K] : List (Factor fg) :=
+  (Finset.univ : Finset V).toList.map (fun v => Factor.unitVar (fg := fg) v)
+
+/-- The explicit factor list used by the operational VE query surface:
+constraint indicators, user factors, and neutral scope-covering unary factors. -/
+noncomputable def veFactorList
+    (fg : FactorGraph V K)
+    (fs : List (Factor fg))
+    (constraints : List (Σ v : V, fg.stateSpace v))
+    [Fintype V] [∀ v, DecidableEq (fg.stateSpace v)] [Zero K] [One K] : List (Factor fg) :=
+  constraintFactors (fg := fg) constraints ++ fs ++ coveringFactors (fg := fg)
+
+lemma mem_combineAll_scope_of_mem [One K] [Mul K] :
+    ∀ {fs : List (Factor fg)} {φ : Factor fg},
+      φ ∈ fs → ∀ {v : V}, v ∈ φ.scope → v ∈ (combineAll (fg := fg) fs).scope
+  | [], _, hmem, _, _ => by
+      simp at hmem
+  | ψ :: fs, φ, hmem, v, hv => by
+      rcases List.mem_cons.mp hmem with rfl | htail
+      · exact Finset.mem_union.mpr <| Or.inl hv
+      · exact Finset.mem_union.mpr <| Or.inr (mem_combineAll_scope_of_mem htail hv)
+
+omit [DecidableEq V] in
+noncomputable def assignUnivEquivFullConfig
+    (fg : FactorGraph V K) [Fintype V] :
+    FactorGraph.Assign (fg := fg) (Finset.univ : Finset V) ≃ fg.FullConfig where
+  toFun x v := x v (by simp)
+  invFun x v _ := x v
+  left_inv x := by
+    funext v hv
+    rfl
+  right_inv x := by
+    funext v
+    rfl
+
+namespace Factor
+
+noncomputable def fullConfigWeightSum (φ : Factor fg)
+    [Fintype V] [∀ v, Fintype (fg.stateSpace v)] [AddCommMonoid K] : K := by
+  classical
+  letI : Fintype fg.FullConfig := by
+    dsimp [FactorGraph.FullConfig]
+    infer_instance
+  exact ∑ x : fg.FullConfig, φ.potential (FactorGraph.fullAssign (fg := fg) x φ.scope)
+
+theorem totalWeight_eq_evalConst_of_scope_empty (φ : Factor fg)
+    [∀ v, Fintype (fg.stateSpace v)] [AddCommMonoid K] (h : φ.scope = ∅) :
+    totalWeight (φ := φ) = evalConst (φ := φ) h := by
+  classical
+  cases φ with
+  | mk scope potential =>
+      cases h
+      letI : Unique (FactorGraph.Assign (fg := fg) (∅ : Finset V)) := {
+        default := emptyAssign fg
+        uniq := by
+          intro x
+          funext v hv
+          simp at hv }
+      have hdefault : (default : FactorGraph.Assign (fg := fg) (∅ : Finset V)) = emptyAssign fg := by
+        exact Unique.uniq _ _
+      simp [totalWeight, evalConst, hdefault]
+
+theorem totalWeight_eq_fullConfigSum_of_scope_univ (φ : Factor fg)
+    [Fintype V] [∀ v, Fintype (fg.stateSpace v)] [AddCommMonoid K]
+    (h : φ.scope = Finset.univ) :
+    totalWeight (φ := φ) = fullConfigWeightSum (φ := φ) := by
+  classical
+  cases φ with
+  | mk scope potential =>
+      cases h
+      unfold totalWeight fullConfigWeightSum
+      letI : Fintype fg.FullConfig := by
+        dsimp [FactorGraph.FullConfig]
+        infer_instance
+      apply Fintype.sum_equiv (assignUnivEquivFullConfig (fg := fg))
+      · intro x
+        rfl
+
+end Factor
+
+omit [DecidableEq V] in
+lemma restrict_fullAssign {S T : Finset V} (h : S ⊆ T) (x : fg.FullConfig) :
+    FactorGraph.restrict (fg := fg) (h := h) (FactorGraph.fullAssign (fg := fg) x T) =
+      FactorGraph.fullAssign (fg := fg) x S := by
+  funext v hv
+  rfl
+
+lemma combineAll_potential_fullAssign_listProd (fs : List (Factor fg))
+    [One K] [Mul K] (x : fg.FullConfig) :
+    (combineAll (fg := fg) fs).potential
+        (FactorGraph.fullAssign (fg := fg) x (combineAll (fg := fg) fs).scope) =
+      (fs.map (fun φ => φ.potential (FactorGraph.fullAssign (fg := fg) x φ.scope))).prod := by
+  classical
+  induction fs with
+  | nil =>
+      simp [combineAll, oneFactor]
+  | cons φ fs ih =>
+      calc
+        (combineAll (fg := fg) (φ :: fs)).potential
+            (FactorGraph.fullAssign (fg := fg) x (combineAll (fg := fg) (φ :: fs)).scope)
+            =
+            (Factor.mul (fg := fg) φ (combineAll (fg := fg) fs)).potential
+              (FactorGraph.fullAssign (fg := fg) x
+                (Factor.mul (fg := fg) φ (combineAll (fg := fg) fs)).scope) := by
+              rfl
+        _ =
+            φ.potential (FactorGraph.fullAssign (fg := fg) x φ.scope) *
+              (combineAll (fg := fg) fs).potential
+                (FactorGraph.fullAssign (fg := fg) x (combineAll (fg := fg) fs).scope) := by
+              simp [Factor.mul, restrict_fullAssign]
+        _ =
+            φ.potential (FactorGraph.fullAssign (fg := fg) x φ.scope) *
+              (fs.map (fun ψ => ψ.potential (FactorGraph.fullAssign (fg := fg) x ψ.scope))).prod := by
+              simp [ih]
+
+omit [DecidableEq V] in
+lemma constraintFactors_product_fullAssign
+    (constraints : List (Σ v : V, fg.stateSpace v))
+    (x : fg.FullConfig)
+    [∀ v, DecidableEq (fg.stateSpace v)] [CommSemiring K] :
+    ((constraintFactors (fg := fg) constraints).map
+      (fun φ => φ.potential (FactorGraph.fullAssign (fg := fg) x φ.scope))).prod =
+      if ∀ c ∈ constraints, x c.1 = c.2 then 1 else 0 := by
+  classical
+  induction constraints with
+  | nil =>
+      simp [constraintFactors]
+  | cons c cs ih =>
+      by_cases hc : x c.1 = c.2
+      · have hsat :
+          (∀ q ∈ c :: cs, x q.1 = q.2) ↔ ∀ q ∈ cs, x q.1 = q.2 := by
+          constructor
+          · intro h q hq
+            exact h q (by simp [hq])
+          · intro h q hq
+            rcases List.mem_cons.mp hq with rfl | hq'
+            · exact hc
+            · exact h q hq'
+        simpa [constraintFactors, Factor.indicator, FactorGraph.fullAssign, hc, hsat] using ih
+      · have hsat : ¬ ∀ q ∈ c :: cs, x q.1 = q.2 := by
+          intro h
+          exact hc (h c (by simp))
+        simp [constraintFactors, Factor.indicator, FactorGraph.fullAssign, hc]
+
+omit [DecidableEq V] in
+lemma coveringFactors_product_fullAssign
+    (x : fg.FullConfig)
+    [Fintype V] [CommSemiring K] :
+    ((coveringFactors (fg := fg)).map
+      (fun φ => φ.potential (FactorGraph.fullAssign (fg := fg) x φ.scope))).prod = 1 := by
+  classical
+  simp [coveringFactors]
+
+lemma veFactorList_scope_univ
+    (fs : List (Factor fg))
+    (constraints : List (Σ v : V, fg.stateSpace v))
+    [Fintype V] [∀ v, DecidableEq (fg.stateSpace v)] [Zero K] [One K] [Mul K] :
+    (combineAll (fg := fg) (veFactorList (fg := fg) fs constraints)).scope = Finset.univ := by
+  classical
+  ext v
+  constructor
+  · intro _
+    simp
+  · intro _
+    have hcover : Factor.unitVar (fg := fg) v ∈ coveringFactors (fg := fg) := by
+      unfold coveringFactors
+      apply List.mem_map.mpr
+      exact ⟨v, by simp, rfl⟩
+    have hmem : Factor.unitVar (fg := fg) v ∈ veFactorList (fg := fg) fs constraints := by
+      unfold veFactorList
+      simp [hcover]
+    exact mem_combineAll_scope_of_mem (fg := fg) hmem (by simp [Factor.unitVar])
+
+lemma veFactorList_potential_fullAssign
+    (fs : List (Factor fg))
+    (constraints : List (Σ v : V, fg.stateSpace v))
+    (x : fg.FullConfig)
+    [Fintype V] [∀ v, DecidableEq (fg.stateSpace v)] [CommSemiring K] :
+    (combineAll (fg := fg) (veFactorList (fg := fg) fs constraints)).potential
+        (FactorGraph.fullAssign (fg := fg) x
+          (combineAll (fg := fg) (veFactorList (fg := fg) fs constraints)).scope) =
+      if ∀ c ∈ constraints, x c.1 = c.2 then
+        (combineAll (fg := fg) fs).potential
+          (FactorGraph.fullAssign (fg := fg) x (combineAll (fg := fg) fs).scope)
+      else 0 := by
+  classical
+  rw [combineAll_potential_fullAssign_listProd (fg := fg)
+    (fs := veFactorList (fg := fg) fs constraints) x]
+  by_cases hs : ∀ c ∈ constraints, x c.1 = c.2
+  · simp [veFactorList, List.map_append, List.prod_append,
+      constraintFactors_product_fullAssign, coveringFactors_product_fullAssign,
+      combineAll_potential_fullAssign_listProd]
+  · simp [veFactorList, List.map_append, List.prod_append,
+      constraintFactors_product_fullAssign, coveringFactors_product_fullAssign, hs]
+
 /-! ## List-based semantic form (factorization-as-state) -/
 
 /-- Exact unnormalized weight for a constraint set, starting from an explicit factor list.
@@ -515,6 +806,119 @@ theorem weightOfConstraints_eq_list
       weightOfConstraintsList (fg := fg) (factorsOfGraph (fg := fg)) constraints := by
   rfl
 
+/-- Preferred honest name for the list-based exact query semantics. -/
+noncomputable def semanticWeightOfConstraintsList
+    (fg : FactorGraph V K)
+    (fs : List (Factor fg))
+    (constraints : List (Σ v : V, fg.stateSpace v))
+    [Fintype V] [∀ v, Fintype (fg.stateSpace v)] [∀ v, DecidableEq (fg.stateSpace v)]
+    [CommSemiring K] : K :=
+  weightOfConstraintsList (fg := fg) fs constraints
+
+/-- Preferred honest name for the factor-graph exact query semantics. -/
+noncomputable def semanticWeightOfConstraints
+    (fg : FactorGraph V K)
+    (constraints : List (Σ v : V, fg.stateSpace v))
+    [Fintype V] [∀ v, Fintype (fg.stateSpace v)] [∀ v, DecidableEq (fg.stateSpace v)]
+    [Fintype fg.factors] [CommSemiring K] : K :=
+  weightOfConstraints (fg := fg) constraints
+
+@[simp] theorem semanticWeightOfConstraintsList_eq_weightOfConstraintsList
+    (fg : FactorGraph V K)
+    (fs : List (Factor fg))
+    (constraints : List (Σ v : V, fg.stateSpace v))
+    [Fintype V] [∀ v, Fintype (fg.stateSpace v)] [∀ v, DecidableEq (fg.stateSpace v)]
+    [CommSemiring K] :
+    semanticWeightOfConstraintsList (fg := fg) fs constraints =
+      weightOfConstraintsList (fg := fg) fs constraints := rfl
+
+@[simp] theorem semanticWeightOfConstraints_eq_weightOfConstraints
+    (fg : FactorGraph V K)
+    (constraints : List (Σ v : V, fg.stateSpace v))
+    [Fintype V] [∀ v, Fintype (fg.stateSpace v)] [∀ v, DecidableEq (fg.stateSpace v)]
+    [Fintype fg.factors] [CommSemiring K] :
+    semanticWeightOfConstraints (fg := fg) constraints =
+      weightOfConstraints (fg := fg) constraints := rfl
+
+/-- Fully operational exact query weight: add explicit indicator factors, add neutral
+scope-covering unary factors, eliminate every variable, then evaluate the constant factor. -/
+noncomputable def veQueryWeightList
+    (fg : FactorGraph V K)
+    (fs : List (Factor fg))
+    (constraints : List (Σ v : V, fg.stateSpace v))
+    [Fintype V] [∀ v, Fintype (fg.stateSpace v)] [∀ v, DecidableEq (fg.stateSpace v)]
+    [CommSemiring K] : K := by
+  classical
+  let φ := combineAll (fg := fg) (veFactorList (fg := fg) fs constraints)
+  let ψ := sumOutAll (fg := fg) φ (Finset.univ : Finset V).toList
+  exact Factor.evalConst (φ := ψ) (sumOutAll_scope_univ (f := φ))
+
+@[simp] theorem veQueryWeightList_eq_weightOfConstraintsList
+    (fg : FactorGraph V K)
+    (fs : List (Factor fg))
+    (constraints : List (Σ v : V, fg.stateSpace v))
+    [Fintype V] [∀ v, Fintype (fg.stateSpace v)] [∀ v, DecidableEq (fg.stateSpace v)]
+    [CommSemiring K] :
+    veQueryWeightList fg fs constraints =
+      weightOfConstraintsList (fg := fg) fs constraints := by
+  classical
+  letI : Fintype fg.FullConfig := by
+    dsimp [FactorGraph.FullConfig]
+    infer_instance
+  let φ := combineAll (fg := fg) (veFactorList (fg := fg) fs constraints)
+  let ψ := sumOutAll (fg := fg) φ (Finset.univ : Finset V).toList
+  calc
+    veQueryWeightList fg fs constraints
+        = Factor.evalConst (φ := ψ) (sumOutAll_scope_univ (f := φ)) := by
+            simp [veQueryWeightList, φ, ψ]
+    _ = Factor.totalWeight (φ := ψ) := by
+          symm
+          exact Factor.totalWeight_eq_evalConst_of_scope_empty (φ := ψ)
+            (sumOutAll_scope_univ (f := φ))
+    _ = Factor.totalWeight (φ := φ) := by
+          simp [φ, ψ, totalWeight_sumOutAll]
+    _ = Factor.fullConfigWeightSum (φ := φ) := by
+          exact Factor.totalWeight_eq_fullConfigSum_of_scope_univ (φ := φ)
+            (veFactorList_scope_univ (fs := fs) (constraints := constraints))
+    _ = ∑ x : fg.FullConfig,
+          if ∀ c ∈ constraints, x c.1 = c.2 then
+            (combineAll (fg := fg) fs).potential
+              (FactorGraph.fullAssign (fg := fg) x (combineAll (fg := fg) fs).scope)
+          else 0 := by
+            unfold Factor.fullConfigWeightSum
+            apply Fintype.sum_congr
+            intro x
+            by_cases hs : ∀ c ∈ constraints, x c.1 = c.2
+            · rw [combineAll_potential_fullAssign_listProd
+                  (fs := veFactorList (fg := fg) fs constraints) x]
+              simp [veFactorList, List.map_append, List.prod_append,
+                constraintFactors_product_fullAssign, coveringFactors_product_fullAssign,
+                combineAll_potential_fullAssign_listProd]
+            · rw [combineAll_potential_fullAssign_listProd
+                  (fs := veFactorList (fg := fg) fs constraints) x]
+              simp [veFactorList, List.map_append, List.prod_append,
+                constraintFactors_product_fullAssign, coveringFactors_product_fullAssign,
+                hs]
+    _ = weightOfConstraintsList (fg := fg) fs constraints := by
+          rfl
+
+/-- Graph-level operational exact query weight. -/
+noncomputable def veQueryWeight
+    (fg : FactorGraph V K)
+    (constraints : List (Σ v : V, fg.stateSpace v))
+    [Fintype V] [∀ v, Fintype (fg.stateSpace v)] [∀ v, DecidableEq (fg.stateSpace v)]
+    [Fintype fg.factors] [CommSemiring K] : K :=
+  veQueryWeightList fg (factorsOfGraph (fg := fg)) constraints
+
+@[simp] theorem veQueryWeight_eq_weightOfConstraints
+    (fg : FactorGraph V K)
+    (constraints : List (Σ v : V, fg.stateSpace v))
+    [Fintype V] [∀ v, Fintype (fg.stateSpace v)] [∀ v, DecidableEq (fg.stateSpace v)]
+    [Fintype fg.factors] [CommSemiring K] :
+    veQueryWeight fg constraints = weightOfConstraints (fg := fg) constraints := by
+  unfold veQueryWeight weightOfConstraints
+  exact veQueryWeightList_eq_weightOfConstraintsList fg (factorsOfGraph (fg := fg)) constraints
+
 /-! ## BN queries via VE (prop/link) -/
 
 namespace BayesianNetwork
@@ -525,7 +929,11 @@ open Mettapedia.ProbabilityTheory.BayesianNetworks.BayesianNetwork.DiscreteCPT
 variable {V : Type*} [Fintype V] [DecidableEq V]
 variable (bn : BayesianNetwork V)
 
-/-- Exact probability of an event `v = val` in a discrete BN (semantic factor-graph form). -/
+/-- Exact probability of an event `v = val`.
+
+This is kept under a historical VE-facing name for compatibility, but the
+current implementation routes through the explicit exact VE elimination
+surface. -/
 noncomputable def propProbVE (cpt : bn.DiscreteCPT) (v : V) (val : bn.stateSpace v)
     [DecidableRel bn.graph.edges]
     [∀ v, Fintype (bn.stateSpace v)] [∀ v, DecidableEq (bn.stateSpace v)] : ENNReal :=
@@ -544,11 +952,15 @@ noncomputable def propProbVE (cpt : bn.DiscreteCPT) (v : V) (val : bn.stateSpace
     letI : Fintype fg.factors := instFactors
     letI : ∀ v, Fintype (fg.stateSpace v) := instState
     letI : ∀ v, DecidableEq (fg.stateSpace v) := instDecEq
-    let num := weightOfConstraints (fg := fg) [⟨v, val⟩]
-    let den := weightOfConstraints (fg := fg) []
+    let num := veQueryWeight fg [⟨v, val⟩]
+    let den := veQueryWeight fg []
     exact if den = 0 then 0 else num / den
 
-/-- Exact conditional probability `P(B = valB | A = valA)` (semantic factor-graph form). -/
+/-- Exact conditional probability `P(B = valB | A = valA)`.
+
+This is kept under a historical VE-facing name for compatibility, but the
+current implementation routes through the explicit exact VE elimination
+surface. -/
 noncomputable def linkProbVE (cpt : bn.DiscreteCPT)
     (a b : V) (valA : bn.stateSpace a) (valB : bn.stateSpace b)
     [DecidableRel bn.graph.edges]
@@ -568,11 +980,15 @@ noncomputable def linkProbVE (cpt : bn.DiscreteCPT)
     letI : Fintype fg.factors := instFactors
     letI : ∀ v, Fintype (fg.stateSpace v) := instState
     letI : ∀ v, DecidableEq (fg.stateSpace v) := instDecEq
-    let num := weightOfConstraints (fg := fg) [⟨a, valA⟩, ⟨b, valB⟩]
-    let den := weightOfConstraints (fg := fg) [⟨a, valA⟩]
+    let num := veQueryWeight fg [⟨a, valA⟩, ⟨b, valB⟩]
+    let den := veQueryWeight fg [⟨a, valA⟩]
     exact if den = 0 then 0 else num / den
 
-/-- Exact conditional probability `P(B = valB | constraints)` for a list of antecedents. -/
+/-- Exact conditional probability `P(B = valB | constraints)`.
+
+This is kept under a historical VE-facing name for compatibility, but the
+current implementation routes through the explicit exact VE elimination
+surface. -/
 noncomputable def linkProbVECond (cpt : bn.DiscreteCPT)
     (constraints : List (Σ v : V, bn.stateSpace v)) (b : Σ v : V, bn.stateSpace v)
     [DecidableRel bn.graph.edges]
@@ -592,9 +1008,51 @@ noncomputable def linkProbVECond (cpt : bn.DiscreteCPT)
     letI : Fintype fg.factors := instFactors
     letI : ∀ v, Fintype (fg.stateSpace v) := instState
     letI : ∀ v, DecidableEq (fg.stateSpace v) := instDecEq
-    let num := weightOfConstraints (fg := fg) (constraints ++ [b])
-    let den := weightOfConstraints (fg := fg) constraints
+    let num := veQueryWeight fg (constraints ++ [b])
+    let den := veQueryWeight fg constraints
     exact if den = 0 then 0 else num / den
+
+/-- Preferred honest name for the exact semantic probability query surface. -/
+noncomputable def propProbSemantic (cpt : bn.DiscreteCPT) (v : V) (val : bn.stateSpace v)
+    [DecidableRel bn.graph.edges]
+    [∀ v, Fintype (bn.stateSpace v)] [∀ v, DecidableEq (bn.stateSpace v)] : ENNReal :=
+  propProbVE (bn := bn) cpt v val
+
+/-- Preferred honest name for the exact semantic binary conditional query surface. -/
+noncomputable def linkProbSemantic (cpt : bn.DiscreteCPT)
+    (a b : V) (valA : bn.stateSpace a) (valB : bn.stateSpace b)
+    [DecidableRel bn.graph.edges]
+    [∀ v, Fintype (bn.stateSpace v)] [∀ v, DecidableEq (bn.stateSpace v)] : ENNReal :=
+  linkProbVE (bn := bn) cpt a b valA valB
+
+/-- Preferred honest name for the exact semantic constrained conditional query surface. -/
+noncomputable def linkProbSemanticCond (cpt : bn.DiscreteCPT)
+    (constraints : List (Σ v : V, bn.stateSpace v)) (b : Σ v : V, bn.stateSpace v)
+    [DecidableRel bn.graph.edges]
+    [∀ v, Fintype (bn.stateSpace v)] [∀ v, DecidableEq (bn.stateSpace v)] : ENNReal :=
+  linkProbVECond (bn := bn) cpt constraints b
+
+@[simp] theorem propProbSemantic_eq_propProbVE
+    (cpt : bn.DiscreteCPT) (v : V) (val : bn.stateSpace v)
+    [DecidableRel bn.graph.edges]
+    [∀ v, Fintype (bn.stateSpace v)] [∀ v, DecidableEq (bn.stateSpace v)] :
+    propProbSemantic (bn := bn) cpt v val = propProbVE (bn := bn) cpt v val := rfl
+
+@[simp] theorem linkProbSemantic_eq_linkProbVE
+    (cpt : bn.DiscreteCPT)
+    (a b : V) (valA : bn.stateSpace a) (valB : bn.stateSpace b)
+    [DecidableRel bn.graph.edges]
+    [∀ v, Fintype (bn.stateSpace v)] [∀ v, DecidableEq (bn.stateSpace v)] :
+    linkProbSemantic (bn := bn) cpt a b valA valB =
+      linkProbVE (bn := bn) cpt a b valA valB := rfl
+
+@[simp] theorem linkProbSemanticCond_eq_linkProbVECond
+    (cpt : bn.DiscreteCPT)
+    (constraints : List (Σ v : V, bn.stateSpace v)) (b : Σ v : V, bn.stateSpace v)
+    [DecidableRel bn.graph.edges]
+    [∀ v, Fintype (bn.stateSpace v)] [∀ v, DecidableEq (bn.stateSpace v)] :
+    linkProbSemanticCond (bn := bn) cpt constraints b =
+      linkProbVECond (bn := bn) cpt constraints b := rfl
 
 end BayesianNetwork
 

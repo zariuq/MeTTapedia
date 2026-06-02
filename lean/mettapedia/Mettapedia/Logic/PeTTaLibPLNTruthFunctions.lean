@@ -17,9 +17,9 @@ This file is a transparent Lean transcription of the numerical truth-value rules
 * `/home/zar/claude/hyperon/PeTTa/lib/lib_pln.metta`
 * `https://github.com/trueagi-io/PeTTa/blob/main/lib/lib_pln.metta`
 
-at PeTTa commit:
+as mirrored from the local PeTTa checkout inspected during this update:
 
-* `dec4505f33aaac266aefbc469f2cf85400c5a455`
+* `/home/zar/claude/hyperon/PeTTa` HEAD `6f734e33533cde865d50bfe5eb449b439235ae89`
 
 This file is intentionally a mirror of that library surface. It is **not** the
 place where canonicity or world-model justification is decided. For the
@@ -103,13 +103,13 @@ by
 /-- `Truth_Induction` as mirrored from PeTTa `lib_pln.metta`. -/
 noncomputable def truthInduction (a b c ba bc : TV) : TV :=
   let s := plnInductionStrength ba.s bc.s a.s b.s c.s
-  let conf := w2c (min ba.c bc.c)
+  let conf := w2c (min (c2w ba.c) (c2w bc.c))
   ⟨s, conf⟩
 
 /-- `Truth_Abduction` as mirrored from PeTTa `lib_pln.metta`. -/
 noncomputable def truthAbduction (a b c ab cb : TV) : TV :=
   let s := plnAbductionStrength ab.s cb.s a.s b.s c.s
-  let conf := w2c (min ab.c cb.c)
+  let conf := w2c (min (c2w ab.c) (c2w cb.c))
   ⟨s, conf⟩
 
 /-- SourceRule (cospan completion): alias of `truthInduction`. -/
@@ -137,7 +137,7 @@ noncomputable def truthRevision (t1 t2 : TV) : TV :=
   let w := w1 + w2
   let f := safeDiv (w1 * t1.s + w2 * t2.s) w
   let c := w2c w
-  ⟨min 1 f, min 1 (max (max c t1.c) t2.c)⟩
+  ⟨min 1 f, min 1 c⟩
 
 /-- `Truth_Negation` as mirrored from PeTTa `lib_pln.metta`. -/
 noncomputable def truthNegation (t : TV) : TV :=
@@ -199,12 +199,12 @@ theorem truthAbduction_s_eq (a b c ab cb : TV) :
     (truthAbduction a b c ab cb).s = plnAbductionStrength ab.s cb.s a.s b.s c.s := by
   simp [truthAbduction]
 
-theorem truthInduction_c_eq_raw_min (a b c ba bc : TV) :
-    (truthInduction a b c ba bc).c = w2c (min ba.c bc.c) := by
+theorem truthInduction_c_eq_weight_min (a b c ba bc : TV) :
+    (truthInduction a b c ba bc).c = w2c (min (c2w ba.c) (c2w bc.c)) := by
   simp [truthInduction]
 
-theorem truthAbduction_c_eq_raw_min (a b c ab cb : TV) :
-    (truthAbduction a b c ab cb).c = w2c (min ab.c cb.c) := by
+theorem truthAbduction_c_eq_weight_min (a b c ab cb : TV) :
+    (truthAbduction a b c ab cb).c = w2c (min (c2w ab.c) (c2w cb.c)) := by
   simp [truthAbduction]
 
 /-- `w2c (c2w c)` reduces to the capped confidence `capConf c`. -/

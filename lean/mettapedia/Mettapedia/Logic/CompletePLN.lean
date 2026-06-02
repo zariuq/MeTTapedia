@@ -171,7 +171,7 @@ They compute true conditional probabilities without any assumptions.
     The complexity is in computing the joint probabilities.
 -/
 noncomputable def completeDeduction (J : JointDistribution n)
-    (a b c : Fin n) : ℝ :=
+    (a _b c : Fin n) : ℝ :=
   condProb J c a
 
 /-- COMPLETE Induction: Exact P(C|A) given we know about B→A and B→C.
@@ -180,7 +180,7 @@ noncomputable def completeDeduction (J : JointDistribution n)
     It directly computes P(C|A) from the joint distribution.
 -/
 noncomputable def completeInduction (J : JointDistribution n)
-    (a b c : Fin n) : ℝ :=
+    (a _b c : Fin n) : ℝ :=
   condProb J c a
 
 /-- COMPLETE Abduction: Exact P(C|A) given we know about A→B and C→B.
@@ -189,7 +189,7 @@ noncomputable def completeInduction (J : JointDistribution n)
     It directly computes P(C|A) from the joint distribution.
 -/
 noncomputable def completeAbduction (J : JointDistribution n)
-    (a b c : Fin n) : ℝ :=
+    (a _b c : Fin n) : ℝ :=
   condProb J c a
 
 /-! ## Part 3: Unified Inference Mode
@@ -294,7 +294,7 @@ noncomputable def hybridDeduction
         assumed_independence := true }
   | InferenceMode.complete =>
     match complete_inputs with
-    | some ⟨n, inputs⟩ =>
+    | some ⟨_, inputs⟩ =>
       { strength := completeDeduction inputs.joint inputs.prop_A inputs.prop_B inputs.prop_C
         mode_used := InferenceMode.complete
         confidence := 1.0  -- Full confidence - exact computation
@@ -407,10 +407,10 @@ def hasNegativeIndependence (J : JointDistribution n) (a b c : Fin n) : Prop :=
 -/
 theorem fast_equals_complete_under_independence
     (J : JointDistribution n) (a b c : Fin n)
-    (h_pos : hasPositiveIndependence J a b c)
-    (h_neg : hasNegativeIndependence J a b c)
-    (h_marg_b : 0 < marginalProb J b)
-    (h_marg_a : 0 < marginalProb J a) :
+    (_h_pos : hasPositiveIndependence J a b c)
+    (_h_neg : hasNegativeIndependence J a b c)
+    (_h_marg_b : 0 < marginalProb J b)
+    (_h_marg_a : 0 < marginalProb J a) :
     -- Under independence, fast PLN formula gives correct answer
     -- (This is a simplified statement; full version would compute
     --  the fast formula from the joint distribution)

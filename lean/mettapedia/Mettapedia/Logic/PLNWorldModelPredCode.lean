@@ -70,6 +70,13 @@ theorem predCodeEvidence_add {U : Type*}
 noncomputable instance {U : Type*} : BinaryWorldModel (PredCodeState U) (PredCodeQuery U) where
   evidence := predCodeEvidence
   evidence_add := predCodeEvidence_add
+  evidence_zero := by
+    classical
+    intro q
+    change predCodeEvidence (0 : PredCodeState U) q = 0
+    unfold predCodeEvidence
+    simp
+    rfl
 
 theorem predCodeEvidence_singleton_of_satisfies {U : Type*}
     (pw : PointedPredCode U) (q : PredCodeQuery U) (h : pw.satisfies q) :

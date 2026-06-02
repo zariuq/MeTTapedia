@@ -97,6 +97,38 @@ theorem pathAmplitude_append {W : Type*} [Monoid W] (wm : WeightMap S W)
   | cons h rest ih =>
       simp [rewritePathAppend, pathAmplitude, ih, mul_assoc]
 
+theorem totalAction_append {A : Type*} [AddMonoid A]
+    (am : ActionMap S A)
+    {t u v : S.Term} (p : S.RewritePath t u) (q : S.RewritePath u v) :
+    totalAction am (rewritePathAppend p q) = totalAction am p + totalAction am q := by
+  induction p with
+  | nil _ =>
+      simp [rewritePathAppend, totalAction]
+  | cons h rest ih =>
+      simp [rewritePathAppend, totalAction, ih, add_assoc]
+
+theorem totalCost_append {A : Type*} {k : Nat} [AddCommMonoid A]
+    (cm : CostMap S A k)
+    {t u v : S.Term} (p : S.RewritePath t u) (q : S.RewritePath u v) :
+    totalCost cm (rewritePathAppend p q) = totalCost cm p + totalCost cm q := by
+  induction p with
+  | nil _ =>
+      simp [rewritePathAppend, totalCost]
+  | cons h rest ih =>
+      simp [rewritePathAppend, totalCost, ih, add_assoc]
+
+theorem totalCost_coord_eq_length_of_step_unit_cost
+    {k : Nat} (cm : CostMap S Nat k) (i : Fin k)
+    (hunit : ∀ {t u : S.Term}, (h : S.Step t u) → cm.cost h i = 1)
+    {t u : S.Term} (p : S.RewritePath t u) :
+    totalCost cm p i = p.length := by
+  induction p with
+  | nil _ =>
+      rfl
+  | cons h rest ih =>
+      change cm.cost h i + totalCost cm rest i = 1 + GSLT.RewritePath.length S rest
+      rw [hunit h, ih]
+
 theorem transitionAmplitude_empty {W : Type*} [Semiring W] (wm : WeightMap S W)
     {t u : S.Term} :
     transitionAmplitude (S := S) wm (FinitePathFamily.empty (S := S) (t := t) (u := u)) = 0 := by

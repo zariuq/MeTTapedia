@@ -256,6 +256,69 @@ lemma sumOut_combine_of_not_mem
       have hφ' : sumOut (φ := φ) v = φ := sumOut_of_not_mem (φ := φ) v hφ
       simp [sumOut, hφ, combine, hv]
 
+/-! ## Bundled scope-respecting valuations (prototype) -/
+
+/-- A valuation bundled with the proof that it respects its declared scope. -/
+structure ScopedValuation (V : Type*) (β : V → Type*) (K : Type*) where
+  toValuation : Valuation V β K
+  respects : RespectsScope toValuation
+
+namespace ScopedValuation
+
+instance : Coe (ScopedValuation V β K) (Valuation V β K) := ⟨fun φ => φ.toValuation⟩
+
+omit [DecidableEq V] in
+@[simp] theorem coe_toValuation (φ : ScopedValuation V β K) :
+    ((φ.toValuation : Valuation V β K)) = φ.toValuation := rfl
+
+omit [DecidableEq V] in
+@[simp] theorem respects_coe (φ : ScopedValuation V β K) :
+    RespectsScope ((φ : Valuation V β K)) := φ.respects
+
+omit [DecidableEq V] in
+@[simp] theorem scope (φ : ScopedValuation V β K) :
+    ((φ : Valuation V β K)).scope = φ.toValuation.scope := rfl
+
+omit [DecidableEq V] in
+@[simp] theorem val_apply (φ : ScopedValuation V β K) (x : FullConfig V β) :
+    ((φ : Valuation V β K)).val x = φ.toValuation.val x := rfl
+
+/-- The bundled neutral valuation. -/
+noncomputable def one [One K] : ScopedValuation V β K :=
+  ⟨oneValuation V β K, respectsScope_one V β K⟩
+
+/-- Bundled pointwise combination. -/
+noncomputable def combine (φ ψ : ScopedValuation V β K) [Mul K] :
+    ScopedValuation V β K :=
+  ⟨Mettapedia.ProbabilityTheory.BayesianNetworks.combine
+      (φ := (φ : Valuation V β K)) (ψ := (ψ : Valuation V β K)),
+    respectsScope_combine φ.respects ψ.respects⟩
+
+/-- Bundled marginalization. -/
+noncomputable def sumOut (φ : ScopedValuation V β K) (v : V)
+    [Fintype (β v)] [AddCommMonoid K] : ScopedValuation V β K :=
+  ⟨Mettapedia.ProbabilityTheory.BayesianNetworks.sumOut
+      (φ := (φ : Valuation V β K)) v,
+    respectsScope_sumOut φ.respects v⟩
+
+omit [DecidableEq V] in
+@[simp] theorem one_toValuation [One K] :
+    ((one (V := V) (β := β) (K := K) : ScopedValuation V β K) : Valuation V β K) =
+      oneValuation V β K := rfl
+
+@[simp] theorem combine_toValuation (φ ψ : ScopedValuation V β K) [Mul K] :
+    ((combine (V := V) (β := β) (K := K) φ ψ : ScopedValuation V β K) : Valuation V β K) =
+      Mettapedia.ProbabilityTheory.BayesianNetworks.combine
+        (φ := (φ : Valuation V β K)) (ψ := (ψ : Valuation V β K)) := rfl
+
+@[simp] theorem sumOut_toValuation (φ : ScopedValuation V β K) (v : V)
+    [Fintype (β v)] [AddCommMonoid K] :
+    ((sumOut (V := V) (β := β) (K := K) φ v : ScopedValuation V β K) : Valuation V β K) =
+      Mettapedia.ProbabilityTheory.BayesianNetworks.sumOut
+        (φ := (φ : Valuation V β K)) v := rfl
+
+end ScopedValuation
+
 /-! ## Combine-all and sum-out-all -/
 
 noncomputable def combineAll (fs : List (Valuation V β K)) [One K] [Mul K] :
@@ -380,6 +443,165 @@ lemma not_mem_scope_combineAll (fs : List (Valuation V β K)) (v : V)
       rcases Finset.mem_union.mp hv' with hvf | hvr
       · exact hf hvf
       · exact ih' hvr
+
+namespace ScopedValuation
+
+/-- Bundled combine-all for scope-respecting valuations. -/
+noncomputable def combineAll (fs : List (ScopedValuation V β K)) [One K] [Mul K] :
+    ScopedValuation V β K :=
+  match fs with
+  | [] => one (V := V) (β := β) (K := K)
+  | φ :: fs => combine φ (combineAll fs)
+
+@[simp] theorem combineAll_toValuation (fs : List (ScopedValuation V β K)) [One K] [Mul K] :
+    ((combineAll (V := V) (β := β) (K := K) fs : ScopedValuation V β K) : Valuation V β K) =
+      Mettapedia.ProbabilityTheory.BayesianNetworks.combineAll
+        (V := V) (β := β) (K := K) (fs.map fun φ => (φ : Valuation V β K)) := by
+  induction fs with
+  | nil =>
+      simp [combineAll, Mettapedia.ProbabilityTheory.BayesianNetworks.combineAll]
+  | cons φ fs ih =>
+      calc
+        ((combineAll (V := V) (β := β) (K := K) (φ :: fs) : ScopedValuation V β K) :
+            Valuation V β K)
+            =
+          Mettapedia.ProbabilityTheory.BayesianNetworks.combine
+            (φ := (φ : Valuation V β K))
+            (ψ := ((combineAll (V := V) (β := β) (K := K) fs : ScopedValuation V β K) :
+              Valuation V β K)) := by
+              rfl
+        _ =
+          Mettapedia.ProbabilityTheory.BayesianNetworks.combine
+            (φ := (φ : Valuation V β K))
+            (ψ := Mettapedia.ProbabilityTheory.BayesianNetworks.combineAll
+              (V := V) (β := β) (K := K) (fs.map fun ψ => (ψ : Valuation V β K))) := by
+              rw [ih]
+        _ =
+          Mettapedia.ProbabilityTheory.BayesianNetworks.combineAll
+            (V := V) (β := β) (K := K) ((φ :: fs).map fun ψ => (ψ : Valuation V β K)) := by
+              rfl
+
+theorem combineAll_append (fs₁ fs₂ : List (ScopedValuation V β K)) [Monoid K] :
+    (combineAll (V := V) (β := β) (K := K) (fs₁ ++ fs₂) : Valuation V β K) =
+      Mettapedia.ProbabilityTheory.BayesianNetworks.combine
+        (φ := (combineAll (V := V) (β := β) (K := K) fs₁ : Valuation V β K))
+        (ψ := (combineAll (V := V) (β := β) (K := K) fs₂ : Valuation V β K)) := by
+  calc
+    (combineAll (V := V) (β := β) (K := K) (fs₁ ++ fs₂) : Valuation V β K)
+        =
+      Mettapedia.ProbabilityTheory.BayesianNetworks.combineAll
+        (V := V) (β := β) (K := K) ((fs₁ ++ fs₂).map fun φ => (φ : Valuation V β K)) := by
+          rw [combineAll_toValuation]
+    _ =
+      Mettapedia.ProbabilityTheory.BayesianNetworks.combine
+        (φ := Mettapedia.ProbabilityTheory.BayesianNetworks.combineAll
+          (V := V) (β := β) (K := K) (fs₁.map fun φ => (φ : Valuation V β K)))
+        (ψ := Mettapedia.ProbabilityTheory.BayesianNetworks.combineAll
+          (V := V) (β := β) (K := K) (fs₂.map fun φ => (φ : Valuation V β K))) := by
+            simpa [List.map_append] using
+              (Mettapedia.ProbabilityTheory.BayesianNetworks.combineAll_append
+                (V := V) (β := β) (K := K)
+                (fs₁.map fun φ => (φ : Valuation V β K))
+                (fs₂.map fun φ => (φ : Valuation V β K)))
+    _ =
+      Mettapedia.ProbabilityTheory.BayesianNetworks.combine
+        (φ := (combineAll (V := V) (β := β) (K := K) fs₁ : Valuation V β K))
+        (ψ := (combineAll (V := V) (β := β) (K := K) fs₂ : Valuation V β K)) := by
+            rw [← combineAll_toValuation, ← combineAll_toValuation]
+
+omit [DecidableEq V] in
+@[simp] theorem flatMap_singleton_toValuation (fs : List (ScopedValuation V β K)) :
+    List.flatMap (fun φ : ScopedValuation V β K => [φ.toValuation]) fs =
+      fs.map (fun φ => φ.toValuation) := by
+  induction fs with
+  | nil =>
+      rfl
+  | cons φ fs ih =>
+      change [φ.toValuation] ++ List.flatMap (fun ψ : ScopedValuation V β K => [ψ.toValuation]) fs =
+        φ.toValuation :: fs.map (fun ψ => ψ.toValuation)
+      simp [ih]
+
+omit [DecidableEq V] in
+@[simp] theorem map_id_bind_toValuation (fs : List (ScopedValuation V β K)) :
+    List.map (fun φ : Valuation V β K => φ) (do
+      let a ← fs
+      pure a.toValuation) =
+      fs.map (fun φ => φ.toValuation) := by
+  simpa [List.flatMap] using
+    (flatMap_singleton_toValuation (V := V) (β := β) (K := K) fs)
+
+/-- Bundle a list of valuations together with a proof that every member respects
+its declared scope. -/
+noncomputable def bundleRespectsAll (fs : List (Valuation V β K))
+    (h : RespectsAll (V := V) (β := β) (K := K) fs) :
+    List (ScopedValuation V β K) :=
+  match fs with
+  | [] => []
+  | φ :: fs =>
+      let hfs : RespectsAll (V := V) (β := β) (K := K) fs := by
+        intro ψ hψ
+        exact h ψ (by simp [hψ])
+      ⟨φ, h φ (by simp)⟩ :: bundleRespectsAll fs hfs
+
+omit [DecidableEq V] in
+@[simp] theorem bundleRespectsAll_map_coe
+    (fs : List (Valuation V β K))
+    (h : RespectsAll (V := V) (β := β) (K := K) fs) :
+    (bundleRespectsAll (V := V) (β := β) (K := K) fs h).map
+        (fun φ : ScopedValuation V β K => (φ : Valuation V β K)) = fs := by
+  induction fs with
+  | nil =>
+      rfl
+  | cons φ fs ih =>
+      have hfs : RespectsAll (V := V) (β := β) (K := K) fs := by
+        intro ψ hψ
+        exact h ψ (by simp [hψ])
+      simp [bundleRespectsAll, ih]
+
+@[simp] theorem combineAll_bundleRespectsAll
+    (fs : List (Valuation V β K))
+    [One K] [Mul K]
+    (h : RespectsAll (V := V) (β := β) (K := K) fs) :
+    ((combineAll (V := V) (β := β) (K := K)
+        (bundleRespectsAll (V := V) (β := β) (K := K) fs h) :
+        ScopedValuation V β K) : Valuation V β K) =
+      Mettapedia.ProbabilityTheory.BayesianNetworks.combineAll
+        (V := V) (β := β) (K := K) fs := by
+  induction fs with
+  | nil =>
+      simp [ScopedValuation.combineAll, Mettapedia.ProbabilityTheory.BayesianNetworks.combineAll,
+        bundleRespectsAll]
+  | cons φ fs ih =>
+      have hfs : RespectsAll (V := V) (β := β) (K := K) fs := by
+        intro ψ hψ
+        exact h ψ (by simp [hψ])
+      calc
+        ((combineAll (V := V) (β := β) (K := K)
+            (bundleRespectsAll (V := V) (β := β) (K := K) (φ :: fs) h) :
+            ScopedValuation V β K) : Valuation V β K)
+            =
+          Mettapedia.ProbabilityTheory.BayesianNetworks.combine
+            (φ := φ)
+            (ψ := ((combineAll (V := V) (β := β) (K := K)
+              (bundleRespectsAll (V := V) (β := β) (K := K) fs hfs) :
+              ScopedValuation V β K) :
+                Valuation V β K)) := by
+                rfl
+        _ =
+          Mettapedia.ProbabilityTheory.BayesianNetworks.combine
+            (φ := φ)
+            (ψ := Mettapedia.ProbabilityTheory.BayesianNetworks.combineAll
+              (V := V) (β := β) (K := K) fs) := by
+                exact congrArg
+                  (fun ψ =>
+                    Mettapedia.ProbabilityTheory.BayesianNetworks.combine (φ := φ) (ψ := ψ))
+                  (ih hfs)
+        _ =
+          Mettapedia.ProbabilityTheory.BayesianNetworks.combineAll
+            (V := V) (β := β) (K := K) (φ :: fs) := by
+                rfl
+
+end ScopedValuation
 
 /-! ## Variable Elimination (valuation form) -/
 
@@ -539,6 +761,51 @@ theorem combineAll_eliminateVar
                 simp [hsplit]
     exact hstep.trans hcomm'
 
+theorem respectsAll_eliminateVar
+    (fs : List (Valuation V β K)) (v : V)
+    [Fintype (β v)] [CommSemiring K]
+    (h : RespectsAll (V := V) (β := β) (K := K) fs) :
+    RespectsAll (V := V) (β := β) (K := K)
+      (eliminateVar (V := V) (β := β) (K := K) fs v) := by
+  have hhit : RespectsAll (V := V) (β := β) (K := K)
+      (fs.filter (hasVar (V := V) (β := β) (K := K) v)) := by
+    intro g hg
+    exact h g (List.mem_of_mem_filter hg)
+  have hrest : RespectsAll (V := V) (β := β) (K := K)
+      (fs.filter (fun g => !(hasVar (V := V) (β := β) (K := K) v g))) := by
+    intro g hg
+    exact h g (List.mem_of_mem_filter hg)
+  by_cases hhit_empty :
+      (fs.filter (hasVar (V := V) (β := β) (K := K) v)) = []
+  · simp [eliminateVar, hhit_empty] at *
+    exact hrest
+  · intro f hf
+    simp [eliminateVar] at hf
+    rcases hf with rfl | hf
+    · have hhit' := respectsScope_combineAll (V := V) (β := β) (K := K)
+        (fs.filter (hasVar (V := V) (β := β) (K := K) v)) hhit
+      exact respectsScope_sumOut (φ := combineAll (V := V) (β := β) (K := K)
+        (fs.filter (hasVar (V := V) (β := β) (K := K) v))) hhit' v
+    · have hf' :
+          f ∈ fs.filter (fun g => !(hasVar (V := V) (β := β) (K := K) v g)) := by
+          exact List.mem_filter.mpr ⟨hf.1, by simp [hf.2]⟩
+      exact hrest _ hf'
+
+theorem respectsAll_eliminateVars
+    (fs : List (Valuation V β K)) (order : List V)
+    [∀ v, Fintype (β v)] [CommSemiring K]
+    (h : RespectsAll (V := V) (β := β) (K := K) fs) :
+    RespectsAll (V := V) (β := β) (K := K)
+      (eliminateVars (V := V) (β := β) (K := K) fs order) := by
+  induction order generalizing fs with
+  | nil =>
+      simpa [eliminateVars] using h
+  | cons v vs ih =>
+      have h' := respectsAll_eliminateVar
+        (V := V) (β := β) (K := K) (fs := fs) (v := v) h
+      simpa [eliminateVars] using
+        ih (fs := eliminateVar (V := V) (β := β) (K := K) fs v) h'
+
 theorem combineAll_eliminateVars
     (fs : List (Valuation V β K)) (order : List V)
     [∀ v, Fintype (β v)] [CommSemiring K]
@@ -550,35 +817,157 @@ theorem combineAll_eliminateVars
   | nil =>
       simp [eliminateVars, sumOutAll]
   | cons v vs ih =>
-      have h' : RespectsAll (V := V) (β := β) (K := K)
-          (eliminateVar (V := V) (β := β) (K := K) fs v) := by
-        -- elimination preserves RespectsScope
-        have hhit : RespectsAll (V := V) (β := β) (K := K)
-            (fs.filter (hasVar (V := V) (β := β) (K := K) v)) := by
-          intro g hg
-          exact h g (List.mem_of_mem_filter hg)
-        have hrest : RespectsAll (V := V) (β := β) (K := K)
-            (fs.filter (fun g => !(hasVar (V := V) (β := β) (K := K) v g))) := by
-          intro g hg
-          exact h g (List.mem_of_mem_filter hg)
-        by_cases hhit_empty :
-            (fs.filter (hasVar (V := V) (β := β) (K := K) v)) = []
-        · simp [eliminateVar, hhit_empty] at *
-          exact hrest
-        · intro f hf
-          simp [eliminateVar] at hf
-          rcases hf with rfl | hf
-          · have hhit' := respectsScope_combineAll (V := V) (β := β) (K := K)
-              (fs.filter (hasVar (V := V) (β := β) (K := K) v)) hhit
-            exact respectsScope_sumOut (φ := combineAll (V := V) (β := β) (K := K)
-              (fs.filter (hasVar (V := V) (β := β) (K := K) v))) hhit' v
-          · have hf' :
-                f ∈ fs.filter (fun g => !(hasVar (V := V) (β := β) (K := K) v g)) := by
-                exact List.mem_filter.mpr ⟨hf.1, by simp [hf.2]⟩
-            exact hrest _ hf'
+      have h' := respectsAll_eliminateVar
+        (V := V) (β := β) (K := K) (fs := fs) (v := v) h
       have hstep :=
         combineAll_eliminateVar (V := V) (β := β) (K := K) (fs := fs) v h
       have ih' := ih (fs := eliminateVar (V := V) (β := β) (K := K) fs v) h'
       simpa [eliminateVars, sumOutAll, hstep] using ih'
+
+namespace ScopedValuation
+
+/-- Eliminate one variable from a bundled scoped-valuation family. -/
+noncomputable def eliminateVar
+    (fs : List (ScopedValuation V β K)) (v : V)
+    [Fintype (β v)] [CommSemiring K] :
+    List (ScopedValuation V β K) :=
+  let raw := Mettapedia.ProbabilityTheory.BayesianNetworks.eliminateVar
+    (V := V) (β := β) (K := K)
+    (fs.map fun φ => φ.toValuation) v
+  let hraw :
+      RespectsAll (V := V) (β := β) (K := K) raw :=
+    respectsAll_eliminateVar (V := V) (β := β) (K := K)
+      (fs := fs.map fun φ => φ.toValuation) (v := v)
+      (by
+        intro φ hφ
+        have hmem :
+            ∃ ψ : ScopedValuation V β K,
+              ψ ∈ fs ∧
+              (ψ.toValuation = φ) := by
+          exact List.mem_map.mp hφ
+        rcases hmem with ⟨ψ, hψ, rfl⟩
+        exact ψ.respects)
+  ScopedValuation.bundleRespectsAll (V := V) (β := β) (K := K) raw hraw
+
+/-- Eliminate a list of variables from a bundled scoped-valuation family. -/
+noncomputable def eliminateVars
+    (fs : List (ScopedValuation V β K)) (order : List V)
+    [∀ v, Fintype (β v)] [CommSemiring K] :
+    List (ScopedValuation V β K) :=
+  order.foldl (fun acc v => eliminateVar (V := V) (β := β) (K := K) acc v) fs
+
+@[simp] theorem eliminateVar_map_coe
+    (fs : List (ScopedValuation V β K)) (v : V)
+    [Fintype (β v)] [CommSemiring K] :
+    (eliminateVar (V := V) (β := β) (K := K) fs v).map
+        (fun φ : ScopedValuation V β K => φ.toValuation) =
+      Mettapedia.ProbabilityTheory.BayesianNetworks.eliminateVar
+        (V := V) (β := β) (K := K)
+        (fs.map fun φ => φ.toValuation) v := by
+  simp [eliminateVar]
+
+@[simp] theorem eliminateVars_map_coe
+    (fs : List (ScopedValuation V β K)) (order : List V)
+    [∀ v, Fintype (β v)] [CommSemiring K] :
+    (eliminateVars (V := V) (β := β) (K := K) fs order).map
+        (fun φ : ScopedValuation V β K => φ.toValuation) =
+      Mettapedia.ProbabilityTheory.BayesianNetworks.eliminateVars
+        (V := V) (β := β) (K := K)
+        (fs.map fun φ => φ.toValuation) order := by
+  classical
+  induction order generalizing fs with
+  | nil =>
+      simp [eliminateVars, Mettapedia.ProbabilityTheory.BayesianNetworks.eliminateVars]
+  | cons v vs ih =>
+      have ih' :=
+        ih (fs := eliminateVar (V := V) (β := β) (K := K) fs v)
+      simpa [eliminateVars, Mettapedia.ProbabilityTheory.BayesianNetworks.eliminateVars,
+        eliminateVar_map_coe] using ih'
+
+  @[simp] theorem combineAll_eliminateVars_toValuation
+    (fs : List (ScopedValuation V β K)) (order : List V)
+    [∀ v, Fintype (β v)] [CommSemiring K] :
+    ((combineAll (V := V) (β := β) (K := K)
+        (eliminateVars (V := V) (β := β) (K := K) fs order) :
+        ScopedValuation V β K) : Valuation V β K) =
+      Mettapedia.ProbabilityTheory.BayesianNetworks.combineAll
+        (V := V) (β := β) (K := K)
+        (Mettapedia.ProbabilityTheory.BayesianNetworks.eliminateVars
+          (V := V) (β := β) (K := K)
+          (fs.map fun φ => φ.toValuation) order) := by
+  calc
+    ((combineAll (V := V) (β := β) (K := K)
+        (eliminateVars (V := V) (β := β) (K := K) fs order) :
+        ScopedValuation V β K) : Valuation V β K)
+        =
+      Mettapedia.ProbabilityTheory.BayesianNetworks.combineAll
+        (V := V) (β := β) (K := K)
+        ((eliminateVars (V := V) (β := β) (K := K) fs order).map
+          (fun φ : ScopedValuation V β K => φ.toValuation)) := by
+            rw [combineAll_toValuation]
+            simp [flatMap_singleton_toValuation]
+    _ =
+      Mettapedia.ProbabilityTheory.BayesianNetworks.combineAll
+        (V := V) (β := β) (K := K)
+        (Mettapedia.ProbabilityTheory.BayesianNetworks.eliminateVars
+          (V := V) (β := β) (K := K)
+          (fs.map fun φ => φ.toValuation) order) := by
+            simp [eliminateVars_map_coe]
+
+theorem combineAll_eliminateVars_eq_sumOutAll
+    (fs : List (ScopedValuation V β K)) (order : List V)
+    [∀ v, Fintype (β v)] [CommSemiring K] :
+    ((combineAll (V := V) (β := β) (K := K)
+        (eliminateVars (V := V) (β := β) (K := K) fs order) :
+        ScopedValuation V β K) : Valuation V β K) =
+      Mettapedia.ProbabilityTheory.BayesianNetworks.sumOutAll
+        (φ := ((combineAll (V := V) (β := β) (K := K) fs :
+          ScopedValuation V β K) : Valuation V β K)) order := by
+  have hres :
+      RespectsAll (V := V) (β := β) (K := K)
+        (fs.map fun φ => φ.toValuation) := by
+    intro φ hφ
+    have hmem :
+        ∃ ψ : ScopedValuation V β K,
+          ψ ∈ fs ∧
+          (ψ.toValuation = φ) := by
+      exact List.mem_map.mp hφ
+    rcases hmem with ⟨ψ, hψ, rfl⟩
+    exact ψ.respects
+  calc
+    ((combineAll (V := V) (β := β) (K := K)
+        (eliminateVars (V := V) (β := β) (K := K) fs order) :
+        ScopedValuation V β K) : Valuation V β K) =
+      Mettapedia.ProbabilityTheory.BayesianNetworks.combineAll
+        (V := V) (β := β) (K := K)
+        (Mettapedia.ProbabilityTheory.BayesianNetworks.eliminateVars
+          (V := V) (β := β) (K := K)
+          (fs.map fun φ => φ.toValuation) order) := by
+            exact combineAll_eliminateVars_toValuation
+              (V := V) (β := β) (K := K) (fs := fs) (order := order)
+    _ = Mettapedia.ProbabilityTheory.BayesianNetworks.sumOutAll
+          (φ := Mettapedia.ProbabilityTheory.BayesianNetworks.combineAll
+            (V := V) (β := β) (K := K) (fs.map fun φ => φ.toValuation)) order := by
+              exact combineAll_eliminateVars
+                (V := V) (β := β) (K := K)
+                (fs := fs.map fun φ => φ.toValuation)
+                (order := order) hres
+    _ = Mettapedia.ProbabilityTheory.BayesianNetworks.sumOutAll
+          (φ := ((combineAll (V := V) (β := β) (K := K) fs :
+            ScopedValuation V β K) : Valuation V β K)) order := by
+              have hcomb :
+                  ((combineAll (V := V) (β := β) (K := K) fs :
+                    ScopedValuation V β K) : Valuation V β K) =
+                    Mettapedia.ProbabilityTheory.BayesianNetworks.combineAll
+                      (V := V) (β := β) (K := K) (fs.map fun φ => φ.toValuation) := by
+                rw [combineAll_toValuation]
+                exact congrArg
+                  (fun xs =>
+                    Mettapedia.ProbabilityTheory.BayesianNetworks.combineAll
+                      (V := V) (β := β) (K := K) xs)
+                  (map_id_bind_toValuation (V := V) (β := β) (K := K) fs)
+              rw [← hcomb]
+
+end ScopedValuation
 
 end Mettapedia.ProbabilityTheory.BayesianNetworks

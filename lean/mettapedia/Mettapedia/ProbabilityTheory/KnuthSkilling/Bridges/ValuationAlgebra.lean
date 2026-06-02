@@ -91,7 +91,7 @@ noncomputable def weightOfConstraintsKS {V : Type*}
     letI : ∀ v, DecidableEq (fg'.stateSpace v) := instDecEq
     letI : Fintype fg'.factors := instFactors
     exact
-      Mettapedia.ProbabilityTheory.BayesianNetworks.VariableElimination.weightOfConstraints
+      Mettapedia.ProbabilityTheory.BayesianNetworks.VariableElimination.veQueryWeight
         (fg := fg') constraints
 
 end FactorGraph
@@ -152,6 +152,48 @@ noncomputable def ksVE
       (toValuations (fg := regradeFactorGraph (rep := rep) fg)
         (VariableElimination.factorsOfGraph (fg := regradeFactorGraph (rep := rep) fg))) order)
 
+noncomputable def ksVEScoped
+    (order : List V)
+    [Fintype V]
+    [∀ v, Fintype (fg.stateSpace v)]
+    [Fintype fg.factors] :
+    Mettapedia.ProbabilityTheory.BayesianNetworks.ScopedValuation V
+      (fun v => fg.stateSpace v) ℝ := by
+  classical
+  let fg' := regradeFactorGraph (rep := rep) fg
+  let fs := toScopedValuations (fg := fg') (VariableElimination.factorsOfGraph (fg := fg'))
+  exact ScopedValuation.combineAll (V := V) (β := fun v => fg.stateSpace v) (K := ℝ)
+    (ScopedValuation.eliminateVars (V := V) (β := fun v => fg.stateSpace v) (K := ℝ)
+      fs order)
+
+@[simp] theorem ksVEScoped_toValuation
+    (order : List V)
+    [Fintype V]
+    [∀ v, Fintype (fg.stateSpace v)]
+    [Fintype fg.factors] :
+    ((ksVEScoped (rep := rep) (fg := fg) (order := order) :
+        Mettapedia.ProbabilityTheory.BayesianNetworks.ScopedValuation V
+          (fun v => fg.stateSpace v) ℝ) :
+      Mettapedia.ProbabilityTheory.BayesianNetworks.Valuation V
+        (fun v => fg.stateSpace v) ℝ) =
+      ksVE (rep := rep) (fg := fg) (order := order) := by
+  classical
+  unfold ksVEScoped ksVE
+  simp only [ScopedValuation.combineAll_eliminateVars_toValuation]
+  have hmap :
+      List.map
+          (fun φ :
+            Mettapedia.ProbabilityTheory.BayesianNetworks.ScopedValuation V
+              (fun v => fg.stateSpace v) ℝ => φ.toValuation)
+          (toScopedValuations (fg := regradeFactorGraph (rep := rep) fg)
+            (VariableElimination.factorsOfGraph
+              (fg := regradeFactorGraph (rep := rep) fg))) =
+        toValuations (fg := regradeFactorGraph (rep := rep) fg)
+          (VariableElimination.factorsOfGraph
+            (fg := regradeFactorGraph (rep := rep) fg)) := by
+    simp [toScopedValuations, toValuations, Function.comp]
+  rw [hmap]
+
 theorem ksVE_correct
     (order : List V)
     [Fintype V]
@@ -163,6 +205,23 @@ theorem ksVE_correct
             (VariableElimination.factorsOfGraph (fg := regradeFactorGraph (rep := rep) fg))) order) =
       ksVE (rep := rep) (fg := fg) (order := order) := by
   simpa [ksVE] using (ve_correct_regrade (rep := rep) (fg := fg) order)
+
+theorem ksVEScoped_correct
+    (order : List V)
+    [Fintype V]
+    [∀ v, Fintype (fg.stateSpace v)]
+    [Fintype fg.factors] :
+    toValuation (fg := regradeFactorGraph (rep := rep) fg)
+        (VariableElimination.sumOutAll (fg := regradeFactorGraph (rep := rep) fg)
+          (VariableElimination.combineAll (fg := regradeFactorGraph (rep := rep) fg)
+            (VariableElimination.factorsOfGraph (fg := regradeFactorGraph (rep := rep) fg))) order) =
+      ((ksVEScoped (rep := rep) (fg := fg) (order := order) :
+          Mettapedia.ProbabilityTheory.BayesianNetworks.ScopedValuation V
+            (fun v => fg.stateSpace v) ℝ) :
+        Mettapedia.ProbabilityTheory.BayesianNetworks.Valuation V
+          (fun v => fg.stateSpace v) ℝ) := by
+  rw [ksVEScoped_toValuation]
+  exact ksVE_correct (rep := rep) (fg := fg) order
 
 end VEBridge
 

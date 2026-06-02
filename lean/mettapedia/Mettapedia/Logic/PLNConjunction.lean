@@ -616,7 +616,8 @@ theorem conjunctionConditional_le_A (s_A s_AB : ℝ≥0∞) (h_AB : s_AB ≤ 1) 
     conjunctionConditional s_A s_AB ≤ s_A := by
   unfold conjunctionConditional
   calc s_A * s_AB
-      ≤ s_A * 1 := mul_le_mul_left' h_AB s_A
+      ≤ s_A * 1 := by
+          gcongr
     _ = s_A := mul_one s_A
 
 /-- Conditional conjunction is monotone in both arguments -/

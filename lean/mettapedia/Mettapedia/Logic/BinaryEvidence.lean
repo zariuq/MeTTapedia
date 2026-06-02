@@ -718,10 +718,29 @@ noncomputable def toOdds (e : BinaryEvidence) : ℝ≥0∞ :=
 noncomputable def toLogOdds (e : BinaryEvidence) : ℝ :=
   Real.log (toOdds e).toReal
 
+/-- Support/truth odds `n⁺ / n⁻` on the strength/direction axis.
+
+This is a naming alias for `toOdds`, kept distinct from confidence odds
+`c / (1 - c)` on the evidence-weight/concentration axis. -/
+noncomputable def truthOdds (e : BinaryEvidence) : ℝ≥0∞ :=
+  toOdds e
+
+/-- Log support/truth odds on the strength/direction axis. -/
+noncomputable def truthLogOdds (e : BinaryEvidence) : ℝ :=
+  toLogOdds e
+
 /-- Nondegenerate case of `toOdds`: when `neg ≠ 0`, odds are `pos/neg`. -/
 @[simp] lemma toOdds_eq_div (e : BinaryEvidence) (hneg : e.neg ≠ 0) :
     toOdds e = e.pos / e.neg := by
   simp [toOdds, hneg]
+
+@[simp] theorem truthOdds_eq_toOdds (e : BinaryEvidence) :
+    truthOdds e = toOdds e :=
+  rfl
+
+@[simp] theorem truthLogOdds_eq_toLogOdds (e : BinaryEvidence) :
+    truthLogOdds e = toLogOdds e :=
+  rfl
 
 /-- Tensor multiplication is multiplicative in odds space. -/
 theorem toOdds_tensor_mul (x y : BinaryEvidence)
@@ -734,6 +753,12 @@ theorem toOdds_tensor_mul (x y : BinaryEvidence)
   rw [div_eq_mul_inv, div_eq_mul_inv, div_eq_mul_inv]
   rw [← (ENNReal.mul_inv (Or.inl hx) (Or.inr hy)).symm]
   ring
+
+/-- Tensor multiplication is multiplicative in support/truth-odds space. -/
+theorem truthOdds_tensor_mul (x y : BinaryEvidence)
+    (hx : x.neg ≠ 0) (hy : y.neg ≠ 0) :
+    truthOdds (x * y) = truthOdds x * truthOdds y := by
+  simpa [truthOdds] using toOdds_tensor_mul x y hx hy
 
 /-- Tensor multiplication is additive in log-odds space (finite/nonzero regime). -/
 theorem toLogOdds_tensor_add (x y : BinaryEvidence)
@@ -755,6 +780,16 @@ theorem toLogOdds_tensor_add (x y : BinaryEvidence)
           simpa using Real.log_mul (ne_of_gt hx_pos_real) (ne_of_gt hy_pos_real)
     _ = toLogOdds x + toLogOdds y := by
           simp [toLogOdds]
+
+/-- Tensor multiplication is additive in log support/truth-odds space
+(finite/nonzero regime). -/
+theorem truthLogOdds_tensor_add (x y : BinaryEvidence)
+    (hx_neg : x.neg ≠ 0) (hy_neg : y.neg ≠ 0)
+    (hx_odds0 : truthOdds x ≠ 0) (hy_odds0 : truthOdds y ≠ 0)
+    (hx_oddsTop : truthOdds x ≠ ⊤) (hy_oddsTop : truthOdds y ≠ ⊤) :
+    truthLogOdds (x * y) = truthLogOdds x + truthLogOdds y := by
+  simpa [truthOdds, truthLogOdds] using
+    toLogOdds_tensor_add x y hx_neg hy_neg hx_odds0 hy_odds0 hx_oddsTop hy_oddsTop
 
 /-- Regraduation by exponentiation in evidence space.
 

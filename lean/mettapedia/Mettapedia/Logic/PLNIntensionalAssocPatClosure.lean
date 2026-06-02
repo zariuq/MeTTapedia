@@ -303,6 +303,17 @@ noncomputable instance : BinaryWorldModel ConcreteState ConcreteQuery where
   evidence_add W₁ W₂ q := by
     cases q <;> ext <;>
       simp [scoreToEvidenceNNReal, combineAssocPatSum, add_assoc, add_left_comm]
+  evidence_zero q := by
+    cases q with
+    | ext a b => ext <;> rfl
+    | assoc a b => ext <;> rfl
+    | pat a b => ext <;> rfl
+    | mix a b =>
+        apply BinaryEvidence.ext'
+        · simp [scoreToEvidenceNNReal, combineAssocPatSum]
+        · simp [scoreToEvidenceNNReal, combineAssocPatSum]
+          change (0 : ℝ≥0∞) = (BinaryEvidence.zero).neg
+          rfl
 
 /-- Canonical query builder into the concrete 4-channel query family. -/
 def enc : PLNIntensionalWorldModel.InheritanceQueryBuilder Pattern ConcreteQuery where

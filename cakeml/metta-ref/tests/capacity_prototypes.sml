@@ -292,9 +292,9 @@ fun eval_switch_one fuel space value branches original =
   case branches of
     [] => []
   | Expr [pattern, body] :: rest =>
-      (case atom_eq value pattern of
-         Yes => eval_top fuel space body
-       | No => eval_switch_one fuel space value rest original)
+      (case match_atom pattern value [] of
+         Match bs => eval_top fuel space (apply_subst bs body)
+       | NoMatch => eval_switch_one fuel space value rest original)
   | _ :: rest => eval_switch_one fuel space value rest original;
 
 fun eval_switch_values fuel space vals branches original =
@@ -305,7 +305,7 @@ fun eval_switch_values fuel space vals branches original =
         (eval_switch_values fuel space rest branches original);
 
 fun eval_switch_like fuel space scrut branches original =
-  eval_switch_values fuel space (eval_top fuel space scrut) branches original;
+  eval_switch_one fuel space scrut branches original;
 
 fun subst_binding_pair v value pair =
   case pair of
@@ -516,6 +516,22 @@ val _ =
       [Expr [A, Bad],
        Expr [B, Good]]
       (call "switch" [B]))
+    [Good];
+
+val _ =
+  expect_bag "switch-variable-pattern"
+    (eval_switch_like 40 [] (call "Pair" [A, B])
+      [Expr [call "Pair" [Var "x", Var "y"], call "Tagged" [Var "x", Var "y"]]]
+      (call "switch" [call "Pair" [A, B]]))
+    [call "Tagged" [A, B]];
+
+val _ =
+  expect_bag "switch-does-not-evaluate-scrutinee-capacity"
+    (eval_switch_like 40 [Expr [Sym "=", call "choose-switch" [], A]]
+      (call "choose-switch" [])
+      [Expr [A, Bad],
+       Expr [call "choose-switch" [], Good]]
+      (call "switch" [call "choose-switch" []]))
     [Good];
 
 val _ =

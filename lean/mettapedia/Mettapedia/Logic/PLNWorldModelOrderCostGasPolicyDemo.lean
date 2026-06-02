@@ -24,9 +24,9 @@ open Mettapedia.Logic.WMGasSensorDriftDemo
 
 /-- Generic WM view for gas states: query extraction is per-gas Normal-Gamma evidence. -/
 noncomputable instance instGenericWorldModelGasSensorArray :
-    WorldModel SensorArrayState GasType NormalGammaEvidence where
-  evidence := gasEvidence
-  evidence_add := by
+    AdditiveWorldModel SensorArrayState GasType NormalGammaEvidence where
+  extract := gasEvidence
+  extract_add := by
     intro s₁ s₂ q
     cases q <;> simp [gasEvidence]
 
@@ -40,12 +40,12 @@ noncomputable def gasAdditiveOverlapLayer :
   evidence_merge := by
     intro s₁ s₂ q
     simpa using
-      (WorldModel.evidence_add'
+      (AdditiveWorldModel.extract_add'
         (State := SensorArrayState) (Query := GasType) (Ev := NormalGammaEvidence) s₁ s₂ q)
   additive_of_independent := by
     intro s₁ s₂ q _hind
     simpa using
-      (WorldModel.evidence_add'
+      (AdditiveWorldModel.extract_add'
         (State := SensorArrayState) (Query := GasType) (Ev := NormalGammaEvidence) s₁ s₂ q)
 
 /-- Gas-lane schedule error wrapper. -/

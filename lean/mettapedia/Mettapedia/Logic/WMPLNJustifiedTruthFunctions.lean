@@ -88,16 +88,16 @@ PLN-adjacent auxiliary symbols used throughout:
   `c2w`).
 * `capConf c = max 0 (min c MAX_CONF)` — clip into `[0, MAX_CONF]`.
 
-**The running story.** Upstream PeTTa main computes induction/abduction
-confidence as `w2c (min cBA cBC)` — it takes the min of two
-*confidences* and then passes that min *back through* `w2c` as if it
-were a *weight*. That is the "double damping" bug: a confidence of 0.5
-becomes `0.5 / 1.5 ≈ 0.333`. The WM-corrected form is
-`w2c (min (c2w cBA) (c2w cBC))`: the min is taken in weight space,
-then converted back. A theorem in this file
+**The running story.** The exact induction/abduction confidence currently
+used here is `w2c (min (c2w cBA) (c2w cBC))`: the min is taken in weight
+space, then converted back. A theorem in this file
 (`truthInduction_conf_eq_min_capped`) proves that this round-trip
 equals `min (capConf cBA) (capConf cBC)` — the intuitive "your chained
 confidence is the weaker of your two inputs'".
+
+The historical raw-min formula `w2c (min cBA cBC)` is analyzed in
+`Mettapedia.Logic.PLNBugAnalysis`; it double-damps by treating a
+confidence as if it were already an evidence weight.
 -/
 
 abbrev TV := Mettapedia.Logic.PeTTaLibPLNTruthFunctions.TV
@@ -213,11 +213,10 @@ exactly the right wrapper to make the obvious answer come out.
 
 **Numeric example.** For `cBA = 0.5, cBC = 0.7`, both `capConf` calls
 are the identity, so this theorem gives `min(0.5, 0.7) = 0.5` — "your
-chained confidence equals your weakest input's." Upstream PeTTa main
-computes `Truth_w2c (min cBA cBC) = w2c(0.5) = 0.5 / 1.5 = 1/3 ≈ 0.333`
-instead: it feeds a raw confidence *back into* `w2c` as if it were a
-weight, double-damping the value. This theorem is where that gap is
-made formal. -/
+chained confidence equals your weakest input's." The historical raw-min
+bug computed `Truth_w2c (min cBA cBC) = w2c(0.5) = 0.5 / 1.5 = 1/3 ≈
+0.333` instead by feeding a raw confidence back into `w2c` as if it were
+a weight. -/
 theorem truthInduction_conf_eq_min_capped (a b c ba bc : TV) :
     (truthInduction a b c ba bc).c = min (capConf ba.c) (capConf bc.c) := by
   simpa [truthInduction, Mettapedia.Logic.PeTTaLibPLNTruthFunctions.truthInduction] using
@@ -254,7 +253,7 @@ theorem truthAbduction_strength_eq (a b c ab cb : TV) :
 WM-corrected abduction confidence also reduces to the plain
 `min (capConf cAB) (capConf cCB)`: same collapse of the weight-space
 round-trip, same intuition ("weaker premise wins"), same correction of
-upstream PeTTa main's double-damping `Truth_w2c (min cAB cCB)`. -/
+the historical raw-min double-damping formula `Truth_w2c (min cAB cCB)`. -/
 theorem truthAbduction_conf_eq_min_capped (a b c ab cb : TV) :
     (truthAbduction a b c ab cb).c = min (capConf ab.c) (capConf cb.c) := by
   simpa [truthAbduction, Mettapedia.Logic.PeTTaLibPLNTruthFunctions.truthAbduction] using

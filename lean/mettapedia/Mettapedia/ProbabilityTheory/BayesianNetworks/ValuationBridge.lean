@@ -32,11 +32,6 @@ noncomputable def toValuation (φ : Factor fg) :
   { scope := φ.scope
     val := fun x => φ.potential (fullAssign (fg := fg) x φ.scope) }
 
-/-- Map a factor list into valuation form. -/
-noncomputable def toValuations (fs : List (Factor fg)) :
-    List (Valuation V (fun v => fg.stateSpace v) K) :=
-  fs.map (toValuation (fg := fg))
-
 omit [DecidableEq V] in
 lemma toValuation_respects (φ : Factor fg) :
     RespectsScope (toValuation (fg := fg) φ) := by
@@ -45,6 +40,35 @@ lemma toValuation_respects (φ : Factor fg) :
     funext v hv
     exact hxy v hv
   simp [toValuation, hfun]
+
+/-- Interpret a factor as a bundled scope-respecting valuation. -/
+noncomputable def toScopedValuation (φ : Factor fg) :
+    ScopedValuation V (fun v => fg.stateSpace v) K :=
+  ⟨toValuation (fg := fg) φ, toValuation_respects (fg := fg) φ⟩
+
+/-- Map a factor list into valuation form. -/
+noncomputable def toValuations (fs : List (Factor fg)) :
+    List (Valuation V (fun v => fg.stateSpace v) K) :=
+  fs.map (toValuation (fg := fg))
+
+/-- Map a factor list into bundled scope-respecting valuation form. -/
+noncomputable def toScopedValuations (fs : List (Factor fg)) :
+    List (ScopedValuation V (fun v => fg.stateSpace v) K) :=
+  fs.map (toScopedValuation (fg := fg))
+
+omit [DecidableEq V] in
+@[simp] theorem toScopedValuation_coe (φ : Factor fg) :
+    ((toScopedValuation (fg := fg) φ : ScopedValuation V (fun v => fg.stateSpace v) K) :
+      Valuation V (fun v => fg.stateSpace v) K) =
+      toValuation (fg := fg) φ := rfl
+
+omit [DecidableEq V] in
+@[simp] theorem toScopedValuations_map_coe (fs : List (Factor fg)) :
+    (toScopedValuations (fg := fg) fs).map
+        (fun φ : ScopedValuation V (fun v => fg.stateSpace v) K =>
+          (φ : Valuation V (fun v => fg.stateSpace v) K)) =
+      toValuations (fg := fg) fs := by
+  simp [toScopedValuations, toValuations]
 
 lemma extend_eq_update (φ : Factor fg) (v : V) (hv : v ∈ φ.scope)
     (x : FullConfig V (fun v => fg.stateSpace v)) (val : fg.stateSpace v) :
@@ -156,6 +180,65 @@ lemma toValuation_combineAll (fs : List (Factor fg)) [One K] [Mul K] :
               (toValuations (fg := fg) (f :: fs)) := by
                 simp [combineAll, toValuations]
 
+lemma toScopedValuation_combineAll (fs : List (Factor fg)) [One K] [Mul K] :
+    ((ScopedValuation.combineAll
+        (V := V) (β := fun v => fg.stateSpace v) (K := K)
+        (toScopedValuations (fg := fg) fs) :
+        ScopedValuation V (fun v => fg.stateSpace v) K) :
+      Valuation V (fun v => fg.stateSpace v) K) =
+      toValuation (fg := fg) (VariableElimination.combineAll (fg := fg) fs) := by
+  induction fs with
+  | nil =>
+      simp [ScopedValuation.combineAll, toScopedValuations, VariableElimination.combineAll,
+        toValuation_oneFactor]
+  | cons f fs ih =>
+      calc
+        ((ScopedValuation.combineAll
+            (V := V) (β := fun v => fg.stateSpace v) (K := K)
+            (toScopedValuations (fg := fg) (f :: fs)) :
+            ScopedValuation V (fun v => fg.stateSpace v) K) :
+          Valuation V (fun v => fg.stateSpace v) K)
+            =
+          combine (φ := toValuation (fg := fg) f)
+            (ψ := ((ScopedValuation.combineAll
+              (V := V) (β := fun v => fg.stateSpace v) (K := K)
+              (toScopedValuations (fg := fg) fs) :
+              ScopedValuation V (fun v => fg.stateSpace v) K) :
+                Valuation V (fun v => fg.stateSpace v) K)) := by
+                rfl
+        _ =
+          combine (φ := toValuation (fg := fg) f)
+            (ψ := toValuation (fg := fg) (VariableElimination.combineAll (fg := fg) fs)) := by
+                exact congrArg
+                  (fun ψ => combine (φ := toValuation (fg := fg) f) (ψ := ψ))
+                  ih
+        _ = toValuation (fg := fg) (VariableElimination.combineAll (fg := fg) (f :: fs)) := by
+                simp [VariableElimination.combineAll, toValuation_mul]
+
+lemma toScopedValuation_combineAll_append
+    (fs₁ fs₂ : List (Factor fg)) [Monoid K] :
+    ((ScopedValuation.combineAll
+        (V := V) (β := fun v => fg.stateSpace v) (K := K)
+        (toScopedValuations (fg := fg) (fs₁ ++ fs₂)) :
+        ScopedValuation V (fun v => fg.stateSpace v) K) :
+      Valuation V (fun v => fg.stateSpace v) K) =
+      combine
+        (φ := ((ScopedValuation.combineAll
+          (V := V) (β := fun v => fg.stateSpace v) (K := K)
+          (toScopedValuations (fg := fg) fs₁) :
+          ScopedValuation V (fun v => fg.stateSpace v) K) :
+            Valuation V (fun v => fg.stateSpace v) K))
+        (ψ := ((ScopedValuation.combineAll
+          (V := V) (β := fun v => fg.stateSpace v) (K := K)
+          (toScopedValuations (fg := fg) fs₂) :
+          ScopedValuation V (fun v => fg.stateSpace v) K) :
+            Valuation V (fun v => fg.stateSpace v) K)) := by
+  simpa [toScopedValuations, toValuations] using
+    (ScopedValuation.combineAll_append
+      (V := V) (β := fun v => fg.stateSpace v) (K := K)
+      (fs₁ := toScopedValuations (fg := fg) fs₁)
+      (fs₂ := toScopedValuations (fg := fg) fs₂))
+
 lemma toValuation_sumOutAll (f : Factor fg) (order : List V)
     [∀ v, Fintype (fg.stateSpace v)] [AddCommMonoid K] :
     toValuation (fg := fg) (VariableElimination.sumOutAll (fg := fg) f order) =
@@ -187,6 +270,29 @@ theorem eliminateVars_correct_via_valuation
   exact
     combineAll_eliminateVars (V := V) (β := fun v => fg.stateSpace v) (K := K)
       (fs := toValuations (fg := fg) fs) (order := order) hres
+
+/-- Bundled scoped-valuation VE correctness: the scoped elimination lane
+computes the same valuation-algebra marginal as direct `sumOutAll`. -/
+theorem eliminateVars_correct_via_scopedValuation
+    (fs : List (Factor fg)) (order : List V)
+    [∀ v, Fintype (fg.stateSpace v)] [CommSemiring K] :
+    ((ScopedValuation.combineAll
+        (V := V) (β := fun v => fg.stateSpace v) (K := K)
+        (ScopedValuation.eliminateVars
+          (V := V) (β := fun v => fg.stateSpace v) (K := K)
+          (toScopedValuations (fg := fg) fs) order) :
+        ScopedValuation V (fun v => fg.stateSpace v) K) :
+      Valuation V (fun v => fg.stateSpace v) K) =
+      sumOutAll
+        (φ := ((ScopedValuation.combineAll
+          (V := V) (β := fun v => fg.stateSpace v) (K := K)
+          (toScopedValuations (fg := fg) fs) :
+          ScopedValuation V (fun v => fg.stateSpace v) K) :
+            Valuation V (fun v => fg.stateSpace v) K)) order := by
+  simpa using
+    (ScopedValuation.combineAll_eliminateVars_eq_sumOutAll
+      (V := V) (β := fun v => fg.stateSpace v) (K := K)
+      (fs := toScopedValuations (fg := fg) fs) (order := order))
 
 /-- Factor-graph semantics → valuation VE:
 combine+sumOut in the concrete engine matches valuation elimination. -/
@@ -228,6 +334,51 @@ theorem sumOutAll_combineAll_via_valuation
             (toValuations (fg := fg) fs) order) := by
           simpa using
             (eliminateVars_correct_via_valuation (fg := fg) (fs := fs) (order := order)).symm
+
+/-- Factor-graph semantics → bundled scoped-valuation VE:
+combine+sumOut in the concrete engine matches scoped valuation elimination. -/
+theorem sumOutAll_combineAll_via_scopedValuation
+    (fs : List (Factor fg)) (order : List V)
+    [∀ v, Fintype (fg.stateSpace v)] [CommSemiring K] :
+    toValuation (fg := fg)
+        (VariableElimination.sumOutAll (fg := fg)
+          (VariableElimination.combineAll (fg := fg) fs) order) =
+      ((ScopedValuation.combineAll
+          (V := V) (β := fun v => fg.stateSpace v) (K := K)
+          (ScopedValuation.eliminateVars
+            (V := V) (β := fun v => fg.stateSpace v) (K := K)
+            (toScopedValuations (fg := fg) fs) order) :
+          ScopedValuation V (fun v => fg.stateSpace v) K) :
+        Valuation V (fun v => fg.stateSpace v) K) := by
+  calc
+    toValuation (fg := fg)
+        (VariableElimination.sumOutAll (fg := fg)
+          (VariableElimination.combineAll (fg := fg) fs) order)
+        =
+      sumOutAll (φ := toValuation (fg := fg)
+        (VariableElimination.combineAll (fg := fg) fs)) order := by
+          simpa using
+            (toValuation_sumOutAll (fg := fg)
+              (f := VariableElimination.combineAll (fg := fg) fs) order)
+    _ =
+      sumOutAll
+        (φ := ((ScopedValuation.combineAll
+          (V := V) (β := fun v => fg.stateSpace v) (K := K)
+          (toScopedValuations (fg := fg) fs) :
+          ScopedValuation V (fun v => fg.stateSpace v) K) :
+            Valuation V (fun v => fg.stateSpace v) K)) order := by
+              rw [← toScopedValuation_combineAll]
+    _ =
+      ((ScopedValuation.combineAll
+          (V := V) (β := fun v => fg.stateSpace v) (K := K)
+          (ScopedValuation.eliminateVars
+            (V := V) (β := fun v => fg.stateSpace v) (K := K)
+            (toScopedValuations (fg := fg) fs) order) :
+          ScopedValuation V (fun v => fg.stateSpace v) K) :
+        Valuation V (fun v => fg.stateSpace v) K) := by
+          symm
+          exact eliminateVars_correct_via_scopedValuation
+            (fg := fg) (fs := fs) (order := order)
 
 end ValuationBridge
 

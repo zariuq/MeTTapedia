@@ -9,6 +9,7 @@ import Mettapedia.Logic.PLNXiCarrierScreening
 import Mettapedia.Logic.PLNXiDerivedBNRules
 import Mettapedia.Logic.PLNIntensionalWorldModel
 import Mettapedia.Logic.IntensionalInheritanceSolomonoffBridge
+import Mettapedia.Logic.IntensionalInheritanceAllCanary
 import Mettapedia.Logic.PLNInferenceControlCore
 import Mettapedia.Logic.PLNInferenceControlAlgorithms
 import Mettapedia.Logic.PLNInferenceControlChainer
@@ -40,6 +41,8 @@ import Mettapedia.Logic.MarkovLogicClauseSemantics
 import Mettapedia.Logic.MarkovLogicClauseFactorGraph
 import Mettapedia.Logic.MarkovLogicClauseWorldModel
 import Mettapedia.Logic.MarkovLogicClauseRegression
+import Mettapedia.Logic.MarkovLogicInfiniteCollapse
+import Mettapedia.ProbabilityTheory.BayesianNetworks.MessagePassingTreeExactness
 import Mettapedia.Logic.PLNProbabilisticEventCalculus
 import Mettapedia.Logic.PLNColliderSingletonBridge
 import Mettapedia.Logic.PLNErrorMagnificationGrounding
@@ -70,6 +73,8 @@ import Mettapedia.Logic.PLNFirstOrder.GradedQuantifierSpecialization
 import Mettapedia.Logic.PLNFirstOrder.FuzzyDomainQuantifiers
 import Mettapedia.Logic.PLNFirstOrder.FuzzyQuantifierSemanticsFin
 import Mettapedia.Logic.HOL
+import Mettapedia.Logic.HOL.Probabilistic
+import Mettapedia.Logic.HOL.LogicalInduction
 import Mettapedia.Logic.PLNWorldModelHOL
 import Mettapedia.Logic.PLNWorldModelHOLCompleteness
 import Mettapedia.Logic.PLNWorldModelHOLConsequence
@@ -79,6 +84,9 @@ import Mettapedia.Logic.PLNWorldModelPredCodeConsequence
 import Mettapedia.Logic.PLNWorldModelPredCodeInfinitaryCompleteness
 import Mettapedia.Logic.PLNWorldModelPreorder
 import Mettapedia.Logic.PLNGaussianEMExtension
+import Mettapedia.Logic.PLNConfidenceWeightRevision
+import Mettapedia.Logic.PLNInformationGeometry
+import Mettapedia.Logic.PLNAmplitudePhase
 
 /-!
 # PLN Canonical API (Lean)
@@ -135,6 +143,18 @@ open Mettapedia.ProbabilityTheory.BayesianNetworks.Examples
 
 /-- Canonical evidence carrier for PLN in this repository. -/
 abbrev BinaryEvidence := EvidenceQuantale.BinaryEvidence
+
+noncomputable abbrev truthOdds :=
+  Mettapedia.Logic.EvidenceQuantale.BinaryEvidence.truthOdds
+
+noncomputable abbrev truthLogOdds :=
+  Mettapedia.Logic.EvidenceQuantale.BinaryEvidence.truthLogOdds
+
+abbrev truthOddsTensorMul :=
+  @Mettapedia.Logic.EvidenceQuantale.BinaryEvidence.truthOdds_tensor_mul
+
+abbrev truthLogOddsTensorAdd :=
+  @Mettapedia.Logic.EvidenceQuantale.BinaryEvidence.truthLogOdds_tensor_add
 
 /-- Canonical STV record used by rule-level formulas. -/
 abbrev STV := PLNDeduction.STV
@@ -1019,6 +1039,30 @@ abbrev pln_higherOrderCertified_regression_gwas_broadSupport_eq :=
 abbrev pln_higherOrderCertified_regression_gwas_revealTissue_extends_context :=
   @_root_.Mettapedia.Logic.certifiedChaining_regression_gwas_revealTissue_extends_context
 
+/-! ## Tree BP Incident-Edge Exactness Endpoints
+
+These are the current public fragment theorems for exact belief propagation on
+small trees, phrased through the incident-edge schedule surface rather than the
+older total-function message API. -/
+
+abbrev pln_bp_leafFork_variableBelief_exact_incident :=
+  @_root_.Mettapedia.ProbabilityTheory.BayesianNetworks.MessagePassing.TreeExactness.leafFork_variableBelief_exact_incident
+
+abbrev pln_bp_twoLeaf_factorBelief_exact_incident :=
+  @_root_.Mettapedia.ProbabilityTheory.BayesianNetworks.MessagePassing.TreeExactness.twoLeaf_factorBelief_exact_incident
+
+abbrev pln_bp_twoSubtree_variableBelief_exact_incident :=
+  @_root_.Mettapedia.ProbabilityTheory.BayesianNetworks.MessagePassing.TreeExactness.twoSubtree_variableBelief_exact_incident
+
+abbrev pln_bp_twoSubtree_factorBelief_exact_incident :=
+  @_root_.Mettapedia.ProbabilityTheory.BayesianNetworks.MessagePassing.TreeExactness.twoSubtree_factorBelief_exact_incident
+
+abbrev pln_bp_twoSubtree_variableBelief_exact_normalized_incident :=
+  @_root_.Mettapedia.ProbabilityTheory.BayesianNetworks.MessagePassing.TreeExactness.twoSubtree_variableBelief_exact_normalized_incident
+
+abbrev pln_bp_twoSubtree_factorBelief_exact_normalized_incident :=
+  @_root_.Mettapedia.ProbabilityTheory.BayesianNetworks.MessagePassing.TreeExactness.twoSubtree_factorBelief_exact_normalized_incident
+
 /-! ## Clause-Native MLN Endpoints (primary MLN→WM result)
 
 The clause-native lane is the canonical MLN subsumption result.
@@ -1071,6 +1115,9 @@ abbrev pln_mln_clause_queryStrength_eq_queryProb :=
 abbrev pln_mln_clause_weight_eq_queryMass :=
   @_root_.Mettapedia.Logic.MarkovLogicClauseWorldModel.clauseWM_weight_eq_queryMass
 
+abbrev pln_mln_clause_scopedWeight_eq_queryMass :=
+  @_root_.Mettapedia.Logic.MarkovLogicClauseWorldModel.clauseWM_scopedWeight_eq_queryMass
+
 abbrev pln_mln_clause_total_eq_totalMass :=
   @_root_.Mettapedia.Logic.MarkovLogicClauseWorldModel.clauseWM_total_eq_totalMass
 
@@ -1084,6 +1131,9 @@ abbrev pln_mln_clause_unnormalizedJoint_eq_worldWeight :=
 abbrev pln_mln_clause_weightOfConstraints_eq_queryMass :=
   @_root_.Mettapedia.Logic.MarkovLogicClauseFactorGraph.GroundMLN.weightOfConstraints_eq_queryMass
 
+abbrev pln_mln_clause_veQueryWeight_eq_queryMass :=
+  @_root_.Mettapedia.Logic.MarkovLogicClauseFactorGraph.GroundMLN.veQueryWeight_eq_queryMass
+
 abbrev pln_mln_clause_partitionFunction_eq_totalMass :=
   @_root_.Mettapedia.Logic.MarkovLogicClauseFactorGraph.GroundMLN.partitionFunction_eq_totalMass
 
@@ -1094,6 +1144,22 @@ abbrev pln_mln_clause_worldWeight_eq_gibbsProduct :=
 -- Regression canaries
 abbrev pln_mln_clause_regression_sigmoid_queryStrength_eq_three_fourths :=
   @_root_.Mettapedia.Logic.MarkovLogicClauseRegression.sigmoid_queryStrength_true_eq_three_fourths
+
+-- Infinite finite-volume collapse bridge
+noncomputable abbrev pln_mln_infinite_regionFactorGraph :=
+  @_root_.Mettapedia.Logic.MarkovLogicInfiniteCollapse.regionFactorGraph
+
+noncomputable abbrev pln_mln_infinite_regionFactorGraphMassSemantics :=
+  @_root_.Mettapedia.Logic.MarkovLogicInfiniteCollapse.regionFactorGraphMassSemantics
+
+abbrev pln_mln_infinite_region_veQueryWeight_eq_queryMass :=
+  @_root_.Mettapedia.Logic.MarkovLogicInfiniteCollapse.regionFactorGraph_veQueryWeight_eq_queryMass
+
+abbrev pln_mln_infinite_region_scopedWeight_eq_queryMass :=
+  @_root_.Mettapedia.Logic.MarkovLogicInfiniteCollapse.regionFactorGraph_scopedWeight_eq_queryMass
+
+abbrev pln_mln_infinite_region_queryProb_eq_finiteVolume_queryProb :=
+  @_root_.Mettapedia.Logic.MarkovLogicInfiniteCollapse.regionFactorGraph_queryProb_eq_finiteVolume_queryProb
 
 abbrev pln_mln_clause_regression_conflicting_queryStrength_eq_three_fifths :=
   @_root_.Mettapedia.Logic.MarkovLogicClauseRegression.conflicting_queryStrength_true_eq_three_fifths
@@ -2107,6 +2173,861 @@ abbrev BinaryContext := EvidenceClass.BinaryContext
 
 abbrev IDMPredictiveContext := PLNWorldModel.IDMPredictiveContext
 
+abbrev EvidenceWeightCoordinate :=
+  Mettapedia.Logic.PLNConfidenceWeight.EvidenceWeightCoordinate
+
+abbrev CountReconstruction :=
+  Mettapedia.Logic.PLNConfidenceWeight.EvidenceWeightCoordinate.CountReconstruction
+
+abbrev LeftInverseOnPositive :=
+  Mettapedia.Logic.PLNConfidenceWeight.EvidenceWeightCoordinate.LeftInverseOnPositive
+
+abbrev TypedConfidence :=
+  Mettapedia.Logic.PLNConfidenceWeight.EvidenceWeightCoordinate.TypedConfidence
+
+noncomputable abbrev typedConfidenceOfWeight :=
+  @Mettapedia.Logic.PLNConfidenceWeight.EvidenceWeightCoordinate.TypedConfidence.ofWeight
+
+noncomputable abbrev typedConfidenceWeight :=
+  @Mettapedia.Logic.PLNConfidenceWeight.EvidenceWeightCoordinate.TypedConfidence.weight
+
+noncomputable abbrev plnOddsCoordinate :=
+  Mettapedia.Logic.PLNConfidenceWeight.EvidenceWeightCoordinate.plnOddsCoordinate
+
+noncomputable abbrev reserveHalfCoordinate :=
+  Mettapedia.Logic.PLNConfidenceWeight.EvidenceWeightCoordinate.reserveHalfCoordinate
+
+noncomputable abbrev evidenceWeightEncodeCounts :=
+  @Mettapedia.Logic.PLNConfidenceWeight.EvidenceWeightCoordinate.encodeCounts
+
+noncomputable abbrev evidenceWeightDecodeCounts :=
+  @Mettapedia.Logic.PLNConfidenceWeight.EvidenceWeightCoordinate.decodeCounts
+
+abbrev evidenceWeightCoordinateDecodeEncodeCounts :=
+  @Mettapedia.Logic.PLNConfidenceWeight.EvidenceWeightCoordinate.decode_encode_counts
+
+abbrev countReconstructionIffLeftInverseOnPositive :=
+  @Mettapedia.Logic.PLNConfidenceWeight.EvidenceWeightCoordinate.countReconstruction_iff_leftInverseOnPositive
+
+abbrev evidenceWeightCoordinateEncodeInjectiveOnNonneg :=
+  @Mettapedia.Logic.PLNConfidenceWeight.EvidenceWeightCoordinate.encode_injective_on_nonneg
+
+abbrev plnOddsCoordinateReconstructsBinaryCounts :=
+  @Mettapedia.Logic.PLNConfidenceWeight.EvidenceWeightCoordinate.plnOddsCoordinate_decode_encode_counts
+
+abbrev reserveHalfCoordinateReconstructsBinaryCounts :=
+  @Mettapedia.Logic.PLNConfidenceWeight.EvidenceWeightCoordinate.reserveHalfCoordinate_decode_encode_counts
+
+abbrev rawConfidenceDisplayCanDecodeToDifferentWeights :=
+  Mettapedia.Logic.PLNConfidenceWeight.EvidenceWeightCoordinate.TypedConfidence.same_display_can_decode_differently
+
+noncomputable abbrev confidenceOdds :=
+  Mettapedia.Logic.PLNConfidenceWeight.EvidenceWeightCoordinate.confidenceOdds
+
+noncomputable abbrev plnConfidenceRevision :=
+  Mettapedia.Logic.PLNConfidenceWeight.EvidenceWeightCoordinate.plnConfidenceRevision
+
+noncomputable abbrev expConfidenceRevision :=
+  Mettapedia.Logic.PLNConfidenceWeight.EvidenceWeightCoordinate.expConfidenceRevision
+
+noncomputable abbrev tanhConfidenceRevision :=
+  Mettapedia.Logic.PLNConfidenceWeight.EvidenceWeightCoordinate.tanhConfidenceRevision
+
+noncomputable abbrev expCoordinate :=
+  Mettapedia.Logic.PLNConfidenceWeight.EvidenceWeightCoordinate.expCoordinate
+
+noncomputable abbrev tanhCoordinate :=
+  Mettapedia.Logic.PLNConfidenceWeight.EvidenceWeightCoordinate.tanhCoordinate
+
+noncomputable abbrev arctanCoordinate :=
+  Mettapedia.Logic.PLNConfidenceWeight.EvidenceWeightCoordinate.arctanCoordinate
+
+abbrev confidenceOddsPLNCoordinateEncodeEqWeightDiv :=
+  @Mettapedia.Logic.PLNConfidenceWeight.EvidenceWeightCoordinate.confidenceOdds_plnOddsCoordinate_encode_eq_weight_div
+
+abbrev confidenceOddsPLNRevisionAdditive :=
+  @Mettapedia.Logic.PLNConfidenceWeight.EvidenceWeightCoordinate.confidenceOdds_pln_revision_additive
+
+noncomputable abbrev transportedConfidenceRevision :=
+  Mettapedia.Logic.PLNConfidenceWeight.EvidenceWeightCoordinate.transportedConfidenceRevision
+
+abbrev NonnegativeEvidenceWeight :=
+  Mettapedia.Logic.PLNConfidenceWeight.EvidenceWeightCoordinate.NonnegativeEvidenceWeight
+
+abbrev EvidenceWeightChartIso :=
+  Mettapedia.Logic.PLNConfidenceWeight.EvidenceWeightCoordinate.EvidenceWeightChartIso
+
+abbrev reparametrizeChart :=
+  @Mettapedia.Logic.PLNConfidenceWeight.EvidenceWeightCoordinate.reparametrizeChart
+
+abbrev chartDifference :=
+  @Mettapedia.Logic.PLNConfidenceWeight.EvidenceWeightCoordinate.chartDifference
+
+abbrev reparametrizeChartChartDifference :=
+  @Mettapedia.Logic.PLNConfidenceWeight.EvidenceWeightCoordinate.reparametrizeChart_chartDifference
+
+abbrev reparametrizeChartFree :=
+  @Mettapedia.Logic.PLNConfidenceWeight.EvidenceWeightCoordinate.reparametrizeChart_free
+
+abbrev chartDifferenceUnique :=
+  @Mettapedia.Logic.PLNConfidenceWeight.EvidenceWeightCoordinate.chartDifference_unique
+
+abbrev chartDifferenceSelf :=
+  @Mettapedia.Logic.PLNConfidenceWeight.EvidenceWeightCoordinate.chartDifference_self
+
+abbrev OrderedEvidenceWeightChartIso :=
+  Mettapedia.Logic.PLNConfidenceWeight.EvidenceWeightCoordinate.OrderedEvidenceWeightChartIso
+
+abbrev orderedChartToChartIso :=
+  @Mettapedia.Logic.PLNConfidenceWeight.EvidenceWeightCoordinate.OrderedEvidenceWeightChartIso.toChartIso
+
+abbrev reparametrizeOrderedChart :=
+  @Mettapedia.Logic.PLNConfidenceWeight.EvidenceWeightCoordinate.reparametrizeOrderedChart
+
+abbrev orderedChartDifference :=
+  @Mettapedia.Logic.PLNConfidenceWeight.EvidenceWeightCoordinate.orderedChartDifference
+
+abbrev reparametrizeOrderedChartDifference :=
+  @Mettapedia.Logic.PLNConfidenceWeight.EvidenceWeightCoordinate.reparametrizeOrderedChart_orderedChartDifference
+
+abbrev reparametrizeOrderedChartFree :=
+  @Mettapedia.Logic.PLNConfidenceWeight.EvidenceWeightCoordinate.reparametrizeOrderedChart_free
+
+abbrev orderedChartDifferenceUnique :=
+  @Mettapedia.Logic.PLNConfidenceWeight.EvidenceWeightCoordinate.orderedChartDifference_unique
+
+abbrev orderedChartDifferenceSelf :=
+  @Mettapedia.Logic.PLNConfidenceWeight.EvidenceWeightCoordinate.orderedChartDifference_self
+
+abbrev reparametrizeOrderedChartToChartIso :=
+  @Mettapedia.Logic.PLNConfidenceWeight.EvidenceWeightCoordinate.reparametrizeOrderedChart_toChartIso
+
+abbrev orderedChartDifferenceToEquiv :=
+  @Mettapedia.Logic.PLNConfidenceWeight.EvidenceWeightCoordinate.orderedChartDifference_toEquiv
+
+abbrev boolSwapNotMonotone :=
+  Mettapedia.Logic.PLNConfidenceWeight.EvidenceWeightCoordinate.boolSwap_not_monotone
+
+abbrev transportedConfidenceRevisionOfEncodedWeights :=
+  @Mettapedia.Logic.PLNConfidenceWeight.EvidenceWeightCoordinate.transportedConfidenceRevision_of_encoded_weights
+
+abbrev transportedConfidenceRevisionAssocOfNonneg :=
+  @Mettapedia.Logic.PLNConfidenceWeight.EvidenceWeightCoordinate.transportedConfidenceRevision_assoc_of_nonneg
+
+abbrev walleyWidthComplementEqPLNCoordinate :=
+  @Mettapedia.Logic.PLNConfidenceWeight.EvidenceWeightCoordinate.walley_width_complement_eq_plnOddsCoordinate_encode
+
+abbrev confidenceOddsWalleyWidthComplementEqWeightDiv :=
+  @Mettapedia.Logic.PLNConfidenceWeight.EvidenceWeightCoordinate.confidenceOdds_walley_width_complement_eq_weight_div
+
+abbrev confidenceOddsWeightIdentityForcesPLN :=
+  @Mettapedia.Logic.PLNConfidenceWeight.EvidenceWeightCoordinate.confidenceOdds_weight_identity_forces_pln_encode
+
+abbrev canonicalOddsAdditiveForcesPLN :=
+  @Mettapedia.Logic.PLNConfidenceWeight.EvidenceWeightCoordinate.canonical_odds_additive_forces_pln
+
+abbrev canonicalOddsMonotoneAdditiveForcesPLN :=
+  @Mettapedia.Logic.PLNConfidenceWeight.EvidenceWeightCoordinate.canonical_odds_monotone_additive_forces_pln
+
+abbrev plnOddsCoordinateSatisfiesCanonicalGates :=
+  @Mettapedia.Logic.PLNConfidenceWeight.EvidenceWeightCoordinate.plnOddsCoordinate_satisfies_canonical_gates
+
+abbrev plnOddsCoordinateSatisfiesMonotoneCanonicalGates :=
+  @Mettapedia.Logic.PLNConfidenceWeight.EvidenceWeightCoordinate.plnOddsCoordinate_satisfies_monotone_canonical_gates
+
+abbrev plnConfidenceRevisionClosedForm :=
+  @Mettapedia.Logic.PLNConfidenceWeight.EvidenceWeightCoordinate.plnConfidence_revision_closedForm
+
+abbrev expCoordinateReconstructsWeight :=
+  @Mettapedia.Logic.PLNConfidenceWeight.EvidenceWeightCoordinate.expCoordinate_decode_encode
+
+abbrev expCoordinateRevisionClosedForm :=
+  @Mettapedia.Logic.PLNConfidenceWeight.EvidenceWeightCoordinate.expCoordinate_revision_closedForm
+
+abbrev tanhCoordinateReconstructsWeight :=
+  @Mettapedia.Logic.PLNConfidenceWeight.EvidenceWeightCoordinate.tanhCoordinate_decode_encode
+
+abbrev tanhCoordinateRevisionClosedForm :=
+  @Mettapedia.Logic.PLNConfidenceWeight.EvidenceWeightCoordinate.tanhCoordinate_revision_closedForm
+
+abbrev arctanCoordinateReconstructsWeight :=
+  @Mettapedia.Logic.PLNConfidenceWeight.EvidenceWeightCoordinate.arctanCoordinate_decode_encode
+
+abbrev expRevisionDiffersFromPLNAtHalf :=
+  Mettapedia.Logic.PLNConfidenceWeight.EvidenceWeightCoordinate.expRevision_differs_from_plnRevision_at_half
+
+abbrev plnRevisionConfidenceOddsAdditiveAtHalf :=
+  Mettapedia.Logic.PLNConfidenceWeight.EvidenceWeightCoordinate.plnRevision_confidenceOdds_additive_at_half
+
+abbrev expRevisionNotConfidenceOddsAdditiveAtHalf :=
+  Mettapedia.Logic.PLNConfidenceWeight.EvidenceWeightCoordinate.expRevision_not_confidenceOdds_additive_at_half
+
+abbrev tanhRevisionDiffersFromPLNAtHalf :=
+  Mettapedia.Logic.PLNConfidenceWeight.EvidenceWeightCoordinate.tanhRevision_differs_from_plnRevision_at_half
+
+abbrev widthComplementCompatible :=
+  @Mettapedia.Logic.PLNTruthTower.WidthComplementCompatible
+
+abbrev plnOddsWidthComplementCompatible :=
+  @Mettapedia.Logic.PLNTruthTower.plnOdds_widthComplementCompatible
+
+abbrev widthComplementCompatibleForcesPLNOdds :=
+  @Mettapedia.Logic.PLNTruthTower.widthComplementCompatible_forces_plnOdds
+
+abbrev reserveHalfNotWidthComplementCompatible :=
+  @Mettapedia.Logic.PLNTruthTower.reserveHalf_not_widthComplementCompatible
+
+abbrev BinaryCounts := Mettapedia.Logic.PLNTruthTower.BinaryCounts
+
+abbrev binaryCountsAddStrengthWeightedMixture :=
+  @Mettapedia.Logic.PLNTruthTower.BinaryCounts.add_strength_eq_weighted_mixture
+
+abbrev BinarySimplexScale :=
+  Mettapedia.Logic.PLNInformationGeometry.BinarySimplexScale
+
+noncomputable abbrev binarySimplexScaleToCounts :=
+  Mettapedia.Logic.PLNInformationGeometry.binarySimplexScaleToCounts
+
+noncomputable abbrev binaryCountsToSimplexScale :=
+  @Mettapedia.Logic.PLNInformationGeometry.binaryCountsToSimplexScale
+
+noncomputable abbrev positiveBinaryCountsEquivSimplexScale :=
+  Mettapedia.Logic.PLNInformationGeometry.positiveBinaryCountsEquivSimplexScale
+
+abbrev binarySimplexScaleToCountsTotal :=
+  @Mettapedia.Logic.PLNInformationGeometry.binarySimplexScaleToCounts_total
+
+abbrev binarySimplexScaleToCountsStrength :=
+  @Mettapedia.Logic.PLNInformationGeometry.binarySimplexScaleToCounts_strength
+
+noncomputable abbrev bernoulliLogOdds :=
+  Mettapedia.Logic.PLNInformationGeometry.bernoulliLogOdds
+
+noncomputable abbrev bernoulliNaturalToMean :=
+  Mettapedia.Logic.PLNInformationGeometry.bernoulliNaturalToMean
+
+noncomputable abbrev bernoulliFisherMetric :=
+  Mettapedia.Logic.PLNInformationGeometry.bernoulliFisherMetric
+
+noncomputable abbrev bernoulliFisherTensor :=
+  Mettapedia.Logic.PLNInformationGeometry.bernoulliFisherTensor
+
+noncomputable abbrev bernoulliMixtureGeodesic :=
+  Mettapedia.Logic.PLNInformationGeometry.bernoulliMixtureGeodesic
+
+noncomputable abbrev bernoulliExponentialGeodesic :=
+  Mettapedia.Logic.PLNInformationGeometry.bernoulliExponentialGeodesic
+
+noncomputable abbrev bernoulliMixtureGeodesicVelocityPath :=
+  Mettapedia.Logic.PLNInformationGeometry.bernoulliMixtureGeodesicVelocityPath
+
+noncomputable abbrev bernoulliExponentialGeodesicNaturalVelocityPath :=
+  Mettapedia.Logic.PLNInformationGeometry.bernoulliExponentialGeodesicNaturalVelocityPath
+
+noncomputable abbrev bernoulliNaturalFisherTensor :=
+  Mettapedia.Logic.PLNInformationGeometry.bernoulliNaturalFisherTensor
+
+noncomputable abbrev bernoulliMixtureConnectionCoeff :=
+  Mettapedia.Logic.PLNInformationGeometry.bernoulliMixtureConnectionCoeff
+
+noncomputable abbrev bernoulliExponentialConnectionCoeff :=
+  Mettapedia.Logic.PLNInformationGeometry.bernoulliExponentialConnectionCoeff
+
+noncomputable abbrev bernoulliLeviCivitaMeanConnectionCoeff :=
+  Mettapedia.Logic.PLNInformationGeometry.bernoulliLeviCivitaMeanConnectionCoeff
+
+noncomputable abbrev bernoulliSquaredHellinger :=
+  Mettapedia.Logic.PLNInformationGeometry.bernoulliSquaredHellinger
+
+noncomputable abbrev bernoulliKL :=
+  Mettapedia.Logic.PLNInformationGeometry.bernoulliKL
+
+noncomputable abbrev bernoulliJeffreys :=
+  Mettapedia.Logic.PLNInformationGeometry.bernoulliJeffreys
+
+noncomputable abbrev bernoulliHellingerEmbedding :=
+  Mettapedia.Logic.PLNInformationGeometry.bernoulliHellingerEmbedding
+
+noncomputable abbrev bernoulliBornPositive :=
+  Mettapedia.Logic.PLNInformationGeometry.bernoulliBornPositive
+
+noncomputable abbrev bernoulliBornNegative :=
+  Mettapedia.Logic.PLNInformationGeometry.bernoulliBornNegative
+
+abbrev BinaryPhasedAmplitude :=
+  Mettapedia.Logic.PLNInformationGeometry.BinaryPhasedAmplitude
+
+abbrev binaryPhasedAmplitudeForgetPhase :=
+  Mettapedia.Logic.PLNInformationGeometry.BinaryPhasedAmplitude.forgetPhase
+
+abbrev bernoulliNaturalToMeanPositive :=
+  Mettapedia.Logic.PLNInformationGeometry.bernoulliNaturalToMean_pos
+
+abbrev bernoulliNaturalToMeanLtOne :=
+  Mettapedia.Logic.PLNInformationGeometry.bernoulliNaturalToMean_lt_one
+
+abbrev bernoulliLogOddsNaturalToMean :=
+  Mettapedia.Logic.PLNInformationGeometry.bernoulliLogOdds_naturalToMean
+
+abbrev bernoulliNaturalToMeanLogOdds :=
+  @Mettapedia.Logic.PLNInformationGeometry.bernoulliNaturalToMean_logOdds
+
+abbrev bernoulliHellingerEmbeddingUnitCircle :=
+  @Mettapedia.Logic.PLNInformationGeometry.bernoulliHellingerEmbedding_unit_circle
+
+abbrev bernoulliFisherMetricPositive :=
+  @Mettapedia.Logic.PLNInformationGeometry.bernoulliFisherMetric_pos
+
+abbrev bernoulliFisherMetricHalf :=
+  Mettapedia.Logic.PLNInformationGeometry.bernoulliFisherMetric_half
+
+abbrev bernoulliFisherTensorSymm :=
+  Mettapedia.Logic.PLNInformationGeometry.bernoulliFisherTensor_symm
+
+abbrev bernoulliFisherTensorDiagPositive :=
+  @Mettapedia.Logic.PLNInformationGeometry.bernoulliFisherTensor_diag_pos
+
+abbrev bernoulliFisherTensorHalf :=
+  Mettapedia.Logic.PLNInformationGeometry.bernoulliFisherTensor_half
+
+abbrev bernoulliMixtureGeodesicOpen :=
+  @Mettapedia.Logic.PLNInformationGeometry.bernoulliMixtureGeodesic_in_open_simplex
+
+abbrev bernoulliExponentialGeodesicOpen :=
+  Mettapedia.Logic.PLNInformationGeometry.bernoulliExponentialGeodesic_in_open_simplex
+
+abbrev bernoulliExponentialGeodesicNaturalLinear :=
+  Mettapedia.Logic.PLNInformationGeometry.bernoulliLogOdds_exponentialGeodesic
+
+abbrev bernoulliMixtureGeodesicVelocityPathAgrees :=
+  Mettapedia.Logic.PLNInformationGeometry.bernoulliMixtureGeodesicVelocityPath_eq_geodesic
+
+abbrev bernoulliMixtureGeodesicConstantVelocity :=
+  Mettapedia.Logic.PLNInformationGeometry.bernoulliMixtureGeodesic_hasDerivAt
+
+abbrev bernoulliExponentialGeodesicNaturalVelocityPathAgrees :=
+  Mettapedia.Logic.PLNInformationGeometry.bernoulliExponentialGeodesicNaturalVelocityPath_eq_linear
+
+abbrev bernoulliExponentialGeodesicNaturalConstantVelocity :=
+  Mettapedia.Logic.PLNInformationGeometry.bernoulliLogOdds_exponentialGeodesic_hasDerivAt
+
+abbrev bernoulliNaturalFisherTensorSymm :=
+  Mettapedia.Logic.PLNInformationGeometry.bernoulliNaturalFisherTensor_symm
+
+abbrev bernoulliNaturalFisherTensorDiagPositive :=
+  @Mettapedia.Logic.PLNInformationGeometry.bernoulliNaturalFisherTensor_diag_pos
+
+abbrev bernoulliNaturalFisherTensorZero :=
+  Mettapedia.Logic.PLNInformationGeometry.bernoulliNaturalFisherTensor_zero
+
+abbrev bernoulliFisherTensorPullbackLogOdds :=
+  Mettapedia.Logic.PLNInformationGeometry.bernoulliFisherTensor_pullback_logOdds
+
+abbrev bernoulliMixtureConnectionCoeffZero :=
+  Mettapedia.Logic.PLNInformationGeometry.bernoulliMixtureConnectionCoeff_zero
+
+abbrev bernoulliExponentialConnectionCoeffZero :=
+  Mettapedia.Logic.PLNInformationGeometry.bernoulliExponentialConnectionCoeff_zero
+
+abbrev bernoulliLeviCivitaMeanConnectionCoeffHalf :=
+  Mettapedia.Logic.PLNInformationGeometry.bernoulliLeviCivitaMeanConnectionCoeff_half
+
+abbrev bernoulliSquaredHellingerNonnegative :=
+  Mettapedia.Logic.PLNInformationGeometry.bernoulliSquaredHellinger_nonneg
+
+abbrev bernoulliSquaredHellingerSymm :=
+  Mettapedia.Logic.PLNInformationGeometry.bernoulliSquaredHellinger_symm
+
+abbrev bernoulliSquaredHellingerSelf :=
+  Mettapedia.Logic.PLNInformationGeometry.bernoulliSquaredHellinger_self
+
+abbrev bernoulliKLSelf :=
+  @Mettapedia.Logic.PLNInformationGeometry.bernoulliKL_self
+
+abbrev bernoulliJeffreysSymm :=
+  Mettapedia.Logic.PLNInformationGeometry.bernoulliJeffreys_symm
+
+abbrev bernoulliJeffreysSelf :=
+  @Mettapedia.Logic.PLNInformationGeometry.bernoulliJeffreys_self
+
+abbrev bernoulliLogOddsHalf :=
+  Mettapedia.Logic.PLNInformationGeometry.bernoulliLogOdds_half
+
+abbrev bernoulliBornPositiveHellinger :=
+  @Mettapedia.Logic.PLNInformationGeometry.bernoulliBornPositive_hellinger
+
+abbrev bernoulliBornNegativeHellinger :=
+  @Mettapedia.Logic.PLNInformationGeometry.bernoulliBornNegative_hellinger
+
+abbrev binaryPhasedAmplitudeForgetPhaseNotInjective :=
+  Mettapedia.Logic.PLNInformationGeometry.binaryPhasedAmplitude_forgetPhase_not_injective
+
+abbrev BinaryAmplitudePhaseState :=
+  Mettapedia.Logic.PLNAmplitudePhase.BinaryAmplitudePhaseState
+
+noncomputable abbrev binaryAmplitudePhaseFromStrengthConcentration :=
+  Mettapedia.Logic.PLNAmplitudePhase.BinaryAmplitudePhaseState.fromStrengthConcentration
+
+noncomputable abbrev binaryAmplitudePhaseToTypedSTV :=
+  @Mettapedia.Logic.PLNAmplitudePhase.BinaryAmplitudePhaseState.toTypedSTV
+
+noncomputable abbrev binaryAmplitudePhaseFromCounts :=
+  Mettapedia.Logic.PLNAmplitudePhase.BinaryAmplitudePhaseState.fromCounts
+
+abbrev binaryAmplitudePhaseFromStrengthBornStrength :=
+  @Mettapedia.Logic.PLNAmplitudePhase.BinaryAmplitudePhaseState.fromStrengthConcentration_bornStrength
+
+abbrev binaryAmplitudePhaseFromStrengthBornCounterStrength :=
+  @Mettapedia.Logic.PLNAmplitudePhase.BinaryAmplitudePhaseState.fromStrengthConcentration_bornCounterStrength
+
+abbrev binaryAmplitudePhaseFromCountsBornStrength :=
+  @Mettapedia.Logic.PLNAmplitudePhase.BinaryAmplitudePhaseState.fromCounts_bornStrength
+
+abbrev binaryAmplitudePhaseFromCountsBornCounterStrength :=
+  @Mettapedia.Logic.PLNAmplitudePhase.BinaryAmplitudePhaseState.fromCounts_bornCounterStrength
+
+abbrev binaryAmplitudePhaseFromCountsTypedSTVStrength :=
+  @Mettapedia.Logic.PLNAmplitudePhase.BinaryAmplitudePhaseState.fromCounts_toTypedSTV_strength
+
+abbrev binaryAmplitudePhaseFromCountsTypedSTVConfidence :=
+  @Mettapedia.Logic.PLNAmplitudePhase.BinaryAmplitudePhaseState.fromCounts_toTypedSTV_confidence
+
+abbrev phaseNotVisibleToStandardPLNView :=
+  Mettapedia.Logic.PLNAmplitudePhase.BinaryAmplitudePhaseState.phase_not_visible_to_standard_pln_view
+
+noncomputable abbrev incoherentTwoPathWeight :=
+  Mettapedia.Logic.PLNAmplitudePhase.incoherentTwoPathWeight
+
+noncomputable abbrev coherentTwoPathWeight :=
+  Mettapedia.Logic.PLNAmplitudePhase.coherentTwoPathWeight
+
+abbrev coherentTwoPathWeightInterferenceLaw :=
+  Mettapedia.Logic.PLNAmplitudePhase.coherentTwoPathWeight_eq_incoherent_plus_interference
+
+abbrev coherentTwoPathWeightZeroInterference :=
+  Mettapedia.Logic.PLNAmplitudePhase.coherentTwoPathWeight_zero_interference
+
+abbrev constructiveInterferenceDiffersFromIncoherent :=
+  Mettapedia.Logic.PLNAmplitudePhase.constructiveInterference_differs_from_incoherent
+
+abbrev destructiveInterferenceDiffersFromIncoherent :=
+  Mettapedia.Logic.PLNAmplitudePhase.destructiveInterference_differs_from_incoherent
+
+noncomputable abbrev complexPhaseFactor :=
+  Mettapedia.Logic.PLNAmplitudePhase.complexPhaseFactor
+
+noncomputable abbrev complexAmplitude :=
+  Mettapedia.Logic.PLNAmplitudePhase.complexAmplitude
+
+noncomputable abbrev complexHellingerAmplitude :=
+  Mettapedia.Logic.PLNAmplitudePhase.complexHellingerAmplitude
+
+noncomputable abbrev complexTwoPathBornWeight :=
+  Mettapedia.Logic.PLNAmplitudePhase.complexTwoPathBornWeight
+
+abbrev complexPhaseFactorIsExponential :=
+  Mettapedia.Logic.PLNAmplitudePhase.complexPhaseFactor_eq_exp_mul_I
+
+abbrev complexAmplitudeIsExponential :=
+  Mettapedia.Logic.PLNAmplitudePhase.complexAmplitude_eq_real_mul_exp_mul_I
+
+abbrev complexPhaseFactorUnitWeight :=
+  Mettapedia.Logic.PLNAmplitudePhase.complexPhaseFactor_normSq
+
+abbrev complexAmplitudeBornWeight :=
+  Mettapedia.Logic.PLNAmplitudePhase.complexAmplitude_normSq
+
+abbrev complexHellingerBornWeight :=
+  @Mettapedia.Logic.PLNAmplitudePhase.complexHellingerAmplitude_normSq
+
+abbrev complexTwoPathInterferenceLaw :=
+  Mettapedia.Logic.PLNAmplitudePhase.complexTwoPathBornWeight_interference
+
+abbrev complexTwoPathReducesToCoherentWeight :=
+  Mettapedia.Logic.PLNAmplitudePhase.complexTwoPathBornWeight_eq_coherentWeight
+
+abbrev complexConstructiveInterference :=
+  Mettapedia.Logic.PLNAmplitudePhase.complexTwoPath_constructive_at_equal_phase
+
+abbrev complexDestructiveInterference :=
+  Mettapedia.Logic.PLNAmplitudePhase.complexTwoPath_destructive_at_pi
+
+abbrev KSComplexPhaseCarrier :=
+  Mettapedia.Logic.PLNAmplitudePhase.KSComplexPhaseCarrier
+
+noncomputable abbrev ksComplexPhaseCarrierEquivComplex :=
+  Mettapedia.Logic.PLNAmplitudePhase.ksComplexPhaseCarrierEquivComplex
+
+abbrev ksComplexPhaseCarrierPositiveDefinite :=
+  Mettapedia.Logic.PLNAmplitudePhase.ksComplexPhaseCarrier_positiveDefinite
+
+abbrev dualCarrierNotPositiveDefinite :=
+  Mettapedia.Logic.PLNAmplitudePhase.dualCarrier_not_positiveDefinite
+
+abbrev splitCarrierNotPositiveDefinite :=
+  Mettapedia.Logic.PLNAmplitudePhase.splitCarrier_not_positiveDefinite
+
+abbrev binaryRevisionStrengthMixtureCoordinate :=
+  @Mettapedia.Logic.PLNInformationGeometry.binaryRevisionStrength_is_mixture_coordinate
+
+abbrev binaryTruthLogOddsTensorNaturalCoordinate :=
+  @Mettapedia.Logic.PLNInformationGeometry.binaryTruthLogOdds_tensor_is_natural_coordinate
+
+abbrev BetaMeanConcentration :=
+  Mettapedia.Logic.PLNInformationGeometry.BetaMeanConcentration
+
+abbrev BetaPriorMeanConcentration :=
+  Mettapedia.Logic.PLNInformationGeometry.BetaPriorMeanConcentration
+
+abbrev DirichletMeanConcentration :=
+  Mettapedia.Logic.PLNInformationGeometry.DirichletMeanConcentration
+
+abbrev betaMeanConcentrationTypedSTVFromCountsFactors :=
+  @Mettapedia.Logic.PLNInformationGeometry.BetaMeanConcentration.typedSTV_fromCounts_factors_through_betaCoordinate
+
+abbrev betaPriorBlendWeightEqPLNConfidenceLink :=
+  @Mettapedia.Logic.PLNInformationGeometry.BetaPriorMeanConcentration.blendWeight_eq_plnConfidenceLink
+
+abbrev betaPriorPosteriorMeanEqBlend :=
+  @Mettapedia.Logic.PLNInformationGeometry.BetaPriorMeanConcentration.posteriorMean_eq_blend_empirical_with_prior_mean
+
+abbrev betaPriorMeanChangesPosteriorStrength :=
+  Mettapedia.Logic.PLNInformationGeometry.BetaPriorMeanConcentration.prior_mean_changes_posterior_strength
+
+abbrev betaPriorConcentrationChangesBlendWeight :=
+  Mettapedia.Logic.PLNInformationGeometry.BetaPriorMeanConcentration.prior_concentration_changes_blend_weight
+
+abbrev dirichletMeanConcentrationTypedTruthFromCountsFactors :=
+  @Mettapedia.Logic.PLNInformationGeometry.DirichletMeanConcentration.typedCategorical_fromCounts_factors_through_dirichletCoordinate
+
+abbrev TypedSTV := Mettapedia.Logic.PLNTruthTower.TypedSTV
+
+noncomputable abbrev typedSTVFromCounts :=
+  @Mettapedia.Logic.PLNTruthTower.TypedSTV.fromCounts
+
+abbrev typedSTVRevisionStrengthWeightedMixture :=
+  @Mettapedia.Logic.PLNTruthTower.typedSTV_revision_fromCounts_strength_eq_weighted_mixture
+
+abbrev typedSTVSameStrengthCanHaveDifferentConfidence :=
+  Mettapedia.Logic.PLNTruthTower.TypedSTV.same_strength_can_have_different_confidence
+
+abbrev typedSTVSameConfidenceCanHaveDifferentStrength :=
+  Mettapedia.Logic.PLNTruthTower.TypedSTV.same_confidence_can_have_different_strength
+
+noncomputable abbrev binaryMleStrength :=
+  Mettapedia.Logic.PLNTruthTower.BinaryCounts.mleStrength
+
+noncomputable abbrev binaryPosteriorDenom :=
+  Mettapedia.Logic.PLNTruthTower.BinaryCounts.posteriorDenom
+
+noncomputable abbrev binaryPosteriorMeanStrength :=
+  Mettapedia.Logic.PLNTruthTower.BinaryCounts.posteriorMeanStrength
+
+abbrev binaryCountsOfNat :=
+  Mettapedia.Logic.PLNTruthTower.BinaryCounts.ofNatCounts
+
+abbrev binaryImproperPosteriorStrengthEqMLE :=
+  @Mettapedia.Logic.PLNTruthTower.BinaryCounts.posteriorMeanStrength_improper_eq_mle
+
+abbrev binaryPosteriorMeanStrengthInUnit :=
+  @Mettapedia.Logic.PLNTruthTower.BinaryCounts.posteriorMeanStrength_in_unit_of_pos_denom
+
+abbrev binaryUniformPriorChangesDisplayedStrength :=
+  Mettapedia.Logic.PLNTruthTower.BinaryCounts.singlePositive_uniform_prior_changes_strength
+
+abbrev binaryCountsOfNatMLEEqHaldane :=
+  @Mettapedia.Logic.PLNTruthTower.BinaryCounts.ofNatCounts_mleStrength_eq_predHaldane
+
+abbrev binaryCountsOfNatUniformEqLaplace :=
+  @Mettapedia.Logic.PLNTruthTower.BinaryCounts.ofNatCounts_uniformPosterior_eq_predLaplace
+
+abbrev binaryCountsOfNatJeffreysEqKT :=
+  @Mettapedia.Logic.PLNTruthTower.BinaryCounts.ofNatCounts_jeffreysPosterior_eq_predJeffreys
+
+abbrev binaryCountsOfNatPriorMatters :=
+  Mettapedia.Logic.PLNTruthTower.BinaryCounts.ofNatCounts_prior_matters_example
+
+abbrev binaryCountsHaldaneVsLaplaceDifference :=
+  @Mettapedia.Logic.PLNTruthTower.BinaryCounts.ofNatCounts_haldane_vs_laplace_difference
+
+abbrev binaryCountsHaldaneVsJeffreysDifference :=
+  @Mettapedia.Logic.PLNTruthTower.BinaryCounts.ofNatCounts_haldane_vs_jeffreys_difference
+
+abbrev binaryCountsMLEConvergesToSymmetricPosteriorMean :=
+  Mettapedia.Logic.PLNTruthTower.BinaryCounts.ofNatCounts_mle_converges_to_symmetric_posterior_mean
+
+abbrev TypedITV := Mettapedia.Logic.PLNTruthTower.TypedITV
+
+abbrev CredalEnvelopeITVSource :=
+  Mettapedia.Logic.PLNTruthTower.CredalEnvelopeITVSource
+
+noncomputable abbrev credalEnvelopeITV :=
+  @Mettapedia.Logic.PLNTruthTower.credalEnvelopeITV
+
+noncomputable abbrev credalEnvelopeITVSemantics :=
+  @Mettapedia.Logic.PLNTruthTower.credalEnvelopeITVSemantics
+
+noncomputable abbrev typedITVFromCredalEnvelope :=
+  @Mettapedia.Logic.PLNTruthTower.TypedITV.fromCredalEnvelope
+
+abbrev credalEnvelope_bounds_do_not_force_credibility :=
+  @Mettapedia.Logic.PLNTruthTower.credalEnvelope_bounds_do_not_force_credibility
+
+abbrev LowerPrevisionITVSource :=
+  Mettapedia.Logic.PLNTruthTower.LowerPrevisionITVSource
+
+abbrev lowerPrevision_le_conjugate :=
+  @Mettapedia.Logic.PLNTruthTower.lowerPrevision_le_conjugate
+
+noncomputable abbrev lowerPrevisionITV :=
+  @Mettapedia.Logic.PLNTruthTower.lowerPrevisionITV
+
+noncomputable abbrev lowerPrevisionITVSemantics :=
+  @Mettapedia.Logic.PLNTruthTower.lowerPrevisionITVSemantics
+
+noncomputable abbrev typedITVFromLowerPrevision :=
+  @Mettapedia.Logic.PLNTruthTower.TypedITV.fromLowerPrevision
+
+abbrev lowerPrevision_bounds_do_not_force_credibility :=
+  @Mettapedia.Logic.PLNTruthTower.lowerPrevision_bounds_do_not_force_credibility
+
+noncomputable abbrev singletonProbDistLowerPrevision :=
+  @Mettapedia.Logic.PLNTruthTower.SingletonCredalLowerPrevision.probDistLowerPrevision
+
+noncomputable abbrev singletonCredalLowerPrevisionSource :=
+  @Mettapedia.Logic.PLNTruthTower.SingletonCredalLowerPrevision.source
+
+noncomputable abbrev singletonCredalEnvelopeSource :=
+  @Mettapedia.Logic.PLNTruthTower.SingletonCredalLowerPrevision.credalEnvelopeSource
+
+abbrev singletonCredalLowerPrevisionAgreement :=
+  @Mettapedia.Logic.PLNTruthTower.SingletonCredalLowerPrevision.typedLowerPrevision_agrees_with_singletonCredalEnvelope
+
+noncomputable abbrev finiteCredalLowerPrevision :=
+  @Mettapedia.Logic.PLNTruthTower.FiniteCredalLowerPrevision.credalLowerPrevision
+
+noncomputable abbrev finiteCredalLowerPrevisionSource :=
+  @Mettapedia.Logic.PLNTruthTower.FiniteCredalLowerPrevision.source
+
+abbrev finiteCredalLowerPrevisionConjugateEqUpperProb :=
+  @Mettapedia.Logic.PLNTruthTower.FiniteCredalLowerPrevision.credalLowerPrevision_conjugate_apply
+
+abbrev finiteCredalLowerPrevisionAgreement :=
+  @Mettapedia.Logic.PLNTruthTower.FiniteCredalLowerPrevision.typedLowerPrevision_agrees_with_credalEnvelope
+
+noncomputable abbrev desirableAcceptablePrices :=
+  @Mettapedia.Logic.PLNTruthTower.DesirableLowerPrevisionBridge.acceptablePrices
+
+noncomputable abbrev finiteDesirableLowerPrevision :=
+  @Mettapedia.Logic.PLNTruthTower.DesirableLowerPrevisionBridge.finiteLowerPrevision
+
+abbrev finiteDesirableLowerPrevisionApply :=
+  @Mettapedia.Logic.PLNTruthTower.DesirableLowerPrevisionBridge.finiteLowerPrevision_apply
+
+abbrev finiteDesirableLowerPrevisionLowerBound :=
+  @Mettapedia.Logic.PLNTruthTower.DesirableLowerPrevisionBridge.lowerPrevision_lower_bound
+
+abbrev finiteDesirableLowerPrevisionPositiveHomogeneous :=
+  @Mettapedia.Logic.PLNTruthTower.DesirableLowerPrevisionBridge.lowerPrevision_pos_homog
+
+abbrev finiteDesirableLowerPrevisionSuperadditive :=
+  @Mettapedia.Logic.PLNTruthTower.DesirableLowerPrevisionBridge.lowerPrevision_superadd
+
+abbrev lowerPrevisionDesirableRegular :=
+  @Mettapedia.Logic.PLNTruthTower.LowerPrevisionDesirableBridge.Regular
+
+abbrev lowerPrevisionConstant :=
+  @Mettapedia.Logic.PLNTruthTower.LowerPrevisionDesirableBridge.lowerPrevision_const
+
+abbrev lowerPrevisionAddConstant :=
+  @Mettapedia.Logic.PLNTruthTower.LowerPrevisionDesirableBridge.lowerPrevision_add_const
+
+abbrev lowerPrevisionSubtractConstant :=
+  @Mettapedia.Logic.PLNTruthTower.LowerPrevisionDesirableBridge.lowerPrevision_sub_const
+
+noncomputable abbrev regularLowerPrevisionCoherentDesirableSet :=
+  @Mettapedia.Logic.PLNTruthTower.LowerPrevisionDesirableBridge.coherentDesirableSet
+
+abbrev regularLowerPrevisionCoherentDesirableSetMem :=
+  @Mettapedia.Logic.PLNTruthTower.LowerPrevisionDesirableBridge.coherentDesirableSet_mem
+
+abbrev regularLowerPrevisionDesirableRoundTrip :=
+  @Mettapedia.Logic.PLNTruthTower.LowerPrevisionDesirableBridge.coherentDesirableSet_lowerPrevision_roundtrip
+
+abbrev finiteLowerPrevisionRegular :=
+  @Mettapedia.Logic.PLNTruthTower.LowerPrevisionDesirableBridge.finite_regular
+
+noncomputable abbrev finiteLowerPrevisionCoherentDesirableSet :=
+  @Mettapedia.Logic.PLNTruthTower.LowerPrevisionDesirableBridge.finiteCoherentDesirableSet
+
+abbrev finiteLowerPrevisionDesirableRoundTripApply :=
+  @Mettapedia.Logic.PLNTruthTower.LowerPrevisionDesirableBridge.finiteCoherentDesirableSet_lowerPrevision_roundtrip_apply
+
+abbrev finiteLowerPrevisionDesirableRoundTrip :=
+  @Mettapedia.Logic.PLNTruthTower.LowerPrevisionDesirableBridge.finiteCoherentDesirableSet_lowerPrevision_roundtrip
+
+noncomputable abbrev finiteStrictRoundTrip :=
+  @Mettapedia.Logic.PLNTruthTower.LowerPrevisionDesirableBridge.finiteStrictRoundTrip
+
+abbrev finiteStrictRoundTripMem :=
+  @Mettapedia.Logic.PLNTruthTower.LowerPrevisionDesirableBridge.finiteStrictRoundTrip_mem
+
+abbrev finiteStrictRoundTripLowerPrevisionEq :=
+  @Mettapedia.Logic.PLNTruthTower.LowerPrevisionDesirableBridge.finiteStrictRoundTrip_finiteLowerPrevision_eq
+
+abbrev finiteStrictRoundTripIdempotent :=
+  @Mettapedia.Logic.PLNTruthTower.LowerPrevisionDesirableBridge.finiteStrictRoundTrip_idempotent_D
+
+abbrev finiteStrictRoundTripIdempotentMemIff :=
+  @Mettapedia.Logic.PLNTruthTower.LowerPrevisionDesirableBridge.finiteStrictRoundTrip_idempotent_mem_iff
+
+abbrev finiteStrictRoundTripSubsetOriginal :=
+  @Mettapedia.Logic.PLNTruthTower.LowerPrevisionDesirableBridge.finiteStrictRoundTrip_subset_original
+
+abbrev finiteStrictRoundTripBoundaryNotRecovered :=
+  @Mettapedia.Logic.PLNTruthTower.LowerPrevisionDesirableBridge.finiteStrictRoundTrip_not_mem_of_nonpositive_lowerPrevision
+
+abbrev finiteStrictRoundTripMembershipIffOfArchimedean :=
+  @Mettapedia.Logic.PLNTruthTower.LowerPrevisionDesirableBridge.finiteStrictRoundTrip_mem_iff_of_archimedean
+
+abbrev finiteStrictRoundTripSetEqOfArchimedean :=
+  @Mettapedia.Logic.PLNTruthTower.LowerPrevisionDesirableBridge.finiteStrictRoundTrip_D_eq_of_archimedean
+
+abbrev finiteStrictRoundTripEqOfArchimedean :=
+  @Mettapedia.Logic.PLNTruthTower.LowerPrevisionDesirableBridge.finiteStrictRoundTrip_eq_of_archimedean
+
+abbrev finiteStrictRoundTripArchimedean :=
+  @Mettapedia.Logic.PLNTruthTower.LowerPrevisionDesirableBridge.finiteStrictRoundTrip_archimedean
+
+abbrev finiteStrictRoundTripEqIffArchimedean :=
+  @Mettapedia.Logic.PLNTruthTower.LowerPrevisionDesirableBridge.finiteStrictRoundTrip_eq_iff_archimedean
+
+abbrev finiteDesirableLowerPrevisionMonotoneOfSubset :=
+  @Mettapedia.Logic.PLNTruthTower.LowerPrevisionDesirableBridge.finiteLowerPrevision_mono_of_desirable_subset
+
+abbrev finiteStrictRoundTripMonotone :=
+  @Mettapedia.Logic.PLNTruthTower.LowerPrevisionDesirableBridge.finiteStrictRoundTrip_mono_D
+
+abbrev finiteStrictRoundTripGreatestArchimedeanSubset :=
+  @Mettapedia.Logic.PLNTruthTower.LowerPrevisionDesirableBridge.finiteStrictRoundTrip_greatest_archimedean_subset_D
+
+abbrev finiteStrictRoundTripArchimedeanSubsetIff :=
+  @Mettapedia.Logic.PLNTruthTower.LowerPrevisionDesirableBridge.finiteStrictRoundTrip_archimedean_subset_iff
+
+abbrev finiteStrictRoundTripFactorsThroughLowerPrevision :=
+  @Mettapedia.Logic.PLNTruthTower.LowerPrevisionDesirableBridge.same_finiteLowerPrevision_same_strictRoundTrip_D
+
+abbrev finiteStrictRoundTripMembershipFactorsThroughLowerPrevision :=
+  @Mettapedia.Logic.PLNTruthTower.LowerPrevisionDesirableBridge.same_finiteLowerPrevision_same_strictRoundTrip_mem_iff
+
+abbrev archimedeanDesirableSet :=
+  @Mettapedia.Logic.PLNTruthTower.LowerPrevisionDesirableBridge.ArchimedeanDesirableSet
+
+abbrev finiteDesirableRoundTripSubsetOriginal :=
+  @Mettapedia.Logic.PLNTruthTower.LowerPrevisionDesirableBridge.finiteDesirableRoundTrip_subset_original
+
+abbrev finiteDesirableBoundaryNotRecovered :=
+  @Mettapedia.Logic.PLNTruthTower.LowerPrevisionDesirableBridge.nonpositive_lowerPrevision_not_recovered_by_strict_roundtrip
+
+abbrev originalSubsetFiniteDesirableRoundTripOfArchimedean :=
+  @Mettapedia.Logic.PLNTruthTower.LowerPrevisionDesirableBridge.original_subset_finiteDesirableRoundTrip_of_archimedean
+
+abbrev finiteDesirableRoundTripMembershipIffOfArchimedean :=
+  @Mettapedia.Logic.PLNTruthTower.LowerPrevisionDesirableBridge.finiteDesirableRoundTrip_mem_iff_of_archimedean
+
+abbrev finiteDesirableRoundTripSetEqOfArchimedean :=
+  @Mettapedia.Logic.PLNTruthTower.LowerPrevisionDesirableBridge.finiteDesirableRoundTrip_D_eq_of_archimedean
+
+noncomputable abbrev finiteMinimum :=
+  @Mettapedia.Logic.PLNTruthTower.DesirableLowerPrevisionBridge.finiteMinimum
+
+abbrev finiteMinimumLeApply :=
+  @Mettapedia.Logic.PLNTruthTower.DesirableLowerPrevisionBridge.finiteMinimum_le_apply
+
+abbrev strictlyPositiveDesirableSet :=
+  @Mettapedia.Logic.PLNTruthTower.LowerPrevisionDesirableBridge.strictlyPositiveDesirableSet
+
+abbrev strictlyPositiveDesirableSetArchimedean :=
+  @Mettapedia.Logic.PLNTruthTower.LowerPrevisionDesirableBridge.strictlyPositiveDesirableSet_archimedean
+
+abbrev strictlyPositiveDesirableSetRoundTripSetEq :=
+  @Mettapedia.Logic.PLNTruthTower.LowerPrevisionDesirableBridge.strictlyPositiveDesirableSet_roundtrip_D_eq
+
+abbrev strictlyPositiveDesirableSetRoundTripMemIff :=
+  @Mettapedia.Logic.PLNTruthTower.LowerPrevisionDesirableBridge.strictlyPositiveDesirableSet_roundtrip_mem_iff
+
+abbrev strictlyPositiveDesirableSetLowerPrevisionFiniteMinimum :=
+  @Mettapedia.Logic.PLNTruthTower.LowerPrevisionDesirableBridge.strictlyPositiveDesirableSet_lowerPrevision_eq_finiteMinimum
+
+abbrev nonnegativeNonzeroDesirableSet :=
+  @Mettapedia.Logic.PLNTruthTower.LowerPrevisionDesirableBridge.nonnegativeNonzeroDesirableSet
+
+abbrev nonnegativeNonzeroDesirableSetLowerPrevisionFiniteMinimum :=
+  @Mettapedia.Logic.PLNTruthTower.LowerPrevisionDesirableBridge.nonnegativeNonzeroDesirableSet_lowerPrevision_eq_finiteMinimum
+
+abbrev positiveConesInduceSameLowerPrevision :=
+  @Mettapedia.Logic.PLNTruthTower.LowerPrevisionDesirableBridge.positiveCones_induce_same_lowerPrevision
+
+abbrev positiveConesInduceSameFiniteLowerPrevision :=
+  @Mettapedia.Logic.PLNTruthTower.LowerPrevisionDesirableBridge.positiveCones_induce_same_finiteLowerPrevision
+
+abbrev nonnegativeNonzeroDesirableSetStrictRoundTripSetEq :=
+  @Mettapedia.Logic.PLNTruthTower.LowerPrevisionDesirableBridge.nonnegativeNonzeroDesirableSet_strictRoundTrip_D_eq_strictlyPositive
+
+abbrev nonnegativeNonzeroDesirableSetStrictRoundTripMemIff :=
+  @Mettapedia.Logic.PLNTruthTower.LowerPrevisionDesirableBridge.nonnegativeNonzeroDesirableSet_strictRoundTrip_mem_iff
+
+abbrev boolBoundaryGamble :=
+  Mettapedia.Logic.PLNTruthTower.LowerPrevisionDesirableBridge.boolBoundaryGamble
+
+abbrev boolBoundaryGambleDesirable :=
+  Mettapedia.Logic.PLNTruthTower.LowerPrevisionDesirableBridge.boolBoundaryGamble_mem_nonnegativeNonzero
+
+abbrev boolBoundaryGambleNotStrict :=
+  Mettapedia.Logic.PLNTruthTower.LowerPrevisionDesirableBridge.boolBoundaryGamble_not_mem_strictlyPositive
+
+abbrev boolPositiveConesDistinct :=
+  Mettapedia.Logic.PLNTruthTower.LowerPrevisionDesirableBridge.strictAndClosedPositiveCones_distinct_bool
+
+abbrev boolPositiveConesProjectionNotInjective :=
+  Mettapedia.Logic.PLNTruthTower.LowerPrevisionDesirableBridge.bool_positiveCones_projection_not_injective
+
+abbrev boolBoundaryLowerPrevisionEqZero :=
+  Mettapedia.Logic.PLNTruthTower.LowerPrevisionDesirableBridge.boolBoundaryGamble_lowerPrevision_eq_zero
+
+abbrev boolBoundaryNotRecoveredByStrictRoundTrip :=
+  Mettapedia.Logic.PLNTruthTower.LowerPrevisionDesirableBridge.concreteBool_boundary_desirable_not_recovered_by_strict_roundtrip
+
+abbrev boolNonnegativeNonzeroNotArchimedean :=
+  Mettapedia.Logic.PLNTruthTower.LowerPrevisionDesirableBridge.nonnegativeNonzeroBool_not_archimedean
+
+abbrev boolBoundaryRoundTripSetNeOriginal :=
+  Mettapedia.Logic.PLNTruthTower.LowerPrevisionDesirableBridge.concreteBool_boundary_roundtrip_set_ne_original
+
+noncomputable abbrev finiteCredalCoherentDesirableSet :=
+  @Mettapedia.Logic.PLNTruthTower.LowerPrevisionDesirableBridge.finiteCredalCoherentDesirableSet
+
+abbrev finiteCredalCoherentDesirableSetMem :=
+  @Mettapedia.Logic.PLNTruthTower.LowerPrevisionDesirableBridge.finiteCredalCoherentDesirableSet_mem
+
+abbrev CredalProjectionTower :=
+  Mettapedia.Logic.PLNTruthTower.CredalProjectionTower
+
+noncomputable abbrev typedITVMidpoint :=
+  @Mettapedia.Logic.PLNTruthTower.TypedITV.midpoint
+
+abbrev typedITVLowerLeMidpoint :=
+  @Mettapedia.Logic.PLNTruthTower.TypedITV.lower_le_midpoint
+
+abbrev typedITVMidpointLeUpper :=
+  @Mettapedia.Logic.PLNTruthTower.TypedITV.midpoint_le_upper
+
+abbrev typedITVMidpointInUnit :=
+  @Mettapedia.Logic.PLNTruthTower.TypedITV.midpoint_in_unit
+
+abbrev credalProjectionTowerMidpointAverage :=
+  @Mettapedia.Logic.PLNTruthTower.CredalProjectionTower.midpointDisplay_eq_credal_average
+
 noncomputable abbrev queryITV {State Query Ctx : Type*}
     [EvidenceClass.EvidenceType State]
     [PLNWorldModel.BinaryWorldModel State Query] :=
@@ -2117,6 +3038,69 @@ noncomputable abbrev queryITVSigma {State Srt Ctx : Type*} {Query : Srt → Type
     [PLNWorldModel.WorldModelSigma State Srt Query] :=
   PLNWorldModel.WorldModelSigma.queryITV
     (State := State) (Srt := Srt) (Query := Query) (Ctx := Ctx)
+
+noncomputable abbrev queryTypedITV {State Query Ctx : Type*}
+    [EvidenceClass.EvidenceType State]
+    [PLNWorldModel.BinaryWorldModel State Query] :=
+  PLNWorldModel.BinaryWorldModel.queryTypedITV
+    (State := State) (Query := Query) (Ctx := Ctx)
+
+noncomputable abbrev queryTypedITVSigma {State Srt Ctx : Type*} {Query : Srt → Type*}
+    [EvidenceClass.EvidenceType State]
+    [PLNWorldModel.WorldModelSigma State Srt Query] :=
+  PLNWorldModel.WorldModelSigma.queryTypedITV
+    (State := State) (Srt := Srt) (Query := Query) (Ctx := Ctx)
+
+abbrev queryTypedITV_value_eq_queryITV :=
+  @PLNWorldModel.BinaryWorldModel.queryTypedITV_value_eq_queryITV
+
+abbrev queryTypedITV_lower_eq_queryITVLower :=
+  @PLNWorldModel.BinaryWorldModel.queryTypedITV_lower_eq_queryITVLower
+
+abbrev queryTypedITV_upper_eq_queryITVUpper :=
+  @PLNWorldModel.BinaryWorldModel.queryTypedITV_upper_eq_queryITVUpper
+
+abbrev queryTypedITV_width_eq_queryITVWidth :=
+  @PLNWorldModel.BinaryWorldModel.queryTypedITV_width_eq_queryITVWidth
+
+abbrev queryTypedITV_credibility_eq_queryITVCredibility :=
+  @PLNWorldModel.BinaryWorldModel.queryTypedITV_credibility_eq_queryITVCredibility
+
+abbrev queryTypedITV_strength_eq_queryITVStrength :=
+  @PLNWorldModel.BinaryWorldModel.queryTypedITV_strength_eq_queryITVStrength
+
+abbrev queryTypedITVSigma_value_eq_queryITV :=
+  @PLNWorldModel.WorldModelSigma.queryTypedITV_value_eq_queryITV
+
+abbrev queryTypedITVAt_value_eq_queryITVAt :=
+  @PLNWorldModel.WorldModelSigma.queryTypedITVAt_value_eq_queryITVAt
+
+abbrev queryTypedITVSigma_lower_eq_queryITVLower :=
+  @PLNWorldModel.WorldModelSigma.queryTypedITV_lower_eq_queryITVLower
+
+abbrev queryTypedITVSigma_upper_eq_queryITVUpper :=
+  @PLNWorldModel.WorldModelSigma.queryTypedITV_upper_eq_queryITVUpper
+
+abbrev queryTypedITVSigma_width_eq_queryITVWidth :=
+  @PLNWorldModel.WorldModelSigma.queryTypedITV_width_eq_queryITVWidth
+
+abbrev queryTypedITVSigma_credibility_eq_queryITVCredibility :=
+  @PLNWorldModel.WorldModelSigma.queryTypedITV_credibility_eq_queryITVCredibility
+
+abbrev queryTypedITVSigma_strength_eq_queryITVStrength :=
+  @PLNWorldModel.WorldModelSigma.queryTypedITV_strength_eq_queryITVStrength
+
+noncomputable abbrev queryTypedITVWalley {State Query : Type*}
+    [EvidenceClass.EvidenceType State]
+    [PLNWorldModel.BinaryWorldModel State Query] :=
+  PLNWorldModel.BinaryWorldModel.queryTypedITVWalley
+    (State := State) (Query := Query)
+
+noncomputable abbrev queryTypedITVSigmaWalley {State Srt : Type*} {Query : Srt → Type*}
+    [EvidenceClass.EvidenceType State]
+    [PLNWorldModel.WorldModelSigma State Srt Query] :=
+  PLNWorldModel.WorldModelSigma.queryTypedITVWalley
+    (State := State) (Srt := Srt) (Query := Query)
 
 abbrev WMITVJudgment {State Query Ctx : Type*}
     [EvidenceClass.EvidenceType State]
@@ -2130,6 +3114,18 @@ abbrev WMITVJudgmentCtx {State Query Ctx : Type*}
   PLNWorldModel.BinaryWorldModel.WMITVJudgmentCtx
     (State := State) (Query := Query) (Ctx := Ctx)
 
+abbrev WMTypedITVJudgment {State Query Ctx : Type*}
+    [EvidenceClass.EvidenceType State]
+    [PLNWorldModel.BinaryWorldModel State Query] :=
+  PLNWorldModel.BinaryWorldModel.WMTypedITVJudgment
+    (State := State) (Query := Query) (Ctx := Ctx)
+
+abbrev WMTypedITVJudgmentCtx {State Query Ctx : Type*}
+    [EvidenceClass.EvidenceType State]
+    [PLNWorldModel.BinaryWorldModel State Query] :=
+  PLNWorldModel.BinaryWorldModel.WMTypedITVJudgmentCtx
+    (State := State) (Query := Query) (Ctx := Ctx)
+
 abbrev WMITVJudgmentSigma {State Srt Ctx : Type*} {Query : Srt → Type*}
     [EvidenceClass.EvidenceType State]
     [PLNWorldModel.WorldModelSigma State Srt Query] :=
@@ -2140,6 +3136,18 @@ abbrev WMITVJudgmentCtxSigma {State Srt Ctx : Type*} {Query : Srt → Type*}
     [EvidenceClass.EvidenceType State]
     [PLNWorldModel.WorldModelSigma State Srt Query] :=
   PLNWorldModel.WorldModelSigma.WMITVJudgmentCtxSigma
+    (State := State) (Srt := Srt) (Query := Query) (Ctx := Ctx)
+
+abbrev WMTypedITVJudgmentSigma {State Srt Ctx : Type*} {Query : Srt → Type*}
+    [EvidenceClass.EvidenceType State]
+    [PLNWorldModel.WorldModelSigma State Srt Query] :=
+  PLNWorldModel.WorldModelSigma.WMTypedITVJudgmentSigma
+    (State := State) (Srt := Srt) (Query := Query) (Ctx := Ctx)
+
+abbrev WMTypedITVJudgmentCtxSigma {State Srt Ctx : Type*} {Query : Srt → Type*}
+    [EvidenceClass.EvidenceType State]
+    [PLNWorldModel.WorldModelSigma State Srt Query] :=
+  PLNWorldModel.WorldModelSigma.WMTypedITVJudgmentCtxSigma
     (State := State) (Srt := Srt) (Query := Query) (Ctx := Ctx)
 
 noncomputable def queryITVSigmaBayes95 {State Srt : Type*} {Query : Srt → Type*}
@@ -2196,6 +3204,23 @@ noncomputable def queryITVSigmaWalleyIDMDefault {State Srt : Type*} {Query : Srt
     [PLNWorldModel.WorldModelSigma State Srt Query]
     (W : State) (q : Sigma Query) : ITV :=
   queryITVSigmaWalleyIDM (State := State) (Srt := Srt) (Query := Query)
+    PLNWorldModel.IDMPredictiveContext.default W q
+
+noncomputable def queryTypedITVSigmaWalleyIDM {State Srt : Type*} {Query : Srt → Type*}
+    [EvidenceClass.EvidenceType State]
+    [PLNWorldModel.WorldModelSigma State Srt Query]
+    (ctx : IDMPredictiveContext) (W : State) (q : Sigma Query) :
+    TypedITV (Mettapedia.Logic.PLNTruthTower.walleyBinaryITVSemantics ctx.s) :=
+  queryTypedITVSigmaWalley (State := State) (Srt := Srt) (Query := Query) ctx W q
+
+noncomputable def queryTypedITVSigmaWalleyIDMDefault {State Srt : Type*} {Query : Srt → Type*}
+    [EvidenceClass.EvidenceType State]
+    [PLNWorldModel.WorldModelSigma State Srt Query]
+    (W : State) (q : Sigma Query) :
+    TypedITV
+      (Mettapedia.Logic.PLNTruthTower.walleyBinaryITVSemantics
+        PLNWorldModel.IDMPredictiveContext.default.s) :=
+  queryTypedITVSigmaWalleyIDM (State := State) (Srt := Srt) (Query := Query)
     PLNWorldModel.IDMPredictiveContext.default W q
 
 theorem queryITVWalley_width_add_credibility
@@ -2300,6 +3325,12 @@ abbrev queryEq_to_queryITVSigma_bayesExact :=
 abbrev queryEq_to_queryITVSigma_walley :=
   @PLNWorldModelITVHypercube.WMQueryEqSigma.to_queryITVSigma_walley
 
+abbrev queryEq_to_queryTypedITVSigma :=
+  @PLNWorldModel.WorldModelSigma.WMQueryEqSigma.to_queryTypedITV
+
+abbrev queryEq_to_WMTypedITVJudgmentSigma :=
+  @PLNWorldModel.WorldModelSigma.WMQueryEqSigma.to_WMTypedITVJudgmentSigma
+
 abbrev queryEq_to_WMITVJudgmentSigmaOfInterval :=
   @PLNWorldModelITVHypercube.WMQueryEqSigma.to_WMITVJudgmentSigmaOfInterval
 
@@ -2329,6 +3360,12 @@ abbrev applyITV_bayesExact_selector :=
 
 abbrev applyITV_walley_selector :=
   @PLNWorldModelITVHypercube.WMRewriteRuleSigma.applyITV_walley_selector
+
+abbrev applyTypedITV :=
+  @PLNWorldModel.WorldModelSigma.WMRewriteRuleSigma.applyTypedITV
+
+abbrev applyTypedITVCtx :=
+  @PLNWorldModel.WorldModelSigma.WMRewriteRuleSigma.applyTypedITVCtx
 
 abbrev applyITVThreshold_bayesExact_selector :=
   @PLNWorldModelITVHypercube.WMRewriteRuleSigma.applyITVThreshold_bayesExact_selector
@@ -3328,6 +4365,15 @@ abbrev InheritanceQueryFamily :=
 abbrev InheritanceQueryBuilder :=
   PLNIntensionalWorldModel.InheritanceQueryBuilder
 
+abbrev InheritanceFiniteWitnessFeatureTable :=
+  Mettapedia.Logic.IntensionalInheritance.FiniteWitnessFeatureTable
+
+abbrev InheritanceFiniteFeatureWitnessCountTable :=
+  Mettapedia.Logic.IntensionalInheritance.FiniteFeatureWitnessCountTable
+
+noncomputable abbrev inheritanceToFiniteWitnessFeatureTable :=
+  @Mettapedia.Logic.IntensionalInheritance.Interpretation.toFiniteWitnessFeatureTable
+
 /-- Universal-mixture prior `Pξ(W|x)` used by intensional inheritance bridges. -/
 noncomputable abbrev priorFromConditional :=
   Mettapedia.Logic.IntensionalInheritance.priorFromConditional
@@ -3348,6 +4394,66 @@ abbrev intensionalFromXiSemimeasure_eq_log2_ratio :=
 
 abbrev intensionalFromXiGeom_eq_log2_ratio :=
   @Mettapedia.Logic.IntensionalInheritance.intensionalFromXiGeom_eq_log2_ratio
+
+abbrev inheritance_finitePriorProb_eq_generated_ve_ratio :=
+  @Mettapedia.Logic.IntensionalInheritance.Interpretation.finitePriorProb_eq_veWeight_ratio
+
+abbrev inheritance_finiteExtensionalProb_eq_generated_ve_ratio :=
+  @Mettapedia.Logic.IntensionalInheritance.Interpretation.finiteExtensionalProb_eq_veWeight_ratio
+
+abbrev inheritance_finitePointwiseLogRatioBits_eq_generated_ve_query_score :=
+  @Mettapedia.Logic.IntensionalInheritance.Interpretation.finitePointwiseLogRatioBits_eq_ve_query_score
+
+abbrev inheritance_finitePriorProb_eq_generated_bp_ratio :=
+  @Mettapedia.Logic.IntensionalInheritance.Interpretation.finitePriorProb_eq_bp_ratio
+
+abbrev inheritance_finiteExtensionalProb_eq_generated_bp_ratio :=
+  @Mettapedia.Logic.IntensionalInheritance.Interpretation.finiteExtensionalProb_eq_bp_ratio
+
+abbrev inheritance_countTable_prior_eq_generated_ve_ratio :=
+  @Mettapedia.Logic.IntensionalInheritance.FiniteFeatureWitnessCountTable.witnessPrior_eq_veWeight_ratio
+
+abbrev inheritance_countTable_strength_eq_generated_bp_ratio :=
+  @Mettapedia.Logic.IntensionalInheritance.FiniteFeatureWitnessCountTable.witnessGivenFeatureStrength_eq_bp_ratio
+
+abbrev inheritance_countTable_score_eq_generated_ve_query_score :=
+  @Mettapedia.Logic.IntensionalInheritance.FiniteFeatureWitnessCountTable.logRatioBits_eq_ve_query_score
+
+abbrev inheritance_membershipBuilder_prior_eq_generated_ve_ratio :=
+  @Mettapedia.Logic.IntensionalInheritance.MembershipQueryBuilderBridge.finitePriorProb_toEvidenceMembershipContext_eq_veWeight_ratio
+
+abbrev inheritance_membershipBuilder_ext_eq_generated_bp_ratio :=
+  @Mettapedia.Logic.IntensionalInheritance.MembershipQueryBuilderBridge.finiteExtensionalProb_toEvidenceMembershipContext_eq_bp_ratio
+
+abbrev inheritance_membershipBuilder_score_eq_generated_ve_query_score :=
+  @Mettapedia.Logic.IntensionalInheritance.MembershipQueryBuilderBridge.finitePointwiseLogRatioBits_toEvidenceMembershipContext_eq_ve_query_score
+
+abbrev inheritance_observation_prior_eq_generated_ve_ratio :=
+  @Mettapedia.Logic.IntensionalInheritance.ObservationSurfaceBridge.finitePriorProb_inducedContext_eq_veWeight_ratio
+
+abbrev inheritance_observation_ext_eq_generated_bp_ratio :=
+  @Mettapedia.Logic.IntensionalInheritance.ObservationSurfaceBridge.finiteExtensionalProb_inducedContext_eq_bp_ratio
+
+abbrev inheritance_observation_score_eq_generated_ve_query_score :=
+  @Mettapedia.Logic.IntensionalInheritance.ObservationSurfaceBridge.finitePointwiseLogRatioBits_inducedContext_eq_ve_query_score
+
+abbrev inheritance_regression_toyObservation_penguinBird_prior_eq_generated_ve_ratio :=
+  @_root_.Mettapedia.Logic.IntensionalInheritanceAllCanary.toyObservation_penguinBird_prior_eq_generated_ve_ratio
+
+abbrev inheritance_regression_toyObservation_penguinBird_ext_eq_generated_bp_ratio :=
+  @_root_.Mettapedia.Logic.IntensionalInheritanceAllCanary.toyObservation_penguinBird_ext_eq_generated_bp_ratio
+
+abbrev inheritance_regression_toyObservation_birdFly_score_eq_generated_ve_query_score :=
+  @_root_.Mettapedia.Logic.IntensionalInheritanceAllCanary.toyObservation_birdFly_score_eq_generated_ve_query_score
+
+abbrev inheritance_regression_toyThreeByTwo_witness0_prior_eq_generated_ve_ratio :=
+  @_root_.Mettapedia.Logic.IntensionalInheritanceAllCanary.toyThreeByTwo_witness0_prior_eq_generated_ve_ratio
+
+abbrev inheritance_regression_toyThreeByTwo_feature2_witness1_strength_eq_generated_bp_ratio :=
+  @_root_.Mettapedia.Logic.IntensionalInheritanceAllCanary.toyThreeByTwo_feature2_witness1_strength_eq_generated_bp_ratio
+
+abbrev inheritance_regression_toyThreeByTwo_feature2_witness1_score_eq_generated_ve_query_score :=
+  @_root_.Mettapedia.Logic.IntensionalInheritanceAllCanary.toyThreeByTwo_feature2_witness1_score_eq_generated_ve_query_score
 
 /-- Pattern-level mixed inheritance atom-query encoder. -/
 def patternInheritanceQueryOfAtom_mixed

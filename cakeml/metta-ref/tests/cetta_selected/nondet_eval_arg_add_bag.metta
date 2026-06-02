@@ -1,0 +1,5 @@
+(= (left) 1)
+(= (left) 2)
+(= (right) 10)
+(= (right) 20)
+!(+ (left) (right))

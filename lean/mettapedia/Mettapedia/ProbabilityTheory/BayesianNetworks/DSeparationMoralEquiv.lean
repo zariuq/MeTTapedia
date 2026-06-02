@@ -2766,4 +2766,14 @@ theorem dsepFull_iff_separatedInMoralAncestral
       ⟨p', hp'ne, hEnds', hTrail', hAvoid'⟩
     exact hSep x hx y hy hxy ⟨p', hp'ne, hEnds', hTrail', hAvoid'⟩
 
+/-- Full d-separation is symmetric in the endpoint sets for acyclic graphs. -/
+theorem dsepFull_symmetric
+    (G : DirectedGraph V) (X Y Z : Set V)
+    (hacyclic : G.IsAcyclic) (hirr : ∀ v, ¬G.edges v v)
+    (hdsep : DSeparatedFull G X Y Z) :
+    DSeparatedFull G Y X Z := by
+  apply (dsepFull_iff_separatedInMoralAncestral G Y X Z hacyclic hirr).2
+  exact separatedInMoralAncestral_symmetric G X Y Z
+    ((dsepFull_iff_separatedInMoralAncestral G X Y Z hacyclic hirr).1 hdsep)
+
 end Mettapedia.ProbabilityTheory.BayesianNetworks.DSeparation

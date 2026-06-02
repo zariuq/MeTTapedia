@@ -119,16 +119,10 @@ theorem rewrites_compat_bisimilar (S : GSLT) {p q p' : S.Term}
     **distinction = evidence** — evidence strength IS operational distinguishability.
 -/
 
-/-- For a GSLT with finitely many bisimulation classes, the distinction and
-    non-distinction events are complementary in `U × U`.
-
-    In the finite case, this gives the key identity:
-    `weakness(distinction) + weakness(non-distinction) = weakness(U × U)`
-    which is Bennett's fundamental equation.
--/
-theorem distinction_complement (S : GSLT) (p q : S.Term) :
-    IsDistinguished S p q ↔ ¬ S.Bisimilar p q :=
-  Iff.rfl
+/-  `IsDistinguished` is defined as `¬ S.Bisimilar`, so the complement
+observation is currently definitional. We keep that fact as an unfolding of the
+definition rather than packaging it as a standalone theorem with no proof
+content. -/
 
 /-! ## GSLT Morphisms and the Quotient
 

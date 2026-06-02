@@ -148,6 +148,29 @@ lemma weightOfConstraints_eq_queryMass
   split_ifs <;> rfl
 
 omit [DecidableEq ClauseId] in
+lemma veQueryWeight_eq_worldWeight_sum
+    [Fintype Atom]
+    (M : GroundMLN Atom ClauseId)
+    (support : Finset ClauseId)
+    (constraints : ConstraintQuery Atom) :
+    VariableElimination.veQueryWeight (fg := compiledClauseFactorGraph M support) constraints =
+      ∑ W : AtomValuation Atom,
+        if satisfiesConstraints W constraints then M.worldWeight support W else 0 := by
+  simpa using weightOfConstraints_eq_worldWeight_sum M support constraints
+
+omit [DecidableEq ClauseId] in
+lemma veQueryWeight_eq_queryMass
+    [Fintype Atom]
+    (M : GroundMLN Atom ClauseId)
+    (support : Finset ClauseId)
+    (constraints : ConstraintQuery Atom) :
+    VariableElimination.veQueryWeight (fg := compiledClauseFactorGraph M support) constraints =
+      CountableMLNSemantics.queryMass
+        (M.toCountableMLNSemantics (Query := ConstraintQuery Atom) support constraintQueryHolds)
+        constraints := by
+  simpa using weightOfConstraints_eq_queryMass M support constraints
+
+omit [DecidableEq ClauseId] in
 /-- The compiled clause factor-graph partition function agrees with total MLN mass. -/
 lemma partitionFunction_eq_totalMass
     [Fintype Atom]

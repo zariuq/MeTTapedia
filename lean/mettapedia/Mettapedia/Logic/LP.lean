@@ -13,6 +13,7 @@ import Mettapedia.Logic.LP.SLDAll
 import Mettapedia.Logic.LP.SLDCompletenessKit
 import Mettapedia.Logic.LP.SLDCompletenessCanaries
 import Mettapedia.Logic.LP.PropositionalChainer
+import Mettapedia.Logic.LP.BackwardViaForward
 import Mettapedia.Logic.LP.PropositionalConnectionChainer
 import Mettapedia.Logic.LP.FirstOrderConnectionTrace
 import Mettapedia.Logic.LP.FunctionFree
@@ -46,6 +47,7 @@ Barrel import for the LP module stack:
 | `SLDCompletenessKit` | Canonical lift-kit API (`hBase/hRule`) + concrete kit instances |
 | `SLDCompletenessCanaries` | Concrete positive/negative completeness canaries |
 | `FunctionFree` | Function-free fragment: GroundTerm ≃ constants, DecidableEq GroundAtom |
+| `BackwardViaForward` | Nil-style demand materialization: backward chaining via propositional forward chaining |
 | `PropositionalConnectionChainer` | PeTTa-style connection tableau traces, checker soundness/completeness, refinement aliases |
 | `FirstOrderConnectionTrace` | FO trace checker semantics (`proof_fo` shape), replay soundness theorem |
 | `FunctionFreeEvaluation` | HerbrandBase, finiteness, leastModel = ⋃ T_P_LP_iter |

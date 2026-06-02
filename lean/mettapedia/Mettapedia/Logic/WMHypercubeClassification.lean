@@ -24,8 +24,8 @@ by two independent structural decisions:
 1. Does your event algebra satisfy excluded middle? (Boolean vs Heyting)
 2. Do you track evidence per-channel or summarize to a point? (Bounds vs Point)
 
-The KS representation theorem then gives the UNIQUE algebra satisfying
-those choices. The WM calculus instantiates each vertex.
+The KS formalism then constrains what kinds of additive and representation
+surfaces fit those choices. The WM calculus instantiates each vertex.
 
 ## References
 

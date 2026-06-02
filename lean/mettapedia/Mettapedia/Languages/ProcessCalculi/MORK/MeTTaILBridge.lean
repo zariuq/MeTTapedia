@@ -704,7 +704,6 @@ theorem morkPatternToAtom_freeVars (p : ILP) (h : morkTranslatable p = true) :
     simp only [morkPatternToAtom, ilFreeVars,
       Mettapedia.OSLF.MeTTaIL.Substitution.freeVars]
     simp only [atomFreeVars, atomFreeVars.atomFreeVarsList]
-    congr 1
     induction args with
     | nil => rfl
     | cons a as ih_as =>
@@ -744,7 +743,6 @@ theorem morkPatternToAtom_freeVars (p : ILP) (h : morkTranslatable p = true) :
       simp only [morkPatternToAtom, ilFreeVars,
         Mettapedia.OSLF.MeTTaIL.Substitution.freeVars]
       simp only [atomFreeVars, atomFreeVars.atomFreeVarsList]
-      congr 1
       induction elems with
       | nil => rfl
       | cons a as ih_as =>
@@ -797,7 +795,7 @@ theorem freshness_premise_correspond
         (Mettapedia.OSLF.MeTTaIL.Match.Bindings.lookup bs fc.varName).map
           morkPatternToAtom := by
     rw [← translateBindings_eq_bindingsToSubst, translateBindings_lookup]
-    simp [Mettapedia.OSLF.MeTTaIL.Match.Bindings.lookup, Function.comp]
+    simp [Mettapedia.OSLF.MeTTaIL.Match.Bindings.lookup]
   cases hlookup : Mettapedia.OSLF.MeTTaIL.Match.Bindings.lookup bs fc.varName with
   | none =>
     have hlu : (bindingsToSubst bs).lookup fc.varName = none := by
@@ -819,27 +817,27 @@ theorem freshness_premise_correspond
       simpa [hx] using (hfreshCorr.symm.trans hfreshCheck)
     | bvar n =>
       have : False := by
-        simpa [hlookup] using hresolved
+        simp [hlookup] at hresolved
       cases this
     | apply f args =>
       have : False := by
-        simpa [hlookup] using hresolved
+        simp [hlookup] at hresolved
       cases this
     | lambda _ body =>
       have : False := by
-        simpa [hlookup] using hresolved
+        simp [hlookup] at hresolved
       cases this
     | multiLambda n _ body =>
       have : False := by
-        simpa [hlookup] using hresolved
+        simp [hlookup] at hresolved
       cases this
     | subst body repl =>
       have : False := by
-        simpa [hlookup] using hresolved
+        simp [hlookup] at hresolved
       cases this
     | collection ct elems rest =>
       have : False := by
-        simpa [hlookup] using hresolved
+        simp [hlookup] at hresolved
       cases this
 
 /-! ## Workspace representation
@@ -1038,25 +1036,25 @@ private theorem premisesToSourceFactorsExt_cons_relationQuery (rel : String)
     (args : List ILP) (rest : List ILPremise) :
     premisesToSourceFactorsExt (.relationQuery rel args :: rest) =
       .btm (morkPatternToAtom (.apply rel args)) :: premisesToSourceFactorsExt rest := by
-  simp [premisesToSourceFactorsExt, List.filterMap_cons, premiseToFactorOrGuard]
+  simp [premisesToSourceFactorsExt, premiseToFactorOrGuard]
 
 private theorem premisesToSourceGuards_cons_relationQuery (rel : String)
     (args : List ILP) (rest : List ILPremise) :
     premisesToSourceGuards (.relationQuery rel args :: rest) =
       premisesToSourceGuards rest := by
-  simp [premisesToSourceGuards, List.filterMap_cons, premiseToFactorOrGuard]
+  simp [premisesToSourceGuards, premiseToFactorOrGuard]
 
 private theorem premisesToSourceFactorsExt_cons_freshness
     (fc : Mettapedia.OSLF.MeTTaIL.Syntax.FreshnessCondition) (rest : List ILPremise) :
     premisesToSourceFactorsExt (.freshness fc :: rest) =
       premisesToSourceFactorsExt rest := by
-  simp [premisesToSourceFactorsExt, List.filterMap_cons, premiseToFactorOrGuard]
+  simp [premisesToSourceFactorsExt, premiseToFactorOrGuard]
 
 private theorem premisesToSourceGuards_cons_freshness
     (fc : Mettapedia.OSLF.MeTTaIL.Syntax.FreshnessCondition) (rest : List ILPremise) :
     premisesToSourceGuards (.freshness fc :: rest) =
       .freshness fc.varName (morkPatternToAtom fc.term) :: premisesToSourceGuards rest := by
-  simp [premisesToSourceGuards, List.filterMap_cons, premiseToFactorOrGuard]
+  simp [premisesToSourceGuards, premiseToFactorOrGuard]
 
 /-- Core lemma (ext): `PremiseChain` implies membership in
     `matchSourceFactors.go` for the extended factor list.
@@ -1150,13 +1148,13 @@ theorem premiseChain_matchSourceFactorsExt {relEnv : ILRelEnv} {lang : ILDL}
     an arbitrary workspace (not just `patternToSpace p`). -/
 theorem declReducesWithPremises_noPremise_fvar_mork_fireSourceRule
     (p q : ILP) (x : String)
-    (r : ILRRule) (relEnv : ILRelEnv) (lang : ILDL)
+    (r : ILRRule) (_relEnv : ILRelEnv) (_lang : ILDL)
     (hlhs : r.left = Mettapedia.OSLF.MeTTaIL.Syntax.Pattern.fvar x)
-    (htrans_rhs : morkTranslatable r.right = true)
+    (_htrans_rhs : morkTranslatable r.right = true)
     (hnoprem : r.premises = [])
     (bs : ILBind) (hbs : bs ∈ ilMatchPattern r.left p)
-    (hrhs : ilApplyBindings bs r.right = q)
-    (hground : isGroundAtom (morkPatternToAtom q) = true)
+    (_hrhs : ilApplyBindings bs r.right = q)
+    (_hground : isGroundAtom (morkPatternToAtom q) = true)
     (s : Space)
     (hp_in : morkPatternToAtom p ∈ s) :
     applySinks s (bindingsToSubst bs) (rewriteRuleToSourceExecRule r).tmpl ∈
@@ -1183,7 +1181,7 @@ theorem declReducesWithPremises_noPremise_fvar_mork_fireSourceRule
       · exact Finset.mem_toList.mpr (by simp [hp_in])
       · simp [matchAtom_var_fresh]
     · -- go [] σ₁ consumed = [(σ₁, consumed)]
-      simp only [matchSourceFactors.go, List.mem_singleton]
+      simp only [List.mem_singleton]
       rw [hbs_eq]; simp [bindingsToSubst]
   · -- Show applySinks s σ tmpl = applySinks s (bindingsToSubst bs) tmpl
     rfl
@@ -1203,13 +1201,13 @@ theorem declReducesWithPremises_singlePremise_fvar_mork_fireSourceRule
     (r : ILRRule) (relEnv : ILRelEnv) (lang : ILDL)
     (rel : String) (args : List ILP)
     (hlhs : r.left = Mettapedia.OSLF.MeTTaIL.Syntax.Pattern.fvar x)
-    (htrans_rhs : morkTranslatable r.right = true)
+    (_htrans_rhs : morkTranslatable r.right = true)
     (hprem : r.premises = [Mettapedia.OSLF.MeTTaIL.Syntax.Premise.relationQuery rel args])
     (bs0 : ILBind) (hbs0 : bs0 ∈ ilMatchPattern r.left p)
     (bs : ILBind)
-    (hbs : bs ∈ ilApplyPremisesWithEnv relEnv lang r.premises bs0)
-    (hrhs : ilApplyBindings bs r.right = q)
-    (hground : isGroundAtom (morkPatternToAtom q) = true)
+    (_hbs : bs ∈ ilApplyPremisesWithEnv relEnv lang r.premises bs0)
+    (_hrhs : ilApplyBindings bs r.right = q)
+    (_hground : isGroundAtom (morkPatternToAtom q) = true)
     (s : Space)
     (hp_in : morkPatternToAtom p ∈ s)
     -- Workspace faithfulness: there exists a matching atom for the premise
@@ -1241,7 +1239,6 @@ theorem declReducesWithPremises_singlePremise_fvar_mork_fireSourceRule
       · exact Finset.mem_toList.mpr (by simp [hp_in])
       · simp [matchAtom_var_fresh]
     · -- Second factor: btm premAtom → match against a_prem in s \ {lhs_atom}
-      simp only [matchSourceFactors.go, matchSourceFactor, matchOneInSpace]
       apply List.mem_flatMap.mpr
       refine ⟨(bindingsToSubst bs, a_prem), ?_, ?_⟩
       · simp only [List.mem_filterMap]
@@ -1272,12 +1269,12 @@ each step provides a witness atom that MORK's `matchAtom` matches against. -/
 theorem declReducesWithPremises_multiPremise_fvar_mork_fireSourceRule
     (p q : ILP) (x : String) (r : ILRRule) (relEnv : ILRelEnv) (lang : ILDL)
     (hlhs : r.left = Mettapedia.OSLF.MeTTaIL.Syntax.Pattern.fvar x)
-    (htrans_rhs : morkTranslatable r.right = true)
+    (_htrans_rhs : morkTranslatable r.right = true)
     (htrans_prem : allPremisesTranslatable r.premises = true)
     (bs0 : ILBind) (hbs0 : bs0 ∈ ilMatchPattern r.left p)
     (bs : ILBind)
-    (hrhs : ilApplyBindings bs r.right = q)
-    (hground : isGroundAtom (morkPatternToAtom q) = true)
+    (_hrhs : ilApplyBindings bs r.right = q)
+    (_hground : isGroundAtom (morkPatternToAtom q) = true)
     (s : Space) (hp_in : morkPatternToAtom p ∈ s)
     -- PremiseChain witness
     (witnesses : List Atom)
@@ -1365,12 +1362,12 @@ def languageDefToSourceExecRulesExt (lang : ILDL) : List SourceExecRule :=
 theorem declReducesWithPremises_multiPremise_fvar_mork_fireSourceRuleExt
     (p q : ILP) (x : String) (r : ILRRule) (relEnv : ILRelEnv) (lang : ILDL)
     (hlhs : r.left = Mettapedia.OSLF.MeTTaIL.Syntax.Pattern.fvar x)
-    (htrans_rhs : morkTranslatable r.right = true)
+    (_htrans_rhs : morkTranslatable r.right = true)
     (htrans_prem : allPremisesTranslatableExt r.premises = true)
     (bs0 : ILBind) (hbs0 : bs0 ∈ ilMatchPattern r.left p)
     (bs : ILBind)
-    (hrhs : ilApplyBindings bs r.right = q)
-    (hground : isGroundAtom (morkPatternToAtom q) = true)
+    (_hrhs : ilApplyBindings bs r.right = q)
+    (_hground : isGroundAtom (morkPatternToAtom q) = true)
     (s : Space) (hp_in : morkPatternToAtom p ∈ s)
     (witnesses : List Atom)
     (hchain : PremiseChain relEnv lang s bs0 r.premises witnesses bs)

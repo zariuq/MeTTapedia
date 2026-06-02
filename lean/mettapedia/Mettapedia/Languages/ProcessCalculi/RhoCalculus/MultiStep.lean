@@ -139,6 +139,22 @@ noncomputable def reducesN_concat {n m : ℕ} {p q r : Pattern}
       rw [Nat.add_right_comm k 1 m]
       exact ReducesN.succ h_step step_km
 
+@[simp] theorem reducesN_concat_zero {m : ℕ} {p r : Pattern} (h : p ⇝[m] r) :
+    reducesN_concat (ReducesN.zero p) h = cast (by simp) h := by
+  cases h with
+  | zero p =>
+      rfl
+  | succ step rest =>
+      simp [reducesN_concat]
+
+@[simp] theorem reducesN_concat_succ {n m : ℕ} {p q r s : Pattern}
+    (step : Reduces p q) (rest : q ⇝[n] r) (h₂ : r ⇝[m] s) :
+    reducesN_concat (ReducesN.succ step rest) h₂ =
+      cast
+        (by simp [Nat.add_assoc, Nat.add_comm, Nat.add_left_comm])
+        (ReducesN.succ step (reducesN_concat rest h₂)) := by
+  simp [reducesN_concat]
+
 /-- Transitivity of star closure (alternative proof) -/
 noncomputable def reducesN_trans_via_concat {p q r : Pattern}
     (h1 : Σ n, p ⇝[n] q) (h2 : Σ m, q ⇝[m] r) :

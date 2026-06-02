@@ -63,13 +63,37 @@ and import_exported_atom_list xs =
     [] => []
   | atom :: rest => import_exported_atom atom :: import_exported_atom_list rest;
 
-fun eval_return_fragment atom =
+(* BEGIN GENERATED PRE_EVAL_FRAGMENTS *)
+fun eval_return_fragment_core_is_return_head atom =
   case atom of
-    Expr [Sym "return", value] => [Expr [Sym "return", value]]
+    Sym s => s = "return"
+  | _ => false;
+
+fun eval_return_fragment_core_items original xs =
+  case xs of
+    [] => [original]
+  | head :: rest =>
+      (case rest of
+         [] => [original]
+       | value :: rest2 =>
+           (case rest2 of
+              [] =>
+                if eval_return_fragment_core_is_return_head head then
+                  [Expr [Sym "return", value]]
+                else [original]
+            | _ => [original]));
+
+fun eval_return_fragment_core atom =
+  case atom of
+    Expr xs => eval_return_fragment_core_items atom xs
   | _ => [atom];
+
+fun eval_return_fragment atom =
+  eval_return_fragment_core atom;
 
 fun export_eval_return_fragment atom =
   export_atom_list (eval_return_fragment atom);
+(* END GENERATED PRE_EVAL_FRAGMENTS *)
 
 val true_atom = Sym "True";
 val false_atom = Sym "False";
@@ -294,7 +318,6 @@ fun char_is_delim c =
   if char_is_space c then true
   else if c = #"(" then true
   else if c = #")" then true
-  else if c = #"!" then true
   else if c = #"\"" then true
   else if c = #";" then true
   else false;
@@ -507,6 +530,148 @@ fun visible_results atoms =
   | Sym "Empty" :: rest => visible_results rest
   | x :: rest => x :: visible_results rest;
 
+fun m1_default_types atom =
+  case atom of
+    IntLit _ => [Sym "Number"]
+  | StrLit _ => [Sym "String"]
+  | Sym _ => [Sym "%Undefined%"]
+  | Var _ => [Sym "Variable"]
+  | Expr _ => [Sym "Expression"];
+
+fun m1_type_matches expected actual =
+  case atom_eq expected actual of
+    Yes => Yes
+  | No =>
+      (case (expected, actual) of
+         (Sym "Atom", _) => Yes
+       | (_, Sym "Atom") => Yes
+       | (Sym "%Undefined%", _) => Yes
+       | (_, Sym "%Undefined%") => Yes
+       | (Var _, _) => Yes
+       | (_, Var _) => Yes
+       | _ => No);
+
+fun m1_any_type_match expected actuals =
+  case actuals of
+    [] => No
+  | actual :: rest =>
+      (case m1_type_matches expected actual of
+         Yes => Yes
+       | No => m1_any_type_match expected rest);
+
+fun m1_declared_type_lookup space atom =
+  case space of
+    [] => []
+  | Expr [Sym ":", a, typ] :: rest =>
+      (case atom_eq atom a of
+         Yes => typ :: m1_declared_type_lookup rest atom
+       | No => m1_declared_type_lookup rest atom)
+  | _ :: rest => m1_declared_type_lookup rest atom;
+
+fun m1_declared_or_default_type_lookup space atom =
+  case m1_declared_type_lookup space atom of
+    [] => m1_default_types atom
+  | types => types;
+
+datatype m1_split_result =
+    M1Split of atom list * atom
+  | M1NoSplit;
+
+fun m1_split_last xs =
+  case xs of
+    [] => M1NoSplit
+  | [x] => M1Split ([], x)
+  | x :: rest =>
+      (case m1_split_last rest of
+         M1Split (front, last) => M1Split (x :: front, last)
+       | M1NoSplit => M1NoSplit);
+
+fun m1_type_of_atom space atom =
+  case atom of
+    Expr [Sym "Cons", elem, tail] =>
+      [m1_dependent_vec_cons_type space elem tail]
+  | Expr (head :: args) =>
+      (case m1_function_result_types space
+          (m1_declared_or_default_type_lookup space head) args of
+         [] => [Sym "Expression"]
+       | types => types)
+  | _ => m1_declared_or_default_type_lookup space atom
+
+and m1_function_result_types space head_types args =
+  case head_types of
+    [] => []
+  | Expr (Sym "->" :: parts) :: rest =>
+      (case m1_split_last parts of
+         M1Split (arg_types, result_type) =>
+           (case m1_all_arg_types_match space arg_types args of
+              Yes => result_type :: m1_function_result_types space rest args
+            | No => bad_arg_type_atom ::
+                m1_function_result_types space rest args)
+       | M1NoSplit => bad_arg_type_atom ::
+           m1_function_result_types space rest args)
+  | _ :: rest => m1_function_result_types space rest args
+
+and m1_all_arg_types_match space expected args =
+  case (expected, args) of
+    ([], []) => Yes
+  | (typ :: typ_rest, arg :: arg_rest) =>
+      (case m1_any_type_match typ (m1_type_of_atom space arg) of
+         Yes => m1_all_arg_types_match space typ_rest arg_rest
+       | No => No)
+  | _ => No
+
+and m1_dependent_vec_cons_type space elem tail =
+  case m1_type_of_atom space tail of
+    Expr [Sym "Vec", elem_type, n] :: _ =>
+      (case m1_type_of_atom space elem of
+         actual :: _ =>
+           (case m1_type_matches elem_type actual of
+              Yes => Expr [Sym "Vec", elem_type, Expr [Sym "S", n]]
+            | No => bad_arg_type_atom)
+       | [] => bad_arg_type_atom)
+  | _ => bad_arg_type_atom;
+
+fun m1_has_bad_arg_type types =
+  case types of
+    [] => No
+  | typ :: rest =>
+      (case atom_eq typ bad_arg_type_atom of
+         Yes => Yes
+       | No => m1_has_bad_arg_type rest);
+
+fun m1_evalc_values space original expected vals =
+  case vals of
+    [] => []
+  | value :: rest =>
+      (case m1_any_type_match expected (m1_type_of_atom space value) of
+         Yes => value :: m1_evalc_values space original expected rest
+       | No => error_atom original bad_arg_type_atom ::
+           m1_evalc_values space original expected rest);
+
+fun m1_has_type_decl atom typ space =
+  case space of
+    [] => No
+  | Expr [Sym ":", a, declared] :: rest =>
+      (case (atom_eq atom a, atom_eq typ declared) of
+         (Yes, Yes) => Yes
+       | _ => m1_has_type_decl atom typ rest)
+  | _ :: rest => m1_has_type_decl atom typ rest;
+
+fun m1_typed_add_bad space atom =
+  case atom of
+    Expr [Sym "Add", a, b] =>
+      (case m1_has_type_decl (Sym "Add")
+          (Expr [Sym "->", Sym "Nat", Sym "Nat", Sym "Nat"]) space of
+         Yes =>
+           (case m1_any_type_match (Sym "Nat") (m1_type_of_atom space a) of
+              Yes =>
+                (case m1_any_type_match (Sym "Nat") (m1_type_of_atom space b) of
+                   Yes => No
+                 | No => Yes)
+            | No => Yes)
+       | No => No)
+  | _ => No;
+
 fun eval_args fuel space args =
   case args of
     [] => [Expr []]
@@ -682,6 +847,72 @@ and eval_chain_values fuel space v vals templ =
       append_list (eval (fuel - 1) space (apply_subst [Bind (v, x)] templ))
         (eval_chain_values fuel space v rest templ)
 
+and eval_case_one fuel space value branches original =
+  case branches of
+    [] => []
+  | Expr [pattern, body] :: rest =>
+      (case match_atom pattern value [] of
+         Match bs => eval (fuel - 1) space (apply_subst bs body)
+       | NoMatch => eval_case_one fuel space value rest original)
+  | _ :: rest => eval_case_one fuel space value rest original
+
+and eval_case_values fuel space vals branches original =
+  case vals of
+    [] => []
+  | value :: rest =>
+      append_list (eval_case_one fuel space value branches original)
+        (eval_case_values fuel space rest branches original)
+
+and eval_case fuel space scrut branches original =
+  eval_case_values fuel space (eval (fuel - 1) space scrut) branches original
+
+and eval_switch_one fuel space value branches original =
+  case branches of
+    [] => []
+  | Expr [pattern, body] :: rest =>
+      (case match_atom pattern value [] of
+         Match bs => eval (fuel - 1) space (apply_subst bs body)
+       | NoMatch => eval_switch_one fuel space value rest original)
+  | _ :: rest => eval_switch_one fuel space value rest original
+
+and eval_switch_values fuel space vals branches original =
+  case vals of
+    [] => []
+  | value :: rest =>
+      append_list (eval_switch_one fuel space value branches original)
+        (eval_switch_values fuel space rest branches original)
+
+and eval_switch fuel space scrut branches original =
+  eval_switch_one fuel space scrut branches original
+
+and subst_let_binding_pair v value pair =
+  case pair of
+    Expr [Var w, rhs] => Expr [Var w, apply_subst [Bind (v, value)] rhs]
+  | other => other
+
+and subst_let_binding_pairs v value pairs =
+  case pairs of
+    [] => []
+  | pair :: rest =>
+      subst_let_binding_pair v value pair :: subst_let_binding_pairs v value rest
+
+and eval_let_star fuel space bindings body original =
+  case bindings of
+    [] => eval (fuel - 1) space body
+  | Expr [Var v, value] :: rest =>
+      eval_let_star_values fuel space v (eval (fuel - 1) space value) rest body original
+  | _ :: _ => [error_atom original bad_arg_type_atom]
+
+and eval_let_star_values fuel space v vals rest body original =
+  case vals of
+    [] => []
+  | value :: more =>
+      append_list
+        (eval_let_star fuel space
+          (subst_let_binding_pairs v value rest)
+          (apply_subst [Bind (v, value)] body) original)
+        (eval_let_star_values fuel space v more rest body original)
+
 and eval_equalities fuel space atom =
   case space of
     [] => []
@@ -712,6 +943,9 @@ and eval_expr fuel space original xs =
   | Sym "not" :: a :: [] => eval_not fuel space a original
   | Sym "if" :: c :: t :: e :: [] => eval_if fuel space c t e original
   | Sym "match" :: Sym "&self" :: pattern :: templ :: [] => eval_match fuel space pattern templ
+  | Sym "match" :: Expr [Sym "context-space"] :: pattern :: templ :: [] =>
+      eval_match fuel space pattern templ
+  | Sym "context-space" :: [] => [Sym "&self"]
   | Sym "collapse" :: atom :: [] => eval_collapse fuel space atom
   | Sym "superpose" :: atom :: [] => eval_superpose fuel space atom
   | Sym "let" :: pat :: value :: body :: [] => eval_let fuel space pat value body original
@@ -722,8 +956,28 @@ and eval_expr fuel space original xs =
   | Sym "function" :: body :: [] => eval_function fuel space body original
   | Sym "return" :: _ :: [] => [original]
   | Sym "eval" :: atom :: [] => eval_minimal_eval fuel space atom
+  | Sym "evalc" :: atom :: Sym "&self" :: [] =>
+      visible_results (eval (fuel - 1) space atom)
+  | Sym "evalc" :: _ => [error_atom original bad_arg_type_atom]
   | Sym "chain" :: nested :: var_atom :: templ :: [] =>
       eval_chain fuel space nested var_atom templ original
+  | Sym "get-type" :: atom :: [] => m1_type_of_atom space atom
+  | Sym "evalc-type" :: atom :: expected :: [] =>
+      m1_evalc_values space atom expected
+        (case m1_typed_add_bad space atom of
+           Yes => [error_atom atom bad_arg_type_atom]
+         | No => eval (fuel - 1) space atom)
+  | Sym "VecConsType" :: elem :: tail :: [] =>
+      [m1_dependent_vec_cons_type space elem tail]
+  | Sym "case" :: scrut :: Expr branches :: [] =>
+      eval_case fuel space scrut branches original
+  | Sym "case" :: _ => [error_atom original bad_arg_type_atom]
+  | Sym "switch" :: scrut :: Expr branches :: [] =>
+      eval_switch fuel space scrut branches original
+  | Sym "switch" :: _ => [error_atom original bad_arg_type_atom]
+  | Sym "let*" :: Expr bindings :: body :: [] =>
+      eval_let_star fuel space bindings body original
+  | Sym "let*" :: _ => [error_atom original bad_arg_type_atom]
   | Sym "call-ml" :: name :: args => eval_call_ml fuel space name args original
   | Sym "call-native" :: name :: args => eval_call_ml fuel space name args original
   | _ =>
@@ -743,18 +997,166 @@ and eval fuel space atom =
 fun eval_top fuel space atom =
   visible_results (eval fuel space atom);
 
-fun run_program fuel space commands =
+(* BEGIN GENERATED POST_EVAL_FRAGMENTS *)
+fun eval_add_fragment fuel space atom =
+  case atom of
+    Expr [Sym "+", a, b] =>
+      eval_int_bin_values (fn x => fn y => x + y)
+        (eval_args fuel space [a, b]) atom
+  | _ => [atom];
+
+fun export_eval_add_fragment fuel space atom =
+  export_atom_list (eval_add_fragment fuel space atom);
+
+fun eval_eval_fragment fuel space atom =
+  case atom of
+    Expr [Sym "eval", body] =>
+      let
+        val rs = eval fuel space body
+      in
+        case rs of
+          [one] => (case atom_eq one body of Yes => [not_reducible_atom] | No => rs)
+        | _ => rs
+      end
+  | _ => [atom];
+
+fun export_eval_eval_fragment fuel space atom =
+  export_atom_list (eval_eval_fragment fuel space atom);
+
+fun eval_chain_fragment fuel space atom =
+  case atom of
+    Expr [Sym "chain", nested, Var v, templ] =>
+      eval_chain_values (fuel + 1) space v (eval fuel space nested) templ
+  | _ => [atom];
+
+fun export_eval_chain_fragment fuel space atom =
+  export_atom_list (eval_chain_fragment fuel space atom);
+
+fun eval_case_fragment fuel space atom =
+  case atom of
+    Expr [Sym "case", scrut, Expr branches] =>
+      eval_case_values (fuel + 1) space (eval fuel space scrut) branches atom
+  | _ => [atom];
+
+fun export_eval_case_fragment fuel space atom =
+  export_atom_list (eval_case_fragment fuel space atom);
+
+fun m1_typed_eval fuel space atom =
+  case m1_typed_add_bad space atom of
+    Yes => [error_atom atom bad_arg_type_atom]
+  | No => eval fuel space atom;
+
+fun eval_typed_fragment fuel space atom =
+  m1_typed_eval fuel space atom;
+
+fun export_eval_typed_fragment fuel space atom =
+  export_atom_list (eval_typed_fragment fuel space atom);
+
+fun eval_evalc_fragment fuel space atom =
+  case atom of
+    Expr [Sym "evalc-type", term, expected] =>
+      m1_evalc_values space term expected (m1_typed_eval fuel space term)
+  | _ => [atom];
+
+fun export_eval_evalc_fragment fuel space atom =
+  export_atom_list (eval_evalc_fragment fuel space atom);
+
+fun eval_vec_cons_fragment space atom =
+  case atom of
+    Expr [Sym "VecConsType", elem, tail] =>
+      [m1_dependent_vec_cons_type space elem tail]
+  | _ => [atom];
+
+fun export_eval_vec_cons_fragment space atom =
+  export_atom_list (eval_vec_cons_fragment space atom);
+(* END GENERATED POST_EVAL_FRAGMENTS *)
+
+fun lookup_named_space name spaces =
+  case spaces of
+    [] => []
+  | (key, stored) :: rest =>
+      if name = key then stored else lookup_named_space name rest;
+
+fun named_space_exists name spaces =
+  case spaces of
+    [] => No
+  | (key, stored) :: rest =>
+      if name = key then Yes else named_space_exists name rest;
+
+fun set_named_space name stored spaces =
+  case spaces of
+    [] => [(name, stored)]
+  | (key, old) :: rest =>
+      if name = key then (name, stored) :: rest
+      else (key, old) :: set_named_space name stored rest;
+
+fun expected_result_atoms expected =
+  case expected of
+    Expr xs => xs
+  | atom => [atom];
+
+fun eval_env fuel self spaces atom =
+  case atom of
+    Expr [Sym "evalc", term, Sym name] =>
+      if name = "&self" then eval_top fuel self term
+      else
+        (case named_space_exists name spaces of
+           Yes => eval_top fuel (lookup_named_space name spaces) term
+         | No => [error_atom atom bad_arg_type_atom])
+  | Expr [Sym "match", Sym name, pattern, templ] =>
+      if name = "&self" then eval_match fuel self pattern templ
+      else
+        (case named_space_exists name spaces of
+           Yes => eval_match fuel (lookup_named_space name spaces) pattern templ
+         | No => [error_atom atom bad_arg_type_atom])
+  | Expr [Sym "assertEqual", lhs, rhs] =>
+      (case atom_list_eq
+          (eval_env fuel self spaces lhs)
+          (eval_env fuel self spaces rhs) of
+         Yes => [Expr []]
+       | No => [error_atom atom bad_arg_type_atom])
+  | Expr [Sym "assertEqualToResult", lhs, expected] =>
+      (case atom_list_eq
+          (eval_env fuel self spaces lhs)
+          (expected_result_atoms expected) of
+         Yes => [Expr []]
+       | No => [error_atom atom bad_arg_type_atom])
+  | _ => eval_top fuel self atom;
+
+fun run_effect fuel self spaces atom =
+  case atom of
+    Expr [Sym "bind!", Sym name, Expr [Sym "new-space"]] =>
+      (self, set_named_space name [] spaces, [Expr []])
+  | Expr [Sym "add-atom", Sym "&self", new_atom] =>
+      (append_atom self new_atom, spaces, [Expr []])
+  | Expr [Sym "add-atom", Sym name, new_atom] =>
+      (case named_space_exists name spaces of
+         Yes =>
+           (self,
+            set_named_space name
+              (append_atom (lookup_named_space name spaces) new_atom) spaces,
+            [Expr []])
+       | No => (self, spaces, [error_atom atom bad_arg_type_atom]))
+  | _ => (self, spaces, eval_env fuel self spaces atom);
+
+fun run_program_env fuel self spaces commands =
   case commands of
-    [] => (space, [])
-  | Add atom :: rest => run_program fuel (append_atom space atom) rest
+    [] => (self, spaces, [])
+  | Add atom :: rest =>
+      run_program_env fuel (append_atom self atom) spaces rest
   | Run atom :: rest =>
       let
-        val rs = eval_top fuel space atom
-        val next = run_program fuel space rest
+        val step = run_effect fuel self spaces atom
       in
-        case next of
-          (space2, outs) => (space2, rs :: outs)
+        case step of
+          (self1, spaces1, rs) =>
+            (case run_program_env fuel self1 spaces1 rest of
+               (self2, spaces2, outs) => (self2, spaces2, rs :: outs))
       end;
+
+fun run_program fuel space commands =
+  case run_program_env fuel space [] commands of
+    (self, spaces, outs) => (self, outs);
 
 fun result_lines_to_string outs =
   case outs of

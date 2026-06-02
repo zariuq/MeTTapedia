@@ -3,6 +3,7 @@ import Mathlib.Data.Real.Archimedean
 import Mathlib.Order.ConditionallyCompleteLattice.Basic
 import Mathlib.Algebra.Order.Group.Cone
 import Mathlib.Algebra.BigOperators.Group.Finset.Basic
+import Mathlib.Algebra.Order.BigOperators.Group.Finset
 
 /-!
 # Desirable Gambles: A Minimal Foundation for Credal Sets
@@ -144,6 +145,35 @@ theorem expectedValue_add {Ω : Type*} [Fintype Ω] (P : ProbDist Ω) (f g : Gam
     expectedValue P (f + g) = expectedValue P f + expectedValue P g := by
   simp only [expectedValue, Pi.add_apply, mul_add, Finset.sum_add_distrib]
 
+/-- Expected value of a nonnegative gamble is nonnegative. -/
+theorem expectedValue_nonneg_of_nonnegative {Ω : Type*} [Fintype Ω]
+    (P : ProbDist Ω) (f : Gamble Ω) (hf : ∀ ω, 0 ≤ f ω) :
+    0 ≤ expectedValue P f := by
+  unfold expectedValue
+  exact Finset.sum_nonneg (by
+    intro ω _
+    exact mul_nonneg (P.non_neg ω) (hf ω))
+
+/-- Expected value of a gamble bounded above by one is at most one. -/
+theorem expectedValue_le_one_of_le_one {Ω : Type*} [Fintype Ω]
+    (P : ProbDist Ω) (f : Gamble Ω) (hf : ∀ ω, f ω ≤ 1) :
+    expectedValue P f ≤ 1 := by
+  unfold expectedValue
+  calc
+    (∑ ω : Ω, P.prob ω * f ω) ≤ ∑ ω : Ω, P.prob ω * 1 := by
+        apply Finset.sum_le_sum
+        intro ω _
+        exact mul_le_mul_of_nonneg_left (hf ω) (P.non_neg ω)
+    _ = ∑ ω : Ω, P.prob ω := by simp
+    _ = 1 := P.sum_one
+
+/-- Expected value of a unit-bounded gamble lies in `[0,1]`. -/
+theorem expectedValue_mem_unit_of_unit_gamble {Ω : Type*} [Fintype Ω]
+    (P : ProbDist Ω) (f : Gamble Ω) (hf : ∀ ω, f ω ∈ Set.Icc 0 1) :
+    expectedValue P f ∈ Set.Icc 0 1 :=
+  ⟨expectedValue_nonneg_of_nonnegative P f (fun ω => (hf ω).1),
+    expectedValue_le_one_of_le_one P f (fun ω => (hf ω).2)⟩
+
 /-- A credal set: a set of probability distributions -/
 abbrev CredalSetFinite (Ω : Type*) [Fintype Ω] := Set (ProbDist Ω)
 
@@ -154,6 +184,79 @@ noncomputable def lowerProb {Ω : Type*} [Fintype Ω] (C : CredalSetFinite Ω) (
 /-- Upper probability from a credal set -/
 noncomputable def upperProb {Ω : Type*} [Fintype Ω] (C : CredalSetFinite Ω) (f : Gamble Ω) : ℝ :=
   sSup (Set.image (fun P => expectedValue P f) C)
+
+/-- The lower probability of a unit-bounded gamble lies in `[0,1]` when the
+credal set is nonempty. -/
+theorem lowerProb_mem_unit_of_unit_gamble {Ω : Type*} [Fintype Ω]
+    (C : CredalSetFinite Ω) (hC : C.Nonempty) (f : Gamble Ω)
+    (hf : ∀ ω, f ω ∈ Set.Icc 0 1) :
+    lowerProb C f ∈ Set.Icc 0 1 := by
+  let S : Set ℝ := Set.image (fun P => expectedValue P f) C
+  have hS_ne : S.Nonempty := by
+    rcases hC with ⟨P, hP⟩
+    exact ⟨expectedValue P f, ⟨P, hP, rfl⟩⟩
+  have hS_bddBelow : BddBelow S := by
+    refine ⟨0, ?_⟩
+    intro x hx
+    rcases hx with ⟨P, _hP, rfl⟩
+    exact (expectedValue_mem_unit_of_unit_gamble P f hf).1
+  unfold lowerProb
+  constructor
+  · exact le_csInf hS_ne (by
+      intro x hx
+      rcases hx with ⟨P, _hP, rfl⟩
+      exact (expectedValue_mem_unit_of_unit_gamble P f hf).1)
+  · rcases hC with ⟨P, hP⟩
+    exact (csInf_le hS_bddBelow ⟨P, hP, rfl⟩).trans
+      (expectedValue_mem_unit_of_unit_gamble P f hf).2
+
+/-- The upper probability of a unit-bounded gamble lies in `[0,1]` when the
+credal set is nonempty. -/
+theorem upperProb_mem_unit_of_unit_gamble {Ω : Type*} [Fintype Ω]
+    (C : CredalSetFinite Ω) (hC : C.Nonempty) (f : Gamble Ω)
+    (hf : ∀ ω, f ω ∈ Set.Icc 0 1) :
+    upperProb C f ∈ Set.Icc 0 1 := by
+  let S : Set ℝ := Set.image (fun P => expectedValue P f) C
+  have hS_ne : S.Nonempty := by
+    rcases hC with ⟨P, hP⟩
+    exact ⟨expectedValue P f, ⟨P, hP, rfl⟩⟩
+  have hS_bddAbove : BddAbove S := by
+    refine ⟨1, ?_⟩
+    intro x hx
+    rcases hx with ⟨P, _hP, rfl⟩
+    exact (expectedValue_mem_unit_of_unit_gamble P f hf).2
+  unfold upperProb
+  constructor
+  · rcases hC with ⟨P, hP⟩
+    exact (expectedValue_mem_unit_of_unit_gamble P f hf).1.trans
+      (le_csSup hS_bddAbove ⟨P, hP, rfl⟩)
+  · exact csSup_le hS_ne (by
+      intro x hx
+      rcases hx with ⟨P, _hP, rfl⟩
+      exact (expectedValue_mem_unit_of_unit_gamble P f hf).2)
+
+/-- Lower probability is below upper probability for nonempty finite credal
+sets and unit-bounded gambles. -/
+theorem lowerProb_le_upperProb_of_unit_gamble {Ω : Type*} [Fintype Ω]
+    (C : CredalSetFinite Ω) (hC : C.Nonempty) (f : Gamble Ω)
+    (hf : ∀ ω, f ω ∈ Set.Icc 0 1) :
+    lowerProb C f ≤ upperProb C f := by
+  let S : Set ℝ := Set.image (fun P => expectedValue P f) C
+  have hS_bddBelow : BddBelow S := by
+    refine ⟨0, ?_⟩
+    intro x hx
+    rcases hx with ⟨P, _hP, rfl⟩
+    exact (expectedValue_mem_unit_of_unit_gamble P f hf).1
+  have hS_bddAbove : BddAbove S := by
+    refine ⟨1, ?_⟩
+    intro x hx
+    rcases hx with ⟨P, _hP, rfl⟩
+    exact (expectedValue_mem_unit_of_unit_gamble P f hf).2
+  rcases hC with ⟨P, hP⟩
+  unfold lowerProb upperProb
+  calc
+    sInf S ≤ expectedValue P f := csInf_le hS_bddBelow ⟨P, hP, rfl⟩
+    _ ≤ sSup S := le_csSup hS_bddAbove ⟨P, hP, rfl⟩
 
 /-- Lower probability is superadditive: `P*(f + g) ≥ P*(f) + P*(g)`. -/
 theorem lowerProb_superadditive {Ω : Type*} [Fintype Ω] (K : CredalSetFinite Ω)
@@ -238,14 +341,52 @@ This file sits at the minimal imprecise-probability end of that spectrum.
 ## §8: Constructive Examples (Proving Intervals Exist)
 -/
 
+/-- For a singleton credal set, the lower probability is just that
+distribution's expected value. -/
+theorem lowerProb_singleton_eq_expectedValue {Ω : Type*} [Fintype Ω]
+    (P : ProbDist Ω) (f : Gamble Ω) :
+    lowerProb (Set.singleton P) f = expectedValue P f := by
+  unfold lowerProb
+  have h :
+      ((fun Q => expectedValue Q f) '' Set.singleton P) =
+        ({expectedValue P f} : Set ℝ) := by
+    ext x
+    constructor
+    · rintro ⟨Q, hQ, rfl⟩
+      have hQP : Q = P := by simpa using hQ
+      simp [hQP]
+    · intro hx
+      have hx' : x = expectedValue P f := by simpa using hx
+      subst x
+      exact ⟨P, rfl, rfl⟩
+  rw [h]
+  exact csInf_singleton _
+
+/-- For a singleton credal set, the upper probability is just that
+distribution's expected value. -/
+theorem upperProb_singleton_eq_expectedValue {Ω : Type*} [Fintype Ω]
+    (P : ProbDist Ω) (f : Gamble Ω) :
+    upperProb (Set.singleton P) f = expectedValue P f := by
+  unfold upperProb
+  have h :
+      ((fun Q => expectedValue Q f) '' Set.singleton P) =
+        ({expectedValue P f} : Set ℝ) := by
+    ext x
+    constructor
+    · rintro ⟨Q, hQ, rfl⟩
+      have hQP : Q = P := by simpa using hQ
+      simp [hQP]
+    · intro hx
+      have hx' : x = expectedValue P f := by simpa using hx
+      subst x
+      exact ⟨P, rfl, rfl⟩
+  rw [h]
+  exact csSup_singleton _
+
 /-- For a singleton credal set, lower = upper. -/
 theorem singleton_credal_collapse {Ω : Type*} [Fintype Ω] (P : ProbDist Ω) (f : Gamble Ω) :
     lowerProb (Set.singleton P) f = upperProb (Set.singleton P) f := by
-  unfold lowerProb upperProb
-  have h : (fun Q => expectedValue Q f) '' Set.singleton P = {expectedValue P f} :=
-    Set.image_singleton
-  rw [h]
-  exact (csInf_singleton _).trans (csSup_singleton _).symm
+  rw [lowerProb_singleton_eq_expectedValue, upperProb_singleton_eq_expectedValue]
 
 /-- The singleton collapse principle. -/
 theorem V3_is_singleton_collapse :

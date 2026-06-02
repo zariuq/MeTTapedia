@@ -17,7 +17,7 @@ import Mettapedia.ProbabilityTheory.BayesianNetworks.DiscreteSemantics
 import Mettapedia.ProbabilityTheory.BayesianNetworks.DSeparationSoundness
 
 open MeasureTheory ProbabilityTheory
-open scoped Classical
+open scoped Classical ENNReal
 
 namespace Mettapedia.ProbabilityTheory.BayesianNetworks.DiscreteLocalMarkov
 
@@ -214,6 +214,677 @@ theorem factorization_given_parents
     funext u hu
     exact hpa u hu
   rw [hpa_eq, hv]
+
+/-! ## Block-scope respect for relevant factors -/
+
+/-- If a relevant local factor scope meets the `X`-reachable outside-`Z` block,
+then any variable outside `X ∪ Z` is not a parent of that factor head. -/
+theorem not_parent_of_outside_xReachableBlock_conditioning_of_scope_meets_xReachableBlock
+    (X Y Z : Set V)
+    (hirr : ∀ v : V, ¬bn.graph.edges v v)
+    {v u w : V}
+    (hv : v ∈ DSeparation.relevantVertices bn.graph X Y Z)
+    (huBlock : u ∈ DSeparation.xReachableBlock bn.graph X Y Z)
+    (huScope : u = v ∨ bn.graph.edges u v)
+    (hwOut : w ∉ DSeparation.xReachableBlock bn.graph X Y Z ∪ Z) :
+    w ∉ bn.graph.parents v := by
+  intro hwPar
+  have hwRel : w ∈ DSeparation.relevantVertices bn.graph X Y Z :=
+    DSeparation.edge_source_relevant bn.graph X Y Z hv hwPar
+  have hwZ : w ∉ Z := by
+    exact fun hwZ => hwOut (Or.inr hwZ)
+  have hwW : w ∈ DSeparation.relevantOutsideConditioning bn.graph X Y Z := ⟨hwRel, hwZ⟩
+  have hwX : w ∈ DSeparation.xReachableBlock bn.graph X Y Z :=
+    DSeparation.same_headScope_relevantOutsideConditioning_subset_xReachableBlock
+      bn.graph X Y Z hirr hv huBlock huScope hwW (Or.inr hwPar)
+  exact hwOut (Or.inl hwX)
+
+/-- If a relevant local factor scope meets the `X`-reachable outside-`Z` block,
+then updating any variable outside `X ∪ Z` does not affect the factor head. -/
+theorem nodeProb_independent_of_outside_xReachableBlock_conditioning_of_scope_meets_xReachableBlock
+    (cpt : bn.DiscreteCPT) (X Y Z : Set V)
+    (hirr : ∀ v : V, ¬bn.graph.edges v v)
+    {v u w : V}
+    (hv : v ∈ DSeparation.relevantVertices bn.graph X Y Z)
+    (huBlock : u ∈ DSeparation.xReachableBlock bn.graph X Y Z)
+    (huScope : u = v ∨ bn.graph.edges u v)
+    (hwOut : w ∉ DSeparation.xReachableBlock bn.graph X Y Z ∪ Z)
+    (x : bn.JointSpace) (a : bn.stateSpace w) :
+    cpt.nodeProb (Function.update x w a) v = cpt.nodeProb x v := by
+  apply nodeProb_update_irrelevant bn cpt w v
+  · exact not_parent_of_outside_xReachableBlock_conditioning_of_scope_meets_xReachableBlock
+      bn X Y Z hirr hv huBlock huScope hwOut
+  · intro hwv
+    subst w
+    by_cases hvZ : v ∈ Z
+    · exact hwOut (Or.inr hvZ)
+    · have hvW : v ∈ DSeparation.relevantOutsideConditioning bn.graph X Y Z := ⟨hv, hvZ⟩
+      have hvX : v ∈ DSeparation.xReachableBlock bn.graph X Y Z :=
+        DSeparation.same_headScope_relevantOutsideConditioning_subset_xReachableBlock
+          bn.graph X Y Z hirr hv huBlock huScope hvW (Or.inl rfl)
+      exact hwOut (Or.inl hvX)
+
+/-- Symmetric block-scope respect: if a relevant local factor scope meets the
+`Y`-reachable outside-`Z` block, then variables outside `Y ∪ Z` are irrelevant
+to that factor head. -/
+theorem nodeProb_independent_of_outside_yReachableBlock_conditioning_of_scope_meets_yReachableBlock
+    (cpt : bn.DiscreteCPT) (X Y Z : Set V)
+    (hirr : ∀ v : V, ¬bn.graph.edges v v)
+    {v u w : V}
+    (hv : v ∈ DSeparation.relevantVertices bn.graph X Y Z)
+    (huBlock : u ∈ DSeparation.yReachableBlock bn.graph X Y Z)
+    (huScope : u = v ∨ bn.graph.edges u v)
+    (hwOut : w ∉ DSeparation.yReachableBlock bn.graph X Y Z ∪ Z)
+    (x : bn.JointSpace) (a : bn.stateSpace w) :
+    cpt.nodeProb (Function.update x w a) v = cpt.nodeProb x v := by
+  apply nodeProb_update_irrelevant bn cpt w v
+  · intro hwPar
+    have hwRel : w ∈ DSeparation.relevantVertices bn.graph X Y Z :=
+      DSeparation.edge_source_relevant bn.graph X Y Z hv hwPar
+    have hwZ : w ∉ Z := by
+      exact fun hwZ => hwOut (Or.inr hwZ)
+    have hwW : w ∈ DSeparation.relevantOutsideConditioning bn.graph X Y Z := ⟨hwRel, hwZ⟩
+    have hwY : w ∈ DSeparation.yReachableBlock bn.graph X Y Z :=
+      DSeparation.same_headScope_relevantOutsideConditioning_subset_yReachableBlock
+        bn.graph X Y Z hirr hv huBlock huScope hwW (Or.inr hwPar)
+    exact hwOut (Or.inl hwY)
+  · intro hwv
+    subst w
+    by_cases hvZ : v ∈ Z
+    · exact hwOut (Or.inr hvZ)
+    · have hvW : v ∈ DSeparation.relevantOutsideConditioning bn.graph X Y Z := ⟨hv, hvZ⟩
+      have hvY : v ∈ DSeparation.yReachableBlock bn.graph X Y Z :=
+        DSeparation.same_headScope_relevantOutsideConditioning_subset_yReachableBlock
+          bn.graph X Y Z hirr hv huBlock huScope hvW (Or.inl rfl)
+      exact hwOut (Or.inl hvY)
+
+/-- Residual block-scope respect: if a relevant local factor scope meets neither
+the `X`- nor `Y`-reachable outside-`Z` blocks, then variables outside the
+residual block and conditioning set are irrelevant to that factor head. -/
+theorem nodeProb_independent_of_outside_residualBlock_conditioning_of_scope_missing_xy
+    (cpt : bn.DiscreteCPT) (X Y Z : Set V)
+    {v w : V}
+    (hv : v ∈ DSeparation.relevantVertices bn.graph X Y Z)
+    (hNoX : ∀ {u : V}, u ∈ DSeparation.xReachableBlock bn.graph X Y Z →
+      ¬ (u = v ∨ bn.graph.edges u v))
+    (hNoY : ∀ {u : V}, u ∈ DSeparation.yReachableBlock bn.graph X Y Z →
+      ¬ (u = v ∨ bn.graph.edges u v))
+    (hwOut : w ∉ DSeparation.residualBlock bn.graph X Y Z ∪ Z)
+    (x : bn.JointSpace) (a : bn.stateSpace w) :
+    cpt.nodeProb (Function.update x w a) v = cpt.nodeProb x v := by
+  apply nodeProb_update_irrelevant bn cpt w v
+  · intro hwPar
+    have hwRel : w ∈ DSeparation.relevantVertices bn.graph X Y Z :=
+      DSeparation.edge_source_relevant bn.graph X Y Z hv hwPar
+    have hwZ : w ∉ Z := by
+      exact fun hwZ => hwOut (Or.inr hwZ)
+    have hwW : w ∈ DSeparation.relevantOutsideConditioning bn.graph X Y Z := ⟨hwRel, hwZ⟩
+    have hwR : w ∈ DSeparation.residualBlock bn.graph X Y Z :=
+      DSeparation.same_headScope_relevantOutsideConditioning_subset_residualBlock
+        bn.graph X Y Z hNoX hNoY hwW (Or.inr hwPar)
+    exact hwOut (Or.inl hwR)
+  · intro hwv
+    subst w
+    by_cases hvZ : v ∈ Z
+    · exact hwOut (Or.inr hvZ)
+    · have hvW : v ∈ DSeparation.relevantOutsideConditioning bn.graph X Y Z := ⟨hv, hvZ⟩
+      have hvR : v ∈ DSeparation.residualBlock bn.graph X Y Z :=
+        DSeparation.same_headScope_relevantOutsideConditioning_subset_residualBlock
+          bn.graph X Y Z hNoX hNoY hvW (Or.inl rfl)
+      exact hwOut (Or.inl hvR)
+
+/-- If a relevant local factor scope meets the `X`-reachable outside-`Z` block,
+then `nodeProb` for its head depends only on the `X` block and conditioning set. -/
+theorem factorization_given_xReachableBlock_conditioning_of_scope_meets_xReachableBlock
+    (cpt : bn.DiscreteCPT) (X Y Z : Set V)
+    (hirr : ∀ v : V, ¬bn.graph.edges v v)
+    {v u : V}
+    (hv : v ∈ DSeparation.relevantVertices bn.graph X Y Z)
+    (huBlock : u ∈ DSeparation.xReachableBlock bn.graph X Y Z)
+    (huScope : u = v ∨ bn.graph.edges u v)
+    (x y : bn.JointSpace)
+    (hXYeq : ∀ s, s ∈ DSeparation.xReachableBlock bn.graph X Y Z ∪ Z → x s = y s) :
+    cpt.nodeProb x v = cpt.nodeProb y v := by
+  apply factorization_given_parents bn cpt v x y
+  · intro w hwPar
+    have hwRel : w ∈ DSeparation.relevantVertices bn.graph X Y Z :=
+      DSeparation.edge_source_relevant bn.graph X Y Z hv hwPar
+    by_cases hwZ : w ∈ Z
+    · exact hXYeq w (Or.inr hwZ)
+    · have hwW : w ∈ DSeparation.relevantOutsideConditioning bn.graph X Y Z := ⟨hwRel, hwZ⟩
+      have hwX : w ∈ DSeparation.xReachableBlock bn.graph X Y Z :=
+        DSeparation.same_headScope_relevantOutsideConditioning_subset_xReachableBlock
+          bn.graph X Y Z hirr hv huBlock huScope hwW (Or.inr hwPar)
+      exact hXYeq w (Or.inl hwX)
+  · by_cases hvZ : v ∈ Z
+    · exact hXYeq v (Or.inr hvZ)
+    · have hvW : v ∈ DSeparation.relevantOutsideConditioning bn.graph X Y Z := ⟨hv, hvZ⟩
+      have hvX : v ∈ DSeparation.xReachableBlock bn.graph X Y Z :=
+        DSeparation.same_headScope_relevantOutsideConditioning_subset_xReachableBlock
+          bn.graph X Y Z hirr hv huBlock huScope hvW (Or.inl rfl)
+      exact hXYeq v (Or.inl hvX)
+
+/-- Symmetric block factorization: if a relevant local factor scope meets the
+`Y`-reachable outside-`Z` block, then `nodeProb` for its head depends only on
+that block and the conditioning set. -/
+theorem factorization_given_yReachableBlock_conditioning_of_scope_meets_yReachableBlock
+    (cpt : bn.DiscreteCPT) (X Y Z : Set V)
+    (hirr : ∀ v : V, ¬bn.graph.edges v v)
+    {v u : V}
+    (hv : v ∈ DSeparation.relevantVertices bn.graph X Y Z)
+    (huBlock : u ∈ DSeparation.yReachableBlock bn.graph X Y Z)
+    (huScope : u = v ∨ bn.graph.edges u v)
+    (x y : bn.JointSpace)
+    (hYZeq : ∀ s, s ∈ DSeparation.yReachableBlock bn.graph X Y Z ∪ Z → x s = y s) :
+    cpt.nodeProb x v = cpt.nodeProb y v := by
+  apply factorization_given_parents bn cpt v x y
+  · intro w hwPar
+    have hwRel : w ∈ DSeparation.relevantVertices bn.graph X Y Z :=
+      DSeparation.edge_source_relevant bn.graph X Y Z hv hwPar
+    by_cases hwZ : w ∈ Z
+    · exact hYZeq w (Or.inr hwZ)
+    · have hwW : w ∈ DSeparation.relevantOutsideConditioning bn.graph X Y Z := ⟨hwRel, hwZ⟩
+      have hwY : w ∈ DSeparation.yReachableBlock bn.graph X Y Z :=
+        DSeparation.same_headScope_relevantOutsideConditioning_subset_yReachableBlock
+          bn.graph X Y Z hirr hv huBlock huScope hwW (Or.inr hwPar)
+      exact hYZeq w (Or.inl hwY)
+  · by_cases hvZ : v ∈ Z
+    · exact hYZeq v (Or.inr hvZ)
+    · have hvW : v ∈ DSeparation.relevantOutsideConditioning bn.graph X Y Z := ⟨hv, hvZ⟩
+      have hvY : v ∈ DSeparation.yReachableBlock bn.graph X Y Z :=
+        DSeparation.same_headScope_relevantOutsideConditioning_subset_yReachableBlock
+          bn.graph X Y Z hirr hv huBlock huScope hvW (Or.inl rfl)
+      exact hYZeq v (Or.inl hvY)
+
+/-- Residual block factorization: if a relevant local factor scope meets neither
+reachable endpoint block, then `nodeProb` for its head depends only on the
+residual block and conditioning set. -/
+theorem factorization_given_residualBlock_conditioning_of_scope_missing_xy
+    (cpt : bn.DiscreteCPT) (X Y Z : Set V)
+    {v : V}
+    (hv : v ∈ DSeparation.relevantVertices bn.graph X Y Z)
+    (hNoX : ∀ {u : V}, u ∈ DSeparation.xReachableBlock bn.graph X Y Z →
+      ¬ (u = v ∨ bn.graph.edges u v))
+    (hNoY : ∀ {u : V}, u ∈ DSeparation.yReachableBlock bn.graph X Y Z →
+      ¬ (u = v ∨ bn.graph.edges u v))
+    (x y : bn.JointSpace)
+    (hReq : ∀ s, s ∈ DSeparation.residualBlock bn.graph X Y Z ∪ Z → x s = y s) :
+    cpt.nodeProb x v = cpt.nodeProb y v := by
+  apply factorization_given_parents bn cpt v x y
+  · intro w hwPar
+    have hwRel : w ∈ DSeparation.relevantVertices bn.graph X Y Z :=
+      DSeparation.edge_source_relevant bn.graph X Y Z hv hwPar
+    by_cases hwZ : w ∈ Z
+    · exact hReq w (Or.inr hwZ)
+    · have hwW : w ∈ DSeparation.relevantOutsideConditioning bn.graph X Y Z := ⟨hwRel, hwZ⟩
+      have hwR : w ∈ DSeparation.residualBlock bn.graph X Y Z :=
+        DSeparation.same_headScope_relevantOutsideConditioning_subset_residualBlock
+          bn.graph X Y Z hNoX hNoY hwW (Or.inr hwPar)
+      exact hReq w (Or.inl hwR)
+  · by_cases hvZ : v ∈ Z
+    · exact hReq v (Or.inr hvZ)
+    · have hvW : v ∈ DSeparation.relevantOutsideConditioning bn.graph X Y Z := ⟨hv, hvZ⟩
+      have hvR : v ∈ DSeparation.residualBlock bn.graph X Y Z :=
+        DSeparation.same_headScope_relevantOutsideConditioning_subset_residualBlock
+          bn.graph X Y Z hNoX hNoY hvW (Or.inl rfl)
+      exact hReq v (Or.inl hvR)
+
+/-- If a relevant local factor scope meets the residual outside-`Z` block, then
+`nodeProb` for its head depends only on the residual block and conditioning set. -/
+theorem factorization_given_residualBlock_conditioning_of_scope_meets_residualBlock
+    (cpt : bn.DiscreteCPT) (X Y Z : Set V)
+    (hirr : ∀ v : V, ¬bn.graph.edges v v)
+    {v u : V}
+    (hv : v ∈ DSeparation.relevantVertices bn.graph X Y Z)
+    (huBlock : u ∈ DSeparation.residualBlock bn.graph X Y Z)
+    (huScope : u = v ∨ bn.graph.edges u v)
+    (x y : bn.JointSpace)
+    (hReq : ∀ s, s ∈ DSeparation.residualBlock bn.graph X Y Z ∪ Z → x s = y s) :
+    cpt.nodeProb x v = cpt.nodeProb y v := by
+  apply factorization_given_residualBlock_conditioning_of_scope_missing_xy
+    bn cpt X Y Z hv ?_ ?_ x y hReq
+  · intro w hwX hwScope
+    have huW : u ∈ DSeparation.relevantOutsideConditioning bn.graph X Y Z := huBlock.1
+    have huX : u ∈ DSeparation.xReachableBlock bn.graph X Y Z :=
+      DSeparation.same_headScope_relevantOutsideConditioning_subset_xReachableBlock
+        bn.graph X Y Z hirr hv hwX hwScope huW huScope
+    exact huBlock.2 (Or.inl huX)
+  · intro w hwY hwScope
+    have huW : u ∈ DSeparation.relevantOutsideConditioning bn.graph X Y Z := huBlock.1
+    have huY : u ∈ DSeparation.yReachableBlock bn.graph X Y Z :=
+      DSeparation.same_headScope_relevantOutsideConditioning_subset_yReachableBlock
+        bn.graph X Y Z hirr hv hwY hwScope huW huScope
+    exact huBlock.2 (Or.inr huY)
+
+/-- The local scope of head `v` meets the `X`-reachable outside-`Z` block. -/
+def scopeMeetsXReachableBlock (X Y Z : Set V) (v : V) : Prop :=
+  ∃ u, u ∈ DSeparation.xReachableBlock bn.graph X Y Z ∧ (u = v ∨ bn.graph.edges u v)
+
+/-- The local scope of head `v` meets the `Y`-reachable outside-`Z` block. -/
+def scopeMeetsYReachableBlock (X Y Z : Set V) (v : V) : Prop :=
+  ∃ u, u ∈ DSeparation.yReachableBlock bn.graph X Y Z ∧ (u = v ∨ bn.graph.edges u v)
+
+/-- The local scope of head `v` meets the residual outside-`Z` block. -/
+def scopeMeetsResidualBlock (X Y Z : Set V) (v : V) : Prop :=
+  ∃ u, u ∈ DSeparation.residualBlock bn.graph X Y Z ∧ (u = v ∨ bn.graph.edges u v)
+
+/-- Relevant heads whose local scopes stay entirely in the conditioning set. -/
+def scopeOnlyConditioning (X Y Z : Set V) (v : V) : Prop :=
+  v ∈ DSeparation.relevantVertices bn.graph X Y Z ∧
+    ¬ scopeMeetsXReachableBlock bn X Y Z v ∧
+    ¬ scopeMeetsYReachableBlock bn X Y Z v ∧
+    ¬ scopeMeetsResidualBlock bn X Y Z v
+
+/-- Relevant heads whose local scopes meet the `X`-reachable outside-`Z` block. -/
+noncomputable def relevantHeadXFinset (X Y Z : Set V) : Finset V :=
+  Finset.univ.filter (fun v =>
+    v ∈ DSeparation.relevantVertices bn.graph X Y Z ∧
+      scopeMeetsXReachableBlock bn X Y Z v)
+
+/-- Relevant heads whose local scopes meet the `Y`-reachable outside-`Z` block. -/
+noncomputable def relevantHeadYFinset (X Y Z : Set V) : Finset V :=
+  Finset.univ.filter (fun v =>
+    v ∈ DSeparation.relevantVertices bn.graph X Y Z ∧
+      scopeMeetsYReachableBlock bn X Y Z v)
+
+/-- Relevant heads whose local scopes meet the residual outside-`Z` block. -/
+noncomputable def relevantHeadResidualFinset (X Y Z : Set V) : Finset V :=
+  Finset.univ.filter (fun v =>
+    v ∈ DSeparation.relevantVertices bn.graph X Y Z ∧
+      scopeMeetsResidualBlock bn X Y Z v)
+
+/-- Relevant heads whose local scopes stay in the conditioning set. -/
+noncomputable def relevantHeadConditioningFinset (X Y Z : Set V) : Finset V :=
+  Finset.univ.filter (scopeOnlyConditioning bn X Y Z)
+
+/-- If a relevant local factor scope has no outside-`Z` witness in any endpoint
+or residual block, then `nodeProb` for its head depends only on the conditioning
+set. -/
+theorem factorization_given_conditioning_of_scope_onlyConditioning
+    (cpt : bn.DiscreteCPT) (X Y Z : Set V)
+    {v : V}
+    (hCond : scopeOnlyConditioning bn X Y Z v)
+    (x y : bn.JointSpace)
+    (hZeq : ∀ s, s ∈ Z → x s = y s) :
+    cpt.nodeProb x v = cpt.nodeProb y v := by
+  rcases hCond with ⟨hv, hNoX, hNoY, hNoR⟩
+  apply factorization_given_parents bn cpt v x y
+  · intro w hwPar
+    have hwRel : w ∈ DSeparation.relevantVertices bn.graph X Y Z :=
+      DSeparation.edge_source_relevant bn.graph X Y Z hv hwPar
+    by_cases hwZ : w ∈ Z
+    · exact hZeq w hwZ
+    · have hwW : w ∈ DSeparation.relevantOutsideConditioning bn.graph X Y Z := ⟨hwRel, hwZ⟩
+      have hwBlocks :
+          w ∈ DSeparation.xReachableBlock bn.graph X Y Z ∪
+              (DSeparation.yReachableBlock bn.graph X Y Z ∪
+                DSeparation.residualBlock bn.graph X Y Z) := by
+        rw [← DSeparation.relevantOutsideConditioning_eq_blocks_union_residual
+          bn.graph X Y Z]
+        exact hwW
+      rcases hwBlocks with hwX | hwYR
+      · exact False.elim <| hNoX ⟨w, hwX, Or.inr hwPar⟩
+      · rcases hwYR with hwY | hwR
+        · exact False.elim <| hNoY ⟨w, hwY, Or.inr hwPar⟩
+        · exact False.elim <| hNoR ⟨w, hwR, Or.inr hwPar⟩
+  · by_cases hvZ : v ∈ Z
+    · exact hZeq v hvZ
+    · have hvW : v ∈ DSeparation.relevantOutsideConditioning bn.graph X Y Z := ⟨hv, hvZ⟩
+      have hvBlocks :
+          v ∈ DSeparation.xReachableBlock bn.graph X Y Z ∪
+              (DSeparation.yReachableBlock bn.graph X Y Z ∪
+                DSeparation.residualBlock bn.graph X Y Z) := by
+        rw [← DSeparation.relevantOutsideConditioning_eq_blocks_union_residual
+          bn.graph X Y Z]
+        exact hvW
+      rcases hvBlocks with hvX | hvYR
+      · exact False.elim <| hNoX ⟨v, hvX, Or.inl rfl⟩
+      · rcases hvYR with hvY | hvR
+        · exact False.elim <| hNoY ⟨v, hvY, Or.inl rfl⟩
+        · exact False.elim <| hNoR ⟨v, hvR, Or.inl rfl⟩
+
+/-- The `X`-head factor product depends only on the `X` block and conditioning set. -/
+theorem prod_relevantHeadXFinset_eq_of_agree
+    (cpt : bn.DiscreteCPT) (X Y Z : Set V)
+    (hirr : ∀ v : V, ¬bn.graph.edges v v)
+    (x y : bn.JointSpace)
+    (hXYeq : ∀ s, s ∈ DSeparation.xReachableBlock bn.graph X Y Z ∪ Z → x s = y s) :
+    ∏ v ∈ relevantHeadXFinset bn X Y Z, cpt.nodeProb x v =
+      ∏ v ∈ relevantHeadXFinset bn X Y Z, cpt.nodeProb y v := by
+  refine Finset.prod_congr rfl ?_
+  intro v hv
+  rcases Finset.mem_filter.mp hv with ⟨_, hvRel, hvX⟩
+  rcases hvX with ⟨u, huBlock, huScope⟩
+  exact factorization_given_xReachableBlock_conditioning_of_scope_meets_xReachableBlock
+    bn cpt X Y Z hirr hvRel huBlock huScope x y hXYeq
+
+/-- The `Y`-head factor product depends only on the `Y` block and conditioning set. -/
+theorem prod_relevantHeadYFinset_eq_of_agree
+    (cpt : bn.DiscreteCPT) (X Y Z : Set V)
+    (hirr : ∀ v : V, ¬bn.graph.edges v v)
+    (x y : bn.JointSpace)
+    (hYZeq : ∀ s, s ∈ DSeparation.yReachableBlock bn.graph X Y Z ∪ Z → x s = y s) :
+    ∏ v ∈ relevantHeadYFinset bn X Y Z, cpt.nodeProb x v =
+      ∏ v ∈ relevantHeadYFinset bn X Y Z, cpt.nodeProb y v := by
+  refine Finset.prod_congr rfl ?_
+  intro v hv
+  rcases Finset.mem_filter.mp hv with ⟨_, hvRel, hvY⟩
+  rcases hvY with ⟨u, huBlock, huScope⟩
+  exact factorization_given_yReachableBlock_conditioning_of_scope_meets_yReachableBlock
+    bn cpt X Y Z hirr hvRel huBlock huScope x y hYZeq
+
+/-- The residual-head factor product depends only on the residual block and
+conditioning set. -/
+theorem prod_relevantHeadResidualFinset_eq_of_agree
+    (cpt : bn.DiscreteCPT) (X Y Z : Set V)
+    (hirr : ∀ v : V, ¬bn.graph.edges v v)
+    (x y : bn.JointSpace)
+    (hReq : ∀ s, s ∈ DSeparation.residualBlock bn.graph X Y Z ∪ Z → x s = y s) :
+    ∏ v ∈ relevantHeadResidualFinset bn X Y Z, cpt.nodeProb x v =
+      ∏ v ∈ relevantHeadResidualFinset bn X Y Z, cpt.nodeProb y v := by
+  refine Finset.prod_congr rfl ?_
+  intro v hv
+  rcases Finset.mem_filter.mp hv with ⟨_, hvRel, hvR⟩
+  rcases hvR with ⟨u, huBlock, huScope⟩
+  exact factorization_given_residualBlock_conditioning_of_scope_meets_residualBlock
+    bn cpt X Y Z hirr hvRel huBlock huScope x y hReq
+
+/-- The conditioning-head factor product depends only on the conditioning set. -/
+theorem prod_relevantHeadConditioningFinset_eq_of_agree
+    (cpt : bn.DiscreteCPT) (X Y Z : Set V)
+    (x y : bn.JointSpace)
+    (hZeq : ∀ s, s ∈ Z → x s = y s) :
+    ∏ v ∈ relevantHeadConditioningFinset bn X Y Z, cpt.nodeProb x v =
+      ∏ v ∈ relevantHeadConditioningFinset bn X Y Z, cpt.nodeProb y v := by
+  refine Finset.prod_congr rfl ?_
+  intro v hv
+  exact factorization_given_conditioning_of_scope_onlyConditioning
+    bn cpt X Y Z (by
+      exact (Finset.mem_filter.mp hv).2) x y hZeq
+
+/-- All relevant heads for the moral-ancestral factorization surface. -/
+noncomputable def relevantHeadFinset (X Y Z : Set V) : Finset V :=
+  Finset.univ.filter (fun v => v ∈ DSeparation.relevantVertices bn.graph X Y Z)
+
+/-- Irrelevant heads, complementary to `relevantHeadFinset`. -/
+noncomputable def irrelevantHeadFinset (X Y Z : Set V) : Finset V :=
+  Finset.univ.filter (fun v => v ∉ DSeparation.relevantVertices bn.graph X Y Z)
+
+/-- A relevant local factor scope cannot meet both the `X`- and `Y`-reachable
+outside-`Z` blocks. -/
+theorem relevantHeadXFinset_disjoint_relevantHeadYFinset
+    (X Y Z : Set V)
+    (hirr : ∀ v : V, ¬bn.graph.edges v v)
+    (hXY : Disjoint X Y)
+    (hSep : DSeparation.SeparatedInMoralAncestral bn.graph X Y Z) :
+    Disjoint (relevantHeadXFinset bn X Y Z) (relevantHeadYFinset bn X Y Z) := by
+  apply Finset.disjoint_left.2
+  intro v hvX hvY
+  rcases Finset.mem_filter.mp hvX with ⟨_, hvRel, ⟨u, huBlock, huScope⟩⟩
+  rcases Finset.mem_filter.mp hvY with ⟨_, _, ⟨w, hwBlock, hwScope⟩⟩
+  have huw : u ≠ w := by
+    intro huw
+    subst huw
+    exact Set.disjoint_left.mp
+      (DSeparation.xReachableBlock_disjoint_yReachableBlock
+        bn.graph X Y Z hXY hSep) huBlock hwBlock
+  exact DSeparation.same_headScope_not_across_reachableBlocks
+    bn.graph X Y Z hirr hXY hSep hvRel huBlock hwBlock huScope hwScope huw
+
+/-- A relevant local factor scope meeting the `X`-reachable block cannot also
+meet the residual outside-`Z` block. -/
+theorem relevantHeadXFinset_disjoint_relevantHeadResidualFinset
+    (X Y Z : Set V)
+    (hirr : ∀ v : V, ¬bn.graph.edges v v) :
+    Disjoint (relevantHeadXFinset bn X Y Z)
+      (relevantHeadResidualFinset bn X Y Z) := by
+  apply Finset.disjoint_left.2
+  intro v hvX hvR
+  rcases Finset.mem_filter.mp hvX with ⟨_, hvRel, ⟨u, huBlock, huScope⟩⟩
+  rcases Finset.mem_filter.mp hvR with ⟨_, _, ⟨w, hwBlock, hwScope⟩⟩
+  have hwX : w ∈ DSeparation.xReachableBlock bn.graph X Y Z :=
+    DSeparation.same_headScope_relevantOutsideConditioning_subset_xReachableBlock
+      bn.graph X Y Z hirr hvRel huBlock huScope hwBlock.1 hwScope
+  exact hwBlock.2 (Or.inl hwX)
+
+/-- A relevant local factor scope meeting the `Y`-reachable block cannot also
+meet the residual outside-`Z` block. -/
+theorem relevantHeadYFinset_disjoint_relevantHeadResidualFinset
+    (X Y Z : Set V)
+    (hirr : ∀ v : V, ¬bn.graph.edges v v) :
+    Disjoint (relevantHeadYFinset bn X Y Z)
+      (relevantHeadResidualFinset bn X Y Z) := by
+  apply Finset.disjoint_left.2
+  intro v hvY hvR
+  rcases Finset.mem_filter.mp hvY with ⟨_, hvRel, ⟨u, huBlock, huScope⟩⟩
+  rcases Finset.mem_filter.mp hvR with ⟨_, _, ⟨w, hwBlock, hwScope⟩⟩
+  have hwY : w ∈ DSeparation.yReachableBlock bn.graph X Y Z :=
+    DSeparation.same_headScope_relevantOutsideConditioning_subset_yReachableBlock
+      bn.graph X Y Z hirr hvRel huBlock huScope hwBlock.1 hwScope
+  exact hwBlock.2 (Or.inr hwY)
+
+/-- By definition, a conditioning-only scope cannot meet the `X`-reachable
+block. -/
+theorem relevantHeadXFinset_disjoint_relevantHeadConditioningFinset
+    (X Y Z : Set V) :
+    Disjoint (relevantHeadXFinset bn X Y Z)
+      (relevantHeadConditioningFinset bn X Y Z) := by
+  apply Finset.disjoint_left.2
+  intro v hvX hvC
+  exact (Finset.mem_filter.mp hvC).2.2.1 (Finset.mem_filter.mp hvX).2.2
+
+/-- By definition, a conditioning-only scope cannot meet the `Y`-reachable
+block. -/
+theorem relevantHeadYFinset_disjoint_relevantHeadConditioningFinset
+    (X Y Z : Set V) :
+    Disjoint (relevantHeadYFinset bn X Y Z)
+      (relevantHeadConditioningFinset bn X Y Z) := by
+  apply Finset.disjoint_left.2
+  intro v hvY hvC
+  exact (Finset.mem_filter.mp hvC).2.2.2.1 (Finset.mem_filter.mp hvY).2.2
+
+/-- By definition, a conditioning-only scope cannot meet the residual
+outside-`Z` block. -/
+theorem relevantHeadResidualFinset_disjoint_relevantHeadConditioningFinset
+    (X Y Z : Set V) :
+    Disjoint (relevantHeadResidualFinset bn X Y Z)
+      (relevantHeadConditioningFinset bn X Y Z) := by
+  apply Finset.disjoint_left.2
+  intro v hvR hvC
+  exact (Finset.mem_filter.mp hvC).2.2.2.2 (Finset.mem_filter.mp hvR).2.2
+
+/-- The relevant factor heads partition into `X`-block, `Y`-block, residual,
+and conditioning-only classes. -/
+theorem relevantHeadFinset_eq_block_disjUnion
+    (X Y Z : Set V)
+    (hirr : ∀ v : V, ¬bn.graph.edges v v)
+    (hXY : Disjoint X Y)
+    (hSep : DSeparation.SeparatedInMoralAncestral bn.graph X Y Z) :
+    relevantHeadFinset bn X Y Z =
+      (relevantHeadXFinset bn X Y Z).disjUnion
+        ((relevantHeadYFinset bn X Y Z).disjUnion
+          ((relevantHeadResidualFinset bn X Y Z).disjUnion
+            (relevantHeadConditioningFinset bn X Y Z)
+            (relevantHeadResidualFinset_disjoint_relevantHeadConditioningFinset bn X Y Z))
+          (by
+            rw [Finset.disjoint_disjUnion_right]
+            exact ⟨relevantHeadYFinset_disjoint_relevantHeadResidualFinset bn X Y Z hirr,
+              relevantHeadYFinset_disjoint_relevantHeadConditioningFinset bn X Y Z⟩))
+        (by
+          rw [Finset.disjoint_disjUnion_right]
+          exact
+            ⟨relevantHeadXFinset_disjoint_relevantHeadYFinset
+                bn X Y Z hirr hXY hSep,
+              by
+                rw [Finset.disjoint_disjUnion_right]
+                exact
+                  ⟨relevantHeadXFinset_disjoint_relevantHeadResidualFinset
+                      bn X Y Z hirr,
+                    relevantHeadXFinset_disjoint_relevantHeadConditioningFinset
+                      bn X Y Z⟩⟩) := by
+  classical
+  let hRC :=
+    relevantHeadResidualFinset_disjoint_relevantHeadConditioningFinset bn X Y Z
+  let hYRC :
+      Disjoint (relevantHeadYFinset bn X Y Z)
+        ((relevantHeadResidualFinset bn X Y Z).disjUnion
+          (relevantHeadConditioningFinset bn X Y Z) hRC) := by
+    rw [Finset.disjoint_disjUnion_right]
+    exact
+      ⟨relevantHeadYFinset_disjoint_relevantHeadResidualFinset bn X Y Z hirr,
+        relevantHeadYFinset_disjoint_relevantHeadConditioningFinset bn X Y Z⟩
+  let hAll :
+      Disjoint (relevantHeadXFinset bn X Y Z)
+        ((relevantHeadYFinset bn X Y Z).disjUnion
+          ((relevantHeadResidualFinset bn X Y Z).disjUnion
+            (relevantHeadConditioningFinset bn X Y Z) hRC) hYRC) := by
+    rw [Finset.disjoint_disjUnion_right]
+    exact
+      ⟨relevantHeadXFinset_disjoint_relevantHeadYFinset
+          bn X Y Z hirr hXY hSep,
+        by
+          rw [Finset.disjoint_disjUnion_right]
+          exact
+            ⟨relevantHeadXFinset_disjoint_relevantHeadResidualFinset
+                bn X Y Z hirr,
+              relevantHeadXFinset_disjoint_relevantHeadConditioningFinset
+                bn X Y Z⟩⟩
+  ext v
+  constructor
+  · intro hv
+    have hvRel : v ∈ DSeparation.relevantVertices bn.graph X Y Z :=
+      (Finset.mem_filter.mp hv).2
+    by_cases hX : scopeMeetsXReachableBlock bn X Y Z v
+    · simp [relevantHeadFinset, relevantHeadXFinset, relevantHeadYFinset,
+        relevantHeadResidualFinset, relevantHeadConditioningFinset,
+        scopeOnlyConditioning, hRC, hYRC, hAll, hvRel, hX]
+    · by_cases hY : scopeMeetsYReachableBlock bn X Y Z v
+      · simp [relevantHeadFinset, relevantHeadXFinset, relevantHeadYFinset,
+          relevantHeadResidualFinset, relevantHeadConditioningFinset,
+          scopeOnlyConditioning, hRC, hYRC, hAll, hvRel, hX, hY]
+      · by_cases hR : scopeMeetsResidualBlock bn X Y Z v
+        · simp [relevantHeadFinset, relevantHeadXFinset, relevantHeadYFinset,
+            relevantHeadResidualFinset, relevantHeadConditioningFinset,
+            scopeOnlyConditioning, hRC, hYRC, hAll, hvRel, hX, hY, hR]
+        · simp [relevantHeadFinset, relevantHeadXFinset, relevantHeadYFinset,
+            relevantHeadResidualFinset, relevantHeadConditioningFinset,
+            scopeOnlyConditioning, hRC, hYRC, hAll, hvRel, hX, hY, hR]
+  · intro hv
+    have hv' := hv
+    simp only [Finset.mem_disjUnion, relevantHeadXFinset, relevantHeadYFinset,
+      relevantHeadResidualFinset, relevantHeadConditioningFinset,
+      scopeOnlyConditioning, Finset.mem_filter, Finset.mem_univ, true_and] at hv'
+    have hvRel : v ∈ DSeparation.relevantVertices bn.graph X Y Z := by
+      rcases hv' with hX | hrest
+      · exact hX.1
+      · rcases hrest with hY | hrest
+        · exact hY.1
+        · rcases hrest with hR | hC
+          · exact hR.1
+          · exact hC.1
+    exact Finset.mem_filter.mpr ⟨Finset.mem_univ v, hvRel⟩
+
+/-- The product of `nodeProb`s over all relevant heads splits into the four
+reachable/conditioning blocks. -/
+theorem relevantHeadProd_eq_blockProducts
+    (cpt : bn.DiscreteCPT) (X Y Z : Set V)
+    (hirr : ∀ v : V, ¬bn.graph.edges v v)
+    (hXY : Disjoint X Y)
+    (hSep : DSeparation.SeparatedInMoralAncestral bn.graph X Y Z)
+    (x : bn.JointSpace) :
+    ∏ v ∈ relevantHeadFinset bn X Y Z, cpt.nodeProb x v =
+      (∏ v ∈ relevantHeadXFinset bn X Y Z, cpt.nodeProb x v) *
+        ((∏ v ∈ relevantHeadYFinset bn X Y Z, cpt.nodeProb x v) *
+          ((∏ v ∈ relevantHeadResidualFinset bn X Y Z, cpt.nodeProb x v) *
+            ∏ v ∈ relevantHeadConditioningFinset bn X Y Z, cpt.nodeProb x v)) := by
+  classical
+  let hRC :=
+    relevantHeadResidualFinset_disjoint_relevantHeadConditioningFinset bn X Y Z
+  let hYRC :
+      Disjoint (relevantHeadYFinset bn X Y Z)
+        ((relevantHeadResidualFinset bn X Y Z).disjUnion
+          (relevantHeadConditioningFinset bn X Y Z) hRC) := by
+    rw [Finset.disjoint_disjUnion_right]
+    exact
+      ⟨relevantHeadYFinset_disjoint_relevantHeadResidualFinset bn X Y Z hirr,
+        relevantHeadYFinset_disjoint_relevantHeadConditioningFinset bn X Y Z⟩
+  let hAll :
+      Disjoint (relevantHeadXFinset bn X Y Z)
+        ((relevantHeadYFinset bn X Y Z).disjUnion
+          ((relevantHeadResidualFinset bn X Y Z).disjUnion
+            (relevantHeadConditioningFinset bn X Y Z) hRC) hYRC) := by
+    rw [Finset.disjoint_disjUnion_right]
+    exact
+      ⟨relevantHeadXFinset_disjoint_relevantHeadYFinset
+          bn X Y Z hirr hXY hSep,
+        by
+          rw [Finset.disjoint_disjUnion_right]
+          exact
+            ⟨relevantHeadXFinset_disjoint_relevantHeadResidualFinset
+                bn X Y Z hirr,
+              relevantHeadXFinset_disjoint_relevantHeadConditioningFinset
+                bn X Y Z⟩⟩
+  rw [relevantHeadFinset_eq_block_disjUnion bn X Y Z hirr hXY hSep]
+  rw [Finset.prod_disjUnion hAll, Finset.prod_disjUnion hYRC, Finset.prod_disjUnion hRC]
+
+/-- `jointWeight` splits into the product over relevant and irrelevant heads. -/
+theorem jointWeight_eq_relevant_irrelevant_prod
+    (cpt : bn.DiscreteCPT) (X Y Z : Set V) (x : bn.JointSpace) :
+    cpt.jointWeight x =
+      (∏ v ∈ relevantHeadFinset bn X Y Z, cpt.nodeProb x v) *
+        ∏ v ∈ irrelevantHeadFinset bn X Y Z, cpt.nodeProb x v := by
+  symm
+  simpa [relevantHeadFinset, irrelevantHeadFinset, DiscreteCPT.jointWeight] using
+    (Finset.prod_filter_mul_prod_filter_not (s := Finset.univ)
+      (p := fun v => v ∈ DSeparation.relevantVertices bn.graph X Y Z)
+      (f := fun v => cpt.nodeProb x v))
+
+/-- `jointWeight` splits into `X`-block, `Y`-block, residual, conditioning,
+and irrelevant head factors. -/
+theorem jointWeight_eq_block_irrelevant_prod
+    (cpt : bn.DiscreteCPT) (X Y Z : Set V)
+    (hirr : ∀ v : V, ¬bn.graph.edges v v)
+    (hXY : Disjoint X Y)
+    (hSep : DSeparation.SeparatedInMoralAncestral bn.graph X Y Z)
+    (x : bn.JointSpace) :
+    cpt.jointWeight x =
+      ((∏ v ∈ relevantHeadXFinset bn X Y Z, cpt.nodeProb x v) *
+        ((∏ v ∈ relevantHeadYFinset bn X Y Z, cpt.nodeProb x v) *
+          ((∏ v ∈ relevantHeadResidualFinset bn X Y Z, cpt.nodeProb x v) *
+            ∏ v ∈ relevantHeadConditioningFinset bn X Y Z, cpt.nodeProb x v))) *
+        ∏ v ∈ irrelevantHeadFinset bn X Y Z, cpt.nodeProb x v := by
+  calc
+    cpt.jointWeight x
+      = (∏ v ∈ relevantHeadFinset bn X Y Z, cpt.nodeProb x v) *
+          ∏ v ∈ irrelevantHeadFinset bn X Y Z, cpt.nodeProb x v :=
+        jointWeight_eq_relevant_irrelevant_prod bn cpt X Y Z x
+    _ = ((∏ v ∈ relevantHeadXFinset bn X Y Z, cpt.nodeProb x v) *
+          ((∏ v ∈ relevantHeadYFinset bn X Y Z, cpt.nodeProb x v) *
+            ((∏ v ∈ relevantHeadResidualFinset bn X Y Z, cpt.nodeProb x v) *
+              ∏ v ∈ relevantHeadConditioningFinset bn X Y Z, cpt.nodeProb x v))) *
+          ∏ v ∈ irrelevantHeadFinset bn X Y Z, cpt.nodeProb x v := by
+        rw [relevantHeadProd_eq_blockProducts bn cpt X Y Z hirr hXY hSep x]
+
+/-- Finite-sum rearrangement for three multiplicatively separated block
+families. This is the algebraic core used to turn a blockwise factorization of
+`jointWeight` into the atomic event identity for separated constraint blocks. -/
+theorem fintype_sum_mul_sum_mul_sum {α β γ : Type*}
+    [Fintype α] [Fintype β] [Fintype γ]
+    (f : α → ℝ≥0∞) (g : β → ℝ≥0∞) (h : γ → ℝ≥0∞) :
+    (∑ a, f a) * ((∑ b, g b) * (∑ c, h c)) =
+      ∑ a, ∑ b, ∑ c, f a * (g b * h c) := by
+  calc
+    (∑ a, f a) * ((∑ b, g b) * (∑ c, h c))
+        = ((∑ a, f a) * (∑ b, g b)) * (∑ c, h c) := by ac_rfl
+    _ = (∑ a, ∑ b, f a * g b) * (∑ c, h c) := by
+          rw [Fintype.sum_mul_sum]
+    _ = (∑ p : α × β, f p.1 * g p.2) * (∑ c, h c) := by
+          rw [← Fintype.sum_prod_type']
+    _ = ∑ p : α × β, ∑ c, (f p.1 * g p.2) * h c := by
+          rw [Fintype.sum_mul_sum]
+    _ = ∑ a, ∑ b, ∑ c, f a * (g b * h c) := by
+          rw [Fintype.sum_prod_type]
+          simp [mul_assoc]
 
 /-! ## Telescoping sum: marginalizing out subsets of vertices
 
@@ -534,6 +1205,254 @@ lemma measurableSet_singleton_preimage
     simpa [measurableSpaceOfVertices_singleton (bn := bn) v] using hs
   rcases (MeasurableSpace.measurableSet_comap).1 hs' with ⟨T, hT, hpre⟩
   exact ⟨T, hT, hpre.symm⟩
+
+/-! ### Constraint atoms for arbitrary vertex blocks
+
+The next global BN soundness target will need an atom-level statement for
+constraint events on separated endpoint blocks. We keep that target as a source
+comment rather than an unproved declaration:
+
+`μ(event(cx ++ cy ++ cz)) * μ(event(cz)) = μ(event(cx ++ cz)) * μ(event(cy ++ cz))`
+
+for constraint lists supported on disjoint `X`, `Y`, and conditioning block `Z`.
+The lemmas below expose `eventOfConstraints` as the atomic generators of
+`measurableSpaceOfVertices S`.
+-/
+
+/-- Enumerate a restriction assignment as a concrete constraint list. -/
+noncomputable def constraintsOfRestrict (S : Set V)
+    (xS : ∀ p : S, bn.stateSpace p.1) : List (Σ v : V, bn.stateSpace v) :=
+  ((Finset.univ : Finset S).toList).map (fun p => (⟨p.1, xS p⟩ : Σ v : V, bn.stateSpace v))
+
+/-- The constraint list built from a restriction assignment cuts out exactly the
+singleton fiber of that assignment. -/
+lemma eventOfConstraints_constraintsOfRestrict
+    (S : Set V) (xS : ∀ p : S, bn.stateSpace p.1) :
+    eventOfConstraints (bn := bn) (constraintsOfRestrict (bn := bn) S xS) =
+      (restrictToSet (bn := bn) S) ⁻¹' ({xS} : Set (∀ p : S, bn.stateSpace p.1)) := by
+  classical
+  ext ω
+  constructor
+  · intro hω
+    ext p
+    have hpMem : p ∈ ((Finset.univ : Finset S).toList) := by
+      simp
+    have hcMem :
+        (⟨p.1, xS p⟩ : Σ v : V, bn.stateSpace v) ∈
+          constraintsOfRestrict (bn := bn) S xS := by
+      simpa [constraintsOfRestrict] using
+        (List.mem_map.2 ⟨p, hpMem, rfl⟩)
+    exact hω _ hcMem
+  · intro hω c hc
+    have hc' : ∃ p : S, (⟨p.1, xS p⟩ : Σ v : V, bn.stateSpace v) = c := by
+      simpa [constraintsOfRestrict] using hc
+    rcases hc' with ⟨p, hpEq⟩
+    subst hpEq
+    exact congrFun hω p
+
+/-- Distinct block assignments yield disjoint constraint atoms. -/
+lemma eventOfConstraints_constraintsOfRestrict_disjoint
+    (S : Set V) {xS yS : ∀ p : S, bn.stateSpace p.1}
+    (hxy : xS ≠ yS) :
+    Disjoint
+      (eventOfConstraints (bn := bn) (constraintsOfRestrict (bn := bn) S xS))
+      (eventOfConstraints (bn := bn) (constraintsOfRestrict (bn := bn) S yS)) := by
+  refine Set.disjoint_left.mpr ?_
+  intro ω hx hy
+  have hx' : restrictToSet (bn := bn) S ω = xS := by
+    simpa [eventOfConstraints_constraintsOfRestrict (bn := bn) S xS] using hx
+  have hy' : restrictToSet (bn := bn) S ω = yS := by
+    simpa [eventOfConstraints_constraintsOfRestrict (bn := bn) S yS] using hy
+  exact hxy (hx'.symm.trans hy')
+
+/-- Any event measurable in `σ(S)` is a finite union of constraint atoms. -/
+lemma vertices_preimage_eq_iUnion_eventOfConstraints
+    (S : Set V) (T : Set (∀ p : S, bn.stateSpace p.1)) :
+    (restrictToSet (bn := bn) S) ⁻¹' T =
+      ⋃ xS : (∀ p : S, bn.stateSpace p.1),
+        (if xS ∈ T then
+          eventOfConstraints (bn := bn) (constraintsOfRestrict (bn := bn) S xS)
+        else (∅ : Set bn.JointSpace)) := by
+  classical
+  ext ω
+  constructor
+  · intro hω
+    refine Set.mem_iUnion.2 ?_
+    refine ⟨restrictToSet (bn := bn) S ω, ?_⟩
+    by_cases hT : restrictToSet (bn := bn) S ω ∈ T
+    · simpa [hT, eventOfConstraints_constraintsOfRestrict (bn := bn) S
+        (restrictToSet (bn := bn) S ω)] using hω
+    · exact (hT hω).elim
+  · intro hω
+    rcases Set.mem_iUnion.1 hω with ⟨xS, hxS⟩
+    by_cases hT : xS ∈ T
+    · have hx :
+          ω ∈ eventOfConstraints (bn := bn) (constraintsOfRestrict (bn := bn) S xS) := by
+        simpa [hT] using hxS
+      have hEq : restrictToSet (bn := bn) S ω = xS := by
+        simpa [eventOfConstraints_constraintsOfRestrict (bn := bn) S xS] using hx
+      simpa [hEq] using hT
+    · have : ω ∈ (∅ : Set bn.JointSpace) := by
+        simpa [hT] using hxS
+      exact False.elim (by simpa using this)
+
+/-- Direct measure decomposition over block-constraint atoms. -/
+lemma measure_vertices_preimage_eq_sum
+    (μ : Measure bn.JointSpace)
+    (S : Set V) [∀ v, MeasurableSingletonClass (bn.stateSpace v)]
+    (T : Set (∀ p : S, bn.stateSpace p.1)) :
+    μ ((restrictToSet (bn := bn) S) ⁻¹' T) =
+      ∑ xS : (∀ p : S, bn.stateSpace p.1),
+        if xS ∈ T then
+          μ (eventOfConstraints (bn := bn) (constraintsOfRestrict (bn := bn) S xS))
+        else 0 := by
+  classical
+  rw [vertices_preimage_eq_iUnion_eventOfConstraints (bn := bn) S T]
+  have hMeas :
+      ∀ xS : (∀ p : S, bn.stateSpace p.1),
+        MeasurableSet
+          (if xS ∈ T then
+            eventOfConstraints (bn := bn) (constraintsOfRestrict (bn := bn) S xS)
+          else (∅ : Set bn.JointSpace)) := by
+    intro xS
+    by_cases hxS : xS ∈ T
+    · simpa [hxS] using
+        measurable_eventOfConstraints (bn := bn)
+          (constraintsOfRestrict (bn := bn) S xS)
+    · simp [hxS]
+  have hDisj :
+      Pairwise (fun xS yS : (∀ p : S, bn.stateSpace p.1) =>
+        Disjoint
+          (if xS ∈ T then
+            eventOfConstraints (bn := bn) (constraintsOfRestrict (bn := bn) S xS)
+          else (∅ : Set bn.JointSpace))
+          (if yS ∈ T then
+            eventOfConstraints (bn := bn) (constraintsOfRestrict (bn := bn) S yS)
+          else (∅ : Set bn.JointSpace))) := by
+    intro xS yS hne
+    by_cases hxS : xS ∈ T
+    · by_cases hyS : yS ∈ T
+      · simpa [hxS, hyS] using
+          eventOfConstraints_constraintsOfRestrict_disjoint
+            (bn := bn) S (xS := xS) (yS := yS) hne
+      · simp [hyS]
+    · simp [hxS]
+  have hUnion :
+      μ (⋃ xS : (∀ p : S, bn.stateSpace p.1),
+          (if xS ∈ T then
+            eventOfConstraints (bn := bn) (constraintsOfRestrict (bn := bn) S xS)
+          else (∅ : Set bn.JointSpace)))
+        =
+      ∑' xS : (∀ p : S, bn.stateSpace p.1),
+        μ (if xS ∈ T then
+          eventOfConstraints (bn := bn) (constraintsOfRestrict (bn := bn) S xS)
+        else (∅ : Set bn.JointSpace)) :=
+    MeasureTheory.measure_iUnion hDisj hMeas
+  calc
+    μ (⋃ xS : (∀ p : S, bn.stateSpace p.1),
+        (if xS ∈ T then
+          eventOfConstraints (bn := bn) (constraintsOfRestrict (bn := bn) S xS)
+        else (∅ : Set bn.JointSpace))) =
+      ∑' xS : (∀ p : S, bn.stateSpace p.1),
+        μ (if xS ∈ T then
+          eventOfConstraints (bn := bn) (constraintsOfRestrict (bn := bn) S xS)
+        else (∅ : Set bn.JointSpace)) := hUnion
+    _ =
+      ∑ xS : (∀ p : S, bn.stateSpace p.1),
+        μ (if xS ∈ T then
+          eventOfConstraints (bn := bn) (constraintsOfRestrict (bn := bn) S xS)
+        else (∅ : Set bn.JointSpace)) := by
+          rw [tsum_fintype]
+    _ =
+      ∑ xS : (∀ p : S, bn.stateSpace p.1),
+        if xS ∈ T then
+          μ (eventOfConstraints (bn := bn) (constraintsOfRestrict (bn := bn) S xS))
+        else 0 := by
+          refine Finset.sum_congr rfl ?_
+          intro xS _
+          by_cases hxS : xS ∈ T <;> simp [hxS]
+
+/-- Set-integral decomposition over block-constraint atoms. -/
+lemma setIntegral_vertices_preimage
+    (μ : Measure bn.JointSpace) [IsFiniteMeasure μ]
+    (S : Set V) [∀ v, MeasurableSingletonClass (bn.stateSpace v)]
+    (T : Set (∀ p : S, bn.stateSpace p.1)) (f : bn.JointSpace → ℝ)
+    (hf : Integrable f μ) :
+    ∫ x in (restrictToSet (bn := bn) S) ⁻¹' T, f x ∂μ =
+      ∑ xS : (∀ p : S, bn.stateSpace p.1),
+        if xS ∈ T then
+          ∫ x in eventOfConstraints (bn := bn) (constraintsOfRestrict (bn := bn) S xS), f x ∂μ
+        else 0 := by
+  classical
+  rw [vertices_preimage_eq_iUnion_eventOfConstraints (bn := bn) S T]
+  have hMeas :
+      ∀ xS : (∀ p : S, bn.stateSpace p.1),
+        @MeasurableSet _ MeasurableSpace.pi
+          (if xS ∈ T then
+            eventOfConstraints (bn := bn) (constraintsOfRestrict (bn := bn) S xS)
+          else (∅ : Set bn.JointSpace)) := by
+    intro xS
+    by_cases hxS : xS ∈ T
+    · simpa [hxS] using
+        measurable_eventOfConstraints (bn := bn)
+          (constraintsOfRestrict (bn := bn) S xS)
+    · simp [hxS]
+  have hDisj :
+      Pairwise (fun xS yS : (∀ p : S, bn.stateSpace p.1) =>
+        Disjoint
+          (if xS ∈ T then
+            eventOfConstraints (bn := bn) (constraintsOfRestrict (bn := bn) S xS)
+          else (∅ : Set bn.JointSpace))
+          (if yS ∈ T then
+            eventOfConstraints (bn := bn) (constraintsOfRestrict (bn := bn) S yS)
+          else (∅ : Set bn.JointSpace))) := by
+    intro xS yS hne
+    by_cases hxS : xS ∈ T
+    · by_cases hyS : yS ∈ T
+      · simpa [hxS, hyS] using
+          eventOfConstraints_constraintsOfRestrict_disjoint
+            (bn := bn) S (xS := xS) (yS := yS) hne
+      · simp [hyS]
+    · simp [hxS]
+  have hInt :
+      ∀ xS : (∀ p : S, bn.stateSpace p.1),
+        IntegrableOn (f := f)
+          (if xS ∈ T then
+            eventOfConstraints (bn := bn) (constraintsOfRestrict (bn := bn) S xS)
+          else (∅ : Set bn.JointSpace)) μ := by
+    intro xS
+    exact hf.integrableOn
+  have hUnion :
+      ∫ x in ⋃ xS : (∀ p : S, bn.stateSpace p.1),
+          (if xS ∈ T then
+            eventOfConstraints (bn := bn) (constraintsOfRestrict (bn := bn) S xS)
+          else (∅ : Set bn.JointSpace)), f x ∂μ
+        =
+      ∑ xS : (∀ p : S, bn.stateSpace p.1),
+        ∫ x in (if xS ∈ T then
+          eventOfConstraints (bn := bn) (constraintsOfRestrict (bn := bn) S xS)
+        else (∅ : Set bn.JointSpace)), f x ∂μ :=
+    MeasureTheory.integral_iUnion_fintype
+      (μ := μ) (f := f)
+      (s := fun xS : (∀ p : S, bn.stateSpace p.1) =>
+        if xS ∈ T then
+          eventOfConstraints (bn := bn) (constraintsOfRestrict (bn := bn) S xS)
+        else (∅ : Set bn.JointSpace))
+      hMeas hDisj hInt
+  have hSum :
+      (∑ xS : (∀ p : S, bn.stateSpace p.1),
+          ∫ x in (if xS ∈ T then
+            eventOfConstraints (bn := bn) (constraintsOfRestrict (bn := bn) S xS)
+          else (∅ : Set bn.JointSpace)), f x ∂μ)
+        =
+      ∑ xS : (∀ p : S, bn.stateSpace p.1),
+        if xS ∈ T then
+          ∫ x in eventOfConstraints (bn := bn) (constraintsOfRestrict (bn := bn) S xS), f x ∂μ
+        else 0 := by
+    refine Finset.sum_congr rfl ?_
+    intro xS _
+    by_cases hxS : xS ∈ T <;> simp [hxS]
+  exact hUnion.trans hSum
 
 noncomputable def parentsRestrict (v : V) :
     bn.JointSpace → (∀ p : {x // x ∈ (bn.graph.parents v : Set V)}, bn.stateSpace p.1) :=
@@ -1351,11 +2270,13 @@ private lemma sum_jointWeight_reindex_and_collapse_of_desc_irrel
             (sum_descendants_jointWeight_over_nonDesc_if (bn := bn) (cpt := cpt) (v := v)
               (xND := xND) (P := P))
 
-/-- Per-parent-fiber screening identity used in `condExp_indicator_mul_of_bn_ci`.
-This is the discrete BN algebraic core:
-`μ((B ∩ t₂) ∩ F_c) * μ(F_c) = μ(B ∩ F_c) * μ(t₂ ∩ F_c)`.
--/
-private lemma fiber_screening_mul
+/-- Per-parent-fiber screening identity for a discrete CPT joint measure.
+
+This is the algebraic core behind the local-Markov proof and a reusable finite
+bridge for later BN soundness work: once the parent assignment `c` is fixed,
+the event determined by `v` and the event determined by
+`ND(v) \ (Pa(v) ∪ {v})` multiply over the parent fiber `F_c`. -/
+theorem jointMeasure_parentFiber_screening_mul
     (cpt : bn.DiscreteCPT) (v : V)
     (B : Set bn.JointSpace)
     (hB : MeasurableSet[bn.measurableSpaceOfVertices ({v} : Set V)] B)
@@ -2320,7 +3241,7 @@ private lemma fiber_screening_mul
     using hfinal
 
 
-/-- BN factorization CI on parent fibers: for B ∈ m_v and f = t₂.indicator 1 with t₂ ∈ m_{ND'},
+/- BN factorization CI on parent fibers: for B ∈ m_v and f = t₂.indicator 1 with t₂ ∈ m_{ND'},
     on each parent fiber F_c the joint weight factors as nodeProb(v,x_v,c) · Ψ(x_{ND'},c)
     after marginalizing descendants (telescoping_sum). This product structure gives:
     μ[B.indicator 1 * f | m_pa] =ᵃᵉ μ[B.indicator 1 | m_pa] * μ[f | m_pa]
@@ -2328,7 +3249,13 @@ private lemma fiber_screening_mul
     Proof: On fiber F_c, w(x) = nodeProb(v, x_v, c) · Ψ(x_{ND'}, c) · Σ_desc(→1).
     Since nodeProb(v) depends only on x_v,c and Ψ depends only on x_{ND'},c:
     μ(B∩t₂∩F_c) · μ(F_c) = μ(B∩F_c) · μ(t₂∩F_c). Summing over fibers gives CI. -/
-private lemma condExp_indicator_mul_of_bn_ci
+/-- Event-level conditional-expectation factorization for the discrete BN local-Markov core.
+
+For an event `B` depending only on `v` and an event `t₂` depending only on
+`ND(v) \ (Pa(v) ∪ {v})`, conditioning on the parent σ-algebra makes the
+indicator product split. This packages the discrete parent-fiber screening
+algebra into a reusable public theorem. -/
+theorem condExp_indicator_mul_of_parent_screening
     (cpt : bn.DiscreteCPT) (v : V)
     (B : Set bn.JointSpace)
     (hB : MeasurableSet[bn.measurableSpaceOfVertices ({v} : Set V)] B)
@@ -2516,7 +3443,8 @@ private lemma condExp_indicator_mul_of_bn_ci
                     simp [Set.inter_assoc, Set.inter_left_comm, Set.inter_comm]
           have hscreen : μ ((B ∩ t₂) ∩ F) * μ F = μ (B ∩ F) * μ (t₂ ∩ F) := by
             simpa [μ, F, Set.inter_assoc, Set.inter_left_comm, Set.inter_comm] using
-              fiber_screening_mul (bn := bn) (cpt := cpt) (v := v) (B := B) (hB := hB)
+              jointMeasure_parentFiber_screening_mul
+                (bn := bn) (cpt := cpt) (v := v) (B := B) (hB := hB)
                 (t₂ := t₂) (ht₂ := ht₂) c
           have hscreen_real :
               μ.real ((B ∩ t₂) ∩ F) * μ.real F = μ.real (B ∩ F) * μ.real (t₂ ∩ F) := by
@@ -2666,7 +3594,7 @@ theorem condExp_ndesc_indep_of_vertex
         have hB_pi : @MeasurableSet _ MeasurableSpace.pi B :=
           (bn.measurableSpaceOfVertices_le _) _ hB
         -- Use the CI lemma
-        have hci := condExp_indicator_mul_of_bn_ci bn cpt v B hB t₂ ht₂
+        have hci := condExp_indicator_mul_of_parent_screening bn cpt v B hB t₂ ht₂
         -- hci : μ[g * f | m_pa] =ᵃᵉ μ[g | m_pa] * μ[f | m_pa]
         -- where g = B.indicator 1
         set g := B.indicator (fun _ => (1 : ℝ)) with hg_def
@@ -2815,6 +3743,439 @@ theorem discrete_localMarkovCondition
     exact h5.trans h6
   · exact bn.measurableSpaceOfVertices_le _
   · exact bn.measurableSpaceOfVertices_le _
+
+/-- Reduced-core discrete conditional independence for concrete events:
+an event depending only on `v` is conditionally independent of an event
+depending only on `ND(v) \ (Pa(v) ∪ {v})`, given the parent coordinates. -/
+theorem jointMeasure_condIndepSet_of_vertex_nonDesc_given_parents
+    (cpt : bn.DiscreteCPT) (v : V)
+    {B t₂ : Set bn.JointSpace}
+    (hB : MeasurableSet[bn.measurableSpaceOfVertices ({v} : Set V)] B)
+    (ht₂ : MeasurableSet[bn.measurableSpaceOfVertices
+            (bn.nonDescendantsExceptParentsAndSelf v)] t₂) :
+    ProbabilityTheory.CondIndepSet
+      (m' := bn.measurableSpaceOfVertices (bn.graph.parents v))
+      (hm' := measurableSpaceOfVertices_le (bn := bn) (bn.graph.parents v))
+      B t₂ cpt.jointMeasure := by
+  have hmarkov : LocalMarkovCondition bn cpt.jointMeasure v :=
+    discrete_localMarkovCondition (bn := bn) cpt v
+  have hsets :=
+    (ProbabilityTheory.condIndep_iff_forall_condIndepSet
+      (m' := bn.measurableSpaceOfVertices (bn.graph.parents v))
+      (m₁ := bn.measurableSpaceOfVertices ({v} : Set V))
+      (m₂ := bn.measurableSpaceOfVertices (bn.nonDescendantsExceptParentsAndSelf v))
+      (hm' := measurableSpaceOfVertices_le (bn := bn) (bn.graph.parents v))
+      (μ := cpt.jointMeasure)).1 (by
+        simpa [LocalMarkovCondition] using hmarkov)
+  exact hsets B t₂ hB ht₂
+
+/-- Reduced-core discrete conditional independence remains valid after
+intersecting the singleton-left and non-descendant-right events with additional
+parent-measurable events. This is the first non-singleton event-level bridge we
+need for parent-enriched reduced-core arguments. -/
+theorem jointMeasure_condIndepSet_of_parent_inter_vertex_parent_inter_nonDesc_given_parents
+    (cpt : bn.DiscreteCPT) (v : V)
+    {u B w t₂ : Set bn.JointSpace}
+    (hu : MeasurableSet[bn.measurableSpaceOfVertices (bn.graph.parents v)] u)
+    (hB : MeasurableSet[bn.measurableSpaceOfVertices ({v} : Set V)] B)
+    (hw : MeasurableSet[bn.measurableSpaceOfVertices (bn.graph.parents v)] w)
+    (ht₂ : MeasurableSet[bn.measurableSpaceOfVertices
+            (bn.nonDescendantsExceptParentsAndSelf v)] t₂) :
+    ProbabilityTheory.CondIndepSet
+      (m' := bn.measurableSpaceOfVertices (bn.graph.parents v))
+      (hm' := measurableSpaceOfVertices_le (bn := bn) (bn.graph.parents v))
+      (u ∩ B) (w ∩ t₂) cpt.jointMeasure := by
+  have hB_meas :
+      MeasurableSet B :=
+    (measurableSpaceOfVertices_le (bn := bn) ({v} : Set V)) _ hB
+  have ht₂_meas :
+      MeasurableSet t₂ :=
+    (measurableSpaceOfVertices_le (bn := bn)
+      (bn.nonDescendantsExceptParentsAndSelf v)) _ ht₂
+  have hbase :
+      ProbabilityTheory.CondIndepSet
+        (m' := bn.measurableSpaceOfVertices (bn.graph.parents v))
+        (hm' := measurableSpaceOfVertices_le (bn := bn) (bn.graph.parents v))
+        B t₂ cpt.jointMeasure :=
+    jointMeasure_condIndepSet_of_vertex_nonDesc_given_parents
+      (bn := bn) cpt v hB ht₂
+  have hleft :
+      ProbabilityTheory.CondIndepSet
+        (m' := bn.measurableSpaceOfVertices (bn.graph.parents v))
+        (hm' := measurableSpaceOfVertices_le (bn := bn) (bn.graph.parents v))
+        (u ∩ B) t₂ cpt.jointMeasure :=
+    condIndepSet_inter_left_of_measurable
+      (bn := bn) (μ := cpt.jointMeasure) (Z := bn.graph.parents v)
+      hu hB_meas ht₂_meas hbase
+  have huB_meas : MeasurableSet (u ∩ B) :=
+    ((measurableSpaceOfVertices_le (bn := bn) (bn.graph.parents v)) _ hu).inter hB_meas
+  simpa [Set.inter_comm] using
+    (condIndepSet_inter_right_of_measurable
+      (bn := bn) (μ := cpt.jointMeasure) (Z := bn.graph.parents v)
+      huB_meas ht₂_meas hw hleft)
+
+/-- Discrete local Markov, lifted directly from the concrete event theorem to the
+vertex-generated σ-algebras for `{v}` and `ND(v) \ (Pa(v) ∪ {v})`. -/
+theorem jointMeasure_condIndepVertices_of_vertex_nonDesc_given_parents
+    (cpt : bn.DiscreteCPT) (v : V) :
+    CondIndepVertices
+      bn cpt.jointMeasure ({v} : Set V)
+      (bn.nonDescendantsExceptParentsAndSelf v) (bn.graph.parents v) := by
+  unfold CondIndepVertices
+  exact
+    (ProbabilityTheory.condIndep_iff_forall_condIndepSet
+      (m' := bn.measurableSpaceOfVertices (bn.graph.parents v))
+      (m₁ := bn.measurableSpaceOfVertices ({v} : Set V))
+      (m₂ := bn.measurableSpaceOfVertices (bn.nonDescendantsExceptParentsAndSelf v))
+      (hm' := measurableSpaceOfVertices_le (bn := bn) (bn.graph.parents v))
+      (μ := cpt.jointMeasure)).2
+      (fun s t hs ht =>
+        jointMeasure_condIndepSet_of_vertex_nonDesc_given_parents
+          (bn := bn) cpt v hs ht)
+
+/-- Parent coordinates can be freely added to both sides of the reduced-core
+discrete local-Markov statement, because they are already measurable in the
+conditioning σ-algebra. -/
+theorem jointMeasure_condIndepVertices_of_parentset_union_vertex_nonDesc_given_parents
+    (cpt : bn.DiscreteCPT) (v : V) {U W : Set V}
+    (hU : U ⊆ bn.graph.parents v)
+    (hW : W ⊆ bn.graph.parents v) :
+    CondIndepVertices
+      bn cpt.jointMeasure (U ∪ ({v} : Set V))
+      (W ∪ bn.nonDescendantsExceptParentsAndSelf v) (bn.graph.parents v) := by
+  have hbase :
+      CondIndepVertices
+        bn cpt.jointMeasure ({v} : Set V)
+        (bn.nonDescendantsExceptParentsAndSelf v) (bn.graph.parents v) :=
+    jointMeasure_condIndepVertices_of_vertex_nonDesc_given_parents
+      (bn := bn) cpt v
+  have hleft :
+      CondIndepVertices
+        bn cpt.jointMeasure (U ∪ ({v} : Set V))
+        (bn.nonDescendantsExceptParentsAndSelf v) (bn.graph.parents v) :=
+    condIndepVertices_union_left_of_subset_conditioning
+      (bn := bn) (μ := cpt.jointMeasure)
+      (U := U) (X := ({v} : Set V))
+      (Y := bn.nonDescendantsExceptParentsAndSelf v)
+      (Z := bn.graph.parents v) hU hbase
+  exact
+    condIndepVertices_union_right_of_subset_conditioning
+      (bn := bn) (μ := cpt.jointMeasure)
+      (X := U ∪ ({v} : Set V))
+      (U := W) (Y := bn.nonDescendantsExceptParentsAndSelf v)
+      (Z := bn.graph.parents v) hW hleft
+
+/-- Set-level reduced-core discrete soundness for parent-enriched singleton blocks:
+arbitrary events measurable in `σ(U ∪ {v})` and `σ(W ∪ ND(v)\(Pa(v)∪{v}))`
+are conditionally independent given `σ(Pa(v))` whenever `U,W ⊆ Pa(v)`. -/
+theorem jointMeasure_condIndepSet_of_parentset_union_vertex_parentset_union_nonDesc_given_parents
+    (cpt : bn.DiscreteCPT) (v : V) {U W : Set V}
+    (hU : U ⊆ bn.graph.parents v)
+    (hW : W ⊆ bn.graph.parents v)
+    {s t : Set bn.JointSpace}
+    (hs : MeasurableSet[bn.measurableSpaceOfVertices (U ∪ ({v} : Set V))] s)
+    (ht : MeasurableSet[bn.measurableSpaceOfVertices
+            (W ∪ bn.nonDescendantsExceptParentsAndSelf v)] t) :
+    ProbabilityTheory.CondIndepSet
+      (m' := bn.measurableSpaceOfVertices (bn.graph.parents v))
+      (hm' := measurableSpaceOfVertices_le (bn := bn) (bn.graph.parents v))
+      s t cpt.jointMeasure := by
+  have hCI :
+      CondIndepVertices
+        bn cpt.jointMeasure (U ∪ ({v} : Set V))
+        (W ∪ bn.nonDescendantsExceptParentsAndSelf v) (bn.graph.parents v) :=
+    jointMeasure_condIndepVertices_of_parentset_union_vertex_nonDesc_given_parents
+      (bn := bn) cpt v hU hW
+  exact
+    (ProbabilityTheory.condIndep_iff_forall_condIndepSet
+      (m' := bn.measurableSpaceOfVertices (bn.graph.parents v))
+      (m₁ := bn.measurableSpaceOfVertices (U ∪ ({v} : Set V)))
+      (m₂ := bn.measurableSpaceOfVertices (W ∪ bn.nonDescendantsExceptParentsAndSelf v))
+      (hm' := measurableSpaceOfVertices_le (bn := bn) (bn.graph.parents v))
+      (μ := cpt.jointMeasure)).1 (by
+        simpa [CondIndepVertices] using hCI) s t hs ht
+
+/-- Reduced-core discrete soundness for a parent-enriched singleton-left block:
+if the only non-conditioned left vertex is `v`, then d-separation from `Y`
+given `Pa(v)` is enough to invoke the discrete local-Markov bridge. -/
+theorem dsepFull_parentset_union_singleton_left_parentset_condIndepVertices
+    (cpt : bn.DiscreteCPT) {v : V} {U Y : Set V}
+    (hU : U ⊆ bn.graph.parents v)
+    (hXY : (U ∪ ({v} : Set V)) ∩ Y ⊆ bn.graph.parents v)
+    (hdsep :
+      Mettapedia.ProbabilityTheory.BayesianNetworks.DSeparation.DSeparatedFull
+        bn.graph (U ∪ ({v} : Set V)) Y (bn.graph.parents v)) :
+    CondIndepVertices
+      bn cpt.jointMeasure (U ∪ ({v} : Set V)) Y (bn.graph.parents v) := by
+  have hSubset :
+      Y \ bn.graph.parents v ⊆ bn.nonDescendantsExceptParentsAndSelf v :=
+    dsepFull_parentset_union_singleton_left_parentset_subset_nonDescendantsExceptParentsAndSelf
+      (bn := bn) (v := v) hXY hdsep
+  have hCore :
+      CondIndepVertices
+        bn cpt.jointMeasure (U ∪ ({v} : Set V))
+        ((Y ∩ bn.graph.parents v) ∪ bn.nonDescendantsExceptParentsAndSelf v)
+        (bn.graph.parents v) :=
+    jointMeasure_condIndepVertices_of_parentset_union_vertex_nonDesc_given_parents
+      (bn := bn) cpt v hU (by
+        intro y hy
+        exact hy.2)
+  have hY :
+      Y ⊆ (Y ∩ bn.graph.parents v) ∪ bn.nonDescendantsExceptParentsAndSelf v := by
+    intro y hy
+    by_cases hyPa : y ∈ bn.graph.parents v
+    · exact Or.inl ⟨hy, hyPa⟩
+    · exact Or.inr (hSubset ⟨hy, hyPa⟩)
+  exact condIndepVertices_of_le_right (bn := bn) (μ := cpt.jointMeasure) hY hCore
+
+/-- Event-level form of the parent-enriched singleton-left reduced-core
+d-separation bridge. This is the concrete measurable-event theorem that the
+broader disjoint-core route will want to reuse. -/
+theorem dsepFull_parentset_union_singleton_left_parentset_condIndepSet
+    (cpt : bn.DiscreteCPT) {v : V} {U Y : Set V}
+    (hU : U ⊆ bn.graph.parents v)
+    (hXY : (U ∪ ({v} : Set V)) ∩ Y ⊆ bn.graph.parents v)
+    (hdsep :
+      Mettapedia.ProbabilityTheory.BayesianNetworks.DSeparation.DSeparatedFull
+        bn.graph (U ∪ ({v} : Set V)) Y (bn.graph.parents v))
+    {s t : Set bn.JointSpace}
+    (hs : MeasurableSet[bn.measurableSpaceOfVertices (U ∪ ({v} : Set V))] s)
+    (ht : MeasurableSet[bn.measurableSpaceOfVertices Y] t) :
+    ProbabilityTheory.CondIndepSet
+      (m' := bn.measurableSpaceOfVertices (bn.graph.parents v))
+      (hm' := measurableSpaceOfVertices_le (bn := bn) (bn.graph.parents v))
+      s t cpt.jointMeasure := by
+  have hCI :
+      CondIndepVertices
+        bn cpt.jointMeasure (U ∪ ({v} : Set V)) Y (bn.graph.parents v) :=
+    dsepFull_parentset_union_singleton_left_parentset_condIndepVertices
+      (bn := bn) cpt hU hXY hdsep
+  exact
+    (ProbabilityTheory.condIndep_iff_forall_condIndepSet
+      (m' := bn.measurableSpaceOfVertices (bn.graph.parents v))
+      (m₁ := bn.measurableSpaceOfVertices (U ∪ ({v} : Set V)))
+      (m₂ := bn.measurableSpaceOfVertices Y)
+      (hm' := measurableSpaceOfVertices_le (bn := bn) (bn.graph.parents v))
+      (μ := cpt.jointMeasure)).1 (by
+        simpa [CondIndepVertices] using hCI) s t hs ht
+
+/-- If every pair of `eventOfConstraints` atoms over `X` and `Y` is conditionally
+independent given `σ(Z)`, then the full vertex-generated σ-algebras over `X` and
+`Y` are conditionally independent given `σ(Z)`. This packages the final lift
+from atomic block identities to the public `CondIndepVertices` API. -/
+theorem condIndepVertices_of_condIndepSet_constraintAtoms
+    (μ : Measure bn.JointSpace) [IsFiniteMeasure μ]
+    [∀ v, MeasurableSingletonClass (bn.stateSpace v)]
+    {X Y Z : Set V}
+    (hatom :
+      ∀ xX : (∀ p : X, bn.stateSpace p.1),
+        ∀ xY : (∀ p : Y, bn.stateSpace p.1),
+          ProbabilityTheory.CondIndepSet
+            (m' := bn.measurableSpaceOfVertices Z)
+            (hm' := measurableSpaceOfVertices_le (bn := bn) Z)
+            (eventOfConstraints (bn := bn)
+              (constraintsOfRestrict (bn := bn) X xX))
+            (eventOfConstraints (bn := bn)
+              (constraintsOfRestrict (bn := bn) Y xY))
+            μ) :
+    CondIndepVertices bn μ X Y Z := by
+  let mZ : MeasurableSpace bn.JointSpace := bn.measurableSpaceOfVertices Z
+  let mX : MeasurableSpace bn.JointSpace := bn.measurableSpaceOfVertices X
+  let mY : MeasurableSpace bn.JointSpace := bn.measurableSpaceOfVertices Y
+  let atomX : (∀ p : X, bn.stateSpace p.1) → Set bn.JointSpace :=
+    fun xX => eventOfConstraints (bn := bn)
+      (constraintsOfRestrict (bn := bn) X xX)
+  let atomY : (∀ p : Y, bn.stateSpace p.1) → Set bn.JointSpace :=
+    fun xY => eventOfConstraints (bn := bn)
+      (constraintsOfRestrict (bn := bn) Y xY)
+  let p : Set (Set bn.JointSpace) :=
+    {a | a = ∅ ∨ ∃ xX : (∀ q : X, bn.stateSpace q.1), a = atomX xX}
+  let q : Set (Set bn.JointSpace) :=
+    {b | b = ∅ ∨ ∃ xY : (∀ r : Y, bn.stateSpace r.1), b = atomY xY}
+  have hmZ : mZ ≤ (MeasurableSpace.pi : MeasurableSpace bn.JointSpace) :=
+    measurableSpaceOfVertices_le (bn := bn) Z
+  have hmX : mX ≤ (MeasurableSpace.pi : MeasurableSpace bn.JointSpace) :=
+    measurableSpaceOfVertices_le (bn := bn) X
+  have hmY : mY ≤ (MeasurableSpace.pi : MeasurableSpace bn.JointSpace) :=
+    measurableSpaceOfVertices_le (bn := bn) Y
+  have hAtomX_meas :
+      ∀ xX : (∀ p : X, bn.stateSpace p.1),
+        MeasurableSet[mX] (atomX xX) := by
+    intro xX
+    have hcomap :
+        MeasurableSet[
+          MeasurableSpace.comap (restrictToSet (bn := bn) X) (by infer_instance)]
+          (atomX xX) := by
+      refine (MeasurableSpace.measurableSet_comap).2 ?_
+      refine ⟨{xX}, by simp, ?_⟩
+      exact (eventOfConstraints_constraintsOfRestrict (bn := bn) X xX).symm
+    simpa [mX, measurableSpaceOfVertices_eq_comap_restrict (bn := bn) X,
+      atomX] using hcomap
+  have hAtomY_meas :
+      ∀ xY : (∀ p : Y, bn.stateSpace p.1),
+        MeasurableSet[mY] (atomY xY) := by
+    intro xY
+    have hcomap :
+        MeasurableSet[
+          MeasurableSpace.comap (restrictToSet (bn := bn) Y) (by infer_instance)]
+          (atomY xY) := by
+      refine (MeasurableSpace.measurableSet_comap).2 ?_
+      refine ⟨{xY}, by simp, ?_⟩
+      exact (eventOfConstraints_constraintsOfRestrict (bn := bn) Y xY).symm
+    simpa [mY, measurableSpaceOfVertices_eq_comap_restrict (bn := bn) Y,
+      atomY] using hcomap
+  have hp_pi : IsPiSystem p := by
+    intro a ha b hb hab
+    rcases ha with rfl | ⟨xX, rfl⟩
+    · simpa using hab
+    · rcases hb with rfl | ⟨yX, rfl⟩
+      · simpa [p] using hab
+      · by_cases hxy : xX = yX
+        · right
+          refine ⟨xX, ?_⟩
+          subst hxy
+          ext ω
+          simp [atomX]
+        · left
+          ext ω
+          have hdisj :
+              Disjoint
+                (eventOfConstraints (bn := bn)
+                  (constraintsOfRestrict (bn := bn) X xX))
+                (eventOfConstraints (bn := bn)
+                  (constraintsOfRestrict (bn := bn) X yX)) :=
+            eventOfConstraints_constraintsOfRestrict_disjoint
+              (bn := bn) X hxy
+          have hempty : ω ∉ atomX xX ∩ atomX yX := by
+            intro hω
+            exact Set.disjoint_left.mp hdisj hω.1 hω.2
+          simp [atomX, hempty]
+  have hq_pi : IsPiSystem q := by
+    intro a ha b hb hab
+    rcases ha with rfl | ⟨xY, rfl⟩
+    · simpa using hab
+    · rcases hb with rfl | ⟨yY, rfl⟩
+      · simpa [q] using hab
+      · by_cases hxy : xY = yY
+        · right
+          refine ⟨xY, ?_⟩
+          subst hxy
+          ext ω
+          simp [atomY]
+        · left
+          ext ω
+          have hdisj :
+              Disjoint
+                (eventOfConstraints (bn := bn)
+                  (constraintsOfRestrict (bn := bn) Y xY))
+                (eventOfConstraints (bn := bn)
+                  (constraintsOfRestrict (bn := bn) Y yY)) :=
+            eventOfConstraints_constraintsOfRestrict_disjoint
+              (bn := bn) Y hxy
+          have hempty : ω ∉ atomY xY ∩ atomY yY := by
+            intro hω
+            exact Set.disjoint_left.mp hdisj hω.1 hω.2
+          simp [atomY, hempty]
+  have hp_meas : ∀ a ∈ p, @MeasurableSet _ MeasurableSpace.pi a := by
+    intro a ha
+    rcases ha with rfl | ⟨xX, rfl⟩
+    · simpa using (MeasurableSet.empty : @MeasurableSet _ MeasurableSpace.pi ∅)
+    · exact hmX _ (hAtomX_meas xX)
+  have hq_meas : ∀ b ∈ q, @MeasurableSet _ MeasurableSpace.pi b := by
+    intro b hb
+    rcases hb with rfl | ⟨xY, rfl⟩
+    · simpa using (MeasurableSet.empty : @MeasurableSet _ MeasurableSpace.pi ∅)
+    · exact hmY _ (hAtomY_meas xY)
+  have hp_generate : MeasurableSpace.generateFrom p = mX := by
+    apply le_antisymm
+    · apply MeasurableSpace.generateFrom_le
+      intro a ha
+      rcases ha with rfl | ⟨xX, rfl⟩
+      · simpa [mX] using (MeasurableSet.empty : MeasurableSet[MeasurableSpace.pi] ∅)
+      · exact hAtomX_meas xX
+    · intro s hs
+      rcases measurableSet_vertices_preimage (bn := bn) (S := X) (s := s) hs with
+        ⟨T, hT, rfl⟩
+      rw [vertices_preimage_eq_iUnion_eventOfConstraints (bn := bn) X T]
+      apply MeasurableSet.iUnion
+      intro xX
+      by_cases hxX : xX ∈ T
+      · have hmem :
+            (if xX ∈ T then atomX xX else (∅ : Set bn.JointSpace)) ∈ p := by
+          right
+          refine ⟨xX, ?_⟩
+          simp [hxX, atomX]
+        exact MeasurableSpace.measurableSet_generateFrom hmem
+      · have hmem :
+            (if xX ∈ T then atomX xX else (∅ : Set bn.JointSpace)) ∈ p := by
+          left
+          simp [hxX]
+        simpa [hxX] using MeasurableSpace.measurableSet_generateFrom hmem
+  have hq_generate : MeasurableSpace.generateFrom q = mY := by
+    apply le_antisymm
+    · apply MeasurableSpace.generateFrom_le
+      intro b hb
+      rcases hb with rfl | ⟨xY, rfl⟩
+      · simpa [mY] using (MeasurableSet.empty : MeasurableSet[MeasurableSpace.pi] ∅)
+      · exact hAtomY_meas xY
+    · intro t ht
+      rcases measurableSet_vertices_preimage (bn := bn) (S := Y) (s := t) ht with
+        ⟨T, hT, rfl⟩
+      rw [vertices_preimage_eq_iUnion_eventOfConstraints (bn := bn) Y T]
+      apply MeasurableSet.iUnion
+      intro xY
+      by_cases hxY : xY ∈ T
+      · have hmem :
+            (if xY ∈ T then atomY xY else (∅ : Set bn.JointSpace)) ∈ q := by
+          right
+          refine ⟨xY, ?_⟩
+          simp [hxY, atomY]
+        exact MeasurableSpace.measurableSet_generateFrom hmem
+      · have hmem :
+            (if xY ∈ T then atomY xY else (∅ : Set bn.JointSpace)) ∈ q := by
+          left
+          simp [hxY]
+        simpa [hxY] using MeasurableSpace.measurableSet_generateFrom hmem
+  have hpq :
+      ProbabilityTheory.CondIndepSets (m' := mZ) (hm' := hmZ) p q μ := by
+    rw [ProbabilityTheory.condIndepSets_iff
+      (m' := mZ) (hm' := hmZ) (s1 := p) (s2 := q) hp_meas hq_meas (μ := μ)]
+    intro a b ha hb
+    rcases ha with rfl | ⟨xX, rfl⟩
+    · exact
+        (ProbabilityTheory.condIndepSet_iff
+          (m' := mZ) (hm' := hmZ) (s := (∅ : Set bn.JointSpace)) (t := b)
+          (show @MeasurableSet _ MeasurableSpace.pi (∅ : Set bn.JointSpace) from by simp)
+          (hq_meas b hb) (μ := μ)).1
+        (condIndepSet_of_measurable_left
+          (bn := bn) (μ := μ) (Z := Z)
+          (show @MeasurableSet _ mZ (∅ : Set bn.JointSpace) from by simp)
+          (hq_meas b hb))
+    · rcases hb with rfl | ⟨xY, rfl⟩
+      · exact
+          (ProbabilityTheory.condIndepSet_iff
+            (m' := mZ) (hm' := hmZ) (s := atomX xX) (t := (∅ : Set bn.JointSpace))
+            (hmX _ (hAtomX_meas xX))
+            (show @MeasurableSet _ MeasurableSpace.pi (∅ : Set bn.JointSpace) from by simp)
+            (μ := μ)).1
+          (condIndepSet_of_measurable_right
+            (bn := bn) (μ := μ) (Z := Z)
+            (hmX _ (hAtomX_meas xX))
+            (show @MeasurableSet _ mZ (∅ : Set bn.JointSpace) from by simp))
+      · exact
+          (ProbabilityTheory.condIndepSet_iff
+            (m' := mZ) (hm' := hmZ) (s := atomX xX) (t := atomY xY)
+            (hmX _ (hAtomX_meas xX)) (hmY _ (hAtomY_meas xY)) (μ := μ)).1
+          (by simpa [atomX, atomY] using hatom xX xY)
+  have hsup :
+      ProbabilityTheory.CondIndep
+        (m' := mZ) (m₁ := MeasurableSpace.generateFrom p)
+        (m₂ := MeasurableSpace.generateFrom q)
+        (hm' := hmZ) μ :=
+    ProbabilityTheory.CondIndepSets.condIndep'
+      (m' := mZ) (hm' := hmZ)
+      hp_meas hq_meas hp_pi hq_pi hpq
+  simpa [CondIndepVertices, mZ, mX, mY, hp_generate, hq_generate] using hsup
 
 instance discrete_hasLocalMarkovProperty
     (cpt : bn.DiscreteCPT) :

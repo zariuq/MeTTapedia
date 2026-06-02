@@ -670,8 +670,9 @@ Definition eval_switch_one_with_def:
   eval_switch_one_with ev value (branch :: rest) =
     (case branch_pair branch of
      | SOME (pattern, body) =>
-         if value = pattern then ev body
-         else eval_switch_one_with ev value rest
+         (case match_atom pattern value [] of
+          | SOME bs => ev (apply_subst bs body)
+          | NONE => eval_switch_one_with ev value rest)
      | NONE => eval_switch_one_with ev value rest)
 End
 
@@ -797,9 +798,8 @@ Definition eval_m1_rec_def:
     | Expr [Sym 54; scrut; branches] =>
         [error_atom atom (Sym 10)]
     | Expr [Sym 55; scrut; Expr branches] =>
-        eval_switch_values_with
-          (eval_m1_rec fuel space)
-          (eval_m1_rec fuel space scrut) branches
+        eval_switch_one_with
+          (eval_m1_rec fuel space) scrut branches
     | Expr [Sym 55; scrut; branches] =>
         [error_atom atom (Sym 10)]
     | Expr [Sym 56; Expr bindings; body] =>
@@ -862,6 +862,128 @@ Proof
   rw[eval_return_fragment_def, eval_m1_rec_def]
 QED
 
+Definition eval_add_fragment_def:
+  eval_add_fragment fuel space atom =
+    case atom of
+    | Expr [Sym 11; a; b] =>
+        rec_add_values atom
+          (eval_m1_rec fuel space a)
+          (eval_m1_rec fuel space b)
+    | _ => [atom]
+End
+
+Definition export_eval_add_fragment_def:
+  export_eval_add_fragment fuel space atom =
+    MAP export_atom (eval_add_fragment fuel space atom)
+End
+
+Theorem import_export_eval_add_fragment:
+  ∀fuel space atom.
+    MAP import_exported_atom (export_eval_add_fragment fuel space atom) =
+    eval_add_fragment fuel space atom
+Proof
+  rw[export_eval_add_fragment_def, import_export_atom_map]
+QED
+
+Theorem eval_add_fragment_agrees_with_eval_m1_rec:
+  ∀fuel space a b.
+    eval_add_fragment fuel space (Expr [Sym 11; a; b]) =
+    eval_m1_rec (SUC fuel) space (Expr [Sym 11; a; b])
+Proof
+  rw[eval_add_fragment_def, eval_m1_rec_def]
+QED
+
+Definition eval_eval_fragment_def:
+  eval_eval_fragment fuel space atom =
+    case atom of
+    | Expr [Sym 20; body] =>
+        let rs = eval_m1_rec fuel space body in
+          if rs = [body] then [Sym 23] else rs
+    | _ => [atom]
+End
+
+Definition export_eval_eval_fragment_def:
+  export_eval_eval_fragment fuel space atom =
+    MAP export_atom (eval_eval_fragment fuel space atom)
+End
+
+Theorem import_export_eval_eval_fragment:
+  ∀fuel space atom.
+    MAP import_exported_atom (export_eval_eval_fragment fuel space atom) =
+    eval_eval_fragment fuel space atom
+Proof
+  rw[export_eval_eval_fragment_def, import_export_atom_map]
+QED
+
+Theorem eval_eval_fragment_agrees_with_eval_m1_rec:
+  ∀fuel space body.
+    eval_eval_fragment fuel space (Expr [Sym 20; body]) =
+    eval_m1_rec (SUC fuel) space (Expr [Sym 20; body])
+Proof
+  rw[eval_eval_fragment_def, eval_m1_rec_def]
+QED
+
+Definition eval_chain_fragment_def:
+  eval_chain_fragment fuel space atom =
+    case atom of
+    | Expr [Sym 21; nested; Var v; templ] =>
+        eval_m1_rec_chain fuel space v
+          (eval_m1_rec fuel space nested) templ
+    | _ => [atom]
+End
+
+Definition export_eval_chain_fragment_def:
+  export_eval_chain_fragment fuel space atom =
+    MAP export_atom (eval_chain_fragment fuel space atom)
+End
+
+Theorem import_export_eval_chain_fragment:
+  ∀fuel space atom.
+    MAP import_exported_atom (export_eval_chain_fragment fuel space atom) =
+    eval_chain_fragment fuel space atom
+Proof
+  rw[export_eval_chain_fragment_def, import_export_atom_map]
+QED
+
+Theorem eval_chain_fragment_agrees_with_eval_m1_rec:
+  ∀fuel space nested v templ.
+    eval_chain_fragment fuel space (Expr [Sym 21; nested; Var v; templ]) =
+    eval_m1_rec (SUC fuel) space (Expr [Sym 21; nested; Var v; templ])
+Proof
+  rw[eval_chain_fragment_def, eval_m1_rec_def]
+QED
+
+Definition eval_case_fragment_def:
+  eval_case_fragment fuel space atom =
+    case atom of
+    | Expr [Sym 54; scrut; Expr branches] =>
+        eval_case_values_with
+          (λa. eval_m1_rec fuel space a)
+          (eval_m1_rec fuel space scrut) branches
+    | _ => [atom]
+End
+
+Definition export_eval_case_fragment_def:
+  export_eval_case_fragment fuel space atom =
+    MAP export_atom (eval_case_fragment fuel space atom)
+End
+
+Theorem import_export_eval_case_fragment:
+  ∀fuel space atom.
+    MAP import_exported_atom (export_eval_case_fragment fuel space atom) =
+    eval_case_fragment fuel space atom
+Proof
+  rw[export_eval_case_fragment_def, import_export_atom_map]
+QED
+
+Theorem eval_case_fragment_agrees_with_eval_m1_rec:
+  ∀fuel space scrut branches.
+    eval_case_fragment fuel space (Expr [Sym 54; scrut; Expr branches]) =
+    eval_m1_rec (SUC fuel) space (Expr [Sym 54; scrut; Expr branches])
+Proof
+  rw[eval_case_fragment_def, eval_m1_rec_def]
+QED
+
 Definition typed_eval_m1_rec_def:
   typed_eval_m1_rec fuel space atom =
     if hol_typed_add_bad space atom then [error_atom atom (Sym 10)]
@@ -872,6 +994,263 @@ Definition evalc_like_def:
   evalc_like fuel space atom expected =
     evalc_values space atom expected (typed_eval_m1_rec fuel space atom)
 End
+
+Definition lookup_named_space_def:
+  lookup_named_space name [] = NONE ∧
+  lookup_named_space name ((key, stored) :: rest) =
+    (if name = key then SOME stored else lookup_named_space name rest)
+End
+
+Definition set_named_space_def:
+  set_named_space name stored [] = [(name, stored)] ∧
+  set_named_space name stored ((key, old) :: rest) =
+    (if name = key then (name, stored) :: rest
+     else (key, old) :: set_named_space name stored rest)
+End
+
+Definition bind_empty_named_space_def:
+  bind_empty_named_space name spaces =
+    set_named_space name [] spaces
+End
+
+Definition add_atom_to_named_space_def:
+  add_atom_to_named_space name atom spaces =
+    case lookup_named_space name spaces of
+    | SOME stored =>
+        SOME (set_named_space name (stored ++ [atom]) spaces)
+    | NONE => NONE
+End
+
+Definition evalc_context_def:
+  evalc_context fuel self named term (Sym name) =
+    (if name = 5 then visible_results (eval_m1_rec fuel self term)
+     else
+       case lookup_named_space name named of
+       | SOME ctx => visible_results (eval_m1_rec fuel ctx term)
+       | NONE => [error_atom (Expr [Sym 61; term; Sym name]) (Sym 10)]) ∧
+  evalc_context fuel self named term bad_space =
+    [error_atom (Expr [Sym 61; term; bad_space]) (Sym 10)]
+End
+
+Definition match_context_space_def:
+  match_context_space self named (Sym name) pattern templ =
+    (if name = 5 then match_space self pattern templ
+     else
+       case lookup_named_space name named of
+       | SOME ctx => match_space ctx pattern templ
+       | NONE => [error_atom (Expr [Sym 4; Sym name; pattern; templ]) (Sym 10)]) ∧
+  match_context_space self named bad_space pattern templ =
+    [error_atom (Expr [Sym 4; bad_space; pattern; templ]) (Sym 10)]
+End
+
+Definition eval_typed_fragment_def:
+  eval_typed_fragment fuel space atom =
+    typed_eval_m1_rec fuel space atom
+End
+
+Definition export_eval_typed_fragment_def:
+  export_eval_typed_fragment fuel space atom =
+    MAP export_atom (eval_typed_fragment fuel space atom)
+End
+
+Theorem import_export_eval_typed_fragment:
+  ∀fuel space atom.
+    MAP import_exported_atom (export_eval_typed_fragment fuel space atom) =
+    eval_typed_fragment fuel space atom
+Proof
+  rw[export_eval_typed_fragment_def, eval_typed_fragment_def,
+     import_export_atom_map]
+QED
+
+Theorem eval_typed_fragment_agrees_with_typed_eval_m1_rec:
+  ∀fuel space atom.
+    eval_typed_fragment fuel space atom =
+    typed_eval_m1_rec fuel space atom
+Proof
+  rw[eval_typed_fragment_def]
+QED
+
+Definition eval_evalc_fragment_def:
+  eval_evalc_fragment fuel space atom =
+    case atom of
+    | Expr [Sym 57; term; expected] =>
+        evalc_values space term expected
+          (typed_eval_m1_rec fuel space term)
+    | _ => [atom]
+End
+
+Definition export_eval_evalc_fragment_def:
+  export_eval_evalc_fragment fuel space atom =
+    MAP export_atom (eval_evalc_fragment fuel space atom)
+End
+
+Theorem import_export_eval_evalc_fragment:
+  ∀fuel space atom.
+    MAP import_exported_atom (export_eval_evalc_fragment fuel space atom) =
+    eval_evalc_fragment fuel space atom
+Proof
+  rw[export_eval_evalc_fragment_def, import_export_atom_map]
+QED
+
+Theorem eval_evalc_fragment_agrees_with_eval_m1_rec:
+  ∀fuel space term expected.
+    eval_evalc_fragment fuel space (Expr [Sym 57; term; expected]) =
+    eval_m1_rec (SUC fuel) space (Expr [Sym 57; term; expected])
+Proof
+  rw[eval_evalc_fragment_def, eval_m1_rec_def, typed_eval_m1_rec_def]
+QED
+
+Definition eval_vec_cons_fragment_def:
+  eval_vec_cons_fragment space atom =
+    case atom of
+    | Expr [Sym 58; elem; tail] =>
+        [dependent_vec_cons_type space elem tail]
+    | _ => [atom]
+End
+
+Definition export_eval_vec_cons_fragment_def:
+  export_eval_vec_cons_fragment space atom =
+    MAP export_atom (eval_vec_cons_fragment space atom)
+End
+
+Theorem import_export_eval_vec_cons_fragment:
+  ∀space atom.
+    MAP import_exported_atom (export_eval_vec_cons_fragment space atom) =
+    eval_vec_cons_fragment space atom
+Proof
+  rw[export_eval_vec_cons_fragment_def, import_export_atom_map]
+QED
+
+Theorem eval_vec_cons_fragment_agrees_with_eval_m1_rec:
+  ∀fuel space elem tail.
+    eval_vec_cons_fragment space (Expr [Sym 58; elem; tail]) =
+    eval_m1_rec (SUC fuel) space (Expr [Sym 58; elem; tail])
+Proof
+  rw[eval_vec_cons_fragment_def, eval_m1_rec_def]
+QED
+
+Theorem lookup_named_space_hit:
+  ∀name stored rest.
+    lookup_named_space name ((name, stored) :: rest) = SOME stored
+Proof
+  rw[lookup_named_space_def]
+QED
+
+Theorem lookup_named_space_miss_cons:
+  ∀name key stored rest.
+    name ≠ key ⇒
+    lookup_named_space name ((key, stored) :: rest) =
+    lookup_named_space name rest
+Proof
+  rw[lookup_named_space_def]
+QED
+
+Theorem lookup_named_space_set_hit:
+  ∀spaces name stored.
+    lookup_named_space name (set_named_space name stored spaces) =
+    SOME stored
+Proof
+  Induct \\ rw[lookup_named_space_def, set_named_space_def] \\
+  PairCases_on ‘h’ \\
+  rw[lookup_named_space_def, set_named_space_def]
+QED
+
+Theorem lookup_named_space_set_other:
+  ∀spaces name other stored.
+    name ≠ other ⇒
+    lookup_named_space name (set_named_space other stored spaces) =
+    lookup_named_space name spaces
+Proof
+  Induct \\ rw[lookup_named_space_def, set_named_space_def] \\
+  PairCases_on ‘h’ \\
+  rw[lookup_named_space_def, set_named_space_def]
+QED
+
+Theorem bind_empty_named_space_lookup:
+  ∀spaces name.
+    lookup_named_space name (bind_empty_named_space name spaces) = SOME []
+Proof
+  rw[bind_empty_named_space_def, lookup_named_space_set_hit]
+QED
+
+Theorem add_atom_to_named_space_lookup_hit:
+  ∀spaces name stored atom spaces2.
+    lookup_named_space name spaces = SOME stored ∧
+    add_atom_to_named_space name atom spaces = SOME spaces2 ⇒
+    lookup_named_space name spaces2 = SOME (stored ++ [atom])
+Proof
+  rw[add_atom_to_named_space_def] \\
+  gvs[lookup_named_space_set_hit]
+QED
+
+Theorem add_atom_to_named_space_missing:
+  ∀spaces name atom.
+    lookup_named_space name spaces = NONE ⇒
+    add_atom_to_named_space name atom spaces = NONE
+Proof
+  rw[add_atom_to_named_space_def]
+QED
+
+Theorem add_atom_to_named_space_example:
+  add_atom_to_named_space 66 (Sym 25) [(66, [Sym 24])] =
+  SOME [(66, [Sym 24; Sym 25])]
+Proof
+  EVAL_TAC
+QED
+
+Theorem evalc_context_self_example:
+  ∀fuel.
+    evalc_context (SUC (SUC fuel))
+      [Expr [Sym 2; Expr [Sym 24]; Sym 25]]
+      [] (Expr [Sym 24]) (Sym 5) =
+    [Sym 25]
+Proof
+  EVAL_TAC \\ rw[]
+QED
+
+Theorem evalc_context_named_space_example:
+  ∀fuel.
+    evalc_context (SUC (SUC fuel)) []
+      [(66, [Expr [Sym 2; Expr [Sym 24]; Sym 25]])]
+      (Expr [Sym 24]) (Sym 66) =
+    [Sym 25]
+Proof
+  EVAL_TAC \\ rw[]
+QED
+
+Theorem evalc_context_missing_space_example:
+  evalc_context 7 [] [] (Sym 24) (Sym 66) =
+  [error_atom (Expr [Sym 61; Sym 24; Sym 66]) (Sym 10)]
+Proof
+  EVAL_TAC
+QED
+
+Theorem evalc_context_bad_space_atom_example:
+  evalc_context 7 [] [] (Sym 24) (Expr [Sym 66]) =
+  [error_atom (Expr [Sym 61; Sym 24; Expr [Sym 66]]) (Sym 10)]
+Proof
+  EVAL_TAC
+QED
+
+Theorem match_context_space_self_example:
+  match_context_space
+    [Expr [Sym 2; Expr [Sym 24]; Sym 25]]
+    [] (Sym 5)
+    (Expr [Sym 2; Expr [Sym 24]; Var 0]) (Var 0) =
+  [Sym 25]
+Proof
+  EVAL_TAC
+QED
+
+Theorem match_context_space_named_example:
+  match_context_space []
+    [(66, [Expr [Sym 2; Expr [Sym 24]; Sym 25]])]
+    (Sym 66)
+    (Expr [Sym 2; Expr [Sym 24]; Var 0]) (Var 0) =
+  [Sym 25]
+Proof
+  EVAL_TAC
+QED
 
 Definition eval_case_one_def:
   eval_case_one fuel space value [] original = [] ∧
@@ -901,8 +1280,9 @@ Definition eval_switch_one_def:
   eval_switch_one fuel space value (branch :: rest) original =
     case branch_pair branch of
     | SOME (pattern, body) =>
-        if value = pattern then eval_m1_rec fuel space body
-        else eval_switch_one fuel space value rest original
+        (case match_atom pattern value [] of
+         | SOME bs => eval_m1_rec fuel space (apply_subst bs body)
+         | NONE => eval_switch_one fuel space value rest original)
     | NONE => eval_switch_one fuel space value rest original
 End
 
@@ -915,8 +1295,7 @@ End
 
 Definition eval_switch_like_def:
   eval_switch_like fuel space scrut branches original =
-    eval_switch_values fuel space
-      (eval_m1_rec fuel space scrut) branches original
+    eval_switch_one fuel space scrut branches original
 End
 
 Definition eval_let1_values_def:
@@ -1684,6 +2063,40 @@ Proof
   rw[host_byte_profile_dec_echo_byte_only]
 QED
 
+Theorem host_call_table_lookup_supported_eval_only:
+  ∀tag name arity conf.
+    host_call_table_lookup host_call_table tag name arity = SOME conf ⇒
+    host_eval_profile tag name arity ∧
+    ¬∃opcode. host_byte_only_profile tag name arity conf opcode
+Proof
+  rw[] \\
+  drule host_call_table_lookup_sound \\
+  rw[host_eval_profile_def, host_byte_only_profile_def]
+QED
+
+Theorem host_eval_profile_lookup_complete:
+  ∀tag name arity.
+    host_eval_profile tag name arity ⇒
+    ∃conf.
+      host_call_table_lookup host_call_table tag name arity = SOME conf
+Proof
+  Cases_on ‘tag’ \\
+  rw[host_eval_profile_def, host_call_table_def,
+     host_call_table_lookup_def]
+QED
+
+Theorem host_byte_only_profile_not_host_call_table:
+  ∀tag name arity conf opcode.
+    host_byte_only_profile tag name arity conf opcode ⇒
+    host_call_table_lookup host_call_table tag name arity = NONE
+Proof
+  Cases_on ‘tag’ \\
+  rw[host_byte_only_profile_def, host_byte_profile_def,
+     host_eval_profile_def, host_byte_conf_len_def,
+     host_call_table_def, host_call_table_lookup_def] \\
+  gvs[]
+QED
+
 Theorem rec_add_right_member_sound:
   ∀ys original x out.
     MEM out (rec_add_right original x ys) ⇒
@@ -2037,7 +2450,8 @@ Theorem eval_m1_rec_return_nonempty:
   ∀fuel space value.
     eval_m1_rec (SUC fuel) space (Expr [Sym 19; value]) ≠ []
 Proof
-  rw[eval_m1_rec_def]
+  rw[eval_m1_rec_def] \\
+  fs[]
 QED
 
 Theorem eval_m1_rec_eval_nonempty:
@@ -2309,6 +2723,22 @@ Proof
   Cases \\ rw[evalc_values_def]
 QED
 
+Theorem eval_typed_fragment_bad_add_nonempty:
+  ∀fuel space atom.
+    hol_typed_add_bad space atom ⇒
+    eval_typed_fragment fuel space atom ≠ []
+Proof
+  rw[eval_typed_fragment_def, typed_eval_m1_rec_def]
+QED
+
+Theorem eval_evalc_fragment_nonempty:
+  ∀fuel space term expected.
+    typed_eval_m1_rec fuel space term ≠ [] ⇒
+    eval_evalc_fragment fuel space (Expr [Sym 57; term; expected]) ≠ []
+Proof
+  rw[eval_evalc_fragment_def, evalc_values_nonempty]
+QED
+
 Theorem eval_m1_rec_evalc_nonempty:
   ∀fuel space term expected.
     hol_typed_add_bad space term ∨ eval_m1_rec fuel space term ≠ [] ⇒
@@ -2324,6 +2754,13 @@ Theorem eval_m1_rec_vec_cons_nonempty:
     eval_m1_rec (SUC fuel) space (Expr [Sym 58; elem; tail]) ≠ []
 Proof
   rw[eval_m1_rec_def]
+QED
+
+Theorem eval_vec_cons_fragment_nonempty:
+  ∀space elem tail.
+    eval_vec_cons_fragment space (Expr [Sym 58; elem; tail]) ≠ []
+Proof
+  rw[eval_vec_cons_fragment_def]
 QED
 
 Theorem eval_case_values_with_nonempty:
@@ -2364,14 +2801,11 @@ QED
 
 Theorem eval_m1_rec_switch_branch_nonempty:
   ∀fuel space scrut branches.
-    (∃value.
-       MEM value (eval_m1_rec fuel space scrut) ∧
-       eval_switch_one_with (eval_m1_rec fuel space) value branches ≠ []) ⇒
+    eval_switch_one_with (λa. eval_m1_rec fuel space a) scrut branches ≠ [] ⇒
     eval_m1_rec (SUC fuel) space
       (Expr [Sym 55; scrut; Expr branches]) ≠ []
 Proof
-  rw[eval_m1_rec_def] \\
-  metis_tac[eval_switch_values_with_nonempty]
+  rw[eval_m1_rec_def]
 QED
 
 Theorem eval_m1_rec_chain_bad_var_nonempty:
@@ -2581,15 +3015,16 @@ QED
 Theorem eval_switch_one_member_sound:
   ∀branches fuel space value original out.
     MEM out (eval_switch_one fuel space value branches original) ⇒
-    ∃branch body.
-      MEM branch branches ∧ branch_pair branch = SOME (value, body) ∧
-      MEM out (eval_m1_rec fuel space body)
+    ∃branch pattern body bs.
+      MEM branch branches ∧ branch_pair branch = SOME (pattern, body) ∧
+      match_atom pattern value [] = SOME bs ∧
+      MEM out (eval_m1_rec fuel space (apply_subst bs body))
 Proof
   Induct \\ rw[eval_switch_one_def] \\
   Cases_on ‘branch_pair h’ \\ gvs[] >-
     metis_tac[] \\
   PairCases_on ‘x’ \\
-  Cases_on ‘value = x0’ \\ gvs[] \\
+  Cases_on ‘match_atom x0 value []’ \\ gvs[] \\
   metis_tac[]
 QED
 
@@ -2607,26 +3042,24 @@ QED
 Theorem eval_switch_like_member_sound:
   ∀fuel space scrut branches original out.
     MEM out (eval_switch_like fuel space scrut branches original) ⇒
-    ∃value.
-      MEM value (eval_m1_rec fuel space scrut) ∧
-      MEM out (eval_switch_one fuel space value branches original)
+    MEM out (eval_switch_one fuel space scrut branches original)
 Proof
-  rw[eval_switch_like_def] \\
-  metis_tac[eval_switch_values_member_sound]
+  rw[eval_switch_like_def]
 QED
 
 Theorem eval_switch_one_with_member_sound:
   ∀branches ev value out.
     MEM out (eval_switch_one_with ev value branches) ⇒
-    ∃branch body.
-      MEM branch branches ∧ branch_pair branch = SOME (value, body) ∧
-      MEM out (ev body)
+    ∃branch pattern body bs.
+      MEM branch branches ∧ branch_pair branch = SOME (pattern, body) ∧
+      match_atom pattern value [] = SOME bs ∧
+      MEM out (ev (apply_subst bs body))
 Proof
   Induct \\ rw[eval_switch_one_with_def] \\
   Cases_on ‘branch_pair h’ \\ gvs[] >-
     metis_tac[] \\
   PairCases_on ‘x’ \\
-  Cases_on ‘value = x0’ \\ gvs[] \\
+  Cases_on ‘match_atom x0 value []’ \\ gvs[] \\
   metis_tac[]
 QED
 
@@ -2644,12 +3077,9 @@ Theorem eval_m1_rec_switch_branch_member_sound:
   ∀fuel space scrut branches out.
     MEM out
       (eval_m1_rec (SUC fuel) space (Expr [Sym 55; scrut; Expr branches])) ⇒
-    ∃value.
-      MEM value (eval_m1_rec fuel space scrut) ∧
-      MEM out (eval_switch_one_with (eval_m1_rec fuel space) value branches)
+    MEM out (eval_switch_one_with (λa. eval_m1_rec fuel space a) scrut branches)
 Proof
-  rw[eval_m1_rec_def] \\
-  metis_tac[eval_switch_values_with_member_sound]
+  rw[eval_m1_rec_def]
 QED
 
 Theorem eval_let1_values_member_sound:
@@ -2799,11 +3229,11 @@ Theorem eval_m1_rec_switch_branch_semantic_sound:
   ∀fuel space scrut branches out.
     MEM out
       (eval_m1_rec (SUC fuel) space (Expr [Sym 55; scrut; Expr branches])) ⇒
-    ∃value branch body.
-      MEM value (eval_m1_rec fuel space scrut) ∧
+    ∃branch pattern body bs.
       MEM branch branches ∧
-      branch_pair branch = SOME (value, body) ∧
-      MEM out (eval_m1_rec fuel space body)
+      branch_pair branch = SOME (pattern, body) ∧
+      match_atom pattern scrut [] = SOME bs ∧
+      MEM out (eval_m1_rec fuel space (apply_subst bs body))
 Proof
   rw[] \\
   drule eval_m1_rec_switch_branch_member_sound \\
@@ -2924,12 +3354,12 @@ Definition eval_m1_rec_branch_sound_def:
        atom = Expr [Sym 54; scrut; bad_branches] ∧
        (∀branches. bad_branches ≠ Expr branches) ∧
        out = error_atom atom (Sym 10)) ∨
-    (∃scrut branches value branch body.
+    (∃scrut branches branch pattern body bs.
        atom = Expr [Sym 55; scrut; Expr branches] ∧
-       MEM value (eval_m1_rec fuel space scrut) ∧
        MEM branch branches ∧
-       branch_pair branch = SOME (value, body) ∧
-       MEM out (eval_m1_rec fuel space body)) ∨
+       branch_pair branch = SOME (pattern, body) ∧
+       match_atom pattern scrut [] = SOME bs ∧
+       MEM out (eval_m1_rec fuel space (apply_subst bs body))) ∨
     (∃scrut bad_branches.
        atom = Expr [Sym 55; scrut; bad_branches] ∧
        (∀branches. bad_branches ≠ Expr branches) ∧
@@ -3505,12 +3935,12 @@ Definition eval_m1_rec_structural_sound_def:
        atom = Expr [Sym 54; scrut; bad_branches] ∧
        (∀branches. bad_branches ≠ Expr branches) ∧
        out = error_atom atom (Sym 10)) ∨
-    (∃scrut branches value branch body.
+    (∃scrut branches branch pattern body bs.
        atom = Expr [Sym 55; scrut; Expr branches] ∧
-       MEM value (eval_m1_rec fuel space scrut) ∧
        MEM branch branches ∧
-       branch_pair branch = SOME (value, body) ∧
-       MEM out (eval_m1_rec fuel space body)) ∨
+       branch_pair branch = SOME (pattern, body) ∧
+       match_atom pattern scrut [] = SOME bs ∧
+       MEM out (eval_m1_rec fuel space (apply_subst bs body))) ∨
     (∃scrut bad_branches.
        atom = Expr [Sym 55; scrut; bad_branches] ∧
        (∀branches. bad_branches ≠ Expr branches) ∧
@@ -3684,11 +4114,11 @@ Theorem eval_m1_rec_switch_family_input_sound:
       (eval_m1_rec (SUC fuel) space (Expr [Sym 55; scrut; Expr branches])) ⇒
     eval_m1_rec_structural_sound fuel space
       (Expr [Sym 55; scrut; Expr branches]) out ∧
-    ∃value branch body.
-      MEM value (eval_m1_rec fuel space scrut) ∧
+    ∃branch pattern body bs.
       MEM branch branches ∧
-      branch_pair branch = SOME (value, body) ∧
-      MEM out (eval_m1_rec fuel space body)
+      branch_pair branch = SOME (pattern, body) ∧
+      match_atom pattern scrut [] = SOME bs ∧
+      MEM out (eval_m1_rec fuel space (apply_subst bs body))
 Proof
   rw[] \\
   drule eval_m1_rec_switch_branch_semantic_sound \\
@@ -3937,13 +4367,12 @@ Theorem eval_m1_rec_switch_nested_family_sound:
       (eval_m1_rec (SUC fuel) space (Expr [Sym 55; scrut; Expr branches])) ⇒
     eval_m1_rec_structural_sound fuel space
       (Expr [Sym 55; scrut; Expr branches]) out ∧
-    ∃value branch body.
-      MEM value (eval_m1_rec fuel space scrut) ∧
-      eval_m1_rec_family_sound fuel space scrut value ∧
+    ∃branch pattern body bs.
       MEM branch branches ∧
-      branch_pair branch = SOME (value, body) ∧
-      MEM out (eval_m1_rec fuel space body) ∧
-      eval_m1_rec_family_sound fuel space body out
+      branch_pair branch = SOME (pattern, body) ∧
+      match_atom pattern scrut [] = SOME bs ∧
+      MEM out (eval_m1_rec fuel space (apply_subst bs body)) ∧
+      eval_m1_rec_family_sound fuel space (apply_subst bs body) out
 Proof
   rw[] \\
   drule eval_m1_rec_switch_family_input_sound \\
@@ -3966,6 +4395,112 @@ Proof
   rw[] \\
   drule let_star_provenance_family_sound \\
   rw[]
+QED
+
+Definition eval_m1_rec_nested_family_atom_def:
+  eval_m1_rec_nested_family_atom atom ⇔
+    (∃nested v templ.
+       atom = Expr [Sym 21; nested; Var v; templ]) ∨
+    (∃term expected.
+       atom = Expr [Sym 57; term; expected]) ∨
+    (∃scrut branches.
+       atom = Expr [Sym 54; scrut; Expr branches]) ∨
+    (∃scrut branches.
+       atom = Expr [Sym 55; scrut; Expr branches]) ∨
+    (∃bindings body.
+       atom = Expr [Sym 56; Expr bindings; body])
+End
+
+Definition eval_m1_rec_nested_family_sound_def:
+  eval_m1_rec_nested_family_sound fuel space atom out ⇔
+    (∃nested v templ x.
+       atom = Expr [Sym 21; nested; Var v; templ] ∧
+       eval_m1_rec_control_sound fuel space atom out ∧
+       MEM x (eval_m1_rec fuel space nested) ∧
+       eval_m1_rec_family_sound fuel space nested x ∧
+       MEM out (eval_m1_rec fuel space (apply_subst [Bind v x] templ)) ∧
+       eval_m1_rec_family_sound fuel space
+         (apply_subst [Bind v x] templ) out) ∨
+    (∃term expected value.
+       atom = Expr [Sym 57; term; expected] ∧
+       eval_m1_rec_structural_sound fuel space atom out ∧
+       MEM value
+         (if hol_typed_add_bad space term
+          then [error_atom term (Sym 10)]
+          else eval_m1_rec fuel space term) ∧
+       (¬hol_typed_add_bad space term ⇒
+        eval_m1_rec_family_sound fuel space term value) ∧
+       ((hol_any_type_match expected
+           (hol_declared_or_default_type_lookup space value) ∧ out = value) ∨
+        (¬hol_any_type_match expected
+           (hol_declared_or_default_type_lookup space value) ∧
+         out = error_atom term (Sym 10)))) ∨
+    (∃scrut branches value branch pattern body bs.
+       atom = Expr [Sym 54; scrut; Expr branches] ∧
+       eval_m1_rec_structural_sound fuel space atom out ∧
+       MEM value (eval_m1_rec fuel space scrut) ∧
+       eval_m1_rec_family_sound fuel space scrut value ∧
+       MEM branch branches ∧
+       branch_pair branch = SOME (pattern, body) ∧
+       match_atom pattern value [] = SOME bs ∧
+       MEM out (eval_m1_rec fuel space (apply_subst bs body)) ∧
+       eval_m1_rec_family_sound fuel space (apply_subst bs body) out) ∨
+    (∃scrut branches branch pattern body bs.
+       atom = Expr [Sym 55; scrut; Expr branches] ∧
+       eval_m1_rec_structural_sound fuel space atom out ∧
+       MEM branch branches ∧
+       branch_pair branch = SOME (pattern, body) ∧
+       match_atom pattern scrut [] = SOME bs ∧
+       MEM out (eval_m1_rec fuel space (apply_subst bs body)) ∧
+       eval_m1_rec_family_sound fuel space (apply_subst bs body) out) ∨
+    (∃bindings body.
+       atom = Expr [Sym 56; Expr bindings; body] ∧
+       eval_m1_rec_structural_sound fuel space atom out ∧
+       let_star_family_provenance fuel space (SUC (LENGTH bindings))
+         bindings body atom out)
+End
+
+Theorem eval_m1_rec_nested_family_result_sound:
+  ∀fuel space atom out.
+    eval_m1_rec_nested_family_atom atom ∧
+    MEM out (eval_m1_rec (SUC fuel) space atom) ⇒
+    eval_m1_rec_nested_family_sound fuel space atom out
+Proof
+  rw[eval_m1_rec_nested_family_atom_def,
+     eval_m1_rec_nested_family_sound_def] >-
+    metis_tac[eval_m1_rec_chain_nested_family_sound] >-
+    metis_tac[eval_m1_rec_evalc_nested_family_sound] >-
+    metis_tac[eval_m1_rec_case_nested_family_sound] >-
+    metis_tac[eval_m1_rec_switch_nested_family_sound] >-
+    metis_tac[eval_m1_rec_let_star_nested_family_sound]
+QED
+
+Theorem eval_m1_rec_nested_family_to_recursive_result_sound:
+  ∀fuel space atom out.
+    eval_m1_rec_nested_family_atom atom ∧
+    MEM out (eval_m1_rec (SUC fuel) space atom) ⇒
+    eval_m1_rec_nested_family_sound fuel space atom out ∧
+    eval_m1_rec_family_sound (SUC fuel) space atom out
+Proof
+  rw[] \\
+  metis_tac[
+    eval_m1_rec_nested_family_result_sound,
+    eval_m1_rec_family_result_sound]
+QED
+
+Theorem eval_m1_rec_fuller_result_sound:
+  ∀fuel space atom out.
+    MEM out (eval_m1_rec fuel space atom) ⇒
+    eval_m1_rec_result_sound fuel space atom out ∧
+    (∀fuel0.
+       fuel = SUC fuel0 ∧ eval_m1_rec_nested_family_atom atom ⇒
+       eval_m1_rec_nested_family_sound fuel0 space atom out)
+Proof
+  Cases \\
+  rw[] >-
+    metis_tac[eval_m1_rec_result_sound] >-
+    metis_tac[eval_m1_rec_result_sound] \\
+  metis_tac[eval_m1_rec_nested_family_result_sound]
 QED
 
 Theorem eval_m1_rec_add_evaluates_args_example:
@@ -4356,6 +4891,65 @@ Theorem eval_m1_rec_chain_bad_var_example:
     eval_m1_rec (SUC fuel) []
       (Expr [Sym 21; nested; Sym 0; templ]) =
     [error_atom (Expr [Sym 21; nested; Sym 0; templ]) (Sym 10)]
+Proof
+  EVAL_TAC \\ rw[]
+QED
+
+Theorem eval_typed_fragment_add_good_example:
+  ∀fuel.
+    eval_typed_fragment (SUC fuel)
+      [Expr [Sym 34; Sym 24; Sym 36];
+       Expr [Sym 34; Sym 38; Expr [Sym 37; Sym 36; Sym 36; Sym 36]];
+       Expr [Sym 2; Expr [Sym 38; Var 0; Sym 24]; Var 0]]
+      (Expr [Sym 38; Sym 24; Sym 24]) =
+    [Sym 24]
+Proof
+  EVAL_TAC \\ rw[]
+QED
+
+Theorem eval_typed_fragment_add_bad_arg_example:
+  ∀fuel.
+    eval_typed_fragment (SUC fuel)
+      [Expr [Sym 34; Sym 24; Sym 36];
+       Expr [Sym 34; Sym 25; Expr [Sym 37; Sym 36; Sym 36]];
+       Expr [Sym 34; Sym 38; Expr [Sym 37; Sym 36; Sym 36; Sym 36]];
+       Expr [Sym 2; Expr [Sym 38; Var 0; Sym 24]; Var 0]]
+      (Expr [Sym 38; Sym 25; Sym 24]) =
+    [error_atom (Expr [Sym 38; Sym 25; Sym 24]) (Sym 10)]
+Proof
+  EVAL_TAC \\ rw[]
+QED
+
+Theorem eval_evalc_fragment_good_example:
+  ∀fuel.
+    eval_evalc_fragment (SUC fuel)
+      [Expr [Sym 34; Sym 24; Sym 36];
+       Expr [Sym 34; Sym 38; Expr [Sym 37; Sym 36; Sym 36; Sym 36]];
+       Expr [Sym 2; Expr [Sym 38; Var 0; Sym 24]; Var 0]]
+      (Expr [Sym 57; Expr [Sym 38; Sym 24; Sym 24]; Sym 36]) =
+    [Sym 24]
+Proof
+  EVAL_TAC \\ rw[]
+QED
+
+Theorem eval_evalc_fragment_bad_result_type_example:
+  ∀fuel.
+    eval_evalc_fragment (SUC fuel)
+      [Expr [Sym 34; Sym 24; Sym 36];
+       Expr [Sym 34; Sym 38; Expr [Sym 37; Sym 36; Sym 36; Sym 36]];
+       Expr [Sym 2; Expr [Sym 38; Var 0; Sym 24]; Var 0]]
+      (Expr [Sym 57; Expr [Sym 38; Sym 24; Sym 24]; Sym 42]) =
+    [error_atom (Expr [Sym 38; Sym 24; Sym 24]) (Sym 10)]
+Proof
+  EVAL_TAC \\ rw[]
+QED
+
+Theorem eval_vec_cons_fragment_good_example:
+  eval_vec_cons_fragment
+    [Expr [Sym 34; Sym 24; Sym 50];
+     Expr [Sym 34; Sym 52; Expr [Sym 49; Sym 50; Sym 53]]]
+    (Expr [Sym 58; Sym 24; Sym 52]) =
+  [Expr [Sym 49; Sym 50; Expr [Sym 51; Sym 53]]]
 Proof
   EVAL_TAC \\ rw[]
 QED

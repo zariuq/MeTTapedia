@@ -49,7 +49,11 @@ def matchInput (p : Pattern) : Option (Pattern × Pattern) :=
 def findInputPartner (n : Pattern) (elems : List Pattern) : List (Nat × Pattern) :=
   elems.zipIdx.filterMap fun (elem, i) =>
     match matchInput elem with
-    | some (n', body) => if n == n' then some (i, body) else none
+    | some (n', body) =>
+      if semanticNormalizeName n == semanticNormalizeName n' then
+        some (i, body)
+      else
+        none
     | none => none
 
 /-- Find all COMM reducts in a bag.
@@ -95,6 +99,23 @@ private theorem reduceElemsAux_spec {f : Pattern → List Pattern} {elems : List
   obtain ⟨_, hi_lt, helem_eq⟩ := hzi
   simp at hi_lt helem_eq
   exact ⟨hi_lt, helem_eq ▸ hr_mem⟩
+
+/-- Completeness companion to `reduceElemsAux_spec`: any reduct of `elems[idx]`
+    appears in the indexed auxiliary frontier. -/
+private theorem reduceElemsAux_mem {f : Pattern → List Pattern} {elems : List Pattern}
+    {idx : Nat} {elem' : Pattern}
+    (hidx : idx < elems.length)
+    (h : elem' ∈ f (elems[idx])) :
+    (idx, elem') ∈ reduceElemsAux f elems := by
+  unfold reduceElemsAux
+  rw [List.mem_flatten]
+  refine ⟨(f (elems[idx])).map (fun r => (idx, r)), ?_, ?_⟩
+  · rw [List.mem_map]
+    refine ⟨(elems[idx], idx), ?_, rfl⟩
+    rw [List.mk_mem_zipIdx_iff_getElem?]
+    simp [List.getElem?_eq_getElem hidx]
+  · rw [List.mem_map]
+    exact ⟨elem', h, rfl⟩
 
 /-- Compute all one-step reducts of a pattern. -/
 def reduceStep (p : Pattern) (fuel : Nat := 100) : List Pattern :=
@@ -160,29 +181,31 @@ private theorem matchInput_spec {p : Pattern} {n : Pattern} {body : Pattern}
 private theorem findInputPartner_spec {n : Pattern} {elems : List Pattern}
     {j : Nat} {body : Pattern}
     (h : (j, body) ∈ findInputPartner n elems) :
-    ∃ (hj : j < elems.length), elems[j] = .apply "PInput" [n, .lambda none body] := by
+    ∃ (n' : Pattern) (hj : j < elems.length),
+      elems[j] = .apply "PInput" [n', .lambda none body] ∧
+      semanticNormalizeName n = semanticNormalizeName n' := by
   unfold findInputPartner at h
   rw [List.mem_filterMap] at h
   obtain ⟨⟨elem, k⟩, hmem, hfilt⟩ := h
   have hzip := List.mem_zipIdx hmem
   obtain ⟨_, hk_len, helem_eq⟩ := hzip
   simp only at hfilt
-  split at hfilt
-  · next n' body' heq_mi =>
-    split at hfilt
-    · next hbeq =>
-      simp only [Option.some.injEq, Prod.mk.injEq] at hfilt
-      obtain ⟨hj_eq, hbody_eq⟩ := hfilt
-      subst hj_eq; subst hbody_eq
-      rw [beq_iff_eq] at hbeq
-      subst hbeq
+  cases hmi : matchInput elem with
+  | none =>
+      simp [hmi] at hfilt
+  | some pair =>
+      rcases pair with ⟨n', body'⟩
+      simp [hmi] at hfilt
+      obtain ⟨hbeq, hj_eq, hbody_eq⟩ := hfilt
+      subst hj_eq
+      subst hbody_eq
       have hk_lt : k < elems.length := by omega
-      have helem_eq' : elem = elems[k] := by simp at helem_eq; exact helem_eq
-      refine ⟨hk_lt, ?_⟩
+      have helem_eq' : elem = elems[k] := by
+        simp at helem_eq
+        exact helem_eq
+      refine ⟨n', hk_lt, ?_, hbeq⟩
       rw [← helem_eq']
-      exact matchInput_spec heq_mi
-    · simp at hfilt
-  · simp at hfilt
+      exact matchInput_spec hmi
 
 /-- Helper: extracting two elements at positions i,j from a list gives a permutation. -/
 private theorem perm_extract_two (elems : List Pattern) (i : Nat) (j : Nat)
@@ -193,19 +216,199 @@ private theorem perm_extract_two (elems : List Pattern) (i : Nat) (j : Nat)
   have h2 := (List.getElem_cons_eraseIdx_perm hj).symm
   exact h1.trans (h2.cons _)
 
+private theorem struct_output_cong_channel {n n' q : Pattern}
+    (hn : StructuralCongruence n n') :
+    StructuralCongruence (.apply "POutput" [n, q]) (.apply "POutput" [n', q]) := by
+  refine StructuralCongruence.apply_cong "POutput" [n, q] [n', q] rfl ?_
+  intro i h₁ h₂
+  have hi_lt : i < 2 := by simpa using h₁
+  have hi : i = 0 ∨ i = 1 := by omega
+  cases hi with
+  | inl hi0 =>
+      subst hi0
+      simpa using hn
+  | inr hi1 =>
+      subst hi1
+      simpa using StructuralCongruence.refl q
+
+private theorem struct_input_cong_channel {n n' body : Pattern}
+    (hn : StructuralCongruence n n') :
+    StructuralCongruence
+      (.apply "PInput" [n, .lambda none body])
+      (.apply "PInput" [n', .lambda none body]) := by
+  refine StructuralCongruence.apply_cong "PInput"
+    [n, .lambda none body] [n', .lambda none body] rfl ?_
+  intro i h₁ h₂
+  have hi_lt : i < 2 := by simpa using h₁
+  have hi : i = 0 ∨ i = 1 := by omega
+  cases hi with
+  | inl hi0 =>
+      subst hi0
+      simpa using hn
+  | inr hi1 =>
+      subst hi1
+      simpa using StructuralCongruence.refl (.lambda none body)
+
+private theorem par_cong_cons_cons_tail
+    {a₁ a₂ b₁ b₂ : Pattern} {rest : List Pattern}
+    (ha : StructuralCongruence a₁ a₂)
+    (hb : StructuralCongruence b₁ b₂) :
+    StructuralCongruence
+      (.collection .hashBag ([a₁, b₁] ++ rest) none)
+      (.collection .hashBag ([a₂, b₂] ++ rest) none) := by
+  refine StructuralCongruence.par_cong _ _ rfl ?_
+  intro i h₁ h₂
+  cases i with
+  | zero =>
+      simpa using ha
+  | succ i =>
+      cases i with
+      | zero =>
+          simpa using hb
+      | succ i =>
+          have h₁' : i < rest.length := by simpa using h₁
+          have h₂' : i < rest.length := by simpa using h₂
+          simpa using StructuralCongruence.refl (rest.get ⟨i, h₁'⟩)
+
+private theorem struct_cong_par_head
+    {p p' : Pattern} {rest : List Pattern}
+    (hp : StructuralCongruence p p') :
+    StructuralCongruence
+      (.collection .hashBag (p :: rest) none)
+      (.collection .hashBag (p' :: rest) none) := by
+  refine StructuralCongruence.par_cong _ _ rfl ?_
+  intro i h₁ h₂
+  cases i with
+  | zero =>
+      simpa using hp
+  | succ i =>
+      have h₁' : i < rest.length := by simpa using h₁
+      have h₂' : i < rest.length := by simpa using h₂
+      simpa using StructuralCongruence.refl (rest.get ⟨i, h₁'⟩)
+
+private theorem struct_cong_par_any
+    {before after : List Pattern} {p p' : Pattern}
+    (hp : StructuralCongruence p p') :
+    StructuralCongruence
+      (.collection .hashBag (before ++ [p] ++ after) none)
+      (.collection .hashBag (before ++ [p'] ++ after) none) := by
+  have hpermLeft :
+      (before ++ [p] ++ after).Perm (p :: (before ++ after)) := by
+    simp
+  have hpermRight :
+      (before ++ [p'] ++ after).Perm (p' :: (before ++ after)) := by
+    simp
+  exact StructuralCongruence.trans _ _ _
+    (StructuralCongruence.par_perm _ _ hpermLeft)
+    (StructuralCongruence.trans _ _ _
+      (struct_cong_par_head hp)
+      (StructuralCongruence.symm _ _ (StructuralCongruence.par_perm _ _ hpermRight)))
+
+private theorem struct_cong_set_head
+    {p p' : Pattern} {rest : List Pattern}
+    (hp : StructuralCongruence p p') :
+    StructuralCongruence
+      (.collection .hashSet (p :: rest) none)
+      (.collection .hashSet (p' :: rest) none) := by
+  refine StructuralCongruence.set_cong _ _ rfl ?_
+  intro i h₁ h₂
+  cases i with
+  | zero =>
+      simpa using hp
+  | succ i =>
+      have h₁' : i < rest.length := by simpa using h₁
+      have h₂' : i < rest.length := by simpa using h₂
+      simpa using StructuralCongruence.refl (rest.get ⟨i, h₁'⟩)
+
+private theorem struct_cong_set_any
+    {before after : List Pattern} {p p' : Pattern}
+    (hp : StructuralCongruence p p') :
+    StructuralCongruence
+      (.collection .hashSet (before ++ [p] ++ after) none)
+      (.collection .hashSet (before ++ [p'] ++ after) none) := by
+  have hpermLeft :
+      (before ++ [p] ++ after).Perm (p :: (before ++ after)) := by
+    simp
+  have hpermRight :
+      (before ++ [p'] ++ after).Perm (p' :: (before ++ after)) := by
+    simp
+  exact StructuralCongruence.trans _ _ _
+    (StructuralCongruence.set_perm _ _ hpermLeft)
+    (StructuralCongruence.trans _ _ _
+      (struct_cong_set_head hp)
+      (StructuralCongruence.symm _ _ (StructuralCongruence.set_perm _ _ hpermRight)))
+
+private theorem reduceStep_mem_par_any
+    {before after : List Pattern} {p q : Pattern} {fuel : Nat}
+    (h : q ∈ reduceStep p fuel) :
+    .collection .hashBag (before ++ [q] ++ after) none ∈
+      reduceStep (.collection .hashBag (before ++ [p] ++ after) none) (fuel + 1) := by
+  have hidx : before.length < (before ++ [p] ++ after).length := by
+    simp
+  have haux :
+      (before.length, q) ∈
+        reduceElemsAux (reduceStep · fuel) (before ++ [p] ++ after) :=
+    reduceElemsAux_mem hidx (by simpa using h)
+  have hset :
+      (before ++ [p] ++ after).set before.length q = before ++ [q] ++ after := by
+    simp [List.set_eq_take_append_cons_drop]
+  simp only [reduceStep, List.mem_append]
+  right
+  rw [List.mem_map]
+  exact ⟨(before.length, q), haux, by simp⟩
+
+private theorem reduceStep_mem_par_set_any
+    {before after : List Pattern} {p q : Pattern} {fuel : Nat}
+    (h : q ∈ reduceStep p fuel) :
+    .collection .hashSet (before ++ [q] ++ after) none ∈
+      reduceStep (.collection .hashSet (before ++ [p] ++ after) none) (fuel + 1) := by
+  have hidx : before.length < (before ++ [p] ++ after).length := by
+    simp
+  have haux :
+      (before.length, q) ∈
+        reduceElemsAux (reduceStep · fuel) (before ++ [p] ++ after) :=
+    reduceElemsAux_mem hidx (by simpa using h)
+  have hset :
+      (before ++ [p] ++ after).set before.length q = before ++ [q] ++ after := by
+    simp [List.set_eq_take_append_cons_drop]
+  simp only [reduceStep]
+  rw [List.mem_map]
+  exact ⟨(before.length, q), haux, by simp⟩
+
 open StructuralCongruence in
 /-- COMM soundness at specific positions -/
 private theorem comm_at_positions (elems : List Pattern) (i : Nat) (j : Nat)
-    (n q : Pattern) (body : Pattern)
+    (nOut q nIn : Pattern) (body : Pattern)
     (hi : i < elems.length)
     (hj : j < (elems.eraseIdx i).length)
-    (hout : elems[i] = .apply "POutput" [n, q])
-    (hinp : (elems.eraseIdx i)[j] = .apply "PInput" [n, .lambda none body]) :
+    (hout : elems[i] = .apply "POutput" [nOut, q])
+    (hinp : (elems.eraseIdx i)[j] = .apply "PInput" [nIn, .lambda none body])
+    (hchan : semanticNormalizeName nOut = semanticNormalizeName nIn) :
     Nonempty (Reduces (.collection .hashBag elems none)
       (.collection .hashBag ([semanticCommSubst body q] ++ (elems.eraseIdx i).eraseIdx j) none)) := by
   have hperm := perm_extract_two elems i j hi hj
   rw [hout, hinp] at hperm
-  have hsc1 := StructuralCongruence.par_perm elems _ hperm
+  let n := semanticNormalizeName nOut
+  have hOutNorm :
+      StructuralCongruence (.apply "POutput" [nOut, q]) (.apply "POutput" [n, q]) :=
+    by
+      simpa [n] using
+        struct_output_cong_channel
+          (StructuralCongruence.symm _ _ (semanticNormalizeName_sound_struct (n := nOut)))
+  have hInNorm :
+      StructuralCongruence (.apply "PInput" [nIn, .lambda none body])
+        (.apply "PInput" [n, .lambda none body]) := by
+    simpa [n, hchan] using
+      struct_input_cong_channel
+        (StructuralCongruence.symm _ _ (semanticNormalizeName_sound_struct (n := nIn)))
+  have hsc1 : StructuralCongruence
+      (.collection .hashBag elems none)
+      (.collection .hashBag
+        ([.apply "POutput" [n, q], .apply "PInput" [n, .lambda none body]]
+          ++ (elems.eraseIdx i).eraseIdx j) none) := by
+    exact StructuralCongruence.trans _ _ _
+      (StructuralCongruence.par_perm elems _ hperm)
+      (par_cong_cons_cons_tail hOutNorm hInNorm)
   have hcomm := @Reduces.comm n q body ((elems.eraseIdx i).eraseIdx j)
   exact ⟨Reduces.equiv hsc1 hcomm (StructuralCongruence.refl _)⟩
 
@@ -213,9 +416,10 @@ private theorem comm_at_positions (elems : List Pattern) (i : Nat) (j : Nat)
 private theorem findAllComm_spec {elems : List Pattern} {r : Pattern}
     (hr : r ∈ findAllComm elems) :
     ∃ (i : Nat) (hi : i < elems.length) (j : Nat) (hj : j < (elems.eraseIdx i).length)
-      (n q : Pattern) (body : Pattern),
-      elems[i] = .apply "POutput" [n, q] ∧
-      (elems.eraseIdx i)[j] = .apply "PInput" [n, .lambda none body] ∧
+      (nOut q nIn : Pattern) (body : Pattern),
+      elems[i] = .apply "POutput" [nOut, q] ∧
+      (elems.eraseIdx i)[j] = .apply "PInput" [nIn, .lambda none body] ∧
+      semanticNormalizeName nOut = semanticNormalizeName nIn ∧
       r = .collection .hashBag ([semanticCommSubst body q] ++ (elems.eraseIdx i).eraseIdx j) none := by
   unfold findAllComm at hr
   rw [List.mem_flatten] at hr
@@ -231,17 +435,16 @@ private theorem findAllComm_spec {elems : List Pattern} {r : Pattern}
   · next n q hmatch =>
     rw [List.mem_map] at hr_in_sl
     obtain ⟨⟨j, body⟩, hpartner, rfl⟩ := hr_in_sl
-    refine ⟨i, hi_lt, j, ?_, n, q, body, ?_, ?_, rfl⟩
-    · exact (findInputPartner_spec hpartner).choose
+    obtain ⟨nIn, hj, hinp, hnorm⟩ := findInputPartner_spec hpartner
+    refine ⟨i, hi_lt, j, hj, n, q, nIn, body, ?_, hinp, hnorm, rfl⟩
     · rw [helem_eq] at hmatch; exact matchOutput_spec hmatch
-    · exact (findInputPartner_spec hpartner).choose_spec
 
 /-- Soundness of `findAllComm` -/
 private theorem findAllComm_sound (elems : List Pattern)
     (r : Pattern) (hr : r ∈ findAllComm elems) :
     Nonempty (Reduces (.collection .hashBag elems none) r) := by
-  obtain ⟨i, hi, j, hj, n, q, body, hout, hinp, rfl⟩ := findAllComm_spec hr
-  exact comm_at_positions elems i j n q body hi hj hout hinp
+  obtain ⟨i, hi, j, hj, nOut, q, nIn, body, hout, hinp, hchan, rfl⟩ := findAllComm_spec hr
+  exact comm_at_positions elems i j nOut q nIn body hi hj hout hinp hchan
 
 /-- Soundness of `reduceStep`: every reduct is a valid `Reduces`. -/
 theorem reduceStep_sound (p q : Pattern) (fuel : Nat)
@@ -289,6 +492,116 @@ theorem reduceStep_sound (p q : Pattern) (fuel : Nat)
   | n + 1, .apply c args =>
     simp only [reduceStep] at h
     simp at h
+
+/-- Completeness for a top-level COMM redex: if the send and receive channels
+    agree after semantic name normalization, the executable one-step frontier
+    contains the expected COMM residual. This matches the live C runtime's
+    normalized-name scheduler behavior. -/
+theorem comm_head_mem_reduceStep
+    {nOut q nIn body : Pattern} {rest : List Pattern}
+    (hchan : semanticNormalizeName nOut = semanticNormalizeName nIn) :
+    .collection .hashBag ([semanticCommSubst body q] ++ rest) none ∈
+      reduceStep
+        (.collection .hashBag
+          ([.apply "POutput" [nOut, q],
+            .apply "PInput" [nIn, .lambda none body]] ++ rest) none)
+        1 := by
+  simp [reduceStep, findAllComm, findInputPartner, matchOutput, matchInput, hchan]
+
+/-- Structural fuel bound for quotient-exact one-step completeness.
+
+    This is the honest amount of executable lookahead needed for a specific
+    semantic one-step derivation: COMM needs one step, and every descent under
+    bag/set structure adds one layer of recursive fuel. Structural-congruence
+    shells themselves do not increase the bound. -/
+def reduceStepCompletenessFuel {p q : Pattern} (h : p ⇝ q) : Nat :=
+  match h with
+  | .comm => 1
+  | .equiv _ hmid _ => reduceStepCompletenessFuel hmid
+  | .par hmid => reduceStepCompletenessFuel hmid + 1
+  | .par_any hmid => reduceStepCompletenessFuel hmid + 1
+  | .par_set hmid => reduceStepCompletenessFuel hmid + 1
+  | .par_set_any hmid => reduceStepCompletenessFuel hmid + 1
+
+/-- Quotient-exact completeness with an explicit proof-structural fuel bound. -/
+theorem reduceStep_complete_up_to_struct_bounded
+    {p q : Pattern} (h : p ⇝ q) :
+    ∃ p' q',
+      StructuralCongruence p' p ∧
+      q' ∈ reduceStep p' (reduceStepCompletenessFuel h) ∧
+      StructuralCongruence q' q := by
+  induction h with
+  | @comm n payload body rest =>
+      refine ⟨
+        .collection .hashBag
+          ([.apply "POutput" [n, payload],
+            .apply "PInput" [n, .lambda none body]] ++ rest) none,
+        .collection .hashBag ([semanticCommSubst body payload] ++ rest) none,
+        StructuralCongruence.refl _,
+        ?_,
+        StructuralCongruence.refl _⟩
+      simpa [reduceStepCompletenessFuel] using
+        comm_head_mem_reduceStep
+          (nOut := n) (q := payload) (nIn := n) (body := body) (rest := rest) rfl
+  | @equiv p pMid q qMid hsrc hmid htgt ih =>
+      rcases ih with ⟨pRep, qRep, hpRep, hmem, hqRep⟩
+      refine ⟨pRep, qRep, ?_, ?_, ?_⟩
+      · exact StructuralCongruence.trans _ _ _ hpRep (StructuralCongruence.symm _ _ hsrc)
+      · simpa [reduceStepCompletenessFuel] using hmem
+      · exact StructuralCongruence.trans _ _ _ hqRep htgt
+  | @par p q rest hstep ih =>
+      rcases ih with ⟨pRep, qRep, hpRep, hmem, hqRep⟩
+      refine ⟨
+        .collection .hashBag (pRep :: rest) none,
+        .collection .hashBag (qRep :: rest) none,
+        struct_cong_par_head hpRep,
+        ?_,
+        struct_cong_par_head hqRep⟩
+      simpa [reduceStepCompletenessFuel] using
+        reduceStep_mem_par_any (before := []) (after := rest) hmem
+  | @par_any p q before after hstep ih =>
+      rcases ih with ⟨pRep, qRep, hpRep, hmem, hqRep⟩
+      refine ⟨
+        .collection .hashBag (before ++ [pRep] ++ after) none,
+        .collection .hashBag (before ++ [qRep] ++ after) none,
+        struct_cong_par_any hpRep,
+        ?_,
+        struct_cong_par_any hqRep⟩
+      simpa [reduceStepCompletenessFuel] using
+        reduceStep_mem_par_any (before := before) (after := after) hmem
+  | @par_set p q rest hstep ih =>
+      rcases ih with ⟨pRep, qRep, hpRep, hmem, hqRep⟩
+      refine ⟨
+        .collection .hashSet (pRep :: rest) none,
+        .collection .hashSet (qRep :: rest) none,
+        struct_cong_set_head hpRep,
+        ?_,
+        struct_cong_set_head hqRep⟩
+      simpa [reduceStepCompletenessFuel] using
+        reduceStep_mem_par_set_any (before := []) (after := rest) hmem
+  | @par_set_any p q before after hstep ih =>
+      rcases ih with ⟨pRep, qRep, hpRep, hmem, hqRep⟩
+      refine ⟨
+        .collection .hashSet (before ++ [pRep] ++ after) none,
+        .collection .hashSet (before ++ [qRep] ++ after) none,
+        struct_cong_set_any hpRep,
+        ?_,
+        struct_cong_set_any hqRep⟩
+      simpa [reduceStepCompletenessFuel] using
+        reduceStep_mem_par_set_any (before := before) (after := after) hmem
+
+/-- Quotient-exact completeness for executable one-step reduction: every
+    semantic one-step reduct is represented by an executable one-step reduct
+    of some structurally congruent source representative, with a structurally
+    congruent target representative. -/
+theorem reduceStep_complete_up_to_struct
+    {p q : Pattern} (h : p ⇝ q) :
+    ∃ p' fuel q',
+      StructuralCongruence p' p ∧
+      q' ∈ reduceStep p' fuel ∧
+      StructuralCongruence q' q := by
+  rcases reduceStep_complete_up_to_struct_bounded h with ⟨p', q', hsrc, hmem, htgt⟩
+  exact ⟨p', reduceStepCompletenessFuel h, q', hsrc, hmem, htgt⟩
 
 /-! ## Pretty Printing -/
 

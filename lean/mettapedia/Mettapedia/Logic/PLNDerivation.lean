@@ -204,6 +204,7 @@ that the PLN deduction formula follows from probability axioms.
 
 variable {Ω : Type*} [MeasurableSpace Ω]
 
+omit [MeasurableSpace Ω] in
 /-- Binary partition of a set: A = (A ∩ B) ∪ (A ∩ Bᶜ) -/
 lemma set_inter_union_compl (A B : Set Ω) : A = (A ∩ B) ∪ (A ∩ Bᶜ) := by
   ext x
@@ -217,6 +218,7 @@ lemma set_inter_union_compl (A B : Set Ω) : A = (A ∩ B) ∪ (A ∩ Bᶜ) := b
     | inl h => exact h.1
     | inr h => exact h.1
 
+omit [MeasurableSpace Ω] in
 /-- The two parts of the binary partition are disjoint. -/
 lemma disjoint_inter_compl (A B : Set Ω) : Disjoint (A ∩ B) (A ∩ Bᶜ) := by
   rw [Set.disjoint_iff]
