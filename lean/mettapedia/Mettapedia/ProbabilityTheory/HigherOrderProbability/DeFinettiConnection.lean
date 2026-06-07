@@ -1,5 +1,6 @@
 import Mettapedia.ProbabilityTheory.HigherOrderProbability.Basic
 import Mettapedia.Logic.DeFinetti
+import Mettapedia.ProbabilityTheory.FiniteMeasureSupport
 import Mathlib.MeasureTheory.Integral.Lebesgue.Map
 import Mathlib.MeasureTheory.Integral.Bochner.Basic
 import Mathlib.MeasureTheory.Measure.GiryMonad
@@ -31,6 +32,7 @@ namespace Mettapedia.ProbabilityTheory.HigherOrderProbability
 open scoped BigOperators ENNReal ProbabilityTheory
 
 open MeasureTheory ProbabilityTheory
+open Mettapedia.ProbabilityTheory.FiniteMeasureSupport
 
 namespace DeFinettiConnection
 
@@ -483,6 +485,65 @@ theorem flatten_apply_singleton (M : BernoulliMixture) (n : ℕ) (xs : Fin n →
     _ = ∫⁻ t in Set.Icc (0 : ℝ) 1, ENNReal.ofReal (bernoulliProductPMF t xs) ∂M.mixingMeasure := hsub
     _ = ENNReal.ofReal (∫ t in Set.Icc (0 : ℝ) 1, bernoulliProductPMF t xs ∂M.mixingMeasure) := hconv
     _ = ENNReal.ofReal (M.prob xs) := by simp [BernoulliMixture.prob]
+
+/-! ## Finite-prefix probability laws -/
+
+/-- Bernoulli-mixture finite-prefix probabilities are nonnegative.  The proof is
+the analytic integral fact: on the support interval `[0,1]`, every Bernoulli
+product factor is nonnegative. -/
+theorem bernoulliMixture_prob_nonneg
+    (M : BernoulliMixture) (n : ℕ) (xs : Fin n → Bool) :
+    0 ≤ M.prob xs := by
+  unfold BernoulliMixture.prob
+  have hnonneg :
+      (0 : ℝ → ℝ) ≤ᵐ[(M.mixingMeasure.restrict (Set.Icc (0 : ℝ) 1))]
+        (fun t : ℝ => bernoulliProductPMF t xs) := by
+    refine (MeasureTheory.ae_restrict_of_forall_mem measurableSet_Icc ?_)
+    intro t ht
+    have ht0 : 0 ≤ t := ht.1
+    have ht1 : t ≤ 1 := ht.2
+    have h1t : 0 ≤ 1 - t := sub_nonneg.2 ht1
+    have : 0 ≤ t ^ (countTrue xs) * (1 - t) ^ (countFalse xs) := by
+      exact mul_nonneg (pow_nonneg ht0 _) (pow_nonneg h1t _)
+    simpa [bernoulliProductPMF_eq_power] using this
+  exact integral_nonneg_of_ae hnonneg
+
+/-- Bernoulli-mixture finite-prefix probabilities sum to one.  This packages
+the finite product normalization from `pmf`/`sum_weight_eq_one` through
+Kyburg flattening: the flattened measure is a probability measure, and finite
+singletons partition the prefix space. -/
+theorem bernoulliMixture_prob_total
+    (M : BernoulliMixture) (n : ℕ) :
+    ∑ xs : (Fin n → Bool), M.prob xs = 1 := by
+  classical
+  let ν : Measure (Fin n → Bool) := ParametrizedDistribution.flatten (pd M n)
+  have hνuniv : ν Set.univ = 1 := by
+    haveI : IsProbabilityMeasure ν := by
+      dsimp [ν]
+      infer_instance
+    simp
+  have hsumMass :
+      ν Set.univ = ∑ xs : (Fin n → Bool), ν ({xs} : Set (Fin n → Bool)) :=
+    finiteMeasure_univ_eq_sum_singletons ν
+  have hsumENN : ∑ xs : (Fin n → Bool), ENNReal.ofReal (M.prob xs) = 1 := by
+    calc
+      ∑ xs : (Fin n → Bool), ENNReal.ofReal (M.prob xs)
+          = ∑ xs : (Fin n → Bool), ν ({xs} : Set (Fin n → Bool)) := by
+            apply Finset.sum_congr rfl
+            intro xs _hxs
+            exact (flatten_apply_singleton M n xs).symm
+      _ = ν Set.univ := hsumMass.symm
+      _ = 1 := hνuniv
+  have hOfRealSum :
+      ENNReal.ofReal (∑ xs : (Fin n → Bool), M.prob xs) = 1 := by
+    rw [ENNReal.ofReal_sum_of_nonneg]
+    · exact hsumENN
+    · intro xs _hxs
+      exact bernoulliMixture_prob_nonneg M n xs
+  have hsumNonneg : 0 ≤ ∑ xs : (Fin n → Bool), M.prob xs := by
+    exact Finset.sum_nonneg fun xs _hxs => bernoulliMixture_prob_nonneg M n xs
+  have hReal := congrArg ENNReal.toReal hOfRealSum
+  simpa [ENNReal.toReal_ofReal hsumNonneg] using hReal
 
 end DeFinettiConnection
 

@@ -8,6 +8,7 @@ import Mettapedia.Logic.PLNWorldModelITV
 import Mettapedia.Logic.WalleyMultinomialIDMExamples
 import Mettapedia.ProbabilityTheory.ImpreciseProbability.ProjectiveCredal
 import Mettapedia.Logic.MarkovLogicInfiniteCredalBridge
+import Mettapedia.Logic.MarkovLogicPLNTruthBridge
 import Mettapedia.Logic.DeFinettiProjectiveCredalBridge
 
 /-!
@@ -4929,6 +4930,7 @@ structure TruthTheoryPackage where
   naturalExtension : NaturalExtensionProfile
   projectiveCredal : Mettapedia.ProbabilityTheory.ImpreciseProbability.ProjectiveCredal.ProjectiveCredalProfile
   infiniteMLNCredalBridge : Mettapedia.Logic.MarkovLogicInfiniteCredalBridge.InfiniteMLNCredalBridgeProfile
+  dlrQueryOutcomePLNBridge : Mettapedia.Logic.MarkovLogicPLNTruthBridge.DLRQueryOutcomePLNBridgeProfile
   projectiveDeFinettiCredalBridge : Mettapedia.Logic.DeFinettiProjectiveCredalBridge.ProjectiveDeFinettiCredalBridgeProfile
   coreFourCompletion : CoreFourCompletionProfile
   crispnessCollapse : CrispnessCollapseProfile
@@ -4962,6 +4964,8 @@ noncomputable def plnTruthTheoryPackage : TruthTheoryPackage where
     Mettapedia.ProbabilityTheory.ImpreciseProbability.ProjectiveCredal.projectiveCredalProfile
   infiniteMLNCredalBridge :=
     Mettapedia.Logic.MarkovLogicInfiniteCredalBridge.infiniteMLNCredalBridgeProfile
+  dlrQueryOutcomePLNBridge :=
+    Mettapedia.Logic.MarkovLogicPLNTruthBridge.dlrQueryOutcomePLNBridgeProfile
   projectiveDeFinettiCredalBridge :=
     Mettapedia.Logic.DeFinettiProjectiveCredalBridge.projectiveDeFinettiCredalBridgeProfile
   coreFourCompletion := coreFourCompletionProfile

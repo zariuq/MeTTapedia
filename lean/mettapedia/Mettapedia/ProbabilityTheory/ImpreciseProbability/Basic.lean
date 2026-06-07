@@ -1,5 +1,6 @@
 import Mathlib.Analysis.Convex.Cone.Extension
 import Mathlib.Data.Real.Pointwise
+import Mathlib.Data.Fintype.BigOperators
 import Mathlib.Algebra.Order.Archimedean.Basic
 import Mathlib.Topology.Order.Basic
 
@@ -202,6 +203,42 @@ lemma conjugate_subadditive (P : LowerPrevision Ω) (X Y : Gamble Ω) :
   have h := P.superadd (-Y) (-X)
   linarith
 
+/-- A lower prevision is always pointwise below its conjugate upper prevision. -/
+lemma le_conjugate (P : LowerPrevision Ω) (X : Gamble Ω) :
+    P X ≤ P.conjugate X := by
+  have h := P.superadd X (-X)
+  have hzero : X + -X = (0 : Gamble Ω) := by
+    simp
+  rw [hzero, P.map_zero] at h
+  simp only [conjugate]
+  linarith
+
+/-- The conjugate upper prevision is positively homogeneous for nonnegative
+scalars. -/
+lemma conjugate_pos_homog_of_nonneg (P : LowerPrevision Ω)
+    {r : ℝ} (hr : 0 ≤ r) (X : Gamble Ω) :
+    P.conjugate (r • X) = r * P.conjugate X := by
+  dsimp [conjugate]
+  have hneg : -(r • X) = r • (-X : Gamble Ω) := by
+    funext ω
+    change -(r * X ω) = r * (-X ω)
+    ring
+  rw [hneg, P.pos_homog r (-X) hr]
+  ring
+
+/-- For nonpositive scalars, the conjugate of a scaled gamble is governed by
+the lower prevision of the unscaled gamble. -/
+lemma conjugate_smul_of_nonpos (P : LowerPrevision Ω)
+    {r : ℝ} (hr : r ≤ 0) (X : Gamble Ω) :
+    P.conjugate (r • X) = r * P X := by
+  dsimp [conjugate]
+  have hneg : -(r • X) = (-r) • X := by
+    funext ω
+    change -(r * X ω) = (-r) * X ω
+    ring
+  rw [hneg, P.pos_homog (-r) X (by linarith)]
+  ring
+
 /-- Double conjugate returns to original. -/
 lemma conjugate_conjugate (P : LowerPrevision Ω) (X : Gamble Ω) :
     -(-P (-(-X))) = P X := by
@@ -247,6 +284,13 @@ def avoidsSureLoss (P : LowerPrevision Ω) : Prop :=
 def avoidsWeakSureLoss (P : LowerPrevision Ω) : Prop :=
   ∀ (X : Gamble Ω), (∀ ω, X ω ≥ 0) → P X ≥ 0
 
+/-- Uniform strict no-sure-loss.  On infinite spaces, pointwise strict
+positivity need not provide a positive lower bound; this property records the
+regularity that *uniformly* positive gambles receive strictly positive
+prevision. -/
+def avoidsUniformSureLoss (P : LowerPrevision Ω) : Prop :=
+  ∀ (X : Gamble Ω), (∃ ε : ℝ, 0 < ε ∧ ∀ ω, ε ≤ X ω) → P X > 0
+
 /-!
 ## Counterexample: A1–A3 do not imply strict positivity
 
@@ -282,15 +326,110 @@ def isCoherent (P : LowerPrevision Ω) : Prop :=
   ∀ (X Y : Gamble Ω) (a b : ℝ), 0 < a → 0 < b →
     P (a • X + b • Y) ≥ a * P X + b * P Y
 
+/-- The combination half of `isCoherent` is already forced by the
+`LowerPrevision` structure: positive homogeneity plus superadditivity gives the
+finite positive-linear lower bound. -/
+lemma coherent_combination (P : LowerPrevision Ω)
+    (X Y : Gamble Ω) (a b : ℝ) (ha : 0 < a) (hb : 0 < b) :
+    P (a • X + b • Y) ≥ a * P X + b * P Y := by
+  have hsuper := P.superadd (a • X) (b • Y)
+  rw [P.pos_homog a X (le_of_lt ha),
+    P.pos_homog b Y (le_of_lt hb)] at hsuper
+  exact hsuper
+
+/-- For this bundled Walley lower-prevision structure, coherence reduces to
+strict avoiding-sure-loss: the superlinear algebraic axioms are already fields of
+`LowerPrevision`. -/
+lemma isCoherent_iff_avoidsSureLoss (P : LowerPrevision Ω) :
+    P.isCoherent ↔ P.avoidsSureLoss := by
+  constructor
+  · exact fun h => h.1
+  · intro hAvoid
+    exact ⟨hAvoid, P.coherent_combination⟩
+
+/-- A lower prevision satisfying strict avoiding sure loss is coherent in this
+bundled Walley sense. -/
+lemma isCoherent_of_avoidsSureLoss (P : LowerPrevision Ω)
+    (hAvoid : P.avoidsSureLoss) : P.isCoherent :=
+  (P.isCoherent_iff_avoidsSureLoss).2 hAvoid
+
 /-- All coherent lower previsions avoid weak sure loss.
     This follows directly from the A1 axiom (lower bound property). -/
 lemma avoidsWeakSureLoss_of_lower_bound (P : LowerPrevision Ω) : P.avoidsWeakSureLoss :=
   fun _X hX => P.nonneg_of_nonneg hX
 
+/-- Walley's lower-bound axiom gives the uniform strict version of avoiding
+sure loss.  This is the infinite-domain safe replacement for claiming
+pointwise strict positivity always has positive lower expectation. -/
+lemma avoidsUniformSureLoss_of_lower_bound (P : LowerPrevision Ω) :
+    P.avoidsUniformSureLoss := by
+  intro X hX
+  rcases hX with ⟨ε, hεpos, hε⟩
+  exact lt_of_lt_of_le hεpos (P.lower_bound X ε hε)
+
+/-- On a finite nonempty state space, every pointwise-strictly-positive gamble
+has a uniform positive lower bound.  This is the finite bridge from Walley's
+uniform no-sure-loss condition to pointwise strict avoiding-sure-loss. -/
+theorem finite_strictlyPositive_uniformLowerBound
+    {Ω : Type*} [Fintype Ω] [Nonempty Ω]
+    (X : Gamble Ω) (hX : ∀ ω, 0 < X ω) :
+    ∃ ε : ℝ, 0 < ε ∧ ∀ ω, ε ≤ X ω := by
+  classical
+  let values : Finset ℝ := Finset.univ.image X
+  obtain ⟨ω₀⟩ := (inferInstance : Nonempty Ω)
+  have hvalues : values.Nonempty := by
+    refine ⟨X ω₀, ?_⟩
+    exact Finset.mem_image.mpr ⟨ω₀, Finset.mem_univ ω₀, rfl⟩
+  let ε : ℝ := values.min' hvalues
+  refine ⟨ε, ?_, ?_⟩
+  · have hεmem : ε ∈ values := Finset.min'_mem values hvalues
+    rcases Finset.mem_image.mp hεmem with ⟨ω, _hω, hω⟩
+    simpa [hω] using hX ω
+  · intro ω
+    exact Finset.min'_le values (X ω)
+      (Finset.mem_image.mpr ⟨ω, Finset.mem_univ ω, rfl⟩)
+
+/-- Finite nonempty lower previsions avoid Walley's strict sure loss.  The
+finiteness hypothesis is essential: strict pointwise positivity becomes a
+uniform positive lower bound. -/
+theorem avoidsSureLoss_of_finite
+    {Ω : Type*} [Fintype Ω] [Nonempty Ω]
+    (P : LowerPrevision Ω) : P.avoidsSureLoss := by
+  intro X hX
+  rcases finite_strictlyPositive_uniformLowerBound X hX with ⟨ε, hεpos, hε⟩
+  exact lt_of_lt_of_le hεpos (P.lower_bound X ε hε)
+
+/-- On finite nonempty state spaces, pointwise strict avoiding-sure-loss and
+uniform avoiding-sure-loss coincide.  This is the finite/infinite boundary:
+only the reverse implication needs finiteness. -/
+theorem avoidsSureLoss_iff_avoidsUniformSureLoss_of_finite
+    {Ω : Type*} [Fintype Ω] [Nonempty Ω]
+    (P : LowerPrevision Ω) :
+    P.avoidsSureLoss ↔ P.avoidsUniformSureLoss := by
+  constructor
+  · intro hAvoid X hUniform
+    rcases hUniform with ⟨ε, hεpos, hε⟩
+    exact hAvoid X (fun ω => lt_of_lt_of_le hεpos (hε ω))
+  · intro hUniform X hX
+    exact hUniform X (finite_strictlyPositive_uniformLowerBound X hX)
+
+/-- Every finite nonempty bundled lower prevision is coherent in this Walley
+interface: the algebraic coherence laws are structure fields, and finite
+strict positivity supplies strict avoiding sure loss. -/
+theorem isCoherent_of_finite
+    {Ω : Type*} [Fintype Ω] [Nonempty Ω]
+    (P : LowerPrevision Ω) : P.isCoherent :=
+  P.isCoherent_of_avoidsSureLoss P.avoidsSureLoss_of_finite
+
 /-- Coherent previsions avoid weak sure loss. -/
 lemma isCoherent.avoidsWeakSureLoss (P : LowerPrevision Ω) (_hP : P.isCoherent) :
     P.avoidsWeakSureLoss :=
   P.avoidsWeakSureLoss_of_lower_bound
+
+/-- Coherent previsions also avoid uniform sure loss. -/
+lemma isCoherent.avoidsUniformSureLoss (P : LowerPrevision Ω) (_hP : P.isCoherent) :
+    P.avoidsUniformSureLoss :=
+  P.avoidsUniformSureLoss_of_lower_bound
 
 end LowerPrevision
 

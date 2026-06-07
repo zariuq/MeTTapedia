@@ -7,6 +7,7 @@ import Mettapedia.Languages.ProcessCalculi.RhoCalculus.SemanticSubstitution
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.Reduction
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.BasicBridge
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.MultiStep
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.ParallelWave
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.DerivedRepNu
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.SpiceRule
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CommRule

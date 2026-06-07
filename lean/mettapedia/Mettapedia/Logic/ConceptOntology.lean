@@ -1,5 +1,10 @@
 import Mettapedia.Logic.ConceptOntology.Basic
 import Mettapedia.Logic.ConceptOntology.FCA
+import Mettapedia.Logic.ConceptOntology.FCARecovery
+import Mettapedia.Logic.ConceptOntology.Formation
+import Mettapedia.Logic.ConceptOntology.BenchmarkControl
+import Mettapedia.Logic.ConceptOntology.CredalFormation
 import Mettapedia.Logic.ConceptOntology.WeakRepresentation
 import Mettapedia.Logic.ConceptOntology.WMBridge
 import Mettapedia.Logic.ConceptOntology.Examples
+import Mettapedia.Logic.ConceptOntology.MizarBenchmark

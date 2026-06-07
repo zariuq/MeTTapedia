@@ -4,6 +4,7 @@ import Mettapedia.Logic.EvidenceBeta
 import Mettapedia.Logic.WalleyBinaryIDM
 import Mettapedia.Logic.WalleyMultinomialIDM
 import Mettapedia.ProbabilityTheory.ImpreciseProbability.Basic
+import Mettapedia.ProbabilityTheory.ImpreciseProbability.ProjectiveCredal
 import Mettapedia.ProbabilityTheory.Hypercube.ThetaSemantics
 import Mettapedia.ProbabilityTheory.KnuthSkilling.Core.TotalityImprecision
 
@@ -33,6 +34,7 @@ open scoped ENNReal NNReal Pointwise
 open Mettapedia.Logic.PLNConfidenceWeight
 open Mettapedia.Logic.PLNConfidenceWeight.EvidenceWeightCoordinate
 open Mettapedia.Logic.PLNIndefiniteTruth
+open Mettapedia.ProbabilityTheory.ImpreciseProbability.ProjectiveCredal
 
 universe u v w
 
@@ -1446,6 +1448,188 @@ noncomputable def fromCredalEnvelope {Ω : Type u} [Fintype Ω]
     (fromCredalEnvelope src).credibility = src.credibility :=
   by simp [fromCredalEnvelope, TypedITV.credibility, TypedITV.value,
     credalEnvelopeITVSemantics, credalEnvelopeITV]
+
+end TypedITV
+
+/-! ### Projective credal envelopes as width-complement ITVs -/
+
+/-- Source data for the PLN interval view obtained from a projective global
+credal envelope under the width-complement convention.
+
+Unlike `CredalEnvelopeITVSource`, this source does not allow an arbitrary
+credibility coordinate: the credibility is specifically the complement of the
+compatible-completion envelope width.  This is a named bridge law, not a generic
+fact about every credal interval. -/
+structure ProjectiveCredalWidthComplementITVSource
+    (Window : Type u) (Global : Type v) [LE Window] where
+  spec : ProjectiveLocalCredalSpec.{u, v, w} Window Global
+  compatible : spec.hasCompatibleCompletion
+  gamble : Mettapedia.ProbabilityTheory.ImpreciseProbability.Gamble Global
+  gamble_in_unit : ∀ ω, gamble ω ∈ Set.Icc (0 : ℝ) 1
+  bddBelow :
+    BddBelow ((fun P : PrecisePrevision Global => P gamble) ''
+      spec.projectiveLimitCredalSet)
+  bddAbove :
+    BddAbove ((fun P : PrecisePrevision Global => P gamble) ''
+      spec.projectiveLimitCredalSet)
+
+namespace ProjectiveCredalWidthComplementITVSource
+
+/-- In finite global state spaces, boundedness of the projective credal range is
+automatic, so the source only needs the coherent-completion and unit-gamble
+gates. -/
+noncomputable def finite
+    {Window : Type u} {Global : Type v} [LE Window] [Fintype Global] [Nonempty Global]
+    (spec : ProjectiveLocalCredalSpec.{u, v, w} Window Global)
+    (compatible : spec.hasCompatibleCompletion)
+    (gamble : Mettapedia.ProbabilityTheory.ImpreciseProbability.Gamble Global)
+    (gamble_in_unit : ∀ ω, gamble ω ∈ Set.Icc (0 : ℝ) 1) :
+    ProjectiveCredalWidthComplementITVSource Window Global where
+  spec := spec
+  compatible := compatible
+  gamble := gamble
+  gamble_in_unit := gamble_in_unit
+  bddBelow := finite_credalRange_bddBelow spec.projectiveLimitCredalSet gamble
+  bddAbove := finite_credalRange_bddAbove spec.projectiveLimitCredalSet gamble
+
+end ProjectiveCredalWidthComplementITVSource
+
+/-- Projective lower/upper envelope compressed to an ITV by the
+width-complement law. -/
+noncomputable def projectiveCredalWidthComplementITV
+    {Window : Type u} {Global : Type v} [LE Window]
+    (src : ProjectiveCredalWidthComplementITVSource.{u, v, w} Window Global) : ITV where
+  lower := src.spec.globalNaturalExtension src.gamble
+  upper := upperEnvelope src.spec.projectiveLimitCredalSet src.gamble
+  credibility := src.spec.globalEnvelopeWidthComplement src.gamble
+  lower_le_upper :=
+    lowerEnvelope_le_upperEnvelope_of_nonempty src.spec.projectiveLimitCredalSet
+      src.gamble src.compatible src.bddBelow src.bddAbove
+  lower_in_unit :=
+    lowerEnvelope_in_unit_of_unit src.spec.projectiveLimitCredalSet src.gamble
+      src.compatible src.bddBelow src.gamble_in_unit
+  upper_in_unit :=
+    upperEnvelope_in_unit_of_unit src.spec.projectiveLimitCredalSet src.gamble
+      src.compatible src.bddAbove src.gamble_in_unit
+  credibility_in_unit :=
+    src.spec.globalEnvelopeWidthComplement_in_unit_of_unit src.compatible
+      src.gamble src.bddBelow src.bddAbove src.gamble_in_unit
+
+@[simp] theorem projectiveCredalWidthComplementITV_lower
+    {Window : Type u} {Global : Type v} [LE Window]
+    (src : ProjectiveCredalWidthComplementITVSource.{u, v, w} Window Global) :
+    (projectiveCredalWidthComplementITV src).lower =
+      src.spec.globalNaturalExtension src.gamble :=
+  rfl
+
+@[simp] theorem projectiveCredalWidthComplementITV_upper
+    {Window : Type u} {Global : Type v} [LE Window]
+    (src : ProjectiveCredalWidthComplementITVSource.{u, v, w} Window Global) :
+    (projectiveCredalWidthComplementITV src).upper =
+      upperEnvelope src.spec.projectiveLimitCredalSet src.gamble :=
+  rfl
+
+@[simp] theorem projectiveCredalWidthComplementITV_credibility
+    {Window : Type u} {Global : Type v} [LE Window]
+    (src : ProjectiveCredalWidthComplementITVSource.{u, v, w} Window Global) :
+    (projectiveCredalWidthComplementITV src).credibility =
+      src.spec.globalEnvelopeWidthComplement src.gamble :=
+  rfl
+
+@[simp] theorem projectiveCredalWidthComplementITV_width
+    {Window : Type u} {Global : Type v} [LE Window]
+    (src : ProjectiveCredalWidthComplementITVSource.{u, v, w} Window Global) :
+    (projectiveCredalWidthComplementITV src).width =
+      src.spec.globalEnvelopeWidth src.gamble := by
+  rfl
+
+@[simp] theorem projectiveCredalWidthComplementITV_strength
+    {Window : Type u} {Global : Type v} [LE Window]
+    (src : ProjectiveCredalWidthComplementITVSource.{u, v, w} Window Global) :
+    (projectiveCredalWidthComplementITV src).strength =
+      src.spec.globalEnvelopeMidpoint src.gamble := by
+  rfl
+
+/-- The projective width-complement bridge makes ITV width plus credibility add
+to one. -/
+theorem projectiveCredalWidthComplementITV_width_add_credibility
+    {Window : Type u} {Global : Type v} [LE Window]
+    (src : ProjectiveCredalWidthComplementITVSource.{u, v, w} Window Global) :
+    (projectiveCredalWidthComplementITV src).width +
+        (projectiveCredalWidthComplementITV src).credibility = 1 := by
+  simp [projectiveCredalWidthComplementITV, ITV.width,
+    ProjectiveLocalCredalSpec.globalEnvelopeWidthComplement,
+    ProjectiveLocalCredalSpec.globalNaturalExtension,
+    credalEnvelopeWidth, credalEnvelopeWidthComplement]
+
+/-- The typed semantics for projective credal envelopes with the
+width-complement credibility convention. -/
+noncomputable def projectiveCredalWidthComplementITVSemantics
+    (Window : Type u) (Global : Type v) [LE Window] :
+    ITVSemantics.{max (max u v) (w+1)} where
+  Source := ProjectiveCredalWidthComplementITVSource.{u, v, w} Window Global
+  toITV := projectiveCredalWidthComplementITV
+
+namespace TypedITV
+
+/-- Build a typed ITV from a projective credal envelope under the
+width-complement bridge law. -/
+noncomputable def fromProjectiveCredalWidthComplement
+    {Window : Type u} {Global : Type v} [LE Window]
+    (src : ProjectiveCredalWidthComplementITVSource.{u, v, w} Window Global) :
+    TypedITV (projectiveCredalWidthComplementITVSemantics.{u, v, w} Window Global) :=
+  ⟨src⟩
+
+@[simp] theorem value_fromProjectiveCredalWidthComplement
+    {Window : Type u} {Global : Type v} [LE Window]
+    (src : ProjectiveCredalWidthComplementITVSource.{u, v, w} Window Global) :
+    (fromProjectiveCredalWidthComplement src).value =
+      projectiveCredalWidthComplementITV src := by
+  simp [fromProjectiveCredalWidthComplement, TypedITV.value,
+    projectiveCredalWidthComplementITVSemantics]
+
+@[simp] theorem fromProjectiveCredalWidthComplement_lower
+    {Window : Type u} {Global : Type v} [LE Window]
+    (src : ProjectiveCredalWidthComplementITVSource.{u, v, w} Window Global) :
+    (fromProjectiveCredalWidthComplement src).lower =
+      src.spec.globalNaturalExtension src.gamble := by
+  simp [fromProjectiveCredalWidthComplement, TypedITV.lower, TypedITV.value,
+    projectiveCredalWidthComplementITVSemantics,
+    projectiveCredalWidthComplementITV]
+
+@[simp] theorem fromProjectiveCredalWidthComplement_upper
+    {Window : Type u} {Global : Type v} [LE Window]
+    (src : ProjectiveCredalWidthComplementITVSource.{u, v, w} Window Global) :
+    (fromProjectiveCredalWidthComplement src).upper =
+      upperEnvelope src.spec.projectiveLimitCredalSet src.gamble := by
+  simp [fromProjectiveCredalWidthComplement, TypedITV.upper, TypedITV.value,
+    projectiveCredalWidthComplementITVSemantics,
+    projectiveCredalWidthComplementITV]
+
+@[simp] theorem fromProjectiveCredalWidthComplement_credibility
+    {Window : Type u} {Global : Type v} [LE Window]
+    (src : ProjectiveCredalWidthComplementITVSource.{u, v, w} Window Global) :
+    (fromProjectiveCredalWidthComplement src).credibility =
+      src.spec.globalEnvelopeWidthComplement src.gamble := by
+  simp [fromProjectiveCredalWidthComplement, TypedITV.credibility,
+    TypedITV.value, projectiveCredalWidthComplementITVSemantics,
+    projectiveCredalWidthComplementITV]
+
+@[simp] theorem fromProjectiveCredalWidthComplement_width
+    {Window : Type u} {Global : Type v} [LE Window]
+    (src : ProjectiveCredalWidthComplementITVSource.{u, v, w} Window Global) :
+    (fromProjectiveCredalWidthComplement src).width =
+      src.spec.globalEnvelopeWidth src.gamble := by
+  simp [fromProjectiveCredalWidthComplement, TypedITV.width, TypedITV.value,
+    projectiveCredalWidthComplementITVSemantics]
+
+@[simp] theorem fromProjectiveCredalWidthComplement_midpoint
+    {Window : Type u} {Global : Type v} [LE Window]
+    (src : ProjectiveCredalWidthComplementITVSource.{u, v, w} Window Global) :
+    (fromProjectiveCredalWidthComplement src).midpoint =
+      src.spec.globalEnvelopeMidpoint src.gamble := by
+  simp [fromProjectiveCredalWidthComplement, TypedITV.midpoint, TypedITV.value,
+    projectiveCredalWidthComplementITVSemantics]
 
 end TypedITV
 

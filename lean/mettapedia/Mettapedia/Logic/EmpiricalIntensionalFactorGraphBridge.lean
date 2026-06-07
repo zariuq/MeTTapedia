@@ -1,5 +1,7 @@
 import Mettapedia.Logic.EmpiricalIntensionalInformation
 import Mettapedia.Logic.BinaryEvidence
+import Mettapedia.Logic.ConceptOntology.Formation
+import Mettapedia.Logic.ConceptOntology.CredalFormation
 import Mettapedia.Logic.ConceptOntology.WMBridge
 import Mettapedia.ProbabilityTheory.BayesianNetworks.VariableElimination
 import Mettapedia.ProbabilityTheory.BayesianNetworks.MessagePassing
@@ -1326,6 +1328,1404 @@ theorem finiteExtensionalProb_eq_bp_ratio
 end FinitePairBridge
 
 end Interpretation
+
+namespace AbstractInheritance
+
+section FormedConceptFinitePairBridge
+
+variable {Obj Attr Q : Type*}
+variable [Preorder Q] [Fintype Obj] [Nonempty Obj] [Fintype Attr]
+
+noncomputable def formedConceptInheritanceTable
+    (G : Mettapedia.Logic.ConceptOntology.EvidenceGate Q)
+    (M : Obj → Attr → Q)
+    (subConcept superConcept : Mettapedia.Logic.AbstractInheritance.FormedConcept G M) :
+    FiniteWitnessFeatureTable :=
+  Mettapedia.Logic.IntensionalInheritance.Interpretation.toFiniteWitnessFeatureTable
+    (Mettapedia.Logic.AbstractInheritance.formedConceptInterpretation G M)
+    subConcept superConcept
+
+theorem finitePriorProb_formedConceptInterpretation_eq_toFiniteWitnessFeatureTable_witnessPrior
+    (G : Mettapedia.Logic.ConceptOntology.EvidenceGate Q)
+    (M : Obj → Attr → Q)
+    (feature witness : Mettapedia.Logic.AbstractInheritance.FormedConcept G M) :
+    Mettapedia.Logic.IntensionalInheritance.Interpretation.finitePriorProb
+        (Mettapedia.Logic.AbstractInheritance.formedConceptInterpretation G M) witness =
+      FiniteWitnessFeatureTable.witnessPrior
+        (Mettapedia.Logic.IntensionalInheritance.Interpretation.toFiniteWitnessFeatureTable
+          (Mettapedia.Logic.AbstractInheritance.formedConceptInterpretation G M) feature witness) := by
+  simpa using
+    Interpretation.finitePriorProb_eq_toFiniteWitnessFeatureTable_witnessPrior
+      (I := Mettapedia.Logic.AbstractInheritance.formedConceptInterpretation G M)
+      (feature := feature) (witness := witness)
+
+theorem finiteExtensionalProb_formedConceptInterpretation_eq_toFiniteWitnessFeatureTable_strength
+    (G : Mettapedia.Logic.ConceptOntology.EvidenceGate Q)
+    (M : Obj → Attr → Q)
+    (feature witness : Mettapedia.Logic.AbstractInheritance.FormedConcept G M) :
+    Mettapedia.Logic.IntensionalInheritance.Interpretation.finiteExtensionalProb
+        (Mettapedia.Logic.AbstractInheritance.formedConceptInterpretation G M) feature witness =
+      FiniteWitnessFeatureTable.featureToWitnessStrength
+        (Mettapedia.Logic.IntensionalInheritance.Interpretation.toFiniteWitnessFeatureTable
+          (Mettapedia.Logic.AbstractInheritance.formedConceptInterpretation G M) feature witness) := by
+  simpa using
+    Interpretation.finiteExtensionalProb_eq_toFiniteWitnessFeatureTable_strength
+      (I := Mettapedia.Logic.AbstractInheritance.formedConceptInterpretation G M)
+      (feature := feature) (witness := witness)
+
+theorem finitePointwiseLogRatioBits_formedConceptInterpretation_eq_toFiniteWitnessFeatureTable
+    (G : Mettapedia.Logic.ConceptOntology.EvidenceGate Q)
+    (M : Obj → Attr → Q)
+    (feature witness : Mettapedia.Logic.AbstractInheritance.FormedConcept G M) :
+    Mettapedia.Logic.IntensionalInheritance.Interpretation.finitePointwiseLogRatioBits
+        (Mettapedia.Logic.AbstractInheritance.formedConceptInterpretation G M) feature witness =
+      FiniteWitnessFeatureTable.logRatioBits
+        (Mettapedia.Logic.IntensionalInheritance.Interpretation.toFiniteWitnessFeatureTable
+          (Mettapedia.Logic.AbstractInheritance.formedConceptInterpretation G M) feature witness) := by
+  simpa using
+    Interpretation.finitePointwiseLogRatioBits_eq_toFiniteWitnessFeatureTable
+      (I := Mettapedia.Logic.AbstractInheritance.formedConceptInterpretation G M)
+      (feature := feature) (witness := witness)
+
+theorem finitePriorProb_formedConceptInterpretation_eq_veWeight_ratio
+    (G : Mettapedia.Logic.ConceptOntology.EvidenceGate Q)
+    (M : Obj → Attr → Q)
+    (feature witness : Mettapedia.Logic.AbstractInheritance.FormedConcept G M) :
+    Mettapedia.Logic.IntensionalInheritance.Interpretation.finitePriorProb
+        (Mettapedia.Logic.AbstractInheritance.formedConceptInterpretation G M) witness =
+      (FiniteWitnessFeatureTable.veWeight
+        (Mettapedia.Logic.IntensionalInheritance.Interpretation.toFiniteWitnessFeatureTable
+          (Mettapedia.Logic.AbstractInheritance.formedConceptInterpretation G M) feature witness)
+        [⟨MembershipConcept.witness, true⟩] : ℝ) /
+        FiniteWitnessFeatureTable.veWeight
+          (Mettapedia.Logic.IntensionalInheritance.Interpretation.toFiniteWitnessFeatureTable
+            (Mettapedia.Logic.AbstractInheritance.formedConceptInterpretation G M) feature witness) [] := by
+  simpa using
+    Interpretation.finitePriorProb_eq_veWeight_ratio
+      (I := Mettapedia.Logic.AbstractInheritance.formedConceptInterpretation G M)
+      (feature := feature) (witness := witness)
+
+theorem finiteExtensionalProb_formedConceptInterpretation_eq_veWeight_ratio
+    (G : Mettapedia.Logic.ConceptOntology.EvidenceGate Q)
+    (M : Obj → Attr → Q)
+    (feature witness : Mettapedia.Logic.AbstractInheritance.FormedConcept G M) :
+    Mettapedia.Logic.IntensionalInheritance.Interpretation.finiteExtensionalProb
+        (Mettapedia.Logic.AbstractInheritance.formedConceptInterpretation G M) feature witness =
+      if FiniteWitnessFeatureTable.veWeight
+          (Mettapedia.Logic.IntensionalInheritance.Interpretation.toFiniteWitnessFeatureTable
+            (Mettapedia.Logic.AbstractInheritance.formedConceptInterpretation G M) feature witness)
+          [⟨MembershipConcept.feature, true⟩] = 0 then
+        0
+      else
+        (FiniteWitnessFeatureTable.veWeight
+          (Mettapedia.Logic.IntensionalInheritance.Interpretation.toFiniteWitnessFeatureTable
+            (Mettapedia.Logic.AbstractInheritance.formedConceptInterpretation G M) feature witness)
+          [⟨MembershipConcept.feature, true⟩, ⟨MembershipConcept.witness, true⟩] : ℝ) /
+          FiniteWitnessFeatureTable.veWeight
+            (Mettapedia.Logic.IntensionalInheritance.Interpretation.toFiniteWitnessFeatureTable
+              (Mettapedia.Logic.AbstractInheritance.formedConceptInterpretation G M) feature witness)
+            [⟨MembershipConcept.feature, true⟩] := by
+  simpa using
+    Interpretation.finiteExtensionalProb_eq_veWeight_ratio
+      (I := Mettapedia.Logic.AbstractInheritance.formedConceptInterpretation G M)
+      (feature := feature) (witness := witness)
+
+theorem finitePointwiseLogRatioBits_formedConceptInterpretation_eq_ve_query_score
+    (G : Mettapedia.Logic.ConceptOntology.EvidenceGate Q)
+    (M : Obj → Attr → Q)
+    (feature witness : Mettapedia.Logic.AbstractInheritance.FormedConcept G M) :
+    Mettapedia.Logic.IntensionalInheritance.Interpretation.finitePointwiseLogRatioBits
+        (Mettapedia.Logic.AbstractInheritance.formedConceptInterpretation G M) feature witness =
+      logRatioInformationGainFromEvidence
+        (if FiniteWitnessFeatureTable.veWeight
+            (Mettapedia.Logic.IntensionalInheritance.Interpretation.toFiniteWitnessFeatureTable
+              (Mettapedia.Logic.AbstractInheritance.formedConceptInterpretation G M) feature witness)
+            [⟨MembershipConcept.feature, true⟩] = 0 then
+          0
+        else
+          (FiniteWitnessFeatureTable.veWeight
+            (Mettapedia.Logic.IntensionalInheritance.Interpretation.toFiniteWitnessFeatureTable
+              (Mettapedia.Logic.AbstractInheritance.formedConceptInterpretation G M) feature witness)
+            [⟨MembershipConcept.feature, true⟩, ⟨MembershipConcept.witness, true⟩] : ℝ) /
+            FiniteWitnessFeatureTable.veWeight
+              (Mettapedia.Logic.IntensionalInheritance.Interpretation.toFiniteWitnessFeatureTable
+                (Mettapedia.Logic.AbstractInheritance.formedConceptInterpretation G M) feature witness)
+              [⟨MembershipConcept.feature, true⟩])
+        ((FiniteWitnessFeatureTable.veWeight
+          (Mettapedia.Logic.IntensionalInheritance.Interpretation.toFiniteWitnessFeatureTable
+            (Mettapedia.Logic.AbstractInheritance.formedConceptInterpretation G M) feature witness)
+          [⟨MembershipConcept.witness, true⟩] : ℝ) /
+            FiniteWitnessFeatureTable.veWeight
+              (Mettapedia.Logic.IntensionalInheritance.Interpretation.toFiniteWitnessFeatureTable
+                (Mettapedia.Logic.AbstractInheritance.formedConceptInterpretation G M) feature witness) []) := by
+  simpa using
+    Interpretation.finitePointwiseLogRatioBits_eq_ve_query_score
+      (I := Mettapedia.Logic.AbstractInheritance.formedConceptInterpretation G M)
+      (feature := feature) (witness := witness)
+
+theorem finitePriorProb_formedConceptInterpretation_eq_bp_ratio
+    (G : Mettapedia.Logic.ConceptOntology.EvidenceGate Q)
+    (M : Obj → Attr → Q)
+    (feature witness : Mettapedia.Logic.AbstractInheritance.FormedConcept G M) :
+    Mettapedia.Logic.IntensionalInheritance.Interpretation.finitePriorProb
+        (Mettapedia.Logic.AbstractInheritance.formedConceptInterpretation G M) witness =
+      (FiniteWitnessFeatureTable.witnessMessage
+        (Mettapedia.Logic.IntensionalInheritance.Interpretation.toFiniteWitnessFeatureTable
+          (Mettapedia.Logic.AbstractInheritance.formedConceptInterpretation G M) feature witness) true : ℝ) /
+        FiniteWitnessFeatureTable.veWeight
+          (Mettapedia.Logic.IntensionalInheritance.Interpretation.toFiniteWitnessFeatureTable
+            (Mettapedia.Logic.AbstractInheritance.formedConceptInterpretation G M) feature witness) [] := by
+  simpa using
+    Interpretation.finitePriorProb_eq_bp_ratio
+      (I := Mettapedia.Logic.AbstractInheritance.formedConceptInterpretation G M)
+      (feature := feature) (witness := witness)
+
+theorem finiteExtensionalProb_formedConceptInterpretation_eq_bp_ratio
+    (G : Mettapedia.Logic.ConceptOntology.EvidenceGate Q)
+    (M : Obj → Attr → Q)
+    (feature witness : Mettapedia.Logic.AbstractInheritance.FormedConcept G M) :
+    Mettapedia.Logic.IntensionalInheritance.Interpretation.finiteExtensionalProb
+        (Mettapedia.Logic.AbstractInheritance.formedConceptInterpretation G M) feature witness =
+      if FiniteWitnessFeatureTable.featureMessage
+          (Mettapedia.Logic.IntensionalInheritance.Interpretation.toFiniteWitnessFeatureTable
+            (Mettapedia.Logic.AbstractInheritance.formedConceptInterpretation G M) feature witness) true = 0 then
+        0
+      else
+        (FiniteWitnessFeatureTable.jointFactorBelief
+          (Mettapedia.Logic.IntensionalInheritance.Interpretation.toFiniteWitnessFeatureTable
+            (Mettapedia.Logic.AbstractInheritance.formedConceptInterpretation G M) feature witness)
+          (FiniteWitnessFeatureTable.ttJointAssign
+            (Mettapedia.Logic.IntensionalInheritance.Interpretation.toFiniteWitnessFeatureTable
+              (Mettapedia.Logic.AbstractInheritance.formedConceptInterpretation G M) feature witness)) : ℝ) /
+          FiniteWitnessFeatureTable.featureMessage
+            (Mettapedia.Logic.IntensionalInheritance.Interpretation.toFiniteWitnessFeatureTable
+              (Mettapedia.Logic.AbstractInheritance.formedConceptInterpretation G M) feature witness) true := by
+  simpa using
+    Interpretation.finiteExtensionalProb_eq_bp_ratio
+      (I := Mettapedia.Logic.AbstractInheritance.formedConceptInterpretation G M)
+      (feature := feature) (witness := witness)
+
+theorem finiteInheritancePrior_formedConceptInterpretation_eq_veWeight_ratio
+    (G : Mettapedia.Logic.ConceptOntology.EvidenceGate Q)
+    (M : Obj → Attr → Q)
+    (subConcept superConcept : Mettapedia.Logic.AbstractInheritance.FormedConcept G M) :
+    Mettapedia.Logic.IntensionalInheritance.Interpretation.finiteInheritancePrior
+        (Mettapedia.Logic.AbstractInheritance.formedConceptInterpretation G M) superConcept =
+      (FiniteWitnessFeatureTable.veWeight
+        (Mettapedia.Logic.IntensionalInheritance.Interpretation.toFiniteWitnessFeatureTable
+          (Mettapedia.Logic.AbstractInheritance.formedConceptInterpretation G M)
+          subConcept superConcept)
+        [⟨MembershipConcept.witness, true⟩] : ℝ) /
+        FiniteWitnessFeatureTable.veWeight
+          (Mettapedia.Logic.IntensionalInheritance.Interpretation.toFiniteWitnessFeatureTable
+            (Mettapedia.Logic.AbstractInheritance.formedConceptInterpretation G M)
+            subConcept superConcept) [] := by
+  simpa [Interpretation.finiteInheritancePrior_eq] using
+    finitePriorProb_formedConceptInterpretation_eq_veWeight_ratio
+      (G := G) (M := M) (feature := subConcept) (witness := superConcept)
+
+theorem finiteInheritanceStrength_formedConceptInterpretation_eq_veWeight_ratio
+    (G : Mettapedia.Logic.ConceptOntology.EvidenceGate Q)
+    (M : Obj → Attr → Q)
+    (subConcept superConcept : Mettapedia.Logic.AbstractInheritance.FormedConcept G M) :
+    Mettapedia.Logic.IntensionalInheritance.Interpretation.finiteInheritanceStrength
+        (Mettapedia.Logic.AbstractInheritance.formedConceptInterpretation G M)
+        subConcept superConcept =
+      if FiniteWitnessFeatureTable.veWeight
+          (Mettapedia.Logic.IntensionalInheritance.Interpretation.toFiniteWitnessFeatureTable
+            (Mettapedia.Logic.AbstractInheritance.formedConceptInterpretation G M)
+            subConcept superConcept)
+          [⟨MembershipConcept.feature, true⟩] = 0 then
+        0
+      else
+        (FiniteWitnessFeatureTable.veWeight
+          (Mettapedia.Logic.IntensionalInheritance.Interpretation.toFiniteWitnessFeatureTable
+            (Mettapedia.Logic.AbstractInheritance.formedConceptInterpretation G M)
+            subConcept superConcept)
+          [⟨MembershipConcept.feature, true⟩, ⟨MembershipConcept.witness, true⟩] : ℝ) /
+          FiniteWitnessFeatureTable.veWeight
+            (Mettapedia.Logic.IntensionalInheritance.Interpretation.toFiniteWitnessFeatureTable
+              (Mettapedia.Logic.AbstractInheritance.formedConceptInterpretation G M)
+              subConcept superConcept)
+            [⟨MembershipConcept.feature, true⟩] := by
+  simpa [Interpretation.finiteInheritanceStrength_eq] using
+    finiteExtensionalProb_formedConceptInterpretation_eq_veWeight_ratio
+      (G := G) (M := M) (feature := subConcept) (witness := superConcept)
+
+theorem finiteInheritanceLogRatioBits_formedConceptInterpretation_eq_veQueryScore
+    (G : Mettapedia.Logic.ConceptOntology.EvidenceGate Q)
+    (M : Obj → Attr → Q)
+    (subConcept superConcept : Mettapedia.Logic.AbstractInheritance.FormedConcept G M) :
+    Mettapedia.Logic.IntensionalInheritance.Interpretation.finiteInheritanceLogRatioBits
+        (Mettapedia.Logic.AbstractInheritance.formedConceptInterpretation G M)
+        subConcept superConcept =
+      logRatioInformationGainFromEvidence
+        (if FiniteWitnessFeatureTable.veWeight
+            (Mettapedia.Logic.IntensionalInheritance.Interpretation.toFiniteWitnessFeatureTable
+              (Mettapedia.Logic.AbstractInheritance.formedConceptInterpretation G M)
+              subConcept superConcept)
+            [⟨MembershipConcept.feature, true⟩] = 0 then
+          0
+        else
+          (FiniteWitnessFeatureTable.veWeight
+            (Mettapedia.Logic.IntensionalInheritance.Interpretation.toFiniteWitnessFeatureTable
+              (Mettapedia.Logic.AbstractInheritance.formedConceptInterpretation G M)
+              subConcept superConcept)
+            [⟨MembershipConcept.feature, true⟩, ⟨MembershipConcept.witness, true⟩] : ℝ) /
+            FiniteWitnessFeatureTable.veWeight
+              (Mettapedia.Logic.IntensionalInheritance.Interpretation.toFiniteWitnessFeatureTable
+                (Mettapedia.Logic.AbstractInheritance.formedConceptInterpretation G M)
+                subConcept superConcept)
+              [⟨MembershipConcept.feature, true⟩])
+        ((FiniteWitnessFeatureTable.veWeight
+          (Mettapedia.Logic.IntensionalInheritance.Interpretation.toFiniteWitnessFeatureTable
+            (Mettapedia.Logic.AbstractInheritance.formedConceptInterpretation G M)
+            subConcept superConcept)
+          [⟨MembershipConcept.witness, true⟩] : ℝ) /
+            FiniteWitnessFeatureTable.veWeight
+              (Mettapedia.Logic.IntensionalInheritance.Interpretation.toFiniteWitnessFeatureTable
+                (Mettapedia.Logic.AbstractInheritance.formedConceptInterpretation G M)
+                subConcept superConcept) []) := by
+  simpa [Interpretation.finiteInheritanceLogRatioBits_eq] using
+    finitePointwiseLogRatioBits_formedConceptInterpretation_eq_ve_query_score
+      (G := G) (M := M) (feature := subConcept) (witness := superConcept)
+
+theorem finiteInheritancePrior_formedConceptInterpretation_eq_bpRatio
+    (G : Mettapedia.Logic.ConceptOntology.EvidenceGate Q)
+    (M : Obj → Attr → Q)
+    (subConcept superConcept : Mettapedia.Logic.AbstractInheritance.FormedConcept G M) :
+    Mettapedia.Logic.IntensionalInheritance.Interpretation.finiteInheritancePrior
+        (Mettapedia.Logic.AbstractInheritance.formedConceptInterpretation G M) superConcept =
+      (FiniteWitnessFeatureTable.witnessMessage
+        (Mettapedia.Logic.IntensionalInheritance.Interpretation.toFiniteWitnessFeatureTable
+          (Mettapedia.Logic.AbstractInheritance.formedConceptInterpretation G M)
+          subConcept superConcept) true : ℝ) /
+        FiniteWitnessFeatureTable.veWeight
+          (Mettapedia.Logic.IntensionalInheritance.Interpretation.toFiniteWitnessFeatureTable
+            (Mettapedia.Logic.AbstractInheritance.formedConceptInterpretation G M)
+            subConcept superConcept) [] := by
+  simpa [Interpretation.finiteInheritancePrior_eq] using
+    finitePriorProb_formedConceptInterpretation_eq_bp_ratio
+      (G := G) (M := M) (feature := subConcept) (witness := superConcept)
+
+theorem finiteInheritanceStrength_formedConceptInterpretation_eq_bpRatio
+    (G : Mettapedia.Logic.ConceptOntology.EvidenceGate Q)
+    (M : Obj → Attr → Q)
+    (subConcept superConcept : Mettapedia.Logic.AbstractInheritance.FormedConcept G M) :
+    Mettapedia.Logic.IntensionalInheritance.Interpretation.finiteInheritanceStrength
+        (Mettapedia.Logic.AbstractInheritance.formedConceptInterpretation G M)
+        subConcept superConcept =
+      if FiniteWitnessFeatureTable.featureMessage
+          (Mettapedia.Logic.IntensionalInheritance.Interpretation.toFiniteWitnessFeatureTable
+            (Mettapedia.Logic.AbstractInheritance.formedConceptInterpretation G M)
+            subConcept superConcept) true = 0 then
+        0
+      else
+        (FiniteWitnessFeatureTable.jointFactorBelief
+          (Mettapedia.Logic.IntensionalInheritance.Interpretation.toFiniteWitnessFeatureTable
+            (Mettapedia.Logic.AbstractInheritance.formedConceptInterpretation G M)
+            subConcept superConcept)
+          (FiniteWitnessFeatureTable.ttJointAssign
+            (Mettapedia.Logic.IntensionalInheritance.Interpretation.toFiniteWitnessFeatureTable
+              (Mettapedia.Logic.AbstractInheritance.formedConceptInterpretation G M)
+              subConcept superConcept)) : ℝ) /
+          FiniteWitnessFeatureTable.featureMessage
+            (Mettapedia.Logic.IntensionalInheritance.Interpretation.toFiniteWitnessFeatureTable
+              (Mettapedia.Logic.AbstractInheritance.formedConceptInterpretation G M)
+              subConcept superConcept) true := by
+  simpa [Interpretation.finiteInheritanceStrength_eq] using
+    finiteExtensionalProb_formedConceptInterpretation_eq_bp_ratio
+      (G := G) (M := M) (feature := subConcept) (witness := superConcept)
+
+/-- Supported formed-concept exactness surface for the extensional inheritance
+query family: prior, strength, and log-ratio are read exactly through the
+generated finite witness/feature table. Mixed ASSOC/PAT channels are handled
+separately in `PLNIntensionalAssocPatClosure`. -/
+theorem formedConceptInheritance_exact_via_table
+    (G : Mettapedia.Logic.ConceptOntology.EvidenceGate Q)
+    (M : Obj → Attr → Q)
+    (subConcept superConcept : Mettapedia.Logic.AbstractInheritance.FormedConcept G M) :
+    Mettapedia.Logic.IntensionalInheritance.Interpretation.finiteInheritancePrior
+        (Mettapedia.Logic.AbstractInheritance.formedConceptInterpretation G M) superConcept =
+      FiniteWitnessFeatureTable.witnessPrior
+        (formedConceptInheritanceTable G M subConcept superConcept)
+    ∧
+    Mettapedia.Logic.IntensionalInheritance.Interpretation.finiteInheritanceStrength
+        (Mettapedia.Logic.AbstractInheritance.formedConceptInterpretation G M)
+        subConcept superConcept =
+      FiniteWitnessFeatureTable.featureToWitnessStrength
+        (formedConceptInheritanceTable G M subConcept superConcept)
+    ∧
+    Mettapedia.Logic.IntensionalInheritance.Interpretation.finiteInheritanceLogRatioBits
+        (Mettapedia.Logic.AbstractInheritance.formedConceptInterpretation G M)
+        subConcept superConcept =
+      FiniteWitnessFeatureTable.logRatioBits
+        (formedConceptInheritanceTable G M subConcept superConcept) := by
+  constructor
+  · simpa [formedConceptInheritanceTable, Interpretation.finiteInheritancePrior_eq] using
+      finitePriorProb_formedConceptInterpretation_eq_toFiniteWitnessFeatureTable_witnessPrior
+        (G := G) (M := M) (feature := subConcept) (witness := superConcept)
+  constructor
+  · simpa [formedConceptInheritanceTable, Interpretation.finiteInheritanceStrength_eq] using
+      finiteExtensionalProb_formedConceptInterpretation_eq_toFiniteWitnessFeatureTable_strength
+        (G := G) (M := M) (feature := subConcept) (witness := superConcept)
+  · simpa [formedConceptInheritanceTable, Interpretation.finiteInheritanceLogRatioBits_eq] using
+      finitePointwiseLogRatioBits_formedConceptInterpretation_eq_toFiniteWitnessFeatureTable
+        (G := G) (M := M) (feature := subConcept) (witness := superConcept)
+
+/-- The same supported formed-concept extensional slice, re-expressed through
+VE and BP on the generated finite witness/feature table. Mixed ASSOC/PAT
+channels are not packaged by this theorem. -/
+theorem formedConceptInheritance_exact_via_ve_bp
+    (G : Mettapedia.Logic.ConceptOntology.EvidenceGate Q)
+    (M : Obj → Attr → Q)
+    (subConcept superConcept : Mettapedia.Logic.AbstractInheritance.FormedConcept G M) :
+    (Mettapedia.Logic.IntensionalInheritance.Interpretation.finiteInheritancePrior
+        (Mettapedia.Logic.AbstractInheritance.formedConceptInterpretation G M) superConcept =
+      (FiniteWitnessFeatureTable.veWeight
+        (formedConceptInheritanceTable G M subConcept superConcept)
+        [⟨MembershipConcept.witness, true⟩] : ℝ) /
+        FiniteWitnessFeatureTable.veWeight
+          (formedConceptInheritanceTable G M subConcept superConcept) [])
+    ∧
+    (Mettapedia.Logic.IntensionalInheritance.Interpretation.finiteInheritanceStrength
+        (Mettapedia.Logic.AbstractInheritance.formedConceptInterpretation G M)
+        subConcept superConcept =
+      if FiniteWitnessFeatureTable.veWeight
+          (formedConceptInheritanceTable G M subConcept superConcept)
+          [⟨MembershipConcept.feature, true⟩] = 0 then
+        0
+      else
+        (FiniteWitnessFeatureTable.veWeight
+          (formedConceptInheritanceTable G M subConcept superConcept)
+          [⟨MembershipConcept.feature, true⟩, ⟨MembershipConcept.witness, true⟩] : ℝ) /
+          FiniteWitnessFeatureTable.veWeight
+            (formedConceptInheritanceTable G M subConcept superConcept)
+            [⟨MembershipConcept.feature, true⟩])
+    ∧
+    (Mettapedia.Logic.IntensionalInheritance.Interpretation.finiteInheritanceLogRatioBits
+        (Mettapedia.Logic.AbstractInheritance.formedConceptInterpretation G M)
+        subConcept superConcept =
+      logRatioInformationGainFromEvidence
+        (if FiniteWitnessFeatureTable.veWeight
+            (formedConceptInheritanceTable G M subConcept superConcept)
+            [⟨MembershipConcept.feature, true⟩] = 0 then
+          0
+        else
+          (FiniteWitnessFeatureTable.veWeight
+            (formedConceptInheritanceTable G M subConcept superConcept)
+            [⟨MembershipConcept.feature, true⟩, ⟨MembershipConcept.witness, true⟩] : ℝ) /
+            FiniteWitnessFeatureTable.veWeight
+              (formedConceptInheritanceTable G M subConcept superConcept)
+              [⟨MembershipConcept.feature, true⟩])
+        ((FiniteWitnessFeatureTable.veWeight
+          (formedConceptInheritanceTable G M subConcept superConcept)
+          [⟨MembershipConcept.witness, true⟩] : ℝ) /
+            FiniteWitnessFeatureTable.veWeight
+              (formedConceptInheritanceTable G M subConcept superConcept) []))
+    ∧
+    (Mettapedia.Logic.IntensionalInheritance.Interpretation.finiteInheritancePrior
+        (Mettapedia.Logic.AbstractInheritance.formedConceptInterpretation G M) superConcept =
+      (FiniteWitnessFeatureTable.witnessMessage
+        (formedConceptInheritanceTable G M subConcept superConcept) true : ℝ) /
+        FiniteWitnessFeatureTable.veWeight
+          (formedConceptInheritanceTable G M subConcept superConcept) [])
+    ∧
+    (Mettapedia.Logic.IntensionalInheritance.Interpretation.finiteInheritanceStrength
+        (Mettapedia.Logic.AbstractInheritance.formedConceptInterpretation G M)
+        subConcept superConcept =
+      if FiniteWitnessFeatureTable.featureMessage
+          (formedConceptInheritanceTable G M subConcept superConcept) true = 0 then
+        0
+      else
+        (FiniteWitnessFeatureTable.jointFactorBelief
+          (formedConceptInheritanceTable G M subConcept superConcept)
+          (FiniteWitnessFeatureTable.ttJointAssign
+            (formedConceptInheritanceTable G M subConcept superConcept)) : ℝ) /
+          FiniteWitnessFeatureTable.featureMessage
+            (formedConceptInheritanceTable G M subConcept superConcept) true) := by
+  constructor
+  · simpa [formedConceptInheritanceTable] using
+      finiteInheritancePrior_formedConceptInterpretation_eq_veWeight_ratio
+        (G := G) (M := M) (subConcept := subConcept) (superConcept := superConcept)
+  constructor
+  · simpa [formedConceptInheritanceTable] using
+      finiteInheritanceStrength_formedConceptInterpretation_eq_veWeight_ratio
+        (G := G) (M := M) (subConcept := subConcept) (superConcept := superConcept)
+  constructor
+  · simpa [formedConceptInheritanceTable] using
+      finiteInheritanceLogRatioBits_formedConceptInterpretation_eq_veQueryScore
+        (G := G) (M := M) (subConcept := subConcept) (superConcept := superConcept)
+  constructor
+  · simpa [formedConceptInheritanceTable] using
+      finiteInheritancePrior_formedConceptInterpretation_eq_bpRatio
+        (G := G) (M := M) (subConcept := subConcept) (superConcept := superConcept)
+  · simpa [formedConceptInheritanceTable] using
+      finiteInheritanceStrength_formedConceptInterpretation_eq_bpRatio
+        (G := G) (M := M) (subConcept := subConcept) (superConcept := superConcept)
+
+end FormedConceptFinitePairBridge
+
+end AbstractInheritance
+
+section RobustCredalFinitePairBridge
+
+variable {Obj Attr Q Gate : Type*}
+variable [Preorder Q] [Fintype Gate] [Nonempty Gate] [Fintype Obj] [Nonempty Obj] [Fintype Attr]
+
+open Mettapedia.Logic.ConceptOntology
+
+noncomputable def lowerCredalConceptInheritanceTable
+    (Γ : Gate → EvidenceGate Q)
+    (M : Obj → Attr → Q)
+    (subConcept superConcept : LowerFormedConcept Γ M) :
+    FiniteWitnessFeatureTable :=
+  Interpretation.toFiniteWitnessFeatureTable
+    (lowerFormedConceptInterpretation Γ M)
+    subConcept superConcept
+
+omit [Fintype Gate] [Nonempty Gate] in
+theorem finitePriorProb_lowerFormedConceptInterpretation_eq_toFiniteWitnessFeatureTable_witnessPrior
+    (Γ : Gate → EvidenceGate Q)
+    (M : Obj → Attr → Q)
+    (feature witness : LowerFormedConcept Γ M) :
+    Interpretation.finitePriorProb
+        (lowerFormedConceptInterpretation Γ M) witness =
+      FiniteWitnessFeatureTable.witnessPrior
+        (Interpretation.toFiniteWitnessFeatureTable
+          (lowerFormedConceptInterpretation Γ M)
+          feature witness) := by
+  simpa using
+    Interpretation.finitePriorProb_eq_toFiniteWitnessFeatureTable_witnessPrior
+      (I := lowerFormedConceptInterpretation Γ M)
+      (feature := feature) (witness := witness)
+
+omit [Fintype Gate] [Nonempty Gate] in
+theorem finiteExtensionalProb_lowerFormedConceptInterpretation_eq_toFiniteWitnessFeatureTable_strength
+    (Γ : Gate → EvidenceGate Q)
+    (M : Obj → Attr → Q)
+    (feature witness : LowerFormedConcept Γ M) :
+    Interpretation.finiteExtensionalProb
+        (lowerFormedConceptInterpretation Γ M)
+        feature witness =
+      FiniteWitnessFeatureTable.featureToWitnessStrength
+        (Interpretation.toFiniteWitnessFeatureTable
+          (lowerFormedConceptInterpretation Γ M)
+          feature witness) := by
+  simpa using
+    Interpretation.finiteExtensionalProb_eq_toFiniteWitnessFeatureTable_strength
+      (I := lowerFormedConceptInterpretation Γ M)
+      (feature := feature) (witness := witness)
+
+omit [Fintype Gate] [Nonempty Gate] in
+theorem finitePointwiseLogRatioBits_lowerFormedConceptInterpretation_eq_toFiniteWitnessFeatureTable
+    (Γ : Gate → EvidenceGate Q)
+    (M : Obj → Attr → Q)
+    (feature witness : LowerFormedConcept Γ M) :
+    Interpretation.finitePointwiseLogRatioBits
+        (lowerFormedConceptInterpretation Γ M)
+        feature witness =
+      FiniteWitnessFeatureTable.logRatioBits
+        (Interpretation.toFiniteWitnessFeatureTable
+          (lowerFormedConceptInterpretation Γ M)
+          feature witness) := by
+  simpa using
+    Interpretation.finitePointwiseLogRatioBits_eq_toFiniteWitnessFeatureTable
+      (I := lowerFormedConceptInterpretation Γ M)
+      (feature := feature) (witness := witness)
+
+omit [Fintype Gate] [Nonempty Gate] in
+theorem finiteInheritancePrior_lowerFormedConceptInterpretation_eq_veWeight_ratio
+    (Γ : Gate → _root_.Mettapedia.Logic.ConceptOntology.EvidenceGate Q)
+    (M : Obj → Attr → Q)
+    (subConcept superConcept :
+      _root_.Mettapedia.Logic.ConceptOntology.LowerFormedConcept Γ M) :
+    Interpretation.finiteInheritancePrior
+        (_root_.Mettapedia.Logic.ConceptOntology.lowerFormedConceptInterpretation Γ M) superConcept =
+      (FiniteWitnessFeatureTable.veWeight
+        (Interpretation.toFiniteWitnessFeatureTable
+          (_root_.Mettapedia.Logic.ConceptOntology.lowerFormedConceptInterpretation Γ M)
+          subConcept superConcept)
+        [⟨MembershipConcept.witness, true⟩] : ℝ) /
+        FiniteWitnessFeatureTable.veWeight
+          (Interpretation.toFiniteWitnessFeatureTable
+            (_root_.Mettapedia.Logic.ConceptOntology.lowerFormedConceptInterpretation Γ M)
+            subConcept superConcept) [] := by
+  simpa [Interpretation.finiteInheritancePrior_eq] using
+    Interpretation.finitePriorProb_eq_veWeight_ratio
+      (I := _root_.Mettapedia.Logic.ConceptOntology.lowerFormedConceptInterpretation Γ M)
+      (feature := subConcept) (witness := superConcept)
+
+omit [Fintype Gate] [Nonempty Gate] in
+theorem finiteInheritanceStrength_lowerFormedConceptInterpretation_eq_veWeight_ratio
+    (Γ : Gate → _root_.Mettapedia.Logic.ConceptOntology.EvidenceGate Q)
+    (M : Obj → Attr → Q)
+    (subConcept superConcept :
+      _root_.Mettapedia.Logic.ConceptOntology.LowerFormedConcept Γ M) :
+    Interpretation.finiteInheritanceStrength
+        (_root_.Mettapedia.Logic.ConceptOntology.lowerFormedConceptInterpretation Γ M)
+        subConcept superConcept =
+      if FiniteWitnessFeatureTable.veWeight
+          (Interpretation.toFiniteWitnessFeatureTable
+            (_root_.Mettapedia.Logic.ConceptOntology.lowerFormedConceptInterpretation Γ M)
+            subConcept superConcept)
+          [⟨MembershipConcept.feature, true⟩] = 0 then
+        0
+      else
+        (FiniteWitnessFeatureTable.veWeight
+          (Interpretation.toFiniteWitnessFeatureTable
+            (_root_.Mettapedia.Logic.ConceptOntology.lowerFormedConceptInterpretation Γ M)
+            subConcept superConcept)
+          [⟨MembershipConcept.feature, true⟩, ⟨MembershipConcept.witness, true⟩] : ℝ) /
+          FiniteWitnessFeatureTable.veWeight
+            (Interpretation.toFiniteWitnessFeatureTable
+              (_root_.Mettapedia.Logic.ConceptOntology.lowerFormedConceptInterpretation Γ M)
+              subConcept superConcept)
+            [⟨MembershipConcept.feature, true⟩] := by
+  simpa [Interpretation.finiteInheritanceStrength_eq] using
+    Interpretation.finiteExtensionalProb_eq_veWeight_ratio
+      (I := _root_.Mettapedia.Logic.ConceptOntology.lowerFormedConceptInterpretation Γ M)
+      (feature := subConcept) (witness := superConcept)
+
+omit [Fintype Gate] [Nonempty Gate] in
+theorem finiteInheritanceLogRatioBits_lowerFormedConceptInterpretation_eq_veQueryScore
+    (Γ : Gate → _root_.Mettapedia.Logic.ConceptOntology.EvidenceGate Q)
+    (M : Obj → Attr → Q)
+    (subConcept superConcept :
+      _root_.Mettapedia.Logic.ConceptOntology.LowerFormedConcept Γ M) :
+    Interpretation.finiteInheritanceLogRatioBits
+        (_root_.Mettapedia.Logic.ConceptOntology.lowerFormedConceptInterpretation Γ M)
+        subConcept superConcept =
+      logRatioInformationGainFromEvidence
+        (if FiniteWitnessFeatureTable.veWeight
+            (Interpretation.toFiniteWitnessFeatureTable
+              (_root_.Mettapedia.Logic.ConceptOntology.lowerFormedConceptInterpretation Γ M)
+              subConcept superConcept)
+            [⟨MembershipConcept.feature, true⟩] = 0 then
+          0
+        else
+          (FiniteWitnessFeatureTable.veWeight
+            (Interpretation.toFiniteWitnessFeatureTable
+              (_root_.Mettapedia.Logic.ConceptOntology.lowerFormedConceptInterpretation Γ M)
+              subConcept superConcept)
+            [⟨MembershipConcept.feature, true⟩, ⟨MembershipConcept.witness, true⟩] : ℝ) /
+            FiniteWitnessFeatureTable.veWeight
+              (Interpretation.toFiniteWitnessFeatureTable
+                (_root_.Mettapedia.Logic.ConceptOntology.lowerFormedConceptInterpretation Γ M)
+                subConcept superConcept)
+              [⟨MembershipConcept.feature, true⟩])
+        ((FiniteWitnessFeatureTable.veWeight
+          (Interpretation.toFiniteWitnessFeatureTable
+            (_root_.Mettapedia.Logic.ConceptOntology.lowerFormedConceptInterpretation Γ M)
+            subConcept superConcept)
+          [⟨MembershipConcept.witness, true⟩] : ℝ) /
+            FiniteWitnessFeatureTable.veWeight
+              (Interpretation.toFiniteWitnessFeatureTable
+                (_root_.Mettapedia.Logic.ConceptOntology.lowerFormedConceptInterpretation Γ M)
+                subConcept superConcept) []) := by
+  simpa [Interpretation.finiteInheritanceLogRatioBits_eq] using
+    Interpretation.finitePointwiseLogRatioBits_eq_ve_query_score
+      (I := _root_.Mettapedia.Logic.ConceptOntology.lowerFormedConceptInterpretation Γ M)
+      (feature := subConcept) (witness := superConcept)
+
+omit [Fintype Gate] [Nonempty Gate] in
+theorem finiteInheritancePrior_lowerFormedConceptInterpretation_eq_bpRatio
+    (Γ : Gate → Mettapedia.Logic.ConceptOntology.EvidenceGate Q)
+    (M : Obj → Attr → Q)
+    (subConcept superConcept :
+      Mettapedia.Logic.ConceptOntology.LowerFormedConcept Γ M) :
+    Interpretation.finiteInheritancePrior
+        (Mettapedia.Logic.ConceptOntology.lowerFormedConceptInterpretation Γ M) superConcept =
+      (FiniteWitnessFeatureTable.witnessMessage
+        (Interpretation.toFiniteWitnessFeatureTable
+          (Mettapedia.Logic.ConceptOntology.lowerFormedConceptInterpretation Γ M)
+          subConcept superConcept) true : ℝ) /
+        FiniteWitnessFeatureTable.veWeight
+          (Interpretation.toFiniteWitnessFeatureTable
+            (Mettapedia.Logic.ConceptOntology.lowerFormedConceptInterpretation Γ M)
+            subConcept superConcept) [] := by
+  simpa [Interpretation.finiteInheritancePrior_eq] using
+    Interpretation.finitePriorProb_eq_bp_ratio
+      (I := Mettapedia.Logic.ConceptOntology.lowerFormedConceptInterpretation Γ M)
+      (feature := subConcept) (witness := superConcept)
+
+omit [Fintype Gate] [Nonempty Gate] in
+theorem finiteInheritanceStrength_lowerFormedConceptInterpretation_eq_bpRatio
+    (Γ : Gate → Mettapedia.Logic.ConceptOntology.EvidenceGate Q)
+    (M : Obj → Attr → Q)
+    (subConcept superConcept :
+      Mettapedia.Logic.ConceptOntology.LowerFormedConcept Γ M) :
+    Interpretation.finiteInheritanceStrength
+        (Mettapedia.Logic.ConceptOntology.lowerFormedConceptInterpretation Γ M)
+        subConcept superConcept =
+      if FiniteWitnessFeatureTable.featureMessage
+          (Interpretation.toFiniteWitnessFeatureTable
+            (Mettapedia.Logic.ConceptOntology.lowerFormedConceptInterpretation Γ M)
+            subConcept superConcept) true = 0 then
+        0
+      else
+        (FiniteWitnessFeatureTable.jointFactorBelief
+          (Interpretation.toFiniteWitnessFeatureTable
+            (Mettapedia.Logic.ConceptOntology.lowerFormedConceptInterpretation Γ M)
+            subConcept superConcept)
+          (FiniteWitnessFeatureTable.ttJointAssign
+            (Interpretation.toFiniteWitnessFeatureTable
+              (Mettapedia.Logic.ConceptOntology.lowerFormedConceptInterpretation Γ M)
+              subConcept superConcept)) : ℝ) /
+          FiniteWitnessFeatureTable.featureMessage
+            (Interpretation.toFiniteWitnessFeatureTable
+              (Mettapedia.Logic.ConceptOntology.lowerFormedConceptInterpretation Γ M)
+              subConcept superConcept) true := by
+  simpa [Interpretation.finiteInheritanceStrength_eq] using
+    Interpretation.finiteExtensionalProb_eq_bp_ratio
+      (I := Mettapedia.Logic.ConceptOntology.lowerFormedConceptInterpretation Γ M)
+      (feature := subConcept) (witness := superConcept)
+
+omit [Fintype Gate] [Nonempty Gate] in
+theorem lowerFormedConceptInheritance_exact_via_table
+    (Γ : Gate → Mettapedia.Logic.ConceptOntology.EvidenceGate Q)
+    (M : Obj → Attr → Q)
+    (subConcept superConcept :
+      Mettapedia.Logic.ConceptOntology.LowerFormedConcept Γ M) :
+    Interpretation.finiteInheritancePrior
+        (Mettapedia.Logic.ConceptOntology.lowerFormedConceptInterpretation Γ M) superConcept =
+      FiniteWitnessFeatureTable.witnessPrior
+        (lowerCredalConceptInheritanceTable Γ M subConcept superConcept)
+    ∧
+    Interpretation.finiteInheritanceStrength
+        (Mettapedia.Logic.ConceptOntology.lowerFormedConceptInterpretation Γ M)
+        subConcept superConcept =
+      FiniteWitnessFeatureTable.featureToWitnessStrength
+        (lowerCredalConceptInheritanceTable Γ M subConcept superConcept)
+    ∧
+    Interpretation.finiteInheritanceLogRatioBits
+        (Mettapedia.Logic.ConceptOntology.lowerFormedConceptInterpretation Γ M)
+        subConcept superConcept =
+      FiniteWitnessFeatureTable.logRatioBits
+        (lowerCredalConceptInheritanceTable Γ M subConcept superConcept) := by
+  constructor
+  · simpa [lowerCredalConceptInheritanceTable, Interpretation.finiteInheritancePrior_eq] using
+      finitePriorProb_lowerFormedConceptInterpretation_eq_toFiniteWitnessFeatureTable_witnessPrior
+        (Γ := Γ) (M := M) (feature := subConcept) (witness := superConcept)
+  constructor
+  · simpa [lowerCredalConceptInheritanceTable, Interpretation.finiteInheritanceStrength_eq] using
+      finiteExtensionalProb_lowerFormedConceptInterpretation_eq_toFiniteWitnessFeatureTable_strength
+        (Γ := Γ) (M := M) (feature := subConcept) (witness := superConcept)
+  · simpa [lowerCredalConceptInheritanceTable, Interpretation.finiteInheritanceLogRatioBits_eq] using
+      finitePointwiseLogRatioBits_lowerFormedConceptInterpretation_eq_toFiniteWitnessFeatureTable
+        (Γ := Γ) (M := M) (feature := subConcept) (witness := superConcept)
+
+omit [Fintype Gate] [Nonempty Gate] in
+theorem lowerFormedConceptInheritance_exact_via_ve_bp
+    (Γ : Gate → Mettapedia.Logic.ConceptOntology.EvidenceGate Q)
+    (M : Obj → Attr → Q)
+    (subConcept superConcept :
+      Mettapedia.Logic.ConceptOntology.LowerFormedConcept Γ M) :
+    (Interpretation.finiteInheritancePrior
+        (Mettapedia.Logic.ConceptOntology.lowerFormedConceptInterpretation Γ M) superConcept =
+      (FiniteWitnessFeatureTable.veWeight
+        (lowerCredalConceptInheritanceTable Γ M subConcept superConcept)
+        [⟨MembershipConcept.witness, true⟩] : ℝ) /
+        FiniteWitnessFeatureTable.veWeight
+          (lowerCredalConceptInheritanceTable Γ M subConcept superConcept) [])
+    ∧
+    (Interpretation.finiteInheritanceStrength
+        (Mettapedia.Logic.ConceptOntology.lowerFormedConceptInterpretation Γ M)
+        subConcept superConcept =
+      if FiniteWitnessFeatureTable.veWeight
+          (lowerCredalConceptInheritanceTable Γ M subConcept superConcept)
+          [⟨MembershipConcept.feature, true⟩] = 0 then
+        0
+      else
+        (FiniteWitnessFeatureTable.veWeight
+          (lowerCredalConceptInheritanceTable Γ M subConcept superConcept)
+          [⟨MembershipConcept.feature, true⟩, ⟨MembershipConcept.witness, true⟩] : ℝ) /
+          FiniteWitnessFeatureTable.veWeight
+            (lowerCredalConceptInheritanceTable Γ M subConcept superConcept)
+            [⟨MembershipConcept.feature, true⟩])
+    ∧
+    (Interpretation.finiteInheritanceLogRatioBits
+        (Mettapedia.Logic.ConceptOntology.lowerFormedConceptInterpretation Γ M)
+        subConcept superConcept =
+      logRatioInformationGainFromEvidence
+        (if FiniteWitnessFeatureTable.veWeight
+            (lowerCredalConceptInheritanceTable Γ M subConcept superConcept)
+            [⟨MembershipConcept.feature, true⟩] = 0 then
+          0
+        else
+          (FiniteWitnessFeatureTable.veWeight
+            (lowerCredalConceptInheritanceTable Γ M subConcept superConcept)
+            [⟨MembershipConcept.feature, true⟩, ⟨MembershipConcept.witness, true⟩] : ℝ) /
+            FiniteWitnessFeatureTable.veWeight
+              (lowerCredalConceptInheritanceTable Γ M subConcept superConcept)
+              [⟨MembershipConcept.feature, true⟩])
+        ((FiniteWitnessFeatureTable.veWeight
+          (lowerCredalConceptInheritanceTable Γ M subConcept superConcept)
+          [⟨MembershipConcept.witness, true⟩] : ℝ) /
+            FiniteWitnessFeatureTable.veWeight
+              (lowerCredalConceptInheritanceTable Γ M subConcept superConcept) []))
+    ∧
+    (Interpretation.finiteInheritancePrior
+        (Mettapedia.Logic.ConceptOntology.lowerFormedConceptInterpretation Γ M) superConcept =
+      (FiniteWitnessFeatureTable.witnessMessage
+        (lowerCredalConceptInheritanceTable Γ M subConcept superConcept) true : ℝ) /
+        FiniteWitnessFeatureTable.veWeight
+          (lowerCredalConceptInheritanceTable Γ M subConcept superConcept) [])
+    ∧
+    (Interpretation.finiteInheritanceStrength
+        (Mettapedia.Logic.ConceptOntology.lowerFormedConceptInterpretation Γ M)
+        subConcept superConcept =
+      if FiniteWitnessFeatureTable.featureMessage
+          (lowerCredalConceptInheritanceTable Γ M subConcept superConcept) true = 0 then
+        0
+      else
+        (FiniteWitnessFeatureTable.jointFactorBelief
+          (lowerCredalConceptInheritanceTable Γ M subConcept superConcept)
+          (FiniteWitnessFeatureTable.ttJointAssign
+            (lowerCredalConceptInheritanceTable Γ M subConcept superConcept)) : ℝ) /
+          FiniteWitnessFeatureTable.featureMessage
+            (lowerCredalConceptInheritanceTable Γ M subConcept superConcept) true) := by
+  constructor
+  · simpa [lowerCredalConceptInheritanceTable] using
+      finiteInheritancePrior_lowerFormedConceptInterpretation_eq_veWeight_ratio
+        (Γ := Γ) (M := M) (subConcept := subConcept) (superConcept := superConcept)
+  constructor
+  · simpa [lowerCredalConceptInheritanceTable] using
+      finiteInheritanceStrength_lowerFormedConceptInterpretation_eq_veWeight_ratio
+        (Γ := Γ) (M := M) (subConcept := subConcept) (superConcept := superConcept)
+  constructor
+  · simpa [lowerCredalConceptInheritanceTable] using
+      finiteInheritanceLogRatioBits_lowerFormedConceptInterpretation_eq_veQueryScore
+        (Γ := Γ) (M := M) (subConcept := subConcept) (superConcept := superConcept)
+  constructor
+  · simpa [lowerCredalConceptInheritanceTable] using
+      finiteInheritancePrior_lowerFormedConceptInterpretation_eq_bpRatio
+        (Γ := Γ) (M := M) (subConcept := subConcept) (superConcept := superConcept)
+  · simpa [lowerCredalConceptInheritanceTable] using
+      finiteInheritanceStrength_lowerFormedConceptInterpretation_eq_bpRatio
+        (Γ := Γ) (M := M) (subConcept := subConcept) (superConcept := superConcept)
+
+theorem lowerCredalConceptInheritanceTable_singleton_eq
+    (G : Mettapedia.Logic.ConceptOntology.EvidenceGate Q)
+    (M : Obj → Attr → Q)
+    (subConcept superConcept :
+      Mettapedia.Logic.ConceptOntology.LowerFormedConcept (Gate := PUnit) (fun _ => G) M) :
+    lowerCredalConceptInheritanceTable (Gate := PUnit) (fun _ => G) M subConcept superConcept =
+      AbstractInheritance.formedConceptInheritanceTable G M
+        (Mettapedia.Logic.ConceptOntology.lowerFormedConceptSingletonEquiv G M subConcept)
+        (Mettapedia.Logic.ConceptOntology.lowerFormedConceptSingletonEquiv G M superConcept) := by
+  rfl
+
+omit [Nonempty Obj] in
+theorem finiteInheritanceStrength_lowerFormedConceptInterpretation_singleton_eq
+    (G : Mettapedia.Logic.ConceptOntology.EvidenceGate Q)
+    (M : Obj → Attr → Q)
+    (subConcept superConcept :
+      Mettapedia.Logic.ConceptOntology.LowerFormedConcept (Gate := PUnit) (fun _ => G) M) :
+    Interpretation.finiteInheritanceStrength
+        (Mettapedia.Logic.ConceptOntology.lowerFormedConceptInterpretation
+          (Gate := PUnit) (fun _ => G) M)
+        subConcept superConcept =
+      Interpretation.finiteInheritanceStrength
+        (Mettapedia.Logic.AbstractInheritance.formedConceptInterpretation G M)
+        (Mettapedia.Logic.ConceptOntology.lowerFormedConceptSingletonEquiv G M subConcept)
+        (Mettapedia.Logic.ConceptOntology.lowerFormedConceptSingletonEquiv G M superConcept) := by
+  rfl
+
+omit [Nonempty Obj] in
+theorem lowerFormedConceptInheritance_exact_via_table_singleton
+    (G : Mettapedia.Logic.ConceptOntology.EvidenceGate Q)
+    (M : Obj → Attr → Q)
+    (subConcept superConcept :
+      Mettapedia.Logic.ConceptOntology.LowerFormedConcept (Gate := PUnit) (fun _ => G) M) :
+    let subExact :=
+      Mettapedia.Logic.ConceptOntology.lowerFormedConceptSingletonEquiv G M subConcept
+    let superExact :=
+      Mettapedia.Logic.ConceptOntology.lowerFormedConceptSingletonEquiv G M superConcept
+    Interpretation.finiteInheritancePrior
+        (Mettapedia.Logic.ConceptOntology.lowerFormedConceptInterpretation
+          (Gate := PUnit) (fun _ => G) M)
+        superConcept =
+      Interpretation.finiteInheritancePrior
+        (Mettapedia.Logic.AbstractInheritance.formedConceptInterpretation G M)
+        superExact
+    ∧
+    Interpretation.finiteInheritanceStrength
+        (Mettapedia.Logic.ConceptOntology.lowerFormedConceptInterpretation
+          (Gate := PUnit) (fun _ => G) M)
+        subConcept superConcept =
+      Interpretation.finiteInheritanceStrength
+        (Mettapedia.Logic.AbstractInheritance.formedConceptInterpretation G M)
+        subExact superExact
+    ∧
+    Interpretation.finiteInheritanceLogRatioBits
+        (Mettapedia.Logic.ConceptOntology.lowerFormedConceptInterpretation
+          (Gate := PUnit) (fun _ => G) M)
+        subConcept superConcept =
+      Interpretation.finiteInheritanceLogRatioBits
+        (Mettapedia.Logic.AbstractInheritance.formedConceptInterpretation G M)
+        subExact superExact := by
+  constructor <;> constructor <;> rfl
+
+noncomputable def upperCredalConceptInheritanceTable
+    (Γ : Gate → EvidenceGate Q)
+    (M : Obj → Attr → Q)
+    (subConcept superConcept : UpperFormedConcept Γ M) :
+    FiniteWitnessFeatureTable :=
+  Interpretation.toFiniteWitnessFeatureTable
+    (upperFormedConceptInterpretation Γ M)
+    subConcept superConcept
+
+omit [Fintype Gate] [Nonempty Gate] in
+theorem finitePriorProb_upperFormedConceptInterpretation_eq_toFiniteWitnessFeatureTable_witnessPrior
+    (Γ : Gate → EvidenceGate Q)
+    (M : Obj → Attr → Q)
+    (feature witness : UpperFormedConcept Γ M) :
+    Interpretation.finitePriorProb
+        (upperFormedConceptInterpretation Γ M) witness =
+      FiniteWitnessFeatureTable.witnessPrior
+        (Interpretation.toFiniteWitnessFeatureTable
+          (upperFormedConceptInterpretation Γ M)
+          feature witness) := by
+  simpa using
+    Interpretation.finitePriorProb_eq_toFiniteWitnessFeatureTable_witnessPrior
+      (I := upperFormedConceptInterpretation Γ M)
+      (feature := feature) (witness := witness)
+
+omit [Fintype Gate] [Nonempty Gate] in
+theorem finiteExtensionalProb_upperFormedConceptInterpretation_eq_toFiniteWitnessFeatureTable_strength
+    (Γ : Gate → EvidenceGate Q)
+    (M : Obj → Attr → Q)
+    (feature witness : UpperFormedConcept Γ M) :
+    Interpretation.finiteExtensionalProb
+        (upperFormedConceptInterpretation Γ M)
+        feature witness =
+      FiniteWitnessFeatureTable.featureToWitnessStrength
+        (Interpretation.toFiniteWitnessFeatureTable
+          (upperFormedConceptInterpretation Γ M)
+          feature witness) := by
+  simpa using
+    Interpretation.finiteExtensionalProb_eq_toFiniteWitnessFeatureTable_strength
+      (I := upperFormedConceptInterpretation Γ M)
+      (feature := feature) (witness := witness)
+
+omit [Fintype Gate] [Nonempty Gate] in
+theorem finitePointwiseLogRatioBits_upperFormedConceptInterpretation_eq_toFiniteWitnessFeatureTable
+    (Γ : Gate → EvidenceGate Q)
+    (M : Obj → Attr → Q)
+    (feature witness : UpperFormedConcept Γ M) :
+    Interpretation.finitePointwiseLogRatioBits
+        (upperFormedConceptInterpretation Γ M)
+        feature witness =
+      FiniteWitnessFeatureTable.logRatioBits
+        (Interpretation.toFiniteWitnessFeatureTable
+          (upperFormedConceptInterpretation Γ M)
+          feature witness) := by
+  simpa using
+    Interpretation.finitePointwiseLogRatioBits_eq_toFiniteWitnessFeatureTable
+      (I := upperFormedConceptInterpretation Γ M)
+      (feature := feature) (witness := witness)
+
+omit [Fintype Gate] [Nonempty Gate] in
+theorem finiteInheritancePrior_upperFormedConceptInterpretation_eq_veWeight_ratio
+    (Γ : Gate → EvidenceGate Q)
+    (M : Obj → Attr → Q)
+    (subConcept superConcept : UpperFormedConcept Γ M) :
+    Interpretation.finiteInheritancePrior
+        (upperFormedConceptInterpretation Γ M) superConcept =
+      (FiniteWitnessFeatureTable.veWeight
+        (Interpretation.toFiniteWitnessFeatureTable
+          (upperFormedConceptInterpretation Γ M)
+          subConcept superConcept)
+        [⟨MembershipConcept.witness, true⟩] : ℝ) /
+        FiniteWitnessFeatureTable.veWeight
+          (Interpretation.toFiniteWitnessFeatureTable
+            (upperFormedConceptInterpretation Γ M)
+            subConcept superConcept) [] := by
+  simpa [Interpretation.finiteInheritancePrior_eq] using
+    Interpretation.finitePriorProb_eq_veWeight_ratio
+      (I := upperFormedConceptInterpretation Γ M)
+      (feature := subConcept) (witness := superConcept)
+
+omit [Fintype Gate] [Nonempty Gate] in
+theorem finiteInheritanceStrength_upperFormedConceptInterpretation_eq_veWeight_ratio
+    (Γ : Gate → EvidenceGate Q)
+    (M : Obj → Attr → Q)
+    (subConcept superConcept : UpperFormedConcept Γ M) :
+    Interpretation.finiteInheritanceStrength
+        (upperFormedConceptInterpretation Γ M)
+        subConcept superConcept =
+      if FiniteWitnessFeatureTable.veWeight
+          (Interpretation.toFiniteWitnessFeatureTable
+            (upperFormedConceptInterpretation Γ M)
+            subConcept superConcept)
+          [⟨MembershipConcept.feature, true⟩] = 0 then
+        0
+      else
+        (FiniteWitnessFeatureTable.veWeight
+          (Interpretation.toFiniteWitnessFeatureTable
+            (upperFormedConceptInterpretation Γ M)
+            subConcept superConcept)
+          [⟨MembershipConcept.feature, true⟩, ⟨MembershipConcept.witness, true⟩] : ℝ) /
+          FiniteWitnessFeatureTable.veWeight
+            (Interpretation.toFiniteWitnessFeatureTable
+              (upperFormedConceptInterpretation Γ M)
+              subConcept superConcept)
+            [⟨MembershipConcept.feature, true⟩] := by
+  simpa [Interpretation.finiteInheritanceStrength_eq] using
+    Interpretation.finiteExtensionalProb_eq_veWeight_ratio
+      (I := upperFormedConceptInterpretation Γ M)
+      (feature := subConcept) (witness := superConcept)
+
+omit [Fintype Gate] [Nonempty Gate] in
+theorem finiteInheritanceLogRatioBits_upperFormedConceptInterpretation_eq_veQueryScore
+    (Γ : Gate → EvidenceGate Q)
+    (M : Obj → Attr → Q)
+    (subConcept superConcept : UpperFormedConcept Γ M) :
+    Interpretation.finiteInheritanceLogRatioBits
+        (upperFormedConceptInterpretation Γ M)
+        subConcept superConcept =
+      logRatioInformationGainFromEvidence
+        (if FiniteWitnessFeatureTable.veWeight
+            (Interpretation.toFiniteWitnessFeatureTable
+              (upperFormedConceptInterpretation Γ M)
+              subConcept superConcept)
+            [⟨MembershipConcept.feature, true⟩] = 0 then
+          0
+        else
+          (FiniteWitnessFeatureTable.veWeight
+            (Interpretation.toFiniteWitnessFeatureTable
+              (upperFormedConceptInterpretation Γ M)
+              subConcept superConcept)
+            [⟨MembershipConcept.feature, true⟩, ⟨MembershipConcept.witness, true⟩] : ℝ) /
+            FiniteWitnessFeatureTable.veWeight
+              (Interpretation.toFiniteWitnessFeatureTable
+                (upperFormedConceptInterpretation Γ M)
+                subConcept superConcept)
+              [⟨MembershipConcept.feature, true⟩])
+        ((FiniteWitnessFeatureTable.veWeight
+          (Interpretation.toFiniteWitnessFeatureTable
+            (upperFormedConceptInterpretation Γ M)
+            subConcept superConcept)
+          [⟨MembershipConcept.witness, true⟩] : ℝ) /
+            FiniteWitnessFeatureTable.veWeight
+              (Interpretation.toFiniteWitnessFeatureTable
+                (upperFormedConceptInterpretation Γ M)
+                subConcept superConcept) []) := by
+  simpa [Interpretation.finiteInheritanceLogRatioBits_eq] using
+    Interpretation.finitePointwiseLogRatioBits_eq_ve_query_score
+      (I := upperFormedConceptInterpretation Γ M)
+      (feature := subConcept) (witness := superConcept)
+
+omit [Fintype Gate] [Nonempty Gate] in
+theorem finiteInheritancePrior_upperFormedConceptInterpretation_eq_bpRatio
+    (Γ : Gate → EvidenceGate Q)
+    (M : Obj → Attr → Q)
+    (subConcept superConcept : UpperFormedConcept Γ M) :
+    Interpretation.finiteInheritancePrior
+        (upperFormedConceptInterpretation Γ M) superConcept =
+      (FiniteWitnessFeatureTable.witnessMessage
+        (Interpretation.toFiniteWitnessFeatureTable
+          (upperFormedConceptInterpretation Γ M)
+          subConcept superConcept) true : ℝ) /
+        FiniteWitnessFeatureTable.veWeight
+          (Interpretation.toFiniteWitnessFeatureTable
+            (upperFormedConceptInterpretation Γ M)
+            subConcept superConcept) [] := by
+  simpa [Interpretation.finiteInheritancePrior_eq] using
+    Interpretation.finitePriorProb_eq_bp_ratio
+      (I := upperFormedConceptInterpretation Γ M)
+      (feature := subConcept) (witness := superConcept)
+
+omit [Fintype Gate] [Nonempty Gate] in
+theorem finiteInheritanceStrength_upperFormedConceptInterpretation_eq_bpRatio
+    (Γ : Gate → EvidenceGate Q)
+    (M : Obj → Attr → Q)
+    (subConcept superConcept : UpperFormedConcept Γ M) :
+    Interpretation.finiteInheritanceStrength
+        (upperFormedConceptInterpretation Γ M)
+        subConcept superConcept =
+      if FiniteWitnessFeatureTable.featureMessage
+          (Interpretation.toFiniteWitnessFeatureTable
+            (upperFormedConceptInterpretation Γ M)
+            subConcept superConcept) true = 0 then
+        0
+      else
+        (FiniteWitnessFeatureTable.jointFactorBelief
+          (Interpretation.toFiniteWitnessFeatureTable
+            (upperFormedConceptInterpretation Γ M)
+            subConcept superConcept)
+          (FiniteWitnessFeatureTable.ttJointAssign
+            (Interpretation.toFiniteWitnessFeatureTable
+              (upperFormedConceptInterpretation Γ M)
+              subConcept superConcept)) : ℝ) /
+          FiniteWitnessFeatureTable.featureMessage
+            (Interpretation.toFiniteWitnessFeatureTable
+              (upperFormedConceptInterpretation Γ M)
+              subConcept superConcept) true := by
+  simpa [Interpretation.finiteInheritanceStrength_eq] using
+    Interpretation.finiteExtensionalProb_eq_bp_ratio
+      (I := upperFormedConceptInterpretation Γ M)
+      (feature := subConcept) (witness := superConcept)
+
+omit [Fintype Gate] [Nonempty Gate] in
+theorem upperFormedConceptInheritance_exact_via_table
+    (Γ : Gate → EvidenceGate Q)
+    (M : Obj → Attr → Q)
+    (subConcept superConcept : UpperFormedConcept Γ M) :
+    Interpretation.finiteInheritancePrior
+        (upperFormedConceptInterpretation Γ M) superConcept =
+      FiniteWitnessFeatureTable.witnessPrior
+        (upperCredalConceptInheritanceTable Γ M subConcept superConcept)
+    ∧
+    Interpretation.finiteInheritanceStrength
+        (upperFormedConceptInterpretation Γ M)
+        subConcept superConcept =
+      FiniteWitnessFeatureTable.featureToWitnessStrength
+        (upperCredalConceptInheritanceTable Γ M subConcept superConcept)
+    ∧
+    Interpretation.finiteInheritanceLogRatioBits
+        (upperFormedConceptInterpretation Γ M)
+        subConcept superConcept =
+      FiniteWitnessFeatureTable.logRatioBits
+        (upperCredalConceptInheritanceTable Γ M subConcept superConcept) := by
+  constructor
+  · simpa [upperCredalConceptInheritanceTable, Interpretation.finiteInheritancePrior_eq] using
+      finitePriorProb_upperFormedConceptInterpretation_eq_toFiniteWitnessFeatureTable_witnessPrior
+        (Γ := Γ) (M := M) (feature := subConcept) (witness := superConcept)
+  constructor
+  · simpa [upperCredalConceptInheritanceTable, Interpretation.finiteInheritanceStrength_eq] using
+      finiteExtensionalProb_upperFormedConceptInterpretation_eq_toFiniteWitnessFeatureTable_strength
+        (Γ := Γ) (M := M) (feature := subConcept) (witness := superConcept)
+  · simpa [upperCredalConceptInheritanceTable, Interpretation.finiteInheritanceLogRatioBits_eq] using
+      finitePointwiseLogRatioBits_upperFormedConceptInterpretation_eq_toFiniteWitnessFeatureTable
+        (Γ := Γ) (M := M) (feature := subConcept) (witness := superConcept)
+
+omit [Fintype Gate] [Nonempty Gate] in
+theorem upperFormedConceptInheritance_exact_via_ve_bp
+    (Γ : Gate → EvidenceGate Q)
+    (M : Obj → Attr → Q)
+    (subConcept superConcept : UpperFormedConcept Γ M) :
+    (Interpretation.finiteInheritancePrior
+        (upperFormedConceptInterpretation Γ M) superConcept =
+      (FiniteWitnessFeatureTable.veWeight
+        (upperCredalConceptInheritanceTable Γ M subConcept superConcept)
+        [⟨MembershipConcept.witness, true⟩] : ℝ) /
+        FiniteWitnessFeatureTable.veWeight
+          (upperCredalConceptInheritanceTable Γ M subConcept superConcept) [])
+    ∧
+    (Interpretation.finiteInheritanceStrength
+        (upperFormedConceptInterpretation Γ M)
+        subConcept superConcept =
+      if FiniteWitnessFeatureTable.veWeight
+          (upperCredalConceptInheritanceTable Γ M subConcept superConcept)
+          [⟨MembershipConcept.feature, true⟩] = 0 then
+        0
+      else
+        (FiniteWitnessFeatureTable.veWeight
+          (upperCredalConceptInheritanceTable Γ M subConcept superConcept)
+          [⟨MembershipConcept.feature, true⟩, ⟨MembershipConcept.witness, true⟩] : ℝ) /
+          FiniteWitnessFeatureTable.veWeight
+            (upperCredalConceptInheritanceTable Γ M subConcept superConcept)
+            [⟨MembershipConcept.feature, true⟩])
+    ∧
+    (Interpretation.finiteInheritanceLogRatioBits
+        (upperFormedConceptInterpretation Γ M)
+        subConcept superConcept =
+      logRatioInformationGainFromEvidence
+        (if FiniteWitnessFeatureTable.veWeight
+            (upperCredalConceptInheritanceTable Γ M subConcept superConcept)
+            [⟨MembershipConcept.feature, true⟩] = 0 then
+          0
+        else
+          (FiniteWitnessFeatureTable.veWeight
+            (upperCredalConceptInheritanceTable Γ M subConcept superConcept)
+            [⟨MembershipConcept.feature, true⟩, ⟨MembershipConcept.witness, true⟩] : ℝ) /
+            FiniteWitnessFeatureTable.veWeight
+              (upperCredalConceptInheritanceTable Γ M subConcept superConcept)
+              [⟨MembershipConcept.feature, true⟩])
+        ((FiniteWitnessFeatureTable.veWeight
+          (upperCredalConceptInheritanceTable Γ M subConcept superConcept)
+          [⟨MembershipConcept.witness, true⟩] : ℝ) /
+            FiniteWitnessFeatureTable.veWeight
+              (upperCredalConceptInheritanceTable Γ M subConcept superConcept) []))
+    ∧
+    (Interpretation.finiteInheritancePrior
+        (upperFormedConceptInterpretation Γ M) superConcept =
+      (FiniteWitnessFeatureTable.witnessMessage
+        (upperCredalConceptInheritanceTable Γ M subConcept superConcept) true : ℝ) /
+        FiniteWitnessFeatureTable.veWeight
+          (upperCredalConceptInheritanceTable Γ M subConcept superConcept) [])
+    ∧
+    (Interpretation.finiteInheritanceStrength
+        (upperFormedConceptInterpretation Γ M)
+        subConcept superConcept =
+      if FiniteWitnessFeatureTable.featureMessage
+          (upperCredalConceptInheritanceTable Γ M subConcept superConcept) true = 0 then
+        0
+      else
+        (FiniteWitnessFeatureTable.jointFactorBelief
+          (upperCredalConceptInheritanceTable Γ M subConcept superConcept)
+          (FiniteWitnessFeatureTable.ttJointAssign
+            (upperCredalConceptInheritanceTable Γ M subConcept superConcept)) : ℝ) /
+          FiniteWitnessFeatureTable.featureMessage
+            (upperCredalConceptInheritanceTable Γ M subConcept superConcept) true) := by
+  constructor
+  · simpa [upperCredalConceptInheritanceTable] using
+      finiteInheritancePrior_upperFormedConceptInterpretation_eq_veWeight_ratio
+        (Γ := Γ) (M := M) (subConcept := subConcept) (superConcept := superConcept)
+  constructor
+  · simpa [upperCredalConceptInheritanceTable] using
+      finiteInheritanceStrength_upperFormedConceptInterpretation_eq_veWeight_ratio
+        (Γ := Γ) (M := M) (subConcept := subConcept) (superConcept := superConcept)
+  constructor
+  · simpa [upperCredalConceptInheritanceTable] using
+      finiteInheritanceLogRatioBits_upperFormedConceptInterpretation_eq_veQueryScore
+        (Γ := Γ) (M := M) (subConcept := subConcept) (superConcept := superConcept)
+  constructor
+  · simpa [upperCredalConceptInheritanceTable] using
+      finiteInheritancePrior_upperFormedConceptInterpretation_eq_bpRatio
+        (Γ := Γ) (M := M) (subConcept := subConcept) (superConcept := superConcept)
+  · simpa [upperCredalConceptInheritanceTable] using
+      finiteInheritanceStrength_upperFormedConceptInterpretation_eq_bpRatio
+        (Γ := Γ) (M := M) (subConcept := subConcept) (superConcept := superConcept)
+
+theorem upperCredalConceptInheritanceTable_singleton_eq
+    (G : EvidenceGate Q)
+    (M : Obj → Attr → Q)
+    (subConcept superConcept :
+      UpperFormedConcept (Gate := PUnit) (fun _ => G) M) :
+    upperCredalConceptInheritanceTable (Gate := PUnit) (fun _ => G) M subConcept superConcept =
+      AbstractInheritance.formedConceptInheritanceTable G M
+        (upperFormedConceptSingletonEquiv G M subConcept)
+        (upperFormedConceptSingletonEquiv G M superConcept) := by
+  rfl
+
+omit [Nonempty Obj] in
+theorem finiteInheritanceStrength_upperFormedConceptInterpretation_singleton_eq
+    (G : EvidenceGate Q)
+    (M : Obj → Attr → Q)
+    (subConcept superConcept :
+      UpperFormedConcept (Gate := PUnit) (fun _ => G) M) :
+    Interpretation.finiteInheritanceStrength
+        (upperFormedConceptInterpretation
+          (Gate := PUnit) (fun _ => G) M)
+        subConcept superConcept =
+      Interpretation.finiteInheritanceStrength
+        (Mettapedia.Logic.AbstractInheritance.formedConceptInterpretation G M)
+        (upperFormedConceptSingletonEquiv G M subConcept)
+        (upperFormedConceptSingletonEquiv G M superConcept) := by
+  rfl
+
+omit [Nonempty Obj] in
+theorem upperFormedConceptInheritance_exact_via_table_singleton
+    (G : EvidenceGate Q)
+    (M : Obj → Attr → Q)
+    (subConcept superConcept :
+      UpperFormedConcept (Gate := PUnit) (fun _ => G) M) :
+    let subExact :=
+      upperFormedConceptSingletonEquiv G M subConcept
+    let superExact :=
+      upperFormedConceptSingletonEquiv G M superConcept
+    Interpretation.finiteInheritancePrior
+        (upperFormedConceptInterpretation
+          (Gate := PUnit) (fun _ => G) M)
+        superConcept =
+      Interpretation.finiteInheritancePrior
+        (Mettapedia.Logic.AbstractInheritance.formedConceptInterpretation G M)
+        superExact
+    ∧
+    Interpretation.finiteInheritanceStrength
+        (upperFormedConceptInterpretation
+          (Gate := PUnit) (fun _ => G) M)
+        subConcept superConcept =
+      Interpretation.finiteInheritanceStrength
+        (Mettapedia.Logic.AbstractInheritance.formedConceptInterpretation G M)
+        subExact superExact
+    ∧
+    Interpretation.finiteInheritanceLogRatioBits
+        (upperFormedConceptInterpretation
+          (Gate := PUnit) (fun _ => G) M)
+        subConcept superConcept =
+      Interpretation.finiteInheritanceLogRatioBits
+        (Mettapedia.Logic.AbstractInheritance.formedConceptInterpretation G M)
+        subExact superExact := by
+  constructor <;> constructor <;> rfl
+
+omit [Fintype Gate] in
+theorem upperCredalConceptInheritanceTable_of_lowerLift_eq
+    (Γ : Gate → EvidenceGate Q)
+    (M : Obj → Attr → Q)
+    (subConcept superConcept : LowerFormedConcept Γ M) :
+    upperCredalConceptInheritanceTable Γ M
+      (lowerToUpperFormedConcept Γ M subConcept)
+      (lowerToUpperFormedConcept Γ M superConcept) =
+    lowerCredalConceptInheritanceTable Γ M subConcept superConcept := by
+  rfl
+
+omit [Fintype Gate] [Nonempty Obj] in
+theorem lower_upperCredalInheritance_exact_of_lowerLift
+    (Γ : Gate → EvidenceGate Q)
+    (M : Obj → Attr → Q)
+    (subConcept superConcept : LowerFormedConcept Γ M) :
+    Interpretation.finiteInheritancePrior
+        (lowerFormedConceptInterpretation Γ M) superConcept =
+      Interpretation.finiteInheritancePrior
+        (upperFormedConceptInterpretation Γ M)
+        (lowerToUpperFormedConcept Γ M superConcept)
+    ∧
+    Interpretation.finiteInheritanceStrength
+        (lowerFormedConceptInterpretation Γ M)
+        subConcept superConcept =
+      Interpretation.finiteInheritanceStrength
+        (upperFormedConceptInterpretation Γ M)
+        (lowerToUpperFormedConcept Γ M subConcept)
+        (lowerToUpperFormedConcept Γ M superConcept)
+    ∧
+    Interpretation.finiteInheritanceLogRatioBits
+        (lowerFormedConceptInterpretation Γ M)
+        subConcept superConcept =
+      Interpretation.finiteInheritanceLogRatioBits
+        (upperFormedConceptInterpretation Γ M)
+        (lowerToUpperFormedConcept Γ M subConcept)
+        (lowerToUpperFormedConcept Γ M superConcept) := by
+  constructor <;> constructor <;> rfl
+
+/-- A credal inheritance query is at least permissively supported when both
+concepts are formed under some admissible gate. -/
+def credalInheritanceJudgment
+    (Γ : Gate → EvidenceGate Q)
+    (M : Obj → Attr → Q)
+    (subConcept superConcept : DualConcept Obj Attr) : Prop :=
+  subConcept ∈ upperConceptFamily Γ M ∧
+    superConcept ∈ upperConceptFamily Γ M
+
+/-- A credal inheritance query is precise when both concepts are robustly
+formed under every admissible gate. -/
+def credallyPreciseInheritance
+    (Γ : Gate → EvidenceGate Q)
+    (M : Obj → Attr → Q)
+    (subConcept superConcept : DualConcept Obj Attr) : Prop :=
+  subConcept ∈ lowerConceptFamily Γ M ∧
+    superConcept ∈ lowerConceptFamily Γ M
+
+/-- A credal inheritance query is imprecise when it is permissively supported
+but at least one side fails robust formation. -/
+def credallyImpreciseInheritance
+    (Γ : Gate → EvidenceGate Q)
+    (M : Obj → Attr → Q)
+    (subConcept superConcept : DualConcept Obj Attr) : Prop :=
+  subConcept ∈ upperConceptFamily Γ M ∧
+    superConcept ∈ upperConceptFamily Γ M ∧
+      (subConcept ∉ lowerConceptFamily Γ M ∨
+        superConcept ∉ lowerConceptFamily Γ M)
+
+omit [Fintype Gate] [Nonempty Gate] [Nonempty Obj] in
+@[simp] theorem credalInheritanceJudgment_iff
+    (Γ : Gate → EvidenceGate Q)
+    (M : Obj → Attr → Q)
+    (subConcept superConcept : DualConcept Obj Attr) :
+    credalInheritanceJudgment Γ M subConcept superConcept ↔
+      subConcept ∈ upperConceptFamily Γ M ∧
+        superConcept ∈ upperConceptFamily Γ M := Iff.rfl
+
+omit [Fintype Gate] [Nonempty Gate] [Nonempty Obj] in
+@[simp] theorem credallyPreciseInheritance_iff
+    (Γ : Gate → EvidenceGate Q)
+    (M : Obj → Attr → Q)
+    (subConcept superConcept : DualConcept Obj Attr) :
+    credallyPreciseInheritance Γ M subConcept superConcept ↔
+      subConcept ∈ lowerConceptFamily Γ M ∧
+        superConcept ∈ lowerConceptFamily Γ M := Iff.rfl
+
+omit [Fintype Gate] [Nonempty Gate] [Nonempty Obj] in
+@[simp] theorem credallyImpreciseInheritance_iff
+    (Γ : Gate → EvidenceGate Q)
+    (M : Obj → Attr → Q)
+    (subConcept superConcept : DualConcept Obj Attr) :
+    credallyImpreciseInheritance Γ M subConcept superConcept ↔
+      subConcept ∈ upperConceptFamily Γ M ∧
+        superConcept ∈ upperConceptFamily Γ M ∧
+          (subConcept ∉ lowerConceptFamily Γ M ∨
+            superConcept ∉ lowerConceptFamily Γ M) := Iff.rfl
+
+omit [Fintype Gate] [Nonempty Obj] in
+theorem credallyPreciseInheritance_imp_judgment
+    (Γ : Gate → EvidenceGate Q)
+    (M : Obj → Attr → Q)
+    (subConcept superConcept : DualConcept Obj Attr)
+    (hPrecise : credallyPreciseInheritance Γ M subConcept superConcept) :
+    credalInheritanceJudgment Γ M subConcept superConcept := by
+  rcases hPrecise with ⟨hSub, hSuper⟩
+  exact ⟨lowerConceptFamily_subset_upperConceptFamily Γ M hSub,
+    lowerConceptFamily_subset_upperConceptFamily Γ M hSuper⟩
+
+omit [Fintype Gate] [Nonempty Gate] [Nonempty Obj] in
+theorem credallyImpreciseInheritance_imp_judgment
+    (Γ : Gate → EvidenceGate Q)
+    (M : Obj → Attr → Q)
+    (subConcept superConcept : DualConcept Obj Attr)
+    (hImprecise : credallyImpreciseInheritance Γ M subConcept superConcept) :
+    credalInheritanceJudgment Γ M subConcept superConcept := by
+  exact ⟨hImprecise.1, hImprecise.2.1⟩
+
+omit [Fintype Gate] [Nonempty Gate] [Nonempty Obj] in
+theorem not_credallyImpreciseInheritance_of_precise
+    (Γ : Gate → EvidenceGate Q)
+    (M : Obj → Attr → Q)
+    (subConcept superConcept : DualConcept Obj Attr)
+    (hPrecise : credallyPreciseInheritance Γ M subConcept superConcept) :
+    ¬ credallyImpreciseInheritance Γ M subConcept superConcept := by
+  rcases hPrecise with ⟨hSub, hSuper⟩
+  intro hImprecise
+  rcases hImprecise with ⟨_, _, hGap⟩
+  rcases hGap with hSubNot | hSuperNot
+  · exact hSubNot hSub
+  · exact hSuperNot hSuper
+
+omit [Fintype Gate] [Nonempty Gate] [Nonempty Obj] in
+@[simp] theorem credalInheritanceJudgment_singleton_iff
+    (G : EvidenceGate Q)
+    (M : Obj → Attr → Q)
+    (subConcept superConcept : DualConcept Obj Attr) :
+    credalInheritanceJudgment (Gate := PUnit) (fun _ => G) M subConcept superConcept ↔
+      subConcept ∈ AbstractInheritance.finiteConceptFamily G M ∧
+        superConcept ∈ AbstractInheritance.finiteConceptFamily G M := by
+  simp [credalInheritanceJudgment]
+
+omit [Fintype Gate] [Nonempty Gate] [Nonempty Obj] in
+@[simp] theorem credallyPreciseInheritance_singleton_iff
+    (G : EvidenceGate Q)
+    (M : Obj → Attr → Q)
+    (subConcept superConcept : DualConcept Obj Attr) :
+    credallyPreciseInheritance (Gate := PUnit) (fun _ => G) M subConcept superConcept ↔
+      subConcept ∈ AbstractInheritance.finiteConceptFamily G M ∧
+        superConcept ∈ AbstractInheritance.finiteConceptFamily G M := by
+  simp [credallyPreciseInheritance]
+
+omit [Fintype Gate] [Nonempty Gate] [Nonempty Obj] in
+@[simp] theorem credallyImpreciseInheritance_singleton_iff
+    (G : EvidenceGate Q)
+    (M : Obj → Attr → Q)
+    (subConcept superConcept : DualConcept Obj Attr) :
+    credallyImpreciseInheritance (Gate := PUnit) (fun _ => G) M subConcept superConcept ↔
+      False := by
+  constructor
+  · intro h
+    rcases h with ⟨hSubUpper, hSuperUpper, hGap⟩
+    have hSubLower :
+        subConcept ∈ AbstractInheritance.finiteConceptFamily G M :=
+      (mem_upperConceptFamily_singleton_iff (G := G) (M := M) subConcept).1 hSubUpper
+    have hSuperLower :
+        superConcept ∈ AbstractInheritance.finiteConceptFamily G M :=
+      (mem_upperConceptFamily_singleton_iff (G := G) (M := M) superConcept).1 hSuperUpper
+    rcases hGap with hSubNot | hSuperNot
+    · exact hSubNot ((mem_lowerConceptFamily_singleton_iff (G := G) (M := M) subConcept).2 hSubLower)
+    · exact hSuperNot ((mem_lowerConceptFamily_singleton_iff (G := G) (M := M) superConcept).2 hSuperLower)
+  · intro h
+    exact False.elim h
+
+end RobustCredalFinitePairBridge
 
 namespace EvidenceMembershipContext
 

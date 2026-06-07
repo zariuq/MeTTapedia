@@ -19,7 +19,28 @@ structure FamilyRecursorDeclContract where
   familyName : DeclName
   recursorName : DeclName
   recursorType : PureTm 0
-deriving Repr
+deriving DecidableEq, Repr
+
+structure RecursorIotaObligation where
+  familyName : DeclName
+  recursorName : DeclName
+  ctorName : DeclName
+  generatedFrom : List DeclName
+  sourceShape : String
+  targetShape : String
+deriving DecidableEq, Repr
+
+structure GeneratedRecursorPilot where
+  contract : FamilyRecursorDeclContract
+  obligations : List RecursorIotaObligation
+  value? : Option (PureTm 0)
+deriving DecidableEq, Repr
+
+structure GeneratedClosedIotaRule where
+  obligation : RecursorIotaObligation
+  source : PureTm 0
+  target : PureTm 0
+deriving DecidableEq, Repr
 
 def unitRecName : DeclName := `Unit.rec
 def boolRecName : DeclName := `Bool.rec
@@ -442,8 +463,33 @@ def unitCtorTerm : PureTm 0 := .const unitCtorName
 def unitRecOnCtor : PureTm 0 :=
   .app (.app (.app unitRecTerm unitTyTerm) unitCtorTerm) unitCtorTerm
 
+def natZeroTerm : PureTm 0 := .const natZeroName
+def natSuccTerm : PureTm 0 := .const natSuccName
+def natRecTerm : PureTm 0 := .const natRecName
+
+def natRecStepSuccValue : PureTm 0 :=
+  .lam (.lam (.app (.const natSuccName) (.var (0 : Fin 2))))
+
+def natRecZeroClosedSource : PureTm 0 :=
+  .app (.app (.app (.app natRecTerm (.const natTyName)) natZeroTerm) natRecStepSuccValue) natZeroTerm
+
+def natRecZeroClosedTarget : PureTm 0 :=
+  natZeroTerm
+
 def unitRecAfterTy : PureTm 0 := .lam (.lam (.var (1 : Fin 2)))
 def unitRecAfterTyCtor : PureTm 0 := .lam (.const unitCtorName)
+def unitRecAfterDelta : PureTm 0 :=
+  .app (.app (.app unitRecValue unitTyTerm) unitCtorTerm) unitCtorTerm
+def unitRecAfterMotive : PureTm 0 :=
+  .app (.app unitRecAfterTy unitCtorTerm) unitCtorTerm
+def unitRecAfterBase : PureTm 0 :=
+  .app unitRecAfterTyCtor unitCtorTerm
+
+def unitRecOracleTraceTerms : List (PureTm 0) :=
+  [unitRecOnCtor, unitRecAfterDelta, unitRecAfterMotive, unitRecAfterBase, unitCtorTerm]
+
+theorem unitRecOracleTraceTerms_length :
+    unitRecOracleTraceTerms.length = 5 := rfl
 
 private theorem redDecl_to_star {E : DeclEnv} {t u : PureTm n} (h : RedDecl E t u) :
     RedStarDecl E t u :=
@@ -455,9 +501,9 @@ via δ-unfolding of `Unit.rec` plus β-reduction. -/
 theorem unitRecOnCtor_iota :
     RedStarDecl unitRecDeclEnv unitRecOnCtor unitCtorTerm := by
   let t0 : PureTm 0 := unitRecOnCtor
-  let t1 : PureTm 0 := .app (.app (.app unitRecValue unitTyTerm) unitCtorTerm) unitCtorTerm
-  let t2 : PureTm 0 := .app (.app unitRecAfterTy unitCtorTerm) unitCtorTerm
-  let t3 : PureTm 0 := .app unitRecAfterTyCtor unitCtorTerm
+  let t1 : PureTm 0 := unitRecAfterDelta
+  let t2 : PureTm 0 := unitRecAfterMotive
+  let t3 : PureTm 0 := unitRecAfterBase
   let t4 : PureTm 0 := unitCtorTerm
 
   have h01 : RedDecl unitRecDeclEnv t0 t1 := by
@@ -535,5 +581,97 @@ theorem unitRecOnCtor_preserves_type_to_result :
       RedStarDecl unitRecDeclEnv unitRecOnCtor unitCtorTerm ∧
       HasTypeDecl unitRecDeclEnv .nil unitCtorTerm (.const unitTyName) := by
   exact ⟨hasType_unitRecOnCtor, unitRecOnCtor_iota, hasType_unitCtor_inRecEnv⟩
+
+def unitRecCtorIotaObligation : RecursorIotaObligation :=
+  { familyName := unitTyName
+    recursorName := unitRecName
+    ctorName := unitCtorName
+    generatedFrom := [unitTyName, unitCtorName, unitRecName]
+    sourceShape := "((Unit.rec R) base) Unit.unit"
+    targetShape := "base" }
+
+def natRecZeroIotaObligation : RecursorIotaObligation :=
+  { familyName := natTyName
+    recursorName := natRecName
+    ctorName := natZeroName
+    generatedFrom := [natTyName, natZeroName, natRecName]
+    sourceShape := "(((Nat.rec P) z) step) Nat.zero"
+    targetShape := "z" }
+
+def natRecSuccIotaObligation : RecursorIotaObligation :=
+  { familyName := natTyName
+    recursorName := natRecName
+    ctorName := natSuccName
+    generatedFrom := [natTyName, natSuccName, natRecName]
+    sourceShape := "(((Nat.rec P) z) step) (Nat.succ n)"
+    targetShape := "step n ((((Nat.rec P) z) step) n)" }
+
+def unitRecCtorClosedIotaRule : GeneratedClosedIotaRule :=
+  { obligation := unitRecCtorIotaObligation
+    source := unitRecOnCtor
+    target := unitCtorTerm }
+
+def natRecZeroClosedIotaRule : GeneratedClosedIotaRule :=
+  { obligation := natRecZeroIotaObligation
+    source := natRecZeroClosedSource
+    target := natRecZeroClosedTarget }
+
+def generateClosedIotaRule? (obligation : RecursorIotaObligation) :
+    Option GeneratedClosedIotaRule :=
+  if obligation = unitRecCtorIotaObligation then
+    some unitRecCtorClosedIotaRule
+  else if obligation = natRecZeroIotaObligation then
+    some natRecZeroClosedIotaRule
+  else
+    none
+
+def generatedRecursorPilot (contract : FamilyRecursorDeclContract) : Option GeneratedRecursorPilot :=
+  if contract.recursorName == unitRecName then
+    some
+      { contract := contract
+        obligations := [unitRecCtorIotaObligation]
+        value? := some unitRecValue }
+  else if contract.recursorName == natRecName then
+    some
+      { contract := contract
+        obligations := [natRecZeroIotaObligation, natRecSuccIotaObligation]
+        value? := none }
+  else
+    none
+
+theorem generatedRecursorPilot_unit :
+    generatedRecursorPilot unitRecContract =
+      some
+        { contract := unitRecContract
+          obligations := [unitRecCtorIotaObligation]
+          value? := some unitRecValue } := by
+  decide
+
+theorem generatedRecursorPilot_nat_obligations_no_value :
+    generatedRecursorPilot natRecContract =
+      some
+        { contract := natRecContract
+          obligations := [natRecZeroIotaObligation, natRecSuccIotaObligation]
+          value? := none } := by
+  decide
+
+theorem generateClosedIotaRule_unit :
+    generateClosedIotaRule? unitRecCtorIotaObligation =
+      some unitRecCtorClosedIotaRule := by
+  decide
+
+theorem generateClosedIotaRule_nat_zero :
+    generateClosedIotaRule? natRecZeroIotaObligation =
+      some natRecZeroClosedIotaRule := by
+  simp [generateClosedIotaRule?, unitRecCtorIotaObligation, natRecZeroIotaObligation]
+
+theorem generateClosedIotaRule_nat_succ_still_open :
+    generateClosedIotaRule? natRecSuccIotaObligation = none := by
+  decide
+
+theorem natRecZeroClosedIotaRule_source_target :
+    natRecZeroClosedIotaRule.source = natRecZeroClosedSource ∧
+      natRecZeroClosedIotaRule.target = natZeroTerm :=
+  ⟨rfl, rfl⟩
 
 end Mettapedia.Languages.MeTTa.PureKernel.RecursorDecl

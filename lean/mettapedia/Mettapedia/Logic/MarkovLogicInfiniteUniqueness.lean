@@ -6252,6 +6252,30 @@ def restrictAssignment
   fun ⟨a, ha⟩ => x ⟨a, hΓΔ ha⟩
 
 omit [DecidableEq Atom] in
+theorem limitMarginal_map_restrictAssignment
+    (μ : ProbabilityMeasure (InfiniteWorld Atom))
+    {Γ Δ : Region Atom}
+    (hΓΔ : Γ ⊆ Δ) :
+    (Mettapedia.Logic.MarkovLogicInfiniteLimitFamily.RegionExhaustion.limitMarginal
+        (μ : Measure (InfiniteWorld Atom)) Δ).map (restrictAssignment hΓΔ) =
+      Mettapedia.Logic.MarkovLogicInfiniteLimitFamily.RegionExhaustion.limitMarginal
+        (μ : Measure (InfiniteWorld Atom)) Γ := by
+  unfold Mettapedia.Logic.MarkovLogicInfiniteLimitFamily.RegionExhaustion.limitMarginal
+  change Measure.map
+      (Finset.restrict₂
+        (ι := Atom)
+        (π := Mettapedia.Logic.MarkovLogicInfiniteLimitFamily.RegionExhaustion.BoolCoord Atom)
+        hΓΔ)
+      (Measure.map (Finset.restrict Δ) (μ : Measure (InfiniteWorld Atom))) =
+    Measure.map (Finset.restrict Γ) (μ : Measure (InfiniteWorld Atom))
+  rw [Measure.map_map
+    (Finset.measurable_restrict₂
+      (X := Mettapedia.Logic.MarkovLogicInfiniteLimitFamily.RegionExhaustion.BoolCoord Atom)
+      hΓΔ)
+    (Finset.measurable_restrict Δ)]
+  congr 1
+
+omit [DecidableEq Atom] in
 theorem limitMarginal_toPMF_map_restrictAssignment
     (μ : ProbabilityMeasure (InfiniteWorld Atom))
     {Γ Δ : Region Atom}
@@ -6264,21 +6288,8 @@ theorem limitMarginal_toPMF_map_restrictAssignment
       (Mettapedia.Logic.MarkovLogicInfiniteLimitFamily.RegionExhaustion.limitMarginal
           (μ : Measure (InfiniteWorld Atom)) Δ).map (restrictAssignment hΓΔ) =
         (Mettapedia.Logic.MarkovLogicInfiniteLimitFamily.RegionExhaustion.limitMarginal
-          (μ : Measure (InfiniteWorld Atom)) Γ) := by
-    unfold Mettapedia.Logic.MarkovLogicInfiniteLimitFamily.RegionExhaustion.limitMarginal
-    change Measure.map
-        (Finset.restrict₂
-          (ι := Atom)
-          (π := Mettapedia.Logic.MarkovLogicInfiniteLimitFamily.RegionExhaustion.BoolCoord Atom)
-          hΓΔ)
-        (Measure.map (Finset.restrict Δ) (μ : Measure (InfiniteWorld Atom))) =
-      Measure.map (Finset.restrict Γ) (μ : Measure (InfiniteWorld Atom))
-    rw [Measure.map_map
-      (Finset.measurable_restrict₂
-        (X := Mettapedia.Logic.MarkovLogicInfiniteLimitFamily.RegionExhaustion.BoolCoord Atom)
-        hΓΔ)
-      (Finset.measurable_restrict Δ)]
-    congr 1
+          (μ : Measure (InfiniteWorld Atom)) Γ) :=
+    limitMarginal_map_restrictAssignment (Atom := Atom) μ hΓΔ
   ext x
   have hx : MeasurableSet ({x} : Set (LocalAssignment Atom Γ)) := MeasurableSet.singleton x
   have hprojx :
@@ -6585,7 +6596,7 @@ theorem limitMarginal_toPMF_partialHeatBathSweepPMF_eq_of_interiorList
 
 /-- Descending-shell coupling bound under a uniform Dobrushin constant.
 
-For any finite query region `Λ`, any two DLR measures admit a coupling of
+For any finite query region `Λ`, any two DLR measures have a coupling of
 their `Λ`-marginals whose expected disagreement sup seminorm is bounded by
 `C^n` after `n` shells of expansion, provided every finite-region Dobrushin
 constant is bounded by the same `C < 1`.

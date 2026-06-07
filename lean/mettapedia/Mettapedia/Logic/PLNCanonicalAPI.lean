@@ -10,6 +10,13 @@ import Mettapedia.Logic.PLNXiDerivedBNRules
 import Mettapedia.Logic.PLNIntensionalWorldModel
 import Mettapedia.Logic.IntensionalInheritanceSolomonoffBridge
 import Mettapedia.Logic.IntensionalInheritanceAllCanary
+import Mettapedia.Logic.EmpiricalIntensionalFactorGraphBridge
+import Mettapedia.Logic.ConceptOntology.Formation
+import Mettapedia.Logic.ConceptOntology.CredalFormation
+import Mettapedia.Logic.FormedConceptFixpointClosureBridge
+import Mettapedia.Logic.FormedConceptOntologyGrowthBridge
+import Mettapedia.Logic.CredalConceptFixpointClosureBridge
+import Mettapedia.Logic.CredalConceptOntologyGrowthBridge
 import Mettapedia.Logic.PLNInferenceControlCore
 import Mettapedia.Logic.PLNInferenceControlAlgorithms
 import Mettapedia.Logic.PLNInferenceControlChainer
@@ -1041,9 +1048,32 @@ abbrev pln_higherOrderCertified_regression_gwas_revealTissue_extends_context :=
 
 /-! ## Tree BP Incident-Edge Exactness Endpoints
 
-These are the current public fragment theorems for exact belief propagation on
-small trees, phrased through the incident-edge schedule surface rather than the
-older total-function message API. -/
+These are the current public exactness endpoints for belief propagation on
+tree-shaped fragments and attached incoming subtrees, phrased through the
+incident-edge schedule surface rather than the older total-function message
+API. The generic attached-tree theorems are the preferred surface; the tiny
+named fragment theorems below are the first concrete milestones. -/
+
+abbrev pln_bp_variableBelief_exact_stableIncoming_incident :=
+  @_root_.Mettapedia.ProbabilityTheory.BayesianNetworks.MessagePassing.variableBelief_of_stableIncoming_incident
+
+abbrev pln_bp_factorBelief_exact_stableIncoming_incident :=
+  @_root_.Mettapedia.ProbabilityTheory.BayesianNetworks.MessagePassing.factorBelief_of_stableIncoming_incident
+
+abbrev pln_bp_variableBelief_exact_attachedIncoming_incident :=
+  @_root_.Mettapedia.ProbabilityTheory.BayesianNetworks.MessagePassing.variableBelief_of_attachedIncoming_incident
+
+abbrev pln_bp_factorBelief_exact_attachedIncoming_incident :=
+  @_root_.Mettapedia.ProbabilityTheory.BayesianNetworks.MessagePassing.factorBelief_of_attachedIncoming_incident
+
+abbrev pln_bp_variableBelief_exact_normalized_attachedIncoming_incident :=
+  @_root_.Mettapedia.ProbabilityTheory.BayesianNetworks.MessagePassing.variableBelief_of_attachedIncoming_normalized_incident
+
+abbrev pln_bp_factorBelief_exact_normalized_attachedIncoming_incident :=
+  @_root_.Mettapedia.ProbabilityTheory.BayesianNetworks.MessagePassing.factorBelief_of_attachedIncoming_normalized_incident
+
+abbrev pln_bp_factorBelief_exact_normalized_attachedIncoming_incident_local :=
+  @_root_.Mettapedia.ProbabilityTheory.BayesianNetworks.MessagePassing.factorBelief_of_attachedIncoming_normalized_incident_local
 
 abbrev pln_bp_leafFork_variableBelief_exact_incident :=
   @_root_.Mettapedia.ProbabilityTheory.BayesianNetworks.MessagePassing.TreeExactness.leafFork_variableBelief_exact_incident
@@ -4454,6 +4484,193 @@ abbrev inheritance_regression_toyThreeByTwo_feature2_witness1_strength_eq_genera
 
 abbrev inheritance_regression_toyThreeByTwo_feature2_witness1_score_eq_generated_ve_query_score :=
   @_root_.Mettapedia.Logic.IntensionalInheritanceAllCanary.toyThreeByTwo_feature2_witness1_score_eq_generated_ve_query_score
+
+/-! ### Formed-concept exactness surface -/
+
+abbrev FormedConcept {Obj Attr Q : Type*} [Preorder Q] [Fintype Obj] [Fintype Attr] :=
+  @_root_.Mettapedia.Logic.AbstractInheritance.FormedConcept Obj Attr Q _ _ _
+
+noncomputable abbrev formed_finiteConceptFamily :=
+  @_root_.Mettapedia.Logic.ConceptOntology.ObservationSurface.finiteConceptFamily
+
+abbrev formed_mem_finiteConceptFamily_iff :=
+  @_root_.Mettapedia.Logic.ConceptOntology.ObservationSurface.mem_finiteConceptFamily_iff
+
+abbrev formed_not_mem_finiteConceptFamily_iff :=
+  @_root_.Mettapedia.Logic.ConceptOntology.ObservationSurface.not_mem_finiteConceptFamily_iff
+
+noncomputable abbrev formedConceptInterpretation :=
+  @_root_.Mettapedia.Logic.ConceptOntology.ObservationSurface.formedConceptInterpretation
+
+/-! ### Credal formed-concept surface -/
+
+abbrev CredalConceptFamily {Obj Attr : Type*} :=
+  @_root_.Mettapedia.Logic.ConceptOntology.CredalConceptFamily Obj Attr
+
+noncomputable abbrev credalFormed_lowerConceptFamily :=
+  @_root_.Mettapedia.Logic.ConceptOntology.ObservationSurface.lowerConceptFamily
+
+noncomputable abbrev credalFormed_upperConceptFamily :=
+  @_root_.Mettapedia.Logic.ConceptOntology.ObservationSurface.upperConceptFamily
+
+noncomputable abbrev credalFormed_lowerConceptFamilyFinset :=
+  @_root_.Mettapedia.Logic.ConceptOntology.ObservationSurface.lowerConceptFamilyFinset
+
+noncomputable abbrev credalFormed_upperConceptFamilyFinset :=
+  @_root_.Mettapedia.Logic.ConceptOntology.ObservationSurface.upperConceptFamilyFinset
+
+noncomputable abbrev credalFormed_lowerFormedConceptInterpretation :=
+  @_root_.Mettapedia.Logic.ConceptOntology.ObservationSurface.lowerFormedConceptInterpretation
+
+noncomputable abbrev credalFormed_upperFormedConceptInterpretation :=
+  @_root_.Mettapedia.Logic.ConceptOntology.ObservationSurface.upperFormedConceptInterpretation
+
+abbrev credalFormed_mem_lowerConceptFamily_iff :=
+  @_root_.Mettapedia.Logic.ConceptOntology.ObservationSurface.mem_lowerConceptFamily_iff
+
+abbrev credalFormed_mem_upperConceptFamily_iff :=
+  @_root_.Mettapedia.Logic.ConceptOntology.ObservationSurface.mem_upperConceptFamily_iff
+
+abbrev credalFormed_mem_lowerConceptFamily_singleton_iff :=
+  @_root_.Mettapedia.Logic.ConceptOntology.ObservationSurface.mem_lowerConceptFamily_singleton_iff
+
+abbrev credalFormed_mem_upperConceptFamily_singleton_iff :=
+  @_root_.Mettapedia.Logic.ConceptOntology.ObservationSurface.mem_upperConceptFamily_singleton_iff
+
+abbrev credalFormed_midpoint_eq_generated_credal_midpoint :=
+  @_root_.Mettapedia.Logic.ConceptOntology.ObservationSurface.globalEnvelopeMidpoint_conceptFormationGamble_eq
+
+abbrev credalFormed_width_eq_generated_credal_width :=
+  @_root_.Mettapedia.Logic.ConceptOntology.ObservationSurface.globalEnvelopeWidth_conceptFormationGamble_eq
+
+abbrev credalFormed_widthComplement_eq_generated_credal_widthComplement :=
+  @_root_.Mettapedia.Logic.ConceptOntology.ObservationSurface.globalEnvelopeWidthComplement_conceptFormationGamble_eq
+
+abbrev credalLower_inheritance_exact_via_table :=
+  @_root_.Mettapedia.Logic.IntensionalInheritance.lowerFormedConceptInheritance_exact_via_table
+
+abbrev credalLower_inheritance_exact_via_ve_bp :=
+  @_root_.Mettapedia.Logic.IntensionalInheritance.lowerFormedConceptInheritance_exact_via_ve_bp
+
+noncomputable abbrev credalLower_inheritance_table :=
+  @_root_.Mettapedia.Logic.IntensionalInheritance.lowerCredalConceptInheritanceTable
+
+abbrev credalLower_inheritance_strength_eq_generated_ve_ratio :=
+  @_root_.Mettapedia.Logic.IntensionalInheritance.finiteInheritanceStrength_lowerFormedConceptInterpretation_eq_veWeight_ratio
+
+abbrev credalLower_inheritance_score_eq_generated_ve_query_score :=
+  @_root_.Mettapedia.Logic.IntensionalInheritance.finiteInheritanceLogRatioBits_lowerFormedConceptInterpretation_eq_veQueryScore
+
+abbrev credalLower_inheritance_strength_eq_generated_bp_ratio :=
+  @_root_.Mettapedia.Logic.IntensionalInheritance.finiteInheritanceStrength_lowerFormedConceptInterpretation_eq_bpRatio
+
+abbrev credalUpper_inheritance_exact_via_table :=
+  @_root_.Mettapedia.Logic.IntensionalInheritance.upperFormedConceptInheritance_exact_via_table
+
+abbrev credalUpper_inheritance_exact_via_ve_bp :=
+  @_root_.Mettapedia.Logic.IntensionalInheritance.upperFormedConceptInheritance_exact_via_ve_bp
+
+noncomputable abbrev credalUpper_inheritance_table :=
+  @_root_.Mettapedia.Logic.IntensionalInheritance.upperCredalConceptInheritanceTable
+
+abbrev credalUpper_inheritance_strength_eq_generated_ve_ratio :=
+  @_root_.Mettapedia.Logic.IntensionalInheritance.finiteInheritanceStrength_upperFormedConceptInterpretation_eq_veWeight_ratio
+
+abbrev credalUpper_inheritance_score_eq_generated_ve_query_score :=
+  @_root_.Mettapedia.Logic.IntensionalInheritance.finiteInheritanceLogRatioBits_upperFormedConceptInterpretation_eq_veQueryScore
+
+abbrev credalUpper_inheritance_strength_eq_generated_bp_ratio :=
+  @_root_.Mettapedia.Logic.IntensionalInheritance.finiteInheritanceStrength_upperFormedConceptInterpretation_eq_bpRatio
+
+abbrev credalLower_upper_exact_of_lowerLift :=
+  @_root_.Mettapedia.Logic.IntensionalInheritance.lower_upperCredalInheritance_exact_of_lowerLift
+
+abbrev credalInheritance_judgment :=
+  @_root_.Mettapedia.Logic.IntensionalInheritance.credalInheritanceJudgment
+
+abbrev credalInheritance_precise :=
+  @_root_.Mettapedia.Logic.IntensionalInheritance.credallyPreciseInheritance
+
+abbrev credalInheritance_imprecise :=
+  @_root_.Mettapedia.Logic.IntensionalInheritance.credallyImpreciseInheritance
+
+abbrev credalInheritance_judgment_singleton_iff :=
+  @_root_.Mettapedia.Logic.IntensionalInheritance.credalInheritanceJudgment_singleton_iff
+
+abbrev credalInheritance_precise_singleton_iff :=
+  @_root_.Mettapedia.Logic.IntensionalInheritance.credallyPreciseInheritance_singleton_iff
+
+abbrev credalInheritance_imprecise_singleton_iff :=
+  @_root_.Mettapedia.Logic.IntensionalInheritance.credallyImpreciseInheritance_singleton_iff
+
+abbrev formed_inheritance_exact_via_table := @_root_.Mettapedia.Logic.IntensionalInheritance.AbstractInheritance.formedConceptInheritance_exact_via_table
+
+abbrev formed_inheritance_exact_via_ve_bp := @_root_.Mettapedia.Logic.IntensionalInheritance.AbstractInheritance.formedConceptInheritance_exact_via_ve_bp
+
+noncomputable abbrev formed_inheritance_table := @_root_.Mettapedia.Logic.IntensionalInheritance.AbstractInheritance.formedConceptInheritanceTable
+
+abbrev formed_inheritance_strength_eq_generated_ve_ratio := @_root_.Mettapedia.Logic.IntensionalInheritance.AbstractInheritance.finiteInheritanceStrength_formedConceptInterpretation_eq_veWeight_ratio
+
+abbrev formed_inheritance_score_eq_generated_ve_query_score := @_root_.Mettapedia.Logic.IntensionalInheritance.AbstractInheritance.finiteInheritanceLogRatioBits_formedConceptInterpretation_eq_veQueryScore
+
+abbrev formed_inheritance_strength_eq_generated_bp_ratio := @_root_.Mettapedia.Logic.IntensionalInheritance.AbstractInheritance.finiteInheritanceStrength_formedConceptInterpretation_eq_bpRatio
+
+/-! ### Formed-concept closure/growth surface -/
+
+abbrev formedConceptQuerySet :=
+  @_root_.Mettapedia.Logic.FormedConceptFixpointClosureBridge.formedConceptQuerySet
+
+abbrev formedConcept_closure_thresholdValid_of_exactTableStrength := @_root_.Mettapedia.Logic.FormedConceptFixpointClosureBridge.leastRuleClosure_thresholdValid_of_exactTableStrength
+
+abbrev formedConcept_availableRegion_subset_wmAdmissible_of_exactTableStrength := @_root_.Mettapedia.Logic.FormedConceptFixpointClosureBridge.availableRegionAt_subset_wmAdmissibleRegionAt_of_exactTableStrength
+
+abbrev formedConcept_wmAdmissible_eq_available_of_exactTableStrength := @_root_.Mettapedia.Logic.FormedConceptFixpointClosureBridge.wmAdmissibleRegionAt_eq_availableRegionAt_of_exactTableStrength
+
+abbrev formedConcept_growth_thresholdValid := @_root_.Mettapedia.Logic.FormedConceptOntologyGrowthBridge.thresholdValid_formedConceptQuerySet_stable_of_specAgreesOnRegion
+
+abbrev formedConcept_growth_closure_thresholdValid := @_root_.Mettapedia.Logic.FormedConceptOntologyGrowthBridge.leastRuleClosure_thresholdValid_formedConceptQuerySet_of_specAgreesOnRegion
+
+abbrev formedObservation_growth_thresholdValid := @_root_.Mettapedia.Logic.FormedConceptOntologyGrowthBridge.ConceptOntology.ObservationSurface.thresholdValid_observationFormedConceptQuerySet_stable_of_specAgreesOnRegion
+
+abbrev formedObservation_growth_closure_thresholdValid := @_root_.Mettapedia.Logic.FormedConceptOntologyGrowthBridge.ConceptOntology.ObservationSurface.leastRuleClosure_thresholdValid_observationFormedConceptQuerySet_of_specAgreesOnRegion
+
+abbrev formedObservation_growth_availableRegion_subset_wmAdmissible := @_root_.Mettapedia.Logic.FormedConceptOntologyGrowthBridge.ConceptOntology.ObservationSurface.availableRegionAt_subset_wmAdmissibleRegionAt_of_specAgreesOnRegion
+
+abbrev formedObservation_growth_wmAdmissible_eq_available := @_root_.Mettapedia.Logic.FormedConceptOntologyGrowthBridge.ConceptOntology.ObservationSurface.wmAdmissibleRegionAt_eq_availableRegionAt_of_specAgreesOnRegion
+
+/-! ### Robust lower-formed credal closure/growth surface -/
+
+abbrev credalLowerConceptQuerySet :=
+  @_root_.Mettapedia.Logic.CredalConceptFixpointClosureBridge.lowerFormedConceptQuerySet
+
+abbrev credalLowerConcept_closure_thresholdValid_of_exactTableStrength :=
+  @_root_.Mettapedia.Logic.CredalConceptFixpointClosureBridge.leastRuleClosure_thresholdValid_of_exactTableStrength
+
+abbrev credalLowerConcept_availableRegion_subset_wmAdmissible_of_exactTableStrength :=
+  @_root_.Mettapedia.Logic.CredalConceptFixpointClosureBridge.availableRegionAt_subset_wmAdmissibleRegionAt_of_exactTableStrength
+
+abbrev credalLowerConcept_wmAdmissible_eq_available_of_exactTableStrength :=
+  @_root_.Mettapedia.Logic.CredalConceptFixpointClosureBridge.wmAdmissibleRegionAt_eq_availableRegionAt_of_exactTableStrength
+
+abbrev credalLowerConcept_growth_thresholdValid :=
+  @_root_.Mettapedia.Logic.CredalConceptOntologyGrowthBridge.thresholdValid_lowerFormedConceptQuerySet_stable_of_specAgreesOnRegion
+
+abbrev credalLowerConcept_growth_closure_thresholdValid :=
+  @_root_.Mettapedia.Logic.CredalConceptOntologyGrowthBridge.leastRuleClosure_thresholdValid_lowerFormedConceptQuerySet_of_specAgreesOnRegion
+
+abbrev credalLowerObservation_growth_thresholdValid :=
+  @_root_.Mettapedia.Logic.CredalConceptOntologyGrowthBridge.ConceptOntology.ObservationSurface.thresholdValid_observationLowerFormedConceptQuerySet_stable_of_specAgreesOnRegion
+
+abbrev credalLowerObservation_growth_closure_thresholdValid :=
+  @_root_.Mettapedia.Logic.CredalConceptOntologyGrowthBridge.ConceptOntology.ObservationSurface.leastRuleClosure_thresholdValid_observationLowerFormedConceptQuerySet_of_specAgreesOnRegion
+
+abbrev credalLowerObservation_growth_availableRegion_subset_wmAdmissible :=
+  @_root_.Mettapedia.Logic.CredalConceptOntologyGrowthBridge.ConceptOntology.ObservationSurface.availableRegionAt_subset_wmAdmissibleRegionAt_of_specAgreesOnRegion
+
+abbrev credalLowerObservation_growth_wmAdmissible_eq_available :=
+  @_root_.Mettapedia.Logic.CredalConceptOntologyGrowthBridge.ConceptOntology.ObservationSurface.wmAdmissibleRegionAt_eq_availableRegionAt_of_specAgreesOnRegion
+
+/-! ### Mixed-channel boundary canary -/
 
 /-- Pattern-level mixed inheritance atom-query encoder. -/
 def patternInheritanceQueryOfAtom_mixed

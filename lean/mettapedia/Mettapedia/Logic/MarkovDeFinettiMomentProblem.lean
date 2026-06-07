@@ -2,6 +2,7 @@ import Mettapedia.Logic.MarkovDeFinettiHardBase
 import Mettapedia.Logic.MarkovDeFinettiRecurrence
 import Mettapedia.Logic.UniversalPrediction.MarkovExchangeabilityBridge
 import Mettapedia.Logic.MarkovExchangeability
+import Mettapedia.ProbabilityTheory.FiniteMeasureSupport
 import Mathlib.MeasureTheory.Measure.ProbabilityMeasure
 import Mathlib.MeasureTheory.Measure.Prokhorov
 
@@ -23,6 +24,7 @@ namespace Mettapedia.Logic
 
 open scoped Classical BigOperators NNReal ENNReal
 open MeasureTheory Finset
+open Mettapedia.ProbabilityTheory.FiniteMeasureSupport
 
 namespace MarkovDeFinettiHard
 
@@ -246,36 +248,20 @@ wordProb satisfies the same tree-additivity as prefix measures:
   wordProb θ xs = Σ_a wordProb θ (xs ++ [a])
 This lets us reduce length-≤-n constraints to length-=n constraints. -/
 
--- For ProbabilityMeasure on Fin k: Σ_a (μ : Measure) {a} = 1 (as ENNReal).
-private lemma probMeasure_sum_singleton_enn (μ : ProbabilityMeasure (Fin k)) :
-    ∑ a : Fin k, ((μ : Measure (Fin k)) ({a} : Set (Fin k))) = 1 := by
-  have huniv : (μ : Measure (Fin k)) Set.univ = 1 := measure_univ
-  have hpart : Set.univ = ⋃ a : Fin k, ({a} : Set (Fin k)) := by ext x; simp
-  rw [hpart, measure_iUnion
-    (by intro i j hij; exact Set.disjoint_singleton.mpr hij)
-    (by intro i; exact measurableSet_singleton i),
-    tsum_fintype] at huniv
-  exact huniv
-
--- stepProb sum = 1 in ENNReal (avoids NNReal bridge headaches)
-private lemma probMeasure_coe_singleton (μ : ProbabilityMeasure (Fin k)) (b : Fin k) :
-    (μ ({b} : Set (Fin k)) : ℝ≥0∞) = ((μ : Measure (Fin k)) ({b} : Set (Fin k))) :=
-  ProbabilityMeasure.ennreal_coeFn_eq_coeFn_toMeasure μ _
-
 theorem stepProb_sum_enn (θ : MarkovParam k) (a : Fin k) :
     ∑ b : Fin k, (stepProb (k := k) θ a b : ℝ≥0∞) = 1 := by
-  have h := probMeasure_sum_singleton_enn (k := k) (θ.trans a)
+  have h := probabilityMeasure_sum_singletons_enn (θ.trans a)
   rw [show (∑ b : Fin k, (stepProb (k := k) θ a b : ℝ≥0∞)) =
     ∑ b : Fin k, ((θ.trans a : Measure (Fin k)) ({b} : Set (Fin k))) from by
-    congr 1; funext b; exact probMeasure_coe_singleton (k := k) (θ.trans a) b]
+    congr 1; funext b; exact probabilityMeasure_coe_singleton (θ.trans a) b]
   exact h
 
 theorem initProb_sum_enn (θ : MarkovParam k) :
     ∑ a : Fin k, (initProb (k := k) θ a : ℝ≥0∞) = 1 := by
-  have h := probMeasure_sum_singleton_enn (k := k) θ.init
+  have h := probabilityMeasure_sum_singletons_enn θ.init
   rw [show (∑ a : Fin k, (initProb (k := k) θ a : ℝ≥0∞)) =
     ∑ a : Fin k, ((θ.init : Measure (Fin k)) ({a} : Set (Fin k))) from by
-    congr 1; funext a; exact probMeasure_coe_singleton (k := k) θ.init a]
+    congr 1; funext a; exact probabilityMeasure_coe_singleton θ.init a]
   exact h
 
 -- wordProbAux additivity: tail probability sums over next states

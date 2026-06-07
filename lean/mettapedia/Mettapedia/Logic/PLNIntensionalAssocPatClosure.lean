@@ -537,6 +537,33 @@ theorem binary_mixed_policy_collapse_no_go :
         (State := ConcreteState) (Atom := Pattern) (Query := ConcreteQuery) enc combine2 :=
   no_binary_mixed_policy_for_assocPat_fixture
 
+/-- Boundary canary for the mixed ASSOC+PAT lane:
+PAT contributes materially, the mixed channel is not merely extensional+ASSOC,
+and the corrected three-channel law cannot collapse to any binary
+extensional+ASSOC policy on the fixture family. -/
+theorem assocPat_boundary_canary :
+    PLNIntensionalWorldModel.InheritanceQueryBuilder.intensionalPATEvidence
+        (State := ConcreteState) (Atom := Pattern) (Query := ConcreteQuery)
+        Wdemo enc (Pattern.fvar "a0") (Pattern.fvar "p") ≠ 0
+      ∧
+      PLNIntensionalWorldModel.InheritanceQueryBuilder.mixedEvidence
+        (State := ConcreteState) (Atom := Pattern) (Query := ConcreteQuery)
+        Wdemo enc (Pattern.fvar "a0") (Pattern.fvar "p") ≠
+        PLNIntensionalWorldModel.InheritanceQueryBuilder.extensionalEvidence
+          (State := ConcreteState) (Atom := Pattern) (Query := ConcreteQuery)
+          Wdemo enc (Pattern.fvar "a0") (Pattern.fvar "p") +
+        PLNIntensionalWorldModel.InheritanceQueryBuilder.intensionalAssocEvidence
+          (State := ConcreteState) (Atom := Pattern) (Query := ConcreteQuery)
+          Wdemo enc (Pattern.fvar "a0") (Pattern.fvar "p")
+      ∧
+      ¬ ∃ combine2 : EvidenceQuantale.BinaryEvidence →
+          EvidenceQuantale.BinaryEvidence → EvidenceQuantale.BinaryEvidence,
+        PLNIntensionalWorldModel.InheritanceQueryBuilder.MixedPolicyAssoc
+          (State := ConcreteState) (Atom := Pattern) (Query := ConcreteQuery)
+          enc combine2 := by
+  exact ⟨pat_channel_nontrivial, mixed_not_assoc_only,
+    binary_mixed_policy_collapse_no_go⟩
+
 /-- End-to-end Chapter-12 ASSOC+PAT theorem:
 Bayes-normal selector, lower threshold, concrete semantic model. -/
 theorem end_to_end_assocPat_bayesNormal_lower :

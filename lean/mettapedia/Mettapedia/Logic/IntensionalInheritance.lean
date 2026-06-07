@@ -159,6 +159,13 @@ noncomputable def finitePriorProb
     (w : Carrier) : ℝ :=
   (extentCount I w : ℝ) / Fintype.card Obj
 
+/-- Plain-language alias for the prior of a candidate superconcept in the
+finite interpreted semantics. -/
+noncomputable def finiteInheritancePrior
+    (I : Mettapedia.Logic.AbstractInheritance.Interpretation Carrier Obj Attr)
+    (superConcept : Carrier) : ℝ :=
+  finitePriorProb I superConcept
+
 /-- Finite extensional inheritance `P(W | F)` read from interpreted extents. -/
 noncomputable def finiteExtensionalProb
     (I : Mettapedia.Logic.AbstractInheritance.Interpretation Carrier Obj Attr)
@@ -168,6 +175,13 @@ noncomputable def finiteExtensionalProb
   else
     (jointExtentCount I f w : ℝ) / extentCount I f
 
+/-- Plain-language alias for finite extensional inheritance strength from a
+subconcept to a superconcept. -/
+noncomputable def finiteInheritanceStrength
+    (I : Mettapedia.Logic.AbstractInheritance.Interpretation Carrier Obj Attr)
+    (subConcept superConcept : Carrier) : ℝ :=
+  finiteExtensionalProb I subConcept superConcept
+
 /-- Pointwise Chapter-12 score derived from finite interpreted counting
 semantics. -/
 noncomputable def finitePointwiseLogRatioBits
@@ -175,6 +189,30 @@ noncomputable def finitePointwiseLogRatioBits
     (f w : Carrier) : ℝ :=
   Mettapedia.InformationTheory.logRatioInformationGainBits
     (finiteExtensionalProb I f w) (finitePriorProb I w)
+
+/-- Plain-language alias for the Chapter-12 log-ratio score of an inheritance
+query. -/
+noncomputable def finiteInheritanceLogRatioBits
+    (I : Mettapedia.Logic.AbstractInheritance.Interpretation Carrier Obj Attr)
+    (subConcept superConcept : Carrier) : ℝ :=
+  finitePointwiseLogRatioBits I subConcept superConcept
+
+@[simp] theorem finiteInheritancePrior_eq
+    (I : Mettapedia.Logic.AbstractInheritance.Interpretation Carrier Obj Attr)
+    (superConcept : Carrier) :
+    finiteInheritancePrior I superConcept = finitePriorProb I superConcept := rfl
+
+@[simp] theorem finiteInheritanceStrength_eq
+    (I : Mettapedia.Logic.AbstractInheritance.Interpretation Carrier Obj Attr)
+    (subConcept superConcept : Carrier) :
+    finiteInheritanceStrength I subConcept superConcept =
+      finiteExtensionalProb I subConcept superConcept := rfl
+
+@[simp] theorem finiteInheritanceLogRatioBits_eq
+    (I : Mettapedia.Logic.AbstractInheritance.Interpretation Carrier Obj Attr)
+    (subConcept superConcept : Carrier) :
+    finiteInheritanceLogRatioBits I subConcept superConcept =
+      finitePointwiseLogRatioBits I subConcept superConcept := rfl
 
 /-- Finite interpreted Chapter-12 formula. -/
 theorem finite_goertzel_formula

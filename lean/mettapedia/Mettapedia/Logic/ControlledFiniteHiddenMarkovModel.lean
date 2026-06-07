@@ -1,6 +1,7 @@
 import Mathlib.Data.ENNReal.BigOperators
 import Mettapedia.Logic.MarkovDeFinettiHardBase
 import Mettapedia.Logic.MarkovDeFinettiMomentProblem
+import Mettapedia.ProbabilityTheory.FiniteMeasureSupport
 
 /-!
 # Controlled Finite Hidden Markov Models
@@ -32,6 +33,7 @@ namespace Mettapedia.Logic.ControlledFiniteHiddenMarkovModel
 
 open Mettapedia.Logic
 open Mettapedia.Logic.MarkovDeFinettiHard
+open Mettapedia.ProbabilityTheory.FiniteMeasureSupport
 open scoped BigOperators ENNReal NNReal
 open MeasureTheory
 
@@ -64,64 +66,40 @@ def emissionProb
     (x : Fin latent) (y : Fin obs) : ℝ≥0 :=
   θ.emission x (Set.singleton y)
 
-private lemma probMeasure_sum_singleton_enn
-    {α : Type*} [Fintype α] [MeasurableSpace α] [MeasurableSingletonClass α]
-    (μ : ProbabilityMeasure α) :
-    ∑ a : α, ((μ : Measure α) ({a} : Set α)) = 1 := by
-  have huniv : (μ : Measure α) Set.univ = 1 := measure_univ
-  have hpart : Set.univ = ⋃ a : α, ({a} : Set α) := by
-    ext x
-    simp
-  rw [hpart, measure_iUnion
-    (by
-      intro i j hij
-      exact Set.disjoint_singleton.mpr hij)
-    (by
-      intro i
-      exact measurableSet_singleton i),
-    tsum_fintype] at huniv
-  exact huniv
-
-private lemma probMeasure_coe_singleton
-    {α : Type*} [Fintype α] [MeasurableSpace α] [MeasurableSingletonClass α]
-    (μ : ProbabilityMeasure α) (a : α) :
-    (μ ({a} : Set α) : ℝ≥0∞) = ((μ : Measure α) ({a} : Set α)) :=
-  ProbabilityMeasure.ennreal_coeFn_eq_coeFn_toMeasure μ _
-
 theorem initProb_sum_enn (θ : ControlledFiniteHMMParam Action latent obs) :
     ∑ x : Fin latent, (initProb θ x : ℝ≥0∞) = 1 := by
-  have h := probMeasure_sum_singleton_enn θ.init
+  have h := probabilityMeasure_sum_singletons_enn θ.init
   rw [show (∑ x : Fin latent, (initProb θ x : ℝ≥0∞)) =
       ∑ x : Fin latent, ((θ.init : Measure (Fin latent)) ({x} : Set (Fin latent))) from by
         congr 1
         funext x
-        exact probMeasure_coe_singleton θ.init x]
+        exact probabilityMeasure_coe_singleton θ.init x]
   exact h
 
 theorem stepProb_sum_enn
     (θ : ControlledFiniteHMMParam Action latent obs)
     (a : Action) (x : Fin latent) :
     ∑ x' : Fin latent, (stepProb θ a x x' : ℝ≥0∞) = 1 := by
-  have h := probMeasure_sum_singleton_enn (θ.trans a x)
+  have h := probabilityMeasure_sum_singletons_enn (θ.trans a x)
   rw [show (∑ x' : Fin latent, (stepProb θ a x x' : ℝ≥0∞)) =
       ∑ x' : Fin latent, (((θ.trans a x : ProbabilityMeasure (Fin latent)) :
         Measure (Fin latent)) ({x'} : Set (Fin latent))) from by
         congr 1
         funext x'
-        exact probMeasure_coe_singleton (θ.trans a x) x']
+        exact probabilityMeasure_coe_singleton (θ.trans a x) x']
   exact h
 
 theorem emissionProb_sum_enn
     (θ : ControlledFiniteHMMParam Action latent obs)
     (x : Fin latent) :
     ∑ y : Fin obs, (emissionProb θ x y : ℝ≥0∞) = 1 := by
-  have h := probMeasure_sum_singleton_enn (θ.emission x)
+  have h := probabilityMeasure_sum_singletons_enn (θ.emission x)
   rw [show (∑ y : Fin obs, (emissionProb θ x y : ℝ≥0∞)) =
       ∑ y : Fin obs, (((θ.emission x : ProbabilityMeasure (Fin obs)) :
         Measure (Fin obs)) ({y} : Set (Fin obs))) from by
         congr 1
         funext y
-        exact probMeasure_coe_singleton (θ.emission x) y]
+        exact probabilityMeasure_coe_singleton (θ.emission x) y]
   exact h
 
 /-- A latent mass function before applying the next action-observation cycle. -/

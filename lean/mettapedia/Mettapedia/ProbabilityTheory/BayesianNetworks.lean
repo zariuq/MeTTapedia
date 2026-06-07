@@ -2,6 +2,7 @@ import Mettapedia.ProbabilityTheory.BayesianNetworks.DirectedGraph
 import Mettapedia.ProbabilityTheory.BayesianNetworks.BayesianNetwork
 import Mettapedia.ProbabilityTheory.BayesianNetworks.DSeparation
 import Mettapedia.ProbabilityTheory.BayesianNetworks.DSeparationSoundness
+import Mettapedia.ProbabilityTheory.BayesianNetworks.DiscreteLocalMarkov
 import Mettapedia.ProbabilityTheory.BayesianNetworks.FactorGraph
 import Mettapedia.ProbabilityTheory.BayesianNetworks.VariableElimination
 import Mettapedia.ProbabilityTheory.BayesianNetworks.ValuationBridge
@@ -24,11 +25,15 @@ factor-graph / variable-elimination / belief-propagation stack.
 The intended public story is:
 
 * graph and BN structure,
+* discrete local-Markov and d-separation soundness for CPT joint measures,
 * exact factor-graph inference (`VariableElimination`, `ValuationBridge`),
-* semiring-generic belief propagation,
-* local bridge lemmas and the first tree-exactness support layer.
-* first belief-exactness theorems on small tree fragments.
-* a small named tree-exactness family collecting the current fragment theorems.
+* semiring-generic belief propagation, with the incident-edge schedule surface
+  as the preferred exactness API,
+* local bridge lemmas and the attached-tree exactness support layer,
+* first belief-exactness theorems on small tree fragments and reusable
+  attached incoming subtrees,
+* a small named tree-exactness family collecting the current fragment
+  theorems, rather than a full general loopy-BP exactness claim,
 * tiny executable semiring examples that show the same graph yielding
   different messages under different carriers.
 

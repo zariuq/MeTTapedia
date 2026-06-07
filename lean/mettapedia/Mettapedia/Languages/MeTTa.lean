@@ -16,6 +16,8 @@ import Mettapedia.Languages.MeTTa.ElaboratedCore
 import Mettapedia.Languages.MeTTa.AbstractMachineBoundary
 import Mettapedia.Languages.MeTTa.CeTTaSpaceEngineRefinement
 import Mettapedia.Languages.MeTTa.HEPureKernelFragmentBridge
+import Mettapedia.Languages.MeTTa.DTTSeedProofPath
+import Mettapedia.Languages.MeTTa.DTTTutorialStatus
 
 /-!
 # MeTTa Language Formalizations

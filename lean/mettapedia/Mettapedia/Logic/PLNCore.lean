@@ -58,6 +58,7 @@ import Mettapedia.Logic.MarkovLogicClauseRegression
 import Mettapedia.Logic.SoundnessCompleteness
 import Mettapedia.Logic.PLNErrorMagnificationGrounding
 import Mettapedia.Logic.PLNCanonicalAPI
+import Mettapedia.Logic.PLNIntensionalAssocPatClosure
 import Mettapedia.Logic.PLNFirstOrder.InfiniteRegression
 import Mettapedia.Logic.PLNFirstOrder.FuzzyQuantifierRegressionInf
 import Mettapedia.Logic.PLNFirstOrder.ChoquetQuantifierRegression
@@ -141,6 +142,13 @@ This module is a curated import surface for the currently theorem-complete PLN s
 - Error-magnification grounding across WM calculus, OSLF atom semantics, and
   evidence-derived confidence transport (`PLNErrorMagnificationGrounding`)
 - Canonical API with 3-tier theorem index (`PLNCanonicalAPI`)
+- Exact formed-concept family surface, exact inheritance-query wrappers, and
+  closure/growth transport for the extensional finite concept lane
+  (`ConceptOntology.Formation`, `EmpiricalIntensionalFactorGraphBridge`,
+  `FormedConcept*Bridge`, surfaced through canonical aliases in `PLNCanonicalAPI`)
+- Explicit mixed ASSOC+PAT boundary canary and model-based mixed threshold
+  endpoints, kept separate from the exact extensional formed-concept lane
+  (`PLNIntensionalAssocPatClosure`, especially `assocPat_boundary_canary`)
 - Arbitrary-domain PLN first-order quantifier surface
   (`PLNFirstOrder.InfiniteRegression`, plus canonical aliases in `PLNCanonicalAPI`)
 - Arbitrary-domain fuzzy first-order quantifier surface

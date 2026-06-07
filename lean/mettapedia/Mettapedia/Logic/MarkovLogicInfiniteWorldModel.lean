@@ -103,6 +103,32 @@ def infiniteQueryEvent
     Set (InfiniteWorld Atom) :=
   {ω | satisfiesConstraints ω q}
 
+omit [DecidableEq Atom] in
+/-- Infinite finite-constraint query events are measurable cylinder events. -/
+theorem measurableSet_infiniteQueryEvent
+    (q : ConstraintQuery Atom) :
+    MeasurableSet (infiniteQueryEvent (Atom := Atom) q) := by
+  classical
+  induction q with
+  | nil =>
+      simp [infiniteQueryEvent, satisfiesConstraints]
+  | cons c cs ih =>
+      have hc :
+          MeasurableSet {ω : InfiniteWorld Atom | ω c.1 = c.2} := by
+        simpa using
+          (measurableSet_eq_fun (measurable_pi_apply c.1) measurable_const)
+      have htail :
+          MeasurableSet {ω : InfiniteWorld Atom | satisfiesConstraints ω cs} := by
+        simpa [infiniteQueryEvent] using ih
+      have hset :
+          infiniteQueryEvent (Atom := Atom) (c :: cs) =
+            ({ω : InfiniteWorld Atom | ω c.1 = c.2} ∩
+              {ω : InfiniteWorld Atom | satisfiesConstraints ω cs}) := by
+        ext ω
+        simp [infiniteQueryEvent, satisfiesConstraints]
+      rw [hset]
+      exact hc.inter htail
+
 /-- **Mass semantics induced by a DLR measure.**
 
     Every probability measure `μ` on `InfiniteWorld Atom` gives rise to a
@@ -126,6 +152,18 @@ noncomputable def infiniteMLNMassSemantics
         ≤ (μ : Measure (InfiniteWorld Atom)) Set.univ := measure_mono (Set.subset_univ _)
       _ = 1 := by exact_mod_cast MeasureTheory.measure_univ (μ := (μ : Measure (InfiniteWorld Atom)))
   totalMass_ne_top := ENNReal.one_ne_top
+
+/-- The mass-semantics query probability is exactly the measure of the
+measurable finite-cylinder query event. -/
+theorem infiniteMLNMassSemantics_queryProb_eq_measure_infiniteQueryEvent
+    (M : ClassicalInfiniteGroundMLNSpec Atom ClauseId)
+    (μ : ProbabilityMeasure (InfiniteWorld Atom))
+    (hμ : FixedRegionCylinderDLR M.toStrictlyPositiveInfiniteGroundMLNSpec
+      (μ : Measure (InfiniteWorld Atom)))
+    (q : ConstraintQuery Atom) :
+    (infiniteMLNMassSemantics M μ hμ).queryProb q =
+      (μ : Measure (InfiniteWorld Atom)) (infiniteQueryEvent q) := by
+  simp [MassSemantics.queryProb, infiniteMLNMassSemantics]
 
 /-- **WM query strength equals Gibbs probability.**
 

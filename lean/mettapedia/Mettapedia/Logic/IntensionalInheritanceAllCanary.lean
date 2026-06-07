@@ -503,7 +503,7 @@ noncomputable def toyThreeByTwoCountTable :
     | 1, 1 => 0
     | 2, 0 => 1
     | 2, 1 => 4
-  total_pos := by native_decide
+  total_pos := by decide
 
 def toyThreeByTwoFeature2 : Fin 3 := ⟨2, by decide⟩
 
