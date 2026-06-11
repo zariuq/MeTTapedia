@@ -776,6 +776,33 @@ different pole than its base. The transfer lemmas (\code{isGunky\_congr},
 \code{isGunky\_Iic}, \code{perfectSpace\_stoneSpace\_congr}) exist precisely to move
 the dial to the right carrier.
 
+\paragraph{The dial, welded.} The faces of the dial are now not merely parallel but
+\emph{provably one object}, in three welds. (i)~\emph{Algebra--space}: the semantic
+ultrafilter-sets of the second-order layer are exactly the points of the Stone space
+(\code{ultraSetEquivStonePoint}), having a least element is being an isolated point
+(\code{hasLeast\_iff\_isOpen\_singleton}), and the two previously parallel chains close
+into one circle: the free-ultrafilter axiom holds iff the Stone space is perfect
+(\code{sat\_freeUFAx\_iff\_perfect\_stoneSpace})---free axiom $\Leftrightarrow$ no
+principal ultrafilter $\Leftrightarrow$ no atom $\Leftrightarrow$ no isolated point
+$\Leftrightarrow$ perfect. (ii)~\emph{Index--algebra}: relative truth
+$\mathrm{UltraTrue}$ is evaluation of the verdict-set at a Stone point of the powerset
+algebra (\code{ultraTrue\_iff\_mem}); a principal perspective is evaluation at an
+\emph{atom} (\code{ultraTrue\_pure\_iff\_atom\_le}); precision is degeneracy to
+$\bot$/$\top$ and openness is residence in the frontier
+(\code{preciseFamily\_iff\_degenerate}, \code{openFamily\_iff\_nontrivial\_proper}).
+(iii)~\emph{Inference--metaphysics}: the credal open-world/that's-all predicates of the
+concept-formation layer are \emph{equal} to the perspectival dial---a concept is
+open-world iff its gate-verdict family is an open family, that's-all iff precise
+(\code{openWorldConcept\_iff\_openFamily}, \code{thatsAllConcept\_iff\_preciseFamily}).
+And the principal-shadow slogan is now a theorem-\emph{pair}: a finite frontier is
+provably atomic (\code{not\_isGunky\_of\_finite}), and a finite perspective-space has
+only principal points (\code{ultraTrue\_of\_finite})---gunk and free perspectives both
+live only in the limit, exactly as the thesis demands. At the inference layer the dial
+now also separates the reasoning modes themselves: under that's-all premises induction
+is gate-invariantly precise, while abduction strengths provably \emph{vary} across
+gates once the explanatory edge is open-world and nondegenerate---Peirce's intuition
+that explanation-seeking lives in the open world, as an exact statement.
+
 \subsection{Formal philosophy: gunk versus mereological nihilism}
 \label{sec:sider}
 
@@ -1263,6 +1290,42 @@ theorem isGunky_congr (f : A ~=o B) : IsGunky A <-> IsGunky B
 theorem isGunky_Iic (hg : IsGunky A) (a : A) : IsGunky (Set.Iic a)
 theorem perfectSpace_stoneSpace_congr (f : B ~=o C) :
   PerfectSpace (StoneSpace B) <-> PerfectSpace (StoneSpace C)
+\end{lstlisting}
+
+\noindent The dial welds (UltrainfinitismTwoSemantics.lean, UltrainfinitismCore.lean,
+DialWeld.lean; all sorry-free, axiom-clean):
+
+\begin{lstlisting}
+/-- The semantic ultrafilter-sets ARE the Stone points. -/
+noncomputable def ultraSetEquivStonePoint :
+  {F : Set M // IsUltraSet F} ~= StoneSpace M
+
+/-- Principal = isolated, through the weld. -/
+theorem hasLeast_iff_isOpen_singleton (hF : IsUltraSet F) :
+  HasLeast F <-> IsOpen {hF.stonePoint}
+
+/-- The full circle: free-ultrafilter axiom <-> perfect Stone space. -/
+theorem sat_freeUFAx_iff_perfect_stoneSpace :
+  SatSentence Set.univ freeUFAx <-> PerfectSpace (StoneSpace M)
+
+/-- The index dial is the Stone geometry of the powerset algebra. -/
+theorem ultraTrue_iff_mem  : UltraTrue U P <-> {i | P i} in U
+theorem preciseFamily_iff_degenerate :
+  PreciseFamily P <-> {i | P i} = univ \/ {i | P i} = empty
+theorem openFamily_iff_nontrivial_proper :
+  OpenFamily P <-> {i | P i} != empty /\ {i | P i} != univ
+
+/-- The concept-state dial IS the perspectival dial (gate-verdict family). -/
+theorem openWorldConcept_iff_openFamily :
+  openWorldConcept G M A <-> OpenFamily (gateVerdict G M A)
+theorem thatsAllConcept_iff_preciseFamily :
+  thatsAllConcept G M A <-> PreciseFamily (gateVerdict G M A)
+
+/-- The principal-shadow theorem-pair: finite frontiers are atomic;
+    finite perspective-spaces have only principal points. -/
+theorem not_isGunky_of_finite [Finite a] [Nontrivial a] : not (IsGunky a)
+theorem ultraTrue_of_finite [Finite I] (U) (P) :
+  exists i, (UltraTrue U P <-> P i)
 \end{lstlisting}
 
 \noindent The native ultraproduct/{\L}o\'s anchor (\code{models\_Uprod}) lives in

@@ -1,5 +1,6 @@
 import Foundation.FirstOrder.Ultraproduct
 import Mathlib.Order.Filter.Ultrafilter.Basic
+import Mettapedia.Logic.GunkyMereology
 
 /-!
 # The ultrainfinitist formal core: relative truth, the precise/open dial, Łoś transfer
@@ -122,6 +123,61 @@ theorem hyperfilter_pure_disagree :
     exact Set.finite_singleton 0
   · simp
 
+/-! ## The powerset-dial weld: the index dial IS the Stone geometry of `Set I`
+
+`UltraTrue 𝓤 P` is evaluation of the verdict-set `{i | P i}` at a Stone point of the
+powerset algebra `Set I`; the principal perspectives sit exactly at its **atoms**
+(`Mettapedia.Foundations.Gunk.isAtom_set_singleton`); precision is degeneracy to
+`⊥`/`⊤`; openness is being in the **frontier** — a nontrivial proper element, where
+free and principal perspectives can genuinely disagree. The ultrainfinitist core and
+the gunk/Stone development are one geometry. -/
+
+section PowersetWeld
+
+/-- `UltraTrue` is membership of the verdict-set: evaluation at a Stone point of the
+powerset algebra. -/
+theorem ultraTrue_iff_mem (𝓤 : Ultrafilter I) (P : I → Prop) :
+    UltraTrue 𝓤 P ↔ {i | P i} ∈ 𝓤 :=
+  Filter.eventually_iff
+
+/-- The principal verdict is evaluation at an **atom** of the powerset algebra: the
+singleton `{i}` (an atom by `Mettapedia.Foundations.Gunk.isAtom_set_singleton`)
+decides `P` by containment. -/
+theorem ultraTrue_pure_iff_atom_le (i : I) (P : I → Prop) :
+    UltraTrue (pure i) P ↔ ({i} : Set I) ⊆ {j | P j} := by
+  rw [ultraTrue_pure, Set.singleton_subset_iff]
+  exact Iff.rfl
+
+/-- Precision is degeneracy: a family is precise iff its verdict-set is `⊤` or `⊥`
+in the powerset algebra. -/
+theorem preciseFamily_iff_degenerate (P : I → Prop) :
+    PreciseFamily P ↔ {i | P i} = Set.univ ∨ {i | P i} = ∅ := by
+  rw [preciseFamily_iff]
+  apply or_congr
+  · exact (Set.eq_univ_iff_forall).symm
+  · constructor
+    · intro h
+      ext i
+      simp [h i]
+    · intro h i hi
+      have : i ∈ ({i' | P i'} : Set I) := hi
+      rw [h] at this
+      exact this
+
+/-- Openness is the **frontier**: a family is open iff its verdict-set is a nontrivial
+proper element of the powerset algebra — neither `⊥` nor `⊤`, the region where
+perspectives can disagree. -/
+theorem openFamily_iff_nontrivial_proper (P : I → Prop) :
+    OpenFamily P ↔ {i | P i} ≠ ∅ ∧ {i | P i} ≠ Set.univ := by
+  rw [openFamily_iff]
+  apply and_congr
+  · rw [← Set.nonempty_iff_ne_empty]
+    exact Iff.rfl
+  · rw [Set.ne_univ_iff_exists_notMem]
+    exact Iff.rfl
+
+end PowersetWeld
+
 /-! ## Łoś transfer -/
 
 section Los
@@ -155,4 +211,5 @@ theorem ultrapower_elementary {B : Type u} [Structure L B] [Nonempty B]
 end Los
 
 end Mettapedia.Logic.Metaphysics
+
 

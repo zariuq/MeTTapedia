@@ -287,7 +287,7 @@ presented as a proof.
 \subsection{Evaluator Bug Classes the Campaign Exposed}
 \label{sec:bugclasses}
 
-Two bug classes were found and fixed, both instructive.
+Three bug classes were found and fixed, all instructive.
 
 \paragraph{The Empty algebra.}  When overlapping equations yield a
 branch that reduces to \code{Empty}, two dual defects appeared: the
@@ -313,6 +313,22 @@ modal surface itself ($\Box\bot$ holding on a reducible term), fixed
 as deterministic left-to-right congruence matching the evaluator's
 applicative order---and is the direct motivation for the rule-pack
 weld in Section~\ref{sec:langdefpack}.
+
+\paragraph{The switch/switch-minimal conflation.}  Upstream \HE{}
+types \code{switch} as \code{(-> \%Undefined\% Expression
+\%Undefined\%)}---the scrutinee is \emph{evaluated} before
+matching---while \code{switch-minimal} is \code{(-> Atom Expression
+Atom)}, matching the raw scrutinee structurally.  \CeTTa{} routed both
+spellings through one structural handler, so
+\code{(switch (+ 1 2) ((3 three) ((\$x \$y) (got \$x \$y))))} returned
+\code{(got 1 2)} where upstream returns \code{three}.  The defect was
+exposed not by testing but by the certification campaign
+(Section~\ref{sec:rulecert}): modeling the rules in Lean forced a
+precise reading of the two upstream type contracts, and an oracle
+probe confirmed the divergence.  The fix splits the rule into
+\code{HES\_Switch} (evaluated scrutinee) and \code{HES\_SwitchMinimal}
+(structural), with a distinguishing witness pair pinned in the test
+suite.
 
 \subsection{The Reflective Modal Surface}
 \label{sec:modal}
@@ -372,33 +388,114 @@ The runtime object, \code{CettaLangDefPack}, carries: language,
 profile, and granularity identifiers; a schema version; a source
 digest over the canonical rule-descriptor text; the rule table; a
 disabled-rule mask populated from the
-\code{CETTA\_LANGDEF\_DISABLED\_RULES} environment variable; and an
-honest claim level (currently \emph{bag-tested-adequate}: tested
-against the legacy one-step path and oracle bags, not yet Lean-proven).
-Two rules are live---\code{HEF\_GroundedDispatch} and
-\code{HEF\_LeftmostExprCongruence}---and gate the only implementations
-of those rule classes in the one-step subsystem; quote/return and
-empty/error quiescence are declared as structural metadata pending
-migration.  The pack is reflected into MeTTa by
-\code{lts:he:step-rules}.
+\code{CETTA\_LANGDEF\_DISABLED\_RULES} environment variable; and a
+\emph{per-rule claim level} recording the strongest evidence behind
+each rule (Section~\ref{sec:rulecert}).  Ten rule classes are live and
+gate the \emph{only} implementations of their behavior in the one-step
+subsystem: grounded dispatch, leftmost expression congruence, equation
+match, \code{eval}, \code{chain}, \code{let}, \code{let*},
+\code{case}, \code{switch}, and \code{switch-minimal} (the last two
+split per their distinct upstream contracts,
+Section~\ref{sec:bugclasses}).  Quote/return and empty/error
+quiescence are structural rows: accounted in the table with written
+reasons, but not gateable, since disabling them would make the
+semantics incoherent rather than smaller.  Each row carries a
+provenance string naming the fine-machine rules that justify it.  The
+pack is reflected into MeTTa by \code{lts:he:step-rules}.
 
 The load-bearing test is \emph{anti-decorative}: a dedicated lane
-re-runs the witness suite with each rule disabled and \emph{requires}
-the witnesses to fail (the successor set must go empty; normal-form must
-flip).  If the witnesses still passed with a rule removed, a duplicate
-hidden code path would exist---precisely the disease that produced the
-congruence bug.  The lane fails closed in both directions and runs on
-both the default and MORK-bridge builds.
+re-runs the witness suite with each live rule disabled and
+\emph{requires} the witnesses to fail (the successor set must go
+empty; normal-form must flip)---baseline plus ten rule-removal
+failures confirmed.  If the witnesses still passed with a rule
+removed, a duplicate hidden code path would exist---precisely the
+disease that produced the congruence bug.  A disabled special form
+goes \emph{inert} (its head stays uninterpreted; congruence still
+applies), per the principle that unknown symbols are data, never
+errors.  The lane fails closed in both directions and runs on both the
+default and MORK-bridge builds.
 
-The roadmap is a deliberate hybrid: the pack-as-data drives the
-(non-hot) one-step and reflection surfaces now; a
-\code{--compile-langdef} backend---extending the existing
-\code{--compile-stdlib} blob precedent---will later emit \emph{both}
-the reflectable pack and specialized C for the hot evaluator under a
-single shared source digest, so performance never costs the semantic
-object.  An evaluate-by-iterating-one-step mode is planned purely
-as a reference oracle and benchmark baseline, not as the production
-evaluator.
+Claim levels are deliberately \emph{excluded} from the digest: the
+digest fingerprints rule \emph{content} (names, profiles, provenance,
+schema), while claims are \emph{evidence about} that content.
+Upgrading a rule's certification therefore must not---and verifiably
+does not---move the semantic object: the digest
+(\code{fnv1a64:12eec5b655a75904} at the time of writing) stayed fixed
+across every claim flip.  The pack is, by design, a hand-authored
+object kept honest by the removal lane and the digest; we deliberately
+parked an earlier plan to generate specialized C from the rule source,
+because the weld's value lies in the named semantic object and its
+fail-closed tests, and code generation is machinery the certification
+program does not need.
+
+\subsection{Lean Certification of the Rule Table}
+\label{sec:rulecert}
+
+Each per-rule claim takes one of three values, in increasing strength:
+\emph{bag-tested-adequate} (the rule's behavior matches the legacy
+path and oracle bags on the witness corpus),
+\emph{rule-sound-on-fragment} (a compiled, sorry-free Lean theorem
+proves the rule absorbed by the official declarative semantics on an
+explicitly characterized fragment), and \emph{rule-sound} (the same,
+unconditionally).  A claim flips only when the compiled theorem
+exists, so the reflective surface can never overclaim.  The
+certification route is \emph{absorption}: for each coarse rule, a
+theorem that whenever the rule relates $a \to a'$, the official
+declarative judgment of the Mettapedia \HE{} formalization
+(\code{MettaCall}, \code{MinimalStep}, or \code{EvalAtom}) already
+relates the same atoms.  At the time of writing five of the ten live
+rules carry certification:
+
+\begin{center}\footnotesize
+\begin{tabular}{lll}
+\toprule
+rule & claim & Lean witness \\
+\midrule
+\code{HES\_GroundedDispatch} & rule-sound &
+  \code{mettaCall\_absorbs\_grounded\_dispatch} \\
+\code{HES\_EquationMatch} & rule-sound &
+  \code{mettaCall\_absorbs\_equation\_match} \\
+\code{HES\_Eval} & rule-sound &
+  \code{minimalStep\_absorbs\_eval} \\
+\code{HES\_Chain} & rule-sound-on-fragment &
+  \code{minimalStep\_absorbs\_chain\_source}/\code{\_subst} \\
+\code{HES\_LeftmostExprCongruence} & rule-sound-on-fragment &
+  \code{evalAtom\_absorbs\_congruence\_frag} \\
+\code{HES\_Let}, \code{LetStar}, \code{Case}, & bag-tested-adequate &
+  in progress \\
+\quad\code{Switch}, \code{SwitchMinimal} & & \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The certified fragment for the congruence and chain rules is
+characterized positively: untyped constructor-headed expressions with
+quiescent spectator arguments and a grounded-dispatch or
+equation-match redex.  Its supporting theory is a short ladder of
+compiled lemmas: a quiescence domain on which atoms officially
+self-evaluate, uniqueness of that self-evaluation, transport of
+official evaluation across a single changed argument, and absorption
+of inner fragment steps---about which the honest surprises accumulated
+(e.g.\ a bare \code{Error} \emph{symbol} at tuple head becomes
+error-shaped, so the fragment must exclude it explicitly).
+
+The five remaining rules are upstream \emph{stdlib sugar}: their
+one-step behavior is the upstream definition of \code{let},
+\code{let*}, \code{case}, \code{switch}, and \code{switch-minimal} as
+\code{unify}/\code{chain} programs.  Certifying them required a
+\emph{matcher bridge}: relating \CeTTa{}'s one-way matcher on ground
+scrutinees to the official \code{matchAtoms}/\code{mergeBindings}
+semantics.  Its keystone is a singleton-seed factorization
+theorem---any official match run seeded with bindings $b$ factors
+through the empty-seeded run followed by one deterministic merge back
+into $b$---proven via an extensional lookup-specification of ground
+merging under a key-uniqueness invariant, together with its
+sorry-free instantiation into a full success bridge.  The final link
+between the declarative judgment and the running evaluator's
+\code{unify} is stated \emph{once} as a named two-field interface
+(match-hit and match-miss stabilization); every sugar-rule
+certification spends that interface explicitly, and discharging it is
+a theorem in progress rather than a hidden assumption.
 
 %% ────────────────────────────────────────────────────────────────────
 \section{Verified \HE{}$\leftrightarrow$\PeTTa{} Translation}

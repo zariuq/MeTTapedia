@@ -1,5 +1,4 @@
 import Mettapedia.Logic.ConceptOntology.ConstructionBase
-import Mettapedia.Logic.DeFinettiPLNTruthBridge
 import Mettapedia.Logic.DeFinettiProjectiveCredalBridge
 import Mettapedia.Logic.StoneGunkDuality
 
@@ -22,7 +21,6 @@ namespace Mettapedia.Logic.ConceptOntology
 
 open Mettapedia.Logic
 open Mettapedia.Logic.DeFinetti
-open Mettapedia.Logic.DeFinettiPLNTruthBridge
 open Mettapedia.Logic.DeFinettiProjectiveCredalBridge
 open Mettapedia.ProbabilityTheory.ImpreciseProbability
 open Mettapedia.ProbabilityTheory.ImpreciseProbability.ProjectiveCredal
@@ -64,6 +62,44 @@ def mixturePredictiveOpenWorld
     0 < impreciseDeFinettiPrefixEnvelopeWidth C n
       (bernoulliMixturePrefixLawAt C hLaw n) X
 
+/-- A posterior external process law is a principal shadow when every
+finite-prefix PLN midpoint/confidence coordinate has already collapsed to the
+analytic posterior point. -/
+def posteriorExternalPredictivePrincipalShadow
+    {Ω : Type*} [MeasurableSpace Ω]
+    (M : BernoulliMixture) (k l : ℕ)
+    (hZ : M.countEvidenceMass k l ≠ 0)
+    (A : ExternalBoolProcessLaw Ω) : Prop :=
+  ∀ (n : ℕ) (X : Gamble (Fin n → Bool)),
+    ( externalPathLawPrefixEnvelopeMidpoint
+        ({A} : Set (ExternalBoolProcessLaw Ω)) n X
+    , externalPathLawPrefixEnvelopeWidthComplement
+        ({A} : Set (ExternalBoolProcessLaw Ω)) n X ) =
+      ( (bernoulliMixturePrefixLaw_analytic
+            (M.posteriorBernoulliMixture k l hZ) n).toPrecisePrevision X
+      , (1 : ℝ) )
+
+/-- Compact bounded-measurable version of the same principal-shadow readout:
+every finite-prefix midpoint/confidence coordinate has already collapsed to the
+analytic posterior point on the shared compact carrier. -/
+def posteriorCompactPredictivePrincipalShadow
+    {Ω : Type*} [MeasurableSpace Ω]
+    (M : BernoulliMixture) (k l : ℕ)
+    (hZ : M.countEvidenceMass k l ≠ 0)
+    (A : ExternalBoolProcessLaw Ω) : Prop :=
+  ∀ (n : ℕ) (X : Gamble (Fin n → Bool)),
+    ( boundedMeasurableEnvelopeMidpoint
+        (externalPathLawBoundedMeasurableCompactCredalSet
+          ({A} : Set (ExternalBoolProcessLaw Ω)))
+        (externalPathLawPrefixBoundedMeasurableGamble n X)
+    , boundedMeasurableEnvelopeWidthComplement
+        (externalPathLawBoundedMeasurableCompactCredalSet
+          ({A} : Set (ExternalBoolProcessLaw Ω)))
+        (externalPathLawPrefixBoundedMeasurableGamble n X) ) =
+      ( (bernoulliMixturePrefixLaw_analytic
+            (M.posteriorBernoulliMixture k l hZ) n).toPrecisePrevision X
+      , (1 : ℝ) )
+
 theorem externalPredictiveThatsAll_of_posteriorSharedEnvelopeCrown
     {Ω : Type*} [MeasurableSpace Ω]
     {M : BernoulliMixture} {k l : ℕ}
@@ -85,6 +121,80 @@ theorem compactPredictiveThatsAll_of_posteriorExternalCarrierCrown
         ({A} : Set (ExternalBoolProcessLaw Ω))) := by
   intro n X
   simpa using hCrown.compactPrefixWidth_eq_zero n X
+
+theorem posteriorExternalPredictivePrincipalShadow_of_posteriorSharedEnvelopeCrown
+    {Ω : Type*} [MeasurableSpace Ω]
+    {M : BernoulliMixture} {k l : ℕ}
+    {hZ : M.countEvidenceMass k l ≠ 0}
+    {A : ExternalBoolProcessLaw Ω}
+    (hCrown : PosteriorBernoulliMixtureSharedEnvelopeCrown M k l hZ A) :
+    posteriorExternalPredictivePrincipalShadow M k l hZ A := by
+  intro n X
+  simpa using
+    posteriorBernoulliMixture_sharedEnvelopeCrown_prefixPLNCoordinates_eq_posterior
+      hCrown n X
+
+theorem posteriorCompactPredictivePrincipalShadow_of_posteriorSharedEnvelopeCrown
+    {Ω : Type*} [MeasurableSpace Ω]
+    {M : BernoulliMixture} {k l : ℕ}
+    {hZ : M.countEvidenceMass k l ≠ 0}
+    {A : ExternalBoolProcessLaw Ω}
+    (hCrown : PosteriorBernoulliMixtureSharedEnvelopeCrown M k l hZ A) :
+    posteriorCompactPredictivePrincipalShadow M k l hZ A := by
+  intro n X
+  simpa using
+    posteriorBernoulliMixture_sharedEnvelopeCrown_compactPLNCoordinates_eq_posterior
+      hCrown n X
+
+theorem posteriorBernoulliMixture_canonical_externalPredictivePrincipalShadow
+    (M : BernoulliMixture) (k l : ℕ)
+    (hZ : M.countEvidenceMass k l ≠ 0) :
+    let A : ExternalBoolProcessLaw (ℕ → Bool) :=
+      ExternalBoolProcessLaw.ofProcess
+        (bernoulliMixtureCanonicalProcessMeasure
+          (M.posteriorBernoulliMixture k l hZ))
+        CategoryTheory.coordProcess
+        (by
+          intro i
+          simpa [CategoryTheory.coordProcess] using (measurable_pi_apply (a := i)))
+    posteriorExternalPredictivePrincipalShadow M k l hZ A := by
+  let hcoord : ∀ i : ℕ, Measurable (CategoryTheory.coordProcess i) := by
+    intro i
+    simpa [CategoryTheory.coordProcess] using (measurable_pi_apply (a := i))
+  let A : ExternalBoolProcessLaw (ℕ → Bool) :=
+    ExternalBoolProcessLaw.ofProcess
+      (bernoulliMixtureCanonicalProcessMeasure
+        (M.posteriorBernoulliMixture k l hZ))
+      CategoryTheory.coordProcess
+      hcoord
+  exact
+    posteriorExternalPredictivePrincipalShadow_of_posteriorSharedEnvelopeCrown
+      (posteriorBernoulliMixture_canonicalSharedEnvelopeCrown M k l hZ)
+
+theorem posteriorBernoulliMixture_canonical_compactPredictivePrincipalShadow
+    (M : BernoulliMixture) (k l : ℕ)
+    (hZ : M.countEvidenceMass k l ≠ 0) :
+    let A : ExternalBoolProcessLaw (ℕ → Bool) :=
+      ExternalBoolProcessLaw.ofProcess
+        (bernoulliMixtureCanonicalProcessMeasure
+          (M.posteriorBernoulliMixture k l hZ))
+        CategoryTheory.coordProcess
+        (by
+          intro i
+          simpa [CategoryTheory.coordProcess] using (measurable_pi_apply (a := i)))
+    posteriorCompactPredictivePrincipalShadow M k l hZ A := by
+  let hcoord : ∀ i : ℕ, Measurable (CategoryTheory.coordProcess i) := by
+    intro i
+    simpa [CategoryTheory.coordProcess] using (measurable_pi_apply (a := i))
+  let A : ExternalBoolProcessLaw (ℕ → Bool) :=
+    ExternalBoolProcessLaw.ofProcess
+      (bernoulliMixtureCanonicalProcessMeasure
+        (M.posteriorBernoulliMixture k l hZ))
+      CategoryTheory.coordProcess
+      hcoord
+  exact
+    posteriorCompactPredictivePrincipalShadow_of_posteriorSharedEnvelopeCrown
+      (posteriorBernoulliMixture_canonicalSharedEnvelopeCrown M k l hZ)
 
 theorem posteriorBernoulliMixture_canonical_externalPredictiveThatsAll
     (M : BernoulliMixture) (k l : ℕ)
@@ -157,40 +267,6 @@ theorem posteriorBernoulliMixture_canonical_compactPredictiveThatsAll
         (M.posteriorBernoulliMixture k l hZ))
   exact compactPredictiveThatsAll_of_posteriorExternalCarrierCrown
     (posteriorBernoulliMixture_externalCarrierCrown M k l hZ A hRealize)
-
-theorem posteriorBernoulliMixture_canonical_compactPredictiveThatsAll_and_prefixTypedWidthComplementITV_exact
-    (M : BernoulliMixture) (k l n : ℕ)
-    (hZ : M.countEvidenceMass k l ≠ 0)
-    (G : Gamble (Fin n → Bool))
-    (hG : ∀ ω, G ω ∈ Set.Icc (0 : ℝ) 1) :
-    let A : ExternalBoolProcessLaw (ℕ → Bool) :=
-      ExternalBoolProcessLaw.ofProcess
-        (bernoulliMixtureCanonicalProcessMeasure
-          (M.posteriorBernoulliMixture k l hZ))
-        CategoryTheory.coordProcess
-        (by
-          intro i
-          simpa [CategoryTheory.coordProcess] using (measurable_pi_apply (a := i)))
-    let T :=
-      posteriorBernoulliMixturePrefixTypedWidthComplementITV M k l n hZ G hG
-    let p :=
-      (bernoulliMixturePrefixLaw_analytic
-        (M.posteriorBernoulliMixture k l hZ) n).toPrecisePrevision G
-    compactPredictiveThatsAll
-        (externalPathLawBoundedMeasurableCompactCredalSet
-          ({A} : Set (ExternalBoolProcessLaw (ℕ → Bool)))) ∧
-      T.lower = p ∧
-      T.upper = p ∧
-      T.width = 0 ∧
-      T.credibility = 1 ∧
-      T.midpoint = p := by
-  dsimp
-  refine ⟨posteriorBernoulliMixture_canonical_compactPredictiveThatsAll M k l hZ, ?_, ?_, ?_, ?_, ?_⟩
-  · exact posteriorBernoulliMixturePrefixTypedWidthComplementITV_lower M k l n hZ G hG
-  · exact posteriorBernoulliMixturePrefixTypedWidthComplementITV_upper M k l n hZ G hG
-  · exact posteriorBernoulliMixturePrefixTypedWidthComplementITV_width M k l n hZ G hG
-  · exact posteriorBernoulliMixturePrefixTypedWidthComplementITV_credibility M k l n hZ G hG
-  · exact posteriorBernoulliMixturePrefixTypedWidthComplementITV_midpoint M k l n hZ G hG
 
 theorem posteriorBernoulliMixture_canonical_externalPredictiveThatsAll_and_prefixWitness_iff_zeroInteriorMixingMass
     (M : BernoulliMixture) (k l : ℕ)
@@ -605,7 +681,7 @@ theorem posteriorBernoulliMixture_conditionedTail_compactPredictiveThatsAll
     (posteriorBernoulliMixture_conditionedTail_externalCarrierCrown
       M X μ hX hrep obs hZ)
 
-theorem posteriorBernoulliMixture_conditionedTail_compactPredictiveThatsAll_and_prefixTypedWidthComplementITV_exact
+theorem posteriorBernoulliMixture_conditionedTail_externalPredictivePrincipalShadow
     {Ω : Type*} [MeasurableSpace Ω]
     (M : BernoulliMixture) (X : ℕ → Ω → Bool) (μ : MeasureTheory.Measure Ω)
     (hX : ∀ i : ℕ, Measurable (X i))
@@ -614,65 +690,38 @@ theorem posteriorBernoulliMixture_conditionedTail_compactPredictiveThatsAll_and_
     (hZ :
       M.countEvidenceMass
         (Mettapedia.Logic.Exchangeability.countTrue obs)
-        (Mettapedia.Logic.Exchangeability.countFalse obs) ≠ 0)
-    (n : ℕ)
-    (G : Gamble (Fin n → Bool))
-    (hG : ∀ ω, G ω ∈ Set.Icc (0 : ℝ) 1) :
-    let A : ExternalBoolProcessLaw Ω :=
-      conditionedTailExternalBoolProcessLaw M X μ hX hrep obs hZ
-    let T :=
-      posteriorBernoulliMixturePrefixTypedWidthComplementITV
-        M
+        (Mettapedia.Logic.Exchangeability.countFalse obs) ≠ 0) :
+    posteriorExternalPredictivePrincipalShadow
+      M
+      (Mettapedia.Logic.Exchangeability.countTrue obs)
+      (Mettapedia.Logic.Exchangeability.countFalse obs)
+      hZ
+      (conditionedTailExternalBoolProcessLaw M X μ hX hrep obs hZ) := by
+  exact
+    posteriorExternalPredictivePrincipalShadow_of_posteriorSharedEnvelopeCrown
+      (posteriorBernoulliMixture_conditionedTail_sharedEnvelopeCrown
+        M X μ hX hrep obs hZ)
+
+theorem posteriorBernoulliMixture_conditionedTail_compactPredictivePrincipalShadow
+    {Ω : Type*} [MeasurableSpace Ω]
+    (M : BernoulliMixture) (X : ℕ → Ω → Bool) (μ : MeasureTheory.Measure Ω)
+    (hX : ∀ i : ℕ, Measurable (X i))
+    (hrep : DeFinetti.Represents M X μ) {m : ℕ}
+    (obs : Fin m → Bool)
+    (hZ :
+      M.countEvidenceMass
         (Mettapedia.Logic.Exchangeability.countTrue obs)
-        (Mettapedia.Logic.Exchangeability.countFalse obs)
-        n hZ G hG
-    let p :=
-      (bernoulliMixturePrefixLaw_analytic
-        (M.posteriorBernoulliMixture
-          (Mettapedia.Logic.Exchangeability.countTrue obs)
-          (Mettapedia.Logic.Exchangeability.countFalse obs)
-          hZ) n).toPrecisePrevision G
-    compactPredictiveThatsAll
-        (externalPathLawBoundedMeasurableCompactCredalSet
-          ({A} : Set (ExternalBoolProcessLaw Ω))) ∧
-      T.lower = p ∧
-      T.upper = p ∧
-      T.width = 0 ∧
-      T.credibility = 1 ∧
-      T.midpoint = p := by
-  dsimp
-  refine ⟨posteriorBernoulliMixture_conditionedTail_compactPredictiveThatsAll
-      M X μ hX hrep obs hZ, ?_, ?_, ?_, ?_, ?_⟩
-  · exact
-      posteriorBernoulliMixturePrefixTypedWidthComplementITV_lower
-        M
-        (Mettapedia.Logic.Exchangeability.countTrue obs)
-        (Mettapedia.Logic.Exchangeability.countFalse obs)
-        n hZ G hG
-  · exact
-      posteriorBernoulliMixturePrefixTypedWidthComplementITV_upper
-        M
-        (Mettapedia.Logic.Exchangeability.countTrue obs)
-        (Mettapedia.Logic.Exchangeability.countFalse obs)
-        n hZ G hG
-  · exact
-      posteriorBernoulliMixturePrefixTypedWidthComplementITV_width
-        M
-        (Mettapedia.Logic.Exchangeability.countTrue obs)
-        (Mettapedia.Logic.Exchangeability.countFalse obs)
-        n hZ G hG
-  · exact
-      posteriorBernoulliMixturePrefixTypedWidthComplementITV_credibility
-        M
-        (Mettapedia.Logic.Exchangeability.countTrue obs)
-        (Mettapedia.Logic.Exchangeability.countFalse obs)
-        n hZ G hG
-  · exact
-      posteriorBernoulliMixturePrefixTypedWidthComplementITV_midpoint
-        M
-        (Mettapedia.Logic.Exchangeability.countTrue obs)
-        (Mettapedia.Logic.Exchangeability.countFalse obs)
-        n hZ G hG
+        (Mettapedia.Logic.Exchangeability.countFalse obs) ≠ 0) :
+    posteriorCompactPredictivePrincipalShadow
+      M
+      (Mettapedia.Logic.Exchangeability.countTrue obs)
+      (Mettapedia.Logic.Exchangeability.countFalse obs)
+      hZ
+      (conditionedTailExternalBoolProcessLaw M X μ hX hrep obs hZ) := by
+  exact
+    posteriorCompactPredictivePrincipalShadow_of_posteriorSharedEnvelopeCrown
+      (posteriorBernoulliMixture_conditionedTail_sharedEnvelopeCrown
+        M X μ hX hrep obs hZ)
 
 theorem posteriorBernoulliMixture_conditionedTail_externalPredictiveThatsAll_and_prefixWitness_iff_zeroInteriorMixingMass
     {Ω : Type*} [MeasurableSpace Ω]

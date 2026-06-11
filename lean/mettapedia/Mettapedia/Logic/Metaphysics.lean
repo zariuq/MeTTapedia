@@ -3,6 +3,7 @@ import Mettapedia.Logic.Metaphysics.MonadicSecondOrder
 import Mettapedia.Logic.Metaphysics.UltrainfinitismTwoSemantics
 import Mettapedia.Logic.Metaphysics.DedekindCategoricity
 import Mettapedia.Logic.Metaphysics.UltrainfinitismCore
+import Mettapedia.Logic.Metaphysics.DialWeld
 
 /-!
 # Metaphysics: formal philosophy in Mettapedia
@@ -20,4 +21,7 @@ Formalized metaphysical arguments and their semantic infrastructure:
 * `UltrainfinitismCore` — relative truth `UltraTrue`, principal collapse, the
   precise/open dial with its envelope theorems and dichotomy, free-vs-principal
   separation, and Łoś transfer (`ultraTrue_iff_uprod`, `ultrapower_elementary`).
+* `DialWeld` — the dial welded across layers: the concept-state O/T predicates ARE
+  `OpenFamily`/`PreciseFamily` of the gate-verdict family; finite evidence has only
+  principal perspectives; Boolean worlds are mereologies (one Cantor witness for all).
 -/

@@ -752,6 +752,36 @@ theorem plnAbduction_eq_bayes_deduction (s_AB s_CB _s_A s_B s_C : ℝ) :
   unfold plnAbductionStrength
   rfl
 
+/-- Abduction is genuinely sensitive to the left explanatory edge whenever the
+right explanatory edge is not merely reproducing the common background rate.
+
+More concretely: if the common prior is neither `0` nor `1`, the right concept
+prior is nonzero, and the right premise strength `s_CB` differs from the common
+prior `s_B`, then changing the left premise strength `s_AB` necessarily changes
+the abduction strength. -/
+theorem plnAbductionStrength_ne_of_left_strength_ne_of_nonbackground
+    {s_AB₁ s_AB₂ s_CB s_A₁ s_A₂ s_B s_C : ℝ}
+    (hB0 : s_B ≠ 0)
+    (hB1 : s_B ≠ 1)
+    (hC0 : s_C ≠ 0)
+    (hCB : s_CB ≠ s_B)
+    (hAB : s_AB₁ ≠ s_AB₂) :
+    plnAbductionStrength s_AB₁ s_CB s_A₁ s_B s_C ≠
+      plnAbductionStrength s_AB₂ s_CB s_A₂ s_B s_C := by
+  intro hEq
+  have h1B : 1 - s_B ≠ 0 := sub_ne_zero.mpr hB1.symm
+  have hmul :
+      plnAbductionStrength s_AB₁ s_CB s_A₁ s_B s_C * ((s_B * (1 - s_B)) / s_C) =
+        plnAbductionStrength s_AB₂ s_CB s_A₂ s_B s_C * ((s_B * (1 - s_B)) / s_C) := by
+    exact congrArg (fun x : ℝ => x * ((s_B * (1 - s_B)) / s_C)) hEq
+  unfold plnAbductionStrength plnDeductionStrength bayesInversion at hmul
+  field_simp [hB0, h1B, hC0] at hmul
+  ring_nf at hmul
+  have hscaled : s_AB₁ * (s_CB - s_B) = s_AB₂ * (s_CB - s_B) := by
+    nlinarith [hmul]
+  have hcoef : s_CB - s_B ≠ 0 := sub_ne_zero.mpr hCB
+  exact hAB (mul_right_cancel₀ hcoef hscaled)
+
 /-- Simplified PLN Abduction under high uncertainty.
 
 When the correction term is negligible:

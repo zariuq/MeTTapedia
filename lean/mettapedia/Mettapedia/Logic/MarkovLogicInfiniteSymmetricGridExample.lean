@@ -126,6 +126,85 @@ theorem localQueryEvent_gridOriginSpinLocalQueryInRegion_eq_originSpinUp
   simp [localQueryEvent, worldRestriction, satisfiesConstraints,
     gridOriginSpinLocalQueryInRegion, gridOriginSpinUpLocalQuery]
 
+/-- The eastern nearest neighbour of the origin in the quarter-plane grid. -/
+def gridOriginEast : GridNode := (1, 0)
+
+/-- The northern nearest neighbour of the origin in the quarter-plane grid. -/
+def gridOriginNorth : GridNode := (0, 1)
+
+/-- The two boundary-support neighbours of the corner origin. -/
+def gridOriginNeighborPairRegion : Region GridNode :=
+  ({gridOriginEast, gridOriginNorth} : Finset GridNode)
+
+@[simp] theorem gridOriginEast_mem_neighborPairRegion :
+    gridOriginEast ∈ gridOriginNeighborPairRegion := by
+  simp [gridOriginNeighborPairRegion]
+
+@[simp] theorem gridOriginNorth_mem_neighborPairRegion :
+    gridOriginNorth ∈ gridOriginNeighborPairRegion := by
+  simp [gridOriginNeighborPairRegion]
+
+/-- The local assignment on the east/north origin-neighbour pair with the
+prescribed truth values. -/
+def gridOriginNeighborPairAssignment (bEast bNorth : Bool) :
+    LocalAssignment GridNode gridOriginNeighborPairRegion :=
+  fun a => if a.1 = gridOriginEast then bEast else bNorth
+
+@[simp] theorem gridOriginNeighborPairAssignment_apply_east
+    (bEast bNorth : Bool) :
+    gridOriginNeighborPairAssignment bEast bNorth
+      ⟨gridOriginEast, gridOriginEast_mem_neighborPairRegion⟩ = bEast := by
+  simp [gridOriginNeighborPairAssignment, gridOriginEast]
+
+@[simp] theorem gridOriginNeighborPairAssignment_apply_north
+    (bEast bNorth : Bool) :
+    gridOriginNeighborPairAssignment bEast bNorth
+      ⟨gridOriginNorth, gridOriginNorth_mem_neighborPairRegion⟩ = bNorth := by
+  simp [gridOriginNeighborPairAssignment, gridOriginEast, gridOriginNorth]
+
+@[simp] theorem gridOriginNeighborPairAssignment_eta
+    (x : LocalAssignment GridNode gridOriginNeighborPairRegion) :
+    gridOriginNeighborPairAssignment
+        (x ⟨gridOriginEast, gridOriginEast_mem_neighborPairRegion⟩)
+        (x ⟨gridOriginNorth, gridOriginNorth_mem_neighborPairRegion⟩) =
+      x := by
+  funext a
+  rcases a with ⟨a, ha⟩
+  have haCases : a = gridOriginEast ∨ a = gridOriginNorth := by
+    simpa [gridOriginNeighborPairRegion, gridOriginEast, gridOriginNorth] using ha
+  rcases haCases with rfl | rfl
+  · simp [gridOriginNeighborPairAssignment]
+  · simp [gridOriginNeighborPairAssignment, gridOriginEast, gridOriginNorth]
+
+def gridOriginNeighborPairFF : LocalAssignment GridNode gridOriginNeighborPairRegion :=
+  gridOriginNeighborPairAssignment false false
+
+def gridOriginNeighborPairFT : LocalAssignment GridNode gridOriginNeighborPairRegion :=
+  gridOriginNeighborPairAssignment false true
+
+def gridOriginNeighborPairTF : LocalAssignment GridNode gridOriginNeighborPairRegion :=
+  gridOriginNeighborPairAssignment true false
+
+def gridOriginNeighborPairTT : LocalAssignment GridNode gridOriginNeighborPairRegion :=
+  gridOriginNeighborPairAssignment true true
+
+@[simp] theorem gridOriginNeighborPairAssignment_univ :
+    (Finset.univ : Finset (LocalAssignment GridNode gridOriginNeighborPairRegion)) =
+      ({gridOriginNeighborPairFF, gridOriginNeighborPairFT,
+        gridOriginNeighborPairTF, gridOriginNeighborPairTT} :
+          Finset (LocalAssignment GridNode gridOriginNeighborPairRegion)) := by
+  ext x
+  constructor
+  · intro _hx
+    rw [← gridOriginNeighborPairAssignment_eta x]
+    cases hEast : x ⟨gridOriginEast, gridOriginEast_mem_neighborPairRegion⟩ <;>
+      cases hNorth : x ⟨gridOriginNorth, gridOriginNorth_mem_neighborPairRegion⟩ <;>
+      simp [gridOriginNeighborPairFF, gridOriginNeighborPairFT,
+        gridOriginNeighborPairTF, gridOriginNeighborPairTT]
+  · intro hx
+    simp at hx
+    simp
+
 /-- Clause ids for the symmetric two-clause-per-edge grid. -/
 inductive SymmetricGridClauseId where
   | prior : Nat → Nat → SymmetricGridClauseId
@@ -211,6 +290,94 @@ theorem gridVerticalPair_eval_spinFlip_eq
         gridVerticalReverseClause_holds_spinFlip_iff_forward,
         hf, hr, mul_comm]
 
+/-- Product of the two symmetric clause potentials on a horizontal grid edge. -/
+noncomputable def symmetricGridHorizontalEdgePairWeight
+    (w : ℝ) (i j : Nat) (W : InfiniteWorld GridNode) : ENNReal :=
+  (classicalWeightedClause (gridHorizontalClause i j) w).eval W *
+    (classicalWeightedClause (gridHorizontalReverseClause i j) w).eval W
+
+/-- Product of the two symmetric clause potentials on a vertical grid edge. -/
+noncomputable def symmetricGridVerticalEdgePairWeight
+    (w : ℝ) (i j : Nat) (W : InfiniteWorld GridNode) : ENNReal :=
+  (classicalWeightedClause (gridVerticalClause i j) w).eval W *
+    (classicalWeightedClause (gridVerticalReverseClause i j) w).eval W
+
+/-- Every symmetric horizontal edge contributes a base factor `exp(w)`, with an
+additional factor `exp(w)` exactly when the endpoint spins agree. -/
+theorem symmetricGridHorizontalEdgePairWeight_eq_alignmentBonus
+    (w : ℝ) (i j : Nat) (W : InfiniteWorld GridNode) :
+    symmetricGridHorizontalEdgePairWeight w i j W =
+      ENNReal.ofReal (Real.exp w) *
+        (if W (i, j) = W (i + 1, j) then ENNReal.ofReal (Real.exp w) else 1) := by
+  cases hLeft : W (i, j) <;> cases hRight : W (i + 1, j) <;>
+    simp [symmetricGridHorizontalEdgePairWeight, WeightedGroundClause.eval,
+      classicalWeightedClause, gridHorizontalClause, gridHorizontalReverseClause,
+      GroundClause.holds, Literal.holds, hLeft, hRight]
+
+/-- Every symmetric vertical edge contributes a base factor `exp(w)`, with an
+additional factor `exp(w)` exactly when the endpoint spins agree. -/
+theorem symmetricGridVerticalEdgePairWeight_eq_alignmentBonus
+    (w : ℝ) (i j : Nat) (W : InfiniteWorld GridNode) :
+    symmetricGridVerticalEdgePairWeight w i j W =
+      ENNReal.ofReal (Real.exp w) *
+        (if W (i, j) = W (i, j + 1) then ENNReal.ofReal (Real.exp w) else 1) := by
+  cases hDown : W (i, j) <;> cases hUp : W (i, j + 1) <;>
+    simp [symmetricGridVerticalEdgePairWeight, WeightedGroundClause.eval,
+      classicalWeightedClause, gridVerticalClause, gridVerticalReverseClause,
+      GroundClause.holds, Literal.holds, hDown, hUp]
+
+theorem symmetricGridHorizontalEdgePairWeight_eq_of_eq
+    (w : ℝ) (i j : Nat) (W : InfiniteWorld GridNode)
+    (hEq : W (i, j) = W (i + 1, j)) :
+    symmetricGridHorizontalEdgePairWeight w i j W =
+      ENNReal.ofReal (Real.exp w) * ENNReal.ofReal (Real.exp w) := by
+  simp [symmetricGridHorizontalEdgePairWeight_eq_alignmentBonus, hEq]
+
+theorem symmetricGridVerticalEdgePairWeight_eq_of_eq
+    (w : ℝ) (i j : Nat) (W : InfiniteWorld GridNode)
+    (hEq : W (i, j) = W (i, j + 1)) :
+    symmetricGridVerticalEdgePairWeight w i j W =
+      ENNReal.ofReal (Real.exp w) * ENNReal.ofReal (Real.exp w) := by
+  simp [symmetricGridVerticalEdgePairWeight_eq_alignmentBonus, hEq]
+
+theorem symmetricGridHorizontalEdgePairWeight_eq_of_ne
+    (w : ℝ) (i j : Nat) (W : InfiniteWorld GridNode)
+    (hNe : W (i, j) ≠ W (i + 1, j)) :
+    symmetricGridHorizontalEdgePairWeight w i j W =
+      ENNReal.ofReal (Real.exp w) := by
+  simp [symmetricGridHorizontalEdgePairWeight_eq_alignmentBonus, hNe]
+
+theorem symmetricGridVerticalEdgePairWeight_eq_of_ne
+    (w : ℝ) (i j : Nat) (W : InfiniteWorld GridNode)
+    (hNe : W (i, j) ≠ W (i, j + 1)) :
+    symmetricGridVerticalEdgePairWeight w i j W =
+      ENNReal.ofReal (Real.exp w) := by
+  simp [symmetricGridVerticalEdgePairWeight_eq_alignmentBonus, hNe]
+
+/-- Correcting a horizontal disagreement to an agreement gains exactly one
+additional factor `exp(w)` in the symmetric two-clause-per-edge encoding. -/
+theorem symmetricGridHorizontalEdgePairWeight_gain_of_eq_over_ne
+    (w : ℝ) (i j : Nat) (W W' : InfiniteWorld GridNode)
+    (hEq : W' (i, j) = W' (i + 1, j))
+    (hNe : W (i, j) ≠ W (i + 1, j)) :
+    symmetricGridHorizontalEdgePairWeight w i j W' =
+      ENNReal.ofReal (Real.exp w) *
+        symmetricGridHorizontalEdgePairWeight w i j W := by
+  simp [symmetricGridHorizontalEdgePairWeight_eq_of_eq, hEq,
+    symmetricGridHorizontalEdgePairWeight_eq_of_ne, hNe]
+
+/-- Correcting a vertical disagreement to an agreement gains exactly one
+additional factor `exp(w)` in the symmetric two-clause-per-edge encoding. -/
+theorem symmetricGridVerticalEdgePairWeight_gain_of_eq_over_ne
+    (w : ℝ) (i j : Nat) (W W' : InfiniteWorld GridNode)
+    (hEq : W' (i, j) = W' (i, j + 1))
+    (hNe : W (i, j) ≠ W (i, j + 1)) :
+    symmetricGridVerticalEdgePairWeight w i j W' =
+      ENNReal.ofReal (Real.exp w) *
+        symmetricGridVerticalEdgePairWeight w i j W := by
+  simp [symmetricGridVerticalEdgePairWeight_eq_of_eq, hEq,
+    symmetricGridVerticalEdgePairWeight_eq_of_ne, hNe]
+
 /-- Underlying clause attached to a symmetric grid clause id. -/
 def symmetricGridClause : SymmetricGridClauseId → GroundClause GridNode
   | .prior i j => gridPriorClause i j
@@ -285,6 +452,27 @@ theorem symmetricGridBase_mem_expansion (k : SymmetricGridClauseId) :
     k ∈ symmetricGridExpansion (symmetricGridBaseClauseId k) := by
   cases k <;> simp [symmetricGridExpansion, symmetricGridBaseClauseId]
 
+theorem symmetricGridBaseClauseId_eq_of_mem_expansion
+    {j : GridClauseId} {k : SymmetricGridClauseId}
+    (hk : k ∈ symmetricGridExpansion j) :
+    symmetricGridBaseClauseId k = j := by
+  cases j <;> cases k <;>
+    simp [symmetricGridExpansion, symmetricGridBaseClauseId] at hk ⊢ <;>
+    simpa using hk
+
+theorem symmetricGridExpansion_pairwiseDisjoint
+    (s : Finset GridClauseId) :
+    Set.PairwiseDisjoint (↑s) symmetricGridExpansion := by
+  intro j _hj k _hk hjk
+  change Disjoint (symmetricGridExpansion j) (symmetricGridExpansion k)
+  rw [Finset.disjoint_left]
+  intro x hxj hxk
+  have hbasej : symmetricGridBaseClauseId x = j :=
+    symmetricGridBaseClauseId_eq_of_mem_expansion hxj
+  have hbasek : symmetricGridBaseClauseId x = k :=
+    symmetricGridBaseClauseId_eq_of_mem_expansion hxk
+  exact hjk (hbasej.symm.trans hbasek)
+
 /-- Finite clause support for the symmetric grid, obtained by expanding the
 already-proved oriented grid support. -/
 noncomputable def symmetricGridRegionSupport
@@ -351,6 +539,49 @@ target for low-temperature phase coexistence. -/
 noncomputable def symmetricGridZeroFieldClassicalSpec
     (w : ℝ) : ClassicalInfiniteGroundMLNSpec GridNode SymmetricGridClauseId :=
   symmetricGridClassicalSpecWithField 0 w
+
+/-- The zero-field weight contributed by one oriented support id: priors are
+trivial, while horizontal and vertical ids contribute the paired symmetric edge
+weights. -/
+noncomputable def symmetricGridBaseClauseWeight
+    (w : ℝ) (j : GridClauseId) (W : InfiniteWorld GridNode) : ENNReal :=
+  match j with
+  | .prior _ _ => 1
+  | .horizontal i j => symmetricGridHorizontalEdgePairWeight w i j W
+  | .vertical i j => symmetricGridVerticalEdgePairWeight w i j W
+
+theorem symmetricGridExpansion_prod_clauseEval_eq_baseClauseWeight
+    (w : ℝ) (j : GridClauseId) (W : InfiniteWorld GridNode) :
+    ∏ k ∈ symmetricGridExpansion j,
+      ((symmetricGridZeroFieldClassicalSpec w).toStrictlyPositiveInfiniteGroundMLNSpec.clauseData k).eval W =
+        symmetricGridBaseClauseWeight w j W := by
+  cases j <;>
+    simp [symmetricGridExpansion, symmetricGridBaseClauseWeight,
+      symmetricGridZeroFieldClassicalSpec, symmetricGridClassicalSpecWithField,
+      ClassicalInfiniteGroundMLNSpec.toStrictlyPositiveInfiniteGroundMLNSpec,
+      symmetricGridClause, symmetricGridHorizontalEdgePairWeight,
+      symmetricGridVerticalEdgePairWeight, classicalWeightedClause,
+      WeightedGroundClause.eval, Real.exp_zero]
+
+theorem symmetricGridZeroField_finiteVolumeWeight_eq_prod_baseClauseWeight
+    (w : ℝ) (Λ : Region GridNode) (x : LocalAssignment GridNode Λ)
+    (ξ : BoundaryCondition GridNode) :
+    (symmetricGridZeroFieldClassicalSpec w).toStrictlyPositiveInfiniteGroundMLNSpec.toInfiniteGroundMLNSpec.finiteVolumeWeight
+        Λ x ξ =
+      ∏ j ∈ gridRegionSupport Λ,
+        symmetricGridBaseClauseWeight w j (patch Λ x ξ) := by
+  classical
+  let W : InfiniteWorld GridNode := patch Λ x ξ
+  unfold Mettapedia.Logic.MarkovLogicInfiniteSpecification.InfiniteGroundMLNSpec.finiteVolumeWeight
+  change
+    (∏ k ∈ symmetricGridRegionSupport Λ,
+      ((symmetricGridZeroFieldClassicalSpec w).toStrictlyPositiveInfiniteGroundMLNSpec.clauseData k).eval W) =
+      ∏ j ∈ gridRegionSupport Λ, symmetricGridBaseClauseWeight w j W
+  rw [symmetricGridRegionSupport, Finset.prod_biUnion
+    (symmetricGridExpansion_pairwiseDisjoint (gridRegionSupport Λ))]
+  refine Finset.prod_congr rfl ?_
+  intro j hj
+  simpa [W] using symmetricGridExpansion_prod_clauseEval_eq_baseClauseWeight w j W
 
 theorem symmetricGridZeroField_clauseData_eval_spinFlip_eq_flip
     (w : ℝ) (k : SymmetricGridClauseId) (W : InfiniteWorld GridNode) :
@@ -806,6 +1037,119 @@ theorem symmetricGridZeroField_uniformSmallTotalInfluence
     symmetricGridClassicalSpecWithField, symmetricGridRegionSupport,
     symmetricGridExpansion, gridRegionSupport, gridOrigin]
 
+@[simp] theorem symmetricGridZeroField_boundaryClauseSupportRegion_origin
+    (w : ℝ) :
+    Mettapedia.Logic.MarkovLogicInfiniteFixedRegionDLR.boundaryClauseSupportRegion
+        (symmetricGridZeroFieldClassicalSpec w).toStrictlyPositiveInfiniteGroundMLNSpec.toInfiniteGroundMLNSpec
+        ({gridOrigin} : Region GridNode) =
+      gridOriginNeighborPairRegion := by
+  have hsupport :
+      (symmetricGridZeroFieldClassicalSpec w).toStrictlyPositiveInfiniteGroundMLNSpec.regionSupport
+          ({gridOrigin} : Region GridNode) =
+        ({SymmetricGridClauseId.prior 0 0,
+          SymmetricGridClauseId.horizontalForward 0 0,
+          SymmetricGridClauseId.horizontalBackward 0 0,
+          SymmetricGridClauseId.verticalForward 0 0,
+          SymmetricGridClauseId.verticalBackward 0 0} : Finset SymmetricGridClauseId) := by
+    change (symmetricGridZeroFieldClassicalSpec w).regionSupport ({gridOrigin} : Region GridNode) =
+      ({SymmetricGridClauseId.prior 0 0,
+        SymmetricGridClauseId.horizontalForward 0 0,
+        SymmetricGridClauseId.horizontalBackward 0 0,
+        SymmetricGridClauseId.verticalForward 0 0,
+        SymmetricGridClauseId.verticalBackward 0 0} : Finset SymmetricGridClauseId)
+    exact symmetricGridZeroField_regionSupport_origin w
+  ext a
+  constructor
+  · intro ha
+    rw [Mettapedia.Logic.MarkovLogicInfiniteFixedRegionDLR.boundaryClauseSupportRegion,
+      hsupport] at ha
+    rcases Finset.mem_biUnion.mp ha with ⟨j, hj, ha⟩
+    rcases Finset.mem_sdiff.mp ha with ⟨haAtom, hnotOrigin⟩
+    have hcases :
+        j = SymmetricGridClauseId.prior 0 0 ∨
+          j = SymmetricGridClauseId.horizontalForward 0 0 ∨
+          j = SymmetricGridClauseId.horizontalBackward 0 0 ∨
+          j = SymmetricGridClauseId.verticalForward 0 0 ∨
+          j = SymmetricGridClauseId.verticalBackward 0 0 := by
+      simp at hj
+      exact hj
+    rcases hcases with rfl | rfl | rfl | rfl | rfl
+    · have haOrigin : a = gridOrigin := by
+        simpa [ClassicalInfiniteGroundMLNSpec.toStrictlyPositiveInfiniteGroundMLNSpec,
+          classicalWeightedClause, symmetricGridZeroFieldClassicalSpec, symmetricGridClassicalSpecWithField,
+          symmetricGridClause, gridPriorClause_atoms, gridOrigin] using haAtom
+      exact False.elim (hnotOrigin (by simp [haOrigin]))
+    · have haCases : a = gridOrigin ∨ a = gridOriginEast := by
+        simpa [ClassicalInfiniteGroundMLNSpec.toStrictlyPositiveInfiniteGroundMLNSpec,
+          classicalWeightedClause, symmetricGridZeroFieldClassicalSpec, symmetricGridClassicalSpecWithField,
+          symmetricGridClause, gridHorizontalClause_atoms, gridOrigin, gridOriginEast] using haAtom
+      have haEast : a = gridOriginEast := by
+        rcases haCases with haOrigin | haEast
+        · exfalso
+          exact hnotOrigin (by simp [haOrigin])
+        · exact haEast
+      simp [gridOriginNeighborPairRegion, gridOriginEast, gridOriginNorth, haEast]
+    · have haCases : a = gridOrigin ∨ a = gridOriginEast := by
+        simpa [ClassicalInfiniteGroundMLNSpec.toStrictlyPositiveInfiniteGroundMLNSpec,
+          classicalWeightedClause, symmetricGridZeroFieldClassicalSpec, symmetricGridClassicalSpecWithField,
+          symmetricGridClause, gridHorizontalReverseClause_atoms, gridOrigin, gridOriginEast] using haAtom
+      have haEast : a = gridOriginEast := by
+        rcases haCases with haOrigin | haEast
+        · exfalso
+          exact hnotOrigin (by simp [haOrigin])
+        · exact haEast
+      simp [gridOriginNeighborPairRegion, gridOriginEast, gridOriginNorth, haEast]
+    · have haCases : a = gridOrigin ∨ a = gridOriginNorth := by
+        simpa [ClassicalInfiniteGroundMLNSpec.toStrictlyPositiveInfiniteGroundMLNSpec,
+          classicalWeightedClause, symmetricGridZeroFieldClassicalSpec, symmetricGridClassicalSpecWithField,
+          symmetricGridClause, gridVerticalClause_atoms, gridOrigin, gridOriginNorth] using haAtom
+      have haNorth : a = gridOriginNorth := by
+        rcases haCases with haOrigin | haNorth
+        · exfalso
+          exact hnotOrigin (by simp [haOrigin])
+        · exact haNorth
+      simp [gridOriginNeighborPairRegion, gridOriginEast, gridOriginNorth, haNorth]
+    · have haCases : a = gridOrigin ∨ a = gridOriginNorth := by
+        simpa [ClassicalInfiniteGroundMLNSpec.toStrictlyPositiveInfiniteGroundMLNSpec,
+          classicalWeightedClause, symmetricGridZeroFieldClassicalSpec, symmetricGridClassicalSpecWithField,
+          symmetricGridClause, gridVerticalReverseClause_atoms, gridOrigin, gridOriginNorth] using haAtom
+      have haNorth : a = gridOriginNorth := by
+        rcases haCases with haOrigin | haNorth
+        · exfalso
+          exact hnotOrigin (by simp [haOrigin])
+        · exact haNorth
+      simp [gridOriginNeighborPairRegion, gridOriginEast, gridOriginNorth, haNorth]
+  · intro ha
+    rw [Mettapedia.Logic.MarkovLogicInfiniteFixedRegionDLR.boundaryClauseSupportRegion,
+      hsupport]
+    simp [gridOriginNeighborPairRegion, gridOriginEast, gridOriginNorth] at ha
+    rcases ha with rfl | rfl
+    · refine Finset.mem_biUnion.mpr ?_
+      refine ⟨SymmetricGridClauseId.horizontalForward 0 0, ?_, ?_⟩
+      · simp
+      · simp [ClassicalInfiniteGroundMLNSpec.toStrictlyPositiveInfiniteGroundMLNSpec,
+          classicalWeightedClause, symmetricGridZeroFieldClassicalSpec, symmetricGridClassicalSpecWithField,
+          symmetricGridClause, gridHorizontalClause_atoms, gridOrigin]
+    · refine Finset.mem_biUnion.mpr ?_
+      refine ⟨SymmetricGridClauseId.verticalForward 0 0, ?_, ?_⟩
+      · simp
+      · simp [ClassicalInfiniteGroundMLNSpec.toStrictlyPositiveInfiniteGroundMLNSpec,
+          classicalWeightedClause, symmetricGridZeroFieldClassicalSpec, symmetricGridClassicalSpecWithField,
+          symmetricGridClause, gridVerticalClause_atoms, gridOrigin]
+
+@[simp] theorem symmetricGridZeroField_cylinderBoundarySupportRegion_origin
+    (w : ℝ) :
+    Mettapedia.Logic.MarkovLogicInfiniteFixedRegionDLR.cylinderBoundarySupportRegion
+        (symmetricGridZeroFieldClassicalSpec w).toStrictlyPositiveInfiniteGroundMLNSpec.toInfiniteGroundMLNSpec
+        ({gridOrigin} : Region GridNode)
+        ({gridOrigin} : Region GridNode) =
+      gridOriginNeighborPairRegion := by
+  rw [Mettapedia.Logic.MarkovLogicInfiniteFixedRegionDLR.cylinderBoundarySupportRegion,
+    Mettapedia.Logic.MarkovLogicInfiniteFixedRegionDLR.outsideRegion,
+    symmetricGridZeroField_boundaryClauseSupportRegion_origin]
+  ext a
+  simp [gridOrigin, gridOriginNeighborPairRegion]
+
 theorem symmetricGridZeroField_origin_singletonLogOdds_plusBoundary
     (w : ℝ) :
     (symmetricGridZeroFieldClassicalSpec w).singletonLogOdds gridOrigin gridPlusBoundary =
@@ -835,6 +1179,440 @@ theorem symmetricGridZeroField_origin_singletonLogOdds_minusBoundary
     gridHorizontalClause, gridHorizontalReverseClause, gridVerticalClause,
     gridVerticalReverseClause, patch, singletonAssignment]
   ring_nf
+
+theorem symmetricGridZeroField_origin_singletonLogOdds_eq_neighborBoundarySum
+    (w : ℝ) (ξ : BoundaryCondition GridNode) :
+    (symmetricGridZeroFieldClassicalSpec w).singletonLogOdds gridOrigin ξ =
+      (if ξ gridOriginEast then w else -w) +
+        (if ξ gridOriginNorth then w else -w) := by
+  rw [(symmetricGridZeroFieldClassicalSpec w).singletonLogOdds_eq_sum_clauseContribution
+    gridOrigin ξ]
+  rw [symmetricGridZeroField_regionSupport_origin]
+  cases hEast : ξ gridOriginEast <;> cases hNorth : ξ gridOriginNorth <;>
+    simp [gridOriginEast, gridOriginNorth] at hEast hNorth <;>
+    simp [ClassicalInfiniteGroundMLNSpec.singletonLogOddsClauseContribution,
+      GroundClause.holds, Literal.holds,
+      symmetricGridZeroFieldClassicalSpec, symmetricGridClassicalSpecWithField,
+      symmetricGridClause, gridOrigin,
+      gridPriorClause, gridHorizontalClause, gridHorizontalReverseClause,
+      gridVerticalClause, gridVerticalReverseClause, patch, singletonAssignment,
+      hEast, hNorth]
+
+theorem symmetricGridZeroField_origin_singletonKernelTrueProb_eq_sigmoid_neighborBoundarySum
+    (w : ℝ) (ξ : BoundaryCondition GridNode) :
+    (symmetricGridZeroFieldClassicalSpec w).singletonKernelTrueProb gridOrigin ξ =
+      Real.sigmoid
+        ((if ξ gridOriginEast then w else -w) +
+          (if ξ gridOriginNorth then w else -w)) := by
+  rw [(symmetricGridZeroFieldClassicalSpec w).singletonKernelTrueProb_eq_sigmoid_singletonLogOdds]
+  rw [symmetricGridZeroField_origin_singletonLogOdds_eq_neighborBoundarySum]
+
+theorem symmetricGridZeroField_origin_cylinderBoundaryKernelValue_toReal_eq_neighborSigmoid
+    (w : ℝ)
+    (x : LocalAssignment GridNode gridOriginNeighborPairRegion) :
+    ENNReal.toReal
+      (StrictlyPositiveInfiniteGroundMLNSpec.cylinderBoundaryKernelValue
+        (symmetricGridZeroFieldClassicalSpec w).toStrictlyPositiveInfiniteGroundMLNSpec
+        ({gridOrigin} : Region GridNode)
+        ({gridOrigin} : Region GridNode)
+        (singletonTrueAssignmentSet gridOrigin)
+        x) =
+      Real.sigmoid
+        ((if x ⟨gridOriginEast, by simp [gridOriginNeighborPairRegion, gridOriginEast, gridOriginNorth]⟩
+            then w else -w) +
+          (if x ⟨gridOriginNorth, by simp [gridOriginNeighborPairRegion, gridOriginEast, gridOriginNorth]⟩
+            then w else -w)) := by
+  simpa [StrictlyPositiveInfiniteGroundMLNSpec.cylinderBoundaryKernelValue,
+    symmetricGridZeroField_cylinderBoundarySupportRegion_origin,
+    gridOriginNeighborPairRegion, gridOriginEast, gridOriginNorth] using
+    (symmetricGridZeroField_origin_singletonKernelTrueProb_eq_sigmoid_neighborBoundarySum
+      w
+      (patch gridOriginNeighborPairRegion x (fun _ => false)))
+
+theorem symmetricGridZeroField_originSpinUp_finiteVolumeKernel_eq_neighborPairBoundaryIntegral
+    (w : ℝ) (n : ℕ) (ξ : BoundaryCondition GridNode) :
+    gridExhaustion.finiteVolumeKernelSequence
+        (symmetricGridZeroFieldClassicalSpec w).toStrictlyPositiveInfiniteGroundMLNSpec
+        ξ n
+        (localQueryEvent ({gridOrigin} : Region GridNode) gridOriginSpinUpLocalQuery) =
+      ∫⁻ x,
+        StrictlyPositiveInfiniteGroundMLNSpec.cylinderBoundaryKernelValue
+          (symmetricGridZeroFieldClassicalSpec w).toStrictlyPositiveInfiniteGroundMLNSpec
+          ({gridOrigin} : Region GridNode)
+          ({gridOrigin} : Region GridNode)
+          (singletonTrueAssignmentSet gridOrigin)
+          x
+        ∂ Mettapedia.Logic.MarkovLogicInfiniteProjective.RegionExhaustion.stageMarginal
+          gridExhaustion
+          (symmetricGridZeroFieldClassicalSpec w).toStrictlyPositiveInfiniteGroundMLNSpec
+          ξ n
+          gridOriginNeighborPairRegion := by
+  have hsub : ({gridOrigin} : Region GridNode) ⊆ gridExhaustion.region n := by
+    intro a ha
+    rcases Finset.mem_singleton.mp ha with rfl
+    exact gridOrigin_mem_gridExhaustion_region n
+  have hdlr :
+      ∫⁻ ω,
+        Mettapedia.Logic.MarkovLogicInfinitePositive.StrictlyPositiveInfiniteGroundMLNSpec.finiteVolumeWorldMeasure
+          (symmetricGridZeroFieldClassicalSpec w).toStrictlyPositiveInfiniteGroundMLNSpec
+          ({gridOrigin} : Region GridNode) ω
+          (MeasureTheory.cylinder ({gridOrigin} : Region GridNode)
+            (singletonTrueAssignmentSet gridOrigin))
+        ∂ gridExhaustion.finiteVolumeKernelSequence
+          (symmetricGridZeroFieldClassicalSpec w).toStrictlyPositiveInfiniteGroundMLNSpec
+          ξ n =
+      gridExhaustion.finiteVolumeKernelSequence
+        (symmetricGridZeroFieldClassicalSpec w).toStrictlyPositiveInfiniteGroundMLNSpec
+        ξ n
+        (MeasureTheory.cylinder ({gridOrigin} : Region GridNode)
+          (singletonTrueAssignmentSet gridOrigin)) := by
+    simpa [Mettapedia.Logic.MarkovLogicInfiniteExhaustion.RegionExhaustion.finiteVolumeKernelSequence] using
+      (Mettapedia.Logic.MarkovLogicInfiniteFixedRegionDLR.finiteVolumeWorldMeasure_subregion_cylinder_dlr
+        (M := (symmetricGridZeroFieldClassicalSpec w).toStrictlyPositiveInfiniteGroundMLNSpec)
+        (Λ := ({gridOrigin} : Region GridNode))
+        (Δ := gridExhaustion.region n)
+        hsub
+        (ξ := ξ)
+        (I := ({gridOrigin} : Region GridNode))
+        (S := singletonTrueAssignmentSet gridOrigin)
+        (hS := measurableSet_singletonTrueAssignmentSet gridOrigin))
+  have hstage :
+      ∫⁻ x,
+        StrictlyPositiveInfiniteGroundMLNSpec.cylinderBoundaryKernelValue
+          (symmetricGridZeroFieldClassicalSpec w).toStrictlyPositiveInfiniteGroundMLNSpec
+          ({gridOrigin} : Region GridNode)
+          ({gridOrigin} : Region GridNode)
+          (singletonTrueAssignmentSet gridOrigin)
+          x
+        ∂ Mettapedia.Logic.MarkovLogicInfiniteProjective.RegionExhaustion.stageMarginal
+          gridExhaustion
+          (symmetricGridZeroFieldClassicalSpec w).toStrictlyPositiveInfiniteGroundMLNSpec
+          ξ n
+          gridOriginNeighborPairRegion =
+      ∫⁻ ω,
+        Mettapedia.Logic.MarkovLogicInfinitePositive.StrictlyPositiveInfiniteGroundMLNSpec.finiteVolumeWorldMeasure
+          (symmetricGridZeroFieldClassicalSpec w).toStrictlyPositiveInfiniteGroundMLNSpec
+          ({gridOrigin} : Region GridNode) ω
+          (MeasureTheory.cylinder ({gridOrigin} : Region GridNode)
+            (singletonTrueAssignmentSet gridOrigin))
+        ∂ gridExhaustion.finiteVolumeKernelSequence
+          (symmetricGridZeroFieldClassicalSpec w).toStrictlyPositiveInfiniteGroundMLNSpec
+          ξ n := by
+    simpa [symmetricGridZeroField_cylinderBoundarySupportRegion_origin] using
+      (Mettapedia.Logic.MarkovLogicInfiniteFixedRegionDLR.RegionExhaustion.stageMarginal_lintegral_cylinderBoundaryKernelValue
+        (E := gridExhaustion)
+        (M := (symmetricGridZeroFieldClassicalSpec w).toStrictlyPositiveInfiniteGroundMLNSpec)
+        (ξ := ξ)
+        (n := n)
+        (Λ := ({gridOrigin} : Region GridNode))
+        (I := ({gridOrigin} : Region GridNode))
+        (S := singletonTrueAssignmentSet gridOrigin)
+        (hS := measurableSet_singletonTrueAssignmentSet gridOrigin))
+  calc
+    gridExhaustion.finiteVolumeKernelSequence
+        (symmetricGridZeroFieldClassicalSpec w).toStrictlyPositiveInfiniteGroundMLNSpec
+        ξ n
+        (localQueryEvent ({gridOrigin} : Region GridNode) gridOriginSpinUpLocalQuery) =
+      ∫⁻ ω,
+        Mettapedia.Logic.MarkovLogicInfinitePositive.StrictlyPositiveInfiniteGroundMLNSpec.finiteVolumeWorldMeasure
+          (symmetricGridZeroFieldClassicalSpec w).toStrictlyPositiveInfiniteGroundMLNSpec
+          ({gridOrigin} : Region GridNode) ω
+          (MeasureTheory.cylinder ({gridOrigin} : Region GridNode)
+            (singletonTrueAssignmentSet gridOrigin))
+        ∂ gridExhaustion.finiteVolumeKernelSequence
+          (symmetricGridZeroFieldClassicalSpec w).toStrictlyPositiveInfiniteGroundMLNSpec
+          ξ n := by
+            simpa [localQueryEvent_eq_cylinder, gridOriginSpinUpLocalConstraintSet_eq] using
+              hdlr.symm
+    _ =
+      ∫⁻ x,
+        StrictlyPositiveInfiniteGroundMLNSpec.cylinderBoundaryKernelValue
+          (symmetricGridZeroFieldClassicalSpec w).toStrictlyPositiveInfiniteGroundMLNSpec
+          ({gridOrigin} : Region GridNode)
+          ({gridOrigin} : Region GridNode)
+          (singletonTrueAssignmentSet gridOrigin)
+          x
+        ∂ Mettapedia.Logic.MarkovLogicInfiniteProjective.RegionExhaustion.stageMarginal
+          gridExhaustion
+          (symmetricGridZeroFieldClassicalSpec w).toStrictlyPositiveInfiniteGroundMLNSpec
+          ξ n
+          gridOriginNeighborPairRegion := by
+            simpa using hstage.symm
+
+/-- The stage marginal on the two-neighbour boundary support of the origin
+query. -/
+noncomputable def symmetricGridZeroFieldOriginNeighborPairStagePMF
+    (w : ℝ) (ξ : BoundaryCondition GridNode) (n : ℕ) :
+    PMF (LocalAssignment GridNode gridOriginNeighborPairRegion) :=
+  (Mettapedia.Logic.MarkovLogicInfiniteProjective.RegionExhaustion.stageMarginal
+    gridExhaustion
+    (symmetricGridZeroFieldClassicalSpec w).toStrictlyPositiveInfiniteGroundMLNSpec
+    ξ n
+    gridOriginNeighborPairRegion).toPMF
+
+theorem symmetricGridZeroField_originSpinUp_finiteVolumeKernel_toReal_eq_neighborPairMixture
+    (w : ℝ) (n : ℕ) (ξ : BoundaryCondition GridNode) :
+    ENNReal.toReal
+      (gridExhaustion.finiteVolumeKernelSequence
+        (symmetricGridZeroFieldClassicalSpec w).toStrictlyPositiveInfiniteGroundMLNSpec
+        ξ n
+        (localQueryEvent ({gridOrigin} : Region GridNode) gridOriginSpinUpLocalQuery)) =
+      Real.sigmoid (-2 * w) *
+          ENNReal.toReal
+            (symmetricGridZeroFieldOriginNeighborPairStagePMF w ξ n
+              gridOriginNeighborPairFF) +
+        (1 / 2 : ℝ) *
+          ENNReal.toReal
+            (symmetricGridZeroFieldOriginNeighborPairStagePMF w ξ n
+              gridOriginNeighborPairFT) +
+        (1 / 2 : ℝ) *
+          ENNReal.toReal
+            (symmetricGridZeroFieldOriginNeighborPairStagePMF w ξ n
+              gridOriginNeighborPairTF) +
+        Real.sigmoid (2 * w) *
+          ENNReal.toReal
+            (symmetricGridZeroFieldOriginNeighborPairStagePMF w ξ n
+              gridOriginNeighborPairTT) := by
+  classical
+  let q := symmetricGridZeroFieldOriginNeighborPairStagePMF w ξ n
+  let K : LocalAssignment GridNode gridOriginNeighborPairRegion → ENNReal := fun x =>
+    StrictlyPositiveInfiniteGroundMLNSpec.cylinderBoundaryKernelValue
+      (symmetricGridZeroFieldClassicalSpec w).toStrictlyPositiveInfiniteGroundMLNSpec
+      ({gridOrigin} : Region GridNode)
+      ({gridOrigin} : Region GridNode)
+      (singletonTrueAssignmentSet gridOrigin)
+      x
+  have hEq :
+      gridExhaustion.finiteVolumeKernelSequence
+          (symmetricGridZeroFieldClassicalSpec w).toStrictlyPositiveInfiniteGroundMLNSpec
+          ξ n
+          (localQueryEvent ({gridOrigin} : Region GridNode) gridOriginSpinUpLocalQuery) =
+        ∑ x : LocalAssignment GridNode gridOriginNeighborPairRegion,
+          K x * q x := by
+    calc
+      gridExhaustion.finiteVolumeKernelSequence
+          (symmetricGridZeroFieldClassicalSpec w).toStrictlyPositiveInfiniteGroundMLNSpec
+          ξ n
+          (localQueryEvent ({gridOrigin} : Region GridNode) gridOriginSpinUpLocalQuery) =
+        ∫⁻ x, K x
+          ∂ Mettapedia.Logic.MarkovLogicInfiniteProjective.RegionExhaustion.stageMarginal
+            gridExhaustion
+            (symmetricGridZeroFieldClassicalSpec w).toStrictlyPositiveInfiniteGroundMLNSpec
+            ξ n
+            gridOriginNeighborPairRegion := by
+              simpa [K] using
+                symmetricGridZeroField_originSpinUp_finiteVolumeKernel_eq_neighborPairBoundaryIntegral
+                  w n ξ
+      _ = ∑ x : LocalAssignment GridNode gridOriginNeighborPairRegion, K x * q x := by
+            rw [MeasureTheory.lintegral_fintype]
+            simp [K, q, symmetricGridZeroFieldOriginNeighborPairStagePMF, Measure.toPMF_apply]
+  have hne_top :
+      ∀ x : LocalAssignment GridNode gridOriginNeighborPairRegion,
+        K x * q x ≠ (⊤ : ENNReal) := by
+    intro x
+    exact ENNReal.mul_ne_top
+      (StrictlyPositiveInfiniteGroundMLNSpec.cylinderBoundaryKernelValue_ne_top
+        (symmetricGridZeroFieldClassicalSpec w).toStrictlyPositiveInfiniteGroundMLNSpec
+        ({gridOrigin} : Region GridNode)
+        ({gridOrigin} : Region GridNode)
+        (singletonTrueAssignmentSet gridOrigin)
+        x)
+      (q.apply_ne_top x)
+  calc
+    ENNReal.toReal
+        (gridExhaustion.finiteVolumeKernelSequence
+          (symmetricGridZeroFieldClassicalSpec w).toStrictlyPositiveInfiniteGroundMLNSpec
+          ξ n
+          (localQueryEvent ({gridOrigin} : Region GridNode) gridOriginSpinUpLocalQuery)) =
+      ∑ x : LocalAssignment GridNode gridOriginNeighborPairRegion,
+        ENNReal.toReal (K x * q x) := by
+          rw [hEq, ENNReal.toReal_sum]
+          intro x hx
+          exact hne_top x
+    _ =
+      ∑ x : LocalAssignment GridNode gridOriginNeighborPairRegion,
+        ENNReal.toReal (K x) * ENNReal.toReal (q x) := by
+          refine Finset.sum_congr rfl ?_
+          intro x hx
+          simp [ENNReal.toReal_mul]
+    _ =
+      Finset.sum
+          ({gridOriginNeighborPairFF, gridOriginNeighborPairFT,
+            gridOriginNeighborPairTF, gridOriginNeighborPairTT} :
+              Finset (LocalAssignment GridNode gridOriginNeighborPairRegion))
+          (fun x => ENNReal.toReal (K x) * ENNReal.toReal (q x)) := by
+          rw [gridOriginNeighborPairAssignment_univ]
+    _ =
+      Real.sigmoid (-2 * w) * ENNReal.toReal (q gridOriginNeighborPairFF) +
+        (1 / 2 : ℝ) * ENNReal.toReal (q gridOriginNeighborPairFT) +
+        (1 / 2 : ℝ) * ENNReal.toReal (q gridOriginNeighborPairTF) +
+        Real.sigmoid (2 * w) * ENNReal.toReal (q gridOriginNeighborPairTT) := by
+          have hFF :
+              gridOriginNeighborPairFF ∉
+                ({gridOriginNeighborPairFT, gridOriginNeighborPairTF,
+                  gridOriginNeighborPairTT} :
+                    Finset (LocalAssignment GridNode gridOriginNeighborPairRegion)) := by
+            decide
+          have hFT :
+              gridOriginNeighborPairFT ∉
+                ({gridOriginNeighborPairTF, gridOriginNeighborPairTT} :
+                    Finset (LocalAssignment GridNode gridOriginNeighborPairRegion)) := by
+            decide
+          have hTF :
+              gridOriginNeighborPairTF ∉
+                ({gridOriginNeighborPairTT} :
+                    Finset (LocalAssignment GridNode gridOriginNeighborPairRegion)) := by
+            decide
+          rw [Finset.sum_insert hFF, Finset.sum_insert hFT, Finset.sum_insert hTF,
+            Finset.sum_singleton]
+          simp [K, q, gridOriginNeighborPairFF, gridOriginNeighborPairFT,
+            gridOriginNeighborPairTF, gridOriginNeighborPairTT,
+            symmetricGridZeroField_origin_cylinderBoundaryKernelValue_toReal_eq_neighborSigmoid]
+          ring_nf
+
+theorem symmetricGridZeroField_originSpinUp_finiteVolumeKernel_toReal_eq_half_add_neighborPairGap
+    (w : ℝ) (n : ℕ) (ξ : BoundaryCondition GridNode) :
+    ENNReal.toReal
+      (gridExhaustion.finiteVolumeKernelSequence
+        (symmetricGridZeroFieldClassicalSpec w).toStrictlyPositiveInfiniteGroundMLNSpec
+        ξ n
+        (localQueryEvent ({gridOrigin} : Region GridNode) gridOriginSpinUpLocalQuery)) =
+      (1 / 2 : ℝ) +
+        (Real.sigmoid (2 * w) - (1 / 2 : ℝ)) *
+          (ENNReal.toReal
+              (symmetricGridZeroFieldOriginNeighborPairStagePMF w ξ n
+                gridOriginNeighborPairTT) -
+            ENNReal.toReal
+              (symmetricGridZeroFieldOriginNeighborPairStagePMF w ξ n
+                gridOriginNeighborPairFF)) := by
+  classical
+  let q := symmetricGridZeroFieldOriginNeighborPairStagePMF w ξ n
+  have hmix :=
+    symmetricGridZeroField_originSpinUp_finiteVolumeKernel_toReal_eq_neighborPairMixture
+      w n ξ
+  have hsumq' : ∑ x : LocalAssignment GridNode gridOriginNeighborPairRegion,
+      ENNReal.toReal (q x) = 1 :=
+    sum_toReal_eq_one_of_pmf q
+  rw [gridOriginNeighborPairAssignment_univ] at hsumq'
+  have hsumq :
+      ENNReal.toReal (q gridOriginNeighborPairFF) +
+          ENNReal.toReal (q gridOriginNeighborPairFT) +
+          ENNReal.toReal (q gridOriginNeighborPairTF) +
+          ENNReal.toReal (q gridOriginNeighborPairTT) = 1 := by
+    have hFF :
+        gridOriginNeighborPairFF ∉
+          ({gridOriginNeighborPairFT, gridOriginNeighborPairTF,
+            gridOriginNeighborPairTT} :
+              Finset (LocalAssignment GridNode gridOriginNeighborPairRegion)) := by
+      decide
+    have hFT :
+        gridOriginNeighborPairFT ∉
+          ({gridOriginNeighborPairTF, gridOriginNeighborPairTT} :
+              Finset (LocalAssignment GridNode gridOriginNeighborPairRegion)) := by
+      decide
+    have hTF :
+        gridOriginNeighborPairTF ∉
+          ({gridOriginNeighborPairTT} :
+              Finset (LocalAssignment GridNode gridOriginNeighborPairRegion)) := by
+      decide
+    rw [Finset.sum_insert hFF, Finset.sum_insert hFT, Finset.sum_insert hTF,
+      Finset.sum_singleton] at hsumq'
+    simpa [q, gridOriginNeighborPairFF, gridOriginNeighborPairFT,
+      gridOriginNeighborPairTF, gridOriginNeighborPairTT, add_assoc] using hsumq'
+  have hsigNeg : Real.sigmoid (-2 * w) = 1 - Real.sigmoid (2 * w) := by
+    simpa [neg_mul] using Real.sigmoid_neg (2 * w)
+  calc
+    ENNReal.toReal
+        (gridExhaustion.finiteVolumeKernelSequence
+          (symmetricGridZeroFieldClassicalSpec w).toStrictlyPositiveInfiniteGroundMLNSpec
+          ξ n
+          (localQueryEvent ({gridOrigin} : Region GridNode) gridOriginSpinUpLocalQuery)) =
+      Real.sigmoid (-2 * w) * ENNReal.toReal (q gridOriginNeighborPairFF) +
+        (1 / 2 : ℝ) * ENNReal.toReal (q gridOriginNeighborPairFT) +
+        (1 / 2 : ℝ) * ENNReal.toReal (q gridOriginNeighborPairTF) +
+        Real.sigmoid (2 * w) * ENNReal.toReal (q gridOriginNeighborPairTT) := by
+          simpa [q] using hmix
+    _ =
+      Real.sigmoid (-2 * w) * ENNReal.toReal (q gridOriginNeighborPairFF) +
+        (1 / 2 : ℝ) *
+            (ENNReal.toReal (q gridOriginNeighborPairFT) +
+              ENNReal.toReal (q gridOriginNeighborPairTF)) +
+        Real.sigmoid (2 * w) * ENNReal.toReal (q gridOriginNeighborPairTT) := by
+          ring
+    _ =
+      Real.sigmoid (-2 * w) * ENNReal.toReal (q gridOriginNeighborPairFF) +
+        (1 / 2 : ℝ) *
+            (1 - ENNReal.toReal (q gridOriginNeighborPairFF) -
+              ENNReal.toReal (q gridOriginNeighborPairTT)) +
+        Real.sigmoid (2 * w) * ENNReal.toReal (q gridOriginNeighborPairTT) := by
+          linarith
+    _ =
+      (1 / 2 : ℝ) +
+        (Real.sigmoid (2 * w) - (1 / 2 : ℝ)) *
+          (ENNReal.toReal (q gridOriginNeighborPairTT) -
+            ENNReal.toReal (q gridOriginNeighborPairFF)) := by
+          rw [hsigNeg]
+          ring
+
+/-- Any stagewise bound on the failure of the corner-neighbour `TT` event
+forces a quantitative lower bound on the `TT - FF` pair gap. -/
+theorem symmetricGridZeroFieldOriginNeighborPairStage_gap_ge_of_notTTBound
+    {w η : ℝ} (n : ℕ) (ξ : BoundaryCondition GridNode)
+    (hbad :
+      1 -
+          ENNReal.toReal
+            (symmetricGridZeroFieldOriginNeighborPairStagePMF w ξ n
+              gridOriginNeighborPairTT) ≤
+        η) :
+    1 - 2 * η ≤
+      ENNReal.toReal
+          (symmetricGridZeroFieldOriginNeighborPairStagePMF w ξ n
+            gridOriginNeighborPairTT) -
+        ENNReal.toReal
+          (symmetricGridZeroFieldOriginNeighborPairStagePMF w ξ n
+            gridOriginNeighborPairFF) := by
+  let q := symmetricGridZeroFieldOriginNeighborPairStagePMF w ξ n
+  have hsum' : ∑ x : LocalAssignment GridNode gridOriginNeighborPairRegion,
+      ENNReal.toReal (q x) = 1 :=
+    sum_toReal_eq_one_of_pmf q
+  rw [gridOriginNeighborPairAssignment_univ] at hsum'
+  have hsum :
+      ENNReal.toReal (q gridOriginNeighborPairFF) +
+          ENNReal.toReal (q gridOriginNeighborPairFT) +
+          ENNReal.toReal (q gridOriginNeighborPairTF) +
+          ENNReal.toReal (q gridOriginNeighborPairTT) = 1 := by
+    have hFF :
+        gridOriginNeighborPairFF ∉
+          ({gridOriginNeighborPairFT, gridOriginNeighborPairTF,
+            gridOriginNeighborPairTT} :
+              Finset (LocalAssignment GridNode gridOriginNeighborPairRegion)) := by
+      decide
+    have hFT :
+        gridOriginNeighborPairFT ∉
+          ({gridOriginNeighborPairTF, gridOriginNeighborPairTT} :
+              Finset (LocalAssignment GridNode gridOriginNeighborPairRegion)) := by
+      decide
+    have hTF :
+        gridOriginNeighborPairTF ∉
+          ({gridOriginNeighborPairTT} :
+              Finset (LocalAssignment GridNode gridOriginNeighborPairRegion)) := by
+      decide
+    rw [Finset.sum_insert hFF, Finset.sum_insert hFT, Finset.sum_insert hTF,
+      Finset.sum_singleton] at hsum'
+    simpa [q, gridOriginNeighborPairFF, gridOriginNeighborPairFT,
+      gridOriginNeighborPairTF, gridOriginNeighborPairTT, add_assoc] using hsum'
+  have hft_nonneg : 0 ≤ ENNReal.toReal (q gridOriginNeighborPairFT) :=
+    ENNReal.toReal_nonneg
+  have htf_nonneg : 0 ≤ ENNReal.toReal (q gridOriginNeighborPairTF) :=
+    ENNReal.toReal_nonneg
+  have hff_le :
+      ENNReal.toReal (q gridOriginNeighborPairFF) ≤
+        1 - ENNReal.toReal (q gridOriginNeighborPairTT) := by
+    linarith
+  have htt_ge :
+      1 - η ≤ ENNReal.toReal (q gridOriginNeighborPairTT) := by
+    linarith
+  linarith
 
 theorem symmetricGridZeroField_origin_singletonKernelTrueProb_plusBoundary_eq_sigmoid
     (w : ℝ) :
@@ -921,6 +1699,138 @@ theorem symmetricGridZeroField_originSpinUp_stage0_plus_gt_minus
   rw [symmetricGridZeroField_originSpinUp_stage0_minusBoundary_eq_sigmoid,
     symmetricGridZeroField_originSpinUp_stage0_plusBoundary_eq_sigmoid]
   exact Real.sigmoid_lt (by nlinarith)
+
+/-- A fixed enumeration of the countable grid nodes. -/
+noncomputable def gridNodeNatEquiv : ℕ ≃ GridNode :=
+  (Equiv.prodEquivOfEquivNat (Equiv.refl Nat)).symm
+
+private theorem symmetricGridZeroFieldBoundary_exists_stageProbabilityFamily_tendsto_subseq
+    (w : ℝ) (ξ : BoundaryCondition GridNode) :
+    ∃ P :
+        Mettapedia.Logic.MarkovLogicInfiniteCompactness.RegionExhaustion.StageProbabilityFamily
+          GridNode,
+      ∃ φ : ℕ → ℕ,
+        StrictMono φ ∧
+          Tendsto
+            (fun n =>
+              Mettapedia.Logic.MarkovLogicInfiniteCompactness.RegionExhaustion.stageProbabilityFamily
+                gridExhaustion
+                (symmetricGridZeroFieldClassicalSpec w).toStrictlyPositiveInfiniteGroundMLNSpec
+                ξ (φ n))
+            atTop
+            (nhds P) := by
+  exact
+    Mettapedia.Logic.MarkovLogicInfiniteCompactness.RegionExhaustion.exists_stageProbabilityFamily_tendsto_subseq_of_equiv
+      (E := gridExhaustion)
+      (M := (symmetricGridZeroFieldClassicalSpec w).toStrictlyPositiveInfiniteGroundMLNSpec)
+      (ξ := ξ)
+      gridNodeNatEquiv
+
+/-- The compactness-extracted subsequential stage marginal family for the
+zero-field symmetric grid under boundary condition `ξ`. -/
+noncomputable def symmetricGridZeroFieldBoundaryStageProbabilityFamily
+    (w : ℝ) (ξ : BoundaryCondition GridNode) :
+    Mettapedia.Logic.MarkovLogicInfiniteCompactness.RegionExhaustion.StageProbabilityFamily
+      GridNode :=
+  Classical.choose
+    (symmetricGridZeroFieldBoundary_exists_stageProbabilityFamily_tendsto_subseq
+      w ξ)
+
+/-- The extracted subsequence along which the stage marginal family converges
+for boundary condition `ξ`. -/
+noncomputable def symmetricGridZeroFieldBoundaryStageSubseq
+    (w : ℝ) (ξ : BoundaryCondition GridNode) : ℕ → ℕ :=
+  Classical.choose
+    (Classical.choose_spec
+      (symmetricGridZeroFieldBoundary_exists_stageProbabilityFamily_tendsto_subseq
+        w ξ))
+
+theorem symmetricGridZeroFieldBoundaryStageSubseq_strictMono
+    (w : ℝ) (ξ : BoundaryCondition GridNode) :
+    StrictMono (symmetricGridZeroFieldBoundaryStageSubseq w ξ) := by
+  unfold symmetricGridZeroFieldBoundaryStageSubseq
+  simpa using
+    (Classical.choose_spec
+      (Classical.choose_spec
+        (symmetricGridZeroFieldBoundary_exists_stageProbabilityFamily_tendsto_subseq
+          w ξ))).1
+
+theorem symmetricGridZeroFieldBoundaryStageProbabilityFamily_tendsto
+    (w : ℝ) (ξ : BoundaryCondition GridNode) :
+    Tendsto
+      (fun n =>
+        Mettapedia.Logic.MarkovLogicInfiniteCompactness.RegionExhaustion.stageProbabilityFamily
+          gridExhaustion
+          (symmetricGridZeroFieldClassicalSpec w).toStrictlyPositiveInfiniteGroundMLNSpec
+          ξ
+          (symmetricGridZeroFieldBoundaryStageSubseq w ξ n))
+      atTop
+      (nhds (symmetricGridZeroFieldBoundaryStageProbabilityFamily w ξ)) := by
+  unfold symmetricGridZeroFieldBoundaryStageSubseq
+    symmetricGridZeroFieldBoundaryStageProbabilityFamily
+  simpa using
+    (Classical.choose_spec
+      (Classical.choose_spec
+        (symmetricGridZeroFieldBoundary_exists_stageProbabilityFamily_tendsto_subseq
+          w ξ))).2
+
+/-- The compactness-extracted limiting marginal family, viewed as raw measures
+rather than `ProbabilityMeasure`s. -/
+noncomputable def symmetricGridZeroFieldBoundaryMarginalFamily
+    (w : ℝ) (ξ : BoundaryCondition GridNode) :
+    ∀ I : Finset GridNode, Measure (LocalAssignment GridNode I) :=
+  fun I =>
+    ((symmetricGridZeroFieldBoundaryStageProbabilityFamily w ξ I :
+      ProbabilityMeasure (LocalAssignment GridNode I)) :
+        Measure (LocalAssignment GridNode I))
+
+theorem symmetricGridZeroFieldBoundaryMarginalFamily_projective
+    (w : ℝ) (ξ : BoundaryCondition GridNode) :
+    MeasureTheory.IsProjectiveMeasureFamily
+      (ι := GridNode)
+      (α := Mettapedia.Logic.MarkovLogicInfiniteProjective.RegionExhaustion.BoolCoord GridNode)
+      (symmetricGridZeroFieldBoundaryMarginalFamily w ξ) := by
+  simpa [symmetricGridZeroFieldBoundaryMarginalFamily] using
+    (Mettapedia.Logic.MarkovLogicInfiniteCompactness.RegionExhaustion.isProjectiveMeasureFamily_of_tendsto_stageProbabilityFamily
+      (E := gridExhaustion)
+      (M := (symmetricGridZeroFieldClassicalSpec w).toStrictlyPositiveInfiniteGroundMLNSpec)
+      (ξ := ξ)
+      (P := symmetricGridZeroFieldBoundaryStageProbabilityFamily w ξ)
+      (φ := symmetricGridZeroFieldBoundaryStageSubseq w ξ)
+      (symmetricGridZeroFieldBoundaryStageProbabilityFamily_tendsto w ξ))
+
+/-- The reindexed exhaustion following the extracted convergent subsequence for
+boundary condition `ξ`. -/
+noncomputable def symmetricGridZeroFieldBoundaryExhaustion
+    (w : ℝ) (ξ : BoundaryCondition GridNode) :
+    Mettapedia.Logic.MarkovLogicInfiniteExhaustion.RegionExhaustion GridNode :=
+  gridExhaustion.reindex
+    (symmetricGridZeroFieldBoundaryStageSubseq w ξ)
+    (symmetricGridZeroFieldBoundaryStageSubseq_strictMono w ξ)
+
+theorem symmetricGridZeroFieldBoundaryStageMarginal_tendsto
+    (w : ℝ) (ξ : BoundaryCondition GridNode)
+    (I : Finset GridNode) (S : Set (LocalAssignment GridNode I))
+    (_hS : MeasurableSet S) :
+    Tendsto
+      (fun n =>
+        Mettapedia.Logic.MarkovLogicInfiniteProjective.RegionExhaustion.stageMarginal
+          (symmetricGridZeroFieldBoundaryExhaustion w ξ)
+          (symmetricGridZeroFieldClassicalSpec w).toStrictlyPositiveInfiniteGroundMLNSpec
+          ξ n I S)
+      atTop
+      (nhds ((symmetricGridZeroFieldBoundaryMarginalFamily w ξ) I S)) := by
+  simpa [symmetricGridZeroFieldBoundaryExhaustion,
+    symmetricGridZeroFieldBoundaryMarginalFamily,
+    Mettapedia.Logic.MarkovLogicInfiniteProjective.RegionExhaustion.stageMarginal_reindex] using
+    (Mettapedia.Logic.MarkovLogicInfiniteExistence.RegionExhaustion.tendsto_stageMarginal_apply_of_tendsto_stageProbabilityFamily
+      (E := gridExhaustion)
+      (M := (symmetricGridZeroFieldClassicalSpec w).toStrictlyPositiveInfiniteGroundMLNSpec)
+      (ξ := ξ)
+      (P := symmetricGridZeroFieldBoundaryStageProbabilityFamily w ξ)
+      (φ := symmetricGridZeroFieldBoundaryStageSubseq w ξ)
+      (symmetricGridZeroFieldBoundaryStageProbabilityFamily_tendsto w ξ)
+      I S)
 
 theorem symmetricGridZeroField_originSpinUp_strictWidth_of_stageMarginalLimitSeparation
     {w : ℝ}
@@ -1461,18 +2371,27 @@ theorem symmetricGridZeroField_dlrCompletion_nonempty
   exact ⟨⟨⟨μ, hμprob⟩, hμdlr⟩⟩
 
 /-- A zero-field symmetric-grid DLR completion selected from finite-volume
-construction with boundary `ξ`.  This uses noncomputable choice from the
-existence theorem and does not assert phase separation. -/
+construction with boundary `ξ`, built from the compactness-extracted
+subsequential projective-limit measure for that boundary condition. -/
 noncomputable def symmetricGridZeroFieldBoundaryCompletion
     (w : ℝ) (ξ : BoundaryCondition GridNode) :
     DLRCompletion (symmetricGridZeroFieldClassicalSpec w) := by
-  classical
-  let hExists := exists_symmetricGridZeroField_fixedRegionCylinderDLR w ξ
-  let μ := Classical.choose hExists
-  let hμExists := Classical.choose_spec hExists
-  let hμprob := Classical.choose hμExists
-  let hμdlr := Classical.choose_spec hμExists
-  exact ⟨⟨μ, hμprob⟩, hμdlr⟩
+  letI :
+      ∀ I : Finset GridNode,
+        IsProbabilityMeasure
+          ((symmetricGridZeroFieldBoundaryMarginalFamily w ξ) I) := by
+    intro I
+    dsimp [symmetricGridZeroFieldBoundaryMarginalFamily]
+    infer_instance
+  exact
+    projectiveLimitDLRCompletion_of_stageMarginal_tendsto
+      (symmetricGridZeroFieldClassicalSpec w)
+      (symmetricGridZeroFieldBoundaryExhaustion w ξ)
+      ξ
+      gridNodeNatEquiv
+      (symmetricGridZeroFieldBoundaryMarginalFamily w ξ)
+      (symmetricGridZeroFieldBoundaryMarginalFamily_projective w ξ)
+      (symmetricGridZeroFieldBoundaryStageMarginal_tendsto w ξ)
 
 /-- The zero-field symmetric completion selected from all-plus finite-volume
 boundary conditions. -/
@@ -1485,6 +2404,184 @@ boundary conditions. -/
 noncomputable def symmetricGridZeroFieldMinusBoundaryCompletion
     (w : ℝ) : DLRCompletion (symmetricGridZeroFieldClassicalSpec w) :=
   symmetricGridZeroFieldBoundaryCompletion w gridMinusBoundary
+
+theorem symmetricGridZeroFieldBoundaryCompletion_originSpinUp_queryProb_eq_limit
+    (w : ℝ) (ξ : BoundaryCondition GridNode) :
+    dlrCompletionQueryProb (symmetricGridZeroFieldClassicalSpec w)
+        gridOriginSpinUpQuery
+        (symmetricGridZeroFieldBoundaryCompletion w ξ) =
+      ENNReal.toReal
+        ((symmetricGridZeroFieldBoundaryMarginalFamily w ξ)
+          ({gridOrigin} : Region GridNode)
+          (localConstraintSet ({gridOrigin} : Region GridNode)
+            gridOriginSpinUpLocalQuery)) := by
+  have hlocal :
+      dlrCompletionLocalQueryProb (symmetricGridZeroFieldClassicalSpec w)
+          ({gridOrigin} : Region GridNode)
+          gridOriginSpinUpLocalQuery
+          (symmetricGridZeroFieldBoundaryCompletion w ξ) =
+        ENNReal.toReal
+          ((symmetricGridZeroFieldBoundaryMarginalFamily w ξ)
+            ({gridOrigin} : Region GridNode)
+            (localConstraintSet ({gridOrigin} : Region GridNode)
+              gridOriginSpinUpLocalQuery)) := by
+    simp [dlrCompletionLocalQueryProb, symmetricGridZeroFieldBoundaryCompletion,
+      symmetricGridZeroFieldBoundaryMarginalFamily,
+      projectiveLimitDLRCompletion_of_stageMarginal_tendsto,
+      Mettapedia.Logic.MarkovLogicInfiniteLimitFamily.RegionExhaustion.projectiveLimitMeasure_localQueryEvent]
+  rw [dlrCompletionQueryProb_eq_toReal_measure_infiniteQueryEvent]
+  rw [← gridOriginSpinUpLocalQueryEvent_eq_global]
+  simpa [dlrCompletionLocalQueryProb] using hlocal
+
+theorem symmetricGridZeroFieldBoundaryCompletion_originSpinUp_queryProb_le_of_uniformKernelUpperBound
+    {w b : ℝ} (ξ : BoundaryCondition GridNode)
+    (hbound :
+      ∀ n,
+        ENNReal.toReal
+          (gridExhaustion.finiteVolumeKernelSequence
+            (symmetricGridZeroFieldClassicalSpec w).toStrictlyPositiveInfiniteGroundMLNSpec
+            ξ n
+            (localQueryEvent ({gridOrigin} : Region GridNode)
+              gridOriginSpinUpLocalQuery)) ≤ b) :
+    dlrCompletionQueryProb (symmetricGridZeroFieldClassicalSpec w)
+        gridOriginSpinUpQuery
+        (symmetricGridZeroFieldBoundaryCompletion w ξ) ≤ b := by
+  let originRegion : Region GridNode := {gridOrigin}
+  let originEvent : Set (LocalAssignment GridNode originRegion) :=
+    localConstraintSet originRegion gridOriginSpinUpLocalQuery
+  have hmeasOrigin : MeasurableSet originEvent := by
+    simpa [originRegion, originEvent] using
+      measurableSet_localConstraintSet
+        ({gridOrigin} : Region GridNode) gridOriginSpinUpLocalQuery
+  have hconvENN :
+      Tendsto
+        (fun n =>
+          Mettapedia.Logic.MarkovLogicInfiniteProjective.RegionExhaustion.stageMarginal
+            (symmetricGridZeroFieldBoundaryExhaustion w ξ)
+            (symmetricGridZeroFieldClassicalSpec w).toStrictlyPositiveInfiniteGroundMLNSpec
+            ξ n originRegion originEvent)
+        atTop
+        (nhds
+          ((symmetricGridZeroFieldBoundaryMarginalFamily w ξ)
+            originRegion originEvent)) :=
+    symmetricGridZeroFieldBoundaryStageMarginal_tendsto w ξ originRegion originEvent hmeasOrigin
+  letI :
+      IsProbabilityMeasure
+        ((symmetricGridZeroFieldBoundaryMarginalFamily w ξ) originRegion) := by
+    dsimp [symmetricGridZeroFieldBoundaryMarginalFamily]
+    infer_instance
+  have hconvReal :
+      Tendsto
+        (fun n =>
+          ENNReal.toReal
+            (Mettapedia.Logic.MarkovLogicInfiniteProjective.RegionExhaustion.stageMarginal
+              (symmetricGridZeroFieldBoundaryExhaustion w ξ)
+              (symmetricGridZeroFieldClassicalSpec w).toStrictlyPositiveInfiniteGroundMLNSpec
+              ξ n originRegion originEvent))
+        atTop
+        (nhds
+          (ENNReal.toReal
+            (((symmetricGridZeroFieldBoundaryMarginalFamily w ξ)
+              originRegion originEvent)))) :=
+    (ENNReal.continuousAt_toReal
+      (MeasureTheory.measure_ne_top
+        (μ := (symmetricGridZeroFieldBoundaryMarginalFamily w ξ) originRegion)
+        (s := originEvent))).tendsto.comp hconvENN
+  have hsubseqBound :
+      (fun n =>
+        ENNReal.toReal
+          (Mettapedia.Logic.MarkovLogicInfiniteProjective.RegionExhaustion.stageMarginal
+            (symmetricGridZeroFieldBoundaryExhaustion w ξ)
+            (symmetricGridZeroFieldClassicalSpec w).toStrictlyPositiveInfiniteGroundMLNSpec
+            ξ n originRegion originEvent)) ≤ᶠ[atTop]
+        fun _ => b := by
+    exact Eventually.of_forall (fun n => by
+      simpa [symmetricGridZeroFieldBoundaryExhaustion, originRegion, originEvent,
+        Mettapedia.Logic.MarkovLogicInfiniteProjective.RegionExhaustion.stageMarginal_reindex,
+        Mettapedia.Logic.MarkovLogicInfiniteGlobalDLR.RegionExhaustion.stageMarginal_apply_localConstraintSet] using
+        hbound (symmetricGridZeroFieldBoundaryStageSubseq w ξ n))
+  have hlimit :
+      ENNReal.toReal
+        (((symmetricGridZeroFieldBoundaryMarginalFamily w ξ)
+          originRegion originEvent)) ≤ b :=
+    le_of_tendsto_of_tendsto hconvReal tendsto_const_nhds hsubseqBound
+  rw [symmetricGridZeroFieldBoundaryCompletion_originSpinUp_queryProb_eq_limit]
+  simpa [originRegion, originEvent] using hlimit
+
+theorem symmetricGridZeroFieldBoundaryCompletion_originSpinUp_queryProb_ge_of_uniformKernelLowerBound
+    {w b : ℝ} (ξ : BoundaryCondition GridNode)
+    (hbound :
+      ∀ n,
+        b ≤ ENNReal.toReal
+          (gridExhaustion.finiteVolumeKernelSequence
+            (symmetricGridZeroFieldClassicalSpec w).toStrictlyPositiveInfiniteGroundMLNSpec
+            ξ n
+            (localQueryEvent ({gridOrigin} : Region GridNode)
+              gridOriginSpinUpLocalQuery))) :
+    b ≤ dlrCompletionQueryProb (symmetricGridZeroFieldClassicalSpec w)
+        gridOriginSpinUpQuery
+        (symmetricGridZeroFieldBoundaryCompletion w ξ) := by
+  let originRegion : Region GridNode := {gridOrigin}
+  let originEvent : Set (LocalAssignment GridNode originRegion) :=
+    localConstraintSet originRegion gridOriginSpinUpLocalQuery
+  have hmeasOrigin : MeasurableSet originEvent := by
+    simpa [originRegion, originEvent] using
+      measurableSet_localConstraintSet
+        ({gridOrigin} : Region GridNode) gridOriginSpinUpLocalQuery
+  have hconvENN :
+      Tendsto
+        (fun n =>
+          Mettapedia.Logic.MarkovLogicInfiniteProjective.RegionExhaustion.stageMarginal
+            (symmetricGridZeroFieldBoundaryExhaustion w ξ)
+            (symmetricGridZeroFieldClassicalSpec w).toStrictlyPositiveInfiniteGroundMLNSpec
+            ξ n originRegion originEvent)
+        atTop
+        (nhds
+          ((symmetricGridZeroFieldBoundaryMarginalFamily w ξ)
+            originRegion originEvent)) :=
+    symmetricGridZeroFieldBoundaryStageMarginal_tendsto w ξ originRegion originEvent hmeasOrigin
+  letI :
+      IsProbabilityMeasure
+        ((symmetricGridZeroFieldBoundaryMarginalFamily w ξ) originRegion) := by
+    dsimp [symmetricGridZeroFieldBoundaryMarginalFamily]
+    infer_instance
+  have hconvReal :
+      Tendsto
+        (fun n =>
+          ENNReal.toReal
+            (Mettapedia.Logic.MarkovLogicInfiniteProjective.RegionExhaustion.stageMarginal
+              (symmetricGridZeroFieldBoundaryExhaustion w ξ)
+              (symmetricGridZeroFieldClassicalSpec w).toStrictlyPositiveInfiniteGroundMLNSpec
+              ξ n originRegion originEvent))
+        atTop
+        (nhds
+          (ENNReal.toReal
+            (((symmetricGridZeroFieldBoundaryMarginalFamily w ξ)
+              originRegion originEvent)))) :=
+    (ENNReal.continuousAt_toReal
+      (MeasureTheory.measure_ne_top
+        (μ := (symmetricGridZeroFieldBoundaryMarginalFamily w ξ) originRegion)
+        (s := originEvent))).tendsto.comp hconvENN
+  have hsubseqBound :
+      (fun _ => b) ≤ᶠ[atTop]
+        (fun n =>
+          ENNReal.toReal
+            (Mettapedia.Logic.MarkovLogicInfiniteProjective.RegionExhaustion.stageMarginal
+              (symmetricGridZeroFieldBoundaryExhaustion w ξ)
+              (symmetricGridZeroFieldClassicalSpec w).toStrictlyPositiveInfiniteGroundMLNSpec
+              ξ n originRegion originEvent)) := by
+    exact Eventually.of_forall (fun n => by
+      simpa [symmetricGridZeroFieldBoundaryExhaustion, originRegion, originEvent,
+        Mettapedia.Logic.MarkovLogicInfiniteProjective.RegionExhaustion.stageMarginal_reindex,
+        Mettapedia.Logic.MarkovLogicInfiniteGlobalDLR.RegionExhaustion.stageMarginal_apply_localConstraintSet] using
+        hbound (symmetricGridZeroFieldBoundaryStageSubseq w ξ n))
+  have hlimit :
+      b ≤ ENNReal.toReal
+        (((symmetricGridZeroFieldBoundaryMarginalFamily w ξ)
+          originRegion originEvent)) :=
+    le_of_tendsto_of_tendsto tendsto_const_nhds hconvReal hsubseqBound
+  rw [symmetricGridZeroFieldBoundaryCompletion_originSpinUp_queryProb_eq_limit]
+  simpa [originRegion, originEvent] using hlimit
 
 /-- The local and global origin-spin probabilities agree for every zero-field
 symmetric-grid DLR completion. -/
@@ -1769,6 +2866,108 @@ theorem symmetricGridZeroFieldOriginPlusHalfGap_of_peierlsErrorBound
   have hb := hbound n
   linarith
 
+theorem symmetricGridZeroFieldOriginPlusHalfGap_of_neighborPairGap
+    {w γ : ℝ}
+    (hw : 0 < w)
+    (hγ : 0 < γ)
+    (hpair :
+      ∀ n,
+        γ ≤
+          ENNReal.toReal
+            (symmetricGridZeroFieldOriginNeighborPairStagePMF w gridPlusBoundary n
+              gridOriginNeighborPairTT) -
+            ENNReal.toReal
+              (symmetricGridZeroFieldOriginNeighborPairStagePMF w gridPlusBoundary n
+                gridOriginNeighborPairFF)) :
+    symmetricGridZeroFieldOriginPlusHalfGap w
+      ((Real.sigmoid (2 * w) - (1 / 2 : ℝ)) * γ) := by
+  have hsigHalf : (1 / 2 : ℝ) < Real.sigmoid (2 * w) := by
+    have hlt : Real.sigmoid 0 < Real.sigmoid (2 * w) := by
+      exact Real.sigmoid_lt (by nlinarith)
+    simpa [Real.sigmoid_zero] using hlt
+  refine ⟨by nlinarith, ?_⟩
+  intro n
+  have hcoef_nonneg : 0 ≤ Real.sigmoid (2 * w) - (1 / 2 : ℝ) := by
+    linarith
+  have hmul :
+      (Real.sigmoid (2 * w) - (1 / 2 : ℝ)) * γ ≤
+        (Real.sigmoid (2 * w) - (1 / 2 : ℝ)) *
+          (ENNReal.toReal
+              (symmetricGridZeroFieldOriginNeighborPairStagePMF w gridPlusBoundary n
+                gridOriginNeighborPairTT) -
+            ENNReal.toReal
+              (symmetricGridZeroFieldOriginNeighborPairStagePMF w gridPlusBoundary n
+                gridOriginNeighborPairFF)) := by
+    exact mul_le_mul_of_nonneg_left (hpair n) hcoef_nonneg
+  rw [symmetricGridZeroField_originSpinUp_finiteVolumeKernel_toReal_eq_half_add_neighborPairGap
+    w n gridPlusBoundary]
+  linarith
+
+/-- A uniform plus-boundary bound on the failure of the corner-neighbour `TT`
+event is enough to instantiate the existing pair-gap half-gap bridge. -/
+theorem symmetricGridZeroFieldOriginPlusHalfGap_of_notTTBound
+    {w η : ℝ}
+    (hw : 0 < w)
+    (hη_lt_half : η < (1 / 2 : ℝ))
+    (hbad :
+      ∀ n,
+        1 -
+            ENNReal.toReal
+              (symmetricGridZeroFieldOriginNeighborPairStagePMF w gridPlusBoundary n
+                gridOriginNeighborPairTT) ≤
+          η) :
+    symmetricGridZeroFieldOriginPlusHalfGap w
+      ((Real.sigmoid (2 * w) - (1 / 2 : ℝ)) * (1 - 2 * η)) := by
+  have hgap_pos : 0 < 1 - 2 * η := by
+    linarith
+  exact symmetricGridZeroFieldOriginPlusHalfGap_of_neighborPairGap hw hgap_pos
+    (fun n =>
+      symmetricGridZeroFieldOriginNeighborPairStage_gap_ge_of_notTTBound
+        (w := w) (η := η) n gridPlusBoundary (hbad n))
+
+/-- A uniform plus-boundary half-gap forces the compactness-extracted
+plus/minus DLR completions to separate at the origin-spin query. -/
+theorem symmetricGridZeroFieldOriginPlusMinusBoundarySeparation_of_plusHalfGap
+    {w δ : ℝ}
+    (hgap : symmetricGridZeroFieldOriginPlusHalfGap w δ) :
+    symmetricGridZeroFieldOriginPlusMinusBoundarySeparation w := by
+  rcases hgap with ⟨hδ, hplus⟩
+  have hminus :
+      ∀ n,
+        ENNReal.toReal
+          (gridExhaustion.finiteVolumeKernelSequence
+            (symmetricGridZeroFieldClassicalSpec w).toStrictlyPositiveInfiniteGroundMLNSpec
+            gridMinusBoundary n
+            (localQueryEvent ({gridOrigin} : Region GridNode)
+              gridOriginSpinUpLocalQuery)) ≤ (1 / 2 : ℝ) - δ := by
+    intro n
+    rw [symmetricGridZeroField_originSpinUp_finiteVolumeKernel_minus_eq_one_sub_plus w n]
+    linarith [hplus n]
+  have hminus_le :
+      dlrCompletionQueryProb (symmetricGridZeroFieldClassicalSpec w)
+          gridOriginSpinUpQuery
+          (symmetricGridZeroFieldMinusBoundaryCompletion w) ≤
+        (1 / 2 : ℝ) - δ :=
+    symmetricGridZeroFieldBoundaryCompletion_originSpinUp_queryProb_le_of_uniformKernelUpperBound
+      (w := w) (b := (1 / 2 : ℝ) - δ) gridMinusBoundary hminus
+  have hplus_ge :
+      (1 / 2 : ℝ) + δ ≤
+        dlrCompletionQueryProb (symmetricGridZeroFieldClassicalSpec w)
+          gridOriginSpinUpQuery
+          (symmetricGridZeroFieldPlusBoundaryCompletion w) :=
+    symmetricGridZeroFieldBoundaryCompletion_originSpinUp_queryProb_ge_of_uniformKernelLowerBound
+      (w := w) (b := (1 / 2 : ℝ) + δ) gridPlusBoundary hplus
+  linarith
+
+/-- A Peierls-style finite-volume error bound therefore also separates the
+compactness-extracted plus/minus DLR completions at the origin-spin query. -/
+theorem symmetricGridZeroFieldOriginPlusMinusBoundarySeparation_of_peierlsErrorBound
+    {w ε : ℝ}
+    (hPeierls : symmetricGridZeroFieldOriginPeierlsErrorBound w ε) :
+    symmetricGridZeroFieldOriginPlusMinusBoundarySeparation w :=
+  symmetricGridZeroFieldOriginPlusMinusBoundarySeparation_of_plusHalfGap
+    (symmetricGridZeroFieldOriginPlusHalfGap_of_peierlsErrorBound hPeierls)
+
 /-- The review-facing strict-interval package for the symmetric zero-field
 origin-spin query: positive scalar envelope width, confidence complement below
 one, and positive binary query-outcome credal width. -/
@@ -1838,6 +3037,10 @@ structure SymmetricGridZeroFieldOriginPhaseCoexistenceReductionCrown : Prop wher
     ∀ {w δ : ℝ},
       symmetricGridZeroFieldOriginPlusHalfGap w δ →
         SymmetricGridZeroFieldOriginPLNStrictIntervalCrown w
+  plusHalfGapBoundarySeparation :
+    ∀ {w δ : ℝ},
+      symmetricGridZeroFieldOriginPlusHalfGap w δ →
+        symmetricGridZeroFieldOriginPlusMinusBoundarySeparation w
   peierlsErrorBoundPlusHalfGap :
     ∀ {w ε : ℝ},
       symmetricGridZeroFieldOriginPeierlsErrorBound w ε →
@@ -1858,6 +3061,10 @@ structure SymmetricGridZeroFieldOriginPhaseCoexistenceReductionCrown : Prop wher
                 gridPlusBoundary n
                 (localQueryEvent ({gridOrigin} : Region GridNode)
                   gridOriginSpinUpLocalQuery))
+  peierlsErrorBoundBoundarySeparation :
+    ∀ {w ε : ℝ},
+      symmetricGridZeroFieldOriginPeierlsErrorBound w ε →
+        symmetricGridZeroFieldOriginPlusMinusBoundarySeparation w
   peierlsErrorBoundStrictInterval :
     ∀ {w ε : ℝ},
       symmetricGridZeroFieldOriginPeierlsErrorBound w ε →
@@ -1878,6 +3085,9 @@ theorem symmetricGridZeroField_originPhaseCoexistenceReductionCrown :
   plusHalfGapStrictInterval := by
     intro w δ hgap
     exact symmetricGridZeroField_originPLNStrictIntervalCrown_of_plusHalfGap hgap
+  plusHalfGapBoundarySeparation := by
+    intro w δ hgap
+    exact symmetricGridZeroFieldOriginPlusMinusBoundarySeparation_of_plusHalfGap hgap
   peierlsErrorBoundPlusHalfGap := by
     intro w ε hPeierls
     exact symmetricGridZeroFieldOriginPlusHalfGap_of_peierlsErrorBound hPeierls
@@ -1886,6 +3096,9 @@ theorem symmetricGridZeroField_originPhaseCoexistenceReductionCrown :
     exact
       symmetricGridZeroField_originSpinUp_finiteVolumeKernel_lt_of_peierlsErrorBound
         hPeierls n
+  peierlsErrorBoundBoundarySeparation := by
+    intro w ε hPeierls
+    exact symmetricGridZeroFieldOriginPlusMinusBoundarySeparation_of_peierlsErrorBound hPeierls
   peierlsErrorBoundStrictInterval := by
     intro w ε hPeierls
     exact symmetricGridZeroField_originPLNStrictIntervalCrown_of_peierlsErrorBound hPeierls

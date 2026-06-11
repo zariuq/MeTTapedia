@@ -77,6 +77,13 @@ theorem infinite_of_isGunky [Nontrivial α] (hg : IsGunky α) : Infinite α := b
     exact hnext (seq n)
   exact Infinite.of_injective (fun n => (seq n).1) hanti.injective
 
+/-- A finite nontrivial carrier cannot be gunky. This is the contrapositive of
+`infinite_of_isGunky`, packaged for use on finite-stage approximations and
+frontier objects. -/
+theorem not_isGunky_of_finite [Finite α] [Nontrivial α] : ¬ IsGunky α := by
+  intro hg
+  exact Infinite.false (infinite_of_isGunky hg)
+
 end Order
 
 /-! ## The paradigm gunky individual: the continuum -/
@@ -245,5 +252,3 @@ theorem isGunky_clopens_cantor : IsGunky (Clopens (ℕ → Bool)) := by
 end BooleanWitness
 
 end Mettapedia.Foundations.Gunk
-
-

@@ -1,3 +1,4 @@
+import Mettapedia.Languages.MeTTa.HE.Certification
 import Mettapedia.Languages.MeTTa.HE.SmallStepMaster
 import Mettapedia.Languages.MeTTa.HE.BindingComposition
 
@@ -644,6 +645,92 @@ private theorem mergeGround_mid_exists_of_seeded
     have hcLook : c.lookup v = some aM := hmbc v aM hmbLook
     exact mergeGround_overlap_agree hfrEq hfrKeys hx hcLook hfrLook
   exact mergeGround_exists_of_overlap_agree hfrEq hfrKeys hag
+
+private theorem lookup_filter_some_of_nodup
+    {xs : List (String × Atom)} {pred : (String × Atom) → Bool}
+    {v : String} {a : Atom}
+    (hkeys : (xs.map Prod.fst).Nodup)
+    (h : List.lookup v (xs.filter pred) = some a) :
+    List.lookup v xs = some a := by
+  induction xs with
+  | nil =>
+      simp at h
+  | cons x xs ih =>
+      rcases x with ⟨k, b⟩
+      have hkeys' : (xs.map Prod.fst).Nodup := by
+        simpa using (List.nodup_cons.mp hkeys).2
+      by_cases hk : v == k
+      · have hvk : v = k := by simpa using hk
+        subst k
+        have hnotmem : v ∉ xs.map Prod.fst := by
+          simpa using (List.nodup_cons.mp hkeys).1
+        by_cases hpred : pred (v, b)
+        · simp [hpred] at h
+          simpa using h
+        · simp [hpred] at h
+          have htailNone : List.lookup v xs = none := lookup_none_of_not_mem_keys hnotmem
+          have htailSome : List.lookup v xs = some a := ih hkeys' h
+          rw [htailNone] at htailSome
+          cases htailSome
+      · by_cases hpred : pred (k, b)
+        · have h' : List.lookup v (List.filter pred xs) = some a := by
+            simpa [List.lookup_cons, hk, hpred] using h
+          simpa [List.lookup_cons, hk] using ih hkeys' h'
+        · have h' : List.lookup v (List.filter pred xs) = some a := by
+            simpa [List.lookup_cons, hk, hpred] using h
+          simpa [List.lookup_cons, hk] using ih hkeys' h'
+
+private theorem keys_nodup_filter
+    {xs : List (String × Atom)} {pred : (String × Atom) → Bool}
+    (hkeys : (xs.map Prod.fst).Nodup) :
+    ((xs.filter pred).map Prod.fst).Nodup := by
+  induction xs with
+  | nil =>
+      simp
+  | cons pair xs ih =>
+      rcases pair with ⟨k, a⟩
+      have hnotmem : k ∉ xs.map Prod.fst := by
+        simpa using (List.nodup_cons.mp hkeys).1
+      have hkeys' : (xs.map Prod.fst).Nodup := by
+        simpa using (List.nodup_cons.mp hkeys).2
+      by_cases hpred : pred (k, a)
+      · have hnotmem' : k ∉ (xs.filter pred).map Prod.fst := by
+          intro hkmem
+          rcases List.mem_map.mp hkmem with ⟨p, hp, hpk⟩
+          have hp' : p ∈ xs := List.mem_of_mem_filter hp
+          rcases p with ⟨k', a'⟩
+          simp at hpk
+          subst k'
+          exact hnotmem (List.mem_map.mpr ⟨(k, a'), hp', rfl⟩)
+        simpa [List.filter_cons, hpred] using List.Nodup.cons hnotmem' (ih hkeys')
+      · simpa [List.filter_cons, hpred] using ih hkeys'
+
+private theorem filter_lookup_none_of_extends
+    {xs : List (String × Atom)} {base ext : Bindings}
+    (hext : base.Extends ext) :
+    (xs.filter (fun p => (base.lookup p.1).isNone)).filter
+        (fun p => (ext.lookup p.1).isNone) =
+      xs.filter (fun p => (ext.lookup p.1).isNone) := by
+  induction xs with
+  | nil => rfl
+  | cons pair xs ih =>
+      rcases pair with ⟨v, a⟩
+      cases hExt : (ext.lookup v).isNone with
+      | false =>
+          cases hBase : (base.lookup v).isNone <;>
+            simp [hExt, hBase, ih]
+      | true =>
+          have hExtNone : ext.lookup v = none := by
+            cases hlook : ext.lookup v <;> simp [hlook] at hExt ⊢
+          have hBase : (base.lookup v).isNone = true := by
+            cases hlook : base.lookup v with
+            | none =>
+                simp
+            | some b =>
+                have hpush : ext.lookup v = some b := hext v b hlook
+                rw [hExtNone] at hpush
+                cases hpush
+          simp [hExt, hBase, ih]
 
 /-- At the bindings level, deterministic ground-merge composes over
 concatenated assignment fragments when both fragments have no equalities. -/
@@ -2359,6 +2446,235 @@ private theorem matchAtomsList_empty_cons_inv_ground
     exact hEq
   exact ⟨b', by simpa [hb'eq] using hmb0, htail⟩
 
+/-- Deterministic ground merge composes at the equation level on the canonical
+ground fragment: if `c` is the result of merging `mb` into `b`, and `x` is the
+result of merging `fr` into `c`, then the middle merge `mb ⋆ fr` exists as a
+concrete bindings value `g`, and merging `g` into `b` reproduces `x`. -/
+private theorem mergeGround_seed_compose
+    {b mb c fr x : Bindings}
+    (hb : GroundBindings b)
+    (hmbCanon : GroundBindingsCanon mb)
+    (hfrCanon : GroundBindingsCanon fr)
+    (hc : mergeGround? b mb = some c)
+    (hx : mergeGround? c fr = some x) :
+    ∃ g,
+      mergeGround? mb fr = some g ∧
+      mergeGround? b g = some x := by
+  let restAssigns := fr.assignments.filter (fun p => (mb.lookup p.1).isNone)
+  let rest : Bindings := { assignments := restAssigns, equalities := [] }
+  let g : Bindings := { assignments := mb.assignments ++ restAssigns, equalities := [] }
+  have hmbExt : mb.Extends c :=
+    mergeGround_extends_right_of_nodup hmbCanon.1.2 hmbCanon.2 hc
+  have hmid :
+      mergeGround? mb fr = some g := by
+    have hag :
+        ∀ {v aM aF},
+          mb.lookup v = some aM →
+          List.lookup v fr.assignments = some aF →
+          aM = aF := by
+      intro v aM aF hmbLook hfrLook
+      have hcLook : c.lookup v = some aM := hmbExt v aM hmbLook
+      exact mergeGround_overlap_agree hfrCanon.1.2 hfrCanon.2 hx hcLook
+        (by simpa [Bindings.lookup] using hfrLook)
+    simpa [mergeGround?, hfrCanon.1.2, g, restAssigns] using
+      (mergeGroundAssignments_eq_append_fresh_of_overlap_agree
+        (left := mb) (assigns := fr.assignments)
+        hmbCanon.1.2 hfrCanon.2 hag)
+  have hcmem :
+      c ∈ mergeBindings b mb 2 :=
+    (mem_mergeBindings_ground_iff
+      (left := b) (right := mb) (result := c) (fuel := 0) hb hmbCanon.1).mpr hc
+  have hcg : GroundBindings c := by
+    have hmatchers := matcher_ground 2
+    rcases hmatchers with ⟨_hA, _hL, hM, _hB⟩
+    exact hM b mb c hb hmbCanon.1 hcmem
+  have hrestMerge :
+      mergeGround? c rest = some x := by
+    have hrest :
+        mergeGround? c rest =
+          some
+            { assignments := c.assignments ++
+                restAssigns.filter (fun p => (c.lookup p.1).isNone)
+            , equalities := [] } := by
+      have hag :
+          ∀ {v aL aR},
+            c.lookup v = some aL →
+            List.lookup v restAssigns = some aR →
+            aL = aR := by
+        intro v aL aR hcLook hrestLook
+        have hfrLook : List.lookup v fr.assignments = some aR :=
+          lookup_filter_some_of_nodup hfrCanon.2 hrestLook
+        exact mergeGround_overlap_agree hfrCanon.1.2 hfrCanon.2 hx hcLook
+          (by simpa [Bindings.lookup] using hfrLook)
+      simpa [mergeGround?, rest, restAssigns] using
+        (mergeGroundAssignments_eq_append_fresh_of_overlap_agree
+          (left := c) (assigns := restAssigns)
+          hcg.2 (keys_nodup_filter hfrCanon.2) hag)
+    have hx' :
+        x =
+          { assignments := c.assignments ++
+              fr.assignments.filter (fun p => (c.lookup p.1).isNone)
+          , equalities := [] } := by
+      have hfull :
+          mergeGround? c fr =
+            some
+              { assignments := c.assignments ++
+                  fr.assignments.filter (fun p => (c.lookup p.1).isNone)
+              , equalities := [] } := by
+        have hag :
+            ∀ {v aL aR},
+              c.lookup v = some aL →
+              List.lookup v fr.assignments = some aR →
+              aL = aR := by
+          intro v aL aR hcLook hfrLook
+          exact mergeGround_overlap_agree hfrCanon.1.2 hfrCanon.2 hx hcLook
+            (by simpa [Bindings.lookup] using hfrLook)
+        simpa [mergeGround?, hfrCanon.1.2] using
+          (mergeGroundAssignments_eq_append_fresh_of_overlap_agree
+            (left := c) (assigns := fr.assignments)
+            hcg.2 hfrCanon.2 hag)
+      have : some x =
+          some
+            { assignments := c.assignments ++
+                fr.assignments.filter (fun p => (c.lookup p.1).isNone)
+            , equalities := [] } := by
+        rw [← hx, hfull]
+      injection this
+    have hfilter :
+        restAssigns.filter (fun p => (c.lookup p.1).isNone) =
+          fr.assignments.filter (fun p => (c.lookup p.1).isNone) := by
+      simpa [restAssigns] using
+        (filter_lookup_none_of_extends
+          (xs := fr.assignments) (base := mb) (ext := c) hmbExt)
+    rw [hrest, hx', hfilter]
+  refine ⟨g, hmid, ?_⟩
+  have hconcat := mergeGround_concat b mb rest hmbCanon.1.2 rfl
+  simpa [g, rest, restAssigns, hc, hrestMerge] using hconcat
+
+/-- Transport a singleton-seeded official list run across an already-factored
+ground seed: if `seed` is obtained by merging canonical `delta` into `base`,
+then any official run from `[seed]` factors through a run from `[delta]`,
+possibly at a larger fuel, with the same final merge into `base`. -/
+private theorem matchAtomsList_seed_transport_ground : ∀ fuel : Nat,
+    ∀ {lefts rights base delta seed x},
+      (∀ t ∈ lefts, GroundAtom t) →
+      GroundBindings base →
+      GroundBindingsCanon delta →
+      seed ∈ mergeBindings base delta 2 →
+      x ∈ matchAtomsList lefts rights [seed] fuel →
+        ∃ fuel', ∃ fr,
+          fr ∈ matchAtomsList lefts rights [delta] fuel' ∧
+          x ∈ mergeBindings base fr 2 := by
+  intro fuel
+  induction fuel with
+  | zero =>
+      intro lefts rights base delta seed x hlefts hbase hdelta hseed hmem
+      simp [matchAtomsList] at hmem
+  | succ n ih =>
+      intro lefts rights base delta seed x hlefts hbase hdelta hseed hmem
+      have hseedGround : GroundBindings seed := by
+        have hmatchers := matcher_ground 2
+        rcases hmatchers with ⟨_hA, _hL, hM, _hB⟩
+        exact hM base delta seed hbase hdelta.1 hseed
+      cases lefts with
+      | nil =>
+          cases rights with
+          | nil =>
+              simp [matchAtomsList] at hmem
+              subst hmem
+              refine ⟨1, delta, ?_, hseed⟩
+              simp [matchAtomsList]
+          | cons r rs =>
+              simp [matchAtomsList] at hmem
+      | cons t ts =>
+          cases rights with
+          | nil =>
+              simp [matchAtomsList] at hmem
+          | cons p ps =>
+              have ht : GroundAtom t := hlefts t (by simp)
+              have htsGround : ∀ a ∈ ts, GroundAtom a := by
+                intro a ha
+                exact hlefts a (by simp [ha])
+              have htailAcc :
+                  x ∈ matchAtomsList ts ps
+                    ((matchAtoms t p n).flatMap fun mb => mergeBindings seed mb n) n := by
+                simpa [matchAtomsList] using hmem
+              obtain ⟨c, hcAcc, htail⟩ :=
+                (mem_matchAtomsList_seedwise
+                  (lefts := ts) (rights := ps)
+                  (seeds := (matchAtoms t p n).flatMap fun mb => mergeBindings seed mb n)
+                  (fuel := n) (x := x)).mp htailAcc
+              obtain ⟨mb, hmb, hcSeed2⟩ :=
+                matchAtoms_ground_seed_factor ht hseedGround hcAcc
+              have hmbCanon : GroundBindingsCanon mb := matchAtoms_ground_canon ht hmb
+              have hseedEq :
+                  mergeGround? base delta = some seed :=
+                (mem_mergeBindings_ground_iff
+                  (left := base) (right := delta) (result := seed)
+                  (fuel := 0) hbase hdelta.1).mp hseed
+              have hcSeedEq :
+                  mergeGround? seed mb = some c :=
+                (mem_mergeBindings_ground_iff
+                  (left := seed) (right := mb) (result := c)
+                  (fuel := 0) hseedGround hmbCanon.1).mp hcSeed2
+              obtain ⟨g, hgEq, hcBaseEq⟩ :=
+                mergeGround_seed_compose hbase hdelta hmbCanon hseedEq hcSeedEq
+              have hgMem2 :
+                  g ∈ mergeBindings delta mb 2 :=
+                (mem_mergeBindings_ground_iff
+                  (left := delta) (right := mb) (result := g)
+                  (fuel := 0) hdelta.1 hmbCanon.1).mpr hgEq
+              have hgCanon : GroundBindingsCanon g :=
+                mergeBindings_canon hdelta hmbCanon hgMem2
+              have hcBaseMem :
+                  c ∈ mergeBindings base g 2 :=
+                (mem_mergeBindings_ground_iff
+                  (left := base) (right := g) (result := c)
+                  (fuel := 0) hbase hgCanon.1).mpr hcBaseEq
+              obtain ⟨fuelTail, fr, hfr, hmergeFinal⟩ :=
+                ih (lefts := ts) (rights := ps)
+                  (base := base) (delta := g) (seed := c) (x := x)
+                  htsGround hbase hgCanon hcBaseMem htail
+              let fuelHead := max n 2
+              have hmb' : mb ∈ matchAtoms t p fuelHead := by
+                have hEq : n + (fuelHead - n) = fuelHead := by
+                  dsimp [fuelHead]
+                  exact Nat.add_sub_of_le (Nat.le_max_left _ _)
+                simpa [hEq, fuelHead] using
+                  (matchAtoms_mono_add t p n (fuelHead - n)) mb hmb
+              have hgMemHead : g ∈ mergeBindings delta mb fuelHead := by
+                have hEq : 2 + (fuelHead - 2) = fuelHead := by
+                  dsimp [fuelHead]
+                  exact Nat.add_sub_of_le (Nat.le_max_right _ _)
+                simpa [hEq, fuelHead] using
+                  (mergeBindings_mono_add delta mb 2 (fuelHead - 2)) g hgMem2
+              have hhead :
+                  g ∈ (matchAtoms t p fuelHead).flatMap
+                    (fun mb0 => mergeBindings delta mb0 fuelHead) :=
+                List.mem_flatMap.mpr ⟨mb, hmb', hgMemHead⟩
+              obtain ⟨fuelWhole, hwhole⟩ := matchAtomsList_cons_of_head_tail hhead hfr
+              exact ⟨fuelWhole + 1, fr, by simpa using hwhole, hmergeFinal⟩
+
+/-- Singleton-seed factorization on the ground fragment: any official list run
+from `[b]` factors through an empty-seeded run at some (possibly larger) fuel,
+with the same final merge back into `b` at fuel 2. -/
+private theorem matchAtomsList_singleton_factor_ground
+    {lefts rights : List Atom} {b x : Bindings} {fuel : Nat}
+    (hlefts : ∀ t ∈ lefts, GroundAtom t)
+    (hb : GroundBindings b)
+    (hmem : x ∈ matchAtomsList lefts rights [b] fuel) :
+    ∃ fuel', ∃ fr,
+      fr ∈ matchAtomsList lefts rights [Bindings.empty] fuel' ∧
+      x ∈ mergeBindings b fr 2 := by
+  have hseed : b ∈ mergeBindings b Bindings.empty 2 := by
+    rw [mergeBindings_empty_right b 1]
+    simp
+  simpa using
+    (matchAtomsList_seed_transport_ground fuel
+      (lefts := lefts) (rights := rights)
+      (base := b) (delta := Bindings.empty) (seed := b) (x := x)
+      hlefts hb GroundBindingsCanon.empty hseed hmem)
+
 /-- Ground-seeded list bridge: if each successful element match from a ground
 seed has an official witness, then successful `simpleMatchList` threading from
 a ground seed also has an official seeded list witness, and recursive seeds stay
@@ -2508,6 +2824,230 @@ theorem simpleMatch_ground_grounded_bridge
       | expression es =>
           simp [simpleMatch] at hmatch
 
+/-- `simpleMatch` and `simpleMatchList` are monotone in fuel on successful
+runs: once a match succeeds, one extra unit of fuel preserves the same
+result.  This is the fuel-skew shim the failure bridge needs, because the
+official `matchAtomsList` recursion spends one unit of fuel differently from
+the coarse threaded matcher. -/
+private theorem simpleMatch_mono_succ (fuel : Nat) :
+    (∀ pattern target b qb,
+      simpleMatch pattern target b fuel = some qb →
+      simpleMatch pattern target b (fuel + 1) = some qb) ∧
+    (∀ ps ts b qb,
+      simpleMatch.simpleMatchList ps ts b fuel = some qb →
+      simpleMatch.simpleMatchList ps ts b (fuel + 1) = some qb) := by
+  induction fuel with
+  | zero =>
+      refine ⟨?_, ?_⟩
+      · intro pattern target b qb h
+        simp [simpleMatch] at h
+      · intro ps ts b qb h
+        cases ps <;> cases ts <;>
+          simp [simpleMatch.simpleMatchList, simpleMatch] at h ⊢
+        · simpa [simpleMatch.simpleMatchList] using h
+  | succ n ih =>
+      obtain ⟨ihAtom, ihList⟩ := ih
+      have hAtomSucc :
+          ∀ pattern target b qb,
+            simpleMatch pattern target b (n + 1) = some qb →
+            simpleMatch pattern target b (n + 2) = some qb := by
+        intro pattern target b qb h
+        cases pattern with
+        | var v =>
+            cases hlook : b.lookup v <;>
+              simpa [simpleMatch, hlook] using h
+        | symbol s =>
+            cases target with
+            | var v =>
+                simp [simpleMatch] at h
+            | symbol t =>
+                simp [simpleMatch] at h ⊢
+                exact h
+            | grounded g =>
+                simp [simpleMatch] at h
+            | expression es =>
+                simp [simpleMatch] at h
+        | grounded g =>
+            cases target with
+            | var v =>
+                simp [simpleMatch] at h
+            | symbol s =>
+                simp [simpleMatch] at h
+            | grounded h' =>
+                simp [simpleMatch] at h ⊢
+                exact h
+            | expression es =>
+                simp [simpleMatch] at h
+        | expression ps =>
+            cases target with
+            | var v =>
+                simp [simpleMatch] at h
+            | symbol s =>
+                simp [simpleMatch] at h
+            | grounded g =>
+                simp [simpleMatch] at h
+            | expression ts =>
+                cases hneq : (ps.length != ts.length) with
+                | true =>
+                    simp [simpleMatch, hneq] at h
+                | false =>
+                    simp [simpleMatch, hneq] at h ⊢
+                    exact ihList ps ts b qb h
+      have hListSucc :
+          ∀ ps ts b qb,
+            simpleMatch.simpleMatchList ps ts b (n + 1) = some qb →
+            simpleMatch.simpleMatchList ps ts b (n + 2) = some qb := by
+        intro ps
+        induction ps with
+        | nil =>
+            intro ts b qb h
+            cases ts <;> simp [simpleMatch.simpleMatchList] at h ⊢
+            · simpa [simpleMatch.simpleMatchList] using h
+        | cons p ps ihps =>
+            intro ts b qb h
+            cases ts with
+            | nil =>
+                simp [simpleMatch.simpleMatchList] at h
+            | cons t ts =>
+                unfold simpleMatch.simpleMatchList at h ⊢
+                cases hhd : simpleMatch p t b (n + 1) with
+                | none =>
+                    simp [hhd] at h
+                | some b' =>
+                    simp [hhd] at h
+                    have hhd' : simpleMatch p t b (n + 2) = some b' :=
+                      hAtomSucc p t b b' hhd
+                    have htail' : simpleMatch.simpleMatchList ps ts b' (n + 2) = some qb :=
+                      ihps ts b' qb h
+                    simp [hhd', htail']
+      exact ⟨hAtomSucc, hListSucc⟩
+
+/-- Contrapositive of `simpleMatch_mono_succ`: if a match fails at fuel
+`n+1`, it already failed at fuel `n`.  This is the downward fuel step used to
+line up coarse list failures with the official list matcher's inner fuel. -/
+private theorem simpleMatch_none_pred (fuel : Nat) :
+    (∀ pattern target b,
+      simpleMatch pattern target b (fuel + 1) = none →
+      simpleMatch pattern target b fuel = none) ∧
+    (∀ ps ts b,
+      simpleMatch.simpleMatchList ps ts b (fuel + 1) = none →
+      simpleMatch.simpleMatchList ps ts b fuel = none) := by
+  obtain ⟨hAtomSucc, hListSucc⟩ := simpleMatch_mono_succ fuel
+  refine ⟨?_, ?_⟩
+  · intro pattern target b hnone
+    cases hprev : simpleMatch pattern target b fuel with
+    | none =>
+        rfl
+    | some qb =>
+        have hsucc : simpleMatch pattern target b (fuel + 1) = some qb :=
+          hAtomSucc pattern target b qb hprev
+        rw [hsucc] at hnone
+        exact hnone
+  · intro ps ts b hnone
+    cases hprev : simpleMatch.simpleMatchList ps ts b fuel with
+    | none =>
+        rfl
+    | some qb =>
+        have hsucc : simpleMatch.simpleMatchList ps ts b (fuel + 1) = some qb :=
+          hListSucc ps ts b qb hprev
+        rw [hsucc] at hnone
+        exact hnone
+
+/-- Failure leaf: on a ground target, a conflicting seeded variable match has
+no official seeded witness at the same fuel. -/
+private theorem simpleMatch_ground_var_no_match
+    {target : Atom} {b : Bindings} {v : String} {fuel : Nat}
+    (hb : GroundBindings b)
+    (hground : GroundAtom target)
+    (hmatch : simpleMatch (.var v) target b fuel = none) :
+    (matchAtoms target (.var v) fuel).flatMap
+      (fun mb => mergeBindings b mb fuel) = [] := by
+  cases fuel with
+  | zero =>
+      simp [matchAtoms]
+  | succ n =>
+      cases hlook : b.lookup v with
+      | none =>
+          simp [simpleMatch, hlook] at hmatch
+      | some prev =>
+          simp only [simpleMatch, hlook] at hmatch
+          split at hmatch <;> rename_i hsame
+          · simp at hmatch
+          · have hprev : GroundAtom prev := lookup_ground hb hlook
+            have hneq : prev ≠ target := by
+              intro heq
+              exact hsame (by simp [heq])
+            cases n with
+            | zero =>
+                rw [matchAtoms_ground_var_exact target v 0 hground]
+                simp [mergeBindings, addVarBinding, Bindings.empty, Bindings.assign,
+                  Bindings.isBound, Bindings.lookup]
+            | succ k =>
+                rw [matchAtoms_ground_var_exact target v (k + 1) hground]
+                have hmerge :
+                    mergeBindings b (Bindings.empty.assign v target) (k + 2) = [] := by
+                  rw [mergeBindings_single_assign (b := b) (v := v) (val := target) k]
+                  cases k with
+                  | zero =>
+                      simp [addVarBinding, hlook, hsame, matchAtoms]
+                  | succ m =>
+                      have hmatchNil : matchAtoms prev target (m + 1) = [] :=
+                        matchAtoms_ground_ne_nil hprev hground hneq
+                      simp [addVarBinding, hlook, hsame, hmatchNil]
+                simpa using hmerge
+
+/-- Failure leaf: on a ground target, a symbol-pattern mismatch has no
+official seeded witness at the same fuel. -/
+private theorem simpleMatch_ground_symbol_no_match
+    {target : Atom} {b : Bindings} {s : String} {fuel : Nat}
+    (hground : GroundAtom target)
+    (hmatch : simpleMatch (.symbol s) target b fuel = none) :
+    (matchAtoms target (.symbol s) fuel).flatMap
+      (fun mb => mergeBindings b mb fuel) = [] := by
+  cases fuel with
+  | zero =>
+      simp [matchAtoms]
+  | succ n =>
+      cases target with
+      | var v =>
+          exact (GroundAtom.not_var hground).elim
+      | symbol t =>
+          simp [simpleMatch] at hmatch
+          have hst : s ≠ t := by simpa using hmatch
+          by_cases hts : t = s
+          · exact False.elim (hst hts.symm)
+          · simp [matchAtoms, getMetaType, Atom.symbolType, hts]
+      | grounded g =>
+          simp [matchAtoms, getMetaType, Atom.groundedType, Atom.symbolType]
+      | expression es =>
+          simp [matchAtoms, getMetaType, Atom.expressionType, Atom.symbolType]
+
+/-- Failure leaf: on a ground target, a grounded-pattern mismatch has no
+official seeded witness at the same fuel. -/
+private theorem simpleMatch_ground_grounded_no_match
+    {target : Atom} {b : Bindings} {g : GroundedValue} {fuel : Nat}
+    (hground : GroundAtom target)
+    (hmatch : simpleMatch (.grounded g) target b fuel = none) :
+    (matchAtoms target (.grounded g) fuel).flatMap
+      (fun mb => mergeBindings b mb fuel) = [] := by
+  cases fuel with
+  | zero =>
+      simp [matchAtoms]
+  | succ n =>
+      cases target with
+      | var v =>
+          exact (GroundAtom.not_var hground).elim
+      | symbol s =>
+          simp [matchAtoms, getMetaType, Atom.symbolType, Atom.groundedType]
+      | grounded h =>
+          simp [simpleMatch] at hmatch
+          have hgh : g ≠ h := by simpa using hmatch
+          by_cases hhg : h = g
+          · exact False.elim (hgh hhg.symm)
+          · simp [matchAtoms, getMetaType, Atom.groundedType, hhg]
+      | expression es =>
+          simp [matchAtoms, getMetaType, Atom.expressionType, Atom.groundedType]
+
 /-- If the seeded official list matcher on ground scrutinees factors through
 the empty-seeded run plus a final seed merge, then the full ground
 `simpleMatch`/`matchAtoms` bridge follows by fuel induction. This isolates the
@@ -2518,8 +3058,8 @@ private theorem simpleMatch_ground_official_of_factor
         (∀ t ∈ lefts, GroundAtom t) →
         GroundBindings b →
         x ∈ matchAtomsList lefts rights [b] fuelList →
-          ∃ fr,
-            fr ∈ matchAtomsList lefts rights [Bindings.empty] fuelList ∧
+          ∃ fuel', ∃ fr,
+            fr ∈ matchAtomsList lefts rights [Bindings.empty] fuel' ∧
             x ∈ mergeBindings b fr 2) :
     ∀ fuel : Nat,
       (∀ p t b qb,
@@ -2600,18 +3140,18 @@ private theorem simpleMatch_ground_official_of_factor
                       simpa using hneq
                     simp [simpleMatch, hneq] at hmatch
                     obtain ⟨fuelSeeded, hseeded⟩ := ihList ps ts b qb hb htsGround hmatch
-                    obtain ⟨fr, hfr, hmerge2⟩ := hFactor htsGround hb hseeded
-                    let fuel0 := max fuelSeeded 2
-                    have hFuelSeededLe : fuelSeeded ≤ fuel0 := by
+                    obtain ⟨fuelFact, fr, hfr, hmerge2⟩ := hFactor htsGround hb hseeded
+                    let fuel0 := max fuelFact 2
+                    have hFuelFactLe : fuelFact ≤ fuel0 := by
                       dsimp [fuel0]
                       exact Nat.le_max_left _ _
                     have hFuel0Ge2 : 2 ≤ fuel0 := by
                       dsimp [fuel0]
                       exact Nat.le_max_right _ _
                     have hfr' : fr ∈ matchAtomsList ts ps [Bindings.empty] fuel0 := by
-                      have hsub := matchAtomsList_mono_add ts ps [Bindings.empty] fuelSeeded (fuel0 - fuelSeeded)
-                      have hEq : fuelSeeded + (fuel0 - fuelSeeded) = fuel0 :=
-                        Nat.add_sub_of_le hFuelSeededLe
+                      have hsub := matchAtomsList_mono_add ts ps [Bindings.empty] fuelFact (fuel0 - fuelFact)
+                      have hEq : fuelFact + (fuel0 - fuelFact) = fuel0 :=
+                        Nat.add_sub_of_le hFuelFactLe
                       simpa [hEq] using hsub fr hfr
                     have hexpr : fr ∈ matchAtoms (.expression ts) (.expression ps) (fuel0 + 1) := by
                       rw [matchAtoms_ground_expr_filter_free ts ps fuel0 htsGround]
@@ -2643,5 +3183,907 @@ private theorem simpleMatch_ground_official_of_factor
         intro ps ts b qb hb hground hmatch
         exact simpleMatchList_ground_seeded_of_elem_bridge_ground (n + 1) hElemSucc' hb hground hmatch
       exact ⟨hElemSucc, hListSucc⟩
+
+/-- Full success bridge for one-way `simpleMatch` on the ground fragment:
+every successful coarse match is witnessed by an official matcher result
+merged back into the same seed. -/
+private theorem simpleMatch_ground_official
+    {p t : Atom} {seed out : Bindings} {fuel : Nat}
+    (hb : GroundBindings seed)
+    (ht : GroundAtom t)
+    (hmatch : simpleMatch p t seed fuel = some out) :
+    ∃ fuel',
+      out ∈ (matchAtoms t p fuel').flatMap (fun mb => mergeBindings seed mb fuel') := by
+  exact
+    (simpleMatch_ground_official_of_factor
+      (fun {lefts rights b x fuelList} hlefts hb hmem =>
+        matchAtomsList_singleton_factor_ground hlefts hb hmem) fuel).1
+      p t seed out hb ht hmatch
+
+/-- Full success bridge for `simpleMatchList` on the ground fragment:
+every successful coarse threaded match has an official seeded list-matcher
+witness, possibly at a larger fuel. -/
+private theorem simpleMatchList_ground_official
+    {ps ts : List Atom} {seed out : Bindings} {fuel : Nat}
+    (hb : GroundBindings seed)
+    (hts : ∀ t ∈ ts, GroundAtom t)
+    (hmatch : simpleMatch.simpleMatchList ps ts seed fuel = some out) :
+    ∃ fuel', out ∈ matchAtomsList ts ps [seed] fuel' := by
+  exact
+    (simpleMatch_ground_official_of_factor
+      (fun {lefts rights b x fuelList} hlefts hb hmem =>
+        matchAtomsList_singleton_factor_ground hlefts hb hmem) fuel).2
+      ps ts seed out hb hts hmatch
+
+/-- Empty-seed success bridge on the ground fragment: when a coarse one-way
+match succeeds against a ground target from the empty seed, the resulting
+bindings themselves appear as an official `matchAtoms` result at some fuel
+at least `2`.  This packages away the empty-seed merge bookkeeping and is
+the reusable matcher-facing endpoint for later sugar-rule certifications. -/
+theorem simpleMatch_ground_matchAtoms
+    {pattern target : Atom} {mb : Bindings} {fuel : Nat}
+    (hground : GroundAtom target)
+    (hmatch : simpleMatch pattern target Bindings.empty fuel = some mb) :
+    ∃ fuel', mb ∈ matchAtoms target pattern fuel' ∧ 2 ≤ fuel' := by
+  obtain ⟨fuel', hbridge⟩ :=
+    simpleMatch_ground_official GroundBindings.empty hground hmatch
+  rcases List.mem_flatMap.mp hbridge with ⟨mb0, hmb0, hmerge0⟩
+  have hmbCanon : GroundBindingsCanon mb0 := matchAtoms_ground_canon hground hmb0
+  let fuel0 := fuel' + 2
+  have hmb0' : mb0 ∈ matchAtoms target pattern fuel0 := by
+    dsimp [fuel0]
+    exact (matchAtoms_mono_add target pattern fuel' 2) mb0 hmb0
+  have hmerge0' : mb ∈ mergeBindings Bindings.empty mb0 fuel0 := by
+    dsimp [fuel0]
+    exact (mergeBindings_mono_add Bindings.empty mb0 fuel' 2) mb hmerge0
+  have hmergeDet : mergeGround? Bindings.empty mb0 = some mb := by
+    exact
+      (mem_mergeBindings_ground_iff
+        (left := Bindings.empty) (right := mb0) (result := mb) (fuel := fuel')
+        GroundBindings.empty hmbCanon.1).mp hmerge0'
+  have hmergeId : mergeGround? Bindings.empty mb0 = some mb0 :=
+    mergeGround_empty_left_of_canon hmbCanon
+  have hsame : mb = mb0 := by
+    rw [hmergeId] at hmergeDet
+    injection hmergeDet with hEq
+    exact hEq.symm
+  refine ⟨fuel0, ?_, ?_⟩
+  · simpa [hsame] using hmb0'
+  · dsimp [fuel0]
+    omega
+
+/-! ## First consumers of the completed matcher bridge -/
+
+/-- On the ground fragment, a successful coarse one-way match from the empty
+seed induces the official `unify_match` instruction step with the same
+substituted success branch.  This is the matcher-side core theorem later
+control-form certifications consume. -/
+theorem minimalStep_absorbs_unify_match_ground
+    {space : Space} {d : GroundedDispatch}
+    {target pattern thenBranch elseBranch : Atom} {mb : Bindings} {fuel : Nat}
+    (hground : GroundAtom target)
+    (hmatch : simpleMatch pattern target Bindings.empty fuel = some mb) :
+    MinimalStep d space
+      (.expression [.symbol "unify", target, pattern, thenBranch, elseBranch])
+      Bindings.empty space (mb.applyDefault thenBranch, mb) := by
+  obtain ⟨fuel0, hmb, hFuel0⟩ := simpleMatch_ground_matchAtoms hground hmatch
+  have hmbCanon : GroundBindingsCanon mb := matchAtoms_ground_canon hground hmb
+  have hmbGround : GroundBindings mb := hmbCanon.1
+  have hnoLoop : mb.hasLoop = false :=
+    GroundBindings.hasLoop_false hmbGround
+  have hmergeRight : mb ∈ mergeBindings mb Bindings.empty fuel0 := by
+    cases fuel0 with
+    | zero =>
+        omega
+    | succ n =>
+        rw [mergeBindings_empty_right mb n]
+        simp
+  exact MinimalStep.unify_match space target pattern thenBranch elseBranch Bindings.empty
+    mb mb fuel0 hmb hmergeRight hnoLoop
+
+/-- Empty-seed no-match bridge on the ground fragment for the non-expression
+pattern cases: if coarse one-way matching fails, the official matcher also
+has no results (at the same fuel).  The expression-pattern case is excluded
+here and treated separately later because it depends on the list-level
+earlier-branch failure bridge. -/
+private theorem simpleMatch_ground_matchAtoms_nil_nonexpr
+    {pattern target : Atom} {fuel : Nat}
+    (hground : GroundAtom target)
+    (h_nonexpr : ¬ ∃ ps, pattern = .expression ps)
+    (hmatch : simpleMatch pattern target Bindings.empty fuel = none) :
+    matchAtoms target pattern fuel = [] := by
+  cases fuel with
+  | zero =>
+      simp [matchAtoms]
+  | succ n =>
+      cases pattern with
+      | var v =>
+          simp [simpleMatch, Bindings.empty, Bindings.lookup] at hmatch
+      | symbol s =>
+          cases target with
+          | var v =>
+              exact (GroundAtom.not_var hground).elim
+          | symbol t =>
+              simp [simpleMatch] at hmatch
+              have hst : s ≠ t := by simpa using hmatch
+              have hneq : t ≠ s := by
+                intro hts
+                exact hst hts.symm
+              simp [matchAtoms, getMetaType, Atom.symbolType, hneq]
+          | grounded g =>
+              simp [matchAtoms, getMetaType, Atom.symbolType, Atom.groundedType]
+          | expression es =>
+              simp [matchAtoms, getMetaType, Atom.symbolType, Atom.expressionType]
+      | grounded g =>
+          cases target with
+          | var v =>
+              exact (GroundAtom.not_var hground).elim
+          | symbol s =>
+              simp [matchAtoms, getMetaType, Atom.symbolType, Atom.groundedType]
+          | grounded h =>
+              simp [simpleMatch] at hmatch
+              have hgh : g ≠ h := by simpa using hmatch
+              have hneq : h ≠ g := by
+                intro hhg
+                exact hgh hhg.symm
+              simp [matchAtoms, getMetaType, Atom.groundedType, hneq]
+          | expression es =>
+              simp [matchAtoms, getMetaType, Atom.expressionType, Atom.groundedType]
+      | expression ps =>
+          exact False.elim (h_nonexpr ⟨ps, rfl⟩)
+
+/-- Empty-seed no-match bridge on the full ground fragment: if coarse one-way
+matching fails, there exists some official matcher fuel witnessing failure
+too.  Non-expression patterns can reuse the same fuel; expression patterns
+use fuel `1`, whose inner official list matcher has zero fuel and so yields
+no candidates. -/
+theorem simpleMatch_ground_matchAtoms_nil
+    {pattern target : Atom} {fuel : Nat}
+    (hground : GroundAtom target)
+    (hmatch : simpleMatch pattern target Bindings.empty fuel = none) :
+    ∃ fuel', matchAtoms target pattern fuel' = [] := by
+  cases pattern with
+  | var v =>
+      refine ⟨fuel, ?_⟩
+      exact simpleMatch_ground_matchAtoms_nil_nonexpr hground
+        (by intro h; rcases h with ⟨ps, hps⟩; cases hps)
+        hmatch
+  | symbol s =>
+      refine ⟨fuel, ?_⟩
+      exact simpleMatch_ground_matchAtoms_nil_nonexpr hground
+        (by intro h; rcases h with ⟨ps, hps⟩; cases hps)
+        hmatch
+  | grounded g =>
+      refine ⟨fuel, ?_⟩
+      exact simpleMatch_ground_matchAtoms_nil_nonexpr hground
+        (by intro h; rcases h with ⟨ps, hps⟩; cases hps)
+        hmatch
+  | expression ps =>
+      refine ⟨1, ?_⟩
+      cases target with
+      | var v =>
+          exact (GroundAtom.not_var hground).elim
+      | symbol s =>
+          simp [matchAtoms, getMetaType, Atom.symbolType, Atom.expressionType]
+      | grounded g =>
+          simp [matchAtoms, getMetaType, Atom.groundedType, Atom.expressionType]
+      | expression ts =>
+          have hinner : matchAtomsList ts ps [Bindings.empty] 0 = [] := by
+            simp [matchAtomsList]
+          simp [matchAtoms, getMetaType, Atom.expressionType, hinner]
+
+/-- Ground-fragment no-match absorption for `unify`, on the non-expression
+pattern cases.  When coarse one-way matching from the empty seed fails, the
+official `unify` instruction takes its `unify_no_match` branch and returns
+the else-branch unchanged with empty bindings.  Expression patterns are
+excluded here; they need the list-level failure bridge still to come. -/
+theorem minimalStep_absorbs_unify_no_match_ground_nonexpr
+    {space : Space} {d : GroundedDispatch}
+    {target pattern thenBranch elseBranch : Atom} {fuel : Nat}
+    (hground : GroundAtom target)
+    (h_nonexpr : ¬ ∃ ps, pattern = .expression ps)
+    (hmatch : simpleMatch pattern target Bindings.empty fuel = none) :
+    MinimalStep d space
+      (.expression [.symbol "unify", target, pattern, thenBranch, elseBranch])
+      Bindings.empty space (elseBranch, Bindings.empty) := by
+  exact MinimalStep.unify_no_match space target pattern thenBranch elseBranch
+    Bindings.empty fuel
+    (simpleMatch_ground_matchAtoms_nil_nonexpr hground h_nonexpr hmatch)
+
+/-- Ground-fragment no-match absorption for `unify`, with no pattern-shape
+restriction: when coarse one-way matching from the empty seed fails, the
+official `unify` instruction takes its `unify_no_match` branch at some fuel
+and returns the else-branch unchanged with empty bindings. -/
+theorem minimalStep_absorbs_unify_no_match_ground
+    {space : Space} {d : GroundedDispatch}
+    {target pattern thenBranch elseBranch : Atom} {fuel : Nat}
+    (hground : GroundAtom target)
+    (hmatch : simpleMatch pattern target Bindings.empty fuel = none) :
+    MinimalStep d space
+      (.expression [.symbol "unify", target, pattern, thenBranch, elseBranch])
+      Bindings.empty space (elseBranch, Bindings.empty) := by
+  obtain ⟨fuel0, hnil⟩ := simpleMatch_ground_matchAtoms_nil hground hmatch
+  exact MinimalStep.unify_no_match space target pattern thenBranch elseBranch
+    Bindings.empty fuel0 hnil
+
+/-- **F3, `let` substitution half on the ground fragment.**  The verbatim
+upstream rhs of `let`,
+`(unify <value> <pattern> <template> Empty)`, takes an official
+`unify_match` step whenever the coarse one-way matcher succeeds on a ground
+value.  This is the first end-to-end consumer of the completed matcher
+bridge. -/
+theorem minimalStep_absorbs_let_subst_ground
+    {space : Space} {d : GroundedDispatch}
+    {pt value body : Atom} {mb : Bindings} {fuel : Nat}
+    (hground : GroundAtom value)
+    (hmatch : simpleMatch pt value Bindings.empty fuel = some mb) :
+    MinimalStep d space (.expression [.symbol "unify", value, pt, body, Atom.empty])
+      Bindings.empty space (mb.applyDefault body, mb) :=
+  minimalStep_absorbs_unify_match_ground hground hmatch
+
+/-- **F3, `switch-internal` first-branch hit on the ground fragment.**
+The verbatim upstream `switch-internal` rhs delegates its head branch to a
+`unify`; when the coarse one-way matcher succeeds on a ground scrutinee, that
+`unify` takes the official `unify_match` step to the chosen branch's returned
+template.  This is the success-half core that the later `HES_SwitchMinimal`
+certification will compose through the surrounding recursion. -/
+theorem minimalStep_absorbs_switch_internal_head_match_ground
+    {space : Space} {d : GroundedDispatch}
+    {scrut pt template : Atom} {tail : List Atom} {mb : Bindings} {fuel : Nat}
+    (hground : GroundAtom scrut)
+    (hmatch : simpleMatch pt scrut Bindings.empty fuel = some mb) :
+    MinimalStep d space
+      (.expression [.symbol "unify", scrut, pt,
+        .expression [.symbol "return", template],
+        .expression [.symbol "chain",
+          .expression [.symbol "eval",
+            .expression [.symbol "switch-minimal", scrut, .expression tail]],
+          .var "ret",
+          .expression [.symbol "return", .var "ret"]]])
+      Bindings.empty space
+      (mb.applyDefault (.expression [.symbol "return", template]), mb) :=
+  minimalStep_absorbs_unify_match_ground hground hmatch
+
+/-- **F3, `switch-internal` head miss on the ground/non-expression fragment.**
+When the head branch's coarse one-way matcher fails from the empty seed, the
+official `unify` takes its no-match branch and returns the recursive else
+branch unchanged.  This is the first failure-side consumer on the exact
+upstream `switch-internal` shape; the expression-pattern case is excluded
+until the list-level earlier-branch failure bridge lands. -/
+theorem minimalStep_absorbs_switch_internal_head_no_match_ground_nonexpr
+    {space : Space} {d : GroundedDispatch}
+    {scrut pt template : Atom} {tail : List Atom} {fuel : Nat}
+    (hground : GroundAtom scrut)
+    (h_nonexpr : ¬ ∃ ps, pt = .expression ps)
+    (hmatch : simpleMatch pt scrut Bindings.empty fuel = none) :
+    MinimalStep d space
+      (.expression [.symbol "unify", scrut, pt,
+        .expression [.symbol "return", template],
+        .expression [.symbol "chain",
+          .expression [.symbol "eval",
+            .expression [.symbol "switch-minimal", scrut, .expression tail]],
+          .var "ret",
+          .expression [.symbol "return", .var "ret"]]])
+      Bindings.empty space
+      (.expression [.symbol "chain",
+        .expression [.symbol "eval",
+          .expression [.symbol "switch-minimal", scrut, .expression tail]],
+        .var "ret",
+        .expression [.symbol "return", .var "ret"]],
+        Bindings.empty) :=
+  minimalStep_absorbs_unify_no_match_ground_nonexpr hground h_nonexpr hmatch
+
+/-- **F3, `switch-internal` head miss on the full ground fragment.**
+When the head branch's coarse one-way matcher fails from the empty seed, the
+official `unify` takes its no-match branch and returns the recursive else
+branch unchanged.  This packages the completed empty-seed failure bridge in
+the exact upstream `switch-internal` shape. -/
+theorem minimalStep_absorbs_switch_internal_head_no_match_ground
+    {space : Space} {d : GroundedDispatch}
+    {scrut pt template : Atom} {tail : List Atom} {fuel : Nat}
+    (hground : GroundAtom scrut)
+    (hmatch : simpleMatch pt scrut Bindings.empty fuel = none) :
+    MinimalStep d space
+      (.expression [.symbol "unify", scrut, pt,
+        .expression [.symbol "return", template],
+        .expression [.symbol "chain",
+          .expression [.symbol "eval",
+            .expression [.symbol "switch-minimal", scrut, .expression tail]],
+          .var "ret",
+          .expression [.symbol "return", .var "ret"]]])
+      Bindings.empty space
+      (.expression [.symbol "chain",
+        .expression [.symbol "eval",
+          .expression [.symbol "switch-minimal", scrut, .expression tail]],
+        .var "ret",
+        .expression [.symbol "return", .var "ret"]],
+        Bindings.empty) :=
+  minimalStep_absorbs_unify_no_match_ground hground hmatch
+
+/-! ## F2: Ground `unify` Realization Boundary
+
+The matcher bridge and the `MinimalStep.unify_*` absorption theorems above pin
+the official *instruction-level* behavior.  The remaining sugar-rule
+certifications need one more handoff: the live HE evaluator must actually
+realize those `unify` instructions at the `EvalAtom` entry point under the
+active dispatch.  We state that boundary explicitly instead of folding it into
+the later surface-rule theorems. -/
+
+/-- Executable-boundary realization needed to spend the matcher bridge inside
+surface sugar proofs.
+
+Positive example:
+- a successful coarse ground match makes the evaluator stably return the
+  substituted success branch for the corresponding `unify`.
+
+Negative example:
+- a failed coarse ground match makes the evaluator stably return the else
+  branch unchanged for the corresponding `unify`. -/
+structure UnifyGroundRealization (space : Space) (d : GroundedDispatch) where
+  matchStable :
+    ∀ {target pattern thenBranch elseBranch mb fuel},
+      GroundAtom target →
+      simpleMatch pattern target Bindings.empty fuel = some mb →
+      EvalAtomStablyReaches space d
+        (.expression [.symbol "unify", target, pattern, thenBranch, elseBranch])
+        Atom.undefinedType Bindings.empty
+        (mb.applyDefault thenBranch, mb)
+  noMatchStable :
+    ∀ {target pattern thenBranch elseBranch fuel},
+      GroundAtom target →
+      simpleMatch pattern target Bindings.empty fuel = none →
+      EvalAtomStablyReaches space d
+        (.expression [.symbol "unify", target, pattern, thenBranch, elseBranch])
+        Atom.undefinedType Bindings.empty
+        (elseBranch, Bindings.empty)
+
+/-- Spending the realization boundary on the success branch: a successful
+coarse ground match yields the public declarative `EvalAtom` judgment for the
+corresponding `unify` expression. -/
+theorem evalAtom_realizes_unify_match_ground
+    {space : Space} {d : GroundedDispatch}
+    (hReal : UnifyGroundRealization space d)
+    {target pattern thenBranch elseBranch : Atom} {mb : Bindings} {fuel : Nat}
+    (hground : GroundAtom target)
+    (hmatch : simpleMatch pattern target Bindings.empty fuel = some mb) :
+    EvalAtom space d
+      (.expression [.symbol "unify", target, pattern, thenBranch, elseBranch])
+      Atom.undefinedType Bindings.empty
+      (mb.applyDefault thenBranch, mb) :=
+  evalAtomStablyReaches_to_EvalAtom space d
+    (.expression [.symbol "unify", target, pattern, thenBranch, elseBranch])
+    Atom.undefinedType Bindings.empty
+    (mb.applyDefault thenBranch, mb)
+    (hReal.matchStable hground hmatch)
+
+/-- Spending the realization boundary on the failure branch: a failed coarse
+ground match yields the public declarative `EvalAtom` judgment for the
+corresponding `unify` expression's else branch. -/
+theorem evalAtom_realizes_unify_no_match_ground
+    {space : Space} {d : GroundedDispatch}
+    (hReal : UnifyGroundRealization space d)
+    {target pattern thenBranch elseBranch : Atom} {fuel : Nat}
+    (hground : GroundAtom target)
+    (hmatch : simpleMatch pattern target Bindings.empty fuel = none) :
+    EvalAtom space d
+      (.expression [.symbol "unify", target, pattern, thenBranch, elseBranch])
+      Atom.undefinedType Bindings.empty
+      (elseBranch, Bindings.empty) :=
+  evalAtomStablyReaches_to_EvalAtom space d
+    (.expression [.symbol "unify", target, pattern, thenBranch, elseBranch])
+    Atom.undefinedType Bindings.empty
+    (elseBranch, Bindings.empty)
+    (hReal.noMatchStable hground hmatch)
+
+/-- Realized evaluator form of the `let` substitution half on the ground
+fragment.  This is the first surface-sugar consumer of the explicit `unify`
+realization boundary. -/
+theorem evalAtom_realizes_let_subst_ground
+    {space : Space} {d : GroundedDispatch}
+    (hReal : UnifyGroundRealization space d)
+    {pt value body : Atom} {mb : Bindings} {fuel : Nat}
+    (hground : GroundAtom value)
+    (hmatch : simpleMatch pt value Bindings.empty fuel = some mb) :
+    EvalAtom space d
+      (.expression [.symbol "unify", value, pt, body, Atom.empty])
+      Atom.undefinedType Bindings.empty
+      (mb.applyDefault body, mb) :=
+  evalAtom_realizes_unify_match_ground hReal hground hmatch
+
+/-- Realized evaluator form of the `switch-internal` head-hit branch on the
+ground fragment.  This is the direct success-side ingredient for the later
+`switch-minimal` certification. -/
+theorem evalAtom_realizes_switch_internal_head_match_ground
+    {space : Space} {d : GroundedDispatch}
+    (hReal : UnifyGroundRealization space d)
+    {scrut pt template : Atom} {tail : List Atom} {mb : Bindings} {fuel : Nat}
+    (hground : GroundAtom scrut)
+    (hmatch : simpleMatch pt scrut Bindings.empty fuel = some mb) :
+    EvalAtom space d
+      (.expression [.symbol "unify", scrut, pt,
+        .expression [.symbol "return", template],
+        .expression [.symbol "chain",
+          .expression [.symbol "eval",
+            .expression [.symbol "switch-minimal", scrut, .expression tail]],
+          .var "ret",
+          .expression [.symbol "return", .var "ret"]]])
+      Atom.undefinedType Bindings.empty
+      (mb.applyDefault (.expression [.symbol "return", template]), mb) :=
+  evalAtom_realizes_unify_match_ground hReal hground hmatch
+
+/-- Realized evaluator form of the `switch-internal` head-miss branch on the
+ground fragment.  This is the failure-side ingredient for the later
+`switch-minimal` certification. -/
+theorem evalAtom_realizes_switch_internal_head_no_match_ground
+    {space : Space} {d : GroundedDispatch}
+    (hReal : UnifyGroundRealization space d)
+    {scrut pt template : Atom} {tail : List Atom} {fuel : Nat}
+    (hground : GroundAtom scrut)
+    (hmatch : simpleMatch pt scrut Bindings.empty fuel = none) :
+    EvalAtom space d
+      (.expression [.symbol "unify", scrut, pt,
+        .expression [.symbol "return", template],
+        .expression [.symbol "chain",
+          .expression [.symbol "eval",
+            .expression [.symbol "switch-minimal", scrut, .expression tail]],
+          .var "ret",
+          .expression [.symbol "return", .var "ret"]]])
+      Atom.undefinedType Bindings.empty
+      (.expression [.symbol "chain",
+        .expression [.symbol "eval",
+          .expression [.symbol "switch-minimal", scrut, .expression tail]],
+        .var "ret",
+        .expression [.symbol "return", .var "ret"]],
+        Bindings.empty) :=
+  evalAtom_realizes_unify_no_match_ground hReal hground hmatch
+
+/-! ## F3: `let` Function/Equation Shell
+
+The matcher bridge now gives us the `unify` core.  The next honest outer layer
+is the verbatim upstream `let` shell: the operator's typed function-path
+interpretation, then the equation-call wrapper that invokes the `unify` rhs.
+
+We keep this shell explicit instead of folding it into the later rule theorem:
+it is the exact typed/equational boundary the final `HES_Let` certification
+will spend. -/
+
+/-- The verbatim upstream function type annotation for `let`. -/
+private def letFunctionType : Atom :=
+  .expression [.symbol "->", Atom.atomType, Atom.undefinedType,
+    Atom.atomType, Atom.undefinedType]
+
+/-- Surface `let` atom in the upstream stdlib shape. -/
+private def letExpr (pt value body : Atom) : Atom :=
+  .expression [.symbol "let", pt, value, body]
+
+/-- The verbatim upstream rhs for `let`: a `unify` over the evaluated value. -/
+private def letUnifyRhs (pt value body : Atom) : Atom :=
+  .expression [.symbol "unify", value, pt, body, Atom.empty]
+
+/-- If the space presents `let` with exactly its stdlib function type, then
+the official type-cast path evaluates the head symbol to itself at that type.
+
+Positive example:
+- `(: let (-> Atom %Undefined% Atom %Undefined%))` gives the expected head step.
+
+Negative example:
+- without the exact annotation, this theorem does not apply; the typed
+  function-path shell is an explicit hypothesis boundary, not folklore. -/
+private theorem evalAtom_let_head_typed
+    {space : Space} {d : GroundedDispatch}
+    (h_types : getAtomTypes space (.symbol "let") = [letFunctionType]) :
+    EvalAtom space d (.symbol "let") letFunctionType Bindings.empty
+      (.symbol "let", Bindings.empty) := by
+  refine EvalAtom.type_cast _ _ _ _ 10 rfl ?_ (Or.inl rfl) ?_
+  · simp [letFunctionType, getMetaType, Atom.atomType,
+      Atom.symbolType, Atom.undefinedType, Atom.variableType]
+  · rw [typeCast, h_types]
+    native_decide
+
+/-- Any atom can be evaluated against the expected type `Atom`, producing
+itself with unchanged bindings. -/
+private theorem evalAtom_atom_type
+    {space : Space} {d : GroundedDispatch} (a : Atom) (b : Bindings) :
+    EvalAtom space d a Atom.atomType b (a, b) := by
+  by_cases h : isEmptyOrError a = true
+  · exact EvalAtom.empty_or_error _ _ _ h
+  · exact EvalAtom.type_pass _ _ _ (by simpa using h) (Or.inl rfl)
+
+/-- The three `let` arguments officially interpret to themselves on the
+fragment needed by the sugar proof: pattern/body are merely required not to be
+the bare `Error` symbol, while the value uses the proven quiescent
+self-evaluation theorem. -/
+private theorem interpretArgs_let_self
+    {space : Space} {d : GroundedDispatch} {fuel : Nat}
+    {pt value body : Atom}
+    (h_value_nerr : value ≠ Atom.symbol "Error")
+    (h_body_nerr : body ≠ Atom.symbol "Error")
+    (h_value_q : SelfEvalQuiescent space d fuel value) :
+    InterpretArgs space d [pt, value, body]
+      [Atom.atomType, Atom.undefinedType, Atom.atomType]
+      Bindings.empty
+      (.expression [pt, value, body], Bindings.empty) := by
+  have h_pt : EvalAtom space d pt Atom.atomType Bindings.empty
+      (pt, Bindings.empty) :=
+    evalAtom_atom_type pt Bindings.empty
+  have h_value : EvalAtom space d value Atom.undefinedType Bindings.empty
+      (value, Bindings.empty) :=
+    selfEval_of_quiescent value h_value_q Bindings.empty
+  have h_body : EvalAtom space d body Atom.atomType Bindings.empty
+      (body, Bindings.empty) :=
+    evalAtom_atom_type body Bindings.empty
+  have h_tail_body : InterpretArgs space d [body] [Atom.atomType]
+      Bindings.empty (.expression [body], Bindings.empty) := by
+    exact InterpretArgs.cons_ok body [] Atom.atomType [] Bindings.empty
+      (body, Bindings.empty) (Atom.unit, Bindings.empty)
+      h_body (Or.inr rfl) InterpretArgs.nil rfl
+  have h_tail_value : InterpretArgs space d [value, body]
+      [Atom.undefinedType, Atom.atomType] Bindings.empty
+      (.expression [value, body], Bindings.empty) := by
+    refine InterpretArgs.cons_ok value [body] Atom.undefinedType
+      [Atom.atomType] Bindings.empty
+      (value, Bindings.empty) (.expression [body], Bindings.empty)
+      h_value (Or.inr rfl) h_tail_body ?_
+    exact isEmptyOrError_expr_false [] h_body_nerr
+  refine InterpretArgs.cons_ok pt [value, body] Atom.atomType
+    [Atom.undefinedType, Atom.atomType] Bindings.empty
+    (pt, Bindings.empty) (.expression [value, body], Bindings.empty)
+    h_pt (Or.inr rfl) h_tail_value ?_
+  exact isEmptyOrError_expr_false [body] h_value_nerr
+
+/-- The official typed function-path shell for the verbatim upstream `let`
+surface form on the certified fragment.  This is the outer function wrapper
+that the later `HES_Let` theorem will spend before taking the equation-match
+step into the `unify` rhs. -/
+theorem interpretFunction_let_self
+    {space : Space} {d : GroundedDispatch} {fuel : Nat}
+    {pt value body : Atom}
+    (h_types : getAtomTypes space (.symbol "let") = [letFunctionType])
+    (h_pt_nerr : pt ≠ Atom.symbol "Error")
+    (h_value_nerr : value ≠ Atom.symbol "Error")
+    (h_body_nerr : body ≠ Atom.symbol "Error")
+    (h_value_q : SelfEvalQuiescent space d fuel value) :
+    InterpretFunction space d (letExpr pt value body)
+      letFunctionType Atom.undefinedType Bindings.empty
+      (letExpr pt value body, Bindings.empty) := by
+  have h_head : EvalAtom space d (.symbol "let") letFunctionType Bindings.empty
+      (.symbol "let", Bindings.empty) :=
+    evalAtom_let_head_typed h_types
+  have h_tail : InterpretArgs space d [pt, value, body]
+      [Atom.atomType, Atom.undefinedType, Atom.atomType]
+      Bindings.empty
+      (.expression [pt, value, body], Bindings.empty) :=
+    interpretArgs_let_self h_value_nerr h_body_nerr h_value_q
+  refine InterpretFunction.head_ok_tail_ok
+    (letExpr pt value body) letFunctionType Atom.undefinedType Bindings.empty
+    (.symbol "let") [pt, value, body]
+    [Atom.atomType, Atom.undefinedType, Atom.atomType]
+    (.symbol "let", Bindings.empty)
+    (.expression [pt, value, body], Bindings.empty)
+    rfl rfl h_head rfl h_tail ?_
+  exact isEmptyOrError_expr_false (value :: [body]) h_pt_nerr
+
+/-- Generic equation-call wrapper for the verbatim upstream `let` surface
+form.  Once the typed function-path shell is in place, any official evaluation
+of the matched rhs composes into an official `MettaCall` of the original
+surface `let`. -/
+theorem mettaCall_absorbs_let_equation
+    {space : Space} {d : GroundedDispatch}
+    {pt value body rhs : Atom} {qb merged : Bindings}
+    {final : ResultPair} {fuel : Nat}
+    (h_not_exec : d.isExecutable (.symbol "let") = false)
+    (h_query : (rhs, qb) ∈ queryEquations space (letExpr pt value body) fuel)
+    (h_merge : merged ∈ mergeBindings qb Bindings.empty fuel)
+    (h_no_loop : merged.hasLoop = false)
+    (h_eval : EvalAtom space d (merged.apply rhs fuel)
+      Atom.undefinedType merged final) :
+    MettaCall space d (letExpr pt value body) Atom.undefinedType
+      Bindings.empty final :=
+  MettaCall.equation_match _ _ _ rhs qb merged final fuel
+    (by simp [letExpr, isErrorAtom])
+    (by simpa [letExpr] using h_not_exec)
+    h_query h_merge h_no_loop h_eval
+
+/-- The outer official `let` shell, relative to the explicit typed-function
+path and equation-match hypotheses.  This theorem packages the exact remaining
+boundary around the already-proven `unify` core: once the surface `let`
+function path and its equation-call are supplied, the full official
+`EvalAtom` judgment follows. -/
+theorem evalAtom_absorbs_let_shell
+    {space : Space} {d : GroundedDispatch}
+    {pt value body : Atom} {final : ResultPair}
+    {succs : List Bindings} {fuel : Nat}
+    (h_op_type : letFunctionType ∈ getAtomTypes space (.symbol "let"))
+    (h_check : checkIfFunctionTypeIsApplicable
+      (letExpr pt value body) letFunctionType Atom.undefinedType
+      space Bindings.empty fuel = .inr succs)
+    (h_check_b : Bindings.empty ∈ succs)
+    (h_interp : InterpretFunction space d (letExpr pt value body)
+      letFunctionType Atom.undefinedType Bindings.empty
+      (letExpr pt value body, Bindings.empty))
+    (h_call : MettaCall space d (letExpr pt value body)
+      Atom.undefinedType Bindings.empty final)
+    (h_final_ok : isErrorAtom final.1 = false) :
+    EvalAtom space d (letExpr pt value body)
+      Atom.undefinedType Bindings.empty final := by
+  refine EvalAtom.interpret_success _ _ _ _ ?_ ?_ rfl ?_ ?_ h_final_ok
+  · exact isEmptyOrError_expr_false [pt, value, body] (by simp)
+  · simp [letExpr, getMetaType, Atom.undefinedType, Atom.atomType,
+      Atom.expressionType, Atom.variableType]
+  · intro h_unit
+    simp [letExpr, Atom.unit] at h_unit
+  · refine InterpretExpression.function_path _ _ _
+      (.symbol "let") [pt, value, body]
+      letFunctionType Atom.undefinedType Bindings.empty
+      (letExpr pt value body, Bindings.empty) final fuel
+      rfl h_op_type ?_ succs h_check h_check_b rfl h_interp h_call
+    rfl
+
+/-! ## F3: `switch-minimal` / `switch-internal` Typed Function + Equation Shells
+
+The matcher bridge and `unify` realization now give us the branch-local core
+of `switch-internal`. The next honest outer layer is the typed/equational
+surface shell shared by `switch-minimal` and `switch-internal`: both are
+stdlib equations whose heads carry the same binary function type
+`(-> Atom Expression Atom)`. We expose that shell explicitly so the later
+recursive branch proof can spend real interface theorems rather than rebuild
+the function/equation plumbing ad hoc. -/
+
+/-- The shared stdlib function type for `switch-minimal` and
+`switch-internal`. -/
+private def switchBinaryFunctionType : Atom :=
+  .expression [.symbol "->", Atom.atomType, Atom.expressionType, Atom.atomType]
+
+/-- Surface `switch-minimal` atom in the upstream stdlib shape. -/
+private def switchMinimalExpr (scrut : Atom) (branches : List Atom) : Atom :=
+  .expression [.symbol "switch-minimal", scrut, .expression branches]
+
+/-- Surface `switch-internal` atom in the upstream stdlib shape. -/
+private def switchInternalExpr (scrut headBranch : Atom) (tail : List Atom) : Atom :=
+  .expression [.symbol "switch-internal", scrut,
+    .expression [headBranch, .expression tail]]
+
+/-- If the space presents `switch-minimal` with exactly its stdlib function
+type, then the official type-cast path evaluates the head symbol to itself at
+that type. -/
+private theorem evalAtom_switchMinimal_head_typed
+    {space : Space} {d : GroundedDispatch}
+    (h_types : getAtomTypes space (.symbol "switch-minimal") = [switchBinaryFunctionType]) :
+    EvalAtom space d (.symbol "switch-minimal") switchBinaryFunctionType Bindings.empty
+      (.symbol "switch-minimal", Bindings.empty) := by
+  refine EvalAtom.type_cast _ _ _ _ 10 rfl ?_ (Or.inl rfl) ?_
+  · simp [switchBinaryFunctionType, getMetaType, Atom.atomType,
+      Atom.symbolType, Atom.variableType]
+  · rw [typeCast, h_types]
+    native_decide
+
+/-- If the space presents `switch-internal` with exactly its stdlib function
+type, then the official type-cast path evaluates the head symbol to itself at
+that type. -/
+private theorem evalAtom_switchInternal_head_typed
+    {space : Space} {d : GroundedDispatch}
+    (h_types : getAtomTypes space (.symbol "switch-internal") = [switchBinaryFunctionType]) :
+    EvalAtom space d (.symbol "switch-internal") switchBinaryFunctionType Bindings.empty
+      (.symbol "switch-internal", Bindings.empty) := by
+  refine EvalAtom.type_cast _ _ _ _ 10 rfl ?_ (Or.inl rfl) ?_
+  · simp [switchBinaryFunctionType, getMetaType, Atom.atomType,
+      Atom.symbolType, Atom.variableType]
+  · rw [typeCast, h_types]
+    native_decide
+
+/-- Any non-empty, non-error-headed expression can be evaluated against the
+expected type `Expression`, producing itself with unchanged bindings. -/
+private theorem evalAtom_expr_type_self
+    {space : Space} {d : GroundedDispatch}
+    (head : Atom) (tail : List Atom) (b : Bindings)
+    (h_head_nerr : head ≠ Atom.symbol "Error") :
+    EvalAtom space d (.expression (head :: tail)) Atom.expressionType b
+      (.expression (head :: tail), b) := by
+  exact EvalAtom.type_pass _ _ _ (isEmptyOrError_expr_false tail h_head_nerr)
+    (Or.inr (Or.inl rfl))
+
+/-- Shared argument-shell lemma for the binary switch helpers:
+the first argument is interpreted at type `Atom`, and the second at type
+`Expression`, both self-evaluating on the certified fragment. -/
+private theorem interpretArgs_switch_binary_self
+    {space : Space} {d : GroundedDispatch}
+    {scrut head : Atom} {tail : List Atom}
+    (h_head_nerr : head ≠ Atom.symbol "Error") :
+    InterpretArgs space d [scrut, .expression (head :: tail)]
+      [Atom.atomType, Atom.expressionType]
+      Bindings.empty
+      (.expression [scrut, .expression (head :: tail)], Bindings.empty) := by
+  have h_scrut : EvalAtom space d scrut Atom.atomType Bindings.empty
+      (scrut, Bindings.empty) :=
+    evalAtom_atom_type scrut Bindings.empty
+  have h_cases : EvalAtom space d (.expression (head :: tail))
+      Atom.expressionType Bindings.empty
+      (.expression (head :: tail), Bindings.empty) :=
+    evalAtom_expr_type_self head tail Bindings.empty h_head_nerr
+  have h_tail : InterpretArgs space d [.expression (head :: tail)]
+      [Atom.expressionType] Bindings.empty
+      (.expression [.expression (head :: tail)], Bindings.empty) := by
+    exact InterpretArgs.cons_ok (.expression (head :: tail)) [] Atom.expressionType []
+      Bindings.empty
+      (.expression (head :: tail), Bindings.empty)
+      (Atom.unit, Bindings.empty)
+      h_cases (Or.inr rfl) InterpretArgs.nil rfl
+  refine InterpretArgs.cons_ok scrut [.expression (head :: tail)] Atom.atomType
+    [Atom.expressionType] Bindings.empty
+    (scrut, Bindings.empty) (.expression [.expression (head :: tail)], Bindings.empty)
+    h_scrut (Or.inr rfl) h_tail ?_
+  exact isEmptyOrError_expr_false [] (by simp)
+
+/-- Typed function-path shell for the verbatim upstream `switch-minimal`
+surface form on the fragment where the raw-cases expression is non-empty and
+not error-shaped. -/
+theorem interpretFunction_switchMinimal_self
+    {space : Space} {d : GroundedDispatch}
+    {scrut headBranch : Atom} {tail : List Atom}
+    (h_types : getAtomTypes space (.symbol "switch-minimal") = [switchBinaryFunctionType])
+    (h_scrut_nerr : scrut ≠ Atom.symbol "Error")
+    (h_head_nerr : headBranch ≠ Atom.symbol "Error") :
+    InterpretFunction space d (switchMinimalExpr scrut (headBranch :: tail))
+      switchBinaryFunctionType Atom.undefinedType Bindings.empty
+      (switchMinimalExpr scrut (headBranch :: tail), Bindings.empty) := by
+  have h_head : EvalAtom space d (.symbol "switch-minimal")
+      switchBinaryFunctionType Bindings.empty
+      (.symbol "switch-minimal", Bindings.empty) :=
+    evalAtom_switchMinimal_head_typed h_types
+  have h_tail : InterpretArgs space d [scrut, .expression (headBranch :: tail)]
+      [Atom.atomType, Atom.expressionType]
+      Bindings.empty
+      (.expression [scrut, .expression (headBranch :: tail)], Bindings.empty) :=
+    interpretArgs_switch_binary_self h_head_nerr
+  refine InterpretFunction.head_ok_tail_ok
+    (switchMinimalExpr scrut (headBranch :: tail))
+    switchBinaryFunctionType Atom.undefinedType Bindings.empty
+    (.symbol "switch-minimal") [scrut, .expression (headBranch :: tail)]
+    [Atom.atomType, Atom.expressionType]
+    (.symbol "switch-minimal", Bindings.empty)
+    (.expression [scrut, .expression (headBranch :: tail)], Bindings.empty)
+    rfl rfl h_head rfl h_tail ?_
+  exact isEmptyOrError_expr_false [.expression (headBranch :: tail)] h_scrut_nerr
+
+/-- Typed function-path shell for the verbatim upstream `switch-internal`
+surface form on the fragment where the deconsed head branch is itself not the
+bare `Error` symbol.  In the intended use that head is a branch pair
+expression, so this side condition is immediate. -/
+theorem interpretFunction_switchInternal_self
+    {space : Space} {d : GroundedDispatch}
+    {scrut headBranch : Atom} {tail : List Atom}
+    (h_types : getAtomTypes space (.symbol "switch-internal") = [switchBinaryFunctionType])
+    (h_scrut_nerr : scrut ≠ Atom.symbol "Error")
+    (h_head_nerr : headBranch ≠ Atom.symbol "Error") :
+    InterpretFunction space d (switchInternalExpr scrut headBranch tail)
+      switchBinaryFunctionType Atom.undefinedType Bindings.empty
+      (switchInternalExpr scrut headBranch tail, Bindings.empty) := by
+  have h_head : EvalAtom space d (.symbol "switch-internal")
+      switchBinaryFunctionType Bindings.empty
+      (.symbol "switch-internal", Bindings.empty) :=
+    evalAtom_switchInternal_head_typed h_types
+  have h_tail : InterpretArgs space d [scrut, .expression [headBranch, .expression tail]]
+      [Atom.atomType, Atom.expressionType]
+      Bindings.empty
+      (.expression [scrut, .expression [headBranch, .expression tail]], Bindings.empty) :=
+    interpretArgs_switch_binary_self h_head_nerr
+  refine InterpretFunction.head_ok_tail_ok
+    (switchInternalExpr scrut headBranch tail)
+    switchBinaryFunctionType Atom.undefinedType Bindings.empty
+    (.symbol "switch-internal") [scrut, .expression [headBranch, .expression tail]]
+    [Atom.atomType, Atom.expressionType]
+    (.symbol "switch-internal", Bindings.empty)
+    (.expression [scrut, .expression [headBranch, .expression tail]], Bindings.empty)
+    rfl rfl h_head rfl h_tail ?_
+  exact isEmptyOrError_expr_false [.expression [headBranch, .expression tail]] h_scrut_nerr
+
+/-- Generic equation-call wrapper for the verbatim upstream `switch-minimal`
+surface form. -/
+theorem mettaCall_absorbs_switchMinimal_equation
+    {space : Space} {d : GroundedDispatch}
+    {scrut : Atom} {branches : List Atom} {type_ rhs : Atom} {qb merged : Bindings}
+    {final : ResultPair} {fuel : Nat}
+    (h_not_exec : d.isExecutable (.symbol "switch-minimal") = false)
+    (h_query : (rhs, qb) ∈ queryEquations space (switchMinimalExpr scrut branches) fuel)
+    (h_merge : merged ∈ mergeBindings qb Bindings.empty fuel)
+    (h_no_loop : merged.hasLoop = false)
+    (h_eval : EvalAtom space d (merged.apply rhs fuel) type_ merged final) :
+    MettaCall space d (switchMinimalExpr scrut branches) type_
+      Bindings.empty final :=
+  MettaCall.equation_match _ _ _ rhs qb merged final fuel
+    (by simp [switchMinimalExpr, isErrorAtom])
+    (by simpa [switchMinimalExpr] using h_not_exec)
+    h_query h_merge h_no_loop h_eval
+
+/-- Generic equation-call wrapper for the verbatim upstream `switch-internal`
+surface form. -/
+theorem mettaCall_absorbs_switchInternal_equation
+    {space : Space} {d : GroundedDispatch}
+    {scrut headBranch : Atom} {tail : List Atom}
+    {type_ rhs : Atom} {qb merged : Bindings}
+    {final : ResultPair} {fuel : Nat}
+    (h_not_exec : d.isExecutable (.symbol "switch-internal") = false)
+    (h_query : (rhs, qb) ∈ queryEquations space
+      (switchInternalExpr scrut headBranch tail) fuel)
+    (h_merge : merged ∈ mergeBindings qb Bindings.empty fuel)
+    (h_no_loop : merged.hasLoop = false)
+    (h_eval : EvalAtom space d (merged.apply rhs fuel) type_ merged final) :
+    MettaCall space d (switchInternalExpr scrut headBranch tail) type_
+      Bindings.empty final :=
+  MettaCall.equation_match _ _ _ rhs qb merged final fuel
+    (by simp [switchInternalExpr, isErrorAtom])
+    (by simpa [switchInternalExpr] using h_not_exec)
+    h_query h_merge h_no_loop h_eval
+
+/-- Outer official shell for `switch-minimal`, relative to the explicit typed
+function-path and equation-call hypotheses.  This isolates the remaining
+recursive branch-selection content from the already-settled surface
+typed/equational plumbing. -/
+theorem evalAtom_absorbs_switchMinimal_shell
+    {space : Space} {d : GroundedDispatch}
+    {scrut headBranch : Atom} {tail : List Atom} {final : ResultPair}
+    {succs : List Bindings} {fuel : Nat}
+    (h_op_type : switchBinaryFunctionType ∈ getAtomTypes space (.symbol "switch-minimal"))
+    (h_check : checkIfFunctionTypeIsApplicable
+      (switchMinimalExpr scrut (headBranch :: tail)) switchBinaryFunctionType Atom.undefinedType
+      space Bindings.empty fuel = .inr succs)
+    (h_check_b : Bindings.empty ∈ succs)
+    (h_interp : InterpretFunction space d (switchMinimalExpr scrut (headBranch :: tail))
+      switchBinaryFunctionType Atom.undefinedType Bindings.empty
+      (switchMinimalExpr scrut (headBranch :: tail), Bindings.empty))
+    (h_call : MettaCall space d (switchMinimalExpr scrut (headBranch :: tail))
+      Atom.atomType Bindings.empty final)
+    (h_final_ok : isErrorAtom final.1 = false) :
+    EvalAtom space d (switchMinimalExpr scrut (headBranch :: tail))
+      Atom.undefinedType Bindings.empty final := by
+  refine EvalAtom.interpret_success _ _ _ _ ?_ ?_ rfl ?_ ?_ h_final_ok
+  · exact isEmptyOrError_expr_false [scrut, .expression (headBranch :: tail)] (by simp)
+  · simp [switchMinimalExpr, getMetaType, Atom.undefinedType, Atom.atomType,
+      Atom.expressionType, Atom.variableType]
+  · intro h_unit
+    simp [switchMinimalExpr, Atom.unit] at h_unit
+  · refine InterpretExpression.function_path _ _ _
+      (.symbol "switch-minimal") [scrut, .expression (headBranch :: tail)]
+      switchBinaryFunctionType Atom.atomType Bindings.empty
+      (switchMinimalExpr scrut (headBranch :: tail), Bindings.empty) final fuel
+      rfl h_op_type ?_ succs h_check h_check_b ?_ h_interp h_call
+    · rfl
+    · native_decide
+
+/-- Outer official shell for `switch-internal`, relative to the explicit
+typed function-path and equation-call hypotheses.  This isolates the
+recursive head-hit/head-miss proof from the already-settled typed/equational
+surface layer. -/
+theorem evalAtom_absorbs_switchInternal_shell
+    {space : Space} {d : GroundedDispatch}
+    {scrut headBranch : Atom} {tail : List Atom} {final : ResultPair}
+    {succs : List Bindings} {fuel : Nat}
+    (h_op_type : switchBinaryFunctionType ∈ getAtomTypes space (.symbol "switch-internal"))
+    (h_check : checkIfFunctionTypeIsApplicable
+      (switchInternalExpr scrut headBranch tail) switchBinaryFunctionType
+      Atom.undefinedType space Bindings.empty fuel = .inr succs)
+    (h_check_b : Bindings.empty ∈ succs)
+    (h_interp : InterpretFunction space d (switchInternalExpr scrut headBranch tail)
+      switchBinaryFunctionType Atom.undefinedType Bindings.empty
+      (switchInternalExpr scrut headBranch tail, Bindings.empty))
+    (h_call : MettaCall space d (switchInternalExpr scrut headBranch tail)
+      Atom.atomType Bindings.empty final)
+    (h_final_ok : isErrorAtom final.1 = false) :
+    EvalAtom space d (switchInternalExpr scrut headBranch tail)
+      Atom.undefinedType Bindings.empty final := by
+  refine EvalAtom.interpret_success _ _ _ _ ?_ ?_ rfl ?_ ?_ h_final_ok
+  · exact isEmptyOrError_expr_false
+      [scrut, .expression [headBranch, .expression tail]] (by simp)
+  · simp [switchInternalExpr, getMetaType, Atom.undefinedType, Atom.atomType,
+      Atom.expressionType, Atom.variableType]
+  · intro h_unit
+    simp [switchInternalExpr, Atom.unit] at h_unit
+  · refine InterpretExpression.function_path _ _ _
+      (.symbol "switch-internal") [scrut, .expression [headBranch, .expression tail]]
+      switchBinaryFunctionType Atom.atomType Bindings.empty
+      (switchInternalExpr scrut headBranch tail, Bindings.empty) final fuel
+      rfl h_op_type ?_ succs h_check h_check_b ?_ h_interp h_call
+    · rfl
+    · native_decide
 
 end Mettapedia.Languages.MeTTa.HE

@@ -14,9 +14,11 @@ import Mettapedia.Logic.EmpiricalIntensionalFactorGraphBridge
 import Mettapedia.Logic.ConceptOntology.Formation
 import Mettapedia.Logic.ConceptOntology.CredalFormation
 import Mettapedia.Logic.ConceptOntology.MizarBenchmark
+import Mettapedia.Logic.ConceptOntology.MizarBenchmarkEndpoint
 import Mettapedia.Logic.ConceptOntology.ConstructionBaseInheritance
 import Mettapedia.Logic.ConceptOntology.ConstructionBaseInference
 import Mettapedia.Logic.ConceptOntology.ConstructionBasePredictive
+import Mettapedia.Logic.ConceptOntology.ConstructionBasePredictiveITV
 import Mettapedia.Logic.FormedConceptFixpointClosureBridge
 import Mettapedia.Logic.FormedConceptOntologyGrowthBridge
 import Mettapedia.Logic.CredalConceptFixpointClosureBridge
@@ -5528,6 +5530,45 @@ abbrev MizarObjectDerivationCredalBenchmarkCrown :=
 
 abbrev mizarBenchmark_objectDerivationCredalBenchmarkCrown :=
   @_root_.Mettapedia.Logic.ConceptOntology.MizarBenchmark.objectDerivationCredalBenchmarkCrown
+
+abbrev MizarObjectDerivationCredalInheritanceBenchmarkCrown :=
+  @_root_.Mettapedia.Logic.ConceptOntology.MizarBenchmark.ObjectDerivationCredalInheritanceBenchmarkCrown
+
+abbrev mizarBenchmark_objectDerivationCredalInheritanceBenchmarkCrown :=
+  @_root_.Mettapedia.Logic.ConceptOntology.MizarBenchmark.objectDerivationCredalInheritanceBenchmarkCrown
+
+abbrev mizarBenchmark_objectDerivationLooseConcept_selfInheritance_imprecise :=
+  @_root_.Mettapedia.Logic.ConceptOntology.MizarBenchmark.objectDerivationLooseConcept_selfInheritance_imprecise
+
+noncomputable abbrev mizarBenchmark_objectDerivationSelfInheritanceTruthCoordinateCrown :=
+  @_root_.Mettapedia.Logic.ConceptOntology.MizarBenchmark.objectDerivationSelfInheritanceTruthCoordinateCrown
+
+abbrev MizarFamilyPilotArticle :=
+  @_root_.Mettapedia.Logic.ConceptOntology.MizarBenchmark.MizarFamilyPilotArticle
+
+abbrev MizarFamilyThresholdPilotCrown :=
+  @_root_.Mettapedia.Logic.ConceptOntology.MizarBenchmark.MizarFamilyThresholdPilotCrown
+
+abbrev mizarBenchmark_mizarFamilyThresholdPilotCrown :=
+  @_root_.Mettapedia.Logic.ConceptOntology.MizarBenchmark.mizarFamilyThresholdPilotCrown
+
+abbrev MizarFamilyDualityGhostPilotCrown :=
+  @_root_.Mettapedia.Logic.ConceptOntology.MizarBenchmark.MizarFamilyDualityGhostPilotCrown
+
+abbrev mizarBenchmark_mizarFamilyDualityGhostPilotCrown :=
+  @_root_.Mettapedia.Logic.ConceptOntology.MizarBenchmark.mizarFamilyDualityGhostPilotCrown
+
+abbrev MizarPrefixCompletionThresholdPilotCrown :=
+  @_root_.Mettapedia.Logic.ConceptOntology.MizarBenchmark.MizarPrefixCompletionThresholdPilotCrown
+
+abbrev mizarBenchmark_mizarPrefixCompletionThresholdPilotCrown :=
+  @_root_.Mettapedia.Logic.ConceptOntology.MizarBenchmark.mizarPrefixCompletionThresholdPilotCrown
+
+abbrev MizarCredalBenchmarkEndpointCrown :=
+  @_root_.Mettapedia.Logic.ConceptOntology.MizarBenchmark.MizarCredalBenchmarkEndpointCrown
+
+abbrev mizarBenchmark_mizarCredalBenchmarkEndpointCrown :=
+  @_root_.Mettapedia.Logic.ConceptOntology.MizarBenchmark.mizarCredalBenchmarkEndpointCrown
 
 abbrev mizarBenchmark_objectDerivationLooseConcept_mem_upper :=
   @_root_.Mettapedia.Logic.ConceptOntology.MizarBenchmark.objectDerivationLooseConcept_mem_upper

@@ -2340,17 +2340,28 @@ theorem chosenOutcome_lossless_iff_singlePathSafe
   · intro hchosen r hr s hs
     rw [hchosen r hr, hchosen s hs]
 
-/-! ## Concurrent fold — the strongest-rhometta core (delta-monoid macro step)
+/-! ## Concurrent fold — the commuting lemma for one fixed compatible matching (the ⊗ layer)
 
-The value-only rhometta above forces a single `value` at each eval-COMM.  The strongest version lets a
-payload, over a frozen base, be a *nondeterministic producer of `(result, local-delta)`*, where the
-delta lives in a commutative merge monoid `Δ` (a semilattice / MORK union / cost quantale).  Firing an
-independent frontier chooses one outcome per payload and merges the deltas commutatively, recording
-results as an order-independent multiset.  Because `Δ` is a `CommMonoid`, the outcome set is invariant
-under firing order (`foldOutcomes_perm`) — macro-step soundness delivered as *algebra*, not a hand
-diamond.  Single-path safety factors as "every payload is deterministic"
-(`foldOutcomes_subsingleton_of_forall`), generalizing `chosenOutcome_lossless_iff_singlePathSafe`.  The
-value-only theory above is the `Δ := PUnit` instance. -/
+This block is the **⊗ layer** of the full rhometta semantics
+(⊔ choice over compatible matchings + ⊗ parallel fold within a matching + `;` sequential closure of
+rounds): it governs ONE pairwise-compatible matching fired as a single round.  It is deliberately
+*not* the whole semantics — it does not model contention (choice between alternative pairings of the
+same linear send/receive) nor causal chaining (a COMM enabling a later COMM); those phenomena require
+the choice and sequencing layers and have operational witnesses in `Engine.lean` (race and multi-step
+tests).  Treating this fold as the whole rhometta would overclaim.
+
+Within its scope it is exact: a payload over a frozen base is a *nondeterministic producer of
+`(result, local-delta)`*, where the delta lives in a commutative merge monoid `Δ` (a semilattice /
+MORK union / cost quantale).  Firing an independent frontier chooses one outcome per payload and
+merges the deltas commutatively, recording results as an order-independent multiset.  Because `Δ` is
+a `CommMonoid`, the outcome set is invariant under firing order (`foldOutcomes_perm`) — macro-step
+soundness for one round delivered as *algebra*, not a hand diamond.  Single-path safety factors as
+"every payload is deterministic" (`foldOutcomes_subsingleton_of_forall`), generalizing
+`chosenOutcome_lossless_iff_singlePathSafe`.  The value-only theory above is the `Δ := PUnit`
+instance.  Payload non-interference is *structural* here (payload outcome sets are fixed data); an
+engine step instantiates this fold only under the engine-side conditions (quiet continuations,
+copy-stable results, unique matching, transactional isolation) — that instance-hood is a separate
+corollary, not this lemma. -/
 section ConcurrentFold
 
 /-- A payload over the frozen base: its set of possible `(result, local-delta)` outcomes. -/
@@ -2555,5 +2566,878 @@ example (F : List (Payload Pattern ℝ≥0∞)) :
   foldCost_eq_aggregate F
 
 end Grounding
+
+/-! ## First-class owned exports — the Ω layer (transactional outcomes)
+
+The engine's transactional payloads do three things: produce a result, accumulate a local delta, and
+let mutated resources escape only as *owned exports* (fresh-identity spaces/state cells returned as
+values).  Here exports become first-class in the outcome object: a payload outcome is
+`(result, delta, exports)` with exports an order-irrelevant bag.
+
+The crucial economy: `PayloadΩ R Δ Ω` is *definitionally* the existing `Payload` over the product
+merge monoid `Δ × ExportBag Ω`, so the entire ⊗-layer theory (`foldOutcomes`, `foldOutcomes_perm`,
+the factorizations) applies verbatim — nothing is re-proven (`foldOutcomesΩ_perm`).  Dropping
+exports along the projection monoid hom recovers the export-free theory
+(`foldOutcomesΩ_proj_delta`, via the general naturality lemma `foldOutcomes_map_hom`), so the
+development above is literally the shadow of this one.
+
+`reifyΩ` is the abstract form of what the engine does with owned results: pack result and exports
+together (owned results returned as values in the residual), delta separate.  It is injective
+(`reifyΩ_injective`) — reification loses nothing — and commutes with firing a round
+(`reifyΩ_fold_commutes`): reify-then-fold equals fold-then-reify on aggregate observables.  The
+closing example shows exports are *semantically real*: two payloads with identical result/delta
+projections but different owned exports are distinguished after reification — outcome objects
+without exports are too coarse for transactional rhometta. -/
+section OwnedExports
+
+/-- A bag of owned exports, as a multiplicative commutative monoid (merge = bag union). -/
+abbrev ExportBag (Ω : Type*) := Multiplicative (Multiset Ω)
+
+/-- A transactional payload: a nondeterministic producer of `(result, delta, exports)` over a frozen
+base.  Definitionally a `Payload` over the product merge monoid, so the concurrent-fold theory
+applies verbatim. -/
+abbrev PayloadΩ (R Δ Ω : Type*) := Payload R (Δ × ExportBag Ω)
+
+variable {R Δ Ω : Type*} [CommMonoid Δ]
+
+/-- Outcomes of firing a frontier of transactional payloads: the existing fold over the product
+monoid — deltas merge in `Δ`, export bags merge by union. -/
+abbrev foldOutcomesΩ (F : List (PayloadΩ R Δ Ω)) : Set (Multiset R × (Δ × ExportBag Ω)) :=
+  foldOutcomes F
+
+/-- Order-independence of the transactional round, inherited verbatim from the ⊗ layer. -/
+theorem foldOutcomesΩ_perm {F₁ F₂ : List (PayloadΩ R Δ Ω)} (h : F₁.Perm F₂) :
+    foldOutcomesΩ F₁ = foldOutcomesΩ F₂ :=
+  foldOutcomes_perm h
+
+/-- **Naturality**: the concurrent fold commutes with any monoid hom on the merge — mapping every
+payload along `f` and folding equals folding and then mapping the merged delta. -/
+theorem foldOutcomes_map_hom {Δ' : Type*} [CommMonoid Δ'] (f : Δ →* Δ') :
+    ∀ F : List (Payload R Δ),
+      foldOutcomes (F.map (fun p => (fun o : R × Δ => (o.1, f o.2)) '' p)) =
+        (fun x : Multiset R × Δ => (x.1, f x.2)) '' foldOutcomes F
+  | [] => by
+      ext x
+      simp [foldOutcomes, Set.image_singleton]
+  | p :: F => by
+      ext x
+      simp only [List.map_cons, mem_foldOutcomes_cons, Set.mem_image]
+      constructor
+      · rintro ⟨r, δ, rs, δ', ⟨⟨a, b⟩, hab, hg⟩, hrs, rfl⟩
+        rw [foldOutcomes_map_hom f F] at hrs
+        obtain ⟨⟨rs₀, d₀⟩, hd₀, hg₂⟩ := hrs
+        rw [Prod.mk.injEq] at hg hg₂
+        obtain ⟨rfl, rfl⟩ := hg
+        obtain ⟨rfl, rfl⟩ := hg₂
+        exact ⟨(a ::ₘ rs₀, b * d₀), ⟨a, b, rs₀, d₀, hab, hd₀, rfl⟩, by
+          simp [map_mul]⟩
+      · rintro ⟨⟨RS, D⟩, hRSD, rfl⟩
+        obtain ⟨r, δ, rs, δ', hr, hrs, hpair⟩ := hRSD
+        rw [Prod.mk.injEq] at hpair
+        obtain ⟨rfl, rfl⟩ := hpair
+        refine ⟨r, f δ, rs, f δ', ⟨(r, δ), hr, rfl⟩, ?_, by simp [map_mul]⟩
+        rw [foldOutcomes_map_hom f F]
+        exact ⟨(rs, δ'), hrs, rfl⟩
+
+/-- **Conservativity**: dropping exports (the projection monoid hom) recovers the export-free
+theory — the Δ-only development is the image of the transactional one. -/
+theorem foldOutcomesΩ_proj_delta (F : List (PayloadΩ R Δ Ω)) :
+    foldOutcomes (F.map (fun p => (fun o : R × (Δ × ExportBag Ω) => (o.1, o.2.1)) '' p)) =
+      (fun x : Multiset R × (Δ × ExportBag Ω) => (x.1, x.2.1)) '' foldOutcomesΩ F :=
+  foldOutcomes_map_hom (MonoidHom.fst Δ (ExportBag Ω)) F
+
+/-- Reify a transactional outcome into the residual-style shape the engine returns: result and
+exports packed together (owned results as values in the residual), delta separate. -/
+def reifyΩ (o : R × (Δ × ExportBag Ω)) : (R × Multiset Ω) × Δ :=
+  ((o.1, (o.2.2 : ExportBag Ω).toAdd), o.2.1)
+
+omit [CommMonoid Δ] in
+/-- **Reification loses no information.** -/
+theorem reifyΩ_injective : Function.Injective (reifyΩ (R := R) (Δ := Δ) (Ω := Ω)) := by
+  rintro ⟨r₁, δ₁, ω₁⟩ ⟨r₂, δ₂, ω₂⟩ h
+  simp only [reifyΩ, Prod.mk.injEq] at h
+  obtain ⟨⟨rfl, hω⟩, rfl⟩ := h
+  simp only [Prod.mk.injEq, true_and]
+  exact Multiplicative.toAdd.injective hω
+
+/-- Aggregate a reified round outcome: strip per-result export attachments into one merged bag. -/
+def aggregateReified (x : Multiset (R × Multiset Ω) × Δ) : Multiset R × Δ × Multiset Ω :=
+  (x.1.map Prod.fst, x.2, (x.1.map Prod.snd).sum)
+
+/-- Reshape a transactional fold outcome to the same observable type. -/
+def reshapeΩ (x : Multiset R × (Δ × ExportBag Ω)) : Multiset R × Δ × Multiset Ω :=
+  (x.1, x.2.1, (x.2.2 : ExportBag Ω).toAdd)
+
+/-- **Reification commutes with the round**: reifying every payload, firing the round, and
+aggregating equals firing the transactional round and reshaping — reify-then-fold =
+fold-then-reify on aggregate observables. -/
+theorem reifyΩ_fold_commutes :
+    ∀ F : List (PayloadΩ R Δ Ω),
+      aggregateReified '' foldOutcomes (F.map (Set.image reifyΩ)) =
+        reshapeΩ '' foldOutcomesΩ F
+  | [] => by
+      ext x
+      simp [foldOutcomes, Set.image_singleton, aggregateReified, reshapeΩ]
+  | p :: F => by
+      ext x
+      simp only [List.map_cons, Set.mem_image]
+      constructor
+      · rintro ⟨⟨RS, D⟩, hRSD, rfl⟩
+        obtain ⟨rω, δ, rs, δ', hrω, hrs, hpair⟩ := hRSD
+        rw [Prod.mk.injEq] at hpair
+        obtain ⟨rfl, rfl⟩ := hpair
+        obtain ⟨⟨a, b, ωm⟩, hab, hg⟩ := hrω
+        have hagg : aggregateReified (rs, δ') ∈
+            aggregateReified '' foldOutcomes (F.map (Set.image reifyΩ)) :=
+          ⟨(rs, δ'), hrs, rfl⟩
+        rw [reifyΩ_fold_commutes F] at hagg
+        obtain ⟨⟨rs₀, d₀, ωs₀⟩, hmem, hsh⟩ := hagg
+        refine ⟨(a ::ₘ rs₀, (b * d₀, ωm * ωs₀)),
+          ⟨a, (b, ωm), rs₀, (d₀, ωs₀), hab, hmem, by simp⟩, ?_⟩
+        simp only [reifyΩ] at hg
+        rw [Prod.mk.injEq] at hg
+        obtain ⟨hg1, rfl⟩ := hg
+        simp only [reshapeΩ, aggregateReified, reshapeΩ] at hsh ⊢
+        rw [Prod.mk.injEq] at hsh
+        obtain ⟨h1, h2⟩ := hsh
+        rw [Prod.mk.injEq] at h2
+        obtain ⟨h2, h3⟩ := h2
+        simp only [Multiset.map_cons, Multiset.sum_cons, ← hg1, Prod.mk.injEq]
+        refine ⟨by rw [h1], by rw [h2], ?_⟩
+        rw [← h3, toAdd_mul]
+      · rintro ⟨⟨RS, D⟩, hRSD, rfl⟩
+        obtain ⟨a, bω, rs, δω', hab, hrs, hpair⟩ := hRSD
+        obtain ⟨b, ωm⟩ := bω
+        obtain ⟨δ', ωs'⟩ := δω'
+        rw [Prod.mk.injEq] at hpair
+        obtain ⟨rfl, rfl⟩ := hpair
+        have hsh : reshapeΩ (rs, (δ', ωs')) ∈ reshapeΩ '' foldOutcomesΩ F :=
+          ⟨(rs, (δ', ωs')), hrs, rfl⟩
+        rw [← reifyΩ_fold_commutes F] at hsh
+        obtain ⟨⟨RS₀, D₀⟩, hmem, hagg⟩ := hsh
+        refine ⟨((a, ωm.toAdd) ::ₘ RS₀, b * D₀),
+          ⟨(a, ωm.toAdd), b, RS₀, D₀, ⟨(a, (b, ωm)), hab, rfl⟩, hmem, rfl⟩, ?_⟩
+        simp only [aggregateReified, reshapeΩ] at hagg ⊢
+        rw [Prod.mk.injEq] at hagg
+        obtain ⟨h1, h2⟩ := hagg
+        rw [Prod.mk.injEq] at h2
+        obtain ⟨h2, h3⟩ := h2
+        simp only [Multiset.map_cons, Multiset.sum_cons, Prod.fst_mul, Prod.snd_mul,
+          toAdd_mul, Prod.mk.injEq]
+        exact ⟨by rw [h1], by rw [h2], by rw [h3]⟩
+
+/-- Positive grounding: a singleton transactional frontier yields exactly its payload's outcome,
+exports included. -/
+theorem foldOutcomesΩ_singleton (r₀ : R) (δ₀ : Δ × ExportBag Ω) :
+    foldOutcomesΩ [({(r₀, δ₀)} : PayloadΩ R Δ Ω)] = {(({r₀} : Multiset R), δ₀)} := by
+  ext x
+  simp only [foldOutcomesΩ, foldOutcomes, Set.mem_singleton_iff]
+  constructor
+  · rintro ⟨r, δ, rs, δ', hr, hrs, rfl⟩
+    rw [Prod.mk.injEq] at hr hrs
+    obtain ⟨rfl, rfl⟩ := hr
+    obtain ⟨rfl, rfl⟩ := hrs
+    simp
+  · rintro rfl
+    exact ⟨r₀, δ₀, 0, 1, rfl, rfl, by simp⟩
+
+/-- A concrete transactional round: one payload exporting an owned resource. -/
+example :
+    foldOutcomesΩ [({((), (2, Multiplicative.ofAdd ({true} : Multiset Bool)))} :
+        PayloadΩ Unit ℕ Bool)] =
+      {(({()} : Multiset Unit), (2, Multiplicative.ofAdd ({true} : Multiset Bool)))} :=
+  foldOutcomesΩ_singleton _ _
+
+/-- **Exports are semantically real** (the no-go-3 content): two payloads with identical
+result/delta projections but different owned exports are distinguished after reification — outcome
+objects without exports are too coarse for transactional rhometta. -/
+example :
+    ∃ p₁ p₂ : PayloadΩ Unit ℕ Bool,
+      (fun o : Unit × (ℕ × ExportBag Bool) => (o.1, o.2.1)) '' p₁ =
+        (fun o : Unit × (ℕ × ExportBag Bool) => (o.1, o.2.1)) '' p₂ ∧
+      reifyΩ '' p₁ ≠ reifyΩ '' p₂ := by
+  refine ⟨{((), (1, Multiplicative.ofAdd ({true} : Multiset Bool)))},
+          {((), (1, Multiplicative.ofAdd ({false} : Multiset Bool)))}, ?_, ?_⟩
+  · simp [Set.image_singleton]
+  · simp only [Set.image_singleton, reifyΩ, ne_eq, Set.singleton_eq_singleton_iff]
+    intro h
+    rw [Prod.mk.injEq] at h
+    have := h.1
+    rw [Prod.mk.injEq] at this
+    have hbag := this.2
+    simp only [toAdd_ofAdd] at hbag
+    exact absurd (Multiset.singleton_inj.mp hbag) (by decide)
+
+end OwnedExports
+
+/-! ## Event layer — the ⊔/`;` boundary vocabulary (events, compatibility, matchings)
+
+An `EventSkeleton` is a COMM candidate: which output occurrence and which input occurrence it
+would consume (as frontier indices), and the transactional payload it would run.  `Compatible` is
+the MODEL-level relation — distinct consumed occurrences and disjoint export identities.  It is
+deliberately weaker than the engine's macro side conditions (quiet continuations, copy-stable
+results, unique matching): in the model, payload non-interference is structural, so bare
+compatibility carries the abstract theorems; the engine conditions enter only as explicit
+hypotheses of the engine-facing corollary.
+
+A matching is a pairwise-compatible selection of events fired together as one round; `MatchOf` is
+ALL compatible matchings over an enabled set — including the empty and singleton ones, so the
+exact one-redex reducer embeds as the finest refinement and every concrete scheduler is a
+refinement of this one base.
+
+The two no-go theorems pin the boundary the round/run layers must respect:
+`contention_requires_choice` — a contended enabled set is represented by NO single fold, so a
+one-round semantics must branch over matchings (additive choice ⊔); and
+`chaining_not_single_round` — one-round folds only produce results offered by enabled payloads,
+so an outcome enabled only by a *later* COMM needs sequential closure (`;`).  The same witnesses
+are pinned operationally by the race/chaining theorems in `Engine.lean` and at runtime by the
+`eval:contended-pair` / `eval:chained-two-round` bridge fixtures. -/
+section EventLayer
+
+variable {R Δ Ω : Type*}
+
+/-- A COMM candidate: the output/input occurrences it consumes (frontier indices) and the
+transactional payload fired at the rendezvous. -/
+structure EventSkeleton (R Δ Ω : Type*) where
+  sendIdx : ℕ
+  recvIdx : ℕ
+  payload : PayloadΩ R Δ Ω
+
+/-- The owned-export identities an event's payload can produce. -/
+def EventSkeleton.exports (e : EventSkeleton R Δ Ω) : Set Ω :=
+  { ω | ∃ o ∈ e.payload, ω ∈ ((o.2.2 : ExportBag Ω).toAdd : Multiset Ω) }
+
+/-- Model-level compatibility: distinct consumed occurrences (no shared linear send or receive)
+and disjoint export identities.  Deliberately weaker than the engine's macro conditions — see the
+section header. -/
+structure Compatible (e₁ e₂ : EventSkeleton R Δ Ω) : Prop where
+  send_ne : e₁.sendIdx ≠ e₂.sendIdx
+  recv_ne : e₁.recvIdx ≠ e₂.recvIdx
+  exports_disjoint : Disjoint e₁.exports e₂.exports
+
+theorem Compatible.symm {e₁ e₂ : EventSkeleton R Δ Ω} (h : Compatible e₁ e₂) :
+    Compatible e₂ e₁ :=
+  ⟨h.send_ne.symm, h.recv_ne.symm, h.exports_disjoint.symm⟩
+
+/-- Compatibility is irreflexive: an event would consume its own send twice. -/
+theorem not_compatible_self (e : EventSkeleton R Δ Ω) : ¬Compatible e e :=
+  fun h => h.send_ne rfl
+
+/-- Contention: two events consuming the same linear send are incompatible. -/
+theorem not_compatible_of_shared_send {e₁ e₂ : EventSkeleton R Δ Ω}
+    (h : e₁.sendIdx = e₂.sendIdx) : ¬Compatible e₁ e₂ :=
+  fun hc => hc.send_ne h
+
+/-- A matching: a pairwise-compatible selection of events, fired together as one round.  Carried
+as a list (the fold's native shape); order is irrelevant by `foldOutcomesΩ_perm`, and pairwise
+compatibility forces distinctness via `not_compatible_self`. -/
+def IsMatching (M : List (EventSkeleton R Δ Ω)) : Prop :=
+  M.Pairwise Compatible
+
+/-- ALL compatible matchings over an enabled set — including `[]` and singletons, so the exact
+one-redex reducer embeds as the finest refinement of this one base relation. -/
+def MatchOf (E : Set (EventSkeleton R Δ Ω)) : Set (List (EventSkeleton R Δ Ω)) :=
+  { M | (∀ e ∈ M, e ∈ E) ∧ IsMatching M }
+
+/-- The payloads a matching fires. -/
+def matchingPayloads (M : List (EventSkeleton R Δ Ω)) : List (PayloadΩ R Δ Ω) :=
+  M.map (·.payload)
+
+@[simp] theorem nil_mem_matchOf (E : Set (EventSkeleton R Δ Ω)) : [] ∈ MatchOf E :=
+  ⟨by simp, List.Pairwise.nil⟩
+
+/-- Singletons are matchings: the exact one-redex step is a legal round. -/
+theorem singleton_mem_matchOf {E : Set (EventSkeleton R Δ Ω)} {e : EventSkeleton R Δ Ω}
+    (he : e ∈ E) : [e] ∈ MatchOf E :=
+  ⟨by simpa using he, List.pairwise_singleton _ _⟩
+
+/-- Sub-selections of a matching are matchings: the base is closed under sub-rounds. -/
+theorem matchOf_sublist {E : Set (EventSkeleton R Δ Ω)} {M M' : List (EventSkeleton R Δ Ω)}
+    (hM : M ∈ MatchOf E) (hsub : List.Sublist M' M) : M' ∈ MatchOf E :=
+  ⟨fun e he => hM.1 e (hsub.subset he), hM.2.sublist hsub⟩
+
+/-- In a contended pair (shared linear send), every matching fires at most one event. -/
+theorem matchOf_length_le_one_of_shared_send {e₁ e₂ : EventSkeleton R Δ Ω}
+    (hsend : e₁.sendIdx = e₂.sendIdx) :
+    ∀ M ∈ MatchOf {e₁, e₂}, M.length ≤ 1 := by
+  rintro M ⟨hmem, hpair⟩
+  match M with
+  | [] => simp
+  | [_] => simp
+  | a :: b :: rest =>
+    exfalso
+    have hcab : Compatible a b := (List.pairwise_cons.mp hpair).1 b (by simp)
+    have ha := hmem a (by simp)
+    have hb := hmem b (by simp)
+    simp only [Set.mem_insert_iff, Set.mem_singleton_iff] at ha hb
+    have hsame : a.sendIdx = b.sendIdx := by
+      rcases ha with rfl | rfl <;> rcases hb with rfl | rfl <;>
+        first | rfl | exact hsend | exact hsend.symm
+    exact not_compatible_of_shared_send hsame hcab
+
+variable [CommMonoid Δ]
+
+/-- Every outcome of a frontier carries exactly one result per fired payload. -/
+theorem foldOutcomes_card {F : List (Payload R Δ)} :
+    ∀ x ∈ foldOutcomes F, x.1.card = F.length := by
+  induction F with
+  | nil =>
+      rintro x hx
+      simp only [foldOutcomes, Set.mem_singleton_iff] at hx
+      subst hx; simp
+  | cons p F ih =>
+      rintro x ⟨r, δ, rs, δ', _, hrs, rfl⟩
+      simp [ih (rs, δ') hrs]
+
+/-- A frontier of nonempty payloads has a nonempty outcome set. -/
+theorem foldOutcomes_nonempty {F : List (Payload R Δ)} (h : ∀ p ∈ F, p.Nonempty) :
+    (foldOutcomes F).Nonempty := by
+  induction F with
+  | nil => exact ⟨(0, 1), rfl⟩
+  | cons p F ih =>
+      obtain ⟨⟨r, δ⟩, hrδ⟩ := h p (by simp)
+      obtain ⟨⟨rs, δ'⟩, hrs⟩ := ih (fun q hq => h q (by simp [hq]))
+      exact ⟨(r ::ₘ rs, δ * δ'), ⟨r, δ, rs, δ', hrδ, hrs, rfl⟩⟩
+
+/-- **Provenance**: every result in a round outcome is offered by one of the fired payloads. -/
+theorem foldOutcomes_results_mem {F : List (Payload R Δ)} :
+    ∀ x ∈ foldOutcomes F, ∀ r ∈ x.1, ∃ p ∈ F, ∃ δ, (r, δ) ∈ p := by
+  induction F with
+  | nil =>
+      rintro x hx r hr
+      simp only [foldOutcomes, Set.mem_singleton_iff] at hx
+      subst hx; simp at hr
+  | cons p F ih =>
+      rintro x ⟨r₀, δ₀, rs, δ', hr₀, hrs, rfl⟩ r hr
+      rcases Multiset.mem_cons.mp hr with rfl | hr
+      · exact ⟨p, by simp, δ₀, hr₀⟩
+      · obtain ⟨q, hq, δ, hmem⟩ := ih (rs, δ') hrs r hr
+        exact ⟨q, by simp [hq], δ, hmem⟩
+
+/-- **No-go: contention requires choice (⊔).**  When two enabled events contend for the same
+linear send, the raw fold over BOTH is the fold of NO legal matching: every matching of the
+contended pair fires at most one event (outcomes carry ≤ 1 result), while the raw fold's outcomes
+carry two.  A one-round semantics must branch over matchings — additive choice — rather than fold
+the enabled set.  Operational echo: `Engine.lean` race theorem; runtime echo: the
+`eval:contended-pair` bridge fixture. -/
+theorem contention_requires_choice {e₁ e₂ : EventSkeleton R Δ Ω}
+    (hsend : e₁.sendIdx = e₂.sendIdx)
+    (h₁ : e₁.payload.Nonempty) (h₂ : e₂.payload.Nonempty) :
+    ∀ M ∈ MatchOf {e₁, e₂},
+      foldOutcomesΩ (matchingPayloads M) ≠ foldOutcomesΩ [e₁.payload, e₂.payload] := by
+  rintro M hM heq
+  have hlen : M.length ≤ 1 := matchOf_length_le_one_of_shared_send hsend M hM
+  obtain ⟨x, hx⟩ : (foldOutcomesΩ [e₁.payload, e₂.payload]).Nonempty :=
+    foldOutcomes_nonempty (by
+      rintro p hp
+      rcases List.mem_pair.mp hp with rfl | rfl
+      · exact h₁
+      · exact h₂)
+  have hc2 : x.1.card = 2 := foldOutcomes_card x hx
+  rw [← heq] at hx
+  have hc1 : x.1.card = (matchingPayloads M).length := foldOutcomes_card x hx
+  rw [matchingPayloads, List.length_map] at hc1
+  omega
+
+/-- **No-go: chaining requires sequence (`;`).**  A one-round fold over an enabled set only
+produces results offered by the enabled payloads (provenance).  So an outcome whose result is
+offered by NO initially-enabled payload — e.g. one enabled only after a first COMM exposes a new
+send — is unreachable in any single round, whichever matching fires: reaching it requires
+sequential closure of rounds.  Operational echo: `Engine.lean` two-step chaining theorem; runtime
+echo: the `eval:chained-two-round` bridge fixture. -/
+theorem chaining_not_single_round {E : Set (EventSkeleton R Δ Ω)} {target : R}
+    (hno : ∀ e ∈ E, ∀ o ∈ e.payload, o.1 ≠ target) :
+    ∀ M ∈ MatchOf E, ∀ x ∈ foldOutcomesΩ (matchingPayloads M), target ∉ x.1 := by
+  rintro M ⟨hmem, _⟩ x hx htgt
+  obtain ⟨p, hp, δ, hpδ⟩ := foldOutcomes_results_mem x hx target htgt
+  obtain ⟨e, heM, rfl⟩ := List.mem_map.mp hp
+  exact absurd rfl (hno e (hmem e heM) (target, δ) hpδ)
+
+/-- Concrete contended pair: one send (occurrence 0), two receivers — no single fold represents
+the round. -/
+example :
+    ∀ M ∈ MatchOf {(⟨0, 0, {(true, (1, 1))}⟩ : EventSkeleton Bool ℕ Empty),
+                   (⟨0, 1, {(false, (1, 1))}⟩ : EventSkeleton Bool ℕ Empty)},
+      foldOutcomesΩ (matchingPayloads M) ≠
+        foldOutcomesΩ [{(true, (1, 1))}, {(false, (1, 1))}] :=
+  contention_requires_choice rfl ⟨_, rfl⟩ ⟨_, rfl⟩
+
+/-- Concrete chained witness: the only enabled payload offers `false`; the `true`-producing event
+exists but is not yet enabled — no single round reaches `true`. -/
+example :
+    ∀ M ∈ MatchOf {(⟨0, 0, {(false, (1, 1))}⟩ : EventSkeleton Bool ℕ Empty)},
+      ∀ x ∈ foldOutcomesΩ (matchingPayloads M), true ∉ x.1 :=
+  chaining_not_single_round (by
+    rintro e he o ho
+    simp only [Set.mem_singleton_iff] at he
+    subst he
+    simp only [Set.mem_singleton_iff] at ho
+    subst ho
+    simp)
+
+/-- Membership in a one-payload fold: exactly the payload's outcomes, singleton-wrapped. -/
+theorem mem_foldOutcomes_singleton {p : Payload R Δ} {x : Multiset R × Δ} :
+    x ∈ foldOutcomes [p] ↔ ∃ o ∈ p, x = ({o.1}, o.2) := by
+  simp only [foldOutcomes, Set.mem_singleton_iff]
+  constructor
+  · rintro ⟨r, δ, rs, δ', hr, hrs, rfl⟩
+    rw [Prod.mk.injEq] at hrs
+    obtain ⟨rfl, rfl⟩ := hrs
+    exact ⟨(r, δ), hr, by simp⟩
+  · rintro ⟨⟨r, δ⟩, hr, rfl⟩
+    exact ⟨r, δ, 0, 1, hr, rfl, by simp⟩
+
+/-- Folds split over frontier concatenation: an outcome of `F₁ ++ F₂` is the pointwise merge of
+an outcome of each part. -/
+theorem mem_foldOutcomes_append {F₁ F₂ : List (Payload R Δ)} {x : Multiset R × Δ} :
+    x ∈ foldOutcomes (F₁ ++ F₂) ↔
+      ∃ x₁ ∈ foldOutcomes F₁, ∃ x₂ ∈ foldOutcomes F₂, x = (x₁.1 + x₂.1, x₁.2 * x₂.2) := by
+  induction F₁ generalizing x with
+  | nil =>
+      simp only [List.nil_append, foldOutcomes, Set.mem_singleton_iff]
+      constructor
+      · intro hx
+        exact ⟨(0, 1), rfl, x, hx, by simp⟩
+      · rintro ⟨x₁, hx₁, x₂, hx₂, rfl⟩
+        subst hx₁
+        simpa using hx₂
+  | cons p F₁ ih =>
+      simp only [List.cons_append, mem_foldOutcomes_cons]
+      constructor
+      · rintro ⟨r, δ, rs, δ', hr, hrs, rfl⟩
+        obtain ⟨x₁, hx₁, x₂, hx₂, heq⟩ := ih.mp hrs
+        rw [Prod.mk.injEq] at heq
+        obtain ⟨rfl, rfl⟩ := heq
+        exact ⟨(r ::ₘ x₁.1, δ * x₁.2), ⟨r, δ, x₁.1, x₁.2, hr, hx₁, rfl⟩, x₂, hx₂, by
+          simp [mul_assoc]⟩
+      · rintro ⟨x₁, ⟨r, δ, rs, δ', hr, hrs, rfl⟩, x₂, hx₂, rfl⟩
+        exact ⟨r, δ, rs + x₂.1, δ' * x₂.2, hr, ih.mpr ⟨(rs, δ'), hrs, x₂, hx₂, rfl⟩, by
+          simp [mul_assoc]⟩
+
+omit [CommMonoid Δ] in
+/-- Matchings are duplicate-free: pairwise compatibility is irreflexive. -/
+theorem IsMatching.nodup {M : List (EventSkeleton R Δ Ω)} (h : IsMatching M) : M.Nodup := by
+  induction M with
+  | nil => exact List.nodup_nil
+  | cons e M ih =>
+      rcases List.pairwise_cons.mp h with ⟨hhead, htail⟩
+      exact List.nodup_cons.mpr
+        ⟨fun hmem => not_compatible_self e (hhead e hmem), ih htail⟩
+
+/-! ### B4 — the round layer (static): choice over compatible matchings -/
+
+/-- One-round outcomes of an enabled set: additive choice (⊔) over ALL compatible matchings, each
+interpreted by the commuting ⊗-fold.  This is where contention becomes branching instead of an
+impossible joint firing. -/
+def roundOutcomes (E : Set (EventSkeleton R Δ Ω)) : Set (Multiset R × (Δ × ExportBag Ω)) :=
+  ⋃ M ∈ MatchOf E, foldOutcomesΩ (matchingPayloads M)
+
+/-- **The exact one-redex reducer is the finest refinement**: every single enabled event's fold
+contributes to the round. -/
+theorem singleton_step_embeds {E : Set (EventSkeleton R Δ Ω)} {e : EventSkeleton R Δ Ω}
+    (he : e ∈ E) : foldOutcomesΩ [e.payload] ⊆ roundOutcomes E := fun _ hx =>
+  Set.mem_biUnion (singleton_mem_matchOf he) hx
+
+/-- **Collapse on an independent frontier**: when a selection of enabled events is pairwise
+compatible, the full ⊗-fold over it is one of the round's branches. -/
+theorem independent_unique_matching_collapses_to_fold {E : Set (EventSkeleton R Δ Ω)}
+    {L : List (EventSkeleton R Δ Ω)} (hmem : ∀ e ∈ L, e ∈ E) (hpair : IsMatching L) :
+    foldOutcomesΩ (matchingPayloads L) ⊆ roundOutcomes E := fun _ hx =>
+  Set.mem_biUnion (⟨hmem, hpair⟩ : L ∈ MatchOf E) hx
+
+/-- **Choice is semantically load-bearing** (corollary of the contention no-go): the round of a
+contended pair never fires both events jointly — its outcomes carry at most one result — so it is
+NOT the raw two-event fold, whose outcomes all carry two. -/
+theorem roundOutcomes_ne_rawFold {e₁ e₂ : EventSkeleton R Δ Ω}
+    (hsend : e₁.sendIdx = e₂.sendIdx)
+    (h₁ : e₁.payload.Nonempty) (h₂ : e₂.payload.Nonempty) :
+    roundOutcomes {e₁, e₂} ≠ foldOutcomesΩ [e₁.payload, e₂.payload] := by
+  intro heq
+  obtain ⟨x, hx⟩ : (foldOutcomesΩ [e₁.payload, e₂.payload]).Nonempty :=
+    foldOutcomes_nonempty (by
+      rintro p hp
+      rcases List.mem_pair.mp hp with rfl | rfl
+      · exact h₁
+      · exact h₂)
+  have hc2 : x.1.card = 2 := foldOutcomes_card x hx
+  rw [← heq] at hx
+  obtain ⟨_, ⟨M, rfl⟩, _, ⟨hM, rfl⟩, hxM⟩ := hx
+  have hlen := matchOf_length_le_one_of_shared_send hsend M hM
+  have hc1 : x.1.card = (matchingPayloads M).length := foldOutcomes_card x hxM
+  rw [matchingPayloads, List.length_map] at hc1
+  omega
+
+end EventLayer
+
+/-! ## Run layer — sequential closure of rounds and the two crowns
+
+`EventSystem` is the abstract transactional machine: states expose enabled COMM candidates;
+firing one event advances the state.  Its single law, `enabled_persist`, is the MODEL-structural
+form of transactional non-interference: a compatible sibling survives a firing.  Payload outcome
+sets are data attached to skeletons, so "copy-stable results" and "transactional payload
+isolation" have no separate content at this layer — they are what makes an ENGINE step
+instantiate this structure at all, and they are discharged at the operational bridge, not assumed
+here.  Likewise the owned-export renaming obligation vanishes at this layer: exports are data
+merged by bag union, so serializing a round needs no identity bookkeeping — fresh-identity
+generation is an operational-bridge concern.
+
+`runOutcomes` is the fuel-indexed sequential closure of rounds under a *policy* (which matchings
+may fire): `singletonPol` is the exact one-redex reducer, `allPol` the free all-matchings base.
+
+**Crown 1**, `round_granularity_independence`: the two closures reach exactly the same
+configurations — bigger compatible rounds add nothing and lose nothing.  This is a statement
+about the MODEL; citing it as an engine guarantee without Crown 2 is precisely the overclaim this
+file is structured to prevent.
+
+**Crown 2**, `macro_collapse_corollary`: under the explicit `QuietFrontier` hypotheses mirroring
+the engine's macro side conditions — `matching` (no alternative pairing), `complete` (the macro
+fires the whole frontier), `quiet_consume` (linear consumption and no new enablement: quiet
+continuations) — the macro's one-shot outcome set IS the quiescent may-set of the full closure.
+Each hypothesis corresponds to a C-side check in the correspondence table of the two-lane TODO
+(docs/plans 2026-06-11); the conditions with no formal content here (copy-stability, payload
+isolation) are exactly the engine's instance-hood obligations. -/
+section RunLayer
+
+variable {R Δ Ω S : Type*} [CommMonoid Δ]
+
+/-- An abstract transactional event system: states expose enabled COMM candidates; firing one
+event advances the state.  `enabled_persist` is the model-structural form of transactional
+non-interference: a compatible sibling survives a firing. -/
+structure EventSystem (R Δ Ω : Type*) (S : Type*) where
+  enabled : S → Set (EventSkeleton R Δ Ω)
+  fireOne : S → EventSkeleton R Δ Ω → S
+  enabled_persist : ∀ s e e', e ∈ enabled s → e' ∈ enabled s → Compatible e' e →
+    e' ∈ enabled (fireOne s e)
+
+/-- Fire a matching's events in list order (the reference serialization). -/
+def EventSystem.fireMany (sys : EventSystem R Δ Ω S) (s : S)
+    (M : List (EventSkeleton R Δ Ω)) : S :=
+  M.foldl sys.fireOne s
+
+omit [CommMonoid Δ] in
+@[simp] theorem EventSystem.fireMany_nil (sys : EventSystem R Δ Ω S) (s : S) :
+    sys.fireMany s [] = s := rfl
+
+omit [CommMonoid Δ] in
+@[simp] theorem EventSystem.fireMany_cons (sys : EventSystem R Δ Ω S) (s : S)
+    (e : EventSkeleton R Δ Ω) (M : List (EventSkeleton R Δ Ω)) :
+    sys.fireMany s (e :: M) = sys.fireMany (sys.fireOne s e) M := rfl
+
+omit [CommMonoid Δ] in
+theorem EventSystem.fireMany_append (sys : EventSystem R Δ Ω S) (s : S)
+    (L M : List (EventSkeleton R Δ Ω)) :
+    sys.fireMany s (L ++ M) = sys.fireMany (sys.fireMany s L) M :=
+  List.foldl_append
+
+/-- A configuration: state plus accumulated observable (results, merged delta and exports). -/
+abbrev Config (R Δ Ω S : Type*) := S × (Multiset R × (Δ × ExportBag Ω))
+
+/-- Merge accumulated observables: results append, deltas and export bags multiply. -/
+def accMul (x y : Multiset R × (Δ × ExportBag Ω)) : Multiset R × (Δ × ExportBag Ω) :=
+  (x.1 + y.1, x.2 * y.2)
+
+theorem accMul_assoc (x y z : Multiset R × (Δ × ExportBag Ω)) :
+    accMul (accMul x y) z = accMul x (accMul y z) := by
+  simp [accMul, add_assoc, mul_assoc]
+
+@[simp] theorem accMul_one (x : Multiset R × (Δ × ExportBag Ω)) :
+    accMul x (0, 1) = x := by
+  simp [accMul]
+
+omit [CommMonoid Δ] in
+/-- Firing one event of a matching keeps the rest a matching of the new state — the persistence
+law, in the form the serialization induction consumes. -/
+theorem matchOf_tail_fireOne (sys : EventSystem R Δ Ω S) {s : S} {e : EventSkeleton R Δ Ω}
+    {M : List (EventSkeleton R Δ Ω)} (h : (e :: M) ∈ MatchOf (sys.enabled s)) :
+    M ∈ MatchOf (sys.enabled (sys.fireOne s e)) := by
+  obtain ⟨hmem, hpair⟩ := h
+  rcases List.pairwise_cons.mp hpair with ⟨hhead, htail⟩
+  refine ⟨fun a ha => ?_, htail⟩
+  exact sys.enabled_persist s e a (hmem e (by simp)) (hmem a (by simp [ha]))
+    ((hhead a ha).symm)
+
+/-- One round under a policy: fire a permitted matching of the enabled set, in list order,
+accumulating one of its ⊗-fold outcomes. -/
+inductive RoundStep (sys : EventSystem R Δ Ω S)
+    (pol : List (EventSkeleton R Δ Ω) → Prop) :
+    Config R Δ Ω S → Config R Δ Ω S → Prop
+  | fire {s : S} {acc : Multiset R × (Δ × ExportBag Ω)}
+      {M : List (EventSkeleton R Δ Ω)} {x : Multiset R × (Δ × ExportBag Ω)}
+      (hpol : pol M) (hM : M ∈ MatchOf (sys.enabled s))
+      (hx : x ∈ foldOutcomesΩ (matchingPayloads M)) :
+      RoundStep sys pol (s, acc) (sys.fireMany s M, accMul acc x)
+
+/-- The exact policy: one event per round (the one-redex reducer). -/
+def singletonPol (M : List (EventSkeleton R Δ Ω)) : Prop := M.length = 1
+
+/-- The free policy: any compatible matching. -/
+def allPol (_ : List (EventSkeleton R Δ Ω)) : Prop := True
+
+/-- Fuel-indexed sequential closure: configurations reachable in at most `n` rounds. -/
+def runOutcomes (sys : EventSystem R Δ Ω S) (pol : List (EventSkeleton R Δ Ω) → Prop) :
+    ℕ → Config R Δ Ω S → Set (Config R Δ Ω S)
+  | 0, c => {c}
+  | n + 1, c => {c} ∪ ⋃ c' ∈ {c' | RoundStep sys pol c c'}, runOutcomes sys pol n c'
+
+theorem self_mem_runOutcomes (sys : EventSystem R Δ Ω S) (pol) (n : ℕ)
+    (c : Config R Δ Ω S) : c ∈ runOutcomes sys pol n c := by
+  cases n <;> simp [runOutcomes]
+
+theorem runOutcomes_succ_of_step (sys : EventSystem R Δ Ω S) {pol} {n : ℕ}
+    {c d c' : Config R Δ Ω S} (hstep : RoundStep sys pol c d)
+    (h : c' ∈ runOutcomes sys pol n d) : c' ∈ runOutcomes sys pol (n + 1) c := by
+  simp only [runOutcomes, Set.mem_union, Set.mem_iUnion, Set.mem_setOf_eq]
+  exact Or.inr ⟨d, hstep, h⟩
+
+theorem runOutcomes_mono_fuel (sys : EventSystem R Δ Ω S) (pol) :
+    ∀ {n : ℕ} {c c' : Config R Δ Ω S},
+      c' ∈ runOutcomes sys pol n c → c' ∈ runOutcomes sys pol (n + 1) c := by
+  intro n
+  induction n with
+  | zero =>
+      intro c c' h
+      rw [Set.mem_singleton_iff.mp h]
+      exact self_mem_runOutcomes sys pol 1 c
+  | succ n ih =>
+      intro c c' h
+      simp only [runOutcomes, Set.mem_union, Set.mem_iUnion, Set.mem_setOf_eq] at h
+      rcases h with h | ⟨d, hd, hrest⟩
+      · rw [Set.mem_singleton_iff.mp h]
+        exact self_mem_runOutcomes sys pol (n + 2) c
+      · exact runOutcomes_succ_of_step sys hd (ih hrest)
+
+theorem runOutcomes_le (sys : EventSystem R Δ Ω S) (pol) {m k : ℕ} (hmk : m ≤ k) :
+    ∀ {c c' : Config R Δ Ω S},
+      c' ∈ runOutcomes sys pol m c → c' ∈ runOutcomes sys pol k c := by
+  induction hmk with
+  | refl => intro c c' h; exact h
+  | step _ ih => intro c c' h; exact runOutcomes_mono_fuel sys pol (ih h)
+
+theorem runOutcomes_trans (sys : EventSystem R Δ Ω S) (pol) :
+    ∀ {n m : ℕ} {c c' c'' : Config R Δ Ω S},
+      c' ∈ runOutcomes sys pol n c → c'' ∈ runOutcomes sys pol m c' →
+      c'' ∈ runOutcomes sys pol (n + m) c := by
+  intro n
+  induction n with
+  | zero =>
+      intro m c c' c'' h h'
+      rw [Set.mem_singleton_iff.mp h] at h'
+      exact runOutcomes_le sys pol (by omega) h'
+  | succ n ih =>
+      intro m c c' c'' h h'
+      simp only [runOutcomes, Set.mem_union, Set.mem_iUnion, Set.mem_setOf_eq] at h
+      rcases h with h | ⟨d, hd, hrest⟩
+      · rw [Set.mem_singleton_iff.mp h] at h'
+        exact runOutcomes_le sys pol (by omega) h'
+      · have heq : n + 1 + m = (n + m) + 1 := by omega
+        rw [heq]
+        exact runOutcomes_succ_of_step sys hd (ih hrest h')
+
+theorem runOutcomes_mono_pol (sys : EventSystem R Δ Ω S)
+    {pol₁ pol₂ : List (EventSkeleton R Δ Ω) → Prop} (hpol : ∀ M, pol₁ M → pol₂ M) :
+    ∀ {n : ℕ} {c c' : Config R Δ Ω S},
+      c' ∈ runOutcomes sys pol₁ n c → c' ∈ runOutcomes sys pol₂ n c := by
+  intro n
+  induction n with
+  | zero => intro c c' h; exact h
+  | succ n ih =>
+      intro c c' h
+      simp only [runOutcomes, Set.mem_union, Set.mem_iUnion, Set.mem_setOf_eq] at h
+      rcases h with h | ⟨d, hd, hrest⟩
+      · rw [Set.mem_singleton_iff.mp h]
+        exact self_mem_runOutcomes sys pol₂ (n + 1) c
+      · refine runOutcomes_succ_of_step sys ?_ (ih hrest)
+        cases hd with
+        | fire hp hM hx => exact RoundStep.fire (hpol _ hp) hM hx
+
+/-- **Serialization**: a matching round decomposes into singleton rounds — same final state (the
+round's own list order) and same accumulated observable, by the per-payload structure of the
+⊗-fold.  Note: no export renaming is needed — exports are data merged by bag union at this layer. -/
+theorem singleton_run_of_matching (sys : EventSystem R Δ Ω S) :
+    ∀ (M : List (EventSkeleton R Δ Ω)) (s : S) (acc x),
+      M ∈ MatchOf (sys.enabled s) → x ∈ foldOutcomesΩ (matchingPayloads M) →
+      (sys.fireMany s M, accMul acc x) ∈ runOutcomes sys singletonPol M.length (s, acc)
+  | [], s, acc, x, _, hx => by
+      simp only [matchingPayloads, List.map_nil, foldOutcomesΩ, foldOutcomes,
+        Set.mem_singleton_iff] at hx
+      subst hx
+      simpa using self_mem_runOutcomes sys singletonPol 0 (s, acc)
+  | e :: M, s, acc, x, hM, hx => by
+      simp only [matchingPayloads, List.map_cons, foldOutcomesΩ] at hx
+      rw [mem_foldOutcomes_cons] at hx
+      obtain ⟨r, δω, rs, δω', ho, hrest, rfl⟩ := hx
+      have hstep : RoundStep sys singletonPol (s, acc)
+          (sys.fireMany s [e], accMul acc ({r}, δω)) :=
+        RoundStep.fire (by simp [singletonPol])
+          (singleton_mem_matchOf (hM.1 e (by simp)))
+          (mem_foldOutcomes_singleton.mpr ⟨(r, δω), ho, rfl⟩)
+      have hrest' := singleton_run_of_matching sys M (sys.fireOne s e)
+        (accMul acc ({r}, δω)) (rs, δω') (matchOf_tail_fireOne sys hM) hrest
+      have hconn : accMul acc (r ::ₘ rs, δω * δω') =
+          accMul (accMul acc ({r}, δω)) (rs, δω') := by
+        simp only [accMul, Prod.mk.injEq]
+        exact ⟨by rw [← Multiset.singleton_add, add_assoc], (mul_assoc _ _ _).symm⟩
+      rw [hconn]
+      exact runOutcomes_succ_of_step sys hstep hrest'
+
+/-- Any free-policy round decomposes into a singleton run. -/
+theorem roundStep_decomposes (sys : EventSystem R Δ Ω S) {c c' : Config R Δ Ω S}
+    (h : RoundStep sys allPol c c') :
+    ∃ n, c' ∈ runOutcomes sys singletonPol n c := by
+  cases h with
+  | fire hpol hM hx => exact ⟨_, singleton_run_of_matching sys _ _ _ _ hM hx⟩
+
+/-- **Crown 1 — round-granularity independence (abstract).**  The all-matchings closure and the
+singleton-only closure reach exactly the same configurations: bigger compatible rounds add
+nothing and lose nothing.  This is a statement about the MODEL — payload non-interference is
+structural here (payload outcome sets are fixed data, and `enabled_persist` is assumed) — and it
+must NOT be cited as an engine guarantee on its own: the engine instantiates it only under the
+macro side conditions, which is `macro_collapse_corollary` below. -/
+theorem round_granularity_independence (sys : EventSystem R Δ Ω S) (c : Config R Δ Ω S) :
+    {c' | ∃ n, c' ∈ runOutcomes sys allPol n c} =
+    {c' | ∃ n, c' ∈ runOutcomes sys singletonPol n c} := by
+  ext c'
+  simp only [Set.mem_setOf_eq]
+  constructor
+  · rintro ⟨n, hn⟩
+    induction n generalizing c with
+    | zero => exact ⟨0, hn⟩
+    | succ n ih =>
+        simp only [runOutcomes, Set.mem_union, Set.mem_iUnion, Set.mem_setOf_eq] at hn
+        rcases hn with h | ⟨d, hd, hrest⟩
+        · exact ⟨0, h⟩
+        · obtain ⟨m₁, h₁⟩ := roundStep_decomposes sys hd
+          obtain ⟨m₂, h₂⟩ := ih d hrest
+          exact ⟨m₁ + m₂, runOutcomes_trans sys singletonPol h₁ h₂⟩
+  · rintro ⟨n, hn⟩
+    exact ⟨n, runOutcomes_mono_pol sys (fun _ _ => trivial) hn⟩
+
+/-- Quiescent corollary of Crown 1: the quiescent may-sets of the two closures agree. -/
+theorem quiescent_granularity_independence (sys : EventSystem R Δ Ω S)
+    (c : Config R Δ Ω S) :
+    {c' | (∃ n, c' ∈ runOutcomes sys allPol n c) ∧ sys.enabled c'.1 = ∅} =
+    {c' | (∃ n, c' ∈ runOutcomes sys singletonPol n c) ∧ sys.enabled c'.1 = ∅} := by
+  have h := Set.ext_iff.mp (round_granularity_independence sys c)
+  ext c'
+  simp only [Set.mem_setOf_eq] at h ⊢
+  exact ⟨fun ⟨a, b⟩ => ⟨(h c').mp a, b⟩, fun ⟨a, b⟩ => ⟨(h c').mpr a, b⟩⟩
+
+/-- **The engine macro side conditions, as explicit model hypotheses.**  Each field corresponds
+to a C-side check (correspondence table, docs/plans 2026-06-11): `matching` ↔ keywise at-most-one
+pairing (no contention); `complete` ↔ the macro fires the whole frontier; `quiet_consume` ↔ quiet
+continuations + linear consumption (fired events leave, nothing new is exposed, compatible
+siblings persist — one equation).  Copy-stable results and transactional payload isolation have
+no separate content at this layer (payload outcome sets are fixed data on skeletons); they are
+the engine's instance-hood obligations, discharged at the operational bridge. -/
+structure QuietFrontier (sys : EventSystem R Δ Ω S) (s : S)
+    (M : List (EventSkeleton R Δ Ω)) : Prop where
+  matching : M ∈ MatchOf (sys.enabled s)
+  complete : ∀ e ∈ sys.enabled s, e ∈ M
+  quiet_consume : ∀ L : List (EventSkeleton R Δ Ω), L.Nodup → (∀ e ∈ L, e ∈ M) →
+    sys.enabled (sys.fireMany s L) = {e | e ∈ sys.enabled s ∧ e ∉ L}
+
+/-- Shape invariant of singleton runs under a quiet frontier: every reachable configuration is
+"some duplicate-free part `L'` of the frontier fired, with a fold outcome of `L'` accumulated". -/
+theorem QuietFrontier.singleton_run_shape {sys : EventSystem R Δ Ω S} {s : S}
+    {M : List (EventSkeleton R Δ Ω)} (h : QuietFrontier sys s M)
+    (acc : Multiset R × (Δ × ExportBag Ω)) :
+    ∀ {n : ℕ} {L : List (EventSkeleton R Δ Ω)} {y} {c' : Config R Δ Ω S},
+      L.Nodup → (∀ e ∈ L, e ∈ M) → y ∈ foldOutcomesΩ (matchingPayloads L) →
+      c' ∈ runOutcomes sys singletonPol n (sys.fireMany s L, accMul acc y) →
+      ∃ L' : List (EventSkeleton R Δ Ω), L'.Nodup ∧ (∀ e ∈ L', e ∈ M) ∧
+        c'.1 = sys.fireMany s L' ∧
+        ∃ y' ∈ foldOutcomesΩ (matchingPayloads L'), c'.2 = accMul acc y' := by
+  intro n
+  induction n with
+  | zero =>
+      rintro L y c' hnd hsub hy hc'
+      rw [Set.mem_singleton_iff.mp hc']
+      exact ⟨L, hnd, hsub, rfl, y, hy, rfl⟩
+  | succ n ih =>
+      rintro L y c' hnd hsub hy hc'
+      simp only [runOutcomes, Set.mem_union, Set.mem_iUnion, Set.mem_setOf_eq] at hc'
+      rcases hc' with hc' | ⟨d, hd, hrest⟩
+      · rw [Set.mem_singleton_iff.mp hc']
+        exact ⟨L, hnd, hsub, rfl, y, hy, rfl⟩
+      · cases hd with
+        | @fire _ _ M₀ x hpol hM hx =>
+          obtain ⟨e, rfl⟩ : ∃ a, M₀ = [a] := by
+            rcases M₀ with _ | ⟨a, _ | ⟨b, l⟩⟩
+            · exfalso; simp only [singletonPol, List.length_nil] at hpol; omega
+            · exact ⟨a, rfl⟩
+            · exfalso; simp only [singletonPol, List.length_cons] at hpol; omega
+          have he : e ∈ sys.enabled (sys.fireMany s L) := hM.1 e (by simp)
+          rw [h.quiet_consume L hnd hsub] at he
+          have heM : e ∈ M := h.complete e he.1
+          simp only [matchingPayloads, List.map_cons, List.map_nil, foldOutcomesΩ] at hx
+          have hLe_nodup : (L ++ [e]).Nodup := by
+            refine List.Nodup.append hnd (List.nodup_singleton e) ?_
+            intro a haL hae
+            exact he.2 ((List.mem_singleton.mp hae) ▸ haL)
+          have hLe_sub : ∀ a ∈ L ++ [e], a ∈ M := by
+            intro a ha
+            rcases List.mem_append.mp ha with ha | ha
+            · exact hsub a ha
+            · rw [List.mem_singleton.mp ha]; exact heM
+          have hyx : accMul y x ∈ foldOutcomesΩ (matchingPayloads (L ++ [e])) := by
+            simp only [matchingPayloads, List.map_append, List.map_cons, List.map_nil,
+              foldOutcomesΩ]
+            exact mem_foldOutcomes_append.mpr ⟨y, hy, x, hx, rfl⟩
+          have hd_eq : ((sys.fireMany (sys.fireMany s L) [e], accMul (accMul acc y) x) :
+              Config R Δ Ω S) =
+              (sys.fireMany s (L ++ [e]), accMul acc (accMul y x)) :=
+            Prod.ext (sys.fireMany_append s L [e]).symm (accMul_assoc acc y x)
+          rw [hd_eq] at hrest
+          exact ih hLe_nodup hLe_sub hyx hrest
+
+/-- **Crown 2 — the engine macro-collapse corollary.**  Under the explicit `QuietFrontier`
+hypotheses (the engine's macro side conditions), the macro's one-shot outcome set IS the
+quiescent may-set of the full all-matchings closure: macro-firing the frontier is semantically
+invisible.  This — not Crown 1 alone — is the statement the engine may cite: Crown 1 supplies
+the model fact, this corollary supplies the instance-hood under the named conditions. -/
+theorem macro_collapse_corollary (sys : EventSystem R Δ Ω S) {s : S}
+    {M : List (EventSkeleton R Δ Ω)} (h : QuietFrontier sys s M)
+    (acc : Multiset R × (Δ × ExportBag Ω)) :
+    {acc' | ∃ s', (∃ n, (s', acc') ∈ runOutcomes sys allPol n (s, acc)) ∧
+        sys.enabled s' = ∅} =
+    {acc' | ∃ x ∈ foldOutcomesΩ (matchingPayloads M), acc' = accMul acc x} := by
+  ext acc'
+  simp only [Set.mem_setOf_eq]
+  constructor
+  · rintro ⟨s', ⟨n, hn⟩, hq⟩
+    have h1 : ((s', acc') : Config R Δ Ω S) ∈
+        {c' | ∃ n, c' ∈ runOutcomes sys singletonPol n (s, acc)} := by
+      rw [← round_granularity_independence sys (s, acc)]
+      exact ⟨n, hn⟩
+    obtain ⟨m, hm⟩ := h1
+    have hbase : ((s, acc) : Config R Δ Ω S) =
+        (sys.fireMany s [], accMul acc ((0 : Multiset R), (1 : Δ × ExportBag Ω))) := by
+      simp
+    rw [hbase] at hm
+    obtain ⟨L', hnd, hsub, hs', y', hy', hacc'⟩ :=
+      h.singleton_run_shape acc List.nodup_nil (by simp) rfl hm
+    have hempty : {e | e ∈ sys.enabled s ∧ e ∉ L'} = (∅ : Set (EventSkeleton R Δ Ω)) := by
+      rw [← h.quiet_consume L' hnd hsub, ← hs', hq]
+    have hML' : ∀ e ∈ M, e ∈ L' := by
+      intro e heM
+      by_contra hnot
+      have : e ∈ {e | e ∈ sys.enabled s ∧ e ∉ L'} := ⟨h.matching.1 e heM, hnot⟩
+      rw [hempty] at this
+      exact this
+    have hperm : L'.Perm M :=
+      (hnd.subperm hsub).antisymm ((h.matching.2.nodup).subperm hML')
+    have hfold : foldOutcomesΩ (matchingPayloads L') = foldOutcomesΩ (matchingPayloads M) :=
+      foldOutcomesΩ_perm (hperm.map _)
+    exact ⟨y', hfold ▸ hy', hacc'⟩
+  · rintro ⟨x, hx, rfl⟩
+    refine ⟨sys.fireMany s M, ⟨1, ?_⟩, ?_⟩
+    · exact runOutcomes_succ_of_step sys (RoundStep.fire trivial h.matching hx)
+        (self_mem_runOutcomes sys allPol 0 _)
+    · rw [h.quiet_consume M h.matching.2.nodup (fun _ he => he)]
+      ext e
+      simp only [Set.mem_setOf_eq, Set.mem_empty_iff_false, iff_false, not_and, not_not]
+      exact fun hes => h.complete e hes
+
+end RunLayer
 
 end Mettapedia.Languages.ProcessCalculi.RhoCalculus.RhometaReduction

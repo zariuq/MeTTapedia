@@ -716,4 +716,45 @@ private def ppar (elems : List Pattern) : Pattern :=
   let result := reduceToNormalForm term
   IO.println s!"  normal form: {result}"
 
+/-! ### Boundary witnesses, proved
+
+The race and chaining behaviours exercised by the `#eval` tests above, pinned as kernel-checked
+theorems.  They are the operational echoes of the abstract no-go theorems
+`contention_requires_choice` and `chaining_not_single_round` in `RhometaReduction.lean`: choice
+between alternative COMM pairings and multi-round causal chaining are real behaviours of the
+executable semantics, not artifacts of the abstract model. -/
+
+/-- One send on `x`, two competing receivers: the contention witness. -/
+private def raceWitness : Pattern :=
+  ppar [poutput (Pattern.fvar "x") pzero,
+        pinput (Pattern.fvar "x") (.bvar 0),
+        pinput (Pattern.fvar "x") (pdrop (.bvar 0))]
+
+/-- **Contention is operationally real**: the race witness has exactly two one-step reducts, and
+they are distinct — two alternative pairings consume the same linear send, so a one-round
+semantics must choose. -/
+theorem raceWitness_two_distinct_reducts :
+    (reduceStep raceWitness 4).length = 2 ∧ (reduceStep raceWitness 4).Nodup := by
+  decide
+
+/-- `send c a | recv c x. send d x | recv d y. 0`: the chaining witness — the `d`-COMM is enabled
+only after the `c`-COMM fires. -/
+private def chainWitness : Pattern :=
+  ppar [poutput (Pattern.fvar "c") (nquote pzero),
+        pinput (Pattern.fvar "c") (poutput (Pattern.fvar "d") (.bvar 0)),
+        pinput (Pattern.fvar "d") pzero]
+
+/-- **Chaining is operationally real, half 1**: no one-step reduct of the chaining witness is
+quiescent — one round cannot finish it. -/
+theorem chainWitness_no_one_step_quiescence :
+    (reduceStep chainWitness 6).all (fun q => !(reduceStep q 6).isEmpty) = true := by
+  decide
+
+/-- **Chaining is operationally real, half 2**: a quiescent state IS reachable in two rounds —
+sequential closure reaches what no single round can. -/
+theorem chainWitness_two_step_quiescence :
+    (reduceStep chainWitness 6).any
+      (fun q => (reduceStep q 6).any (fun v => (reduceStep v 6).isEmpty)) = true := by
+  decide
+
 end Mettapedia.Languages.ProcessCalculi.RhoCalculus.Engine

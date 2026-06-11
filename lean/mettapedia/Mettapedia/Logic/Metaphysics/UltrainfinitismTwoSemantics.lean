@@ -1,5 +1,6 @@
 import Mettapedia.Logic.Metaphysics.MonadicSecondOrder
 import Mettapedia.Logic.GunkyMereology
+import Mettapedia.Logic.StoneGunkDuality
 
 /-!
 # The ultrainfinitist theory is satisfiable under both standard and Henkin semantics
@@ -358,7 +359,207 @@ theorem sigma11_not_family_absolute :
   · exact h
   · exact h
 
+/-! ## The Stone-points weld: ultrafilter-sets ARE the points of the Stone space
+
+`IsUltraSet` (the semantic ultrafilters of the MSO layer) and the points of
+`StoneSpace B = PrimeSpectrum (AsBoolRing B)` are the same object: an ultrafilter-set
+corresponds to the prime ideal of (the ring images of) its non-members
+(`ultraSetEquivStonePoint`). Under this correspondence, **having a least element is being
+an isolated point** (`hasLeast_iff_isOpen_singleton`), so the two previously parallel
+chains — `sat_freeUFAx_iff_isGunky` (MSO side) and `isGunky_iff_perfect_stoneSpace`
+(topological side) — close into one circle
+(`sat_freeUFAx_iff_perfect_stoneSpace`):
+
+free-ultrafilter axiom ⟺ no principal ultrafilter-set ⟺ no atom ⟺ no isolated point
+⟺ perfect Stone space. -/
+
+section StoneWeld
+
+namespace IsUltraSet
+
+theorem top_mem {F : Set M} (hF : IsUltraSet F) : (⊤ : M) ∈ F := by
+  rcases hF.total ⊤ with h | h
+  · exact h
+  · rw [compl_top] at h
+    exact absurd h hF.proper
+
+theorem sup_mem_or {F : Set M} (hF : IsUltraSet F) {a b : M}
+    (h : a ⊔ b ∈ F) : a ∈ F ∨ b ∈ F := by
+  by_contra hc
+  push_neg at hc
+  have ha := (hF.total a).resolve_left hc.1
+  have hb := (hF.total b).resolve_left hc.2
+  have hinf := hF.inf_mem _ _ ha hb
+  rw [← compl_sup] at hinf
+  have hbot := hF.inf_mem _ _ h hinf
+  rw [inf_compl_self] at hbot
+  exact hF.proper hbot
+
+/-- The prime ideal of an ultrafilter-set: the ring images of its non-members. -/
+def stoneIdeal {F : Set M} (hF : IsUltraSet F) : Ideal (AsBoolRing M) where
+  carrier := {x : AsBoolRing M | ofBoolRing x ∉ F}
+  zero_mem' := by
+    show ofBoolRing (0 : AsBoolRing M) ∉ F
+    rw [show ofBoolRing (0 : AsBoolRing M) = (⊥ : M) from rfl]
+    exact hF.proper
+  add_mem' := by
+    intro x y hx hy
+    show ofBoolRing (x + y) ∉ F
+    rw [show ofBoolRing (x + y) = symmDiff (ofBoolRing x : M) (ofBoolRing y) from rfl]
+    intro hmem
+    have hsup : (ofBoolRing x : M) ⊔ ofBoolRing y ∈ F :=
+      hF.upward _ _ hmem symmDiff_le_sup
+    rcases hF.sup_mem_or hsup with h | h
+    · exact hx h
+    · exact hy h
+  smul_mem' := by
+    intro c x hx
+    show ofBoolRing (c * x) ∉ F
+    rw [show ofBoolRing (c * x) = (ofBoolRing c : M) ⊓ ofBoolRing x from rfl]
+    intro hmem
+    exact hx (hF.upward _ _ hmem inf_le_right)
+
+theorem stoneIdeal_isPrime {F : Set M} (hF : IsUltraSet F) :
+    (hF.stoneIdeal).IsPrime := by
+  constructor
+  · rw [Ideal.ne_top_iff_one]
+    show ¬ ofBoolRing (1 : AsBoolRing M) ∉ F
+    rw [show ofBoolRing (1 : AsBoolRing M) = (⊤ : M) from rfl, not_not]
+    exact hF.top_mem
+  · intro x y hxy
+    have h : (ofBoolRing x : M) ⊓ ofBoolRing y ∉ F := by
+      rw [show (ofBoolRing x : M) ⊓ ofBoolRing y = ofBoolRing (x * y) from rfl]
+      exact hxy
+    rcases em ((ofBoolRing x : M) ∈ F) with hx | hx
+    · right
+      show ofBoolRing y ∉ F
+      intro hy
+      exact h (hF.inf_mem _ _ hx hy)
+    · exact Or.inl hx
+
+/-- The Stone point of an ultrafilter-set. -/
+def stonePoint {F : Set M} (hF : IsUltraSet F) : StoneSpace M :=
+  ⟨hF.stoneIdeal, hF.stoneIdeal_isPrime⟩
+
+end IsUltraSet
+
+/-- The ultrafilter-set of a Stone point: the elements whose ring image avoids the
+prime ideal. -/
+def stonePointUltraSet (p : StoneSpace M) : Set M :=
+  {a : M | toBoolRing a ∉ p.asIdeal}
+
+theorem isUltraSet_stonePointUltraSet (p : StoneSpace M) :
+    IsUltraSet (stonePointUltraSet p) where
+  upward a b ha hab := by
+    show toBoolRing b ∉ p.asIdeal
+    intro hb
+    apply ha
+    show toBoolRing a ∈ p.asIdeal
+    rw [show (toBoolRing a : AsBoolRing M) = toBoolRing a * toBoolRing b by
+      rw [show (toBoolRing a * toBoolRing b : AsBoolRing M) = toBoolRing (a ⊓ b) from rfl,
+        inf_eq_left.mpr hab]]
+    exact Ideal.mul_mem_left _ _ hb
+  inf_mem a b ha hb := by
+    show toBoolRing (a ⊓ b) ∉ p.asIdeal
+    rw [show (toBoolRing (a ⊓ b) : AsBoolRing M) = toBoolRing a * toBoolRing b from rfl]
+    intro h
+    rcases p.2.mem_or_mem h with h' | h'
+    · exact ha h'
+    · exact hb h'
+  proper := by
+    intro h
+    exact h (by
+      rw [show (toBoolRing (⊥ : M) : AsBoolRing M) = 0 from rfl]
+      exact p.asIdeal.zero_mem)
+  total a := by
+    by_contra hc
+    push_neg at hc
+    have h1 : toBoolRing a ∈ p.asIdeal := not_not.mp hc.1
+    have h2 : toBoolRing aᶜ ∈ p.asIdeal := not_not.mp hc.2
+    have hsum := p.asIdeal.add_mem h1 h2
+    rw [show (toBoolRing a + toBoolRing aᶜ : AsBoolRing M) = toBoolRing (symmDiff a aᶜ)
+        from rfl,
+      show symmDiff a aᶜ = (⊤ : M) by
+        simp [symmDiff_def, sdiff_eq, compl_compl]] at hsum
+    exact p.2.ne_top (Ideal.eq_top_iff_one _ |>.mpr hsum)
+
+theorem stonePointUltraSet_stonePoint {F : Set M} (hF : IsUltraSet F) :
+    stonePointUltraSet hF.stonePoint = F := by
+  ext a
+  show ¬ (ofBoolRing (toBoolRing a) : M) ∉ F ↔ a ∈ F
+  rw [show (ofBoolRing (toBoolRing a) : M) = a from rfl]
+  exact not_not
+
+theorem stonePoint_stonePointUltraSet (p : StoneSpace M) :
+    (isUltraSet_stonePointUltraSet p).stonePoint = p := by
+  refine PrimeSpectrum.ext (Ideal.ext fun x => ?_)
+  show ¬ (toBoolRing (ofBoolRing x : M)) ∉ p.asIdeal ↔ x ∈ p.asIdeal
+  rw [show (toBoolRing (ofBoolRing x : M) : AsBoolRing M) = x from rfl]
+  exact not_not
+
+/-- **The Stone-points weld.** The semantic ultrafilters of the MSO layer are exactly
+the points of the Stone space. -/
+noncomputable def ultraSetEquivStonePoint :
+    {F : Set M // IsUltraSet F} ≃ StoneSpace M where
+  toFun F := F.2.stonePoint
+  invFun p := ⟨stonePointUltraSet p, isUltraSet_stonePointUltraSet p⟩
+  left_inv F := Subtype.ext (stonePointUltraSet_stonePoint F.2)
+  right_inv p := stonePoint_stonePointUltraSet p
+
+open PrimeSpectrum in
+/-- **Principal = isolated, through the weld.** An ultrafilter-set has a least element
+exactly when its Stone point is isolated. -/
+theorem hasLeast_iff_isOpen_singleton {F : Set M} (hF : IsUltraSet F) :
+    HasLeast F ↔ IsOpen ({hF.stonePoint} : Set (StoneSpace M)) := by
+  constructor
+  · rintro ⟨m, hm, hleast⟩
+    have hatom : IsAtom m := isAtom_of_least hF hm hleast
+    have hKatom : IsAtom (stoneRepr M m) := (OrderIso.isAtom_iff (stoneRepr M) m).mpr hatom
+    obtain ⟨q, hq⟩ := isAtom_clopens_isSingleton hKatom
+    rw [coe_stoneRepr] at hq
+    have hp_mem : hF.stonePoint ∈ (basicOpen (toBoolRing m) : Set (StoneSpace M)) := by
+      show toBoolRing m ∉ hF.stonePoint.asIdeal
+      exact not_not.mpr hm
+    rw [hq, Set.mem_singleton_iff] at hp_mem
+    rw [hp_mem, ← hq]
+    exact (basicOpen (toBoolRing m)).2
+  · intro hopen
+    have hcl : IsClopen ({hF.stonePoint} : Set (StoneSpace M)) := ⟨isClosed_singleton, hopen⟩
+    set K : TopologicalSpace.Clopens (StoneSpace M) := ⟨{hF.stonePoint}, hcl⟩ with hK
+    have hKatom : IsAtom K := isAtom_clopens_of_singleton hcl
+    set a := (stoneRepr M).symm K with ha
+    have hrepr : stoneRepr M a = K := by rw [ha]; exact (stoneRepr M).apply_symm_apply _
+    have hbo : (basicOpen (toBoolRing a) : Set (StoneSpace M)) = {hF.stonePoint} := by
+      rw [← coe_stoneRepr, hrepr]
+      rfl
+    refine ⟨a, ?_, ?_⟩
+    · have hmem : hF.stonePoint ∈ (basicOpen (toBoolRing a) : Set (StoneSpace M)) := by
+        rw [hbo]; rfl
+      exact not_not.mp hmem
+    · intro b hb
+      have hsub : ({hF.stonePoint} : Set (StoneSpace M)) ⊆
+          (basicOpen (toBoolRing b) : Set (StoneSpace M)) := by
+        intro q hq
+        rw [Set.mem_singleton_iff] at hq
+        subst hq
+        show toBoolRing b ∉ hF.stonePoint.asIdeal
+        exact not_not.mpr hb
+      have hle : stoneRepr M a ≤ stoneRepr M b := by
+        rw [← SetLike.coe_subset_coe, coe_stoneRepr, coe_stoneRepr, hbo]
+        exact hsub
+      exact (stoneRepr M).le_iff_le.mp hle
+
+/-- **The full circle.** The second-order free-ultrafilter axiom holds (standard
+semantics) iff the Stone space is perfect: freeUFAx ⟺ no principal ultrafilter-set ⟺
+no atom ⟺ no isolated point ⟺ perfect. The two previously parallel chains, closed. -/
+theorem sat_freeUFAx_iff_perfect_stoneSpace :
+    SatSentence (Set.univ : Set (Set M)) freeUFAx ↔ PerfectSpace (StoneSpace M) := by
+  rw [sat_freeUFAx_iff_isGunky, isGunky_iff_perfect_stoneSpace]
+
+end StoneWeld
+
 end Mettapedia.Logic.Metaphysics
+
 
 
 

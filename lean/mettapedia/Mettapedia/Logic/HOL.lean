@@ -11,6 +11,20 @@ import Mettapedia.Logic.HOL.LindenbaumSet
 import Mettapedia.Logic.HOL.PrimeHenkinExtension
 import Mettapedia.Logic.HOL.Syntax.FreshConst
 import Mettapedia.Logic.HOL.CanonicalQuantifierBridges
+import Mettapedia.Logic.HOL.WitnessedExtension
+import Mettapedia.Logic.HOL.WitnessedSaturation
+import Mettapedia.Logic.HOL.MaximalConsistent
+import Mettapedia.Logic.HOL.WitnessedWorld
+import Mettapedia.Logic.HOL.WorldEquality
+import Mettapedia.Logic.HOL.ClassicalExcludedMiddle
+import Mettapedia.Logic.HOL.ClassicalWorld
+import Mettapedia.Logic.HOL.TermModel.Domain
+import Mettapedia.Logic.HOL.TermModel.Truth
+import Mettapedia.Logic.HOL.TermModel.Realize
+import Mettapedia.Logic.HOL.TermModel.Denote
+import Mettapedia.Logic.HOL.TermModel.PreModelWrapper
+import Mettapedia.Logic.HOL.TermModel.Fundamental
+import Mettapedia.Logic.HOL.TermModel.HenkinCompleteness
 
 /-!
 # Higher-Order Logic Core

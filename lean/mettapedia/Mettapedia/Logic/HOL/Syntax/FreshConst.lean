@@ -83,6 +83,86 @@ theorem noConstOccurrence_param_of_inj {σ : Ty Base} (n : Nat) :
   | all φ hφ => exact NoConstOccurrence.all hφ
   | ex φ hφ => exact NoConstOccurrence.ex hφ
 
+/-- A strict upper bound on the parameter indices occurring in a term: `0` if no
+parameter occurs, else `1 + (largest index)`.  Used to pick a *fresh* witness
+parameter when saturating: any `param σ k` with `maxParam t ≤ k` is absent from
+`t`. -/
+def maxParam {Γ : Ctx Base} {τ : Ty Base} : Term (WithParams Const) Γ τ → Nat
+  | .var _ => 0
+  | .const d => Sum.elim (fun _ => 0) (fun k => k + 1) d
+  | .app f t => max (maxParam f) (maxParam t)
+  | .lam t => maxParam t
+  | .top => 0
+  | .bot => 0
+  | .and a b => max (maxParam a) (maxParam b)
+  | .or a b => max (maxParam a) (maxParam b)
+  | .imp a b => max (maxParam a) (maxParam b)
+  | .not a => maxParam a
+  | .eq a b => max (maxParam a) (maxParam b)
+  | .all a => maxParam a
+  | .ex a => maxParam a
+
+/-- Any parameter index at or above `maxParam t` names a constant absent from
+`t`: the freshness criterion for Henkin witnessing. -/
+theorem noConstOccurrence_param_of_ge {σ : Ty Base} (k : Nat) :
+    ∀ {Γ : Ctx Base} {τ : Ty Base} (t : Term (WithParams Const) Γ τ),
+      maxParam (Const := Const) t ≤ k → NoConstOccurrence (param σ k) t
+  | _, _, .var _, _ => NoConstOccurrence.var
+  | _, τ', .const d, h => by
+      cases d with
+      | inl c =>
+          by_cases hτ : σ = τ'
+          · subst hτ
+            exact NoConstOccurrence.const_same_ne (inj c) (inj_ne_param c k)
+          · exact NoConstOccurrence.const_diff_type hτ (inj c)
+      | inr j =>
+          simp only [maxParam, Sum.elim_inr] at h
+          by_cases hτ : σ = τ'
+          · subst hτ
+            refine NoConstOccurrence.const_same_ne (param σ j) (fun he => ?_)
+            have hjk : j = k := param_inj he
+            omega
+          · exact NoConstOccurrence.const_diff_type hτ (param τ' j)
+  | _, _, .app f t, h => by
+      simp only [maxParam] at h
+      exact NoConstOccurrence.app
+        (noConstOccurrence_param_of_ge k f (by omega))
+        (noConstOccurrence_param_of_ge k t (by omega))
+  | _, _, .lam t, h => by
+      simp only [maxParam] at h
+      exact NoConstOccurrence.lam (noConstOccurrence_param_of_ge k t h)
+  | _, _, .top, _ => NoConstOccurrence.top
+  | _, _, .bot, _ => NoConstOccurrence.bot
+  | _, _, .and a b, h => by
+      simp only [maxParam] at h
+      exact NoConstOccurrence.and
+        (noConstOccurrence_param_of_ge k a (by omega))
+        (noConstOccurrence_param_of_ge k b (by omega))
+  | _, _, .or a b, h => by
+      simp only [maxParam] at h
+      exact NoConstOccurrence.or
+        (noConstOccurrence_param_of_ge k a (by omega))
+        (noConstOccurrence_param_of_ge k b (by omega))
+  | _, _, .imp a b, h => by
+      simp only [maxParam] at h
+      exact NoConstOccurrence.imp
+        (noConstOccurrence_param_of_ge k a (by omega))
+        (noConstOccurrence_param_of_ge k b (by omega))
+  | _, _, .not a, h => by
+      simp only [maxParam] at h
+      exact NoConstOccurrence.not (noConstOccurrence_param_of_ge k a h)
+  | _, _, .eq a b, h => by
+      simp only [maxParam] at h
+      exact NoConstOccurrence.eq
+        (noConstOccurrence_param_of_ge k a (by omega))
+        (noConstOccurrence_param_of_ge k b (by omega))
+  | _, _, .all a, h => by
+      simp only [maxParam] at h
+      exact NoConstOccurrence.all (noConstOccurrence_param_of_ge k a h)
+  | _, _, .ex a, h => by
+      simp only [maxParam] at h
+      exact NoConstOccurrence.ex (noConstOccurrence_param_of_ge k a h)
+
 end WithParams
 
 end Mettapedia.Logic.HOL

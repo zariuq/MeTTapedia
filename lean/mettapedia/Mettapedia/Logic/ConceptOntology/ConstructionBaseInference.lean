@@ -184,6 +184,124 @@ theorem inheritanceTV_truthAbduction_strength_gateInvariant_of_inheritanceThatsA
   rw [(inheritanceThatsAll_iff_all_strength_inputs_agree (J := J) (sub := right) (super := common)).1 hRight g h]
   rw [hA g h, hB g h, hC g h]
 
+/-- Abduction asymmetry at the construction-base layer.
+
+If the left explanatory edge is genuinely open-world, while the right
+explanatory edge and the common/right priors are already gate-precise, then
+abduction still inherits gate-disagreement provided the right explanatory edge
+is not merely reproducing the common background rate. This is the exact
+nondegenerate regime where abduction structurally lives in `Open World`. -/
+theorem inheritanceTV_truthAbduction_strength_disagreement_of_left_openWorld_right_thatsAll_and_right_nonbackground
+    (J : Gate → AbstractInheritance.Interpretation Carrier Obj Attr)
+    (left common right : Carrier)
+    (hLeftOpen : inheritanceOpenWorld J left common)
+    (hRight : inheritanceThatsAll J right common)
+    (hB : ∀ g h : Gate,
+      Mettapedia.Logic.IntensionalInheritance.Interpretation.finitePriorProb (J g) common =
+        Mettapedia.Logic.IntensionalInheritance.Interpretation.finitePriorProb (J h) common)
+    (hC : ∀ g h : Gate,
+      Mettapedia.Logic.IntensionalInheritance.Interpretation.finitePriorProb (J g) right =
+        Mettapedia.Logic.IntensionalInheritance.Interpretation.finitePriorProb (J h) right)
+    (hNondeg : ∃ g : Gate,
+      Mettapedia.Logic.IntensionalInheritance.Interpretation.finitePriorProb (J g) right ≠ 0 ∧
+      Mettapedia.Logic.IntensionalInheritance.Interpretation.finitePriorProb (J g) common ≠ 0 ∧
+      Mettapedia.Logic.IntensionalInheritance.Interpretation.finitePriorProb (J g) common ≠ 1 ∧
+      (Mettapedia.Logic.ExtensionalIntensionalDivergence.inheritanceTV (J g) right common).strength ≠
+        Mettapedia.Logic.IntensionalInheritance.Interpretation.finitePriorProb (J g) common) :
+    ∃ g h : Gate,
+      (truthAbduction
+        (Mettapedia.Logic.ExtensionalIntensionalDivergence.stvToWMTruthValue
+          (Mettapedia.Logic.ExtensionalIntensionalDivergence.conceptPriorTV (J g) left))
+        (Mettapedia.Logic.ExtensionalIntensionalDivergence.stvToWMTruthValue
+          (Mettapedia.Logic.ExtensionalIntensionalDivergence.conceptPriorTV (J g) common))
+        (Mettapedia.Logic.ExtensionalIntensionalDivergence.stvToWMTruthValue
+          (Mettapedia.Logic.ExtensionalIntensionalDivergence.conceptPriorTV (J g) right))
+        (Mettapedia.Logic.ExtensionalIntensionalDivergence.stvToWMTruthValue
+          (Mettapedia.Logic.ExtensionalIntensionalDivergence.inheritanceTV (J g) left common))
+        (Mettapedia.Logic.ExtensionalIntensionalDivergence.stvToWMTruthValue
+          (Mettapedia.Logic.ExtensionalIntensionalDivergence.inheritanceTV (J g) right common))).s
+      ≠
+      (truthAbduction
+        (Mettapedia.Logic.ExtensionalIntensionalDivergence.stvToWMTruthValue
+          (Mettapedia.Logic.ExtensionalIntensionalDivergence.conceptPriorTV (J h) left))
+        (Mettapedia.Logic.ExtensionalIntensionalDivergence.stvToWMTruthValue
+          (Mettapedia.Logic.ExtensionalIntensionalDivergence.conceptPriorTV (J h) common))
+        (Mettapedia.Logic.ExtensionalIntensionalDivergence.stvToWMTruthValue
+          (Mettapedia.Logic.ExtensionalIntensionalDivergence.conceptPriorTV (J h) right))
+        (Mettapedia.Logic.ExtensionalIntensionalDivergence.stvToWMTruthValue
+        (Mettapedia.Logic.ExtensionalIntensionalDivergence.inheritanceTV (J h) left common))
+        (Mettapedia.Logic.ExtensionalIntensionalDivergence.stvToWMTruthValue
+          (Mettapedia.Logic.ExtensionalIntensionalDivergence.inheritanceTV (J h) right common))).s := by
+  rcases
+      (inheritanceOpenWorld_iff_exists_strength_disagreement (J := J) (sub := left) (super := common)).1
+        hLeftOpen with
+    ⟨g, h, hLeftNe⟩
+  rcases hNondeg with ⟨g₀, hC0, hB0, hB1, hRightNonbackground⟩
+  have hRightAll :
+      ∀ g h : Gate,
+        (Mettapedia.Logic.ExtensionalIntensionalDivergence.inheritanceTV (J g) right common).strength =
+          (Mettapedia.Logic.ExtensionalIntensionalDivergence.inheritanceTV (J h) right common).strength :=
+    (inheritanceThatsAll_iff_all_strength_inputs_agree (J := J) (sub := right) (super := common)).1 hRight
+  have hCh_ne0 :
+      Mettapedia.Logic.IntensionalInheritance.Interpretation.finitePriorProb (J h) right ≠ 0 := by
+    intro hz
+    apply hC0
+    calc
+      Mettapedia.Logic.IntensionalInheritance.Interpretation.finitePriorProb (J g₀) right
+          =
+        Mettapedia.Logic.IntensionalInheritance.Interpretation.finitePriorProb (J h) right := hC g₀ h
+      _ = 0 := hz
+  have hBh_ne0 :
+      Mettapedia.Logic.IntensionalInheritance.Interpretation.finitePriorProb (J h) common ≠ 0 := by
+    intro hz
+    apply hB0
+    calc
+      Mettapedia.Logic.IntensionalInheritance.Interpretation.finitePriorProb (J g₀) common
+          =
+        Mettapedia.Logic.IntensionalInheritance.Interpretation.finitePriorProb (J h) common := hB g₀ h
+      _ = 0 := hz
+  have hBh_ne1 :
+      Mettapedia.Logic.IntensionalInheritance.Interpretation.finitePriorProb (J h) common ≠ 1 := by
+    intro hz
+    apply hB1
+    calc
+      Mettapedia.Logic.IntensionalInheritance.Interpretation.finitePriorProb (J g₀) common
+          =
+        Mettapedia.Logic.IntensionalInheritance.Interpretation.finitePriorProb (J h) common := hB g₀ h
+      _ = 1 := hz
+  have hRightNonbackground_h :
+      (Mettapedia.Logic.ExtensionalIntensionalDivergence.inheritanceTV (J h) right common).strength ≠
+        Mettapedia.Logic.IntensionalInheritance.Interpretation.finitePriorProb (J h) common := by
+    intro hEq
+    apply hRightNonbackground
+    calc
+      (Mettapedia.Logic.ExtensionalIntensionalDivergence.inheritanceTV (J g₀) right common).strength
+          =
+        (Mettapedia.Logic.ExtensionalIntensionalDivergence.inheritanceTV (J h) right common).strength :=
+          hRightAll g₀ h
+      _ =
+        Mettapedia.Logic.IntensionalInheritance.Interpretation.finitePriorProb (J h) common := hEq
+      _ =
+        Mettapedia.Logic.IntensionalInheritance.Interpretation.finitePriorProb (J g₀) common := by
+          symm
+          exact hB g₀ h
+  refine ⟨g, h, ?_⟩
+  rw [Mettapedia.Logic.ExtensionalIntensionalDivergence.inheritanceTV_truthAbduction_strength_eq_conceptPrior
+      (I := J g) (left := left) (common := common) (right := right)]
+  rw [Mettapedia.Logic.ExtensionalIntensionalDivergence.inheritanceTV_truthAbduction_strength_eq_conceptPrior
+      (I := J h) (left := left) (common := common) (right := right)]
+  rw [hRightAll g h, hB g h, hC g h]
+  exact
+    Mettapedia.Logic.PLN.plnAbductionStrength_ne_of_left_strength_ne_of_nonbackground
+      (s_AB₁ := (Mettapedia.Logic.ExtensionalIntensionalDivergence.inheritanceTV (J g) left common).strength)
+      (s_AB₂ := (Mettapedia.Logic.ExtensionalIntensionalDivergence.inheritanceTV (J h) left common).strength)
+      (s_CB := (Mettapedia.Logic.ExtensionalIntensionalDivergence.inheritanceTV (J h) right common).strength)
+      (s_A₁ := Mettapedia.Logic.IntensionalInheritance.Interpretation.finitePriorProb (J g) left)
+      (s_A₂ := Mettapedia.Logic.IntensionalInheritance.Interpretation.finitePriorProb (J h) left)
+      (s_B := Mettapedia.Logic.IntensionalInheritance.Interpretation.finitePriorProb (J h) common)
+      (s_C := Mettapedia.Logic.IntensionalInheritance.Interpretation.finitePriorProb (J h) right)
+      hBh_ne0 hBh_ne1 hCh_ne0 hRightNonbackground_h hLeftNe
+
 end GatewiseInference
 
 end Mettapedia.Logic.ConceptOntology

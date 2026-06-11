@@ -18,7 +18,9 @@ collapsed to the only values the current theory permits (`0` or `1`).
 
 This yields the honest theoremic separation:
 
-* `openWorldConcept` iff the frontier shadow order is **nontrivial and gunky**;
+* `openWorldConcept` iff the frontier shadow order is **nontrivial**;
+* `openWorldConcept` also gives the frontier shadow a **gunky face** by placing it
+  inside the ambient gunky interval `[0,1] ⊆ NNReal`;
 * `thatsAllConcept` forces the frontier shadow order to collapse to a singleton.
 
 So the open/closed-world dial lands on a real frontier object, but at the right
@@ -145,19 +147,16 @@ theorem isGunky_frontierOrder_of_openWorldConcept
   exact isGunky_Iic (α := NNReal) isGunky_nnreal (1 : NNReal)
 
 omit [Fintype Gate] [Nonempty Gate] in
-theorem openWorldConcept_iff_nontrivial_gunky_frontierOrder
+theorem openWorldConcept_frontierOrder_nontrivial_with_gunkyFace
     (Γ : Gate → EvidenceGate Q) (M : Obj → Attr → Q)
     (A : AbstractInheritance.DualConcept Obj Attr) :
-    openWorldConcept (Obj := Obj) (Attr := Attr) (Q := Q) (Gate := Gate) Γ M A ↔
+    openWorldConcept (Obj := Obj) (Attr := Attr) (Q := Q) (Gate := Gate) Γ M A →
       Nontrivial (conceptCredalFrontierOrder Γ M A) ∧
         IsGunky (conceptCredalFrontierOrder Γ M A) := by
-  constructor
-  · intro hOpen
-    exact ⟨
-      (openWorldConcept_iff_nontrivial_frontierOrder (Γ := Γ) (M := M) (A := A)).1 hOpen,
-      isGunky_frontierOrder_of_openWorldConcept (Γ := Γ) (M := M) (A := A) hOpen⟩
-  · intro hFrontier
-    exact (openWorldConcept_iff_nontrivial_frontierOrder (Γ := Γ) (M := M) (A := A)).2 hFrontier.1
+  intro hOpen
+  exact ⟨
+    (openWorldConcept_iff_nontrivial_frontierOrder (Γ := Γ) (M := M) (A := A)).1 hOpen,
+    isGunky_frontierOrder_of_openWorldConcept (Γ := Γ) (M := M) (A := A) hOpen⟩
 
 omit [Fintype Gate] [Nonempty Gate] in
 theorem subsingleton_frontierOrder_of_thatsAllConcept
@@ -169,19 +168,48 @@ theorem subsingleton_frontierOrder_of_thatsAllConcept
     conceptCredalFrontierHeight_eq_zero_of_thatsAllConcept (Γ := Γ) (M := M) (A := A) hAll
   simpa [conceptCredalFrontierOrder, hHeight] using subsingleton_iic_zero_nnreal
 
+-- A genuinely open-world frontier shadow cannot be finite: finite nontrivial
+-- carriers are never gunky, so any finite-stage frontier approximation
+-- collapses the dial.
+omit [Fintype Gate] [Nonempty Gate] in
+theorem not_openWorldConcept_of_finite_frontierOrder
+    (Γ : Gate → EvidenceGate Q) (M : Obj → Attr → Q)
+    (A : AbstractInheritance.DualConcept Obj Attr)
+    [Finite (conceptCredalFrontierOrder Γ M A)] :
+    ¬ openWorldConcept (Obj := Obj) (Attr := Attr) (Q := Q) (Gate := Gate) Γ M A := by
+  intro hOpen
+  have hFrontier :=
+    openWorldConcept_frontierOrder_nontrivial_with_gunkyFace
+      (Γ := Γ) (M := M) (A := A) hOpen
+  letI : Nontrivial (conceptCredalFrontierOrder Γ M A) := hFrontier.1
+  exact not_isGunky_of_finite hFrontier.2
+
+-- Any finite frontier carrier forces the concept-state dial to collapse to the
+-- `That’s All` side. The genuine atomless/perfect identification cannot live at
+-- a finite stage.
+omit [Fintype Gate] [Nonempty Gate] in
+theorem thatsAllConcept_of_finite_frontierOrder
+    (Γ : Gate → EvidenceGate Q) (M : Obj → Attr → Q)
+    (A : AbstractInheritance.DualConcept Obj Attr)
+    [Finite (conceptCredalFrontierOrder Γ M A)] :
+    thatsAllConcept (Obj := Obj) (Attr := Attr) (Q := Q) (Gate := Gate) Γ M A := by
+  have hNotOpen :
+      ¬ openWorldConcept (Obj := Obj) (Attr := Attr) (Q := Q) (Gate := Gate) Γ M A :=
+    not_openWorldConcept_of_finite_frontierOrder (Γ := Γ) (M := M) (A := A)
+  simpa [thatsAllConcept, openWorldConcept] using hNotOpen
+
 end FrontierShadow
 
 namespace ControlExample
 
 open ControlCredalExample
 
-theorem flyingFamilyConcept_frontierOrder_nontrivial_gunky :
+theorem flyingFamilyConcept_frontierOrder_nontrivial_with_gunkyFace :
     Nontrivial (conceptCredalFrontierOrder gateFamily context.evidence flyingFamilyConcept) ∧
       IsGunky (conceptCredalFrontierOrder gateFamily context.evidence flyingFamilyConcept) := by
-  exact
-    (openWorldConcept_iff_nontrivial_gunky_frontierOrder
-      gateFamily context.evidence flyingFamilyConcept).1
-        flyingFamilyConcept_openWorldConcept
+  exact openWorldConcept_frontierOrder_nontrivial_with_gunkyFace
+    gateFamily context.evidence flyingFamilyConcept
+    flyingFamilyConcept_openWorldConcept
 
 theorem batOnlyFlyingConcept_frontierOrder_subsingleton :
     Subsingleton (conceptCredalFrontierOrder gateFamily context.evidence batOnlyFlyingConcept) := by
