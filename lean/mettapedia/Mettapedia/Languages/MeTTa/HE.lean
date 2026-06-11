@@ -20,6 +20,12 @@ import Mettapedia.Languages.MeTTa.HE.SemanticForms
 import Mettapedia.Languages.MeTTa.HE.CoreFragment
 import Mettapedia.Languages.MeTTa.HE.LetChainResumption
 import Mettapedia.Languages.MeTTa.HE.BulkTransferSoundness
+import Mettapedia.Languages.MeTTa.HE.SmallStep
+import Mettapedia.Languages.MeTTa.HE.SmallStepSound
+import Mettapedia.Languages.MeTTa.HE.SmallStepQuiescence
+import Mettapedia.Languages.MeTTa.HE.SmallStepContext
+import Mettapedia.Languages.MeTTa.HE.SmallStepMaster
+import Mettapedia.Languages.MeTTa.HE.MatcherBridge
 
 /-!
 # Hyperon Experimental MeTTa Semantics

@@ -1,4 +1,5 @@
 import Mettapedia.Logic.CredalConceptFixpointClosureBridge
+import Mettapedia.Logic.CredalConceptFullInheritanceClosureBridge
 import Mettapedia.Logic.MarkovLogicOntologyGrowth
 
 /-!
@@ -195,6 +196,122 @@ theorem leastRuleClosure_thresholdValid_lowerFormedConceptQuerySet_of_specAgrees
     hagree hclosed₁ hclosed₂ hbudget₁ hbudget₂ μ₁ μ₂ hμ₁ hμ₂
     GateFamily M tau encode seed hSeed hSupport
 
+/- The same ontology-growth stability transport also applies to the new
+full-inheritance query surface: once a robust lower-formed seed family is
+encoded against `fullInheritanceStrength`, local agreement of the MLN
+specifications preserves threshold-validity of that exact full-strength family. -/
+omit [Fintype Gate] [Nonempty Gate] in
+theorem thresholdValid_lowerFormedConceptQuerySet_stable_of_specAgreesOnRegion_of_exactFullInheritanceStrength
+    {M₁ M₂ : MarkovLogicInfiniteUniqueness.ClassicalInfiniteGroundMLNSpec Atom ClauseId}
+    {Γ : MarkovLogicInfiniteSpecification.Region Atom}
+    (hagree : SpecAgreesOnRegion M₁ M₂ Γ)
+    (hclosed₁ : InteractionClosed M₁ Γ)
+    (hclosed₂ : InteractionClosed M₂ Γ)
+    (hbudget₁ : M₁.PaperUniformSmallTotalInfluence)
+    (hbudget₂ : M₂.PaperUniformSmallTotalInfluence)
+    (μ₁ : MeasureTheory.ProbabilityMeasure (MarkovLogicInfiniteSpecification.InfiniteWorld Atom))
+    (μ₂ : MeasureTheory.ProbabilityMeasure (MarkovLogicInfiniteSpecification.InfiniteWorld Atom))
+    (hμ₁ : MarkovLogicInfiniteFixedRegionDLR.FixedRegionCylinderDLR
+      M₁.toStrictlyPositiveInfiniteGroundMLNSpec
+      (μ₁ : MeasureTheory.Measure (MarkovLogicInfiniteSpecification.InfiniteWorld Atom)))
+    (hμ₂ : MarkovLogicInfiniteFixedRegionDLR.FixedRegionCylinderDLR
+      M₂.toStrictlyPositiveInfiniteGroundMLNSpec
+      (μ₂ : MeasureTheory.Measure (MarkovLogicInfiniteSpecification.InfiniteWorld Atom)))
+    (GateFamily : Gate → ConceptOntology.EvidenceGate Q) (M : Obj → Attr → Q)
+    (tau : ENNReal)
+    (encode :
+      ConceptOntology.LowerFormedConcept GateFamily M →
+        ConceptOntology.LowerFormedConcept GateFamily M →
+          ConstraintQuery Atom)
+    (seed :
+      Set (CredalConceptFullInheritanceClosureBridge.LowerFormedConceptPair GateFamily M))
+    (hSeed :
+      thresholdValid
+        (State := MassState (ConstraintQuery Atom))
+        (Query := ConstraintQuery Atom)
+        ({infiniteMLNMassSemantics M₁ μ₁ hμ₁}) tau
+        (CredalConceptFullInheritanceClosureBridge.lowerFormedConceptQuerySet
+          GateFamily M encode seed))
+    (hSupport :
+      ∀ p : CredalConceptFullInheritanceClosureBridge.LowerFormedConceptPair GateFamily M, p ∈ seed →
+        ∀ c ∈ encode p.1 p.2, (c : Sigma fun _ : Atom => Bool).1 ∈ Γ) :
+    thresholdValid
+      (State := MassState (ConstraintQuery Atom))
+      (Query := ConstraintQuery Atom)
+      ({infiniteMLNMassSemantics M₂ μ₂ hμ₂}) tau
+      (CredalConceptFullInheritanceClosureBridge.lowerFormedConceptQuerySet
+        GateFamily M encode seed) := by
+  intro q hq
+  rcases hq with ⟨p, hp, rfl⟩
+  have hOld :
+      tau ≤ BinaryWorldModel.queryStrength
+        (State := MassState (ConstraintQuery Atom))
+        (Query := ConstraintQuery Atom)
+        ({infiniteMLNMassSemantics M₁ μ₁ hμ₁}) (encode p.1 p.2) :=
+    hSeed _ ⟨p, hp, rfl⟩
+  have hEq :=
+    lowerFormedConceptQueryStrength_eq_of_specAgreesOnRegion
+      hagree hclosed₁ hclosed₂ hbudget₁ hbudget₂ μ₁ μ₂ hμ₁ hμ₂
+      GateFamily M encode p.1 p.2 (hSupport p hp)
+  simpa [hEq] using hOld
+
+/- Re-applying generic WM consequence closure on the grown ontology preserves
+threshold-validity for the exact full-inheritance lower-formed query family as
+well once the family is locally stable under ontology growth. -/
+omit [Fintype Gate] [Nonempty Gate] in
+theorem leastRuleClosure_thresholdValid_lowerFormedConceptQuerySet_of_specAgreesOnRegion_of_exactFullInheritanceStrength
+    (R :
+      RuleSet
+        (MassState (ConstraintQuery Atom))
+        (ConstraintQuery Atom))
+    {M₁ M₂ : MarkovLogicInfiniteUniqueness.ClassicalInfiniteGroundMLNSpec Atom ClauseId}
+    {Γ : MarkovLogicInfiniteSpecification.Region Atom}
+    (hagree : SpecAgreesOnRegion M₁ M₂ Γ)
+    (hclosed₁ : InteractionClosed M₁ Γ)
+    (hclosed₂ : InteractionClosed M₂ Γ)
+    (hbudget₁ : M₁.PaperUniformSmallTotalInfluence)
+    (hbudget₂ : M₂.PaperUniformSmallTotalInfluence)
+    (μ₁ : MeasureTheory.ProbabilityMeasure (MarkovLogicInfiniteSpecification.InfiniteWorld Atom))
+    (μ₂ : MeasureTheory.ProbabilityMeasure (MarkovLogicInfiniteSpecification.InfiniteWorld Atom))
+    (hμ₁ : MarkovLogicInfiniteFixedRegionDLR.FixedRegionCylinderDLR
+      M₁.toStrictlyPositiveInfiniteGroundMLNSpec
+      (μ₁ : MeasureTheory.Measure (MarkovLogicInfiniteSpecification.InfiniteWorld Atom)))
+    (hμ₂ : MarkovLogicInfiniteFixedRegionDLR.FixedRegionCylinderDLR
+      M₂.toStrictlyPositiveInfiniteGroundMLNSpec
+      (μ₂ : MeasureTheory.Measure (MarkovLogicInfiniteSpecification.InfiniteWorld Atom)))
+    (GateFamily : Gate → ConceptOntology.EvidenceGate Q) (M : Obj → Attr → Q)
+    (tau : ENNReal)
+    (encode :
+      ConceptOntology.LowerFormedConcept GateFamily M →
+        ConceptOntology.LowerFormedConcept GateFamily M →
+          ConstraintQuery Atom)
+    (seed :
+      Set (CredalConceptFullInheritanceClosureBridge.LowerFormedConceptPair GateFamily M))
+    (hSeed :
+      thresholdValid
+        (State := MassState (ConstraintQuery Atom))
+        (Query := ConstraintQuery Atom)
+        ({infiniteMLNMassSemantics M₁ μ₁ hμ₁}) tau
+        (CredalConceptFullInheritanceClosureBridge.lowerFormedConceptQuerySet
+          GateFamily M encode seed))
+    (hSupport :
+      ∀ p : CredalConceptFullInheritanceClosureBridge.LowerFormedConceptPair GateFamily M, p ∈ seed →
+        ∀ c ∈ encode p.1 p.2, (c : Sigma fun _ : Atom => Bool).1 ∈ Γ) :
+    thresholdValid
+      (State := MassState (ConstraintQuery Atom))
+      (Query := ConstraintQuery Atom)
+      ({infiniteMLNMassSemantics M₂ μ₂ hμ₂}) tau
+      (leastRuleClosure
+        (State := MassState (ConstraintQuery Atom))
+        (Query := ConstraintQuery Atom)
+        R ({infiniteMLNMassSemantics M₂ μ₂ hμ₂})
+        (CredalConceptFullInheritanceClosureBridge.lowerFormedConceptQuerySet
+          GateFamily M encode seed)) := by
+  apply leastRuleClosure_thresholdValid
+  exact thresholdValid_lowerFormedConceptQuerySet_stable_of_specAgreesOnRegion_of_exactFullInheritanceStrength
+    hagree hclosed₁ hclosed₂ hbudget₁ hbudget₂ μ₁ μ₂ hμ₁ hμ₂
+    GateFamily M tau encode seed hSeed hSupport
+
 end Generic
 
 section Admissibility
@@ -340,6 +457,141 @@ theorem generic_wmAdmissibleRegionAt_eq_availableRegionAt_of_specAgreesOnRegion
       R hagree hclosed₁ hclosed₂ hbudget₁ hbudget₂ μ₁ μ₂ hμ₁ hμ₂
       GateFamily M tau encode seed hSeed hSupport)
 
+/- The same admissibility transport applies to the exact full-inheritance
+lower-formed query family once ontology growth preserves the local semantics of
+the encoded seed obligations. -/
+omit [Fintype Gate] [Nonempty Gate] in
+theorem generic_availableRegionAt_subset_wmAdmissibleRegionAt_of_specAgreesOnRegion_of_exactFullInheritanceStrength
+    (P : StatefulPerspective (MassState (ConstraintQuery Atom)) (ConstraintQuery Atom) Signal Cost)
+    (R :
+      RuleSet
+        (MassState (ConstraintQuery Atom))
+        (ConstraintQuery Atom))
+    {M₁ M₂ : MarkovLogicInfiniteUniqueness.ClassicalInfiniteGroundMLNSpec Atom ClauseId}
+    {Γ : MarkovLogicInfiniteSpecification.Region Atom}
+    (hagree : SpecAgreesOnRegion M₁ M₂ Γ)
+    (hclosed₁ : InteractionClosed M₁ Γ)
+    (hclosed₂ : InteractionClosed M₂ Γ)
+    (hbudget₁ : M₁.PaperUniformSmallTotalInfluence)
+    (hbudget₂ : M₂.PaperUniformSmallTotalInfluence)
+    (μ₁ : MeasureTheory.ProbabilityMeasure (MarkovLogicInfiniteSpecification.InfiniteWorld Atom))
+    (μ₂ : MeasureTheory.ProbabilityMeasure (MarkovLogicInfiniteSpecification.InfiniteWorld Atom))
+    (hμ₁ : MarkovLogicInfiniteFixedRegionDLR.FixedRegionCylinderDLR
+      M₁.toStrictlyPositiveInfiniteGroundMLNSpec
+      (μ₁ : MeasureTheory.Measure (MarkovLogicInfiniteSpecification.InfiniteWorld Atom)))
+    (hμ₂ : MarkovLogicInfiniteFixedRegionDLR.FixedRegionCylinderDLR
+      M₂.toStrictlyPositiveInfiniteGroundMLNSpec
+      (μ₂ : MeasureTheory.Measure (MarkovLogicInfiniteSpecification.InfiniteWorld Atom)))
+    (GateFamily : Gate → ConceptOntology.EvidenceGate Q) (M : Obj → Attr → Q)
+    (B : Cost) (guard : Set (ConstraintQuery Atom)) (tau : ENNReal)
+    (encode :
+      ConceptOntology.LowerFormedConcept GateFamily M →
+        ConceptOntology.LowerFormedConcept GateFamily M →
+          ConstraintQuery Atom)
+    (seed :
+      Set (CredalConceptFullInheritanceClosureBridge.LowerFormedConceptPair GateFamily M))
+    (hSeed :
+      thresholdValid
+        (State := MassState (ConstraintQuery Atom))
+        (Query := ConstraintQuery Atom)
+        ({infiniteMLNMassSemantics M₁ μ₁ hμ₁}) tau
+        (CredalConceptFullInheritanceClosureBridge.lowerFormedConceptQuerySet
+          GateFamily M encode seed))
+    (hSupport :
+      ∀ p : CredalConceptFullInheritanceClosureBridge.LowerFormedConceptPair GateFamily M, p ∈ seed →
+        ∀ c ∈ encode p.1 p.2, (c : Sigma fun _ : Atom => Bool).1 ∈ Γ)
+    (hAvail :
+      availableRegionAt P ({infiniteMLNMassSemantics M₂ μ₂ hμ₂}) B guard ⊆
+        leastRuleClosure
+          (State := MassState (ConstraintQuery Atom))
+          (Query := ConstraintQuery Atom)
+          R ({infiniteMLNMassSemantics M₂ μ₂ hμ₂})
+          (CredalConceptFullInheritanceClosureBridge.lowerFormedConceptQuerySet
+            GateFamily M encode seed)) :
+    availableRegionAt P ({infiniteMLNMassSemantics M₂ μ₂ hμ₂}) B guard ⊆
+      PLNWorldModelRegimeAdmissibility.wmAdmissibleRegionAt
+        (State := MassState (ConstraintQuery Atom))
+        (Query := ConstraintQuery Atom)
+        P ({infiniteMLNMassSemantics M₂ μ₂ hμ₂}) B guard tau := by
+  apply PLNWorldModelRegimeAdmissibility.availableRegionAt_subset_wmAdmissibleRegionAt_of_thresholdValid
+    (S := leastRuleClosure
+      (State := MassState (ConstraintQuery Atom))
+      (Query := ConstraintQuery Atom)
+      R ({infiniteMLNMassSemantics M₂ μ₂ hμ₂})
+      (CredalConceptFullInheritanceClosureBridge.lowerFormedConceptQuerySet
+        GateFamily M encode seed))
+  · exact leastRuleClosure_thresholdValid_lowerFormedConceptQuerySet_of_specAgreesOnRegion_of_exactFullInheritanceStrength
+      R hagree hclosed₁ hclosed₂ hbudget₁ hbudget₂ μ₁ μ₂ hμ₁ hμ₂
+      GateFamily M tau encode seed hSeed hSupport
+  · exact hAvail
+
+/- If the grown available region is covered by the grown closure of a locally
+stable exact full-inheritance lower-formed seed family, the grown
+WM-admissible region again collapses back to the available region. -/
+omit [Fintype Gate] [Nonempty Gate] in
+theorem generic_wmAdmissibleRegionAt_eq_availableRegionAt_of_specAgreesOnRegion_of_exactFullInheritanceStrength
+    (P : StatefulPerspective (MassState (ConstraintQuery Atom)) (ConstraintQuery Atom) Signal Cost)
+    (R :
+      RuleSet
+        (MassState (ConstraintQuery Atom))
+        (ConstraintQuery Atom))
+    {M₁ M₂ : MarkovLogicInfiniteUniqueness.ClassicalInfiniteGroundMLNSpec Atom ClauseId}
+    {Γ : MarkovLogicInfiniteSpecification.Region Atom}
+    (hagree : SpecAgreesOnRegion M₁ M₂ Γ)
+    (hclosed₁ : InteractionClosed M₁ Γ)
+    (hclosed₂ : InteractionClosed M₂ Γ)
+    (hbudget₁ : M₁.PaperUniformSmallTotalInfluence)
+    (hbudget₂ : M₂.PaperUniformSmallTotalInfluence)
+    (μ₁ : MeasureTheory.ProbabilityMeasure (MarkovLogicInfiniteSpecification.InfiniteWorld Atom))
+    (μ₂ : MeasureTheory.ProbabilityMeasure (MarkovLogicInfiniteSpecification.InfiniteWorld Atom))
+    (hμ₁ : MarkovLogicInfiniteFixedRegionDLR.FixedRegionCylinderDLR
+      M₁.toStrictlyPositiveInfiniteGroundMLNSpec
+      (μ₁ : MeasureTheory.Measure (MarkovLogicInfiniteSpecification.InfiniteWorld Atom)))
+    (hμ₂ : MarkovLogicInfiniteFixedRegionDLR.FixedRegionCylinderDLR
+      M₂.toStrictlyPositiveInfiniteGroundMLNSpec
+      (μ₂ : MeasureTheory.Measure (MarkovLogicInfiniteSpecification.InfiniteWorld Atom)))
+    (GateFamily : Gate → ConceptOntology.EvidenceGate Q) (M : Obj → Attr → Q)
+    (B : Cost) (guard : Set (ConstraintQuery Atom)) (tau : ENNReal)
+    (encode :
+      ConceptOntology.LowerFormedConcept GateFamily M →
+        ConceptOntology.LowerFormedConcept GateFamily M →
+          ConstraintQuery Atom)
+    (seed :
+      Set (CredalConceptFullInheritanceClosureBridge.LowerFormedConceptPair GateFamily M))
+    (hSeed :
+      thresholdValid
+        (State := MassState (ConstraintQuery Atom))
+        (Query := ConstraintQuery Atom)
+        ({infiniteMLNMassSemantics M₁ μ₁ hμ₁}) tau
+        (CredalConceptFullInheritanceClosureBridge.lowerFormedConceptQuerySet
+          GateFamily M encode seed))
+    (hSupport :
+      ∀ p : CredalConceptFullInheritanceClosureBridge.LowerFormedConceptPair GateFamily M, p ∈ seed →
+        ∀ c ∈ encode p.1 p.2, (c : Sigma fun _ : Atom => Bool).1 ∈ Γ)
+    (hAvail :
+      availableRegionAt P ({infiniteMLNMassSemantics M₂ μ₂ hμ₂}) B guard ⊆
+        leastRuleClosure
+          (State := MassState (ConstraintQuery Atom))
+          (Query := ConstraintQuery Atom)
+          R ({infiniteMLNMassSemantics M₂ μ₂ hμ₂})
+          (CredalConceptFullInheritanceClosureBridge.lowerFormedConceptQuerySet
+            GateFamily M encode seed)) :
+    PLNWorldModelRegimeAdmissibility.wmAdmissibleRegionAt
+        (State := MassState (ConstraintQuery Atom))
+        (Query := ConstraintQuery Atom)
+        P ({infiniteMLNMassSemantics M₂ μ₂ hμ₂}) B guard tau =
+      availableRegionAt P ({infiniteMLNMassSemantics M₂ μ₂ hμ₂}) B guard := by
+  apply PLNWorldModelRegimeAdmissibility.wmAdmissibleRegionAt_eq_availableRegionAt_of_thresholdValid
+  exact thresholdValid_mono
+    (State := MassState (ConstraintQuery Atom))
+    (Query := ConstraintQuery Atom)
+    (W := {infiniteMLNMassSemantics M₂ μ₂ hμ₂})
+    (τ := tau)
+    hAvail
+    (leastRuleClosure_thresholdValid_lowerFormedConceptQuerySet_of_specAgreesOnRegion_of_exactFullInheritanceStrength
+      R hagree hclosed₁ hclosed₂ hbudget₁ hbudget₂ μ₁ μ₂ hμ₁ hμ₂
+      GateFamily M tau encode seed hSeed hSupport)
+
 end Admissibility
 
 section Observation
@@ -462,6 +714,116 @@ theorem ConceptOntology.ObservationSurface.leastRuleClosure_thresholdValid_obser
     R hagree hclosed₁ hclosed₂ hbudget₁ hbudget₂ μ₁ μ₂ hμ₁ hμ₂
     GateFamily (ConceptOntology.ObservationSurface.aggregate S σ) tau encode seed hSeed hSupport
 
+/- Observation-level specialization of local ontology-growth stability for
+robust lower-formed exact full-inheritance obligations. -/
+omit [Fintype Gate] [Nonempty Gate] in
+theorem ConceptOntology.ObservationSurface.thresholdValid_observationLowerFormedConceptQuerySet_stable_of_specAgreesOnRegion_of_exactFullInheritanceStrength
+    {M₁ M₂ : MarkovLogicInfiniteUniqueness.ClassicalInfiniteGroundMLNSpec Atom ClauseId}
+    {Γ : MarkovLogicInfiniteSpecification.Region Atom}
+    (hagree : SpecAgreesOnRegion M₁ M₂ Γ)
+    (hclosed₁ : InteractionClosed M₁ Γ)
+    (hclosed₂ : InteractionClosed M₂ Γ)
+    (hbudget₁ : M₁.PaperUniformSmallTotalInfluence)
+    (hbudget₂ : M₂.PaperUniformSmallTotalInfluence)
+    (μ₁ : MeasureTheory.ProbabilityMeasure (MarkovLogicInfiniteSpecification.InfiniteWorld Atom))
+    (μ₂ : MeasureTheory.ProbabilityMeasure (MarkovLogicInfiniteSpecification.InfiniteWorld Atom))
+    (hμ₁ : MarkovLogicInfiniteFixedRegionDLR.FixedRegionCylinderDLR
+      M₁.toStrictlyPositiveInfiniteGroundMLNSpec
+      (μ₁ : MeasureTheory.Measure (MarkovLogicInfiniteSpecification.InfiniteWorld Atom)))
+    (hμ₂ : MarkovLogicInfiniteFixedRegionDLR.FixedRegionCylinderDLR
+      M₂.toStrictlyPositiveInfiniteGroundMLNSpec
+      (μ₂ : MeasureTheory.Measure (MarkovLogicInfiniteSpecification.InfiniteWorld Atom)))
+    (S : ConceptOntology.ObservationSurface Obs Obj Attr Q)
+    (GateFamily : Gate → ConceptOntology.EvidenceGate Q) (σ : Multiset Obs)
+    (tau : ENNReal)
+    (encode :
+      ConceptOntology.ObservationSurface.LowerFormedConcept S GateFamily σ →
+        ConceptOntology.ObservationSurface.LowerFormedConcept S GateFamily σ →
+          ConstraintQuery Atom)
+    (seed :
+      Set
+        (ConceptOntology.ObservationSurface.LowerFormedConcept S GateFamily σ ×
+          ConceptOntology.ObservationSurface.LowerFormedConcept S GateFamily σ))
+    (hSeed :
+      thresholdValid
+        (State := MassState (ConstraintQuery Atom))
+        (Query := ConstraintQuery Atom)
+        ({infiniteMLNMassSemantics M₁ μ₁ hμ₁}) tau
+        (CredalConceptFullInheritanceClosureBridge.lowerFormedConceptQuerySet GateFamily
+          (ConceptOntology.ObservationSurface.aggregate S σ) encode seed))
+    (hSupport :
+      ∀ p : ConceptOntology.ObservationSurface.LowerFormedConcept S GateFamily σ ×
+          ConceptOntology.ObservationSurface.LowerFormedConcept S GateFamily σ, p ∈ seed →
+        ∀ c ∈ encode p.1 p.2, (c : Sigma fun _ : Atom => Bool).1 ∈ Γ) :
+    thresholdValid
+      (State := MassState (ConstraintQuery Atom))
+      (Query := ConstraintQuery Atom)
+      ({infiniteMLNMassSemantics M₂ μ₂ hμ₂}) tau
+      (CredalConceptFullInheritanceClosureBridge.lowerFormedConceptQuerySet GateFamily
+        (ConceptOntology.ObservationSurface.aggregate S σ) encode seed) := by
+  exact thresholdValid_lowerFormedConceptQuerySet_stable_of_specAgreesOnRegion_of_exactFullInheritanceStrength
+    hagree hclosed₁ hclosed₂ hbudget₁ hbudget₂ μ₁ μ₂ hμ₁ hμ₂
+    GateFamily (ConceptOntology.ObservationSurface.aggregate S σ) tau encode seed hSeed hSupport
+
+/- Observation-level closure corollary for the exact full-inheritance
+lower-formed surface. -/
+omit [Fintype Gate] [Nonempty Gate] in
+theorem ConceptOntology.ObservationSurface.leastRuleClosure_thresholdValid_observationLowerFormedConceptQuerySet_of_specAgreesOnRegion_of_exactFullInheritanceStrength
+    (R :
+      RuleSet
+        (MassState (ConstraintQuery Atom))
+        (ConstraintQuery Atom))
+    {M₁ M₂ : MarkovLogicInfiniteUniqueness.ClassicalInfiniteGroundMLNSpec Atom ClauseId}
+    {Γ : MarkovLogicInfiniteSpecification.Region Atom}
+    (hagree : SpecAgreesOnRegion M₁ M₂ Γ)
+    (hclosed₁ : InteractionClosed M₁ Γ)
+    (hclosed₂ : InteractionClosed M₂ Γ)
+    (hbudget₁ : M₁.PaperUniformSmallTotalInfluence)
+    (hbudget₂ : M₂.PaperUniformSmallTotalInfluence)
+    (μ₁ : MeasureTheory.ProbabilityMeasure (MarkovLogicInfiniteSpecification.InfiniteWorld Atom))
+    (μ₂ : MeasureTheory.ProbabilityMeasure (MarkovLogicInfiniteSpecification.InfiniteWorld Atom))
+    (hμ₁ : MarkovLogicInfiniteFixedRegionDLR.FixedRegionCylinderDLR
+      M₁.toStrictlyPositiveInfiniteGroundMLNSpec
+      (μ₁ : MeasureTheory.Measure (MarkovLogicInfiniteSpecification.InfiniteWorld Atom)))
+    (hμ₂ : MarkovLogicInfiniteFixedRegionDLR.FixedRegionCylinderDLR
+      M₂.toStrictlyPositiveInfiniteGroundMLNSpec
+      (μ₂ : MeasureTheory.Measure (MarkovLogicInfiniteSpecification.InfiniteWorld Atom)))
+    (S : ConceptOntology.ObservationSurface Obs Obj Attr Q)
+    (GateFamily : Gate → ConceptOntology.EvidenceGate Q) (σ : Multiset Obs)
+    (tau : ENNReal)
+    (encode :
+      ConceptOntology.ObservationSurface.LowerFormedConcept S GateFamily σ →
+        ConceptOntology.ObservationSurface.LowerFormedConcept S GateFamily σ →
+          ConstraintQuery Atom)
+    (seed :
+      Set
+        (ConceptOntology.ObservationSurface.LowerFormedConcept S GateFamily σ ×
+          ConceptOntology.ObservationSurface.LowerFormedConcept S GateFamily σ))
+    (hSeed :
+      thresholdValid
+        (State := MassState (ConstraintQuery Atom))
+        (Query := ConstraintQuery Atom)
+        ({infiniteMLNMassSemantics M₁ μ₁ hμ₁}) tau
+        (CredalConceptFullInheritanceClosureBridge.lowerFormedConceptQuerySet GateFamily
+          (ConceptOntology.ObservationSurface.aggregate S σ) encode seed))
+    (hSupport :
+      ∀ p : ConceptOntology.ObservationSurface.LowerFormedConcept S GateFamily σ ×
+          ConceptOntology.ObservationSurface.LowerFormedConcept S GateFamily σ, p ∈ seed →
+        ∀ c ∈ encode p.1 p.2, (c : Sigma fun _ : Atom => Bool).1 ∈ Γ) :
+    thresholdValid
+      (State := MassState (ConstraintQuery Atom))
+      (Query := ConstraintQuery Atom)
+      ({infiniteMLNMassSemantics M₂ μ₂ hμ₂}) tau
+      (leastRuleClosure
+        (State := MassState (ConstraintQuery Atom))
+        (Query := ConstraintQuery Atom)
+        R ({infiniteMLNMassSemantics M₂ μ₂ hμ₂})
+        (CredalConceptFullInheritanceClosureBridge.lowerFormedConceptQuerySet GateFamily
+          (ConceptOntology.ObservationSurface.aggregate S σ) encode seed)) := by
+  exact leastRuleClosure_thresholdValid_lowerFormedConceptQuerySet_of_specAgreesOnRegion_of_exactFullInheritanceStrength
+    R hagree hclosed₁ hclosed₂ hbudget₁ hbudget₂ μ₁ μ₂ hμ₁ hμ₂
+    GateFamily (ConceptOntology.ObservationSurface.aggregate S σ) tau encode seed hSeed hSupport
+
 section ObservationAdmissibility
 
 variable {Atom ClauseId : Type u} [DecidableEq Atom] [DecidableEq ClauseId]
@@ -534,6 +896,70 @@ theorem ConceptOntology.ObservationSurface.availableRegionAt_subset_wmAdmissible
     GateFamily (ConceptOntology.ObservationSurface.aggregate S σ)
     B guard tau encode seed hSeed hSupport hAvail
 
+/- Observation-level admissibility corollary for locally stable exact
+full-inheritance lower-formed obligations under ontology growth. -/
+omit [Fintype Gate] [Nonempty Gate] in
+theorem ConceptOntology.ObservationSurface.availableRegionAt_subset_wmAdmissibleRegionAt_of_specAgreesOnRegion_of_exactFullInheritanceStrength
+    (P : StatefulPerspective (MassState (ConstraintQuery Atom)) (ConstraintQuery Atom) Signal Cost)
+    (R :
+      RuleSet
+        (MassState (ConstraintQuery Atom))
+        (ConstraintQuery Atom))
+    {M₁ M₂ : MarkovLogicInfiniteUniqueness.ClassicalInfiniteGroundMLNSpec Atom ClauseId}
+    {Γ : MarkovLogicInfiniteSpecification.Region Atom}
+    (hagree : SpecAgreesOnRegion M₁ M₂ Γ)
+    (hclosed₁ : InteractionClosed M₁ Γ)
+    (hclosed₂ : InteractionClosed M₂ Γ)
+    (hbudget₁ : M₁.PaperUniformSmallTotalInfluence)
+    (hbudget₂ : M₂.PaperUniformSmallTotalInfluence)
+    (μ₁ : MeasureTheory.ProbabilityMeasure (MarkovLogicInfiniteSpecification.InfiniteWorld Atom))
+    (μ₂ : MeasureTheory.ProbabilityMeasure (MarkovLogicInfiniteSpecification.InfiniteWorld Atom))
+    (hμ₁ : MarkovLogicInfiniteFixedRegionDLR.FixedRegionCylinderDLR
+      M₁.toStrictlyPositiveInfiniteGroundMLNSpec
+      (μ₁ : MeasureTheory.Measure (MarkovLogicInfiniteSpecification.InfiniteWorld Atom)))
+    (hμ₂ : MarkovLogicInfiniteFixedRegionDLR.FixedRegionCylinderDLR
+      M₂.toStrictlyPositiveInfiniteGroundMLNSpec
+      (μ₂ : MeasureTheory.Measure (MarkovLogicInfiniteSpecification.InfiniteWorld Atom)))
+    (S : ConceptOntology.ObservationSurface Obs Obj Attr Q)
+    (GateFamily : Gate → ConceptOntology.EvidenceGate Q) (σ : Multiset Obs)
+    (B : Cost) (guard : Set (ConstraintQuery Atom)) (tau : ENNReal)
+    (encode :
+      ConceptOntology.ObservationSurface.LowerFormedConcept S GateFamily σ →
+        ConceptOntology.ObservationSurface.LowerFormedConcept S GateFamily σ →
+          ConstraintQuery Atom)
+    (seed :
+      Set
+        (ConceptOntology.ObservationSurface.LowerFormedConcept S GateFamily σ ×
+          ConceptOntology.ObservationSurface.LowerFormedConcept S GateFamily σ))
+    (hSeed :
+      thresholdValid
+        (State := MassState (ConstraintQuery Atom))
+        (Query := ConstraintQuery Atom)
+        ({infiniteMLNMassSemantics M₁ μ₁ hμ₁}) tau
+        (CredalConceptFullInheritanceClosureBridge.lowerFormedConceptQuerySet GateFamily
+          (ConceptOntology.ObservationSurface.aggregate S σ) encode seed))
+    (hSupport :
+      ∀ p : ConceptOntology.ObservationSurface.LowerFormedConcept S GateFamily σ ×
+          ConceptOntology.ObservationSurface.LowerFormedConcept S GateFamily σ, p ∈ seed →
+        ∀ c ∈ encode p.1 p.2, (c : Sigma fun _ : Atom => Bool).1 ∈ Γ)
+    (hAvail :
+      availableRegionAt P ({infiniteMLNMassSemantics M₂ μ₂ hμ₂}) B guard ⊆
+        leastRuleClosure
+          (State := MassState (ConstraintQuery Atom))
+          (Query := ConstraintQuery Atom)
+          R ({infiniteMLNMassSemantics M₂ μ₂ hμ₂})
+          (CredalConceptFullInheritanceClosureBridge.lowerFormedConceptQuerySet GateFamily
+            (ConceptOntology.ObservationSurface.aggregate S σ) encode seed)) :
+    availableRegionAt P ({infiniteMLNMassSemantics M₂ μ₂ hμ₂}) B guard ⊆
+      PLNWorldModelRegimeAdmissibility.wmAdmissibleRegionAt
+        (State := MassState (ConstraintQuery Atom))
+        (Query := ConstraintQuery Atom)
+        P ({infiniteMLNMassSemantics M₂ μ₂ hμ₂}) B guard tau := by
+  exact generic_availableRegionAt_subset_wmAdmissibleRegionAt_of_specAgreesOnRegion_of_exactFullInheritanceStrength
+    P R hagree hclosed₁ hclosed₂ hbudget₁ hbudget₂ μ₁ μ₂ hμ₁ hμ₂
+    GateFamily (ConceptOntology.ObservationSurface.aggregate S σ)
+    B guard tau encode seed hSeed hSupport hAvail
+
 /- Observation-level admissible-region collapse corollary for locally stable
 robust lower-formed obligations under ontology growth. -/
 omit [Fintype Gate] [Nonempty Gate] in
@@ -594,6 +1020,70 @@ theorem ConceptOntology.ObservationSurface.wmAdmissibleRegionAt_eq_availableRegi
         P ({infiniteMLNMassSemantics M₂ μ₂ hμ₂}) B guard tau =
       availableRegionAt P ({infiniteMLNMassSemantics M₂ μ₂ hμ₂}) B guard := by
   exact generic_wmAdmissibleRegionAt_eq_availableRegionAt_of_specAgreesOnRegion
+    P R hagree hclosed₁ hclosed₂ hbudget₁ hbudget₂ μ₁ μ₂ hμ₁ hμ₂
+    GateFamily (ConceptOntology.ObservationSurface.aggregate S σ)
+    B guard tau encode seed hSeed hSupport hAvail
+
+/- Observation-level admissible-region collapse corollary for locally stable
+exact full-inheritance lower-formed obligations under ontology growth. -/
+omit [Fintype Gate] [Nonempty Gate] in
+theorem ConceptOntology.ObservationSurface.wmAdmissibleRegionAt_eq_availableRegionAt_of_specAgreesOnRegion_of_exactFullInheritanceStrength
+    (P : StatefulPerspective (MassState (ConstraintQuery Atom)) (ConstraintQuery Atom) Signal Cost)
+    (R :
+      RuleSet
+        (MassState (ConstraintQuery Atom))
+        (ConstraintQuery Atom))
+    {M₁ M₂ : MarkovLogicInfiniteUniqueness.ClassicalInfiniteGroundMLNSpec Atom ClauseId}
+    {Γ : MarkovLogicInfiniteSpecification.Region Atom}
+    (hagree : SpecAgreesOnRegion M₁ M₂ Γ)
+    (hclosed₁ : InteractionClosed M₁ Γ)
+    (hclosed₂ : InteractionClosed M₂ Γ)
+    (hbudget₁ : M₁.PaperUniformSmallTotalInfluence)
+    (hbudget₂ : M₂.PaperUniformSmallTotalInfluence)
+    (μ₁ : MeasureTheory.ProbabilityMeasure (MarkovLogicInfiniteSpecification.InfiniteWorld Atom))
+    (μ₂ : MeasureTheory.ProbabilityMeasure (MarkovLogicInfiniteSpecification.InfiniteWorld Atom))
+    (hμ₁ : MarkovLogicInfiniteFixedRegionDLR.FixedRegionCylinderDLR
+      M₁.toStrictlyPositiveInfiniteGroundMLNSpec
+      (μ₁ : MeasureTheory.Measure (MarkovLogicInfiniteSpecification.InfiniteWorld Atom)))
+    (hμ₂ : MarkovLogicInfiniteFixedRegionDLR.FixedRegionCylinderDLR
+      M₂.toStrictlyPositiveInfiniteGroundMLNSpec
+      (μ₂ : MeasureTheory.Measure (MarkovLogicInfiniteSpecification.InfiniteWorld Atom)))
+    (S : ConceptOntology.ObservationSurface Obs Obj Attr Q)
+    (GateFamily : Gate → ConceptOntology.EvidenceGate Q) (σ : Multiset Obs)
+    (B : Cost) (guard : Set (ConstraintQuery Atom)) (tau : ENNReal)
+    (encode :
+      ConceptOntology.ObservationSurface.LowerFormedConcept S GateFamily σ →
+        ConceptOntology.ObservationSurface.LowerFormedConcept S GateFamily σ →
+          ConstraintQuery Atom)
+    (seed :
+      Set
+        (ConceptOntology.ObservationSurface.LowerFormedConcept S GateFamily σ ×
+          ConceptOntology.ObservationSurface.LowerFormedConcept S GateFamily σ))
+    (hSeed :
+      thresholdValid
+        (State := MassState (ConstraintQuery Atom))
+        (Query := ConstraintQuery Atom)
+        ({infiniteMLNMassSemantics M₁ μ₁ hμ₁}) tau
+        (CredalConceptFullInheritanceClosureBridge.lowerFormedConceptQuerySet GateFamily
+          (ConceptOntology.ObservationSurface.aggregate S σ) encode seed))
+    (hSupport :
+      ∀ p : ConceptOntology.ObservationSurface.LowerFormedConcept S GateFamily σ ×
+          ConceptOntology.ObservationSurface.LowerFormedConcept S GateFamily σ, p ∈ seed →
+        ∀ c ∈ encode p.1 p.2, (c : Sigma fun _ : Atom => Bool).1 ∈ Γ)
+    (hAvail :
+      availableRegionAt P ({infiniteMLNMassSemantics M₂ μ₂ hμ₂}) B guard ⊆
+        leastRuleClosure
+          (State := MassState (ConstraintQuery Atom))
+          (Query := ConstraintQuery Atom)
+          R ({infiniteMLNMassSemantics M₂ μ₂ hμ₂})
+          (CredalConceptFullInheritanceClosureBridge.lowerFormedConceptQuerySet GateFamily
+            (ConceptOntology.ObservationSurface.aggregate S σ) encode seed)) :
+    PLNWorldModelRegimeAdmissibility.wmAdmissibleRegionAt
+        (State := MassState (ConstraintQuery Atom))
+        (Query := ConstraintQuery Atom)
+        P ({infiniteMLNMassSemantics M₂ μ₂ hμ₂}) B guard tau =
+      availableRegionAt P ({infiniteMLNMassSemantics M₂ μ₂ hμ₂}) B guard := by
+  exact generic_wmAdmissibleRegionAt_eq_availableRegionAt_of_specAgreesOnRegion_of_exactFullInheritanceStrength
     P R hagree hclosed₁ hclosed₂ hbudget₁ hbudget₂ μ₁ μ₂ hμ₁ hμ₂
     GateFamily (ConceptOntology.ObservationSurface.aggregate S σ)
     B guard tau encode seed hSeed hSupport hAvail

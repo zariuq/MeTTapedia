@@ -1,0 +1,962 @@
+%% PLN credal degrees of freedom
+%%
+%% Render with:
+%%   lualatex -shell-escape pln-credal-degrees-of-freedom.tex \
+%%     && bibtex pln-credal-degrees-of-freedom \
+%%     && lualatex -shell-escape pln-credal-degrees-of-freedom.tex \
+%%     && lualatex -shell-escape pln-credal-degrees-of-freedom.tex
+
+\documentclass[]{article}
+\usepackage{url}
+\usepackage[hyperindex,breaklinks]{hyperref}
+\IfFileExists{breakurl.sty}{\usepackage{breakurl}}{}
+\usepackage{listings}
+\lstset{basicstyle=\ttfamily\footnotesize,breaklines=true,frame=single,
+        xleftmargin=1em,xrightmargin=0.5em}
+\usepackage{float}
+\restylefloat{table}
+\usepackage{longtable}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage[font=small,labelfont=bf]{caption}
+\usepackage[skip=0pt]{subcaption}
+\usepackage{amsfonts}
+\usepackage{amsmath}
+\usepackage{amsthm}
+\usepackage{unicode-math}
+\IfFileExists{newunicodechar.sty}{
+  \usepackage{newunicodechar}
+  \newunicodechar{∘}{\ensuremath{\circ}}
+}{}
+\IfFontExistsTF{Stix Two Math}{\setmathfont{Stix Two Math}}{\setmathfont{STIX Math}}
+
+% Compatibility fallback for older TeX bundles.
+\makeatletter
+\providecommand{\headerps@out}{}
+\makeatother
+
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{corollary}[theorem]{Corollary}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{remark}[theorem]{Remark}
+\newtheorem{observation}[theorem]{Observation}
+
+\newcommand{\nuPLN}{\texorpdfstring{$\nu$}{nu}\textup{PLN}}
+\newcommand{\xiPLN}{\texorpdfstring{$\xi$}{xi}\textup{PLN}}
+\newcommand{\code}[1]{\texttt{#1}}
+\newcommand{\codepath}[1]{\path{#1}}
+\newcommand{\lid}[1]{{\ttfamily\nolinkurl{#1}}}
+\newcommand{\lpath}[1]{\texttt{\nolinkurl{#1}}}
+\newcommand{\ty}[1]{\ensuremath{\mathtt{#1}}}
+\newcommand{\STV}[2]{\langle #1,\, #2 \rangle}
+\newcommand{\strength}{\mathrm{strength}}
+\newcommand{\confidence}{\mathrm{confidence}}
+\newcommand{\Eq}{\;\Leftrightarrow\;}
+
+\emergencystretch=3em
+
+\title{Credal degrees of freedom for PLN truth values:\\
+       a layered characterization of strength and confidence}
+\author{Mettapedia Working Notes}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+PLN's two-number truth value $\STV{s}{c}$ is the compression of a richer
+object: a credal set of admissible precise previsions over an outcome space.
+We give a layered formal characterization of where $\STV{s}{c}$ is
+\emph{determined} by the spec --- the strength is a single real, the
+confidence is at its information ceiling --- and where the underlying
+credal set has \emph{degrees of freedom} that the two-number summary
+cannot see.
+
+The characterization rests on a recently-landed Lean dichotomy in
+\codepath{Mettapedia.ProbabilityTheory.ImpreciseProbability.ProjectiveCredal}:
+the predicates \lid{credalSetDetermines} and \lid{credalSetHasStrictWidth}
+on a credal set $C$ and a gamble $X$ are the formal locators of, respectively,
+``$\STV{s}{c}$ is fully determined on $X$'' and ``$\STV{s}{c}$ has
+genuine interval width on $X$.'' The collapse theorem
+\lid{lower\_eq\_upperEnvelope\_of\_credalSetDetermines} closes the
+``determined $\Rightarrow$ precise'' direction; the width theorem
+\lid{lower\_upperEnvelope\_nontrivial\_of\_strictWidth} closes the
+``disagreement $\Rightarrow$ envelope opens'' direction.
+
+We lift this dichotomy to the projective credal level
+(\lid{determinesGlobalGamble} / \lid{hasStrictGlobalWidth}) and onward to
+the infinite Markov-logic setting through DLR completions
+(\lid{dlrQueryDetermined} / \lid{dlrQueryHasStrictWidth}). Under the
+Dobrushin uniform small-influence hypothesis,
+\lid{PaperUniformSmallTotalInfluence} implies \lid{dlrQueryDetermined},
+and therefore the MLN query envelope is precise. In the opposite
+direction, whenever two DLR completions are explicitly exhibited that
+disagree on a finite query, the corresponding Walley envelope has strict
+width. Failure of the Dobrushin hypothesis is therefore a frontier where
+strict width can occur, not by itself a proof that it must occur.
+
+We organize the degrees of freedom into three slots:
+(A)~specification-level freedom in the local credal sets;
+(B)~completion-level freedom in extreme-point choice within a fixed credal
+set (aleatoric, formally invisible to $\STV{s}{c}$);
+(C)~phase-transition freedom from non-uniqueness of DLR completions
+in infinite MLNs. We honestly enumerate what is open.
+\end{abstract}
+
+\tableofcontents
+
+\section{Introduction}
+
+PLN's atomic truth-value object is a pair $\STV{s}{c}$ with $s, c \in [0,1]$
+called \emph{strength} and \emph{confidence}. Standard PLN parametrises
+$s$ as a probability estimate and $c$ as a function of evidence count,
+typically $c = N/(N+\kappa)$ for a system-level constant $\kappa$ and an
+evidence-count integer $N$. The pair is what travels through PLN's
+rules (revision, deduction, induction, abduction); it is what is read off
+by query atoms; it is the type signature of every PLN belief.
+
+But $\STV{s}{c}$ is a two-number summary. The same pair can be produced by
+very different underlying epistemic objects: a Beta-distribution
+second-order Bayesian; a Walley-style coherent lower prevision with a
+specific interval width; an exchangeable de Finetti mixture with a
+particular concentration. PLN's compositional rules treat $\STV{s}{c}$
+\emph{as} the belief object, and the algebra reduces to numerical update
+formulas; but the question of \emph{what is and is not pinned down by
+$\STV{s}{c}$} is rarely written explicitly in the PLN literature.
+
+This paper makes that explicit. We organise the question as follows.
+The strength and confidence of a query in PLN are determined by an
+underlying credal set $C$ of admissible precise previsions. The
+\emph{degrees of freedom} that $\STV{s}{c}$ summarises but does not
+expose live in three slots:
+\begin{itemize}
+\item Specification freedom in the local credal sets that build $C$;
+\item Completion freedom (extreme-point choice) inside a fixed $C$;
+\item Phase-transition freedom from non-uniqueness of global completions
+      when $C$ is the projective limit of a Markov-logic / DLR family.
+\end{itemize}
+Each slot has a formally locatable status. Recent landings in
+the \codepath{Mettapedia.ProbabilityTheory.ImpreciseProbability} and
+\codepath{Mettapedia.Logic} libraries (the \emph{credal dichotomy}
+predicates and the DLR query lifts; see Sec.~\ref{sec:dichotomy} and
+\ref{sec:dlr}) make this dichotomy an actual Lean theorem rather than
+informal prose. Wherever possible we quote the Lean theorem statements
+verbatim from their source files.
+
+\paragraph{Scope.}
+We treat strength and confidence as the read-off of credal-envelope width
+and centre. We do \emph{not} address the propagation of $\STV{s}{c}$
+through PLN's compositional rules (deduction, induction, abduction,
+revision); that material is in the existing PLN corpus
+(\xiPLN, \nuPLN, the WM-PLN book; see Sec.~\ref{sec:related}). The paper's
+contribution is the determinacy / freedom characterization at the level
+of a single truth value, with formal Lean hooks.
+
+\paragraph{Sibling papers.}
+This paper is a sibling of \xiPLN\ and the \emph{PLN Review}
+(\lpath{papers/xiPLN.tex}, \lpath{papers/pln-review.tex}). The
+WM-PLN book \lpath{papers/wm-pln-book.tex} contains an informal section
+on degrees of freedom versus forcing (\S 7.4 in the current draft); the
+present paper offers the formal characterization that the book section
+calls for.
+
+\section{The credal stack: types and definitions}\label{sec:stack}
+
+We work in the formal stack of
+\codepath{Mettapedia.ProbabilityTheory.ImpreciseProbability.ProjectiveCredal}
+(referenced throughout as \emph{ProjectiveCredal.lean}, file path
+\lpath{Mettapedia/ProbabilityTheory/ImpreciseProbability/ProjectiveCredal.lean}).
+Outcome spaces are arbitrary types $\Omega$; gambles are bounded real-valued
+functions on $\Omega$.
+
+\subsection{Gambles and previsions}
+
+A \emph{gamble} on $\Omega$ is a real-valued function on $\Omega$:
+\begin{lstlisting}
+abbrev Gamble (Omega : Type*) := Omega -> Real
+\end{lstlisting}
+
+A \emph{precise prevision} on $\Omega$ is a Walley-coherent linear
+functional from gambles to reals: the structure
+\lid{PrecisePrevision} in ProjectiveCredal.lean is the standard linear
+expectation with constant-preservation, positive homogeneity, and
+additivity built in:
+\begin{lstlisting}
+structure PrecisePrevision (Omega : Type*) where
+  toFun       : Gamble Omega -> Real
+  lower_bound : ... -- c <= X (pointwise) implies c <= toFun X
+  pos_homog   : ... -- toFun (r . X) = r * toFun X for r >= 0
+  add         : ... -- toFun (X + Y) = toFun X + toFun Y
+\end{lstlisting}
+
+A \emph{lower prevision} relaxes additivity to superadditivity, and is
+the Walley credal-summary object:
+\begin{lstlisting}
+structure LowerPrevision (Omega : Type*) where
+  toFun       : Gamble Omega -> Real
+  lower_bound : ... -- c <= X pointwise implies c <= toFun X
+  pos_homog   : ... -- toFun (r . X) = r * toFun X for r >= 0
+  superadd    : ... -- toFun (X + Y) >= toFun X + toFun Y
+\end{lstlisting}
+Coherence (positive homogeneity, superadditivity, and avoidance of sure
+loss) is the Walley condition for the lower prevision to be the
+lower envelope of some non-empty set of precise previsions.
+
+\subsection{Credal sets and envelopes}
+
+A \emph{credal set} is just a set of precise previsions:
+\begin{lstlisting}
+abbrev CredalPrevisionSet (Omega : Type*) := Set (PrecisePrevision Omega)
+\end{lstlisting}
+
+For a credal set $C$ and a gamble $X$, the \emph{lower} and \emph{upper}
+envelopes are the standard inf / sup:
+\begin{lstlisting}
+def lowerEnvelope (C : CredalPrevisionSet Omega) (X : Gamble Omega) : Real :=
+  sInf ((fun P : PrecisePrevision Omega => P X) '' C)
+
+def upperEnvelope (C : CredalPrevisionSet Omega) (X : Gamble Omega) : Real :=
+  sSup ((fun P : PrecisePrevision Omega => P X) '' C)
+\end{lstlisting}
+The construction
+\lid{lowerEnvelopePrevision} packages \lid{lowerEnvelope} together with
+the proofs of constant-preservation, positive homogeneity, and
+superadditivity, exhibiting a \lid{LowerPrevision} object out of any
+non-empty bounded-below credal set. The finite case theorem
+\lid{lowerEnvelopePrevision\_isCoherent\_of\_finite}
+(ProjectiveCredal.lean line~868) confirms Walley coherence on finite
+nonempty $\Omega$.
+
+\subsection{PLN $\STV{s}{c}$ as the credal-envelope summary}\label{sec:stv-summary}
+
+The canonical Lean STV type lives in
+\codepath{Mettapedia.Logic.PLNDeduction} at lines 138--139:
+\begin{lstlisting}
+/-- Simple Truth Value: (strength, confidence) pair -/
+structure STV where
+  strength   : Real
+  confidence : Real
+  strength_nonneg  : 0 <= strength
+  strength_le_one  : strength <= 1
+  confidence_nonneg : 0 <= confidence
+  confidence_le_one : confidence <= 1
+\end{lstlisting}
+Its distributional model is in \codepath{Mettapedia.Logic.PLNDistributional}:
+given a Beta$(\alpha, \beta)$ distribution, the canonical PLN STV reads
+\begin{equation*}
+   s \;=\; \frac{\alpha}{\alpha + \beta},
+   \qquad
+   c \;=\; f(\alpha + \beta)
+\end{equation*}
+for an evidence-count map $f$ (typically $f(N) = N/(N+\kappa)$).
+
+The two-number compression from a credal set $C$ and a query gamble
+$X_q$ (e.g.\ the indicator $\mathbf{1}_A$ of a query atom $A$) is the
+following implicit map:
+\begin{equation}\label{eq:summary}
+   C, X_q \;\longmapsto\;
+   \left\{
+   \begin{array}{l}
+   s_q \;=\; \tfrac{1}{2}\bigl(\,\mathrm{lowerEnvelope}\, C\, X_q\,
+                              +\,\mathrm{upperEnvelope}\, C\, X_q\,\bigr) \\[4pt]
+   c_q \;=\; g\bigl(\,\mathrm{upperEnvelope}\, C\, X_q\,
+                   -\,\mathrm{lowerEnvelope}\, C\, X_q\,\bigr)
+   \end{array}
+   \right.
+\end{equation}
+for a monotone-decreasing $g : [0,1] \to [0,1]$ with $g(0) = 1$ (no
+width, full confidence) and $g(1) = 0$ (maximum width, no information).
+The specific choice of midpoint and $g$ is an interface design decision
+(PLN traditionally uses midpoint for $s$ and a sigmoidal $g$ derived from
+the Beta variance); the freedom characterization of this paper is
+independent of this choice. What matters is that \eqref{eq:summary}
+is the read-off, and that the credal set $C$ may have degrees of
+freedom that the pair $(s_q, c_q)$ cannot expose.
+
+\begin{remark}
+The summary map \eqref{eq:summary} loses two kinds of information.
+First, \emph{which} gambles have positive credal-width and which do
+not: $(s_q, c_q)$ summarises a single query but a credal set with
+non-zero width on \emph{some} queries may have zero width on others.
+Second, the \emph{shape} of $C$: a credal set on $\Omega$ whose extreme
+points are clustered (high agreement) and one whose extreme points are
+dispersed (low agreement) can produce the same midpoint and width on a
+particular query, but compose differently under PLN's inference rules.
+The width as a function on gambles --- which we will study below --- is
+the right object; $(s_q, c_q)$ is its evaluation at one point.
+\end{remark}
+
+\section{Finite-case determinacy}\label{sec:finite}
+
+We first treat the case where the outcome space $\Omega$ is finite. Here
+the Walley theory is complete in the formalization; we summarise the
+load-bearing results.
+
+\subsection{Uniform positivity and avoidance of sure loss}
+
+For finite $\Omega$, a pointwise-strictly-positive gamble has a uniform
+positive lower bound (ProjectiveCredal.lean line~833):
+\begin{lstlisting}
+theorem finite_strictlyPositive_uniformLowerBound
+    {Omega : Type*} [Fintype Omega] [Nonempty Omega]
+    (X : Gamble Omega) (hX : forall omega, 0 < X omega) :
+    exists epsilon : Real, 0 < epsilon and forall omega, epsilon <= X omega
+\end{lstlisting}
+This is the technical hinge that lets every nonempty finite credal set
+\emph{avoid sure loss} in the strict Walley sense
+(line~855):
+\begin{lstlisting}
+theorem lowerEnvelopePrevision_avoidsSureLoss_of_finite
+    {Omega : Type*} [Fintype Omega] [Nonempty Omega]
+    (C : CredalPrevisionSet Omega) (hC : C.Nonempty)
+    (hBdd : forall X : Gamble Omega,
+      BddBelow ((fun P : PrecisePrevision Omega => P X) '' C)) :
+    (lowerEnvelopePrevision C hC hBdd).avoidsSureLoss
+\end{lstlisting}
+and to be \emph{coherent} (line~868):
+\begin{lstlisting}
+theorem lowerEnvelopePrevision_isCoherent_of_finite
+    {Omega : Type*} [Fintype Omega] [Nonempty Omega]
+    (C : CredalPrevisionSet Omega) (hC : C.Nonempty)
+    (hBdd : forall X : Gamble Omega,
+      BddBelow ((fun P : PrecisePrevision Omega => P X) '' C)) :
+    (lowerEnvelopePrevision C hC hBdd).isCoherent
+\end{lstlisting}
+The take-away for PLN: on a finite outcome space, the credal-envelope
+construction never fails. The map from spec to $\STV{s}{c}$ is total.
+
+\subsection{Singleton collapse}
+
+The case where the credal set has exactly one element is the case where
+PLN's $\STV{s}{c}$ has no freedom at all; everything is pinned. The
+theorem (ProjectiveCredal.lean line~885) is direct:
+\begin{lstlisting}
+theorem lowerEnvelope_singleton
+    {Omega : Type*} (P : PrecisePrevision Omega) (X : Gamble Omega) :
+    lowerEnvelope ({P} : CredalPrevisionSet Omega) X = P X
+\end{lstlisting}
+and similarly for \lid{upperEnvelope\_singleton}. On a singleton credal
+set, lower = upper on every gamble. PLN-side: every query has $c$ at its
+information ceiling, and $s$ is the single value $P X_q$.
+
+\section{The credal dichotomy: where strength is determined and where it has width}\label{sec:dichotomy}
+
+The contribution of the recent landing in ProjectiveCredal.lean is to
+make the ``determined / has width'' distinction \emph{predicate-level},
+not theorem-level. Two definitions are added (lines~746 and~753), each
+followed by collapse / non-triviality theorems that pin down the
+PLN-side consequence.
+
+\subsection{The two predicates}
+
+\begin{definition}[determined credal set on a gamble]\label{def:determines}
+The predicate \lid{credalSetDetermines} (ProjectiveCredal.lean line~746):
+\begin{lstlisting}
+def credalSetDetermines {Omega : Type*}
+    (C : CredalPrevisionSet Omega) (X : Gamble Omega) : Prop :=
+  forall P : PrecisePrevision Omega, P in C ->
+    forall Q : PrecisePrevision Omega, Q in C -> P X = Q X
+\end{lstlisting}
+$C$ \emph{determines} $X$ when every two admissible precise previsions in
+$C$ assign the same expectation to $X$.
+\end{definition}
+
+\begin{definition}[strict width]\label{def:strictwidth}
+The predicate \lid{credalSetHasStrictWidth} (line~753):
+\begin{lstlisting}
+def credalSetHasStrictWidth {Omega : Type*}
+    (C : CredalPrevisionSet Omega) (X : Gamble Omega) : Prop :=
+  exists P : PrecisePrevision Omega, P in C and
+    exists Q : PrecisePrevision Omega, Q in C and P X < Q X
+\end{lstlisting}
+$C$ has \emph{strict width} on $X$ when there exist two precise previsions
+in $C$ that strictly disagree on $X$.
+\end{definition}
+
+The two predicates are mutually exclusive (ProjectiveCredal.lean line~809):
+\begin{theorem}[mutual exclusion]\label{thm:mutex}
+\lid{not\_credalSetDetermines\_of\_strictWidth}:
+\begin{lstlisting}
+theorem not_credalSetDetermines_of_strictWidth
+    {Omega : Type*}
+    {C : CredalPrevisionSet Omega} {X : Gamble Omega}
+    (hWidth : credalSetHasStrictWidth C X) :
+    not (credalSetDetermines C X)
+\end{lstlisting}
+\end{theorem}
+
+The endpoint instances cover the trivial cases. Subsingleton credal sets
+collapse to determinacy
+(\lid{credalSetDetermines\_of\_subsingleton}, line~758), and so do
+singletons (\lid{credalSetDetermines\_singleton}, line~766):
+\begin{lstlisting}
+theorem credalSetDetermines_singleton {Omega : Type*}
+    (P : PrecisePrevision Omega) (X : Gamble Omega) :
+    credalSetDetermines ({P} : CredalPrevisionSet Omega) X
+\end{lstlisting}
+
+\subsection{Collapse and width theorems}
+
+The PLN-side consequence of \lid{credalSetDetermines} is precisely
+that strength is pinned: the lower and upper envelopes coincide
+(ProjectiveCredal.lean line~798):
+\begin{theorem}[envelope collapse from determinacy]\label{thm:collapse}
+\lid{lower\_eq\_upperEnvelope\_of\_credalSetDetermines}:
+\begin{lstlisting}
+theorem lower_eq_upperEnvelope_of_credalSetDetermines
+    {Omega : Type*}
+    (C : CredalPrevisionSet Omega) (X : Gamble Omega)
+    (hC : C.Nonempty)
+    (hBddBelow : BddBelow ((fun P => P X) '' C))
+    (hBddAbove : BddAbove ((fun P => P X) '' C))
+    {P : PrecisePrevision Omega} (hP : P in C)
+    (hDet : credalSetDetermines C X) :
+    lowerEnvelope C X = upperEnvelope C X
+\end{lstlisting}
+This is the formal statement of ``$\STV{s}{c}$ on $X_q$ is precise''
+when $C$ determines $X_q$.
+\end{theorem}
+
+The PLN-side consequence of \lid{credalSetHasStrictWidth} is the opposite:
+the envelope is genuinely non-trivial (line~835):
+\begin{theorem}[envelope width from strict disagreement]\label{thm:width}
+\lid{lower\_upperEnvelope\_nontrivial\_of\_strictWidth}:
+\begin{lstlisting}
+theorem lower_upperEnvelope_nontrivial_of_strictWidth
+    {Omega : Type*}
+    (C : CredalPrevisionSet Omega) (X : Gamble Omega)
+    (hBddBelow : BddBelow ((fun P => P X) '' C))
+    (hBddAbove : BddAbove ((fun P => P X) '' C))
+    (hWidth : credalSetHasStrictWidth C X) :
+    lowerEnvelope C X < upperEnvelope C X
+\end{lstlisting}
+This is the formal statement of ``$\STV{s}{c}$ on $X_q$ is genuinely an
+interval'' when two completions in $C$ strictly disagree on $X_q$.
+\end{theorem}
+
+\subsection{PLN read-off}\label{sec:plnreadoff}
+
+Putting the dichotomy into the summary map \eqref{eq:summary}: for any
+credal set $C$ on which both envelope-boundedness conditions hold, and any
+query gamble $X_q$, exactly one of the following holds:
+\begin{center}
+\begin{tabular}{lll}
+\toprule
+predicate & envelope & PLN $\STV{s}{c}$ \\
+\midrule
+\lid{credalSetDetermines} $C$ $X_q$ & $L = U$ & precise $s = L\,X_q$; $c$ at ceiling \\
+\lid{credalSetHasStrictWidth} $C$ $X_q$ & $L < U$ & $s$ in interval $[L, U]$; $c < $ ceiling \\
+\bottomrule
+\end{tabular}
+\end{center}
+The Lean dichotomy is the formal locator of which case the PLN truth-value
+read-off lives in.
+
+\section{Projective credal specs: three slots for freedom}\label{sec:projective}
+
+Once $\Omega$ is large (or infinite), one builds the credal set
+\emph{compositionally} from finite-window data. The standard packaging
+is a projective family of local credal sets, indexed by ``windows''
+(finite subsets, finite cylinders) of the global outcome space, glued
+by restriction maps.
+
+\subsection{The projective machinery}
+
+The cylinder structure (ProjectiveCredal.lean, the
+\lid{ProjectiveCylinderSystem} structure) packs the window-to-local
+projection and the local restriction maps:
+\begin{lstlisting}
+structure ProjectiveCylinderSystem (Window Global : Type*) [LE Window] where
+  Local             : Window -> Type*
+  project           : forall i : Window, Global -> Local i
+  restrict          : forall {i j : Window}, i <= j -> Local j -> Local i
+  project_restrict  : ...   -- compatibility on the diagram
+\end{lstlisting}
+The full spec layers a local credal choice on top:
+\begin{lstlisting}
+structure ProjectiveLocalCredalSpec (Window Global : Type*) [LE Window] where
+  cylinders   : ProjectiveCylinderSystem Window Global
+  localCredal : forall i : Window, CredalPrevisionSet (cylinders.Local i)
+\end{lstlisting}
+The \emph{global credal set} associated to a spec is the
+\lid{projectiveLimitCredalSet} (the set of $P$ in \lid{PrecisePrevision}
+\lid{Global} that marginalise into \lid{localCredal}{} $i$ at every window
+$i$).
+
+\subsection{Three identifying cases and the dichotomy at the global level}
+
+The codebase ships two endpoints and one general construction:
+\begin{itemize}
+\item \textbf{Singleton} (ProjectiveCredal.lean line~1615):
+\begin{lstlisting}
+def singletonIdentityProjectiveSpec {Omega : Type*}
+    (P : PrecisePrevision Omega) : ProjectiveLocalCredalSpec PUnit Omega
+\end{lstlisting}
+Every window's local credal is the supplied singleton $\{P\}$. The
+projective limit is $\{P\}$
+(\lid{singletonIdentityProjectiveSpec\_projectiveLimitCredalSet},
+line~1620). PLN $\STV{s}{c}$ on every gamble is precise; this is the
+``no freedom'' case.
+
+\item \textbf{Unrestricted} (line~1571):
+\begin{lstlisting}
+def finiteUnrestrictedProjectiveSpec (Omega : Type*) :
+    ProjectiveLocalCredalSpec PUnit Omega
+\end{lstlisting}
+Every window's local credal is \lid{Set.univ}. The projective limit
+contains every precise prevision on $\Omega$. PLN $\STV{s}{c}$ on most
+gambles has \lid{credalSetHasStrictWidth}; this is the ``maximum freedom''
+case. The non-emptiness of the projective limit is witnessed by
+\lid{finiteUnrestricted\_finiteEvaluationCompact\_hasCompatibleCompletion}
+(line~1578) via a compact carrier in the finite-evaluation topology.
+
+\item \textbf{Genuine intermediate}: any spec whose local credals are
+non-trivial proper subsets of \lid{Set.univ}. Whether
+\lid{credalSetDetermines} or \lid{credalSetHasStrictWidth} holds on a
+particular gamble depends on the spec and the gamble.
+\end{itemize}
+
+The dichotomy lifts to the projective level. ProjectiveCredal.lean defines
+\lid{determinesGlobalGamble} (line~1307) and \lid{hasStrictGlobalWidth}
+(line~1314) as the global analogues of \lid{credalSetDetermines} and
+\lid{credalSetHasStrictWidth}, with the mutual exclusion theorem
+\lid{not\_determinesGlobalGamble\_of\_strictWidth} at line~1411. The
+natural-extension lifting theorems (around lines~1391 and~1424) connect
+the projective predicates to the lower / upper envelopes on the projective
+limit.
+
+\subsection{The three formal slots, structurally}\label{sec:slots-structural}
+
+We can now name the three slots in which PLN credal freedom lives. Each
+is formally locatable through one of the predicates above.
+
+\begin{description}
+\item[(A) Specification-level freedom.] The choice of \lid{localCredal}{} $i$
+at each window. This is the modeller's freedom: evidence width, prior
+choices, and what classes of measure are taken to be admissible at each
+local scale.
+
+\item[(B) Completion-level freedom.] Given a fixed credal set $C$, the
+choice of $P \in C$ that actually governs the world. This freedom is
+purely aleatoric: it is invisible to $\STV{s}{c}$ because $\STV{s}{c}$ is
+a property of $C$, not of any specific $P \in C$.
+
+\item[(C) Phase-transition freedom.] For globally-glued projective specs,
+the projective limit may itself have multiple admissible elements that
+correspond to different \emph{global} solutions of the same local
+problem. This is the slot Markov-logic / DLR exemplifies (next section).
+\end{description}
+
+Slots (A) and (C) are the only ones $\STV{s}{c}$ can see. Slot (B) is
+formally invisible at the truth-value level.
+
+\section{Infinite Markov logic: Dobrushin collapse and DLR width}\label{sec:dlr}
+
+For the infinite case --- countably-many ground atoms, Markov-logic
+network with weights, density specified locally --- the projective
+machinery specialises into the Dobrushin--Lanford--Ruelle framework. The
+file
+\codepath{Mettapedia.Logic.MarkovLogicInfiniteCredalBridge}
+(\lpath{Mettapedia/Logic/MarkovLogicInfiniteCredalBridge.lean}) packages this.
+
+\subsection{Classical MLN spec and DLR completions}
+
+A \lid{ClassicalInfiniteGroundMLNSpec} packages a countable atom set, a
+clause-id set, the clauses, their log-weights, and the local
+finite-volume region structure. A \emph{DLR completion} of such a spec
+is a probability measure on the infinite world satisfying the
+DLR consistency condition at every finite volume:
+\begin{lstlisting}
+abbrev DLRCompletion (M : ClassicalInfiniteGroundMLNSpec Atom ClauseId) :=
+  { mu : ProbabilityMeasure (InfiniteWorld Atom)
+  // FixedRegionCylinderDLR M.toStrictlyPositiveInfiniteGroundMLNSpec
+       (mu : Measure (InfiniteWorld Atom)) }
+\end{lstlisting}
+The set of DLR completions of $M$ is the ``credal set'' for the infinite
+spec, and the projective-credal lift packages it as
+\lid{DLRProjectiveCredalSpecialization} in
+\codepath{Mettapedia/Logic/MarkovLogicInfiniteCredalBridge.lean}.
+
+A \emph{query} is a finite-volume event; its \emph{probability} under a
+DLR completion is its measure:
+\begin{lstlisting}
+noncomputable def dlrCompletionQueryProb
+    (M : ClassicalInfiniteGroundMLNSpec Atom ClauseId)
+    (q : ConstraintQuery Atom) (mu : DLRCompletion M) : Real :=
+  ENNReal.toReal
+    ((infiniteMLNMassSemantics M mu.1 mu.2).queryProb q)
+\end{lstlisting}
+
+\subsection{DLR-level dichotomy}\label{sec:dlrdichotomy}
+
+The credal dichotomy lifts directly to the DLR setting:
+\begin{lstlisting}
+def dlrQueryDetermined
+    (M : ClassicalInfiniteGroundMLNSpec Atom ClauseId)
+    (q : ConstraintQuery Atom) : Prop :=
+  forall mu nu : DLRCompletion M,
+    dlrCompletionQueryProb M q mu = dlrCompletionQueryProb M q nu
+
+def dlrQueryHasStrictWidth
+    (M : ClassicalInfiniteGroundMLNSpec Atom ClauseId)
+    (q : ConstraintQuery Atom) : Prop :=
+  exists mu : DLRCompletion M, exists nu : DLRCompletion M,
+    dlrCompletionQueryProb M q mu < dlrCompletionQueryProb M q nu
+\end{lstlisting}
+\lid{dlrQueryDetermined} says all DLR completions agree on the query;
+\lid{dlrQueryHasStrictWidth} says two of them strictly disagree. The
+mutual exclusion theorem
+\lid{not\_dlrQueryDetermined\_of\_strictWidth}:
+\begin{lstlisting}
+theorem not_dlrQueryDetermined_of_strictWidth
+    (M : ClassicalInfiniteGroundMLNSpec Atom ClauseId)
+    (q : ConstraintQuery Atom)
+    (hWidth : dlrQueryHasStrictWidth M q) :
+    not (dlrQueryDetermined M q)
+\end{lstlisting}
+
+\subsection{Dobrushin uniqueness as the collapse-direction hypothesis}
+
+The classical Dobrushin uniform-influence condition is packaged as the
+predicate \lid{PaperUniformSmallTotalInfluence} on the MLN spec
+in \codepath{Mettapedia.Logic.MarkovLogicInfiniteUniqueness}.
+The collapse direction of the DLR-level dichotomy is the theorem
+\lid{dlrQueryDetermined\_of\_uniform}:
+\begin{lstlisting}
+theorem dlrQueryDetermined_of_uniform
+    (M : ClassicalInfiniteGroundMLNSpec Atom ClauseId)
+    (hM : M.PaperUniformSmallTotalInfluence)
+    (q : ConstraintQuery Atom) :
+    dlrQueryDetermined M q
+\end{lstlisting}
+\emph{Under the Dobrushin uniform small-influence hypothesis, every finite
+query is DLR-determined.}
+Combining with the dichotomy gives the precision of the MLN query
+envelope:
+\begin{lstlisting}
+theorem infiniteMLN_queryEnvelope_precise_of_uniform
+    (M : ClassicalInfiniteGroundMLNSpec Atom ClauseId)
+    [Nonempty (DLRCompletion M)]
+    (hM : M.PaperUniformSmallTotalInfluence)
+    (q : ConstraintQuery Atom) :
+    infiniteMLNLowerQueryEnvelope M q
+      = infiniteMLNUpperQueryEnvelope M q
+\end{lstlisting}
+\emph{Under the same hypothesis, and assuming the DLR completion family is
+inhabited, the PLN $\STV{s}{c}$ for every finite query is precise.}
+
+\subsection{Strict width as the phase-transition canary}
+
+The opposite direction is the theorem
+\lid{infiniteMLN\_queryEnvelope\_nontrivial\_of\_disagreement}
+and the lift through
+\lid{infiniteMLN\_queryEnvelope\_nontrivial\_of\_strictWidth}:
+\begin{lstlisting}
+theorem infiniteMLN_queryEnvelope_nontrivial_of_strictWidth
+    (M : ClassicalInfiniteGroundMLNSpec Atom ClauseId)
+    (q : ConstraintQuery Atom)
+    (hBddBelow : BddBelow (Set.range (dlrCompletionQueryProb M q)))
+    (hBddAbove : BddAbove (Set.range (dlrCompletionQueryProb M q)))
+    (hWidth : dlrQueryHasStrictWidth M q) :
+    infiniteMLNLowerQueryEnvelope M q
+      < infiniteMLNUpperQueryEnvelope M q
+\end{lstlisting}
+\emph{If two DLR completions disagree on a finite query, the PLN
+$\STV{s}{c}$ for that query is genuinely an interval.}
+
+\subsection{Dobrushin collapse and strict-width witnesses}
+
+Combining the two proved directions gives a one-sided collapse theorem
+and a separate strict-width witness theorem. The Dobrushin condition
+\lid{PaperUniformSmallTotalInfluence} is a formally sufficient hypothesis
+for query determinacy and precise PLN/Walley envelopes. Separately, if
+two DLR completions are exhibited that disagree on a query, then that
+query has strict width. The Lean development does not prove that failure
+of the Dobrushin hypothesis entails non-uniqueness or strict width.
+
+\section{Worked examples already in the formalization}\label{sec:examples}
+
+The codebase now ships both finite toy witnesses and a concrete infinite
+DLR/PLN contrast crown. The finite two-spin examples remain useful sanity
+witnesses for strict credal width.
+
+\subsection{Two-spin magnet}
+
+In ProjectiveCredal.lean around lines~1064--1101, the type
+\lid{TwoSpin}, defined as $\mathrm{Bool} \times \mathrm{Bool}$, carries the two-spin
+magnet credal set
+\begin{lstlisting}
+def twoSpinMagnetCredalSet : CredalPrevisionSet TwoSpin :=
+  { PrecisePrevision.dirac twoSpinAllDown,
+    PrecisePrevision.dirac twoSpinAllUp }
+\end{lstlisting}
+The credal set contains two Dirac measures: all spins down, and all
+spins up. The first-spin-up gamble
+\begin{lstlisting}
+def twoSpinFirstUpGamble : Gamble TwoSpin :=
+  fun s => if s.fst then 1 else 0
+\end{lstlisting}
+is rewarded by the all-up Dirac and unrewarded by the all-down Dirac;
+the disagreement gives the strict width witness. The packaged theorem
+\lid{twoSpinMagnetEnvelope\_nontrivial} (line~1101) closes:
+\begin{lstlisting}
+theorem twoSpinMagnetEnvelope_nontrivial :
+    lowerEnvelope twoSpinMagnetCredalSet twoSpinFirstUpGamble
+      < upperEnvelope twoSpinMagnetCredalSet twoSpinFirstUpGamble
+\end{lstlisting}
+PLN-side: on this two-Dirac credal, the magnetization query has lower
+envelope $0$, upper envelope $1$, and confidence at its floor.
+
+\subsection{Zero-temperature aligned magnet}
+
+An incremental sibling
+\lid{twoSpinZeroTemperatureMagnetEnvelope\_nontrivial} adds the
+zero-temperature Gibbs constraint (spins must be aligned), and shows
+the envelope is still strictly non-trivial: any measure supported on
+the aligned-spin pair $\{(\downarrow,\downarrow), (\uparrow,\uparrow)\}$
+still admits both extremes. The structural constraint by itself does
+not close down credal width; the Dobrushin condition has to be checked
+\emph{quantitatively} on the local-influence row-sums.
+
+\subsection{Concrete infinite crown: reinforced line versus zero-weight grid}
+
+The theorem
+\lid{reinforcedLineGeometric\_strictWidth\_and\_zeroWeightGrid\_collapse}
+packages the first concrete DLR/PLN contrast. The strict-width side uses
+\lid{reinforcedLineGeometric\_originSpinUp\_plnStrictInterval}: a
+geometrically reinforced half-line has positive PLN strict-width at the
+origin-spin query. The collapse side uses
+\lid{gridZeroField\_originSpinUp\_queryEnvelope\_precise\_of\_dobrushin}:
+the zero-weight zero-field grid lies in the Dobrushin collapse regime for
+the analogous origin-spin query. This is an infinite canary, but it is not
+yet the full two-dimensional low-temperature Ising plus/minus
+phase-separation theorem.
+
+\section{Three kinds of degree of freedom: the synthesis}\label{sec:synthesis}
+
+We now name the three formally-locatable freedom slots, each with the
+predicate that witnesses it.
+
+\paragraph{(A) Specification-level: \lid{localCredal} choice.}
+A wider local credal at any cylinder window produces a wider projective
+limit. The PLN-side question ``does my $\STV{s}{c}$ on query $X_q$ have
+genuine width?'' reduces to ``does \lid{hasStrictGlobalWidth}
+\lid{spec} on $X_q$ hold?''. The modeller controls this slot by varying
+\lid{localCredal}{} $i$. The slot is finite or infinite depending on
+whether $\Omega$ is.
+
+\paragraph{(B) Completion-level: extreme-point choice.}
+Given a credal set $C$, the actual world chooses one $P \in C$ (the
+``true'' precise prevision). This freedom is aleatoric. It is formally
+invisible to $\STV{s}{c}$ because $\STV{s}{c}$ is a property of $C$, not
+of any specific $P$. PLN inference rules do not see it; only the
+verification of a query against actual data sees it.
+
+\paragraph{(C) Phase-transition: DLR non-uniqueness.}
+In infinite Markov-logic specs, the projective limit is the set of DLR
+completions, which may itself be non-singleton. The slot is opened
+exactly when \lid{dlrQueryHasStrictWidth} on $(M, q)$ holds for the
+query $q$ of interest, and closed when \lid{dlrQueryDetermined} on $(M, q)$
+holds. The Dobrushin condition \lid{PaperUniformSmallTotalInfluence}
+is a sufficient condition for the closed case.
+
+\begin{observation}
+Slot (A) is the freedom the PLN modeller intends to give. Slot (B) is
+the freedom the world has within the modeller's spec. Slot (C) is the
+freedom that the infinite structure of the spec itself produces, without
+any modeller intent and without any world-side aleatoric residual.
+\end{observation}
+
+The three slots are independent. A modeller can pick (A) tight, the
+world can pick (B) freely, and the spec can still have (C) freedom from
+a phase transition. The PLN $\STV{s}{c}$ sees (A) and (C); it does not
+see (B).
+
+\section{What is open}\label{sec:open}
+
+The formal characterization above is honest about which steps are
+already-proved theorems and which are open. Since the first draft of this
+section, the generic compact/FIP and Walley projective-natural-extension
+waist has landed. The remaining work is now narrower:
+
+\begin{itemize}
+\item \textbf{Local finite-window coherence feeding FIP.}
+      The generic compact/FIP waist is present:
+      \lid{ProjectiveLocalLowerPrevisionSpec.finiteWindowCompatibleInCarrier}
+      feeds
+      \lid{hasCompatibleCompletion\_of\_finiteWindowCompatibleInCarrier}.
+      What remains is an honest, non-circular local-coherence predicate
+      that implies finite-window compatibility without assuming a hidden
+      global compatible precise prevision.
+
+\item \textbf{Polished DLR compact-projective packaging.}
+      The DLR determined/strict-width bridge and the concrete
+      reinforced-line crown exist. The remaining packaging work is to
+      expose the DLR layer as a clean public specialization of the generic
+      projective/Walley interface, with theorem names aligned to the
+      confidence-formula API.
+
+\item \textbf{Imprecise de~Finetti mixing-family package.}
+      The finite-prefix Bernoulli-mixture payoff theorems exist, including
+      agreement $\Rightarrow$ width-complement $1$ and disagreement
+      $\Rightarrow$ width-complement $<1$. What remains is a clean public
+      mixing-family object and, later, full process-law synthesis beyond
+      finite-prefix adapters.
+
+\item \textbf{True two-dimensional low-temperature Ising separation.}
+      The reinforced-line strict-width crown is a concrete infinite canary.
+      It is not yet the classical 2D low-temperature Ising plus/minus
+      theorem. That theorem would require constructing two distinct
+      infinite-volume DLR completions satisfying the same local conditional
+      specification and proving that they disagree on an explicit
+      finite-cylinder query.
+
+\item \textbf{Paper/build metadata refresh.}
+      Line counts and theorem references should be generated from the exact
+      commit or avoided in favor of module and theorem names.
+\end{itemize}
+
+These are not blockers for the dichotomy we have proved; they are
+the next theorems in the same vein. We name them as open so a reader
+of this paper is not misled into thinking the infinite half of the
+characterization is closed.
+
+\section{Related work}\label{sec:related}
+
+\paragraph{Walley.}
+The credal-set lower-prevision framework is Walley (1991). Our
+\lid{LowerPrevision} structure is the Walley structure with
+constant-preservation, positive homogeneity, and superadditivity, and
+our \lid{lowerEnvelopePrevision\_isCoherent\_of\_finite} is the
+classical Walley coherence theorem for finite envelopes.
+
+\paragraph{de~Finetti.}
+The de~Finetti exchangeability theorem connects exchangeable distributions
+on infinite sequences to mixtures over IID distributions. The codebase has
+finite-prefix imprecise de~Finetti payoff theorems: mixture agreement
+forces width-complement $1$, and mixture disagreement forces
+width-complement $<1$ on the induced finite-prefix envelope. It also has a
+projective specialization adapter. What remains open is a polished public
+mixing-family object and a full process-law synthesis beyond the
+finite-prefix surface.
+
+\paragraph{Dobrushin--Lanford--Ruelle.}
+The DLR framework characterises infinite Gibbs measures by their
+finite-volume conditional distributions. The Dobrushin uniqueness
+condition (uniform smallness of total influence) implies a unique DLR
+completion. Singla and Domingos have a Markov-logic specific
+uniformity-of-influence framing. Our \lid{PaperUniformSmallTotalInfluence}
+is the codified hypothesis.
+
+\paragraph{PLN literature.}
+The two-component truth value $\STV{s}{c}$ is canonical in the PLN
+literature (Goertzel et al.\ \emph{Probabilistic Logic Networks}). The
+sibling papers \xiPLN\ (\lpath{papers/xiPLN.tex}) and the PLN Review
+(\lpath{papers/pln-review.tex}) treat the evidence-algebra and
+formal-rule-coherence axes. The WM-PLN book
+(\lpath{papers/wm-pln-book.tex}) has the informal predecessor of the
+degrees-of-freedom characterization in its \S 7.4
+(``Degrees of freedom versus forcing'').
+
+\paragraph{Markov logic networks.}
+Richardson and Domingos (Machine Learning, 2006) introduced MLNs as
+finite log-linear models on first-order logic. The infinite
+specialisation in
+\codepath{Mettapedia.Logic.MarkovLogicInfinite*}
+is a recent codex landing (cited inline above).
+
+\paragraph{Imprecise probability and second-order Bayesianity.}
+The PLN tradition of treating $c$ as ``confidence-in-strength'' has a
+natural Bayesian second-order reading (a Beta distribution over the
+true probability), which the file
+\codepath{Mettapedia.Logic.PLNDistributional} formalises. The credal
+reading we develop here is the Walley-side complement; in the
+finite case the two readings overlap on the singleton case and
+diverge on the strict-width case.
+
+\section{Conclusion}\label{sec:conclusion}
+
+PLN truth values $\STV{s}{c}$ are summary statistics of a credal set,
+and the question of where their information lives reduces, formally,
+to a dichotomy on the underlying credal set. The codebase landings in
+\codepath{Mettapedia.ProbabilityTheory.ImpreciseProbability.ProjectiveCredal}
+	(the \lid{credalSetDetermines} / \lid{credalSetHasStrictWidth}
+	predicates and their collapse / width theorems) and in
+	\codepath{Mettapedia.Logic.MarkovLogicInfiniteCredalBridge} (the
+	DLR-level lift and the Dobrushin hypothesis as a sufficient collapse
+	condition) make this dichotomy a checkable Lean theorem rather than
+	informal commentary.
+
+The three freedom slots --- specification, completion, phase-transition
+--- partition the question along orthogonal axes. (A) is the modeller's
+freedom. (B) is the world's freedom. (C) is the structural freedom
+the spec produces by itself. PLN $\STV{s}{c}$ sees (A) and (C); it
+does not see (B). Where it sees (C), the Dobrushin condition is the
+formally sufficient hypothesis for $\STV{s}{c}$ to be precise.
+
+The infinite half of the characterization has real open work, named in
+Sec.~\ref{sec:open}. We have not pretended otherwise.
+
+\bibliographystyle{plain}
+\begin{thebibliography}{10}
+
+\bibitem{walley91}
+Peter Walley.
+\newblock \emph{Statistical Reasoning with Imprecise Probabilities}.
+\newblock Chapman \& Hall, 1991.
+
+\bibitem{definetti37}
+Bruno de Finetti.
+\newblock La pr\'evision: ses lois logiques, ses sources subjectives.
+\newblock \emph{Annales de l'Institut Henri Poincar\'e}, 7:1--68, 1937.
+
+\bibitem{dobrushin68}
+R.\ L.\ Dobrushin.
+\newblock Description of a random field by means of conditional
+        probabilities and conditions of its regularity.
+\newblock \emph{Theory of Probability and its Applications},
+        13(2):197--224, 1968.
+
+\bibitem{lanford-ruelle69}
+O.\ Lanford and D.\ Ruelle.
+\newblock Observables at infinity and states with short-range correlations
+        in statistical mechanics.
+\newblock \emph{Communications in Mathematical Physics}, 13:194--215, 1969.
+
+\bibitem{richardson-domingos06}
+Matthew Richardson and Pedro Domingos.
+\newblock Markov logic networks.
+\newblock \emph{Machine Learning}, 62:107--136, 2006.
+
+\bibitem{singla-domingos05}
+Parag Singla and Pedro Domingos.
+\newblock Discriminative training of Markov logic networks.
+\newblock In \emph{AAAI 2005}.
+
+\bibitem{goertzel-pln}
+Ben Goertzel, Matthew Ikl\'e, Izabela Goertzel, and Ari Heljakka.
+\newblock \emph{Probabilistic Logic Networks: A Comprehensive Framework
+        for Uncertain Inference}.
+\newblock Springer, 2008.
+
+\bibitem{xipln}
+Mettapedia Working Notes.
+\newblock $\xi$PLN: a correct and complete foundation for probabilistic
+        logic networks.
+\newblock In this directory: \lpath{papers/xiPLN.tex}.
+
+\bibitem{wmpln-book}
+Mettapedia Working Notes.
+\newblock The WM-PLN book.
+\newblock In this directory: \lpath{papers/wm-pln-book.tex}.
+
+\bibitem{pln-review}
+Mettapedia Working Notes.
+\newblock PLN review and corrections.
+\newblock In this directory: \lpath{papers/pln-review.tex}.
+
+\end{thebibliography}
+
+\end{document}

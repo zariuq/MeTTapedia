@@ -1,0 +1,1047 @@
+%% Credal Concept Formation in Dependent Type Theory
+%%
+%% Render with:
+%%   lualatex -shell-escape credal-concept-formation.tex \
+%%     && bibtex credal-concept-formation \
+%%     && lualatex -shell-escape credal-concept-formation.tex \
+%%     && lualatex -shell-escape credal-concept-formation.tex
+
+\documentclass[]{article}
+\usepackage{url}
+\usepackage[hyperindex,breaklinks]{hyperref}
+\IfFileExists{breakurl.sty}{\usepackage{breakurl}}{}
+\usepackage{listings}
+\lstset{basicstyle=\ttfamily\footnotesize,breaklines=true,frame=single,
+        xleftmargin=1em,xrightmargin=0.5em}
+\usepackage{float}
+\restylefloat{table}
+\usepackage{longtable}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage[font=small,labelfont=bf]{caption}
+\usepackage[skip=0pt]{subcaption}
+\usepackage{amsfonts}
+\usepackage{amsmath}
+\usepackage{amsthm}
+\usepackage{unicode-math}
+\IfFileExists{newunicodechar.sty}{
+  \usepackage{newunicodechar}
+  \newunicodechar{∘}{\ensuremath{\circ}}
+}{}
+\IfFontExistsTF{Stix Two Math}{\setmathfont{Stix Two Math}}{\setmathfont{STIX Math}}
+
+\makeatletter
+\providecommand{\headerps@out}{}
+\makeatother
+
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{corollary}[theorem]{Corollary}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{remark}[theorem]{Remark}
+\newtheorem{observation}[theorem]{Observation}
+
+\newcommand{\code}[1]{\texttt{#1}}
+\newcommand{\codepath}[1]{\path{#1}}
+\newcommand{\lid}[1]{{\ttfamily\nolinkurl{#1}}}
+\newcommand{\lpath}[1]{\texttt{\nolinkurl{#1}}}
+\newcommand{\ty}[1]{\ensuremath{\mathtt{#1}}}
+\newcommand{\STV}[2]{\langle #1,\, #2 \rangle}
+\newcommand{\strength}{\mathrm{strength}}
+\newcommand{\confidence}{\mathrm{confidence}}
+\newcommand{\Eq}{\;\Leftrightarrow\;}
+\newcommand{\LowerFC}{\mathcal{L}}
+\newcommand{\UpperFC}{\mathcal{U}}
+\newcommand{\PreciseEnv}{\mathcal{P}}
+
+\emergencystretch=3em
+
+\title{Credal Concept Formation in Dependent Type Theory:\\
+       FCA Recovery, Walley Conjugacy, and a Mizar Benchmark}
+\author{Mettapedia Working Notes}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+We give a type-theoretic formalization of credal concept formation in Lean~4 that admits
+classical Formal Concept Analysis (FCA) as an exact, order-isomorphic special case.
+The contributions are: (i) subtype-based lower and upper formed-concept carriers,
+\lid{LowerFormedConcept} and \lid{UpperFormedConcept}, parameterized over a family of
+admissible evidence gates; (ii) an order-isomorphism recovery theorem
+\lid{formedConceptOrderIsoCrispConcept} establishing that our exact lane \emph{is} the
+classical FCA concept lattice; (iii) singleton-collapse equivalences that prove
+conservative extension of the crisp case; (iv) integration with Walley's natural
+extension via a four-scale conjugacy cluster on a projective credal spec, lifting the
+credal coordinates (lower, upper, midpoint, width-complement) into the
+imprecise-probability machinery the PLN $\STV{s}{c}$ truth value compresses; (v) a
+first-stone empirical benchmark over an extracted slice of the Mizar Mathematical
+Library article \lid{conlat\_1.miz}, including a real credal witness on the
+\lid{ObjectDerivation} base concept. All theorems are quoted verbatim from a public
+Lean~4 source with no \lid{sorry}, \lid{admit}, or new \lid{axiom}. We are explicit
+about what is theorem-witness and what is yet-to-run experiment; \S 9 enumerates the
+empirical work required to turn the benchmark into a published discovery.
+\end{abstract}
+
+\section{Introduction}\label{sec:intro}
+
+Classical Formal Concept Analysis (FCA), introduced by Wille~\cite{wille1982}, gives a
+crisp, order-theoretic account of how concepts arise from an incidence relation
+$M : \mathrm{Obj} \times \mathrm{Attr} \to \{0,1\}$. The standard objects are
+\emph{formal concepts}: pairs $(A, B)$ with $A = B^\downarrow$ and $B = A^\uparrow$
+under the derivation operators. The standard structure is a complete lattice with
+intent/extent duality. After forty years and several thousand papers, this is the
+canonical mathematical framework for the question ``what concepts arise from this
+context?'' For practical concept formation over noisy or evidence-graded data,
+however, the binary commitment ${M : \mathrm{Obj} \times \mathrm{Attr} \to \{0,1\}}$ is
+too rigid.
+
+Several lines of work generalize FCA to handle uncertainty. Belohlavek's fuzzy
+FCA~\cite{belohlavek1999} replaces the crisp incidence with degrees in $[0,1]$.
+Djouadi and Prade introduce interval-valued and possibilistic
+contexts~\cite{djouadi2009}. Triadic FCA~\cite{wille1995} adds a context dimension.
+Each gives one principled answer to ``what if the relation $M$ is uncertain?''.
+
+This paper takes a different route. We treat the uncertainty as living \emph{not in
+the relation $M$ itself}, but in which \emph{admissible evidence gate} converts
+evidence-valued cells into crisp incidence assertions. A gate is a thresholding
+discipline; admissible gates are those the modeller is willing to consider; concept
+formation under \emph{every} admissible gate gives a \emph{lower} carrier
+(``robustly formed concepts'') while concept formation under \emph{some} admissible
+gate gives an \emph{upper} carrier (``permissively formed concepts''). This matches
+the Walley imprecise-probability framework~\cite{walley1991}: the gate family
+indexes a family of precise previsions; the lower/upper concepts are the credal
+envelopes of an underlying gamble. The exact (singleton-gate) case recovers
+classical FCA.
+
+\paragraph{Three concrete contributions.} The paper formalizes this picture in
+Lean~4 and ties it to existing PLN infrastructure as follows.
+
+\begin{enumerate}
+\item \textbf{Type-theoretic credal carriers (\S\ref{sec:carriers}).} We define
+\lid{LowerFormedConcept} and \lid{UpperFormedConcept} as proper subtypes of
+\lid{DualConcept}, not as wrappers around \lid{FormedConcept}. The subtype design
+avoids a class of degenerate-instance traps; the upper-side witness extraction
+uses \lid{Classical.choose} honestly.
+
+\item \textbf{Order-isomorphic FCA recovery (\S\ref{sec:fca-recovery}).} We prove
+\lid{formedConceptEquivCrispConcept} (the carrier equivalence) and
+\lid{formedConceptOrderIsoCrispConcept} (the order isomorphism) against mathlib's
+\lid{CrispConcept}. The recovery is not a structural resemblance: the exact lane
+\emph{is} the classical FCA concept lattice as an order-theoretic object.
+
+\item \textbf{Walley natural-extension bridge (\S\ref{sec:walley}).} Four
+parameterized conjugacy theorems at the cylinder, finite-cylinder, global, and
+finite-global scales of a projective local credal spec connect upper-envelope and
+natural-extension semantics. The credal coordinates \lid{credalEnvelopeWidth},
+\lid{credalEnvelopeMidpoint}, \lid{credalEnvelopeWidthComplement} are the natural
+$\STV{s}{c}$-compression coordinates the PLN truth value rides on.
+\end{enumerate}
+
+\paragraph{Empirical anchor.} \S\ref{sec:mizar} reports a first-stone benchmark: a
+Python extractor walks a \lid{.miz} article and emits an attribute-counted
+observation context; \S\ref{sec:mizar} exhibits a real credal witness on the
+\lid{ObjectDerivation} base concept of \lid{conlat\_1.miz} where the concept lives in
+the upper carrier but not the lower, yielding $\mathrm{width} = 1,\
+\mathrm{midpoint} = \tfrac{1}{2}$. We are explicit (\S\ref{sec:mizar-honest}) that this
+is theorem-witness over hand-chosen gates and one article. \S\ref{sec:roadmap}
+discusses what real experiments would look like, including the most interesting one:
+using the upper/lower gap on a multi-article Mizar corpus to detect
+\emph{formally-missing concepts} via Galois-dual reasoning.
+
+\section{Background}\label{sec:background}
+
+\subsection{Classical FCA}\label{sec:bg-fca}
+
+A formal context is a triple $(\mathrm{Obj}, \mathrm{Attr}, I)$ with
+$I \subseteq \mathrm{Obj} \times \mathrm{Attr}$. The derivation operators
+$\cdot^\uparrow : 2^{\mathrm{Obj}} \to 2^{\mathrm{Attr}}$ and
+$\cdot^\downarrow$ form a Galois connection. A formal concept is a pair
+$(A, B)$ with $A^\uparrow = B$ and $B^\downarrow = A$. The set of formal concepts
+ordered by $(A, B) \leq (A', B') \iff A \subseteq A'$ is the
+\emph{concept lattice} of the context. The main theorem of
+FCA~\cite{wille1982,gantnerwille1999} is that every finite lattice arises this way.
+
+Algorithmic FCA tooling (NextClosure, ConExp, FCAbedrock, Lattice Miner) computes
+concept lattices in time proportional to lattice size, not $2^{|\mathrm{Obj}|}$.
+For practical contexts the lattice stays small. The crisp commitment, however, is
+brittle: a single attribute-cell flip can move concepts in and out of the lattice
+discontinuously.
+
+\subsection{Imprecise probability and Walley's natural extension}\label{sec:bg-walley}
+
+Walley~\cite{walley1991} replaces a single probability measure with a \emph{credal
+set} of admissible precise previsions. A lower prevision $\underline{P}$ is
+\emph{coherent} when it avoids sure loss and satisfies superadditivity and positive
+homogeneity. The \emph{natural extension} of a coherent lower prevision is the
+greatest coherent lower prevision dominated by it; its conjugate $\overline{P}(X)
+= -\underline{P}(-X)$ is the corresponding upper prevision. The
+\emph{lower envelope} of a credal set $\mathcal{C}$ on a gamble $X$ is
+$\inf_{P \in \mathcal{C}} P(X)$; the \emph{upper envelope} is $\sup$. Walley's
+representation theorem links the two notions: every coherent lower prevision is the
+lower envelope of its set of dominating precise previsions, and conversely.
+
+Belohlavek's fuzzy FCA~\cite{belohlavek1999} and Djouadi--Prade's interval-valued
+FCA~\cite{djouadi2009} are predecessors for treating FCA-style closures under
+uncertainty. They do not bridge into Walley's natural-extension calculus, and do
+not formalize a conservative reduction to crisp FCA in dependent type theory.
+
+\subsection{PLN truth values}\label{sec:bg-pln}
+
+Probabilistic Logic Networks~\cite{goertzel2008} represent the strength and
+confidence of an inheritance relation as a two-number tuple $\STV{s}{c}$, where
+$s \in [0,1]$ is interpreted as a strength-like point estimate and
+$c \in [0,1]$ as a confidence-like inverse-imprecision. A companion characterization
+paper~\cite{pln-credal-degrees-of-freedom} identifies $\STV{s}{c}$ as a two-number
+compression of an underlying credal set, with three layered slots where the
+compression admits genuine degrees of freedom. The present paper provides the
+\emph{concept-formation} side of that picture: how credal carriers, FCA recovery,
+and Walley conjugacy together justify a midpoint/width-complement reading of
+$\STV{s}{c}$.
+
+\section{The credal carriers}\label{sec:carriers}
+
+The exact (precise) concept-formation surface in our framework is given by the
+\lid{ObservationSurface} machinery and its
+\lid{finiteConceptFamily} operator; see~\cite{wmpln_concept_formation_guidance} for
+the public-API discussion. Codex's \lid{ConceptOntology/Formation.lean} provides the
+operator and a correctness theorem
+\(\,A \in \operatorname{finiteConceptFamily}(S,G,\sigma)\,\) iff \(A\) is closed
+under \(\operatorname{crispRelation}(G,S.\operatorname{aggregate}(\sigma))\).
+The credal extension lives one level up.
+
+\paragraph{Carriers as subtypes.} The credal carriers are not wrappers; they are
+subtypes whose proof field carries genuine content.
+
+\begin{definition}[\lid{LowerFormedConcept} and \lid{UpperFormedConcept},
+\lpath{ConceptOntology/CredalFormation.lean:143,148}]\label{def:carriers}
+\begin{lstlisting}
+abbrev LowerFormedConcept
+    (Γ : Gate → EvidenceGate Q) (M : Obj → Attr → Q) :=
+  { A : DualConcept Obj Attr // A ∈ lowerConceptFamily Γ M }
+
+abbrev UpperFormedConcept
+    (Γ : Gate → EvidenceGate Q) (M : Obj → Attr → Q) :=
+  { A : DualConcept Obj Attr // A ∈ upperConceptFamily Γ M }
+\end{lstlisting}
+\end{definition}
+
+\noindent The membership predicate \lid{lowerConceptFamily} is ``$A$ is a formed
+concept under \emph{every} gate $\Gamma(g)$'' and \lid{upperConceptFamily} is ``$A$
+is a formed concept under \emph{some} gate.'' The carriers' proof field \(A.2\)
+certifies \(A \in \operatorname{lowerConceptFamily}(\Gamma,M)\): an honest
+dependent proof obligation, not a definitional unfolding.
+
+\paragraph{Why subtype, not wrapper.} The carrier design avoids a degenerate
+pattern that would render the credal layer vacuous: defining a ``credal concept''
+as a \emph{renamed} \lid{FormedConcept} and proving the recovery theorem by
+\lid{rfl}. The present subtype design forces the recovery theorem to do real work
+because the carrier types are genuinely distinct, even though their meaning sets are
+related.
+
+\paragraph{Working with the proof field.} The single-gate projection
+\lid{lowerFormedConceptAt} uses the universal-gate proof concretely:
+
+\begin{lstlisting}
+def lowerFormedConceptAt
+    (Γ : Gate → EvidenceGate Q) (M : Obj → Attr → Q)
+    (g : Gate) :
+    LowerFormedConcept Γ M → AbstractInheritance.FormedConcept (Γ g) M :=
+  fun A => ⟨A.1, A.2 g⟩
+\end{lstlisting}
+
+\noindent (\lpath{ConceptOntology/CredalFormation.lean:198}.) The upper-side
+witness extraction uses \lid{Classical.choose}:
+
+\begin{lstlisting}
+noncomputable def upperFormedConceptWitness
+    (Γ : Gate → EvidenceGate Q) (M : Obj → Attr → Q) :
+    UpperFormedConcept Γ M →
+      Σ g : Gate, AbstractInheritance.FormedConcept (Γ g) M := by
+  classical
+  intro A
+  refine ⟨Classical.choose A.2, ?_⟩
+  exact ⟨A.1, Classical.choose_spec A.2⟩
+\end{lstlisting}
+
+\noindent (line 205). Both projections preserve the underlying dual-concept value
+unchanged; this is recorded as the \lid{lowerFormedConceptAt\_val} and
+\lid{upperFormedConceptWitness\_val} simp lemmas.
+
+\section{FCA recovery}\label{sec:fca-recovery}
+
+Codex's \lpath{ConceptOntology/FCARecovery.lean} module makes the FCA recovery
+explicit. The 74-line file proves two theorems and one corollary; we quote the
+first verbatim and sketch the second.
+
+\begin{theorem}[Carrier equivalence,
+\lpath{ConceptOntology/FCARecovery.lean:27}]\label{thm:fca-carrier}
+\begin{lstlisting}
+noncomputable def formedConceptEquivCrispConcept
+    (G : EvidenceGate Q) (M : Obj → Attr → Q) :
+    AbstractInheritance.FormedConcept G M ≃ CrispConcept G M where
+  toFun A :=
+    DualConcept.toConcept A.1
+      (AbstractInheritance.formedConcept_isClosed G M A)
+  invFun c :=
+    ⟨DualConcept.ofConcept c,
+      (AbstractInheritance.mem_finiteConceptFamily_iff G M _).2
+        (DualConcept.isClosed_ofConcept c)⟩
+  left_inv A := by
+    apply Subtype.ext
+    exact DualConcept.ofConcept_toConcept A.1
+      (AbstractInheritance.formedConcept_isClosed G M A)
+  right_inv c := by
+    exact DualConcept.toConcept_ofConcept c
+\end{lstlisting}
+\end{theorem}
+
+\noindent The carrier equivalence promotes a formed-concept proof to a classical
+formal-concept pair $(A, B)$ via the \lid{DualConcept.toConcept} construction, and
+inverts it by \lid{DualConcept.ofConcept}. Both inverse laws are honest
+sigma-extensionality lemmas, not \lid{rfl}.
+
+\begin{theorem}[Order isomorphism,
+\lpath{ConceptOntology/FCARecovery.lean:44}]\label{thm:fca-order}
+\begin{lstlisting}
+noncomputable def formedConceptOrderIsoCrispConcept
+    (G : EvidenceGate Q) (M : Obj → Attr → Q) :
+    AbstractInheritance.FormedConcept G M ≃o CrispConcept G M where
+  toEquiv := formedConceptEquivCrispConcept G M
+  map_rel_iff' := by
+    intro A B
+    simpa using
+      (DualConcept.toConcept_le_iff A.1 B.1
+        (AbstractInheritance.formedConcept_isClosed G M A)
+        (AbstractInheritance.formedConcept_isClosed G M B))
+\end{lstlisting}
+\end{theorem}
+
+\noindent This is the headline claim of the recovery layer: the exact formed-concept
+order is the classical FCA concept-lattice order, as an order isomorphism. It is
+not merely the case that the carriers are equipotent; the order structure transfers
+exactly. A corollary at line 64,
+\lid{formedConcept\_inherits\_iff\_crispConcept\_le}, packages the implication for
+downstream consumers who want the inheritance-style direction.
+
+\subsection{Singleton-collapse conservative extension}
+
+The credal layer collapses to the exact layer in the singleton-gate case. We
+formalize this via two type equivalences:
+
+\begin{theorem}[Lower singleton equivalence,
+\lpath{ConceptOntology/CredalFormation.lean:275}]\label{thm:lower-singleton}
+\begin{lstlisting}
+noncomputable def lowerFormedConceptSingletonEquiv
+    (G : EvidenceGate Q) (M : Obj → Attr → Q) :
+    LowerFormedConcept (Gate := PUnit) (fun _ => G) M ≃
+      AbstractInheritance.FormedConcept G M
+\end{lstlisting}
+\end{theorem}
+
+\noindent The companion \lid{upperFormedConceptSingletonEquiv} at line 292 is the
+upper-side twin. Both proofs use the singleton iff lemmas
+\lid{mem\_lowerConceptFamily\_singleton\_iff} and
+\lid{mem\_upperConceptFamily\_singleton\_iff}, with \lid{cases A; rfl} discharging
+the inverse laws. The constructions are honest equivalences between type-distinct
+objects (the credal subtype \emph{with} \lid{Gate := PUnit} versus the bare
+\lid{FormedConcept}).
+
+\paragraph{What conservative extension means here.} When the gate family has a
+single element, every \lid{LowerFormedConcept} is the same as a \lid{FormedConcept}
+under that gate, and the same for \lid{UpperFormedConcept}. Composed with
+Theorem~\ref{thm:fca-order}, this gives the chain
+\[
+  \text{Credal layer at singleton gate}
+  \xrightarrow{\text{Thm.~\ref{thm:lower-singleton}}}
+  \text{Exact \lid{FormedConcept}}
+  \xrightarrow{\text{Thm.~\ref{thm:fca-order}}}
+  \text{Classical FCA concept lattice}.
+\]
+Both arrows are order isomorphisms. The credal layer is a conservative refinement,
+not a sideways alternative.
+
+\section{Inheritance and transport}\label{sec:inheritance}
+
+The credal carrier composes cleanly with the existing inheritance, closure, and
+ontology-growth infrastructure landed in earlier passes
+(\lpath{Logic/EmpiricalIntensionalFactorGraphBridge.lean},
+\lpath{Logic/CredalConceptFixpointClosureBridge.lean},
+\lpath{Logic/CredalConceptOntologyGrowthBridge.lean}).
+
+\subsection{Lower-credal inheritance table}\label{sec:inheritance-table}
+
+The credal inheritance table mirrors the precise version at line 1644 but operates
+on \lid{LowerFormedConcept}:
+
+\begin{definition}[\lid{lowerCredalConceptInheritanceTable},
+\lpath{EmpiricalIntensionalFactorGraphBridge.lean:1778}]\label{def:lower-table}
+\begin{lstlisting}
+noncomputable def lowerCredalConceptInheritanceTable
+    (Γ : Gate → EvidenceGate Q)
+    (M : Obj → Attr → Q)
+    (subConcept superConcept : LowerFormedConcept Γ M) :
+    FiniteWitnessFeatureTable :=
+  Interpretation.toFiniteWitnessFeatureTable
+    (lowerFormedConceptInterpretation Γ M)
+    subConcept superConcept
+\end{lstlisting}
+\end{definition}
+
+\noindent Three exactness theorems follow: the prior at line 1787, the strength at
+line 1804, and the log-ratio at line 1822. Each proves the credal interpretation's
+read of the corresponding quantity equals the table read, via \lid{simpa} from the
+underlying precise lemma. The packaged conjunction
+\lid{lowerFormedConceptInheritance\_exact\_via\_table} at line 1985 is the credal
+analogue of the line-1644 precise theorem.
+
+\subsection{Closure transport}\label{sec:closure-transport}
+
+The credal inheritance survives closure under WM-style rule sets:
+
+\begin{theorem}[Threshold validity through closure,
+\lpath{CredalConceptFixpointClosureBridge.lean:71}]
+\label{thm:closure-transport}
+Let $\mathit{seed}$ be a set of \lid{LowerFormedConceptPair}, $R$ a \lid{RuleSet}.
+If a query-encoding $\mathit{encode}$ exposes the supported lower-formed
+extensional-inheritance slice at strength level (the \lid{hEncode} hypothesis),
+and every seed obligation is above threshold $\tau$ according to the exact generated
+table, then the encoded seed query set is threshold-valid in the world model. The
+companion \lid{leastRuleClosure\_thresholdValid\_of\_exactTableStrength} at line~114
+shows the same obligations stay threshold-valid after applying any state-indexed
+WM consequence rule set.
+\end{theorem}
+
+\subsection{Ontology-growth transport}\label{sec:growth-transport}
+
+The credal inheritance is stable under ontology growth, provided the agreement
+region is interaction-closed and the two MLN specs satisfy the
+\lid{PaperUniformSmallTotalInfluence} (Dobrushin-style) bound:
+
+\begin{theorem}[Stable under ontology growth,
+\lpath{CredalConceptOntologyGrowthBridge.lean:87}]
+\label{thm:growth-transport}
+If a lower-formed-concept seed family is threshold-valid in MLN world-model state
+$\mu_1$ and every encoded seed query is supported inside an agreement region
+$\Gamma$, then the same seed family remains threshold-valid after ontology growth
+to the agreeing spec on $\mu_2$. The companion line~145 theorem extends the result
+through least-rule closure, and lines 212/280 push the result into perspectival
+availability/admissibility.
+\end{theorem}
+
+\noindent Theorems~\ref{thm:closure-transport} and \ref{thm:growth-transport}
+together demonstrate that the credal carrier is not a parallel stack. It integrates
+with the existing world-model semantics: credal inheritance obligations transport
+through both \emph{logical} closure (rule-set application) and \emph{ontological}
+closure (Dobrushin-bound growth).
+This is a conditional transport theorem: it does not assert that arbitrary
+ontology growth is stable, but that stability follows under the stated
+agreement-region and Dobrushin-style hypotheses.
+
+\section{Credal truth coordinates and the Walley bridge}\label{sec:walley}
+
+The credal layer reads $\STV{s}{c}$-like coordinates off the lower/upper envelopes
+through definitions in \lpath{ProbabilityTheory/ImpreciseProbability/ProjectiveCredal.lean}.
+
+\subsection{The three coordinates}
+
+\begin{definition}[Credal envelope coordinates,
+\lpath{ProjectiveCredal.lean}]\label{def:coords}
+\begin{lstlisting}
+noncomputable def credalEnvelopeWidth
+    (C : CredalPrevisionSet Ω) (X : Gamble Ω) : ℝ :=
+  upperEnvelope C X - lowerEnvelope C X
+
+noncomputable def credalEnvelopeWidthComplement
+    (C : CredalPrevisionSet Ω) (X : Gamble Ω) : ℝ :=
+  1 - credalEnvelopeWidth C X
+
+noncomputable def credalEnvelopeMidpoint
+    (C : CredalPrevisionSet Ω) (X : Gamble Ω) : ℝ :=
+  (lowerEnvelope C X + upperEnvelope C X) / 2
+\end{lstlisting}
+\end{definition}
+
+\noindent The docstrings are explicit about the intended PLN reading:
+\lid{credalEnvelopeWidth} is the imprecision coordinate that
+``PLN confidence-like displays compress'';
+\lid{credalEnvelopeMidpoint} is the point-estimate coordinate that
+``PLN strength-like displays compress.''
+
+The display map used in this paper is the canonical midpoint /
+width-complement projection for this credal reading of PLN truth values:
+\[
+  \STV{s}{c}\ \longleftarrow\
+  \bigl(\,\text{\lid{credalEnvelopeMidpoint}}\ C\ X,\
+        \text{\lid{credalEnvelopeWidthComplement}}\ C\ X\,\bigr).
+\]
+Singleton-recovery: when \lid{credalSetDetermines}\ $C\ X$ holds, the lower and upper
+envelopes coincide and the midpoint reads the precise value while the
+width-complement reads $1$, recovering the precise PLN truth value. This is the
+``three slots of freedom'' picture of~\cite{pln-credal-degrees-of-freedom} viewed
+from the concept-formation side.
+
+\noindent The same display lane is now packaged for credal inheritance pairs in
+\lpath{EmpiricalIntensionalFactorGraphBridge.lean}.  The gamble
+\lid{credalInheritanceGamble} uses the independent gate index
+\lid{Gate × Gate}, so it matches the existing predicate
+\lid{credalInheritanceJudgment}: the subconcept and superconcept each need upper
+support, but not necessarily under the same admissible gate.  The global readout
+theorems \lid{globalEnvelopeWidth\_credalInheritanceGamble\_eq},
+\lid{globalEnvelopeWidthComplement\_credalInheritanceGamble\_eq}, and
+\lid{globalEnvelopeMidpoint\_credalInheritanceGamble\_eq} prove the intended PLN
+coordinates: \lid{credallyImpreciseInheritance} gives width $1$ and
+width-complement $0$, while robust precision gives width-complement $1$.  The
+review-facing bundle is \lid{CredalInheritanceTruthCoordinateCrown}.
+
+\subsection{The Walley conjugacy cluster}\label{sec:walley-cluster}
+
+A four-theorem cluster lands the conjugacy $\overline{P}^\ast = -\underline{P}_{\text{nat. ext.}}(-\cdot)$
+at four scales of the projective credal spec: cylinder, finite-cylinder, global,
+finite-global. We quote the global one verbatim; the cylinder one follows the same
+pattern at a smaller scale.
+
+\begin{theorem}[Global upper-envelope/natural-extension conjugacy,
+\lpath{ProjectiveCredal.lean:6871}]\label{thm:walley-global}
+\begin{lstlisting}
+theorem globalUpperEnvelopePrevision_conjugate_eq_naturalExtension
+    (S : ProjectiveLocalCredalSpec Window Global)
+    (hNonempty : S.hasCompatibleCompletion)
+    (hBdd : ∀ X : Gamble Global,
+      BddAbove ((fun P : PrecisePrevision Global => P X) ''
+        S.projectiveLimitCredalSet))
+    (X : Gamble Global) :
+    (S.globalUpperEnvelopePrevision hNonempty hBdd).conjugate X =
+      S.globalNaturalExtension X
+\end{lstlisting}
+\end{theorem}
+
+\noindent The proof is four lines: invoke
+\lid{upperEnvelopePrevision\_conjugate\_eq\_lowerEnvelope} at the credal-set level
+on \lid{S.projectiveLimitCredalSet}, with the spec's nonempty/compatibility
+hypothesis as input. The three siblings live at lines 6268 (cylinder), 6523
+(finite-cylinder), and 7065 (finite-global), with the same proof shape, scaled
+hypotheses, and matching siblings going the other direction
+(\lid{globalNaturalExtension\_conjugate\_eq\_upperEnvelope}).
+
+\paragraph{What the cluster buys.} Each conjugacy theorem is a Walley-canonical
+compatibility lemma: the spec's packaged upper-envelope prevision (a thing of type
+\lid{UpperPrevision}) and the spec's packaged natural extension (a thing of type
+\lid{LowerPrevision}) are conjugate. This is the load-bearing identity tying the
+exact-natural-extension calculus to the credal-set envelope calculus on the
+projective-credal infrastructure. The credal coordinates of
+Definition~\ref{def:coords}, when read off
+\lid{S.projectiveLimitCredalSet}, are the standard Walley coordinates of the
+natural extension.
+
+\section{The Mizar benchmark}\label{sec:mizar}
+
+We exhibit the first concrete benchmark: an extractor for Mizar Mathematical
+Library articles, a generated context, and a credal witness with computed
+coordinates.
+
+\subsection{The extractor}\label{sec:mizar-extractor}
+
+\lpath{scripts/concept\_ontology/extract\_mizar\_article\_context.py} (330 lines)
+walks a Mizar source file and emits a JSON observation context. Rows are
+classified into four kinds (\lid{definition}, \lid{registration}, \lid{notation},
+\lid{theorem}); attributes are extracted from the article's mode/attribute declarations
+and predicate uses. Output schema:
+
+\begin{lstlisting}
+{
+  "article":    string,
+  "attributes": [ string ],
+  "rows": [
+    { "object":   string,
+      "kind":     "definition"|"theorem"|"registration"|"notation",
+      "index":    int,
+      "preview":  string,
+      "counts":   { attribute -> int } } ]
+}
+\end{lstlisting}
+
+\noindent The extractor is deliberately small and conservative: it does not interpret
+Mizar's full grammar, only enough to populate the attribute-count cells. The output
+is then loaded by a generated Lean module
+(\lpath{Generated/MizarConlat1.lean}) into the
+\lid{BinaryFcaBenchmarkContext} surface from \lpath{BenchmarkControl.lean}.
+
+\subsection{Working slice: \texorpdfstring{\lid{conlat\_1.miz}}{conlat\_1.miz}}\label{sec:mizar-data}
+
+\lid{conlat\_1.miz} (Wojciechowski, 2002, on Concept Lattices, 3260 source lines)
+is chosen for two reasons: it is a concept-lattice article, so the predicate
+vocabulary is FCA-aligned, and it is well-scoped (mid-size, no
+heavy preface). The extractor produces 14 rows over 9 attributes:
+
+\begin{center}\small
+\begin{tabular}{ll}
+\toprule
+\textbf{Attribute} & \textbf{Role} \\
+\midrule
+\lid{Attribute}            & FCA primitive \\
+\lid{AttributeDerivation}  & Galois operator (attribute side) \\
+\lid{ContextStr}           & 2-sorted context structure \\
+\lid{FormalContext}        & Article's main concept-context object \\
+\lid{Function}             & Underlying carrier function \\
+\lid{Information}          & Incidence relation \\
+\lid{ObjectDerivation}     & Galois operator (object side) \\
+\lid{Subset}               & Stratification primitive \\
+\lid{is-connected-with}    & Incidence predicate alias \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\noindent Row-kind histogram: 6~definitions, 5~theorems, 2~registrations, 1~notation.
+
+\subsection{Toy control: the flying-family example}\label{sec:mizar-control}
+
+\lpath{ConceptOntology/BenchmarkControl.lean} provides a small toy concept-context
+(animals with traits) used to exercise the FCA recovery layer with concrete witnesses.
+The positive witness
+\lid{flyingFamilyConcept\_mem\_exact} at line 238 shows the flying-family concept is
+in the exact concept family; the negative witness
+\lid{batOnlyFlyingConcept\_not\_mem\_exact} at line 246 shows a non-closed pair is
+correctly rejected; the lower-credal exclusion
+\lid{flyingFamilyConcept\_not\_mem\_lower} at line 265 shows the lower-credal carrier
+correctly rejects the flying-family concept under a strict-gate family that requires
+two supporting tokens. This is the controlled benchmark surface against which the
+Mizar layer is instantiated.
+
+\subsection{The credal witness on \texorpdfstring{\lid{conlat\_1}}{conlat\_1}}\label{sec:mizar-witness}
+
+\lpath{ConceptOntology/MizarBenchmark.lean} instantiates the
+\lid{BinaryFcaBenchmarkContext} surface on the extracted \lid{conlat\_1} context.
+A two-element gate family
+\lid{MizarGate} := \{\lid{loose}, \lid{strict}\} is defined:
+\lid{loose} = the exact (positive-support) gate; \lid{strict} = the
+positive-threshold-2 gate (requires two supporting tokens per cell).
+
+The article's \lid{ObjectDerivation} attribute concept is encoded as
+\lid{objectDerivationLooseConcept} (line 67). The credal witnesses are:
+
+\begin{itemize}
+\item \lid{objectDerivationLooseConcept\_mem\_upper} (line 127): the concept is
+in \lid{upperMizarConceptFamily} (it forms under the \lid{loose} gate).
+\item \lid{objectDerivationLooseConcept\_not\_mem\_strict} (line 131): it is not
+closed under the \lid{strict} gate's incidence relation.
+\item \lid{objectDerivationLooseConcept\_not\_mem\_lower} (line 138): therefore it
+is not in \lid{lowerMizarConceptFamily}.
+\end{itemize}
+
+\noindent The three computed coordinate theorems (lines 147, 160, 173) follow from
+the upper-only-membership pattern:
+
+\[
+  \mathrm{width} = 1, \qquad
+  \mathrm{midpoint} = \tfrac{1}{2}, \qquad
+  \mathrm{width\text{-}complement} = 0.
+\]
+
+\noindent These are the maximum-imprecision coordinates one would expect for a
+concept that lives in upper-but-not-lower under a binary gate family: the lower
+envelope reads 0, the upper reads 1, the midpoint is $\tfrac{1}{2}$, and the
+width-complement (i.e., PLN-style confidence) is at zero.
+
+\subsection{Honest accounting}\label{sec:mizar-honest}
+
+The reader should not over-interpret the Mizar witness. Specifically:
+
+\begin{enumerate}
+\item \textbf{One article, hand-picked gates.} The witness is computed on a single
+\lid{.miz} file with two artificial gates (positive-threshold-1 versus
+positive-threshold-2). The credal coordinates are not measured against natural
+gate variation in the Mizar Library; they are demonstrated against codex-chosen
+thresholds.
+\item \textbf{$\mathrm{width} = 1$ is structural, not empirical.} Under a binary
+gate family where one gate says yes and the other says no, the lower envelope reads
+0 and the upper reads 1, giving width exactly 1. The witness verifies the calculus,
+not the substantive credal claim about MML.
+\item \textbf{External FCA checking is a separate gate.} The order-isomorphism
+Theorem~\ref{thm:fca-order} is the theorem-side claim that our exact lane is
+classical FCA. An empirical cross-check against ConExp or LatticeMiner on the
+extracted context is straightforward (the JSON schema is convertible to standard
+\lid{.cxt} format) but is not the load-bearing result of this paper.
+\item \textbf{Gate-family choice is itself a research question.}
+The curated-family pilot in
+\lpath{artifacts/concept\_ontology/mizar\_family/credal\_threshold\_summary.json}
+now runs threshold gates over 13 lattice/FCA-adjacent MML articles. In that pilot,
+all 13 articles have more than one induced concept family and at least one
+upper-minus-lower concept under the sampled count thresholds; the aggregate
+unstable-concept count is 917. This is evidence that the extraction and credal
+scoring harness is live, not evidence that the sampled threshold gates are the
+right scientific gate family. On classical binary FCA contexts
+(\lid{livingbeings\_en.cxt}, \lid{animals\_en.cxt}), the same threshold gates
+degenerate: threshold $\geq 1$ recovers the original context and threshold $\geq 2$
+yields a near-null one, leaving the credal envelope structureless. Row-drop and
+column-drop \emph{observation} gates do produce meaningful lower/upper families on
+those binary contexts. The diagnostic is that the credal layer applies not whenever
+``we have a dataset'' but whenever ``we have a meaningful family of admissible
+gates for that dataset.'' Choosing the gate family to match the evidence type
+is part of the empirical work; the theory does not automate it.
+\end{enumerate}
+
+\noindent What this benchmark \emph{does} demonstrate is that the formal
+infrastructure runs end-to-end on real Mizar source: extractor $\to$ context
+$\to$ credal layer $\to$ coordinates, and that the same machinery can now be run
+as a small article-family pilot. It is the first stone of a real benchmark,
+not yet a benchmark result. \S\ref{sec:roadmap} discusses the experiments that
+would turn this into one.
+
+\subsection{The semantic-feature lane: status}\label{sec:mizar-semantic}
+
+Roadmap item~(f) below --- extracting \emph{semantic} rather than lexical features
+--- is now operational, and reporting its current state at true weight is more
+useful than deferring it. For a curated slice of the \lid{LATTICE2} article
+(\lid{MPTP}/\lid{chainy} export, theorems \lid{t14}--\lid{t25}) we extract, per
+theorem, a Craig interpolant on the entailment $\Gamma \vdash \varphi$ (Vampire
+symbol elimination) and a finite model of the satisfiable premise fragment (Vampire
+FMB~\cite{vampire-fmb}); the predicate/function symbols of each artifact become the
+attributes of an FCA context, and the credal gate family runs as in
+\S\ref{sec:mizar-witness}. Three findings, each stated at its true weight.
+
+\emph{(1) A reusable schema synthesizer.} A single recognizer-based procedure
+replaces the earlier per-cluster extractors: given a theorem cluster it emits a
+parameterized schema (a theorem-with-blanks) or refuses with ``no common schema.''
+On \lid{t14}--\lid{t17} it recovers the left-identity/extremum schema --- \emph{in a
+bounded lattice, the unique left identity of meet (resp.\ join) is the top (resp.\
+bottom)} --- with the operation and the extremal element as the two parameter slots,
+and it \emph{refuses} the mixed \lid{t14}--\lid{t19} cluster rather than fabricating
+a common template. We stress that this schema is an elementary lattice fact: it
+witnesses that the engine recovers a genuine unification from raw first-order export,
+and is \emph{not} offered as a mathematical result. On the strip-mined tail
+(\lid{t20}--\lid{t25}) the synthesized families drift toward library
+\emph{encoding} regularities (self-relations of the \lid{BINOP\_1} operation
+functor) rather than lattice mathematics --- a faithful signal that elementary
+\lid{LATTICE2} is exhausted as a source of interesting structure.
+
+\emph{(2) A cross-role bridge.} The cleanest non-degenerate concept is the pair
+\lid{t15}+\lid{t18} and its dual \lid{t17}+\lid{t19}: a
+left-identity-uniqueness theorem and a unity-identification theorem that target the
+\emph{same} extremal object through the \emph{same} selector. This is a readable
+concept-family bridge between two theorem forms, confirmed by direct FCA closure,
+and is not a solver-timeout artifact.
+
+\emph{(3) No gate yet perturbs the mathematics.} We ran three gate families.
+Premise-neighborhood subsetting is a no-op (the prover already uses only the
+neighborhood). Whole-symbol operator ablation is destructive: the resulting
+instability is dominated by \lid{failure:timeout} --- proof \emph{failure}, not
+changed content. A non-deletion ``right-partition'' family --- moving a support
+record across the Craig interpolation cut instead of deleting it --- is
+solver-robust (zero timeouts) and does change the interpolant vocabulary, but it
+perturbs the \emph{feature} (which symbols are forced into the shared interpolation
+vocabulary), \emph{not the theory}: every gate leaves the theorem's truth untouched.
+It is a feature-stability diagnostic, not a conjecture generator. The gate family
+that would generate conjectures is stated as item~(f).
+
+\section{What real experiments would look like}\label{sec:roadmap}
+
+We are explicit about which experiments would move the benchmark from
+infrastructure-witness to scientific result.
+
+\paragraph{(a) External FCA cross-check.} Convert
+\lid{Generated/MizarConlat1.json} to a standard FCA \lid{.cxt} file, compute
+the concept lattice in ConExp~1.1.4 or FCAbedrock, and compare against the
+Lean-computed exact concept family for size, edges, and selected concept
+witnesses. The order-isomorphism theorem predicts perfect agreement. ${\sim}2$ days
+of engineering. This is sanity, not novelty.
+
+\paragraph{(b) Multi-article scale.} A 13-article lattice/FCA-family pilot is now
+materialized in \lpath{artifacts/concept\_ontology/mizar\_family/}: the extractor
+writes per-article JSON and \lid{.cxt} files, the threshold-gate summary records
+non-trivial upper/lower splits in every article of the pilot, and the aggregate
+unstable-concept count is 917. The next scale target is $50$--$100$ MML articles.
+The mathematical library has ${\sim}1500$ articles total; the
+\lid{chainy} filter of MPTP~\cite{urban2003mptp} already produces well-scoped
+subsets. The extractor's per-article extraction is fast; loading all articles into
+one Lean module is not, so the harness needs an article-batched scoring layer rather
+than a single monolithic context. The output is a real
+$\mathrm{Concept} \times \mathrm{Article}$ presence matrix.
+
+\paragraph{(c) Article-derived gates.} Replace the hand-picked threshold gates of
+\S\ref{sec:mizar-witness} with article-derived gates (each MML article becomes one
+admissible gate; the credal carriers then witness ``concepts robust across the
+article portfolio'' versus ``concepts attested in at least one article''). This is
+the move from synthetic to semantic credal variation.
+
+\paragraph{(d) Galois-dual ghost hunt.} FCA theory predicts every closure operator
+has a Galois dual; every concept-lattice node has a corresponding co-lattice node.
+\lid{conlat\_1.miz} itself exhibits this: \lid{ObjectDerivation} and
+\lid{AttributeDerivation} are Galois-dual operators. If the multi-article scan
+identifies concepts in \(\mathrm{Upper}\setminus\mathrm{Lower}\) where the FCA-dual concept is
+expected but not formally registered in some articles, those candidates are
+predictions of ``formally missing concepts'' in MML that the credal layer surfaces
+via duality reasoning. The first narrow lexical scan,
+\lpath{artifacts/concept\_ontology/mizar\_family/duality\_ghosts.json}, reports
+three one-sided \lid{Top}/\lid{Bottom} duality-mention candidates
+(\lid{conlat\_1}, \lid{yellow\_2}, \lid{waybel\_0}); this is a triage list, not a
+semantic confirmation of missing concepts. Verifying a small number of such
+predictions against domain experts (Mizar maintainers, recent MML changelog) would
+constitute a published discovery in the FCA-on-formal-math territory. We give this
+a ${\sim}65\%$
+probability of being feasible at the formalization layer; ${\sim}50\%$ of
+producing at least one publishable discovery.
+
+\paragraph{(f) Conjectures live in the prove--refute gap.} The semantic lane of
+\S\ref{sec:mizar-semantic} is operational but has not yet surfaced a non-trivial
+conjecture, because every gate built so far either leaves the theory fixed
+(right-partition) or destroys provability without establishing falsity (operator
+ablation). The gate that \emph{generates} conjectures is hypothesis weakening with a
+dual oracle: drop a hypothesis from a synthesized schema, then ask both a prover
+(does the weakened schema still prove?) and a model builder (does its negation admit
+a finite countermodel?). Three outcomes partition the result: \emph{proved} (the
+hypothesis was unnecessary --- a generalization theorem); \emph{refuted} (the
+hypothesis was essential --- a sharpness witness); and \emph{neither, in budget} ---
+the genuine open conjecture. The credal layer ranks candidates by gate-stability,
+and a companion Markov-logic world-model formalization (which proves
+$\mathrm{queryStrength} = \mathrm{queryProb}$, i.e.\ the PLN strength a world model
+assigns to a query equals its Markov-network probability) attaches a
+truth-likelihood to the third class. The honest discriminating questions then are
+whether the credal coordinates beat a syntactic baseline (ENIGMA-style symbol
+features, raw overlap) and whether the truth-likelihood is \emph{calibrated} against
+hammer-provability on decidable held-out conjectures. Crucially, this experiment
+requires a substrate richer than elementary lattice theory --- where the
+prove--refute gap is empty within budget --- such as the \lid{WAYBEL}
+continuous-lattice articles, or cross-article schema transfer in which a schema
+proven in one domain becomes a conjecture in another.
+
+\paragraph{(g) Annotator-disagreement complement.} Walley-canonical credal
+benchmarks come from real annotator disagreement: CIFAR-10H~\cite{cifar10h} (51
+labels per image), ChaosNLI~\cite{chaosnli} (100 annotators per item). With
+appropriate object-attribute-gate reframing (classes as attributes, annotators as
+gates, $\sim 200$--$500$ stratified items), these become tractable Lean
+benchmarks. This is the headline credal-empirical complement to the
+formal-mathematical Mizar benchmark of (b)--(d). Out of scope for the present paper.
+
+\section{Related work}\label{sec:related}
+
+\paragraph{Classical FCA.} Wille's~\cite{wille1982} original triadic-context-free
+treatment; the canonical reference Ganter--Wille~\cite{gantnerwille1999}; the
+survey volume~\cite{gantnerstumemwille2005}. Mathlib's
+\lpath{Mathlib/Order/Concept.lean} provides a Lean~4 formalization of the
+crisp concept-lattice carrier. The present work's recovery theorem
+(Thm.~\ref{thm:fca-order}) bridges our exact concept layer into that mathlib
+artifact; we do not duplicate it.
+
+\paragraph{Generalized FCA.} Belohlavek's fuzzy FCA~\cite{belohlavek1999}
+replaces the crisp incidence with degrees in $[0,1]$. Djouadi and
+Prade~\cite{djouadi2009} introduce interval-valued and possibilistic contexts.
+Murai--Mizumoto--Tahani~\cite{murai1989} treat the topic from a possibility-theoretic
+angle. Triadic FCA~\cite{wille1995} adds a context dimension. None of these works
+formalize a conservative reduction to crisp FCA in dependent type theory, nor
+integrate with Walley's natural-extension calculus through a projective credal
+spec, nor connect to a PLN-style truth-value calculus.
+
+\paragraph{Walley framework.} The standard reference is~\cite{walley1991}; the
+modern handbook is~\cite{augustin2014}. Natural extension's role as the canonical
+coherent extension and as the conjugate of the upper envelope is treated there.
+
+\paragraph{Lean formalizations of imprecise probability.} The
+\lpath{Mettapedia/ProbabilityTheory/ImpreciseProbability/ProjectiveCredal.lean}
+module is a multi-thousand-line Lean~4 formalization of credal sets, lower/upper
+previsions, natural extension, and projective credal specs, on which the present
+paper relies. To our knowledge it is the largest extant Lean~4 formalization in
+this area.
+
+\paragraph{PLN.} Goertzel--Iklé--Ari--Heljakka~\cite{goertzel2008} introduce the
+two-number truth value; the companion characterization
+paper~\cite{pln-credal-degrees-of-freedom} formalizes its three slots of degrees
+of freedom over the same projective credal spec used here. Sibling formalization
+papers \lid{xiPLN.tex} and \lid{nuPLN.tex} establish the broader PLN-on-Mettapedia
+program.
+
+\paragraph{Mizar.} Bancerek et al.~\cite{bancerek2018} give the canonical reference
+for the Mizar Mathematical Library; Urban~\cite{urban2003mptp} introduces MPTP.
+Premise-selection work over MML/MPTP includes Jakub\r{u}v--Urban
+ENIGMA~\cite{jakubuv2019enigma} and the present project's sibling
+PLN-kNN-NB~\cite{pln-knn-nb}. The Mizar extractor presented here is, to our
+knowledge, the first FCA/credal-layer formalization of MML article structure;
+prior MML-engagement work has been ATP-centric.
+
+\paragraph{Automated theory formation and theory exploration.} The
+concept-formation $\to$ conjecture $\to$ prove $\to$ counterexample cycle is not
+new. Colton, Bundy, and Walsh's HR~\cite{colton1999hr} forms concepts and
+conjectures over data tables and dispatches them to a prover and a model generator,
+scored by deterministic interestingness measures; Colton and
+Wagner~\cite{colton2007fca} applied FCA to mathematical discovery over the OEIS and
+Graffiti conjectures. Theory-exploration systems QuickSpec~\cite{quickspec} and
+Hipster~\cite{hipster} synthesize and filter equational conjectures for proof
+assistants. Our \emph{cycle shape} and our \emph{use of FCA for mathematical
+discovery} are therefore not the novel elements, and we do not claim them as such.
+The delta is narrow and specific: a Walley-style credal lower/upper family
+\emph{indexed by a gate family} over \emph{prover-derived} semantic artifacts
+(Craig interpolants, finite models), with a Lean-4 exact/credal foundation and a PLN
+truth-coordinate reading. We likewise claim no novelty for uncertainty-aware FCA in
+general (cf.\ the generalized-FCA paragraph) nor for automated conjecturing in
+general.
+
+\section{Conclusion and open work}\label{sec:conclusion}
+
+\paragraph{Recap of contributions.} (i) Type-theoretic credal carriers for
+concept formation as proper subtypes; (ii) FCA recovery as a Lean~4
+order-isomorphism theorem against mathlib's concept-lattice infrastructure;
+(iii) singleton-collapse conservative-extension theorems for both lower and upper
+carriers; (iv) integration with Walley's natural extension via a four-scale
+conjugacy cluster on a projective credal spec under the compatible-completion
+and boundedness hypotheses of \S\ref{sec:walley-cluster}; (v) a first-stone Mizar benchmark
+with a real credal witness on \lid{conlat\_1.miz}'s \lid{ObjectDerivation} concept.
+
+\paragraph{Open work.} The upper-side inheritance table and the basic two-sided
+credal inheritance predicates have now landed:
+\lid{upperCredalConceptInheritanceTable},
+\lid{credalInheritanceJudgment}, \lid{credallyPreciseInheritance}, and
+\lid{credallyImpreciseInheritance}. These predicates now have a PLN
+truth-coordinate package through \lid{CredalInheritanceTruthCoordinateCrown},
+including midpoint and width-complement readouts for inheritance. A 13-article
+Mizar-family pilot and first narrow duality-ghost scan are now materialized as
+artifacts. The remaining work is to scale the pilot to a larger, less curated MML
+slice, replace convenience threshold gates with article-derived semantic gates, and
+validate any ghost candidates against Mizar-domain expertise.
+
+\paragraph{What the paper is not.} The paper is not a benchmark result. It is the
+formal-infrastructure writeup of a layer that can support a benchmark result. The
+load-bearing scientific question --- ``can the credal layer surface
+formally-missing concepts in real mathematical libraries?'' --- requires the
+multi-article scale of \S\ref{sec:roadmap}(b)--(d) and is left open.
+
+\paragraph{Hygiene.} All theorems quoted in this paper are verbatim from the
+public Lean~4 source as of the date listed on the title page. A grep across the
+cited files (\lpath{ConceptOntology/CredalFormation.lean},
+\lpath{ConceptOntology/FCARecovery.lean},
+\lpath{ConceptOntology/BenchmarkControl.lean},
+\lpath{ConceptOntology/MizarBenchmark.lean},
+\lpath{EmpiricalIntensionalFactorGraphBridge.lean},
+\lpath{CredalConceptFixpointClosureBridge.lean},
+\lpath{CredalConceptOntologyGrowthBridge.lean},
+\lpath{ProjectiveCredal.lean}) for \lid{sorry}, \lid{admit}, \lid{axiom}, and
+\lid{by trivial} returns zero hits. Axiom checks on the load-bearing theorems
+return the mathlib baseline
+\{\lid{propext}, \lid{Classical.choice}, \lid{Quot.sound}\}.
+
+\begin{thebibliography}{99}
+
+\bibitem{wille1982}
+R.~Wille.
+\newblock Restructuring lattice theory: an approach based on hierarchies of concepts.
+\newblock In \emph{Ordered Sets} (I.~Rival, ed.), Reidel, 1982, pp. 445--470.
+
+\bibitem{gantnerwille1999}
+B.~Ganter and R.~Wille.
+\newblock \emph{Formal Concept Analysis: Mathematical Foundations}.
+\newblock Springer, 1999.
+
+\bibitem{gantnerstumemwille2005}
+B.~Ganter, G.~Stumme, and R.~Wille (eds.).
+\newblock \emph{Formal Concept Analysis: Foundations and Applications}.
+\newblock LNAI 3626, Springer, 2005.
+
+\bibitem{wille1995}
+R.~Wille.
+\newblock The basic theorem of triadic concept analysis.
+\newblock \emph{Order}, 12(2):149--158, 1995.
+
+\bibitem{belohlavek1999}
+R.~Belohlavek.
+\newblock Fuzzy Galois connections.
+\newblock \emph{Mathematical Logic Quarterly}, 45(4):497--504, 1999.
+
+\bibitem{djouadi2009}
+Y.~Djouadi and H.~Prade.
+\newblock Interval-valued fuzzy formal concept analysis.
+\newblock In \emph{ISMIS 2009}, LNCS 5722, Springer, 2009, pp. 592--601.
+
+\bibitem{murai1989}
+T.~Murai, M.~Mizumoto, and N.~Tahani.
+\newblock Possibility theory and concept lattices.
+\newblock In \emph{Proc. IFSA 1989}, 1989.
+
+\bibitem{walley1991}
+P.~Walley.
+\newblock \emph{Statistical Reasoning with Imprecise Probabilities}.
+\newblock Chapman \& Hall, 1991.
+
+\bibitem{augustin2014}
+T.~Augustin, F.~P.~A. Coolen, G.~de Cooman, and M.~C.~M. Troffaes.
+\newblock \emph{Introduction to Imprecise Probabilities}.
+\newblock Wiley, 2014.
+
+\bibitem{goertzel2008}
+B.~Goertzel, M.~Iklé, I.~F. Goertzel, and A.~Heljakka.
+\newblock \emph{Probabilistic Logic Networks: A Comprehensive Framework for
+Uncertain Inference}.
+\newblock Springer, 2008.
+
+\bibitem{pln-credal-degrees-of-freedom}
+Mettapedia Working Notes.
+\newblock Credal degrees of freedom for PLN truth values.
+\newblock Companion paper, this collection, 2026.
+
+\bibitem{pln-knn-nb}
+Mettapedia Working Notes.
+\newblock PLN-kNN-NB on extended MPTP 5k.
+\newblock Companion paper, this collection, 2026.
+
+\bibitem{wmpln_concept_formation_guidance}
+GPT-Pro 5.4.
+\newblock WM-PLN concept formation grounding guidance.
+\newblock \lpath{GPT-Pro\_Responses/WM-PLN/wmpln\_concept\_formation\_grounding\_guidance.md},
+2026.
+
+\bibitem{urban2003mptp}
+J.~Urban.
+\newblock MPTP -- Motivation, implementation, first experiments.
+\newblock \emph{Journal of Automated Reasoning}, 33(3-4):319--339, 2004.
+
+\bibitem{bancerek2018}
+G.~Bancerek, C.~Bylinski, A.~Grabowski, A.~Kornilowicz, R.~Matuszewski, A.~Naumowicz,
+K.~Pak, and J.~Urban.
+\newblock The role of the Mizar Mathematical Library for interactive proof
+development in Mizar.
+\newblock \emph{Journal of Automated Reasoning}, 61(1-4):9--32, 2018.
+
+\bibitem{jakubuv2019enigma}
+J.~Jakub\r{u}v and J.~Urban.
+\newblock Hammering Mizar by learning clause guidance.
+\newblock In \emph{ITP 2019}, LIPIcs 141, 2019, pp. 34:1--34:8.
+
+\bibitem{vampire-fmb}
+G.~Reger, M.~Suda, and A.~Voronkov.
+\newblock Finding finite models in multi-sorted first-order logic.
+\newblock In \emph{SAT 2016}, LNCS 9710, Springer, 2016, pp. 323--341.
+
+\bibitem{cifar10h}
+J.~C. Peterson, R.~M. Battleday, T.~L. Griffiths, and O.~Russakovsky.
+\newblock Human uncertainty makes classification more robust.
+\newblock In \emph{ICCV 2019}, pp. 9617--9626.
+
+\bibitem{chaosnli}
+Y.~Nie, X.~Zhou, and M.~Bansal.
+\newblock What can we learn from collective human opinions on natural language
+inference data?
+\newblock In \emph{EMNLP 2020}, pp. 9131--9143.
+
+\bibitem{colton1999hr}
+S.~Colton, A.~Bundy, and T.~Walsh.
+\newblock Automatic concept formation in pure mathematics.
+\newblock In \emph{IJCAI 1999}, pp. 786--791.
+
+\bibitem{colton2007fca}
+S.~Colton and D.~Wagner.
+\newblock Using formal concept analysis in mathematical discovery.
+\newblock In \emph{Calculemus/MKM 2007}, LNCS 4573, Springer, 2007, pp. 205--220.
+
+\bibitem{quickspec}
+K.~Claessen, N.~Smallbone, and J.~Hughes.
+\newblock QuickSpec: guessing formal specifications using testing.
+\newblock In \emph{TAP 2010}, LNCS 6143, Springer, 2010, pp. 6--21.
+
+\bibitem{hipster}
+M.~Johansson, D.~Ros\'en, N.~Smallbone, and K.~Claessen.
+\newblock Hipster: integrating theory exploration in a proof assistant.
+\newblock In \emph{CICM 2014}, LNCS 8543, Springer, 2014, pp. 108--122.
+
+\end{thebibliography}
+
+\end{document}

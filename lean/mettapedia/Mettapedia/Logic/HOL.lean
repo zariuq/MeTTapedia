@@ -9,6 +9,8 @@ import Mettapedia.Logic.HOL.Lindenbaum
 import Mettapedia.Logic.HOL.CanonicalTheory
 import Mettapedia.Logic.HOL.LindenbaumSet
 import Mettapedia.Logic.HOL.PrimeHenkinExtension
+import Mettapedia.Logic.HOL.Syntax.FreshConst
+import Mettapedia.Logic.HOL.CanonicalQuantifierBridges
 
 /-!
 # Higher-Order Logic Core

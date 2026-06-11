@@ -1,6 +1,7 @@
 import Mettapedia.ProbabilityTheory.HigherOrderProbability.Basic
 import Mettapedia.Logic.DeFinetti
 import Mettapedia.ProbabilityTheory.FiniteMeasureSupport
+import Exchangeability.Core
 import Mathlib.MeasureTheory.Integral.Lebesgue.Map
 import Mathlib.MeasureTheory.Integral.Bochner.Basic
 import Mathlib.MeasureTheory.Measure.GiryMonad
@@ -297,6 +298,128 @@ def pmf (θ : Theta) : PMF (Fin n → Bool) :=
     (pmf (n := n) θ).toMeasure {xs} = weight (n := n) θ xs := by
   simp [pmf]
 
+/-- Appending Boolean prefixes factorizes the fixed-parameter Bernoulli-product
+weights into prefix and suffix weights. -/
+theorem weight_append (θ : Theta) {m n : ℕ}
+    (xs : Fin m → Bool) (ys : Fin n → Bool) :
+    weight (n := m + n) θ (Fin.append xs ys) =
+      weight (n := m) θ xs * weight (n := n) θ ys := by
+  have hxs : 0 ≤ bernoulliProductPMF (θ : ℝ) xs := by
+    rw [bernoulliProductPMF_eq_power]
+    exact mul_nonneg (pow_nonneg (theta_nonneg θ) _) (pow_nonneg (one_sub_theta_nonneg θ) _)
+  have hsplit :
+      bernoulliProductPMF (θ : ℝ) (Fin.append xs ys) =
+        bernoulliProductPMF (θ : ℝ) xs * bernoulliProductPMF (θ : ℝ) ys := by
+    rw [bernoulliProductPMF_eq_power, bernoulliProductPMF_eq_power,
+      bernoulliProductPMF_eq_power, countTrue_append_fin, countFalse_append_fin,
+      pow_add, pow_add]
+    ring
+  rw [weight, weight, weight, hsplit, ENNReal.ofReal_mul hxs]
+
+/-- Truncating a fixed-parameter Bernoulli-product law to a shorter prefix
+recovers the shorter fixed-parameter law exactly. -/
+theorem pmf_map_takePrefix_eq (θ : Theta) {m n : ℕ} (hmn : m ≤ n) :
+    PMF.map (Exchangeability.takePrefix (α := Bool) hmn) (pmf (n := n) θ) =
+      pmf (n := m) θ := by
+  classical
+  obtain ⟨d, rfl⟩ := Nat.exists_eq_add_of_le hmn
+  have h_eq : hmn = Nat.le_add_right m d := by
+    apply Subsingleton.elim
+  cases h_eq
+  ext xs
+  rw [PMF.map_apply, tsum_fintype]
+  let g : (Fin (m + d) → Bool) → ℝ≥0∞ := fun ys =>
+    if xs = Exchangeability.takePrefix (α := Bool) (Nat.le_add_right m d) ys
+    then pmf (n := m + d) θ ys else 0
+  have hg :
+      (∑ b : Fin (m + d) → Bool,
+        if xs = Exchangeability.takePrefix (α := Bool) (Nat.le_add_right m d) b
+        then pmf (n := m + d) θ b else 0) =
+      ∑ ys : Fin (m + d) → Bool, g ys := by
+    rfl
+  have hsum :
+      (∑ ys : Fin (m + d) → Bool, g ys) =
+        ∑ p : (Fin m → Bool) × (Fin d → Bool), g (Fin.append p.1 p.2) := by
+    simpa [g] using
+      (Fintype.sum_equiv (Fin.appendEquiv (α := Bool) m d)
+        (fun p : (Fin m → Bool) × (Fin d → Bool) => g (Fin.append p.1 p.2))
+        g (fun _ => rfl)).symm
+  have hinner :
+      ∀ p : Fin m → Bool,
+        (∑ q : Fin d → Bool, g (Fin.append p q)) =
+          if xs = p then pmf (n := m) θ p else 0 := by
+    intro p
+    by_cases hxp : xs = p
+    · rw [if_pos hxp]
+      calc
+        ∑ q : Fin d → Bool, g (Fin.append p q)
+            = ∑ q : Fin d → Bool, pmf (n := m + d) θ (Fin.append p q) := by
+                apply Finset.sum_congr rfl
+                intro q _hq
+                have hprefix :
+                    Exchangeability.takePrefix (α := Bool) (Nat.le_add_right m d)
+                        (Fin.append p q) = p := by
+                  ext i
+                  simp [Exchangeability.takePrefix]
+                simp [g, hprefix, hxp]
+        _ = ∑ q : Fin d → Bool,
+              weight (n := m) θ p * weight (n := d) θ q := by
+                apply Finset.sum_congr rfl
+                intro q _hq
+                rw [pmf_apply, weight_append]
+        _ = weight (n := m) θ p * ∑ q : Fin d → Bool, weight (n := d) θ q := by
+                simpa using
+                  (Finset.mul_sum (s := (Finset.univ : Finset (Fin d → Bool)))
+                    (f := fun q : Fin d → Bool => weight (n := d) θ q)
+                    (a := weight (n := m) θ p)).symm
+        _ = weight (n := m) θ p := by simp [sum_weight_eq_one]
+        _ = pmf (n := m) θ p := by rw [pmf_apply]
+    · have hgzero : ∀ q : Fin d → Bool, g (Fin.append p q) = 0 := by
+        intro q
+        have hprefix :
+            Exchangeability.takePrefix (α := Bool) (Nat.le_add_right m d)
+                (Fin.append p q) = p := by
+          ext i
+          simp [Exchangeability.takePrefix]
+        simp [g, hprefix, hxp]
+      simp [hxp, hgzero]
+  have houter :
+      (∑ p : Fin m → Bool, if xs = p then pmf (n := m) θ p else 0) =
+        pmf (n := m) θ xs := by
+    rw [Finset.sum_eq_single xs]
+    · simp
+    · intro p _hp hpx
+      have hneq : xs ≠ p := by
+        intro h
+        exact hpx h.symm
+      simp [hneq]
+    · intro hxs
+      exact (hxs (Finset.mem_univ xs)).elim
+  have hmain :
+      (∑ ys : Fin (m + d) → Bool, g ys) = pmf (n := m) θ xs := by
+    calc
+      ∑ ys : Fin (m + d) → Bool, g ys
+          = ∑ p : (Fin m → Bool) × (Fin d → Bool), g (Fin.append p.1 p.2) := hsum
+      _ = ∑ p : Fin m → Bool, ∑ q : Fin d → Bool, g (Fin.append p q) := by
+            rw [Fintype.sum_prod_type]
+      _ = ∑ p : Fin m → Bool, if xs = p then pmf (n := m) θ p else 0 := by
+            apply Finset.sum_congr rfl
+            intro p _hp
+            exact hinner p
+      _ = pmf (n := m) θ xs := houter
+  simpa [g] using hmain
+
+/-- The fixed-parameter Bernoulli-product measure truncates exactly to the
+shorter fixed-parameter prefix measure. -/
+theorem pmf_toMeasure_map_takePrefix_eq (θ : Theta) {m n : ℕ} (hmn : m ≤ n) :
+    Measure.map (Exchangeability.takePrefix (α := Bool) hmn)
+      ((pmf (n := n) θ).toMeasure) =
+    (pmf (n := m) θ).toMeasure := by
+  simpa [pmf_map_takePrefix_eq (θ := θ) hmn] using
+    (PMF.toMeasure_map (f := Exchangeability.takePrefix (α := Bool) hmn)
+      (p := pmf (n := n) θ)
+      (hf := Exchangeability.takePrefix_measurable (α := Bool) hmn))
+
 private lemma measurable_weight (xs : Fin n → Bool) :
     Measurable fun θ : Theta => weight (n := n) θ xs := by
   -- `bernoulliProductPMF` is a finite product of measurable functions.
@@ -372,6 +495,26 @@ def pd (M : BernoulliMixture) (n : ℕ) :
     kernel_isMarkov := kernel_isMarkov (n := n)
     mixingMeasure := mixingMeasureTheta M
     mixing_isProbability := inferInstance }
+
+/-- Truncating the Kyburg/de Finetti flattened finite prefix law to a shorter
+prefix recovers the shorter flattened law. -/
+theorem flatten_map_takePrefix_eq (M : BernoulliMixture) {m n : ℕ} (hmn : m ≤ n) :
+    Measure.map (Exchangeability.takePrefix (α := Bool) hmn)
+      (ParametrizedDistribution.flatten (pd M n)) =
+    ParametrizedDistribution.flatten (pd M m) := by
+  ext s hs
+  rw [Measure.map_apply (Exchangeability.takePrefix_measurable (α := Bool) hmn) hs]
+  rw [ParametrizedDistribution.flatten_apply (pd M n)
+    ((Exchangeability.takePrefix (α := Bool) hmn) ⁻¹' s)
+    ((Exchangeability.takePrefix_measurable (α := Bool) hmn) hs)]
+  rw [ParametrizedDistribution.flatten_apply (pd M m) s hs]
+  apply lintegral_congr_ae
+  refine Filter.Eventually.of_forall ?_
+  intro θ
+  have hθ := congrArg (fun μ : Measure (Fin m → Bool) => μ s)
+    (pmf_toMeasure_map_takePrefix_eq (θ := θ) hmn)
+  simpa [Measure.map_apply (Exchangeability.takePrefix_measurable (α := Bool) hmn) hs,
+    pd, kernel] using hθ
 
 /-! ## Main bridge lemma -/
 

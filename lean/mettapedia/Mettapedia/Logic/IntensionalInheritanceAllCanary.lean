@@ -163,6 +163,65 @@ theorem positiveExample_generic_semantic_prior_eq_generated_ve_ratio :
       (feature := MembershipConcept.feature)
       (witness := MembershipConcept.witness)
 
+theorem positiveExample_semantic_prior_tv_strength_eq_generated_ve_ratio :
+    (Mettapedia.Logic.ExtensionalIntensionalDivergence.conceptPriorTV
+        (MembershipCounts.semanticInterpretation MembershipCounts.positiveExample)
+        MembershipConcept.witness).strength =
+      (FiniteWitnessFeatureTable.veWeight
+        (Interpretation.toFiniteWitnessFeatureTable
+          (MembershipCounts.semanticInterpretation MembershipCounts.positiveExample)
+          MembershipConcept.feature
+          MembershipConcept.witness)
+        [⟨MembershipConcept.witness, true⟩] : ℝ) /
+        FiniteWitnessFeatureTable.veWeight
+          (Interpretation.toFiniteWitnessFeatureTable
+            (MembershipCounts.semanticInterpretation MembershipCounts.positiveExample)
+            MembershipConcept.feature
+            MembershipConcept.witness) [] := by
+  simpa using positiveExample_generic_semantic_prior_eq_generated_ve_ratio
+
+theorem positiveExample_semantic_induction_conf_eq_min_capped :
+    (Mettapedia.Logic.WMPLNJustifiedTruthFunctions.truthInduction
+      (Mettapedia.Logic.ExtensionalIntensionalDivergence.stvToWMTruthValue
+        (Mettapedia.Logic.ExtensionalIntensionalDivergence.conceptPriorTV
+          (MembershipCounts.semanticInterpretation MembershipCounts.positiveExample)
+          MembershipConcept.feature))
+      (Mettapedia.Logic.ExtensionalIntensionalDivergence.stvToWMTruthValue
+        (Mettapedia.Logic.ExtensionalIntensionalDivergence.conceptPriorTV
+          (MembershipCounts.semanticInterpretation MembershipCounts.positiveExample)
+          MembershipConcept.witness))
+      (Mettapedia.Logic.ExtensionalIntensionalDivergence.stvToWMTruthValue
+        (Mettapedia.Logic.ExtensionalIntensionalDivergence.conceptPriorTV
+          (MembershipCounts.semanticInterpretation MembershipCounts.positiveExample)
+          MembershipConcept.feature))
+      (Mettapedia.Logic.ExtensionalIntensionalDivergence.stvToWMTruthValue
+        (Mettapedia.Logic.ExtensionalIntensionalDivergence.inheritanceTV
+          (MembershipCounts.semanticInterpretation MembershipCounts.positiveExample)
+          MembershipConcept.feature
+          MembershipConcept.witness))
+      (Mettapedia.Logic.ExtensionalIntensionalDivergence.stvToWMTruthValue
+        (Mettapedia.Logic.ExtensionalIntensionalDivergence.inheritanceTV
+          (MembershipCounts.semanticInterpretation MembershipCounts.positiveExample)
+          MembershipConcept.witness
+          MembershipConcept.feature))).c =
+    min
+      (Mettapedia.Logic.WMPLNJustifiedTruthFunctions.capConf
+        (Mettapedia.Logic.ExtensionalIntensionalDivergence.inheritanceTV
+          (MembershipCounts.semanticInterpretation MembershipCounts.positiveExample)
+          MembershipConcept.feature
+          MembershipConcept.witness).confidence)
+      (Mettapedia.Logic.WMPLNJustifiedTruthFunctions.capConf
+        (Mettapedia.Logic.ExtensionalIntensionalDivergence.inheritanceTV
+          (MembershipCounts.semanticInterpretation MembershipCounts.positiveExample)
+          MembershipConcept.witness
+          MembershipConcept.feature).confidence) := by
+  simpa using
+    Mettapedia.Logic.ExtensionalIntensionalDivergence.inheritanceTV_truthInduction_conf_eq_min_capped_conceptPrior
+      (I := MembershipCounts.semanticInterpretation MembershipCounts.positiveExample)
+      (sub := MembershipConcept.feature)
+      (mid := MembershipConcept.witness)
+      (super := MembershipConcept.feature)
+
 theorem positiveExample_generic_semantic_ext_eq_generated_bp_ratio :
     Interpretation.finiteExtensionalProb
         (MembershipCounts.semanticInterpretation MembershipCounts.positiveExample)
@@ -577,5 +636,41 @@ theorem toyThreeByTwo_feature2_witness1_score_eq_generated_ve_query_score :
       toyThreeByTwoCountTable
       toyThreeByTwoFeature2
       toyThreeByTwoWitness1
+
+theorem formedConcept_prior_tv_strength_eq_generated_ve_ratio
+    {Obj Attr Q : Type*}
+    [Preorder Q] [Fintype Obj] [Nonempty Obj] [Fintype Attr]
+    (G : Mettapedia.Logic.ConceptOntology.EvidenceGate Q)
+    (M : Obj → Attr → Q)
+    (feature witness : Mettapedia.Logic.AbstractInheritance.FormedConcept G M) :
+    (Mettapedia.Logic.ExtensionalIntensionalDivergence.conceptPriorTV
+        (Mettapedia.Logic.AbstractInheritance.formedConceptInterpretation G M)
+        witness).strength =
+      (Mettapedia.Logic.IntensionalInheritance.FiniteWitnessFeatureTable.veWeight
+        (Mettapedia.Logic.IntensionalInheritance.Interpretation.toFiniteWitnessFeatureTable
+          (Mettapedia.Logic.AbstractInheritance.formedConceptInterpretation G M)
+          feature witness)
+        [⟨Mettapedia.Logic.IntensionalInheritance.MembershipConcept.witness, true⟩] : ℝ) /
+        Mettapedia.Logic.IntensionalInheritance.FiniteWitnessFeatureTable.veWeight
+          (Mettapedia.Logic.IntensionalInheritance.Interpretation.toFiniteWitnessFeatureTable
+            (Mettapedia.Logic.AbstractInheritance.formedConceptInterpretation G M)
+            feature witness) [] := by
+  simpa using
+    Mettapedia.Logic.IntensionalInheritance.AbstractInheritance.finitePriorProb_formedConceptInterpretation_eq_veWeight_ratio
+      G M feature witness
+
+theorem formedConcept_formConjoint_universal
+    {Obj Attr Q : Type*}
+    [Preorder Q] [Fintype Obj] [Fintype Attr]
+    (G : Mettapedia.Logic.ConceptOntology.EvidenceGate Q)
+    (M : Obj → Attr → Q)
+    {A B C : Mettapedia.Logic.AbstractInheritance.FormedConcept G M}
+    (hCA : Mettapedia.Logic.AbstractInheritance.DualConcept.Inherits C.1 A.1)
+    (hCB : Mettapedia.Logic.AbstractInheritance.DualConcept.Inherits C.1 B.1) :
+    Mettapedia.Logic.AbstractInheritance.DualConcept.Inherits C.1
+      (Mettapedia.Logic.ExtensionalIntensionalDivergence.formConjointConcept A.1 B.1) := by
+  exact
+    Mettapedia.Logic.ExtensionalIntensionalDivergence.formConjointConcept_universal
+      hCA hCB
 
 end Mettapedia.Logic.IntensionalInheritanceAllCanary

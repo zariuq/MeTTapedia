@@ -62,10 +62,10 @@ reduction relation is reflected into MeTTa itself as a modal surface
 (\code{transitions}, \code{box}, \code{diamond}, normal-form tests)
 aligned with the OSLF
 $\mathrm{LanguageDef}\to\mathrm{ReductionSpan}\to\Diamond/\Box$
-pipeline proven in Lean, and the first frontier rule classes (grounded
-dispatch, argument congruence) are welded to a reflectable LangDef
-rule pack whose rule-removal tests prove the engine genuinely depends
-on the declared rules.
+pipeline proven in Lean, and the first rule classes (grounded dispatch,
+argument congruence, equation matching) are welded to a reflectable
+small-step rule table whose rule-removal tests prove the engine
+genuinely depends on the declared rules.
 The runtime features SymbolId-based dispatch (38\% instruction
 reduction), structured space kinds (queue, hash, stack), a pluggable
 match backend with PathMap/MORK integration, and compiled space
@@ -111,14 +111,14 @@ Three implementations exist:
   378-example broad corpus with every difference classified
   (Section~\ref{sec:specdriven}).
 \item A reflective modal LTS surface over the evaluator's one-step
-  reduction relation---successor frontier, $\Box$/$\Diamond$,
+  reduction relation---successor set, $\Box$/$\Diamond$,
   normal-form tests---with runtime De~Morgan self-tests mirroring the
   Galois connection proven in the Lean OSLF framework.
-\item The first specification weld: a reflectable frontier rule pack
-  gating grounded dispatch and argument congruence, with
-  anti-decorative rule-removal tests.  This converts a cross-branch
-  frontier soundness bug (missing argument congruence) into a
-  structurally prevented class.
+\item The first specification weld: a reflectable small-step rule
+  table gating grounded dispatch, argument congruence, and equation
+  matching, with anti-decorative rule-removal tests.  This converts a
+  cross-branch one-step soundness bug (missing argument congruence)
+  into a structurally prevented class.
 \item A bidirectional \HE{}$\leftrightarrow$\PeTTa{} translator
   (Prolog + executable Lean), with a sorry-free Lean proof of semantic
   correspondence.
@@ -182,15 +182,15 @@ Golden regression files are oracle-validated when introduced;
 (all bridge sub-lanes green), plus 104 profile tests covering module
 imports, foreign (Python) function dispatch, numeric-tower and
 profile-surface splits, and extension surfaces.  Two further lanes are
-fail-by-default: \code{make test-langdef-pack} disables individual
-frontier-pack rules and \emph{requires} the witnesses to fail
+fail-by-default: \code{make test-step-rules} disables individual
+rule-table entries and \emph{requires} the witnesses to fail
 (Section~\ref{sec:specdriven}), and the semantic conformance suite
 re-runs the curated oracle corpus live against upstream \HE{}
 (Section~\ref{sec:conformance}).
 
 %% ────────────────────────────────────────────────────────────────────
 \section{Specification-Driven Semantics: Profiles, Conformance, and the
-  Frontier Rule Pack}
+  Small-Step Rule Table}
 \label{sec:specdriven}
 
 \CeTTa{} is organized around an explicit principle: \emph{the semantics
@@ -301,8 +301,8 @@ branches independently of their siblings.  In modal terms
 (Section~\ref{sec:modal}): the successor algebra must satisfy
 $\Diamond\bot = \bot$.
 
-\paragraph{The frontier congruence bug.}  The reflective one-step
-frontier reported \code{(+ 1 (+ 2 3))} as a \emph{normal form}: the
+\paragraph{The one-step congruence bug.}  The reflective one-step
+surface reported \code{(+ 1 (+ 2 3))} as a \emph{normal form}: the
 one-step relation lacked argument congruence (stepping a reducible
 argument when the head cannot fire), while the big-step evaluator had
 it.  Because the one-step relation and the evaluator were separately
@@ -318,11 +318,11 @@ weld in Section~\ref{sec:langdefpack}.
 \label{sec:modal}
 
 The library surface \code{lts} (generic, step-parameterized) and
-\code{lts:he} (bound to the \HE{} evaluator's frontier) reflect the
+\code{lts:he} (bound to the \HE{} evaluator's one-step relation) reflect the
 one-step reduction relation into MeTTa as data:
 
 \begin{itemize}
-\item \code{lts:he:transitions} emits the one-step successor frontier
+\item \code{lts:he:transitions} emits the one-step successor set
   of an atom as quoted states (zero results on quiescent atoms);
   \code{lts:he:trace-2} enumerates two-step traces.
 \item \code{lts:he:is-normal-form} is exactly $\Box\bot$ (every
@@ -350,7 +350,7 @@ modal predicates quotient to reachability.  Evaluation and conformance
 compare bags; $\Diamond/\Box$ use support.  Result sets are never
 deduplicated for speed.
 
-\subsection{The Frontier Rule Pack}
+\subsection{The Small-Step Rule Table}
 \label{sec:langdefpack}
 
 The congruence bug demonstrated the structural disease: reduction
@@ -360,11 +360,11 @@ and untestable-by-absence.  The cure is to make the rule set a
 
 Three granularity strata are kept distinct.  \emph{HEFine} is the Lean
 \code{mettaHE} instruction machine (59 rules over interpreter states;
-the proof reference).  \emph{HEFrontier} is the coarse user-visible
+the proof reference).  \emph{HE small-step} is the coarse user-visible
 one-step relation---one observable surface rewrite, e.g.\
 \code{(+ 1 (+ 2 3))} $\to$ \code{(+ 1 5)}---which is what the
 \code{lts} surface exposes.  \emph{HEBigStep} is full evaluation.  The
-pack encodes HEFrontier; its relationship to the fine machine is a
+table encodes the small-step relation; its relationship to the fine machine is a
 collapse/simulation with explicit provenance links (each coarse rule
 names the fine rules that justify it), never a label identity.
 
@@ -374,29 +374,29 @@ digest over the canonical rule-descriptor text; the rule table; a
 disabled-rule mask populated from the
 \code{CETTA\_LANGDEF\_DISABLED\_RULES} environment variable; and an
 honest claim level (currently \emph{bag-tested-adequate}: tested
-against the legacy frontier and oracle bags, not yet Lean-proven).
+against the legacy one-step path and oracle bags, not yet Lean-proven).
 Two rules are live---\code{HEF\_GroundedDispatch} and
 \code{HEF\_LeftmostExprCongruence}---and gate the only implementations
 of those rule classes in the one-step subsystem; quote/return and
 empty/error quiescence are declared as structural metadata pending
 migration.  The pack is reflected into MeTTa by
-\code{lts:he:pack-info}.
+\code{lts:he:step-rules}.
 
 The load-bearing test is \emph{anti-decorative}: a dedicated lane
 re-runs the witness suite with each rule disabled and \emph{requires}
-the witnesses to fail (the frontier must go empty; normal-form must
+the witnesses to fail (the successor set must go empty; normal-form must
 flip).  If the witnesses still passed with a rule removed, a duplicate
 hidden code path would exist---precisely the disease that produced the
 congruence bug.  The lane fails closed in both directions and runs on
 both the default and MORK-bridge builds.
 
 The roadmap is a deliberate hybrid: the pack-as-data drives the
-(non-hot) frontier and reflection surfaces now; a
+(non-hot) one-step and reflection surfaces now; a
 \code{--compile-langdef} backend---extending the existing
 \code{--compile-stdlib} blob precedent---will later emit \emph{both}
 the reflectable pack and specialized C for the hot evaluator under a
 single shared source digest, so performance never costs the semantic
-object.  An evaluate-by-iterating-the-frontier mode is planned purely
+object.  An evaluate-by-iterating-one-step mode is planned purely
 as a reference oracle and benchmark baseline, not as the production
 evaluator.
 
@@ -1325,7 +1325,7 @@ Rust \HE{}) and the principled \code{he} line distinct, recorded
 semantic products; the reflective modal surface exposes the one-step
 reduction relation---$\Diamond$, $\Box$, normal-form---to MeTTa
 programs themselves, aligned with the Lean OSLF derivation; and the
-frontier rule pack makes the first reduction-rule classes named,
+small-step rule table makes the first reduction-rule classes named,
 reflectable, and removable, with rule-removal tests proving the engine
 depends on the declared rules rather than on duplicate hidden branches.
 The congruence bug that motivated this weld---an argument-congruence
@@ -1343,22 +1343,24 @@ ambient, or user-visible.}
 
 \paragraph{Future work.}
 \begin{itemize}
-\item \textbf{Widen the frontier rule pack:} migrate equation match,
-  quote/return and empty/error quiescence into the pack, one rule
-  class at a time, each with bag-equality and rule-removal gates.
+\item \textbf{Complete HE one-step coverage:} equation matching is
+  table-routed; migrate the special forms (\code{chain}, \code{let},
+  \code{let*}, \code{case}, \code{switch}) one rule class at a time,
+  each with bag-equality and rule-removal gates.
 \item \textbf{\code{--compile-langdef} codegen:} a generator emitting
   both the reflectable pack and specialized C for the hot evaluator
   under one shared source digest, extending the
   \code{--compile-stdlib} blob precedent; an
-  evaluate-by-frontier-iteration mode as reference oracle.
-\item \textbf{Lean coarse frontier:} an \code{HEFrontierStep} relation
-  in Lean with the OSLF span instantiated over it, and (separately) the
-  delimited collapse/simulation theorems connecting it to the fine
+  evaluate-by-iterating-one-step mode as reference oracle.
+\item \textbf{Small-step / official-HE correspondence:} the
+  \code{HESmallStep} relation and its OSLF span exist in Lean
+  (proven; zero sorries); the remaining climb is the delimited
+  collapse/simulation theorems connecting it to the fine
   \code{mettaHE} instruction machine.
 \item \textbf{Bounded modal operators:} fuel-bounded
   \code{reachable-within} ($\Diamond^{\le k}$) and
   \code{invariant-within} ($\Box^{\le k}$) over the now-faithful
-  one-step frontier.
+  one-step relation.
 \item \textbf{Local search machine:} trail/watermark rollback,
   \code{BindingsBuilder}, arena mark/reset for scratch atoms.
   Target: 3--5$\times$ on search-heavy workloads (tilepuzzle gap

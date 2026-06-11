@@ -1070,6 +1070,13 @@ theorem countLikelihood_nonneg_on_unit
   have h1 : 0 ≤ 1 - θ := sub_nonneg.mpr hθ.2
   exact mul_nonneg (pow_nonneg h0 k) (pow_nonneg h1 l)
 
+theorem countLikelihood_pos_on_unit_interior
+    (k l : ℕ) {θ : ℝ} (hθ : θ ∈ Set.Ioo (0 : ℝ) 1) :
+    0 < countLikelihood k l θ := by
+  have h0 : 0 < θ := hθ.1
+  have h1 : 0 < 1 - θ := sub_pos.mpr hθ.2
+  exact mul_pos (pow_pos h0 k) (pow_pos h1 l)
+
 namespace BernoulliMixture
 
 /-- Marginal likelihood/evidence mass for `k` successes and `l` failures under
@@ -1150,6 +1157,142 @@ theorem countLikelihood_nonneg_restrict_unit_ae
 theorem countEvidenceMass_nonneg (M : BernoulliMixture) (k l : ℕ) :
     0 ≤ M.countEvidenceMass k l := by
   exact integral_nonneg_of_ae (countLikelihood_nonneg_restrict_unit_ae M k l)
+
+theorem countEvidenceMass_pos_of_interiorMass
+    (M : BernoulliMixture) (k l : ℕ)
+    (hInterior : 0 < M.mixingMeasure (Set.Ioo (0 : ℝ) 1)) :
+    0 < M.countEvidenceMass k l := by
+  let μ : Measure ℝ := M.mixingMeasure.restrict (Set.Icc (0 : ℝ) 1)
+  have hInt :
+      Integrable (fun θ : ℝ => countLikelihood k l θ) μ := by
+    simpa [μ] using countLikelihood_integrable_restrict_unit M k l
+  have hNonneg :
+      0 ≤ᵐ[μ] fun θ : ℝ => countLikelihood k l θ := by
+    simpa [μ] using countLikelihood_nonneg_restrict_unit_ae M k l
+  have hSubset :
+      Set.Ioo (0 : ℝ) 1 ⊆ Function.support (fun θ : ℝ => countLikelihood k l θ) := by
+    intro θ hθ
+    exact (countLikelihood_pos_on_unit_interior k l hθ).ne'
+  have hIooRestrict :
+      0 < μ (Set.Ioo (0 : ℝ) 1) := by
+    rw [Measure.restrict_apply measurableSet_Ioo]
+    have hsub : Set.Ioo (0 : ℝ) 1 ⊆ Set.Icc (0 : ℝ) 1 := by
+      intro θ hθ
+      exact ⟨le_of_lt hθ.1, le_of_lt hθ.2⟩
+    simpa [μ, Set.inter_eq_left.mpr hsub] using hInterior
+  have hSupportPos :
+      0 < μ (Function.support (fun θ : ℝ => countLikelihood k l θ)) := by
+    exact measure_pos_of_superset hSubset hIooRestrict.ne'
+  have hPos :=
+    (integral_pos_iff_support_of_nonneg_ae hNonneg hInt).2 hSupportPos
+  simpa [BernoulliMixture.countEvidenceMass, μ] using hPos
+
+theorem countEvidenceMass_eq_zero_of_zeroInteriorMass_of_pos_of_pos
+    (M : BernoulliMixture) (k l : ℕ)
+    (hk : 0 < k) (hl : 0 < l)
+    (hInterior : M.mixingMeasure (Set.Ioo (0 : ℝ) 1) = 0) :
+    M.countEvidenceMass k l = 0 := by
+  let μ : Measure ℝ := M.mixingMeasure.restrict (Set.Icc (0 : ℝ) 1)
+  have hIooZero : μ (Set.Ioo (0 : ℝ) 1) = 0 := by
+    rw [Measure.restrict_apply measurableSet_Ioo]
+    have hsub : Set.Ioo (0 : ℝ) 1 ⊆ Set.Icc (0 : ℝ) 1 := by
+      intro θ hθ
+      exact ⟨le_of_lt hθ.1, le_of_lt hθ.2⟩
+    simpa [μ, Set.inter_eq_left.mpr hsub] using hInterior
+  have hOutsideIoo : ∀ᵐ θ ∂μ, θ ∉ Set.Ioo (0 : ℝ) 1 := by
+    rw [ae_iff]
+    simpa using hIooZero
+  have hZeroAE : (fun θ : ℝ => countLikelihood k l θ) =ᵐ[μ] 0 := by
+    filter_upwards [ae_restrict_mem measurableSet_Icc, hOutsideIoo] with θ hθUnit hθBoundary
+    rcases hθUnit with ⟨h0, h1⟩
+    have hEq0or1 : θ = 0 ∨ θ = 1 := by
+      by_cases hθ0 : 0 < θ
+      · have hNotLt1 : ¬ θ < 1 := by
+          intro hLt1
+          exact hθBoundary ⟨hθ0, hLt1⟩
+        right
+        linarith
+      · left
+        linarith
+    rcases hEq0or1 with rfl | rfl
+    · simp [countLikelihood, hk.ne']
+    · simp [countLikelihood, hl.ne']
+  unfold BernoulliMixture.countEvidenceMass
+  change ∫ θ, countLikelihood k l θ ∂μ = 0
+  rw [integral_congr_ae hZeroAE]
+  simp
+
+theorem countEvidenceMass_eq_countEvidenceMass_one_zero_of_zeroInteriorMass_of_pos
+    (M : BernoulliMixture) (k : ℕ)
+    (hk : 0 < k)
+    (hInterior : M.mixingMeasure (Set.Ioo (0 : ℝ) 1) = 0) :
+    M.countEvidenceMass k 0 = M.countEvidenceMass 1 0 := by
+  let μ : Measure ℝ := M.mixingMeasure.restrict (Set.Icc (0 : ℝ) 1)
+  have hIooZero : μ (Set.Ioo (0 : ℝ) 1) = 0 := by
+    rw [Measure.restrict_apply measurableSet_Ioo]
+    have hsub : Set.Ioo (0 : ℝ) 1 ⊆ Set.Icc (0 : ℝ) 1 := by
+      intro θ hθ
+      exact ⟨le_of_lt hθ.1, le_of_lt hθ.2⟩
+    simpa [μ, Set.inter_eq_left.mpr hsub] using hInterior
+  have hOutsideIoo : ∀ᵐ θ ∂μ, θ ∉ Set.Ioo (0 : ℝ) 1 := by
+    rw [ae_iff]
+    simpa using hIooZero
+  have hEqAE :
+      (fun θ : ℝ => countLikelihood k 0 θ) =ᵐ[μ]
+        fun θ : ℝ => countLikelihood 1 0 θ := by
+    filter_upwards [ae_restrict_mem measurableSet_Icc, hOutsideIoo] with θ hθUnit hθBoundary
+    rcases hθUnit with ⟨h0, h1⟩
+    have hEq0or1 : θ = 0 ∨ θ = 1 := by
+      by_cases hθ0 : 0 < θ
+      · have hNotLt1 : ¬ θ < 1 := by
+          intro hLt1
+          exact hθBoundary ⟨hθ0, hLt1⟩
+        right
+        linarith
+      · left
+        linarith
+    rcases hEq0or1 with rfl | rfl
+    · simp [countLikelihood, hk.ne']
+    · simp [countLikelihood]
+  unfold BernoulliMixture.countEvidenceMass
+  change ∫ θ, countLikelihood k 0 θ ∂μ = ∫ θ, countLikelihood 1 0 θ ∂μ
+  rw [integral_congr_ae hEqAE]
+
+theorem countEvidenceMass_eq_countEvidenceMass_zero_one_of_zeroInteriorMass_of_pos
+    (M : BernoulliMixture) (l : ℕ)
+    (hl : 0 < l)
+    (hInterior : M.mixingMeasure (Set.Ioo (0 : ℝ) 1) = 0) :
+    M.countEvidenceMass 0 l = M.countEvidenceMass 0 1 := by
+  let μ : Measure ℝ := M.mixingMeasure.restrict (Set.Icc (0 : ℝ) 1)
+  have hIooZero : μ (Set.Ioo (0 : ℝ) 1) = 0 := by
+    rw [Measure.restrict_apply measurableSet_Ioo]
+    have hsub : Set.Ioo (0 : ℝ) 1 ⊆ Set.Icc (0 : ℝ) 1 := by
+      intro θ hθ
+      exact ⟨le_of_lt hθ.1, le_of_lt hθ.2⟩
+    simpa [μ, Set.inter_eq_left.mpr hsub] using hInterior
+  have hOutsideIoo : ∀ᵐ θ ∂μ, θ ∉ Set.Ioo (0 : ℝ) 1 := by
+    rw [ae_iff]
+    simpa using hIooZero
+  have hEqAE :
+      (fun θ : ℝ => countLikelihood 0 l θ) =ᵐ[μ]
+        fun θ : ℝ => countLikelihood 0 1 θ := by
+    filter_upwards [ae_restrict_mem measurableSet_Icc, hOutsideIoo] with θ hθUnit hθBoundary
+    rcases hθUnit with ⟨h0, h1⟩
+    have hEq0or1 : θ = 0 ∨ θ = 1 := by
+      by_cases hθ0 : 0 < θ
+      · have hNotLt1 : ¬ θ < 1 := by
+          intro hLt1
+          exact hθBoundary ⟨hθ0, hLt1⟩
+        right
+        linarith
+      · left
+        linarith
+    rcases hEq0or1 with rfl | rfl
+    · simp [countLikelihood]
+    · simp [countLikelihood, hl.ne']
+  unfold BernoulliMixture.countEvidenceMass
+  change ∫ θ, countLikelihood 0 l θ ∂μ = ∫ θ, countLikelihood 0 1 θ ∂μ
+  rw [integral_congr_ae hEqAE]
 
 theorem unnormalizedPosteriorMixingMeasure_apply_univ
     (M : BernoulliMixture) (k l : ℕ) :
@@ -1397,6 +1540,17 @@ theorem prob_append_eq_countEvidenceMass_add
         (countFalse obs + countFalse xs) := by
   rw [← countEvidenceMass_eq_prob_of_counts]
   rw [countTrue_append_fin, countFalse_append_fin]
+
+/-- Appending finite Boolean prefixes factorizes the Bernoulli-product mass into
+the product of the prefix and suffix masses. -/
+theorem bernoulliProductPMF_append
+    {m n : ℕ} (θ : ℝ) (xs : Fin m → Bool) (ys : Fin n → Bool) :
+    bernoulliProductPMF θ (Fin.append xs ys) =
+      bernoulliProductPMF θ xs * bernoulliProductPMF θ ys := by
+  rw [bernoulliProductPMF_eq_power, bernoulliProductPMF_eq_power,
+    bernoulliProductPMF_eq_power, countTrue_append_fin, countFalse_append_fin,
+    pow_add, pow_add]
+  ring
 
 /-- A represented cylinder has real measure equal to its Bernoulli-mixture
 finite-prefix probability. -/

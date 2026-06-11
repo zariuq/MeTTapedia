@@ -454,6 +454,34 @@ Currently proves:
   bridge_export_command_list_with_env have translator certificates, app-spec
   certificates, CF wrapper specs, and positive/negative dynamic-symbol
   examples.
+- there is now a first HOL runner-kernel composition slice over imported
+  numeric commands. bridge_expected_result_atoms, bridge_eval_env,
+  bridge_run_effect, bridge_run_program_env, and
+  bridge_run_imported_program_tokens_result_with_env model env-aware
+  assertEqual/assertEqualToResult, evalc named-space dispatch, match
+  context-space dispatch, bind!/new-space, add-atom, multi-command program
+  threading, and parsed-program-to-runner composition, with positive and
+  negative dynamic-symbol examples. This is semantic-model evidence for the
+  runner composition spine; exact translated/CF top-level runner wrappers are
+  still open.
+- the runner state-effect subcases now have a smaller executable-facing bridge.
+  bridge_try_run_state_effect factors the bind!/new-space and add-atom cases
+  out of bridge_run_effect, proves success and NONE-fallback agreement with the
+  runner kernel, has positive/negative examples, and now has translator,
+  app-spec, and quoted CakeML CF wrapper evidence. This does not prove the full
+  runner, but it gives a standard CakeML foothold under the exact shipped
+  runner shell.
+- the source-string side now reaches that runner kernel directly.
+  bridge_import_source_atom_with_env, bridge_import_source_command_with_env,
+  and bridge_import_source_command_list_with_env import parsed source atoms and
+  commands through dynamic symbol, variable, and string environments; these
+  source import helpers now have translator certificates and app-spec
+  certificates, plus quoted CakeML wrapper CF specs for the atom, command, and
+  command-list source import helpers. bridge_run_source_program_string_shipped_
+  bound_with_env then composes the public bound source-string parser, source-
+  command import, and HOL runner kernel into one top-level semantic result
+  with positive import/run and negative parse/import examples. The remaining
+  gap is still the exact shipped CakeML runner wrapper and its CF proof.
 - evaluated-argument surface addition now also has an env-aware dynamic-symbol
   bridge: bridge_surface_eval_add_evaluated_args_wrapper_with_env imports the
   original and evaluated argument-result lists through bridge_dyn_env_ok-style
@@ -642,7 +670,9 @@ Currently proves:
   bridge_parse_source_command_tokens_shipped_no_parser_fuel_error plus
   bridge_parse_source_program_tokens_shipped_no_parser_fuel_error lift these
   results to the shipped string-error result surface. The remaining parser-bound
-  work is a direct CF proof of the exact shipped recursive parser bodies.
+  work is top-level composition of the translated pure parser with the runner's
+  exact string/eval entrypoint, not a second handwritten recursive parser
+  proof.
 - The prototype/source parser bridge now has bridge_proto_token and
   bridge_proto_source_token_rel for the shipped-style Sym/Var/Int/Str/Expr
   string atom shape, plus bridge_parse_proto_source_full_tokens_related,
@@ -663,9 +693,10 @@ Currently proves:
   wrapper specs. The proto side now mirrors the source side's parser-fuel
   guarantees with proto atom/command/program rest-decrease and doubled-bound
   no-fuel theorems, plus shipped no-parser-fuel theorems for proto atom,
-  command, and program token entrypoints. This is still a verified prototype
-  parser model and result shape, not a direct CF proof of the exact shipped
-  SML/CakeML parser code.
+  command, and program token entrypoints, including the factored shipped
+  command-body shape. This is still a verified prototype parser model and
+  result shape; the next bridge step is whole-runner composition rather than
+  proving a duplicate handwritten recursive parser.
 
 Substitution zoo foothold:
 - substitution extension/refinement facts for association-list bindings;

@@ -216,6 +216,27 @@ theorem batOnlyFlyingConcept_not_closed_exact :
     exact hRobinLower
   simp [batOnlyFlyingConcept] at hRobinExtent
 
+theorem batOnlyFlyingConcept_not_closed_strict :
+    ¬ DualConcept.IsClosed
+      (crispRelation (EvidenceGate.positiveThreshold 2) context.evidence)
+      batOnlyFlyingConcept := by
+  intro hClosed
+  have hRobinLower :
+      Animal.robin ∈
+        _root_.lowerPolar
+          (crispRelation (EvidenceGate.positiveThreshold 2) context.evidence)
+          batOnlyFlyingConcept.intent := by
+    intro t ht
+    have ht' : t = Trait.flies := by simpa [batOnlyFlyingConcept] using ht
+    subst t
+    simp [crispRelation, EvidenceGate.positiveThreshold,
+      context, BinaryFcaBenchmarkContext.supportToken]
+  have hRobinExtent :
+      Animal.robin ∈ batOnlyFlyingConcept.extent := by
+    rw [← hClosed.2]
+    exact hRobinLower
+  simp [batOnlyFlyingConcept] at hRobinExtent
+
 theorem flyingFamilyConcept_not_closed_strict :
     ¬ DualConcept.IsClosed
       (crispRelation (EvidenceGate.positiveThreshold 2) context.evidence)
@@ -285,6 +306,33 @@ theorem flyingFamilyConcept_not_mem_lower :
         (M := context.evidence)
         flyingFamilyConcept).2 flyingFamilyConcept_not_closed_strict
   exact hNot hStrict
+
+theorem batOnlyFlyingConcept_not_mem_upper :
+    batOnlyFlyingConcept ∉
+      BinaryFcaBenchmarkContext.upperThresholdConceptFamily context thresholds := by
+  intro hUpper
+  change ∃ b : Bool,
+      batOnlyFlyingConcept ∈
+        AbstractInheritance.finiteConceptFamily (gateFamily b) context.evidence at hUpper
+  rcases hUpper with ⟨b, hb⟩
+  cases b with
+  | false =>
+      have hNot :
+          batOnlyFlyingConcept ∉
+            AbstractInheritance.finiteConceptFamily (gateFamily false) context.evidence := by
+        simpa [gateFamily, thresholds, BinaryFcaBenchmarkContext.exactConceptFamily] using
+          batOnlyFlyingConcept_not_mem_exact
+      exact hNot hb
+  | true =>
+      have hNot :
+          batOnlyFlyingConcept ∉
+            AbstractInheritance.finiteConceptFamily (gateFamily true) context.evidence := by
+        simpa [gateFamily, thresholds] using
+          (not_mem_finiteConceptFamily_iff
+            (G := EvidenceGate.positiveThreshold 2)
+            (M := context.evidence)
+            batOnlyFlyingConcept).2 batOnlyFlyingConcept_not_closed_strict
+      exact hNot hb
 
 /-- The exact control benchmark really is the classical FCA lattice of the same
 context, not a parallel invention. -/

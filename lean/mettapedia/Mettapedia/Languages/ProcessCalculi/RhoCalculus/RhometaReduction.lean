@@ -1,3 +1,5 @@
+import Mathlib.Algebra.Order.Quantale
+import Mettapedia.Algebra.QuantaleWeakness
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.MultiStep
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.RhoOpening
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.SemanticSubstitution
@@ -2414,5 +2416,144 @@ theorem foldOutcomes_subsingleton_of_forall :
       exact ⟨by rw [hp.1, htail.1], by rw [hp.2, htail.2]⟩
 
 end ConcurrentFold
+
+/-! ### Merged cost — the concurrent fold as a quantale-valued aggregate
+
+When the merge monoid `Δ` also carries a complete lattice (e.g. the cost quantale `ℝ≥0∞` from
+`Mettapedia.Algebra.QuantaleWeakness`), a payload's aggregate value is the join of its possible deltas,
+and a frontier's merged cost is the commutative product of those aggregates.  This merged cost is
+invariant under firing order (`foldCost_perm`) — the quantale shadow of `foldOutcomes_perm`. -/
+section CostQuantale
+
+variable {R : Type*} {Δ : Type*} [CommMonoid Δ] [CompleteLattice Δ]
+
+/-- A payload's aggregate value: the join of its possible deltas. -/
+noncomputable def payloadSup (p : Payload R Δ) : Δ := sSup {δ | ∃ r, (r, δ) ∈ p}
+
+/-- A frontier's merged cost: the commutative product of the per-payload aggregates. -/
+noncomputable def foldCost : List (Payload R Δ) → Δ
+  | [] => 1
+  | p :: F => payloadSup p * foldCost F
+
+@[simp] theorem foldCost_nil : foldCost ([] : List (Payload R Δ)) = 1 := rfl
+
+@[simp] theorem foldCost_cons (p : Payload R Δ) (F : List (Payload R Δ)) :
+    foldCost (p :: F) = payloadSup p * foldCost F := rfl
+
+/-- The merged cost of an independent frontier is invariant under firing order — the quantale shadow
+of `foldOutcomes_perm`, by commutativity of the merge. -/
+theorem foldCost_perm {F₁ F₂ : List (Payload R Δ)} (h : F₁.Perm F₂) :
+    foldCost F₁ = foldCost F₂ := by
+  induction h with
+  | nil => rfl
+  | cons p _ ih => simp only [foldCost_cons, ih]
+  | swap x y l => simp only [foldCost_cons]; rw [mul_left_comm]
+  | trans _ _ ih₁ ih₂ => rw [ih₁, ih₂]
+
+end CostQuantale
+
+/-! ### The quantale factorization — merged cost = aggregate over outcomes
+
+When `Δ` is a quantale (the merge `*` distributes over arbitrary joins, as for the cost quantale
+`ℝ≥0∞`), the recursive merged cost `foldCost` equals the join of the deltas of *all* concurrent
+outcomes (`foldCost_eq_aggregate`).  So the macro step's single merged cost faithfully aggregates the
+whole outcome lattice — macro-step soundness for the cost observable, delivered by quantale
+distributivity. -/
+section CostAggregate
+
+variable {R : Type*} {Δ : Type*} [CommMonoid Δ] [CompleteLattice Δ] [IsQuantale Δ]
+
+/-- The product of two joins is the join of the pairwise products (quantale distributivity). -/
+theorem sSup_mul_sSup (A B : Set Δ) :
+    sSup A * sSup B = ⨆ a ∈ A, ⨆ b ∈ B, a * b := by
+  rw [sSup_mul_distrib]
+  simp_rw [mul_sSup_distrib]
+
+/-- **Quantale factorization**: the frontier's recursive merged cost equals the join of the merged
+deltas over every concurrent outcome.  Macro-step soundness for the cost observable. -/
+theorem foldCost_eq_aggregate (F : List (Payload R Δ)) :
+    foldCost F = sSup (Prod.snd '' foldOutcomes F) := by
+  induction F with
+  | nil =>
+      rw [foldCost_nil, foldOutcomes, Set.image_singleton]
+      simp
+  | cons p F ih =>
+      rw [foldCost_cons, ih, payloadSup, sSup_mul_sSup]
+      apply le_antisymm
+      · refine iSup₂_le fun a ha => iSup₂_le fun b hb => le_sSup ?_
+        obtain ⟨r, hr⟩ := ha
+        obtain ⟨x, hxF, rfl⟩ := hb
+        exact ⟨(r ::ₘ x.1, a * x.2),
+          mem_foldOutcomes_cons.mpr ⟨r, a, x.1, x.2, hr, hxF, rfl⟩, rfl⟩
+      · refine sSup_le fun c hc => ?_
+        obtain ⟨x, hx, rfl⟩ := hc
+        rw [mem_foldOutcomes_cons] at hx
+        obtain ⟨r, δ, rs, δ', hr, hrs, rfl⟩ := hx
+        exact le_iSup₂_of_le δ ⟨r, hr⟩ (le_iSup₂_of_le δ' ⟨(rs, δ'), hrs, rfl⟩ le_rfl)
+
+end CostAggregate
+
+/-! ### Result branching factors out of the merge
+
+The other half of the factorization: the multiset of *results* reachable is the pure result fold,
+independent of the delta monoid.  Together with `foldCost_eq_aggregate`, the may-set factors as
+(result branching) × (merge/cost skeleton). -/
+section ResultFactor
+
+variable {R : Type*} {Δ : Type*} [CommMonoid Δ]
+
+/-- The pure result fold: the multisets of results from choosing one result per payload. -/
+def resultOutcomes : List (Set R) → Set (Multiset R)
+  | [] => {0}
+  | p :: F => {x | ∃ r rs, r ∈ p ∧ rs ∈ resultOutcomes F ∧ x = r ::ₘ rs}
+
+theorem mem_resultOutcomes_cons {p : Set R} {F : List (Set R)} {x : Multiset R} :
+    x ∈ resultOutcomes (p :: F) ↔
+      ∃ r rs, r ∈ p ∧ rs ∈ resultOutcomes F ∧ x = r ::ₘ rs :=
+  Iff.rfl
+
+/-- The result-multiset reachable is the pure result fold, independent of the delta monoid. -/
+theorem foldOutcomes_fst (F : List (Payload R Δ)) :
+    Prod.fst '' foldOutcomes F = resultOutcomes (F.map (fun p => Prod.fst '' p)) := by
+  induction F with
+  | nil => simp [foldOutcomes, resultOutcomes]
+  | cons p F ih =>
+      ext z
+      simp only [List.map_cons, mem_resultOutcomes_cons, Set.mem_image]
+      constructor
+      · rintro ⟨x, hx, rfl⟩
+        rw [mem_foldOutcomes_cons] at hx
+        obtain ⟨r, δ, rs, δ', hr, hrs, rfl⟩ := hx
+        refine ⟨r, rs, ⟨(r, δ), hr, rfl⟩, ?_, rfl⟩
+        rw [← ih]; exact ⟨(rs, δ'), hrs, rfl⟩
+      · rintro ⟨r, rs, ⟨rδ, hrδ, hrr⟩, hrs, rfl⟩
+        rw [← ih] at hrs
+        obtain ⟨y, hy, rfl⟩ := hrs
+        refine ⟨(rδ.1 ::ₘ y.1, rδ.2 * y.2), mem_foldOutcomes_cons.mpr
+          ⟨rδ.1, rδ.2, y.1, y.2, hrδ, hy, rfl⟩, ?_⟩
+        simp [hrr]
+
+end ResultFactor
+
+/-! ### Grounding: the fold fires on real rhometta merge and on the cost quantale
+
+These witnesses confirm the abstract theory applies to concrete rhometta data: `Δ` a bag-space delta
+(`Multiset Atom` merge, via `Multiplicative`) gives order-independent residual outcomes; `Δ = ℝ≥0∞`
+(the project's cost quantale) gives the merged-cost factorization. -/
+section Grounding
+
+open scoped ENNReal
+
+/-- rhometta residuals merging bag-space deltas: the concurrent fold is order-independent. -/
+example {F₁ F₂ : List (Payload Pattern (Multiplicative (Multiset Atom)))} (h : F₁.Perm F₂) :
+    foldOutcomes F₁ = foldOutcomes F₂ :=
+  foldOutcomes_perm h
+
+/-- rhometta cost in the `ℝ≥0∞` quantale: merged cost = join over all concurrent outcomes. -/
+example (F : List (Payload Pattern ℝ≥0∞)) :
+    foldCost F = sSup (Prod.snd '' foldOutcomes F) :=
+  foldCost_eq_aggregate F
+
+end Grounding
 
 end Mettapedia.Languages.ProcessCalculi.RhoCalculus.RhometaReduction
