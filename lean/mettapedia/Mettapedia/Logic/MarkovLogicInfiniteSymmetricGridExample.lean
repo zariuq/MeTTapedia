@@ -205,6 +205,174 @@ def gridOriginNeighborPairTT : LocalAssignment GridNode gridOriginNeighborPairRe
     simp at hx
     simp
 
+/-- Current finite carrier for a corner separator witness: a region inside the
+square box whose cut separates the corner origin from both axis directions
+through the east and north neighbours. The later extraction/counting layer can
+add connectivity/path structure on top of this region witness. -/
+structure CornerAxisSeparator (n : ℕ) where
+  inside : Region GridNode
+  inside_subset : inside ⊆ gridExhaustion.region n
+  origin_mem : gridOrigin ∈ inside
+  east_not_mem : gridOriginEast ∉ inside
+  north_not_mem : gridOriginNorth ∉ inside
+
+/-- The finite-volume cut predicate for an oriented grid base clause relative to
+an inside region. Priors never cut; an edge cuts exactly when its endpoints lie
+on opposite sides of the region boundary. -/
+def gridBaseClauseCutsRegion (inside : Region GridNode) : GridClauseId → Prop
+  | .prior _ _ => False
+  | .horizontal i j =>
+      ((i, j) ∈ inside ∧ (i + 1, j) ∉ inside) ∨
+        ((i, j) ∉ inside ∧ (i + 1, j) ∈ inside)
+  | .vertical i j =>
+      ((i, j) ∈ inside ∧ (i, j + 1) ∉ inside) ∨
+        ((i, j) ∉ inside ∧ (i, j + 1) ∈ inside)
+
+noncomputable instance (inside : Region GridNode) :
+    DecidablePred (gridBaseClauseCutsRegion inside) :=
+  Classical.decPred _
+
+/-- The base-clause cut set associated to a corner separator inside a finite
+volume box. -/
+noncomputable def CornerAxisSeparator.cutBaseClauses
+    {n : ℕ} (sep : CornerAxisSeparator n) : Finset GridClauseId :=
+  by
+    classical
+    exact (gridRegionSupport (gridExhaustion.region n)).filter
+      (gridBaseClauseCutsRegion sep.inside)
+
+theorem cornerAxisSeparator_horizontalOrigin_mem_cutBaseClauses
+    {n : ℕ} (sep : CornerAxisSeparator n) :
+    GridClauseId.horizontal 0 0 ∈ sep.cutBaseClauses := by
+  classical
+  unfold CornerAxisSeparator.cutBaseClauses
+  rw [Finset.mem_filter]
+  constructor
+  · apply gridRegionSupport_complete
+    refine ⟨gridOrigin, ?_, gridOrigin_mem_gridExhaustion_region n⟩
+    simp [gridClause, gridOrigin]
+  · exact Or.inl ⟨sep.origin_mem, sep.east_not_mem⟩
+
+theorem cornerAxisSeparator_verticalOrigin_mem_cutBaseClauses
+    {n : ℕ} (sep : CornerAxisSeparator n) :
+    GridClauseId.vertical 0 0 ∈ sep.cutBaseClauses := by
+  classical
+  unfold CornerAxisSeparator.cutBaseClauses
+  rw [Finset.mem_filter]
+  constructor
+  · apply gridRegionSupport_complete
+    refine ⟨gridOrigin, ?_, gridOrigin_mem_gridExhaustion_region n⟩
+    simp [gridClause, gridOrigin]
+  · exact Or.inl ⟨sep.origin_mem, sep.north_not_mem⟩
+
+/-- Flip a finite local assignment on a chosen inside region, leaving the
+outside part of the box unchanged. -/
+noncomputable def flipInsideLocalAssignment
+    {Λ : Region GridNode} (inside : Region GridNode) (hInsideΛ : inside ⊆ Λ)
+    (x : LocalAssignment GridNode Λ) : LocalAssignment GridNode Λ :=
+  Mettapedia.Logic.MarkovLogicInfiniteFixedRegionDLR.mergeAssignments (Atom := GridNode)
+    (spinFlipLocalAssignment
+      (Mettapedia.Logic.MarkovLogicInfiniteFixedRegionDLR.restrictAssignment
+        (Atom := GridNode) hInsideΛ x))
+    (Mettapedia.Logic.MarkovLogicInfiniteFixedRegionDLR.restrictOutsideAssignment
+      (Atom := GridNode) (Λ := inside) (Δ := Λ) x)
+
+@[simp] theorem flipInsideLocalAssignment_apply_mem
+    {Λ : Region GridNode} {inside : Region GridNode} {hInsideΛ : inside ⊆ Λ}
+    (x : LocalAssignment GridNode Λ)
+    (a : RegionAtom GridNode Λ)
+    (ha : a.1 ∈ inside) :
+    flipInsideLocalAssignment inside hInsideΛ x a = !x ⟨a.1, hInsideΛ ha⟩ := by
+  simp [flipInsideLocalAssignment,
+    Mettapedia.Logic.MarkovLogicInfiniteFixedRegionDLR.mergeAssignments,
+    Mettapedia.Logic.MarkovLogicInfiniteFixedRegionDLR.restrictAssignment,
+    spinFlipLocalAssignment, ha]
+
+@[simp] theorem flipInsideLocalAssignment_apply_not_mem
+    {Λ : Region GridNode} {inside : Region GridNode} {hInsideΛ : inside ⊆ Λ}
+    (x : LocalAssignment GridNode Λ)
+    (a : RegionAtom GridNode Λ)
+    (ha : a.1 ∉ inside) :
+    flipInsideLocalAssignment inside hInsideΛ x a = x a := by
+  simp [flipInsideLocalAssignment,
+    Mettapedia.Logic.MarkovLogicInfiniteFixedRegionDLR.mergeAssignments,
+    Mettapedia.Logic.MarkovLogicInfiniteFixedRegionDLR.restrictOutsideAssignment, ha]
+
+theorem flipInsideLocalAssignment_involutive
+    {Λ : Region GridNode} (inside : Region GridNode) (hInsideΛ : inside ⊆ Λ)
+    (x : LocalAssignment GridNode Λ) :
+    flipInsideLocalAssignment inside hInsideΛ
+        (flipInsideLocalAssignment inside hInsideΛ x) = x := by
+  funext a
+  by_cases ha : a.1 ∈ inside
+  · simp [flipInsideLocalAssignment_apply_mem, ha]
+  · simp [flipInsideLocalAssignment_apply_not_mem, ha]
+
+theorem patch_flipInsideLocalAssignment_eq_not_of_mem
+    {Λ : Region GridNode} {inside : Region GridNode} {hInsideΛ : inside ⊆ Λ}
+    (x : LocalAssignment GridNode Λ) (ξ : BoundaryCondition GridNode)
+    {a : GridNode} (ha : a ∈ inside) :
+    patch Λ (flipInsideLocalAssignment inside hInsideΛ x) ξ a =
+      !(patch Λ x ξ a) := by
+  have haΛ : a ∈ Λ := hInsideΛ ha
+  simp [patch, ha, haΛ, flipInsideLocalAssignment,
+    Mettapedia.Logic.MarkovLogicInfiniteFixedRegionDLR.mergeAssignments,
+    Mettapedia.Logic.MarkovLogicInfiniteFixedRegionDLR.restrictAssignment,
+    spinFlipLocalAssignment]
+
+theorem patch_flipInsideLocalAssignment_eq_of_not_mem
+    {Λ : Region GridNode} {inside : Region GridNode} {hInsideΛ : inside ⊆ Λ}
+    (x : LocalAssignment GridNode Λ) (ξ : BoundaryCondition GridNode)
+    {a : GridNode} (ha : a ∉ inside) :
+    patch Λ (flipInsideLocalAssignment inside hInsideΛ x) ξ a =
+      patch Λ x ξ a := by
+  by_cases haΛ : a ∈ Λ
+  · simp [patch, ha, haΛ, flipInsideLocalAssignment,
+      Mettapedia.Logic.MarkovLogicInfiniteFixedRegionDLR.mergeAssignments,
+      Mettapedia.Logic.MarkovLogicInfiniteFixedRegionDLR.restrictOutsideAssignment]
+  · simp [patch, haΛ]
+
+/-- Local separator condition saying that a cut base clause sees a minus spin on
+the inside side and a plus spin on the outside side, so flipping the inside
+turns that disagreement into an agreement. -/
+def symmetricGridBaseClauseFlipGainCondition
+    {Λ : Region GridNode} (inside : Region GridNode) (_hInsideΛ : inside ⊆ Λ)
+    (x : LocalAssignment GridNode Λ) (ξ : BoundaryCondition GridNode) :
+    GridClauseId → Prop
+  | .prior _ _ => False
+  | .horizontal i j =>
+      (((i, j) ∈ inside ∧ (i + 1, j) ∉ inside) ∧
+          patch Λ x ξ (i, j) = false ∧
+          patch Λ x ξ (i + 1, j) = true) ∨
+        (((i, j) ∉ inside ∧ (i + 1, j) ∈ inside) ∧
+          patch Λ x ξ (i, j) = true ∧
+          patch Λ x ξ (i + 1, j) = false)
+  | .vertical i j =>
+      (((i, j) ∈ inside ∧ (i, j + 1) ∉ inside) ∧
+          patch Λ x ξ (i, j) = false ∧
+          patch Λ x ξ (i, j + 1) = true) ∨
+        (((i, j) ∉ inside ∧ (i, j + 1) ∈ inside) ∧
+          patch Λ x ξ (i, j) = true ∧
+          patch Λ x ξ (i, j + 1) = false)
+
+theorem symmetricGridBaseClauseFlipGainCondition_imp_cutsRegion
+    {Λ : Region GridNode} {inside : Region GridNode} {hInsideΛ : inside ⊆ Λ}
+    {x : LocalAssignment GridNode Λ} {ξ : BoundaryCondition GridNode}
+    {j : GridClauseId}
+    (hj : symmetricGridBaseClauseFlipGainCondition inside hInsideΛ x ξ j) :
+    gridBaseClauseCutsRegion inside j := by
+  cases j with
+  | prior i j =>
+      cases hj
+  | horizontal i j =>
+      rcases hj with h | h
+      · exact Or.inl h.1
+      · exact Or.inr h.1
+  | vertical i j =>
+      rcases hj with h | h
+      · exact Or.inl h.1
+      · exact Or.inr h.1
+
 /-- Clause ids for the symmetric two-clause-per-edge grid. -/
 inductive SymmetricGridClauseId where
   | prior : Nat → Nat → SymmetricGridClauseId
@@ -378,6 +546,270 @@ theorem symmetricGridVerticalEdgePairWeight_gain_of_eq_over_ne
   simp [symmetricGridVerticalEdgePairWeight_eq_of_eq, hEq,
     symmetricGridVerticalEdgePairWeight_eq_of_ne, hNe]
 
+theorem symmetricGridHorizontalEdgePairWeight_flipInside_gain_of_leftCut
+    {Λ : Region GridNode} {inside : Region GridNode} {hInsideΛ : inside ⊆ Λ}
+    (w : ℝ) (x : LocalAssignment GridNode Λ) (ξ : BoundaryCondition GridNode)
+    (i j : Nat)
+    (hLeftMem : (i, j) ∈ inside)
+    (hRightMem : (i + 1, j) ∉ inside)
+    (hLeftFalse : patch Λ x ξ (i, j) = false)
+    (hRightTrue : patch Λ x ξ (i + 1, j) = true) :
+    symmetricGridHorizontalEdgePairWeight w i j
+        (patch Λ (flipInsideLocalAssignment inside hInsideΛ x) ξ) =
+      ENNReal.ofReal (Real.exp w) *
+        symmetricGridHorizontalEdgePairWeight w i j (patch Λ x ξ) := by
+  let W : InfiniteWorld GridNode := patch Λ x ξ
+  let W' : InfiniteWorld GridNode := patch Λ (flipInsideLocalAssignment inside hInsideΛ x) ξ
+  have hLeftFlip : W' (i, j) = true := by
+    calc
+      W' (i, j) = !(W (i, j)) := by
+        simpa [W, W'] using
+          (patch_flipInsideLocalAssignment_eq_not_of_mem
+            (x := x) (ξ := ξ) (a := (i, j)) hLeftMem)
+      _ = true := by simp [W, hLeftFalse]
+  have hRightFlip : W' (i + 1, j) = true := by
+    calc
+      W' (i + 1, j) = W (i + 1, j) := by
+        simpa [W, W'] using
+          (patch_flipInsideLocalAssignment_eq_of_not_mem
+            (x := x) (ξ := ξ) (a := (i + 1, j)) hRightMem)
+      _ = true := by simp [W, hRightTrue]
+  have hEq : W' (i, j) = W' (i + 1, j) := hLeftFlip.trans hRightFlip.symm
+  have hNe : W (i, j) ≠ W (i + 1, j) := by
+    simp [W, hLeftFalse, hRightTrue]
+  simpa [W, W'] using
+    (symmetricGridHorizontalEdgePairWeight_gain_of_eq_over_ne w i j W W' hEq hNe)
+
+theorem symmetricGridHorizontalEdgePairWeight_flipInside_gain_of_rightCut
+    {Λ : Region GridNode} {inside : Region GridNode} {hInsideΛ : inside ⊆ Λ}
+    (w : ℝ) (x : LocalAssignment GridNode Λ) (ξ : BoundaryCondition GridNode)
+    (i j : Nat)
+    (hLeftMem : (i, j) ∉ inside)
+    (hRightMem : (i + 1, j) ∈ inside)
+    (hLeftTrue : patch Λ x ξ (i, j) = true)
+    (hRightFalse : patch Λ x ξ (i + 1, j) = false) :
+    symmetricGridHorizontalEdgePairWeight w i j
+        (patch Λ (flipInsideLocalAssignment inside hInsideΛ x) ξ) =
+      ENNReal.ofReal (Real.exp w) *
+        symmetricGridHorizontalEdgePairWeight w i j (patch Λ x ξ) := by
+  let W : InfiniteWorld GridNode := patch Λ x ξ
+  let W' : InfiniteWorld GridNode := patch Λ (flipInsideLocalAssignment inside hInsideΛ x) ξ
+  have hLeftFlip : W' (i, j) = true := by
+    calc
+      W' (i, j) = W (i, j) := by
+        simpa [W, W'] using
+          (patch_flipInsideLocalAssignment_eq_of_not_mem
+            (x := x) (ξ := ξ) (a := (i, j)) hLeftMem)
+      _ = true := by simp [W, hLeftTrue]
+  have hRightFlip : W' (i + 1, j) = true := by
+    calc
+      W' (i + 1, j) = !(W (i + 1, j)) := by
+        simpa [W, W'] using
+          (patch_flipInsideLocalAssignment_eq_not_of_mem
+            (x := x) (ξ := ξ) (a := (i + 1, j)) hRightMem)
+      _ = true := by simp [W, hRightFalse]
+  have hEq : W' (i, j) = W' (i + 1, j) := hLeftFlip.trans hRightFlip.symm
+  have hNe : W (i, j) ≠ W (i + 1, j) := by
+    simp [W, hLeftTrue, hRightFalse]
+  simpa [W, W'] using
+    (symmetricGridHorizontalEdgePairWeight_gain_of_eq_over_ne w i j W W' hEq hNe)
+
+theorem symmetricGridVerticalEdgePairWeight_flipInside_gain_of_downCut
+    {Λ : Region GridNode} {inside : Region GridNode} {hInsideΛ : inside ⊆ Λ}
+    (w : ℝ) (x : LocalAssignment GridNode Λ) (ξ : BoundaryCondition GridNode)
+    (i j : Nat)
+    (hDownMem : (i, j) ∈ inside)
+    (hUpMem : (i, j + 1) ∉ inside)
+    (hDownFalse : patch Λ x ξ (i, j) = false)
+    (hUpTrue : patch Λ x ξ (i, j + 1) = true) :
+    symmetricGridVerticalEdgePairWeight w i j
+        (patch Λ (flipInsideLocalAssignment inside hInsideΛ x) ξ) =
+      ENNReal.ofReal (Real.exp w) *
+        symmetricGridVerticalEdgePairWeight w i j (patch Λ x ξ) := by
+  let W : InfiniteWorld GridNode := patch Λ x ξ
+  let W' : InfiniteWorld GridNode := patch Λ (flipInsideLocalAssignment inside hInsideΛ x) ξ
+  have hDownFlip : W' (i, j) = true := by
+    calc
+      W' (i, j) = !(W (i, j)) := by
+        simpa [W, W'] using
+          (patch_flipInsideLocalAssignment_eq_not_of_mem
+            (x := x) (ξ := ξ) (a := (i, j)) hDownMem)
+      _ = true := by simp [W, hDownFalse]
+  have hUpFlip : W' (i, j + 1) = true := by
+    calc
+      W' (i, j + 1) = W (i, j + 1) := by
+        simpa [W, W'] using
+          (patch_flipInsideLocalAssignment_eq_of_not_mem
+            (x := x) (ξ := ξ) (a := (i, j + 1)) hUpMem)
+      _ = true := by simp [W, hUpTrue]
+  have hEq : W' (i, j) = W' (i, j + 1) := hDownFlip.trans hUpFlip.symm
+  have hNe : W (i, j) ≠ W (i, j + 1) := by
+    simp [W, hDownFalse, hUpTrue]
+  simpa [W, W'] using
+    (symmetricGridVerticalEdgePairWeight_gain_of_eq_over_ne w i j W W' hEq hNe)
+
+theorem symmetricGridVerticalEdgePairWeight_flipInside_gain_of_upCut
+    {Λ : Region GridNode} {inside : Region GridNode} {hInsideΛ : inside ⊆ Λ}
+    (w : ℝ) (x : LocalAssignment GridNode Λ) (ξ : BoundaryCondition GridNode)
+    (i j : Nat)
+    (hDownMem : (i, j) ∉ inside)
+    (hUpMem : (i, j + 1) ∈ inside)
+    (hDownTrue : patch Λ x ξ (i, j) = true)
+    (hUpFalse : patch Λ x ξ (i, j + 1) = false) :
+    symmetricGridVerticalEdgePairWeight w i j
+        (patch Λ (flipInsideLocalAssignment inside hInsideΛ x) ξ) =
+      ENNReal.ofReal (Real.exp w) *
+        symmetricGridVerticalEdgePairWeight w i j (patch Λ x ξ) := by
+  let W : InfiniteWorld GridNode := patch Λ x ξ
+  let W' : InfiniteWorld GridNode := patch Λ (flipInsideLocalAssignment inside hInsideΛ x) ξ
+  have hDownFlip : W' (i, j) = true := by
+    calc
+      W' (i, j) = W (i, j) := by
+        simpa [W, W'] using
+          (patch_flipInsideLocalAssignment_eq_of_not_mem
+            (x := x) (ξ := ξ) (a := (i, j)) hDownMem)
+      _ = true := by simp [W, hDownTrue]
+  have hUpFlip : W' (i, j + 1) = true := by
+    calc
+      W' (i, j + 1) = !(W (i, j + 1)) := by
+        simpa [W, W'] using
+          (patch_flipInsideLocalAssignment_eq_not_of_mem
+            (x := x) (ξ := ξ) (a := (i, j + 1)) hUpMem)
+      _ = true := by simp [W, hUpFalse]
+  have hEq : W' (i, j) = W' (i, j + 1) := hDownFlip.trans hUpFlip.symm
+  have hNe : W (i, j) ≠ W (i, j + 1) := by
+    simp [W, hDownTrue, hUpFalse]
+  simpa [W, W'] using
+    (symmetricGridVerticalEdgePairWeight_gain_of_eq_over_ne w i j W W' hEq hNe)
+
+theorem symmetricGridHorizontalEdgePairWeight_flipInside_eq_of_not_cut
+    {Λ : Region GridNode} {inside : Region GridNode} {hInsideΛ : inside ⊆ Λ}
+    (w : ℝ) (x : LocalAssignment GridNode Λ) (ξ : BoundaryCondition GridNode)
+    (i j : Nat)
+    (hnotcut : ¬ gridBaseClauseCutsRegion inside (.horizontal i j)) :
+    symmetricGridHorizontalEdgePairWeight w i j
+        (patch Λ (flipInsideLocalAssignment inside hInsideΛ x) ξ) =
+      symmetricGridHorizontalEdgePairWeight w i j (patch Λ x ξ) := by
+  let W : InfiniteWorld GridNode := patch Λ x ξ
+  let W' : InfiniteWorld GridNode := patch Λ (flipInsideLocalAssignment inside hInsideΛ x) ξ
+  by_cases hLeftMem : (i, j) ∈ inside
+  · have hRightMem : (i + 1, j) ∈ inside := by
+      by_contra hRightMem
+      exact hnotcut (Or.inl ⟨hLeftMem, hRightMem⟩)
+    have hLeftFlip : W' (i, j) = !(W (i, j)) := by
+      simpa [W, W'] using
+        (patch_flipInsideLocalAssignment_eq_not_of_mem
+          (x := x) (ξ := ξ) (a := (i, j)) hLeftMem)
+    have hRightFlip : W' (i + 1, j) = !(W (i + 1, j)) := by
+      simpa [W, W'] using
+        (patch_flipInsideLocalAssignment_eq_not_of_mem
+          (x := x) (ξ := ξ) (a := (i + 1, j)) hRightMem)
+    by_cases hEq : W (i, j) = W (i + 1, j)
+    · have hEq' : W' (i, j) = W' (i + 1, j) := by
+        rw [hLeftFlip, hRightFlip]
+        simpa using congrArg Bool.not hEq
+      rw [symmetricGridHorizontalEdgePairWeight_eq_of_eq w i j W' hEq',
+        symmetricGridHorizontalEdgePairWeight_eq_of_eq w i j W hEq]
+    · have hNe' : W' (i, j) ≠ W' (i + 1, j) := by
+        intro hEq'
+        apply hEq
+        have : Bool.not (W (i, j)) = Bool.not (W (i + 1, j)) := by
+          calc
+            Bool.not (W (i, j)) = W' (i, j) := by
+              symm
+              exact hLeftFlip
+            _ = W' (i + 1, j) := hEq'
+            _ = Bool.not (W (i + 1, j)) := hRightFlip
+        simpa using congrArg Bool.not this
+      rw [symmetricGridHorizontalEdgePairWeight_eq_of_ne w i j W' hNe',
+        symmetricGridHorizontalEdgePairWeight_eq_of_ne w i j W hEq]
+  · have hRightMem : (i + 1, j) ∉ inside := by
+      by_contra hRightMem
+      exact hnotcut (Or.inr ⟨hLeftMem, hRightMem⟩)
+    have hLeftSame : W' (i, j) = W (i, j) := by
+      simpa [W, W'] using
+        (patch_flipInsideLocalAssignment_eq_of_not_mem
+          (x := x) (ξ := ξ) (a := (i, j)) hLeftMem)
+    have hRightSame : W' (i + 1, j) = W (i + 1, j) := by
+      simpa [W, W'] using
+        (patch_flipInsideLocalAssignment_eq_of_not_mem
+          (x := x) (ξ := ξ) (a := (i + 1, j)) hRightMem)
+    by_cases hEq : W (i, j) = W (i + 1, j)
+    · have hEq' : W' (i, j) = W' (i + 1, j) := by
+        rw [hLeftSame, hRightSame]
+        exact hEq
+      rw [symmetricGridHorizontalEdgePairWeight_eq_of_eq w i j W' hEq',
+        symmetricGridHorizontalEdgePairWeight_eq_of_eq w i j W hEq]
+    · have hNe' : W' (i, j) ≠ W' (i + 1, j) := by
+        rw [hLeftSame, hRightSame]
+        exact hEq
+      rw [symmetricGridHorizontalEdgePairWeight_eq_of_ne w i j W' hNe',
+        symmetricGridHorizontalEdgePairWeight_eq_of_ne w i j W hEq]
+
+theorem symmetricGridVerticalEdgePairWeight_flipInside_eq_of_not_cut
+    {Λ : Region GridNode} {inside : Region GridNode} {hInsideΛ : inside ⊆ Λ}
+    (w : ℝ) (x : LocalAssignment GridNode Λ) (ξ : BoundaryCondition GridNode)
+    (i j : Nat)
+    (hnotcut : ¬ gridBaseClauseCutsRegion inside (.vertical i j)) :
+    symmetricGridVerticalEdgePairWeight w i j
+        (patch Λ (flipInsideLocalAssignment inside hInsideΛ x) ξ) =
+      symmetricGridVerticalEdgePairWeight w i j (patch Λ x ξ) := by
+  let W : InfiniteWorld GridNode := patch Λ x ξ
+  let W' : InfiniteWorld GridNode := patch Λ (flipInsideLocalAssignment inside hInsideΛ x) ξ
+  by_cases hDownMem : (i, j) ∈ inside
+  · have hUpMem : (i, j + 1) ∈ inside := by
+      by_contra hUpMem
+      exact hnotcut (Or.inl ⟨hDownMem, hUpMem⟩)
+    have hDownFlip : W' (i, j) = !(W (i, j)) := by
+      simpa [W, W'] using
+        (patch_flipInsideLocalAssignment_eq_not_of_mem
+          (x := x) (ξ := ξ) (a := (i, j)) hDownMem)
+    have hUpFlip : W' (i, j + 1) = !(W (i, j + 1)) := by
+      simpa [W, W'] using
+        (patch_flipInsideLocalAssignment_eq_not_of_mem
+          (x := x) (ξ := ξ) (a := (i, j + 1)) hUpMem)
+    by_cases hEq : W (i, j) = W (i, j + 1)
+    · have hEq' : W' (i, j) = W' (i, j + 1) := by
+        rw [hDownFlip, hUpFlip]
+        simpa using congrArg Bool.not hEq
+      rw [symmetricGridVerticalEdgePairWeight_eq_of_eq w i j W' hEq',
+        symmetricGridVerticalEdgePairWeight_eq_of_eq w i j W hEq]
+    · have hNe' : W' (i, j) ≠ W' (i, j + 1) := by
+        intro hEq'
+        apply hEq
+        have : Bool.not (W (i, j)) = Bool.not (W (i, j + 1)) := by
+          calc
+            Bool.not (W (i, j)) = W' (i, j) := by
+              symm
+              exact hDownFlip
+            _ = W' (i, j + 1) := hEq'
+            _ = Bool.not (W (i, j + 1)) := hUpFlip
+        simpa using congrArg Bool.not this
+      rw [symmetricGridVerticalEdgePairWeight_eq_of_ne w i j W' hNe',
+        symmetricGridVerticalEdgePairWeight_eq_of_ne w i j W hEq]
+  · have hUpMem : (i, j + 1) ∉ inside := by
+      by_contra hUpMem
+      exact hnotcut (Or.inr ⟨hDownMem, hUpMem⟩)
+    have hDownSame : W' (i, j) = W (i, j) := by
+      simpa [W, W'] using
+        (patch_flipInsideLocalAssignment_eq_of_not_mem
+          (x := x) (ξ := ξ) (a := (i, j)) hDownMem)
+    have hUpSame : W' (i, j + 1) = W (i, j + 1) := by
+      simpa [W, W'] using
+        (patch_flipInsideLocalAssignment_eq_of_not_mem
+          (x := x) (ξ := ξ) (a := (i, j + 1)) hUpMem)
+    by_cases hEq : W (i, j) = W (i, j + 1)
+    · have hEq' : W' (i, j) = W' (i, j + 1) := by
+        rw [hDownSame, hUpSame]
+        exact hEq
+      rw [symmetricGridVerticalEdgePairWeight_eq_of_eq w i j W' hEq',
+        symmetricGridVerticalEdgePairWeight_eq_of_eq w i j W hEq]
+    · have hNe' : W' (i, j) ≠ W' (i, j + 1) := by
+        rw [hDownSame, hUpSame]
+        exact hEq
+      rw [symmetricGridVerticalEdgePairWeight_eq_of_ne w i j W' hNe',
+        symmetricGridVerticalEdgePairWeight_eq_of_ne w i j W hEq]
+
 /-- Underlying clause attached to a symmetric grid clause id. -/
 def symmetricGridClause : SymmetricGridClauseId → GroundClause GridNode
   | .prior i j => gridPriorClause i j
@@ -550,6 +982,63 @@ noncomputable def symmetricGridBaseClauseWeight
   | .horizontal i j => symmetricGridHorizontalEdgePairWeight w i j W
   | .vertical i j => symmetricGridVerticalEdgePairWeight w i j W
 
+theorem symmetricGridBaseClauseWeight_flipInside_eq_of_not_cut
+    {Λ : Region GridNode} {inside : Region GridNode} {hInsideΛ : inside ⊆ Λ}
+    (w : ℝ) (x : LocalAssignment GridNode Λ) (ξ : BoundaryCondition GridNode)
+    {j : GridClauseId}
+    (hnotcut : ¬ gridBaseClauseCutsRegion inside j) :
+    symmetricGridBaseClauseWeight w j
+        (patch Λ (flipInsideLocalAssignment inside hInsideΛ x) ξ) =
+      symmetricGridBaseClauseWeight w j (patch Λ x ξ) := by
+  cases j with
+  | prior i j =>
+      simp [symmetricGridBaseClauseWeight]
+  | horizontal i j =>
+      simpa [symmetricGridBaseClauseWeight] using
+        (symmetricGridHorizontalEdgePairWeight_flipInside_eq_of_not_cut
+          (w := w) (x := x) (ξ := ξ) i j hnotcut)
+  | vertical i j =>
+      simpa [symmetricGridBaseClauseWeight] using
+        (symmetricGridVerticalEdgePairWeight_flipInside_eq_of_not_cut
+          (w := w) (x := x) (ξ := ξ) i j hnotcut)
+
+theorem symmetricGridBaseClauseWeight_flipInside_gain_of_condition
+    {Λ : Region GridNode} {inside : Region GridNode} {hInsideΛ : inside ⊆ Λ}
+    (w : ℝ) (x : LocalAssignment GridNode Λ) (ξ : BoundaryCondition GridNode)
+    {j : GridClauseId}
+    (hj : symmetricGridBaseClauseFlipGainCondition inside hInsideΛ x ξ j) :
+    symmetricGridBaseClauseWeight w j
+        (patch Λ (flipInsideLocalAssignment inside hInsideΛ x) ξ) =
+      ENNReal.ofReal (Real.exp w) *
+        symmetricGridBaseClauseWeight w j (patch Λ x ξ) := by
+  cases j with
+  | prior i j =>
+      cases hj
+  | horizontal i j =>
+      rcases hj with h | h
+      · rcases h with ⟨⟨hLeftMem, hRightMem⟩, hLeftFalse, hRightTrue⟩
+        simpa [symmetricGridBaseClauseWeight] using
+          (symmetricGridHorizontalEdgePairWeight_flipInside_gain_of_leftCut
+            (w := w) (x := x) (ξ := ξ) i j
+            hLeftMem hRightMem hLeftFalse hRightTrue)
+      · rcases h with ⟨⟨hLeftMem, hRightMem⟩, hLeftTrue, hRightFalse⟩
+        simpa [symmetricGridBaseClauseWeight] using
+          (symmetricGridHorizontalEdgePairWeight_flipInside_gain_of_rightCut
+            (w := w) (x := x) (ξ := ξ) i j
+            hLeftMem hRightMem hLeftTrue hRightFalse)
+  | vertical i j =>
+      rcases hj with h | h
+      · rcases h with ⟨⟨hDownMem, hUpMem⟩, hDownFalse, hUpTrue⟩
+        simpa [symmetricGridBaseClauseWeight] using
+          (symmetricGridVerticalEdgePairWeight_flipInside_gain_of_downCut
+            (w := w) (x := x) (ξ := ξ) i j
+            hDownMem hUpMem hDownFalse hUpTrue)
+      · rcases h with ⟨⟨hDownMem, hUpMem⟩, hDownTrue, hUpFalse⟩
+        simpa [symmetricGridBaseClauseWeight] using
+          (symmetricGridVerticalEdgePairWeight_flipInside_gain_of_upCut
+            (w := w) (x := x) (ξ := ξ) i j
+            hDownMem hUpMem hDownTrue hUpFalse)
+
 theorem symmetricGridExpansion_prod_clauseEval_eq_baseClauseWeight
     (w : ℝ) (j : GridClauseId) (W : InfiniteWorld GridNode) :
     ∏ k ∈ symmetricGridExpansion j,
@@ -582,6 +1071,111 @@ theorem symmetricGridZeroField_finiteVolumeWeight_eq_prod_baseClauseWeight
   refine Finset.prod_congr rfl ?_
   intro j hj
   simpa [W] using symmetricGridExpansion_prod_clauseEval_eq_baseClauseWeight w j W
+
+theorem symmetricGridZeroField_finiteVolumeWeight_flipInside_eq_cutFactor_of_gainCondition
+    (w : ℝ) {Λ : Region GridNode} (inside : Region GridNode) (hInsideΛ : inside ⊆ Λ)
+    (x : LocalAssignment GridNode Λ) (ξ : BoundaryCondition GridNode)
+    (hgain :
+      ∀ j ∈ (gridRegionSupport Λ).filter (gridBaseClauseCutsRegion inside),
+        symmetricGridBaseClauseFlipGainCondition inside hInsideΛ x ξ j) :
+    (symmetricGridZeroFieldClassicalSpec w).toStrictlyPositiveInfiniteGroundMLNSpec.toInfiniteGroundMLNSpec.finiteVolumeWeight
+        Λ (flipInsideLocalAssignment inside hInsideΛ x) ξ =
+      (ENNReal.ofReal (Real.exp w)) ^
+          ((gridRegionSupport Λ).filter (gridBaseClauseCutsRegion inside)).card *
+        (symmetricGridZeroFieldClassicalSpec w).toStrictlyPositiveInfiniteGroundMLNSpec.toInfiniteGroundMLNSpec.finiteVolumeWeight
+          Λ x ξ := by
+  classical
+  let s : Finset GridClauseId := gridRegionSupport Λ
+  let sCut : Finset GridClauseId := s.filter (gridBaseClauseCutsRegion inside)
+  let sNot : Finset GridClauseId := s.filter (fun j => ¬ gridBaseClauseCutsRegion inside j)
+  let W : InfiniteWorld GridNode := patch Λ x ξ
+  let W' : InfiniteWorld GridNode := patch Λ (flipInsideLocalAssignment inside hInsideΛ x) ξ
+  let factor : ENNReal := ENNReal.ofReal (Real.exp w)
+  have hsplitW' :
+      (∏ j ∈ s, symmetricGridBaseClauseWeight w j W') =
+        (∏ j ∈ sCut, symmetricGridBaseClauseWeight w j W') *
+          ∏ j ∈ sNot, symmetricGridBaseClauseWeight w j W' := by
+    have h :=
+      (Finset.prod_filter_mul_prod_filter_not
+        (s := s)
+        (p := gridBaseClauseCutsRegion inside)
+        (f := fun j => symmetricGridBaseClauseWeight w j W')).symm
+    simpa [sCut, sNot] using h
+  have hsplitW :
+      (∏ j ∈ sCut, symmetricGridBaseClauseWeight w j W) *
+          ∏ j ∈ sNot, symmetricGridBaseClauseWeight w j W =
+        (∏ j ∈ s, symmetricGridBaseClauseWeight w j W) := by
+    have h :=
+      Finset.prod_filter_mul_prod_filter_not
+        (s := s)
+        (p := gridBaseClauseCutsRegion inside)
+        (f := fun j => symmetricGridBaseClauseWeight w j W)
+    simpa [sCut, sNot] using h
+  have hcut :
+      (∏ j ∈ sCut, symmetricGridBaseClauseWeight w j W') =
+        factor ^ sCut.card * ∏ j ∈ sCut, symmetricGridBaseClauseWeight w j W := by
+    calc
+      (∏ j ∈ sCut, symmetricGridBaseClauseWeight w j W') =
+          ∏ j ∈ sCut, factor * symmetricGridBaseClauseWeight w j W := by
+            refine Finset.prod_congr rfl ?_
+            intro j hj
+            have hjGain :
+                symmetricGridBaseClauseFlipGainCondition inside hInsideΛ x ξ j :=
+              hgain j (by simpa [sCut] using hj)
+            simpa [factor, W, W'] using
+              (symmetricGridBaseClauseWeight_flipInside_gain_of_condition
+                (w := w) (inside := inside) (hInsideΛ := hInsideΛ)
+                (x := x) (ξ := ξ) hjGain)
+      _ = (∏ _j ∈ sCut, factor) * ∏ j ∈ sCut, symmetricGridBaseClauseWeight w j W := by
+            rw [Finset.prod_mul_distrib]
+      _ = factor ^ sCut.card * ∏ j ∈ sCut, symmetricGridBaseClauseWeight w j W := by
+            congr 1
+            exact Finset.prod_eq_pow_card (s := sCut) (f := fun _ => factor) (b := factor)
+              (by intro j hj; rfl)
+  have hnot :
+      (∏ j ∈ sNot, symmetricGridBaseClauseWeight w j W') =
+        ∏ j ∈ sNot, symmetricGridBaseClauseWeight w j W := by
+    refine Finset.prod_congr rfl ?_
+    intro j hj
+    have hjNot : ¬ gridBaseClauseCutsRegion inside j :=
+      (Finset.mem_filter.mp hj).2
+    simpa [W, W'] using
+      (symmetricGridBaseClauseWeight_flipInside_eq_of_not_cut
+        (w := w) (inside := inside) (hInsideΛ := hInsideΛ)
+        (x := x) (ξ := ξ) hjNot)
+  rw [symmetricGridZeroField_finiteVolumeWeight_eq_prod_baseClauseWeight]
+  rw [symmetricGridZeroField_finiteVolumeWeight_eq_prod_baseClauseWeight]
+  calc
+    (∏ j ∈ s, symmetricGridBaseClauseWeight w j W') =
+        (∏ j ∈ sCut, symmetricGridBaseClauseWeight w j W') *
+          ∏ j ∈ sNot, symmetricGridBaseClauseWeight w j W' := hsplitW'
+    _ =
+        (factor ^ sCut.card * ∏ j ∈ sCut, symmetricGridBaseClauseWeight w j W) *
+          ∏ j ∈ sNot, symmetricGridBaseClauseWeight w j W := by
+            rw [hcut, hnot]
+    _ =
+        factor ^ sCut.card *
+          ((∏ j ∈ sCut, symmetricGridBaseClauseWeight w j W) *
+            ∏ j ∈ sNot, symmetricGridBaseClauseWeight w j W) := by
+            ac_rfl
+    _ = factor ^ sCut.card * (∏ j ∈ s, symmetricGridBaseClauseWeight w j W) := by
+          rw [hsplitW]
+
+theorem cornerAxisSeparator_zeroField_finiteVolumeWeight_flipInside_eq_cutFactor
+    (w : ℝ) {n : ℕ} (sep : CornerAxisSeparator n)
+    (x : LocalAssignment GridNode (gridExhaustion.region n))
+    (ξ : BoundaryCondition GridNode)
+    (hgain :
+      ∀ j ∈ sep.cutBaseClauses,
+        symmetricGridBaseClauseFlipGainCondition sep.inside sep.inside_subset x ξ j) :
+    (symmetricGridZeroFieldClassicalSpec w).toStrictlyPositiveInfiniteGroundMLNSpec.toInfiniteGroundMLNSpec.finiteVolumeWeight
+        (gridExhaustion.region n) (flipInsideLocalAssignment sep.inside sep.inside_subset x) ξ =
+      (ENNReal.ofReal (Real.exp w)) ^ sep.cutBaseClauses.card *
+        (symmetricGridZeroFieldClassicalSpec w).toStrictlyPositiveInfiniteGroundMLNSpec.toInfiniteGroundMLNSpec.finiteVolumeWeight
+          (gridExhaustion.region n) x ξ := by
+  simpa [CornerAxisSeparator.cutBaseClauses] using
+    (symmetricGridZeroField_finiteVolumeWeight_flipInside_eq_cutFactor_of_gainCondition
+      (w := w) (Λ := gridExhaustion.region n) sep.inside sep.inside_subset x ξ hgain)
 
 theorem symmetricGridZeroField_clauseData_eval_spinFlip_eq_flip
     (w : ℝ) (k : SymmetricGridClauseId) (W : InfiniteWorld GridNode) :

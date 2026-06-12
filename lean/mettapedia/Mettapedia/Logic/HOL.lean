@@ -29,19 +29,24 @@ import Mettapedia.Logic.HOL.TermModel.HenkinCompleteness
 /-!
 # Higher-Order Logic Core
 
-Active restart surface for HOL.
+Public surface for HOL: the trusted substrate plus the completed **classical Henkin
+completeness** development.
 
-This entrypoint intentionally exposes only the substrate we currently trust for a
-clean rebuild:
+Substrate:
+- typed syntax and substitutions, const-map transport,
+- extensional natural deduction, closed-theory provability,
+- Lindenbaum machinery, prime-extension infrastructure.
 
-- typed syntax and substitutions,
-- const-map transport,
-- extensional natural deduction,
-- closed-theory provability,
-- Lindenbaum machinery,
-- prime-extension infrastructure.
+Completeness (Henkin 1950 for the theory of types — sorry-free, axiom-clean):
+- the fresh-constant generalization `provable_all_intro_fresh` and the Henkin
+  witnessing/saturation chain (`witnessLimit_consistent`, `exists_witnessAxiom`),
+- the Lindenbaum maximal extension and the classical canonical world
+  (`exists_classical_world`, including the `all_counterexample` field),
+- the canonical Henkin **general** term model (`TermModel/`), the fundamental lemma,
+  and `models_iff_mem`,
+- the headline `TermModel.HenkinCompleteness.henkin_satisfiable`: a consistent
+  *witnessed + excluded-middle* theory has a Henkin general model satisfying it.
 
-Semantic endgames, model bridges, archived routes, and non-core overlays have
-been removed from this public surface and are being staged under
-`Logic/HOL/_archive/`.
+Legacy `WorldModelCompleteness.lean` (hypothesis-parameterised) is retained but is not
+the active completeness surface.
 -/

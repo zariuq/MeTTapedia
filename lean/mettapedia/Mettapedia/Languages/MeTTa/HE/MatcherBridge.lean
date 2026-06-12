@@ -3843,6 +3843,25 @@ private def switchInternalExpr (scrut headBranch : Atom) (tail : List Atom) : At
   .expression [.symbol "switch-internal", scrut,
     .expression [headBranch, .expression tail]]
 
+/-- The recursive else-branch used by the upstream `switch-internal` helper. -/
+private def switchInternalElseChain (scrut : Atom) (tail : List Atom) : Atom :=
+  .expression [.symbol "chain",
+    .expression [.symbol "eval", switchMinimalExpr scrut tail],
+    .var "ret",
+    .expression [.symbol "return", .var "ret"]]
+
+/-- The verbatim upstream `unify` core inside `switch-internal`. -/
+private def switchInternalUnify
+    (scrut pt template : Atom) (tail : List Atom) : Atom :=
+  .expression [.symbol "unify", scrut, pt,
+    .expression [.symbol "return", template],
+    switchInternalElseChain scrut tail]
+
+/-- The verbatim upstream `function` body for `switch-internal`. -/
+private def switchInternalBody
+    (scrut pt template : Atom) (tail : List Atom) : Atom :=
+  .expression [.symbol "function", switchInternalUnify scrut pt template tail]
+
 /-- If the space presents `switch-minimal` with exactly its stdlib function
 type, then the official type-cast path evaluates the head symbol to itself at
 that type. -/
@@ -4085,5 +4104,140 @@ theorem evalAtom_absorbs_switchInternal_shell
       rfl h_op_type ?_ succs h_check h_check_b ?_ h_interp h_call
     · rfl
     · native_decide
+
+/-! ## F2b: `switch-internal` Evaluator Boundary
+
+The `unify` realization is now explicit, but the recursive `switch-internal`
+helper also depends on three other minimal control operators in the live
+evaluator: `eval`, `chain`, and `function/return`.  We surface exactly that
+boundary here rather than silently smuggling those behaviors into the later
+branch-selection proof. -/
+
+/-- Stable evaluator boundary for the exact minimal helpers that
+`switch-internal` spends in addition to `unify`. -/
+structure SwitchInternalGroundRealization (space : Space) (d : GroundedDispatch)
+    extends UnifyGroundRealization space d where
+  evalStable :
+    ∀ {atom : Atom} {r : ResultPair},
+      EvalAtom space d atom Atom.undefinedType Bindings.empty r →
+      EvalAtomStablyReaches space d
+        (.expression [.symbol "eval", atom])
+        Atom.undefinedType Bindings.empty r
+  chainStable :
+    ∀ {atom template : Atom} {v : String} {result : Atom} {rb : Bindings},
+      EvalAtom space d atom Atom.undefinedType Bindings.empty (result, rb) →
+      result ≠ Atom.empty →
+      EvalAtomStablyReaches space d
+        (.expression [.symbol "chain", atom, .var v, template])
+        Atom.undefinedType Bindings.empty
+        ((Bindings.assign rb v result).applyDefault template,
+          Bindings.assign rb v result)
+  functionReturnStable :
+    ∀ {body ret : Atom} {rb : Bindings},
+      EvalAtom space d body Atom.undefinedType Bindings.empty
+        (.expression [.symbol "return", ret], rb) →
+      EvalAtomStablyReaches space d
+        (.expression [.symbol "function", body])
+        Atom.undefinedType Bindings.empty
+        (ret, rb)
+
+/-- Applying bindings to a `(return ...)` wrapper preserves the head symbol
+and substitutes only inside the payload.  This makes the `function/return`
+boundary spendable without pretending the inner payload saw the same fuel as a
+bare `applyDefault`. -/
+private theorem applyDefault_return_shape
+    (b : Bindings) (payload : Atom) :
+    b.applyDefault (.expression [.symbol "return", payload]) =
+      .expression [.symbol "return", b.apply payload 99] := by
+  rfl
+
+/-- Head-hit branch of the *function body* used by `switch-internal`.
+This spends the explicit `function/return` boundary on top of the already
+landed `unify` realization, keeping the one-step fuel skew visible in the
+result atom. -/
+theorem evalAtom_realizes_switch_internal_body_match_ground
+    {space : Space} {d : GroundedDispatch}
+    (hReal : SwitchInternalGroundRealization space d)
+    {scrut pt template : Atom} {tail : List Atom} {mb : Bindings} {fuel : Nat}
+    (hground : GroundAtom scrut)
+    (hmatch : simpleMatch pt scrut Bindings.empty fuel = some mb) :
+    EvalAtom space d
+      (switchInternalBody scrut pt template tail)
+      Atom.undefinedType Bindings.empty
+      (mb.apply template 99, mb) := by
+  have h_unify :
+      EvalAtom space d
+        (switchInternalUnify scrut pt template tail)
+        Atom.undefinedType Bindings.empty
+        (mb.applyDefault (.expression [.symbol "return", template]), mb) := by
+    simpa [switchInternalUnify, switchInternalElseChain] using
+      evalAtom_realizes_switch_internal_head_match_ground
+        hReal.toUnifyGroundRealization hground hmatch
+  have h_unify_ret :
+      EvalAtom space d
+        (switchInternalUnify scrut pt template tail)
+        Atom.undefinedType Bindings.empty
+        (.expression [.symbol "return", mb.apply template 99], mb) := by
+    simpa [applyDefault_return_shape] using h_unify
+  exact evalAtomStablyReaches_to_EvalAtom space d
+    (switchInternalBody scrut pt template tail)
+    Atom.undefinedType Bindings.empty
+    (mb.apply template 99, mb)
+    (hReal.functionReturnStable h_unify_ret)
+
+/-- Recursive else-chain core used by the head-miss branch of
+`switch-internal`, parametrized by the official evaluation of the tail
+`switch-minimal`.  This is the exact `chain` layer the later recursive
+branch-selection proof will feed into the function shell. -/
+theorem evalAtom_realizes_switch_internal_else_chain_of_tail
+    {space : Space} {d : GroundedDispatch}
+    (hReal : SwitchInternalGroundRealization space d)
+    {scrut : Atom} {tail : List Atom}
+    {ret : Atom} {rb : Bindings}
+    (h_tail :
+      EvalAtom space d
+        (switchMinimalExpr scrut tail)
+        Atom.undefinedType Bindings.empty
+        (ret, rb))
+    (h_ret_nonempty : ret ≠ Atom.empty) :
+    EvalAtom space d
+      (switchInternalElseChain scrut tail)
+      Atom.undefinedType Bindings.empty
+      (.expression [.symbol "return",
+          (Bindings.assign rb "ret" ret).apply (.var "ret") 99],
+        Bindings.assign rb "ret" ret) := by
+  have h_eval_switch :
+      EvalAtom space d
+        (.expression [.symbol "eval", switchMinimalExpr scrut tail])
+        Atom.undefinedType Bindings.empty
+        (ret, rb) :=
+    evalAtomStablyReaches_to_EvalAtom space d
+      (.expression [.symbol "eval", switchMinimalExpr scrut tail])
+      Atom.undefinedType Bindings.empty
+      (ret, rb)
+      (hReal.evalStable h_tail)
+  have h_chain :
+      EvalAtom space d
+        (switchInternalElseChain scrut tail)
+        Atom.undefinedType Bindings.empty
+        ((Bindings.assign rb "ret" ret).applyDefault
+          (.expression [.symbol "return", .var "ret"]),
+          Bindings.assign rb "ret" ret) :=
+    evalAtomStablyReaches_to_EvalAtom space d
+      (switchInternalElseChain scrut tail)
+      Atom.undefinedType Bindings.empty
+      ((Bindings.assign rb "ret" ret).applyDefault
+        (.expression [.symbol "return", .var "ret"]),
+        Bindings.assign rb "ret" ret)
+      (hReal.chainStable h_eval_switch h_ret_nonempty)
+  have h_chain_ret :
+      EvalAtom space d
+        (switchInternalElseChain scrut tail)
+        Atom.undefinedType Bindings.empty
+        (.expression [.symbol "return",
+            (Bindings.assign rb "ret" ret).apply (.var "ret") 99],
+          Bindings.assign rb "ret" ret) := by
+    simpa [applyDefault_return_shape] using h_chain
+  exact h_chain_ret
 
 end Mettapedia.Languages.MeTTa.HE

@@ -32,7 +32,7 @@ theorem exists_classical_world {T : ClosedTheorySet (WithParams Const)}
     (hCons : Consistent (Const := WithParams Const)
       (witnessLimit T enum ∪ EMSchema Const)) :
     ∃ W : ClosedTheorySet.World (WithParams Const),
-      (∀ ψ ∈ T, ψ ∈ W.carrier) ∧ (∀ ψ ∈ EMSchema Const, ψ ∈ W.carrier) ∧
+      (∀ ψ ∈ witnessLimit T enum ∪ EMSchema Const, ψ ∈ W.carrier) ∧
       (∀ χ : ClosedFormula (WithParams Const),
         χ ∈ W.carrier ∨ (.not χ : ClosedFormula (WithParams Const)) ∈ W.carrier) := by
   classical
@@ -64,7 +64,7 @@ theorem exists_classical_world {T : ClosedTheorySet (WithParams Const)}
             prime_or := fun h => maximal_prime_or hClosed hComplete h,
             exists_witness := fun hex => hWit hex,
             all_counterexample := ?_ },
-          fun ψ hψ => hWLsub (subset_witnessLimit T enum hψ), hEMsub, hComplete⟩
+          fun ψ hψ => hHM hψ, hComplete⟩
   -- all_counterexample
   intro σ' ψ hnotall
   have hnall : (.not (.all ψ) : ClosedFormula (WithParams Const)) ∈ M :=

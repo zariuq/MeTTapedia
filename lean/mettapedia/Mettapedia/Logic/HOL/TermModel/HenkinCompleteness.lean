@@ -50,23 +50,38 @@ theorem termHenkinModel_models_iff (M : World (WithParams Const))
     (termHenkinModel M hC).models φ ↔ φ ∈ M.carrier :=
   models_iff_mem M hC φ
 
-/-- **Classical Henkin completeness (model existence).**  A consistent classical theory
-`witnessLimit T enum ∪ EMSchema` has a Henkin general model satisfying `T` and the
-excluded-middle schema. -/
+/-- **Henkin satisfiability (the precise headline).**  Exactly Henkin's 1950 theorem in
+model-existence form: if the witnessed, excluded-middle-extended theory
+`witnessLimit T enum ∪ EMSchema` is consistent, then it has a Henkin **general** model
+satisfying *every* one of its members.
+
+This is the honest statement of what is proved — it is **not** "every consistent HOL
+theory is satisfiable in a standard model": the hypothesis is consistency of the
+*witnessed + EM* theory (i.e. classical consistency over a Henkin-expanded signature),
+and the model is a *general* (Henkin) model. -/
+theorem henkin_satisfiable {T : ClosedTheorySet (WithParams Const)}
+    (enum : Nat → Body Const) (henum : ∀ b : Body Const, ∃ n, enum n = b)
+    (hCons : Consistent (Const := WithParams Const)
+      (witnessLimit T enum ∪ EMSchema Const)) :
+    ∃ N : HenkinModel.{u, v, v} Base (WithParams Const),
+      ∀ ψ ∈ witnessLimit T enum ∪ EMSchema Const, N.models ψ := by
+  obtain ⟨W, hHW, hComplete⟩ := exists_classical_world enum henum hCons
+  refine ⟨termHenkinModel W hComplete, fun ψ hψ => ?_⟩
+  rw [termHenkinModel_models_iff]
+  exact hHW ψ hψ
+
+/-- Convenience corollary: the Henkin model satisfies the original theory `T` and the
+excluded-middle schema (a weakening of `henkin_satisfiable`, since both are subtheories
+of `witnessLimit T enum ∪ EMSchema`). -/
 theorem henkin_model_exists {T : ClosedTheorySet (WithParams Const)}
     (enum : Nat → Body Const) (henum : ∀ b : Body Const, ∃ n, enum n = b)
     (hCons : Consistent (Const := WithParams Const)
       (witnessLimit T enum ∪ EMSchema Const)) :
     ∃ N : HenkinModel.{u, v, v} Base (WithParams Const),
       (∀ ψ ∈ T, N.models ψ) ∧ (∀ ψ ∈ EMSchema Const, N.models ψ) := by
-  obtain ⟨W, hT, hEM, hComplete⟩ := exists_classical_world enum henum hCons
-  refine ⟨termHenkinModel W hComplete, ?_, ?_⟩
-  · intro ψ hψ
-    rw [termHenkinModel_models_iff]
-    exact hT ψ hψ
-  · intro ψ hψ
-    rw [termHenkinModel_models_iff]
-    exact hEM ψ hψ
+  obtain ⟨N, hN⟩ := henkin_satisfiable enum henum hCons
+  exact ⟨N, fun ψ hψ => hN ψ (Set.mem_union_left _ (subset_witnessLimit T enum hψ)),
+    fun ψ hψ => hN ψ (Set.mem_union_right _ hψ)⟩
 
 end ClosedTheorySet
 end Mettapedia.Logic.HOL
