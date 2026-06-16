@@ -74,6 +74,11 @@ _test/
 target/
 target-*/
 
+# Local Lean repos and legacy local-only compatibility artifacts
+lean/standalone/
+lean/externals/
+lean/dev-package-overrides.json
+
 # Experimental results, data, and scripts (regenerable)
 lean/mettapedia/results/
 lean/mettapedia/data/

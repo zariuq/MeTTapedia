@@ -80,8 +80,8 @@ name = "certifyingDatalog"
 git = "https://github.com/zariuq/CertifyingDatalog.git"
 rev = "a269a8fdd097afad2a12081a04263214762faf1b"
 
-# Verified Metamath checker (pinned, branch `verified-mm-latest`)
+# Verified Metamath checker (pinned to the 4.28 integration revision)
 [[require]]
 name = "mm-lean4"
 git = "https://github.com/zariuq/mm-lean4.git"
-rev = "2c149b810396b80c29e4e3fb7890bc41794235bd"
+rev = "396a7a00ba85a6e9df295917031a669b92c7d1e2"

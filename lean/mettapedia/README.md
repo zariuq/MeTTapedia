@@ -4,7 +4,7 @@ Mettapedia hosts formalizations across probability theory, information theory, l
 
 ## High-level structure
 
-the structure presents the high-level Mettapedia directory layout.
+The package layout is:
 
 ```
 Mettapedia/
@@ -28,28 +28,35 @@ Mettapedia/
 ├── QuantumTheory/
 ├── SetTheory/
 ├── UniversalAI/
-└── external/
+└── externals/
 ```
 
 ## Toolchain
 
 - The toolchain uses Lean 4.28.0 (see lean-toolchain).
-- The toolchain uses Mathlib v4.28.0 (see lakefile.toml).
-- External dependencies (Foundation, exchangeability, provenance,
-  OrderedSemigroups, Metatheory, CertifyingDatalog, mm-lean4) are git-pinned
-  in lakefile.toml and fetched by Lake; lake-manifest.json is the lock.
+- The toolchain uses Mathlib v4.28.0.
+- The default local developer configuration is `lakefile.lean`, which uses
+  local repos in `../externals/` for Foundation, exchangeability, provenance,
+  OrderedSemigroups, Metatheory, CertifyingDatalog, and `mm-lean4`.
+- `lakefile.toml` stays as the git-pinned fallback. If you remove
+  `lakefile.lean`, Lake falls back to the pinned git dependency graph.
 
 ## Build
 
 ```bash
+cd lean
+./bootstrap_local_repos.sh
 cd lean/mettapedia
 lake exe cache get
 lake build
 ```
 
-- the build runs from lean/mettapedia.
-- The first build runs lake exe cache get (mathlib oleans).
-- prefer targeted `lake update <pkg>` over bare `lake update`; the bare form
+- `bootstrap_local_repos.sh` clones the local editable repos into
+  `lean/externals/` and `lean/standalone/` if they are missing, then leaves
+  existing working trees alone.
+- The build runs from `lean/mettapedia`.
+- The first build should run `lake exe cache get` to fetch mathlib oleans.
+- Prefer targeted `lake update <pkg>` over bare `lake update`; the bare form
   can bump transitive pins (e.g. batteries) past the v4.28.0 toolchain.
 
 ## Notable subprojects
@@ -127,9 +134,10 @@ cd hyperon/mettail-rust
 
 ## Status review
 
-- the proof completeness varies by the subproject.
-- the local check runs rg -n "sorry" Mettapedia/ to find proof gaps.
-- Mettapedia/ProbabilityTheory/KnuthSkilling/README.md contains the Knuth-Skilling structure and build targets.
+- Proof completeness varies by subproject.
+- Use `rg -n "sorry" Mettapedia/` to find proof gaps.
+- `Mettapedia/ProbabilityTheory/KnuthSkilling/README.md` contains the
+  Knuth-Skilling structure and build targets.
 
 ```bash
 rg -n "sorry" Mettapedia/
@@ -137,14 +145,13 @@ rg -n "sorry" Mettapedia/
 
 ## Contribution
 
-- the contribution requires explicit proofs.
-- the contribution requires documented theorem sources.
-- the contribution requires frequent lake build checks.
+- Contributions require explicit proofs.
+- Contributions require documented theorem sources.
+- Contributions require frequent `lake build` checks.
 
 ## External repo policy
 
-- the policy uses zariuq forks as origin remotes.
-- the policy uses actual source repos as upstream remotes and uses godelclaw only as a separate named remote when relevant.
-- the policy references EXTERNAL_REPOS.md for exact commands.
-
-Accountability trace: the CertifyingDatalog bridge at `Mettapedia/Logic/LP/CertifyingDatalogBridge.lean` was reviewed by Codex 5.4 and Claude Code Opus 4.6.
+- Use `zariuq` forks as `origin` remotes.
+- Use source projects as `upstream` remotes, and use `godelclaw` only as a
+  separate named remote when relevant.
+- See `EXTERNAL_REPOS.md` for exact commands.
