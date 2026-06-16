@@ -25,11 +25,11 @@ name = "ordered_semigroups"
 git = "https://github.com/zariuq/OrderedSemigroups.git"
 rev = "63e9c6c3457420c16749837102966a5c32f27825"
 
-# Foundation (pinned fork, mathlib-4.28 port on branch `mettapedia`)
+# Foundation (Lean 4.28.0 release-cached fork)
 [[require]]
 name = "Foundation"
 git = "https://github.com/zariuq/Foundation.git"
-rev = "81ca74a1b6d4c7f46dba70b34db7c692f931f695"
+rev = "v4.28.0"
 
 # Exchangeability (pinned fork, branch `mettapedia`; includes ForMathlib support library)
 [[require]]
