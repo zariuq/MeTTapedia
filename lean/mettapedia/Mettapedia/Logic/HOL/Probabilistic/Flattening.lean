@@ -116,6 +116,22 @@ theorem hierarchicalSentenceProb_eq_of_pointwiseEq
       (μ := H.flattenedModelMeasure)
       heq
 
+/-- Hierarchical probability of a negated HOL sentence is the complement of
+the flattened sentence probability. -/
+theorem hierarchicalSentenceProb_not_eq_one_sub
+    (H : HierarchicalState.{u, v, w, x} Base Const)
+    (φ : ClosedFormula Const) :
+    hierarchicalSentenceProb H (.not φ) =
+      1 - hierarchicalSentenceProb H φ := by
+  simpa [hierarchicalSentenceProb] using
+    sentenceProb_not_eq_one_sub
+      (S := H.baseSpace)
+      (μ := H.flattenedModelMeasure)
+      (hμ := by
+        unfold HierarchicalState.flattenedModelMeasure
+        infer_instance)
+      φ
+
 theorem flattenedModelMeasure_ofConstantMeasure_eq
     (S : ModelSpace Base Const)
     (μIdx : MeasureTheory.Measure S.Idx)

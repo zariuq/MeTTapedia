@@ -66,6 +66,7 @@ theorem mettaCall_absorbs_grounded_dispatch
     {space : Space} {d : GroundedDispatch}
     {op : Atom} {args : List Atom} {rs : ResultSet} {r : Atom} {bs : Bindings}
     {type_ : Atom} {finalResult : ResultPair} (fuel : Nat)
+    (h_not_special : ¬ SpecialFormHead (.expression (op :: args)))
     (h_exec : d.isExecutable op = true)
     (h_run : d.execute op args = .ok rs)
     (h_mem : (r, bs) ∈ rs)
@@ -75,7 +76,16 @@ theorem mettaCall_absorbs_grounded_dispatch
       finalResult :=
   MettaCall.grounded_ok (.expression (op :: args)) type_ Bindings.empty
     op args rs (r, bs) bs finalResult (fuel + 1)
-    rfl h_exec h_not_err h_run h_mem
+    rfl h_exec
+    (by
+      intro h_unify
+      apply h_not_special
+      simp [SpecialFormHead, h_unify])
+    (by
+      intro h_switch
+      apply h_not_special
+      simp [SpecialFormHead, h_switch])
+    h_not_err h_run h_mem
     (by rw [mergeBindings_empty_right]; exact List.mem_singleton.mpr rfl)
     h_eval
 
@@ -137,36 +147,42 @@ theorem mettaCall_absorbs_root_step
   cases h with
   | @grounded_dispatch op args rs r bs _ h_exec h_run h_mem =>
       exact ⟨bs, fun h_eval =>
-        mettaCall_absorbs_grounded_dispatch fuel h_exec h_run h_mem
+        mettaCall_absorbs_grounded_dispatch fuel h_not_special h_exec h_run h_mem
           h_not_err h_eval⟩
   | @equation_match es rhs qb _ h_not_grounded h_query h_no_loop =>
       exact ⟨qb, fun h_eval =>
         mettaCall_absorbs_equation_match h_not_grounded h_query h_no_loop
           h_not_err h_eval⟩
   | eval_step h_shape =>
-      exact absurd (by rw [h_shape]; exact Or.inl rfl) h_not_special
+      exact absurd (by simp [SpecialFormHead, h_shape]) h_not_special
   | chain_source h_shape _ =>
-      exact absurd (by rw [h_shape]; exact Or.inr (Or.inl rfl)) h_not_special
+      exact absurd (by simp [SpecialFormHead, h_shape]) h_not_special
   | chain_subst h_shape _ =>
-      exact absurd (by rw [h_shape]; exact Or.inr (Or.inl rfl)) h_not_special
+      exact absurd (by simp [SpecialFormHead, h_shape]) h_not_special
+  | function_source h_shape _ =>
+      exact absurd (by simp [SpecialFormHead, h_shape]) h_not_special
+  | function_return h_shape _ _ =>
+      exact absurd (by simp [SpecialFormHead, h_shape]) h_not_special
+  | function_no_return h_shape _ _ =>
+      exact absurd (by simp [SpecialFormHead, h_shape]) h_not_special
   | letStar_empty h_shape =>
-      exact absurd (by rw [h_shape]; exact Or.inr (Or.inr (Or.inr (Or.inl rfl)))) h_not_special
+      exact absurd (by simp [SpecialFormHead, h_shape]) h_not_special
   | letStar_unroll h_shape =>
-      exact absurd (by rw [h_shape]; exact Or.inr (Or.inr (Or.inr (Or.inl rfl)))) h_not_special
+      exact absurd (by simp [SpecialFormHead, h_shape]) h_not_special
   | let_source h_shape _ =>
-      exact absurd (by rw [h_shape]; exact Or.inr (Or.inr (Or.inl rfl))) h_not_special
+      exact absurd (by simp [SpecialFormHead, h_shape]) h_not_special
   | let_subst h_shape _ _ =>
-      exact absurd (by rw [h_shape]; exact Or.inr (Or.inr (Or.inl rfl))) h_not_special
+      exact absurd (by simp [SpecialFormHead, h_shape]) h_not_special
   | case_scrutinee h_shape _ =>
-      exact absurd (by rw [h_shape]; exact Or.inr (Or.inr (Or.inr (Or.inr (Or.inl rfl))))) h_not_special
+      exact absurd (by simp [SpecialFormHead, h_shape]) h_not_special
   | case_match h_shape _ _ _ _ =>
-      exact absurd (by rw [h_shape]; exact Or.inr (Or.inr (Or.inr (Or.inr (Or.inl rfl))))) h_not_special
+      exact absurd (by simp [SpecialFormHead, h_shape]) h_not_special
   | switch_scrutinee h_shape _ =>
-      exact absurd (by rw [h_shape]; exact Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inl rfl)))))) h_not_special
+      exact absurd (by simp [SpecialFormHead, h_shape]) h_not_special
   | switch_match h_shape _ _ _ _ =>
-      exact absurd (by rw [h_shape]; exact Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inl rfl)))))) h_not_special
+      exact absurd (by simp [SpecialFormHead, h_shape]) h_not_special
   | switch_minimal_match h_shape _ _ _ =>
-      exact absurd (by rw [h_shape]; exact Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr rfl)))))) h_not_special
+      exact absurd (by simp [SpecialFormHead, h_shape]) h_not_special
   | @leftmost_congruence pre x x' post _ _ _ _ _ =>
       exact absurd rfl (fun h' => h_root h' rfl)
 

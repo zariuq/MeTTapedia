@@ -97,6 +97,19 @@ theorem nearOneMassInf_crispIndicator_eq_cap_of_epsilon_zero
   · simp [FuzzyProfile.crispIndicator, nearOneInf, hε, hu]
   · simp [FuzzyProfile.crispIndicator, nearOneInf, hε, hu]
 
+/-- At `ε = 0`, the near-zero mass of a crisp indicator is exactly the
+capacity of the complement of its support. -/
+theorem nearZeroMassInf_crispIndicator_eq_cap_compl_of_epsilon_zero
+    (p : FuzzyQuantifierParamsInf) (hε : p.ε = 0)
+    (ν : FuzzyCapacity U) (A : Set U) :
+    nearZeroMassInf p ν (FuzzyProfile.crispIndicator A) = ν Aᶜ := by
+  unfold nearZeroMassInf nearZeroCutInf
+  congr 1
+  ext u
+  by_cases hu : u ∈ A
+  · simp [FuzzyProfile.crispIndicator, nearZeroInf, hε, hu]
+  · simp [FuzzyProfile.crispIndicator, nearZeroInf, hε, hu]
+
 /-- Constant-zero profiles have near-zero mass equal to the capacity of the whole domain. -/
 theorem nearZeroMassInf_constantZero_eq_cap_univ
     (p : FuzzyQuantifierParamsInf) (ν : FuzzyCapacity U) :

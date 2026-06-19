@@ -194,6 +194,125 @@ def matchTypes (type1 type2 : Atom) (b : Bindings) (fuel : Nat := 100) : List Bi
     matched.flatMap fun mb =>
       mergeBindings b mb fuel
 
+/-! ## Primitive `unify` result lane
+
+This is the raw success-side payload computed by upstream HE's primitive
+`unify`: structural matcher results merged with the incoming bindings, with
+loopy merged bindings filtered, and the surviving merged bindings substituted
+into the success branch.
+
+The caller is responsible for the final else-branch fallback when this list is
+empty; upstream does that after the merge/filter pass, not before. -/
+
+/-- Raw success results for the primitive `unify` lane, before the caller's
+    final else-branch fallback. -/
+def unifySuccessResults
+    (target pattern thenBranch : Atom) (seed : Bindings) (fuel : Nat) :
+    ResultSet :=
+  (matchAtoms target pattern fuel).flatMap fun matchBindings =>
+    (mergeBindings matchBindings seed fuel).filterMap fun merged =>
+      if merged.hasLoop then none
+      else some (merged.applyDefault thenBranch, merged)
+
+/-! ## Control-form structural helpers
+
+These helpers factor the purely structural parts of HE control builtins so the
+contracts, premise tables, and proof bridge can all point at the same small
+kernel.  They intentionally stop before evaluation. -/
+
+/-- Parse either `(switch <scrutinee> <rawCases>)` or
+    `(switch-minimal <scrutinee> <rawCases>)`, returning the packed pair
+    `(<scrutinee> <rawCases>)` expected by the HE premise layer. -/
+def parseSwitchMinimalCallArgs : Atom → Option Atom
+  | .expression [.symbol "switch-minimal", scrutinee, rawCases] =>
+      some (.expression [scrutinee, rawCases])
+  | .expression [.symbol "switch", scrutinee, rawCases] =>
+      some (.expression [scrutinee, rawCases])
+  | _ => none
+
+/-- Predicate helper for the explicit `NotReducible` sentinel returned by the
+    structural switch selector when no branch matches. -/
+def checkIsNotReducible (atom : Atom) : Bool :=
+  atom == Atom.notReducible
+
+/-- Positive complement of `checkIsNotReducible`. -/
+def checkIsReducible (atom : Atom) : Bool :=
+  !(checkIsNotReducible atom)
+
+/-- First successful `switch-minimal` branch together with the branch-local
+    bindings that selected it.  Unlike the coarse `NotReducible`-sentinel
+    selector below, this helper keeps genuine "matched template is literally
+    NotReducible" distinct from "no branch matched". -/
+def selectSwitchResultPair?
+    (scrut : Atom) (branches : List Atom) (fuel : Nat) : Option ResultPair :=
+  match branches with
+  | [] => none
+  | .expression [pt, template] :: rest =>
+      match simpleMatch pt scrut Bindings.empty fuel with
+      | some mb => some (mb.applyDefault template, mb)
+      | none => selectSwitchResultPair? scrut rest fuel
+  | _ :: rest => selectSwitchResultPair? scrut rest fuel
+
+/-- Coarse first-match selector for `switch-minimal` on the raw structural
+    fragment: scan the branch list left-to-right, skip malformed branches, and
+    return the substituted template from the first well-formed matching branch.
+    If no branch matches, return the explicit `NotReducible` sentinel.
+
+    This is intentionally a selector, not an evaluator: it chooses a branch
+    result but does not continue evaluating that chosen template. -/
+def selectSwitchTemplateCoarse
+    (scrut : Atom) (branches : List Atom) (fuel : Nat) : Atom :=
+  match selectSwitchResultPair? scrut branches fuel with
+  | some (result, _) => result
+  | none => Atom.notReducible
+
+/-- Raw result set for `switch-minimal` before the outer stdlib
+    `if-equal ... NotReducible Empty ...` post-processing.
+
+    The scan is left-to-right over the branch list:
+    - malformed branches are skipped;
+    - on the first well-formed branch whose coarse match succeeds,
+      the branch-local matcher bindings are merged with the incoming seed;
+    - if that merge/filter lane yields no surviving results, the scan
+      continues with the remaining branches, exactly like upstream
+      `switch-internal` following `unify`'s else branch.
+
+    This is still a raw branch-and-bind helper: it does not collapse
+    `NotReducible` to `Empty`. -/
+def switchMinimalRawResults
+    (scrut : Atom) (branches : List Atom) (seed : Bindings) (fuel : Nat) :
+    ResultSet :=
+  match branches with
+  | [] => []
+  | .expression [pt, template] :: rest =>
+      match simpleMatch pt scrut Bindings.empty fuel with
+      | some mb =>
+          let hits :=
+            (mergeBindings mb seed fuel).filterMap fun merged =>
+              if merged.hasLoop then none
+              else some (merged.applyDefault template, merged)
+          if hits.isEmpty then
+            switchMinimalRawResults scrut rest seed fuel
+          else
+            hits
+      | none => switchMinimalRawResults scrut rest seed fuel
+  | _ :: rest => switchMinimalRawResults scrut rest seed fuel
+
+/-- Final observable result set for `switch-minimal`, after the stdlib's
+    outer `if-equal` converts a raw `NotReducible` witness into `Empty`.
+
+    If no branch produces any surviving raw result, upstream `switch-minimal`
+    also yields `Empty` under the original seed. -/
+def switchMinimalResults
+    (scrut : Atom) (branches : List Atom) (seed : Bindings) (fuel : Nat) :
+    ResultSet :=
+  let raw := switchMinimalRawResults scrut branches seed fuel
+  if raw.isEmpty then
+    [(Atom.empty, seed)]
+  else
+    raw.map fun (result, rb) =>
+      (if result == Atom.notReducible then Atom.empty else result, rb)
+
 /-! ## Theorems -/
 
 /-- matchTypes with %Undefined% on left always succeeds.
@@ -236,6 +355,29 @@ example : matchTypes Atom.undefinedType (.symbol "Int") Bindings.empty = [Bindin
 example : matchTypes (.symbol "Int") Atom.atomType Bindings.empty = [Bindings.empty] := rfl
 example : matchTypes (.symbol "Int") (.symbol "Int") Bindings.empty = [Bindings.empty] := rfl
 example : matchTypes (.symbol "Int") (.symbol "Bool") Bindings.empty = [] := rfl
+
+-- switch-minimal selector
+example : parseSwitchMinimalCallArgs
+    (.expression [.symbol "switch-minimal", .symbol "A", .expression []]) =
+      some (.expression [.symbol "A", .expression []]) := rfl
+example : parseSwitchMinimalCallArgs
+    (.expression [.symbol "switch", .symbol "A", .expression []]) =
+      some (.expression [.symbol "A", .expression []]) := rfl
+example : parseSwitchMinimalCallArgs (.expression [.symbol "switch", .symbol "A"]) = none := rfl
+example : checkIsNotReducible Atom.notReducible = true := rfl
+example : checkIsReducible Atom.notReducible = false := rfl
+example : selectSwitchResultPair? (.symbol "z")
+    [.expression [.var "x", .expression [.symbol "tag", .var "x"]]] 10 =
+      some (.expression [.symbol "tag", .symbol "z"],
+        Bindings.empty.assign "x" (.symbol "z")) := rfl
+example : selectSwitchResultPair? (.symbol "A")
+    [.expression [.symbol "B", .symbol "miss"]] 10 = none := rfl
+example : selectSwitchTemplateCoarse (.symbol "A")
+    [.expression [.symbol "A", .symbol "ok"]] 10 = .symbol "ok" := rfl
+example : selectSwitchTemplateCoarse (.symbol "A")
+    [.symbol "bogus", .expression [.symbol "A", .symbol "ok"]] 10 = .symbol "ok" := rfl
+example : selectSwitchTemplateCoarse (.symbol "A")
+    [.expression [.symbol "B", .symbol "miss"]] 10 = Atom.notReducible := rfl
 
 -- mergeBindings
 example : mergeBindings Bindings.empty Bindings.empty 10 = [Bindings.empty] := rfl

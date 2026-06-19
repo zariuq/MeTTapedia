@@ -1,0 +1,307 @@
+%% MettaKernel: A MeTTa-hosted Proof/Inference Kernel for both
+%% Dependent Type Theory and Higher-Order Tarski--Grothendieck Set Theory
+%%
+%% Build:
+%%   pdflatex MettaKernel.tex
+%%
+%% Status: design + curriculum memo (prototype-first). The MeTTa kernel is a
+%% SUBJECT under construction; Lean PureKernel and Megalodon are the oracles.
+
+\documentclass[11pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage{geometry}
+\geometry{margin=1in}
+\usepackage{hyperref}
+\usepackage{longtable}
+\usepackage{booktabs}
+\usepackage{listings}
+\usepackage{array}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\setlength{\emergencystretch}{3em}
+\lstset{
+  basicstyle=\ttfamily\small,
+  breaklines=true,
+  columns=fullflexible,
+  keepspaces=true,
+  frame=single,
+  framesep=4pt,
+}
+\newcommand{\MeTTa}{MeTTa}
+\newcommand{\CeTTa}{CeTTa}
+\newcommand{\HOTG}{HOTG}
+\newcommand{\DTT}{DTT}
+\newcommand{\code}[1]{\texttt{#1}}
+
+\title{MettaKernel: A \MeTTa-hosted Proof/Inference Kernel for both\\
+Dependent Type Theory and Higher-Order Tarski--Grothendieck Set Theory\\
+\large Design, Curriculum, and a Prototype-First Build Plan}
+\author{Oru\v{z}i \and Zar Goertzel}
+\date{2026-06-18 (draft)}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+We set out to build one small \emph{trusted} proof/inference kernel, written
+\emph{in \MeTTa{}} (as an ordinary \MeTTa{} program, executed on the \CeTTa{}
+engine), that can express and check proofs in \emph{both} foundations we care
+about: CIC-grade \emph{dependent type theory} (the foundation of Lean and Coq)
+and \emph{higher-order Tarski--Grothendieck set theory} (\HOTG{}, the classical
+higher-order logic of Megalodon). The kernel is a \MeTTa{} program --- not a new
+\CeTTa{} language substrate --- in the same spirit as \code{pverify}, an existing
+Metamath proof checker written in \MeTTa{}. Two principles govern the work.
+First, \textbf{prototype a fully working kernel before any deeper integration into
+the engine}, so that the design is chosen empirically rather than frozen in
+advance. Second, \textbf{conversion is the danger line}: the kernel's
+$\beta\eta\delta\iota$ conversion must be its own small, decidable, resource-bounded
+\MeTTa{} functions and must never be delegated to \CeTTa{}'s general runtime
+rewriting, or proof checking ceases to be a terminating judgment. We present the
+two reference kernels we mirror (the Lean \code{PureKernel} for \DTT{} and
+Megalodon's \code{tp/tm/pf}+\code{check\_doc} core for \HOTG{}), a graded
+\emph{curriculum} of the easiest examples that pin down the smallest fully
+expressive kernel (a \DTT{} ladder following Smolka \& Brown's \emph{Introduction
+to Computational Logic}, and an \HOTG{} ladder following Megalodon), and a
+prototype-first build plan whose first milestone is an honest \emph{capacity ledger}
+(\textsc{Agree}/\textsc{Diverge}/\textsc{Open}) rather than a claim of finality. The
+\MeTTa{} kernel's verdicts are treated as a \emph{subject} to be measured against
+the oracles, not as an oracle itself.
+\end{abstract}
+
+\section{Why a single kernel for two foundations}
+
+Lean/Coq rest on the Calculus of Inductive Constructions: dependent function and
+pair types, an inductive-definition mechanism with computation rules, a universe
+hierarchy, and a \emph{decidable} definitional equality. Megalodon rests on
+\HOTG{}: simple types with an impredicative \code{Prop}, proof terms, classical
+logic, set membership, extensionality, foundational ($\in$-)induction, and a choice
+operator. These are different mathematics, but a \emph{proof kernel} for either is
+small: it is a term/type/proof object language plus a conversion relation plus a
+checking judgment, with everything else (parsing, automation, optimization, the
+ambient runtime) living \emph{outside} the trusted core.
+
+Our thesis --- developed at length in the companion memo
+\emph{metta\_proof\_kernel\_grounded} --- is that \MeTTa{} is an apt host for such a
+kernel \emph{as a program}: terms, types, and proofs are \MeTTa{} atoms; the
+checking and conversion judgments are \MeTTa{} functions; theories and imports are
+\MeTTa{} data. The trusted waist is then a small auditable \MeTTa{} module, and the
+two foundations appear as two \emph{checkers} sharing that waist. We are not
+proposing to encode both foundations into one ambient rewriting theory (the
+Dedukti route); we keep the foundations' judgments first-class and only share the
+machinery beneath them.
+
+\paragraph{What this document is.} A design + curriculum memo to drive a
+prototype-first build. It records: the reference kernels we mirror
+(\S\ref{sec:oracles}); the \MeTTa-program architecture (\S\ref{sec:arch}); the
+graded curriculum that defines ``smallest fully expressive'' (\S\ref{sec:curric});
+the build plan and its first milestone, a capacity ledger (\S\ref{sec:plan});
+the conversion discipline that is the central hazard (\S\ref{sec:conv}); and the
+open questions we deliberately leave open (\S\ref{sec:open}).
+
+\section{The two reference kernels (our oracles and templates)}
+\label{sec:oracles}
+
+\subsection{\DTT{}: the Lean \code{PureKernel}}
+A trusted, \emph{sorry-free} dependently-typed kernel already exists in Lean
+(\code{Mettapedia/.../MeTTa/PureKernel/}, 28 files). Its term language is
+\begin{lstlisting}
+PureTm n ::= var (Fin n) | const DeclName | U0 | U1
+           | pi A B | sigma A B | id A t u
+           | lam B | app f a | pair t u | fst p | snd p | refl t
+\end{lstlisting}
+with two universes ($\code{U0}:\code{U1}$), $\Pi$, $\Sigma$, and identity types. It
+provides one-step $\beta/\delta/\iota$ reduction, Church--Rosser confluence,
+\code{HasType}, a \emph{decidable} definitional equality
+(\code{defEqByNormalization?}), subject reduction, and a bidirectional checker.
+Ordinary families (\code{Bool}, \code{Nat}, \code{Unit}) are \emph{not} hard-coded:
+they enter through a general declaration mechanism (\code{DeclSpec},
+\code{InductiveDecl}, \code{RecursorDecl}) with full well-formedness proofs. This is
+both our \DTT{} \emph{oracle} and our design template; crucially, the existing
+runtime-to-kernel bridge marks \code{directExecEquivalence} as \code{false}, so the
+runtime is \emph{not} yet known to agree with this kernel.
+
+\subsection{\HOTG{}: the Megalodon \code{mathdata} core}
+Megalodon's trusted core (\code{repos/megalodon-1.13/src/mathdata.mli}) is genuinely
+compact --- three small inductive types and a checker:
+\begin{lstlisting}
+tp ::= TpVar i | Prop | Base i | Ar(tp,tp) | TpAll tp        (* simple types + type-vars + type-forall *)
+tm ::= DB i | TmH h | Prim i | Ap(tm,tm) | Lam(tp,tm)
+     | Imp(tm,tm) | All(tp,tm) | TTpAp(tm,tp) | TTpLam tm | TTpAll tm
+pf ::= Gpa h | Hyp i | Known h | PTmAp(pf,tm) | PPfAp(pf,pf)
+     | PLam(tm,pf) | TLam(tp,pf) | PTpAp(pf,tp) | PTpLam pf
+\end{lstlisting}
+plus \code{check\_doc} (the proof checker), $\beta\eta\delta$ normalization with
+resource limits (\code{BetaLimit}, \code{NonNormalTerm}), and hash-addressed
+\code{doc}/\code{theory}/\code{signa} imports. Logic and set-theoretic content are
+\emph{not} in this core: \code{True}/\code{False}/\code{not}/\code{and}/\code{or}
+are impredicative definitions, and membership/extensionality/choice/$\in$-induction
+enter as \emph{axioms} in a preamble (Egal mode uses \code{Eps} choice and Tarski's
+axiom; Mizar mode uses \code{the} and ZF-style axioms). The seed file
+\code{Mettapedia/megalodon/experiments/01\_basics.mg} proves eight propositional
+theorems entirely by proof-term lambdas (e.g.\
+\code{andEL := fun A B H => H A (fun a b => a)}).
+
+\subsection{Precedent that \MeTTa{} can host a checker}
+\code{hyperon/metamath/pverify} (with \code{lib/pverify-utils.metta}) is a Metamath
+proof checker realized as a \MeTTa{} program. It establishes feasibility of the
+\emph{host}; it is Metamath, not \HOTG{}, so it is precedent, not evidence about the
+present design.
+
+\section{Architecture: the kernel as a \MeTTa{} program}
+\label{sec:arch}
+
+\paragraph{Shared waist (written once in \MeTTa{}).} Atom encodings for binders
+(de Bruijn or locally nameless), $\alpha$-safe substitution, typed contexts,
+declarations (parameter / definition / axiom / theorem / inductive / import), proof
+objects, the \textbf{conversion engine} ($\beta/\eta/\delta/\iota$ as explicit,
+terminating, resource-capped \MeTTa{} functions), a \code{check}/\code{infer}
+driver, and hashing/provenance for imports. The two checkers below are
+\emph{instances} of this waist --- that sharing \emph{is} the early unification.
+
+\paragraph{\HOTG{} checker.} Mirror \code{tp}/\code{tm}/\code{pf} + \code{check\_doc}
++ $\beta\eta\delta$ as \MeTTa{} atoms and functions. Proof-term checking over
+impredicative \code{Prop}; classical/set/TG axioms are a \emph{profile} layered
+above the core, admitted only after the bare proof-term checker is green.
+
+\paragraph{\DTT{} checker.} Mirror \code{PureTm} ($\code{U0}/\code{U1}$, $\Pi$,
+$\Sigma$, \code{Id}) with bidirectional infer/check, $\beta/\delta/\iota$, and
+decidable definitional equality by normalization; inductive families via
+\code{DeclSpec}, never hard-coded. Where the \CeTTa{} engine's \code{--profile
+he-prime} already provides dependent type inference, the \MeTTa{} kernel may use it;
+new C features are added to \code{he-prime} \emph{only} when the prototype proves a
+concrete need.
+
+\section{Curriculum: the examples that pin the smallest fully expressive kernel}
+\label{sec:curric}
+
+The curriculum \emph{defines} ``fully expressive'': the smallest kernel is the one
+that checks every example below. The \DTT{} ladder follows the chapter order of
+Smolka \& Brown's \emph{Introduction to Computational Logic} (a Coq course by
+Megalodon's own author), which introduces kernel features in increasing dependency
+order. The \HOTG{} ladder follows Megalodon.
+
+\paragraph{L0 --- shared waist (both ladders ride on it).} Names/binding,
+$\alpha$-safe substitution, typed contexts, declarations, proof objects,
+conversion ($\beta/\eta/\delta/\iota$, decidable), hash imports + provenance,
+negative tests.
+
+\begin{longtable}{@{}p{0.06\textwidth}p{0.42\textwidth}p{0.46\textwidth}@{}}
+\caption{\DTT{} ladder (ICL spine + \CeTTa{} \code{he-prime} seeds + \code{PureKernel}).}\\
+\toprule
+\textbf{Step} & \textbf{Example (source)} & \textbf{Kernel feature it pins}\\
+\midrule
+\endfirsthead
+\toprule \textbf{Step} & \textbf{Example} & \textbf{Kernel feature}\\ \midrule
+\endhead
+D1 & \code{bool}/\code{negb}/\code{andb}/\code{andb\_com} (ICL \S1.1) & inductive \code{Bool}, match/recursor, def-eq by computation\\
+D2 & \code{plus\_O}/\code{plus\_S}/\code{plus\_assoc} (ICL \S1.3--1.4) & \code{Nat}, recursor, structural induction\\
+D3 & $\Pi$ / proofs-as-programs (ICL \S1.2, 2.2, 2.6) & $\Pi$ formation/intro/elim, application\\
+D4 & $\Sigma$ / pairs (ICL \S6.6; he-prime \code{TutPackHuman}) & $\Sigma$ formation/intro/projection\\
+D5 & \code{Id}/refl/cong/transport (ICL \S3.3; he-prime \code{TutEq}/\code{TutRefl}/\code{TutSuccCong}) & identity types, $J$/transport\\
+D6 & \code{app\_assoc}/\code{length\_app} (ICL \S8) & parametric inductive + recursor\\
+D7 & \code{Vec}/\code{TutIndex} safety; \textbf{\code{VecN -1} (open)} & indexed inductive families; index-domain question (\code{Number} vs \code{Nat})\\
+D8 & \code{Even}/$\le$ (ICL \S7) & inductive predicates, elim restriction\\
+D9 & recursors + elim restriction + universes (ICL \S5) & $\iota$-reduction, proof irrelevance, universe consistency\\
+\bottomrule
+\end{longtable}
+
+\begin{longtable}{@{}p{0.06\textwidth}p{0.42\textwidth}p{0.46\textwidth}@{}}
+\caption{\HOTG{} ladder (\code{01\_basics.mg} + Megalodon + \code{mathdata} \code{tp/tm/pf}).}\\
+\toprule
+\textbf{Step} & \textbf{Example (source)} & \textbf{Kernel feature it pins}\\
+\midrule
+\endfirsthead
+\toprule \textbf{Step} & \textbf{Example} & \textbf{Kernel feature}\\ \midrule
+\endhead
+H1 & propositional encodings (\code{01\_basics.mg}, 8 thms) & \code{tp(Prop)}, \code{tm(All,Imp,Lam,Ap)}, \code{pf(PLam,PPfAp,Hyp)}, $\beta$-normalization, \code{check\_doc}\\
+H2 & $\forall$-instantiation; $\to$/proof application & \code{PTmAp}, \code{PPfAp}\\
+H3 & proof $\lambda$; $\beta\eta\delta$; definition unfolding & $\delta$ on \code{ThyDef}/\code{SignaDef}, $\eta$\\
+H4 & equality/congruence (Leibniz \code{eq}) & polymorphic \code{eq} via \code{TpAll}\\
+H5 & \textbf{membership/set/TG axioms} (\code{In}/\code{Empty}/\code{EmptyE}, set-ext, \code{In\_ind}, \code{Eps}) & \emph{axiom profile}, admitted only after H1--H4 green\\
+\bottomrule
+\end{longtable}
+
+\paragraph{Cross-profile smoke.} $P\to P$;\ $P\to Q\to P$;\ $P\wedge Q\to P$;\
+$\bot\to P$;\ equality reflexivity/congruence;\ pair projections;\ and \emph{one}
+tiny \CeTTa{} operational-semantics theorem treated as a \emph{certificate}, never
+as definitional equality.
+
+\paragraph{Negative corpus (a fail-by-default gate --- the soundness backstop).}
+Bad de Bruijn index;\ unknown \code{Known}/\code{Hyp};\ application type mismatch;\
+a proposition-shape used as a proof object;\ cyclic/non-normal $\delta$;\
+\textbf{an arbitrary \MeTTa{} rewrite admitted as conversion} (the central danger);\
+stale import/hash;\ \code{VecN \dots -1} wrongly accepted. The kernel must
+\emph{reject} every item here; a checker that accepts any of them is unsound.
+
+\section{Prototype-first build plan}
+\label{sec:plan}
+
+\begin{description}
+\item[Phase 0.] Shared \MeTTa{} waist + the ledger harness (three deciders:
+  \MeTTa{}-kernel vs.\ Lean \code{PureKernel} oracle vs.\ \code{he-prime} C).
+\item[Phase 1 (\HOTG{} prototype).] \MeTTa{} \code{tp/tm/pf} + proof-term checker +
+  $\beta$; \emph{check the eight \code{01\_basics.mg} theorems green} (H1--H2).
+\item[Phase 2 (\DTT{} prototype).] \MeTTa{} \code{PureTm} + bidirectional checker +
+  $\beta/\delta/\iota$ + decidable def-eq; \emph{D1--D5 green}; ledger vs.\ the Lean
+  oracle and \code{he-prime} C.
+\item[Phase 3 (unify + harden).] Both checkers share the waist; cross-profile smoke
+  green; \emph{negative corpus rejected}.
+\item[Phase 4 (climb the ladders).] \HOTG{} H3--H5 (definitions, equality, then
+  set/TG axioms); \DTT{} D6--D9 (lists, \code{Vec}, inductive predicates,
+  recursors/universes); resolve the \code{VecN} index-domain question.
+\item[Later.] Only after a fully working prototype and its lessons: consider deeper
+  substrate integration --- add the \code{he-prime} C features the prototype proved
+  necessary; refine \CeTTa{}. Not before.
+\end{description}
+
+\paragraph{Milestone 1 (the ledger, not a constitution).} The deliverable is the
+working H1 + D1--D3 \MeTTa{} kernel plus a populated \emph{capacity ledger} with
+buckets \textsc{Agree-Accept}, \textsc{Agree-Reject}, \textsc{Diverge},
+\textsc{Open}, plus the negative-corpus rejections. Divergences and open cases are
+first-class outputs, not blemishes to hide. Only then does external review become
+useful, and its question is whether the fragment boundary is honest and which
+divergences are bugs versus legitimate language semantics --- not whether the final
+kernel is settled. The \MeTTa{}-kernel verdicts are labelled \textbf{subject}; the
+Lean \code{PureKernel} and Megalodon are the \textbf{oracles}.
+
+\section{Conversion discipline (the central hazard)}
+\label{sec:conv}
+The single biggest architectural risk is identifying kernel conversion with general
+\MeTTa{} evaluation. We hold five lines:
+(A) decidable conversion $\ne$ general \MeTTa{} eval --- the kernel's
+$\beta/\eta/\delta/\iota$ are its own bounded \MeTTa{} functions (resource caps in
+the spirit of Megalodon's \code{BetaLimit});
+(B) \MeTTa{}'s many-valued/nondeterministic typing vs.\ a functional \DTT{}
+judgment --- the kernel commits to a functional infer/check;
+(C) grounded/FFI values are a trusted boundary --- grounded equality is not kernel
+reduction;
+(D) universe consistency is not optional forever, because proofs \emph{about}
+\MeTTa{} are a goal;
+(E) the kernel must be small and separable --- a pure checking slice, not entangled
+in effectful evaluation.
+
+\section{Open questions (kept deliberately open)}
+\label{sec:open}
+(1) Should \code{VecN String -1} be accepted under \code{Number} indexing, or should
+tranche~1 restrict indexed families to \code{Nat}? (2) How much definitional
+equality belongs in the first tranche? (3) What stays in the trusted runtime core
+versus later self-hosted \MeTTa{} rules? (4) What fragment of dependent typing is
+promised first? (5) Does the \code{PureKernel}-style core remain the convergence
+target for the runtime-facing tranche, given \code{directExecEquivalence = false}?
+
+\section*{References (local anchors)}
+\begin{itemize}
+\item G.\ Smolka and C.\ E.\ Brown, \emph{Introduction to Computational Logic},
+  Lecture Notes, Saarland University, 2014. (DTT curriculum spine.)
+\item \emph{metta\_proof\_kernel\_grounded} (AIrxiv, 2026): framework core,
+  object-theory profiles, conversion discipline, hash imports.
+\item Megalodon: \code{repos/megalodon-1.13/src/mathdata.mli} (the \HOTG{}
+  \code{tp/tm/pf} + \code{check\_doc} core); \code{examples/} (Egal/Mizar
+  preambles); \code{experiments/01\_basics.mg} (seed).
+\item Lean \code{PureKernel/README.md} and modules (the \DTT{} oracle/template).
+\item \code{hyperon/metamath/pverify} (\MeTTa-hosted checker precedent).
+\end{itemize}
+
+\end{document}

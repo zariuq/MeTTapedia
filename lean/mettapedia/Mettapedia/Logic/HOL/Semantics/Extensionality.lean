@@ -35,6 +35,22 @@ end PreModel
 
 namespace HenkinModel
 
+/-- Function-denotations in an extensional Henkin model respect extensional
+equality of admissible arguments.
+
+The base `HenkinModel` interface already gives function equality as pointwise
+extensional equality. This extra law is the converse-side congruence needed for
+the stronger `ExtDerivation.eqAppArg` rule: if `x ≃ y`, then every admissible
+function sends them to extensionally equal outputs. -/
+def FunctionsRespectEqv (M : HenkinModel Base Const) : Prop :=
+  ∀ {σ τ : Ty Base} {f : Ty.denote M.Carrier (σ ⇒ τ)}
+    {x y : Ty.denote M.Carrier σ},
+    M.adm (σ ⇒ τ) f →
+      M.adm σ x →
+        M.adm σ y →
+          Eqv M σ x y →
+            Eqv M τ (f x) (f y)
+
 theorem eqv_symm (M : HenkinModel Base Const) {τ : Ty Base} {x y : Ty.denote M.Carrier τ}
     (h : Eqv M τ x y) : Eqv M τ y x :=
   PreModel.eqv_symm M.toPreModel h

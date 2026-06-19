@@ -70,7 +70,7 @@ Covered by runnable tests
   evaluated argument arithmetic, nondeterministic if/let, evaluated match
   templates, collapse, and evaluated superpose. The selected set now also
   includes direct case/switch branch scripts, switch variable-pattern binding,
-  a switch no-evaluate-scrutinee check, sequential let*, and function/return
+  a switch evaluates-scrutinee check, sequential let*, and function/return
   through chain. The exact-output subset now includes get-type comparisons for
   direct declarations, simple function-result types, the dependent Vec/Cons
   witness, context-space matching, and the official evalc context-space
@@ -229,7 +229,7 @@ Currently proves:
   and does not evaluate the scrutinee before branch selection. Case remains
   the evaluated-selector control form. The HOL, SML, and CakeML evaluators
   now follow this split, with CeTTa comparison scripts for both direct
-  variable-pattern matching and no-evaluate-scrutinee behavior.
+  variable-pattern matching and evaluates-scrutinee behavior.
 - checked HOL-to-executable fragments now also cover recursive eval, chain,
   and simple case: eval_eval_fragment, eval_chain_fragment, and
   eval_case_fragment each agree with eval_m1_rec on its covered branch, each

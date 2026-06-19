@@ -1,6 +1,7 @@
 import Mettapedia.Logic.AbstractInheritancePLNBridge
 import Mettapedia.Logic.AbstractInheritanceStampedWitness
 import Mettapedia.Logic.ConceptOntology.Examples
+import Mettapedia.Logic.PLNHigherOrderHOLAssocPatBridge
 import Mathlib.Tactic
 
 /-!
@@ -26,6 +27,8 @@ open Mettapedia.Logic.ConceptOntology
 open Mettapedia.Logic.ConceptOntology.Examples
 open Mettapedia.Logic.AbstractInheritance
 open scoped ENNReal
+
+universe u v w
 
 instance : Fintype Creature where
   elems := {Creature.tweety, Creature.pingu, Creature.plane}
@@ -410,6 +413,206 @@ theorem positive_pair_subset_rel :
       gate membershipBuilder 1
       Concept.bird Concept.bird Concept.penguin Concept.bird := by
   exact ⟨penguin_inherits_bird_at_one, bird_inherits_bird_at_one⟩
+
+/-- The concrete Chapter-12 toy pair-subset witness can feed the finite
+HO predicate-vocabulary ASSOC/PAT target once the toy concept intension is
+transported into the decoded predicate vocabulary.
+
+The transport hypothesis is intentionally explicit: this theorem connects the
+old abstract-inheritance semantics to the new HO target without pretending that
+the ontology concepts already are HOL predicates. -/
+theorem positive_pair_subset_rel_transports_to_predicateVocabularyIntensionalPairSubsetRel
+    {Base : Type u}
+    {Const : Mettapedia.Logic.HOL.Ty Base → Type v}
+    (M : Mettapedia.Logic.HOL.HenkinModel.{u, v, w} Base Const)
+    (σ : Mettapedia.Logic.HOL.Ty Base)
+    {Pred : Type}
+    (code : Concept → Pred)
+    (decode : Pred →
+      Mettapedia.Logic.PLNHigherOrderHOLInheritanceBridge.UnaryPredicate
+        (Base := Base) (Const := Const) σ)
+    (hTransport : ∀ {p q : Concept},
+      baseInterpretation.IntensionalInherits p q →
+        (Mettapedia.Logic.PLNHigherOrderHOLInheritanceBridge.predicateVocabularyInterpretation
+          (Base := Base) (Const := Const) M σ decode).IntensionalInherits
+            (code p) (code q)) :
+    Mettapedia.Logic.PLNHigherOrderHOLAssocPatBridge.predicateVocabularyIntensionalPairSubsetRel
+      (Base := Base) (Const := Const) M σ decode (1 : DemoState)
+      (code Concept.bird) (code Concept.bird)
+      (code Concept.penguin) (code Concept.bird) := by
+  exact
+    Mettapedia.Logic.PLNHigherOrderHOLAssocPatBridge.predicateVocabularyIntensionalPairSubsetRel_of_interpretationPairSubsetRel
+        (I := baseInterpretation)
+        (M := M) (σ := σ) (code := code) (decode := decode)
+        hTransport (1 : DemoState)
+        (by
+          simpa [ConceptOntology.AbstractExtentPairSubsetRel, baseInterpretation] using
+            positive_pair_subset_rel)
+
+/-- Intent-map variant of the concrete transport canary.
+
+Instead of assuming a packaged transport theorem, this version asks for the two
+primitive map laws that richer Chapter-12 pattern semantics should prove:
+reflection of decoded HO intent items into concrete concept intent, and
+preservation of concrete concept intent back into the decoded HO vocabulary. -/
+theorem positive_pair_subset_rel_transports_to_predicateVocabularyIntensionalPairSubsetRel_viaIntentMap
+    {Base : Type u}
+    {Const : Mettapedia.Logic.HOL.Ty Base → Type v}
+    (M : Mettapedia.Logic.HOL.HenkinModel.{u, v, w} Base Const)
+    (σ : Mettapedia.Logic.HOL.Ty Base)
+    {Pred : Type}
+    (code : Concept → Pred)
+    (decode : Pred →
+      Mettapedia.Logic.PLNHigherOrderHOLInheritanceBridge.UnaryPredicate
+        (Base := Base) (Const := Const) σ)
+    (attrOf : Pred → Concept)
+    (hReflect : ∀ {p : Concept} {r : Pred},
+      r ∈ ((Mettapedia.Logic.PLNHigherOrderHOLInheritanceBridge.predicateVocabularyInterpretation
+          (Base := Base) (Const := Const) M σ decode).meaning (code p)).intent →
+        attrOf r ∈ (baseInterpretation.meaning p).intent)
+    (hPreserve : ∀ {p : Concept} {r : Pred},
+      attrOf r ∈ (baseInterpretation.meaning p).intent →
+        r ∈ ((Mettapedia.Logic.PLNHigherOrderHOLInheritanceBridge.predicateVocabularyInterpretation
+          (Base := Base) (Const := Const) M σ decode).meaning (code p)).intent) :
+    Mettapedia.Logic.PLNHigherOrderHOLAssocPatBridge.predicateVocabularyIntensionalPairSubsetRel
+      (Base := Base) (Const := Const) M σ decode (1 : DemoState)
+      (code Concept.bird) (code Concept.bird)
+      (code Concept.penguin) (code Concept.bird) := by
+  exact
+    Mettapedia.Logic.PLNHigherOrderHOLAssocPatBridge.predicateVocabularyIntensionalPairSubsetRel_of_interpretationPairSubsetRel_viaIntentMap
+      (I := baseInterpretation)
+      (M := M) (σ := σ) (code := code) (decode := decode)
+      attrOf hReflect hPreserve (1 : DemoState)
+      (by
+        simpa [ConceptOntology.AbstractExtentPairSubsetRel, baseInterpretation] using
+          positive_pair_subset_rel)
+
+/-- Calibrated-intent variant of the concrete transport canary.
+
+This is the proof obligation richer empirical/factor-graph semantics should
+prefer: one iff identifies decoded HO intent membership with concrete
+pattern-side intent membership. The bridge then recovers both reflection and
+preservation automatically. -/
+theorem positive_pair_subset_rel_transports_to_predicateVocabularyIntensionalPairSubsetRel_viaIntentCalibration
+    {Base : Type u}
+    {Const : Mettapedia.Logic.HOL.Ty Base → Type v}
+    (M : Mettapedia.Logic.HOL.HenkinModel.{u, v, w} Base Const)
+    (σ : Mettapedia.Logic.HOL.Ty Base)
+    {Pred : Type}
+    (code : Concept → Pred)
+    (decode : Pred →
+      Mettapedia.Logic.PLNHigherOrderHOLInheritanceBridge.UnaryPredicate
+        (Base := Base) (Const := Const) σ)
+    (attrOf : Pred → Concept)
+    (hCal : ∀ {p : Concept} {r : Pred},
+      r ∈ ((Mettapedia.Logic.PLNHigherOrderHOLInheritanceBridge.predicateVocabularyInterpretation
+          (Base := Base) (Const := Const) M σ decode).meaning (code p)).intent ↔
+        attrOf r ∈ (baseInterpretation.meaning p).intent) :
+    Mettapedia.Logic.PLNHigherOrderHOLAssocPatBridge.predicateVocabularyIntensionalPairSubsetRel
+      (Base := Base) (Const := Const) M σ decode (1 : DemoState)
+      (code Concept.bird) (code Concept.bird)
+      (code Concept.penguin) (code Concept.bird) := by
+  exact
+    Mettapedia.Logic.PLNHigherOrderHOLAssocPatBridge.predicateVocabularyIntensionalPairSubsetRel_of_interpretationPairSubsetRel_viaIntentCalibration
+      (I := baseInterpretation)
+      (M := M) (σ := σ) (code := code) (decode := decode)
+      attrOf hCal (1 : DemoState)
+      (by
+        simpa [ConceptOntology.AbstractExtentPairSubsetRel, baseInterpretation] using
+          positive_pair_subset_rel)
+
+/-- Concrete Chapter-12 consumer theorem.
+
+The toy `penguin ≤ bird` concept-geometry witness, once calibrated into a
+finite HOL predicate vocabulary, drives actual ASSOC and PAT evidence
+monotonicity for any nonnegatively weighted order-rank score model.  This is the
+rule-facing version of the transport canary above: it consumes the existing
+finite-vocabulary ASSOC/PAT bridge instead of stopping at the intermediate
+pair-subset relation. -/
+theorem positive_pair_subset_rel_weightedPredicateVocabularyAssocPatEvidence_mono_viaIntentCalibration
+    {Base : Type u}
+    {Const : Mettapedia.Logic.HOL.Ty Base → Type v}
+    (M : Mettapedia.Logic.HOL.HenkinModel.{u, v, w} Base Const)
+    (σ : Mettapedia.Logic.HOL.Ty Base)
+    {Pred : Type}
+    [Fintype Pred]
+    (code : Concept → Pred)
+    (decode : Pred →
+      Mettapedia.Logic.PLNHigherOrderHOLInheritanceBridge.UnaryPredicate
+        (Base := Base) (Const := Const) σ)
+    (attrOf : Pred → Concept)
+    (hCal : ∀ {p : Concept} {r : Pred},
+      r ∈ ((Mettapedia.Logic.PLNHigherOrderHOLInheritanceBridge.predicateVocabularyInterpretation
+          (Base := Base) (Const := Const) M σ decode).meaning (code p)).intent ↔
+        attrOf r ∈ (baseInterpretation.meaning p).intent)
+    {State PairQuery : Type}
+    [EvidenceType State]
+    [WorldModelSigma State InheritanceSort (InheritanceQueryFamily PairQuery)]
+    (pairEnc : InheritanceQueryBuilder Pred PairQuery)
+    (model : InheritanceQueryBuilder.IntensionalScoreModel
+      (State := State) (Atom := Pred) (Query := PairQuery) pairEnc)
+    {assocLeftWeight assocRightWeight patLeftWeight patRightWeight : ℝ}
+    (hAssocLeftWeight : 0 ≤ assocLeftWeight)
+    (hAssocRightWeight : 0 ≤ assocRightWeight)
+    (hPatLeftWeight : 0 ≤ patLeftWeight)
+    (hPatRightWeight : 0 ≤ patRightWeight)
+    (hAssocScore : ∀ (W : State) (a b : Pred),
+      model.assocScore W a b =
+        Mettapedia.Logic.PLNHigherOrderHOLAssocPatBridge.predicateVocabularyWeightedPairOrderRankScore
+          (Base := Base) (Const := Const) M σ decode
+          assocLeftWeight assocRightWeight a b)
+    (hPatScore : ∀ (W : State) (a b : Pred),
+      model.patScore W a b =
+        Mettapedia.Logic.PLNHigherOrderHOLAssocPatBridge.predicateVocabularyWeightedPairOrderRankScore
+          (Base := Base) (Const := Const) M σ decode
+          patLeftWeight patRightWeight a b)
+    (W : State) :
+    InheritanceQueryBuilder.intensionalAssocEvidence
+        (State := State) (Atom := Pred) (Query := PairQuery)
+        W pairEnc (code Concept.bird) (code Concept.bird) ≤
+      InheritanceQueryBuilder.intensionalAssocEvidence
+        (State := State) (Atom := Pred) (Query := PairQuery)
+        W pairEnc (code Concept.penguin) (code Concept.bird)
+      ∧
+      InheritanceQueryBuilder.intensionalPATEvidence
+        (State := State) (Atom := Pred) (Query := PairQuery)
+        W pairEnc (code Concept.bird) (code Concept.bird) ≤
+      InheritanceQueryBuilder.intensionalPATEvidence
+        (State := State) (Atom := Pred) (Query := PairQuery)
+        W pairEnc (code Concept.penguin) (code Concept.bird) := by
+  have hRelDemo :=
+    positive_pair_subset_rel_transports_to_predicateVocabularyIntensionalPairSubsetRel_viaIntentCalibration
+      (Base := Base) (Const := Const) M σ code decode attrOf hCal
+  have hRel :
+      Mettapedia.Logic.PLNHigherOrderHOLAssocPatBridge.predicateVocabularyIntensionalPairSubsetRel
+        (Base := Base) (Const := Const) M σ decode W
+        (code Concept.bird) (code Concept.bird)
+        (code Concept.penguin) (code Concept.bird) := by
+    simpa [Mettapedia.Logic.PLNHigherOrderHOLAssocPatBridge.predicateVocabularyIntensionalPairSubsetRel]
+      using hRelDemo
+  have hAssocSubset :
+      InheritanceQueryBuilder.AssocSubsetSemantics
+        (State := State) (Atom := Pred) (Query := PairQuery)
+        pairEnc model
+        (Mettapedia.Logic.PLNHigherOrderHOLAssocPatBridge.predicateVocabularyIntensionalPairSubsetRel
+          (Base := Base) (Const := Const) M σ decode) :=
+    Mettapedia.Logic.PLNHigherOrderHOLAssocPatBridge.assocSubsetSemantics_of_predicateVocabularyWeightedPairOrderRankScore
+      (Base := Base) (Const := Const) M σ decode pairEnc model
+      hAssocLeftWeight hAssocRightWeight hAssocScore
+  have hPatSubset :
+      InheritanceQueryBuilder.PATSubsetSemantics
+        (State := State) (Atom := Pred) (Query := PairQuery)
+        pairEnc model
+        (Mettapedia.Logic.PLNHigherOrderHOLAssocPatBridge.predicateVocabularyIntensionalPairSubsetRel
+          (Base := Base) (Const := Const) M σ decode) :=
+    Mettapedia.Logic.PLNHigherOrderHOLAssocPatBridge.patSubsetSemantics_of_predicateVocabularyWeightedPairOrderRankScore
+      (Base := Base) (Const := Const) M σ decode pairEnc model
+      hPatLeftWeight hPatRightWeight hPatScore
+  exact
+    ⟨Mettapedia.Logic.PLNHigherOrderHOLAssocPatBridge.assocEvidence_mono_of_predicateVocabularyIntensionalSubsetSemantics
+        (Base := Base) (Const := Const) M σ decode pairEnc model hAssocSubset hRel,
+      Mettapedia.Logic.PLNHigherOrderHOLAssocPatBridge.patEvidence_mono_of_predicateVocabularyIntensionalSubsetSemantics
+        (Base := Base) (Const := Const) M σ decode pairEnc model hPatSubset hRel⟩
 
 theorem negative_pair_subset_rel :
     ¬ AbstractExtentPairSubsetRel

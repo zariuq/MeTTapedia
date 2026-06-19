@@ -45,7 +45,8 @@ Convert BinaryEvidence to bounded STV using clamp01 for safety. -/
 
     The strength is `n⁺ / (n⁺ + n⁻)` and confidence is `total / (total + κ)`.
     We use clamp01 to ensure bounds, which is the identity for valid evidence. -/
-noncomputable def evidenceToSTV (κ : ℝ≥0∞) (e : BinaryEvidence) : STV :=
+noncomputable def evidenceToSTV (κ : ℝ≥0∞) (e : BinaryEvidence) :
+    Mettapedia.Logic.PLNMeTTaCore.STV :=
   let s := (BinaryEvidence.toStrength e).toReal
   let c := (BinaryEvidence.toConfidence κ e).toReal
   ⟨clamp01 s, clamp01 c,

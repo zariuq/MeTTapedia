@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# HOL4's Holmake captures hostname through a temp file. On this machine,
+# hostname(1) writes nothing when stdout is a regular file, so use procfs.
+if [[ -r /proc/sys/kernel/hostname ]]; then
+  cat /proc/sys/kernel/hostname
+else
+  uname -n
+fi

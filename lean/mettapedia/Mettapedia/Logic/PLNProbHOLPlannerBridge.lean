@@ -1,5 +1,6 @@
 import Mettapedia.Logic.PLNMixedModeChainComposition
 import Mettapedia.Logic.HOL.Probabilistic.BenchmarkBeliefBridge
+import Mettapedia.Logic.PLNHigherOrderHOLDeductionBridge
 
 /-!
 # PLN ProbHOL Planner Bridge
@@ -30,8 +31,218 @@ open Mettapedia.Logic.PLNGuardedHigherOrderSemantics
 open Mettapedia.Logic.PLNMixedModeChainComposition
 open Mettapedia.Logic.PLNProbGuardedAdmissibilityDemo
 open Mettapedia.Logic.PLNProofCarryingContractionDemo
+open Mettapedia.Logic.HOL
 open Mettapedia.Logic.HOL.LogicalInduction
 open Mettapedia.Logic.HOL.Probabilistic
+open Mettapedia.Logic.PLNHigherOrderHOLInheritanceBridge
+open Mettapedia.Logic.PLNHigherOrderHOLDeductionBridge
+
+universe u v w x
+
+variable {Base : Type u} {Const : Ty Base → Type v}
+
+/-! ## Generic higher-order deduction planner shadows -/
+
+/-- Planner-facing package for one five-coordinate HO deduction readout.
+
+The coordinates and interval theorem are supplied by
+`PLNHigherOrderHOLDeductionBridge`; this structure only records the planner
+query label, provenance, admissibility proof, and chosen credibility coordinate.
+It is intentionally generic so benchmark/regime wrappers can consume the same
+surface without inventing a benchmark-specific deduction semantics. -/
+structure HODeductionPlannerShadow (xs : Fin 5 → ℝ) where
+  query : String
+  provenance : List String
+  admissibility : DeductionCoordinateAdmissibility xs
+  credibility : ℝ
+  credibility_mem : credibility ∈ Set.Icc (0 : ℝ) 1
+
+/-- The planner-facing point value is the standard five-input PLN deduction
+formula applied to the packaged coordinates. -/
+noncomputable def HODeductionPlannerShadow.pointValue
+    {xs : Fin 5 → ℝ} (_shadow : HODeductionPlannerShadow xs) : ℝ :=
+  deductionAsFinite5 xs
+
+/-- The planner-facing interval is the existing full admissible-allocation
+joint ITV supplied by the deduction interval layer. -/
+noncomputable def HODeductionPlannerShadow.jointInterval
+    {xs : Fin 5 → ℝ} (shadow : HODeductionPlannerShadow xs) :
+    Mettapedia.Logic.PLNTruthTower.TypedITV
+      (Mettapedia.Logic.PLNTruthTower.credalEnvelopeITVSemantics
+        Mettapedia.Logic.PLNDeduction.DeductionAtom) :=
+  Mettapedia.Logic.PLNDeduction.deductionAllocationJointTypedITV
+    (xs 0) (xs 1) (xs 2) (xs 3) (xs 4)
+    shadow.admissibility.hFeas shadow.credibility shadow.credibility_mem
+
+/-- Planner-facing no-independence safety theorem: the packaged point deduction
+value is inside the normalized full-allocation interval. -/
+theorem HODeductionPlannerShadow.pointValue_mem_normalized_interval
+    {xs : Fin 5 → ℝ} (shadow : HODeductionPlannerShadow xs) :
+    shadow.jointInterval.lower / (xs 0) ≤ shadow.pointValue ∧
+      shadow.pointValue ≤ shadow.jointInterval.upper / (xs 0) := by
+  simpa [HODeductionPlannerShadow.pointValue, HODeductionPlannerShadow.jointInterval] using
+    deductionAsFinite5_mem_normalized_allocationJointTypedITV_of_admissible
+      xs shadow.admissibility shadow.credibility shadow.credibility_mem
+
+/-- Planner shadow for a same-state deduction step whose coordinates are
+Kyburg-flattened predicate-implication HOL sentences. -/
+noncomputable def predicateImplicationDeductionPlannerShadow
+    (query : String)
+    (H : HierarchicalState.{u, v, w, x} Base Const)
+    (σ : Ty Base)
+    (links :
+      Fin 5 →
+        UnaryPredicate (Base := Base) (Const := Const) σ ×
+          UnaryPredicate (Base := Base) (Const := Const) σ)
+    (h :
+      DeductionCoordinateAdmissibility
+        (hierarchicalPredicateImplicationDeductionCoordinates
+          (Base := Base) (Const := Const) H σ links))
+    (credibility : ℝ) (hc : credibility ∈ Set.Icc (0 : ℝ) 1)
+    (provenance : List String) :
+    HODeductionPlannerShadow
+      (hierarchicalPredicateImplicationDeductionCoordinates
+        (Base := Base) (Const := Const) H σ links) where
+  query := query
+  provenance := provenance
+  admissibility := h
+  credibility := credibility
+  credibility_mem := hc
+
+@[simp] theorem predicateImplicationDeductionPlannerShadow_pointValue
+    (query : String)
+    (H : HierarchicalState.{u, v, w, x} Base Const)
+    (σ : Ty Base)
+    (links :
+      Fin 5 →
+        UnaryPredicate (Base := Base) (Const := Const) σ ×
+          UnaryPredicate (Base := Base) (Const := Const) σ)
+    (h :
+      DeductionCoordinateAdmissibility
+        (hierarchicalPredicateImplicationDeductionCoordinates
+          (Base := Base) (Const := Const) H σ links))
+    (credibility : ℝ) (hc : credibility ∈ Set.Icc (0 : ℝ) 1)
+    (provenance : List String) :
+    (predicateImplicationDeductionPlannerShadow
+      (Base := Base) (Const := Const)
+      query H σ links h credibility hc provenance).pointValue =
+      hierarchicalPredicateImplicationDeductionPointValue
+        (Base := Base) (Const := Const) H σ links :=
+  rfl
+
+/-- The predicate-implication planner shadow inherits the generic
+no-independence interval certificate. -/
+theorem predicateImplicationDeductionPlannerShadow_pointValue_mem_normalized_interval
+    (query : String)
+    (H : HierarchicalState.{u, v, w, x} Base Const)
+    (σ : Ty Base)
+    (links :
+      Fin 5 →
+        UnaryPredicate (Base := Base) (Const := Const) σ ×
+          UnaryPredicate (Base := Base) (Const := Const) σ)
+    (h :
+      DeductionCoordinateAdmissibility
+        (hierarchicalPredicateImplicationDeductionCoordinates
+          (Base := Base) (Const := Const) H σ links))
+    (credibility : ℝ) (hc : credibility ∈ Set.Icc (0 : ℝ) 1)
+    (provenance : List String) :
+    let shadow :=
+      predicateImplicationDeductionPlannerShadow
+        (Base := Base) (Const := Const)
+        query H σ links h credibility hc provenance
+    shadow.jointInterval.lower /
+        ((hierarchicalPredicateImplicationDeductionCoordinates
+          (Base := Base) (Const := Const) H σ links) 0) ≤
+        shadow.pointValue ∧
+      shadow.pointValue ≤
+        shadow.jointInterval.upper /
+          ((hierarchicalPredicateImplicationDeductionCoordinates
+            (Base := Base) (Const := Const) H σ links) 0) := by
+  simpa [predicateImplicationDeductionPlannerShadow] using
+    HODeductionPlannerShadow.pointValue_mem_normalized_interval
+      (predicateImplicationDeductionPlannerShadow
+        (Base := Base) (Const := Const)
+        query H σ links h credibility hc provenance)
+
+/-- Planner shadow for a same-state deduction step whose coordinates are
+Kyburg-flattened predicate-equivalence / similarity HOL sentences. -/
+noncomputable def predicateSimilarityDeductionPlannerShadow
+    (query : String)
+    (H : HierarchicalState.{u, v, w, x} Base Const)
+    (σ : Ty Base)
+    (links :
+      Fin 5 →
+        UnaryPredicate (Base := Base) (Const := Const) σ ×
+          UnaryPredicate (Base := Base) (Const := Const) σ)
+    (h :
+      DeductionCoordinateAdmissibility
+        (hierarchicalPredicateSimilarityDeductionCoordinates
+          (Base := Base) (Const := Const) H σ links))
+    (credibility : ℝ) (hc : credibility ∈ Set.Icc (0 : ℝ) 1)
+    (provenance : List String) :
+    HODeductionPlannerShadow
+      (hierarchicalPredicateSimilarityDeductionCoordinates
+        (Base := Base) (Const := Const) H σ links) where
+  query := query
+  provenance := provenance
+  admissibility := h
+  credibility := credibility
+  credibility_mem := hc
+
+@[simp] theorem predicateSimilarityDeductionPlannerShadow_pointValue
+    (query : String)
+    (H : HierarchicalState.{u, v, w, x} Base Const)
+    (σ : Ty Base)
+    (links :
+      Fin 5 →
+        UnaryPredicate (Base := Base) (Const := Const) σ ×
+          UnaryPredicate (Base := Base) (Const := Const) σ)
+    (h :
+      DeductionCoordinateAdmissibility
+        (hierarchicalPredicateSimilarityDeductionCoordinates
+          (Base := Base) (Const := Const) H σ links))
+    (credibility : ℝ) (hc : credibility ∈ Set.Icc (0 : ℝ) 1)
+    (provenance : List String) :
+    (predicateSimilarityDeductionPlannerShadow
+      (Base := Base) (Const := Const)
+      query H σ links h credibility hc provenance).pointValue =
+      hierarchicalPredicateSimilarityDeductionPointValue
+        (Base := Base) (Const := Const) H σ links :=
+  rfl
+
+/-- The predicate-similarity planner shadow inherits the generic
+no-independence interval certificate. -/
+theorem predicateSimilarityDeductionPlannerShadow_pointValue_mem_normalized_interval
+    (query : String)
+    (H : HierarchicalState.{u, v, w, x} Base Const)
+    (σ : Ty Base)
+    (links :
+      Fin 5 →
+        UnaryPredicate (Base := Base) (Const := Const) σ ×
+          UnaryPredicate (Base := Base) (Const := Const) σ)
+    (h :
+      DeductionCoordinateAdmissibility
+        (hierarchicalPredicateSimilarityDeductionCoordinates
+          (Base := Base) (Const := Const) H σ links))
+    (credibility : ℝ) (hc : credibility ∈ Set.Icc (0 : ℝ) 1)
+    (provenance : List String) :
+    let shadow :=
+      predicateSimilarityDeductionPlannerShadow
+        (Base := Base) (Const := Const)
+        query H σ links h credibility hc provenance
+    shadow.jointInterval.lower /
+        ((hierarchicalPredicateSimilarityDeductionCoordinates
+          (Base := Base) (Const := Const) H σ links) 0) ≤
+        shadow.pointValue ∧
+      shadow.pointValue ≤
+        shadow.jointInterval.upper /
+          ((hierarchicalPredicateSimilarityDeductionCoordinates
+            (Base := Base) (Const := Const) H σ links) 0) := by
+  simpa [predicateSimilarityDeductionPlannerShadow] using
+    HODeductionPlannerShadow.pointValue_mem_normalized_interval
+      (predicateSimilarityDeductionPlannerShadow
+        (Base := Base) (Const := Const)
+        query H σ links h credibility hc provenance)
 
 /-- Planner-facing shadow of one semantically justified higher-order guarded
 step.  The carried query remains the planner object, while the belief day and

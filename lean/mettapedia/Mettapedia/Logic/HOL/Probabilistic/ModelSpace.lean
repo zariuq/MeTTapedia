@@ -83,6 +83,14 @@ theorem sentenceEvent_eq_of_pointwiseEq
   intro i
   exact heq i ▸ Iff.rfl
 
+/-- Negating a closed HOL sentence takes its satisfaction event to the set
+complement of the original satisfaction event. -/
+theorem sentenceEvent_not_eq_compl
+    (S : ModelSpace Base Const) (φ : ClosedFormula Const) :
+    sentenceEvent S (.not φ) = (sentenceEvent S φ)ᶜ := by
+  ext i
+  simp [sentenceEvent, holSatisfies]
+
 end ModelSpace
 
 end Mettapedia.Logic.HOL.Probabilistic

@@ -798,8 +798,9 @@ Definition eval_m1_rec_def:
     | Expr [Sym 54; scrut; branches] =>
         [error_atom atom (Sym 10)]
     | Expr [Sym 55; scrut; Expr branches] =>
-        eval_switch_one_with
-          (eval_m1_rec fuel space) scrut branches
+        eval_switch_values_with
+          (eval_m1_rec fuel space)
+          (eval_m1_rec fuel space scrut) branches
     | Expr [Sym 55; scrut; branches] =>
         [error_atom atom (Sym 10)]
     | Expr [Sym 56; Expr bindings; body] =>
@@ -1295,7 +1296,7 @@ End
 
 Definition eval_switch_like_def:
   eval_switch_like fuel space scrut branches original =
-    eval_switch_one fuel space scrut branches original
+    eval_switch_values fuel space (eval_m1_rec fuel space scrut) branches original
 End
 
 Definition eval_let1_values_def:
@@ -2801,11 +2802,14 @@ QED
 
 Theorem eval_m1_rec_switch_branch_nonempty:
   ∀fuel space scrut branches.
-    eval_switch_one_with (λa. eval_m1_rec fuel space a) scrut branches ≠ [] ⇒
+    (∃value.
+       MEM value (eval_m1_rec fuel space scrut) ∧
+       eval_switch_one_with (λa. eval_m1_rec fuel space a) value branches ≠ []) ⇒
     eval_m1_rec (SUC fuel) space
       (Expr [Sym 55; scrut; Expr branches]) ≠ []
 Proof
-  rw[eval_m1_rec_def]
+  rw[eval_m1_rec_def] \\
+  metis_tac[eval_switch_values_with_nonempty]
 QED
 
 Theorem eval_m1_rec_chain_bad_var_nonempty:
@@ -3042,9 +3046,12 @@ QED
 Theorem eval_switch_like_member_sound:
   ∀fuel space scrut branches original out.
     MEM out (eval_switch_like fuel space scrut branches original) ⇒
-    MEM out (eval_switch_one fuel space scrut branches original)
+    ∃value.
+      MEM value (eval_m1_rec fuel space scrut) ∧
+      MEM out (eval_switch_one fuel space value branches original)
 Proof
-  rw[eval_switch_like_def]
+  rw[eval_switch_like_def] \\
+  metis_tac[eval_switch_values_member_sound]
 QED
 
 Theorem eval_switch_one_with_member_sound:
@@ -3077,9 +3084,12 @@ Theorem eval_m1_rec_switch_branch_member_sound:
   ∀fuel space scrut branches out.
     MEM out
       (eval_m1_rec (SUC fuel) space (Expr [Sym 55; scrut; Expr branches])) ⇒
-    MEM out (eval_switch_one_with (λa. eval_m1_rec fuel space a) scrut branches)
+    ∃value.
+      MEM value (eval_m1_rec fuel space scrut) ∧
+      MEM out (eval_switch_one_with (λa. eval_m1_rec fuel space a) value branches)
 Proof
-  rw[eval_m1_rec_def]
+  rw[eval_m1_rec_def] \\
+  metis_tac[eval_switch_values_with_member_sound]
 QED
 
 Theorem eval_let1_values_member_sound:
@@ -3229,10 +3239,11 @@ Theorem eval_m1_rec_switch_branch_semantic_sound:
   ∀fuel space scrut branches out.
     MEM out
       (eval_m1_rec (SUC fuel) space (Expr [Sym 55; scrut; Expr branches])) ⇒
-    ∃branch pattern body bs.
+    ∃value branch pattern body bs.
+      MEM value (eval_m1_rec fuel space scrut) ∧
       MEM branch branches ∧
       branch_pair branch = SOME (pattern, body) ∧
-      match_atom pattern scrut [] = SOME bs ∧
+      match_atom pattern value [] = SOME bs ∧
       MEM out (eval_m1_rec fuel space (apply_subst bs body))
 Proof
   rw[] \\
@@ -3354,12 +3365,13 @@ Definition eval_m1_rec_branch_sound_def:
        atom = Expr [Sym 54; scrut; bad_branches] ∧
        (∀branches. bad_branches ≠ Expr branches) ∧
        out = error_atom atom (Sym 10)) ∨
-    (∃scrut branches branch pattern body bs.
-       atom = Expr [Sym 55; scrut; Expr branches] ∧
-       MEM branch branches ∧
-       branch_pair branch = SOME (pattern, body) ∧
-       match_atom pattern scrut [] = SOME bs ∧
-       MEM out (eval_m1_rec fuel space (apply_subst bs body))) ∨
+    (∃scrut branches value branch pattern body bs.
+      atom = Expr [Sym 55; scrut; Expr branches] ∧
+      MEM value (eval_m1_rec fuel space scrut) ∧
+      MEM branch branches ∧
+      branch_pair branch = SOME (pattern, body) ∧
+      match_atom pattern value [] = SOME bs ∧
+      MEM out (eval_m1_rec fuel space (apply_subst bs body))) ∨
     (∃scrut bad_branches.
        atom = Expr [Sym 55; scrut; bad_branches] ∧
        (∀branches. bad_branches ≠ Expr branches) ∧
@@ -3935,11 +3947,12 @@ Definition eval_m1_rec_structural_sound_def:
        atom = Expr [Sym 54; scrut; bad_branches] ∧
        (∀branches. bad_branches ≠ Expr branches) ∧
        out = error_atom atom (Sym 10)) ∨
-    (∃scrut branches branch pattern body bs.
+    (∃scrut branches value branch pattern body bs.
        atom = Expr [Sym 55; scrut; Expr branches] ∧
+       MEM value (eval_m1_rec fuel space scrut) ∧
        MEM branch branches ∧
        branch_pair branch = SOME (pattern, body) ∧
-       match_atom pattern scrut [] = SOME bs ∧
+       match_atom pattern value [] = SOME bs ∧
        MEM out (eval_m1_rec fuel space (apply_subst bs body))) ∨
     (∃scrut bad_branches.
        atom = Expr [Sym 55; scrut; bad_branches] ∧
@@ -4114,10 +4127,11 @@ Theorem eval_m1_rec_switch_family_input_sound:
       (eval_m1_rec (SUC fuel) space (Expr [Sym 55; scrut; Expr branches])) ⇒
     eval_m1_rec_structural_sound fuel space
       (Expr [Sym 55; scrut; Expr branches]) out ∧
-    ∃branch pattern body bs.
+    ∃value branch pattern body bs.
+      MEM value (eval_m1_rec fuel space scrut) ∧
       MEM branch branches ∧
       branch_pair branch = SOME (pattern, body) ∧
-      match_atom pattern scrut [] = SOME bs ∧
+      match_atom pattern value [] = SOME bs ∧
       MEM out (eval_m1_rec fuel space (apply_subst bs body))
 Proof
   rw[] \\
@@ -4367,10 +4381,12 @@ Theorem eval_m1_rec_switch_nested_family_sound:
       (eval_m1_rec (SUC fuel) space (Expr [Sym 55; scrut; Expr branches])) ⇒
     eval_m1_rec_structural_sound fuel space
       (Expr [Sym 55; scrut; Expr branches]) out ∧
-    ∃branch pattern body bs.
+    ∃value branch pattern body bs.
+      MEM value (eval_m1_rec fuel space scrut) ∧
+      eval_m1_rec_family_sound fuel space scrut value ∧
       MEM branch branches ∧
       branch_pair branch = SOME (pattern, body) ∧
-      match_atom pattern scrut [] = SOME bs ∧
+      match_atom pattern value [] = SOME bs ∧
       MEM out (eval_m1_rec fuel space (apply_subst bs body)) ∧
       eval_m1_rec_family_sound fuel space (apply_subst bs body) out
 Proof
@@ -4445,12 +4461,14 @@ Definition eval_m1_rec_nested_family_sound_def:
        match_atom pattern value [] = SOME bs ∧
        MEM out (eval_m1_rec fuel space (apply_subst bs body)) ∧
        eval_m1_rec_family_sound fuel space (apply_subst bs body) out) ∨
-    (∃scrut branches branch pattern body bs.
+    (∃scrut branches value branch pattern body bs.
        atom = Expr [Sym 55; scrut; Expr branches] ∧
        eval_m1_rec_structural_sound fuel space atom out ∧
+       MEM value (eval_m1_rec fuel space scrut) ∧
+       eval_m1_rec_family_sound fuel space scrut value ∧
        MEM branch branches ∧
        branch_pair branch = SOME (pattern, body) ∧
-       match_atom pattern scrut [] = SOME bs ∧
+       match_atom pattern value [] = SOME bs ∧
        MEM out (eval_m1_rec fuel space (apply_subst bs body)) ∧
        eval_m1_rec_family_sound fuel space (apply_subst bs body) out) ∨
     (∃bindings body.

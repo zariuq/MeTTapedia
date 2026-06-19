@@ -235,6 +235,8 @@ theorem ioCount_SC {P Q : Pattern}
     simp [ioCount, List.map_cons, List.map_nil, List.sum_cons, List.sum_nil]
   | par_nil_right p =>
     simp [ioCount, List.map_cons, List.map_nil, List.sum_cons, List.sum_nil]
+  | par_empty =>
+    simp [ioCount, List.map_nil, List.sum_nil]
   | par_comm p q =>
     simp [ioCount, List.map_cons, List.map_nil, List.sum_cons, List.sum_nil]; omega
   | par_assoc p q r =>
@@ -333,6 +335,8 @@ theorem redWeight_SC {P Q : Pattern}
     simp [redWeight, List.map_cons, List.map_nil, List.sum_cons, List.sum_nil]
   | par_nil_right p =>
     simp [redWeight, List.map_cons, List.map_nil, List.sum_cons, List.sum_nil]
+  | par_empty =>
+    simp [redWeight, List.map_nil, List.sum_nil]
   | par_comm p q =>
     simp [redWeight, List.map_cons, List.map_nil, List.sum_cons, List.sum_nil]; omega
   | par_assoc p q r =>

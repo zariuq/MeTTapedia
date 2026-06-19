@@ -257,6 +257,66 @@ theorem bernoulliMixturePrefixPrevision_oneBitFalse_eq_countEvidenceMass
     Mettapedia.Logic.Exchangeability.countFalse] using
     (BernoulliMixture.countEvidenceMass_eq_prob_of_counts M oneBitFalsePrefix)
 
+/-! ### Posterior predictive revision beyond the Beta subfamily -/
+
+/-- Updating a general de-Finetti Bernoulli mixture by observed counts and then
+asking the one-bit Kyburg/projective prefix prevision for `true` gives the
+posterior predictive success probability.  No Beta-parametric assumption is
+used here. -/
+theorem posteriorBernoulliMixturePrefixPrevision_oneBitTrue_eq_posteriorPredictiveTrue
+    (M : BernoulliMixture) (k l : ℕ)
+    (hZ : M.countEvidenceMass k l ≠ 0) :
+    (bernoulliMixturePrefixLaw_analytic
+        (M.posteriorBernoulliMixture k l hZ) 1).toPrecisePrevision
+        oneBitTrueGamble =
+      M.posteriorPredictiveTrue k l := by
+  rw [bernoulliMixturePrefixPrevision_oneBitTrue_eq_countEvidenceMass]
+  exact
+    BernoulliMixture.posteriorBernoulliMixture_countEvidenceMass_true_eq_posteriorPredictiveTrue
+      M k l hZ
+
+/-- Updating a general de-Finetti Bernoulli mixture by observed counts and then
+asking the one-bit Kyburg/projective prefix prevision for `false` gives the
+posterior predictive failure probability. -/
+theorem posteriorBernoulliMixturePrefixPrevision_oneBitFalse_eq_posteriorPredictiveFalse
+    (M : BernoulliMixture) (k l : ℕ)
+    (hZ : M.countEvidenceMass k l ≠ 0) :
+    (bernoulliMixturePrefixLaw_analytic
+        (M.posteriorBernoulliMixture k l hZ) 1).toPrecisePrevision
+        oneBitFalseGamble =
+      M.posteriorPredictiveFalse k l := by
+  rw [bernoulliMixturePrefixPrevision_oneBitFalse_eq_countEvidenceMass]
+  exact
+    BernoulliMixture.posteriorBernoulliMixture_countEvidenceMass_false_eq_posteriorPredictiveFalse
+      M k l hZ
+
+/-- General de-Finetti revision read as a count-evidence Bayes ratio through
+the one-bit Kyburg/projective prefix prevision.  This is the broad semantic
+update law of which Beta-Bernoulli conjugacy is only one convenient subfamily. -/
+theorem posteriorBernoulliMixturePrefixPrevision_oneBitTrue_eq_countEvidenceMass_ratio
+    (M : BernoulliMixture) (k l : ℕ)
+    (hZ : M.countEvidenceMass k l ≠ 0) :
+    (bernoulliMixturePrefixLaw_analytic
+        (M.posteriorBernoulliMixture k l hZ) 1).toPrecisePrevision
+        oneBitTrueGamble =
+      M.countEvidenceMass (k + 1) l / M.countEvidenceMass k l := by
+  rw [posteriorBernoulliMixturePrefixPrevision_oneBitTrue_eq_posteriorPredictiveTrue
+    M k l hZ]
+  exact BernoulliMixture.posteriorPredictiveTrue_eq_countEvidenceMass_ratio M k l
+
+/-- General de-Finetti revision read as a count-evidence Bayes ratio for the
+next failure event through the one-bit Kyburg/projective prefix prevision. -/
+theorem posteriorBernoulliMixturePrefixPrevision_oneBitFalse_eq_countEvidenceMass_ratio
+    (M : BernoulliMixture) (k l : ℕ)
+    (hZ : M.countEvidenceMass k l ≠ 0) :
+    (bernoulliMixturePrefixLaw_analytic
+        (M.posteriorBernoulliMixture k l hZ) 1).toPrecisePrevision
+        oneBitFalseGamble =
+      M.countEvidenceMass k (l + 1) / M.countEvidenceMass k l := by
+  rw [posteriorBernoulliMixturePrefixPrevision_oneBitFalse_eq_posteriorPredictiveFalse
+    M k l hZ]
+  exact BernoulliMixture.posteriorPredictiveFalse_eq_countEvidenceMass_ratio M k l
+
 /-! ## External exchangeability prefix adapters -/
 
 /-- The vendored exchangeability library's `iidProduct` has the expected finite
@@ -2783,6 +2843,75 @@ def bernoulliMixturePrefixProcessFiniteJointWindowSystem
       xs (Fin.castLE (prefixWindow_le_jointLength u hi) k) :=
   rfl
 
+/-- Exact finite-prefix marginal consistency for an imprecise Bernoulli-mixture
+family, stated on the canonical largest-prefix joint-window system.
+
+For every admissible mixture in `C`, the law on the largest requested prefix
+must marginalize to the law on each member prefix.  This is the non-circular
+finite-window hypothesis that feeds the generic compact/FIP crown without
+assuming an arbitrary local-coherence witness. -/
+def bernoulliMixturePrefixProcessMarginalConsistent
+    (C : Set BernoulliMixture)
+    (hLaw : ∀ M : BernoulliMixture, M ∈ C → ∀ n : ℕ,
+      BernoulliMixturePrefixLaw M n) : Prop :=
+  ∀ (M : BernoulliMixture) (hM : M ∈ C)
+    (u : Finset ℕ) {i : ℕ} (hi : i ∈ u)
+    (X : Gamble (Fin i → Bool)),
+    ((bernoulliMixturePrefixLawAt C hLaw (prefixWindowJointLength u)) M hM).toPrecisePrevision
+      (fun xs => X (fun t =>
+        xs (Fin.castLE (prefixWindow_le_jointLength u hi) t))) =
+    ((bernoulliMixturePrefixLawAt C hLaw i) M hM).toPrecisePrevision X
+
+/-- Prefix marginal consistency supplies local coherence for the canonical
+largest-prefix finite joint-window system of an imprecise Bernoulli-mixture
+family. -/
+theorem bernoulliMixturePrefixProcessFiniteJointWindowSystem_localCoherent_of_marginalConsistent
+    (C : Set BernoulliMixture)
+    (hLaw : ∀ M : BernoulliMixture, M ∈ C → ∀ n : ℕ,
+      BernoulliMixturePrefixLaw M n)
+    (hC : C.Nonempty)
+    (hMarginal :
+      bernoulliMixturePrefixProcessMarginalConsistent C hLaw) :
+    (bernoulliMixturePrefixProcessLowerSpec C hLaw hC).finiteWindowLocalCoherent
+      (bernoulliMixturePrefixProcessFiniteJointWindowSystem C hLaw hC) := by
+  have hCw : C.Nonempty := hC
+  rcases hC with ⟨M₀, hM₀⟩
+  intro u
+  let R : PrecisePrevision
+      ((bernoulliMixturePrefixProcessFiniteJointWindowSystem C hLaw hCw).Joint u) :=
+    ((bernoulliMixturePrefixLawAt C hLaw (prefixWindowJointLength u)) M₀ hM₀).toPrecisePrevision
+  refine ⟨R, ?_⟩
+  intro i hi
+  rw [mem_dominatingPreciseCompletions]
+  intro X
+  have hLower :
+      (bernoulliMixturePrefixProcessLowerSpec C hLaw hCw).localLower i X ≤
+        ((bernoulliMixturePrefixLawAt C hLaw i) M₀ hM₀).toPrecisePrevision X := by
+    rw [bernoulliMixturePrefixProcessLowerSpec_localLower_apply]
+    exact
+      impreciseDeFinettiPrefixLowerEnvelope_le_mixturePrevision
+        C i (bernoulliMixturePrefixLawAt C hLaw i) hM₀ X
+  have hMarginalEq :
+      (bernoulliMixturePrefixProcessFiniteJointWindowSystem
+          C hLaw hCw).jointMarginalPrevision u i hi R X =
+        ((bernoulliMixturePrefixLawAt C hLaw i) M₀ hM₀).toPrecisePrevision X := by
+    rw [ProjectiveLocalLowerPrevisionSpec.FiniteJointWindowSystem.jointMarginalPrevision_apply]
+    simpa [R, ProjectiveLocalLowerPrevisionSpec.FiniteJointWindowSystem.jointCylinderGamble,
+      bernoulliMixturePrefixProcessFiniteJointWindowSystem] using
+      (hMarginal M₀ hM₀ u (i := i) hi X)
+  exact hLower.trans_eq hMarginalEq.symm
+
+/-- The canonical analytic Bernoulli-mixture prefix laws are automatically
+marginal-consistent on the largest-prefix finite-window system. -/
+theorem bernoulliMixturePrefixProcessMarginalConsistent_analytic
+    (C : Set BernoulliMixture) :
+    bernoulliMixturePrefixProcessMarginalConsistent C
+      (fun M _ n => bernoulliMixturePrefixLaw_analytic M n) := by
+  intro M _hM u i hi X
+  simpa [Exchangeability.takePrefix] using
+    (bernoulliMixturePrefixPrevision_takePrefix_eq
+      (M := M) (hmn := prefixWindow_le_jointLength u hi) X)
+
 /-- Finite-window realization/FIP completion for the imprecise de Finetti
 prefix-process specification.
 
@@ -2881,6 +3010,12 @@ structure ImpreciseDeFinettiProcessLawCrown
       (bernoulliMixturePrefixProjectiveSpec C n
         (bernoulliMixturePrefixLawAt C hLaw n)).globalEnvelopeWidthComplement X =
         impreciseDeFinettiPrefixEnvelopeWidthComplement C n
+          (bernoulliMixturePrefixLawAt C hLaw n) X
+  prefixMidpointReadout :
+    ∀ (n : ℕ) (X : Gamble (Fin n → Bool)),
+      (bernoulliMixturePrefixProjectiveSpec C n
+        (bernoulliMixturePrefixLawAt C hLaw n)).globalEnvelopeMidpoint X =
+        impreciseDeFinettiPrefixEnvelopeMidpoint C n
           (bernoulliMixturePrefixLawAt C hLaw n) X
   agreementDetermines :
     ∀ (n : ℕ) (X : Gamble (Fin n → Bool)),
@@ -3045,6 +3180,331 @@ abbrev posteriorBernoulliMixturePrefixLawAt
       BernoulliMixturePrefixLaw P n :=
   bernoulliMixturePrefixLawAt (posteriorBernoulliMixtureSet M k l hZ)
     (posteriorBernoulliMixtureSetPrefixLaw M k l hZ) n
+
+/-! ### Posterior mixture families as imprecise revision envelopes -/
+
+/-- Updating every prior mixture in a credal family by the same observed counts
+gives the posterior credal family.  The nonzero-normalizer hypothesis is kept
+memberwise; it is the honest Bayes gate for count revision. -/
+noncomputable def posteriorBernoulliMixtureFamilySet
+    (C : Set BernoulliMixture) (k l : ℕ)
+    (hZ : ∀ M : BernoulliMixture, M ∈ C →
+      M.countEvidenceMass k l ≠ 0) : Set BernoulliMixture :=
+  {P | ∃ M : BernoulliMixture, ∃ hM : M ∈ C,
+    P = M.posteriorBernoulliMixture k l (hZ M hM)}
+
+theorem posteriorBernoulliMixtureFamilySet_nonempty
+    (C : Set BernoulliMixture) (k l : ℕ)
+    (hZ : ∀ M : BernoulliMixture, M ∈ C →
+      M.countEvidenceMass k l ≠ 0)
+    (hC : C.Nonempty) :
+    (posteriorBernoulliMixtureFamilySet C k l hZ).Nonempty := by
+  rcases hC with ⟨M, hM⟩
+  exact ⟨M.posteriorBernoulliMixture k l (hZ M hM), M, hM, rfl⟩
+
+theorem posteriorBernoulliMixture_mem_posteriorFamilySet
+    (C : Set BernoulliMixture) (k l : ℕ)
+    (hZ : ∀ M : BernoulliMixture, M ∈ C →
+      M.countEvidenceMass k l ≠ 0)
+    {M : BernoulliMixture} (hM : M ∈ C) :
+    M.posteriorBernoulliMixture k l (hZ M hM) ∈
+      posteriorBernoulliMixtureFamilySet C k l hZ :=
+  ⟨M, hM, rfl⟩
+
+/-- Every member of the posterior family has analytic Bernoulli prefix laws. -/
+def posteriorBernoulliMixtureFamilyPrefixLaw
+    (C : Set BernoulliMixture) (k l : ℕ)
+    (hZ : ∀ M : BernoulliMixture, M ∈ C →
+      M.countEvidenceMass k l ≠ 0) :
+    ∀ P : BernoulliMixture,
+      P ∈ posteriorBernoulliMixtureFamilySet C k l hZ →
+      ∀ n : ℕ, BernoulliMixturePrefixLaw P n := by
+  intro P _hP n
+  exact bernoulliMixturePrefixLaw_analytic P n
+
+/-- The finite-window prefix-law selector for an updated posterior family. -/
+abbrev posteriorBernoulliMixtureFamilyPrefixLawAt
+    (C : Set BernoulliMixture) (k l : ℕ)
+    (hZ : ∀ M : BernoulliMixture, M ∈ C →
+      M.countEvidenceMass k l ≠ 0) (n : ℕ) :
+    ∀ P : BernoulliMixture,
+      P ∈ posteriorBernoulliMixtureFamilySet C k l hZ →
+      BernoulliMixturePrefixLaw P n :=
+  bernoulliMixturePrefixLawAt (posteriorBernoulliMixtureFamilySet C k l hZ)
+    (posteriorBernoulliMixtureFamilyPrefixLaw C k l hZ) n
+
+/-- In the posterior family envelope, every admissible prior mixture's
+next-success Bayes ratio lies between the lower and upper one-bit envelopes.
+
+This is a semantic Walley-family statement: it says the updated family contains
+the memberwise Bayes update, not that the endpoints are proof-theoretically
+tight. -/
+theorem posteriorBernoulliMixtureFamily_trueRatio_mem_prefixEnvelope
+    (C : Set BernoulliMixture) (k l : ℕ)
+    (hZ : ∀ M : BernoulliMixture, M ∈ C →
+      M.countEvidenceMass k l ≠ 0)
+    {M : BernoulliMixture} (hM : M ∈ C) :
+    impreciseDeFinettiPrefixLowerEnvelope
+        (posteriorBernoulliMixtureFamilySet C k l hZ) 1
+        (posteriorBernoulliMixtureFamilyPrefixLawAt C k l hZ 1)
+        oneBitTrueGamble ≤
+      M.countEvidenceMass (k + 1) l / M.countEvidenceMass k l ∧
+    M.countEvidenceMass (k + 1) l / M.countEvidenceMass k l ≤
+      impreciseDeFinettiPrefixUpperEnvelope
+        (posteriorBernoulliMixtureFamilySet C k l hZ) 1
+        (posteriorBernoulliMixtureFamilyPrefixLawAt C k l hZ 1)
+        oneBitTrueGamble := by
+  let P := M.posteriorBernoulliMixture k l (hZ M hM)
+  have hP :
+      P ∈ posteriorBernoulliMixtureFamilySet C k l hZ :=
+    posteriorBernoulliMixture_mem_posteriorFamilySet C k l hZ hM
+  have hValue :
+      ((posteriorBernoulliMixtureFamilyPrefixLawAt C k l hZ 1)
+          P hP).toPrecisePrevision oneBitTrueGamble =
+        M.countEvidenceMass (k + 1) l / M.countEvidenceMass k l := by
+    simpa [P, posteriorBernoulliMixtureFamilyPrefixLawAt,
+      posteriorBernoulliMixtureFamilyPrefixLaw, bernoulliMixturePrefixLawAt] using
+      (posteriorBernoulliMixturePrefixPrevision_oneBitTrue_eq_countEvidenceMass_ratio
+        M k l (hZ M hM))
+  constructor
+  · exact
+      (impreciseDeFinettiPrefixLowerEnvelope_le_mixturePrevision
+        (posteriorBernoulliMixtureFamilySet C k l hZ) 1
+        (posteriorBernoulliMixtureFamilyPrefixLawAt C k l hZ 1)
+        hP oneBitTrueGamble).trans_eq hValue
+  · calc
+      M.countEvidenceMass (k + 1) l / M.countEvidenceMass k l =
+          ((posteriorBernoulliMixtureFamilyPrefixLawAt C k l hZ 1)
+            P hP).toPrecisePrevision oneBitTrueGamble := hValue.symm
+      _ ≤ impreciseDeFinettiPrefixUpperEnvelope
+          (posteriorBernoulliMixtureFamilySet C k l hZ) 1
+          (posteriorBernoulliMixtureFamilyPrefixLawAt C k l hZ 1)
+          oneBitTrueGamble :=
+        impreciseDeFinettiPrefixPrevision_le_upperEnvelope
+          (posteriorBernoulliMixtureFamilySet C k l hZ) 1
+          (posteriorBernoulliMixtureFamilyPrefixLawAt C k l hZ 1)
+          hP oneBitTrueGamble
+
+/-- The same posterior-family envelope fact for the next-failure Bayes ratio. -/
+theorem posteriorBernoulliMixtureFamily_falseRatio_mem_prefixEnvelope
+    (C : Set BernoulliMixture) (k l : ℕ)
+    (hZ : ∀ M : BernoulliMixture, M ∈ C →
+      M.countEvidenceMass k l ≠ 0)
+    {M : BernoulliMixture} (hM : M ∈ C) :
+    impreciseDeFinettiPrefixLowerEnvelope
+        (posteriorBernoulliMixtureFamilySet C k l hZ) 1
+        (posteriorBernoulliMixtureFamilyPrefixLawAt C k l hZ 1)
+        oneBitFalseGamble ≤
+      M.countEvidenceMass k (l + 1) / M.countEvidenceMass k l ∧
+    M.countEvidenceMass k (l + 1) / M.countEvidenceMass k l ≤
+      impreciseDeFinettiPrefixUpperEnvelope
+        (posteriorBernoulliMixtureFamilySet C k l hZ) 1
+        (posteriorBernoulliMixtureFamilyPrefixLawAt C k l hZ 1)
+        oneBitFalseGamble := by
+  let P := M.posteriorBernoulliMixture k l (hZ M hM)
+  have hP :
+      P ∈ posteriorBernoulliMixtureFamilySet C k l hZ :=
+    posteriorBernoulliMixture_mem_posteriorFamilySet C k l hZ hM
+  have hValue :
+      ((posteriorBernoulliMixtureFamilyPrefixLawAt C k l hZ 1)
+          P hP).toPrecisePrevision oneBitFalseGamble =
+        M.countEvidenceMass k (l + 1) / M.countEvidenceMass k l := by
+    simpa [P, posteriorBernoulliMixtureFamilyPrefixLawAt,
+      posteriorBernoulliMixtureFamilyPrefixLaw, bernoulliMixturePrefixLawAt] using
+      (posteriorBernoulliMixturePrefixPrevision_oneBitFalse_eq_countEvidenceMass_ratio
+        M k l (hZ M hM))
+  constructor
+  · exact
+      (impreciseDeFinettiPrefixLowerEnvelope_le_mixturePrevision
+        (posteriorBernoulliMixtureFamilySet C k l hZ) 1
+        (posteriorBernoulliMixtureFamilyPrefixLawAt C k l hZ 1)
+        hP oneBitFalseGamble).trans_eq hValue
+  · calc
+      M.countEvidenceMass k (l + 1) / M.countEvidenceMass k l =
+          ((posteriorBernoulliMixtureFamilyPrefixLawAt C k l hZ 1)
+            P hP).toPrecisePrevision oneBitFalseGamble := hValue.symm
+      _ ≤ impreciseDeFinettiPrefixUpperEnvelope
+          (posteriorBernoulliMixtureFamilySet C k l hZ) 1
+          (posteriorBernoulliMixtureFamilyPrefixLawAt C k l hZ 1)
+          oneBitFalseGamble :=
+        impreciseDeFinettiPrefixPrevision_le_upperEnvelope
+          (posteriorBernoulliMixtureFamilySet C k l hZ) 1
+          (posteriorBernoulliMixtureFamilyPrefixLawAt C k l hZ 1)
+          hP oneBitFalseGamble
+
+/-- The posterior-family lower envelope for the next-success event is the
+greatest scalar lower bound of all memberwise Bayes count ratios.
+
+This remains a semantic Walley-envelope statement.  It does not assert that a
+proof system derives the endpoint; it says the endpoint is forced by the full
+updated credal family. -/
+theorem posteriorBernoulliMixtureFamily_trueRatio_lowerEnvelope_greatestLowerBound
+    (C : Set BernoulliMixture) (k l : ℕ)
+    (hZ : ∀ M : BernoulliMixture, M ∈ C →
+      M.countEvidenceMass k l ≠ 0)
+    (hC : C.Nonempty) {a : ℝ}
+    (ha : ∀ M : BernoulliMixture, ∀ _hM : M ∈ C,
+      a ≤ M.countEvidenceMass (k + 1) l / M.countEvidenceMass k l) :
+    a ≤
+      impreciseDeFinettiPrefixLowerEnvelope
+        (posteriorBernoulliMixtureFamilySet C k l hZ) 1
+        (posteriorBernoulliMixtureFamilyPrefixLawAt C k l hZ 1)
+        oneBitTrueGamble := by
+  unfold impreciseDeFinettiPrefixLowerEnvelope
+  apply le_lowerEnvelope_of_forall_le
+  · exact bernoulliMixturePrefixCredalSet_nonempty
+      (posteriorBernoulliMixtureFamilySet C k l hZ) 1
+      (posteriorBernoulliMixtureFamilyPrefixLawAt C k l hZ 1)
+      (posteriorBernoulliMixtureFamilySet_nonempty C k l hZ hC)
+  · intro P hP
+    rcases hP with ⟨N, hN, rfl⟩
+    rcases hN with ⟨M, hM, rfl⟩
+    have hValue :
+        (BernoulliMixturePrefixLaw.toPrecisePrevision
+          ((posteriorBernoulliMixtureFamilyPrefixLawAt C k l hZ 1)
+            (M.posteriorBernoulliMixture k l (hZ M hM))
+            (posteriorBernoulliMixture_mem_posteriorFamilySet C k l hZ hM)))
+            oneBitTrueGamble =
+          M.countEvidenceMass (k + 1) l / M.countEvidenceMass k l := by
+      simpa [posteriorBernoulliMixtureFamilyPrefixLawAt,
+        posteriorBernoulliMixtureFamilyPrefixLaw, bernoulliMixturePrefixLawAt] using
+        (posteriorBernoulliMixturePrefixPrevision_oneBitTrue_eq_countEvidenceMass_ratio
+          M k l (hZ M hM))
+    calc
+      a ≤ M.countEvidenceMass (k + 1) l / M.countEvidenceMass k l := ha M hM
+      _ = (BernoulliMixturePrefixLaw.toPrecisePrevision
+            ((posteriorBernoulliMixtureFamilyPrefixLawAt C k l hZ 1)
+            (M.posteriorBernoulliMixture k l (hZ M hM))
+            (posteriorBernoulliMixture_mem_posteriorFamilySet C k l hZ hM)))
+            oneBitTrueGamble := hValue.symm
+
+/-- The posterior-family upper envelope for the next-success event is the least
+scalar upper bound of all memberwise Bayes count ratios. -/
+theorem posteriorBernoulliMixtureFamily_trueRatio_upperEnvelope_leastUpperBound
+    (C : Set BernoulliMixture) (k l : ℕ)
+    (hZ : ∀ M : BernoulliMixture, M ∈ C →
+      M.countEvidenceMass k l ≠ 0)
+    (hC : C.Nonempty) {a : ℝ}
+    (ha : ∀ M : BernoulliMixture, ∀ _hM : M ∈ C,
+      M.countEvidenceMass (k + 1) l / M.countEvidenceMass k l ≤ a) :
+    impreciseDeFinettiPrefixUpperEnvelope
+        (posteriorBernoulliMixtureFamilySet C k l hZ) 1
+        (posteriorBernoulliMixtureFamilyPrefixLawAt C k l hZ 1)
+        oneBitTrueGamble ≤
+      a := by
+  unfold impreciseDeFinettiPrefixUpperEnvelope
+  apply upperEnvelope_le_of_forall_le
+  · exact bernoulliMixturePrefixCredalSet_nonempty
+      (posteriorBernoulliMixtureFamilySet C k l hZ) 1
+      (posteriorBernoulliMixtureFamilyPrefixLawAt C k l hZ 1)
+      (posteriorBernoulliMixtureFamilySet_nonempty C k l hZ hC)
+  · intro P hP
+    rcases hP with ⟨N, hN, rfl⟩
+    rcases hN with ⟨M, hM, rfl⟩
+    have hValue :
+        (BernoulliMixturePrefixLaw.toPrecisePrevision
+          ((posteriorBernoulliMixtureFamilyPrefixLawAt C k l hZ 1)
+            (M.posteriorBernoulliMixture k l (hZ M hM))
+            (posteriorBernoulliMixture_mem_posteriorFamilySet C k l hZ hM)))
+            oneBitTrueGamble =
+          M.countEvidenceMass (k + 1) l / M.countEvidenceMass k l := by
+      simpa [posteriorBernoulliMixtureFamilyPrefixLawAt,
+        posteriorBernoulliMixtureFamilyPrefixLaw, bernoulliMixturePrefixLawAt] using
+        (posteriorBernoulliMixturePrefixPrevision_oneBitTrue_eq_countEvidenceMass_ratio
+          M k l (hZ M hM))
+    calc
+      (BernoulliMixturePrefixLaw.toPrecisePrevision
+        ((posteriorBernoulliMixtureFamilyPrefixLawAt C k l hZ 1)
+          (M.posteriorBernoulliMixture k l (hZ M hM))
+          (posteriorBernoulliMixture_mem_posteriorFamilySet C k l hZ hM)))
+          oneBitTrueGamble =
+        M.countEvidenceMass (k + 1) l / M.countEvidenceMass k l := hValue
+      _ ≤ a := ha M hM
+
+/-- The posterior-family lower envelope for the next-failure event is the
+greatest scalar lower bound of all memberwise Bayes count ratios. -/
+theorem posteriorBernoulliMixtureFamily_falseRatio_lowerEnvelope_greatestLowerBound
+    (C : Set BernoulliMixture) (k l : ℕ)
+    (hZ : ∀ M : BernoulliMixture, M ∈ C →
+      M.countEvidenceMass k l ≠ 0)
+    (hC : C.Nonempty) {a : ℝ}
+    (ha : ∀ M : BernoulliMixture, ∀ _hM : M ∈ C,
+      a ≤ M.countEvidenceMass k (l + 1) / M.countEvidenceMass k l) :
+    a ≤
+      impreciseDeFinettiPrefixLowerEnvelope
+        (posteriorBernoulliMixtureFamilySet C k l hZ) 1
+        (posteriorBernoulliMixtureFamilyPrefixLawAt C k l hZ 1)
+        oneBitFalseGamble := by
+  unfold impreciseDeFinettiPrefixLowerEnvelope
+  apply le_lowerEnvelope_of_forall_le
+  · exact bernoulliMixturePrefixCredalSet_nonempty
+      (posteriorBernoulliMixtureFamilySet C k l hZ) 1
+      (posteriorBernoulliMixtureFamilyPrefixLawAt C k l hZ 1)
+      (posteriorBernoulliMixtureFamilySet_nonempty C k l hZ hC)
+  · intro P hP
+    rcases hP with ⟨N, hN, rfl⟩
+    rcases hN with ⟨M, hM, rfl⟩
+    have hValue :
+        (BernoulliMixturePrefixLaw.toPrecisePrevision
+          ((posteriorBernoulliMixtureFamilyPrefixLawAt C k l hZ 1)
+            (M.posteriorBernoulliMixture k l (hZ M hM))
+            (posteriorBernoulliMixture_mem_posteriorFamilySet C k l hZ hM)))
+            oneBitFalseGamble =
+          M.countEvidenceMass k (l + 1) / M.countEvidenceMass k l := by
+      simpa [posteriorBernoulliMixtureFamilyPrefixLawAt,
+        posteriorBernoulliMixtureFamilyPrefixLaw, bernoulliMixturePrefixLawAt] using
+        (posteriorBernoulliMixturePrefixPrevision_oneBitFalse_eq_countEvidenceMass_ratio
+          M k l (hZ M hM))
+    calc
+      a ≤ M.countEvidenceMass k (l + 1) / M.countEvidenceMass k l := ha M hM
+      _ = (BernoulliMixturePrefixLaw.toPrecisePrevision
+            ((posteriorBernoulliMixtureFamilyPrefixLawAt C k l hZ 1)
+            (M.posteriorBernoulliMixture k l (hZ M hM))
+            (posteriorBernoulliMixture_mem_posteriorFamilySet C k l hZ hM)))
+            oneBitFalseGamble := hValue.symm
+
+/-- The posterior-family upper envelope for the next-failure event is the
+least scalar upper bound of all memberwise Bayes count ratios. -/
+theorem posteriorBernoulliMixtureFamily_falseRatio_upperEnvelope_leastUpperBound
+    (C : Set BernoulliMixture) (k l : ℕ)
+    (hZ : ∀ M : BernoulliMixture, M ∈ C →
+      M.countEvidenceMass k l ≠ 0)
+    (hC : C.Nonempty) {a : ℝ}
+    (ha : ∀ M : BernoulliMixture, ∀ _hM : M ∈ C,
+      M.countEvidenceMass k (l + 1) / M.countEvidenceMass k l ≤ a) :
+    impreciseDeFinettiPrefixUpperEnvelope
+        (posteriorBernoulliMixtureFamilySet C k l hZ) 1
+        (posteriorBernoulliMixtureFamilyPrefixLawAt C k l hZ 1)
+        oneBitFalseGamble ≤
+      a := by
+  unfold impreciseDeFinettiPrefixUpperEnvelope
+  apply upperEnvelope_le_of_forall_le
+  · exact bernoulliMixturePrefixCredalSet_nonempty
+      (posteriorBernoulliMixtureFamilySet C k l hZ) 1
+      (posteriorBernoulliMixtureFamilyPrefixLawAt C k l hZ 1)
+      (posteriorBernoulliMixtureFamilySet_nonempty C k l hZ hC)
+  · intro P hP
+    rcases hP with ⟨N, hN, rfl⟩
+    rcases hN with ⟨M, hM, rfl⟩
+    have hValue :
+        (BernoulliMixturePrefixLaw.toPrecisePrevision
+          ((posteriorBernoulliMixtureFamilyPrefixLawAt C k l hZ 1)
+            (M.posteriorBernoulliMixture k l (hZ M hM))
+            (posteriorBernoulliMixture_mem_posteriorFamilySet C k l hZ hM)))
+            oneBitFalseGamble =
+          M.countEvidenceMass k (l + 1) / M.countEvidenceMass k l := by
+      simpa [posteriorBernoulliMixtureFamilyPrefixLawAt,
+        posteriorBernoulliMixtureFamilyPrefixLaw, bernoulliMixturePrefixLawAt] using
+        (posteriorBernoulliMixturePrefixPrevision_oneBitFalse_eq_countEvidenceMass_ratio
+          M k l (hZ M hM))
+    calc
+      (BernoulliMixturePrefixLaw.toPrecisePrevision
+        ((posteriorBernoulliMixtureFamilyPrefixLawAt C k l hZ 1)
+          (M.posteriorBernoulliMixture k l (hZ M hM))
+          (posteriorBernoulliMixture_mem_posteriorFamilySet C k l hZ hM)))
+          oneBitFalseGamble =
+        M.countEvidenceMass k (l + 1) / M.countEvidenceMass k l := hValue
+      _ ≤ a := ha M hM
 
 theorem posteriorBernoulliMixturePrefixProjectiveSpec_hasCompatibleCompletion
     (M : BernoulliMixture) (k l : ℕ)
@@ -4043,6 +4503,95 @@ theorem not_posteriorBernoulliMixturePrefixProcessWitness_of_mixedEvidence
       M k l hk hl hInteriorZero
   exact hZ hCountZero
 
+theorem bernoulliMixture_oneBitPrefixPrevision_true_add_false
+    (M : BernoulliMixture) :
+    (bernoulliMixturePrefixLaw_analytic M 1).toPrecisePrevision
+        oneBitTrueGamble +
+      (bernoulliMixturePrefixLaw_analytic M 1).toPrecisePrevision
+        oneBitFalseGamble = 1 := by
+  calc
+    (bernoulliMixturePrefixLaw_analytic M 1).toPrecisePrevision
+        oneBitTrueGamble +
+      (bernoulliMixturePrefixLaw_analytic M 1).toPrecisePrevision
+        oneBitFalseGamble =
+        (bernoulliMixturePrefixLaw_analytic M 1).toPrecisePrevision
+          (oneBitTrueGamble + oneBitFalseGamble) := by
+        symm
+        exact
+          (bernoulliMixturePrefixLaw_analytic M 1).toPrecisePrevision.add
+            oneBitTrueGamble oneBitFalseGamble
+    _ =
+        (bernoulliMixturePrefixLaw_analytic M 1).toPrecisePrevision
+          (Gamble.const (1 : ℝ)) := by
+        rw [oneBitTrueGamble_add_oneBitFalseGamble]
+    _ = 1 := by
+        simpa using
+          (PrecisePrevision.map_const_one
+            ((bernoulliMixturePrefixLaw_analytic M 1).toPrecisePrevision))
+
+theorem bernoulliMixture_allTruePrefixPrevision_eq_oneBitTrue_of_zeroInteriorMixingMass
+    (M : BernoulliMixture)
+    (n : ℕ) (hn : 0 < n)
+    (hInterior : M.mixingMeasure (Set.Ioo (0 : ℝ) 1) = 0) :
+    (bernoulliMixturePrefixLaw_analytic M n).toPrecisePrevision
+        (PrecisePrevision.FiniteWeights.atomGamble (allTruePrefix n)) =
+      (bernoulliMixturePrefixLaw_analytic M 1).toPrecisePrevision
+        oneBitTrueGamble := by
+  rw [BernoulliMixturePrefixLaw.toPrecisePrevision_atomGamble,
+    oneBitTrueGamble, BernoulliMixturePrefixLaw.toPrecisePrevision_atomGamble]
+  have hLeft :
+      M.prob (allTruePrefix n) = M.countEvidenceMass 1 0 := by
+    rw [← BernoulliMixture.countEvidenceMass_eq_prob_of_counts M (allTruePrefix n)]
+    simpa [countTrue_allTruePrefix, countFalse_allTruePrefix] using
+      (BernoulliMixture.countEvidenceMass_eq_countEvidenceMass_one_zero_of_zeroInteriorMass_of_pos
+        M n hn hInterior)
+  have hRight :
+      M.prob oneBitTruePrefix = M.countEvidenceMass 1 0 := by
+    rw [← BernoulliMixture.countEvidenceMass_eq_prob_of_counts M oneBitTruePrefix]
+    simp [oneBitTruePrefix, Mettapedia.Logic.Exchangeability.countTrue,
+      Mettapedia.Logic.Exchangeability.countFalse]
+  rw [hLeft, hRight]
+
+theorem bernoulliMixture_allFalsePrefixPrevision_eq_oneBitFalse_of_zeroInteriorMixingMass
+    (M : BernoulliMixture)
+    (n : ℕ) (hn : 0 < n)
+    (hInterior : M.mixingMeasure (Set.Ioo (0 : ℝ) 1) = 0) :
+    (bernoulliMixturePrefixLaw_analytic M n).toPrecisePrevision
+        (PrecisePrevision.FiniteWeights.atomGamble (allFalsePrefix n)) =
+      (bernoulliMixturePrefixLaw_analytic M 1).toPrecisePrevision
+        oneBitFalseGamble := by
+  rw [BernoulliMixturePrefixLaw.toPrecisePrevision_atomGamble,
+    oneBitFalseGamble, BernoulliMixturePrefixLaw.toPrecisePrevision_atomGamble]
+  have hLeft :
+      M.prob (allFalsePrefix n) = M.countEvidenceMass 0 1 := by
+    rw [← BernoulliMixture.countEvidenceMass_eq_prob_of_counts M (allFalsePrefix n)]
+    simpa [countTrue_allFalsePrefix, countFalse_allFalsePrefix] using
+      (BernoulliMixture.countEvidenceMass_eq_countEvidenceMass_zero_one_of_zeroInteriorMass_of_pos
+        M n hn hInterior)
+  have hRight :
+      M.prob oneBitFalsePrefix = M.countEvidenceMass 0 1 := by
+    rw [← BernoulliMixture.countEvidenceMass_eq_prob_of_counts M oneBitFalsePrefix]
+    simp [oneBitFalsePrefix, Mettapedia.Logic.Exchangeability.countTrue,
+      Mettapedia.Logic.Exchangeability.countFalse]
+  rw [hLeft, hRight]
+
+theorem bernoulliMixture_prefixAtom_eq_zero_of_zeroInteriorMixingMass_of_countTrue_pos_of_countFalse_pos
+    (M : BernoulliMixture)
+    {n : ℕ} (xs : Fin n → Bool)
+    (hTrue : 0 < Mettapedia.Logic.Exchangeability.countTrue xs)
+    (hFalse : 0 < Mettapedia.Logic.Exchangeability.countFalse xs)
+    (hInterior : M.mixingMeasure (Set.Ioo (0 : ℝ) 1) = 0) :
+    (bernoulliMixturePrefixLaw_analytic M n).toPrecisePrevision
+        (PrecisePrevision.FiniteWeights.atomGamble xs) = 0 := by
+  rw [BernoulliMixturePrefixLaw.toPrecisePrevision_atomGamble]
+  rw [← BernoulliMixture.countEvidenceMass_eq_prob_of_counts M xs]
+  exact
+    BernoulliMixture.countEvidenceMass_eq_zero_of_zeroInteriorMass_of_pos_of_pos
+      M
+      (Mettapedia.Logic.Exchangeability.countTrue xs)
+      (Mettapedia.Logic.Exchangeability.countFalse xs)
+      hTrue hFalse hInterior
+
 theorem posteriorBernoulliMixture_oneBitPrefixPrevision_true_add_false
     (M : BernoulliMixture) (k l : ℕ)
     (hZ : M.countEvidenceMass k l ≠ 0) :
@@ -4544,6 +5093,55 @@ def prefixTailFalseExtensionCarrier : CredalPrevisionSet (ℕ → Bool) :=
 
 /-- The canonical largest-prefix finite-window system is realized inside the
 explicit tail-false raw carrier, one finite window at a time. -/
+theorem bernoulliMixturePrefixProcess_jointPrevisionsRealizedIn_prefixTailFalseExtensionCarrier
+    (C : Set BernoulliMixture)
+    (hLaw : ∀ M : BernoulliMixture, M ∈ C → ∀ n : ℕ,
+      BernoulliMixturePrefixLaw M n)
+    (hC : C.Nonempty) :
+    (bernoulliMixturePrefixProcessLowerSpec C hLaw hC).jointPrevisionsRealizedInCarrier
+      (bernoulliMixturePrefixProcessFiniteJointWindowSystem C hLaw hC)
+      prefixTailFalseExtensionCarrier := by
+  intro u R _hR
+  refine ⟨prefixTailFalseExtensionPrevision R, ?_, ?_⟩
+  · exact ⟨⟨prefixWindowJointLength u, R⟩, rfl⟩
+  · intro i hi
+    ext X
+    simpa [ProjectiveLocalLowerPrevisionSpec.FiniteJointWindowSystem.jointMarginalPrevision,
+      ProjectiveLocalLowerPrevisionSpec.FiniteJointWindowSystem.jointCylinderGamble,
+      bernoulliMixturePrefixProcessLowerSpec,
+      bernoulliMixturePrefixProcessFiniteJointWindowSystem] using
+      (prefixTailFalseExtensionPrevision_marginal_eq
+        (n := prefixWindowJointLength u) (i := i)
+        (prefixWindow_le_jointLength u hi) R X)
+
+/-- Any raw carrier containing the explicit tail-false finite-window realizers
+inherits canonical carrier realization for the imprecise Bernoulli-mixture
+prefix process. -/
+theorem bernoulliMixturePrefixProcess_jointPrevisionsRealizedInCarrier_of_prefixTailFalseExtensionCarrierSubset
+    (C : Set BernoulliMixture)
+    (hLaw : ∀ M : BernoulliMixture, M ∈ C → ∀ n : ℕ,
+      BernoulliMixturePrefixLaw M n)
+    (hC : C.Nonempty)
+    (carrier : CredalPrevisionSet (ℕ → Bool))
+    (hSubset : prefixTailFalseExtensionCarrier ⊆ carrier) :
+    (bernoulliMixturePrefixProcessLowerSpec C hLaw hC).jointPrevisionsRealizedInCarrier
+      (bernoulliMixturePrefixProcessFiniteJointWindowSystem C hLaw hC)
+      carrier := by
+  intro u R _hR
+  refine ⟨prefixTailFalseExtensionPrevision R, ?_, ?_⟩
+  · exact hSubset ⟨⟨prefixWindowJointLength u, R⟩, rfl⟩
+  · intro i hi
+    ext X
+    simpa [ProjectiveLocalLowerPrevisionSpec.FiniteJointWindowSystem.jointMarginalPrevision,
+      ProjectiveLocalLowerPrevisionSpec.FiniteJointWindowSystem.jointCylinderGamble,
+      bernoulliMixturePrefixProcessLowerSpec,
+      bernoulliMixturePrefixProcessFiniteJointWindowSystem] using
+      (prefixTailFalseExtensionPrevision_marginal_eq
+        (n := prefixWindowJointLength u) (i := i)
+        (prefixWindow_le_jointLength u hi) R X)
+
+/-- The canonical largest-prefix finite-window system is realized inside the
+explicit tail-false raw carrier, one finite window at a time. -/
 theorem posteriorBernoulliMixturePrefixProcess_jointPrevisionsRealizedIn_prefixTailFalseExtensionCarrier
     (M : BernoulliMixture) (k l : ℕ)
     (hZ : M.countEvidenceMass k l ≠ 0) :
@@ -4654,6 +5252,10 @@ theorem impreciseDeFinetti_processLaw_projectiveNaturalExtension_crown_of_finite
     intro n X
     exact bernoulliMixturePrefixProjectiveSpec_globalEnvelopeWidthComplement
       C n (bernoulliMixturePrefixLawAt C hLaw n) X
+  prefixMidpointReadout := by
+    intro n X
+    exact bernoulliMixturePrefixProjectiveSpec_globalEnvelopeMidpoint
+      C n (bernoulliMixturePrefixLawAt C hLaw n) X
   agreementDetermines := by
     intro n X hAgree
     exact impreciseDeFinetti_prefixAgreement_projectiveDetermines
@@ -4674,6 +5276,134 @@ theorem impreciseDeFinetti_processLaw_projectiveNaturalExtension_crown_of_finite
     intro n X M N hM hN hlt
     exact impreciseDeFinetti_prefixDisagreement_confidence_lt_one
       C hLaw n X hM hN hlt
+
+/-- The exact raw all-gambles compatibility predicate for an imprecise de
+Finetti prefix-process lower envelope.
+
+Positive example: any instance of `ImpreciseDeFinettiProcessLawCrown` supplies
+this predicate by projection.  Negative example: in the posterior singleton
+case with positive interior mixing mass, the already-proved dichotomy refutes
+this predicate through the corresponding posterior process-law crown. -/
+def ImpreciseDeFinettiRawProcessCompatible
+    (C : Set BernoulliMixture)
+    (hLaw : ∀ M : BernoulliMixture, M ∈ C → ∀ n : ℕ,
+      BernoulliMixturePrefixLaw M n)
+    (hC : C.Nonempty) : Prop :=
+  ((bernoulliMixturePrefixProcessLowerSpec C hLaw hC).toCredalSpec).hasCompatibleCompletion
+
+/-- The process-law crown follows from the exact raw compatibility predicate;
+the remaining prefix envelope, width, and agreement/disagreement readouts are
+the finite-prefix de Finetti machinery already proved above. -/
+theorem impreciseDeFinetti_processLaw_projectiveNaturalExtension_crown_of_rawProcessCompatible
+    (C : Set BernoulliMixture)
+    (hLaw : ∀ M : BernoulliMixture, M ∈ C → ∀ n : ℕ,
+      BernoulliMixturePrefixLaw M n)
+    (hC : C.Nonempty)
+    (hCompat : ImpreciseDeFinettiRawProcessCompatible C hLaw hC) :
+    ImpreciseDeFinettiProcessLawCrown C hLaw hC where
+  processCompatibleCompletion := hCompat
+  prefixCompatibleCompletion := by
+    intro n
+    exact bernoulliMixturePrefixProjectiveSpec_hasCompatibleCompletion
+      C n (bernoulliMixturePrefixLawAt C hLaw n) hC
+  prefixLowerEnvelopeReadout := by
+    intro n X
+    exact bernoulliMixturePrefixProjectiveSpec_globalNaturalExtension
+      C n (bernoulliMixturePrefixLawAt C hLaw n) X
+  prefixUpperEnvelopeReadout := by
+    intro n X
+    exact bernoulliMixturePrefixProjectiveSpec_upperEnvelope
+      C n (bernoulliMixturePrefixLawAt C hLaw n) X
+  prefixWidthComplementReadout := by
+    intro n X
+    exact bernoulliMixturePrefixProjectiveSpec_globalEnvelopeWidthComplement
+      C n (bernoulliMixturePrefixLawAt C hLaw n) X
+  prefixMidpointReadout := by
+    intro n X
+    exact bernoulliMixturePrefixProjectiveSpec_globalEnvelopeMidpoint
+      C n (bernoulliMixturePrefixLawAt C hLaw n) X
+  agreementDetermines := by
+    intro n X hAgree
+    exact impreciseDeFinetti_prefixAgreement_projectiveDetermines
+      C hLaw n X hAgree
+  agreementWidthComplement_eq_one := by
+    intro n X hAgree
+    exact impreciseDeFinetti_prefixAgreement_confidence_eq_one
+      C hLaw hC n X hAgree
+  disagreementStrictWidth := by
+    intro n X M N hM hN hlt
+    exact impreciseDeFinetti_prefixDisagreement_strictWidth
+      C hLaw n X hM hN hlt
+  disagreementEnvelopeWidth_pos := by
+    intro n X M N hM hN hlt
+    exact impreciseDeFinetti_prefixDisagreement_envelopeWidth_pos
+      C hLaw n X hM hN hlt
+  disagreementWidthComplement_lt_one := by
+    intro n X M N hM hN hlt
+    exact impreciseDeFinetti_prefixDisagreement_confidence_lt_one
+      C hLaw n X hM hN hlt
+
+/-- Exact boundary form of the generic process-law crown: after all finite-prefix
+readouts are factored out, its raw process-side content is precisely compatible
+completion of the projective lower-envelope specification. -/
+theorem impreciseDeFinetti_processLaw_projectiveNaturalExtension_crown_iff_rawProcessCompatible
+    (C : Set BernoulliMixture)
+    (hLaw : ∀ M : BernoulliMixture, M ∈ C → ∀ n : ℕ,
+      BernoulliMixturePrefixLaw M n)
+    (hC : C.Nonempty) :
+    ImpreciseDeFinettiProcessLawCrown C hLaw hC ↔
+      ImpreciseDeFinettiRawProcessCompatible C hLaw hC := by
+  constructor
+  · intro hCrown
+    exact hCrown.processCompatibleCompletion
+  · intro hCompat
+    exact
+      impreciseDeFinetti_processLaw_projectiveNaturalExtension_crown_of_rawProcessCompatible
+        C hLaw hC hCompat
+
+/-- A respecting global lower prevision is the direct constructive route to the
+raw compatibility predicate. -/
+theorem ImpreciseDeFinettiRawProcessCompatible_of_respectsLocalLower
+    (C : Set BernoulliMixture)
+    (hLaw : ∀ M : BernoulliMixture, M ∈ C → ∀ n : ℕ,
+      BernoulliMixturePrefixLaw M n)
+    (hC : C.Nonempty)
+    (L : LowerPrevision (ℕ → Bool))
+    (hL :
+      (bernoulliMixturePrefixProcessLowerSpec C hLaw hC).respectsLocalLower L) :
+    ImpreciseDeFinettiRawProcessCompatible C hLaw hC := by
+  exact
+    ProjectiveLocalLowerPrevisionSpec.hasCompatibleCompletion_of_respectsLocalLower
+      (bernoulliMixturePrefixProcessLowerSpec C hLaw hC) L hL
+
+/-- Exact lower-prevision form of raw compatibility: the projective lower
+envelope has a compatible precise completion iff some global lower prevision
+respects all local lower assessments. -/
+theorem ImpreciseDeFinettiRawProcessCompatible_iff_exists_respectsLocalLower
+    (C : Set BernoulliMixture)
+    (hLaw : ∀ M : BernoulliMixture, M ∈ C → ∀ n : ℕ,
+      BernoulliMixturePrefixLaw M n)
+    (hC : C.Nonempty) :
+    ImpreciseDeFinettiRawProcessCompatible C hLaw hC ↔
+      ∃ L : LowerPrevision (ℕ → Bool),
+        (bernoulliMixturePrefixProcessLowerSpec C hLaw hC).respectsLocalLower L := by
+  let S := bernoulliMixturePrefixProcessLowerSpec C hLaw hC
+  change S.toCredalSpec.hasCompatibleCompletion ↔
+    ∃ L : LowerPrevision (ℕ → Bool), S.respectsLocalLower L
+  constructor
+  · intro hCompat
+    rcases hCompat with ⟨P, hP⟩
+    refine ⟨P.toLowerPrevision, ?_⟩
+    intro i X
+    have hPi :
+        S.cylinders.marginalPrevision i P ∈
+          dominatingPreciseCompletions (S.localLower i) := by
+      exact hP i
+    exact hPi X
+  · rintro ⟨L, hL⟩
+    exact
+      ImpreciseDeFinettiRawProcessCompatible_of_respectsLocalLower
+        C hLaw hC L hL
 
 /-- Main imprecise de Finetti process-law synthesis crown. -/
 theorem impreciseDeFinetti_processLaw_projectiveNaturalExtension_crown
@@ -4706,6 +5436,147 @@ theorem impreciseDeFinetti_processLaw_projectiveNaturalExtension_crown
   exact
     impreciseDeFinetti_processLaw_projectiveNaturalExtension_crown_of_finiteWindowCompatibleInCarrier
       C hLaw hC carrier hCompact hCarrierConvex hClosed hFIP
+
+/-- Canonical prefix marginal consistency plus carrier realization imply the
+finite-window compatibility boundary consumed by the generic compact/FIP
+completion theorem. -/
+theorem bernoulliMixturePrefixProcess_finiteWindowCompatibleInCarrier_of_prefixMarginalConsistentCarrierRealization
+    (C : Set BernoulliMixture)
+    (hLaw : ∀ M : BernoulliMixture, M ∈ C → ∀ n : ℕ,
+      BernoulliMixturePrefixLaw M n)
+    (hC : C.Nonempty)
+    (carrier : CredalPrevisionSet (ℕ → Bool))
+    (hMarginal :
+      bernoulliMixturePrefixProcessMarginalConsistent C hLaw)
+    (hRealize :
+      (bernoulliMixturePrefixProcessLowerSpec C hLaw hC).jointPrevisionsRealizedInCarrier
+        (bernoulliMixturePrefixProcessFiniteJointWindowSystem C hLaw hC)
+        carrier) :
+    (bernoulliMixturePrefixProcessLowerSpec C hLaw hC).finiteWindowCompatibleInCarrier
+      carrier := by
+  exact
+    ProjectiveLocalLowerPrevisionSpec.finiteWindowCompatibleInCarrier_of_jointPrevisionsRealizedInCarrier
+      (bernoulliMixturePrefixProcessLowerSpec C hLaw hC)
+      (bernoulliMixturePrefixProcessFiniteJointWindowSystem C hLaw hC)
+      carrier
+      (bernoulliMixturePrefixProcessFiniteJointWindowSystem_localCoherent_of_marginalConsistent
+        C hLaw hC hMarginal)
+      hRealize
+
+/-- Canonical prefix marginal consistency plus any carrier containing the
+explicit tail-false finite-window realizers imply the finite-window
+compatibility boundary consumed by the generic compact/FIP completion theorem. -/
+theorem bernoulliMixturePrefixProcess_finiteWindowCompatibleInCarrier_of_marginalConsistent_prefixTailFalseExtensionCarrierSubset
+    (C : Set BernoulliMixture)
+    (hLaw : ∀ M : BernoulliMixture, M ∈ C → ∀ n : ℕ,
+      BernoulliMixturePrefixLaw M n)
+    (hC : C.Nonempty)
+    (carrier : CredalPrevisionSet (ℕ → Bool))
+    (hMarginal :
+      bernoulliMixturePrefixProcessMarginalConsistent C hLaw)
+    (hSubset : prefixTailFalseExtensionCarrier ⊆ carrier) :
+    (bernoulliMixturePrefixProcessLowerSpec C hLaw hC).finiteWindowCompatibleInCarrier
+      carrier := by
+  exact
+    ProjectiveLocalLowerPrevisionSpec.finiteWindowCompatibleInCarrier_of_jointPrevisionsRealizedInCarrier
+      (bernoulliMixturePrefixProcessLowerSpec C hLaw hC)
+      (bernoulliMixturePrefixProcessFiniteJointWindowSystem C hLaw hC)
+      carrier
+      (bernoulliMixturePrefixProcessFiniteJointWindowSystem_localCoherent_of_marginalConsistent
+        C hLaw hC hMarginal)
+      (bernoulliMixturePrefixProcess_jointPrevisionsRealizedInCarrier_of_prefixTailFalseExtensionCarrierSubset
+        C hLaw hC carrier hSubset)
+
+/-- Canonical prefix marginal consistency plus carrier realization imply the
+generic process-law compatible completion, without an arbitrary local-coherence
+or finite-window-system witness. -/
+theorem impreciseDeFinetti_processLawCompatibleCompletion_of_prefixMarginalConsistentCarrierRealization
+    (C : Set BernoulliMixture)
+    (hLaw : ∀ M : BernoulliMixture, M ∈ C → ∀ n : ℕ,
+      BernoulliMixturePrefixLaw M n)
+    (hC : C.Nonempty)
+    [TopologicalSpace (PrecisePrevision (ℕ → Bool))]
+    (carrier : CredalPrevisionSet (ℕ → Bool))
+    (hCompact : IsCompact carrier)
+    (hCarrierConvex : CredalPrevisionSet.IsConvex carrier)
+    (hClosed : ∀ n, IsClosed {P : PrecisePrevision (ℕ → Bool) |
+      ((bernoulliMixturePrefixProcessLowerSpec C hLaw hC).cylinders.marginalPrevision
+          n P) ∈
+        dominatingPreciseCompletions
+          ((bernoulliMixturePrefixProcessLowerSpec C hLaw hC).localLower n)})
+    (hMarginal :
+      bernoulliMixturePrefixProcessMarginalConsistent C hLaw)
+    (hRealize :
+      (bernoulliMixturePrefixProcessLowerSpec C hLaw hC).jointPrevisionsRealizedInCarrier
+        (bernoulliMixturePrefixProcessFiniteJointWindowSystem C hLaw hC)
+        carrier) :
+    ((bernoulliMixturePrefixProcessLowerSpec C hLaw hC).toCredalSpec).hasCompatibleCompletion := by
+  exact
+    impreciseDeFinetti_processLawCompatibleCompletion_of_finiteWindowCompatibleInCarrier
+      C hLaw hC carrier hCompact hCarrierConvex hClosed
+      (bernoulliMixturePrefixProcess_finiteWindowCompatibleInCarrier_of_prefixMarginalConsistentCarrierRealization
+        C hLaw hC carrier hMarginal hRealize)
+
+/-- Main imprecise de Finetti process-law synthesis crown from the canonical
+largest-prefix marginal-consistency condition plus carrier realization. -/
+theorem impreciseDeFinetti_processLaw_projectiveNaturalExtension_crown_of_prefixMarginalConsistentCarrierRealization
+    (C : Set BernoulliMixture)
+    (hLaw : ∀ M : BernoulliMixture, M ∈ C → ∀ n : ℕ,
+      BernoulliMixturePrefixLaw M n)
+    (hC : C.Nonempty)
+    [TopologicalSpace (PrecisePrevision (ℕ → Bool))]
+    (carrier : CredalPrevisionSet (ℕ → Bool))
+    (hCompact : IsCompact carrier)
+    (hCarrierConvex : CredalPrevisionSet.IsConvex carrier)
+    (hClosed : ∀ n, IsClosed {P : PrecisePrevision (ℕ → Bool) |
+      ((bernoulliMixturePrefixProcessLowerSpec C hLaw hC).cylinders.marginalPrevision
+          n P) ∈
+        dominatingPreciseCompletions
+          ((bernoulliMixturePrefixProcessLowerSpec C hLaw hC).localLower n)})
+    (hMarginal :
+      bernoulliMixturePrefixProcessMarginalConsistent C hLaw)
+    (hRealize :
+      (bernoulliMixturePrefixProcessLowerSpec C hLaw hC).jointPrevisionsRealizedInCarrier
+        (bernoulliMixturePrefixProcessFiniteJointWindowSystem C hLaw hC)
+        carrier) :
+    ImpreciseDeFinettiProcessLawCrown C hLaw hC := by
+  exact
+    impreciseDeFinetti_processLaw_projectiveNaturalExtension_crown_of_finiteWindowCompatibleInCarrier
+      C hLaw hC carrier hCompact hCarrierConvex hClosed
+      (bernoulliMixturePrefixProcess_finiteWindowCompatibleInCarrier_of_prefixMarginalConsistentCarrierRealization
+        C hLaw hC carrier hMarginal hRealize)
+
+/-- For the canonical analytic prefix laws, any compact carrier containing the
+explicit tail-false finite-window realizers already yields the full imprecise
+de Finetti process-law crown.  This removes a separate local-coherence witness,
+an explicit finite-window realization witness, and a separate marginal-
+consistency assumption from the public synthesis boundary. -/
+theorem impreciseDeFinetti_analyticProcessLaw_projectiveNaturalExtension_crown_of_prefixTailFalseExtensionCarrierSubset
+    (C : Set BernoulliMixture)
+    (hC : C.Nonempty)
+    [TopologicalSpace (PrecisePrevision (ℕ → Bool))]
+    (carrier : CredalPrevisionSet (ℕ → Bool))
+    (hCompact : IsCompact carrier)
+    (hCarrierConvex : CredalPrevisionSet.IsConvex carrier)
+    (hClosed : ∀ n, IsClosed {P : PrecisePrevision (ℕ → Bool) |
+      ((bernoulliMixturePrefixProcessLowerSpec
+          C (fun M _ n => bernoulliMixturePrefixLaw_analytic M n) hC).cylinders.marginalPrevision
+          n P) ∈
+        dominatingPreciseCompletions
+          ((bernoulliMixturePrefixProcessLowerSpec
+              C (fun M _ n => bernoulliMixturePrefixLaw_analytic M n) hC).localLower n)})
+    (hSubset : prefixTailFalseExtensionCarrier ⊆ carrier) :
+    ImpreciseDeFinettiProcessLawCrown
+      C (fun M _ n => bernoulliMixturePrefixLaw_analytic M n) hC := by
+  exact
+    impreciseDeFinetti_processLaw_projectiveNaturalExtension_crown_of_finiteWindowCompatibleInCarrier
+      C (fun M _ n => bernoulliMixturePrefixLaw_analytic M n) hC
+      carrier hCompact hCarrierConvex hClosed
+      (bernoulliMixturePrefixProcess_finiteWindowCompatibleInCarrier_of_marginalConsistent_prefixTailFalseExtensionCarrierSubset
+        C (fun M _ n => bernoulliMixturePrefixLaw_analytic M n) hC
+        carrier
+        (bernoulliMixturePrefixProcessMarginalConsistent_analytic C)
+        hSubset)
 
 /-! ### Posterior process-law crown under finite-window compatibility/realization -/
 
@@ -5467,21 +6338,1283 @@ theorem externalBoolProcessLawOf_realizes_posteriorBernoulliMixture_of_represent
   externalBoolProcessLawOf_realizes_bernoulliMixture_of_represents
     μ X hX (M.posteriorBernoulliMixture k l hZ) hRep
 
+/-- The canonical external Boolean process law on `Bool^ℕ` carried by a
+Bernoulli mixture. -/
+noncomputable def bernoulliMixtureCanonicalExternalBoolProcessLaw
+    (M : BernoulliMixture) :
+    ExternalBoolProcessLaw (ℕ → Bool) :=
+  ExternalBoolProcessLaw.ofProcess
+    (bernoulliMixtureCanonicalProcessMeasure M)
+    coordProcess
+    bernoulliMixtureCanonical_coordProcess_measurable
+
 /-- The canonical mixed `Bool^ℕ` process measure directly supplies the external
 realization predicate for a Bernoulli mixture. -/
 theorem bernoulliMixtureCanonicalExternalProcessRealization
     (M : BernoulliMixture) :
     BernoulliMixtureExternalProcessRealization M
-      (ExternalBoolProcessLaw.ofProcess
-        (bernoulliMixtureCanonicalProcessMeasure M)
-        coordProcess
-        bernoulliMixtureCanonical_coordProcess_measurable) := by
+      (bernoulliMixtureCanonicalExternalBoolProcessLaw M) := by
   exact externalBoolProcessLawOf_realizes_bernoulliMixture_of_represents
     (bernoulliMixtureCanonicalProcessMeasure M)
     coordProcess
     bernoulliMixtureCanonical_coordProcess_measurable
     M
     (bernoulliMixtureCanonicalProcessMeasure_represents M)
+
+/-- The family of canonical external `Bool^ℕ` process laws generated by a set
+of Bernoulli mixtures. -/
+def bernoulliMixtureCanonicalExternalBoolProcessLawSet
+    (C : Set BernoulliMixture) :
+    Set (ExternalBoolProcessLaw (ℕ → Bool)) :=
+  {A | ∃ M : BernoulliMixture, M ∈ C ∧
+    A = bernoulliMixtureCanonicalExternalBoolProcessLaw M}
+
+theorem bernoulliMixtureCanonicalExternalBoolProcessLawSet_nonempty
+    (C : Set BernoulliMixture) (hC : C.Nonempty) :
+    (bernoulliMixtureCanonicalExternalBoolProcessLawSet C).Nonempty := by
+  rcases hC with ⟨M, hM⟩
+  exact ⟨bernoulliMixtureCanonicalExternalBoolProcessLaw M, M, hM, rfl⟩
+
+/-- At each finite prefix, the canonical external-process realization of a
+Bernoulli-mixture credal set induces exactly the same precise-prevision carrier
+as the analytic imprecise de Finetti prefix family. -/
+theorem bernoulliMixtureCanonicalExternalBoolProcessLawSet_prefixCredalSet_eq_impreciseDeFinetti
+    (C : Set BernoulliMixture) (n : ℕ) :
+    externalPathLawPrefixCredalSet
+        (bernoulliMixtureCanonicalExternalBoolProcessLawSet C) n =
+      bernoulliMixturePrefixCredalSet C n
+        (fun M _ => bernoulliMixturePrefixLaw_analytic M n) := by
+  ext P
+  constructor
+  · rintro ⟨A, hA, hP⟩
+    rcases hA with ⟨M, hM, rfl⟩
+    refine ⟨M, hM, ?_⟩
+    calc
+      P = (bernoulliMixtureCanonicalExternalBoolProcessLaw M).prefixPrevision n := hP
+      _ = (bernoulliMixturePrefixLaw_analytic M n).toPrecisePrevision := by
+        ext X
+        exact bernoulliMixtureCanonicalExternalProcessRealization M n X
+  · rintro ⟨M, hM, hP⟩
+    refine ⟨bernoulliMixtureCanonicalExternalBoolProcessLaw M, ?_, ?_⟩
+    · exact ⟨M, hM, rfl⟩
+    · calc
+        P = (bernoulliMixturePrefixLaw_analytic M n).toPrecisePrevision := hP
+        _ = (bernoulliMixtureCanonicalExternalBoolProcessLaw M).prefixPrevision n := by
+          ext X
+          symm
+          exact bernoulliMixtureCanonicalExternalProcessRealization M n X
+
+/-- The canonical external process-law family of a Bernoulli-mixture credal
+set computes exactly the same finite-prefix lower envelope as the imprecise de
+Finetti family itself. -/
+theorem bernoulliMixtureCanonicalExternalBoolProcessLawSet_prefixLowerEnvelope_eq_impreciseDeFinetti
+    (C : Set BernoulliMixture) (_hC : C.Nonempty) (n : ℕ)
+    (X : Gamble (Fin n → Bool)) :
+    externalPathLawPrefixLowerEnvelope
+        (bernoulliMixtureCanonicalExternalBoolProcessLawSet C) n X =
+      impreciseDeFinettiPrefixLowerEnvelope C n
+        (fun M _ => bernoulliMixturePrefixLaw_analytic M n) X := by
+  unfold externalPathLawPrefixLowerEnvelope
+    impreciseDeFinettiPrefixLowerEnvelope
+  rw [
+    bernoulliMixtureCanonicalExternalBoolProcessLawSet_prefixCredalSet_eq_impreciseDeFinetti
+      C n]
+
+/-- The canonical external process-law family of a Bernoulli-mixture credal
+set computes exactly the same finite-prefix upper envelope as the imprecise de
+Finetti family itself. -/
+theorem bernoulliMixtureCanonicalExternalBoolProcessLawSet_prefixUpperEnvelope_eq_impreciseDeFinetti
+    (C : Set BernoulliMixture) (_hC : C.Nonempty) (n : ℕ)
+    (X : Gamble (Fin n → Bool)) :
+    externalPathLawPrefixUpperEnvelope
+        (bernoulliMixtureCanonicalExternalBoolProcessLawSet C) n X =
+      impreciseDeFinettiPrefixUpperEnvelope C n
+        (fun M _ => bernoulliMixturePrefixLaw_analytic M n) X := by
+  unfold externalPathLawPrefixUpperEnvelope
+    impreciseDeFinettiPrefixUpperEnvelope
+  rw [
+    bernoulliMixtureCanonicalExternalBoolProcessLawSet_prefixCredalSet_eq_impreciseDeFinetti
+      C n]
+
+/-- The canonical external process-law family of a Bernoulli-mixture credal
+set computes exactly the same finite-prefix width-complement confidence
+coordinate as the imprecise de Finetti family itself. -/
+theorem bernoulliMixtureCanonicalExternalBoolProcessLawSet_prefixWidthComplement_eq_impreciseDeFinetti
+    (C : Set BernoulliMixture) (_hC : C.Nonempty) (n : ℕ)
+    (X : Gamble (Fin n → Bool)) :
+    externalPathLawPrefixEnvelopeWidthComplement
+        (bernoulliMixtureCanonicalExternalBoolProcessLawSet C) n X =
+      impreciseDeFinettiPrefixEnvelopeWidthComplement C n
+        (fun M _ => bernoulliMixturePrefixLaw_analytic M n) X := by
+  unfold externalPathLawPrefixEnvelopeWidthComplement
+    impreciseDeFinettiPrefixEnvelopeWidthComplement
+    credalEnvelopeWidthComplement credalEnvelopeWidth
+  rw [
+    bernoulliMixtureCanonicalExternalBoolProcessLawSet_prefixCredalSet_eq_impreciseDeFinetti
+      C n]
+
+/-- The canonical external process-law family of a Bernoulli-mixture credal
+set computes exactly the same finite-prefix midpoint strength coordinate as the
+imprecise de Finetti family itself. -/
+theorem bernoulliMixtureCanonicalExternalBoolProcessLawSet_prefixMidpoint_eq_impreciseDeFinetti
+    (C : Set BernoulliMixture) (_hC : C.Nonempty) (n : ℕ)
+    (X : Gamble (Fin n → Bool)) :
+    externalPathLawPrefixEnvelopeMidpoint
+        (bernoulliMixtureCanonicalExternalBoolProcessLawSet C) n X =
+      impreciseDeFinettiPrefixEnvelopeMidpoint C n
+        (fun M _ => bernoulliMixturePrefixLaw_analytic M n) X := by
+  unfold externalPathLawPrefixEnvelopeMidpoint
+    impreciseDeFinettiPrefixEnvelopeMidpoint
+    credalEnvelopeMidpoint
+  rw [
+    bernoulliMixtureCanonicalExternalBoolProcessLawSet_prefixCredalSet_eq_impreciseDeFinetti
+      C n]
+
+/-- The compact bounded-measurable canonical external path-law carrier of a
+Bernoulli-mixture credal set computes the same finite-prefix lower envelope as
+the imprecise de Finetti family itself. -/
+theorem bernoulliMixtureCanonicalExternalBoolProcessLawSet_compactNaturalExtension_prefix_eq_impreciseDeFinetti
+    (C : Set BernoulliMixture) (hC : C.Nonempty) (n : ℕ)
+    (X : Gamble (Fin n → Bool)) :
+    boundedMeasurableNaturalExtensionPrevision
+        (externalPathLawBoundedMeasurableCompactCredalSet
+          (bernoulliMixtureCanonicalExternalBoolProcessLawSet C))
+        (externalPathLawBoundedMeasurableCompactCredalSet_nonempty
+          (bernoulliMixtureCanonicalExternalBoolProcessLawSet C)
+          (bernoulliMixtureCanonicalExternalBoolProcessLawSet_nonempty C hC))
+        (externalPathLawPrefixBoundedMeasurableGamble n X) =
+      impreciseDeFinettiPrefixLowerEnvelope C n
+        (fun M _ => bernoulliMixturePrefixLaw_analytic M n) X := by
+  rw [
+    boundedMeasurableNaturalExtensionPrevision_externalPathLawCompactCredalSet_prefix_eq_finitePrefixLower
+      (bernoulliMixtureCanonicalExternalBoolProcessLawSet C)
+      (bernoulliMixtureCanonicalExternalBoolProcessLawSet_nonempty C hC) n X,
+    bernoulliMixtureCanonicalExternalBoolProcessLawSet_prefixLowerEnvelope_eq_impreciseDeFinetti
+      C hC n X]
+
+/-- The compact bounded-measurable canonical external path-law carrier of a
+Bernoulli-mixture credal set computes the same finite-prefix upper envelope as
+the imprecise de Finetti family itself. -/
+theorem bernoulliMixtureCanonicalExternalBoolProcessLawSet_compactNaturalUpperEnvelope_prefix_eq_impreciseDeFinetti
+    (C : Set BernoulliMixture) (hC : C.Nonempty) (n : ℕ)
+    (X : Gamble (Fin n → Bool)) :
+    boundedMeasurableNaturalUpperEnvelopePrevision
+        (externalPathLawBoundedMeasurableCompactCredalSet
+          (bernoulliMixtureCanonicalExternalBoolProcessLawSet C))
+        (externalPathLawBoundedMeasurableCompactCredalSet_nonempty
+          (bernoulliMixtureCanonicalExternalBoolProcessLawSet C)
+          (bernoulliMixtureCanonicalExternalBoolProcessLawSet_nonempty C hC))
+        (externalPathLawPrefixBoundedMeasurableGamble n X) =
+      impreciseDeFinettiPrefixUpperEnvelope C n
+        (fun M _ => bernoulliMixturePrefixLaw_analytic M n) X := by
+  rw [
+    boundedMeasurableNaturalUpperEnvelopePrevision_externalPathLawCompactCredalSet_prefix_eq_finitePrefixUpper
+      (bernoulliMixtureCanonicalExternalBoolProcessLawSet C)
+      (bernoulliMixtureCanonicalExternalBoolProcessLawSet_nonempty C hC) n X,
+    bernoulliMixtureCanonicalExternalBoolProcessLawSet_prefixUpperEnvelope_eq_impreciseDeFinetti
+      C hC n X]
+
+/-- The compact bounded-measurable canonical external path-law carrier of a
+Bernoulli-mixture credal set computes the same finite-prefix width-complement
+confidence coordinate as the imprecise de Finetti family itself. -/
+theorem bernoulliMixtureCanonicalExternalBoolProcessLawSet_compactWidthComplement_prefix_eq_impreciseDeFinetti
+    (C : Set BernoulliMixture) (hC : C.Nonempty) (n : ℕ)
+    (X : Gamble (Fin n → Bool)) :
+    boundedMeasurableEnvelopeWidthComplement
+        (externalPathLawBoundedMeasurableCompactCredalSet
+          (bernoulliMixtureCanonicalExternalBoolProcessLawSet C))
+        (externalPathLawPrefixBoundedMeasurableGamble n X) =
+      impreciseDeFinettiPrefixEnvelopeWidthComplement C n
+        (fun M _ => bernoulliMixturePrefixLaw_analytic M n) X := by
+  rw [
+    boundedMeasurableEnvelopeWidthComplement_externalPathLawCompactCredalSet_prefix_eq_finitePrefixComplement
+      (bernoulliMixtureCanonicalExternalBoolProcessLawSet C)
+      (bernoulliMixtureCanonicalExternalBoolProcessLawSet_nonempty C hC) n X,
+    bernoulliMixtureCanonicalExternalBoolProcessLawSet_prefixWidthComplement_eq_impreciseDeFinetti
+      C hC n X]
+
+/-- The compact bounded-measurable canonical external path-law carrier of a
+Bernoulli-mixture credal set computes the same finite-prefix midpoint strength
+coordinate as the imprecise de Finetti family itself. -/
+theorem bernoulliMixtureCanonicalExternalBoolProcessLawSet_compactMidpoint_prefix_eq_impreciseDeFinetti
+    (C : Set BernoulliMixture) (hC : C.Nonempty) (n : ℕ)
+    (X : Gamble (Fin n → Bool)) :
+    boundedMeasurableEnvelopeMidpoint
+        (externalPathLawBoundedMeasurableCompactCredalSet
+          (bernoulliMixtureCanonicalExternalBoolProcessLawSet C))
+        (externalPathLawPrefixBoundedMeasurableGamble n X) =
+      impreciseDeFinettiPrefixEnvelopeMidpoint C n
+        (fun M _ => bernoulliMixturePrefixLaw_analytic M n) X := by
+  rw [
+    boundedMeasurableEnvelopeMidpoint_externalPathLawCompactCredalSet_prefix_eq_finitePrefixMidpoint
+      (bernoulliMixtureCanonicalExternalBoolProcessLawSet C)
+      (bernoulliMixtureCanonicalExternalBoolProcessLawSet_nonempty C hC) n X,
+    bernoulliMixtureCanonicalExternalBoolProcessLawSet_prefixMidpoint_eq_impreciseDeFinetti
+      C hC n X]
+
+/-- Public sigma-additive mixing-family package for an imprecise de Finetti
+credal set.
+
+Positive example: it gives an actual external `Bool^ℕ` family whose finite-
+prefix and compact bounded-measurable lower/upper/width-complement/midpoint
+readouts agree exactly with the analytic Bernoulli-mixture family.
+
+Negative example: it does not claim a raw all-gambles compatible completion or
+process-law crown; those remain separate theorems. -/
+structure ImpreciseDeFinettiCanonicalExternalMixingFamily
+    (C : Set BernoulliMixture) (hC : C.Nonempty) : Prop where
+  nonempty :
+    (bernoulliMixtureCanonicalExternalBoolProcessLawSet C).Nonempty
+  prefixProjectiveCompatibleCompletion :
+    ∀ n : ℕ,
+      (bernoulliMixturePrefixProjectiveSpec C n
+        (fun M _ => bernoulliMixturePrefixLaw_analytic M n)).hasCompatibleCompletion
+  prefixCredalSet_eq_impreciseDeFinetti :
+    ∀ n : ℕ,
+      externalPathLawPrefixCredalSet
+          (bernoulliMixtureCanonicalExternalBoolProcessLawSet C) n =
+        bernoulliMixturePrefixCredalSet C n
+          (fun M _ => bernoulliMixturePrefixLaw_analytic M n)
+  prefixLowerEnvelope_eq_impreciseDeFinetti :
+    ∀ (n : ℕ) (X : Gamble (Fin n → Bool)),
+      externalPathLawPrefixLowerEnvelope
+          (bernoulliMixtureCanonicalExternalBoolProcessLawSet C) n X =
+        impreciseDeFinettiPrefixLowerEnvelope C n
+          (fun M _ => bernoulliMixturePrefixLaw_analytic M n) X
+  prefixUpperEnvelope_eq_impreciseDeFinetti :
+    ∀ (n : ℕ) (X : Gamble (Fin n → Bool)),
+      externalPathLawPrefixUpperEnvelope
+          (bernoulliMixtureCanonicalExternalBoolProcessLawSet C) n X =
+        impreciseDeFinettiPrefixUpperEnvelope C n
+          (fun M _ => bernoulliMixturePrefixLaw_analytic M n) X
+  prefixWidthComplement_eq_impreciseDeFinetti :
+    ∀ (n : ℕ) (X : Gamble (Fin n → Bool)),
+      externalPathLawPrefixEnvelopeWidthComplement
+          (bernoulliMixtureCanonicalExternalBoolProcessLawSet C) n X =
+        impreciseDeFinettiPrefixEnvelopeWidthComplement C n
+          (fun M _ => bernoulliMixturePrefixLaw_analytic M n) X
+  prefixMidpoint_eq_impreciseDeFinetti :
+    ∀ (n : ℕ) (X : Gamble (Fin n → Bool)),
+      externalPathLawPrefixEnvelopeMidpoint
+          (bernoulliMixtureCanonicalExternalBoolProcessLawSet C) n X =
+        impreciseDeFinettiPrefixEnvelopeMidpoint C n
+          (fun M _ => bernoulliMixturePrefixLaw_analytic M n) X
+  compactNaturalExtension_prefix_eq_impreciseDeFinetti :
+    ∀ (n : ℕ) (X : Gamble (Fin n → Bool)),
+      boundedMeasurableNaturalExtensionPrevision
+          (externalPathLawBoundedMeasurableCompactCredalSet
+            (bernoulliMixtureCanonicalExternalBoolProcessLawSet C))
+          (externalPathLawBoundedMeasurableCompactCredalSet_nonempty
+            (bernoulliMixtureCanonicalExternalBoolProcessLawSet C)
+            (bernoulliMixtureCanonicalExternalBoolProcessLawSet_nonempty C hC))
+          (externalPathLawPrefixBoundedMeasurableGamble n X) =
+        impreciseDeFinettiPrefixLowerEnvelope C n
+          (fun M _ => bernoulliMixturePrefixLaw_analytic M n) X
+  compactNaturalUpperEnvelope_prefix_eq_impreciseDeFinetti :
+    ∀ (n : ℕ) (X : Gamble (Fin n → Bool)),
+      boundedMeasurableNaturalUpperEnvelopePrevision
+          (externalPathLawBoundedMeasurableCompactCredalSet
+            (bernoulliMixtureCanonicalExternalBoolProcessLawSet C))
+          (externalPathLawBoundedMeasurableCompactCredalSet_nonempty
+            (bernoulliMixtureCanonicalExternalBoolProcessLawSet C)
+            (bernoulliMixtureCanonicalExternalBoolProcessLawSet_nonempty C hC))
+          (externalPathLawPrefixBoundedMeasurableGamble n X) =
+        impreciseDeFinettiPrefixUpperEnvelope C n
+          (fun M _ => bernoulliMixturePrefixLaw_analytic M n) X
+  compactWidthComplement_prefix_eq_impreciseDeFinetti :
+    ∀ (n : ℕ) (X : Gamble (Fin n → Bool)),
+      boundedMeasurableEnvelopeWidthComplement
+          (externalPathLawBoundedMeasurableCompactCredalSet
+            (bernoulliMixtureCanonicalExternalBoolProcessLawSet C))
+          (externalPathLawPrefixBoundedMeasurableGamble n X) =
+        impreciseDeFinettiPrefixEnvelopeWidthComplement C n
+          (fun M _ => bernoulliMixturePrefixLaw_analytic M n) X
+  compactMidpoint_prefix_eq_impreciseDeFinetti :
+    ∀ (n : ℕ) (X : Gamble (Fin n → Bool)),
+      boundedMeasurableEnvelopeMidpoint
+          (externalPathLawBoundedMeasurableCompactCredalSet
+            (bernoulliMixtureCanonicalExternalBoolProcessLawSet C))
+          (externalPathLawPrefixBoundedMeasurableGamble n X) =
+        impreciseDeFinettiPrefixEnvelopeMidpoint C n
+          (fun M _ => bernoulliMixturePrefixLaw_analytic M n) X
+  agreementDetermines :
+    ∀ (n : ℕ) (X : Gamble (Fin n → Bool)),
+      (∀ M : BernoulliMixture, ∀ _hM : M ∈ C,
+        ∀ N : BernoulliMixture, ∀ _hN : N ∈ C,
+          (bernoulliMixturePrefixLaw_analytic M n).toPrecisePrevision X =
+            (bernoulliMixturePrefixLaw_analytic N n).toPrecisePrevision X) →
+        (bernoulliMixturePrefixProjectiveSpec C n
+          (fun M _ => bernoulliMixturePrefixLaw_analytic M n)).determinesGlobalGamble X
+  agreementWidthComplement_eq_one :
+    ∀ (n : ℕ) (X : Gamble (Fin n → Bool)),
+      (∀ M : BernoulliMixture, ∀ _hM : M ∈ C,
+        ∀ N : BernoulliMixture, ∀ _hN : N ∈ C,
+          (bernoulliMixturePrefixLaw_analytic M n).toPrecisePrevision X =
+            (bernoulliMixturePrefixLaw_analytic N n).toPrecisePrevision X) →
+        impreciseDeFinettiPrefixEnvelopeWidthComplement C n
+          (fun M _ => bernoulliMixturePrefixLaw_analytic M n) X = 1
+  disagreementStrictWidth :
+    ∀ (n : ℕ) (X : Gamble (Fin n → Bool))
+      {M N : BernoulliMixture} (_hM : M ∈ C) (_hN : N ∈ C),
+      (bernoulliMixturePrefixLaw_analytic M n).toPrecisePrevision X <
+        (bernoulliMixturePrefixLaw_analytic N n).toPrecisePrevision X →
+        (bernoulliMixturePrefixProjectiveSpec C n
+          (fun M _ => bernoulliMixturePrefixLaw_analytic M n)).hasStrictGlobalWidth X
+  disagreementEnvelopeWidth_pos :
+    ∀ (n : ℕ) (X : Gamble (Fin n → Bool))
+      {M N : BernoulliMixture} (_hM : M ∈ C) (_hN : N ∈ C),
+      (bernoulliMixturePrefixLaw_analytic M n).toPrecisePrevision X <
+        (bernoulliMixturePrefixLaw_analytic N n).toPrecisePrevision X →
+        0 < impreciseDeFinettiPrefixEnvelopeWidth C n
+          (fun M _ => bernoulliMixturePrefixLaw_analytic M n) X
+  disagreementWidthComplement_lt_one :
+    ∀ (n : ℕ) (X : Gamble (Fin n → Bool))
+      {M N : BernoulliMixture} (_hM : M ∈ C) (_hN : N ∈ C),
+      (bernoulliMixturePrefixLaw_analytic M n).toPrecisePrevision X <
+        (bernoulliMixturePrefixLaw_analytic N n).toPrecisePrevision X →
+        impreciseDeFinettiPrefixEnvelopeWidthComplement C n
+          (fun M _ => bernoulliMixturePrefixLaw_analytic M n) X < 1
+
+/-- The canonical external `Bool^ℕ` Bernoulli-mixture family is the clean
+public sigma-additive mixing-family object for the imprecise de Finetti
+finite-prefix and compact bounded-measurable readouts. -/
+theorem impreciseDeFinetti_canonicalExternalMixingFamily
+    (C : Set BernoulliMixture) (hC : C.Nonempty) :
+    ImpreciseDeFinettiCanonicalExternalMixingFamily C hC where
+  nonempty :=
+    bernoulliMixtureCanonicalExternalBoolProcessLawSet_nonempty C hC
+  prefixProjectiveCompatibleCompletion := by
+    intro n
+    exact bernoulliMixturePrefixProjectiveSpec_hasCompatibleCompletion
+      C n (fun M _ => bernoulliMixturePrefixLaw_analytic M n) hC
+  prefixCredalSet_eq_impreciseDeFinetti := by
+    intro n
+    exact
+      bernoulliMixtureCanonicalExternalBoolProcessLawSet_prefixCredalSet_eq_impreciseDeFinetti
+        C n
+  prefixLowerEnvelope_eq_impreciseDeFinetti := by
+    intro n X
+    exact
+      bernoulliMixtureCanonicalExternalBoolProcessLawSet_prefixLowerEnvelope_eq_impreciseDeFinetti
+        C hC n X
+  prefixUpperEnvelope_eq_impreciseDeFinetti := by
+    intro n X
+    exact
+      bernoulliMixtureCanonicalExternalBoolProcessLawSet_prefixUpperEnvelope_eq_impreciseDeFinetti
+        C hC n X
+  prefixWidthComplement_eq_impreciseDeFinetti := by
+    intro n X
+    exact
+      bernoulliMixtureCanonicalExternalBoolProcessLawSet_prefixWidthComplement_eq_impreciseDeFinetti
+        C hC n X
+  prefixMidpoint_eq_impreciseDeFinetti := by
+    intro n X
+    exact
+      bernoulliMixtureCanonicalExternalBoolProcessLawSet_prefixMidpoint_eq_impreciseDeFinetti
+        C hC n X
+  compactNaturalExtension_prefix_eq_impreciseDeFinetti := by
+    intro n X
+    exact
+      bernoulliMixtureCanonicalExternalBoolProcessLawSet_compactNaturalExtension_prefix_eq_impreciseDeFinetti
+        C hC n X
+  compactNaturalUpperEnvelope_prefix_eq_impreciseDeFinetti := by
+    intro n X
+    exact
+      bernoulliMixtureCanonicalExternalBoolProcessLawSet_compactNaturalUpperEnvelope_prefix_eq_impreciseDeFinetti
+        C hC n X
+  compactWidthComplement_prefix_eq_impreciseDeFinetti := by
+    intro n X
+    exact
+      bernoulliMixtureCanonicalExternalBoolProcessLawSet_compactWidthComplement_prefix_eq_impreciseDeFinetti
+        C hC n X
+  compactMidpoint_prefix_eq_impreciseDeFinetti := by
+    intro n X
+    exact
+      bernoulliMixtureCanonicalExternalBoolProcessLawSet_compactMidpoint_prefix_eq_impreciseDeFinetti
+        C hC n X
+  agreementDetermines := by
+    intro n X hAgree
+    exact
+      impreciseDeFinetti_prefixAgreement_projectiveDetermines
+        C (fun M _ n => bernoulliMixturePrefixLaw_analytic M n) n X hAgree
+  agreementWidthComplement_eq_one := by
+    intro n X hAgree
+    exact
+      impreciseDeFinetti_prefixAgreement_confidence_eq_one
+        C (fun M _ n => bernoulliMixturePrefixLaw_analytic M n) hC n X hAgree
+  disagreementStrictWidth := by
+    intro n X M N hM hN hlt
+    exact
+      impreciseDeFinetti_prefixDisagreement_strictWidth
+        C (fun M _ n => bernoulliMixturePrefixLaw_analytic M n) n X hM hN hlt
+  disagreementEnvelopeWidth_pos := by
+    intro n X M N hM hN hlt
+    exact
+      impreciseDeFinetti_prefixDisagreement_envelopeWidth_pos
+        C (fun M _ n => bernoulliMixturePrefixLaw_analytic M n) n X hM hN hlt
+  disagreementWidthComplement_lt_one := by
+    intro n X M N hM hN hlt
+    exact
+      impreciseDeFinetti_prefixDisagreement_confidence_lt_one
+        C (fun M _ n => bernoulliMixturePrefixLaw_analytic M n) n X hM hN hlt
+
+/-- Public analytic infinite de Finetti package at the current honest
+process-law boundary.
+
+Positive example: it records both the canonical sigma-additive `Bool^ℕ`
+mixing-family object and the raw all-gambles process-law crown.
+
+Negative example: it does not remove the remaining compact carrier/FIP
+hypothesis boundary; this package sits exactly at that boundary rather than
+hiding it. -/
+structure ImpreciseDeFinettiAnalyticMixingFamilyProcessLawCrown
+    (C : Set BernoulliMixture) (hC : C.Nonempty) : Prop where
+  canonicalExternalMixingFamily :
+    ImpreciseDeFinettiCanonicalExternalMixingFamily C hC
+  processLawCrown :
+    ImpreciseDeFinettiProcessLawCrown
+      C (fun M _ n => bernoulliMixturePrefixLaw_analytic M n) hC
+
+/-- Singleton specialization bridge for the analytic family-level crown.
+
+This is the S0a guardrail for F2: if the raw all-gambles analytic crown is
+claimed for the posterior singleton family, it really yields the existing
+posterior-specific raw process-law crown.  Thus any later refutation of an
+unconditional family-level raw crown can pass through the already-proved
+posterior zero-interior-mass dichotomy. -/
+theorem posteriorBernoulliMixture_processLawCrown_of_singletonAnalyticMixingFamilyCrown
+    (M : BernoulliMixture) (k l : ℕ)
+    (hZ : M.countEvidenceMass k l ≠ 0)
+    (hCrown :
+      ImpreciseDeFinettiAnalyticMixingFamilyProcessLawCrown
+        (posteriorBernoulliMixtureSet M k l hZ)
+        (posteriorBernoulliMixtureSet_nonempty M k l hZ)) :
+    PosteriorBernoulliMixtureProcessLawCrown M k l hZ where
+  prefixProjectiveCrown :=
+    posteriorBernoulliMixturePrefixProjectiveCrown M k l hZ
+  processLawCrown := by
+    simpa [posteriorBernoulliMixtureSetPrefixLaw] using hCrown.processLawCrown
+  processCompatibleCompletion := by
+    simpa [posteriorBernoulliMixturePrefixProcessLowerSpec,
+      posteriorBernoulliMixtureSetPrefixLaw] using
+      hCrown.processLawCrown.processCompatibleCompletion
+  prefixEnvelopeWidth_eq_zero := by
+    intro n X
+    exact posteriorBernoulliMixturePrefixEnvelopeWidth_eq_zero M k l hZ n X
+  prefixWidthComplement_eq_one := by
+    intro n X
+    exact posteriorBernoulliMixturePrefixEnvelopeWidthComplement_eq_one M k l hZ n X
+
+/-- A positive-interior posterior singleton refutes any unconditional raw analytic
+family-level crown for all nonempty credal sets.
+
+This is the F2 guardrail: the canonical external mixing readout is unconditional,
+but the raw all-gambles process-law crown is not. -/
+theorem not_forall_impreciseDeFinetti_analyticMixingFamilyProcessLawCrown_of_interiorMixingMass
+    (M : BernoulliMixture) (k l : ℕ)
+    (hInterior : 0 < M.mixingMeasure (Set.Ioo (0 : ℝ) 1)) :
+    ¬ (∀ (C : Set BernoulliMixture) (hC : C.Nonempty),
+        ImpreciseDeFinettiAnalyticMixingFamilyProcessLawCrown C hC) := by
+  intro hAll
+  have hZ : M.countEvidenceMass k l ≠ 0 := by
+    exact ne_of_gt
+      (BernoulliMixture.countEvidenceMass_pos_of_interiorMass M k l hInterior)
+  have hSingleton :
+      ImpreciseDeFinettiAnalyticMixingFamilyProcessLawCrown
+        (posteriorBernoulliMixtureSet M k l hZ)
+        (posteriorBernoulliMixtureSet_nonempty M k l hZ) :=
+    hAll (posteriorBernoulliMixtureSet M k l hZ)
+      (posteriorBernoulliMixtureSet_nonempty M k l hZ)
+  have hPosterior :
+      PosteriorBernoulliMixtureProcessLawCrown M k l hZ :=
+    posteriorBernoulliMixture_processLawCrown_of_singletonAnalyticMixingFamilyCrown
+      M k l hZ hSingleton
+  exact
+    not_posteriorBernoulliMixture_processLawCrown_of_interiorMixingMass
+      M k l hZ hInterior hPosterior
+
+/-- The neutral analytic compatibility condition for the F2 family-level raw
+process-law crown.
+
+Positive example: a proven analytic mixing-family process-law crown projects to
+this condition.  Negative example: the positive-interior posterior singleton
+refutation above shows that no theorem can supply this condition for every
+nonempty credal family. -/
+def AnalyticMixingFamilyRawProcessCompatible
+    (C : Set BernoulliMixture) (hC : C.Nonempty) : Prop :=
+  ImpreciseDeFinettiRawProcessCompatible C
+    (fun M _ n => bernoulliMixturePrefixLaw_analytic M n) hC
+
+/-- Candidate pointwise zero-interior condition for the analytic family-level
+raw process-law crown.
+
+Positive example: a singleton family satisfies this condition exactly when its
+one member has zero interior mixing mass.  Negative example: any member with
+positive interior mixing mass refutes the condition. -/
+def AnalyticMixingFamilyPointwiseZeroInterior
+    (C : Set BernoulliMixture) : Prop :=
+  ∀ M : BernoulliMixture, M ∈ C →
+    M.mixingMeasure (Set.Ioo (0 : ℝ) 1) = 0
+
+/-- A single Bernoulli mixture has an all-gambles analytic prefix-process
+witness when one precise prevision on infinite Boolean paths has exactly its
+analytic finite-prefix marginals.
+
+Positive example: the posterior zero-interior theorem proves this shape for
+posterior singleton laws.  Negative example: the posterior interior-mass
+dichotomy refutes this shape in the corresponding positive-interior posterior
+case. -/
+def BernoulliMixtureAnalyticPrefixProcessWitness
+    (M : BernoulliMixture) : Prop :=
+  ∃ P : PrecisePrevision (ℕ → Bool),
+    ∀ (n : ℕ) (X : Gamble (Fin n → Bool)),
+      (bernoulliMixturePrefixProcessCylinderSystem.marginalPrevision n P) X =
+        (bernoulliMixturePrefixLaw_analytic M n).toPrecisePrevision X
+
+/-- A zero-interior Bernoulli mixture has a raw all-gambles analytic prefix-process
+witness: the infinite process is the two-point mixture of the all-true and
+all-false paths, with weight determined by the one-bit true prefix. -/
+theorem BernoulliMixtureAnalyticPrefixProcessWitness_of_zeroInteriorMixingMass
+    (M : BernoulliMixture)
+    (hInterior : M.mixingMeasure (Set.Ioo (0 : ℝ) 1) = 0) :
+    BernoulliMixtureAnalyticPrefixProcessWitness M := by
+  classical
+  let t : ℝ :=
+    (bernoulliMixturePrefixLaw_analytic M 1).toPrecisePrevision
+      oneBitTrueGamble
+  have ht0 : 0 ≤ t := by
+    dsimp [t]
+    exact
+      ((bernoulliMixturePrefixLaw_analytic M 1).toPrecisePrevision).lower_bound
+        oneBitTrueGamble 0 (by
+          intro xs
+          simpa [oneBitTrueGamble] using
+            (PrecisePrevision.FiniteWeights.atomGamble_nonneg oneBitTruePrefix xs))
+  have hFalseNonneg :
+      0 ≤
+        (bernoulliMixturePrefixLaw_analytic M 1).toPrecisePrevision
+          oneBitFalseGamble := by
+    exact
+      ((bernoulliMixturePrefixLaw_analytic M 1).toPrecisePrevision).lower_bound
+        oneBitFalseGamble 0 (by
+          intro xs
+          simpa [oneBitFalseGamble] using
+            (PrecisePrevision.FiniteWeights.atomGamble_nonneg oneBitFalsePrefix xs))
+  have hSum :
+      t +
+        (bernoulliMixturePrefixLaw_analytic M 1).toPrecisePrevision
+          oneBitFalseGamble = 1 := by
+    simpa [t] using
+      bernoulliMixture_oneBitPrefixPrevision_true_add_false M
+  have ht1 : t ≤ 1 := by
+    linarith
+  let P : PrecisePrevision (ℕ → Bool) :=
+    PrecisePrevision.mix t
+      (PrecisePrevision.dirac allTruePath)
+      (PrecisePrevision.dirac allFalsePath)
+      ht0 ht1
+  refine ⟨P, ?_⟩
+  intro n X
+  have hMarginalTrue :
+      bernoulliMixturePrefixProcessCylinderSystem.marginalPrevision n
+        (PrecisePrevision.dirac allTruePath) =
+        PrecisePrevision.dirac (allTruePrefix n) := by
+    ext Y
+    rfl
+  have hMarginalFalse :
+      bernoulliMixturePrefixProcessCylinderSystem.marginalPrevision n
+        (PrecisePrevision.dirac allFalsePath) =
+        PrecisePrevision.dirac (allFalsePrefix n) := by
+    ext Y
+    rfl
+  have hMarginalMix :
+      bernoulliMixturePrefixProcessCylinderSystem.marginalPrevision n P =
+        PrecisePrevision.mix t
+          (PrecisePrevision.dirac (allTruePrefix n))
+          (PrecisePrevision.dirac (allFalsePrefix n))
+          ht0 ht1 := by
+    change
+      bernoulliMixturePrefixProcessCylinderSystem.marginalPrevision n P =
+        PrecisePrevision.mix t
+          (PrecisePrevision.dirac (allTruePrefix n))
+          (PrecisePrevision.dirac (allFalsePrefix n))
+          ht0 ht1
+    rw [ProjectiveCylinderSystem.marginalPrevision_mix]
+    rw [hMarginalTrue, hMarginalFalse]
+  have hLocalEq :
+      bernoulliMixturePrefixProcessCylinderSystem.marginalPrevision n P =
+        (bernoulliMixturePrefixLaw_analytic M n).toPrecisePrevision := by
+    cases n with
+    | zero =>
+        have hWeights :
+            PrecisePrevision.FiniteWeights.ofPrecisePrevision
+              (Ω := Fin 0 → Bool)
+              (bernoulliMixturePrefixProcessCylinderSystem.marginalPrevision 0 P) =
+              PrecisePrevision.FiniteWeights.ofPrecisePrevision
+                (Ω := Fin 0 → Bool)
+                ((bernoulliMixturePrefixLaw_analytic M 0).toPrecisePrevision) := by
+          ext xs
+          have hxs : xs = default := by
+            ext i
+            exact Fin.elim0 i
+          subst hxs
+          rw [PrecisePrevision.FiniteWeights.ofPrecisePrevision_weight,
+            PrecisePrevision.FiniteWeights.ofPrecisePrevision_weight]
+          rw [hMarginalMix]
+          have hTrue0 : allTruePrefix 0 = (default : Fin 0 → Bool) := by
+            ext i
+            exact Fin.elim0 i
+          have hFalse0 : allFalsePrefix 0 = (default : Fin 0 → Bool) := by
+            ext i
+            exact Fin.elim0 i
+          have hLeft :
+              (PrecisePrevision.mix t
+                  (PrecisePrevision.dirac (allTruePrefix 0))
+                  (PrecisePrevision.dirac (allFalsePrefix 0)) ht0 ht1)
+                (PrecisePrevision.FiniteWeights.atomGamble (default : Fin 0 → Bool)) = 1 := by
+            simp [PrecisePrevision.mix, PrecisePrevision.FiniteWeights.atomGamble, t,
+              hTrue0, hFalse0]
+          have hTotal :=
+            (bernoulliMixturePrefixLaw_analytic M 0).total
+          have hRight :
+              (bernoulliMixturePrefixLaw_analytic M 0).toPrecisePrevision
+                (PrecisePrevision.FiniteWeights.atomGamble (default : Fin 0 → Bool)) = 1 := by
+            simpa [BernoulliMixturePrefixLaw.toPrecisePrevision_atomGamble,
+              PrecisePrevision.FiniteWeights.atomGamble] using hTotal
+          exact hLeft.trans hRight.symm
+        have hPrec := congrArg PrecisePrevision.FiniteWeights.toPrecisePrevision hWeights
+        simpa [PrecisePrevision.FiniteWeights.toPrecisePrevision_ofPrecisePrevision] using hPrec
+    | succ m =>
+        have hWeights :
+            PrecisePrevision.FiniteWeights.ofPrecisePrevision
+              (Ω := Fin (Nat.succ m) → Bool)
+              (bernoulliMixturePrefixProcessCylinderSystem.marginalPrevision (Nat.succ m) P) =
+              PrecisePrevision.FiniteWeights.ofPrecisePrevision
+                (Ω := Fin (Nat.succ m) → Bool)
+                ((bernoulliMixturePrefixLaw_analytic M (Nat.succ m)).toPrecisePrevision) := by
+          ext xs
+          rw [PrecisePrevision.FiniteWeights.ofPrecisePrevision_weight,
+            PrecisePrevision.FiniteWeights.ofPrecisePrevision_weight]
+          rw [hMarginalMix]
+          by_cases hEqTrue : xs = allTruePrefix (Nat.succ m)
+          · have hEqFalse : xs ≠ allFalsePrefix (Nat.succ m) := by
+              intro hEqFalse'
+              exact
+                allTruePrefix_ne_allFalsePrefix (Nat.succ_pos m)
+                  (hEqTrue.symm.trans hEqFalse')
+            subst hEqTrue
+            have hEqFalse' : allFalsePrefix (Nat.succ m) ≠ allTruePrefix (Nat.succ m) := by
+              intro h
+              exact hEqFalse h.symm
+            have hLeft :
+                (PrecisePrevision.mix t
+                    (PrecisePrevision.dirac (allTruePrefix (Nat.succ m)))
+                    (PrecisePrevision.dirac (allFalsePrefix (Nat.succ m))) ht0 ht1)
+                  (PrecisePrevision.FiniteWeights.atomGamble (allTruePrefix (Nat.succ m))) = t := by
+              simp [PrecisePrevision.mix, PrecisePrevision.FiniteWeights.atomGamble,
+                hEqFalse', t]
+            have hRight :
+                (bernoulliMixturePrefixLaw_analytic M (Nat.succ m)).toPrecisePrevision
+                  (PrecisePrevision.FiniteWeights.atomGamble (allTruePrefix (Nat.succ m))) = t := by
+              simpa [t] using
+                bernoulliMixture_allTruePrefixPrevision_eq_oneBitTrue_of_zeroInteriorMixingMass
+                  M (Nat.succ m) (Nat.succ_pos m) hInterior
+            exact hLeft.trans hRight.symm
+          · by_cases hEqFalse : xs = allFalsePrefix (Nat.succ m)
+            · subst hEqFalse
+              have hEqTrue' : allTruePrefix (Nat.succ m) ≠ allFalsePrefix (Nat.succ m) := by
+                intro h
+                exact hEqTrue h.symm
+              have hLeft :
+                  (PrecisePrevision.mix t
+                      (PrecisePrevision.dirac (allTruePrefix (Nat.succ m)))
+                      (PrecisePrevision.dirac (allFalsePrefix (Nat.succ m))) ht0 ht1)
+                    (PrecisePrevision.FiniteWeights.atomGamble (allFalsePrefix (Nat.succ m))) =
+                    1 - t := by
+                simp [PrecisePrevision.mix, PrecisePrevision.FiniteWeights.atomGamble,
+                  hEqTrue', t]
+              have hOneBitFalse :
+                  (bernoulliMixturePrefixLaw_analytic M (Nat.succ m)).toPrecisePrevision
+                    (PrecisePrevision.FiniteWeights.atomGamble (allFalsePrefix (Nat.succ m))) =
+                    (bernoulliMixturePrefixLaw_analytic M 1).toPrecisePrevision
+                      oneBitFalseGamble :=
+                bernoulliMixture_allFalsePrefixPrevision_eq_oneBitFalse_of_zeroInteriorMixingMass
+                  M (Nat.succ m) (Nat.succ_pos m) hInterior
+              have hRight :
+                  (bernoulliMixturePrefixLaw_analytic M (Nat.succ m)).toPrecisePrevision
+                    (PrecisePrevision.FiniteWeights.atomGamble (allFalsePrefix (Nat.succ m))) =
+                    1 - t := by
+                linarith [hSum, hOneBitFalse]
+              exact hLeft.trans hRight.symm
+            · have hCountTruePos :
+                  0 < Mettapedia.Logic.Exchangeability.countTrue xs := by
+                by_contra hNotPos
+                have hZero : Mettapedia.Logic.Exchangeability.countTrue xs = 0 :=
+                  Nat.eq_zero_of_not_pos hNotPos
+                exact hEqFalse (eq_allFalsePrefix_of_countTrue_eq_zero hZero)
+              have hCountFalsePos :
+                  0 < Mettapedia.Logic.Exchangeability.countFalse xs := by
+                by_contra hNotPos
+                have hZero : Mettapedia.Logic.Exchangeability.countFalse xs = 0 :=
+                  Nat.eq_zero_of_not_pos hNotPos
+                exact hEqTrue (eq_allTruePrefix_of_countFalse_eq_zero hZero)
+              have hEqTrue' : allTruePrefix (Nat.succ m) ≠ xs := by
+                intro h
+                exact hEqTrue h.symm
+              have hEqFalse' : allFalsePrefix (Nat.succ m) ≠ xs := by
+                intro h
+                exact hEqFalse h.symm
+              have hLeft :
+                  (PrecisePrevision.mix t
+                      (PrecisePrevision.dirac (allTruePrefix (Nat.succ m)))
+                      (PrecisePrevision.dirac (allFalsePrefix (Nat.succ m))) ht0 ht1)
+                    (PrecisePrevision.FiniteWeights.atomGamble xs) = 0 := by
+                simp [PrecisePrevision.mix, PrecisePrevision.FiniteWeights.atomGamble,
+                  hEqTrue', hEqFalse', t]
+              have hRight :
+                  (bernoulliMixturePrefixLaw_analytic M (Nat.succ m)).toPrecisePrevision
+                    (PrecisePrevision.FiniteWeights.atomGamble xs) = 0 := by
+                exact
+                  bernoulliMixture_prefixAtom_eq_zero_of_zeroInteriorMixingMass_of_countTrue_pos_of_countFalse_pos
+                    M xs hCountTruePos hCountFalsePos hInterior
+              exact hLeft.trans hRight.symm
+        have hPrec := congrArg PrecisePrevision.FiniteWeights.toPrecisePrevision hWeights
+        simpa [PrecisePrevision.FiniteWeights.toPrecisePrevision_ofPrecisePrevision] using hPrec
+  exact congrArg (fun Q => Q X) hLocalEq
+
+/-- Neutral discovered sufficient condition for the analytic family-level raw
+process-law crown: at least one admissible mixture already has an all-gambles
+analytic prefix-process witness.
+
+This is intentionally weaker than pointwise zero-interior.  Because the family
+uses a lower envelope, a single compatible member is enough to dominate all
+local lower assessments. -/
+def AnalyticMixingFamilyHasCompatibleMember
+    (C : Set BernoulliMixture) : Prop :=
+  ∃ M : BernoulliMixture, M ∈ C ∧
+    BernoulliMixtureAnalyticPrefixProcessWitness M
+
+/-- A concrete sufficient condition for the discovered compatible-member
+condition: the credal family contains at least one zero-interior mixture. -/
+def AnalyticMixingFamilyHasZeroInteriorMember
+    (C : Set BernoulliMixture) : Prop :=
+  ∃ M : BernoulliMixture, M ∈ C ∧
+    M.mixingMeasure (Set.Ioo (0 : ℝ) 1) = 0
+
+/-- The family contains at least one positive-interior mixture.  This is the
+minimal witness that pointwise zero-interior fails. -/
+def AnalyticMixingFamilyHasPositiveInteriorMember
+    (C : Set BernoulliMixture) : Prop :=
+  ∃ M : BernoulliMixture, M ∈ C ∧
+    0 < M.mixingMeasure (Set.Ioo (0 : ℝ) 1)
+
+/-- A point mass at a Bernoulli parameter inside `[0,1]`, packaged as a
+Bernoulli mixture. -/
+noncomputable def bernoulliMixtureDiracOnUnit
+    (θ : ℝ) (hθ : θ ∈ Set.Icc (0 : ℝ) 1) : BernoulliMixture where
+  mixingMeasure := Measure.dirac θ
+  isProbability := by infer_instance
+  support_unit := by
+    simp [hθ]
+
+/-- The zero-endpoint Dirac Bernoulli mixture. -/
+noncomputable def bernoulliMixtureDiracZero : BernoulliMixture :=
+  bernoulliMixtureDiracOnUnit 0 (by norm_num)
+
+/-- The midpoint Dirac Bernoulli mixture. -/
+noncomputable def bernoulliMixtureDiracHalf : BernoulliMixture :=
+  bernoulliMixtureDiracOnUnit (1 / 2 : ℝ) (by norm_num)
+
+theorem bernoulliMixtureDiracZero_zeroInterior :
+    bernoulliMixtureDiracZero.mixingMeasure (Set.Ioo (0 : ℝ) 1) = 0 := by
+  simp [bernoulliMixtureDiracZero, bernoulliMixtureDiracOnUnit]
+
+theorem bernoulliMixtureDiracHalf_positiveInterior :
+    0 < bernoulliMixtureDiracHalf.mixingMeasure (Set.Ioo (0 : ℝ) 1) := by
+  change 0 < (Measure.dirac (1 / 2 : ℝ)) (Set.Ioo (0 : ℝ) 1)
+  rw [Measure.dirac_apply]
+  rw [Set.indicator_of_mem]
+  · norm_num
+  · norm_num
+
+/-- A two-member analytic family witnessing that pointwise zero-interior is not
+necessary for the family-level raw crown: one member is endpoint-supported, the
+other has positive interior mass. -/
+noncomputable def analyticMixingFamilyPointwiseNecessityCounterexample :
+    Set BernoulliMixture :=
+  {bernoulliMixtureDiracZero, bernoulliMixtureDiracHalf}
+
+/-- A concrete no-go condition for raw compatibility: the analytic lower
+envelope gives every first-true cylinder a strictly positive lower mass. -/
+noncomputable def AnalyticMixingFamilyPositiveFirstTrueLowerEnvelope
+    (C : Set BernoulliMixture) : Prop :=
+  ∀ n : ℕ,
+    0 <
+      impreciseDeFinettiPrefixLowerEnvelope C (n + 1)
+        (bernoulliMixturePrefixLawAt C
+          (fun M _ n => bernoulliMixturePrefixLaw_analytic M n) (n + 1))
+        (firstTruePrefixGamble n)
+
+/-- A singleton analytic family has the pointwise-zero condition exactly when
+its single member has zero interior mixing mass. -/
+theorem AnalyticMixingFamilyPointwiseZeroInterior_singleton_iff
+    (M : BernoulliMixture) :
+    AnalyticMixingFamilyPointwiseZeroInterior ({M} : Set BernoulliMixture) ↔
+      M.mixingMeasure (Set.Ioo (0 : ℝ) 1) = 0 := by
+  constructor
+  · intro hZero
+    exact hZero M (by simp)
+  · intro hZero N hN
+    have hNM : N = M := by simpa using hN
+    subst hNM
+    exact hZero
+
+/-- A positive-interior member refutes the candidate pointwise-zero condition. -/
+theorem not_AnalyticMixingFamilyPointwiseZeroInterior_of_mem_interiorMixingMass
+    (C : Set BernoulliMixture) {M : BernoulliMixture}
+    (hM : M ∈ C)
+    (hInterior : 0 < M.mixingMeasure (Set.Ioo (0 : ℝ) 1)) :
+    ¬ AnalyticMixingFamilyPointwiseZeroInterior C := by
+  intro hZero
+  have hMZero : M.mixingMeasure (Set.Ioo (0 : ℝ) 1) = 0 := hZero M hM
+  rw [hMZero] at hInterior
+  exact (lt_irrefl (0 : ENNReal)) hInterior
+
+/-- A positive-interior member refutes the pointwise-zero candidate condition. -/
+theorem not_AnalyticMixingFamilyPointwiseZeroInterior_of_hasPositiveInteriorMember
+    (C : Set BernoulliMixture)
+    (hPositiveMember : AnalyticMixingFamilyHasPositiveInteriorMember C) :
+    ¬ AnalyticMixingFamilyPointwiseZeroInterior C := by
+  rcases hPositiveMember with ⟨M, hM, hInterior⟩
+  exact
+    not_AnalyticMixingFamilyPointwiseZeroInterior_of_mem_interiorMixingMass
+      C hM hInterior
+
+/-- A zero-interior member supplies the discovered compatible-member condition. -/
+theorem AnalyticMixingFamilyHasCompatibleMember_of_hasZeroInteriorMember
+    (C : Set BernoulliMixture)
+    (hZeroMember : AnalyticMixingFamilyHasZeroInteriorMember C) :
+    AnalyticMixingFamilyHasCompatibleMember C := by
+  rcases hZeroMember with ⟨M, hM, hZero⟩
+  exact
+    ⟨M, hM,
+      BernoulliMixtureAnalyticPrefixProcessWitness_of_zeroInteriorMixingMass M hZero⟩
+
+/-- Pointwise zero-interior is sufficient because any nonempty family then has a
+zero-interior member.  It is not asserted here as necessary. -/
+theorem AnalyticMixingFamilyHasZeroInteriorMember_of_pointwiseZeroInterior
+    (C : Set BernoulliMixture) (hC : C.Nonempty)
+    (hZero : AnalyticMixingFamilyPointwiseZeroInterior C) :
+    AnalyticMixingFamilyHasZeroInteriorMember C := by
+  rcases hC with ⟨M, hM⟩
+  exact ⟨M, hM, hZero M hM⟩
+
+/-- Pointwise zero-interior supplies the discovered compatible-member condition
+for any nonempty analytic family. -/
+theorem AnalyticMixingFamilyHasCompatibleMember_of_pointwiseZeroInterior
+    (C : Set BernoulliMixture) (hC : C.Nonempty)
+    (hZero : AnalyticMixingFamilyPointwiseZeroInterior C) :
+    AnalyticMixingFamilyHasCompatibleMember C := by
+  exact
+    AnalyticMixingFamilyHasCompatibleMember_of_hasZeroInteriorMember C
+      (AnalyticMixingFamilyHasZeroInteriorMember_of_pointwiseZeroInterior
+        C hC hZero)
+
+/-- A respecting global lower prevision supplies the analytic raw compatibility
+predicate directly.  This is the constructive S1 target for any proposed
+family-level compatibility condition. -/
+theorem AnalyticMixingFamilyRawProcessCompatible_of_respectsLocalLower
+    (C : Set BernoulliMixture) (hC : C.Nonempty)
+    (L : LowerPrevision (ℕ → Bool))
+    (hL :
+      (bernoulliMixturePrefixProcessLowerSpec
+        C (fun M _ n => bernoulliMixturePrefixLaw_analytic M n) hC).respectsLocalLower L) :
+    AnalyticMixingFamilyRawProcessCompatible C hC := by
+  exact
+    ImpreciseDeFinettiRawProcessCompatible_of_respectsLocalLower
+      C (fun M _ n => bernoulliMixturePrefixLaw_analytic M n) hC L hL
+
+/-- If one admissible mixture has an all-gambles analytic prefix-process
+witness, then the whole analytic family lower envelope is raw-compatible. -/
+theorem AnalyticMixingFamilyRawProcessCompatible_of_mem_analyticPrefixProcessWitness
+    (C : Set BernoulliMixture) (hC : C.Nonempty)
+    {M : BernoulliMixture} (hM : M ∈ C)
+    (hWitness : BernoulliMixtureAnalyticPrefixProcessWitness M) :
+    AnalyticMixingFamilyRawProcessCompatible C hC := by
+  rcases hWitness with ⟨P, hP⟩
+  refine
+    AnalyticMixingFamilyRawProcessCompatible_of_respectsLocalLower
+      C hC P.toLowerPrevision ?_
+  intro n X
+  rw [bernoulliMixturePrefixProcessLowerSpec_localLower_apply]
+  calc
+    impreciseDeFinettiPrefixLowerEnvelope C n
+        (bernoulliMixturePrefixLawAt C
+          (fun M _ n => bernoulliMixturePrefixLaw_analytic M n) n) X ≤
+      (bernoulliMixturePrefixLaw_analytic M n).toPrecisePrevision X :=
+        impreciseDeFinettiPrefixLowerEnvelope_le_mixturePrevision
+          C n
+          (bernoulliMixturePrefixLawAt C
+            (fun M _ n => bernoulliMixturePrefixLaw_analytic M n) n)
+          hM X
+    _ =
+      P.toLowerPrevision
+        (bernoulliMixturePrefixProcessCylinderSystem.cylinderGamble n X) := by
+        simpa [PrecisePrevision.toLowerPrevision_apply] using (hP n X).symm
+
+/-- F2 sufficiency in the discovered compatible-member form. -/
+theorem AnalyticMixingFamilyRawProcessCompatible_of_hasCompatibleMember
+    (C : Set BernoulliMixture) (hC : C.Nonempty)
+    (hMember : AnalyticMixingFamilyHasCompatibleMember C) :
+    AnalyticMixingFamilyRawProcessCompatible C hC := by
+  rcases hMember with ⟨M, hM, hWitness⟩
+  exact
+    AnalyticMixingFamilyRawProcessCompatible_of_mem_analyticPrefixProcessWitness
+      C hC hM hWitness
+
+/-- F2 sufficiency in concrete zero-interior-member form. -/
+theorem AnalyticMixingFamilyRawProcessCompatible_of_hasZeroInteriorMember
+    (C : Set BernoulliMixture) (hC : C.Nonempty)
+    (hZeroMember : AnalyticMixingFamilyHasZeroInteriorMember C) :
+    AnalyticMixingFamilyRawProcessCompatible C hC := by
+  exact
+    AnalyticMixingFamilyRawProcessCompatible_of_hasCompatibleMember C hC
+      (AnalyticMixingFamilyHasCompatibleMember_of_hasZeroInteriorMember
+        C hZeroMember)
+
+/-- F2 sufficiency for the original pointwise-zero candidate.  The necessity of
+this condition remains a separate question because larger lower envelopes can be
+compatible for weaker reasons. -/
+theorem AnalyticMixingFamilyRawProcessCompatible_of_pointwiseZeroInterior
+    (C : Set BernoulliMixture) (hC : C.Nonempty)
+    (hZero : AnalyticMixingFamilyPointwiseZeroInterior C) :
+    AnalyticMixingFamilyRawProcessCompatible C hC := by
+  exact
+    AnalyticMixingFamilyRawProcessCompatible_of_hasCompatibleMember C hC
+      (AnalyticMixingFamilyHasCompatibleMember_of_pointwiseZeroInterior
+        C hC hZero)
+
+/-- The family-level first-true exploding-gamble obstruction: if the local
+analytic lower envelope assigns strictly positive lower mass to every first-true
+cylinder, then no raw all-gambles process completion exists. -/
+theorem not_AnalyticMixingFamilyRawProcessCompatible_of_positiveFirstTrueLowerEnvelope
+    (C : Set BernoulliMixture) (hC : C.Nonempty)
+    (hPos : AnalyticMixingFamilyPositiveFirstTrueLowerEnvelope C) :
+    ¬ AnalyticMixingFamilyRawProcessCompatible C hC := by
+  intro hCompat
+  let S :=
+    bernoulliMixturePrefixProcessLowerSpec C
+      (fun M _ n => bernoulliMixturePrefixLaw_analytic M n) hC
+  have hCompatS : S.toCredalSpec.hasCompatibleCompletion := by
+    simpa [S, AnalyticMixingFamilyRawProcessCompatible,
+      ImpreciseDeFinettiRawProcessCompatible] using hCompat
+  rcases hCompatS with ⟨P, hP⟩
+  apply no_rawPrecisePrevision_extends_positiveFirstTrueWeights P
+  intro n
+  have hDominates :
+      S.localLower (n + 1) (firstTruePrefixGamble n) ≤
+        (S.cylinders.marginalPrevision (n + 1) P)
+          (firstTruePrefixGamble n) := by
+    exact hP (n + 1) (firstTruePrefixGamble n)
+  have hLocalPos :
+      0 < S.localLower (n + 1) (firstTruePrefixGamble n) := by
+    simpa [S, AnalyticMixingFamilyPositiveFirstTrueLowerEnvelope,
+      bernoulliMixturePrefixProcessLowerSpec_localLower_apply] using hPos n
+  have hMarginalPos :
+      0 <
+        (S.cylinders.marginalPrevision (n + 1) P)
+          (firstTruePrefixGamble n) :=
+    lt_of_lt_of_le hLocalPos hDominates
+  have hCylinder :
+      P (firstTrueCylinderGamble n) =
+        (S.cylinders.marginalPrevision (n + 1) P)
+          (firstTruePrefixGamble n) := by
+    calc
+      P (firstTrueCylinderGamble n)
+          = P
+              (bernoulliMixturePrefixProcessCylinderSystem.cylinderGamble
+                (n + 1) (firstTruePrefixGamble n)) := by
+                  rw [firstTrueCylinderGamble_eq_cylinderGamble]
+      _ =
+        (S.cylinders.marginalPrevision (n + 1) P)
+          (firstTruePrefixGamble n) := by
+            rfl
+  rwa [hCylinder]
+
+/-- Exact F2-facing lower-prevision form of analytic raw compatibility.  The
+next substantive sufficiency proof is therefore exactly the construction of a
+global lower prevision respecting the analytic prefix lower envelope. -/
+theorem AnalyticMixingFamilyRawProcessCompatible_iff_exists_respectsLocalLower
+    (C : Set BernoulliMixture) (hC : C.Nonempty) :
+    AnalyticMixingFamilyRawProcessCompatible C hC ↔
+      ∃ L : LowerPrevision (ℕ → Bool),
+        (bernoulliMixturePrefixProcessLowerSpec
+          C (fun M _ n => bernoulliMixturePrefixLaw_analytic M n) hC).respectsLocalLower L := by
+  simpa [AnalyticMixingFamilyRawProcessCompatible] using
+    (ImpreciseDeFinettiRawProcessCompatible_iff_exists_respectsLocalLower
+      C (fun M _ n => bernoulliMixturePrefixLaw_analytic M n) hC)
+
+/-- The analytic family-level crown follows from the neutral raw compatibility
+condition together with the unconditional canonical external mixing readout. -/
+theorem impreciseDeFinetti_analyticMixingFamilyProcessLawCrown_of_rawProcessCompatible
+    (C : Set BernoulliMixture) (hC : C.Nonempty)
+    (hCompat : AnalyticMixingFamilyRawProcessCompatible C hC) :
+    ImpreciseDeFinettiAnalyticMixingFamilyProcessLawCrown C hC where
+  canonicalExternalMixingFamily :=
+    impreciseDeFinetti_canonicalExternalMixingFamily C hC
+  processLawCrown :=
+    impreciseDeFinetti_processLaw_projectiveNaturalExtension_crown_of_rawProcessCompatible
+      C (fun M _ n => bernoulliMixturePrefixLaw_analytic M n) hC hCompat
+
+/-- Exact analytic boundary: the external de-Finetti mixing-family readout is
+unconditional, so the raw analytic crown is equivalent to the neutral raw
+process-compatibility predicate. -/
+theorem impreciseDeFinetti_analyticMixingFamilyProcessLawCrown_iff_rawProcessCompatible
+    (C : Set BernoulliMixture) (hC : C.Nonempty) :
+    ImpreciseDeFinettiAnalyticMixingFamilyProcessLawCrown C hC ↔
+      AnalyticMixingFamilyRawProcessCompatible C hC := by
+  constructor
+  · intro hCrown
+    exact hCrown.processLawCrown.processCompatibleCompletion
+  · intro hCompat
+    exact
+      impreciseDeFinetti_analyticMixingFamilyProcessLawCrown_of_rawProcessCompatible
+        C hC hCompat
+
+/-- Exact lower-prevision form of the analytic F2 boundary: the raw all-gambles
+analytic crown exists iff some global lower prevision respects the analytic
+finite-prefix lower envelope. -/
+theorem impreciseDeFinetti_analyticMixingFamilyProcessLawCrown_iff_exists_respectsLocalLower
+    (C : Set BernoulliMixture) (hC : C.Nonempty) :
+    ImpreciseDeFinettiAnalyticMixingFamilyProcessLawCrown C hC ↔
+      ∃ L : LowerPrevision (ℕ → Bool),
+        (bernoulliMixturePrefixProcessLowerSpec
+          C (fun M _ n => bernoulliMixturePrefixLaw_analytic M n) hC).respectsLocalLower L := by
+  rw [impreciseDeFinetti_analyticMixingFamilyProcessLawCrown_iff_rawProcessCompatible]
+  exact AnalyticMixingFamilyRawProcessCompatible_iff_exists_respectsLocalLower C hC
+
+/-- Public F2 sharp compatibility statement: the external sigma-additive
+de-Finetti mixing-family readout is unconditional, while the raw all-gambles
+analytic crown is exactly the lower-prevision compatibility condition. -/
+theorem impreciseDeFinetti_analyticMixingFamily_sharpCompatibilityCrown
+    (C : Set BernoulliMixture) (hC : C.Nonempty) :
+    ImpreciseDeFinettiCanonicalExternalMixingFamily C hC ∧
+      (ImpreciseDeFinettiAnalyticMixingFamilyProcessLawCrown C hC ↔
+        ∃ L : LowerPrevision (ℕ → Bool),
+          (bernoulliMixturePrefixProcessLowerSpec
+            C (fun M _ n => bernoulliMixturePrefixLaw_analytic M n) hC).respectsLocalLower L) := by
+  exact
+    ⟨impreciseDeFinetti_canonicalExternalMixingFamily C hC,
+      impreciseDeFinetti_analyticMixingFamilyProcessLawCrown_iff_exists_respectsLocalLower
+        C hC⟩
+
+/-- Public S1 sufficiency in the discovered compatible-member form: if the
+credal family contains one mixture with an all-gambles analytic prefix-process
+witness, then the full analytic mixing-family process-law crown follows. -/
+theorem impreciseDeFinetti_analyticMixingFamilyProcessLawCrown_of_hasCompatibleMember
+    (C : Set BernoulliMixture) (hC : C.Nonempty)
+    (hMember : AnalyticMixingFamilyHasCompatibleMember C) :
+    ImpreciseDeFinettiAnalyticMixingFamilyProcessLawCrown C hC := by
+  exact
+    impreciseDeFinetti_analyticMixingFamilyProcessLawCrown_of_rawProcessCompatible
+      C hC
+      (AnalyticMixingFamilyRawProcessCompatible_of_hasCompatibleMember
+        C hC hMember)
+
+/-- Public S1 sufficiency in concrete zero-interior-member form. -/
+theorem impreciseDeFinetti_analyticMixingFamilyProcessLawCrown_of_hasZeroInteriorMember
+    (C : Set BernoulliMixture) (hC : C.Nonempty)
+    (hZeroMember : AnalyticMixingFamilyHasZeroInteriorMember C) :
+    ImpreciseDeFinettiAnalyticMixingFamilyProcessLawCrown C hC := by
+  exact
+    impreciseDeFinetti_analyticMixingFamilyProcessLawCrown_of_hasCompatibleMember
+      C hC
+      (AnalyticMixingFamilyHasCompatibleMember_of_hasZeroInteriorMember
+        C hZeroMember)
+
+/-- Public S1 sufficiency for the pointwise-zero candidate. -/
+theorem impreciseDeFinetti_analyticMixingFamilyProcessLawCrown_of_pointwiseZeroInterior
+    (C : Set BernoulliMixture) (hC : C.Nonempty)
+    (hZero : AnalyticMixingFamilyPointwiseZeroInterior C) :
+    ImpreciseDeFinettiAnalyticMixingFamilyProcessLawCrown C hC := by
+  exact
+    impreciseDeFinetti_analyticMixingFamilyProcessLawCrown_of_hasCompatibleMember
+      C hC
+      (AnalyticMixingFamilyHasCompatibleMember_of_pointwiseZeroInterior
+        C hC hZero)
+
+/-- Pointwise zero-interior is not necessary for the analytic family-level raw
+crown: a zero-interior member supplies the compatible raw process, while a
+positive-interior member refutes the pointwise-zero candidate condition. -/
+theorem impreciseDeFinetti_analyticMixingFamilyProcessLawCrown_and_not_pointwiseZeroInterior
+    (C : Set BernoulliMixture) (hC : C.Nonempty)
+    (hZeroMember : AnalyticMixingFamilyHasZeroInteriorMember C)
+    (hPositiveMember : AnalyticMixingFamilyHasPositiveInteriorMember C) :
+    ImpreciseDeFinettiAnalyticMixingFamilyProcessLawCrown C hC ∧
+      ¬ AnalyticMixingFamilyPointwiseZeroInterior C := by
+  exact
+    ⟨impreciseDeFinetti_analyticMixingFamilyProcessLawCrown_of_hasZeroInteriorMember
+      C hC hZeroMember,
+      not_AnalyticMixingFamilyPointwiseZeroInterior_of_hasPositiveInteriorMember
+        C hPositiveMember⟩
+
+/-- Consequently, the implication from analytic raw crown to pointwise
+zero-interior is false for any nonempty family containing both a zero-interior
+member and a positive-interior member. -/
+theorem not_forall_impreciseDeFinetti_analyticMixingFamilyProcessLawCrown_imp_pointwiseZeroInterior
+    (C : Set BernoulliMixture) (hC : C.Nonempty)
+    (hZeroMember : AnalyticMixingFamilyHasZeroInteriorMember C)
+    (hPositiveMember : AnalyticMixingFamilyHasPositiveInteriorMember C) :
+    ¬ (∀ (D : Set BernoulliMixture) (hD : D.Nonempty),
+        ImpreciseDeFinettiAnalyticMixingFamilyProcessLawCrown D hD →
+          AnalyticMixingFamilyPointwiseZeroInterior D) := by
+  intro hAll
+  have hPair :
+      ImpreciseDeFinettiAnalyticMixingFamilyProcessLawCrown C hC ∧
+        ¬ AnalyticMixingFamilyPointwiseZeroInterior C :=
+    impreciseDeFinetti_analyticMixingFamilyProcessLawCrown_and_not_pointwiseZeroInterior
+      C hC hZeroMember hPositiveMember
+  exact hPair.2 (hAll C hC hPair.1)
+
+/-- Closed S2 counterexample: there exists an analytic mixing family whose raw
+all-gambles crown exists but whose members do not all have zero interior mixing
+mass. -/
+theorem exists_impreciseDeFinetti_analyticMixingFamilyProcessLawCrown_not_pointwiseZeroInterior :
+    ∃ (C : Set BernoulliMixture), ∃ hC : C.Nonempty,
+      ImpreciseDeFinettiAnalyticMixingFamilyProcessLawCrown C hC ∧
+        ¬ AnalyticMixingFamilyPointwiseZeroInterior C := by
+  let C : Set BernoulliMixture :=
+    analyticMixingFamilyPointwiseNecessityCounterexample
+  have hC : C.Nonempty := by
+    exact ⟨bernoulliMixtureDiracZero, by
+      simp [C, analyticMixingFamilyPointwiseNecessityCounterexample]⟩
+  have hZeroMember : AnalyticMixingFamilyHasZeroInteriorMember C := by
+    exact ⟨bernoulliMixtureDiracZero,
+      by simp [C, analyticMixingFamilyPointwiseNecessityCounterexample],
+      bernoulliMixtureDiracZero_zeroInterior⟩
+  have hPositiveMember : AnalyticMixingFamilyHasPositiveInteriorMember C := by
+    exact ⟨bernoulliMixtureDiracHalf,
+      by simp [C, analyticMixingFamilyPointwiseNecessityCounterexample],
+      bernoulliMixtureDiracHalf_positiveInterior⟩
+  exact
+    ⟨C, hC,
+      impreciseDeFinetti_analyticMixingFamilyProcessLawCrown_and_not_pointwiseZeroInterior
+        C hC hZeroMember hPositiveMember⟩
+
+/-- Closed refutation of the too-strong necessity claim: the analytic raw crown
+does not force pointwise zero-interior for every member of the credal family. -/
+theorem not_forall_impreciseDeFinetti_analyticMixingFamilyProcessLawCrown_imp_pointwiseZeroInterior_closed :
+    ¬ (∀ (C : Set BernoulliMixture) (hC : C.Nonempty),
+        ImpreciseDeFinettiAnalyticMixingFamilyProcessLawCrown C hC →
+          AnalyticMixingFamilyPointwiseZeroInterior C) := by
+  intro hAll
+  rcases exists_impreciseDeFinetti_analyticMixingFamilyProcessLawCrown_not_pointwiseZeroInterior with
+    ⟨C, hC, hCrown, hNotPointwise⟩
+  exact hNotPointwise (hAll C hC hCrown)
+
+/-- Crown-level form of the family first-true obstruction. -/
+theorem not_impreciseDeFinetti_analyticMixingFamilyProcessLawCrown_of_positiveFirstTrueLowerEnvelope
+    (C : Set BernoulliMixture) (hC : C.Nonempty)
+    (hPos : AnalyticMixingFamilyPositiveFirstTrueLowerEnvelope C) :
+    ¬ ImpreciseDeFinettiAnalyticMixingFamilyProcessLawCrown C hC := by
+  intro hCrown
+  exact
+    (not_AnalyticMixingFamilyRawProcessCompatible_of_positiveFirstTrueLowerEnvelope
+      C hC hPos)
+      ((impreciseDeFinetti_analyticMixingFamilyProcessLawCrown_iff_rawProcessCompatible
+        C hC).mp hCrown)
+
+/-- The exact raw compatibility condition fails for a positive-interior
+posterior singleton.  This is the predicate-level form of the Option-U
+refutation. -/
+theorem not_AnalyticMixingFamilyRawProcessCompatible_posteriorSingleton_of_interiorMixingMass
+    (M : BernoulliMixture) (k l : ℕ)
+    (hInterior : 0 < M.mixingMeasure (Set.Ioo (0 : ℝ) 1)) :
+    ¬ AnalyticMixingFamilyRawProcessCompatible
+        (posteriorBernoulliMixtureSet M k l
+          (ne_of_gt
+            (BernoulliMixture.countEvidenceMass_pos_of_interiorMass M k l hInterior)))
+        (posteriorBernoulliMixtureSet_nonempty M k l
+          (ne_of_gt
+            (BernoulliMixture.countEvidenceMass_pos_of_interiorMass M k l hInterior))) := by
+  intro hCompat
+  let hZ : M.countEvidenceMass k l ≠ 0 :=
+    ne_of_gt (BernoulliMixture.countEvidenceMass_pos_of_interiorMass M k l hInterior)
+  have hCrown :
+      ImpreciseDeFinettiAnalyticMixingFamilyProcessLawCrown
+        (posteriorBernoulliMixtureSet M k l hZ)
+        (posteriorBernoulliMixtureSet_nonempty M k l hZ) :=
+    impreciseDeFinetti_analyticMixingFamilyProcessLawCrown_of_rawProcessCompatible
+      (posteriorBernoulliMixtureSet M k l hZ)
+      (posteriorBernoulliMixtureSet_nonempty M k l hZ)
+      hCompat
+  have hPosterior :
+      PosteriorBernoulliMixtureProcessLawCrown M k l hZ :=
+    posteriorBernoulliMixture_processLawCrown_of_singletonAnalyticMixingFamilyCrown
+      M k l hZ hCrown
+  exact
+    not_posteriorBernoulliMixture_processLawCrown_of_interiorMixingMass
+      M k l hZ hInterior hPosterior
+
+/-- The analytic imprecise de Finetti package already exists at the canonical
+prefix finite-window realization boundary.  Compared with the concrete
+tail-false carrier-subset theorem below, this keeps only the abstract
+finite-window realization hypothesis for the canonical joint-window system. -/
+theorem impreciseDeFinetti_analyticMixingFamilyProcessLawCrown_of_prefixFiniteWindowRealization
+    (C : Set BernoulliMixture)
+    (hC : C.Nonempty)
+    [TopologicalSpace (PrecisePrevision (ℕ → Bool))]
+    (carrier : CredalPrevisionSet (ℕ → Bool))
+    (hCompact : IsCompact carrier)
+    (hCarrierConvex : CredalPrevisionSet.IsConvex carrier)
+    (hClosed : ∀ n, IsClosed {P : PrecisePrevision (ℕ → Bool) |
+      ((bernoulliMixturePrefixProcessLowerSpec
+          C (fun M _ n => bernoulliMixturePrefixLaw_analytic M n) hC).cylinders.marginalPrevision
+          n P) ∈
+        dominatingPreciseCompletions
+          ((bernoulliMixturePrefixProcessLowerSpec
+              C (fun M _ n => bernoulliMixturePrefixLaw_analytic M n) hC).localLower n)})
+    (hRealize :
+      (bernoulliMixturePrefixProcessLowerSpec
+        C (fun M _ n => bernoulliMixturePrefixLaw_analytic M n) hC).jointPrevisionsRealizedInCarrier
+        (bernoulliMixturePrefixProcessFiniteJointWindowSystem
+          C (fun M _ n => bernoulliMixturePrefixLaw_analytic M n) hC)
+        carrier) :
+    ImpreciseDeFinettiAnalyticMixingFamilyProcessLawCrown C hC where
+  canonicalExternalMixingFamily :=
+    impreciseDeFinetti_canonicalExternalMixingFamily C hC
+  processLawCrown :=
+    impreciseDeFinetti_processLaw_projectiveNaturalExtension_crown_of_prefixMarginalConsistentCarrierRealization
+      C (fun M _ n => bernoulliMixturePrefixLaw_analytic M n) hC
+      carrier hCompact hCarrierConvex hClosed
+      (bernoulliMixturePrefixProcessMarginalConsistent_analytic C)
+      hRealize
+
+/-- The canonical sigma-additive Bernoulli-mixture family and the raw
+all-gambles process-law crown assemble into one honest analytic infinite de
+Finetti package as soon as the explicit tail-false finite-window realizers sit
+inside a compact carrier. -/
+theorem impreciseDeFinetti_analyticMixingFamilyProcessLawCrown_of_prefixTailFalseExtensionCarrierSubset
+    (C : Set BernoulliMixture)
+    (hC : C.Nonempty)
+    [TopologicalSpace (PrecisePrevision (ℕ → Bool))]
+    (carrier : CredalPrevisionSet (ℕ → Bool))
+    (hCompact : IsCompact carrier)
+    (hCarrierConvex : CredalPrevisionSet.IsConvex carrier)
+    (hClosed : ∀ n, IsClosed {P : PrecisePrevision (ℕ → Bool) |
+      ((bernoulliMixturePrefixProcessLowerSpec
+          C (fun M _ n => bernoulliMixturePrefixLaw_analytic M n) hC).cylinders.marginalPrevision
+          n P) ∈
+        dominatingPreciseCompletions
+          ((bernoulliMixturePrefixProcessLowerSpec
+              C (fun M _ n => bernoulliMixturePrefixLaw_analytic M n) hC).localLower n)})
+    (hSubset : prefixTailFalseExtensionCarrier ⊆ carrier) :
+    ImpreciseDeFinettiAnalyticMixingFamilyProcessLawCrown C hC :=
+  impreciseDeFinetti_analyticMixingFamilyProcessLawCrown_of_prefixFiniteWindowRealization
+    C hC carrier hCompact hCarrierConvex hClosed
+    (bernoulliMixturePrefixProcess_jointPrevisionsRealizedInCarrier_of_prefixTailFalseExtensionCarrierSubset
+      C (fun M _ n => bernoulliMixturePrefixLaw_analytic M n) hC
+      carrier hSubset)
 
 /-- If an external Boolean process realizes a posterior Bernoulli mixture, its
 one-bit true prefix prevision is the normalized posterior mixture's one-step
@@ -7825,6 +9958,119 @@ structure ProjectiveDeFinettiCredalBridgeProfile where
           boundedMeasurableNaturalUpperEnvelopePrevision
             (externalPathLawBoundedMeasurableCompactCredalSet C)
             (externalPathLawBoundedMeasurableCompactCredalSet_nonempty C hC) X
+  canonicalExternalBoolProcessLaw :
+    BernoulliMixture → ExternalBoolProcessLaw (ℕ → Bool)
+  canonicalExternalProcessRealization :
+    ∀ (M : BernoulliMixture),
+      BernoulliMixtureExternalProcessRealization M
+        (canonicalExternalBoolProcessLaw M)
+  canonicalExternalBoolProcessLawSetPrefixCredalSetEqImpreciseDeFinetti :
+    ∀ (C : Set BernoulliMixture) (n : ℕ),
+      externalPathLawPrefixCredalSet
+          ({A | ∃ M : BernoulliMixture, M ∈ C ∧
+            A = canonicalExternalBoolProcessLaw M}) n =
+        bernoulliMixturePrefixCredalSet C n
+          (fun M _ => analyticPrefixLaw M n)
+  canonicalExternalBoolProcessLawSetPrefixLowerEnvelopeEqImpreciseDeFinetti :
+    ∀ (C : Set BernoulliMixture), C.Nonempty →
+      ∀ (n : ℕ)
+      (X : Mettapedia.ProbabilityTheory.ImpreciseProbability.Gamble
+        (Fin n → Bool)),
+        externalPathLawPrefixLowerEnvelope
+            ({A | ∃ M : BernoulliMixture, M ∈ C ∧
+              A = canonicalExternalBoolProcessLaw M}) n X =
+          impreciseDeFinettiPrefixLowerEnvelope C n
+            (fun M _ => analyticPrefixLaw M n) X
+  canonicalExternalBoolProcessLawSetPrefixUpperEnvelopeEqImpreciseDeFinetti :
+    ∀ (C : Set BernoulliMixture), C.Nonempty →
+      ∀ (n : ℕ)
+      (X : Mettapedia.ProbabilityTheory.ImpreciseProbability.Gamble
+        (Fin n → Bool)),
+        externalPathLawPrefixUpperEnvelope
+            ({A | ∃ M : BernoulliMixture, M ∈ C ∧
+              A = canonicalExternalBoolProcessLaw M}) n X =
+          impreciseDeFinettiPrefixUpperEnvelope C n
+            (fun M _ => analyticPrefixLaw M n) X
+  canonicalExternalBoolProcessLawSetPrefixWidthComplementEqImpreciseDeFinetti :
+    ∀ (C : Set BernoulliMixture), C.Nonempty →
+      ∀ (n : ℕ)
+      (X : Mettapedia.ProbabilityTheory.ImpreciseProbability.Gamble
+        (Fin n → Bool)),
+        externalPathLawPrefixEnvelopeWidthComplement
+            ({A | ∃ M : BernoulliMixture, M ∈ C ∧
+              A = canonicalExternalBoolProcessLaw M}) n X =
+          impreciseDeFinettiPrefixEnvelopeWidthComplement C n
+            (fun M _ => analyticPrefixLaw M n) X
+  canonicalExternalBoolProcessLawSetPrefixMidpointEqImpreciseDeFinetti :
+    ∀ (C : Set BernoulliMixture), C.Nonempty →
+      ∀ (n : ℕ)
+      (X : Mettapedia.ProbabilityTheory.ImpreciseProbability.Gamble
+        (Fin n → Bool)),
+        externalPathLawPrefixEnvelopeMidpoint
+            ({A | ∃ M : BernoulliMixture, M ∈ C ∧
+              A = canonicalExternalBoolProcessLaw M}) n X =
+          impreciseDeFinettiPrefixEnvelopeMidpoint C n
+            (fun M _ => analyticPrefixLaw M n) X
+  canonicalExternalBoolProcessLawSetCompactNaturalExtensionPrefixEqImpreciseDeFinetti :
+    ∀ (C : Set BernoulliMixture), (hC : C.Nonempty) →
+      ∀ (n : ℕ)
+      (X : Mettapedia.ProbabilityTheory.ImpreciseProbability.Gamble
+        (Fin n → Bool)),
+        boundedMeasurableNaturalExtensionPrevision
+            (externalPathLawBoundedMeasurableCompactCredalSet
+              ({A | ∃ M : BernoulliMixture, M ∈ C ∧
+                A = canonicalExternalBoolProcessLaw M}))
+            (externalPathLawBoundedMeasurableCompactCredalSet_nonempty
+              ({A | ∃ M : BernoulliMixture, M ∈ C ∧
+                A = canonicalExternalBoolProcessLaw M})
+              (by
+                rcases hC with ⟨M, hM⟩
+                exact ⟨canonicalExternalBoolProcessLaw M, ⟨M, hM, rfl⟩⟩))
+            (externalPathLawPrefixBoundedMeasurableGamble n X) =
+          impreciseDeFinettiPrefixLowerEnvelope C n
+            (fun M _ => analyticPrefixLaw M n) X
+  canonicalExternalBoolProcessLawSetCompactNaturalUpperEnvelopePrefixEqImpreciseDeFinetti :
+    ∀ (C : Set BernoulliMixture), (hC : C.Nonempty) →
+      ∀ (n : ℕ)
+      (X : Mettapedia.ProbabilityTheory.ImpreciseProbability.Gamble
+        (Fin n → Bool)),
+        boundedMeasurableNaturalUpperEnvelopePrevision
+            (externalPathLawBoundedMeasurableCompactCredalSet
+              ({A | ∃ M : BernoulliMixture, M ∈ C ∧
+                A = canonicalExternalBoolProcessLaw M}))
+            (externalPathLawBoundedMeasurableCompactCredalSet_nonempty
+              ({A | ∃ M : BernoulliMixture, M ∈ C ∧
+                A = canonicalExternalBoolProcessLaw M})
+              (by
+                rcases hC with ⟨M, hM⟩
+                exact ⟨canonicalExternalBoolProcessLaw M, ⟨M, hM, rfl⟩⟩))
+            (externalPathLawPrefixBoundedMeasurableGamble n X) =
+          impreciseDeFinettiPrefixUpperEnvelope C n
+            (fun M _ => analyticPrefixLaw M n) X
+  canonicalExternalBoolProcessLawSetCompactWidthComplementPrefixEqImpreciseDeFinetti :
+    ∀ (C : Set BernoulliMixture), (hC : C.Nonempty) →
+      ∀ (n : ℕ)
+      (X : Mettapedia.ProbabilityTheory.ImpreciseProbability.Gamble
+        (Fin n → Bool)),
+        boundedMeasurableEnvelopeWidthComplement
+            (externalPathLawBoundedMeasurableCompactCredalSet
+              ({A | ∃ M : BernoulliMixture, M ∈ C ∧
+                A = canonicalExternalBoolProcessLaw M}))
+            (externalPathLawPrefixBoundedMeasurableGamble n X) =
+          impreciseDeFinettiPrefixEnvelopeWidthComplement C n
+            (fun M _ => analyticPrefixLaw M n) X
+  canonicalExternalBoolProcessLawSetCompactMidpointPrefixEqImpreciseDeFinetti :
+    ∀ (C : Set BernoulliMixture), (hC : C.Nonempty) →
+      ∀ (n : ℕ)
+      (X : Mettapedia.ProbabilityTheory.ImpreciseProbability.Gamble
+        (Fin n → Bool)),
+        boundedMeasurableEnvelopeMidpoint
+            (externalPathLawBoundedMeasurableCompactCredalSet
+              ({A | ∃ M : BernoulliMixture, M ∈ C ∧
+                A = canonicalExternalBoolProcessLaw M}))
+            (externalPathLawPrefixBoundedMeasurableGamble n X) =
+          impreciseDeFinettiPrefixEnvelopeMidpoint C n
+            (fun M _ => analyticPrefixLaw M n) X
   externalPathLawPrefixProjectiveDeterminesOfProcessAgreement :
     ∀ {Ω : Type*} [MeasurableSpace Ω]
       (C : Set (ExternalBoolProcessLaw Ω)) (n : ℕ)
@@ -8008,6 +10254,101 @@ structure ProjectiveDeFinettiCredalBridgeProfile where
       (_hLaw M _hM).toPrecisePrevision X <
         (_hLaw N _hN).toPrecisePrevision X →
         0 < credalEnvelopeWidth (bernoulliMixturePrefixCredalSet C n _hLaw) X
+  prefixProcessFiniteJointWindowSystemLocalCoherentOfMarginalConsistent :
+    ∀ (C : Set BernoulliMixture)
+      (_hLaw : ∀ M : BernoulliMixture, M ∈ C →
+        ∀ n : ℕ, BernoulliMixturePrefixLaw M n)
+      (_hC : C.Nonempty),
+      bernoulliMixturePrefixProcessMarginalConsistent C _hLaw →
+        (bernoulliMixturePrefixProcessLowerSpec C _hLaw _hC).finiteWindowLocalCoherent
+          (bernoulliMixturePrefixProcessFiniteJointWindowSystem C _hLaw _hC)
+  prefixProcessFiniteWindowCompatibleInCarrierOfMarginalConsistentCarrierRealization :
+    ∀ (C : Set BernoulliMixture)
+      (_hLaw : ∀ M : BernoulliMixture, M ∈ C →
+        ∀ n : ℕ, BernoulliMixturePrefixLaw M n)
+      (_hC : C.Nonempty)
+      (carrier : CredalPrevisionSet (ℕ → Bool)),
+      bernoulliMixturePrefixProcessMarginalConsistent C _hLaw →
+        (bernoulliMixturePrefixProcessLowerSpec C _hLaw _hC).jointPrevisionsRealizedInCarrier
+          (bernoulliMixturePrefixProcessFiniteJointWindowSystem C _hLaw _hC)
+          carrier →
+          (bernoulliMixturePrefixProcessLowerSpec C _hLaw _hC).finiteWindowCompatibleInCarrier
+            carrier
+  processLawCompatibleCompletionOfPrefixMarginalConsistentCarrierRealization :
+    ∀ (C : Set BernoulliMixture)
+      (_hLaw : ∀ M : BernoulliMixture, M ∈ C →
+        ∀ n : ℕ, BernoulliMixturePrefixLaw M n)
+      (_hC : C.Nonempty)
+      [TopologicalSpace (PrecisePrevision (ℕ → Bool))]
+      (carrier : CredalPrevisionSet (ℕ → Bool))
+      (_hCompact : IsCompact carrier)
+      (_hCarrierConvex : CredalPrevisionSet.IsConvex carrier)
+      (_hClosed : ∀ n, IsClosed {P : PrecisePrevision (ℕ → Bool) |
+        ((bernoulliMixturePrefixProcessLowerSpec C _hLaw _hC).cylinders.marginalPrevision
+            n P) ∈
+          dominatingPreciseCompletions
+            ((bernoulliMixturePrefixProcessLowerSpec C _hLaw _hC).localLower n)}),
+      bernoulliMixturePrefixProcessMarginalConsistent C _hLaw →
+        (bernoulliMixturePrefixProcessLowerSpec C _hLaw _hC).jointPrevisionsRealizedInCarrier
+          (bernoulliMixturePrefixProcessFiniteJointWindowSystem C _hLaw _hC)
+          carrier →
+          ((bernoulliMixturePrefixProcessLowerSpec C _hLaw _hC).toCredalSpec).hasCompatibleCompletion
+  processLawCrownOfPrefixMarginalConsistentCarrierRealization :
+    ∀ (C : Set BernoulliMixture)
+      (_hLaw : ∀ M : BernoulliMixture, M ∈ C →
+        ∀ n : ℕ, BernoulliMixturePrefixLaw M n)
+      (_hC : C.Nonempty)
+      [TopologicalSpace (PrecisePrevision (ℕ → Bool))]
+      (carrier : CredalPrevisionSet (ℕ → Bool))
+      (_hCompact : IsCompact carrier)
+      (_hCarrierConvex : CredalPrevisionSet.IsConvex carrier)
+      (_hClosed : ∀ n, IsClosed {P : PrecisePrevision (ℕ → Bool) |
+        ((bernoulliMixturePrefixProcessLowerSpec C _hLaw _hC).cylinders.marginalPrevision
+            n P) ∈
+          dominatingPreciseCompletions
+            ((bernoulliMixturePrefixProcessLowerSpec C _hLaw _hC).localLower n)}),
+      bernoulliMixturePrefixProcessMarginalConsistent C _hLaw →
+        (bernoulliMixturePrefixProcessLowerSpec C _hLaw _hC).jointPrevisionsRealizedInCarrier
+          (bernoulliMixturePrefixProcessFiniteJointWindowSystem C _hLaw _hC)
+          carrier →
+          ImpreciseDeFinettiProcessLawCrown C _hLaw _hC
+  analyticMixingFamilyProcessLawCrownOfPrefixFiniteWindowRealization :
+    ∀ (C : Set BernoulliMixture)
+      (_hC : C.Nonempty)
+      [TopologicalSpace (PrecisePrevision (ℕ → Bool))]
+      (carrier : CredalPrevisionSet (ℕ → Bool))
+      (_hCompact : IsCompact carrier)
+      (_hCarrierConvex : CredalPrevisionSet.IsConvex carrier)
+      (_hClosed : ∀ n, IsClosed {P : PrecisePrevision (ℕ → Bool) |
+        ((bernoulliMixturePrefixProcessLowerSpec
+            C (fun M _ n => analyticPrefixLaw M n) _hC).cylinders.marginalPrevision
+            n P) ∈
+          dominatingPreciseCompletions
+            ((bernoulliMixturePrefixProcessLowerSpec
+                C (fun M _ n => analyticPrefixLaw M n) _hC).localLower n)}),
+      (_hRealize :
+        (bernoulliMixturePrefixProcessLowerSpec
+          C (fun M _ n => analyticPrefixLaw M n) _hC).jointPrevisionsRealizedInCarrier
+          (bernoulliMixturePrefixProcessFiniteJointWindowSystem
+            C (fun M _ n => analyticPrefixLaw M n) _hC)
+          carrier) →
+          ImpreciseDeFinettiAnalyticMixingFamilyProcessLawCrown C _hC
+  analyticMixingFamilyProcessLawCrownOfPrefixTailFalseExtensionCarrierSubset :
+    ∀ (C : Set BernoulliMixture)
+      (_hC : C.Nonempty)
+      [TopologicalSpace (PrecisePrevision (ℕ → Bool))]
+      (carrier : CredalPrevisionSet (ℕ → Bool))
+      (_hCompact : IsCompact carrier)
+      (_hCarrierConvex : CredalPrevisionSet.IsConvex carrier)
+      (_hClosed : ∀ n, IsClosed {P : PrecisePrevision (ℕ → Bool) |
+        ((bernoulliMixturePrefixProcessLowerSpec
+            C (fun M _ n => analyticPrefixLaw M n) _hC).cylinders.marginalPrevision
+            n P) ∈
+          dominatingPreciseCompletions
+            ((bernoulliMixturePrefixProcessLowerSpec
+                C (fun M _ n => analyticPrefixLaw M n) _hC).localLower n)}),
+      (_hSubset : prefixTailFalseExtensionCarrier ⊆ carrier) →
+          ImpreciseDeFinettiAnalyticMixingFamilyProcessLawCrown C _hC
   hasCompatibleCompletionOfFactorization :
     ∀ {Ω Window Global : Type*} [MeasurableSpace Ω] [LE Window]
       {X : ℕ → Ω → Bool} {μ : Measure Ω}
@@ -8082,6 +10423,28 @@ noncomputable def projectiveDeFinettiCredalBridgeProfile :
     boundedMeasurableNaturalExtensionPrevision_externalPathLawCompactCredalSet_le_processPrevision
   externalPathLawCompactBoundedNaturalUpperEnvelopeProcessLe :=
     boundedMeasurableNaturalUpperEnvelopePrevision_externalPathLawCompactCredalSet_processPrevision_le
+  canonicalExternalBoolProcessLaw :=
+    bernoulliMixtureCanonicalExternalBoolProcessLaw
+  canonicalExternalProcessRealization :=
+    bernoulliMixtureCanonicalExternalProcessRealization
+  canonicalExternalBoolProcessLawSetPrefixCredalSetEqImpreciseDeFinetti :=
+    bernoulliMixtureCanonicalExternalBoolProcessLawSet_prefixCredalSet_eq_impreciseDeFinetti
+  canonicalExternalBoolProcessLawSetPrefixLowerEnvelopeEqImpreciseDeFinetti :=
+    bernoulliMixtureCanonicalExternalBoolProcessLawSet_prefixLowerEnvelope_eq_impreciseDeFinetti
+  canonicalExternalBoolProcessLawSetPrefixUpperEnvelopeEqImpreciseDeFinetti :=
+    bernoulliMixtureCanonicalExternalBoolProcessLawSet_prefixUpperEnvelope_eq_impreciseDeFinetti
+  canonicalExternalBoolProcessLawSetPrefixWidthComplementEqImpreciseDeFinetti :=
+    bernoulliMixtureCanonicalExternalBoolProcessLawSet_prefixWidthComplement_eq_impreciseDeFinetti
+  canonicalExternalBoolProcessLawSetPrefixMidpointEqImpreciseDeFinetti :=
+    bernoulliMixtureCanonicalExternalBoolProcessLawSet_prefixMidpoint_eq_impreciseDeFinetti
+  canonicalExternalBoolProcessLawSetCompactNaturalExtensionPrefixEqImpreciseDeFinetti :=
+    bernoulliMixtureCanonicalExternalBoolProcessLawSet_compactNaturalExtension_prefix_eq_impreciseDeFinetti
+  canonicalExternalBoolProcessLawSetCompactNaturalUpperEnvelopePrefixEqImpreciseDeFinetti :=
+    bernoulliMixtureCanonicalExternalBoolProcessLawSet_compactNaturalUpperEnvelope_prefix_eq_impreciseDeFinetti
+  canonicalExternalBoolProcessLawSetCompactWidthComplementPrefixEqImpreciseDeFinetti :=
+    bernoulliMixtureCanonicalExternalBoolProcessLawSet_compactWidthComplement_prefix_eq_impreciseDeFinetti
+  canonicalExternalBoolProcessLawSetCompactMidpointPrefixEqImpreciseDeFinetti :=
+    bernoulliMixtureCanonicalExternalBoolProcessLawSet_compactMidpoint_prefix_eq_impreciseDeFinetti
   externalPathLawPrefixProjectiveDeterminesOfProcessAgreement :=
     externalPathLawPrefixProjectiveSpec_determinesGlobalGamble_of_processAgreement
   externalPathLawPrefixProjectiveStrictWidthOfProcessDisagreement :=
@@ -8126,6 +10489,18 @@ noncomputable def projectiveDeFinettiCredalBridgeProfile :
     bernoulliMixturePrefixCredalSet_lowerUpperEnvelope_nontrivial_of_mixtureDisagreement
   prefixCredalSetWidthPositiveOfMixtureDisagreement :=
     bernoulliMixturePrefixCredalSet_envelopeWidth_pos_of_mixtureDisagreement
+  prefixProcessFiniteJointWindowSystemLocalCoherentOfMarginalConsistent :=
+    bernoulliMixturePrefixProcessFiniteJointWindowSystem_localCoherent_of_marginalConsistent
+  prefixProcessFiniteWindowCompatibleInCarrierOfMarginalConsistentCarrierRealization :=
+    bernoulliMixturePrefixProcess_finiteWindowCompatibleInCarrier_of_prefixMarginalConsistentCarrierRealization
+  processLawCompatibleCompletionOfPrefixMarginalConsistentCarrierRealization :=
+    impreciseDeFinetti_processLawCompatibleCompletion_of_prefixMarginalConsistentCarrierRealization
+  processLawCrownOfPrefixMarginalConsistentCarrierRealization :=
+    impreciseDeFinetti_processLaw_projectiveNaturalExtension_crown_of_prefixMarginalConsistentCarrierRealization
+  analyticMixingFamilyProcessLawCrownOfPrefixFiniteWindowRealization :=
+    impreciseDeFinetti_analyticMixingFamilyProcessLawCrown_of_prefixFiniteWindowRealization
+  analyticMixingFamilyProcessLawCrownOfPrefixTailFalseExtensionCarrierSubset :=
+    impreciseDeFinetti_analyticMixingFamilyProcessLawCrown_of_prefixTailFalseExtensionCarrierSubset
   hasCompatibleCompletionOfFactorization :=
     DeFinettiProjectiveCredalSpecialization.hasCompatibleCompletion_of_factorization
   hasCompatibleCompletionOfExchangeable :=

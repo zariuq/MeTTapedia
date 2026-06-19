@@ -305,7 +305,7 @@ fun eval_switch_values fuel space vals branches original =
         (eval_switch_values fuel space rest branches original);
 
 fun eval_switch_like fuel space scrut branches original =
-  eval_switch_one fuel space scrut branches original;
+  eval_switch_values fuel space (eval_top fuel space scrut) branches original;
 
 fun subst_binding_pair v value pair =
   case pair of
@@ -526,13 +526,13 @@ val _ =
     [call "Tagged" [A, B]];
 
 val _ =
-  expect_bag "switch-does-not-evaluate-scrutinee-capacity"
+  expect_bag "switch-evaluates-scrutinee-capacity"
     (eval_switch_like 40 [Expr [Sym "=", call "choose-switch" [], A]]
       (call "choose-switch" [])
       [Expr [A, Bad],
        Expr [call "choose-switch" [], Good]]
       (call "switch" [call "choose-switch" []]))
-    [Good];
+    [Bad];
 
 val _ =
   expect_bag "let-star-sequential"

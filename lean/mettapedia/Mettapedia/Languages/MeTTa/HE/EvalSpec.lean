@@ -361,6 +361,67 @@ inductive MettaCall (space : Space) (dispatch : GroundedDispatch) :
   | error_passthrough (atom type_ : Atom) (b : Bindings)
       (h_err : isErrorAtom atom = true) :
       MettaCall space dispatch atom type_ b (atom, b)
+  /-- Primitive `unify`: successful raw branch result.
+      Upstream `unify` itself only chooses a branch and threads bindings; it
+      does not recursively evaluate the chosen branch to completion.
+      The raw success lane is exactly `unifySuccessResults`.
+      ````
+      (unify target pattern then else)
+        ↦ apply merged bindings to then
+      ``` -/
+  | unify_success_raw (atom type_ : Atom) (b : Bindings)
+      (target pattern thenBranch elseBranch : Atom)
+      (finalResult : ResultPair) (fuel : Nat)
+      (h_shape : atom = .expression [.symbol "unify",
+        target, pattern, thenBranch, elseBranch])
+      (h_not_error : isErrorAtom atom = false)
+      (h_raw : finalResult ∈ unifySuccessResults target pattern thenBranch b fuel) :
+      MettaCall space dispatch atom type_ b finalResult
+  /-- Primitive `unify`: no surviving raw success results, so upstream falls
+      back to the else branch unchanged under the original bindings.
+      ````
+      (unify target pattern then else)
+        ↦ else
+      ``` -/
+  | unify_no_match_raw (atom type_ : Atom) (b : Bindings)
+      (target pattern thenBranch elseBranch : Atom) (fuel : Nat)
+      (h_shape : atom = .expression [.symbol "unify",
+        target, pattern, thenBranch, elseBranch])
+      (h_not_error : isErrorAtom atom = false)
+      (h_empty : unifySuccessResults target pattern thenBranch b fuel = []) :
+      MettaCall space dispatch atom type_ b (elseBranch, b)
+  /-- Primitive `unify`: wrong arity is surfaced as
+      `IncorrectNumberOfArguments`. -/
+  | unify_bad_arity (atom type_ : Atom) (b : Bindings)
+      (tail : List Atom)
+      (h_shape : atom = .expression (.symbol "unify" :: tail))
+      (h_arity : tail.length ≠ 4)
+      (h_not_error : isErrorAtom atom = false) :
+      MettaCall space dispatch atom type_ b (mkError atom .incorrectNumberOfArguments, b)
+  /-- `switch-minimal`: exact-shape direct result lane.
+      This packages the observable behavior of the stdlib helper:
+      first viable branch wins, the selected raw template is returned with its
+      surviving merged bindings, and a raw `NotReducible` witness is collapsed
+      to `Empty`.  If no branch produces any surviving result, the overall
+      result is also `Empty` under the original seed bindings. -/
+  | switch_minimal_result (atom type_ : Atom) (b : Bindings)
+      (scrut : Atom) (branches : List Atom)
+      (finalResult : ResultPair) (fuel : Nat)
+      (h_shape : atom = .expression [.symbol "switch-minimal",
+        scrut, .expression branches])
+      (h_not_error : isErrorAtom atom = false)
+      (h_result : finalResult ∈ switchMinimalResults scrut branches b fuel) :
+      MettaCall space dispatch atom type_ b finalResult
+  /-- `switch-minimal`: any non-canonical surface form (wrong arity or
+      non-expression cases argument) is surfaced as
+      `IncorrectNumberOfArguments`, matching the executable evaluator's
+      direct pattern split. -/
+  | switch_minimal_bad_shape (atom type_ : Atom) (b : Bindings)
+      (tail : List Atom)
+      (h_shape : atom = .expression (.symbol "switch-minimal" :: tail))
+      (h_noncanonical : ¬ ∃ scrut branches, tail = [scrut, .expression branches])
+      (h_not_error : isErrorAtom atom = false) :
+      MettaCall space dispatch atom type_ b (mkError atom .incorrectNumberOfArguments, b)
   /-- Spec lines 365-368: Grounded op, native call succeeds → recurse with metta.
       ```
       if <$op is executable grounded atom>:
@@ -375,6 +436,8 @@ inductive MettaCall (space : Space) (dispatch : GroundedDispatch) :
       (merged : Bindings) (finalResult : ResultPair) (fuel : Nat)
       (h_shape : atom = .expression (op :: args))
       (h_exec : dispatch.isExecutable op = true)
+      (h_not_unify : op ≠ .symbol "unify")
+      (h_not_switch : op ≠ .symbol "switch-minimal")
       (h_not_error : isErrorAtom atom = false)
       (h_native : dispatch.execute op args = .ok nativeResults)
       (h_native_mem : nativeResult ∈ nativeResults)
@@ -390,6 +453,8 @@ inductive MettaCall (space : Space) (dispatch : GroundedDispatch) :
       (op : Atom) (args : List Atom) (msg : String)
       (h_shape : atom = .expression (op :: args))
       (h_exec : dispatch.isExecutable op = true)
+      (h_not_unify : op ≠ .symbol "unify")
+      (h_not_switch : op ≠ .symbol "switch-minimal")
       (h_not_error : isErrorAtom atom = false)
       (h_native : dispatch.execute op args = .runtimeError msg) :
       MettaCall space dispatch atom type_ b
@@ -402,6 +467,8 @@ inductive MettaCall (space : Space) (dispatch : GroundedDispatch) :
       (op : Atom) (args : List Atom)
       (h_shape : atom = .expression (op :: args))
       (h_exec : dispatch.isExecutable op = true)
+      (h_not_unify : op ≠ .symbol "unify")
+      (h_not_switch : op ≠ .symbol "switch-minimal")
       (h_not_error : isErrorAtom atom = false)
       (h_native : dispatch.execute op args = .noReduce) :
       MettaCall space dispatch atom type_ b (atom, b)
@@ -413,6 +480,8 @@ inductive MettaCall (space : Space) (dispatch : GroundedDispatch) :
       (op : Atom) (args : List Atom)
       (h_shape : atom = .expression (op :: args))
       (h_exec : dispatch.isExecutable op = true)
+      (h_not_unify : op ≠ .symbol "unify")
+      (h_not_switch : op ≠ .symbol "switch-minimal")
       (h_not_error : isErrorAtom atom = false)
       (h_native : dispatch.execute op args = .incorrectArgument) :
       MettaCall space dispatch atom type_ b (atom, b)
@@ -429,6 +498,8 @@ inductive MettaCall (space : Space) (dispatch : GroundedDispatch) :
       (op : Atom) (args : List Atom)
       (h_shape : atom = .expression (op :: args))
       (h_exec : dispatch.isExecutable op = true)
+      (h_not_unify : op ≠ .symbol "unify")
+      (h_not_switch : op ≠ .symbol "switch-minimal")
       (h_not_error : isErrorAtom atom = false)
       (h_native : dispatch.execute op args = .ok []) :
       MettaCall space dispatch atom type_ b (Atom.empty, b)
@@ -447,7 +518,10 @@ inductive MettaCall (space : Space) (dispatch : GroundedDispatch) :
       (finalResult : ResultPair) (fuel : Nat)
       (h_not_error : isErrorAtom atom = false)
       (h_not_grounded : match atom with
-        | .expression (op :: _) => dispatch.isExecutable op = false
+        | .expression (op :: _) =>
+            dispatch.isExecutable op = false ∧
+            op ≠ .symbol "unify" ∧
+            op ≠ .symbol "switch-minimal"
         | _ => True)
       (h_query : (rhs, queryBindings) ∈ queryEquations space atom fuel)
       (h_merge : merged ∈ mergeBindings queryBindings b fuel)
@@ -462,7 +536,10 @@ inductive MettaCall (space : Space) (dispatch : GroundedDispatch) :
   | no_match (atom type_ : Atom) (b : Bindings) (fuel : Nat)
       (h_not_error : isErrorAtom atom = false)
       (h_not_grounded : match atom with
-        | .expression (op :: _) => dispatch.isExecutable op = false
+        | .expression (op :: _) =>
+            dispatch.isExecutable op = false ∧
+            op ≠ .symbol "unify" ∧
+            op ≠ .symbol "switch-minimal"
         | _ => True)
       (h_no_eqs : queryEquations space atom fuel = []) :
       MettaCall space dispatch atom type_ b (atom, b)
@@ -474,7 +551,10 @@ inductive MettaCall (space : Space) (dispatch : GroundedDispatch) :
   | empty_results (atom type_ : Atom) (b : Bindings) (fuel : Nat)
       (h_not_error : isErrorAtom atom = false)
       (h_not_grounded : match atom with
-        | .expression (op :: _) => dispatch.isExecutable op = false
+        | .expression (op :: _) =>
+            dispatch.isExecutable op = false ∧
+            op ≠ .symbol "unify" ∧
+            op ≠ .symbol "switch-minimal"
         | _ => True)
       (h_has_eqs : queryEquations space atom fuel ≠ [])
       (h_all_filtered : ∀ (rhs : Atom) (qb mb : Bindings),

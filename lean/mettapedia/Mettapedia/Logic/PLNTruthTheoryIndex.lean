@@ -5,10 +5,14 @@ import Mettapedia.Logic.PLNAmplitudePhase
 import Mettapedia.Logic.PLNDidacticWitnesses
 import Mettapedia.Logic.PeTTaLibPLNTruthFunctions
 import Mettapedia.Logic.PLNWorldModelITV
+import Mettapedia.Logic.ConceptOntology.ConstructionBasePredictiveITV
 import Mettapedia.Logic.WalleyMultinomialIDMExamples
 import Mettapedia.ProbabilityTheory.ImpreciseProbability.ProjectiveCredal
 import Mettapedia.Logic.MarkovLogicInfiniteCredalBridge
 import Mettapedia.Logic.MarkovLogicPLNTruthBridge
+import Mettapedia.Logic.MarkovLogicInfiniteUniqueness
+import Mettapedia.Logic.MarkovLogicInfinitePLNCrown
+import Mettapedia.Logic.MarkovLogicInfiniteSymmetricGridExample
 import Mettapedia.Logic.DeFinettiProjectiveCredalBridge
 
 /-!
@@ -1928,6 +1932,25 @@ theorem general_beta_posterior_mean_is_concentration_blend
   BetaPriorMeanConcentration.posteriorMean_eq_blend_empirical_with_prior_mean
     π e hTotal
 
+/-- General Beta posterior concentration is batch/sequential invariant under
+PLN count addition. -/
+theorem general_beta_posterior_concentration_add_is_sequential
+    (π : BetaPriorMeanConcentration) (e₁ e₂ : BinaryCounts) :
+    π.posteriorConcentration (e₁.add e₂) =
+      (π.posteriorPrior e₁).posteriorConcentration e₂ :=
+  BetaPriorMeanConcentration.posteriorConcentration_add_eq_sequential
+    π e₁ e₂
+
+/-- General Beta posterior mean is batch/sequential invariant under PLN count
+addition: revision adds sufficient statistics, and Bayesian updating can be
+performed in either order. -/
+theorem general_beta_posterior_mean_add_is_sequential
+    (π : BetaPriorMeanConcentration) (e₁ e₂ : BinaryCounts) :
+    π.posteriorMean (e₁.add e₂) =
+      (π.posteriorPrior e₁).posteriorMean e₂ :=
+  BetaPriorMeanConcentration.posteriorMean_add_eq_sequential
+    π e₁ e₂
+
 /-- General Beta prior mean is a real strength degree of freedom. -/
 theorem general_beta_prior_mean_changes_posterior_strength :
     let e : BinaryCounts :=
@@ -1950,6 +1973,20 @@ theorem general_beta_prior_concentration_changes_blend_weight :
       ⟨1 / 2, 2, by norm_num, by norm_num, by norm_num⟩
     π₁.blendWeight e ≠ π₂.blendWeight e :=
   BetaPriorMeanConcentration.prior_concentration_changes_blend_weight
+
+/-- Canary: sequential Beta updating agrees with batch evidence revision, while
+the prior keeps the posterior mean distinct from the raw empirical strength. -/
+theorem general_beta_posterior_mean_sequential_update_canary :
+    let π : BetaPriorMeanConcentration :=
+      ⟨1 / 2, 2, by norm_num, by norm_num, by norm_num⟩
+    let e₁ : BinaryCounts :=
+      ⟨1, 1, by norm_num, by norm_num⟩
+    let e₂ : BinaryCounts :=
+      ⟨3, 1, by norm_num, by norm_num⟩
+    π.posteriorMean (e₁.add e₂) = 5 / 8 ∧
+      (π.posteriorPrior e₁).posteriorMean e₂ = 5 / 8 ∧
+      π.posteriorMean (e₁.add e₂) ≠ (e₁.add e₂).strength :=
+  BetaPriorMeanConcentration.posteriorMean_add_eq_sequential_canary
 
 /-- The multinomial credal-set category envelope agrees with the
 `EvidenceDirichlet` IDM formulas. -/
@@ -2793,6 +2830,14 @@ structure MeanConcentrationProfile where
         π.posteriorMean e =
           π.blendWeight e * e.strength +
             (1 - π.blendWeight e) * π.mean
+  binaryGeneralBetaPosteriorConcentrationSequential :
+    ∀ (π : BetaPriorMeanConcentration) (e₁ e₂ : BinaryCounts),
+      π.posteriorConcentration (e₁.add e₂) =
+        (π.posteriorPrior e₁).posteriorConcentration e₂
+  binaryGeneralBetaPosteriorMeanSequential :
+    ∀ (π : BetaPriorMeanConcentration) (e₁ e₂ : BinaryCounts),
+      π.posteriorMean (e₁.add e₂) =
+        (π.posteriorPrior e₁).posteriorMean e₂
   binaryPriorMeanChangesPosteriorStrength :
     let e : BinaryCounts :=
       ⟨1, 0, by norm_num, by norm_num⟩
@@ -2809,6 +2854,16 @@ structure MeanConcentrationProfile where
     let π₂ : BetaPriorMeanConcentration :=
       ⟨1 / 2, 2, by norm_num, by norm_num, by norm_num⟩
     π₁.blendWeight e ≠ π₂.blendWeight e
+  binaryPosteriorMeanSequentialUpdateCanary :
+    let π : BetaPriorMeanConcentration :=
+      ⟨1 / 2, 2, by norm_num, by norm_num, by norm_num⟩
+    let e₁ : BinaryCounts :=
+      ⟨1, 1, by norm_num, by norm_num⟩
+    let e₂ : BinaryCounts :=
+      ⟨3, 1, by norm_num, by norm_num⟩
+    π.posteriorMean (e₁.add e₂) = 5 / 8 ∧
+      (π.posteriorPrior e₁).posteriorMean e₂ = 5 / 8 ∧
+      π.posteriorMean (e₁.add e₂) ≠ (e₁.add e₂).strength
   categoricalLinkNotForced :
     let z : DirichletMeanConcentration 3 := ⟨fun _ => 1 / 3, 1⟩
     dirichletPLNConfidenceLink 1 (by norm_num) z ≠
@@ -2867,10 +2922,16 @@ noncomputable def meanConcentrationProfile : MeanConcentrationProfile where
     symmetric_beta_posterior_mean_is_concentration_blend
   binaryGeneralBetaPosteriorMeanBlend :=
     general_beta_posterior_mean_is_concentration_blend
+  binaryGeneralBetaPosteriorConcentrationSequential :=
+    general_beta_posterior_concentration_add_is_sequential
+  binaryGeneralBetaPosteriorMeanSequential :=
+    general_beta_posterior_mean_add_is_sequential
   binaryPriorMeanChangesPosteriorStrength :=
     general_beta_prior_mean_changes_posterior_strength
   binaryPriorConcentrationChangesBlendWeight :=
     general_beta_prior_concentration_changes_blend_weight
+  binaryPosteriorMeanSequentialUpdateCanary :=
+    general_beta_posterior_mean_sequential_update_canary
   categoricalLinkNotForced :=
     dirichlet_coordinate_does_not_force_confidence_link
   categoricalBlendWeightIsConcentrationLink :=
@@ -4863,6 +4924,445 @@ noncomputable def formulaCharacterizationProfile :
   paperFacingSynthesis :=
     paperFacingDOFForcingSynthesisProfile
 
+/-! ## Confidence characterization endpoint -/
+
+/-- Stable index-level alias for the finite singleton-posterior collapse
+endpoint: compact predictive That's-All together with exact typed ITV
+readouts. -/
+theorem deFinetti_canonical_compactPredictiveThatsAll_and_prefixTypedWidthComplementITV_exact
+    (M : Mettapedia.Logic.DeFinetti.BernoulliMixture) (k l n : ℕ)
+    (hZ : M.countEvidenceMass k l ≠ 0)
+    (G : Mettapedia.ProbabilityTheory.ImpreciseProbability.Gamble (Fin n → Bool))
+    (hG : ∀ ω, G ω ∈ Set.Icc (0 : ℝ) 1) :
+    Mettapedia.Logic.ConceptOntology.compactPredictiveThatsAll
+        (Mettapedia.Logic.DeFinettiProjectiveCredalBridge.externalPathLawBoundedMeasurableCompactCredalSet
+          ({Mettapedia.Logic.ConceptOntology.posteriorCanonicalExternalBoolProcessLaw M k l hZ} :
+            Set (Mettapedia.Logic.DeFinettiProjectiveCredalBridge.ExternalBoolProcessLaw
+              (ℕ → Bool)))) ∧
+      (Mettapedia.Logic.ConceptOntology.posteriorPrefixTypedReadoutITV M k l n hZ G hG).lower =
+        Mettapedia.Logic.ConceptOntology.posteriorPrefixReadoutPrevision M k l n hZ G ∧
+      (Mettapedia.Logic.ConceptOntology.posteriorPrefixTypedReadoutITV M k l n hZ G hG).upper =
+        Mettapedia.Logic.ConceptOntology.posteriorPrefixReadoutPrevision M k l n hZ G ∧
+      (Mettapedia.Logic.ConceptOntology.posteriorPrefixTypedReadoutITV M k l n hZ G hG).width = 0 ∧
+      (Mettapedia.Logic.ConceptOntology.posteriorPrefixTypedReadoutITV M k l n hZ G hG).credibility = 1 ∧
+      (Mettapedia.Logic.ConceptOntology.posteriorPrefixTypedReadoutITV M k l n hZ G hG).midpoint =
+        Mettapedia.Logic.ConceptOntology.posteriorPrefixReadoutPrevision M k l n hZ G := by
+  exact
+    Mettapedia.Logic.ConceptOntology.posteriorBernoulliMixture_canonical_compactPredictiveThatsAll_and_prefixTypedWidthComplementITV_exact
+      M k l n hZ G hG
+
+/-- Stable index-level alias for the proved infinite i.i.d. regime split: the
+raw posterior process-law crown exists exactly in the zero-interior-mixing
+regime. -/
+theorem deFinetti_posterior_processLawCrown_iff_zeroInteriorMixingMass
+    (M : Mettapedia.Logic.DeFinetti.BernoulliMixture) (k l : ℕ)
+    (hZ : M.countEvidenceMass k l ≠ 0) :
+    Mettapedia.Logic.DeFinettiProjectiveCredalBridge.PosteriorBernoulliMixtureProcessLawCrown
+      M k l hZ ↔
+      M.mixingMeasure (Set.Ioo (0 : ℝ) 1) = 0 := by
+  exact
+    Mettapedia.Logic.DeFinettiProjectiveCredalBridge.posteriorBernoulliMixture_processLawCrown_iff_zeroInteriorMixingMass
+      M k l hZ
+
+/-- Stable index-level alias for the proved infinite i.i.d. canonical compact
+predictive/process-law regime split.  The canonical compact predictive endpoint
+always exists, and the stronger raw process-law crown exists exactly in the
+zero-interior-mixing regime. -/
+theorem deFinetti_canonical_compactPredictiveThatsAll_and_processLawCrown_iff_zeroInteriorMixingMass
+    (M : Mettapedia.Logic.DeFinetti.BernoulliMixture) (k l : ℕ)
+    (hZ : M.countEvidenceMass k l ≠ 0) :
+    let A : Mettapedia.Logic.DeFinettiProjectiveCredalBridge.ExternalBoolProcessLaw (ℕ → Bool) :=
+      Mettapedia.Logic.DeFinettiProjectiveCredalBridge.ExternalBoolProcessLaw.ofProcess
+        (Mettapedia.Logic.DeFinettiProjectiveCredalBridge.bernoulliMixtureCanonicalProcessMeasure
+          (M.posteriorBernoulliMixture k l hZ))
+        Mettapedia.CategoryTheory.coordProcess
+        (by
+          intro i
+          simpa [Mettapedia.CategoryTheory.coordProcess] using (measurable_pi_apply (a := i)))
+    Mettapedia.Logic.ConceptOntology.compactPredictiveThatsAll
+      (Mettapedia.Logic.DeFinettiProjectiveCredalBridge.externalPathLawBoundedMeasurableCompactCredalSet
+        ({A} : Set (Mettapedia.Logic.DeFinettiProjectiveCredalBridge.ExternalBoolProcessLaw
+          (ℕ → Bool)))) ∧
+      (Mettapedia.Logic.DeFinettiProjectiveCredalBridge.PosteriorBernoulliMixtureProcessLawCrown
+        M k l hZ ↔
+        M.mixingMeasure (Set.Ioo (0 : ℝ) 1) = 0) := by
+  exact
+    Mettapedia.Logic.ConceptOntology.posteriorBernoulliMixture_canonical_compactPredictiveThatsAll_and_processLawCrown_iff_zeroInteriorMixingMass
+      M k l hZ
+
+/-- Stable index-level alias for the public sigma-additive infinite i.i.d.
+mixing-family package.  The canonical `Bool^ℕ` family attached to a Bernoulli-
+mixture credal set computes exactly the same finite-prefix and compact
+bounded-measurable PLN readouts as the analytic imprecise de Finetti family. -/
+theorem deFinetti_canonical_external_mixing_family
+    (C : Set Mettapedia.Logic.DeFinetti.BernoulliMixture)
+    (hC : C.Nonempty) :
+    Mettapedia.Logic.DeFinettiProjectiveCredalBridge.ImpreciseDeFinettiCanonicalExternalMixingFamily
+      C hC := by
+  exact
+    Mettapedia.Logic.DeFinettiProjectiveCredalBridge.impreciseDeFinetti_canonicalExternalMixingFamily
+      C hC
+
+/-- Stable index-level alias for the abstract infinite i.i.d. de Finetti crown
+package built from analytic prefix laws plus an explicit finite-window
+realization inside a compact carrier. -/
+theorem deFinetti_analytic_mixingFamily_processLawCrown_of_prefixFiniteWindowRealization
+    (C : Set Mettapedia.Logic.DeFinetti.BernoulliMixture)
+    (hC : C.Nonempty)
+    [TopologicalSpace
+      (Mettapedia.ProbabilityTheory.ImpreciseProbability.ProjectiveCredal.PrecisePrevision
+        (ℕ → Bool))]
+    (carrier :
+      Mettapedia.ProbabilityTheory.ImpreciseProbability.ProjectiveCredal.CredalPrevisionSet
+        (ℕ → Bool))
+    (hCompact : IsCompact carrier)
+    (hCarrierConvex :
+      Mettapedia.ProbabilityTheory.ImpreciseProbability.ProjectiveCredal.CredalPrevisionSet.IsConvex
+        carrier)
+    (hClosed : ∀ n,
+      IsClosed
+        {P :
+            Mettapedia.ProbabilityTheory.ImpreciseProbability.ProjectiveCredal.PrecisePrevision
+              (ℕ → Bool) |
+          ((Mettapedia.Logic.DeFinettiProjectiveCredalBridge.bernoulliMixturePrefixProcessLowerSpec
+                C (fun M _ n => Mettapedia.Logic.DeFinettiProjectiveCredalBridge.bernoulliMixturePrefixLaw_analytic M n)
+                hC).cylinders.marginalPrevision n P) ∈
+            Mettapedia.ProbabilityTheory.ImpreciseProbability.ProjectiveCredal.dominatingPreciseCompletions
+              ((Mettapedia.Logic.DeFinettiProjectiveCredalBridge.bernoulliMixturePrefixProcessLowerSpec
+                    C (fun M _ n => Mettapedia.Logic.DeFinettiProjectiveCredalBridge.bernoulliMixturePrefixLaw_analytic M n)
+                    hC).localLower n)})
+    (hRealize :
+      (Mettapedia.Logic.DeFinettiProjectiveCredalBridge.bernoulliMixturePrefixProcessLowerSpec
+          C (fun M _ n => Mettapedia.Logic.DeFinettiProjectiveCredalBridge.bernoulliMixturePrefixLaw_analytic M n)
+          hC).jointPrevisionsRealizedInCarrier
+        (Mettapedia.Logic.DeFinettiProjectiveCredalBridge.bernoulliMixturePrefixProcessFiniteJointWindowSystem
+          C (fun M _ n => Mettapedia.Logic.DeFinettiProjectiveCredalBridge.bernoulliMixturePrefixLaw_analytic M n)
+          hC)
+        carrier) :
+    Mettapedia.Logic.DeFinettiProjectiveCredalBridge.ImpreciseDeFinettiAnalyticMixingFamilyProcessLawCrown
+      C hC := by
+  exact
+    Mettapedia.Logic.DeFinettiProjectiveCredalBridge.impreciseDeFinetti_analyticMixingFamilyProcessLawCrown_of_prefixFiniteWindowRealization
+      C hC carrier hCompact hCarrierConvex hClosed hRealize
+
+/-- Stable index-level alias for the concrete infinite i.i.d. de Finetti crown
+package obtained from any carrier containing the explicit tail-false
+finite-window realizers. -/
+theorem deFinetti_analytic_mixingFamily_processLawCrown_of_prefixTailFalseExtensionCarrierSubset
+    (C : Set Mettapedia.Logic.DeFinetti.BernoulliMixture)
+    (hC : C.Nonempty)
+    [TopologicalSpace
+      (Mettapedia.ProbabilityTheory.ImpreciseProbability.ProjectiveCredal.PrecisePrevision
+        (ℕ → Bool))]
+    (carrier :
+      Mettapedia.ProbabilityTheory.ImpreciseProbability.ProjectiveCredal.CredalPrevisionSet
+        (ℕ → Bool))
+    (hCompact : IsCompact carrier)
+    (hCarrierConvex :
+      Mettapedia.ProbabilityTheory.ImpreciseProbability.ProjectiveCredal.CredalPrevisionSet.IsConvex
+        carrier)
+    (hClosed : ∀ n,
+      IsClosed
+        {P :
+            Mettapedia.ProbabilityTheory.ImpreciseProbability.ProjectiveCredal.PrecisePrevision
+              (ℕ → Bool) |
+          ((Mettapedia.Logic.DeFinettiProjectiveCredalBridge.bernoulliMixturePrefixProcessLowerSpec
+                C (fun M _ n => Mettapedia.Logic.DeFinettiProjectiveCredalBridge.bernoulliMixturePrefixLaw_analytic M n)
+                hC).cylinders.marginalPrevision n P) ∈
+            Mettapedia.ProbabilityTheory.ImpreciseProbability.ProjectiveCredal.dominatingPreciseCompletions
+              ((Mettapedia.Logic.DeFinettiProjectiveCredalBridge.bernoulliMixturePrefixProcessLowerSpec
+                    C (fun M _ n => Mettapedia.Logic.DeFinettiProjectiveCredalBridge.bernoulliMixturePrefixLaw_analytic M n)
+                    hC).localLower n)})
+    (hSubset :
+      Mettapedia.Logic.DeFinettiProjectiveCredalBridge.prefixTailFalseExtensionCarrier ⊆
+        carrier) :
+    Mettapedia.Logic.DeFinettiProjectiveCredalBridge.ImpreciseDeFinettiAnalyticMixingFamilyProcessLawCrown
+      C hC := by
+  exact
+      Mettapedia.Logic.DeFinettiProjectiveCredalBridge.impreciseDeFinetti_analyticMixingFamilyProcessLawCrown_of_prefixTailFalseExtensionCarrierSubset
+        C hC carrier hCompact hCarrierConvex hClosed hSubset
+
+/-- Stable index-level alias for the sharp F2 i.i.d. de Finetti boundary: the
+external mixing-family readout is unconditional, while the raw all-gambles
+analytic crown is equivalent to exact lower-prevision compatibility. -/
+theorem deFinetti_analytic_mixingFamily_sharpCompatibilityCrown
+    (C : Set Mettapedia.Logic.DeFinetti.BernoulliMixture)
+    (hC : C.Nonempty) :
+    Mettapedia.Logic.DeFinettiProjectiveCredalBridge.ImpreciseDeFinettiCanonicalExternalMixingFamily
+        C hC ∧
+      (Mettapedia.Logic.DeFinettiProjectiveCredalBridge.ImpreciseDeFinettiAnalyticMixingFamilyProcessLawCrown
+          C hC ↔
+        ∃ L : Mettapedia.ProbabilityTheory.ImpreciseProbability.LowerPrevision (ℕ → Bool),
+          (Mettapedia.Logic.DeFinettiProjectiveCredalBridge.bernoulliMixturePrefixProcessLowerSpec
+            C (fun M _ n => Mettapedia.Logic.DeFinettiProjectiveCredalBridge.bernoulliMixturePrefixLaw_analytic M n)
+            hC).respectsLocalLower L) := by
+  exact
+    Mettapedia.Logic.DeFinettiProjectiveCredalBridge.impreciseDeFinetti_analyticMixingFamily_sharpCompatibilityCrown
+      C hC
+
+/-- Stable index-level alias for the closed S2 verdict: the analytic raw crown
+does not imply pointwise zero-interior for every member of the credal family. -/
+theorem deFinetti_analytic_mixingFamily_rawCrown_not_implies_pointwiseZeroInterior :
+    ¬ (∀ (C : Set Mettapedia.Logic.DeFinetti.BernoulliMixture) (hC : C.Nonempty),
+        Mettapedia.Logic.DeFinettiProjectiveCredalBridge.ImpreciseDeFinettiAnalyticMixingFamilyProcessLawCrown
+          C hC →
+          Mettapedia.Logic.DeFinettiProjectiveCredalBridge.AnalyticMixingFamilyPointwiseZeroInterior C) := by
+  exact
+    Mettapedia.Logic.DeFinettiProjectiveCredalBridge.not_forall_impreciseDeFinetti_analyticMixingFamilyProcessLawCrown_imp_pointwiseZeroInterior_closed
+
+/-- Stable index-level alias for the proved infinite MLN collapse theorem:
+uniform Dobrushin small influence forces uniqueness of the infinite DLR
+measure. -/
+theorem infiniteMLN_paperUniformSmallTotalInfluence_implies_uniqueMeasure
+    {Atom ClauseId : Type*} [DecidableEq Atom] [DecidableEq ClauseId]
+    (M : Mettapedia.Logic.MarkovLogicInfiniteUniqueness.ClassicalInfiniteGroundMLNSpec
+      Atom ClauseId)
+    (hM : M.PaperUniformSmallTotalInfluence) :
+    M.PaperUniqueMeasure := by
+  exact M.paperUniformSmallTotalInfluence_implies_paperUniqueMeasure hM
+
+/-- Stable index-level alias for the first concrete infinite DLR/PLN contrast:
+positive strict width on the reinforced line and Dobrushin collapse on the
+zero-weight grid. -/
+theorem infiniteMLN_reinforcedLineGeometric_zeroWeightGrid_concreteDLRPLNContrast :
+    Mettapedia.Logic.MarkovLogicInfinitePLNCrown.ConcreteDLRPLNContrast := by
+  exact
+    Mettapedia.Logic.MarkovLogicInfinitePLNCrown.reinforcedLineGeometric_zeroWeightGrid_concreteDLRPLNContrast
+
+/-- Stable index-level alias for the symmetric-grid Ising reduction crown: the
+high-temperature collapse theorem is proved, and any future low-temperature
+Peierls input immediately yields plus/minus separation and a strict PLN
+interval. -/
+theorem infiniteMLN_symmetricGridZeroField_originPhaseCoexistenceReductionCrown :
+    Mettapedia.Logic.MarkovLogicInfiniteSymmetricGridExample.SymmetricGridZeroFieldOriginPhaseCoexistenceReductionCrown := by
+  exact
+    Mettapedia.Logic.MarkovLogicInfiniteSymmetricGridExample.symmetricGridZeroField_originPhaseCoexistenceReductionCrown
+
+/-- Focused, paper-facing endpoint for the confidence-formula characterization.
+
+This deliberately packages only the proved surface:
+
+* finite DOF/forcing characterization;
+* explicit typed-STV canaries showing the residual degrees of freedom;
+* the finite singleton-posterior exact ITV collapse;
+  * the infinite DLR/MLN specialization into width-complement ITVs, including
+    the proved Dobrushin uniqueness theorem, a concrete strict-width-versus-
+    collapse contrast, and the symmetric-grid phase-coexistence reduction crown
+    that isolates the remaining low-temperature Peierls input;
+  * the public sigma-additive imprecise de Finetti mixing-family object and the
+    exact lower-prevision compatibility boundary for the analytic raw
+    all-gambles process-law crown, plus conditional finite-window realization
+    routes into that crown;
+  * the proved i.i.d. de Finetti compact-predictive / process-law regime split.
+
+  It intentionally does not package still-open infinite frontiers such as the
+  low-temperature two-dimensional phase-separation theorem on the MLN/Ising
+  side. -/
+structure ConfidenceCharacterizationEndpointProfile where
+  formulaCharacterization : FormulaCharacterizationProfile
+  typedSTVSameStrengthCanHaveDifferentConfidence :
+    let χ := plnOddsCoordinate 1 (by norm_num)
+    let x := Mettapedia.Logic.PLNTruthTower.TypedSTV.fromCounts χ
+      (Mettapedia.Logic.PLNTruthTower.BinaryCounts.ofNatCounts 1 1)
+    let y := Mettapedia.Logic.PLNTruthTower.TypedSTV.fromCounts χ
+      (Mettapedia.Logic.PLNTruthTower.BinaryCounts.ofNatCounts 2 2)
+    x.strength = y.strength ∧ x.confidence.display ≠ y.confidence.display
+  typedSTVSameConfidenceCanHaveDifferentStrength :
+    let χ := plnOddsCoordinate 1 (by norm_num)
+    let x := Mettapedia.Logic.PLNTruthTower.TypedSTV.fromCounts χ
+      (Mettapedia.Logic.PLNTruthTower.BinaryCounts.ofNatCounts 1 1)
+    let y := Mettapedia.Logic.PLNTruthTower.TypedSTV.fromCounts χ
+      (Mettapedia.Logic.PLNTruthTower.BinaryCounts.ofNatCounts 2 0)
+    x.confidence.display = y.confidence.display ∧ x.strength ≠ y.strength
+  walleyWidthComplementForcesPLNOdds :
+    ∀ (χ : EvidenceWeightCoordinate) (s : ℝ) (hs : 0 < s)
+      (_hχ : WidthComplementCompatible χ s) {n : ℝ} (_hn : 0 ≤ n),
+        χ.encode n = (plnOddsCoordinate s hs).encode n
+  finiteCanonicalExactPredictiveITV :
+    ∀ (M : Mettapedia.Logic.DeFinetti.BernoulliMixture) (k l n : ℕ)
+      (hZ : M.countEvidenceMass k l ≠ 0)
+      (G : Mettapedia.ProbabilityTheory.ImpreciseProbability.Gamble
+        (Fin n → Bool))
+      (hG : ∀ ω, G ω ∈ Set.Icc (0 : ℝ) 1),
+      Mettapedia.Logic.ConceptOntology.compactPredictiveThatsAll
+          (Mettapedia.Logic.DeFinettiProjectiveCredalBridge.externalPathLawBoundedMeasurableCompactCredalSet
+            ({Mettapedia.Logic.ConceptOntology.posteriorCanonicalExternalBoolProcessLaw M k l hZ} :
+              Set (Mettapedia.Logic.DeFinettiProjectiveCredalBridge.ExternalBoolProcessLaw
+                (ℕ → Bool)))) ∧
+        (Mettapedia.Logic.ConceptOntology.posteriorPrefixTypedReadoutITV M k l n hZ G hG).lower =
+          Mettapedia.Logic.ConceptOntology.posteriorPrefixReadoutPrevision M k l n hZ G ∧
+        (Mettapedia.Logic.ConceptOntology.posteriorPrefixTypedReadoutITV M k l n hZ G hG).upper =
+          Mettapedia.Logic.ConceptOntology.posteriorPrefixReadoutPrevision M k l n hZ G ∧
+        (Mettapedia.Logic.ConceptOntology.posteriorPrefixTypedReadoutITV M k l n hZ G hG).width = 0 ∧
+        (Mettapedia.Logic.ConceptOntology.posteriorPrefixTypedReadoutITV M k l n hZ G hG).credibility = 1 ∧
+        (Mettapedia.Logic.ConceptOntology.posteriorPrefixTypedReadoutITV M k l n hZ G hG).midpoint =
+          Mettapedia.Logic.ConceptOntology.posteriorPrefixReadoutPrevision M k l n hZ G
+  infiniteMLNCredalBridge :
+    Mettapedia.Logic.MarkovLogicInfiniteCredalBridge.InfiniteMLNCredalBridgeProfile
+  infiniteDLRQueryOutcomeITV :
+    Mettapedia.Logic.MarkovLogicPLNTruthBridge.DLRQueryOutcomePLNBridgeProfile
+  infiniteProjectiveDeFinettiBridge :
+    Mettapedia.Logic.DeFinettiProjectiveCredalBridge.ProjectiveDeFinettiCredalBridgeProfile
+  infiniteCanonicalExternalMixingFamily :
+    ∀ (C : Set Mettapedia.Logic.DeFinetti.BernoulliMixture) (hC : C.Nonempty),
+      Mettapedia.Logic.DeFinettiProjectiveCredalBridge.ImpreciseDeFinettiCanonicalExternalMixingFamily
+        C hC
+  infiniteAnalyticMixingFamilySharpCompatibility :
+    ∀ (C : Set Mettapedia.Logic.DeFinetti.BernoulliMixture)
+      (hC : C.Nonempty),
+      Mettapedia.Logic.DeFinettiProjectiveCredalBridge.ImpreciseDeFinettiCanonicalExternalMixingFamily
+          C hC ∧
+        (Mettapedia.Logic.DeFinettiProjectiveCredalBridge.ImpreciseDeFinettiAnalyticMixingFamilyProcessLawCrown
+            C hC ↔
+          ∃ L : Mettapedia.ProbabilityTheory.ImpreciseProbability.LowerPrevision (ℕ → Bool),
+            (Mettapedia.Logic.DeFinettiProjectiveCredalBridge.bernoulliMixturePrefixProcessLowerSpec
+              C (fun M _ n => Mettapedia.Logic.DeFinettiProjectiveCredalBridge.bernoulliMixturePrefixLaw_analytic M n)
+              hC).respectsLocalLower L)
+  infiniteAnalyticMixingFamilyRawCrownDoesNotForcePointwiseZeroInterior :
+    ¬ (∀ (C : Set Mettapedia.Logic.DeFinetti.BernoulliMixture) (hC : C.Nonempty),
+        Mettapedia.Logic.DeFinettiProjectiveCredalBridge.ImpreciseDeFinettiAnalyticMixingFamilyProcessLawCrown
+          C hC →
+          Mettapedia.Logic.DeFinettiProjectiveCredalBridge.AnalyticMixingFamilyPointwiseZeroInterior C)
+  infiniteAnalyticMixingFamilyProcessLawCrownOfPrefixFiniteWindowRealization :
+    ∀ (C : Set Mettapedia.Logic.DeFinetti.BernoulliMixture)
+      (hC : C.Nonempty)
+      [TopologicalSpace
+        (Mettapedia.ProbabilityTheory.ImpreciseProbability.ProjectiveCredal.PrecisePrevision
+          (ℕ → Bool))]
+      (carrier :
+        Mettapedia.ProbabilityTheory.ImpreciseProbability.ProjectiveCredal.CredalPrevisionSet
+          (ℕ → Bool))
+      (_hCompact : IsCompact carrier)
+      (_hCarrierConvex :
+        Mettapedia.ProbabilityTheory.ImpreciseProbability.ProjectiveCredal.CredalPrevisionSet.IsConvex
+          carrier)
+      (_hClosed : ∀ n,
+        IsClosed
+          {P :
+              Mettapedia.ProbabilityTheory.ImpreciseProbability.ProjectiveCredal.PrecisePrevision
+                (ℕ → Bool) |
+            ((Mettapedia.Logic.DeFinettiProjectiveCredalBridge.bernoulliMixturePrefixProcessLowerSpec
+                  C (fun M _ n => Mettapedia.Logic.DeFinettiProjectiveCredalBridge.bernoulliMixturePrefixLaw_analytic M n)
+                  hC).cylinders.marginalPrevision n P) ∈
+              Mettapedia.ProbabilityTheory.ImpreciseProbability.ProjectiveCredal.dominatingPreciseCompletions
+                ((Mettapedia.Logic.DeFinettiProjectiveCredalBridge.bernoulliMixturePrefixProcessLowerSpec
+                      C (fun M _ n => Mettapedia.Logic.DeFinettiProjectiveCredalBridge.bernoulliMixturePrefixLaw_analytic M n)
+                      hC).localLower n)})
+      (_hRealize :
+        (Mettapedia.Logic.DeFinettiProjectiveCredalBridge.bernoulliMixturePrefixProcessLowerSpec
+            C (fun M _ n => Mettapedia.Logic.DeFinettiProjectiveCredalBridge.bernoulliMixturePrefixLaw_analytic M n)
+            hC).jointPrevisionsRealizedInCarrier
+          (Mettapedia.Logic.DeFinettiProjectiveCredalBridge.bernoulliMixturePrefixProcessFiniteJointWindowSystem
+            C (fun M _ n => Mettapedia.Logic.DeFinettiProjectiveCredalBridge.bernoulliMixturePrefixLaw_analytic M n)
+            hC)
+          carrier),
+        Mettapedia.Logic.DeFinettiProjectiveCredalBridge.ImpreciseDeFinettiAnalyticMixingFamilyProcessLawCrown
+          C hC
+  infiniteAnalyticMixingFamilyProcessLawCrownOfPrefixTailFalseExtensionCarrierSubset :
+    ∀ (C : Set Mettapedia.Logic.DeFinetti.BernoulliMixture)
+      (hC : C.Nonempty)
+      [TopologicalSpace
+        (Mettapedia.ProbabilityTheory.ImpreciseProbability.ProjectiveCredal.PrecisePrevision
+          (ℕ → Bool))]
+      (carrier :
+        Mettapedia.ProbabilityTheory.ImpreciseProbability.ProjectiveCredal.CredalPrevisionSet
+          (ℕ → Bool))
+      (_hCompact : IsCompact carrier)
+      (_hCarrierConvex :
+        Mettapedia.ProbabilityTheory.ImpreciseProbability.ProjectiveCredal.CredalPrevisionSet.IsConvex
+          carrier)
+      (_hClosed : ∀ n,
+        IsClosed
+          {P :
+              Mettapedia.ProbabilityTheory.ImpreciseProbability.ProjectiveCredal.PrecisePrevision
+                (ℕ → Bool) |
+            ((Mettapedia.Logic.DeFinettiProjectiveCredalBridge.bernoulliMixturePrefixProcessLowerSpec
+                  C (fun M _ n => Mettapedia.Logic.DeFinettiProjectiveCredalBridge.bernoulliMixturePrefixLaw_analytic M n)
+                  hC).cylinders.marginalPrevision n P) ∈
+              Mettapedia.ProbabilityTheory.ImpreciseProbability.ProjectiveCredal.dominatingPreciseCompletions
+                ((Mettapedia.Logic.DeFinettiProjectiveCredalBridge.bernoulliMixturePrefixProcessLowerSpec
+                      C (fun M _ n => Mettapedia.Logic.DeFinettiProjectiveCredalBridge.bernoulliMixturePrefixLaw_analytic M n)
+                      hC).localLower n)})
+      (_hSubset :
+        Mettapedia.Logic.DeFinettiProjectiveCredalBridge.prefixTailFalseExtensionCarrier ⊆
+          carrier),
+        Mettapedia.Logic.DeFinettiProjectiveCredalBridge.ImpreciseDeFinettiAnalyticMixingFamilyProcessLawCrown
+          C hC
+  infiniteProcessLawCrownBoundary :
+    ∀ (M : Mettapedia.Logic.DeFinetti.BernoulliMixture) (k l : ℕ)
+      (hZ : M.countEvidenceMass k l ≠ 0),
+      Mettapedia.Logic.DeFinettiProjectiveCredalBridge.PosteriorBernoulliMixtureProcessLawCrown
+        M k l hZ ↔
+        M.mixingMeasure (Set.Ioo (0 : ℝ) 1) = 0
+  infiniteCanonicalCompactPredictiveProcessLawBoundary :
+    ∀ (M : Mettapedia.Logic.DeFinetti.BernoulliMixture) (k l : ℕ)
+      (hZ : M.countEvidenceMass k l ≠ 0),
+      let A : Mettapedia.Logic.DeFinettiProjectiveCredalBridge.ExternalBoolProcessLaw (ℕ → Bool) :=
+        Mettapedia.Logic.DeFinettiProjectiveCredalBridge.ExternalBoolProcessLaw.ofProcess
+          (Mettapedia.Logic.DeFinettiProjectiveCredalBridge.bernoulliMixtureCanonicalProcessMeasure
+            (M.posteriorBernoulliMixture k l hZ))
+          Mettapedia.CategoryTheory.coordProcess
+          (by
+            intro i
+            simpa [Mettapedia.CategoryTheory.coordProcess] using (measurable_pi_apply (a := i)))
+      Mettapedia.Logic.ConceptOntology.compactPredictiveThatsAll
+        (Mettapedia.Logic.DeFinettiProjectiveCredalBridge.externalPathLawBoundedMeasurableCompactCredalSet
+          ({A} : Set (Mettapedia.Logic.DeFinettiProjectiveCredalBridge.ExternalBoolProcessLaw
+            (ℕ → Bool)))) ∧
+        (Mettapedia.Logic.DeFinettiProjectiveCredalBridge.PosteriorBernoulliMixtureProcessLawCrown
+          M k l hZ ↔
+          M.mixingMeasure (Set.Ioo (0 : ℝ) 1) = 0)
+  infiniteDobrushinUniqueness :
+    ∀ {Atom ClauseId : Type*} [DecidableEq Atom] [DecidableEq ClauseId]
+      (M : Mettapedia.Logic.MarkovLogicInfiniteUniqueness.ClassicalInfiniteGroundMLNSpec
+        Atom ClauseId),
+      M.PaperUniformSmallTotalInfluence →
+        M.PaperUniqueMeasure
+  infiniteConcreteStrictWidthVsCollapseContrast :
+    Mettapedia.Logic.MarkovLogicInfinitePLNCrown.ConcreteDLRPLNContrast
+  infiniteSymmetricGridPhaseCoexistenceReduction :
+    Mettapedia.Logic.MarkovLogicInfiniteSymmetricGridExample.SymmetricGridZeroFieldOriginPhaseCoexistenceReductionCrown
+
+/-- Current focused endpoint for the confidence-formula characterization. -/
+noncomputable def confidenceCharacterizationEndpointProfile :
+    ConfidenceCharacterizationEndpointProfile where
+  formulaCharacterization :=
+    formulaCharacterizationProfile
+  typedSTVSameStrengthCanHaveDifferentConfidence :=
+    typed_stv_same_strength_can_have_different_confidence
+  typedSTVSameConfidenceCanHaveDifferentStrength :=
+    typed_stv_same_confidence_can_have_different_strength
+  walleyWidthComplementForcesPLNOdds :=
+    walley_width_complement_forces_pln_odds
+  finiteCanonicalExactPredictiveITV :=
+    deFinetti_canonical_compactPredictiveThatsAll_and_prefixTypedWidthComplementITV_exact
+  infiniteMLNCredalBridge :=
+    Mettapedia.Logic.MarkovLogicInfiniteCredalBridge.infiniteMLNCredalBridgeProfile
+  infiniteDLRQueryOutcomeITV :=
+    Mettapedia.Logic.MarkovLogicPLNTruthBridge.dlrQueryOutcomePLNBridgeProfile
+  infiniteProjectiveDeFinettiBridge :=
+    Mettapedia.Logic.DeFinettiProjectiveCredalBridge.projectiveDeFinettiCredalBridgeProfile
+  infiniteCanonicalExternalMixingFamily :=
+    deFinetti_canonical_external_mixing_family
+  infiniteAnalyticMixingFamilySharpCompatibility :=
+    deFinetti_analytic_mixingFamily_sharpCompatibilityCrown
+  infiniteAnalyticMixingFamilyRawCrownDoesNotForcePointwiseZeroInterior :=
+    deFinetti_analytic_mixingFamily_rawCrown_not_implies_pointwiseZeroInterior
+  infiniteAnalyticMixingFamilyProcessLawCrownOfPrefixFiniteWindowRealization :=
+    deFinetti_analytic_mixingFamily_processLawCrown_of_prefixFiniteWindowRealization
+  infiniteAnalyticMixingFamilyProcessLawCrownOfPrefixTailFalseExtensionCarrierSubset :=
+    deFinetti_analytic_mixingFamily_processLawCrown_of_prefixTailFalseExtensionCarrierSubset
+  infiniteProcessLawCrownBoundary :=
+    deFinetti_posterior_processLawCrown_iff_zeroInteriorMixingMass
+  infiniteCanonicalCompactPredictiveProcessLawBoundary :=
+    deFinetti_canonical_compactPredictiveThatsAll_and_processLawCrown_iff_zeroInteriorMixingMass
+  infiniteDobrushinUniqueness :=
+    infiniteMLN_paperUniformSmallTotalInfluence_implies_uniqueMeasure
+  infiniteConcreteStrictWidthVsCollapseContrast :=
+    infiniteMLN_reinforcedLineGeometric_zeroWeightGrid_concreteDLRPLNContrast
+  infiniteSymmetricGridPhaseCoexistenceReduction :=
+    infiniteMLN_symmetricGridZeroField_originPhaseCoexistenceReductionCrown
+
 /-- External runtime parity metadata for the arithmetic/provenance mirror.
 This is not a proof object; the corresponding commands are run by the build
 agent. -/
@@ -4911,6 +5411,7 @@ def plnITVIDMRuntimeParitySurface : RuntimeParitySurface where
 surface.  The fields are theorem-profile values, so importing this package
 gives a compact proof-carrying index of the current formal story. -/
 structure TruthTheoryPackage where
+  confidenceCharacterizationEndpoint : ConfidenceCharacterizationEndpointProfile
   confidenceFormulaAudit : ConfidenceFormulaAuditProfile
   confidenceChartTorsor : ConfidenceChartTorsorProfile
   confidenceRevisionCharts : ConfidenceRevisionChartProfile
@@ -4943,6 +5444,8 @@ structure TruthTheoryPackage where
 /-- The current proof-carrying package for the confidence / strength / ITV
 theory surface. -/
 noncomputable def plnTruthTheoryPackage : TruthTheoryPackage where
+  confidenceCharacterizationEndpoint :=
+    confidenceCharacterizationEndpointProfile
   confidenceFormulaAudit := confidenceFormulaAuditProfile
   confidenceChartTorsor := confidenceChartTorsorProfile
   confidenceRevisionCharts := confidenceRevisionChartProfile

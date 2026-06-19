@@ -883,7 +883,7 @@ and eval_switch_values fuel space vals branches original =
         (eval_switch_values fuel space rest branches original)
 
 and eval_switch fuel space scrut branches original =
-  eval_switch_one fuel space scrut branches original
+  eval_switch_values fuel space (eval (fuel - 1) space scrut) branches original
 
 and subst_let_binding_pair v value pair =
   case pair of

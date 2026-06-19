@@ -85,6 +85,19 @@ theorem natEvidenceSemantics_add (interp : EvidenceInterpretation) (n₁ n₂ m�
   simp only [natEvidenceSemantics, natEvidenceBetaMeasure_eq, Nat.cast_add]
   ring_nf
 
+/-- Batch evidence semantics is sequential Bayesian updating: first update the
+prior interpretation by `(n₁,m₁)`, then interpret the second batch `(n₂,m₂)`.
+This is the measure-level version of PLN revision as sufficient-statistic
+addition. -/
+theorem natEvidenceSemantics_add_eq_sequential
+    (interp : EvidenceInterpretation) (n₁ n₂ m₁ m₂ : ℕ) :
+    natEvidenceSemantics interp (n₁ + n₂) (m₁ + m₂) =
+      natEvidenceSemantics (interp.posteriorFromNat n₁ m₁) n₂ m₂ := by
+  simp only [natEvidenceSemantics, natEvidenceBetaMeasure_eq, Nat.cast_add,
+    EvidenceInterpretation.posteriorFromNat_prior_alpha,
+    EvidenceInterpretation.posteriorFromNat_prior_beta]
+  ring_nf
+
 /-- The posterior parameters grow linearly with evidence -/
 theorem natEvidenceSemantics_params (interp : EvidenceInterpretation) (npos nneg : ℕ) :
     let α := interp.prior_alpha + npos
@@ -97,6 +110,28 @@ theorem natEvidenceSemantics_params (interp : EvidenceInterpretation) (npos nneg
 /-- The Beta mean from evidence with uniform prior -/
 noncomputable def evidencePosteriorMean (npos nneg : ℕ) (interp : EvidenceInterpretation) : ℝ :=
   (interp.prior_alpha + npos) / (interp.prior_alpha + interp.prior_beta + npos + nneg)
+
+/-- Posterior mean readout of the measure semantics is also invariant under
+batch-vs-sequential Bayesian updating. -/
+theorem evidencePosteriorMean_add_eq_sequential
+    (interp : EvidenceInterpretation) (n₁ n₂ m₁ m₂ : ℕ) :
+    evidencePosteriorMean (n₁ + n₂) (m₁ + m₂) interp =
+      evidencePosteriorMean n₂ m₂ (interp.posteriorFromNat n₁ m₁) := by
+  unfold evidencePosteriorMean EvidenceInterpretation.posteriorFromNat
+  simp only [Nat.cast_add]
+  ring
+
+/-- Canary: under the symmetric `Beta(1,1)` prior, updating by `(1,1)` and
+then `(3,1)` gives the same posterior mean as updating once by `(4,2)`, namely
+`5/8`; this is not the raw empirical strength `4/6`. -/
+theorem evidencePosteriorMean_sequential_update_canary :
+    let interp := EvidenceInterpretation.symmetric 1 (by norm_num)
+    evidencePosteriorMean (1 + 3) (1 + 1) interp = 5 / 8 ∧
+      evidencePosteriorMean 3 1 (interp.posteriorFromNat 1 1) = 5 / 8 ∧
+      evidencePosteriorMean (1 + 3) (1 + 1) interp ≠ (4 : ℝ) / (4 + 2) := by
+  dsimp [evidencePosteriorMean, EvidenceInterpretation.symmetric,
+    EvidenceInterpretation.posteriorFromNat]
+  norm_num
 
 /-- Posterior mean is in [0,1] -/
 theorem evidencePosteriorMean_mem_unit (npos nneg : ℕ) (interp : EvidenceInterpretation) :

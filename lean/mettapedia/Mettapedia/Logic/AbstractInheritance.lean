@@ -286,18 +286,41 @@ def IntensionalInherits (I : Interpretation Carrier Obj Attr) (a b : Carrier) : 
 def Inherits (I : Interpretation Carrier Obj Attr) (a b : Carrier) : Prop :=
   DualConcept.Inherits (I.meaning a) (I.meaning b)
 
+/-- Crisp similarity/equivalence at the abstract inheritance layer: inheritance
+in both directions. Numeric PLN similarity rules can consume this as the
+collapsed 0/1 case without inventing a second semantic relation. -/
+def MutualInherits (I : Interpretation Carrier Obj Attr) (a b : Carrier) : Prop :=
+  I.Inherits a b ∧ I.Inherits b a
+
 @[simp] theorem inherits_iff (I : Interpretation Carrier Obj Attr) (a b : Carrier) :
     I.Inherits a b ↔
       I.ExtensionalInherits a b ∧ I.IntensionalInherits a b := Iff.rfl
+
+@[simp] theorem mutualInherits_iff (I : Interpretation Carrier Obj Attr) (a b : Carrier) :
+    I.MutualInherits a b ↔ I.Inherits a b ∧ I.Inherits b a := Iff.rfl
 
 theorem inherits_refl (I : Interpretation Carrier Obj Attr) (a : Carrier) :
     I.Inherits a a :=
   DualConcept.inherits_refl _
 
+theorem mutualInherits_refl (I : Interpretation Carrier Obj Attr) (a : Carrier) :
+    I.MutualInherits a a :=
+  ⟨I.inherits_refl a, I.inherits_refl a⟩
+
+theorem mutualInherits_symm (I : Interpretation Carrier Obj Attr) {a b : Carrier}
+    (h : I.MutualInherits a b) :
+    I.MutualInherits b a :=
+  ⟨h.2, h.1⟩
+
 theorem inherits_trans (I : Interpretation Carrier Obj Attr) {a b c : Carrier}
     (hab : I.Inherits a b) (hbc : I.Inherits b c) :
     I.Inherits a c :=
   DualConcept.inherits_trans hab hbc
+
+theorem mutualInherits_trans (I : Interpretation Carrier Obj Attr) {a b c : Carrier}
+    (hab : I.MutualInherits a b) (hbc : I.MutualInherits b c) :
+    I.MutualInherits a c :=
+  ⟨I.inherits_trans hab.1 hbc.1, I.inherits_trans hbc.2 hab.2⟩
 
 /-- Pairwise subset semantics induced directly from the abstract inheritance
 foundation. This is the generic relation used by downstream ASSOC/PAT

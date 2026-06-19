@@ -89,7 +89,12 @@ private theorem eqMatch_sound
     (space : Space) (dispatch : GroundedDispatch) (atom type_ : Atom) (b : Bindings)
     (r : ResultPair) (n : Nat)
     (h_ef : isErrorAtom atom = false)
-    (h_ng : match atom with | .expression (op :: _) => dispatch.isExecutable op = false | _ => True)
+    (h_ng : match atom with
+      | .expression (op :: _) =>
+          dispatch.isExecutable op = false ∧
+          op ≠ .symbol "unify" ∧
+          op ≠ .symbol "switch-minimal"
+      | _ => True)
     (ih_eval : ∀ s d a t b' r', r' ∈ evalAtom s d a t b' n → EvalAtom s d a t b' r')
     (hr : r ∈ (if queryEquations space atom n = [] then [(atom, b)]
                else (queryEquations space atom n).flatMap fun x =>
@@ -365,39 +370,312 @@ private theorem allSound : ∀ fuel, AllSound fuel := by
       | false =>
         have h_ef : isErrorAtom atom = false := h_err
         match atom with
+        | .expression [.symbol "unify", target, pattern, thenBranch, elseBranch] =>
+          by_cases h_results : unifySuccessResults target pattern thenBranch b n = []
+          · simp [mettaCall, h_ef, h_results] at hr
+            subst r
+            exact MettaCall.unify_no_match_raw _ type_ b
+              target pattern thenBranch elseBranch n rfl h_ef h_results
+          · simp [mettaCall, h_ef, h_results] at hr
+            exact MettaCall.unify_success_raw _ type_ b
+              target pattern thenBranch elseBranch r n rfl h_ef hr
+        | .expression (.symbol "unify" :: tail) =>
+          cases tail with
+          | nil =>
+              simp [mettaCall, h_ef] at hr
+              subst r
+              exact MettaCall.unify_bad_arity _ type_ b [] rfl (by simp) h_ef
+          | cons target tail1 =>
+              cases tail1 with
+              | nil =>
+                  simp [mettaCall, h_ef] at hr
+                  subst r
+                  exact MettaCall.unify_bad_arity _ type_ b [target] rfl (by simp) h_ef
+              | cons pattern tail2 =>
+                  cases tail2 with
+                  | nil =>
+                      simp [mettaCall, h_ef] at hr
+                      subst r
+                      exact MettaCall.unify_bad_arity _ type_ b [target, pattern] rfl (by simp) h_ef
+                  | cons thenBranch tail3 =>
+                      cases tail3 with
+                      | nil =>
+                          simp [mettaCall, h_ef] at hr
+                          subst r
+                          exact MettaCall.unify_bad_arity _ type_ b
+                            [target, pattern, thenBranch] rfl (by simp) h_ef
+                      | cons elseBranch tail4 =>
+                          cases tail4 with
+                          | nil =>
+                              by_cases h_results :
+                                  unifySuccessResults target pattern thenBranch b n = []
+                              · simp [mettaCall, h_ef, h_results] at hr
+                                subst r
+                                exact MettaCall.unify_no_match_raw _ type_ b
+                                  target pattern thenBranch elseBranch n rfl h_ef h_results
+                              · simp [mettaCall, h_ef, h_results] at hr
+                                exact MettaCall.unify_success_raw _ type_ b
+                                  target pattern thenBranch elseBranch r n rfl h_ef hr
+                          | cons extra rest =>
+                              simp [mettaCall, h_ef] at hr
+                              subst r
+                              exact MettaCall.unify_bad_arity _ type_ b
+                                (target :: pattern :: thenBranch :: elseBranch :: extra :: rest)
+                                rfl (by simp) h_ef
+        | .expression (.symbol "switch-minimal" :: tail) =>
+          cases tail with
+          | nil =>
+              simp [mettaCall, h_ef] at hr
+              subst r
+              exact MettaCall.switch_minimal_bad_shape _ type_ b [] rfl
+                (by intro h; rcases h with ⟨scrut, branches, htail⟩; simp at htail) h_ef
+          | cons scrut tail1 =>
+              cases tail1 with
+              | nil =>
+                  simp [mettaCall, h_ef] at hr
+                  subst r
+                  exact MettaCall.switch_minimal_bad_shape _ type_ b [scrut] rfl
+                    (by intro h; rcases h with ⟨scrut', branches, htail⟩; simp at htail) h_ef
+              | cons casesAtom tail2 =>
+                  cases tail2 with
+                  | nil =>
+                      cases h_cases : casesAtom with
+                      | symbol s =>
+                          have h_expr_not_error :
+                              isErrorAtom (.expression [.symbol "switch-minimal", scrut, .symbol s]) = false := by
+                            simpa [h_cases] using h_ef
+                          simp [mettaCall, h_cases, h_expr_not_error] at hr
+                          have hr_eq :
+                              r =
+                                (mkError (.expression [.symbol "switch-minimal", scrut, .symbol s])
+                                  .incorrectNumberOfArguments, b) := by
+                            simpa using hr
+                          subst r
+                          exact MettaCall.switch_minimal_bad_shape _ type_ b
+                            [scrut, .symbol s] rfl
+                            (by
+                              intro h
+                              rcases h with ⟨scrut', branches, htail⟩
+                              simp [h_cases] at htail)
+                            h_ef
+                      | var v =>
+                          have h_expr_not_error :
+                              isErrorAtom (.expression [.symbol "switch-minimal", scrut, .var v]) = false := by
+                            simpa [h_cases] using h_ef
+                          simp [mettaCall, h_cases, h_expr_not_error] at hr
+                          have hr_eq :
+                              r =
+                                (mkError (.expression [.symbol "switch-minimal", scrut, .var v])
+                                  .incorrectNumberOfArguments, b) := by
+                            simpa using hr
+                          subst r
+                          exact MettaCall.switch_minimal_bad_shape _ type_ b
+                            [scrut, .var v] rfl
+                            (by
+                              intro h
+                              rcases h with ⟨scrut', branches, htail⟩
+                              simp [h_cases] at htail)
+                            h_ef
+                      | grounded g =>
+                          have h_expr_not_error :
+                              isErrorAtom (.expression [.symbol "switch-minimal", scrut, .grounded g]) = false := by
+                            simpa [h_cases] using h_ef
+                          simp [mettaCall, h_cases, h_expr_not_error] at hr
+                          have hr_eq :
+                              r =
+                                (mkError (.expression [.symbol "switch-minimal", scrut, .grounded g])
+                                  .incorrectNumberOfArguments, b) := by
+                            simpa using hr
+                          subst r
+                          exact MettaCall.switch_minimal_bad_shape _ type_ b
+                            [scrut, .grounded g] rfl
+                            (by
+                              intro h
+                              rcases h with ⟨scrut', branches, htail⟩
+                              simp [h_cases] at htail)
+                            h_ef
+                      | expression branches =>
+                          simp [mettaCall, h_ef, h_cases] at hr
+                          exact MettaCall.switch_minimal_result _ type_ b
+                            scrut branches r n rfl h_ef hr
+                  | cons extra rest =>
+                      simp [mettaCall, h_ef] at hr
+                      subst r
+                      exact MettaCall.switch_minimal_bad_shape _ type_ b
+                        (scrut :: casesAtom :: extra :: rest) rfl
+                        (by
+                          intro h
+                          rcases h with ⟨scrut', branches, htail⟩
+                          simp at htail)
+                        h_ef
         | .expression (op :: args) =>
-          cases h_exec : dispatch.isExecutable op with
-          | true =>
-            simp [mettaCall, h_ef, h_exec] at hr
-            cases h_run : dispatch.execute op args with
-            | ok results =>
-              by_cases h_results : results = []
-              · simp [h_run, h_results] at hr
-                have hr_eq : r = (Atom.empty, b) := by simpa [h_results] using hr
+          by_cases h_unify : op = .symbol "unify"
+          · subst h_unify
+            cases args with
+            | nil =>
+                simp [mettaCall, h_ef] at hr
                 subst r
-                subst results
-                exact MettaCall.grounded_empty_results _ type_ b op args rfl h_exec h_ef h_run
-              · simp [h_run, h_results] at hr
-                obtain ⟨nativeR, nativeB, h_nat, mb, h_merge, hr3⟩ := hr
-                exact MettaCall.grounded_ok _ type_ b op args results
-                  (nativeR, nativeB) mb r n rfl h_exec h_ef h_run
-                  h_nat h_merge (ih_eval _ _ _ _ _ _ hr3)
-            | runtimeError msg =>
-              simp [h_run] at hr
-              subst r
-              exact MettaCall.grounded_runtime_error _ type_ b op args msg rfl h_exec h_ef h_run
-            | noReduce =>
-              simp [h_run] at hr
-              subst r
-              exact MettaCall.grounded_no_reduce _ type_ b op args rfl h_exec h_ef h_run
-            | incorrectArgument =>
-              simp [h_run] at hr
-              subst r
-              exact MettaCall.grounded_incorrect_arg _ type_ b op args rfl h_exec h_ef h_run
-          | false =>
-            simp [mettaCall, h_ef, h_exec] at hr
-            exact eqMatch_sound space dispatch _ type_ b r n h_ef (by simpa using h_exec)
-              ih_eval hr
+                exact MettaCall.unify_bad_arity _ type_ b [] rfl (by simp) h_ef
+            | cons target args1 =>
+                cases args1 with
+                | nil =>
+                    simp [mettaCall, h_ef] at hr
+                    subst r
+                    exact MettaCall.unify_bad_arity _ type_ b [target] rfl (by simp) h_ef
+                | cons pattern args2 =>
+                    cases args2 with
+                    | nil =>
+                        simp [mettaCall, h_ef] at hr
+                        subst r
+                        exact MettaCall.unify_bad_arity _ type_ b [target, pattern] rfl (by simp) h_ef
+                    | cons thenBranch args3 =>
+                        cases args3 with
+                        | nil =>
+                            simp [mettaCall, h_ef] at hr
+                            subst r
+                            exact MettaCall.unify_bad_arity _ type_ b
+                              [target, pattern, thenBranch] rfl (by simp) h_ef
+                        | cons elseBranch args4 =>
+                            cases args4 with
+                            | nil =>
+                                by_cases h_results :
+                                    unifySuccessResults target pattern thenBranch b n = []
+                                · simp [mettaCall, h_ef, h_results] at hr
+                                  subst r
+                                  exact MettaCall.unify_no_match_raw _ type_ b
+                                    target pattern thenBranch elseBranch n rfl h_ef h_results
+                                · simp [mettaCall, h_ef, h_results] at hr
+                                  exact MettaCall.unify_success_raw _ type_ b
+                                    target pattern thenBranch elseBranch r n rfl h_ef hr
+                            | cons extra tail =>
+                                simp [mettaCall, h_ef] at hr
+                                subst r
+                                exact MettaCall.unify_bad_arity _ type_ b
+                                  (target :: pattern :: thenBranch :: elseBranch :: extra :: tail)
+                                  rfl (by simp) h_ef
+          · by_cases h_switch : op = .symbol "switch-minimal"
+            · subst h_switch
+              cases args with
+              | nil =>
+                  simp [mettaCall, h_ef] at hr
+                  subst r
+                  exact MettaCall.switch_minimal_bad_shape _ type_ b [] rfl
+                    (by intro h; rcases h with ⟨scrut, branches, htail⟩; simp at htail) h_ef
+              | cons scrut tail1 =>
+                  cases tail1 with
+                  | nil =>
+                      simp [mettaCall, h_ef] at hr
+                      subst r
+                      exact MettaCall.switch_minimal_bad_shape _ type_ b [scrut] rfl
+                        (by intro h; rcases h with ⟨scrut', branches, htail⟩; simp at htail) h_ef
+                  | cons casesAtom tail2 =>
+                      cases tail2 with
+                      | nil =>
+                          cases h_cases : casesAtom with
+                          | symbol s =>
+                              have h_expr_not_error :
+                                  isErrorAtom (.expression [.symbol "switch-minimal", scrut, .symbol s]) = false := by
+                                simpa [h_cases] using h_ef
+                              simp [mettaCall, h_cases, h_expr_not_error] at hr
+                              have hr_eq :
+                                  r =
+                                    (mkError (.expression [.symbol "switch-minimal", scrut, .symbol s])
+                                      .incorrectNumberOfArguments, b) := by
+                                simpa using hr
+                              subst r
+                              exact MettaCall.switch_minimal_bad_shape _ type_ b
+                                [scrut, .symbol s] rfl
+                                (by
+                                  intro h
+                                  rcases h with ⟨scrut', branches, htail⟩
+                                  simp [h_cases] at htail)
+                                h_ef
+                          | var v =>
+                              have h_expr_not_error :
+                                  isErrorAtom (.expression [.symbol "switch-minimal", scrut, .var v]) = false := by
+                                simpa [h_cases] using h_ef
+                              simp [mettaCall, h_cases, h_expr_not_error] at hr
+                              have hr_eq :
+                                  r =
+                                    (mkError (.expression [.symbol "switch-minimal", scrut, .var v])
+                                      .incorrectNumberOfArguments, b) := by
+                                simpa using hr
+                              subst r
+                              exact MettaCall.switch_minimal_bad_shape _ type_ b
+                                [scrut, .var v] rfl
+                                (by
+                                  intro h
+                                  rcases h with ⟨scrut', branches, htail⟩
+                                  simp [h_cases] at htail)
+                                h_ef
+                          | grounded g =>
+                              have h_expr_not_error :
+                                  isErrorAtom (.expression [.symbol "switch-minimal", scrut, .grounded g]) = false := by
+                                simpa [h_cases] using h_ef
+                              simp [mettaCall, h_cases, h_expr_not_error] at hr
+                              have hr_eq :
+                                  r =
+                                    (mkError (.expression [.symbol "switch-minimal", scrut, .grounded g])
+                                      .incorrectNumberOfArguments, b) := by
+                                simpa using hr
+                              subst r
+                              exact MettaCall.switch_minimal_bad_shape _ type_ b
+                                [scrut, .grounded g] rfl
+                                (by
+                                  intro h
+                                  rcases h with ⟨scrut', branches, htail⟩
+                                  simp [h_cases] at htail)
+                                h_ef
+                          | expression branches =>
+                              simp [mettaCall, h_ef, h_cases] at hr
+                              exact MettaCall.switch_minimal_result _ type_ b
+                                scrut branches r n rfl h_ef hr
+                      | cons extra rest =>
+                          simp [mettaCall, h_ef] at hr
+                          subst r
+                          exact MettaCall.switch_minimal_bad_shape _ type_ b
+                            (scrut :: casesAtom :: extra :: rest) rfl
+                            (by
+                              intro h
+                              rcases h with ⟨scrut', branches, htail⟩
+                              simp at htail)
+                            h_ef
+            · cases h_exec : dispatch.isExecutable op with
+              | true =>
+                simp [mettaCall, h_ef, h_unify, h_switch, h_exec] at hr
+                cases h_run : dispatch.execute op args with
+                | ok results =>
+                  by_cases h_results : results = []
+                  · simp [h_run, h_results] at hr
+                    have hr_eq : r = (Atom.empty, b) := by simpa [h_results] using hr
+                    subst r
+                    subst results
+                    exact MettaCall.grounded_empty_results _ type_ b op args rfl h_exec h_unify h_switch h_ef h_run
+                  · simp [h_run, h_results] at hr
+                    obtain ⟨nativeR, nativeB, h_nat, mb, h_merge, hr3⟩ := hr
+                    exact MettaCall.grounded_ok _ type_ b op args results
+                      (nativeR, nativeB) mb r n rfl h_exec h_unify h_switch h_ef h_run
+                      h_nat h_merge (ih_eval _ _ _ _ _ _ hr3)
+                | runtimeError msg =>
+                  simp [h_run] at hr
+                  subst r
+                  exact MettaCall.grounded_runtime_error _ type_ b op args msg
+                    rfl h_exec h_unify h_switch h_ef h_run
+                | noReduce =>
+                  simp [h_run] at hr
+                  subst r
+                  exact MettaCall.grounded_no_reduce _ type_ b op args
+                    rfl h_exec h_unify h_switch h_ef h_run
+                | incorrectArgument =>
+                  simp [h_run] at hr
+                  subst r
+                  exact MettaCall.grounded_incorrect_arg _ type_ b op args
+                    rfl h_exec h_unify h_switch h_ef h_run
+              | false =>
+                simp [mettaCall, h_ef, h_unify, h_switch, h_exec] at hr
+                exact eqMatch_sound space dispatch _ type_ b r n h_ef
+                  (by exact ⟨h_exec, h_unify, h_switch⟩)
+                  ih_eval hr
         | .symbol _ =>
           simp [mettaCall, h_ef] at hr
           exact eqMatch_sound space dispatch _ type_ b r n h_ef trivial ih_eval hr
@@ -947,12 +1225,51 @@ private inductive MettaCallSync (space : Space) (dispatch : GroundedDispatch) :
   | error_passthrough (n : Nat) (atom type_ : Atom) (b : Bindings)
       (h_err : isErrorAtom atom = true) :
       MettaCallSync space dispatch (n + 1) atom type_ b (atom, b)
+  | unify_success_raw (n : Nat) (atom type_ : Atom) (b : Bindings)
+      (target pattern thenBranch elseBranch : Atom)
+      (finalResult : ResultPair)
+      (h_shape : atom = .expression [.symbol "unify",
+        target, pattern, thenBranch, elseBranch])
+      (h_not_error : isErrorAtom atom = false)
+      (h_raw : finalResult ∈ unifySuccessResults target pattern thenBranch b n) :
+      MettaCallSync space dispatch (n + 1) atom type_ b finalResult
+  | unify_no_match_raw (n : Nat) (atom type_ : Atom) (b : Bindings)
+      (target pattern thenBranch elseBranch : Atom)
+      (h_shape : atom = .expression [.symbol "unify",
+        target, pattern, thenBranch, elseBranch])
+      (h_not_error : isErrorAtom atom = false)
+      (h_empty : unifySuccessResults target pattern thenBranch b n = []) :
+      MettaCallSync space dispatch (n + 1) atom type_ b (elseBranch, b)
+  | unify_bad_arity (n : Nat) (atom type_ : Atom) (b : Bindings)
+      (tail : List Atom)
+      (h_shape : atom = .expression (.symbol "unify" :: tail))
+      (h_arity : tail.length ≠ 4)
+      (h_not_error : isErrorAtom atom = false) :
+      MettaCallSync space dispatch (n + 1) atom type_ b
+        (mkError atom .incorrectNumberOfArguments, b)
+  | switch_minimal_result (n : Nat) (atom type_ : Atom) (b : Bindings)
+      (scrut : Atom) (branches : List Atom)
+      (finalResult : ResultPair)
+      (h_shape : atom = .expression [.symbol "switch-minimal",
+        scrut, .expression branches])
+      (h_not_error : isErrorAtom atom = false)
+      (h_result : finalResult ∈ switchMinimalResults scrut branches b n) :
+      MettaCallSync space dispatch (n + 1) atom type_ b finalResult
+  | switch_minimal_bad_shape (n : Nat) (atom type_ : Atom) (b : Bindings)
+      (tail : List Atom)
+      (h_shape : atom = .expression (.symbol "switch-minimal" :: tail))
+      (h_noncanonical : ¬ ∃ scrut branches, tail = [scrut, .expression branches])
+      (h_not_error : isErrorAtom atom = false) :
+      MettaCallSync space dispatch (n + 1) atom type_ b
+        (mkError atom .incorrectNumberOfArguments, b)
   | grounded_ok (n : Nat) (atom type_ : Atom) (b : Bindings)
       (op : Atom) (args : List Atom)
       (nativeResults : ResultSet) (nativeResult : ResultPair)
       (merged : Bindings) (finalResult : ResultPair)
       (h_shape : atom = .expression (op :: args))
       (h_exec : dispatch.isExecutable op = true)
+      (h_not_unify : op ≠ .symbol "unify")
+      (h_not_switch : op ≠ .symbol "switch-minimal")
       (h_not_error : isErrorAtom atom = false)
       (h_native : dispatch.execute op args = .ok nativeResults)
       (h_native_mem : nativeResult ∈ nativeResults)
@@ -963,6 +1280,8 @@ private inductive MettaCallSync (space : Space) (dispatch : GroundedDispatch) :
       (op : Atom) (args : List Atom) (msg : String)
       (h_shape : atom = .expression (op :: args))
       (h_exec : dispatch.isExecutable op = true)
+      (h_not_unify : op ≠ .symbol "unify")
+      (h_not_switch : op ≠ .symbol "switch-minimal")
       (h_not_error : isErrorAtom atom = false)
       (h_native : dispatch.execute op args = .runtimeError msg) :
       MettaCallSync space dispatch (n + 1) atom type_ b
@@ -971,6 +1290,8 @@ private inductive MettaCallSync (space : Space) (dispatch : GroundedDispatch) :
       (op : Atom) (args : List Atom)
       (h_shape : atom = .expression (op :: args))
       (h_exec : dispatch.isExecutable op = true)
+      (h_not_unify : op ≠ .symbol "unify")
+      (h_not_switch : op ≠ .symbol "switch-minimal")
       (h_not_error : isErrorAtom atom = false)
       (h_native : dispatch.execute op args = .noReduce) :
       MettaCallSync space dispatch (n + 1) atom type_ b (atom, b)
@@ -978,6 +1299,8 @@ private inductive MettaCallSync (space : Space) (dispatch : GroundedDispatch) :
       (op : Atom) (args : List Atom)
       (h_shape : atom = .expression (op :: args))
       (h_exec : dispatch.isExecutable op = true)
+      (h_not_unify : op ≠ .symbol "unify")
+      (h_not_switch : op ≠ .symbol "switch-minimal")
       (h_not_error : isErrorAtom atom = false)
       (h_native : dispatch.execute op args = .incorrectArgument) :
       MettaCallSync space dispatch (n + 1) atom type_ b (atom, b)
@@ -985,6 +1308,8 @@ private inductive MettaCallSync (space : Space) (dispatch : GroundedDispatch) :
       (op : Atom) (args : List Atom)
       (h_shape : atom = .expression (op :: args))
       (h_exec : dispatch.isExecutable op = true)
+      (h_not_unify : op ≠ .symbol "unify")
+      (h_not_switch : op ≠ .symbol "switch-minimal")
       (h_not_error : isErrorAtom atom = false)
       (h_native : dispatch.execute op args = .ok []) :
       MettaCallSync space dispatch (n + 1) atom type_ b (Atom.empty, b)
@@ -993,7 +1318,10 @@ private inductive MettaCallSync (space : Space) (dispatch : GroundedDispatch) :
       (finalResult : ResultPair)
       (h_not_error : isErrorAtom atom = false)
       (h_not_grounded : match atom with
-        | .expression (op :: _) => dispatch.isExecutable op = false
+        | .expression (op :: _) =>
+            dispatch.isExecutable op = false ∧
+            op ≠ .symbol "unify" ∧
+            op ≠ .symbol "switch-minimal"
         | _ => True)
       (h_query : (rhs, queryBindings) ∈ queryEquations space atom n)
       (h_merge : merged ∈ mergeBindings queryBindings b n)
@@ -1003,7 +1331,10 @@ private inductive MettaCallSync (space : Space) (dispatch : GroundedDispatch) :
   | no_match (n : Nat) (atom type_ : Atom) (b : Bindings)
       (h_not_error : isErrorAtom atom = false)
       (h_not_grounded : match atom with
-        | .expression (op :: _) => dispatch.isExecutable op = false
+        | .expression (op :: _) =>
+            dispatch.isExecutable op = false ∧
+            op ≠ .symbol "unify" ∧
+            op ≠ .symbol "switch-minimal"
         | _ => True)
       (h_no_eqs : queryEquations space atom n = []) :
       MettaCallSync space dispatch (n + 1) atom type_ b (atom, b)
@@ -1583,26 +1914,103 @@ private theorem mettaCall_sync_to_eval_step
   cases h with
   | error_passthrough _ atom type_ b h_err =>
       simp [mettaCall, h_err]
+  | unify_success_raw _ atom type_ b target pattern thenBranch elseBranch finalResult
+      h_shape h_not_error h_raw =>
+      subst h_shape
+      simp [mettaCall, h_not_error]
+      by_cases h_empty : unifySuccessResults target pattern thenBranch b n = []
+      · rw [h_empty] at h_raw
+        simp at h_raw
+      · simp [h_empty, h_raw]
+  | unify_no_match_raw _ atom type_ b target pattern thenBranch elseBranch
+      h_shape h_not_error h_empty =>
+      subst h_shape
+      simp [mettaCall, h_not_error, h_empty]
+  | unify_bad_arity _ atom type_ b tail h_shape h_arity h_not_error =>
+      subst h_shape
+      cases tail with
+      | nil =>
+          simp [mettaCall, h_not_error]
+      | cons a tail1 =>
+          cases tail1 with
+          | nil =>
+              simp [mettaCall, h_not_error]
+          | cons b1 tail2 =>
+              cases tail2 with
+              | nil =>
+                  simp [mettaCall, h_not_error]
+              | cons c tail3 =>
+                  cases tail3 with
+                  | nil =>
+                      simp [mettaCall, h_not_error]
+                  | cons d tail4 =>
+                      cases tail4 with
+                      | nil =>
+                          exfalso
+                          exact h_arity (by simp)
+                      | cons e tail5 =>
+                          simp [mettaCall, h_not_error]
+  | switch_minimal_result _ atom type_ b scrut branches finalResult
+      h_shape h_not_error h_result =>
+      subst h_shape
+      simp [mettaCall, h_not_error, h_result]
+  | switch_minimal_bad_shape _ atom type_ b tail h_shape h_noncanonical h_not_error =>
+      subst h_shape
+      cases tail with
+      | nil =>
+          simp [mettaCall, h_not_error]
+      | cons scrut tail1 =>
+          cases tail1 with
+          | nil =>
+              simp [mettaCall, h_not_error]
+          | cons casesAtom tail2 =>
+              cases tail2 with
+              | nil =>
+                  cases h_cases : casesAtom with
+                  | symbol s =>
+                      have h_expr_not_error :
+                          isErrorAtom (.expression [.symbol "switch-minimal", scrut, .symbol s]) = false := by
+                        simpa [h_cases] using h_not_error
+                      simpa [mettaCall, h_cases, h_expr_not_error]
+                  | var v =>
+                      have h_expr_not_error :
+                          isErrorAtom (.expression [.symbol "switch-minimal", scrut, .var v]) = false := by
+                        simpa [h_cases] using h_not_error
+                      simpa [mettaCall, h_cases, h_expr_not_error]
+                  | grounded g =>
+                      have h_expr_not_error :
+                          isErrorAtom (.expression [.symbol "switch-minimal", scrut, .grounded g]) = false := by
+                        simpa [h_cases] using h_not_error
+                      simpa [mettaCall, h_cases, h_expr_not_error]
+                  | expression branches =>
+                      exfalso
+                      exact h_noncanonical ⟨scrut, branches, by simp [h_cases]⟩
+              | cons extra rest =>
+                  simp [mettaCall, h_not_error]
   | grounded_ok _ atom type_ b op args nativeResults nativeResult merged finalResult
-      h_shape h_exec h_not_error h_native h_native_mem h_merge h_recurse =>
+      h_shape h_exec h_not_unify h_not_switch h_not_error h_native h_native_mem h_merge h_recurse =>
       subst h_shape
       have h_native_nonempty : nativeResults.isEmpty = false :=
         isEmpty_false_of_mem h_native_mem
-      simp [mettaCall, h_not_error, h_exec, h_native, h_native_nonempty]
+      simp [mettaCall, h_not_error, h_exec, h_not_unify, h_not_switch, h_native, h_native_nonempty]
       refine ⟨nativeResult.1, nativeResult.2, h_native_mem, merged, h_merge, ?_⟩
       exact ih.evalAtom _ _ _ _ h_recurse
-  | grounded_runtime_error _ atom type_ b op args msg h_shape h_exec h_not_error h_native =>
+  | grounded_runtime_error _ atom type_ b op args msg
+      h_shape h_exec h_not_unify h_not_switch h_not_error h_native =>
       subst h_shape
-      simp [mettaCall, h_not_error, h_exec, h_native]
-  | grounded_no_reduce _ atom type_ b op args h_shape h_exec h_not_error h_native =>
+      simp [mettaCall, h_not_error, h_exec, h_not_unify, h_not_switch, h_native]
+  | grounded_no_reduce _ atom type_ b op args
+      h_shape h_exec h_not_unify h_not_switch h_not_error h_native =>
       subst h_shape
-      simp [mettaCall, h_not_error, h_exec, h_native]
-  | grounded_incorrect_arg _ atom type_ b op args h_shape h_exec h_not_error h_native =>
+      simp [mettaCall, h_not_error, h_exec, h_not_unify, h_not_switch, h_native]
+  | grounded_incorrect_arg _ atom type_ b op args
+      h_shape h_exec h_not_unify h_not_switch h_not_error h_native =>
       subst h_shape
-      simp [mettaCall, h_not_error, h_exec, h_native]
-  | grounded_empty_results _ atom type_ b op args h_shape h_exec h_not_error h_native =>
+      simp [mettaCall, h_not_error, h_exec, h_not_unify, h_not_switch, h_native]
+  | grounded_empty_results _ atom type_ b op args
+      h_shape h_exec h_not_unify h_not_switch h_not_error h_native =>
       subst h_shape
-      simp [mettaCall, h_not_error, h_exec, h_native]
+      simp [mettaCall, h_not_error, h_exec, h_not_unify, h_not_switch, h_native]
   | equation_match _ atom type_ b rhs queryBindings merged finalResult h_not_error
       h_not_grounded h_query h_merge h_no_loop h_recurse =>
       cases atom with
@@ -2482,7 +2890,12 @@ private theorem eqMatch_eval_to_sync
     (space : Space) (dispatch : GroundedDispatch) (atom type_ : Atom) (b : Bindings)
     (r : ResultPair) (n : Nat)
     (h_ef : isErrorAtom atom = false)
-    (h_ng : match atom with | .expression (op :: _) => dispatch.isExecutable op = false | _ => True)
+    (h_ng : match atom with
+      | .expression (op :: _) =>
+          dispatch.isExecutable op = false ∧
+          op ≠ .symbol "unify" ∧
+          op ≠ .symbol "switch-minimal"
+      | _ => True)
     (ih_eval : ∀ atom' type_' b' r',
       r' ∈ evalAtom space dispatch atom' type_' b' n →
       EvalAtomSync space dispatch n atom' type_' b' r')
@@ -2526,43 +2939,261 @@ private theorem mettaCall_eval_to_sync_step
   | false =>
       have h_ef : isErrorAtom atom = false := h_err
       match atom with
+      | .expression [.symbol "unify", target, pattern, thenBranch, elseBranch] =>
+          by_cases h_results : unifySuccessResults target pattern thenBranch b n = []
+          · simp [mettaCall, h_ef, h_results] at hr
+            subst r
+            exact MettaCallSync.unify_no_match_raw n
+              (.expression [.symbol "unify", target, pattern, thenBranch, elseBranch])
+              type_ b target pattern thenBranch elseBranch rfl h_ef h_results
+          · simp [mettaCall, h_ef, h_results] at hr
+            exact MettaCallSync.unify_success_raw n
+              (.expression [.symbol "unify", target, pattern, thenBranch, elseBranch])
+              type_ b target pattern thenBranch elseBranch r
+              rfl h_ef hr
+      | .expression (.symbol "unify" :: tail) =>
+          cases tail with
+          | nil =>
+              simp [mettaCall, h_ef] at hr
+              subst r
+              exact MettaCallSync.unify_bad_arity n
+                (.expression [.symbol "unify"]) type_ b [] rfl (by simp) h_ef
+          | cons target tail1 =>
+              cases tail1 with
+              | nil =>
+                  simp [mettaCall, h_ef] at hr
+                  subst r
+                  exact MettaCallSync.unify_bad_arity n
+                    (.expression [.symbol "unify", target]) type_ b [target] rfl (by simp) h_ef
+              | cons pattern tail2 =>
+                  cases tail2 with
+                  | nil =>
+                      simp [mettaCall, h_ef] at hr
+                      subst r
+                      exact MettaCallSync.unify_bad_arity n
+                        (.expression [.symbol "unify", target, pattern]) type_ b
+                        [target, pattern] rfl (by simp) h_ef
+                  | cons thenBranch tail3 =>
+                      cases tail3 with
+                      | nil =>
+                          simp [mettaCall, h_ef] at hr
+                          subst r
+                          exact MettaCallSync.unify_bad_arity n
+                            (.expression [.symbol "unify", target, pattern, thenBranch]) type_ b
+                            [target, pattern, thenBranch] rfl (by simp) h_ef
+                      | cons elseBranch tail4 =>
+                          cases tail4 with
+                          | nil =>
+                              by_cases h_results :
+                                  unifySuccessResults target pattern thenBranch b n = []
+                              · simp [mettaCall, h_ef, h_results] at hr
+                                subst r
+                                exact MettaCallSync.unify_no_match_raw n
+                                  (.expression [.symbol "unify", target, pattern, thenBranch, elseBranch])
+                                  type_ b target pattern thenBranch elseBranch
+                                  rfl h_ef h_results
+                              · simp [mettaCall, h_ef, h_results] at hr
+                                exact MettaCallSync.unify_success_raw n
+                                  (.expression [.symbol "unify", target, pattern, thenBranch, elseBranch])
+                                  type_ b target pattern thenBranch elseBranch r
+                                  rfl h_ef hr
+                          | cons extra rest =>
+                              simp [mettaCall, h_ef] at hr
+                              subst r
+                              exact MettaCallSync.unify_bad_arity n
+                                (.expression (.symbol "unify" ::
+                                  target :: pattern :: thenBranch :: elseBranch :: extra :: rest))
+                                type_ b
+                                (target :: pattern :: thenBranch :: elseBranch :: extra :: rest)
+                                rfl (by simp) h_ef
       | .expression (op :: args) =>
-          cases h_exec : dispatch.isExecutable op with
-          | true =>
-              simp [mettaCall, h_ef, h_exec] at hr
-              cases h_run : dispatch.execute op args with
-              | ok results =>
-                  by_cases h_results : results = []
-                  · simp [h_run, h_results] at hr
+          by_cases h_unify : op = .symbol "unify"
+          · subst h_unify
+            cases args with
+            | nil =>
+                simp [mettaCall, h_ef] at hr
+                subst r
+                exact MettaCallSync.unify_bad_arity n
+                  (.expression [.symbol "unify"]) type_ b [] rfl (by simp) h_ef
+            | cons target args1 =>
+                cases args1 with
+                | nil =>
+                    simp [mettaCall, h_ef] at hr
                     subst r
-                    subst results
-                    exact MettaCallSync.grounded_empty_results n (.expression (op :: args))
-                      type_ b op args rfl h_exec h_ef h_run
-                  · simp [h_run, h_results] at hr
-                    obtain ⟨nativeR, nativeB, h_nat, mb, h_merge, hr3⟩ := hr
-                    exact MettaCallSync.grounded_ok n (.expression (op :: args))
-                      type_ b op args results (nativeR, nativeB) mb r
-                      rfl h_exec h_ef h_run h_nat h_merge
-                      (ih.evalAtom _ _ _ _ hr3)
-              | runtimeError msg =>
-                  simp [h_run] at hr
+                    exact MettaCallSync.unify_bad_arity n
+                      (.expression [.symbol "unify", target]) type_ b [target] rfl (by simp) h_ef
+                | cons pattern args2 =>
+                    cases args2 with
+                    | nil =>
+                        simp [mettaCall, h_ef] at hr
+                        subst r
+                        exact MettaCallSync.unify_bad_arity n
+                          (.expression [.symbol "unify", target, pattern]) type_ b
+                          [target, pattern] rfl (by simp) h_ef
+                    | cons thenBranch args3 =>
+                        cases args3 with
+                        | nil =>
+                            simp [mettaCall, h_ef] at hr
+                            subst r
+                            exact MettaCallSync.unify_bad_arity n
+                              (.expression [.symbol "unify", target, pattern, thenBranch]) type_ b
+                              [target, pattern, thenBranch] rfl (by simp) h_ef
+                        | cons elseBranch args4 =>
+                            cases args4 with
+                            | nil =>
+                                by_cases h_results :
+                                    unifySuccessResults target pattern thenBranch b n = []
+                                · simp [mettaCall, h_ef, h_results] at hr
+                                  subst r
+                                  exact MettaCallSync.unify_no_match_raw n
+                                    (.expression [.symbol "unify", target, pattern, thenBranch, elseBranch])
+                                    type_ b target pattern thenBranch elseBranch
+                                    rfl h_ef h_results
+                                · simp [mettaCall, h_ef, h_results] at hr
+                                  exact MettaCallSync.unify_success_raw n
+                                    (.expression [.symbol "unify", target, pattern, thenBranch, elseBranch])
+                                    type_ b target pattern thenBranch elseBranch r
+                                    rfl h_ef hr
+                            | cons extra tail =>
+                                simp [mettaCall, h_ef] at hr
+                                subst r
+                                exact MettaCallSync.unify_bad_arity n
+                                  (.expression (.symbol "unify" ::
+                                    target :: pattern :: thenBranch :: elseBranch :: extra :: tail))
+                                  type_ b
+                                  (target :: pattern :: thenBranch :: elseBranch :: extra :: tail)
+                                  rfl (by simp) h_ef
+          · by_cases h_switch : op = .symbol "switch-minimal"
+            · subst h_switch
+              cases args with
+              | nil =>
+                  simp [mettaCall, h_ef] at hr
                   subst r
-                  exact MettaCallSync.grounded_runtime_error n (.expression (op :: args))
-                    type_ b op args msg rfl h_exec h_ef h_run
-              | noReduce =>
-                  simp [h_run] at hr
-                  subst r
-                  exact MettaCallSync.grounded_no_reduce n (.expression (op :: args))
-                    type_ b op args rfl h_exec h_ef h_run
-              | incorrectArgument =>
-                  simp [h_run] at hr
-                  subst r
-                  exact MettaCallSync.grounded_incorrect_arg n (.expression (op :: args))
-                    type_ b op args rfl h_exec h_ef h_run
-          | false =>
-              simp [mettaCall, h_ef, h_exec] at hr
-              exact eqMatch_eval_to_sync space dispatch _ type_ b r n h_ef
-                (by simpa using h_exec) (fun atom' type_' b' r' hr' => ih.evalAtom atom' type_' b' r' hr') hr
+                  exact MettaCallSync.switch_minimal_bad_shape n
+                    (.expression [.symbol "switch-minimal"]) type_ b [] rfl
+                    (by intro h; rcases h with ⟨scrut, branches, htail⟩; simp at htail) h_ef
+              | cons scrut tail1 =>
+                  cases tail1 with
+                  | nil =>
+                      simp [mettaCall, h_ef] at hr
+                      subst r
+                      exact MettaCallSync.switch_minimal_bad_shape n
+                        (.expression [.symbol "switch-minimal", scrut]) type_ b [scrut] rfl
+                        (by intro h; rcases h with ⟨scrut', branches, htail⟩; simp at htail) h_ef
+                  | cons casesAtom tail2 =>
+                      cases tail2 with
+                      | nil =>
+                          cases h_cases : casesAtom with
+                          | symbol s =>
+                              have h_expr_not_error :
+                                  isErrorAtom (.expression [.symbol "switch-minimal", scrut, .symbol s]) = false := by
+                                simpa [h_cases] using h_ef
+                              simp [mettaCall, h_cases, h_expr_not_error] at hr
+                              have hr_eq :
+                                  r =
+                                    (mkError (.expression [.symbol "switch-minimal", scrut, .symbol s])
+                                      .incorrectNumberOfArguments, b) := by
+                                simpa using hr
+                              subst r
+                              exact MettaCallSync.switch_minimal_bad_shape n
+                                (.expression [.symbol "switch-minimal", scrut, .symbol s]) type_ b
+                                [scrut, .symbol s] rfl
+                                (by
+                                  intro h
+                                  rcases h with ⟨scrut', branches, htail⟩
+                                  simp [h_cases] at htail)
+                                h_ef
+                          | var v =>
+                              have h_expr_not_error :
+                                  isErrorAtom (.expression [.symbol "switch-minimal", scrut, .var v]) = false := by
+                                simpa [h_cases] using h_ef
+                              simp [mettaCall, h_cases, h_expr_not_error] at hr
+                              have hr_eq :
+                                  r =
+                                    (mkError (.expression [.symbol "switch-minimal", scrut, .var v])
+                                      .incorrectNumberOfArguments, b) := by
+                                simpa using hr
+                              subst r
+                              exact MettaCallSync.switch_minimal_bad_shape n
+                                (.expression [.symbol "switch-minimal", scrut, .var v]) type_ b
+                                [scrut, .var v] rfl
+                                (by
+                                  intro h
+                                  rcases h with ⟨scrut', branches, htail⟩
+                                  simp [h_cases] at htail)
+                                h_ef
+                          | grounded g =>
+                              have h_expr_not_error :
+                                  isErrorAtom (.expression [.symbol "switch-minimal", scrut, .grounded g]) = false := by
+                                simpa [h_cases] using h_ef
+                              simp [mettaCall, h_cases, h_expr_not_error] at hr
+                              have hr_eq :
+                                  r =
+                                    (mkError (.expression [.symbol "switch-minimal", scrut, .grounded g])
+                                      .incorrectNumberOfArguments, b) := by
+                                simpa using hr
+                              subst r
+                              exact MettaCallSync.switch_minimal_bad_shape n
+                                (.expression [.symbol "switch-minimal", scrut, .grounded g]) type_ b
+                                [scrut, .grounded g] rfl
+                                (by
+                                  intro h
+                                  rcases h with ⟨scrut', branches, htail⟩
+                                  simp [h_cases] at htail)
+                                h_ef
+                          | expression branches =>
+                              simp [mettaCall, h_ef, h_cases] at hr
+                              exact MettaCallSync.switch_minimal_result n
+                                (.expression [.symbol "switch-minimal", scrut, .expression branches])
+                                type_ b scrut branches r rfl h_ef hr
+                      | cons extra rest =>
+                          simp [mettaCall, h_ef] at hr
+                          subst r
+                          exact MettaCallSync.switch_minimal_bad_shape n
+                            (.expression (.symbol "switch-minimal" :: scrut :: casesAtom :: extra :: rest))
+                            type_ b (scrut :: casesAtom :: extra :: rest) rfl
+                            (by
+                              intro h
+                              rcases h with ⟨scrut', branches, htail⟩
+                              simp at htail)
+                            h_ef
+            · cases h_exec : dispatch.isExecutable op with
+              | true =>
+                  simp [mettaCall, h_ef, h_unify, h_switch, h_exec] at hr
+                  cases h_run : dispatch.execute op args with
+                  | ok results =>
+                      by_cases h_results : results = []
+                      · simp [h_run, h_results] at hr
+                        subst r
+                        subst results
+                        exact MettaCallSync.grounded_empty_results n (.expression (op :: args))
+                          type_ b op args rfl h_exec h_unify h_switch h_ef h_run
+                      · simp [h_run, h_results] at hr
+                        obtain ⟨nativeR, nativeB, h_nat, mb, h_merge, hr3⟩ := hr
+                        exact MettaCallSync.grounded_ok n (.expression (op :: args))
+                          type_ b op args results (nativeR, nativeB) mb r
+                          rfl h_exec h_unify h_switch h_ef h_run h_nat h_merge
+                          (ih.evalAtom _ _ _ _ hr3)
+                  | runtimeError msg =>
+                      simp [h_run] at hr
+                      subst r
+                      exact MettaCallSync.grounded_runtime_error n (.expression (op :: args))
+                        type_ b op args msg rfl h_exec h_unify h_switch h_ef h_run
+                  | noReduce =>
+                      simp [h_run] at hr
+                      subst r
+                      exact MettaCallSync.grounded_no_reduce n (.expression (op :: args))
+                        type_ b op args rfl h_exec h_unify h_switch h_ef h_run
+                  | incorrectArgument =>
+                      simp [h_run] at hr
+                      subst r
+                      exact MettaCallSync.grounded_incorrect_arg n (.expression (op :: args))
+                        type_ b op args rfl h_exec h_unify h_switch h_ef h_run
+              | false =>
+                  simp [mettaCall, h_ef, h_unify, h_switch, h_exec] at hr
+                  exact eqMatch_eval_to_sync space dispatch _ type_ b r n h_ef
+                    (by exact ⟨h_exec, h_unify, h_switch⟩)
+                    (fun atom' type_' b' r' hr' => ih.evalAtom atom' type_' b' r' hr') hr
       | .symbol _ =>
           simp [mettaCall, h_ef] at hr
           exact eqMatch_eval_to_sync space dispatch _ type_ b r n h_ef
@@ -3200,12 +3831,57 @@ private inductive MettaCallAligned (space : Space) (dispatch : GroundedDispatch)
   | error_passthrough (atom type_ : Atom) (b : Bindings)
       (h_err : isErrorAtom atom = true) :
       MettaCallAligned space dispatch atom type_ b (atom, b)
+  | unify_success_raw (atom type_ : Atom) (b : Bindings)
+      (target pattern thenBranch elseBranch : Atom)
+      (finalResult : ResultPair)
+      (h_shape : atom = .expression [.symbol "unify",
+        target, pattern, thenBranch, elseBranch])
+      (h_not_error : isErrorAtom atom = false)
+      (h_raw_eventual :
+        ∃ fuel0, ∀ fuel, fuel ≥ fuel0 →
+          finalResult ∈ unifySuccessResults target pattern thenBranch b fuel) :
+      MettaCallAligned space dispatch atom type_ b finalResult
+  | unify_no_match_raw (atom type_ : Atom) (b : Bindings)
+      (target pattern thenBranch elseBranch : Atom)
+      (h_shape : atom = .expression [.symbol "unify",
+        target, pattern, thenBranch, elseBranch])
+      (h_not_error : isErrorAtom atom = false)
+      (h_empty_eventual :
+        ∃ fuel0, ∀ fuel, fuel ≥ fuel0 →
+          unifySuccessResults target pattern thenBranch b fuel = []) :
+      MettaCallAligned space dispatch atom type_ b (elseBranch, b)
+  | unify_bad_arity (atom type_ : Atom) (b : Bindings)
+      (tail : List Atom)
+      (h_shape : atom = .expression (.symbol "unify" :: tail))
+      (h_arity : tail.length ≠ 4)
+      (h_not_error : isErrorAtom atom = false) :
+      MettaCallAligned space dispatch atom type_ b
+        (mkError atom .incorrectNumberOfArguments, b)
+  | switch_minimal_result (atom type_ : Atom) (b : Bindings)
+      (scrut : Atom) (branches : List Atom)
+      (finalResult : ResultPair)
+      (h_shape : atom = .expression [.symbol "switch-minimal",
+        scrut, .expression branches])
+      (h_not_error : isErrorAtom atom = false)
+      (h_result_eventual :
+        ∃ fuel0, ∀ fuel, fuel ≥ fuel0 →
+          finalResult ∈ switchMinimalResults scrut branches b fuel) :
+      MettaCallAligned space dispatch atom type_ b finalResult
+  | switch_minimal_bad_shape (atom type_ : Atom) (b : Bindings)
+      (tail : List Atom)
+      (h_shape : atom = .expression (.symbol "switch-minimal" :: tail))
+      (h_noncanonical : ¬ ∃ scrut branches, tail = [scrut, .expression branches])
+      (h_not_error : isErrorAtom atom = false) :
+      MettaCallAligned space dispatch atom type_ b
+        (mkError atom .incorrectNumberOfArguments, b)
   | grounded_ok (atom type_ : Atom) (b : Bindings)
       (op : Atom) (args : List Atom)
       (nativeResults : ResultSet) (nativeResult : ResultPair)
       (merged : Bindings) (finalResult : ResultPair)
       (h_shape : atom = .expression (op :: args))
       (h_exec : dispatch.isExecutable op = true)
+      (h_not_unify : op ≠ .symbol "unify")
+      (h_not_switch : op ≠ .symbol "switch-minimal")
       (h_not_error : isErrorAtom atom = false)
       (h_native : dispatch.execute op args = .ok nativeResults)
       (h_native_mem : nativeResult ∈ nativeResults)
@@ -3217,6 +3893,8 @@ private inductive MettaCallAligned (space : Space) (dispatch : GroundedDispatch)
       (op : Atom) (args : List Atom) (msg : String)
       (h_shape : atom = .expression (op :: args))
       (h_exec : dispatch.isExecutable op = true)
+      (h_not_unify : op ≠ .symbol "unify")
+      (h_not_switch : op ≠ .symbol "switch-minimal")
       (h_not_error : isErrorAtom atom = false)
       (h_native : dispatch.execute op args = .runtimeError msg) :
       MettaCallAligned space dispatch atom type_ b
@@ -3225,6 +3903,8 @@ private inductive MettaCallAligned (space : Space) (dispatch : GroundedDispatch)
       (op : Atom) (args : List Atom)
       (h_shape : atom = .expression (op :: args))
       (h_exec : dispatch.isExecutable op = true)
+      (h_not_unify : op ≠ .symbol "unify")
+      (h_not_switch : op ≠ .symbol "switch-minimal")
       (h_not_error : isErrorAtom atom = false)
       (h_native : dispatch.execute op args = .noReduce) :
       MettaCallAligned space dispatch atom type_ b (atom, b)
@@ -3232,6 +3912,8 @@ private inductive MettaCallAligned (space : Space) (dispatch : GroundedDispatch)
       (op : Atom) (args : List Atom)
       (h_shape : atom = .expression (op :: args))
       (h_exec : dispatch.isExecutable op = true)
+      (h_not_unify : op ≠ .symbol "unify")
+      (h_not_switch : op ≠ .symbol "switch-minimal")
       (h_not_error : isErrorAtom atom = false)
       (h_native : dispatch.execute op args = .incorrectArgument) :
       MettaCallAligned space dispatch atom type_ b (atom, b)
@@ -3239,6 +3921,8 @@ private inductive MettaCallAligned (space : Space) (dispatch : GroundedDispatch)
       (op : Atom) (args : List Atom)
       (h_shape : atom = .expression (op :: args))
       (h_exec : dispatch.isExecutable op = true)
+      (h_not_unify : op ≠ .symbol "unify")
+      (h_not_switch : op ≠ .symbol "switch-minimal")
       (h_not_error : isErrorAtom atom = false)
       (h_native : dispatch.execute op args = .ok []) :
       MettaCallAligned space dispatch atom type_ b (Atom.empty, b)
@@ -3247,7 +3931,10 @@ private inductive MettaCallAligned (space : Space) (dispatch : GroundedDispatch)
       (finalResult : ResultPair)
       (h_not_error : isErrorAtom atom = false)
       (h_not_grounded : match atom with
-        | .expression (op :: _) => dispatch.isExecutable op = false
+        | .expression (op :: _) =>
+            dispatch.isExecutable op = false ∧
+            op ≠ .symbol "unify" ∧
+            op ≠ .symbol "switch-minimal"
         | _ => True)
       (h_query_eventual :
         QueryEquationEventually space atom rhs queryBindings)
@@ -3261,7 +3948,10 @@ private inductive MettaCallAligned (space : Space) (dispatch : GroundedDispatch)
   | no_match (atom type_ : Atom) (b : Bindings)
       (h_not_error : isErrorAtom atom = false)
       (h_not_grounded : match atom with
-        | .expression (op :: _) => dispatch.isExecutable op = false
+        | .expression (op :: _) =>
+            dispatch.isExecutable op = false ∧
+            op ≠ .symbol "unify" ∧
+            op ≠ .symbol "switch-minimal"
         | _ => True)
       (h_no_eqs_eventual : QueryNoMatchEventually space atom) :
       MettaCallAligned space dispatch atom type_ b (atom, b)
@@ -3602,8 +4292,61 @@ private theorem mettaCallAligned_eventually_to_sync_of_evalAtom_eventually
       | zero => cases hfuel
       | succ n =>
           simpa using (MettaCallSync.error_passthrough n atom type_ b h_err)
+  | .unify_success_raw atom type_ b target pattern thenBranch elseBranch finalResult
+      h_shape h_not_error h_raw_eventual =>
+      obtain ⟨fuel0, h_raw_eventual⟩ := h_raw_eventual
+      refine ⟨fuel0 + 1, ?_⟩
+      intro fuel hfuel
+      cases fuel with
+      | zero => cases hfuel
+      | succ n =>
+          exact MettaCallSync.unify_success_raw n atom type_ b
+            target pattern thenBranch elseBranch finalResult
+            h_shape h_not_error
+            (h_raw_eventual n (Nat.succ_le_succ_iff.mp hfuel))
+  | .unify_no_match_raw atom type_ b target pattern thenBranch elseBranch
+      h_shape h_not_error h_empty_eventual =>
+      obtain ⟨fuel0, h_empty_eventual⟩ := h_empty_eventual
+      refine ⟨fuel0 + 1, ?_⟩
+      intro fuel hfuel
+      cases fuel with
+      | zero => cases hfuel
+      | succ n =>
+          exact MettaCallSync.unify_no_match_raw n atom type_ b
+            target pattern thenBranch elseBranch
+            h_shape h_not_error
+            (h_empty_eventual n (Nat.succ_le_succ_iff.mp hfuel))
+  | .unify_bad_arity atom type_ b tail h_shape h_arity h_not_error =>
+      refine ⟨1, ?_⟩
+      intro fuel hfuel
+      cases fuel with
+      | zero => cases hfuel
+      | succ n =>
+          simpa using
+            (MettaCallSync.unify_bad_arity n atom type_ b tail
+              h_shape h_arity h_not_error)
+  | .switch_minimal_result atom type_ b scrut branches finalResult
+      h_shape h_not_error h_result_eventual =>
+      obtain ⟨fuel0, h_result_eventual⟩ := h_result_eventual
+      refine ⟨fuel0 + 1, ?_⟩
+      intro fuel hfuel
+      cases fuel with
+      | zero => cases hfuel
+      | succ n =>
+          exact MettaCallSync.switch_minimal_result n atom type_ b
+            scrut branches finalResult h_shape h_not_error
+            (h_result_eventual n (Nat.succ_le_succ_iff.mp hfuel))
+  | .switch_minimal_bad_shape atom type_ b tail h_shape h_noncanonical h_not_error =>
+      refine ⟨1, ?_⟩
+      intro fuel hfuel
+      cases fuel with
+      | zero => cases hfuel
+      | succ n =>
+          simpa using
+            (MettaCallSync.switch_minimal_bad_shape n atom type_ b tail
+              h_shape h_noncanonical h_not_error)
   | .grounded_ok atom type_ b op args nativeResults nativeResult merged finalResult
-      h_shape h_exec h_not_error h_native h_native_mem h_merge_eventual h_recurse =>
+      h_shape h_exec h_not_unify h_not_switch h_not_error h_native h_native_mem h_merge_eventual h_recurse =>
       obtain ⟨fuelMerge, h_merge_eventual⟩ := h_merge_eventual
       obtain ⟨fuelEval, h_eval_eventual⟩ := h_eval_eventual nativeResult.1 type_ merged finalResult h_recurse
       refine ⟨max fuelMerge fuelEval + 1, ?_⟩
@@ -3615,9 +4358,10 @@ private theorem mettaCallAligned_eventually_to_sync_of_evalAtom_eventually
           have hn_merge : n ≥ fuelMerge := le_trans (Nat.le_max_left fuelMerge fuelEval) hn_max
           have hn_eval : n ≥ fuelEval := le_trans (Nat.le_max_right fuelMerge fuelEval) hn_max
           exact MettaCallSync.grounded_ok n atom type_ b op args nativeResults nativeResult
-            merged finalResult h_shape h_exec h_not_error h_native h_native_mem
+            merged finalResult h_shape h_exec h_not_unify h_not_switch h_not_error h_native h_native_mem
             (h_merge_eventual n hn_merge) (h_eval_eventual n hn_eval)
-  | .grounded_runtime_error atom type_ b op args msg h_shape h_exec h_not_error h_native =>
+  | .grounded_runtime_error atom type_ b op args msg
+      h_shape h_exec h_not_unify h_not_switch h_not_error h_native =>
       refine ⟨1, ?_⟩
       intro fuel hfuel
       cases fuel with
@@ -3625,8 +4369,9 @@ private theorem mettaCallAligned_eventually_to_sync_of_evalAtom_eventually
       | succ n =>
           simpa using
             (MettaCallSync.grounded_runtime_error n atom type_ b op args msg
-              h_shape h_exec h_not_error h_native)
-  | .grounded_no_reduce atom type_ b op args h_shape h_exec h_not_error h_native =>
+              h_shape h_exec h_not_unify h_not_switch h_not_error h_native)
+  | .grounded_no_reduce atom type_ b op args
+      h_shape h_exec h_not_unify h_not_switch h_not_error h_native =>
       refine ⟨1, ?_⟩
       intro fuel hfuel
       cases fuel with
@@ -3634,8 +4379,9 @@ private theorem mettaCallAligned_eventually_to_sync_of_evalAtom_eventually
       | succ n =>
           simpa using
             (MettaCallSync.grounded_no_reduce n atom type_ b op args
-              h_shape h_exec h_not_error h_native)
-  | .grounded_incorrect_arg atom type_ b op args h_shape h_exec h_not_error h_native =>
+              h_shape h_exec h_not_unify h_not_switch h_not_error h_native)
+  | .grounded_incorrect_arg atom type_ b op args
+      h_shape h_exec h_not_unify h_not_switch h_not_error h_native =>
       refine ⟨1, ?_⟩
       intro fuel hfuel
       cases fuel with
@@ -3643,8 +4389,9 @@ private theorem mettaCallAligned_eventually_to_sync_of_evalAtom_eventually
       | succ n =>
           simpa using
             (MettaCallSync.grounded_incorrect_arg n atom type_ b op args
-              h_shape h_exec h_not_error h_native)
-  | .grounded_empty_results atom type_ b op args h_shape h_exec h_not_error h_native =>
+              h_shape h_exec h_not_unify h_not_switch h_not_error h_native)
+  | .grounded_empty_results atom type_ b op args
+      h_shape h_exec h_not_unify h_not_switch h_not_error h_native =>
       refine ⟨1, ?_⟩
       intro fuel hfuel
       cases fuel with
@@ -3652,7 +4399,7 @@ private theorem mettaCallAligned_eventually_to_sync_of_evalAtom_eventually
       | succ n =>
           simpa using
             (MettaCallSync.grounded_empty_results n atom type_ b op args
-              h_shape h_exec h_not_error h_native)
+              h_shape h_exec h_not_unify h_not_switch h_not_error h_native)
   | .equation_match atom type_ b rhs applied queryBindings merged finalResult
       h_not_error h_not_grounded h_query_eventual h_merge_eventual h_no_loop
       h_apply_stable h_recurse =>
@@ -4284,8 +5031,61 @@ private theorem mettaCallAligned_eventually_to_sync
       | zero => cases hfuel
       | succ n =>
           simpa using (MettaCallSync.error_passthrough n atom type_ b h_err)
+  | .unify_success_raw atom type_ b target pattern thenBranch elseBranch finalResult
+      h_shape h_not_error h_raw_eventual =>
+      obtain ⟨fuel0, h_raw_eventual⟩ := h_raw_eventual
+      refine ⟨fuel0 + 1, ?_⟩
+      intro fuel hfuel
+      cases fuel with
+      | zero => cases hfuel
+      | succ n =>
+          exact MettaCallSync.unify_success_raw n atom type_ b
+            target pattern thenBranch elseBranch finalResult
+            h_shape h_not_error
+            (h_raw_eventual n (Nat.succ_le_succ_iff.mp hfuel))
+  | .unify_no_match_raw atom type_ b target pattern thenBranch elseBranch
+      h_shape h_not_error h_empty_eventual =>
+      obtain ⟨fuel0, h_empty_eventual⟩ := h_empty_eventual
+      refine ⟨fuel0 + 1, ?_⟩
+      intro fuel hfuel
+      cases fuel with
+      | zero => cases hfuel
+      | succ n =>
+          exact MettaCallSync.unify_no_match_raw n atom type_ b
+            target pattern thenBranch elseBranch
+            h_shape h_not_error
+            (h_empty_eventual n (Nat.succ_le_succ_iff.mp hfuel))
+  | .unify_bad_arity atom type_ b tail h_shape h_arity h_not_error =>
+      refine ⟨1, ?_⟩
+      intro fuel hfuel
+      cases fuel with
+      | zero => cases hfuel
+      | succ n =>
+          simpa using
+            (MettaCallSync.unify_bad_arity n atom type_ b tail
+              h_shape h_arity h_not_error)
+  | .switch_minimal_result atom type_ b scrut branches finalResult
+      h_shape h_not_error h_result_eventual =>
+      obtain ⟨fuel0, h_result_eventual⟩ := h_result_eventual
+      refine ⟨fuel0 + 1, ?_⟩
+      intro fuel hfuel
+      cases fuel with
+      | zero => cases hfuel
+      | succ n =>
+          exact MettaCallSync.switch_minimal_result n atom type_ b
+            scrut branches finalResult h_shape h_not_error
+            (h_result_eventual n (Nat.succ_le_succ_iff.mp hfuel))
+  | .switch_minimal_bad_shape atom type_ b tail h_shape h_noncanonical h_not_error =>
+      refine ⟨1, ?_⟩
+      intro fuel hfuel
+      cases fuel with
+      | zero => cases hfuel
+      | succ n =>
+          simpa using
+            (MettaCallSync.switch_minimal_bad_shape n atom type_ b tail
+              h_shape h_noncanonical h_not_error)
   | .grounded_ok atom type_ b op args nativeResults nativeResult merged finalResult
-      h_shape h_exec h_not_error h_native h_native_mem h_merge_eventual h_recurse =>
+      h_shape h_exec h_not_unify h_not_switch h_not_error h_native h_native_mem h_merge_eventual h_recurse =>
       obtain ⟨fuelMerge, h_merge_eventual⟩ := h_merge_eventual
       obtain ⟨fuelEval, h_eval_eventual⟩ :=
         evalAtomAligned_eventually_to_sync space dispatch h_recurse
@@ -4298,9 +5098,10 @@ private theorem mettaCallAligned_eventually_to_sync
           have hn_merge : n ≥ fuelMerge := le_trans (Nat.le_max_left fuelMerge fuelEval) hn_max
           have hn_eval : n ≥ fuelEval := le_trans (Nat.le_max_right fuelMerge fuelEval) hn_max
           exact MettaCallSync.grounded_ok n atom type_ b op args nativeResults nativeResult
-            merged finalResult h_shape h_exec h_not_error h_native h_native_mem
+            merged finalResult h_shape h_exec h_not_unify h_not_switch h_not_error h_native h_native_mem
             (h_merge_eventual n hn_merge) (h_eval_eventual n hn_eval)
-  | .grounded_runtime_error atom type_ b op args msg h_shape h_exec h_not_error h_native =>
+  | .grounded_runtime_error atom type_ b op args msg
+      h_shape h_exec h_not_unify h_not_switch h_not_error h_native =>
       refine ⟨1, ?_⟩
       intro fuel hfuel
       cases fuel with
@@ -4308,8 +5109,9 @@ private theorem mettaCallAligned_eventually_to_sync
       | succ n =>
           simpa using
             (MettaCallSync.grounded_runtime_error n atom type_ b op args msg
-              h_shape h_exec h_not_error h_native)
-  | .grounded_no_reduce atom type_ b op args h_shape h_exec h_not_error h_native =>
+              h_shape h_exec h_not_unify h_not_switch h_not_error h_native)
+  | .grounded_no_reduce atom type_ b op args
+      h_shape h_exec h_not_unify h_not_switch h_not_error h_native =>
       refine ⟨1, ?_⟩
       intro fuel hfuel
       cases fuel with
@@ -4317,8 +5119,9 @@ private theorem mettaCallAligned_eventually_to_sync
       | succ n =>
           simpa using
             (MettaCallSync.grounded_no_reduce n atom type_ b op args
-              h_shape h_exec h_not_error h_native)
-  | .grounded_incorrect_arg atom type_ b op args h_shape h_exec h_not_error h_native =>
+              h_shape h_exec h_not_unify h_not_switch h_not_error h_native)
+  | .grounded_incorrect_arg atom type_ b op args
+      h_shape h_exec h_not_unify h_not_switch h_not_error h_native =>
       refine ⟨1, ?_⟩
       intro fuel hfuel
       cases fuel with
@@ -4326,8 +5129,9 @@ private theorem mettaCallAligned_eventually_to_sync
       | succ n =>
           simpa using
             (MettaCallSync.grounded_incorrect_arg n atom type_ b op args
-              h_shape h_exec h_not_error h_native)
-  | .grounded_empty_results atom type_ b op args h_shape h_exec h_not_error h_native =>
+              h_shape h_exec h_not_unify h_not_switch h_not_error h_native)
+  | .grounded_empty_results atom type_ b op args
+      h_shape h_exec h_not_unify h_not_switch h_not_error h_native =>
       refine ⟨1, ?_⟩
       intro fuel hfuel
       cases fuel with
@@ -4335,7 +5139,7 @@ private theorem mettaCallAligned_eventually_to_sync
       | succ n =>
           simpa using
             (MettaCallSync.grounded_empty_results n atom type_ b op args
-              h_shape h_exec h_not_error h_native)
+              h_shape h_exec h_not_unify h_not_switch h_not_error h_native)
   | .equation_match atom type_ b rhs applied queryBindings merged finalResult
       h_not_error h_not_grounded h_query_eventual h_merge_eventual h_no_loop
       h_apply_stable h_recurse =>
@@ -4615,21 +5419,51 @@ private theorem mettaCallAligned_to_MettaCall
   match h with
   | .error_passthrough atom type_ b h_err =>
       exact .error_passthrough atom type_ b h_err
+  | .unify_success_raw atom type_ b target pattern thenBranch elseBranch finalResult
+      h_shape h_not_error h_raw_eventual =>
+      obtain ⟨fuel0, h_raw_eventual⟩ := h_raw_eventual
+      exact .unify_success_raw atom type_ b
+        target pattern thenBranch elseBranch finalResult fuel0
+        h_shape h_not_error (h_raw_eventual fuel0 le_rfl)
+  | .unify_no_match_raw atom type_ b target pattern thenBranch elseBranch
+      h_shape h_not_error h_empty_eventual =>
+      obtain ⟨fuel0, h_empty_eventual⟩ := h_empty_eventual
+      exact .unify_no_match_raw atom type_ b
+        target pattern thenBranch elseBranch fuel0
+        h_shape h_not_error (h_empty_eventual fuel0 le_rfl)
+  | .unify_bad_arity atom type_ b tail h_shape h_arity h_not_error =>
+      exact .unify_bad_arity atom type_ b tail h_shape h_arity h_not_error
+  | .switch_minimal_result atom type_ b scrut branches finalResult
+      h_shape h_not_error h_result_eventual =>
+      obtain ⟨fuel0, h_result_eventual⟩ := h_result_eventual
+      exact .switch_minimal_result atom type_ b
+        scrut branches finalResult fuel0
+        h_shape h_not_error (h_result_eventual fuel0 le_rfl)
+  | .switch_minimal_bad_shape atom type_ b tail h_shape h_noncanonical h_not_error =>
+      exact .switch_minimal_bad_shape atom type_ b tail h_shape h_noncanonical h_not_error
   | .grounded_ok atom type_ b op args nativeResults nativeResult merged finalResult
-      h_shape h_exec h_not_error h_native h_native_mem h_merge_eventual h_recurse =>
+      h_shape h_exec h_not_unify h_not_switch h_not_error h_native h_native_mem h_merge_eventual h_recurse =>
       obtain ⟨fuel0, h_merge_eventual⟩ := h_merge_eventual
       exact .grounded_ok atom type_ b op args nativeResults nativeResult merged finalResult fuel0
-        h_shape h_exec h_not_error h_native h_native_mem
+        h_shape h_exec h_not_unify h_not_switch h_not_error h_native h_native_mem
         (h_merge_eventual fuel0 le_rfl)
         (evalAtomAligned_to_EvalAtom space dispatch h_recurse)
-  | .grounded_runtime_error atom type_ b op args msg h_shape h_exec h_not_error h_native =>
-      exact .grounded_runtime_error atom type_ b op args msg h_shape h_exec h_not_error h_native
-  | .grounded_no_reduce atom type_ b op args h_shape h_exec h_not_error h_native =>
-      exact .grounded_no_reduce atom type_ b op args h_shape h_exec h_not_error h_native
-  | .grounded_incorrect_arg atom type_ b op args h_shape h_exec h_not_error h_native =>
-      exact .grounded_incorrect_arg atom type_ b op args h_shape h_exec h_not_error h_native
-  | .grounded_empty_results atom type_ b op args h_shape h_exec h_not_error h_native =>
-      exact .grounded_empty_results atom type_ b op args h_shape h_exec h_not_error h_native
+  | .grounded_runtime_error atom type_ b op args msg
+      h_shape h_exec h_not_unify h_not_switch h_not_error h_native =>
+      exact .grounded_runtime_error atom type_ b op args msg
+        h_shape h_exec h_not_unify h_not_switch h_not_error h_native
+  | .grounded_no_reduce atom type_ b op args
+      h_shape h_exec h_not_unify h_not_switch h_not_error h_native =>
+      exact .grounded_no_reduce atom type_ b op args
+        h_shape h_exec h_not_unify h_not_switch h_not_error h_native
+  | .grounded_incorrect_arg atom type_ b op args
+      h_shape h_exec h_not_unify h_not_switch h_not_error h_native =>
+      exact .grounded_incorrect_arg atom type_ b op args
+        h_shape h_exec h_not_unify h_not_switch h_not_error h_native
+  | .grounded_empty_results atom type_ b op args
+      h_shape h_exec h_not_unify h_not_switch h_not_error h_native =>
+      exact .grounded_empty_results atom type_ b op args
+        h_shape h_exec h_not_unify h_not_switch h_not_error h_native
   | .equation_match atom type_ b rhs applied queryBindings merged finalResult
       h_not_error h_not_grounded h_query_eventual h_merge_eventual h_no_loop
       h_apply_stable h_recurse =>

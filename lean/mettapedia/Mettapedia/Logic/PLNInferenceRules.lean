@@ -118,6 +118,42 @@ theorem twoInh2Sim_le_one (s_AC s_CA : ℝ)
     linarith
   linarith
 
+/-- On the probability unit square, `2inh2sim` reaches maximal similarity
+exactly when both directed inheritance strengths are maximal. This is the
+algebraic hinge that lets higher-order predicate similarity reuse the ordinary
+PLN inheritance machinery instead of duplicating it. -/
+theorem twoInh2Sim_eq_one_iff (s_AC s_CA : ℝ)
+    (hAC : 0 ≤ s_AC ∧ s_AC ≤ 1) (hCA : 0 ≤ s_CA ∧ s_CA ≤ 1) :
+    twoInh2Sim s_AC s_CA = 1 ↔ s_AC = 1 ∧ s_CA = 1 := by
+  constructor
+  · intro hsim
+    by_cases hzero : s_AC = 0 ∨ s_CA = 0
+    · unfold twoInh2Sim at hsim
+      rw [if_pos hzero] at hsim
+      norm_num at hsim
+    · push_neg at hzero
+      have hAC_pos : 0 < s_AC := lt_of_le_of_ne hAC.1 hzero.1.symm
+      have hCA_pos : 0 < s_CA := lt_of_le_of_ne hCA.1 hzero.2.symm
+      have hden_pos : 0 < s_AC + s_CA - s_AC * s_CA := by
+        have h1 : 0 ≤ s_AC * (1 - s_CA) :=
+          mul_nonneg hAC_pos.le (by linarith [hCA.2])
+        nlinarith
+      rw [twoInh2Sim_eq s_AC s_CA hzero.1 hzero.2] at hsim
+      have hden_ne : s_AC + s_CA - s_AC * s_CA ≠ 0 :=
+        ne_of_gt hden_pos
+      have hmul : s_AC * s_CA = s_AC + s_CA - s_AC * s_CA := by
+        rw [div_eq_iff hden_ne] at hsim
+        simpa using hsim
+      have hsum : 2 * s_AC * s_CA = s_AC + s_CA := by
+        nlinarith
+      have hAC_one : s_AC = 1 := by
+        nlinarith [hAC_pos, hCA_pos, hAC.2, hCA.2, hsum]
+      have hCA_one : s_CA = 1 := by
+        nlinarith [hAC_pos, hCA_pos, hAC.2, hCA.2, hsum]
+      exact ⟨hAC_one, hCA_one⟩
+  · rintro ⟨rfl, rfl⟩
+    norm_num [twoInh2Sim]
+
 /-- 2inh2sim is non-negative -/
 theorem twoInh2Sim_nonneg (s_AC s_CA : ℝ)
     (hAC : 0 ≤ s_AC ∧ s_AC ≤ 1) (hCA : 0 ≤ s_CA ∧ s_CA ≤ 1) :
@@ -144,6 +180,71 @@ theorem twoInh2Sim_nonneg (s_AC s_CA : ℝ)
       rw [denom_eq]
       exact div_pos num_pos (mul_pos hAC_pos hCA_pos)
     exact le_of_lt (one_div_pos.mpr denom_pos)
+
+/-- `2inh2sim` is monotone on the probability unit square. This is the
+rule-validity fact needed by interval-valued and higher-order PLN lifts: if
+both directed inheritance strengths increase, the induced similarity strength
+cannot decrease. -/
+theorem twoInh2Sim_mono_on_unit {s_AC₁ s_AC₂ s_CA₁ s_CA₂ : ℝ}
+    (hAC₁_nonneg : 0 ≤ s_AC₁) (hAC₂_le_one : s_AC₂ ≤ 1)
+    (hCA₁_nonneg : 0 ≤ s_CA₁) (hCA₂_le_one : s_CA₂ ≤ 1)
+    (hAC : s_AC₁ ≤ s_AC₂) (hCA : s_CA₁ ≤ s_CA₂) :
+    twoInh2Sim s_AC₁ s_CA₁ ≤ twoInh2Sim s_AC₂ s_CA₂ := by
+  have hAC₂_nonneg : 0 ≤ s_AC₂ := le_trans hAC₁_nonneg hAC
+  have hCA₂_nonneg : 0 ≤ s_CA₂ := le_trans hCA₁_nonneg hCA
+  by_cases hleft : s_AC₁ = 0 ∨ s_CA₁ = 0
+  · unfold twoInh2Sim
+    rw [if_pos hleft]
+    exact twoInh2Sim_nonneg s_AC₂ s_CA₂
+      ⟨hAC₂_nonneg, hAC₂_le_one⟩ ⟨hCA₂_nonneg, hCA₂_le_one⟩
+  · by_cases hright : s_AC₂ = 0 ∨ s_CA₂ = 0
+    · rcases hright with hAC₂_zero | hCA₂_zero
+      · have hAC₁_zero : s_AC₁ = 0 :=
+          le_antisymm (by simpa [hAC₂_zero] using hAC) hAC₁_nonneg
+        exact False.elim (hleft (Or.inl hAC₁_zero))
+      · have hCA₁_zero : s_CA₁ = 0 :=
+          le_antisymm (by simpa [hCA₂_zero] using hCA) hCA₁_nonneg
+        exact False.elim (hleft (Or.inr hCA₁_zero))
+    · push_neg at hleft hright
+      have hAC₁_pos : 0 < s_AC₁ :=
+        lt_of_le_of_ne hAC₁_nonneg hleft.1.symm
+      have hCA₁_pos : 0 < s_CA₁ :=
+        lt_of_le_of_ne hCA₁_nonneg hleft.2.symm
+      have hAC₂_pos : 0 < s_AC₂ :=
+        lt_of_le_of_ne hAC₂_nonneg hright.1.symm
+      have hCA₂_pos : 0 < s_CA₂ :=
+        lt_of_le_of_ne hCA₂_nonneg hright.2.symm
+      have hleft_step :
+          twoInh2Sim s_AC₁ s_CA₁ ≤ twoInh2Sim s_AC₂ s_CA₁ := by
+        rw [twoInh2Sim_eq s_AC₁ s_CA₁ hleft.1 hleft.2]
+        rw [twoInh2Sim_eq s_AC₂ s_CA₁ hright.1 hleft.2]
+        have d1_pos : 0 < s_AC₁ + s_CA₁ - s_AC₁ * s_CA₁ := by
+          have h1 : 0 ≤ s_AC₁ * (1 - s_CA₁) := by
+            exact mul_nonneg hAC₁_pos.le (by linarith [hCA₂_le_one, hCA])
+          nlinarith
+        have d2_pos : 0 < s_AC₂ + s_CA₁ - s_AC₂ * s_CA₁ := by
+          have h1 : 0 ≤ s_AC₂ * (1 - s_CA₁) := by
+            exact mul_nonneg hAC₂_pos.le (by linarith [hCA₂_le_one, hCA])
+          nlinarith
+        rw [div_le_div_iff₀ d1_pos d2_pos]
+        ring_nf
+        nlinarith [hCA₁_pos]
+      have hright_step :
+          twoInh2Sim s_AC₂ s_CA₁ ≤ twoInh2Sim s_AC₂ s_CA₂ := by
+        rw [twoInh2Sim_eq s_AC₂ s_CA₁ hright.1 hleft.2]
+        rw [twoInh2Sim_eq s_AC₂ s_CA₂ hright.1 hright.2]
+        have d1_pos : 0 < s_AC₂ + s_CA₁ - s_AC₂ * s_CA₁ := by
+          have h1 : 0 ≤ s_CA₁ * (1 - s_AC₂) := by
+            exact mul_nonneg hCA₁_pos.le (by linarith [hAC₂_le_one])
+          nlinarith
+        have d2_pos : 0 < s_AC₂ + s_CA₂ - s_AC₂ * s_CA₂ := by
+          have h1 : 0 ≤ s_CA₂ * (1 - s_AC₂) := by
+            exact mul_nonneg hCA₂_pos.le (by linarith [hAC₂_le_one])
+          nlinarith
+        rw [div_le_div_iff₀ d1_pos d2_pos]
+        ring_nf
+        nlinarith [hAC₂_pos]
+      exact le_trans hleft_step hright_step
 
 /-- **inh2sim**: Estimate similarity from single inheritance + term probabilities.
 
@@ -206,6 +307,111 @@ theorem sim2inh_mem_unit (sim_AB s_A s_B : ℝ)
           linarith
       _ = 2 * sim_AB := by ring
       _ ≤ 1 + sim_AB := by nlinarith [h_sim.1, h_sim.2]
+
+/-- On the ordinary PLN domain, `sim2inh` is monotone in the similarity
+coordinate. -/
+theorem sim2inh_mono_sim {sim₁ sim₂ s_A s_B : ℝ}
+    (hsim₁_nonneg : 0 ≤ sim₁)
+    (hsim_le : sim₁ ≤ sim₂)
+    (h_sA_pos : 0 < s_A)
+    (h_sB_nonneg : 0 ≤ s_B) :
+    sim2inh sim₁ s_A s_B ≤ sim2inh sim₂ s_A s_B := by
+  unfold sim2inh
+  have hsA_ne : s_A ≠ 0 := ne_of_gt h_sA_pos
+  have hsim₁_ne : sim₁ ≠ -1 := by linarith
+  have hsim₂_nonneg : 0 ≤ sim₂ := le_trans hsim₁_nonneg hsim_le
+  have hsim₂_ne : sim₂ ≠ -1 := by linarith
+  simp only [hsA_ne, hsim₁_ne, hsim₂_ne, or_false, ↓reduceIte]
+  have hden₁ : 0 < 1 + sim₁ := by linarith
+  have hden₂ : 0 < 1 + sim₂ := by linarith
+  have hfrac : sim₁ / (1 + sim₁) ≤ sim₂ / (1 + sim₂) := by
+    rw [div_le_div_iff₀ hden₁ hden₂]
+    nlinarith [hsim_le]
+  have hcoef : 0 ≤ 1 + s_B / s_A := by
+    have hdiv : 0 ≤ s_B / s_A :=
+      div_nonneg h_sB_nonneg (le_of_lt h_sA_pos)
+    linarith
+  calc
+    (1 + s_B / s_A) * sim₁ / (1 + sim₁)
+        = (1 + s_B / s_A) * (sim₁ / (1 + sim₁)) := by ring
+    _ ≤ (1 + s_B / s_A) * (sim₂ / (1 + sim₂)) :=
+        mul_le_mul_of_nonneg_left hfrac hcoef
+    _ = (1 + s_B / s_A) * sim₂ / (1 + sim₂) := by ring
+
+/-- On the ordinary PLN domain, `sim2inh` is monotone in the target term
+strength coordinate. -/
+theorem sim2inh_mono_target {sim_AB s_A s_B₁ s_B₂ : ℝ}
+    (hsim_nonneg : 0 ≤ sim_AB)
+    (h_sA_pos : 0 < s_A)
+    (h_target_le : s_B₁ ≤ s_B₂) :
+    sim2inh sim_AB s_A s_B₁ ≤ sim2inh sim_AB s_A s_B₂ := by
+  unfold sim2inh
+  have hsA_ne : s_A ≠ 0 := ne_of_gt h_sA_pos
+  have hsim_ne : sim_AB ≠ -1 := by linarith
+  simp only [hsA_ne, hsim_ne, or_false, ↓reduceIte]
+  have hden : 0 < 1 + sim_AB := by linarith
+  have hfactor : 0 ≤ sim_AB / (1 + sim_AB) :=
+    div_nonneg hsim_nonneg (le_of_lt hden)
+  have hdiv : s_B₁ / s_A ≤ s_B₂ / s_A :=
+    div_le_div_of_nonneg_right h_target_le (le_of_lt h_sA_pos)
+  calc
+    (1 + s_B₁ / s_A) * sim_AB / (1 + sim_AB)
+        = (1 + s_B₁ / s_A) * (sim_AB / (1 + sim_AB)) := by ring
+    _ ≤ (1 + s_B₂ / s_A) * (sim_AB / (1 + sim_AB)) :=
+        mul_le_mul_of_nonneg_right (by linarith) hfactor
+    _ = (1 + s_B₂ / s_A) * sim_AB / (1 + sim_AB) := by ring
+
+/-- On the ordinary PLN domain, `sim2inh` is antitone in the source term
+strength coordinate. A larger source set makes the target/source ratio smaller. -/
+theorem sim2inh_antitone_source {sim_AB s_A₁ s_A₂ s_B : ℝ}
+    (hsim_nonneg : 0 ≤ sim_AB)
+    (h_sA₁_pos : 0 < s_A₁)
+    (h_sA₂_pos : 0 < s_A₂)
+    (h_source_le : s_A₁ ≤ s_A₂)
+    (h_sB_nonneg : 0 ≤ s_B) :
+    sim2inh sim_AB s_A₂ s_B ≤ sim2inh sim_AB s_A₁ s_B := by
+  unfold sim2inh
+  have hsA₁_ne : s_A₁ ≠ 0 := ne_of_gt h_sA₁_pos
+  have hsA₂_ne : s_A₂ ≠ 0 := ne_of_gt h_sA₂_pos
+  have hsim_ne : sim_AB ≠ -1 := by linarith
+  simp only [hsA₁_ne, hsA₂_ne, hsim_ne, or_false, ↓reduceIte]
+  have hden : 0 < 1 + sim_AB := by linarith
+  have hfactor : 0 ≤ sim_AB / (1 + sim_AB) :=
+    div_nonneg hsim_nonneg (le_of_lt hden)
+  have hdiv : s_B / s_A₂ ≤ s_B / s_A₁ := by
+    rw [div_eq_mul_one_div, div_eq_mul_one_div]
+    exact mul_le_mul_of_nonneg_left
+      (by
+        simpa [one_div] using
+          one_div_le_one_div_of_le h_sA₁_pos h_source_le)
+      h_sB_nonneg
+  calc
+    (1 + s_B / s_A₂) * sim_AB / (1 + sim_AB)
+        = (1 + s_B / s_A₂) * (sim_AB / (1 + sim_AB)) := by ring
+    _ ≤ (1 + s_B / s_A₁) * (sim_AB / (1 + sim_AB)) :=
+        mul_le_mul_of_nonneg_right (by linarith) hfactor
+    _ = (1 + s_B / s_A₁) * sim_AB / (1 + sim_AB) := by ring
+
+/-- Mixed endpoint monotonicity for `sim2inh`: similarity and target strength
+move upward, while source strength moves downward. This is the shape needed
+for independent credal endpoint hulls. -/
+theorem sim2inh_mixed_mono
+    {sim₁ sim₂ source₁ source₂ target₁ target₂ : ℝ}
+    (hsim₁_nonneg : 0 ≤ sim₁)
+    (hsim_le : sim₁ ≤ sim₂)
+    (hsource₂_pos : 0 < source₂)
+    (hsource₁_pos : 0 < source₁)
+    (hsource_le : source₂ ≤ source₁)
+    (htarget₁_nonneg : 0 ≤ target₁)
+    (htarget_le : target₁ ≤ target₂) :
+    sim2inh sim₁ source₁ target₁ ≤ sim2inh sim₂ source₂ target₂ := by
+  have hsim₂_nonneg : 0 ≤ sim₂ := le_trans hsim₁_nonneg hsim_le
+  exact le_trans
+    (sim2inh_mono_sim hsim₁_nonneg hsim_le hsource₁_pos htarget₁_nonneg)
+    (le_trans
+      (sim2inh_antitone_source hsim₂_nonneg hsource₂_pos hsource₁_pos
+        hsource_le htarget₁_nonneg)
+      (sim2inh_mono_target hsim₂_nonneg hsource₂_pos htarget_le))
 
 /-- **Transitive Similarity**: The main similarity inference rule.
 
@@ -304,6 +510,43 @@ theorem modusPonens_mono_sAB (s_A c : ℝ) (h_sA : 0 ≤ s_A) :
   have : (y - x) * s_A ≥ 0 := mul_nonneg (by linarith) h_sA
   linarith
 
+/-- Modus ponens is monotone in the premise strength exactly on the side of
+the default background where the implication strength improves on that
+background. If `s_AB < c`, increasing the premise moves weight away from the
+background and can decrease the conclusion, so the side condition is real. -/
+theorem modusPonens_mono_sA_of_background_le (s_AB c : ℝ)
+    (hc : c ≤ s_AB) :
+    Monotone (fun s_A => modusPonens s_AB s_A c) := by
+  intro x y hxy
+  have hcoef : 0 ≤ s_AB - c := sub_nonneg.mpr hc
+  have hdiff : 0 ≤ (y - x) * (s_AB - c) :=
+    mul_nonneg (sub_nonneg.mpr hxy) hcoef
+  have h :
+      modusPonens s_AB y c - modusPonens s_AB x c =
+        (y - x) * (s_AB - c) := by
+    unfold modusPonens
+    ring
+  linarith
+
+/-- Two-coordinate monotonicity for modus ponens under the honest background
+side condition. This is the rule-validity boundary needed before lifting
+modus ponens into interval-valued or higher-order rule envelopes. -/
+theorem modusPonens_mono_of_background_le
+    {s_AB₁ s_AB₂ s_A₁ s_A₂ c : ℝ}
+    (h_sA₁ : 0 ≤ s_A₁)
+    (hc : c ≤ s_AB₁)
+    (hAB : s_AB₁ ≤ s_AB₂)
+    (hA : s_A₁ ≤ s_A₂) :
+    modusPonens s_AB₁ s_A₁ c ≤ modusPonens s_AB₂ s_A₂ c := by
+  have hAB_step :
+      modusPonens s_AB₁ s_A₁ c ≤ modusPonens s_AB₂ s_A₁ c :=
+    modusPonens_mono_sAB s_A₁ c h_sA₁ hAB
+  have hc₂ : c ≤ s_AB₂ := le_trans hc hAB
+  have hA_step :
+      modusPonens s_AB₂ s_A₁ c ≤ modusPonens s_AB₂ s_A₂ c :=
+    modusPonens_mono_sA_of_background_le s_AB₂ c hc₂ hA
+  exact le_trans hAB_step hA_step
+
 /-- **Modus Tollens**: From P(P→Q) and P(¬Q), infer P(¬P).
 
 Equivalent to: modusPonens on (¬Q → ¬P) and P(¬Q).
@@ -365,6 +608,94 @@ theorem symmetricModusPonens_mem_unit (sim_AB s_A c : ℝ)
             mul_le_mul_of_nonneg_right h1 (by linarith [h_sA.2])
           linarith
       _ = 1 := by ring
+
+/-- Symmetric modus ponens is monotone in the similarity coordinate whenever
+the premise strength is a genuine probability and the background/default is
+nonnegative. -/
+theorem symmetricModusPonens_mono_sim (s_A c : ℝ)
+    (h_sA : s_A ∈ Set.Icc (0 : ℝ) 1)
+    (hc : 0 ≤ c) :
+    Monotone (fun sim_AB => symmetricModusPonens sim_AB s_A c) := by
+  intro x y hxy
+  have hcoef : 0 ≤ s_A + c * (1 - s_A) := by
+    exact add_nonneg h_sA.1 (mul_nonneg hc (by linarith [h_sA.2]))
+  have hdiff : 0 ≤ (y - x) * (s_A + c * (1 - s_A)) :=
+    mul_nonneg (sub_nonneg.mpr hxy) hcoef
+  have h :
+      symmetricModusPonens y s_A c -
+          symmetricModusPonens x s_A c =
+        (y - x) * (s_A + c * (1 - s_A)) := by
+    unfold symmetricModusPonens
+    ring
+  linarith
+
+/-- Symmetric modus ponens is monotone in the premise-strength coordinate only
+on the honest side of the background/default threshold. The coefficient of the
+premise is `sim_AB - c * (1 + sim_AB)`, so this side condition is real. -/
+theorem symmetricModusPonens_mono_sA_of_background_le (sim_AB c : ℝ)
+    (hc : c * (1 + sim_AB) ≤ sim_AB) :
+    Monotone (fun s_A => symmetricModusPonens sim_AB s_A c) := by
+  intro x y hxy
+  have hcoef : 0 ≤ sim_AB - c * (1 + sim_AB) := sub_nonneg.mpr hc
+  have hdiff : 0 ≤ (y - x) * (sim_AB - c * (1 + sim_AB)) :=
+    mul_nonneg (sub_nonneg.mpr hxy) hcoef
+  have h :
+      symmetricModusPonens sim_AB y c -
+          symmetricModusPonens sim_AB x c =
+        (y - x) * (sim_AB - c * (1 + sim_AB)) := by
+    unfold symmetricModusPonens
+    ring
+  linarith
+
+/-- If the symmetric-MP background threshold holds at a lower similarity
+endpoint, it also holds at any stronger similarity endpoint as long as
+`c ≤ 1`. -/
+theorem symmetricModusPonens_background_le_of_le
+    {sim₁ sim₂ c : ℝ}
+    (hc_one : c ≤ 1)
+    (hcond : c * (1 + sim₁) ≤ sim₁)
+    (hsim : sim₁ ≤ sim₂) :
+    c * (1 + sim₂) ≤ sim₂ := by
+  have hcoef₁ : 0 ≤ sim₁ - c * (1 + sim₁) := sub_nonneg.mpr hcond
+  have hmono :
+      0 ≤ (sim₂ - c * (1 + sim₂)) -
+          (sim₁ - c * (1 + sim₁)) := by
+    have hprod : 0 ≤ (sim₂ - sim₁) * (1 - c) :=
+      mul_nonneg (sub_nonneg.mpr hsim) (sub_nonneg.mpr hc_one)
+    have hrewrite :
+        (sim₂ - c * (1 + sim₂)) -
+            (sim₁ - c * (1 + sim₁)) =
+          (sim₂ - sim₁) * (1 - c) := by
+      ring
+    simpa [hrewrite] using hprod
+  have hcoef₂ : 0 ≤ sim₂ - c * (1 + sim₂) := by
+    linarith
+  exact sub_nonneg.mp hcoef₂
+
+/-- Two-coordinate monotonicity for symmetric modus ponens under the honest
+background side condition. This is the rule-validity boundary needed before
+lifting symmetric MP into independent-endpoint credal hulls. -/
+theorem symmetricModusPonens_mono_of_background_le
+    {sim₁ sim₂ s_A₁ s_A₂ c : ℝ}
+    (h_sA₁ : s_A₁ ∈ Set.Icc (0 : ℝ) 1)
+    (hc_nonneg : 0 ≤ c)
+    (hc_one : c ≤ 1)
+    (hc : c * (1 + sim₁) ≤ sim₁)
+    (hsim : sim₁ ≤ sim₂)
+    (hA : s_A₁ ≤ s_A₂) :
+    symmetricModusPonens sim₁ s_A₁ c ≤
+      symmetricModusPonens sim₂ s_A₂ c := by
+  have hsim_step :
+      symmetricModusPonens sim₁ s_A₁ c ≤
+        symmetricModusPonens sim₂ s_A₁ c :=
+    symmetricModusPonens_mono_sim s_A₁ c h_sA₁ hc_nonneg hsim
+  have hc₂ : c * (1 + sim₂) ≤ sim₂ :=
+    symmetricModusPonens_background_le_of_le hc_one hc hsim
+  have hA_step :
+      symmetricModusPonens sim₂ s_A₁ c ≤
+        symmetricModusPonens sim₂ s_A₂ c :=
+    symmetricModusPonens_mono_sA_of_background_le sim₂ c hc₂ hA
+  exact le_trans hsim_step hA_step
 
 /-! ## §3: Member/Inheritance Conversion
 

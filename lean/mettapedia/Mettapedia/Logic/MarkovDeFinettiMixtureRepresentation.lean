@@ -391,7 +391,15 @@ hypotheses is the strong-recurrence successor-matrix PE bridge exposed in
 Routing the surface theorem through the PE bridge keeps the missing mathematics
 at the right abstraction level: first prove the genuine joint symmetry theorem
 `SuccessorMatrixPE_of_markovExchangeable_strongRecurrence`, then recover the
-row-kernel payload and the final mixture representation from that bridge. -/
+row-kernel payload and the final mixture representation from that bridge.
+
+Important status note (2026-06): the direct bridge normalization in
+`MarkovDeFinettiFiberEventBridge` is now known to be false as stated on an
+active counterexample (`positiveTokenRootedBridgeCardEq_false_on_counterexample_0101`).
+So the direct route is not "almost done"; it must be rebuilt around a corrected
+BEST weight. The PE-route assembly in this file remains mathematically viable,
+but the public theorems here are still conditional on the explicit PE bridge
+assumptions shown in their signatures. -/
 
 /-- Honest surface route with the minimal PE payload
 `hEval + RowSuccessorMatrixInvariance`. -/

@@ -883,7 +883,7 @@ and eval_switch_values fuel space vals branches original =
         (eval_switch_values fuel space rest branches original)
 
 and eval_switch fuel space scrut branches original =
-  eval_switch_one fuel space scrut branches original
+  eval_switch_values fuel space (eval (fuel - 1) space scrut) branches original
 
 and subst_let_binding_pair v value pair =
   case pair of
@@ -1429,13 +1429,13 @@ val failures15 =
        Expr [Expr [call "pair" [Var "x", Var "y"],
                    call "tagged" [Var "x", Var "y"]]]]))
     [call "tagged" [a_atom, b_atom]] +
-  test_bag "switch-does-not-evaluate-scrutinee"
+  test_bag "switch-evaluates-scrutinee"
     (eval_top 40 [Expr [Sym "=", call "choose-switch" [], a_atom]]
       (call "switch"
         [call "choose-switch" [],
          Expr [Expr [a_atom, Sym "bad"],
                 Expr [call "choose-switch" [], Sym "direct"]]]))
-    [Sym "direct"] +
+    [Sym "bad"] +
   test_bag "let-star-sequential"
     (eval_top 40 [] (call "let*"
       [Expr [Expr [Var "x", IntLit 1],
@@ -1766,7 +1766,7 @@ fun eval_switch_values fuel space vals branches original =
         (eval_switch_values fuel space rest branches original);
 
 fun eval_switch_like fuel space scrut branches original =
-  eval_switch_one fuel space scrut branches original;
+  eval_switch_values fuel space (eval_top fuel space scrut) branches original;
 
 fun subst_binding_pair v value pair =
   case pair of
@@ -2035,13 +2035,13 @@ val capacity26 =
       [Expr [call "Pair" [Var "x", Var "y"], call "Tagged" [Var "x", Var "y"]]]
       (call "switch" [call "Pair" [a_atom, b_atom]]))
     [call "Tagged" [a_atom, b_atom]] +
-  test_bag "switch-does-not-evaluate-scrutinee-capacity-cml"
+  test_bag "switch-evaluates-scrutinee-capacity-cml"
     (eval_switch_like 40 [Expr [Sym "=", call "choose-switch" [], a_atom]]
       (call "choose-switch" [])
       [Expr [a_atom, bad_atom],
        Expr [call "choose-switch" [], good_atom]]
       (call "switch" [call "choose-switch" []]))
-    [good_atom];
+    [bad_atom];
 
 val capacity27 =
   capacity26 +

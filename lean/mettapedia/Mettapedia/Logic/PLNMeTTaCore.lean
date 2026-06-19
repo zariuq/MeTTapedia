@@ -1,7 +1,10 @@
 import Mettapedia.Logic.EvidenceSTVBridge
 import Mettapedia.Logic.PLNDeduction
 import Mettapedia.Logic.PLNDerivation
+import Mettapedia.Logic.PLNInferenceCalculus
 import Mettapedia.Logic.PLNInferenceRules
+import Mettapedia.Logic.PLNLinkCalculusSoundness
+import Mettapedia.Logic.PLNTruthTower
 import Mettapedia.Languages.MeTTa.OSLFCore.Atom
 import Mettapedia.Languages.MeTTa.OSLFCore.Atomspace
 import Mettapedia.Languages.MeTTa.OSLFCore.MinimalOps
@@ -53,10 +56,59 @@ namespace Mettapedia.Logic.PLNMeTTaCore
 open Mettapedia.Logic.PLNDeduction
 open Mettapedia.Logic.PLN
 open Mettapedia.Logic.PLNInferenceRules
+open Mettapedia.Logic.PLNConfidenceWeight.EvidenceWeightCoordinate
 open Mettapedia.Languages.MeTTa.OSLFCore
 
 /-- Canonical STV view for this bridge module. -/
 abbrev STV := Mettapedia.Logic.EvidenceSTVBridge.DeductionSTV
+
+/-! ## Count-backed STV views -/
+
+/-- The MeTTa-facing PLN odds coordinate, with unit prior weight. -/
+noncomputable abbrev semanticPLNOddsCoordinate :
+    Mettapedia.Logic.PLNConfidenceWeight.EvidenceWeightCoordinate :=
+  plnOddsCoordinate 1 (by norm_num)
+
+/-- Convert positive finite binary evidence counts to the MeTTa-facing STV view.
+
+The input counts are the load-bearing state; the displayed confidence is only
+the PLN odds coordinate for the total evidence weight. -/
+noncomputable def semanticPLNCountSTV
+    (e : Mettapedia.Logic.PLNTruthTower.BinaryCounts)
+    (hTotal : e.total ≠ 0) : STV where
+  strength := e.strength
+  confidence := semanticPLNOddsCoordinate.encode e.total
+  strength_nonneg :=
+    (e.strength_mem_unit_of_total_ne_zero hTotal).1
+  strength_le_one :=
+    (e.strength_mem_unit_of_total_ne_zero hTotal).2
+  confidence_nonneg := by
+    exact (plnOddsCoordinate_encode_in_Ico 1 (by norm_num) e.total_nonneg).1
+  confidence_le_one := by
+    exact le_of_lt
+      (plnOddsCoordinate_encode_in_Ico 1 (by norm_num) e.total_nonneg).2
+
+/-- Decoding the PLN odds confidence display recovers the evidence weight. -/
+private theorem c2w_semanticPLNOddsCoordinate_encode
+    {w : ℝ} (hw : 0 ≤ w) :
+    Mettapedia.Logic.PLNInferenceCalculus.c2w
+        (semanticPLNOddsCoordinate.encode w) = w := by
+  unfold semanticPLNOddsCoordinate
+  unfold Mettapedia.Logic.PLNInferenceCalculus.c2w plnOddsCoordinate
+  have hden_pos : 0 < w + 1 := by linarith
+  have hlt : w / (w + 1) < 1 := by
+    rw [div_lt_one hden_pos]
+    linarith
+  simp [hlt]
+  field_simp [ne_of_gt hden_pos]
+  ring
+
+/-- Encoding evidence weight as PLN odds is the same display as
+`PLNInferenceCalculus.w2c` at prior weight one. -/
+private theorem w2c_eq_semanticPLNOddsCoordinate_encode {w : ℝ} :
+    Mettapedia.Logic.PLNInferenceCalculus.w2c w =
+      semanticPLNOddsCoordinate.encode w :=
+  rfl
 
 /-! ## Unified PLN Deduction Formula
 
@@ -149,13 +201,16 @@ theorem pln_formula_in_range
       ⟨tvR.strength_nonneg, tvR.strength_le_one⟩
       h_constraint_upper
 
-/-- **Complete Soundness Theorem**: Under valid PLN inputs, MeTTaCore evaluation
-    produces the exact conditional probability formula.
+/-- **Formula Soundness Theorem**: under valid PLN inputs, MeTTaCore semantic
+    deduction computes the canonical raw PLN deduction formula.
 
     This combines:
     1. unified_deduction_formula (clamp01 is identity)
-    2. pln_formula_in_range (formula is in [0,1])
-    3. pln_deduction_from_total_probability (formula = P(C|A)) -/
+    2. pln_formula_in_range (formula is in [0,1]).
+
+    The measure-context theorem `semantic_pln_deduction_measure_sound` below is
+    the one that additionally consumes `pln_deduction_from_total_probability_ctx`
+    and reaches `P(C|A)`. -/
 theorem complete_pln_soundness
     (tvP tvQ tvR tvPQ tvQR : STV)
     (h_consistency : conditionalProbabilityConsistency tvP.strength tvQ.strength tvPQ.strength ∧
@@ -172,6 +227,68 @@ theorem complete_pln_soundness
   · exact h_q_not_near_1
   · exact pln_formula_in_range tvP tvQ tvR tvPQ tvQR h_q_pos h_q_lt1
       h_constraint_upper h_constraint_lower
+
+/-! ### Measure-context soundness for semantic deduction
+
+The theorem above reaches the raw PLN formula. The next theorem consumes the
+measure-theoretic derivation theorem, so the MeTTa-facing semantic deduction
+surface reaches the actual conditional probability under the explicit PLN
+deduction context.
+-/
+
+/-- **Measure Soundness for Semantic Deduction**: if the supplied STVs are the
+term/link probabilities of a probability space satisfying the PLN deduction
+independence context, semantic PLN deduction computes the true conditional
+probability `P(C | A)`.
+
+This is the non-tautological end-to-end deduction bridge:
+`semanticPLNDeduction` -> guarded STV formula -> `plnDeductionStrength` ->
+measure-theoretic total probability under the explicit context. -/
+theorem semantic_pln_deduction_measure_sound
+    {Ω : Type*} [MeasurableSpace Ω] (μ : MeasureTheory.Measure Ω)
+    [MeasureTheory.IsProbabilityMeasure μ]
+    {A B C : Set Ω}
+    (ctx : PLNDeductionMeasureContext (μ := μ) (A := A) (B := B) (C := C))
+    (tvP tvQ tvR tvPQ tvQR : STV)
+    (h_consistency :
+      conditionalProbabilityConsistency tvP.strength tvQ.strength tvPQ.strength ∧
+        conditionalProbabilityConsistency tvQ.strength tvR.strength tvQR.strength)
+    (h_q_not_near_1 : tvQ.strength ≤ 0.9999)
+    (_hP : tvP.strength = μ.real A)
+    (hQ : tvQ.strength = μ.real B)
+    (hR : tvR.strength = μ.real C)
+    (hPQ : tvPQ.strength = μ.real (B ∩ A) / μ.real A)
+    (hQR : tvQR.strength = μ.real (C ∩ B) / μ.real B) :
+    (semanticPLNDeduction tvP tvQ tvR tvPQ tvQR).strength =
+      μ.real (C ∩ A) / μ.real A := by
+  have hctx :=
+    (pln_deduction_from_total_probability_ctx (μ := μ) (A := A) (B := B) (C := C) ctx)
+  have hraw :
+      plnDeductionStrength tvPQ.strength tvQR.strength tvQ.strength tvR.strength =
+        μ.real (C ∩ A) / μ.real A := by
+    have hQR' : μ.real (C ∩ B) / tvQ.strength = tvQR.strength := by
+      simpa [hQ] using hQR.symm
+    have h :
+        μ.real (C ∩ A) / μ.real A =
+          plnDeductionStrength tvPQ.strength tvQR.strength tvQ.strength tvR.strength := by
+      simpa [← hPQ, hQR', ← hQ, ← hR] using hctx
+    exact h.symm
+  have hraw_expr :
+      tvPQ.strength * tvQR.strength +
+          (1 - tvPQ.strength) *
+            (tvR.strength - tvQ.strength * tvQR.strength) / (1 - tvQ.strength) =
+        μ.real (C ∩ A) / μ.real A := by
+    simpa [plnDeductionStrength] using hraw
+  have hmem :
+      μ.real (C ∩ A) / μ.real A ∈ Set.Icc (0 : ℝ) 1 :=
+    Mettapedia.Logic.PLNLinkCalculus.Soundness.condProb_mem_unit
+      (μ := μ) (A := A) (C := C) ctx.hA_pos
+  unfold semanticPLNDeduction deductionFormulaSTV
+  simp only [h_consistency]
+  have hq : ¬ tvQ.strength > 0.9999 := not_lt.mpr h_q_not_near_1
+  simp only [hq, ↓reduceIte]
+  rw [hraw_expr]
+  exact clamp01_of_mem_unit hmem
 
 /-! ## PLN Induction
 
@@ -206,6 +323,54 @@ theorem semantic_pln_induction_correct
   simp only
   rw [clamp01_of_mem_unit (Set.mem_Icc.mpr ⟨h_nonneg, h_bounds⟩)]
 
+/-- **Measure Soundness for Semantic Induction / SourceRule**: if `tvBA`
+represents `P(A | B)` and `tvBC` represents `P(C | B)` in a probability space
+satisfying the explicit PLN deduction context, semantic PLN induction computes
+the true conditional probability `P(C | A)`.
+
+The proof reuses the weight-first link-calculus source-rule soundness theorem;
+the STV-to-WTV conversion is only an internal bridge and does not introduce a
+second semantics. -/
+theorem semantic_pln_induction_measure_sound
+    {Ω : Type*} [MeasurableSpace Ω] (μ : MeasureTheory.Measure Ω)
+    [MeasureTheory.IsProbabilityMeasure μ]
+    {A B C : Set Ω}
+    (ctx : PLNDeductionMeasureContext (μ := μ) (A := A) (B := B) (C := C))
+    (tvA tvB tvC tvBA tvBC : STV)
+    (hA : tvA.strength = μ.real A)
+    (hB : tvB.strength = μ.real B)
+    (hC : tvC.strength = μ.real C)
+    (hBA : tvBA.strength = μ.real (A ∩ B) / μ.real B)
+    (hBC : tvBC.strength = μ.real (C ∩ B) / μ.real B) :
+    (semanticPLNInduction tvA tvB tvC tvBA tvBC).strength =
+      μ.real (C ∩ A) / μ.real A := by
+  let wA := Mettapedia.Logic.PLNWeightTV.WTV.ofCTV tvA
+  let wB := Mettapedia.Logic.PLNWeightTV.WTV.ofCTV tvB
+  let wC := Mettapedia.Logic.PLNWeightTV.WTV.ofCTV tvC
+  let wBA := Mettapedia.Logic.PLNWeightTV.WTV.ofCTV tvBA
+  let wBC := Mettapedia.Logic.PLNWeightTV.WTV.ofCTV tvBC
+  have hs :=
+    Mettapedia.Logic.PLNLinkCalculus.Soundness.truth_sourceRule_sound
+      (μ := μ) (interp := id) (A := A) (B := B) (C := C)
+      (tA := wA) (tB := wB) (tC := wC) (tBA := wBA) (tBC := wBC)
+      ctx
+      (by simpa [Mettapedia.Logic.PLNLinkCalculus.Soundness.holdsTerm, wA] using hA)
+      (by simpa [Mettapedia.Logic.PLNLinkCalculus.Soundness.holdsTerm, wB] using hB)
+      (by simpa [Mettapedia.Logic.PLNLinkCalculus.Soundness.holdsTerm, wC] using hC)
+      (by simpa [Mettapedia.Logic.PLNLinkCalculus.Soundness.holdsLink, wBA] using hBA)
+      (by simpa [Mettapedia.Logic.PLNLinkCalculus.Soundness.holdsLink, wBC] using hBC)
+  have hsource :
+      (Mettapedia.Logic.PLNLinkCalculus.Truth.sourceRule wA wB wC wBA wBC).strength =
+        μ.real (C ∩ A) / μ.real A := by
+    simpa [Mettapedia.Logic.PLNLinkCalculus.Soundness.holdsLink] using hs
+  calc
+    (semanticPLNInduction tvA tvB tvC tvBA tvBC).strength
+        = (Mettapedia.Logic.PLNLinkCalculus.Truth.sourceRule wA wB wC wBA wBC).strength := by
+            simp [semanticPLNInduction, Mettapedia.Logic.PLNLinkCalculus.Truth.sourceRule,
+              Mettapedia.Logic.PLNWeightTV.WTV.ofCTV, wA, wB, wC, wBA, wBC,
+              plnSourceRuleStrength, plnInductionStrength]
+    _ = μ.real (C ∩ A) / μ.real A := hsource
+
 /-! ## PLN Abduction
 
 Abduction: given A→B and C→B, infer A→C.
@@ -239,6 +404,53 @@ theorem semantic_pln_abduction_correct
   simp only
   rw [clamp01_of_mem_unit (Set.mem_Icc.mpr ⟨h_nonneg, h_bounds⟩)]
 
+/-- **Measure Soundness for Semantic Abduction / SinkRule**: if `tvAB`
+represents `P(B | A)` and `tvCB` represents `P(B | C)` in a probability space
+satisfying the explicit PLN deduction context, semantic PLN abduction computes
+the true conditional probability `P(C | A)`.
+
+As for induction, this reuses the weight-first link-calculus sink-rule
+soundness theorem and keeps the STV-to-WTV conversion internal. -/
+theorem semantic_pln_abduction_measure_sound
+    {Ω : Type*} [MeasurableSpace Ω] (μ : MeasureTheory.Measure Ω)
+    [MeasureTheory.IsProbabilityMeasure μ]
+    {A B C : Set Ω}
+    (ctx : PLNDeductionMeasureContext (μ := μ) (A := A) (B := B) (C := C))
+    (tvA tvB tvC tvAB tvCB : STV)
+    (hA : tvA.strength = μ.real A)
+    (hB : tvB.strength = μ.real B)
+    (hC : tvC.strength = μ.real C)
+    (hAB : tvAB.strength = μ.real (B ∩ A) / μ.real A)
+    (hCB : tvCB.strength = μ.real (B ∩ C) / μ.real C) :
+    (semanticPLNAbduction tvA tvB tvC tvAB tvCB).strength =
+      μ.real (C ∩ A) / μ.real A := by
+  let wA := Mettapedia.Logic.PLNWeightTV.WTV.ofCTV tvA
+  let wB := Mettapedia.Logic.PLNWeightTV.WTV.ofCTV tvB
+  let wC := Mettapedia.Logic.PLNWeightTV.WTV.ofCTV tvC
+  let wAB := Mettapedia.Logic.PLNWeightTV.WTV.ofCTV tvAB
+  let wCB := Mettapedia.Logic.PLNWeightTV.WTV.ofCTV tvCB
+  have hs :=
+    Mettapedia.Logic.PLNLinkCalculus.Soundness.truth_sinkRule_sound
+      (μ := μ) (interp := id) (A := A) (B := B) (C := C)
+      (tA := wA) (tB := wB) (tC := wC) (tAB := wAB) (tCB := wCB)
+      ctx
+      (by simpa [Mettapedia.Logic.PLNLinkCalculus.Soundness.holdsTerm, wA] using hA)
+      (by simpa [Mettapedia.Logic.PLNLinkCalculus.Soundness.holdsTerm, wB] using hB)
+      (by simpa [Mettapedia.Logic.PLNLinkCalculus.Soundness.holdsTerm, wC] using hC)
+      (by simpa [Mettapedia.Logic.PLNLinkCalculus.Soundness.holdsLink, wAB] using hAB)
+      (by simpa [Mettapedia.Logic.PLNLinkCalculus.Soundness.holdsLink, wCB] using hCB)
+  have hsink :
+      (Mettapedia.Logic.PLNLinkCalculus.Truth.sinkRule wA wB wC wAB wCB).strength =
+        μ.real (C ∩ A) / μ.real A := by
+    simpa [Mettapedia.Logic.PLNLinkCalculus.Soundness.holdsLink] using hs
+  calc
+    (semanticPLNAbduction tvA tvB tvC tvAB tvCB).strength
+        = (Mettapedia.Logic.PLNLinkCalculus.Truth.sinkRule wA wB wC wAB wCB).strength := by
+            simp [semanticPLNAbduction, Mettapedia.Logic.PLNLinkCalculus.Truth.sinkRule,
+              Mettapedia.Logic.PLNWeightTV.WTV.ofCTV, wB, wC, wAB, wCB,
+              plnAbductionStrength]
+    _ = μ.real (C ∩ A) / μ.real A := hsink
+
 /-! ## PLN Negation
 
 Negation: ¬A has strength 1 - s_A, confidence unchanged. -/
@@ -256,8 +468,11 @@ theorem negation_sound (tv : STV) :
 
 /-! ## PLN Revision
 
-Revision combines independent evidence sources using weighted averaging.
-The weight is determined by confidence (converted to "weight" via c/(1-c)). -/
+Revision combines independent evidence sources by adding the latent evidence
+weights decoded from their confidence coordinates.  This delegates to the
+canonical `PLNInferenceCalculus.revisionTV` rule, so the MeTTaCore operational
+surface remains a view of the shared evidence-addition semantics rather than a
+parallel heuristic. -/
 
 /-- Semantic PLN Revision: combines two truth values via weighted averaging.
 
@@ -266,29 +481,91 @@ The weight is determined by confidence (converted to "weight" via c/(1-c)). -/
     - s_combined = (w1 * s1 + w2 * s2) / (w1 + w2)
     - c_combined = (w1 + w2) / (w1 + w2 + 1)
 
-    This simplifies to a weighted average when confidences are positive. -/
+    This is the same evidence-weight formula used by
+    `PLNInferenceCalculus.revisionTV`. -/
 noncomputable def semanticPLNRevision (tv1 tv2 : STV) : STV :=
-  -- Use the simple weighted average formula directly
-  -- Weight by confidence (approximating c/(1-c) behavior for typical c values)
-  let w1 := tv1.confidence
-  let w2 := tv2.confidence
-  let totalW := w1 + w2
-  -- Weighted average strength
-  let s := if totalW > 0 then (w1 * tv1.strength + w2 * tv2.strength) / totalW
-           else (tv1.strength + tv2.strength) / 2
-  -- Combined confidence: more evidence = higher confidence
-  let c := if totalW ≤ 0 then 0
-           else min 1 ((tv1.confidence + tv2.confidence) / 2 + 0.1)  -- Simplified
-  ⟨clamp01 s, clamp01 c, clamp01_nonneg s, clamp01_le_one s, clamp01_nonneg c, clamp01_le_one c⟩
+  Mettapedia.Logic.PLNInferenceCalculus.revisionTV tv1 tv2
 
-/-- **Revision computes weighted average of strengths**. -/
+/-- **Revision computes weighted average of strengths by decoded evidence
+weights, not by raw displayed confidences.** -/
 theorem revision_weighted_average (tv1 tv2 : STV)
-    (h_w_pos : tv1.confidence + tv2.confidence > 0) :
+    (h_w_pos :
+      Mettapedia.Logic.PLNInferenceCalculus.c2w tv1.confidence +
+        Mettapedia.Logic.PLNInferenceCalculus.c2w tv2.confidence ≠ 0) :
     (semanticPLNRevision tv1 tv2).strength =
-    clamp01 ((tv1.confidence * tv1.strength + tv2.confidence * tv2.strength) /
-             (tv1.confidence + tv2.confidence)) := by
-  unfold semanticPLNRevision
-  simp only [h_w_pos, ↓reduceIte]
+    clamp01
+      ((Mettapedia.Logic.PLNInferenceCalculus.c2w tv1.confidence * tv1.strength +
+          Mettapedia.Logic.PLNInferenceCalculus.c2w tv2.confidence * tv2.strength) /
+        (Mettapedia.Logic.PLNInferenceCalculus.c2w tv1.confidence +
+          Mettapedia.Logic.PLNInferenceCalculus.c2w tv2.confidence)) := by
+  exact Mettapedia.Logic.PLNInferenceCalculus.revision_weighted_average
+    tv1 tv2 h_w_pos
+
+/-- **Revision confidence is the display of the added evidence weights.** -/
+theorem revision_confidence_formula (tv1 tv2 : STV) :
+    (semanticPLNRevision tv1 tv2).confidence =
+      Mettapedia.Logic.PLNInferenceCalculus.w2c
+        (Mettapedia.Logic.PLNInferenceCalculus.c2w tv1.confidence +
+          Mettapedia.Logic.PLNInferenceCalculus.c2w tv2.confidence) := by
+  exact Mettapedia.Logic.PLNInferenceCalculus.revision_confidence_formula
+    tv1 tv2
+
+/-- Operational Revision on count-backed STVs is exactly finite evidence-count
+addition, displayed through the same PLN odds confidence coordinate.
+
+This is the MeTTa-facing Bayesian/de-Finetti seal: `Truth_Revision` is not a
+raw-confidence heuristic, but the STV display of adding positive and negative
+evidence counts. -/
+theorem semanticPLNRevision_countSTV_eq_added_count_view
+    (e₁ e₂ : Mettapedia.Logic.PLNTruthTower.BinaryCounts)
+    (h₁ : e₁.total ≠ 0) (h₂ : e₂.total ≠ 0)
+    (hSum : e₁.total + e₂.total ≠ 0) :
+    let tv₁ := semanticPLNCountSTV e₁ h₁
+    let tv₂ := semanticPLNCountSTV e₂ h₂
+    (semanticPLNRevision tv₁ tv₂).strength = (e₁.add e₂).strength ∧
+      (semanticPLNRevision tv₁ tv₂).confidence =
+        semanticPLNOddsCoordinate.encode (e₁.add e₂).total := by
+  dsimp
+  have hw₁ :
+      Mettapedia.Logic.PLNInferenceCalculus.c2w
+          (semanticPLNCountSTV e₁ h₁).confidence = e₁.total := by
+    exact c2w_semanticPLNOddsCoordinate_encode e₁.total_nonneg
+  have hw₂ :
+      Mettapedia.Logic.PLNInferenceCalculus.c2w
+          (semanticPLNCountSTV e₂ h₂).confidence = e₂.total := by
+    exact c2w_semanticPLNOddsCoordinate_encode e₂.total_nonneg
+  have hWeightSum :
+      Mettapedia.Logic.PLNInferenceCalculus.c2w
+          (semanticPLNCountSTV e₁ h₁).confidence +
+        Mettapedia.Logic.PLNInferenceCalculus.c2w
+          (semanticPLNCountSTV e₂ h₂).confidence ≠ 0 := by
+    simpa [hw₁, hw₂] using hSum
+  have hAddTotal : (e₁.add e₂).total ≠ 0 := by
+    rw [Mettapedia.Logic.PLNTruthTower.BinaryCounts.add_total]
+    exact hSum
+  constructor
+  · rw [revision_weighted_average (semanticPLNCountSTV e₁ h₁)
+      (semanticPLNCountSTV e₂ h₂) hWeightSum]
+    rw [hw₁, hw₂]
+    simp only [semanticPLNCountSTV]
+    have hMix :=
+      Mettapedia.Logic.PLNTruthTower.BinaryCounts.add_strength_eq_weighted_mixture
+        e₁ e₂ h₁ h₂ hSum
+    have hSame :
+        ((e₁.total * e₁.strength + e₂.total * e₂.strength) /
+            (e₁.total + e₂.total)) =
+          (e₁.add e₂).strength := by
+      rw [hMix]
+      ring
+    rw [hSame]
+    exact clamp01_of_mem_unit
+      ((e₁.add e₂).strength_mem_unit_of_total_ne_zero hAddTotal)
+  · rw [revision_confidence_formula]
+    rw [hw₁, hw₂]
+    rw [w2c_eq_semanticPLNOddsCoordinate_encode]
+    change semanticPLNOddsCoordinate.encode (e₁.total + e₂.total) =
+      semanticPLNOddsCoordinate.encode (e₁.add e₂).total
+    rw [Mettapedia.Logic.PLNTruthTower.BinaryCounts.add_total]
 
 /-! ## PLN Modus Ponens
 
@@ -390,7 +667,7 @@ def deductionPattern : Atom :=
   .expression [.symbol "Truth_Deduction",
                .var "tvP", .var "tvQ", .var "tvR", .var "tvPQ", .var "tvQR"]
 
-/-- PLN deduction space (placeholder) -/
+/-- Empty atomspace witness used by the atom-level deduction examples. -/
 def plnDeductionSpace : Atomspace := Atomspace.empty
 
 /-! ## Unit Tests -/
@@ -420,23 +697,30 @@ end Tests
 
 /-! ## Summary
 
-This module provides a **comprehensive** bridge between MeTTaCore evaluation and PLN.
-All PLN inference rules are verified to produce mathematically correct results.
+This module provides a semantic bridge between MeTTaCore evaluation and PLN.
+For deduction, induction/source, and abduction/sink, the bridge now reaches both
+the raw formula and explicit measure-context theorems. For the other rules, the
+statements below are still formula-level bridges unless a separate
+measure/context theorem is cited.
 
 ### Key Results (All Proved, 0 Sorries)
 
 **Deduction:**
 - `unified_deduction_formula`: `deductionFormulaSTV` = `plnDeductionStrength` under valid inputs
-- `complete_pln_soundness`: Full soundness theorem
+- `complete_pln_soundness`: formula-level semantic deduction bridge
+- `semantic_pln_deduction_measure_sound`: measure-context theorem reaching `P(C|A)`
 
 **Induction:**
 - `semantic_pln_induction_correct`: Induction computes `plnInductionStrength`
+- `semantic_pln_induction_measure_sound`: measure-context theorem reaching `P(C|A)`
 
 **Abduction:**
 - `semantic_pln_abduction_correct`: Abduction computes `plnAbductionStrength`
+- `semantic_pln_abduction_measure_sound`: measure-context theorem reaching `P(C|A)`
 
 **Revision:**
-- `revision_weighted_average`: Revision computes weighted average by confidence
+- `revision_weighted_average`: Revision computes weighted average by decoded
+  evidence weights
 
 **Modus Ponens:**
 - `modus_ponens_sound`: MP computes `modusPonens` formula
@@ -454,9 +738,9 @@ All PLN inference rules are verified to produce mathematically correct results.
 
 | Rule | Formula Source | Soundness Theorem |
 |------|---------------|-------------------|
-| Deduction | PLNDerivation | ✅ complete_pln_soundness |
-| Induction | PLNDerivation | ✅ semantic_pln_induction_correct |
-| Abduction | PLNDerivation | ✅ semantic_pln_abduction_correct |
+| Deduction | PLNDerivation | ✅ `semantic_pln_deduction_measure_sound` for the explicit measure context |
+| Induction | PLNDerivation + LinkCalculusSoundness | ✅ `semantic_pln_induction_measure_sound` for the explicit measure context |
+| Abduction | PLNDerivation + LinkCalculusSoundness | ✅ `semantic_pln_abduction_measure_sound` for the explicit measure context |
 | Revision | PLNRevision | ✅ revision_weighted_average |
 | Modus Ponens | PLNInferenceRules | ✅ modus_ponens_sound |
 | Negation | trivial | ✅ negation_sound |
@@ -472,11 +756,12 @@ All PLN inference rules are verified to produce mathematically correct results.
    the same underlying formula. The `clamp01` wrapper is defensive programming that
    is provably the identity under valid inputs.
 
-3. **Composable Proofs**: The soundness proofs compose:
-   - PLNDerivation.lean: Formula = conditional probability
+3. **Composable Proofs**: The deduction soundness proof composes:
+   - PLNDerivation.lean: formula = conditional probability under the explicit context
    - PLNInferenceRules.lean: Extended rule formulas
-   - This file: MeTTaCore evaluation uses those formulas
-   - Result: MeTTaCore PLN = correct probability
+   - This file: MeTTaCore deduction evaluation uses those formulas
+   - Result: semantic deduction = correct conditional probability when the
+     measure context and STV/source hypotheses are supplied
 
 ### Connection to Probability Theory
 
@@ -540,6 +825,35 @@ example : (semanticPLNNegation ⟨0.8, 0.9, by norm_num, by norm_num, by norm_nu
 /-- Negation preserves confidence. -/
 example : (semanticPLNNegation ⟨0.8, 0.9, by norm_num, by norm_num, by norm_num, by norm_num⟩).confidence = 0.9 := by
   simp only [semanticPLNNegation]
+
+/-- Revision canary matching the CeTTa `Truth_Revision` half/half witness:
+two equal one-unit evidence views revise to strength `1/2` and confidence
+`2/3`. -/
+theorem semanticPLNRevision_half_half_canary :
+    let tv : STV := ⟨0.5, 0.5, by norm_num, by norm_num, by norm_num, by norm_num⟩
+    (semanticPLNRevision tv tv).strength = 0.5 ∧
+      (semanticPLNRevision tv tv).confidence = (2 / 3 : ℝ) := by
+  norm_num [
+    semanticPLNRevision,
+    Mettapedia.Logic.PLNInferenceCalculus.revisionTV,
+    Mettapedia.Logic.PLNInferenceCalculus.c2w,
+    Mettapedia.Logic.PLNInferenceCalculus.w2c,
+    clamp01]
+
+/-- Revision canary matching the CeTTa asymmetric witness:
+`(0.2,0.5)` revised with `(0.8,0.75)` has strength `13/20` and confidence
+`4/5`, because the decoded evidence weights are `1` and `3`. -/
+theorem semanticPLNRevision_asymmetric_canary :
+    let tv1 : STV := ⟨0.2, 0.5, by norm_num, by norm_num, by norm_num, by norm_num⟩
+    let tv2 : STV := ⟨0.8, 0.75, by norm_num, by norm_num, by norm_num, by norm_num⟩
+    (semanticPLNRevision tv1 tv2).strength = (13 / 20 : ℝ) ∧
+      (semanticPLNRevision tv1 tv2).confidence = (4 / 5 : ℝ) := by
+  norm_num [
+    semanticPLNRevision,
+    Mettapedia.Logic.PLNInferenceCalculus.revisionTV,
+    Mettapedia.Logic.PLNInferenceCalculus.c2w,
+    Mettapedia.Logic.PLNInferenceCalculus.w2c,
+    clamp01]
 
 /-- Formula definitions are aliases (definitional equality). -/
 example : plnDeductionRaw 0.8 0.7 0.5 0.6 = plnDeductionStrength 0.8 0.7 0.5 0.6 := rfl

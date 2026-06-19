@@ -1,4 +1,5 @@
 import Mettapedia.Languages.MeTTa.Translation.HEPeTTaTranslateCore
+import Mettapedia.Languages.MeTTa.Translation.HEPeTTaNativeLoweringContracts
 import Mettapedia.Languages.MeTTa.Translation.HEPeTTaTranslateOperationalBridge
 import Mettapedia.Languages.MeTTa.Translation.HEPeTTaTranslateValidatedRoundtrip
 

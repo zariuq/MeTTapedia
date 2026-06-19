@@ -603,13 +603,13 @@ def PLNModel.satisfies (M : PLNModel) (j : Judgment) : Prop :=
 def PLNModel.satisfiesContext (M : PLNModel) (Γ : Context) : Prop :=
   ∀ j ∈ Γ, M.satisfies j
 
-/-! ## Model Axioms
+/-! ## Model Laws
 
-For the soundness theorem to hold, the model must satisfy certain probability axioms.
+For the soundness theorem to hold, the model must satisfy certain probability laws.
 These are not part of the PLNModel structure to avoid circular dependencies,
 but are required as hypotheses in the soundness theorem. -/
 
-/-- Modus ponens axiom: P(B) = P(B|A) · P(A) (simplified: no background term) -/
+/-- Modus ponens compatibility law: `P(B) = P(B|A) · P(A)` (simplified: no background term). -/
 def PLNModel.satisfiesMP (M : PLNModel) : Prop :=
   ∀ A B : PLNFormula, (B.eval M) = (M.cond B A) * (A.eval M)
 
@@ -883,14 +883,24 @@ These theorems connect the proof calculus to the PLN probability semantics
 from PLNDerivation.lean.
 -/
 
-/-- The deduction rule produces the correct strength formula.
+/-- The deduction rule produces the guarded PLN strength formula.
 
 This connects the proof calculus rule to the semantic formula.
 The formula derives from the Law of Total Probability under conditional independence. -/
-theorem deduction_strength_formula (tvA tvB tvC tvAB tvBC : TV) :
+theorem deduction_strength_formula (tvA tvB tvC tvAB tvBC : TV)
+    (h_consist : conditionalProbabilityConsistency tvA.strength tvB.strength tvAB.strength ∧
+                 conditionalProbabilityConsistency tvB.strength tvC.strength tvBC.strength)
+    (h_bound : tvB.strength ≤ 0.9999) :
     (deductionFormulaSTV tvA tvB tvC tvAB tvBC).strength =
-      (deductionFormulaSTV tvA tvB tvC tvAB tvBC).strength := by
-  rfl
+      clamp01 (tvAB.strength * tvBC.strength +
+               (1 - tvAB.strength) * (tvC.strength - tvB.strength * tvBC.strength) /
+               (1 - tvB.strength)) := by
+  unfold deductionFormulaSTV
+  have h1 : ¬¬(conditionalProbabilityConsistency tvA.strength tvB.strength tvAB.strength ∧
+               conditionalProbabilityConsistency tvB.strength tvC.strength tvBC.strength) :=
+    not_not.mpr h_consist
+  have h2 : ¬(tvB.strength > 0.9999) := not_lt.mpr h_bound
+  simp only [h1, h2, ite_false]
 
 /-- Deduction formula matches the algebraic definition from PLNDeduction.lean. -/
 theorem deduction_matches_pln_formula (tvA tvB tvC tvAB tvBC : TV)
@@ -931,16 +941,22 @@ theorem cospan_is_bayes_deduction (tvAB tvCB tvA tvB tvC : TV) :
 - Cospan (was "abduction"): Bayes on second premise
 -/
 theorem inference_triad_structure (tvAB tvBC tvBA tvCB tvA tvB tvC : TV) :
-    -- Deduction uses both premises directly
+    (h_consist : conditionalProbabilityConsistency tvA.strength tvB.strength tvAB.strength ∧
+                 conditionalProbabilityConsistency tvB.strength tvC.strength tvBC.strength) →
+    (h_bound : tvB.strength ≤ 0.9999) →
+    -- Deduction uses both premises directly via the guarded algebraic formula.
     (deductionFormulaSTV tvA tvB tvC tvAB tvBC).strength =
-      (deductionFormulaSTV tvA tvB tvC tvAB tvBC).strength ∧
+      clamp01 (tvAB.strength * tvBC.strength +
+               (1 - tvAB.strength) * (tvC.strength - tvB.strength * tvBC.strength) /
+               (1 - tvB.strength)) ∧
     -- Span inverts the first premise
     (spanTV tvBA tvBC tvA tvB tvC).strength =
       (deductionFormulaSTV tvA tvB tvC (bayesInversionSTV tvBA tvA tvB) tvBC).strength ∧
     -- Cospan inverts the second premise
     (cospanTV tvAB tvCB tvA tvB tvC).strength =
       (deductionFormulaSTV tvA tvB tvC tvAB (bayesInversionSTV tvCB tvB tvC)).strength := by
-  exact ⟨rfl, rfl, rfl⟩
+  intro h_consist h_bound
+  exact ⟨deduction_strength_formula tvA tvB tvC tvAB tvBC h_consist h_bound, rfl, rfl⟩
 
 /-- Negation preserves strength relationship.
 

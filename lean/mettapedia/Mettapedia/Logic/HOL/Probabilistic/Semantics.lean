@@ -84,4 +84,20 @@ theorem sentenceProb_eq_of_pointwiseEq
     sentenceProb S μ φ = sentenceProb S μ ψ := by
   rw [sentenceProb, sentenceProb, S.sentenceEvent_eq_of_pointwiseEq heq]
 
+/-- Probability of a negated HOL sentence is the complement probability of
+the original sentence. This is the semantic probability-theory seam needed by
+later product/noisy-OR De Morgan laws. -/
+theorem sentenceProb_not_eq_one_sub
+    (S : ModelSpace.{u, v, w, x} Base Const)
+    (μ : MeasureTheory.Measure S.Idx)
+    (hμ : MeasureTheory.IsProbabilityMeasure μ)
+    (φ : ClosedFormula Const) :
+    sentenceProb S μ (.not φ) = 1 - sentenceProb S μ φ := by
+  letI : MeasureTheory.IsProbabilityMeasure μ := hμ
+  rw [sentenceProb, S.sentenceEvent_not_eq_compl]
+  simpa [sentenceProb, IsProbabilityMeasure.measure_univ (μ := μ)] using
+    (measure_compl (μ := μ)
+      (S.measurable_sentenceEvent φ)
+      (measure_ne_top μ (S.sentenceEvent φ)))
+
 end Mettapedia.Logic.HOL.Probabilistic

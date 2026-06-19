@@ -36,7 +36,7 @@ This is exactly an **explicit substitution closure** ⟨M, σ⟩ from Abadi et a
 
 - Abadi et al., "Explicit Substitutions", JFP 1991
 - CeTTa: `/home/zar/claude/c-projects/CeTTa-TermUniverse/src/variant_shape.h`
-- Roadmap: `papers/cetta_roadmap.tex` §8 (Dual-Target Architecture)
+- Roadmap: `../../../../papers/cetta_roadmap.tex` §8 (Dual-Target Architecture)
 -/
 
 namespace Mettapedia.Bridge.CeTTaExplicitSubst

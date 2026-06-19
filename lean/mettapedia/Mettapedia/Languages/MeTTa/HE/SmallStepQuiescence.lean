@@ -294,6 +294,11 @@ theorem mettaCall_untyped_inert {space : Space} {d : GroundedDispatch}
   unfold HeadNotExecutable at h_not_exec
   cases h with
   | error_passthrough _ _ _ _ => rfl
+  | unify_success_raw => simp_all
+  | unify_no_match_raw => simp_all
+  | unify_bad_arity => simp_all
+  | switch_minimal_result => simp_all
+  | switch_minimal_bad_shape => simp_all
   | no_match _ _ _ _ _ _ _ => rfl
   | grounded_ok => simp_all
   | grounded_runtime_error => simp_all

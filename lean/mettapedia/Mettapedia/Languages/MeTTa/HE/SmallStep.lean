@@ -24,7 +24,10 @@ equations before congruence).  The relation is the *visible* step
 relation: evaluation-to-Empty (e.g. no-match `let`/`case`/`switch`)
 appears as quiescence, per the Empty-as-absorbing-zero doctrine.
 Degenerate special-form arities (e.g. a two-argument `chain`) are outside
-the modeled fragment.
+the modeled fragment.  In addition, this file carries a local
+`function`/`return` continuation scaffold for the switch-internal
+proofs: `function` steps its body, unwraps a quiescent `(return ...)`, or
+produces `NoReturn`, while bare `return` stays an inert control sentinel.
 
 This is **not** the fine `mettaHE` instruction machine (`HELanguageDef.lean`,
 which steps interpreter states `Metta/InterpExpr/...`), and **not** big-step
@@ -88,7 +91,10 @@ def GroundedRedex (d : GroundedDispatch) (a : Atom) : Prop :=
 condition `EvalSpec.lean`'s `MettaCall.equation_match` imposes). -/
 def HeadNotExecutable (d : GroundedDispatch) (a : Atom) : Prop :=
   match a with
-  | .expression (op :: _) => d.isExecutable op = false
+  | .expression (op :: _) =>
+      d.isExecutable op = false ∧
+      op ≠ .symbol "unify" ∧
+      op ≠ .symbol "switch-minimal"
   | _ => True
 
 /-- `a` is headed by one of the special-form symbols the runtime dispatches
@@ -98,7 +104,8 @@ def SpecialFormHead (a : Atom) : Prop :=
   match a with
   | .expression (.symbol s :: _) =>
       s = "eval" ∨ s = "chain" ∨ s = "let" ∨ s = "let*" ∨ s = "case" ∨
-      s = "switch" ∨ s = "switch-minimal"
+      s = "switch" ∨ s = "switch-minimal" ∨ s = "unify" ∨
+      s = "function" ∨ s = "return"
   | _ => False
 
 /-- `a` is an equation redex: a non-grounded-headed expression with at least
@@ -134,6 +141,9 @@ inductive HECanSmallStep (space : Space) (d : GroundedDispatch) (fuel : Nat) :
       HECanSmallStep space d fuel (.expression es)
   | chain_form {es : List Atom} {a : Atom} {v : String} {t : Atom}
       (h_shape : es = [.symbol "chain", a, .var v, t]) :
+      HECanSmallStep space d fuel (.expression es)
+  | function_form {es : List Atom} {body : Atom}
+      (h_shape : es = [.symbol "function", body]) :
       HECanSmallStep space d fuel (.expression es)
   | letStar_empty_form {es : List Atom} {body : Atom}
       (h_shape : es = [.symbol "let*", .expression [], body]) :
@@ -226,6 +236,29 @@ inductive HESmallStep (space : Space) (d : GroundedDispatch) (fuel : Nat) :
       (h_quiescent : ¬ HECanSmallStep space d fuel a) :
       HESmallStep space d fuel (.expression es)
         ((Bindings.empty.assign v a).applyDefault t)
+  /-- `function` source-progress case: while the body can step, the function
+  steps it in place.  `return` is treated as an inert control sentinel, so
+  this rule is the only way the wrapper makes progress before it unwraps. -/
+  | function_source {es : List Atom} {body body' : Atom}
+      (h_shape : es = [.symbol "function", body])
+      (h_src : HESmallStep space d fuel body body') :
+      HESmallStep space d fuel (.expression es)
+        (.expression [.symbol "function", body'])
+  /-- `function` return case: a quiescent `(return x)` body unwraps to `x`
+  literally, with no further evaluation of the payload at this surface step. -/
+  | function_return {es : List Atom} {body ret : Atom}
+      (h_shape : es = [.symbol "function", body])
+      (h_quiescent : ¬ HECanSmallStep space d fuel body)
+      (h_ret : body = .expression [.symbol "return", ret]) :
+      HESmallStep space d fuel (.expression es) ret
+  /-- `function` NoReturn case: a quiescent body that is not a `(return ...)`
+  produces the spec-shaped `NoReturn` error. -/
+  | function_no_return {es : List Atom} {body : Atom}
+      (h_shape : es = [.symbol "function", body])
+      (h_quiescent : ¬ HECanSmallStep space d fuel body)
+      (h_not_return : ∀ ret, body ≠ .expression [.symbol "return", ret]) :
+      HESmallStep space d fuel (.expression es)
+        (Atom.error (.expression [.symbol "function", body]) (.symbol "NoReturn"))
   /-- `HES_EquationMatch`: a `(= lhs rhs)` equation in the space matches the
   expression; the successor is the freshened right-hand side under the query
   bindings — exactly the data `queryEquations` returns and the application
@@ -345,6 +378,9 @@ theorem canStep_of_step {space : Space} {d : GroundedDispatch} {fuel : Nat}
   | eval_step h_shape => exact .eval_form h_shape
   | chain_source h_shape _ _ => exact .chain_form h_shape
   | chain_subst h_shape _ => exact .chain_form h_shape
+  | function_source h_shape _ _ => exact .function_form h_shape
+  | function_return h_shape _ _ => exact .function_form h_shape
+  | function_no_return h_shape _ _ => exact .function_form h_shape
   | letStar_empty h_shape => exact .letStar_empty_form h_shape
   | letStar_unroll h_shape => exact .letStar_unroll_form h_shape
   | @let_source es pt v v' body h_shape h_src ih =>
@@ -419,6 +455,16 @@ theorem exists_step_of_canStep {space : Space} {d : GroundedDispatch}
             · obtain ⟨a', ha'⟩ := exists_step_of_canStep a hca
               exact ⟨_, HESmallStep.chain_source h_shape ha'⟩
             · exact ⟨_, HESmallStep.chain_subst h_shape hca⟩
+        | @function_form es body h_shape =>
+            by_cases hcb : HECanSmallStep space d fuel body
+            · obtain ⟨body', hb'⟩ := exists_step_of_canStep body hcb
+              exact ⟨_, HESmallStep.function_source h_shape hb'⟩
+            · by_cases hret : ∃ ret, body = .expression [.symbol "return", ret]
+              · obtain ⟨ret, hret_eq⟩ := hret
+                exact ⟨_, HESmallStep.function_return h_shape hcb hret_eq⟩
+              · exact ⟨_, HESmallStep.function_no_return h_shape hcb (by
+                  intro ret h_eq
+                  exact hret ⟨ret, h_eq⟩)⟩
         | letStar_empty_form h_shape =>
             exact ⟨_, HESmallStep.letStar_empty h_shape⟩
         | letStar_unroll_form h_shape =>
@@ -465,27 +511,29 @@ theorem exists_step_of_canStep {space : Space} {d : GroundedDispatch}
             | grounded _ hg' => exact absurd hg' hg
             | equation he' => exact absurd he' he
             | eval_form h_shape =>
-                exact absurd (by rw [h_shape]; exact Or.inl rfl) hsf
+                exact absurd (by simp [SpecialFormHead, h_shape]) hsf
             | chain_form h_shape =>
-                exact absurd (by rw [h_shape]; exact Or.inr (Or.inl rfl)) hsf
+                exact absurd (by simp [SpecialFormHead, h_shape]) hsf
+            | function_form h_shape =>
+                exact absurd (by simp [SpecialFormHead, h_shape]) hsf
             | letStar_empty_form h_shape =>
-                exact absurd (by rw [h_shape]; exact Or.inr (Or.inr (Or.inr (Or.inl rfl)))) hsf
+                exact absurd (by simp [SpecialFormHead, h_shape]) hsf
             | letStar_unroll_form h_shape =>
-                exact absurd (by rw [h_shape]; exact Or.inr (Or.inr (Or.inr (Or.inl rfl)))) hsf
+                exact absurd (by simp [SpecialFormHead, h_shape]) hsf
             | let_source_form h_shape _ =>
-                exact absurd (by rw [h_shape]; exact Or.inr (Or.inr (Or.inl rfl))) hsf
+                exact absurd (by simp [SpecialFormHead, h_shape]) hsf
             | let_subst_form h_shape _ =>
-                exact absurd (by rw [h_shape]; exact Or.inr (Or.inr (Or.inl rfl))) hsf
+                exact absurd (by simp [SpecialFormHead, h_shape]) hsf
             | case_scrutinee_form h_shape _ =>
-                exact absurd (by rw [h_shape]; exact Or.inr (Or.inr (Or.inr (Or.inr (Or.inl rfl))))) hsf
+                exact absurd (by simp [SpecialFormHead, h_shape]) hsf
             | case_match_form h_shape _ =>
-                exact absurd (by rw [h_shape]; exact Or.inr (Or.inr (Or.inr (Or.inr (Or.inl rfl))))) hsf
+                exact absurd (by simp [SpecialFormHead, h_shape]) hsf
             | switch_scrutinee_form h_shape _ =>
-                exact absurd (by rw [h_shape]; exact Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inl rfl)))))) hsf
+                exact absurd (by simp [SpecialFormHead, h_shape]) hsf
             | switch_match_form h_shape _ =>
-                exact absurd (by rw [h_shape]; exact Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inl rfl)))))) hsf
+                exact absurd (by simp [SpecialFormHead, h_shape]) hsf
             | switch_minimal_form h_shape _ =>
-                exact absurd (by rw [h_shape]; exact Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr rfl)))))) hsf
+                exact absurd (by simp [SpecialFormHead, h_shape]) hsf
             | @element es e h_ns h_mem h_e =>
                 obtain ⟨pre, x, post, heq, hx, hpre⟩ :=
                   split_first_canStep space d fuel es ⟨e, h_mem, h_e⟩
@@ -503,6 +551,11 @@ theorem exists_step_of_canStep {space : Space} {d : GroundedDispatch}
       List.nil.sizeOf_spec]
     omega
   · -- let source recursion (source-form)
+    subst h_shape
+    simp only [Atom.expression.sizeOf_spec, List.cons.sizeOf_spec,
+      List.nil.sizeOf_spec]
+    omega
+  · -- function source recursion
     subst h_shape
     simp only [Atom.expression.sizeOf_spec, List.cons.sizeOf_spec,
       List.nil.sizeOf_spec]
@@ -753,6 +806,7 @@ theorem inert_application_not_canStep :
       simp [queryEquations, Space.empty] at h_mem
   | eval_form h_shape => simp at h_shape
   | chain_form h_shape => simp at h_shape
+  | function_form h_shape => simp at h_shape
   | letStar_empty_form h_shape => simp at h_shape
   | letStar_unroll_form h_shape => simp at h_shape
   | let_source_form h_shape _ => simp at h_shape

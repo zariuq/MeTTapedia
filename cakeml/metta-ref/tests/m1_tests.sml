@@ -267,13 +267,13 @@ val _ =
     [call "tagged" [A, B]];
 
 val _ =
-  assert_bag "switch-does-not-evaluate-scrutinee"
+  assert_bag "switch-evaluates-scrutinee"
     (eval_top 40 [Expr [Sym "=", call "choose-switch" [], A]]
       (call "switch"
         [call "choose-switch" [],
          Expr [Expr [A, Sym "bad"],
                 Expr [call "choose-switch" [], Sym "direct"]]]))
-    [Sym "direct"];
+    [Sym "bad"];
 
 val _ =
   assert_bag "let-star-sequential"

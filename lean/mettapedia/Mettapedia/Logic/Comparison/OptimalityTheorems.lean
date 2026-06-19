@@ -1,5 +1,6 @@
 import Mettapedia.Logic.EvidenceBeta
 import Mettapedia.Logic.Convergence.RateOfConvergence
+import Mettapedia.Logic.DeFinettiProjectiveCredalBridge
 import Mettapedia.Logic.MeasureTheoreticPLN.EvidenceSemantics
 
 /-!
@@ -16,12 +17,16 @@ probabilistic reasoning.
 
 ## The Optimality Story
 
-For exchangeable binary data (IID Bernoulli being the canonical example):
+For the Beta-Bernoulli conjugate subfamily of exchangeable binary data
+(IID Bernoulli with a Beta prior being the canonical example):
 - The posterior distribution is Beta(α + n⁺, β + n⁻)
 - PLN strength = n⁺/(n⁺+n⁻) converges to the posterior mean
-- The convergence rate is O(1/n), which is optimal for Bayesian inference
+- The convergence rate is O(1/n), which is optimal for this Bayesian subfamily
 
-This makes PLN **Bayes-optimal** for binary classification with exchangeable data.
+This makes PLN **Bayes-optimal** for binary classification inside that
+Beta-Bernoulli conjugate subfamily.
+The file also records the guardrail that exchangeability alone does not force
+the Beta subfamily.
 
 ## References
 
@@ -35,6 +40,8 @@ namespace Mettapedia.Logic.Comparison
 open Mettapedia.Logic.EvidenceQuantale
 open Mettapedia.Logic.EvidenceBeta
 open Mettapedia.Logic.Convergence
+open Mettapedia.Logic.DeFinetti
+open Mettapedia.Logic.DeFinettiProjectiveCredalBridge
 open Mettapedia.Logic.MeasureTheoreticPLN
 open scoped ENNReal
 
@@ -65,6 +72,189 @@ theorem pln_joint_convergence (prior_param κ : ℝ) (hprior : 0 < prior_param) 
       |strength - mean| < ε ∧ 1 - confidenceFromN κ (n_pos + n_neg) < ε :=
   pln_eventually_accurate prior_param κ hprior hκ
 
+/-! ## Revision as Bayesian sufficient-statistic update -/
+
+/-- PLN count revision is Bayesian sequential update at the Beta-measure level:
+batching two evidence packets gives the same posterior measure as updating the
+prior by the first packet and interpreting the second packet under that
+posterior prior. -/
+theorem pln_revision_is_sequential_beta_measure_update
+    (interp : EvidenceInterpretation) (n₁ n₂ m₁ m₂ : ℕ) :
+    natEvidenceSemantics interp (n₁ + n₂) (m₁ + m₂) =
+      natEvidenceSemantics (interp.posteriorFromNat n₁ m₁) n₂ m₂ :=
+  natEvidenceSemantics_add_eq_sequential interp n₁ n₂ m₁ m₂
+
+/-- The posterior-mean readout of PLN count revision is likewise invariant
+under batch-vs-sequential Bayesian updating. -/
+theorem pln_revision_posterior_mean_is_sequential_beta_update
+    (interp : EvidenceInterpretation) (n₁ n₂ m₁ m₂ : ℕ) :
+    evidencePosteriorMean (n₁ + n₂) (m₁ + m₂) interp =
+      evidencePosteriorMean n₂ m₂ (interp.posteriorFromNat n₁ m₁) :=
+  evidencePosteriorMean_add_eq_sequential interp n₁ n₂ m₁ m₂
+
+/-- Canary for the revision theorem: under a symmetric `Beta(1,1)` prior, the
+sequential and batch posterior mean is `5/8`, not the raw empirical strength
+`4/6`. -/
+theorem pln_revision_sequential_beta_update_canary :
+    let interp := EvidenceInterpretation.symmetric 1 (by norm_num)
+    evidencePosteriorMean (1 + 3) (1 + 1) interp = 5 / 8 ∧
+      evidencePosteriorMean 3 1 (interp.posteriorFromNat 1 1) = 5 / 8 ∧
+      evidencePosteriorMean (1 + 3) (1 + 1) interp ≠ (4 : ℝ) / (4 + 2) :=
+  evidencePosteriorMean_sequential_update_canary
+
+/-! ## Boundary: exchangeability is broader than the Beta subfamily -/
+
+/-- Public comparison-surface guardrail: a count-based exchangeable
+de-Finetti mixture predictor need not be a Beta posterior-predictive
+predictor.  Revision's Beta-update theorem is therefore a conjugate subfamily
+result, not a theorem that all exchangeable predictors are Beta. -/
+theorem exchangeability_does_not_force_beta_predictor :
+    ¬ ∃ α β : ℝ,
+      twoPointExchangeableMixturePredictorN2 0 = (α / (2 + α + β)) ∧
+      twoPointExchangeableMixturePredictorN2 1 = ((1 + α) / (2 + α + β)) ∧
+      twoPointExchangeableMixturePredictorN2 2 = ((2 + α) / (2 + α + β)) :=
+  twoPointExchangeableMixturePredictorN2_not_beta
+
+/-! ## General de-Finetti revision update -/
+
+/-- Beyond the Beta subfamily, count revision for a general Bernoulli
+de-Finetti mixture updates the mixture and reads the next-success prediction as
+the Bayes count-evidence ratio through the Kyburg/projective one-bit prefix
+prevision. -/
+theorem pln_revision_definetti_true_prefix_update_eq_count_ratio
+    (M : BernoulliMixture) (k l : ℕ)
+    (hZ : M.countEvidenceMass k l ≠ 0) :
+    (bernoulliMixturePrefixLaw_analytic
+        (M.posteriorBernoulliMixture k l hZ) 1).toPrecisePrevision
+        oneBitTrueGamble =
+      M.countEvidenceMass (k + 1) l / M.countEvidenceMass k l :=
+  posteriorBernoulliMixturePrefixPrevision_oneBitTrue_eq_countEvidenceMass_ratio
+    M k l hZ
+
+/-- The same general de-Finetti revision update for the next-failure event. -/
+theorem pln_revision_definetti_false_prefix_update_eq_count_ratio
+    (M : BernoulliMixture) (k l : ℕ)
+    (hZ : M.countEvidenceMass k l ≠ 0) :
+    (bernoulliMixturePrefixLaw_analytic
+        (M.posteriorBernoulliMixture k l hZ) 1).toPrecisePrevision
+        oneBitFalseGamble =
+      M.countEvidenceMass k (l + 1) / M.countEvidenceMass k l :=
+  posteriorBernoulliMixturePrefixPrevision_oneBitFalse_eq_countEvidenceMass_ratio
+    M k l hZ
+
+/-- Imprecise de-Finetti/Walley revision: after every mixture in a prior
+credal family is updated by the same observed counts, each member's next-true
+Bayes count ratio lies inside the posterior family's one-bit lower/upper
+envelope.  This is a semantic envelope result, not a numeric endpoint-tightness
+claim. -/
+theorem pln_revision_definetti_family_true_ratio_mem_prefix_envelope
+    (C : Set BernoulliMixture) (k l : ℕ)
+    (hZ : ∀ M : BernoulliMixture, M ∈ C →
+      M.countEvidenceMass k l ≠ 0)
+    {M : BernoulliMixture} (hM : M ∈ C) :
+    impreciseDeFinettiPrefixLowerEnvelope
+        (posteriorBernoulliMixtureFamilySet C k l hZ) 1
+        (posteriorBernoulliMixtureFamilyPrefixLawAt C k l hZ 1)
+        oneBitTrueGamble ≤
+      M.countEvidenceMass (k + 1) l / M.countEvidenceMass k l ∧
+    M.countEvidenceMass (k + 1) l / M.countEvidenceMass k l ≤
+      impreciseDeFinettiPrefixUpperEnvelope
+        (posteriorBernoulliMixtureFamilySet C k l hZ) 1
+        (posteriorBernoulliMixtureFamilyPrefixLawAt C k l hZ 1)
+        oneBitTrueGamble :=
+  posteriorBernoulliMixtureFamily_trueRatio_mem_prefixEnvelope C k l hZ hM
+
+/-- The same imprecise de-Finetti/Walley family envelope result for the
+next-false Bayes count ratio. -/
+theorem pln_revision_definetti_family_false_ratio_mem_prefix_envelope
+    (C : Set BernoulliMixture) (k l : ℕ)
+    (hZ : ∀ M : BernoulliMixture, M ∈ C →
+      M.countEvidenceMass k l ≠ 0)
+    {M : BernoulliMixture} (hM : M ∈ C) :
+    impreciseDeFinettiPrefixLowerEnvelope
+        (posteriorBernoulliMixtureFamilySet C k l hZ) 1
+        (posteriorBernoulliMixtureFamilyPrefixLawAt C k l hZ 1)
+        oneBitFalseGamble ≤
+      M.countEvidenceMass k (l + 1) / M.countEvidenceMass k l ∧
+    M.countEvidenceMass k (l + 1) / M.countEvidenceMass k l ≤
+      impreciseDeFinettiPrefixUpperEnvelope
+        (posteriorBernoulliMixtureFamilySet C k l hZ) 1
+        (posteriorBernoulliMixtureFamilyPrefixLawAt C k l hZ 1)
+        oneBitFalseGamble :=
+  posteriorBernoulliMixtureFamily_falseRatio_mem_prefixEnvelope C k l hZ hM
+
+/-- Public comparison-surface form of the semantic Walley lower endpoint for
+general de-Finetti revision: any scalar lower bound of all posterior-family
+next-success ratios is below the lower envelope itself.  This is an endpoint
+characterization of the supplied posterior family, not a proof-theoretic
+tightness claim. -/
+theorem pln_revision_definetti_family_true_lower_envelope_greatest_scalar_lower_bound
+    (C : Set BernoulliMixture) (k l : ℕ)
+    (hZ : ∀ M : BernoulliMixture, M ∈ C →
+      M.countEvidenceMass k l ≠ 0)
+    (hC : C.Nonempty) {a : ℝ}
+    (ha : ∀ M : BernoulliMixture, ∀ _hM : M ∈ C,
+      a ≤ M.countEvidenceMass (k + 1) l / M.countEvidenceMass k l) :
+    a ≤
+      impreciseDeFinettiPrefixLowerEnvelope
+        (posteriorBernoulliMixtureFamilySet C k l hZ) 1
+        (posteriorBernoulliMixtureFamilyPrefixLawAt C k l hZ 1)
+        oneBitTrueGamble :=
+  posteriorBernoulliMixtureFamily_trueRatio_lowerEnvelope_greatestLowerBound
+    C k l hZ hC ha
+
+/-- Public comparison-surface form of the semantic Walley upper endpoint for
+general de-Finetti revision: any scalar upper bound of all posterior-family
+next-success ratios is above the upper envelope itself. -/
+theorem pln_revision_definetti_family_true_upper_envelope_least_scalar_upper_bound
+    (C : Set BernoulliMixture) (k l : ℕ)
+    (hZ : ∀ M : BernoulliMixture, M ∈ C →
+      M.countEvidenceMass k l ≠ 0)
+    (hC : C.Nonempty) {a : ℝ}
+    (ha : ∀ M : BernoulliMixture, ∀ _hM : M ∈ C,
+      M.countEvidenceMass (k + 1) l / M.countEvidenceMass k l ≤ a) :
+    impreciseDeFinettiPrefixUpperEnvelope
+        (posteriorBernoulliMixtureFamilySet C k l hZ) 1
+        (posteriorBernoulliMixtureFamilyPrefixLawAt C k l hZ 1)
+        oneBitTrueGamble ≤
+      a :=
+  posteriorBernoulliMixtureFamily_trueRatio_upperEnvelope_leastUpperBound
+    C k l hZ hC ha
+
+/-- Public comparison-surface form of the semantic Walley lower endpoint for
+the next-failure posterior-family ratios. -/
+theorem pln_revision_definetti_family_false_lower_envelope_greatest_scalar_lower_bound
+    (C : Set BernoulliMixture) (k l : ℕ)
+    (hZ : ∀ M : BernoulliMixture, M ∈ C →
+      M.countEvidenceMass k l ≠ 0)
+    (hC : C.Nonempty) {a : ℝ}
+    (ha : ∀ M : BernoulliMixture, ∀ _hM : M ∈ C,
+      a ≤ M.countEvidenceMass k (l + 1) / M.countEvidenceMass k l) :
+    a ≤
+      impreciseDeFinettiPrefixLowerEnvelope
+        (posteriorBernoulliMixtureFamilySet C k l hZ) 1
+        (posteriorBernoulliMixtureFamilyPrefixLawAt C k l hZ 1)
+        oneBitFalseGamble :=
+  posteriorBernoulliMixtureFamily_falseRatio_lowerEnvelope_greatestLowerBound
+    C k l hZ hC ha
+
+/-- Public comparison-surface form of the semantic Walley upper endpoint for
+the next-failure posterior-family ratios. -/
+theorem pln_revision_definetti_family_false_upper_envelope_least_scalar_upper_bound
+    (C : Set BernoulliMixture) (k l : ℕ)
+    (hZ : ∀ M : BernoulliMixture, M ∈ C →
+      M.countEvidenceMass k l ≠ 0)
+    (hC : C.Nonempty) {a : ℝ}
+    (ha : ∀ M : BernoulliMixture, ∀ _hM : M ∈ C,
+      M.countEvidenceMass k (l + 1) / M.countEvidenceMass k l ≤ a) :
+    impreciseDeFinettiPrefixUpperEnvelope
+        (posteriorBernoulliMixtureFamilySet C k l hZ) 1
+        (posteriorBernoulliMixtureFamilyPrefixLawAt C k l hZ 1)
+        oneBitFalseGamble ≤
+      a :=
+  posteriorBernoulliMixtureFamily_falseRatio_upperEnvelope_leastUpperBound
+    C k l hZ hC ha
+
 /-! ## Rate Analysis -/
 
 /-- The error bound 2/(n+2) shows O(1/n) convergence rate.
@@ -86,12 +276,14 @@ theorem pln_confidence_rate (κ : ℝ) (hκ : 0 < κ) (n : ℕ) (hn : 0 < n) :
 
 /-- PLN is Bayes-optimal for exchangeable binary evidence.
 
-    For evidence (n⁺, n⁻) from exchangeable Bernoulli observations:
+For evidence (n⁺, n⁻) in the Beta-Bernoulli conjugate subfamily:
     1. Posterior is Beta(α + n⁺, β + n⁻)
     2. PLN strength approximates Beta mean with bound 2/(n+2)
     3. Error → 0 as n → ∞ at rate O(1/n)
 
-    This is the best possible rate for Bayesian inference.
+    This is the best possible rate for this Bayesian subfamily.  General
+    exchangeable mixtures are broader; see
+    `exchangeability_does_not_force_beta_predictor`.
 -/
 theorem pln_bayes_optimal_for_binary_evidence :
     -- For any target accuracy
@@ -160,7 +352,8 @@ theorem pln_jeffreys_minimax (npos nneg : ℕ) :
 
 /-! ## Summary
 
-This file establishes PLN's optimality:
+This file establishes PLN's optimality for the Beta-Bernoulli conjugate
+subfamily, plus the boundary against overgeneralizing it:
 
 1. **Convergence** (Theorem `pln_strength_converges_to_posterior`):
    - PLN strength → Beta posterior mean as n → ∞
@@ -175,6 +368,10 @@ This file establishes PLN's optimality:
 4. **Generality** (Theorems `pln_subsumes_laplace_smoothing`, `pln_jeffreys_minimax`):
    - PLN with uniform prior gives Laplace smoothing
    - PLN with Jeffreys prior gives minimax estimator
+
+5. **Boundary** (Theorem `exchangeability_does_not_force_beta_predictor`):
+   - Exchangeability/de Finetti gives a count-based mixture predictor
+   - It does not force that predictor to lie in the Beta subfamily
 
 ## Significance for PLN vs ProbLog/MLN
 

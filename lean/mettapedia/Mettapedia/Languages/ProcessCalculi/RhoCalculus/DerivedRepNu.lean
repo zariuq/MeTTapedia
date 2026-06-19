@@ -259,6 +259,8 @@ theorem hasDerivedHead_SC {p q : Pattern}
       simp [hasDerivedHead]
   | par_nil_right p =>
       simp [hasDerivedHead]
+  | par_empty =>
+      simp [hasDerivedHead]
   | par_comm p q =>
       simp [hasDerivedHead, Bool.or_comm]
   | par_assoc p q r =>

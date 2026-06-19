@@ -36,7 +36,7 @@ For larger demonstrations and surrounding discussion, see:
 * `Mettapedia.Logic.PLNMapleCourtDemo`
 * `Mettapedia.Logic.MarkovPredictiveChaining`
 * `Mettapedia.Logic.PLNConjunction`
-* `papers/wm-pln-book_v3.tex`, especially the worked Dirichlet-over-worlds
+* `../../../../papers/wm-pln-book_v3.tex`, especially the worked Dirichlet-over-worlds
   section.
 
 Every theorem below is either:

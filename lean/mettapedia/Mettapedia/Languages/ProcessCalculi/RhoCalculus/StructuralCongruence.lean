@@ -202,6 +202,15 @@ inductive StructuralCongruence : Pattern → Pattern → Prop where
   | quote_drop (n : Pattern) :
       StructuralCongruence (.apply "NQuote" [.apply "PDrop" [n]]) n
 
+  /-- ParEmpty: the empty parallel composition is nil.
+      `[] ≡ PZero` — the missing base case of the `par_nil` family; an empty
+      `hashBag` carries no process, so it is structurally congruent to `PZero`.
+      This is the standard process-calculus law `0 | 0 | ... ≡ 0` at arity zero,
+      and it is exactly what `stripSCWrappers` already assumes when it collapses
+      an all-`PZero` bag to `PZero`. -/
+  | par_empty :
+      StructuralCongruence (.collection .hashBag [] none) (.apply "PZero" [])
+
 notation:50 p " ≡ " q => StructuralCongruence p q
 
 /-! ## Derived Structural Rules -/

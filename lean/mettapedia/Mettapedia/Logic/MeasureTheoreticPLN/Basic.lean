@@ -102,6 +102,40 @@ theorem totalPrior_pos (interp : EvidenceInterpretation) : 0 < interp.totalPrior
   unfold totalPrior
   linarith [interp.prior_pos.1, interp.prior_pos.2]
 
+/-- Updating an interpretation by finite natural-count evidence yields the
+posterior Beta prior for the next evidence batch. -/
+def posteriorFromNat (interp : EvidenceInterpretation)
+    (npos nneg : ℕ) : EvidenceInterpretation where
+  prior_alpha := interp.prior_alpha + npos
+  prior_beta := interp.prior_beta + nneg
+  prior_pos := by
+    constructor
+    · have hn : (0 : ℝ) ≤ npos := Nat.cast_nonneg npos
+      linarith [interp.prior_pos.1, hn]
+    · have hn : (0 : ℝ) ≤ nneg := Nat.cast_nonneg nneg
+      linarith [interp.prior_pos.2, hn]
+
+@[simp] theorem posteriorFromNat_prior_alpha
+    (interp : EvidenceInterpretation) (npos nneg : ℕ) :
+    (interp.posteriorFromNat npos nneg).prior_alpha =
+      interp.prior_alpha + npos :=
+  rfl
+
+@[simp] theorem posteriorFromNat_prior_beta
+    (interp : EvidenceInterpretation) (npos nneg : ℕ) :
+    (interp.posteriorFromNat npos nneg).prior_beta =
+      interp.prior_beta + nneg :=
+  rfl
+
+/-- The posterior interpretation's total prior concentration is the old prior
+concentration plus the observed evidence concentration. -/
+theorem posteriorFromNat_totalPrior
+    (interp : EvidenceInterpretation) (npos nneg : ℕ) :
+    (interp.posteriorFromNat npos nneg).totalPrior =
+      interp.totalPrior + npos + nneg := by
+  unfold posteriorFromNat totalPrior
+  ring
+
 end EvidenceInterpretation
 
 /-! ## Converting BinaryEvidence to Beta Parameters -/

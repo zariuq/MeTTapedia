@@ -557,6 +557,57 @@ theorem not_beta_from_exchangeability_example :
     norm_num
   exact hcontra (by simpa [add_assoc, add_comm, add_left_comm] using hBeta)
 
+/-- Public name for the two-point exchangeable mixture predictor used in the
+Beta-subfamily boundary theorem.
+
+It is count-based, hence exchangeable in the de-Finetti sense, but it is not a
+Beta posterior-predictive family. -/
+noncomputable def twoPointExchangeableMixturePredictorN2 (k : ℕ) : ℝ :=
+  mixPred_n2 k
+
+@[simp] theorem twoPointExchangeableMixturePredictorN2_zero :
+    twoPointExchangeableMixturePredictorN2 0 = (15 / 44 : ℝ) := by
+  simpa [twoPointExchangeableMixturePredictorN2] using (mixPred_n2_eval).1
+
+@[simp] theorem twoPointExchangeableMixturePredictorN2_one :
+    twoPointExchangeableMixturePredictorN2 1 = (7 / 12 : ℝ) := by
+  simpa [twoPointExchangeableMixturePredictorN2] using (mixPred_n2_eval).2.1
+
+@[simp] theorem twoPointExchangeableMixturePredictorN2_two :
+    twoPointExchangeableMixturePredictorN2 2 = (55 / 76 : ℝ) := by
+  simpa [twoPointExchangeableMixturePredictorN2] using (mixPred_n2_eval).2.2
+
+/-- The explicit count-triple for the two-point mixture predictor. -/
+theorem twoPointExchangeableMixturePredictorN2_eval :
+    twoPointExchangeableMixturePredictorN2 0 = (15 / 44 : ℝ) ∧
+      twoPointExchangeableMixturePredictorN2 1 = (7 / 12 : ℝ) ∧
+      twoPointExchangeableMixturePredictorN2 2 = (55 / 76 : ℝ) := by
+  simp
+
+/-- A Beta posterior-predictive triple at `n = 2` is affine in the count `k`. -/
+theorem betaPredictiveTriple_affine_n2 (α β : ℝ) :
+    (2 : ℝ) * ((1 + α) / (2 + α + β)) =
+      (α / (2 + α + β)) + ((2 + α) / (2 + α + β)) := by
+  exact beta_affine_constraint_n2 α β
+
+/-- The two-point exchangeable mixture violates the affine constraint satisfied
+by every Beta posterior-predictive triple at `n = 2`. -/
+theorem twoPointExchangeableMixturePredictorN2_violates_beta_affine :
+    (2 : ℝ) * twoPointExchangeableMixturePredictorN2 1 ≠
+      twoPointExchangeableMixturePredictorN2 0 +
+        twoPointExchangeableMixturePredictorN2 2 := by
+  norm_num
+
+/-- Exchangeability gives a count-based de-Finetti mixture predictor; it does
+not force the predictor to belong to the Beta posterior-predictive subfamily. -/
+theorem twoPointExchangeableMixturePredictorN2_not_beta :
+    ¬ ∃ α β : ℝ,
+      twoPointExchangeableMixturePredictorN2 0 = (α / (2 + α + β)) ∧
+      twoPointExchangeableMixturePredictorN2 1 = ((1 + α) / (2 + α + β)) ∧
+      twoPointExchangeableMixturePredictorN2 2 = ((2 + α) / (2 + α + β)) := by
+  simpa [twoPointExchangeableMixturePredictorN2] using
+    not_beta_from_exchangeability_example
+
 end Counterexample
 
 /-! ## BinaryEvidence Aggregation = Beta Update -/

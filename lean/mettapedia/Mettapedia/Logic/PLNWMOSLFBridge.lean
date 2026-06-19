@@ -24,7 +24,7 @@ OSLF adapter over that carrier.
 - Derivation judgments (`XiDerivesAtomEvidence`, `XiDerivesAtomStrength`)
 - Soundness: derivations are OSLF-semantically sound
 
-All theorems are fully proved (0 sorry).
+All theorems in this bridge are fully proved.
 -/
 
 namespace Mettapedia.Logic.PLNWMOSLFBridge
@@ -275,6 +275,35 @@ theorem xiDerivesAtomEvidence_to_wmQueryJudgmentCtx
   obtain ⟨r, _, hside, henc, rfl⟩ := hDer
   exact ⟨hW, by rw [henc]; exact r.sound hside W⟩
 
+/-- ξPLN evidence derivations over a revised state inherit the union of the
+source contexts.  This is the OSLF-facing provenance form of
+`WMJudgmentCtx.union_revise`: the atom query is justified only by the combined
+sources used to build `W₁ + W₂`. -/
+theorem xiDerivesAtomEvidence_to_wmQueryJudgmentCtx_union_revise
+    (Ξ : XiPLN (State := State) (Query := Query))
+    {Γ₁ Γ₂ : Set State} {W₁ W₂ : State}
+    {a : String} {p : Pattern} {e : BinaryEvidence}
+    (hDer : XiDerivesAtomEvidence Ξ (W₁ + W₂) a p e)
+    (hW₁ : WMJudgmentCtx Γ₁ W₁) (hW₂ : WMJudgmentCtx Γ₂ W₂) :
+    WMQueryJudgmentCtx (Γ₁ ∪ Γ₂) (W₁ + W₂) (Ξ.queryOfAtom a p) e :=
+  xiDerivesAtomEvidence_to_wmQueryJudgmentCtx Ξ hDer
+    (WMJudgmentCtx.union_revise hW₁ hW₂)
+
+/-- Proof-carrying union-context ξPLN evidence: a single theorem exposes both
+the context-indexed WM query judgment and the OSLF atom-evidence equality. -/
+theorem xiDerivesAtomEvidence_ctx_union_sound_package
+    (Ξ : XiPLN (State := State) (Query := Query))
+    (R : Pattern → Pattern → Prop)
+    {Γ₁ Γ₂ : Set State} {W₁ W₂ : State}
+    {a : String} {p : Pattern} {e : BinaryEvidence}
+    (hDer : XiDerivesAtomEvidence Ξ (W₁ + W₂) a p e)
+    (hW₁ : WMJudgmentCtx Γ₁ W₁) (hW₂ : WMJudgmentCtx Γ₂ W₂) :
+    WMQueryJudgmentCtx (Γ₁ ∪ Γ₂) (W₁ + W₂) (Ξ.queryOfAtom a p) e ∧
+      semE R (wmEvidenceAtomSemQ (W₁ + W₂) Ξ.queryOfAtom) (.atom a) p = e := by
+  exact ⟨
+    xiDerivesAtomEvidence_to_wmQueryJudgmentCtx_union_revise Ξ hDer hW₁ hW₂,
+    xiDerivesAtomEvidence_sound Ξ R hDer⟩
+
 /-- ξPLN evidence derivations are OSLF-semantically sound under context-indexing.
 Soundness is purely about the WM semantics (not about contexts), so this follows
 directly from the context-free version. -/
@@ -298,6 +327,22 @@ theorem xiDerivesAtomStrength_threshold_sound_ctx
     sem R (thresholdAtomSemOfWMQ W tau Ξ.queryOfAtom) (.atom a) p :=
   xiDerivesAtomStrength_threshold_sound Ξ R hDer hTau
 
+/-- Proof-carrying union-context ξPLN strength threshold: a threshold atom
+truth derived over a revised state is paired with the union context that
+justifies the state being queried. -/
+theorem xiDerivesAtomStrength_threshold_ctx_union_sound_package
+    (Ξ : XiPLN (State := State) (Query := Query))
+    (R : Pattern → Pattern → Prop)
+    {Γ₁ Γ₂ : Set State} {W₁ W₂ : State}
+    {a : String} {p : Pattern} {s tau : ℝ≥0∞}
+    (hDer : XiDerivesAtomStrength Ξ (W₁ + W₂) a p s)
+    (hTau : tau ≤ s)
+    (hW₁ : WMJudgmentCtx Γ₁ W₁) (hW₂ : WMJudgmentCtx Γ₂ W₂) :
+    WMJudgmentCtx (Γ₁ ∪ Γ₂) (W₁ + W₂) ∧
+      sem R (thresholdAtomSemOfWMQ (W₁ + W₂) tau Ξ.queryOfAtom) (.atom a) p := by
+  exact ⟨WMJudgmentCtx.union_revise hW₁ hW₂,
+    xiDerivesAtomStrength_threshold_sound Ξ R hDer hTau⟩
+
 /-- ξPLN revision under context: combining two context-derivable states yields
 a state derivable from the union of contexts, with evidence additivity. -/
 theorem xi_atom_revision_ctx
@@ -310,6 +355,22 @@ theorem xi_atom_revision_ctx
       semE R (wmEvidenceAtomSemQ W₁ Ξ.queryOfAtom) (.atom a) p +
       semE R (wmEvidenceAtomSemQ W₂ Ξ.queryOfAtom) (.atom a) p :=
   xi_atom_revision Ξ R W₁ W₂ a p
+
+/-- ξPLN revision with explicit context provenance.  The first component proves
+that the revised state is derivable from the union context; the second is the
+existing OSLF atom-evidence additivity law. -/
+theorem xi_atom_revision_ctx_with_judgment
+    (Ξ : XiPLN (State := State) (Query := Query))
+    (R : Pattern → Pattern → Prop)
+    {Γ₁ Γ₂ : Set State} {W₁ W₂ : State}
+    (hW₁ : WMJudgmentCtx Γ₁ W₁) (hW₂ : WMJudgmentCtx Γ₂ W₂)
+    (a : String) (p : Pattern) :
+    WMJudgmentCtx (Γ₁ ∪ Γ₂) (W₁ + W₂) ∧
+      semE R (wmEvidenceAtomSemQ (W₁ + W₂) Ξ.queryOfAtom) (.atom a) p =
+        semE R (wmEvidenceAtomSemQ W₁ Ξ.queryOfAtom) (.atom a) p +
+        semE R (wmEvidenceAtomSemQ W₂ Ξ.queryOfAtom) (.atom a) p := by
+  exact ⟨WMJudgmentCtx.union_revise hW₁ hW₂,
+    xi_atom_revision Ξ R W₁ W₂ a p⟩
 
 end XiPLNCtx
 
@@ -538,6 +599,24 @@ theorem xiDerivesAtomStrengthSigma_threshold_sound
   exact wmStrengthRuleSigma_threshold_atom
     (State := State) (Srt := Srt) (Query := Query) R r hSide W tau Ξ.queryOfAtom a p hEnc hTau
 
+/-- Typed proof-carrying union-context ξPLN strength threshold. -/
+theorem xiDerivesAtomStrengthSigma_threshold_ctx_union_sound_package
+    (Ξ : XiPLNSigma (State := State) (Srt := Srt) (Query := Query))
+    (R : Pattern → Pattern → Prop)
+    {Γ₁ Γ₂ : Set State} {W₁ W₂ : State}
+    {a : String} {p : Pattern} {s tau : ℝ≥0∞}
+    (hDer : XiDerivesAtomStrengthSigma Ξ (W₁ + W₂) a p s)
+    (hTau : tau ≤ s)
+    (hW₁ : WMJudgmentCtx Γ₁ W₁) (hW₂ : WMJudgmentCtx Γ₂ W₂) :
+    WMJudgmentCtx (Γ₁ ∪ Γ₂) (W₁ + W₂) ∧
+      sem R
+        (thresholdAtomSemOfWMQSigma (State := State) (Srt := Srt) (Query := Query)
+          (W₁ + W₂) tau Ξ.queryOfAtom)
+        (.atom a) p := by
+  exact ⟨WMJudgmentCtx.union_revise hW₁ hW₂,
+    xiDerivesAtomStrengthSigma_threshold_sound
+      (State := State) (Srt := Srt) (Query := Query) Ξ R hDer hTau⟩
+
 /-- Typed ξ derivations lift to typed WM query judgments. -/
 theorem xiDerivesAtomEvidenceSigma_to_wmQueryJudgment
     (Ξ : XiPLNSigma (State := State) (Srt := Srt) (Query := Query))
@@ -560,6 +639,39 @@ theorem xiDerivesAtomEvidenceSigma_to_wmQueryJudgmentCtx
   obtain ⟨r, _, hSide, hEnc, rfl⟩ := hDer
   exact ⟨hW, by rw [hEnc]; exact r.sound hSide W⟩
 
+/-- Typed ξPLN evidence derivations over a revised state inherit the union of
+the source contexts. -/
+theorem xiDerivesAtomEvidenceSigma_to_wmQueryJudgmentCtx_union_revise
+    (Ξ : XiPLNSigma (State := State) (Srt := Srt) (Query := Query))
+    {Γ₁ Γ₂ : Set State} {W₁ W₂ : State}
+    {a : String} {p : Pattern} {e : BinaryEvidence}
+    (hDer : XiDerivesAtomEvidenceSigma Ξ (W₁ + W₂) a p e)
+    (hW₁ : WMJudgmentCtx Γ₁ W₁) (hW₂ : WMJudgmentCtx Γ₂ W₂) :
+    WorldModelSigma.WMQueryJudgmentCtxSigma (State := State) (Srt := Srt) (Query := Query)
+      (Γ₁ ∪ Γ₂) (W₁ + W₂) (Ξ.queryOfAtom a p) e :=
+  xiDerivesAtomEvidenceSigma_to_wmQueryJudgmentCtx Ξ hDer
+    (WMJudgmentCtx.union_revise hW₁ hW₂)
+
+/-- Typed proof-carrying union-context ξPLN evidence: the context-indexed WM
+query judgment and the OSLF atom-evidence equality travel together. -/
+theorem xiDerivesAtomEvidenceSigma_ctx_union_sound_package
+    (Ξ : XiPLNSigma (State := State) (Srt := Srt) (Query := Query))
+    (R : Pattern → Pattern → Prop)
+    {Γ₁ Γ₂ : Set State} {W₁ W₂ : State}
+    {a : String} {p : Pattern} {e : BinaryEvidence}
+    (hDer : XiDerivesAtomEvidenceSigma Ξ (W₁ + W₂) a p e)
+    (hW₁ : WMJudgmentCtx Γ₁ W₁) (hW₂ : WMJudgmentCtx Γ₂ W₂) :
+    WorldModelSigma.WMQueryJudgmentCtxSigma (State := State) (Srt := Srt) (Query := Query)
+        (Γ₁ ∪ Γ₂) (W₁ + W₂) (Ξ.queryOfAtom a p) e ∧
+      semE R
+        (wmEvidenceAtomSemQSigma (State := State) (Srt := Srt) (Query := Query)
+          (W₁ + W₂) Ξ.queryOfAtom)
+        (.atom a) p = e := by
+  exact ⟨
+    xiDerivesAtomEvidenceSigma_to_wmQueryJudgmentCtx_union_revise Ξ hDer hW₁ hW₂,
+    xiDerivesAtomEvidenceSigma_sound
+      (State := State) (Srt := Srt) (Query := Query) Ξ R hDer⟩
+
 /-- Typed ξ revision at atom-evidence level commutes with WM revision. -/
 theorem xi_atom_revision_sigma
     (Ξ : XiPLNSigma (State := State) (Srt := Srt) (Query := Query))
@@ -576,6 +688,30 @@ theorem xi_atom_revision_sigma
         (.atom a) p :=
   semE_wm_atom_revision_qsigma
     (State := State) (Srt := Srt) (Query := Query) R W₁ W₂ Ξ.queryOfAtom a p
+
+/-- Typed ξPLN revision with explicit context provenance. -/
+theorem xi_atom_revision_sigma_ctx_with_judgment
+    (Ξ : XiPLNSigma (State := State) (Srt := Srt) (Query := Query))
+    (R : Pattern → Pattern → Prop)
+    {Γ₁ Γ₂ : Set State} {W₁ W₂ : State}
+    (hW₁ : WMJudgmentCtx Γ₁ W₁) (hW₂ : WMJudgmentCtx Γ₂ W₂)
+    (a : String) (p : Pattern) :
+    WMJudgmentCtx (Γ₁ ∪ Γ₂) (W₁ + W₂) ∧
+      semE R
+        (wmEvidenceAtomSemQSigma (State := State) (Srt := Srt) (Query := Query)
+          (W₁ + W₂) Ξ.queryOfAtom)
+        (.atom a) p =
+        semE R
+          (wmEvidenceAtomSemQSigma (State := State) (Srt := Srt) (Query := Query)
+            W₁ Ξ.queryOfAtom)
+          (.atom a) p +
+        semE R
+          (wmEvidenceAtomSemQSigma (State := State) (Srt := Srt) (Query := Query)
+            W₂ Ξ.queryOfAtom)
+          (.atom a) p := by
+  exact ⟨WMJudgmentCtx.union_revise hW₁ hW₂,
+    xi_atom_revision_sigma
+      (State := State) (Srt := Srt) (Query := Query) Ξ R W₁ W₂ a p⟩
 
 end XiPLNSigma
 

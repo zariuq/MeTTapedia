@@ -205,6 +205,11 @@ theorem mettaCall_symbol_inert {space : Space} {d : GroundedDispatch}
     r = (.symbol sym, b) := by
   cases h with
   | error_passthrough _ _ _ _ => rfl
+  | unify_success_raw => simp_all
+  | unify_no_match_raw => simp_all
+  | unify_bad_arity => simp_all
+  | switch_minimal_result => simp_all
+  | switch_minimal_bad_shape => simp_all
   | no_match _ _ _ _ _ _ _ => rfl
   | grounded_ok => simp_all
   | grounded_runtime_error => simp_all
@@ -235,6 +240,8 @@ theorem evalAtom_swap_atom {space : Space} {d : GroundedDispatch}
     (h_head_nes : p ≠ Atom.symbol "Error")
     (h_head_untyped : getAtomTypes space p = [Atom.undefinedType])
     (h_head_not_exec : d.isExecutable p = false)
+    (h_head_not_unify : p ≠ .symbol "unify")
+    (h_head_not_switch : p ≠ .symbol "switch-minimal")
     (h_head_no_eqs : ∀ (es : List Atom) (f : Nat),
       queryEquations space (.expression (p :: es)) f = [])
     (h_empty_no_eqs : ∀ f, queryEquations space Atom.empty f = [])
@@ -274,6 +281,11 @@ theorem evalAtom_swap_atom {space : Space} {d : GroundedDispatch}
                 (by simpa [Atom.empty] using h_empty_no_eqs) h_mc
             · cases h_mc with
               | error_passthrough _ _ _ _ => rfl
+              | unify_success_raw => simp_all
+              | unify_no_match_raw => simp_all
+              | unify_bad_arity => simp_all
+              | switch_minimal_result => simp_all
+              | switch_minimal_bad_shape => simp_all
               | no_match _ _ _ _ _ _ _ => rfl
               | grounded_ok => simp_all
               | grounded_runtime_error => simp_all
@@ -284,7 +296,9 @@ theorem evalAtom_swap_atom {space : Space} {d : GroundedDispatch}
               | empty_results => simp_all
             · rw [hA] at h_mc ⊢
               exact mettaCall_untyped_inert
-                (by unfold HeadNotExecutable; exact h_head_not_exec)
+                (by
+                  unfold HeadNotExecutable
+                  exact ⟨h_head_not_exec, h_head_not_unify, h_head_not_switch⟩)
                 (h_head_no_eqs ta) h_mc
           subst h_r
           have h_src_call : MettaCall space d tupleResult.1
@@ -298,7 +312,8 @@ theorem evalAtom_swap_atom {space : Space} {d : GroundedDispatch}
             · rw [hA]
               exact MettaCall.no_match _ _ _ fuel
                 (isErrorAtom_expr_false ta h_head_nes)
-                h_head_not_exec (h_head_no_eqs ta fuel)
+                ⟨h_head_not_exec, h_head_not_unify, h_head_not_switch⟩
+                (h_head_no_eqs ta fuel)
           by_cases hAerr : isErrorAtom tupleResult.1 = true
           · exact ⟨rb1, EvalAtom.interpret_error _ _ _ _ h_src_ok
               (by simp [getMetaType, Atom.undefinedType, Atom.atomType,
@@ -336,6 +351,11 @@ theorem evalAtom_swap_atom {space : Space} {d : GroundedDispatch}
                 (by simpa [Atom.empty] using h_empty_no_eqs) h_mc
             · cases h_mc with
               | error_passthrough _ _ _ _ => rfl
+              | unify_success_raw => simp_all
+              | unify_no_match_raw => simp_all
+              | unify_bad_arity => simp_all
+              | switch_minimal_result => simp_all
+              | switch_minimal_bad_shape => simp_all
               | no_match _ _ _ _ _ _ _ => rfl
               | grounded_ok => simp_all
               | grounded_runtime_error => simp_all
@@ -346,7 +366,9 @@ theorem evalAtom_swap_atom {space : Space} {d : GroundedDispatch}
               | empty_results => simp_all
             · rw [hA] at h_mc ⊢
               exact mettaCall_untyped_inert
-                (by unfold HeadNotExecutable; exact h_head_not_exec)
+                (by
+                  unfold HeadNotExecutable
+                  exact ⟨h_head_not_exec, h_head_not_unify, h_head_not_switch⟩)
                 (h_head_no_eqs ta) h_mc
           subst h_r
           have h_src_call : MettaCall space d tupleResult.1
@@ -360,7 +382,8 @@ theorem evalAtom_swap_atom {space : Space} {d : GroundedDispatch}
             · rw [hA]
               exact MettaCall.no_match _ _ _ fuel
                 (isErrorAtom_expr_false ta h_head_nes)
-                h_head_not_exec (h_head_no_eqs ta fuel)
+                ⟨h_head_not_exec, h_head_not_unify, h_head_not_switch⟩
+                (h_head_no_eqs ta fuel)
           exact ⟨rb1, EvalAtom.interpret_error _ _ _ _ h_src_ok
             (by simp [getMetaType, Atom.undefinedType, Atom.atomType,
               Atom.expressionType, Atom.variableType])
@@ -388,6 +411,8 @@ inductive FragStep (space : Space) (d : GroundedDispatch) (fuel : Nat) :
       (h_args_ne : args ≠ [])
       (h_last : ∀ es', (op :: args).getLast? = some (Atom.expression es') → False)
       (h_nes : ∀ e ∈ op :: args, e ≠ Atom.symbol "Error")
+      (h_not_unify : op ≠ .symbol "unify")
+      (h_not_switch : op ≠ .symbol "switch-minimal")
       (h_exec : d.isExecutable op = true)
       (h_run : d.execute op args = .ok rs)
       (h_mem : (r0, Bindings.empty) ∈ rs) :
@@ -401,6 +426,8 @@ inductive FragStep (space : Space) (d : GroundedDispatch) (fuel : Nat) :
       (h_op_has : ∃ t ∈ getAtomTypes space op,
         isFunctionType t = false ∨ t = Atom.undefinedType)
       (h_not_exec : d.isExecutable op = false)
+      (h_not_unify : op ≠ .symbol "unify")
+      (h_not_switch : op ≠ .symbol "switch-minimal")
       (h_query : (rhs, qb) ∈ queryEquations space
         (.expression (op :: e2 :: rest)) fuel)
       (h_no_loop : qb.hasLoop = false)
@@ -418,6 +445,8 @@ inductive FragStep (space : Space) (d : GroundedDispatch) (fuel : Nat) :
       (h_head_nes : p ≠ Atom.symbol "Error")
       (h_head_untyped : getAtomTypes space p = [Atom.undefinedType])
       (h_head_not_exec : d.isExecutable p = false)
+      (h_head_not_unify : p ≠ .symbol "unify")
+      (h_head_not_switch : p ≠ .symbol "switch-minimal")
       (h_head_no_eqs : ∀ (es : List Atom) (f : Nat),
         queryEquations space (.expression (p :: es)) f = [])
       (h_inner : FragStep space d fuel inner inner') :
@@ -442,7 +471,7 @@ theorem evalAtom_absorbs_fragStep {space : Space} {d : GroundedDispatch}
   intro a a' h_step
   induction h_step with
   | @grounded_leaf op args rs r0 h_op_q h_op_untyped h_args h_args_ne
-      h_last h_nes h_exec h_run h_mem =>
+      h_last h_nes h_not_unify h_not_switch h_exec h_run h_mem =>
       intro r h_eval
       have h_src_ok : isEmptyOrError (Atom.expression (op :: args)) = false :=
         isEmptyOrError_expr_false _ (h_nes op (by simp))
@@ -464,6 +493,8 @@ theorem evalAtom_absorbs_fragStep {space : Space} {d : GroundedDispatch}
           Atom.undefinedType Bindings.empty r :=
         MettaCall.grounded_ok _ _ _ op args rs (r0, Bindings.empty)
           Bindings.empty r (fuel + 1) rfl h_exec
+          h_not_unify
+          h_not_switch
           (isErrorAtom_expr_false _ (h_nes op (by simp)))
           h_run h_mem
           (by rw [mergeBindings_empty_right]; exact List.mem_singleton.mpr rfl)
@@ -488,7 +519,7 @@ theorem evalAtom_absorbs_fragStep {space : Space} {d : GroundedDispatch}
           (by intro h_unit; simp [Atom.unit] at h_unit)
           h_interp (by simpa using hRerr)⟩
   | @equation_leaf op e2 rest rhs qb h_elems h_last h_nes h_op_has
-      h_not_exec h_query h_no_loop h_applied_q =>
+      h_not_exec h_not_unify h_not_switch h_query h_no_loop h_applied_q =>
       intro r h_eval
       have h_r := selfEval_unique _ h_applied_q h_eval
       have h_src_ok : isEmptyOrError (Atom.expression (op :: e2 :: rest)) = false :=
@@ -511,7 +542,7 @@ theorem evalAtom_absorbs_fragStep {space : Space} {d : GroundedDispatch}
             MettaCall.equation_match _ _ _ rhs qb qb
               (qb.apply rhs (n + 1), qb) (n + 1)
               (isErrorAtom_expr_false _ (h_nes op (by simp)))
-              h_not_exec h_query
+              ⟨h_not_exec, h_not_unify, h_not_switch⟩ h_query
               (by rw [mergeBindings_empty_right]; exact List.mem_singleton.mpr rfl)
               h_no_loop
               (selfEval_of_quiescent _ h_applied_q qb)
@@ -531,11 +562,13 @@ theorem evalAtom_absorbs_fragStep {space : Space} {d : GroundedDispatch}
           simp only [isEmptyOrError, Bool.or_eq_false_iff] at h_ok
           exact h_ok.2
   | @congruence p ps inner inner' post h_pre h_post h_post_last h_post_nes
-      h_head_nes h_head_untyped h_head_not_exec h_head_no_eqs h_inner ih =>
+      h_head_nes h_head_untyped h_head_not_exec h_head_not_unify h_head_not_switch
+      h_head_no_eqs h_inner ih =>
       intro r h_eval
       exact evalAtom_swap_atom (fun r' h' => ih h') p ps
         h_pre h_post h_post_last h_post_nes h_head_nes h_head_untyped
-        h_head_not_exec h_head_no_eqs h_empty_no_eqs h_eval
+        h_head_not_exec h_head_not_unify h_head_not_switch
+        h_head_no_eqs h_empty_no_eqs h_eval
 
 /-- **S4, chain source-progress half.**  When the chain's source takes a
 fragment step, every official evaluation of the *successor* source yields
@@ -575,6 +608,8 @@ theorem evalAtom_absorbs_congruence_frag {space : Space}
     (h_head_nes : p ≠ Atom.symbol "Error")
     (h_head_untyped : getAtomTypes space p = [Atom.undefinedType])
     (h_head_not_exec : d.isExecutable p = false)
+    (h_head_not_unify : p ≠ .symbol "unify")
+    (h_head_not_switch : p ≠ .symbol "switch-minimal")
     (h_head_no_eqs : ∀ (es : List Atom) (f : Nat),
       queryEquations space (.expression (p :: es)) f = [])
     (h_inner : FragStep space d fuel inner inner')
@@ -585,7 +620,8 @@ theorem evalAtom_absorbs_congruence_frag {space : Space}
       Atom.undefinedType Bindings.empty (r.1, rb) :=
   evalAtom_absorbs_fragStep h_empty_no_eqs
     (FragStep.congruence h_pre h_post h_post_last h_post_nes h_head_nes
-      h_head_untyped h_head_not_exec h_head_no_eqs h_inner)
+      h_head_untyped h_head_not_exec h_head_not_unify h_head_not_switch
+      h_head_no_eqs h_inner)
     h_eval
 
 end Mettapedia.Languages.MeTTa.HE

@@ -768,6 +768,131 @@ noncomputable def posteriorConcentration
     (π : BetaPriorMeanConcentration) (e : BinaryCounts) : ℝ :=
   e.total + π.concentration
 
+/-- Posterior concentration is strictly positive, so the posterior can itself
+serve as the next Beta prior in a sequential update. -/
+theorem posteriorConcentration_pos
+    (π : BetaPriorMeanConcentration) (e : BinaryCounts) :
+    0 < π.posteriorConcentration e := by
+  unfold posteriorConcentration
+  have htotal : 0 ≤ e.total := e.total_nonneg
+  linarith [π.concentration_pos, htotal]
+
+/-- General Beta posterior means stay in the unit interval. -/
+theorem posteriorMean_nonneg
+    (π : BetaPriorMeanConcentration) (e : BinaryCounts) :
+    0 ≤ π.posteriorMean e := by
+  unfold posteriorMean priorPositiveWeight
+  apply div_nonneg
+  · exact add_nonneg
+      (mul_nonneg π.mean_nonneg (le_of_lt π.concentration_pos))
+      e.nPlus_nonneg
+  · have htotal : 0 ≤ e.total := e.total_nonneg
+    linarith [π.concentration_pos, htotal]
+
+/-- General Beta posterior means stay below one. -/
+theorem posteriorMean_le_one
+    (π : BetaPriorMeanConcentration) (e : BinaryCounts) :
+    π.posteriorMean e ≤ 1 := by
+  have hprior :
+      π.priorPositiveWeight ≤ π.concentration := by
+    unfold priorPositiveWeight
+    calc
+      π.mean * π.concentration ≤ 1 * π.concentration :=
+        mul_le_mul_of_nonneg_right π.mean_le_one
+          (le_of_lt π.concentration_pos)
+      _ = π.concentration := by ring
+  have hnum :
+      π.priorPositiveWeight + e.nPlus ≤ π.concentration + e.total := by
+    unfold BinaryCounts.total
+    linarith [hprior, e.nMinus_nonneg]
+  have hden : 0 < π.concentration + e.total := by
+    have htotal : 0 ≤ e.total := e.total_nonneg
+    linarith [π.concentration_pos, htotal]
+  unfold posteriorMean
+  exact (div_le_one hden).2 hnum
+
+/-- Repackage a posterior Beta mean/concentration pair as the prior for the
+next update.  This is the thin Bayesian counterpart of PLN evidence revision:
+the new pseudo-counts are the old prior pseudo-counts plus observed evidence. -/
+noncomputable def posteriorPrior
+    (π : BetaPriorMeanConcentration) (e : BinaryCounts) :
+    BetaPriorMeanConcentration where
+  mean := π.posteriorMean e
+  concentration := π.posteriorConcentration e
+  mean_nonneg := π.posteriorMean_nonneg e
+  mean_le_one := π.posteriorMean_le_one e
+  concentration_pos := π.posteriorConcentration_pos e
+
+/-- Updating the prior by evidence `e` adds `e`'s positive count to the prior
+positive pseudo-count. -/
+theorem posteriorPrior_priorPositiveWeight
+    (π : BetaPriorMeanConcentration) (e : BinaryCounts) :
+    (π.posteriorPrior e).priorPositiveWeight =
+      π.priorPositiveWeight + e.nPlus := by
+  unfold posteriorPrior posteriorMean posteriorConcentration priorPositiveWeight
+  have hden : π.concentration + e.total ≠ 0 := by
+    have htotal : 0 ≤ e.total := e.total_nonneg
+    nlinarith [π.concentration_pos, htotal]
+  field_simp [hden]
+  ring
+
+/-- Updating the prior by evidence `e` adds `e`'s negative count to the prior
+negative pseudo-count. -/
+theorem posteriorPrior_priorNegativeWeight
+    (π : BetaPriorMeanConcentration) (e : BinaryCounts) :
+    (π.posteriorPrior e).priorNegativeWeight =
+      π.priorNegativeWeight + e.nMinus := by
+  unfold posteriorPrior posteriorMean posteriorConcentration priorPositiveWeight
+    priorNegativeWeight BinaryCounts.total
+  have hden : π.concentration + (e.nPlus + e.nMinus) ≠ 0 := by
+    have htotal : 0 ≤ e.nPlus + e.nMinus :=
+      add_nonneg e.nPlus_nonneg e.nMinus_nonneg
+    nlinarith [π.concentration_pos, htotal]
+  field_simp [hden]
+  ring
+
+/-- Batch and sequential evidence updates have the same posterior
+concentration. -/
+theorem posteriorConcentration_add_eq_sequential
+    (π : BetaPriorMeanConcentration) (e₁ e₂ : BinaryCounts) :
+    π.posteriorConcentration (e₁.add e₂) =
+      (π.posteriorPrior e₁).posteriorConcentration e₂ := by
+  unfold posteriorPrior posteriorConcentration BinaryCounts.add BinaryCounts.total
+  ring
+
+/-- Batch PLN evidence revision is sequential Bayesian updating for a general
+Beta mean/concentration prior.  This is the count-backed revision jewel: the
+revision operation adds sufficient statistics, and the Beta posterior obtained
+from the combined evidence is the same posterior obtained by updating in two
+steps. -/
+theorem posteriorMean_add_eq_sequential
+    (π : BetaPriorMeanConcentration) (e₁ e₂ : BinaryCounts) :
+    π.posteriorMean (e₁.add e₂) =
+      (π.posteriorPrior e₁).posteriorMean e₂ := by
+  unfold posteriorMean
+  rw [posteriorPrior_priorPositiveWeight]
+  unfold posteriorPrior posteriorConcentration BinaryCounts.add BinaryCounts.total
+  ring
+
+/-- Canary: with prior mean `1/2` and prior concentration `2`, updating by
+`(1,1)` and then `(3,1)` equals the one-shot update by `(4,2)`, and differs
+from the raw empirical strength `4/6`.  The prior is doing real Bayesian work;
+this is not merely maximum-likelihood count pooling. -/
+theorem posteriorMean_add_eq_sequential_canary :
+    let π : BetaPriorMeanConcentration :=
+      ⟨1 / 2, 2, by norm_num, by norm_num, by norm_num⟩
+    let e₁ : BinaryCounts :=
+      ⟨1, 1, by norm_num, by norm_num⟩
+    let e₂ : BinaryCounts :=
+      ⟨3, 1, by norm_num, by norm_num⟩
+    π.posteriorMean (e₁.add e₂) = 5 / 8 ∧
+      (π.posteriorPrior e₁).posteriorMean e₂ = 5 / 8 ∧
+      π.posteriorMean (e₁.add e₂) ≠ (e₁.add e₂).strength := by
+  dsimp [posteriorPrior, posteriorMean, posteriorConcentration,
+    priorPositiveWeight, BinaryCounts.add, BinaryCounts.strength,
+    BinaryCounts.total]
+  norm_num
+
 /-- The general Beta blend weight is exactly the PLN/NARS odds link applied to
 observed concentration, with `k` equal to prior concentration. -/
 theorem blendWeight_eq_plnConfidenceLink

@@ -62,7 +62,12 @@ theorem confidence_gap_rate (κ : ℝ) (hκ : 0 < κ) :
         have h := Nat.cast_le (α := ℝ).mpr hn
         simp only [Nat.cast_add, Nat.cast_one] at h
         exact h
-      have hN' : κ / ε + 1 ≤ n := le_trans (add_le_add_right hceil 1) hN
+      have hN' : κ / ε + 1 ≤ n := by
+        calc
+          κ / ε + 1 = 1 + κ / ε := by ring
+          _ ≤ 1 + (Nat.ceil (κ / ε) : ℝ) := add_le_add_right hceil 1
+          _ = (Nat.ceil (κ / ε) : ℝ) + 1 := by ring
+          _ ≤ n := hN
       have hN'' : κ / ε < n := by linarith
       have hε' : ε ≠ 0 := hε.ne'
       have hκ_lt : κ < (n : ℝ) * ε := by

@@ -3,6 +3,12 @@ import Mettapedia.Logic.PLNHigherOrderHOLRules
 import Mettapedia.Logic.PLNHigherOrderHOLSoundness
 import Mettapedia.Logic.PLNHigherOrderHOLConsequence
 import Mettapedia.Logic.PLNHigherOrderHOLLinkBridge
+import Mettapedia.Logic.PLNHigherOrderHOLInheritanceBridge
+import Mettapedia.Logic.PLNHigherOrderHOLSimilarityBridge
+import Mettapedia.Logic.PLNHigherOrderHOLAssocPatBridge
+import Mettapedia.Logic.PLNHigherOrderHOLQuantifierBridge
+import Mettapedia.Logic.PLNHigherOrderHOLProbabilisticBridge
+import Mettapedia.Logic.PLNHigherOrderHOLCredalBridge
 import Mettapedia.Logic.PLNHigherOrderHOLCanary
 import Mettapedia.Logic.PLNWorldModelHOLSetBridgeRegression
 import Mettapedia.Logic.PLNProbHOLPlannerBridgeRegression

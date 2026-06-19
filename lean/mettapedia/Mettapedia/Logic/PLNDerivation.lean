@@ -875,6 +875,33 @@ theorem plnAbduction_symmetric_uniform (s_AB s_CB s s_B : ℝ)
   -- Clear denominators and prove algebraically - field_simp + ring closes the goal
   field_simp [hsB, h1sB]
 
+/-! ### Induction/Abduction asymmetry canary
+
+The uniform-prior theorem above explains why the two inverse-deduction rules can
+look interchangeable in toy examples.  The following canary records the
+non-uniform case that matters for WM-PLN: source completion and sink completion
+are different Bayesian inversions of the same deduction skeleton. -/
+
+/-- Non-uniform base rates make PLN induction/source-rule and
+abduction/sink-rule genuinely different.  With
+`P(A)=P(C)=1/2`, `P(B)=3/4`, and the same visible premise strengths
+`1/2` and `1/2`, the source-rule conclusion is `1/2` while the
+sink-rule conclusion is `2/3`.
+
+This canary is deliberately chosen so the induced deduction skeletons are also
+branch-feasible for the no-independence credal interval in
+`PLNInductionAbductionITVBridge`.
+-/
+theorem plnInductionAbduction_asymmetric_canary :
+    plnInductionStrength (1 / 2) (1 / 2) (1 / 2) (3 / 4) (1 / 2) =
+        (1 / 2 : ℝ) ∧
+      plnAbductionStrength (1 / 2) (1 / 2) (1 / 2) (3 / 4) (1 / 2) =
+        (2 / 3 : ℝ) ∧
+      plnInductionStrength (1 / 2) (1 / 2) (1 / 2) (3 / 4) (1 / 2) ≠
+        plnAbductionStrength (1 / 2) (1 / 2) (1 / 2) (3 / 4) (1 / 2) := by
+  norm_num [plnInductionStrength, plnAbductionStrength,
+    plnDeductionStrength, bayesInversion]
+
 /-! ### SinkRule Aliases (for Abduction)
 
 B is the common *sink* - arrows fan in: A → B, C → B.

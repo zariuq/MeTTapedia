@@ -377,6 +377,50 @@ theorem deduction_formula_in_unit_interval
   exact convex_combination_bounded sBC ((pC - pB * sBC) / (1 - pB)) sAB
           hsBC h_term2_bounds hsAB
 
+/-- The residual conditional probability for the non-`B` branch induced by
+the marginal `P(C)` and the `B -> C` strength.
+
+This is the quantity that makes
+`P(C) = P(B) * P(C|B) + P(¬B) * P(C|¬B)` hold when `P(B) ≠ 1`. -/
+noncomputable def complementConditionalFromMarginal
+    (pB pC sBC : ℝ) : ℝ :=
+  (pC - pB * sBC) / (1 - pB)
+
+/-- The residual non-`B` conditional exactly reconstructs the marginal
+probability of `C`.
+
+This is the algebraic content behind the residual term in the PLN deduction
+formula. It is not an independence assumption; it only says that the chosen
+residual is the unique value making the two-way total-probability decomposition
+match the supplied marginal. -/
+theorem complementConditionalFromMarginal_reconstructs_marginal
+    (pB pC sBC : ℝ) (hpB_ne_one : pB ≠ 1) :
+    pB * sBC + (1 - pB) * complementConditionalFromMarginal pB pC sBC = pC := by
+  have hden : 1 - pB ≠ 0 := by
+    intro h
+    apply hpB_ne_one
+    linarith
+  unfold complementConditionalFromMarginal
+  field_simp [hden]
+  ring
+
+/-- On the guarded, non-edge branch, the implemented simple deduction formula
+is exactly the total-probability expression using the residual non-`B`
+conditional. -/
+theorem simpleDeductionStrengthFormula_eq_total_probability_residual
+    (pA pB pC sAB sBC : ℝ)
+    (hpB_small : pB ≤ 0.99)
+    (h_consist : conditionalProbabilityConsistency pA pB sAB ∧
+                 conditionalProbabilityConsistency pB pC sBC) :
+    simpleDeductionStrengthFormula pA pB pC sAB sBC =
+      sAB * sBC +
+        (1 - sAB) * complementConditionalFromMarginal pB pC sBC := by
+  unfold simpleDeductionStrengthFormula complementConditionalFromMarginal
+  simp [h_consist]
+  have hpB_not_edge : ¬ pB > 0.99 := by linarith
+  simp [hpB_not_edge]
+  ring
+
 /-- The formula derives from the law of total probability.
 
 Law of total probability:
@@ -390,14 +434,589 @@ which is the probability of C among non-B elements.
 -/
 theorem deduction_formula_derives_from_total_probability
     (pA pB pC sAB sBC : ℝ)
-    (_hpA_pos : 0 < pA)
-    (_hpB_pos : 0 < pB)
-    (_hpB_lt : pB < 1)
-    : let pC_given_notB := (pC - pB * sBC) / (1 - pB)
-      let formula := sAB * sBC + (1 - sAB) * pC_given_notB
-      -- This is exactly the law of total probability with the independence assumption
-      formula = sAB * sBC + (1 - sAB) * pC_given_notB := by
+    (hpB_small : pB ≤ 0.99)
+    (h_consist : conditionalProbabilityConsistency pA pB sAB ∧
+                 conditionalProbabilityConsistency pB pC sBC) :
+    let pC_given_notB := complementConditionalFromMarginal pB pC sBC
+    simpleDeductionStrengthFormula pA pB pC sAB sBC =
+        sAB * sBC + (1 - sAB) * pC_given_notB ∧
+      pB * sBC + (1 - pB) * pC_given_notB = pC := by
+  dsimp
+  constructor
+  · exact
+      simpleDeductionStrengthFormula_eq_total_probability_residual
+        pA pB pC sAB sBC hpB_small h_consist
+  · exact
+      complementConditionalFromMarginal_reconstructs_marginal
+        pB pC sBC (by linarith)
+
+/-! ## Credal Deduction Bounds
+
+The point-valued PLN deduction formula is the total-probability expression
+after choosing particular branch conditionals.  If those branch conditionals are
+not justified, the honest object is an interval over the branch allocations
+compatible with the supplied marginals and conditionals.
+-/
+
+/-- The joint mass `P(A ∧ B)` induced by `P(A)` and `P(B | A)`. -/
+noncomputable def deductionJointAB (pA sAB : ℝ) : ℝ :=
+  pA * sAB
+
+/-- The joint mass `P(B ∧ C)` induced by `P(B)` and `P(C | B)`. -/
+noncomputable def deductionJointBC (pB sBC : ℝ) : ℝ :=
+  pB * sBC
+
+/-- Fréchet lower bound for the `A ∧ B ∧ C` branch inside `B`. -/
+noncomputable def deductionBBranchLower
+    (pA pB sAB sBC : ℝ) : ℝ :=
+  max 0 (deductionJointAB pA sAB + deductionJointBC pB sBC - pB)
+
+/-- Fréchet upper bound for the `A ∧ B ∧ C` branch inside `B`. -/
+noncomputable def deductionBBranchUpper
+    (pA pB sAB sBC : ℝ) : ℝ :=
+  min (deductionJointAB pA sAB) (deductionJointBC pB sBC)
+
+/-- Fréchet lower bound for the `A ∧ ¬B ∧ C` branch outside `B`. -/
+noncomputable def deductionNotBBranchLower
+    (pA pB pC sAB sBC : ℝ) : ℝ :=
+  max 0
+    ((pA - deductionJointAB pA sAB) +
+      (pC - deductionJointBC pB sBC) - (1 - pB))
+
+/-- Fréchet upper bound for the `A ∧ ¬B ∧ C` branch outside `B`. -/
+noncomputable def deductionNotBBranchUpper
+    (pA pB pC sAB sBC : ℝ) : ℝ :=
+  min (pA - deductionJointAB pA sAB) (pC - deductionJointBC pB sBC)
+
+/-- The branch marginals induced by the deduction inputs are feasible inside
+the `B` and `not B` carriers.
+
+This is the exact no-laundering certificate needed before treating the
+Fréchet bounds below as a nonempty interval. -/
+structure DeductionBranchFeasibility
+    (pA pB pC sAB sBC : ℝ) : Prop where
+  AB_nonneg : 0 ≤ deductionJointAB pA sAB
+  AB_le_B : deductionJointAB pA sAB ≤ pB
+  BC_nonneg : 0 ≤ deductionJointBC pB sBC
+  BC_le_B : deductionJointBC pB sBC ≤ pB
+  AnotB_nonneg : 0 ≤ pA - deductionJointAB pA sAB
+  AnotB_le_notB : pA - deductionJointAB pA sAB ≤ 1 - pB
+  CnotB_nonneg : 0 ≤ pC - deductionJointBC pB sBC
+  CnotB_le_notB : pC - deductionJointBC pB sBC ≤ 1 - pB
+
+/-- Fréchet lower bounds are below Fréchet upper bounds whenever both
+submasses live inside the same carrier. -/
+theorem frechetLower_le_frechetUpper_of_submass_bounds
+    (m x y : ℝ)
+    (hx0 : 0 ≤ x) (hxm : x ≤ m)
+    (hy0 : 0 ≤ y) (hym : y ≤ m) :
+    max 0 (x + y - m) ≤ min x y := by
+  apply le_min
+  · exact max_le hx0 (by linarith)
+  · exact max_le hy0 (by linarith)
+
+/-- The `B` branch Fréchet interval is nonempty under its branch-marginal
+feasibility hypotheses. -/
+theorem deductionBBranchLower_le_upper_of_bounds
+    (pA pB sAB sBC : ℝ)
+    (hAB_nonneg : 0 ≤ deductionJointAB pA sAB)
+    (hAB_le_B : deductionJointAB pA sAB ≤ pB)
+    (hBC_nonneg : 0 ≤ deductionJointBC pB sBC)
+    (hBC_le_B : deductionJointBC pB sBC ≤ pB) :
+    deductionBBranchLower pA pB sAB sBC ≤
+      deductionBBranchUpper pA pB sAB sBC := by
+  simpa [deductionBBranchLower, deductionBBranchUpper] using
+    frechetLower_le_frechetUpper_of_submass_bounds
+      pB (deductionJointAB pA sAB) (deductionJointBC pB sBC)
+      hAB_nonneg hAB_le_B hBC_nonneg hBC_le_B
+
+/-- The `not B` branch Fréchet interval is nonempty under its branch-marginal
+feasibility hypotheses. -/
+theorem deductionNotBBranchLower_le_upper_of_bounds
+    (pA pB pC sAB sBC : ℝ)
+    (hAnotB_nonneg : 0 ≤ pA - deductionJointAB pA sAB)
+    (hAnotB_le_notB : pA - deductionJointAB pA sAB ≤ 1 - pB)
+    (hCnotB_nonneg : 0 ≤ pC - deductionJointBC pB sBC)
+    (hCnotB_le_notB : pC - deductionJointBC pB sBC ≤ 1 - pB) :
+    deductionNotBBranchLower pA pB pC sAB sBC ≤
+      deductionNotBBranchUpper pA pB pC sAB sBC := by
+  simpa [deductionNotBBranchLower, deductionNotBBranchUpper] using
+    frechetLower_le_frechetUpper_of_submass_bounds
+      (1 - pB)
+      (pA - deductionJointAB pA sAB)
+      (pC - deductionJointBC pB sBC)
+      hAnotB_nonneg hAnotB_le_notB hCnotB_nonneg hCnotB_le_notB
+
+/-- Lower bound for the joint mass `P(A ∧ C)` implied by the two branch
+Fréchet bounds. -/
+noncomputable def deductionCredalJointLower
+    (pA pB pC sAB sBC : ℝ) : ℝ :=
+  deductionBBranchLower pA pB sAB sBC +
+    deductionNotBBranchLower pA pB pC sAB sBC
+
+/-- Upper bound for the joint mass `P(A ∧ C)` implied by the two branch
+Fréchet bounds. -/
+noncomputable def deductionCredalJointUpper
+    (pA pB pC sAB sBC : ℝ) : ℝ :=
+  deductionBBranchUpper pA pB sAB sBC +
+    deductionNotBBranchUpper pA pB pC sAB sBC
+
+/-- Lower bound for the conditional strength `P(C | A)` obtained by normalizing
+the joint lower bound. -/
+noncomputable def deductionCredalStrengthLower
+    (pA pB pC sAB sBC : ℝ) : ℝ :=
+  deductionCredalJointLower pA pB pC sAB sBC / pA
+
+/-- Upper bound for the conditional strength `P(C | A)` obtained by normalizing
+the joint upper bound. -/
+noncomputable def deductionCredalStrengthUpper
+    (pA pB pC sAB sBC : ℝ) : ℝ :=
+  deductionCredalJointUpper pA pB pC sAB sBC / pA
+
+/-- A concrete branch allocation for credal deduction.
+
+`inB` is the mass assigned to `A ∧ B ∧ C`; `outNotB` is the mass assigned to
+`A ∧ not B ∧ C`.  The fields certify that each branch mass lies inside its
+Fréchet interval. -/
+structure DeductionBranchAllocation
+    (pA pB pC sAB sBC : ℝ) where
+  inB : ℝ
+  outNotB : ℝ
+  inB_lower : deductionBBranchLower pA pB sAB sBC ≤ inB
+  inB_upper : inB ≤ deductionBBranchUpper pA pB sAB sBC
+  outNotB_lower : deductionNotBBranchLower pA pB pC sAB sBC ≤ outNotB
+  outNotB_upper : outNotB ≤ deductionNotBBranchUpper pA pB pC sAB sBC
+
+namespace DeductionBranchAllocation
+
+/-- The joint mass `P(A ∧ C)` read from an admissible branch allocation. -/
+noncomputable def jointAC
+    {pA pB pC sAB sBC : ℝ}
+    (alloc : DeductionBranchAllocation pA pB pC sAB sBC) : ℝ :=
+  alloc.inB + alloc.outNotB
+
+/-- The conditional strength `P(C | A)` read from an admissible branch
+allocation. -/
+noncomputable def strengthAC
+    {pA pB pC sAB sBC : ℝ}
+    (alloc : DeductionBranchAllocation pA pB pC sAB sBC) : ℝ :=
+  alloc.jointAC / pA
+
+end DeductionBranchAllocation
+
+/-- Any admissible branch allocation gives a joint `P(A ∧ C)` inside the
+credal deduction joint interval.
+
+Here `t` is the mass assigned to `A ∧ B ∧ C`, and `u` is the mass assigned to
+`A ∧ ¬B ∧ C`.  The hypotheses are exactly the two branch Fréchet constraints;
+no independence assumption is smuggled in. -/
+theorem deductionCredalJointBounds_of_branch_bounds
+    (pA pB pC sAB sBC t u : ℝ)
+    (ht_lower : deductionBBranchLower pA pB sAB sBC ≤ t)
+    (ht_upper : t ≤ deductionBBranchUpper pA pB sAB sBC)
+    (hu_lower : deductionNotBBranchLower pA pB pC sAB sBC ≤ u)
+    (hu_upper : u ≤ deductionNotBBranchUpper pA pB pC sAB sBC) :
+    deductionCredalJointLower pA pB pC sAB sBC ≤ t + u ∧
+      t + u ≤ deductionCredalJointUpper pA pB pC sAB sBC := by
+  unfold deductionCredalJointLower deductionCredalJointUpper
+  constructor <;> linarith
+
+/-- Any admissible branch allocation gives a conditional `P(C | A)` inside the
+credal deduction strength interval. -/
+theorem deductionCredalStrengthBounds_of_branch_bounds
+    (pA pB pC sAB sBC t u : ℝ)
+    (hpA : 0 < pA)
+    (ht_lower : deductionBBranchLower pA pB sAB sBC ≤ t)
+    (ht_upper : t ≤ deductionBBranchUpper pA pB sAB sBC)
+    (hu_lower : deductionNotBBranchLower pA pB pC sAB sBC ≤ u)
+    (hu_upper : u ≤ deductionNotBBranchUpper pA pB pC sAB sBC) :
+    deductionCredalStrengthLower pA pB pC sAB sBC ≤ (t + u) / pA ∧
+      (t + u) / pA ≤ deductionCredalStrengthUpper pA pB pC sAB sBC := by
+  have hJoint :=
+    deductionCredalJointBounds_of_branch_bounds
+      pA pB pC sAB sBC t u ht_lower ht_upper hu_lower hu_upper
+  unfold deductionCredalStrengthLower deductionCredalStrengthUpper
+  constructor
+  · exact div_le_div_of_nonneg_right hJoint.1 (le_of_lt hpA)
+  · exact div_le_div_of_nonneg_right hJoint.2 (le_of_lt hpA)
+
+namespace DeductionBranchAllocation
+
+/-- Every admissible branch allocation reads out a joint mass inside the credal
+deduction joint interval. -/
+theorem jointAC_mem_interval
+    {pA pB pC sAB sBC : ℝ}
+    (alloc : DeductionBranchAllocation pA pB pC sAB sBC) :
+    deductionCredalJointLower pA pB pC sAB sBC ≤ alloc.jointAC ∧
+      alloc.jointAC ≤ deductionCredalJointUpper pA pB pC sAB sBC := by
+  unfold jointAC
+  exact
+    deductionCredalJointBounds_of_branch_bounds
+      pA pB pC sAB sBC alloc.inB alloc.outNotB
+      alloc.inB_lower alloc.inB_upper alloc.outNotB_lower alloc.outNotB_upper
+
+/-- Every admissible branch allocation reads out a conditional strength inside
+the credal deduction strength interval. -/
+theorem strengthAC_mem_interval
+    {pA pB pC sAB sBC : ℝ}
+    (alloc : DeductionBranchAllocation pA pB pC sAB sBC)
+    (hpA : 0 < pA) :
+    deductionCredalStrengthLower pA pB pC sAB sBC ≤ alloc.strengthAC ∧
+      alloc.strengthAC ≤ deductionCredalStrengthUpper pA pB pC sAB sBC := by
+  unfold strengthAC jointAC
+  exact
+    deductionCredalStrengthBounds_of_branch_bounds
+      pA pB pC sAB sBC alloc.inB alloc.outNotB hpA
+      alloc.inB_lower alloc.inB_upper alloc.outNotB_lower alloc.outNotB_upper
+
+/-- Atom `A ∧ B ∧ C` in the finite realization of a branch allocation. -/
+noncomputable def atomABC
+    {pA pB pC sAB sBC : ℝ}
+    (alloc : DeductionBranchAllocation pA pB pC sAB sBC) : ℝ :=
+  alloc.inB
+
+/-- Atom `A ∧ B ∧ not C` in the finite realization of a branch allocation. -/
+noncomputable def atomABNotC
+    {pA pB pC sAB sBC : ℝ}
+    (alloc : DeductionBranchAllocation pA pB pC sAB sBC) : ℝ :=
+  deductionJointAB pA sAB - alloc.inB
+
+/-- Atom `A ∧ not B ∧ C` in the finite realization of a branch allocation. -/
+noncomputable def atomANotBC
+    {pA pB pC sAB sBC : ℝ}
+    (alloc : DeductionBranchAllocation pA pB pC sAB sBC) : ℝ :=
+  alloc.outNotB
+
+/-- Atom `A ∧ not B ∧ not C` in the finite realization of a branch allocation. -/
+noncomputable def atomANotBNotC
+    {pA pB pC sAB sBC : ℝ}
+    (alloc : DeductionBranchAllocation pA pB pC sAB sBC) : ℝ :=
+  pA - deductionJointAB pA sAB - alloc.outNotB
+
+/-- Atom `not A ∧ B ∧ C` in the finite realization of a branch allocation. -/
+noncomputable def atomNotABC
+    {pA pB pC sAB sBC : ℝ}
+    (alloc : DeductionBranchAllocation pA pB pC sAB sBC) : ℝ :=
+  deductionJointBC pB sBC - alloc.inB
+
+/-- Atom `not A ∧ B ∧ not C` in the finite realization of a branch allocation. -/
+noncomputable def atomNotABNotC
+    {pA pB pC sAB sBC : ℝ}
+    (alloc : DeductionBranchAllocation pA pB pC sAB sBC) : ℝ :=
+  pB - deductionJointAB pA sAB - deductionJointBC pB sBC + alloc.inB
+
+/-- Atom `not A ∧ not B ∧ C` in the finite realization of a branch allocation. -/
+noncomputable def atomNotANotBC
+    {pA pB pC sAB sBC : ℝ}
+    (alloc : DeductionBranchAllocation pA pB pC sAB sBC) : ℝ :=
+  pC - deductionJointBC pB sBC - alloc.outNotB
+
+/-- Atom `not A ∧ not B ∧ not C` in the finite realization of a branch allocation. -/
+noncomputable def atomNotANotBNotC
+    {pA pB pC sAB sBC : ℝ}
+    (alloc : DeductionBranchAllocation pA pB pC sAB sBC) : ℝ :=
+  1 - pA - pB - pC + deductionJointAB pA sAB +
+    deductionJointBC pB sBC + alloc.outNotB
+
+theorem atomABC_nonneg
+    {pA pB pC sAB sBC : ℝ}
+    (alloc : DeductionBranchAllocation pA pB pC sAB sBC) :
+    0 ≤ alloc.atomABC := by
+  unfold atomABC
+  have hLowerNonneg : 0 ≤ deductionBBranchLower pA pB sAB sBC := by
+    unfold deductionBBranchLower
+    exact le_max_left _ _
+  linarith [alloc.inB_lower]
+
+theorem atomABNotC_nonneg
+    {pA pB pC sAB sBC : ℝ}
+    (alloc : DeductionBranchAllocation pA pB pC sAB sBC) :
+    0 ≤ alloc.atomABNotC := by
+  unfold atomABNotC
+  have hUpper_le :
+      deductionBBranchUpper pA pB sAB sBC ≤ deductionJointAB pA sAB := by
+    unfold deductionBBranchUpper
+    exact min_le_left _ _
+  linarith [alloc.inB_upper, hUpper_le]
+
+theorem atomANotBC_nonneg
+    {pA pB pC sAB sBC : ℝ}
+    (alloc : DeductionBranchAllocation pA pB pC sAB sBC) :
+    0 ≤ alloc.atomANotBC := by
+  unfold atomANotBC
+  have hLowerNonneg :
+      0 ≤ deductionNotBBranchLower pA pB pC sAB sBC := by
+    unfold deductionNotBBranchLower
+    exact le_max_left _ _
+  linarith [alloc.outNotB_lower]
+
+theorem atomANotBNotC_nonneg
+    {pA pB pC sAB sBC : ℝ}
+    (alloc : DeductionBranchAllocation pA pB pC sAB sBC) :
+    0 ≤ alloc.atomANotBNotC := by
+  unfold atomANotBNotC
+  have hUpper_le :
+      deductionNotBBranchUpper pA pB pC sAB sBC ≤
+        pA - deductionJointAB pA sAB := by
+    unfold deductionNotBBranchUpper
+    exact min_le_left _ _
+  linarith [alloc.outNotB_upper, hUpper_le]
+
+theorem atomNotABC_nonneg
+    {pA pB pC sAB sBC : ℝ}
+    (alloc : DeductionBranchAllocation pA pB pC sAB sBC) :
+    0 ≤ alloc.atomNotABC := by
+  unfold atomNotABC
+  have hUpper_le :
+      deductionBBranchUpper pA pB sAB sBC ≤ deductionJointBC pB sBC := by
+    unfold deductionBBranchUpper
+    exact min_le_right _ _
+  linarith [alloc.inB_upper, hUpper_le]
+
+theorem atomNotABNotC_nonneg
+    {pA pB pC sAB sBC : ℝ}
+    (alloc : DeductionBranchAllocation pA pB pC sAB sBC) :
+    0 ≤ alloc.atomNotABNotC := by
+  unfold atomNotABNotC
+  have hLower_ge :
+      deductionJointAB pA sAB + deductionJointBC pB sBC - pB ≤
+        deductionBBranchLower pA pB sAB sBC := by
+    unfold deductionBBranchLower
+    exact le_max_right _ _
+  linarith [alloc.inB_lower, hLower_ge]
+
+theorem atomNotANotBC_nonneg
+    {pA pB pC sAB sBC : ℝ}
+    (alloc : DeductionBranchAllocation pA pB pC sAB sBC) :
+    0 ≤ alloc.atomNotANotBC := by
+  unfold atomNotANotBC
+  have hUpper_le :
+      deductionNotBBranchUpper pA pB pC sAB sBC ≤
+        pC - deductionJointBC pB sBC := by
+    unfold deductionNotBBranchUpper
+    exact min_le_right _ _
+  linarith [alloc.outNotB_upper, hUpper_le]
+
+theorem atomNotANotBNotC_nonneg
+    {pA pB pC sAB sBC : ℝ}
+    (alloc : DeductionBranchAllocation pA pB pC sAB sBC) :
+    0 ≤ alloc.atomNotANotBNotC := by
+  unfold atomNotANotBNotC
+  have hLower_ge :
+      (pA - deductionJointAB pA sAB) +
+          (pC - deductionJointBC pB sBC) - (1 - pB) ≤
+        deductionNotBBranchLower pA pB pC sAB sBC := by
+    unfold deductionNotBBranchLower
+    exact le_max_right _ _
+  linarith [alloc.outNotB_lower, hLower_ge]
+
+/-- The eight atoms of an admissible branch allocation sum to total mass `1`. -/
+theorem atom_total_eq_one
+    {pA pB pC sAB sBC : ℝ}
+    (alloc : DeductionBranchAllocation pA pB pC sAB sBC) :
+    alloc.atomABC + alloc.atomABNotC + alloc.atomANotBC +
+      alloc.atomANotBNotC + alloc.atomNotABC + alloc.atomNotABNotC +
+      alloc.atomNotANotBC + alloc.atomNotANotBNotC = 1 := by
+  unfold atomABC atomABNotC atomANotBC atomANotBNotC
+    atomNotABC atomNotABNotC atomNotANotBC atomNotANotBNotC
+  ring
+
+theorem atom_marginalA_eq
+    {pA pB pC sAB sBC : ℝ}
+    (alloc : DeductionBranchAllocation pA pB pC sAB sBC) :
+    alloc.atomABC + alloc.atomABNotC + alloc.atomANotBC +
+      alloc.atomANotBNotC = pA := by
+  unfold atomABC atomABNotC atomANotBC atomANotBNotC
+  ring
+
+theorem atom_marginalB_eq
+    {pA pB pC sAB sBC : ℝ}
+    (alloc : DeductionBranchAllocation pA pB pC sAB sBC) :
+    alloc.atomABC + alloc.atomABNotC + alloc.atomNotABC +
+      alloc.atomNotABNotC = pB := by
+  unfold atomABC atomABNotC atomNotABC atomNotABNotC
+  ring
+
+theorem atom_marginalC_eq
+    {pA pB pC sAB sBC : ℝ}
+    (alloc : DeductionBranchAllocation pA pB pC sAB sBC) :
+    alloc.atomABC + alloc.atomANotBC + alloc.atomNotABC +
+      alloc.atomNotANotBC = pC := by
+  unfold atomABC atomANotBC atomNotABC atomNotANotBC
+  ring
+
+theorem atom_jointAB_eq
+    {pA pB pC sAB sBC : ℝ}
+    (alloc : DeductionBranchAllocation pA pB pC sAB sBC) :
+    alloc.atomABC + alloc.atomABNotC = deductionJointAB pA sAB := by
+  unfold atomABC atomABNotC
+  ring
+
+theorem atom_jointBC_eq
+    {pA pB pC sAB sBC : ℝ}
+    (alloc : DeductionBranchAllocation pA pB pC sAB sBC) :
+    alloc.atomABC + alloc.atomNotABC = deductionJointBC pB sBC := by
+  unfold atomABC atomNotABC
+  ring
+
+theorem atom_jointAC_eq
+    {pA pB pC sAB sBC : ℝ}
+    (alloc : DeductionBranchAllocation pA pB pC sAB sBC) :
+    alloc.atomABC + alloc.atomANotBC = alloc.jointAC := by
+  unfold atomABC atomANotBC jointAC
+  ring
+
+end DeductionBranchAllocation
+
+/-- Under the packed branch-feasibility certificate, the credal deduction joint
+interval is well-formed. -/
+theorem deductionCredalJointLower_le_upper_of_branch_feasible
+    (pA pB pC sAB sBC : ℝ)
+    (h : DeductionBranchFeasibility pA pB pC sAB sBC) :
+    deductionCredalJointLower pA pB pC sAB sBC ≤
+      deductionCredalJointUpper pA pB pC sAB sBC := by
+  have hB :
+      deductionBBranchLower pA pB sAB sBC ≤
+        deductionBBranchUpper pA pB sAB sBC :=
+    deductionBBranchLower_le_upper_of_bounds
+      pA pB sAB sBC h.AB_nonneg h.AB_le_B h.BC_nonneg h.BC_le_B
+  have hNotB :
+      deductionNotBBranchLower pA pB pC sAB sBC ≤
+        deductionNotBBranchUpper pA pB pC sAB sBC :=
+    deductionNotBBranchLower_le_upper_of_bounds
+      pA pB pC sAB sBC h.AnotB_nonneg h.AnotB_le_notB
+      h.CnotB_nonneg h.CnotB_le_notB
+  unfold deductionCredalJointLower deductionCredalJointUpper
+  linarith
+
+/-- Under branch feasibility and `P(A) > 0`, the normalized credal deduction
+strength interval is well-formed. -/
+theorem deductionCredalStrengthLower_le_upper_of_branch_feasible
+    (pA pB pC sAB sBC : ℝ)
+    (hpA : 0 < pA)
+    (h : DeductionBranchFeasibility pA pB pC sAB sBC) :
+    deductionCredalStrengthLower pA pB pC sAB sBC ≤
+      deductionCredalStrengthUpper pA pB pC sAB sBC := by
+  have hJoint :=
+    deductionCredalJointLower_le_upper_of_branch_feasible pA pB pC sAB sBC h
+  unfold deductionCredalStrengthLower deductionCredalStrengthUpper
+  exact div_le_div_of_nonneg_right hJoint (le_of_lt hpA)
+
+/-- The canonical admissible allocation attaining the lower branch endpoints. -/
+noncomputable def deductionLowerEndpointBranchAllocation
+    (pA pB pC sAB sBC : ℝ)
+    (h : DeductionBranchFeasibility pA pB pC sAB sBC) :
+    DeductionBranchAllocation pA pB pC sAB sBC where
+  inB := deductionBBranchLower pA pB sAB sBC
+  outNotB := deductionNotBBranchLower pA pB pC sAB sBC
+  inB_lower := le_rfl
+  inB_upper :=
+    deductionBBranchLower_le_upper_of_bounds
+      pA pB sAB sBC h.AB_nonneg h.AB_le_B h.BC_nonneg h.BC_le_B
+  outNotB_lower := le_rfl
+  outNotB_upper :=
+    deductionNotBBranchLower_le_upper_of_bounds
+      pA pB pC sAB sBC h.AnotB_nonneg h.AnotB_le_notB
+      h.CnotB_nonneg h.CnotB_le_notB
+
+/-- The canonical admissible allocation attaining the upper branch endpoints. -/
+noncomputable def deductionUpperEndpointBranchAllocation
+    (pA pB pC sAB sBC : ℝ)
+    (h : DeductionBranchFeasibility pA pB pC sAB sBC) :
+    DeductionBranchAllocation pA pB pC sAB sBC where
+  inB := deductionBBranchUpper pA pB sAB sBC
+  outNotB := deductionNotBBranchUpper pA pB pC sAB sBC
+  inB_lower :=
+    deductionBBranchLower_le_upper_of_bounds
+      pA pB sAB sBC h.AB_nonneg h.AB_le_B h.BC_nonneg h.BC_le_B
+  inB_upper := le_rfl
+  outNotB_lower :=
+    deductionNotBBranchLower_le_upper_of_bounds
+      pA pB pC sAB sBC h.AnotB_nonneg h.AnotB_le_notB
+      h.CnotB_nonneg h.CnotB_le_notB
+  outNotB_upper := le_rfl
+
+@[simp] theorem deductionLowerEndpointBranchAllocation_jointAC
+    (pA pB pC sAB sBC : ℝ)
+    (h : DeductionBranchFeasibility pA pB pC sAB sBC) :
+    (deductionLowerEndpointBranchAllocation pA pB pC sAB sBC h).jointAC =
+      deductionCredalJointLower pA pB pC sAB sBC := by
   rfl
+
+@[simp] theorem deductionUpperEndpointBranchAllocation_jointAC
+    (pA pB pC sAB sBC : ℝ)
+    (h : DeductionBranchFeasibility pA pB pC sAB sBC) :
+    (deductionUpperEndpointBranchAllocation pA pB pC sAB sBC h).jointAC =
+      deductionCredalJointUpper pA pB pC sAB sBC := by
+  rfl
+
+@[simp] theorem deductionLowerEndpointBranchAllocation_strengthAC
+    (pA pB pC sAB sBC : ℝ)
+    (h : DeductionBranchFeasibility pA pB pC sAB sBC) :
+    (deductionLowerEndpointBranchAllocation pA pB pC sAB sBC h).strengthAC =
+      deductionCredalStrengthLower pA pB pC sAB sBC := by
+  rfl
+
+@[simp] theorem deductionUpperEndpointBranchAllocation_strengthAC
+    (pA pB pC sAB sBC : ℝ)
+    (h : DeductionBranchFeasibility pA pB pC sAB sBC) :
+    (deductionUpperEndpointBranchAllocation pA pB pC sAB sBC h).strengthAC =
+      deductionCredalStrengthUpper pA pB pC sAB sBC := by
+  rfl
+
+/-- The point-valued PLN deduction formula lies inside the credal deduction
+interval when its induced branch allocation is itself admissible.
+
+This is the precise guardrail for the traditional formula: the theorem does not
+assert that the branch allocation is automatically admissible.  When the
+independence / branch assumptions are missing, the interval bounds above are the
+honest output. -/
+theorem simpleDeductionStrengthFormula_mem_credal_interval_of_branch_bounds
+    (pA pB pC sAB sBC : ℝ)
+    (hpA : 0 < pA)
+    (hpB_small : pB ≤ 0.99)
+    (h_consist : conditionalProbabilityConsistency pA pB sAB ∧
+                 conditionalProbabilityConsistency pB pC sBC)
+    (ht_lower :
+      deductionBBranchLower pA pB sAB sBC ≤ pA * sAB * sBC)
+    (ht_upper :
+      pA * sAB * sBC ≤ deductionBBranchUpper pA pB sAB sBC)
+    (hu_lower :
+      deductionNotBBranchLower pA pB pC sAB sBC ≤
+        pA * (1 - sAB) * complementConditionalFromMarginal pB pC sBC)
+    (hu_upper :
+      pA * (1 - sAB) * complementConditionalFromMarginal pB pC sBC ≤
+        deductionNotBBranchUpper pA pB pC sAB sBC) :
+    deductionCredalStrengthLower pA pB pC sAB sBC ≤
+        simpleDeductionStrengthFormula pA pB pC sAB sBC ∧
+      simpleDeductionStrengthFormula pA pB pC sAB sBC ≤
+        deductionCredalStrengthUpper pA pB pC sAB sBC := by
+  let t := pA * sAB * sBC
+  let u := pA * (1 - sAB) * complementConditionalFromMarginal pB pC sBC
+  have hBounds :
+      deductionCredalStrengthLower pA pB pC sAB sBC ≤ (t + u) / pA ∧
+        (t + u) / pA ≤ deductionCredalStrengthUpper pA pB pC sAB sBC :=
+    deductionCredalStrengthBounds_of_branch_bounds
+      pA pB pC sAB sBC t u hpA ht_lower ht_upper hu_lower hu_upper
+  have hFormula :
+      simpleDeductionStrengthFormula pA pB pC sAB sBC =
+        sAB * sBC +
+          (1 - sAB) * complementConditionalFromMarginal pB pC sBC :=
+    simpleDeductionStrengthFormula_eq_total_probability_residual
+      pA pB pC sAB sBC hpB_small h_consist
+  have hNormalize :
+      (t + u) / pA =
+        sAB * sBC +
+          (1 - sAB) * complementConditionalFromMarginal pB pC sBC := by
+    dsimp [t, u]
+    field_simp [ne_of_gt hpA]
+  constructor
+  · calc
+      deductionCredalStrengthLower pA pB pC sAB sBC ≤ (t + u) / pA := hBounds.1
+      _ = simpleDeductionStrengthFormula pA pB pC sAB sBC := by rw [hNormalize, hFormula]
+  · calc
+      simpleDeductionStrengthFormula pA pB pC sAB sBC = (t + u) / pA := by rw [hNormalize, hFormula]
+      _ ≤ deductionCredalStrengthUpper pA pB pC sAB sBC := hBounds.2
 
 /-! ## Special Cases -/
 

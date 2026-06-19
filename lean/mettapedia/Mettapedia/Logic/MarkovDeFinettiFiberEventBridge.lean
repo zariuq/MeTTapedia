@@ -2940,6 +2940,39 @@ def IsTargetRootedArborescence
     (t : Fin k) (p : TargetParentAssignment t) : Prop :=
   ∀ v : Fin k, ∃ n : ℕ, n ≤ k ∧ ((targetParentStep (k := k) t p)^[n]) v = t
 
+/-- Non-root vertices with positive outgoing mass. This is the support-local
+domain for rooted arborescences that ignore dormant rows. -/
+abbrev PositiveNonrootVertex (G : EulerGraph k) (t : Fin k) :=
+  {v : Fin k // v ≠ t ∧ 0 < outDegG (k := k) G v}
+
+/-- A parent-target choice for every active non-root vertex. -/
+abbrev PositiveTargetParentAssignment
+    (G : EulerGraph k) (t : Fin k) :=
+  PositiveNonrootVertex (k := k) G t → Fin k
+
+/-- The self-map induced by an active-support target-parent assignment. Dormant
+non-root vertices are sent directly to the root because they are outside the
+local arborescence support. -/
+def positiveTargetParentStep
+    (G : EulerGraph k) (t : Fin k)
+    (p : PositiveTargetParentAssignment (k := k) G t) : Fin k → Fin k :=
+  fun v =>
+    if h : v = t then
+      t
+    else if hpos : 0 < outDegG (k := k) G v then
+      p ⟨v, h, hpos⟩
+    else
+      t
+
+/-- A support-local target-parent assignment is rooted if every active
+non-root vertex reaches the root in at most `k` steps. -/
+def IsPositiveTargetRootedArborescence
+    (G : EulerGraph k) (t : Fin k)
+    (p : PositiveTargetParentAssignment (k := k) G t) : Prop :=
+  ∀ v : PositiveNonrootVertex (k := k) G t,
+    ∃ n : ℕ, n ≤ k ∧
+      ((positiveTargetParentStep (k := k) G t p)^[n]) v.1 = t
+
 /-- A token-parent assignment chooses one concrete outgoing edge token for every
 non-root vertex. -/
 abbrev TokenParentAssignment (G : EulerGraph k) (t : Fin k) :=
@@ -2958,11 +2991,37 @@ def IsTokenRootedArborescence
     (A : TokenParentAssignment (k := k) G t) : Prop :=
   IsTargetRootedArborescence (k := k) t (tokenParentTargets (k := k) G t A)
 
+/-- A token-parent assignment on the active non-root support. -/
+abbrev PositiveTokenParentAssignment
+    (G : EulerGraph k) (t : Fin k) :=
+  ∀ x : PositiveNonrootVertex (k := k) G t, outTok (k := k) G x.1
+
+/-- Forget the copy index of an active-support token-parent assignment. -/
+def positiveTokenParentTargets
+    (G : EulerGraph k) (t : Fin k)
+    (A : PositiveTokenParentAssignment (k := k) G t) :
+    PositiveTargetParentAssignment (k := k) G t :=
+  fun x => (A x).1
+
+/-- An active-support token-parent assignment is rooted exactly when its target
+profile is. -/
+def IsPositiveTokenRootedArborescence
+    (G : EulerGraph k) (t : Fin k)
+    (A : PositiveTokenParentAssignment (k := k) G t) : Prop :=
+  IsPositiveTargetRootedArborescence (k := k) G t
+    (positiveTokenParentTargets (k := k) G t A)
+
 /-- Copy choices over a fixed target profile. -/
 abbrev TokenCopyAssignment
     (G : EulerGraph k) (t : Fin k)
     (p : TargetParentAssignment t) :=
   ∀ x : NonrootVertex t, Fin (G x.1 (p x))
+
+/-- Copy choices over a fixed active-support target profile. -/
+abbrev PositiveTokenCopyAssignment
+    (G : EulerGraph k) (t : Fin k)
+    (p : PositiveTargetParentAssignment (k := k) G t) :=
+  ∀ x : PositiveNonrootVertex (k := k) G t, Fin (G x.1 (p x))
 
 /-- Weighted target-profile count of rooted arborescences, where the weight is
 the number of compatible concrete token choices. -/
@@ -2974,11 +3033,30 @@ noncomputable def weightedTargetRootedArborescenceCount
       ∑ p : {p : TargetParentAssignment t // IsTargetRootedArborescence (k := k) t p},
         ∏ x : NonrootVertex t, G x.1 (p.1 x)
 
+/-- Support-local weighted target-profile count of rooted arborescences, where
+completely dormant non-root rows are omitted from the domain. -/
+noncomputable def positiveWeightedTargetRootedArborescenceCount
+    (G : EulerGraph k) (t : Fin k) : ℕ :=
+  by
+    classical
+    exact
+      ∑ p : {p : PositiveTargetParentAssignment (k := k) G t //
+          IsPositiveTargetRootedArborescence (k := k) G t p},
+        ∏ x : PositiveNonrootVertex (k := k) G t, G x.1 (p.1 x)
+
 /-- Token-level rooted arborescence count on the concrete `edgeTok` model. -/
 def tokenRootedArborescenceCount
     (G : EulerGraph k) (t : Fin k) : ℕ :=
   Nat.card {A : TokenParentAssignment (k := k) G t //
     IsTokenRootedArborescence (k := k) G t A}
+
+/-- Support-local token-level rooted arborescence count on the concrete
+`edgeTok` model. Dormant non-root rows are excluded from the assignment domain.
+-/
+def positiveTokenRootedArborescenceCount
+    (G : EulerGraph k) (t : Fin k) : ℕ :=
+  Nat.card {A : PositiveTokenParentAssignment (k := k) G t //
+    IsPositiveTokenRootedArborescence (k := k) G t A}
 
 /-- Remove one copy of the directed edge `u → v`.  The source is restricted to
 `NonrootVertex t`, because rooted arborescences never choose an outgoing parent
@@ -3013,6 +3091,15 @@ lemma card_tokenCopyAssignment
   rw [Nat.card_pi]
   simp
 
+lemma card_positiveTokenCopyAssignment
+    (G : EulerGraph k) (t : Fin k)
+    (p : PositiveTargetParentAssignment (k := k) G t) :
+    Nat.card (PositiveTokenCopyAssignment (k := k) G t p) =
+      ∏ x : PositiveNonrootVertex (k := k) G t, G x.1 (p x) := by
+  classical
+  rw [Nat.card_pi]
+  simp
+
 /-- Token-rooted arborescences are equivalent to a rooted target profile plus a
 copy choice on each selected edge. -/
 noncomputable def tokenRootedArborescenceEquivSigma
@@ -3033,6 +3120,26 @@ noncomputable def tokenRootedArborescenceEquivSigma
     cases q
     rfl
 
+/-- Support-local token-rooted arborescences are equivalent to an active rooted
+target profile plus a copy choice on each selected edge. -/
+noncomputable def positiveTokenRootedArborescenceEquivSigma
+    (G : EulerGraph k) (t : Fin k) :
+    {A : PositiveTokenParentAssignment (k := k) G t //
+        IsPositiveTokenRootedArborescence (k := k) G t A} ≃
+      Σ p : {p : PositiveTargetParentAssignment (k := k) G t //
+          IsPositiveTargetRootedArborescence (k := k) G t p},
+        PositiveTokenCopyAssignment (k := k) G t p.1 where
+  toFun A :=
+    ⟨⟨positiveTokenParentTargets (k := k) G t A.1, A.2⟩, fun x => (A.1 x).2⟩
+  invFun q :=
+    ⟨fun x => ⟨q.1.1 x, q.2 x⟩, q.1.2⟩
+  left_inv A := by
+    ext x
+    rfl
+  right_inv q := by
+    cases q
+    rfl
+
 lemma tokenRootedArborescenceCount_eq_weightedTargetRootedArborescenceCount
     (G : EulerGraph k) (t : Fin k) :
     tokenRootedArborescenceCount (k := k) G t =
@@ -3043,6 +3150,915 @@ lemma tokenRootedArborescenceCount_eq_weightedTargetRootedArborescenceCount
   rw [Nat.card_sigma]
   congr with p
   exact card_tokenCopyAssignment (k := k) G t p.1
+
+lemma positiveTokenRootedArborescenceCount_eq_positiveWeightedTargetRootedArborescenceCount
+    (G : EulerGraph k) (t : Fin k) :
+    positiveTokenRootedArborescenceCount (k := k) G t =
+      positiveWeightedTargetRootedArborescenceCount (k := k) G t := by
+  classical
+  unfold positiveTokenRootedArborescenceCount
+    positiveWeightedTargetRootedArborescenceCount
+  rw [Nat.card_congr (positiveTokenRootedArborescenceEquivSigma (k := k) G t)]
+  rw [Nat.card_sigma]
+  congr with p
+  exact card_positiveTokenCopyAssignment (k := k) G t p.1
+
+private lemma isEmpty_positiveNonrootVertex_of_forall_nonroot_outdeg_zero
+    (G : EulerGraph k) (t : Fin k)
+    (hzero : ∀ u : NonrootVertex t, outDegG (k := k) G u.1 = 0) :
+    IsEmpty (PositiveNonrootVertex (k := k) G t) := by
+  refine ⟨?_⟩
+  intro u
+  have hu0 : outDegG (k := k) G u.1 = 0 := hzero ⟨u.1, u.2.1⟩
+  exact (Nat.ne_of_gt u.2.2) hu0
+
+lemma positiveWeightedTargetRootedArborescenceCount_eq_one_of_forall_nonroot_outdeg_zero
+    (G : EulerGraph k) (t : Fin k)
+    (hzero : ∀ u : NonrootVertex t, outDegG (k := k) G u.1 = 0) :
+    positiveWeightedTargetRootedArborescenceCount (k := k) G t = 1 := by
+  classical
+  letI : IsEmpty (PositiveNonrootVertex (k := k) G t) :=
+    isEmpty_positiveNonrootVertex_of_forall_nonroot_outdeg_zero
+      (k := k) G t hzero
+  let p0 : PositiveTargetParentAssignment (k := k) G t := fun x => (isEmptyElim x)
+  have hp0 : IsPositiveTargetRootedArborescence (k := k) G t p0 := by
+    intro v
+    exact (isEmptyElim v)
+  haveI :
+      Subsingleton
+        {p : PositiveTargetParentAssignment (k := k) G t //
+          IsPositiveTargetRootedArborescence (k := k) G t p} := by
+    refine ⟨?_⟩
+    intro x y
+    apply Subtype.ext
+    funext v
+    exact (isEmptyElim v)
+  have huniv :
+      (Finset.univ :
+        Finset {p : PositiveTargetParentAssignment (k := k) G t //
+          IsPositiveTargetRootedArborescence (k := k) G t p}) = {⟨p0, hp0⟩} := by
+    ext x
+    simp [Subsingleton.elim x ⟨p0, hp0⟩]
+  unfold positiveWeightedTargetRootedArborescenceCount
+  rw [huniv]
+  simp [p0]
+
+lemma positiveTokenRootedArborescenceCount_eq_one_of_forall_nonroot_outdeg_zero
+    (G : EulerGraph k) (t : Fin k)
+    (hzero : ∀ u : NonrootVertex t, outDegG (k := k) G u.1 = 0) :
+    positiveTokenRootedArborescenceCount (k := k) G t = 1 := by
+  rw [positiveTokenRootedArborescenceCount_eq_positiveWeightedTargetRootedArborescenceCount]
+  exact
+    positiveWeightedTargetRootedArborescenceCount_eq_one_of_forall_nonroot_outdeg_zero
+      (k := k) G t hzero
+
+lemma outDegG_eq_of_nonroot_rows_eq
+    {t : Fin k} {G G' : EulerGraph k}
+    (hrow : ∀ u : NonrootVertex t, ∀ v : Fin k, G u.1 v = G' u.1 v)
+    (u : NonrootVertex t) :
+    outDegG (k := k) G u.1 = outDegG (k := k) G' u.1 := by
+  simp [outDegG, hrow]
+
+lemma outDegG_deleteOneCopy_eq_of_ne_source
+    {t : Fin k} (G : EulerGraph k)
+    (u : NonrootVertex t) (v a : Fin k)
+    (ha : a ≠ u.1) :
+    outDegG (k := k) (deleteOneCopy (k := k) G u v) a =
+      outDegG (k := k) G a := by
+  simp [outDegG, deleteOneCopy, ha]
+
+lemma outDegG_deleteOneCopy_le
+    {t : Fin k} (G : EulerGraph k)
+    (u : NonrootVertex t) (v a : Fin k) :
+    outDegG (k := k) (deleteOneCopy (k := k) G u v) a ≤
+      outDegG (k := k) G a := by
+  by_cases ha : a = u.1
+  · subst ha
+    unfold outDegG
+    refine Finset.sum_le_sum ?_
+    intro b _hb
+    by_cases hb : b = v
+    · simp [deleteOneCopy, hb]
+    · simp [deleteOneCopy, hb]
+  · rw [outDegG_deleteOneCopy_eq_of_ne_source (k := k) G u v a ha]
+
+noncomputable def positiveNonrootVertexEquiv_of_nonroot_rows_eq
+    {t : Fin k} {G G' : EulerGraph k}
+    (hrow : ∀ u : NonrootVertex t, ∀ v : Fin k, G u.1 v = G' u.1 v) :
+    PositiveNonrootVertex (k := k) G t ≃ PositiveNonrootVertex (k := k) G' t where
+  toFun u :=
+    ⟨u.1, u.2.1, by
+      rw [← outDegG_eq_of_nonroot_rows_eq (k := k) hrow ⟨u.1, u.2.1⟩]
+      exact u.2.2⟩
+  invFun u :=
+    ⟨u.1, u.2.1, by
+      rw [← outDegG_eq_of_nonroot_rows_eq (k := k)
+        (G := G') (G' := G) (fun u v => (hrow u v).symm) ⟨u.1, u.2.1⟩]
+      exact u.2.2⟩
+  left_inv u := by
+    cases u
+    rfl
+  right_inv u := by
+    cases u
+    rfl
+
+noncomputable def positiveTargetParentAssignmentEquiv_of_nonroot_rows_eq
+    {t : Fin k} {G G' : EulerGraph k}
+    (hrow : ∀ u : NonrootVertex t, ∀ v : Fin k, G u.1 v = G' u.1 v) :
+    PositiveTargetParentAssignment (k := k) G t ≃
+      PositiveTargetParentAssignment (k := k) G' t where
+  toFun p := fun x =>
+    p ((positiveNonrootVertexEquiv_of_nonroot_rows_eq (k := k) hrow).symm x)
+  invFun p := fun x =>
+    p ((positiveNonrootVertexEquiv_of_nonroot_rows_eq (k := k) hrow) x)
+  left_inv p := by
+    funext x
+    simp [positiveNonrootVertexEquiv_of_nonroot_rows_eq]
+  right_inv p := by
+    funext x
+    simp [positiveNonrootVertexEquiv_of_nonroot_rows_eq]
+
+lemma positiveTargetParentStep_eq_of_nonroot_rows_eq
+    {t : Fin k} {G G' : EulerGraph k}
+    (hrow : ∀ u : NonrootVertex t, ∀ v : Fin k, G u.1 v = G' u.1 v)
+    (p : PositiveTargetParentAssignment (k := k) G t) :
+    positiveTargetParentStep (k := k) G t p =
+      positiveTargetParentStep (k := k) G' t
+        ((positiveTargetParentAssignmentEquiv_of_nonroot_rows_eq
+          (k := k) hrow) p) := by
+  funext v
+  by_cases hv : v = t
+  · simp [positiveTargetParentStep, hv]
+  · have hdeg :
+      outDegG (k := k) G v = outDegG (k := k) G' v := by
+      exact outDegG_eq_of_nonroot_rows_eq (k := k) hrow ⟨v, hv⟩
+    by_cases hpos : 0 < outDegG (k := k) G v
+    · have hpos' : 0 < outDegG (k := k) G' v := by
+        rwa [← hdeg]
+      have heq :
+          ((positiveNonrootVertexEquiv_of_nonroot_rows_eq (k := k) hrow).symm
+            ⟨v, hv, hpos'⟩) = ⟨v, hv, hpos⟩ := by
+        rfl
+      simp [positiveTargetParentStep, hv, hpos, hpos', heq,
+        positiveTargetParentAssignmentEquiv_of_nonroot_rows_eq]
+    · have hpos' : ¬ 0 < outDegG (k := k) G' v := by
+        rwa [← hdeg]
+      simp [positiveTargetParentStep, hv, hpos, hpos']
+
+lemma isPositiveTargetRootedArborescence_iff_of_nonroot_rows_eq
+    {t : Fin k} {G G' : EulerGraph k}
+    (hrow : ∀ u : NonrootVertex t, ∀ v : Fin k, G u.1 v = G' u.1 v)
+    (p : PositiveTargetParentAssignment (k := k) G t) :
+    IsPositiveTargetRootedArborescence (k := k) G t p ↔
+      IsPositiveTargetRootedArborescence (k := k) G' t
+        ((positiveTargetParentAssignmentEquiv_of_nonroot_rows_eq
+          (k := k) hrow) p) := by
+  constructor
+  · intro hroot v
+    let v' :=
+      (positiveNonrootVertexEquiv_of_nonroot_rows_eq (k := k) hrow).symm v
+    rcases hroot v' with ⟨n, hn, hstep⟩
+    refine ⟨n, hn, ?_⟩
+    simpa [v', positiveTargetParentStep_eq_of_nonroot_rows_eq (k := k) hrow p] using hstep
+  · intro hroot v
+    let hrow' :
+        ∀ u : NonrootVertex t, ∀ w : Fin k, G' u.1 w = G u.1 w := by
+      intro u w
+      exact (hrow u w).symm
+    let p' :=
+      (positiveTargetParentAssignmentEquiv_of_nonroot_rows_eq
+        (k := k) hrow) p
+    let v' :=
+      (positiveNonrootVertexEquiv_of_nonroot_rows_eq (k := k) hrow) v
+    rcases hroot v' with ⟨n, hn, hstep⟩
+    refine ⟨n, hn, ?_⟩
+    simpa [p', v', positiveTargetParentStep_eq_of_nonroot_rows_eq (k := k) hrow' p'] using hstep
+
+noncomputable def positiveNonrootVertexEquiv_deleteOneCopy_of_source_stays_positive
+    {t : Fin k} (G : EulerGraph k)
+    (u : NonrootVertex t) (v : Fin k)
+    (hstay :
+      0 < outDegG (k := k) (deleteOneCopy (k := k) G u v) u.1) :
+    PositiveNonrootVertex (k := k) G t ≃
+      PositiveNonrootVertex (k := k) (deleteOneCopy (k := k) G u v) t where
+  toFun x := by
+    by_cases hx : x.1 = u.1
+    · exact ⟨u.1, u.2, by simpa [hx] using hstay⟩
+    · exact ⟨x.1, x.2.1, by
+        rw [outDegG_deleteOneCopy_eq_of_ne_source (k := k) G u v x.1 hx]
+        exact x.2.2⟩
+  invFun x := by
+    by_cases hx : x.1 = u.1
+    · exact ⟨u.1, u.2, by
+        have hle := outDegG_deleteOneCopy_le (k := k) G u v u.1
+        exact lt_of_lt_of_le (by simpa [hx] using x.2.2) hle⟩
+    · exact ⟨x.1, x.2.1, by
+        simpa [outDegG_deleteOneCopy_eq_of_ne_source (k := k) G u v x.1 hx]
+          using x.2.2⟩
+  left_inv x := by
+    apply Subtype.ext
+    dsimp
+    by_cases hx : x.1 = u.1 <;> simp [hx]
+  right_inv x := by
+    apply Subtype.ext
+    dsimp
+    by_cases hx : x.1 = u.1 <;> simp [hx]
+
+noncomputable def positiveTargetParentAssignmentEquiv_deleteOneCopy_of_source_stays_positive
+    {t : Fin k} (G : EulerGraph k)
+    (u : NonrootVertex t) (v : Fin k)
+    (hstay :
+      0 < outDegG (k := k) (deleteOneCopy (k := k) G u v) u.1) :
+    PositiveTargetParentAssignment (k := k) G t ≃
+      PositiveTargetParentAssignment (k := k) (deleteOneCopy (k := k) G u v) t where
+  toFun p := fun x =>
+    p ((positiveNonrootVertexEquiv_deleteOneCopy_of_source_stays_positive
+      (k := k) G u v hstay).symm x)
+  invFun p := fun x =>
+    p ((positiveNonrootVertexEquiv_deleteOneCopy_of_source_stays_positive
+      (k := k) G u v hstay) x)
+  left_inv p := by
+    funext x
+    exact congrArg p
+      ((positiveNonrootVertexEquiv_deleteOneCopy_of_source_stays_positive
+        (k := k) G u v hstay).left_inv x)
+  right_inv p := by
+    funext x
+    exact congrArg p
+      ((positiveNonrootVertexEquiv_deleteOneCopy_of_source_stays_positive
+        (k := k) G u v hstay).right_inv x)
+
+lemma positiveTargetParentStep_eq_deleteOneCopy_of_source_stays_positive
+    {t : Fin k} (G : EulerGraph k)
+    (u : NonrootVertex t) (v : Fin k)
+    (hstay :
+      0 < outDegG (k := k) (deleteOneCopy (k := k) G u v) u.1)
+    (p : PositiveTargetParentAssignment (k := k) G t) :
+    positiveTargetParentStep (k := k) G t p =
+      positiveTargetParentStep (k := k) (deleteOneCopy (k := k) G u v) t
+        ((positiveTargetParentAssignmentEquiv_deleteOneCopy_of_source_stays_positive
+          (k := k) G u v hstay) p) := by
+  funext a
+  by_cases ha : a = t
+  · simp [positiveTargetParentStep, ha]
+  · by_cases hau : a = u.1
+    · subst a
+      have hpos :
+        0 < outDegG (k := k) G u.1 := by
+        have hle :
+            outDegG (k := k) (deleteOneCopy (k := k) G u v) u.1 ≤
+              outDegG (k := k) G u.1 := by
+          exact outDegG_deleteOneCopy_le (k := k) G u v u.1
+        exact lt_of_lt_of_le hstay hle
+      have hpos' :
+          0 < outDegG (k := k) (deleteOneCopy (k := k) G u v) u.1 := hstay
+      have heq :
+          ((positiveNonrootVertexEquiv_deleteOneCopy_of_source_stays_positive
+            (k := k) G u v hstay).symm ⟨u.1, u.2, hpos'⟩) = ⟨u.1, u.2, hpos⟩ := by
+        apply Subtype.ext
+        dsimp [positiveNonrootVertexEquiv_deleteOneCopy_of_source_stays_positive]
+        simp
+      simpa [positiveTargetParentStep, u.2, hpos, hpos',
+        positiveTargetParentAssignmentEquiv_deleteOneCopy_of_source_stays_positive] using
+        congrArg p heq.symm
+    · have hdeg :
+        outDegG (k := k) (deleteOneCopy (k := k) G u v) a =
+          outDegG (k := k) G a := by
+        rw [outDegG_deleteOneCopy_eq_of_ne_source (k := k) G u v a hau]
+      by_cases hpos : 0 < outDegG (k := k) G a
+      · have hpos' :
+          0 < outDegG (k := k) (deleteOneCopy (k := k) G u v) a := by
+          simpa [hdeg] using hpos
+        have heq :
+            ((positiveNonrootVertexEquiv_deleteOneCopy_of_source_stays_positive
+              (k := k) G u v hstay).symm ⟨a, ha, hpos'⟩) = ⟨a, ha, hpos⟩ := by
+          apply Subtype.ext
+          dsimp [positiveNonrootVertexEquiv_deleteOneCopy_of_source_stays_positive]
+          simp [hau]
+        simpa [positiveTargetParentStep, ha, hau, hpos, hpos',
+          positiveTargetParentAssignmentEquiv_deleteOneCopy_of_source_stays_positive] using
+          congrArg p heq.symm
+      · have hpos' :
+          ¬ 0 < outDegG (k := k) (deleteOneCopy (k := k) G u v) a := by
+          simpa [hdeg] using hpos
+        simp [positiveTargetParentStep, ha, hpos, hpos']
+
+lemma isPositiveTargetRootedArborescence_iff_deleteOneCopy_of_source_stays_positive
+    {t : Fin k} (G : EulerGraph k)
+    (u : NonrootVertex t) (v : Fin k)
+    (hstay :
+      0 < outDegG (k := k) (deleteOneCopy (k := k) G u v) u.1)
+    (p : PositiveTargetParentAssignment (k := k) G t) :
+    IsPositiveTargetRootedArborescence (k := k) G t p ↔
+      IsPositiveTargetRootedArborescence
+        (k := k) (deleteOneCopy (k := k) G u v) t
+        ((positiveTargetParentAssignmentEquiv_deleteOneCopy_of_source_stays_positive
+          (k := k) G u v hstay) p) := by
+  constructor
+  · intro hroot x
+    let x' :=
+      (positiveNonrootVertexEquiv_deleteOneCopy_of_source_stays_positive
+        (k := k) G u v hstay).symm x
+    rcases hroot x' with ⟨n, hn, hstep⟩
+    have hx : x'.1 = x.1 := by
+      dsimp [x', positiveNonrootVertexEquiv_deleteOneCopy_of_source_stays_positive]
+      by_cases hxu : x.1 = u.1 <;> simp [hxu]
+    refine ⟨n, hn, ?_⟩
+    simpa [x', hx,
+      positiveTargetParentStep_eq_deleteOneCopy_of_source_stays_positive
+        (k := k) G u v hstay p] using hstep
+  · intro hroot x
+    let p' :=
+      (positiveTargetParentAssignmentEquiv_deleteOneCopy_of_source_stays_positive
+        (k := k) G u v hstay) p
+    let x' :=
+      (positiveNonrootVertexEquiv_deleteOneCopy_of_source_stays_positive
+        (k := k) G u v hstay) x
+    rcases hroot x' with ⟨n, hn, hstep⟩
+    have hx : x'.1 = x.1 := by
+      dsimp [x', positiveNonrootVertexEquiv_deleteOneCopy_of_source_stays_positive]
+      by_cases hxu : x.1 = u.1 <;> simp [hxu]
+    refine ⟨n, hn, ?_⟩
+    simpa [p', x', hx,
+      positiveTargetParentStep_eq_deleteOneCopy_of_source_stays_positive
+        (k := k) G u v hstay p] using hstep
+
+noncomputable def positiveTargetRootedArborescenceEquiv_deleteOneCopy_of_source_stays_positive
+    {t : Fin k} (G : EulerGraph k)
+    (u : NonrootVertex t) (v : Fin k)
+    (hstay :
+      0 < outDegG (k := k) (deleteOneCopy (k := k) G u v) u.1) :
+    {p : PositiveTargetParentAssignment (k := k) G t //
+        IsPositiveTargetRootedArborescence (k := k) G t p} ≃
+      {p : PositiveTargetParentAssignment (k := k) (deleteOneCopy (k := k) G u v) t //
+        IsPositiveTargetRootedArborescence
+          (k := k) (deleteOneCopy (k := k) G u v) t p} where
+  toFun p :=
+    ⟨(positiveTargetParentAssignmentEquiv_deleteOneCopy_of_source_stays_positive
+        (k := k) G u v hstay) p.1,
+      (isPositiveTargetRootedArborescence_iff_deleteOneCopy_of_source_stays_positive
+        (k := k) G u v hstay p.1).1 p.2⟩
+  invFun p :=
+    ⟨(positiveTargetParentAssignmentEquiv_deleteOneCopy_of_source_stays_positive
+        (k := k) G u v hstay).symm p.1,
+      by
+        have hp :
+            IsPositiveTargetRootedArborescence
+              (k := k) G t
+              ((positiveTargetParentAssignmentEquiv_deleteOneCopy_of_source_stays_positive
+                (k := k) G u v hstay).symm p.1) := by
+          exact
+            (isPositiveTargetRootedArborescence_iff_deleteOneCopy_of_source_stays_positive
+              (k := k) G u v hstay
+              ((positiveTargetParentAssignmentEquiv_deleteOneCopy_of_source_stays_positive
+                (k := k) G u v hstay).symm p.1)).2 (by
+                  simpa [positiveTargetParentAssignmentEquiv_deleteOneCopy_of_source_stays_positive] using p.2)
+        exact hp⟩
+  left_inv p := by
+    cases p
+    simp [positiveTargetParentAssignmentEquiv_deleteOneCopy_of_source_stays_positive]
+  right_inv p := by
+    cases p
+    simp [positiveTargetParentAssignmentEquiv_deleteOneCopy_of_source_stays_positive]
+
+private lemma positiveDeleteOneCopy_transport_term_of_source_stays_positive
+    {t : Fin k} (G : EulerGraph k)
+    (u : NonrootVertex t) (v : Fin k)
+    (hstay :
+      0 < outDegG (k := k) (deleteOneCopy (k := k) G u v) u.1)
+    (p : PositiveTargetParentAssignment (k := k) G t) :
+    (∏ x : PositiveNonrootVertex (k := k) (deleteOneCopy (k := k) G u v) t,
+        deleteOneCopy (k := k) G u v x.1
+          ((positiveTargetParentAssignmentEquiv_deleteOneCopy_of_source_stays_positive
+            (k := k) G u v hstay) p x)) =
+      ∏ x : PositiveNonrootVertex (k := k) G t,
+        deleteOneCopy (k := k) G u v x.1 (p x) := by
+  symm
+  refine Fintype.prod_equiv
+    (positiveNonrootVertexEquiv_deleteOneCopy_of_source_stays_positive
+      (k := k) G u v hstay)
+    (fun x : PositiveNonrootVertex (k := k) G t =>
+      deleteOneCopy (k := k) G u v x.1 (p x))
+    (fun x : PositiveNonrootVertex (k := k) (deleteOneCopy (k := k) G u v) t =>
+      deleteOneCopy (k := k) G u v x.1
+        ((positiveTargetParentAssignmentEquiv_deleteOneCopy_of_source_stays_positive
+          (k := k) G u v hstay) p x)) ?_
+  intro x
+  have hx :
+      ((positiveNonrootVertexEquiv_deleteOneCopy_of_source_stays_positive
+        (k := k) G u v hstay) x).1 = x.1 := by
+    dsimp [positiveNonrootVertexEquiv_deleteOneCopy_of_source_stays_positive]
+    by_cases hxu : x.1 = u.1 <;> simp [hxu]
+  have hp :
+      ((positiveTargetParentAssignmentEquiv_deleteOneCopy_of_source_stays_positive
+        (k := k) G u v hstay) p)
+        ((positiveNonrootVertexEquiv_deleteOneCopy_of_source_stays_positive
+          (k := k) G u v hstay) x) = p x := by
+    exact congrArg p
+      ((positiveNonrootVertexEquiv_deleteOneCopy_of_source_stays_positive
+        (k := k) G u v hstay).left_inv x)
+  simp [hx, hp]
+
+lemma positiveWeightedTargetRootedArborescenceCount_deleteOneCopy_eq_transportSum_of_source_stays_positive
+    {t : Fin k} (G : EulerGraph k)
+    (u : NonrootVertex t) (v : Fin k)
+    (hstay :
+      0 < outDegG (k := k) (deleteOneCopy (k := k) G u v) u.1) :
+    positiveWeightedTargetRootedArborescenceCount
+        (k := k) (deleteOneCopy (k := k) G u v) t =
+      (by
+        classical
+        exact
+          ∑ p : {p : PositiveTargetParentAssignment (k := k) G t //
+              IsPositiveTargetRootedArborescence (k := k) G t p},
+            ∏ x : PositiveNonrootVertex (k := k) G t,
+              deleteOneCopy (k := k) G u v x.1 (p.1 x)) := by
+  classical
+  unfold positiveWeightedTargetRootedArborescenceCount
+  refine (Fintype.sum_equiv
+    (positiveTargetRootedArborescenceEquiv_deleteOneCopy_of_source_stays_positive
+      (k := k) G u v hstay)
+    (fun p : {p : PositiveTargetParentAssignment (k := k) G t //
+        IsPositiveTargetRootedArborescence (k := k) G t p} =>
+      ∏ x : PositiveNonrootVertex (k := k) G t,
+        deleteOneCopy (k := k) G u v x.1 (p.1 x))
+    (fun p : {p : PositiveTargetParentAssignment (k := k) (deleteOneCopy (k := k) G u v) t //
+        IsPositiveTargetRootedArborescence
+          (k := k) (deleteOneCopy (k := k) G u v) t p} =>
+      ∏ x : PositiveNonrootVertex (k := k) (deleteOneCopy (k := k) G u v) t,
+        deleteOneCopy (k := k) G u v x.1 (p.1 x)) ?_
+    ).symm
+  intro p
+  exact
+    (positiveDeleteOneCopy_transport_term_of_source_stays_positive
+      (k := k) G u v hstay p.1).symm
+
+private lemma positiveTargetRootedArborescenceWeight_eq_sourceFactor_mul
+    {t : Fin k} (G : EulerGraph k)
+    (u : PositiveNonrootVertex (k := k) G t)
+    (p : PositiveTargetParentAssignment (k := k) G t) :
+    (∏ x : PositiveNonrootVertex (k := k) G t, G x.1 (p x)) =
+      G u.1 (p u) *
+        ((Finset.univ.erase u).prod
+          fun x : PositiveNonrootVertex (k := k) G t => G x.1 (p x)) := by
+  classical
+  calc
+    (∏ x : PositiveNonrootVertex (k := k) G t, G x.1 (p x)) =
+        ((Finset.univ.erase u).prod
+          fun x : PositiveNonrootVertex (k := k) G t => G x.1 (p x)) * G u.1 (p u) := by
+          simpa using
+            (Finset.prod_erase_mul
+              (s := Finset.univ)
+              (f := fun x : PositiveNonrootVertex (k := k) G t => G x.1 (p x))
+              (h := Finset.mem_univ u)).symm
+    _ = G u.1 (p u) *
+        ((Finset.univ.erase u).prod
+          fun x : PositiveNonrootVertex (k := k) G t => G x.1 (p x)) := by
+          ac_rfl
+
+private lemma positiveDeleteOneCopy_prod_erase_eq_of_source_stays_positive
+    {t : Fin k} (G : EulerGraph k)
+    (u : PositiveNonrootVertex (k := k) G t) (v : Fin k)
+    (p : PositiveTargetParentAssignment (k := k) G t) :
+    ((Finset.univ.erase u).prod fun x : PositiveNonrootVertex (k := k) G t =>
+        deleteOneCopy (k := k) G ⟨u.1, u.2.1⟩ v x.1 (p x)) =
+      ((Finset.univ.erase u).prod fun x : PositiveNonrootVertex (k := k) G t =>
+        G x.1 (p x)) := by
+  classical
+  refine Finset.prod_congr rfl ?_
+  intro x hx
+  have hxne : x ≠ u := (Finset.mem_erase.mp hx).1
+  have hsrc : x.1 ≠ u.1 := by
+    intro hxu
+    apply hxne
+    exact Subtype.ext hxu
+  simp [deleteOneCopy, hsrc]
+
+private lemma positiveWeightedTargetRootedArborescenceCount_deleteOneCopy_lower_term_of_source_stays_positive
+    {t : Fin k} (G : EulerGraph k)
+    (u : NonrootVertex t) (v : Fin k)
+    (hstay :
+      0 < outDegG (k := k) (deleteOneCopy (k := k) G u v) u.1)
+    (p : {p : PositiveTargetParentAssignment (k := k) G t //
+      IsPositiveTargetRootedArborescence (k := k) G t p}) :
+    (G u.1 v - 1) *
+        (∏ x : PositiveNonrootVertex (k := k) G t, G x.1 (p.1 x)) ≤
+      G u.1 v *
+        (∏ x : PositiveNonrootVertex (k := k) G t,
+          deleteOneCopy (k := k) G u v x.1 (p.1 x)) := by
+  classical
+  have hupos :
+      0 < outDegG (k := k) G u.1 := by
+    have hle := outDegG_deleteOneCopy_le (k := k) G u v u.1
+    exact lt_of_lt_of_le hstay hle
+  let uG : PositiveNonrootVertex (k := k) G t := ⟨u.1, u.2, hupos⟩
+  let rest : ℕ :=
+    ((Finset.univ.erase uG).prod fun x : PositiveNonrootVertex (k := k) G t => G x.1 (p.1 x))
+  have hfull :
+      (∏ x : PositiveNonrootVertex (k := k) G t, G x.1 (p.1 x)) =
+        G u.1 (p.1 uG) * rest := by
+    simpa [uG, rest] using
+      positiveTargetRootedArborescenceWeight_eq_sourceFactor_mul
+        (k := k) G uG p.1
+  have herase :
+      ((Finset.univ.erase uG).prod fun x : PositiveNonrootVertex (k := k) G t =>
+          deleteOneCopy (k := k) G u v x.1 (p.1 x)) = rest := by
+    simpa [uG, rest] using
+      positiveDeleteOneCopy_prod_erase_eq_of_source_stays_positive
+        (k := k) G uG v p.1
+  have hdel :
+      (∏ x : PositiveNonrootVertex (k := k) G t,
+          deleteOneCopy (k := k) G u v x.1 (p.1 x)) =
+        deleteOneCopy (k := k) G u v u.1 (p.1 uG) * rest := by
+    calc
+      (∏ x : PositiveNonrootVertex (k := k) G t,
+          deleteOneCopy (k := k) G u v x.1 (p.1 x)) =
+            deleteOneCopy (k := k) G u v u.1 (p.1 uG) *
+              ((Finset.univ.erase uG).prod fun x : PositiveNonrootVertex (k := k) G t =>
+                deleteOneCopy (k := k) G u v x.1 (p.1 x)) := by
+              calc
+                (∏ x : PositiveNonrootVertex (k := k) G t,
+                    deleteOneCopy (k := k) G u v x.1 (p.1 x)) =
+                  ((Finset.univ.erase uG).prod
+                      fun x : PositiveNonrootVertex (k := k) G t =>
+                        deleteOneCopy (k := k) G u v x.1 (p.1 x)) *
+                    deleteOneCopy (k := k) G u v u.1 (p.1 uG) := by
+                      simpa using
+                        (Finset.prod_erase_mul
+                          (s := Finset.univ)
+                          (f := fun x : PositiveNonrootVertex (k := k) G t =>
+                            deleteOneCopy (k := k) G u v x.1 (p.1 x))
+                          (h := Finset.mem_univ uG)).symm
+                _ = deleteOneCopy (k := k) G u v u.1 (p.1 uG) *
+                    ((Finset.univ.erase uG).prod
+                      fun x : PositiveNonrootVertex (k := k) G t =>
+                        deleteOneCopy (k := k) G u v x.1 (p.1 x)) := by
+                      ac_rfl
+      _ = deleteOneCopy (k := k) G u v u.1 (p.1 uG) * rest := by
+            rw [herase]
+  by_cases hmatch : p.1 uG = v
+  · have hsame :
+        deleteOneCopy (k := k) G u v u.1 (p.1 uG) = G u.1 v - 1 := by
+      simp [deleteOneCopy, hmatch]
+    have heq :
+        (G u.1 v - 1) * (G u.1 (p.1 uG) * rest) =
+          G u.1 v * (deleteOneCopy (k := k) G u v u.1 (p.1 uG) * rest) := by
+      simp [hmatch]
+      ac_rfl
+    simpa [hfull, hdel] using le_of_eq heq
+  · have hsame :
+        deleteOneCopy (k := k) G u v u.1 (p.1 uG) = G u.1 (p.1 uG) := by
+      simp [deleteOneCopy, hmatch]
+    have hm : G u.1 v - 1 ≤ G u.1 v := Nat.sub_le _ _
+    have hmono :
+        (G u.1 v - 1) * (G u.1 (p.1 uG) * rest) ≤
+          G u.1 v * (G u.1 (p.1 uG) * rest) :=
+      Nat.mul_le_mul_right (G u.1 (p.1 uG) * rest) hm
+    simpa [hfull, hdel, hsame] using hmono
+
+lemma positiveWeightedTargetRootedArborescenceCount_deleteOneCopy_lower_of_source_stays_positive
+    {t : Fin k} (G : EulerGraph k)
+    (u : NonrootVertex t) (v : Fin k)
+    (hstay :
+      0 < outDegG (k := k) (deleteOneCopy (k := k) G u v) u.1) :
+    (G u.1 v - 1) *
+        positiveWeightedTargetRootedArborescenceCount (k := k) G t ≤
+      G u.1 v *
+        positiveWeightedTargetRootedArborescenceCount
+          (k := k) (deleteOneCopy (k := k) G u v) t := by
+  classical
+  have htransport :=
+    positiveWeightedTargetRootedArborescenceCount_deleteOneCopy_eq_transportSum_of_source_stays_positive
+      (k := k) G u v hstay
+  calc
+    (G u.1 v - 1) * positiveWeightedTargetRootedArborescenceCount (k := k) G t =
+        ∑ p : {p : PositiveTargetParentAssignment (k := k) G t //
+            IsPositiveTargetRootedArborescence (k := k) G t p},
+          (G u.1 v - 1) *
+            ∏ x : PositiveNonrootVertex (k := k) G t, G x.1 (p.1 x) := by
+              simpa [positiveWeightedTargetRootedArborescenceCount] using
+                (Finset.mul_sum
+                  (s := Finset.univ)
+                  (f := fun p : {p : PositiveTargetParentAssignment (k := k) G t //
+                      IsPositiveTargetRootedArborescence (k := k) G t p} =>
+                    ∏ x : PositiveNonrootVertex (k := k) G t, G x.1 (p.1 x))
+                  (a := G u.1 v - 1))
+    _ ≤ ∑ p : {p : PositiveTargetParentAssignment (k := k) G t //
+            IsPositiveTargetRootedArborescence (k := k) G t p},
+          G u.1 v *
+            ∏ x : PositiveNonrootVertex (k := k) G t,
+              deleteOneCopy (k := k) G u v x.1 (p.1 x) := by
+            apply Finset.sum_le_sum
+            intro p hp
+            exact
+              positiveWeightedTargetRootedArborescenceCount_deleteOneCopy_lower_term_of_source_stays_positive
+                (k := k) G u v hstay p
+    _ = G u.1 v *
+          (by
+            classical
+            exact
+              ∑ p : {p : PositiveTargetParentAssignment (k := k) G t //
+                  IsPositiveTargetRootedArborescence (k := k) G t p},
+                ∏ x : PositiveNonrootVertex (k := k) G t,
+                  deleteOneCopy (k := k) G u v x.1 (p.1 x)) := by
+            simpa [positiveWeightedTargetRootedArborescenceCount] using
+              (Finset.mul_sum
+                (s := Finset.univ)
+                (f := fun p : {p : PositiveTargetParentAssignment (k := k) G t //
+                    IsPositiveTargetRootedArborescence (k := k) G t p} =>
+                  ∏ x : PositiveNonrootVertex (k := k) G t,
+                    deleteOneCopy (k := k) G u v x.1 (p.1 x))
+                (a := G u.1 v)).symm
+    _ = G u.1 v *
+          positiveWeightedTargetRootedArborescenceCount
+            (k := k) (deleteOneCopy (k := k) G u v) t := by
+            rw [htransport]
+
+lemma positiveWeightedTargetRootedArborescenceCount_deleteOneCopy_lower
+    {t : Fin k} (G : EulerGraph k)
+    (u : NonrootVertex t) (v : Fin k) :
+    (G u.1 v - 1) *
+        positiveWeightedTargetRootedArborescenceCount (k := k) G t ≤
+      G u.1 v *
+        positiveWeightedTargetRootedArborescenceCount
+          (k := k) (deleteOneCopy (k := k) G u v) t := by
+  by_cases hstay :
+      0 < outDegG (k := k) (deleteOneCopy (k := k) G u v) u.1
+  · exact
+      positiveWeightedTargetRootedArborescenceCount_deleteOneCopy_lower_of_source_stays_positive
+        (k := k) G u v hstay
+  · have hzeroOut :
+      outDegG (k := k) (deleteOneCopy (k := k) G u v) u.1 = 0 := by
+      exact Nat.eq_zero_of_not_pos hstay
+    have hterm_le :
+        deleteOneCopy (k := k) G u v u.1 v ≤
+          outDegG (k := k) (deleteOneCopy (k := k) G u v) u.1 := by
+      unfold outDegG
+      exact Finset.single_le_sum (fun _ _ => Nat.zero_le _) (Finset.mem_univ v)
+    have hterm_zero :
+        deleteOneCopy (k := k) G u v u.1 v = 0 := by
+      have hle0 :
+          deleteOneCopy (k := k) G u v u.1 v ≤ 0 := by
+        simpa [hzeroOut] using hterm_le
+      exact Nat.eq_zero_of_le_zero hle0
+    have hfactor_zero : G u.1 v - 1 = 0 := by
+      simpa [deleteOneCopy] using hterm_zero
+    simp [hfactor_zero]
+
+lemma positiveTokenRootedArborescenceCount_deleteOneCopy_lower
+    {t : Fin k} (G : EulerGraph k)
+    (u : NonrootVertex t) (v : Fin k) :
+    (G u.1 v - 1) * positiveTokenRootedArborescenceCount (k := k) G t ≤
+      G u.1 v * positiveTokenRootedArborescenceCount
+        (k := k) (deleteOneCopy (k := k) G u v) t := by
+  rw [positiveTokenRootedArborescenceCount_eq_positiveWeightedTargetRootedArborescenceCount,
+    positiveTokenRootedArborescenceCount_eq_positiveWeightedTargetRootedArborescenceCount]
+  exact positiveWeightedTargetRootedArborescenceCount_deleteOneCopy_lower
+    (k := k) G u v
+
+noncomputable def positiveOutTokEquiv_of_nonroot_rows_eq
+    {t : Fin k} {G G' : EulerGraph k}
+    (hrow : ∀ u : NonrootVertex t, ∀ v : Fin k, G u.1 v = G' u.1 v)
+    (u : PositiveNonrootVertex (k := k) G t) :
+    outTok (k := k) G u.1 ≃ outTok (k := k) G' u.1 where
+  toFun x :=
+    ⟨x.1, Fin.cast (by
+      simpa using hrow ⟨u.1, u.2.1⟩ x.1) x.2⟩
+  invFun x :=
+    ⟨x.1, Fin.cast (by
+      simpa using (hrow ⟨u.1, u.2.1⟩ x.1).symm) x.2⟩
+  left_inv x := by
+    cases x
+    rfl
+  right_inv x := by
+    cases x
+    rfl
+
+noncomputable def positiveTokenParentAssignmentEquiv_of_nonroot_rows_eq
+    {t : Fin k} {G G' : EulerGraph k}
+    (hrow : ∀ u : NonrootVertex t, ∀ v : Fin k, G u.1 v = G' u.1 v) :
+    PositiveTokenParentAssignment (k := k) G t ≃
+      PositiveTokenParentAssignment (k := k) G' t where
+  toFun A := fun x =>
+    (positiveOutTokEquiv_of_nonroot_rows_eq (k := k) hrow
+      ((positiveNonrootVertexEquiv_of_nonroot_rows_eq (k := k) hrow).symm x))
+        (A ((positiveNonrootVertexEquiv_of_nonroot_rows_eq (k := k) hrow).symm x))
+  invFun A := fun x =>
+    (positiveOutTokEquiv_of_nonroot_rows_eq (k := k)
+      (G := G') (G' := G) (fun u v => (hrow u v).symm)
+      ((positiveNonrootVertexEquiv_of_nonroot_rows_eq (k := k) hrow) x))
+        (A ((positiveNonrootVertexEquiv_of_nonroot_rows_eq (k := k) hrow) x))
+  left_inv A := by
+    funext x
+    simp [positiveOutTokEquiv_of_nonroot_rows_eq,
+      positiveNonrootVertexEquiv_of_nonroot_rows_eq]
+  right_inv A := by
+    funext x
+    simp [positiveOutTokEquiv_of_nonroot_rows_eq,
+      positiveNonrootVertexEquiv_of_nonroot_rows_eq]
+
+lemma isPositiveTokenRootedArborescence_iff_of_nonroot_rows_eq
+    {t : Fin k} {G G' : EulerGraph k}
+    (hrow : ∀ u : NonrootVertex t, ∀ v : Fin k, G u.1 v = G' u.1 v)
+    (A : PositiveTokenParentAssignment (k := k) G t) :
+    IsPositiveTokenRootedArborescence (k := k) G t A ↔
+      IsPositiveTokenRootedArborescence (k := k) G' t
+        ((positiveTokenParentAssignmentEquiv_of_nonroot_rows_eq
+          (k := k) hrow) A) := by
+  simpa [IsPositiveTokenRootedArborescence, positiveTokenParentTargets,
+    positiveTokenParentAssignmentEquiv_of_nonroot_rows_eq,
+    positiveTargetParentAssignmentEquiv_of_nonroot_rows_eq] using
+    (isPositiveTargetRootedArborescence_iff_of_nonroot_rows_eq
+      (k := k) hrow (positiveTokenParentTargets (k := k) G t A))
+
+lemma positiveTokenRootedArborescenceCount_congr_nonroot_rows
+    {t : Fin k} {G G' : EulerGraph k}
+    (hrow : ∀ u : NonrootVertex t, ∀ v : Fin k, G u.1 v = G' u.1 v) :
+    positiveTokenRootedArborescenceCount (k := k) G t =
+      positiveTokenRootedArborescenceCount (k := k) G' t := by
+  classical
+  unfold positiveTokenRootedArborescenceCount
+  refine Nat.card_congr ?_
+  refine
+    { toFun := fun A =>
+        ⟨(positiveTokenParentAssignmentEquiv_of_nonroot_rows_eq
+            (k := k) hrow) A.1, ?_⟩
+      , invFun := fun A =>
+        ⟨(positiveTokenParentAssignmentEquiv_of_nonroot_rows_eq
+            (k := k) hrow).symm A.1, ?_⟩
+      , left_inv := ?_
+      , right_inv := ?_ }
+  · exact
+      (isPositiveTokenRootedArborescence_iff_of_nonroot_rows_eq
+        (k := k) hrow A.1).1 A.2
+  · exact
+      (isPositiveTokenRootedArborescence_iff_of_nonroot_rows_eq
+        (k := k) (G := G') (G' := G) (fun u v => (hrow u v).symm)
+        A.1).1 A.2
+  · intro A
+    ext x
+    simp [positiveTokenParentAssignmentEquiv_of_nonroot_rows_eq,
+      positiveOutTokEquiv_of_nonroot_rows_eq,
+      positiveNonrootVertexEquiv_of_nonroot_rows_eq]
+  · intro A
+    ext x
+    simp [positiveTokenParentAssignmentEquiv_of_nonroot_rows_eq,
+      positiveOutTokEquiv_of_nonroot_rows_eq,
+      positiveNonrootVertexEquiv_of_nonroot_rows_eq]
+
+noncomputable def positiveNonrootVertexEquivNonrootVertex_of_forall_pos
+    (G : EulerGraph k) (t : Fin k)
+    (hpos : ∀ u : NonrootVertex t, 0 < outDegG (k := k) G u.1) :
+    PositiveNonrootVertex (k := k) G t ≃ NonrootVertex t where
+  toFun u := ⟨u.1, u.2.1⟩
+  invFun u := ⟨u.1, u.2, hpos u⟩
+  left_inv u := by
+    cases u
+    rfl
+  right_inv u := by
+    cases u
+    rfl
+
+lemma positiveTargetParentStep_eq_targetParentStep_of_forall_pos
+    (G : EulerGraph k) (t : Fin k)
+    (hpos : ∀ u : NonrootVertex t, 0 < outDegG (k := k) G u.1)
+    (p : TargetParentAssignment t) :
+    positiveTargetParentStep (k := k) G t
+        (fun x => p ((positiveNonrootVertexEquivNonrootVertex_of_forall_pos
+          (k := k) G t hpos) x)) =
+      targetParentStep (k := k) t p := by
+  funext v
+  by_cases hv : v = t
+  · simp [positiveTargetParentStep, targetParentStep, hv]
+  · have hvpos : 0 < outDegG (k := k) G v := hpos ⟨v, hv⟩
+    have heq :
+        ((positiveNonrootVertexEquivNonrootVertex_of_forall_pos
+          (k := k) G t hpos) ⟨v, hv, hvpos⟩) = ⟨v, hv⟩ := by
+      rfl
+    simp [positiveTargetParentStep, targetParentStep, hv, hvpos, heq]
+
+lemma isPositiveTargetRootedArborescence_iff_isTargetRootedArborescence_of_forall_pos
+    (G : EulerGraph k) (t : Fin k)
+    (hpos : ∀ u : NonrootVertex t, 0 < outDegG (k := k) G u.1)
+    (p : TargetParentAssignment t) :
+    IsPositiveTargetRootedArborescence (k := k) G t
+        (fun x => p ((positiveNonrootVertexEquivNonrootVertex_of_forall_pos
+          (k := k) G t hpos) x)) ↔
+      IsTargetRootedArborescence (k := k) t p := by
+  constructor
+  · intro hroot v
+    by_cases hv : v = t
+    · refine ⟨0, Nat.zero_le _, ?_⟩
+      simp [hv]
+    · have hvpos : 0 < outDegG (k := k) G v := hpos ⟨v, hv⟩
+      rcases hroot ⟨v, hv, hvpos⟩ with ⟨n, hn, hstep⟩
+      refine ⟨n, hn, ?_⟩
+      simpa [positiveTargetParentStep_eq_targetParentStep_of_forall_pos
+        (k := k) G t hpos p] using hstep
+  · intro hroot v
+    rcases hroot v.1 with ⟨n, hn, hstep⟩
+    refine ⟨n, hn, ?_⟩
+    simpa [positiveTargetParentStep_eq_targetParentStep_of_forall_pos
+      (k := k) G t hpos p] using hstep
+
+noncomputable def positiveTokenParentAssignmentEquivTokenParentAssignment_of_forall_pos
+    (G : EulerGraph k) (t : Fin k)
+    (hpos : ∀ u : NonrootVertex t, 0 < outDegG (k := k) G u.1) :
+    PositiveTokenParentAssignment (k := k) G t ≃
+      TokenParentAssignment (k := k) G t where
+  toFun A := fun x =>
+    by
+      simpa using A ((positiveNonrootVertexEquivNonrootVertex_of_forall_pos
+        (k := k) G t hpos).symm x)
+  invFun A := fun x =>
+    by
+      simpa using A ((positiveNonrootVertexEquivNonrootVertex_of_forall_pos
+        (k := k) G t hpos) x)
+  left_inv A := by
+    funext x
+    simp [positiveNonrootVertexEquivNonrootVertex_of_forall_pos]
+  right_inv A := by
+    funext x
+    simp [positiveNonrootVertexEquivNonrootVertex_of_forall_pos]
+
+lemma isPositiveTokenRootedArborescence_iff_isTokenRootedArborescence_of_forall_pos
+    (G : EulerGraph k) (t : Fin k)
+    (hpos : ∀ u : NonrootVertex t, 0 < outDegG (k := k) G u.1)
+    (A : TokenParentAssignment (k := k) G t) :
+    IsPositiveTokenRootedArborescence (k := k) G t
+        ((positiveTokenParentAssignmentEquivTokenParentAssignment_of_forall_pos
+          (k := k) G t hpos).symm A) ↔
+      IsTokenRootedArborescence (k := k) G t A := by
+  simpa [IsPositiveTokenRootedArborescence, positiveTokenParentTargets,
+    IsTokenRootedArborescence, tokenParentTargets,
+    positiveTokenParentAssignmentEquivTokenParentAssignment_of_forall_pos] using
+    (isPositiveTargetRootedArborescence_iff_isTargetRootedArborescence_of_forall_pos
+      (k := k) G t hpos (tokenParentTargets (k := k) G t A))
+
+lemma isTokenRootedArborescence_iff_isPositiveTokenRootedArborescence_of_forall_pos
+    (G : EulerGraph k) (t : Fin k)
+    (hpos : ∀ u : NonrootVertex t, 0 < outDegG (k := k) G u.1)
+    (A : PositiveTokenParentAssignment (k := k) G t) :
+    IsTokenRootedArborescence (k := k) G t
+        ((positiveTokenParentAssignmentEquivTokenParentAssignment_of_forall_pos
+          (k := k) G t hpos) A) ↔
+      IsPositiveTokenRootedArborescence (k := k) G t A := by
+  simpa using
+    (isPositiveTokenRootedArborescence_iff_isTokenRootedArborescence_of_forall_pos
+      (k := k) G t hpos
+      ((positiveTokenParentAssignmentEquivTokenParentAssignment_of_forall_pos
+        (k := k) G t hpos) A)).symm
+
+lemma positiveTokenRootedArborescenceCount_eq_tokenRootedArborescenceCount_of_forall_pos
+    (G : EulerGraph k) (t : Fin k)
+    (hpos : ∀ u : NonrootVertex t, 0 < outDegG (k := k) G u.1) :
+    positiveTokenRootedArborescenceCount (k := k) G t =
+      tokenRootedArborescenceCount (k := k) G t := by
+  classical
+  unfold positiveTokenRootedArborescenceCount tokenRootedArborescenceCount
+  refine Nat.card_congr ?_
+  refine
+    { toFun := fun A =>
+        ⟨(positiveTokenParentAssignmentEquivTokenParentAssignment_of_forall_pos
+            (k := k) G t hpos) A.1, ?_⟩
+      , invFun := fun A =>
+        ⟨(positiveTokenParentAssignmentEquivTokenParentAssignment_of_forall_pos
+            (k := k) G t hpos).symm A.1, ?_⟩
+      , left_inv := ?_
+      , right_inv := ?_ }
+  · exact
+      (isTokenRootedArborescence_iff_isPositiveTokenRootedArborescence_of_forall_pos
+        (k := k) G t hpos A.1).2 A.2
+  · exact
+      (isPositiveTokenRootedArborescence_iff_isTokenRootedArborescence_of_forall_pos
+        (k := k) G t hpos A.1).2 A.2
+  · intro A
+    ext x
+    rfl
+  · intro A
+    ext x
+    rfl
+
+lemma weightedTargetRootedArborescenceCount_eq_zero_of_exists_nonroot_zero_row
+    (G : EulerGraph k) (t : Fin k)
+    (hzero : ∃ u : NonrootVertex t, ∀ v : Fin k, G u.1 v = 0) :
+    weightedTargetRootedArborescenceCount (k := k) G t = 0 := by
+  classical
+  rcases hzero with ⟨u, hu⟩
+  unfold weightedTargetRootedArborescenceCount
+  refine Finset.sum_eq_zero ?_
+  intro p hp
+  refine Finset.prod_eq_zero (i := u) (by simp) ?_
+  exact hu (p.1 u)
+
+lemma tokenRootedArborescenceCount_eq_zero_of_exists_nonroot_zero_row
+    (G : EulerGraph k) (t : Fin k)
+    (hzero : ∃ u : NonrootVertex t, ∀ v : Fin k, G u.1 v = 0) :
+    tokenRootedArborescenceCount (k := k) G t = 0 := by
+  rw [tokenRootedArborescenceCount_eq_weightedTargetRootedArborescenceCount]
+  exact
+    weightedTargetRootedArborescenceCount_eq_zero_of_exists_nonroot_zero_row
+      (k := k) G t hzero
 
 private lemma targetRootedArborescenceWeight_eq_sourceFactor_mul
     (G : EulerGraph k) (t : Fin k)
@@ -3198,10 +4214,473 @@ def prefixTokenRootedArborescenceRatioReal
     prefixTokenRootedArborescenceRatioReal (k := k) a ys N hN eN =
       (prefixTokenRootedArborescenceRatio (k := k) a ys N hN eN : ℝ) := rfl
 
-/-- Exact bridge reduction: any specialized BEST theorem identifying
+/-- Residual/full ratio of the support-local token-rooted arborescence counts.
+This is the honest replacement target for dormant-row states. -/
+def prefixPositiveTokenRootedArborescenceRatio
+    (a : Fin k) (ys : List (Fin k))
+    (N : ℕ) (_hN : ys.length ≤ N) (eN : MarkovState k) : ℚ :=
+  (positiveTokenRootedArborescenceCount (k := k)
+      (graphOfState (k := k) (residualStateOfPrefix (k := k) a ys eN))
+      (residualStateOfPrefix (k := k) a ys eN).last : ℚ) /
+    positiveTokenRootedArborescenceCount (k := k) (graphOfState (k := k) eN) eN.last
+
+/-- Real-valued version of the support-local token-rooted arborescence ratio. -/
+def prefixPositiveTokenRootedArborescenceRatioReal
+    (a : Fin k) (ys : List (Fin k))
+    (N : ℕ) (hN : ys.length ≤ N) (eN : MarkovState k) : ℝ :=
+  (prefixPositiveTokenRootedArborescenceRatio (k := k) a ys N hN eN : ℝ)
+
+@[simp] lemma prefixPositiveTokenRootedArborescenceRatioReal_eq_ratCast
+    (a : Fin k) (ys : List (Fin k))
+    (N : ℕ) (hN : ys.length ≤ N) (eN : MarkovState k) :
+    prefixPositiveTokenRootedArborescenceRatioReal (k := k) a ys N hN eN =
+      (prefixPositiveTokenRootedArborescenceRatio (k := k) a ys N hN eN : ℝ) := rfl
+
+lemma prefixPositiveTokenRootedArborescenceRatio_eq_prefixTokenRootedArborescenceRatio_of_forall_pos
+    (a : Fin k) (ys : List (Fin k))
+    (N : ℕ) (hN : ys.length ≤ N) (eN : MarkovState k)
+    (hres :
+      ∀ u : NonrootVertex (residualStateOfPrefix (k := k) a ys eN).last,
+        0 < MarkovDeFinettiHardEuler.outdeg (k := k)
+          (residualStateOfPrefix (k := k) a ys eN) u.1)
+    (hfull :
+      ∀ u : NonrootVertex eN.last,
+        0 < MarkovDeFinettiHardEuler.outdeg (k := k) eN u.1) :
+    prefixPositiveTokenRootedArborescenceRatio (k := k) a ys N hN eN =
+      prefixTokenRootedArborescenceRatio (k := k) a ys N hN eN := by
+  have hres' :
+      ∀ u : NonrootVertex (residualStateOfPrefix (k := k) a ys eN).last,
+        0 < outDegG (k := k)
+          (graphOfState (k := k) (residualStateOfPrefix (k := k) a ys eN)) u.1 := by
+    intro u
+    simpa [outDeg_graphOfState_eq] using hres u
+  have hfull' :
+      ∀ u : NonrootVertex eN.last,
+        0 < outDegG (k := k) (graphOfState (k := k) eN) u.1 := by
+    intro u
+    simpa [outDeg_graphOfState_eq] using hfull u
+  unfold prefixPositiveTokenRootedArborescenceRatio
+    prefixTokenRootedArborescenceRatio
+  rw [positiveTokenRootedArborescenceCount_eq_tokenRootedArborescenceCount_of_forall_pos
+    (k := k)
+    (G := graphOfState (k := k) (residualStateOfPrefix (k := k) a ys eN))
+    (t := (residualStateOfPrefix (k := k) a ys eN).last) hres']
+  · rw [positiveTokenRootedArborescenceCount_eq_tokenRootedArborescenceCount_of_forall_pos
+      (k := k) (G := graphOfState (k := k) eN) (t := eN.last) hfull']
+
+lemma prefixPositiveTokenRootedArborescenceRatioReal_eq_prefixTokenRootedArborescenceRatioReal_of_forall_pos
+    (a : Fin k) (ys : List (Fin k))
+    (N : ℕ) (hN : ys.length ≤ N) (eN : MarkovState k)
+    (hres :
+      ∀ u : NonrootVertex (residualStateOfPrefix (k := k) a ys eN).last,
+        0 < MarkovDeFinettiHardEuler.outdeg (k := k)
+          (residualStateOfPrefix (k := k) a ys eN) u.1)
+    (hfull :
+      ∀ u : NonrootVertex eN.last,
+        0 < MarkovDeFinettiHardEuler.outdeg (k := k) eN u.1) :
+    prefixPositiveTokenRootedArborescenceRatioReal (k := k) a ys N hN eN =
+      prefixTokenRootedArborescenceRatioReal (k := k) a ys N hN eN := by
+  exact congrArg (fun q : ℚ => (q : ℝ))
+    (prefixPositiveTokenRootedArborescenceRatio_eq_prefixTokenRootedArborescenceRatio_of_forall_pos
+      (k := k) a ys N hN eN hres hfull)
+
+/-- Legacy exact finite bridge statement for one evidence state: the Euler-trail
+count matches the token-rooted arborescence count times the full
+outdegree-factorial weight.
+
+This normalization is kept as a historical surface because downstream ratio
+lemmas still factor through it. It is not a valid global theorem target:
+`positiveTokenRootedBridgeCardEq_false_on_counterexample_0101` refutes the
+support-local version on an active state, and the same double-counting issue
+applies to the all-vertices variant. -/
+def tokenRootedBridgeCardEq
+    (s : MarkovState k) : Prop :=
+  (eulerTrailFinset (graphOfState s) s.start s.last).card =
+    tokenRootedArborescenceCount (k := k) (graphOfState (k := k) s) s.last *
+      outdegFactorialWeight (k := k) s
+
+/-- Legacy support-local exact finite bridge statement for one evidence state:
+the Euler-trail count matches the active-support token-rooted arborescence
+count times the full outdegree-factorial weight.
+
+This predicate is now known to be false in general:
+`positiveTokenRootedBridgeCardEq_false_on_counterexample_0101` gives a concrete
+active counterexample. The direct-route repair must replace the weight, not
+merely prove this predicate for more cases. -/
+def positiveTokenRootedBridgeCardEq
+    (s : MarkovState k) : Prop :=
+  (eulerTrailFinset (graphOfState s) s.start s.last).card =
+    positiveTokenRootedArborescenceCount (k := k) (graphOfState (k := k) s) s.last *
+      outdegFactorialWeight (k := k) s
+
+/-- Corrected support-local BEST weight suggested by the concrete refutation of
+`positiveTokenRootedBridgeCardEq`.
+
+The root contributes `outdeg(last)!`, while each active non-root row
+contributes `(outdeg(v) - 1)!`. This is a concrete normalization factor only;
+the corresponding exact bridge theorem is still open and should be treated as a
+conjectural replacement target until it is actually proved. -/
+def positiveTokenRootedBestWeight
+    (s : MarkovState k) : ℕ :=
+  (MarkovDeFinettiHardEuler.outdeg (k := k) s s.last).factorial *
+    ∏ u : PositiveNonrootVertex (k := k) (graphOfState (k := k) s) s.last,
+      (MarkovDeFinettiHardEuler.outdeg (k := k) s u.1 - 1).factorial
+
+/-- Exact finite-state bridge input in cardinality form. If the Euler-trail
+count factors as token-rooted arborescences times the outdegree-factorial
+weight, then the normalized Euler correction is exactly the token-rooted
+arborescence count. This is the more concrete finite combinatorial surface
+behind the later bridge theorems. -/
+lemma normalizedEulerTrailCorrection_eq_tokenRootedArborescenceCount_of_card_eq
+    {s : MarkovState k}
+    (hcard :
+      (eulerTrailFinset (graphOfState s) s.start s.last).card =
+        tokenRootedArborescenceCount (k := k) (graphOfState (k := k) s) s.last *
+          outdegFactorialWeight (k := k) s) :
+    normalizedEulerTrailCorrection (k := k) s =
+      tokenRootedArborescenceCount (k := k) (graphOfState (k := k) s) s.last := by
+  unfold normalizedEulerTrailCorrection
+  have hden :
+      ((outdegFactorialWeight (k := k) s : ℕ) : ℚ) ≠ 0 := by
+    exact_mod_cast outdegFactorialWeight_ne_zero (k := k) s
+  apply (div_eq_iff hden).2
+  exact_mod_cast hcard
+
+lemma normalizedEulerTrailCorrection_eq_tokenRootedArborescenceCount_of_tokenRootedBridgeCardEq
+    {s : MarkovState k}
+    (hs : tokenRootedBridgeCardEq (k := k) s) :
+    normalizedEulerTrailCorrection (k := k) s =
+      tokenRootedArborescenceCount (k := k) (graphOfState (k := k) s) s.last :=
+  normalizedEulerTrailCorrection_eq_tokenRootedArborescenceCount_of_card_eq
+    (k := k) hs
+
+lemma normalizedEulerTrailCorrection_eq_positiveTokenRootedArborescenceCount_of_positiveTokenRootedBridgeCardEq
+    {s : MarkovState k}
+    (hs : positiveTokenRootedBridgeCardEq (k := k) s) :
+    normalizedEulerTrailCorrection (k := k) s =
+      positiveTokenRootedArborescenceCount (k := k) (graphOfState (k := k) s) s.last :=
+  by
+    unfold normalizedEulerTrailCorrection
+    have hden :
+        ((outdegFactorialWeight (k := k) s : ℕ) : ℚ) ≠ 0 := by
+      exact_mod_cast outdegFactorialWeight_ne_zero (k := k) s
+    apply (div_eq_iff hden).2
+    exact_mod_cast hs
+
+lemma tokenRootedBridgeCardEq_of_positiveTokenRootedBridgeCardEq_of_forall_pos
+    {s : MarkovState k}
+    (hs : positiveTokenRootedBridgeCardEq (k := k) s)
+    (hpos :
+      ∀ u : NonrootVertex s.last,
+        0 < MarkovDeFinettiHardEuler.outdeg (k := k) s u.1) :
+    tokenRootedBridgeCardEq (k := k) s := by
+  have hpos' :
+      ∀ u : NonrootVertex s.last,
+        0 < outDegG (k := k) (graphOfState (k := k) s) u.1 := by
+    intro u
+    simpa [outDeg_graphOfState_eq] using hpos u
+  change
+    (eulerTrailFinset (graphOfState s) s.start s.last).card =
+      tokenRootedArborescenceCount (k := k) (graphOfState (k := k) s) s.last *
+        outdegFactorialWeight (k := k) s
+  change
+    (eulerTrailFinset (graphOfState s) s.start s.last).card =
+      positiveTokenRootedArborescenceCount (k := k) (graphOfState (k := k) s) s.last *
+        outdegFactorialWeight (k := k) s at hs
+  rw [positiveTokenRootedArborescenceCount_eq_tokenRootedArborescenceCount_of_forall_pos
+    (k := k) (G := graphOfState (k := k) s) (t := s.last) hpos'] at hs
+  exact hs
+
+lemma positiveTokenRootedBridgeCardEq_of_tokenRootedBridgeCardEq_of_forall_pos
+    {s : MarkovState k}
+    (hs : tokenRootedBridgeCardEq (k := k) s)
+    (hpos :
+      ∀ u : NonrootVertex s.last,
+        0 < MarkovDeFinettiHardEuler.outdeg (k := k) s u.1) :
+    positiveTokenRootedBridgeCardEq (k := k) s := by
+  have hpos' :
+      ∀ u : NonrootVertex s.last,
+        0 < outDegG (k := k) (graphOfState (k := k) s) u.1 := by
+    intro u
+    simpa [outDeg_graphOfState_eq] using hpos u
+  change
+    (eulerTrailFinset (graphOfState s) s.start s.last).card =
+      positiveTokenRootedArborescenceCount (k := k) (graphOfState (k := k) s) s.last *
+        outdegFactorialWeight (k := k) s
+  change
+    (eulerTrailFinset (graphOfState s) s.start s.last).card =
+      tokenRootedArborescenceCount (k := k) (graphOfState (k := k) s) s.last *
+        outdegFactorialWeight (k := k) s at hs
+  rw [positiveTokenRootedArborescenceCount_eq_tokenRootedArborescenceCount_of_forall_pos
+    (k := k) (G := graphOfState (k := k) s) (t := s.last) hpos']
+  exact hs
+
+lemma positiveTokenRootedBridgeCardEq_iff_tokenRootedBridgeCardEq_of_forall_pos
+    {s : MarkovState k}
+    (hpos :
+      ∀ u : NonrootVertex s.last,
+        0 < MarkovDeFinettiHardEuler.outdeg (k := k) s u.1) :
+    positiveTokenRootedBridgeCardEq (k := k) s ↔ tokenRootedBridgeCardEq (k := k) s := by
+  constructor
+  · intro hs
+    exact tokenRootedBridgeCardEq_of_positiveTokenRootedBridgeCardEq_of_forall_pos
+      (k := k) hs hpos
+  · intro hs
+    exact positiveTokenRootedBridgeCardEq_of_tokenRootedBridgeCardEq_of_forall_pos
+      (k := k) hs hpos
+
+lemma positiveTokenRootedBridgeCardEq_iff_card_eq_outdegFactorialWeight_of_forall_nonroot_outdeg_zero
+    {s : MarkovState k}
+    (hzero :
+      ∀ u : NonrootVertex s.last,
+        MarkovDeFinettiHardEuler.outdeg (k := k) s u.1 = 0) :
+    positiveTokenRootedBridgeCardEq (k := k) s ↔
+      (eulerTrailFinset (graphOfState s) s.start s.last).card =
+        outdegFactorialWeight (k := k) s := by
+  have hzero' :
+      ∀ u : NonrootVertex s.last,
+        outDegG (k := k) (graphOfState (k := k) s) u.1 = 0 := by
+    intro u
+    simpa [outDeg_graphOfState_eq] using hzero u
+  rw [positiveTokenRootedBridgeCardEq]
+  rw [positiveTokenRootedArborescenceCount_eq_one_of_forall_nonroot_outdeg_zero
+    (k := k) (G := graphOfState (k := k) s) (t := s.last) hzero']
+  simp
+
+/-! ## Permanent counterexample to the legacy support-local bridge weight
+
+The direct-route bridge predicate `positiveTokenRootedBridgeCardEq` is not just
+unproved; it is false on the concrete active evidence state induced by the word
+`0,1,0,1`. This section records that fact permanently so future work does not
+keep trying to prove the wrong normalization. The corrected weight
+`positiveTokenRootedBestWeight` does match the same example, but the general
+BEST theorem for that corrected normalization remains open. -/
+
+/-- Concrete four-symbol trajectory `0,1,0,1` used to refute the legacy
+support-local bridge weight. -/
+def positiveTokenRootedBridgeCounterexampleTraj0101 : Traj 2 3 := ![0, 1, 0, 1]
+
+/-- Evidence state of `positiveTokenRootedBridgeCounterexampleTraj0101`. -/
+def positiveTokenRootedBridgeCounterexampleState0101 : MarkovState 2 :=
+  stateOfTraj (k := 2) positiveTokenRootedBridgeCounterexampleTraj0101
+
+lemma positiveTokenRootedBridgeCounterexampleState0101_mem_stateFinset :
+    positiveTokenRootedBridgeCounterexampleState0101 ∈ stateFinset 2 3 :=
+  stateOfTraj_mem_stateFinset
+    (k := 2) positiveTokenRootedBridgeCounterexampleTraj0101
+
+lemma eulerTrailFinset_card_counterexample_0101 :
+    (eulerTrailFinset
+        (graphOfState positiveTokenRootedBridgeCounterexampleState0101)
+        positiveTokenRootedBridgeCounterexampleState0101.start
+        positiveTokenRootedBridgeCounterexampleState0101.last).card = 2 := by
+  rw [eulerTrailFinset_card_eq
+    (k := 2) positiveTokenRootedBridgeCounterexampleState0101
+    positiveTokenRootedBridgeCounterexampleState0101_mem_stateFinset]
+  decide
+
+lemma positiveTokenRootedArborescenceCount_counterexample_0101 :
+    positiveTokenRootedArborescenceCount
+        (k := 2) (graphOfState positiveTokenRootedBridgeCounterexampleState0101) 1 = 2 := by
+  have htok :
+      ∀ tok : outTok (k := 2) (graphOfState positiveTokenRootedBridgeCounterexampleState0101) 0,
+        tok.1 = 1 := by
+    rintro ⟨b, i⟩
+    fin_cases b
+    · exact i.elim0
+    · rfl
+  have hall :
+      ∀ A : PositiveTokenParentAssignment
+          (k := 2) (graphOfState positiveTokenRootedBridgeCounterexampleState0101) 1,
+        IsPositiveTokenRootedArborescence
+          (k := 2) (graphOfState positiveTokenRootedBridgeCounterexampleState0101) 1 A := by
+    intro A v
+    obtain ⟨v, hv1, hv2⟩ := v
+    have hv0 : v = 0 := by
+      omega
+    subst hv0
+    refine ⟨1, by norm_num, ?_⟩
+    simp only [Function.iterate_one, positiveTargetParentStep, positiveTokenParentTargets]
+    rw [dif_neg (by decide), dif_pos (by decide)]
+    exact htok _
+  unfold positiveTokenRootedArborescenceCount
+  rw [Nat.card_congr (Equiv.subtypeUnivEquiv hall), Nat.card_eq_fintype_card, Fintype.card_pi]
+  simp only [card_outTok]
+  decide
+
+/-- The legacy support-local bridge predicate is refuted by the active evidence
+state coming from the word `0,1,0,1`. -/
+theorem positiveTokenRootedBridgeCardEq_false_on_counterexample_0101 :
+    ¬ positiveTokenRootedBridgeCardEq (k := 2) positiveTokenRootedBridgeCounterexampleState0101 := by
+  intro hbridge
+  unfold positiveTokenRootedBridgeCardEq at hbridge
+  rw [eulerTrailFinset_card_counterexample_0101,
+      show outdegFactorialWeight (k := 2) positiveTokenRootedBridgeCounterexampleState0101 = 2 by
+        decide,
+      show positiveTokenRootedBridgeCounterexampleState0101.last = 1 by
+        decide,
+      positiveTokenRootedArborescenceCount_counterexample_0101] at hbridge
+  omega
+
+/-- The corrected support-local BEST weight matches the same example. This does
+not prove the corrected bridge theorem in general; it only pins the right local
+constant on the concrete counterexample state. -/
+theorem corrected_positiveTokenRootedBestWeight_bridge_holds_on_counterexample_0101 :
+    (eulerTrailFinset
+        (graphOfState positiveTokenRootedBridgeCounterexampleState0101)
+        positiveTokenRootedBridgeCounterexampleState0101.start
+        positiveTokenRootedBridgeCounterexampleState0101.last).card =
+      positiveTokenRootedArborescenceCount
+          (k := 2) (graphOfState positiveTokenRootedBridgeCounterexampleState0101)
+          positiveTokenRootedBridgeCounterexampleState0101.last *
+        positiveTokenRootedBestWeight
+          (k := 2) positiveTokenRootedBridgeCounterexampleState0101 := by
+  rw [eulerTrailFinset_card_counterexample_0101,
+      show positiveTokenRootedBridgeCounterexampleState0101.last = 1 by
+        decide,
+      positiveTokenRootedArborescenceCount_counterexample_0101]
+  decide
+
+lemma row_eq_zero_of_outDegG_eq_zero
+    {t : Fin k} {G : EulerGraph k} {u : NonrootVertex t}
+    (hout : outDegG (k := k) G u.1 = 0) :
+    ∀ v : Fin k, G u.1 v = 0 := by
+  intro v
+  have hvle : G u.1 v ≤ outDegG (k := k) G u.1 := by
+    unfold outDegG
+    exact Finset.single_le_sum (fun _ _ => Nat.zero_le _) (by simp)
+  exact Nat.eq_zero_of_le_zero (by simpa [hout] using hvle)
+
+lemma col_eq_zero_of_inDegG_eq_zero
+    {t : Fin k} {G : EulerGraph k} {u : NonrootVertex t}
+    (hin : inDegG (k := k) G u.1 = 0) :
+    ∀ v : Fin k, G v u.1 = 0 := by
+  intro v
+  have hvle : G v u.1 ≤ inDegG (k := k) G u.1 := by
+    unfold inDegG
+    exact
+      Finset.single_le_sum
+        (f := fun a : Fin k => G a u.1)
+        (fun _ _ => Nat.zero_le _)
+        (Finset.mem_univ v)
+  exact Nat.eq_zero_of_le_zero (by simpa [hin] using hvle)
+
+lemma inDegG_eq_zero_of_outdeg_eq_zero_of_mem_stateFinset
+    {N : ℕ} {eN : MarkovState k}
+    (heN : eN ∈ stateFinset k N)
+    {u : NonrootVertex eN.last}
+    (hout : MarkovDeFinettiHardEuler.outdeg (k := k) eN u.1 = 0) :
+    inDegG (k := k) (graphOfState (k := k) eN) u.1 = 0 := by
+  have hout' : outDegG (k := k) (graphOfState (k := k) eN) u.1 = 0 := by
+    simpa [outDeg_graphOfState_eq] using hout
+  have hlast_ne : eN.last ≠ u.1 := u.2.symm
+  have hbal :=
+    MarkovDeFinettiHardBESTCore.flow_balance_graphOfState_of_mem_stateFinset
+      (k := k) heN u.1
+  have hstart_ne : eN.start ≠ u.1 := by
+    intro hstart
+    have hzero :
+        0 = inDegG (k := k) (graphOfState (k := k) eN) u.1 + 1 := by
+      have hbal' := hbal
+      simp [hout', hlast_ne, hstart] at hbal'
+    have hsucc :
+        inDegG (k := k) (graphOfState (k := k) eN) u.1 + 1 ≠ 0 := by
+      simp [Nat.add_comm]
+    exact hsucc hzero.symm
+  have hzero :
+      0 = inDegG (k := k) (graphOfState (k := k) eN) u.1 + 0 := by
+    have hbal' := hbal
+    simp [hout', hlast_ne, hstart_ne] at hbal'
+    exact hbal'
+  simp at hzero
+  exact hzero.symm
+
+lemma start_ne_of_outdeg_eq_zero_of_mem_stateFinset
+    {N : ℕ} {eN : MarkovState k}
+    (heN : eN ∈ stateFinset k N)
+    {u : NonrootVertex eN.last}
+    (hout : MarkovDeFinettiHardEuler.outdeg (k := k) eN u.1 = 0) :
+    eN.start ≠ u.1 := by
+  have hout' : outDegG (k := k) (graphOfState (k := k) eN) u.1 = 0 := by
+    simpa [outDeg_graphOfState_eq] using hout
+  have hlast_ne : eN.last ≠ u.1 := u.2.symm
+  have hbal :=
+    MarkovDeFinettiHardBESTCore.flow_balance_graphOfState_of_mem_stateFinset
+      (k := k) heN u.1
+  intro hstart
+  have hzero :
+      0 = inDegG (k := k) (graphOfState (k := k) eN) u.1 + 1 := by
+    have hbal' := hbal
+    simp [hout', hlast_ne, hstart] at hbal'
+  have hsucc :
+      inDegG (k := k) (graphOfState (k := k) eN) u.1 + 1 ≠ 0 := by
+    simp [Nat.add_comm]
+  exact hsucc hzero.symm
+
+lemma graphOfState_col_eq_zero_of_outdeg_eq_zero_of_mem_stateFinset
+    {N : ℕ} {eN : MarkovState k}
+    (heN : eN ∈ stateFinset k N)
+    {u : NonrootVertex eN.last}
+    (hout : MarkovDeFinettiHardEuler.outdeg (k := k) eN u.1 = 0) :
+    ∀ v : Fin k, graphOfState eN v u.1 = 0 := by
+  exact
+    col_eq_zero_of_inDegG_eq_zero
+      (k := k) (G := graphOfState (k := k) eN) (u := u)
+      (inDegG_eq_zero_of_outdeg_eq_zero_of_mem_stateFinset
+        (k := k) heN hout)
+
+lemma graphOfState_row_eq_zero_of_outdeg_eq_zero
+    {eN : MarkovState k} {u : NonrootVertex eN.last}
+    (hout : MarkovDeFinettiHardEuler.outdeg (k := k) eN u.1 = 0) :
+    ∀ v : Fin k, graphOfState eN u.1 v = 0 := by
+  have hout' : outDegG (k := k) (graphOfState (k := k) eN) u.1 = 0 := by
+    simpa [outDeg_graphOfState_eq] using hout
+  exact row_eq_zero_of_outDegG_eq_zero (k := k) (G := graphOfState (k := k) eN) hout'
+
+lemma not_tokenRootedBridgeCardEq_of_exists_nonroot_zero_row_of_mem_stateFinset
+    {N : ℕ} {eN : MarkovState k}
+    (heN : eN ∈ stateFinset k N)
+    (hzero : ∃ u : NonrootVertex eN.last, ∀ v : Fin k, graphOfState eN u.1 v = 0) :
+    ¬ tokenRootedBridgeCardEq (k := k) eN := by
+  intro hBridge
+  have hcard_pos :
+      0 < (eulerTrailFinset (graphOfState eN) eN.start eN.last).card := by
+    rw [eulerTrailFinset_card_eq (k := k) eN heN]
+    exact Nat.mul_pos
+      (Nat.pos_iff_ne_zero.mpr <|
+        fiber_card_ne_zero_of_mem_stateFinset (k := k) (N := N) (eN := eN) heN)
+      (graphFactorialWeight_pos (k := k) eN)
+  have harb_zero :
+      tokenRootedArborescenceCount (k := k) (graphOfState eN) eN.last = 0 := by
+    exact
+      tokenRootedArborescenceCount_eq_zero_of_exists_nonroot_zero_row
+        (k := k) (G := graphOfState eN) (t := eN.last) hzero
+  have hcard_zero :
+      (eulerTrailFinset (graphOfState eN) eN.start eN.last).card = 0 := by
+    simpa [tokenRootedBridgeCardEq, harb_zero] using hBridge
+  exact (Nat.ne_of_gt hcard_pos) hcard_zero
+
+lemma not_tokenRootedBridgeCardEq_of_exists_nonroot_outdeg_zero_of_mem_stateFinset
+    {N : ℕ} {eN : MarkovState k}
+    (heN : eN ∈ stateFinset k N)
+    (hzero :
+      ∃ u : NonrootVertex eN.last,
+        MarkovDeFinettiHardEuler.outdeg (k := k) eN u.1 = 0) :
+    ¬ tokenRootedBridgeCardEq (k := k) eN := by
+  apply not_tokenRootedBridgeCardEq_of_exists_nonroot_zero_row_of_mem_stateFinset
+    (k := k) heN
+  rcases hzero with ⟨u, hu⟩
+  exact ⟨u, graphOfState_row_eq_zero_of_outdeg_eq_zero (k := k) hu⟩
+
+/-- Legacy bridge reduction: any specialized theorem identifying
 `normalizedEulerTrailCorrection` with token-rooted arborescence counts on
 balanced `graphOfState` graphs immediately transfers the normalized correction
-ratio to the token-rooted arborescence ratio. -/
+ratio to the token-rooted arborescence ratio.
+
+This transport lemma remains mathematically valid, but it sits on top of the
+refuted `outdegFactorialWeight` normalization. The live direct-route repair is
+to rebuild the same transport around `positiveTokenRootedBestWeight`, not to
+keep strengthening the old bridge predicate. -/
 lemma prefixNormalizedEulerTrailCorrectionRatio_eq_prefixTokenRootedArborescenceRatio_of_bridge
     (a : Fin k) (ys : List (Fin k))
     (N : ℕ) (hN : ys.length ≤ N) (eN : MarkovState k)
@@ -3235,6 +4714,42 @@ lemma prefixNormalizedEulerTrailCorrectionRatioReal_eq_prefixTokenRootedArboresc
     (prefixNormalizedEulerTrailCorrectionRatio_eq_prefixTokenRootedArborescenceRatio_of_bridge
       (k := k) a ys N hN eN hcomp hBridge)
 
+/-- Exact bridge reduction through the support-local rooted-arborescence count. -/
+lemma prefixNormalizedEulerTrailCorrectionRatio_eq_prefixPositiveTokenRootedArborescenceRatio_of_positiveBridge
+    (a : Fin k) (ys : List (Fin k))
+    (N : ℕ) (hN : ys.length ≤ N) (eN : MarkovState k)
+    (hcomp : prefixCompatibleState (k := k) a ys N hN eN)
+    (hBridge :
+      ∀ {M : ℕ} {s : MarkovState k},
+        s ∈ stateFinset k M →
+          normalizedEulerTrailCorrection (k := k) s =
+            positiveTokenRootedArborescenceCount (k := k) (graphOfState (k := k) s) s.last) :
+    prefixNormalizedEulerTrailCorrectionRatio (k := k) a ys N hN eN =
+      prefixPositiveTokenRootedArborescenceRatio (k := k) a ys N hN eN := by
+  rcases hcomp with ⟨heN, _, hres⟩
+  unfold prefixNormalizedEulerTrailCorrectionRatio
+    prefixPositiveTokenRootedArborescenceRatio
+  rw [hBridge (M := N - ys.length) hres, hBridge (M := N) heN]
+
+/-- Real-valued support-local bridge reduction for the normalized correction
+ratio. -/
+lemma prefixNormalizedEulerTrailCorrectionRatioReal_eq_prefixPositiveTokenRootedArborescenceRatioReal_of_positiveBridge
+    (a : Fin k) (ys : List (Fin k))
+    (N : ℕ) (hN : ys.length ≤ N) (eN : MarkovState k)
+    (hcomp : prefixCompatibleState (k := k) a ys N hN eN)
+    (hBridge :
+      ∀ {M : ℕ} {s : MarkovState k},
+        s ∈ stateFinset k M →
+          normalizedEulerTrailCorrection (k := k) s =
+            positiveTokenRootedArborescenceCount (k := k) (graphOfState (k := k) s) s.last) :
+    prefixNormalizedEulerTrailCorrectionRatioReal (k := k) a ys N hN eN =
+      prefixPositiveTokenRootedArborescenceRatioReal (k := k) a ys N hN eN := by
+  change ((prefixNormalizedEulerTrailCorrectionRatio (k := k) a ys N hN eN : ℚ) : ℝ) =
+      ((prefixPositiveTokenRootedArborescenceRatio (k := k) a ys N hN eN : ℚ) : ℝ)
+  exact congrArg (fun q : ℚ => (q : ℝ))
+    (prefixNormalizedEulerTrailCorrectionRatio_eq_prefixPositiveTokenRootedArborescenceRatio_of_positiveBridge
+      (k := k) a ys N hN eN hcomp hBridge)
+
 /-- Tendsto reduction through the specialized token-rooted BEST bridge. -/
 lemma tendsto_prefixNormalizedEulerTrailCorrectionRatioReal_of_tendsto_prefixTokenRootedArborescenceRatioReal_of_bridge
     (a : Fin k) (ys : List (Fin k))
@@ -3257,6 +4772,98 @@ lemma tendsto_prefixNormalizedEulerTrailCorrectionRatioReal_of_tendsto_prefixTok
   filter_upwards [hcomp] with n hn
   exact (prefixNormalizedEulerTrailCorrectionRatioReal_eq_prefixTokenRootedArborescenceRatioReal_of_bridge
     (k := k) a ys (Nf n) (hN n) (e n) hn hBridge).symm
+
+lemma prefixNormalizedEulerTrailCorrectionRatio_eq_prefixTokenRootedArborescenceRatio_of_bridgeCardEq_pair
+    (a : Fin k) (ys : List (Fin k))
+    (N : ℕ) (hN : ys.length ≤ N) (eN : MarkovState k)
+    (hfull : tokenRootedBridgeCardEq (k := k) eN)
+    (hres :
+      tokenRootedBridgeCardEq (k := k)
+        (residualStateOfPrefix (k := k) a ys eN)) :
+    prefixNormalizedEulerTrailCorrectionRatio (k := k) a ys N hN eN =
+      prefixTokenRootedArborescenceRatio (k := k) a ys N hN eN := by
+  unfold prefixNormalizedEulerTrailCorrectionRatio prefixTokenRootedArborescenceRatio
+  rw [normalizedEulerTrailCorrection_eq_tokenRootedArborescenceCount_of_tokenRootedBridgeCardEq
+        (k := k) hres]
+  rw [normalizedEulerTrailCorrection_eq_tokenRootedArborescenceCount_of_tokenRootedBridgeCardEq
+        (k := k) hfull]
+
+lemma prefixNormalizedEulerTrailCorrectionRatioReal_eq_prefixTokenRootedArborescenceRatioReal_of_bridgeCardEq_pair
+    (a : Fin k) (ys : List (Fin k))
+    (N : ℕ) (hN : ys.length ≤ N) (eN : MarkovState k)
+    (hfull : tokenRootedBridgeCardEq (k := k) eN)
+    (hres :
+      tokenRootedBridgeCardEq (k := k)
+        (residualStateOfPrefix (k := k) a ys eN)) :
+    prefixNormalizedEulerTrailCorrectionRatioReal (k := k) a ys N hN eN =
+      prefixTokenRootedArborescenceRatioReal (k := k) a ys N hN eN := by
+  change ((prefixNormalizedEulerTrailCorrectionRatio (k := k) a ys N hN eN : ℚ) : ℝ) =
+      ((prefixTokenRootedArborescenceRatio (k := k) a ys N hN eN : ℚ) : ℝ)
+  exact congrArg (fun q : ℚ => (q : ℝ))
+    (prefixNormalizedEulerTrailCorrectionRatio_eq_prefixTokenRootedArborescenceRatio_of_bridgeCardEq_pair
+      (k := k) a ys N hN eN hfull hres)
+
+lemma prefixNormalizedEulerTrailCorrectionRatioReal_eq_prefixPositiveTokenRootedArborescenceRatioReal_of_positiveBridgeCardEq_pair
+    (a : Fin k) (ys : List (Fin k))
+    (N : ℕ) (hN : ys.length ≤ N) (eN : MarkovState k)
+    (hfull : positiveTokenRootedBridgeCardEq (k := k) eN)
+    (hres :
+      positiveTokenRootedBridgeCardEq (k := k)
+        (residualStateOfPrefix (k := k) a ys eN)) :
+    prefixNormalizedEulerTrailCorrectionRatioReal (k := k) a ys N hN eN =
+      prefixPositiveTokenRootedArborescenceRatioReal (k := k) a ys N hN eN := by
+  change ((prefixNormalizedEulerTrailCorrectionRatio (k := k) a ys N hN eN : ℚ) : ℝ) =
+      ((prefixPositiveTokenRootedArborescenceRatio (k := k) a ys N hN eN : ℚ) : ℝ)
+  unfold prefixNormalizedEulerTrailCorrectionRatio
+    prefixPositiveTokenRootedArborescenceRatio
+  rw [normalizedEulerTrailCorrection_eq_positiveTokenRootedArborescenceCount_of_positiveTokenRootedBridgeCardEq
+      (k := k) hres]
+  rw [normalizedEulerTrailCorrection_eq_positiveTokenRootedArborescenceCount_of_positiveTokenRootedBridgeCardEq
+      (k := k) hfull]
+
+lemma tendsto_prefixNormalizedEulerTrailCorrectionRatioReal_of_tendsto_prefixTokenRootedArborescenceRatioReal_of_bridgeCardEq_pair
+    (a : Fin k) (ys : List (Fin k))
+    (e : ℕ → MarkovState k) (Nf : ℕ → ℕ)
+    (hN : ∀ n, ys.length ≤ Nf n)
+    (hBridgePair :
+      ∀ᶠ n in Filter.atTop,
+        tokenRootedBridgeCardEq (k := k) (e n) ∧
+          tokenRootedBridgeCardEq (k := k)
+            (residualStateOfPrefix (k := k) a ys (e n)))
+    (hlim :
+      Filter.Tendsto
+        (fun n => prefixTokenRootedArborescenceRatioReal (k := k) a ys (Nf n) (hN n) (e n))
+        Filter.atTop (nhds 1)) :
+    Filter.Tendsto
+      (fun n => prefixNormalizedEulerTrailCorrectionRatioReal (k := k) a ys (Nf n) (hN n) (e n))
+      Filter.atTop (nhds 1) := by
+  refine Filter.Tendsto.congr' ?_ hlim
+  filter_upwards [hBridgePair] with n hn
+  exact
+    (prefixNormalizedEulerTrailCorrectionRatioReal_eq_prefixTokenRootedArborescenceRatioReal_of_bridgeCardEq_pair
+      (k := k) a ys (Nf n) (hN n) (e n) hn.1 hn.2).symm
+
+lemma tendsto_prefixNormalizedEulerTrailCorrectionRatioReal_of_tendsto_prefixPositiveTokenRootedArborescenceRatioReal_of_positiveBridgeCardEq_pair
+    (a : Fin k) (ys : List (Fin k))
+    (e : ℕ → MarkovState k) (Nf : ℕ → ℕ)
+    (hN : ∀ n, ys.length ≤ Nf n)
+    (hBridgePair :
+      ∀ᶠ n in Filter.atTop,
+        positiveTokenRootedBridgeCardEq (k := k) (e n) ∧
+          positiveTokenRootedBridgeCardEq (k := k)
+            (residualStateOfPrefix (k := k) a ys (e n)))
+    (hlim :
+      Filter.Tendsto
+        (fun n => prefixPositiveTokenRootedArborescenceRatioReal (k := k) a ys (Nf n) (hN n) (e n))
+        Filter.atTop (nhds 1)) :
+    Filter.Tendsto
+      (fun n => prefixNormalizedEulerTrailCorrectionRatioReal (k := k) a ys (Nf n) (hN n) (e n))
+      Filter.atTop (nhds 1) := by
+  refine Filter.Tendsto.congr' ?_ hlim
+  filter_upwards [hBridgePair] with n hn
+  exact
+    (prefixNormalizedEulerTrailCorrectionRatioReal_eq_prefixPositiveTokenRootedArborescenceRatioReal_of_positiveBridgeCardEq_pair
+      (k := k) a ys (Nf n) (hN n) (e n) hn.1 hn.2).symm
 
 lemma prefixRatioFn_eq_prefixHypergeometricFactor_mul_prefixBridgeCorrection_of_prefixCompatibleState
     (a : Fin k) (ys : List (Fin k))
@@ -5393,6 +7000,64 @@ lemma tokenRootedArborescenceCount_deleteCopies_lower
                 simp [tokenDeletionLowerDenominator, deleteCopies, G']
                 ac_rfl
 
+lemma positiveTokenRootedArborescenceCount_deleteCopies_lower
+    {t : Fin k} (G : EulerGraph k) (ds : List (NonrootVertex t × Fin k)) :
+    tokenDeletionLowerNumerator (k := k) G ds *
+        positiveTokenRootedArborescenceCount (k := k) G t ≤
+      tokenDeletionLowerDenominator (k := k) G ds *
+        positiveTokenRootedArborescenceCount
+          (k := k) (deleteCopies (k := k) G ds) t := by
+  induction ds generalizing G with
+  | nil =>
+      simp [deleteCopies, tokenDeletionLowerNumerator, tokenDeletionLowerDenominator]
+  | cons uv ds ih =>
+      rcases uv with ⟨u, v⟩
+      let G' : EulerGraph k := deleteOneCopy (k := k) G u v
+      have hstep :
+          (G u.1 v - 1) * positiveTokenRootedArborescenceCount (k := k) G t ≤
+            G u.1 v * positiveTokenRootedArborescenceCount (k := k) G' t := by
+        simpa [G'] using
+          positiveTokenRootedArborescenceCount_deleteOneCopy_lower
+            (k := k) (G := G) (t := t) (u := u) (v := v)
+      have hstepMul :
+          tokenDeletionLowerNumerator (k := k) G' ds *
+              ((G u.1 v - 1) * positiveTokenRootedArborescenceCount (k := k) G t) ≤
+            tokenDeletionLowerNumerator (k := k) G' ds *
+              (G u.1 v * positiveTokenRootedArborescenceCount (k := k) G' t) :=
+        Nat.mul_le_mul_left _ hstep
+      have hrestMul :
+          G u.1 v *
+              (tokenDeletionLowerNumerator (k := k) G' ds *
+                positiveTokenRootedArborescenceCount (k := k) G' t) ≤
+            G u.1 v *
+              (tokenDeletionLowerDenominator (k := k) G' ds *
+                positiveTokenRootedArborescenceCount (k := k)
+                  (deleteCopies (k := k) G' ds) t) :=
+        Nat.mul_le_mul_left _ (ih (G := G'))
+      calc
+        tokenDeletionLowerNumerator (k := k) G ((u, v) :: ds) *
+            positiveTokenRootedArborescenceCount (k := k) G t
+            =
+              tokenDeletionLowerNumerator (k := k) G' ds *
+                ((G u.1 v - 1) * positiveTokenRootedArborescenceCount (k := k) G t) := by
+                  simp [tokenDeletionLowerNumerator, G']
+                  ac_rfl
+        _ ≤ tokenDeletionLowerNumerator (k := k) G' ds *
+              (G u.1 v * positiveTokenRootedArborescenceCount (k := k) G' t) := hstepMul
+        _ = G u.1 v *
+              (tokenDeletionLowerNumerator (k := k) G' ds *
+                positiveTokenRootedArborescenceCount (k := k) G' t) := by
+                ac_rfl
+        _ ≤ G u.1 v *
+              (tokenDeletionLowerDenominator (k := k) G' ds *
+                positiveTokenRootedArborescenceCount (k := k)
+                  (deleteCopies (k := k) G' ds) t) := hrestMul
+        _ = tokenDeletionLowerDenominator (k := k) G ((u, v) :: ds) *
+              positiveTokenRootedArborescenceCount (k := k)
+                (deleteCopies (k := k) G ((u, v) :: ds)) t := by
+                simp [tokenDeletionLowerDenominator, deleteCopies, G']
+                ac_rfl
+
 lemma tokenRootedArborescenceCount_deleteCopies_le
     {t : Fin k} (G : EulerGraph k) (ds : List (NonrootVertex t × Fin k)) :
     tokenRootedArborescenceCount (k := k) (deleteCopies (k := k) G ds) t ≤
@@ -5570,6 +7235,20 @@ lemma tokenRootedArborescenceCount_residualStateOfPrefix_eq_deleteCopies_prefixN
   intro u v
   exact deleteCopies_prefixNonrootDeletionList_apply (k := k) a ys eN u v
 
+lemma positiveTokenRootedArborescenceCount_residualStateOfPrefix_eq_deleteCopies_prefixNonrootDeletionList
+    (a : Fin k) (ys : List (Fin k)) (eN : MarkovState k) :
+    positiveTokenRootedArborescenceCount (k := k)
+        (graphOfState (k := k) (residualStateOfPrefix (k := k) a ys eN)) eN.last =
+      positiveTokenRootedArborescenceCount (k := k)
+        (deleteCopies (k := k)
+          (graphOfState (k := k) eN)
+          (prefixNonrootDeletionList (k := k) eN.last a ys))
+        eN.last := by
+  symm
+  apply positiveTokenRootedArborescenceCount_congr_nonroot_rows (k := k)
+  intro u v
+  exact deleteCopies_prefixNonrootDeletionList_apply (k := k) a ys eN u v
+
 lemma prefixTokenRootedArborescenceRatio_eq_deleteCopies_prefixNonroot_ratio
     (a : Fin k) (ys : List (Fin k))
     (N : ℕ) (hN : ys.length ≤ N) (eN : MarkovState k) :
@@ -5589,6 +7268,27 @@ lemma prefixTokenRootedArborescenceRatio_eq_deleteCopies_prefixNonroot_ratio
           tokenRootedArborescenceCount (k := k)
             (graphOfState (k := k) eN) eN.last)
       (tokenRootedArborescenceCount_residualStateOfPrefix_eq_deleteCopies_prefixNonrootDeletionList
+        (k := k) a ys eN)
+
+lemma prefixPositiveTokenRootedArborescenceRatio_eq_deleteCopies_prefixNonroot_ratio
+    (a : Fin k) (ys : List (Fin k))
+    (N : ℕ) (hN : ys.length ≤ N) (eN : MarkovState k) :
+    prefixPositiveTokenRootedArborescenceRatio (k := k) a ys N hN eN =
+      ((positiveTokenRootedArborescenceCount (k := k)
+          (deleteCopies (k := k)
+            (graphOfState (k := k) eN)
+            (prefixNonrootDeletionList (k := k) eN.last a ys))
+          eN.last : ℚ) /
+        positiveTokenRootedArborescenceCount (k := k)
+          (graphOfState (k := k) eN) eN.last) := by
+  unfold prefixPositiveTokenRootedArborescenceRatio
+  simpa [residualStateOfPrefix_last] using
+    congrArg
+      (fun m : ℕ =>
+        (m : ℚ) /
+          positiveTokenRootedArborescenceCount (k := k)
+            (graphOfState (k := k) eN) eN.last)
+      (positiveTokenRootedArborescenceCount_residualStateOfPrefix_eq_deleteCopies_prefixNonrootDeletionList
         (k := k) a ys eN)
 
 /-- Prefix-specific lower-bound numerator for the non-root deletion problem. -/
@@ -5637,6 +7337,22 @@ lemma prefixTokenDeletionLowerNumerator_mul_full_le_denominator_mul_residual
     (t := eN.last)
     (ds := prefixNonrootDeletionList (k := k) eN.last a ys)
 
+lemma prefixTokenDeletionLowerNumerator_mul_positiveFull_le_denominator_mul_positiveResidual
+    (a : Fin k) (ys : List (Fin k)) (eN : MarkovState k) :
+    prefixTokenDeletionLowerNumerator (k := k) a ys eN *
+        positiveTokenRootedArborescenceCount (k := k)
+          (graphOfState (k := k) eN) eN.last ≤
+      prefixTokenDeletionLowerDenominator (k := k) a ys eN *
+        positiveTokenRootedArborescenceCount (k := k)
+          (graphOfState (k := k) (residualStateOfPrefix (k := k) a ys eN)) eN.last := by
+  unfold prefixTokenDeletionLowerNumerator prefixTokenDeletionLowerDenominator
+  rw [positiveTokenRootedArborescenceCount_residualStateOfPrefix_eq_deleteCopies_prefixNonrootDeletionList]
+  exact positiveTokenRootedArborescenceCount_deleteCopies_lower
+    (k := k)
+    (G := graphOfState (k := k) eN)
+    (t := eN.last)
+    (ds := prefixNonrootDeletionList (k := k) eN.last a ys)
+
 lemma tokenRootedArborescenceCount_residualStateOfPrefix_le
     (a : Fin k) (ys : List (Fin k)) (eN : MarkovState k) :
     tokenRootedArborescenceCount (k := k)
@@ -5649,6 +7365,345 @@ lemma tokenRootedArborescenceCount_residualStateOfPrefix_le
     (G := graphOfState (k := k) eN)
     (t := eN.last)
     (ds := prefixNonrootDeletionList (k := k) eN.last a ys)
+
+lemma prefixTokenRootedArborescenceRatio_le_one
+    (a : Fin k) (ys : List (Fin k))
+    (N : ℕ) (hN : ys.length ≤ N) (eN : MarkovState k) :
+    prefixTokenRootedArborescenceRatio (k := k) a ys N hN eN ≤ 1 := by
+  unfold prefixTokenRootedArborescenceRatio
+  exact div_le_one_of_le₀
+    (by
+      exact_mod_cast
+        tokenRootedArborescenceCount_residualStateOfPrefix_le
+          (k := k) a ys eN)
+    (by positivity)
+
+lemma prefixTokenRootedArborescenceRatioReal_le_one
+    (a : Fin k) (ys : List (Fin k))
+    (N : ℕ) (hN : ys.length ≤ N) (eN : MarkovState k) :
+    prefixTokenRootedArborescenceRatioReal (k := k) a ys N hN eN ≤ 1 := by
+  change ((prefixTokenRootedArborescenceRatio (k := k) a ys N hN eN : ℚ) : ℝ) ≤ (1 : ℝ)
+  exact_mod_cast
+    (prefixTokenRootedArborescenceRatio_le_one
+      (k := k) a ys N hN eN)
+
+lemma prefixTokenDeletionLowerFactor_le_prefixTokenRootedArborescenceRatio_of_prefixCompatibleState_of_bridge
+    (a : Fin k) (ys : List (Fin k))
+    (N : ℕ) (hN : ys.length ≤ N) (eN : MarkovState k)
+    (hcomp : prefixCompatibleState (k := k) a ys N hN eN)
+    (hBridge :
+      ∀ {M : ℕ} {s : MarkovState k},
+        s ∈ stateFinset k M →
+          normalizedEulerTrailCorrection (k := k) s =
+          tokenRootedArborescenceCount (k := k) (graphOfState (k := k) s) s.last) :
+    prefixTokenDeletionLowerFactor (k := k) a ys eN ≤
+      prefixTokenRootedArborescenceRatio (k := k) a ys N hN eN := by
+  rcases hcomp with ⟨heN, _, _⟩
+  have hfull_ne_zero :
+      tokenRootedArborescenceCount (k := k)
+        (graphOfState (k := k) eN) eN.last ≠ 0 := by
+    intro hzero
+    have hcorr_zero : normalizedEulerTrailCorrection (k := k) eN = 0 := by
+      simpa [hzero] using (hBridge (M := N) heN)
+    exact
+      (normalizedEulerTrailCorrection_ne_zero_of_mem_stateFinset
+        (k := k) heN) hcorr_zero
+  have hfull_pos :
+      0 <
+        (tokenRootedArborescenceCount (k := k)
+          (graphOfState (k := k) eN) eN.last : ℚ) := by
+    exact_mod_cast Nat.pos_iff_ne_zero.mpr hfull_ne_zero
+  by_cases hdenom_zero :
+      prefixTokenDeletionLowerDenominator (k := k) a ys eN = 0
+  · have hratio_nonneg :
+        0 ≤ prefixTokenRootedArborescenceRatio (k := k) a ys N hN eN := by
+      unfold prefixTokenRootedArborescenceRatio
+      exact div_nonneg (by positivity) (by positivity)
+    simpa [prefixTokenDeletionLowerFactor, hdenom_zero] using hratio_nonneg
+  · have hdenom_pos :
+        0 < (prefixTokenDeletionLowerDenominator (k := k) a ys eN : ℚ) := by
+      exact_mod_cast Nat.pos_iff_ne_zero.mpr hdenom_zero
+    rw [prefixTokenDeletionLowerFactor, prefixTokenRootedArborescenceRatio]
+    rw [div_le_div_iff₀ hdenom_pos hfull_pos]
+    have hmul :
+        ((prefixTokenDeletionLowerNumerator (k := k) a ys eN *
+            tokenRootedArborescenceCount (k := k)
+              (graphOfState (k := k) eN) eN.last : ℕ) : ℚ) ≤
+          ((prefixTokenDeletionLowerDenominator (k := k) a ys eN *
+              tokenRootedArborescenceCount (k := k)
+                (graphOfState (k := k) (residualStateOfPrefix (k := k) a ys eN)) eN.last :
+              ℕ) : ℚ) := by
+      exact_mod_cast
+        (prefixTokenDeletionLowerNumerator_mul_full_le_denominator_mul_residual
+          (k := k) a ys eN)
+    simpa [residualStateOfPrefix_last, mul_comm, mul_left_comm, mul_assoc] using hmul
+
+lemma prefixTokenDeletionLowerFactor_le_prefixTokenRootedArborescenceRatio_of_prefixCompatibleState_of_bridgeCardEq
+    (a : Fin k) (ys : List (Fin k))
+    (N : ℕ) (hN : ys.length ≤ N) (eN : MarkovState k)
+    (hcomp : prefixCompatibleState (k := k) a ys N hN eN)
+    (hBridge : tokenRootedBridgeCardEq (k := k) eN) :
+    prefixTokenDeletionLowerFactor (k := k) a ys eN ≤
+      prefixTokenRootedArborescenceRatio (k := k) a ys N hN eN := by
+  rcases hcomp with ⟨heN, _, _⟩
+  have hfull_ne_zero :
+      tokenRootedArborescenceCount (k := k)
+        (graphOfState (k := k) eN) eN.last ≠ 0 := by
+    intro hzero
+    have hcorr_zero : normalizedEulerTrailCorrection (k := k) eN = 0 := by
+      simpa [hzero] using
+        (normalizedEulerTrailCorrection_eq_tokenRootedArborescenceCount_of_tokenRootedBridgeCardEq
+          (k := k) hBridge)
+    exact
+      (normalizedEulerTrailCorrection_ne_zero_of_mem_stateFinset
+        (k := k) heN) hcorr_zero
+  have hfull_pos :
+      0 <
+        (tokenRootedArborescenceCount (k := k)
+          (graphOfState (k := k) eN) eN.last : ℚ) := by
+    exact_mod_cast Nat.pos_iff_ne_zero.mpr hfull_ne_zero
+  by_cases hdenom_zero :
+      prefixTokenDeletionLowerDenominator (k := k) a ys eN = 0
+  · have hratio_nonneg :
+        0 ≤ prefixTokenRootedArborescenceRatio (k := k) a ys N hN eN := by
+      unfold prefixTokenRootedArborescenceRatio
+      exact div_nonneg (by positivity) (by positivity)
+    simpa [prefixTokenDeletionLowerFactor, hdenom_zero] using hratio_nonneg
+  · have hdenom_pos :
+      0 < (prefixTokenDeletionLowerDenominator (k := k) a ys eN : ℚ) := by
+      exact_mod_cast Nat.pos_iff_ne_zero.mpr hdenom_zero
+    rw [prefixTokenDeletionLowerFactor, prefixTokenRootedArborescenceRatio]
+    rw [div_le_div_iff₀ hdenom_pos hfull_pos]
+    have hmul :
+        ((prefixTokenDeletionLowerNumerator (k := k) a ys eN *
+            tokenRootedArborescenceCount (k := k)
+              (graphOfState (k := k) eN) eN.last : ℕ) : ℚ) ≤
+          ((prefixTokenDeletionLowerDenominator (k := k) a ys eN *
+              tokenRootedArborescenceCount (k := k)
+                (graphOfState (k := k) (residualStateOfPrefix (k := k) a ys eN)) eN.last :
+              ℕ) : ℚ) := by
+      exact_mod_cast
+        (prefixTokenDeletionLowerNumerator_mul_full_le_denominator_mul_residual
+          (k := k) a ys eN)
+    simpa [residualStateOfPrefix_last, mul_comm, mul_left_comm, mul_assoc] using hmul
+
+lemma prefixTokenDeletionLowerFactor_le_prefixTokenRootedArborescenceRatio_of_prefixCompatibleState_of_bridgeCard
+    (a : Fin k) (ys : List (Fin k))
+    (N : ℕ) (hN : ys.length ≤ N) (eN : MarkovState k)
+    (hcomp : prefixCompatibleState (k := k) a ys N hN eN)
+    (hBridgeCard :
+      ∀ {M : ℕ} {s : MarkovState k},
+        s ∈ stateFinset k M →
+          (eulerTrailFinset (graphOfState s) s.start s.last).card =
+            tokenRootedArborescenceCount (k := k) (graphOfState (k := k) s) s.last *
+              outdegFactorialWeight (k := k) s) :
+    prefixTokenDeletionLowerFactor (k := k) a ys eN ≤
+      prefixTokenRootedArborescenceRatio (k := k) a ys N hN eN := by
+  exact
+    prefixTokenDeletionLowerFactor_le_prefixTokenRootedArborescenceRatio_of_prefixCompatibleState_of_bridge
+      (k := k) a ys N hN eN hcomp
+      (fun {_M} {_s} hs =>
+        normalizedEulerTrailCorrection_eq_tokenRootedArborescenceCount_of_card_eq
+          (k := k) (hBridgeCard hs))
+
+lemma prefixTokenDeletionLowerFactorReal_le_prefixTokenRootedArborescenceRatioReal_of_prefixCompatibleState_of_bridge
+    (a : Fin k) (ys : List (Fin k))
+    (N : ℕ) (hN : ys.length ≤ N) (eN : MarkovState k)
+    (hcomp : prefixCompatibleState (k := k) a ys N hN eN)
+    (hBridge :
+      ∀ {M : ℕ} {s : MarkovState k},
+        s ∈ stateFinset k M →
+          normalizedEulerTrailCorrection (k := k) s =
+            tokenRootedArborescenceCount (k := k) (graphOfState (k := k) s) s.last) :
+    prefixTokenDeletionLowerFactorReal (k := k) a ys eN ≤
+      prefixTokenRootedArborescenceRatioReal (k := k) a ys N hN eN := by
+  simpa [prefixTokenDeletionLowerFactorReal, prefixTokenRootedArborescenceRatioReal] using
+    (prefixTokenDeletionLowerFactor_le_prefixTokenRootedArborescenceRatio_of_prefixCompatibleState_of_bridge
+      (k := k) a ys N hN eN hcomp hBridge)
+
+lemma prefixTokenDeletionLowerFactorReal_le_prefixTokenRootedArborescenceRatioReal_of_prefixCompatibleState_of_bridgeCard
+    (a : Fin k) (ys : List (Fin k))
+    (N : ℕ) (hN : ys.length ≤ N) (eN : MarkovState k)
+    (hcomp : prefixCompatibleState (k := k) a ys N hN eN)
+    (hBridgeCard :
+      ∀ {M : ℕ} {s : MarkovState k},
+        s ∈ stateFinset k M →
+          (eulerTrailFinset (graphOfState s) s.start s.last).card =
+            tokenRootedArborescenceCount (k := k) (graphOfState (k := k) s) s.last *
+              outdegFactorialWeight (k := k) s) :
+    prefixTokenDeletionLowerFactorReal (k := k) a ys eN ≤
+      prefixTokenRootedArborescenceRatioReal (k := k) a ys N hN eN := by
+  simpa [prefixTokenDeletionLowerFactorReal, prefixTokenRootedArborescenceRatioReal] using
+    (prefixTokenDeletionLowerFactor_le_prefixTokenRootedArborescenceRatio_of_prefixCompatibleState_of_bridgeCard
+      (k := k) a ys N hN eN hcomp hBridgeCard)
+
+lemma prefixTokenDeletionLowerFactorReal_le_prefixTokenRootedArborescenceRatioReal_of_prefixCompatibleState_of_bridgeCardEq
+    (a : Fin k) (ys : List (Fin k))
+    (N : ℕ) (hN : ys.length ≤ N) (eN : MarkovState k)
+    (hcomp : prefixCompatibleState (k := k) a ys N hN eN)
+    (hBridge : tokenRootedBridgeCardEq (k := k) eN) :
+    prefixTokenDeletionLowerFactorReal (k := k) a ys eN ≤
+      prefixTokenRootedArborescenceRatioReal (k := k) a ys N hN eN := by
+  simpa [prefixTokenDeletionLowerFactorReal, prefixTokenRootedArborescenceRatioReal] using
+    (prefixTokenDeletionLowerFactor_le_prefixTokenRootedArborescenceRatio_of_prefixCompatibleState_of_bridgeCardEq
+      (k := k) a ys N hN eN hcomp hBridge)
+
+lemma prefixTokenDeletionLowerFactor_le_prefixPositiveTokenRootedArborescenceRatio_of_prefixCompatibleState_of_positiveBridge
+    (a : Fin k) (ys : List (Fin k))
+    (N : ℕ) (hN : ys.length ≤ N) (eN : MarkovState k)
+    (hcomp : prefixCompatibleState (k := k) a ys N hN eN)
+    (hBridge :
+      ∀ {M : ℕ} {s : MarkovState k},
+        s ∈ stateFinset k M →
+          normalizedEulerTrailCorrection (k := k) s =
+            positiveTokenRootedArborescenceCount (k := k) (graphOfState (k := k) s) s.last) :
+    prefixTokenDeletionLowerFactor (k := k) a ys eN ≤
+      prefixPositiveTokenRootedArborescenceRatio (k := k) a ys N hN eN := by
+  rcases hcomp with ⟨heN, _, _⟩
+  have hfull_ne_zero :
+      positiveTokenRootedArborescenceCount (k := k)
+        (graphOfState (k := k) eN) eN.last ≠ 0 := by
+    intro hzero
+    have hcorr_zero : normalizedEulerTrailCorrection (k := k) eN = 0 := by
+      simpa [hzero] using (hBridge (M := N) heN)
+    exact
+      (normalizedEulerTrailCorrection_ne_zero_of_mem_stateFinset
+        (k := k) heN) hcorr_zero
+  have hfull_pos :
+      0 <
+        (positiveTokenRootedArborescenceCount (k := k)
+          (graphOfState (k := k) eN) eN.last : ℚ) := by
+    exact_mod_cast Nat.pos_iff_ne_zero.mpr hfull_ne_zero
+  by_cases hdenom_zero :
+      prefixTokenDeletionLowerDenominator (k := k) a ys eN = 0
+  · have hratio_nonneg :
+        0 ≤ prefixPositiveTokenRootedArborescenceRatio (k := k) a ys N hN eN := by
+      unfold prefixPositiveTokenRootedArborescenceRatio
+      exact div_nonneg (by positivity) (by positivity)
+    simpa [prefixTokenDeletionLowerFactor, hdenom_zero] using hratio_nonneg
+  · have hdenom_pos :
+        0 < (prefixTokenDeletionLowerDenominator (k := k) a ys eN : ℚ) := by
+      exact_mod_cast Nat.pos_iff_ne_zero.mpr hdenom_zero
+    rw [prefixTokenDeletionLowerFactor, prefixPositiveTokenRootedArborescenceRatio]
+    rw [div_le_div_iff₀ hdenom_pos hfull_pos]
+    have hmul :
+        ((prefixTokenDeletionLowerNumerator (k := k) a ys eN *
+            positiveTokenRootedArborescenceCount (k := k)
+              (graphOfState (k := k) eN) eN.last : ℕ) : ℚ) ≤
+          ((prefixTokenDeletionLowerDenominator (k := k) a ys eN *
+              positiveTokenRootedArborescenceCount (k := k)
+                (graphOfState (k := k) (residualStateOfPrefix (k := k) a ys eN)) eN.last :
+              ℕ) : ℚ) := by
+      exact_mod_cast
+        (prefixTokenDeletionLowerNumerator_mul_positiveFull_le_denominator_mul_positiveResidual
+          (k := k) a ys eN)
+    simpa [residualStateOfPrefix_last, mul_comm, mul_left_comm, mul_assoc] using hmul
+
+lemma prefixTokenDeletionLowerFactor_le_prefixPositiveTokenRootedArborescenceRatio_of_prefixCompatibleState_of_positiveBridgeCard
+    (a : Fin k) (ys : List (Fin k))
+    (N : ℕ) (hN : ys.length ≤ N) (eN : MarkovState k)
+    (hcomp : prefixCompatibleState (k := k) a ys N hN eN)
+    (hBridgeCard :
+      ∀ {M : ℕ} {s : MarkovState k},
+        s ∈ stateFinset k M →
+          positiveTokenRootedBridgeCardEq (k := k) s) :
+    prefixTokenDeletionLowerFactor (k := k) a ys eN ≤
+      prefixPositiveTokenRootedArborescenceRatio (k := k) a ys N hN eN := by
+  exact
+    prefixTokenDeletionLowerFactor_le_prefixPositiveTokenRootedArborescenceRatio_of_prefixCompatibleState_of_positiveBridge
+      (k := k) a ys N hN eN hcomp
+      (fun {_M} {_s} hs =>
+        normalizedEulerTrailCorrection_eq_positiveTokenRootedArborescenceCount_of_positiveTokenRootedBridgeCardEq
+          (k := k) (hBridgeCard hs))
+
+lemma prefixTokenDeletionLowerFactor_le_prefixPositiveTokenRootedArborescenceRatio_of_prefixCompatibleState_of_positiveBridgeCardEq
+    (a : Fin k) (ys : List (Fin k))
+    (N : ℕ) (hN : ys.length ≤ N) (eN : MarkovState k)
+    (hcomp : prefixCompatibleState (k := k) a ys N hN eN)
+    (hBridge : positiveTokenRootedBridgeCardEq (k := k) eN) :
+    prefixTokenDeletionLowerFactor (k := k) a ys eN ≤
+      prefixPositiveTokenRootedArborescenceRatio (k := k) a ys N hN eN := by
+  rcases hcomp with ⟨heN, _, _⟩
+  have hfull_ne_zero :
+      positiveTokenRootedArborescenceCount (k := k)
+        (graphOfState (k := k) eN) eN.last ≠ 0 := by
+    intro hzero
+    have hcorr_zero : normalizedEulerTrailCorrection (k := k) eN = 0 := by
+      simpa [hzero] using
+        (normalizedEulerTrailCorrection_eq_positiveTokenRootedArborescenceCount_of_positiveTokenRootedBridgeCardEq
+          (k := k) hBridge)
+    exact
+      (normalizedEulerTrailCorrection_ne_zero_of_mem_stateFinset
+        (k := k) heN) hcorr_zero
+  have hfull_pos :
+      0 <
+        (positiveTokenRootedArborescenceCount (k := k)
+          (graphOfState (k := k) eN) eN.last : ℚ) := by
+    exact_mod_cast Nat.pos_iff_ne_zero.mpr hfull_ne_zero
+  by_cases hdenom_zero :
+      prefixTokenDeletionLowerDenominator (k := k) a ys eN = 0
+  · have hratio_nonneg :
+        0 ≤ prefixPositiveTokenRootedArborescenceRatio (k := k) a ys N hN eN := by
+      unfold prefixPositiveTokenRootedArborescenceRatio
+      exact div_nonneg (by positivity) (by positivity)
+    simpa [prefixTokenDeletionLowerFactor, hdenom_zero] using hratio_nonneg
+  · have hdenom_pos :
+      0 < (prefixTokenDeletionLowerDenominator (k := k) a ys eN : ℚ) := by
+      exact_mod_cast Nat.pos_iff_ne_zero.mpr hdenom_zero
+    rw [prefixTokenDeletionLowerFactor, prefixPositiveTokenRootedArborescenceRatio]
+    rw [div_le_div_iff₀ hdenom_pos hfull_pos]
+    have hmul :
+        ((prefixTokenDeletionLowerNumerator (k := k) a ys eN *
+            positiveTokenRootedArborescenceCount (k := k)
+              (graphOfState (k := k) eN) eN.last : ℕ) : ℚ) ≤
+          ((prefixTokenDeletionLowerDenominator (k := k) a ys eN *
+              positiveTokenRootedArborescenceCount (k := k)
+                (graphOfState (k := k) (residualStateOfPrefix (k := k) a ys eN)) eN.last :
+              ℕ) : ℚ) := by
+      exact_mod_cast
+        (prefixTokenDeletionLowerNumerator_mul_positiveFull_le_denominator_mul_positiveResidual
+          (k := k) a ys eN)
+    simpa [residualStateOfPrefix_last, mul_comm, mul_left_comm, mul_assoc] using hmul
+
+lemma prefixTokenDeletionLowerFactorReal_le_prefixPositiveTokenRootedArborescenceRatioReal_of_prefixCompatibleState_of_positiveBridge
+    (a : Fin k) (ys : List (Fin k))
+    (N : ℕ) (hN : ys.length ≤ N) (eN : MarkovState k)
+    (hcomp : prefixCompatibleState (k := k) a ys N hN eN)
+    (hBridge :
+      ∀ {M : ℕ} {s : MarkovState k},
+        s ∈ stateFinset k M →
+          normalizedEulerTrailCorrection (k := k) s =
+            positiveTokenRootedArborescenceCount (k := k) (graphOfState (k := k) s) s.last) :
+    prefixTokenDeletionLowerFactorReal (k := k) a ys eN ≤
+      prefixPositiveTokenRootedArborescenceRatioReal (k := k) a ys N hN eN := by
+  simpa [prefixTokenDeletionLowerFactorReal, prefixPositiveTokenRootedArborescenceRatioReal] using
+    (prefixTokenDeletionLowerFactor_le_prefixPositiveTokenRootedArborescenceRatio_of_prefixCompatibleState_of_positiveBridge
+      (k := k) a ys N hN eN hcomp hBridge)
+
+lemma prefixTokenDeletionLowerFactorReal_le_prefixPositiveTokenRootedArborescenceRatioReal_of_prefixCompatibleState_of_positiveBridgeCard
+    (a : Fin k) (ys : List (Fin k))
+    (N : ℕ) (hN : ys.length ≤ N) (eN : MarkovState k)
+    (hcomp : prefixCompatibleState (k := k) a ys N hN eN)
+    (hBridgeCard :
+      ∀ {M : ℕ} {s : MarkovState k},
+        s ∈ stateFinset k M →
+          positiveTokenRootedBridgeCardEq (k := k) s) :
+    prefixTokenDeletionLowerFactorReal (k := k) a ys eN ≤
+      prefixPositiveTokenRootedArborescenceRatioReal (k := k) a ys N hN eN := by
+  simpa [prefixTokenDeletionLowerFactorReal, prefixPositiveTokenRootedArborescenceRatioReal] using
+    (prefixTokenDeletionLowerFactor_le_prefixPositiveTokenRootedArborescenceRatio_of_prefixCompatibleState_of_positiveBridgeCard
+      (k := k) a ys N hN eN hcomp hBridgeCard)
+
+lemma prefixTokenDeletionLowerFactorReal_le_prefixPositiveTokenRootedArborescenceRatioReal_of_prefixCompatibleState_of_positiveBridgeCardEq
+    (a : Fin k) (ys : List (Fin k))
+    (N : ℕ) (hN : ys.length ≤ N) (eN : MarkovState k)
+    (hcomp : prefixCompatibleState (k := k) a ys N hN eN)
+    (hBridge : positiveTokenRootedBridgeCardEq (k := k) eN) :
+    prefixTokenDeletionLowerFactorReal (k := k) a ys eN ≤
+      prefixPositiveTokenRootedArborescenceRatioReal (k := k) a ys N hN eN := by
+  simpa [prefixTokenDeletionLowerFactorReal, prefixPositiveTokenRootedArborescenceRatioReal] using
+    (prefixTokenDeletionLowerFactor_le_prefixPositiveTokenRootedArborescenceRatio_of_prefixCompatibleState_of_positiveBridgeCardEq
+      (k := k) a ys N hN eN hcomp hBridge)
 
 /-- Exact squeeze boundary for the remaining token-rooted stability problem. If
 the concrete lower factor tends to `1`, and the token-rooted ratio is
@@ -6113,6 +8168,505 @@ bridge needed for the final dominated-convergence step. -/
     (ω : ℕ → Fin k) (N : ℕ) :
     pathPrefixState (k := k) ω N ∈ stateFinset k N := by
   exact stateOfTraj_mem_stateFinset (k := k) (xs := pathPrefixTraj (k := k) ω N)
+
+/-- The exact finite bridge-cardinality data actually used along one path:
+the full path-prefix state and its residual-after-prefix state both satisfy the
+token-rooted bridge identity. -/
+def pathPrefixBridgeCardEqPair
+    (a : Fin k) (ys : List (Fin k))
+    (ω : ℕ → Fin k) (r : ℕ) : Prop :=
+  tokenRootedBridgeCardEq (k := k)
+      (pathPrefixState (k := k) ω (ys.length + r)) ∧
+    tokenRootedBridgeCardEq (k := k)
+      (residualStateOfPrefix (k := k) a ys
+        (pathPrefixState (k := k) ω (ys.length + r)))
+
+/-- Support-local exact finite bridge-cardinality data actually used along one
+path: the full path-prefix state and its residual-after-prefix state both
+satisfy the support-local rooted-arborescence bridge identity. -/
+def pathPrefixPositiveBridgeCardEqPair
+    (a : Fin k) (ys : List (Fin k))
+    (ω : ℕ → Fin k) (r : ℕ) : Prop :=
+  positiveTokenRootedBridgeCardEq (k := k)
+      (pathPrefixState (k := k) ω (ys.length + r)) ∧
+    positiveTokenRootedBridgeCardEq (k := k)
+      (residualStateOfPrefix (k := k) a ys
+        (pathPrefixState (k := k) ω (ys.length + r)))
+
+lemma pathPrefixBridgeCardEqPair_of_globalBridgeCard_of_prefixCompatibleState
+    (a : Fin k) (ys : List (Fin k))
+    (ω : ℕ → Fin k) (r : ℕ)
+    (hcomp :
+      prefixCompatibleState (k := k) a ys (ys.length + r)
+        (Nat.le_add_right ys.length r)
+        (pathPrefixState (k := k) ω (ys.length + r)))
+    (hBridgeCard :
+      ∀ {M : ℕ} {s : MarkovState k},
+        s ∈ stateFinset k M →
+          tokenRootedBridgeCardEq (k := k) s) :
+    pathPrefixBridgeCardEqPair (k := k) a ys ω r := by
+  rcases hcomp with ⟨_, _, hres⟩
+  constructor
+  · exact hBridgeCard (pathPrefixState_mem_stateFinset (k := k) ω (ys.length + r))
+  · exact hBridgeCard hres
+
+lemma ae_eventually_pathPrefixBridgeCardEqPair_of_globalBridgeCard_of_eventually_prefixCompatibleState
+    (P : Measure (ℕ → Fin k))
+    (a : Fin k) (ys : List (Fin k))
+    (hcomp :
+      ∀ᵐ ω ∂P,
+        ω 0 = a →
+          ∀ᶠ r in Filter.atTop,
+            prefixCompatibleState (k := k) a ys (ys.length + r)
+              (Nat.le_add_right ys.length r)
+              (pathPrefixState (k := k) ω (ys.length + r)))
+    (hBridgeCard :
+      ∀ {M : ℕ} {s : MarkovState k},
+        s ∈ stateFinset k M →
+          tokenRootedBridgeCardEq (k := k) s) :
+    ∀ᵐ ω ∂P,
+      ω 0 = a →
+        ∀ᶠ r in Filter.atTop, pathPrefixBridgeCardEqPair (k := k) a ys ω r := by
+  filter_upwards [hcomp] with ω hcompω hstart
+  filter_upwards [hcompω hstart] with r hr
+  exact
+    pathPrefixBridgeCardEqPair_of_globalBridgeCard_of_prefixCompatibleState
+      (k := k) a ys ω r hr hBridgeCard
+
+lemma pathPrefixPositiveBridgeCardEqPair_of_globalPositiveBridgeCard_of_prefixCompatibleState
+    (a : Fin k) (ys : List (Fin k))
+    (ω : ℕ → Fin k) (r : ℕ)
+    (hcomp :
+      prefixCompatibleState (k := k) a ys (ys.length + r)
+        (Nat.le_add_right ys.length r)
+        (pathPrefixState (k := k) ω (ys.length + r)))
+    (hBridgeCard :
+      ∀ {M : ℕ} {s : MarkovState k},
+        s ∈ stateFinset k M →
+          positiveTokenRootedBridgeCardEq (k := k) s) :
+    pathPrefixPositiveBridgeCardEqPair (k := k) a ys ω r := by
+  rcases hcomp with ⟨_, _, hres⟩
+  constructor
+  · exact hBridgeCard (pathPrefixState_mem_stateFinset (k := k) ω (ys.length + r))
+  · exact hBridgeCard hres
+
+lemma ae_eventually_pathPrefixPositiveBridgeCardEqPair_of_globalPositiveBridgeCard_of_eventually_prefixCompatibleState
+    (P : Measure (ℕ → Fin k))
+    (a : Fin k) (ys : List (Fin k))
+    (hcomp :
+      ∀ᵐ ω ∂P,
+        ω 0 = a →
+          ∀ᶠ r in Filter.atTop,
+            prefixCompatibleState (k := k) a ys (ys.length + r)
+              (Nat.le_add_right ys.length r)
+              (pathPrefixState (k := k) ω (ys.length + r)))
+    (hBridgeCard :
+      ∀ {M : ℕ} {s : MarkovState k},
+        s ∈ stateFinset k M →
+          positiveTokenRootedBridgeCardEq (k := k) s) :
+    ∀ᵐ ω ∂P,
+      ω 0 = a →
+        ∀ᶠ r in Filter.atTop, pathPrefixPositiveBridgeCardEqPair (k := k) a ys ω r := by
+  filter_upwards [hcomp] with ω hcompω hstart
+  filter_upwards [hcompω hstart] with r hr
+  exact
+    pathPrefixPositiveBridgeCardEqPair_of_globalPositiveBridgeCard_of_prefixCompatibleState
+      (k := k) a ys ω r hr hBridgeCard
+
+lemma pathPrefixBridgeCardEqPair_of_pathPrefixPositiveBridgeCardEqPair_of_prefixCompatibleState_of_forall_outdeg_gt_prefixWordState_outdeg
+    (a : Fin k) (ys : List (Fin k))
+    (ω : ℕ → Fin k) (r : ℕ)
+    (hcomp :
+      prefixCompatibleState (k := k) a ys (ys.length + r)
+        (Nat.le_add_right ys.length r)
+        (pathPrefixState (k := k) ω (ys.length + r)))
+    (hgt :
+      ∀ i : Fin k,
+        MarkovDeFinettiHardEuler.outdeg (k := k)
+            (prefixWordState (k := k) a ys) i <
+          MarkovDeFinettiHardEuler.outdeg (k := k)
+            (pathPrefixState (k := k) ω (ys.length + r)) i)
+    (hBridgePos :
+      pathPrefixPositiveBridgeCardEqPair (k := k) a ys ω r) :
+    pathPrefixBridgeCardEqPair (k := k) a ys ω r := by
+  rcases hBridgePos with ⟨hfullPos, hresPos⟩
+  constructor
+  · exact
+      tokenRootedBridgeCardEq_of_positiveTokenRootedBridgeCardEq_of_forall_pos
+        (k := k) hfullPos
+        (hpos := by
+          intro u
+          exact lt_of_le_of_lt (Nat.zero_le _) (hgt u.1))
+  · exact
+      tokenRootedBridgeCardEq_of_positiveTokenRootedBridgeCardEq_of_forall_pos
+        (k := k) hresPos
+        (hpos := by
+          intro u
+          rw [residualStateOfPrefix_outdeg
+            (k := k) a ys (ys.length + r) (Nat.le_add_right ys.length r)
+            (pathPrefixState (k := k) ω (ys.length + r)) hcomp u.1]
+          exact Nat.sub_pos_of_lt (hgt u.1))
+
+lemma pathPrefixPositiveBridgeCardEqPair_of_pathPrefixBridgeCardEqPair_of_prefixCompatibleState_of_forall_outdeg_gt_prefixWordState_outdeg
+    (a : Fin k) (ys : List (Fin k))
+    (ω : ℕ → Fin k) (r : ℕ)
+    (hcomp :
+      prefixCompatibleState (k := k) a ys (ys.length + r)
+        (Nat.le_add_right ys.length r)
+        (pathPrefixState (k := k) ω (ys.length + r)))
+    (hgt :
+      ∀ i : Fin k,
+        MarkovDeFinettiHardEuler.outdeg (k := k)
+            (prefixWordState (k := k) a ys) i <
+          MarkovDeFinettiHardEuler.outdeg (k := k)
+            (pathPrefixState (k := k) ω (ys.length + r)) i)
+    (hBridge :
+      pathPrefixBridgeCardEqPair (k := k) a ys ω r) :
+    pathPrefixPositiveBridgeCardEqPair (k := k) a ys ω r := by
+  rcases hBridge with ⟨hfull, hres⟩
+  constructor
+  · exact
+      positiveTokenRootedBridgeCardEq_of_tokenRootedBridgeCardEq_of_forall_pos
+        (k := k) hfull
+        (hpos := by
+          intro u
+          exact lt_of_le_of_lt (Nat.zero_le _) (hgt u.1))
+  · exact
+      positiveTokenRootedBridgeCardEq_of_tokenRootedBridgeCardEq_of_forall_pos
+        (k := k) hres
+        (hpos := by
+          intro u
+          rw [residualStateOfPrefix_outdeg
+            (k := k) a ys (ys.length + r) (Nat.le_add_right ys.length r)
+            (pathPrefixState (k := k) ω (ys.length + r)) hcomp u.1]
+          exact Nat.sub_pos_of_lt (hgt u.1))
+
+lemma pathPrefixPositiveBridgeCardEqPair_iff_pathPrefixBridgeCardEqPair_of_prefixCompatibleState_of_forall_outdeg_gt_prefixWordState_outdeg
+    (a : Fin k) (ys : List (Fin k))
+    (ω : ℕ → Fin k) (r : ℕ)
+    (hcomp :
+      prefixCompatibleState (k := k) a ys (ys.length + r)
+        (Nat.le_add_right ys.length r)
+        (pathPrefixState (k := k) ω (ys.length + r)))
+    (hgt :
+      ∀ i : Fin k,
+        MarkovDeFinettiHardEuler.outdeg (k := k)
+            (prefixWordState (k := k) a ys) i <
+          MarkovDeFinettiHardEuler.outdeg (k := k)
+            (pathPrefixState (k := k) ω (ys.length + r)) i) :
+    pathPrefixPositiveBridgeCardEqPair (k := k) a ys ω r ↔
+      pathPrefixBridgeCardEqPair (k := k) a ys ω r := by
+  constructor
+  · intro hBridgePos
+    exact
+      pathPrefixBridgeCardEqPair_of_pathPrefixPositiveBridgeCardEqPair_of_prefixCompatibleState_of_forall_outdeg_gt_prefixWordState_outdeg
+        (k := k) a ys ω r hcomp hgt hBridgePos
+  · intro hBridge
+    exact
+      pathPrefixPositiveBridgeCardEqPair_of_pathPrefixBridgeCardEqPair_of_prefixCompatibleState_of_forall_outdeg_gt_prefixWordState_outdeg
+        (k := k) a ys ω r hcomp hgt hBridge
+
+lemma ae_eventually_pathPrefixBridgeCardEqPair_of_globalPositiveBridgeCard_of_eventually_prefixCompatibleState_of_ae_tendsto_outdeg
+    (P : Measure (ℕ → Fin k))
+    (a : Fin k) (ys : List (Fin k))
+    (hcomp :
+      ∀ᵐ ω ∂P,
+        ω 0 = a →
+          ∀ᶠ r in Filter.atTop,
+            prefixCompatibleState (k := k) a ys (ys.length + r)
+              (Nat.le_add_right ys.length r)
+              (pathPrefixState (k := k) ω (ys.length + r)))
+    (hBridgeCard :
+      ∀ {M : ℕ} {s : MarkovState k},
+        s ∈ stateFinset k M →
+          positiveTokenRootedBridgeCardEq (k := k) s)
+    (hout :
+      ∀ i : Fin k,
+        ∀ᵐ ω ∂P,
+          ω 0 = a →
+            Filter.Tendsto
+              (fun r =>
+                MarkovDeFinettiHardEuler.outdeg (k := k)
+                  (pathPrefixState (k := k) ω (ys.length + r)) i)
+              Filter.atTop Filter.atTop) :
+    ∀ᵐ ω ∂P,
+      ω 0 = a →
+        ∀ᶠ r in Filter.atTop, pathPrefixBridgeCardEqPair (k := k) a ys ω r := by
+  have hBridgePos :
+      ∀ᵐ ω ∂P,
+        ω 0 = a →
+          ∀ᶠ r in Filter.atTop, pathPrefixPositiveBridgeCardEqPair (k := k) a ys ω r :=
+    ae_eventually_pathPrefixPositiveBridgeCardEqPair_of_globalPositiveBridgeCard_of_eventually_prefixCompatibleState
+      (k := k) P a ys hcomp hBridgeCard
+  have houtAll :
+      ∀ᵐ ω ∂P,
+        ω 0 = a →
+          ∀ i : Fin k,
+            Filter.Tendsto
+              (fun r =>
+                MarkovDeFinettiHardEuler.outdeg (k := k)
+                  (pathPrefixState (k := k) ω (ys.length + r)) i)
+              Filter.atTop Filter.atTop := by
+    have hpack :
+        ∀ᵐ ω ∂P,
+          ∀ i : Fin k,
+            ω 0 = a →
+              Filter.Tendsto
+                (fun r =>
+                  MarkovDeFinettiHardEuler.outdeg (k := k)
+                    (pathPrefixState (k := k) ω (ys.length + r)) i)
+                Filter.atTop Filter.atTop := by
+      rw [ae_all_iff]
+      intro i
+      exact hout i
+    filter_upwards [hpack] with ω hω hstart i
+    exact hω i hstart
+  filter_upwards [hcomp, hBridgePos, houtAll] with ω hcompω hBridgePosω houtω hstart
+  have hgt :
+      ∀ᶠ r in Filter.atTop,
+        ∀ i : Fin k,
+          MarkovDeFinettiHardEuler.outdeg (k := k)
+              (prefixWordState (k := k) a ys) i <
+            MarkovDeFinettiHardEuler.outdeg (k := k)
+              (pathPrefixState (k := k) ω (ys.length + r)) i := by
+    rw [Filter.eventually_all]
+    intro i
+    have hmem :
+        Set.Ici
+          (MarkovDeFinettiHardEuler.outdeg (k := k)
+            (prefixWordState (k := k) a ys) i + 1) ∈
+          (Filter.atTop : Filter ℕ) := by
+      exact Filter.mem_atTop_sets.2
+        ⟨MarkovDeFinettiHardEuler.outdeg (k := k)
+            (prefixWordState (k := k) a ys) i + 1,
+          fun b hb => hb⟩
+    filter_upwards [houtω hstart i hmem] with r hr
+    exact lt_of_lt_of_le (Nat.lt_succ_self _) hr
+  filter_upwards [hcompω hstart, hBridgePosω hstart, hgt] with r hrcomp hrBridgePos hrgt
+  exact
+    pathPrefixBridgeCardEqPair_of_pathPrefixPositiveBridgeCardEqPair_of_prefixCompatibleState_of_forall_outdeg_gt_prefixWordState_outdeg
+      (k := k) a ys ω r hrcomp hrgt hrBridgePos
+
+lemma ae_eventually_pathPrefixBridgeCardEqPair_of_ae_pathPrefixPositiveBridgeCardEqPair_of_eventually_prefixCompatibleState_of_ae_tendsto_outdeg
+    (P : Measure (ℕ → Fin k))
+    (a : Fin k) (ys : List (Fin k))
+    (hcomp :
+      ∀ᵐ ω ∂P,
+        ω 0 = a →
+          ∀ᶠ r in Filter.atTop,
+            prefixCompatibleState (k := k) a ys (ys.length + r)
+              (Nat.le_add_right ys.length r)
+              (pathPrefixState (k := k) ω (ys.length + r)))
+    (hBridgePos :
+      ∀ᵐ ω ∂P,
+        ω 0 = a →
+          ∀ᶠ r in Filter.atTop, pathPrefixPositiveBridgeCardEqPair (k := k) a ys ω r)
+    (hout :
+      ∀ i : Fin k,
+        ∀ᵐ ω ∂P,
+          ω 0 = a →
+            Filter.Tendsto
+              (fun r =>
+                MarkovDeFinettiHardEuler.outdeg (k := k)
+                  (pathPrefixState (k := k) ω (ys.length + r)) i)
+              Filter.atTop Filter.atTop) :
+    ∀ᵐ ω ∂P,
+      ω 0 = a →
+        ∀ᶠ r in Filter.atTop, pathPrefixBridgeCardEqPair (k := k) a ys ω r := by
+  have houtAll :
+      ∀ᵐ ω ∂P,
+        ω 0 = a →
+          ∀ i : Fin k,
+            Filter.Tendsto
+              (fun r =>
+                MarkovDeFinettiHardEuler.outdeg (k := k)
+                  (pathPrefixState (k := k) ω (ys.length + r)) i)
+              Filter.atTop Filter.atTop := by
+    have hpack :
+        ∀ᵐ ω ∂P,
+          ∀ i : Fin k,
+            ω 0 = a →
+              Filter.Tendsto
+                (fun r =>
+                  MarkovDeFinettiHardEuler.outdeg (k := k)
+                    (pathPrefixState (k := k) ω (ys.length + r)) i)
+                Filter.atTop Filter.atTop := by
+      rw [ae_all_iff]
+      intro i
+      exact hout i
+    filter_upwards [hpack] with ω hω hstart i
+    exact hω i hstart
+  filter_upwards [hcomp, hBridgePos, houtAll] with ω hcompω hBridgePosω houtω hstart
+  have hgt :
+      ∀ᶠ r in Filter.atTop,
+        ∀ i : Fin k,
+          MarkovDeFinettiHardEuler.outdeg (k := k)
+              (prefixWordState (k := k) a ys) i <
+            MarkovDeFinettiHardEuler.outdeg (k := k)
+              (pathPrefixState (k := k) ω (ys.length + r)) i := by
+    rw [Filter.eventually_all]
+    intro i
+    have hmem :
+        Set.Ici
+          (MarkovDeFinettiHardEuler.outdeg (k := k)
+            (prefixWordState (k := k) a ys) i + 1) ∈
+          (Filter.atTop : Filter ℕ) := by
+      exact Filter.mem_atTop_sets.2
+        ⟨MarkovDeFinettiHardEuler.outdeg (k := k)
+            (prefixWordState (k := k) a ys) i + 1,
+          fun b hb => hb⟩
+    filter_upwards [houtω hstart i hmem] with r hr
+    exact lt_of_lt_of_le (Nat.lt_succ_self _) hr
+  filter_upwards [hcompω hstart, hBridgePosω hstart, hgt] with r hrcomp hrBridgePos hrgt
+  exact
+    pathPrefixBridgeCardEqPair_of_pathPrefixPositiveBridgeCardEqPair_of_prefixCompatibleState_of_forall_outdeg_gt_prefixWordState_outdeg
+      (k := k) a ys ω r hrcomp hrgt hrBridgePos
+
+lemma ae_eventually_pathPrefixPositiveBridgeCardEqPair_of_globalBridgeCard_of_eventually_prefixCompatibleState_of_ae_tendsto_outdeg
+    (P : Measure (ℕ → Fin k))
+    (a : Fin k) (ys : List (Fin k))
+    (hcomp :
+      ∀ᵐ ω ∂P,
+        ω 0 = a →
+          ∀ᶠ r in Filter.atTop,
+            prefixCompatibleState (k := k) a ys (ys.length + r)
+              (Nat.le_add_right ys.length r)
+              (pathPrefixState (k := k) ω (ys.length + r)))
+    (hBridgeCard :
+      ∀ {M : ℕ} {s : MarkovState k},
+        s ∈ stateFinset k M →
+          tokenRootedBridgeCardEq (k := k) s)
+    (hout :
+      ∀ i : Fin k,
+        ∀ᵐ ω ∂P,
+          ω 0 = a →
+            Filter.Tendsto
+              (fun r =>
+                MarkovDeFinettiHardEuler.outdeg (k := k)
+                  (pathPrefixState (k := k) ω (ys.length + r)) i)
+              Filter.atTop Filter.atTop) :
+    ∀ᵐ ω ∂P,
+      ω 0 = a →
+        ∀ᶠ r in Filter.atTop, pathPrefixPositiveBridgeCardEqPair (k := k) a ys ω r := by
+  have hBridge :
+      ∀ᵐ ω ∂P,
+        ω 0 = a →
+          ∀ᶠ r in Filter.atTop, pathPrefixBridgeCardEqPair (k := k) a ys ω r :=
+    ae_eventually_pathPrefixBridgeCardEqPair_of_globalBridgeCard_of_eventually_prefixCompatibleState
+      (k := k) P a ys hcomp hBridgeCard
+  have houtAll :
+      ∀ᵐ ω ∂P,
+        ω 0 = a →
+          ∀ i : Fin k,
+            Filter.Tendsto
+              (fun r =>
+                MarkovDeFinettiHardEuler.outdeg (k := k)
+                  (pathPrefixState (k := k) ω (ys.length + r)) i)
+              Filter.atTop Filter.atTop := by
+    have hpack :
+        ∀ᵐ ω ∂P,
+          ∀ i : Fin k,
+            ω 0 = a →
+              Filter.Tendsto
+                (fun r =>
+                  MarkovDeFinettiHardEuler.outdeg (k := k)
+                    (pathPrefixState (k := k) ω (ys.length + r)) i)
+                Filter.atTop Filter.atTop := by
+      rw [ae_all_iff]
+      intro i
+      exact hout i
+    filter_upwards [hpack] with ω hω hstart i
+    exact hω i hstart
+  filter_upwards [hcomp, hBridge, houtAll] with ω hcompω hBridgeω houtω hstart
+  have hgt :
+      ∀ᶠ r in Filter.atTop,
+        ∀ i : Fin k,
+          MarkovDeFinettiHardEuler.outdeg (k := k)
+              (prefixWordState (k := k) a ys) i <
+            MarkovDeFinettiHardEuler.outdeg (k := k)
+              (pathPrefixState (k := k) ω (ys.length + r)) i := by
+    rw [Filter.eventually_all]
+    intro i
+    have hmem :
+        Set.Ici
+          (MarkovDeFinettiHardEuler.outdeg (k := k)
+            (prefixWordState (k := k) a ys) i + 1) ∈
+          (Filter.atTop : Filter ℕ) := by
+      exact Filter.mem_atTop_sets.2
+        ⟨MarkovDeFinettiHardEuler.outdeg (k := k)
+            (prefixWordState (k := k) a ys) i + 1,
+          fun b hb => hb⟩
+    filter_upwards [houtω hstart i hmem] with r hr
+    exact lt_of_lt_of_le (Nat.lt_succ_self _) hr
+  filter_upwards [hcompω hstart, hBridgeω hstart, hgt] with r hrcomp hrBridge hrgt
+  exact
+    pathPrefixPositiveBridgeCardEqPair_of_pathPrefixBridgeCardEqPair_of_prefixCompatibleState_of_forall_outdeg_gt_prefixWordState_outdeg
+      (k := k) a ys ω r hrcomp hrgt hrBridge
+
+lemma eventually_forall_outdeg_gt_prefixWordState_outdeg_of_tendsto
+    (a : Fin k) (ys : List (Fin k))
+    (e : ℕ → MarkovState k)
+    (hout :
+      ∀ i : Fin k,
+        Filter.Tendsto
+          (fun n => MarkovDeFinettiHardEuler.outdeg (k := k) (e n) i)
+          Filter.atTop Filter.atTop) :
+    ∀ᶠ n in Filter.atTop,
+      ∀ i : Fin k,
+        MarkovDeFinettiHardEuler.outdeg (k := k)
+            (prefixWordState (k := k) a ys) i <
+          MarkovDeFinettiHardEuler.outdeg (k := k) (e n) i := by
+  rw [Filter.eventually_all]
+  intro i
+  have hmem :
+      Set.Ici
+        (MarkovDeFinettiHardEuler.outdeg (k := k)
+          (prefixWordState (k := k) a ys) i + 1) ∈
+        (Filter.atTop : Filter ℕ) := by
+    exact Filter.mem_atTop_sets.2
+      ⟨MarkovDeFinettiHardEuler.outdeg (k := k)
+          (prefixWordState (k := k) a ys) i + 1,
+        fun b hb => hb⟩
+  filter_upwards [hout i hmem] with n hn
+  exact lt_of_lt_of_le (Nat.lt_succ_self _) hn
+
+lemma eventually_eq_prefixPositiveTokenRootedArborescenceRatioReal_of_prefixTokenRootedArborescenceRatioReal_of_eventually_prefixCompatibleState_of_eventually_forall_outdeg_gt_prefixWordState_outdeg
+    (a : Fin k) (ys : List (Fin k))
+    (ω : ℕ → Fin k)
+    (hcomp :
+      ∀ᶠ r in Filter.atTop,
+        prefixCompatibleState (k := k) a ys (ys.length + r)
+          (Nat.le_add_right ys.length r)
+          (pathPrefixState (k := k) ω (ys.length + r)))
+    (hgt :
+      ∀ᶠ r in Filter.atTop,
+        ∀ i : Fin k,
+          MarkovDeFinettiHardEuler.outdeg (k := k)
+              (prefixWordState (k := k) a ys) i <
+            MarkovDeFinettiHardEuler.outdeg (k := k)
+              (pathPrefixState (k := k) ω (ys.length + r)) i) :
+    (fun r =>
+      prefixPositiveTokenRootedArborescenceRatioReal (k := k) a ys
+        (ys.length + r) (Nat.le_add_right ys.length r)
+        (pathPrefixState (k := k) ω (ys.length + r))) =ᶠ[Filter.atTop]
+      (fun r =>
+        prefixTokenRootedArborescenceRatioReal (k := k) a ys
+          (ys.length + r) (Nat.le_add_right ys.length r)
+          (pathPrefixState (k := k) ω (ys.length + r))) := by
+  filter_upwards [hcomp, hgt] with r hcomp_r hgt_r
+  exact
+    prefixPositiveTokenRootedArborescenceRatioReal_eq_prefixTokenRootedArborescenceRatioReal_of_forall_pos
+      (k := k) a ys (ys.length + r) (Nat.le_add_right ys.length r)
+      (pathPrefixState (k := k) ω (ys.length + r))
+      (hres := by
+        intro u
+        rw [residualStateOfPrefix_outdeg
+          (k := k) a ys (ys.length + r) (Nat.le_add_right ys.length r)
+          (pathPrefixState (k := k) ω (ys.length + r)) hcomp_r u.1]
+        exact Nat.sub_pos_of_lt (hgt_r u.1))
+      (hfull := by
+        intro u
+        exact lt_of_le_of_lt (Nat.zero_le _) (hgt_r u.1))
 
 lemma pairwiseDisjoint_cylinder_on_trajSet
     {N : ℕ} (A : Finset (Traj k N)) :
@@ -6644,6 +9198,50 @@ lemma mem_prefixUsedTransitionSet_iff
     (i, j) ∈ prefixUsedTransitionSet (k := k) a ys ↔
       0 < (prefixWordState (k := k) a ys).counts.counts i j := by
   simp [prefixUsedTransitionSet]
+
+lemma prefixThetaPowerProduct_eq_zero_of_mem_prefixUsedTransitionSet_zero
+    (a : Fin k) (ys : List (Fin k)) (Θ : Fin k → Fin k → ℝ)
+    {p : Fin k × Fin k}
+    (hp : p ∈ prefixUsedTransitionSet (k := k) a ys)
+    (hzero : Θ p.1 p.2 = 0) :
+    prefixThetaPowerProduct (k := k) a ys Θ = 0 := by
+  classical
+  rcases p with ⟨i, j⟩
+  have hcount :
+      0 < (prefixWordState (k := k) a ys).counts.counts i j := by
+    simpa [mem_prefixUsedTransitionSet_iff] using hp
+  have hcount_ne :
+      transCount (wordTraj (k := k) a ys) i j ≠ 0 := by
+    simpa [prefixWordState_counts] using hcount.ne'
+  unfold prefixThetaPowerProduct
+  refine Finset.prod_eq_zero (i := i) (by simp) ?_
+  refine Finset.prod_eq_zero (i := j) (by simp) ?_
+  simp [hzero, prefixWordState_counts, hcount_ne]
+
+lemma prefixThetaPowerProduct_eq_zero_of_exists_mem_prefixUsedTransitionSet_zero
+    (a : Fin k) (ys : List (Fin k)) (Θ : Fin k → Fin k → ℝ)
+    (hzero :
+      ∃ p ∈ prefixUsedTransitionSet (k := k) a ys, Θ p.1 p.2 = 0) :
+    prefixThetaPowerProduct (k := k) a ys Θ = 0 := by
+  rcases hzero with ⟨p, hp, hpzero⟩
+  exact prefixThetaPowerProduct_eq_zero_of_mem_prefixUsedTransitionSet_zero
+    (a := a) (ys := ys) (Θ := Θ) hp hpzero
+
+lemma prefixThetaPos_of_forall_mem_prefixUsedTransitionSet
+    (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k))
+    (a : Fin k) (ys : List (Fin k))
+    (ω : ℕ → Fin k)
+    (hpos :
+      ∀ p ∈ prefixUsedTransitionSet (k := k) a ys,
+        0 < rowKernelVisitProbReal (k := k) rowKernel p.1 p.2 ω) :
+    ∀ i j : Fin k,
+      0 < (prefixWordState (k := k) a ys).counts.counts i j →
+        0 < rowKernelVisitProbReal (k := k) rowKernel i j ω := by
+  intro i j hcount
+  have hmem :
+      (i, j) ∈ prefixUsedTransitionSet (k := k) a ys := by
+    simpa [mem_prefixUsedTransitionSet_iff] using hcount
+  exact hpos (i, j) hmem
 
 lemma ae_prefixThetaPos_of_forall_mem_prefixUsedTransitionSet
     (P : Measure (ℕ → Fin k))
@@ -7975,6 +10573,62 @@ lemma ae_prefixThetaPosUsed_of_ae_prefixThetaPos
     ae_forall_mem_prefixUsedTransitionSet_of_ae_prefixThetaPos
       (k := k) P rowKernel a (b :: xs) hΘpos
 
+lemma rowKernelStepProd_eq_zero_of_exists_mem_prefixUsedTransitionSet_zero
+    (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k))
+    (a : Fin k) (ys : List (Fin k)) (ω : ℕ → Fin k)
+    (hzero :
+      ∃ p ∈ prefixUsedTransitionSet (k := k) a ys,
+        rowKernelVisitProbReal (k := k) rowKernel p.1 p.2 ω = 0) :
+    rowKernelStepProd (k := k) rowKernel ω (a :: ys) = 0 := by
+  have htargetZero :
+      prefixThetaPowerProduct (k := k) a ys
+        (fun i j =>
+          ((rowKernel i (rowSuccessorVisitProcess (k := k) i ω)) ({j} : Set (Fin k))).toReal) = 0 := by
+    exact
+      prefixThetaPowerProduct_eq_zero_of_exists_mem_prefixUsedTransitionSet_zero
+        (k := k) a ys
+        (fun i j =>
+          ((rowKernel i (rowSuccessorVisitProcess (k := k) i ω)) ({j} : Set (Fin k))).toReal)
+        hzero
+  have hstep_ne_top :
+      rowKernelStepProd (k := k) rowKernel ω (a :: ys) ≠ ⊤ := by
+    exact ne_of_lt <| lt_of_le_of_lt
+      (rowKernelStepProd_le_one (k := k) rowKernel ω (a :: ys))
+      (by simp)
+  have htoReal :
+      (rowKernelStepProd (k := k) rowKernel ω (a :: ys)).toReal = 0 := by
+    rw [← prefixThetaPowerProduct_eq_rowKernelStepProd_toReal
+      (k := k) a ys rowKernel ω
+      (fun i j =>
+        ((rowKernel i (rowSuccessorVisitProcess (k := k) i ω)) ({j} : Set (Fin k))).toReal)
+      (fun i j => rfl)]
+    exact htargetZero
+  rcases (ENNReal.toReal_eq_zero_iff _).1 htoReal with hzeroStep | htop
+  · exact hzeroStep
+  · exact (hstep_ne_top htop).elim
+
+lemma forall_mem_prefixUsedTransitionSet_pos_or_exists_zero_rowKernelVisitProbReal
+    (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k))
+    (a : Fin k) (ys : List (Fin k)) (ω : ℕ → Fin k) :
+    (∀ p ∈ prefixUsedTransitionSet (k := k) a ys,
+      0 < rowKernelVisitProbReal (k := k) rowKernel p.1 p.2 ω) ∨
+      ∃ p ∈ prefixUsedTransitionSet (k := k) a ys,
+        rowKernelVisitProbReal (k := k) rowKernel p.1 p.2 ω = 0 := by
+  classical
+  by_cases hpos :
+      ∀ p ∈ prefixUsedTransitionSet (k := k) a ys,
+        0 < rowKernelVisitProbReal (k := k) rowKernel p.1 p.2 ω
+  · exact Or.inl hpos
+  · push_neg at hpos
+    rcases hpos with ⟨p, hp, hnotpos⟩
+    have hnonneg :
+        0 ≤ rowKernelVisitProbReal (k := k) rowKernel p.1 p.2 ω := by
+      exact ENNReal.toReal_nonneg
+    have hzero :
+        rowKernelVisitProbReal (k := k) rowKernel p.1 p.2 ω = 0 := by
+      linarith
+    exact Or.inr ⟨p, hp, hzero⟩
+
 lemma ae_hout_pathPrefixState_shift_of_strongRecurrence_on_start_of_ae_exists_visit
     (P : MeasureTheory.Measure (ℕ → Fin k))
     (hStrong : StrongRecurrence (k := k) P)
@@ -7992,6 +10646,265 @@ lemma ae_hout_pathPrefixState_shift_of_strongRecurrence_on_start_of_ae_exists_vi
   exact
     ae_coordwise_tendsto_outdeg_pathPrefixState_shift_atTop_of_strongRecurrence_on_start_of_ae_exists_visit
       (k := k) P hStrong a (b :: xs).length hvisit
+
+lemma ae_eventually_prefixCompatibleState_pathPrefixState_of_strongRecurrence_visit_rowProcessCoordwise_components_of_ae_prefixThetaPosUsed_of_ae_tendsto_prefixNormalizedEulerTrailCorrectionRatioReal
+    (P : Measure (ℕ → Fin k))
+    (hStrong : StrongRecurrence (k := k) P)
+    (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k))
+    (a b : Fin k) (xs : List (Fin k))
+    (hvisit :
+      ∀ i : Fin k,
+        ∀ᵐ ω ∂P, ω 0 = a → ∃ t : ℕ, ω t = i)
+    (hrow : RowProcessCoordwiseCesaroLimit (k := k) P rowKernel)
+    (hΘposUsed :
+      ∀ p ∈ prefixUsedTransitionSet (k := k) a (b :: xs),
+        ∀ᵐ ω ∂P,
+          ω 0 = a →
+            0 < rowKernelVisitProbReal (k := k) rowKernel p.1 p.2 ω)
+    (hgraph :
+      ∀ᵐ ω ∂P,
+        ω 0 = a →
+          Filter.Tendsto
+            (fun r =>
+              prefixNormalizedEulerTrailCorrectionRatioReal
+                (k := k) a (b :: xs) ((b :: xs).length + r)
+                (Nat.le_add_right (b :: xs).length r)
+                (pathPrefixState (k := k) ω ((b :: xs).length + r)))
+            Filter.atTop (nhds (1 : ℝ))) :
+    ∀ᵐ ω ∂P,
+      ω 0 = a →
+        ∀ᶠ r in Filter.atTop,
+          prefixCompatibleState (k := k) a (b :: xs) ((b :: xs).length + r)
+            (Nat.le_add_right (b :: xs).length r)
+            (pathPrefixState (k := k) ω ((b :: xs).length + r)) := by
+  have houtAll :
+      ∀ᵐ ω ∂P,
+        ω 0 = a →
+          ∀ i : Fin k,
+            Filter.Tendsto
+              (fun r =>
+                MarkovDeFinettiHardEuler.outdeg (k := k)
+                  (pathPrefixState (k := k) ω ((b :: xs).length + r)) i)
+              Filter.atTop Filter.atTop := by
+    have hpack :
+        ∀ᵐ ω ∂P,
+          ∀ i : Fin k,
+            ω 0 = a →
+              Filter.Tendsto
+                (fun r =>
+                  MarkovDeFinettiHardEuler.outdeg (k := k)
+                    (pathPrefixState (k := k) ω ((b :: xs).length + r)) i)
+                Filter.atTop Filter.atTop := by
+      rw [ae_all_iff]
+      intro i
+      exact
+        ae_hout_pathPrefixState_shift_of_strongRecurrence_on_start_of_ae_exists_visit
+          (k := k) P hStrong a b xs hvisit i
+    filter_upwards [hpack] with ω hω hstart i
+    exact hω i hstart
+  have hfreqCoord :
+      ∀ i j : Fin k,
+        ∀ᵐ ω ∂P,
+          ω 0 = a →
+            Filter.Tendsto
+              (fun m => rowSuccessorEmpiricalFreq (k := k) i j ω m)
+              Filter.atTop
+              (nhds (rowKernelVisitProbReal (k := k) rowKernel i j ω)) :=
+    ae_coordwise_tendsto_rowSuccessorEmpiricalFreq_to_rowKernelEval_on_start_of_rowProcessCoordwiseCesaroLimit
+      (k := k) P rowKernel a hrow
+  have hfreqAll :
+      ∀ᵐ ω ∂P,
+        ω 0 = a →
+          ∀ i : Fin k, ∀ j : Fin k,
+            Filter.Tendsto
+              (fun m => rowSuccessorEmpiricalFreq (k := k) i j ω m)
+              Filter.atTop
+              (nhds (rowKernelVisitProbReal (k := k) rowKernel i j ω)) :=
+    ae_all_tendsto_rowSuccessorEmpiricalFreq_to_rowKernelEval_of_coordwise
+      (k := k) P rowKernel a hfreqCoord
+  have hΘposAll :
+      ∀ᵐ ω ∂P,
+        ω 0 = a →
+          ∀ i j : Fin k,
+            0 < (prefixWordState (k := k) a (b :: xs)).counts.counts i j →
+              0 < rowKernelVisitProbReal (k := k) rowKernel i j ω :=
+    by
+      have hΘposCoord :
+          ∀ i j : Fin k,
+            ∀ᵐ ω ∂P,
+              ω 0 = a →
+                0 < (prefixWordState (k := k) a (b :: xs)).counts.counts i j →
+                  0 < rowKernelVisitProbReal (k := k) rowKernel i j ω :=
+        ae_prefixThetaPos_of_forall_mem_prefixUsedTransitionSet
+          (k := k) P rowKernel a (b :: xs) hΘposUsed
+      have hpack :
+          ∀ᵐ ω ∂P,
+            ∀ i : Fin k, ∀ j : Fin k,
+              ω 0 = a →
+                0 < (prefixWordState (k := k) a (b :: xs)).counts.counts i j →
+                  0 < rowKernelVisitProbReal (k := k) rowKernel i j ω := by
+        rw [ae_all_iff]
+        intro i
+        rw [ae_all_iff]
+        intro j
+        exact hΘposCoord i j
+      filter_upwards [hpack] with ω hω hstart i j hij
+      exact hω i j hstart hij
+  filter_upwards [houtAll, hfreqAll, hΘposAll, hgraph] with ω houtω hfreqω hΘposω hgraphω hstart
+  exact
+    eventually_prefixCompatibleState_pathPrefixState_of_start_eq_of_ratioData
+      (k := k) a (b :: xs) ω
+      (fun i j => rowKernelVisitProbReal (k := k) rowKernel i j ω)
+      hstart
+      (fun i => houtω hstart i)
+      (fun i j => hfreqω hstart i j)
+      (fun i j => hΘposω hstart i j)
+      (hgraphω hstart)
+
+lemma ae_tendsto_prefixTokenDeletionLowerFactorReal_shift_of_strongRecurrence_visit_rowProcessCoordwise_components_of_ae_prefixThetaPos
+    (P : Measure (ℕ → Fin k))
+    (hStrong : StrongRecurrence (k := k) P)
+    (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k))
+    (a b : Fin k) (xs : List (Fin k))
+    (hvisit :
+      ∀ i : Fin k,
+        ∀ᵐ ω ∂P, ω 0 = a → ∃ t : ℕ, ω t = i)
+    (hrow : RowProcessCoordwiseCesaroLimit (k := k) P rowKernel)
+    (hΘpos :
+      ∀ i j : Fin k,
+        ∀ᵐ ω ∂P,
+          ω 0 = a →
+            0 < (prefixWordState (k := k) a (b :: xs)).counts.counts i j →
+              0 < rowKernelVisitProbReal (k := k) rowKernel i j ω) :
+    ∀ᵐ ω ∂P,
+      ω 0 = a →
+        Filter.Tendsto
+          (fun r =>
+            prefixTokenDeletionLowerFactorReal (k := k) a (b :: xs)
+              (pathPrefixState (k := k) ω ((b :: xs).length + r)))
+          Filter.atTop (nhds (1 : ℝ)) := by
+  have houtAll :
+      ∀ᵐ ω ∂P,
+        ω 0 = a →
+          ∀ i : Fin k,
+            Filter.Tendsto
+              (fun r =>
+                MarkovDeFinettiHardEuler.outdeg (k := k)
+                  (pathPrefixState (k := k) ω ((b :: xs).length + r)) i)
+              Filter.atTop Filter.atTop := by
+    have hpack :
+        ∀ᵐ ω ∂P,
+          ∀ i : Fin k,
+            ω 0 = a →
+              Filter.Tendsto
+                (fun r =>
+                  MarkovDeFinettiHardEuler.outdeg (k := k)
+                    (pathPrefixState (k := k) ω ((b :: xs).length + r)) i)
+                Filter.atTop Filter.atTop := by
+      rw [ae_all_iff]
+      intro i
+      exact
+        ae_hout_pathPrefixState_shift_of_strongRecurrence_on_start_of_ae_exists_visit
+          (k := k) P hStrong a b xs hvisit i
+    filter_upwards [hpack] with ω hω hstart i
+    exact hω i hstart
+  have hfreqCoord :
+      ∀ i j : Fin k,
+        ∀ᵐ ω ∂P,
+          ω 0 = a →
+            Filter.Tendsto
+              (fun m => rowSuccessorEmpiricalFreq (k := k) i j ω m)
+              Filter.atTop
+              (nhds (rowKernelVisitProbReal (k := k) rowKernel i j ω)) :=
+    ae_coordwise_tendsto_rowSuccessorEmpiricalFreq_to_rowKernelEval_on_start_of_rowProcessCoordwiseCesaroLimit
+      (k := k) P rowKernel a hrow
+  have hfreqAll :
+      ∀ᵐ ω ∂P,
+        ω 0 = a →
+          ∀ i : Fin k, ∀ j : Fin k,
+            Filter.Tendsto
+              (fun m => rowSuccessorEmpiricalFreq (k := k) i j ω m)
+              Filter.atTop
+              (nhds (rowKernelVisitProbReal (k := k) rowKernel i j ω)) :=
+    ae_all_tendsto_rowSuccessorEmpiricalFreq_to_rowKernelEval_of_coordwise
+      (k := k) P rowKernel a hfreqCoord
+  have hΘposAll :
+      ∀ᵐ ω ∂P,
+        ω 0 = a →
+          ∀ i j : Fin k,
+            0 < (prefixWordState (k := k) a (b :: xs)).counts.counts i j →
+              0 < rowKernelVisitProbReal (k := k) rowKernel i j ω := by
+    have hpack :
+        ∀ᵐ ω ∂P,
+          ∀ i : Fin k, ∀ j : Fin k,
+            ω 0 = a →
+              0 < (prefixWordState (k := k) a (b :: xs)).counts.counts i j →
+                0 < rowKernelVisitProbReal (k := k) rowKernel i j ω := by
+      rw [ae_all_iff]
+      intro i
+      rw [ae_all_iff]
+      intro j
+      exact hΘpos i j
+    filter_upwards [hpack] with ω hω hstart i j hij
+    exact hω i j hstart hij
+  filter_upwards [houtAll, hfreqAll, hΘposAll] with ω houtω hfreqω hΘposω hstart
+  have hratio :
+      ∀ i j : Fin k,
+        Filter.Tendsto
+          (fun r =>
+            ((pathPrefixState (k := k) ω ((b :: xs).length + r)).counts.counts i j : ℝ) /
+              (MarkovDeFinettiHardEuler.outdeg (k := k)
+                (pathPrefixState (k := k) ω ((b :: xs).length + r)) i : ℝ))
+          Filter.atTop
+          (nhds (rowKernelVisitProbReal (k := k) rowKernel i j ω)) :=
+    pathPrefixState_ratioData_of_tendsto_rowSuccessorEmpiricalFreq_of_tendsto_outdeg
+      (k := k) ω (fun r => (b :: xs).length + r)
+      (fun i j => rowKernelVisitProbReal (k := k) rowKernel i j ω)
+      (houtω hstart) (hfreqω hstart)
+  have houtReal :
+      ∀ i : Fin k,
+        0 < MarkovDeFinettiHardEuler.outdeg (k := k)
+          (prefixWordState (k := k) a (b :: xs)) i →
+        Filter.Tendsto
+          (fun r =>
+            (MarkovDeFinettiHardEuler.outdeg (k := k)
+              (pathPrefixState (k := k) ω ((b :: xs).length + r)) i : ℝ))
+          Filter.atTop Filter.atTop := by
+    intro i _
+    exact tendsto_natCast_atTop_atTop.comp (houtω hstart i)
+  exact
+    tendsto_prefixTokenDeletionLowerFactorReal_of_ratioData
+      (k := k) a (b :: xs)
+      (e := fun r => pathPrefixState (k := k) ω ((b :: xs).length + r))
+      (Θ := fun i j => rowKernelVisitProbReal (k := k) rowKernel i j ω)
+      houtReal hratio (hΘposω hstart)
+
+lemma ae_tendsto_prefixTokenDeletionLowerFactorReal_shift_of_strongRecurrence_visit_rowProcessCoordwise_components_of_ae_prefixThetaPosUsed
+    (P : Measure (ℕ → Fin k))
+    (hStrong : StrongRecurrence (k := k) P)
+    (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k))
+    (a b : Fin k) (xs : List (Fin k))
+    (hvisit :
+      ∀ i : Fin k,
+        ∀ᵐ ω ∂P, ω 0 = a → ∃ t : ℕ, ω t = i)
+    (hrow : RowProcessCoordwiseCesaroLimit (k := k) P rowKernel)
+    (hΘposUsed :
+      ∀ p ∈ prefixUsedTransitionSet (k := k) a (b :: xs),
+        ∀ᵐ ω ∂P,
+          ω 0 = a →
+            0 < rowKernelVisitProbReal (k := k) rowKernel p.1 p.2 ω) :
+    ∀ᵐ ω ∂P,
+      ω 0 = a →
+        Filter.Tendsto
+          (fun r =>
+            prefixTokenDeletionLowerFactorReal (k := k) a (b :: xs)
+              (pathPrefixState (k := k) ω ((b :: xs).length + r)))
+          Filter.atTop (nhds (1 : ℝ)) := by
+  exact
+    ae_tendsto_prefixTokenDeletionLowerFactorReal_shift_of_strongRecurrence_visit_rowProcessCoordwise_components_of_ae_prefixThetaPos
+      (k := k) P hStrong rowKernel a b xs hvisit hrow
+      (ae_prefixThetaPos_of_forall_mem_prefixUsedTransitionSet
+        (k := k) P rowKernel a (b :: xs) hΘposUsed)
 
 lemma ae_tendsto_prefixTokenRootedArborescenceRatioReal_shift_of_ae_tendsto_prefixTokenDeletionLowerFactorReal
     (P : Measure (ℕ → Fin k))
@@ -8039,6 +10952,181 @@ lemma ae_tendsto_prefixTokenRootedArborescenceRatioReal_shift_of_ae_tendsto_pref
       (hupper := huppω hstart)
       (hlim := hlimω hstart)
 
+lemma ae_eventually_prefixTokenDeletionLowerFactorReal_le_prefixTokenRootedArborescenceRatioReal_shift_of_bridge_of_eventually_prefixCompatibleState
+    (P : Measure (ℕ → Fin k))
+    (a : Fin k) (ys : List (Fin k))
+    (hcomp :
+      ∀ᵐ ω ∂P,
+        ω 0 = a →
+          ∀ᶠ r in Filter.atTop,
+            prefixCompatibleState (k := k) a ys (ys.length + r)
+              (Nat.le_add_right ys.length r)
+              (pathPrefixState (k := k) ω (ys.length + r)))
+    (hBridge :
+      ∀ {M : ℕ} {s : MarkovState k},
+        s ∈ stateFinset k M →
+          normalizedEulerTrailCorrection (k := k) s =
+            tokenRootedArborescenceCount (k := k) (graphOfState (k := k) s) s.last) :
+    ∀ᵐ ω ∂P,
+      ω 0 = a →
+        ∀ᶠ r in Filter.atTop,
+          prefixTokenDeletionLowerFactorReal (k := k) a ys
+              (pathPrefixState (k := k) ω (ys.length + r)) ≤
+            prefixTokenRootedArborescenceRatioReal (k := k) a ys
+              (ys.length + r) (Nat.le_add_right ys.length r)
+              (pathPrefixState (k := k) ω (ys.length + r)) := by
+  filter_upwards [hcomp] with ω hcompω hstart
+  exact (hcompω hstart).mono fun r hr =>
+    prefixTokenDeletionLowerFactorReal_le_prefixTokenRootedArborescenceRatioReal_of_prefixCompatibleState_of_bridge
+      (k := k) a ys
+      (ys.length + r) (Nat.le_add_right ys.length r)
+      (pathPrefixState (k := k) ω (ys.length + r))
+      hr hBridge
+
+lemma ae_eventually_prefixTokenDeletionLowerFactorReal_le_prefixTokenRootedArborescenceRatioReal_shift_of_bridgeCard_of_eventually_prefixCompatibleState
+    (P : Measure (ℕ → Fin k))
+    (a : Fin k) (ys : List (Fin k))
+    (hcomp :
+      ∀ᵐ ω ∂P,
+        ω 0 = a →
+          ∀ᶠ r in Filter.atTop,
+            prefixCompatibleState (k := k) a ys (ys.length + r)
+              (Nat.le_add_right ys.length r)
+              (pathPrefixState (k := k) ω (ys.length + r)))
+    (hBridgeCard :
+      ∀ {M : ℕ} {s : MarkovState k},
+        s ∈ stateFinset k M →
+          (eulerTrailFinset (graphOfState s) s.start s.last).card =
+            tokenRootedArborescenceCount (k := k) (graphOfState (k := k) s) s.last *
+              outdegFactorialWeight (k := k) s) :
+    ∀ᵐ ω ∂P,
+      ω 0 = a →
+        ∀ᶠ r in Filter.atTop,
+          prefixTokenDeletionLowerFactorReal (k := k) a ys
+              (pathPrefixState (k := k) ω (ys.length + r)) ≤
+            prefixTokenRootedArborescenceRatioReal (k := k) a ys
+              (ys.length + r) (Nat.le_add_right ys.length r)
+              (pathPrefixState (k := k) ω (ys.length + r)) := by
+  filter_upwards [hcomp] with ω hcompω hstart
+  exact (hcompω hstart).mono fun r hr =>
+    prefixTokenDeletionLowerFactorReal_le_prefixTokenRootedArborescenceRatioReal_of_prefixCompatibleState_of_bridgeCard
+      (k := k) a ys
+      (ys.length + r) (Nat.le_add_right ys.length r)
+      (pathPrefixState (k := k) ω (ys.length + r))
+      hr hBridgeCard
+
+lemma ae_eventually_prefixTokenDeletionLowerFactorReal_le_prefixTokenRootedArborescenceRatioReal_shift_of_ae_pathPrefixBridgeCardEq_of_eventually_prefixCompatibleState
+    (P : Measure (ℕ → Fin k))
+    (a : Fin k) (ys : List (Fin k))
+    (hcomp :
+      ∀ᵐ ω ∂P,
+        ω 0 = a →
+          ∀ᶠ r in Filter.atTop,
+            prefixCompatibleState (k := k) a ys (ys.length + r)
+              (Nat.le_add_right ys.length r)
+              (pathPrefixState (k := k) ω (ys.length + r)))
+    (hBridge :
+      ∀ᵐ ω ∂P,
+        ω 0 = a →
+          ∀ᶠ r in Filter.atTop,
+            tokenRootedBridgeCardEq (k := k)
+              (pathPrefixState (k := k) ω (ys.length + r))) :
+    ∀ᵐ ω ∂P,
+      ω 0 = a →
+        ∀ᶠ r in Filter.atTop,
+          prefixTokenDeletionLowerFactorReal (k := k) a ys
+              (pathPrefixState (k := k) ω (ys.length + r)) ≤
+            prefixTokenRootedArborescenceRatioReal (k := k) a ys
+              (ys.length + r) (Nat.le_add_right ys.length r)
+              (pathPrefixState (k := k) ω (ys.length + r)) := by
+  filter_upwards [hcomp, hBridge] with ω hcompω hBridgeω hstart
+  filter_upwards [hcompω hstart, hBridgeω hstart] with r hrComp hrBridge
+  exact
+    prefixTokenDeletionLowerFactorReal_le_prefixTokenRootedArborescenceRatioReal_of_prefixCompatibleState_of_bridgeCardEq
+      (k := k) a ys
+      (ys.length + r) (Nat.le_add_right ys.length r)
+      (pathPrefixState (k := k) ω (ys.length + r))
+      hrComp hrBridge
+
+lemma ae_eventually_prefixTokenDeletionLowerFactorReal_le_prefixPositiveTokenRootedArborescenceRatioReal_shift_of_positiveBridgeCard_of_eventually_prefixCompatibleState
+    (P : Measure (ℕ → Fin k))
+    (a : Fin k) (ys : List (Fin k))
+    (hcomp :
+      ∀ᵐ ω ∂P,
+        ω 0 = a →
+          ∀ᶠ r in Filter.atTop,
+            prefixCompatibleState (k := k) a ys (ys.length + r)
+              (Nat.le_add_right ys.length r)
+              (pathPrefixState (k := k) ω (ys.length + r)))
+    (hPositiveBridgeCard :
+      ∀ {M : ℕ} {s : MarkovState k},
+        s ∈ stateFinset k M →
+          positiveTokenRootedBridgeCardEq (k := k) s) :
+    ∀ᵐ ω ∂P,
+      ω 0 = a →
+        ∀ᶠ r in Filter.atTop,
+          prefixTokenDeletionLowerFactorReal (k := k) a ys
+              (pathPrefixState (k := k) ω (ys.length + r)) ≤
+            prefixPositiveTokenRootedArborescenceRatioReal (k := k) a ys
+              (ys.length + r) (Nat.le_add_right ys.length r)
+              (pathPrefixState (k := k) ω (ys.length + r)) := by
+  filter_upwards [hcomp] with ω hcompω hstart
+  exact (hcompω hstart).mono fun r hr =>
+    prefixTokenDeletionLowerFactorReal_le_prefixPositiveTokenRootedArborescenceRatioReal_of_prefixCompatibleState_of_positiveBridgeCard
+      (k := k) a ys
+      (ys.length + r) (Nat.le_add_right ys.length r)
+      (pathPrefixState (k := k) ω (ys.length + r))
+      hr hPositiveBridgeCard
+
+lemma ae_eventually_prefixTokenDeletionLowerFactorReal_le_prefixPositiveTokenRootedArborescenceRatioReal_shift_of_ae_pathPrefixPositiveBridgeCardEqPair_of_eventually_prefixCompatibleState
+    (P : Measure (ℕ → Fin k))
+    (a : Fin k) (ys : List (Fin k))
+    (hcomp :
+      ∀ᵐ ω ∂P,
+        ω 0 = a →
+          ∀ᶠ r in Filter.atTop,
+            prefixCompatibleState (k := k) a ys (ys.length + r)
+              (Nat.le_add_right ys.length r)
+              (pathPrefixState (k := k) ω (ys.length + r)))
+    (hBridge :
+      ∀ᵐ ω ∂P,
+        ω 0 = a →
+          ∀ᶠ r in Filter.atTop,
+            pathPrefixPositiveBridgeCardEqPair (k := k) a ys ω r) :
+    ∀ᵐ ω ∂P,
+      ω 0 = a →
+        ∀ᶠ r in Filter.atTop,
+          prefixTokenDeletionLowerFactorReal (k := k) a ys
+              (pathPrefixState (k := k) ω (ys.length + r)) ≤
+            prefixPositiveTokenRootedArborescenceRatioReal (k := k) a ys
+              (ys.length + r) (Nat.le_add_right ys.length r)
+              (pathPrefixState (k := k) ω (ys.length + r)) := by
+  filter_upwards [hcomp, hBridge] with ω hcompω hBridgeω hstart
+  filter_upwards [hcompω hstart, hBridgeω hstart] with r hrComp hrBridge
+  exact
+    prefixTokenDeletionLowerFactorReal_le_prefixPositiveTokenRootedArborescenceRatioReal_of_prefixCompatibleState_of_positiveBridgeCardEq
+      (k := k) a ys
+      (ys.length + r) (Nat.le_add_right ys.length r)
+      (pathPrefixState (k := k) ω (ys.length + r))
+      hrComp hrBridge.1
+
+lemma ae_eventually_prefixTokenRootedArborescenceRatioReal_le_one_shift
+    (P : Measure (ℕ → Fin k))
+    (a : Fin k) (ys : List (Fin k)) :
+    ∀ᵐ ω ∂P,
+      ω 0 = a →
+        ∀ᶠ r in Filter.atTop,
+          prefixTokenRootedArborescenceRatioReal (k := k) a ys
+              (ys.length + r) (Nat.le_add_right ys.length r)
+              (pathPrefixState (k := k) ω (ys.length + r)) ≤ (1 : ℝ) := by
+  refine Filter.Eventually.of_forall ?_
+  intro ω _
+  exact Filter.Eventually.of_forall fun r =>
+    prefixTokenRootedArborescenceRatioReal_le_one
+      (k := k) a ys
+      (ys.length + r) (Nat.le_add_right ys.length r)
+      (pathPrefixState (k := k) ω (ys.length + r))
+
 lemma ae_tendsto_prefixNormalizedEulerTrailCorrectionRatioReal_shift_of_ae_tendsto_prefixTokenRootedArborescenceRatioReal_of_bridge_of_eventually_prefixCompatibleState
     (P : Measure (ℕ → Fin k))
     (a : Fin k) (ys : List (Fin k))
@@ -8082,6 +11170,52 @@ lemma ae_tendsto_prefixNormalizedEulerTrailCorrectionRatioReal_shift_of_ae_tends
       (hBridge := hBridge)
       (hlim := htokω hstart)
 
+lemma ae_tendsto_prefixNormalizedEulerTrailCorrectionRatioReal_shift_of_ae_tendsto_prefixTokenRootedArborescenceRatioReal_of_bridgeCard_of_eventually_prefixCompatibleState
+    (P : Measure (ℕ → Fin k))
+    (a : Fin k) (ys : List (Fin k))
+    (hcomp :
+      ∀ᵐ ω ∂P,
+        ω 0 = a →
+          ∀ᶠ r in Filter.atTop,
+            prefixCompatibleState (k := k) a ys (ys.length + r)
+              (Nat.le_add_right ys.length r)
+              (pathPrefixState (k := k) ω (ys.length + r)))
+    (hBridgeCard :
+      ∀ {M : ℕ} {s : MarkovState k},
+        s ∈ stateFinset k M →
+          (eulerTrailFinset (graphOfState s) s.start s.last).card =
+            tokenRootedArborescenceCount (k := k) (graphOfState (k := k) s) s.last *
+              outdegFactorialWeight (k := k) s)
+    (htok :
+      ∀ᵐ ω ∂P,
+        ω 0 = a →
+          Filter.Tendsto
+            (fun r =>
+              prefixTokenRootedArborescenceRatioReal (k := k) a ys
+                (ys.length + r) (Nat.le_add_right ys.length r)
+                (pathPrefixState (k := k) ω (ys.length + r)))
+            Filter.atTop (nhds (1 : ℝ))) :
+    ∀ᵐ ω ∂P,
+      ω 0 = a →
+        Filter.Tendsto
+          (fun r =>
+            prefixNormalizedEulerTrailCorrectionRatioReal (k := k) a ys
+              (ys.length + r) (Nat.le_add_right ys.length r)
+              (pathPrefixState (k := k) ω (ys.length + r)))
+          Filter.atTop (nhds (1 : ℝ)) := by
+  filter_upwards [hcomp, htok] with ω hcompω htokω hstart
+  exact
+    tendsto_prefixNormalizedEulerTrailCorrectionRatioReal_of_tendsto_prefixTokenRootedArborescenceRatioReal_of_bridge
+      (k := k) a ys
+      (e := fun r => pathPrefixState (k := k) ω (ys.length + r))
+      (Nf := fun r => ys.length + r)
+      (hN := fun r => Nat.le_add_right ys.length r)
+      (hcomp := hcompω hstart)
+      (hBridge := fun {_M} {_s} hs =>
+        normalizedEulerTrailCorrection_eq_tokenRootedArborescenceCount_of_card_eq
+          (k := k) (hBridgeCard hs))
+      (hlim := htokω hstart)
+
 lemma ae_tendsto_prefixNormalizedEulerTrailCorrectionRatioReal_shift_of_ae_tokenDeletionSqueeze_of_bridge_of_eventually_prefixCompatibleState
     (P : Measure (ℕ → Fin k))
     (a : Fin k) (ys : List (Fin k))
@@ -8097,22 +11231,6 @@ lemma ae_tendsto_prefixNormalizedEulerTrailCorrectionRatioReal_shift_of_ae_token
         s ∈ stateFinset k M →
           normalizedEulerTrailCorrection (k := k) s =
             tokenRootedArborescenceCount (k := k) (graphOfState (k := k) s) s.last)
-    (hlower :
-      ∀ᵐ ω ∂P,
-        ω 0 = a →
-          ∀ᶠ r in Filter.atTop,
-            prefixTokenDeletionLowerFactorReal (k := k) a ys
-                (pathPrefixState (k := k) ω (ys.length + r)) ≤
-              prefixTokenRootedArborescenceRatioReal (k := k) a ys
-                (ys.length + r) (Nat.le_add_right ys.length r)
-                (pathPrefixState (k := k) ω (ys.length + r)))
-    (hupper :
-      ∀ᵐ ω ∂P,
-        ω 0 = a →
-          ∀ᶠ r in Filter.atTop,
-            prefixTokenRootedArborescenceRatioReal (k := k) a ys
-                (ys.length + r) (Nat.le_add_right ys.length r)
-                (pathPrefixState (k := k) ω (ys.length + r)) ≤ (1 : ℝ))
     (hlimLower :
       ∀ᵐ ω ∂P,
         ω 0 = a →
@@ -8133,16 +11251,660 @@ lemma ae_tendsto_prefixNormalizedEulerTrailCorrectionRatioReal_shift_of_ae_token
       ∀ᵐ ω ∂P,
         ω 0 = a →
           Filter.Tendsto
-            (fun r =>
+          (fun r =>
               prefixTokenRootedArborescenceRatioReal (k := k) a ys
                 (ys.length + r) (Nat.le_add_right ys.length r)
                 (pathPrefixState (k := k) ω (ys.length + r)))
             Filter.atTop (nhds (1 : ℝ)) :=
     ae_tendsto_prefixTokenRootedArborescenceRatioReal_shift_of_ae_tendsto_prefixTokenDeletionLowerFactorReal
-      (k := k) P a ys hlower hupper hlimLower
+      (k := k) P a ys
+      (ae_eventually_prefixTokenDeletionLowerFactorReal_le_prefixTokenRootedArborescenceRatioReal_shift_of_bridge_of_eventually_prefixCompatibleState
+        (k := k) P a ys hcomp hBridge)
+      (ae_eventually_prefixTokenRootedArborescenceRatioReal_le_one_shift
+        (k := k) P a ys)
+      hlimLower
   exact
     ae_tendsto_prefixNormalizedEulerTrailCorrectionRatioReal_shift_of_ae_tendsto_prefixTokenRootedArborescenceRatioReal_of_bridge_of_eventually_prefixCompatibleState
       (k := k) P a ys hcomp hBridge htok
+
+lemma ae_tendsto_prefixNormalizedEulerTrailCorrectionRatioReal_shift_of_ae_tokenDeletionSqueeze_of_bridgeCard_of_eventually_prefixCompatibleState
+    (P : Measure (ℕ → Fin k))
+    (a : Fin k) (ys : List (Fin k))
+    (hcomp :
+      ∀ᵐ ω ∂P,
+        ω 0 = a →
+          ∀ᶠ r in Filter.atTop,
+            prefixCompatibleState (k := k) a ys (ys.length + r)
+              (Nat.le_add_right ys.length r)
+              (pathPrefixState (k := k) ω (ys.length + r)))
+    (hBridgeCard :
+      ∀ {M : ℕ} {s : MarkovState k},
+        s ∈ stateFinset k M →
+          (eulerTrailFinset (graphOfState s) s.start s.last).card =
+            tokenRootedArborescenceCount (k := k) (graphOfState (k := k) s) s.last *
+              outdegFactorialWeight (k := k) s)
+    (hlimLower :
+      ∀ᵐ ω ∂P,
+        ω 0 = a →
+          Filter.Tendsto
+            (fun r =>
+              prefixTokenDeletionLowerFactorReal (k := k) a ys
+                (pathPrefixState (k := k) ω (ys.length + r)))
+            Filter.atTop (nhds (1 : ℝ))) :
+    ∀ᵐ ω ∂P,
+      ω 0 = a →
+        Filter.Tendsto
+          (fun r =>
+            prefixNormalizedEulerTrailCorrectionRatioReal (k := k) a ys
+              (ys.length + r) (Nat.le_add_right ys.length r)
+              (pathPrefixState (k := k) ω (ys.length + r)))
+          Filter.atTop (nhds (1 : ℝ)) := by
+  have htok :
+      ∀ᵐ ω ∂P,
+        ω 0 = a →
+          Filter.Tendsto
+          (fun r =>
+              prefixTokenRootedArborescenceRatioReal (k := k) a ys
+                (ys.length + r) (Nat.le_add_right ys.length r)
+                (pathPrefixState (k := k) ω (ys.length + r)))
+            Filter.atTop (nhds (1 : ℝ)) :=
+    ae_tendsto_prefixTokenRootedArborescenceRatioReal_shift_of_ae_tendsto_prefixTokenDeletionLowerFactorReal
+      (k := k) P a ys
+      (ae_eventually_prefixTokenDeletionLowerFactorReal_le_prefixTokenRootedArborescenceRatioReal_shift_of_bridgeCard_of_eventually_prefixCompatibleState
+        (k := k) P a ys hcomp hBridgeCard)
+      (ae_eventually_prefixTokenRootedArborescenceRatioReal_le_one_shift
+        (k := k) P a ys)
+      hlimLower
+  exact
+    ae_tendsto_prefixNormalizedEulerTrailCorrectionRatioReal_shift_of_ae_tendsto_prefixTokenRootedArborescenceRatioReal_of_bridgeCard_of_eventually_prefixCompatibleState
+      (k := k) P a ys hcomp hBridgeCard htok
+
+lemma ae_tendsto_prefixNormalizedEulerTrailCorrectionRatioReal_shift_of_ae_tendsto_prefixTokenRootedArborescenceRatioReal_of_ae_pathPrefixBridgeCardEqPair
+    (P : Measure (ℕ → Fin k))
+    (a : Fin k) (ys : List (Fin k))
+    (hBridgePair :
+      ∀ᵐ ω ∂P,
+        ω 0 = a →
+          ∀ᶠ r in Filter.atTop, pathPrefixBridgeCardEqPair (k := k) a ys ω r)
+    (htok :
+      ∀ᵐ ω ∂P,
+        ω 0 = a →
+          Filter.Tendsto
+            (fun r =>
+              prefixTokenRootedArborescenceRatioReal (k := k) a ys
+                (ys.length + r) (Nat.le_add_right ys.length r)
+                (pathPrefixState (k := k) ω (ys.length + r)))
+            Filter.atTop (nhds (1 : ℝ))) :
+    ∀ᵐ ω ∂P,
+      ω 0 = a →
+        Filter.Tendsto
+          (fun r =>
+            prefixNormalizedEulerTrailCorrectionRatioReal (k := k) a ys
+              (ys.length + r) (Nat.le_add_right ys.length r)
+              (pathPrefixState (k := k) ω (ys.length + r)))
+          Filter.atTop (nhds (1 : ℝ)) := by
+  filter_upwards [hBridgePair, htok] with ω hBridgeω htokω hstart
+  exact
+    tendsto_prefixNormalizedEulerTrailCorrectionRatioReal_of_tendsto_prefixTokenRootedArborescenceRatioReal_of_bridgeCardEq_pair
+      (k := k) a ys
+      (e := fun r => pathPrefixState (k := k) ω (ys.length + r))
+      (Nf := fun r => ys.length + r)
+      (hN := fun r => Nat.le_add_right ys.length r)
+      (hBridgePair := hBridgeω hstart)
+      (hlim := htokω hstart)
+
+lemma ae_tendsto_prefixNormalizedEulerTrailCorrectionRatioReal_shift_of_strongRecurrence_visit_rowProcessCoordwise_components_of_ae_prefixThetaPosUsed_of_ae_pathPrefixBridgeCardEqPair_of_eventually_prefixCompatibleState
+    (P : Measure (ℕ → Fin k))
+    (hStrong : StrongRecurrence (k := k) P)
+    (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k))
+    (a b : Fin k) (xs : List (Fin k))
+    (hvisit :
+      ∀ i : Fin k,
+        ∀ᵐ ω ∂P, ω 0 = a → ∃ t : ℕ, ω t = i)
+    (hrow : RowProcessCoordwiseCesaroLimit (k := k) P rowKernel)
+    (hΘposUsed :
+      ∀ p ∈ prefixUsedTransitionSet (k := k) a (b :: xs),
+        ∀ᵐ ω ∂P,
+          ω 0 = a →
+            0 < rowKernelVisitProbReal (k := k) rowKernel p.1 p.2 ω)
+    (hcomp :
+      ∀ᵐ ω ∂P,
+        ω 0 = a →
+          ∀ᶠ r in Filter.atTop,
+            prefixCompatibleState (k := k) a (b :: xs) ((b :: xs).length + r)
+              (Nat.le_add_right (b :: xs).length r)
+              (pathPrefixState (k := k) ω ((b :: xs).length + r)))
+    (hBridgePair :
+      ∀ᵐ ω ∂P,
+        ω 0 = a →
+          ∀ᶠ r in Filter.atTop,
+            pathPrefixBridgeCardEqPair (k := k) a (b :: xs) ω r) :
+    ∀ᵐ ω ∂P,
+      ω 0 = a →
+        Filter.Tendsto
+          (fun r =>
+            prefixNormalizedEulerTrailCorrectionRatioReal
+              (k := k) a (b :: xs) ((b :: xs).length + r)
+              (Nat.le_add_right (b :: xs).length r)
+              (pathPrefixState (k := k) ω ((b :: xs).length + r)))
+          Filter.atTop (nhds (1 : ℝ)) := by
+  have hlimLower :
+      ∀ᵐ ω ∂P,
+        ω 0 = a →
+          Filter.Tendsto
+            (fun r =>
+              prefixTokenDeletionLowerFactorReal (k := k) a (b :: xs)
+                (pathPrefixState (k := k) ω ((b :: xs).length + r)))
+            Filter.atTop (nhds (1 : ℝ)) :=
+    ae_tendsto_prefixTokenDeletionLowerFactorReal_shift_of_strongRecurrence_visit_rowProcessCoordwise_components_of_ae_prefixThetaPosUsed
+      (k := k) P hStrong rowKernel a b xs hvisit hrow hΘposUsed
+  have hBridgeFull :
+      ∀ᵐ ω ∂P,
+        ω 0 = a →
+          ∀ᶠ r in Filter.atTop,
+            tokenRootedBridgeCardEq (k := k)
+              (pathPrefixState (k := k) ω ((b :: xs).length + r)) := by
+    filter_upwards [hBridgePair] with ω hBridgeω hstart
+    filter_upwards [hBridgeω hstart] with r hr
+    exact hr.1
+  have htok :
+      ∀ᵐ ω ∂P,
+        ω 0 = a →
+          Filter.Tendsto
+            (fun r =>
+              prefixTokenRootedArborescenceRatioReal (k := k) a (b :: xs)
+                ((b :: xs).length + r) (Nat.le_add_right (b :: xs).length r)
+                (pathPrefixState (k := k) ω ((b :: xs).length + r)))
+            Filter.atTop (nhds (1 : ℝ)) :=
+    ae_tendsto_prefixTokenRootedArborescenceRatioReal_shift_of_ae_tendsto_prefixTokenDeletionLowerFactorReal
+      (k := k) P a (b :: xs)
+      (ae_eventually_prefixTokenDeletionLowerFactorReal_le_prefixTokenRootedArborescenceRatioReal_shift_of_ae_pathPrefixBridgeCardEq_of_eventually_prefixCompatibleState
+        (k := k) P a (b :: xs) hcomp hBridgeFull)
+      (ae_eventually_prefixTokenRootedArborescenceRatioReal_le_one_shift
+        (k := k) P a (b :: xs))
+      hlimLower
+  exact
+    ae_tendsto_prefixNormalizedEulerTrailCorrectionRatioReal_shift_of_ae_tendsto_prefixTokenRootedArborescenceRatioReal_of_ae_pathPrefixBridgeCardEqPair
+      (k := k) P a (b :: xs) hBridgePair htok
+
+lemma ae_tendsto_prefixNormalizedEulerTrailCorrectionRatioReal_shift_of_ae_tendsto_prefixPositiveTokenRootedArborescenceRatioReal_of_ae_pathPrefixPositiveBridgeCardEqPair
+    (P : Measure (ℕ → Fin k))
+    (a : Fin k) (ys : List (Fin k))
+    (hBridgePair :
+      ∀ᵐ ω ∂P,
+        ω 0 = a →
+          ∀ᶠ r in Filter.atTop, pathPrefixPositiveBridgeCardEqPair (k := k) a ys ω r)
+    (htok :
+      ∀ᵐ ω ∂P,
+        ω 0 = a →
+          Filter.Tendsto
+            (fun r =>
+              prefixPositiveTokenRootedArborescenceRatioReal (k := k) a ys
+                (ys.length + r) (Nat.le_add_right ys.length r)
+                (pathPrefixState (k := k) ω (ys.length + r)))
+            Filter.atTop (nhds (1 : ℝ))) :
+    ∀ᵐ ω ∂P,
+      ω 0 = a →
+        Filter.Tendsto
+          (fun r =>
+            prefixNormalizedEulerTrailCorrectionRatioReal (k := k) a ys
+              (ys.length + r) (Nat.le_add_right ys.length r)
+              (pathPrefixState (k := k) ω (ys.length + r)))
+          Filter.atTop (nhds (1 : ℝ)) := by
+  filter_upwards [hBridgePair, htok] with ω hBridgeω htokω hstart
+  exact
+    tendsto_prefixNormalizedEulerTrailCorrectionRatioReal_of_tendsto_prefixPositiveTokenRootedArborescenceRatioReal_of_positiveBridgeCardEq_pair
+      (k := k) a ys
+      (e := fun r => pathPrefixState (k := k) ω (ys.length + r))
+      (Nf := fun r => ys.length + r)
+      (hN := fun r => Nat.le_add_right ys.length r)
+      (hBridgePair := hBridgeω hstart)
+      (hlim := htokω hstart)
+
+lemma tendsto_prefixPositiveTokenRootedArborescenceRatioReal_of_tendsto_prefixTokenRootedArborescenceRatioReal_of_eventually_prefixCompatibleState_of_tendsto_outdeg
+    (a : Fin k) (ys : List (Fin k))
+    (ω : ℕ → Fin k)
+    (hcomp :
+      ∀ᶠ r in Filter.atTop,
+        prefixCompatibleState (k := k) a ys (ys.length + r)
+          (Nat.le_add_right ys.length r)
+          (pathPrefixState (k := k) ω (ys.length + r)))
+    (hout :
+      ∀ i : Fin k,
+        Filter.Tendsto
+          (fun r =>
+            MarkovDeFinettiHardEuler.outdeg (k := k)
+              (pathPrefixState (k := k) ω (ys.length + r)) i)
+          Filter.atTop Filter.atTop)
+    (htok :
+      Filter.Tendsto
+        (fun r =>
+          prefixTokenRootedArborescenceRatioReal (k := k) a ys
+            (ys.length + r) (Nat.le_add_right ys.length r)
+            (pathPrefixState (k := k) ω (ys.length + r)))
+        Filter.atTop (nhds (1 : ℝ))) :
+    Filter.Tendsto
+      (fun r =>
+        prefixPositiveTokenRootedArborescenceRatioReal (k := k) a ys
+          (ys.length + r) (Nat.le_add_right ys.length r)
+          (pathPrefixState (k := k) ω (ys.length + r)))
+      Filter.atTop (nhds (1 : ℝ)) := by
+  apply Filter.Tendsto.congr' ?_ htok
+  exact
+    (eventually_eq_prefixPositiveTokenRootedArborescenceRatioReal_of_prefixTokenRootedArborescenceRatioReal_of_eventually_prefixCompatibleState_of_eventually_forall_outdeg_gt_prefixWordState_outdeg
+      (k := k) a ys ω hcomp
+      (eventually_forall_outdeg_gt_prefixWordState_outdeg_of_tendsto
+        (k := k) a ys
+        (e := fun r => pathPrefixState (k := k) ω (ys.length + r)) hout)).symm
+
+lemma ae_tendsto_prefixPositiveTokenRootedArborescenceRatioReal_shift_of_ae_tendsto_prefixTokenRootedArborescenceRatioReal_of_ae_eventually_prefixCompatibleState_of_ae_tendsto_outdeg
+    (P : Measure (ℕ → Fin k))
+    (a : Fin k) (ys : List (Fin k))
+    (hcomp :
+      ∀ᵐ ω ∂P,
+        ω 0 = a →
+          ∀ᶠ r in Filter.atTop,
+            prefixCompatibleState (k := k) a ys (ys.length + r)
+              (Nat.le_add_right ys.length r)
+              (pathPrefixState (k := k) ω (ys.length + r)))
+    (hout :
+      ∀ i : Fin k,
+        ∀ᵐ ω ∂P,
+          ω 0 = a →
+            Filter.Tendsto
+              (fun r =>
+                MarkovDeFinettiHardEuler.outdeg (k := k)
+                  (pathPrefixState (k := k) ω (ys.length + r)) i)
+              Filter.atTop Filter.atTop)
+    (htok :
+      ∀ᵐ ω ∂P,
+        ω 0 = a →
+          Filter.Tendsto
+            (fun r =>
+              prefixTokenRootedArborescenceRatioReal (k := k) a ys
+                (ys.length + r) (Nat.le_add_right ys.length r)
+                (pathPrefixState (k := k) ω (ys.length + r)))
+            Filter.atTop (nhds (1 : ℝ))) :
+    ∀ᵐ ω ∂P,
+      ω 0 = a →
+        Filter.Tendsto
+          (fun r =>
+            prefixPositiveTokenRootedArborescenceRatioReal (k := k) a ys
+              (ys.length + r) (Nat.le_add_right ys.length r)
+              (pathPrefixState (k := k) ω (ys.length + r)))
+          Filter.atTop (nhds (1 : ℝ)) := by
+  have houtAll :
+      ∀ᵐ ω ∂P,
+        ω 0 = a →
+          ∀ i : Fin k,
+            Filter.Tendsto
+              (fun r =>
+                MarkovDeFinettiHardEuler.outdeg (k := k)
+                  (pathPrefixState (k := k) ω (ys.length + r)) i)
+              Filter.atTop Filter.atTop := by
+    have hpack :
+        ∀ᵐ ω ∂P,
+          ∀ i : Fin k,
+            ω 0 = a →
+              Filter.Tendsto
+                (fun r =>
+                  MarkovDeFinettiHardEuler.outdeg (k := k)
+                    (pathPrefixState (k := k) ω (ys.length + r)) i)
+                Filter.atTop Filter.atTop := by
+      rw [ae_all_iff]
+      intro i
+      exact hout i
+    filter_upwards [hpack] with ω hω hstart i
+    exact hω i hstart
+  filter_upwards [hcomp, houtAll, htok] with ω hcompω houtω htokω hstart
+  exact
+    tendsto_prefixPositiveTokenRootedArborescenceRatioReal_of_tendsto_prefixTokenRootedArborescenceRatioReal_of_eventually_prefixCompatibleState_of_tendsto_outdeg
+      (k := k) a ys ω (hcompω hstart) (houtω hstart) (htokω hstart)
+
+lemma ae_tendsto_prefixNormalizedEulerTrailCorrectionRatioReal_shift_of_strongRecurrence_visit_rowProcessCoordwise_components_of_ae_prefixThetaPos_of_ae_tokenDeletionSqueeze_of_bridge_of_eventually_prefixCompatibleState
+    (P : Measure (ℕ → Fin k))
+    (hStrong : StrongRecurrence (k := k) P)
+    (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k))
+    (a b : Fin k) (xs : List (Fin k))
+    (hvisit :
+      ∀ i : Fin k,
+        ∀ᵐ ω ∂P, ω 0 = a → ∃ t : ℕ, ω t = i)
+    (hrow : RowProcessCoordwiseCesaroLimit (k := k) P rowKernel)
+    (hΘpos :
+      ∀ i j : Fin k,
+        ∀ᵐ ω ∂P,
+          ω 0 = a →
+            0 < (prefixWordState (k := k) a (b :: xs)).counts.counts i j →
+              0 < rowKernelVisitProbReal (k := k) rowKernel i j ω)
+    (hcomp :
+      ∀ᵐ ω ∂P,
+        ω 0 = a →
+          ∀ᶠ r in Filter.atTop,
+            prefixCompatibleState (k := k) a (b :: xs) ((b :: xs).length + r)
+              (Nat.le_add_right (b :: xs).length r)
+              (pathPrefixState (k := k) ω ((b :: xs).length + r)))
+    (hBridge :
+      ∀ {M : ℕ} {s : MarkovState k},
+        s ∈ stateFinset k M →
+          normalizedEulerTrailCorrection (k := k) s =
+            tokenRootedArborescenceCount (k := k) (graphOfState (k := k) s) s.last) :
+    ∀ᵐ ω ∂P,
+      ω 0 = a →
+        Filter.Tendsto
+          (fun r =>
+            prefixNormalizedEulerTrailCorrectionRatioReal
+              (k := k) a (b :: xs) ((b :: xs).length + r)
+              (Nat.le_add_right (b :: xs).length r)
+              (pathPrefixState (k := k) ω ((b :: xs).length + r)))
+          Filter.atTop (nhds (1 : ℝ)) := by
+  have hlimLower :
+      ∀ᵐ ω ∂P,
+        ω 0 = a →
+          Filter.Tendsto
+            (fun r =>
+              prefixTokenDeletionLowerFactorReal (k := k) a (b :: xs)
+                (pathPrefixState (k := k) ω ((b :: xs).length + r)))
+            Filter.atTop (nhds (1 : ℝ)) :=
+    ae_tendsto_prefixTokenDeletionLowerFactorReal_shift_of_strongRecurrence_visit_rowProcessCoordwise_components_of_ae_prefixThetaPos
+      (k := k) P hStrong rowKernel a b xs hvisit hrow hΘpos
+  exact
+    ae_tendsto_prefixNormalizedEulerTrailCorrectionRatioReal_shift_of_ae_tokenDeletionSqueeze_of_bridge_of_eventually_prefixCompatibleState
+      (k := k) P a (b :: xs) hcomp hBridge hlimLower
+
+lemma ae_tendsto_prefixNormalizedEulerTrailCorrectionRatioReal_shift_of_strongRecurrence_visit_rowProcessCoordwise_components_of_ae_prefixThetaPos_of_ae_tokenDeletionSqueeze_of_bridgeCard_of_eventually_prefixCompatibleState
+    (P : Measure (ℕ → Fin k))
+    (hStrong : StrongRecurrence (k := k) P)
+    (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k))
+    (a b : Fin k) (xs : List (Fin k))
+    (hvisit :
+      ∀ i : Fin k,
+        ∀ᵐ ω ∂P, ω 0 = a → ∃ t : ℕ, ω t = i)
+    (hrow : RowProcessCoordwiseCesaroLimit (k := k) P rowKernel)
+    (hΘpos :
+      ∀ i j : Fin k,
+        ∀ᵐ ω ∂P,
+          ω 0 = a →
+            0 < (prefixWordState (k := k) a (b :: xs)).counts.counts i j →
+              0 < rowKernelVisitProbReal (k := k) rowKernel i j ω)
+    (hcomp :
+      ∀ᵐ ω ∂P,
+        ω 0 = a →
+          ∀ᶠ r in Filter.atTop,
+            prefixCompatibleState (k := k) a (b :: xs) ((b :: xs).length + r)
+              (Nat.le_add_right (b :: xs).length r)
+              (pathPrefixState (k := k) ω ((b :: xs).length + r)))
+    (hBridgeCard :
+      ∀ {M : ℕ} {s : MarkovState k},
+        s ∈ stateFinset k M →
+          (eulerTrailFinset (graphOfState s) s.start s.last).card =
+            tokenRootedArborescenceCount (k := k) (graphOfState (k := k) s) s.last *
+              outdegFactorialWeight (k := k) s) :
+    ∀ᵐ ω ∂P,
+      ω 0 = a →
+        Filter.Tendsto
+          (fun r =>
+            prefixNormalizedEulerTrailCorrectionRatioReal
+              (k := k) a (b :: xs) ((b :: xs).length + r)
+              (Nat.le_add_right (b :: xs).length r)
+              (pathPrefixState (k := k) ω ((b :: xs).length + r)))
+          Filter.atTop (nhds (1 : ℝ)) := by
+  have hlimLower :
+      ∀ᵐ ω ∂P,
+        ω 0 = a →
+          Filter.Tendsto
+            (fun r =>
+              prefixTokenDeletionLowerFactorReal (k := k) a (b :: xs)
+                (pathPrefixState (k := k) ω ((b :: xs).length + r)))
+            Filter.atTop (nhds (1 : ℝ)) :=
+    ae_tendsto_prefixTokenDeletionLowerFactorReal_shift_of_strongRecurrence_visit_rowProcessCoordwise_components_of_ae_prefixThetaPos
+      (k := k) P hStrong rowKernel a b xs hvisit hrow hΘpos
+  exact
+    ae_tendsto_prefixNormalizedEulerTrailCorrectionRatioReal_shift_of_ae_tokenDeletionSqueeze_of_bridgeCard_of_eventually_prefixCompatibleState
+      (k := k) P a (b :: xs) hcomp hBridgeCard hlimLower
+
+lemma ae_tendsto_prefixNormalizedEulerTrailCorrectionRatioReal_shift_of_strongRecurrence_visit_rowProcessCoordwise_components_of_ae_prefixThetaPosUsed_of_ae_tokenDeletionSqueeze_of_bridge_of_eventually_prefixCompatibleState
+    (P : Measure (ℕ → Fin k))
+    (hStrong : StrongRecurrence (k := k) P)
+    (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k))
+    (a b : Fin k) (xs : List (Fin k))
+    (hvisit :
+      ∀ i : Fin k,
+        ∀ᵐ ω ∂P, ω 0 = a → ∃ t : ℕ, ω t = i)
+    (hrow : RowProcessCoordwiseCesaroLimit (k := k) P rowKernel)
+    (hΘposUsed :
+      ∀ p ∈ prefixUsedTransitionSet (k := k) a (b :: xs),
+        ∀ᵐ ω ∂P,
+          ω 0 = a →
+            0 < rowKernelVisitProbReal (k := k) rowKernel p.1 p.2 ω)
+    (hcomp :
+      ∀ᵐ ω ∂P,
+        ω 0 = a →
+          ∀ᶠ r in Filter.atTop,
+            prefixCompatibleState (k := k) a (b :: xs) ((b :: xs).length + r)
+              (Nat.le_add_right (b :: xs).length r)
+              (pathPrefixState (k := k) ω ((b :: xs).length + r)))
+    (hBridge :
+      ∀ {M : ℕ} {s : MarkovState k},
+        s ∈ stateFinset k M →
+          normalizedEulerTrailCorrection (k := k) s =
+            tokenRootedArborescenceCount (k := k) (graphOfState (k := k) s) s.last) :
+    ∀ᵐ ω ∂P,
+      ω 0 = a →
+        Filter.Tendsto
+          (fun r =>
+            prefixNormalizedEulerTrailCorrectionRatioReal
+              (k := k) a (b :: xs) ((b :: xs).length + r)
+              (Nat.le_add_right (b :: xs).length r)
+              (pathPrefixState (k := k) ω ((b :: xs).length + r)))
+          Filter.atTop (nhds (1 : ℝ)) := by
+  have hlimLower :
+      ∀ᵐ ω ∂P,
+        ω 0 = a →
+          Filter.Tendsto
+            (fun r =>
+              prefixTokenDeletionLowerFactorReal (k := k) a (b :: xs)
+                (pathPrefixState (k := k) ω ((b :: xs).length + r)))
+            Filter.atTop (nhds (1 : ℝ)) :=
+    ae_tendsto_prefixTokenDeletionLowerFactorReal_shift_of_strongRecurrence_visit_rowProcessCoordwise_components_of_ae_prefixThetaPosUsed
+      (k := k) P hStrong rowKernel a b xs hvisit hrow hΘposUsed
+  exact
+    ae_tendsto_prefixNormalizedEulerTrailCorrectionRatioReal_shift_of_ae_tokenDeletionSqueeze_of_bridge_of_eventually_prefixCompatibleState
+      (k := k) P a (b :: xs) hcomp hBridge hlimLower
+
+lemma ae_tendsto_prefixNormalizedEulerTrailCorrectionRatioReal_shift_of_strongRecurrence_visit_rowProcessCoordwise_components_of_ae_prefixThetaPosUsed_of_ae_tokenDeletionSqueeze_of_bridgeCard_of_eventually_prefixCompatibleState
+    (P : Measure (ℕ → Fin k))
+    (hStrong : StrongRecurrence (k := k) P)
+    (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k))
+    (a b : Fin k) (xs : List (Fin k))
+    (hvisit :
+      ∀ i : Fin k,
+        ∀ᵐ ω ∂P, ω 0 = a → ∃ t : ℕ, ω t = i)
+    (hrow : RowProcessCoordwiseCesaroLimit (k := k) P rowKernel)
+    (hΘposUsed :
+      ∀ p ∈ prefixUsedTransitionSet (k := k) a (b :: xs),
+        ∀ᵐ ω ∂P,
+          ω 0 = a →
+            0 < rowKernelVisitProbReal (k := k) rowKernel p.1 p.2 ω)
+    (hcomp :
+      ∀ᵐ ω ∂P,
+        ω 0 = a →
+          ∀ᶠ r in Filter.atTop,
+            prefixCompatibleState (k := k) a (b :: xs) ((b :: xs).length + r)
+              (Nat.le_add_right (b :: xs).length r)
+              (pathPrefixState (k := k) ω ((b :: xs).length + r)))
+    (hBridgeCard :
+      ∀ {M : ℕ} {s : MarkovState k},
+        s ∈ stateFinset k M →
+          (eulerTrailFinset (graphOfState s) s.start s.last).card =
+            tokenRootedArborescenceCount (k := k) (graphOfState (k := k) s) s.last *
+              outdegFactorialWeight (k := k) s) :
+    ∀ᵐ ω ∂P,
+      ω 0 = a →
+        Filter.Tendsto
+          (fun r =>
+            prefixNormalizedEulerTrailCorrectionRatioReal
+              (k := k) a (b :: xs) ((b :: xs).length + r)
+              (Nat.le_add_right (b :: xs).length r)
+              (pathPrefixState (k := k) ω ((b :: xs).length + r)))
+          Filter.atTop (nhds (1 : ℝ)) := by
+  have hlimLower :
+      ∀ᵐ ω ∂P,
+        ω 0 = a →
+          Filter.Tendsto
+            (fun r =>
+              prefixTokenDeletionLowerFactorReal (k := k) a (b :: xs)
+                (pathPrefixState (k := k) ω ((b :: xs).length + r)))
+            Filter.atTop (nhds (1 : ℝ)) :=
+    ae_tendsto_prefixTokenDeletionLowerFactorReal_shift_of_strongRecurrence_visit_rowProcessCoordwise_components_of_ae_prefixThetaPosUsed
+      (k := k) P hStrong rowKernel a b xs hvisit hrow hΘposUsed
+  exact
+    ae_tendsto_prefixNormalizedEulerTrailCorrectionRatioReal_shift_of_ae_tokenDeletionSqueeze_of_bridgeCard_of_eventually_prefixCompatibleState
+      (k := k) P a (b :: xs) hcomp hBridgeCard hlimLower
+
+lemma ae_tendsto_prefixNormalizedEulerTrailCorrectionRatioReal_shift_of_strongRecurrence_visit_rowProcessCoordwise_components_of_ae_prefixThetaPosUsed_of_ae_pathPrefixPositiveBridgeCardEqPair_of_eventually_prefixCompatibleState
+    (P : Measure (ℕ → Fin k))
+    (hStrong : StrongRecurrence (k := k) P)
+    (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k))
+    (a b : Fin k) (xs : List (Fin k))
+    (hvisit :
+      ∀ i : Fin k,
+        ∀ᵐ ω ∂P, ω 0 = a → ∃ t : ℕ, ω t = i)
+    (hrow : RowProcessCoordwiseCesaroLimit (k := k) P rowKernel)
+    (hΘposUsed :
+      ∀ p ∈ prefixUsedTransitionSet (k := k) a (b :: xs),
+        ∀ᵐ ω ∂P,
+          ω 0 = a →
+            0 < rowKernelVisitProbReal (k := k) rowKernel p.1 p.2 ω)
+    (hcomp :
+      ∀ᵐ ω ∂P,
+        ω 0 = a →
+          ∀ᶠ r in Filter.atTop,
+            prefixCompatibleState (k := k) a (b :: xs) ((b :: xs).length + r)
+              (Nat.le_add_right (b :: xs).length r)
+              (pathPrefixState (k := k) ω ((b :: xs).length + r)))
+    (hBridgePos :
+      ∀ᵐ ω ∂P,
+        ω 0 = a →
+          ∀ᶠ r in Filter.atTop,
+            pathPrefixPositiveBridgeCardEqPair (k := k) a (b :: xs) ω r) :
+    ∀ᵐ ω ∂P,
+      ω 0 = a →
+        Filter.Tendsto
+          (fun r =>
+            prefixNormalizedEulerTrailCorrectionRatioReal
+              (k := k) a (b :: xs) ((b :: xs).length + r)
+              (Nat.le_add_right (b :: xs).length r)
+              (pathPrefixState (k := k) ω ((b :: xs).length + r)))
+          Filter.atTop (nhds (1 : ℝ)) := by
+  have hlimLower :
+      ∀ᵐ ω ∂P,
+        ω 0 = a →
+          Filter.Tendsto
+            (fun r =>
+              prefixTokenDeletionLowerFactorReal (k := k) a (b :: xs)
+                (pathPrefixState (k := k) ω ((b :: xs).length + r)))
+            Filter.atTop (nhds (1 : ℝ)) :=
+    ae_tendsto_prefixTokenDeletionLowerFactorReal_shift_of_strongRecurrence_visit_rowProcessCoordwise_components_of_ae_prefixThetaPosUsed
+      (k := k) P hStrong rowKernel a b xs hvisit hrow hΘposUsed
+  have hout :
+      ∀ i : Fin k,
+        ∀ᵐ ω ∂P,
+          ω 0 = a →
+            Filter.Tendsto
+              (fun r =>
+                MarkovDeFinettiHardEuler.outdeg (k := k)
+                  (pathPrefixState (k := k) ω ((b :: xs).length + r)) i)
+              Filter.atTop Filter.atTop :=
+    fun i =>
+      ae_hout_pathPrefixState_shift_of_strongRecurrence_on_start_of_ae_exists_visit
+        (k := k) P hStrong a b xs hvisit i
+  have hBridgePair :
+      ∀ᵐ ω ∂P,
+        ω 0 = a →
+          ∀ᶠ r in Filter.atTop,
+            pathPrefixBridgeCardEqPair (k := k) a (b :: xs) ω r :=
+    ae_eventually_pathPrefixBridgeCardEqPair_of_ae_pathPrefixPositiveBridgeCardEqPair_of_eventually_prefixCompatibleState_of_ae_tendsto_outdeg
+      (k := k) P a (b :: xs) hcomp hBridgePos hout
+  have hBridgeFull :
+      ∀ᵐ ω ∂P,
+        ω 0 = a →
+          ∀ᶠ r in Filter.atTop,
+            tokenRootedBridgeCardEq (k := k)
+              (pathPrefixState (k := k) ω ((b :: xs).length + r)) := by
+    filter_upwards [hBridgePair] with ω hBridgeω hstart
+    filter_upwards [hBridgeω hstart] with r hr
+    exact hr.1
+  have htok :
+      ∀ᵐ ω ∂P,
+        ω 0 = a →
+          Filter.Tendsto
+            (fun r =>
+              prefixTokenRootedArborescenceRatioReal (k := k) a (b :: xs)
+                ((b :: xs).length + r) (Nat.le_add_right (b :: xs).length r)
+                (pathPrefixState (k := k) ω ((b :: xs).length + r)))
+            Filter.atTop (nhds (1 : ℝ)) :=
+    ae_tendsto_prefixTokenRootedArborescenceRatioReal_shift_of_ae_tendsto_prefixTokenDeletionLowerFactorReal
+      (k := k) P a (b :: xs)
+      (ae_eventually_prefixTokenDeletionLowerFactorReal_le_prefixTokenRootedArborescenceRatioReal_shift_of_ae_pathPrefixBridgeCardEq_of_eventually_prefixCompatibleState
+        (k := k) P a (b :: xs) hcomp hBridgeFull)
+      (ae_eventually_prefixTokenRootedArborescenceRatioReal_le_one_shift
+        (k := k) P a (b :: xs))
+      hlimLower
+  have htokPos :
+      ∀ᵐ ω ∂P,
+        ω 0 = a →
+          Filter.Tendsto
+            (fun r =>
+              prefixPositiveTokenRootedArborescenceRatioReal (k := k) a (b :: xs)
+                ((b :: xs).length + r) (Nat.le_add_right (b :: xs).length r)
+                (pathPrefixState (k := k) ω ((b :: xs).length + r)))
+            Filter.atTop (nhds (1 : ℝ)) :=
+    ae_tendsto_prefixPositiveTokenRootedArborescenceRatioReal_shift_of_ae_tendsto_prefixTokenRootedArborescenceRatioReal_of_ae_eventually_prefixCompatibleState_of_ae_tendsto_outdeg
+      (k := k) P a (b :: xs) hcomp hout htok
+  exact
+    ae_tendsto_prefixNormalizedEulerTrailCorrectionRatioReal_shift_of_ae_tendsto_prefixPositiveTokenRootedArborescenceRatioReal_of_ae_pathPrefixPositiveBridgeCardEqPair
+      (k := k) P a (b :: xs) hBridgePos htokPos
+
+lemma ae_tendsto_prefixNormalizedEulerTrailCorrectionRatioReal_shift_of_strongRecurrence_visit_rowProcessCoordwise_components_of_ae_prefixThetaPosUsed_of_positiveBridge_of_eventually_prefixCompatibleState
+    (P : Measure (ℕ → Fin k))
+    (hStrong : StrongRecurrence (k := k) P)
+    (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k))
+    (a b : Fin k) (xs : List (Fin k))
+    (hvisit :
+      ∀ i : Fin k,
+        ∀ᵐ ω ∂P, ω 0 = a → ∃ t : ℕ, ω t = i)
+    (hrow : RowProcessCoordwiseCesaroLimit (k := k) P rowKernel)
+    (hΘposUsed :
+      ∀ p ∈ prefixUsedTransitionSet (k := k) a (b :: xs),
+        ∀ᵐ ω ∂P,
+          ω 0 = a →
+            0 < rowKernelVisitProbReal (k := k) rowKernel p.1 p.2 ω)
+    (hcomp :
+      ∀ᵐ ω ∂P,
+        ω 0 = a →
+          ∀ᶠ r in Filter.atTop,
+            prefixCompatibleState (k := k) a (b :: xs) ((b :: xs).length + r)
+              (Nat.le_add_right (b :: xs).length r)
+              (pathPrefixState (k := k) ω ((b :: xs).length + r)))
+    (hPositiveBridgeCard :
+      ∀ {M : ℕ} {s : MarkovState k},
+        s ∈ stateFinset k M →
+          positiveTokenRootedBridgeCardEq (k := k) s) :
+    ∀ᵐ ω ∂P,
+      ω 0 = a →
+        Filter.Tendsto
+          (fun r =>
+            prefixNormalizedEulerTrailCorrectionRatioReal
+              (k := k) a (b :: xs) ((b :: xs).length + r)
+              (Nat.le_add_right (b :: xs).length r)
+              (pathPrefixState (k := k) ω ((b :: xs).length + r)))
+          Filter.atTop (nhds (1 : ℝ)) := by
+  exact
+    ae_tendsto_prefixNormalizedEulerTrailCorrectionRatioReal_shift_of_strongRecurrence_visit_rowProcessCoordwise_components_of_ae_prefixThetaPosUsed_of_ae_pathPrefixPositiveBridgeCardEqPair_of_eventually_prefixCompatibleState
+      (k := k) P hStrong rowKernel a b xs hvisit hrow hΘposUsed hcomp
+      (ae_eventually_pathPrefixPositiveBridgeCardEqPair_of_globalPositiveBridgeCard_of_eventually_prefixCompatibleState
+        (k := k) P a (b :: xs) hcomp
+        (fun {_M} {_s} hs => hPositiveBridgeCard hs))
 
 lemma ae_tendsto_prefixRatioApproxENN_of_strongRecurrence_visit_rowProcessCoordwise_components
     (P : Measure (ℕ → Fin k))
@@ -8309,29 +12071,375 @@ lemma ae_tendsto_prefixRatioApproxENN_of_strongRecurrence_visit_rowProcessCoordw
       ∀ {M : ℕ} {s : MarkovState k},
         s ∈ stateFinset k M →
           normalizedEulerTrailCorrection (k := k) s =
-            tokenRootedArborescenceCount (k := k) (graphOfState (k := k) s) s.last)
-    (hlower :
+            tokenRootedArborescenceCount (k := k) (graphOfState (k := k) s) s.last) :
+    ∀ᵐ ω ∂P,
+      Filter.Tendsto
+        (fun r => prefixRatioApproxENN (k := k) a (b :: xs) r ω)
+        Filter.atTop
+        (nhds (if ω 0 = a then rowKernelStepProd (k := k) rowKernel ω (a :: b :: xs) else 0)) := by
+  have hgraph :
       ∀ᵐ ω ∂P,
         ω 0 = a →
-          ∀ᶠ r in Filter.atTop,
-            prefixTokenDeletionLowerFactorReal (k := k) a (b :: xs)
-                (pathPrefixState (k := k) ω ((b :: xs).length + r)) ≤
-              prefixTokenRootedArborescenceRatioReal (k := k) a (b :: xs)
-                ((b :: xs).length + r) (Nat.le_add_right (b :: xs).length r)
+          Filter.Tendsto
+            (fun r =>
+              prefixNormalizedEulerTrailCorrectionRatioReal
+                (k := k) a (b :: xs) ((b :: xs).length + r)
+                (Nat.le_add_right (b :: xs).length r)
                 (pathPrefixState (k := k) ω ((b :: xs).length + r)))
-    (hupper :
+            Filter.atTop (nhds (1 : ℝ)) :=
+    ae_tendsto_prefixNormalizedEulerTrailCorrectionRatioReal_shift_of_strongRecurrence_visit_rowProcessCoordwise_components_of_ae_prefixThetaPos_of_ae_tokenDeletionSqueeze_of_bridge_of_eventually_prefixCompatibleState
+      (k := k) P hStrong rowKernel a b xs hvisit hrow hΘpos hcomp hBridge
+  exact
+    ae_tendsto_prefixRatioApproxENN_of_strongRecurrence_visit_rowProcessCoordwise_components_of_ae_prefixThetaPos
+      (k := k) P hStrong rowKernel a b xs hvisit hrow hΘpos hgraph
+
+lemma ae_tendsto_prefixRatioApproxENN_of_strongRecurrence_visit_rowProcessCoordwise_components_of_ae_prefixThetaPos_of_ae_tokenDeletionSqueeze_of_bridgeCard_of_eventually_prefixCompatibleState
+    (P : Measure (ℕ → Fin k))
+    (hStrong : StrongRecurrence (k := k) P)
+    (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k))
+    (a b : Fin k) (xs : List (Fin k))
+    (hvisit :
+      ∀ i : Fin k,
+        ∀ᵐ ω ∂P, ω 0 = a → ∃ t : ℕ, ω t = i)
+    (hrow : RowProcessCoordwiseCesaroLimit (k := k) P rowKernel)
+    (hΘpos :
+      ∀ i j : Fin k,
+        ∀ᵐ ω ∂P,
+          ω 0 = a →
+            0 < (prefixWordState (k := k) a (b :: xs)).counts.counts i j →
+              0 < rowKernelVisitProbReal (k := k) rowKernel i j ω)
+    (hcomp :
       ∀ᵐ ω ∂P,
         ω 0 = a →
           ∀ᶠ r in Filter.atTop,
-            prefixTokenRootedArborescenceRatioReal (k := k) a (b :: xs)
-                ((b :: xs).length + r) (Nat.le_add_right (b :: xs).length r)
-                (pathPrefixState (k := k) ω ((b :: xs).length + r)) ≤ (1 : ℝ))
-    (hlimLower :
+            prefixCompatibleState (k := k) a (b :: xs) ((b :: xs).length + r)
+              (Nat.le_add_right (b :: xs).length r)
+              (pathPrefixState (k := k) ω ((b :: xs).length + r)))
+    (hBridgeCard :
+      ∀ {M : ℕ} {s : MarkovState k},
+        s ∈ stateFinset k M →
+          (eulerTrailFinset (graphOfState s) s.start s.last).card =
+            tokenRootedArborescenceCount (k := k) (graphOfState (k := k) s) s.last *
+              outdegFactorialWeight (k := k) s) :
+    ∀ᵐ ω ∂P,
+      Filter.Tendsto
+        (fun r => prefixRatioApproxENN (k := k) a (b :: xs) r ω)
+        Filter.atTop
+        (nhds (if ω 0 = a then rowKernelStepProd (k := k) rowKernel ω (a :: b :: xs) else 0)) := by
+  have hgraph :
+      ∀ᵐ ω ∂P,
+        ω 0 = a →
+          Filter.Tendsto
+            (fun r =>
+              prefixNormalizedEulerTrailCorrectionRatioReal
+                (k := k) a (b :: xs) ((b :: xs).length + r)
+                (Nat.le_add_right (b :: xs).length r)
+                (pathPrefixState (k := k) ω ((b :: xs).length + r)))
+            Filter.atTop (nhds (1 : ℝ)) :=
+    ae_tendsto_prefixNormalizedEulerTrailCorrectionRatioReal_shift_of_strongRecurrence_visit_rowProcessCoordwise_components_of_ae_prefixThetaPos_of_ae_tokenDeletionSqueeze_of_bridgeCard_of_eventually_prefixCompatibleState
+      (k := k) P hStrong rowKernel a b xs hvisit hrow hΘpos hcomp hBridgeCard
+  exact
+    ae_tendsto_prefixRatioApproxENN_of_strongRecurrence_visit_rowProcessCoordwise_components_of_ae_prefixThetaPos
+      (k := k) P hStrong rowKernel a b xs hvisit hrow hΘpos hgraph
+
+lemma ae_tendsto_prefixRatioApproxENN_of_strongRecurrence_visit_rowProcessCoordwise_components_of_ae_prefixThetaPosUsed_of_ae_tokenDeletionSqueeze_of_bridge_of_eventually_prefixCompatibleState
+    (P : Measure (ℕ → Fin k))
+    (hStrong : StrongRecurrence (k := k) P)
+    (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k))
+    (a b : Fin k) (xs : List (Fin k))
+    (hvisit :
+      ∀ i : Fin k,
+        ∀ᵐ ω ∂P, ω 0 = a → ∃ t : ℕ, ω t = i)
+    (hrow : RowProcessCoordwiseCesaroLimit (k := k) P rowKernel)
+    (hΘposUsed :
+      ∀ p ∈ prefixUsedTransitionSet (k := k) a (b :: xs),
+        ∀ᵐ ω ∂P,
+          ω 0 = a →
+            0 < rowKernelVisitProbReal (k := k) rowKernel p.1 p.2 ω)
+    (hcomp :
+      ∀ᵐ ω ∂P,
+        ω 0 = a →
+          ∀ᶠ r in Filter.atTop,
+            prefixCompatibleState (k := k) a (b :: xs) ((b :: xs).length + r)
+              (Nat.le_add_right (b :: xs).length r)
+              (pathPrefixState (k := k) ω ((b :: xs).length + r)))
+    (hBridge :
+      ∀ {M : ℕ} {s : MarkovState k},
+        s ∈ stateFinset k M →
+          normalizedEulerTrailCorrection (k := k) s =
+            tokenRootedArborescenceCount (k := k) (graphOfState (k := k) s) s.last) :
+    ∀ᵐ ω ∂P,
+      Filter.Tendsto
+        (fun r => prefixRatioApproxENN (k := k) a (b :: xs) r ω)
+        Filter.atTop
+        (nhds (if ω 0 = a then rowKernelStepProd (k := k) rowKernel ω (a :: b :: xs) else 0)) := by
+  have hgraph :
+      ∀ᵐ ω ∂P,
+        ω 0 = a →
+          Filter.Tendsto
+            (fun r =>
+              prefixNormalizedEulerTrailCorrectionRatioReal
+                (k := k) a (b :: xs) ((b :: xs).length + r)
+                (Nat.le_add_right (b :: xs).length r)
+                (pathPrefixState (k := k) ω ((b :: xs).length + r)))
+            Filter.atTop (nhds (1 : ℝ)) :=
+    ae_tendsto_prefixNormalizedEulerTrailCorrectionRatioReal_shift_of_strongRecurrence_visit_rowProcessCoordwise_components_of_ae_prefixThetaPosUsed_of_ae_tokenDeletionSqueeze_of_bridge_of_eventually_prefixCompatibleState
+      (k := k) P hStrong rowKernel a b xs hvisit hrow hΘposUsed hcomp hBridge
+  exact
+    ae_tendsto_prefixRatioApproxENN_of_strongRecurrence_visit_rowProcessCoordwise_components
+      (k := k) P hStrong rowKernel a b xs hvisit hrow hΘposUsed hgraph
+
+lemma ae_tendsto_prefixRatioApproxENN_of_strongRecurrence_visit_rowProcessCoordwise_components_of_ae_prefixThetaPosUsed_of_ae_tokenDeletionSqueeze_of_bridgeCard_of_eventually_prefixCompatibleState
+    (P : Measure (ℕ → Fin k))
+    (hStrong : StrongRecurrence (k := k) P)
+    (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k))
+    (a b : Fin k) (xs : List (Fin k))
+    (hvisit :
+      ∀ i : Fin k,
+        ∀ᵐ ω ∂P, ω 0 = a → ∃ t : ℕ, ω t = i)
+    (hrow : RowProcessCoordwiseCesaroLimit (k := k) P rowKernel)
+    (hΘposUsed :
+      ∀ p ∈ prefixUsedTransitionSet (k := k) a (b :: xs),
+        ∀ᵐ ω ∂P,
+          ω 0 = a →
+            0 < rowKernelVisitProbReal (k := k) rowKernel p.1 p.2 ω)
+    (hcomp :
+      ∀ᵐ ω ∂P,
+        ω 0 = a →
+          ∀ᶠ r in Filter.atTop,
+            prefixCompatibleState (k := k) a (b :: xs) ((b :: xs).length + r)
+              (Nat.le_add_right (b :: xs).length r)
+              (pathPrefixState (k := k) ω ((b :: xs).length + r)))
+    (hBridgeCard :
+      ∀ {M : ℕ} {s : MarkovState k},
+        s ∈ stateFinset k M →
+          (eulerTrailFinset (graphOfState s) s.start s.last).card =
+            tokenRootedArborescenceCount (k := k) (graphOfState (k := k) s) s.last *
+              outdegFactorialWeight (k := k) s) :
+    ∀ᵐ ω ∂P,
+      Filter.Tendsto
+        (fun r => prefixRatioApproxENN (k := k) a (b :: xs) r ω)
+        Filter.atTop
+        (nhds (if ω 0 = a then rowKernelStepProd (k := k) rowKernel ω (a :: b :: xs) else 0)) := by
+  have hgraph :
+      ∀ᵐ ω ∂P,
+        ω 0 = a →
+          Filter.Tendsto
+            (fun r =>
+              prefixNormalizedEulerTrailCorrectionRatioReal
+                (k := k) a (b :: xs) ((b :: xs).length + r)
+                (Nat.le_add_right (b :: xs).length r)
+                (pathPrefixState (k := k) ω ((b :: xs).length + r)))
+            Filter.atTop (nhds (1 : ℝ)) :=
+    ae_tendsto_prefixNormalizedEulerTrailCorrectionRatioReal_shift_of_ae_tokenDeletionSqueeze_of_bridgeCard_of_eventually_prefixCompatibleState
+      (k := k) P a (b :: xs) hcomp hBridgeCard
+      (ae_tendsto_prefixTokenDeletionLowerFactorReal_shift_of_strongRecurrence_visit_rowProcessCoordwise_components_of_ae_prefixThetaPosUsed
+        (k := k) P hStrong rowKernel a b xs hvisit hrow hΘposUsed)
+  exact
+    ae_tendsto_prefixRatioApproxENN_of_strongRecurrence_visit_rowProcessCoordwise_components
+      (k := k) P hStrong rowKernel a b xs hvisit hrow hΘposUsed hgraph
+
+lemma ae_tendsto_prefixRatioApproxENN_of_strongRecurrence_visit_rowProcessCoordwise_components_of_ae_prefixThetaPosUsed_of_ae_pathPrefixBridgeCardEqPair_of_eventually_prefixCompatibleState
+    (P : Measure (ℕ → Fin k))
+    (hStrong : StrongRecurrence (k := k) P)
+    (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k))
+    (a b : Fin k) (xs : List (Fin k))
+    (hvisit :
+      ∀ i : Fin k,
+        ∀ᵐ ω ∂P, ω 0 = a → ∃ t : ℕ, ω t = i)
+    (hrow : RowProcessCoordwiseCesaroLimit (k := k) P rowKernel)
+    (hΘposUsed :
+      ∀ p ∈ prefixUsedTransitionSet (k := k) a (b :: xs),
+        ∀ᵐ ω ∂P,
+          ω 0 = a →
+            0 < rowKernelVisitProbReal (k := k) rowKernel p.1 p.2 ω)
+    (hcomp :
+      ∀ᵐ ω ∂P,
+        ω 0 = a →
+          ∀ᶠ r in Filter.atTop,
+            prefixCompatibleState (k := k) a (b :: xs) ((b :: xs).length + r)
+              (Nat.le_add_right (b :: xs).length r)
+              (pathPrefixState (k := k) ω ((b :: xs).length + r)))
+    (hBridgePair :
+      ∀ᵐ ω ∂P,
+        ω 0 = a →
+          ∀ᶠ r in Filter.atTop,
+            pathPrefixBridgeCardEqPair (k := k) a (b :: xs) ω r) :
+    ∀ᵐ ω ∂P,
+      Filter.Tendsto
+        (fun r => prefixRatioApproxENN (k := k) a (b :: xs) r ω)
+        Filter.atTop
+        (nhds (if ω 0 = a then rowKernelStepProd (k := k) rowKernel ω (a :: b :: xs) else 0)) := by
+  have hlimLower :
       ∀ᵐ ω ∂P,
         ω 0 = a →
           Filter.Tendsto
             (fun r =>
               prefixTokenDeletionLowerFactorReal (k := k) a (b :: xs)
+                (pathPrefixState (k := k) ω ((b :: xs).length + r)))
+            Filter.atTop (nhds (1 : ℝ)) :=
+    ae_tendsto_prefixTokenDeletionLowerFactorReal_shift_of_strongRecurrence_visit_rowProcessCoordwise_components_of_ae_prefixThetaPosUsed
+      (k := k) P hStrong rowKernel a b xs hvisit hrow hΘposUsed
+  have hBridgeFull :
+      ∀ᵐ ω ∂P,
+        ω 0 = a →
+          ∀ᶠ r in Filter.atTop,
+            tokenRootedBridgeCardEq (k := k)
+              (pathPrefixState (k := k) ω ((b :: xs).length + r)) := by
+    filter_upwards [hBridgePair] with ω hBridgeω hstart
+    filter_upwards [hBridgeω hstart] with r hr
+    exact hr.1
+  have htok :
+      ∀ᵐ ω ∂P,
+        ω 0 = a →
+          Filter.Tendsto
+            (fun r =>
+              prefixTokenRootedArborescenceRatioReal (k := k) a (b :: xs)
+                ((b :: xs).length + r) (Nat.le_add_right (b :: xs).length r)
+                (pathPrefixState (k := k) ω ((b :: xs).length + r)))
+            Filter.atTop (nhds (1 : ℝ)) :=
+    ae_tendsto_prefixTokenRootedArborescenceRatioReal_shift_of_ae_tendsto_prefixTokenDeletionLowerFactorReal
+      (k := k) P a (b :: xs)
+      (ae_eventually_prefixTokenDeletionLowerFactorReal_le_prefixTokenRootedArborescenceRatioReal_shift_of_ae_pathPrefixBridgeCardEq_of_eventually_prefixCompatibleState
+        (k := k) P a (b :: xs) hcomp hBridgeFull)
+      (ae_eventually_prefixTokenRootedArborescenceRatioReal_le_one_shift
+        (k := k) P a (b :: xs))
+      hlimLower
+  have hgraph :
+      ∀ᵐ ω ∂P,
+        ω 0 = a →
+          Filter.Tendsto
+            (fun r =>
+              prefixNormalizedEulerTrailCorrectionRatioReal
+                (k := k) a (b :: xs) ((b :: xs).length + r)
+                (Nat.le_add_right (b :: xs).length r)
+                (pathPrefixState (k := k) ω ((b :: xs).length + r)))
+            Filter.atTop (nhds (1 : ℝ)) :=
+    ae_tendsto_prefixNormalizedEulerTrailCorrectionRatioReal_shift_of_ae_tendsto_prefixTokenRootedArborescenceRatioReal_of_ae_pathPrefixBridgeCardEqPair
+      (k := k) P a (b :: xs) hBridgePair htok
+  exact
+    ae_tendsto_prefixRatioApproxENN_of_strongRecurrence_visit_rowProcessCoordwise_components
+      (k := k) P hStrong rowKernel a b xs hvisit hrow hΘposUsed hgraph
+
+lemma ae_tendsto_prefixRatioApproxENN_of_strongRecurrence_visit_rowProcessCoordwise_components_of_ae_prefixThetaPosUsed_of_positiveBridge_of_eventually_prefixCompatibleState
+    (P : Measure (ℕ → Fin k))
+    (hStrong : StrongRecurrence (k := k) P)
+    (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k))
+    (a b : Fin k) (xs : List (Fin k))
+    (hvisit :
+      ∀ i : Fin k,
+        ∀ᵐ ω ∂P, ω 0 = a → ∃ t : ℕ, ω t = i)
+    (hrow : RowProcessCoordwiseCesaroLimit (k := k) P rowKernel)
+    (hΘposUsed :
+      ∀ p ∈ prefixUsedTransitionSet (k := k) a (b :: xs),
+        ∀ᵐ ω ∂P,
+          ω 0 = a →
+            0 < rowKernelVisitProbReal (k := k) rowKernel p.1 p.2 ω)
+    (hcomp :
+      ∀ᵐ ω ∂P,
+        ω 0 = a →
+          ∀ᶠ r in Filter.atTop,
+            prefixCompatibleState (k := k) a (b :: xs) ((b :: xs).length + r)
+              (Nat.le_add_right (b :: xs).length r)
+              (pathPrefixState (k := k) ω ((b :: xs).length + r)))
+    (hPositiveBridgeCard :
+      ∀ {M : ℕ} {s : MarkovState k},
+        s ∈ stateFinset k M →
+          positiveTokenRootedBridgeCardEq (k := k) s) :
+    ∀ᵐ ω ∂P,
+      Filter.Tendsto
+        (fun r => prefixRatioApproxENN (k := k) a (b :: xs) r ω)
+        Filter.atTop
+        (nhds (if ω 0 = a then rowKernelStepProd (k := k) rowKernel ω (a :: b :: xs) else 0)) := by
+  have hgraph :
+      ∀ᵐ ω ∂P,
+        ω 0 = a →
+          Filter.Tendsto
+            (fun r =>
+              prefixNormalizedEulerTrailCorrectionRatioReal
+                (k := k) a (b :: xs) ((b :: xs).length + r)
+                (Nat.le_add_right (b :: xs).length r)
+                (pathPrefixState (k := k) ω ((b :: xs).length + r)))
+            Filter.atTop (nhds (1 : ℝ)) :=
+    ae_tendsto_prefixNormalizedEulerTrailCorrectionRatioReal_shift_of_strongRecurrence_visit_rowProcessCoordwise_components_of_ae_prefixThetaPosUsed_of_positiveBridge_of_eventually_prefixCompatibleState
+      (k := k) P hStrong rowKernel a b xs hvisit hrow hΘposUsed hcomp hPositiveBridgeCard
+  exact
+    ae_tendsto_prefixRatioApproxENN_of_strongRecurrence_visit_rowProcessCoordwise_components
+      (k := k) P hStrong rowKernel a b xs hvisit hrow hΘposUsed hgraph
+
+lemma ae_tendsto_prefixRatioApproxENN_of_strongRecurrence_visit_rowProcessCoordwise_components_of_ae_prefixThetaPosUsed_of_ae_pathPrefixPositiveBridgeCardEqPair_of_eventually_prefixCompatibleState
+    (P : Measure (ℕ → Fin k))
+    (hStrong : StrongRecurrence (k := k) P)
+    (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k))
+    (a b : Fin k) (xs : List (Fin k))
+    (hvisit :
+      ∀ i : Fin k,
+        ∀ᵐ ω ∂P, ω 0 = a → ∃ t : ℕ, ω t = i)
+    (hrow : RowProcessCoordwiseCesaroLimit (k := k) P rowKernel)
+    (hΘposUsed :
+      ∀ p ∈ prefixUsedTransitionSet (k := k) a (b :: xs),
+        ∀ᵐ ω ∂P,
+          ω 0 = a →
+            0 < rowKernelVisitProbReal (k := k) rowKernel p.1 p.2 ω)
+    (hcomp :
+      ∀ᵐ ω ∂P,
+        ω 0 = a →
+          ∀ᶠ r in Filter.atTop,
+            prefixCompatibleState (k := k) a (b :: xs) ((b :: xs).length + r)
+              (Nat.le_add_right (b :: xs).length r)
+              (pathPrefixState (k := k) ω ((b :: xs).length + r)))
+    (hBridgePos :
+      ∀ᵐ ω ∂P,
+        ω 0 = a →
+          ∀ᶠ r in Filter.atTop,
+            pathPrefixPositiveBridgeCardEqPair (k := k) a (b :: xs) ω r) :
+    ∀ᵐ ω ∂P,
+      Filter.Tendsto
+        (fun r => prefixRatioApproxENN (k := k) a (b :: xs) r ω)
+        Filter.atTop
+        (nhds (if ω 0 = a then rowKernelStepProd (k := k) rowKernel ω (a :: b :: xs) else 0)) := by
+  have hgraph :
+      ∀ᵐ ω ∂P,
+        ω 0 = a →
+          Filter.Tendsto
+            (fun r =>
+              prefixNormalizedEulerTrailCorrectionRatioReal
+                (k := k) a (b :: xs) ((b :: xs).length + r)
+                (Nat.le_add_right (b :: xs).length r)
+                (pathPrefixState (k := k) ω ((b :: xs).length + r)))
+            Filter.atTop (nhds (1 : ℝ)) :=
+    ae_tendsto_prefixNormalizedEulerTrailCorrectionRatioReal_shift_of_strongRecurrence_visit_rowProcessCoordwise_components_of_ae_prefixThetaPosUsed_of_ae_pathPrefixPositiveBridgeCardEqPair_of_eventually_prefixCompatibleState
+      (k := k) P hStrong rowKernel a b xs hvisit hrow hΘposUsed hcomp hBridgePos
+  exact
+    ae_tendsto_prefixRatioApproxENN_of_strongRecurrence_visit_rowProcessCoordwise_components
+      (k := k) P hStrong rowKernel a b xs hvisit hrow hΘposUsed hgraph
+
+lemma ae_tendsto_prefixRatioApproxENN_of_strongRecurrence_visit_rowProcessCoordwise_components_of_ae_prefixThetaPosUsed_of_ae_tendsto_prefixPositiveTokenRootedArborescenceRatioReal_of_ae_pathPrefixPositiveBridgeCardEqPair
+    (P : Measure (ℕ → Fin k))
+    (hStrong : StrongRecurrence (k := k) P)
+    (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k))
+    (a b : Fin k) (xs : List (Fin k))
+    (hvisit :
+      ∀ i : Fin k,
+        ∀ᵐ ω ∂P, ω 0 = a → ∃ t : ℕ, ω t = i)
+    (hrow : RowProcessCoordwiseCesaroLimit (k := k) P rowKernel)
+    (hΘposUsed :
+      ∀ p ∈ prefixUsedTransitionSet (k := k) a (b :: xs),
+        ∀ᵐ ω ∂P,
+          ω 0 = a →
+            0 < rowKernelVisitProbReal (k := k) rowKernel p.1 p.2 ω)
+    (hBridgePair :
+      ∀ᵐ ω ∂P,
+        ω 0 = a →
+          ∀ᶠ r in Filter.atTop,
+            pathPrefixPositiveBridgeCardEqPair (k := k) a (b :: xs) ω r)
+    (htokPos :
+      ∀ᵐ ω ∂P,
+        ω 0 = a →
+          Filter.Tendsto
+            (fun r =>
+              prefixPositiveTokenRootedArborescenceRatioReal (k := k) a (b :: xs)
+                ((b :: xs).length + r) (Nat.le_add_right (b :: xs).length r)
                 (pathPrefixState (k := k) ω ((b :: xs).length + r)))
             Filter.atTop (nhds (1 : ℝ))) :
     ∀ᵐ ω ∂P,
@@ -8349,11 +12457,11 @@ lemma ae_tendsto_prefixRatioApproxENN_of_strongRecurrence_visit_rowProcessCoordw
                 (Nat.le_add_right (b :: xs).length r)
                 (pathPrefixState (k := k) ω ((b :: xs).length + r)))
             Filter.atTop (nhds (1 : ℝ)) :=
-    ae_tendsto_prefixNormalizedEulerTrailCorrectionRatioReal_shift_of_ae_tokenDeletionSqueeze_of_bridge_of_eventually_prefixCompatibleState
-      (k := k) P a (b :: xs) hcomp hBridge hlower hupper hlimLower
+    ae_tendsto_prefixNormalizedEulerTrailCorrectionRatioReal_shift_of_ae_tendsto_prefixPositiveTokenRootedArborescenceRatioReal_of_ae_pathPrefixPositiveBridgeCardEqPair
+      (k := k) P a (b :: xs) hBridgePair htokPos
   exact
-    ae_tendsto_prefixRatioApproxENN_of_strongRecurrence_visit_rowProcessCoordwise_components_of_ae_prefixThetaPos
-      (k := k) P hStrong rowKernel a b xs hvisit hrow hΘpos hgraph
+    ae_tendsto_prefixRatioApproxENN_of_strongRecurrence_visit_rowProcessCoordwise_components
+      (k := k) P hStrong rowKernel a b xs hvisit hrow hΘposUsed hgraph
 
 lemma ae_tendsto_prefixRatioApproxENN_of_ae_infinite_visits_rowProcessCoordwise_components_of_ae_prefixThetaPos_of_ae_tokenDeletionSqueeze_of_bridge_of_eventually_prefixCompatibleState
     (P : Measure (ℕ → Fin k))
@@ -8380,51 +12488,148 @@ lemma ae_tendsto_prefixRatioApproxENN_of_ae_infinite_visits_rowProcessCoordwise_
       ∀ {M : ℕ} {s : MarkovState k},
         s ∈ stateFinset k M →
           normalizedEulerTrailCorrection (k := k) s =
-            tokenRootedArborescenceCount (k := k) (graphOfState (k := k) s) s.last)
-    (hlower :
-      ∀ᵐ ω ∂P,
-        ω 0 = a →
-          ∀ᶠ r in Filter.atTop,
-            prefixTokenDeletionLowerFactorReal (k := k) a (b :: xs)
-                (pathPrefixState (k := k) ω ((b :: xs).length + r)) ≤
-              prefixTokenRootedArborescenceRatioReal (k := k) a (b :: xs)
-                ((b :: xs).length + r) (Nat.le_add_right (b :: xs).length r)
-                (pathPrefixState (k := k) ω ((b :: xs).length + r)))
-    (hupper :
-      ∀ᵐ ω ∂P,
-        ω 0 = a →
-          ∀ᶠ r in Filter.atTop,
-            prefixTokenRootedArborescenceRatioReal (k := k) a (b :: xs)
-                ((b :: xs).length + r) (Nat.le_add_right (b :: xs).length r)
-                (pathPrefixState (k := k) ω ((b :: xs).length + r)) ≤ (1 : ℝ))
-    (hlimLower :
-      ∀ᵐ ω ∂P,
-        ω 0 = a →
-          Filter.Tendsto
-            (fun r =>
-              prefixTokenDeletionLowerFactorReal (k := k) a (b :: xs)
-                (pathPrefixState (k := k) ω ((b :: xs).length + r)))
-            Filter.atTop (nhds (1 : ℝ))) :
+            tokenRootedArborescenceCount (k := k) (graphOfState (k := k) s) s.last) :
     ∀ᵐ ω ∂P,
       Filter.Tendsto
         (fun r => prefixRatioApproxENN (k := k) a (b :: xs) r ω)
         Filter.atTop
         (nhds (if ω 0 = a then rowKernelStepProd (k := k) rowKernel ω (a :: b :: xs) else 0)) := by
-  have hgraph :
+  have hStrong : StrongRecurrence (k := k) P :=
+    strongRecurrence_of_ae_infinite_visits (k := k) P hinf
+  have hvisit :
+      ∀ i : Fin k,
+        ∀ᵐ ω ∂P, ω 0 = a → ∃ t : ℕ, ω t = i :=
+    ae_coordwise_exists_visit_on_start_of_ae_infinite_visits
+      (k := k) P a hinf
+  exact
+    ae_tendsto_prefixRatioApproxENN_of_strongRecurrence_visit_rowProcessCoordwise_components_of_ae_prefixThetaPos_of_ae_tokenDeletionSqueeze_of_bridge_of_eventually_prefixCompatibleState
+      (k := k) P hStrong rowKernel a b xs hvisit hrow hΘpos hcomp hBridge
+
+lemma ae_tendsto_prefixRatioApproxENN_of_ae_infinite_visits_rowProcessCoordwise_components_of_ae_prefixThetaPosUsed_of_ae_tokenDeletionSqueeze_of_bridge_of_eventually_prefixCompatibleState
+    (P : Measure (ℕ → Fin k))
+    (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k))
+    (a b : Fin k) (xs : List (Fin k))
+    (hinf :
+      ∀ i : Fin k,
+        ∀ᵐ ω ∂P, Set.Infinite {t : ℕ | ω t = i})
+    (hrow : RowProcessCoordwiseCesaroLimit (k := k) P rowKernel)
+    (hΘposUsed :
+      ∀ p ∈ prefixUsedTransitionSet (k := k) a (b :: xs),
+        ∀ᵐ ω ∂P,
+          ω 0 = a →
+            0 < rowKernelVisitProbReal (k := k) rowKernel p.1 p.2 ω)
+    (hcomp :
       ∀ᵐ ω ∂P,
         ω 0 = a →
-          Filter.Tendsto
-            (fun r =>
-              prefixNormalizedEulerTrailCorrectionRatioReal
-                (k := k) a (b :: xs) ((b :: xs).length + r)
-                (Nat.le_add_right (b :: xs).length r)
-                (pathPrefixState (k := k) ω ((b :: xs).length + r)))
-            Filter.atTop (nhds (1 : ℝ)) :=
-    ae_tendsto_prefixNormalizedEulerTrailCorrectionRatioReal_shift_of_ae_tokenDeletionSqueeze_of_bridge_of_eventually_prefixCompatibleState
-      (k := k) P a (b :: xs) hcomp hBridge hlower hupper hlimLower
+          ∀ᶠ r in Filter.atTop,
+            prefixCompatibleState (k := k) a (b :: xs) ((b :: xs).length + r)
+              (Nat.le_add_right (b :: xs).length r)
+              (pathPrefixState (k := k) ω ((b :: xs).length + r)))
+    (hBridge :
+      ∀ {M : ℕ} {s : MarkovState k},
+        s ∈ stateFinset k M →
+          normalizedEulerTrailCorrection (k := k) s =
+            tokenRootedArborescenceCount (k := k) (graphOfState (k := k) s) s.last) :
+    ∀ᵐ ω ∂P,
+      Filter.Tendsto
+        (fun r => prefixRatioApproxENN (k := k) a (b :: xs) r ω)
+        Filter.atTop
+        (nhds (if ω 0 = a then rowKernelStepProd (k := k) rowKernel ω (a :: b :: xs) else 0)) := by
+  have hStrong : StrongRecurrence (k := k) P :=
+    strongRecurrence_of_ae_infinite_visits (k := k) P hinf
+  have hvisit :
+      ∀ i : Fin k,
+        ∀ᵐ ω ∂P, ω 0 = a → ∃ t : ℕ, ω t = i :=
+    ae_coordwise_exists_visit_on_start_of_ae_infinite_visits
+      (k := k) P a hinf
   exact
-    ae_tendsto_prefixRatioApproxENN_of_ae_infinite_visits_rowProcessCoordwise_components_of_ae_prefixThetaPos
-      (k := k) P rowKernel a b xs hinf hrow hΘpos hgraph
+    ae_tendsto_prefixRatioApproxENN_of_strongRecurrence_visit_rowProcessCoordwise_components_of_ae_prefixThetaPosUsed_of_ae_tokenDeletionSqueeze_of_bridge_of_eventually_prefixCompatibleState
+      (k := k) P hStrong rowKernel a b xs hvisit hrow hΘposUsed hcomp hBridge
+
+lemma ae_tendsto_prefixRatioApproxENN_of_ae_infinite_visits_rowProcessCoordwise_components_of_ae_prefixThetaPos_of_ae_tokenDeletionSqueeze_of_bridgeCard_of_eventually_prefixCompatibleState
+    (P : Measure (ℕ → Fin k))
+    (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k))
+    (a b : Fin k) (xs : List (Fin k))
+    (hinf :
+      ∀ i : Fin k,
+        ∀ᵐ ω ∂P, Set.Infinite {t : ℕ | ω t = i})
+    (hrow : RowProcessCoordwiseCesaroLimit (k := k) P rowKernel)
+    (hΘpos :
+      ∀ i j : Fin k,
+        ∀ᵐ ω ∂P,
+          ω 0 = a →
+            0 < (prefixWordState (k := k) a (b :: xs)).counts.counts i j →
+              0 < rowKernelVisitProbReal (k := k) rowKernel i j ω)
+    (hcomp :
+      ∀ᵐ ω ∂P,
+        ω 0 = a →
+          ∀ᶠ r in Filter.atTop,
+            prefixCompatibleState (k := k) a (b :: xs) ((b :: xs).length + r)
+              (Nat.le_add_right (b :: xs).length r)
+              (pathPrefixState (k := k) ω ((b :: xs).length + r)))
+    (hBridgeCard :
+      ∀ {M : ℕ} {s : MarkovState k},
+        s ∈ stateFinset k M →
+          (eulerTrailFinset (graphOfState s) s.start s.last).card =
+            tokenRootedArborescenceCount (k := k) (graphOfState (k := k) s) s.last *
+              outdegFactorialWeight (k := k) s) :
+    ∀ᵐ ω ∂P,
+      Filter.Tendsto
+        (fun r => prefixRatioApproxENN (k := k) a (b :: xs) r ω)
+        Filter.atTop
+        (nhds (if ω 0 = a then rowKernelStepProd (k := k) rowKernel ω (a :: b :: xs) else 0)) := by
+  have hvisit :
+      ∀ i : Fin k,
+        ∀ᵐ ω ∂P, ω 0 = a → ∃ t : ℕ, ω t = i :=
+    ae_coordwise_exists_visit_on_start_of_ae_infinite_visits
+      (k := k) P a hinf
+  have hStrong : StrongRecurrence (k := k) P :=
+    strongRecurrence_of_ae_infinite_visits (k := k) P hinf
+  exact
+    ae_tendsto_prefixRatioApproxENN_of_strongRecurrence_visit_rowProcessCoordwise_components_of_ae_prefixThetaPos_of_ae_tokenDeletionSqueeze_of_bridgeCard_of_eventually_prefixCompatibleState
+      (k := k) P hStrong rowKernel a b xs hvisit hrow hΘpos hcomp hBridgeCard
+
+lemma ae_tendsto_prefixRatioApproxENN_of_ae_infinite_visits_rowProcessCoordwise_components_of_ae_prefixThetaPosUsed_of_ae_tokenDeletionSqueeze_of_bridgeCard_of_eventually_prefixCompatibleState
+    (P : Measure (ℕ → Fin k))
+    (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k))
+    (a b : Fin k) (xs : List (Fin k))
+    (hinf :
+      ∀ i : Fin k,
+        ∀ᵐ ω ∂P, Set.Infinite {t : ℕ | ω t = i})
+    (hrow : RowProcessCoordwiseCesaroLimit (k := k) P rowKernel)
+    (hΘposUsed :
+      ∀ p ∈ prefixUsedTransitionSet (k := k) a (b :: xs),
+        ∀ᵐ ω ∂P,
+          ω 0 = a →
+            0 < rowKernelVisitProbReal (k := k) rowKernel p.1 p.2 ω)
+    (hcomp :
+      ∀ᵐ ω ∂P,
+        ω 0 = a →
+          ∀ᶠ r in Filter.atTop,
+            prefixCompatibleState (k := k) a (b :: xs) ((b :: xs).length + r)
+              (Nat.le_add_right (b :: xs).length r)
+              (pathPrefixState (k := k) ω ((b :: xs).length + r)))
+    (hBridgeCard :
+      ∀ {M : ℕ} {s : MarkovState k},
+        s ∈ stateFinset k M →
+          (eulerTrailFinset (graphOfState s) s.start s.last).card =
+            tokenRootedArborescenceCount (k := k) (graphOfState (k := k) s) s.last *
+              outdegFactorialWeight (k := k) s) :
+    ∀ᵐ ω ∂P,
+      Filter.Tendsto
+        (fun r => prefixRatioApproxENN (k := k) a (b :: xs) r ω)
+        Filter.atTop
+        (nhds (if ω 0 = a then rowKernelStepProd (k := k) rowKernel ω (a :: b :: xs) else 0)) := by
+  have hvisit :
+      ∀ i : Fin k,
+        ∀ᵐ ω ∂P, ω 0 = a → ∃ t : ℕ, ω t = i :=
+    ae_coordwise_exists_visit_on_start_of_ae_infinite_visits
+      (k := k) P a hinf
+  have hStrong : StrongRecurrence (k := k) P :=
+    strongRecurrence_of_ae_infinite_visits (k := k) P hinf
+  exact
+    ae_tendsto_prefixRatioApproxENN_of_strongRecurrence_visit_rowProcessCoordwise_components_of_ae_prefixThetaPosUsed_of_ae_tokenDeletionSqueeze_of_bridgeCard_of_eventually_prefixCompatibleState
+      (k := k) P hStrong rowKernel a b xs hvisit hrow hΘposUsed hcomp hBridgeCard
 
 lemma tendsto_prefixRatioApproxENN_of_start_eq_to_rowKernelStepProd_of_eventually_prefixCompatibleState
     (a : Fin k) (ys : List (Fin k))
@@ -8480,6 +12685,598 @@ lemma tendsto_prefixRatioApproxENN_of_start_eq_to_rowKernelStepProd_of_eventuall
       (k := k) a ys rowKernel ω Θ hΘ]
     exact ENNReal.ofReal_toReal hstep_ne_top
   simpa [hstart, htarget] using hmain
+
+lemma tendsto_prefixRatioApproxENN_to_zero_of_eventually_prefixCompatibleState_of_exists_zero_rowKernelVisitProbReal
+    (a : Fin k) (ys : List (Fin k))
+    (ω : ℕ → Fin k)
+    (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k))
+    (hcomp :
+      ∀ᶠ r in Filter.atTop,
+        prefixCompatibleState (k := k) a ys (ys.length + r)
+          (Nat.le_add_right ys.length r)
+          (pathPrefixState (k := k) ω (ys.length + r)))
+    (hout :
+      ∀ i : Fin k,
+        Filter.Tendsto
+          (fun r =>
+            MarkovDeFinettiHardEuler.outdeg (k := k)
+              (pathPrefixState (k := k) ω (ys.length + r)) i)
+          Filter.atTop Filter.atTop)
+    (hfreq :
+      ∀ i j : Fin k,
+        Filter.Tendsto
+          (fun m => rowSuccessorEmpiricalFreq (k := k) i j ω m)
+          Filter.atTop
+          (nhds (((rowKernel i
+            (rowSuccessorVisitProcess (k := k) i ω)) ({j} : Set (Fin k))).toReal)))
+    (hgraph :
+      Filter.Tendsto
+        (fun r =>
+          prefixNormalizedEulerTrailCorrectionRatioReal
+            (k := k) a ys (ys.length + r)
+            (Nat.le_add_right ys.length r)
+            (pathPrefixState (k := k) ω (ys.length + r)))
+        Filter.atTop (nhds (1 : ℝ)))
+    (hzero :
+      ∃ p ∈ prefixUsedTransitionSet (k := k) a ys,
+        rowKernelVisitProbReal (k := k) rowKernel p.1 p.2 ω = 0) :
+    Filter.Tendsto
+      (fun r => prefixRatioApproxENN (k := k) a ys r ω)
+      Filter.atTop (nhds (0 : ENNReal)) := by
+  have hmain :=
+    tendsto_prefixRatioApproxENN_of_tendsto_rowSuccessorEmpiricalFreq_of_tendsto_prefixNormalizedEulerTrailCorrectionRatioReal_of_eventually_prefixCompatibleState
+      (k := k) a ys ω
+      (fun i j =>
+        ((rowKernel i (rowSuccessorVisitProcess (k := k) i ω)) ({j} : Set (Fin k))).toReal)
+      hcomp hout hfreq hgraph
+  have htargetZero :
+      prefixThetaPowerProduct (k := k) a ys
+        (fun i j =>
+          ((rowKernel i (rowSuccessorVisitProcess (k := k) i ω)) ({j} : Set (Fin k))).toReal) = 0 := by
+    exact
+      prefixThetaPowerProduct_eq_zero_of_exists_mem_prefixUsedTransitionSet_zero
+        (k := k) a ys
+        (fun i j =>
+          ((rowKernel i (rowSuccessorVisitProcess (k := k) i ω)) ({j} : Set (Fin k))).toReal)
+        hzero
+  simpa [htargetZero] using hmain
+
+lemma tendsto_prefixRatioApproxENN_of_start_eq_of_rowKernelVisitSupportSplit_of_eventually_prefixCompatibleState
+    (a : Fin k) (ys : List (Fin k))
+    (ω : ℕ → Fin k)
+    (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k))
+    (hstart : ω 0 = a)
+    (hcomp :
+      ∀ᶠ r in Filter.atTop,
+        prefixCompatibleState (k := k) a ys (ys.length + r)
+          (Nat.le_add_right ys.length r)
+          (pathPrefixState (k := k) ω (ys.length + r)))
+    (hout :
+      ∀ i : Fin k,
+        Filter.Tendsto
+          (fun r =>
+            MarkovDeFinettiHardEuler.outdeg (k := k)
+              (pathPrefixState (k := k) ω (ys.length + r)) i)
+          Filter.atTop Filter.atTop)
+    (hfreq :
+      ∀ i j : Fin k,
+        Filter.Tendsto
+          (fun m => rowSuccessorEmpiricalFreq (k := k) i j ω m)
+          Filter.atTop
+          (nhds (((rowKernel i
+            (rowSuccessorVisitProcess (k := k) i ω)) ({j} : Set (Fin k))).toReal)))
+    (hgraph :
+      Filter.Tendsto
+        (fun r =>
+          prefixNormalizedEulerTrailCorrectionRatioReal
+            (k := k) a ys (ys.length + r)
+            (Nat.le_add_right ys.length r)
+            (pathPrefixState (k := k) ω (ys.length + r)))
+        Filter.atTop (nhds (1 : ℝ))) :
+    Filter.Tendsto
+      (fun r => prefixRatioApproxENN (k := k) a ys r ω)
+      Filter.atTop
+      (nhds (rowKernelStepProd (k := k) rowKernel ω (a :: ys))) := by
+  rcases forall_mem_prefixUsedTransitionSet_pos_or_exists_zero_rowKernelVisitProbReal
+      (k := k) rowKernel a ys ω with hposUsed | hzero
+  · have hΘpos :
+        ∀ i j : Fin k,
+          0 < (prefixWordState (k := k) a ys).counts.counts i j →
+            0 < rowKernelVisitProbReal (k := k) rowKernel i j ω :=
+      prefixThetaPos_of_forall_mem_prefixUsedTransitionSet
+        (k := k) rowKernel a ys ω hposUsed
+    have hlimLower :
+        Filter.Tendsto
+          (fun r =>
+            prefixTokenDeletionLowerFactorReal (k := k) a ys
+              (pathPrefixState (k := k) ω (ys.length + r)))
+          Filter.atTop (nhds (1 : ℝ)) :=
+      tendsto_prefixTokenDeletionLowerFactorReal_of_ratioData
+        (k := k) a ys
+        (e := fun r => pathPrefixState (k := k) ω (ys.length + r))
+        (Θ := fun i j => rowKernelVisitProbReal (k := k) rowKernel i j ω)
+        (hout := by
+          intro i _
+          exact tendsto_natCast_atTop_atTop.comp (hout i))
+        (hratio := by
+          exact pathPrefixState_ratioData_of_tendsto_rowSuccessorEmpiricalFreq_of_tendsto_outdeg
+            (k := k) ω (fun r => ys.length + r)
+            (fun i j => rowKernelVisitProbReal (k := k) rowKernel i j ω)
+            hout hfreq)
+        hΘpos
+    have _ :
+        Filter.Tendsto
+          (fun r =>
+            prefixTokenDeletionLowerFactorReal (k := k) a ys
+              (pathPrefixState (k := k) ω (ys.length + r)))
+          Filter.atTop (nhds (1 : ℝ)) := hlimLower
+    simpa [hstart] using
+      tendsto_prefixRatioApproxENN_of_start_eq_to_rowKernelStepProd_of_eventually_prefixCompatibleState
+        (k := k) a ys ω rowKernel
+        (fun i j =>
+          ((rowKernel i (rowSuccessorVisitProcess (k := k) i ω)) ({j} : Set (Fin k))).toReal)
+        hstart hcomp hout hfreq hgraph (fun i j => rfl)
+  · have hzeroLim :
+      Filter.Tendsto
+        (fun r => prefixRatioApproxENN (k := k) a ys r ω)
+        Filter.atTop (nhds (0 : ENNReal)) :=
+      tendsto_prefixRatioApproxENN_to_zero_of_eventually_prefixCompatibleState_of_exists_zero_rowKernelVisitProbReal
+        (k := k) a ys ω rowKernel hcomp hout hfreq hgraph hzero
+    have hstepZero :
+        rowKernelStepProd (k := k) rowKernel ω (a :: ys) = 0 :=
+      rowKernelStepProd_eq_zero_of_exists_mem_prefixUsedTransitionSet_zero
+        (k := k) rowKernel a ys ω hzero
+    simpa [hstepZero] using hzeroLim
+
+lemma ae_tendsto_prefixRatioApproxENN_to_zero_of_ae_eventually_prefixCompatibleState_of_ae_exists_zero_rowKernelVisitProbReal
+    (P : Measure (ℕ → Fin k))
+    (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k))
+    (a b : Fin k) (xs : List (Fin k))
+    (hcomp :
+      ∀ᵐ ω ∂P,
+        ω 0 = a →
+          ∀ᶠ r in Filter.atTop,
+            prefixCompatibleState (k := k) a (b :: xs) ((b :: xs).length + r)
+              (Nat.le_add_right (b :: xs).length r)
+              (pathPrefixState (k := k) ω ((b :: xs).length + r)))
+    (hout :
+      ∀ i : Fin k,
+        ∀ᵐ ω ∂P,
+          ω 0 = a →
+            Filter.Tendsto
+              (fun r =>
+                MarkovDeFinettiHardEuler.outdeg (k := k)
+                  (pathPrefixState (k := k) ω ((b :: xs).length + r)) i)
+              Filter.atTop Filter.atTop)
+    (hfreq :
+      ∀ i j : Fin k,
+        ∀ᵐ ω ∂P,
+          ω 0 = a →
+            Filter.Tendsto
+              (fun m => rowSuccessorEmpiricalFreq (k := k) i j ω m)
+              Filter.atTop
+              (nhds (rowKernelVisitProbReal (k := k) rowKernel i j ω)))
+    (hgraph :
+      ∀ᵐ ω ∂P,
+        ω 0 = a →
+          Filter.Tendsto
+            (fun r =>
+              prefixNormalizedEulerTrailCorrectionRatioReal
+                (k := k) a (b :: xs) ((b :: xs).length + r)
+                (Nat.le_add_right (b :: xs).length r)
+                (pathPrefixState (k := k) ω ((b :: xs).length + r)))
+            Filter.atTop (nhds (1 : ℝ)))
+    (hzero :
+      ∀ᵐ ω ∂P,
+        ω 0 = a →
+          ∃ p ∈ prefixUsedTransitionSet (k := k) a (b :: xs),
+            rowKernelVisitProbReal (k := k) rowKernel p.1 p.2 ω = 0) :
+    ∀ᵐ ω ∂P,
+      ω 0 = a →
+        Filter.Tendsto
+          (fun r => prefixRatioApproxENN (k := k) a (b :: xs) r ω)
+          Filter.atTop (nhds (0 : ENNReal)) := by
+  have houtAll :
+      ∀ᵐ ω ∂P,
+        ω 0 = a →
+          ∀ i : Fin k,
+            Filter.Tendsto
+              (fun r =>
+                MarkovDeFinettiHardEuler.outdeg (k := k)
+                  (pathPrefixState (k := k) ω ((b :: xs).length + r)) i)
+              Filter.atTop Filter.atTop := by
+    have hpack :
+        ∀ᵐ ω ∂P,
+          ∀ i : Fin k,
+            ω 0 = a →
+              Filter.Tendsto
+                (fun r =>
+                  MarkovDeFinettiHardEuler.outdeg (k := k)
+                    (pathPrefixState (k := k) ω ((b :: xs).length + r)) i)
+                Filter.atTop Filter.atTop := by
+      rw [ae_all_iff]
+      intro i
+      exact hout i
+    filter_upwards [hpack] with ω hω hstart i
+    exact hω i hstart
+  have hfreqAll :
+      ∀ᵐ ω ∂P,
+        ω 0 = a →
+          ∀ i : Fin k, ∀ j : Fin k,
+            Filter.Tendsto
+              (fun m => rowSuccessorEmpiricalFreq (k := k) i j ω m)
+              Filter.atTop
+              (nhds (rowKernelVisitProbReal (k := k) rowKernel i j ω)) :=
+    ae_all_tendsto_rowSuccessorEmpiricalFreq_to_rowKernelEval_of_coordwise
+      (k := k) P rowKernel a hfreq
+  filter_upwards [hcomp, houtAll, hfreqAll, hgraph, hzero] with
+    ω hcompω houtω hfreqω hgraphω hzeroω hstart
+  exact
+    tendsto_prefixRatioApproxENN_to_zero_of_eventually_prefixCompatibleState_of_exists_zero_rowKernelVisitProbReal
+      (k := k) a (b :: xs) ω rowKernel
+      (hcompω hstart)
+      (fun i => houtω hstart i)
+      (fun i j => hfreqω hstart i j)
+      (hgraphω hstart)
+      (hzeroω hstart)
+
+lemma ae_tendsto_prefixNormalizedEulerTrailCorrectionRatioReal_shift_of_ae_tendsto_prefixNormalizedBridgeProductReal_of_ae_eventually_prefixCompatibleState
+    (P : Measure (ℕ → Fin k))
+    (a : Fin k) (ys : List (Fin k))
+    (hcomp :
+      ∀ᵐ ω ∂P,
+        ω 0 = a →
+          ∀ᶠ r in Filter.atTop,
+            prefixCompatibleState (k := k) a ys (ys.length + r)
+              (Nat.le_add_right ys.length r)
+              (pathPrefixState (k := k) ω (ys.length + r)))
+    (hbridgeNorm :
+      ∀ᵐ ω ∂P,
+        ω 0 = a →
+          Filter.Tendsto
+            (fun r =>
+              prefixNormalizedBridgeProductReal
+                (k := k) a ys (ys.length + r)
+                (Nat.le_add_right ys.length r)
+                (pathPrefixState (k := k) ω (ys.length + r)))
+            Filter.atTop (nhds (1 : ℝ))) :
+    ∀ᵐ ω ∂P,
+      ω 0 = a →
+        Filter.Tendsto
+          (fun r =>
+            prefixNormalizedEulerTrailCorrectionRatioReal
+              (k := k) a ys (ys.length + r)
+              (Nat.le_add_right ys.length r)
+              (pathPrefixState (k := k) ω (ys.length + r)))
+          Filter.atTop (nhds (1 : ℝ)) := by
+  filter_upwards [hcomp, hbridgeNorm] with ω hcompω hbridgeω hstart
+  have hEq :
+      (fun r =>
+        prefixNormalizedBridgeProductReal
+          (k := k) a ys (ys.length + r)
+          (Nat.le_add_right ys.length r)
+          (pathPrefixState (k := k) ω (ys.length + r))) =ᶠ[Filter.atTop]
+      (fun r =>
+        prefixNormalizedEulerTrailCorrectionRatioReal
+          (k := k) a ys (ys.length + r)
+          (Nat.le_add_right ys.length r)
+          (pathPrefixState (k := k) ω (ys.length + r))) := by
+    exact (hcompω hstart).mono fun r hr =>
+      prefixNormalizedBridgeProductReal_eq_prefixNormalizedEulerTrailCorrectionRatioReal_of_prefixCompatibleState
+        (k := k) a ys (ys.length + r) (Nat.le_add_right ys.length r)
+        (pathPrefixState (k := k) ω (ys.length + r)) hr
+  exact (hbridgeω hstart).congr' hEq
+
+lemma ae_tendsto_prefixNormalizedBridgeProductReal_shift_of_ae_tendsto_prefixNormalizedEulerTrailCorrectionRatioReal_of_ae_eventually_prefixCompatibleState
+    (P : Measure (ℕ → Fin k))
+    (a : Fin k) (ys : List (Fin k))
+    (hcomp :
+      ∀ᵐ ω ∂P,
+        ω 0 = a →
+          ∀ᶠ r in Filter.atTop,
+            prefixCompatibleState (k := k) a ys (ys.length + r)
+              (Nat.le_add_right ys.length r)
+              (pathPrefixState (k := k) ω (ys.length + r)))
+    (hgraph :
+      ∀ᵐ ω ∂P,
+        ω 0 = a →
+          Filter.Tendsto
+            (fun r =>
+              prefixNormalizedEulerTrailCorrectionRatioReal
+                (k := k) a ys (ys.length + r)
+                (Nat.le_add_right ys.length r)
+                (pathPrefixState (k := k) ω (ys.length + r)))
+            Filter.atTop (nhds (1 : ℝ))) :
+    ∀ᵐ ω ∂P,
+      ω 0 = a →
+        Filter.Tendsto
+          (fun r =>
+            prefixNormalizedBridgeProductReal
+              (k := k) a ys (ys.length + r)
+              (Nat.le_add_right ys.length r)
+              (pathPrefixState (k := k) ω (ys.length + r)))
+          Filter.atTop (nhds (1 : ℝ)) := by
+  filter_upwards [hcomp, hgraph] with ω hcompω hgraphω hstart
+  have hEq :
+      (fun r =>
+        prefixNormalizedBridgeProductReal
+          (k := k) a ys (ys.length + r)
+          (Nat.le_add_right ys.length r)
+          (pathPrefixState (k := k) ω (ys.length + r))) =ᶠ[Filter.atTop]
+      (fun r =>
+        prefixNormalizedEulerTrailCorrectionRatioReal
+          (k := k) a ys (ys.length + r)
+          (Nat.le_add_right ys.length r)
+          (pathPrefixState (k := k) ω (ys.length + r))) := by
+    exact (hcompω hstart).mono fun r hr =>
+      prefixNormalizedBridgeProductReal_eq_prefixNormalizedEulerTrailCorrectionRatioReal_of_prefixCompatibleState
+        (k := k) a ys (ys.length + r) (Nat.le_add_right ys.length r)
+        (pathPrefixState (k := k) ω (ys.length + r)) hr
+  exact (hgraphω hstart).congr' hEq.symm
+
+theorem ae_tendsto_prefixRatioApproxENN_of_coordwise_component_limits_of_ae_eventually_prefixCompatibleState
+    (P : Measure (ℕ → Fin k))
+    (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k))
+    (a b : Fin k) (xs : List (Fin k))
+    (hcomp :
+      ∀ᵐ ω ∂P,
+        ω 0 = a →
+          ∀ᶠ r in Filter.atTop,
+            prefixCompatibleState (k := k) a (b :: xs) ((b :: xs).length + r)
+              (Nat.le_add_right (b :: xs).length r)
+              (pathPrefixState (k := k) ω ((b :: xs).length + r)))
+    (hout :
+      ∀ i : Fin k,
+        ∀ᵐ ω ∂P,
+          ω 0 = a →
+            Filter.Tendsto
+              (fun r =>
+                MarkovDeFinettiHardEuler.outdeg (k := k)
+                  (pathPrefixState (k := k) ω ((b :: xs).length + r)) i)
+              Filter.atTop Filter.atTop)
+    (hfreq :
+      ∀ i j : Fin k,
+        ∀ᵐ ω ∂P,
+          ω 0 = a →
+            Filter.Tendsto
+              (fun m => rowSuccessorEmpiricalFreq (k := k) i j ω m)
+              Filter.atTop
+              (nhds (((rowKernel i
+                (rowSuccessorVisitProcess (k := k) i ω)) ({j} : Set (Fin k))).toReal)))
+    (hgraph :
+      ∀ᵐ ω ∂P,
+        ω 0 = a →
+          Filter.Tendsto
+            (fun r =>
+              prefixNormalizedEulerTrailCorrectionRatioReal
+                (k := k) a (b :: xs) ((b :: xs).length + r)
+                (Nat.le_add_right (b :: xs).length r)
+                (pathPrefixState (k := k) ω ((b :: xs).length + r)))
+            Filter.atTop (nhds (1 : ℝ))) :
+    ∀ᵐ ω ∂P,
+      Filter.Tendsto
+        (fun r => prefixRatioApproxENN (k := k) a (b :: xs) r ω)
+        Filter.atTop
+        (nhds (if ω 0 = a then rowKernelStepProd (k := k) rowKernel ω (a :: b :: xs) else 0)) := by
+  have houtAll :
+      ∀ᵐ ω ∂P,
+        ω 0 = a →
+          ∀ i : Fin k,
+            Filter.Tendsto
+              (fun r =>
+                MarkovDeFinettiHardEuler.outdeg (k := k)
+                  (pathPrefixState (k := k) ω ((b :: xs).length + r)) i)
+              Filter.atTop Filter.atTop := by
+    have hpack :
+        ∀ᵐ ω ∂P,
+          ∀ i : Fin k,
+            ω 0 = a →
+              Filter.Tendsto
+                (fun r =>
+                  MarkovDeFinettiHardEuler.outdeg (k := k)
+                    (pathPrefixState (k := k) ω ((b :: xs).length + r)) i)
+                Filter.atTop Filter.atTop := by
+      rw [ae_all_iff]
+      intro i
+      exact hout i
+    filter_upwards [hpack] with ω hω hstart i
+    exact hω i hstart
+  have hfreqAll :=
+    ae_all_tendsto_rowSuccessorEmpiricalFreq_to_rowKernelEval_of_coordwise
+      (k := k) P rowKernel a hfreq
+  filter_upwards [hcomp, houtAll, hfreqAll, hgraph] with ω hcompω houtω hfreqω hgraphω
+  by_cases hstart : ω 0 = a
+  · simpa [hstart] using
+      tendsto_prefixRatioApproxENN_of_start_eq_of_rowKernelVisitSupportSplit_of_eventually_prefixCompatibleState
+        (k := k) a (b :: xs) ω rowKernel hstart
+        (hcompω hstart)
+        (fun i => houtω hstart i)
+        (fun i j => hfreqω hstart i j)
+        (hgraphω hstart)
+  · have hzeroEv :
+        (fun r => prefixRatioApproxENN (k := k) a (b :: xs) r ω) =ᶠ[Filter.atTop]
+          (fun _ : ℕ => (0 : ENNReal)) := by
+      exact Filter.Eventually.of_forall (fun r =>
+        prefixRatioApproxENN_eq_zero_of_start_ne
+          (k := k) a (b :: xs) r ω hstart)
+    have hconst :
+        Filter.Tendsto (fun _ : ℕ => (0 : ENNReal))
+          Filter.atTop
+          (nhds
+            (if ω 0 = a then rowKernelStepProd (k := k) rowKernel ω (a :: b :: xs) else 0)) := by
+      simp [hstart]
+    exact hconst.congr' hzeroEv.symm
+
+lemma ae_tendsto_prefixRatioApproxENN_of_strongRecurrence_visit_rowProcessCoordwise_components_of_ae_eventually_prefixCompatibleState
+    (P : Measure (ℕ → Fin k))
+    (hStrong : StrongRecurrence (k := k) P)
+    (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k))
+    (a b : Fin k) (xs : List (Fin k))
+    (hvisit :
+      ∀ i : Fin k,
+        ∀ᵐ ω ∂P, ω 0 = a → ∃ t : ℕ, ω t = i)
+    (hrow : RowProcessCoordwiseCesaroLimit (k := k) P rowKernel)
+    (hcomp :
+      ∀ᵐ ω ∂P,
+        ω 0 = a →
+          ∀ᶠ r in Filter.atTop,
+            prefixCompatibleState (k := k) a (b :: xs) ((b :: xs).length + r)
+              (Nat.le_add_right (b :: xs).length r)
+              (pathPrefixState (k := k) ω ((b :: xs).length + r)))
+    (hgraph :
+      ∀ᵐ ω ∂P,
+        ω 0 = a →
+          Filter.Tendsto
+            (fun r =>
+              prefixNormalizedEulerTrailCorrectionRatioReal
+                (k := k) a (b :: xs) ((b :: xs).length + r)
+                (Nat.le_add_right (b :: xs).length r)
+                (pathPrefixState (k := k) ω ((b :: xs).length + r)))
+            Filter.atTop (nhds (1 : ℝ))) :
+    ∀ᵐ ω ∂P,
+      Filter.Tendsto
+        (fun r => prefixRatioApproxENN (k := k) a (b :: xs) r ω)
+        Filter.atTop
+        (nhds (if ω 0 = a then rowKernelStepProd (k := k) rowKernel ω (a :: b :: xs) else 0)) := by
+  refine
+    ae_tendsto_prefixRatioApproxENN_of_coordwise_component_limits_of_ae_eventually_prefixCompatibleState
+      (k := k) P rowKernel a b xs hcomp ?_ ?_ hgraph
+  · exact
+      ae_coordwise_tendsto_outdeg_pathPrefixState_shift_atTop_of_strongRecurrence_on_start_of_ae_exists_visit
+        (k := k) P hStrong a (b :: xs).length hvisit
+  · exact
+      ae_coordwise_tendsto_rowSuccessorEmpiricalFreq_to_rowKernelEval_on_start_of_rowProcessCoordwiseCesaroLimit
+        (k := k) P rowKernel a hrow
+
+lemma ae_tendsto_prefixRatioApproxENN_of_strongRecurrence_visit_rowProcessCoordwise_components_of_ae_eventually_prefixCompatibleState_of_ae_tendsto_prefixNormalizedBridgeProductReal
+    (P : Measure (ℕ → Fin k))
+    (hStrong : StrongRecurrence (k := k) P)
+    (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k))
+    (a b : Fin k) (xs : List (Fin k))
+    (hvisit :
+      ∀ i : Fin k,
+        ∀ᵐ ω ∂P, ω 0 = a → ∃ t : ℕ, ω t = i)
+    (hrow : RowProcessCoordwiseCesaroLimit (k := k) P rowKernel)
+    (hcomp :
+      ∀ᵐ ω ∂P,
+        ω 0 = a →
+          ∀ᶠ r in Filter.atTop,
+            prefixCompatibleState (k := k) a (b :: xs) ((b :: xs).length + r)
+              (Nat.le_add_right (b :: xs).length r)
+              (pathPrefixState (k := k) ω ((b :: xs).length + r)))
+    (hbridgeNorm :
+      ∀ᵐ ω ∂P,
+        ω 0 = a →
+          Filter.Tendsto
+            (fun r =>
+              prefixNormalizedBridgeProductReal
+                (k := k) a (b :: xs) ((b :: xs).length + r)
+                (Nat.le_add_right (b :: xs).length r)
+                (pathPrefixState (k := k) ω ((b :: xs).length + r)))
+            Filter.atTop (nhds (1 : ℝ))) :
+    ∀ᵐ ω ∂P,
+      Filter.Tendsto
+        (fun r => prefixRatioApproxENN (k := k) a (b :: xs) r ω)
+        Filter.atTop
+        (nhds (if ω 0 = a then rowKernelStepProd (k := k) rowKernel ω (a :: b :: xs) else 0)) := by
+  exact
+    ae_tendsto_prefixRatioApproxENN_of_strongRecurrence_visit_rowProcessCoordwise_components_of_ae_eventually_prefixCompatibleState
+      (k := k) P hStrong rowKernel a b xs hvisit hrow hcomp
+      (ae_tendsto_prefixNormalizedEulerTrailCorrectionRatioReal_shift_of_ae_tendsto_prefixNormalizedBridgeProductReal_of_ae_eventually_prefixCompatibleState
+        (k := k) P a (b :: xs) hcomp hbridgeNorm)
+
+lemma ae_tendsto_prefixRatioApproxENN_of_strongRecurrence_visit_rowProcessCoordwise_components_of_ae_prefixThetaPosUsed_of_positiveBridge_of_eventually_prefixCompatibleState_via_supportSplit
+    (P : Measure (ℕ → Fin k))
+    (hStrong : StrongRecurrence (k := k) P)
+    (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k))
+    (a b : Fin k) (xs : List (Fin k))
+    (hvisit :
+      ∀ i : Fin k,
+        ∀ᵐ ω ∂P, ω 0 = a → ∃ t : ℕ, ω t = i)
+    (hrow : RowProcessCoordwiseCesaroLimit (k := k) P rowKernel)
+    (hΘposUsed :
+      ∀ p ∈ prefixUsedTransitionSet (k := k) a (b :: xs),
+        ∀ᵐ ω ∂P,
+          ω 0 = a →
+            0 < rowKernelVisitProbReal (k := k) rowKernel p.1 p.2 ω)
+    (hcomp :
+      ∀ᵐ ω ∂P,
+        ω 0 = a →
+          ∀ᶠ r in Filter.atTop,
+            prefixCompatibleState (k := k) a (b :: xs) ((b :: xs).length + r)
+              (Nat.le_add_right (b :: xs).length r)
+              (pathPrefixState (k := k) ω ((b :: xs).length + r)))
+    (hPositiveBridgeCard :
+      ∀ {M : ℕ} {s : MarkovState k},
+        s ∈ stateFinset k M →
+          positiveTokenRootedBridgeCardEq (k := k) s) :
+    ∀ᵐ ω ∂P,
+      Filter.Tendsto
+        (fun r => prefixRatioApproxENN (k := k) a (b :: xs) r ω)
+        Filter.atTop
+        (nhds (if ω 0 = a then rowKernelStepProd (k := k) rowKernel ω (a :: b :: xs) else 0)) := by
+  have hgraph :
+      ∀ᵐ ω ∂P,
+        ω 0 = a →
+          Filter.Tendsto
+            (fun r =>
+              prefixNormalizedEulerTrailCorrectionRatioReal
+                (k := k) a (b :: xs) ((b :: xs).length + r)
+                (Nat.le_add_right (b :: xs).length r)
+                (pathPrefixState (k := k) ω ((b :: xs).length + r)))
+            Filter.atTop (nhds (1 : ℝ)) :=
+    ae_tendsto_prefixNormalizedEulerTrailCorrectionRatioReal_shift_of_strongRecurrence_visit_rowProcessCoordwise_components_of_ae_prefixThetaPosUsed_of_positiveBridge_of_eventually_prefixCompatibleState
+      (k := k) P hStrong rowKernel a b xs hvisit hrow hΘposUsed hcomp hPositiveBridgeCard
+  exact
+    ae_tendsto_prefixRatioApproxENN_of_strongRecurrence_visit_rowProcessCoordwise_components_of_ae_eventually_prefixCompatibleState
+      (k := k) P hStrong rowKernel a b xs hvisit hrow hcomp hgraph
+
+lemma ae_tendsto_prefixRatioApproxENN_of_strongRecurrence_visit_rowProcessCoordwise_components_of_ae_prefixThetaPosUsed_of_ae_pathPrefixPositiveBridgeCardEqPair_of_eventually_prefixCompatibleState_via_supportSplit
+    (P : Measure (ℕ → Fin k))
+    (hStrong : StrongRecurrence (k := k) P)
+    (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k))
+    (a b : Fin k) (xs : List (Fin k))
+    (hvisit :
+      ∀ i : Fin k,
+        ∀ᵐ ω ∂P, ω 0 = a → ∃ t : ℕ, ω t = i)
+    (hrow : RowProcessCoordwiseCesaroLimit (k := k) P rowKernel)
+    (hΘposUsed :
+      ∀ p ∈ prefixUsedTransitionSet (k := k) a (b :: xs),
+        ∀ᵐ ω ∂P,
+          ω 0 = a →
+            0 < rowKernelVisitProbReal (k := k) rowKernel p.1 p.2 ω)
+    (hcomp :
+      ∀ᵐ ω ∂P,
+        ω 0 = a →
+          ∀ᶠ r in Filter.atTop,
+            prefixCompatibleState (k := k) a (b :: xs) ((b :: xs).length + r)
+              (Nat.le_add_right (b :: xs).length r)
+              (pathPrefixState (k := k) ω ((b :: xs).length + r)))
+    (hBridgePos :
+      ∀ᵐ ω ∂P,
+        ω 0 = a →
+          ∀ᶠ r in Filter.atTop,
+            pathPrefixPositiveBridgeCardEqPair (k := k) a (b :: xs) ω r) :
+    ∀ᵐ ω ∂P,
+      Filter.Tendsto
+        (fun r => prefixRatioApproxENN (k := k) a (b :: xs) r ω)
+        Filter.atTop
+        (nhds (if ω 0 = a then rowKernelStepProd (k := k) rowKernel ω (a :: b :: xs) else 0)) := by
+  have hgraph :
+      ∀ᵐ ω ∂P,
+        ω 0 = a →
+          Filter.Tendsto
+            (fun r =>
+              prefixNormalizedEulerTrailCorrectionRatioReal
+                (k := k) a (b :: xs) ((b :: xs).length + r)
+                (Nat.le_add_right (b :: xs).length r)
+                (pathPrefixState (k := k) ω ((b :: xs).length + r)))
+            Filter.atTop (nhds (1 : ℝ)) :=
+    ae_tendsto_prefixNormalizedEulerTrailCorrectionRatioReal_shift_of_strongRecurrence_visit_rowProcessCoordwise_components_of_ae_prefixThetaPosUsed_of_ae_pathPrefixPositiveBridgeCardEqPair_of_eventually_prefixCompatibleState
+      (k := k) P hStrong rowKernel a b xs hvisit hrow hΘposUsed hcomp hBridgePos
+  exact
+    ae_tendsto_prefixRatioApproxENN_of_strongRecurrence_visit_rowProcessCoordwise_components_of_ae_eventually_prefixCompatibleState
+      (k := k) P hStrong rowKernel a b xs hvisit hrow hcomp hgraph
 
 /-- Conditional DCT step for the direct conditioned-prefix route: once the
 prefix-ratio approximants converge almost surely to the start-indicator
@@ -9041,8 +13838,85 @@ theorem fortiniSuccessorMatrixInvarianceTheoremStrongRecurrence_of_visit_rowProc
 
 /-- Intrinsic-row-Cesàro variant of the visit-based coordwise component builder.
 `hLocal` no longer carries `RowProcessCoordwiseCesaroLimit`; it is supplied once
-from `hRowCoord`. -/
+from `hRowCoord`. At this public intrinsic surface, `hLocal` also no longer
+asks for positivity on the finite `prefixUsedTransitionSet`; it is enough to
+provide eventual prefix compatibility and the normalized Euler-trail correction
+limit. -/
 theorem fortiniSuccessorMatrixInvarianceTheoremStrongRecurrence_of_visit_rowProcessCoordwise_component_builder_intrinsic
+    (hRowCoord :
+      ∀ (P : Measure (ℕ → Fin k)) (_hP : IsProbabilityMeasure P)
+        (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k)),
+          (∀ i : Fin k, ∀ b : Fin k,
+            AEMeasurable
+              (fun r : ℕ → Fin k => (rowKernel i r : Measure (Fin k)) ({b} : Set (Fin k)))
+              (rowProcessLaw (k := k) P i)) →
+          StartRestrictedRowKernelData (k := k) P rowKernel →
+          (∀ i : Fin k,
+            AEMeasurable
+              (fun r : ℕ → Fin k =>
+                Measure.pi (fun _ : Fin 1 => (rowKernel i r : Measure (Fin k))))
+              (rowProcessLaw (k := k) P i)) →
+          RowProcessCoordwiseCesaroLimit (k := k) P rowKernel)
+    (hLocal :
+      ∀ (μ : FiniteAlphabet.PrefixMeasure (Fin k))
+        (_hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
+        (P : Measure (ℕ → Fin k))
+        (_hP : IsProbabilityMeasure P)
+        (_hExt : ∀ xs : List (Fin k), μ xs = P (cylinder (k := k) xs))
+        (_hStrong : StrongRecurrence (k := k) P),
+          ∃ (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k)),
+            (∀ i : Fin k, ∀ b : Fin k,
+              AEMeasurable
+                (fun r : ℕ → Fin k => (rowKernel i r : Measure (Fin k)) ({b} : Set (Fin k)))
+                (rowProcessLaw (k := k) P i)) ∧
+            StartRestrictedRowKernelData (k := k) P rowKernel ∧
+            (∀ i : Fin k,
+              AEMeasurable
+                (fun r : ℕ → Fin k =>
+                  Measure.pi (fun _ : Fin 1 => (rowKernel i r : Measure (Fin k))))
+                (rowProcessLaw (k := k) P i)) ∧
+            (∀ (a b : Fin k) (xs : List (Fin k)),
+              (∀ i : Fin k,
+                ∀ᵐ ω ∂P,
+                  ω 0 = a → ∃ t : ℕ, ω t = i) ∧
+              (∀ᵐ ω ∂P,
+                ω 0 = a →
+                  ∀ᶠ r in Filter.atTop,
+                    prefixCompatibleState (k := k) a (b :: xs) ((b :: xs).length + r)
+                      (Nat.le_add_right (b :: xs).length r)
+                      (pathPrefixState (k := k) ω ((b :: xs).length + r))) ∧
+              (∀ᵐ ω ∂P,
+                ω 0 = a →
+                  Filter.Tendsto
+                    (fun r =>
+                      prefixNormalizedEulerTrailCorrectionRatioReal
+                        (k := k) a (b :: xs) ((b :: xs).length + r)
+                        (Nat.le_add_right (b :: xs).length r)
+                        (pathPrefixState (k := k) ω ((b :: xs).length + r)))
+                    Filter.atTop (nhds (1 : ℝ))))) :
+    FortiniSuccessorMatrixInvarianceTheoremStrongRecurrence k := by
+  refine
+    fortiniSuccessorMatrixInvarianceTheoremStrongRecurrence_of_prefixRatioApproxENN_builder
+      (k := k) ?_
+  intro μ hμ P hP hExt hStrong
+  rcases hLocal μ hμ P hP hExt hStrong with
+    ⟨rowKernel, hEval, hstart, hPi, hcomp⟩
+  refine ⟨rowKernel, hEval, hstart, hPi, ?_⟩
+  intro a b xs
+  rcases hcomp a b xs with ⟨hvisit, hprefixComp, hgraph⟩
+  exact
+    ae_tendsto_prefixRatioApproxENN_of_strongRecurrence_visit_rowProcessCoordwise_components_of_ae_eventually_prefixCompatibleState
+      (k := k) P hStrong rowKernel a b xs hvisit
+      (hRowCoord P hP rowKernel hEval hstart hPi)
+      hprefixComp
+      hgraph
+
+/-- Intrinsic-row-Cesàro builder that keeps the normalized-Euler limit public
+while deriving eventual prefix compatibility internally from used-transition
+positivity. This makes the plain intrinsic route available directly over the
+smaller `hΘposUsed + hgraph` seam instead of forcing callers to package
+eventual compatibility separately. -/
+theorem fortiniSuccessorMatrixInvarianceTheoremStrongRecurrence_of_visit_rowProcessCoordwise_component_builder_intrinsic_of_prefixThetaPosUsed
     (hRowCoord :
       ∀ (P : Measure (ℕ → Fin k)) (_hP : IsProbabilityMeasure P)
         (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k)),
@@ -9093,17 +13967,702 @@ theorem fortiniSuccessorMatrixInvarianceTheoremStrongRecurrence_of_visit_rowProc
                         (pathPrefixState (k := k) ω ((b :: xs).length + r)))
                     Filter.atTop (nhds (1 : ℝ))))) :
     FortiniSuccessorMatrixInvarianceTheoremStrongRecurrence k := by
+  refine
+    fortiniSuccessorMatrixInvarianceTheoremStrongRecurrence_of_prefixRatioApproxENN_builder
+      (k := k) ?_
+  intro μ hμ P hP hExt hStrong
+  rcases hLocal μ hμ P hP hExt hStrong with
+    ⟨rowKernel, hEval, hstart, hPi, hcomp⟩
+  refine ⟨rowKernel, hEval, hstart, hPi, ?_⟩
+  intro a b xs
+  rcases hcomp a b xs with ⟨hvisit, hΘposUsed, hgraph⟩
   exact
-    fortiniSuccessorMatrixInvarianceTheoremStrongRecurrence_of_visit_rowProcessCoordwise_component_builder
+    ae_tendsto_prefixRatioApproxENN_of_strongRecurrence_visit_rowProcessCoordwise_components
+      (k := k) P hStrong rowKernel a b xs hvisit
+      (hRowCoord P hP rowKernel hEval hstart hPi)
+      hΘposUsed hgraph
+
+/-- Builder variant that isolates the live residual local seam explicitly:
+eventual prefix compatibility plus the normalized Euler-trail correction limit,
+with row-Cesàro data supplied intrinsically by `hRowCoord`. -/
+theorem fortiniSuccessorMatrixInvarianceTheoremStrongRecurrence_of_visit_rowProcessCoordwise_component_builder_intrinsic_of_eventually_prefixCompatibleState
+    (hRowCoord :
+      ∀ (P : Measure (ℕ → Fin k)) (_hP : IsProbabilityMeasure P)
+        (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k)),
+          (∀ i : Fin k, ∀ b : Fin k,
+            AEMeasurable
+              (fun r : ℕ → Fin k => (rowKernel i r : Measure (Fin k)) ({b} : Set (Fin k)))
+              (rowProcessLaw (k := k) P i)) →
+          StartRestrictedRowKernelData (k := k) P rowKernel →
+          (∀ i : Fin k,
+            AEMeasurable
+              (fun r : ℕ → Fin k =>
+                Measure.pi (fun _ : Fin 1 => (rowKernel i r : Measure (Fin k))))
+              (rowProcessLaw (k := k) P i)) →
+          RowProcessCoordwiseCesaroLimit (k := k) P rowKernel)
+    (hLocal :
+      ∀ (μ : FiniteAlphabet.PrefixMeasure (Fin k))
+        (_hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
+        (P : Measure (ℕ → Fin k))
+        (_hP : IsProbabilityMeasure P)
+        (_hExt : ∀ xs : List (Fin k), μ xs = P (cylinder (k := k) xs))
+        (_hStrong : StrongRecurrence (k := k) P),
+          ∃ (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k)),
+            (∀ i : Fin k, ∀ b : Fin k,
+              AEMeasurable
+                (fun r : ℕ → Fin k => (rowKernel i r : Measure (Fin k)) ({b} : Set (Fin k)))
+                (rowProcessLaw (k := k) P i)) ∧
+            StartRestrictedRowKernelData (k := k) P rowKernel ∧
+            (∀ i : Fin k,
+              AEMeasurable
+                (fun r : ℕ → Fin k =>
+                  Measure.pi (fun _ : Fin 1 => (rowKernel i r : Measure (Fin k))))
+                (rowProcessLaw (k := k) P i)) ∧
+            (∀ (a b : Fin k) (xs : List (Fin k)),
+              (∀ i : Fin k,
+                ∀ᵐ ω ∂P,
+                  ω 0 = a → ∃ t : ℕ, ω t = i) ∧
+              (∀ᵐ ω ∂P,
+                ω 0 = a →
+                  ∀ᶠ r in Filter.atTop,
+                    prefixCompatibleState (k := k) a (b :: xs) ((b :: xs).length + r)
+                      (Nat.le_add_right (b :: xs).length r)
+                      (pathPrefixState (k := k) ω ((b :: xs).length + r))) ∧
+              (∀ᵐ ω ∂P,
+                ω 0 = a →
+                  Filter.Tendsto
+                    (fun r =>
+                      prefixNormalizedEulerTrailCorrectionRatioReal
+                        (k := k) a (b :: xs) ((b :: xs).length + r)
+                        (Nat.le_add_right (b :: xs).length r)
+                        (pathPrefixState (k := k) ω ((b :: xs).length + r)))
+                    Filter.atTop (nhds (1 : ℝ))))) :
+    FortiniSuccessorMatrixInvarianceTheoremStrongRecurrence k := by
+  refine
+    fortiniSuccessorMatrixInvarianceTheoremStrongRecurrence_of_prefixRatioApproxENN_builder
+      (k := k) ?_
+  intro μ hμ P hP hExt hStrong
+  rcases hLocal μ hμ P hP hExt hStrong with
+    ⟨rowKernel, hEval, hstart, hPi, hcomp⟩
+  refine ⟨rowKernel, hEval, hstart, hPi, ?_⟩
+  intro a b xs
+  rcases hcomp a b xs with ⟨hvisit, hprefixComp, hgraph⟩
+  exact
+    ae_tendsto_prefixRatioApproxENN_of_strongRecurrence_visit_rowProcessCoordwise_components_of_ae_eventually_prefixCompatibleState
+      (k := k) P hStrong rowKernel a b xs hvisit
+      (hRowCoord P hP rowKernel hEval hstart hPi) hprefixComp hgraph
+
+/-- Bridge-product-facing intrinsic-row-Cesàro builder. This states the live
+residual local convergence seam in the more intrinsic normalized bridge-product
+language, while still using eventual prefix compatibility as the exact place
+where bridge-product and normalized-Euler correction coincide. -/
+theorem fortiniSuccessorMatrixInvarianceTheoremStrongRecurrence_of_visit_rowProcessCoordwise_component_builder_intrinsic_of_eventually_prefixCompatibleState_of_tendsto_prefixNormalizedBridgeProductReal
+    (hRowCoord :
+      ∀ (P : Measure (ℕ → Fin k)) (_hP : IsProbabilityMeasure P)
+        (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k)),
+          (∀ i : Fin k, ∀ b : Fin k,
+            AEMeasurable
+              (fun r : ℕ → Fin k => (rowKernel i r : Measure (Fin k)) ({b} : Set (Fin k)))
+              (rowProcessLaw (k := k) P i)) →
+          StartRestrictedRowKernelData (k := k) P rowKernel →
+          (∀ i : Fin k,
+            AEMeasurable
+              (fun r : ℕ → Fin k =>
+                Measure.pi (fun _ : Fin 1 => (rowKernel i r : Measure (Fin k))))
+              (rowProcessLaw (k := k) P i)) →
+          RowProcessCoordwiseCesaroLimit (k := k) P rowKernel)
+    (hLocal :
+      ∀ (μ : FiniteAlphabet.PrefixMeasure (Fin k))
+        (_hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
+        (P : Measure (ℕ → Fin k))
+        (_hP : IsProbabilityMeasure P)
+        (_hExt : ∀ xs : List (Fin k), μ xs = P (cylinder (k := k) xs))
+        (_hStrong : StrongRecurrence (k := k) P),
+          ∃ (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k)),
+            (∀ i : Fin k, ∀ b : Fin k,
+              AEMeasurable
+                (fun r : ℕ → Fin k => (rowKernel i r : Measure (Fin k)) ({b} : Set (Fin k)))
+                (rowProcessLaw (k := k) P i)) ∧
+            StartRestrictedRowKernelData (k := k) P rowKernel ∧
+            (∀ i : Fin k,
+              AEMeasurable
+                (fun r : ℕ → Fin k =>
+                  Measure.pi (fun _ : Fin 1 => (rowKernel i r : Measure (Fin k))))
+                (rowProcessLaw (k := k) P i)) ∧
+            (∀ (a b : Fin k) (xs : List (Fin k)),
+              (∀ i : Fin k,
+                ∀ᵐ ω ∂P,
+                  ω 0 = a → ∃ t : ℕ, ω t = i) ∧
+              (∀ᵐ ω ∂P,
+                ω 0 = a →
+                  ∀ᶠ r in Filter.atTop,
+                    prefixCompatibleState (k := k) a (b :: xs) ((b :: xs).length + r)
+                      (Nat.le_add_right (b :: xs).length r)
+                      (pathPrefixState (k := k) ω ((b :: xs).length + r))) ∧
+              (∀ᵐ ω ∂P,
+                ω 0 = a →
+                  Filter.Tendsto
+                    (fun r =>
+                      prefixNormalizedBridgeProductReal
+                        (k := k) a (b :: xs) ((b :: xs).length + r)
+                        (Nat.le_add_right (b :: xs).length r)
+                        (pathPrefixState (k := k) ω ((b :: xs).length + r)))
+                    Filter.atTop (nhds (1 : ℝ))))) :
+    FortiniSuccessorMatrixInvarianceTheoremStrongRecurrence k := by
+  refine
+    fortiniSuccessorMatrixInvarianceTheoremStrongRecurrence_of_prefixRatioApproxENN_builder
+      (k := k) ?_
+  intro μ hμ P hP hExt hStrong
+  rcases hLocal μ hμ P hP hExt hStrong with
+    ⟨rowKernel, hEval, hstart, hPi, hcomp⟩
+  refine ⟨rowKernel, hEval, hstart, hPi, ?_⟩
+  intro a b xs
+  rcases hcomp a b xs with ⟨hvisit, hprefixComp, hbridgeNorm⟩
+  exact
+    ae_tendsto_prefixRatioApproxENN_of_strongRecurrence_visit_rowProcessCoordwise_components_of_ae_eventually_prefixCompatibleState_of_ae_tendsto_prefixNormalizedBridgeProductReal
+      (k := k) P hStrong rowKernel a b xs hvisit
+      (hRowCoord P hP rowKernel hEval hstart hPi)
+      hprefixComp hbridgeNorm
+
+/-- Public intrinsic builder that removes the explicit normalized-Euler /
+bridge-product convergence input by deriving it internally from the
+token-deletion squeeze, used-transition positivity, and the specialized bridge
+theorem. What still remains external at this layer is eventual prefix
+compatibility together with the bridge theorem itself. -/
+theorem fortiniSuccessorMatrixInvarianceTheoremStrongRecurrence_of_visit_rowProcessCoordwise_component_builder_intrinsic_of_prefixThetaPosUsed_of_pathLocalBridgeCardEqPair_of_eventually_prefixCompatibleState
+    (hRowCoord :
+      ∀ (P : Measure (ℕ → Fin k)) (_hP : IsProbabilityMeasure P)
+        (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k)),
+          (∀ i : Fin k, ∀ b : Fin k,
+            AEMeasurable
+              (fun r : ℕ → Fin k => (rowKernel i r : Measure (Fin k)) ({b} : Set (Fin k)))
+              (rowProcessLaw (k := k) P i)) →
+          StartRestrictedRowKernelData (k := k) P rowKernel →
+          (∀ i : Fin k,
+            AEMeasurable
+              (fun r : ℕ → Fin k =>
+                Measure.pi (fun _ : Fin 1 => (rowKernel i r : Measure (Fin k))))
+              (rowProcessLaw (k := k) P i)) →
+          RowProcessCoordwiseCesaroLimit (k := k) P rowKernel)
+    (hLocal :
+      ∀ (μ : FiniteAlphabet.PrefixMeasure (Fin k))
+        (_hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
+        (P : Measure (ℕ → Fin k))
+        (_hP : IsProbabilityMeasure P)
+        (_hExt : ∀ xs : List (Fin k), μ xs = P (cylinder (k := k) xs))
+        (_hStrong : StrongRecurrence (k := k) P),
+          ∃ (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k)),
+            (∀ i : Fin k, ∀ b : Fin k,
+              AEMeasurable
+                (fun r : ℕ → Fin k => (rowKernel i r : Measure (Fin k)) ({b} : Set (Fin k)))
+                (rowProcessLaw (k := k) P i)) ∧
+            StartRestrictedRowKernelData (k := k) P rowKernel ∧
+            (∀ i : Fin k,
+              AEMeasurable
+                (fun r : ℕ → Fin k =>
+                  Measure.pi (fun _ : Fin 1 => (rowKernel i r : Measure (Fin k))))
+                (rowProcessLaw (k := k) P i)) ∧
+            (∀ (a b : Fin k) (xs : List (Fin k)),
+              (∀ i : Fin k,
+                ∀ᵐ ω ∂P,
+                  ω 0 = a → ∃ t : ℕ, ω t = i) ∧
+              (∀ p ∈ prefixUsedTransitionSet (k := k) a (b :: xs),
+                ∀ᵐ ω ∂P,
+                  ω 0 = a →
+                    0 < rowKernelVisitProbReal (k := k) rowKernel p.1 p.2 ω) ∧
+              (∀ᵐ ω ∂P,
+                ω 0 = a →
+                  ∀ᶠ r in Filter.atTop,
+                    prefixCompatibleState (k := k) a (b :: xs) ((b :: xs).length + r)
+                      (Nat.le_add_right (b :: xs).length r)
+                      (pathPrefixState (k := k) ω ((b :: xs).length + r))) ∧
+              (∀ᵐ ω ∂P,
+                ω 0 = a →
+                  ∀ᶠ r in Filter.atTop,
+                    pathPrefixBridgeCardEqPair (k := k) a (b :: xs) ω r))) :
+    FortiniSuccessorMatrixInvarianceTheoremStrongRecurrence k := by
+  exact
+    fortiniSuccessorMatrixInvarianceTheoremStrongRecurrence_of_visit_rowProcessCoordwise_component_builder_intrinsic_of_prefixThetaPosUsed
+      (k := k)
+      hRowCoord
+      (hLocal := fun μ hμ P hP hExt hStrong => by
+        rcases hLocal μ hμ P hP hExt hStrong with
+          ⟨rowKernel, hEval, hstart, hPi, hcomp⟩
+        refine ⟨rowKernel, hEval, hstart, hPi, ?_⟩
+        intro a b xs
+        rcases hcomp a b xs with ⟨hvisit, hΘposUsed, hprefixComp, hBridgePair⟩
+        refine ⟨hvisit, hΘposUsed, ?_⟩
+        exact
+          ae_tendsto_prefixNormalizedEulerTrailCorrectionRatioReal_shift_of_strongRecurrence_visit_rowProcessCoordwise_components_of_ae_prefixThetaPosUsed_of_ae_pathPrefixBridgeCardEqPair_of_eventually_prefixCompatibleState
+            (k := k) P hStrong rowKernel a b xs hvisit
+            (hRowCoord P hP rowKernel hEval hstart hPi)
+            hΘposUsed hprefixComp hBridgePair)
+
+/-- Path-local support-local bridge-facing intrinsic-row-Cesàro builder with no
+separate support-local arborescence-ratio limit input. This keeps eventual
+prefix compatibility explicit, but once that is available the smaller
+support-local bridge object is already enough for the AE convergence route. -/
+theorem fortiniSuccessorMatrixInvarianceTheoremStrongRecurrence_of_visit_rowProcessCoordwise_component_builder_intrinsic_of_prefixThetaPosUsed_of_pathLocalPositiveBridgeCardEqPair_of_eventually_prefixCompatibleState
+    (hRowCoord :
+      ∀ (P : Measure (ℕ → Fin k)) (_hP : IsProbabilityMeasure P)
+        (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k)),
+          (∀ i : Fin k, ∀ b : Fin k,
+            AEMeasurable
+              (fun r : ℕ → Fin k => (rowKernel i r : Measure (Fin k)) ({b} : Set (Fin k)))
+              (rowProcessLaw (k := k) P i)) →
+          StartRestrictedRowKernelData (k := k) P rowKernel →
+          (∀ i : Fin k,
+            AEMeasurable
+              (fun r : ℕ → Fin k =>
+                Measure.pi (fun _ : Fin 1 => (rowKernel i r : Measure (Fin k))))
+              (rowProcessLaw (k := k) P i)) →
+          RowProcessCoordwiseCesaroLimit (k := k) P rowKernel)
+    (hLocal :
+      ∀ (μ : FiniteAlphabet.PrefixMeasure (Fin k))
+        (_hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
+        (P : Measure (ℕ → Fin k))
+        (_hP : IsProbabilityMeasure P)
+        (_hExt : ∀ xs : List (Fin k), μ xs = P (cylinder (k := k) xs))
+        (_hStrong : StrongRecurrence (k := k) P),
+          ∃ (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k)),
+            (∀ i : Fin k, ∀ b : Fin k,
+              AEMeasurable
+                (fun r : ℕ → Fin k => (rowKernel i r : Measure (Fin k)) ({b} : Set (Fin k)))
+                (rowProcessLaw (k := k) P i)) ∧
+            StartRestrictedRowKernelData (k := k) P rowKernel ∧
+            (∀ i : Fin k,
+              AEMeasurable
+                (fun r : ℕ → Fin k =>
+                  Measure.pi (fun _ : Fin 1 => (rowKernel i r : Measure (Fin k))))
+                (rowProcessLaw (k := k) P i)) ∧
+            (∀ (a b : Fin k) (xs : List (Fin k)),
+              (∀ i : Fin k,
+                ∀ᵐ ω ∂P,
+                  ω 0 = a → ∃ t : ℕ, ω t = i) ∧
+              (∀ p ∈ prefixUsedTransitionSet (k := k) a (b :: xs),
+                ∀ᵐ ω ∂P,
+                  ω 0 = a →
+                    0 < rowKernelVisitProbReal (k := k) rowKernel p.1 p.2 ω) ∧
+              (∀ᵐ ω ∂P,
+                ω 0 = a →
+                  ∀ᶠ r in Filter.atTop,
+                    prefixCompatibleState (k := k) a (b :: xs) ((b :: xs).length + r)
+                      (Nat.le_add_right (b :: xs).length r)
+                      (pathPrefixState (k := k) ω ((b :: xs).length + r))) ∧
+              (∀ᵐ ω ∂P,
+                ω 0 = a →
+                  ∀ᶠ r in Filter.atTop,
+                    pathPrefixPositiveBridgeCardEqPair (k := k) a (b :: xs) ω r))) :
+    FortiniSuccessorMatrixInvarianceTheoremStrongRecurrence k := by
+  exact
+    fortiniSuccessorMatrixInvarianceTheoremStrongRecurrence_of_visit_rowProcessCoordwise_component_builder_intrinsic_of_prefixThetaPosUsed
+      (k := k)
+      hRowCoord
+      (hLocal := fun μ hμ P hP hExt hStrong => by
+        rcases hLocal μ hμ P hP hExt hStrong with
+          ⟨rowKernel, hEval, hstart, hPi, hcomp⟩
+        refine ⟨rowKernel, hEval, hstart, hPi, ?_⟩
+        intro a b xs
+        rcases hcomp a b xs with ⟨hvisit, hΘposUsed, hprefixComp, hBridgePair⟩
+        refine ⟨hvisit, hΘposUsed, ?_⟩
+        exact
+          ae_tendsto_prefixNormalizedEulerTrailCorrectionRatioReal_shift_of_strongRecurrence_visit_rowProcessCoordwise_components_of_ae_prefixThetaPosUsed_of_ae_pathPrefixPositiveBridgeCardEqPair_of_eventually_prefixCompatibleState
+            (k := k) P hStrong rowKernel a b xs hvisit
+            (hRowCoord P hP rowKernel hEval hstart hPi)
+            hΘposUsed hprefixComp hBridgePair)
+
+/-- Support-local bridge-facing intrinsic-row-Cesàro compatibility wrapper.
+The stronger no-extra-ratio path-local support-local builder now exists just
+above it, so this older interface keeps the explicit ratio-limit hypothesis
+only as a compatibility surface and factors through the smaller theorem by
+deriving the needed eventual prefix compatibility from the induced normalized-
+Euler limit. -/
+theorem fortiniSuccessorMatrixInvarianceTheoremStrongRecurrence_of_visit_rowProcessCoordwise_component_builder_intrinsic_of_prefixThetaPosUsed_of_tendsto_prefixPositiveTokenRootedArborescenceRatioReal_of_pathLocalPositiveBridgeCardEqPair
+    (hRowCoord :
+      ∀ (P : Measure (ℕ → Fin k)) (_hP : IsProbabilityMeasure P)
+        (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k)),
+          (∀ i : Fin k, ∀ b : Fin k,
+            AEMeasurable
+              (fun r : ℕ → Fin k => (rowKernel i r : Measure (Fin k)) ({b} : Set (Fin k)))
+              (rowProcessLaw (k := k) P i)) →
+          StartRestrictedRowKernelData (k := k) P rowKernel →
+          (∀ i : Fin k,
+            AEMeasurable
+              (fun r : ℕ → Fin k =>
+                Measure.pi (fun _ : Fin 1 => (rowKernel i r : Measure (Fin k))))
+              (rowProcessLaw (k := k) P i)) →
+          RowProcessCoordwiseCesaroLimit (k := k) P rowKernel)
+    (hLocal :
+      ∀ (μ : FiniteAlphabet.PrefixMeasure (Fin k))
+        (_hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
+        (P : Measure (ℕ → Fin k))
+        (_hP : IsProbabilityMeasure P)
+        (_hExt : ∀ xs : List (Fin k), μ xs = P (cylinder (k := k) xs))
+        (_hStrong : StrongRecurrence (k := k) P),
+          ∃ (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k)),
+            (∀ i : Fin k, ∀ b : Fin k,
+              AEMeasurable
+                (fun r : ℕ → Fin k => (rowKernel i r : Measure (Fin k)) ({b} : Set (Fin k)))
+                (rowProcessLaw (k := k) P i)) ∧
+            StartRestrictedRowKernelData (k := k) P rowKernel ∧
+            (∀ i : Fin k,
+              AEMeasurable
+                (fun r : ℕ → Fin k =>
+                  Measure.pi (fun _ : Fin 1 => (rowKernel i r : Measure (Fin k))))
+                (rowProcessLaw (k := k) P i)) ∧
+            (∀ (a b : Fin k) (xs : List (Fin k)),
+              (∀ i : Fin k,
+                ∀ᵐ ω ∂P,
+                  ω 0 = a → ∃ t : ℕ, ω t = i) ∧
+              (∀ p ∈ prefixUsedTransitionSet (k := k) a (b :: xs),
+                ∀ᵐ ω ∂P,
+                  ω 0 = a →
+                    0 < rowKernelVisitProbReal (k := k) rowKernel p.1 p.2 ω) ∧
+              (∀ᵐ ω ∂P,
+                ω 0 = a →
+                  ∀ᶠ r in Filter.atTop,
+                    pathPrefixPositiveBridgeCardEqPair (k := k) a (b :: xs) ω r) ∧
+              (∀ᵐ ω ∂P,
+                ω 0 = a →
+                  Filter.Tendsto
+                    (fun r =>
+                      prefixPositiveTokenRootedArborescenceRatioReal
+                        (k := k) a (b :: xs) ((b :: xs).length + r)
+                        (Nat.le_add_right (b :: xs).length r)
+                        (pathPrefixState (k := k) ω ((b :: xs).length + r)))
+                    Filter.atTop (nhds (1 : ℝ))))) :
+    FortiniSuccessorMatrixInvarianceTheoremStrongRecurrence k := by
+  exact
+    fortiniSuccessorMatrixInvarianceTheoremStrongRecurrence_of_visit_rowProcessCoordwise_component_builder_intrinsic_of_prefixThetaPosUsed_of_pathLocalPositiveBridgeCardEqPair_of_eventually_prefixCompatibleState
+      (k := k) hRowCoord
+      (hLocal := fun μ hμ P hP hExt hStrong => by
+        rcases hLocal μ hμ P hP hExt hStrong with
+          ⟨rowKernel, hEval, hstart, hPi, hcomp⟩
+        refine ⟨rowKernel, hEval, hstart, hPi, ?_⟩
+        intro a b xs
+        rcases hcomp a b xs with ⟨hvisit, hΘposUsed, hBridgePair, htokPos⟩
+        have hgraph :
+            ∀ᵐ ω ∂P,
+              ω 0 = a →
+                Filter.Tendsto
+                  (fun r =>
+                    prefixNormalizedEulerTrailCorrectionRatioReal
+                      (k := k) a (b :: xs) ((b :: xs).length + r)
+                      (Nat.le_add_right (b :: xs).length r)
+                      (pathPrefixState (k := k) ω ((b :: xs).length + r)))
+                  Filter.atTop (nhds (1 : ℝ)) :=
+          ae_tendsto_prefixNormalizedEulerTrailCorrectionRatioReal_shift_of_ae_tendsto_prefixPositiveTokenRootedArborescenceRatioReal_of_ae_pathPrefixPositiveBridgeCardEqPair
+            (k := k) P a (b :: xs) hBridgePair htokPos
+        have hprefixComp :
+            ∀ᵐ ω ∂P,
+              ω 0 = a →
+                ∀ᶠ r in Filter.atTop,
+                  prefixCompatibleState (k := k) a (b :: xs) ((b :: xs).length + r)
+                    (Nat.le_add_right (b :: xs).length r)
+                    (pathPrefixState (k := k) ω ((b :: xs).length + r)) :=
+          ae_eventually_prefixCompatibleState_pathPrefixState_of_strongRecurrence_visit_rowProcessCoordwise_components_of_ae_prefixThetaPosUsed_of_ae_tendsto_prefixNormalizedEulerTrailCorrectionRatioReal
+            (k := k) P hStrong rowKernel a b xs hvisit
+            (hRowCoord P hP rowKernel hEval hstart hPi)
+            hΘposUsed hgraph
+        exact ⟨hvisit, hΘposUsed, hprefixComp, hBridgePair⟩)
+
+/-- Public support-local bridge-facing intrinsic-row-Cesàro compatibility
+wrapper. The stronger no-extra-ratio support-local builder now exists just
+below it, so this theorem keeps the older interface without adding a distinct
+mathematical seam. -/
+theorem fortiniSuccessorMatrixInvarianceTheoremStrongRecurrence_of_visit_rowProcessCoordwise_component_builder_intrinsic_of_prefixThetaPosUsed_of_tendsto_prefixPositiveTokenRootedArborescenceRatioReal_of_positiveBridge_of_eventually_prefixCompatibleState
+    (hRowCoord :
+      ∀ (P : Measure (ℕ → Fin k)) (_hP : IsProbabilityMeasure P)
+        (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k)),
+          (∀ i : Fin k, ∀ b : Fin k,
+            AEMeasurable
+              (fun r : ℕ → Fin k => (rowKernel i r : Measure (Fin k)) ({b} : Set (Fin k)))
+              (rowProcessLaw (k := k) P i)) →
+          StartRestrictedRowKernelData (k := k) P rowKernel →
+          (∀ i : Fin k,
+            AEMeasurable
+              (fun r : ℕ → Fin k =>
+                Measure.pi (fun _ : Fin 1 => (rowKernel i r : Measure (Fin k))))
+              (rowProcessLaw (k := k) P i)) →
+          RowProcessCoordwiseCesaroLimit (k := k) P rowKernel)
+    (hPositiveBridgeCard :
+      ∀ {M : ℕ} {s : MarkovState k},
+        s ∈ stateFinset k M →
+          positiveTokenRootedBridgeCardEq (k := k) s)
+    (hLocal :
+      ∀ (μ : FiniteAlphabet.PrefixMeasure (Fin k))
+        (_hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
+        (P : Measure (ℕ → Fin k))
+        (_hP : IsProbabilityMeasure P)
+        (_hExt : ∀ xs : List (Fin k), μ xs = P (cylinder (k := k) xs))
+        (_hStrong : StrongRecurrence (k := k) P),
+          ∃ (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k)),
+            (∀ i : Fin k, ∀ b : Fin k,
+              AEMeasurable
+                (fun r : ℕ → Fin k => (rowKernel i r : Measure (Fin k)) ({b} : Set (Fin k)))
+                (rowProcessLaw (k := k) P i)) ∧
+            StartRestrictedRowKernelData (k := k) P rowKernel ∧
+            (∀ i : Fin k,
+              AEMeasurable
+                (fun r : ℕ → Fin k =>
+                  Measure.pi (fun _ : Fin 1 => (rowKernel i r : Measure (Fin k))))
+                (rowProcessLaw (k := k) P i)) ∧
+            (∀ (a b : Fin k) (xs : List (Fin k)),
+              (∀ i : Fin k,
+                ∀ᵐ ω ∂P,
+                  ω 0 = a → ∃ t : ℕ, ω t = i) ∧
+              (∀ p ∈ prefixUsedTransitionSet (k := k) a (b :: xs),
+                ∀ᵐ ω ∂P,
+                  ω 0 = a →
+                    0 < rowKernelVisitProbReal (k := k) rowKernel p.1 p.2 ω) ∧
+              (∀ᵐ ω ∂P,
+                ω 0 = a →
+                  ∀ᶠ r in Filter.atTop,
+                    prefixCompatibleState (k := k) a (b :: xs) ((b :: xs).length + r)
+                      (Nat.le_add_right (b :: xs).length r)
+                      (pathPrefixState (k := k) ω ((b :: xs).length + r))) ∧
+              (∀ᵐ ω ∂P,
+                ω 0 = a →
+                  Filter.Tendsto
+                    (fun r =>
+                      prefixPositiveTokenRootedArborescenceRatioReal
+                        (k := k) a (b :: xs) ((b :: xs).length + r)
+                        (Nat.le_add_right (b :: xs).length r)
+                        (pathPrefixState (k := k) ω ((b :: xs).length + r)))
+                    Filter.atTop (nhds (1 : ℝ))))) :
+    FortiniSuccessorMatrixInvarianceTheoremStrongRecurrence k := by
+  exact
+    fortiniSuccessorMatrixInvarianceTheoremStrongRecurrence_of_prefixRatioApproxENN_builder
       (k := k)
       (hLocal := fun μ hμ P hP hExt hStrong => by
         rcases hLocal μ hμ P hP hExt hStrong with
           ⟨rowKernel, hEval, hstart, hPi, hcomp⟩
         refine ⟨rowKernel, hEval, hstart, hPi, ?_⟩
         intro a b xs
-        rcases hcomp a b xs with ⟨hvisit, hΘposUsed, hgraph⟩
-        refine ⟨hvisit, ?_, hΘposUsed, hgraph⟩
-        exact hRowCoord P hP rowKernel hEval hstart hPi)
+        rcases hcomp a b xs with ⟨hvisit, hΘposUsed, hprefixComp, _htokPos⟩
+        exact
+          ae_tendsto_prefixRatioApproxENN_of_strongRecurrence_visit_rowProcessCoordwise_components_of_ae_prefixThetaPosUsed_of_positiveBridge_of_eventually_prefixCompatibleState_via_supportSplit
+            (k := k) P hStrong rowKernel a b xs hvisit
+            (hRowCoord P hP rowKernel hEval hstart hPi)
+            hΘposUsed hprefixComp
+            (fun {_M} {_s} hs => hPositiveBridgeCard hs))
+
+/-- Public support-local bridge-facing intrinsic-row-Cesàro builder with no
+separate support-local ratio-limit input. On the eventually fully active
+path-prefix states forced by recurrence/outdegree growth, the support-local
+bridge data collapses back to the old path-local bridge data, so the existing
+token-deletion route suffices. -/
+theorem fortiniSuccessorMatrixInvarianceTheoremStrongRecurrence_of_visit_rowProcessCoordwise_component_builder_intrinsic_of_prefixThetaPosUsed_of_positiveBridge_of_eventually_prefixCompatibleState
+    (hRowCoord :
+      ∀ (P : Measure (ℕ → Fin k)) (_hP : IsProbabilityMeasure P)
+        (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k)),
+          (∀ i : Fin k, ∀ b : Fin k,
+            AEMeasurable
+              (fun r : ℕ → Fin k => (rowKernel i r : Measure (Fin k)) ({b} : Set (Fin k)))
+              (rowProcessLaw (k := k) P i)) →
+          StartRestrictedRowKernelData (k := k) P rowKernel →
+          (∀ i : Fin k,
+            AEMeasurable
+              (fun r : ℕ → Fin k =>
+                Measure.pi (fun _ : Fin 1 => (rowKernel i r : Measure (Fin k))))
+              (rowProcessLaw (k := k) P i)) →
+          RowProcessCoordwiseCesaroLimit (k := k) P rowKernel)
+    (hPositiveBridgeCard :
+      ∀ {M : ℕ} {s : MarkovState k},
+        s ∈ stateFinset k M →
+          positiveTokenRootedBridgeCardEq (k := k) s)
+    (hLocal :
+      ∀ (μ : FiniteAlphabet.PrefixMeasure (Fin k))
+        (_hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
+        (P : Measure (ℕ → Fin k))
+        (_hP : IsProbabilityMeasure P)
+        (_hExt : ∀ xs : List (Fin k), μ xs = P (cylinder (k := k) xs))
+        (_hStrong : StrongRecurrence (k := k) P),
+          ∃ (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k)),
+            (∀ i : Fin k, ∀ b : Fin k,
+              AEMeasurable
+                (fun r : ℕ → Fin k => (rowKernel i r : Measure (Fin k)) ({b} : Set (Fin k)))
+                (rowProcessLaw (k := k) P i)) ∧
+            StartRestrictedRowKernelData (k := k) P rowKernel ∧
+            (∀ i : Fin k,
+              AEMeasurable
+                (fun r : ℕ → Fin k =>
+                  Measure.pi (fun _ : Fin 1 => (rowKernel i r : Measure (Fin k))))
+                (rowProcessLaw (k := k) P i)) ∧
+            (∀ (a b : Fin k) (xs : List (Fin k)),
+              (∀ i : Fin k,
+                ∀ᵐ ω ∂P,
+                  ω 0 = a → ∃ t : ℕ, ω t = i) ∧
+              (∀ p ∈ prefixUsedTransitionSet (k := k) a (b :: xs),
+                ∀ᵐ ω ∂P,
+                  ω 0 = a →
+                    0 < rowKernelVisitProbReal (k := k) rowKernel p.1 p.2 ω) ∧
+              (∀ᵐ ω ∂P,
+                ω 0 = a →
+                  ∀ᶠ r in Filter.atTop,
+                    prefixCompatibleState (k := k) a (b :: xs) ((b :: xs).length + r)
+                      (Nat.le_add_right (b :: xs).length r)
+                      (pathPrefixState (k := k) ω ((b :: xs).length + r))))) :
+    FortiniSuccessorMatrixInvarianceTheoremStrongRecurrence k := by
+  exact
+    fortiniSuccessorMatrixInvarianceTheoremStrongRecurrence_of_visit_rowProcessCoordwise_component_builder_intrinsic_of_prefixThetaPosUsed
+      (k := k) hRowCoord
+      (hLocal := fun μ hμ P hP hExt hStrong => by
+        rcases hLocal μ hμ P hP hExt hStrong with
+          ⟨rowKernel, hEval, hstart, hPi, hcomp⟩
+        refine ⟨rowKernel, hEval, hstart, hPi, ?_⟩
+        intro a b xs
+        rcases hcomp a b xs with ⟨hvisit, hΘposUsed, hprefixComp⟩
+        refine ⟨hvisit, hΘposUsed, ?_⟩
+        exact
+          ae_tendsto_prefixNormalizedEulerTrailCorrectionRatioReal_shift_of_strongRecurrence_visit_rowProcessCoordwise_components_of_ae_prefixThetaPosUsed_of_positiveBridge_of_eventually_prefixCompatibleState
+            (k := k) P hStrong rowKernel a b xs hvisit
+            (hRowCoord P hP rowKernel hEval hstart hPi)
+            hΘposUsed hprefixComp
+            (fun {_M} {_s} hs => hPositiveBridgeCard hs))
+
+/-- Public intrinsic builder that removes the explicit normalized-Euler /
+bridge-product convergence input by deriving it internally from the
+token-deletion squeeze, used-transition positivity, and the specialized bridge
+theorem. What still remains external at this layer is eventual prefix
+compatibility together with the bridge theorem itself. -/
+theorem fortiniSuccessorMatrixInvarianceTheoremStrongRecurrence_of_visit_rowProcessCoordwise_component_builder_intrinsic_of_prefixThetaPosUsed_of_bridge_of_eventually_prefixCompatibleState
+    (hRowCoord :
+      ∀ (P : Measure (ℕ → Fin k)) (_hP : IsProbabilityMeasure P)
+        (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k)),
+          (∀ i : Fin k, ∀ b : Fin k,
+            AEMeasurable
+              (fun r : ℕ → Fin k => (rowKernel i r : Measure (Fin k)) ({b} : Set (Fin k)))
+              (rowProcessLaw (k := k) P i)) →
+          StartRestrictedRowKernelData (k := k) P rowKernel →
+          (∀ i : Fin k,
+            AEMeasurable
+              (fun r : ℕ → Fin k =>
+                Measure.pi (fun _ : Fin 1 => (rowKernel i r : Measure (Fin k))))
+              (rowProcessLaw (k := k) P i)) →
+          RowProcessCoordwiseCesaroLimit (k := k) P rowKernel)
+    (hBridgeCard :
+      ∀ {M : ℕ} {s : MarkovState k},
+        s ∈ stateFinset k M →
+          (eulerTrailFinset (graphOfState s) s.start s.last).card =
+            tokenRootedArborescenceCount (k := k) (graphOfState (k := k) s) s.last *
+              outdegFactorialWeight (k := k) s)
+    (hLocal :
+      ∀ (μ : FiniteAlphabet.PrefixMeasure (Fin k))
+        (_hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
+        (P : Measure (ℕ → Fin k))
+        (_hP : IsProbabilityMeasure P)
+        (_hExt : ∀ xs : List (Fin k), μ xs = P (cylinder (k := k) xs))
+        (_hStrong : StrongRecurrence (k := k) P),
+          ∃ (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k)),
+            (∀ i : Fin k, ∀ b : Fin k,
+              AEMeasurable
+                (fun r : ℕ → Fin k => (rowKernel i r : Measure (Fin k)) ({b} : Set (Fin k)))
+                (rowProcessLaw (k := k) P i)) ∧
+            StartRestrictedRowKernelData (k := k) P rowKernel ∧
+            (∀ i : Fin k,
+              AEMeasurable
+                (fun r : ℕ → Fin k =>
+                  Measure.pi (fun _ : Fin 1 => (rowKernel i r : Measure (Fin k))))
+                (rowProcessLaw (k := k) P i)) ∧
+            (∀ (a b : Fin k) (xs : List (Fin k)),
+              (∀ i : Fin k,
+                ∀ᵐ ω ∂P,
+                  ω 0 = a → ∃ t : ℕ, ω t = i) ∧
+              (∀ p ∈ prefixUsedTransitionSet (k := k) a (b :: xs),
+                ∀ᵐ ω ∂P,
+                  ω 0 = a →
+                    0 < rowKernelVisitProbReal (k := k) rowKernel p.1 p.2 ω) ∧
+              (∀ᵐ ω ∂P,
+                ω 0 = a →
+                  ∀ᶠ r in Filter.atTop,
+                    prefixCompatibleState (k := k) a (b :: xs) ((b :: xs).length + r)
+                      (Nat.le_add_right (b :: xs).length r)
+                      (pathPrefixState (k := k) ω ((b :: xs).length + r))))) :
+    FortiniSuccessorMatrixInvarianceTheoremStrongRecurrence k := by
+  exact
+    fortiniSuccessorMatrixInvarianceTheoremStrongRecurrence_of_visit_rowProcessCoordwise_component_builder_intrinsic_of_prefixThetaPosUsed
+      (k := k) hRowCoord
+      (hLocal := fun μ hμ P hP hExt hStrong => by
+        rcases hLocal μ hμ P hP hExt hStrong with
+          ⟨rowKernel, hEval, hstart, hPi, hcomp⟩
+        refine ⟨rowKernel, hEval, hstart, hPi, ?_⟩
+        intro a b xs
+        rcases hcomp a b xs with ⟨hvisit, hΘposUsed, hprefixComp⟩
+        refine ⟨hvisit, hΘposUsed, ?_⟩
+        exact
+          ae_tendsto_prefixNormalizedEulerTrailCorrectionRatioReal_shift_of_strongRecurrence_visit_rowProcessCoordwise_components_of_ae_prefixThetaPosUsed_of_ae_tokenDeletionSqueeze_of_bridgeCard_of_eventually_prefixCompatibleState
+            (k := k) P hStrong rowKernel a b xs hvisit
+            (hRowCoord P hP rowKernel hEval hstart hPi)
+            hΘposUsed hprefixComp
+            (fun {_M} {_s} hs => hBridgeCard hs))
+
+/-- Legacy token-deletion/bridge builder, now collapsed to the stronger
+coordwise intrinsic route. At this public layer, `hLocal` no longer carries
+an external normalized-Euler limit. It is enough to provide visit data,
+positivity on the finite used-transition set, and eventual prefix
+compatibility; the remaining normalized-Euler convergence step is derived
+internally from the token-deletion squeeze plus the specialized bridge
+theorem. -/
+theorem fortiniSuccessorMatrixInvarianceTheoremStrongRecurrence_of_visit_rowProcessCoordwise_component_builder_intrinsic_of_tokenDeletionSqueeze_of_bridge_of_eventually_prefixCompatibleState
+    (hRowCoord :
+      ∀ (P : Measure (ℕ → Fin k)) (_hP : IsProbabilityMeasure P)
+        (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k)),
+          (∀ i : Fin k, ∀ b : Fin k,
+            AEMeasurable
+              (fun r : ℕ → Fin k => (rowKernel i r : Measure (Fin k)) ({b} : Set (Fin k)))
+              (rowProcessLaw (k := k) P i)) →
+          StartRestrictedRowKernelData (k := k) P rowKernel →
+          (∀ i : Fin k,
+            AEMeasurable
+              (fun r : ℕ → Fin k =>
+                Measure.pi (fun _ : Fin 1 => (rowKernel i r : Measure (Fin k))))
+              (rowProcessLaw (k := k) P i)) →
+          RowProcessCoordwiseCesaroLimit (k := k) P rowKernel)
+    (hBridgeCard :
+      ∀ {M : ℕ} {s : MarkovState k},
+        s ∈ stateFinset k M →
+          (eulerTrailFinset (graphOfState s) s.start s.last).card =
+            tokenRootedArborescenceCount (k := k) (graphOfState (k := k) s) s.last *
+              outdegFactorialWeight (k := k) s)
+    (hLocal :
+      ∀ (μ : FiniteAlphabet.PrefixMeasure (Fin k))
+        (_hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
+        (P : Measure (ℕ → Fin k))
+        (_hP : IsProbabilityMeasure P)
+        (_hExt : ∀ xs : List (Fin k), μ xs = P (cylinder (k := k) xs))
+        (_hStrong : StrongRecurrence (k := k) P),
+          ∃ (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k)),
+            (∀ i : Fin k, ∀ b : Fin k,
+              AEMeasurable
+                (fun r : ℕ → Fin k => (rowKernel i r : Measure (Fin k)) ({b} : Set (Fin k)))
+                (rowProcessLaw (k := k) P i)) ∧
+            StartRestrictedRowKernelData (k := k) P rowKernel ∧
+            (∀ i : Fin k,
+              AEMeasurable
+                (fun r : ℕ → Fin k =>
+                  Measure.pi (fun _ : Fin 1 => (rowKernel i r : Measure (Fin k))))
+                (rowProcessLaw (k := k) P i)) ∧
+            (∀ (a b : Fin k) (xs : List (Fin k)),
+              (∀ i : Fin k,
+                ∀ᵐ ω ∂P,
+                  ω 0 = a → ∃ t : ℕ, ω t = i) ∧
+              (∀ p ∈ prefixUsedTransitionSet (k := k) a (b :: xs),
+                ∀ᵐ ω ∂P,
+                  ω 0 = a →
+                    0 < rowKernelVisitProbReal (k := k) rowKernel p.1 p.2 ω) ∧
+              (∀ᵐ ω ∂P,
+                ω 0 = a →
+                  ∀ᶠ r in Filter.atTop,
+                    prefixCompatibleState (k := k) a (b :: xs) ((b :: xs).length + r)
+                      (Nat.le_add_right (b :: xs).length r)
+                      (pathPrefixState (k := k) ω ((b :: xs).length + r))))) :
+    FortiniSuccessorMatrixInvarianceTheoremStrongRecurrence k := by
+  exact
+    fortiniSuccessorMatrixInvarianceTheoremStrongRecurrence_of_visit_rowProcessCoordwise_component_builder_intrinsic_of_prefixThetaPosUsed_of_bridge_of_eventually_prefixCompatibleState
+      (k := k) hRowCoord hBridgeCard
+      (hLocal := fun μ hμ P hP hExt hStrong => by
+        exact hLocal μ hμ P hP hExt hStrong)
 
 theorem fortiniSuccessorMatrixInvarianceTheoremStrongRecurrence_of_infiniteVisits_rowProcess_component_builder
     (hLocal :
@@ -9316,8 +14875,89 @@ theorem exists_markovParamLaw_of_markovExchangeable_rowRecurrent_of_visit_rowPro
 
 /-- Intrinsic-row-Cesàro variant of the markov-parameter reconstruction builder.
 `hLocal` omits `RowProcessCoordwiseCesaroLimit`; that component is supplied by
-`hRowCoord`. -/
+`hRowCoord`. As above, the public intrinsic surface now uses eventual prefix
+compatibility plus the normalized Euler-trail correction limit rather than
+finite-used-transition positivity. -/
 theorem exists_markovParamLaw_of_markovExchangeable_rowRecurrent_of_visit_rowProcessCoordwise_component_builder_intrinsic
+    (hRowCoord :
+      ∀ (P : Measure (ℕ → Fin k)) (_hP : IsProbabilityMeasure P)
+        (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k)),
+          (∀ i : Fin k, ∀ b : Fin k,
+            AEMeasurable
+              (fun r : ℕ → Fin k => (rowKernel i r : Measure (Fin k)) ({b} : Set (Fin k)))
+              (rowProcessLaw (k := k) P i)) →
+          StartRestrictedRowKernelData (k := k) P rowKernel →
+          (∀ i : Fin k,
+            AEMeasurable
+              (fun r : ℕ → Fin k =>
+                Measure.pi (fun _ : Fin 1 => (rowKernel i r : Measure (Fin k))))
+              (rowProcessLaw (k := k) P i)) →
+          RowProcessCoordwiseCesaroLimit (k := k) P rowKernel)
+    (hLocal :
+      ∀ (μ : FiniteAlphabet.PrefixMeasure (Fin k))
+        (_hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
+        (P : Measure (ℕ → Fin k))
+        (_hP : IsProbabilityMeasure P)
+        (_hExt : ∀ xs : List (Fin k), μ xs = P (cylinder (k := k) xs))
+        (_hStrong : StrongRecurrence (k := k) P),
+          ∃ (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k)),
+            (∀ i : Fin k, ∀ b : Fin k,
+              AEMeasurable
+                (fun r : ℕ → Fin k => (rowKernel i r : Measure (Fin k)) ({b} : Set (Fin k)))
+                (rowProcessLaw (k := k) P i)) ∧
+            StartRestrictedRowKernelData (k := k) P rowKernel ∧
+            (∀ i : Fin k,
+              AEMeasurable
+                (fun r : ℕ → Fin k =>
+                  Measure.pi (fun _ : Fin 1 => (rowKernel i r : Measure (Fin k))))
+                (rowProcessLaw (k := k) P i)) ∧
+            (∀ (a b : Fin k) (xs : List (Fin k)),
+              (∀ i : Fin k,
+                ∀ᵐ ω ∂P,
+                  ω 0 = a → ∃ t : ℕ, ω t = i) ∧
+              (∀ᵐ ω ∂P,
+                ω 0 = a →
+                  ∀ᶠ r in Filter.atTop,
+                    prefixCompatibleState (k := k) a (b :: xs) ((b :: xs).length + r)
+                      (Nat.le_add_right (b :: xs).length r)
+                      (pathPrefixState (k := k) ω ((b :: xs).length + r))) ∧
+              (∀ᵐ ω ∂P,
+                ω 0 = a →
+                  Filter.Tendsto
+                    (fun r =>
+                      prefixNormalizedEulerTrailCorrectionRatioReal
+                        (k := k) a (b :: xs) ((b :: xs).length + r)
+                        (Nat.le_add_right (b :: xs).length r)
+                        (pathPrefixState (k := k) ω ((b :: xs).length + r)))
+                    Filter.atTop (nhds (1 : ℝ)))))
+    (μ : FiniteAlphabet.PrefixMeasure (Fin k))
+    (hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
+    (hrow : MarkovRowRecurrentPrefixMeasure (k := k) μ) :
+    ∃ (pi : Measure (MarkovParam k)), IsProbabilityMeasure pi ∧
+      ∀ xs : List (Fin k), μ xs = ∫⁻ θ, wordProb (k := k) θ xs ∂pi := by
+  exact
+    exists_markovParamLaw_of_markovExchangeable_rowRecurrent_of_prefixRatioApproxENN_builder
+      (k := k)
+      (hLocal := fun μ hμ P hP hExt hStrong => by
+        rcases hLocal μ hμ P hP hExt hStrong with
+          ⟨rowKernel, hEval, hstart, hPi, hcomp⟩
+        refine ⟨rowKernel, hEval, hstart, hPi, ?_⟩
+        intro a b xs
+        rcases hcomp a b xs with ⟨hvisit, hprefixComp, hgraph⟩
+        exact
+          ae_tendsto_prefixRatioApproxENN_of_strongRecurrence_visit_rowProcessCoordwise_components_of_ae_eventually_prefixCompatibleState
+            (k := k) P hStrong rowKernel a b xs hvisit
+            (hRowCoord P hP rowKernel hEval hstart hPi)
+            hprefixComp
+            hgraph)
+      μ hμ hrow
+
+/-- Intrinsic-row-Cesàro markov-parameter builder over the smaller plain
+normalized-Euler seam. As with the Fortini builder above, used-transition
+positivity plus the normalized-Euler limit are enough here; eventual prefix
+compatibility is derived internally rather than supplied at the theorem
+surface. -/
+theorem exists_markovParamLaw_of_markovExchangeable_rowRecurrent_of_visit_rowProcessCoordwise_component_builder_intrinsic_of_prefixThetaPosUsed
     (hRowCoord :
       ∀ (P : Measure (ℕ → Fin k)) (_hP : IsProbabilityMeasure P)
         (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k)),
@@ -9373,7 +15013,7 @@ theorem exists_markovParamLaw_of_markovExchangeable_rowRecurrent_of_visit_rowPro
     ∃ (pi : Measure (MarkovParam k)), IsProbabilityMeasure pi ∧
       ∀ xs : List (Fin k), μ xs = ∫⁻ θ, wordProb (k := k) θ xs ∂pi := by
   exact
-    exists_markovParamLaw_of_markovExchangeable_rowRecurrent_of_visit_rowProcessCoordwise_component_builder
+    exists_markovParamLaw_of_markovExchangeable_rowRecurrent_of_prefixRatioApproxENN_builder
       (k := k)
       (hLocal := fun μ hμ P hP hExt hStrong => by
         rcases hLocal μ hμ P hP hExt hStrong with
@@ -9381,8 +15021,700 @@ theorem exists_markovParamLaw_of_markovExchangeable_rowRecurrent_of_visit_rowPro
         refine ⟨rowKernel, hEval, hstart, hPi, ?_⟩
         intro a b xs
         rcases hcomp a b xs with ⟨hvisit, hΘposUsed, hgraph⟩
-        refine ⟨hvisit, ?_, hΘposUsed, hgraph⟩
-        exact hRowCoord P hP rowKernel hEval hstart hPi)
+        exact
+          ae_tendsto_prefixRatioApproxENN_of_strongRecurrence_visit_rowProcessCoordwise_components
+            (k := k) P hStrong rowKernel a b xs hvisit
+            (hRowCoord P hP rowKernel hEval hstart hPi)
+            hΘposUsed hgraph)
+      μ hμ hrow
+
+theorem exists_markovParamLaw_of_markovExchangeable_rowRecurrent_of_visit_rowProcessCoordwise_component_builder_intrinsic_of_eventually_prefixCompatibleState
+    (hRowCoord :
+      ∀ (P : Measure (ℕ → Fin k)) (_hP : IsProbabilityMeasure P)
+        (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k)),
+          (∀ i : Fin k, ∀ b : Fin k,
+            AEMeasurable
+              (fun r : ℕ → Fin k => (rowKernel i r : Measure (Fin k)) ({b} : Set (Fin k)))
+              (rowProcessLaw (k := k) P i)) →
+          StartRestrictedRowKernelData (k := k) P rowKernel →
+          (∀ i : Fin k,
+            AEMeasurable
+              (fun r : ℕ → Fin k =>
+                Measure.pi (fun _ : Fin 1 => (rowKernel i r : Measure (Fin k))))
+              (rowProcessLaw (k := k) P i)) →
+          RowProcessCoordwiseCesaroLimit (k := k) P rowKernel)
+    (hLocal :
+      ∀ (μ : FiniteAlphabet.PrefixMeasure (Fin k))
+        (_hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
+        (P : Measure (ℕ → Fin k))
+        (_hP : IsProbabilityMeasure P)
+        (_hExt : ∀ xs : List (Fin k), μ xs = P (cylinder (k := k) xs))
+        (_hStrong : StrongRecurrence (k := k) P),
+          ∃ (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k)),
+            (∀ i : Fin k, ∀ b : Fin k,
+              AEMeasurable
+                (fun r : ℕ → Fin k => (rowKernel i r : Measure (Fin k)) ({b} : Set (Fin k)))
+                (rowProcessLaw (k := k) P i)) ∧
+            StartRestrictedRowKernelData (k := k) P rowKernel ∧
+            (∀ i : Fin k,
+              AEMeasurable
+                (fun r : ℕ → Fin k =>
+                  Measure.pi (fun _ : Fin 1 => (rowKernel i r : Measure (Fin k))))
+                (rowProcessLaw (k := k) P i)) ∧
+            (∀ (a b : Fin k) (xs : List (Fin k)),
+              (∀ i : Fin k,
+                ∀ᵐ ω ∂P,
+                  ω 0 = a → ∃ t : ℕ, ω t = i) ∧
+              (∀ᵐ ω ∂P,
+                ω 0 = a →
+                  ∀ᶠ r in Filter.atTop,
+                    prefixCompatibleState (k := k) a (b :: xs) ((b :: xs).length + r)
+                      (Nat.le_add_right (b :: xs).length r)
+                      (pathPrefixState (k := k) ω ((b :: xs).length + r))) ∧
+              (∀ᵐ ω ∂P,
+                ω 0 = a →
+                  Filter.Tendsto
+                    (fun r =>
+                      prefixNormalizedEulerTrailCorrectionRatioReal
+                        (k := k) a (b :: xs) ((b :: xs).length + r)
+                        (Nat.le_add_right (b :: xs).length r)
+                        (pathPrefixState (k := k) ω ((b :: xs).length + r)))
+                    Filter.atTop (nhds (1 : ℝ)))))
+    (μ : FiniteAlphabet.PrefixMeasure (Fin k))
+    (hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
+    (hrow : MarkovRowRecurrentPrefixMeasure (k := k) μ) :
+    ∃ (pi : Measure (MarkovParam k)), IsProbabilityMeasure pi ∧
+      ∀ xs : List (Fin k), μ xs = ∫⁻ θ, wordProb (k := k) θ xs ∂pi := by
+  exact
+    exists_markovParamLaw_of_markovExchangeable_rowRecurrent_of_prefixRatioApproxENN_builder
+      (k := k)
+      (hLocal := fun μ hμ P hP hExt hStrong => by
+        rcases hLocal μ hμ P hP hExt hStrong with
+          ⟨rowKernel, hEval, hstart, hPi, hcomp⟩
+        refine ⟨rowKernel, hEval, hstart, hPi, ?_⟩
+        intro a b xs
+        rcases hcomp a b xs with ⟨hvisit, hprefixComp, hgraph⟩
+        exact
+          ae_tendsto_prefixRatioApproxENN_of_strongRecurrence_visit_rowProcessCoordwise_components_of_ae_eventually_prefixCompatibleState
+            (k := k) P hStrong rowKernel a b xs hvisit
+            (hRowCoord P hP rowKernel hEval hstart hPi) hprefixComp hgraph)
+      μ hμ hrow
+
+theorem exists_markovParamLaw_of_markovExchangeable_rowRecurrent_of_visit_rowProcessCoordwise_component_builder_intrinsic_of_eventually_prefixCompatibleState_of_tendsto_prefixNormalizedBridgeProductReal
+    (hRowCoord :
+      ∀ (P : Measure (ℕ → Fin k)) (_hP : IsProbabilityMeasure P)
+        (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k)),
+          (∀ i : Fin k, ∀ b : Fin k,
+            AEMeasurable
+              (fun r : ℕ → Fin k => (rowKernel i r : Measure (Fin k)) ({b} : Set (Fin k)))
+              (rowProcessLaw (k := k) P i)) →
+          StartRestrictedRowKernelData (k := k) P rowKernel →
+          (∀ i : Fin k,
+            AEMeasurable
+              (fun r : ℕ → Fin k =>
+                Measure.pi (fun _ : Fin 1 => (rowKernel i r : Measure (Fin k))))
+              (rowProcessLaw (k := k) P i)) →
+          RowProcessCoordwiseCesaroLimit (k := k) P rowKernel)
+    (hLocal :
+      ∀ (μ : FiniteAlphabet.PrefixMeasure (Fin k))
+        (_hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
+        (P : Measure (ℕ → Fin k))
+        (_hP : IsProbabilityMeasure P)
+        (_hExt : ∀ xs : List (Fin k), μ xs = P (cylinder (k := k) xs))
+        (_hStrong : StrongRecurrence (k := k) P),
+          ∃ (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k)),
+            (∀ i : Fin k, ∀ b : Fin k,
+              AEMeasurable
+                (fun r : ℕ → Fin k => (rowKernel i r : Measure (Fin k)) ({b} : Set (Fin k)))
+                (rowProcessLaw (k := k) P i)) ∧
+            StartRestrictedRowKernelData (k := k) P rowKernel ∧
+            (∀ i : Fin k,
+              AEMeasurable
+                (fun r : ℕ → Fin k =>
+                  Measure.pi (fun _ : Fin 1 => (rowKernel i r : Measure (Fin k))))
+                (rowProcessLaw (k := k) P i)) ∧
+            (∀ (a b : Fin k) (xs : List (Fin k)),
+              (∀ i : Fin k,
+                ∀ᵐ ω ∂P,
+                  ω 0 = a → ∃ t : ℕ, ω t = i) ∧
+              (∀ᵐ ω ∂P,
+                ω 0 = a →
+                  ∀ᶠ r in Filter.atTop,
+                    prefixCompatibleState (k := k) a (b :: xs) ((b :: xs).length + r)
+                      (Nat.le_add_right (b :: xs).length r)
+                      (pathPrefixState (k := k) ω ((b :: xs).length + r))) ∧
+              (∀ᵐ ω ∂P,
+                ω 0 = a →
+                  Filter.Tendsto
+                    (fun r =>
+                      prefixNormalizedBridgeProductReal
+                        (k := k) a (b :: xs) ((b :: xs).length + r)
+                        (Nat.le_add_right (b :: xs).length r)
+                        (pathPrefixState (k := k) ω ((b :: xs).length + r)))
+                    Filter.atTop (nhds (1 : ℝ)))))
+    (μ : FiniteAlphabet.PrefixMeasure (Fin k))
+    (hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
+    (hrow : MarkovRowRecurrentPrefixMeasure (k := k) μ) :
+    ∃ (pi : Measure (MarkovParam k)), IsProbabilityMeasure pi ∧
+      ∀ xs : List (Fin k), μ xs = ∫⁻ θ, wordProb (k := k) θ xs ∂pi := by
+  exact
+    exists_markovParamLaw_of_markovExchangeable_rowRecurrent_of_prefixRatioApproxENN_builder
+      (k := k)
+      (hLocal := fun μ hμ P hP hExt hStrong => by
+        rcases hLocal μ hμ P hP hExt hStrong with
+          ⟨rowKernel, hEval, hstart, hPi, hcomp⟩
+        refine ⟨rowKernel, hEval, hstart, hPi, ?_⟩
+        intro a b xs
+        rcases hcomp a b xs with ⟨hvisit, hprefixComp, hbridgeNorm⟩
+        exact
+          ae_tendsto_prefixRatioApproxENN_of_strongRecurrence_visit_rowProcessCoordwise_components_of_ae_eventually_prefixCompatibleState_of_ae_tendsto_prefixNormalizedBridgeProductReal
+            (k := k) P hStrong rowKernel a b xs hvisit
+            (hRowCoord P hP rowKernel hEval hstart hPi)
+            hprefixComp hbridgeNorm)
+      μ hμ hrow
+
+theorem exists_markovParamLaw_of_markovExchangeable_rowRecurrent_of_visit_rowProcessCoordwise_component_builder_intrinsic_of_prefixThetaPosUsed_of_pathLocalBridgeCardEqPair_of_eventually_prefixCompatibleState
+    (hRowCoord :
+      ∀ (P : Measure (ℕ → Fin k)) (_hP : IsProbabilityMeasure P)
+        (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k)),
+          (∀ i : Fin k, ∀ b : Fin k,
+            AEMeasurable
+              (fun r : ℕ → Fin k => (rowKernel i r : Measure (Fin k)) ({b} : Set (Fin k)))
+              (rowProcessLaw (k := k) P i)) →
+          StartRestrictedRowKernelData (k := k) P rowKernel →
+          (∀ i : Fin k,
+            AEMeasurable
+              (fun r : ℕ → Fin k =>
+                Measure.pi (fun _ : Fin 1 => (rowKernel i r : Measure (Fin k))))
+              (rowProcessLaw (k := k) P i)) →
+          RowProcessCoordwiseCesaroLimit (k := k) P rowKernel)
+    (hLocal :
+      ∀ (μ : FiniteAlphabet.PrefixMeasure (Fin k))
+        (_hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
+        (P : Measure (ℕ → Fin k))
+        (_hP : IsProbabilityMeasure P)
+        (_hExt : ∀ xs : List (Fin k), μ xs = P (cylinder (k := k) xs))
+        (_hStrong : StrongRecurrence (k := k) P),
+          ∃ (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k)),
+            (∀ i : Fin k, ∀ b : Fin k,
+              AEMeasurable
+                (fun r : ℕ → Fin k => (rowKernel i r : Measure (Fin k)) ({b} : Set (Fin k)))
+                (rowProcessLaw (k := k) P i)) ∧
+            StartRestrictedRowKernelData (k := k) P rowKernel ∧
+            (∀ i : Fin k,
+              AEMeasurable
+                (fun r : ℕ → Fin k =>
+                  Measure.pi (fun _ : Fin 1 => (rowKernel i r : Measure (Fin k))))
+                (rowProcessLaw (k := k) P i)) ∧
+            (∀ (a b : Fin k) (xs : List (Fin k)),
+              (∀ i : Fin k,
+                ∀ᵐ ω ∂P,
+                  ω 0 = a → ∃ t : ℕ, ω t = i) ∧
+              (∀ p ∈ prefixUsedTransitionSet (k := k) a (b :: xs),
+                ∀ᵐ ω ∂P,
+                  ω 0 = a →
+                    0 < rowKernelVisitProbReal (k := k) rowKernel p.1 p.2 ω) ∧
+              (∀ᵐ ω ∂P,
+                ω 0 = a →
+                  ∀ᶠ r in Filter.atTop,
+                    prefixCompatibleState (k := k) a (b :: xs) ((b :: xs).length + r)
+                      (Nat.le_add_right (b :: xs).length r)
+                      (pathPrefixState (k := k) ω ((b :: xs).length + r))) ∧
+              (∀ᵐ ω ∂P,
+                ω 0 = a →
+                  ∀ᶠ r in Filter.atTop,
+                    pathPrefixBridgeCardEqPair (k := k) a (b :: xs) ω r)))
+    (μ : FiniteAlphabet.PrefixMeasure (Fin k))
+    (hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
+    (hrow : MarkovRowRecurrentPrefixMeasure (k := k) μ) :
+    ∃ (pi : Measure (MarkovParam k)), IsProbabilityMeasure pi ∧
+      ∀ xs : List (Fin k), μ xs = ∫⁻ θ, wordProb (k := k) θ xs ∂pi := by
+  exact
+    exists_markovParamLaw_of_markovExchangeable_rowRecurrent_of_visit_rowProcessCoordwise_component_builder_intrinsic_of_prefixThetaPosUsed
+      (k := k)
+      hRowCoord
+      (hLocal := fun μ hμ P hP hExt hStrong => by
+        rcases hLocal μ hμ P hP hExt hStrong with
+          ⟨rowKernel, hEval, hstart, hPi, hcomp⟩
+        refine ⟨rowKernel, hEval, hstart, hPi, ?_⟩
+        intro a b xs
+        rcases hcomp a b xs with ⟨hvisit, hΘposUsed, hprefixComp, hBridgePair⟩
+        refine ⟨hvisit, hΘposUsed, ?_⟩
+        exact
+          ae_tendsto_prefixNormalizedEulerTrailCorrectionRatioReal_shift_of_strongRecurrence_visit_rowProcessCoordwise_components_of_ae_prefixThetaPosUsed_of_ae_pathPrefixBridgeCardEqPair_of_eventually_prefixCompatibleState
+            (k := k) P hStrong rowKernel a b xs hvisit
+            (hRowCoord P hP rowKernel hEval hstart hPi)
+            hΘposUsed hprefixComp hBridgePair)
+      μ hμ hrow
+
+theorem exists_markovParamLaw_of_markovExchangeable_rowRecurrent_of_visit_rowProcessCoordwise_component_builder_intrinsic_of_prefixThetaPosUsed_of_bridge_of_eventually_prefixCompatibleState
+    (hRowCoord :
+      ∀ (P : Measure (ℕ → Fin k)) (_hP : IsProbabilityMeasure P)
+        (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k)),
+          (∀ i : Fin k, ∀ b : Fin k,
+            AEMeasurable
+              (fun r : ℕ → Fin k => (rowKernel i r : Measure (Fin k)) ({b} : Set (Fin k)))
+              (rowProcessLaw (k := k) P i)) →
+          StartRestrictedRowKernelData (k := k) P rowKernel →
+          (∀ i : Fin k,
+            AEMeasurable
+              (fun r : ℕ → Fin k =>
+                Measure.pi (fun _ : Fin 1 => (rowKernel i r : Measure (Fin k))))
+              (rowProcessLaw (k := k) P i)) →
+          RowProcessCoordwiseCesaroLimit (k := k) P rowKernel)
+    (hBridgeCard :
+      ∀ {M : ℕ} {s : MarkovState k},
+        s ∈ stateFinset k M →
+          (eulerTrailFinset (graphOfState s) s.start s.last).card =
+            tokenRootedArborescenceCount (k := k) (graphOfState (k := k) s) s.last *
+              outdegFactorialWeight (k := k) s)
+    (hLocal :
+      ∀ (μ : FiniteAlphabet.PrefixMeasure (Fin k))
+        (_hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
+        (P : Measure (ℕ → Fin k))
+        (_hP : IsProbabilityMeasure P)
+        (_hExt : ∀ xs : List (Fin k), μ xs = P (cylinder (k := k) xs))
+        (_hStrong : StrongRecurrence (k := k) P),
+          ∃ (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k)),
+            (∀ i : Fin k, ∀ b : Fin k,
+              AEMeasurable
+                (fun r : ℕ → Fin k => (rowKernel i r : Measure (Fin k)) ({b} : Set (Fin k)))
+                (rowProcessLaw (k := k) P i)) ∧
+            StartRestrictedRowKernelData (k := k) P rowKernel ∧
+            (∀ i : Fin k,
+              AEMeasurable
+                (fun r : ℕ → Fin k =>
+                  Measure.pi (fun _ : Fin 1 => (rowKernel i r : Measure (Fin k))))
+                (rowProcessLaw (k := k) P i)) ∧
+            (∀ (a b : Fin k) (xs : List (Fin k)),
+              (∀ i : Fin k,
+                ∀ᵐ ω ∂P,
+                  ω 0 = a → ∃ t : ℕ, ω t = i) ∧
+              (∀ p ∈ prefixUsedTransitionSet (k := k) a (b :: xs),
+                ∀ᵐ ω ∂P,
+                  ω 0 = a →
+                    0 < rowKernelVisitProbReal (k := k) rowKernel p.1 p.2 ω) ∧
+              (∀ᵐ ω ∂P,
+                ω 0 = a →
+                  ∀ᶠ r in Filter.atTop,
+                    prefixCompatibleState (k := k) a (b :: xs) ((b :: xs).length + r)
+                      (Nat.le_add_right (b :: xs).length r)
+                      (pathPrefixState (k := k) ω ((b :: xs).length + r)))))
+    (μ : FiniteAlphabet.PrefixMeasure (Fin k))
+    (hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
+    (hrow : MarkovRowRecurrentPrefixMeasure (k := k) μ) :
+    ∃ (pi : Measure (MarkovParam k)), IsProbabilityMeasure pi ∧
+      ∀ xs : List (Fin k), μ xs = ∫⁻ θ, wordProb (k := k) θ xs ∂pi := by
+  exact
+    exists_markovParamLaw_of_markovExchangeable_rowRecurrent_of_visit_rowProcessCoordwise_component_builder_intrinsic_of_prefixThetaPosUsed
+      (k := k)
+      hRowCoord
+      (hLocal := fun μ hμ P hP hExt hStrong => by
+        rcases hLocal μ hμ P hP hExt hStrong with
+          ⟨rowKernel, hEval, hstart, hPi, hcomp⟩
+        refine ⟨rowKernel, hEval, hstart, hPi, ?_⟩
+        intro a b xs
+        rcases hcomp a b xs with ⟨hvisit, hΘposUsed, hprefixComp⟩
+        refine ⟨hvisit, hΘposUsed, ?_⟩
+        exact
+          ae_tendsto_prefixNormalizedEulerTrailCorrectionRatioReal_shift_of_strongRecurrence_visit_rowProcessCoordwise_components_of_ae_prefixThetaPosUsed_of_ae_tokenDeletionSqueeze_of_bridgeCard_of_eventually_prefixCompatibleState
+            (k := k) P hStrong rowKernel a b xs hvisit
+            (hRowCoord P hP rowKernel hEval hstart hPi)
+            hΘposUsed hprefixComp
+            (fun {_M} {_s} hs => hBridgeCard hs))
+      μ hμ hrow
+
+theorem exists_markovParamLaw_of_markovExchangeable_rowRecurrent_of_visit_rowProcessCoordwise_component_builder_intrinsic_of_prefixThetaPosUsed_of_pathLocalPositiveBridgeCardEqPair_of_eventually_prefixCompatibleState
+    (hRowCoord :
+      ∀ (P : Measure (ℕ → Fin k)) (_hP : IsProbabilityMeasure P)
+        (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k)),
+          (∀ i : Fin k, ∀ b : Fin k,
+            AEMeasurable
+              (fun r : ℕ → Fin k => (rowKernel i r : Measure (Fin k)) ({b} : Set (Fin k)))
+              (rowProcessLaw (k := k) P i)) →
+          StartRestrictedRowKernelData (k := k) P rowKernel →
+          (∀ i : Fin k,
+            AEMeasurable
+              (fun r : ℕ → Fin k =>
+                Measure.pi (fun _ : Fin 1 => (rowKernel i r : Measure (Fin k))))
+              (rowProcessLaw (k := k) P i)) →
+          RowProcessCoordwiseCesaroLimit (k := k) P rowKernel)
+    (hLocal :
+      ∀ (μ : FiniteAlphabet.PrefixMeasure (Fin k))
+        (_hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
+        (P : Measure (ℕ → Fin k))
+        (_hP : IsProbabilityMeasure P)
+        (_hExt : ∀ xs : List (Fin k), μ xs = P (cylinder (k := k) xs))
+        (_hStrong : StrongRecurrence (k := k) P),
+          ∃ (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k)),
+            (∀ i : Fin k, ∀ b : Fin k,
+              AEMeasurable
+                (fun r : ℕ → Fin k => (rowKernel i r : Measure (Fin k)) ({b} : Set (Fin k)))
+                (rowProcessLaw (k := k) P i)) ∧
+            StartRestrictedRowKernelData (k := k) P rowKernel ∧
+            (∀ i : Fin k,
+              AEMeasurable
+                (fun r : ℕ → Fin k =>
+                  Measure.pi (fun _ : Fin 1 => (rowKernel i r : Measure (Fin k))))
+                (rowProcessLaw (k := k) P i)) ∧
+            (∀ (a b : Fin k) (xs : List (Fin k)),
+              (∀ i : Fin k,
+                ∀ᵐ ω ∂P,
+                  ω 0 = a → ∃ t : ℕ, ω t = i) ∧
+              (∀ p ∈ prefixUsedTransitionSet (k := k) a (b :: xs),
+                ∀ᵐ ω ∂P,
+                  ω 0 = a →
+                    0 < rowKernelVisitProbReal (k := k) rowKernel p.1 p.2 ω) ∧
+              (∀ᵐ ω ∂P,
+                ω 0 = a →
+                  ∀ᶠ r in Filter.atTop,
+                    prefixCompatibleState (k := k) a (b :: xs) ((b :: xs).length + r)
+                      (Nat.le_add_right (b :: xs).length r)
+                      (pathPrefixState (k := k) ω ((b :: xs).length + r))) ∧
+              (∀ᵐ ω ∂P,
+                ω 0 = a →
+                  ∀ᶠ r in Filter.atTop,
+                    pathPrefixPositiveBridgeCardEqPair (k := k) a (b :: xs) ω r)))
+    (μ : FiniteAlphabet.PrefixMeasure (Fin k))
+    (hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
+    (hrow : MarkovRowRecurrentPrefixMeasure (k := k) μ) :
+    ∃ (pi : Measure (MarkovParam k)), IsProbabilityMeasure pi ∧
+      ∀ xs : List (Fin k), μ xs = ∫⁻ θ, wordProb (k := k) θ xs ∂pi := by
+  exact
+    exists_markovParamLaw_of_markovExchangeable_rowRecurrent_of_visit_rowProcessCoordwise_component_builder_intrinsic_of_prefixThetaPosUsed
+      (k := k)
+      hRowCoord
+      (hLocal := fun μ hμ P hP hExt hStrong => by
+        rcases hLocal μ hμ P hP hExt hStrong with
+          ⟨rowKernel, hEval, hstart, hPi, hcomp⟩
+        refine ⟨rowKernel, hEval, hstart, hPi, ?_⟩
+        intro a b xs
+        rcases hcomp a b xs with ⟨hvisit, hΘposUsed, hprefixComp, hBridgePair⟩
+        refine ⟨hvisit, hΘposUsed, ?_⟩
+        exact
+          ae_tendsto_prefixNormalizedEulerTrailCorrectionRatioReal_shift_of_strongRecurrence_visit_rowProcessCoordwise_components_of_ae_prefixThetaPosUsed_of_ae_pathPrefixPositiveBridgeCardEqPair_of_eventually_prefixCompatibleState
+            (k := k) P hStrong rowKernel a b xs hvisit
+            (hRowCoord P hP rowKernel hEval hstart hPi)
+            hΘposUsed hprefixComp hBridgePair)
+      μ hμ hrow
+
+/-- Support-local bridge-facing row-recurrent compatibility wrapper. The
+stronger no-extra-ratio path-local support-local route already exists, so this
+older interface now factors through it by deriving eventual prefix
+compatibility from the induced normalized-Euler limit. -/
+theorem exists_markovParamLaw_of_markovExchangeable_rowRecurrent_of_visit_rowProcessCoordwise_component_builder_intrinsic_of_prefixThetaPosUsed_of_tendsto_prefixPositiveTokenRootedArborescenceRatioReal_of_pathLocalPositiveBridgeCardEqPair
+    (hRowCoord :
+      ∀ (P : Measure (ℕ → Fin k)) (_hP : IsProbabilityMeasure P)
+        (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k)),
+          (∀ i : Fin k, ∀ b : Fin k,
+            AEMeasurable
+              (fun r : ℕ → Fin k => (rowKernel i r : Measure (Fin k)) ({b} : Set (Fin k)))
+              (rowProcessLaw (k := k) P i)) →
+          StartRestrictedRowKernelData (k := k) P rowKernel →
+          (∀ i : Fin k,
+            AEMeasurable
+              (fun r : ℕ → Fin k =>
+                Measure.pi (fun _ : Fin 1 => (rowKernel i r : Measure (Fin k))))
+              (rowProcessLaw (k := k) P i)) →
+          RowProcessCoordwiseCesaroLimit (k := k) P rowKernel)
+    (hLocal :
+      ∀ (μ : FiniteAlphabet.PrefixMeasure (Fin k))
+        (_hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
+        (P : Measure (ℕ → Fin k))
+        (_hP : IsProbabilityMeasure P)
+        (_hExt : ∀ xs : List (Fin k), μ xs = P (cylinder (k := k) xs))
+        (_hStrong : StrongRecurrence (k := k) P),
+          ∃ (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k)),
+            (∀ i : Fin k, ∀ b : Fin k,
+              AEMeasurable
+                (fun r : ℕ → Fin k => (rowKernel i r : Measure (Fin k)) ({b} : Set (Fin k)))
+                (rowProcessLaw (k := k) P i)) ∧
+            StartRestrictedRowKernelData (k := k) P rowKernel ∧
+            (∀ i : Fin k,
+              AEMeasurable
+                (fun r : ℕ → Fin k =>
+                  Measure.pi (fun _ : Fin 1 => (rowKernel i r : Measure (Fin k))))
+                (rowProcessLaw (k := k) P i)) ∧
+            (∀ (a b : Fin k) (xs : List (Fin k)),
+              (∀ i : Fin k,
+                ∀ᵐ ω ∂P,
+                  ω 0 = a → ∃ t : ℕ, ω t = i) ∧
+              (∀ p ∈ prefixUsedTransitionSet (k := k) a (b :: xs),
+                ∀ᵐ ω ∂P,
+                  ω 0 = a →
+                    0 < rowKernelVisitProbReal (k := k) rowKernel p.1 p.2 ω) ∧
+              (∀ᵐ ω ∂P,
+                ω 0 = a →
+                  ∀ᶠ r in Filter.atTop,
+                    pathPrefixPositiveBridgeCardEqPair (k := k) a (b :: xs) ω r) ∧
+              (∀ᵐ ω ∂P,
+                ω 0 = a →
+                  Filter.Tendsto
+                    (fun r =>
+                      prefixPositiveTokenRootedArborescenceRatioReal
+                        (k := k) a (b :: xs) ((b :: xs).length + r)
+                        (Nat.le_add_right (b :: xs).length r)
+                        (pathPrefixState (k := k) ω ((b :: xs).length + r)))
+                    Filter.atTop (nhds (1 : ℝ)))))
+    (μ : FiniteAlphabet.PrefixMeasure (Fin k))
+    (hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
+    (hrow : MarkovRowRecurrentPrefixMeasure (k := k) μ) :
+    ∃ (pi : Measure (MarkovParam k)), IsProbabilityMeasure pi ∧
+      ∀ xs : List (Fin k), μ xs = ∫⁻ θ, wordProb (k := k) θ xs ∂pi := by
+  exact
+    exists_markovParamLaw_of_markovExchangeable_rowRecurrent_of_visit_rowProcessCoordwise_component_builder_intrinsic_of_prefixThetaPosUsed_of_pathLocalPositiveBridgeCardEqPair_of_eventually_prefixCompatibleState
+      (k := k) hRowCoord
+      (hLocal := fun μ hμ P hP hExt hStrong => by
+        rcases hLocal μ hμ P hP hExt hStrong with
+          ⟨rowKernel, hEval, hstart, hPi, hcomp⟩
+        refine ⟨rowKernel, hEval, hstart, hPi, ?_⟩
+        intro a b xs
+        rcases hcomp a b xs with ⟨hvisit, hΘposUsed, hBridgePair, htokPos⟩
+        have hgraph :
+            ∀ᵐ ω ∂P,
+              ω 0 = a →
+                Filter.Tendsto
+                  (fun r =>
+                    prefixNormalizedEulerTrailCorrectionRatioReal
+                      (k := k) a (b :: xs) ((b :: xs).length + r)
+                      (Nat.le_add_right (b :: xs).length r)
+                      (pathPrefixState (k := k) ω ((b :: xs).length + r)))
+                  Filter.atTop (nhds (1 : ℝ)) :=
+          ae_tendsto_prefixNormalizedEulerTrailCorrectionRatioReal_shift_of_ae_tendsto_prefixPositiveTokenRootedArborescenceRatioReal_of_ae_pathPrefixPositiveBridgeCardEqPair
+            (k := k) P a (b :: xs) hBridgePair htokPos
+        have hprefixComp :
+            ∀ᵐ ω ∂P,
+              ω 0 = a →
+                ∀ᶠ r in Filter.atTop,
+                  prefixCompatibleState (k := k) a (b :: xs) ((b :: xs).length + r)
+                    (Nat.le_add_right (b :: xs).length r)
+                    (pathPrefixState (k := k) ω ((b :: xs).length + r)) :=
+          ae_eventually_prefixCompatibleState_pathPrefixState_of_strongRecurrence_visit_rowProcessCoordwise_components_of_ae_prefixThetaPosUsed_of_ae_tendsto_prefixNormalizedEulerTrailCorrectionRatioReal
+            (k := k) P hStrong rowKernel a b xs hvisit
+            (hRowCoord P hP rowKernel hEval hstart hPi)
+            hΘposUsed hgraph
+        exact ⟨hvisit, hΘposUsed, hprefixComp, hBridgePair⟩)
+      μ hμ hrow
+
+theorem exists_markovParamLaw_of_markovExchangeable_rowRecurrent_of_visit_rowProcessCoordwise_component_builder_intrinsic_of_prefixThetaPosUsed_of_tendsto_prefixPositiveTokenRootedArborescenceRatioReal_of_positiveBridge_of_eventually_prefixCompatibleState
+    (hRowCoord :
+      ∀ (P : Measure (ℕ → Fin k)) (_hP : IsProbabilityMeasure P)
+        (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k)),
+          (∀ i : Fin k, ∀ b : Fin k,
+            AEMeasurable
+              (fun r : ℕ → Fin k => (rowKernel i r : Measure (Fin k)) ({b} : Set (Fin k)))
+              (rowProcessLaw (k := k) P i)) →
+          StartRestrictedRowKernelData (k := k) P rowKernel →
+          (∀ i : Fin k,
+            AEMeasurable
+              (fun r : ℕ → Fin k =>
+                Measure.pi (fun _ : Fin 1 => (rowKernel i r : Measure (Fin k))))
+              (rowProcessLaw (k := k) P i)) →
+          RowProcessCoordwiseCesaroLimit (k := k) P rowKernel)
+    (hPositiveBridgeCard :
+      ∀ {M : ℕ} {s : MarkovState k},
+        s ∈ stateFinset k M →
+          positiveTokenRootedBridgeCardEq (k := k) s)
+    (hLocal :
+      ∀ (μ : FiniteAlphabet.PrefixMeasure (Fin k))
+        (_hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
+        (P : Measure (ℕ → Fin k))
+        (_hP : IsProbabilityMeasure P)
+        (_hExt : ∀ xs : List (Fin k), μ xs = P (cylinder (k := k) xs))
+        (_hStrong : StrongRecurrence (k := k) P),
+          ∃ (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k)),
+            (∀ i : Fin k, ∀ b : Fin k,
+              AEMeasurable
+                (fun r : ℕ → Fin k => (rowKernel i r : Measure (Fin k)) ({b} : Set (Fin k)))
+                (rowProcessLaw (k := k) P i)) ∧
+            StartRestrictedRowKernelData (k := k) P rowKernel ∧
+            (∀ i : Fin k,
+              AEMeasurable
+                (fun r : ℕ → Fin k =>
+                  Measure.pi (fun _ : Fin 1 => (rowKernel i r : Measure (Fin k))))
+                (rowProcessLaw (k := k) P i)) ∧
+            (∀ (a b : Fin k) (xs : List (Fin k)),
+              (∀ i : Fin k,
+                ∀ᵐ ω ∂P,
+                  ω 0 = a → ∃ t : ℕ, ω t = i) ∧
+              (∀ p ∈ prefixUsedTransitionSet (k := k) a (b :: xs),
+                ∀ᵐ ω ∂P,
+                  ω 0 = a →
+                    0 < rowKernelVisitProbReal (k := k) rowKernel p.1 p.2 ω) ∧
+              (∀ᵐ ω ∂P,
+                ω 0 = a →
+                  ∀ᶠ r in Filter.atTop,
+                    prefixCompatibleState (k := k) a (b :: xs) ((b :: xs).length + r)
+                      (Nat.le_add_right (b :: xs).length r)
+                      (pathPrefixState (k := k) ω ((b :: xs).length + r))) ∧
+              (∀ᵐ ω ∂P,
+                ω 0 = a →
+                  Filter.Tendsto
+                    (fun r =>
+                      prefixPositiveTokenRootedArborescenceRatioReal
+                        (k := k) a (b :: xs) ((b :: xs).length + r)
+                        (Nat.le_add_right (b :: xs).length r)
+                        (pathPrefixState (k := k) ω ((b :: xs).length + r)))
+                    Filter.atTop (nhds (1 : ℝ)))))
+    (μ : FiniteAlphabet.PrefixMeasure (Fin k))
+    (hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
+    (hrow : MarkovRowRecurrentPrefixMeasure (k := k) μ) :
+    ∃ (pi : Measure (MarkovParam k)), IsProbabilityMeasure pi ∧
+      ∀ xs : List (Fin k), μ xs = ∫⁻ θ, wordProb (k := k) θ xs ∂pi := by
+  exact
+    exists_markovParamLaw_of_markovExchangeable_rowRecurrent_of_prefixRatioApproxENN_builder
+      (k := k)
+      (hLocal := fun μ hμ P hP hExt hStrong => by
+        rcases hLocal μ hμ P hP hExt hStrong with
+          ⟨rowKernel, hEval, hstart, hPi, hcomp⟩
+        refine ⟨rowKernel, hEval, hstart, hPi, ?_⟩
+        intro a b xs
+        rcases hcomp a b xs with ⟨hvisit, hΘposUsed, hprefixComp, _htokPos⟩
+        exact
+          ae_tendsto_prefixRatioApproxENN_of_strongRecurrence_visit_rowProcessCoordwise_components_of_ae_prefixThetaPosUsed_of_positiveBridge_of_eventually_prefixCompatibleState_via_supportSplit
+            (k := k) P hStrong rowKernel a b xs hvisit
+            (hRowCoord P hP rowKernel hEval hstart hPi)
+            hΘposUsed hprefixComp
+            (fun {_M} {_s} hs => hPositiveBridgeCard hs))
+      μ hμ hrow
+
+theorem exists_markovParamLaw_of_markovExchangeable_rowRecurrent_of_visit_rowProcessCoordwise_component_builder_intrinsic_of_prefixThetaPosUsed_of_positiveBridge_of_eventually_prefixCompatibleState
+    (hRowCoord :
+      ∀ (P : Measure (ℕ → Fin k)) (_hP : IsProbabilityMeasure P)
+        (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k)),
+          (∀ i : Fin k, ∀ b : Fin k,
+            AEMeasurable
+              (fun r : ℕ → Fin k => (rowKernel i r : Measure (Fin k)) ({b} : Set (Fin k)))
+              (rowProcessLaw (k := k) P i)) →
+          StartRestrictedRowKernelData (k := k) P rowKernel →
+          (∀ i : Fin k,
+            AEMeasurable
+              (fun r : ℕ → Fin k =>
+                Measure.pi (fun _ : Fin 1 => (rowKernel i r : Measure (Fin k))))
+              (rowProcessLaw (k := k) P i)) →
+          RowProcessCoordwiseCesaroLimit (k := k) P rowKernel)
+    (hPositiveBridgeCard :
+      ∀ {M : ℕ} {s : MarkovState k},
+        s ∈ stateFinset k M →
+          positiveTokenRootedBridgeCardEq (k := k) s)
+    (hLocal :
+      ∀ (μ : FiniteAlphabet.PrefixMeasure (Fin k))
+        (_hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
+        (P : Measure (ℕ → Fin k))
+        (_hP : IsProbabilityMeasure P)
+        (_hExt : ∀ xs : List (Fin k), μ xs = P (cylinder (k := k) xs))
+        (_hStrong : StrongRecurrence (k := k) P),
+          ∃ (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k)),
+            (∀ i : Fin k, ∀ b : Fin k,
+              AEMeasurable
+                (fun r : ℕ → Fin k => (rowKernel i r : Measure (Fin k)) ({b} : Set (Fin k)))
+                (rowProcessLaw (k := k) P i)) ∧
+            StartRestrictedRowKernelData (k := k) P rowKernel ∧
+            (∀ i : Fin k,
+              AEMeasurable
+                (fun r : ℕ → Fin k =>
+                  Measure.pi (fun _ : Fin 1 => (rowKernel i r : Measure (Fin k))))
+                (rowProcessLaw (k := k) P i)) ∧
+            (∀ (a b : Fin k) (xs : List (Fin k)),
+              (∀ i : Fin k,
+                ∀ᵐ ω ∂P,
+                  ω 0 = a → ∃ t : ℕ, ω t = i) ∧
+              (∀ p ∈ prefixUsedTransitionSet (k := k) a (b :: xs),
+                ∀ᵐ ω ∂P,
+                  ω 0 = a →
+                    0 < rowKernelVisitProbReal (k := k) rowKernel p.1 p.2 ω) ∧
+              (∀ᵐ ω ∂P,
+                ω 0 = a →
+                  ∀ᶠ r in Filter.atTop,
+                    prefixCompatibleState (k := k) a (b :: xs) ((b :: xs).length + r)
+                      (Nat.le_add_right (b :: xs).length r)
+                      (pathPrefixState (k := k) ω ((b :: xs).length + r)))))
+    (μ : FiniteAlphabet.PrefixMeasure (Fin k))
+    (hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
+    (hrow : MarkovRowRecurrentPrefixMeasure (k := k) μ) :
+    ∃ (pi : Measure (MarkovParam k)), IsProbabilityMeasure pi ∧
+      ∀ xs : List (Fin k), μ xs = ∫⁻ θ, wordProb (k := k) θ xs ∂pi := by
+  exact
+    exists_markovParamLaw_of_markovExchangeable_rowRecurrent_of_visit_rowProcessCoordwise_component_builder_intrinsic_of_prefixThetaPosUsed
+      (k := k) hRowCoord
+      (hLocal := fun μ hμ P hP hExt hStrong => by
+        rcases hLocal μ hμ P hP hExt hStrong with
+          ⟨rowKernel, hEval, hstart, hPi, hcomp⟩
+        refine ⟨rowKernel, hEval, hstart, hPi, ?_⟩
+        intro a b xs
+        rcases hcomp a b xs with ⟨hvisit, hΘposUsed, hprefixComp⟩
+        refine ⟨hvisit, hΘposUsed, ?_⟩
+        exact
+          ae_tendsto_prefixNormalizedEulerTrailCorrectionRatioReal_shift_of_strongRecurrence_visit_rowProcessCoordwise_components_of_ae_prefixThetaPosUsed_of_positiveBridge_of_eventually_prefixCompatibleState
+            (k := k) P hStrong rowKernel a b xs hvisit
+            (hRowCoord P hP rowKernel hEval hstart hPi)
+            hΘposUsed hprefixComp
+            (fun {_M} {_s} hs => hPositiveBridgeCard hs))
+      μ hμ hrow
+
+theorem exists_markovParamLaw_of_markovExchangeable_rowRecurrent_of_visit_rowProcessCoordwise_component_builder_intrinsic_of_tokenDeletionSqueeze_of_bridge_of_eventually_prefixCompatibleState
+    (hRowCoord :
+      ∀ (P : Measure (ℕ → Fin k)) (_hP : IsProbabilityMeasure P)
+        (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k)),
+          (∀ i : Fin k, ∀ b : Fin k,
+            AEMeasurable
+              (fun r : ℕ → Fin k => (rowKernel i r : Measure (Fin k)) ({b} : Set (Fin k)))
+              (rowProcessLaw (k := k) P i)) →
+          StartRestrictedRowKernelData (k := k) P rowKernel →
+          (∀ i : Fin k,
+            AEMeasurable
+              (fun r : ℕ → Fin k =>
+                Measure.pi (fun _ : Fin 1 => (rowKernel i r : Measure (Fin k))))
+              (rowProcessLaw (k := k) P i)) →
+          RowProcessCoordwiseCesaroLimit (k := k) P rowKernel)
+    (hBridgeCard :
+      ∀ {M : ℕ} {s : MarkovState k},
+        s ∈ stateFinset k M →
+          (eulerTrailFinset (graphOfState s) s.start s.last).card =
+            tokenRootedArborescenceCount (k := k) (graphOfState (k := k) s) s.last *
+              outdegFactorialWeight (k := k) s)
+    (hLocal :
+      ∀ (μ : FiniteAlphabet.PrefixMeasure (Fin k))
+        (_hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
+        (P : Measure (ℕ → Fin k))
+        (_hP : IsProbabilityMeasure P)
+        (_hExt : ∀ xs : List (Fin k), μ xs = P (cylinder (k := k) xs))
+        (_hStrong : StrongRecurrence (k := k) P),
+          ∃ (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k)),
+            (∀ i : Fin k, ∀ b : Fin k,
+              AEMeasurable
+                (fun r : ℕ → Fin k => (rowKernel i r : Measure (Fin k)) ({b} : Set (Fin k)))
+                (rowProcessLaw (k := k) P i)) ∧
+            StartRestrictedRowKernelData (k := k) P rowKernel ∧
+            (∀ i : Fin k,
+              AEMeasurable
+                (fun r : ℕ → Fin k =>
+                  Measure.pi (fun _ : Fin 1 => (rowKernel i r : Measure (Fin k))))
+                (rowProcessLaw (k := k) P i)) ∧
+            (∀ (a b : Fin k) (xs : List (Fin k)),
+              (∀ i : Fin k,
+                ∀ᵐ ω ∂P,
+                  ω 0 = a → ∃ t : ℕ, ω t = i) ∧
+              (∀ p ∈ prefixUsedTransitionSet (k := k) a (b :: xs),
+                ∀ᵐ ω ∂P,
+                  ω 0 = a →
+                    0 < rowKernelVisitProbReal (k := k) rowKernel p.1 p.2 ω) ∧
+              (∀ᵐ ω ∂P,
+                ω 0 = a →
+                  ∀ᶠ r in Filter.atTop,
+                    prefixCompatibleState (k := k) a (b :: xs) ((b :: xs).length + r)
+                      (Nat.le_add_right (b :: xs).length r)
+                      (pathPrefixState (k := k) ω ((b :: xs).length + r)))))
+    (μ : FiniteAlphabet.PrefixMeasure (Fin k))
+    (hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
+    (hrow : MarkovRowRecurrentPrefixMeasure (k := k) μ) :
+    ∃ (pi : Measure (MarkovParam k)), IsProbabilityMeasure pi ∧
+      ∀ xs : List (Fin k), μ xs = ∫⁻ θ, wordProb (k := k) θ xs ∂pi := by
+  exact
+    exists_markovParamLaw_of_markovExchangeable_rowRecurrent_of_visit_rowProcessCoordwise_component_builder_intrinsic_of_prefixThetaPosUsed_of_bridge_of_eventually_prefixCompatibleState
+      (k := k) hRowCoord hBridgeCard
+      (hLocal := fun μ hμ P hP hExt hStrong => by
+        exact hLocal μ hμ P hP hExt hStrong)
       μ hμ hrow
 
 theorem exists_markovParamLaw_of_markovExchangeable_rowRecurrent_of_infiniteVisits_rowProcess_component_builder
@@ -9535,9 +15867,155 @@ What remains sound and usable here:
 - the builder-level composition into `BuiltRowKernelOnExtension` and the public
   recurrent Fortini theorem path
 
-What still remains open is the local extension-level convergence builder: derive
-the almost-sure limit of `prefixRatioApproxENN` from the normalized
-Euler-trail-correction analysis and the row-kernel asymptotics, without
-assuming that limit as an input. -/
+What still remains open is the larger local extension-level builder package:
+the supported-vs-unsupported prefix split is now explicit at both the pointwise
+and AE levels, and eventual prefix compatibility is now derived from the
+strong-recurrence / row-Cesàro / finite-used-transition-positivity package once
+the normalized-Euler correction limit is supplied. The main intrinsic public
+Fortini / markov-parameter routes now also use that smaller seam: there is now
+a plain intrinsic public route stated directly over finite-used-transition
+positivity plus the normalized-Euler limit, with eventual prefix compatibility
+derived internally, and there are also smaller eventual-compatibility-facing
+routes over either the normalized-Euler limit or, more intrinsically, the
+normalized bridge-product limit. The live remaining seam is therefore the
+intrinsic source of that local convergence input itself. There is now also a
+public route that avoids an external `hgraph` hypothesis by deriving the
+normalized-Euler limit internally from used-transition positivity, the
+token-deletion squeeze, and the specialized bridge theorem; on the support-
+local side, once that `hgraph` input is available the strong-recurrence
+`prefixRatioApproxENN` route now explicitly factors through the general
+supported-vs-unsupported split instead of carrying a separate specialized
+endgame, and the support-local Fortini / markov-parameter builders now factor
+through the plain intrinsic `hΘposUsed + hgraph` seam once their bridge data
+has produced that local convergence input. The older token-rooted path-local
+and global bridge-facing Fortini / markov-parameter builders now also derive
+that local convergence input and then reuse the same plain intrinsic
+`hΘposUsed + hgraph` seam instead of standing as parallel public proof lanes.
+At the public builder surface, that bridge input is now exposed in the more concrete finite
+cardinality form saying that `eulerTrailFinset.card` equals the token-rooted
+arborescence count times the outdegree-factorial weight. More sharply, the
+public bridge-based route can now be phrased using only the eventual full and
+residual path-prefix instances of that exact bridge-cardinality identity,
+rather than a global all-states bridge assumption. The new obstruction theorems
+`not_tokenRootedBridgeCardEq_of_exists_nonroot_zero_row_of_mem_stateFinset`
+and
+`not_tokenRootedBridgeCardEq_of_exists_nonroot_outdeg_zero_of_mem_stateFinset`
+show why that sharpening matters: on a state in `stateFinset`, the exact
+bridge-cardinality identity cannot hold as soon as a non-root vertex becomes
+dormant, because the Euler-trail count is still positive while the all-vertices
+token-rooted arborescence count collapses to zero. The new state-balance
+lemmas `inDegG_eq_zero_of_outdeg_eq_zero_of_mem_stateFinset`,
+`start_ne_of_outdeg_eq_zero_of_mem_stateFinset`, and
+`graphOfState_col_eq_zero_of_outdeg_eq_zero_of_mem_stateFinset` sharpen that
+picture further: in an actual evidence state, a dormant non-root row has no
+incoming edges either and cannot be the start vertex. So the remaining gap is
+not merely to "prove the old global theorem"; it is to internalize the right
+support-local finite bridge-cardinality source itself.
+The file originally named that replacement target as
+`positiveTokenRootedBridgeCardEq`, built from
+`positiveTokenRootedArborescenceCount`, where dormant non-root rows are removed
+from the rooted-arborescence domain. The permanent theorem
+`positiveTokenRootedBridgeCardEq_false_on_counterexample_0101` now shows that
+this support-local bridge still uses the wrong normalization: the full
+`outdegFactorialWeight` double-counts parent-edge copy choices already present
+in `positiveTokenRootedArborescenceCount`. The live conjectural replacement is
+the same cardinality identity with `positiveTokenRootedBestWeight` instead of
+`outdegFactorialWeight`. Consequently the normalized-Euler bridge layer is now
+best read as legacy transport scaffolding around a refuted normalization, not
+as a closable endgame for the direct route. What still remains is to rebuild
+that transport stack around the corrected BEST weight, prove the genuine
+support-local BEST theorem for the corrected normalization, and only then
+finish the cleanup of any residual wrapper stack so the recurrent Fortini path
+depends on row-kernel asymptotics plus true local combinatorics rather than on
+a residual `hLocal` bundle. The comparison theorem
+`positiveTokenRootedArborescenceCount_eq_tokenRootedArborescenceCount_of_forall_pos`
+still shows that the support-local count object itself is conservative on
+states where every non-root row is active: in that case the support-local and
+old all-vertices rooted counts coincide exactly. The new ratio-transport lemmas
+`prefixPositiveTokenRootedArborescenceRatio_eq_prefixTokenRootedArborescenceRatio_of_forall_pos`
+and
+`tendsto_prefixPositiveTokenRootedArborescenceRatioReal_of_tendsto_prefixTokenRootedArborescenceRatioReal_of_eventually_prefixCompatibleState_of_tendsto_outdeg`
+push that conservativity further up the stack: once path-prefix outdegrees are
+eventually strictly larger than the finite prefix outdegrees, the support-local
+arborescence ratio is eventually equal to the old token-rooted ratio and hence
+inherits its `→ 1` limit. Those transport results still matter for the future
+corrected route, but not as evidence that the legacy bridge predicate itself is
+salvageable. At
+the opposite extreme, the new finite lemmas
+`positiveWeightedTargetRootedArborescenceCount_eq_one_of_forall_nonroot_outdeg_zero`,
+`positiveTokenRootedArborescenceCount_eq_one_of_forall_nonroot_outdeg_zero`,
+and
+`positiveTokenRootedBridgeCardEq_iff_card_eq_outdegFactorialWeight_of_forall_nonroot_outdeg_zero`
+also settle the completely dormant non-root regime exactly: there the
+support-local rooted-arborescence count is `1`, so the support-local bridge
+equation reduces to a bare Euler-trail/cardinality identity. So the live
+finite support-local bridge seam is now the genuinely mixed case, with some
+active non-root rows and some dormant ones. The new support-local transport
+lemmas
+`positiveTokenRootedArborescenceCount_congr_nonroot_rows`,
+`positiveTokenRootedArborescenceCount_residualStateOfPrefix_eq_deleteCopies_prefixNonrootDeletionList`,
+and
+`prefixPositiveTokenRootedArborescenceRatio_eq_deleteCopies_prefixNonroot_ratio`
+also mean that this mixed seam is no longer "just" a new count object: the
+support-local rooted count and its prefix ratio now satisfy the same exact
+residual/delete-copies finite rewrite pattern that the old token-rooted route
+used. The new active-source transport lemmas
+`positiveNonrootVertexEquiv_deleteOneCopy_of_source_stays_positive`,
+`positiveTargetParentStep_eq_deleteOneCopy_of_source_stays_positive`, and
+`isPositiveTargetRootedArborescence_iff_deleteOneCopy_of_source_stays_positive`
+push that one step further: in the mixed case branch where deleting one copy
+does not extinguish the source row, the active support and rootedness data now
+transport exactly across `deleteOneCopy`. The new weighted rewrite
+`positiveWeightedTargetRootedArborescenceCount_deleteOneCopy_eq_transportSum_of_source_stays_positive`
+then lifts that transport to the support-local finite counting surface itself:
+in the same active-source branch, the delete-one-copy weighted count is now
+literally a sum over the original rooted support-local assignments with the
+updated edge multiplicities substituted into each term. The new active-source
+lower inequality
+`positiveWeightedTargetRootedArborescenceCount_deleteOneCopy_lower_of_source_stays_positive`
+shows that this branch is no longer just a transport statement: it already has
+the exact one-copy multiplicative lower bound needed for the deletion-squeeze
+route, as long as the deleted source row stays active. And the new full
+one-copy support-local lower theorem
+`positiveWeightedTargetRootedArborescenceCount_deleteOneCopy_lower`, together
+with its token-level corollary
+`positiveTokenRootedArborescenceCount_deleteOneCopy_lower`, now folds in the
+complementary branch where the deleted source row goes dormant by showing that
+the deleted multiplicity factor itself collapses to `0` there. So the
+support-local finite deletion engine is now present one level higher too:
+`positiveTokenRootedArborescenceCount_deleteCopies_lower` lifts that one-copy
+support-local lower theorem through the full `deleteCopies` induction. So the
+support-local finite deletion engine is no longer stranded below the prefix
+ratio layer either: the new lemmas
+`prefixTokenDeletionLowerNumerator_mul_positiveFull_le_denominator_mul_positiveResidual`
+and
+`prefixTokenDeletionLowerFactor_le_prefixPositiveTokenRootedArborescenceRatio_of_prefixCompatibleState_of_positiveBridgeCardEq`,
+together with their AE path-local support-local transport
+`ae_eventually_prefixTokenDeletionLowerFactorReal_le_prefixPositiveTokenRootedArborescenceRatioReal_shift_of_ae_pathPrefixPositiveBridgeCardEqPair_of_eventually_prefixCompatibleState`,
+show that the same concrete lower factor now feeds directly into the
+support-local prefix ratio whenever the full path-prefix bridge-cardinality
+input is available. So the remaining mixed support-local gap is narrower than
+before: it is to prove the mixed-case BEST-style bridge theorem and the
+matching intrinsic support-local asymptotic route on top of that
+now-internalized delete-copies exactness, rather than to recover the
+residual-state combinatorics from scratch.
 
+The new bridge-transport theorem
+`ae_eventually_pathPrefixBridgeCardEqPair_of_globalPositiveBridgeCard_of_eventually_prefixCompatibleState_of_ae_tendsto_outdeg`
+pushes that same fully-active reduction to the lower convergence layer too:
+from a global support-local bridge theorem, eventual prefix compatibility, and
+the intrinsic outdegree-growth route from strong recurrence, the file now
+recovers the old path-local bridge data automatically on eventual path
+prefixes. As a result, the support-local positive-bridge seam now reaches the
+normalized-Euler limit directly at both the path-local and global AE layers,
+and the strong-recurrence AE convergence theorem plus both the path-local and
+global-support-local public Fortini / markov-parameter builder routes no
+longer need a separate external support-local arborescence-ratio limit input.
+So the remaining support-local asymptotic gap is now isolated even more
+sharply to the dormant-row case itself, together with the finite support-local
+BEST-style theorem. The global support-local public routes also now factor
+through the path-local support-local builders instead of maintaining a separate
+parallel proof stack, and the older path-local/global support-local
+ratio-limit-flavored compatibility wrappers now route through those smaller
+no-extra-ratio support-local seams rather than carrying distinct proof paths. -/
 end Mettapedia.Logic.MarkovDeFinettiHard

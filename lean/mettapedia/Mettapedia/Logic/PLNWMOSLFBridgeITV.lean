@@ -163,6 +163,63 @@ theorem wmRewriteRuleSigma_itv_threshold_atom
     itvSem ctx r hSide W queryOfAtom a p hEnc]
   exact hTau
 
+/-- Proof-carrying context-indexed ITV-coordinate threshold consequence.
+The first component is the WM context judgment; the second is the OSLF atom
+truth for the same typed rewrite rule and threshold coordinate. -/
+theorem wmRewriteRuleSigma_itv_threshold_atom_ctx_package
+    (R : Pattern → Pattern → Prop)
+    (itvSem : ITVSemantics Ctx) (ctx : Ctx)
+    (tau : ℝ) (coord : ITVCoord)
+    (r : WorldModelSigma.WMRewriteRuleSigma State Srt Query)
+    (hSide : r.side) {Γ : Set State} {W : State}
+    (queryOfAtom : String → Pattern → Sigma Query)
+    (a : String) (p : Pattern)
+    (hEnc : queryOfAtom a p = r.conclusion)
+    (hTau : tau ≤ coord (itvSem.eval ctx (r.derive W)))
+    (hW : WMJudgmentCtx Γ W) :
+    WorldModelSigma.WMITVThresholdJudgmentCtxSigma
+      (State := State) (Srt := Srt) (Query := Query) (Ctx := Ctx)
+      itvSem ctx Γ W r.conclusion coord tau ∧
+      sem R
+        (thresholdAtomSemOfWMITVQSigma
+          (State := State) (Srt := Srt) (Query := Query) (Ctx := Ctx)
+          itvSem ctx W tau coord queryOfAtom)
+        (.atom a) p := by
+  exact ⟨
+    WorldModelSigma.WMRewriteRuleSigma.applyITVThresholdCtx
+      (State := State) (Srt := Srt) (Query := Query) (Ctx := Ctx)
+      itvSem ctx coord tau hSide hW hTau,
+    wmRewriteRuleSigma_itv_threshold_atom
+      (State := State) (Srt := Srt) (Query := Query) (Ctx := Ctx)
+      R itvSem ctx tau coord r hSide W queryOfAtom a p hEnc hTau⟩
+
+/-- Union-context version of the proof-carrying ITV threshold package.
+The revised state `W₁ + W₂` is justified by the union of the two source
+contexts before exposing the threshold atom truth. -/
+theorem wmRewriteRuleSigma_itv_threshold_atom_ctx_union_package
+    (R : Pattern → Pattern → Prop)
+    (itvSem : ITVSemantics Ctx) (ctx : Ctx)
+    (tau : ℝ) (coord : ITVCoord)
+    (r : WorldModelSigma.WMRewriteRuleSigma State Srt Query)
+    (hSide : r.side) {Γ₁ Γ₂ : Set State} {W₁ W₂ : State}
+    (queryOfAtom : String → Pattern → Sigma Query)
+    (a : String) (p : Pattern)
+    (hEnc : queryOfAtom a p = r.conclusion)
+    (hTau : tau ≤ coord (itvSem.eval ctx (r.derive (W₁ + W₂))))
+    (hW₁ : WMJudgmentCtx Γ₁ W₁) (hW₂ : WMJudgmentCtx Γ₂ W₂) :
+    WorldModelSigma.WMITVThresholdJudgmentCtxSigma
+      (State := State) (Srt := Srt) (Query := Query) (Ctx := Ctx)
+      itvSem ctx (Γ₁ ∪ Γ₂) (W₁ + W₂) r.conclusion coord tau ∧
+      sem R
+        (thresholdAtomSemOfWMITVQSigma
+          (State := State) (Srt := Srt) (Query := Query) (Ctx := Ctx)
+          itvSem ctx (W₁ + W₂) tau coord queryOfAtom)
+        (.atom a) p :=
+  wmRewriteRuleSigma_itv_threshold_atom_ctx_package
+    (State := State) (Srt := Srt) (Query := Query) (Ctx := Ctx)
+    R itvSem ctx tau coord r hSide queryOfAtom a p hEnc hTau
+    (WMJudgmentCtx.union_revise hW₁ hW₂)
+
 /-- Lower-threshold consequence from a typed WM rewrite rule. -/
 theorem wmRewriteRuleSigma_lower_threshold_atom
     (R : Pattern → Pattern → Prop)

@@ -64,6 +64,38 @@ theorem total_nonneg (e : BinaryCounts) : 0 ≤ e.total := by
 /-- The strength coordinate determined by positive finite total evidence. -/
 noncomputable def strength (e : BinaryCounts) : ℝ := e.nPlus / e.total
 
+/-- Nonzero finite binary evidence has strictly positive total weight. -/
+theorem total_pos_of_ne_zero (e : BinaryCounts) (hTotal : e.total ≠ 0) :
+    0 < e.total := by
+  by_contra hNotPos
+  have hLe : e.total ≤ 0 := le_of_not_gt hNotPos
+  have hZero : e.total = 0 := le_antisymm hLe e.total_nonneg
+  exact hTotal hZero
+
+/-- Positive-total binary evidence displays a nonnegative strength. -/
+theorem strength_nonneg_of_total_ne_zero
+    (e : BinaryCounts) (_hTotal : e.total ≠ 0) :
+    0 ≤ e.strength := by
+  unfold strength
+  exact div_nonneg e.nPlus_nonneg e.total_nonneg
+
+/-- Positive-total binary evidence displays strength at most one. -/
+theorem strength_le_one_of_total_ne_zero
+    (e : BinaryCounts) (hTotal : e.total ≠ 0) :
+    e.strength ≤ 1 := by
+  have hPos : 0 < e.total := e.total_pos_of_ne_zero hTotal
+  unfold strength
+  rw [div_le_one hPos]
+  unfold total at hPos ⊢
+  linarith [e.nMinus_nonneg]
+
+/-- Positive-total binary evidence displays a unit-interval strength. -/
+theorem strength_mem_unit_of_total_ne_zero
+    (e : BinaryCounts) (hTotal : e.total ≠ 0) :
+    e.strength ∈ Set.Icc (0 : ℝ) 1 :=
+  ⟨e.strength_nonneg_of_total_ne_zero hTotal,
+    e.strength_le_one_of_total_ne_zero hTotal⟩
+
 /-- The maximum-likelihood / improper-prior strength projection.  This is the
 standard PLN simple strength view of the counts. -/
 noncomputable def mleStrength (e : BinaryCounts) : ℝ := e.strength

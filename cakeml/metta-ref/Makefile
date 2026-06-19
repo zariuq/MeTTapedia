@@ -6,7 +6,8 @@ CAKE ?= $(CAKEML_HOME)/cake-x64-64/cake
 BASIS_FFI ?= $(CAKEML_HOME)/cake-x64-64/basis_ffi.c
 HOLDIR ?= $(CAKEML_HOME)/HOL4
 CAKEMLDIR ?= $(CAKEML_HOME)/cakeml-src
-HOL_PATH := $(CAKEML_HOME)/polyml-local/bin:$(HOLDIR)/bin:$(PATH)
+HOL_SHIMS := $(METTA_REF_DIR)/tools/hol-shims
+HOL_PATH := $(HOL_SHIMS):$(CAKEML_HOME)/polyml-local/bin:$(HOLDIR)/bin:$(PATH)
 CC ?= cc
 LDLIBS += -lm
 

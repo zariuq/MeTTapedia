@@ -91,18 +91,24 @@ the infinite Markov-logic setting through DLR completions
 (\lid{dlrQueryDetermined} / \lid{dlrQueryHasStrictWidth}). Under the
 Dobrushin uniform small-influence hypothesis,
 \lid{PaperUniformSmallTotalInfluence} implies \lid{dlrQueryDetermined},
-and therefore the MLN query envelope is precise. In the opposite
-direction, whenever two DLR completions are explicitly exhibited that
-disagree on a finite query, the corresponding Walley envelope has strict
-width. Failure of the Dobrushin hypothesis is therefore a frontier where
-strict width can occur, not by itself a proof that it must occur.
+and therefore the MLN query envelope is precise. The low-temperature
+two-dimensional symmetric-grid theorem now supplies the complementary
+strict-width crown:
+\lid{symmetricGridZeroField\_originPLNStrictIntervalCrown\_of\_axisAnchoredContourCode\_twentyFour}.
+On the exchangeable side, the public de~Finetti theorem
+\lid{impreciseDeFinetti\_analyticMixingFamily\_sharpCompatibilityCrown}
+separates the unconditional external mixing-family readout from the raw
+all-gambles crown, which holds exactly at the lower-prevision
+compatibility boundary.
 
 We organize the degrees of freedom into three slots:
 (A)~specification-level freedom in the local credal sets;
 (B)~completion-level freedom in extreme-point choice within a fixed credal
 set (aleatoric, formally invisible to $\STV{s}{c}$);
 (C)~phase-transition freedom from non-uniqueness of DLR completions
-in infinite MLNs. We honestly enumerate what is open.
+in infinite MLNs. The endpoint is now a closed Lean package rather than a
+list of open infinite-side obligations; the remaining freedom is named by
+the predicates and hypotheses, not hidden in the notation $\STV{s}{c}$.
 \end{abstract}
 
 \tableofcontents
@@ -226,7 +232,7 @@ the proofs of constant-preservation, positive homogeneity, and
 superadditivity, exhibiting a \lid{LowerPrevision} object out of any
 non-empty bounded-below credal set. The finite case theorem
 \lid{lowerEnvelopePrevision\_isCoherent\_of\_finite}
-(ProjectiveCredal.lean line~868) confirms Walley coherence on finite
+confirms Walley coherence on finite
 nonempty $\Omega$.
 
 \subsection{PLN $\STV{s}{c}$ as the credal-envelope summary}\label{sec:stv-summary}
@@ -297,7 +303,7 @@ load-bearing results.
 \subsection{Uniform positivity and avoidance of sure loss}
 
 For finite $\Omega$, a pointwise-strictly-positive gamble has a uniform
-positive lower bound (ProjectiveCredal.lean line~833):
+positive lower bound :
 \begin{lstlisting}
 theorem finite_strictlyPositive_uniformLowerBound
     {Omega : Type*} [Fintype Omega] [Nonempty Omega]
@@ -305,8 +311,7 @@ theorem finite_strictlyPositive_uniformLowerBound
     exists epsilon : Real, 0 < epsilon and forall omega, epsilon <= X omega
 \end{lstlisting}
 This is the technical hinge that lets every nonempty finite credal set
-\emph{avoid sure loss} in the strict Walley sense
-(line~855):
+\emph{avoid sure loss} in the strict Walley sense:
 \begin{lstlisting}
 theorem lowerEnvelopePrevision_avoidsSureLoss_of_finite
     {Omega : Type*} [Fintype Omega] [Nonempty Omega]
@@ -315,7 +320,7 @@ theorem lowerEnvelopePrevision_avoidsSureLoss_of_finite
       BddBelow ((fun P : PrecisePrevision Omega => P X) '' C)) :
     (lowerEnvelopePrevision C hC hBdd).avoidsSureLoss
 \end{lstlisting}
-and to be \emph{coherent} (line~868):
+and to be \emph{coherent} :
 \begin{lstlisting}
 theorem lowerEnvelopePrevision_isCoherent_of_finite
     {Omega : Type*} [Fintype Omega] [Nonempty Omega]
@@ -331,7 +336,7 @@ construction never fails. The map from spec to $\STV{s}{c}$ is total.
 
 The case where the credal set has exactly one element is the case where
 PLN's $\STV{s}{c}$ has no freedom at all; everything is pinned. The
-theorem (ProjectiveCredal.lean line~885) is direct:
+theorem is direct:
 \begin{lstlisting}
 theorem lowerEnvelope_singleton
     {Omega : Type*} (P : PrecisePrevision Omega) (X : Gamble Omega) :
@@ -352,7 +357,7 @@ PLN-side consequence.
 \subsection{The two predicates}
 
 \begin{definition}[determined credal set on a gamble]\label{def:determines}
-The predicate \lid{credalSetDetermines} (ProjectiveCredal.lean line~746):
+The predicate \lid{credalSetDetermines} :
 \begin{lstlisting}
 def credalSetDetermines {Omega : Type*}
     (C : CredalPrevisionSet Omega) (X : Gamble Omega) : Prop :=
@@ -364,7 +369,7 @@ $C$ assign the same expectation to $X$.
 \end{definition}
 
 \begin{definition}[strict width]\label{def:strictwidth}
-The predicate \lid{credalSetHasStrictWidth} (line~753):
+The predicate \lid{credalSetHasStrictWidth} :
 \begin{lstlisting}
 def credalSetHasStrictWidth {Omega : Type*}
     (C : CredalPrevisionSet Omega) (X : Gamble Omega) : Prop :=
@@ -375,7 +380,7 @@ $C$ has \emph{strict width} on $X$ when there exist two precise previsions
 in $C$ that strictly disagree on $X$.
 \end{definition}
 
-The two predicates are mutually exclusive (ProjectiveCredal.lean line~809):
+The two predicates are mutually exclusive :
 \begin{theorem}[mutual exclusion]\label{thm:mutex}
 \lid{not\_credalSetDetermines\_of\_strictWidth}:
 \begin{lstlisting}
@@ -389,8 +394,8 @@ theorem not_credalSetDetermines_of_strictWidth
 
 The endpoint instances cover the trivial cases. Subsingleton credal sets
 collapse to determinacy
-(\lid{credalSetDetermines\_of\_subsingleton}, line~758), and so do
-singletons (\lid{credalSetDetermines\_singleton}, line~766):
+(\lid{credalSetDetermines\_of\_subsingleton}), and so do
+singletons (\lid{credalSetDetermines\_singleton}):
 \begin{lstlisting}
 theorem credalSetDetermines_singleton {Omega : Type*}
     (P : PrecisePrevision Omega) (X : Gamble Omega) :
@@ -400,8 +405,7 @@ theorem credalSetDetermines_singleton {Omega : Type*}
 \subsection{Collapse and width theorems}
 
 The PLN-side consequence of \lid{credalSetDetermines} is precisely
-that strength is pinned: the lower and upper envelopes coincide
-(ProjectiveCredal.lean line~798):
+that strength is pinned: the lower and upper envelopes coincide:
 \begin{theorem}[envelope collapse from determinacy]\label{thm:collapse}
 \lid{lower\_eq\_upperEnvelope\_of\_credalSetDetermines}:
 \begin{lstlisting}
@@ -420,7 +424,7 @@ when $C$ determines $X_q$.
 \end{theorem}
 
 The PLN-side consequence of \lid{credalSetHasStrictWidth} is the opposite:
-the envelope is genuinely non-trivial (line~835):
+the envelope is genuinely non-trivial :
 \begin{theorem}[envelope width from strict disagreement]\label{thm:width}
 \lid{lower\_upperEnvelope\_nontrivial\_of\_strictWidth}:
 \begin{lstlisting}
@@ -489,18 +493,17 @@ $i$).
 
 The codebase ships two endpoints and one general construction:
 \begin{itemize}
-\item \textbf{Singleton} (ProjectiveCredal.lean line~1615):
+\item \textbf{Singleton} :
 \begin{lstlisting}
 def singletonIdentityProjectiveSpec {Omega : Type*}
     (P : PrecisePrevision Omega) : ProjectiveLocalCredalSpec PUnit Omega
 \end{lstlisting}
 Every window's local credal is the supplied singleton $\{P\}$. The
 projective limit is $\{P\}$
-(\lid{singletonIdentityProjectiveSpec\_projectiveLimitCredalSet},
-line~1620). PLN $\STV{s}{c}$ on every gamble is precise; this is the
+(\lid{singletonIdentityProjectiveSpec\_projectiveLimitCredalSet}). PLN $\STV{s}{c}$ on every gamble is precise; this is the
 ``no freedom'' case.
 
-\item \textbf{Unrestricted} (line~1571):
+\item \textbf{Unrestricted} :
 \begin{lstlisting}
 def finiteUnrestrictedProjectiveSpec (Omega : Type*) :
     ProjectiveLocalCredalSpec PUnit Omega
@@ -510,7 +513,7 @@ contains every precise prevision on $\Omega$. PLN $\STV{s}{c}$ on most
 gambles has \lid{credalSetHasStrictWidth}; this is the ``maximum freedom''
 case. The non-emptiness of the projective limit is witnessed by
 \lid{finiteUnrestricted\_finiteEvaluationCompact\_hasCompatibleCompletion}
-(line~1578) via a compact carrier in the finite-evaluation topology.
+via a compact carrier in the finite-evaluation topology.
 
 \item \textbf{Genuine intermediate}: any spec whose local credals are
 non-trivial proper subsets of \lid{Set.univ}. Whether
@@ -519,11 +522,11 @@ particular gamble depends on the spec and the gamble.
 \end{itemize}
 
 The dichotomy lifts to the projective level. ProjectiveCredal.lean defines
-\lid{determinesGlobalGamble} (line~1307) and \lid{hasStrictGlobalWidth}
-(line~1314) as the global analogues of \lid{credalSetDetermines} and
+\lid{determinesGlobalGamble} and \lid{hasStrictGlobalWidth}
+as the global analogues of \lid{credalSetDetermines} and
 \lid{credalSetHasStrictWidth}, with the mutual exclusion theorem
-\lid{not\_determinesGlobalGamble\_of\_strictWidth} at line~1411. The
-natural-extension lifting theorems (around lines~1391 and~1424) connect
+\lid{not\_determinesGlobalGamble\_of\_strictWidth}. The
+natural-extension lifting theorems connect
 the projective predicates to the lower / upper envelopes on the projective
 limit.
 
@@ -676,11 +679,46 @@ two DLR completions are exhibited that disagree on a query, then that
 query has strict width. The Lean development does not prove that failure
 of the Dobrushin hypothesis entails non-uniqueness or strict width.
 
+\section{Exchangeable de~Finetti families: the F2 compatibility boundary}\label{sec:definetti-f2}
+
+The second infinite lane is the exchangeable IID/de~Finetti lane. Here the
+formal point is not merely that an external mixture representation exists:
+it does, unconditionally, for any nonempty credal family of Bernoulli
+mixtures. The stronger all-gambles process-law crown has a sharper
+boundary.
+
+The public theorem
+\lid{impreciseDeFinetti\_analyticMixingFamily\_sharpCompatibilityCrown}
+states:
+\begin{lstlisting}
+theorem impreciseDeFinetti_analyticMixingFamily_sharpCompatibilityCrown
+    (C : Set BernoulliMixture) (hC : C.Nonempty) :
+    ImpreciseDeFinettiCanonicalExternalMixingFamily C hC /\
+      (ImpreciseDeFinettiAnalyticMixingFamilyProcessLawCrown C hC <->
+        exists L : LowerPrevision (Nat -> Bool),
+          (bernoulliMixturePrefixProcessLowerSpec C ... hC).
+            respectsLocalLower L)
+\end{lstlisting}
+Thus the canonical sigma-additive external readout is always present, while
+the raw all-gambles analytic crown is pinned exactly by existence of a
+respecting lower prevision for the analytic prefix lower envelope. This is
+the Walley natural-extension boundary in the exchangeable process setting.
+
+A useful negative theorem prevents over-reading the result. The theorem
+\lid{exists\_impreciseDeFinetti\_analyticMixingFamilyProcessLawCrown\_not\_pointwiseZeroInterior}
+exhibits a nonempty mixing family whose raw all-gambles crown exists even
+though not every member has zero interior mixing mass. Equivalently,
+\lid{not\_forall\_impreciseDeFinetti\_analyticMixingFamilyProcessLawCrown\_imp\_pointwiseZeroInterior\_closed}
+closes the refutation of the too-strong pointwise-zero necessity claim.
+Pointwise zero-interior is a sufficient concrete route; it is not the
+right family-level characterization.
+
 \section{Worked examples already in the formalization}\label{sec:examples}
 
 The codebase now ships both finite toy witnesses and a concrete infinite
-DLR/PLN contrast crown. The finite two-spin examples remain useful sanity
-witnesses for strict credal width.
+DLR/PLN contrast crown, plus the low-temperature symmetric-grid strict
+interval crown. The finite two-spin examples remain useful sanity witnesses
+for strict credal width.
 
 \subsection{Two-spin magnet}
 
@@ -700,7 +738,7 @@ def twoSpinFirstUpGamble : Gamble TwoSpin :=
 \end{lstlisting}
 is rewarded by the all-up Dirac and unrewarded by the all-down Dirac;
 the disagreement gives the strict width witness. The packaged theorem
-\lid{twoSpinMagnetEnvelope\_nontrivial} (line~1101) closes:
+\lid{twoSpinMagnetEnvelope\_nontrivial} closes:
 \begin{lstlisting}
 theorem twoSpinMagnetEnvelope_nontrivial :
     lowerEnvelope twoSpinMagnetCredalSet twoSpinFirstUpGamble
@@ -730,9 +768,29 @@ geometrically reinforced half-line has positive PLN strict-width at the
 origin-spin query. The collapse side uses
 \lid{gridZeroField\_originSpinUp\_queryEnvelope\_precise\_of\_dobrushin}:
 the zero-weight zero-field grid lies in the Dobrushin collapse regime for
-the analogous origin-spin query. This is an infinite canary, but it is not
-yet the full two-dimensional low-temperature Ising plus/minus
-phase-separation theorem.
+the analogous origin-spin query. This remains a useful canary for the
+collapse direction.
+
+\subsection{Low-temperature symmetric-grid strict interval crown}
+
+The full two-dimensional low-temperature strict-width side is supplied by
+the symmetric-grid Peierls development in
+\codepath{Mettapedia.Logic.MarkovLogicInfiniteSymmetricGridExample}. The
+public theorem
+\lid{symmetricGridZeroField\_originPLNStrictIntervalCrown\_of\_axisAnchoredContourCode\_twentyFour}
+states:
+\begin{lstlisting}
+theorem symmetricGridZeroField_originPLNStrictIntervalCrown_of_axisAnchoredContourCode_twentyFour :
+    SymmetricGridZeroFieldOriginPLNStrictIntervalCrown (24 : Real)
+\end{lstlisting}
+The crown packages positive scalar query-envelope width, width-complement
+below one, and positive binary query-outcome credal width for the origin-spin
+query. The proof path is the classical Peierls route specialized to the
+finite box: axis-anchored contour codes, a finite-box $\mathbb{F}_2$
+separator/potential argument, a geometric contour count, and the resulting
+plus/minus boundary separation. The theorem is independent of the refuted
+Markov de~Finetti branch and does not rely on the older conditional
+\lid{CutWalkCode} adapters.
 
 \section{Three kinds of degree of freedom: the synthesis}\label{sec:synthesis}
 
@@ -760,7 +818,9 @@ completions, which may itself be non-singleton. The slot is opened
 exactly when \lid{dlrQueryHasStrictWidth} on $(M, q)$ holds for the
 query $q$ of interest, and closed when \lid{dlrQueryDetermined} on $(M, q)$
 holds. The Dobrushin condition \lid{PaperUniformSmallTotalInfluence}
-is a sufficient condition for the closed case.
+is a sufficient condition for the closed case; the low-temperature
+symmetric-grid Peierls theorem is the complementary proved strict-width
+case.
 
 \begin{observation}
 Slot (A) is the freedom the PLN modeller intends to give. Slot (B) is
@@ -774,54 +834,61 @@ world can pick (B) freely, and the spec can still have (C) freedom from
 a phase transition. The PLN $\STV{s}{c}$ sees (A) and (C); it does not
 see (B).
 
-\section{What is open}\label{sec:open}
+\section{Closed endpoint and remaining polish}\label{sec:open}
 
-The formal characterization above is honest about which steps are
-already-proved theorems and which are open. Since the first draft of this
-section, the generic compact/FIP and Walley projective-natural-extension
-waist has landed. The remaining work is now narrower:
+The current Lean endpoint is the profile
+\lid{confidenceCharacterizationEndpointProfile}, exported through
+\codepath{Mettapedia.Logic.PLNCanonicalAPI}. It packages the finite forcing
+results, the typed-STV canaries showing residual degrees of freedom, the
+Walley width-complement forcing theorem for the PLN odds coordinate, the
+finite exact-predictive ITV collapse, the DLR/Dobrushin collapse lane, the
+F2 exchangeable mixing-family compatibility boundary, and the F4
+low-temperature symmetric-grid strict-interval crown.
 
+The characterization should therefore be read as closed relative to its
+explicit semantic gates:
 \begin{itemize}
-\item \textbf{Local finite-window coherence feeding FIP.}
-      The generic compact/FIP waist is present:
-      \lid{ProjectiveLocalLowerPrevisionSpec.finiteWindowCompatibleInCarrier}
-      feeds
-      \lid{hasCompatibleCompletion\_of\_finiteWindowCompatibleInCarrier}.
-      What remains is an honest, non-circular local-coherence predicate
-      that implies finite-window compatibility without assuming a hidden
-      global compatible precise prevision.
+\item \textbf{Finite forcing.}
+      Once evidence counts are read through a Walley width-complement
+      compatible evidence-weight coordinate, the odds form of PLN
+      confidence is forced by
+      \lid{walley\_width\_complement\_forces\_pln\_odds}. The free
+      parameter is the evidence-scale constant, not the shape of the
+      coordinate.
 
-\item \textbf{Polished DLR compact-projective packaging.}
-      The DLR determined/strict-width bridge and the concrete
-      reinforced-line crown exist. The remaining packaging work is to
-      expose the DLR layer as a clean public specialization of the generic
-      projective/Walley interface, with theorem names aligned to the
-      confidence-formula API.
+\item \textbf{Finite exact collapse.}
+      Singleton and exact posterior carriers have lower envelope equal to
+      upper envelope. Their ITV readout has width zero, credibility one,
+      and midpoint equal to the single predictive prevision.
 
-\item \textbf{Imprecise de~Finetti mixing-family package.}
-      The finite-prefix Bernoulli-mixture payoff theorems exist, including
-      agreement $\Rightarrow$ width-complement $1$ and disagreement
-      $\Rightarrow$ width-complement $<1$. What remains is a clean public
-      mixing-family object and, later, full process-law synthesis beyond
-      finite-prefix adapters.
+\item \textbf{F2, exchangeable IID/de~Finetti.}
+      \lid{impreciseDeFinetti\_analyticMixingFamily\_sharpCompatibilityCrown}
+      proves that the external sigma-additive mixing-family readout is
+      unconditional, while the raw all-gambles process-law crown holds
+      exactly at the lower-prevision compatibility boundary. The theorem
+      \lid{not\_forall\_impreciseDeFinetti\_analyticMixingFamilyProcessLawCrown\_imp\_pointwiseZeroInterior\_closed}
+      prevents the common but false strengthening to pointwise zero-interior
+      necessity.
 
-\item \textbf{True two-dimensional low-temperature Ising separation.}
-      The reinforced-line strict-width crown is a concrete infinite canary.
-      It is not yet the classical 2D low-temperature Ising plus/minus
-      theorem. That theorem would require constructing two distinct
-      infinite-volume DLR completions satisfying the same local conditional
-      specification and proving that they disagree on an explicit
-      finite-cylinder query.
+\item \textbf{F3, Dobrushin collapse.}
+      \lid{infiniteMLN\_paperUniformSmallTotalInfluence\_implies\_uniqueMeasure}
+      gives the Markov-logic/DLR collapse direction: uniform small influence
+      forces a unique infinite measure, hence precise finite-query envelopes.
 
-\item \textbf{Paper/build metadata refresh.}
-      Line counts and theorem references should be generated from the exact
-      commit or avoided in favor of module and theorem names.
+\item \textbf{F4, low-temperature Ising width.}
+      \lid{symmetricGridZeroField\_originPLNStrictIntervalCrown\_of\_axisAnchoredContourCode\_twentyFour}
+      gives the 2D symmetric-grid strict-interval crown at low temperature,
+      by the finite-box Peierls/$\mathbb{F}_2$ contour route.
 \end{itemize}
 
-These are not blockers for the dichotomy we have proved; they are
-the next theorems in the same vein. We name them as open so a reader
-of this paper is not misled into thinking the infinite half of the
-characterization is closed.
+What remains is integration polish rather than a missing crown theorem: the
+book chapter should import the closed endpoint, and future work can broaden the
+menu of examples and sharpen constants. A runnable companion now accompanies
+this paper at \lpath{papers/pln-confidence-examples/}: it pairs each degree of
+freedom with a small PeTTa/CeTTa canary and its Lean oracle (see
+Appendix~\ref{app:examples}), with a one-command harness \lpath{run_all.sh}.
+Those refinements do not change the status of the confidence-formula
+characterization itself.
 
 \section{Related work}\label{sec:related}
 
@@ -834,13 +901,12 @@ classical Walley coherence theorem for finite envelopes.
 
 \paragraph{de~Finetti.}
 The de~Finetti exchangeability theorem connects exchangeable distributions
-on infinite sequences to mixtures over IID distributions. The codebase has
-finite-prefix imprecise de~Finetti payoff theorems: mixture agreement
-forces width-complement $1$, and mixture disagreement forces
-width-complement $<1$ on the induced finite-prefix envelope. It also has a
-projective specialization adapter. What remains open is a polished public
-mixing-family object and a full process-law synthesis beyond the
-finite-prefix surface.
+on infinite sequences to mixtures over IID distributions. The codebase now
+has the finite-prefix imprecise de~Finetti payoff theorems, the canonical
+external sigma-additive mixing-family object, and the raw all-gambles
+process-law compatibility boundary. The important caution is negative:
+family-level crown existence does not force pointwise zero-interior mass for
+every mixture in the family.
 
 \paragraph{Dobrushin--Lanford--Ruelle.}
 The DLR framework characterises infinite Gibbs measures by their
@@ -865,7 +931,9 @@ Richardson and Domingos (Machine Learning, 2006) introduced MLNs as
 finite log-linear models on first-order logic. The infinite
 specialisation in
 \codepath{Mettapedia.Logic.MarkovLogicInfinite*}
-is a recent codex landing (cited inline above).
+is cited inline above: Dobrushin uniqueness supplies the collapse side, and
+the symmetric-grid Peierls theorem supplies the low-temperature strict-width
+side.
 
 \paragraph{Imprecise probability and second-order Bayesianity.}
 The PLN tradition of treating $c$ as ``confidence-in-strength'' has a
@@ -882,22 +950,315 @@ PLN truth values $\STV{s}{c}$ are summary statistics of a credal set,
 and the question of where their information lives reduces, formally,
 to a dichotomy on the underlying credal set. The codebase landings in
 \codepath{Mettapedia.ProbabilityTheory.ImpreciseProbability.ProjectiveCredal}
-	(the \lid{credalSetDetermines} / \lid{credalSetHasStrictWidth}
-	predicates and their collapse / width theorems) and in
-	\codepath{Mettapedia.Logic.MarkovLogicInfiniteCredalBridge} (the
-	DLR-level lift and the Dobrushin hypothesis as a sufficient collapse
-	condition) make this dichotomy a checkable Lean theorem rather than
-	informal commentary.
+(the \lid{credalSetDetermines} / \lid{credalSetHasStrictWidth}
+predicates and their collapse / width theorems),
+\codepath{Mettapedia.Logic.DeFinettiProjectiveCredalBridge} (the F2
+compatibility boundary), and
+\codepath{Mettapedia.Logic.MarkovLogicInfiniteSymmetricGridExample} (the
+F4 strict-width crown) make this dichotomy a checkable Lean endpoint rather
+than informal commentary.
 
 The three freedom slots --- specification, completion, phase-transition
 --- partition the question along orthogonal axes. (A) is the modeller's
 freedom. (B) is the world's freedom. (C) is the structural freedom
 the spec produces by itself. PLN $\STV{s}{c}$ sees (A) and (C); it
-does not see (B). Where it sees (C), the Dobrushin condition is the
-formally sufficient hypothesis for $\STV{s}{c}$ to be precise.
+does not see (B). Where it sees (C), Dobrushin uniqueness pins the
+high-temperature collapse side and the Peierls theorem pins the
+low-temperature strict-width side.
 
-The infinite half of the characterization has real open work, named in
-Sec.~\ref{sec:open}. We have not pretended otherwise.
+The infinite half is no longer a list of named crown gaps. The exchangeable
+F2 lane is pinned by lower-prevision compatibility rather than pointwise
+zero-interior mass; the DLR F3 lane is pinned on the collapse side by
+Dobrushin uniqueness; and the Ising F4 lane is pinned on the width side by
+the low-temperature symmetric-grid strict-interval crown. What remains is
+the ordinary work of presentation, API consolidation, and additional
+examples, not a missing theorem in the confidence-formula characterization.
+
+\appendix
+
+\section{Degrees-of-freedom zoo}\label{app:dof-zoo}
+
+This appendix lists the degrees of freedom that should remain visible in
+PLN truth-value practice. Defaults are useful; unnecessary fixation is not.
+Each entry names the freedom, the formal gate that can collapse it, and why a
+real system may want to keep the knob available.
+
+\begin{description}
+\item[Evidence scale / prior strength.]
+      In the evidence-count view, confidence is commonly
+      $c = N/(N+\kappa)$, where $N$ is total retained evidence and
+      $\kappa > 0$ is the effective prior or context size. The Walley
+      width-complement bridge forces the odds form once the scale is chosen,
+      but it does not choose the scale. A curated clinical fact, a noisy
+      high-throughput association, and an indirect pathway-mediated
+      hypothesis should not usually accumulate confidence at the same rate.
+      Positive example: a hand-curated contraindication can use small
+      $\kappa$. Negative example: a single weak omics hit should not receive
+      the same confidence merely because it has the same positive/negative
+      ratio.
+
+\item[Strength projection / prior context.]
+      The same positive and negative counts can be read by maximum
+      likelihood, by a uniform Beta posterior mean, by Jeffreys' prior, or by
+      another explicit context. The formal tower records this as a projection
+      choice rather than pretending that ``strength'' is context-free.
+      Positive example: sparse medical counts may need shrinkage toward a
+      population baseline. Negative example: a mature benchmark with thousands
+      of observations can safely use a near-MLE projection.
+
+\item[Evidence total versus evidence ratio.]
+      Strength reads the positive/negative ratio; confidence reads the total
+      amount of evidence. Thus $1/1$ and $100/100$ have the same strength but
+      should not have the same confidence. Conversely, $1/1$ and $2/0$ can
+      have the same total evidence and different strengths. This is the basic
+      reason the two coordinates are separate.
+
+\item[Confidence chart.]
+      Count reconstruction only requires an invertible chart on total
+      evidence; it does not by itself force the PLN odds chart. The
+      width-complement bridge is the extra semantic law that narrows the
+      chart to the PLN/NARS odds coordinate. Positive example: user-facing
+      risk displays may want a compressed visual confidence scale. Negative
+      example: revision must operate in evidence-weight space, not in an
+      arbitrary display chart.
+
+\item[Width-complement convention.]
+      For unit gambles, the convention $c = 1 - (U-L)$ makes confidence the
+      complement of interval width. For a general bounded gamble with range
+      $[a,b]$, the normalized version is
+      $c = 1 - (U-L)/(b-a)$. This convention is natural and minimal, but it is
+      still a convention. Positive example: binary prediction has a canonical
+      unit scale. Negative example: dollar-valued utilities must be
+      range-normalized before width-complement confidence is meaningful.
+
+\item[Interval point selector.]
+      A nontrivial interval $[L,U]$ does not force a single displayed point:
+      lower, midpoint, upper, or a risk-adjusted selector can all be
+      reasonable. The paper uses midpoint when it wants a neutral PLN
+      strength display. Positive example: safety-critical planning may use
+      the lower envelope. Negative example: exploratory ranking may use the
+      midpoint with the interval width shown separately.
+
+\item[Credal shape beyond one interval.]
+      A single query interval loses the shape of the credal set. Two credal
+      sets can agree on $L$ and $U$ for one gamble but differ on other
+      gambles, on correlations, or under composition. Positive example: two
+      drug hypotheses can share the same marginal response interval but differ
+      in adverse-event dependence. Negative example: reporting only an STV
+      for each marginal can hide incompatible joint structure.
+
+\item[Backend for uncertainty.]
+      Bayesian credible intervals, Walley IDM predictive intervals, finite
+      lower envelopes, projective credal envelopes, and DLR completion
+      envelopes all produce interval-like readouts but carry different
+      provenance. Positive example: a posterior credible interval is right
+      for a parametric lab assay. Negative example: a robust safety envelope
+      should not be collapsed into a single Bayesian posterior merely for
+      convenience.
+
+\item[Credible level / tolerance.]
+      Bayesian credible intervals carry a chosen level, e.g. 90\%, 95\%, or
+      99\%. This is not the same knob as $\kappa$: $\kappa$ governs evidence
+      accumulation; credible level governs the interval requested from a
+      posterior. Positive example: exploratory dashboards can show 90\%
+      intervals. Negative example: clinical decision support may require 99\%
+      or a one-sided lower bound.
+
+\item[Categorical query choice.]
+      In multinomial or categorical evidence, total concentration can be
+      shared while each queried category has its own lower, upper, width, and
+      strength. Positive example: a phenotype classifier may have high total
+      evidence but low confidence for a rare subclass. Negative example:
+      forcing one binary query can erase category-specific uncertainty.
+
+\item[Feature/evidence discounting.]
+      Evidence can be reweighted by source quality, feature informativeness,
+      IDF-like rarity, route length, recency, or dependence corrections before
+      it enters the count tower. Positive example: independent curated
+      replications should count more than near-duplicate text-mined hits.
+      Negative example: treating correlated pathway hits as independent
+      overstates confidence.
+
+\item[Local credal specification.]
+      In projective credal models, the modeller chooses local credal sets at
+      finite windows. This is the intended imprecision knob: how much local
+      ambiguity the model admits before global completion. Positive example:
+      sensor calibration uncertainty belongs in local credal sets. Negative
+      example: hiding local ambiguity by picking a single precise prior can
+      make later confidence appear unjustifiably high.
+
+\item[Compatible completion / natural extension.]
+      A family of finite-window lower previsions must be globally compatible
+      before it gives a raw all-gambles process law. F2 shows that the
+      exchangeable external readout is unconditional, while the raw crown is
+      exactly the lower-prevision compatibility boundary. Positive example:
+      finite-prefix forecasts can be useful before full natural extension is
+      available. Negative example: calling those forecasts a full process law
+      without compatibility is assumption laundering.
+
+\item[Completion-level extreme point.]
+      Given a fixed credal set, the world may instantiate one precise
+      completion. This is real aleatoric freedom, but it is invisible to a
+      truth value because $\STV{s}{c}$ is a property of the whole credal set.
+      Positive example: scenario simulation samples an extreme completion.
+      Negative example: inference rules should not pretend to know which
+      extreme completion the world selected.
+
+\item[Phase-transition / infinite boundary freedom.]
+      Infinite local specifications can have multiple DLR completions. F3
+      pins a collapse regime by Dobrushin uniqueness; F4 pins a strict-width
+      regime by low-temperature Ising separation. Positive example: weakly
+      coupled large sensor networks can have precise local-query envelopes.
+      Negative example: strongly coupled spatial contagion or image domains
+      can keep interval width because distant boundary conditions matter.
+
+\item[Exchangeability / de~Finetti family freedom.]
+      In the IID lane, a mixing family can have a canonical external
+      sigma-additive readout while the raw all-gambles crown depends on
+      lower-prevision compatibility. Pointwise zero-interior mass is
+      sufficient in some kernel cases but not necessary at the family level.
+      Positive example: a family with one compatible conservative member can
+      support the raw crown. Negative example: requiring every member to have
+      zero interior mass rejects legitimate imprecise families.
+
+\item[Rule-level confidence transport.]
+      PLN rule formulas must decide whether confidence is combined by
+      addition in weight space, minimum in weight space, multiplication, or a
+      rule-specific effective evidence term. Positive example: revision adds
+      independent evidence weights. Negative example: feeding a raw confidence
+      through \lid{w2c} as if it were already a weight double-damps the result.
+
+\item[Provenance and route semantics.]
+      Two derivations with the same final STV may have different provenance:
+      direct observation, pathway transfer, abduction, or long inference
+      chain. Positive example: biomedical drug support should distinguish
+      direct disease evidence from pathway-mediated support. Negative example:
+      merging all routes before preserving provenance makes audit and
+      discounting impossible.
+
+\item[Extra structure beyond classical STV.]
+      Standard STV forgets structures such as phase, dependence witnesses, or
+      higher-order distributional shape. The formal amplitude/phase boundary
+      shows that such information can be invisible to the classical strength
+      and confidence view. Positive example: interference-like composition
+      requires extra structure. Negative example: carrying phase in an
+      ordinary binary classifier may be needless complexity.
+\end{description}
+
+\section{Example coverage plan for PeTTa/CeTTa}\label{app:examples}
+
+These examples accompany the paper as a runnable companion package,
+\lpath{papers/pln-confidence-examples/} (build and run via \lpath{run_all.sh}
+on CeTTa(HE) and PeTTa; \lpath{DOF-INDEX.md} is the full map). Each degree of
+freedom falls in one of three honesty tiers: \emph{Runnable} (a real executable
+canary with a positive and a negative case), \emph{Structural} (a finite shadow
+of an infinite or joint fact --- the Lean theorem is the real claim), and
+\emph{Lean-ref} (the witness is a theorem; no standalone \texttt{.metta}).
+Thirteen runnable canaries (DoF 1--8, 10, 11, 13, 17, 18) are portable across
+CeTTa(HE) and PeTTa; the three new Lean canaries (DoF 8, 11, 18) live in
+\lpath{Mettapedia/lean/mettapedia/Mettapedia/Logic/PLNConfidenceDoFCanary.lean}
+and are axiom-clean. DoF 14 deliberately points to the existing strict-envelope
+theorem rather than inventing a fake ``extreme point'' executable. The table
+below records each row's current artifact and what that artifact demonstrates;
+for Lean-ref rows, it names the example story that would illustrate the theorem.
+
+\begin{longtable}{p{0.22\linewidth}p{0.28\linewidth}p{0.36\linewidth}}
+\toprule
+Freedom & Current artifact & Demonstration \\
+\midrule
+\endhead
+Evidence total versus ratio &
+\lpath{Mettapedia/papers/examples/RavenAsymmetricInduction.metta} &
+Keep the raven asymmetry example; add explicit confidence readouts for
+$5/0$, $5/95$, and $50/950$ under at least two $\kappa$ values. \\
+
+Evidence scale $\kappa$ &
+\lpath{Mettapedia/papers/pln-confidence-examples/metta/dof01_kappa_calibration.metta} &
+Add a small table showing the same evidence count under $\kappa=1,10,50$.
+Use curated clinical, noisy omics, and pathway-mediated labels. \\
+
+Strength prior context &
+Lean canaries in \lid{PLNTruthTower} &
+Add a PeTTa/CeTTa count example where MLE, uniform prior, and Jeffreys prior
+produce different strength displays from the same sparse counts. \\
+
+Confidence chart freedom &
+\lid{reserveHalfCoordinate\_not\_walley\_width\_complement} in Lean &
+Add a runnable chart comparison: PLN odds chart versus reserve-half display,
+same decoded evidence, different displayed confidence. \\
+
+Revision as evidence addition &
+\lpath{Mettapedia/papers/pln-confidence-examples/metta/dof17_revision_transport.metta} &
+Keep \lid{Truth\_Revision}; add a canary that revising two STVs equals adding
+decoded evidence weights and re-encoding. \\
+
+Rule-level confidence transport &
+\lpath{Mettapedia/lean/mettapedia/Mettapedia/Logic/PeTTaLibPLNFormalAnalysis.lean} &
+Add a PeTTa regression for the raw-min double-damping bug: old formula below
+weight-space formula on unit evidence. \\
+
+Interval point selector &
+Lean generic ITV selector canary &
+Add a three-selector example showing lower, midpoint, and upper produce
+different displayed strengths on the same interval. \\
+
+Width-complement range normalization &
+Paper convention &
+Add binary and dollar-utility examples: binary width uses $1-(U-L)$; bounded
+utility uses $1-(U-L)/(b-a)$. \\
+
+Credal shape beyond one interval &
+Lean credal projection tower canaries &
+Add two small finite credal sets with the same query interval and different
+joint/correlation behavior. \\
+
+Backend choice &
+Lean typed ITV constructors &
+Add side-by-side Bayesian credible interval and Walley IDM interval from the
+same counts, with provenance printed in the result. \\
+
+Categorical query choice &
+Lean categorical evidence tower &
+Add a three-category classifier where total evidence is high but the rare
+category remains wide. \\
+
+Feature/evidence discounting &
+\lpath{Mettapedia/papers/pln-confidence-examples/metta/dof11_evidence_discounting.metta} &
+Add IDF/source-quality examples: duplicate text-mined hits discounted,
+curated independent hits amplified. \\
+
+Biomedical route provenance &
+\lpath{Mettapedia/papers/pln-confidence-examples/metta/dof18_route_provenance.metta} &
+Keep direct-versus-pathway route tests; add route-specific $\kappa$ or
+discounting before supported-drug revision. \\
+
+Exchangeable de~Finetti F2 &
+Lean F2 crown &
+Add a finite-prefix coin/patient-response stream: external readout always
+exists; raw all-gambles crown marked as requiring compatibility. Include the
+counterexample to pointwise zero-interior necessity as a symbolic canary. \\
+
+Dobrushin F3 collapse &
+Lean F3 crown &
+Add a weakly coupled sensor-grid story: all finite-query completions agree
+under the Dobrushin budget, so the interval collapses. \\
+
+Ising F4 strict width &
+Lean F4 crown &
+Add a spatial contagion or image-segmentation story: low-temperature coupling
+and boundary conditions keep the origin query interval nontrivial. \\
+
+Completion-level extreme point &
+Credal-set semantics &
+Add a scenario-sampling example where two precise completions are sampled
+from the same credal set but the displayed STV remains the envelope summary. \\
+
+Extra hidden structure &
+Amplitude/phase Lean boundary &
+Add an optional example with two hidden-phase states that share classical STV
+but differ under a composition rule that sees phase. \\
+\bottomrule
+\end{longtable}
 
 \bibliographystyle{plain}
 \begin{thebibliography}{10}
@@ -945,17 +1306,17 @@ Ben Goertzel, Matthew Ikl\'e, Izabela Goertzel, and Ari Heljakka.
 Mettapedia Working Notes.
 \newblock $\xi$PLN: a correct and complete foundation for probabilistic
         logic networks.
-\newblock In this directory: \lpath{papers/xiPLN.tex}.
+\newblock In the Mettapedia corpus: \lpath{papers/xiPLN.tex}.
 
 \bibitem{wmpln-book}
 Mettapedia Working Notes.
 \newblock The WM-PLN book.
-\newblock In this directory: \lpath{papers/wm-pln-book.tex}.
+\newblock In the Mettapedia corpus: \lpath{papers/wm-pln-book.tex}.
 
 \bibitem{pln-review}
 Mettapedia Working Notes.
 \newblock PLN review and corrections.
-\newblock In this directory: \lpath{papers/pln-review.tex}.
+\newblock In the Mettapedia corpus: \lpath{papers/pln-review.tex}.
 
 \end{thebibliography}
 

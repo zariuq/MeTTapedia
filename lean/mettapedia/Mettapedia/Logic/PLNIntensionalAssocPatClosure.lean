@@ -1,4 +1,5 @@
 import Mettapedia.Logic.PLNCanonicalAPI
+import Mettapedia.Logic.PLNHigherOrderHOLAssocPatBridge
 
 /-!
 # Chapter-12 ASSOC+PAT Closure
@@ -12,6 +13,8 @@ This module adds theorem-level closure for mixed ASSOC+PAT inheritance channels:
 -/
 
 namespace Mettapedia.Logic.PLNCanonical
+
+universe u v w
 
 /-- Mixed (extensional+ASSOC+PAT) rewrite-to-threshold endpoint under selected ITV semantics. -/
 theorem intensional_mixed_assocPat_threshold_atom_of_interval
@@ -140,6 +143,143 @@ theorem intensional_mixed_assocPat_threshold_atom_of_interval_of_assocPatSemanti
         (State := State) (Atom := Mettapedia.OSLF.MeTTaIL.Syntax.Pattern)
         (Query := Query) enc model)
     W a0 p coord tau trivial hTau'
+
+/-- Weighted finite-vocabulary HO predicate-score endpoint.
+
+This theorem is the downstream bridge from the HO predicate vocabulary to the
+OSLF threshold surface.  OSLF still ranges over concrete `Pattern`s, while
+`code` maps those patterns into a finite working predicate vocabulary.  The
+ASSOC and PAT scores are required to be nonnegatively weighted finite-vocabulary
+order-rank scores, so the theorem also returns the corresponding subset
+semantics instead of merely rewriting a threshold premise. -/
+theorem intensional_mixed_assocPat_threshold_atom_of_interval_of_weightedPredicateVocabularyAssocPatSemanticModel
+    {State Query : Type}
+    [EvidenceClass.EvidenceType State]
+    [PLNWorldModel.BinaryWorldModel State Query]
+    (i : WMIntervalSemantics)
+    (R : Mettapedia.OSLF.MeTTaIL.Syntax.Pattern →
+      Mettapedia.OSLF.MeTTaIL.Syntax.Pattern → Prop)
+    (ctx : CtxOfInterval i)
+    {Base : Type u}
+    {Const : Mettapedia.Logic.HOL.Ty Base → Type v}
+    (M : Mettapedia.Logic.HOL.HenkinModel.{u, v, w} Base Const)
+    (σ : Mettapedia.Logic.HOL.Ty Base)
+    {Pred : Type}
+    [Fintype Pred]
+    (code : Mettapedia.OSLF.MeTTaIL.Syntax.Pattern → Pred)
+    (decode : Pred →
+      Mettapedia.Logic.PLNHigherOrderHOLInheritanceBridge.UnaryPredicate
+        (Base := Base) (Const := Const) σ)
+    (enc : InheritanceQueryBuilder Mettapedia.OSLF.MeTTaIL.Syntax.Pattern Query)
+    (model : PLNIntensionalWorldModel.InheritanceQueryBuilder.AssocPatSemanticModel
+      (State := State) (Atom := Mettapedia.OSLF.MeTTaIL.Syntax.Pattern) (Query := Query) enc)
+    {assocLeftWeight assocRightWeight patLeftWeight patRightWeight : ℝ}
+    (hAssocLeftWeight : 0 ≤ assocLeftWeight)
+    (hAssocRightWeight : 0 ≤ assocRightWeight)
+    (hPatLeftWeight : 0 ≤ patLeftWeight)
+    (hPatRightWeight : 0 ≤ patRightWeight)
+    (hAssocScore : ∀ (W : State)
+        (a b : Mettapedia.OSLF.MeTTaIL.Syntax.Pattern),
+      model.scoreModel.assocScore W a b =
+        _root_.Mettapedia.Logic.PLNHigherOrderHOLAssocPatBridge.predicateVocabularyWeightedPairOrderRankScore
+            (Base := Base) (Const := Const) M σ decode
+            assocLeftWeight assocRightWeight (code a) (code b))
+    (hPatScore : ∀ (W : State)
+        (a b : Mettapedia.OSLF.MeTTaIL.Syntax.Pattern),
+      model.scoreModel.patScore W a b =
+        _root_.Mettapedia.Logic.PLNHigherOrderHOLAssocPatBridge.predicateVocabularyWeightedPairOrderRankScore
+            (Base := Base) (Const := Const) M σ decode
+            patLeftWeight patRightWeight (code a) (code b))
+    (W : State)
+    (a0 : String) (p : Mettapedia.OSLF.MeTTaIL.Syntax.Pattern)
+    (coord : ITV → ℝ) (tau : ℝ)
+    (hTau : tau ≤ coord ((semanticsOfInterval i).eval ctx
+      (model.combine
+        (PLNIntensionalWorldModel.InheritanceQueryBuilder.extensionalEvidence
+          (State := State) (Atom := Mettapedia.OSLF.MeTTaIL.Syntax.Pattern)
+          (Query := Query) W enc
+          (Mettapedia.OSLF.MeTTaIL.Syntax.Pattern.fvar a0) p)
+        (model.scoreModel.scoreToEvidence
+          (_root_.Mettapedia.Logic.PLNHigherOrderHOLAssocPatBridge.predicateVocabularyWeightedPairOrderRankScore
+              (Base := Base) (Const := Const) M σ decode
+              assocLeftWeight assocRightWeight
+              (code (Mettapedia.OSLF.MeTTaIL.Syntax.Pattern.fvar a0)) (code p)))
+        (model.scoreModel.scoreToEvidence
+          (_root_.Mettapedia.Logic.PLNHigherOrderHOLAssocPatBridge.predicateVocabularyWeightedPairOrderRankScore
+              (Base := Base) (Const := Const) M σ decode
+              patLeftWeight patRightWeight
+              (code (Mettapedia.OSLF.MeTTaIL.Syntax.Pattern.fvar a0)) (code p)))))) :
+    PLNIntensionalWorldModel.InheritanceQueryBuilder.AssocSubsetSemantics
+        (State := State) (Atom := Mettapedia.OSLF.MeTTaIL.Syntax.Pattern)
+        (Query := Query)
+        enc model.scoreModel
+        (fun W a b c d =>
+          _root_.Mettapedia.Logic.PLNHigherOrderHOLAssocPatBridge.predicateVocabularyIntensionalPairSubsetRel
+              (Base := Base) (Const := Const) M σ decode W
+              (code a) (code b) (code c) (code d)) ∧
+      PLNIntensionalWorldModel.InheritanceQueryBuilder.PATSubsetSemantics
+        (State := State) (Atom := Mettapedia.OSLF.MeTTaIL.Syntax.Pattern)
+        (Query := Query)
+        enc model.scoreModel
+        (fun W a b c d =>
+          _root_.Mettapedia.Logic.PLNHigherOrderHOLAssocPatBridge.predicateVocabularyIntensionalPairSubsetRel
+              (Base := Base) (Const := Const) M σ decode W
+              (code a) (code b) (code c) (code d)) ∧
+      Mettapedia.OSLF.Formula.sem R
+        (PLNWMOSLFBridgeITVTyped.thresholdAtomSemOfWMITVQSigma
+          (State := State) (Srt := InheritanceSort) (Query := InheritanceQueryFamily Query)
+          (Ctx := CtxOfInterval i)
+          (semanticsOfInterval i) ctx W tau coord
+          (patternInheritanceQueryOfAtom_mixed enc))
+        (.atom a0) p := by
+  let subsetRel :
+      State → Mettapedia.OSLF.MeTTaIL.Syntax.Pattern →
+        Mettapedia.OSLF.MeTTaIL.Syntax.Pattern →
+          Mettapedia.OSLF.MeTTaIL.Syntax.Pattern →
+            Mettapedia.OSLF.MeTTaIL.Syntax.Pattern → Prop :=
+    fun W a b c d =>
+      _root_.Mettapedia.Logic.PLNHigherOrderHOLAssocPatBridge.predicateVocabularyIntensionalPairSubsetRel
+          (Base := Base) (Const := Const) M σ decode W
+          (code a) (code b) (code c) (code d)
+  have hAssocSubset :
+      PLNIntensionalWorldModel.InheritanceQueryBuilder.AssocSubsetSemantics
+        (State := State) (Atom := Mettapedia.OSLF.MeTTaIL.Syntax.Pattern)
+        (Query := Query)
+        enc model.scoreModel subsetRel := by
+    intro W' a b c d hRel
+    rw [hAssocScore W' a b, hAssocScore W' c d]
+    exact
+      _root_.Mettapedia.Logic.PLNHigherOrderHOLAssocPatBridge.predicateVocabularyWeightedPairOrderRankScore_mono
+          (Base := Base) (Const := Const) M σ decode
+          hAssocLeftWeight hAssocRightWeight hRel
+  have hPatSubset :
+      PLNIntensionalWorldModel.InheritanceQueryBuilder.PATSubsetSemantics
+        (State := State) (Atom := Mettapedia.OSLF.MeTTaIL.Syntax.Pattern)
+        (Query := Query)
+        enc model.scoreModel subsetRel := by
+    intro W' a b c d hRel
+    rw [hPatScore W' a b, hPatScore W' c d]
+    exact
+      _root_.Mettapedia.Logic.PLNHigherOrderHOLAssocPatBridge.predicateVocabularyWeightedPairOrderRankScore_mono
+          (Base := Base) (Const := Const) M σ decode
+          hPatLeftWeight hPatRightWeight hRel
+  have hTau' : tau ≤ coord ((semanticsOfInterval i).eval ctx
+      (model.combine
+        (PLNIntensionalWorldModel.InheritanceQueryBuilder.extensionalEvidence
+          (State := State) (Atom := Mettapedia.OSLF.MeTTaIL.Syntax.Pattern)
+          (Query := Query) W enc
+          (Mettapedia.OSLF.MeTTaIL.Syntax.Pattern.fvar a0) p)
+        (model.scoreModel.scoreToEvidence
+          (model.scoreModel.assocScore W (Mettapedia.OSLF.MeTTaIL.Syntax.Pattern.fvar a0) p))
+        (model.scoreModel.scoreToEvidence
+          (model.scoreModel.patScore W (Mettapedia.OSLF.MeTTaIL.Syntax.Pattern.fvar a0) p)))) := by
+    simpa [hAssocScore W (Mettapedia.OSLF.MeTTaIL.Syntax.Pattern.fvar a0) p,
+      hPatScore W (Mettapedia.OSLF.MeTTaIL.Syntax.Pattern.fvar a0) p] using hTau
+  exact
+    ⟨hAssocSubset, hPatSubset,
+      intensional_mixed_assocPat_threshold_atom_of_interval_of_assocPatSemanticModel
+        (State := State) (Query := Query)
+        i R ctx enc model W a0 p coord tau hTau'⟩
 
 /-- Bayes-normal selector wrapper for the model-based ASSOC+PAT endpoint. -/
 theorem intensional_mixed_assocPat_threshold_atom_bayesNormal_of_assocPatSemanticModel

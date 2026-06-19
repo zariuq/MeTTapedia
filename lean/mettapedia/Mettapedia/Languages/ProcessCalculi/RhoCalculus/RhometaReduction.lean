@@ -955,10 +955,335 @@ private theorem stripSCWrappers_wrappedValue (value : Atom) :
   simp [wrappedValue, stripSCWrappers, stripSCWrappersList,
     stripSCWrappers_atomToPattern]
 
+/-- Drop a leading `PZero` from a parallel bag of any length:
+`[PZero, rest…] ≡ [rest…]`, via `par_flatten` (nest the tail) then `par_nil_left`. -/
+private theorem scParRemoveLeadingPZero (rest : List Pattern) :
+    StructuralCongruence
+      (.collection .hashBag (.apply "PZero" [] :: rest) none)
+      (.collection .hashBag rest none) := by
+  have hflat :
+      StructuralCongruence
+        (.collection .hashBag
+          (.apply "PZero" [] :: [.collection .hashBag rest none]) none)
+        (.collection .hashBag (.apply "PZero" [] :: rest) none) := by
+    simpa using StructuralCongruence.par_flatten [.apply "PZero" []] rest
+  exact StructuralCongruence.trans _ _ _
+    (StructuralCongruence.symm _ _ hflat)
+    (StructuralCongruence.par_nil_left (.collection .hashBag rest none))
+
+/-- Congruence under a fixed bag head: `[y, rest…] ≡ [y, rest'…]` from the
+tail congruence `[rest…] ≡ [rest'…]`, via the `par_flatten` sandwich + 2-element
+`par_cong`. -/
+private theorem scHashBag_cons_cong {rest rest' : List Pattern} (y : Pattern)
+    (h : StructuralCongruence
+          (.collection .hashBag rest none) (.collection .hashBag rest' none)) :
+    StructuralCongruence
+      (.collection .hashBag (y :: rest) none)
+      (.collection .hashBag (y :: rest') none) := by
+  have hcong :
+      StructuralCongruence
+        (.collection .hashBag [y, .collection .hashBag rest none] none)
+        (.collection .hashBag [y, .collection .hashBag rest' none] none) := by
+    refine StructuralCongruence.par_cong
+      [y, .collection .hashBag rest none]
+      [y, .collection .hashBag rest' none] rfl ?_
+    intro i h₁ h₂
+    match i, h₁ with
+    | 0, _ => exact StructuralCongruence.refl _
+    | 1, _ => exact h
+  have hl :
+      StructuralCongruence
+        (.collection .hashBag [y, .collection .hashBag rest none] none)
+        (.collection .hashBag (y :: rest) none) := by
+    simpa using StructuralCongruence.par_flatten [y] rest
+  have hr :
+      StructuralCongruence
+        (.collection .hashBag [y, .collection .hashBag rest' none] none)
+        (.collection .hashBag (y :: rest') none) := by
+    simpa using StructuralCongruence.par_flatten [y] rest'
+  exact StructuralCongruence.trans _ _ _
+    (StructuralCongruence.trans _ _ _ (StructuralCongruence.symm _ _ hl) hcong) hr
+
+/-- Remove every `PZero` from a parallel bag: `[ys…] ≡ [ys.filter (≠ PZero)…]`. -/
+private theorem scHashBag_filterPZero (ys : List Pattern) :
+    StructuralCongruence
+      (.collection .hashBag ys none)
+      (.collection .hashBag
+        (ys.filter (fun e => e ≠ .apply "PZero" [])) none) := by
+  induction ys with
+  | nil => exact StructuralCongruence.refl _
+  | cons y rest ih =>
+    by_cases hy : y = .apply "PZero" []
+    · subst hy
+      have hfilter :
+          (.apply "PZero" [] :: rest).filter (fun e => e ≠ .apply "PZero" []) =
+            rest.filter (fun e => e ≠ .apply "PZero" []) := by simp
+      rw [hfilter]
+      exact StructuralCongruence.trans _ _ _ (scParRemoveLeadingPZero rest) ih
+    · have hfilter :
+          (y :: rest).filter (fun e => e ≠ .apply "PZero" []) =
+            y :: rest.filter (fun e => e ≠ .apply "PZero" []) := by simp [hy]
+      rw [hfilter]
+      exact scHashBag_cons_cong y ih
+
+/-- The final administrative collapse of a `PZero`-free bag, matching
+`stripSCWrappers`' own `hashBag` arm: `[] ↦ PZero`, `[e] ↦ e`, `≥2 ↦ itself`. -/
+private theorem scHashBag_collapse (zs : List Pattern) :
+    StructuralCongruence (.collection .hashBag zs none)
+      (match zs with
+       | [] => .apply "PZero" []
+       | [e] => e
+       | _ => .collection .hashBag zs none) := by
+  match zs with
+  | [] => exact StructuralCongruence.par_empty
+  | [e] => exact StructuralCongruence.par_singleton e
+  | _ :: _ :: _ => exact StructuralCongruence.refl _
+
+/-- Two-sided bag-cons congruence: `[a, rest…] ≡ [b, rest'…]` from head `a ≡ b`
+and tail `[rest…] ≡ [rest'…]`. (Generalises `scHashBag_cons_cong`.) -/
+private theorem scHashBag_cons_cong2 {a b : Pattern} {rest rest' : List Pattern}
+    (hh : StructuralCongruence a b)
+    (ht : StructuralCongruence
+          (.collection .hashBag rest none) (.collection .hashBag rest' none)) :
+    StructuralCongruence
+      (.collection .hashBag (a :: rest) none)
+      (.collection .hashBag (b :: rest') none) := by
+  have hcong :
+      StructuralCongruence
+        (.collection .hashBag [a, .collection .hashBag rest none] none)
+        (.collection .hashBag [b, .collection .hashBag rest' none] none) := by
+    refine StructuralCongruence.par_cong
+      [a, .collection .hashBag rest none]
+      [b, .collection .hashBag rest' none] rfl ?_
+    intro i h₁ h₂
+    match i, h₁ with
+    | 0, _ => exact hh
+    | 1, _ => exact ht
+  have hl :
+      StructuralCongruence
+        (.collection .hashBag [a, .collection .hashBag rest none] none)
+        (.collection .hashBag (a :: rest) none) := by
+    simpa using StructuralCongruence.par_flatten [a] rest
+  have hr :
+      StructuralCongruence
+        (.collection .hashBag [b, .collection .hashBag rest' none] none)
+        (.collection .hashBag (b :: rest') none) := by
+    simpa using StructuralCongruence.par_flatten [b] rest'
+  exact StructuralCongruence.trans _ _ _
+    (StructuralCongruence.trans _ _ _ (StructuralCongruence.symm _ _ hl) hcong) hr
+
+mutual
+
+/-- Patterns free of any `hashSet` collection — the fragment on which
+`stripSCWrappers` is structurally sound (it collapses `hashSet`s without an SC law). -/
+private def NoHashSet : Pattern → Prop
+  | .bvar _ => True
+  | .fvar _ => True
+  | .apply _ args => NoHashSetList args
+  | .lambda _ body => NoHashSet body
+  | .multiLambda _ _ body => NoHashSet body
+  | .subst b r => NoHashSet b ∧ NoHashSet r
+  | .collection .hashSet _ _ => False
+  | .collection _ elems _ => NoHashSetList elems
+
+private def NoHashSetList : List Pattern → Prop
+  | [] => True
+  | p :: ps => NoHashSet p ∧ NoHashSetList ps
+
+end
+
+
+/-- `stripSCWrappers` reduction on a non-quote-drop `apply`: when the head/args
+are not the `NQuote (PDrop ·)` shape, strip just recurses into the arguments. -/
+private theorem stripSCWrappers_apply_general
+    (f : String) (args : List Pattern)
+    (hne : ¬ ∃ n, f = "NQuote" ∧ args = [.apply "PDrop" [n]]) :
+    stripSCWrappers (.apply f args) = .apply f (stripSCWrappersList args) := by
+  unfold stripSCWrappers
+  split <;> simp_all
+
+/-- `stripSCWrappers` reduction on a collection that is not a `hashBag`/`hashSet`
+quiescent (`g = none`) bag: strip just recurses into the elements. -/
+private theorem stripSCWrappers_collection_general
+    (ct : CollType) (elems : List Pattern) (g : Option String)
+    (hb : ¬ (ct = .hashBag ∧ g = none)) (hs : ¬ (ct = .hashSet ∧ g = none)) :
+    stripSCWrappers (.collection ct elems g) =
+      .collection ct (stripSCWrappersList elems) g := by
+  unfold stripSCWrappers
+  split <;> simp_all
+
+mutual
+
+/-- Strip-soundness on the `hashSet`-free fragment: every `stripSCWrappers`
+rewrite (singleton/nil/empty collapse, quote-drop, recursion) is an SC step. -/
+private theorem structuralCongruence_stripSCWrappers :
+    ∀ (p : Pattern), NoHashSet p → StructuralCongruence p (stripSCWrappers p)
+  | .bvar _, _ => StructuralCongruence.refl _
+  | .fvar _, _ => StructuralCongruence.refl _
+  | .lambda nm body, h =>
+      StructuralCongruence.lambda_cong nm _ _
+        (structuralCongruence_stripSCWrappers body h)
+  | .multiLambda n nms body, h =>
+      StructuralCongruence.multiLambda_cong n nms _ _
+        (structuralCongruence_stripSCWrappers body h)
+  | .subst b r, h =>
+      StructuralCongruence.subst_cong _ _ _ _
+        (structuralCongruence_stripSCWrappers b h.1)
+        (structuralCongruence_stripSCWrappers r h.2)
+  | .apply f args, h => by
+      by_cases hq : ∃ n, f = "NQuote" ∧ args = [.apply "PDrop" [n]]
+      · obtain ⟨n, hf, ha⟩ := hq
+        subst hf; subst ha
+        have hr : stripSCWrappers (.apply "NQuote" [.apply "PDrop" [n]])
+            = stripSCWrappers n := rfl
+        rw [hr]
+        exact StructuralCongruence.trans _ _ _ (StructuralCongruence.quote_drop n)
+          (structuralCongruence_stripSCWrappers n
+            (by simpa [NoHashSet, NoHashSetList] using h))
+      · rw [stripSCWrappers_apply_general f args hq]
+        exact StructuralCongruence.apply_cong f args (stripSCWrappersList args)
+          (by rw [stripSCWrappersList_eq_map, List.length_map])
+          (scStripList_pointwise args h)
+  | .collection .hashBag elems none, h => by
+      have hkit := StructuralCongruence.trans _ _ _
+        (StructuralCongruence.trans _ _ _
+          (StructuralCongruence.par_cong elems (stripSCWrappersList elems)
+            (by rw [stripSCWrappersList_eq_map, List.length_map])
+            (scStripList_pointwise elems h))
+          (scHashBag_filterPZero (stripSCWrappersList elems)))
+        (scHashBag_collapse
+          ((stripSCWrappersList elems).filter (fun e => e ≠ .apply "PZero" [])))
+      simpa only [stripSCWrappers] using hkit
+  | .collection .hashSet _ _, h => absurd h (by simp [NoHashSet])
+  | .collection ct elems g, h => by
+      by_cases hb : ct = .hashBag ∧ g = none
+      · obtain ⟨hct, hg⟩ := hb; subst hct; subst hg
+        have hkit := StructuralCongruence.trans _ _ _
+          (StructuralCongruence.trans _ _ _
+            (StructuralCongruence.par_cong elems (stripSCWrappersList elems)
+              (by rw [stripSCWrappersList_eq_map, List.length_map])
+              (scStripList_pointwise elems (by simpa [NoHashSet] using h)))
+            (scHashBag_filterPZero (stripSCWrappersList elems)))
+          (scHashBag_collapse
+            ((stripSCWrappersList elems).filter (fun e => e ≠ .apply "PZero" [])))
+        simpa only [stripSCWrappers] using hkit
+      · by_cases hs : ct = .hashSet ∧ g = none
+        · obtain ⟨hct, hg⟩ := hs; subst hct; subst hg
+          exact absurd h (by simp [NoHashSet])
+        · rw [stripSCWrappers_collection_general ct elems g hb hs]
+          exact StructuralCongruence.collection_general_cong ct elems
+            (stripSCWrappersList elems) g
+            (by rw [stripSCWrappersList_eq_map, List.length_map])
+            (scStripList_pointwise elems
+              (by cases ct <;> simpa [NoHashSet] using h))
+
+/-- Pointwise strip-soundness over a `hashSet`-free list (the `*_cong` shape). -/
+private theorem scStripList_pointwise :
+    ∀ (elems : List Pattern), NoHashSetList elems →
+      ∀ i (h₁ : i < elems.length) (h₂ : i < (stripSCWrappersList elems).length),
+        StructuralCongruence (elems.get ⟨i, h₁⟩)
+          ((stripSCWrappersList elems).get ⟨i, h₂⟩)
+  | [], _ => by intro i h₁ _; exact absurd h₁ (by simp)
+  | a :: rest, h => by
+      intro i h₁ h₂
+      match i with
+      | 0 =>
+          simpa [stripSCWrappersList] using
+            structuralCongruence_stripSCWrappers a h.1
+      | Nat.succ j =>
+          have hj : j < rest.length := by
+            simp only [List.length_cons] at h₁; omega
+          have hj₂ : j < (stripSCWrappersList rest).length := by
+            simp only [stripSCWrappersList, List.length_cons] at h₂; omega
+          simpa [stripSCWrappersList] using
+            scStripList_pointwise rest h.2 j hj hj₂
+
+end
+
+private theorem noHashSetList_iff_of_pointwise
+    {ps qs : List Pattern}
+    (hlen : ps.length = qs.length)
+    (hpoint : ∀ i (h₁ : i < ps.length) (h₂ : i < qs.length),
+      NoHashSet (ps.get ⟨i, h₁⟩) ↔ NoHashSet (qs.get ⟨i, h₂⟩)) :
+    NoHashSetList ps ↔ NoHashSetList qs := by
+  induction ps generalizing qs with
+  | nil =>
+      cases qs with
+      | nil => simp [NoHashSetList]
+      | cons q qs => simp at hlen
+  | cons p ps ih =>
+      cases qs with
+      | nil => simp at hlen
+      | cons q qs =>
+          have hpq : NoHashSet p ↔ NoHashSet q :=
+            hpoint 0 (Nat.zero_lt_succ _) (Nat.zero_lt_succ _)
+          have hrest : NoHashSetList ps ↔ NoHashSetList qs := by
+            apply ih
+            · simpa using Nat.succ.inj hlen
+            · intro i h₁ h₂
+              simpa using hpoint (i + 1) (Nat.succ_lt_succ h₁) (Nat.succ_lt_succ h₂)
+          simp only [NoHashSetList]
+          constructor <;> intro h
+          · exact ⟨hpq.mp h.1, hrest.mp h.2⟩
+          · exact ⟨hpq.mpr h.1, hrest.mpr h.2⟩
+
+private theorem noHashSetList_iff_of_perm
+    {ps qs : List Pattern} (hperm : ps.Perm qs) :
+    NoHashSetList ps ↔ NoHashSetList qs := by
+  induction hperm with
+  | nil => simp [NoHashSetList]
+  | @cons p ps qs hperm ih => simp [NoHashSetList, ih]
+  | swap p q ps => simp [NoHashSetList, and_left_comm]
+  | trans _ _ ih₁ ih₂ => exact ih₁.trans ih₂
+
+private theorem noHashSetList_append_iff
+    {ps qs : List Pattern} :
+    NoHashSetList (ps ++ qs) ↔ NoHashSetList ps ∧ NoHashSetList qs := by
+  induction ps with
+  | nil => simp [NoHashSetList]
+  | cons p ps ih => simp [NoHashSetList, ih, and_assoc]
+
+/-- `NoHashSet` is structural-congruence invariant: SC never introduces or
+removes a `hashSet`, so the residual SC-class is uniformly `hashSet`-free. -/
+private theorem noHashSet_iff_of_structuralCongruence
+    {p q : Pattern} (hsc : StructuralCongruence p q) :
+    NoHashSet p ↔ NoHashSet q := by
+  induction hsc with
+  | alpha _ _ h => subst h; rfl
+  | refl _ => rfl
+  | symm _ _ _ ih => exact ih.symm
+  | trans _ _ _ _ _ ih₁ ih₂ => exact ih₁.trans ih₂
+  | par_singleton p => simp [NoHashSet, NoHashSetList]
+  | par_nil_left p => simp [NoHashSet, NoHashSetList]
+  | par_nil_right p => simp [NoHashSet, NoHashSetList]
+  | par_empty => simp [NoHashSet, NoHashSetList]
+  | par_comm p q => simp [NoHashSet, NoHashSetList, and_comm]
+  | par_assoc p q r => simp [NoHashSet, NoHashSetList, and_assoc, and_comm]
+  | par_cong ps qs hlen _ ih =>
+      simpa [NoHashSet] using noHashSetList_iff_of_pointwise hlen ih
+  | par_flatten ps qs =>
+      simp [NoHashSet, NoHashSetList, noHashSetList_append_iff]
+  | par_perm ps qs hperm =>
+      simpa [NoHashSet] using noHashSetList_iff_of_perm hperm
+  | set_perm ps qs hperm => simp [NoHashSet]
+  | set_cong ps qs hlen _ ih => simp [NoHashSet]
+  | lambda_cong _ _ _ _ ih => simpa [NoHashSet] using ih
+  | apply_cong f args₁ args₂ hlen _ ih =>
+      simpa [NoHashSet] using noHashSetList_iff_of_pointwise hlen ih
+  | collection_general_cong ct ps qs g hlen _ ih =>
+      cases ct <;>
+        simpa [NoHashSet] using noHashSetList_iff_of_pointwise hlen ih
+  | multiLambda_cong _ _ _ _ _ ih => simpa [NoHashSet] using ih
+  | subst_cong _ _ _ _ _ _ ih₁ ih₂ => simp [NoHashSet, ih₁, ih₂]
+  | quote_drop n => simp [NoHashSet, NoHashSetList]
+
 /-- SC-aware atom decoder candidate: first collapse administrative wrappers,
 then decode the inert HE embedding. -/
 private def scDecodeAtom? (p : Pattern) : Option Atom :=
   patternToAtom? (stripSCWrappers p)
+
+private def scDecodeAtom2? (p : Pattern) : Option Atom :=
+  patternToAtom? (stripSCWrappers (stripSCWrappers p))
 
 /-- The nonzero stripped elements of a parallel bag/set shell. -/
 private def strippedNonZeroElems (elems : List Pattern) : List Pattern :=
@@ -1246,6 +1571,18 @@ private theorem strippedNonZeroElems_eq_singleton_deferred_iff_of_pointwise
 private theorem scDecodeAtom_atomToPattern (a : Atom) :
     scDecodeAtom? (atomToPattern a) = some a := by
   simp [scDecodeAtom?, stripSCWrappers_atomToPattern,
+    patternToAtom_atomToPattern]
+
+private theorem scDecodeAtom2_atomToPattern (a : Atom) :
+    scDecodeAtom2? (atomToPattern a) = some a := by
+  simp [scDecodeAtom2?, stripSCWrappers_atomToPattern,
+    patternToAtom_atomToPattern]
+
+private theorem scDecodeAtom2_of_strip_atomToPattern
+    {p : Pattern} {a : Atom}
+    (hstrip : stripSCWrappers p = atomToPattern a) :
+    scDecodeAtom2? p = some a := by
+  simp [scDecodeAtom2?, hstrip, stripSCWrappers_atomToPattern,
     patternToAtom_atomToPattern]
 
 private theorem scDecodeAtom_unique
@@ -2972,6 +3309,8 @@ private theorem outputsDeferred_iff_of_structuralCongruence
       simp [OutputsDeferred, OutputsDeferredList]
   | par_nil_right p =>
       simp [OutputsDeferred, OutputsDeferredList]
+  | par_empty =>
+      simp [OutputsDeferred, OutputsDeferredList]
   | par_comm p q =>
       simp [OutputsDeferred, OutputsDeferredList, and_comm]
   | par_assoc p q r =>
@@ -3150,6 +3489,8 @@ private theorem outputsPayload_iff_of_structuralCongruence
   | par_nil_left p =>
       simp [OutputsPayload, OutputsPayloadList]
   | par_nil_right p =>
+      simp [OutputsPayload, OutputsPayloadList]
+  | par_empty =>
       simp [OutputsPayload, OutputsPayloadList]
   | par_comm p q =>
       simp [OutputsPayload, OutputsPayloadList, and_comm]
@@ -3960,6 +4301,28 @@ private theorem shellWidth_deferredPayload (payload : Atom) :
     shellWidth (deferredPayload payload) = 1 := by
   simp [deferredPayload, shellWidth]
 
+private theorem decodeWrappedValues?_shellWidth_sum_eq_length
+    {ps : List Pattern} {xs : List Atom}
+    (h : decodeWrappedValues? ps = some xs) :
+    (ps.map shellWidth).sum = xs.length := by
+  induction ps generalizing xs with
+  | nil =>
+      simp [decodeWrappedValues?] at h
+      cases h
+      rfl
+  | cons p ps ih =>
+      simp only [decodeWrappedValues?] at h
+      cases hp : decodeWrappedValue? p <;> simp [hp] at h
+      rename_i a
+      cases hs : decodeWrappedValues? ps <;> simp [hs] at h
+      rename_i ys
+      subst xs
+      have hpwidth : shellWidth p = 1 := by
+        rw [eq_wrappedValue_of_decodeWrappedValue_eq_some hp]
+        exact shellWidth_wrappedValue a
+      simp [hpwidth, ih hs]
+      omega
+
 private theorem shellWidth_list_SC
     {ps qs : List Pattern} (hlen : ps.length = qs.length)
     (hsc : ∀ i (h₁ : i < ps.length) (h₂ : i < qs.length),
@@ -4000,6 +4363,8 @@ private theorem shellWidth_SC {p q : Pattern}
       simp [shellWidth, List.map_cons, List.map_nil, List.sum_cons, List.sum_nil]
   | par_nil_right p =>
       simp [shellWidth, List.map_cons, List.map_nil, List.sum_cons, List.sum_nil]
+  | par_empty =>
+      simp [shellWidth, List.map_nil, List.sum_nil]
   | par_comm p q =>
       simp [shellWidth, List.map_cons, List.map_nil, List.sum_cons, List.sum_nil]
       omega
@@ -4831,6 +5196,8 @@ theorem evalFree_iff_of_structuralCongruence
   | par_nil_left p =>
       simp [EvalFree, EvalFreeList]
   | par_nil_right p =>
+      simp [EvalFree, EvalFreeList]
+  | par_empty =>
       simp [EvalFree, EvalFreeList]
   | par_comm p q =>
       simp [EvalFree, EvalFreeList, and_comm]
@@ -6104,6 +6471,8 @@ private theorem wrappedValuePayload_iff_of_structuralCongruence
       simp [WrappedValuePayload, WrappedValuePayloadList]
   | par_nil_right p =>
       simp [WrappedValuePayload, WrappedValuePayloadList]
+  | par_empty =>
+      simp [WrappedValuePayload, WrappedValuePayloadList]
   | par_comm p q =>
       simp [WrappedValuePayload, WrappedValuePayloadList, and_comm]
   | par_assoc p q r =>
@@ -6175,6 +6544,62 @@ private theorem wrappedValuePayload_iff_of_structuralCongruence
   | quote_drop n =>
       simp [WrappedValuePayload, WrappedValuePayloadList]
 
+private theorem wrappedValuePayload_natToPattern_any (target : Atom) :
+    ∀ n : Nat, WrappedValuePayload target (natToPattern n)
+  | 0 => by
+      simp [natToPattern, WrappedValuePayload, WrappedValuePayloadList]
+  | n + 1 => by
+      simp [natToPattern, WrappedValuePayload, WrappedValuePayloadList,
+        wrappedValuePayload_natToPattern_any target n]
+
+mutual
+
+private theorem wrappedValuePayload_atomToPattern_any (target : Atom) :
+    ∀ atom : Atom, WrappedValuePayload target (atomToPattern atom)
+  | .symbol s => by
+      simp [atomToPattern, WrappedValuePayload, WrappedValuePayloadList]
+  | .var v => by
+      simp [atomToPattern, WrappedValuePayload, WrappedValuePayloadList]
+  | .grounded g => by
+      cases g with
+      | int i =>
+          cases i using Int.rec with
+          | ofNat n =>
+              simp [atomToPattern, groundedValueToPattern,
+                WrappedValuePayload, WrappedValuePayloadList,
+                wrappedValuePayload_natToPattern_any target n]
+          | negSucc n =>
+              simp [atomToPattern, groundedValueToPattern,
+                WrappedValuePayload, WrappedValuePayloadList,
+                wrappedValuePayload_natToPattern_any target n]
+      | string s =>
+          simp [atomToPattern, groundedValueToPattern,
+            WrappedValuePayload, WrappedValuePayloadList]
+      | bool b =>
+          cases b <;>
+            simp [atomToPattern, groundedValueToPattern,
+              WrappedValuePayload, WrappedValuePayloadList]
+      | custom ty data =>
+          simp [atomToPattern, groundedValueToPattern,
+            WrappedValuePayload, WrappedValuePayloadList]
+  | .expression es => by
+      simpa [atomToPattern, WrappedValuePayload] using
+        wrappedValuePayloadList_atomToPatterns_any target es
+termination_by atom => sizeOf atom
+
+private theorem wrappedValuePayloadList_atomToPatterns_any (target : Atom) :
+    ∀ atoms : List Atom,
+      WrappedValuePayloadList target (atoms.map atomToPattern)
+  | [] => by
+      simp [WrappedValuePayloadList]
+  | atom :: atoms => by
+      simp [WrappedValuePayloadList,
+        wrappedValuePayload_atomToPattern_any target atom,
+        wrappedValuePayloadList_atomToPatterns_any target atoms]
+termination_by atoms => sizeOf atoms
+
+end
+
 private theorem wrappedValuePayload_wrappedValue (value : Atom) :
     WrappedValuePayload value (wrappedValue value) := by
   simpa [WrappedValuePayload, wrappedValue] using
@@ -6239,6 +6664,65 @@ private theorem wrappedValuePayload_of_evalDropResidual_structural
     WrappedValuePayload value p :=
   wrappedValuePayload_of_structuralResidual
     (StructuralCongruence.symm _ _ hsc)
+
+private theorem noHashSet_natToPattern (n : Nat) :
+    NoHashSet (natToPattern n) := by
+  induction n with
+  | zero => simp [natToPattern, NoHashSet, NoHashSetList]
+  | succ n ih => simp [natToPattern, NoHashSet, NoHashSetList, ih]
+
+private theorem noHashSet_groundedValueToPattern (g : GroundedValue) :
+    NoHashSet (groundedValueToPattern g) := by
+  cases g with
+  | int i =>
+      cases i using Int.rec with
+      | ofNat n =>
+          simp [groundedValueToPattern, NoHashSet, NoHashSetList,
+            noHashSet_natToPattern]
+      | negSucc n =>
+          simp [groundedValueToPattern, NoHashSet, NoHashSetList,
+            noHashSet_natToPattern]
+  | string s => simp [groundedValueToPattern, NoHashSet, NoHashSetList]
+  | bool b => cases b <;> simp [groundedValueToPattern, NoHashSet, NoHashSetList]
+  | custom ty data => simp [groundedValueToPattern, NoHashSet, NoHashSetList]
+
+mutual
+
+/-- The inert HE embedding `atomToPattern` is collection-free, hence `hashSet`-free. -/
+private theorem noHashSet_atomToPattern :
+    ∀ a : Atom, NoHashSet (atomToPattern a)
+  | .symbol s => by simp [atomToPattern, NoHashSet, NoHashSetList]
+  | .var v => by simp [atomToPattern, NoHashSet, NoHashSetList]
+  | .grounded g => by
+      simpa [atomToPattern] using noHashSet_groundedValueToPattern g
+  | .expression es => by
+      simpa [atomToPattern, NoHashSet] using noHashSetList_atomToPatterns es
+termination_by a => sizeOf a
+
+private theorem noHashSetList_atomToPatterns :
+    ∀ xs : List Atom, NoHashSetList (xs.map atomToPattern)
+  | [] => by simp [NoHashSetList]
+  | x :: xs => by
+      simp [NoHashSetList, noHashSet_atomToPattern x,
+        noHashSetList_atomToPatterns xs]
+termination_by xs => sizeOf xs
+
+end
+
+/-- The drop-residual is `hashSet`-free. -/
+private theorem noHashSet_evalDropResidual (value : Atom) :
+    NoHashSet (evalDropResidual value) := by
+  unfold evalDropResidual
+  rw [semanticNormalizeProc_wrappedValue]
+  simp [wrappedValue, NoHashSet, NoHashSetList, noHashSet_atomToPattern]
+
+/-- Hence every SC-representative of a drop-residual is `hashSet`-free, so the
+strip-soundness connector applies to it. -/
+private theorem noHashSet_of_structuralResidual
+    {value : Atom} {p : Pattern}
+    (hsc : StructuralCongruence p (evalDropResidual value)) :
+    NoHashSet p :=
+  (noHashSet_iff_of_structuralCongruence hsc).mpr (noHashSet_evalDropResidual value)
 
 -- B7 ROUTE: carrier faithful; avoid broad decoder/atom SC-invariance.
 -- Prove residual-specific value recovery, then the singleton carrier theorem.
@@ -6487,6 +6971,91 @@ private theorem scResidualResultMultiset_eq_singleton_of_strip_wrappedValue
       (fun value => ({value} : Multiset Atom)) = some rs at hdecode
   simp [scDecodeWrappedValue?_wrappedValue] at hdecode
   exact hdecode.symm
+
+private theorem scResidualResultMultiset_width_one_singleton
+    {p : Pattern} {rs : Multiset Atom}
+    (hwidth : shellWidth (stripSCWrappers p) = 1)
+    (hdecode : scResidualResultMultiset? p = some rs) :
+    ∃ value, rs = ({value} : Multiset Atom) := by
+  unfold scResidualResultMultiset? at hdecode
+  cases hstrip : stripSCWrappers p with
+  | collection ct elems g =>
+      cases ct <;> cases g <;> simp [hstrip] at hdecode hwidth
+      · rcases hdecode with ⟨value, _, hrs⟩
+        exact ⟨value, hrs.symm⟩
+      · rcases hdecode with ⟨value, _, hrs⟩
+        exact ⟨value, hrs.symm⟩
+      · cases hdec : decodeWrappedValues? elems with
+        | none =>
+            simp [hdec] at hdecode
+        | some xs =>
+            have hrs : (xs : Multiset Atom) = rs := by
+              simpa [hdec] using hdecode
+            have hsum : (elems.map shellWidth).sum = xs.length :=
+              decodeWrappedValues?_shellWidth_sum_eq_length hdec
+            have hsumwidth : (elems.map shellWidth).sum = 1 := by
+              simpa [shellWidth] using hwidth
+            have hxslen : xs.length = 1 := by
+              omega
+            cases xs with
+            | nil =>
+                simp at hxslen
+            | cons value rest =>
+                cases rest with
+                | nil =>
+                    refine ⟨value, ?_⟩
+                    simpa using hrs.symm
+                | cons value' rest' =>
+                    simp at hxslen
+      · rcases hdecode with ⟨value, _, hrs⟩
+        exact ⟨value, hrs.symm⟩
+      · rcases hdecode with ⟨value, _, hrs⟩
+        exact ⟨value, hrs.symm⟩
+      · rcases hdecode with ⟨value, _, hrs⟩
+        exact ⟨value, hrs.symm⟩
+  | apply f args =>
+      simp [hstrip] at hdecode
+      rcases hdecode with ⟨value, _, hrs⟩
+      exact ⟨value, hrs.symm⟩
+  | bvar i =>
+      simp [hstrip, scDecodeWrappedValue?, stripSCWrappers] at hdecode
+  | fvar x =>
+      simp [hstrip, scDecodeWrappedValue?, stripSCWrappers] at hdecode
+  | lambda nm body =>
+      simp [hstrip, scDecodeWrappedValue?, stripSCWrappers] at hdecode
+  | multiLambda n nms body =>
+      simp [hstrip, scDecodeWrappedValue?, stripSCWrappers] at hdecode
+  | subst body repl =>
+      simp [hstrip, scDecodeWrappedValue?, stripSCWrappers] at hdecode
+
+private theorem scResidualResultMultiset_singleton_of_structuralResidual
+    {value : Atom} {p : Pattern} {rs : Multiset Atom}
+    (hsc : StructuralCongruence p (evalDropResidual value))
+    (hdecode : scResidualResultMultiset? p = some rs) :
+    ∃ decoded, rs = ({decoded} : Multiset Atom) := by
+  have hwidth : shellWidth p = 1 :=
+    shellWidth_of_dropResidualLike
+      (dropResidualLike_of_residual_structuralCongruence hsc)
+  have hstripWidth : shellWidth (stripSCWrappers p) = 1 := by
+    rw [shellWidth_stripSCWrappers, hwidth]
+  exact scResidualResultMultiset_width_one_singleton hstripWidth hdecode
+
+private theorem scResidualResultMultiset_eq_singleton_of_structuralResidual_of_value_unique
+    {value : Atom}
+    (hvalue : ∀ {p : Pattern} {decoded : Atom},
+      StructuralCongruence p (evalDropResidual value) →
+      scResidualResultMultiset? p = some ({decoded} : Multiset Atom) →
+      decoded = value)
+    {p : Pattern} {rs : Multiset Atom}
+    (hsc : StructuralCongruence p (evalDropResidual value))
+    (hdecode : scResidualResultMultiset? p = some rs) :
+    rs = ({value} : Multiset Atom) := by
+  obtain ⟨decoded, hrs⟩ :=
+    scResidualResultMultiset_singleton_of_structuralResidual hsc hdecode
+  subst hrs
+  have hdecoded : decoded = value := hvalue hsc hdecode
+  subst hdecoded
+  rfl
 
 private theorem obs_eq_of_strip_hashBag_singleton_wrapped_decode
     {value : Atom} {p : Pattern} {elems : List Pattern}
@@ -9419,6 +9988,34 @@ theorem evalDrop_quiescent_run_eq_branch_split
     exact evalDropSystem_quiescent_eq_self_of_empty
       (space := space) (dispatch := dispatch)
       (chan := chan) (payload := payload) hready
+
+/-- B7 drop-shell bridge crown: the exact drop observer's abstract quiescent
+may-set is the certified singleton image on the ready branch, and the unchanged
+initial accumulator on the empty-frontier branch. -/
+theorem rhometta_bridge
+    {space : Space} {dispatch : GroundedDispatch}
+    {chan : Pattern} {payload : Atom} :
+    ((certifiedPayloadReified space dispatch payload).Nonempty →
+      {acc' | ∃ s',
+          (∃ n,
+            (s', acc') ∈
+              runOutcomes (evalDropSystem space dispatch chan payload) allPol n
+                (evalDropSource chan payload,
+                  ((0 : Multiset Atom), (1 : Unit × ExportBag Empty)))) ∧
+          (evalDropSystem space dispatch chan payload).enabled s' = ∅} =
+        {acc' | ∃ value,
+            CertifiedPayloadResult space dispatch payload value ∧
+            acc' = (({value} : Multiset Atom), ((), (1 : ExportBag Empty)))}) ∧
+    (¬ (certifiedPayloadReified space dispatch payload).Nonempty →
+      {acc' | ∃ s',
+          (∃ n,
+            (s', acc') ∈
+              runOutcomes (evalDropSystem space dispatch chan payload) allPol n
+                (evalDropSource chan payload,
+                  ((0 : Multiset Atom), (1 : Unit × ExportBag Empty)))) ∧
+          (evalDropSystem space dispatch chan payload).enabled s' = ∅} =
+        {((0 : Multiset Atom), (1 : Unit × ExportBag Empty))}) :=
+  evalDrop_quiescent_run_eq_branch_split
 
 end EvalDropRunBridge
 

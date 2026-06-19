@@ -7063,7 +7063,9 @@ Definition bridge_eval_switch_fragment_def:
   bridge_eval_switch_fragment fuel space atom =
     case atom of
     | metta_m1$Expr [metta_m1$Sym 55; scrut; metta_m1$Expr branches] =>
-        eval_switch_one_with (λa. eval_m1_rec fuel space a) scrut branches
+        eval_switch_values_with
+          (λa. eval_m1_rec fuel space a)
+          (eval_m1_rec fuel space scrut) branches
     | _ => [atom]
 End
 
@@ -7818,6 +7820,19 @@ Proof
      bridge_first_branch_payloads_case_decompose]
 QED
 
+Theorem bridge_branch_values_payloads_switch_decompose:
+  ∀ev vals branches.
+    eval_switch_values_with ev vals branches =
+    bridge_chain_concat_results
+      (MAP ev (bridge_branch_values_payloads vals branches))
+Proof
+  Induct_on ‘vals’ \\
+  rw[eval_switch_values_with_def, bridge_branch_values_payloads_def,
+     bridge_chain_concat_results_def, MAP_APPEND,
+     bridge_chain_concat_results_append,
+     bridge_first_branch_payloads_switch_decompose]
+QED
+
 Theorem bridge_eval_switch_fragment_decomposes:
   ∀fuel space scrut branches.
     bridge_eval_switch_fragment fuel space
@@ -7825,10 +7840,11 @@ Theorem bridge_eval_switch_fragment_decomposes:
     bridge_chain_concat_results
       (MAP
         (λpayload. eval_m1_rec fuel space payload)
-        (bridge_first_branch_payloads scrut branches))
+        (bridge_branch_values_payloads
+          (eval_m1_rec fuel space scrut) branches))
 Proof
   rw[bridge_eval_switch_fragment_def,
-     bridge_first_branch_payloads_switch_decompose]
+     bridge_branch_values_payloads_switch_decompose]
 QED
 
 Theorem bridge_eval_case_fragment_decomposes:
@@ -7970,7 +7986,9 @@ Theorem bridge_eval_switch_fragment_payload_recursive_sound:
         (metta_m1$Expr [metta_m1$Sym 55; scrut;
                          metta_m1$Expr branches])) ⇒
     ∃payload.
-      MEM payload (bridge_first_branch_payloads scrut branches) ∧
+      MEM payload
+        (bridge_branch_values_payloads
+          (eval_m1_rec fuel space scrut) branches) ∧
       MEM out (eval_m1_rec fuel space payload) ∧
       eval_m1_rec_result_sound fuel space payload out ∧
       eval_m1_rec_family_sound fuel space payload out
@@ -8853,7 +8871,9 @@ Definition bridge_nested_payload_result_def:
        atom =
          metta_m1$Expr
           [metta_m1$Sym 55; scrut; metta_m1$Expr branches] ∧
-       MEM payload (bridge_first_branch_payloads scrut branches) ∧
+       MEM payload
+         (bridge_branch_values_payloads
+           (eval_m1_rec fuel space scrut) branches) ∧
        MEM out (eval_m1_rec fuel space payload) ∧
        eval_m1_rec_result_sound fuel space payload out ∧
        eval_m1_rec_family_sound fuel space payload out) ∨

@@ -187,6 +187,15 @@ def mettaCall (space : Space) (dispatch : GroundedDispatch)
   | n + 1 =>
     if isErrorAtom atom then [(atom, b)]
     else match atom with
+    | .expression [.symbol "unify", target, pattern, thenBranch, elseBranch] =>
+      let results := unifySuccessResults target pattern thenBranch b n
+      if results.isEmpty then [(elseBranch, b)] else results
+    | .expression (.symbol "unify" :: _) =>
+      [(mkError atom .incorrectNumberOfArguments, b)]
+    | .expression [.symbol "switch-minimal", scrut, .expression branches] =>
+      switchMinimalResults scrut branches b n
+    | .expression (.symbol "switch-minimal" :: _) =>
+      [(mkError atom .incorrectNumberOfArguments, b)]
     | .expression (op :: args) =>
       if dispatch.isExecutable op then
         match dispatch.execute op args with
@@ -219,6 +228,39 @@ def mettaCall (space : Space) (dispatch : GroundedDispatch)
 
 end
 
+/-- Primitive `unify` is a raw branch-and-bind lane: when its successful
+    merged results are nonempty, `mettaCall` returns exactly those raw branch
+    results and does not evaluate them further on its own. -/
+theorem mettaCall_unify_success_raw
+    {space : Space} {dispatch : GroundedDispatch}
+    {target pattern thenBranch elseBranch type_ : Atom}
+    {b : Bindings} {fuel : Nat}
+    (h_nonempty :
+      unifySuccessResults target pattern thenBranch b fuel ≠ []) :
+    mettaCall space dispatch
+      (.expression [.symbol "unify", target, pattern, thenBranch, elseBranch])
+      type_ b (fuel + 1) =
+      unifySuccessResults target pattern thenBranch b fuel := by
+  cases hres : unifySuccessResults target pattern thenBranch b fuel with
+  | nil =>
+      contradiction
+  | cons hd tl =>
+      simp [mettaCall, hres, isErrorAtom]
+
+/-- Primitive `unify` does its final else-branch fallback only when the raw
+    success-result lane is empty after merge/filter. -/
+theorem mettaCall_unify_no_match_raw
+    {space : Space} {dispatch : GroundedDispatch}
+    {target pattern thenBranch elseBranch type_ : Atom}
+    {b : Bindings} {fuel : Nat}
+    (h_empty :
+      unifySuccessResults target pattern thenBranch b fuel = []) :
+    mettaCall space dispatch
+      (.expression [.symbol "unify", target, pattern, thenBranch, elseBranch])
+      type_ b (fuel + 1) =
+      [(elseBranch, b)] := by
+  simp [mettaCall, h_empty, isErrorAtom]
+
 /-- Evaluate a MeTTa atom with default settings. -/
 def eval (space : Space) (atom : Atom) (fuel : Nat := 100) : ResultSet :=
   evalAtom space GroundedDispatch.none atom Atom.undefinedType Bindings.empty fuel
@@ -249,6 +291,15 @@ private def typedSpace := Space.ofList [
   .expression [.symbol ":", .symbol "x", .symbol "Int"]
 ]
 
+private def unifyFunctionType : Atom :=
+  .expression
+    [.symbol "->", Atom.atomType, Atom.atomType,
+      Atom.atomType, Atom.atomType, Atom.undefinedType]
+
+private def unifyTypedSpace := Space.ofList [
+  .expression [.symbol ":", .symbol "unify", unifyFunctionType]
+]
+
 example : evalAtom typedSpace GroundedDispatch.none
     (.symbol "x") (.symbol "Int") Bindings.empty 10 =
     [(.symbol "x", Bindings.empty)] := rfl
@@ -256,6 +307,66 @@ example : evalAtom typedSpace GroundedDispatch.none
 example : evalAtom typedSpace GroundedDispatch.none
     (.symbol "x") Atom.undefinedType Bindings.empty 10 =
     [(.symbol "x", Bindings.empty)] := rfl
+
+example : mettaCall Space.empty GroundedDispatch.none
+    (.expression
+      [.symbol "unify",
+        .expression [.symbol "A", .symbol "B"],
+        .expression [.var "x", .var "y"],
+        .expression [.symbol "found", .var "x", .var "y"],
+        .symbol "not-found"])
+    Atom.undefinedType Bindings.empty 10 =
+    [(.expression [.symbol "found", .symbol "A", .symbol "B"],
+      (Bindings.empty.assign "x" (.symbol "A")).assign "y" (.symbol "B"))] := rfl
+
+example : mettaCall Space.empty GroundedDispatch.none
+    (.expression
+      [.symbol "unify",
+        .expression [.symbol "A", .symbol "B"],
+        .expression [.symbol "C", .symbol "D"],
+        .symbol "success",
+        .symbol "failure"])
+    Atom.undefinedType Bindings.empty 10 =
+    [(.symbol "failure", Bindings.empty)] := rfl
+
+example : mettaCall Space.empty GroundedDispatch.none
+    (.expression [.symbol "unify", .symbol "A", .symbol "B", .symbol "yes"])
+    Atom.undefinedType Bindings.empty 10 =
+    [(mkError
+        (.expression [.symbol "unify", .symbol "A", .symbol "B", .symbol "yes"])
+        .incorrectNumberOfArguments,
+      Bindings.empty)] := rfl
+
+example : evalAtom unifyTypedSpace GroundedDispatch.none
+    (.expression
+      [.symbol "unify",
+        .symbol "A",
+        .symbol "A",
+        .expression [.symbol "+", .grounded (.int 1), .grounded (.int 2)],
+        .grounded (.int 0)])
+    Atom.undefinedType Bindings.empty 12 =
+    [(.expression [.symbol "+", .grounded (.int 1), .grounded (.int 2)],
+      Bindings.empty)] := by native_decide
+
+example : (mettaCall Space.empty GroundedDispatch.none
+    (.expression
+      [.symbol "unify",
+        .expression [.symbol "A", .var "b"],
+        .expression [.var "a", .symbol "B"],
+        .expression [.var "a", .var "b"],
+        Atom.empty])
+    Atom.undefinedType Bindings.empty 10).map Prod.fst =
+    [.expression [.symbol "A", .symbol "B"]] := rfl
+
+example : (mettaCall Space.empty GroundedDispatch.none
+    (.expression
+      [.symbol "unify",
+        .expression [.symbol "A", .var "b", .symbol "C"],
+        .expression [.var "a", .symbol "B", .symbol "D"],
+        .expression [.var "a", .var "b"],
+        Atom.empty])
+    Atom.undefinedType Bindings.empty 10).map Prod.fst =
+    [Atom.empty] := rfl
 
 example : evalAtom Space.empty GroundedDispatch.none
     Atom.unit Atom.undefinedType Bindings.empty 10 =

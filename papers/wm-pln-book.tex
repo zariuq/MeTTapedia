@@ -344,7 +344,7 @@ that status is marked.
 \item \emph{Proved in Lean}: the world-model/evidence calculi, compiled-rule theorems, and counterexamples stated here as mathematical claims.
 \item \emph{Numerically instantiated in Python}: full-dataset protocol runs (GJP, Gas, Steel, NAB) using the same closed-form update/query laws; these are auditable experiment instantiations, not kernel-checked proofs.
 \item \emph{Domain scope}: the reviewed quantifier, intensional, and inference-control theorems use finite domains ($|U| < \infty$).  An arbitrary-domain infinitary layer exists in the codebase (\codepath{PLNFirstOrder/Infinite.lean}) but is not yet integrated into this manuscript.  The world-model kernel (Parts~II--III) and compiled BN inference (Part~IV) are domain-agnostic.  Theorems requiring finite domains are marked \finitedomain{} in their titles.
-\item \emph{Deferred/open}: some runtime infrastructure remains operational rather than theoremic; the HOL completeness theorem is in progress (Section~\ref{sec:hol-completeness-status}).
+\item \emph{Deferred/open}: some runtime infrastructure remains operational rather than theoremic; the active HOL foundation is classical Henkin, while intuitionistic-strengthening and fuller belief-process fusion remain open (Section~\ref{sec:hol-completeness-status}).
 \end{itemize}
 \end{minipage}}
 \end{center}
@@ -7113,24 +7113,28 @@ all the information actually present.
 \begin{quote}\small
 \textbf{Goal:} Ground higher-order PLN in a real HOL layer with set-theoretic semantics.\\
 \textbf{Layer:} Extension (higher-order).\\
-\textbf{Semantic object:} Typed HOL syntax; Heyting/Henkin semantics; ProbHOL; HOL$\leftrightarrow$WM bridge.\\
-\textbf{Proved:} PLN Ch.~10 parity (syntax, soundness, FOL embedding, ProbHOL, certified chaining).\\
-\textbf{In progress:} Typed canonical model and HOL completeness theorem (Section~\ref{sec:hol-completeness-status}).\\[4pt]
+\textbf{Semantic object:} Typed HOL syntax; extensional Henkin semantics; ProbHOL; HOL$\leftrightarrow$WM bridge.\\
+\textbf{Proved:} Typed HOL surface, soundness, classical Henkin model existence, FOL embedding, ProbHOL, and certified chaining.\\
+\textbf{In progress:} Intuitionistic/generalized semantic strengthenings and fuller dynamic belief fusion.\\[4pt]
 \textbf{Extension template:}
 \textit{State:} HOL environment (typed terms + interpretations).
-\textit{Query:} HOL formulas under Heyting/Henkin semantics.
-\textit{Extract:} Satisfying-set reduction $\to$ WM evidence via $\code{holToWorldModel}$.
+\textit{Query:} Closed HOL formulas under extensional Henkin semantics.
+\textit{Extract:} HOL satisfaction/consequence transport $\to$ WM evidence and query strength.
 \textit{Kernel laws:} Revision = union of interpretations; extraction additive over structure.
 \textit{Compiled shards:} ProbHOL certified chaining; HOL-guarded rewrites.
-\textit{Limitations:} HOL completeness WIP; full semantics requires Henkin models.
+\textit{Limitations:} Intuitionistic completeness and full belief-dynamic fusion remain future work.
 \end{quote}
 
 This chapter is now grounded in a real higher-order logic layer rather than
 treating higher-order PLN as only a satisfying-set reduction trick.
-The current HOL layer provides typed syntax, intuitionistic-extensional
-Heyting/Henkin semantics, an extensional proof overlay, soundness, cumulative
-Henkinization infrastructure, and world-level canonical truth machinery.
-A typed canonical model and HOL completeness theorem are still in progress.
+The current HOL layer provides typed syntax, extensional natural deduction,
+Henkin semantics, the classical witnessed/classical-world/term-model route,
+and world-model truth transport.
+The active higher-order foundation is now the classical Henkin route surfaced by
+\codepath{Mettapedia/Logic/HOL.lean} and
+\codepath{Mettapedia/Logic/HOL/TermModel/HenkinCompleteness.lean};
+intuitionistic completeness and richer dynamic belief overlays remain future
+work.
 
 The formal architecture is:
 \[
@@ -7185,7 +7189,7 @@ This gives a cleaner and more faithful foundation for higher-order PLN than
 the older story in which higher-order talk was largely reduced immediately to
 first-order extensional set manipulations.
 
-\section{Current Intuitionistic-Extensional HOL Core}
+\section{Current HOL Core and Classical Henkin Route}
 
 The canonical higher-order object language is now Church-style simple type
 theory:
@@ -7204,14 +7208,14 @@ The natural-deduction proof calculus is in
 (argument-congruence rules needed by standard extensional HOL equality) is in
 \codepath{Mettapedia/Logic/HOL/DerivationExtensionality.lean}.
 
-The current canonical semantics are intuitionistic-extensional
-Heyting/Henkin models, formalized in
-\codepath{Mettapedia/Logic/HOL/Semantics/HeytingHenkin.lean}.
-These equip each type with an admissible carrier, a Heyting truth object,
-and explicit $\Omega$-valued equality with reflexivity, symmetry, and
-transitivity---without classical negation.  This matters because Henkin
-semantics are still first-order-manageable at the metatheoretic level,
-while preserving the cleaner higher-order rule language.
+The current canonical semantics are extensional Henkin models, formalized in
+\codepath{Mettapedia/Logic/HOL/Semantics/Henkin.lean} together with the
+extensional equality layer in
+\codepath{Mettapedia/Logic/HOL/Semantics/Extensionality.lean}.
+These equip each type with an admissible carrier and typed equality inside a
+real Henkin-model semantics.  This matters because Henkin semantics are still
+first-order-manageable at the metatheoretic level, while preserving the
+cleaner higher-order rule language.
 So one can speak directly about
 \[
   \lambda x.\, t,\qquad f = g,\qquad \forall P : \iota \to o,\; \varphi(P),
@@ -7219,44 +7223,50 @@ So one can speak directly about
 instead of encoding those patterns awkwardly inside a purely first-order
 surface.
 
-An older classical/Boolean semantics layer remains in
-\codepath{Mettapedia/Logic/HOL/Semantics/Henkin.lean}, but the current
-completeness target is the intuitionistic-extensional path.
+The active metatheoretic route is now the classical Henkin one:
+\codepath{Mettapedia/Logic/HOL/Soundness.lean} gives validity in every Henkin
+model, and
+\codepath{Mettapedia/Logic/HOL/TermModel/HenkinCompleteness.lean} gives the
+classical model-existence theorem surfaced by
+\codepath{Mettapedia/Logic/HOL.lean}.
 
-\begin{theorem}[HOL soundness over Heyting/Henkin models (\claimCore{})]
+\begin{theorem}[HOL soundness over Henkin models (\claimCore{})]
 If a closed HOL formula is derivable in the extensional proof calculus, then
-it is satisfied by every intuitionistic-extensional Heyting/Henkin model.
+it is satisfied by every Henkin model.
 \end{theorem}
 
 This is formalized in
-\codepath{Mettapedia/Logic/HOL/IntuitionisticSoundness.lean}.
-(A parallel classical soundness result lives in
-\codepath{Mettapedia/Logic/HOL/Soundness.lean}.)
+\codepath{Mettapedia/Logic/HOL/Soundness.lean}.
+The active completeness surface is the classical Henkin model-existence theorem
+packaged by \codepath{Mettapedia/Logic/HOL.lean} and
+\codepath{Mettapedia/Logic/HOL/TermModel/HenkinCompleteness.lean};
+intuitionistic HOL completeness remains future work.
 
-\paragraph{Cumulative Henkinization.}
-The completeness program requires constructing witness-rich extensions of
-the base language.  The current formalization provides:
+\paragraph{Witnessing, classical worlds, and term models.}
+The live completeness route is no longer best summarized as ``Henkinization now,
+canonical model later.''  The current formalization instead factors through:
 \begin{itemize}
-\item stage-indexed witness expansion in
-  \codepath{Mettapedia/Logic/HOL/HenkinizationStages.lean},
-\item the cumulative witness-rich language (collapsing finite stages into
-  a single canonical signature) in
-  \codepath{Mettapedia/Logic/HOL/HenkinizationInfinity.lean}, and
-\item the cumulative Henkin axiom family (existential witness axioms and
-  universal counterexample axioms) in
-  \codepath{Mettapedia/Logic/HOL/HenkinAxiomsInfinity.lean}.
+\item witnessed extension and saturation in
+  \codepath{Mettapedia/Logic/HOL/WitnessedExtension.lean} and
+  \codepath{Mettapedia/Logic/HOL/WitnessedSaturation.lean},
+\item prime/maximal/classical world construction in
+  \codepath{Mettapedia/Logic/HOL/PrimeHenkinExtension.lean},
+  \codepath{Mettapedia/Logic/HOL/MaximalConsistent.lean},
+  \codepath{Mettapedia/Logic/HOL/WitnessedWorld.lean}, and
+  \codepath{Mettapedia/Logic/HOL/ClassicalWorld.lean}, and
+\item general term-model assembly, denotation, realizability, and the
+  fundamental truth theorem in
+  \codepath{Mettapedia/Logic/HOL/TermModel/Domain.lean},
+  \codepath{Mettapedia/Logic/HOL/TermModel/Truth.lean},
+  \codepath{Mettapedia/Logic/HOL/TermModel/Realize.lean},
+  \codepath{Mettapedia/Logic/HOL/TermModel/Denote.lean},
+  \codepath{Mettapedia/Logic/HOL/TermModel/PreModelWrapper.lean},
+  \codepath{Mettapedia/Logic/HOL/TermModel/Fundamental.lean}, and
+  \codepath{Mettapedia/Logic/HOL/TermModel/HenkinCompleteness.lean}.
 \end{itemize}
-This is the syntactic infrastructure for Henkin's completeness argument.
-The completeness theorem itself remains future work (see
-Section~\ref{sec:hol-completeness-status}).
-
-\paragraph{World-level truth machinery.}
-The formalization also provides partial truth-lemma infrastructure in
-\codepath{Mettapedia/Logic/HOL/TruthLemma.lean}: world-level converse
-forcing/membership equivalences for implication and negation under
-cumulative Henkin saturation.  This is not yet the full typed semantic
-truth lemma needed for completeness, but it establishes the key
-structural lemmas that the canonical-model construction will consume.
+This route supplies the public classical model-existence theorem surfaced by
+\codepath{Mettapedia/Logic/HOL.lean}, rather than leaving completeness as a
+future placeholder.
 
 \section{FOL Embedding into HOL}
 
@@ -7825,27 +7835,27 @@ For clarity, we summarize the current state of the HOL metatheory:
 
 \begin{description}
 \item[Done.] Typed Church-style syntax, natural-deduction proof calculus
-  with extensional overlay, intuitionistic-extensional Heyting/Henkin
-  semantics, and soundness.
-\item[Done.] Stage-indexed and cumulative Henkinization: witness-rich language
-  construction, cumulative signature collapse, and the Henkin axiom families
-  (existential witnesses, universal counterexamples).
-\item[Done (partial).] World-level truth machinery: converse forcing/membership
-  equivalences for implication and negation under cumulative Henkin saturation.
-\item[Future work.] Typed canonical model: carriers at each type, admissibility,
-  base equality, constant interpretation, and realizability of semantic values by
-  closed terms.
-\item[Future work.] HOL completeness theorem: if every intuitionistic-extensional
-  Henkin model satisfying a finite set of closed assumptions satisfies a closed
-  conclusion, then the proof system derives the conclusion.
-\item[Deferred.] Boolean/classical specialization of the completeness result.
+  with extensional overlay, Henkin semantics, and soundness.
+\item[Done.] Witnessed extension/saturation, prime/maximal/classical-world
+  construction, general term-model assembly, and the classical Henkin
+  model-existence theorem surfaced by
+  \codepath{Mettapedia/Logic/HOL.lean} and
+  \codepath{Mettapedia/Logic/HOL/TermModel/HenkinCompleteness.lean}.
+\item[Done.] The HOL$\leftrightarrow$WM bridge, semantic ProbHOL,
+  hierarchical probabilistic HOL, certified higher-order chaining, and the
+  inference-control theorem surface all run over that live classical Henkin
+  base.
+\item[Future work.] Intuitionistic completeness and other non-classical
+  strengthenings of the HOL metatheory.
+\item[Future work.] Stronger semantic classes beyond the active Henkin route,
+  together with fuller fusion of semantic ProbHOL and belief-process dynamics.
 \end{description}
 
-The HOL$\leftrightarrow$WM bridge, semantic ProbHOL, hierarchical probabilistic
+The active higher-order foundation is therefore no longer ``canonical model
+pending.''  It is the landed classical Henkin route.  The
+HOL$\leftrightarrow$WM bridge, semantic ProbHOL, hierarchical probabilistic
 HOL, certified higher-order chaining, and the inference-control theorem surface
-are all mature and do not depend on the completeness theorem.  They work over
-any collection of Henkin models, whether or not the model was constructed by the
-canonical completeness argument.
+do not depend on further completeness strengthening beyond that route.
 
 
 \chapter{Quantifiers and the Fuzzy/QFM Layer}
@@ -10353,8 +10363,8 @@ admissible carrier at each type, with comprehension limited to the
 carrier---this avoids the impredicativity issues of full semantics
 while remaining ``first-order manageable at the metatheoretic level''
 (the proofs about Henkin models are themselves first-order).  The
-proof calculus is intuitionistic-extensional with a Heyting/Henkin
-interpretation.
+proof calculus is extensional natural deduction over Henkin semantics, and
+the active completeness route takes a classical specialization.
 
 \subsection{Set representation: the \code{SetStructure} abstraction}
 
@@ -10504,38 +10514,38 @@ See \codepath{PLNWorldModelFOL.lean},
 
 At the FOL level, completeness is available from the Foundation
 library: provability $\Leftrightarrow$ semantic consequence.  At
-the HOL level, the situation is more
-nuanced.\footnote{Open question: completing the HOL
-completeness theorem requires constructing the typed canonical
-Henkin model (carriers at each type, admissibility, constant
-interpretation, realizability).  The Henkinization infrastructure
-(witness-rich language extensions, stage-indexed and cumulative
-construction, prime consistent extension) is formalized; the
-canonical model assembly is the remaining
-step.}
+the HOL level, the live foundation is already the classical Henkin
+route: provability implies Henkin-model satisfaction, and consistent classical
+theories admit Henkin models via the witnessed-extension, classical-world, and
+term-model development.\footnote{Open question: beyond the current classical
+Henkin route, can we recover matching completeness for the intuitionistic base
+calculus, or for stronger semantic classes such as full standard higher-order
+semantics?}
 
 The following HOL results are proved:
 \begin{itemize}
 \item Soundness: derivability implies Henkin-model satisfaction.
-\item Henkinization: witness-rich language extensions and Lindenbaum
-  prime extension.
-\item Truth lemma infrastructure for implication and negation.
+\item Witnessed extension/saturation together with prime/maximal/classical world
+  construction.
+\item Term-model denotation, realizability, the fundamental truth theorem, and
+  classical Henkin model existence.
 \end{itemize}
 
 The following are \emph{not} yet proved:
 \begin{itemize}
-\item The typed canonical model construction.
-\item HOL completeness (Henkin-model satisfaction implies
-  derivability).
-\item Boolean/classical specialization of completeness.
+\item Intuitionistic completeness matching the base calculus without classical
+  hypotheses.
+\item Completeness for full higher-order semantics rather than the active
+  Henkin route.
+\item Full fusion of semantic ProbHOL with a mature logical-induction-style
+  belief-process semantics.
 \end{itemize}
 
 \noindent
 Crucially, the WM bridge, ProbHOL (probabilistic higher-order logic),
 certified higher-order chaining, and the inference-control surface
-\emph{do not depend on the completeness theorem}.  They work over any
-collection of Henkin models, regardless of whether those models were
-constructed by a canonical completeness argument.
+\emph{do not depend on those stronger variants}.  They already work over the
+live classical Henkin model layer.
 
 \subsection{Infinite domains}
 
@@ -10869,12 +10879,12 @@ answer-profile generators in a principled way.
 
 Several directions extend the foundation established here.
 
-\paragraph{HOL completeness.}
-The intuitionistic-extensional HOL layer (Chapter~\ref{ch:hol}) establishes
-syntax, soundness, and satisfying-set reduction, but the typed canonical-model
-completeness theorem remains open
-(Section~\ref{sec:hol-completeness-status}).  Completing it would close the
-gap between PLN's higher-order syntax and full semantic adequacy.
+\paragraph{HOL foundations beyond the active classical route.}
+Chapter~\ref{ch:hol} now establishes syntax, soundness, the HOL$\leftrightarrow$WM
+lens, and the classical Henkin model-existence/completeness basis
+(Section~\ref{sec:hol-completeness-status}).  Natural next steps are
+intuitionistic completeness, fuller semantic variants, and richer dynamic
+belief fusion on top of that landed higher-order substrate.
 
 \paragraph{Selective distributional inference.}
 The convergence and dominance results
