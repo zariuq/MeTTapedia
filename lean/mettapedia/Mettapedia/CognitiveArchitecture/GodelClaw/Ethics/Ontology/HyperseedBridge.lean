@@ -237,10 +237,15 @@ theorem UpperShardFoundationalMeaningProfile.activeGoal_mem_protectedFamily
     (hProtected : profile.ActiveGoalProtectedBy claims) :
     profile.activeGoalQuery enc ∈
       (claims.toProtectedEthicsQueryFamily enc hEUL hNoHarm hConsent hReciprocity).goals := by
+  -- `UpperShard…activeGoalQuery` is `UpperShardEthicalClaim.toQuery enc · `, which
+  -- unfolds to `EthicalAnchor.toQuery enc · .toAnchor` — the form the anchor-layer
+  -- lemma produces.  At 4.31 that last step is not chased automatically, so add
+  -- `UpperShardEthicalClaim.toQuery`/`toAnchor` to the unfold set.
   simpa [UpperShardFoundationalMeaningProfile.activeGoalQuery,
       UpperShardFoundationalMeaningProfile.toEthicalFoundationalMeaningProfile,
       ProtectedUpperShardClaims.toProtectedEthicsQueryFamily,
       ProtectedUpperShardClaims.toProtectedEthicsAnchors,
+      UpperShardEthicalClaim.toQuery, UpperShardEthicalClaim.toAnchor,
       EthicalFoundationalMeaningProfile.activeGoalQuery]
     using
       EthicalFoundationalMeaningProfile.activeGoal_mem_protectedFamily
@@ -285,10 +290,12 @@ theorem validModification_preserves_protectedUpperShardActiveGoal_of_dynamicIndi
       (profile.toEthicalFoundationalMeaningProfile).activeGoalQuery enc ∈ family.goals := by
     simpa [UpperShardFoundationalMeaningProfile.activeGoalQuery,
       UpperShardFoundationalMeaningProfile.toEthicalFoundationalMeaningProfile,
+      UpperShardEthicalClaim.toQuery, UpperShardEthicalClaim.toAnchor,
       Mettapedia.CognitiveArchitecture.GodelClaw.Ethics.EthicalFoundationalMeaningProfile.activeGoalQuery]
       using hgoal
   simpa [UpperShardFoundationalMeaningProfile.activeGoalQuery,
       UpperShardFoundationalMeaningProfile.toEthicalFoundationalMeaningProfile,
+      UpperShardEthicalClaim.toQuery, UpperShardEthicalClaim.toAnchor,
       Mettapedia.CognitiveArchitecture.GodelClaw.Ethics.EthicalFoundationalMeaningProfile.activeGoalQuery]
     using
       validModification_preserves_protectedEthicalActiveGoal_of_dynamicIndividuationClosure
@@ -334,10 +341,12 @@ theorem MetaGoalShellPreservationPathDLR.utility_improves_and_protectedUpperShar
       (profile.toEthicalFoundationalMeaningProfile).activeGoalQuery enc ∈ family.goals := by
     simpa [UpperShardFoundationalMeaningProfile.activeGoalQuery,
       UpperShardFoundationalMeaningProfile.toEthicalFoundationalMeaningProfile,
+      UpperShardEthicalClaim.toQuery, UpperShardEthicalClaim.toAnchor,
       Mettapedia.CognitiveArchitecture.GodelClaw.Ethics.EthicalFoundationalMeaningProfile.activeGoalQuery]
       using hgoal
   simpa [UpperShardFoundationalMeaningProfile.activeGoalQuery,
       UpperShardFoundationalMeaningProfile.toEthicalFoundationalMeaningProfile,
+      UpperShardEthicalClaim.toQuery, UpperShardEthicalClaim.toAnchor,
       Mettapedia.CognitiveArchitecture.GodelClaw.Ethics.EthicalFoundationalMeaningProfile.activeGoalQuery]
     using
       MetaGoalShellPreservationPathDLR.utility_improves_and_protectedEthicalActiveGoal_drift_bounded

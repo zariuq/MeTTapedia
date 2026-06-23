@@ -1,7 +1,8 @@
 ; =============================================================================
 ; kernel_signature_lf_indexed_v0.metta
 ;
-; PHASES 1+2+3+4 of the general indexed-inductive "telescope IR" engine.
+; PHASES 1+2+3+4 plus v3/v4 convergence of the general indexed-inductive
+; "telescope IR" engine.
 ; Introduces ONE declaration form `DIndG` beside the existing slices, with an
 ; explicit telescope IR, and implements:
 ;   * the family-kind generator        (Pi Delta. Pi Xi. Type)
@@ -21,18 +22,21 @@
 ;   * retirement gate (proved via generated J, no GEq/GRfl/GTransp/Transp):
 ;     J diagonal; successor congruence; a checked `plus` DDef over the generated
 ;     recursor; and `forall n. plus n z = n` by generated Nat induction + cong-s
+;   * v4 slice-collapse replays for the old inductive-family slices:
+;     Bool, Tree, Vec constructor-index discrimination, positivity rejection,
+;     and empty inductives all pass through the same DIndG engine
 ;
 ; v3 convergence status: the dedicated GEq/GRfl/GTransp/Transp and Id/J slices
-; are retired to `retired_fixtures/`.  The remaining older inductive-family
-; slices are still live compatibility/regression rows until the v4 slice-collapse
-; milestone replays them through DIndG and retires them too.  A fully generic
-; transport combinator remains future helper-factoring work; it is not a live
-; primitive in this engine.
+; are retired to `retired_fixtures/`.  v4 also retires the older
+; inductive-family slices (DInd/DIndP/DIndPI/Vec families) there after the
+; replay block below.  A fully generic transport combinator remains future
+; helper-factoring work; it is not a live primitive in this engine.
 ;
-; Validation goal: the generated family/constructor/eliminator types MUST equal
-; the hand-written types the current slices carry (Nat, List, Vec, Fin, Id) —
-; so this is replay-before-retire for the remaining family slices.  For Id, the
-; generated eliminator type is J and the dedicated Id/J slice has been retired.
+; Validation status: generated family/constructor/eliminator types replay the
+; hand-written Nat/List/Vec/Fin/Id/J shapes, and the v4 block below adds the
+; remaining Bool/Tree/Vec/positivity/empty-inductive slice claims before
+; retirement.  For Id, the generated eliminator type is J and the dedicated
+; Id/J slice has been retired.
 ;
 ; IR:
 ;   Tel    ::= TNil | (TCons <type> Tel)            -- each entry in ctx of priors
@@ -43,28 +47,16 @@
 ;     in context paramTel ++ argTel.
 ; =============================================================================
 
+!(import! &self kernel_binding_waist_v1)
+
 (= (is-bad $x) (unify $x (Bad $e) True False))
 (= (ax-union ANil $ys) $ys)
 (= (ax-union (ACons $x $xs) $ys) (ACons $x (ax-union $xs $ys)))
 
-; ---------- de Bruijn term machinery (base forms only — no recursor terms) ----
-(= (shift $d $c (Var $k)) (if (< $k $c) (Var $k) (Var (+ $k $d))))
-(= (shift $d $c (Srt $s)) (Srt $s))
-(= (shift $d $c (Con $x)) (Con $x))
-(= (shift $d $c (Def $x)) (Def $x))
-(= (shift $d $c (App $f $a)) (App (shift $d $c $f) (shift $d $c $a)))
-(= (shift $d $c (Pi  $A $B)) (Pi  (shift $d $c $A) (shift $d (+ $c 1) $B)))
-(= (shift $d $c (Lam $A $b)) (Lam (shift $d $c $A) (shift $d (+ $c 1) $b)))
-(= (shift $d $c (Bad $e)) (Bad $e))
-
-(= (subst $j $s (Var $k)) (if (== $k $j) $s (if (> $k $j) (Var (- $k 1)) (Var $k))))
-(= (subst $j $s (Srt $x)) (Srt $x))
-(= (subst $j $s (Con $x)) (Con $x))
-(= (subst $j $s (Def $x)) (Def $x))
-(= (subst $j $s (App $f $a)) (App (subst $j $s $f) (subst $j $s $a)))
-(= (subst $j $s (Pi  $A $B)) (Pi  (subst $j $s $A) (subst (+ $j 1) (shift 1 0 $s) $B)))
-(= (subst $j $s (Lam $A $b)) (Lam (subst $j $s $A) (subst (+ $j 1) (shift 1 0 $s) $b)))
-(= (subst $j $s (Bad $e)) (Bad $e))
+; ---------- de Bruijn term machinery -----------------------------------------
+; Public `shift`/`subst`/Args/Cases traversal comes from `kernel_binding_waist_v1`.
+; This kernel is a client of the shared binding waist, not a second binding
+; implementation.
 
 (= (nf $sig (Var $k)) (Var $k))
 (= (nf $sig (Srt $s)) (Srt $s))
@@ -643,10 +635,6 @@
 ; ---- Args / Cases plumbing --------------------------------------------------
 (= (args-len ArgsNil) 0)
 (= (args-len (ArgsCons $a $r)) (+ 1 (args-len $r)))
-(= (shift-args $d $c ArgsNil) ArgsNil)
-(= (shift-args $d $c (ArgsCons $a $r)) (ArgsCons (shift $d $c $a) (shift-args $d $c $r)))
-(= (subst-args $j $s ArgsNil) ArgsNil)
-(= (subst-args $j $s (ArgsCons $a $r)) (ArgsCons (subst $j $s $a) (subst-args $j $s $r)))
 (= (nf-args $sig ArgsNil) ArgsNil)
 (= (nf-args $sig (ArgsCons $a $r)) (ArgsCons (nf $sig $a) (nf-args $sig $r)))
 (= (case-body-of CasesNil $ctor) (Bad missing-case))
@@ -668,12 +656,6 @@
    (if (unique-cases $cases)
      (if (ctors-have-cases $ctors $cases) (cases-known-ctors $cases $ctors) False)
      False))
-(= (shift-cases $d $c CasesNil) CasesNil)
-(= (shift-cases $d $c (Cases (Case $cn $body) $rest))
-   (Cases (Case $cn (shift $d $c $body)) (shift-cases $d $c $rest)))
-(= (subst-cases $j $s CasesNil) CasesNil)
-(= (subst-cases $j $s (Cases (Case $cn $body) $rest))
-   (Cases (Case $cn (subst $j $s $body)) (subst-cases $j $s $rest)))
 (= (nf-cases $sig CasesNil) CasesNil)
 (= (nf-cases $sig (Cases (Case $cn $body) $rest))
    (Cases (Case $cn (nf $sig $body)) (nf-cases $sig $rest)))
@@ -731,13 +713,7 @@
 (= (infer-indg-scrut $sig $ctx $scrut $T4)
    (infer-apply-arg $sig $ctx $T4 $scrut))
 
-; ---- IndG term: de Bruijn + nf dispatch + head/args totality ----------------
-(= (shift $d $c (IndG $name $params $motive $cases $indices $scrut))
-   (IndG $name (shift-args $d $c $params) (shift $d $c $motive) (shift-cases $d $c $cases)
-         (shift-args $d $c $indices) (shift $d $c $scrut)))
-(= (subst $j $s (IndG $name $params $motive $cases $indices $scrut))
-   (IndG $name (subst-args $j $s $params) (subst $j $s $motive) (subst-cases $j $s $cases)
-         (subst-args $j $s $indices) (subst $j $s $scrut)))
+; ---- IndG term: nf dispatch + head/args totality ----------------------------
 (= (nf $sig (IndG $name $params $motive $cases $indices $scrut))
    (nf-indg $sig $name (nf-args $sig $params) (nf $sig $motive) (nf-cases $sig $cases)
             (nf-args $sig $indices) (nf $sig $scrut)))
@@ -1224,3 +1200,54 @@
 !(assertEqual (sig-admitted (emp-sig-G)) True)
 !(assertEqual (dindg-elim-typechecks (emp-sig-G) emp) True)
 !(assertEqual (sig-admitted-with-elims (emp-sig-G)) True)
+
+; =============================================================================
+; BINDING CAPTURE SPEC v1: capture-specific teeth for the de Bruijn machinery.
+; Tri-runtime parity catches output DIVERGENCE, not binding CORRECTNESS — a
+; corpus without capture cases passes a *capturing* subst identically on all
+; three engines, and a proof kernel turns that into unsoundness.  These rows pin
+; the capture-free behaviour of shift/subst/conv (incl. through IndG binders) so
+; a mutation that drops the under-binder shift or the index decrement turns a row
+; red.  Verdicts are the capture-free values mandated by de Bruijn binding
+; (POPLmark / Chargueraud locally-nameless / Gabbay-Pitts nominal / Autosubst).
+; run_binding_mutation_gate.sh confirms the teeth bite.  This is the acceptance
+; spec a future ABT binding engine (Codex lane) must also satisfy.
+; =============================================================================
+
+; B1 shift: a free var moves; a var bound under its own binder is fixed.
+!(assertEqual (shift 1 0 (Var 0)) (Var 1))
+!(assertEqual (shift 1 0 (Lam (Con nat) (Var 0))) (Lam (Con nat) (Var 0)))          ; bound var fixed
+!(assertEqual (shift 1 0 (Lam (Con nat) (Var 1))) (Lam (Con nat) (Var 2)))          ; free var moves under binder
+; negative: a capturing shift would FIX the free Var 1 (treat it as bound) — reject that value
+!(assertEqual (== (shift 1 0 (Lam (Con nat) (Var 1))) (Lam (Con nat) (Var 1))) False)
+
+; B2 subst capture-AVOIDANCE: substituting a free var into a lambda body shifts it,
+; so it stays free (Var 1) and is NEVER captured by the binder (Var 0).
+!(assertEqual (subst 0 (Var 0) (Lam (Con nat) (Var 1))) (Lam (Con nat) (Var 1)))
+; negative: the captured value (Var 0) — what a subst missing (shift 1 0 $s) would produce — is rejected
+!(assertEqual (== (subst 0 (Var 0) (Lam (Con nat) (Var 1))) (Lam (Con nat) (Var 0))) False)
+
+; B3 subst index decrement: the substituted var is replaced; strictly-higher free vars decrement.
+!(assertEqual (subst 0 (Con z) (Var 0)) (Con z))
+!(assertEqual (subst 0 (Con z) (Var 2)) (Var 1))
+!(assertEqual (subst 1 (Con z) (Var 0)) (Var 0))                                    ; var below the subst point unchanged
+
+; B4 alpha as conv: de Bruijn identifies alpha-equivalents; bound != free is preserved.
+!(assertEqual (conv (good-sig-G) (Lam (Con nat) (Var 0)) (Lam (Con nat) (Var 0))) True)
+!(assertEqual (conv (good-sig-G) (Lam (Con nat) (Var 0)) (Lam (Con nat) (Var 1))) False)
+; beta UNDER a binder substitutes the right occurrence: (\x.\y. x) z  ~>  \y. z
+!(assertEqual (conv (good-sig-G)
+   (App (Lam (Con nat) (Lam (Con nat) (Var 1))) (Con z))
+   (Lam (Con nat) (Con z))) True)
+
+; B5 shadowing: a substituted free var travels through nested binders, staying free.
+!(assertEqual (subst 0 (Var 0) (Lam (Con nat) (Lam (Con nat) (Var 2))))
+   (Lam (Con nat) (Lam (Con nat) (Var 2))))
+
+; B6 IndG binders: shift traverses params/motive/cases/indices/scrut (the nullary-case
+; body shifts at the IndG's own depth; binders inside case bodies are handled by Lam).
+!(assertEqual
+   (shift 1 0 (IndG nat ArgsNil (Lam (Con nat) (Con nat))
+                (Cases (Case z (Var 0)) CasesNil) ArgsNil (Var 0)))
+   (IndG nat ArgsNil (Lam (Con nat) (Con nat))
+     (Cases (Case z (Var 1)) CasesNil) ArgsNil (Var 1)))

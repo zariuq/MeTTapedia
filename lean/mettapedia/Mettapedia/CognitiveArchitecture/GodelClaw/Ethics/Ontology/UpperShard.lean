@@ -799,7 +799,12 @@ theorem UpperShardEthicalClaim.deontic_toValue_toQuery_eq_of_aligned
     (s : LabeledDeonticSentence World Agent Label) :
     (UpperShardEthicalClaim.normative (.presentedDeontic s)).toQuery enc =
       (UpperShardEthicalClaim.normative (.presentedValue s.toValue)).toQuery enc := by
-  simpa [UpperShardEthicalClaim.toQuery, UpperShardEthicalClaim.toAnchor] using
+  -- Both `UpperShardEthicalClaim.toQuery` and `NormativeClaim.toQuery` reduce to
+  -- `EthicalAnchor.toQuery enc · .toAnchor`; unfold both so the normative-claim
+  -- lemma's statement matches the goal.  (At 4.31 the goal-side unfold alone left
+  -- the lemma's `NormativeClaim.toQuery` un-reduced, breaking the `simpa` match.)
+  simpa [UpperShardEthicalClaim.toQuery, UpperShardEthicalClaim.toAnchor,
+    NormativeClaim.toQuery] using
     NormativeClaim.presented_deontic_toValue_toQuery_eq_of_aligned enc hAlign s
 
 /-- The Gewirth right claim can be lowered into the general upper-shard layer

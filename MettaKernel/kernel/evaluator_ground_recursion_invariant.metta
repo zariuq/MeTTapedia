@@ -23,10 +23,10 @@
 ;       to (1) must not make `infer` spuriously produce results (over-generation).
 ; =============================================================================
 
-(= (shift $d $c (Var $k)) (if (< $k $c) (Var $k) (Var (+ $k $d))))
-(= (shift $d $c (Srt $s)) (Srt $s))
-(= (shift $d $c (Pi $A $B)) (Pi (shift $d $c $A) (shift $d (+ $c 1) $B)))
-(= (shift $d $c (Bad $e)) (Bad $e))
+!(import! &self kernel_binding_waist_v1)
+
+; Public capture-avoiding `shift`/`subst` traversal comes from the shared binding
+; waist.  This file tests evaluator recursion, not binding traversal.
 
 (= (nf (Var $k)) (Var $k))
 (= (nf (Srt $s)) (Srt $s))
@@ -61,6 +61,10 @@
    (Pi (Srt type) (Pi (Var 0) (Pi (Var 1) (Srt type)))))
 
 ; (1) positive: deep recursive inference reaches the spec normal form (Srt kind).
+!(assertEqual (subst 0 (Con z) (Var 1)) (Var 0))
+!(assertEqual (subst 0 (Var 0) (Lam (Srt type) (Var 1))) (Lam (Srt type) (Var 1)))
+!(assertEqual (shift 1 0 (Lam (Srt type) (Var 0))) (Lam (Srt type) (Var 0)))
+!(assertEqual (shift 1 0 (Lam (Srt type) (Var 1))) (Lam (Srt type) (Var 2)))
 !(assertEqual
    (nf (infer CtxNil (id-ty-expanded)))
    (Srt kind))

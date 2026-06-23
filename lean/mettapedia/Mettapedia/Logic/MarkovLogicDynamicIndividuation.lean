@@ -159,8 +159,13 @@ theorem DynamicIndividuationStep.seed_queryProb_approximately_preserved_explicit
     |((infiniteMLNMassSemantics M₁ μ₁ hμ₁).queryProb q).toReal -
       ((infiniteMLNMassSemantics M₂ μ₂ hμ₂).queryProb q).toReal| ≤
         step.errorBound := by
-  simpa [DynamicIndividuationStep.errorBound]
-    using DynamicTranscendenceStep.queryProb_approximately_preserved_of_uniformConstant
+  -- `errorBound = 2 * step.proto.seed.card * C ^ step.shellDepth`, and the
+  -- transcendence step's `queryRegion`/`shellDepth` are *defined* as
+  -- `step.proto.seed`/`step.shellDepth`, so the two bounds coincide by defeq.
+  -- (At 4.31 `simpa [errorBound]` over-normalizes and the projection chains no
+  -- longer match; unfold `errorBound` and close the goal directly via `exact`.)
+  unfold DynamicIndividuationStep.errorBound
+  exact DynamicTranscendenceStep.queryProb_approximately_preserved_of_uniformConstant
       (step := step.toDynamicTranscendenceStep)
       (C := step.contractionConstant)
       (hC_nonneg := step.contractionConstant_nonneg)

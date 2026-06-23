@@ -17,6 +17,8 @@
 \usepackage{array}
 \usepackage{amsmath}
 \usepackage{amssymb}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,fit,backgrounds}
 \setlength{\emergencystretch}{3em}
 \lstset{
   basicstyle=\ttfamily\small,
@@ -560,6 +562,340 @@ definitions/theorems:
 \end{description}
 
 %% ────────────────────────────────────────────────────────────────────
+\section{\RhoCalc{}: A Concurrent Reaction Machine}
+\label{sec:rhocalc}
+
+So far \CeTTa{} has been a MeTTa evaluator: a term goes in, normal forms come
+out.  Under \code{--lang rhocalc} the same runtime becomes something different in
+kind---a \emph{concurrent process engine} whose unit of work is not a rewrite but
+a \emph{reaction}: a rendezvous between a sender and a receiver on a shared
+channel.  This gives MeTTa three things plain evaluation lacks---channels and
+private names, genuine concurrency, and, the reason it earns its own section,
+\emph{evaluation triggered by communication}.  That last capability, together
+with the MeTTa library that exposes it, is what we call \emph{rhometta}.
+
+\subsection{A reaction, in one picture}
+
+The calculus is Meredith and Radestock's reflective higher-order
+$\rho$-calculus~\cite{rho2005}.  Its single rewrite rule, \textsc{comm}, is a
+handshake: a sender \code{x!(m)} offering a message \code{m} on channel \code{x},
+sitting next to a receiver \code{for(y <- x)\{P\}} waiting on that same channel,
+react---the message is consumed and the receiver resumes with \code{m}
+substituted for its bound name \code{y}:
+\[
+  x!(m) \;\big|\; \mathsf{for}(y \leftarrow x)\{P\}
+  \;\;\xrightarrow{\;\textsc{comm}\;}\;\; P[y := m].
+\]
+
+\begin{figure}[h]\centering
+\begin{tikzpicture}[>=Stealth,
+  box/.style={draw, rounded corners, align=center, inner sep=4pt,
+    font=\small\ttfamily}]
+  \node[box] (s) {x!(m)};
+  \node (par) [right=3mm of s, font=\large] {$\mid$};
+  \node[box] (r) [right=3mm of par] {for(y<-x)\{P\}};
+  \node[box, fill=black!8] (out) [right=16mm of r] {P[y:=m]};
+  \draw[->, thick] (r) -- node[above, font=\scriptsize\sffamily] {\textsc{comm}} (out);
+\end{tikzpicture}
+\caption{A reaction: a send and a matching receive on channel \code{x} rendezvous;
+  the receiver continues with the message substituted in.}
+\end{figure}
+
+A little vocabulary makes the rest precise.  \code{0} is the inert process;
+\code{P | Q} runs \code{P} and \code{Q} concurrently; \code{new x in P} makes a
+fresh private channel.  Two reflection operators let processes become names and
+names become processes again: \code{@P} \emph{quotes} a process into a name, and
+\code{*x} \emph{drops} (runs) the process a name quotes, with \code{*@P = P}.
+Channels are themselves quoted processes---this is what makes the calculus
+\emph{higher-order}, and it is the hinge of the next subsection.
+
+\subsection{Eval-at-\textsc{comm}: communication that computes}
+
+Reflection turns an ordinary handshake into a computation.  Let the receiver do
+nothing but \emph{drop} whatever it receives:
+\[
+  \texttt{eval\_drop}(x,p)\;\equiv\;
+  \underbrace{x!(@p)}_{\text{send the quoted program } p}\;\big|\;
+  \underbrace{\mathsf{for}(y \leftarrow x)\{\,*y\,\}}_{\text{run whatever arrives}}.
+\]
+The \textsc{comm} delivers the name \code{@p}; the drop \code{*@p} runs \code{p};
+the process settles at the \emph{result of running} \code{p}.  A handshake has
+become an evaluation step: \emph{communication is computation}.  And because
+\code{p} may itself evaluate to \emph{more process}, a reaction can plant the
+next reactions---\emph{communication is computation is construction}.  This
+eval-at-\textsc{comm} pattern, and its MeTTa library, is rhometta.
+
+\subsection{Engine, profiles, libraries}
+
+rhometta is three layers over the engine, not one monolith (Figure~\ref{fig:rho-layers}).
+
+\begin{figure}[h]\centering
+\begin{tikzpicture}[
+  lyr/.style={draw, rounded corners, minimum width=86mm, align=center,
+    inner sep=4pt, font=\small}]
+  \node[lyr] (a) {demos --- \code{benchmarks/rho/rhometta-*} (self-unfolding prover, AGI showcase)};
+  \node[lyr, below=1.6mm of a] (b) {\code{lib/rhometta.metta} --- \code{rhometta:run}, \code{:eval}, \code{:transitions}};
+  \node[lyr, below=1.6mm of b] (c) {\code{lib/rho.metta} --- strict-core $\rho$ constructor surface};
+  \node[lyr, below=1.6mm of c, fill=black!8] (d) {\code{--lang rhocalc} engine \;|\; profiles: \code{strict-core}, \code{cost}};
+\end{tikzpicture}
+\caption{The rhometta stack.  A \emph{profile} is a named variant of the
+  reduction relation; a \emph{library} is MeTTa-level surface that delegates
+  reduction to the engine.}
+\label{fig:rho-layers}
+\end{figure}
+
+\begin{description}
+\item[The engine.] \code{--lang rhocalc} reduces $\rho$ terms in either a
+  Rholang-like \code{.rho} surface or a MeTTa-style s-expression \code{.mrho}
+  surface.  Reduction lives in a dedicated \code{RhoMachine} (run budget,
+  fresh-name counter, and a live index of sends and receive-sites rebuilt after
+  each reaction) rather than being threaded through the ordinary evaluator.
+  Internally allocated fresh names are opaque identities; quoted process names
+  are compared as whole names and never bound through, so the fast index covers
+  only directly comparable names and quoted names take a structural fallback.
+\item[Profiles.] A \emph{profile} names a variant of the reduction relation.
+  \code{strict-core} is the pure asynchronous $\rho$ spine; \code{cost} accounts
+  the resource each reaction consumes (Section~\ref{sec:rho-cost}).  As
+  everywhere in \CeTTa{}, a profile fixes what is \emph{interpreted}, never what
+  is legal.
+\item[Libraries.] \code{lib/rho.metta} is the base vocabulary for building
+  strict-core $\rho$ terms; \code{lib/rhometta.metta} is the rhometta surface
+  (\code{rhometta:run} reduces to the quiescent outcome set,
+  \code{rhometta:eval} is eval-at-\textsc{comm}, \code{rhometta:transitions}
+  gives one-step successors), delegating reduction to the engine.
+\end{description}
+
+\subsection{What you observe is what it computes}
+\label{sec:rho-lean}
+
+A fair worry: when eval-at-\textsc{comm} fires, is the result the engine reports
+really the result of running the payload---or could the machinery quietly change
+the answer?  We settle this in Lean.
+
+In plain terms: run \code{eval\_drop(x,p)} to quiescence and collect every
+outcome you can observe \emph{up to structural rearrangement} of the process.
+That set of observations is exactly the set of results a correct evaluation of
+\code{p} would produce---no more, no less---and the statement refers only to what
+is observable, never to any internal ``this is the answer'' tag.
+
+Precisely, the theorem \code{rhometta\_bridge\_scObserved} (in
+\code{RhometaReduction.lean}) equates the concrete quiescent run of
+\code{eval\_drop(x,p)} with \code{RhometaSCObservedOutcomes} of the same
+process---the outcomes visible up to structural congruence---with no
+result-certificate carried in the answer.  It is axiom-clean
+(\code{\{propext, Classical.choice, Quot.sound\}}, zero sorries).  Two ingredients
+are load-bearing and worth stating honestly:
+\begin{itemize}
+\item \textbf{The proof technique.}  Inductions directly on structural
+  congruence stall at the symmetry and transitivity steps.  The fix is a
+  canonical-form normalizer \code{nfAtom} that is \emph{complete}: two processes
+  are structurally congruent exactly when they share a normal form.  Equality of
+  normal forms is then an ordinary equation, and the stall is gone.
+\item \textbf{One side condition.}  The communicated variable must not occur
+  \emph{under a quote} (a hygiene predicate, \code{noBoundUnderQuote}).  This is
+  necessary, not bureaucratic: a payload that hides a bound occurrence inside a
+  quoted name can defeat the characterization, and a concrete counterexample
+  exhibits exactly that failure.
+\end{itemize}
+
+\subsection{rhometta as a cognitive substrate}
+
+eval-at-\textsc{comm} is more than a soundness curiosity---it is a way to
+program.  Because a reaction's payload can emit new reactions, a reaction network
+can \emph{grow itself}.  Two self-contained demos (both run on the
+\code{make BUILD=core} binary, under \code{benchmarks/rho/rhometta-*}) show what
+that buys.
+
+\paragraph{A self-unfolding prover.}  Seed a \emph{single} cell for a goal.  Each
+\textsc{comm} evaluates one backward-chaining step whose result is the cells for
+that goal's subgoals, so \code{rhometta:run} keeps reducing and the reaction
+network unfolds itself into a proof tree.  Where a goal has several rules the
+payload has several results, so the \textsc{comm} \emph{forks}: nondeterministic
+inference becomes branching reduction, and \code{rhometta:run} returns one
+quiescent residual per complete proof tree (Figure~\ref{fig:cake})---two for the
+sample ``can I bake a cake?'' goal, while a single-rule goal stays confluent at
+one.
+
+\begin{figure}[h]\centering
+\begin{tikzpicture}[>=Stealth, level distance=8mm, sibling distance=15mm,
+  every node/.style={font=\scriptsize\ttfamily}, edge from parent/.style={draw,-}]
+  \begin{scope}
+  \node {cake} child { node {batter} child { node {flour} } child { node {egg} } }
+               child { node {oven} };
+  \end{scope}
+  \begin{scope}[xshift=42mm]
+  \node {cake} child { node {batter} child { node {mix} } }
+               child { node {oven} };
+  \end{scope}
+\end{tikzpicture}
+\caption{The self-unfolding prover's may-set for ``cake'': two complete proof
+  trees, one per rule for \code{batter}.  The trees are not enumerated up front---%
+  they are \emph{grown} by reactions whose payloads plant their children.}
+\label{fig:cake}
+\end{figure}
+
+\paragraph{Cognitive services as parallel reactions.}  A larger showcase runs
+three OpenCog/Hyperon primitives concurrently---a PLN two-hop proof search,
+overlap-corrected evidence revision across two agents, and one ECAN
+attention-spreading round---and chains their channel-gathered results into a
+final payload that synthesizes one action plan per proof path.  Plain Rholang can
+pass names and spawn processes but cannot evaluate a MeTTa term at \textsc{comm};
+a bare MeTTa interpreter has the inference but no channels, concurrency, or
+may-set.  rhometta is the fusion, and this showcase is the smallest program that
+exhibits all of it at once.
+
+\paragraph{Backward chaining, in the standard idiom.}  The cake prover is the
+intuition; a small ladder of demos puts the reaction machine in the exact
+representation the Hyperon community recognizes as backward chaining---typed judgments
+\code{(: proof theorem)}, rules \code{(: r (-> (: p1 P1) (: p2 P2) Concl))}, and
+Curry--Howard proof terms---and they form a deliberate ladder
+(Figure~\ref{fig:rho-ladder}).  In \code{rhometta-typed-bc} the recognizable mortal
+syllogism (\code{researcher}\,$\wedge$\,\code{curious}\,$\Rightarrow$\,%
+\code{mortal}) is proved by reactions: the two premises run as parallel cells, and
+the join re-matches the rule so its shared variable is unified---a spurious pairing
+(\code{researcher}~$r_1$ with \code{curious}~$e_1$) cannot survive.  In
+\code{rhometta-type-inference} type inference \emph{is} the proof search: an
+overloaded \code{plus} produces a genuine may-set (an \code{Int} and a \code{Float}
+typing of \code{(plus one one)}), while \code{(plus x one)} with \code{x\,:\,Int}
+prunes the \code{Float} overload at the unification join.  Proof terms stay pure,
+\code{(: (app pf pa pb) (HasType e t))}; a PLN truth value rides \emph{outside} the
+judgment as derivation metadata that ranks the overloads.  Each demo is gated by
+negative canaries---a bad pairing yields no proof and, because the join is made
+total, no stuck reaction---and is checked differentially against a sequential nilbc
+chainer on the same knowledge base, which produces the same proof-term skeletons.
+Two companion type-inference demos then separate the two deeper motifs:
+\code{rhometta-type-inference-nested} sends a deterministic sub-proof back to its
+parent join, while \code{rhometta-type-inference-mayset} uses
+\code{rho:patterns:!recv} to let two inner typings feed one outer continuation.
+
+\begin{figure}[h]\centering
+\begin{tikzpicture}[>=Stealth, node distance=3mm,
+  rung/.style={draw, rounded corners, align=left, inner sep=4pt, font=\footnotesize,
+    text width=104mm},
+  hero/.style={rung, line width=1pt, draw=orange!85!black, fill=orange!8}]
+  \node[rung] (a) {\textbf{\code{rhometta-typed-bc}} --- standard nilbc shape.\\
+    {\scriptsize\itshape facts/rules $\to$ Curry--Howard proof terms;\quad output: 2 mortal proofs.}};
+  \node[rung, below=of a] (b) {\textbf{\code{rhometta-type-inference}} --- proof search as typing.\\
+    {\scriptsize\itshape overloads fork, the join prunes bad types;\quad output: Int/Float may-set, then Int-only.}};
+  \node[rung, below=of b] (n) {\textbf{\code{rhometta-type-inference-nested}} --- recursive sub-proof flow.\\
+    {\scriptsize\itshape a deterministic sub-proof returns to its parent join;\quad output: \code{(f (g x))} : Bool.}};
+  \node[rung, below=of n] (m) {\textbf{\code{rhometta-type-inference-mayset}} --- recursive may-set at depth.\\
+    {\scriptsize\itshape derived inner proofs fan in via \code{!recv};\quad output: boxed typings, including multi-premise.}};
+  \node[hero, below=of m] (c) {\textbf{\code{rhometta-deployment-planner}} --- application-shaped constraint join.\\
+    {\scriptsize\itshape 7 premises in parallel, shared variables agree at the join;\quad output: 2 valid EU chat plans.}};
+  \node[rung, below=of c] (d) {\textbf{\code{rhometta-agi-showcase}} --- cognitive workflow.\\
+    {\scriptsize\itshape PLN $+$ belief revision $+$ ECAN $\to$ plans;\quad output: one plan per proof path.}};
+  \draw[->] (a)--(b); \draw[->] (b)--(n); \draw[->] (n)--(m); \draw[->] (m)--(c); \draw[->] (c)--(d);
+\end{tikzpicture}
+\caption{The rhometta demo ladder, from the smallest recognizable
+  backward-chaining shape up to an AGI cognitive workflow.  The first two isolate
+  the proof-search motifs; the next two add recursion (deterministic, then a
+  may-set at depth via replicated input); the highlighted deployment planner is
+  the reader-facing, application-shaped showcase.}
+\label{fig:rho-ladder}
+\end{figure}
+
+The first two demos are intentionally small: they isolate the two proof-search
+motifs---a shared-variable AND-join, and may-set OR-forking with join-time pruning.
+The third, \code{rhometta-deployment-planner}, composes those motifs into an
+application-shaped query (Figure~\ref{fig:rho-join}).  A deployment plan is not
+selected by post-filtering a list; it is \emph{derived} by backward chaining: rho
+supplies the concurrent premise cells, and the join enforces that the same request,
+model, GPU, provider, region, and latency are used across all seven premises.  A
+plan for \code{eu-chat} (an EU, low-latency, GDPR-safe dialogue request) exists only
+if all seven judgments agree---request task/privacy/offer, model task/privacy/%
+GPU-need, and a matching provider offer---so the engine returns the two valid plans
+(\code{cloudA}+\code{llm70bq4} on H100 and \code{cloudB}+\code{llm7b} on L40S) while
+the US-region, standard-latency, and HIPAA-only candidates die at the join.
+
+\begin{figure}[t]\centering
+\resizebox{\textwidth}{!}{%
+\begin{tikzpicture}[>=Stealth, font=\scriptsize,
+  req/.style={draw, rounded corners, align=left, inner sep=4pt, fill=black!4},
+  cell/.style={draw, rounded corners, fill=blue!8, inner sep=2.5pt, align=left,
+    font=\scriptsize, text width=46mm},
+  jbox/.style={draw, line width=1pt, draw=orange!85!black, fill=orange!12,
+    align=center, inner sep=5pt, rounded corners, text width=26mm},
+  good/.style={draw, fill=green!14, align=left, inner sep=4pt, rounded corners, text width=32mm},
+  bad/.style={draw, fill=black!7, align=left, inner sep=4pt, rounded corners,
+    text=black!55, text width=32mm}]
+  \node[req] (req) {\textbf{Request} \code{eu-chat}\\ task $=$ Dialogue\\
+    privacy $=$ GDPR\\ region $=$ EU\\ latency $=$ LowLatency};
+  \node[cell] (p1) [above right=14mm and 8mm of req] {ReqTask(req, task)};
+  \node[cell, below=1mm of p1] (p2) {ReqPrivacy(req, privacy)};
+  \node[cell, below=1mm of p2] (p3) {ModelTask(model, task)};
+  \node[cell, below=1mm of p3] (p4) {ModelPrivacy(model, privacy)};
+  \node[cell, below=1mm of p4] (p5) {ModelNeeds(model, gpu)};
+  \node[cell, below=1mm of p5] (p6) {ProviderOffer(provider, gpu, region, latency)};
+  \node[cell, below=1mm of p6] (p7) {ReqOffer(req, region, latency)};
+  \node[jbox] (join) [right=10mm of p4] {\textbf{JOIN}\\ shared variables agree:
+    req, model, provider, gpu, region, latency};
+  \node[good] (good) [above right=1mm and 10mm of join] {\textbf{Valid may-set}\\
+    cloudA $+$ llm70bq4 (H100)\\ cloudB $+$ llm7b (L40S)};
+  \node[bad] (bad) [below right=1mm and 10mm of join] {Pruned\\
+    cloudC: wrong region (US)\\ cloudD: wrong latency\\ voicegen: wrong privacy};
+  \draw[->, thick] (req) -- (p4.west);
+  \foreach \p in {p1,p2,p3,p4,p5,p6,p7} \draw[->, blue!55] (\p.east) -- (join.west);
+  \draw[->, green!55!black, thick] (join) -- (good);
+  \draw[->, black!45, thick] (join) -- (bad);
+\end{tikzpicture}}
+\caption{The deployment planner's constraint join.  Each premise is solved in its
+  own rho cell (blue); independent premise search \emph{generates} invalid
+  cross-products, but they are killed at the join (gold), where the shared variables
+  must agree.  The surviving residuals are exactly the valid plans (green); the
+  pruned branches (grey) never reach the may-set.}
+\label{fig:rho-join}
+\end{figure}
+
+The ladder keeps the reader-facing story staged.  The deployment planner prunes a
+premise \emph{cross-product} at the join, so it is a semantic demo rather than an
+indexed large-catalog planner: a production planner would thread bindings or index
+premise lookup earlier.
+
+Two companion demos carry the deeper recursive motifs.
+\code{rhometta-type-inference-nested} exercises a \emph{deterministic} recursive
+search with a join: the sub-proof for \code{(g x)} flows back along a channel to
+the parent reaction for \code{(f (g x))}, which assembles the nested proof term.
+\code{rhometta-type-inference-mayset} handles the sharper case---a recursive
+may-set \emph{at depth}, where a compound subgoal has several proofs that must all
+reach one parent continuation---and here the mechanics matter.  The inner subgoal
+\code{(box one)} is type-checked by a real overload \textsc{comm}-fork over the
+knowledge base: both \code{(Boxed Int)} and \code{(Boxed Float)} are
+\emph{derived}, their proof terms are built by re-matching the rule against the
+resolved premise, and the result is cross-checked by set membership against an
+independent sequential nilbc chainer rather than against a constant.  One boundary
+is stated plainly rather than hidden.  Because the engine forks a multi-result
+payload into separate may-set \emph{branches}---one delivered message per branch---a
+single send would give a replicated input nothing to gather; so the derived inner
+set is collapsed to data, \emph{re-lifted} as parallel sends on the parent channel,
+and \code{rho:patterns:!recv} fans them in.  This ``derived-then-delivered'' bridge
+means the inner search and the outer join are two reductions joined by a collapse
+and re-lift, not one uninterrupted rho reduction.
+
+The fan-in itself is genuine: \code{rho:patterns:!recv} is the lazy
+Meredith--Radestock replicated-input encoding, derived from strict-core reflection
+(quote/drop), so a primitive persistent receive would be a performance and
+residual-cleanliness convenience, not an expressiveness requirement.  Nor is
+multiplicity at depth confined to a single overloaded premise: a further check
+derives \code{(box (plus one one))}---an eight-way premise cross-product
+($2\times2\times2$ over an overloaded operator and two overloaded arguments) pruned
+at the join to two typings---and fans both boxed results into the parent join
+through the same replicated input.  Multi-premise cross-products compose at depth
+with no starvation.
+
+\subsection{Cost-accounted reactions}
+\label{sec:rho-cost}
+
+Reactions are also the natural place to \emph{meter} computation: each
+\textsc{comm} is one unit of work, so a resource budget can be charged per
+reaction.  \CeTTa{}'s \code{cost} profile does this directly---it reduces an
+annotated $\rho$ dialect and reports the resource each reaction consumes.  It is
+the executable end of an ongoing program to equip the $\rho$-calculus with a
+\emph{cost endofunctor}: a construction that wraps a calculus with resource
+accounting once and for all~\cite{costendofunctor}.  We return to it in future
+work.
+
+%% ────────────────────────────────────────────────────────────────────
 \section{Cross-Runtime Benchmarks}
 
 All benchmarks use dialect-agnostic MeTTa (shared syntax) unless noted.
@@ -974,169 +1310,6 @@ not share mutable state:
 Language profiles (\code{he\_compat}, \code{he\_extended},
 \code{he\_prime}, future \code{petta}) are compositional assemblies
 over these machines, not ad-hoc forks in the evaluator.
-
-\subsection{\RhoCalc{} as a Reaction Machine}
-
-\RhoCalc{} adds a fourth pressure point to the architecture: not a new storage
-backend, and not merely another syntax over atom-space evaluation, but an
-active process language whose basic unit of work is a \emph{reaction}.  The
-current \CeTTa{} branch exposes it as \code{--lang rhocalc}, with both a
-Rholang-like \code{.rho} surface and a MeTTa-style \code{.mrho} surface.  The
-\code{core} profile is treated as an explicit restriction, not as the identity
-of the language.
-
-The executable kernel currently supports the small asynchronous spine:
-\[
-  0,\quad P \mid Q,\quad x!(v),\quad
-  \mathsf{for}(p \leftarrow x)\{P\},\quad
-  \mathsf{new}\;x\;\mathsf{in}\;P,\quad
-  @P,\quad *x
-\]
-together with joins and persistent receives/contracts.  Operationally, this is
-implemented by a \code{RhoMachine} object rather than by scattering rho-specific
-state through the ordinary evaluator.  A machine slice carries its run budget,
-fresh-name counter, last run result, and reusable reaction-index capacity.
-
-The important implementation distinction is between:
-\begin{itemize}
-\item \textbf{semantic freshness}: internally allocated rho fresh names are
-  opaque grounded identities, printed as \code{rho:fresh:N} only for
-  deterministic tests and human inspection; and
-\item \textbf{surface spellings}: a user-written symbol such as
-  \code{rho:fresh:1} is not a capability and does not communicate with the
-  internally allocated name that happens to print the same way.
-\end{itemize}
-
-Quoted process names are similarly treated as names with an opaque boundary.
-Substitution and pattern matching may compare quoted names as whole names, but
-they must not casually bind through the quoted process body.  This is why the
-fast send index only indexes directly comparable names such as free symbols and
-opaque fresh identities; quoted process names remain on the fallback path where
-alpha-normalized process equality is used.
-
-\paragraph{Indexed reactions.}
-The first reaction engine is still single-threaded, but no longer treats every
-step as an undifferentiated scan.  Each slice builds a live index of sends and
-reaction sites over the current normalized process, reusing the underlying
-buffers across steps.  A receive or join first consults the indexed sends for
-direct channels and falls back to a full scan only for quoted or otherwise
-non-direct names.  Persistent receives and joins reuse the same machinery while
-leaving their receive process in the residual process.
-
-This design deliberately separates \emph{persistent capacity} from
-\emph{stale pointers}: the index is rebuilt against the current process after a
-reaction, but its allocated storage is retained.  A later refinement can add
-stable component identities and delta updates, but the present design already
-removes repeated allocation and gives the runtime an explicit place to hang
-slice/resume and future parallel reaction scheduling.
-
-\paragraph{Compatibility benchmark ladder.}
-\CeTTa{} compares its \code{.rho} and lowered \code{.mrho} execution against
-the local \code{f1r3node} \code{rholang-cli}.  The benchmark script runs three
-stages: direct \code{.rho}, translated \code{.mrho}, and external
-\code{rholang-cli}.  Ratios are reported only when both engines actually
-complete; if the external engine panics or times out, the comparison is marked
-\code{NA} rather than smuggling a failed run into a speed ratio.
-
-Representative single-repeat measurements from the current branch:
-\begin{center}
-\begin{tabular}{lrrrl}
-\toprule
-Case & Size & \CeTTa{} \code{.rho} & \code{f1r3node} & Note \\
-\midrule
-pipeline & 1024 & 5.14\,s & 16.94\,s & linear receive/send chain \\
-comm-pairs & 256 & 0.82\,s & 2.05\,s & independent communications \\
-persistent-server & 256 & 0.21\,s & 0.54\,s & one contract serving many sends \\
-join-pairs & 256 & 1.73\,s & 4.91\,s & two-channel joins \\
-join-pairs & 64 & 0.10\,s & fail & external \code{TryFromIntError} \\
-\bottomrule
-\end{tabular}
-\end{center}
-
-The persistent-server case is especially informative: it exercises the
-contract/persistent-receive path without requiring blockchain machinery,
-networking, or generalized Rholang effects.  It is therefore a good early
-benchmark for whether the reaction engine handles reusable receive capacity
-without collapsing into materialized intermediate lists.
-
-\paragraph{Relation to the rest of \CeTTa{}.}
-\RhoCalc{} should teach the shared runtime about channels, sources, sinks,
-cancellation, and reaction scheduling, but it should not force every MeTTa
-operation into process-calculus overhead.  The intended direction is to extract
-the reusable substrate---budgets, machine slices, indexed reaction state,
-cancellation tokens, and eventually worker pools---while keeping \HE{},
-\PeTTa{}, and \RhoCalc{} free to choose different surface semantics.
-
-\subsection{Lean Certification of the Reaction Semantics}
-\label{sec:rho-lean}
-
-The reaction machine's most delicate capability is \emph{eval-at-\textsc{comm}}:
-a communication that does not merely move a message but evaluates the
-transmitted payload.  The canonical pattern is the two-component process
-\[
-  \texttt{eval\_drop}(x, p)\;\equiv\;
-  x!\big(@p\big)\;\mid\;\mathsf{for}(y \leftarrow x)\{\,*y\,\},
-\]
-where $@p$ is a deferred (quoted) payload and the receiver immediately drops
-($*$, dereferences and runs) whatever it receives.  The single available
-\textsc{comm} consumes the message and the drop executes the payload; the
-process then runs to quiescence at the evaluated result.
-
-This semantics is formalized in Lean (\code{RhometaReduction.lean}) over the
-same locally-nameless syntax, structural congruence, and semantic substitution
-used for the rest of the \RhoCalc{} development.  The reduction relation
-\code{RhometaReduces} is the rho reaction relation restricted so that the
-ordinary core \textsc{comm} cannot silently consume an explicit eval payload,
-and \code{RhometaSCObservedOutcomes} collects the
-structural-congruence-observable outcomes of its quiescent reducts.  The main
-theorem, \code{rhometta\_bridge\_scObserved}, is a \emph{witness-free
-operational characterization}: on the ready branch (some payload evaluation is
-certified) and for a hash-set-free channel, the concrete quiescent run of
-$\texttt{eval\_drop}(x,p)$ equals
-\[
-  \texttt{RhometaSCObservedOutcomes}\,\big(\texttt{eval\_drop}(x,p)\big),
-\]
-with \emph{no} certification witness exposed in the carrier.  Earlier bridges
-characterized the run only through an explicit \code{CertifiedPayloadResult}
-witness; the witness-free form states the run purely in terms of what is
-structurally observable---the property a caller of the reaction machine can
-actually rely on.
-
-The proof is axiom-clean (\code{\{propext, Classical.choice, Quot.sound\}}, zero
-sorries).  Its keystone is a canonical-form argument: a normalizer
-\code{nfAtom} that is \emph{complete} for structural congruence (congruent terms
-have equal normal forms), which turns the symmetric/transitive structural
-closure---where direct inductions stall---into an equation on canonical forms.
-The load-bearing substitution lemma carries an opacity side condition---that the
-communicated variable does not occur \emph{under a quote}
-(\code{noBoundUnderQuote})---and this condition is necessary, not cosmetic:
-without it a payload can hide a bound occurrence inside a quoted name and the
-characterization fails, as a concrete counterexample witnesses.  The
-\code{NoHashSet} hypothesis on the channel records that the result is stated for
-the bag-structured reaction fragment, the same opaque-name boundary the
-executable index already relies on (quoted process names stay on the fallback
-path).
-
-\paragraph{From the bridge to a running cognitive substrate.}
-The eval-at-\textsc{comm} bridge is not only a soundness result; it licenses a
-programming idiom.  Because a deferred payload may itself evaluate to \emph{more}
-rho process, a reaction's payload can plant the next reactions---communication is
-at once computation and construction.  Two self-contained demos exercise this on
-the executable engine.  A \emph{self-unfolding backward-chaining prover} seeds a
-single cell for a goal; each \textsc{comm} evaluates one inference step whose
-result is the cells for that goal's subgoals, so the reaction network grows
-itself into a proof tree and forks into the may-set wherever a goal has several
-rules: \code{rhometta:run} returns one quiescent residual per complete proof
-tree (two for the sample goal; a single-rule goal stays confluent at one).  A
-larger showcase runs three cognitive services as parallel reactions---a
-PLN-style two-hop proof search, overlap-corrected evidence revision across two
-agents, and one ECAN-style attention-spreading round---and chains their
-channel-gathered results into a final deferred payload that synthesizes one
-action plan per proof path.  Every cell in these demos is an \code{eval\_drop},
-so \code{rhometta\_bridge\_scObserved} is exactly the theorem that licenses
-reading the quiescent residual as the computed result.  Both run on the
-\code{make BUILD=core} binary (the showcase additionally importing the shipped
-\code{lib\_pln}); they live under \code{benchmarks/rho/rhometta-*}.
 
 \subsection{Faithful Backend Obligations}
 
@@ -1591,8 +1764,8 @@ ambient, or user-visible.}
 \label{app:mam}
 
 \emph{This appendix is explicitly experimental.  It captures design
-exploration from ongoing discussions (April~2026) between the authors,
-external reviewers (GPT-5.4 Pro), and Codex, concerning the
+exploration from ongoing discussions (April~2026) between the authors
+and external reviewers (GPT-5.4 Pro), concerning the
 post-phase-1f abstract-machine layer for \CeTTa{}.  Nothing here is yet
 implemented or committed architecture.  It is recorded to preserve
 design rationale; the authoritative implementation plan remains
@@ -1804,7 +1977,7 @@ local library:
 \subsection{Status}
 
 This appendix records design rationale; it does not commit
-implementation.  Reasoned council review converged on $\sim$0.88
+implementation.  Reasoned design review converged on $\sim$0.88
 confidence on MAM naming and two-engine strategy.  The concrete
 implementation plan (phase~2 seam; phase~3 tabling plugin;
 phase~4 backend parity) is the authoritative schedule and is
@@ -1833,6 +2006,17 @@ did not.}
   Z.~Goertzel and Oru\v{z}i,
   ``MeTTaIL: Contract-First Boot Compilation for Direct C MeTTa Runtimes,''
   Working paper, 2026.
+
+\bibitem{rho2005}
+  L.~G.~Meredith and M.~Radestock,
+  ``A Reflective Higher-Order Calculus,''
+  \emph{Electronic Notes in Theoretical Computer Science}, vol.~141, no.~5,
+  pp.~49--67, 2005.
+
+\bibitem{costendofunctor}
+  L.~G.~Meredith,
+  ``Continued Interactive GSLTs and the Cost Endofunctor: Wrapping by
+  Construction,'' Working paper, 2026.
 \end{thebibliography}
 
 \end{document}

@@ -103,10 +103,14 @@ theorem agreesOnBoundarySupport_of_interactionClosed
     AgreesOnBoundarySupport
       M.toStrictlyPositiveInfiniteGroundMLNSpec.toInfiniteGroundMLNSpec Γ ξ₁ ξ₂ := by
   intro j a hj ha hnot
-  have hj' : j ∈ M.regionSupport Γ := by
-    simpa [ClassicalInfiniteGroundMLNSpec.toStrictlyPositiveInfiniteGroundMLNSpec] using hj
-  have ha' : a ∈ (M.clause j).atoms := by
-    simpa [ClassicalInfiniteGroundMLNSpec.toStrictlyPositiveInfiniteGroundMLNSpec] using ha
+  -- `M.regionSupport` is sugar for the parent-projection chain through both
+  -- coercions, so this is definitional.  (At 4.31 `simp [toStrictlyPositive…]`
+  -- over-unfolds the coercion and breaks the match; `exact` uses the defeq.)
+  have hj' : j ∈ M.regionSupport Γ := hj
+  -- `(M.toStrictlyPositive…).clauseData j = classicalWeightedClause (M.clause j) _`
+  -- by the coercion instance, and `(classicalWeightedClause c _).clause = c`
+  -- definitionally, so the atom sets coincide by defeq.
+  have ha' : a ∈ (M.clause j).atoms := ha
   rcases M.regionSupport_sound hj' with ⟨b, hbClause, hbΓ⟩
   have htouchSingleton : clauseTouchesRegion (M.clause j) ({b} : Region Atom) := by
     exact ⟨b, hbClause, by simp⟩
@@ -138,8 +142,10 @@ theorem finiteVolumeQueryProb_eq_of_specAgreesOnRegion
   classical
   let N₁ := M₁.toStrictlyPositiveInfiniteGroundMLNSpec.toInfiniteGroundMLNSpec
   let N₂ := M₂.toStrictlyPositiveInfiniteGroundMLNSpec.toInfiniteGroundMLNSpec
-  have hsupport : N₁.regionSupport Γ = N₂.regionSupport Γ := by
-    simpa [N₁, N₂] using hagree.regionSupport_eq Γ (by intro a ha; exact ha) hΓ
+  -- `Nᵢ.regionSupport = Mᵢ.regionSupport` definitionally (parent projection),
+  -- so the agreement lemma transports directly without `simp` normalization.
+  have hsupport : N₁.regionSupport Γ = N₂.regionSupport Γ :=
+    hagree.regionSupport_eq Γ (fun a ha => ha) hΓ
   have hweight :
       ∀ x : LocalAssignment Atom Γ,
         N₁.finiteVolumeWeight Γ x ξ = N₂.finiteVolumeWeight Γ x ξ := by
@@ -151,8 +157,7 @@ theorem finiteVolumeQueryProb_eq_of_specAgreesOnRegion
     have hjN₁ : j ∈ N₁.regionSupport Γ := by
       rw [hsupport]
       exact hj
-    have hj' : j ∈ M₁.regionSupport Γ := by
-      simpa [N₁] using hjN₁
+    have hj' : j ∈ M₁.regionSupport Γ := hjN₁
     have hwc := classicalWeightedClause_eq_of_specAgreesOnRegion hagree hj'
     simpa [N₁, N₂, ClassicalInfiniteGroundMLNSpec.toStrictlyPositiveInfiniteGroundMLNSpec]
       using congrArg (fun wc => wc.eval (patch Γ x ξ)) hwc
@@ -233,7 +238,11 @@ theorem queryProb_eq_of_specAgreesOnRegion
         by_cases ha : a ∈ Γ
         · simp [patch, worldRestriction, ha]
         · simp [patch, ha]
-      simpa [infiniteQueryEvent, qΓ, localQueryEvent, hpatch] using
+      -- `infiniteQueryEvent` unfolds (via `infiniteConstraintQueryHolds` →
+      -- `constraintQueryHolds`) to `satisfiesConstraints ω q`; at 4.31 `simp`
+      -- leaves `infiniteConstraintQueryHolds` un-reduced, so unfold it explicitly.
+      simpa [infiniteQueryEvent, InfiniteGroundMLNSpec.infiniteConstraintQueryHolds,
+        constraintQueryHolds, qΓ, localQueryEvent, hpatch] using
         (satisfiesConstraints_restrictQueryToRegion_iff
           (Λ := Γ) (x := worldRestriction Γ ω) (q := q) hq (ξ := ω)).symm
     have hconst₁ :

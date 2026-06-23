@@ -335,8 +335,11 @@ theorem trustTriangle_bodhisattva_exact_example
       newMeasure := μ₂
       oldDLR := hμ₁
       newDLR := hμ₂ }
-  let family : ProtectedEthicsQueryFamily closure.proto.seed := by
-    simpa [closure, trustTriangleClosure] using trustTriangleBodhisattvaGoals
+  -- `closure.proto.seed` is `coreTriangle` definitionally, so the goals family
+  -- transports directly.  (At 4.31 the old `simpa … using` route wrapped this in a
+  -- `cast` that no longer reduces, leaving `(cast … goals).…Query` in the result
+  -- type where the goal expects the un-cast `goals.…Query`.)
+  let family : ProtectedEthicsQueryFamily closure.proto.seed := trustTriangleBodhisattvaGoals
   have hAgree :
       SpecAgreesOnRegion (triangleChainSpec wt wc₁) (triangleChainSpec wt wc₂)
         ((triangleChainSpec wt wc₁).iterExpandRegion closure.proto.seed closure.closureDepth) := by

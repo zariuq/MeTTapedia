@@ -262,15 +262,15 @@ theorem trustTriangleGewirth_activeGoal_mem_bodhisattvaGoals
     (trustTriangleGewirthMeaningProfile context agent).activeGoalQuery
         (trustTriangleUpperShardEncoder (Agent := I.Entity)) ∈
       trustTriangleBodhisattvaGoals.goals := by
-  simpa [trustTriangleGewirthMeaningProfile]
-    using trustTriangleBodhisattvaGoals.mem_nonMaleficence
+  simp [trustTriangleGewirthMeaningProfile, UpperShardFoundationalMeaningProfile.activeGoalQuery,
+    trustTriangleBodhisattvaGoals]
 
 theorem trustTriangleGewirth_operator_mem_bodhisattvaGoals
     {I : PGCInterpretation} (operator : I.Entity) :
     (operatorCareClaim operator).toQuery
         (trustTriangleUpperShardEncoder (Agent := I.Entity)) ∈
       trustTriangleBodhisattvaGoals.goals := by
-  simpa using trustTriangleBodhisattvaGoals.mem_epistemicUniversalLove
+  simp [operatorCareClaim_query_eq_epistemicUniversalLove operator, trustTriangleBodhisattvaGoals]
 
 theorem trustTriangleGewirth_activeGoal_mem_traceSeed
     {I : PGCInterpretation} (context : I.Ctx) (agent operator : I.Entity) :
@@ -419,7 +419,7 @@ theorem trustTriangle_gewirth_nonInterference_and_operator_path_example
     ?_, ?_⟩
   · simpa [trustTriangleBodhisattvaPath_totalErrorBound] using hUpper.2
   · simpa [operatorCareClaim_query_eq_epistemicUniversalLove operator,
-      trustTriangleBodhisattvaPath_totalErrorBound] using hOperator
+      trustTriangleBodhisattvaPath_totalErrorBound, trustTriangleBodhisattvaGoals] using hOperator
 
 /-- Exact closure version of the Gewirth/WM example:
 
@@ -509,6 +509,7 @@ theorem trustTriangle_gewirth_nonInterference_and_operator_exact_example
     hUpper.1,
     trustTriangleGewirth_activeGoal_mem_upperShardGoals context agent operator,
     hUpper.2,
-    by simpa [operatorCareClaim_query_eq_epistemicUniversalLove operator] using hOperator⟩
+    by simpa [operatorCareClaim_query_eq_epistemicUniversalLove operator,
+      trustTriangleBodhisattvaGoals] using hOperator⟩
 
 end Mettapedia.CognitiveArchitecture.GodelClaw.Ethics.Ontology

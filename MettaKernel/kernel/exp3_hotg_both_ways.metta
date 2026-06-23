@@ -18,6 +18,8 @@
 ;   /home/aimama/aihub/hyperon/CeTTa/cetta exp3_hotg_both_ways.metta
 ; =============================================================================
 
+!(import! &self kernel_binding_waist_v1)
+
 ; =============================================================================
 ; 1. Sequent/admitted-signature kernel fragment
 ; =============================================================================
@@ -158,23 +160,16 @@
 (= (l_is_axiom_name (SCons (DDef $c $T $body) $rest) $x)
    (l_is_axiom_name $rest $x))
 
-(= (l_shift $d $c (Var $k)) (if (< $k $c) (Var $k) (Var (+ $k $d))))
-(= (l_shift $d $c (Srt $s)) (Srt $s))
-(= (l_shift $d $c (Con $x)) (Con $x))
-(= (l_shift $d $c (Def $x)) (Def $x))
-(= (l_shift $d $c (App $f $a)) (App (l_shift $d $c $f) (l_shift $d $c $a)))
-(= (l_shift $d $c (Pi $A $B)) (Pi (l_shift $d $c $A) (l_shift $d (+ $c 1) $B)))
-(= (l_shift $d $c (Lam $A $b)) (Lam (l_shift $d $c $A) (l_shift $d (+ $c 1) $b)))
-(= (l_shift $d $c (Bad $e)) (Bad $e))
+(= (l_shift $d $c $t) (shift $d $c $t))
+(= (l_subst $j $s $t) (subst $j $s $t))
 
-(= (l_subst $j $s (Var $k)) (if (== $k $j) $s (if (> $k $j) (Var (- $k 1)) (Var $k))))
-(= (l_subst $j $s (Srt $x)) (Srt $x))
-(= (l_subst $j $s (Con $x)) (Con $x))
-(= (l_subst $j $s (Def $x)) (Def $x))
-(= (l_subst $j $s (App $f $a)) (App (l_subst $j $s $f) (l_subst $j $s $a)))
-(= (l_subst $j $s (Pi $A $B)) (Pi (l_subst $j $s $A) (l_subst (+ $j 1) (l_shift 1 0 $s) $B)))
-(= (l_subst $j $s (Lam $A $b)) (Lam (l_subst $j $s $A) (l_subst (+ $j 1) (l_shift 1 0 $s) $b)))
-(= (l_subst $j $s (Bad $e)) (Bad $e))
+!(assertEqual (l_subst 0 (Con z) (Var 1)) (Var 0))
+!(assertEqual
+   (l_subst 0 (Var 0) (Lam (Con nat) (Var 1)))
+   (Lam (Con nat) (Var 1)))
+!(assertEqual (l_shift 1 0 (Lam (Con nat) (Var 0))) (Lam (Con nat) (Var 0)))
+!(assertEqual (l_shift 1 1 (Lam (Con nat) (Var 0))) (Lam (Con nat) (Var 0)))
+!(assertEqual (l_shift 1 0 (Lam (Con nat) (Var 1))) (Lam (Con nat) (Var 2)))
 
 (= (l_nf $sig (Var $k)) (Var $k))
 (= (l_nf $sig (Srt $s)) (Srt $s))

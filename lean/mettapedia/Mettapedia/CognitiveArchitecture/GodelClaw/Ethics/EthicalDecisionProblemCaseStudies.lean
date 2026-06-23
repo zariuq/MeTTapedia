@@ -498,8 +498,8 @@ theorem privacyDisclosureLegacyPracticalBridge_askConsent_query_eq_axiological :
 theorem privacyDisclosureLegacyPracticalBridge_askConsent_query_eq_autonomy :
     privacyDisclosureLegacyPracticalBridge.actionQuery .askConsent =
       privacyDisclosureAutonomyQuery := by
-  simpa [privacyDisclosureAutonomyQuery] using
-    privacyDisclosureLegacyPracticalBridge_askConsent_query_eq_axiological
+  rw [privacyDisclosureLegacyPracticalBridge_askConsent_query_eq_axiological]
+  rfl
 
 /-- Direct structured encoder used for the source-to-WM correctness theorem on
 the privacy-disclosure autonomy lane.
@@ -572,7 +572,8 @@ theorem privacyDisclosureLegacyPracticalBridge_askConsent_wmPositive :
       (privacyDisclosureLegacyPracticalBridge.actionQuery .askConsent) := by
   rw [privacyDisclosureLegacyPracticalBridge_askConsent_query_eq_autonomy]
   simpa [privacyDisclosureAskConsentObligationClaim, privacyDisclosureActionRendering,
-    privacyDisclosureStructuredEncoder, privacyDisclosureAutonomyQuery] using
+    StructuredEthicalClaim.toQuery, privacyDisclosureStructuredEncoder,
+    privacyDisclosureAutonomyQuery] using
     privacyDisclosureAskConsentObligationClaim_wmPositive
 
 -- ═══════════════════════════════════════════════════════════════════════════
@@ -1316,8 +1317,8 @@ theorem forceEscalationLegacyPracticalBridge_lockDown_query_eq_axiological :
 theorem forceEscalationLegacyPracticalBridge_lockDown_query_eq_protection :
     forceEscalationLegacyPracticalBridge.actionQuery .lockDown =
       forceEscalationProtectionQuery := by
-  simpa [forceEscalationProtectionQuery] using
-    forceEscalationLegacyPracticalBridge_lockDown_query_eq_axiological
+  rw [forceEscalationLegacyPracticalBridge_lockDown_query_eq_axiological]
+  rfl
 
 /-- Direct structured encoder used for the source-to-WM correctness theorem on
 the force-escalation protection lane.  This is intentionally lane-coarse: the
@@ -1387,7 +1388,8 @@ theorem forceEscalationLegacyPracticalBridge_lockDown_wmPositive :
       (forceEscalationLegacyPracticalBridge.actionQuery .lockDown) := by
   rw [forceEscalationLegacyPracticalBridge_lockDown_query_eq_protection]
   simpa [forceEscalationLockDownObligationClaim, forceEscalationActionRendering,
-    forceEscalationStructuredEncoder, forceEscalationProtectionQuery] using
+    StructuredEthicalClaim.toQuery, forceEscalationStructuredEncoder,
+    forceEscalationProtectionQuery] using
     forceEscalationLockDownObligationClaim_wmPositive
 
 def forceEscalationUtility : ForceEscalationAction → ℝ
@@ -1416,7 +1418,8 @@ theorem lockDownClaim_ground_witnessed₀ :
 theorem forceEscalationLockDownObligationClaim_ground_witnessedForCandidateSet :
     forceEscalationLockDownObligationClaim.ground.WitnessedForCandidateSet₀
       forceEscalationCandidateSet.toFinset := by
-  simpa [forceEscalationLockDownObligationClaim, forceEscalationActionRendering] using
+  simpa [forceEscalationLockDownObligationClaim, forceEscalationActionRendering,
+    lockDownClaim, mkActiveGoalClaim] using
     lockDownClaim_ground_witnessedForCandidateSet
 
 theorem forceEscalationLockDownObligationClaim_ground_witnessed₀ :

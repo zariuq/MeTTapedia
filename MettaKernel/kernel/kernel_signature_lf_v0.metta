@@ -17,6 +17,8 @@
 ;   /home/aimama/aihub/hyperon/CeTTa/cetta kernel_signature_lf_v0.metta
 ; =============================================================================
 
+!(import! &self kernel_binding_waist_v1)
+
 ; ---------- list helpers -----------------------------------------------------
 (= (is-bad $x) (unify $x (Bad $e) True False))
 
@@ -63,23 +65,9 @@
 (= (is-axiom-name (SCons (DDef $c $T $body) $rest) $x) (is-axiom-name $rest $x))
 
 ; ---------- lambda-Pi term machinery ----------------------------------------
-(= (shift $d $c (Var $k)) (if (< $k $c) (Var $k) (Var (+ $k $d))))
-(= (shift $d $c (Srt $s)) (Srt $s))
-(= (shift $d $c (Con $x)) (Con $x))
-(= (shift $d $c (Def $x)) (Def $x))
-(= (shift $d $c (App $f $a)) (App (shift $d $c $f) (shift $d $c $a)))
-(= (shift $d $c (Pi  $A $B)) (Pi  (shift $d $c $A) (shift $d (+ $c 1) $B)))
-(= (shift $d $c (Lam $A $b)) (Lam (shift $d $c $A) (shift $d (+ $c 1) $b)))
-(= (shift $d $c (Bad $e)) (Bad $e))
-
-(= (subst $j $s (Var $k)) (if (== $k $j) $s (if (> $k $j) (Var (- $k 1)) (Var $k))))
-(= (subst $j $s (Srt $x)) (Srt $x))
-(= (subst $j $s (Con $x)) (Con $x))
-(= (subst $j $s (Def $x)) (Def $x))
-(= (subst $j $s (App $f $a)) (App (subst $j $s $f) (subst $j $s $a)))
-(= (subst $j $s (Pi  $A $B)) (Pi  (subst $j $s $A) (subst (+ $j 1) (shift 1 0 $s) $B)))
-(= (subst $j $s (Lam $A $b)) (Lam (subst $j $s $A) (subst (+ $j 1) (shift 1 0 $s) $b)))
-(= (subst $j $s (Bad $e)) (Bad $e))
+; Public capture-avoiding `shift`/`subst` traversal comes from
+; `kernel_binding_waist_v1`; this kernel is a client, not a second binding
+; implementation.
 
 (= (nf $sig (Var $k)) (Var $k))
 (= (nf $sig (Srt $s)) (Srt $s))
@@ -250,6 +238,15 @@
 ; Bad is not a type.
 !(assertEqual (infer (good-sig) CtxNil (Lam (Srt type) (Var 0))) (Bad lam-domain-not-a-type))
 !(assertEqual (check (good-sig) CtxNil (Lam (Con o) (Srt kind)) (Pi (Con o) (Bad kind-is-topsort))) False)
+
+; Binding waist replay: the shared waist preserves this kernel's de Bruijn behavior.
+(= (lf-v0-shadow-term) (Lam (Con nat) (Lam (Con nat) (Var 2))))
+(= (lf-v0-shadow-replay) (subst 0 (Var 0) (lf-v0-shadow-term)))
+!(assertEqual (subst 0 (Con z) (Var 1)) (Var 0))                         ; index decrement
+!(assertEqual (subst 0 (Var 0) (Lam (Con nat) (Var 1))) (Lam (Con nat) (Var 1))) ; no capture
+!(assertEqual (shift 1 0 (Lam (Con nat) (Var 0))) (Lam (Con nat) (Var 0))) ; bound var fixed under binder
+!(assertEqual (shift 1 0 (Lam (Con nat) (Var 1))) (Lam (Con nat) (Var 2))) ; free var shifts under binder
+!(assertEqual (lf-v0-shadow-replay) (lf-v0-shadow-term))                  ; nested shadowing
 
 ; Delta conversion through an admitted definition.
 !(assertEqual (conv (good-sig) (App (Def holds) (Con A)) (App (Con prf) (Con A))) True)

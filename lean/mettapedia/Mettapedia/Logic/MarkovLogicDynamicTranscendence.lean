@@ -213,8 +213,15 @@ private theorem infiniteQueryEvent_eq_localQueryEvent_restrictQueryToRegion
     · simp [patch, ha]
   have hiff :=
     satisfiesConstraints_restrictQueryToRegion_iff Γ (Finset.restrict Γ ω) q hq ω
-  simpa [infiniteQueryEvent, localQueryEvent, InfiniteGroundMLNSpec.infiniteConstraintQueryHolds, hpatch]
-    using hiff.symm
+  -- After substituting `hpatch`, `hiff`'s RHS is `infiniteConstraintQueryHolds q ω`,
+  -- which is `satisfiesConstraints ω q` definitionally.  Unfold both query events;
+  -- the goal becomes `satisfiesConstraints ω q ↔ satisfiesConstraints (worldRestriction Γ ω) qΓ`,
+  -- and `worldRestriction Γ ω = Finset.restrict Γ ω = fun a => ω a.1` definitionally, so
+  -- `hiff.symm` closes it by defeq.  (At 4.31 `simp`/`simpa` won't bridge the
+  -- `worldRestriction`/`Finset.restrict` and `constraintQueryHolds` defeqs in its final check.)
+  rw [hpatch] at hiff
+  simp only [infiniteQueryEvent, localQueryEvent, Set.mem_setOf_eq]
+  exact hiff.symm
 
 private lemma infiniteMLNMassSemantics_queryProb_empty_eq_one
     (M : ClassicalInfiniteGroundMLNSpec Atom ClauseId)
@@ -267,9 +274,12 @@ private theorem limitMarginal_toPMF_finiteVolumeWorldMeasure_eq_finiteVolumeAssi
     simp [p]
   apply PMF.ext
   intro x
-  have hsingleton :=
-    congrArg (fun ρ : Measure (LocalAssignment Atom Ω) => ρ ({x} : Set (LocalAssignment Atom Ω))) hmeasure
-  simpa [p] using hsingleton
+  -- `(limitMarginal …).toPMF x = (limitMarginal …) {x}` definitionally
+  -- (`Measure.toPMF_apply`); rewrite the marginal to `p.toMeasure` and finish
+  -- with `PMF.toMeasure_apply_singleton`.  (Rewriting `hmeasure` directly under
+  -- `.toPMF` fails at 4.31 — the `IsProbabilityMeasure` instance is dependent.)
+  rw [MeasureTheory.Measure.toPMF_apply, hmeasure,
+    PMF.toMeasure_apply_singleton _ x (measurableSet_singleton x)]
 
 private theorem finiteVolumeAssignmentPMF_eq_of_specAgreesOnRegion
     {M₁ M₂ : ClassicalInfiniteGroundMLNSpec Atom ClauseId}
@@ -286,8 +296,9 @@ private theorem finiteVolumeAssignmentPMF_eq_of_specAgreesOnRegion
   classical
   let N₁ := M₁.toStrictlyPositiveInfiniteGroundMLNSpec.toInfiniteGroundMLNSpec
   let N₂ := M₂.toStrictlyPositiveInfiniteGroundMLNSpec.toInfiniteGroundMLNSpec
-  have hsupport : N₁.regionSupport Ω = N₂.regionSupport Ω := by
-    simpa [N₁, N₂] using hagree.regionSupport_eq Ω (by intro a ha; exact ha) hΩne
+  -- `Nᵢ.regionSupport = Mᵢ.regionSupport` definitionally (parent projection).
+  have hsupport : N₁.regionSupport Ω = N₂.regionSupport Ω :=
+    hagree.regionSupport_eq Ω (fun a ha => ha) hΩne
   have hweight :
       ∀ x : LocalAssignment Atom Ω,
         N₁.finiteVolumeWeight Ω x ξ = N₂.finiteVolumeWeight Ω x ξ := by
@@ -299,8 +310,7 @@ private theorem finiteVolumeAssignmentPMF_eq_of_specAgreesOnRegion
     have hjN₁ : j ∈ N₁.regionSupport Ω := by
       rw [hsupport]
       exact hj
-    have hj' : j ∈ M₁.regionSupport Ω := by
-      simpa [N₁] using hjN₁
+    have hj' : j ∈ M₁.regionSupport Ω := hjN₁
     have hwc := classicalWeightedClause_eq_of_specAgreesOnRegion hagree hj'
     simpa [N₁, N₂, ClassicalInfiniteGroundMLNSpec.toStrictlyPositiveInfiniteGroundMLNSpec]
       using congrArg (fun wc => wc.eval (patch Ω x ξ)) hwc
@@ -481,14 +491,16 @@ theorem DynamicTranscendenceStep.queryProb_approximately_preserved_of_uniformCon
     have hν₁_on :
         FixedRegionCylinderDLR_on M₁.toStrictlyPositiveInfiniteGroundMLNSpec
           (ν₁ : Measure (InfiniteWorld Atom)) Ω := by
-      simpa [ν₁, N₁, hZ₁] using
-        finiteVolumeWorldMeasure_fixedRegionCylinderDLR_on
+      -- `M'.finiteVolumeWorldMeasure Ω ξ₀` unfolds to `finiteVolumeWorldMeasure N₁ Ω ξ₀ _`
+      -- with the partition-nonzero proof supplied by `finiteVolumePartition_ne_zero`;
+      -- that proof is defeq to `hZ₁` by proof irrelevance, so `ν₁` matches by defeq.
+      exact finiteVolumeWorldMeasure_fixedRegionCylinderDLR_on
           M₁.toStrictlyPositiveInfiniteGroundMLNSpec Ω ξ₀
     have hν₂_on :
         FixedRegionCylinderDLR_on M₂.toStrictlyPositiveInfiniteGroundMLNSpec
           (ν₂ : Measure (InfiniteWorld Atom)) Ω := by
-      simpa [ν₂, N₂, hZ₂] using
-        finiteVolumeWorldMeasure_fixedRegionCylinderDLR_on
+      -- Same defeq as `hν₁_on` above (proof irrelevance on the partition-nonzero arg).
+      exact finiteVolumeWorldMeasure_fixedRegionCylinderDLR_on
           M₂.toStrictlyPositiveInfiniteGroundMLNSpec Ω ξ₀
     have hleft :
         M₁.finiteRegionLocalQueryDiscrepancy μ₁ ν₁ Γ qΓ ≤

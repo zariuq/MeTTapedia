@@ -131,7 +131,7 @@ theorem trustTriangle_meaning_activeGoal_path_example :
   rcases trustTriangle_bodhisattva_reciprocity_path_example with ⟨measures, himprove, hReciprocity⟩
   exact ⟨measures, himprove, trustTriangleMeaning_activeGoal_protected,
     trustTriangleMeaning_activeGoal_mem_traceSeed, by
-      simpa [trustTriangleMeaningProfile] using hReciprocity⟩
+      simpa [trustTriangleMeaningProfile, trustTriangleBodhisattvaGoals] using hReciprocity⟩
 
 /-- Combined reciprocity + operator-deference path theorem:
 
@@ -183,9 +183,9 @@ theorem trustTriangle_meaning_operatorDeference_and_reciprocity_path_example :
     trustTriangleMeaning_operatorDeference_protected,
     trustTriangleMeaning_activeGoal_mem_traceSeed,
     trustTriangleMeaning_operatorDeference_mem_traceSeed, ?_, ?_⟩
-  · simpa [trustTriangleMeaningProfile] using hReciprocity
-  · simpa [trustTriangleOperatorDeferenceQuery, bodhisattvaEpistemicUniversalLoveQuery] using
-      hOperator
+  · simpa [trustTriangleMeaningProfile, trustTriangleBodhisattvaGoals] using hReciprocity
+  · simpa [trustTriangleOperatorDeferenceQuery, bodhisattvaEpistemicUniversalLoveQuery,
+      trustTriangleBodhisattvaGoals] using hOperator
 
 /-- Exact closure version of the combined theorem:
 
@@ -228,8 +228,8 @@ theorem trustTriangle_meaning_operatorDeference_and_reciprocity_exact_example
   exact ⟨himprove,
     trustTriangleMeaning_activeGoal_protected,
     trustTriangleMeaning_operatorDeference_protected,
-    by simpa [trustTriangleMeaningProfile] using hReciprocity,
-    by simpa [trustTriangleOperatorDeferenceQuery, bodhisattvaEpistemicUniversalLoveQuery] using
-      hOperator⟩
+    by simpa [trustTriangleMeaningProfile, trustTriangleBodhisattvaGoals] using hReciprocity,
+    by simpa [trustTriangleOperatorDeferenceQuery, bodhisattvaEpistemicUniversalLoveQuery,
+      trustTriangleBodhisattvaGoals] using hOperator⟩
 
 end Mettapedia.CognitiveArchitecture.GodelClaw.Ethics

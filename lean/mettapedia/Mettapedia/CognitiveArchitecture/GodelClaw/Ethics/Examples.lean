@@ -109,6 +109,6 @@ theorem trustTriangle_full_stack_exact_example
   refine ⟨hRec, trustTriangleTheoryGuidedDecisionProblem_comparisonBudget_eq,
     hAdm, hGoalEq, hNoHarmSat, hNoHarmWM, hConsentSat, hConsentWM, hGoalWM, ?_⟩
   refine ⟨hUtility, ?_⟩
-  simpa [hGoalEq] using hEUL
+  simpa [hGoalEq, trustTriangleBodhisattvaGoals] using hEUL
 
 end Mettapedia.CognitiveArchitecture.GodelClaw.Ethics

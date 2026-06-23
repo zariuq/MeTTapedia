@@ -13,24 +13,11 @@
 ;    /home/aimama/aihub/hyperon/CeTTa/cetta curriculum_lf_demo.metta
 ; =============================================================================
 
-; ============================ THE TRUSTED KERNEL ============================
-(= (shift $d $c (Var $k)) (if (< $k $c) (Var $k) (Var (+ $k $d))))
-(= (shift $d $c (Srt $s)) (Srt $s))
-(= (shift $d $c (Con $x)) (Con $x))
-(= (shift $d $c (Def $x)) (Def $x))
-(= (shift $d $c (App $f $a)) (App (shift $d $c $f) (shift $d $c $a)))
-(= (shift $d $c (Pi  $A $B)) (Pi  (shift $d $c $A) (shift $d (+ $c 1) $B)))
-(= (shift $d $c (Lam $A $b)) (Lam (shift $d $c $A) (shift $d (+ $c 1) $b)))
-(= (shift $d $c (Bad $e)) (Bad $e))
+!(import! &self kernel_binding_waist_v1)
 
-(= (subst $j $s (Var $k)) (if (== $k $j) $s (if (> $k $j) (Var (- $k 1)) (Var $k))))
-(= (subst $j $s (Srt $x)) (Srt $x))
-(= (subst $j $s (Con $x)) (Con $x))
-(= (subst $j $s (Def $x)) (Def $x))
-(= (subst $j $s (App $f $a)) (App (subst $j $s $f) (subst $j $s $a)))
-(= (subst $j $s (Pi  $A $B)) (Pi  (subst $j $s $A) (subst (+ $j 1) (shift 1 0 $s) $B)))
-(= (subst $j $s (Lam $A $b)) (Lam (subst $j $s $A) (subst (+ $j 1) (shift 1 0 $s) $b)))
-(= (subst $j $s (Bad $e)) (Bad $e))
+; ============================ THE TRUSTED KERNEL ============================
+; Public capture-avoiding `shift`/`subst` traversal comes from the shared binding
+; waist.  This curriculum demo is a checker client, not a binding implementation.
 
 (= (nf (Var $k)) (Var $k))
 (= (nf (Srt $s)) (Srt $s))
@@ -116,6 +103,10 @@
 
 ; ================================= TESTS ====================================
 ; ---- waist sanity ----
+!(assertEqual (subst 0 (Con z) (Var 1)) (Var 0))
+!(assertEqual (subst 0 (Var 0) (Lam (Con nat) (Var 1))) (Lam (Con nat) (Var 1)))
+!(assertEqual (shift 1 0 (Lam (Con nat) (Var 0))) (Lam (Con nat) (Var 0)))
+!(assertEqual (shift 1 0 (Lam (Con nat) (Var 1))) (Lam (Con nat) (Var 2)))
 !(assertEqual (infer CtxNil (Srt type)) (Srt kind))
 !(assertEqual (infer CtxNil (App (Con prf) (Con A))) (Srt type))
 ; Bad is not a type: the safe checker rejects failed inference results instead
@@ -128,6 +119,9 @@
 !(assertEqual (check CtxNil (App (Con s) (App (Con s) (Con z))) (Con nat)) True)
 ; identity intro:  rfl z : eqn z z
 !(assertEqual (check CtxNil (App (Con rfl) (Con z)) (App (App (Con eqn) (Con z)) (Con z))) True)
+; self-implication identity (Curry-Howard image of NIK's propositional ph->ph; cross-profile anchor):
+;   lambda x:o. x : o -> o  -- the lambda-Pi profile inhabits A->A, agreeing with the Metamath profile
+!(assertEqual (check CtxNil (Lam (Con o) (Var 0)) (Pi (Con o) (Con o))) True)
 ; NEGATIVE: rfl z does not prove  eqn z (s z)
 !(assertEqual (check CtxNil (App (Con rfl) (Con z)) (App (App (Con eqn) (Con z)) (App (Con s) (Con z)))) False)
 

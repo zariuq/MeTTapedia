@@ -16,6 +16,8 @@
 ;   /home/aimama/aihub/hyperon/CeTTa/cetta exp2_dtt_wall.metta
 ; =============================================================================
 
+!(import! &self kernel_binding_waist_v1)
+
 ; ---------- admitted lambda-Pi kernel core -----------------------------------
 (= (is-bad $x) (unify $x (Bad $e) True False))
 (= (decl-name (DConst $n $T)) $n)
@@ -42,23 +44,8 @@
 (= (def-body-of (SCons (DConst $c $T) $rest) $x) (def-body-of $rest $x))
 (= (def-body-of (SCons (DAxiom $c $T) $rest) $x) (def-body-of $rest $x))
 
-(= (shift $d $c (Var $k)) (if (< $k $c) (Var $k) (Var (+ $k $d))))
-(= (shift $d $c (Srt $s)) (Srt $s))
-(= (shift $d $c (Con $x)) (Con $x))
-(= (shift $d $c (Def $x)) (Def $x))
-(= (shift $d $c (App $f $a)) (App (shift $d $c $f) (shift $d $c $a)))
-(= (shift $d $c (Pi $A $B)) (Pi (shift $d $c $A) (shift $d (+ $c 1) $B)))
-(= (shift $d $c (Lam $A $b)) (Lam (shift $d $c $A) (shift $d (+ $c 1) $b)))
-(= (shift $d $c (Bad $e)) (Bad $e))
-
-(= (subst $j $s (Var $k)) (if (== $k $j) $s (if (> $k $j) (Var (- $k 1)) (Var $k))))
-(= (subst $j $s (Srt $x)) (Srt $x))
-(= (subst $j $s (Con $x)) (Con $x))
-(= (subst $j $s (Def $x)) (Def $x))
-(= (subst $j $s (App $f $a)) (App (subst $j $s $f) (subst $j $s $a)))
-(= (subst $j $s (Pi $A $B)) (Pi (subst $j $s $A) (subst (+ $j 1) (shift 1 0 $s) $B)))
-(= (subst $j $s (Lam $A $b)) (Lam (subst $j $s $A) (subst (+ $j 1) (shift 1 0 $s) $b)))
-(= (subst $j $s (Bad $e)) (Bad $e))
+; Public capture-avoiding `shift`/`subst` traversal comes from the shared binding
+; waist.  This wall-localization probe is a checker client, not binding code.
 
 (= (nf $sig (Var $k)) (Var $k))
 (= (nf $sig (Srt $s)) (Srt $s))
@@ -106,6 +93,11 @@
         (Bad applied-a-non-function))))
 (= (infer $sig $ctx (App $f $a)) (infer-app $sig $ctx $f $a))
 (= (check $sig $ctx $t $ty) (conv $sig (infer $sig $ctx $t) $ty))
+
+!(assertEqual (subst 0 (Con z) (Var 1)) (Var 0))
+!(assertEqual (subst 0 (Var 0) (Lam (Con nat) (Var 1))) (Lam (Con nat) (Var 1)))
+!(assertEqual (shift 1 0 (Lam (Con nat) (Var 0))) (Lam (Con nat) (Var 0)))
+!(assertEqual (shift 1 0 (Lam (Con nat) (Var 1))) (Lam (Con nat) (Var 2)))
 
 (= (sort-ok $s) (unify $s (Srt type) True (unify $s (Srt kind) True False)))
 (= (wf-decl $prefix (DConst $n $T))

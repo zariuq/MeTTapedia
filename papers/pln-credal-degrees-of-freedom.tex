@@ -8,8 +8,9 @@
 
 \documentclass[]{article}
 \usepackage{url}
-\usepackage[hyperindex,breaklinks]{hyperref}
+\usepackage[hyperindex,breaklinks,colorlinks=true,urlcolor=blue,linkcolor=black,citecolor=black]{hyperref}
 \IfFileExists{breakurl.sty}{\usepackage{breakurl}}{}
+\usepackage{xstring}
 \usepackage{listings}
 \lstset{basicstyle=\ttfamily\footnotesize,breaklines=true,frame=single,
         xleftmargin=1em,xrightmargin=0.5em}
@@ -23,6 +24,8 @@
 \usepackage{amsfonts}
 \usepackage{amsmath}
 \usepackage{amsthm}
+\usepackage{tikz}
+\usetikzlibrary{positioning,arrows.meta,calc,decorations.pathreplacing}
 \usepackage{unicode-math}
 \IfFileExists{newunicodechar.sty}{
   \usepackage{newunicodechar}
@@ -48,17 +51,28 @@
 \newcommand{\code}[1]{\texttt{#1}}
 \newcommand{\codepath}[1]{\path{#1}}
 \newcommand{\lid}[1]{{\ttfamily\nolinkurl{#1}}}
-\newcommand{\lpath}[1]{\texttt{\nolinkurl{#1}}}
+% Repo path references auto-link to the public MeTTapedia GitHub.
+% Lean sources live under lean/mettapedia/; papers/ is at the repo root.
+\newcommand{\mpbase}{https://github.com/zariuq/MeTTapedia/blob/main/}
+\newcommand{\lpath}[1]{%
+  \IfBeginWith{#1}{Mettapedia/}%
+    {\href{\mpbase lean/mettapedia/#1}{\texttt{\nolinkurl{#1}}}}%
+    {\IfBeginWith{#1}{papers/}%
+      {\href{\mpbase#1}{\texttt{\nolinkurl{#1}}}}%
+      {\texttt{\nolinkurl{#1}}}}}
 \newcommand{\ty}[1]{\ensuremath{\mathtt{#1}}}
 \newcommand{\STV}[2]{\langle #1,\, #2 \rangle}
 \newcommand{\strength}{\mathrm{strength}}
 \newcommand{\confidence}{\mathrm{confidence}}
 \newcommand{\Eq}{\;\Leftrightarrow\;}
+% mini-diagram for each knob-zoo entry: uniform width + breathing room
+\newcommand{\knobpic}[1]{\par\nopagebreak\vspace{3pt}%
+  \centerline{\resizebox{0.5\linewidth}{!}{#1}}\vspace{6pt}\par}
 
 \emergencystretch=3em
 
-\title{Credal degrees of freedom for PLN truth values:\\
-       a layered characterization of strength and confidence}
+\title{Two numbers for a whole set of beliefs:\\
+       what PLN's strength and confidence can and cannot see}
 \author{Mettapedia Working Notes}
 \date{\today}
 
@@ -66,1216 +80,1189 @@
 \maketitle
 
 \begin{abstract}
-PLN's two-number truth value $\STV{s}{c}$ is the compression of a richer
-object: a credal set of admissible precise previsions over an outcome space.
-We give a layered formal characterization of where $\STV{s}{c}$ is
-\emph{determined} by the spec --- the strength is a single real, the
-confidence is at its information ceiling --- and where the underlying
-credal set has \emph{degrees of freedom} that the two-number summary
-cannot see.
+A belief in PLN (Probabilistic Logic Networks) carries two numbers: a
+\emph{strength} $s$ and a \emph{confidence} $c$. This paper explains, from
+scratch, what those two numbers really stand for and exactly when they tell the
+whole story. The short version: behind the pair $\STV{s}{c}$ sits a whole
+\emph{set} of probability assignments you have not yet ruled out; strength is
+the centre of that set on the question you asked, and confidence measures how
+narrow the set is. Two numbers are a faithful summary of the set when the set
+pins your question down to a single value, and a lossy summary when the set
+leaves a genuine \emph{interval} of admissible answers.
 
-The characterization rests on a recently-landed Lean dichotomy in
-\codepath{Mettapedia.ProbabilityTheory.ImpreciseProbability.ProjectiveCredal}:
-the predicates \lid{credalSetDetermines} and \lid{credalSetHasStrictWidth}
-on a credal set $C$ and a gamble $X$ are the formal locators of, respectively,
-``$\STV{s}{c}$ is fully determined on $X$'' and ``$\STV{s}{c}$ has
-genuine interval width on $X$.'' The collapse theorem
-\lid{lower\_eq\_upperEnvelope\_of\_credalSetDetermines} closes the
-``determined $\Rightarrow$ precise'' direction; the width theorem
-\lid{lower\_upperEnvelope\_nontrivial\_of\_strictWidth} closes the
-``disagreement $\Rightarrow$ envelope opens'' direction.
-
-We lift this dichotomy to the projective credal level
-(\lid{determinesGlobalGamble} / \lid{hasStrictGlobalWidth}) and onward to
-the infinite Markov-logic setting through DLR completions
-(\lid{dlrQueryDetermined} / \lid{dlrQueryHasStrictWidth}). Under the
-Dobrushin uniform small-influence hypothesis,
-\lid{PaperUniformSmallTotalInfluence} implies \lid{dlrQueryDetermined},
-and therefore the MLN query envelope is precise. The low-temperature
-two-dimensional symmetric-grid theorem now supplies the complementary
-strict-width crown:
-\lid{symmetricGridZeroField\_originPLNStrictIntervalCrown\_of\_axisAnchoredContourCode\_twentyFour}.
-On the exchangeable side, the public de~Finetti theorem
-\lid{impreciseDeFinetti\_analyticMixingFamily\_sharpCompatibilityCrown}
-separates the unconditional external mixing-family readout from the raw
-all-gambles crown, which holds exactly at the lower-prevision
-compatibility boundary.
-
-We organize the degrees of freedom into three slots:
-(A)~specification-level freedom in the local credal sets;
-(B)~completion-level freedom in extreme-point choice within a fixed credal
-set (aleatoric, formally invisible to $\STV{s}{c}$);
-(C)~phase-transition freedom from non-uniqueness of DLR completions
-in infinite MLNs. The endpoint is now a closed Lean package rather than a
-list of open infinite-side obligations; the remaining freedom is named by
-the predicates and hypotheses, not hidden in the notation $\STV{s}{c}$.
+We make this precise with a single recurring picture --- \emph{pinned} versus a
+\emph{range} --- and follow it up three rising levels: one belief; a belief
+built from many local pieces; and three infinite limits (order-free data
+streams; weakly coupled systems, which collapse to one precise answer; and
+strongly coupled systems, where distant conditions keep a real interval open).
+Along the way we catalogue nineteen design choices --- ``degrees of freedom''
+--- that two numbers either expose or hide, each with a numeric example
+you can run. Every claim has a machine-checked counterpart; the formal
+statements are collected, de-jargoned, in an appendix, and a runnable example
+pack reproduces every number in the paper.
 \end{abstract}
 
 \tableofcontents
 
-\section{Introduction}
+\section{One flip versus a hundred}\label{sec:hook}
 
-PLN's atomic truth-value object is a pair $\STV{s}{c}$ with $s, c \in [0,1]$
-called \emph{strength} and \emph{confidence}. Standard PLN parametrises
-$s$ as a probability estimate and $c$ as a function of evidence count,
-typically $c = N/(N+\kappa)$ for a system-level constant $\kappa$ and an
-evidence-count integer $N$. The pair is what travels through PLN's
-rules (revision, deduction, induction, abduction); it is what is read off
-by query atoms; it is the type signature of every PLN belief.
+You flip a bent coin once and it lands heads. \emph{One out of one --- so far it
+always comes up heads.} Now I flip a different bent coin a hundred times and it
+lands heads every single time. \emph{A hundred out of a hundred.} In both cases
+the coin ``always comes up heads'' on the evidence so far, so the best guess for
+the next flip is the same: lean all the way toward heads. But you are not
+equally sure. After one flip you would shrug; after a hundred you would bet real
+money.
 
-But $\STV{s}{c}$ is a two-number summary. The same pair can be produced by
-very different underlying epistemic objects: a Beta-distribution
-second-order Bayesian; a Walley-style coherent lower prevision with a
-specific interval width; an exchangeable de Finetti mixture with a
-particular concentration. PLN's compositional rules treat $\STV{s}{c}$
-\emph{as} the belief object, and the algebra reduces to numerical update
-formulas; but the question of \emph{what is and is not pinned down by
-$\STV{s}{c}$} is rarely written explicitly in the PLN literature.
+That gap is the whole subject of this paper. The ``best guess'' --- which way
+the evidence leans --- is the \textbf{strength}. ``How much you would bet on
+your own guess'' --- how much evidence stands behind it --- is the
+\textbf{confidence}. They are genuinely two different things, and \emph{no single
+number can be both}: the two coins above share a strength but must not share a
+confidence.
 
-This paper makes that explicit. We organise the question as follows.
-The strength and confidence of a query in PLN are determined by an
-underlying credal set $C$ of admissible precise previsions. The
-\emph{degrees of freedom} that $\STV{s}{c}$ summarises but does not
-expose live in three slots:
+Here is the idea that organizes everything below. Behind those two numbers sits
+a richer object: \textbf{the whole range of probabilities still consistent with
+what you have seen}. After $1/1$ that range is wide --- the coin's true bias
+could be anywhere from ``barely favours heads'' to ``always heads.'' After
+$100/100$ the range has shrunk to a sliver near $1$. PLN keeps only two facts
+about that range: where its centre is (strength) and how narrow it is
+(confidence). So the question of this paper is:
+
+\begin{quote}
+\emph{When do those two numbers tell the whole story, and when is the range
+behind them doing something the two numbers cannot show?}
+\end{quote}
+
+One more twist before we start, to set expectations. Even the \emph{rate} at
+which confidence grows is a choice. The same five pieces of evidence can be ``a
+lot'' or ``barely anything'' depending on the domain. Using PLN's standard rule
+$c = N/(N+\kappa)$ with $N=5$ pieces of evidence: at $\kappa=1$ you get
+confidence $0.833$; at $\kappa=10$, only $0.333$; at $\kappa=50$, just $0.091$.
+Same evidence, three confidences. That dial $\kappa$ --- and roughly eighteen of
+its cousins --- is what Section~\ref{sec:zoo} catalogues. Each is a place where
+two beliefs can look identical as $\STV{s}{c}$ yet mean different things; that is
+what we mean by a \emph{degree of freedom}.
+
+\paragraph{What this paper is, and is not.} We characterize a single truth
+value: what $\STV{s}{c}$ records, when it is forced, and what it hides. We do
+\emph{not} re-derive how truth values propagate through PLN's inference rules
+(deduction, induction, abduction, revision); that is the existing PLN corpus
+(\xiPLN, \nuPLN, and the WM-PLN book~\cite{xipln,wmpln-book,goertzel-pln}). The
+body stays at sophomore level: basic probability (a coin's bias, expectation,
+conditional probability) is all you need. The rigorous statements live in
+Appendix~\ref{app:formal}, and a runnable companion that reproduces every number
+lives at \lpath{papers/pln-confidence-examples/} (Appendix~\ref{app:run}). All
+sources are in the public MeTTapedia repository,
+\url{https://github.com/zariuq/MeTTapedia}, and the file references throughout
+this paper link to it.
+
+\section{Two dials: which way, and how much}\label{sec:dials}
+
+Picture a belief as a little instrument panel with two dials
+(Figure~\ref{fig:dials}).
+
+\paragraph{The strength dial reads the ratio.} Count your evidence as $n^+$
+votes ``for'' and $n^-$ votes ``against.'' Strength reads which way the votes
+lean:
+\[
+  s = \frac{n^+}{n^+ + n^-}.
+\]
+For a coin, this is just the fraction of heads. $7$ heads in $10$ flips gives
+$s = 0.7$.
+
+\paragraph{The confidence dial reads the total.} Confidence ignores which way
+the votes went and reads \emph{how many} there are. Writing $N = n^+ + n^-$ for
+the total evidence,
+\[
+  c = \frac{N}{N + \kappa},
+\]
+where $\kappa>0$ is a calibration constant for ``how much evidence counts as a
+lot.'' More evidence pushes $c$ toward $1$; no evidence gives $c=0$.
+
+Why two dials and not one? Because the two facts vary independently. Consider:
+
+\begin{center}
+\begin{tabular}{lccc}
+\toprule
+evidence & strength $s$ & total $N$ & confidence $c$ (at $\kappa=1$)\\
+\midrule
+$1$ for, $1$ against    & $0.5$ & $2$   & $0.667$\\
+$10$ for, $10$ against  & $0.5$ & $20$  & $0.952$\\
+$100$ for, $100$ against& $0.5$ & $200$ & $0.995$\\
+\midrule
+$1$ for, $1$ against    & $0.5$ & $2$ & $0.667$\\
+$2$ for, $0$ against    & $1.0$ & $2$ & $0.667$\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The top three rows have the \emph{same} strength $0.5$ but climbing confidence:
+balanced evidence still accumulates certainty about ``it's a fair coin.'' The
+bottom two have the \emph{same} confidence (same total $N=2$) but different
+strength. Any attempt to fold belief into a single number would have to equate
+$1/1$ with $100/100$ --- exactly the mistake the opening coins warn against.
+
+\paragraph{The calibration dial $\kappa$.} The constant $\kappa$ re-gears the
+confidence dial without touching strength. With the same $N=5$:
+\[
+  \kappa=1:\ c=0.833 \qquad \kappa=10:\ c=0.333 \qquad \kappa=50:\ c=0.091.
+\]
+A hand-curated clinical fact (trust it fast: small $\kappa$) and a single noisy
+high-throughput hit (trust it slowly: large $\kappa$) can have identical
+$+/-$ ratios and still deserve very different confidence. $\kappa$ is a knob you
+set per domain; nothing in the mathematics picks it for you. (We will see in
+Section~\ref{sec:zoo} that, once you fix a couple of natural conventions, the
+\emph{shape} $c=N/(N+\kappa)$ is forced\footnote{Lean:
+\lid{walley\_width\_complement\_forces\_plnOdds} in
+\lpath{Mettapedia/Logic/PLNConfidenceWeight.lean}; see Appendix~\ref{app:formal}.}
+--- but the value of $\kappa$ never is.)
+
+\begin{figure}[ht]
+\centering
+\vspace{0.8em}
+\resizebox{\textwidth}{!}{%
+\begin{tikzpicture}[>=Stealth,scale=1.0]
+  % ---- strength gauge ----
+  \begin{scope}[shift={(0,0)}]
+    \draw[thick] (0,0) arc (180:0:1.8);
+    \foreach \a in {180,135,90,45,0} \draw ([shift={(1.8,0)}]\a:1.8)--([shift={(1.8,0)}]\a:1.65);
+    \node[anchor=east] at (-0.2,0) {\footnotesize all against};
+    \node[anchor=west] at (3.8,0) {\footnotesize all for};
+    % needle at 0.5 -> straight up
+    \draw[red,very thick,->] (1.8,0) -- ($(1.8,0)+(90:1.45)$);
+    \node at (1.8,-0.5) {\textbf{strength}};
+    \node[align=center] at (1.8,-1.0) {\footnotesize\emph{which way}\\[-2pt]\footnotesize $n^+/(n^++n^-)$};
+  \end{scope}
+  % ---- confidence gauge ----
+  \begin{scope}[shift={(6,0)}]
+    \draw[thick] (0,0) arc (180:0:1.8);
+    \foreach \a in {180,135,90,45,0} \draw ([shift={(1.8,0)}]\a:1.8)--([shift={(1.8,0)}]\a:1.65);
+    \node[anchor=east] at (-0.2,0) {\footnotesize $0$};
+    \node[anchor=west] at (3.8,0) {\footnotesize $1$};
+    \draw[blue!60!black,very thick,->] (1.8,0) -- ($(1.8,0)+(35:1.45)$);
+    \node at (1.8,-0.5) {\textbf{confidence}};
+    \node[align=center] at (1.8,-1.0) {\footnotesize\emph{how much}\\[-2pt]\footnotesize $N/(N+\kappa)$};
+  \end{scope}
+  % ---- kappa slider ----
+  \begin{scope}[shift={(3.0,-3.2)}]
+    \draw[thick] (0,0) -- (4.2,0);
+    \foreach \x/\l/\v in {0.4/{$\kappa{=}1$}/{0.833}, 2.1/{$\kappa{=}10$}/{0.333}, 3.8/{$\kappa{=}50$}/{0.091}}{
+      \draw (\x,0.12)--(\x,-0.12);
+      \node[above] at (\x,0.12) {\footnotesize \l};
+      \node[below] at (\x,-0.12) {\footnotesize \v};
+    }
+    \node[align=center] at (2.1,1.2) {\footnotesize the $\kappa$ slider re-gears confidence for the\\[-2pt]\footnotesize \emph{same} $N=5$ --- strength is untouched};
+  \end{scope}
+\end{tikzpicture}%
+}
+\vspace{0.7em}
+\caption{Two dials. Strength reads which way the evidence leans (the ratio);
+confidence reads how much evidence there is (the total), geared by the
+calibration constant $\kappa$. The two move independently --- which is why one
+number cannot do the job of both.}
+\label{fig:dials}
+\end{figure}
+
+\section{Behind the dials: a set of admissible probabilities}\label{sec:spread}
+
+We can say what the dials are really reading. Suppose your belief is about some
+quantity --- ``the coin lands heads,'' or more generally the expected value of
+some measurement $X$. If you knew the exact probability distribution of the
+world, $X$ would have one exact expected value. But usually you do \emph{not}
+know the exact distribution; you know a \emph{set} of distributions that are all
+consistent with what you have seen. That set is the object behind the two
+numbers. In the literature it is called a \textbf{credal set}; we will also just
+call it the \emph{spread} of admissible probabilities.
+
+\begin{quote}
+\textbf{The whole content of $\STV{s}{c}$.}\footnote{The read-off:
+\lid{lowerEnvelope} and \lid{upperEnvelope} in
+\lpath{Mettapedia/ProbabilityTheory/ImpreciseProbability/ProjectiveCredal.lean};
+see Appendix~\ref{app:formal}.} Take the spread. Ask your question
+$X$. Each admissible distribution in the spread assigns $X$ some expected value;
+sweeping over the spread, those values range between two endpoints, $L$ the
+smallest expected value anyone in the spread allows and $U$ the largest. (For
+the convex spreads we care about they fill the whole interval $[L,U]$; but only
+the two endpoints are ever read off.) Then
+\[
+\begin{aligned}
+  s &= \tfrac12(L+U) && \text{(the centre of the interval)},\\
+  c &= g(U-L) && \text{(a decreasing function of its width)}.
+\end{aligned}
+\]
+with $g(0)=1$ (zero width: full confidence) and $g$ falling toward $0$ as the
+interval widens (maximum width: no confidence).
+\end{quote}
+
+That is the entire ``confidence characterization'' in one box, and the rest of
+the paper is unpacking it. The endpoints $L$ and $U$ are the smallest and
+largest honest answers; strength sits in the middle, and confidence asks how far
+apart they are (Figure~\ref{fig:compress}).
+
+\paragraph{This is the same confidence as Section~\ref{sec:dials}.} It is not a
+second, competing definition. Take $g$ to be one-minus-width (the natural
+``width-complement'' convention; Section~\ref{sec:zoo}, entry~5). After $N$
+observations, the range of biases still consistent with the data has width
+$\kappa/(N+\kappa)$, so $1-\text{width}=N/(N+\kappa)$ --- exactly the confidence
+dial of Section~\ref{sec:dials}. The count rule $c=N/(N+\kappa)$ and the
+envelope-width rule $c=g(U-L)$ are one belief seen two ways: counting evidence
+\emph{is} narrowing the spread.
+
+\paragraph{The coin, concretely.} Suppose all you know is that the coin's bias
+$p$ lies somewhere in $[0.4,0.6]$. The spread is the family of coins with those
+biases. The expected value of ``heads'' is just $p$, so it ranges over
+$[0.4,0.6]$: here $L=0.4$, $U=0.6$. Strength $=\tfrac12(0.4+0.6)=0.5$;
+confidence $=1-0.2=0.8$ (reading $g$ as one-minus-width). Now suppose you learn
+nothing and
+your spread is all of $[0,1]$: then $[L,U]=[0,1]$, width $1$, and confidence
+drops to $0$ --- you have a centre ($0.5$) but no reason to trust it. Shrink the
+spread to the single bias $\{0.5\}$ and the interval collapses to the point
+$0.5$, width $0$, confidence $1$.
+
+\paragraph{Why a set, and why two numbers lose information.} The spread is
+richer than any two numbers: it can have a complicated shape, and it can pin
+some questions while leaving others wide open. Recording only the centre and
+width of one question's interval throws the rest away. That lost information is
+not a bug --- it is the price of a compact, composable truth value --- but it is
+exactly the source of the ``degrees of freedom'' this paper is about
+(Figure~\ref{fig:compress}, grey box).
+
+\begin{figure}[ht]
+\centering
+\resizebox{\textwidth}{!}{%
+\begin{tikzpicture}[>=Stealth]
+  % --- title for the spread (top, clearly separated) ---
+  \node[blue!55!black,align=center] at (4,2.55)
+       {\footnotesize the credal set (\emph{spread}): every probability still\\[-1pt]
+        \footnotesize consistent with what you know about question $X$};
+  % --- width brace + its label, just above the band ---
+  \draw[decorate,decoration={brace,amplitude=5pt}] (2.6,1.15)--(5.4,1.15);
+  \node[align=center] at (4,1.78)
+       {\footnotesize \emph{width} of the spread $\Rightarrow$ confidence $c$ \ (narrow $\Rightarrow$ high)};
+  % --- the spread band over [L,U] ---
+  \fill[blue!16] (2.6,0.05) rectangle (5.4,1.05);
+  \draw[blue!55!black,thick] (2.6,0.05) rectangle (5.4,1.05);
+  % centre line -> strength
+  \draw[red,thick] (4,0.05)--(4,1.05);
+  % --- probability axis ---
+  \draw[->] (-0.3,0) -- (8.8,0) node[right]{\footnotesize value of $X$};
+  \foreach \x in {0,4,8} \draw (\x,0.08)--(\x,-0.08);
+  \node[below] at (0,-0.1) {\footnotesize $0$};
+  \node[below] at (8,-0.1) {\footnotesize $1$};
+  \node[blue!55!black,below] at (2.6,-0.1) {\footnotesize $L$};
+  \node[blue!55!black,below] at (5.4,-0.1) {\footnotesize $U$};
+  \node[red,below] at (4,-0.62) {\footnotesize centre $=s$};
+  % --- arrow to the compressed pair (upper right, clear of the axis) ---
+  \draw[->,very thick] (5.6,1.0) .. controls (7.2,1.5) .. (8.5,1.55);
+  \node[anchor=west] at (8.6,1.55) {$\STV{s}{\,c=g(U-L)}$};
+  % --- what's lost (below everything, clear of the axis labels) ---
+  \node[draw,gray,rounded corners,align=center,text=gray,fill=gray!6] at (4,-1.8)
+    {\footnotesize \textbf{thrown away:} the shape of the spread; which \emph{other}\\[-1pt]
+     \footnotesize questions have width; which single distribution the world runs};
+\end{tikzpicture}%
+}
+\caption{Compression. The two numbers are a lossy photo of a whole set: strength
+is the centre of the interval the set allows for your question, confidence falls
+with its width. Everything in the grey box is invisible to $\STV{s}{c}$.}
+\label{fig:compress}
+\end{figure}
+
+\section{The fork in the road: pinned, or a range}\label{sec:fork}
+
+Everything above leads to one clean dichotomy, and it is the technical heart of
+the paper. Fix a spread and a question $X$. Exactly one of two things happens.
+
 \begin{itemize}
-\item Specification freedom in the local credal sets that build $C$;
-\item Completion freedom (extreme-point choice) inside a fixed $C$;
-\item Phase-transition freedom from non-uniqueness of global completions
-      when $C$ is the projective limit of a Markov-logic / DLR family.
+\item \textbf{Pinned.} Every admissible distribution in the spread assigns $X$
+the \emph{same} expected value. Then $L=U$: the interval is a single point, the
+width is zero, and confidence sits at its ceiling. The two numbers tell the
+whole story --- there is nothing else to know about $X$.
+\item \textbf{A genuine range.} Two admissible distributions \emph{disagree}
+about $X$. Then $L<U$: the interval has real width, strength is its midpoint,
+and confidence is honestly below the ceiling. The two numbers report the range,
+not a single value.
 \end{itemize}
-Each slot has a formally locatable status. Recent landings in
-the \codepath{Mettapedia.ProbabilityTheory.ImpreciseProbability} and
-\codepath{Mettapedia.Logic} libraries (the \emph{credal dichotomy}
-predicates and the DLR query lifts; see Sec.~\ref{sec:dichotomy} and
-\ref{sec:dlr}) make this dichotomy an actual Lean theorem rather than
-informal prose. Wherever possible we quote the Lean theorem statements
-verbatim from their source files.
 
-\paragraph{Scope.}
-We treat strength and confidence as the read-off of credal-envelope width
-and centre. We do \emph{not} address the propagation of $\STV{s}{c}$
-through PLN's compositional rules (deduction, induction, abduction,
-revision); that material is in the existing PLN corpus
-(\xiPLN, \nuPLN, the WM-PLN book; see Sec.~\ref{sec:related}). The paper's
-contribution is the determinacy / freedom characterization at the level
-of a single truth value, with formal Lean hooks. Each named degree of
-freedom additionally comes with a small runnable PeTTa/CeTTa canary paired
-with its Lean oracle, in the companion package
-\lpath{papers/pln-confidence-examples/} (one-command build and run via
-\lpath{run_all.sh}; see Appendix~\ref{app:examples}).
+These are the only two cases, and they are mutually exclusive: a question cannot
+be both pinned and have width (Figure~\ref{fig:fork}). This is stated formally,
+and machine-checked, in Appendix~\ref{app:formal}\footnote{Lean:
+\lid{credalSetDetermines} and \lid{credalSetHasStrictWidth} (with the collapse,
+width, and mutual-exclusion theorems) in
+\lpath{Mettapedia/ProbabilityTheory/ImpreciseProbability/ProjectiveCredal.lean};
+see Appendix~\ref{app:formal}, item~\ref{item:dich}.} (the \emph{pinned/range
+dichotomy} and its mutual exclusion).
 
-\paragraph{Sibling papers.}
-This paper is a sibling of \xiPLN\ and the \emph{PLN Review}
-(\lpath{papers/xiPLN.tex}, \lpath{papers/pln-review.tex}). The
-WM-PLN book \lpath{papers/wm-pln-book.tex} contains an informal section
-on degrees of freedom versus forcing (\S 7.4 in the current draft); the
-present paper offers the formal characterization that the book section
-calls for.
+\paragraph{A ``pinned'' example.} If the spread is a single
+distribution, \emph{everything} is pinned: every question has $L=U$, every
+confidence is at the ceiling. There is no freedom anywhere --- the belief is as
+sharp as belief can be.
 
-\section{The credal stack: types and definitions}\label{sec:stack}
+\paragraph{A ``range'' example: two stuck magnets.} Imagine two coupled
+sites that must agree: either both ``up'' or both ``down,'' and you do not know
+which world you are in. The spread is the two distributions \{all-up\},
+\{all-down\}. Ask: \emph{is the first site up?} In the all-up world the answer is
+$1$; in the all-down world it is $0$. So the interval is $[0,1]$, width $1$,
+confidence $0$: maximally uncertain, even though each individual world is itself
+perfectly definite. The uncertainty is not noise inside a world --- it is not
+knowing which world.\footnote{The two-magnets witness:
+\lid{twoSpinMagnetEnvelope\_nontrivial} in
+\lpath{Mettapedia/ProbabilityTheory/ImpreciseProbability/ProjectiveCredal.lean};
+see Appendix~\ref{app:formal}, item~\ref{item:strong}.}
 
-We work in the formal stack of
-\codepath{Mettapedia.ProbabilityTheory.ImpreciseProbability.ProjectiveCredal}
-(referenced throughout as \emph{ProjectiveCredal.lean}, file path
-\lpath{Mettapedia/ProbabilityTheory/ImpreciseProbability/ProjectiveCredal.lean}).
-Outcome spaces are arbitrary types $\Omega$; gambles are bounded real-valued
-functions on $\Omega$.
+\begin{figure}[ht]
+\centering
+\resizebox{\textwidth}{!}{%
+\begin{tikzpicture}[>=Stealth]
+  % top line: determined
+  \begin{scope}[shift={(0,1.4)}]
+    \draw[->] (0,0)--(8.2,0) node[right]{\footnotesize $X$};
+    \foreach \x in {0,4,8} \draw (\x,0.07)--(\x,-0.07);
+    \fill[red] (4,0) circle (2.6pt);
+    \node[red,above=3pt] at (4,0) {\footnotesize $s$};
+    \node[align=left,anchor=west] at (8.6,0)
+      {\footnotesize \textbf{pinned} --- everyone agrees\\[-2pt]
+       \footnotesize $L=U$; confidence at the ceiling};
+  \end{scope}
+  % bottom line: interval
+  \begin{scope}[shift={(0,-0.4)}]
+    \draw[->] (0,0)--(8.2,0) node[right]{\footnotesize $X$};
+    \foreach \x in {0,4,8} \draw (\x,0.07)--(\x,-0.07);
+    \draw[blue!55!black,line width=3pt] (2.4,0)--(5.6,0);
+    \fill[red] (4,0) circle (2.6pt);
+    \node[blue!55!black,below=2pt] at (2.4,0) {\footnotesize $L$};
+    \node[blue!55!black,below=2pt] at (5.6,0) {\footnotesize $U$};
+    \node[red,above=3pt] at (4,0) {\footnotesize $s$};
+    \node[align=left,anchor=west] at (8.6,0)
+      {\footnotesize \textbf{a genuine range} --- two disagree\\[-2pt]
+       \footnotesize $L<U$; confidence below the ceiling};
+  \end{scope}
+\end{tikzpicture}%
+}
+\caption{The fork. For any question of any spread: either every admissible
+distribution agrees (a single pinned value, top) or two disagree (a genuine
+interval, bottom). This same picture returns for the infinite cases in
+Section~\ref{sec:infinite}: weak coupling lands on top, strong coupling on the
+bottom. ($s$ is drawn at the midpoint convention.)}
+\label{fig:fork}
+\end{figure}
 
-\subsection{Gambles and previsions}
+\section{Building a big belief from small pieces}\label{sec:build}
 
-A \emph{gamble} on $\Omega$ is a real-valued function on $\Omega$:
-\begin{lstlisting}
-abbrev Gamble (Omega : Type*) := Omega -> Real
-\end{lstlisting}
+So far the spread was small enough to picture. For a large or infinite world ---
+say, a belief about a whole grid of interacting variables --- you cannot write
+the spread down directly. Instead you specify it \emph{locally}: you say what is
+admissible on each small ``window'' of the world, and you glue the windows
+together consistently. The global spread is then everything that fits all the
+local pieces at once.
 
-A \emph{precise prevision} on $\Omega$ is a Walley-coherent linear
-functional from gambles to reals: the structure
-\lid{PrecisePrevision} in ProjectiveCredal.lean is the standard linear
-expectation with constant-preservation, positive homogeneity, and
-additivity built in:
-\begin{lstlisting}
-structure PrecisePrevision (Omega : Type*) where
-  toFun       : Gamble Omega -> Real
-  lower_bound : ... -- c <= X (pointwise) implies c <= toFun X
-  pos_homog   : ... -- toFun (r . X) = r * toFun X for r >= 0
-  add         : ... -- toFun (X + Y) = toFun X + toFun Y
-\end{lstlisting}
+You do not need the machinery to feel the two extremes:
 
-A \emph{lower prevision} relaxes additivity to superadditivity, and is
-the Walley credal-summary object:
-\begin{lstlisting}
-structure LowerPrevision (Omega : Type*) where
-  toFun       : Gamble Omega -> Real
-  lower_bound : ... -- c <= X pointwise implies c <= toFun X
-  pos_homog   : ... -- toFun (r . X) = r * toFun X for r >= 0
-  superadd    : ... -- toFun (X + Y) >= toFun X + toFun Y
-\end{lstlisting}
-Coherence (positive homogeneity, superadditivity, and avoidance of sure
-loss) is the Walley condition for the lower prevision to be the
-lower envelope of some non-empty set of precise previsions.
+\begin{itemize}
+\item \textbf{Tightest possible.} If each local piece allows exactly one
+distribution, the glued global spread is a single distribution: everything is
+pinned, no freedom (Section~\ref{sec:fork}, ``pinned'').
+\item \textbf{Loosest possible.} If each local piece allows \emph{everything},
+the global spread contains every distribution: almost every question has full
+width, maximum freedom.
+\end{itemize}
 
-\subsection{Credal sets and envelopes}
+Real models live between these. The interesting content is: \emph{where} does
+freedom enter as you build up, and which kinds can the two-number summary see?
+That is the next section. (The formal construction --- local windows, restriction
+maps, the glued limit --- is Appendix~\ref{app:formal}, items \ref{item:global}
+and following; the body needs only ``specify locally, glue globally.'')
 
-A \emph{credal set} is just a set of precise previsions:
+\section{Three places freedom can hide}\label{sec:three}
+
+Pulling it together, the wiggle room behind $\STV{s}{c}$ comes from three
+sources (Figure~\ref{fig:three}).
+
+\begin{description}
+\item[(A) The modeller's freedom.] \emph{How wide you chose to make the local
+pieces.} If you declare a quantity known only to within $[0.4,0.6]$, you put
+that width there on purpose. The two numbers report it faithfully: this freedom
+is \textbf{visible}.
+\item[(B) The world's freedom.] \emph{Which single true distribution the world
+actually runs, inside your spread.} Your spread might allow many; the world picks
+one. The pair $\STV{s}{c}$ cannot see which --- and that is correct, because the
+belief is a statement about the whole spread, not a guess at the world's secret
+pick. This freedom is \textbf{invisible}, by design. (It is the kind of
+uncertainty that more local data does not remove: it is about which possibility
+is real, not about a fuzzy measurement.) A truth value that \emph{changed} with
+the world's hidden pick would be claiming knowledge it cannot have from the
+evidence --- so its blindness here is soundness, not a defect.
+\item[(C) The structure's own freedom.] \emph{When gluing infinitely many local
+pieces admits several global solutions to the very same local rules.} No
+modeller put it there; no single ``true world inside the spread'' explains it
+away. It is produced by the structure itself, and the two numbers \emph{can} see
+it (it shows up as genuine width). This is the surprise of the infinite case
+(Section~\ref{sec:infinite}).
+\end{description}
+
+\begin{observation}[the thesis in one line]
+$\STV{s}{c}$ is a property of the whole spread, not of any single distribution in
+it. So it sees how wide you made the model \textup{(A)} and whether the structure
+forces a range \textup{(C)}, but it is --- correctly --- blind to which member
+the world actually picked \textup{(B)}.
+\end{observation}
+
+\begin{figure}[ht]
+\centering
+\begin{tikzpicture}[>=Stealth,node distance=6mm]
+  \node[draw,rounded corners,fill=blue!8,align=center,minimum width=3.1cm] (A)
+    {\textbf{(A) Modeller}\\[-1pt]\footnotesize how wide you drew\\[-3pt]\footnotesize the local pieces};
+  \node[draw,rounded corners,fill=gray!8,align=center,minimum width=3.1cm,below=of A] (B)
+    {\textbf{(B) World}\\[-1pt]\footnotesize which single truth\\[-3pt]\footnotesize the world runs};
+  \node[draw,rounded corners,fill=blue!8,align=center,minimum width=3.1cm,below=of B] (C)
+    {\textbf{(C) Structure}\\[-1pt]\footnotesize infinite gluing admits\\[-3pt]\footnotesize several solutions};
+  \node[draw,rounded corners,fill=red!8,align=center,right=34mm of B] (S)
+    {$\STV{s}{c}$};
+  \draw[->,thick] (A.east) -- (S.west) node[midway,above,sloped]{\footnotesize visible};
+  \draw[->,thick] (C.east) -- (S.west) node[midway,below,sloped]{\footnotesize visible};
+  \draw[->,gray,dashed,thick] (B.east) -- (S.west) node[midway,above]{\footnotesize invisible};
+\end{tikzpicture}
+\caption{Three sources of freedom and what the two numbers can see. (A) and (C)
+reach $\STV{s}{c}$; (B), the world's single hidden pick, does not --- and that
+blindness is the correct behaviour, because the truth value describes the set,
+not the pick. (A) is freedom you \emph{declared}; (C) is freedom the structure
+produces \emph{emergently} --- different origins, both visible.}
+\label{fig:three}
+\end{figure}
+
+\section{Three infinite stories}\label{sec:infinite}
+
+The same fork --- pinned or a range --- recurs when the world is infinite, and
+this is where it gets genuinely interesting. We tell three stories in plain
+language; the theorems behind them are in Appendix~\ref{app:formal}.
+
+\subsection{When do snapshots add up to a movie? (order-free streams)}
+\label{sec:exch}
+
+You watch a stream where only the \emph{counts} matter, not the order ---
+patient responses, defects coming off a line, fraud flags. ``Order does not
+matter'' is a real assumption with a famous name (\emph{exchangeability}), and a
+beautiful classical fact (de Finetti's theorem~\cite{definetti37}) says such a
+stream behaves exactly like repeatedly flipping a coin of \emph{unknown} bias,
+averaged over your uncertainty about the bias.
+
+From any finite prefix you can always write down a sensible next-step forecast.
+The textbook one is Laplace's rule: $3$ successes in $5$ predicts
+$\tfrac{3+1}{5+2}=0.5714$ for the next; $30$ in $50$ predicts $0.5962$. That
+forecast is \emph{always available}. The subtle part is the stronger claim that
+your finite forecasts knit together into \emph{one} consistent infinite law that
+answers \emph{every} question coherently. That stronger claim is not automatic:
+it holds exactly at a precise compatibility boundary (Appendix~\ref{app:formal},
+item~\ref{item:exch}).\footnote{Lean: the \emph{sharp compatibility} crown (and
+its refuted ``every component degenerate'' tightening) in
+\lpath{Mettapedia/Logic/DeFinettiProjectiveCredalBridge.lean}; full name and
+statement in Appendix~\ref{app:formal}, item~\ref{item:exch}.}
+
+\begin{quote}
+\textbf{Takeaway.} Having a forecast for tomorrow is free; having a coherent
+theory of the whole future is not --- and we pin down exactly where the line is.
+A caution that survives the formalization: it is tempting to require the unknown
+bias to be pinned to an exact value (always $0$ or always $1$, never in between),
+but that would forbid the honest ``I'm not sure of the bias'' case --- which is
+the whole reason to carry a set of coins instead of one. The real boundary is
+more permissive than that.
+\end{quote}
+
+\subsection{Weak coupling: one precise answer}\label{sec:weak}
+
+Now picture not one variable but a vast grid of them --- sensors, pixels,
+people --- where each one only \emph{nudges} its neighbours a little. ``A little''
+can be made into a budget you check by adding up the nudges.
+
+\begin{quote}
+\textbf{The result.} When every local influence is small enough (the budget
+holds), the infinite system has \emph{exactly one} global behaviour consistent
+with the local rules. Every finite question then gets one precise answer:
+strength is a single point, confidence sits at the ceiling. Distant conditions
+wash out --- what you fix far away cannot reach the centre. This lands on the
+\emph{top} of the fork in Figure~\ref{fig:fork}.
+\end{quote}
+
+Intuitively: if nothing pushes hard, faraway stuff does not matter, so the two
+numbers tell the whole story. (This is the de-jargoned form of the classical
+Dobrushin uniqueness condition~\cite{dobrushin68}; Appendix~\ref{app:formal},
+item~\ref{item:weak}.\footnote{Lean: \lid{dlrQueryDetermined\_of\_uniform} (with
+the precise-envelope and global-uniqueness theorems) in
+\lpath{Mettapedia/Logic/MarkovLogicInfiniteCredalBridge.lean}.} We prove this
+direction; we do \emph{not} claim the
+converse, that failing the budget forces a range.)
+
+\subsection{Strong coupling: a genuine interval the distant edges control}
+\label{sec:strong}
+
+Same grid, opposite regime: now neighbours pull \emph{hard} to agree --- a magnet
+near freezing, a spreading contagion, an image whose adjacent pixels strongly
+match.
+
+\begin{quote}
+\textbf{The result.} Now the infinite system has \emph{more than one} global
+behaviour consistent with the same local rules, and --- the striking part ---
+\emph{what you fix at the far-away boundary changes the answer in the centre}. A
+question at the middle gets a \emph{genuine interval}, not a point: confidence is
+honestly below the ceiling, and that width is not ignorance you could erase with
+more local data. It is the system's own structure. This lands on the
+\emph{bottom} of the fork.
+\end{quote}
+
+This is the same setup as Section~\ref{sec:weak} at a different coupling
+strength: \emph{weak coupling gives a point, strong coupling gives an interval.}
+That single contrast is the whole infinite story. Why does the far-away boundary
+reach the centre at all? Because flipping it would force a long ring of
+neighbours to disagree, and long rings of disagreement are exponentially
+unlikely when the coupling is strong --- so the centre keeps a memory of the edge
+that no amount of interior data can erase. The strong-coupling side is the
+hardest theorem in the project --- it is a low-temperature two-dimensional magnet
+whose centre genuinely depends on the boundary --- and it is stated, with the one
+machine-checked guarantee it provides, in Appendix~\ref{app:formal},
+item~\ref{item:strong}.\footnote{Lean: the symmetric-grid strict-interval crown,
+proved unconditionally, in
+\lpath{Mettapedia/Logic/MarkovLogicInfiniteSymmetricGridExample.lean}; full name
+and statement in Appendix~\ref{app:formal}, item~\ref{item:strong}.} (For the connoisseur: the underlying tool is a Peierls
+contour argument; we do not need it here, and nothing in this section depends on
+the proof technique.)
+
+\section{The knob zoo: nineteen places two numbers can fool you}\label{sec:zoo}
+
+This is the practical payoff, and the part to keep open while you work. Each
+entry is a \emph{degree of freedom}: a modelling choice under which two beliefs
+can share the same $\STV{s}{c}$ yet mean different things, or under which a single
+``obvious'' default silently commits you to something. Each comes as: the idea in
+a sentence, the smallest number that shows it, and the trap it prevents. Every
+number here is reproduced by the runnable pack (Appendix~\ref{app:run}); every
+entry names its formal anchor in Appendix~\ref{app:formal}.\footnote{The new
+canaries for DoF 8, 11, and 18 are in
+\lpath{Mettapedia/Logic/PLNConfidenceDoFCanary.lean};
+\lpath{papers/pln-confidence-examples/lean/DOF-LEAN-MAP.md} maps every degree of
+freedom to its theorem.}
+
+\begin{enumerate}
+\item \textbf{Evidence scale $\kappa$.}\footnote{Lean:
+\lid{walley\_width\_complement\_forces\_plnOdds} forces the odds shape while
+leaving $\kappa$ free (\lpath{Mettapedia/Logic/PLNConfidenceWeight.lean});
+strength is \lid{posteriorMeanStrength} (\lpath{Mettapedia/Logic/PLNTruthTower.lean}).}
+How much evidence counts as ``a lot'' is
+a domain choice. The same $N=5$ gives confidence $0.833/0.333/0.091$ at
+$\kappa=1/10/50$. \emph{Trap:} fixing $\kappa=1$ everywhere lets a lone weak hit
+claim $0.83$ confidence it never earned.
+
+\knobpic{%
+\begin{tikzpicture}
+  \foreach \x/\h/\k/\v in {0/2.5/1/0.833, 1.3/1.0/10/0.333, 2.6/0.27/50/0.091}{
+    \fill[blue!55!black] (\x,0) rectangle ({\x+0.7},\h);
+    \node[below] at ({\x+0.35},0) {\footnotesize $\kappa{=}\k$};
+    \node[above] at ({\x+0.35},\h) {\footnotesize \v};
+  }
+  \node[align=center] at (1.65,3.2) {\footnotesize confidence falls as $\kappa$ rises\\[-2pt]\footnotesize (same $N=5$)};
+\end{tikzpicture}}
+
+\item \textbf{Prior context for strength.}\footnote{Lean:
+\lid{posteriorMeanStrength\_improper\_eq\_mle} in
+\lpath{Mettapedia/Logic/PLNTruthTower.lean}.} The same counts read differently
+under maximum-likelihood, a uniform prior, or Jeffreys'. From a single positive
+$(1,0)$: MLE $1.0$, uniform-prior mean $0.667$, Jeffreys $0.75$ --- and all
+converge to $\approx0.999$ once $1000$ observations pile up. \emph{Trap:}
+pretending strength is context-free silently bakes in a prior.
+
+\knobpic{%
+\begin{tikzpicture}
+  \draw[->](0,0)--(5.4,0) node[right]{\footnotesize strength $s$};
+  \draw(0,0.08)--(0,-0.08); \draw(5,0.08)--(5,-0.08);
+  \node[below] at (0,-0.1){\footnotesize 0}; \node[below] at (5,-0.1){\footnotesize 1};
+  \fill[blue!60!black](3.33,0)circle(2.5pt); \node[below] at (3.33,-0.15){\footnotesize unif .667};
+  \fill[teal](3.75,0)circle(2.5pt); \node[above] at (3.95,0.15){\footnotesize Jeff .75};
+  \fill[red](5,0)circle(2.5pt); \node[above] at (5,0.15){\footnotesize MLE 1.0};
+  \node at (2.0,1.0){\footnotesize same count $(1,0)$, three readouts};
+\end{tikzpicture}}
+
+\item \textbf{Total versus ratio.}\footnote{Lean:
+\lid{strength\_mem\_unit\_of\_total\_ne\_zero} in
+\lpath{Mettapedia/Logic/PLNTruthTower.lean}.} Strength reads the ratio, confidence the
+total --- the reason there are two numbers at all. $1/1,10/10,100/100$ all have
+strength $0.5$ with confidence $0.667/0.952/0.995$; $1/1$ versus $2/0$ share the
+total (confidence $0.667$) but split on strength ($0.5$ vs $1.0$). \emph{Trap:}
+any one-number truth value equates $1/1$ with $100/100$.
+
+\knobpic{%
+\begin{tikzpicture}
+  \foreach \y/\n/\v in {0/{1/1}/0.667, 0.65/{10/10}/0.952, 1.3/{100/100}/0.995}{
+    \node[left] at (-0.05,{\y+0.15}){\footnotesize \n};
+    \fill[blue!55!black](0,\y) rectangle ({3*\v},{\y+0.3});
+    \node[right] at ({3*\v+0.05},{\y+0.15}){\footnotesize $c={\v}$};
+  }
+  \node at (1.5,2.05){\footnotesize strength $0.5$ for all; confidence climbs with the total};
+\end{tikzpicture}}
+
+\item \textbf{Confidence chart.}\footnote{Lean:
+\lid{reserveHalfCoordinate\_not\_walley\_width\_complement} (a chart that
+reconstructs evidence yet is not the odds chart) in
+\lpath{Mettapedia/Logic/PLNConfidenceWeight.lean}.} Recovering the evidence count needs only
+\emph{some} invertible scale; it does not force PLN's particular one. The same
+recovered evidence displayed three ways gives $0.833$ (PLN odds), $0.455$
+(a reserve-half chart), $0.874$ (an arctangent chart). \emph{Trap:} combining
+evidence in a display chart instead of in evidence-count space.
+
+\knobpic{%
+\begin{tikzpicture}
+  \foreach \y/\n/\v in {0/{PLN odds}/0.833, 0.65/{reserve-half}/0.455, 1.3/{arctan}/0.874}{
+    \node[left] at (-0.05,{\y+0.15}){\footnotesize \n};
+    \fill[teal](0,\y) rectangle ({3*\v},{\y+0.3});
+    \node[right] at ({3*\v+0.05},{\y+0.15}){\footnotesize \v};
+  }
+  \node at (1.5,2.05){\footnotesize same evidence, three display charts};
+\end{tikzpicture}}
+
+\item \textbf{Width-complement convention.}\footnote{Lean:
+\lid{WidthComplementCompatible} (\lpath{Mettapedia/Logic/PLNTruthTower.lean})
+and \lid{walley\_width\_complement\_forces\_plnOdds}
+(\lpath{Mettapedia/Logic/PLNConfidenceWeight.lean}).} Setting confidence $=1-\text{width}$
+is natural but still a convention, and it needs a scale. A binary interval gives
+$0.4$; a bounded utility, correctly range-normalized, also $0.4$; the same
+utility left un-normalized gives the deliberate nonsense $-59.0$. \emph{Trap:}
+applying width-complement to dollar-valued gambles without normalizing.
+
+\knobpic{%
+\begin{tikzpicture}
+  \draw[blue!55!black,line width=3pt](0.6,0)--(3.0,0);
+  \draw[decorate,decoration={brace,amplitude=4pt}](3.0,0.2)--(0.6,0.2);
+  \node[above] at (1.8,0.5){\footnotesize width $0.6\Rightarrow c=1-0.6=0.4$};
+  \node[red] at (1.8,-0.7){\footnotesize but an un-normalized utility gives $c=-59$ (nonsense)};
+\end{tikzpicture}}
+
+\item \textbf{Interval point selector.}\footnote{Lean:
+\lid{generic\_itv\_does\_not\_force\_point\_projection} in
+\lpath{Mettapedia/Logic/PLNTruthTheoryIndex.lean}.} A real interval $[L,U]$ does not pick its
+own display point. Lower / midpoint / upper on one interval: $0.2/0.5/0.8$.
+\emph{Trap:} a safety decision shown the midpoint when it needed the lower bound.
+
+\knobpic{%
+\begin{tikzpicture}
+  \draw[->](0,0)--(4.7,0) node[right]{\footnotesize value};
+  \draw(0,0.07)--(0,-0.07);\draw(4,0.07)--(4,-0.07);
+  \node[below] at(0,-0.12){\footnotesize 0};\node[below] at(4,-0.12){\footnotesize 1};
+  \draw[blue!55!black,line width=3pt](0.8,0)--(3.2,0);
+  \fill[red](0.8,0)circle(2.5pt) node[above=2pt]{\footnotesize lower .2};
+  \fill[red](2.0,0)circle(2.5pt) node[above=2pt]{\footnotesize mid .5};
+  \fill[red](3.2,0)circle(2.5pt) node[above=2pt]{\footnotesize upper .8};
+  \node at (2,-0.7){\footnotesize one interval, three honest picks};
+\end{tikzpicture}}
+
+\item \textbf{Credal shape beyond one interval.}\footnote{Lean:
+\lid{CredalProjectionTower} in \lpath{Mettapedia/Logic/PLNTruthTower.lean}.} Two spreads can agree on one
+question and disagree on another --- the very reason $\STV{s}{c}$ is a
+compression. Two joint models with identical marginals $P(A)=P(B)=0.5$ can have
+conjunction $0.5$ (perfectly dependent) or $0.0$ (mutually exclusive); the whole
+range $[0,0.5]$ is invisible to the marginal summary. \emph{Trap:} certifying two
+incompatible joint models ``the same'' because their margins match.
+
+\knobpic{%
+\begin{tikzpicture}
+  \begin{scope}
+    \draw[thick] (0,0) circle (0.55); \draw[thick] (0.55,0) circle (0.55);
+    \node at (0.27,-0.95){\footnotesize dependent: $P(A\wedge B){=}0.5$};
+  \end{scope}
+  \begin{scope}[shift={(3.4,0)}]
+    \draw[thick] (-0.05,0) circle (0.5); \draw[thick] (1.15,0) circle (0.5);
+    \node at (0.55,-0.95){\footnotesize exclusive: $P(A\wedge B){=}0.0$};
+  \end{scope}
+  \node at (1.75,1.2){\footnotesize same margins $P(A){=}P(B){=}0.5$};
+\end{tikzpicture}}
+
+\item \textbf{Which uncertainty method (the ``backend'').}\footnote{Lean:
+\lid{beta\_mean\_strictly\_inside\_walley\_idm\_interval} in
+\lpath{Mettapedia/Logic/PLNConfidenceDoFCanary.lean}; see Appendix~\ref{app:formal}.} Feed the \emph{same}
+data to two different uncertainty methods and you get answers of different
+\emph{shape}. From $2$ ``yes'' and $3$ ``no'': a single-distribution Bayesian
+method returns one best number (the Beta posterior mean $\tfrac{3}{7}\approx
+0.429$), while a cautious \emph{imprecise} method returns a whole interval of
+defensible values, $[\tfrac{2}{7},\tfrac{4}{7}]=[0.286,0.571]$. The Bayesian
+point lands inside that interval --- it simply declines to show the range.
+\emph{Trap:} collapsing the cautious interval down to the single point ``for
+convenience,'' silently discarding the safety margin.
+
+\knobpic{%
+\begin{tikzpicture}
+  \draw[->](0,0)--(4.4,0) node[right]{\footnotesize value};
+  \draw(0,0.06)--(0,-0.06);\draw(4,0.06)--(4,-0.06);
+  \node[below] at(0,-0.1){\footnotesize 0};\node[below] at(4,-0.1){\footnotesize 1};
+  \draw[blue!55!black,line width=3pt](1.14,0.6)--(2.29,0.6);
+  \node[blue!55!black,below] at(1.14,0.55){\footnotesize .286};
+  \node[blue!55!black,below] at(2.29,0.55){\footnotesize .571};
+  \node[blue!55!black,right] at(2.45,0.6){\footnotesize robust method: an interval};
+  \fill[red](1.71,1.35)circle(2.5pt);
+  \node[red,right] at(1.85,1.35){\footnotesize Bayesian method: one number .429};
+  \draw[gray,dashed](1.71,1.27)--(1.71,0.66);
+  \node at (2.0,2.15){\footnotesize same data (2 yes, 3 no), two methods};
+\end{tikzpicture}}
+
+\item \textbf{Credible level / tolerance.}\footnote{Lean:
+\lid{walleyCategorical\_credibility\_eq} in
+\lpath{Mettapedia/Logic/PLNTruthTower.lean}.} A Bayesian interval also carries a
+chosen level ($90/95/99\%$) --- a different knob from $\kappa$. $\kappa$ governs
+how evidence accumulates; the level governs what you \emph{ask} of a finished
+posterior. \emph{Trap:} confusing ``more evidence'' with ``a tighter requested
+interval.''
+
+\knobpic{%
+\begin{tikzpicture}
+  \foreach \y/\w/\l in {0/0.7/90, 0.45/1.05/95, 0.9/1.5/99}{
+    \draw[line width=2pt,blue!55!black] ({2-\w},\y)--({2+\w},\y);
+    \node[right] at ({2+\w+0.12},\y){\footnotesize \l\%};
+  }
+  \node at (2,1.65){\footnotesize higher level $\Rightarrow$ wider interval (a knob separate from $\kappa$)};
+\end{tikzpicture}}
+
+\item \textbf{Categorical query.}\footnote{Lean:
+\lid{categoricalSurface\_idmEnvelope\_forced\_by\_aggregate} in
+\lpath{Mettapedia/Logic/PLNTruthTower.lean}.} In a multi-class model the total evidence is
+shared but each category has its own confidence. In a $1000$-sample $3$-class
+model: the common class has strength $0.90$, confidence $0.999$; a rare class has
+strength $0.002$, confidence $0.167$ \emph{despite} the huge total. \emph{Trap:}
+``the classifier is $99.9\%$ confident'' hiding that a class rests on two
+observations.
+
+\knobpic{%
+\begin{tikzpicture}
+  \fill[teal] (0,0) rectangle (2.7,0.4);
+  \node[right] at (2.8,0.2){\footnotesize common: $s{=}.90$, $c{=}.999$};
+  \fill[orange] (0,-0.6) rectangle (0.5,-0.2);
+  \node[right] at (0.6,-0.4){\footnotesize rare: $s{=}.002$, $c{=}.167$ (!)};
+  \node at (1.9,1.0){\footnotesize one model, very different per-class confidence};
+\end{tikzpicture}}
+
+\item \textbf{Evidence discounting.}\footnote{Lean:
+\lid{power\_discount\_scales\_logodds} in
+\lpath{Mettapedia/Logic/PLNConfidenceDoFCanary.lean}.} Evidence can be reweighted for quality,
+rarity, or route before it counts. Power-discounting scales the log-odds
+linearly; discounted totals of $4.57,12,104$ give confidences
+$0.821/0.923/0.991$. \emph{Trap:} treating correlated hits as independent and
+overstating confidence.
+
+\knobpic{%
+\begin{tikzpicture}
+  \fill[gray!45](0,0.2) rectangle (3,0.6); \node[right] at(3.05,0.4){\footnotesize raw evidence};
+  \draw[->,thick](1.5,0.1)--(1.5,-0.35);
+  \node[right] at (1.6,-0.15){\footnotesize $\times\,w$ (quality / rarity)};
+  \fill[blue!55!black](0,-0.95) rectangle (1.6,-0.55);
+  \node[right] at(1.65,-0.75){\footnotesize discounted $\Rightarrow$ lower $c$};
+  \node at (1.5,1.15){\footnotesize down-weight before counting};
+\end{tikzpicture}}
+
+\item \textbf{Local credal specification.}\footnote{Lean:
+\lid{finiteLowerPrevision} and \lid{coherentDesirableSet} in
+\lpath{Mettapedia/Logic/PLNTruthTower.lean}.} In a built-up model the modeller
+chooses how wide each local piece is --- the intended-imprecision knob (source
+(A) of Section~\ref{sec:three}). \emph{Trap:} hiding local ambiguity behind a
+single precise prior, so later confidence looks unjustifiably high.
+
+\knobpic{%
+\begin{tikzpicture}
+  \draw[->](0,0)--(4.6,0) node[right]{\footnotesize value};
+  \draw(0,0.07)--(0,-0.07);\draw(4,0.07)--(4,-0.07);
+  \node[below] at(0,-0.12){\footnotesize 0};\node[below] at(4,-0.12){\footnotesize 1};
+  \draw[<->](1.2,0.35)--(2.8,0.35);
+  \node[above] at(2,0.42){\footnotesize modeller sets this width};
+  \draw[blue!55!black,line width=3pt](1.2,0)--(2.8,0);
+  \node at (2,-0.7){\footnotesize narrow $=$ confident, wide $=$ cautious};
+\end{tikzpicture}}
+
+\item \textbf{Compatible completion.}\footnote{Lean: the sharp-compatibility
+crown in \lpath{Mettapedia/Logic/DeFinettiProjectiveCredalBridge.lean}; see
+Appendix~\ref{app:formal}, item~\ref{item:exch}.} Finite-prefix forecasts always exist; a
+full infinite law does not always exist (Section~\ref{sec:exch}). The Laplace
+readout $3/5\to0.5714$, $30/50\to0.5962$ is always available; the consistent
+whole-process law is a separate boundary condition. \emph{Trap:} calling finite
+forecasts a process law without the compatibility witness.
+
+\knobpic{%
+\begin{tikzpicture}
+  \node at (0.2,0){\footnotesize $3/5$};
+  \draw[->,thick](0.6,0)--(1.5,0);
+  \node[right] at (1.55,0){\footnotesize next $\approx 0.571$ (always free)};
+  \draw[gray,thick] (0.0,-1.35) rectangle (4.6,-0.6);
+  \node[gray,align=center] at (2.3,-0.97){\footnotesize whole-process law:\\[-2pt]\footnotesize exists only at a compatibility boundary};
+\end{tikzpicture}}
+
+\item \textbf{Completion extreme point.}\footnote{Lean:
+\lid{boundedMeasurableCredalSetHasStrictWidth} in
+\lpath{Mettapedia/ProbabilityTheory/ImpreciseProbability/ProjectiveCredal.lean}.} Inside a fixed spread the world runs one
+true distribution, and that single pick is invisible to $\STV{s}{c}$ --- correctly
+(source (B)). The two stuck magnets witness it: two admissible worlds disagree,
+so no single determined readout is justified. \emph{Trap:} an inference rule that
+pretends to know which world is real.
+
+\knobpic{%
+\begin{tikzpicture}
+  \fill[blue!14](0,0) ellipse (1.3 and 0.7);
+  \draw[blue!55!black,thick](0,0) ellipse (1.3 and 0.7);
+  \node[blue!55!black] at (0,1.0){\footnotesize the spread $C$};
+  \fill[red](0.55,0.18)circle(2pt);
+  \node[red,right] at(0.62,0.22){\footnotesize world's pick (hidden)};
+  \draw[->,dashed,gray](1.0,-0.25)--(2.6,-0.6);
+  \node[draw,gray,rounded corners,text=gray] at (3.7,-0.6){\footnotesize $\STV{s}{c}$ unchanged};
+\end{tikzpicture}}
+
+\item \textbf{Phase transition / infinite boundary.}\footnote{Lean: the
+weak-coupling collapse (\lpath{Mettapedia/Logic/MarkovLogicInfiniteCredalBridge.lean})
+and the strong-coupling crown
+(\lpath{Mettapedia/Logic/MarkovLogicInfiniteSymmetricGridExample.lean}); see
+Appendix~\ref{app:formal}, items~\ref{item:weak} and~\ref{item:strong}.} Some infinite
+specifications admit several global solutions to the same local rules (source
+(C)). Weak coupling collapses the interval (Section~\ref{sec:weak}); strong
+coupling keeps it open, controlled by distant boundaries
+(Section~\ref{sec:strong}). \emph{Trap:} assuming a unique global model exists
+just because the local rules are fixed.
+
+\knobpic{%
+\begin{tikzpicture}
+  \node at (0.6,1.5){\footnotesize weak coupling};
+  \draw[step=0.3,gray!55] (0,0) grid (1.2,1.2);
+  \draw[->](1.4,0.6)--(2.0,0.6);
+  \fill[red](2.25,0.6)circle(2.5pt); \node[right] at(2.35,0.6){\footnotesize one point};
+  \begin{scope}[shift={(5.2,0)}]
+    \node at (0.6,1.5){\footnotesize strong coupling};
+    \draw[step=0.3,gray!55] (0,0) grid (1.2,1.2);
+    \draw[->](1.4,0.6)--(2.0,0.6);
+    \draw[blue!55!black,line width=3pt](2.25,0.6)--(3.35,0.6); \node[right] at(3.4,0.6){\footnotesize an interval};
+  \end{scope}
+\end{tikzpicture}}
+
+\item \textbf{Exchangeability / mixture readout.}\footnote{Lean: the imprecise
+de Finetti mixing-family in
+\lpath{Mettapedia/Logic/DeFinettiProjectiveCredalBridge.lean}; see
+Appendix~\ref{app:formal}, item~\ref{item:exch}.} An order-free stream has a
+canonical mixture forecast, but the raw all-questions law depends on the
+compatibility boundary of Section~\ref{sec:exch}. \emph{Trap:} demanding every
+mixture component be degenerate, which wrongly rejects legitimate
+``unsure-of-the-bias'' families.
+
+\knobpic{%
+\begin{tikzpicture}
+  \draw[thick] (0,0) ellipse (1.0 and 0.72);
+  \foreach \x/\y in {-0.45/0.05, 0.05/-0.2, 0.4/0.25, -0.1/0.35, 0.25/-0.35}{\draw (\x,\y) circle (0.16);}
+  \node at (0,1.05){\footnotesize coins of unknown bias};
+  \draw[->,thick](1.1,0)--(2.1,0);
+  \node[right] at (2.15,0){\footnotesize an order-free stream behaves as a mixture};
+\end{tikzpicture}}
+
+\item \textbf{Rule-level confidence transport (revision).}\footnote{Lean:
+\lid{transportedConfidenceRevision} and \lid{plnConfidenceRevision} in
+\lpath{Mettapedia/Logic/PLNConfidenceWeightRevision.lean}.} Combining two
+independent bodies of evidence is ``add the counts, then re-read,'' not ``average
+the confidences.'' $(4,2)\oplus(3,1)=(7,3)$ gives $\STV{0.7}{0.909}$ --- higher
+than either source ($\STV{0.667}{0.857}$ and $\STV{0.75}{0.800}$). \emph{Trap:}
+averaging displayed confidences, which absurdly \emph{lowers} confidence after
+seeing \emph{more} evidence.
+
+\knobpic{%
+\begin{tikzpicture}
+  \fill[blue!40](0,0) rectangle (0.5,1.71); \node[below] at(0.25,0){\footnotesize $(4,2)$};\node[above] at(0.25,1.71){\footnotesize .857};
+  \node at (0.95,0.85){\footnotesize $\oplus$};
+  \fill[blue!40](1.4,0) rectangle (1.9,1.6); \node[below] at(1.65,0){\footnotesize $(3,1)$};\node[above] at(1.65,1.6){\footnotesize .800};
+  \node at (2.35,0.85){\footnotesize $=$};
+  \fill[blue!70!black](2.8,0) rectangle (3.3,1.82); \node[below] at(3.05,0){\footnotesize $(7,3)$};\node[above] at(3.05,1.82){\footnotesize .909};
+  \node[align=center] at (1.65,2.55){\footnotesize add counts $\Rightarrow$ higher $c$ (not the average!)};
+\end{tikzpicture}}
+
+\item \textbf{Provenance / route.}\footnote{Lean:
+\lid{route\_kappa\_changes\_confidence\_not\_strength} in
+\lpath{Mettapedia/Logic/PLNConfidenceDoFCanary.lean}.} Same counts, different route, route-specific
+confidence. From $(3,0)$: strength $1.0$ on every route, but confidence $0.75$ on
+a direct route ($\kappa=1$) versus $0.273$ on a pathway-mediated route
+($\kappa=8$). \emph{Trap:} merging routes before applying route-specific
+$\kappa$, destroying both the audit trail and the discount.
+
+\knobpic{%
+\begin{tikzpicture}
+  \node (s) at (0,0){\footnotesize $(3,0)$};
+  \draw[->,thick](0.4,0.12)--(2.0,0.7); \node[right] at(2.05,0.7){\footnotesize direct ($\kappa{=}1$): $c=.75$};
+  \draw[->,thick](0.4,-0.12)--(2.0,-0.7); \node[right] at(2.05,-0.7){\footnotesize pathway ($\kappa{=}8$): $c=.27$};
+  \node at (0.55,1.05){\footnotesize same strength $1.0$};
+\end{tikzpicture}}
+
+\item \textbf{Extra structure beyond $\STV{s}{c}$.}\footnote{Lean:
+\lid{phase\_not\_visible\_to\_standard\_pln\_view} in
+\lpath{Mettapedia/Logic/PLNAmplitudePhase.lean}.} Some beliefs carry more than
+strength and confidence --- a ``phase'' or dependence witness --- and two beliefs
+with identical $\STV{s}{c}$ can differ once a composition rule that \emph{sees}
+the extra coordinate is in play. \emph{Trap:} both carrying phase needlessly in a
+plain classifier, \emph{and} assuming $\STV{s}{c}$ is complete when
+interference-like composition matters.
+\knobpic{%
+\begin{tikzpicture}
+  \node[draw,rounded corners,thick] (a) at (0,0){\footnotesize $\STV{s}{c}$};
+  \node[draw,rounded corners,thick] (b) at (3,0){\footnotesize $\STV{s}{c}$};
+  \node at (1.5,0.0){\footnotesize $=$};
+  \draw[->,red,thick](-0.4,-0.55)--(0.3,-1.1); \node[red,below] at(-0.05,-1.15){\footnotesize phase A};
+  \draw[->,blue,thick](3.4,-0.55)--(2.7,-1.1); \node[blue,below] at(3.05,-1.15){\footnotesize phase B};
+  \node at (1.5,1.0){\footnotesize same pair, different hidden coordinate};
+\end{tikzpicture}}
+
+\end{enumerate}
+
+The thread through all nineteen: a degree of freedom is a place where a
+\emph{convention} masquerades as a \emph{fact}. Naming them is what lets you
+choose deliberately --- and lets two honest modellers reconcile beliefs that
+print the same two numbers.
+
+\section{Conclusion}\label{sec:conclusion}
+
+PLN's truth value is two numbers standing in for a whole set of admissible
+probabilities. Strength is the centre of the set on the question you ask;
+confidence falls with the set's width. The two numbers tell the whole story
+exactly when the set pins your question to a point, and report a genuine interval
+otherwise --- one fork, recurring from a single coin up to infinite interacting
+systems. Freedom hides in three places: the width you chose (visible), the
+world's single hidden pick (invisible, and rightly so), and the structure's own
+non-uniqueness in the infinite limit (visible, as real width). And nineteen
+everyday modelling choices live in the gap between ``the two numbers'' and ``the
+set behind them.'' Every claim here has a machine-checked counterpart
+(Appendix~\ref{app:formal}) and a runnable demonstration
+(Appendix~\ref{app:run}).
+
+\section{Related work}\label{sec:related}
+
+\paragraph{Imprecise probability.} The credal-set / lower-prevision picture ---
+a belief as a \emph{set} of distributions, summarized by lower and upper
+expectations --- is Walley's~\cite{walley91}. Our ``spread,'' ``pinned versus
+range,'' and the read-off of strength and confidence are the PLN-facing form of
+his coherent lower previsions and their envelopes.
+
+\paragraph{Exchangeability.} de Finetti's theorem~\cite{definetti37} is the
+classical bridge: an exchangeable (order-free) infinite sequence is a mixture of
+i.i.d.\ trials. Section~\ref{sec:exch} is the imprecise version --- a \emph{set}
+of such mixtures, with the compatibility boundary that decides when finite
+forecasts extend to one whole-process law.
+
+\paragraph{Infinite systems.} The Dobrushin--Lanford--Ruelle
+framework~\cite{dobrushin68,lanford-ruelle69} characterizes infinite Gibbs
+measures by their finite-volume conditionals; Dobrushin's uniqueness condition is
+the ``weak coupling, one answer'' result of Section~\ref{sec:weak}, and
+phase-transition non-uniqueness is the ``strong coupling, an interval'' result of
+Section~\ref{sec:strong}. Markov logic networks~\cite{richardson-domingos06,
+singla-domingos05} are the logic-facing instance: weighted clauses specifying a
+distribution over possible worlds.
+
+\paragraph{Sibling papers.} This note is a companion to \xiPLN\ and the PLN
+Review (\lpath{papers/xiPLN.tex}, \lpath{papers/pln-review.tex}), which treat the
+evidence algebra and PLN's inference rules; the WM-PLN book~\cite{wmpln-book}
+contains the informal predecessor of the degrees-of-freedom discussion this paper
+makes precise.
+
+\appendix
+
+\section{Run it yourself}\label{app:run}
+
+Every number in the body is reproduced by a small runnable companion pack at
+\lpath{papers/pln-confidence-examples/}. It runs on two independent MeTTa engines
+(CeTTa in its HE mode, and PeTTa), so the arithmetic is not taking any one
+implementation's word for it.
+
+\begin{verbatim}
+cd papers/pln-confidence-examples
+sh run_all.sh        # build CeTTa, run every dofNN, then PeTTa
+\end{verbatim}
+
+The pack has one small example per degree of freedom (\lpath{metta/dof01..18}),
+each a self-contained file ending in queries whose printed outputs are the
+claims; a one-line-per-knob index (\lpath{README.md}); and the expected numbers
+for a human spot-check. The honest contract is stated there and bears repeating:
+\textbf{the Lean theorems of Appendix~\ref{app:formal} are the correctness
+oracle; the \texttt{.metta} runs are intuition and reproducibility, never proof.}
+Matching output is an illustration check, not a verification.
+
+A few entries (the infinite-boundary ones --- exchangeable streams, weak/strong
+coupling, completion extreme points, hidden phase) have no finite executable that
+could settle the claim; for those the pack ships the closest finite ``shadow''
+(e.g.\ the Laplace forecast of Section~\ref{sec:exch}) and points at the theorem
+that carries the real content. The index marks each row as \emph{runnable},
+\emph{structural} (a finite shadow), or \emph{theorem-only}, so nothing
+infinite masquerades as something you can compute.
+
+\section{Formal companion: the statements, de-jargoned}\label{app:formal}
+
+The body avoided machinery on purpose. Here are the load-bearing statements, each
+as: the plain-English claim the body relied on, the machine-checked Lean name,
+and one line on what it forces. All are verified in the Mettapedia Lean library;
+the public entry point bundling them is
+\lid{confidenceCharacterizationEndpointProfile}, and the names below are live
+declarations in that development. The core objects: a \emph{gamble} is a
+real-valued function on the outcome space (a random variable / payoff); a
+\emph{precise prevision} is an expectation operator $E[\cdot]$ on gambles; a
+\emph{credal set} (our ``spread'') is a set of these; the \emph{lower} and
+\emph{upper envelopes} are the pointwise $\inf$ and $\sup$ of $E[X]$ over the set
+--- the endpoints $L$ and $U$. The listings are lightly ASCII-formatted
+(\code{Omega} for $\Omega$, \code{->} for $\to$, and \code{forall}/\code{exists}/%
+\code{in}/\code{and}/\code{not} for the binders and connectives). The source
+files are \lpath{Mettapedia/ProbabilityTheory/ImpreciseProbability/ProjectiveCredal.lean}
+(the credal stack), \lpath{Mettapedia/Logic/DeFinettiProjectiveCredalBridge.lean},
+\lpath{Mettapedia/Logic/MarkovLogicInfiniteCredalBridge.lean}, and
+\lpath{Mettapedia/Logic/MarkovLogicInfiniteSymmetricGridExample.lean}.
+
+\begin{enumerate}
+\item \textbf{The read-off.} Strength is the midpoint and confidence a decreasing
+function $g$ of the width of $[L,U]$. The midpoint and $g$ are interface
+choices; none of the results below depends on them. \emph{Forces:} the meaning of
+$\STV{s}{c}$ as centre-and-width of an envelope interval.
 \begin{lstlisting}
 abbrev CredalPrevisionSet (Omega : Type*) := Set (PrecisePrevision Omega)
-\end{lstlisting}
 
-For a credal set $C$ and a gamble $X$, the \emph{lower} and \emph{upper}
-envelopes are the standard inf / sup:
-\begin{lstlisting}
 def lowerEnvelope (C : CredalPrevisionSet Omega) (X : Gamble Omega) : Real :=
   sInf ((fun P : PrecisePrevision Omega => P X) '' C)
-
 def upperEnvelope (C : CredalPrevisionSet Omega) (X : Gamble Omega) : Real :=
   sSup ((fun P : PrecisePrevision Omega => P X) '' C)
 \end{lstlisting}
-The construction
-\lid{lowerEnvelopePrevision} packages \lid{lowerEnvelope} together with
-the proofs of constant-preservation, positive homogeneity, and
-superadditivity, exhibiting a \lid{LowerPrevision} object out of any
-non-empty bounded-below credal set. The finite case theorem
-\lid{lowerEnvelopePrevision\_isCoherent\_of\_finite}
-confirms Walley coherence on finite
-nonempty $\Omega$.
 
-\subsection{PLN $\STV{s}{c}$ as the credal-envelope summary}\label{sec:stv-summary}
-
-The canonical Lean STV type lives in
-\codepath{Mettapedia.Logic.PLNDeduction}:
+\item\label{item:dich} \textbf{The pinned/range dichotomy (the spine).} If every
+admissible prevision assigns $X$ the same value the envelopes coincide; if two
+disagree the envelope strictly opens; and the two cases are mutually exclusive.
+\emph{Forces:} Section~\ref{sec:fork} --- pinned and range are the only cases and
+cannot coexist.
 \begin{lstlisting}
-/-- Simple Truth Value: (strength, confidence) pair -/
-structure STV where
-  strength   : Real
-  confidence : Real
-  strength_nonneg  : 0 <= strength
-  strength_le_one  : strength <= 1
-  confidence_nonneg : 0 <= confidence
-  confidence_le_one : confidence <= 1
-\end{lstlisting}
-Its distributional model is in \codepath{Mettapedia.Logic.PLNDistributional}:
-given a Beta$(\alpha, \beta)$ distribution, the canonical PLN STV reads
-\begin{equation*}
-   s \;=\; \frac{\alpha}{\alpha + \beta},
-   \qquad
-   c \;=\; f(\alpha + \beta)
-\end{equation*}
-for an evidence-count map $f$ (typically $f(N) = N/(N+\kappa)$).
-
-The two-number compression from a credal set $C$ and a query gamble
-$X_q$ (e.g.\ the indicator $\mathbf{1}_A$ of a query atom $A$) is the
-following implicit map:
-\begin{equation}\label{eq:summary}
-   C, X_q \;\longmapsto\;
-   \left\{
-   \begin{array}{l}
-   s_q \;=\; \tfrac{1}{2}\bigl(\,\mathrm{lowerEnvelope}\, C\, X_q\,
-                              +\,\mathrm{upperEnvelope}\, C\, X_q\,\bigr) \\[4pt]
-   c_q \;=\; g\bigl(\,\mathrm{upperEnvelope}\, C\, X_q\,
-                   -\,\mathrm{lowerEnvelope}\, C\, X_q\,\bigr)
-   \end{array}
-   \right.
-\end{equation}
-for a monotone-decreasing $g : [0,1] \to [0,1]$ with $g(0) = 1$ (no
-width, full confidence) and $g(1) = 0$ (maximum width, no information).
-The specific choice of midpoint and $g$ is an interface design decision
-(PLN traditionally uses midpoint for $s$ and a sigmoidal $g$ derived from
-the Beta variance); the freedom characterization of this paper is
-independent of this choice. What matters is that \eqref{eq:summary}
-is the read-off, and that the credal set $C$ may have degrees of
-freedom that the pair $(s_q, c_q)$ cannot expose.
-
-\begin{remark}
-The summary map \eqref{eq:summary} loses two kinds of information.
-First, \emph{which} gambles have positive credal-width and which do
-not: $(s_q, c_q)$ summarises a single query but a credal set with
-non-zero width on \emph{some} queries may have zero width on others.
-Second, the \emph{shape} of $C$: a credal set on $\Omega$ whose extreme
-points are clustered (high agreement) and one whose extreme points are
-dispersed (low agreement) can produce the same midpoint and width on a
-particular query, but compose differently under PLN's inference rules.
-The width as a function on gambles --- which we will study below --- is
-the right object; $(s_q, c_q)$ is its evaluation at one point.
-\end{remark}
-
-\section{Finite-case determinacy}\label{sec:finite}
-
-We first treat the case where the outcome space $\Omega$ is finite. Here
-the Walley theory is complete in the formalization; we summarise the
-load-bearing results.
-
-\subsection{Uniform positivity and avoidance of sure loss}
-
-For finite $\Omega$, a pointwise-strictly-positive gamble has a uniform
-positive lower bound :
-\begin{lstlisting}
-theorem finite_strictlyPositive_uniformLowerBound
-    {Omega : Type*} [Fintype Omega] [Nonempty Omega]
-    (X : Gamble Omega) (hX : forall omega, 0 < X omega) :
-    exists epsilon : Real, 0 < epsilon and forall omega, epsilon <= X omega
-\end{lstlisting}
-This is the technical hinge that lets every nonempty finite credal set
-\emph{avoid sure loss} in the strict Walley sense:
-\begin{lstlisting}
-theorem lowerEnvelopePrevision_avoidsSureLoss_of_finite
-    {Omega : Type*} [Fintype Omega] [Nonempty Omega]
-    (C : CredalPrevisionSet Omega) (hC : C.Nonempty)
-    (hBdd : forall X : Gamble Omega,
-      BddBelow ((fun P : PrecisePrevision Omega => P X) '' C)) :
-    (lowerEnvelopePrevision C hC hBdd).avoidsSureLoss
-\end{lstlisting}
-and to be \emph{coherent} :
-\begin{lstlisting}
-theorem lowerEnvelopePrevision_isCoherent_of_finite
-    {Omega : Type*} [Fintype Omega] [Nonempty Omega]
-    (C : CredalPrevisionSet Omega) (hC : C.Nonempty)
-    (hBdd : forall X : Gamble Omega,
-      BddBelow ((fun P : PrecisePrevision Omega => P X) '' C)) :
-    (lowerEnvelopePrevision C hC hBdd).isCoherent
-\end{lstlisting}
-The take-away for PLN: on a finite outcome space, the credal-envelope
-construction never fails. The map from spec to $\STV{s}{c}$ is total.
-
-\subsection{Singleton collapse}
-
-The case where the credal set has exactly one element is the case where
-PLN's $\STV{s}{c}$ has no freedom at all; everything is pinned. The
-theorem is direct:
-\begin{lstlisting}
-theorem lowerEnvelope_singleton
-    {Omega : Type*} (P : PrecisePrevision Omega) (X : Gamble Omega) :
-    lowerEnvelope ({P} : CredalPrevisionSet Omega) X = P X
-\end{lstlisting}
-and similarly for \lid{upperEnvelope\_singleton}. On a singleton credal
-set, lower = upper on every gamble. PLN-side: every query has $c$ at its
-information ceiling, and $s$ is the single value $P X_q$.
-
-\section{The credal dichotomy: where strength is determined and where it has width}\label{sec:dichotomy}
-
-The contribution of the recent landing in ProjectiveCredal.lean is to
-make the ``determined / has width'' distinction \emph{predicate-level},
-not theorem-level. The collapse and non-triviality theorems following
-those definitions pin down the PLN-side consequence.
-
-\subsection{The two predicates}
-
-\begin{definition}[determined credal set on a gamble]\label{def:determines}
-The predicate \lid{credalSetDetermines} :
-\begin{lstlisting}
-def credalSetDetermines {Omega : Type*}
-    (C : CredalPrevisionSet Omega) (X : Gamble Omega) : Prop :=
+def credalSetDetermines (C : CredalPrevisionSet Omega) (X : Gamble Omega) : Prop :=
   forall P : PrecisePrevision Omega, P in C ->
     forall Q : PrecisePrevision Omega, Q in C -> P X = Q X
-\end{lstlisting}
-$C$ \emph{determines} $X$ when every two admissible precise previsions in
-$C$ assign the same expectation to $X$.
-\end{definition}
-
-\begin{definition}[strict width]\label{def:strictwidth}
-The predicate \lid{credalSetHasStrictWidth} :
-\begin{lstlisting}
-def credalSetHasStrictWidth {Omega : Type*}
-    (C : CredalPrevisionSet Omega) (X : Gamble Omega) : Prop :=
+def credalSetHasStrictWidth (C : CredalPrevisionSet Omega) (X : Gamble Omega) : Prop :=
   exists P : PrecisePrevision Omega, P in C and
     exists Q : PrecisePrevision Omega, Q in C and P X < Q X
-\end{lstlisting}
-$C$ has \emph{strict width} on $X$ when there exist two precise previsions
-in $C$ that strictly disagree on $X$.
-\end{definition}
 
-The two predicates are mutually exclusive :
-\begin{theorem}[mutual exclusion]\label{thm:mutex}
-\lid{not\_credalSetDetermines\_of\_strictWidth}:
-\begin{lstlisting}
 theorem not_credalSetDetermines_of_strictWidth
-    {Omega : Type*}
-    {C : CredalPrevisionSet Omega} {X : Gamble Omega}
-    (hWidth : credalSetHasStrictWidth C X) :
-    not (credalSetDetermines C X)
-\end{lstlisting}
-\end{theorem}
+    (hWidth : credalSetHasStrictWidth C X) : not (credalSetDetermines C X)
 
-The endpoint instances cover the trivial cases. Subsingleton credal sets
-collapse to determinacy
-(\lid{credalSetDetermines\_of\_subsingleton}), and so do
-singletons (\lid{credalSetDetermines\_singleton}):
-\begin{lstlisting}
-theorem credalSetDetermines_singleton {Omega : Type*}
-    (P : PrecisePrevision Omega) (X : Gamble Omega) :
-    credalSetDetermines ({P} : CredalPrevisionSet Omega) X
-\end{lstlisting}
-
-\subsection{Collapse and width theorems}
-
-The PLN-side consequence of \lid{credalSetDetermines} is precisely
-that strength is pinned: the lower and upper envelopes coincide:
-\begin{theorem}[envelope collapse from determinacy]\label{thm:collapse}
-\lid{lower\_eq\_upperEnvelope\_of\_credalSetDetermines}:
-\begin{lstlisting}
 theorem lower_eq_upperEnvelope_of_credalSetDetermines
-    {Omega : Type*}
-    (C : CredalPrevisionSet Omega) (X : Gamble Omega)
-    (hC : C.Nonempty)
+    (C : CredalPrevisionSet Omega) (X : Gamble Omega) (hC : C.Nonempty)
     (hBddBelow : BddBelow ((fun P => P X) '' C))
     (hBddAbove : BddAbove ((fun P => P X) '' C))
-    {P : PrecisePrevision Omega} (hP : P in C)
-    (hDet : credalSetDetermines C X) :
+    (hP : P in C) (hDet : credalSetDetermines C X) :
     lowerEnvelope C X = upperEnvelope C X
-\end{lstlisting}
-This is the formal statement of ``$\STV{s}{c}$ on $X_q$ is precise''
-when $C$ determines $X_q$.
-\end{theorem}
 
-The PLN-side consequence of \lid{credalSetHasStrictWidth} is the opposite:
-the envelope is genuinely non-trivial :
-\begin{theorem}[envelope width from strict disagreement]\label{thm:width}
-\lid{lower\_upperEnvelope\_nontrivial\_of\_strictWidth}:
-\begin{lstlisting}
 theorem lower_upperEnvelope_nontrivial_of_strictWidth
-    {Omega : Type*}
     (C : CredalPrevisionSet Omega) (X : Gamble Omega)
     (hBddBelow : BddBelow ((fun P => P X) '' C))
     (hBddAbove : BddAbove ((fun P => P X) '' C))
     (hWidth : credalSetHasStrictWidth C X) :
     lowerEnvelope C X < upperEnvelope C X
 \end{lstlisting}
-This is the formal statement of ``$\STV{s}{c}$ on $X_q$ is genuinely an
-interval'' when two completions in $C$ strictly disagree on $X_q$.
-\end{theorem}
 
-\subsection{PLN read-off}\label{sec:plnreadoff}
-
-Putting the dichotomy into the summary map \eqref{eq:summary}: for any
-credal set $C$ on which both envelope-boundedness conditions hold, and any
-query gamble $X_q$, exactly one of the following holds:
-\begin{center}
-\begin{tabular}{lll}
-\toprule
-predicate & envelope & PLN $\STV{s}{c}$ \\
-\midrule
-\lid{credalSetDetermines} $C$ $X_q$ & $L = U$ & precise $s = L\,X_q$; $c$ at ceiling \\
-\lid{credalSetHasStrictWidth} $C$ $X_q$ & $L < U$ & $s$ in interval $[L, U]$; $c < $ ceiling \\
-\bottomrule
-\end{tabular}
-\end{center}
-The Lean dichotomy is the formal locator of which case the PLN truth-value
-read-off lives in.
-
-\section{Projective credal specs: three slots for freedom}\label{sec:projective}
-
-Once $\Omega$ is large (or infinite), one builds the credal set
-\emph{compositionally} from finite-window data. The standard packaging
-is a projective family of local credal sets, indexed by ``windows''
-(finite subsets, finite cylinders) of the global outcome space, glued
-by restriction maps.
-
-\subsection{The projective machinery}
-
-The cylinder structure (ProjectiveCredal.lean, the
-\lid{ProjectiveCylinderSystem} structure) packs the window-to-local
-projection and the local restriction maps:
+\item \textbf{Finite totality.} On a finite outcome space the construction never
+misbehaves --- the spread avoids sure loss and is coherent --- and a one-element
+spread pins every question. \emph{Forces:} the map from a specification to
+$\STV{s}{c}$ is well defined.
 \begin{lstlisting}
-structure ProjectiveCylinderSystem (Window Global : Type*) [LE Window] where
-  Local             : Window -> Type*
-  project           : forall i : Window, Global -> Local i
-  restrict          : forall {i j : Window}, i <= j -> Local j -> Local i
-  project_restrict  : ...   -- compatibility on the diagram
-\end{lstlisting}
-The full spec layers a local credal choice on top:
-\begin{lstlisting}
-structure ProjectiveLocalCredalSpec (Window Global : Type*) [LE Window] where
-  cylinders   : ProjectiveCylinderSystem Window Global
-  localCredal : forall i : Window, CredalPrevisionSet (cylinders.Local i)
-\end{lstlisting}
-The \emph{global credal set} associated to a spec is the
-\lid{projectiveLimitCredalSet} (the set of $P$ in \lid{PrecisePrevision}
-\lid{Global} that marginalise into \lid{localCredal}{} $i$ at every window
-$i$).
+theorem lowerEnvelopePrevision_avoidsSureLoss_of_finite
+    [Fintype Omega] [Nonempty Omega]
+    (C : CredalPrevisionSet Omega) (hC : C.Nonempty)
+    (hBdd : forall X, BddBelow ((fun P => P X) '' C)) :
+    (lowerEnvelopePrevision C hC hBdd).avoidsSureLoss
 
-\subsection{Three identifying cases and the dichotomy at the global level}
-
-The codebase ships two endpoints and one general construction:
-\begin{itemize}
-\item \textbf{Singleton} :
-\begin{lstlisting}
-def singletonIdentityProjectiveSpec {Omega : Type*}
-    (P : PrecisePrevision Omega) : ProjectiveLocalCredalSpec PUnit Omega
-\end{lstlisting}
-Every window's local credal is the supplied singleton $\{P\}$. The
-projective limit is $\{P\}$
-(\lid{singletonIdentityProjectiveSpec\_projectiveLimitCredalSet}). PLN $\STV{s}{c}$ on every gamble is precise; this is the
-``no freedom'' case.
-
-\item \textbf{Unrestricted} :
-\begin{lstlisting}
-def finiteUnrestrictedProjectiveSpec (Omega : Type*) :
-    ProjectiveLocalCredalSpec PUnit Omega
-\end{lstlisting}
-Every window's local credal is \lid{Set.univ}. The projective limit
-contains every precise prevision on $\Omega$. PLN $\STV{s}{c}$ on most
-gambles has \lid{credalSetHasStrictWidth}; this is the ``maximum freedom''
-case. The non-emptiness of the projective limit is witnessed by
-\lid{finiteUnrestricted\_finiteEvaluationCompact\_hasCompatibleCompletion}
-via a compact carrier in the finite-evaluation topology.
-
-\item \textbf{Genuine intermediate}: any spec whose local credals are
-non-trivial proper subsets of \lid{Set.univ}. Whether
-\lid{credalSetDetermines} or \lid{credalSetHasStrictWidth} holds on a
-particular gamble depends on the spec and the gamble.
-\end{itemize}
-
-The dichotomy lifts to the projective level. ProjectiveCredal.lean defines
-\lid{determinesGlobalGamble} and \lid{hasStrictGlobalWidth}
-as the global analogues of \lid{credalSetDetermines} and
-\lid{credalSetHasStrictWidth}, with the mutual exclusion theorem
-\lid{not\_determinesGlobalGamble\_of\_strictWidth}. The
-natural-extension lifting theorems connect
-the projective predicates to the lower / upper envelopes on the projective
-limit.
-
-\subsection{The three formal slots, structurally}\label{sec:slots-structural}
-
-We can now name the three slots in which PLN credal freedom lives. Each
-is formally locatable through one of the predicates above.
-
-\begin{description}
-\item[(A) Specification-level freedom.] The choice of \lid{localCredal}{} $i$
-at each window. This is the modeller's freedom: evidence width, prior
-choices, and what classes of measure are taken to be admissible at each
-local scale.
-
-\item[(B) Completion-level freedom.] Given a fixed credal set $C$, the
-choice of $P \in C$ that actually governs the world. This freedom is
-purely aleatoric: it is invisible to $\STV{s}{c}$ because $\STV{s}{c}$ is
-a property of $C$, not of any specific $P \in C$.
-
-\item[(C) Phase-transition freedom.] For globally-glued projective specs,
-the projective limit may itself have multiple admissible elements that
-correspond to different \emph{global} solutions of the same local
-problem. This is the slot Markov-logic / DLR exemplifies (next section).
-\end{description}
-
-Slots (A) and (C) are the only ones $\STV{s}{c}$ can see. Slot (B) is
-formally invisible at the truth-value level.
-
-\section{Infinite Markov logic: Dobrushin collapse and DLR width}\label{sec:dlr}
-
-For the infinite case --- countably-many ground atoms, Markov-logic
-network with weights, density specified locally --- the projective
-machinery specialises into the Dobrushin--Lanford--Ruelle framework. The
-file
-\codepath{Mettapedia.Logic.MarkovLogicInfiniteCredalBridge}
-(\lpath{Mettapedia/Logic/MarkovLogicInfiniteCredalBridge.lean}) packages this.
-
-\subsection{Classical MLN spec and DLR completions}
-
-A \lid{ClassicalInfiniteGroundMLNSpec} packages a countable atom set, a
-clause-id set, the clauses, their log-weights, and the local
-finite-volume region structure. A \emph{DLR completion} of such a spec
-is a probability measure on the infinite world satisfying the
-DLR consistency condition at every finite volume:
-\begin{lstlisting}
-abbrev DLRCompletion (M : ClassicalInfiniteGroundMLNSpec Atom ClauseId) :=
-  { mu : ProbabilityMeasure (InfiniteWorld Atom)
-  // FixedRegionCylinderDLR M.toStrictlyPositiveInfiniteGroundMLNSpec
-       (mu : Measure (InfiniteWorld Atom)) }
-\end{lstlisting}
-The set of DLR completions of $M$ is the ``credal set'' for the infinite
-spec, and the projective-credal lift packages it as
-\lid{DLRProjectiveCredalSpecialization} in
-\codepath{Mettapedia/Logic/MarkovLogicInfiniteCredalBridge.lean}.
-
-A \emph{query} is a finite-volume event; its \emph{probability} under a
-DLR completion is its measure:
-\begin{lstlisting}
-noncomputable def dlrCompletionQueryProb
-    (M : ClassicalInfiniteGroundMLNSpec Atom ClauseId)
-    (q : ConstraintQuery Atom) (mu : DLRCompletion M) : Real :=
-  ENNReal.toReal
-    ((infiniteMLNMassSemantics M mu.1 mu.2).queryProb q)
+theorem lowerEnvelope_singleton (P : PrecisePrevision Omega) (X : Gamble Omega) :
+    lowerEnvelope ({P} : CredalPrevisionSet Omega) X = P X
 \end{lstlisting}
 
-\subsection{DLR-level dichotomy}\label{sec:dlrdichotomy}
-
-The credal dichotomy lifts directly to the DLR setting:
+\item\label{item:global} \textbf{The dichotomy lifts to built-up specs.} For
+beliefs glued from local windows, the same fork holds globally. \emph{Forces:}
+Section~\ref{sec:build}.
 \begin{lstlisting}
-def dlrQueryDetermined
-    (M : ClassicalInfiniteGroundMLNSpec Atom ClauseId)
-    (q : ConstraintQuery Atom) : Prop :=
-  forall mu nu : DLRCompletion M,
-    dlrCompletionQueryProb M q mu = dlrCompletionQueryProb M q nu
+def determinesGlobalGamble
+    (S : ProjectiveLocalCredalSpec Window Global) (X : Gamble Global) : Prop :=
+  credalSetDetermines S.projectiveLimitCredalSet X
+def hasStrictGlobalWidth
+    (S : ProjectiveLocalCredalSpec Window Global) (X : Gamble Global) : Prop :=
+  credalSetHasStrictWidth S.projectiveLimitCredalSet X
 
-def dlrQueryHasStrictWidth
-    (M : ClassicalInfiniteGroundMLNSpec Atom ClauseId)
-    (q : ConstraintQuery Atom) : Prop :=
-  exists mu : DLRCompletion M, exists nu : DLRCompletion M,
-    dlrCompletionQueryProb M q mu < dlrCompletionQueryProb M q nu
-\end{lstlisting}
-\lid{dlrQueryDetermined} says all DLR completions agree on the query;
-\lid{dlrQueryHasStrictWidth} says two of them strictly disagree. The
-mutual exclusion theorem
-\lid{not\_dlrQueryDetermined\_of\_strictWidth}:
-\begin{lstlisting}
-theorem not_dlrQueryDetermined_of_strictWidth
-    (M : ClassicalInfiniteGroundMLNSpec Atom ClauseId)
-    (q : ConstraintQuery Atom)
-    (hWidth : dlrQueryHasStrictWidth M q) :
-    not (dlrQueryDetermined M q)
+theorem not_determinesGlobalGamble_of_strictWidth
+    (S : ProjectiveLocalCredalSpec Window Global)
+    (hWidth : S.hasStrictGlobalWidth X) : not (S.determinesGlobalGamble X)
 \end{lstlisting}
 
-\subsection{Dobrushin uniqueness as the collapse-direction hypothesis}
+\item\label{item:exch} \textbf{Order-free streams.} The canonical mixture
+forecast always exists; the stronger ``one consistent law for every question''
+holds \emph{exactly} when a respecting lower prevision exists. It may \emph{not}
+be tightened to ``every mixture component degenerate'' --- that strengthening is
+refuted. \emph{Forces:} the takeaway and caution of Section~\ref{sec:exch}.
+\begin{lstlisting}
+theorem impreciseDeFinetti_analyticMixingFamily_
+    sharpCompatibilityCrown
+    (C : Set BernoulliMixture) (hC : C.Nonempty) :
+    ImpreciseDeFinettiCanonicalExternalMixingFamily C hC and
+      (ImpreciseDeFinettiAnalyticMixingFamilyProcessLawCrown C hC <->
+        exists L : LowerPrevision (Nat -> Bool),
+          (bernoulliMixturePrefixProcessLowerSpec C
+            (fun M _ n => bernoulliMixturePrefixLaw_analytic M n) hC).respectsLocalLower L)
 
-The classical Dobrushin uniform-influence condition is packaged as the
-predicate \lid{PaperUniformSmallTotalInfluence} on the MLN spec
-in \codepath{Mettapedia.Logic.MarkovLogicInfiniteUniqueness}.
-The collapse direction of the DLR-level dichotomy is the theorem
-\lid{dlrQueryDetermined\_of\_uniform}:
+theorem not_forall_impreciseDeFinetti_
+    analyticMixingFamilyProcessLawCrown_imp_
+    pointwiseZeroInterior_closed :
+    not (forall (C : Set BernoulliMixture) (hC : C.Nonempty),
+        ImpreciseDeFinettiAnalyticMixingFamilyProcessLawCrown C hC ->
+          AnalyticMixingFamilyPointwiseZeroInterior C)
+\end{lstlisting}
+
+\item\label{item:weak} \textbf{Weak coupling collapses.} Under a uniform
+small-influence budget every finite query is pinned, and the global model is
+unique. We prove only this direction; the converse (budget failure forcing
+width) is not claimed. \emph{Forces:} Section~\ref{sec:weak}, top of the fork.
 \begin{lstlisting}
 theorem dlrQueryDetermined_of_uniform
     (M : ClassicalInfiniteGroundMLNSpec Atom ClauseId)
-    (hM : M.PaperUniformSmallTotalInfluence)
-    (q : ConstraintQuery Atom) :
+    (hM : M.PaperUniformSmallTotalInfluence) (q : ConstraintQuery Atom) :
     dlrQueryDetermined M q
-\end{lstlisting}
-\emph{Under the Dobrushin uniform small-influence hypothesis, every finite
-query is DLR-determined.}
-Combining with the dichotomy gives the precision of the MLN query
-envelope:
-\begin{lstlisting}
+
 theorem infiniteMLN_queryEnvelope_precise_of_uniform
     (M : ClassicalInfiniteGroundMLNSpec Atom ClauseId)
     [Nonempty (DLRCompletion M)]
-    (hM : M.PaperUniformSmallTotalInfluence)
-    (q : ConstraintQuery Atom) :
-    infiniteMLNLowerQueryEnvelope M q
-      = infiniteMLNUpperQueryEnvelope M q
+    (hM : M.PaperUniformSmallTotalInfluence) (q : ConstraintQuery Atom) :
+    infiniteMLNLowerQueryEnvelope M q = infiniteMLNUpperQueryEnvelope M q
 \end{lstlisting}
-\emph{Under the same hypothesis, and assuming the DLR completion family is
-inhabited, the PLN $\STV{s}{c}$ for every finite query is precise.}
 
-\subsection{Strict width as the phase-transition canary}
-
-The opposite direction is the theorem
-\lid{infiniteMLN\_queryEnvelope\_nontrivial\_of\_disagreement}
-and the lift through
-\lid{infiniteMLN\_queryEnvelope\_nontrivial\_of\_strictWidth}:
+\item\label{item:strong} \textbf{Strong coupling keeps an interval.} A
+low-temperature two-dimensional symmetric grid has an origin query with genuinely
+positive envelope width (so confidence is strictly below its ceiling), a range
+the distant boundary controls --- and this is proved with \emph{no} hypotheses.
+The two stuck magnets are the finite witness used in the body. \emph{Forces:}
+Section~\ref{sec:strong}, bottom of the fork.
 \begin{lstlisting}
-theorem infiniteMLN_queryEnvelope_nontrivial_of_strictWidth
-    (M : ClassicalInfiniteGroundMLNSpec Atom ClauseId)
-    (q : ConstraintQuery Atom)
-    (hBddBelow : BddBelow (Set.range (dlrCompletionQueryProb M q)))
-    (hBddAbove : BddAbove (Set.range (dlrCompletionQueryProb M q)))
-    (hWidth : dlrQueryHasStrictWidth M q) :
-    infiniteMLNLowerQueryEnvelope M q
-      < infiniteMLNUpperQueryEnvelope M q
-\end{lstlisting}
-\emph{If two DLR completions disagree on a finite query, the PLN
-$\STV{s}{c}$ for that query is genuinely an interval.}
+-- the crown asserts, for the zero-field grid at coupling w:
+structure SymmetricGridZeroFieldOriginPLNStrictIntervalCrown
+    (w : Real) : Prop where
+  queryEnvelopeWidth_pos :
+    0 < infiniteMLNQueryEnvelopeWidth
+          (symmetricGridZeroFieldClassicalSpec w) gridOriginSpinUpQuery
+  queryEnvelopeWidthComplement_lt_one :
+    infiniteMLNQueryEnvelopeWidthComplement
+          (symmetricGridZeroFieldClassicalSpec w) gridOriginSpinUpQuery < 1
+  queryOutcomeCredalSet_width_pos : ...   -- the binary outcome has positive width
 
-\subsection{Dobrushin collapse and strict-width witnesses}
-
-Combining the two proved directions gives a one-sided collapse theorem
-and a separate strict-width witness theorem. The Dobrushin condition
-\lid{PaperUniformSmallTotalInfluence} is a formally sufficient hypothesis
-for query determinacy and precise PLN/Walley envelopes. Separately, if
-two DLR completions are exhibited that disagree on a query, then that
-query has strict width. The Lean development does not prove that failure
-of the Dobrushin hypothesis entails non-uniqueness or strict width.
-
-\section{Exchangeable de~Finetti families: the F2 compatibility boundary}\label{sec:definetti-f2}
-
-The second infinite lane is the exchangeable IID/de~Finetti lane. Here the
-formal point is not merely that an external mixture representation exists:
-it does, unconditionally, for any nonempty credal family of Bernoulli
-mixtures. The stronger all-gambles process-law crown has a sharper
-boundary.
-
-The public theorem
-\lid{impreciseDeFinetti\_analyticMixingFamily\_sharpCompatibilityCrown}
-states:
-\begin{lstlisting}
-theorem impreciseDeFinetti_analyticMixingFamily_sharpCompatibilityCrown
-    (C : Set BernoulliMixture) (hC : C.Nonempty) :
-    ImpreciseDeFinettiCanonicalExternalMixingFamily C hC /\
-      (ImpreciseDeFinettiAnalyticMixingFamilyProcessLawCrown C hC <->
-        exists L : LowerPrevision (Nat -> Bool),
-          (bernoulliMixturePrefixProcessLowerSpec C ... hC).
-            respectsLocalLower L)
-\end{lstlisting}
-Thus the canonical sigma-additive external readout is always present, while
-the raw all-gambles analytic crown is pinned exactly by existence of a
-respecting lower prevision for the analytic prefix lower envelope. This is
-the Walley natural-extension boundary in the exchangeable process setting.
-
-A useful negative theorem prevents over-reading the result. The theorem
-\lid{exists\_impreciseDeFinetti\_analyticMixingFamilyProcessLawCrown\_not\_pointwiseZeroInterior}
-exhibits a nonempty mixing family whose raw all-gambles crown exists even
-though not every member has zero interior mixing mass. Equivalently,
-\lid{not\_forall\_impreciseDeFinetti\_analyticMixingFamilyProcessLawCrown\_imp\_pointwiseZeroInterior\_closed}
-closes the refutation of the too-strong pointwise-zero necessity claim.
-Pointwise zero-interior is a sufficient concrete route; it is not the
-right family-level characterization.
-
-\section{Worked examples already in the formalization}\label{sec:examples}
-
-The codebase now ships both finite toy witnesses and a concrete infinite
-DLR/PLN contrast crown, plus the low-temperature symmetric-grid strict
-interval crown. The finite two-spin examples remain useful sanity witnesses
-for strict credal width.
-
-\subsection{Two-spin magnet}
-
-In \lpath{ProjectiveCredal.lean}, the type
-\lid{TwoSpin}, defined as $\mathrm{Bool} \times \mathrm{Bool}$, carries the two-spin
-magnet credal set
-\begin{lstlisting}
-def twoSpinMagnetCredalSet : CredalPrevisionSet TwoSpin :=
-  { PrecisePrevision.dirac twoSpinAllDown,
-    PrecisePrevision.dirac twoSpinAllUp }
-\end{lstlisting}
-The credal set contains two Dirac measures: all spins down, and all
-spins up. The first-spin-up gamble
-\begin{lstlisting}
-def twoSpinFirstUpGamble : Gamble TwoSpin :=
-  fun s => if s.fst then 1 else 0
-\end{lstlisting}
-is rewarded by the all-up Dirac and unrewarded by the all-down Dirac;
-the disagreement gives the strict width witness. The packaged theorem
-\lid{twoSpinMagnetEnvelope\_nontrivial} closes:
-\begin{lstlisting}
-theorem twoSpinMagnetEnvelope_nontrivial :
-    lowerEnvelope twoSpinMagnetCredalSet twoSpinFirstUpGamble
-      < upperEnvelope twoSpinMagnetCredalSet twoSpinFirstUpGamble
-\end{lstlisting}
-PLN-side: on this two-Dirac credal, the magnetization query has lower
-envelope $0$, upper envelope $1$, and confidence at its floor.
-
-\subsection{Zero-temperature aligned magnet}
-
-An incremental sibling
-\lid{twoSpinZeroTemperatureMagnetEnvelope\_nontrivial} adds the
-zero-temperature Gibbs constraint (spins must be aligned), and shows
-the envelope is still strictly non-trivial: any measure supported on
-the aligned-spin pair $\{(\downarrow,\downarrow), (\uparrow,\uparrow)\}$
-still admits both extremes. The structural constraint by itself does
-not close down credal width; the Dobrushin condition has to be checked
-\emph{quantitatively} on the local-influence row-sums.
-
-\subsection{Concrete infinite crown: reinforced line versus zero-weight grid}
-
-The theorem
-\lid{reinforcedLineGeometric\_strictWidth\_and\_zeroWeightGrid\_collapse}
-packages the first concrete DLR/PLN contrast. The strict-width side uses
-\lid{reinforcedLineGeometric\_originSpinUp\_plnStrictInterval}: a
-geometrically reinforced half-line has positive PLN strict-width at the
-origin-spin query. The collapse side uses
-\lid{gridZeroField\_originSpinUp\_queryEnvelope\_precise\_of\_dobrushin}:
-the zero-weight zero-field grid lies in the Dobrushin collapse regime for
-the analogous origin-spin query. This remains a useful canary for the
-collapse direction.
-
-\subsection{Low-temperature symmetric-grid strict interval crown}
-
-The full two-dimensional low-temperature strict-width side is supplied by
-the symmetric-grid Peierls development in
-\codepath{Mettapedia.Logic.MarkovLogicInfiniteSymmetricGridExample}. The
-public theorem
-\lid{symmetricGridZeroField\_originPLNStrictIntervalCrown\_of\_axisAnchoredContourCode\_twentyFour}
-states:
-\begin{lstlisting}
-theorem symmetricGridZeroField_originPLNStrictIntervalCrown_of_axisAnchoredContourCode_twentyFour :
+-- proved with no hypotheses at coupling w = 24:
+theorem symmetricGridZeroField_originPLNStrictIntervalCrown_of_
+    axisAnchoredContourCode_twentyFour :
     SymmetricGridZeroFieldOriginPLNStrictIntervalCrown (24 : Real)
+
+-- the finite witness used in the body (two stuck magnets):
+theorem twoSpinMagnetEnvelope_nontrivial :
+    lowerEnvelope twoSpinMagnetCredalSet twoSpinFirstUpGamble <
+      upperEnvelope twoSpinMagnetCredalSet twoSpinFirstUpGamble
 \end{lstlisting}
-The crown packages positive scalar query-envelope width, width-complement
-below one, and positive binary query-outcome credal width for the origin-spin
-query. The proof path is the classical Peierls route specialized to the
-finite box: axis-anchored contour codes, a finite-box $\mathbb{F}_2$
-separator/potential argument, a geometric contour count, and the resulting
-plus/minus boundary separation. The theorem is independent of the refuted
-Markov de~Finetti branch and does not rely on the older conditional
-\lid{CutWalkCode} adapters.
 
-\section{Three kinds of degree of freedom: the synthesis}\label{sec:synthesis}
+\item \textbf{Three freedoms, formally.} The sharpest negative claim of the
+paper: $\STV{s}{c}$ is a property of the credal \emph{set}, so the world's single
+choice of member (source (B)) cannot change it, while the spec width (A) and
+structural non-uniqueness (C) can. This is the content of items
+\ref{item:dich}--\ref{item:strong} read together, and is why source (B) is
+invisible in Figure~\ref{fig:three}.
+\end{enumerate}
+
+The full type definitions and proof scripts (the credal stack, the projective
+construction, the DLR specialization, and the contour argument behind
+item~\ref{item:strong}) live in the Lean sources under
+\lpath{lean/mettapedia/Mettapedia/}; this appendix states what they establish,
+not how. The companion package's \lpath{lean/DOF-LEAN-MAP.md} maps each
+degree of freedom in Section~\ref{sec:zoo} to its specific theorem.
 
-We now name the three formally-locatable freedom slots, each with the
-predicate that witnesses it.
-
-\paragraph{(A) Specification-level: \lid{localCredal} choice.}
-A wider local credal at any cylinder window produces a wider projective
-limit. The PLN-side question ``does my $\STV{s}{c}$ on query $X_q$ have
-genuine width?'' reduces to ``does \lid{hasStrictGlobalWidth}
-\lid{spec} on $X_q$ hold?''. The modeller controls this slot by varying
-\lid{localCredal}{} $i$. The slot is finite or infinite depending on
-whether $\Omega$ is.
-
-\paragraph{(B) Completion-level: extreme-point choice.}
-Given a credal set $C$, the actual world chooses one $P \in C$ (the
-``true'' precise prevision). This freedom is aleatoric. It is formally
-invisible to $\STV{s}{c}$ because $\STV{s}{c}$ is a property of $C$, not
-of any specific $P$. PLN inference rules do not see it; only the
-verification of a query against actual data sees it.
-
-\paragraph{(C) Phase-transition: DLR non-uniqueness.}
-In infinite Markov-logic specs, the projective limit is the set of DLR
-completions, which may itself be non-singleton. The slot is opened
-exactly when \lid{dlrQueryHasStrictWidth} on $(M, q)$ holds for the
-query $q$ of interest, and closed when \lid{dlrQueryDetermined} on $(M, q)$
-holds. The Dobrushin condition \lid{PaperUniformSmallTotalInfluence}
-is a sufficient condition for the closed case; the low-temperature
-symmetric-grid Peierls theorem is the complementary proved strict-width
-case.
-
-\begin{observation}
-Slot (A) is the freedom the PLN modeller intends to give. Slot (B) is
-the freedom the world has within the modeller's spec. Slot (C) is the
-freedom that the infinite structure of the spec itself produces, without
-any modeller intent and without any world-side aleatoric residual.
-\end{observation}
-
-The three slots are independent. A modeller can pick (A) tight, the
-world can pick (B) freely, and the spec can still have (C) freedom from
-a phase transition. The PLN $\STV{s}{c}$ sees (A) and (C); it does not
-see (B).
-
-\section{Closed endpoint and remaining polish}\label{sec:open}
-
-The current Lean endpoint is the profile
-\lid{confidenceCharacterizationEndpointProfile}, exported through
-\codepath{Mettapedia.Logic.PLNCanonicalAPI}. It packages the finite forcing
-results, the typed-STV canaries showing residual degrees of freedom, the
-Walley width-complement forcing theorem for the PLN odds coordinate, the
-finite exact-predictive ITV collapse, the DLR/Dobrushin collapse lane, the
-F2 exchangeable mixing-family compatibility boundary, and the F4
-low-temperature symmetric-grid strict-interval crown.
-
-The characterization should therefore be read as closed relative to its
-explicit semantic gates:
-\begin{itemize}
-\item \textbf{Finite forcing.}
-      Once evidence counts are read through a Walley width-complement
-      compatible evidence-weight coordinate, the odds form of PLN
-      confidence is forced by
-      \lid{walley\_width\_complement\_forces\_pln\_odds}. The free
-      parameter is the evidence-scale constant, not the shape of the
-      coordinate.
-
-\item \textbf{Finite exact collapse.}
-      Singleton and exact posterior carriers have lower envelope equal to
-      upper envelope. Their ITV readout has width zero, credibility one,
-      and midpoint equal to the single predictive prevision.
-
-\item \textbf{F2, exchangeable IID/de~Finetti.}
-      \lid{impreciseDeFinetti\_analyticMixingFamily\_sharpCompatibilityCrown}
-      proves that the external sigma-additive mixing-family readout is
-      unconditional, while the raw all-gambles process-law crown holds
-      exactly at the lower-prevision compatibility boundary. The theorem
-      \lid{not\_forall\_impreciseDeFinetti\_analyticMixingFamilyProcessLawCrown\_imp\_pointwiseZeroInterior\_closed}
-      prevents the common but false strengthening to pointwise zero-interior
-      necessity.
-
-\item \textbf{F3, Dobrushin collapse.}
-      \lid{infiniteMLN\_paperUniformSmallTotalInfluence\_implies\_uniqueMeasure}
-      gives the Markov-logic/DLR collapse direction: uniform small influence
-      forces a unique infinite measure, hence precise finite-query envelopes.
-
-\item \textbf{F4, low-temperature Ising width.}
-      \lid{symmetricGridZeroField\_originPLNStrictIntervalCrown\_of\_axisAnchoredContourCode\_twentyFour}
-      gives the 2D symmetric-grid strict-interval crown at low temperature,
-      by the finite-box Peierls/$\mathbb{F}_2$ contour route.
-\end{itemize}
-
-What remains is integration polish rather than a missing crown theorem: the
-book chapter should import the closed endpoint, and future work can broaden the
-menu of examples and sharpen constants. A runnable companion now accompanies
-this paper at \lpath{papers/pln-confidence-examples/}: it pairs each degree of
-freedom with a small PeTTa/CeTTa canary and its Lean oracle (see
-Appendix~\ref{app:examples}), with a one-command harness \lpath{run_all.sh}.
-Those refinements do not change the status of the confidence-formula
-characterization itself.
-
-\section{Related work}\label{sec:related}
-
-\paragraph{Walley.}
-The credal-set lower-prevision framework is Walley (1991). Our
-\lid{LowerPrevision} structure is the Walley structure with
-constant-preservation, positive homogeneity, and superadditivity, and
-our \lid{lowerEnvelopePrevision\_isCoherent\_of\_finite} is the
-classical Walley coherence theorem for finite envelopes.
-
-\paragraph{de~Finetti.}
-The de~Finetti exchangeability theorem connects exchangeable distributions
-on infinite sequences to mixtures over IID distributions. The codebase now
-has the finite-prefix imprecise de~Finetti payoff theorems, the canonical
-external sigma-additive mixing-family object, and the raw all-gambles
-process-law compatibility boundary. The important caution is negative:
-family-level crown existence does not force pointwise zero-interior mass for
-every mixture in the family.
-
-\paragraph{Dobrushin--Lanford--Ruelle.}
-The DLR framework characterises infinite Gibbs measures by their
-finite-volume conditional distributions. The Dobrushin uniqueness
-condition (uniform smallness of total influence) implies a unique DLR
-completion. Singla and Domingos have a Markov-logic specific
-uniformity-of-influence framing. Our \lid{PaperUniformSmallTotalInfluence}
-is the codified hypothesis.
-
-\paragraph{PLN literature.}
-The two-component truth value $\STV{s}{c}$ is canonical in the PLN
-literature (Goertzel et al.\ \emph{Probabilistic Logic Networks}). The
-sibling papers \xiPLN\ (\lpath{papers/xiPLN.tex}) and the PLN Review
-(\lpath{papers/pln-review.tex}) treat the evidence-algebra and
-formal-rule-coherence axes. The WM-PLN book
-(\lpath{papers/wm-pln-book.tex}) has the informal predecessor of the
-degrees-of-freedom characterization in its \S 7.4
-(``Degrees of freedom versus forcing'').
-
-\paragraph{Markov logic networks.}
-Richardson and Domingos (Machine Learning, 2006) introduced MLNs as
-finite log-linear models on first-order logic. The infinite
-specialisation in
-\codepath{Mettapedia.Logic.MarkovLogicInfinite*}
-is cited inline above: Dobrushin uniqueness supplies the collapse side, and
-the symmetric-grid Peierls theorem supplies the low-temperature strict-width
-side.
-
-\paragraph{Imprecise probability and second-order Bayesianity.}
-The PLN tradition of treating $c$ as ``confidence-in-strength'' has a
-natural Bayesian second-order reading (a Beta distribution over the
-true probability), which the file
-\codepath{Mettapedia.Logic.PLNDistributional} formalises. The credal
-reading we develop here is the Walley-side complement; in the
-finite case the two readings overlap on the singleton case and
-diverge on the strict-width case.
-
-\section{Conclusion}\label{sec:conclusion}
-
-PLN truth values $\STV{s}{c}$ are summary statistics of a credal set,
-and the question of where their information lives reduces, formally,
-to a dichotomy on the underlying credal set. The codebase landings in
-\codepath{Mettapedia.ProbabilityTheory.ImpreciseProbability.ProjectiveCredal}
-(the \lid{credalSetDetermines} / \lid{credalSetHasStrictWidth}
-predicates and their collapse / width theorems),
-\codepath{Mettapedia.Logic.DeFinettiProjectiveCredalBridge} (the F2
-compatibility boundary), and
-\codepath{Mettapedia.Logic.MarkovLogicInfiniteSymmetricGridExample} (the
-F4 strict-width crown) make this dichotomy a checkable Lean endpoint rather
-than informal commentary.
-
-The three freedom slots --- specification, completion, phase-transition
---- partition the question along orthogonal axes. (A) is the modeller's
-freedom. (B) is the world's freedom. (C) is the structural freedom
-the spec produces by itself. PLN $\STV{s}{c}$ sees (A) and (C); it
-does not see (B). Where it sees (C), Dobrushin uniqueness pins the
-high-temperature collapse side and the Peierls theorem pins the
-low-temperature strict-width side.
-
-The infinite half is no longer a list of named crown gaps. The exchangeable
-F2 lane is pinned by lower-prevision compatibility rather than pointwise
-zero-interior mass; the DLR F3 lane is pinned on the collapse side by
-Dobrushin uniqueness; and the Ising F4 lane is pinned on the width side by
-the low-temperature symmetric-grid strict-interval crown. What remains is
-the ordinary work of presentation, API consolidation, and additional
-examples, not a missing theorem in the confidence-formula characterization.
-
-\appendix
-
-\section{Degrees-of-freedom zoo}\label{app:dof-zoo}
-
-This appendix lists the degrees of freedom that should remain visible in
-PLN truth-value practice. Defaults are useful; unnecessary fixation is not.
-Each entry names the freedom, the formal gate that can collapse it, and why a
-real system may want to keep the knob available.
-
-\begin{description}
-\item[Evidence scale / prior strength.]
-      In the evidence-count view, confidence is commonly
-      $c = N/(N+\kappa)$, where $N$ is total retained evidence and
-      $\kappa > 0$ is the effective prior or context size. The Walley
-      width-complement bridge forces the odds form once the scale is chosen,
-      but it does not choose the scale. A curated clinical fact, a noisy
-      high-throughput association, and an indirect pathway-mediated
-      hypothesis should not usually accumulate confidence at the same rate.
-      Positive example: a hand-curated contraindication can use small
-      $\kappa$. Negative example: a single weak omics hit should not receive
-      the same confidence merely because it has the same positive/negative
-      ratio.
-
-\item[Strength projection / prior context.]
-      The same positive and negative counts can be read by maximum
-      likelihood, by a uniform Beta posterior mean, by Jeffreys' prior, or by
-      another explicit context. The formal tower records this as a projection
-      choice rather than pretending that ``strength'' is context-free.
-      Positive example: sparse medical counts may need shrinkage toward a
-      population baseline. Negative example: a mature benchmark with thousands
-      of observations can safely use a near-MLE projection.
-
-\item[Evidence total versus evidence ratio.]
-      Strength reads the positive/negative ratio; confidence reads the total
-      amount of evidence. Thus $1/1$ and $100/100$ have the same strength but
-      should not have the same confidence. Conversely, $1/1$ and $2/0$ can
-      have the same total evidence and different strengths. This is the basic
-      reason the two coordinates are separate.
-
-\item[Confidence chart.]
-      Count reconstruction only requires an invertible chart on total
-      evidence; it does not by itself force the PLN odds chart. The
-      width-complement bridge is the extra semantic law that narrows the
-      chart to the PLN/NARS odds coordinate. Positive example: user-facing
-      risk displays may want a compressed visual confidence scale. Negative
-      example: revision must operate in evidence-weight space, not in an
-      arbitrary display chart.
-
-\item[Width-complement convention.]
-      For unit gambles, the convention $c = 1 - (U-L)$ makes confidence the
-      complement of interval width. For a general bounded gamble with range
-      $[a,b]$, the normalized version is
-      $c = 1 - (U-L)/(b-a)$. This convention is natural and minimal, but it is
-      still a convention. Positive example: binary prediction has a canonical
-      unit scale. Negative example: dollar-valued utilities must be
-      range-normalized before width-complement confidence is meaningful.
-
-\item[Interval point selector.]
-      A nontrivial interval $[L,U]$ does not force a single displayed point:
-      lower, midpoint, upper, or a risk-adjusted selector can all be
-      reasonable. The paper uses midpoint when it wants a neutral PLN
-      strength display. Positive example: safety-critical planning may use
-      the lower envelope. Negative example: exploratory ranking may use the
-      midpoint with the interval width shown separately.
-
-\item[Credal shape beyond one interval.]
-      A single query interval loses the shape of the credal set. Two credal
-      sets can agree on $L$ and $U$ for one gamble but differ on other
-      gambles, on correlations, or under composition. Positive example: two
-      drug hypotheses can share the same marginal response interval but differ
-      in adverse-event dependence. Negative example: reporting only an STV
-      for each marginal can hide incompatible joint structure.
-
-\item[Backend for uncertainty.]
-      Bayesian credible intervals, Walley IDM predictive intervals, finite
-      lower envelopes, projective credal envelopes, and DLR completion
-      envelopes all produce interval-like readouts but carry different
-      provenance. Positive example: a posterior credible interval is right
-      for a parametric lab assay. Negative example: a robust safety envelope
-      should not be collapsed into a single Bayesian posterior merely for
-      convenience.
-
-\item[Credible level / tolerance.]
-      Bayesian credible intervals carry a chosen level, e.g. 90\%, 95\%, or
-      99\%. This is not the same knob as $\kappa$: $\kappa$ governs evidence
-      accumulation; credible level governs the interval requested from a
-      posterior. Positive example: exploratory dashboards can show 90\%
-      intervals. Negative example: clinical decision support may require 99\%
-      or a one-sided lower bound.
-
-\item[Categorical query choice.]
-      In multinomial or categorical evidence, total concentration can be
-      shared while each queried category has its own lower, upper, width, and
-      strength. Positive example: a phenotype classifier may have high total
-      evidence but low confidence for a rare subclass. Negative example:
-      forcing one binary query can erase category-specific uncertainty.
-
-\item[Feature/evidence discounting.]
-      Evidence can be reweighted by source quality, feature informativeness,
-      IDF-like rarity, route length, recency, or dependence corrections before
-      it enters the count tower. Positive example: independent curated
-      replications should count more than near-duplicate text-mined hits.
-      Negative example: treating correlated pathway hits as independent
-      overstates confidence.
-
-\item[Local credal specification.]
-      In projective credal models, the modeller chooses local credal sets at
-      finite windows. This is the intended imprecision knob: how much local
-      ambiguity the model admits before global completion. Positive example:
-      sensor calibration uncertainty belongs in local credal sets. Negative
-      example: hiding local ambiguity by picking a single precise prior can
-      make later confidence appear unjustifiably high.
-
-\item[Compatible completion / natural extension.]
-      A family of finite-window lower previsions must be globally compatible
-      before it gives a raw all-gambles process law. F2 shows that the
-      exchangeable external readout is unconditional, while the raw crown is
-      exactly the lower-prevision compatibility boundary. Positive example:
-      finite-prefix forecasts can be useful before full natural extension is
-      available. Negative example: calling those forecasts a full process law
-      without compatibility is assumption laundering.
-
-\item[Completion-level extreme point.]
-      Given a fixed credal set, the world may instantiate one precise
-      completion. This is real aleatoric freedom, but it is invisible to a
-      truth value because $\STV{s}{c}$ is a property of the whole credal set.
-      Positive example: scenario simulation samples an extreme completion.
-      Negative example: inference rules should not pretend to know which
-      extreme completion the world selected.
-
-\item[Phase-transition / infinite boundary freedom.]
-      Infinite local specifications can have multiple DLR completions. F3
-      pins a collapse regime by Dobrushin uniqueness; F4 pins a strict-width
-      regime by low-temperature Ising separation. Positive example: weakly
-      coupled large sensor networks can have precise local-query envelopes.
-      Negative example: strongly coupled spatial contagion or image domains
-      can keep interval width because distant boundary conditions matter.
-
-\item[Exchangeability / de~Finetti family freedom.]
-      In the IID lane, a mixing family can have a canonical external
-      sigma-additive readout while the raw all-gambles crown depends on
-      lower-prevision compatibility. Pointwise zero-interior mass is
-      sufficient in some kernel cases but not necessary at the family level.
-      Positive example: a family with one compatible conservative member can
-      support the raw crown. Negative example: requiring every member to have
-      zero interior mass rejects legitimate imprecise families.
-
-\item[Rule-level confidence transport.]
-      PLN rule formulas must decide whether confidence is combined by
-      addition in weight space, minimum in weight space, multiplication, or a
-      rule-specific effective evidence term. Positive example: revision adds
-      independent evidence weights. Negative example: feeding a raw confidence
-      through \lid{w2c} as if it were already a weight double-damps the result.
-
-\item[Provenance and route semantics.]
-      Two derivations with the same final STV may have different provenance:
-      direct observation, pathway transfer, abduction, or long inference
-      chain. Positive example: biomedical drug support should distinguish
-      direct disease evidence from pathway-mediated support. Negative example:
-      merging all routes before preserving provenance makes audit and
-      discounting impossible.
-
-\item[Extra structure beyond classical STV.]
-      Standard STV forgets structures such as phase, dependence witnesses, or
-      higher-order distributional shape. The formal amplitude/phase boundary
-      shows that such information can be invisible to the classical strength
-      and confidence view. Positive example: interference-like composition
-      requires extra structure. Negative example: carrying phase in an
-      ordinary binary classifier may be needless complexity.
-\end{description}
-
-\section{Example coverage plan for PeTTa/CeTTa}\label{app:examples}
-
-These examples accompany the paper as a runnable companion package,
-\lpath{papers/pln-confidence-examples/} (build and run via \lpath{run_all.sh}
-on CeTTa(HE) and PeTTa; \lpath{DOF-INDEX.md} is the full map). Each degree of
-freedom falls in one of three honesty tiers: \emph{Runnable} (a real executable
-canary with a positive and a negative case), \emph{Structural} (a finite shadow
-of an infinite or joint fact --- the Lean theorem is the real claim), and
-\emph{Lean-ref} (the witness is a theorem; no standalone \texttt{.metta}).
-Thirteen runnable canaries (DoF 1--8, 10, 11, 13, 17, 18) are portable across
-CeTTa(HE) and PeTTa; the three new Lean canaries (DoF 8, 11, 18) live in
-\lpath{Mettapedia/lean/mettapedia/Mettapedia/Logic/PLNConfidenceDoFCanary.lean}
-and are axiom-clean. DoF 14 deliberately points to the existing strict-width /
-non-determination theorem rather than inventing a misleading ``extreme point''
-executable. The table
-below records each row's current artifact and what that artifact demonstrates;
-for Lean-ref rows, it names the example story that would illustrate the theorem.
-
-\begin{longtable}{p{0.22\linewidth}p{0.28\linewidth}p{0.36\linewidth}}
-\toprule
-Freedom & Current artifact & Demonstration \\
-\midrule
-\endhead
-Evidence total versus ratio &
-Raven example; \lpath{metta/dof03_ratio_vs_total.metta} &
-Shows the raven asymmetry pattern and then isolates the ratio/total split:
-$5/5$, $50/50$, and $500/500$ have the same strength but rising confidence. \\
-
-Evidence scale $\kappa$ &
-\lpath{metta/dof01_kappa_calibration.metta} &
-Shows the same evidence count under $\kappa=1,10,50$, matching the intuition
-that curated clinical, noisy omics, and pathway-mediated labels may need
-different evidence scales. \\
-
-Strength prior context &
-\lpath{metta/dof02_strength_prior_contexts.metta};
-Lean canaries in \lid{PLNTruthTower} &
-Shows MLE, uniform-prior, and Jeffreys-prior strengths from the same sparse
-counts, so the prior context is visible rather than silently fixed. \\
-
-Confidence chart freedom &
-\lpath{metta/dof04_confidence_chart.metta};
-Lean chart-separation theorem &
-Compares PLN odds, reserve-half, and smooth arctangent charts on the same
-decoded evidence, demonstrating chart freedom without changing the evidence. \\
-
-Revision as evidence addition &
-\lpath{metta/dof17_revision_transport.metta} &
-Shows \lid{Truth\_Revision} by adding decoded evidence weights and re-encoding
-the result, while contrasting it with separate prior choices. \\
-
-Rule-level confidence transport &
-Lean transport analysis &
-The Lean analysis records the weight-space transport discipline; a PeTTa
-regression can show the old raw-min double-damping bug as an executable shadow. \\
-
-Interval point selector &
-\lpath{metta/dof06_interval_selector.metta};
-Lean generic ITV selector canary &
-Shows lower, midpoint, and upper selectors producing different displayed
-strengths on the same interval. \\
-
-Width-complement range normalization &
-\lpath{metta/dof05_width_complement_range.metta};
-paper convention &
-Shows binary width as $1-(U-L)$ and bounded-utility width as
-$1-(U-L)/(b-a)$, including the negative example where raw dollar width is
-misleading. \\
-
-Credal shape beyond one interval &
-\lpath{metta/dof07_credal_shape.metta};
-Lean credal projection tower canaries &
-Shows two finite credal shapes with the same marginal interval and different
-joint/correlation behavior. \\
-
-Backend choice &
-\lpath{metta/dof08_backend_beta_vs_idm.metta};
-\lid{beta\_mean\_strictly\_inside\_walley\_idm\_interval} &
-Compares a Bayesian beta posterior point with the Walley IDM interval from the
-same counts, keeping backend provenance explicit. \\
-
-Categorical query choice &
-\lpath{metta/dof10_categorical_query.metta};
-Lean categorical evidence tower &
-Shows a three-category classifier where total evidence is high but a rare
-category still has low confidence. \\
-
-Feature/evidence discounting &
-\lpath{metta/dof11_evidence_discounting.metta} &
-Shows evidence-power discounting and amplification, matching the Lean theorem
-that the log-odds scale linearly with the evidence power. \\
-
-Biomedical route provenance &
-\lpath{metta/dof18_route_provenance.metta} &
-Shows direct, pathway-mediated, and weak-literature routes with the same
-strength and route-specific confidence scales. \\
-
-Exchangeable de~Finetti F2 &
-\lpath{metta/dof13_f2_finite_shadow.metta};
-Lean F2 crown &
-Uses a finite-prefix shadow to show the always-available external readout,
-while the raw all-gambles crown remains the Lean compatibility theorem. \\
-
-Dobrushin F3 collapse &
-Lean F3 crown &
-The intended finite story is a weakly coupled sensor grid: all finite-query
-completions agree under the Dobrushin budget, so the interval collapses. \\
-
-Ising F4 strict width &
-Lean F4 crown &
-The intended finite story is spatial contagion or image segmentation:
-low-temperature coupling and boundary conditions keep the origin query
-interval nontrivial. \\
-
-Completion-level extreme point &
-\lid{boundedMeasurableCredalSetHasStrictWidth} and
-\lid{boundedMeasurableCredalSet\_not\_determines\_of\_strictWidth} &
-The theorem-level layer says two admissible precise completions can disagree
-and therefore no single determined readout is justified. \\
-
-Extra hidden structure &
-Amplitude/phase Lean boundary &
-The Lean boundary marks hidden phase/amplitude structure that shares classical
-STV but can differ under a composition rule that sees the hidden coordinate. \\
-\bottomrule
-\end{longtable}
-
-\bibliographystyle{plain}
 \begin{thebibliography}{10}
 
 \bibitem{walley91}

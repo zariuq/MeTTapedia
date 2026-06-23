@@ -207,7 +207,13 @@ theorem limitMarginal_toPMF_singleSiteHeatBathUpdatePMF_eq_of_interior_on
       _ = μ (MeasureTheory.cylinder Δ ({y} : Set (LocalAssignment Atom Δ))) := hdlr
       _ = pμ.toMeasure ({y} : Set (LocalAssignment Atom Δ)) := hrhs.symm
   rw [hdlr_sum] at hupdate
-  simpa [pμ, PMF.toMeasure_apply_singleton] using hupdate
+  -- `hupdate` is `(…).toMeasure {y} = pμ.toMeasure {y}`; rewrite both singleton
+  -- measures to PMF point-values.  (At 4.31 unfolding `pμ` first lets simp
+  -- collapse `pμ.toMeasure {y}` back to the underlying measure, breaking the
+  -- match; rewriting the lemma in place keeps both sides as PMF values.)
+  rw [PMF.toMeasure_apply_singleton _ y hsingleton,
+    PMF.toMeasure_apply_singleton _ y hsingleton] at hupdate
+  exact hupdate
 
 /-- Partial heat-bath sweep preserves the limit marginal under restricted DLR. -/
 theorem limitMarginal_toPMF_partialHeatBathSweepPMF_eq_of_interiorList_on
@@ -409,7 +415,11 @@ theorem exists_limitMarginalCoupling_sup_le_pow_on
                   (finiteRegionCouplingExpectedDisagreement_projectCoupling_eq
                     (Atom := Atom) hΛΔ qs a ha)
           _ ≤ M.finiteRegionPairwiseDobrushinConstant Δ * C ^ n := by
-                simpa [qs] using hupdated aΔ ha_mem_l
+                -- `qs` is by definition the `foldl` in `hupdated`, and `a = ↑aΔ`
+                -- (since `aΔ = ⟨a, _⟩`), so this matches by defeq.  (At 4.31
+                -- `simp [qs]` exposes the `foldl` on the goal but won't refold it
+                -- to `partialHeatBathSweepCouplingPMF`, breaking the `simpa` match.)
+                exact hupdated aΔ ha_mem_l
           _ ≤ C * C ^ n := by
                 exact mul_le_mul_of_nonneg_right (hC_bound Δ) hs_nonneg
           _ = C ^ (n + 1) := by

@@ -248,10 +248,12 @@ theorem trustTriangleTheoryGuidedDecisionProblem_hasDominantAdmissibleAction :
     trustTriangleTheoryGuidedDecisionProblem.HasDominantAdmissibleAction := by
   refine ⟨.safeEscalation, ?_, ?_⟩
   · simpa [TheoryGuidedDecisionProblem.admissibleActionSet,
-      trustTriangleTheoryGuidedDecisionProblem] using
+      trustTriangleTheoryGuidedDecisionProblem,
+      trustTriangleComputableConflictDiscipline] using
       (mem_trustTriangle_admissibleCandidates_iff .safeEscalation).2 rfl
   · simpa [TheoryGuidedDecisionProblem.admissibleActionSet,
-      trustTriangleTheoryGuidedDecisionProblem] using
+      trustTriangleTheoryGuidedDecisionProblem,
+      trustTriangleComputableConflictDiscipline] using
       safeEscalation_dominates_trustTriangle_admissibleCandidates
 
 theorem trustTriangleTheoryGuidedDecisionProblem_hasAdmissibleAction :
@@ -279,16 +281,19 @@ theorem trustTriangleTheoryGuidedDecisionProblem_safeEscalation_is_admissible_an
         .safeEscalation := by
   refine ⟨trustTriangleTheoryGuidedDecisionProblem_recommends_safeEscalation, ?_, ?_⟩
   · simpa [TheoryGuidedDecisionProblem.admissibleActionSet,
-      trustTriangleTheoryGuidedDecisionProblem] using
+      trustTriangleTheoryGuidedDecisionProblem,
+      trustTriangleComputableConflictDiscipline] using
       (mem_trustTriangle_admissibleCandidates_iff .safeEscalation).2 rfl
   · simpa [TheoryGuidedDecisionProblem.admissibleActionSet,
-      trustTriangleTheoryGuidedDecisionProblem] using
+      trustTriangleTheoryGuidedDecisionProblem,
+      trustTriangleComputableConflictDiscipline] using
       safeEscalation_dominates_trustTriangle_admissibleCandidates
 
 theorem trustTriangleTheoryGuidedDecisionProblem_comparisonBudget_eq :
     trustTriangleTheoryGuidedDecisionProblem.comparisonBudget = 21 := by
   simpa [TheoryGuidedDecisionProblem.comparisonBudget,
-    trustTriangleTheoryGuidedDecisionProblem] using
+    trustTriangleTheoryGuidedDecisionProblem, trustTriangleCandidateSet,
+    trustTriangleDutyDomain, trustTrianglePrinciple, trustTriangleCandidates] using
     trustTriangle_theoryGuided_filteredComparisonCount_eq
 
 /-- Deontological support for the no-harm branch of the scenario. -/
@@ -648,9 +653,10 @@ theorem trustTriangleTheoryGuidedMeaningProfile_activeGoalQuery_wmPositive :
     WMPositiveQuerySupport
       ({regionSupportMassSemantics coreTriangle} : MassState (ConstraintQuery Nat))
       (trustTriangleTheoryGuidedMeaningProfile.activeGoalQuery trustTriangleStructuredEncoder) := by
-  simpa [trustTriangleTheoryGuidedMeaningProfile_activeGoalQuery_eq_eul,
-    endorseSafeEscalationClaim, StructuredEthicalClaim.toQuery,
-    trustTriangleStructuredEncoder, bodhisattvaEpistemicUniversalLoveQuery] using
+  rw [trustTriangleTheoryGuidedMeaningProfile_activeGoalQuery_eq_eul]
+  simpa [endorseSafeEscalationClaim, StructuredEthicalClaim.toQuery,
+    trustTriangleStructuredEncoder, bodhisattvaEpistemicUniversalLoveQuery,
+    agent1Query] using
     endorseSafeEscalationClaim_wmPositive_in_trustTriangleStructuredESOModel
 
 theorem harmfulDisclosure_not_dominant :
