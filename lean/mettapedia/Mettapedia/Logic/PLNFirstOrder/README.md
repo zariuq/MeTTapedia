@@ -1,18 +1,30 @@
 # PLN First-Order Quantifiers
 
-Formalization of PLN first-order quantifier semantics via Goertzel's
-weakness theory and fuzzy quantifier algebra (QFM).
-**40 files, ~6,774 lines. Zero sorry.**
+Classical logic gives you "for all" and "there exists" as a crisp yes/no. But
+real reasoning needs *graded* quantifiers: not just "all swans are white" but
+"**most** swans are white," "**about half** of the patients improved," "**few**
+trials failed." This directory formalizes PLN's account of quantifiers — both the
+classical pair and the fuzzy family — as *uncertain truth values* you can compute
+with, proving the central identities rather than asserting them.
+
+The starting observation is a clean one. In PLN, an evidence-graded truth value
+lives in a *quantale* (an ordered algebra of evidence), and there is an operation
+called **weakness** that measures how strongly one predicate is contained in
+another. The key idea here is that the universal quantifier is *exactly* the
+weakness of a satisfying set against the diagonal relation:
+
+> ∀μ(S) = weakness(μ, diag(S)),   which under uniform weights reduces to |S|²/|U|².
+
+The existential is its De Morgan dual. Fuzzy quantifiers ("most", "few", "about
+half") extend this with witness-fraction predicates and QFM (quantifier
+fuzzification mechanism) composition operators (multiplicative, minimum,
+Łukasiewicz, probabilistic-sum), and the graded layer adds Sugeno- and
+Choquet-integral semantics over fuzzy capacities.
+
+Built via Goertzel's weakness theory (`Mettapedia.Algebra.QuantaleWeakness`) and
+the evidence quantale (`Mettapedia.Logic.EvidenceQuantale`).
 
 Companion text: `../../../../../papers/wm-pln-book.tex`, Chapter 11 (Quantifiers).
-
-## Key Idea
-
-First-order quantifiers are **weakness of the diagonal relation** on a
-satisfying set: ∀μ(S) = weakness(μ, diag(S)). Under uniform weights
-this reduces to |S|²/|U|². The existential is the De Morgan dual.
-Fuzzy quantifiers ("most", "few", "about half") extend this with
-witness-fraction predicates and QFM composition operators.
 
 ## Core Quantifier Semantics
 
@@ -61,9 +73,9 @@ witness-fraction predicates and QFM composition operators.
 
 ## Canary and Regression Tests
 
-10 canary files and 5 regression files covering finite, infinite, fuzzy,
-graded, syllogism, and domain-restriction correctness on concrete
-domains (Bool, Fin n, ℕ).
+8 `*Canary*.lean` files and 8 `*Regression*.lean` files covering finite,
+infinite, fuzzy, graded, syllogism, and domain-restriction correctness on
+concrete domains (Bool, Fin n, ℕ).
 
 ## Third-Order Extension
 
@@ -71,3 +83,27 @@ domains (Bool, Fin n, ℕ).
 |------|----------|
 | `ThirdOrderQuantifierSemantics.lean` | `SecondOrderUncertainty`, `ThirdOrderQuantifierModel`; theory-observation gap theorem |
 | `FoundationBridge.lean` | `PLNSemiformula` syntax bridge to Foundation logic |
+
+## Formalization status
+
+All 40 `.lean` files in this directory are `sorry`-free (~6,800 lines total). The
+central identity `forAll_is_weakness_of_diagonal` (`WeaknessConnection.lean`) holds
+*by construction*; the soundness lane (`Soundness.lean`, `InfiniteSoundness.lean`)
+proves monotonicity, De Morgan duality, and functoriality, mirrored in the
+infinite-domain layer; the Sugeno/Choquet graded layer proves the integrands
+monotone/antitone and the scores in `[0,1]`.
+
+**Trusted base.** There are no source-level `axiom` declarations in this directory
+(a source grep, *not* a per-theorem `#print axioms` audit — the quantifier
+evaluators are `noncomputable` and built on Mathlib's order/real machinery, so
+theorems may inherit standard Mathlib axioms such as `propext`, `Quot.sound`, and
+`Classical.choice` transitively). Nothing in this directory uses `native_decide`,
+so no `.lean` file here enlarges the trusted base via compile-time evaluation.
+
+## References
+
+- Ben Goertzel, Matthew Iklé, Izabela Freire Goertzel & Ari Heljakka, [*Probabilistic Logic Networks: A Comprehensive Framework for Uncertain Inference*](https://link.springer.com/book/10.1007/978-0-387-76872-4) (Springer, 2008) — PLN truth values, the weakness/quantale account of quantifiers, and the source of Chapter 11's quantifier theory.
+- Lotfi A. Zadeh, "A Computational Approach to Fuzzy Quantifiers in Natural Languages," [*Computers & Mathematics with Applications* 9(1), 1983, pp. 149-184](https://www.sciencedirect.com/science/article/pii/0898122183900135) — the fuzzy-quantifier ("most", "few", "about half") tradition behind the QFM layer.
+
+---
+*Status (drafted 2026-06-22 by Claude Code, Opus 4.8): 40 .lean files, 0 with sorries.*

@@ -1,100 +1,88 @@
-# Higher-Order Probability Theory in Mettapedia
+# Higher-Order Probability (Lean 4)
 
-Formalization of Kyburg's flattening theorem and higher-order probability foundations.
+## What this is about
 
-## Files in This Directory
+Ordinary probability asks "how likely is rain tomorrow?" *Higher-order* probability
+asks a stranger question: "how confident am I in my own confidence?" — a probability
+*about* a probability. If you are unsure whether a coin is fair, you might hold a
+distribution over its bias `θ`, and then a distribution over `θ` on top of that.
+This shows up everywhere uncertainty is layered: hierarchical Bayesian models,
+second-order (credence-about-credence) uncertainty, and imprecise probability.
 
-### Week 1: Foundations ✅
-- **`Basic.lean`** (176 lines)
-  - Core structures: `ParametrizedDistribution`, `kyburgJoint`, `flatten`
-  - Foundation for all higher-order probability work
+The natural worry is that this could regress forever — distributions over
+distributions over distributions. **Kyburg's flattening theorem** (1988) settles
+it: a higher-order probability can always be *flattened* into an ordinary one by
+taking the marginal of a joint distribution, and you lose nothing decision-relevant
+in doing so. Concretely, if `κ : Θ → Measure X` is a family of distributions indexed
+by a parameter `θ`, and `μ` is your distribution over `θ`, then the flattened
+distribution
 
-### Week 2: Main Theorem ✅
-- **`KyburgFlattening.lean`** (163 lines)
-  - Kyburg's flattening theorem
-  - Expectation consistency and decision-theoretic equivalence
-  - Connection to Giry monad
-
-### Week 3: Connections ✅
-- **`DeFinettiConnection.lean`** (237 lines)
-  - Connect to `Mettapedia/Logic/DeFinetti.lean`
-  - Show BernoulliMixture is a Kyburg flattening
-  - Exchangeability ↔ Kyburg flattening
-
-### Week 6: Giry Monad ✅
-- **`GiryMonad.lean`** (308 lines)
-  - Connect to mathlib's Giry monad
-  - Prove flatten = monadic bind
-  - Monad laws for Kyburg flattening
-
-### Status & Planning
-- **`STATUS.md`** - Implementation progress tracker
-- **`README.md`** - This file
-
-## Quick Build
-
-```bash
-# Build all higher-order probability modules
-lake build Mettapedia.ProbabilityTheory.HigherOrderProbability.Basic
-lake build Mettapedia.ProbabilityTheory.HigherOrderProbability.KyburgFlattening
-
-# Or build the whole HigherOrderProbability namespace
-lake build Mettapedia.ProbabilityTheory.HigherOrderProbability
+```
+flatten = ∫ κ(θ) dμ(θ)     (the marginal of the joint  μ ⊗ κ  on  Θ × X)
 ```
 
-## Master Plan
+makes the same predictions and supports the same optimal decisions as reasoning with
+the two-level object. There is "no advantage" to keeping the levels separate.
 
-Full 6-week implementation plan: `/home/zar/.claude/plans/eventual-mapping-wadler.md`
+The clean way to see *why* flattening is canonical rather than ad hoc is category
+theory: `flatten` is exactly the **monadic bind / join of the Giry monad** (the monad
+of probability measures). The monad laws — left/right identity and associativity —
+are precisely the consistency properties Kyburg's reduction needs, so flattening is
+mathematically forced, not a modelling convenience. This directory formalizes the
+flattening theorem, its Giry-monad characterization, and the bridge showing the
+de Finetti mixture models elsewhere in Mettapedia are themselves Kyburg flattenings.
 
-**Phases**:
-1. Kyburg Flattening (Weeks 1-3) - COMPLETE ✅
-2. PLN-Kyburg Bridge (Weeks 4-5) - COMPLETE ✅
-3. Giry Monad Integration (Week 6) - COMPLETE ✅
-4. Quasi-Borel Foundations (Future) - PLANNED
+## Components
 
-## Key Theorems
+| File | Contents |
+|------|----------|
+| `Basic.lean` | the core object `ParametrizedDistribution` (a Markov kernel `κ : Θ → Measure X` plus a mixing measure `μ` over parameters); `flatten` (the marginal `κ ∘ₘ μ`); `kyburgJoint` (`μ ⊗ₘ κ` on `Θ × X`); the probability-measure instances and the marginal/sum/deterministic basic lemmas |
+| `KyburgFlattening.lean` | the flattening results: `kyburg_flattening` (marginalizing the joint recovers the mixture), `flatten_is_marginal`, `expectation_consistency` (`E[U] = E[E[U∣θ]]`), `kyburg_no_advantage` (decision-theoretic equivalence), and `flatten_is_monad_multiplication` |
+| `GiryMonad.lean` | the categorical identification: `flatten_is_bind`, `flatten_is_join`, and the monad laws `flatten_left_identity`, `flatten_right_identity`, `flatten_associativity` (plus a kernel-level associativity and a monad-route `kyburg_no_advantage_via_monad`) |
+| `DeFinettiConnection.lean` | packages the Bernoulli-mixture model from `Mettapedia.Logic.DeFinetti` as a `ParametrizedDistribution`; the singleton bridge `flatten(pd M n) {xs} = ENNReal.ofReal (M.prob xs)` — "de Finetti is Kyburg" for binary observations |
+| `CategoricalConnection.lean` | the same bridge generalized from binary (Bool) to k-ary (`Fin k`) observations, built on `Mettapedia.Logic.CategoricalMixture`: `catKernel`, `catPMF`, `sum_catWeight_eq_one`, `flatten_apply_singleton` |
+| `ProbabilityMeasureBorelBridge.lean` | supporting measurability infrastructure: derives `BorelSpace (ProbabilityMeasure Ω)` from `BorelSpace (FiniteMeasure Ω)` via `ProbabilityMeasure.toFiniteMeasure` (needed so mixing measures over the parameter space are well-typed) |
 
-**Phase 1-2: Kyburg Flattening**
-- `kyburg_flattening` : P(x) = ∫ kernel(θ)(x) dμ(θ)
-- `expectation_consistency` : E[U] = E[E[U|θ]]
-- `kyburg_no_advantage` : Decision equivalence
+### Connection to PLN (developed elsewhere)
 
-**Phase 3: Giry Monad**
-- `flatten_is_bind` : flatten = monadic bind (identity)
-- `flatten_left_identity` : join ∘ dirac = id
-- `flatten_right_identity` : join ∘ map dirac = id
-- `flatten_associativity` : join ∘ join = join ∘ map join
+The motivation for this directory is the higher-order PLN story: PLN's evidence
+counts `(n⁺, n⁻)` are the sufficient statistic for a Beta–Bernoulli Kyburg
+flattening, so PLN's compact strength/confidence pair *is* a flattened second-order
+belief. That reduction is formalized in the **sibling** directory
+`Mettapedia/Logic/HigherOrder/` (`PLNKyburgReduction.lean`), which builds on the
+flattening API here together with `Mettapedia/Logic/EvidenceQuantale.lean`. It is
+out of scope for this directory and not counted in the file totals below.
 
-**Phase 2: PLN-Kyburg Bridge**
-- `evidence_encodes_beta_mixture` : (n⁺, n⁻) → Beta(α+n⁺, β+n⁻)
-- `pln_satisfies_kyburg_expectation` : strength = ∫ θ dBeta
-- `kyburg_reduction_for_pln` : PLN IS Kyburg-optimal
+## Formalization status
 
-## Connections to Existing Work
+No source-level `axiom` declarations appear in this directory — a source grep, *not*
+a per-theorem `#print axioms` audit (a theorem can still inherit a Mathlib axiom
+transitively, e.g. through the Giry-monad and measure-theory development it builds
+on). All six `.lean` files are **`sorry`-free**.
 
-**De Finetti Theorem** (`Mettapedia/Logic/DeFinetti.lean`):
-- BernoulliMixture IS already a Kyburg flattening
-- Exchangeability = Kyburg reduction
-- Week 3 will make this connection explicit
+**Trusted base.** There is no `native_decide` anywhere in this directory, so nothing
+here compile-evaluates in place of kernel checking; the trusted base is Lean's
+kernel plus whatever Mathlib axioms the imported measure-theory lemmas carry.
 
-**PLN Evidence** (`Mettapedia/Logic/EvidenceQuantale.lean`):
-- (n⁺, n⁻) = sufficient statistic for Kyburg flattening
-- Strength/confidence = compact encoding of Beta mixture
-- Weeks 4-5 will formalize this bridge
+Reproduce from this directory — the `sorry`/`admit` regex is a *raw* scan that can
+also match prose in comments/strings, so the per-file count in the footer below is
+the authoritative comment-stripped figure:
 
-**Giry Monad** (mathlib):
-- `flatten` = monadic join operation
-- Week 6 will connect to mathlib's categorical infrastructure
+```bash
+# sorry/admit occurrences (prints nothing):
+rg -n --glob '*.lean' '\b(sorry|admit)\b' .
+# axiom declarations (prints nothing):
+rg -n --glob '*.lean' '^\s*(@\[[^]]*\]\s*)*axiom\s' .
+# native_decide occurrences (prints nothing):
+rg -n --glob '*.lean' 'native_decide' .
+```
 
-## For the Global Gödel Brain 🧠
+## References
 
-This formalization provides the mathematical foundations for:
-- Higher-order uncertainty in PLN
-- Kyburg's justification of compact probability representations
-- Path to quasi-Borel spaces (probability over functions)
-- Connection between decision theory and category theory
+- Henry E. Kyburg, Jr., [*Higher Order Probabilities*](https://arxiv.org/pdf/1304.2714), in Uncertainty in Artificial Intelligence 3 (1987/88) — the flattening theorem this directory formalizes ("higher-order probabilities can always be replaced by marginal distributions of joint probability distributions").
+- Michèle Giry, [*A categorical approach to probability theory*](https://doi.org/10.1007/BFb0092872), Lecture Notes in Mathematics 915 (Springer, 1982), 68–85 — the Giry monad that makes `flatten` a monadic bind/join.
+- F. William Lawvere, [*The category of probabilistic mappings*](https://ncatlab.org/nlab/files/lawvereprobability1962.pdf) (seminar notes, 1962; [Lawvere Archives scan](https://lawverearchives.com/wp-content/uploads/2025/07/1962.probmap.pdf)) — the origin of the categorical view of probabilistic maps, cited in `GiryMonad.lean`.
+- de Finetti's exchangeability/mixture theory, as formalized in `Mettapedia/Logic/DeFinetti.lean` and `Mettapedia/Logic/CategoricalMixture.lean` — the source of the mixture models the `*Connection.lean` files identify as Kyburg flattenings.
 
 ---
-
-**Last Updated**: 2026-02-03
-**Status**: Phases 1-3 complete (Weeks 1-6), builds clean (2524 jobs)
+*Status (drafted 2026-06-22 by Claude Code, Opus 4.8): 6 .lean files, 0 with sorries.*

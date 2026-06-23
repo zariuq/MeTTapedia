@@ -1,20 +1,24 @@
 # Cognitive Architecture — MetaMo, OpenPsi, MicroPsi & GödelClaw (Lean 4)
 
-`Mettapedia/CognitiveArchitecture` formalizes the MetaMo motivational Q-module
-framework, its OpenPsi and MicroPsi instances, their mathematical bridges and
-value systems, and the work-in-progress **GödelClaw** ethical-agent kernel
-(`GodelClaw/`).
+A *cognitive architecture* is a computational theory of how an agent's
+motivations, emotions, and decisions fit together into one working mind: what it
+wants, how a stimulus changes those wants, and how those wants pick an action.
+This directory formalizes such architectures in Lean and asks what they have in
+common — and what they leave out.
 
-The MetaMo/OpenPsi/MicroPsi/Bridges/Values strands are `sorry`- and `admit`-free;
-`GodelClaw/` is also `sorry`-free but introduces one named ethical postulate
-(see GödelClaw below). Reproduce from this directory:
-
-```bash
-# real sorry/admit tactics (prints nothing):
-rg -n --glob '*.lean' '^\s*(sorry|admit)\b' .
-# axiom declarations (prints only the one GödelClaw postulate):
-rg -n --glob '*.lean' '^\s*axiom\s' .
-```
+The organizing abstraction is **MetaMo**, a category-theoretic *motivational
+Q-module*: motivational state lives in a module over a quantale of "intensities,"
+an **appraisal** functor maps environmental stimuli to changes in that state, and
+a **decision** functor maps state to actions. Two well-known psychological
+architectures appear as concrete MetaMo instances — **OpenPsi** (the OpenCog
+realization of Dörner's *Psi* theory, with six demands and four modulators) and
+**MicroPsi** (Bach's architecture, with seven demands and a PAD emotion model) —
+which lets the formalization compare them on a common footing and *prove* where
+they coincide and where they fall short. The `Values/` strand then extends the
+picture beyond the consequentialist core both architectures share (Schwartz
+values, Haidt's moral foundations, deontological/relational/temporal/meta layers),
+and the work-in-progress **GödelClaw** kernel (`GodelClaw/`) builds an
+ethical-agent layer — policy kernel, tool broker, gate chain, "mindlock" — on top.
 
 ## Modules
 
@@ -128,3 +132,41 @@ axiom UniversalLovingCare : Prop
 - Appraisal-decision commutativity is proven when the quantale is commutative.
 - Contractivity is a sufficient condition for unique motivational equilibrium.
 - Gap analysis shows that both base architectures are fundamentally consequentialist.
+
+## Formalization status
+
+All 64 `.lean` files in this directory are `sorry`- and `admit`-free.
+
+**Trusted base.** The MetaMo / OpenPsi / MicroPsi / Bridges / Values strands have
+no source-level `axiom` declarations (a source grep, *not* a per-theorem `#print
+axioms` audit — a theorem can still inherit a Mathlib axiom transitively).
+`GodelClaw/` introduces **exactly one** named postulate: `axiom
+UniversalLovingCare : Prop` in `GodelClaw/Core.lean` (see GödelClaw above). This
+is an honest stand-in for an ethical primitive — more a placeholder than a proved
+theorem — and the rest of `GodelClaw/` is otherwise `sorry`-free. There is **no
+`native_decide`** anywhere in this directory, so nothing here compile-evaluates in
+place of kernel-checking.
+
+Reproduce from this directory — the regexes below are raw scans (they would also
+match the term in comments/strings):
+
+```bash
+# real sorry/admit tactics (prints nothing):
+rg -n --glob '*.lean' '^\s*(sorry|admit)\b' .
+# axiom declarations (prints only the one GödelClaw postulate):
+rg -n --glob '*.lean' '^\s*axiom\s' .
+# native_decide occurrences (prints nothing):
+rg -n --glob '*.lean' 'native_decide' .
+```
+
+## References
+
+- Zhenhua Cai, Ben Goertzel & Nil Geisweiller, [*OpenPsi: Realizing Dörner's "Psi" Cognitive Model in the OpenCog Integrative AGI Architecture*](https://doi.org/10.1007/978-3-642-22887-2_22) (AGI 2011, LNCS 6830, Springer) — the OpenPsi demands/modulators formalized in `OpenPsi/`.
+- Dietrich Dörner, [*Bauplan für eine Seele*](https://www.spektrum.de/magazin/bauplan-fuer-eine-seele/825713) (Rowohlt, 1999) — the *Psi* theory underlying both OpenPsi and MicroPsi.
+- Joscha Bach, [*Principles of Synthetic Intelligence: Psi — An Architecture of Motivated Cognition*](https://global.oup.com/academic/product/principles-of-synthetic-intelligence-9780195370676) (Oxford University Press, 2009) — the MicroPsi architecture (demands + PAD model) formalized in `MicroPsi/`.
+- Shalom H. Schwartz, [*Universals in the Content and Structure of Values*](https://doi.org/10.1016/S0065-2601(08)60281-6), in *Advances in Experimental Social Psychology* 25 (1992), 1–65 — the ten-value circumplex in `Values/SchwartzValues.lean`.
+- Jonathan Haidt, [*The Righteous Mind: Why Good People Are Divided by Politics and Religion*](https://righteousmind.com/) (Pantheon, 2012) — Moral Foundations Theory in `Values/MoralFoundations.lean`.
+- Alan Gewirth, [*Reason and Morality*](https://press.uchicago.edu/ucp/books/book/chicago/R/bo25842059.html) (University of Chicago Press, 1978) — the Principle of Generic Consistency underlying the Gewirth/FOET ethics layer in `GodelClaw/Ethics/` and `Values/FOETBridge.lean`.
+
+---
+*Status (drafted 2026-06-22 by Claude Code, Opus 4.8): 64 .lean files, 0 with sorries.*

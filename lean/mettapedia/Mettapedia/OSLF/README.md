@@ -48,6 +48,63 @@ open Mettapedia.OSLF
 -- 4) Use Formula.sem and checkLangUsing for properties.
 ```
 
+### Run it: GSLT → NTT (executable)
+
+A **GSLT** (Graph-Structured Lambda Theory) is given in Lean as a `LanguageDef`
+(grammar + equations + rewrite rules). OSLF turns it into an `OSLFTypeSystem`
+(predicates-as-frames with `◇`/`□` and a proven Galois connection); the **NTT**
+(Native Type Theory) view exposes its native types `(sort, predicate)` and the
+sort-crossing constructor diagram.
+
+Run the worked ρ-calculus GSLT end to end (only needs a built tree) from
+`lean/mettapedia/`:
+
+```bash
+lake env lean Mettapedia/OSLF/Tools/OSLFRunDemo.lean
+```
+
+which prints the ρ-calculus NTT crossings:
+
+```
+"rho NTT crossing count = 2"
+[("PDrop", "Name", "Proc"), ("NQuote", "Proc", "Name")]
+```
+
+Those crossings **are** the ρ-calculus GSLT's native-type constructors — the
+sort-crossing operations (`NQuote : Proc → Name`, `PDrop : Name → Proc`) that
+generate its native types. So that one command *is* "run OSLF over a GSLT and read
+off its native types." `langNativeType` then packages any chosen `(sort, predicate)`
+as a native type object.
+
+To run OSLF on your own GSLT and read off its NTT (fill in `myGSLT`; `procSort`
+defaults to `"Proc"`):
+
+```lean
+import Mettapedia.OSLF.CoreMain
+import Mettapedia.OSLF.Framework.ConstructorCategory
+open Mettapedia.OSLF
+open Mettapedia.OSLF.Framework.ConstructorCategory
+
+def myGSLT : LanguageDef := { /- types, terms, equations, rewrites, premises -/ }
+
+-- OSLF type system + modal operators (◇ ⊣ □):
+#check langOSLF myGSLT                    -- : OSLFTypeSystem …
+#check langDiamond myGSLT                 -- ◇ : (Pattern → Prop) → (Pattern → Prop)
+#check langBox myGSLT                     -- □
+#check langGaloisUsing RelationEnv.empty myGSLT  -- proof ◇ ⊣ □ (use a non-empty RelationEnv if the GSLT has premise relations)
+
+-- The NTT: native (sort, predicate) types + the sort-crossing diagram:
+#check langNativeType myGSLT              -- native (sort, predicate) type
+#eval  unaryCrossings myGSLT              -- NTT crossing constructors, as the demo above
+
+-- Check a modal property of a term (see Formula.lean: `sem`, `checkLang`/`checkLangUsing`):
+#check checkLang myGSLT
+```
+
+Fuller worked GSLTs to copy from: `Framework/TinyMLInstance.lean`,
+`Framework/MeTTaMinimalInstance.lean`, `Framework/MeTTaFullInstance.lean`; the
+ρ-calculus DSL at `Languages/ProcessCalculi/RhoCalculus/LanguageDefDSL.lean`.
+
 ### Canonical APIs
 
 - `Mettapedia/OSLF/Framework/TypeSynthesis.lean`

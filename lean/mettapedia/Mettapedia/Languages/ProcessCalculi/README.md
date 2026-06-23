@@ -1,7 +1,26 @@
 # Process Calculi
 
-Lean 4.28 formalization of five process-algebraic systems with cross-calculus
-bridges. **17,821 lines across 55 files. Zero sorry. Zero custom axioms.**
+## What this is about
+
+In a *process calculus*, a program is not a function that maps an input to an output but a
+collection of concurrent *processes* that run side by side and interact by passing messages.
+The calculus fixes a tiny grammar of processes (do nothing; run two things in parallel;
+send/receive on a channel; create a fresh private name; replicate) and a *reduction rule*
+saying what happens when a sender meets a receiver. From that minimal kit you can model
+everything from network protocols to biological signalling — and, because the rules are so
+sharp, you can *prove* when two systems are indistinguishable to any observer
+(**bisimilarity**) or when a translation from one calculus into another is faithful.
+
+This directory formalizes five such systems and the bridges between them: the **π-calculus**
+(Milner's classic, with channel mobility), the reflective **ρ-calculus** (Meredith &
+Radestock — *names are quoted processes*), the **MeTTa-calculus**, the **MQ** quantum
+calculus (Born-rule measurement as a reduction outcome), and a **MORK** execution kernel.
+Each calculus is also wired into the shared OSLF back-end as a `LanguageDef` where
+applicable, so its modal type theory and open-map bisimulation come for free.
+
+The π-, ρ-, MeTTa-, and MQ-calculus lanes have their own detailed READMEs; this top-level
+README owns the shared `Common/` infrastructure and the `MORK/` kernel, and gives the
+cross-calculus overview.
 
 Paper: `../../../../../papers/process-calculi.tex` — *Process Calculi Formalized in Lean 4:
 Rho, Pi, MQ, and Modal Mu-Calculus with Cross-Calculus Bridges* (March 2026)
@@ -110,10 +129,11 @@ indices, Born-rule measurement, and gate application.
 | `Interoperability.lean` | MQ COMM non-determinism aligns with MORK binary-fold |
 | `MQCalculus.lean` | Facade, integration tests, canary theorems |
 
-## MORK (7 files)
+## MORK (25 files)
 
 MM2 execution kernel formalization: prioritized exec rules over
-PathMap-backed atom spaces.
+PathMap-backed atom spaces. The table below lists the core modules; the lane also
+includes arithmetic-extension, bridge, and regression files (25 `.lean` in total).
 
 | File | Description |
 |------|-------------|
@@ -138,9 +158,41 @@ PathMap-backed atom spaces.
 - Pi-calculus and MQ-calculus as OSLF LanguageDef instances
 - Open-map bisimulation bridges (weak bisim ↔ generalized open-map path bisim)
 
+## Formalization status
+
+This README's **own scope** (the shared `Common/` modules and the `MORK/` kernel —
+everything not under the π/ρ/MeTTa/MQ sub-trees, which have their own READMEs) is **35
+`.lean` files, all `sorry`-free**. There are no source-level `axiom` declarations in this
+scope (a source grep, *not* a per-theorem `#print axioms` audit, so a theorem can still
+inherit a standard Mathlib axiom transitively).
+
+**Trusted base — `native_decide`.** Two files in this scope discharge fixtures with
+`native_decide`, which *compile-evaluates* a Boolean rather than kernel-checking it (so it
+trusts the Lean compiler and enlarges the trusted base): `Ambient/LanguageDefDSL.lean`
+(13 invocations) and `MORK/ArithmeticExtension.lean` (3) — **16 in this scope**, flagged for
+migration to kernel `decide`. The structural results (reductions, the MORK three-phase
+protocol, the bridge correspondences) do not depend on them. The π/ρ/MeTTa/MQ sub-trees
+carry their own `native_decide` invocations, disclosed in their respective READMEs.
+
+Reproduce from this directory — the `sorry` regex is a *raw* scan that also matches prose in
+comments/strings, so the footer count (0) is the authoritative comment-stripped figure:
+
+```bash
+rg -n --glob '*.lean' '\b(sorry|admit)\b' .
+rg -n --glob '*.lean' '^\s*(@\[[^]]*\]\s*)*axiom\s' .   # prints nothing
+rg -n --glob '*.lean' 'native_decide' .                 # Ambient/LanguageDefDSL.lean, MORK/ArithmeticExtension.lean
+```
+
+Recursively (including the four sub-READMEs' trees) the whole `Mettapedia/Languages/ProcessCalculi`
+tree is 95 `.lean` files.
+
 ## References
 
-- Lybech, S. (2022). "A Correct Translation from Rho to Pi"
-- Meredith, L.G. & Radestock, M. (2005). "A Reflective Higher-Order Calculus"
-- Meredith, L.G. (2026). "How the Agents Got Their Present Moment"
-- Stay, M. & Meredith, L.G. (2026). "MQ-Calculus"
+- L. G. Meredith & Matthias Radestock, [*A Reflective Higher-Order Calculus*](https://doi.org/10.1016/j.entcs.2005.05.016), Electronic Notes in Theoretical Computer Science 141(5):49–67 (2005) — the ρ-calculus.
+- Stian Lybech, [*Encodability and Separation for a Reflective Higher-Order Calculus*](https://arxiv.org/abs/2209.02356), EXPRESS/SOS 2022 (EPTCS 368:95–112) — the π → ρ encoding and the separation result this lane formalizes.
+- Robin Milner, Joachim Parrow & David Walker, [*A Calculus of Mobile Processes, Part I*](https://doi.org/10.1016/0890-5401(92)90008-4), Information and Computation 100(1):1–40 (1992) — the π-calculus.
+- L. G. Meredith (2026). *How the Agents Got Their Present Moment* — the spice-calculus extension (manuscript; no public URL located).
+- Mike Stay & L. G. Meredith (2026). *MQ-Calculus* — the quantum process calculus (manuscript `papers/mq-calculus-lean-formalization.tex`; no public URL located).
+
+---
+*Status (drafted 2026-06-22 by Claude Code, Opus 4.8): 35 .lean files, 0 with sorries.*

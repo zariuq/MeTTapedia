@@ -1,9 +1,20 @@
 # Universal Prediction
 
-Lean 4.28 formalization of Solomonoff–Hutter universal prediction theory,
-following Hutter's *Universal Artificial Intelligence: Sequential
+Suppose you see a binary string one bit at a time and must keep betting on the next
+bit. Is there a *single, universal* predictor that does essentially as well as the
+*best* computable predictor for whatever sequence nature happens to produce? The
+remarkable answer — Solomonoff's — is yes: mix together *all* computable hypotheses,
+weighting each by its description length, and the resulting predictor's error is
+bounded by the (fixed) complexity of the true source. This directory formalizes that
+theory in Lean 4, following Hutter's *Universal Artificial Intelligence: Sequential
 Decisions Based on Algorithmic Probability* (Springer, 2005).
-**37 files (28 top-level + 9 FiniteAlphabet/). ~12,900 lines. Zero sorry.**
+
+The technical engine is **dominance**: the universal mixture ξ dominates every
+computable measure μ up to a constant (the weight μ carries in the mixture), and
+*all* the prediction guarantees — convergence ξ → μ, error bounds, loss bounds,
+Pareto optimality — follow from that one inequality.
+
+**40 files (28 top-level + 12 `FiniteAlphabet/`). ~13,700 lines. Zero `sorry`.**
 
 ## Source
 
@@ -106,14 +117,41 @@ in without duplicating the core theory.
 ## Finite Alphabet (`FiniteAlphabet/`)
 
 Parallel stack for generic finite alphabets (`List α`) rather than
-`BinString`. 9 files (1,295 lines) covering prefix measures, entropy,
-enumeration, Hook B composition, Solomonoff bridge, and Markov-Dirichlet
-hyperprior mixtures for arbitrary `[Fintype α]`. Includes `StepModel.lean`
-— a reusable state-machine-to-prefix-measure template for adding new
-predictor families without boilerplate.
+`BinString`. 12 files (~1,700 lines) covering prefix measures, entropy,
+enumeration, Hook B composition, Solomonoff bridge, controlled
+(action-conditioned) prefix measures, computable mixtures, and a
+state-machine `StepModel.lean` template — all for arbitrary `[Fintype α]`,
+so new predictor families plug in without boilerplate.
+
+## Formalization status
+
+All 40 `.lean` files in this directory (28 top-level + 12 in `FiniteAlphabet/`,
+~13,700 lines) are `sorry`-free. The Chapter-2 enumeration machinery, the
+Kraft/summability bound (proven, *not* postulated as an axiom — see `Optimality.lean`
+and `HutterV3Kpf.lean`), and the Chapter-3 results cited in the tables above
+(Lemma 3.11s, Theorems 3.19, 3.36, 3.48, 3.59, 3.60, 3.63-3.70) are all
+kernel-checked. The remaining TODOs noted in the coverage tables (e.g. the cylinder
+partition note in `Optimality.lean`) are docstring TODOs, not proof gaps: there are
+no `sorry`s in this directory.
+
+**Scope note.** The sibling `Mettapedia/UniversalAI/` directory (Chapters 4-7,
+*not* part of this directory's footer count) does contain open `sorry`s — 11 in its
+`GrainOfTruth/ROADMAP.lean` and ~10 in `GodelMachine/`, marking planned extensions.
+Those are outside this directory; the 0-sorry claim here is about Chapters 2-3 only.
+
+**Trusted base.** There are no source-level `axiom` declarations in this directory
+(a source grep, *not* a per-theorem `#print axioms` audit — the development is built
+on Mathlib's measure-theory / `Nat.Partrec.Code` machinery, so theorems may inherit
+standard Mathlib axioms such as `propext`, `Quot.sound`, and `Classical.choice`
+transitively, and several constructions are `noncomputable`). Nothing in this
+directory uses `native_decide`, so no `.lean` file here enlarges the trusted base via
+compile-time evaluation.
 
 ## References
 
-- Hutter, M. (2005). *Universal Artificial Intelligence: Sequential
-  Decisions Based on Algorithmic Probability*. Springer. (Chapters 2–5)
-- Solomonoff, R. (1964). "A Formal Theory of Inductive Inference"
+- Marcus Hutter, [*Universal Artificial Intelligence: Sequential Decisions Based on Algorithmic Probability*](https://www.hutter1.net/ai/uaibook.htm) (Springer, 2005) — the primary source; this directory follows Chapters 2-3.
+- Ray J. Solomonoff, "A Formal Theory of Inductive Inference, Parts I and II," [*Information and Control* 7, 1964, pp. 1-22](https://doi.org/10.1016/S0019-9958(64)90223-2) and [pp. 224-254](https://raysolomonoff.com/publications/1964pt2.pdf) — the origin of algorithmic probability and universal induction.
+- Ming Li & Paul Vitányi, [*An Introduction to Kolmogorov Complexity and Its Applications*](https://link.springer.com/book/10.1007/978-0-387-49820-1) (Springer) — standard reference for the algorithmic-complexity background (prefix-free codes, Kraft inequality, semimeasures).
+
+---
+*Status (drafted 2026-06-22 by Claude Code, Opus 4.8): 40 .lean files, 0 with sorries.*
