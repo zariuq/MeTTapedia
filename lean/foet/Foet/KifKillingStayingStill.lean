@@ -39,13 +39,13 @@ noncomputable def semU : UtilityAssignmentSemantics World :=
     -- A tiny “oracle” utility: distinguish formulas by their truth-table on the two sample worlds.
     exact if φ true then (-1) else if φ false then 0 else 0⟩
 
-def semV : ValueSemantics World :=
+noncomputable def semV : ValueSemantics World :=
   valueSemanticsOfUtility World semU
 
-def semD : DeonticSemantics World :=
+noncomputable def semD : DeonticSemantics World :=
   ⟨fun a φ w => semV.morally (deonticToMoralValue a) φ w⟩
 
-def semT : VirtueTargetSemantics World :=
+noncomputable def semT : VirtueTargetSemantics World :=
   ⟨fun a φ w => semV.morally (virtueAspectToMoralValue a) φ w⟩
 
 theorem alignDeontic : ∀ a φ w, semD.deontic a φ w ↔ semV.morally (deonticToMoralValue a) φ w := by
@@ -120,7 +120,7 @@ private theorem entailsUnder_bad_killing :
     EntailsUnder (valueJudgmentSemantics World semV) Tval ctx (morallyBad φKilling) :=
   entailsUnder_of_mem (sem := valueJudgmentSemantics World semV) (T := Tval) (C := ctx) (s := morallyBad φKilling) rfl
 
-def evalValue : ValueJudgmentTheory World :=
+noncomputable def evalValue : ValueJudgmentTheory World :=
   evaluateSituated (World := World) semV Tval scp
 
 theorem evalValue_contains_bad_killing :

@@ -379,7 +379,7 @@ theorem markovDirichlet_common_state_update_of_same_summary
           (MarkovDirichlet.markovDirichletPrefixMeasure (k := k) hk prior) ((b :: xsTail) ++ [a]) =
             (MarkovDirichlet.markovDirichletPrefixMeasure (k := k) hk prior) (b :: xsTail) *
               ENNReal.ofReal (MarkovDirichlet.stepProb prior state.1 state.2 a) := by
-        simpa [state] using
+        simpa only [MarkovDirichlet.markovDirichletPrefixMeasure, state] using
           (MarkovDirichlet.prefixProb_cons_append_singleton
             (k := k) (prior := prior) (b := b) (xs := xsTail) (a := a))
       cases ys with
@@ -395,7 +395,7 @@ theorem markovDirichlet_common_state_update_of_same_summary
               (MarkovDirichlet.markovDirichletPrefixMeasure (k := k) hk prior) ((c :: ysTail) ++ [a]) =
                 (MarkovDirichlet.markovDirichletPrefixMeasure (k := k) hk prior) (c :: ysTail) *
                   ENNReal.ofReal (MarkovDirichlet.stepProb prior state.1 state.2 a) := by
-            simpa [hstateY] using
+            simpa only [MarkovDirichlet.markovDirichletPrefixMeasure, hstateY] using
               (MarkovDirichlet.prefixProb_cons_append_singleton
                 (k := k) (prior := prior) (b := c) (xs := ysTail) (a := a))
           exact ⟨hxsUpdate, hysUpdate⟩

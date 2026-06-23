@@ -122,9 +122,9 @@ theorem trajToEdgeTok_injective {M : ℕ} (xs : Fin (M + 1) → Fin k) :
     Function.Injective (trajToEdgeTok (k := k) xs) := by
   intro i j hij
   have hsrc : xs (Fin.castSucc i) = xs (Fin.castSucc j) := by
-    have := congr_arg edgeSrc hij; simpa using this
+    have := congr_arg edgeSrc hij; exact this
   have htgt : xs (Fin.succ i) = xs (Fin.succ j) := by
-    have := congr_arg edgeTgt hij; simpa using this
+    have := congr_arg edgeTgt hij; exact this
   have hcopy : copyIndexAt xs i = copyIndexAt xs j := by
     have := congr_arg (fun e : edgeTok _ => (e.2.2 : ℕ)) hij
     simpa [trajToEdgeTok] using this

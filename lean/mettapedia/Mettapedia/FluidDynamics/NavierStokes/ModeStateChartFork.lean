@@ -51,8 +51,7 @@ theorem continuous_softSupportScalar :
   have hden : ∀ t : ℝ, 1 + |t| ≠ 0 := by
     intro t
     positivity
-  simpa [softSupportScalar] using
-    continuous_abs.div (continuous_const.add continuous_abs) hden
+  exact continuous_abs.div (continuous_const.add continuous_abs) hden
 
 theorem softSupportScalar_nonneg (t : ℝ) :
     0 ≤ softSupportScalar t := by
@@ -71,8 +70,7 @@ theorem softSupportScalar_le_one (t : ℝ) :
 
 theorem continuous_softSupportTerm (W : SummableModeWeights) (n : ℕ) :
     Continuous fun x : ModeState => softSupportTerm W x n := by
-  simpa [softSupportTerm] using
-    (continuous_softSupportScalar.comp (continuous_coeffObservable n)).mul
+  exact (continuous_softSupportScalar.comp (continuous_coeffObservable n)).mul
       (continuous_const : Continuous fun _ : ModeState => W.weight n)
 
 theorem norm_softSupportTerm_le (W : SummableModeWeights) (x : ModeState) (n : ℕ) :

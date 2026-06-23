@@ -62,12 +62,13 @@ theorem checked_term
 theorem checked_typing
     (enc : ClosedFormulaArtifactEncoding Const) :
     HasType .nil enc.checked.term enc.claimedType := by
-  simpa [checked] using enc.checked.emptyContextTyping
+  simpa [checked] using
+    pureCheckingBoundary.checkClosedTerm_typing enc.term enc.claimedType enc.typing
 
 theorem checked_quoteAgreement
     (enc : ClosedFormulaArtifactEncoding Const) :
     enc.checked.artifact.pattern = quoteClosedTm enc.term := by
-  simpa [checked, checked_term] using
+  simpa [checked, pureCheckingBoundary.checkClosedTerm_term enc.term enc.claimedType enc.typing] using
     pureCheckingBoundary.checkClosedTerm_quoteAgreement enc.term enc.claimedType enc.typing
 
 theorem checked_region_pureKernel

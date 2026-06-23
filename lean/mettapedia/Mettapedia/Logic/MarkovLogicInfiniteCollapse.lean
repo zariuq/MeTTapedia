@@ -189,9 +189,8 @@ theorem regionFactorGraph_queryProb_eq_finiteVolume_queryProb
     (q : LocalConstraintQuery Atom Λ) :
     (regionFactorGraphMassSemantics M Λ ξ).queryProb q =
       (finiteVolumeMassSemantics M Λ ξ).queryProb q := by
-  unfold MassSemantics.queryProb
-  dsimp [regionFactorGraphMassSemantics, finiteVolumeMassSemantics]
-  rw [regionFactorGraph_scopedWeight_eq_queryMass,
+  simp [regionFactorGraphMassSemantics, finiteVolumeMassSemantics, MassSemantics.queryProb,
+    regionFactorGraph_scopedWeight_eq_queryMass,
     regionFactorGraph_partitionFunction_eq_finiteVolumePartition]
 
 end Mettapedia.Logic.MarkovLogicInfiniteCollapse

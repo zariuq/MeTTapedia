@@ -958,7 +958,13 @@ noncomputable def reindexableApplicativeInterp :
     apply congrArg (pointCarrier (M := M) (τ := σ ⇒ τ))
     apply congrArg M.lam
     funext a
-    rw [EtaleSpace.BasicTopologicalInterpretation.CtxTerm.reindex_apply]
+    change pointCarrierVal (M := M)
+        (t.toContinuousMap (consCtx (M := M) a (ρ.toContinuousMap x))) =
+      pointCarrierVal (M := M)
+        (t.toContinuousMap
+          ((EtaleSpace.BasicTopologicalInterpretation.CtxHom.lift
+            (I := basicInterp M) (τ := σ) ρ).toContinuousMap
+              (consCtx (M := M) a x)))
     rw [lift_apply_consCtx (M := M) (ρ := ρ) (x := x) (a := a)]
     rfl
 
@@ -979,51 +985,43 @@ noncomputable def reindexableApplicativeInterp :
         (ApplicativeSubst.toSubst σs)
         (decodeEnv (M := M) γ) :
       NativeEnv (M := M) Γ) := by
-  funext τ x
-  have hvar :
-      pointCarrierVal (M := M)
-        (((EtaleSpace.BasicTopologicalInterpretation.CtxTerm.var
-          (basicInterp M) x).reindex
-            (ApplicativeSubst.eval
-              (I := reindexableApplicativeInterp (M := M))
-              (Γ := Γ) (Δ := Δ) σs)).toContinuousMap γ) =
-      pointCarrierVal (M := M)
-        (((applicativeInterp M).evalTerm (σs x)).toContinuousMap γ) := by
-    simpa only [toApplicative_reindexableApplicativeInterp (M := M)] using
-      congrArg
-        (fun t => pointCarrierVal (M := M) (t.toContinuousMap γ))
+    funext τ x
+    have hvar := by
+      simpa [toApplicative_reindexableApplicativeInterp (M := M), applicativeInterp] using
+        congrArg
+          (fun t => pointCarrierVal (M := M) (t.toContinuousMap γ))
         (ApplicativeSubst.var_reindex_eval
           (I := reindexableApplicativeInterp (M := M))
           (Γ := Γ) (Δ := Δ) (σs := σs) (x := x))
-  calc
-    decodeEnv (M := M)
-        ((ApplicativeSubst.eval
-          (I := reindexableApplicativeInterp (M := M))
-          (Γ := Γ) (Δ := Δ) σs).toContinuousMap γ) x =
-      pointCarrierVal (M := M)
-        (((EtaleSpace.BasicTopologicalInterpretation.CtxTerm.var
-          (basicInterp M) x).reindex
-            (ApplicativeSubst.eval
-              (I := reindexableApplicativeInterp (M := M))
-              (Γ := Γ) (Δ := Δ) σs)).toContinuousMap γ) := by
-            rw [EtaleSpace.BasicTopologicalInterpretation.CtxTerm.reindex_apply]
-            symm
-            exact var_val_decode (M := M) x _
-    _ =
-      pointCarrierVal (M := M)
-        (((applicativeInterp M).evalTerm (σs x)).toContinuousMap γ) := hvar
-    _ =
-      SemilocalModel.eval M.toSemilocalModel
-        (decodeEnv (M := M) γ)
-        (ApplicativeTerm.toTerm (σs x)) := by
-          exact
-            ApplicativeTopologicalInterpretation.eval_val_decode
-              (M := M) (t := σs x) γ
-    _ =
-      SemilocalModel.substEnv M.toSemilocalModel
-        (ApplicativeSubst.toSubst σs)
-        (decodeEnv (M := M) γ) x := by
-          rfl
+    calc
+      decodeEnv (M := M)
+          ((ApplicativeSubst.eval
+            (I := reindexableApplicativeInterp (M := M))
+            (Γ := Γ) (Δ := Δ) σs).toContinuousMap γ) x =
+        pointCarrierVal (M := M)
+          (((EtaleSpace.BasicTopologicalInterpretation.CtxTerm.var
+            (basicInterp M) x).reindex
+              (ApplicativeSubst.eval
+                (I := reindexableApplicativeInterp (M := M))
+                (Γ := Γ) (Δ := Δ) σs)).toContinuousMap γ) := by
+              rw [EtaleSpace.BasicTopologicalInterpretation.CtxTerm.reindex_apply]
+              symm
+              exact var_val_decode (M := M) x _
+      _ =
+        pointCarrierVal (M := M)
+          (((applicativeInterp M).evalTerm (σs x)).toContinuousMap γ) := hvar
+      _ =
+        SemilocalModel.eval M.toSemilocalModel
+          (decodeEnv (M := M) γ)
+          (ApplicativeTerm.toTerm (σs x)) := by
+            exact
+              ApplicativeTopologicalInterpretation.eval_val_decode
+                (M := M) (t := σs x) γ
+      _ =
+        SemilocalModel.substEnv M.toSemilocalModel
+          (ApplicativeSubst.toSubst σs)
+          (decodeEnv (M := M) γ) x := by
+            rfl
 
 namespace ApplicativeTopologicalInterpretation
 

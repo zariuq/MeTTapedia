@@ -513,7 +513,7 @@ theorem denoteFormula_app_iotaTerm_of_exists_general
           (appClass (T := M.T) (M.toCanonicalClassModel.denoteTerm ν p) x) := by
     rcases hp with ⟨x, hx⟩
     refine ⟨x, ?_⟩
-    simpa using
+    simpa [ClassAssignment.extend] using
       (M.toCanonicalClassModel.propClassHolds_appClass_iff
         (ν := ClassAssignment.extend ν x)
         (p := weaken (Base := Atom) (Const := Primitive) (σ := α) p)

@@ -479,17 +479,18 @@ Reference:
 def sortFamilyPresheaf (R : RewriteSystem) (T : R.Sorts → Type v) :
     CategoryTheory.Functor (Opposite (CategoryTheory.Discrete R.Sorts)) (Type v) where
   obj X := T X.unop.as
-  map {X Y} f := by
-    intro x
-    exact cast (by
+  map {X Y} f := TypeCat.ofHom fun x =>
+    cast (by
       simpa using congrArg T (CategoryTheory.Discrete.eq_of_hom f.unop).symm) x
   map_id := by
     intro X
-    ext x
+    apply CategoryTheory.ConcreteCategory.hom_ext
+    intro x
     simp
   map_comp := by
     intro X Y Z f g
-    ext x
+    apply CategoryTheory.ConcreteCategory.hom_ext
+    intro x
     cases X using Opposite.rec
     cases Y using Opposite.rec
     cases Z using Opposite.rec
@@ -522,11 +523,16 @@ noncomputable def sortFamilySubfunctorEquivPred
       { obj := fun X => { x : (sortFamilyPresheaf R T).obj X | p X.unop.as x }
         map := ?_ }
     intro X Y f x hx
-    change p Y.unop.as ((sortFamilyPresheaf R T).map f x)
-    have hp : p X.unop.as x ↔ p Y.unop.as ((sortFamilyPresheaf R T).map f x) := by
+    change p Y.unop.as
+      ((CategoryTheory.ConcreteCategory.hom ((sortFamilyPresheaf R T).map f)) x)
+    have hp : p X.unop.as x ↔
+        p Y.unop.as
+          ((CategoryTheory.ConcreteCategory.hom ((sortFamilyPresheaf R T).map f)) x) := by
       let hs : Y.unop.as = X.unop.as := CategoryTheory.Discrete.eq_of_hom f.unop
-      have hcast : (sortFamilyPresheaf R T).map f x = cast (congrArg T hs.symm) x := by
-        simp [sortFamilyPresheaf]
+      have hcast :
+          (CategoryTheory.ConcreteCategory.hom ((sortFamilyPresheaf R T).map f)) x =
+            cast (congrArg T hs.symm) x := by
+        rfl
       have hp' : p X.unop.as x ↔ p Y.unop.as (cast (congrArg T hs.symm) x) := by
         exact pred_cast_iff (T := T) (p := p) hs x
       simpa [hcast] using hp'
@@ -672,11 +678,8 @@ noncomputable def predFibration_presheafSortApprox_agreement (R : RewriteSystem)
       (sortFamilyPresheaf R (fun s => R.Term s))
       ≃
     (∀ s : R.Sorts,
-      (predFibrationSortApprox R).Sub (CategoryTheory.Discrete.mk s)) := by
-  simpa [predFibration, predFibrationPresheafPrimary, predFibrationPresheafUsing,
-    predFibrationSortApprox, predFibrationUsing, defaultSortCategoryInterface,
-    SortPresheafCategory] using
-    (sortTermSubfunctorEquivPred (R := R))
+      (predFibrationSortApprox R).Sub (CategoryTheory.Discrete.mk s)) :=
+  sortTermSubfunctorEquivPred (R := R)
 
 /-- Non-default concrete use-site: predicate fibration over λ-theory-backed
     sort interface (instead of default `SortCategory`). -/
@@ -713,12 +716,8 @@ noncomputable def typeSortsOSLFFibrationUsing_presheafAgreement :
       (sortFamilyPresheaf typeSortsRewriteSystem
         (fun s => typeSortsRewriteSystem.Term s))
       ≃
-    (∀ s : Type, typeSortsOSLFFiberFamily s) := by
-  simpa [predFibrationPresheafPrimary, predFibrationPresheafUsing,
-    typeSortsOSLFFiberFamily, typeSortsOSLFFibrationViaLambdaInterface,
-    oslf_fibrationUsing, typeSortsLambdaInterface, lambdaTheorySortInterface,
-    typeSortsRewriteSystem] using
-    (sortTermSubfunctorEquivPred (R := typeSortsRewriteSystem))
+    (∀ s : Type, typeSortsOSLFFiberFamily s) :=
+  sortTermSubfunctorEquivPred (R := typeSortsRewriteSystem)
 
 /-- Pointwise fiber family induced by `oslf_fibrationUsing` on a language wrapper
 (`Sorts = String`). -/
@@ -742,11 +741,8 @@ noncomputable def langOSLFFibrationUsing_presheafAgreement
       (sortFamilyPresheaf (langRewriteSystem lang procSort)
         (fun s => (langRewriteSystem lang procSort).Term s))
       ≃
-    (∀ s : String, langOSLFFiberFamily lang procSort s) := by
-  simpa [predFibrationPresheafPrimary, predFibrationPresheafUsing,
-    langOSLFFiberFamily, oslf_fibrationUsing, defaultSortCategoryInterface,
-    langRewriteSystem, langRewriteSystemUsing, langOSLF] using
-    (sortTermSubfunctorEquivPred (R := (langRewriteSystem lang procSort)))
+    (∀ s : String, langOSLFFiberFamily lang procSort s) :=
+  sortTermSubfunctorEquivPred (R := (langRewriteSystem lang procSort))
 
 /-- Pointwise fiber family induced by `oslf_fibrationUsing` on the concrete
 `rhoCalc` language wrapper (`Sorts = String`). -/
@@ -813,11 +809,10 @@ noncomputable def languageSortFiber_characteristicEquiv
     (lang : LanguageDef) (s : LangSort lang) :
     ((languageSortRepresentableObj lang s) ⟶
       Mettapedia.GSLT.Topos.omegaFunctor (C := ConstructorObj lang))
-      ≃ languageSortFiber lang s := by
-  simpa [languageSortFiber, languagePresheafLambdaTheory, languageSortRepresentableObj] using
-    (Mettapedia.GSLT.Topos.natTransEquivSubfunctor
-      (C := ConstructorObj lang)
-      (P := (CategoryTheory.yoneda.obj (ConstructorObj.mk s))))
+      ≃ languageSortFiber lang s :=
+  Mettapedia.GSLT.Topos.natTransEquivSubfunctor
+    (C := ConstructorObj lang)
+    (P := (CategoryTheory.yoneda.obj (ConstructorObj.mk s)))
 
 /-- Side condition ensuring a `Pattern → Prop` predicate is stable under
 precomposition along constructor-category arrows into a fixed representable
@@ -1122,9 +1117,8 @@ noncomputable def languageSortFiber_ofPatternPred
             φ (pathSem lang h seed) }
       map := ?_ }
   intro X Y f h hh
-  change φ (pathSem lang (((languageSortRepresentableObj lang s).map f) h) seed)
-  simpa [languageSortRepresentableObj, CategoryTheory.yoneda] using
-    (hNat f.unop h hh)
+  simp only [Set.mem_preimage, Set.mem_setOf_eq]
+  exact hNat f.unop h hh
 
 /-- Naturality-by-construction: membership in
 `languageSortFiber_ofPatternPred ...` is preserved by representable reindexing
@@ -1312,11 +1306,8 @@ theorem rhoProc_langOSLF_predicate_to_fiber_mem_iff
     (h : (languageSortRepresentableObj rhoCalc rhoProc).obj X) :
   h ∈ (languageSortFiber_ofPatternPred rhoCalc rhoProc seed φ hNat).obj X
       ↔
-    (langOSLF rhoCalc "Proc").satisfies (pathSem rhoCalc h seed) φ := by
-  simpa using
-    (languageSortFiber_ofPatternPred_mem_iff_satisfies
-      (lang := rhoCalc) (procSort := "Proc")
-      (s := rhoProc) (seed := seed) (φ := φ) (hNat := hNat) (h := h))
+    (langOSLF rhoCalc "Proc").satisfies (pathSem rhoCalc h seed) φ :=
+  Iff.rfl
 
 /-- Interface-selected OSLF Proc-predicate type for rhoCalc. -/
 abbrev rhoProcOSLFUsingPred : Type :=

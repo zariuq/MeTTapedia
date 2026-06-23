@@ -97,7 +97,10 @@ noncomputable def empiricalMembershipContext
   { memberEvidence := empiricalMemberEvidence c
     memberEvidence_add := by
       intro σ₁ σ₂ x k
-      simp [empiricalMemberEvidence, Multiset.count_add, add_nsmul] }
+      show Multiset.count x (σ₁ + σ₂) • c.empiricalMembershipAtom x k
+        = Multiset.count x σ₁ • c.empiricalMembershipAtom x k
+          + Multiset.count x σ₂ • c.empiricalMembershipAtom x k
+      rw [Multiset.count_add, add_nsmul] }
 
 /-- The full finite observation state containing each empirical object exactly
 once. -/

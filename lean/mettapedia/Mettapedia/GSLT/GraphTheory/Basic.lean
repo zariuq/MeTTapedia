@@ -3,8 +3,6 @@ import Mettapedia.GSLT.Core.LambdaTheoryCategory
 import Mathlib.Data.Set.Basic
 import Mathlib.Data.Set.Lattice
 
-universe u
-
 /-!
 # Graph Lambda Theories
 
@@ -891,7 +889,7 @@ def theoryOf (D : GraphModel) : Set LambdaEq :=
 /-- A theory is a graph theory if it equals Th(D) for some graph model.
     Note: We fix the universe level u for the graph model. -/
 def IsGraphTheory (T : LambdaTheory) : Prop :=
-  ∃ D : GraphModel.{u}, T.equations = theoryOf D
+  ∃ D : GraphModel, T.equations = theoryOf D
 
 /-! ## Key Theorems (Statements)
 

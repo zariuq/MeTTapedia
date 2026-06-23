@@ -73,7 +73,7 @@ noncomputable def coupledCommunitiesDevelopmentStep₀₁ :
   coupled := coupledCommunitiesSubsystem communityCoreWt communityTailWt₀
   shellDepth := 0
   shell_agreement := by
-    simpa [ClassicalInfiniteGroundMLNSpec.iterExpandRegion]
+    simpa [ClassicalInfiniteGroundMLNSpec.iterExpandRegion, coupledCommunitiesSubsystem]
       using specs_agree_on_carrier communityCoreWt communityTailWt₀ communityTailWt₁
   budget₁ :=
     coupledCommunitiesSpec_budget
@@ -90,7 +90,7 @@ noncomputable def coupledCommunitiesDevelopmentStep₁₂ :
   coupled := coupledCommunitiesSubsystem communityCoreWt communityTailWt₁
   shellDepth := 0
   shell_agreement := by
-    simpa [ClassicalInfiniteGroundMLNSpec.iterExpandRegion]
+    simpa [ClassicalInfiniteGroundMLNSpec.iterExpandRegion, coupledCommunitiesSubsystem]
       using specs_agree_on_carrier communityCoreWt communityTailWt₁ communityTailWt₂
   budget₁ :=
     coupledCommunitiesSpec_budget
@@ -216,13 +216,15 @@ theorem coupledCommunities_syntheticDevelopment_example
           dev.path.originalLeftCore ∪ dev.path.originalRightCore := by
     simpa [dev, coupledCommunitiesDevelopmentPath,
       DynamicCoupledSubsystemPath.originalLeftCore,
-      DynamicCoupledSubsystemPath.originalRightCore] using jointQuery_supported
+      DynamicCoupledSubsystemPath.originalRightCore,
+      coupledCommunitiesDevelopmentStep₀₁,
+      coupledCommunitiesSubsystem] using jointQuery_supported
   refine ⟨dev, ?_⟩
   have hmain :=
     dev.coordination_improves_while_joint_identity_drift_bounded
       jointQuery hjoint
   refine ⟨?_, ?_⟩
-  · simpa [dev, measures, coordinationScore] using hmain.1
+  · exact lt_trans hgrow₀₁ hgrow₁₂
   · have hbound :
         |(BinaryWorldModel.queryStrength
             ({infiniteMLNMassSemantics
@@ -233,7 +235,8 @@ theorem coupledCommunities_syntheticDevelopment_example
                 (coupledCommunitiesSpec communityCoreWt communityTailWt₂) μ₂ hμ₂} :
               MassState (ConstraintQuery Nat)) jointQuery).toReal| ≤
             dev.path.totalErrorBound := by
-      simpa [dev, measures] using hmain.2
+      simpa [dev, measures, DynamicCoupledSubsystemPathDLR.startMeasure,
+        DynamicCoupledSubsystemPathDLR.endMeasure] using hmain.2
     simpa [dev, coupledCommunitiesDevelopmentPath_totalErrorBound] using hbound
 
 /-- Existential DLR witness package for the concrete development example. -/

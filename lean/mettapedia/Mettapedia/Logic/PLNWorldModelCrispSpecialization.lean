@@ -139,7 +139,7 @@ theorem pointwiseImplies_iff_singletonStrengthLE
       rw [queryStrength_singleton_of_satisfies satisfies x q₁ hq₁]
       rw [queryStrength_singleton_of_satisfies satisfies x q₂ hq₂]
     · rw [queryStrength_singleton_of_not_satisfies satisfies x q₁ hq₁]
-      exact zero_le _
+      exact zero_le
   · intro hle x hq₁
     by_contra hq₂
     have hsingleton := hle x

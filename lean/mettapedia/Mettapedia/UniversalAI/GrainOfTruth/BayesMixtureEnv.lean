@@ -32,7 +32,7 @@ theorem bayesianPosterior_tsum_le_one (O : Mettapedia.Computability.Oracle) (M :
     simpa [bayesianPosteriorWeight, denom, hden] using prior.tsum_le_one
   · -- proper posterior sums to 1
     have hden_pos : denom > 0 :=
-      lt_of_le_of_ne (zero_le denom) (Ne.symm hden)
+      lt_of_le_of_ne zero_le (Ne.symm hden)
     have hsum : (∑' i, bayesianPosteriorWeight O M prior envs i h) = 1 :=
       bayesianPosterior_sum_one O M prior envs h hden_pos
     exact le_of_eq hsum
@@ -81,7 +81,7 @@ theorem mixtureProbability_pos_of_component_pos (O : Mettapedia.Computability.Or
   have hpos_ne : prior.weight ν_idx * historyProbability (envs ν_idx) h ≠ 0 := by
     exact mul_ne_zero (ne_of_gt hw) (ne_of_gt hprob)
   have hpos : 0 < prior.weight ν_idx * historyProbability (envs ν_idx) h :=
-    lt_of_le_of_ne (zero_le _) (Ne.symm hpos_ne)
+    lt_of_le_of_ne zero_le (Ne.symm hpos_ne)
   exact lt_of_lt_of_le hpos (le_mixtureProbability O M prior envs ν_idx h)
 
 end Mettapedia.UniversalAI.GrainOfTruth.FixedPoint

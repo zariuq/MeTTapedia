@@ -1,8 +1,7 @@
-import Mettapedia.Logic.HOL.IntuitionisticSoundness
-import Mettapedia.Logic.HOL.CanonicalModel
-import Mettapedia.Logic.HOL.IntuitionisticCompleteness
-import Mettapedia.Logic.HOL.OriginalReflectionObstruction
-import Mettapedia.Logic.HOL.OriginalReflectionWitnessed
+import Mettapedia.Logic.HOL.Soundness
+import Mettapedia.Logic.HOL.TermModel.HenkinCompleteness
+import Mettapedia.Logic.HOL.WitnessedWorld
+import Mettapedia.Logic.HOL.WitnessedSaturation
 import Mettapedia.Logic.HOL.Embedding.FirstOrder
 import Mettapedia.Logic.HOL.WorldModel
 import Mettapedia.Logic.HOL.WorldModelCompleteness
@@ -15,10 +14,9 @@ import Mettapedia.Logic.PLNProbHOLPlannerBridge
 This module curates theorem-level examples showing how the current higher-order
 logic stack can already be instantiated across several layers:
 
-- corrected intuitionistic-extensional HOL soundness,
-- internal cumulative-Henkin completeness,
-- the certified obstruction to naive original reflection,
-- the witnessed-source replacement direction,
+- HOL soundness for closed theorems,
+- classical Henkin satisfiability/model existence,
+- the witnessed prime-extension and witness-axiom machinery,
 - first-order embedding into real HOL,
 - HOL-to-world-model consequence transfer,
 - higher-order probabilistic belief tracking,
@@ -27,9 +25,10 @@ logic stack can already be instantiated across several layers:
 Positive examples:
 
 - `closedTheoremSoundnessExample`
-- `internalCanonicalCompletenessExample`
-- `liftedOriginalProofToCanonicalValidityExample`
-- `witnessedExistentialExample`
+- `henkinSatisfiabilityExample`
+- `henkinClassicalModelExistenceExample`
+- `witnessedPrimeExtensionExample`
+- `witnessAxiomExistsExample`
 - `firstOrderEmbeddingSentenceExample`
 - `singletonWorldModelAdequacyExample`
 - `worldModelSingletonConsequenceExample`
@@ -40,7 +39,6 @@ Positive examples:
 
 Negative examples:
 
-- `naiveOriginalReflectionObstructionExample`
 - `singletonWorldModelCounterevidenceExample`
 - `benchmarkBeliefNotGlobalOracleExample`
 - `plannerShadowNotGlobalOracleExample`
@@ -57,27 +55,27 @@ namespace Mettapedia.Logic.HOLExampleLadder
 /-- Positive example: closed HOL theorems are sound in every Heyting-Henkin
 model of the corrected intuitionistic-extensional core. -/
 abbrev closedTheoremSoundnessExample :=
-  @Mettapedia.Logic.HOL.IntuitionisticSoundness.theorem_sound
+  @Mettapedia.Logic.HOL.Soundness.theorem_sound
 
-/-- Positive example: internal cumulative-Henkin canonical validity is exactly
-finite-context provability from the cumulative Henkin axioms. -/
-abbrev internalCanonicalCompletenessExample :=
-  @Mettapedia.Logic.HOL.HenkinConstInfinity.canonicalHenkinValidFrom_iff_provable
+/-- Positive example: the witnessed + excluded-middle Henkin extension has a
+general Henkin model whenever that extended theory is consistent. -/
+abbrev henkinSatisfiabilityExample :=
+  @Mettapedia.Logic.HOL.ClosedTheorySet.henkin_satisfiable
 
-/-- Positive example: an original-signature derivation lifts to canonical
-validity in the cumulative Henkin language. -/
-abbrev liftedOriginalProofToCanonicalValidityExample :=
-  @Mettapedia.Logic.HOL.HenkinConstInfinity.liftBase_canonicalHenkinValidFrom_of_provable
+/-- Positive example: in the honest classical/Henkin regime, consistency of the
+original parameter-free theory yields a Henkin model of that theory. -/
+abbrev henkinClassicalModelExistenceExample :=
+  @Mettapedia.Logic.HOL.ClosedTheorySet.henkin_model_exists_of_consistent_classical
 
-/-- Negative example: naive constant-based original reflection is obstructed by
-the empty-signature existential witness theorem in the cumulative language. -/
-abbrev naiveOriginalReflectionObstructionExample :=
-  @Mettapedia.Logic.HOL.HenkinConstInfinity.emptySignature_originalLiftProvable_existsTop
+/-- Positive example: consistent parameter-free theories extend to witnessed,
+prime, deductively closed Henkin worlds. -/
+abbrev witnessedPrimeExtensionExample :=
+  @Mettapedia.Logic.HOL.exists_witnessed_prime_extension
 
-/-- Positive example: base-type witnesses recursively yield source-level
-existential theorems `∃ x : τ, ⊤` at every simple type. -/
-abbrev witnessedExistentialExample :=
-  @Mettapedia.Logic.HOL.BaseWitnesses.theorem_existsTop
+/-- Positive example: the Henkin saturation contains an explicit witness axiom
+for every enumerated existential body. -/
+abbrev witnessAxiomExistsExample :=
+  @Mettapedia.Logic.HOL.exists_witnessAxiom
 
 /-- Positive example: first-order sentence truth is preserved by the standard
 embedding into real Church-style HOL. -/

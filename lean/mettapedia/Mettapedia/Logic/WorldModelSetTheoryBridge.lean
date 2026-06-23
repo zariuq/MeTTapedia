@@ -80,7 +80,7 @@ theorem consequence_iff_all_model_singleton_strength
             ({S} : SetState) φ ≤
           BinaryWorldModel.queryStrength (State := SetState) (Query := SetQuery)
             ({S} : SetState) ψ := by
-  simpa [singletonStrengthLEOnTheory] using
+  exact
     (consequence_iff_singletonStrengthLEOnTheory (T := T) (φ := φ) (ψ := ψ))
 
 /-- Steelman singleton-explicit form:
@@ -94,7 +94,7 @@ theorem provable_imp_iff_all_model_singleton_strength
             ({S} : SetState) φ ≤
           BinaryWorldModel.queryStrength (State := SetState) (Query := SetQuery)
             ({S} : SetState) ψ := by
-  simpa [singletonStrengthLEOnTheory] using
+  exact
     (provable_imp_iff_singletonStrengthLEOnTheory (T := T) (φ := φ) (ψ := ψ))
 
 /-- Set-theoretic semantic implication consequence gives multiset WM strength

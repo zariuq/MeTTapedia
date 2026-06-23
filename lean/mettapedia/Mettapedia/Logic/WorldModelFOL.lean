@@ -128,11 +128,9 @@ theorem singleton_adequacy_strength_one_is_crispSpecialization {L : Language.{u}
     folSatisfies S φ ↔
       BinaryWorldModel.queryStrength (State := Multiset (PointedFOL L)) (Query := FOLQuery L)
         ({S} : Multiset (PointedFOL L)) φ = 1 := by
-  simpa [Mettapedia.Logic.PLNWorldModelCrispSpecialization.crispQueryStrength,
-    BinaryWorldModel.queryStrength, folEvidence_eq_crispEvidence]
-    using
-      (Mettapedia.Logic.PLNWorldModelCrispSpecialization.singleton_adequacy_strength_one
-        (satisfies := folSatisfies) S φ)
+  exact
+    (Mettapedia.Logic.PLNWorldModelCrispSpecialization.singleton_adequacy_strength_one
+      (satisfies := folSatisfies) S φ)
 
 /-! ## Consequence adequacy on singleton and multiset FOL states -/
 
@@ -156,7 +154,7 @@ theorem pointwiseImplies_iff_singletonStrengthLE {L : Language.{u}}
       rw [queryStrength_singleton_of_satisfies S φ hφ]
       rw [queryStrength_singleton_of_satisfies S ψ hψ]
     · rw [queryStrength_singleton_of_not_satisfies S φ hφ]
-      exact zero_le _
+      exact zero_le
   · intro hle S hφ
     by_contra hψ
     have hsingleton := hle S

@@ -795,7 +795,7 @@ theorem cylinder_partition (x : BinString) :
       · have heq : i.val = x.length := by have := i.isLt; simp at this; omega
         have hlen : i.val < (x ++ [false]).length := i.isLt
         have aux : (x ++ [false])[i.val]'hlen = false := by simp [heq]
-        have : (x ++ [false])[i] = false := by convert aux using 1
+        have : (x ++ [false])[i] = false := by simpa using aux
         calc (x ++ [false])[i]
             = false := this
           _ = ω x.length := hb.symm
@@ -812,7 +812,7 @@ theorem cylinder_partition (x : BinString) :
       · have heq : i.val = x.length := by have := i.isLt; simp at this; omega
         have hlen : i.val < (x ++ [true]).length := i.isLt
         have aux : (x ++ [true])[i.val]'hlen = true := by simp [heq]
-        have : (x ++ [true])[i] = true := by convert aux using 1
+        have : (x ++ [true])[i] = true := by simpa using aux
         calc (x ++ [true])[i]
             = true := this
           _ = ω x.length := h'.symm

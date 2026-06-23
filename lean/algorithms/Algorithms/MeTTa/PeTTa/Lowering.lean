@@ -73,7 +73,7 @@ private theorem mkRulesAux_heads (idx : Nat) (rules : List FrozenPeTTaRule) :
       simp [mkRulesAux]
   | cons rule rest ih =>
       simp [mkRulesAux, headCtor?]
-      simpa using ih (idx + 1)
+      exact ih (idx + 1)
 
 def toLanguageDef (cfg : FrozenPeTTaConfig) : LanguageDef := {
   name := "FrozenPeTTa"

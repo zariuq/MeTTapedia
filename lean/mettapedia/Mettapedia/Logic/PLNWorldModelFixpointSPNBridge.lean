@@ -39,6 +39,9 @@ noncomputable instance : BinaryWorldModel OrbitState OrbitQuery where
   evidence_add := by
     intro W₁ W₂ _q
     rfl
+  evidence_zero := by
+    intro _q
+    rfl
 
 /-- One damped SP/SPN transition rule at time `n` and state `x`. -/
 def orbitRule

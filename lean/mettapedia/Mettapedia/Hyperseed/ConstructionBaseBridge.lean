@@ -354,7 +354,8 @@ theorem awareReady_not_mem_visible_grounded_budget1 :
 theorem sensedSignal_mem_closureAt_grounded_budget1_readyToAct :
     AgentQuery.sensedSignal ∈
       ((groundedConstructionBase.closureAt (1 : ℕ) readyToActPremise) : Set AgentQuery) := by
-  rw [ConstructionBase.mem_closureAt_iff]
+  refine (groundedConstructionBase.mem_closureAt_iff (1 : ℕ) readyToActPremise
+      AgentQuery.sensedSignal).mpr ?_
   intro x hxVisible hxPrem
   cases x with
   | sensedSignal =>
@@ -369,7 +370,8 @@ theorem sensedSignal_not_mem_fullClosure_readyToAct :
     AgentQuery.sensedSignal ∉
       ((groundedConstructionBase.fullClosure readyToActPremise) : Set AgentQuery) := by
   intro h
-  rw [ConstructionBase.mem_fullClosure_iff] at h
+  replace h := (groundedConstructionBase.mem_fullClosure_iff readyToActPremise
+    AgentQuery.sensedSignal).mp h
   have hPrem : ∀ b, b ∈ readyToActPremise →
       groundedConstructionBase.incidence AgentQuery.readyToAct b := by
     intro b hb
@@ -482,7 +484,8 @@ theorem awareReady_mem_closureAt_regimeSensitive_nonempty_budget3_readyToAct :
     AgentQuery.awareReady ∈
       ((regimeSensitiveConstructionBase.closureAt (witnessTrace, (3 : ℕ)) readyToActPremise) :
         Set AgentQuery) := by
-  rw [ConstructionBase.mem_closureAt_iff]
+  refine (regimeSensitiveConstructionBase.mem_closureAt_iff (witnessTrace, (3 : ℕ))
+      readyToActPremise AgentQuery.awareReady).mpr ?_
   intro w hwVisible _hPrem
   rcases w with ⟨σ, q⟩
   rcases hwVisible with ⟨hσ, hVisible⟩
@@ -499,7 +502,8 @@ theorem awareReady_not_mem_fullClosure_regimeSensitive_readyToAct :
     AgentQuery.awareReady ∉
       ((regimeSensitiveConstructionBase.fullClosure readyToActPremise) : Set AgentQuery) := by
   intro h
-  rw [ConstructionBase.mem_fullClosure_iff] at h
+  replace h := (regimeSensitiveConstructionBase.mem_fullClosure_iff readyToActPremise
+    AgentQuery.awareReady).mp h
   have hPrem :
       ∀ b, b ∈ readyToActPremise →
         regimeSensitiveConstructionBase.incidence

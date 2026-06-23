@@ -106,8 +106,7 @@ noncomputable def marginalRight (joint : JointProb m n) : Prob (Fin n) :=
             = ∑ ba : Fin n × Fin m, joint.1 (ba.2, ba.1) := by
                 simp [Fintype.sum_prod_type]
         _ = ∑ ab : Fin m × Fin n, joint.1 ab := by
-              simpa using
-                (Equiv.sum_comp (Equiv.prodComm (Fin n) (Fin m))
+              exact (Equiv.sum_comp (Equiv.prodComm (Fin n) (Fin m))
                   (fun ab : Fin m × Fin n => joint.1 ab))
         _ = 1 := joint.2.2⟩
 

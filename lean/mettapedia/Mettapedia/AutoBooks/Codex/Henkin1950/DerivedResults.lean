@@ -132,7 +132,8 @@ theorem pointwiseEq_of_eq {α β : HTy} (f g : ClosedTerm (α ⇒ β)) :
     ExtTheorem (imp (eq f g) (forall_ (pointwiseEq f g))) := by
   refine .impI ?_
   refine .allI ?_
-  simpa [pointwiseEq, eq, var0, weakenHyps] using
+  simp only [pointwiseEq, eq, var0, weakenHyps]
+  exact
     (ExtDerivation.eqApp (var0 α)
       (.hyp (show weaken (eq f g) ∈
           weakenHyps (Base := Atom) (Const := Primitive) (σ := α) [eq f g] from by

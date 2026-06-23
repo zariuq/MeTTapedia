@@ -98,7 +98,7 @@ noncomputable def propEvidence (E : JointEvidence n) (A : Fin n) : BinaryEvidenc
 
 /-! ### World-model interface instance -/
 
-instance instEvidenceType : EvidenceType (JointEvidence n) where
+noncomputable instance instEvidenceType : EvidenceType (JointEvidence n) where
 
 theorem propEvidence_add (E₁ E₂ : JointEvidence n) (A : Fin n) :
     propEvidence (n := n) (E := E₁ + E₂) A =

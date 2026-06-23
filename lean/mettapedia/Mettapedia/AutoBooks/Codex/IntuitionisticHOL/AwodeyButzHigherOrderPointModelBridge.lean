@@ -158,10 +158,11 @@ noncomputable def decodeEnv :
   | vz =>
       rfl
   | @vs Γ υ τ x ih =>
-      simpa [EtaleSpace.BasicTopologicalInterpretation.CtxTerm.var,
-        EtaleSpace.BasicTopologicalInterpretation.CtxTerm.weaken,
-        tailCtx, decodeEnv]
-        using ih (tailCtx (M := M) γ)
+      change pointCarrierVal (M := M)
+        ((EtaleSpace.BasicTopologicalInterpretation.CtxTerm.var (basicInterp M) x).toContinuousMap
+          (tailCtx (M := M) γ)) =
+        decodeEnv (M := M) (tailCtx (M := M) γ) x
+      exact ih (tailCtx (M := M) γ)
 
 /-- Full higher-order term evaluation into the one-point Awodey-Butz carrier. -/
 noncomputable def eval

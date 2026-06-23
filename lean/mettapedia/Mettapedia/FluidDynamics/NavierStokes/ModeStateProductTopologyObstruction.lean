@@ -47,7 +47,7 @@ def unitStatisticMode : ModeState → ℝ := fun _ => 1
 theorem tendsto_truncateModes_modeState (x : ModeState) :
     Tendsto (fun N => truncateModes N x) Filter.atTop (nhds x) := by
   rw [nhds_induced]
-  simpa [tendsto_iff_comap, Filter.comap_comap, Function.comp] using
+  simpa [tendsto_iff_comap, Filter.comap_comap, Function.comp_def] using
     (show Tendsto (fun N : ℕ => (truncateModes N x).coeff) Filter.atTop (nhds x.coeff) from by
       rw [tendsto_pi_nhds]
       intro i
@@ -58,7 +58,7 @@ theorem tendsto_truncateModes_modeState (x : ModeState) :
 theorem tendsto_tailSpikeMode_modeZero :
     Tendsto tailSpikeMode Filter.atTop (nhds modeZero) := by
   rw [nhds_induced]
-  simpa [tendsto_iff_comap, Filter.comap_comap, Function.comp] using
+  simpa [tendsto_iff_comap, Filter.comap_comap, Function.comp_def] using
     (show Tendsto (fun N : ℕ => (tailSpikeMode N).coeff) Filter.atTop (nhds modeZero.coeff) from by
       rw [tendsto_pi_nhds]
       intro i

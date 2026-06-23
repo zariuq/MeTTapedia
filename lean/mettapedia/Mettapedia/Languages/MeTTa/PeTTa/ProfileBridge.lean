@@ -170,8 +170,10 @@ theorem premise_roundTrip (prem : CPremise) :
 
 theorem premise_list_roundTrip (premises : List CPremise) :
     premises.mapM (fun prem => specToCorePremise (coreToSpecPremise prem)) = .ok premises := by
-  simpa [premise_roundTrip] using
-    (List.mapM_pure (m := Except String) (l := premises) (f := fun prem => prem))
+  simp only [premise_roundTrip]
+  induction premises with
+  | nil => rfl
+  | cons a as ih => rw [List.mapM_cons]; rw [ih]; rfl
 
 theorem rewriteRule_roundTrip (r : CRewriteRule) :
     specToCoreRewriteRule (coreToSpecRewriteRule r) = .ok r := by
@@ -192,14 +194,16 @@ theorem rewriteRule_roundTrip (r : CRewriteRule) :
         simpa using premise_list_roundTrip premises
       have hPremises' :
           premises.mapM (specToCorePremise ∘ coreToSpecPremise) = .ok premises := by
-        simpa [Function.comp] using hPremises
+        simpa [Function.comp_def] using hPremises
       simp [coreToSpecRewriteRule, specToCoreRewriteRule, hTypes, pattern_roundTrip]
       rw [hPremises']
       rfl
 
 theorem rewriteRule_list_roundTrip (rs : List CRewriteRule) :
     rs.mapM (fun r => specToCoreRewriteRule (coreToSpecRewriteRule r)) = .ok rs := by
-  simpa [rewriteRule_roundTrip] using
-    (List.mapM_pure (m := Except String) (l := rs) (f := fun r => r))
+  simp only [rewriteRule_roundTrip]
+  induction rs with
+  | nil => rfl
+  | cons a as ih => rw [List.mapM_cons]; rw [ih]; rfl
 
 end Mettapedia.Languages.MeTTa.PeTTa.ProfileBridge

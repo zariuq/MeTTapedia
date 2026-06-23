@@ -7,7 +7,7 @@ namespace Mettapedia.AutoBooks.Codex.IntuitionisticHOL
 
 open Mettapedia.Logic.HOL
 
-universe u v w
+universe u v w w'
 
 namespace HigherOrderPointHeytingGlobalModelBridge
 
@@ -21,8 +21,8 @@ one-point carrier, but the stronger Heyting layer still needs a full
 `TopologicalInterpretation` together with a typed identification between the
 model carriers and that interpretation's fibers.
 -/
-structure OnePointTopologicalWitness (M : GlobalModel Base Const) where
-  toTopologicalInterpretation : TopologicalInterpretation Base Const PUnit
+structure OnePointTopologicalWitness (M : GlobalModel.{u, v, 0, w'} Base Const) where
+  toTopologicalInterpretation : TopologicalInterpretation.{u, v, 0, 0} Base Const PUnit
   carrierEquiv : ∀ τ : Ty Base, M.Carrier τ ≃ (toTopologicalInterpretation.space τ).Carrier
   carrierEquiv_proj : ∀ (τ : Ty Base) (x : M.Carrier τ),
     (toTopologicalInterpretation.space τ).proj (carrierEquiv τ x) = ()
@@ -31,7 +31,7 @@ structure OnePointTopologicalWitness (M : GlobalModel Base Const) where
 
 namespace OnePointTopologicalWitness
 
-variable {M : GlobalModel Base Const} (W : OnePointTopologicalWitness M)
+variable {M : GlobalModel.{u, v, 0, w'} Base Const} (W : OnePointTopologicalWitness M)
 
 /-- Context spaces of the witnessed full topological interpretation. -/
 abbrev ctxSpace (Γ : Ctx Base) : EtaleSpace PUnit :=
@@ -75,7 +75,7 @@ noncomputable def encodeCtx :
       (HigherOrderPointTopologicalGlobalModelBridge.basicInterp.ctxSpace (M := M) Γ).Carrier →
       (W.ctxSpace Γ).Carrier
   | [], _ => by
-      simpa using (PUnit.unit : (EtaleSpace.terminal PUnit).Carrier)
+      exact PUnit.unit
   | σ :: Γ, γ => by
       change
         (EtaleSpace.prod (W.toTopologicalInterpretation.space σ) (W.ctxSpace Γ)).Carrier
@@ -105,7 +105,7 @@ noncomputable def decodeCtx :
       (W.ctxSpace Γ).Carrier →
       (HigherOrderPointTopologicalGlobalModelBridge.basicInterp.ctxSpace (M := M) Γ).Carrier
   | [], _ => by
-      simpa using (PUnit.unit : (EtaleSpace.terminal PUnit).Carrier)
+      exact PUnit.unit
   | σ :: Γ, γ => by
       change
         (EtaleSpace.prod
@@ -178,7 +178,7 @@ This is the connective-only stage between the concrete full topological witness
 and the full Heyting interpretation. Equality and quantifiers are intentionally
 left for the next layer.
 -/
-structure OnePointPropositionWitness (M : GlobalModel Base Const)
+structure OnePointPropositionWitness (M : GlobalModel.{u, v, 0, w'} Base Const)
     extends OnePointTopologicalWitness M where
   propTop : toTopologicalInterpretation.propSpace.GlobalSection
   propBot : toTopologicalInterpretation.propSpace.GlobalSection
@@ -210,7 +210,7 @@ structure OnePointPropositionWitness (M : GlobalModel Base Const)
 
 namespace OnePointPropositionWitness
 
-variable {M : GlobalModel Base Const} (W : OnePointPropositionWitness M)
+variable {M : GlobalModel.{u, v, 0, w'} Base Const} (W : OnePointPropositionWitness M)
 
 /-- Forget the proposition-space packaging and recover the underlying topological witness. -/
 abbrev toTopological : OnePointTopologicalWitness M :=
@@ -760,7 +760,7 @@ the projection/continuity and fiberwise algebra laws required by
 `HeytingTopologicalInterpretation`, stopping before global section operations,
 equality, and quantifiers.
 -/
-structure OnePointHeytingAlgebraWitness (M : GlobalModel Base Const)
+structure OnePointHeytingAlgebraWitness (M : GlobalModel.{u, v, 0, w'} Base Const)
     extends OnePointPropositionWitness M where
   fiberMeet_continuous : Continuous fiberMeet
   fiberJoin_continuous : Continuous fiberJoin
@@ -876,7 +876,7 @@ structure OnePointHeytingAlgebraWitness (M : GlobalModel Base Const)
 
 namespace OnePointHeytingAlgebraWitness
 
-variable {M : GlobalModel Base Const} (W : OnePointHeytingAlgebraWitness M)
+variable {M : GlobalModel.{u, v, 0, w'} Base Const} (W : OnePointHeytingAlgebraWitness M)
 
 abbrev toProposition : OnePointPropositionWitness M :=
   W.toOnePointPropositionWitness
@@ -905,7 +905,7 @@ end OnePointHeytingAlgebraWitness
 The second one-point Heyting field cluster: global-section connectives and
 their algebraic laws, still stopping before equality and quantifiers.
 -/
-structure OnePointHeytingSectionWitness (M : GlobalModel Base Const)
+structure OnePointHeytingSectionWitness (M : GlobalModel.{u, v, 0, w'} Base Const)
     extends OnePointHeytingAlgebraWitness M where
   propMeet : toTopologicalInterpretation.propSpace.GlobalSection →
     toTopologicalInterpretation.propSpace.GlobalSection →
@@ -929,7 +929,7 @@ structure OnePointHeytingSectionWitness (M : GlobalModel Base Const)
 
 namespace OnePointHeytingSectionWitness
 
-variable {M : GlobalModel Base Const} (W : OnePointHeytingSectionWitness M)
+variable {M : GlobalModel.{u, v, 0, w'} Base Const} (W : OnePointHeytingSectionWitness M)
 
 abbrev toAlgebra : OnePointHeytingAlgebraWitness M :=
   W.toOnePointHeytingAlgebraWitness
@@ -944,18 +944,18 @@ its typed carrier identification back to the archive-free global-model point
 bridge. The remaining blocker is to *construct* such a witness for the intended
 Awodey-Butz models, not to guess what interface the stronger theorem needs.
 -/
-structure OnePointHeytingWitness (M : GlobalModel Base Const)
+structure OnePointHeytingWitness (M : GlobalModel.{u, v, 0, w'} Base Const)
     extends OnePointTopologicalWitness M where
-  toHeytingInterpretation : HeytingTopologicalInterpretation Base Const PUnit
+  toHeytingInterpretation : HeytingTopologicalInterpretation.{u, v, 0} Base Const PUnit
   underlying_eq :
     toHeytingInterpretation.toTopologicalInterpretation = toTopologicalInterpretation
 
 namespace OnePointHeytingWitness
 
-variable {M : GlobalModel Base Const} (W : OnePointHeytingWitness M)
+variable {M : GlobalModel.{u, v, 0, w'} Base Const} (W : OnePointHeytingWitness M)
 
 /-- Forget the one-point compatibility data and recover the concrete Heyting interpretation. -/
-abbrev toHeyting : HeytingTopologicalInterpretation Base Const PUnit :=
+abbrev toHeyting : HeytingTopologicalInterpretation.{u, v, 0} Base Const PUnit :=
   W.toHeytingInterpretation
 
 @[simp] theorem toHeyting_toTopological :
@@ -972,7 +972,7 @@ open CategoryTheory
 open TopologicalSpace
 open TopologicalSpace.Opens
 
-variable (M : GlobalModel Base Const)
+variable (M : GlobalModel.{u, v, 0, w'} Base Const)
 
 @[simp] theorem point_base_proj_eq_unit {E : EtaleSpace PUnit} (x : E.Carrier) :
     E.proj x = () :=
@@ -1010,7 +1010,7 @@ theorem globalSection_ext {E : EtaleSpace PUnit} {s t : E.GlobalSection}
       rfl
 
 theorem onePointPropGlobalSection_ext
-    {M : GlobalModel Base Const}
+    {M : GlobalModel.{u, v, 0, w'} Base Const}
     (W : OnePointPropositionWitness M)
     {s t : W.toTopologicalInterpretation.propSpace.GlobalSection}
     (h : W.decodeProp (s.toContinuousMap ()) = W.decodeProp (t.toContinuousMap ())) :
@@ -1019,7 +1019,7 @@ theorem onePointPropGlobalSection_ext
 
 namespace OnePointHeytingAlgebraWitness
 
-variable {M : GlobalModel Base Const} (W : OnePointHeytingAlgebraWitness M)
+variable {M : GlobalModel.{u, v, 0, w'} Base Const} (W : OnePointHeytingAlgebraWitness M)
 
 def propSectionPair
     (a b : W.toTopologicalInterpretation.propSpace.GlobalSection) :
@@ -1226,7 +1226,7 @@ noncomputable def onePointConstSection :
 
 /-- The concrete one-point full topological interpretation induced by a global model. -/
 noncomputable def concreteOnePointTopologicalInterpretation :
-    TopologicalInterpretation Base Const PUnit where
+    TopologicalInterpretation.{u, v, 0, 0} Base Const PUnit where
   space := onePointSpace (M := M)
   const := onePointConstSection (M := M)
   propSpace := pointEtale (M.Carrier .prop)
@@ -1249,7 +1249,7 @@ noncomputable def concreteOnePointTopologicalWitness :
     exact point_base_proj_eq_unit ((onePointCarrierEquiv (M := M) τ) x)
   const_eq := by
     intro τ c
-    simp [concreteOnePointTopologicalInterpretation, onePointConstSection, globalSectionOfPoint]
+    rfl
 
 @[simp] theorem concreteOnePointTopologicalWitness_encode
     {τ : Ty Base} (x : M.Carrier τ) :
@@ -1262,8 +1262,7 @@ noncomputable def concreteOnePointTopologicalWitness :
     (concreteOnePointTopologicalWitness (M := M)).encode (M.const c) =
       (concreteOnePointTopologicalInterpretation (M := M).const c).toContinuousMap () :=
   by
-    simp [concreteOnePointTopologicalWitness, concreteOnePointTopologicalInterpretation,
-      onePointConstSection, globalSectionOfPoint]
+    rfl
 
 private noncomputable def concretePropTopSection :
     (concreteOnePointTopologicalInterpretation (M := M)).propSpace.GlobalSection :=
@@ -1675,9 +1674,15 @@ noncomputable def concreteOnePointHeytingAlgebraWitness
           (a.toContinuousMap ()))
         ((concreteOnePointPropositionWitness (M := M)).decodeProp
           (b.toContinuousMap ())) := by
-  simp [OnePointHeytingAlgebraWitness.propMeetOfPoint,
-    OnePointHeytingAlgebraWitness.propSectionPair, concreteOnePointHeytingAlgebraWitness,
-    concreteOnePointPropositionWitness_decode_fiberMeet]
+  let P := concreteOnePointPropositionWitness (M := M)
+  change P.decodeProp
+      ((globalSectionOfPoint
+        (P.fiberMeet ⟨(a.toContinuousMap (), b.toContinuousMap ()), by
+          exact Subsingleton.elim _ _⟩)).toContinuousMap ()) =
+    M.andP (P.decodeProp (a.toContinuousMap ())) (P.decodeProp (b.toContinuousMap ()))
+  rw [globalSectionOfPoint_apply]
+  exact concreteOnePointPropositionWitness_decode_fiberMeet
+    (M := M) (a.toContinuousMap ()) (b.toContinuousMap _) _
 
 @[simp] theorem concreteOnePointHeytingAlgebraWitness_decode_propJoinOfPoint
     (laws : PropCarrierHeytingLaws M)
@@ -1690,9 +1695,15 @@ noncomputable def concreteOnePointHeytingAlgebraWitness
           (a.toContinuousMap ()))
         ((concreteOnePointPropositionWitness (M := M)).decodeProp
           (b.toContinuousMap ())) := by
-  simp [OnePointHeytingAlgebraWitness.propJoinOfPoint,
-    OnePointHeytingAlgebraWitness.propSectionPair, concreteOnePointHeytingAlgebraWitness,
-    concreteOnePointPropositionWitness_decode_fiberJoin]
+  let P := concreteOnePointPropositionWitness (M := M)
+  change P.decodeProp
+      ((globalSectionOfPoint
+        (P.fiberJoin ⟨(a.toContinuousMap (), b.toContinuousMap ()), by
+          exact Subsingleton.elim _ _⟩)).toContinuousMap ()) =
+    M.orP (P.decodeProp (a.toContinuousMap ())) (P.decodeProp (b.toContinuousMap ()))
+  rw [globalSectionOfPoint_apply]
+  exact concreteOnePointPropositionWitness_decode_fiberJoin
+    (M := M) (a.toContinuousMap ()) (b.toContinuousMap _) _
 
 @[simp] theorem concreteOnePointHeytingAlgebraWitness_decode_propHimpOfPoint
     (laws : PropCarrierHeytingLaws M)
@@ -1705,9 +1716,15 @@ noncomputable def concreteOnePointHeytingAlgebraWitness
           (a.toContinuousMap ()))
         ((concreteOnePointPropositionWitness (M := M)).decodeProp
           (b.toContinuousMap ())) := by
-  simp [OnePointHeytingAlgebraWitness.propHimpOfPoint,
-    OnePointHeytingAlgebraWitness.propSectionPair, concreteOnePointHeytingAlgebraWitness,
-    concreteOnePointPropositionWitness_decode_fiberHimp]
+  let P := concreteOnePointPropositionWitness (M := M)
+  change P.decodeProp
+      ((globalSectionOfPoint
+        (P.fiberHimp ⟨(a.toContinuousMap (), b.toContinuousMap ()), by
+          exact Subsingleton.elim _ _⟩)).toContinuousMap ()) =
+    M.impP (P.decodeProp (a.toContinuousMap ())) (P.decodeProp (b.toContinuousMap ()))
+  rw [globalSectionOfPoint_apply]
+  exact concreteOnePointPropositionWitness_decode_fiberHimp
+    (M := M) (a.toContinuousMap ()) (b.toContinuousMap _) _
 
 private noncomputable def concretePropMeetSection
     (a b : (concreteOnePointTopologicalInterpretation (M := M)).propSpace.GlobalSection) :
@@ -1752,6 +1769,25 @@ private noncomputable def concretePropHimpSection
   rw [globalSectionOfPoint_apply]
   exact P.decodeProp_encodeProp _
 
+@[simp] private theorem concretePropJoinSection_decode
+    (a b : (concreteOnePointTopologicalInterpretation (M := M)).propSpace.GlobalSection) :
+    (concreteOnePointPropositionWitness (M := M)).decodeProp
+        ((concretePropJoinSection (M := M) a b).toContinuousMap ()) =
+      M.orP
+        ((concreteOnePointPropositionWitness (M := M)).decodeProp (a.toContinuousMap ()))
+        ((concreteOnePointPropositionWitness (M := M)).decodeProp (b.toContinuousMap ())) := by
+  let P := concreteOnePointPropositionWitness (M := M)
+  change
+    P.decodeProp
+        ((globalSectionOfPoint
+          (P.encodeProp
+            (M.orP (P.decodeProp (a.toContinuousMap ()))
+              (P.decodeProp (b.toContinuousMap ()))))).toContinuousMap ()) =
+      M.orP (P.decodeProp (a.toContinuousMap ()))
+        (P.decodeProp (b.toContinuousMap ()))
+  rw [globalSectionOfPoint_apply]
+  exact P.decodeProp_encodeProp _
+
 @[simp] private theorem concretePropHimpSection_decode
     (a b : (concreteOnePointTopologicalInterpretation (M := M)).propSpace.GlobalSection) :
     (concreteOnePointPropositionWitness (M := M)).decodeProp
@@ -1784,64 +1820,103 @@ noncomputable def concreteOnePointHeytingSectionWitness
       intro a b
       change concretePropMeetSection (M := M) a b =
         concretePropMeetSection (M := M) b a
-      apply globalSection_ext
-      simpa [concretePropMeetSection] using
-        congrArg P.encodeProp
-          (laws.and_comm (P.decodeProp (a.toContinuousMap ()))
-            (P.decodeProp (b.toContinuousMap ())))
+      apply onePointPropGlobalSection_ext P
+      change
+        P.decodeProp ((concretePropMeetSection (M := M) a b).toContinuousMap ()) =
+          P.decodeProp ((concretePropMeetSection (M := M) b a).toContinuousMap ())
+      rw [concretePropMeetSection_decode, concretePropMeetSection_decode]
+      exact laws.and_comm (P.decodeProp (a.toContinuousMap ()))
+        (P.decodeProp (b.toContinuousMap ()))
     propMeet_assoc := by
       intro a b c
       change concretePropMeetSection (M := M) (concretePropMeetSection (M := M) a b) c =
         concretePropMeetSection (M := M) a (concretePropMeetSection (M := M) b c)
-      apply globalSection_ext
-      simpa [concretePropMeetSection] using
-        congrArg P.encodeProp
-          (laws.and_assoc (P.decodeProp (a.toContinuousMap ()))
-            (P.decodeProp (b.toContinuousMap ()))
-            (P.decodeProp (c.toContinuousMap ())))
+      apply onePointPropGlobalSection_ext P
+      change
+        P.decodeProp
+            ((concretePropMeetSection (M := M)
+              (concretePropMeetSection (M := M) a b) c).toContinuousMap ()) =
+          P.decodeProp
+            ((concretePropMeetSection (M := M) a
+              (concretePropMeetSection (M := M) b c)).toContinuousMap ())
+      rw [concretePropMeetSection_decode, concretePropMeetSection_decode,
+        concretePropMeetSection_decode, concretePropMeetSection_decode]
+      exact laws.and_assoc (P.decodeProp (a.toContinuousMap ()))
+        (P.decodeProp (b.toContinuousMap ()))
+        (P.decodeProp (c.toContinuousMap ()))
     propMeet_top := by
       intro a
       change concretePropMeetSection (M := M) a A.propTop = a
-      apply globalSection_ext
-      simpa [concretePropMeetSection, A, P] using
-        congrArg P.encodeProp (laws.and_top (P.decodeProp (a.toContinuousMap ())))
+      apply onePointPropGlobalSection_ext P
+      change
+        P.decodeProp ((concretePropMeetSection (M := M) a A.propTop).toContinuousMap ()) =
+          P.decodeProp (a.toContinuousMap ())
+      rw [concretePropMeetSection_decode]
+      have htop : P.decodeProp (A.propTop.toContinuousMap ()) = M.topP := by
+        change P.decodeProp (P.encodeProp M.topP) = M.topP
+        exact P.decodeProp_encodeProp M.topP
+      exact htop ▸ laws.and_top (P.decodeProp (a.toContinuousMap ()))
     propJoin_comm := by
       intro a b
       change concretePropJoinSection (M := M) a b =
         concretePropJoinSection (M := M) b a
-      apply globalSection_ext
-      simpa [concretePropJoinSection] using
-        congrArg P.encodeProp
-          (laws.or_comm (P.decodeProp (a.toContinuousMap ()))
-            (P.decodeProp (b.toContinuousMap ())))
+      apply onePointPropGlobalSection_ext P
+      change
+        P.decodeProp ((concretePropJoinSection (M := M) a b).toContinuousMap ()) =
+          P.decodeProp ((concretePropJoinSection (M := M) b a).toContinuousMap ())
+      rw [concretePropJoinSection_decode, concretePropJoinSection_decode]
+      exact laws.or_comm (P.decodeProp (a.toContinuousMap ()))
+        (P.decodeProp (b.toContinuousMap ()))
     propJoin_assoc := by
       intro a b c
       change concretePropJoinSection (M := M) (concretePropJoinSection (M := M) a b) c =
         concretePropJoinSection (M := M) a (concretePropJoinSection (M := M) b c)
-      apply globalSection_ext
-      simpa [concretePropJoinSection] using
-        congrArg P.encodeProp
-          (laws.or_assoc (P.decodeProp (a.toContinuousMap ()))
-            (P.decodeProp (b.toContinuousMap ()))
-            (P.decodeProp (c.toContinuousMap ())))
+      apply onePointPropGlobalSection_ext P
+      change
+        P.decodeProp
+            ((concretePropJoinSection (M := M)
+              (concretePropJoinSection (M := M) a b) c).toContinuousMap ()) =
+          P.decodeProp
+            ((concretePropJoinSection (M := M) a
+              (concretePropJoinSection (M := M) b c)).toContinuousMap ())
+      rw [concretePropJoinSection_decode, concretePropJoinSection_decode,
+        concretePropJoinSection_decode, concretePropJoinSection_decode]
+      exact laws.or_assoc (P.decodeProp (a.toContinuousMap ()))
+        (P.decodeProp (b.toContinuousMap ()))
+        (P.decodeProp (c.toContinuousMap ()))
     propJoin_bot := by
       intro a
       change concretePropJoinSection (M := M) a A.propBot = a
-      apply globalSection_ext
-      simpa [concretePropJoinSection, A, P] using
-        congrArg P.encodeProp (laws.or_bot (P.decodeProp (a.toContinuousMap ())))
+      apply onePointPropGlobalSection_ext P
+      change
+        P.decodeProp ((concretePropJoinSection (M := M) a A.propBot).toContinuousMap ()) =
+          P.decodeProp (a.toContinuousMap ())
+      rw [concretePropJoinSection_decode]
+      have hbot : P.decodeProp (A.propBot.toContinuousMap ()) = M.botP := by
+        change P.decodeProp (P.encodeProp M.botP) = M.botP
+        exact P.decodeProp_encodeProp M.botP
+      exact hbot ▸ laws.or_bot (P.decodeProp (a.toContinuousMap ()))
     propMeet_join_distrib := by
       intro a b c
       change concretePropMeetSection (M := M) a (concretePropJoinSection (M := M) b c) =
         concretePropJoinSection (M := M)
           (concretePropMeetSection (M := M) a b)
           (concretePropMeetSection (M := M) a c)
-      apply globalSection_ext
-      simpa [concretePropMeetSection, concretePropJoinSection] using
-        congrArg P.encodeProp
-          (laws.and_or_distrib_left (P.decodeProp (a.toContinuousMap ()))
-            (P.decodeProp (b.toContinuousMap ()))
-            (P.decodeProp (c.toContinuousMap ())))
+      apply onePointPropGlobalSection_ext P
+      change
+        P.decodeProp
+            ((concretePropMeetSection (M := M) a
+              (concretePropJoinSection (M := M) b c)).toContinuousMap ()) =
+          P.decodeProp
+            ((concretePropJoinSection (M := M)
+              (concretePropMeetSection (M := M) a b)
+              (concretePropMeetSection (M := M) a c)).toContinuousMap ())
+      rw [concretePropMeetSection_decode, concretePropJoinSection_decode,
+        concretePropJoinSection_decode, concretePropMeetSection_decode,
+        concretePropMeetSection_decode]
+      exact laws.and_or_distrib_left (P.decodeProp (a.toContinuousMap ()))
+        (P.decodeProp (b.toContinuousMap ()))
+        (P.decodeProp (c.toContinuousMap ()))
     propHimp_adj := by
       intro a b c
       constructor
@@ -1849,16 +1924,15 @@ noncomputable def concreteOnePointHeytingSectionWitness
         change concretePropMeetSection (M := M)
             (concretePropMeetSection (M := M) a b) c =
           concretePropMeetSection (M := M) a b at h
-        have hcarrier :
-            M.andP
-                (M.andP (P.decodeProp (a.toContinuousMap ()))
-                  (P.decodeProp (b.toContinuousMap ())))
-                (P.decodeProp (c.toContinuousMap ())) =
-              M.andP (P.decodeProp (a.toContinuousMap ()))
-                (P.decodeProp (b.toContinuousMap ())) := by
+        have hcarrier := by
           have hdecode :=
             congrArg (fun s => P.decodeProp (s.toContinuousMap ())) h
-          simpa only [concretePropMeetSection_decode] using hdecode
+          change
+            P.decodeProp
+                ((concretePropMeetSection (M := M)
+                  (concretePropMeetSection (M := M) a b) c).toContinuousMap ()) =
+              P.decodeProp ((concretePropMeetSection (M := M) a b).toContinuousMap ()) at hdecode
+          simpa only [P, propTy, concretePropMeetSection_decode] using hdecode
         have hright :
             M.andP (P.decodeProp (a.toContinuousMap ()))
                 (M.impP (P.decodeProp (b.toContinuousMap ()))
@@ -1870,25 +1944,27 @@ noncomputable def concreteOnePointHeytingSectionWitness
             (P.decodeProp (c.toContinuousMap ()))).1 hcarrier
         change concretePropMeetSection (M := M) a (concretePropHimpSection (M := M) b c) = a
         apply onePointPropGlobalSection_ext P
-        simpa only [concretePropMeetSection_decode, concretePropHimpSection_decode] using hright
+        change
+          P.decodeProp
+              ((concretePropMeetSection (M := M) a
+                (concretePropHimpSection (M := M) b c)).toContinuousMap ()) =
+            P.decodeProp (a.toContinuousMap ())
+        rw [concretePropMeetSection_decode, concretePropHimpSection_decode]
+        exact hright
       · intro h
         change concretePropMeetSection (M := M) a (concretePropHimpSection (M := M) b c) =
           a at h
-        have hcarrier :
-            M.andP (P.decodeProp (a.toContinuousMap ()))
-                (M.impP (P.decodeProp (b.toContinuousMap ()))
-                  (P.decodeProp (c.toContinuousMap ()))) =
-              P.decodeProp (a.toContinuousMap ()) := by
+        have hcarrier := by
           have hdecode :=
             congrArg (fun s => P.decodeProp (s.toContinuousMap ())) h
-          simpa only [concretePropMeetSection_decode, concretePropHimpSection_decode] using hdecode
-        have hleft :
-            M.andP
-                (M.andP (P.decodeProp (a.toContinuousMap ()))
-                  (P.decodeProp (b.toContinuousMap ())))
-                (P.decodeProp (c.toContinuousMap ())) =
-              M.andP (P.decodeProp (a.toContinuousMap ()))
-                (P.decodeProp (b.toContinuousMap ())) :=
+          change
+            P.decodeProp
+                ((concretePropMeetSection (M := M) a
+                  (concretePropHimpSection (M := M) b c)).toContinuousMap ()) =
+              P.decodeProp (a.toContinuousMap ()) at hdecode
+          rw [concretePropMeetSection_decode, concretePropHimpSection_decode] at hdecode
+          exact hdecode
+        have hleft :=
           (laws.himp_adj
             (P.decodeProp (a.toContinuousMap ()))
             (P.decodeProp (b.toContinuousMap ()))
@@ -1897,7 +1973,12 @@ noncomputable def concreteOnePointHeytingSectionWitness
             (concretePropMeetSection (M := M) a b) c =
           concretePropMeetSection (M := M) a b
         apply onePointPropGlobalSection_ext P
-        simpa only [concretePropMeetSection_decode] using hleft }
+        change
+          P.decodeProp
+              ((concretePropMeetSection (M := M)
+                (concretePropMeetSection (M := M) a b) c).toContinuousMap ()) =
+            P.decodeProp ((concretePropMeetSection (M := M) a b).toContinuousMap ())
+        exact hleft }
 
 @[simp] theorem concreteOnePointHeytingSectionWitness_propMeet_eq_propMeetOfPoint
     (laws : PropCarrierHeytingLaws M)
@@ -1907,9 +1988,13 @@ noncomputable def concreteOnePointHeytingSectionWitness
       (concreteOnePointHeytingAlgebraWitness (M := M) laws).propMeetOfPoint a b := by
   let P := concreteOnePointPropositionWitness (M := M)
   apply onePointPropGlobalSection_ext P
-  simpa [concreteOnePointHeytingSectionWitness, concretePropMeetSection, P] using
-    (concreteOnePointHeytingAlgebraWitness_decode_propMeetOfPoint
-      (M := M) laws a b).symm
+  change
+    P.decodeProp ((concretePropMeetSection (M := M) a b).toContinuousMap ()) =
+      P.decodeProp
+        (((concreteOnePointHeytingAlgebraWitness (M := M) laws).propMeetOfPoint a b).toContinuousMap ())
+  rw [concretePropMeetSection_decode]
+  exact (concreteOnePointHeytingAlgebraWitness_decode_propMeetOfPoint
+    (M := M) laws a b).symm
 
 @[simp] theorem concreteOnePointHeytingSectionWitness_propJoin_eq_propJoinOfPoint
     (laws : PropCarrierHeytingLaws M)
@@ -1919,9 +2004,13 @@ noncomputable def concreteOnePointHeytingSectionWitness
       (concreteOnePointHeytingAlgebraWitness (M := M) laws).propJoinOfPoint a b := by
   let P := concreteOnePointPropositionWitness (M := M)
   apply onePointPropGlobalSection_ext P
-  simpa [concreteOnePointHeytingSectionWitness, concretePropJoinSection, P] using
-    (concreteOnePointHeytingAlgebraWitness_decode_propJoinOfPoint
-      (M := M) laws a b).symm
+  change
+    P.decodeProp ((concretePropJoinSection (M := M) a b).toContinuousMap ()) =
+      P.decodeProp
+        (((concreteOnePointHeytingAlgebraWitness (M := M) laws).propJoinOfPoint a b).toContinuousMap ())
+  rw [concretePropJoinSection_decode]
+  exact (concreteOnePointHeytingAlgebraWitness_decode_propJoinOfPoint
+    (M := M) laws a b).symm
 
 @[simp] theorem concreteOnePointHeytingSectionWitness_propHimp_eq_propHimpOfPoint
     (laws : PropCarrierHeytingLaws M)
@@ -1931,9 +2020,13 @@ noncomputable def concreteOnePointHeytingSectionWitness
       (concreteOnePointHeytingAlgebraWitness (M := M) laws).propHimpOfPoint a b := by
   let P := concreteOnePointPropositionWitness (M := M)
   apply onePointPropGlobalSection_ext P
-  simpa [concreteOnePointHeytingSectionWitness, concretePropHimpSection, P] using
-    (concreteOnePointHeytingAlgebraWitness_decode_propHimpOfPoint
-      (M := M) laws a b).symm
+  change
+    P.decodeProp ((concretePropHimpSection (M := M) a b).toContinuousMap ()) =
+      P.decodeProp
+        (((concreteOnePointHeytingAlgebraWitness (M := M) laws).propHimpOfPoint a b).toContinuousMap ())
+  rw [concretePropHimpSection_decode]
+  exact (concreteOnePointHeytingAlgebraWitness_decode_propHimpOfPoint
+    (M := M) laws a b).symm
 
 open HigherOrderPointTopologicalGlobalModelBridge
 
@@ -2410,9 +2503,9 @@ theorem and_formula_witness_top_of_truthValidSequent
               (pointFormulaValue (M := M) φ γ),
             (concreteOnePointPropositionWitness (M := M)).encodeProp
               (pointFormulaValue (M := M) ψ γ)), by simp⟩)) = ⊤ := by
-  simpa [concreteOnePointPropositionWitness_formula_and (M := M) φ ψ γ] using
-    formula_witness_top_of_truthValidSequent (M := M) (χ := Term.and φ ψ)
-      hvalid γ hΔ
+  rw [concreteOnePointPropositionWitness_formula_and (M := M) φ ψ γ]
+  exact formula_witness_top_of_truthValidSequent (M := M) (χ := Term.and φ ψ)
+    hvalid γ hΔ
 
 theorem or_formula_witness_top_of_truthValidSequent
     {Γ : Ctx Base}
@@ -2432,9 +2525,9 @@ theorem or_formula_witness_top_of_truthValidSequent
               (pointFormulaValue (M := M) φ γ),
             (concreteOnePointPropositionWitness (M := M)).encodeProp
               (pointFormulaValue (M := M) ψ γ)), by simp⟩)) = ⊤ := by
-  simpa [concreteOnePointPropositionWitness_formula_or (M := M) φ ψ γ] using
-    formula_witness_top_of_truthValidSequent (M := M) (χ := Term.or φ ψ)
-      hvalid γ hΔ
+  rw [concreteOnePointPropositionWitness_formula_or (M := M) φ ψ γ]
+  exact formula_witness_top_of_truthValidSequent (M := M) (χ := Term.or φ ψ)
+    hvalid γ hΔ
 
 theorem imp_formula_witness_top_of_truthValidSequent
     {Γ : Ctx Base}

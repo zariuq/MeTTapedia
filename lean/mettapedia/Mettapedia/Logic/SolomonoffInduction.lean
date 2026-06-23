@@ -72,7 +72,7 @@ namespace Semimeasure
 variable (ν : Semimeasure)
 
 /-- Measures are nonnegative (automatically satisfied by ℝ≥0∞) -/
-theorem nonneg (x : BinString) : 0 ≤ ν x := zero_le _
+theorem nonneg (x : BinString) : 0 ≤ ν x := zero_le
 
 /-- Monotonicity: extending a prefix decreases the measure -/
 theorem mono (x : BinString) (b : Bool) : ν (x ++ [b]) ≤ ν x := by

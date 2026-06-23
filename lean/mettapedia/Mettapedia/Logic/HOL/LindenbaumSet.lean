@@ -515,7 +515,7 @@ instance : HeytingAlgebra (LindenbaumSet (Const := Const) T) where
     refine Quotient.inductionOn a ?_
     intro φ
     rw [compl_def, bot_def, himp_def]
-  __ := inferInstanceAs (GeneralizedHeytingAlgebra (LindenbaumSet (Const := Const) T))
+  __ := (inferInstance : GeneralizedHeytingAlgebra (LindenbaumSet (Const := Const) T))
 
 end LindenbaumSet
 

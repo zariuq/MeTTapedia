@@ -179,7 +179,8 @@ lemma saturate_fixed (P : PropProgram α) (facts : Finset α) :
     simpa [hk1, hk2] using h
   unfold saturate maxSteps
   -- `iterate ... (N+2) = step ... (iterate ... (N+1))`
-  simpa [Nat.add_assoc] using hshift.symm
+  change iterate P facts ((Fintype.card α + 1) + 1) = iterate P facts (Fintype.card α + 1)
+  simpa [N, Nat.add_assoc] using hshift.symm
 
 lemma saturate_contains_facts (P : PropProgram α) (facts : Finset α) :
     facts ⊆ saturate P facts := by

@@ -70,8 +70,13 @@ theorem exactRecoverySampleMass_ge_one_sub_bitBudget_mul_pow_of_agreementMass_le
       change Nonempty (BitCode s)
       exact ⟨Classical.choose htarget⟩)
     μ target m htarget q hq
-  simpa [bitExactRecoverySampleMass, BitEncodedClassifierFamily.toEncodedFamily, card_bitCode] using
-    hmain
+  letI : Nonempty F.toEncodedFamily.Code := by
+    change Nonempty (BitCode s)
+    exact ⟨Classical.choose htarget⟩
+  change 1 - (Fintype.card (BitCode s) : ℝ≥0∞) * q ^ m ≤
+    F.toEncodedFamily.exactRecoverySampleMass μ target m at hmain
+  rw [card_bitCode] at hmain
+  simpa [bitExactRecoverySampleMass, BitEncodedClassifierFamily.toEncodedFamily] using hmain
 
 end Recovery
 

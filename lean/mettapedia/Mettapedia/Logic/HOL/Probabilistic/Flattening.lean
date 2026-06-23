@@ -202,7 +202,8 @@ theorem hierarchicalProbQueryStrength_eq_sentenceProb
   unfold hierarchicalProbQueryStrength
   let p := hierarchicalSentenceProb H φ
   have hp : p ≤ 1 := by
-    simpa [hierarchicalSentenceProb, HierarchicalState.flattenedModelMeasure] using
+    dsimp [p, hierarchicalSentenceProb]
+    exact
       sentenceProb_le_one
         (S := H.baseSpace)
         (μ := H.flattenedModelMeasure)

@@ -533,9 +533,8 @@ theorem pat_channel_nontrivial :
     have h10 := congrArg EvidenceQuantale.BinaryEvidence.pos h
     change (1 : ℝ≥0∞) = 0 at h10
     exact one_ne_zero h10
-  simpa [Wdemo, constScore, scoreToEvidenceNNReal,
-    PLNIntensionalWorldModel.InheritanceQueryBuilder.intensionalPATEvidence,
-    PLNIntensionalWorldModel.InheritanceQueryBuilder.patQ, enc] using h1
+  change ({ pos := 1, neg := 0 } : EvidenceQuantale.BinaryEvidence) ≠ 0
+  simpa [scoreToEvidenceNNReal] using h1
 
 /-- Mixed channel is strictly richer than ext+ASSOC when PAT is nonzero. -/
 theorem mixed_not_assoc_only :
@@ -657,9 +656,14 @@ theorem no_binary_mixed_policy_for_assocPat_fixture :
     have h01 :
         (scoreToEvidenceNNReal 3 + scoreToEvidenceNNReal 2) + scoreToEvidenceNNReal 0 =
           (scoreToEvidenceNNReal 3 + scoreToEvidenceNNReal 2) + scoreToEvidenceNNReal 1 := by
-      simpa [Wpat0, Wpat1, constScore, a, b,
-        PLNIntensionalWorldModel.InheritanceQueryBuilder.mixedEvidence,
-        PLNIntensionalWorldModel.InheritanceQueryBuilder.mixedQ, enc] using hEq
+      change
+        PLNIntensionalWorldModel.InheritanceQueryBuilder.mixedEvidence
+          (State := ConcreteState) (Atom := Pattern) (Query := ConcreteQuery)
+          Wpat0 enc a b =
+        PLNIntensionalWorldModel.InheritanceQueryBuilder.mixedEvidence
+          (State := ConcreteState) (Atom := Pattern) (Query := ConcreteQuery)
+          Wpat1 enc a b
+      exact hEq
     have hPosEq : (2 + 3 : ENNReal) = 1 + (2 + 3) := by
       simpa [scoreToEvidenceNNReal, BinaryEvidence.hplus_def, add_assoc, add_left_comm, add_comm] using
         congrArg EvidenceQuantale.BinaryEvidence.pos h01

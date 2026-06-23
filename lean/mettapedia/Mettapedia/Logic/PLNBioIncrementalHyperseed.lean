@@ -26,6 +26,7 @@ open Mettapedia.Logic.EvidenceQuantale
 open Mettapedia.Logic.ProbLogDistributionSemantics
 open Mettapedia.Logic.PLNWorldModel
 open Mettapedia.Logic.PLNWorldModelAdditive
+open Mettapedia.Logic.PLNWorldModelGeneric
 open Mettapedia.Logic.PLNWorldModelFixpointClosure
 open Mettapedia.Logic.PLNNoisyOr
 open Mettapedia.Logic.SufficientStatisticSurface
@@ -75,12 +76,14 @@ theorem bioSurface_unitObservation :
     UnitObservation bioSurface := by
   intro o q
   by_cases h : o.pair = queryPair q
-  · simp [bioSurface, h,
-      Mettapedia.Logic.ConjugateEvidenceSurface.instConjugateEvidenceBeta,
-      unitPositiveEvidence]
-  · simp [bioSurface, h,
-      Mettapedia.Logic.ConjugateEvidenceSurface.instConjugateEvidenceBeta,
-      unitNegativeEvidence]
+  · dsimp [bioSurface]
+    rw [if_pos h]
+    change unitPositiveEvidence.pos + unitPositiveEvidence.neg = 1
+    simp [unitPositiveEvidence]
+  · dsimp [bioSurface]
+    rw [if_neg h]
+    change unitNegativeEvidence.pos + unitNegativeEvidence.neg = 1
+    simp [unitNegativeEvidence]
 
 noncomputable instance : EvidenceType (Multiset BioObservation) :=
   multisetEvidenceType BioObservation
@@ -88,11 +91,11 @@ noncomputable instance : EvidenceType (Multiset BioObservation) :=
 noncomputable instance : BinaryWorldModel (Multiset BioObservation) BioQuery :=
   worldModelOfAtomicEvidence bioSurface.observe
 
-noncomputable instance : WorldModel (Multiset BioObservation) BioQuery BinaryEvidence :=
+noncomputable instance : AdditiveWorldModel (Multiset BioObservation) BioQuery BinaryEvidence :=
   bioSurface.inducedWorldModel
 
 private noncomputable abbrev bioWMEvidence : Multiset BioObservation → BioQuery → BinaryEvidence :=
-  (inferInstance : WorldModel (Multiset BioObservation) BioQuery BinaryEvidence).evidence
+  (inferInstance : AdditiveWorldModel (Multiset BioObservation) BioQuery BinaryEvidence).extract
 
 theorem bioSurface_observe_eq_of_samePair
     (o : BioObservation) {q₁ q₂ : BioQuery}
@@ -573,10 +576,10 @@ theorem pairARepeatEqtlTrace_count :
 theorem bio_rawWM_evidence_add
     (σ₁ σ₂ : Multiset BioObservation) (q : BioQuery) :
     bioWMEvidence (σ₁ + σ₂) q = bioWMEvidence σ₁ q + bioWMEvidence σ₂ q := by
-  simpa [bioWMEvidence] using
-    (WorldModel.evidence_add'
-      (State := Multiset BioObservation) (Query := BioQuery) (Ev := BinaryEvidence)
-      σ₁ σ₂ q)
+  change genAdditiveExtension bioSurface.observe (σ₁ + σ₂) q =
+    genAdditiveExtension bioSurface.observe σ₁ q +
+      genAdditiveExtension bioSurface.observe σ₂ q
+  exact genAdditiveExtension_add bioSurface.observe σ₁ σ₂ q
 
 /-- Concrete batchwise = bulk raw-WM theorem for the accumulated pair-A trace. -/
 theorem pairATrace_rawWM_evidence_eq_batches (q : BioQuery) :

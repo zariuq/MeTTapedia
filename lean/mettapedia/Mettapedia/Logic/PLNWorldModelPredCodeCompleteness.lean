@@ -157,13 +157,13 @@ def wmConsequenceRule_of_singletonStrengthLE {U : Type*} (q₁ q₂ : PredCodeQu
         (W := W) (q₁ := q₁) (q₂ := q₂) hSide
 
 /-- State-indexed wrapper promoted from the global implication-closure rule. -/
-def wmConsequenceRuleOn_of_pointwise {U : Type*} (q₁ q₂ : PredCodeQuery U) :
+noncomputable def wmConsequenceRuleOn_of_pointwise {U : Type*} (q₁ q₂ : PredCodeQuery U) :
     WMConsequenceRuleOn (PredCodeState U) (PredCodeQuery U) :=
   WMConsequenceRuleOn.ofGlobal
     (wmConsequenceRule_of_pointwise (q₁ := q₁) (q₂ := q₂))
 
 /-- Categorical-aligned state-indexed wrapper from predicate-code pointwise implication. -/
-def wmConsequenceRuleOn_of_pointwise_categorical {U : Type*}
+noncomputable def wmConsequenceRuleOn_of_pointwise_categorical {U : Type*}
     (H : WMHyperdoctrine (PredCodeState U))
     (_hcat : WMCategoricalEndpointSurface (H := H))
     {X : H.Obj} (_φc : H.query X)
@@ -172,14 +172,14 @@ def wmConsequenceRuleOn_of_pointwise_categorical {U : Type*}
   wmConsequenceRuleOn_of_pointwise (q₁ := q₁) (q₂ := q₂)
 
 /-- State-indexed wrapper promoted from singleton-strength side conditions. -/
-def wmConsequenceRuleOn_of_singletonStrengthLE {U : Type*} (q₁ q₂ : PredCodeQuery U) :
+noncomputable def wmConsequenceRuleOn_of_singletonStrengthLE {U : Type*} (q₁ q₂ : PredCodeQuery U) :
     WMConsequenceRuleOn (PredCodeState U) (PredCodeQuery U) :=
   WMConsequenceRuleOn.ofGlobal
     (wmConsequenceRule_of_singletonStrengthLE (q₁ := q₁) (q₂ := q₂))
 
 /-- Categorical-aligned state-indexed wrapper from predicate-code singleton-strength side
 conditions. -/
-def wmConsequenceRuleOn_of_singletonStrengthLE_categorical {U : Type*}
+noncomputable def wmConsequenceRuleOn_of_singletonStrengthLE_categorical {U : Type*}
     (H : WMHyperdoctrine (PredCodeState U))
     (_hcat : WMCategoricalEndpointSurface (H := H))
     {X : H.Obj} (_φc : H.query X)

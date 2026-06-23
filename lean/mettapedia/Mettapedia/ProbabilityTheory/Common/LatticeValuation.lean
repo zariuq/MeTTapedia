@@ -245,20 +245,20 @@ For orthomodular lattices (quantum logic), we have a specialized valuation
 that respects the orthomodular structure.
 -/
 
-/-- HasCompl provides complement operation. -/
-class HasOrthocomplement (L : Type*) extends HasCompl L where
+/-- `Compl` provides the complement operation. -/
+class HasOrthocomplement (L : Type*) extends Compl L where
   compl_compl : ∀ a : L, aᶜᶜ = a
 
 /-- An orthomodular valuation: orthoadditive + respects complements.
     This is the quantum analog of a probability measure. -/
-structure OrthomodularValuation (L : Type*) [Lattice L] [BoundedOrder L] [HasCompl L]
+structure OrthomodularValuation (L : Type*) [Lattice L] [BoundedOrder L] [Compl L]
     extends OrthoadditiveValuation L where
   /-- v(aᶜ) = 1 - v(a) (complement rule) -/
   val_compl : ∀ a, val aᶜ = 1 - val a
 
 namespace OrthomodularValuation
 
-variable {L : Type*} [Lattice L] [BoundedOrder L] [HasCompl L]
+variable {L : Type*} [Lattice L] [BoundedOrder L] [Compl L]
 
 /-- v(a) + v(aᶜ) = 1. -/
 theorem add_compl (v : OrthomodularValuation L) (a : L) :

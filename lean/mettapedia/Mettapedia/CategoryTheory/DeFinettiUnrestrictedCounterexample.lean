@@ -78,7 +78,7 @@ private lemma iid_mixedSeq_eq_zero_endpoint (θ : LatentTheta)
     iidSequenceKernelTheta θ ({mixedSeq} : Set GlobalBinarySeq) = 0 := by
   have hbound := iid_mixedSeq_le_prefix_bound θ 2 (by omega)
   simp only [show 2 - 1 = 1 from rfl, pow_one] at hbound
-  apply le_antisymm _ (zero_le _)
+  apply le_antisymm _ zero_le
   calc iidSequenceKernelTheta θ ({mixedSeq} : Set GlobalBinarySeq)
       ≤ ENNReal.ofReal ((θ : ℝ) * (1 - (θ : ℝ))) := hbound
     _ = 0 := by rcases h with h | h <;> simp [h]
@@ -88,7 +88,7 @@ measure to vanish. -/
 private lemma iid_mixedSeq_eq_zero_interior (θ : LatentTheta)
     (h0 : 0 < (θ : ℝ)) (h1 : (θ : ℝ) < 1) :
     iidSequenceKernelTheta θ ({mixedSeq} : Set GlobalBinarySeq) = 0 := by
-  apply le_antisymm _ (zero_le _)
+  apply le_antisymm _ zero_le
   have hle : ∀ n : ℕ, iidSequenceKernelTheta θ ({mixedSeq} : Set GlobalBinarySeq) ≤
       ENNReal.ofReal ((θ : ℝ) * (1 - (θ : ℝ)) ^ n) := by
     intro n
@@ -170,7 +170,8 @@ private noncomputable def countKernel : ProbabilityTheory.Kernel PUnit GlobalBin
 /-- The counting-measure Kleisli morphism from PUnit to Bool^ℕ. -/
 private noncomputable def countKleisliHom :=
   kernelToKleisliHom
-    (A := (MeasCat.of PUnit : KleisliGiry)) (B := KleisliBinarySeqObj) countKernel
+    (A := (CategoryTheory.Kleisli.mk MeasCat.Giry (MeasCat.of PUnit) : KleisliGiry))
+    (B := KleisliBinarySeqObj) countKernel
 
 /-- The counting-measure morphism commutes with all finitary permutations. -/
 private lemma countKleisliHom_commutes :
@@ -178,9 +179,9 @@ private lemma countKleisliHom_commutes :
       CategoryTheory.CategoryStruct.comp countKleisliHom (finSuppPermKleisliHom τ) =
         countKleisliHom := by
   intro τ
-  apply Subtype.ext; funext y
-  show Measure.bind (countKernel y) (fun x => Measure.dirac (finSuppPermuteSeq τ x)) =
-    countKernel y
+  apply kleisliHom_ext; intro a
+  show Measure.bind (countKernel a) (fun x => Measure.dirac (finSuppPermuteSeq τ x)) =
+    countKernel a
   change Measure.bind Measure.count (fun x => Measure.dirac (finSuppPermuteSeq τ x)) =
     Measure.count
   rw [Measure.bind_dirac_eq_map Measure.count (measurable_finSuppPermuteSeq τ)]
@@ -199,22 +200,24 @@ theorem not_allSourcesKleisli_unrestricted :
     ¬ KernelLatentThetaUniversalMediator_allSourcesKleisli_unrestricted := by
   intro huniv
   -- Instantiate with A = PUnit, κhom = counting measure
-  obtain ⟨m, hm, _⟩ := huniv (MeasCat.of PUnit) countKleisliHom countKleisliHom_commutes
+  obtain ⟨m, hm, _⟩ :=
+    huniv (CategoryTheory.Kleisli.mk MeasCat.Giry (MeasCat.of PUnit))
+      countKleisliHom countKleisliHom_commutes
   -- hm : comp m iidSequenceKleisliHomTheta = countKleisliHom
   -- Extract measure-level equality at PUnit.unit
-  have hmeq : (CategoryTheory.CategoryStruct.comp m iidSequenceKleisliHomTheta).1 PUnit.unit =
-    countKleisliHom.1 PUnit.unit :=
-    congrFun (congrArg Subtype.val hm) PUnit.unit
+  have hmeq : (CategoryTheory.CategoryStruct.comp m iidSequenceKleisliHomTheta).1.1 PUnit.unit =
+    countKleisliHom.1.1 PUnit.unit :=
+    kleisliHom_congr_fun hm PUnit.unit
   -- LHS: the composed measure is bind (m PUnit.unit) iid
   -- bind _ iid on {mixedSeq} = 0
-  have hlhs : Measure.bind (m.1 PUnit.unit) (fun θ => iidSequenceKernelTheta θ)
+  have hlhs : Measure.bind (m.1.1 PUnit.unit) (fun θ => iidSequenceKernelTheta θ)
     ({mixedSeq} : Set GlobalBinarySeq) = 0 :=
-    bind_iid_singleton_mixedSeq_eq_zero (m.1 PUnit.unit)
+    bind_iid_singleton_mixedSeq_eq_zero (m.1.1 PUnit.unit)
   -- RHS: the count measure on {mixedSeq} = 1
   have hrhs : (Measure.count : Measure GlobalBinarySeq) ({mixedSeq}) = 1 :=
     Measure.count_singleton _
   -- Cast hmeq to Measure GlobalBinarySeq equality, then evaluate on {mixedSeq}
-  have hmeq' : (Measure.bind (m.1 PUnit.unit) (fun θ => iidSequenceKernelTheta θ) :
+  have hmeq' : (Measure.bind (m.1.1 PUnit.unit) (fun θ => iidSequenceKernelTheta θ) :
     Measure GlobalBinarySeq) = (Measure.count : Measure GlobalBinarySeq) := hmeq
   have h01 : (0 : ENNReal) = 1 := by
     have h := congr_fun (congr_arg DFunLike.coe hmeq') ({mixedSeq} : Set GlobalBinarySeq)

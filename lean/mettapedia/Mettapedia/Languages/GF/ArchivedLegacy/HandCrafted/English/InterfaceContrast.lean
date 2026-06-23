@@ -36,47 +36,37 @@ open Mettapedia.OSLF.Framework.TypeSynthesis
 
 /-- Subject NP: "the cat". -/
 def subjCat : AbstractNode :=
-  mkApp2 "DetCN" "Det" "CN" "NP"
-    (mkLeaf "the_Det" "Det")
-    (mkApp1 "UseN" "N" "CN" (mkLeaf "cat_N" "N"))
+  witnessSubjCat
 
 /-- Object NP: "the dog". -/
 def objDog : AbstractNode :=
-  mkApp2 "DetCN" "Det" "CN" "NP"
-    (mkLeaf "the_Det" "Det")
-    (mkApp1 "UseN" "N" "CN" (mkLeaf "dog_N" "N"))
+  witnessObjDog
 
 /-- Active clause witness: "the cat loves the dog". -/
 def activeClause : AbstractNode :=
-  mkApp2 "PredVP" "NP" "VP" "Cl"
-    subjCat
-    (mkApp2 "ComplSlash" "VPSlash" "NP" "VP"
-      (mkApp1 "SlashV2a" "V2" "VPSlash" (mkLeaf "love_V2" "V2"))
-      objDog)
+  witnessActiveClause
 
 /-- Passive clause witness: "the dog is loved". -/
 def passiveClause : AbstractNode :=
-  mkApp2 "PredVP" "NP" "VP" "Cl"
-    objDog
-    (mkApp1 "PassV2" "V2" "VP" (mkLeaf "love_V2" "V2"))
+  witnessPassiveClause
 
 /-- LF consequence endpoint: the active witness reduces to the passive witness. -/
 theorem active_reduces_to_passive :
-    langReduces gfRGLLanguageDef
+    langReduces gfLegacySemanticLanguageDef
       (gfAbstractToPattern activeClause)
       (gfAbstractToPattern passiveClause) := by
-  simpa [activeClause, passiveClause, subjCat, objDog, mkApp2, mkApp1, mkLeaf]
-    using
-      (langReduces_activePassive
-        (gfAbstractToPattern subjCat)
-        (gfAbstractToPattern objDog)
-        (gfAbstractToPattern (mkLeaf "love_V2" "V2")))
+  rw [activeClause, passiveClause, gfAbstractToPattern_witnessActiveClause,
+    gfAbstractToPattern_witnessPassiveClause]
+  exact
+    langReduces_activePassive
+      (gfAbstractToPattern witnessSubjCat)
+      (gfAbstractToPattern witnessObjDog)
+      (Mettapedia.OSLF.MeTTaIL.Syntax.Pattern.fvar "love_V2")
 
 /-- Derivational witness: active and passive trees are syntactically distinct. -/
 theorem active_clause_ne_passive_clause :
     activeClause ≠ passiveClause := by
-  intro hEq
-  simp [activeClause, passiveClause, subjCat, objDog, mkApp2, mkApp1, mkLeaf] at hEq
+  decide
 
 -- Executable PF witnesses (for paper/demo use).
 #eval! linearizeTree {} activeClause .Nom .Sg
@@ -125,8 +115,7 @@ theorem active_linearize_eq_certified :
   calc
     linearizeTree {} activeClause .Nom .Sg
         = "the cat loves the dog" := by
-          simpa [activeClause, subjCat, objDog, mkApp2, mkApp1, mkLeaf]
-            using linearize_witnessActiveClause_nom_sg
+          simpa [activeClause] using linearize_witnessActiveClause_nom_sg
     _ = activeSurfaceCertified := by
       simpa [activeSurfaceCertified] using (Eq.symm activeSurfaceCertified_eq)
 
@@ -136,8 +125,7 @@ theorem passive_linearize_eq_certified :
   calc
     linearizeTree {} passiveClause .Nom .Sg
         = "the dog is loved" := by
-          simpa [passiveClause, objDog, mkApp2, mkApp1, mkLeaf]
-            using linearize_witnessPassiveClause_nom_sg
+          simpa [passiveClause] using linearize_witnessPassiveClause_nom_sg
     _ = passiveSurfaceCertified := by
       simpa [passiveSurfaceCertified, passV2Certified] using (Eq.symm passiveSurfaceCertified_eq)
 
@@ -166,7 +154,7 @@ theorem active_pf_string_ne_passive_pf_string :
 /-- Combined interface contrast endpoint:
 LF consequence holds while PF strings remain distinct. -/
 theorem lf_consequence_distinct_witness :
-    langReduces gfRGLLanguageDef
+    langReduces gfLegacySemanticLanguageDef
       (gfAbstractToPattern activeClause)
       (gfAbstractToPattern passiveClause) ∧
     activeClause ≠ passiveClause :=

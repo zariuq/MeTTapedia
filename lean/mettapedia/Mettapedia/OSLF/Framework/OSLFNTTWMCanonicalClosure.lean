@@ -401,7 +401,10 @@ theorem oslf_ntt_wm_star_sound_of_pathOrder
     (pi1 := pi1) (pi2 := pi2) (fcat := fcat) (gcat := gcat)
     (hpb := hpb) (hmfcat := hmfcat) (hmpi2 := hmpi2)
     (queryOfAtom := queryOfAtom)
-    (φf := φf) (hφ := by simpa [policy] using hφ)
+    (φf := φf) (hφ := by
+      have hPolicySem : policy.semEPolicy = hSemEPolicy := rfl
+      rw [hPolicySem]
+      exact hφ)
     (Xobj := Xobj) (Xgr := Xgr)
     (p := p) (q := q) (hstar := hstar) (φcat := φcat)
 
@@ -490,7 +493,10 @@ theorem oslf_ntt_wm_step_sound_of_pathOrder
     (pi1 := pi1) (pi2 := pi2) (fcat := fcat) (gcat := gcat)
     (hpb := hpb) (hmfcat := hmfcat) (hmpi2 := hmpi2)
     (queryOfAtom := queryOfAtom)
-    (φf := φf) (hφ := by simpa [policy] using hφ)
+    (φf := φf) (hφ := by
+      have hPolicySem : policy.semEPolicy = hSemEPolicy := rfl
+      rw [hPolicySem]
+      exact hφ)
     (Xobj := Xobj) (Xgr := Xgr)
     (p := p) (q := q) (hstep := hstep) (φcat := φcat)
 
@@ -786,7 +792,10 @@ theorem oslf_formula_ntt_wm_star_sound_of_pathOrder
     (pi1 := pi1) (pi2 := pi2) (fcat := fcat) (gcat := gcat)
     (hpb := hpb) (hmfcat := hmfcat) (hmpi2 := hmpi2)
     (queryOfAtom := queryOfAtom)
-    (φf := φf) (hφ := by simpa [policy] using hφ)
+    (φf := φf) (hφ := by
+      have hPolicySem : policy.semEPolicy = hSemEPolicy := rfl
+      rw [hPolicySem]
+      exact hφ)
     (Xobj := Xobj) (Xgr := Xgr)
     (p := p) (q := q) (hstar := hstar) (φcat := φcat)
 
@@ -868,7 +877,9 @@ theorem oslf_formula_ntt_wm_star_sound_ctx
     (pi1 := pi1) (pi2 := pi2) (fcat := fcat) (gcat := gcat)
     (hpb := hpb) (hmfcat := hmfcat) (hmpi2 := hmpi2)
     (queryOfAtom := queryOfAtom)
-    (φf := φf) (hφ := by simpa [CanonicalClosureContext.policy] using hφ)
+    (φf := φf) (hφ := by
+      rw [CanonicalClosureContext.policy_semEPolicy]
+      exact hφ)
     (Xobj := Xobj) (Xgr := Xgr)
     (p := p) (q := q) (hstar := hstar) (φcat := φcat)
 
@@ -1082,7 +1093,7 @@ theorem canonical_rulePack_transport_pack_and_fixpoint_endpoint_compact
     (hφTop :
       languageSortPredNaturality ctx.lang ctx.s ctx.seed ctx.φpred)
     (hPiSigmaPack :
-      Mettapedia.OSLF.NativeType.PiSigmaPredicateRulePack
+      Mettapedia.OSLF.NativeType.PiSigmaPredicateRulePack.{0, 0, 0}
         (C := ConstructorObj ctx.lang))
     (p q : Pattern)
     (hstar : OSLFTheoryStepStar ctx.relEnv p q)
@@ -1128,7 +1139,7 @@ theorem canonical_rulePack_transport_pack_and_fixpoint_endpoint_of_goal
     (hφTop :
       languageSortPredNaturality ctx.lang ctx.s ctx.seed ctx.φpred)
     (hPiSigmaPack :
-      Mettapedia.OSLF.NativeType.PiSigmaPredicateRulePack
+      Mettapedia.OSLF.NativeType.PiSigmaPredicateRulePack.{0, 0, 0}
         (C := ConstructorObj ctx.lang))
     (goal : CanonicalGoalArgs ctx cat fa) :
     Mettapedia.OSLF.Framework.BeckChevalleyOSLF.RepresentablePiSigmaTransportPack
@@ -1236,7 +1247,7 @@ theorem canonical_rulePack_transport_pack_and_fixpoint_endpoint_of_transportGoal
     (cat : CanonicalHyperSquare ctx)
     (fa : CanonicalFormulaArgs ctx)
     (hPiSigmaPack :
-      Mettapedia.OSLF.NativeType.PiSigmaPredicateRulePack
+      Mettapedia.OSLF.NativeType.PiSigmaPredicateRulePack.{0, 0, 0}
         (C := ConstructorObj ctx.lang))
     (transportGoal : CanonicalTransportGoalArgs ctx modal cat fa) :
     Mettapedia.OSLF.Framework.BeckChevalleyOSLF.RepresentablePiSigmaTransportPack
@@ -1291,7 +1302,7 @@ theorem canonical_rulePack_transport_piSigma_and_fixpoint_of_transportGoal
     (cat : CanonicalHyperSquare ctx)
     (fa : CanonicalFormulaArgs ctx)
     (hPiSigmaPack :
-      Mettapedia.OSLF.NativeType.PiSigmaPredicateRulePack
+      Mettapedia.OSLF.NativeType.PiSigmaPredicateRulePack.{0, 0, 0}
         (C := ConstructorObj ctx.lang))
     (transportGoal : CanonicalTransportGoalArgs ctx modal cat fa) :
     ((((Mettapedia.GSLT.Topos.presheafChangeOfBase
@@ -1399,7 +1410,7 @@ theorem canonical_prop12_transport_piSigma_and_fixpoint_of_transportGoal
         ∧ transportGoal.goal.q ∈ Mettapedia.Logic.PLNWorldModelFixpointClosure.leastRuleClosure R W0 ({transportGoal.goal.p} : Set SemEQuery)) := by
   simpa using canonical_rulePack_transport_piSigma_and_fixpoint_of_transportGoal
     (ctx := ctx) (modal := modal) (cat := cat) (fa := fa)
-    (hPiSigmaPack := Mettapedia.OSLF.NativeType.prop12_piSigmaPredicateRulePack
+    (hPiSigmaPack := Mettapedia.OSLF.NativeType.prop12_piSigmaPredicateRulePack.{0, 0, 0}
       (C := ConstructorObj ctx.lang))
     (transportGoal := transportGoal)
 
@@ -1424,7 +1435,7 @@ theorem oslf_formula_ntt_wm_step_sound_of_pathOrder
     (hfm : CategoryTheory.Mono fm) (hpi2m : CategoryTheory.Mono pi2m)
     {Xmodal : Opposite (ConstructorObj lang)}
     (pmodal : Pattern)
-    (H : Mettapedia.Logic.PLNWorldModelHyperdoctrine.WMHyperdoctrine SemEState)
+    (H : Mettapedia.Logic.PLNWorldModelHyperdoctrine.WMHyperdoctrine.{u, v, 0, 0} SemEState)
     {P Aobj Bobj D : H.Obj}
     (pi1 : P ⟶ Aobj) (pi2 : P ⟶ Bobj) (fcat : Aobj ⟶ D) (gcat : Bobj ⟶ D)
     (hpb : CategoryTheory.IsPullback pi1 pi2 fcat gcat)
@@ -1495,7 +1506,10 @@ theorem oslf_formula_ntt_wm_step_sound_of_pathOrder
     (pi1 := pi1) (pi2 := pi2) (fcat := fcat) (gcat := gcat)
     (hpb := hpb) (hmfcat := hmfcat) (hmpi2 := hmpi2)
     (queryOfAtom := queryOfAtom)
-    (φf := φf) (hφ := by simpa [policy] using hφ)
+    (φf := φf) (hφ := by
+      have hPolicySem : policy.semEPolicy = hSemEPolicy := rfl
+      rw [hPolicySem]
+      exact hφ)
     (Xobj := Xobj) (Xgr := Xgr)
     (p := p) (q := q) (hstep := hstep) (φcat := φcat)
 
@@ -1525,7 +1539,7 @@ theorem oslf_formula_ntt_wm_star_internalLogic_endpoint_of_pathOrder
     (hfm : CategoryTheory.Mono fm) (hpi2m : CategoryTheory.Mono pi2m)
     {Xmodal : Opposite (ConstructorObj lang)}
     (pmodal : Pattern)
-    (H : Mettapedia.Logic.PLNWorldModelHyperdoctrine.WMHyperdoctrine SemEState)
+    (H : Mettapedia.Logic.PLNWorldModelHyperdoctrine.WMHyperdoctrine.{u, v, 0, 0} SemEState)
     {P Aobj Bobj D : H.Obj}
     (pi1 : P ⟶ Aobj) (pi2 : P ⟶ Bobj) (fcat : Aobj ⟶ D) (gcat : Bobj ⟶ D)
     (hpb : CategoryTheory.IsPullback pi1 pi2 fcat gcat)
@@ -1771,7 +1785,7 @@ theorem canonical_rulePack_transport_and_fixpoint_endpoint
     (hfm : CategoryTheory.Mono fm) (hpi2m : CategoryTheory.Mono pi2m)
     {Xmodal : Opposite (ConstructorObj ctx.lang)}
     (pmodal : Pattern)
-    (H : Mettapedia.Logic.PLNWorldModelHyperdoctrine.WMHyperdoctrine SemEState)
+    (H : Mettapedia.Logic.PLNWorldModelHyperdoctrine.WMHyperdoctrine.{u, v, 0, 0} SemEState)
     {P Aobj Bobj D : H.Obj}
     (pi1 : P ⟶ Aobj) (pi2 : P ⟶ Bobj) (fcat : Aobj ⟶ D) (gcat : Bobj ⟶ D)
     (hpb : CategoryTheory.IsPullback pi1 pi2 fcat gcat)
@@ -1841,59 +1855,57 @@ theorem canonical_rulePack_transport_and_fixpoint_endpoint
       p ∈ Mettapedia.Logic.PLNWorldModelFixpointClosure.immediateIter R W0 ({p} : Set SemEQuery) 0
         ∧ q ∈ Mettapedia.Logic.PLNWorldModelFixpointClosure.immediateIter R W0 ({p} : Set SemEQuery) 1
         ∧ q ∈ Mettapedia.Logic.PLNWorldModelFixpointClosure.leastRuleClosure R W0 ({p} : Set SemEQuery)) := by
-  let modal : CanonicalModalSquare ctx := {
-    Pm := Pm
-    Bm := Bm
-    Dm := Dm
-    pi1m := pi1m
-    pi2m := pi2m
-    fm := fm
-    gm := gm
-    hpbm := hpbm
-    hfm := hfm
-    hpi2m := hpi2m
-    Xmodal := Xmodal
-    pmodal := pmodal
-  }
-  let cat : CanonicalHyperSquare ctx := {
-    H := H
-    P := P
-    Aobj := Aobj
-    Bobj := Bobj
-    D := D
-    pi1 := pi1
-    pi2 := pi2
-    fcat := fcat
-    gcat := gcat
-    hpb := hpb
-    hmfcat := hmfcat
-    hmpi2 := hmpi2
-  }
-  let fa : CanonicalFormulaArgs ctx := {
-    queryOfAtom := queryOfAtom
-    φf := φf
-    hφ := hφ
-    Xobj := Xobj
-    Xgr := Xgr
-  }
-  let goal : CanonicalGoalArgs ctx cat fa := {
-    p := p
-    q := q
-    hstar := hstar
-    φcat := φcat
-    hStrengthFromEvidence := hStrengthFromEvidence
-  }
-  let transportGoal : CanonicalTransportGoalArgs ctx modal cat fa := {
-    hφTop := hφTop
-    χ := χ
-    ψ := ψ
-    goal := goal
-  }
-  simpa [modal, cat, fa, goal, transportGoal] using
-    canonical_rulePack_transport_piSigma_and_fixpoint_of_transportGoal
-      (ctx := ctx) (modal := modal) (cat := cat) (fa := fa)
-      (hPiSigmaPack := Mettapedia.OSLF.NativeType.prop12_piSigmaPredicateRulePack
+  have hTransport :=
+    Mettapedia.OSLF.Framework.ToposTOGLBridge.topos_representable_patternPred_piSigma_transport_via_rulePack
+      (lang := ctx.lang) (s := ctx.s) (seed := ctx.seed) (φ := ctx.φpred) (hNat := hφTop)
+      (hPiSigmaPack := Mettapedia.OSLF.NativeType.prop12_piSigmaPredicateRulePack.{0, 0, 0}
         (C := ConstructorObj ctx.lang))
-      (transportGoal := transportGoal)
+      (f := fm) (χ := χ) (ψ := ψ)
+  refine ⟨hTransport.1, hTransport.2, ?_⟩
+  classical
+  dsimp
+  let W0 : SemEState := semEState ctx.relEnv ctx.I φf
+  let r : WMConsequenceRuleOn SemEState SemEQuery :=
+    { side := fun W => W = W0
+      premise := p
+      conclusion := q
+      sound := by
+        intro W hW
+        subst hW
+        have hCore :=
+          oslf_formula_ntt_wm_star_sound_ctx
+            (ctx := ctx)
+            (pi1m := pi1m) (pi2m := pi2m) (fm := fm) (gm := gm)
+            (hpbm := hpbm) (hfm := hfm) (hpi2m := hpi2m)
+            (Xmodal := Xmodal) (pmodal := pmodal)
+            (H := H)
+            (pi1 := pi1) (pi2 := pi2) (fcat := fcat) (gcat := gcat)
+            (hpb := hpb) (hmfcat := hmfcat) (hmpi2 := hmpi2)
+            (queryOfAtom := queryOfAtom)
+            (φf := φf) (hφ := hφ)
+            (Xobj := Xobj) (Xgr := Xgr)
+            (p := p) (q := q) (hstar := hstar) (φcat := φcat)
+        rcases hCore with ⟨_hFormula, hRest⟩
+        rcases hRest with ⟨_hModal, hRest⟩
+        rcases hRest with ⟨_hDia, hRest⟩
+        rcases hRest with ⟨_hEndpoint, hEv⟩
+        exact hStrengthFromEvidence hEv }
+  let R : Mettapedia.Logic.PLNWorldModelFixpointClosure.RuleSet SemEState SemEQuery := ({r} : Set _)
+  have hp0 :
+      p ∈ Mettapedia.Logic.PLNWorldModelFixpointClosure.immediateIter R W0 ({p} : Set SemEQuery) 0 := by
+    simp [Mettapedia.Logic.PLNWorldModelFixpointClosure.immediateIter]
+  have hq1 :
+      q ∈ Mettapedia.Logic.PLNWorldModelFixpointClosure.immediateIter R W0 ({p} : Set SemEQuery) 1 := by
+    change q ∈ Mettapedia.Logic.PLNWorldModelFixpointClosure.immediateStep R W0
+      ({p} : Set SemEQuery) ({p} : Set SemEQuery)
+    refine Or.inr ?_
+    refine ⟨r, by simp [R], by simp [r, W0], ?_, by simp [r]⟩
+    show p ∈ ({p} : Set SemEQuery)
+    simp
+  have hqLfp :
+      q ∈ Mettapedia.Logic.PLNWorldModelFixpointClosure.leastRuleClosure R W0 ({p} : Set SemEQuery) :=
+    Mettapedia.Logic.PLNWorldModelFixpointClosure.immediateIter_subset_leastRuleClosure
+      (State := SemEState) (Query := SemEQuery) R W0 ({p} : Set SemEQuery) 1 hq1
+  exact ⟨hp0, hq1, hqLfp⟩
 
 end Mettapedia.OSLF.Framework.OSLFNTTWMCanonicalClosure

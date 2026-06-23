@@ -305,19 +305,19 @@ abbrev DepPred := Pattern → Pattern → Prop
 abbrev ParamPred (ι : Type) := ι → Pattern → Prop
 
 /-- Dependent diamond operator induced by `langDiamond`. -/
-def depDiamond (lang : LanguageDef) (φ : DepPred) : DepPred :=
+abbrev depDiamond (lang : LanguageDef) (φ : DepPred) : DepPred :=
   fun i q => langDiamond lang (fun r => φ i r) q
 
 /-- Dependent box operator induced by `langBox`. -/
-def depBox (lang : LanguageDef) (φ : DepPred) : DepPred :=
+abbrev depBox (lang : LanguageDef) (φ : DepPred) : DepPred :=
   fun i q => langBox lang (fun r => φ i r) q
 
 /-- Parametric diamond operator induced by `langDiamond`. -/
-def paramDiamond (lang : LanguageDef) {ι : Type} (φ : ParamPred ι) : ParamPred ι :=
+abbrev paramDiamond (lang : LanguageDef) {ι : Type} (φ : ParamPred ι) : ParamPred ι :=
   fun a q => langDiamond lang (fun r => φ a r) q
 
 /-- Parametric box operator induced by `langBox`. -/
-def paramBox (lang : LanguageDef) {ι : Type} (φ : ParamPred ι) : ParamPred ι :=
+abbrev paramBox (lang : LanguageDef) {ι : Type} (φ : ParamPred ι) : ParamPred ι :=
   fun a q => langBox lang (fun r => φ a r) q
 
 /-- Operational meaning of dependent diamond types. -/

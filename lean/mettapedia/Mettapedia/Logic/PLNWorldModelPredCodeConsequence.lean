@@ -41,7 +41,7 @@ theorem multiset_strength_le_of_pointwise {U : Type*}
   Mettapedia.Logic.PLNWorldModelPredCodeCompleteness.multiset_strength_le_of_pointwise
     (W := W) (q₁ := q₁) (q₂ := q₂) himp
 
-def wmConsequenceRuleOn_of_pointwise {U : Type*} (q₁ q₂ : PredCodeQuery U) :
+noncomputable def wmConsequenceRuleOn_of_pointwise {U : Type*} (q₁ q₂ : PredCodeQuery U) :
     WMConsequenceRuleOn (PredCodeState U) (PredCodeQuery U) :=
   Mettapedia.Logic.PLNWorldModelPredCodeCompleteness.wmConsequenceRuleOn_of_pointwise
     (q₁ := q₁) (q₂ := q₂)

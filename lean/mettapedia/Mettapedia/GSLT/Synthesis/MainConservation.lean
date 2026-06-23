@@ -247,7 +247,12 @@ theorem cptTransform_conservedBalance [AddCommMonoid A] (q : QuantumState S A k)
     conservedBalance (cptTransform q) = conservedBalance q := by
   funext i
   have htrace := congrFun (cptTransform_traceAccount (S := S) (A := A) (k := k) q) i
-  simpa [conservedBalance, QuantumState.cptTransform] using congrArg (fun x => q.account i + x) htrace
+  -- `(a + b) i` is definitionally `a i + b i` for `VectorialAccount`, but Lean 4.31's
+  -- `.reducible` `simp` won't bridge that through the opaque synonym; use `show` (which
+  -- works up to full defeq) to expose the pointwise form, then close with `congrArg`.
+  show q.account i + traceAccount (cptTransform q).history i
+        = q.account i + traceAccount q.history i
+  exact congrArg (fun x => q.account i + x) htrace
 
 end QuantumState
 

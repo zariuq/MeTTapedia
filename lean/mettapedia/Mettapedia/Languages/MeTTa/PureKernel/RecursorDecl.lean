@@ -374,7 +374,7 @@ private theorem unitRecSpecs_hTyped :
   · have hv : v0 = unitRecValue := by
       simpa [unitRecSpec] using hVal.symm
     subst hv
-    simpa [liftClosed_zero] using hasType_unitRecValue
+    simpa [liftClosed_zero, unitRecSpec, unitRecDeclEnv] using hasType_unitRecValue
 
 private theorem unitRecSpecs_hNoSelf :
     ∀ s ∈ unitRecSpecs, ∀ v0 : PureTm 0,
@@ -425,7 +425,7 @@ theorem unitRecSpec_prefixAdmissible :
     have hv : v0 = unitRecValue := by
       simpa [unitRecSpec] using hVal.symm
     subst hv
-    simpa [liftClosed_zero] using hasType_unitRecValue_inUnitPrefix
+    simpa [liftClosed_zero, unitRecSpec] using hasType_unitRecValue_inUnitPrefix
   noSelfDelta := by
     intro v0 hVal
     have hv : v0 = unitRecValue := by

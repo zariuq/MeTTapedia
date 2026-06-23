@@ -104,7 +104,7 @@ theorem singletonStrengthLE_singleton_iff_imp {L : Language.{u}}
             (S := S) (φ := ψ) hψ]
     · rw [Mettapedia.Logic.PLNWorldModelFOL.queryStrength_singleton_of_not_satisfies
             (S := S) (φ := φ) hφ]
-      exact zero_le _
+      exact zero_le
 
 /-- Model-restricted pointwise implication iff model-restricted singleton WM
 consequence. -/

@@ -59,6 +59,7 @@ noncomputable instance : EvidenceType PeTTaRuntimeEvidenceState where
 instance : BinaryWorldModel PeTTaRuntimeEvidenceState Pattern where
   evidence W q := W q
   evidence_add _ _ _ := rfl
+  evidence_zero _ := rfl
 
 @[simp] theorem pointwise_queryStrength
     (W : PeTTaRuntimeEvidenceState) (p : Pattern) :
@@ -183,7 +184,7 @@ def pettaStep_wmConsequenceRule
 
 /-- A single PeTTa step yields a WM consequence rule in the concrete
 pointwise interpretation. -/
-def pettaPointwiseStep_wmConsequenceRule
+noncomputable def pettaPointwiseStep_wmConsequenceRule
     {s : PeTTaSpace} {p q : Pattern} (hstep : MeTTaStep s p q) :
     WMConsequenceRuleOn PeTTaRuntimeEvidenceState Pattern :=
   (pettaPointwiseWMInterface s).toRuntimeJudgmentWMInterface.wmConsequenceRuleOn_of_step hstep

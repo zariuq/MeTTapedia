@@ -241,7 +241,7 @@ theorem oracleOutputProbBounded_le_one (M : OTMIndex) (x : ℕ) (O : Oracle) (k 
 /-- Bounded output probability is non-negative. -/
 theorem oracleOutputProbBounded_nonneg (M : OTMIndex) (x : ℕ) (O : Oracle) (k : ℕ) :
     0 ≤ oracleOutputProbBounded M x O k :=
-  zero_le _
+  zero_le
 
 /-! ## Connection to Reflective Oracles -/
 

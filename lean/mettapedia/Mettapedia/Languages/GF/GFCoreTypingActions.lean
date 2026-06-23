@@ -1,4 +1,6 @@
+import Algorithms.GF.Generated.PaperAmbiguitySig
 import Mettapedia.Languages.GF.GFCoreNTTDiagnostics
+import Mettapedia.Languages.GF.SemanticKernelDSL
 import Mettapedia.OSLF.Framework.DerivedTyping
 import Mettapedia.OSLF.Framework.ConstructorFibration
 import Mettapedia.OSLF.NativeType.Construction
@@ -50,6 +52,67 @@ open Mettapedia.OSLF.Framework.TypeSynthesis
 open Mettapedia.OSLF.NativeType
 open Mettapedia.OSLF.MeTTaIL.Engine
 open CategoryTheory
+
+private def internalGrammarRule
+    (label category : String)
+    (params : List (String × TypeExpr)) : GrammarRule :=
+  { label := label
+  , category := category
+  , params := params.map (fun pair => TermParam.simple pair.1 pair.2)
+  , syntaxPattern := [] }
+
+private def gfTypingActionSupportTypes : List TypeDecl :=
+  [TypeDecl.plain "SC"]
+
+private def gfTypingActionSupportTerms : List GrammarRule :=
+  [ internalGrammarRule "PassV2" "VP" [("v", .base "V2")]
+  , internalGrammarRule "EmbedS" "SC" [("s", .base "S")]
+  , internalGrammarRule "⊛embedded" "SC" [("cl", .base "Cl")]
+  ]
+
+abbrev paperLangKR : LanguageDef :=
+  Mettapedia.Languages.GF.GFCoreOSLFBridge.gfFunsListToLanguageDef
+    "PaperAmbiguity"
+    Algorithms.GF.Generated.PaperAmbiguitySig.funsList
+    gfTypingActionSupportTypes
+    gfTypingActionSupportTerms
+    [Mettapedia.Languages.GF.SemanticKernelDSL.embedPresentRewrite]
+    []
+
+abbrev paperNSort : LangSort paperLangKR :=
+  LangSort.mk' paperLangKR "N" (by decide)
+
+abbrev paperCNSort : LangSort paperLangKR :=
+  LangSort.mk' paperLangKR "CN" (by decide)
+
+abbrev paperV2Sort : LangSort paperLangKR :=
+  LangSort.mk' paperLangKR "V2" (by decide)
+
+abbrev paperVPSort : LangSort paperLangKR :=
+  LangSort.mk' paperLangKR "VP" (by decide)
+
+abbrev paperSSort : LangSort paperLangKR :=
+  LangSort.mk' paperLangKR "S" (by decide)
+
+theorem useN_crossing :
+    ("UseN", "N", "CN") ∈ unaryCrossings paperLangKR := by
+  decide
+
+theorem passV2_crossing :
+    ("PassV2", "V2", "VP") ∈ unaryCrossings paperLangKR := by
+  decide
+
+abbrev useNArrow : SortArrow paperLangKR paperNSort paperCNSort :=
+  ⟨"UseN", useN_crossing⟩
+
+abbrev passV2Arrow : SortArrow paperLangKR paperV2Sort paperVPSort :=
+  ⟨"PassV2", passV2_crossing⟩
+
+def useNMor : ConstructorObj.mk paperNSort ⟶ ConstructorObj.mk paperCNSort :=
+  useNArrow.toPath
+
+def passV2Mor : ConstructorObj.mk paperV2Sort ⟶ ConstructorObj.mk paperVPSort :=
+  passV2Arrow.toPath
 
 -- ═══════════════════════════════════════════════════════════════════
 -- Section 1: Typing-Action Classification
@@ -310,8 +373,6 @@ noncomputable def gfConstructorChangeOfBase :
 -- This is de re/de dicto in modal logic:
 -- - de re (◇): the referent could change (the sentence can reduce)
 -- - de dicto: the description is fixed (the SC is a snapshot)
---
--- Council: Meredith, Stay, Martin-Löf, Pfenning, de Paiva
 -- ═══════════════════════════════════════════════════════════════════
 
 def paperSCSort : LangSort paperLangKR :=
@@ -393,10 +454,12 @@ theorem embedS_pb_ui_adj :
     The embedded sentence `EmbedS(UseCl(TPres, PPos, cl))` can reduce to
     `⊛embedded(cl)` — the bare propositional content with tense stripped. -/
 def embeddedActivePattern : Pattern :=
-  Pattern.apply "⊛embedded" [activeClausePattern]
+  Pattern.apply "⊛embedded"
+    [Mettapedia.Languages.GF.GeneratedBridgeConformance.activeClausePattern]
 
 def embedSPresentPattern : Pattern :=
-  Pattern.apply "EmbedS" [presentSentencePattern]
+  Pattern.apply "EmbedS"
+    [Mettapedia.Languages.GF.GeneratedBridgeConformance.presentSentencePattern]
 
 -- Compiled-code regression: EmbedS reduction fires
 #eval do

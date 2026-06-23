@@ -212,7 +212,7 @@ theorem outputProb_le_one (M : PTMIndex) (x : ℕ) : outputProb M x ≤ 1 := by
 
 /-- Output probability is non-negative. -/
 theorem outputProb_nonneg (M : PTMIndex) (x : ℕ) : 0 ≤ outputProb M x := by
-  exact zero_le _
+  exact bot_le
 
 /-! ## Bounded Approximations
 

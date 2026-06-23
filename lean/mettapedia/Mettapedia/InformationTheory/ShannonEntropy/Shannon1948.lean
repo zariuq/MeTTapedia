@@ -946,6 +946,12 @@ theorem shannon1948_uniqueness (E : Shannon1948Entropy) :
                   (fun N : ℕ =>
                     (((((⌊p'.1 i * (N + 1 : ℝ)⌋₊ : ℝ) + 1) / (N + 1 : ℝ))
                         / ((approxDenom N : ℝ) / (N + 1 : ℝ))))) atTop (𝓝 (p'.1 i)) := by
+            change
+              Tendsto
+                (((fun N : ℕ =>
+                    (((⌊p'.1 i * (N + 1 : ℝ)⌋₊ : ℝ) + 1) / (N + 1 : ℝ))) /
+                  (fun N : ℕ => ((approxDenom N : ℝ) / (N + 1 : ℝ)))))
+                atTop (𝓝 (p'.1 i))
             simpa [div_one] using hdiv
           have hfun :
               (fun N : ℕ =>

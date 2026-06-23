@@ -443,8 +443,11 @@ private lemma ratio_foldl_eq (_hk : 0 < k) (n : ℕ) (st : Acc k) (xs : List (Fi
                 ⟨Acc.counts st⟩ (Acc.prev st) sym *
               (MarkovDirichlet.prefixAux (k := k)
                   (prior := fun _ => DirichletParams.uniform (a n) (a_pos n))
-                  (prev := sym) (c := ⟨Acc.counts (stepAcc n st sym)⟩) xs).toReal := by
-        simp [MarkovDirichlet.prefixAux, htc, ENNReal.toReal_mul, ENNReal.toReal_ofReal hprob0]
+              (prev := Acc.prev (stepAcc n st sym))
+              (c := ⟨Acc.counts (stepAcc n st sym)⟩) xs).toReal := by
+        simp only [MarkovDirichlet.prefixAux, ENNReal.toReal_mul, ENNReal.toReal_ofReal hprob0]
+        rw [htc]
+        rfl
       have ih'' :
           (Acc.num (xs.foldl (stepAcc n) (stepAcc n st sym)) : ℝ) /
               (Acc.den (xs.foldl (stepAcc n) (stepAcc n st sym)) : ℝ) =
@@ -453,7 +456,8 @@ private lemma ratio_foldl_eq (_hk : 0 < k) (n : ℕ) (st : Acc k) (xs : List (Fi
                   ⟨Acc.counts st⟩ (Acc.prev st) sym) *
               (MarkovDirichlet.prefixAux (k := k)
                   (prior := fun _ => DirichletParams.uniform (a n) (a_pos n))
-                  (prev := sym) (c := ⟨Acc.counts (stepAcc n st sym)⟩) xs).toReal := by
+                  (prev := Acc.prev (stepAcc n st sym))
+                  (c := ⟨Acc.counts (stepAcc n st sym)⟩) xs).toReal := by
         simpa [hratio_step, hprob, mul_assoc] using ih'
       have hmul :
           ((Acc.num st : ℝ) / (Acc.den st : ℝ) *
@@ -461,7 +465,8 @@ private lemma ratio_foldl_eq (_hk : 0 < k) (n : ℕ) (st : Acc k) (xs : List (Fi
                   ⟨Acc.counts st⟩ (Acc.prev st) sym) *
               (MarkovDirichlet.prefixAux (k := k)
                   (prior := fun _ => DirichletParams.uniform (a n) (a_pos n))
-                  (prev := sym) (c := ⟨Acc.counts (stepAcc n st sym)⟩) xs).toReal =
+                  (prev := Acc.prev (stepAcc n st sym))
+                  (c := ⟨Acc.counts (stepAcc n st sym)⟩) xs).toReal =
             (Acc.num st : ℝ) / (Acc.den st : ℝ) *
               (MarkovDirichlet.prefixAux (k := k)
                   (prior := fun _ => DirichletParams.uniform (a n) (a_pos n))
@@ -718,7 +723,9 @@ private theorem bumpCounts_primrec {k : ℕ} :
       Primrec (Function.curry (fun r : (P × Fin k) => (fun j : Fin k =>
         if r.2 = r.1.1.2 ∧ j = r.1.2 then (r.1.1.1 r.2 j + 1) else (r.1.1.1 r.2 j)))) := by
     exact (Primrec.fin_curry (α := P) (σ := (Fin k → ℕ)) (n := k)).2 hG2
-  simpa [P, bumpCounts] using hG
+  exact hG.of_eq (by
+    intro p
+    rfl)
 
 private theorem stepAcc_primrec {k : ℕ} :
     Primrec₂ (fun p : (ℕ × Acc k) => fun next : Fin k => stepAcc (k := k) p.1 p.2 next) := by

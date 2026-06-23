@@ -87,11 +87,11 @@ noncomputable def hypergeometricCDF (n a b k : ℕ) : ℝ≥0∞ :=
 
 /-- PMF is non-negative (trivially true for ℝ≥0∞) -/
 theorem hypergeometricPMF_nonneg (n a b k : ℕ) :
-    0 ≤ hypergeometricPMF n a b k := zero_le _
+    0 ≤ hypergeometricPMF n a b k := zero_le
 
 /-- CDF is non-negative -/
 theorem hypergeometricCDF_nonneg (n a b k : ℕ) :
-    0 ≤ hypergeometricCDF n a b k := zero_le _
+    0 ≤ hypergeometricCDF n a b k := zero_le
 
 /-- CDF is monotone in k -/
 theorem hypergeometricCDF_mono (n a b : ℕ) :
@@ -625,7 +625,7 @@ theorem conjunctionConditional_mono {s_A s_A' s_AB s_AB' : ℝ≥0∞}
     (ha : s_A ≤ s_A') (hab : s_AB ≤ s_AB') :
     conjunctionConditional s_A s_AB ≤ conjunctionConditional s_A' s_AB' := by
   unfold conjunctionConditional
-  exact mul_le_mul ha hab (zero_le _) (zero_le _)
+  exact mul_le_mul ha hab (zero_le) (zero_le)
 
 /-- When the implication strength equals the independence assumption:
 

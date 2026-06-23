@@ -1401,7 +1401,7 @@ private theorem activeFromXNeY_of_anchor_step_spouse_activated
           exact (Prod.mk.inj hPair).1.symm
         refine ⟨x0, hx0, hx0NeY, ?_⟩
         refine ⟨[x0, b], by simp, by simp [PathEndpoints], ?_⟩
-        exact ActiveTrail.two (by simpa [hx0c] using (Or.inr hbc : UndirectedEdge G c b))
+        exact ActiveTrail.two (by simpa [hx0c] using! (Or.inr hbc : UndirectedEdge G c b))
       · let v : V := pref.getLast hpref
         let p2 : List V := pref.dropLast
         have hpref_eq : pref = p2 ++ [v] := by

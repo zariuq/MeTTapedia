@@ -69,7 +69,14 @@ theorem modalSubobjectAsFiber_eq_modalFiber
     (hNat : languageSortPredNaturality lang s seed φ) :
     modalSubobjectAsFiber lang s seed φ hNat =
       modalFiberOfPatternPred lang s seed φ hNat := by
-  simpa [modalSubobjectAsFiber, modalSubobjectOfPatternPred, modalFiberOfPatternPred] using
+  change
+    (CategoryTheory.Subfunctor.orderIsoSubobject
+      (F := languageSortRepresentableObj lang s)).invFun
+        (languageSortFiber_ofPatternPred_subobject lang s seed φ hNat)
+      =
+    (languageSortFiber_ofPatternPred lang s seed φ hNat :
+      CategoryTheory.Subfunctor (languageSortRepresentableObj lang s))
+  simpa [languageSortFiber_ofPatternPred_subobject] using
     (CategoryTheory.Subfunctor.orderIsoSubobject
       (F := languageSortRepresentableObj lang s)).toEquiv.left_inv
       (languageSortFiber_ofPatternPred lang s seed φ hNat)

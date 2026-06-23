@@ -560,7 +560,7 @@ theorem finiteVolumeWeight_singletonAssignment_eq_exp_exponent
               InfiniteGroundMLNSpec.finiteVolumeWeight
             refine Finset.prod_congr rfl ?_
             intro j hj
-            simpa [W] using
+            exact
               classicalWeightedClause_eval_eq_ofReal_indicator_exp
                 (C := M.clause j) (w := M.logWeight j) (W := W)
     _ =
@@ -876,20 +876,20 @@ theorem holds_patch_singletonAssignment_iff
       refine ⟨l, hl, hla, ?_⟩
       cases l with
       | pos c =>
-          have hnot : c ∉ ({a} : Region Atom) := by simpa using hla
+          have hnot : c ∉ ({a} : Region Atom) := by simpa [Literal.atom] using hla
           simpa [Literal.holds, patch, singletonAssignment, hnot] using hh
       | neg c =>
-          have hnot : c ∉ ({a} : Region Atom) := by simpa using hla
+          have hnot : c ∉ ({a} : Region Atom) := by simpa [Literal.atom] using hla
           simpa [Literal.holds, patch, singletonAssignment, hnot] using hh
   · rintro (hother | hpos | hneg)
     · rcases hother with ⟨l, hl, hla, hh⟩
       refine ⟨l, hl, ?_⟩
       cases l with
       | pos c =>
-          have hnot : c ∉ ({a} : Region Atom) := by simpa using hla
+          have hnot : c ∉ ({a} : Region Atom) := by simpa [Literal.atom] using hla
           simpa [Literal.holds, patch, singletonAssignment, hnot] using hh
       | neg c =>
-          have hnot : c ∉ ({a} : Region Atom) := by simpa using hla
+          have hnot : c ∉ ({a} : Region Atom) := by simpa [Literal.atom] using hla
           simpa [Literal.holds, patch, singletonAssignment, hnot] using hh
     · rcases hpos with ⟨hl, hv⟩
       refine ⟨Literal.pos a, hl, ?_⟩
@@ -3352,7 +3352,7 @@ theorem singleSiteHeatBathKernelPMF_eq_map_mergeAssignments
           ({i.1} : Region Atom) η hZ).map
           (fun s =>
             worldRestriction Δ (patch ({i.1} : Region Atom) s η)) := by
-              simpa using
+              exact
                 (PMF.map_comp
                   (p := finiteVolumeAssignmentPMF
                     (M := M'.toInfiniteGroundMLNSpec)
@@ -3402,7 +3402,7 @@ theorem singleSiteHeatBathKernelPMF_map_eval_eq_pure_of_ne
           (fun s =>
             (mergeAssignments (Atom := Atom) s
               (restrictOutsideAssignment (Atom := Atom) x)) a) := by
-            simpa using
+            exact
               (PMF.map_comp
                 (p := finiteVolumeAssignmentPMF
                   (M := M'.toInfiniteGroundMLNSpec)
@@ -3715,15 +3715,15 @@ theorem singleSiteHeatBathKernelPMF_map_eval_totalVariation_eq_trueSensitivity
         (((M.singleSiteHeatBathKernelPMF i ξ x).map (fun z => z i)).toMeasure ({true} : Set Bool)) =
           ((M.singleSiteHeatBathKernelPMF i ξ x).toMeasure
             {z : LocalAssignment Atom Δ | z i = true}) := by
-      simpa using
-        (PMF.toMeasure_map_apply
+      rw [PMF.toMeasure_map_apply
           (p := M.singleSiteHeatBathKernelPMF i ξ x)
           (f := fun z => z i)
           (s := ({true} : Set Bool))
           (hf := by
             classical
             exact Measurable.of_discrete)
-          (hs := MeasurableSet.singleton true))
+          (hs := MeasurableSet.singleton true)]
+      rfl
     calc
       ENNReal.toReal (((M.singleSiteHeatBathKernelPMF i ξ x).map (fun z => z i)) true)
         = (((M.singleSiteHeatBathKernelPMF i ξ x).map (fun z => z i)).toMeasure
@@ -3742,15 +3742,15 @@ theorem singleSiteHeatBathKernelPMF_map_eval_totalVariation_eq_trueSensitivity
         (((M.singleSiteHeatBathKernelPMF i ξ y).map (fun z => z i)).toMeasure ({true} : Set Bool)) =
           ((M.singleSiteHeatBathKernelPMF i ξ y).toMeasure
             {z : LocalAssignment Atom Δ | z i = true}) := by
-      simpa using
-        (PMF.toMeasure_map_apply
+      rw [PMF.toMeasure_map_apply
           (p := M.singleSiteHeatBathKernelPMF i ξ y)
           (f := fun z => z i)
           (s := ({true} : Set Bool))
           (hf := by
             classical
             exact Measurable.of_discrete)
-          (hs := MeasurableSet.singleton true))
+          (hs := MeasurableSet.singleton true)]
+      rfl
     calc
       ENNReal.toReal (((M.singleSiteHeatBathKernelPMF i ξ y).map (fun z => z i)) true)
         = (((M.singleSiteHeatBathKernelPMF i ξ y).map (fun z => z i)).toMeasure
@@ -3813,7 +3813,7 @@ theorem singleSiteHeatBathKernelCouplingPMF_map_fst
             mergeAssignments (Atom := Atom)
               (singletonAssignment (Atom := Atom) i.1 zz.1)
               (restrictOutsideAssignment (Atom := Atom) x)) := by
-          simpa [lift] using
+          exact
             (PMF.map_comp (p := pmfMaximalCoupling px py) (f := lift) Prod.fst)
     _ = (PMF.map Prod.fst (pmfMaximalCoupling px py)).map
           (fun b =>
@@ -3821,7 +3821,7 @@ theorem singleSiteHeatBathKernelCouplingPMF_map_fst
               (singletonAssignment (Atom := Atom) i.1 b)
               (restrictOutsideAssignment (Atom := Atom) x)) := by
           symm
-          simpa using
+          exact
             (PMF.map_comp
               (p := pmfMaximalCoupling px py)
               (f := Prod.fst)
@@ -3867,7 +3867,7 @@ theorem singleSiteHeatBathKernelCouplingPMF_map_snd
             mergeAssignments (Atom := Atom)
               (singletonAssignment (Atom := Atom) i.1 zz.2)
               (restrictOutsideAssignment (Atom := Atom) y)) := by
-          simpa [lift] using
+          exact
             (PMF.map_comp (p := pmfMaximalCoupling px py) (f := lift) Prod.snd)
     _ = (PMF.map Prod.snd (pmfMaximalCoupling px py)).map
           (fun b =>
@@ -3875,7 +3875,7 @@ theorem singleSiteHeatBathKernelCouplingPMF_map_snd
               (singletonAssignment (Atom := Atom) i.1 b)
               (restrictOutsideAssignment (Atom := Atom) y)) := by
           symm
-          simpa using
+          exact
             (PMF.map_comp
               (p := pmfMaximalCoupling px py)
               (f := Prod.snd)
@@ -3941,7 +3941,7 @@ theorem singleSiteHeatBathKernelCouplingPMF_map_eval_pair_eq_of_ne
              (mergeAssignments (Atom := Atom)
                 (singletonAssignment (Atom := Atom) i.1 zz.2)
                 (restrictOutsideAssignment (Atom := Atom) y)) a)) := by
-          simpa [lift] using
+          exact
             (PMF.map_comp (p := pmfMaximalCoupling px py) (f := lift)
               (fun z => (z.1 a, z.2 a)))
     _ = (pmfMaximalCoupling px py).map (Function.const _ (x a, y a)) := by
@@ -4039,7 +4039,7 @@ theorem singleSiteHeatBathKernelCouplingPMF_map_eval_pair_eq_updatedSite
              (mergeAssignments (Atom := Atom)
                 (singletonAssignment (Atom := Atom) i.1 zz.2)
                 (restrictOutsideAssignment (Atom := Atom) y)) i)) := by
-          simpa [lift] using
+          exact
             (PMF.map_comp (p := pmfMaximalCoupling px py) (f := lift)
               (fun z => (z.1 i, z.2 i)))
     _ = (pmfMaximalCoupling px py).map id := by
@@ -4204,7 +4204,7 @@ theorem singleSiteHeatBathUpdateCouplingPMF_map_eval_pair_eq_of_ne
           funext z
           exact M.singleSiteHeatBathKernelCouplingPMF_map_eval_pair_eq_of_ne i a ha ξ z.1 z.2
     _ = q.map (fun z => (z.1 a, z.2 a)) := by
-          simpa using
+          exact
             (PMF.bind_pure_comp
               (p := q)
               (f := fun z : LocalAssignment Atom Δ × LocalAssignment Atom Δ => (z.1 a, z.2 a)))
@@ -4360,7 +4360,7 @@ theorem singleSiteHeatBathUpdatePMF_map_eval_eq_of_ne
           funext x
           exact M.singleSiteHeatBathKernelPMF_map_eval_eq_pure_of_ne i a ha ξ x
     _ = p.map (fun x => x a) := by
-          simpa using
+          exact
             (PMF.bind_pure_comp
               (p := p)
               (f := fun x : LocalAssignment Atom Δ => x a))
@@ -4412,7 +4412,7 @@ theorem finiteVolumeAssignmentPMF_singleSiteHeatBathUpdatePMF_eq
       StrictlyPositiveInfiniteGroundMLNSpec.finiteVolumeWorldMeasure
         M' Δ ξ (MeasureTheory.cylinder Δ ({y} : Set (LocalAssignment Atom Δ))) =
         pΔ.toMeasure ({y} : Set (LocalAssignment Atom Δ)) := by
-    simpa [pΔ] using
+    exact
       (finiteVolumeWorldMeasure_cylinder_region_eq_assignmentPMF_toMeasure
         (M := M'.toInfiniteGroundMLNSpec) Δ ξ hZΔ ({y} : Set (LocalAssignment Atom Δ))
         hsingleton)
@@ -5642,7 +5642,7 @@ theorem eq_of_limitMarginal_eq_all_regions
         (ι := Atom) (α := fun _ : Atom => Bool)
         (ν : Measure (InfiniteWorld Atom)) P := by
     intro Δ
-    simpa [P] using (hlim Δ).symm
+    exact (hlim Δ).symm
   exact MeasureTheory.IsProjectiveLimit.unique
     (ι := Atom) (α := fun _ : Atom => Bool)
     (P := P)
@@ -6355,7 +6355,8 @@ theorem limitMarginal_toPMF_singleSiteHeatBathUpdatePMF_eq_of_interior
           (MeasureTheory.cylinder Δ ({y} : Set (LocalAssignment Atom Δ))) := hdlr
       _ = pμ.toMeasure ({y} : Set (LocalAssignment Atom Δ)) := hrhs.symm
   rw [hdlr_sum] at hupdate
-  simpa [pμ, PMF.toMeasure_apply_singleton] using hupdate
+  exact (PMF.toMeasure_apply_singleton (p := M.singleSiteHeatBathUpdatePMF i ξ pμ) y hsingleton).symm.trans
+    (hupdate.trans (PMF.toMeasure_apply_singleton (p := pμ) y hsingleton))
 
 -- ═══════════════════════════════════════════════════════════════════════════
 -- Infrastructure for the descending-shell Dobrushin uniqueness proof
@@ -6857,7 +6858,7 @@ theorem exists_limitMarginalCoupling_sup_le_pow_of_uniformConstant
                   (finiteRegionCouplingExpectedDisagreement_projectCoupling_eq
                     (Atom := Atom) hΛΔ qs a ha)
           _ ≤ M.finiteRegionPairwiseDobrushinConstant Δ * C ^ n := by
-                simpa [qs] using hupdated aΔ ha_mem_l
+                exact hupdated aΔ ha_mem_l
           _ ≤ C * C ^ n := by
                 exact mul_le_mul_of_nonneg_right (hC_bound Δ) hs_nonneg
           _ = C ^ (n + 1) := by

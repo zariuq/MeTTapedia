@@ -111,7 +111,7 @@ Build the assumptions interface from any FOET model that satisfies the sentence-
 This is the key step that makes the ontology connection *non-decorative*:
 `Entails` will now genuinely depend on the theory-as-a-set.
 -/
-def assumptionsOfModels (hM : Models semantics () theory) : Assumptions := by
+@[reducible] def assumptionsOfModels (hM : Models semantics () theory) : Assumptions := by
   classical
   refine
     { EssPPA_valid := ?_
@@ -271,7 +271,7 @@ section
       have hCJ := (CJ_14p (A := □ᴰ (Good I (FWB I))) (B := FWB I)) C (World C)
       apply hCJ
       refine ⟨hOcondFWB, hBoxA, hDiapFWB, ?_⟩
-      simpa using hDiapNotFWB
+      exact hDiapNotFWB
 
     have hOiDiaFWB : Oᵢ (◇ₐ (FWB I)) C (World C) := by
       have hAx : ⌊ax_OIOAC (FWB I)⌋₍C₎ := GA.OIOAC_valid (FWB I) C
@@ -293,7 +293,7 @@ section
       exact (Oi_congr C (World C) (◇ₐ (FWB I))
         (∀ₘ (fun a : e => ¬ₘ (InterferesWith a (FWB I)))) hEq).1 hOiDiaFWB
 
-    simpa [RightTo] using hOiNonInterf
+    simpa [RightTo, ldtruectx] using hOiNonInterf
 
   private theorem RightTo_of_PPA_fromAssumptions (C : c) (I : e) :
       ⌊PPA I⌋₍C₎ → ⌊RightTo I FWB⌋₍C₎ := by
@@ -320,7 +320,7 @@ theorem entails_PGC_strong : Entails semantics theory s_PGC_strong := by
   -- through the assumption interface at the ontology boundary.
   have h : ⌊φPGC_strong⌋ᴰ :=
     PGC_strong_fromAssumptions
-  simpa [s_PGC_strong, holds] using h
+  simpa [semantics, s_PGC_strong, holds] using h
 
 /-!
 Compatibility aliases (older names used during development).

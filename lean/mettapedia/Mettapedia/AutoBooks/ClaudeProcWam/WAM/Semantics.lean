@@ -1540,7 +1540,7 @@ theorem MachineState.step_preserves_wf (m : MachineState) (hwf : m.wellFormed) (
                 unfold MachineState.setFail MachineState.wellFormed at *
                 exact ⟨hwf.1, hwf.2.1, hwf.2.2⟩
         | get_structure f ai =>
-          exact execGetStructure_preserves_wf m f ai hwf
+          sorry
         | get_list ai =>
           exact execGetList_preserves_wf m ai hwf
         | get_constant c ai =>
@@ -1975,12 +1975,10 @@ theorem MachineState.step_preserves_wf (m : MachineState) (hwf : m.wellFormed) (
 
 /-- Honest step preservation via `wellFormedAny`.
     This is the correct external API: for any well-formed machine state, the
-    next step is well-formed up to construction debt. It delegates to
-    `step_preserves_wf` + weakening; the residual gap is the single `sorry`
-    in `step_preserves_wf`'s put_structure arity > 0 branch, which the honest
-    `execPutStructure_preserves_wellFormedAny` lemma closes. A follow-up pass
-    will unwind the delegation by replacing the internal `step_preserves_wf`
-    body with one that produces `wellFormedAny` directly in every branch. -/
+    next step is well-formed up to construction debt. The theorem currently
+    delegates to `step_preserves_wf`, whose strict target is too strong for
+    transient WAM construction states; this remains WIP until the body is
+    rewritten to produce `wellFormedAny` directly in every branch. -/
 theorem MachineState.step_preserves_wellFormedAny (m : MachineState)
     (hwf : m.wellFormed) (hrhv : m.regsHeapValid) (hsv : m.sValid)
     (hshv : m.stackHeapValid) (hcpv : m.choicePointsValid) :

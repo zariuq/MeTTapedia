@@ -101,6 +101,7 @@ def pyashEnglishObservedHeadCoverageFloorClaim : Prop :=
 
 theorem pyashEnglishObservedHeadCoverageFloorClaim_true :
     pyashEnglishObservedHeadCoverageFloorClaim := by
+  show pyashEnglishObservedMappedHeadFloor ≤ pyashEnglishObservedMappedHeadCount
   simpa [pyashEnglishObservedMappedHeadCount] using pyashEnglishObservedMappedHeadFloor_holds
 
 /-- Executable boolean canary for the observed-head mapping floor claim. -/
@@ -110,7 +111,7 @@ def pyashEnglishObservedHeadCoverageFloorBool : Bool :=
 theorem pyashEnglishObservedHeadCoverageFloorBool_true :
     pyashEnglishObservedHeadCoverageFloorBool = true := by
   unfold pyashEnglishObservedHeadCoverageFloorBool
-  simpa [Nat.ble_eq] using pyashEnglishObservedHeadCoverageFloorClaim_true
+  exact Nat.ble_eq.mpr pyashEnglishObservedHeadCoverageFloorClaim_true
 
 /-- Executable comparison canary bundle (label, claim-satisfied). -/
 def pyashEnglishComparativeCanaries : List (String × Bool) :=

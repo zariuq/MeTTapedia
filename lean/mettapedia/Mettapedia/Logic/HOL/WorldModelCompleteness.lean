@@ -313,14 +313,14 @@ def wmConsequenceRule_of_singletonStrengthLE (φ ψ : HOLQuery Const) :
       (Base := Base) (Const := Const) (W := W) (φ := φ) (ψ := ψ) hSide
 
 /-- State-indexed wrapper promoted from the global implication-closure rule. -/
-def wmConsequenceRuleOn_of_pointwise (φ ψ : HOLQuery Const) :
+noncomputable def wmConsequenceRuleOn_of_pointwise (φ ψ : HOLQuery Const) :
     WMConsequenceRuleOn (HOLState Base Const) (HOLQuery Const) :=
   WMConsequenceRuleOn.ofGlobal
     (wmConsequenceRule_of_pointwise.{u, v, w}
       (Base := Base) (Const := Const) (φ := φ) (ψ := ψ))
 
 /-- Categorical-aligned state-indexed wrapper from HOL pointwise implication. -/
-def wmConsequenceRuleOn_of_pointwise_categorical
+noncomputable def wmConsequenceRuleOn_of_pointwise_categorical
     (H : WMHyperdoctrine (HOLState Base Const))
     (_hcat : WMCategoricalEndpointSurface (Base := Base) (Const := Const) (H := H))
     {X : H.Obj} (_φc : H.query X)
@@ -331,14 +331,14 @@ def wmConsequenceRuleOn_of_pointwise_categorical
       (Base := Base) (Const := Const) (φ := φ) (ψ := ψ))
 
 /-- State-indexed wrapper promoted from singleton-strength side conditions. -/
-def wmConsequenceRuleOn_of_singletonStrengthLE (φ ψ : HOLQuery Const) :
+noncomputable def wmConsequenceRuleOn_of_singletonStrengthLE (φ ψ : HOLQuery Const) :
     WMConsequenceRuleOn (HOLState Base Const) (HOLQuery Const) :=
   WMConsequenceRuleOn.ofGlobal
     (wmConsequenceRule_of_singletonStrengthLE.{u, v, w}
       (Base := Base) (Const := Const) (φ := φ) (ψ := ψ))
 
 /-- Categorical-aligned state-indexed wrapper from HOL singleton-strength side conditions. -/
-def wmConsequenceRuleOn_of_singletonStrengthLE_categorical
+noncomputable def wmConsequenceRuleOn_of_singletonStrengthLE_categorical
     (H : WMHyperdoctrine (HOLState Base Const))
     (_hcat : WMCategoricalEndpointSurface (Base := Base) (Const := Const) (H := H))
     {X : H.Obj} (_φc : H.query X)

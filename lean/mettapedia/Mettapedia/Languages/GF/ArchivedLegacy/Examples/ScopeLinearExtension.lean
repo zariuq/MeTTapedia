@@ -1,4 +1,4 @@
-import Mettapedia.Languages.GF.Examples.ScopeAmbiguity
+import Mettapedia.Languages.GF.ArchivedLegacy.Examples.ScopeAmbiguity
 import Mettapedia.Languages.GF.VisibleLayer
 import Mettapedia.Languages.GF.VisibleLayerGFInstance
 
@@ -182,7 +182,7 @@ theorem emlaLinearExtension_iff_dagLinearExtension
         simp [emlaDAG] at he
     · subst h21
       refine ⟨?_, ?_⟩
-      · simpa using (List.Perm.swap "q1" "q2" [])
+      · simpa [emlaDAG] using (List.Perm.swap "q1" "q2" [])
       · intro e he
         simp [emlaDAG] at he
   · intro h

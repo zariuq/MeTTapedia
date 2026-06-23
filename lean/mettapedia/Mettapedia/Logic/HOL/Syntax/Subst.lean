@@ -569,8 +569,7 @@ theorem subst_rename (σs : Subst Const Δ Ξ) (ρ : Rename Base Γ Δ)
   | vz =>
       rfl
   | vs v =>
-      simpa [Subst.comp, weaken] using
-        (subst_weaken (Base := Base) (Const := Const) (σ := σ) (σs := τs) (t := σs v)).symm
+      exact (subst_weaken (Base := Base) (Const := Const) (σ := σ) (σs := τs) (t := σs v)).symm
 
 theorem subst_comp (τs : Subst Const Δ Ξ) (σs : Subst Const Γ Δ)
     (t : Term Const Γ ρ) :
@@ -998,8 +997,8 @@ theorem var_singleAt_insertRen
         noConstOccurrence_of_rename Rename.weaken (singleAt c Ξ w) hno
       have ih := var_singleAt_insertRen c Ξ w hno'
       simp only [insertRen, singleAt, Subst.lift] at ⊢
-      rw [rename_lift_weaken, ← ih]
-      rfl
+      exact ((rename_lift_weaken (insertRen Ξ) (singleAt c Ξ w)).trans
+        (congrArg (rename Rename.weaken) ih.symm)).symm
 
 /-- Prefix-generalized auxiliary: the prefix Ξ grows under binders,
     making the structural recursion well-typed.
@@ -1055,6 +1054,8 @@ theorem weaken_of_instantiate_prefix
       cases hno with
       | ex hb =>
           exact congrArg Term.ex (weaken_of_instantiate_prefix c (_ :: Ξ) body hb)
+  termination_by Ξ _ φ => sizeOf φ
+  decreasing_by all_goals (simp_wf; first | omega | exact Nat.lt_add_of_pos_left (by omega))
 
 /-- If `instantiate (.const c) φ = θ` and `c` doesn't occur in `θ`,
     then `φ = weaken θ` (variable 0 was unused). -/
@@ -1099,6 +1100,8 @@ noncomputable def abstractConstAt (c : Const σ) :
   | Ξ, _, .eq t u => .eq (abstractConstAt c Ξ t) (abstractConstAt c Ξ u)
   | Ξ, _, .all body => .all (abstractConstAt c (_ :: Ξ) body)
   | Ξ, _, .ex body => .ex (abstractConstAt c (_ :: Ξ) body)
+  termination_by Ξ _ t => sizeOf t
+  decreasing_by all_goals (simp_wf; first | omega | exact Nat.lt_add_of_pos_left (by omega))
 
 /-- Wrapper: abstract constant c at depth 0. -/
 noncomputable abbrev abstractConst (c : Const σ) (t : Term Const Γ τ) :
@@ -1152,7 +1155,7 @@ theorem abstractConstAt_noOccurrence {c : Const σ} :
   | Ξ, _, .lam body, h => by
       cases h with | lam hb =>
         simp only [abstractConstAt, rename, insertRen,
-          abstractConstAt_noOccurrence (_ :: Ξ) body hb]
+          abstractConstAt_noOccurrence (_ :: Ξ) body hb] <;> rfl
   | _, _, .top, _ => by simp [abstractConstAt, rename]
   | _, _, .bot, _ => by simp [abstractConstAt, rename]
   | Ξ, _, .and p q, h => by
@@ -1178,11 +1181,13 @@ theorem abstractConstAt_noOccurrence {c : Const σ} :
   | Ξ, _, .all body, h => by
       cases h with | all hb =>
         simp only [abstractConstAt, rename, insertRen,
-          abstractConstAt_noOccurrence (_ :: Ξ) body hb]
+          abstractConstAt_noOccurrence (_ :: Ξ) body hb] <;> rfl
   | Ξ, _, .ex body, h => by
       cases h with | ex hb =>
         simp only [abstractConstAt, rename, insertRen,
-          abstractConstAt_noOccurrence (_ :: Ξ) body hb]
+          abstractConstAt_noOccurrence (_ :: Ξ) body hb] <;> rfl
+  termination_by Ξ _ t => sizeOf t
+  decreasing_by all_goals (simp_wf; first | omega | exact Nat.lt_add_of_pos_left (by omega))
 
 /-- Round-trip: substituting `c` back into the abstracted term recovers the original. -/
 theorem subst_singleAt_abstractConstAt (c : Const σ) :
@@ -1235,6 +1240,8 @@ theorem subst_singleAt_abstractConstAt (c : Const σ) :
       simp only [abstractConstAt, subst]
       congr 1
       exact subst_singleAt_abstractConstAt c (_ :: Ξ) body
+  termination_by Ξ _ t => sizeOf t
+  decreasing_by all_goals (simp_wf; first | omega | exact Nat.lt_add_of_pos_left (by omega))
 
 /-- Insert a variable of type `ρ` between upper prefix `Ξ₁` and lower suffix `Ξ₂`.
     Bakes the split into the recursion so both domain and codomain are
@@ -1300,6 +1307,8 @@ def insertRenAt
   | .eq a b => by simp [abstractConstAt, rename, abstractConstAt_insertRenAt Ξ₁ Ξ₂ a, abstractConstAt_insertRenAt Ξ₁ Ξ₂ b]
   | .all body => by simp only [abstractConstAt, rename]; congr 1; exact abstractConstAt_insertRenAt (_ :: Ξ₁) Ξ₂ body
   | .ex body => by simp only [abstractConstAt, rename]; congr 1; exact abstractConstAt_insertRenAt (_ :: Ξ₁) Ξ₂ body
+  termination_by sizeOf t
+  decreasing_by all_goals (simp_wf; first | omega | exact Nat.lt_add_of_pos_left (by omega))
 
 /-- abstractConstAt commutes with weakening (Ξ₁=[] specialization). -/
 @[simp] theorem abstractConstAt_weaken
@@ -1339,8 +1348,7 @@ def substAt
   | nil =>
       rfl
   | cons α Ξ₁ ih =>
-      simpa [substAt, varAtDepth, weaken] using
-        congrArg (weaken (Base := Base) (Const := Const) (σ := α)) ih
+      exact congrArg (weaken (Base := Base) (Const := Const) (σ := α)) ih
 
 /-- Variable case of split-point substitution commutation:
     abstracting `c` below the split commutes with substituting a lower-suffix
@@ -1369,34 +1377,19 @@ theorem abstractConstAt_substAt_var
         (substAt (Base := Base) (Const := Const) (Γ := ρ :: Γ) (_ :: Ξ₁) Ξ₂
           (abstractConstAt (Base := Base) (Γ := Γ) c Ξ₂ t))
           (insertRen (Γ := Γ) (σ := ρ) ((_ :: Ξ₁) ++ (σ :: Ξ₂)) (.vz))
-      simp [substAt, abstractConstAt, insertRen, List.cons_append, Subst.lift, Rename.lift]
+      rw [abstractConstAt]; simp [substAt, insertRen, List.cons_append, Subst.lift, Rename.lift]
   | α :: Ξ₁, Ξ₂, t, .vs v => by
-      calc
-        abstractConstAt (Base := Base) (Γ := Γ) c ((α :: Ξ₁) ++ Ξ₂)
-            (substAt (Base := Base) (Const := Const) (Γ := Γ) (α :: Ξ₁) Ξ₂ t (.vs v))
-            =
-          abstractConstAt (Base := Base) (Γ := Γ) c (α :: (Ξ₁ ++ Ξ₂))
+      show abstractConstAt (Base := Base) (Γ := Γ) c (α :: (Ξ₁ ++ Ξ₂))
             (weaken (Base := Base) (Const := Const) (σ := α)
-              (substAt (Base := Base) (Const := Const) (Γ := Γ) Ξ₁ Ξ₂ t v)) := by
-                rfl
-        _ =
-          weaken (Base := Base) (Const := Const) (σ := α)
-            (abstractConstAt (Base := Base) (Γ := Γ) c (Ξ₁ ++ Ξ₂)
-              (substAt (Base := Base) (Const := Const) (Γ := Γ) Ξ₁ Ξ₂ t v)) := by
-                simp [List.cons_append]
-        _ =
+              (substAt (Base := Base) (Const := Const) (Γ := Γ) Ξ₁ Ξ₂ t v)) =
           weaken (Base := Base) (Const := Const) (σ := α)
             ((substAt (Base := Base) (Const := Const) (Γ := ρ :: Γ) Ξ₁ Ξ₂
               (abstractConstAt (Base := Base) (Γ := Γ) c Ξ₂ t))
-              (insertRen (Γ := Γ) (σ := ρ) (Ξ₁ ++ (σ :: Ξ₂)) v)) := by
-                exact congrArg
-                  (weaken (Base := Base) (Const := Const) (σ := α))
-                  (abstractConstAt_substAt_var (c := c) Ξ₁ Ξ₂ t v)
-        _ =
-          (substAt (Base := Base) (Const := Const) (Γ := ρ :: Γ) (α :: Ξ₁) Ξ₂
-            (abstractConstAt (Base := Base) (Γ := Γ) c Ξ₂ t))
-            (insertRen (Γ := Γ) (σ := ρ) ((α :: Ξ₁) ++ (σ :: Ξ₂)) (.vs v)) := by
-              rfl
+              (insertRen (Γ := Γ) (σ := ρ) (Ξ₁ ++ (σ :: Ξ₂)) v))
+      rw [abstractConstAt_weaken]
+      exact congrArg
+        (weaken (Base := Base) (Const := Const) (σ := α))
+        (abstractConstAt_substAt_var (c := c) Ξ₁ Ξ₂ t v)
 
 /-- Full commutation: abstractConstAt commutes with split-point substitution.
     Variable case proved by CodeX (abstractConstAt_substAt_var).
@@ -1437,6 +1430,8 @@ theorem abstractConstAt_substAt {c : Const ρ} :
   | Ξ₁, Ξ₂, _, _, t, .ex body => by
       simp only [subst, abstractConstAt]
       congr 1; exact abstractConstAt_substAt (_ :: Ξ₁) Ξ₂ t body
+  termination_by Ξ₁ Ξ₂ _ _ _ u => sizeOf u
+  decreasing_by all_goals (simp_wf; first | omega | exact Nat.lt_add_of_pos_left (by omega))
 
 /-- Specialization: abstractConstAt commutes with instantiation (Ξ₁=[], Ξ₂=Ξ). -/
 @[simp] theorem abstractConstAt_instantiate {c : Const ρ}

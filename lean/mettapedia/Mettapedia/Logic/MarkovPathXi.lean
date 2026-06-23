@@ -215,6 +215,12 @@ theorem markovTransitionPathAtom_semE_eq_chainEvidence
         (markovWMPosteriorChain hk prior start (markov_countsExtract (k := k) W) tail) := by
   rw [semE_atom_wmEvidenceAtomSemQ]
   rw [markovTransitionPathXiPLN_queryOfAtom_path (k := k) start tail]
+  change MassState.evidence
+      ({markovPathMassSemantics (k := k) hk prior (markov_countsExtract (k := k) W)} :
+        MarkovTransitionPathState k)
+      ⟨start, tail⟩ =
+    markovPathEvidenceOfProb
+      (markovWMPosteriorChain hk prior start (markov_countsExtract (k := k) W) tail)
   simpa [markovTransitionPathStateOfWM] using
     (MassState.evidence_singleton
       (markovPathMassSemantics (k := k) hk prior (markov_countsExtract (k := k) W))

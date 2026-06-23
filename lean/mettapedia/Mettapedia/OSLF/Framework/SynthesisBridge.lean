@@ -211,8 +211,12 @@ the two typing judgments coincide. -/
 def nativeToGen (τ : NativeType) : GenNativeType rhoCalc :=
   ⟨τ.sort, τ.predicate, by
     have h := τ.sort_valid
-    simp only [rhoCalc, List.mem_cons] at h ⊢
-    exact h⟩
+    simp at h
+    rcases h with h | h
+    · rw [h]
+      decide
+    · rw [h]
+      decide⟩
 
 /-- Convert a hand-written TypingContext to a generated one -/
 def ctxToGen (Γ : TypingContext) : GenTypingContext rhoCalc :=

@@ -676,7 +676,7 @@ theorem topos_representable_patternPred_piSigma_transport_pack_via_rulePack
     (hNat : Mettapedia.OSLF.Framework.CategoryBridge.languageSortPredNaturality
       lang s seed φ)
     (hPiSigmaPack :
-      Mettapedia.OSLF.NativeType.PiSigmaPredicateRulePack
+      Mettapedia.OSLF.NativeType.PiSigmaPredicateRulePack.{0, 0, 0}
         (C := Mettapedia.OSLF.Framework.ConstructorCategory.ConstructorObj lang))
     {D : CategoryTheory.Functor
       (Opposite (Mettapedia.OSLF.Framework.ConstructorCategory.ConstructorObj lang)) Type}
@@ -702,7 +702,7 @@ theorem topos_representable_patternPred_piSigma_transport_pack_via_prop12
       (lang := lang) (s := s) (seed := seed) (φ := φ) (hNat := hNat) (f := f) := by
   exact topos_representable_patternPred_piSigma_transport_pack_via_rulePack
     (lang := lang) (s := s) (seed := seed) (φ := φ) (hNat := hNat)
-    (hPiSigmaPack := Mettapedia.OSLF.NativeType.prop12_piSigmaPredicateRulePack
+    (hPiSigmaPack := Mettapedia.OSLF.NativeType.prop12_piSigmaPredicateRulePack.{0, 0, 0}
       (C := Mettapedia.OSLF.Framework.ConstructorCategory.ConstructorObj lang))
     (f := f)
 
@@ -714,7 +714,7 @@ theorem topos_representable_patternPred_piSigma_transport_via_rulePack
     (hNat : Mettapedia.OSLF.Framework.CategoryBridge.languageSortPredNaturality
       lang s seed φ)
     (hPiSigmaPack :
-      Mettapedia.OSLF.NativeType.PiSigmaPredicateRulePack
+      Mettapedia.OSLF.NativeType.PiSigmaPredicateRulePack.{0, 0, 0}
         (C := Mettapedia.OSLF.Framework.ConstructorCategory.ConstructorObj lang))
     {D : CategoryTheory.Functor
       (Opposite (Mettapedia.OSLF.Framework.ConstructorCategory.ConstructorObj lang)) Type}
@@ -790,7 +790,7 @@ theorem topos_representable_patternPred_piSigma_transport_via_prop12_pack
             lang s seed φ hNat))) := by
   exact topos_representable_patternPred_piSigma_transport_via_rulePack
     (lang := lang) (s := s) (seed := seed) (φ := φ) (hNat := hNat)
-    (hPiSigmaPack := Mettapedia.OSLF.NativeType.prop12_piSigmaPredicateRulePack
+    (hPiSigmaPack := Mettapedia.OSLF.NativeType.prop12_piSigmaPredicateRulePack.{0, 0, 0}
       (C := Mettapedia.OSLF.Framework.ConstructorCategory.ConstructorObj lang))
     (f := f) (χ := χ) (ψ := ψ)
 
@@ -808,7 +808,7 @@ theorem topos_transport_pack_via_prop12_eq_via_rulePack
       lang s seed φ hNat f =
     topos_representable_patternPred_piSigma_transport_pack_via_rulePack
       lang s seed φ hNat
-      (hPiSigmaPack := Mettapedia.OSLF.NativeType.prop12_piSigmaPredicateRulePack
+      (hPiSigmaPack := Mettapedia.OSLF.NativeType.prop12_piSigmaPredicateRulePack.{0, 0, 0}
         (C := Mettapedia.OSLF.Framework.ConstructorCategory.ConstructorObj lang))
       f := rfl
 

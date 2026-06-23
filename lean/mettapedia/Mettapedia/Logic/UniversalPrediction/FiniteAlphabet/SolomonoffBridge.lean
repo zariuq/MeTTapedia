@@ -98,7 +98,8 @@ theorem relEntropy_le_codeLength_log2_M₂ (μ : PrefixMeasure α)
           (E := HutterEnumerationTheoremSemimeasure.lscSemimeasureEnumeration (α := α)) code x)
     have hcode_x : HutterEnumerationTheoremSemimeasure.evalLSC (α := α) code x = μ x := by
       have := congrArg (fun ξ : Semimeasure α => ξ x) hcode
-      simpa [PrefixMeasure.toSemimeasure_apply] using this
+      simpa [PrefixMeasure.toSemimeasure_apply,
+        HutterEnumerationTheoremSemimeasure.lscSemimeasureEnumeration] using this
     simpa [hcode_x] using hdom'
   have hc0 : encodeWeight code ≠ 0 := by
     unfold encodeWeight

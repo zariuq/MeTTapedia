@@ -26,7 +26,7 @@ universe u v w
 abbrev StochasticChannel (Θ : Type u) (Ω : Type v) := Θ → PMF Ω
 abbrev StochasticState (Θ : Type u) := Θ → ℝ≥0∞
 
-instance {Θ : Type u} : EvidenceType (StochasticState Θ) where
+noncomputable instance {Θ : Type u} : EvidenceType (StochasticState Θ) where
 
 /-- Kleisli composition for PMF channels (`first f, then g`). -/
 noncomputable def stochasticComp {Θ : Type u} {Ω : Type v} {Υ : Type w}

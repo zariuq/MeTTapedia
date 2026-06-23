@@ -54,7 +54,7 @@ theorem extend_admissible (M : PreModel Base Const) {Γ : Ctx Base}
   intro τ v
   cases v with
   | vz =>
-      simpa using hx
+      exact hx
   | vs v =>
       exact hρ v
 

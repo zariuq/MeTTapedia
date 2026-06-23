@@ -118,7 +118,7 @@ theorem repeatProb_antitone_refinement {S : Type*} [Fintype S] [DecidableEq S]
   split_ifs with h1 h2 h2
   · exact le_refl _
   · exact absurd (hRefine p q h1) h2
-  · exact zero_le _
+  · exact zero_le_one
   · exact le_refl _
 
 /-- Finer partition → lower repeat probability → higher logical entropy.

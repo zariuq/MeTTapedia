@@ -72,6 +72,8 @@ endpoint for downstream OSLF consumers.
 
 namespace Mettapedia.OSLF
 
+universe u v
+
 export Mettapedia.Languages.MeTTa.OSLFCore.Premises (
   space0Atomspace
   space0EqEntries
@@ -531,7 +533,7 @@ theorem coreMain_representable_patternPred_piSigma_transport_via_rulePack
       Mettapedia.OSLF.Framework.CategoryBridge.languageSortPredNaturality
         lang s seed φ)
     (hPiSigmaPack :
-      Mettapedia.OSLF.NativeType.PiSigmaPredicateRulePack
+      Mettapedia.OSLF.NativeType.PiSigmaPredicateRulePack.{0, 0, 0}
         (C := Mettapedia.OSLF.Framework.ConstructorCategory.ConstructorObj lang))
     {D : CategoryTheory.Functor
       (Opposite (Mettapedia.OSLF.Framework.ConstructorCategory.ConstructorObj lang)) Type}
@@ -629,7 +631,7 @@ theorem coreMain_representable_patternPred_piSigma_transport_pack_via_rulePack
       Mettapedia.OSLF.Framework.CategoryBridge.languageSortPredNaturality
         lang s seed φ)
     (hPiSigmaPack :
-      Mettapedia.OSLF.NativeType.PiSigmaPredicateRulePack
+      Mettapedia.OSLF.NativeType.PiSigmaPredicateRulePack.{0, 0, 0}
         (C := Mettapedia.OSLF.Framework.ConstructorCategory.ConstructorObj lang))
     {D : CategoryTheory.Functor
       (Opposite (Mettapedia.OSLF.Framework.ConstructorCategory.ConstructorObj lang)) Type}
@@ -1103,7 +1105,7 @@ structure CoreMainPaperParityCanonicalPackage
               f.toFullGrothHom g.toFullGrothHom
   togl_graph_composition :
     ∀ {relEnv : Mettapedia.OSLF.MeTTaIL.Engine.RelationEnv}
-      {C : Type _} [CategoryTheory.Category C]
+      {C : Type u} [CategoryTheory.Category.{v} C]
       {X : Opposite C}
       (p r : Mettapedia.OSLF.MeTTaIL.Syntax.Pattern),
       Mettapedia.OSLF.Framework.ToposTOGLBridge.graphChain2
@@ -1269,8 +1271,8 @@ theorem coreMain_paper_parity_full_package
 #check @coreMain_theorem1_langReduces_imageFinite
 #check @coreMain_paper_parity_theorem_package
 #check @coreMain_paper_parity_theorem_package_langReduces
-#check @CoreMainPaperParityCanonicalPackage
-#check @coreMain_paper_parity_canonical_package
+#check @Mettapedia.OSLF.CoreMainPaperParityCanonicalPackage
+#check @Mettapedia.OSLF.coreMain_paper_parity_canonical_package
 -- Category LambdaTheory (Thm 23 upgrade)
 #check @Mettapedia.OSLF.NativeType.lambdaTheoryCategoryStruct
 #check @Mettapedia.OSLF.NativeType.lambdaTheoryCategory

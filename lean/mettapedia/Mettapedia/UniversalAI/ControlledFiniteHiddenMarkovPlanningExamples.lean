@@ -55,7 +55,8 @@ private def diracPM {α : Type*} [MeasurableSpace α] [MeasurableSingletonClass 
       simp
     simp [hind]
   · have hb : b ∉ Set.singleton a := by
-        simpa [Set.mem_singleton_iff] using h
+        intro hb
+        exact h (Set.mem_singleton_iff.mp hb)
     have hind : (((Set.singleton a).indicator (1 : α → ENNReal)) b) = 0 := by
       rw [Set.indicator_of_notMem hb]
     simp [h, hind]
@@ -94,7 +95,7 @@ noncomputable def chooseOneAgent : Agent (Fin 2) (Fin 2) :=
   calc
     controlledSwitchEnv.prob [HistElem.act 0] 0
       = observationMassGivenAction controlledSwitchHMM (filteringMass controlledSwitchHMM []) 0 0 := by
-          simpa [controlledSwitchEnv, toEnvironment] using
+          simpa [controlledSwitchEnv, toEnvironment, historyOfCycles] using
             (environmentProb_historyOfCycles_append_act (θ := controlledSwitchHMM) (zs := []) (a := 0) (y := 0))
     _ = 1 := by
           unfold observationMassGivenAction filteringMass filteringMassAux initialLatentMass
@@ -107,7 +108,7 @@ noncomputable def chooseOneAgent : Agent (Fin 2) (Fin 2) :=
   calc
     controlledSwitchEnv.prob [HistElem.act 0] 1
       = observationMassGivenAction controlledSwitchHMM (filteringMass controlledSwitchHMM []) 0 1 := by
-          simpa [controlledSwitchEnv, toEnvironment] using
+          simpa [controlledSwitchEnv, toEnvironment, historyOfCycles] using
             (environmentProb_historyOfCycles_append_act (θ := controlledSwitchHMM) (zs := []) (a := 0) (y := 1))
     _ = 0 := by
           unfold observationMassGivenAction filteringMass filteringMassAux initialLatentMass
@@ -120,7 +121,7 @@ noncomputable def chooseOneAgent : Agent (Fin 2) (Fin 2) :=
   calc
     controlledSwitchEnv.prob [HistElem.act 1] 0
       = observationMassGivenAction controlledSwitchHMM (filteringMass controlledSwitchHMM []) 1 0 := by
-          simpa [controlledSwitchEnv, toEnvironment] using
+          simpa [controlledSwitchEnv, toEnvironment, historyOfCycles] using
             (environmentProb_historyOfCycles_append_act (θ := controlledSwitchHMM) (zs := []) (a := 1) (y := 0))
     _ = 0 := by
           unfold observationMassGivenAction filteringMass filteringMassAux initialLatentMass
@@ -133,7 +134,7 @@ noncomputable def chooseOneAgent : Agent (Fin 2) (Fin 2) :=
   calc
     controlledSwitchEnv.prob [HistElem.act 1] 1
       = observationMassGivenAction controlledSwitchHMM (filteringMass controlledSwitchHMM []) 1 1 := by
-          simpa [controlledSwitchEnv, toEnvironment] using
+          simpa [controlledSwitchEnv, toEnvironment, historyOfCycles] using
             (environmentProb_historyOfCycles_append_act (θ := controlledSwitchHMM) (zs := []) (a := 1) (y := 1))
     _ = 1 := by
           unfold observationMassGivenAction filteringMass filteringMassAux initialLatentMass
@@ -476,7 +477,7 @@ noncomputable def ambiguousControlledFamily : Fin 2 → ControlledFiniteHMMParam
   calc
     ambiguousHighEnv.prob [HistElem.act 0] 0
       = observationMassGivenAction ambiguousHighHMM (filteringMass ambiguousHighHMM []) 0 0 := by
-          simpa [ambiguousHighEnv, toEnvironment] using
+          simpa [ambiguousHighEnv, toEnvironment, historyOfCycles] using
             (environmentProb_historyOfCycles_append_act (θ := ambiguousHighHMM) (zs := []) (a := 0) (y := 0))
     _ = 1 := by
           unfold observationMassGivenAction filteringMass filteringMassAux initialLatentMass
@@ -489,7 +490,7 @@ noncomputable def ambiguousControlledFamily : Fin 2 → ControlledFiniteHMMParam
   calc
     ambiguousHighEnv.prob [HistElem.act 0] 1
       = observationMassGivenAction ambiguousHighHMM (filteringMass ambiguousHighHMM []) 0 1 := by
-          simpa [ambiguousHighEnv, toEnvironment] using
+          simpa [ambiguousHighEnv, toEnvironment, historyOfCycles] using
             (environmentProb_historyOfCycles_append_act (θ := ambiguousHighHMM) (zs := []) (a := 0) (y := 1))
     _ = 0 := by
           unfold observationMassGivenAction filteringMass filteringMassAux initialLatentMass
@@ -502,7 +503,7 @@ noncomputable def ambiguousControlledFamily : Fin 2 → ControlledFiniteHMMParam
   calc
     ambiguousHighEnv.prob [HistElem.act 1] 0
       = observationMassGivenAction ambiguousHighHMM (filteringMass ambiguousHighHMM []) 1 0 := by
-          simpa [ambiguousHighEnv, toEnvironment] using
+          simpa [ambiguousHighEnv, toEnvironment, historyOfCycles] using
             (environmentProb_historyOfCycles_append_act (θ := ambiguousHighHMM) (zs := []) (a := 1) (y := 0))
     _ = 0 := by
           unfold observationMassGivenAction filteringMass filteringMassAux initialLatentMass
@@ -515,7 +516,7 @@ noncomputable def ambiguousControlledFamily : Fin 2 → ControlledFiniteHMMParam
   calc
     ambiguousHighEnv.prob [HistElem.act 1] 1
       = observationMassGivenAction ambiguousHighHMM (filteringMass ambiguousHighHMM []) 1 1 := by
-          simpa [ambiguousHighEnv, toEnvironment] using
+          simpa [ambiguousHighEnv, toEnvironment, historyOfCycles] using
             (environmentProb_historyOfCycles_append_act (θ := ambiguousHighHMM) (zs := []) (a := 1) (y := 1))
     _ = 1 := by
           unfold observationMassGivenAction filteringMass filteringMassAux initialLatentMass
@@ -528,7 +529,7 @@ noncomputable def ambiguousControlledFamily : Fin 2 → ControlledFiniteHMMParam
   calc
     ambiguousLowEnv.prob [HistElem.act 0] 0
       = observationMassGivenAction ambiguousLowHMM (filteringMass ambiguousLowHMM []) 0 0 := by
-          simpa [ambiguousLowEnv, toEnvironment] using
+          simpa [ambiguousLowEnv, toEnvironment, historyOfCycles] using
             (environmentProb_historyOfCycles_append_act (θ := ambiguousLowHMM) (zs := []) (a := 0) (y := 0))
     _ = 0 := by
           unfold observationMassGivenAction filteringMass filteringMassAux initialLatentMass
@@ -541,7 +542,7 @@ noncomputable def ambiguousControlledFamily : Fin 2 → ControlledFiniteHMMParam
   calc
     ambiguousLowEnv.prob [HistElem.act 0] 1
       = observationMassGivenAction ambiguousLowHMM (filteringMass ambiguousLowHMM []) 0 1 := by
-          simpa [ambiguousLowEnv, toEnvironment] using
+          simpa [ambiguousLowEnv, toEnvironment, historyOfCycles] using
             (environmentProb_historyOfCycles_append_act (θ := ambiguousLowHMM) (zs := []) (a := 0) (y := 1))
     _ = 1 := by
           unfold observationMassGivenAction filteringMass filteringMassAux initialLatentMass
@@ -554,7 +555,7 @@ noncomputable def ambiguousControlledFamily : Fin 2 → ControlledFiniteHMMParam
   calc
     ambiguousLowEnv.prob [HistElem.act 1] 0
       = observationMassGivenAction ambiguousLowHMM (filteringMass ambiguousLowHMM []) 1 0 := by
-          simpa [ambiguousLowEnv, toEnvironment] using
+          simpa [ambiguousLowEnv, toEnvironment, historyOfCycles] using
             (environmentProb_historyOfCycles_append_act (θ := ambiguousLowHMM) (zs := []) (a := 1) (y := 0))
     _ = 1 := by
           unfold observationMassGivenAction filteringMass filteringMassAux initialLatentMass
@@ -567,7 +568,7 @@ noncomputable def ambiguousControlledFamily : Fin 2 → ControlledFiniteHMMParam
   calc
     ambiguousLowEnv.prob [HistElem.act 1] 1
       = observationMassGivenAction ambiguousLowHMM (filteringMass ambiguousLowHMM []) 1 1 := by
-          simpa [ambiguousLowEnv, toEnvironment] using
+          simpa [ambiguousLowEnv, toEnvironment, historyOfCycles] using
             (environmentProb_historyOfCycles_append_act (θ := ambiguousLowHMM) (zs := []) (a := 1) (y := 1))
     _ = 0 := by
           unfold observationMassGivenAction filteringMass filteringMassAux initialLatentMass
@@ -884,7 +885,7 @@ theorem ambiguousControlledFamily_optimalValue_mem_interval_and_no_uniqueAction 
         optimalAction (toEnvironment (ambiguousControlledFamily i)) gammaOne [] 3 = a := by
   constructor
   · intro i
-    simpa using
+    simpa [historyOfCycles] using
       (optimalValue_historyOfCycles_mem_recursiveEnvelope
         (Θ := ambiguousControlledFamily) (γ := gammaOne)
         4 ([] : List (CycleObservation (Fin 2) 2)) i)

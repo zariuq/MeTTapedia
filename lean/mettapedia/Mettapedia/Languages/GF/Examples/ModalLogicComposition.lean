@@ -1,6 +1,4 @@
-import Mettapedia.Languages.GF.OSLFBridge
 import Mettapedia.Languages.GF.GFCoreNTTDiagnostics
-import Mettapedia.Languages.GF.OSLFScopeComposition
 import Mettapedia.OSLF.MeTTaIL.LogicSemantics
 import Mettapedia.OSLF.Framework.TypeSynthesis
 
@@ -26,13 +24,12 @@ logical correctness guarantees.
 This completes the hypercube: operational semantics (rewrites) +
 propositional logic (Datalog premises) → modal type system (◇/□).
 
-## Council
+## Design note
 
-- **Meredith**: "This is the third face of the hypercube — propositional."
-- **Stay**: "The Galois connection is parametric in the relation environment."
-- **Pfenning**: "LP.Core's T_P gives the propositional semantics; OSLF's
-  change-of-base gives the modal semantics; the composition is the adjunction
-  parametrized by the logic."
+The Galois connection is parametric in the relation environment: LP.Core's
+`T_P` supplies the propositional semantics, OSLF's change-of-base supplies the
+modal semantics, and their composition is the adjunction parametrized by the
+logic.
 -/
 
 namespace Mettapedia.Languages.GF.Examples.ModalLogicComposition
@@ -42,8 +39,6 @@ open Mettapedia.OSLF.MeTTaIL.Engine
 open Mettapedia.OSLF.MeTTaIL.LogicSemantics
 open Mettapedia.OSLF.Framework.TypeSynthesis
 open Mettapedia.Languages.GF.GFCoreNTTDiagnostics
-open Mettapedia.Languages.GF.GFCoreOSLFBridge
-open Mettapedia.Languages.GF.OSLFScopeComposition
 
 -- ═══════════════════════════════════════════════════════════════════
 -- Part 1: The Galois connection is parametric in RelationEnv

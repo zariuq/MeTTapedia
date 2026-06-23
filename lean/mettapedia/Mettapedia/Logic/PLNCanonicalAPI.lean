@@ -1332,7 +1332,7 @@ abbrev pln_hol_pointwiseImplies_iff_singletonConsequence :=
 abbrev pln_hol_pointwiseIff_iff_queryEq :=
   @_root_.Mettapedia.Logic.PLNWorldModelHOLCompleteness.pointwiseIff_iff_queryEq
 
-abbrev pln_hol_wmConsequenceRuleOn_of_pointwise :=
+noncomputable abbrev pln_hol_wmConsequenceRuleOn_of_pointwise :=
   @_root_.Mettapedia.Logic.PLNWorldModelHOLConsequence.wmConsequenceRuleOn_of_pointwise
 
 /-! ## Direct Set-Semantics -> HOL -> WM Endpoints -/
@@ -5311,7 +5311,7 @@ theorem end_to_end_quantale_selector_rewrite_query_threshold_of_interval
         (.atom a0) (m.mapTerm ((fun _ : Unit => p) u))) := by
   cases i with
   | bayesNormal =>
-      simpa [WMIntervalSemantics, CtxOfInterval, semanticsOfInterval] using
+      exact
         (end_to_end_quantale_selector_rewrite_query_threshold_bayesNormal
           (State := State) (Srt := Srt) (Query := Query)
           (R := R) (m := m) (ctx := ctx)
@@ -5320,7 +5320,7 @@ theorem end_to_end_quantale_selector_rewrite_query_threshold_of_interval
           (a0 := a0) (p := p) (coord := coord) (tau := tau)
           hSide hW hTau hEq hVal H)
   | bayesExact =>
-      simpa [WMIntervalSemantics, CtxOfInterval, semanticsOfInterval] using
+      exact
         (end_to_end_quantale_selector_rewrite_query_threshold_bayesExact
           (State := State) (Srt := Srt) (Query := Query)
           (R := R) (m := m) (ctx := ctx)
@@ -5329,7 +5329,7 @@ theorem end_to_end_quantale_selector_rewrite_query_threshold_of_interval
           (a0 := a0) (p := p) (coord := coord) (tau := tau)
           hSide hW hTau hEq hVal H)
   | walleyIDM =>
-      simpa [WMIntervalSemantics, CtxOfInterval, semanticsOfInterval] using
+      exact
         (end_to_end_quantale_selector_rewrite_query_threshold_walley
           (State := State) (Srt := Srt) (Query := Query)
           (R := R) (m := m) (ctx := ctx)
@@ -7552,7 +7552,7 @@ This endpoint composes:
 1. rewrite/query/quantale transport via the generic final-bundle API, and
 2. truth transport from the linked semantic Solomonoff theorem family.
 -/
-def end_to_end_quantale_selector_rewrite_query_threshold_finalBundle_inheritance_solomonoff_semantic_linked_of_interval
+noncomputable def end_to_end_quantale_selector_rewrite_query_threshold_finalBundle_inheritance_solomonoff_semantic_linked_of_interval
     {State Query : Type}
     [EvidenceClass.EvidenceType State]
     [PLNWorldModel.BinaryWorldModel State Query]
@@ -7771,7 +7771,7 @@ def end_to_end_quantale_selector_rewrite_query_threshold_finalBundle_inheritance
 
 This variant consumes `SolomonoffAssocLinkedModelStrong`, so mixed-channel and
 positivity obligations are internalized in the model object. -/
-def end_to_end_quantale_selector_rewrite_query_threshold_finalBundle_inheritance_solomonoff_semantic_linkedStrong_of_interval
+noncomputable def end_to_end_quantale_selector_rewrite_query_threshold_finalBundle_inheritance_solomonoff_semantic_linkedStrong_of_interval
     {State Query : Type}
     [EvidenceClass.EvidenceType State]
     [PLNWorldModel.BinaryWorldModel State Query]
@@ -7849,7 +7849,7 @@ def end_to_end_quantale_selector_rewrite_query_threshold_finalBundle_inheritance
     H
 
 /-- Bayes-normal selector wrapper for strong linked Chapter-12 final-bundle endpoint. -/
-def end_to_end_quantale_selector_rewrite_query_threshold_finalBundle_inheritance_solomonoff_semantic_linkedStrong_bayesNormal
+noncomputable def end_to_end_quantale_selector_rewrite_query_threshold_finalBundle_inheritance_solomonoff_semantic_linkedStrong_bayesNormal
     {State Query : Type}
     [EvidenceClass.EvidenceType State]
     [PLNWorldModel.BinaryWorldModel State Query]
@@ -7919,7 +7919,7 @@ def end_to_end_quantale_selector_rewrite_query_threshold_finalBundle_inheritance
     hW hVal hTau hTauTarget H
 
 /-- Bayes-exact selector wrapper for strong linked Chapter-12 final-bundle endpoint. -/
-def end_to_end_quantale_selector_rewrite_query_threshold_finalBundle_inheritance_solomonoff_semantic_linkedStrong_bayesExact
+noncomputable def end_to_end_quantale_selector_rewrite_query_threshold_finalBundle_inheritance_solomonoff_semantic_linkedStrong_bayesExact
     {State Query : Type}
     [EvidenceClass.EvidenceType State]
     [PLNWorldModel.BinaryWorldModel State Query]
@@ -7989,7 +7989,7 @@ def end_to_end_quantale_selector_rewrite_query_threshold_finalBundle_inheritance
     hW hVal hTau hTauTarget H
 
 /-- Walley-IDM selector wrapper for strong linked Chapter-12 final-bundle endpoint. -/
-def end_to_end_quantale_selector_rewrite_query_threshold_finalBundle_inheritance_solomonoff_semantic_linkedStrong_walley
+noncomputable def end_to_end_quantale_selector_rewrite_query_threshold_finalBundle_inheritance_solomonoff_semantic_linkedStrong_walley
     {State Query : Type}
     [EvidenceClass.EvidenceType State]
     [PLNWorldModel.BinaryWorldModel State Query]
@@ -8230,10 +8230,14 @@ theorem end_to_end_temporal_hypercube_event_threshold_bundle_of_interval
         (State := State) (Srt := EventCalcSort) (Query := PatternEventQueryFamily)
         W₁ queryOfAtom a0 (pick u)) := hITV (pick u)
   have hTauW₂ :
-      tau ≤ coord ((semanticsOfInterval i).eval ctx
-        (PLNWMOSLFBridgeITVTyped.wmPatternValuation
+      tau ≤ coord
+        (PLNWorldModel.WorldModelSigma.queryITV
           (State := State) (Srt := EventCalcSort) (Query := PatternEventQueryFamily)
-          W₂ queryOfAtom a0 (pick u))) := by
+          (semanticsOfInterval i) ctx W₂ (queryOfAtom a0 (pick u))) := by
+    change tau ≤ coord ((semanticsOfInterval i).eval ctx
+      (PLNWMOSLFBridgeITVTyped.wmPatternValuation
+        (State := State) (Srt := EventCalcSort) (Query := PatternEventQueryFamily)
+        W₂ queryOfAtom a0 (pick u)))
     simpa [hEq] using hTau u
   simpa [Mettapedia.OSLF.Formula.sem,
     PLNWMOSLFBridgeITVTyped.thresholdAtomSemOfWMITVQSigma,

@@ -162,7 +162,7 @@ def decodeEnv :
     (v : Var (SimpleTy.toCtx Γ) τ.toTy) :
     decodeEnv (M := M) γ (.vs v) =
       decodeEnv (M := M) (tailCtx (M := M) γ) v := by
-  simp [decodeEnv]
+  rfl
 
 @[simp] theorem decodeEnv_consCtx_apply
     {Γ : List (SimpleTy Base)} {τ : SimpleTy Base}
@@ -175,9 +175,11 @@ def decodeEnv :
   intro σ v
   cases v with
   | vz =>
-      simp [decodeEnv]
+      simp only [decodeEnv_cons_vz, ApplicativeStructure.Env.extend_vz, headVal_consCtx]
   | vs w =>
-      simp [decodeEnv]
+      change decodeEnv (M := M) (tailCtx (M := M) (consCtx (M := M) x γ)) w =
+        decodeEnv (M := M) γ w
+      rw [tailCtx_consCtx]
 
 /-- Proposition terms into the one-point proposition space. -/
 def mkPred {Γ : List (SimpleTy Base)}
@@ -597,7 +599,7 @@ end SimpleTopologicalInterpretation
       (((quantInterp M).allPred p).toContinuousMap γ) =
       M.allP fun x =>
         pointCarrierVal (M := M) (p.toContinuousMap (consCtx (M := M) x γ)) := by
-  simp [quantInterp]
+  rfl
 
 @[simp] theorem ex_val
     {Γ : List (SimpleTy Base)} {τ : SimpleTy Base}
@@ -607,7 +609,7 @@ end SimpleTopologicalInterpretation
       (((quantInterp M).exPred p).toContinuousMap γ) =
       M.exP fun x =>
         pointCarrierVal (M := M) (p.toContinuousMap (consCtx (M := M) x γ)) := by
-  simp [quantInterp]
+  rfl
 
 namespace SemilocalModel
 
@@ -618,60 +620,60 @@ namespace SemilocalModel
     (t : Term Const Γ τ)
     (hρ : ∀ {σ : Ty Base} (v : Var Γ σ), ρ v = ν v) :
     SemilocalModel.eval S ρ t = SemilocalModel.eval S ν t := by
-  induction t with
-  | var v =>
-      exact hρ v
-  | const c =>
-      rfl
-  | app f t ihf iht =>
-      simp [SemilocalModel.eval, ihf (ν := ν) hρ, iht (ν := ν) hρ]
-  | lam t ih =>
-      simp [SemilocalModel.eval]
-      apply congrArg S.lam
-      funext x
-      exact ih (ν := ApplicativeStructure.Env.extend S.toApplicativeStructure ν x) (by
-        intro σ v
-        cases v with
-        | vz =>
-            rfl
-        | vs w =>
-            simpa [ApplicativeStructure.Env.extend] using hρ w)
-  | top =>
-      rfl
-  | bot =>
-      rfl
-  | and φ ψ ihφ ihψ =>
-      simp [SemilocalModel.eval, ihφ (ν := ν) hρ, ihψ (ν := ν) hρ]
-  | or φ ψ ihφ ihψ =>
-      simp [SemilocalModel.eval, ihφ (ν := ν) hρ, ihψ (ν := ν) hρ]
-  | imp φ ψ ihφ ihψ =>
-      simp [SemilocalModel.eval, ihφ (ν := ν) hρ, ihψ (ν := ν) hρ]
-  | not φ ih =>
-      simp [SemilocalModel.eval, ih (ν := ν) hρ]
-  | eq t u iht ihu =>
-      simp [SemilocalModel.eval, iht (ν := ν) hρ, ihu (ν := ν) hρ]
-  | all φ ih =>
-      simp [SemilocalModel.eval]
-      apply congrArg S.allP
-      funext x
-      exact ih (ν := ApplicativeStructure.Env.extend S.toApplicativeStructure ν x) (by
-        intro σ v
-        cases v with
-        | vz =>
-            rfl
-        | vs w =>
-            simpa [ApplicativeStructure.Env.extend] using hρ w)
-  | ex φ ih =>
-      simp [SemilocalModel.eval]
-      apply congrArg S.exP
-      funext x
-      exact ih (ν := ApplicativeStructure.Env.extend S.toApplicativeStructure ν x) (by
-        intro σ v
-        cases v with
-        | vz =>
-            rfl
-        | vs w =>
-            simpa [ApplicativeStructure.Env.extend] using hρ w)
+    induction t with
+    | var v =>
+        exact hρ v
+    | const c =>
+        rfl
+    | app f t ihf iht =>
+        simp [SemilocalModel.eval, ihf (ν := ν) hρ, iht (ν := ν) hρ]
+    | lam t ih =>
+        simp [SemilocalModel.eval]
+        apply congrArg S.lam
+        funext x
+        exact ih (ν := ApplicativeStructure.Env.extend S.toApplicativeStructure ν x) (by
+          intro σ v
+          cases v with
+          | vz =>
+              rfl
+          | vs w =>
+              simpa [ApplicativeStructure.Env.extend] using hρ w)
+    | top =>
+        rfl
+    | bot =>
+        rfl
+    | and φ ψ ihφ ihψ =>
+        simp [SemilocalModel.eval, ihφ (ν := ν) hρ, ihψ (ν := ν) hρ]
+    | or φ ψ ihφ ihψ =>
+        simp [SemilocalModel.eval, ihφ (ν := ν) hρ, ihψ (ν := ν) hρ]
+    | imp φ ψ ihφ ihψ =>
+        simp [SemilocalModel.eval, ihφ (ν := ν) hρ, ihψ (ν := ν) hρ]
+    | not φ ih =>
+        simp [SemilocalModel.eval, ih (ν := ν) hρ]
+    | eq t u iht ihu =>
+        simp [SemilocalModel.eval, iht (ν := ν) hρ, ihu (ν := ν) hρ]
+    | all φ ih =>
+        simp [SemilocalModel.eval]
+        apply congrArg S.allP
+        funext x
+        exact ih (ν := ApplicativeStructure.Env.extend S.toApplicativeStructure ν x) (by
+          intro σ v
+          cases v with
+          | vz =>
+              rfl
+          | vs w =>
+              simpa [ApplicativeStructure.Env.extend] using hρ w)
+    | ex φ ih =>
+        simp [SemilocalModel.eval]
+        apply congrArg S.exP
+        funext x
+        exact ih (ν := ApplicativeStructure.Env.extend S.toApplicativeStructure ν x) (by
+          intro σ v
+          cases v with
+          | vz =>
+              rfl
+          | vs w =>
+              simpa [ApplicativeStructure.Env.extend] using hρ w)
 
 end SemilocalModel
 
@@ -690,10 +692,12 @@ namespace CtxTerm
   | vz =>
       rfl
   | @vs Γ υ τ x ih =>
-      simpa [SimpleTopologicalInterpretation.CtxTerm.var,
-        SimpleTopologicalInterpretation.CtxTerm.weaken,
-        simpleInterp.tailCtx, simpleInterp.decodeEnv]
-        using ih (simpleInterp.tailCtx (M := M) γ)
+      change pointCarrierVal (M := M)
+        ((SimpleTopologicalInterpretation.CtxTerm.var (simpleInterp M) x).toContinuousMap
+          (simpleInterp.tailCtx (M := M) γ)) =
+        simpleInterp.decodeEnv (M := M) (simpleInterp.tailCtx (M := M) γ)
+          (SimpleVar.toVar x)
+      exact ih (simpleInterp.tailCtx (M := M) γ)
 
 end CtxTerm
 

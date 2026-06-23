@@ -73,8 +73,8 @@ theorem thresholdValid_iff_subset_wmThresholdRegion
   constructor
   · intro h q hq
     exact h q hq
-  · intro h
-    simpa [thresholdValid, wmThresholdRegion] using h
+  · intro h q hq
+    exact h hq
 
 theorem wmAdmissibleRegionAt_subset_availableRegionAt
     (P : StatefulPerspective State Query Signal Cost)

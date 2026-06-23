@@ -215,9 +215,9 @@ def totalCost {S : GSLT} {A : Type*} {k : Nat} [Add A] [Zero A]
 
     Combines Definitions 6.2 and 7.2.
 -/
-structure WeightedGSLT (W : Type*) (A : Type*) (k : Nat) where
+structure WeightedGSLT.{u} (W : Type*) (A : Type*) (k : Nat) where
   /-- The underlying GSLT -/
-  gslt : GSLT
+  gslt : GSLT.{u}
   /-- The weight map (amplitudes) -/
   weights : WeightMap gslt W
   /-- The cost map (resources) -/

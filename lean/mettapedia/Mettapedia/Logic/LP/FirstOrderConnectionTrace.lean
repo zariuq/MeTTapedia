@@ -1330,7 +1330,9 @@ theorem fo_unsat_ground :
       ⟨Subst.id (σ := foFixtureSig), hUnifies⟩ with ⟨uFuel, θ, hU⟩
   have hUnify :
       unifyComplementLit? (σ := foFixtureSig) uFuel fo_lit_pos_a fo_lit_neg_a = some θ := by
-    simpa [unifyComplementLit?, unifyAtoms, fo_lit_pos_a, fo_lit_neg_a, fo_atomP] using hU
+    unfold unifyComplementLit? unifyAtoms
+    simp [fo_lit_pos_a, fo_lit_neg_a, fo_atomP]
+    exact hU
   have hDer : TraceDerivableFO fo_unsat_ground_clauses uFuel
       fo_unsat_ground_root [] [.step_extend fo_unsat_ground_c2 fo_lit_neg_a] := by
     have hErase : fo_unsat_ground_c2.erase fo_lit_neg_a = [] := by
@@ -1339,8 +1341,11 @@ theorem fo_unsat_ground :
       fo_lit_pos_a [] [] fo_unsat_ground_c2 fo_lit_neg_a [] θ
       (by simp [fo_unsat_ground_clauses, fo_unsat_ground_c2, fo_unsat_ground_c1])
       (by simp [fo_unsat_ground_c2, fo_lit_neg_a]) hUnify ?_
-    simpa [hErase] using (TraceDerivableFO.done (clauses := fo_unsat_ground_clauses)
-      (uFuel := uFuel) (θ.applyConnFOClause [fo_lit_pos_a]))
+    rw [hErase]
+    change TraceDerivableFO fo_unsat_ground_clauses uFuel []
+      (θ.applyConnFOClause [fo_lit_pos_a]) []
+    exact TraceDerivableFO.done (clauses := fo_unsat_ground_clauses)
+      (uFuel := uFuel) (θ.applyConnFOClause [fo_lit_pos_a])
   rcases connProveFODFS_complete_of_trace
       (σ := foFixtureSig) (clauses := fo_unsat_ground_clauses) (uFuel := uFuel)
       (goals := fo_unsat_ground_root) (path := [])
@@ -1365,7 +1370,9 @@ theorem fo_unsat_unify :
       ⟨δ, hUnifies⟩ with ⟨uFuel, θ, hU⟩
   have hUnify :
       unifyComplementLit? (σ := foFixtureSig) uFuel fo_lit_pos_x fo_lit_neg_fa = some θ := by
-    simpa [unifyComplementLit?, unifyAtoms, fo_lit_pos_x, fo_lit_neg_fa, fo_atomP] using hU
+    unfold unifyComplementLit? unifyAtoms
+    simp [fo_lit_pos_x, fo_lit_neg_fa, fo_atomP]
+    exact hU
   have hDer : TraceDerivableFO fo_unsat_unify_clauses uFuel
       fo_unsat_unify_root [] [.step_extend fo_unsat_unify_c2 fo_lit_neg_fa] := by
     have hErase : fo_unsat_unify_c2.erase fo_lit_neg_fa = [] := by
@@ -1374,8 +1381,11 @@ theorem fo_unsat_unify :
       fo_lit_pos_x [] [] fo_unsat_unify_c2 fo_lit_neg_fa [] θ
       (by simp [fo_unsat_unify_clauses, fo_unsat_unify_c2, fo_unsat_unify_c1])
       (by simp [fo_unsat_unify_c2, fo_lit_neg_fa]) hUnify ?_
-    simpa [hErase] using (TraceDerivableFO.done (clauses := fo_unsat_unify_clauses)
-      (uFuel := uFuel) (θ.applyConnFOClause [fo_lit_pos_x]))
+    rw [hErase]
+    change TraceDerivableFO fo_unsat_unify_clauses uFuel []
+      (θ.applyConnFOClause [fo_lit_pos_x]) []
+    exact TraceDerivableFO.done (clauses := fo_unsat_unify_clauses)
+      (uFuel := uFuel) (θ.applyConnFOClause [fo_lit_pos_x])
   rcases connProveFODFS_complete_of_trace
       (σ := foFixtureSig) (clauses := fo_unsat_unify_clauses) (uFuel := uFuel)
       (goals := fo_unsat_unify_root) (path := [])

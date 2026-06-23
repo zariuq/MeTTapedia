@@ -116,7 +116,7 @@ theorem sequenceKernelConeObj_existsUnique_latentThetaKernel
     (sequenceKernelConeObj_iff_kernelExchangeable_coord (κ := κ)).1 hcone
   have hX : ∀ i : ℕ, Measurable (coordProcess i) := by
     intro i
-    simpa [coordProcess] using (measurable_pi_apply (a := i))
+    exact measurable_pi_apply i
   exact existsUnique_latentThetaKernel_of_kernelExchangeable
     (X := coordProcess) (κ := κ) hX hexch
 
@@ -130,7 +130,7 @@ theorem sequenceKernelConeObj_iff_kernelLatentThetaFactorization_coord
     SequenceKernelConeObj κ ↔ KernelLatentThetaFactorization (X := coordProcess) κ := by
   have hX : ∀ i : ℕ, Measurable (coordProcess i) := by
     intro i
-    simpa [coordProcess] using (measurable_pi_apply (a := i))
+    exact measurable_pi_apply i
   calc
     SequenceKernelConeObj κ ↔ KernelExchangeable (X := coordProcess) κ :=
       sequenceKernelConeObj_iff_kernelExchangeable_coord (κ := κ)

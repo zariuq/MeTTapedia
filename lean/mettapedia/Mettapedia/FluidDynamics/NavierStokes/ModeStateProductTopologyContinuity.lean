@@ -28,8 +28,7 @@ theorem continuous_modeCoeff (n : ℕ) : Continuous fun x : ModeState => x.coeff
   exact (continuous_apply n).comp continuous_induced_dom
 
 theorem continuous_modeTerm (n : ℕ) : Continuous fun x : ModeState => modeTerm x n := by
-  simpa [modeTerm] using
-    (continuous_abs.comp (continuous_modeCoeff n)).mul (continuous_const : Continuous fun _ : ModeState => modeWeight n)
+  exact (continuous_abs.comp (continuous_modeCoeff n)).mul (continuous_const : Continuous fun _ : ModeState => modeWeight n)
 
 theorem modeTerm_norm_le_modeWeight (x : ModeState) (n : ℕ) :
     ‖modeTerm x n‖ ≤ modeWeight n := by

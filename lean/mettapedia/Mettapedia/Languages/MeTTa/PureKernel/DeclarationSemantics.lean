@@ -204,7 +204,7 @@ private theorem subst_vars_eq_rename (ρ : Ren n m) (t : PureTm n) :
     subst (fun i => (.var (ρ i) : PureTm m)) t
         = subst (ids (n := m)) (rename ρ t) := by
             symm
-            simpa using (subst_rename (σ := ids (n := m)) (ρ := ρ) (t := t))
+            simpa [ids] using (subst_rename (σ := ids (n := m)) (ρ := ρ) (t := t))
     _ = rename ρ t := by
           exact subst_ids (t := rename ρ t)
 
@@ -686,7 +686,7 @@ theorem typing_rename_decl {E : DeclEnv} {Γ : Ctx n} {t A : PureTm n}
       simpa [rename] using (HasTypeDecl.u0_type (E := E) (Γ := Δ))
   | var i =>
       intro m Δ ρ hρ
-      simpa [hρ i] using (HasTypeDecl.var (E := E) (Γ := Δ) (i := ρ i))
+      simpa only [hρ i, rename] using (HasTypeDecl.var (E := E) (Γ := Δ) (i := ρ i))
   | @const n Γ c A0 hLookup =>
       intro m Δ ρ hρ
       simpa [rename, rename_liftClosed] using
@@ -1369,8 +1369,9 @@ private theorem closed_typing_lift_to_ctx {E : DeclEnv} {Γ : Ctx n} {t A : Pure
   have hρ : CtxRen .nil Γ ρ0 := by
     intro i
     nomatch i
-  simpa [rename_liftClosed] using
-    (typing_rename_decl (ht := h) (m := n) (Δ := Γ) (ρ := ρ0) hρ)
+  have hkey := typing_rename_decl (ht := h) (m := n) (Δ := Γ) (ρ := ρ0) hρ
+  rw [rename_liftClosed, rename_liftClosed] at hkey
+  exact hkey
 
 /-- Declaration-aware one-step preservation for `δ`-unfolding from a successful
 value lookup in a well-formed declaration environment. -/

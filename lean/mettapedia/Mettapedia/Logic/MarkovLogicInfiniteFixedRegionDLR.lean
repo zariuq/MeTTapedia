@@ -1308,7 +1308,7 @@ theorem MarginalClusterPoint.tendsto_lintegral_stageMarginal
     (a := fun x => g x * limitMarginal μ J ({x} : Set (LocalAssignment Atom J))) ?_
   intro x hx
   have hx' := h J ({x} : Set (LocalAssignment Atom J)) (MeasurableSet.singleton x)
-  simpa using ENNReal.Tendsto.const_mul hx' (Or.inr (hg_top x))
+  exact ENNReal.Tendsto.const_mul hx' (Or.inr (hg_top x))
 
 theorem stageMarginal_lintegral_cylinderBoundaryKernelValue
     {Atom ClauseId : Type*} [DecidableEq Atom] [DecidableEq ClauseId]

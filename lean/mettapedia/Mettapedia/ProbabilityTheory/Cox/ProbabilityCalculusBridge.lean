@@ -1,5 +1,5 @@
 import Mettapedia.ProbabilityTheory.Cox.ProductRuleDerivation
-import Mettapedia.ProbabilityTheory.KnuthSkilling.Probability.ProbabilityCalculus
+import KnuthSkilling.Probability.ProbabilityCalculus
 
 /-!
 # Cox ⇄ ProbabilityCalculus Bridge

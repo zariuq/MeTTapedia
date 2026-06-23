@@ -519,28 +519,28 @@ noncomputable def semanticsOfQuantaleType : QuantaleType → QuantaleTypeSemanti
 noncomputable def toBoolOfQuantaleType :
     (t : QuantaleType) →
       Mettapedia.Algebra.QuantaleWeakness.QuantaleHom (semanticsOfQuantaleType t).Q BoolQuantale
-  | .commutative => by simpa [semanticsOfQuantaleType] using commToBool
-  | .interval => by simpa [semanticsOfQuantaleType] using intervalToBool
-  | .noncommutative => by simpa [semanticsOfQuantaleType] using quantumToBool
-  | .free => by simpa [semanticsOfQuantaleType] using freeToBool
-  | .boolean => by simpa [semanticsOfQuantaleType] using booleanIndepToBool
-  | .monotone => by simpa [semanticsOfQuantaleType] using monotoneIndepToBool
+  | .commutative => by simpa [semanticsOfQuantaleType] using! commToBool
+  | .interval => by simpa [semanticsOfQuantaleType] using! intervalToBool
+  | .noncommutative => by simpa [semanticsOfQuantaleType] using! quantumToBool
+  | .free => by simpa [semanticsOfQuantaleType] using! freeToBool
+  | .boolean => by simpa [semanticsOfQuantaleType] using! booleanIndepToBool
+  | .monotone => by simpa [semanticsOfQuantaleType] using! monotoneIndepToBool
   | .booleanAlgebra => by
-      simpa [semanticsOfQuantaleType] using
+      simpa [semanticsOfQuantaleType] using!
         (Mettapedia.Algebra.QuantaleWeakness.QuantaleHom.id (Q := BoolQuantale))
 
 noncomputable def toCommOfQuantaleType :
     (t : QuantaleType) →
       Mettapedia.Algebra.QuantaleWeakness.QuantaleHom (semanticsOfQuantaleType t).Q CommQuantale
   | .commutative => by
-      simpa [semanticsOfQuantaleType] using
+      simpa [semanticsOfQuantaleType] using!
         (Mettapedia.Algebra.QuantaleWeakness.QuantaleHom.id (Q := CommQuantale))
-  | .interval => by simpa [semanticsOfQuantaleType] using intervalUpperToComm
-  | .noncommutative => by simpa [semanticsOfQuantaleType] using quantumToComm
-  | .free => by simpa [semanticsOfQuantaleType] using freeToComm
-  | .boolean => by simpa [semanticsOfQuantaleType] using booleanIndepToComm
-  | .monotone => by simpa [semanticsOfQuantaleType] using monotoneIndepToComm
-  | .booleanAlgebra => by simpa [semanticsOfQuantaleType] using boolToComm
+  | .interval => by simpa [semanticsOfQuantaleType] using! intervalUpperToComm
+  | .noncommutative => by simpa [semanticsOfQuantaleType] using! quantumToComm
+  | .free => by simpa [semanticsOfQuantaleType] using! freeToComm
+  | .boolean => by simpa [semanticsOfQuantaleType] using! booleanIndepToComm
+  | .monotone => by simpa [semanticsOfQuantaleType] using! monotoneIndepToComm
+  | .booleanAlgebra => by simpa [semanticsOfQuantaleType] using! boolToComm
 
 noncomputable def semanticsOfVertex (v : ProbabilityVertex) : QuantaleTypeSemantics :=
   semanticsOfQuantaleType (quantaleTypeOf v)

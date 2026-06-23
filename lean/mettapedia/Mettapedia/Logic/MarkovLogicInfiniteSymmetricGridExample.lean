@@ -241,8 +241,21 @@ theorem patch_mem_localQueryEvent_gridOriginCornerTripleLocalQuery_iff
       patch Λ x ξ gridOrigin = bOrigin ∧
         patch Λ x ξ gridOriginEast = bEast ∧
         patch Λ x ξ gridOriginNorth = bNorth := by
-  simp [localQueryEvent, worldRestriction, satisfiesConstraints,
-    gridOriginCornerTripleLocalQuery, gridOriginCornerTripleRegion]
+  simp only [localQueryEvent, worldRestriction, satisfiesConstraints,
+    gridOriginCornerTripleLocalQuery, gridOriginCornerTripleRegion, Set.mem_setOf_eq]
+  constructor
+  · intro h
+    exact ⟨h _ List.mem_cons_self,
+      h _ (List.mem_cons_of_mem _ List.mem_cons_self),
+      h _ (List.mem_cons_of_mem _ (List.mem_cons_of_mem _ List.mem_cons_self))⟩
+  · rintro ⟨h1, h2, h3⟩ c hc
+    rcases List.mem_cons.1 hc with rfl | hc
+    · exact h1
+    rcases List.mem_cons.1 hc with rfl | hc
+    · exact h2
+    rcases List.mem_cons.1 hc with rfl | hc
+    · exact h3
+    exact absurd hc (List.not_mem_nil)
 
 /-- Current finite carrier for a corner separator witness: a region inside the
 square box whose cut separates the corner origin from both axis directions
@@ -2108,11 +2121,8 @@ theorem leaf_mem_insertLeafAtSupport
 
 theorem rotate_length {V : Type*} [DecidableEq V] {G : SimpleGraph V}
     {root u : V} (p : G.Walk u u) (hroot : root ∈ p.support) :
-    (p.rotate hroot).length = p.length := by
-  have hsplit := congrArg SimpleGraph.Walk.length (SimpleGraph.Walk.take_spec p hroot)
-  simp only [SimpleGraph.Walk.length_append] at hsplit
-  simp [SimpleGraph.Walk.rotate]
-  omega
+    (p.rotate root hroot).length = p.length :=
+  SimpleGraph.Walk.length_rotate p root hroot
 
 end Walk
 end SimpleGraph
@@ -2204,9 +2214,9 @@ theorem Connected.exists_closedWalk_cover_length_le
               simpa [pIns] using
                 SimpleGraph.Walk.leaf_mem_insertLeafAtSupport
                   pLift hyLift hvy.symm
-            refine ⟨pIns.rotate hrootIns, ?_, ?_⟩
+            refine ⟨pIns.rotate root hrootIns, ?_, ?_⟩
             · intro x
-              rw [SimpleGraph.Walk.mem_support_rotate_iff pIns hrootIns]
+              rw [SimpleGraph.Walk.mem_support_rotate_iff pIns root hrootIns]
               by_cases hxroot : x = root
               · subst x
                 exact hrootIns
@@ -2217,13 +2227,13 @@ theorem Connected.exists_closedWalk_cover_length_le
                       show x ≠ root
                       exact hxroot))
             · have hlenLift : pLift.length = pSub.length := by
-                simp [pLift]
+                exact SimpleGraph.Walk.length_map _ _
               have hlenIns : pIns.length = pLift.length + 2 := by
                 simpa [pIns] using
                   SimpleGraph.Walk.insertLeafAtSupport_length
                     pLift hyLift hvy.symm
               calc
-                (pIns.rotate hrootIns).length = pIns.length :=
+                (pIns.rotate root hrootIns).length = pIns.length :=
                   SimpleGraph.Walk.rotate_length pIns hrootIns
                 _ = pLift.length + 2 := hlenIns
                 _ = pSub.length + 2 := by omega
@@ -2280,7 +2290,7 @@ theorem Connected.exists_closedWalk_cover_length_le
                       show x ≠ v
                       exact hxv))
             · have hlenLift : pLift.length = pSub.length := by
-                simp [pLift]
+                exact SimpleGraph.Walk.length_map _ _
               have hlenIns : pIns.length = pLift.length + 2 := by
                 simpa [pIns] using
                   SimpleGraph.Walk.insertLeafAtSupport_length
@@ -2610,9 +2620,8 @@ def gridAdjacentRegionRel (inside : Region GridNode) :
   fun a b => gridAdjacent a.1 b.1
 
 theorem gridAdjacentRegionRel_symm (inside : Region GridNode) :
-    Symmetric (gridAdjacentRegionRel inside) := by
-  intro a b hab
-  exact gridAdjacent_symm hab
+    Std.Symm (gridAdjacentRegionRel inside) :=
+  ⟨fun _ _ hab => gridAdjacent_symm hab⟩
 
 def gridAdjacentRegionGraph (inside : Region GridNode) :
     SimpleGraph {p // p ∈ inside} :=
@@ -4314,9 +4323,8 @@ def visibleOuterBoundaryStarRel (n : ℕ) (hull : Region GridNode) :
   fun a b => gridNodeStarAdjacent a.1 b.1
 
 theorem visibleOuterBoundaryStarRel_symm (n : ℕ) (hull : Region GridNode) :
-    Symmetric (visibleOuterBoundaryStarRel n hull) := by
-  intro a b hab
-  exact gridNodeStarAdjacent_symm hab
+    Std.Symm (visibleOuterBoundaryStarRel n hull) :=
+  ⟨fun _ _ hab => gridNodeStarAdjacent_symm hab⟩
 
 def visibleOuterBoundaryStarGraph (n : ℕ) (hull : Region GridNode) :
     SimpleGraph {p // p ∈ visibleOuterBoundary n hull} :=
@@ -8569,11 +8577,10 @@ theorem visibleBoundaryChoiceStarRel_symm
         (gridRegionSupport (gridExhaustion.region cutStage)).filter
           (gridBaseClauseCutsRegion hull))
     (hHull : hull ⊆ gridExhaustion.region cutStage) :
-    Symmetric (visibleBoundaryChoiceStarRel
+    Std.Symm (visibleBoundaryChoiceStarRel
       (visibleStage := visibleStage) (cutStage := cutStage)
-      (hull := hull) (s := s) hsEq hHull) := by
-  intro p q hpq
-  exact gridClauseStarAdjacent_symm hpq
+      (hull := hull) (s := s) hsEq hHull) :=
+  ⟨fun _ _ hpq => gridClauseStarAdjacent_symm hpq⟩
 
 def visibleBoundaryChoiceStarGraph
     {visibleStage cutStage : ℕ} {hull : Region GridNode}
@@ -10235,7 +10242,7 @@ theorem outerCutCard_lower_of_insideEndpoints
               rcases Finset.mem_union.1 hj with hjV | hjH
               · exact hsubsetV hjV
               · exact hsubsetH hjH
-  unfold originContainingSubregionOuterCutCard at hcard
+  unfold originContainingSubregionOuterCutCard
   simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using hcard
 
 theorem exists_outerCutRowColSkeleton_of_insideEndpoints
@@ -14097,8 +14104,7 @@ theorem rootedStarConnectedCutSet_of_mem_axisAnchored_diag
     ⟨horizontal_root_mem_of_mem_originConnectedHullCutSetCandidatesInCutCardBoxAxisAnchored hs,
       ?_⟩
   intro x hx
-  simpa [gridClauseStarAdjacentIn] using
-    prof.reachable_of_mem_axisAnchored_of_diag hs hdiag hx
+  exact prof.reachable_of_mem_axisAnchored_of_diag hs hdiag hx
 
 theorem axisAnchoredRootedStarConnectedFamily_of_slack_case
     (hslack :
@@ -14237,7 +14243,7 @@ theorem originConnectedHullCutSetCandidatesInCutCardBoxAxisAnchored_card_le_bino
       | zero =>
           exact hgVx0.trans hgVy0.symm
       | succ k =>
-          simpa using hgVSucc k
+          exact hgVSucc k
     have hgH :
         ∀ r : Fin (j + 1), profx.gH r = profy.gH r := by
       intro r
@@ -17063,7 +17069,7 @@ theorem exists_rootedPrefix_of_clauseChain
         pref₀.tag k = CutWalkVisitTag.fresh →
           pref₀.step k ∈ s := by
     intro k _htag
-    simpa [pref₀] using hroot
+    simpa [pref₀, cutWalkRootPrefix] using hroot
   have hcover₀ :
       ∀ x ∈ ({GridClauseId.horizontal i 0} : Finset GridClauseId),
         ∃ k : Fin pref₀.len,
@@ -17096,10 +17102,10 @@ theorem exists_rootedPrefix_of_clauseChain
   rcases hfirst hpos with ⟨hstepFirst, htagFirst⟩
   have hstep0 :
       pref.step ⟨0, hpos⟩ = GridClauseId.horizontal i 0 := by
-    simpa [pref₀] using hstepFirst
+    simpa [pref₀, cutWalkRootPrefix] using hstepFirst
   have htag0 :
       pref.tag ⟨0, hpos⟩ = CutWalkVisitTag.fresh := by
-    simpa [pref₀] using htagFirst
+    simpa [pref₀, cutWalkRootPrefix] using htagFirst
   refine ⟨pref, hpos, hprefLe, hstep0, htag0, hmem, ?_⟩
   intro x hx
   apply hcoverPrefix x
@@ -17146,7 +17152,7 @@ theorem exists_rootedPrefix_of_taggedClauseChain
         pref₀.tag k = CutWalkVisitTag.fresh →
           pref₀.step k ∈ s := by
     intro k _htag
-    simpa [pref₀] using hroot
+    simpa [pref₀, cutWalkRootPrefix] using hroot
   have hcover₀ :
       ∀ x ∈ ({GridClauseId.horizontal i 0} : Finset GridClauseId),
         ∃ k : Fin pref₀.len,
@@ -17178,10 +17184,10 @@ theorem exists_rootedPrefix_of_taggedClauseChain
   rcases hfirst hpos with ⟨hstepFirst, htagFirst⟩
   have hstep0 :
       pref.step ⟨0, hpos⟩ = GridClauseId.horizontal i 0 := by
-    simpa [pref₀] using hstepFirst
+    simpa [pref₀, cutWalkRootPrefix] using hstepFirst
   have htag0 :
       pref.tag ⟨0, hpos⟩ = CutWalkVisitTag.fresh := by
-    simpa [pref₀] using htagFirst
+    simpa [pref₀, cutWalkRootPrefix] using htagFirst
   refine ⟨pref, hpos, hprefLe, hstep0, htag0, hmem, ?_⟩
   intro x hx
   apply hcoverPrefix x
@@ -18416,7 +18422,7 @@ theorem exists_rootedPrefix_of_starClauseChain
         pref₀.tag k = CutWalkVisitTag.fresh →
           pref₀.step k ∈ s := by
     intro k _htag
-    simpa [pref₀] using hroot
+    simpa [pref₀, cutWalkRootPrefix] using hroot
   have hcover₀ :
       ∀ x ∈ ({GridClauseId.horizontal i 0} : Finset GridClauseId),
         ∃ k : Fin pref₀.len,
@@ -18448,10 +18454,10 @@ theorem exists_rootedPrefix_of_starClauseChain
   rcases hfirst hpos with ⟨hstepFirst, htagFirst⟩
   have hstep0 :
       pref.step ⟨0, hpos⟩ = GridClauseId.horizontal i 0 := by
-    simpa [pref₀] using hstepFirst
+    simpa [pref₀, cutWalkRootPrefix] using hstepFirst
   have htag0 :
       pref.tag ⟨0, hpos⟩ = CutWalkVisitTag.fresh := by
-    simpa [pref₀] using htagFirst
+    simpa [pref₀, cutWalkRootPrefix] using htagFirst
   refine ⟨pref, hpos, hprefLe, hstep0, htag0, hmem, ?_⟩
   intro x hx
   apply hcoverPrefix x
@@ -18543,9 +18549,7 @@ theorem RootedStarConnectedCutSet.subtype_starGraph_connected
     (hstar : RootedStarConnectedCutSet root s) :
     let R : {c // c ∈ s} → {c // c ∈ s} → Prop :=
       fun a b => gridClauseStarAdjacent a.1 b.1
-    let hRsymm : Symmetric R := by
-      intro a b hab
-      exact gridClauseStarAdjacent_symm hab
+    let hRsymm : Std.Symm R := ⟨fun _ _ hab => gridClauseStarAdjacent_symm hab⟩
     (SimpleGraph.fromEdgeSet (Sym2.fromRel hRsymm)).Connected := by
   intro R hRsymm
   let rootSub : {c // c ∈ s} := ⟨root, hstar.root_mem⟩
@@ -18566,16 +18570,12 @@ theorem RootedStarConnectedCutSet.of_subtype_starGraph_connected
     (hconn :
       let R : {c // c ∈ s} → {c // c ∈ s} → Prop :=
         fun a b => gridClauseStarAdjacent a.1 b.1
-      let hRsymm : Symmetric R := by
-        intro a b hab
-        exact gridClauseStarAdjacent_symm hab
+      let hRsymm : Std.Symm R := ⟨fun _ _ hab => gridClauseStarAdjacent_symm hab⟩
       (SimpleGraph.fromEdgeSet (Sym2.fromRel hRsymm)).Connected) :
     RootedStarConnectedCutSet root s := by
   let R : {c // c ∈ s} → {c // c ∈ s} → Prop :=
     fun a b => gridClauseStarAdjacent a.1 b.1
-  let hRsymm : Symmetric R := by
-    intro a b hab
-    exact gridClauseStarAdjacent_symm hab
+  let hRsymm : Std.Symm R := ⟨fun _ _ hab => gridClauseStarAdjacent_symm hab⟩
   have hconn' :
       (SimpleGraph.fromEdgeSet (Sym2.fromRel hRsymm)).Connected := by
     simpa [R, hRsymm] using hconn
@@ -18608,9 +18608,7 @@ theorem rootedStarConnectedCutSet_iff_subtype_starGraph_connected
     RootedStarConnectedCutSet root s ↔
       let R : {c // c ∈ s} → {c // c ∈ s} → Prop :=
         fun a b => gridClauseStarAdjacent a.1 b.1
-      let hRsymm : Symmetric R := by
-        intro a b hab
-        exact gridClauseStarAdjacent_symm hab
+      let hRsymm : Std.Symm R := ⟨fun _ _ hab => gridClauseStarAdjacent_symm hab⟩
       (SimpleGraph.fromEdgeSet (Sym2.fromRel hRsymm)).Connected := by
   constructor
   · intro hstar
@@ -18623,9 +18621,8 @@ def cutSetStarRel (s : Finset GridClauseId) :
   fun a b => gridClauseStarAdjacent a.1 b.1
 
 theorem cutSetStarRel_symm (s : Finset GridClauseId) :
-    Symmetric (cutSetStarRel s) := by
-  intro a b hab
-  exact gridClauseStarAdjacent_symm hab
+    Std.Symm (cutSetStarRel s) :=
+  ⟨fun _ _ hab => gridClauseStarAdjacent_symm hab⟩
 
 def cutSetStarGraph (s : Finset GridClauseId) :
     SimpleGraph {c // c ∈ s} :=
@@ -19423,8 +19420,7 @@ theorem RootedStarConnectedCutSet.cutSetStarGraph_connected
     {root : GridClauseId} {s : Finset GridClauseId}
     (hstar : RootedStarConnectedCutSet root s) :
     (cutSetStarGraph s).Connected := by
-  simpa [cutSetStarGraph, cutSetStarRel] using
-    hstar.subtype_starGraph_connected
+  exact hstar.subtype_starGraph_connected
 
 theorem RootedStarConnectedCutSet.of_cutSetStarGraph_connected
     {root : GridClauseId} {s : Finset GridClauseId}
@@ -19432,7 +19428,7 @@ theorem RootedStarConnectedCutSet.of_cutSetStarGraph_connected
     (hconn : (cutSetStarGraph s).Connected) :
     RootedStarConnectedCutSet root s := by
   refine RootedStarConnectedCutSet.of_subtype_starGraph_connected hroot ?_
-  simpa [cutSetStarGraph, cutSetStarRel] using hconn
+  exact hconn
 
 theorem rootedStarConnectedCutSet_iff_cutSetStarGraph_connected
     {root : GridClauseId} {s : Finset GridClauseId}
@@ -19654,9 +19650,7 @@ theorem exists_starClosedWalk_of_rootedStarConnectedCutSet
             (∀ x ∈ s, x ∈ p.support) := by
   let R : {c // c ∈ s} → {c // c ∈ s} → Prop :=
     fun a b => gridClauseStarAdjacent a.1 b.1
-  let hRsymm : Symmetric R := by
-    intro a b hab
-    exact gridClauseStarAdjacent_symm hab
+  let hRsymm : Std.Symm R := ⟨fun _ _ hab => gridClauseStarAdjacent_symm hab⟩
   let Gsub : _root_.SimpleGraph {c // c ∈ s} :=
     _root_.SimpleGraph.fromEdgeSet (Sym2.fromRel hRsymm)
   let rootSub : {c // c ∈ s} := ⟨root, hstar.root_mem⟩
@@ -19665,9 +19659,8 @@ theorem exists_starClosedWalk_of_rootedStarConnectedCutSet
       (hstar.subtype_starGraph_connected)
   rcases SimpleGraph.Connected.exists_closedWalk_cover_length_le hconnSub rootSub with
     ⟨pSub, hcoverSub, hlenSub⟩
-  let hStarSymm : Symmetric gridClauseStarAdjacent := by
-    intro a b hab
-    exact gridClauseStarAdjacent_symm hab
+  let hStarSymm : Std.Symm gridClauseStarAdjacent :=
+    ⟨fun _ _ hab => gridClauseStarAdjacent_symm hab⟩
   let G : _root_.SimpleGraph GridClauseId :=
     _root_.SimpleGraph.fromEdgeSet (Sym2.fromRel hStarSymm)
   let emb : Gsub →g G :=
@@ -19863,7 +19856,7 @@ theorem cutWalkCode_card (m : ℕ) :
     _ = 8 ^ (2 * m) := by
           simp [Fintype.card_prod, hmove, htag]
     _ = 64 ^ m := by
-          simpa using (pow_mul 8 2 m)
+          rw [pow_mul]; norm_num
 
 theorem cutWalkCode_card_ennreal (m : ℕ) :
     ((Fintype.card (CutWalkCode m) : ℕ) : ENNReal) = (64 : ENNReal) ^ m := by
@@ -21167,7 +21160,7 @@ theorem symmetricGridZeroField_flipGainAssignmentFinset_weightSum_mul_cutFactor_
           intro x hx y hy hxy
           exact hflip_injective hxy
     _ ≤ Finset.sum Finset.univ wt := by
-          exact Finset.sum_le_univ_sum_of_nonneg (fun _ => zero_le _)
+          exact Finset.sum_le_univ_sum_of_nonneg (fun _ => zero_le)
     _ = M.finiteVolumePartition Λ ξ := by
           simp [M, wt, Mettapedia.Logic.MarkovLogicInfiniteSpecification.InfiniteGroundMLNSpec.finiteVolumePartition]
 
@@ -21308,7 +21301,7 @@ theorem symmetricGridZeroField_flipGainAssignmentFinset_finiteVolumeWorldMeasure
           exact mul_le_mul_of_nonneg_right
             (symmetricGridZeroField_flipGainAssignmentFinset_weightSum_mul_cutFactor_le_partition
               (w := w) (Λ := Λ) inside hInsideΛ ξ)
-            (by exact zero_le _)
+            (by exact zero_le)
     _ = 1 := by
           exact ENNReal.mul_inv_cancel hZ htop
 
@@ -21388,7 +21381,7 @@ theorem falseInsideTrueCutBoundaryRegion_finiteVolumeWorldMeasure_mul_cutFactor_
           (MeasureTheory.cylinder Λ
             (((A : Finset (LocalAssignment GridNode Λ)) :
               Set (LocalAssignment GridNode Λ)))) := by
-          exact mul_le_mul_of_nonneg_left hmono (by exact zero_le _)
+          exact mul_le_mul_of_nonneg_left hmono (by exact zero_le)
     _ ≤ 1 := by
           simpa [A] using
             (symmetricGridZeroField_flipGainAssignmentFinset_finiteVolumeWorldMeasure_mul_cutFactor_le_one
@@ -21434,7 +21427,7 @@ theorem symmetricGridZeroField_originSpinDown_finiteVolumeWorldMeasure_le_sum_or
   let qFalse := gridOriginSpinLocalQueryInRegion Λ (gridOrigin_mem_gridExhaustion_region n) false
   let Sfalse : Set (LocalAssignment GridNode Λ) := originSpinDownAssignmentEvent n
   have hSfalse_meas : MeasurableSet Sfalse := by
-    simpa [Sfalse, qFalse] using measurableSet_localConstraintSet Λ qFalse
+    exact measurableSet_localConstraintSet Λ qFalse
   have hsubset :
       Sfalse ⊆ ⋃ inside, if inside ∈ originContainingSubregions n then
           originContainingSubregionAssignmentEvent n gridPlusBoundary inside else ∅ :=
@@ -21524,7 +21517,7 @@ theorem symmetricGridZeroField_originSpinDown_finiteVolumeWorldMeasure_le_sum_or
   let qFalse := gridOriginSpinLocalQueryInRegion Λ (gridOrigin_mem_gridExhaustion_region n) false
   let Sfalse : Set (LocalAssignment GridNode Λ) := originSpinDownAssignmentEvent n
   have hSfalse_meas : MeasurableSet Sfalse := by
-    simpa [Sfalse, qFalse] using measurableSet_localConstraintSet Λ qFalse
+    exact measurableSet_localConstraintSet Λ qFalse
   have hsubset :
       Sfalse ⊆ ⋃ inside, if inside ∈ originConnectedContainingSubregions n then
           originContainingSubregionAssignmentEvent n gridPlusBoundary inside else ∅ :=
@@ -22122,7 +22115,7 @@ theorem symmetricGridZeroField_originSpinDown_finiteVolumeWorldMeasure_le_sum_ex
         countBound m * ((ENNReal.ofReal (Real.exp w)) ^ m)⁻¹ := by
           refine Finset.sum_le_sum ?_
           intro m hm
-          exact mul_le_mul_of_nonneg_right (hcount m hm) (by exact zero_le _)
+          exact mul_le_mul_of_nonneg_right (hcount m hm) (by exact zero_le)
 
 theorem sum_originConnectedHullContainingSubregions_cutFactorInv_eq_sum_cutCardRange
     (w : ℝ) (n : ℕ) :
@@ -22210,7 +22203,7 @@ theorem symmetricGridZeroField_originSpinDown_finiteVolumeWorldMeasure_le_sum_co
         countBound m * ((ENNReal.ofReal (Real.exp w)) ^ m)⁻¹ := by
           refine Finset.sum_le_sum ?_
           intro m hm
-          exact mul_le_mul_of_nonneg_right (hcount m hm) (by exact zero_le _)
+          exact mul_le_mul_of_nonneg_right (hcount m hm) (by exact zero_le)
 
 theorem symmetricGridZeroField_originSpinDown_finiteVolumeWorldMeasure_le_sum_originConnectedContainingSubregions_outerCutFactorInv
     (w : ℝ) (n : ℕ) :
@@ -22398,7 +22391,7 @@ theorem symmetricGridZeroField_originSpinDown_finiteVolumeWorldMeasure_le_sum_cu
         countBound m * ((ENNReal.ofReal (Real.exp w)) ^ m)⁻¹ := by
           refine Finset.sum_le_sum ?_
           intro m hm
-          exact mul_le_mul_of_nonneg_right (hcount m hm) (by exact zero_le _)
+          exact mul_le_mul_of_nonneg_right (hcount m hm) (by exact zero_le)
 
 theorem symmetricGridZeroField_originSpinDown_finiteVolumeWorldMeasure_le_geometricCutCardBound
     (w : ℝ) (n : ℕ) (C q : ENNReal)
@@ -22520,7 +22513,7 @@ theorem symmetricGridZeroField_originSpinDown_finiteVolumeWorldMeasure_le_sum_co
         countBound m * ((ENNReal.ofReal (Real.exp w)) ^ m)⁻¹ := by
           refine Finset.sum_le_sum ?_
           intro m hm
-          exact mul_le_mul_of_nonneg_right (hcount m hm) (by exact zero_le _)
+          exact mul_le_mul_of_nonneg_right (hcount m hm) (by exact zero_le)
 
 theorem symmetricGridZeroField_originSpinDown_finiteVolumeWorldMeasure_le_connectedGeometricCutCardBound
     (w : ℝ) (n : ℕ) (C q : ENNReal)
@@ -22581,9 +22574,8 @@ theorem tsum_if_two_le_geometric
   have hshift :
       (∑' m : ↥((Finset.range 2 : Set ℕ)ᶜ), r ^ (m : ℕ)) =
         ∑' m : ℕ, r ^ (m + 2) := by
-    simpa [coe_notMemRangeEquiv_symm]
-      using ((notMemRangeEquiv 2).symm.tsum_eq
-        (f := fun m : {n // n ∉ Finset.range 2} => r ^ (m : ℕ))).symm
+    exact ((notMemRangeEquiv 2).symm.tsum_eq
+      (f := fun m : {n // n ∉ Finset.range 2} => r ^ (m : ℕ))).symm
   rw [← hsubtype, hshift]
   calc
     (∑' m : ℕ, r ^ (m + 2)) = ∑' m : ℕ, r ^ 2 * r ^ m := by
@@ -22752,7 +22744,7 @@ theorem symmetricGridZeroField_originSpinDown_finiteVolumeWorldMeasure_le_sum_co
         countBound m * ((ENNReal.ofReal (Real.exp w)) ^ m)⁻¹ := by
           refine Finset.sum_le_sum ?_
           intro m hm
-          exact mul_le_mul_of_nonneg_right (hcount m hm) (by exact zero_le _)
+          exact mul_le_mul_of_nonneg_right (hcount m hm) (by exact zero_le)
 
 theorem symmetricGridZeroField_originSpinDown_finiteVolumeWorldMeasure_le_connectedOuterGeometricCutCardBound_from_two_of_nonneg
     (w : ℝ) (hw : 0 ≤ w) (n : ℕ) (C q : ENNReal)
@@ -22855,7 +22847,7 @@ theorem symmetricGridZeroField_originSpinDown_finiteVolumeWorldMeasure_le_sum_co
         countBound m * ((ENNReal.ofReal (Real.exp w)) ^ m)⁻¹ := by
           refine Finset.sum_le_sum ?_
           intro m hm
-          exact mul_le_mul_of_nonneg_right (hcount m hm) (by exact zero_le _)
+          exact mul_le_mul_of_nonneg_right (hcount m hm) (by exact zero_le)
 
 theorem symmetricGridZeroField_originSpinDown_finiteVolumeWorldMeasure_le_connectedOuterGeometricCutCardBound_from_two
     (w : ℝ) (n : ℕ) (C q : ENNReal)
@@ -23251,7 +23243,7 @@ theorem cornerAxisSeparator_zeroField_falseInside_trueCutBoundary_finiteVolumeWo
           (MeasureTheory.cylinder (gridExhaustion.region n)
             (((A : Finset (LocalAssignment GridNode (gridExhaustion.region n))) :
               Set (LocalAssignment GridNode (gridExhaustion.region n))))) := by
-          exact mul_le_mul_of_nonneg_left hmono (by exact zero_le _)
+          exact mul_le_mul_of_nonneg_left hmono (by exact zero_le)
     _ ≤ 1 := by
           simpa [A] using
             (cornerAxisSeparator_zeroField_finiteVolumeWorldMeasure_mul_cutFactor_le_one
@@ -24242,12 +24234,9 @@ theorem symmetricGridZeroField_origin_cylinderBoundaryKernelValue_toReal_eq_neig
             then w else -w) +
           (if x ⟨gridOriginNorth, by simp [gridOriginNeighborPairRegion, gridOriginEast, gridOriginNorth]⟩
             then w else -w)) := by
-  simpa [StrictlyPositiveInfiniteGroundMLNSpec.cylinderBoundaryKernelValue,
-    symmetricGridZeroField_cylinderBoundarySupportRegion_origin,
-    gridOriginNeighborPairRegion, gridOriginEast, gridOriginNorth] using
-    (symmetricGridZeroField_origin_singletonKernelTrueProb_eq_sigmoid_neighborBoundarySum
-      w
-      (patch gridOriginNeighborPairRegion x (fun _ => false)))
+  exact symmetricGridZeroField_origin_singletonKernelTrueProb_eq_sigmoid_neighborBoundarySum
+    w
+    (patch gridOriginNeighborPairRegion x (fun _ => false))
 
 theorem symmetricGridZeroField_originSpinUp_finiteVolumeKernel_eq_neighborPairBoundaryIntegral
     (w : ℝ) (n : ℕ) (ξ : BoundaryCondition GridNode) :
@@ -24318,8 +24307,7 @@ theorem symmetricGridZeroField_originSpinUp_finiteVolumeKernel_eq_neighborPairBo
         ∂ gridExhaustion.finiteVolumeKernelSequence
           (symmetricGridZeroFieldClassicalSpec w).toStrictlyPositiveInfiniteGroundMLNSpec
           ξ n := by
-    simpa [symmetricGridZeroField_cylinderBoundarySupportRegion_origin] using
-      (Mettapedia.Logic.MarkovLogicInfiniteFixedRegionDLR.RegionExhaustion.stageMarginal_lintegral_cylinderBoundaryKernelValue
+    exact Mettapedia.Logic.MarkovLogicInfiniteFixedRegionDLR.RegionExhaustion.stageMarginal_lintegral_cylinderBoundaryKernelValue
         (E := gridExhaustion)
         (M := (symmetricGridZeroFieldClassicalSpec w).toStrictlyPositiveInfiniteGroundMLNSpec)
         (ξ := ξ)
@@ -24327,7 +24315,7 @@ theorem symmetricGridZeroField_originSpinUp_finiteVolumeKernel_eq_neighborPairBo
         (Λ := ({gridOrigin} : Region GridNode))
         (I := ({gridOrigin} : Region GridNode))
         (S := singletonTrueAssignmentSet gridOrigin)
-        (hS := measurableSet_singletonTrueAssignmentSet gridOrigin))
+        (hS := measurableSet_singletonTrueAssignmentSet gridOrigin)
   calc
     gridExhaustion.finiteVolumeKernelSequence
         (symmetricGridZeroFieldClassicalSpec w).toStrictlyPositiveInfiniteGroundMLNSpec
@@ -24810,14 +24798,13 @@ theorem symmetricGridZeroFieldBoundaryMarginalFamily_projective
       (ι := GridNode)
       (α := Mettapedia.Logic.MarkovLogicInfiniteProjective.RegionExhaustion.BoolCoord GridNode)
       (symmetricGridZeroFieldBoundaryMarginalFamily w ξ) := by
-  simpa [symmetricGridZeroFieldBoundaryMarginalFamily] using
-    (Mettapedia.Logic.MarkovLogicInfiniteCompactness.RegionExhaustion.isProjectiveMeasureFamily_of_tendsto_stageProbabilityFamily
+  exact Mettapedia.Logic.MarkovLogicInfiniteCompactness.RegionExhaustion.isProjectiveMeasureFamily_of_tendsto_stageProbabilityFamily
       (E := gridExhaustion)
       (M := (symmetricGridZeroFieldClassicalSpec w).toStrictlyPositiveInfiniteGroundMLNSpec)
       (ξ := ξ)
       (P := symmetricGridZeroFieldBoundaryStageProbabilityFamily w ξ)
       (φ := symmetricGridZeroFieldBoundaryStageSubseq w ξ)
-      (symmetricGridZeroFieldBoundaryStageProbabilityFamily_tendsto w ξ))
+      (symmetricGridZeroFieldBoundaryStageProbabilityFamily_tendsto w ξ)
 
 /-- The reindexed exhaustion following the extracted convergent subsequence for
 boundary condition `ξ`. -/

@@ -364,7 +364,10 @@ theorem logLikelihoodRatio_decomposition_ae (ν ν_star : Environment) (t : ℕ)
           have h_step :
               (extendPrefix (truncate (s + 1) traj) s) = traj s := by
             simp [extendPrefix, truncate]
-          simpa [badStep, h_hist, h_step] using htraj
+          have h_last :
+              (truncate (s + 1) traj last) = traj s := by
+            simp [truncate, last]
+          simpa [badStep, h_hist, h_last] using htraj
         have h_mem : traj ∈ cylinderSet (trajectoryToHistory (extendPrefix (truncate (s + 1) traj)) (s + 1)) := by
           refine ⟨s + 1, ?_⟩
           refine trajectoryToHistory_depends_on_prefix traj (extendPrefix (truncate (s + 1) traj)) (s + 1) ?_
@@ -429,7 +432,7 @@ theorem logLikelihoodRatio_decomposition_ae (ν ν_star : Environment) (t : ℕ)
         simp [h_each]
       have h0 : μ (badStep s) ≤ 0 := by
         simpa [h_sum] using h_le.trans_eq h_sum
-      exact le_antisymm h0 (zero_le _)
+      exact le_antisymm h0 zero_le
 
     -- Hence almost surely, all `ν_star` one-step probabilities along the first `t+1` steps are positive.
     have h_good :
@@ -444,7 +447,7 @@ theorem logLikelihoodRatio_decomposition_ae (ν ν_star : Environment) (t : ℕ)
               ≤ ∑ s ∈ Finset.range t.succ, μ (badStep s) :=
                   MeasureTheory.measure_biUnion_finset_le (μ := μ) (Finset.range t.succ) badStep
           _ = 0 := by simp [h_badStep_zero]
-        · exact zero_le _
+        · exact zero_le
       -- Convert to an a.e. statement.
       have h_ae_not :
           ∀ᵐ traj ∂μ, traj ∉ ⋃ s ∈ Finset.range t.succ, badStep s :=
@@ -1425,14 +1428,16 @@ theorem logLikelihoodRatio_supermartingale (ν ν_star : Environment)
   · -- Adapted
     intro t
     apply Measurable.stronglyMeasurable
-    simpa [trajectoryFiltration] using logLikelihoodRatio_stronglyMeasurable ν ν_star t
+    change @Measurable Trajectory ℝ (sigmaAlgebraUpTo t) _ (logLikelihoodRatio ν ν_star t)
+    exact logLikelihoodRatio_stronglyMeasurable ν ν_star t
   · -- Integrable
     intro t
     simpa [μ] using logLikelihoodRatio_integrable ν ν_star t h_stoch
   · -- One-step set integral inequality
     intro t s hs
     have hs_sigma : @MeasurableSet Trajectory (sigmaAlgebraUpTo t) s := by
-      simpa [trajectoryFiltration, μ] using hs
+      change @MeasurableSet Trajectory (sigmaAlgebraUpTo t) s at hs
+      exact hs
     have hs_meas : MeasurableSet s := (trajectoryFiltration.le t) s hs
     have h_decomp :
         ∀ᵐ traj ∂μ,
@@ -1512,7 +1517,10 @@ theorem logLikelihoodRatio_ae_tendsto_limitProcess_of_eLpNorm_bdd (ν ν_star : 
       MeasureTheory.Supermartingale (fun t => logLikelihoodRatio ν ν_star t) trajectoryFiltration μ :=
     logLikelihoodRatio_supermartingale ν ν_star h_ne h_stoch h_support
   have h_sub : MeasureTheory.Submartingale f trajectoryFiltration μ := by
-    simpa [f] using h_sup.neg
+    have hf : f = -(fun t => logLikelihoodRatio ν ν_star t) := by
+      funext t traj
+      rfl
+    simpa [hf] using h_sup.neg
 
   have hbdd' : ∀ t, MeasureTheory.eLpNorm (f t) 1 μ ≤ (R : ENNReal) := by
     intro t
@@ -1788,7 +1796,7 @@ theorem ae_forall_historyProbability_toReal_pos (μ : Environment) (pi : Agent) 
         funext p
         exact h_null p
       simp [h_fun]
-    exact le_antisymm (le_trans h_le (h_union.trans_eq h_tsum)) (zero_le _)
+    exact le_antisymm (le_trans h_le (h_union.trans_eq h_tsum)) zero_le
 
   -- Upgrade from `historyProbability = 0` being a null event to `toReal > 0` a.s. for all times.
   have h_each_pos : ∀ t : ℕ, ∀ᵐ traj ∂μT,

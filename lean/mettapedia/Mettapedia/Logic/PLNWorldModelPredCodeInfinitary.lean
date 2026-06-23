@@ -166,7 +166,7 @@ theorem pointwiseImplies_iff_singletonStrengthLE {U : Type*}
       rw [queryStrength_singleton_of_satisfies pw q₁ hq₁]
       rw [queryStrength_singleton_of_satisfies pw q₂ hq₂]
     · rw [queryStrength_singleton_of_not_satisfies pw q₁ hq₁]
-      exact zero_le _
+      exact zero_le
   · intro hle pw hq₁
     by_contra hq₂
     have hsingleton := hle pw

@@ -113,9 +113,19 @@ theorem totalCost_append {A : Type*} {k : Nat} [AddCommMonoid A]
     totalCost cm (rewritePathAppend p q) = totalCost cm p + totalCost cm q := by
   induction p with
   | nil _ =>
-      simp [rewritePathAppend, totalCost]
+      -- `rewritePathAppend (.nil _) q = q` and `totalCost cm (.nil _) = 0`; the residual
+      -- `totalCost cm q = 0 + totalCost cm q` needs `zero_add` on `VectorialAccount A k`,
+      -- which Lean 4.31's `.reducible` `simp` no longer applies through the (non-reducible)
+      -- `VectorialAccount` synonym, so close it explicitly.
+      show totalCost cm q = 0 + totalCost cm q
+      exact (zero_add _).symm
   | cons h rest ih =>
-      simp [rewritePathAppend, totalCost, ih, add_assoc]
+      show cm.cost h + totalCost cm (rewritePathAppend rest q)
+            = cm.cost h + totalCost cm rest + totalCost cm q
+      rw [ih]
+      -- `add_assoc` on `VectorialAccount A k`: use term mode (full defeq) rather than
+      -- `rw`/`simp`, which would need to match the `+` through the opaque synonym.
+      exact (add_assoc _ _ _).symm
 
 theorem totalCost_coord_eq_length_of_step_unit_cost
     {k : Nat} (cm : CostMap S Nat k) (i : Fin k)

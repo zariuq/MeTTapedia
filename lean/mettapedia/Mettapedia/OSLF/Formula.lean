@@ -249,7 +249,7 @@ theorem sem_box_eq_graphIncoming
           sem (langReduces lang) I φ
             (((Mettapedia.OSLF.Framework.ToposReduction.reductionGraph
               (C := C) lang).source.app X e).down)) := by
-  simpa [langReduces, Mettapedia.OSLF.Framework.ToposReduction.reductionGraph] using
+  exact
     (sem_box_eq_graphIncomingUsing (C := C) (relEnv := RelationEnv.empty)
       (lang := lang) (I := I) (φ := φ) (X := X))
 
@@ -689,7 +689,7 @@ theorem checkLang_sat_sound_proc_fiber
       (Mettapedia.OSLF.Framework.CategoryBridge.languageSortFiber_ofPatternPred
         rhoCalc Mettapedia.OSLF.Framework.ConstructorCategory.rhoProc
         seed (sem (langReduces rhoCalc) I_sem φf) hNat).obj X := by
-  simpa [checkLang, checkLangUsing, langReduces] using
+  exact
     (checkLangUsing_sat_sound_proc_fiber
       (relEnv := RelationEnv.empty) (I_check := I_check) (I_sem := I_sem)
       h_atoms hSat seed hNat hArrow hp)
@@ -713,7 +713,7 @@ theorem checkLang_sat_sound_proc_fiber_using
     hArrow ∈
       (Mettapedia.OSLF.Framework.CategoryBridge.rhoProcOSLFUsingPred_to_languageSortFiber
         seed (φ := sem (langReduces rhoCalc) I_sem φf) hNat).obj X := by
-  simpa [checkLang, checkLangUsing, langReduces] using
+  exact
     (checkLangUsing_sat_sound_proc_fiber_using
       (relEnv := RelationEnv.empty) (I_check := I_check) (I_sem := I_sem)
       h_atoms hSat seed hNat hArrow hp)
@@ -794,7 +794,7 @@ theorem checkLang_sat_sound
     {fuel : Nat} {p : Pattern} {φ : OSLFFormula}
     (h : checkLang lang I_check fuel p φ = .sat) :
     sem (langReduces lang) I_sem φ p := by
-  simpa [checkLang, checkLangUsing, langReduces] using
+  exact
     (checkLangUsing_sat_sound (relEnv := RelationEnv.empty)
       (lang := lang) (I_check := I_check) (I_sem := I_sem) h_atoms h)
 
@@ -1094,7 +1094,7 @@ theorem checkLangWithPred_sat_sound
     {fuel : Nat} {p : Pattern} {φ : OSLFFormula}
     (h : checkLangWithPred lang pred I_check fuel p φ = .sat) :
     sem (langReduces lang) I_sem φ p := by
-  simpa [checkLangWithPred, checkLangUsingWithPred, langReduces] using
+  exact
     (checkLangUsingWithPred_sat_sound
       (relEnv := RelationEnv.empty) (lang := lang)
       (pred := pred) (I_check := I_check) (I_sem := I_sem)

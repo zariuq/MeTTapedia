@@ -261,14 +261,14 @@ def constructionBase : ConstructionBase where
 
 theorem flies_mem_control_frontier :
     Trait.flies ∈ constructionBase.frontierAt ControlIndexicality.sampled wingedPremise := by
-  simpa [constructionBase, ConstructionBase.frontierAt] using
-    flies_mem_winged_scrutability_frontier
+  exact flies_mem_winged_scrutability_frontier
 
 theorem control_openWorldAt_sampled :
     constructionBase.openWorldAt ControlIndexicality.sampled wingedPremise := by
   intro hEmpty
   have hMember := flies_mem_control_frontier
-  simp [hEmpty] at hMember
+  rw [hEmpty] at hMember
+  exact (Set.mem_empty_iff_false _).mp hMember
 
 theorem control_thatsAllAt_total :
     constructionBase.thatsAllAt ControlIndexicality.total wingedPremise := by
@@ -287,8 +287,7 @@ theorem flyingFamilyConcept_thatsAllConcept_not :
 
 theorem batOnlyFlyingConcept_thatsAllConcept :
     thatsAllConcept gateFamily context.evidence batOnlyFlyingConcept := by
-  simpa [thatsAllConcept] using
-    ControlCredalExample.batOnlyFlyingConcept_not_mem_controlCredalScrutabilityGap
+  exact ControlCredalExample.batOnlyFlyingConcept_not_mem_controlCredalScrutabilityGap
 
 theorem control_credal_family_supports_both_world_assumptions :
     openWorldConcept gateFamily context.evidence flyingFamilyConcept ∧

@@ -88,6 +88,13 @@ def emptyValuation (M : HenkinModel.{u, v, w} Base Const) :
     HenkinModel.Valuation M ([] : Ctx Base)
   | _, v => nomatch v
 
+@[simp] theorem emptyValuation_eq_nomatch
+    (M : HenkinModel.{u, v, w} Base Const) :
+    (emptyValuation M : HenkinModel.Valuation M ([] : Ctx Base)) =
+      (fun {_τ} v => nomatch v) := by
+  funext τ v
+  nomatch v
+
 /-- A semantic value is represented by a specific closed term when it is exactly
 that term's denotation under the empty valuation. -/
 def RepresentsClosedTerm
@@ -341,7 +348,7 @@ theorem quotientRealization_models_iff_propTruth
         (HenkinModel.denote M p (emptyValuation M)).down :=
     quotientRealization_propTruth_iff_represented_down
       (M := M) R (representsClosedTerm_denote M p)
-  simpa [HenkinModel.models, PreModel.models, emptyValuation] using hTruth.symm
+  exact hTruth.symm
 
 /-- Over a canonical world carrier, a quotient realization turns semantic
 satisfaction into membership in the world. -/
@@ -565,7 +572,7 @@ theorem extDerivation_sound_of_eqvArgumentCongruent
       simpa using hbody'
   | eqRefl t =>
       intro ρ hρ hΔ
-      simpa using HenkinModel.eqv_refl M (HenkinModel.denote_admissible M hρ t)
+      exact HenkinModel.eqv_refl M (HenkinModel.denote_admissible M hρ t)
   | eqSymm h ih =>
       intro ρ hρ hΔ
       exact HenkinModel.eqv_symm M (ih hρ hΔ)
@@ -599,7 +606,8 @@ theorem extDerivation_sound_of_eqvArgumentCongruent
   | funExt h ih =>
       intro ρ hρ hΔ x hx
       have hpoint := ih hρ hΔ x hx
-      simpa [HenkinModel.denote, PreModel.denote] using hpoint
+      simpa [HenkinModel.denote, PreModel.denote, HenkinModel.extend, PreModel.extend]
+        using hpoint
   | beta t u =>
       intro ρ hρ hΔ
       simpa [HenkinModel.denote, PreModel.denote] using
@@ -607,7 +615,7 @@ theorem extDerivation_sound_of_eqvArgumentCongruent
           (HenkinModel.denote_admissible M hρ (instantiate (Base := Base) t u))
   | eta f =>
       intro ρ hρ hΔ x hx
-      simpa [HenkinModel.denote, PreModel.denote] using
+      simpa [HenkinModel.denote, PreModel.denote, HenkinModel.extend, PreModel.extend] using
         (HenkinModel.eqv_refl M
           (M.app_mem (HenkinModel.denote_admissible M hρ f) hx))
 
@@ -666,8 +674,7 @@ theorem closedTheorySet_provable_sound_of_eqvArgumentCongruent
     (by intro τ v; nomatch v)
     (by
       intro ψ hψ
-      simpa [emptyValuation, HenkinModel.models, PreModel.models] using
-        hT ψ (hΔ ψ hψ))
+      exact hT ψ (hΔ ψ hψ))
 
 /-- Finite provability from a theory set is sound in any Henkin model satisfying
 the theory, using realized-arrow admissibility as the semantic arrow law. -/
@@ -712,10 +719,11 @@ theorem closedTheorySet_provable_eq_to_preModel_eqv
         (HenkinModel.denote M t (emptyValuation M))
         (HenkinModel.denote M u (emptyValuation M)) := by
   intro hEq
-  simpa [HenkinModel.models, PreModel.models, HenkinModel.denote, PreModel.denote,
-    emptyValuation] using
-    closedTheorySet_provable_sound_of_eqvArgumentCongruent
-      (M := M) hArg hT hEq
+  change PreModel.Eqv M.toPreModel τ
+    (HenkinModel.denote M t (emptyValuation M))
+    (HenkinModel.denote M u (emptyValuation M))
+  exact closedTheorySet_provable_sound_of_eqvArgumentCongruent
+    (M := M) hArg hT hEq
 
 /-- Provable equality in a closed theory set implies semantic `PreModel.Eqv`
 under the explicit realized-arrow admissibility side condition. -/

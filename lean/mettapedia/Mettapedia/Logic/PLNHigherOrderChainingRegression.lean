@@ -21,18 +21,28 @@ open Mettapedia.Logic.HOL.Probabilistic
 
 theorem higherOrderChaining_regression_leaky_continue_preserves_semanticStatus :
     leakyHigherOrderPlan_C.current.semanticStatus = .higherOrderSemanticGuarded := by
-  simpa [leakyHigherOrderPlan_C, cleanPlan_B, exactStep_B, startPlan]
-    using higherOrder_continue_preserves_semanticStatus
-      cleanPlan_B
-      rfl
-      PLNProofCarryingContractionDemo.softGateStep_C_given_A.query
-      leakyHigherOrderPayload
-      leakyHigherOrderPayload_valid01.validWeights
-      (PLNProofCarryingContractionDemo.softGateStep_C_given_A.sigma ++
-        ["explicit latent admissibility regime over the leaky chain fixture"])
-      (PLNProofCarryingContractionDemo.softGateStep_C_given_A.provenance ++
-        ["finite higher-order regime mixture"])
-      1
+  change
+    (applyStep cleanPlan_B .applyHigherOrderSemantic
+      (PLNGuardedHigherOrderSemantics.higherOrderSemanticContraction
+        PLNProofCarryingContractionDemo.softGateStep_C_given_A.query
+        leakyHigherOrderPayload
+        leakyHigherOrderPayload_valid01.validWeights
+        (PLNProofCarryingContractionDemo.softGateStep_C_given_A.sigma ++
+          ["explicit latent admissibility regime over the leaky chain fixture"])
+        (PLNProofCarryingContractionDemo.softGateStep_C_given_A.provenance ++
+          ["finite higher-order regime mixture"]))
+      1).current.semanticStatus = .higherOrderSemanticGuarded
+  exact higherOrder_continue_preserves_semanticStatus
+    cleanPlan_B
+    rfl
+    PLNProofCarryingContractionDemo.softGateStep_C_given_A.query
+    leakyHigherOrderPayload
+    leakyHigherOrderPayload_valid01.validWeights
+    (PLNProofCarryingContractionDemo.softGateStep_C_given_A.sigma ++
+      ["explicit latent admissibility regime over the leaky chain fixture"])
+    (PLNProofCarryingContractionDemo.softGateStep_C_given_A.provenance ++
+      ["finite higher-order regime mixture"])
+    1
 
 theorem higherOrderChaining_regression_leaky_continue_accumulatedBound_eq :
     leakyHigherOrderPlan_C.accumulatedBound = some (213 / 4420) := by
@@ -75,17 +85,30 @@ theorem higherOrderChaining_regression_leaky_continue_value_eq_benchmarkBeliefPr
     leakyHigherOrderPlan_C.current.value =
       some (((benchmarkBeliefPrice leakyHigherOrderPayload
         leakyHigherOrderPayload_valid01 : HOL.LogicalInduction.Price01) : Rat)) := by
-  simpa [leakyHigherOrderPlan_C, cleanPlan_B, exactStep_B, startPlan]
-    using higherOrder_continue_current_value_eq_benchmarkBeliefPrice
-      cleanPlan_B
-      PLNProofCarryingContractionDemo.softGateStep_C_given_A.query
-      leakyHigherOrderPayload
-      leakyHigherOrderPayload_valid01
-      (PLNProofCarryingContractionDemo.softGateStep_C_given_A.sigma ++
-        ["explicit latent admissibility regime over the leaky chain fixture"])
-      (PLNProofCarryingContractionDemo.softGateStep_C_given_A.provenance ++
-        ["finite higher-order regime mixture"])
-      1
+  change
+    (applyStep cleanPlan_B .applyHigherOrderSemantic
+      (PLNGuardedHigherOrderSemantics.higherOrderSemanticContraction
+        PLNProofCarryingContractionDemo.softGateStep_C_given_A.query
+        leakyHigherOrderPayload
+        leakyHigherOrderPayload_valid01.validWeights
+        (PLNProofCarryingContractionDemo.softGateStep_C_given_A.sigma ++
+          ["explicit latent admissibility regime over the leaky chain fixture"])
+        (PLNProofCarryingContractionDemo.softGateStep_C_given_A.provenance ++
+          ["finite higher-order regime mixture"])
+        )
+      1).current.value =
+      some (((benchmarkBeliefPrice leakyHigherOrderPayload
+        leakyHigherOrderPayload_valid01 : HOL.LogicalInduction.Price01) : Rat))
+  exact higherOrder_continue_current_value_eq_benchmarkBeliefPrice
+    cleanPlan_B
+    PLNProofCarryingContractionDemo.softGateStep_C_given_A.query
+    leakyHigherOrderPayload
+    leakyHigherOrderPayload_valid01
+    (PLNProofCarryingContractionDemo.softGateStep_C_given_A.sigma ++
+      ["explicit latent admissibility regime over the leaky chain fixture"])
+    (PLNProofCarryingContractionDemo.softGateStep_C_given_A.provenance ++
+      ["finite higher-order regime mixture"])
+    1
 
 theorem higherOrderChaining_regression_leaky_broadQueryError_le_residualMass_mul_branchRadius :
     |(PLNGuardedHigherOrderSemantics.higherOrderSemanticValue leakyHigherOrderPayload : ℝ) -

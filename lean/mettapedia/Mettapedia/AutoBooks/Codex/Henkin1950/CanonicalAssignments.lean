@@ -196,9 +196,7 @@ theorem denote_closeTerm
     HenkinModel.denote M (closeTerm ρ t)
       (RepresentativeAssignment.closedValuation M) =
       HenkinModel.denote M t (RepresentativeAssignment.toValuation M ρ) := by
-  simpa [closeTerm, RepresentativeAssignment.toValuation,
-    RepresentativeAssignment.closedValuation, substVal] using
-    (denote_subst M ρ t (RepresentativeAssignment.closedValuation M))
+  exact (denote_subst M ρ t (RepresentativeAssignment.closedValuation M))
 
 /-- Formula version of `denote_closeTerm`, matching the p. 87 representative
 assignment lemma at proposition type. -/

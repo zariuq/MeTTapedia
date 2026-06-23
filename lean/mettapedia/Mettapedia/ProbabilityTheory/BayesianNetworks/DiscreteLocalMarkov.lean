@@ -27,8 +27,9 @@ lemma measurableSet_parents_preimage
   have hs' :
       MeasurableSet[
         MeasurableSpace.comap (parentsRestrict (bn := bn) v) (by infer_instance)] s := by
-    simpa [parentsRestrict,
-      measurableSpaceOfVertices_eq_comap_restrict (bn := bn) (bn.graph.parents v)] using hs
+    rw [measurableSpaceOfVertices_eq_comap_restrict (bn := bn) (bn.graph.parents v)] at hs
+    -- `parentsRestrict v` is definitionally `restrictToSet (parents v)`.
+    exact hs
   rcases (MeasurableSpace.measurableSet_comap).1 hs' with ⟨S, hS, hpre⟩
   exact ⟨S, hS, hpre.symm⟩
 
@@ -113,9 +114,9 @@ lemma measurable_parentFiber_vertices
         (parentFiber (bn := bn) v c) := by
     refine (MeasurableSpace.measurableSet_comap).2 ?_
     exact ⟨({c} : Set (ParentAssign (bn := bn) v)), measurableSet_singleton (x := c), rfl⟩
-  simpa [parentsRestrict,
-    measurableSpaceOfVertices_eq_comap_restrict (bn := bn) (bn.graph.parents v)]
-    using hcomap
+  rw [measurableSpaceOfVertices_eq_comap_restrict (bn := bn) (bn.graph.parents v)]
+  -- `parentsRestrict v` is definitionally `restrictToSet (parents v)`.
+  exact hcomap
 
 lemma setIntegral_parents_preimage
     (μ : Measure bn.JointSpace) [IsFiniteMeasure μ]
@@ -1266,21 +1267,25 @@ theorem jointMeasure_parentFiber_screening_mul
       have hpair : eND (eND.symm (a, xrest)) = (a, xrest) :=
         Equiv.apply_symm_apply eND (a, xrest)
       have hfst : (eND (eND.symm (a, xrest))).1 = a := congrArg Prod.fst hpair
-      simpa [eND] using hfst
+      -- `(eND z).1` is definitionally `z xvIdx` (the `piSplitAt` first projection), and the
+      -- goal's RHS `Function.update _ xvIdx a xvIdx` reduces to `a`; close both by hand
+      -- rather than `simp [eND]`, which collapses `hfst` to `True`.
+      rw [Function.update_self]
+      exact hfst
     · have h1 : (eND.symm (a, xrest)) n = xrest ⟨n, hn⟩ := by
         have hpair : eND (eND.symm (a, xrest)) = (a, xrest) :=
           Equiv.apply_symm_apply eND (a, xrest)
         have hsnd :
             (eND (eND.symm (a, xrest))).2 ⟨n, hn⟩ = xrest ⟨n, hn⟩ :=
           congrArg (fun g => g ⟨n, hn⟩) (congrArg Prod.snd hpair)
-        simpa [eND] using hsnd
+        exact hsnd
       have h2 : (xND0 xrest) n = xrest ⟨n, hn⟩ := by
         have hpair : eND (eND.symm (a0, xrest)) = (a0, xrest) :=
           Equiv.apply_symm_apply eND (a0, xrest)
         have hsnd :
             (eND (eND.symm (a0, xrest))).2 ⟨n, hn⟩ = xrest ⟨n, hn⟩ :=
           congrArg (fun g => g ⟨n, hn⟩) (congrArg Prod.snd hpair)
-        simpa [xND0, eND] using hsnd
+        exact hsnd
       simp [Function.update_of_ne hn, h1, h2]
 
   have hbase_update :
@@ -2571,8 +2576,9 @@ theorem condIndepVertices_of_condIndepSet_constraintAtoms
       refine (MeasurableSpace.measurableSet_comap).2 ?_
       refine ⟨{xX}, by simp, ?_⟩
       exact (eventOfConstraints_constraintsOfRestrict (bn := bn) X xX).symm
-    simpa [mX, measurableSpaceOfVertices_eq_comap_restrict (bn := bn) X,
-      atomX] using hcomap
+    show MeasurableSet[measurableSpaceOfVertices (bn := bn) X] (atomX xX)
+    rw [measurableSpaceOfVertices_eq_comap_restrict (bn := bn) X]
+    exact hcomap
   have hAtomY_meas :
       ∀ xY : (∀ p : Y, bn.stateSpace p.1),
         MeasurableSet[mY] (atomY xY) := by
@@ -2584,8 +2590,9 @@ theorem condIndepVertices_of_condIndepSet_constraintAtoms
       refine (MeasurableSpace.measurableSet_comap).2 ?_
       refine ⟨{xY}, by simp, ?_⟩
       exact (eventOfConstraints_constraintsOfRestrict (bn := bn) Y xY).symm
-    simpa [mY, measurableSpaceOfVertices_eq_comap_restrict (bn := bn) Y,
-      atomY] using hcomap
+    show MeasurableSet[measurableSpaceOfVertices (bn := bn) Y] (atomY xY)
+    rw [measurableSpaceOfVertices_eq_comap_restrict (bn := bn) Y]
+    exact hcomap
   have hp_pi : IsPiSystem p := by
     intro a ha b hb hab
     rcases ha with rfl | ⟨xX, rfl⟩

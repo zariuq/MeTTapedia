@@ -226,8 +226,9 @@ theorem regression_processOne_eventuallyTracksSentenceProbOn_top
     have htop : φ = encodeClosedFormula (.top : ClosedFormula Const) := by
       simpa [topBridgeSample] using hφ
     subst htop
-    simpa [topBridgeSample] using constantOne_tracks_sentenceProb_top
-      (Const := Const) S μ hμ
+    change BeliefDayTracksSentenceProb (Const := Const) S μ
+      (constantDay (Const := Const) Price01.one) (.top : ClosedFormula Const)
+    exact constantOne_tracks_sentenceProb_top (Const := Const) S μ hμ
 
 /-- Negative day-level bridge canary: the constant-half day does not track
 semantic probability on `⊤`. -/

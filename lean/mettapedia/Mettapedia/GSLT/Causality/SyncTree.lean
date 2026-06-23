@@ -33,6 +33,14 @@ open tree is a pure interface: it does nothing alone but responds to everything.
 
 namespace Mettapedia.GSLT
 
+-- These synchronization-tree constructions are genuine methods on `GSLT` (they take
+-- `S : GSLT` and live alongside `GSLT.MultiStep`, `GSLT.RewritePath`, …).  Declaring
+-- them inside `namespace GSLT` is what makes the generalized field notation `S.X` and
+-- the `RewritePath.toInteractive` method-style def resolve under Lean 4.31's tightened
+-- dotted-name resolution (4.28 found them from the enclosing namespace; 4.31 looks for
+-- `GSLT.X` under the receiver type's own namespace, so they must be declared there).
+namespace GSLT
+
 variable (S : GSLT)
 
 /-! ## Closed Synchronization Trees
@@ -69,7 +77,10 @@ theorem closedTree_trivial_iff_normalForm (P : S.Term) :
     S.IsNormalForm P ↔ ¬∃ e : S.ClosedEdge P, e.source = P := by
   constructor
   · intro hnf ⟨e, heq⟩
-    exact hnf ⟨e.target, heq ▸ e.step⟩
+    refine hnf ⟨e.target, ?_⟩
+    have hstep : S.Step e.source e.target := e.step
+    rw [heq] at hstep
+    exact hstep
   · intro hno ⟨t', hstep⟩
     exact hno ⟨⟨P, t', MultiStep.refl P, hstep⟩, rfl⟩
 
@@ -264,5 +275,7 @@ This file establishes:
 
 **Next**: `Dynamics/PathIntegral.lean` (Definition 9.1–9.2)
 -/
+
+end GSLT
 
 end Mettapedia.GSLT

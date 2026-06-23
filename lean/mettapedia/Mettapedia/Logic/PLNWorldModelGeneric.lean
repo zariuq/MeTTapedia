@@ -177,8 +177,8 @@ theorem queryObservationCount_of_unit
     letI : EvidenceType (Multiset Obs) := multisetEvidenceType Obs
     @queryObservationCount (Multiset Obs) Query Ev _ _
       (genericWorldModelOfAtomicEvidence a) _ σ q = (σ.card : ℝ≥0∞) := by
-  simpa [queryObservationCount, genericWorldModelOfAtomicEvidence] using
-    observationCount_genAdditiveExtension_of_unit a hunit σ q
+  simp only [queryObservationCount]
+  exact observationCount_genAdditiveExtension_of_unit a hunit σ q
 
 /-- For a unit-observation atomic contribution, the generic query observation confidence
     equals `σ.card / (σ.card + κ)`. -/
@@ -192,8 +192,8 @@ theorem queryObservationConfidence_of_unit
     @queryObservationConfidence (Multiset Obs) Query Ev _ _
       (genericWorldModelOfAtomicEvidence a) _ κ σ q =
         (σ.card : ℝ≥0∞) / ((σ.card : ℝ≥0∞) + κ) := by
-  simpa [queryObservationConfidence, genericWorldModelOfAtomicEvidence] using
-    observationConfidence_genAdditiveExtension_of_unit κ a hunit σ q
+  simp only [queryObservationConfidence]
+  exact observationConfidence_genAdditiveExtension_of_unit κ a hunit σ q
 
 /-- If a state is idempotent under revision, then every finite query observation
 count extracted from it must be zero. -/

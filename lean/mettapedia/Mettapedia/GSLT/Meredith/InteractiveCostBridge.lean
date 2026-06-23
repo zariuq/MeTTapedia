@@ -292,7 +292,7 @@ def continuedTwoStepFinal : Pattern :=
 
 private theorem continuedTwoStep_outer_contract :
     semanticCommSubst twoStepOuterBody twoStepForwarder = twoStepForwarder := by
-  simpa [twoStepOuterBody, twoStepForwarder, twoStepInnerChan, twoStepNil] using
+  simpa [twoStepOuterBody, twoStepForwarder, twoStepInnerChan, twoStepNil] using!
     semanticCommSubst_collapses_bound_drop twoStepForwarder
 
 private theorem continuedTwoStep_inner_contract :
@@ -305,7 +305,7 @@ def continuedTwoStepFirstStep :
     rhoGSLT.Step continuedTwoStepSource continuedTwoStepMid :=
   ⟨by
     simpa [continuedTwoStepSource, continuedTwoStepMid, twoStepInnerRecv,
-      twoStepOuterBody, continuedTwoStep_outer_contract] using
+      twoStepOuterBody, continuedTwoStep_outer_contract] using!
       (@Reduces.comm twoStepOuterChan twoStepForwarder twoStepOuterBody [twoStepInnerRecv])⟩
 
 /-- The second concrete rho COMM step in the two-step bridge. -/
@@ -313,7 +313,7 @@ def continuedTwoStepSecondStep :
     rhoGSLT.Step continuedTwoStepMid continuedTwoStepFinal :=
   ⟨by
     simpa [continuedTwoStepMid, continuedTwoStepFinal, twoStepForwarder,
-      twoStepInnerRecv, twoStepInnerBody, twoStepNil, continuedTwoStep_inner_contract] using
+      twoStepInnerRecv, twoStepInnerBody, twoStepNil, continuedTwoStep_inner_contract] using!
       (@Reduces.comm twoStepInnerChan twoStepNil twoStepInnerBody ([] : List Pattern))⟩
 
 /-- The concatenated two-step rho rewrite path used for the accumulated bridge. -/
@@ -1240,7 +1240,7 @@ theorem continuedTwoStepReducesN_concat_path_eq :
     rhoRewritePathOfReducesN
       (reducesN_concat continuedTwoStepFirstReducesN continuedTwoStepSecondReducesN) =
         continuedTwoStepPath := by
-  simpa [continuedTwoStepPath] using
+  simpa [continuedTwoStepPath] using!
     (rhoRewritePathOfReducesN_concat
       continuedTwoStepFirstReducesN
       continuedTwoStepSecondReducesN)
@@ -1961,7 +1961,7 @@ theorem continuedTwoStepPublicSpentSyntaxFullSemanticBridge_reducesN :
       RhoLedger.TraceCoherent
         (totalAction rhoIntrinsicLedgerAction
           (rhoRewritePathOfReducesN continuedTwoStepReducesN)) := by
-  simpa [continuedTwoStepReducesN_path_eq] using
+  simpa [continuedTwoStepReducesN_path_eq] using!
     continuedTwoStepPublicSpentSyntaxFullSemanticBridge
 
 /-- Concrete exact-step direct spent-trace semantic package for the continued
@@ -2023,7 +2023,7 @@ theorem continuedTwoStepDirectSpentTraceFullSemanticBridge_reducesN :
         (rhoIntrinsicDirectSpentTrace
           (rhoRewritePathOfReducesN continuedTwoStepReducesN)).toPattern =
             2 := by
-  simpa [continuedTwoStepReducesN_path_eq] using
+  simpa [continuedTwoStepReducesN_path_eq] using!
     continuedTwoStepDirectSpentTraceFullSemanticBridge
 
 theorem continuedTwoStepPublicSpentSyntax_modulus_reducesN :

@@ -168,7 +168,7 @@ theorem measure_headSet_mul_conditionalTailMeasure_singleton (t m : ℕ)
     have hμ_singleton : μ ({appendPrefix (t := t) (m := m) p q} : Set (Fin (t + m) → Step)) = 0 := by
       have hle : μ ({appendPrefix (t := t) (m := m) p q} : Set (Fin (t + m) → Step)) ≤ μ A :=
         MeasureTheory.measure_mono hsub
-      exact le_antisymm (le_trans hle (by simp [denom, A, hden])) (zero_le _)
+      exact le_antisymm (le_trans hle (by simp [denom, A, hden])) zero_le
     simp [conditionalTailMeasure, A, denom, hden, hμ_singleton]
   · -- The regular conditioning case: multiply out the scalar and unfold the map.
     have hden_ne_top : denom ≠ ∞ :=
@@ -437,7 +437,7 @@ theorem F_m_le_one (O : Oracle) (M : ReflectiveEnvironmentClass O)
       simpa [h_eq] using prior.tsum_le_one
     · have hden_pos :
           mixtureProbability O M prior envs (prefixToHistory t p) > 0 :=
-        lt_of_le_of_ne (zero_le _) (Ne.symm hden)
+        lt_of_le_of_ne zero_le (Ne.symm hden)
       have h_sum : (∑' ρ_idx, wENN ρ_idx) = 1 :=
         bayesianPosterior_sum_one O M prior envs (prefixToHistory t p) hden_pos
       exact le_of_eq h_sum
@@ -819,7 +819,7 @@ theorem integral_F_m_prefix_eq_tsum_prior_toReal_mul_integral_D_m_env_prefix (O 
         simpa [h_eq] using prior.tsum_le_one
       · have hden_pos :
             mixtureProbability O M prior envs (prefixToHistory t p) > 0 :=
-          lt_of_le_of_ne (zero_le _) (Ne.symm hden)
+          lt_of_le_of_ne zero_le (Ne.symm hden)
         have h_sum : (∑' ρ_idx, wENN ρ_idx) = 1 :=
           bayesianPosterior_sum_one O M prior envs (prefixToHistory t p) hden_pos
         exact le_of_eq h_sum
@@ -1100,7 +1100,12 @@ theorem prefixMeasureWithPolicy_real_headSet (μ : Environment) (π : Agent) (h_
   have hENN :=
     congrArg (fun ν : MeasureTheory.Measure (Fin t → Step) => ν ({p} : Set (Fin t → Step))) hmap
   have hReal := congrArg ENNReal.toReal hENN
-  simpa [MeasureTheory.Measure.map_apply, headSet, headPrefix_measurable, MeasureTheory.measureReal_def] using hReal
+  have hHead :
+      headSet t m p = headPrefix (t := t) (m := m) ⁻¹' ({p} : Set (Fin t → Step)) := by
+    ext q
+    simp [headSet]
+  simpa [MeasureTheory.Measure.map_apply, hHead, headPrefix_measurable, MeasureTheory.measureReal_def]
+    using hReal
 
 theorem prefixMeasureMixtureWithPolicy_real_headSet (O : Oracle) (M : ReflectiveEnvironmentClass O)
     (prior : PriorOverClass O M) (envs : ℕ → Environment) (π : Agent)
@@ -1114,7 +1119,12 @@ theorem prefixMeasureMixtureWithPolicy_real_headSet (O : Oracle) (M : Reflective
   have hENN :=
     congrArg (fun ν : MeasureTheory.Measure (Fin t → Step) => ν ({p} : Set (Fin t → Step))) hmap
   have hReal := congrArg ENNReal.toReal hENN
-  simpa [MeasureTheory.Measure.map_apply, headSet, headPrefix_measurable, MeasureTheory.measureReal_def] using hReal
+  have hHead :
+      headSet t m p = headPrefix (t := t) (m := m) ⁻¹' ({p} : Set (Fin t → Step)) := by
+    ext q
+    simp [headSet]
+  simpa [MeasureTheory.Measure.map_apply, hHead, headPrefix_measurable, MeasureTheory.measureReal_def]
+    using hReal
 
 /-- Key identity behind “expected TV vanishes”: the weighted TV distance can be rewritten as an
 expectation of posterior-weight increments. -/
@@ -1985,7 +1995,7 @@ private theorem integral_D_m_env_prefix_le_one (O : Oracle) (M : ReflectiveEnvir
 
   have h_sum_one : (∑ p : Fin t → Step, μρ.real {p} * (1 : ℝ)) = 1 := by
     -- `μρ` is a probability measure, so the real mass of `univ` is `1`.
-    simp [MeasureTheory.measureReal_univ_eq_one (μ := μρ)]
+    simp [MeasureTheory.probReal_univ (μ := μρ)]
 
   calc
     (∫ p : Fin t → Step,

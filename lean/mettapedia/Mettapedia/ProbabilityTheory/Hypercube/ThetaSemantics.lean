@@ -55,7 +55,7 @@ theorem thetaValues_singleton (Θ : α → β) (x : α) :
   ext y
   constructor
   · rintro ⟨Θ', hΘ', rfl⟩
-    have hEq : Θ' = Θ := by simpa using hΘ'
+    have hEq : Θ' = Θ := Set.mem_singleton_iff.mp hΘ'
     simp [hEq]
   · intro hy
     refine ⟨Θ, Set.mem_singleton Θ, ?_⟩

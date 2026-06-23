@@ -31,7 +31,7 @@ import Mathlib.Order.Lattice
 import Mathlib.Tactic
 import Mettapedia.Logic.EvidenceQuantale
 import Mettapedia.Logic.EvidenceIntervalBounds
-import Mettapedia.ProbabilityTheory.KnuthSkilling.Core.HeytingBounds
+import KnuthSkilling.Core.HeytingBounds
 
 namespace Mettapedia.Logic.HeytingValuationOnEvidence
 
@@ -134,8 +134,8 @@ def BoundedEvidence.top (M : ℝ≥0∞) : BoundedEvidence M where
 /-- The bottom of bounded evidence -/
 def BoundedEvidence.bot (M : ℝ≥0∞) : BoundedEvidence M where
   evidence := ⟨0, 0⟩
-  pos_le := zero_le M
-  neg_le := zero_le M
+  pos_le := bot_le
+  neg_le := bot_le
 
 /-! ## Connecting to Heyting Bounds Through Uncertainty
 
@@ -256,8 +256,7 @@ theorem evidence_not_boolean : ∃ e : BinaryEvidence, ∀ c : BinaryEvidence, �
     · exact absurd h one_ne_zero
     · exact h
   -- But then max(1, c.pos) = max(1, 0) = 1 ≠ ⊤
-  rw [hcpos] at h_pos_sup
-  simp only [max_eq_left (zero_le (1 : ℝ≥0∞))] at h_pos_sup
+  rw [hcpos, max_eq_left (zero_le_one : (0 : ℝ≥0∞) ≤ 1)] at h_pos_sup
   exact ENNReal.one_ne_top h_pos_sup
 
 /-! ## BinaryEvidence Has Strictly More Structure Than Intervals

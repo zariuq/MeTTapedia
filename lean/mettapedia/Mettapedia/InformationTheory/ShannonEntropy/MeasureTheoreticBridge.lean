@@ -1,5 +1,5 @@
 import Mettapedia.InformationTheory.ShannonEntropy.Interface
-import Mettapedia.ProbabilityTheory.KnuthSkilling.Information.DivergenceMathlib
+import KnuthSkilling.Information.DivergenceMathlib
 import Mathlib.MeasureTheory.Measure.Count
 import Mathlib.MeasureTheory.Measure.ProbabilityMeasure
 import Mathlib.MeasureTheory.Integral.Lebesgue.Countable
@@ -63,7 +63,7 @@ Shannon, Stacy, Knuth, and Skilling would approve because:
 
 open MeasureTheory Measure Real Finset
 open Mettapedia.InformationTheory
-open Mettapedia.ProbabilityTheory.KnuthSkilling.Information.InformationEntropy
+open KnuthSkilling.Information.InformationEntropy
 open scoped BigOperators ENNReal
 
 namespace Mettapedia.InformationTheory
@@ -258,7 +258,7 @@ theorem klDivergence_eq_mathlib_klDiv {n : ℕ} (P Q : ProbVec n)
     exact (Set.finite_univ.subset (Set.subset_univ _))
   have hSum :
       Summable (fun i : Fin n =>
-        Mettapedia.ProbabilityTheory.KnuthSkilling.Information.Divergence.atomDivergenceExt (w i)
+        KnuthSkilling.Information.Divergence.atomDivergenceExt (w i)
             (u i)) :=
     by
       classical
@@ -269,42 +269,42 @@ theorem klDivergence_eq_mathlib_klDiv {n : ℕ} (P Q : ProbVec n)
   have hkl :
       InformationTheory.klDiv P.toFinMeasure Q.toFinMeasure =
         ENNReal.ofReal
-          (Mettapedia.ProbabilityTheory.KnuthSkilling.Information.Divergence.Countable.divergenceInfCountable
+          (KnuthSkilling.Information.Divergence.Countable.divergenceInfCountable
             (α := Fin n) w u) := by
-    simpa [Mettapedia.ProbabilityTheory.KnuthSkilling.Information.Divergence.Countable.toMeasure,
+    simpa [KnuthSkilling.Information.Divergence.Countable.toMeasure,
       ProbVec.toFinMeasure, w, u]
       using
-        (Mettapedia.ProbabilityTheory.KnuthSkilling.Information.Divergence.Countable.klDiv_toMeasure_eq_ofReal_divergenceInfCountable
+        (KnuthSkilling.Information.Divergence.Countable.klDiv_toMeasure_eq_ofReal_divergenceInfCountable
           (α := Fin n) (w := w) (u := u) hw hu hSupport hw_sum hu_sum hSum)
 
   -- Unfold `klDivergenceVec` to the usual finite KL sum.
   have hKLsum :
       klDivergenceVec P Q hQ_pos = ∑ i : Fin n, w i * log (w i / u i) := by
     simp [klDivergenceVec, ProbVec.toProbDist,
-      Mettapedia.ProbabilityTheory.KnuthSkilling.Information.InformationEntropy.klDivergence, w, u]
+      KnuthSkilling.Information.InformationEntropy.klDivergence, w, u]
 
   -- On a finite type, the divergence sum collapses to KL after canceling `∑ u - ∑ w = 0`.
   have hdiv :
-      Mettapedia.ProbabilityTheory.KnuthSkilling.Information.Divergence.Countable.divergenceInfCountable
+      KnuthSkilling.Information.Divergence.Countable.divergenceInfCountable
           (α := Fin n) w u
         = ∑ i : Fin n, w i * log (w i / u i) := by
     -- Expand the `tsum` into a finite sum.
-    rw [Mettapedia.ProbabilityTheory.KnuthSkilling.Information.Divergence.Countable.divergenceInfCountable,
+    rw [KnuthSkilling.Information.Divergence.Countable.divergenceInfCountable,
       tsum_fintype]
     -- Rewrite each term `atomDivergenceExt` into the explicit formula.
     have hterm : ∀ i : Fin n,
-        Mettapedia.ProbabilityTheory.KnuthSkilling.Information.Divergence.atomDivergenceExt (w i)
+        KnuthSkilling.Information.Divergence.atomDivergenceExt (w i)
             (u i) =
           u i - w i + w i * log (w i / u i) := by
       intro i
       by_cases hwi : w i = 0 <;>
-        simp [Mettapedia.ProbabilityTheory.KnuthSkilling.Information.Divergence.atomDivergenceExt,
+        simp [KnuthSkilling.Information.Divergence.atomDivergenceExt,
           hwi]
     have hQsum : (∑ i : Fin n, u i) = 1 := by simpa [u] using Q.sum_eq_one
     have hPsum : (∑ i : Fin n, w i) = 1 := by simpa [w] using P.sum_eq_one
     calc
       (∑ i : Fin n,
-            Mettapedia.ProbabilityTheory.KnuthSkilling.Information.Divergence.atomDivergenceExt
+            KnuthSkilling.Information.Divergence.atomDivergenceExt
               (w i) (u i))
           = ∑ i : Fin n, (u i - w i + w i * log (w i / u i)) := by
             refine Finset.sum_congr rfl ?_
@@ -320,11 +320,11 @@ theorem klDivergence_eq_mathlib_klDiv {n : ℕ} (P Q : ProbVec n)
             simp [hcancel]
 
   have hdiv_eq_KL :
-      Mettapedia.ProbabilityTheory.KnuthSkilling.Information.Divergence.Countable.divergenceInfCountable
+      KnuthSkilling.Information.Divergence.Countable.divergenceInfCountable
           (α := Fin n) w u
         = klDivergenceVec P Q hQ_pos := by
     calc
-      Mettapedia.ProbabilityTheory.KnuthSkilling.Information.Divergence.Countable.divergenceInfCountable
+      KnuthSkilling.Information.Divergence.Countable.divergenceInfCountable
             (α := Fin n) w u
           = ∑ i : Fin n, w i * log (w i / u i) := hdiv
       _ = klDivergenceVec P Q hQ_pos := by
@@ -333,7 +333,7 @@ theorem klDivergence_eq_mathlib_klDiv {n : ℕ} (P Q : ProbVec n)
 
   have hdiv_nonneg :
       0 ≤
-        Mettapedia.ProbabilityTheory.KnuthSkilling.Information.Divergence.Countable.divergenceInfCountable
+        KnuthSkilling.Information.Divergence.Countable.divergenceInfCountable
           (α := Fin n) w u := by
     simpa [hdiv_eq_KL] using (klDivergenceVec_nonneg (P := P) (Q := Q) hQ_pos)
 

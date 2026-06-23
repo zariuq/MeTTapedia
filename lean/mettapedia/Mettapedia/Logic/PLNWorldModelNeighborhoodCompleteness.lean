@@ -56,7 +56,7 @@ theorem pointwiseImpliesOn_iff_singletonStrengthLEOn
       rw [queryStrength_singleton_of_satisfies pn φ hφ]
       rw [queryStrength_singleton_of_satisfies pn ψ hψ]
     · rw [queryStrength_singleton_of_not_satisfies pn φ hφ]
-      exact zero_le _
+      exact zero_le
   · intro hle pn hC hφ
     by_contra hψ
     have hsingleton := hle pn hC
@@ -210,9 +210,7 @@ theorem provable_imp_of_singletonStrengthLEOn
       world := x
     }
     have hpx : pn.satisfies φ → pn.satisfies ψ := himp pn (by simpa [pn] using hF)
-    exact Formula.Neighborhood.Satisfies.def_imp.mpr (by
-      intro hx
-      simpa [PointedNeighborhood.satisfies, pn] using hpx (by simpa [PointedNeighborhood.satisfies, pn] using hx))
+    exact Formula.Neighborhood.Satisfies.def_imp.mpr (fun hx => hpx hx)
   exact Complete.complete (𝓢 := 𝓢) (𝓜 := C) hvalid
 
 /-- Implication-level proof-theoretic closure for class-indexed singleton WM consequence. -/

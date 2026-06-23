@@ -165,7 +165,7 @@ instance mixingMeasureSimplex_isProbability {k : ℕ} (M : CategoricalMixture k)
   haveI : IsProbabilityMeasure M.mixingMeasure := M.isProbability
   have hIcc :
       mixingMeasureSimplex M Set.univ = M.mixingMeasure (stdSimplex ℝ (Fin k)) := by
-    simpa [mixingMeasureSimplex, measurableSet_stdSimplex] using
+    simpa [mixingMeasureSimplex, measurableSet_stdSimplex] using!
       (comap_subtype_coe_apply (s := stdSimplex ℝ (Fin k))
         (measurableSet_stdSimplex k)
         (μ := M.mixingMeasure) (t := Set.univ))
@@ -217,7 +217,7 @@ theorem flatten_apply_singleton {k : ℕ} (M : CategoricalMixture k) (n : ℕ)
           ∂mixingMeasureSimplex M) =
         ∫⁻ t in stdSimplex ℝ (Fin k),
           ENNReal.ofReal (categoricalProductPMF t xs) ∂M.mixingMeasure := by
-    simpa [mixingMeasureSimplex, hs] using
+    simpa [mixingMeasureSimplex, hs] using!
       (lintegral_subtype_comap (μ := M.mixingMeasure) (s := stdSimplex ℝ (Fin k)) hs
         (f := fun t : Fin k → ℝ => ENNReal.ofReal (categoricalProductPMF t xs)))
   -- Convert lintegral of ofReal to ofReal of integral

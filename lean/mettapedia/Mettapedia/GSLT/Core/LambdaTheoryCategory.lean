@@ -123,11 +123,11 @@ all the required instances, plus a subobject fibration.
     CCC structure gives us function types
     Finite limits give us dependent types via pullbacks
 -/
-structure LambdaTheoryWithEquality where
+structure LambdaTheoryWithEquality.{u', v', w'} where
   /-- The underlying type of objects -/
-  Obj : Type u
+  Obj : Type u'
   /-- Category structure on objects -/
-  instCategory : Category.{v} Obj
+  instCategory : Category.{v'} Obj
   /-- Cartesian monoidal structure (chosen finite products) -/
   instCartesianMonoidal : CartesianMonoidalCategory Obj
   /-- Monoidal closed structure (exponentials) -/
@@ -135,7 +135,7 @@ structure LambdaTheoryWithEquality where
   /-- Finite limits -/
   instHasFiniteLimits : HasFiniteLimits Obj
   /-- The subobject fibration -/
-  fibration : @SubobjectFibration Obj instCategory
+  fibration : @SubobjectFibration.{u', v', w'} Obj instCategory
 
 attribute [instance] LambdaTheoryWithEquality.instCategory
 attribute [instance] LambdaTheoryWithEquality.instCartesianMonoidal
@@ -191,7 +191,7 @@ structure LambdaTheoryMorphism (T S : LambdaTheoryWithEquality) where
   /-- Preserves binary products -/
   preservesBinaryProducts : PreservesLimitsOfShape (Discrete WalkingPair) functor
   /-- Preserves terminal object -/
-  preservesTerminal : PreservesLimit (Functor.empty T.Obj) functor
+  preservesTerminal : PreservesLimit (Functor.empty.{0} T.Obj) functor
 
 namespace LambdaTheoryMorphism
 

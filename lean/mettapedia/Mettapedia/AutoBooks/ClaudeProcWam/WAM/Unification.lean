@@ -495,8 +495,6 @@ theorem Heap.termDepthAux_str_arg_lt (h : Heap) (a : HeapAddr) (fuel : Nat)
     -- Goal: termDepthAux (v+1+i) fuel' < 1 + foldl max 0 (range f.arity)
     have hmem : i ∈ List.range f.arity := List.mem_range.mpr hi
     have hle := foldl_max_ge_any (fun j => h.termDepthAux (v + 1 + j) fuel') (List.range f.arity) i hmem
-    -- Beta-reduce the function application in hle
-    simp only at hle
     -- Now hle : termDepthAux (v+1+i) fuel' ≤ foldl max (using j) ...
     -- Goal : termDepthAux (v+1+i) fuel' < 1 + foldl max (using i) ...
     -- The folds are alpha-equivalent

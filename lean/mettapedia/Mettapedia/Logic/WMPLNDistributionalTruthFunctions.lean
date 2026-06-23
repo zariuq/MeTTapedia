@@ -154,7 +154,7 @@ noncomputable def truthMarkovDirichletTransitionWTV
 
 /-- Walley-IDM ITV view of a binary transition query over the Markov Dirichlet
 carrier. This is the interval-facing predictive view for the transition row. -/
-noncomputable def truthMarkovDirichletTransitionITVWalley
+noncomputable abbrev truthMarkovDirichletTransitionITVWalley
     {k : ℕ} (ctx : IDMPredictiveContext) (W : MarkovTransitionWMState k)
     (q : MarkovTransitionQuery k) : ITV :=
   Mettapedia.Logic.PLNWorldModel.BinaryWorldModel.queryITV
@@ -186,9 +186,14 @@ theorem truthMarkovDirichletTransitionITVWalley_width_add_credibility
     (q : MarkovTransitionQuery k) :
     (truthMarkovDirichletTransitionITVWalley ctx W q).width +
       (truthMarkovDirichletTransitionITVWalley ctx W q).credibility = 1 := by
-  simpa [truthMarkovDirichletTransitionITVWalley] using
-    (Mettapedia.Logic.PLNWorldModel.BinaryWorldModel.queryITVWidth_add_queryITVCredibility_walley
-      (State := MarkovTransitionWMState k) (Query := MarkovTransitionQuery k) ctx W q)
+  change
+    Mettapedia.Logic.PLNWorldModel.BinaryWorldModel.queryITVWidth
+        Mettapedia.Logic.PLNWorldModel.ITVSemantics.walleyIDMPredictive ctx W q +
+      Mettapedia.Logic.PLNWorldModel.BinaryWorldModel.queryITVCredibility
+        Mettapedia.Logic.PLNWorldModel.ITVSemantics.walleyIDMPredictive ctx W q = 1
+  exact
+    Mettapedia.Logic.PLNWorldModel.BinaryWorldModel.queryITVWidth_add_queryITVCredibility_walley
+      (State := MarkovTransitionWMState k) (Query := MarkovTransitionQuery k) ctx W q
 
 theorem truthMarkovDirichletPredictiveChainMass_le_one
     {k : ℕ} (hk : 0 < k) (prior : Fin k → Mettapedia.Logic.EvidenceDirichlet.DirichletParams k)
@@ -371,7 +376,8 @@ theorem hypergeometricCDF95LowerCount_le_supportUpper (n a b : ℕ) :
   · have hmem : (hypergeometricCDF95LowerCandidates n a b).min' hS ∈
         hypergeometricCDF95LowerCandidates n a b := Finset.min'_mem _ _
     simp [hypergeometricCDF95LowerCandidates, hypergeometricClippedCountWindow] at hmem
-    simpa [hypergeometricCDF95LowerCount, hS] using hmem.1.2
+    rw [hypergeometricCDF95LowerCount, dif_pos hS]
+    exact hmem.1.2
   · simpa [hypergeometricCDF95LowerCount, hS] using
       hypergeometricSupportLowerCount_le_upperCount n a b
 

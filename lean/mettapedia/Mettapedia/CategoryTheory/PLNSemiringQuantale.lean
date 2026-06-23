@@ -105,9 +105,9 @@ theorem twoEdge_ge_oneEdge (e : BinaryEvidence) :
   simp only [BinaryEvidence.le_def]
   constructor
   · -- pos component: e.pos * e.pos ≤ e.pos * e.pos + e.pos * e.pos
-    exact le_add_of_nonneg_right (zero_le _)
+    exact le_add_of_nonneg_right (zero_le)
   · -- neg component: e.neg * e.neg ≤ e.neg * e.neg + e.neg * e.neg
-    exact le_add_of_nonneg_right (zero_le _)
+    exact le_add_of_nonneg_right (zero_le)
 
 /-- Two edges have strictly more weakness when evidence is positive and finite (`pos ≠ ⊤`). -/
 theorem twoEdge_gt_oneEdge (e : BinaryEvidence) (hpos : 0 < e.pos) (hfinite : e.pos ≠ ⊤) :

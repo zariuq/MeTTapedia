@@ -79,26 +79,29 @@ class ZeroPreservingGWM (State Query Ev : Type*)
     [EvidenceType State] [AddCommMonoid Ev]
     extends AdditiveWorldModel State Query Ev where
   /-- Zero state extracts zero evidence. -/
-  evidence_zero : ∀ q, evidence (0 : State) q = (0 : Ev)
+  extract_zero : ∀ q,
+    AdditiveWorldModel.extract (State := State) (Query := Query) (Ev := Ev) (0 : State) q = (0 : Ev)
 
 /-- Bundle a zero-preserving generic world model into an AddMonoidHom. -/
 noncomputable def zpgwmProfileHom
     {State Query Ev : Type*} [EvidenceType State] [AddCommMonoid Ev]
     [inst : ZeroPreservingGWM State Query Ev] :
     AddMonoidHom State (Query → Ev) where
-  toFun W q := inst.evidence W q
-  map_zero' := funext inst.evidence_zero
-  map_add' W₁ W₂ := funext (inst.evidence_add W₁ W₂)
+  toFun W q := AdditiveWorldModel.extract (State := State) (Query := Query) (Ev := Ev) W q
+  map_zero' := funext (ZeroPreservingGWM.extract_zero (State := State) (Query := Query) (Ev := Ev))
+  map_add' W₁ W₂ :=
+    funext (AdditiveWorldModel.extract_add (State := State) (Query := Query) (Ev := Ev) W₁ W₂)
 
 /-- Recover a zero-preserving GWM from an AddMonoidHom. -/
+@[reducible]
 def zpgwmOfProfileHom
     {State Query Ev : Type*} [EvidenceType State] [AddCommMonoid Ev]
     (F : AddMonoidHom State (Query → Ev)) :
     ZeroPreservingGWM State Query Ev where
-  evidence W q := F W q
-  evidence_add W₁ W₂ q := by
+  extract W q := F W q
+  extract_add W₁ W₂ q := by
     exact congrArg (fun f => f q) (F.map_add W₁ W₂)
-  evidence_zero q := by
+  extract_zero q := by
     exact congrArg (fun f => f q) F.map_zero
 
 -- The real structural equivalence is `equivGSLTProfileHom` below
@@ -120,19 +123,20 @@ def gsltOfZPGWM
     [EvidenceType State] [AddCommMonoid V]
     [inst : ZeroPreservingGWM State Query V] :
     GSLTEvidenceAssignment State Query V where
-  extract := inst.evidence
-  extract_add := inst.evidence_add
-  extract_zero := inst.evidence_zero
+  extract := AdditiveWorldModel.extract
+  extract_add := AdditiveWorldModel.extract_add
+  extract_zero := ZeroPreservingGWM.extract_zero
 
 /-- Convert a GSLTEvidenceAssignment to a ZeroPreservingGWM (reverse bridge). -/
+@[reducible]
 def zpgwmOfGSLT
     {State Query V : Type*}
     [EvidenceType State] [AddCommMonoid V]
     (ea : GSLTEvidenceAssignment State Query V) :
     ZeroPreservingGWM State Query V where
-  evidence := ea.extract
-  evidence_add := ea.extract_add
-  evidence_zero := ea.extract_zero
+  extract := ea.extract
+  extract_add := ea.extract_add
+  extract_zero := ea.extract_zero
 
 /-! ## 3. The Structural Equivalence
 
@@ -160,9 +164,9 @@ Every binary BinaryWorldModel instance automatically gives a ZeroPreservingGWM. 
 noncomputable instance instZPGWMOfWorldModel
     {State Query : Type*} [EvidenceType State] [BinaryWorldModel State Query] :
     ZeroPreservingGWM State Query BinaryEvidence where
-  evidence := BinaryWorldModel.evidence
-  evidence_add := BinaryWorldModel.evidence_add
-  evidence_zero := BinaryWorldModel.evidence_zero
+  extract := BinaryWorldModel.evidence
+  extract_add := BinaryWorldModel.evidence_add
+  extract_zero := BinaryWorldModel.evidence_zero
 
 /-! ## 4. Non-Additive Views (Structural No-Go Theorems)
 
@@ -214,7 +218,7 @@ theorem born_not_additive :
     ∃ z₁ z₂ : ℂ,
       Complex.normSq (z₁ + z₂) ≠ Complex.normSq z₁ + Complex.normSq z₂ := by
   use 1, 1
-  simp [Complex.normSq_add, Complex.normSq_one, Complex.mul_conj]
+  simp [Complex.normSq_add, Complex.normSq_one]
 
 /-! ## 6. Summary: The Abstraction Hierarchy
 

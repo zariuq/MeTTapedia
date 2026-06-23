@@ -49,8 +49,7 @@ theorem WeightedObservable.package_cutoffPotential_tendsto
         cutoffPotential cutoff radiusSq (matchingObservable L) (truncateModes N x))
       Filter.atTop
       (nhds (cutoffPotential cutoff radiusSq (matchingObservable L) x)) := by
-  simpa [WeightedObservable.toManuscriptTruncationPackage] using
-    (WeightedObservable.toManuscriptTruncationPackage
+  exact (WeightedObservable.toManuscriptTruncationPackage
       (Time := Time) (ι := ι) (X := X) L S cutoff hcutoff).cutoffPotential_tendsto x
 
 theorem WeightedObservable.package_coleHopfPhi_tendsto
@@ -63,8 +62,7 @@ theorem WeightedObservable.package_coleHopfPhi_tendsto
           (truncateModes N x))
       Filter.atTop
       (nhds (coleHopfPhi S.ν (cutoffPotential cutoff radiusSq (matchingObservable L)) x)) := by
-  simpa [WeightedObservable.toManuscriptTruncationPackage] using
-    (WeightedObservable.toManuscriptTruncationPackage
+  exact (WeightedObservable.toManuscriptTruncationPackage
       (Time := Time) (ι := ι) (X := X) L S cutoff hcutoff).coleHopfPhi_tendsto x
 
 theorem WeightedObservable.package_abs_vorticity_le_uniform

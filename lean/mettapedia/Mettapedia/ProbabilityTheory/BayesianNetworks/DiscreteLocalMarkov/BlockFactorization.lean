@@ -83,7 +83,8 @@ lemma measurableSet_vertices_preimage
   have hs' :
       MeasurableSet[
         MeasurableSpace.comap (restrictToSet (bn := bn) S) (by infer_instance)] s := by
-    simpa [measurableSpaceOfVertices_eq_comap_restrict (bn := bn) S] using hs
+    rw [measurableSpaceOfVertices_eq_comap_restrict (bn := bn) S] at hs
+    exact hs
   rcases (MeasurableSpace.measurableSet_comap).1 hs' with ⟨T, hT, hpre⟩
   exact ⟨T, hT, hpre.symm⟩
 
@@ -94,7 +95,8 @@ lemma measurableSet_singleton_preimage
   have hs' :
       MeasurableSet[
         MeasurableSpace.comap (fun ω : bn.JointSpace => ω v) (by infer_instance)] s := by
-    simpa [measurableSpaceOfVertices_singleton (bn := bn) v] using hs
+    rw [measurableSpaceOfVertices_singleton (bn := bn) v] at hs
+    exact hs
   rcases (MeasurableSpace.measurableSet_comap).1 hs' with ⟨T, hT, hpre⟩
   exact ⟨T, hT, hpre.symm⟩
 
@@ -169,7 +171,8 @@ lemma measurable_eventOfConstraints_constraintsOfRestrict_vertices
         (eventOfConstraints (bn := bn) (constraintsOfRestrict (bn := bn) S xS)) := by
     rw [eventOfConstraints_constraintsOfRestrict (bn := bn) S xS]
     exact (MeasurableSpace.measurableSet_comap).2 ⟨{xS}, by simp, rfl⟩
-  simpa [measurableSpaceOfVertices_eq_comap_restrict (bn := bn) S] using hcomap
+  rw [measurableSpaceOfVertices_eq_comap_restrict (bn := bn) S]
+  exact hcomap
 
 /-- Conditional expectations with respect to `σ(S)` are constant on each
 constraint atom fixing the coordinates in `S`. -/
@@ -964,11 +967,11 @@ theorem blockConstraint_inter_eq_relevantPreimage
     rcases hω with ⟨hx, hy, hz⟩
     refine ⟨?_, ?_, ?_⟩
     · simpa [eventOfConstraints_constraintsOfRestrict
-        (bn := bn) (DSeparation.xReachableBlock bn.graph X Y Z) xX] using funext hx
+        (bn := bn) (DSeparation.xReachableBlock bn.graph X Y Z) xX] using! funext hx
     · simpa [eventOfConstraints_constraintsOfRestrict
-        (bn := bn) (DSeparation.yReachableBlock bn.graph X Y Z) xY] using funext hy
+        (bn := bn) (DSeparation.yReachableBlock bn.graph X Y Z) xY] using! funext hy
     · simpa [eventOfConstraints_constraintsOfRestrict
-        (bn := bn) Z xZ] using funext hz
+        (bn := bn) Z xZ] using! funext hz
 
 /-- A block atom over the `X`-reachable side, `Y`-reachable side, and
 conditioning set is a finite disjoint sum of full relevant atoms. -/

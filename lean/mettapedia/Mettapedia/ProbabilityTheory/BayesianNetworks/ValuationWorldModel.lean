@@ -187,14 +187,22 @@ noncomputable instance
   evidence_add W₁ W₂ q := by
     classical
     let f := fun src => sourceEvidence (fg := fg) (W := src) q
+    -- `WMState fg` is definitionally `Multiset (WMSource fg)`, but `W₁ + W₂` carries the
+    -- `WMState` `AddCommMonoid` instance, so `Multiset.map_add` (stated for `Multiset`'s
+    -- own `+`) no longer matches `rw` syntactically under Lean 4.31.  Build the proof in
+    -- term mode (full defeq) from the genuinely-`Multiset` lemmas instead.
     have h :
         (Multiset.map f (W₁ + W₂)).sum =
-          (Multiset.map f W₁).sum + (Multiset.map f W₂).sum := by
-      rw [Multiset.map_add, Multiset.sum_add]
+          (Multiset.map f W₁).sum + (Multiset.map f W₂).sum :=
+      (congrArg Multiset.sum (Multiset.map_add f W₁ W₂)).trans (Multiset.sum_add _ _)
     simpa [evidence, f] using h
   evidence_zero q := by
     classical
-    simp [evidence]
+    -- `evidence 0 q = (Multiset.map _ (0 : WMState fg)).sum`; the zero world is the empty
+    -- multiset, on which `map` and `sum` compute to `0` definitionally.
+    show (Multiset.map (fun src => sourceEvidence (fg := fg) (W := src) q)
+      (0 : Multiset (WMSource fg))).sum = 0
+    rw [Multiset.map_zero, Multiset.sum_zero]
 
 end ENNReal
 

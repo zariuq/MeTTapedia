@@ -1,5 +1,9 @@
-import Mettapedia.ProbabilityTheory.KnuthSkilling.Core.Basic
-import Mettapedia.ProbabilityTheory.KnuthSkilling.Core.Algebra
+/-
+Knuth–Skilling slice of the probability hypercube. See the aggregator
+`Mettapedia/ProbabilityTheory/Hypercube/KnuthSkilling.lean` for the overview.
+-/
+import KnuthSkilling.Core.Basic
+import KnuthSkilling.Core.Algebra
 import Mettapedia.ProbabilityTheory.ImpreciseProbability.CredalSets
 import Mettapedia.ProbabilityTheory.Hypercube.Basic
 
@@ -40,10 +44,15 @@ The **spectrum of probability foundations** forms a hypercube where:
 - Mettapedia/CategoryTheory/Hypercube.lean (PLN instance)
 -/
 
+set_option autoImplicit false
+
 namespace Mettapedia.ProbabilityTheory.Hypercube.KnuthSkilling.Connection
 
-open Mettapedia.ProbabilityTheory.KnuthSkilling
-open KnuthSkillingAlgebra
+-- `_root_.` forces the standalone K&S package; the enclosing
+-- `…Hypercube.KnuthSkilling` namespace would otherwise shadow `KnuthSkilling`.
+open _root_.KnuthSkilling
+open _root_.KnuthSkilling.KnuthSkillingAlgebra
+open _root_.KnuthSkilling.KnuthSkillingAlgebraBase
 open Mettapedia.ProbabilityTheory.Hypercube
 
 /-! ## Section 1: K&S as a Lambda Theory

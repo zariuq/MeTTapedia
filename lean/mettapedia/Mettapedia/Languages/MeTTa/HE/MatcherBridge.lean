@@ -2266,7 +2266,10 @@ private theorem fold_addVarBinding_fuel1_extends_prefix
   induction rest generalizing acc pref with
   | nil =>
       intro result hresult
-      simpa [hEq] using hacc result hresult
+      have hpref : ({ assignments := pref.assignments, equalities := [] } : Bindings) = pref := by
+        rw [← hEq]
+      rw [List.append_nil, hpref]
+      exact hacc result hresult
   | cons pair rest ih =>
       rcases pair with ⟨v, val⟩
       have hlookup : pref.lookup v = none := hfresh v (by simp)
@@ -2325,7 +2328,10 @@ private theorem mergeBindings_two_extends_right_of_canon
           intro x a hx
           simp [Bindings.empty, Bindings.lookup] at hx)
         result hres')
-  simpa [hground.2] using hfold
+  have hright : ({ assignments := right.assignments, equalities := [] } : Bindings) = right := by
+    rw [← hground.2]
+  rw [List.nil_append, hright] at hfold
+  exact hfold
 
 /-- Any successful fuel-1 `addVarBinding` step preserves every lookup already
 present in the seed bindings. -/
@@ -6205,7 +6211,7 @@ theorem evalAtom_realizes_switch_internal_body_match_ground
         (switchInternalUnify scrut pt template tail)
         Atom.undefinedType Bindings.empty
         (mb.applyDefault (.expression [.symbol "return", template]), mb) := by
-    simpa [switchInternalUnify, switchInternalElseChain] using
+    simpa [switchInternalUnify, switchInternalElseChain, switchMinimalExpr] using
       evalAtom_realizes_switch_internal_head_match_ground
         hReal.toUnifyGroundBranchRealization hground hmatch
   have h_unify_ret :

@@ -20,20 +20,25 @@ section
 
 variable {α U : Type*} [Fintype α]
 
+-- These mass wrappers are `@[reducible]` so that `simp`/`simpa`/`unfold` (which run
+-- at `.reducible` transparency since Lean 4.31) fully reduce them; otherwise the
+-- `unfold`/`simpa` proofs below leave nested `sliceMass …`/`correctSliceMass …`
+-- subterms un-reduced and fail with a type mismatch after simplification.
+
 /-- The total weight of a finite domain. -/
-def weightedTotalMass (w : α → ℕ) : ℕ :=
+@[reducible] def weightedTotalMass (w : α → ℕ) : ℕ :=
   ∑ x : α, w x
 
 /-- The total weight of one slice. -/
-def sliceMass (p : α → Prop) [DecidablePred p] (w : α → ℕ) : ℕ :=
+@[reducible] def sliceMass (p : α → Prop) [DecidablePred p] (w : α → ℕ) : ℕ :=
   ∑ x : {x : α // p x}, w x.1
 
 /-- The weight outside one slice. -/
-def outsideMass (p : α → Prop) [DecidablePred p] (w : α → ℕ) : ℕ :=
+@[reducible] def outsideMass (p : α → Prop) [DecidablePred p] (w : α → ℕ) : ℕ :=
   sliceMass (fun x => ¬ p x) w
 
 /-- The correct mass restricted to one slice. -/
-def correctSliceMass
+@[reducible] def correctSliceMass
     (p : α → Prop) [DecidablePred p]
     (u : α → U) (y : α → Bool) (w : α → ℕ) (h : U → Bool) : ℕ :=
   weightedCorrectMass (fun x : {x : α // p x} => u x.1)
@@ -41,7 +46,7 @@ def correctSliceMass
     (fun x : {x : α // p x} => w x.1) h
 
 /-- The incorrect mass restricted to one slice. -/
-def incorrectSliceMass
+@[reducible] def incorrectSliceMass
     (p : α → Prop) [DecidablePred p]
     (u : α → U) (y : α → Bool) (w : α → ℕ) (h : U → Bool) : ℕ :=
   weightedIncorrectMass (fun x : {x : α // p x} => u x.1)
@@ -49,13 +54,13 @@ def incorrectSliceMass
     (fun x : {x : α // p x} => w x.1) h
 
 /-- The correct mass outside one slice. -/
-def correctOutsideMass
+@[reducible] def correctOutsideMass
     (p : α → Prop) [DecidablePred p]
     (u : α → U) (y : α → Bool) (w : α → ℕ) (h : U → Bool) : ℕ :=
   correctSliceMass (fun x => ¬ p x) u y w h
 
 /-- The incorrect mass outside one slice. -/
-def incorrectOutsideMass
+@[reducible] def incorrectOutsideMass
     (p : α → Prop) [DecidablePred p]
     (u : α → U) (y : α → Bool) (w : α → ℕ) (h : U → Bool) : ℕ :=
   incorrectSliceMass (fun x => ¬ p x) u y w h
@@ -103,7 +108,7 @@ theorem sliceMass_eq_correct_add_incorrect
   let y' : {x : α // p x} → Bool := fun x => y x.1
   unfold sliceMass correctSliceMass incorrectSliceMass
   unfold weightedCorrectMass weightedIncorrectMass
-  simpa [u', y', incorrect_iff_not_correct] using
+  simpa [u', y', incorrect_iff_not_correct] using!
     (Fintype.sum_subtype_add_sum_subtype
       (fun x : {x : α // p x} => Correct u' y' h x)
       (fun x : {x : α // p x} => w x.1)).symm

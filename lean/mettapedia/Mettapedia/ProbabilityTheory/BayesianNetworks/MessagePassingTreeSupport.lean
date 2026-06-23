@@ -498,7 +498,7 @@ theorem pairwiseLeaf_factorToVar_of_exactIncoming
                 (singletonOtherScopeAssign (fg := fg) h z v hLeafH x_v)
                 (x z)) *
               μ v h x_v := by
-            simpa using hLocal
+            simpa using! hLocal
     _ = ∑ x_v : fg.stateSpace v,
           fg.potential h
             (VariableElimination.Factor.extend

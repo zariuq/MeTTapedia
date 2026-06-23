@@ -131,7 +131,7 @@ theorem pointwiseImplies_iff_singletonStrengthLE (φ ψ : ModalQuery) :
       rw [queryStrength_singleton_of_satisfies pk φ hφ]
       rw [queryStrength_singleton_of_satisfies pk ψ hψ]
     · rw [queryStrength_singleton_of_not_satisfies pk φ hφ]
-      exact zero_le _
+      exact zero_le
   · intro hle pk hφ
     by_contra hψ
     have hsingleton := hle pk

@@ -817,7 +817,7 @@ theorem RhoDirectCutWitness_ofAccountedStep_spent_ledger
   | unit =>
       simp [RhoDirectSignature.toPattern, RhoDirectSignature.toSignature]
   | atom p =>
-      simpa [RhoDirectSignature.toPattern, RhoDirectSignature.toSignature] using h
+      simpa [RhoDirectSignature.toPattern, RhoDirectSignature.toSignature] using! h
   | mul left right ihLeft ihRight =>
       rcases h with ⟨hLeft, hRight⟩
       simp [RhoDirectSignature.toPattern, RhoDirectSignature.toSignature,
@@ -1557,7 +1557,7 @@ theorem rhoIntrinsicLedgerTotalAction_publicSpentSyntax_width_eq_spatialCard
       (rhoLedgerToSpentSyntax_shadow_of_traceCoherent
         (totalAction rhoIntrinsicLedgerAction path)
         (rhoIntrinsicLedgerTotalAction_traceCoherent path)) 0
-  simpa [rhoLedgerShadow] using h0
+  simpa [rhoLedgerShadow] using! h0
 
 theorem rhoIntrinsicLedgerTotalAction_publicSpentSyntax_ticks_eq_length
     {t u : Pattern} (path : rhoGSLT.RewritePath t u) :
@@ -1576,7 +1576,7 @@ theorem rhoIntrinsicLedgerTotalAction_spatialCard_eq_totalCost_zero
     (totalAction rhoIntrinsicLedgerAction path).spatial.card =
       totalCost rhoIntrinsicCostMap path 0 := by
   have h0 := congrFun (rhoIntrinsicLedgerTotalAction_shadow_eq_totalCost path) 0
-  simpa [rhoLedgerShadow] using h0
+  simpa [rhoLedgerShadow] using! h0
 
 theorem rhoIntrinsicLedgerTotalAction_publicSpentSyntax_width_eq_totalCost_zero
     {t u : Pattern} (path : rhoGSLT.RewritePath t u) :
@@ -2178,7 +2178,7 @@ theorem rhoIntrinsicLedgerTotalAction_publicSpentSyntax_width_rewritePathAppend
             exact rhoIntrinsicLedgerTotalAction_publicSpentSyntax_width_eq_totalCost_zero
               (rewritePathAppend left right)
     _ = totalCost rhoIntrinsicCostMap left 0 + totalCost rhoIntrinsicCostMap right 0 := by
-      simpa using h0
+      simpa using! h0
     _ =
         rhoSpentSyntaxWidth
           (rhoLedgerToSpentSyntax (totalAction rhoIntrinsicLedgerAction left)) +
@@ -2209,7 +2209,7 @@ theorem rhoIntrinsicLedgerTotalAction_publicSpentSyntax_ticks_rewritePathAppend
             exact rhoIntrinsicLedgerTotalAction_publicSpentSyntax_ticks_eq_totalCost_one
               (rewritePathAppend left right)
     _ = totalCost rhoIntrinsicCostMap left 1 + totalCost rhoIntrinsicCostMap right 1 := by
-      simpa using h1
+      simpa using! h1
     _ =
         rhoSpentSyntaxTicks
           (rhoLedgerToSpentSyntax (totalAction rhoIntrinsicLedgerAction left)) +
@@ -2339,7 +2339,7 @@ theorem rhoIntrinsicDirectSpentTrace_width_rewritePathAppend
             exact rhoIntrinsicDirectSpentTrace_width_eq_totalCost_zero
               (rewritePathAppend left right)
     _ = totalCost rhoIntrinsicCostMap left 0 + totalCost rhoIntrinsicCostMap right 0 := by
-      simpa using h0
+      simpa using! h0
     _ =
         rhoSpentSyntaxWidth (rhoIntrinsicDirectSpentTrace left).toPattern +
         rhoSpentSyntaxWidth (rhoIntrinsicDirectSpentTrace right).toPattern := by
@@ -2364,7 +2364,7 @@ theorem rhoIntrinsicDirectSpentTrace_ticks_rewritePathAppend
             exact rhoIntrinsicDirectSpentTrace_ticks_eq_totalCost_one
               (rewritePathAppend left right)
     _ = totalCost rhoIntrinsicCostMap left 1 + totalCost rhoIntrinsicCostMap right 1 := by
-      simpa using h1
+      simpa using! h1
     _ =
         rhoSpentSyntaxTicks (rhoIntrinsicDirectSpentTrace left).toPattern +
         rhoSpentSyntaxTicks (rhoIntrinsicDirectSpentTrace right).toPattern := by

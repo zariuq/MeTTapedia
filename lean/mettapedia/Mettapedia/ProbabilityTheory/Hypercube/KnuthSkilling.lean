@@ -4,11 +4,17 @@ import Mettapedia.ProbabilityTheory.Hypercube.KnuthSkilling.Proofs
 import Mettapedia.ProbabilityTheory.Hypercube.KnuthSkilling.Theory
 
 /-!
-# Hypercube ↔ Knuth–Skilling (optional connection modules)
+# Hypercube ↔ Knuth–Skilling (aggregator)
 
-This module collects the Knuth–Skilling-specific hypercube analysis files under
-`Mettapedia/ProbabilityTheory/Hypercube/KnuthSkilling/`.
+The Knuth–Skilling-centred *slice* of the probability hypercube. It fixes the
+master `ProbabilityVertex` (`Mettapedia/ProbabilityTheory/Hypercube/Basic.lean`)
+to the K&S vertex and characterises which representation theorems survive under
+various order/separation hypotheses (commutativity, density, sandwich-separation,
+scale dichotomy).
 
-These imports intentionally depend on `Mettapedia.ProbabilityTheory.KnuthSkilling.*` and are
-*not* imported by default by `Mettapedia.ProbabilityTheory.Hypercube`.
+This aggregator collects the K&S-specific hypercube analysis modules under
+`Mettapedia/ProbabilityTheory/Hypercube/KnuthSkilling/`. They build on the
+standalone K&S external (`KnuthSkilling.Core.*`, `KnuthSkilling.Additive.*`) and
+the verified Hypercube core (`Hypercube.Basic`, `Hypercube.ThetaSemantics`,
+`Hypercube.ScaleDichotomy`).
 -/

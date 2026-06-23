@@ -195,12 +195,19 @@ theorem aggregate_transitionMultiset_eq_rowEvidence_of_summary
   | nil =>
       simp [TransCounts.summary] at hsum
   | cons b xs =>
-      have haux : TransCounts.summaryAux b 0 xs = (c, last) := by
+      have haux : TransCounts.summaryAux b TransCounts.zero xs = (c, last) := by
         simpa [TransCounts.summary] using Option.some.inj hsum
       have hagg :=
         aggregate_transitionMultisetAux_eq_rowEvidence_summaryAux
-          (k := k) b (0 : TransCounts k) xs q
-      simpa [transitionMultiset, haux, rowEvidence_zero, add_comm] using hagg
+          (k := k) b (TransCounts.zero : TransCounts k) xs q
+      have hzero : rowEvidence (TransCounts.zero : TransCounts k) q = 0 := by
+        ext a
+        rfl
+      have hagg' :
+          aggregate (markovRowStatistic (k := k)) (transitionMultisetAux (k := k) b xs) q =
+            rowEvidence (TransCounts.summaryAux b TransCounts.zero xs).1 q := by
+        simpa [hzero] using hagg
+      simpa [transitionMultiset, haux] using hagg'
 
 /-- The additive WM extractor for Markov transition observations matches the
 transition-count row selected by the query state. -/

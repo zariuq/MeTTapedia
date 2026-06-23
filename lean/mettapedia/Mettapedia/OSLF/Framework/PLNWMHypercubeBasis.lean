@@ -307,7 +307,8 @@ theorem transport_canonical_forward_constant
     transport_canonical_forward (F := constantFiber lang) (p := p) (q := q) hred
   rcases h with ⟨q', hq', hqeq⟩
   refine ⟨q', ?_, ?_⟩
-  · simpa [mapAlongPath_constant] using hq'
+  · rw [mapAlongPath_constant lang canonicalPathToGeneralExact p] at hq'
+    simpa [constantFiber] using hq'
   · simpa [mapAlongPath_constant] using hqeq
 
 end Mettapedia.OSLF.Framework.PLNWMHypercubeBasis

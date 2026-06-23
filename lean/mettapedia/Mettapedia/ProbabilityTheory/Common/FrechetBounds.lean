@@ -78,7 +78,7 @@ theorem frechet_lower_bound
     exact (ENNReal.eq_sub_of_add_eq h_finite_union h').symm
   rw [← h_inter]
   apply max_le
-  · exact zero_le _
+  · exact bot_le
   · exact tsub_le_tsub_left h_union_le_one _
 
 /-- The Fréchet bounds as a single statement -/

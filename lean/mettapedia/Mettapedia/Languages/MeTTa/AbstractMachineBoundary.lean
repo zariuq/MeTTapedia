@@ -170,7 +170,7 @@ theorem heRuntimeRule_routes_to_exec_backend (pattern : Pattern) :
     | _ => False := by
   constructor
   · rfl
-  · simpa [mettaAbstractMachineBoundary] using elaborate_heRuntimeRule_backend pattern
+  · exact elaborate_heRuntimeRule_backend pattern
 
 theorem heRuntimeQuery_routes_to_query_backend (pattern : Pattern) :
     SurfaceNode.abstractMachineLane (SurfaceNode.heRuntimeQuery pattern) =
@@ -208,7 +208,7 @@ theorem pettaRuntimeRule_shares_exec_backend (pattern : Pattern) :
     | _ => False := by
   constructor
   · rfl
-  · simpa [mettaAbstractMachineBoundary] using elaborate_pettaRuntimeRule_backend pattern
+  · exact elaborate_pettaRuntimeRule_backend pattern
 
 theorem fullLegacyRuntime_is_audit_lane (pattern : Pattern) :
     SurfaceNode.abstractMachineLane (SurfaceNode.fullLegacyRuntime pattern) =

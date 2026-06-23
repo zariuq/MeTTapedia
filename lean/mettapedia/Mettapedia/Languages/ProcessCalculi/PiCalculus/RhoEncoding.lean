@@ -165,11 +165,18 @@ theorem nameServer_seed_progress (x z v s : String) :
            dropOperation x,
            rhoOutput (.fvar z) (.apply "PDrop" [.fvar s])] none)) := by
   refine ⟨?_⟩
-  simpa [nameServer, rhoPar, dropOperation, nameServerBody] using
-    (Mettapedia.Languages.ProcessCalculi.RhoCalculus.DerivedRepNu.rep_unfold_par_any
+  change
+    (Pattern.collection CollType.hashBag
+      [rhoReplicate (nameServerBody x z v), dropOperation x,
+       rhoOutput (.fvar z) (.apply "PDrop" [.fvar s])] none) ⇝ᵈ*
+      (Pattern.collection CollType.hashBag
+        [Pattern.collection CollType.hashBag [nameServerBody x z v, rhoReplicate (nameServerBody x z v)] none,
+         dropOperation x, rhoOutput (.fvar z) (.apply "PDrop" [.fvar s])] none)
+  exact
+    Mettapedia.Languages.ProcessCalculi.RhoCalculus.DerivedRepNu.rep_unfold_par_any
       (before := ([] : List Pattern))
       (after := [dropOperation x, rhoOutput (.fvar z) (.apply "PDrop" [.fvar s])])
-      (nameServerBody x z v))
+      (nameServerBody x z v)
 
 /-! ## Encoding Function ⟦P⟧
 
@@ -239,9 +246,12 @@ theorem encodingFreshAt_of_encodingFresh
   refine Finset.disjoint_left.mpr ?_
   intro x hxP hxSeed
   have hxReserved : x ∈ fullEncodeReservedNames := by
-    have hxSeed' : x = "n_init" ∨ x = "v_init" := by
-      simpa using hxSeed
-    rcases hxSeed' with rfl | rfl <;> simp [fullEncodeReservedNames]
+    rcases Finset.mem_insert.mp hxSeed with hx | hx
+    · subst hx
+      exact Finset.mem_insert_self _ _
+    · have hxv : x = ("v_init" : Name) := Finset.mem_singleton.mp hx
+      subst hxv
+      exact Finset.mem_insert_of_mem (Finset.mem_insert_self _ _)
   exact (Finset.disjoint_left.mp hfresh) hxP hxReserved
 
 /-- Positive example: `nil` is always fresh w.r.t. all encoding seeds. -/
@@ -257,9 +267,9 @@ theorem not_encodingFreshAt_output_left (n v z : String) :
     ¬ EncodingFreshAt (.output n z) n v := by
   intro h
   have hn : n ∈ (Process.output n z).freeNames := by
-    simp [Process.freeNames]
+    exact Finset.mem_insert_self (n : Name) ({(z : Name)} : Finset Name)
   have hseed : n ∈ ({ n, v } : Finset Name) := by
-    simp
+    exact Finset.mem_insert_self (n : Name) ({(v : Name)} : Finset Name)
   exact (Finset.disjoint_left.mp h) hn hseed
 
 /-- Observation-set consequence of parameterized freshness:
@@ -307,7 +317,10 @@ theorem ns_z_notin_obs_of_subset_freeNames
     (hfresh : EncodingFresh P) :
     "ns_z" ∉ N := by
   have hnszReserved : "ns_z" ∈ fullEncodeReservedNames := by
-    simp [fullEncodeReservedNames]
+    exact Finset.mem_insert_of_mem
+      (Finset.mem_insert_of_mem
+        (Finset.mem_insert_of_mem
+          (Finset.mem_insert_self ("ns_z" : Name) ({("ns_seed" : Name)} : Finset Name))))
   exact reserved_notin_obs_of_subset_freeNames
     (P := P) (N := N) (r := "ns_z") hobs hfresh hnszReserved
 
@@ -320,7 +333,7 @@ theorem not_obs_subset_singleton_ns_z_of_encodingFresh
   intro hobs
   have hnot : "ns_z" ∉ ({ "ns_z" } : Finset Name) :=
     ns_z_notin_obs_of_subset_freeNames (P := P) (N := ({ "ns_z" } : Finset Name)) hobs hfresh
-  exact hnot (by simp)
+  exact hnot (Finset.mem_singleton_self ("ns_z" : Name))
 
 /-- General singleton reserved-name boundary:
 for any reserved name `r`, user-observation discipline on `{r}` fails under

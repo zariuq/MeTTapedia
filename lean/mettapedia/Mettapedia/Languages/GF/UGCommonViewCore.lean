@@ -314,7 +314,7 @@ theorem semanticCoreEq_implies_englishSingletonCommonViewEq
       simpa [englishCzechViewUniverse] using
         (semanticCoreEq_implies_evidenceAgreement (State := State) hCore W)
   | strength =>
-      simpa [englishCzechViewUniverse] using
+      simpa [englishCzechViewUniverse, semanticCore] using
         (semanticCoreEq_implies_strengthAgreement (State := State) hCore W)
   | englishHouseSem =>
       have hPat : gfAbstractToPattern t₁ = gfAbstractToPattern t₂ := by
@@ -346,7 +346,7 @@ theorem semanticCoreEq_implies_englishCzechCommonViewEq
       simpa [englishCzechViewUniverse] using
         (semanticCoreEq_implies_evidenceAgreement (State := State) hCore W)
   | strength =>
-      simpa [englishCzechViewUniverse] using
+      simpa [englishCzechViewUniverse, semanticCore] using
         (semanticCoreEq_implies_strengthAgreement (State := State) hCore W)
   | englishHouseSem =>
       have hFalse : False := by

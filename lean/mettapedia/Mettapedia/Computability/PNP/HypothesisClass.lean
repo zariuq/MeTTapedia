@@ -98,8 +98,9 @@ def toEncodedFamily (F : BitEncodedClassifierFamily Input s) :
 /-- Any `s`-bit encoded classifier family realizes at most `2^s` classifiers. -/
 theorem card_realized_le (F : BitEncodedClassifierFamily Input s) :
     Fintype.card (EncodedFamily.realized F.toEncodedFamily) ≤ 2 ^ s := by
-  simpa [BitEncodedClassifierFamily.toEncodedFamily, card_bitCode] using
-    EncodedFamily.card_realized_le F.toEncodedFamily
+  have h := EncodedFamily.card_realized_le F.toEncodedFamily
+  rw [BitEncodedClassifierFamily.toEncodedFamily, card_bitCode] at h
+  exact h
 
 end BitEncodedClassifierFamily
 

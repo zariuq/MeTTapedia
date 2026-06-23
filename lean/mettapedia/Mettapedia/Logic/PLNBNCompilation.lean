@@ -149,7 +149,9 @@ noncomputable instance [Fintype V] [DecidableEq V] :
     exact h
   evidence_zero q := by
     classical
-    simp [evidence]
+    dsimp [evidence]
+    change (0 : Multiset BinaryEvidence).sum = 0
+    exact Multiset.sum_zero
 
 /-! ### Singleton-CPT bridge -/
 
@@ -1040,7 +1042,8 @@ theorem screeningOffMulEq_of_condIndepVertices_CA
   have hciCA' :
       Mettapedia.ProbabilityTheory.BayesianNetworks.BayesianNetwork.CondIndepOn
         (bn := bn) (μ := cpt.jointMeasure) C B A := by
-    simpa [Mettapedia.ProbabilityTheory.BayesianNetworks.BayesianNetwork.CondIndepOn] using
+    simpa [Mettapedia.ProbabilityTheory.BayesianNetworks.BayesianNetwork.CondIndepOn,
+      Mettapedia.ProbabilityTheory.BayesianNetworks.BayesianNetwork.CondIndepVertices] using
       hciCA
   have hmulCA :=
     Mettapedia.ProbabilityTheory.BayesianNetworks.BayesianNetwork.condIndep_eventEq_mul_cond
@@ -1554,7 +1557,11 @@ theorem chain_screeningOff_rewrite_applies_of_dsep
           (valA := valA) (valB := valB) (valC := valC) hLM h).symm)
   have hW : ⊢wm W := WMJudgment.axiom W
   have happly := WMRewriteRule.apply (r := r) (W := W) hcond hW
-  simpa [r, qLink, qLinkCond] using happly
+  change ⊢q W ⇓ qLinkCond ↦
+    (BinaryWorldModel.evidence
+      (State := State (bn := chainBN))
+      (Query := AtomQuery (BNQuery.Atom (bn := chainBN))) W qLink)
+  exact happly
 
 theorem chain_screeningOff_strength_eq_of_dsep
     (valA valB valC : Bool)

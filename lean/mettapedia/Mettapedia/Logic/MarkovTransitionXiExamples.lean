@@ -69,7 +69,7 @@ theorem markovTransitionAtom_queryJudgment
         (markov_rowExtract (k := k) W src) dst := by
   refine ⟨WMJudgment.axiom W, ?_⟩
   simpa using
-    markovTransitionAtom_wmEvidence_eq_rowProjection (k := k) W src dst
+    (markovTransitionAtom_wmEvidence_eq_rowProjection (k := k) W src dst).symm
 
 /-- Summary-level consumer theorem: on the transition multiset of a word, the
 encoded transition atom extracts the row selected by the Markov summary. -/

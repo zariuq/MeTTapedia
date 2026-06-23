@@ -1,6 +1,6 @@
 import Mettapedia.Logic.EvidenceQuantale
 import Mettapedia.Logic.EvidenceIntuitionisticProbability
-import Mettapedia.ProbabilityTheory.KnuthSkilling.Core.Basic
+import KnuthSkilling.Core.Basic
 import Mathlib.Data.ENNReal.Inv
 
 /-!
@@ -31,7 +31,7 @@ When you project to strength alone, you lose the "how much evidence" information
 namespace Mettapedia.Logic.EvidenceSTVBijection
 
 open Mettapedia.Logic.EvidenceQuantale
-open Mettapedia.ProbabilityTheory.KnuthSkilling
+open KnuthSkilling
 
 /-! ## Part 1: The Strength Fiber (What's Lost) -/
 

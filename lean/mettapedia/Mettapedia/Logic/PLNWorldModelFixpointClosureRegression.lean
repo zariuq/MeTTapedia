@@ -24,7 +24,7 @@ open scoped ENNReal
 abbrev FState := Multiset Hypothesis
 abbrev FQuery := ExperimentQuery Hypothesis Obs
 
-abbrev fixtureRuleOn : WMConsequenceRuleOn FState FQuery :=
+noncomputable abbrev fixtureRuleOn : WMConsequenceRuleOn FState FQuery :=
   WMConsequenceRuleOn.ofGlobal fixtureBlackwellRule
 
 def fixtureRules : RuleSet FState FQuery := { fixtureRuleOn }
@@ -53,11 +53,15 @@ theorem fixture_pullback_in_leastClosure :
   have hrule : fixtureRuleOn ∈ fixtureRules := by
     simp [fixtureRules]
   have hside : fixtureRuleOn.side fixtureState := by
-    simpa [fixtureRuleOn, WMConsequenceRuleOn.ofGlobal] using weak_factors_through_strong
+    change fixtureBlackwellRule.side
+    exact weak_factors_through_strong
   have hconc :=
     leastRuleClosure_rule_closed (R := fixtureRules) (W := fixtureState) (seed := fixtureSeed)
-      (r := fixtureRuleOn) hrule hside (by simpa [fixtureRuleOn, WMConsequenceRuleOn.ofGlobal] using hprem)
-  simpa [fixtureRuleOn, WMConsequenceRuleOn.ofGlobal] using hconc
+      (r := fixtureRuleOn) hrule hside (by
+        change fixtureBlackwellRule.premise ∈ leastRuleClosure fixtureRules fixtureState fixtureSeed
+        exact hprem)
+  change fixtureBlackwellRule.conclusion ∈ leastRuleClosure fixtureRules fixtureState fixtureSeed at hconc
+  exact hconc
 
 theorem fixture_pullback_threshold_from_seed :
     let τ :=
@@ -108,6 +112,9 @@ noncomputable instance : BinaryWorldModel BState BQuery where
   evidence := fun W _q => W
   evidence_add := by
     intro W₁ W₂ _q
+    rfl
+  evidence_zero := by
+    intro _q
     rfl
 
 def boolRules : RuleSet BState BQuery := (∅ : Set (WMConsequenceRuleOn BState BQuery))

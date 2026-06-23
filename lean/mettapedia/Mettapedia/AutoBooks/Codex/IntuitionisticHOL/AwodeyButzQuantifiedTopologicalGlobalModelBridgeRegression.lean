@@ -30,14 +30,14 @@ theorem derivable_propVar0 :
     Derivable (Base := BaseSort) (Const := Const)
       [SimpleQuantifiedFormula.toFormula propVar0]
       (SimpleQuantifiedFormula.toFormula propVar0) := by
-  exact Derivable.ax (by simp)
+  exact Derivable.ax (List.mem_singleton_self _)
 
 theorem derivable_forallPropSelfImp :
     Derivable (Base := BaseSort) (Const := Const) []
       (SimpleQuantifiedFormula.toFormula forallPropSelfImp) := by
   apply Derivable.allR
   apply Derivable.impR
-  exact Derivable.ax (by simp)
+  exact Derivable.ax List.mem_cons_self
 
 theorem truthValid_propVar0 (M : GlobalModel BaseSort Const) :
     simpleInterp.SimpleQuantifiedFormula.TruthValidSequent M [propVar0] propVar0 := by
@@ -117,10 +117,12 @@ theorem truthEval_forallPropVar_ne_top :
   intro htop
   rw [simpleInterp.SimpleQuantifiedFormula.truthEval_eq_formulaTruth
       (M := model) forallPropVar ()] at htop
-  have hall : ∀ p : Prop, p := by
+  have hiff := by
     simpa [forallPropVar, SimpleQuantifiedFormula.toFormula,
       SemilocalModel.formulaTruth, SemilocalModel.eval, model] using htop
-  exact hall False
+  have hfalse :=
+    (hiff.mpr trivial) False
+  simp [ApplicativeStructure.Env.extend, Carrier, SimpleTy.toTy] at hfalse
 
 theorem not_derivable_forallPropVar :
     ¬ Derivable (Base := BaseSort) (Const := Const) []

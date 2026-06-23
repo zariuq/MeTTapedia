@@ -1,6 +1,6 @@
 import Mettapedia.Logic.EvidenceQuantale
 import Mettapedia.Logic.EvidenceKSBridge
-import Mettapedia.ProbabilityTheory.KnuthSkilling.Core.Basic
+import KnuthSkilling.Core.Basic
 import Mathlib.Data.ENNReal.Inv
 
 /-!
@@ -27,7 +27,7 @@ PLN's 2D BinaryEvidence keeps BOTH (n⁺, n⁻), avoiding the precision loss.
 namespace Mettapedia.Logic.EvidenceIntuitionisticProbability
 
 open Mettapedia.Logic.EvidenceQuantale
-open Mettapedia.ProbabilityTheory.KnuthSkilling
+open KnuthSkilling
 
 /-! ## K&S Valuations on BinaryEvidence
 
@@ -52,7 +52,7 @@ noncomputable def trivialValuation : Valuation BinaryEvidence where
       split_ifs <;> simp
     · by_cases hy : y.pos = 0 ∧ y.neg = 0
       · exfalso
-        push_neg at hx
+        push Not at hx
         simp only [BinaryEvidence.le_def] at hle
         by_cases hp : x.pos = 0
         · -- x.pos = 0, so x.neg ≠ 0 (from hx)
@@ -60,12 +60,12 @@ noncomputable def trivialValuation : Valuation BinaryEvidence where
           have : y.neg = 0 := hy.2
           have hle2 : x.neg ≤ y.neg := hle.2
           rw [this] at hle2
-          exact hn (le_antisymm hle2 (zero_le _))
+          exact hn (le_antisymm hle2 (by positivity))
         · -- x.pos ≠ 0
           have : y.pos = 0 := hy.1
           have hle1 : x.pos ≤ y.pos := hle.1
           rw [this] at hle1
-          exact hp (le_antisymm hle1 (zero_le _))
+          exact hp (le_antisymm hle1 (by positivity))
       · -- Neither x nor y is ⊥, so val x = val y = 1
         simp only [hx, hy, ite_false, le_refl]
   val_bot := by

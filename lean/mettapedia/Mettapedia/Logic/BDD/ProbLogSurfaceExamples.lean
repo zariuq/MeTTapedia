@@ -209,28 +209,17 @@ noncomputable def fairTossComp : FirstOrderWeightedADCompilation fairTossProg wh
     have hinst' : inst = fairTossInst := fairToss_groundedWeightedAD_mem inst hinst
     subst hinst'
     fin_cases i
-    · simpa [fairTossProg, fairTossSwitchSlot, fairTossInst, fairTossAD,
-        GroundedFirstOrderWeightedADInstance.toGroundWeightedAD,
-        Grounding.groundFirstOrderWeightedAD] using
-        (show (1 / 2 : ENNReal) =
-            switchProb fairTossInst.toGroundWeightedAD.probs ⟨0, by decide⟩ from by
-          simp [switchProb, partialSum, fairTossInst, fairTossAD,
-            GroundedFirstOrderWeightedADInstance.toGroundWeightedAD,
-            Grounding.groundFirstOrderWeightedAD])
-    · simp [fairTossProg, fairTossSwitchSlot, fairTossInst, fairTossAD,
-        GroundedFirstOrderWeightedADInstance.toGroundWeightedAD,
-        Grounding.groundFirstOrderWeightedAD, switchProb, partialSum]
-      have hsum :
-          (∑ x with x = 0, ![(2⁻¹ : ENNReal), (2⁻¹ : ENNReal)] x) =
-            (2⁻¹ : ENNReal) := by
-        rw [show (Finset.univ.filter (fun x : Fin 2 => x = 0)) = ({0} : Finset (Fin 2)) by
-              ext x
-              fin_cases x <;> simp]
-        simp
-      rw [hsum]
-      have hhalf_ne_zero : (2⁻¹ : ENNReal) ≠ 0 := by norm_num
-      have hhalf_ne_top : (2⁻¹ : ENNReal) ≠ ⊤ := by simp
-      simpa using (ENNReal.div_self hhalf_ne_zero hhalf_ne_top).symm
+    · change (1 / 2 : ENNReal) =
+        switchProb (![(1 / 2 : ENNReal), (1 / 2 : ENNReal)])
+          (⟨0, by decide⟩ : Fin 2)
+      norm_num [switchProb, partialSum]
+    · change (1 : ENNReal) =
+        switchProb (![(1 / 2 : ENNReal), (1 / 2 : ENNReal)])
+          (⟨1, by decide⟩ : Fin 2)
+      simp [switchProb, partialSum, Finset.sum_filter]
+      exact (ENNReal.div_self
+        (by norm_num : (2⁻¹ : ENNReal) ≠ 0)
+        (by simp : (2⁻¹ : ENNReal) ≠ ⊤)).symm
 
 /-- Heads live at stratum `1`, auxiliary switches at stratum `0`. -/
 def fairTossStratification : Stratification tossSig := fun a =>
@@ -454,28 +443,17 @@ theorem gatedToss_locallyStructurablyCompilable :
             simpa using sw₂₁_ne_coin₁)
     · intro i
       fin_cases i
-      · simpa [gatedTossProg, gatedTossLocalSwitchSlot, gatedTossInst, gatedTossAD,
-          GroundedFirstOrderWeightedADInstance.toGroundWeightedAD,
-          Grounding.groundFirstOrderWeightedAD] using
-          (show (1 / 2 : ENNReal) =
-              switchProb gatedTossInst.toGroundWeightedAD.probs ⟨0, by decide⟩ from by
-            simp [switchProb, partialSum, gatedTossInst, gatedTossAD,
-              GroundedFirstOrderWeightedADInstance.toGroundWeightedAD,
-              Grounding.groundFirstOrderWeightedAD])
-      · simp [gatedTossProg, gatedTossLocalSwitchSlot, gatedTossInst, gatedTossAD,
-          GroundedFirstOrderWeightedADInstance.toGroundWeightedAD,
-          Grounding.groundFirstOrderWeightedAD, switchProb, partialSum]
-        have hsum :
-            (∑ x with x = 0, ![(2⁻¹ : ENNReal), (2⁻¹ : ENNReal)] x) =
-              (2⁻¹ : ENNReal) := by
-          rw [show (Finset.univ.filter (fun x : Fin 2 => x = 0)) = ({0} : Finset (Fin 2)) by
-                ext x
-                fin_cases x <;> simp]
-          simp
-        rw [hsum]
-        have hhalf_ne_zero : (2⁻¹ : ENNReal) ≠ 0 := by norm_num
-        have hhalf_ne_top : (2⁻¹ : ENNReal) ≠ ⊤ := by simp
-        simpa using (ENNReal.div_self hhalf_ne_zero hhalf_ne_top).symm
+      · change (1 / 2 : ENNReal) =
+          switchProb (![(1 / 2 : ENNReal), (1 / 2 : ENNReal)])
+            (⟨0, by decide⟩ : Fin 2)
+        norm_num [switchProb, partialSum]
+      · change (1 : ENNReal) =
+          switchProb (![(1 / 2 : ENNReal), (1 / 2 : ENNReal)])
+            (⟨1, by decide⟩ : Fin 2)
+        simp [switchProb, partialSum, Finset.sum_filter]
+        exact (ENNReal.div_self
+          (by norm_num : (2⁻¹ : ENNReal) ≠ 0)
+          (by simp : (2⁻¹ : ENNReal) ≠ ⊤)).symm
     · intro j i
       fin_cases j <;> fin_cases i
       · change 0 < 1
@@ -522,7 +500,9 @@ theorem gatedToss_locallyStructuredEvidenceSatisfiable :
   intro g hg
   simp [gatedTossEvidence] at hg
   subst hg
-  simpa using gatedToss_coin_holds
+  change FirstOrderGoalLit.holdsCompiledWeightedADProgram
+    gatedTossAutoCompiled tossGoalGrounding gatedTossWitnessAssignment (.pos coinX)
+  exact gatedToss_coin_holds
 
 /-- End-to-end worked example with a non-empty AD body and nontrivial
 evidence: the local-choice automation route constructs the source-structured

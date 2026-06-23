@@ -70,41 +70,40 @@ private theorem half_pos : (0 : ℝ) < 1 / 2 := by
 private theorem half_le_one : (1 / 2 : ℝ) ≤ 1 := by
   norm_num
 
+noncomputable def halfUnitInterval : unitInterval :=
+  ⟨(1 / 2 : ℝ), by norm_num⟩
+
+private theorem halfUnitInterval_ne_zero : halfUnitInterval ≠ 0 := by
+  intro h
+  have hval := congrArg Subtype.val h
+  norm_num [halfUnitInterval] at hval
+
 /-- Positive infinitary canary: under a geometric measure on the genuinely
 infinite index type `Nat`, the sentence probability of `flag` is `1/2`. -/
 theorem regression_nat_geometric_flag_half :
     sentenceProb natFlagSpace
-      ((ProbabilityTheory.geometricMeasure (p := (1 / 2 : ℝ)) half_pos half_le_one) :
+      ((ProbabilityTheory.geometricMeasure halfUnitInterval) :
         MeasureTheory.Measure natFlagSpace.Idx)
       flagSentence =
       (1 / 2 : ℝ≥0∞) := by
   rw [sentenceProb, natFlagSpace_sentenceEvent_flag]
-  rw [ProbabilityTheory.geometricMeasure]
   have hsingleton :
-      (ProbabilityTheory.geometricPMF half_pos half_le_one).toMeasure ({0} : Set Nat) =
-        ProbabilityTheory.geometricPMF half_pos half_le_one 0 := by
-    simpa using
-      (PMF.toMeasure_apply_singleton
-        (p := ProbabilityTheory.geometricPMF half_pos half_le_one)
-        (a := 0) (h := by simp))
-  have hpmf0 :
-      ProbabilityTheory.geometricPMF half_pos half_le_one 0 = (1 / 2 : ℝ≥0∞) := by
-    change ENNReal.ofReal (((1 - (1 / 2 : ℝ)) ^ (0 : ℕ)) * (1 / 2 : ℝ)) =
-      (1 / 2 : ℝ≥0∞)
-    rw [show (((1 - (1 / 2 : ℝ)) ^ (0 : ℕ)) * (1 / 2 : ℝ)) = (1 / 2 : ℝ) by norm_num]
+      ProbabilityTheory.geometricMeasure halfUnitInterval ({0} : Set Nat) =
+        (1 / 2 : ℝ≥0∞) := by
+    rw [ProbabilityTheory.geometricMeasure_singleton halfUnitInterval_ne_zero 0]
+    rw [show (((1 - (halfUnitInterval : ℝ)) ^ (0 : ℕ)) *
+        (halfUnitInterval : ℝ)) = (1 / 2 : ℝ) by
+      norm_num [halfUnitInterval]]
     rw [show (1 / 2 : ℝ) = ((2 : ℝ)⁻¹) by norm_num]
     rw [ENNReal.ofReal_inv_of_pos (by norm_num)]
     norm_num
-  calc
-    (ProbabilityTheory.geometricPMF half_pos half_le_one).toMeasure ({0} : Set Nat)
-        = ProbabilityTheory.geometricPMF half_pos half_le_one 0 := hsingleton
-    _ = (1 / 2 : ℝ≥0∞) := hpmf0
+  exact hsingleton
 
 /-- Negative infinitary canary: the same sentence does not have probability `1`
 under the geometric-indexed model space. -/
 theorem regression_nat_geometric_flag_ne_one :
     sentenceProb natFlagSpace
-      ((ProbabilityTheory.geometricMeasure (p := (1 / 2 : ℝ)) half_pos half_le_one) :
+      ((ProbabilityTheory.geometricMeasure halfUnitInterval) :
         MeasureTheory.Measure natFlagSpace.Idx)
       flagSentence ≠ 1 := by
   rw [regression_nat_geometric_flag_half]
@@ -114,16 +113,16 @@ theorem regression_nat_geometric_flag_ne_one :
 forces equality of sentence probabilities. -/
 theorem regression_nat_geometric_and_top_eq_flag :
     sentenceProb natFlagSpace
-      ((ProbabilityTheory.geometricMeasure (p := (1 / 2 : ℝ)) half_pos half_le_one) :
+      ((ProbabilityTheory.geometricMeasure halfUnitInterval) :
         MeasureTheory.Measure natFlagSpace.Idx)
       (.and flagSentence .top) =
       sentenceProb natFlagSpace
-        ((ProbabilityTheory.geometricMeasure (p := (1 / 2 : ℝ)) half_pos half_le_one) :
+        ((ProbabilityTheory.geometricMeasure halfUnitInterval) :
           MeasureTheory.Measure natFlagSpace.Idx)
         flagSentence := by
   exact sentenceProb_eq_of_pointwiseIff
     (S := natFlagSpace)
-    (μ := ((ProbabilityTheory.geometricMeasure (p := (1 / 2 : ℝ)) half_pos half_le_one) :
+    (μ := ((ProbabilityTheory.geometricMeasure halfUnitInterval) :
       MeasureTheory.Measure natFlagSpace.Idx))
     (φ := (.and flagSentence .top))
     (ψ := flagSentence) <| by

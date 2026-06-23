@@ -2046,9 +2046,8 @@ theorem dlrCompletionBoundedMeasurablePrevision_mix_apply
           (ν.1 : Measure (InfiniteWorld Atom)) X
   rw [integral_add_measure (X.integrable _) (X.integrable _)]
   rw [integral_smul_nnreal_measure, integral_smul_nnreal_measure]
-  simp [unitInterval.toNNReal, unitInterval.symm,
-    BoundedMeasurablePrecisePrevision.ofProbabilityMeasure_apply,
-    NNReal.smul_def]
+  simp only [BoundedMeasurablePrecisePrevision.ofProbabilityMeasure_apply,
+    NNReal.smul_def, unitInterval.coe_toNNReal, unitInterval.coe_symm_eq, smul_eq_mul]
 
 /-- On finite cylinders, the σ-additive bounded-observable expectation induced
 by a DLR completion agrees with the finite-region singleton-mass prevision
@@ -3377,9 +3376,9 @@ theorem dlrCompletionRegionPrevision_restrict
   have hmeasure :
       Measure.map (restrictLocalAssignment hΛΔ) νΔ = νΛ := by
     dsimp [νΔ, νΛ]
-    simpa [restrictLocalAssignment,
-      Mettapedia.Logic.MarkovLogicInfiniteUniqueness.ClassicalInfiniteGroundMLNSpec.restrictAssignment]
-      using limitMarginal_map_restrictAssignment (Atom := Atom) μ.1 hΛΔ
+    -- `restrictLocalAssignment hΛΔ` is definitionally `restrictAssignment hΛΔ`; under Lean 4.31
+    -- `simpa … using` no longer bridges the two, so close by defeq directly.
+    exact limitMarginal_map_restrictAssignment (Atom := Atom) μ.1 hΛΔ
   have hpush :
       @PrecisePrevision.FiniteWeights.ofFiniteProbabilityMeasurePrevision
           (LocalAssignment Atom Λ) _ _ _
@@ -3557,7 +3556,6 @@ theorem dlrAllRegionsProjectiveSpec_mem_projectiveCylinderCredalSet
     dlrCompletionCylinderPrevision M μ ∈
       (dlrAllRegionsProjectiveSpec M).projectiveCylinderCredalSet := by
   intro Λ
-  rw [dlrCompletionCylinderPrevision_localPrevision]
   exact mem_dlrRegionCredalSet M Λ μ
 
 /-- If at least one DLR completion exists, then the all-regions DLR credal
@@ -5603,12 +5601,12 @@ theorem dlrAllRegionsProjectiveSpec_projectiveLimit_exists_endpointPairReadout_l
             ((dlrAllRegionsProjectiveSpec M).cylinders.cylinderGamble Λ X) =
           (Plo ((dlrAllRegionsProjectiveSpec M).cylinders.cylinderGamble Λ X) +
             Phi ((dlrAllRegionsProjectiveSpec M).cylinders.cylinderGamble Λ X)) / 2 := by
-  let S : ProjectiveLocalCredalSpec (Region Atom) (InfiniteWorld Atom) :=
-    dlrAllRegionsProjectiveSpec M
-  haveI : Fintype (S.cylinders.Local Λ) :=
-    inferInstanceAs (Fintype (LocalAssignment Atom Λ))
-  haveI : Nonempty (S.cylinders.Local Λ) :=
-    inferInstanceAs (Nonempty (LocalAssignment Atom Λ))
+  set S : ProjectiveLocalCredalSpec (Region Atom) (InfiniteWorld Atom) :=
+    dlrAllRegionsProjectiveSpec M with hSdef
+  haveI : Fintype (S.cylinders.Local Λ) := by
+    rw [hSdef]; exact inferInstanceAs (Fintype (LocalAssignment Atom Λ))
+  haveI : Nonempty (S.cylinders.Local Λ) := by
+    rw [hSdef]; exact inferInstanceAs (Nonempty (LocalAssignment Atom Λ))
   have hExact : S.localCredalExactAt Λ :=
     dlrAllRegionsProjectiveSpec_localCredalExactAt_of_marginal_eq
       M toPrecise hMarginal Λ

@@ -477,7 +477,7 @@ theorem language_quantale_coherence_wmITV_threshold_atom_of_queryEncoders
     (wmITVAtomSemQSigma
       (State := State) (Srt := Srt) (Query := Query) (Ctx := Ctx₂)
       itvSem₂ ctx₂ W₂ queryOfAtom₂ a0 (m.mapTerm (pick u)))
-  simpa [wmITVAtomSemQSigma, wmPatternValuation] using hPair.2
+  simpa [wmITVAtomSemQSigma, wmPatternValuation, WorldModelSigma.queryITV] using hPair.2
 
 /-- Lower-coordinate specialization of the typed WM/query-encoder coherence bundle. -/
 theorem language_quantale_coherence_wmITV_lower_threshold_atom_of_queryEncoders

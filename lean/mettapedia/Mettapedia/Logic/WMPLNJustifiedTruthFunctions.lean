@@ -136,9 +136,9 @@ theorem truthRevision_strength_eq_toStrength
       (Mettapedia.Logic.NuEvidenceQuantaleBridge.Bridge.BinaryEvidence.toTV κ
         (Mettapedia.Logic.NuEvidenceQuantaleBridge.Bridge.TV.toEvidence κ (toMettaTV t1) +
          Mettapedia.Logic.NuEvidenceQuantaleBridge.Bridge.TV.toEvidence κ (toMettaTV t2))).s := by
-  simpa [truthRevision, toMettaTV] using
-    Mettapedia.Logic.NuEvidenceQuantaleBridge.Bridge.truthRevision_strength_eq_toStrength
-      (κ := κ) hκ0 hκT (toMettaTV t1) (toMettaTV t2) hs1 hs1' hs2 hs2'
+  exact congrArg (·.s)
+    (Mettapedia.Logic.NuEvidenceQuantaleBridge.Bridge.truthRevision_eq_toTV_hplus
+      (κ := κ) hκ0 hκT (toMettaTV t1) (toMettaTV t2) hs1 hs1' hs2 hs2')
 
 theorem truthRevision_conf_eq_toConfidence
     (κ : ENNReal) (hκ0 : κ ≠ 0) (hκT : κ ≠ ⊤)
@@ -149,9 +149,9 @@ theorem truthRevision_conf_eq_toConfidence
       (Mettapedia.Logic.NuEvidenceQuantaleBridge.Bridge.BinaryEvidence.toTV κ
         (Mettapedia.Logic.NuEvidenceQuantaleBridge.Bridge.TV.toEvidence κ (toMettaTV t1) +
          Mettapedia.Logic.NuEvidenceQuantaleBridge.Bridge.TV.toEvidence κ (toMettaTV t2))).c := by
-  simpa [truthRevision, toMettaTV] using
-    Mettapedia.Logic.NuEvidenceQuantaleBridge.Bridge.truthRevision_conf_eq_toConfidence
-      (κ := κ) hκ0 hκT (toMettaTV t1) (toMettaTV t2) hs1 hs1' hs2 hs2'
+  exact congrArg (·.c)
+    (Mettapedia.Logic.NuEvidenceQuantaleBridge.Bridge.truthRevision_eq_toTV_hplus
+      (κ := κ) hκ0 hκT (toMettaTV t1) (toMettaTV t2) hs1 hs1' hs2 hs2')
 
 /-- **Revision, read as evidence accumulation.** The revised TV equals
 what you get by translating both inputs into BinaryEvidence count form

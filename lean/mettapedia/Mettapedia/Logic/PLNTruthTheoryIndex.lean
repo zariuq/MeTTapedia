@@ -561,7 +561,7 @@ confidence scale, IDM context, and queried category are chosen parameters of
 the view; once chosen, equal retained evidence forces equal answers. -/
 structure SufficientStatisticQueryProfile where
   binaryWorldStrengthForced :
-    ∀ {State Query : Type*}
+    ∀ {State Query : Type}
       [Mettapedia.Logic.EvidenceClass.EvidenceType State]
       [Mettapedia.Logic.PLNWorldModel.BinaryWorldModel State Query]
       {W₁ W₂ : State} {q : Query},
@@ -574,7 +574,7 @@ structure SufficientStatisticQueryProfile where
           Mettapedia.Logic.PLNWorldModel.BinaryWorldModel.queryStrength
             (State := State) (Query := Query) W₂ q
   binaryWorldConfidenceForced :
-    ∀ {State Query : Type*}
+    ∀ {State Query : Type}
       [Mettapedia.Logic.EvidenceClass.EvidenceType State]
       [Mettapedia.Logic.PLNWorldModel.BinaryWorldModel State Query]
       (κ : ℝ≥0∞) {W₁ W₂ : State} {q : Query},
@@ -587,7 +587,7 @@ structure SufficientStatisticQueryProfile where
           Mettapedia.Logic.PLNWorldModel.BinaryWorldModel.queryConfidence
             (State := State) (Query := Query) κ W₂ q
   binarySurfaceStrengthForced :
-    ∀ {Obs Query : Type*}
+    ∀ {Obs Query : Type}
       (S :
         Mettapedia.Logic.SufficientStatisticSurface Obs Query
           Mettapedia.Logic.EvidenceQuantale.BinaryEvidence)
@@ -599,7 +599,7 @@ structure SufficientStatisticQueryProfile where
           Mettapedia.Logic.EvidenceQuantale.BinaryEvidence.toStrength
             (Mettapedia.Logic.SufficientStatisticSurface.aggregate S σ₂ q)
   binarySurfaceConfidenceForced :
-    ∀ {Obs Query : Type*}
+    ∀ {Obs Query : Type}
       (S :
         Mettapedia.Logic.SufficientStatisticSurface Obs Query
           Mettapedia.Logic.EvidenceQuantale.BinaryEvidence)
@@ -611,7 +611,7 @@ structure SufficientStatisticQueryProfile where
           Mettapedia.Logic.EvidenceQuantale.BinaryEvidence.toConfidence κ
             (Mettapedia.Logic.SufficientStatisticSurface.aggregate S σ₂ q)
   categoricalMeanForced :
-    ∀ {Obs Query : Type*} {k : ℕ}
+    ∀ {Obs Query : Type} {k : ℕ}
       (S :
         Mettapedia.Logic.SufficientStatisticSurface Obs Query
           (Mettapedia.Logic.EvidenceDirichlet.MultiEvidence k))
@@ -623,7 +623,7 @@ structure SufficientStatisticQueryProfile where
           ((Mettapedia.Logic.SufficientStatisticSurface.aggregate S σ₂ q).counts i : ℝ) /
             ((Mettapedia.Logic.SufficientStatisticSurface.aggregate S σ₂ q).total : ℝ)
   categoricalIDMEnvelopeForced :
-    ∀ {Obs Query : Type*} {k : ℕ}
+    ∀ {Obs Query : Type} {k : ℕ}
       (S :
         Mettapedia.Logic.SufficientStatisticSurface Obs Query
           (Mettapedia.Logic.EvidenceDirichlet.MultiEvidence k))
@@ -2399,44 +2399,44 @@ type rather than the weaker `EvidenceWeightCoordinate`, whose contract is only
 left-inverse reconstruction on nonnegative weights. -/
 structure ConfidenceChartTorsorProfile where
   chartDifferenceTransitive :
-    ∀ {Display : Type*} (χ ψ : EvidenceWeightChartIso Display),
+    ∀ {Display : Type} (χ ψ : EvidenceWeightChartIso Display),
       reparametrizeChart (chartDifference χ ψ) χ = ψ
   chartActionFree :
-    ∀ {Display : Type*} (χ : EvidenceWeightChartIso Display)
+    ∀ {Display : Type} (χ : EvidenceWeightChartIso Display)
       {σ τ : Equiv.Perm Display},
       reparametrizeChart σ χ = reparametrizeChart τ χ → σ = τ
   chartDifferenceUnique :
-    ∀ {Display : Type*} (χ ψ : EvidenceWeightChartIso Display)
+    ∀ {Display : Type} (χ ψ : EvidenceWeightChartIso Display)
       (σ : Equiv.Perm Display),
       reparametrizeChart σ χ = ψ ↔ σ = chartDifference χ ψ
   chartSelfDifferenceIdentity :
-    ∀ {Display : Type*} (χ : EvidenceWeightChartIso Display),
+    ∀ {Display : Type} (χ : EvidenceWeightChartIso Display),
       chartDifference χ χ = Equiv.refl Display
   orderedChartDifferenceTransitive :
-    ∀ {Display : Type*} [LE Display]
+    ∀ {Display : Type} [LE Display]
       (χ ψ : OrderedEvidenceWeightChartIso Display),
       reparametrizeOrderedChart (orderedChartDifference χ ψ) χ = ψ
   orderedChartActionFree :
-    ∀ {Display : Type*} [LE Display]
+    ∀ {Display : Type} [LE Display]
       (χ : OrderedEvidenceWeightChartIso Display)
       {σ τ : Display ≃o Display},
       reparametrizeOrderedChart σ χ = reparametrizeOrderedChart τ χ → σ = τ
   orderedChartDifferenceUnique :
-    ∀ {Display : Type*} [LE Display]
+    ∀ {Display : Type} [LE Display]
       (χ ψ : OrderedEvidenceWeightChartIso Display)
       (σ : Display ≃o Display),
       reparametrizeOrderedChart σ χ = ψ ↔ σ = orderedChartDifference χ ψ
   orderedChartSelfDifferenceIdentity :
-    ∀ {Display : Type*} [LE Display]
+    ∀ {Display : Type} [LE Display]
       (χ : OrderedEvidenceWeightChartIso Display),
       orderedChartDifference χ χ = OrderIso.refl Display
   orderedChartActionForgetsToEquivAction :
-    ∀ {Display : Type*} [LE Display]
+    ∀ {Display : Type} [LE Display]
       (σ : Display ≃o Display) (χ : OrderedEvidenceWeightChartIso Display),
       (reparametrizeOrderedChart σ χ).toChartIso =
         reparametrizeChart σ.toEquiv χ.toChartIso
   orderedChartDifferenceForgetsToEquivDifference :
-    ∀ {Display : Type*} [LE Display]
+    ∀ {Display : Type} [LE Display]
       (χ ψ : OrderedEvidenceWeightChartIso Display),
       (orderedChartDifference χ ψ).toEquiv =
         chartDifference χ.toChartIso ψ.toChartIso
@@ -2512,19 +2512,19 @@ structure StrengthProjectionProfile where
           Mettapedia.Logic.PLNForcedQueries.ITVSelector.eval .lower itv ≠
             Mettapedia.Logic.PLNForcedQueries.ITVSelector.eval .upper itv
   typedITVLowerLeMidpoint :
-    ∀ {Sem : Mettapedia.Logic.PLNTruthTower.ITVSemantics}
+    ∀ {Sem : Mettapedia.Logic.PLNTruthTower.ITVSemantics.{0}}
       (x : Mettapedia.Logic.PLNTruthTower.TypedITV Sem),
       x.lower ≤ x.midpoint
   typedITVMidpointLeUpper :
-    ∀ {Sem : Mettapedia.Logic.PLNTruthTower.ITVSemantics}
+    ∀ {Sem : Mettapedia.Logic.PLNTruthTower.ITVSemantics.{0}}
       (x : Mettapedia.Logic.PLNTruthTower.TypedITV Sem),
       x.midpoint ≤ x.upper
   typedITVMidpointInUnit :
-    ∀ {Sem : Mettapedia.Logic.PLNTruthTower.ITVSemantics}
+    ∀ {Sem : Mettapedia.Logic.PLNTruthTower.ITVSemantics.{0}}
       (x : Mettapedia.Logic.PLNTruthTower.TypedITV Sem),
       x.midpoint ∈ Set.Icc (0 : ℝ) 1
   credalTowerMidpointAverage :
-    ∀ {Ω : Type*} [Fintype Ω]
+    ∀ {Ω : Type} [Fintype Ω]
       (t : Mettapedia.Logic.PLNTruthTower.CredalProjectionTower Ω),
       t.midpointDisplay =
         (Mettapedia.ProbabilityTheory.ImpreciseProbability.DesirableGambles.lowerProb
@@ -2532,11 +2532,11 @@ structure StrengthProjectionProfile where
           Mettapedia.ProbabilityTheory.ImpreciseProbability.DesirableGambles.upperProb
             t.credal t.gamble) / 2
   credalTowerLowerLeMidpoint :
-    ∀ {Ω : Type*} [Fintype Ω]
+    ∀ {Ω : Type} [Fintype Ω]
       (t : Mettapedia.Logic.PLNTruthTower.CredalProjectionTower Ω),
       t.toTypedITV.lower ≤ t.midpointDisplay
   credalTowerMidpointLeUpper :
-    ∀ {Ω : Type*} [Fintype Ω]
+    ∀ {Ω : Type} [Fintype Ω]
       (t : Mettapedia.Logic.PLNTruthTower.CredalProjectionTower Ω),
       t.midpointDisplay ≤ t.toTypedITV.upper
   typedSTVSameStrengthDifferentConfidence :
@@ -3302,18 +3302,18 @@ noncomputable def amplitudePhasePLNProfile : AmplitudePhasePLNProfile where
 an explicit bridge to a shared target semantics. -/
 structure TypedITVOperationProfile where
   sameSemanticsConjunction :
-    ∀ {Sem : ITVSemantics} (x y : TypedITV Sem),
+    ∀ {Sem : ITVSemantics.{0}} (x y : TypedITV Sem),
       (TypedITV.conjunctionSameSemantics x y).value =
         ITV.conjunction x.value y.value
   sameSemanticsImplication :
-    ∀ {Sem : ITVSemantics} (x y : TypedITV Sem),
+    ∀ {Sem : ITVSemantics.{0}} (x y : TypedITV Sem),
       (TypedITV.implicationSameSemantics x y).value =
         ITV.implication x.value y.value
   forgetToGenericPreservesValue :
-    ∀ {Sem : ITVSemantics} (x : TypedITV Sem),
+    ∀ {Sem : ITVSemantics.{0}} (x : TypedITV Sem),
       (TypedITV.forgetToGeneric x).value = x.value
   crossSemanticsConjunctionViaBridge :
-    ∀ {Sem₁ Sem₂ Target : ITVSemantics}
+    ∀ {Sem₁ Sem₂ Target : ITVSemantics.{0}}
       (B : TypedITV.Bridge Sem₁ Sem₂ Target)
       (x : TypedITV Sem₁) (y : TypedITV Sem₂),
       (TypedITV.conjunctionViaBridge B x y).value =
@@ -3335,7 +3335,7 @@ load-bearing state, typed ITV queries retain constructor provenance, and the
 old raw query functions are exactly the forgetful projections. -/
 structure WorldModelTypedITVProfile where
   binaryForgetsToRaw :
-    ∀ {State Query Ctx : Type*}
+    ∀ {State Query Ctx : Type}
       [Mettapedia.Logic.EvidenceClass.EvidenceType State]
       [Mettapedia.Logic.PLNWorldModel.BinaryWorldModel State Query]
       (sem : Mettapedia.Logic.PLNWorldModel.ITVSemantics Ctx)
@@ -3345,7 +3345,7 @@ structure WorldModelTypedITVProfile where
         Mettapedia.Logic.PLNWorldModel.BinaryWorldModel.queryITV
           (State := State) (Query := Query) sem ctx W q
   binaryTypedLowerIsRawLower :
-    ∀ {State Query Ctx : Type*}
+    ∀ {State Query Ctx : Type}
       [Mettapedia.Logic.EvidenceClass.EvidenceType State]
       [Mettapedia.Logic.PLNWorldModel.BinaryWorldModel State Query]
       (sem : Mettapedia.Logic.PLNWorldModel.ITVSemantics Ctx)
@@ -3355,7 +3355,7 @@ structure WorldModelTypedITVProfile where
         Mettapedia.Logic.PLNWorldModel.BinaryWorldModel.queryITVLower
           (State := State) (Query := Query) sem ctx W q
   binaryTypedUpperIsRawUpper :
-    ∀ {State Query Ctx : Type*}
+    ∀ {State Query Ctx : Type}
       [Mettapedia.Logic.EvidenceClass.EvidenceType State]
       [Mettapedia.Logic.PLNWorldModel.BinaryWorldModel State Query]
       (sem : Mettapedia.Logic.PLNWorldModel.ITVSemantics Ctx)
@@ -3365,7 +3365,7 @@ structure WorldModelTypedITVProfile where
         Mettapedia.Logic.PLNWorldModel.BinaryWorldModel.queryITVUpper
           (State := State) (Query := Query) sem ctx W q
   binaryTypedStrengthIsRawStrength :
-    ∀ {State Query Ctx : Type*}
+    ∀ {State Query Ctx : Type}
       [Mettapedia.Logic.EvidenceClass.EvidenceType State]
       [Mettapedia.Logic.PLNWorldModel.BinaryWorldModel State Query]
       (sem : Mettapedia.Logic.PLNWorldModel.ITVSemantics Ctx)
@@ -3375,7 +3375,7 @@ structure WorldModelTypedITVProfile where
         Mettapedia.Logic.PLNWorldModel.BinaryWorldModel.queryITVStrength
           (State := State) (Query := Query) sem ctx W q
   binaryTypedWidthIsRawWidth :
-    ∀ {State Query Ctx : Type*}
+    ∀ {State Query Ctx : Type}
       [Mettapedia.Logic.EvidenceClass.EvidenceType State]
       [Mettapedia.Logic.PLNWorldModel.BinaryWorldModel State Query]
       (sem : Mettapedia.Logic.PLNWorldModel.ITVSemantics Ctx)
@@ -3385,7 +3385,7 @@ structure WorldModelTypedITVProfile where
         Mettapedia.Logic.PLNWorldModel.BinaryWorldModel.queryITVWidth
           (State := State) (Query := Query) sem ctx W q
   binaryTypedCredibilityIsRawCredibility :
-    ∀ {State Query Ctx : Type*}
+    ∀ {State Query Ctx : Type}
       [Mettapedia.Logic.EvidenceClass.EvidenceType State]
       [Mettapedia.Logic.PLNWorldModel.BinaryWorldModel State Query]
       (sem : Mettapedia.Logic.PLNWorldModel.ITVSemantics Ctx)
@@ -3395,7 +3395,7 @@ structure WorldModelTypedITVProfile where
         Mettapedia.Logic.PLNWorldModel.BinaryWorldModel.queryITVCredibility
           (State := State) (Query := Query) sem ctx W q
   binaryTypedJudgmentForgetsToRaw :
-    ∀ {State Query Ctx : Type*}
+    ∀ {State Query Ctx : Type}
       [Mettapedia.Logic.EvidenceClass.EvidenceType State]
       [Mettapedia.Logic.PLNWorldModel.BinaryWorldModel State Query]
       (sem : Mettapedia.Logic.PLNWorldModel.ITVSemantics Ctx)
@@ -3407,7 +3407,7 @@ structure WorldModelTypedITVProfile where
       Mettapedia.Logic.PLNWorldModel.BinaryWorldModel.WMITVJudgment
         (State := State) (Query := Query) sem ctx W q itv.value
   binaryWalleyWidthComplement :
-    ∀ {State Query : Type*}
+    ∀ {State Query : Type}
       [Mettapedia.Logic.EvidenceClass.EvidenceType State]
       [Mettapedia.Logic.PLNWorldModel.BinaryWorldModel State Query]
       (ctx : Mettapedia.Logic.PLNWorldModel.IDMPredictiveContext)
@@ -3417,7 +3417,7 @@ structure WorldModelTypedITVProfile where
         (Mettapedia.Logic.PLNWorldModel.BinaryWorldModel.queryTypedITVWalley
           (State := State) (Query := Query) ctx W q).credibility = 1
   sigmaForgetsToRaw :
-    ∀ {State Srt Ctx : Type*} {Query : Srt → Type*}
+    ∀ {State Srt Ctx : Type} {Query : Srt → Type}
       [Mettapedia.Logic.EvidenceClass.EvidenceType State]
       [Mettapedia.Logic.PLNWorldModel.WorldModelSigma State Srt Query]
       (sem : Mettapedia.Logic.PLNWorldModel.ITVSemantics Ctx)
@@ -3427,7 +3427,7 @@ structure WorldModelTypedITVProfile where
         Mettapedia.Logic.PLNWorldModel.WorldModelSigma.queryITV
           (State := State) (Srt := Srt) (Query := Query) sem ctx W q
   sigmaTypedAtForgetsToRawAt :
-    ∀ {State Srt Ctx : Type*} {Query : Srt → Type*}
+    ∀ {State Srt Ctx : Type} {Query : Srt → Type}
       [Mettapedia.Logic.EvidenceClass.EvidenceType State]
       [Mettapedia.Logic.PLNWorldModel.WorldModelSigma State Srt Query]
       (sem : Mettapedia.Logic.PLNWorldModel.ITVSemantics Ctx)
@@ -3437,7 +3437,7 @@ structure WorldModelTypedITVProfile where
         Mettapedia.Logic.PLNWorldModel.WorldModelSigma.queryITVAt
           (State := State) (Srt := Srt) (Query := Query) sem ctx W q
   sigmaTypedLowerIsRawLower :
-    ∀ {State Srt Ctx : Type*} {Query : Srt → Type*}
+    ∀ {State Srt Ctx : Type} {Query : Srt → Type}
       [Mettapedia.Logic.EvidenceClass.EvidenceType State]
       [Mettapedia.Logic.PLNWorldModel.WorldModelSigma State Srt Query]
       (sem : Mettapedia.Logic.PLNWorldModel.ITVSemantics Ctx)
@@ -3447,7 +3447,7 @@ structure WorldModelTypedITVProfile where
         Mettapedia.Logic.PLNWorldModel.WorldModelSigma.queryITVLower
           (State := State) (Srt := Srt) (Query := Query) sem ctx W q
   sigmaTypedUpperIsRawUpper :
-    ∀ {State Srt Ctx : Type*} {Query : Srt → Type*}
+    ∀ {State Srt Ctx : Type} {Query : Srt → Type}
       [Mettapedia.Logic.EvidenceClass.EvidenceType State]
       [Mettapedia.Logic.PLNWorldModel.WorldModelSigma State Srt Query]
       (sem : Mettapedia.Logic.PLNWorldModel.ITVSemantics Ctx)
@@ -3457,7 +3457,7 @@ structure WorldModelTypedITVProfile where
         Mettapedia.Logic.PLNWorldModel.WorldModelSigma.queryITVUpper
           (State := State) (Srt := Srt) (Query := Query) sem ctx W q
   sigmaTypedStrengthIsRawStrength :
-    ∀ {State Srt Ctx : Type*} {Query : Srt → Type*}
+    ∀ {State Srt Ctx : Type} {Query : Srt → Type}
       [Mettapedia.Logic.EvidenceClass.EvidenceType State]
       [Mettapedia.Logic.PLNWorldModel.WorldModelSigma State Srt Query]
       (sem : Mettapedia.Logic.PLNWorldModel.ITVSemantics Ctx)
@@ -3467,7 +3467,7 @@ structure WorldModelTypedITVProfile where
         Mettapedia.Logic.PLNWorldModel.WorldModelSigma.queryITVStrength
           (State := State) (Srt := Srt) (Query := Query) sem ctx W q
   sigmaTypedWidthIsRawWidth :
-    ∀ {State Srt Ctx : Type*} {Query : Srt → Type*}
+    ∀ {State Srt Ctx : Type} {Query : Srt → Type}
       [Mettapedia.Logic.EvidenceClass.EvidenceType State]
       [Mettapedia.Logic.PLNWorldModel.WorldModelSigma State Srt Query]
       (sem : Mettapedia.Logic.PLNWorldModel.ITVSemantics Ctx)
@@ -3477,7 +3477,7 @@ structure WorldModelTypedITVProfile where
         Mettapedia.Logic.PLNWorldModel.WorldModelSigma.queryITVWidth
           (State := State) (Srt := Srt) (Query := Query) sem ctx W q
   sigmaTypedCredibilityIsRawCredibility :
-    ∀ {State Srt Ctx : Type*} {Query : Srt → Type*}
+    ∀ {State Srt Ctx : Type} {Query : Srt → Type}
       [Mettapedia.Logic.EvidenceClass.EvidenceType State]
       [Mettapedia.Logic.PLNWorldModel.WorldModelSigma State Srt Query]
       (sem : Mettapedia.Logic.PLNWorldModel.ITVSemantics Ctx)
@@ -3487,7 +3487,7 @@ structure WorldModelTypedITVProfile where
         Mettapedia.Logic.PLNWorldModel.WorldModelSigma.queryITVCredibility
           (State := State) (Srt := Srt) (Query := Query) sem ctx W q
   sigmaTypedJudgmentForgetsToRaw :
-    ∀ {State Srt Ctx : Type*} {Query : Srt → Type*}
+    ∀ {State Srt Ctx : Type} {Query : Srt → Type}
       [Mettapedia.Logic.EvidenceClass.EvidenceType State]
       [Mettapedia.Logic.PLNWorldModel.WorldModelSigma State Srt Query]
       (sem : Mettapedia.Logic.PLNWorldModel.ITVSemantics Ctx)
@@ -3499,7 +3499,7 @@ structure WorldModelTypedITVProfile where
       Mettapedia.Logic.PLNWorldModel.WorldModelSigma.WMITVJudgmentSigma
         (State := State) (Srt := Srt) (Query := Query) sem ctx W q itv.value
   sigmaQueryEquivalencePreservesTypedITV :
-    ∀ {State Srt Ctx : Type*} {Query : Srt → Type*}
+    ∀ {State Srt Ctx : Type} {Query : Srt → Type}
       [Mettapedia.Logic.EvidenceClass.EvidenceType State]
       [Mettapedia.Logic.PLNWorldModel.WorldModelSigma State Srt Query]
       {q₁ q₂ : Sigma Query}
@@ -3512,7 +3512,7 @@ structure WorldModelTypedITVProfile where
       Mettapedia.Logic.PLNWorldModel.WorldModelSigma.queryTypedITV
         (State := State) (Srt := Srt) (Query := Query) sem ctx W q₂
   sigmaRewriteProducesTypedJudgment :
-    ∀ {State Srt Ctx : Type*} {Query : Srt → Type*}
+    ∀ {State Srt Ctx : Type} {Query : Srt → Type}
       [Mettapedia.Logic.EvidenceClass.EvidenceType State]
       [Mettapedia.Logic.PLNWorldModel.WorldModelSigma State Srt Query]
       (sem : Mettapedia.Logic.PLNWorldModel.ITVSemantics Ctx)
@@ -3524,7 +3524,7 @@ structure WorldModelTypedITVProfile where
         W r.conclusion
         (Mettapedia.Logic.PLNWorldModel.ITVSemantics.typedEval sem ctx (r.derive W))
   sigmaWalleyWidthComplement :
-    ∀ {State Srt : Type*} {Query : Srt → Type*}
+    ∀ {State Srt : Type} {Query : Srt → Type}
       [Mettapedia.Logic.EvidenceClass.EvidenceType State]
       [Mettapedia.Logic.PLNWorldModel.WorldModelSigma State Srt Query]
       (ctx : Mettapedia.Logic.PLNWorldModel.IDMPredictiveContext)
@@ -3580,7 +3580,7 @@ def worldModelTypedITVProfile : WorldModelTypedITVProfile where
 the retained imprecise-probability object. -/
 structure CredalForcedQueryProfile where
   lowerForced :
-    ∀ {World Ω : Type*} [Fintype Ω]
+    ∀ {World Ω : Type} [Fintype Ω]
       (credal :
         World →
           Mettapedia.ProbabilityTheory.ImpreciseProbability.DesirableGambles.CredalSetFinite Ω)
@@ -3591,7 +3591,7 @@ structure CredalForcedQueryProfile where
         Mettapedia.ProbabilityTheory.ImpreciseProbability.DesirableGambles.lowerProb
           (credal W₂) f
   upperForced :
-    ∀ {World Ω : Type*} [Fintype Ω]
+    ∀ {World Ω : Type} [Fintype Ω]
       (credal :
         World →
           Mettapedia.ProbabilityTheory.ImpreciseProbability.DesirableGambles.CredalSetFinite Ω)
@@ -3602,7 +3602,7 @@ structure CredalForcedQueryProfile where
         Mettapedia.ProbabilityTheory.ImpreciseProbability.DesirableGambles.upperProb
           (credal W₂) f
   envelopeForced :
-    ∀ {World Ω : Type*} [Fintype Ω]
+    ∀ {World Ω : Type} [Fintype Ω]
       (credal :
         World →
           Mettapedia.ProbabilityTheory.ImpreciseProbability.DesirableGambles.CredalSetFinite Ω)
@@ -3617,21 +3617,21 @@ structure CredalForcedQueryProfile where
           Mettapedia.ProbabilityTheory.ImpreciseProbability.DesirableGambles.upperProb
             (credal W₂) f)
   lowerPrevisionForced :
-    ∀ {World Ω : Type*}
+    ∀ {World Ω : Type}
       (prevision :
         World → Mettapedia.ProbabilityTheory.ImpreciseProbability.LowerPrevision Ω)
       (X : Mettapedia.ProbabilityTheory.ImpreciseProbability.Gamble Ω)
       {W₁ W₂ : World}, prevision W₁ = prevision W₂ →
         prevision W₁ X = prevision W₂ X
   upperPrevisionForced :
-    ∀ {World Ω : Type*}
+    ∀ {World Ω : Type}
       (prevision :
         World → Mettapedia.ProbabilityTheory.ImpreciseProbability.LowerPrevision Ω)
       (X : Mettapedia.ProbabilityTheory.ImpreciseProbability.Gamble Ω)
       {W₁ W₂ : World}, prevision W₁ = prevision W₂ →
         (prevision W₁).conjugate X = (prevision W₂).conjugate X
   desirableSetForced :
-    ∀ {World Ω : Type*}
+    ∀ {World Ω : Type}
       (desirable :
         World →
           Mettapedia.ProbabilityTheory.ImpreciseProbability.DesirableGambles.CoherentDesirableSet Ω)
@@ -3642,24 +3642,24 @@ structure CredalForcedQueryProfile where
         Mettapedia.ProbabilityTheory.ImpreciseProbability.DesirableGambles.lowerPrevision
           (desirable W₂) f
   typedEnvelopeLowerForced :
-    ∀ {Ω : Type*} [Fintype Ω]
+    ∀ {Ω : Type} [Fintype Ω]
       (src : Mettapedia.Logic.PLNTruthTower.CredalEnvelopeITVSource Ω),
       (Mettapedia.Logic.PLNTruthTower.TypedITV.fromCredalEnvelope src).lower =
         Mettapedia.ProbabilityTheory.ImpreciseProbability.DesirableGambles.lowerProb
           src.credal src.gamble
   typedEnvelopeUpperForced :
-    ∀ {Ω : Type*} [Fintype Ω]
+    ∀ {Ω : Type} [Fintype Ω]
       (src : Mettapedia.Logic.PLNTruthTower.CredalEnvelopeITVSource Ω),
       (Mettapedia.Logic.PLNTruthTower.TypedITV.fromCredalEnvelope src).upper =
         Mettapedia.ProbabilityTheory.ImpreciseProbability.DesirableGambles.upperProb
           src.credal src.gamble
   typedEnvelopeCredibilitySelected :
-    ∀ {Ω : Type*} [Fintype Ω]
+    ∀ {Ω : Type} [Fintype Ω]
       (src : Mettapedia.Logic.PLNTruthTower.CredalEnvelopeITVSource Ω),
       (Mettapedia.Logic.PLNTruthTower.TypedITV.fromCredalEnvelope src).credibility =
         src.credibility
   typedEnvelopeBoundsDoNotForceCredibility :
-    ∀ {Ω : Type*} [Fintype Ω]
+    ∀ {Ω : Type} [Fintype Ω]
       (K :
         Mettapedia.ProbabilityTheory.ImpreciseProbability.DesirableGambles.CredalSetFinite Ω)
       (hK : K.Nonempty)
@@ -3685,22 +3685,22 @@ structure CredalForcedQueryProfile where
             credibility_in_unit := by norm_num }
       x.lower = y.lower ∧ x.upper = y.upper ∧ x.credibility ≠ y.credibility
   typedLowerPrevisionLowerForced :
-    ∀ {Ω : Type*}
+    ∀ {Ω : Type}
       (src : Mettapedia.Logic.PLNTruthTower.LowerPrevisionITVSource Ω),
       (Mettapedia.Logic.PLNTruthTower.TypedITV.fromLowerPrevision src).lower =
         src.prevision src.gamble
   typedLowerPrevisionUpperForced :
-    ∀ {Ω : Type*}
+    ∀ {Ω : Type}
       (src : Mettapedia.Logic.PLNTruthTower.LowerPrevisionITVSource Ω),
       (Mettapedia.Logic.PLNTruthTower.TypedITV.fromLowerPrevision src).upper =
         src.prevision.conjugate src.gamble
   typedLowerPrevisionCredibilitySelected :
-    ∀ {Ω : Type*}
+    ∀ {Ω : Type}
       (src : Mettapedia.Logic.PLNTruthTower.LowerPrevisionITVSource Ω),
       (Mettapedia.Logic.PLNTruthTower.TypedITV.fromLowerPrevision src).credibility =
         src.credibility
   typedLowerPrevisionBoundsDoNotForceCredibility :
-    ∀ {Ω : Type*}
+    ∀ {Ω : Type}
       (P : Mettapedia.ProbabilityTheory.ImpreciseProbability.LowerPrevision Ω)
       (X : Mettapedia.ProbabilityTheory.ImpreciseProbability.Gamble Ω)
       (hX : ∀ ω, X ω ∈ Set.Icc (0 : ℝ) 1),
@@ -3722,7 +3722,7 @@ structure CredalForcedQueryProfile where
             credibility_in_unit := by norm_num }
       x.lower = y.lower ∧ x.upper = y.upper ∧ x.credibility ≠ y.credibility
   singletonCredalLowerPrevisionAgreement :
-    ∀ {Ω : Type*} [Fintype Ω]
+    ∀ {Ω : Type} [Fintype Ω]
       (P : Mettapedia.ProbabilityTheory.ImpreciseProbability.DesirableGambles.ProbDist Ω)
       (X : Mettapedia.ProbabilityTheory.ImpreciseProbability.DesirableGambles.Gamble Ω)
       (hX : ∀ ω, X ω ∈ Set.Icc (0 : ℝ) 1)
@@ -3740,7 +3740,7 @@ structure CredalForcedQueryProfile where
       lp.lower = ce.lower ∧ lp.upper = ce.upper ∧
         lp.credibility = ce.credibility
   finiteCredalLowerPrevisionAgreement :
-    ∀ {Ω : Type*} [Fintype Ω]
+    ∀ {Ω : Type} [Fintype Ω]
       (K :
         Mettapedia.ProbabilityTheory.ImpreciseProbability.DesirableGambles.CredalSetFinite Ω)
       (hK : K.Nonempty)
@@ -3764,13 +3764,13 @@ structure CredalForcedQueryProfile where
       lp.lower = ce.lower ∧ lp.upper = ce.upper ∧
         lp.credibility = ce.credibility
   regularLowerPrevisionInducesDesirableSet :
-    ∀ {Ω : Type*}
+    ∀ {Ω : Type}
       (P : Mettapedia.ProbabilityTheory.ImpreciseProbability.LowerPrevision Ω)
       (_hReg :
         Mettapedia.Logic.PLNTruthTower.LowerPrevisionDesirableBridge.Regular P),
       Mettapedia.ProbabilityTheory.ImpreciseProbability.DesirableGambles.CoherentDesirableSet Ω
   regularLowerPrevisionDesirableMembership :
-    ∀ {Ω : Type*}
+    ∀ {Ω : Type}
       (P : Mettapedia.ProbabilityTheory.ImpreciseProbability.LowerPrevision Ω)
       (hReg :
         Mettapedia.Logic.PLNTruthTower.LowerPrevisionDesirableBridge.Regular P)
@@ -3780,15 +3780,15 @@ structure CredalForcedQueryProfile where
             P hReg).D ↔
         P X > 0
   finiteLowerPrevisionRegular :
-    ∀ {Ω : Type*} [Fintype Ω] [Nonempty Ω]
+    ∀ {Ω : Type} [Fintype Ω] [Nonempty Ω]
       (P : Mettapedia.ProbabilityTheory.ImpreciseProbability.LowerPrevision Ω),
       Mettapedia.Logic.PLNTruthTower.LowerPrevisionDesirableBridge.Regular P
   finiteLowerPrevisionInducesDesirableSet :
-    ∀ {Ω : Type*} [Fintype Ω] [Nonempty Ω]
+    ∀ {Ω : Type} [Fintype Ω] [Nonempty Ω]
       (_P : Mettapedia.ProbabilityTheory.ImpreciseProbability.LowerPrevision Ω),
       Mettapedia.ProbabilityTheory.ImpreciseProbability.DesirableGambles.CoherentDesirableSet Ω
   finiteCredalLowerPrevisionDesirableMembership :
-    ∀ {Ω : Type*} [Fintype Ω] [Nonempty Ω]
+    ∀ {Ω : Type} [Fintype Ω] [Nonempty Ω]
       (K :
         Mettapedia.ProbabilityTheory.ImpreciseProbability.DesirableGambles.CredalSetFinite Ω)
       (hK : K.Nonempty)
@@ -3852,32 +3852,32 @@ forces lower and upper, while coordinate plus weight select displayed
 confidence. -/
 structure CredalProjectionTowerProfile where
   lowerForced :
-    ∀ {Ω : Type*} [Fintype Ω]
+    ∀ {Ω : Type} [Fintype Ω]
       (t : Mettapedia.Logic.PLNTruthTower.CredalProjectionTower Ω),
       t.toTypedITV.lower =
         Mettapedia.ProbabilityTheory.ImpreciseProbability.DesirableGambles.lowerProb
           t.credal t.gamble
   upperForced :
-    ∀ {Ω : Type*} [Fintype Ω]
+    ∀ {Ω : Type} [Fintype Ω]
       (t : Mettapedia.Logic.PLNTruthTower.CredalProjectionTower Ω),
       t.toTypedITV.upper =
         Mettapedia.ProbabilityTheory.ImpreciseProbability.DesirableGambles.upperProb
           t.credal t.gamble
   credibilitySelectedByCoordinate :
-    ∀ {Ω : Type*} [Fintype Ω]
+    ∀ {Ω : Type} [Fintype Ω]
       (t : Mettapedia.Logic.PLNTruthTower.CredalProjectionTower Ω),
       t.toTypedITV.credibility = t.coordinate.encode t.weight
   confidenceDecodesWeight :
-    ∀ {Ω : Type*} [Fintype Ω]
+    ∀ {Ω : Type} [Fintype Ω]
       (t : Mettapedia.Logic.PLNTruthTower.CredalProjectionTower Ω),
       t.typedConfidence.weight = t.weight
   widthComplementBridgeForcesDisplay :
-    ∀ {Ω : Type*} [Fintype Ω]
+    ∀ {Ω : Type} [Fintype Ω]
       (t : Mettapedia.Logic.PLNTruthTower.CredalProjectionTower Ω),
       t.WidthComplementBridge →
         t.credibilityDisplay = 1 - t.toTypedITV.width
   sameWeightDifferentCoordinateCanary :
-    ∀ {Ω : Type*} [Fintype Ω]
+    ∀ {Ω : Type} [Fintype Ω]
       (K :
         Mettapedia.ProbabilityTheory.ImpreciseProbability.DesirableGambles.CredalSetFinite Ω)
       (hK : K.Nonempty)
@@ -3906,7 +3906,7 @@ structure CredalProjectionTowerProfile where
         x.toTypedITV.credibility ≠ y.toTypedITV.credibility ∧
         x.typedConfidence.weight = y.typedConfidence.weight
   sameCoordinateWeightForcesSameConfidence :
-    ∀ {Ω : Type*} [Fintype Ω]
+    ∀ {Ω : Type} [Fintype Ω]
       (K₁ K₂ :
         Mettapedia.ProbabilityTheory.ImpreciseProbability.DesirableGambles.CredalSetFinite Ω)
       (hK₁ : K₁.Nonempty) (hK₂ : K₂.Nonempty)
@@ -3935,7 +3935,7 @@ structure CredalProjectionTowerProfile where
       x.toTypedITV.credibility = y.toTypedITV.credibility ∧
         x.typedConfidence.weight = y.typedConfidence.weight
   sameConfidenceDifferentEnvelopeCanary :
-    ∀ {Ω : Type*} [Fintype Ω]
+    ∀ {Ω : Type} [Fintype Ω]
       (K₁ K₂ :
         Mettapedia.ProbabilityTheory.ImpreciseProbability.DesirableGambles.CredalSetFinite Ω)
       (hK₁ : K₁.Nonempty) (hK₂ : K₂.Nonempty)
@@ -4029,14 +4029,14 @@ formalized, plus the induced-lower-prevision forcedness.  It does not claim the
 full Walley natural-extension existence/representation theorem. -/
 structure NaturalExtensionProfile where
   desirableAvoidsSureLoss :
-    ∀ {Ω : Type*}
+    ∀ {Ω : Type}
       (C :
         Mettapedia.ProbabilityTheory.ImpreciseProbability.DesirableGambles.CoherentDesirableSet Ω),
       ∀ f : Mettapedia.ProbabilityTheory.ImpreciseProbability.DesirableGambles.Gamble Ω,
         Mettapedia.ProbabilityTheory.ImpreciseProbability.DesirableGambles.Gamble.StrictlyNegative f →
           f ∉ C.D
   desirablePositiveCone :
-    ∀ {Ω : Type*}
+    ∀ {Ω : Type}
       (C :
         Mettapedia.ProbabilityTheory.ImpreciseProbability.DesirableGambles.CoherentDesirableSet Ω),
       ∀ f g :
@@ -4044,7 +4044,7 @@ structure NaturalExtensionProfile where
         f ∈ C.D → g ∈ C.D → ∀ a b : ℝ, a > 0 → b > 0 →
           a • f + b • g ∈ C.D
   inducedLowerPrevisionForced :
-    ∀ {World Ω : Type*}
+    ∀ {World Ω : Type}
       (desirable :
         World →
           Mettapedia.ProbabilityTheory.ImpreciseProbability.DesirableGambles.CoherentDesirableSet Ω)
@@ -4055,11 +4055,11 @@ structure NaturalExtensionProfile where
         Mettapedia.ProbabilityTheory.ImpreciseProbability.DesirableGambles.lowerPrevision
           (desirable W₂) f
   finiteDesirableInducesLowerPrevision :
-    ∀ {Ω : Type*} [Fintype Ω] [Nonempty Ω],
+    ∀ {Ω : Type} [Fintype Ω] [Nonempty Ω],
       Mettapedia.ProbabilityTheory.ImpreciseProbability.DesirableGambles.CoherentDesirableSet Ω →
         Mettapedia.ProbabilityTheory.ImpreciseProbability.LowerPrevision Ω
   finiteDesirableLowerPrevisionApply :
-    ∀ {Ω : Type*} [Fintype Ω] [Nonempty Ω]
+    ∀ {Ω : Type} [Fintype Ω] [Nonempty Ω]
       (C :
         Mettapedia.ProbabilityTheory.ImpreciseProbability.DesirableGambles.CoherentDesirableSet Ω)
       (X : Mettapedia.ProbabilityTheory.ImpreciseProbability.DesirableGambles.Gamble Ω),
@@ -4067,14 +4067,14 @@ structure NaturalExtensionProfile where
         Mettapedia.ProbabilityTheory.ImpreciseProbability.DesirableGambles.lowerPrevision
           C X
   finiteDesirableLowerPrevisionLowerBound :
-    ∀ {Ω : Type*} [Fintype Ω] [Nonempty Ω]
+    ∀ {Ω : Type} [Fintype Ω] [Nonempty Ω]
       (C :
         Mettapedia.ProbabilityTheory.ImpreciseProbability.DesirableGambles.CoherentDesirableSet Ω)
       (X : Mettapedia.ProbabilityTheory.ImpreciseProbability.DesirableGambles.Gamble Ω)
       (c : ℝ), (∀ ω, c ≤ X ω) →
         c ≤ finite_desirable_set_induces_lower_prevision C X
   finiteDesirableLowerPrevisionPositiveHomogeneous :
-    ∀ {Ω : Type*} [Fintype Ω] [Nonempty Ω]
+    ∀ {Ω : Type} [Fintype Ω] [Nonempty Ω]
       (C :
         Mettapedia.ProbabilityTheory.ImpreciseProbability.DesirableGambles.CoherentDesirableSet Ω)
       (r : ℝ) (X : Mettapedia.ProbabilityTheory.ImpreciseProbability.DesirableGambles.Gamble Ω),
@@ -4082,7 +4082,7 @@ structure NaturalExtensionProfile where
         finite_desirable_set_induces_lower_prevision C (r • X) =
           r * finite_desirable_set_induces_lower_prevision C X
   finiteDesirableLowerPrevisionSuperadditive :
-    ∀ {Ω : Type*} [Fintype Ω] [Nonempty Ω]
+    ∀ {Ω : Type} [Fintype Ω] [Nonempty Ω]
       (C :
         Mettapedia.ProbabilityTheory.ImpreciseProbability.DesirableGambles.CoherentDesirableSet Ω)
       (X Y : Mettapedia.ProbabilityTheory.ImpreciseProbability.DesirableGambles.Gamble Ω),
@@ -4090,7 +4090,7 @@ structure NaturalExtensionProfile where
         finite_desirable_set_induces_lower_prevision C Y ≤
           finite_desirable_set_induces_lower_prevision C (X + Y)
   regularLowerPrevisionDesirableRoundTrip :
-    ∀ {Ω : Type*}
+    ∀ {Ω : Type}
       (P : Mettapedia.ProbabilityTheory.ImpreciseProbability.LowerPrevision Ω)
       (hReg :
         Mettapedia.Logic.PLNTruthTower.LowerPrevisionDesirableBridge.Regular P)
@@ -4099,24 +4099,24 @@ structure NaturalExtensionProfile where
         (Mettapedia.Logic.PLNTruthTower.LowerPrevisionDesirableBridge.coherentDesirableSet
           P hReg) X = P X
   finiteLowerPrevisionDesirableRoundTripApply :
-    ∀ {Ω : Type*} [Fintype Ω] [Nonempty Ω]
+    ∀ {Ω : Type} [Fintype Ω] [Nonempty Ω]
       (P : Mettapedia.ProbabilityTheory.ImpreciseProbability.LowerPrevision Ω)
       (X : Mettapedia.ProbabilityTheory.ImpreciseProbability.Gamble Ω),
       finite_desirable_set_induces_lower_prevision
           (Mettapedia.Logic.PLNTruthTower.LowerPrevisionDesirableBridge.finiteCoherentDesirableSet
             P) X = P X
   finiteLowerPrevisionDesirableRoundTrip :
-    ∀ {Ω : Type*} [Fintype Ω] [Nonempty Ω]
+    ∀ {Ω : Type} [Fintype Ω] [Nonempty Ω]
       (P : Mettapedia.ProbabilityTheory.ImpreciseProbability.LowerPrevision Ω),
       finite_desirable_set_induces_lower_prevision
           (Mettapedia.Logic.PLNTruthTower.LowerPrevisionDesirableBridge.finiteCoherentDesirableSet
             P) = P
   finiteStrictRoundTrip :
-    ∀ {Ω : Type*} [Fintype Ω] [Nonempty Ω],
+    ∀ {Ω : Type} [Fintype Ω] [Nonempty Ω],
       Mettapedia.ProbabilityTheory.ImpreciseProbability.DesirableGambles.CoherentDesirableSet Ω →
         Mettapedia.ProbabilityTheory.ImpreciseProbability.DesirableGambles.CoherentDesirableSet Ω
   finiteStrictRoundTripMem :
-    ∀ {Ω : Type*} [Fintype Ω] [Nonempty Ω]
+    ∀ {Ω : Type} [Fintype Ω] [Nonempty Ω]
       (C :
         Mettapedia.ProbabilityTheory.ImpreciseProbability.DesirableGambles.CoherentDesirableSet Ω)
       (X : Mettapedia.ProbabilityTheory.ImpreciseProbability.Gamble Ω),
@@ -4124,24 +4124,24 @@ structure NaturalExtensionProfile where
         Mettapedia.ProbabilityTheory.ImpreciseProbability.DesirableGambles.lowerPrevision
           C X > 0
   finiteStrictRoundTripLowerPrevision :
-    ∀ {Ω : Type*} [Fintype Ω] [Nonempty Ω]
+    ∀ {Ω : Type} [Fintype Ω] [Nonempty Ω]
       (C :
         Mettapedia.ProbabilityTheory.ImpreciseProbability.DesirableGambles.CoherentDesirableSet Ω),
       finite_desirable_set_induces_lower_prevision (finite_strict_roundtrip C) =
         finite_desirable_set_induces_lower_prevision C
   finiteStrictRoundTripIdempotent :
-    ∀ {Ω : Type*} [Fintype Ω] [Nonempty Ω]
+    ∀ {Ω : Type} [Fintype Ω] [Nonempty Ω]
       (C :
         Mettapedia.ProbabilityTheory.ImpreciseProbability.DesirableGambles.CoherentDesirableSet Ω),
       (finite_strict_roundtrip (finite_strict_roundtrip C)).D =
         (finite_strict_roundtrip C).D
   finiteStrictRoundTripSubsetOriginal :
-    ∀ {Ω : Type*} [Fintype Ω] [Nonempty Ω]
+    ∀ {Ω : Type} [Fintype Ω] [Nonempty Ω]
       (C :
         Mettapedia.ProbabilityTheory.ImpreciseProbability.DesirableGambles.CoherentDesirableSet Ω),
       (finite_strict_roundtrip C).D ⊆ C.D
   finiteStrictRoundTripBoundaryNotRecovered :
-    ∀ {Ω : Type*} [Fintype Ω] [Nonempty Ω]
+    ∀ {Ω : Type} [Fintype Ω] [Nonempty Ω]
       (C :
         Mettapedia.ProbabilityTheory.ImpreciseProbability.DesirableGambles.CoherentDesirableSet Ω)
       (X : Mettapedia.ProbabilityTheory.ImpreciseProbability.Gamble Ω),
@@ -4149,35 +4149,35 @@ structure NaturalExtensionProfile where
         C X ≤ 0 →
         X ∉ (finite_strict_roundtrip C).D
   finiteStrictRoundTripMembershipIffOfArchimedean :
-    ∀ {Ω : Type*} [Fintype Ω] [Nonempty Ω]
+    ∀ {Ω : Type} [Fintype Ω] [Nonempty Ω]
       (C :
         Mettapedia.ProbabilityTheory.ImpreciseProbability.DesirableGambles.CoherentDesirableSet Ω)
       (_hArch : archimedean_desirable_set C)
       (X : Mettapedia.ProbabilityTheory.ImpreciseProbability.Gamble Ω),
       X ∈ (finite_strict_roundtrip C).D ↔ X ∈ C.D
   finiteStrictRoundTripSetEqOfArchimedean :
-    ∀ {Ω : Type*} [Fintype Ω] [Nonempty Ω]
+    ∀ {Ω : Type} [Fintype Ω] [Nonempty Ω]
       (C :
         Mettapedia.ProbabilityTheory.ImpreciseProbability.DesirableGambles.CoherentDesirableSet Ω),
       archimedean_desirable_set C →
         (finite_strict_roundtrip C).D = C.D
   finiteStrictRoundTripEqOfArchimedean :
-    ∀ {Ω : Type*} [Fintype Ω] [Nonempty Ω]
+    ∀ {Ω : Type} [Fintype Ω] [Nonempty Ω]
       (C :
         Mettapedia.ProbabilityTheory.ImpreciseProbability.DesirableGambles.CoherentDesirableSet Ω),
       archimedean_desirable_set C → finite_strict_roundtrip C = C
   finiteStrictRoundTripArchimedean :
-    ∀ {Ω : Type*} [Fintype Ω] [Nonempty Ω]
+    ∀ {Ω : Type} [Fintype Ω] [Nonempty Ω]
       (C :
         Mettapedia.ProbabilityTheory.ImpreciseProbability.DesirableGambles.CoherentDesirableSet Ω),
       archimedean_desirable_set (finite_strict_roundtrip C)
   finiteStrictRoundTripEqIffArchimedean :
-    ∀ {Ω : Type*} [Fintype Ω] [Nonempty Ω]
+    ∀ {Ω : Type} [Fintype Ω] [Nonempty Ω]
       (C :
         Mettapedia.ProbabilityTheory.ImpreciseProbability.DesirableGambles.CoherentDesirableSet Ω),
       finite_strict_roundtrip C = C ↔ archimedean_desirable_set C
   finiteDesirableLowerPrevisionMonotoneOfSubset :
-    ∀ {Ω : Type*} [Fintype Ω] [Nonempty Ω]
+    ∀ {Ω : Type} [Fintype Ω] [Nonempty Ω]
       (C D :
         Mettapedia.ProbabilityTheory.ImpreciseProbability.DesirableGambles.CoherentDesirableSet Ω),
       C.D ⊆ D.D →
@@ -4185,24 +4185,24 @@ structure NaturalExtensionProfile where
           finite_desirable_set_induces_lower_prevision C X ≤
             finite_desirable_set_induces_lower_prevision D X
   finiteStrictRoundTripMonotone :
-    ∀ {Ω : Type*} [Fintype Ω] [Nonempty Ω]
+    ∀ {Ω : Type} [Fintype Ω] [Nonempty Ω]
       (C D :
         Mettapedia.ProbabilityTheory.ImpreciseProbability.DesirableGambles.CoherentDesirableSet Ω),
       C.D ⊆ D.D → (finite_strict_roundtrip C).D ⊆ (finite_strict_roundtrip D).D
   finiteStrictRoundTripGreatestArchimedeanSubset :
-    ∀ {Ω : Type*} [Fintype Ω] [Nonempty Ω]
+    ∀ {Ω : Type} [Fintype Ω] [Nonempty Ω]
       (C D :
         Mettapedia.ProbabilityTheory.ImpreciseProbability.DesirableGambles.CoherentDesirableSet Ω),
       archimedean_desirable_set D →
         D.D ⊆ C.D → D.D ⊆ (finite_strict_roundtrip C).D
   finiteStrictRoundTripArchimedeanSubsetIff :
-    ∀ {Ω : Type*} [Fintype Ω] [Nonempty Ω]
+    ∀ {Ω : Type} [Fintype Ω] [Nonempty Ω]
       (C D :
         Mettapedia.ProbabilityTheory.ImpreciseProbability.DesirableGambles.CoherentDesirableSet Ω),
       archimedean_desirable_set D →
         (D.D ⊆ (finite_strict_roundtrip C).D ↔ D.D ⊆ C.D)
   finiteStrictRoundTripFactorsThroughLowerPrevision :
-    ∀ {Ω : Type*} [Fintype Ω] [Nonempty Ω]
+    ∀ {Ω : Type} [Fintype Ω] [Nonempty Ω]
       (C D :
         Mettapedia.ProbabilityTheory.ImpreciseProbability.DesirableGambles.CoherentDesirableSet Ω),
       finite_desirable_set_induces_lower_prevision C =
@@ -4212,7 +4212,7 @@ structure NaturalExtensionProfile where
           (Mettapedia.Logic.PLNTruthTower.LowerPrevisionDesirableBridge.finiteCoherentDesirableSet
             (finite_desirable_set_induces_lower_prevision D)).D
   finiteStrictRoundTripMembershipFactorsThroughLowerPrevision :
-    ∀ {Ω : Type*} [Fintype Ω] [Nonempty Ω]
+    ∀ {Ω : Type} [Fintype Ω] [Nonempty Ω]
       (C D :
         Mettapedia.ProbabilityTheory.ImpreciseProbability.DesirableGambles.CoherentDesirableSet Ω),
       finite_desirable_set_induces_lower_prevision C =
@@ -4225,13 +4225,13 @@ structure NaturalExtensionProfile where
               (Mettapedia.Logic.PLNTruthTower.LowerPrevisionDesirableBridge.finiteCoherentDesirableSet
                 (finite_desirable_set_induces_lower_prevision D)).D
   finiteDesirableRoundTripSubsetOriginal :
-    ∀ {Ω : Type*} [Fintype Ω] [Nonempty Ω]
+    ∀ {Ω : Type} [Fintype Ω] [Nonempty Ω]
       (C :
         Mettapedia.ProbabilityTheory.ImpreciseProbability.DesirableGambles.CoherentDesirableSet Ω),
       (Mettapedia.Logic.PLNTruthTower.LowerPrevisionDesirableBridge.finiteCoherentDesirableSet
         (finite_desirable_set_induces_lower_prevision C)).D ⊆ C.D
   finiteDesirableBoundaryNotRecovered :
-    ∀ {Ω : Type*} [Fintype Ω] [Nonempty Ω]
+    ∀ {Ω : Type} [Fintype Ω] [Nonempty Ω]
       (C :
         Mettapedia.ProbabilityTheory.ImpreciseProbability.DesirableGambles.CoherentDesirableSet Ω)
       (X : Mettapedia.ProbabilityTheory.ImpreciseProbability.Gamble Ω),
@@ -4241,7 +4241,7 @@ structure NaturalExtensionProfile where
           (Mettapedia.Logic.PLNTruthTower.LowerPrevisionDesirableBridge.finiteCoherentDesirableSet
             (finite_desirable_set_induces_lower_prevision C)).D
   finiteDesirableRoundTripMembershipIffOfArchimedean :
-    ∀ {Ω : Type*} [Fintype Ω] [Nonempty Ω]
+    ∀ {Ω : Type} [Fintype Ω] [Nonempty Ω]
       (C :
         Mettapedia.ProbabilityTheory.ImpreciseProbability.DesirableGambles.CoherentDesirableSet Ω)
       (_hArch : archimedean_desirable_set C)
@@ -4251,23 +4251,23 @@ structure NaturalExtensionProfile where
             (finite_desirable_set_induces_lower_prevision C)).D ↔
         X ∈ C.D
   finiteDesirableRoundTripSetEqOfArchimedean :
-    ∀ {Ω : Type*} [Fintype Ω] [Nonempty Ω]
+    ∀ {Ω : Type} [Fintype Ω] [Nonempty Ω]
       (C :
         Mettapedia.ProbabilityTheory.ImpreciseProbability.DesirableGambles.CoherentDesirableSet Ω),
       archimedean_desirable_set C →
         (Mettapedia.Logic.PLNTruthTower.LowerPrevisionDesirableBridge.finiteCoherentDesirableSet
           (finite_desirable_set_induces_lower_prevision C)).D = C.D
   strictPositiveArchimedean :
-    ∀ {Ω : Type*} [Fintype Ω] [Nonempty Ω],
+    ∀ {Ω : Type} [Fintype Ω] [Nonempty Ω],
       archimedean_desirable_set (strict_positive_desirable_set Ω)
   strictPositiveRoundTripSetEq :
-    ∀ {Ω : Type*} [Fintype Ω] [Nonempty Ω],
+    ∀ {Ω : Type} [Fintype Ω] [Nonempty Ω],
       (Mettapedia.Logic.PLNTruthTower.LowerPrevisionDesirableBridge.finiteCoherentDesirableSet
         (finite_desirable_set_induces_lower_prevision
           (strict_positive_desirable_set Ω))).D =
         (strict_positive_desirable_set Ω).D
   strictPositiveRoundTripMemIff :
-    ∀ {Ω : Type*} [Fintype Ω] [Nonempty Ω]
+    ∀ {Ω : Type} [Fintype Ω] [Nonempty Ω]
       (X : Mettapedia.ProbabilityTheory.ImpreciseProbability.Gamble Ω),
       X ∈
           (Mettapedia.Logic.PLNTruthTower.LowerPrevisionDesirableBridge.finiteCoherentDesirableSet
@@ -4275,38 +4275,38 @@ structure NaturalExtensionProfile where
               (strict_positive_desirable_set Ω))).D ↔
         (∀ ω, 0 < X ω)
   strictPositiveLowerPrevisionFiniteMinimum :
-    ∀ {Ω : Type*} [Fintype Ω] [Nonempty Ω]
+    ∀ {Ω : Type} [Fintype Ω] [Nonempty Ω]
       (X : Mettapedia.ProbabilityTheory.ImpreciseProbability.Gamble Ω),
       Mettapedia.ProbabilityTheory.ImpreciseProbability.DesirableGambles.lowerPrevision
         (strict_positive_desirable_set Ω) X =
           finite_minimum X
   closedPositiveLowerPrevisionFiniteMinimum :
-    ∀ {Ω : Type*} [Fintype Ω] [Nonempty Ω]
+    ∀ {Ω : Type} [Fintype Ω] [Nonempty Ω]
       (X : Mettapedia.ProbabilityTheory.ImpreciseProbability.Gamble Ω),
       Mettapedia.ProbabilityTheory.ImpreciseProbability.DesirableGambles.lowerPrevision
         (nonnegative_nonzero_desirable_set Ω) X =
           finite_minimum X
   positiveConesInduceSameLowerPrevision :
-    ∀ {Ω : Type*} [Fintype Ω] [Nonempty Ω]
+    ∀ {Ω : Type} [Fintype Ω] [Nonempty Ω]
       (X : Mettapedia.ProbabilityTheory.ImpreciseProbability.Gamble Ω),
       Mettapedia.ProbabilityTheory.ImpreciseProbability.DesirableGambles.lowerPrevision
         (strict_positive_desirable_set Ω) X =
       Mettapedia.ProbabilityTheory.ImpreciseProbability.DesirableGambles.lowerPrevision
         (nonnegative_nonzero_desirable_set Ω) X
   positiveConesInduceSameFiniteLowerPrevision :
-    ∀ {Ω : Type*} [Fintype Ω] [Nonempty Ω],
+    ∀ {Ω : Type} [Fintype Ω] [Nonempty Ω],
       finite_desirable_set_induces_lower_prevision
           (strict_positive_desirable_set Ω) =
         finite_desirable_set_induces_lower_prevision
           (nonnegative_nonzero_desirable_set Ω)
   closedPositiveStrictRoundTripSetEq :
-    ∀ {Ω : Type*} [Fintype Ω] [Nonempty Ω],
+    ∀ {Ω : Type} [Fintype Ω] [Nonempty Ω],
       (Mettapedia.Logic.PLNTruthTower.LowerPrevisionDesirableBridge.finiteCoherentDesirableSet
         (finite_desirable_set_induces_lower_prevision
           (nonnegative_nonzero_desirable_set Ω))).D =
         (strict_positive_desirable_set Ω).D
   closedPositiveStrictRoundTripMemIff :
-    ∀ {Ω : Type*} [Fintype Ω] [Nonempty Ω]
+    ∀ {Ω : Type} [Fintype Ω] [Nonempty Ω]
       (X : Mettapedia.ProbabilityTheory.ImpreciseProbability.Gamble Ω),
       X ∈
           (Mettapedia.Logic.PLNTruthTower.LowerPrevisionDesirableBridge.finiteCoherentDesirableSet
@@ -4346,22 +4346,22 @@ structure NaturalExtensionProfile where
         (nonnegative_nonzero_desirable_set Bool))).D ≠
       (nonnegative_nonzero_desirable_set Bool).D
   lowerMonotone :
-    ∀ {Ω : Type*}
+    ∀ {Ω : Type}
       (P : Mettapedia.ProbabilityTheory.ImpreciseProbability.LowerPrevision Ω)
       {X Y : Mettapedia.ProbabilityTheory.ImpreciseProbability.Gamble Ω},
       X ≤ Y → P X ≤ P Y
   lowerSuperadditive :
-    ∀ {Ω : Type*}
+    ∀ {Ω : Type}
       (P : Mettapedia.ProbabilityTheory.ImpreciseProbability.LowerPrevision Ω)
       (X Y : Mettapedia.ProbabilityTheory.ImpreciseProbability.Gamble Ω),
       P X + P Y ≤ P (X + Y)
   upperConjugateSubadditive :
-    ∀ {Ω : Type*}
+    ∀ {Ω : Type}
       (P : Mettapedia.ProbabilityTheory.ImpreciseProbability.LowerPrevision Ω)
       (X Y : Mettapedia.ProbabilityTheory.ImpreciseProbability.Gamble Ω),
       P.conjugate (X + Y) ≤ P.conjugate X + P.conjugate Y
   imprecisionNonnegative :
-    ∀ {Ω : Type*}
+    ∀ {Ω : Type}
       (P : Mettapedia.ProbabilityTheory.ImpreciseProbability.LowerPrevision Ω)
       (X : Mettapedia.ProbabilityTheory.ImpreciseProbability.Gamble Ω),
       0 ≤ Mettapedia.ProbabilityTheory.ImpreciseProbability.imprecision P X
@@ -4512,13 +4512,13 @@ structure CoreFourCompletionProfile where
           Mettapedia.Logic.PLNForcedQueries.ITVSelector.eval .lower itv ≠
             Mettapedia.Logic.PLNForcedQueries.ITVSelector.eval .upper itv
   strengthTypedMidpointBounds :
-    ∀ {Sem : Mettapedia.Logic.PLNTruthTower.ITVSemantics}
+    ∀ {Sem : Mettapedia.Logic.PLNTruthTower.ITVSemantics.{0}}
       (x : Mettapedia.Logic.PLNTruthTower.TypedITV Sem),
       x.lower ≤ x.midpoint ∧ x.midpoint ≤ x.upper ∧
         x.midpoint ∈ Set.Icc (0 : ℝ) 1
   typedITV : WorldModelTypedITVProfile
   typedBinaryRawCoordinateViews :
-    ∀ {State Query Ctx : Type*}
+    ∀ {State Query Ctx : Type}
       [Mettapedia.Logic.EvidenceClass.EvidenceType State]
       [Mettapedia.Logic.PLNWorldModel.BinaryWorldModel State Query]
       (sem : Mettapedia.Logic.PLNWorldModel.ITVSemantics Ctx)
@@ -4548,7 +4548,7 @@ structure CoreFourCompletionProfile where
           Mettapedia.Logic.PLNWorldModel.BinaryWorldModel.queryITVStrength
             (State := State) (Query := Query) sem ctx W q
   typedSigmaRawCoordinateViews :
-    ∀ {State Srt Ctx : Type*} {Query : Srt → Type*}
+    ∀ {State Srt Ctx : Type} {Query : Srt → Type}
       [Mettapedia.Logic.EvidenceClass.EvidenceType State]
       [Mettapedia.Logic.PLNWorldModel.WorldModelSigma State Srt Query]
       (sem : Mettapedia.Logic.PLNWorldModel.ITVSemantics Ctx)
@@ -4579,18 +4579,18 @@ structure CoreFourCompletionProfile where
             (State := State) (Srt := Srt) (Query := Query) sem ctx W q
   finiteCredalLoop : NaturalExtensionProfile
   finiteLowerPrevisionToDesirableToLowerPrevision :
-    ∀ {Ω : Type*} [Fintype Ω] [Nonempty Ω]
+    ∀ {Ω : Type} [Fintype Ω] [Nonempty Ω]
       (P : Mettapedia.ProbabilityTheory.ImpreciseProbability.LowerPrevision Ω),
       finite_desirable_set_induces_lower_prevision
           (Mettapedia.Logic.PLNTruthTower.LowerPrevisionDesirableBridge.finiteCoherentDesirableSet
             P) = P
   finiteStrictRoundTripFixedIffArchimedean :
-    ∀ {Ω : Type*} [Fintype Ω] [Nonempty Ω]
+    ∀ {Ω : Type} [Fintype Ω] [Nonempty Ω]
       (C :
         Mettapedia.ProbabilityTheory.ImpreciseProbability.DesirableGambles.CoherentDesirableSet Ω),
       finite_strict_roundtrip C = C ↔ archimedean_desirable_set C
   finiteStrictRoundTripGreatestArchimedeanSubset :
-    ∀ {Ω : Type*} [Fintype Ω] [Nonempty Ω]
+    ∀ {Ω : Type} [Fintype Ω] [Nonempty Ω]
       (C D :
         Mettapedia.ProbabilityTheory.ImpreciseProbability.DesirableGambles.CoherentDesirableSet Ω),
       archimedean_desirable_set D →
@@ -4667,17 +4667,17 @@ lower prevision.  Disagreement and incomparability are the corresponding
 canaries that force honest interval/credal semantics. -/
 structure CrispnessCollapseProfile where
   thetaSingletonCollapse :
-    ∀ {α β : Type*} [CompleteLattice β] (Θ₀ : α → β),
+    ∀ {α β : Type} [CompleteLattice β] (Θ₀ : α → β),
       Mettapedia.ProbabilityTheory.Hypercube.ThetaSemantics.intervalOfFamily
         (Set.singleton Θ₀) = ⟨Θ₀, Θ₀⟩
   thetaSubsingletonLowerEqUpper :
-    ∀ {α β : Type*} [CompleteLattice β]
+    ∀ {α β : Type} [CompleteLattice β]
       {Θs : Set (α → β)},
       Θs.Subsingleton → Θs.Nonempty → ∀ x : α,
         Mettapedia.ProbabilityTheory.Hypercube.ThetaSemantics.lower Θs x =
           Mettapedia.ProbabilityTheory.Hypercube.ThetaSemantics.upper Θs x
   credalSingletonCollapse :
-    ∀ (Ω : Type*) [Fintype Ω]
+    ∀ (Ω : Type) [Fintype Ω]
       (P : Mettapedia.ProbabilityTheory.ImpreciseProbability.DesirableGambles.ProbDist Ω)
       (f : Mettapedia.ProbabilityTheory.ImpreciseProbability.DesirableGambles.Gamble Ω),
       Mettapedia.ProbabilityTheory.ImpreciseProbability.DesirableGambles.lowerProb
@@ -4685,7 +4685,7 @@ structure CrispnessCollapseProfile where
         Mettapedia.ProbabilityTheory.ImpreciseProbability.DesirableGambles.upperProb
           (Set.singleton P) f
   credalDisagreementCreatesInterval :
-    ∀ {Ω : Type*} [Fintype Ω]
+    ∀ {Ω : Type} [Fintype Ω]
       (P Q : Mettapedia.ProbabilityTheory.ImpreciseProbability.DesirableGambles.ProbDist Ω)
       (f : Mettapedia.ProbabilityTheory.ImpreciseProbability.DesirableGambles.Gamble Ω),
       Mettapedia.ProbabilityTheory.ImpreciseProbability.DesirableGambles.expectedValue P f <
@@ -4695,19 +4695,19 @@ structure CrispnessCollapseProfile where
           Mettapedia.ProbabilityTheory.ImpreciseProbability.DesirableGambles.upperProb
             (Set.insert P (Set.singleton Q)) f
   lowerPrevisionZeroImprecisionIffPrecise :
-    ∀ {Ω : Type*}
+    ∀ {Ω : Type}
       (P : Mettapedia.ProbabilityTheory.ImpreciseProbability.LowerPrevision Ω),
       (∀ X, Mettapedia.ProbabilityTheory.ImpreciseProbability.imprecision P X = 0) ↔
         P.isPrecise
   lowerPrevisionPreciseIffAdditive :
-    ∀ {Ω : Type*}
+    ∀ {Ω : Type}
       (P : Mettapedia.ProbabilityTheory.ImpreciseProbability.LowerPrevision Ω),
       P.isPrecise ↔ ∀ X Y, P (X + Y) = P X + P Y
   ksIncomparabilityBlocksCrispPoint :
-    ∀ {α : Type*}
-      [Mettapedia.ProbabilityTheory.KnuthSkilling.TotalityImprecision.PartialKnuthSkillingAlgebra α]
+    ∀ {α : Type}
+      [KnuthSkilling.TotalityImprecision.PartialKnuthSkillingAlgebra α]
       (x y : α),
-      Mettapedia.ProbabilityTheory.KnuthSkilling.TotalityImprecision.PartialKnuthSkillingAlgebra.Incomparable
+      KnuthSkilling.TotalityImprecision.PartialKnuthSkillingAlgebra.Incomparable
         x y →
         ¬ ∃ (Θ : α → ℝ), ∀ a b : α, a ≤ b ↔ Θ a ≤ Θ b
 
@@ -4978,7 +4978,7 @@ theorem deFinetti_canonical_compactPredictiveThatsAll_and_processLawCrown_iff_ze
         Mettapedia.CategoryTheory.coordProcess
         (by
           intro i
-          simpa [Mettapedia.CategoryTheory.coordProcess] using (measurable_pi_apply (a := i)))
+          exact measurable_pi_apply (a := i))
     Mettapedia.Logic.ConceptOntology.compactPredictiveThatsAll
       (Mettapedia.Logic.DeFinettiProjectiveCredalBridge.externalPathLawBoundedMeasurableCompactCredalSet
         ({A} : Set (Mettapedia.Logic.DeFinettiProjectiveCredalBridge.ExternalBoolProcessLaw
@@ -5130,9 +5130,12 @@ theorem infiniteMLN_reinforcedLineGeometric_zeroWeightGrid_concreteDLRPLNContras
     Mettapedia.Logic.MarkovLogicInfinitePLNCrown.reinforcedLineGeometric_zeroWeightGrid_concreteDLRPLNContrast
 
 /-- Stable index-level alias for the symmetric-grid Ising reduction crown: the
-high-temperature collapse theorem is proved, and any future low-temperature
-Peierls input immediately yields plus/minus separation and a strict PLN
-interval. -/
+high-temperature collapse theorem is proved, and the reduction turns a
+low-temperature Peierls input into plus/minus separation and a strict PLN
+interval. That Peierls input is now supplied unconditionally by
+`symmetricGridZeroField_originPLNStrictIntervalCrown_of_axisAnchoredContourCode_twentyFour`,
+so the low-temperature strict-interval direction is itself proved, not merely
+reduced. -/
 theorem infiniteMLN_symmetricGridZeroField_originPhaseCoexistenceReductionCrown :
     Mettapedia.Logic.MarkovLogicInfiniteSymmetricGridExample.SymmetricGridZeroFieldOriginPhaseCoexistenceReductionCrown := by
   exact
@@ -5148,16 +5151,19 @@ This deliberately packages only the proved surface:
   * the infinite DLR/MLN specialization into width-complement ITVs, including
     the proved Dobrushin uniqueness theorem, a concrete strict-width-versus-
     collapse contrast, and the symmetric-grid phase-coexistence reduction crown
-    that isolates the remaining low-temperature Peierls input;
+    (whose low-temperature Peierls input is now supplied, closing the
+    strict-interval direction unconditionally);
   * the public sigma-additive imprecise de Finetti mixing-family object and the
     exact lower-prevision compatibility boundary for the analytic raw
     all-gambles process-law crown, plus conditional finite-window realization
     routes into that crown;
   * the proved i.i.d. de Finetti compact-predictive / process-law regime split.
 
-  It intentionally does not package still-open infinite frontiers such as the
-  low-temperature two-dimensional phase-separation theorem on the MLN/Ising
-  side. -/
+  This profile does not itself bundle the low-temperature two-dimensional
+  phase-separation theorem on the MLN/Ising side; that crown
+  (`symmetricGridZeroField_originPLNStrictIntervalCrown_of_axisAnchoredContourCode_twentyFour`)
+  is now proved unconditionally and lives in
+  `MarkovLogicInfiniteSymmetricGridExample`. -/
 structure ConfidenceCharacterizationEndpointProfile where
   formulaCharacterization : FormulaCharacterizationProfile
   typedSTVSameStrengthCanHaveDifferentConfidence :
@@ -5198,11 +5204,11 @@ structure ConfidenceCharacterizationEndpointProfile where
         (Mettapedia.Logic.ConceptOntology.posteriorPrefixTypedReadoutITV M k l n hZ G hG).midpoint =
           Mettapedia.Logic.ConceptOntology.posteriorPrefixReadoutPrevision M k l n hZ G
   infiniteMLNCredalBridge :
-    Mettapedia.Logic.MarkovLogicInfiniteCredalBridge.InfiniteMLNCredalBridgeProfile
+    Mettapedia.Logic.MarkovLogicInfiniteCredalBridge.InfiniteMLNCredalBridgeProfile.{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
   infiniteDLRQueryOutcomeITV :
-    Mettapedia.Logic.MarkovLogicPLNTruthBridge.DLRQueryOutcomePLNBridgeProfile
+    Mettapedia.Logic.MarkovLogicPLNTruthBridge.DLRQueryOutcomePLNBridgeProfile.{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
   infiniteProjectiveDeFinettiBridge :
-    Mettapedia.Logic.DeFinettiProjectiveCredalBridge.ProjectiveDeFinettiCredalBridgeProfile
+    Mettapedia.Logic.DeFinettiProjectiveCredalBridge.ProjectiveDeFinettiCredalBridgeProfile.{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
   infiniteCanonicalExternalMixingFamily :
     ∀ (C : Set Mettapedia.Logic.DeFinetti.BernoulliMixture) (hC : C.Nonempty),
       Mettapedia.Logic.DeFinettiProjectiveCredalBridge.ImpreciseDeFinettiCanonicalExternalMixingFamily
@@ -5304,7 +5310,7 @@ structure ConfidenceCharacterizationEndpointProfile where
           Mettapedia.CategoryTheory.coordProcess
           (by
             intro i
-            simpa [Mettapedia.CategoryTheory.coordProcess] using (measurable_pi_apply (a := i)))
+            exact measurable_pi_apply (a := i))
       Mettapedia.Logic.ConceptOntology.compactPredictiveThatsAll
         (Mettapedia.Logic.DeFinettiProjectiveCredalBridge.externalPathLawBoundedMeasurableCompactCredalSet
           ({A} : Set (Mettapedia.Logic.DeFinettiProjectiveCredalBridge.ExternalBoolProcessLaw
@@ -5313,7 +5319,7 @@ structure ConfidenceCharacterizationEndpointProfile where
           M k l hZ ↔
           M.mixingMeasure (Set.Ioo (0 : ℝ) 1) = 0)
   infiniteDobrushinUniqueness :
-    ∀ {Atom ClauseId : Type*} [DecidableEq Atom] [DecidableEq ClauseId]
+    ∀ {Atom ClauseId : Type} [DecidableEq Atom] [DecidableEq ClauseId]
       (M : Mettapedia.Logic.MarkovLogicInfiniteUniqueness.ClassicalInfiniteGroundMLNSpec
         Atom ClauseId),
       M.PaperUniformSmallTotalInfluence →
@@ -5429,10 +5435,10 @@ structure TruthTheoryPackage where
   credalForcedQueries : CredalForcedQueryProfile
   credalProjectionTower : CredalProjectionTowerProfile
   naturalExtension : NaturalExtensionProfile
-  projectiveCredal : Mettapedia.ProbabilityTheory.ImpreciseProbability.ProjectiveCredal.ProjectiveCredalProfile
-  infiniteMLNCredalBridge : Mettapedia.Logic.MarkovLogicInfiniteCredalBridge.InfiniteMLNCredalBridgeProfile
-  dlrQueryOutcomePLNBridge : Mettapedia.Logic.MarkovLogicPLNTruthBridge.DLRQueryOutcomePLNBridgeProfile
-  projectiveDeFinettiCredalBridge : Mettapedia.Logic.DeFinettiProjectiveCredalBridge.ProjectiveDeFinettiCredalBridgeProfile
+  projectiveCredal : Mettapedia.ProbabilityTheory.ImpreciseProbability.ProjectiveCredal.ProjectiveCredalProfile.{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+  infiniteMLNCredalBridge : Mettapedia.Logic.MarkovLogicInfiniteCredalBridge.InfiniteMLNCredalBridgeProfile.{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+  dlrQueryOutcomePLNBridge : Mettapedia.Logic.MarkovLogicPLNTruthBridge.DLRQueryOutcomePLNBridgeProfile.{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+  projectiveDeFinettiCredalBridge : Mettapedia.Logic.DeFinettiProjectiveCredalBridge.ProjectiveDeFinettiCredalBridgeProfile.{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
   coreFourCompletion : CoreFourCompletionProfile
   crispnessCollapse : CrispnessCollapseProfile
   degreesOfFreedomForcing : DegreesOfFreedomForcingProfile

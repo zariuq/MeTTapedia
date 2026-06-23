@@ -124,7 +124,7 @@ theorem referenceClassQuality_le_one (pw : ProbWeight U) (R T : Finset U) :
     referenceClassQuality pw R T ≤ 1 := by
   unfold referenceClassQuality
   split_ifs with h
-  · exact zero_le 1
+  · exact zero_le
   · apply ENNReal.div_le_of_le_mul
     rw [one_mul]
     apply Finset.sum_le_sum_of_subset

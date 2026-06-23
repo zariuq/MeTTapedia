@@ -69,7 +69,7 @@ def oslfConverseFrame (R : Pattern → Pattern → Prop) : Frame where
 def oslfForwardModel (R : Pattern → Pattern → Prop) (I : AtomSem)
     (enc : AtomEncoding) : Model where
   toFrame := oslfForwardFrame R
-  Val := fun p n => match enc.decode n with
+  Val := fun n p => match enc.decode n with
     | some s => I s p
     | none => False
 
@@ -77,7 +77,7 @@ def oslfForwardModel (R : Pattern → Pattern → Prop) (I : AtomSem)
 def oslfConverseModel (R : Pattern → Pattern → Prop) (I : AtomSem)
     (enc : AtomEncoding) : Model where
   toFrame := oslfConverseFrame R
-  Val := fun p n => match enc.decode n with
+  Val := fun n p => match enc.decode n with
     | some s => I s p
     | none => False
 

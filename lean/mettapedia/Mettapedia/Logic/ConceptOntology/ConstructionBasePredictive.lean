@@ -156,11 +156,11 @@ theorem posteriorBernoulliMixture_canonical_externalPredictivePrincipalShadow
         CategoryTheory.coordProcess
         (by
           intro i
-          simpa [CategoryTheory.coordProcess] using (measurable_pi_apply (a := i)))
+          exact measurable_pi_apply i)
     posteriorExternalPredictivePrincipalShadow M k l hZ A := by
   let hcoord : ∀ i : ℕ, Measurable (CategoryTheory.coordProcess i) := by
     intro i
-    simpa [CategoryTheory.coordProcess] using (measurable_pi_apply (a := i))
+    exact measurable_pi_apply i
   let A : ExternalBoolProcessLaw (ℕ → Bool) :=
     ExternalBoolProcessLaw.ofProcess
       (bernoulliMixtureCanonicalProcessMeasure
@@ -181,11 +181,11 @@ theorem posteriorBernoulliMixture_canonical_compactPredictivePrincipalShadow
         CategoryTheory.coordProcess
         (by
           intro i
-          simpa [CategoryTheory.coordProcess] using (measurable_pi_apply (a := i)))
+          exact measurable_pi_apply i)
     posteriorCompactPredictivePrincipalShadow M k l hZ A := by
   let hcoord : ∀ i : ℕ, Measurable (CategoryTheory.coordProcess i) := by
     intro i
-    simpa [CategoryTheory.coordProcess] using (measurable_pi_apply (a := i))
+    exact measurable_pi_apply i
   let A : ExternalBoolProcessLaw (ℕ → Bool) :=
     ExternalBoolProcessLaw.ofProcess
       (bernoulliMixtureCanonicalProcessMeasure
@@ -206,11 +206,11 @@ theorem posteriorBernoulliMixture_canonical_externalPredictiveThatsAll
         CategoryTheory.coordProcess
         (by
           intro i
-          simpa [CategoryTheory.coordProcess] using (measurable_pi_apply (a := i)))
+          exact measurable_pi_apply i)
     externalPredictiveThatsAll ({A} : Set (ExternalBoolProcessLaw (ℕ → Bool))) := by
   let hcoord : ∀ i : ℕ, Measurable (CategoryTheory.coordProcess i) := by
     intro i
-    simpa [CategoryTheory.coordProcess] using (measurable_pi_apply (a := i))
+    exact measurable_pi_apply i
   let A : ExternalBoolProcessLaw (ℕ → Bool) :=
     ExternalBoolProcessLaw.ofProcess
       (bernoulliMixtureCanonicalProcessMeasure
@@ -241,13 +241,13 @@ theorem posteriorBernoulliMixture_canonical_compactPredictiveThatsAll
         CategoryTheory.coordProcess
         (by
           intro i
-          simpa [CategoryTheory.coordProcess] using (measurable_pi_apply (a := i)))
+          exact measurable_pi_apply i)
     compactPredictiveThatsAll
       (externalPathLawBoundedMeasurableCompactCredalSet
         ({A} : Set (ExternalBoolProcessLaw (ℕ → Bool)))) := by
   let hcoord : ∀ i : ℕ, Measurable (CategoryTheory.coordProcess i) := by
     intro i
-    simpa [CategoryTheory.coordProcess] using (measurable_pi_apply (a := i))
+    exact measurable_pi_apply i
   let A : ExternalBoolProcessLaw (ℕ → Bool) :=
     ExternalBoolProcessLaw.ofProcess
       (bernoulliMixtureCanonicalProcessMeasure
@@ -278,13 +278,13 @@ theorem posteriorBernoulliMixture_canonical_externalPredictiveThatsAll_and_prefi
         CategoryTheory.coordProcess
         (by
           intro i
-          simpa [CategoryTheory.coordProcess] using (measurable_pi_apply (a := i)))
+          exact measurable_pi_apply i)
     externalPredictiveThatsAll ({A} : Set (ExternalBoolProcessLaw (ℕ → Bool))) ∧
       (posteriorBernoulliMixturePrefixProcessWitness M k l hZ ↔
         M.mixingMeasure (Set.Ioo (0 : ℝ) 1) = 0) := by
   let hcoord : ∀ i : ℕ, Measurable (CategoryTheory.coordProcess i) := by
     intro i
-    simpa [CategoryTheory.coordProcess] using (measurable_pi_apply (a := i))
+    exact measurable_pi_apply i
   let A : ExternalBoolProcessLaw (ℕ → Bool) :=
     ExternalBoolProcessLaw.ofProcess
       (bernoulliMixtureCanonicalProcessMeasure
@@ -308,14 +308,14 @@ theorem posteriorBernoulliMixture_canonical_externalPredictiveThatsAll_and_prefi
         CategoryTheory.coordProcess
         (by
           intro i
-          simpa [CategoryTheory.coordProcess] using (measurable_pi_apply (a := i)))
+          exact measurable_pi_apply i)
     externalPredictiveThatsAll ({A} : Set (ExternalBoolProcessLaw (ℕ → Bool))) ∧
       ((∃ carrier : CredalPrevisionSet (ℕ → Bool),
           posteriorBernoulliMixturePrefixProcessCarrierWitness M k l hZ carrier) ↔
         M.mixingMeasure (Set.Ioo (0 : ℝ) 1) = 0) := by
   let hcoord : ∀ i : ℕ, Measurable (CategoryTheory.coordProcess i) := by
     intro i
-    simpa [CategoryTheory.coordProcess] using (measurable_pi_apply (a := i))
+    exact measurable_pi_apply i
   let A : ExternalBoolProcessLaw (ℕ → Bool) :=
     ExternalBoolProcessLaw.ofProcess
       (bernoulliMixtureCanonicalProcessMeasure
@@ -339,7 +339,7 @@ theorem posteriorBernoulliMixture_canonical_compactPredictiveThatsAll_and_prefix
         CategoryTheory.coordProcess
         (by
           intro i
-          simpa [CategoryTheory.coordProcess] using (measurable_pi_apply (a := i)))
+          exact measurable_pi_apply i)
     compactPredictiveThatsAll
       (externalPathLawBoundedMeasurableCompactCredalSet
         ({A} : Set (ExternalBoolProcessLaw (ℕ → Bool)))) ∧
@@ -347,7 +347,7 @@ theorem posteriorBernoulliMixture_canonical_compactPredictiveThatsAll_and_prefix
         M.mixingMeasure (Set.Ioo (0 : ℝ) 1) = 0) := by
   let hcoord : ∀ i : ℕ, Measurable (CategoryTheory.coordProcess i) := by
     intro i
-    simpa [CategoryTheory.coordProcess] using (measurable_pi_apply (a := i))
+    exact measurable_pi_apply i
   let A : ExternalBoolProcessLaw (ℕ → Bool) :=
     ExternalBoolProcessLaw.ofProcess
       (bernoulliMixtureCanonicalProcessMeasure
@@ -378,7 +378,7 @@ theorem posteriorBernoulliMixture_canonical_compactPredictiveThatsAll_and_prefix
         CategoryTheory.coordProcess
         (by
           intro i
-          simpa [CategoryTheory.coordProcess] using (measurable_pi_apply (a := i)))
+          exact measurable_pi_apply i)
     compactPredictiveThatsAll
       (externalPathLawBoundedMeasurableCompactCredalSet
         ({A} : Set (ExternalBoolProcessLaw (ℕ → Bool)))) ∧
@@ -387,7 +387,7 @@ theorem posteriorBernoulliMixture_canonical_compactPredictiveThatsAll_and_prefix
         M.mixingMeasure (Set.Ioo (0 : ℝ) 1) = 0) := by
   let hcoord : ∀ i : ℕ, Measurable (CategoryTheory.coordProcess i) := by
     intro i
-    simpa [CategoryTheory.coordProcess] using (measurable_pi_apply (a := i))
+    exact measurable_pi_apply i
   let A : ExternalBoolProcessLaw (ℕ → Bool) :=
     ExternalBoolProcessLaw.ofProcess
       (bernoulliMixtureCanonicalProcessMeasure
@@ -418,7 +418,7 @@ theorem posteriorBernoulliMixture_canonical_externalPredictiveThatsAll_and_proce
         CategoryTheory.coordProcess
         (by
           intro i
-          simpa [CategoryTheory.coordProcess] using (measurable_pi_apply (a := i)))
+          exact measurable_pi_apply i)
     externalPredictiveThatsAll ({A} : Set (ExternalBoolProcessLaw (ℕ → Bool))) ∧
       (PosteriorBernoulliMixtureProcessLawCrown M k l hZ ↔
         M.mixingMeasure (Set.Ioo (0 : ℝ) 1) = 0) := by
@@ -436,7 +436,7 @@ theorem posteriorBernoulliMixture_canonical_compactPredictiveThatsAll_and_proces
         CategoryTheory.coordProcess
         (by
           intro i
-          simpa [CategoryTheory.coordProcess] using (measurable_pi_apply (a := i)))
+          exact measurable_pi_apply i)
     compactPredictiveThatsAll
       (externalPathLawBoundedMeasurableCompactCredalSet
         ({A} : Set (ExternalBoolProcessLaw (ℕ → Bool)))) ∧
@@ -457,13 +457,13 @@ theorem posteriorBernoulliMixture_canonical_externalPredictiveThatsAll_and_noPre
         CategoryTheory.coordProcess
         (by
           intro i
-          simpa [CategoryTheory.coordProcess] using (measurable_pi_apply (a := i)))
+          exact measurable_pi_apply i)
     externalPredictiveThatsAll ({A} : Set (ExternalBoolProcessLaw (ℕ → Bool))) ∧
       ∀ carrier : CredalPrevisionSet (ℕ → Bool),
         ¬ posteriorBernoulliMixturePrefixProcessCarrierWitness M k l hZ carrier := by
   let hcoord : ∀ i : ℕ, Measurable (CategoryTheory.coordProcess i) := by
     intro i
-    simpa [CategoryTheory.coordProcess] using (measurable_pi_apply (a := i))
+    exact measurable_pi_apply i
   let A : ExternalBoolProcessLaw (ℕ → Bool) :=
     ExternalBoolProcessLaw.ofProcess
       (bernoulliMixtureCanonicalProcessMeasure
@@ -489,7 +489,7 @@ theorem posteriorBernoulliMixture_canonical_compactPredictiveThatsAll_and_noPref
         CategoryTheory.coordProcess
         (by
           intro i
-          simpa [CategoryTheory.coordProcess] using (measurable_pi_apply (a := i)))
+          exact measurable_pi_apply i)
     compactPredictiveThatsAll
       (externalPathLawBoundedMeasurableCompactCredalSet
         ({A} : Set (ExternalBoolProcessLaw (ℕ → Bool)))) ∧
@@ -497,7 +497,7 @@ theorem posteriorBernoulliMixture_canonical_compactPredictiveThatsAll_and_noPref
         ¬ posteriorBernoulliMixturePrefixProcessCarrierWitness M k l hZ carrier := by
   let hcoord : ∀ i : ℕ, Measurable (CategoryTheory.coordProcess i) := by
     intro i
-    simpa [CategoryTheory.coordProcess] using (measurable_pi_apply (a := i))
+    exact measurable_pi_apply i
   let A : ExternalBoolProcessLaw (ℕ → Bool) :=
     ExternalBoolProcessLaw.ofProcess
       (bernoulliMixtureCanonicalProcessMeasure
@@ -529,12 +529,12 @@ theorem posteriorBernoulliMixture_canonical_externalPredictiveThatsAll_and_noPre
         CategoryTheory.coordProcess
         (by
           intro i
-          simpa [CategoryTheory.coordProcess] using (measurable_pi_apply (a := i)))
+          exact measurable_pi_apply i)
     externalPredictiveThatsAll ({A} : Set (ExternalBoolProcessLaw (ℕ → Bool))) ∧
       ¬ posteriorBernoulliMixturePrefixProcessWitness M k l hZ := by
   let hcoord : ∀ i : ℕ, Measurable (CategoryTheory.coordProcess i) := by
     intro i
-    simpa [CategoryTheory.coordProcess] using (measurable_pi_apply (a := i))
+    exact measurable_pi_apply i
   let A : ExternalBoolProcessLaw (ℕ → Bool) :=
     ExternalBoolProcessLaw.ofProcess
       (bernoulliMixtureCanonicalProcessMeasure
@@ -560,14 +560,14 @@ theorem posteriorBernoulliMixture_canonical_compactPredictiveThatsAll_and_noPref
         CategoryTheory.coordProcess
         (by
           intro i
-          simpa [CategoryTheory.coordProcess] using (measurable_pi_apply (a := i)))
+          exact measurable_pi_apply i)
     compactPredictiveThatsAll
       (externalPathLawBoundedMeasurableCompactCredalSet
         ({A} : Set (ExternalBoolProcessLaw (ℕ → Bool)))) ∧
       ¬ posteriorBernoulliMixturePrefixProcessWitness M k l hZ := by
   let hcoord : ∀ i : ℕ, Measurable (CategoryTheory.coordProcess i) := by
     intro i
-    simpa [CategoryTheory.coordProcess] using (measurable_pi_apply (a := i))
+    exact measurable_pi_apply i
   let A : ExternalBoolProcessLaw (ℕ → Bool) :=
     ExternalBoolProcessLaw.ofProcess
       (bernoulliMixtureCanonicalProcessMeasure
@@ -599,12 +599,12 @@ theorem posteriorBernoulliMixture_canonical_externalPredictiveThatsAll_and_noPre
         CategoryTheory.coordProcess
         (by
           intro i
-          simpa [CategoryTheory.coordProcess] using (measurable_pi_apply (a := i)))
+          exact measurable_pi_apply i)
     externalPredictiveThatsAll ({A} : Set (ExternalBoolProcessLaw (ℕ → Bool))) ∧
       ¬ posteriorBernoulliMixturePrefixProcessWitness M k l hZ := by
   let hcoord : ∀ i : ℕ, Measurable (CategoryTheory.coordProcess i) := by
     intro i
-    simpa [CategoryTheory.coordProcess] using (measurable_pi_apply (a := i))
+    exact measurable_pi_apply i
   let A : ExternalBoolProcessLaw (ℕ → Bool) :=
     ExternalBoolProcessLaw.ofProcess
       (bernoulliMixtureCanonicalProcessMeasure
@@ -627,14 +627,14 @@ theorem posteriorBernoulliMixture_canonical_compactPredictiveThatsAll_and_noPref
         CategoryTheory.coordProcess
         (by
           intro i
-          simpa [CategoryTheory.coordProcess] using (measurable_pi_apply (a := i)))
+          exact measurable_pi_apply i)
     compactPredictiveThatsAll
       (externalPathLawBoundedMeasurableCompactCredalSet
         ({A} : Set (ExternalBoolProcessLaw (ℕ → Bool)))) ∧
       ¬ posteriorBernoulliMixturePrefixProcessWitness M k l hZ := by
   let hcoord : ∀ i : ℕ, Measurable (CategoryTheory.coordProcess i) := by
     intro i
-    simpa [CategoryTheory.coordProcess] using (measurable_pi_apply (a := i))
+    exact measurable_pi_apply i
   let A : ExternalBoolProcessLaw (ℕ → Bool) :=
     ExternalBoolProcessLaw.ofProcess
       (bernoulliMixtureCanonicalProcessMeasure
@@ -1159,7 +1159,7 @@ theorem exchangeable_exists_singletonExternalPredictor
       CategoryTheory.coordProcess
       (by
         intro i
-        simpa [CategoryTheory.coordProcess] using (measurable_pi_apply (a := i)))
+        exact measurable_pi_apply i)
   refine ⟨M, A, hRep, ?_⟩
   simpa [A] using bernoulliMixture_canonical_externalPredictiveThatsAll_and_realization M
 
@@ -1213,7 +1213,7 @@ theorem bernoulliMixture_canonical_externalPredictiveThatsAll_on_gunkyPerfectEvi
         CategoryTheory.coordProcess
         (by
           intro i
-          simpa [CategoryTheory.coordProcess] using (measurable_pi_apply (a := i)))
+          exact measurable_pi_apply i)
     externalPredictiveThatsAll ({A} : Set (ExternalBoolProcessLaw (ℕ → Bool))) ∧
       BernoulliMixtureExternalProcessRealization M A ∧
       Mettapedia.Foundations.Gunk.IsGunky
@@ -1227,7 +1227,7 @@ theorem bernoulliMixture_canonical_externalPredictiveThatsAll_on_gunkyPerfectEvi
       CategoryTheory.coordProcess
       (by
         intro i
-        simpa [CategoryTheory.coordProcess] using (measurable_pi_apply (a := i)))
+        exact measurable_pi_apply i)
   refine ⟨?_, ?_, predictiveEvidenceAlgebra_isGunky, predictiveEvidenceStoneSpace_perfect⟩
   · exact externalPredictiveThatsAll_singleton A
   · exact bernoulliMixtureCanonicalExternalProcessRealization M

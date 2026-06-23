@@ -207,7 +207,13 @@ def gwasFocusedPosterior : CertifiedRegimePosterior GWASLatentRegime where
     constructor
     · intro r
       by_cases h : r = gwasFocusedRegime <;> simp [h]
-    · simp [gwasFocusedRegime]
+    · classical
+      rw [Finset.sum_eq_single gwasFocusedRegime]
+      · simp
+      · intro r _ hr
+        simp [hr]
+      · intro hnot
+        exact False.elim (hnot (Finset.mem_univ gwasFocusedRegime))
   uncertaintyRadius := 0
   uncertaintyRadius_nonneg := by norm_num
 

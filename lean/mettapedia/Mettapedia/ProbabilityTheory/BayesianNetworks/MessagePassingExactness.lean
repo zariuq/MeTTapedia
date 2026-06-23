@@ -195,7 +195,7 @@ theorem twoFactorChain_factorToVar_threeRounds_exact
               (singletonOtherScopeAssign (fg := fg) g v w hLeafG x_w)
               (x v)) *
             σ₂.varToFactor w g x_w := by
-          simpa using hLocal
+          simpa using! hLocal
     _ = ∑ x_w : fg.stateSpace w,
           fg.potential g
             (VariableElimination.Factor.extend
@@ -216,7 +216,7 @@ theorem twoFactorChain_factorToVar_threeRounds_exact
               hwg
               hfg hNbrs
               (Function.update x w x_w)
-          simpa using congrArg
+          simpa using! congrArg
             (fun z =>
               fg.potential g
                 (VariableElimination.Factor.extend

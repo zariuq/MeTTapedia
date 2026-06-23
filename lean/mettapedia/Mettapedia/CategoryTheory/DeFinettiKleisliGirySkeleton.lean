@@ -57,13 +57,29 @@ abbrev KleisliGiry : Type 1 := CategoryTheory.Kleisli (C := MeasCat) MeasCat.Gir
 instance : CategoryTheory.Category KleisliGiry :=
   CategoryTheory.Kleisli.category (T := MeasCat.Giry)
 
+/-- Extensionality for Kleisli(Giry) morphisms via their underlying kernel
+functions. In Lean v4.31 a `Kleisli` morphism is bundled as a `Kleisli.Hom`
+whose `.of` field is a `MeasCat` morphism (itself a `Measurable`-subtype), so the
+underlying function is reached through `.1.1`. -/
+theorem kleisliHom_ext {A B : KleisliGiry} {f g : A ⟶ B}
+    (h : ∀ a : A.of.carrier, f.1.1 a = g.1.1 a) : f = g := by
+  apply CategoryTheory.Kleisli.Hom.ext
+  apply Subtype.ext
+  funext a
+  exact h a
+
+/-- Pointwise application of an equation between Kleisli(Giry) morphisms. -/
+theorem kleisliHom_congr_fun {A B : KleisliGiry} {f g : A ⟶ B}
+    (h : f = g) (a : A.of.carrier) : f.1.1 a = g.1.1 a :=
+  congrFun (congrArg (fun k : A ⟶ B => k.1.1) h) a
+
 /-- Canonical sequence object `Bool^ℕ` in `Kleisli(MeasCat.Giry)`. -/
 abbrev KleisliBinarySeqObj : KleisliGiry :=
-  (MeasCat.of GlobalBinarySeq : CategoryTheory.Kleisli (C := MeasCat) MeasCat.Giry)
+  CategoryTheory.Kleisli.mk MeasCat.Giry (MeasCat.of GlobalBinarySeq)
 
 /-- Canonical parameter object `P Bool` in `Kleisli(MeasCat.Giry)`. -/
 abbrev KleisliProbBoolObj : KleisliGiry :=
-  (MeasCat.of (ProbabilityMeasure Bool) : CategoryTheory.Kleisli (C := MeasCat) MeasCat.Giry)
+  CategoryTheory.Kleisli.mk MeasCat.Giry (MeasCat.of (ProbabilityMeasure Bool))
 
 /-- Measurability of the finitary-permutation action on binary sequences. -/
 lemma measurable_finSuppPermuteSeq (τ : FinSuppPermNat) :
@@ -76,7 +92,9 @@ lemma measurable_finSuppPermuteSeq (τ : FinSuppPermNat) :
 lemma finSuppPermuteSeq_one (ω : GlobalBinarySeq) :
     finSuppPermuteSeq (1 : FinSuppPermNat) ω = ω := by
   funext i
-  simp [finSuppPermuteSeq]
+  show ω (((1 : FinSuppPermNat).1).symm i) = ω i
+  rw [OneMemClass.coe_one]
+  rfl
 
 /-- Composition law for finitary permutation action on sequences. -/
 lemma finSuppPermuteSeq_mul (τ υ : FinSuppPermNat) (ω : GlobalBinarySeq) :
@@ -91,15 +109,15 @@ lemma finSuppPermuteSeq_mul (τ υ : FinSuppPermNat) (ω : GlobalBinarySeq) :
 /-- Deterministic Kleisli morphism induced by a global finitary permutation. -/
 def finSuppPermKleisliHom (τ : FinSuppPermNat) :
     KleisliBinarySeqObj ⟶ KleisliBinarySeqObj :=
-  ⟨fun ω => Measure.dirac (finSuppPermuteSeq τ ω),
-    Measure.measurable_dirac.comp (measurable_finSuppPermuteSeq τ)⟩
+  ⟨⟨fun ω => Measure.dirac (finSuppPermuteSeq τ ω),
+    Measure.measurable_dirac.comp (measurable_finSuppPermuteSeq τ)⟩⟩
 
 /-- Deterministic Kleisli hom for identity permutation is the Kleisli identity. -/
 lemma finSuppPermKleisliHom_one :
     finSuppPermKleisliHom (1 : FinSuppPermNat) =
       CategoryTheory.CategoryStruct.id KleisliBinarySeqObj := by
-  apply Subtype.ext
-  funext ω
+  apply kleisliHom_ext
+  intro ω
   change Measure.dirac (finSuppPermuteSeq (1 : FinSuppPermNat) ω) = Measure.dirac ω
   simp [finSuppPermuteSeq_one]
 
@@ -107,16 +125,14 @@ lemma finSuppPermKleisliHom_one :
 lemma finSuppPermKleisliHom_comp (τ υ : FinSuppPermNat) :
     CategoryTheory.CategoryStruct.comp (finSuppPermKleisliHom υ) (finSuppPermKleisliHom τ) =
       finSuppPermKleisliHom (τ * υ) := by
-  apply Subtype.ext
-  funext ω
+  apply kleisliHom_ext
+  intro ω
   change
     Measure.bind (Measure.dirac (finSuppPermuteSeq υ ω))
         (fun x => Measure.dirac (finSuppPermuteSeq τ x)) =
       Measure.dirac (finSuppPermuteSeq (τ * υ) ω)
-  simpa [finSuppPermuteSeq_mul] using
-    (Measure.dirac_bind
-      (hf := Measure.measurable_dirac.comp (measurable_finSuppPermuteSeq τ))
-      (a := finSuppPermuteSeq υ ω))
+  rw [Measure.bind_dirac_eq_map _ (measurable_finSuppPermuteSeq τ)]
+  simp [measurable_finSuppPermuteSeq τ, finSuppPermuteSeq_mul]
 
 /-- Monoid action into endomorphisms of `Bool^ℕ` in `Kleisli(MeasCat.Giry)`. -/
 def finSuppPermKleisliEndMonoidHom :
@@ -124,7 +140,7 @@ def finSuppPermKleisliEndMonoidHom :
   toFun := finSuppPermKleisliHom
   map_one' := finSuppPermKleisliHom_one
   map_mul' τ υ := by
-    simpa [CategoryTheory.End.mul_def] using (finSuppPermKleisliHom_comp τ υ).symm
+    exact (finSuppPermKleisliHom_comp τ υ).symm
 
 /-- True global finitary-permutation diagram functor in `Kleisli(MeasCat.Giry)`. -/
 def kleisliGiryGlobalDiagramFunctor :
@@ -168,15 +184,14 @@ def thetaFromPrefix {n : ℕ} (x : ThetaBoolPrefix n) : LatentTheta :=
 
 lemma measurable_thetaFromPrefix {n : ℕ} :
     Measurable (thetaFromPrefix (n := n)) := by
-  simpa [thetaFromPrefix, thetaPrefixZeroIdx, ThetaBoolTimeline] using
-    (measurable_pi_apply (a := (thetaPrefixZeroIdx n)))
+  exact measurable_pi_apply (a := (thetaPrefixZeroIdx n))
 
 /-- Read the unique coordinate of a `Fin 1 → Bool` tuple. -/
 def fin1TupleToBool (x : Fin 1 → Bool) : Bool :=
   x ⟨0, by decide⟩
 
 lemma measurable_fin1TupleToBool : Measurable fin1TupleToBool := by
-  simpa [fin1TupleToBool] using (measurable_pi_apply (a := (⟨0, by decide⟩ : Fin 1)))
+  exact measurable_pi_apply (a := (⟨0, by decide⟩ : Fin 1))
 
 /-- One-step Bernoulli kernel on `Bool` parameterized by `Theta`. -/
 def thetaBernoulliKernel : ProbabilityTheory.Kernel LatentTheta Bool :=
@@ -200,19 +215,17 @@ the next Boolean sample depends only on the latent `Theta` coordinate. -/
 def thetaIidStep (n : ℕ) :
     ProbabilityTheory.Kernel (ThetaBoolPrefix n) (ThetaBoolTimeline (n + 1)) where
   toFun := fun x => by
-    simpa [ThetaBoolTimeline] using (thetaBernoulliKernel (thetaFromPrefix x))
+    exact thetaBernoulliKernel (thetaFromPrefix x)
   measurable' := by
     refine Measure.measurable_of_measurable_coe _ ?_
     intro s hs
-    simpa [ThetaBoolTimeline] using
-      (thetaBernoulliKernel.measurable_coe (s := s) hs).comp measurable_thetaFromPrefix
+    exact (thetaBernoulliKernel.measurable_coe (s := s) hs).comp measurable_thetaFromPrefix
 
 instance thetaIidStep_isMarkov (n : ℕ) :
     ProbabilityTheory.IsMarkovKernel (thetaIidStep n) := by
   refine ⟨?_⟩
   intro x
-  simpa [thetaIidStep, ThetaBoolTimeline] using
-    (show IsProbabilityMeasure (thetaBernoulliKernel (thetaFromPrefix x)) from inferInstance)
+  exact (show IsProbabilityMeasure (thetaBernoulliKernel (thetaFromPrefix x)) from inferInstance)
 
 /-- Deterministic embedding of `Theta` into prefixes of length `0`. -/
 noncomputable def thetaToPrefix0 : LatentTheta → ThetaBoolPrefix 0 :=
@@ -228,8 +241,7 @@ lemma measurable_thetaToPrefix0 : Measurable thetaToPrefix0 := by
   rcases i with ⟨j, hj⟩
   have hj0 : j = 0 := Nat.le_antisymm (Finset.mem_Iic.1 hj) (Nat.zero_le _)
   subst hj0
-  simpa [thetaToPrefix0, ThetaBoolTimeline] using
-    (measurable_id : Measurable fun θ : LatentTheta => θ)
+  exact (measurable_id : Measurable fun θ : LatentTheta => θ)
 
 /-- Trajectory kernel on the augmented timeline (`Theta` at index `0`, then IID booleans). -/
 abbrev thetaIidTrajPrefix0 :
@@ -254,7 +266,7 @@ def dropThetaHead (x : Π n, ThetaBoolTimeline n) : GlobalBinarySeq :=
 lemma measurable_dropThetaHead : Measurable dropThetaHead := by
   refine measurable_pi_lambda _ ?_
   intro n
-  simpa [dropThetaHead] using (measurable_pi_apply (a := (n + 1)))
+  exact measurable_pi_apply (a := (n + 1))
 
 /-- Strong IID sequence kernel parameterized by `Theta`. -/
 def iidSequenceKernelTheta : ProbabilityTheory.Kernel LatentTheta GlobalBinarySeq :=
@@ -286,15 +298,15 @@ lemma measurable_dropThetaPrefix (n : ℕ) : Measurable (dropThetaPrefix n) := b
   refine measurable_pi_lambda _ ?_
   intro i
   have hi : i.1 + 1 ≤ n := Nat.succ_le_of_lt i.2
-  simpa using
-    (measurable_pi_apply (a := (⟨i.1 + 1, Finset.mem_Iic.2 hi⟩ : Finset.Iic n)))
+  exact measurable_pi_apply (a := (⟨i.1 + 1, Finset.mem_Iic.2 hi⟩ : Finset.Iic n))
 
 lemma seqPrefixProj_comp_dropThetaHead_eq_dropThetaPrefix_frestrictLe (n : ℕ) :
     seqPrefixProj n ∘ dropThetaHead = dropThetaPrefix n ∘ (Preorder.frestrictLe n) := by
   funext x
   funext i
   unfold seqPrefixProj dropThetaHead dropThetaPrefix
-  simp [Preorder.frestrictLe]
+  simp only [Preorder.frestrictLe]
+  rfl
 
 lemma thetaIidAugmentedKernel_apply (θ : LatentTheta) :
     thetaIidAugmentedKernel θ = thetaIidTrajPrefix0 (thetaToPrefix0 θ) := by
@@ -381,7 +393,7 @@ theorem thetaBernoulliKernel_singleton_apply
     · intro hx
       ext i
       have hi : i = 0 := Fin.eq_zero i
-      simpa [hi] using hx
+      rw [hi]; exact hx
     · intro hx
       simpa [fin1TupleToBool] using congrArg (fun f : Fin 1 → Bool => f 0) hx
   rw [hpre]
@@ -540,13 +552,14 @@ private theorem snocTailEvent_eq_singleton (n : ℕ) (b : Bool) :
     have hy' :
         cast (by simp [ThetaBoolTimeline])
           (y ⟨n + 1, by simp⟩) = b := by
-      simpa [snocTailEvent] using hy
+      exact hy
     have hy'' : y ⟨n + 1, by simp⟩ = b' := by
-      simpa [b'] using hy'
-    simpa [MeasurableEquiv.piSingleton, ThetaBoolTimeline, b'] using hy''
+      exact hy'
+    rw [hy'']; rfl
   · intro hy
     rcases Set.mem_singleton_iff.1 hy with rfl
-    simp [snocTailEvent, MeasurableEquiv.piSingleton, ThetaBoolTimeline]
+    simp only [snocTailEvent, Set.mem_preimage, Set.mem_singleton_iff, MeasurableEquiv.piSingleton]
+    rfl
 
 private theorem measurableSet_snocTailEvent (n : ℕ) (b : Bool) :
     MeasurableSet (snocTailEvent n b) := by
@@ -555,8 +568,10 @@ private theorem measurableSet_snocTailEvent (n : ℕ) (b : Bool) :
       snocTailEvent n b =
         ((MeasurableEquiv.piSingleton n).symm ⁻¹' ({b'} : Set (ThetaBoolTimeline (n + 1)))) := by
     ext y
-    simp [snocTailEvent, MeasurableEquiv.piSingleton, ThetaBoolTimeline, b']
+    rfl
   rw [hpre]
+  haveI : MeasurableSingletonClass (ThetaBoolTimeline (n + 1)) :=
+    (inferInstance : MeasurableSingletonClass Bool)
   exact (MeasurableEquiv.piSingleton n).symm.measurable (MeasurableSet.singleton b')
 
 private theorem snocTailEvent_preimage_piSingleton
@@ -570,9 +585,9 @@ private theorem snocTailEvent_preimage_piSingleton
     have hEq : MeasurableEquiv.piSingleton n t = MeasurableEquiv.piSingleton n b' := by
       simpa [b'] using ht
     have ht' : t = b' := (MeasurableEquiv.piSingleton n).injective hEq
-    simpa [b'] using ht'
+    exact ht'
   · intro ht
-    have ht' : t = b' := by simpa [b'] using ht
+    have ht' : t = b' := ht
     simp [ht', b']
 
 private theorem thetaIidStep_map_piSingleton_snocTailEvent
@@ -600,7 +615,7 @@ private theorem dropThetaPrefix_IicProdIoc_preimage_snoc_tail
     {z : ThetaBoolPrefix n × ((i : Finset.Ioc n (n + 1)) → ThetaBoolTimeline i) |
       dropThetaPrefix n z.1 = xs ∧ z.2 ∈ snocTailEvent n b} := by
   ext z
-  simp [dropThetaPrefix_IicProdIoc_preimage_snoc, snocTailEvent]
+  rw [dropThetaPrefix_IicProdIoc_preimage_snoc]; rfl
 
 private theorem snocTailCarrier_preimage_prodMk
     (n : ℕ) (xs : Fin n → Bool) (b : Bool) (x : ThetaBoolPrefix n) :
@@ -662,7 +677,7 @@ private theorem partialTraj_dropThetaPrefix_map_snoc_integral
   have hprecomp :
       ((IicProdIoc n (n + 1)) ⁻¹' ((dropThetaPrefix (n + 1)) ⁻¹' ({sn} : Set (Fin (n + 1) → Bool)))
         = A) := by
-    simpa [Function.comp] using hAeq
+    exact hAeq
   calc
     (((ProbabilityTheory.Kernel.partialTraj thetaIidStep 0 (n + 1)) (thetaToPrefix0 θ)).map
       (dropThetaPrefix (n + 1))) ({sn} : Set (Fin (n + 1) → Bool))
@@ -897,9 +912,8 @@ theorem iidProduct_thetaBernoulli_seqPrefixEvent_eq_iidPrefixKernel
       (Exchangeability.Probability.iidProduct (thetaBernoulliKernel θ)).map
           (seqPrefixProj n)
         = Measure.pi (fun _ : Fin n => thetaBernoulliKernel θ) := by
-    simpa [seqPrefixProj] using
-      (Exchangeability.Probability.iidProduct.cylinder_fintype
-        (ν := thetaBernoulliKernel θ) (n := n))
+    exact Exchangeability.Probability.iidProduct.cylinder_fintype
+      (thetaBernoulliKernel θ) (n := n)
   calc
     Exchangeability.Probability.iidProduct (thetaBernoulliKernel θ) (seqPrefixEvent n xs)
         = Exchangeability.Probability.iidProduct (thetaBernoulliKernel θ)
@@ -930,7 +944,7 @@ theorem iidSequenceKernelTheta_prefix_apply_of_iidProduct_bridge
 def firstCoord (ω : GlobalBinarySeq) : Bool := ω 0
 
 lemma measurable_firstCoord : Measurable firstCoord := by
-  simpa [firstCoord] using (measurable_pi_apply (a := (0 : ℕ)))
+  exact measurable_pi_apply (a := (0 : ℕ))
 
 lemma thetaFromPrefix_thetaToPrefix0 (θ : LatentTheta) :
     thetaFromPrefix (thetaToPrefix0 θ) = θ := by
@@ -1025,7 +1039,7 @@ lemma partialTraj_thetaIidStep_comp_eval_eq_thetaBernoulli
                 (thetaToPrefix0 θ) hs)
     _ = ∫⁻ x : ThetaBoolPrefix n, (thetaBernoulliKernel (thetaFromPrefix x)) s
           ∂((ProbabilityTheory.Kernel.partialTraj thetaIidStep 0 n) (thetaToPrefix0 θ)) := by
-            simp [thetaIidStep, ThetaBoolTimeline]
+            rfl
     _ = ∫⁻ t : LatentTheta, (thetaBernoulliKernel t) s
           ∂((((ProbabilityTheory.Kernel.partialTraj thetaIidStep 0 n) (thetaToPrefix0 θ)).map
             (fun x : ThetaBoolPrefix n => thetaFromPrefix x))) := by
@@ -1103,7 +1117,8 @@ lemma ae_thetaIidStep_eq_thetaBernoulli_under_partialTraj
       thetaIidStep n x = thetaBernoulliKernel θ := by
   filter_upwards [ae_thetaFromPrefix_eq_of_partialTraj_thetaIidStep θ n] with x hx
   ext s hs
-  simp [thetaIidStep, ThetaBoolTimeline, hx]
+  show thetaBernoulliKernel (thetaFromPrefix x) s = thetaBernoulliKernel θ s
+  rw [hx]
 
 /-- Composing the one-step kernel `thetaIidStep n` with the partial trajectory
 started from `thetaToPrefix0 θ` yields exactly the Bernoulli law at `θ`. -/
@@ -1153,7 +1168,8 @@ private theorem partialTraj_dropThetaPrefix_map_snoc
   have hstep :
       ∀ᵐ x ∂μn, thetaIidStep n x ({b} : Set Bool) = c := by
     filter_upwards [hstepKernel] with x hx
-    simpa [c] using congrArg (fun ν : Measure Bool => ν ({b} : Set Bool)) hx
+    show thetaIidStep n x ({b} : Set Bool) = c
+    rw [hx]; rfl
   have hcongr :
       (∫⁻ x : ThetaBoolPrefix n,
           (if dropThetaPrefix n x = xs then thetaIidStep n x ({b} : Set Bool) else 0) ∂μn)
@@ -1227,18 +1243,17 @@ theorem iidSequenceKernelTheta_map_firstCoord :
   rw [htraj]
   ext θ s hs
   rw [ProbabilityTheory.Kernel.comp_apply' _ _ _ hs, ProbabilityTheory.Kernel.deterministic_apply]
-  simpa [thetaIidStep, thetaFromPrefix_thetaToPrefix0, hs, ThetaBoolTimeline] using
-    (lintegral_dirac'
-      (a := thetaToPrefix0 θ)
-      (f := fun b : ThetaBoolPrefix 0 => (thetaIidStep 0 b) s)
-      ((thetaIidStep 0).measurable_coe hs))
+  rw [lintegral_dirac' (a := thetaToPrefix0 θ) (hf := (thetaIidStep 0).measurable_coe hs)]
+  show thetaBernoulliKernel (thetaFromPrefix (thetaToPrefix0 θ)) s = thetaBernoulliKernel θ s
+  rw [thetaFromPrefix_thetaToPrefix0]
 
 /-- First-coordinate cylinder evaluation for measurable sets. -/
 theorem iidSequenceKernelTheta_firstCoord_apply
     (θ : LatentTheta) (s : Set Bool) (hs : MeasurableSet s) :
     iidSequenceKernelTheta θ {ω | firstCoord ω ∈ s} = thetaBernoulliKernel θ s := by
   have hmap := congrArg (fun κ => κ θ s) iidSequenceKernelTheta_map_firstCoord
-  simpa [firstCoord, ProbabilityTheory.Kernel.map_apply' _ measurable_firstCoord _ hs] using hmap
+  rw [ProbabilityTheory.Kernel.map_apply' _ measurable_firstCoord _ hs] at hmap
+  exact hmap
 
 /-- First-coordinate singleton-cylinder evaluation. -/
 theorem iidSequenceKernelTheta_firstCoord_singleton
@@ -1578,8 +1593,9 @@ theorem iidProduct_globalFinitarySeqConeCommutes
     (ν : Measure Bool) [IsProbabilityMeasure ν] :
     GlobalFinitarySeqConeCommutes (Exchangeability.Probability.iidProduct ν) := by
   intro τ
-  simpa [GlobalFinitarySeqConeCommutes, finSuppPermuteSeq, Function.comp] using
-    (Exchangeability.Probability.iidProduct.perm_eq (ν := ν) (σ := τ.1.symm))
+  show Measure.map (finSuppPermuteSeq τ) (Exchangeability.Probability.iidProduct ν) =
+    Exchangeability.Probability.iidProduct ν
+  exact Exchangeability.Probability.iidProduct.perm_eq (ν := ν) (σ := τ.1.symm)
 
 /-- Path-B bridge: if the strong IID kernel is identified pointwise with the
 external `iidProduct` law, then global finitary commutation follows immediately. -/
@@ -1715,8 +1731,8 @@ theorem globalFinitarySeqConeCommutes_imp_coordPrefixInvariance
             (globalSeqPrefixEvent n xs) =
           μ (globalSeqPrefixEvent n xs) := by
         exact congrArg (fun m => m (globalSeqPrefixEvent n xs)) (hτ (finPermToFinSuppPermNat σ))
-      simpa [Measure.map_apply (measurable_finSuppPermuteSeq (finPermToFinSuppPermNat σ)) hmeas]
-        using hmap
+      rw [Measure.map_apply (measurable_finSuppPermuteSeq (finPermToFinSuppPermNat σ)) hmeas] at hmap
+      exact hmap
     have hcompat :=
       globalPrefixLawActionFromSeqLaw_compatible_with_lift (L := L) n σ
     have hperm :
@@ -1727,8 +1743,9 @@ theorem globalFinitarySeqConeCommutes_imp_coordPrefixInvariance
                 symm
                 exact hcompat
         _ = prefixLawObjOfSeqLaw L n := haction
-    simpa [GlobalLiftedPrefixLawConeCommutes, perNPrefixDiagramMapFromGlobalLift,
-      prefixLawObjOfSeqLaw, prefixLaw, globalSeqPrefixEvent, L] using hperm
+    have h2 : perNPrefixDiagramMapFromGlobalLift n σ (prefixLaw (fun i ω => ω i) μ n) =
+        perNPrefixDiagramMap n σ (prefixLawObjOfSeqLaw L n) := rfl
+    rw [h2]; exact hperm
   exact
     (isPrefixLawCone_iff_globalLiftedPrefixLawConeCommutes
       (Ω := GlobalBinarySeq) (X := fun i ω => ω i) (μ := μ)).2 hglobal
@@ -1795,11 +1812,11 @@ theorem iidSequenceKernelTheta_globalFinitaryInvariance_of_latentDirac
 
 /-- Canonical `Kleisli(Giry)` object for the latent parameter space. -/
 abbrev KleisliLatentThetaObj : KleisliGiry :=
-  (MeasCat.of LatentTheta : CategoryTheory.Kleisli (C := MeasCat) MeasCat.Giry)
+  CategoryTheory.Kleisli.mk MeasCat.Giry (MeasCat.of LatentTheta)
 
 /-- `iidSequenceKernelTheta` viewed as a Kleisli morphism. -/
 def iidSequenceKleisliHomTheta : KleisliLatentThetaObj ⟶ KleisliBinarySeqObj :=
-  ⟨fun θ => iidSequenceKernelTheta θ, iidSequenceKernelTheta.measurable⟩
+  ⟨⟨fun θ => iidSequenceKernelTheta θ, iidSequenceKernelTheta.measurable⟩⟩
 
 /-- Commutation of `iidSequenceKleisliHomTheta` with the global finitary
 permutation action, derived from pointwise global finitary invariance of the
@@ -1810,8 +1827,8 @@ theorem iidSequenceKleisliHomTheta_commutes_of_globalFinitaryInvariance
       CategoryTheory.CategoryStruct.comp iidSequenceKleisliHomTheta (finSuppPermKleisliHom τ) =
         iidSequenceKleisliHomTheta := by
   intro τ
-  apply Subtype.ext
-  funext θ
+  apply kleisliHom_ext
+  intro θ
   change
     Measure.bind (iidSequenceKernelTheta θ) (fun x => Measure.dirac (finSuppPermuteSeq τ x)) =
       iidSequenceKernelTheta θ
@@ -1849,10 +1866,10 @@ theorem iidSequenceKernelTheta_globalFinitaryInvariance_of_iidSequenceKleisliHom
   have hbind :
       Measure.bind (iidSequenceKernelTheta θ) (fun x => Measure.dirac (finSuppPermuteSeq τ x)) =
         iidSequenceKernelTheta θ := by
-    simpa [iidSequenceKleisliHomTheta] using
+    exact
       congrArg
         (fun h :
-          KleisliLatentThetaObj ⟶ KleisliBinarySeqObj => h.1 θ)
+          KleisliLatentThetaObj ⟶ KleisliBinarySeqObj => h.1.1 θ)
         (hcommutes τ)
   calc
     (iidSequenceKernelTheta θ).map (finSuppPermuteSeq τ)
@@ -1885,7 +1902,7 @@ theorem exists_latentKernel_prefixFactorization_of_iidSequenceKernelTheta_global
           ∫⁻ θ' : LatentTheta, (iidPrefixKernel n θ') ({xs} : Set (Fin n → Bool)) ∂(L θ)) := by
   have hX : ∀ i : ℕ, Measurable (coordProcess i) := by
     intro i
-    simpa [coordProcess] using (measurable_pi_apply (a := i))
+    exact measurable_pi_apply (a := i)
   have hprefix :
       KernelPrefixCone (X := coordProcess) (κ := iidSequenceKernelTheta) :=
     iidSequenceKernelTheta_kernelPrefixCone_coord_of_globalFinitaryInvariance hglobal
@@ -1930,7 +1947,7 @@ theorem iidSequenceKernelTheta_canonicalLatentKernel_eq_dirac_of_globalFinitaryI
       (X := coordProcess) (κ := iidSequenceKernelTheta)).2 hprefix
   have hX : ∀ i : ℕ, Measurable (coordProcess i) := by
     intro i
-    simpa [coordProcess] using (measurable_pi_apply (a := i))
+    exact measurable_pi_apply (a := i)
   rcases existsUnique_latentThetaKernel_of_kernelExchangeable
       (X := coordProcess) (κ := iidSequenceKernelTheta) hX hexch with
     ⟨L0, hL0, huniq⟩
@@ -2038,7 +2055,7 @@ structure KleisliGiryIIDConeSkeleton where
     CategoryTheory.CategoryStruct.comp iidHom (finSuppPermKleisliHom τ) = iidHom
 
 /-- Build a true categorical cone from iid-cone data. -/
-def KleisliGiryIIDConeSkeleton.toCone
+noncomputable def KleisliGiryIIDConeSkeleton.toCone
     (cone : KleisliGiryIIDConeSkeleton) :
     CategoryTheory.Limits.Cone kleisliGiryGlobalDiagramFunctor where
   pt := cone.apexObj
@@ -2048,7 +2065,7 @@ def KleisliGiryIIDConeSkeleton.toCone
         intro j j' τ
         cases j
         cases j'
-        simpa using (cone.commutes τ).symm }
+        exact (CategoryTheory.Category.id_comp _).trans (cone.commutes τ).symm }
 
 /-- IID cone-data specialized to the canonical apex `P Bool`. -/
 structure KleisliGiryProbBoolIIDCone where
@@ -2077,7 +2094,7 @@ def GlobalIIDConeMediatorUnique
 /-- A Kleisli morphism is Markov when all fibers are probability measures. -/
 def KleisliIsMarkov
     {A B : KleisliGiry} (f : A ⟶ B) : Prop :=
-  ∀ a : A.1, IsProbabilityMeasure (f.1 a)
+  ∀ a : A.of.carrier, IsProbabilityMeasure (f.1.1 a)
 
 /-- A cone over the global finitary diagram is Markov when its leg at the unique
 index object is Markov. -/
@@ -2088,16 +2105,16 @@ def ConeIsMarkov
 /-- View a kernel as a Kleisli(Giry) morphism. -/
 def kernelToKleisliHom
     {A B : KleisliGiry}
-    (κ : ProbabilityTheory.Kernel A.1 B.1) :
+    (κ : ProbabilityTheory.Kernel A.of.carrier B.of.carrier) :
     A ⟶ B :=
-  ⟨fun a => κ a, κ.measurable⟩
+  ⟨⟨fun a => κ a, κ.measurable⟩⟩
 
 /-- View a Kleisli(Giry) morphism as a kernel. -/
 def kleisliHomToKernel
     {A B : KleisliGiry} (f : A ⟶ B) :
-    ProbabilityTheory.Kernel A.1 B.1 where
-  toFun := f.1
-  measurable' := f.2
+    ProbabilityTheory.Kernel A.of.carrier B.of.carrier where
+  toFun := f.1.1
+  measurable' := f.1.2
 
 /-- A latent-kernel representation witness forces the latent kernel to be
 Markov (fiberwise probability-valued). -/
@@ -2132,9 +2149,9 @@ theorem kernelToKleisliHom_comp_iidSequenceKleisliHomTheta_eq_of_prefixLaw_and_r
     (L : ProbabilityTheory.Kernel Y LatentTheta)
     (hL : KernelRepresentsLatentTheta (X := coordProcess) κ (fun y => L y)) :
     CategoryTheory.CategoryStruct.comp
-        (kernelToKleisliHom (A := (MeasCat.of Y : KleisliGiry)) (B := KleisliLatentThetaObj) L)
+        (kernelToKleisliHom (A := (CategoryTheory.Kleisli.mk MeasCat.Giry (MeasCat.of Y) : KleisliGiry)) (B := KleisliLatentThetaObj) L)
         iidSequenceKleisliHomTheta =
-      kernelToKleisliHom (A := (MeasCat.of Y : KleisliGiry)) (B := KleisliBinarySeqObj) κ := by
+      kernelToKleisliHom (A := (CategoryTheory.Kleisli.mk MeasCat.Giry (MeasCat.of Y) : KleisliGiry)) (B := KleisliBinarySeqObj) κ := by
   haveI : ProbabilityTheory.IsMarkovKernel L :=
     isMarkovKernel_of_kernelRepresentsLatentTheta (κ := κ) (L := L) hL
   let κmix : ProbabilityTheory.Kernel Y GlobalBinarySeq :=
@@ -2191,10 +2208,10 @@ theorem kernelToKleisliHom_comp_iidSequenceKleisliHomTheta_eq_of_prefixLaw_and_r
                   (Exchangeability.measurable_prefixProj (α := Bool) (n := n)) hsx).symm
       exact congrArg (fun μ : Measure (Fin n → Bool) => μ S) hmapEq
     exact Exchangeability.measure_eq_of_fin_marginals_eq_prob (α := Bool) hfin
-  apply Subtype.ext
-  funext y
+  apply kleisliHom_ext
+  intro y
   change Measure.bind (L y) (fun θ => iidSequenceKernelTheta θ) = κ y
-  simpa [κmix] using hμeq y
+  exact hμeq y
 
 /-- Specialization of the previous bridge using a Dirac latent representation
 for `iidSequenceKernelTheta`. -/
@@ -2210,9 +2227,9 @@ theorem kernelToKleisliHom_comp_iidSequenceKleisliHomTheta_eq_of_latentDirac_and
     (L : ProbabilityTheory.Kernel Y LatentTheta)
     (hL : KernelRepresentsLatentTheta (X := coordProcess) κ (fun y => L y)) :
     CategoryTheory.CategoryStruct.comp
-        (kernelToKleisliHom (A := (MeasCat.of Y : KleisliGiry)) (B := KleisliLatentThetaObj) L)
+        (kernelToKleisliHom (A := (CategoryTheory.Kleisli.mk MeasCat.Giry (MeasCat.of Y) : KleisliGiry)) (B := KleisliLatentThetaObj) L)
         iidSequenceKleisliHomTheta =
-      kernelToKleisliHom (A := (MeasCat.of Y : KleisliGiry)) (B := KleisliBinarySeqObj) κ := by
+      kernelToKleisliHom (A := (CategoryTheory.Kleisli.mk MeasCat.Giry (MeasCat.of Y) : KleisliGiry)) (B := KleisliBinarySeqObj) κ := by
   refine kernelToKleisliHom_comp_iidSequenceKleisliHomTheta_eq_of_prefixLaw_and_represents
     (κ := κ) (L := L) (hL := hL) ?_
   intro θ n xs
@@ -2228,10 +2245,10 @@ theorem kernel_prefixLaw_of_kleisliFactorization
     (hfac :
       CategoryTheory.CategoryStruct.comp
           (kernelToKleisliHom
-            (A := (MeasCat.of Y : KleisliGiry)) (B := KleisliLatentThetaObj) L)
+            (A := (CategoryTheory.Kleisli.mk MeasCat.Giry (MeasCat.of Y) : KleisliGiry)) (B := KleisliLatentThetaObj) L)
           iidSequenceKleisliHomTheta =
         kernelToKleisliHom
-          (A := (MeasCat.of Y : KleisliGiry)) (B := KleisliBinarySeqObj) κ) :
+          (A := (CategoryTheory.Kleisli.mk MeasCat.Giry (MeasCat.of Y) : KleisliGiry)) (B := KleisliBinarySeqObj) κ) :
     ∀ (y : Y) (n : ℕ) (xs : Fin n → Bool),
       κ y (seqPrefixEvent n xs) =
         ∫⁻ θ : LatentTheta, iidSequenceKernelTheta θ (seqPrefixEvent n xs) ∂(L y) := by
@@ -2250,9 +2267,9 @@ theorem kernel_prefixLaw_of_kleisliFactorization
     simpa [hset] using
       (Exchangeability.measurable_prefixProj (α := Bool) (n := n))
         (MeasurableSet.singleton xs)
-  have hcomp' := congrArg (fun f => f.1 y) hfac
+  have hcomp' := congrArg (fun f => f.1.1 y) hfac
   have hbindEq : Measure.bind (L y) (fun θ => iidSequenceKernelTheta θ) = κ y := by
-    simpa [kernelToKleisliHom] using hcomp'
+    exact hcomp'
   rw [← hbindEq]
   simpa using
     (Measure.bind_apply hseqMeas (ProbabilityTheory.Kernel.aemeasurable _))
@@ -2272,10 +2289,10 @@ theorem kernel_prefixLaw_iidPrefix_of_kleisliFactorization
     (hfac :
       CategoryTheory.CategoryStruct.comp
           (kernelToKleisliHom
-            (A := (MeasCat.of Y : KleisliGiry)) (B := KleisliLatentThetaObj) L)
+            (A := (CategoryTheory.Kleisli.mk MeasCat.Giry (MeasCat.of Y) : KleisliGiry)) (B := KleisliLatentThetaObj) L)
           iidSequenceKleisliHomTheta =
         kernelToKleisliHom
-          (A := (MeasCat.of Y : KleisliGiry)) (B := KleisliBinarySeqObj) κ) :
+          (A := (CategoryTheory.Kleisli.mk MeasCat.Giry (MeasCat.of Y) : KleisliGiry)) (B := KleisliBinarySeqObj) κ) :
     ∀ (y : Y) (n : ℕ) (xs : Fin n → Bool),
       κ y (seqPrefixEvent n xs) =
         ∫⁻ θ : LatentTheta, (iidPrefixKernel n θ) ({xs} : Set (Fin n → Bool)) ∂(L y) := by
@@ -2475,16 +2492,16 @@ theorem isMarkovKernel_of_kleisliFactorization_targetMarkov
     (hfac :
       CategoryTheory.CategoryStruct.comp
           (kernelToKleisliHom
-            (A := (MeasCat.of Y : KleisliGiry)) (B := KleisliLatentThetaObj) L)
+            (A := (CategoryTheory.Kleisli.mk MeasCat.Giry (MeasCat.of Y) : KleisliGiry)) (B := KleisliLatentThetaObj) L)
           iidSequenceKleisliHomTheta =
         kernelToKleisliHom
-          (A := (MeasCat.of Y : KleisliGiry)) (B := KleisliBinarySeqObj) κ) :
+          (A := (CategoryTheory.Kleisli.mk MeasCat.Giry (MeasCat.of Y) : KleisliGiry)) (B := KleisliBinarySeqObj) κ) :
     ProbabilityTheory.IsMarkovKernel L := by
   refine ⟨?_⟩
   intro y
-  have hcomp' := congrArg (fun f => f.1 y) hfac
+  have hcomp' := congrArg (fun f => f.1.1 y) hfac
   have hbindEq : Measure.bind (L y) (fun θ => iidSequenceKernelTheta θ) = κ y := by
-    simpa [kernelToKleisliHom] using hcomp'
+    exact hcomp'
   have hbind :
       (Measure.bind (L y) (fun θ => iidSequenceKernelTheta θ)) Set.univ = (L y) Set.univ := by
     calc
@@ -2523,10 +2540,10 @@ def KernelLatentThetaUniversalMediator_allSourcesFactorization : Prop :=
         ∃! L : ProbabilityTheory.Kernel Y LatentTheta,
           CategoryTheory.CategoryStruct.comp
               (kernelToKleisliHom
-                (A := (MeasCat.of Y : KleisliGiry)) (B := KleisliLatentThetaObj) L)
+                (A := (CategoryTheory.Kleisli.mk MeasCat.Giry (MeasCat.of Y) : KleisliGiry)) (B := KleisliLatentThetaObj) L)
               iidSequenceKleisliHomTheta =
             kernelToKleisliHom
-              (A := (MeasCat.of Y : KleisliGiry)) (B := KleisliBinarySeqObj) κ
+              (A := (CategoryTheory.Kleisli.mk MeasCat.Giry (MeasCat.of Y) : KleisliGiry)) (B := KleisliBinarySeqObj) κ
 
 /-- Unrestricted all-sources kernel-level universal mediator property in
 factorization form:
@@ -2539,17 +2556,17 @@ def KernelLatentThetaUniversalMediator_allSourcesKernelFactorization_unrestricte
       (∀ τ : FinSuppPermNat,
         CategoryTheory.CategoryStruct.comp
             (kernelToKleisliHom
-              (A := (MeasCat.of Y : KleisliGiry)) (B := KleisliBinarySeqObj) κ)
+              (A := (CategoryTheory.Kleisli.mk MeasCat.Giry (MeasCat.of Y) : KleisliGiry)) (B := KleisliBinarySeqObj) κ)
             (finSuppPermKleisliHom τ) =
           kernelToKleisliHom
-            (A := (MeasCat.of Y : KleisliGiry)) (B := KleisliBinarySeqObj) κ) →
+            (A := (CategoryTheory.Kleisli.mk MeasCat.Giry (MeasCat.of Y) : KleisliGiry)) (B := KleisliBinarySeqObj) κ) →
         ∃! L : ProbabilityTheory.Kernel Y LatentTheta,
           CategoryTheory.CategoryStruct.comp
               (kernelToKleisliHom
-                (A := (MeasCat.of Y : KleisliGiry)) (B := KleisliLatentThetaObj) L)
+                (A := (CategoryTheory.Kleisli.mk MeasCat.Giry (MeasCat.of Y) : KleisliGiry)) (B := KleisliLatentThetaObj) L)
               iidSequenceKleisliHomTheta =
             kernelToKleisliHom
-              (A := (MeasCat.of Y : KleisliGiry)) (B := KleisliBinarySeqObj) κ
+              (A := (CategoryTheory.Kleisli.mk MeasCat.Giry (MeasCat.of Y) : KleisliGiry)) (B := KleisliBinarySeqObj) κ
 
 /-- Commutation API for sequence-law kernels in the global finitary diagram:
 package Markov-ness and full finitary-permutation commutation together. -/
@@ -2560,10 +2577,10 @@ def KernelCommutationAPI
     (∀ τ : FinSuppPermNat,
       CategoryTheory.CategoryStruct.comp
           (kernelToKleisliHom
-            (A := (MeasCat.of Y : KleisliGiry)) (B := KleisliBinarySeqObj) κ)
+            (A := (CategoryTheory.Kleisli.mk MeasCat.Giry (MeasCat.of Y) : KleisliGiry)) (B := KleisliBinarySeqObj) κ)
           (finSuppPermKleisliHom τ) =
         kernelToKleisliHom
-          (A := (MeasCat.of Y : KleisliGiry)) (B := KleisliBinarySeqObj) κ)
+          (A := (CategoryTheory.Kleisli.mk MeasCat.Giry (MeasCat.of Y) : KleisliGiry)) (B := KleisliBinarySeqObj) κ)
 
 /-- Extract Markov-ness from the packaged commutation API. -/
 theorem isMarkovKernel_of_kernelCommutationAPI
@@ -2581,10 +2598,10 @@ theorem kernelCommutes_of_kernelCommutationAPI
     ∀ τ : FinSuppPermNat,
       CategoryTheory.CategoryStruct.comp
           (kernelToKleisliHom
-            (A := (MeasCat.of Y : KleisliGiry)) (B := KleisliBinarySeqObj) κ)
+            (A := (CategoryTheory.Kleisli.mk MeasCat.Giry (MeasCat.of Y) : KleisliGiry)) (B := KleisliBinarySeqObj) κ)
           (finSuppPermKleisliHom τ) =
         kernelToKleisliHom
-          (A := (MeasCat.of Y : KleisliGiry)) (B := KleisliBinarySeqObj) κ :=
+          (A := (CategoryTheory.Kleisli.mk MeasCat.Giry (MeasCat.of Y) : KleisliGiry)) (B := KleisliBinarySeqObj) κ :=
   hκapi.2
 
 /-- Build the packaged commutation API from a local Markov instance plus raw
@@ -2596,10 +2613,10 @@ theorem kernelCommutationAPI_of_commutes_and_isMarkov
     (hcomm : ∀ τ : FinSuppPermNat,
       CategoryTheory.CategoryStruct.comp
           (kernelToKleisliHom
-            (A := (MeasCat.of Y : KleisliGiry)) (B := KleisliBinarySeqObj) κ)
+            (A := (CategoryTheory.Kleisli.mk MeasCat.Giry (MeasCat.of Y) : KleisliGiry)) (B := KleisliBinarySeqObj) κ)
           (finSuppPermKleisliHom τ) =
         kernelToKleisliHom
-          (A := (MeasCat.of Y : KleisliGiry)) (B := KleisliBinarySeqObj) κ) :
+          (A := (CategoryTheory.Kleisli.mk MeasCat.Giry (MeasCat.of Y) : KleisliGiry)) (B := KleisliBinarySeqObj) κ) :
     KernelCommutationAPI (Y := Y) κ := by
   exact ⟨inferInstance, hcomm⟩
 
@@ -2609,15 +2626,15 @@ theorem zeroKernel_punit_commutes_all_finsupp :
     ∀ τ : FinSuppPermNat,
       CategoryTheory.CategoryStruct.comp
           (kernelToKleisliHom
-            (A := (MeasCat.of PUnit : KleisliGiry)) (B := KleisliBinarySeqObj)
+            (A := (CategoryTheory.Kleisli.mk MeasCat.Giry (MeasCat.of PUnit) : KleisliGiry)) (B := KleisliBinarySeqObj)
             (0 : ProbabilityTheory.Kernel PUnit GlobalBinarySeq))
           (finSuppPermKleisliHom τ) =
         kernelToKleisliHom
-          (A := (MeasCat.of PUnit : KleisliGiry)) (B := KleisliBinarySeqObj)
+          (A := (CategoryTheory.Kleisli.mk MeasCat.Giry (MeasCat.of PUnit) : KleisliGiry)) (B := KleisliBinarySeqObj)
           (0 : ProbabilityTheory.Kernel PUnit GlobalBinarySeq) := by
   intro τ
-  apply Subtype.ext
-  funext y
+  apply kleisliHom_ext
+  intro y
   change
     Measure.bind
       ((0 : ProbabilityTheory.Kernel PUnit GlobalBinarySeq) y)
@@ -2650,10 +2667,10 @@ theorem not_commutes_implies_isMarkovKernel_for_all_sources :
         (∀ τ : FinSuppPermNat,
           CategoryTheory.CategoryStruct.comp
               (kernelToKleisliHom
-                (A := (MeasCat.of Y : KleisliGiry)) (B := KleisliBinarySeqObj) κ)
+                (A := (CategoryTheory.Kleisli.mk MeasCat.Giry (MeasCat.of Y) : KleisliGiry)) (B := KleisliBinarySeqObj) κ)
               (finSuppPermKleisliHom τ) =
             kernelToKleisliHom
-              (A := (MeasCat.of Y : KleisliGiry)) (B := KleisliBinarySeqObj) κ) →
+              (A := (CategoryTheory.Kleisli.mk MeasCat.Giry (MeasCat.of Y) : KleisliGiry)) (B := KleisliBinarySeqObj) κ) →
           ProbabilityTheory.IsMarkovKernel κ) := by
   intro hall
   let κ0 : ProbabilityTheory.Kernel PUnit GlobalBinarySeq := 0
@@ -2661,13 +2678,13 @@ theorem not_commutes_implies_isMarkovKernel_for_all_sources :
       ∀ τ : FinSuppPermNat,
         CategoryTheory.CategoryStruct.comp
             (kernelToKleisliHom
-              (A := (MeasCat.of PUnit : KleisliGiry)) (B := KleisliBinarySeqObj) κ0)
+              (A := (CategoryTheory.Kleisli.mk MeasCat.Giry (MeasCat.of PUnit) : KleisliGiry)) (B := KleisliBinarySeqObj) κ0)
             (finSuppPermKleisliHom τ) =
           kernelToKleisliHom
-            (A := (MeasCat.of PUnit : KleisliGiry)) (B := KleisliBinarySeqObj) κ0 := by
+            (A := (CategoryTheory.Kleisli.mk MeasCat.Giry (MeasCat.of PUnit) : KleisliGiry)) (B := KleisliBinarySeqObj) κ0 := by
     intro τ
-    apply Subtype.ext
-    funext y
+    apply kleisliHom_ext
+    intro y
     change Measure.bind (κ0 y) (fun x => Measure.dirac (finSuppPermuteSeq τ x)) = κ0 y
     simp [κ0]
   have hmk : ProbabilityTheory.IsMarkovKernel κ0 := hall PUnit κ0 hcomm
@@ -2682,10 +2699,10 @@ def CommutesToMarkovBridge : Prop :=
     (∀ τ : FinSuppPermNat,
       CategoryTheory.CategoryStruct.comp
           (kernelToKleisliHom
-            (A := (MeasCat.of Y : KleisliGiry)) (B := KleisliBinarySeqObj) κ)
+            (A := (CategoryTheory.Kleisli.mk MeasCat.Giry (MeasCat.of Y) : KleisliGiry)) (B := KleisliBinarySeqObj) κ)
           (finSuppPermKleisliHom τ) =
         kernelToKleisliHom
-          (A := (MeasCat.of Y : KleisliGiry)) (B := KleisliBinarySeqObj) κ) →
+          (A := (CategoryTheory.Kleisli.mk MeasCat.Giry (MeasCat.of Y) : KleisliGiry)) (B := KleisliBinarySeqObj) κ) →
       ProbabilityTheory.IsMarkovKernel κ
 
 /-- The unrestricted commutation-to-Markov bridge is refuted in
@@ -3054,7 +3071,7 @@ theorem allSourcesKernel_discrete_of_allSourcesDefault
       KernelRepresentsLatentTheta (X := coordProcess) (κ := κ) (fun y => L y) := by
   have hX : ∀ i : ℕ, Measurable (coordProcess i) := by
     intro i
-    simpa [coordProcess] using (measurable_pi_apply (a := i))
+    exact measurable_pi_apply (a := i)
   rcases (hunivDefault Y) hX κ hκexch with ⟨Lfun, hLfunRep, hLfunUniq⟩
   rcases
       kernelLatentThetaMediatorMeasurabilityUpgrade_of_discrete
@@ -3080,7 +3097,7 @@ theorem allSourcesKernel_of_allSourcesDefault_and_measurabilityUpgrade
   intro (Y : Type) _ κ _ hκexch
   have hX : ∀ i : ℕ, Measurable (coordProcess i) := by
     intro i
-    simpa [coordProcess] using (measurable_pi_apply (a := i))
+    exact measurable_pi_apply (a := i)
   have hunivY := hunivDefault Y
   rcases hunivY hX κ hκexch with ⟨Lfun, hLfunRep, hLfunUniq⟩
   rcases hupgrade Y κ Lfun hLfunRep with ⟨L, hLeq⟩
@@ -3151,7 +3168,7 @@ def DefaultAllSourcesKernel_to_allSourcesKleisli_unrestricted_strengthening : Pr
 
 /-- A Kleisli morphism has finite mass when all fibers have finite total mass. -/
 def KleisliIsFiniteMass {A B : KleisliGiry} (f : A ⟶ B) : Prop :=
-  ∀ a : A.1, (kleisliHomToKernel f) a Set.univ < ⊤
+  ∀ a : A.of.carrier, (kleisliHomToKernel f) a Set.univ < ⊤
 
 /-- All-sources Kleisli mediator property (finite-mass):
 for every source object and every finite-mass cone-leg into `Bool^ℕ` that commutes
@@ -3233,10 +3250,9 @@ private theorem measurable_smul_measure {α β : Type*}
 
 /-- Factorization equation at a point for Kleisli composition through iid. -/
 private theorem kleisli_iid_fac_at {A : KleisliGiry}
-    (f : A ⟶ KleisliLatentThetaObj) (a : A.1) :
-    (CategoryTheory.CategoryStruct.comp f iidSequenceKleisliHomTheta).1 a =
+    (f : A ⟶ KleisliLatentThetaObj) (a : A.of.carrier) :
+    (CategoryTheory.CategoryStruct.comp f iidSequenceKleisliHomTheta).1.1 a =
       ((kleisliHomToKernel f) a).bind (fun θ => iidSequenceKernelTheta θ) := by
-  simp [kleisliHomToKernel]
   rfl
 
 /-- Finite-mass universality follows from Markov-only universality by
@@ -3250,18 +3266,18 @@ theorem allSourcesKleisli_finiteMass_of_allSourcesKleisli_markovOnly
   -- ===== Setup =====
   let κ := kleisliHomToKernel κhom
   let θ₀ : LatentTheta := ⟨1/2, by norm_num, by norm_num⟩
-  let c : A.1 → ENNReal := fun a => κ a Set.univ
+  let c : A.of.carrier → ENNReal := fun a => κ a Set.univ
   have hc_fin : ∀ a, c a < ⊤ := hfin
   have hc_ne_top : ∀ a, c a ≠ ⊤ := fun a => ne_top_of_lt (hc_fin a)
   have hc_meas : Measurable c :=
     (Measure.measurable_measure.mp κ.measurable) Set.univ MeasurableSet.univ
-  have hp_zero : MeasurableSet {a : A.1 | c a = 0} :=
+  have hp_zero : MeasurableSet {a : A.of.carrier | c a = 0} :=
     hc_meas (measurableSet_singleton 0)
   -- Fiber permutation invariance
   have hfiber_perm : ∀ a τ, (κ a).map (finSuppPermuteSeq τ) = κ a := by
     intro a τ
     have ha : (CategoryTheory.CategoryStruct.comp κhom (finSuppPermKleisliHom τ)).1 a = κhom.1 a :=
-      congrFun (congrArg Subtype.val (hκcomm τ)) a
+      congrFun (congrArg (fun k => k.1.1) (hκcomm τ)) a
     simp only [κ, kleisliHomToKernel]
     change (κhom.1 a).map (finSuppPermuteSeq τ) = κhom.1 a
     have : (CategoryTheory.CategoryStruct.comp κhom (finSuppPermKleisliHom τ)).1 a =
@@ -3269,8 +3285,8 @@ theorem allSourcesKleisli_finiteMass_of_allSourcesKleisli_markovOnly
     rw [this, Measure.bind_dirac_eq_map _ (measurable_finSuppPermuteSeq τ)] at ha
     exact ha
   -- ===== Normalized morphism =====
-  haveI hdec_c : DecidablePred (fun a : A.1 => c a = 0) := fun a => Classical.dec _
-  let κ_norm_fn : A.1 → Measure GlobalBinarySeq :=
+  haveI hdec_c : DecidablePred (fun a : A.of.carrier => c a = 0) := fun a => Classical.dec _
+  let κ_norm_fn : A.of.carrier → Measure GlobalBinarySeq :=
     fun a => if c a = 0 then iidSequenceKernelTheta θ₀ else (c a)⁻¹ • κ a
   have hκ_norm_meas : Measurable κ_norm_fn :=
     measurable_piecewise_measure _ _ (fun a => c a = 0) hp_zero
@@ -3282,10 +3298,10 @@ theorem allSourcesKleisli_finiteMass_of_allSourcesKleisli_markovOnly
     · rename_i h
       exact ⟨by simp only [Measure.smul_apply, smul_eq_mul]
               ; exact ENNReal.inv_mul_cancel h (hc_ne_top a)⟩
-  let κ_norm_hom : A ⟶ KleisliBinarySeqObj := ⟨κ_norm_fn, hκ_norm_meas⟩
+  let κ_norm_hom : A ⟶ KleisliBinarySeqObj := ⟨⟨κ_norm_fn, hκ_norm_meas⟩⟩
   have hκ_norm_comm : ∀ τ : FinSuppPermNat,
       CategoryTheory.CategoryStruct.comp κ_norm_hom (finSuppPermKleisliHom τ) = κ_norm_hom := by
-    intro τ; apply Subtype.ext; funext a
+    intro τ; apply kleisliHom_ext; intro a
     show (κ_norm_fn a).bind (fun ω => Measure.dirac (finSuppPermuteSeq τ ω)) = κ_norm_fn a
     rw [Measure.bind_dirac_eq_map _ (measurable_finSuppPermuteSeq τ)]
     simp only [κ_norm_fn]; split
@@ -3298,8 +3314,8 @@ theorem allSourcesKleisli_finiteMass_of_allSourcesKleisli_markovOnly
   have hm_norm_fac_pt : ∀ a,
       (L_norm a).bind (fun θ => iidSequenceKernelTheta θ) = κ_norm_fn a := by
     intro a
-    have := congrFun (congrArg Subtype.val hm_norm_fac) a
-    simpa [L_norm, kleisliHomToKernel] using this
+    have := congrFun (congrArg (fun k => k.1.1) hm_norm_fac) a
+    exact this
   -- ===== Scaled mediator =====
   have hm_meas : Measurable (fun a => c a • L_norm a) :=
     measurable_smul_measure _ _ L_norm.measurable hc_meas
@@ -3309,9 +3325,9 @@ theorem allSourcesKleisli_finiteMass_of_allSourcesKleisli_markovOnly
         measurable' := hm_meas }
   -- ===== Factorization =====
   have hm_fac : CategoryTheory.CategoryStruct.comp m iidSequenceKleisliHomTheta = κhom := by
-    apply Subtype.ext; funext a
+    apply kleisliHom_ext; intro a
     -- LHS: bind (c a • L_norm a) iid
-    have hlhs : (CategoryTheory.CategoryStruct.comp m iidSequenceKleisliHomTheta).1 a =
+    have hlhs : (CategoryTheory.CategoryStruct.comp m iidSequenceKleisliHomTheta).1.1 a =
         (c a • L_norm a).bind (fun θ => iidSequenceKernelTheta θ) :=
       kleisli_iid_fac_at m a
     rw [hlhs]
@@ -3324,10 +3340,10 @@ theorem allSourcesKleisli_finiteMass_of_allSourcesKleisli_markovOnly
       rename_i hca0
       have hκ_zero : κ a = 0 := Measure.measure_univ_eq_zero.mp hca0
       simp only [hca0, zero_smul]
-      symm; simpa [κ, kleisliHomToKernel] using hκ_zero
+      exact hκ_zero.symm
     · -- c a > 0: c • c⁻¹ • μ = μ
       rename_i hca_ne0
-      show c a • ((c a)⁻¹ • κ a) = κhom.1 a
+      show c a • ((c a)⁻¹ • κ a) = κhom.1.1 a
       have : c a • ((c a)⁻¹ • κ a) = κ a :=
         smul_inv_smul_measure' (κ a) (c a) hca_ne0 (hc_ne_top a)
       rw [this]; rfl
@@ -3340,14 +3356,14 @@ theorem allSourcesKleisli_finiteMass_of_allSourcesKleisli_markovOnly
     have hm'_bind : ∀ a,
         (L' a).bind (fun θ => iidSequenceKernelTheta θ) = κ a := by
       intro a
-      have := congrFun (congrArg Subtype.val hm'_fac) a
-      simpa [L', κ, kleisliHomToKernel] using this
+      have := congrFun (congrArg (fun k => k.1.1) hm'_fac) a
+      exact this
     -- Total mass transfer
     have hm'_mass : ∀ a, (L' a) Set.univ = c a := by
       intro a
       rw [← bind_iidSequenceKernelTheta_totalMass_eq (L' a), hm'_bind a]
     -- Construct normalized m'
-    let m'_norm_fn : A.1 → Measure LatentTheta :=
+    let m'_norm_fn : A.of.carrier → Measure LatentTheta :=
       fun b => if c b = 0 then L_norm b else (c b)⁻¹ • L' b
     have hm'_norm_meas : Measurable m'_norm_fn :=
       measurable_piecewise_measure _ _ (fun b => c b = 0) hp_zero
@@ -3357,8 +3373,8 @@ theorem allSourcesKleisli_finiteMass_of_allSourcesKleisli_markovOnly
     -- m'_norm factors κ_norm_hom
     have hm'_norm_fac : CategoryTheory.CategoryStruct.comp m'_norm
         iidSequenceKleisliHomTheta = κ_norm_hom := by
-      apply Subtype.ext; funext b
-      have hlhs : (CategoryTheory.CategoryStruct.comp m'_norm iidSequenceKleisliHomTheta).1 b =
+      apply kleisliHom_ext; intro b
+      have hlhs : (CategoryTheory.CategoryStruct.comp m'_norm iidSequenceKleisliHomTheta).1.1 b =
           (m'_norm_fn b).bind (fun θ => iidSequenceKernelTheta θ) :=
         kleisli_iid_fac_at m'_norm b
       rw [hlhs]
@@ -3372,27 +3388,27 @@ theorem allSourcesKleisli_finiteMass_of_allSourcesKleisli_markovOnly
     -- Uniqueness: m'_norm = m_norm
     have h_eq : m'_norm = m_norm := hm_norm_uniq m'_norm hm'_norm_fac
     -- Extract pointwise equality
-    apply Subtype.ext; funext a
+    apply kleisliHom_ext; intro a
     by_cases hca0 : c a = 0
     · -- c a = 0: L' a = 0 and c a • L_norm a = 0
       have hL'_zero : L' a = 0 :=
         Measure.measure_univ_eq_zero.mp (by rw [hm'_mass a, hca0])
-      show m'.1 a = m.1 a
-      have hm_a : m.1 a = (0 : Measure LatentTheta) := by
+      show m'.1.1 a = m.1.1 a
+      have hm_a : m.1.1 a = (0 : Measure LatentTheta) := by
         show c a • L_norm a = 0; rw [hca0, zero_smul]
       rw [hm_a]
       change L' a = 0
       exact hL'_zero
     · -- c a > 0: from m'_norm = m_norm, extract (c a)⁻¹ • L' a = L_norm a
       have h_eq_a : m'_norm_fn a = L_norm a := by
-        have h := congrFun (congrArg Subtype.val h_eq) a
+        have h := congrFun (congrArg (fun k => k.1.1) h_eq) a
         exact h
       -- m'_norm_fn a = (c a)⁻¹ • L' a (since c a ≠ 0)
       have h_m'_norm_val : m'_norm_fn a = (c a)⁻¹ • L' a := by
         simp [m'_norm_fn, hca0]
       rw [h_m'_norm_val] at h_eq_a
       -- L' a = c a • L_norm a
-      show m'.1 a = m.1 a
+      show m'.1.1 a = m.1.1 a
       have hL'_eq : L' a = c a • L_norm a := by
         calc L' a = c a • ((c a)⁻¹ • L' a) :=
               (smul_inv_smul_measure' (L' a) (c a) hca0 (hc_ne_top a)).symm
@@ -3452,10 +3468,10 @@ noncomputable def latentKernelOf_allSourcesKernelFactorization_unrestricted
     (hcomm : ∀ τ : FinSuppPermNat,
       CategoryTheory.CategoryStruct.comp
           (kernelToKleisliHom
-            (A := (MeasCat.of Y : KleisliGiry)) (B := KleisliBinarySeqObj) κ)
+            (A := (CategoryTheory.Kleisli.mk MeasCat.Giry (MeasCat.of Y) : KleisliGiry)) (B := KleisliBinarySeqObj) κ)
           (finSuppPermKleisliHom τ) =
         kernelToKleisliHom
-          (A := (MeasCat.of Y : KleisliGiry)) (B := KleisliBinarySeqObj) κ) :
+          (A := (CategoryTheory.Kleisli.mk MeasCat.Giry (MeasCat.of Y) : KleisliGiry)) (B := KleisliBinarySeqObj) κ) :
     ProbabilityTheory.Kernel Y LatentTheta :=
   Classical.choose (huniv Y κ hcomm)
 
@@ -3467,18 +3483,18 @@ theorem latentKernelOf_allSourcesKernelFactorization_unrestricted_factorizes
     (hcomm : ∀ τ : FinSuppPermNat,
       CategoryTheory.CategoryStruct.comp
           (kernelToKleisliHom
-            (A := (MeasCat.of Y : KleisliGiry)) (B := KleisliBinarySeqObj) κ)
+            (A := (CategoryTheory.Kleisli.mk MeasCat.Giry (MeasCat.of Y) : KleisliGiry)) (B := KleisliBinarySeqObj) κ)
           (finSuppPermKleisliHom τ) =
         kernelToKleisliHom
-          (A := (MeasCat.of Y : KleisliGiry)) (B := KleisliBinarySeqObj) κ) :
+          (A := (CategoryTheory.Kleisli.mk MeasCat.Giry (MeasCat.of Y) : KleisliGiry)) (B := KleisliBinarySeqObj) κ) :
     CategoryTheory.CategoryStruct.comp
         (kernelToKleisliHom
-          (A := (MeasCat.of Y : KleisliGiry)) (B := KleisliLatentThetaObj)
+          (A := (CategoryTheory.Kleisli.mk MeasCat.Giry (MeasCat.of Y) : KleisliGiry)) (B := KleisliLatentThetaObj)
           (latentKernelOf_allSourcesKernelFactorization_unrestricted
             (huniv := huniv) (κ := κ) hcomm))
         iidSequenceKleisliHomTheta =
       kernelToKleisliHom
-        (A := (MeasCat.of Y : KleisliGiry)) (B := KleisliBinarySeqObj) κ :=
+        (A := (CategoryTheory.Kleisli.mk MeasCat.Giry (MeasCat.of Y) : KleisliGiry)) (B := KleisliBinarySeqObj) κ :=
   (Classical.choose_spec (huniv Y κ hcomm)).1
 
 /-- Uniqueness of the canonical latent-kernel constructor among kernels with the
@@ -3490,18 +3506,18 @@ theorem latentKernelOf_allSourcesKernelFactorization_unrestricted_unique
     (hcomm : ∀ τ : FinSuppPermNat,
       CategoryTheory.CategoryStruct.comp
           (kernelToKleisliHom
-            (A := (MeasCat.of Y : KleisliGiry)) (B := KleisliBinarySeqObj) κ)
+            (A := (CategoryTheory.Kleisli.mk MeasCat.Giry (MeasCat.of Y) : KleisliGiry)) (B := KleisliBinarySeqObj) κ)
           (finSuppPermKleisliHom τ) =
         kernelToKleisliHom
-          (A := (MeasCat.of Y : KleisliGiry)) (B := KleisliBinarySeqObj) κ)
+          (A := (CategoryTheory.Kleisli.mk MeasCat.Giry (MeasCat.of Y) : KleisliGiry)) (B := KleisliBinarySeqObj) κ)
     (L : ProbabilityTheory.Kernel Y LatentTheta)
     (hL :
       CategoryTheory.CategoryStruct.comp
           (kernelToKleisliHom
-            (A := (MeasCat.of Y : KleisliGiry)) (B := KleisliLatentThetaObj) L)
+            (A := (CategoryTheory.Kleisli.mk MeasCat.Giry (MeasCat.of Y) : KleisliGiry)) (B := KleisliLatentThetaObj) L)
           iidSequenceKleisliHomTheta =
         kernelToKleisliHom
-          (A := (MeasCat.of Y : KleisliGiry)) (B := KleisliBinarySeqObj) κ) :
+          (A := (CategoryTheory.Kleisli.mk MeasCat.Giry (MeasCat.of Y) : KleisliGiry)) (B := KleisliBinarySeqObj) κ) :
     L =
       latentKernelOf_allSourcesKernelFactorization_unrestricted
         (huniv := huniv) (κ := κ) hcomm :=
@@ -3513,7 +3529,7 @@ theorem allSourcesKleisli_unrestricted_of_allSourcesKernelFactorization_unrestri
     (huniv : KernelLatentThetaUniversalMediator_allSourcesKernelFactorization_unrestricted) :
     KernelLatentThetaUniversalMediator_allSourcesKleisli_unrestricted := by
   intro A κhom hκcomm
-  let κ : ProbabilityTheory.Kernel A.1 GlobalBinarySeq := kleisliHomToKernel κhom
+  let κ : ProbabilityTheory.Kernel A.of.carrier GlobalBinarySeq := kleisliHomToKernel κhom
   have hκcomm' :
       ∀ τ : FinSuppPermNat,
         CategoryTheory.CategoryStruct.comp
@@ -3521,10 +3537,10 @@ theorem allSourcesKleisli_unrestricted_of_allSourcesKernelFactorization_unrestri
             (finSuppPermKleisliHom τ) =
           kernelToKleisliHom (A := A) (B := KleisliBinarySeqObj) κ := by
     intro τ
-    simpa [κ, kleisliHomToKernel, kernelToKleisliHom] using hκcomm τ
-  let L : ProbabilityTheory.Kernel A.1 LatentTheta :=
+    exact hκcomm τ
+  let L : ProbabilityTheory.Kernel A.of.carrier LatentTheta :=
     latentKernelOf_allSourcesKernelFactorization_unrestricted
-      (huniv := huniv) (Y := A.1) (κ := κ) hκcomm'
+      (huniv := huniv) (Y := A.of.carrier) (κ := κ) hκcomm'
   refine ⟨kernelToKleisliHom (A := A) (B := KleisliLatentThetaObj) L, ?_, ?_⟩
   · have hfac :
       CategoryTheory.CategoryStruct.comp
@@ -3533,24 +3549,23 @@ theorem allSourcesKleisli_unrestricted_of_allSourcesKernelFactorization_unrestri
         kernelToKleisliHom (A := A) (B := KleisliBinarySeqObj) κ := by
       simpa [L] using
         latentKernelOf_allSourcesKernelFactorization_unrestricted_factorizes
-          (huniv := huniv) (Y := A.1) (κ := κ) hκcomm'
-    simpa [κ, kleisliHomToKernel, kernelToKleisliHom] using hfac
+          (huniv := huniv) (Y := A.of.carrier) (κ := κ) hκcomm'
+    exact hfac
   · intro m hm
-    let K : ProbabilityTheory.Kernel A.1 LatentTheta := kleisliHomToKernel m
+    let K : ProbabilityTheory.Kernel A.of.carrier LatentTheta := kleisliHomToKernel m
     have hfacK :
         CategoryTheory.CategoryStruct.comp
             (kernelToKleisliHom (A := A) (B := KleisliLatentThetaObj) K)
             iidSequenceKleisliHomTheta =
           kernelToKleisliHom (A := A) (B := KleisliBinarySeqObj) κ := by
-      simpa [K, κ, kleisliHomToKernel, kernelToKleisliHom] using hm
+      exact hm
     have hKL : K = L := by
       exact
         latentKernelOf_allSourcesKernelFactorization_unrestricted_unique
-          (huniv := huniv) (Y := A.1) (κ := κ) hκcomm' K hfacK
-    apply Subtype.ext
-    funext y
-    simpa [K, L, kleisliHomToKernel, kernelToKleisliHom] using
-      congrArg (fun K' => K' y) hKL
+          (huniv := huniv) (Y := A.of.carrier) (κ := κ) hκcomm' K hfacK
+    apply kleisliHom_ext
+    intro y
+    exact congrArg (fun K' => K' y) hKL
 
 /-- A commuting Kleisli arrow into `Bool^ℕ` induces a kernel-level coordinate
 exchangeability witness. -/
@@ -3561,18 +3576,18 @@ theorem kernelExchangeable_coord_of_kleisliCommutes
     (hcomm : ∀ τ : FinSuppPermNat,
       CategoryTheory.CategoryStruct.comp
           (kernelToKleisliHom
-            (A := (MeasCat.of Y : KleisliGiry)) (B := KleisliBinarySeqObj) κ)
+            (A := (CategoryTheory.Kleisli.mk MeasCat.Giry (MeasCat.of Y) : KleisliGiry)) (B := KleisliBinarySeqObj) κ)
           (finSuppPermKleisliHom τ) =
         kernelToKleisliHom
-          (A := (MeasCat.of Y : KleisliGiry)) (B := KleisliBinarySeqObj) κ) :
+          (A := (CategoryTheory.Kleisli.mk MeasCat.Giry (MeasCat.of Y) : KleisliGiry)) (B := KleisliBinarySeqObj) κ) :
     KernelExchangeable (X := coordProcess) κ := by
   have hglob : KernelGlobalFinitarySeqConeCommutes (Y := Y) κ := by
     intro y τ
     have hbind :
         Measure.bind (κ y) (fun x => Measure.dirac (finSuppPermuteSeq τ x)) = κ y := by
       have hcomp := hcomm τ
-      have hcomp' := congrArg (fun f => f.1 y) hcomp
-      simpa [kernelToKleisliHom] using hcomp'
+      have hcomp' := congrArg (fun f => f.1.1 y) hcomp
+      exact hcomp'
     calc
       (κ y).map (finSuppPermuteSeq τ) =
           Measure.bind (κ y) (fun x => Measure.dirac (finSuppPermuteSeq τ x)) := by
@@ -3606,10 +3621,10 @@ theorem allSourcesKernelFactorization_unrestricted_of_allSourcesKernel_and_prefi
       ∀ τ : FinSuppPermNat,
         CategoryTheory.CategoryStruct.comp
             (kernelToKleisliHom
-              (A := (MeasCat.of Y : KleisliGiry)) (B := KleisliBinarySeqObj) κ)
+              (A := (CategoryTheory.Kleisli.mk MeasCat.Giry (MeasCat.of Y) : KleisliGiry)) (B := KleisliBinarySeqObj) κ)
             (finSuppPermKleisliHom τ) =
           kernelToKleisliHom
-            (A := (MeasCat.of Y : KleisliGiry)) (B := KleisliBinarySeqObj) κ :=
+            (A := (CategoryTheory.Kleisli.mk MeasCat.Giry (MeasCat.of Y) : KleisliGiry)) (B := KleisliBinarySeqObj) κ :=
     kernelCommutes_of_kernelCommutationAPI hκapi
   have hκexch : KernelExchangeable (X := coordProcess) κ :=
     kernelExchangeable_coord_of_kleisliCommutes (κ := κ) hcomm'
@@ -3983,12 +3998,12 @@ theorem allSourcesKleisli_markovOnly_of_allSourcesKernelFactorization
     (huniv : KernelLatentThetaUniversalMediator_allSourcesFactorization) :
     KernelLatentThetaUniversalMediator_allSourcesKleisli_markovOnly := by
   intro A κhom hmarkov hcomm
-  let κ : ProbabilityTheory.Kernel A.1 GlobalBinarySeq :=
+  let κ : ProbabilityTheory.Kernel A.of.carrier GlobalBinarySeq :=
     kleisliHomToKernel κhom
   haveI : ProbabilityTheory.IsMarkovKernel κ := by
     refine ⟨?_⟩
     intro y
-    simpa [KleisliIsMarkov, κ, kleisliHomToKernel] using hmarkov y
+    exact hmarkov y
   have hκcomm :
       ∀ τ : FinSuppPermNat,
         CategoryTheory.CategoryStruct.comp
@@ -3996,24 +4011,24 @@ theorem allSourcesKleisli_markovOnly_of_allSourcesKernelFactorization
             (finSuppPermKleisliHom τ) =
           kernelToKleisliHom (A := A) (B := KleisliBinarySeqObj) κ := by
     intro τ
-    simpa [κ, kleisliHomToKernel, kernelToKleisliHom] using hcomm τ
+    exact hcomm τ
   have hκexch : KernelExchangeable (X := coordProcess) κ :=
     kernelExchangeable_coord_of_kleisliCommutes (κ := κ) hκcomm
-  rcases huniv A.1 κ hκexch with ⟨L, hfacL, huniqL⟩
+  rcases huniv A.of.carrier κ hκexch with ⟨L, hfacL, huniqL⟩
   refine ⟨kernelToKleisliHom (A := A) (B := KleisliLatentThetaObj) L, ?_, ?_⟩
-  · simpa [κ, kleisliHomToKernel, kernelToKleisliHom] using hfacL
+  · exact hfacL
   · intro m hm
-    let K : ProbabilityTheory.Kernel A.1 LatentTheta := kleisliHomToKernel m
+    let K : ProbabilityTheory.Kernel A.of.carrier LatentTheta := kleisliHomToKernel m
     have hfacK :
         CategoryTheory.CategoryStruct.comp
             (kernelToKleisliHom (A := A) (B := KleisliLatentThetaObj) K)
             iidSequenceKleisliHomTheta =
           kernelToKleisliHom (A := A) (B := KleisliBinarySeqObj) κ := by
-      simpa [K, κ, kleisliHomToKernel, kernelToKleisliHom] using hm
+      exact hm
     have hKL : K = L := huniqL K hfacK
-    apply Subtype.ext
-    funext y
-    simpa [K, kleisliHomToKernel, kernelToKleisliHom] using congrArg (fun K' => K' y) hKL
+    apply kleisliHom_ext
+    intro y
+    exact congrArg (fun K' => K' y) hKL
 
 /-- Markov-only bridge with no extra commutation-to-Markov adapter:
 strict iid prefix law + all-sources kernel-level latent mediation imply
@@ -4145,11 +4160,11 @@ noncomputable def KleisliGiryIIDConeSkeleton.isLimitOfMediatorUnique
   refine ⟨m, ?_, ?_⟩
   · intro j
     cases j
-    simpa [KleisliGiryIIDConeSkeleton.toCone] using hm
+    exact hm
   · intro m' hm'
     apply huniq
     have hm0 := hm' globalFinSuppPermStar
-    simpa [KleisliGiryIIDConeSkeleton.toCone] using hm0
+    exact hm0
 
 /-- Any true `IsLimit` witness yields the universal mediator property. -/
 theorem globalIIDConeMediatorUnique_of_isLimit
@@ -4164,7 +4179,7 @@ theorem globalIIDConeMediatorUnique_of_isLimit
     apply huniq
     intro j
     cases j
-    simpa [KleisliGiryIIDConeSkeleton.toCone] using hm'
+    exact hm'
 
 /-- Any global mediator-uniqueness witness restricts to the Markov-only form. -/
 theorem globalIIDConeMediatorUnique_markovOnly_of_globalIIDConeMediatorUnique
@@ -4197,10 +4212,11 @@ theorem globalIIDConeMediatorUnique_markovOnly_of_allSourcesKleisli
       ∀ τ : FinSuppPermNat,
         CategoryTheory.CategoryStruct.comp κhom (finSuppPermKleisliHom τ) = κhom := by
     intro τ
-    simpa [kleisliGiryGlobalDiagramFunctor_map] using
-      (s.π.naturality (X := globalFinSuppPermStar) (Y := globalFinSuppPermStar) τ).symm
+    have h := (s.π.naturality (X := globalFinSuppPermStar) (Y := globalFinSuppPermStar) τ).symm
+    rw [kleisliGiryGlobalDiagramFunctor_map] at h
+    exact h.trans (CategoryTheory.Category.id_comp _)
   have hκmarkov : KleisliIsMarkov κhom := by
-    simpa [ConeIsMarkov, κhom] using hsMarkov
+    exact hsMarkov
   simpa [κhom] using huniv s.pt κhom hκmarkov hκcomm
 
 /-- Bridge: unrestricted all-sources Kleisli mediation implies full global
@@ -4218,8 +4234,9 @@ theorem globalIIDConeMediatorUnique_of_allSourcesKleisli_unrestricted
       ∀ τ : FinSuppPermNat,
         CategoryTheory.CategoryStruct.comp κhom (finSuppPermKleisliHom τ) = κhom := by
     intro τ
-    simpa [kleisliGiryGlobalDiagramFunctor_map] using
-      (s.π.naturality (X := globalFinSuppPermStar) (Y := globalFinSuppPermStar) τ).symm
+    have h := (s.π.naturality (X := globalFinSuppPermStar) (Y := globalFinSuppPermStar) τ).symm
+    rw [kleisliGiryGlobalDiagramFunctor_map] at h
+    exact h.trans (CategoryTheory.Category.id_comp _)
   simpa [κhom] using huniv s.pt κhom hκcomm
 
 /-- Converse bridge: full global mediator uniqueness for the canonical
@@ -4243,7 +4260,7 @@ theorem allSourcesKleisli_unrestricted_of_globalIIDConeMediatorUnique
             intro j j' τ
             cases j
             cases j'
-            simpa [kleisliGiryGlobalDiagramFunctor_map] using (hκcomm τ).symm } }
+            exact (CategoryTheory.Category.id_comp _).trans (hκcomm τ).symm } }
   rcases hmed s with ⟨m, hm, huniq⟩
   refine ⟨m, ?_, ?_⟩
   · simpa [s] using hm
@@ -4369,8 +4386,9 @@ theorem globalIIDConeMediatorUnique_finiteMass_of_allSourcesKleisli_finiteMass
   have hκcomm : ∀ τ : FinSuppPermNat,
       CategoryTheory.CategoryStruct.comp κhom (finSuppPermKleisliHom τ) = κhom := by
     intro τ
-    simpa [kleisliGiryGlobalDiagramFunctor_map] using
-      (s.π.naturality (X := globalFinSuppPermStar) (Y := globalFinSuppPermStar) τ).symm
+    have h := (s.π.naturality (X := globalFinSuppPermStar) (Y := globalFinSuppPermStar) τ).symm
+    rw [kleisliGiryGlobalDiagramFunctor_map] at h
+    exact h.trans (CategoryTheory.Category.id_comp _)
   exact huniv s.pt κhom hsfm hκcomm
 
 /-- Finite-mass cone universality follows from the all-sources Markov-only

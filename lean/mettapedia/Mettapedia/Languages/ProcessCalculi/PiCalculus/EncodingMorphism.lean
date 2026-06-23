@@ -198,7 +198,7 @@ theorem encode_rf_parComponents_input
       have hmem' :
           .apply "PInput" [ch, .lambda none body] =
             rhoInput (.fvar x) y (encode P n v) := by
-        simpa [encode, rhoInput,
+        simpa [encode, rhoInput, piNameToRhoName,
           Mettapedia.Languages.ProcessCalculi.RhoCalculus.Context.parComponents] using hmem
       have hch : ch = .fvar x := by
         simpa [rhoInput] using congrArg (fun p =>
@@ -283,7 +283,7 @@ theorem encode_rf_parComponents_output
       have hmem' :
           .apply "POutput" [ch, payload] =
             rhoOutput (.fvar x) (rhoDrop (.fvar z)) := by
-        simpa [encode, rhoOutput,
+        simpa [encode, rhoOutput, piNameToRhoName,
           Mettapedia.Languages.ProcessCalculi.RhoCalculus.Context.parComponents] using hmem
       have hch : ch = .fvar x := by
         simpa [rhoOutput] using congrArg (fun p =>
@@ -367,7 +367,7 @@ theorem forward_replicate_case_derived {N : Finset String}
   · refine ⟨?_⟩
     simpa [body, tgt, encode, rhoReplicate] using
       (Mettapedia.Languages.ProcessCalculi.RhoCalculus.DerivedRepNu.rep_unfold_single body)
-  · simpa [body, tgt, encode, rhoPar, rhoReplicate] using
+  · simpa [body, tgt, encode, rhoPar, rhoInput, rhoReplicate, piNameToRhoName] using
       (WeakRestrictedBisim.refl N tgt)
 
 /-- Non-RF single-step forward case for `.replicate`, measured in derived weak bisimilarity. -/
@@ -384,7 +384,7 @@ theorem forward_single_step_replicate_derived {N : Finset String}
   · refine ⟨?_⟩
     simpa [body, tgt, encode, rhoReplicate] using
       (Mettapedia.Languages.ProcessCalculi.RhoCalculus.DerivedRepNu.rep_unfold_single body)
-  · simpa [body, tgt, encode, rhoPar, rhoReplicate] using
+  · simpa [body, tgt, encode, rhoPar, rhoInput, rhoReplicate, piNameToRhoName] using
       (WeakRestrictedBisimD.refl N tgt)
 
 /-- Non-RF single-step administrative progress for a name-server listener,
@@ -394,11 +394,11 @@ theorem forward_single_step_nameServer_listener_derived {N : Finset String}
     ∃ T, Nonempty ((rhoPar (nameServer x z v s) (.apply "PInput" [.fvar z, .lambda none body])) ⇝ᵈ* T) ∧
       T ≈ᵈ{N}
         (.collection .hashBag
-          [Mettapedia.OSLF.MeTTaIL.Substitution.commSubst body (.apply "PDrop" [.fvar s]),
+          [semanticCommSubst body (.apply "PDrop" [.fvar s]),
            rhoReplicate (Mettapedia.Languages.ProcessCalculi.PiCalculus.nameServerBody x z v),
            dropOperation x] none) := by
   let tgt : Pattern := .collection .hashBag
-    [Mettapedia.OSLF.MeTTaIL.Substitution.commSubst body (.apply "PDrop" [.fvar s]),
+    [semanticCommSubst body (.apply "PDrop" [.fvar s]),
      rhoReplicate (Mettapedia.Languages.ProcessCalculi.PiCalculus.nameServerBody x z v),
      dropOperation x] none
   refine ⟨tgt, ?_, ?_⟩
@@ -415,7 +415,7 @@ theorem forward_single_step_nameServer_listener_derived_fresh {N : Finset String
     ∃ T, Nonempty ((rhoPar (nameServer x z v s) (.apply "PInput" [.fvar z, .lambda none body])) ⇝ᵈ* T) ∧
       T ≈ᵈ{N}
         (.collection .hashBag
-          [Mettapedia.OSLF.MeTTaIL.Substitution.commSubst body (.apply "PDrop" [.fvar s]),
+          [semanticCommSubst body (.apply "PDrop" [.fvar s]),
            rhoReplicate (Mettapedia.Languages.ProcessCalculi.PiCalculus.nameServerBody x z v),
            dropOperation x] none) := by
   exact forward_single_step_nameServer_listener_derived (N := N) x z v s body
@@ -455,7 +455,7 @@ theorem forward_single_step_nu_listener_derived {N : Finset String}
     ∃ T, Nonempty ((rhoPar (encode (.nu x P) n v) (.apply "PInput" [.fvar v, .lambda none listenerBody])) ⇝ᵈ* T) ∧
       T ≈ᵈ{N}
         (.collection .hashBag
-          [Mettapedia.OSLF.MeTTaIL.Substitution.commSubst listenerBody (.fvar n),
+          [semanticCommSubst listenerBody (.fvar n),
            rhoInput (.fvar n) x (encode P (n ++ "_" ++ n) v)] none) := by
   let outReq : Pattern := rhoOutput (.fvar v) (.fvar n)
   let bodyIn : Pattern := rhoInput (.fvar n) x (encode P (n ++ "_" ++ n) v)
@@ -463,7 +463,7 @@ theorem forward_single_step_nu_listener_derived {N : Finset String}
   let src : Pattern := rhoPar (encode (.nu x P) n v) listener
   let preComm : Pattern := .collection .hashBag [outReq, listener, bodyIn] none
   let tgt : Pattern := .collection .hashBag
-    [Mettapedia.OSLF.MeTTaIL.Substitution.commSubst listenerBody (.fvar n), bodyIn] none
+    [semanticCommSubst listenerBody (.fvar n), bodyIn] none
   have hdecomp :=
     Mettapedia.Languages.ProcessCalculi.PiCalculus.BackwardNormalization.nu_listener_comm_decompose
       x P n v listenerBody
@@ -475,7 +475,8 @@ theorem forward_single_step_nu_listener_derived {N : Finset String}
       using hdecomp.1)
   have hcomm : preComm ⇝ tgt := by
     exact (by simpa
-      [tgt, bodyIn,
+      [preComm, tgt, listener, outReq, bodyIn,
+       Mettapedia.Languages.ProcessCalculi.PiCalculus.BackwardNormalization.nuListenerPreComm,
        Mettapedia.Languages.ProcessCalculi.PiCalculus.BackwardNormalization.nuListenerTarget]
       using (Classical.choice hdecomp.2))
   have hcore : src ⇝ tgt := by
@@ -492,7 +493,7 @@ theorem forward_single_step_nu_listener_derived_fresh {N : Finset String}
     ∃ T, Nonempty ((rhoPar (encode (.nu x P) n v) (.apply "PInput" [.fvar v, .lambda none listenerBody])) ⇝ᵈ* T) ∧
       T ≈ᵈ{N}
         (.collection .hashBag
-          [Mettapedia.OSLF.MeTTaIL.Substitution.commSubst listenerBody (.fvar n),
+          [semanticCommSubst listenerBody (.fvar n),
            rhoInput (.fvar n) x (encode P (n ++ "_" ++ n) v)] none) := by
   exact forward_single_step_nu_listener_derived (N := N) x P n v listenerBody
 
@@ -503,7 +504,7 @@ theorem forward_single_step_nu_listener_derived_canary :
         (.apply "PInput" [.fvar "v_init", .lambda none rhoNil])) ⇝ᵈ* T) ∧
       T ≈ᵈ{∅}
         (.collection .hashBag
-          [Mettapedia.OSLF.MeTTaIL.Substitution.commSubst rhoNil (.fvar "n_init"),
+          [semanticCommSubst rhoNil (.fvar "n_init"),
            rhoInput (.fvar "n_init") "x" (encode .nil ("n_init" ++ "_" ++ "n_init") "v_init")] none) := by
   simpa using
     (forward_single_step_nu_listener_derived
@@ -521,14 +522,14 @@ theorem fullEncode_nu_admin_progress_derived {N : Finset String}
         (.apply "PInput" [.fvar "v_init", .lambda none nuListenerBody])) ⇝ᵈ* Tnu) ∧
       Tnu ≈ᵈ{N}
         (.collection .hashBag
-          [Mettapedia.OSLF.MeTTaIL.Substitution.commSubst nuListenerBody (.fvar "n_init"),
+          [semanticCommSubst nuListenerBody (.fvar "n_init"),
            rhoInput (.fvar "n_init") x (encode P ("n_init" ++ "_" ++ "n_init") "v_init")] none)) ∧
     (∃ Tseed, Nonempty
       ((rhoPar (nameServer "ns_x" "ns_z" "v_init" "ns_seed")
         (.apply "PInput" [.fvar "ns_z", .lambda none seedListenerBody])) ⇝ᵈ* Tseed) ∧
       Tseed ≈ᵈ{N}
         (.collection .hashBag
-          [Mettapedia.OSLF.MeTTaIL.Substitution.commSubst seedListenerBody (.apply "PDrop" [.fvar "ns_seed"]),
+          [semanticCommSubst seedListenerBody (.apply "PDrop" [.fvar "ns_seed"]),
            rhoReplicate (Mettapedia.Languages.ProcessCalculi.PiCalculus.nameServerBody "ns_x" "ns_z" "v_init"),
            dropOperation "ns_x"] none)) ∧
     (∃ Trep, Nonempty
@@ -560,14 +561,14 @@ theorem fullEncode_nu_admin_progress_derived_fresh {N : Finset String}
         (.apply "PInput" [.fvar "v_init", .lambda none nuListenerBody])) ⇝ᵈ* Tnu) ∧
       Tnu ≈ᵈ{N}
         (.collection .hashBag
-          [Mettapedia.OSLF.MeTTaIL.Substitution.commSubst nuListenerBody (.fvar "n_init"),
+          [semanticCommSubst nuListenerBody (.fvar "n_init"),
            rhoInput (.fvar "n_init") x (encode P ("n_init" ++ "_" ++ "n_init") "v_init")] none)) ∧
     (∃ Tseed, Nonempty
       ((rhoPar (nameServer "ns_x" "ns_z" "v_init" "ns_seed")
         (.apply "PInput" [.fvar "ns_z", .lambda none seedListenerBody])) ⇝ᵈ* Tseed) ∧
       Tseed ≈ᵈ{N}
         (.collection .hashBag
-          [Mettapedia.OSLF.MeTTaIL.Substitution.commSubst seedListenerBody (.apply "PDrop" [.fvar "ns_seed"]),
+          [semanticCommSubst seedListenerBody (.apply "PDrop" [.fvar "ns_seed"]),
            rhoReplicate (Mettapedia.Languages.ProcessCalculi.PiCalculus.nameServerBody "ns_x" "ns_z" "v_init"),
            dropOperation "ns_x"] none)) ∧
     (∃ Trep, Nonempty
@@ -600,11 +601,11 @@ theorem fullEncode_nu_admin_progress_combined_derived {N : Finset String}
         .collection .hashBag [Tseed, Tnu] none) ∧
       WeakRestrictedBisimD N Tnu
         (.collection .hashBag
-          [Mettapedia.OSLF.MeTTaIL.Substitution.commSubst nuListenerBody (.fvar "n_init"),
+          [semanticCommSubst nuListenerBody (.fvar "n_init"),
            rhoInput (.fvar "n_init") x (encode P ("n_init" ++ "_" ++ "n_init") "v_init")] none) ∧
       WeakRestrictedBisimD N Tseed
         (.collection .hashBag
-          [Mettapedia.OSLF.MeTTaIL.Substitution.commSubst seedListenerBody (.apply "PDrop" [.fvar "ns_seed"]),
+          [semanticCommSubst seedListenerBody (.apply "PDrop" [.fvar "ns_seed"]),
            rhoReplicate (Mettapedia.Languages.ProcessCalculi.PiCalculus.nameServerBody "ns_x" "ns_z" "v_init"),
            dropOperation "ns_x"] none) ∧
       WeakRestrictedBisimD N Trep
@@ -682,11 +683,11 @@ theorem full_nonRF_forward_correspondence_derived {N : Finset String}
         .collection .hashBag [Tseed, Tnu] none) ∧
       WeakRestrictedBisimD N Tnu
         (.collection .hashBag
-          [Mettapedia.OSLF.MeTTaIL.Substitution.commSubst nuListenerBody (.fvar "n_init"),
+          [semanticCommSubst nuListenerBody (.fvar "n_init"),
            rhoInput (.fvar "n_init") x (encode P ("n_init" ++ "_" ++ "n_init") "v_init")] none) ∧
       WeakRestrictedBisimD N Tseed
         (.collection .hashBag
-          [Mettapedia.OSLF.MeTTaIL.Substitution.commSubst seedListenerBody (.apply "PDrop" [.fvar "ns_seed"]),
+          [semanticCommSubst seedListenerBody (.apply "PDrop" [.fvar "ns_seed"]),
            rhoReplicate (Mettapedia.Languages.ProcessCalculi.PiCalculus.nameServerBody "ns_x" "ns_z" "v_init"),
            dropOperation "ns_x"] none) ∧
       WeakRestrictedBisimD N TrepNu
@@ -727,11 +728,11 @@ theorem full_nonRF_forward_correspondence_derived_fresh {N : Finset String}
         .collection .hashBag [Tseed, Tnu] none) ∧
       WeakRestrictedBisimD N Tnu
         (.collection .hashBag
-          [Mettapedia.OSLF.MeTTaIL.Substitution.commSubst nuListenerBody (.fvar "n_init"),
+          [semanticCommSubst nuListenerBody (.fvar "n_init"),
            rhoInput (.fvar "n_init") x (encode P ("n_init" ++ "_" ++ "n_init") "v_init")] none) ∧
       WeakRestrictedBisimD N Tseed
         (.collection .hashBag
-          [Mettapedia.OSLF.MeTTaIL.Substitution.commSubst seedListenerBody (.apply "PDrop" [.fvar "ns_seed"]),
+          [semanticCommSubst seedListenerBody (.apply "PDrop" [.fvar "ns_seed"]),
            rhoReplicate (Mettapedia.Languages.ProcessCalculi.PiCalculus.nameServerBody "ns_x" "ns_z" "v_init"),
            dropOperation "ns_x"] none) ∧
       WeakRestrictedBisimD N TrepNu
@@ -751,14 +752,14 @@ theorem fullEncode_nu_admin_progress_derived_canary :
         (.apply "PInput" [.fvar "v_init", .lambda none rhoNil])) ⇝ᵈ* Tnu) ∧
       Tnu ≈ᵈ{(∅ : Finset String)}
         (.collection .hashBag
-          [Mettapedia.OSLF.MeTTaIL.Substitution.commSubst rhoNil (.fvar "n_init"),
+          [semanticCommSubst rhoNil (.fvar "n_init"),
            rhoInput (.fvar "n_init") "x" (encode .nil ("n_init" ++ "_" ++ "n_init") "v_init")] none)) ∧
     (∃ Tseed, Nonempty
       ((rhoPar (nameServer "ns_x" "ns_z" "v_init" "ns_seed")
         (.apply "PInput" [.fvar "ns_z", .lambda none rhoNil])) ⇝ᵈ* Tseed) ∧
       Tseed ≈ᵈ{(∅ : Finset String)}
         (.collection .hashBag
-          [Mettapedia.OSLF.MeTTaIL.Substitution.commSubst rhoNil (.apply "PDrop" [.fvar "ns_seed"]),
+          [semanticCommSubst rhoNil (.apply "PDrop" [.fvar "ns_seed"]),
            rhoReplicate (Mettapedia.Languages.ProcessCalculi.PiCalculus.nameServerBody "ns_x" "ns_z" "v_init"),
            dropOperation "ns_x"] none)) ∧
     (∃ Trep, Nonempty
@@ -789,11 +790,11 @@ theorem fullEncode_nu_admin_progress_combined_derived_canary :
         .collection .hashBag [Tseed, Tnu] none) ∧
       WeakRestrictedBisimD (∅ : Finset String) Tnu
         (.collection .hashBag
-          [Mettapedia.OSLF.MeTTaIL.Substitution.commSubst rhoNil (.fvar "n_init"),
+          [semanticCommSubst rhoNil (.fvar "n_init"),
            rhoInput (.fvar "n_init") "x" (encode .nil ("n_init" ++ "_" ++ "n_init") "v_init")] none) ∧
       WeakRestrictedBisimD (∅ : Finset String) Tseed
         (.collection .hashBag
-          [Mettapedia.OSLF.MeTTaIL.Substitution.commSubst rhoNil (.apply "PDrop" [.fvar "ns_seed"]),
+          [semanticCommSubst rhoNil (.apply "PDrop" [.fvar "ns_seed"]),
            rhoReplicate (Mettapedia.Languages.ProcessCalculi.PiCalculus.nameServerBody "ns_x" "ns_z" "v_init"),
            dropOperation "ns_x"] none) ∧
       WeakRestrictedBisimD (∅ : Finset String) Trep
@@ -845,11 +846,11 @@ theorem fullEncode_nu_admin_progress_combined_derived_canary_nontrivial_full :
         .collection .hashBag [Tseed, Tnu] none) ∧
       WeakRestrictedBisimD (∅ : Finset String) Tnu
         (.collection .hashBag
-          [Mettapedia.OSLF.MeTTaIL.Substitution.commSubst (.apply "PDrop" [.fvar "k"]) (.fvar "n_init"),
+          [semanticCommSubst (.apply "PDrop" [.fvar "k"]) (.fvar "n_init"),
            rhoInput (.fvar "n_init") "x" (encode .nil ("n_init" ++ "_" ++ "n_init") "v_init")] none) ∧
       WeakRestrictedBisimD (∅ : Finset String) Tseed
         (.collection .hashBag
-          [Mettapedia.OSLF.MeTTaIL.Substitution.commSubst (.apply "NQuote" [.fvar "m"]) (.apply "PDrop" [.fvar "ns_seed"]),
+          [semanticCommSubst (.apply "NQuote" [.fvar "m"]) (.apply "PDrop" [.fvar "ns_seed"]),
            rhoReplicate (Mettapedia.Languages.ProcessCalculi.PiCalculus.nameServerBody "ns_x" "ns_z" "v_init"),
            dropOperation "ns_x"] none) ∧
       WeakRestrictedBisimD (∅ : Finset String) Trep
@@ -869,7 +870,7 @@ theorem forward_single_step_replicate_dropOperation_nsx_derived :
         (rhoPar
           (rhoInput (piNameToRhoName "ns_x") "_drop" rhoNil)
           (dropOperation "ns_x")) := by
-  simpa [dropOperation, encode, rhoReplicate] using
+  simpa [dropOperation, encode, rhoInput, rhoReplicate, piNameToRhoName] using
     (forward_single_step_replicate_derived
       (N := (∅ : Finset String)) "ns_x" "_drop" .nil "n_init" "v_init")
 

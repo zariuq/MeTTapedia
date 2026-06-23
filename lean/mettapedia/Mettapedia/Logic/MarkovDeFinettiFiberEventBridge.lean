@@ -283,7 +283,7 @@ lemma eulerTrailFinset_card_filter_fiberPrefixSubset
         fiber k (totalEdgeTokens (k := k) (graphOfState eN)) eN :=
     fiberPrefixSubset_subset_fiber
       (k := k) a ys (totalEdgeTokens (k := k) (graphOfState eN)) hN eN
-  simpa using
+  simp only [castTraj]; exact
     eulerTrailFinset_card_filter_trajSubset
       (k := k) (s := eN)
       (A := fiberPrefixSubset (k := k) a ys
@@ -809,7 +809,7 @@ lemma trajPrefix_eq_wordTraj_of_mem_fiberPrefixSubset
   | zero =>
       simpa [trajPrefix, wordTraj] using hstart
   | succ j =>
-      simpa [trajPrefix, wordTraj] using hprefix j
+      simpa [trajPrefix, wordTraj, Fin.castLE] using hprefix j
 
 lemma prefixState_eq_prefixWordState_of_mem_fiberPrefixSubset
     {a : Fin k} {ys : List (Fin k)} {N : ℕ} {hN : ys.length ≤ N}
@@ -861,7 +861,7 @@ lemma stateOfTraj_trajDrop_eq_residualStateOfPrefix_of_mem_fiberPrefixSubset
           (wordTraj (k := k) a ys) (Fin.last ys.length) := by
       simpa [prefixState, prefixWordState, stateOfTraj_last] using
         congrArg MarkovState.last hPrefixState
-    simpa [stateOfTraj, trajDrop, residualStateOfPrefix] using hlastPrefix
+    simpa [stateOfTraj, trajDrop, residualStateOfPrefix, trajPrefix, Fin.last] using hlastPrefix
   · ext i j
     have hTotal :
         eN.counts.counts i j = transCount (n := N) xs i j := by
@@ -908,7 +908,7 @@ lemma stateOfTraj_trajDrop_eq_residualStateOfPrefix_of_mem_fiberPrefixSubset
   · have hLast :
         xs (Fin.last N) = eN.last := by
       simpa [stateOfTraj] using congrArg MarkovState.last hFiber
-    simpa [stateOfTraj, trajDrop, residualStateOfPrefix, Nat.sub_add_cancel hN] using hLast
+    simpa [stateOfTraj, trajDrop, residualStateOfPrefix, Nat.sub_add_cancel hN, Fin.last] using hLast
 
 lemma stateOfTraj_trajGluePrefix_eq_of_stateOfTraj_eq_residualStateOfPrefix
     {a : Fin k} {ys : List (Fin k)} {N : ℕ} {hN : ys.length ≤ N}
@@ -1056,7 +1056,7 @@ lemma mem_fiberPrefixSubset_of_mem_fiber_residualStateOfPrefix
             (trajGluePrefix (k := k) a ys N hN zs) (Fin.succ j) =
           wordTraj (k := k) a ys (Fin.succ j) := by
       simpa using congrArg (fun f : Traj k ys.length => f (Fin.succ j)) hPrefix
-    simpa [trajPrefix, wordTraj] using hStep
+    simpa [trajPrefix, wordTraj, Fin.castLE] using hStep
 
 /-- Residual suffix trajectories obtained by deleting the prescribed prefix
 `a :: ys` from members of the exact-prefix subset inside a fixed evidence fiber. -/
@@ -1468,6 +1468,7 @@ lemma prefixTrajSet_eq_singleton_wordTraj
       | zero =>
           simpa [wordTraj] using hstart
       | succ j =>
+          rw [show (Fin.succ j) = (⟨↑j + 1, by omega⟩ : Fin (ys.length + 1)) from rfl]
           simpa [wordTraj] using hstep j
     simp [hEq]
   · intro hxs
@@ -3319,7 +3320,8 @@ lemma isPositiveTargetRootedArborescence_iff_of_nonroot_rows_eq
       (positiveNonrootVertexEquiv_of_nonroot_rows_eq (k := k) hrow).symm v
     rcases hroot v' with ⟨n, hn, hstep⟩
     refine ⟨n, hn, ?_⟩
-    simpa [v', positiveTargetParentStep_eq_of_nonroot_rows_eq (k := k) hrow p] using hstep
+    simpa [v', positiveNonrootVertexEquiv_of_nonroot_rows_eq,
+      positiveTargetParentStep_eq_of_nonroot_rows_eq (k := k) hrow p] using hstep
   · intro hroot v
     let hrow' :
         ∀ u : NonrootVertex t, ∀ w : Fin k, G' u.1 w = G u.1 w := by
@@ -3332,7 +3334,8 @@ lemma isPositiveTargetRootedArborescence_iff_of_nonroot_rows_eq
       (positiveNonrootVertexEquiv_of_nonroot_rows_eq (k := k) hrow) v
     rcases hroot v' with ⟨n, hn, hstep⟩
     refine ⟨n, hn, ?_⟩
-    simpa [p', v', positiveTargetParentStep_eq_of_nonroot_rows_eq (k := k) hrow' p'] using hstep
+    rw [positiveTargetParentStep_eq_of_nonroot_rows_eq (k := k) hrow p]
+    simpa [v', positiveNonrootVertexEquiv_of_nonroot_rows_eq] using hstep
 
 noncomputable def positiveNonrootVertexEquiv_deleteOneCopy_of_source_stays_positive
     {t : Fin k} (G : EulerGraph k)
@@ -3850,12 +3853,10 @@ noncomputable def positiveTokenParentAssignmentEquiv_of_nonroot_rows_eq
         (A ((positiveNonrootVertexEquiv_of_nonroot_rows_eq (k := k) hrow) x))
   left_inv A := by
     funext x
-    simp [positiveOutTokEquiv_of_nonroot_rows_eq,
-      positiveNonrootVertexEquiv_of_nonroot_rows_eq]
+    rfl
   right_inv A := by
     funext x
-    simp [positiveOutTokEquiv_of_nonroot_rows_eq,
-      positiveNonrootVertexEquiv_of_nonroot_rows_eq]
+    rfl
 
 lemma isPositiveTokenRootedArborescence_iff_of_nonroot_rows_eq
     {t : Fin k} {G G' : EulerGraph k}
@@ -3865,11 +3866,11 @@ lemma isPositiveTokenRootedArborescence_iff_of_nonroot_rows_eq
       IsPositiveTokenRootedArborescence (k := k) G' t
         ((positiveTokenParentAssignmentEquiv_of_nonroot_rows_eq
           (k := k) hrow) A) := by
-  simpa [IsPositiveTokenRootedArborescence, positiveTokenParentTargets,
+  simp only [IsPositiveTokenRootedArborescence, positiveTokenParentTargets,
     positiveTokenParentAssignmentEquiv_of_nonroot_rows_eq,
-    positiveTargetParentAssignmentEquiv_of_nonroot_rows_eq] using
-    (isPositiveTargetRootedArborescence_iff_of_nonroot_rows_eq
-      (k := k) hrow (positiveTokenParentTargets (k := k) G t A))
+    positiveOutTokEquiv_of_nonroot_rows_eq]
+  exact isPositiveTargetRootedArborescence_iff_of_nonroot_rows_eq
+    (k := k) hrow (positiveTokenParentTargets (k := k) G t A)
 
 lemma positiveTokenRootedArborescenceCount_congr_nonroot_rows
     {t : Fin k} {G G' : EulerGraph k}
@@ -3897,14 +3898,10 @@ lemma positiveTokenRootedArborescenceCount_congr_nonroot_rows
         A.1).1 A.2
   · intro A
     ext x
-    simp [positiveTokenParentAssignmentEquiv_of_nonroot_rows_eq,
-      positiveOutTokEquiv_of_nonroot_rows_eq,
-      positiveNonrootVertexEquiv_of_nonroot_rows_eq]
+    rfl
   · intro A
     ext x
-    simp [positiveTokenParentAssignmentEquiv_of_nonroot_rows_eq,
-      positiveOutTokEquiv_of_nonroot_rows_eq,
-      positiveNonrootVertexEquiv_of_nonroot_rows_eq]
+    rfl
 
 noncomputable def positiveNonrootVertexEquivNonrootVertex_of_forall_pos
     (G : EulerGraph k) (t : Fin k)
@@ -3967,19 +3964,17 @@ noncomputable def positiveTokenParentAssignmentEquivTokenParentAssignment_of_for
     PositiveTokenParentAssignment (k := k) G t ≃
       TokenParentAssignment (k := k) G t where
   toFun A := fun x =>
-    by
-      simpa using A ((positiveNonrootVertexEquivNonrootVertex_of_forall_pos
-        (k := k) G t hpos).symm x)
+    A ((positiveNonrootVertexEquivNonrootVertex_of_forall_pos
+      (k := k) G t hpos).symm x)
   invFun A := fun x =>
-    by
-      simpa using A ((positiveNonrootVertexEquivNonrootVertex_of_forall_pos
-        (k := k) G t hpos) x)
+    A ((positiveNonrootVertexEquivNonrootVertex_of_forall_pos
+      (k := k) G t hpos) x)
   left_inv A := by
     funext x
-    simp [positiveNonrootVertexEquivNonrootVertex_of_forall_pos]
+    rfl
   right_inv A := by
     funext x
-    simp [positiveNonrootVertexEquivNonrootVertex_of_forall_pos]
+    rfl
 
 lemma isPositiveTokenRootedArborescence_iff_isTokenRootedArborescence_of_forall_pos
     (G : EulerGraph k) (t : Fin k)
@@ -3989,11 +3984,12 @@ lemma isPositiveTokenRootedArborescence_iff_isTokenRootedArborescence_of_forall_
         ((positiveTokenParentAssignmentEquivTokenParentAssignment_of_forall_pos
           (k := k) G t hpos).symm A) ↔
       IsTokenRootedArborescence (k := k) G t A := by
-  simpa [IsPositiveTokenRootedArborescence, positiveTokenParentTargets,
+  simp only [IsPositiveTokenRootedArborescence, positiveTokenParentTargets,
     IsTokenRootedArborescence, tokenParentTargets,
-    positiveTokenParentAssignmentEquivTokenParentAssignment_of_forall_pos] using
-    (isPositiveTargetRootedArborescence_iff_isTargetRootedArborescence_of_forall_pos
-      (k := k) G t hpos (tokenParentTargets (k := k) G t A))
+    positiveTokenParentAssignmentEquivTokenParentAssignment_of_forall_pos,
+    Equiv.symm_apply_apply, Equiv.coe_fn_symm_mk]
+  exact isPositiveTargetRootedArborescence_iff_isTargetRootedArborescence_of_forall_pos
+    (k := k) G t hpos (tokenParentTargets (k := k) G t A)
 
 lemma isTokenRootedArborescence_iff_isPositiveTokenRootedArborescence_of_forall_pos
     (G : EulerGraph k) (t : Fin k)
@@ -5747,7 +5743,7 @@ lemma pathPrefixState_outdeg_eq_visitCountBefore
       rcases Finset.mem_map.mp hm with ⟨j, hj, rfl⟩
       exact Finset.mem_filter.mpr ⟨by
         exact Finset.mem_range.mpr j.2, by
-        simpa [A] using (Finset.mem_filter.mp hj).2⟩
+        simpa [A, e] using (Finset.mem_filter.mp hj).2⟩
     · intro hm
       rcases Finset.mem_filter.mp hm with ⟨hmN, hωm⟩
       have hmN' : m < N := Finset.mem_range.mp hmN
@@ -5824,7 +5820,7 @@ lemma strong_law_indicator_iidProduct
           =
         (Exchangeability.Probability.iidProduct (ν : Measure (Fin k))).real
           {r : ℕ → Fin k | r 0 = j} := by
-            simpa using
+            exact
               (MeasureTheory.integral_indicator_one
                 (μ := Exchangeability.Probability.iidProduct (ν : Measure (Fin k)))
                 (s := {r : ℕ → Fin k | r 0 = j})
@@ -5842,7 +5838,8 @@ lemma strong_law_indicator_iidProduct
                 {r : ℕ → Fin k | r 0 = j}
               =
             (ν : Measure (Fin k)) ({j} : Set (Fin k)) := by
-          simpa [Measure.map_apply, measurable_pi_apply, MeasurableSet.singleton] using h_map
+          simpa [Measure.map_apply, measurable_pi_apply, MeasurableSet.singleton,
+            Set.preimage, Set.mem_singleton_iff] using h_map
         rw [Measure.real, Exchangeability.Probability.iidProduct, h_eval']
         rfl
   have hX_indep :
@@ -5854,7 +5851,7 @@ lemma strong_law_indicator_iidProduct
           X) := by
     intro a b hab
     have hab' := h_indep_eval.indepFun hab
-    simpa [X, Function.comp] using
+    exact
       (ProbabilityTheory.IndepFun.comp hab' hF_meas hF_meas)
   have hX_ident :
       ∀ n : ℕ,
@@ -5888,7 +5885,7 @@ lemma strong_law_indicator_iidProduct
                 simpa [Exchangeability.Probability.iidProduct] using
                   (MeasureTheory.Measure.infinitePi_map_eval
                     (μ := fun _ : ℕ => (ν : Measure (Fin k))) 0)
-    simpa [X, Function.comp] using h_eval_ident_n.comp hF_meas
+    exact h_eval_ident_n.comp hF_meas
   have hsl :=
     ProbabilityTheory.strong_law_ae_real X hX_int hX_indep hX_ident
   rw [hInt] at hsl
@@ -5990,12 +5987,13 @@ lemma measurable_iidProduct_of_measurable_eval
               (Measure.map_apply
                 (Exchangeability.measurable_prefixProj (α := Fin k) (n := n)) hS).symm
       _ = (Measure.pi (fun _ : Fin n => (ν ω : Measure (Fin k)))) S := by
-        simpa using
+        exact
           congrArg
             (fun M : Measure (Fin n → Fin k) => M S)
             (Exchangeability.Probability.iidProduct.cylinder_fintype
               (ν := (ν ω : Measure (Fin k))) (n := n))
-  simpa [hEq] using ((Measure.measurable_coe hS).comp hpi_meas)
+  rw [hEq]
+  exact (Measure.measurable_coe hS).comp hpi_meas
 
 /-- Pull the row-fiber SLLN through a bind representation to obtain a.e.
 existence of Cesàro limits under the bound row-process law. -/
@@ -6139,7 +6137,8 @@ theorem rowProcessLaw_eq_bind_directingRowKernel_iidProduct
         (fun r : ℕ → Fin k =>
           Measure.pi
             (fun _ : Fin n => (directingRowKernel (k := k) P i r : Measure (Fin k)))) := by
-    simpa [ρ, X, Exchangeability.prefixProj, directingRowKernel] using
+    simp only [directingRowKernel]
+    exact
       (finite_product_formula_with_directing
         (μ := ρ) (X := X) hContr hX_meas n (fun j : Fin n => j.1)
         (fun _ _ h => h))
@@ -6161,7 +6160,7 @@ theorem rowProcessLaw_eq_bind_directingRowKernel_iidProduct
         Measure.pi
           (fun _ : Fin n => (directingRowKernel (k := k) P i r : Measure (Fin k)))) := by
     funext r
-    simpa [κ] using
+    exact
       (Exchangeability.Probability.iidProduct.cylinder_fintype
         (ν := (directingRowKernel (k := k) P i r : Measure (Fin k))) (n := n))
   calc
@@ -6442,7 +6441,7 @@ theorem ae_tendsto_rowProcessEmpiricalFreq_to_directingRowKernel
   have hdir_ae :
       g =ᵐ[ρ]
         ρ[Set.indicator ({j} : Set (Fin k)) (fun _ => (1 : ℝ)) ∘ X 0 | tailSigma X] := by
-    simpa [g, ρ, X, directingRowKernel] using
+    exact
       (@directingMeasure_X0_marginal
         _ _ _ ρ _ _ _ _ _ X hX_meas ({j} : Set (Fin k))
         (measurableSet_singleton j))
@@ -6539,7 +6538,7 @@ lemma pathPrefixState_counts_eq_rowSuccessorEmpiricalCount
             (pathPrefixState (k := k) ω N).counts.counts i j +
               (if ω N = i ∧ ω (N + 1) = j then 1 else 0) := by
         rw [pathPrefixState, pathPrefixTraj_succ_eq_trajSnoc]
-        simpa [stateOfTraj, countsOfFn, pathPrefixTraj, trajSnoc] using
+        exact
           (transCount_snoc
             (n := N)
             (xs := pathPrefixTraj (k := k) ω N)
@@ -8058,7 +8057,8 @@ lemma tendsto_prefixTokenDeletionLowerFactorReal_of_edgeGrowth
       simp [f, prefixTokenDeletionLowerFactorReal, prefixTokenDeletionLowerFactor,
         prefixTokenDeletionLowerNumerator, prefixTokenDeletionLowerDenominator,
         tokenDeletionLowerFactorRealAux, tokenDeletionLowerFactorRatAux]
-    simpa [hEq] using hsingle
+    rw [hEq]
+    exact hsingle
   have habs :
       Filter.Tendsto
         (fun n => |prefixTokenDeletionLowerFactorReal (k := k) a ys (e n) - 1|)
@@ -8152,7 +8152,7 @@ lemma eulerTrailFinset_card_filter_fiberWordConstraintSubset
         fiber k (totalEdgeTokens (k := k) (graphOfState eN)) eN :=
     fiberWordConstraintSubset_subset_fiber
       (k := k) a ys i c (totalEdgeTokens (k := k) (graphOfState eN)) hN eN
-  simpa using
+  simp only [castTraj]; exact
     eulerTrailFinset_card_filter_trajSubset
       (k := k) (s := eN)
       (A := fiberWordConstraintSubset (k := k) a ys i c
@@ -9569,7 +9569,7 @@ theorem startRestrictedRowLaw_factorizes_directingRowKernel_of_exchangeable
           _ ≤ P S := h2
           _ = c := rfl
           _ = 0 := hc
-      · exact zero_le _
+      · exact bot_le
     have hρa_zero : rowProcessLaw (k := k) Pa i = 0 := by
       simp only [rowProcessLaw, hPa_zero, Measure.map_zero]
     show Measure.map _ (rowProcessLaw (k := k) Pa i) =

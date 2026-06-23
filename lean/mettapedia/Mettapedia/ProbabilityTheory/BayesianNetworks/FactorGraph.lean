@@ -136,7 +136,7 @@ variable {V : Type*}
 /-- The unnormalized joint is non-negative. -/
 theorem unnormalizedJoint_nonneg (fg : FactorGraph V ℝ≥0∞) [Fintype fg.factors]
     (x : fg.FullConfig) : 0 ≤ fg.unnormalizedJoint x := by
-  exact zero_le _
+  exact zero_le
 
 /-- If all potentials are non-zero, the unnormalized joint is non-zero. -/
 theorem unnormalizedJoint_ne_zero (fg : FactorGraph V ℝ≥0∞) [Fintype fg.factors]
@@ -220,7 +220,7 @@ noncomputable def unnormalizedJoint (sfg : SimpleFactorGraph V β) [Fintype sfg.
 /-- The unnormalized joint is non-negative. -/
 theorem unnormalizedJoint_nonneg (sfg : SimpleFactorGraph V β) [Fintype sfg.factors]
     (x : FullConfig V β) : 0 ≤ sfg.unnormalizedJoint x := by
-  exact zero_le _
+  exact zero_le
 
 end SimpleFactorGraph
 

@@ -187,6 +187,6 @@ theorem oracleOutputProbR_le_one (M : OTMIndexR) (x : ℕ) (O : OracleR) :
 /-- Oracle output probability is non-negative. -/
 theorem oracleOutputProbR_nonneg (M : OTMIndexR) (x : ℕ) (O : OracleR) :
     0 ≤ oracleOutputProbR M x O :=
-  zero_le _
+  bot_le
 
 end Mettapedia.Computability

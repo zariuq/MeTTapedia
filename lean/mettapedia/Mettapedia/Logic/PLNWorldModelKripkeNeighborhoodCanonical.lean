@@ -55,8 +55,8 @@ theorem satisfies_iff_kripke_toNeighborhood (M : Kripke.Model) :
       change x ∈ {w : M.World | M a w} ↔ M a x
       simp
   | falsum =>
-      change (x ∈ (kripkeModelToNeighborhood M).truthset Formula.falsum) ↔ False
-      simp [LO.Modal.Neighborhood.Model.truthset]
+      change (x ∈ (∅ : Set M.World)) ↔ False
+      simp
   | imp φ ψ ihφ ihψ =>
       have hImpN :
           Formula.Neighborhood.Satisfies (kripkeModelToNeighborhood M) x (φ ➝ ψ) ↔
@@ -93,7 +93,7 @@ theorem satisfies_iff_kripke_toNeighborhood (M : Kripke.Model) :
             (M := kripkeModelToNeighborhood M) (x := x) (φ := φ)).1 hx
         have hsubset :
             {y : M.World | M.toFrame.Rel x y} ⊆ (kripkeModelToNeighborhood M) φ := by
-          simpa [kripkeModelToNeighborhood, kripkeFrameToNeighborhood] using hN
+          exact hN
         exact (Formula.Kripke.Satisfies.box_def).2 (by
           intro y hxy
           have hy : y ∈ (kripkeModelToNeighborhood M) φ := hsubset (by simpa using hxy)

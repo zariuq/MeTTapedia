@@ -127,6 +127,8 @@ theorem readyToAct_in_availableRegionAt_groundedStateful_budget2
     (σ : Multiset AgentObservation) :
     AgentQuery.readyToAct ∈
       availableRegionAt groundedStatefulQueryPerspective σ 2 Set.univ := by
+  change AgentQuery.readyToAct ∈
+    availableRegion (freezePerspective groundedStatefulQueryPerspective σ) 2 Set.univ
   simpa [groundedStatefulQueryPerspective, freezePerspective] using
     readyToAct_mem_availableRegion_grounded_budget2
 

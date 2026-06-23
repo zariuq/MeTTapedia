@@ -1,5 +1,5 @@
 import Mettapedia.UniversalAI.GrainOfTruth.MeasureTheory.LikelihoodRatio
-import Mettapedia.ProbabilityTheory.KnuthSkilling.Information.InformationEntropy
+import KnuthSkilling.Information.InformationEntropy
 import Mettapedia.InformationTheory.ShannonEntropy.Interface
 
 /-!
@@ -48,7 +48,7 @@ namespace Mettapedia.UniversalAI.GrainOfTruth.MeasureTheory.KLDivergenceBridge
 open MeasureTheory Real Finset
 open Mettapedia.UniversalAI.BayesianAgents
 open Mettapedia.UniversalAI.GrainOfTruth.MeasureTheory.LikelihoodRatio
-open Mettapedia.ProbabilityTheory.KnuthSkilling.Information.InformationEntropy
+open KnuthSkilling.Information.InformationEntropy
 
 /-! ## The Key Connection: Step Log-Likelihood = -KL Divergence
 

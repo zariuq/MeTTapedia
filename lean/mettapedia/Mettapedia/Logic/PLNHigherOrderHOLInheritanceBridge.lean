@@ -358,10 +358,16 @@ theorem predicateInterpretation_extensionalInherits_iff
             (predicateEvidence (Base := Base) (Const := Const) M σ x p) →
               EvidenceGate.positiveSupport.accept
                 (predicateEvidence (Base := Base) (Const := Const) M σ x q) := by
-    simpa [predicateInterpretation] using
-      (crispExtensionalInherits_iff
-        EvidenceGate.positiveSupport
-        (predicateEvidence (Base := Base) (Const := Const) M σ) p q)
+    change crispExtensionalInherits EvidenceGate.positiveSupport
+        (predicateEvidence (Base := Base) (Const := Const) M σ) p q ↔
+      ∀ x : PredicateObject (Base := Base) (Const := Const) M σ,
+        EvidenceGate.positiveSupport.accept
+          (predicateEvidence (Base := Base) (Const := Const) M σ x p) →
+            EvidenceGate.positiveSupport.accept
+              (predicateEvidence (Base := Base) (Const := Const) M σ x q)
+    exact crispExtensionalInherits_iff
+      EvidenceGate.positiveSupport
+      (predicateEvidence (Base := Base) (Const := Const) M σ) p q
   rw [hCrisp]
   constructor
   · intro h x hx
@@ -439,7 +445,12 @@ theorem models_predicateImpFormula_iff
               (.imp (.app (weaken (Base := Base) (σ := σ) p) (.var .vz))
                     (.app (weaken (Base := Base) (σ := σ) q) (.var .vz)))
               (HenkinModel.extend M (closedValuation M) y)).down := by
-      simpa [predicateImpFormula, closedValuation, HenkinModel.models, PreModel.models, PreModel.denote] using h
+      change ∀ y : Ty.denote M.Carrier σ, M.adm σ y →
+        (HenkinModel.denote M
+          (.imp (.app (weaken (Base := Base) (σ := σ) p) (.var .vz))
+                (.app (weaken (Base := Base) (σ := σ) q) (.var .vz)))
+          (HenkinModel.extend M (closedValuation M) y)).down at h
+      exact h
     have hx := hall x.1 x.2
     simpa [predicateHoldsAt, closedValuation] using hx
   · intro h
@@ -452,7 +463,8 @@ theorem models_predicateImpFormula_iff
       intro y hy
       have hy' := h ⟨y, hy⟩
       simpa [predicateHoldsAt, closedValuation] using hy'
-    simpa [predicateImpFormula, closedValuation, HenkinModel.models, PreModel.models, PreModel.denote] using hall
+    change HenkinModel.models M (predicateImpFormula (Base := Base) (Const := Const) σ p q)
+    exact hall
 
 /-- The higher-order inheritance bridge lands exactly on the existing abstract
 inheritance layer. -/
@@ -699,8 +711,11 @@ theorem models_predicateForAllFormula_iff
           (HenkinModel.denote M
               (.app (weaken (Base := Base) (σ := σ) p) (.var .vz))
               (HenkinModel.extend M (closedValuation M) y)).down := by
-      simpa [predicateForAllFormula, closedValuation, HenkinModel.models,
-        PreModel.models, PreModel.denote] using h
+      change ∀ y : Ty.denote M.Carrier σ, M.adm σ y →
+        (HenkinModel.denote M
+          (.app (weaken (Base := Base) (σ := σ) p) (.var .vz))
+          (HenkinModel.extend M (closedValuation M) y)).down at h
+      exact h
     simpa [predicateHoldsAt, closedValuation] using hall x.1 x.2
   · intro h
     have hall :
@@ -710,8 +725,8 @@ theorem models_predicateForAllFormula_iff
               (HenkinModel.extend M (closedValuation M) y)).down := by
       intro y hy
       simpa [predicateHoldsAt, closedValuation] using h ⟨y, hy⟩
-    simpa [predicateForAllFormula, closedValuation, HenkinModel.models,
-      PreModel.models, PreModel.denote] using hall
+    change HenkinModel.models M (predicateForAllFormula (Base := Base) (Const := Const) σ p)
+    exact hall
 
 /-- The HOL sentence `∃ x, p x` is satisfied exactly when the predicate holds
 of some admissible Henkin-model object. -/
@@ -729,8 +744,11 @@ theorem models_predicateExistsFormula_iff
           (HenkinModel.denote M
               (.app (weaken (Base := Base) (σ := σ) p) (.var .vz))
               (HenkinModel.extend M (closedValuation M) y)).down := by
-      simpa [predicateExistsFormula, closedValuation, HenkinModel.models,
-        PreModel.models, PreModel.denote] using h
+      change ∃ y : Ty.denote M.Carrier σ, M.adm σ y ∧
+        (HenkinModel.denote M
+          (.app (weaken (Base := Base) (σ := σ) p) (.var .vz))
+          (HenkinModel.extend M (closedValuation M) y)).down at h
+      exact h
     rcases hex with ⟨y, hy, hp⟩
     exact ⟨⟨y, hy⟩, by simpa [predicateHoldsAt, closedValuation] using hp⟩
   · intro h
@@ -741,8 +759,8 @@ theorem models_predicateExistsFormula_iff
               (.app (weaken (Base := Base) (σ := σ) p) (.var .vz))
               (HenkinModel.extend M (closedValuation M) y)).down :=
       ⟨x.1, x.2, by simpa [predicateHoldsAt, closedValuation] using hp⟩
-    simpa [predicateExistsFormula, closedValuation, HenkinModel.models,
-      PreModel.models, PreModel.denote] using hex
+    change HenkinModel.models M (predicateExistsFormula (Base := Base) (Const := Const) σ p)
+    exact hex
 
 /-- Predicate inheritance transports universal predicate truth: if every `p`
 object satisfies `q`, then `∀x p x` implies `∀x q x`. -/

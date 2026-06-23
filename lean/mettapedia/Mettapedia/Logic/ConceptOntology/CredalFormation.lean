@@ -585,7 +585,7 @@ variable [Fintype Obj] [Fintype Attr]
 
 /-- Observation-level lower/upper credal concept family induced by a finite
 family of admissible gates. -/
-def credalConceptFamily
+noncomputable def credalConceptFamily
     (S : ObservationSurface Obs Obj Attr Q)
     (Γ : Gate → EvidenceGate Q) (σ : Multiset Obs) :
     Mettapedia.Logic.ConceptOntology.CredalConceptFamily Obj Attr :=

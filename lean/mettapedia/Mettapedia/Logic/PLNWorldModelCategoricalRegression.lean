@@ -162,7 +162,7 @@ theorem ch8_fol_provable_bridge_rule_singleton_fixture
       Mettapedia.Logic.PLNWorldModelFOLCompleteness.pointwiseImpliesOnTheory
         T φ ψ := by
     intro S' _hT hφ
-    exact (False.elim (by simpa [φ] using hφ))
+    simp [ψ, Mettapedia.Logic.PLNWorldModelFOL.folSatisfies]
   have hsing :
       Mettapedia.Logic.PLNWorldModelFOLCompleteness.singletonStrengthLEOnTheory
         T φ ψ :=
@@ -177,7 +177,11 @@ theorem ch8_fol_provable_bridge_rule_singleton_fixture
   have hside : rule.side ({S} : Mettapedia.Logic.PLNWorldModelFOLCompleteness.FOLState L) := by
     intro S' hmem
     simp [T]
-  simpa [rule, T, φ, ψ] using
-    (rule.sound hside)
+  have hsound := rule.sound hside
+  change BinaryWorldModel.queryStrength
+      ({S} : Mettapedia.Logic.PLNWorldModelFOLCompleteness.FOLState L) φ ≤
+    BinaryWorldModel.queryStrength
+      ({S} : Mettapedia.Logic.PLNWorldModelFOLCompleteness.FOLState L) ψ
+  exact hsound
 
 end Mettapedia.Logic.PLNWorldModelCategoricalRegression

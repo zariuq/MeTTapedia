@@ -342,8 +342,9 @@ def capReadAliceDocType : PureTm 0 :=
 
 theorem hasType_capReadAliceDoc :
     HasTypeDecl capDeclEnv .nil capReadAliceDocTerm capReadAliceDocType := by
-  unfold capReadAliceDocTerm capReadAliceDocType capReadOK
-  simpa [capReadType, capAliceTerm, capDocTerm, capAliceDocCapTerm, capAliceDocCapType, capCanRead] using
+  -- The declared result type and the substituted `inst0`/`subst` index are definitionally
+  -- equal on these concrete closed terms, so `app_elim` chain typechecks directly.
+  exact
     (HasTypeDecl.app_elim
       (HasTypeDecl.app_elim
         (HasTypeDecl.app_elim hasType_capRead hasType_capAlice)
@@ -367,8 +368,9 @@ def capReadBobDocType : PureTm 0 :=
 
 theorem hasType_capReadBobDocPrefix :
     HasTypeDecl capDeclEnv .nil capReadBobDocPrefixTerm capReadBobDocPrefixType := by
-  unfold capReadBobDocPrefixTerm capReadBobDocPrefixType capReadOK capBobDocCapType capCanRead
-  simpa [capReadType, capBobTerm, capDocTerm] using
+  -- The `.pi` prefix type and the substituted `inst0`/`subst` index agree definitionally
+  -- on these concrete closed terms, so the `app_elim` chain typechecks directly.
+  exact
     (HasTypeDecl.app_elim
       (HasTypeDecl.app_elim hasType_capRead hasType_capBob)
       hasType_capDoc)

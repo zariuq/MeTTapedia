@@ -152,13 +152,13 @@ def someOnDomainHolds
     (p : FuzzyQuantifierParamsInf) (C A B : FuzzyProfile U) : Prop :=
   S.thereExistsOnDomainHolds p (domainRestrict C A) (domainRestrict A B)
 
-  theorem score_eq_of_pointwiseEq
+theorem score_eq_of_pointwiseEq
     {f g : FuzzyProfile U}
     (hfg : ∀ u, f u = g u) :
     S.score f = S.score g := by
   apply le_antisymm
-  · exact S.score_mono_of_pointwise (fun u => by simp [hfg u])
-  · exact S.score_mono_of_pointwise (fun u => by simp [hfg u])
+  · exact S.score_mono_of_pointwise (fun u => le_of_eq (hfg u))
+  · exact S.score_mono_of_pointwise (fun u => le_of_eq (hfg u).symm)
 
 theorem intervalHolds_iff_of_scoreEq
     (p : FuzzyQuantifierParamsInf) {f g : FuzzyProfile U}
@@ -290,7 +290,8 @@ theorem sugenoGraded_thereExistsHolds_iff
     (p : FuzzyQuantifierParamsInf) (ν : FuzzyCapacity U) (f : FuzzyProfile U) :
     (sugenoGradedQuantifierSemantics p ν).thereExistsHolds p f ↔
       fuzzyThereExistsHoldsInf p ν f := by
-  simpa [GradedQuantifierSemantics.thereExistsHolds, sugenoGradedQuantifierSemantics] using
+  simpa [GradedQuantifierSemantics.thereExistsHolds, sugenoGradedQuantifierSemantics,
+    fuzzyExistsScoreInf] using
     (fuzzyThereExistsHoldsInf_iff_nearOneComplement p ν f).symm
 
 @[simp] theorem choquetGraded_intervalHolds_iff

@@ -16,7 +16,7 @@ The chain is:
 Positive examples:
 
 - `holSoundnessRung`
-- `holInternalCompletenessRung`
+- `holHenkinSatisfiabilityRung`
 - `wmConsequenceSchemaRung`
 - `probabilisticBeliefRung`
 - `plannerCarriedValueRung`
@@ -24,7 +24,6 @@ Positive examples:
 
 Negative examples:
 
-- `holOriginalReflectionObstructionRung`
 - `probabilisticNotGlobalOracleRung`
 - `plannerNotGlobalOracleRung`
 
@@ -39,16 +38,12 @@ namespace Mettapedia.Logic.HOLProbPLNExampleDemo
 /-- Positive example: closed HOL theorems are sound in every Heyting-Henkin
 model of the corrected core. -/
 abbrev holSoundnessRung :=
-  @Mettapedia.Logic.HOL.IntuitionisticSoundness.theorem_sound
+  @Mettapedia.Logic.HOL.Soundness.theorem_sound
 
-/-- Positive example: internal cumulative-Henkin canonical validity is already
-equivalent to finite-context provability. -/
-abbrev holInternalCompletenessRung :=
-  @Mettapedia.Logic.HOL.HenkinConstInfinity.canonicalHenkinValidFrom_iff_provable
-
-/-- Negative example: naive original reflection is formally obstructed. -/
-abbrev holOriginalReflectionObstructionRung :=
-  @Mettapedia.Logic.HOL.HenkinConstInfinity.emptySignature_originalLiftProvable_existsTop
+/-- Positive example: the witnessed + excluded-middle Henkin extension has a
+general Henkin model whenever that extended theory is consistent. -/
+abbrev holHenkinSatisfiabilityRung :=
+  @Mettapedia.Logic.HOL.ClosedTheorySet.henkin_satisfiable
 
 /-- Positive example: any external implication relation that is sound and
 complete for pointwise HOL implication coincides with singleton WM

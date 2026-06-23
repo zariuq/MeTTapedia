@@ -77,14 +77,14 @@ instance instFintypeInTok (G : EulerGraph k) (b : Fin k) :
 lemma card_outTok (G : EulerGraph k) (a : Fin k) :
     Fintype.card (outTok (k := k) G a) = outDegG (k := k) G a := by
   classical
-  unfold outTok outDegG
-  simp [Fintype.card_sigma]
+  simp only [outDegG]
+  exact Fintype.card_sigma.trans (by simp)
 
 lemma card_inTok (G : EulerGraph k) (b : Fin k) :
     Fintype.card (inTok (k := k) G b) = inDegG (k := k) G b := by
   classical
-  unfold inTok inDegG
-  simp [Fintype.card_sigma]
+  simp only [inDegG]
+  exact Fintype.card_sigma.trans (by simp)
 
 lemma totalEdgeTokens_eq_sum_card_outTok (G : EulerGraph k) :
     totalEdgeTokens (k := k) G = ∑ a : Fin k, Fintype.card (outTok (k := k) G a) := by
@@ -93,8 +93,8 @@ lemma totalEdgeTokens_eq_sum_card_outTok (G : EulerGraph k) :
 lemma card_edgeTok (G : EulerGraph k) :
     Fintype.card (edgeTok (k := k) G) = totalEdgeTokens (k := k) G := by
   classical
-  unfold edgeTok totalEdgeTokens outDegG
-  simp [Fintype.card_sigma]
+  simp only [totalEdgeTokens, outDegG]
+  exact Fintype.card_sigma.trans (by simp [Fintype.card_sigma])
 
 lemma totalEdgeTokens_eq_sum_inDeg (G : EulerGraph k) :
     totalEdgeTokens (k := k) G = ∑ b : Fin k, inDegG (k := k) G b := by
@@ -170,8 +170,8 @@ lemma flow_balance_graphOfState_of_mem_stateFinset
       (if s.start = a then 1 else 0) := by
   rcases Finset.mem_image.1 hs with ⟨xs, hxs, hstate⟩
   subst hstate
-  simpa [outDegG, inDegG, graphOfState] using
-    (MarkovDeFinettiHardEuler.flow_balance_stateOfTraj (k := k) (xs := xs) (a := a))
+  rw [outDeg_graphOfState_eq, inDeg_graphOfState_eq]
+  exact MarkovDeFinettiHardEuler.flow_balance_stateOfTraj (k := k) (xs := xs) (a := a)
 
 /-- Graph-form predicate for Euler-trail degree balance with designated start/last. -/
 def IsEulerTrailBalanced (s : MarkovState k) : Prop :=
@@ -193,8 +193,8 @@ lemma card_balance_graphOfState_of_mem_stateFinset
       (if s.last = a then 1 else 0) =
     Fintype.card (inTok (k := k) (graphOfState (k := k) s) a) +
       (if s.start = a then 1 else 0) := by
-  simpa [card_outTok_graphOfState_eq, card_inTok_graphOfState_eq] using
-    flow_balance_graphOfState_of_mem_stateFinset (k := k) hs a
+  rw [card_outTok, card_inTok]
+  exact flow_balance_graphOfState_of_mem_stateFinset (k := k) hs a
 
 end MarkovDeFinettiHardBESTCore
 

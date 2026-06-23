@@ -25,7 +25,7 @@ canonical posterior law is a named object rather than an embedded tactic block
 inside theorem statements. -/
 theorem posteriorCanonical_coordProcess_measurable (i : ℕ) :
     Measurable (CategoryTheory.coordProcess i) := by
-  simpa [CategoryTheory.coordProcess] using (measurable_pi_apply (a := i))
+  exact measurable_pi_apply (a := i)
 
 /-- The canonical external posterior process law on `Bool^ℕ`. -/
 noncomputable def posteriorCanonicalExternalBoolProcessLaw

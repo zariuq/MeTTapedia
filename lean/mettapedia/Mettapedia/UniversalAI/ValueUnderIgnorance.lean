@@ -102,7 +102,7 @@ variable (ν : Semimeasure)
 /-- Semimeasure loss is nonnegative (follows from superadditivity). -/
 theorem nonneg (x : BinString) : 0 ≤ semimeasureLoss ν x := by
   unfold semimeasureLoss
-  exact zero_le _
+  exact zero_le
 
 /-- For full probability measures, loss is zero everywhere. -/
 theorem eq_zero_of_measure (x : BinString)
@@ -220,7 +220,7 @@ theorem eq_lintegral_of_measure (μ : Measure α) (f : α → ℝ)
 /-- Choquet integral is nonnegative. -/
 theorem nonneg (ν : Set α → ENNReal) (f : α → ℝ) :
     0 ≤ choquetIntegral ν f :=
-  zero_le _
+  zero_le
 
 end ChoquetIntegral
 

@@ -1,6 +1,6 @@
 import Mathlib.Data.Real.Basic
 import Mettapedia.Logic.PLNIndefiniteTruth
-import Mettapedia.ProbabilityTheory.KnuthSkilling.Probability.BooleanRepresentation
+import KnuthSkilling.Probability.BooleanRepresentation
 
 /-!
 # PLN Indefinite Truth Bridge
@@ -14,7 +14,7 @@ bounds as a `PLNIndefiniteTruth.ITV` with an explicit external credibility.
 
 namespace Mettapedia.Logic.PLNIndefiniteTruthBridge
 
-open Mettapedia.ProbabilityTheory.KnuthSkilling.Probability.BooleanRepresentation
+open KnuthSkilling.Probability.BooleanRepresentation
 
 /-- Generic constructor from lower/upper bounds and an external credibility.
 

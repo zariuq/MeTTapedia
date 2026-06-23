@@ -171,11 +171,11 @@ theorem derivation_subst
       exact .eqApp (subst σs t) (ih σs)
   | eqLam h ih =>
       exact .eqLam (by
-        simpa [derivation_subst_weakenHyps] using
-          ih (Subst.lift (Base := Atom) (Const := Primitive) (σ := _) σs))
+        simp only [derivation_subst_weakenHyps]
+        exact ih (Subst.lift (Base := Atom) (Const := Primitive) (σ := _) σs))
   | funExt h ih =>
       exact .funExt (by
-        simpa [subst, subst_weaken] using ih σs)
+        simpa [subst, subst_weaken, Subst.lift] using ih σs)
   | beta t u =>
       simpa [subst, derivation_subst_instantiate] using
         (.beta
@@ -193,7 +193,8 @@ theorem closeTheoremInContext
     TheoremInContext φ →
       Theorem (closeFormula ρ φ) := by
   intro hφ
-  simpa [TheoremInContext, Theorem, closeFormula] using
+  simp only [Theorem, closeFormula]
+  exact
     (derivation_subst (Γ := Γ) (Θ := ([] : List (Formula Γ)))
       (φ := φ) ρ hφ)
 

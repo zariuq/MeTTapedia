@@ -203,7 +203,7 @@ theorem unitAliasSpec_prefixAdmissible :
         (s := unitCtorSpec)
         (hNodup := by decide)
         (hs := by simp [unitTySpec, unitCtorSpec])
-    simpa [liftClosed_zero] using
+    simpa [liftClosed_zero, unitAliasSpec] using
       (hasType_const_from_lookup
         (E := envOfSpecs [unitTySpec, unitCtorSpec])
         (Γ := .nil)

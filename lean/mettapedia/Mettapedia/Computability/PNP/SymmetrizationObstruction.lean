@@ -23,21 +23,21 @@ namespace Mettapedia.Computability.PNP
 open scoped BigOperators
 
 /-- Length-`n` bit-vectors. -/
-abbrev BitVec (n : ℕ) := Fin n → Bool
+abbrev MajBitVec (n : ℕ) := Fin n → Bool
 
 /-- Number of `true` entries in a bit-vector. -/
-def ones {n : ℕ} (x : BitVec n) : ℕ :=
+def ones {n : ℕ} (x : MajBitVec n) : ℕ :=
   ∑ i, if x i then 1 else 0
 
 /-- Strict majority predicate. For odd `n`, ties are impossible. -/
-def majority {n : ℕ} (x : BitVec n) : Bool :=
+def majority {n : ℕ} (x : MajBitVec n) : Bool :=
   n / 2 < ones x
 
 /-- Bitwise complement. -/
-def compl {n : ℕ} (x : BitVec n) : BitVec n :=
+def compl {n : ℕ} (x : MajBitVec n) : MajBitVec n :=
   fun i => !(x i)
 
-lemma ones_add_ones_compl {n : ℕ} (x : BitVec n) :
+lemma ones_add_ones_compl {n : ℕ} (x : MajBitVec n) :
     ones x + ones (compl x) = n := by
   unfold ones compl
   calc
@@ -50,7 +50,7 @@ lemma ones_add_ones_compl {n : ℕ} (x : BitVec n) :
           by_cases h : x i <;> simp [h]
     _ = n := by simp
 
-lemma majority_compl {n : ℕ} (hodd : Odd n) (x : BitVec n) :
+lemma majority_compl {n : ℕ} (hodd : Odd n) (x : MajBitVec n) :
     majority (compl x) = !(majority x) := by
   rcases hodd with ⟨k, rfl⟩
   unfold majority
@@ -66,7 +66,7 @@ lemma majority_compl {n : ℕ} (hodd : Odd n) (x : BitVec n) :
 /-- On odd sample size, complement gives a bijection between majority-true and majority-false
 bit-vectors. -/
 def majorityTrueEquivMajorityFalse {n : ℕ} (hodd : Odd n) :
-    {x : BitVec n // majority x = true} ≃ {x : BitVec n // majority x = false} where
+    {x : MajBitVec n // majority x = true} ≃ {x : MajBitVec n // majority x = false} where
   toFun x := ⟨compl x.1, by
     have hcomp := majority_compl hodd x.1
     simpa [x.2] using hcomp⟩
@@ -81,36 +81,36 @@ def majorityTrueEquivMajorityFalse {n : ℕ} (hodd : Odd n) :
     simp [compl]
 
 theorem card_majority_true_eq_card_majority_false {n : ℕ} (hodd : Odd n) :
-    Fintype.card {x : BitVec n // majority x = true} =
-      Fintype.card {x : BitVec n // majority x = false} :=
+    Fintype.card {x : MajBitVec n // majority x = true} =
+      Fintype.card {x : MajBitVec n // majority x = false} :=
   Fintype.card_congr (majorityTrueEquivMajorityFalse hodd)
 
-theorem card_bitVec (n : ℕ) : Fintype.card (BitVec n) = 2 ^ n := by
-  simp [BitVec]
+theorem card_bitVec (n : ℕ) : Fintype.card (MajBitVec n) = 2 ^ n := by
+  simp [MajBitVec]
 
 /-- For odd sample size, strict majority succeeds on exactly half of all unbiased bit-vectors. -/
 theorem two_mul_card_majority_true {n : ℕ} (hodd : Odd n) :
-    2 * Fintype.card {x : BitVec n // majority x = true} = 2 ^ n := by
-  set a : ℕ := Fintype.card {x : BitVec n // majority x = true}
+    2 * Fintype.card {x : MajBitVec n // majority x = true} = 2 ^ n := by
+  set a : ℕ := Fintype.card {x : MajBitVec n // majority x = true}
   have hcomp :
-      Fintype.card {x : BitVec n // majority x = false} =
-        Fintype.card (BitVec n) - a := by
-    simpa using (Fintype.card_subtype_compl fun x : BitVec n => majority x = true)
-  have heq : a = Fintype.card {x : BitVec n // majority x = false} := by
+      Fintype.card {x : MajBitVec n // majority x = false} =
+        Fintype.card (MajBitVec n) - a := by
+    simpa using (Fintype.card_subtype_compl fun x : MajBitVec n => majority x = true)
+  have heq : a = Fintype.card {x : MajBitVec n // majority x = false} := by
     simpa [a] using card_majority_true_eq_card_majority_false hodd
   rw [card_bitVec] at hcomp
   have hsub : 2 ^ n - a = a := by
     simpa [heq] using hcomp.symm
   have hle : a ≤ 2 ^ n := by
     rw [← card_bitVec]
-    simpa [a] using Fintype.card_subtype_le (fun x : BitVec n => majority x = true)
+    simpa [a] using Fintype.card_subtype_le (fun x : MajBitVec n => majority x = true)
   have hsum : 2 ^ n = a + a := Nat.eq_add_of_sub_eq hle hsub
   simpa [a, two_mul, Nat.add_comm] using hsum.symm
 
 /-- If the Bayes classifier ties at `p = 1/2` and breaks toward `true`, then majority on an odd
 number of unbiased labels can match that Bayes rule on at most half the samples. -/
 theorem majority_tie_break_not_high_probability {n : ℕ} (hodd : Odd n) :
-    Fintype.card {x : BitVec n // majority x = true} * 2 = Fintype.card (BitVec n) := by
+    Fintype.card {x : MajBitVec n // majority x = true} * 2 = Fintype.card (MajBitVec n) := by
   simpa [Nat.mul_comm] using two_mul_card_majority_true hodd
 
 end Mettapedia.Computability.PNP

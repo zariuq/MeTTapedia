@@ -130,8 +130,9 @@ mutual
         obtain ⟨k, child⟩ := hd
         by_cases hkb : k = b
         · subst hkb
-          simpa [hasValuedPrefixChild, lookupChild, toCTrie_apply] using
-            (hasValuedPrefix_eq_toCTrie_hasPrefix child rest)
+          simp [hasValuedPrefixChild, lookupChild]
+          change child.hasValuedPrefix rest = CTrie.hasPrefix child.toCTrie rest
+          exact hasValuedPrefix_eq_toCTrie_hasPrefix child rest
         · simp [hasValuedPrefixChild, lookupChild, hkb, ih]
 end
 

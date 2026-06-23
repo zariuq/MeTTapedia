@@ -378,7 +378,7 @@ lemma l1_iid_inj_le_choose2
       have hμ0_le_div : μ0 ≤ μ0 / Z := by
         have hmul : μ0 * 1 ≤ μ0 * (1 / Z) :=
           mul_le_mul_of_nonneg_left hOneLeInv hμ0_nonneg
-        simpa [one_div, mul_comm, mul_left_comm, mul_assoc] using hmul
+        simpa [div_eq_mul_inv, one_div, mul_comm, mul_left_comm, mul_assoc] using hmul
       have hsum_split :
           Finset.sum (Finset.univ : Finset (Fin (n + 1) → Fin R))
               (fun f => abs (μ0 - (if Function.Injective f then μ0 / Z else 0)))

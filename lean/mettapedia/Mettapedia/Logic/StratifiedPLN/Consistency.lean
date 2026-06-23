@@ -206,9 +206,7 @@ theorem sigmoid_lipschitz : LipschitzWith (1/4) Real.sigmoid := by
 theorem sigmoid_lipschitz_pointwise (x y : ℝ) :
     |Real.sigmoid x - Real.sigmoid y| ≤ (1/4) * |x - y| := by
   have h := sigmoid_lipschitz.dist_le_mul x y
-  simp only [Real.dist_eq] at h
-  -- LipschitzWith uses (1/4 : ℝ≥0), we need to show this equals (1/4 : ℝ)
-  convert h using 2
+  simpa [Real.dist_eq] using h
 
 /-- Sigmoid satisfies LipschitzRegularity with constant 1/4. -/
 theorem sigmoid_lipschitz_regularity : LipschitzRegularity Real.sigmoid (1/4) := by

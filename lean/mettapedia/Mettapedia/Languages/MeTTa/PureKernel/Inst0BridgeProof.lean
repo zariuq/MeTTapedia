@@ -240,7 +240,7 @@ def prefixIdx (tail : Nat) {m : Nat} (i : Fin m) : Fin (tail + m) :=
   | zero =>
       simp [buildEnv, wkN, idRen]
   | succ m ih =>
-      simpa [buildEnv, wkN, envCons] using ih (k := k) (ρ := ρ) i
+      simpa [buildEnv, wkN, envCons, wk, Fin.cases_succ] using ih (k := k) (ρ := ρ) i
 
 theorem quoteTmWith_renameWkN_buildEnv
     (ν : Nat → String) (k m : Nat) (ρ : QuoteEnv n) (t : PureTm n) :
@@ -667,7 +667,8 @@ theorem closeFVar_quoteTmWith_renameWkN_buildEnv_head
       | zero =>
           simp [liftSubN, prefixIdx]
       | succ j =>
-          simpa [liftSubN, prefixIdx, wk] using congrArg (rename wk) (ih (n := n) (k := k) σ j)
+          simpa [liftSubN, liftSub, prefixIdx, wk, Fin.cases_succ, rename] using
+            congrArg (rename wk) (ih (n := n) (k := k) σ j)
 
 @[simp] theorem closeRange_bvar (ν : Nat → String) (k m j : Nat) :
     closeRange ν k m (.bvar j) = .bvar j := by

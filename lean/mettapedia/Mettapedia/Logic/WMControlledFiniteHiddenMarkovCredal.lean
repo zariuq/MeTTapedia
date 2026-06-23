@@ -155,7 +155,7 @@ theorem cycleCountCredibility_mem_unit
 
 /-- Generic bridge from the local controlled-HMM credal interval into the live
 PLN indefinite truth-value surface. -/
-noncomputable def IndefiniteTruthValue.toPLNITV
+noncomputable abbrev IndefiniteTruthValue.toPLNITV
     (tv : IndefiniteTruthValue)
     (credibility : ℝ)
     (hcred : credibility ∈ Set.Icc 0 1) :
@@ -263,7 +263,7 @@ theorem oneStepQValue_le_one
     have hy_le_sum :
         observationMassGivenAction θ (filteringMass θ zs) a y ≤
           ∑ y' : Fin obs, observationMassGivenAction θ (filteringMass θ zs) a y' := by
-      exact Finset.single_le_sum (fun _ _ => zero_le _) (Finset.mem_univ y)
+      exact Finset.single_le_sum (fun _ _ => bot_le) (Finset.mem_univ y)
     have hy_le_one :
         observationMassGivenAction θ (filteringMass θ zs) a y ≤ 1 :=
       hy_le_sum.trans hprob_le_one
@@ -481,7 +481,7 @@ noncomputable def oneStepQValueCredalTruthValue
 
 /-- One-step `qValue` envelope rendered as the live PLN indefinite truth-value
 surface. -/
-noncomputable def oneStepQValuePLNITV
+noncomputable abbrev oneStepQValuePLNITV
     [Fintype ι] [Nonempty ι]
     (κ : ℝ)
     (hκ : 0 < κ)
@@ -529,7 +529,8 @@ theorem qValue_historyOfCycles_one_mem_PLNITV_interval
     itv.lower ≤ qValue (toEnvironment (Θ i)) π γ (historyOfCycles zs) a 1 ∧
       qValue (toEnvironment (Θ i)) π γ (historyOfCycles zs) a 1 ≤ itv.upper := by
   simpa [oneStepQValuePLNITV, IndefiniteTruthValue.toPLNITV,
-    Mettapedia.Logic.PLNIndefiniteTruthBridge.ofBoundsAndCredibility]
+    Mettapedia.Logic.PLNIndefiniteTruthBridge.ofBoundsAndCredibility,
+    oneStepQValueCredalTruthValue]
     using qValue_historyOfCycles_one_mem_envelope Θ π γ zs a i
 
 /-- Lower one-step optimal decision value across a finite family of controlled
@@ -616,7 +617,7 @@ noncomputable def oneStepOptimalValueCredalTruthValue
 
 /-- One-step optimal decision envelope as the live PLN indefinite truth-value
 surface. -/
-noncomputable def oneStepOptimalValuePLNITV
+noncomputable abbrev oneStepOptimalValuePLNITV
     [Fintype ι] [Nonempty ι] [Fintype Action]
     (κ : ℝ)
     (hκ : 0 < κ)
@@ -656,7 +657,8 @@ theorem optimalValue_historyOfCycles_two_mem_PLNITV_interval
     itv.lower ≤ optimalValue (toEnvironment (Θ i)) γ (historyOfCycles zs) 2 ∧
       optimalValue (toEnvironment (Θ i)) γ (historyOfCycles zs) 2 ≤ itv.upper := by
   simpa [oneStepOptimalValuePLNITV, IndefiniteTruthValue.toPLNITV,
-    Mettapedia.Logic.PLNIndefiniteTruthBridge.ofBoundsAndCredibility]
+    Mettapedia.Logic.PLNIndefiniteTruthBridge.ofBoundsAndCredibility,
+    oneStepOptimalValueCredalTruthValue]
     using optimalValue_historyOfCycles_two_mem_envelope Θ γ zs i
 
 end OneStepValue
@@ -1629,7 +1631,8 @@ private def diracPM {α : Type*} [MeasurableSpace α] [MeasurableSingletonClass 
       simp
     simp [hind]
   · have hb : b ∉ Set.singleton a := by
-      simpa [Set.mem_singleton_iff] using h
+      intro hb
+      exact h (Set.mem_singleton_iff.mp hb)
     have hind : (((Set.singleton a).indicator (1 : α → ENNReal)) b) = 0 := by
       rw [Set.indicator_of_notMem hb]
     simp [h, hind]

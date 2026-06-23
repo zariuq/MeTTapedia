@@ -113,7 +113,8 @@ theorem anyFactMatch_toMorkSourceQuery
     · exact hatom_in
     · simpa [morkPatternToAtom, bindingsToSubst] using
         (matchAtom_var_bindingsToSubst_new ([] : ILBindings) x atom (by simp))
-  · simpa [hq] using applySubst_commutes [(x, atom)] tmpl htrans_tmpl
+  · simpa [hq, Mettapedia.Languages.ProcessCalculi.MORK.translateBindings_eq_bindingsToSubst] using
+      applySubst_commutes [(x, atom)] tmpl htrans_tmpl
 
 /-- Computable version of the same MORK source-query witness on list spaces. -/
 theorem anyFactMatch_toComputableSourceQuery

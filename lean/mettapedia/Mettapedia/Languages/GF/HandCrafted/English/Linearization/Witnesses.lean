@@ -1,8 +1,11 @@
 import Mettapedia.Languages.GF.HandCrafted.English.Linearization
+import Mettapedia.Languages.GF.OSLFBridge_handcrafted
 
 namespace Mettapedia.Languages.GF.HandCrafted.English.Linearization
 
 open Mettapedia.Languages.GF
+open Mettapedia.Languages.GF.OSLFBridge
+open Mettapedia.OSLF.MeTTaIL.Syntax
 open Core Abstract
 open English
 open Syntax Pronouns Relatives
@@ -46,6 +49,37 @@ def witnessPassiveClause : AbstractNode :=
   wMkApp2 "PredVP" "NP" "VP" "Cl"
     witnessObjDog
     (wMkApp1 "PassV2" "V2" "VP" (wMkLeaf "love_V2" "V2"))
+
+/-- LF pattern view of the canonical subject witness. -/
+theorem gfAbstractToPattern_witnessSubjCat :
+    gfAbstractToPattern witnessSubjCat =
+      Pattern.apply "DetCN"
+        [Pattern.fvar "the_Det", Pattern.apply "UseN" [Pattern.fvar "cat_N"]] := by
+  simp [witnessSubjCat, wMkApp2, wMkApp1, wMkLeaf]
+
+/-- LF pattern view of the canonical object witness. -/
+theorem gfAbstractToPattern_witnessObjDog :
+    gfAbstractToPattern witnessObjDog =
+      Pattern.apply "DetCN"
+        [Pattern.fvar "the_Det", Pattern.apply "UseN" [Pattern.fvar "dog_N"]] := by
+  simp [witnessObjDog, wMkApp2, wMkApp1, wMkLeaf]
+
+/-- LF pattern view of the canonical active witness. -/
+theorem gfAbstractToPattern_witnessActiveClause :
+    gfAbstractToPattern witnessActiveClause =
+      Pattern.apply "PredVP"
+        [ gfAbstractToPattern witnessSubjCat
+        , Pattern.apply "ComplSlash"
+            [ Pattern.apply "SlashV2a" [Pattern.fvar "love_V2"]
+            , gfAbstractToPattern witnessObjDog ] ] := by
+  simp [witnessActiveClause, wMkApp2, wMkApp1, wMkLeaf]
+
+/-- LF pattern view of the canonical passive witness. -/
+theorem gfAbstractToPattern_witnessPassiveClause :
+    gfAbstractToPattern witnessPassiveClause =
+      Pattern.apply "PredVP"
+        [gfAbstractToPattern witnessObjDog, Pattern.apply "PassV2" [Pattern.fvar "love_V2"]] := by
+  simp [witnessPassiveClause, wMkApp2, wMkApp1, wMkLeaf]
 
 /-- Public passive constructor matching the `PassV2` dispatch branch. -/
 def passV2Canonical (v2 : EnglishV2) : EnglishVP :=

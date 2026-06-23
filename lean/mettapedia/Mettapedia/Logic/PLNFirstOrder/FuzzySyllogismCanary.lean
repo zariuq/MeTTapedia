@@ -179,8 +179,8 @@ theorem qfmMin_syllogism_most_most
   have hU : min ch11MostParams.UPC ch11MostParams.UPC = (0.9 : ℝ) := by
     norm_num [ch11MostParams]
   constructor
-  · simpa [hL] using h.1
-  · simpa [hU] using h.2
+  · simpa [hL, ch11MostParams] using h.1
+  · simpa [hU, ch11MostParams] using h.2
 
 /-- `qfmMin` specialization of `FEW ∘ MOST`:
 composed score stays in the FEW interval `[0.1,0.3]`. -/

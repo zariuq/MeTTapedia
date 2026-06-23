@@ -83,7 +83,7 @@ import Mathlib.Data.Rat.Cast.Order
 import Mathlib.Data.Nat.Basic
 import Mathlib.Data.Int.Basic
 import Mathlib.Tactic
-import Mettapedia.ProbabilityTheory.KnuthSkilling.Probability.ProbabilityDerivation
+import KnuthSkilling.Probability.ProbabilityDerivation
 
 namespace Mettapedia.ProbabilityTheory.AssociativityTheorem
 
@@ -597,8 +597,8 @@ theorem canonicalIterateLinearizer_respects_op
 theorem exists_linearizer_for_addition :
     let A_add : KSAxioms := {
       op := (· + ·)
-      order_left := fun _ _ _ h => add_lt_add_right h _
-      order_right := fun _ _ _ h => add_lt_add_left h _
+      order_left := fun _ _ _ h => by gcongr
+      order_right := fun _ _ _ h => by gcongr
       assoc := fun x y z => add_assoc x y z
     }
     Nonempty (Linearizer A_add) := by
@@ -686,15 +686,17 @@ noncomputable def weakRegraduationFromLinearizer
 /-- The KSAxioms for standard addition on ℝ. -/
 def additionKSAxioms : KSAxioms where
   op := (· + ·)
-  order_left := fun _ _ _ h => add_lt_add_right h _
-  order_right := fun _ _ _ h => add_lt_add_left h _
+  order_left := fun _ _ _ h => by gcongr
+  order_right := fun _ _ _ h => by gcongr
   assoc := fun x y z => add_assoc x y z
 
 /-- The identity function is a normalized linearizer for addition. -/
 noncomputable def identityNormalizedLinearizer : NormalizedLinearizer additionKSAxioms where
   φ := id
   strictMono := strictMono_id
-  additive := fun _ _ => rfl
+  -- `additionKSAxioms.op x y` is `x + y`, but Lean 4.31 no longer unfolds the structure
+  -- projection of the (non-reducible) `additionKSAxioms` for a bare `rfl`; unfold it.
+  additive := fun _ _ => by simp [additionKSAxioms]
   zero := rfl
   one := rfl
 
@@ -702,7 +704,9 @@ noncomputable def identityNormalizedLinearizer : NormalizedLinearizer additionKS
 theorem weak_regraduation_for_addition :
     ∃ W : KnuthSkilling.Probability.WeakRegraduation additionKSAxioms.op, W.regrade = id := by
   use weakRegraduationFromLinearizer (A := additionKSAxioms) identityNormalizedLinearizer
-  rfl
+  -- `regrade` projects to `identityNormalizedLinearizer.φ = id`; unfold the (non-reducible)
+  -- defs so Lean 4.31 sees the equality rather than relying on bare-`rfl` projection.
+  simp only [weakRegraduationFromLinearizer, identityNormalizedLinearizer]
 
 /-! ### Summary: The Logical Flow
 

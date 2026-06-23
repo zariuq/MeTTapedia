@@ -8,7 +8,7 @@ import Mathlib.MeasureTheory.Group.Defs
 import Mathlib.MeasureTheory.Group.Measure
 import Mathlib.Topology.Order.Real
 import Mathlib.MeasureTheory.Constructions.BorelSpace.Basic
-import Mettapedia.ProbabilityTheory.KnuthSkilling
+import KnuthSkilling
 
 /-
 # Measure Theory from Symmetry
@@ -32,7 +32,7 @@ noncomputable section
 open Classical
 open scoped BigOperators Pointwise ENNReal Topology
 open MeasureTheory Filter Set
-open Mettapedia.ProbabilityTheory.KnuthSkilling
+open KnuthSkilling
 
 namespace Mettapedia.MeasureTheory
 
@@ -227,7 +227,7 @@ theorem sigma_additive_from_continuity {α : Type*}
     have hb : b (n + 1) = b n + μ.val (f n) := by
       simp only [b, Finset.sum_range_succ]
     rw [hb]
-    exact le_add_of_nonneg_right (zero_le _)
+    exact le_self_add
   have hb_mono : Monotone b := monotone_nat_of_le_succ hb_step
   have hb_shift : (⨆ n, b (n + 1)) = ⨆ n, b n := by
     apply le_antisymm
@@ -322,7 +322,7 @@ theorem translation_invariant_is_haar
       simpa using ha
   have hmeas_mul : Measurable fun x => g * x := by
     have hcont : Continuous fun x => g * x := by
-      simpa using (continuous_const.mul continuous_id)
+      exact continuous_const.mul continuous_id
     simpa using hcont.measurable
   have hpre_meas : MeasurableSet ((fun x => g * x) ⁻¹' A) := hA.preimage hmeas_mul
   have hmeas_smul : MeasurableSet (g⁻¹ • A) := by

@@ -111,7 +111,9 @@ theorem hol_native_higherOrderRefl_singleton_fixture
     BinaryWorldModel.queryStrength (State := SetState) (Query := SetHOLQuery)
         ({S} : SetState) holNativeHigherOrderRefl = 1 := by
   have hsatisfies : setHolSatisfies S holNativeHigherOrderRefl := by
-    simpa [setHolSatisfies] using
+    change Mettapedia.Logic.HOL.HenkinModel.models
+      (Mettapedia.Logic.HOL.Semantics.SetBased.ofPointed S) holNativeHigherOrderRefl
+    exact
       (Mettapedia.Logic.PLNHigherOrderHOLSoundness.holProvable_models
         (Base := SetBaseTy) (Const := SetConst)
         (φ := holNativeHigherOrderRefl) holNativeHigherOrderRefl_provable
@@ -128,7 +130,9 @@ theorem hol_native_eta_id_singleton_fixture
     BinaryWorldModel.queryStrength (State := SetState) (Query := SetHOLQuery)
         ({S} : SetState) holNativeEtaIdEq = 1 := by
   have hsatisfies : setHolSatisfies S holNativeEtaIdEq := by
-    simpa [setHolSatisfies] using
+    change Mettapedia.Logic.HOL.HenkinModel.models
+      (Mettapedia.Logic.HOL.Semantics.SetBased.ofPointed S) holNativeEtaIdEq
+    exact
       (Mettapedia.Logic.PLNHigherOrderHOLSoundness.holProvable_models
         (Base := SetBaseTy) (Const := SetConst)
         (φ := holNativeEtaIdEq) holNativeEtaIdEq_provable
@@ -145,7 +149,9 @@ theorem hol_native_pred_self_imp_singleton_fixture
     BinaryWorldModel.queryStrength (State := SetState) (Query := SetHOLQuery)
         ({S} : SetState) holNativePredSelfImp = 1 := by
   have hsatisfies : setHolSatisfies S holNativePredSelfImp := by
-    simpa [setHolSatisfies] using
+    change Mettapedia.Logic.HOL.HenkinModel.models
+      (Mettapedia.Logic.HOL.Semantics.SetBased.ofPointed S) holNativePredSelfImp
+    exact
       (Mettapedia.Logic.PLNHigherOrderHOLSoundness.holProvable_models
         (Base := SetBaseTy) (Const := SetConst)
         (φ := holNativePredSelfImp) holNativePredSelfImp_provable
@@ -162,7 +168,9 @@ theorem hol_native_pred_eta_id_singleton_fixture
     BinaryWorldModel.queryStrength (State := SetState) (Query := SetHOLQuery)
         ({S} : SetState) holNativePredEtaIdEq = 1 := by
   have hsatisfies : setHolSatisfies S holNativePredEtaIdEq := by
-    simpa [setHolSatisfies] using
+    change Mettapedia.Logic.HOL.HenkinModel.models
+      (Mettapedia.Logic.HOL.Semantics.SetBased.ofPointed S) holNativePredEtaIdEq
+    exact
       (Mettapedia.Logic.PLNHigherOrderHOLSoundness.holProvable_models
         (Base := SetBaseTy) (Const := SetConst)
         (φ := holNativePredEtaIdEq) holNativePredEtaIdEq_provable

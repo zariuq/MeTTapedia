@@ -206,7 +206,8 @@ theorem choquetIntegral_constantOne
             by
               have hx' : x ∈ Set.Ioc (0 : ℝ) 1 := by
                 simpa [Set.uIoc_of_le (show (0 : ℝ) ≤ 1 by norm_num)] using hx
-              simpa [choquetIntegrand, choquetLevelCut_constantOne_of_mem_Ioc (U := U) hx'] using hν)
+              simpa [choquetIntegrand, choquetLevelCut_constantOne_of_mem_Ioc (U := U) hx',
+                IsNormalized] using hν)
     _ = 1 := by simp
 
 end FuzzyCapacity

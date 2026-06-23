@@ -215,7 +215,8 @@ instance instConjugateEvidenceWeightedNormalGamma :
     ConjugateEvidence WeightedNormalGammaEvidence where
   observationCount e := ENNReal.ofReal e.weight
   observationCount_add e₁ e₂ := by
-    simpa using ENNReal.ofReal_add e₁.weight_nonneg e₂.weight_nonneg
+    simpa [HAdd.hAdd, instHAdd, Add.add, WeightedNormalGammaEvidence.hplus] using
+      ENNReal.ofReal_add e₁.weight_nonneg e₂.weight_nonneg
   observationCount_zero := by
     show ENNReal.ofReal WeightedNormalGammaEvidence.zero.weight = 0
     simp [WeightedNormalGammaEvidence.zero]

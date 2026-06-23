@@ -188,8 +188,9 @@ theorem wmToProbabilityVertex_probabilityToWMVertex_eq_of_slice
     hAdd, hInv, hDet, hSupport, hReg, hInd⟩
   ext
   · simp [wmToProbabilityVertex, hComm]
-  · simpa [wmToProbabilityVertex, probabilityToWMVertex] using
-      logicToDistributivity_distributivityToWMLogic_eq_of_bool_or_distributive hDist
+  · unfold probabilityToWMVertex wmToProbabilityVertex
+    change logicToDistributivity (distributivityToWMLogic v.distributivity) = v.distributivity
+    exact logicToDistributivity_distributivityToWMLogic_eq_of_bool_or_distributive hDist
   · unfold probabilityToWMVertex
     change truthValueToPrecision (precisionToTruthValue v.precision) = v.precision
     exact truthValueToPrecision_precisionToTruthValue v.precision
@@ -202,8 +203,9 @@ theorem wmToProbabilityVertex_probabilityToWMVertex_eq_of_slice
     exact intervalToAdditivity_additivityToWMInterval v.additivity
   · simp [wmToProbabilityVertex, hInv]
   · simp [wmToProbabilityVertex, hDet]
-  · simpa [wmToProbabilityVertex, probabilityToWMVertex] using
-      typingToSupport_supportToWMTyping_eq_of_finite_or_countable hSupport
+  · unfold probabilityToWMVertex wmToProbabilityVertex
+    change typingToSupport (supportToWMTyping v.support) = v.support
+    exact typingToSupport_supportToWMTyping_eq_of_finite_or_countable hSupport
   · simp [wmToProbabilityVertex, hReg]
   · simp [wmToProbabilityVertex, hInd]
 

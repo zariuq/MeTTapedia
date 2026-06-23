@@ -232,9 +232,11 @@ theorem PureCertificateImport.toPureCertificate_artifact_eq
     cert.toPureCertificate.artifact.pattern = quoteClosedTm cert.term := by
   cases cert with
   | pure cert =>
-      simpa using cert.artifact_eq
+      simpa [PureCertificateImport.toPureCertificate, PureCertificateImport.term]
+        using cert.artifact_eq
   | overlap cert =>
-      simpa [PureCertificateImport.term] using cert.artifact_eq_pure
+      simpa [PureCertificateImport.toPureCertificate, PureCertificateImport.term]
+        using cert.artifact_eq_pure
 
 /-- First real checked certificate object for the restricted Pure lane.
 
@@ -321,10 +323,12 @@ theorem CheckedPureCertificate.quoteAgreement
   | mk imported claimedType typing =>
       cases imported with
       | pure importedCert =>
-          simpa [CheckedPureCertificate.artifact, CheckedPureCertificate.term]
+          simpa [CheckedPureCertificate.artifact, CheckedPureCertificate.term,
+            PureCertificateImport.artifact, PureCertificateImport.term]
             using importedCert.artifact_eq
       | overlap importedCert =>
-          simpa [CheckedPureCertificate.artifact, CheckedPureCertificate.term]
+          simpa [CheckedPureCertificate.artifact, CheckedPureCertificate.term,
+            PureCertificateImport.artifact, PureCertificateImport.term]
             using importedCert.artifact_eq_pure
 
 theorem CheckedPureCertificate.emptyContextTyping

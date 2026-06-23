@@ -1006,8 +1006,12 @@ theorem simpleDeductionStrengthFormula_mem_normalized_endpointJointTypedITV
       pA pB pC sAB sBC hpA hpB_small hFeas h_consist
       ht_lower ht_upper hu_lower hu_upper credibility hc
   constructor
-  · simpa using hMem.1
-  · simpa using hMem.2
+  · rw [← deductionCredalStrengthITV_lower_eq_endpointJoint_lower_div
+      pA pB pC sAB sBC hpA hFeas credibility hc]
+    exact hMem.1
+  · rw [← deductionCredalStrengthITV_upper_eq_endpointJoint_upper_div
+      pA pB pC sAB sBC hpA hFeas credibility hc]
+    exact hMem.2
 
 /-- The traditional PLN point deduction formula also lies inside the normalized
 full admissible-allocation joint envelope.
@@ -1043,7 +1047,11 @@ theorem simpleDeductionStrengthFormula_mem_normalized_allocationJointTypedITV
       pA pB pC sAB sBC hpA hpB_small hFeas h_consist
       ht_lower ht_upper hu_lower hu_upper credibility hc
   constructor
-  · simpa using hMem.1
-  · simpa using hMem.2
+  · rw [← deductionCredalStrengthITV_lower_eq_allocationJoint_lower_div
+      pA pB pC sAB sBC hpA hFeas credibility hc]
+    exact hMem.1
+  · rw [← deductionCredalStrengthITV_upper_eq_allocationJoint_upper_div
+      pA pB pC sAB sBC hpA hFeas credibility hc]
+    exact hMem.2
 
 end Mettapedia.Logic.PLNDeduction

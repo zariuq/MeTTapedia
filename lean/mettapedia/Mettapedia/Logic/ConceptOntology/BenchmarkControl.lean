@@ -280,8 +280,7 @@ theorem flyingFamilyConcept_mem_upper :
       flyingFamilyConcept ∈
         AbstractInheritance.finiteConceptFamily (gateFamily b) context.evidence
   refine ⟨false, ?_⟩
-  simpa [gateFamily, thresholds, BinaryFcaBenchmarkContext.exactConceptFamily] using
-    flyingFamilyConcept_mem_exact
+  exact flyingFamilyConcept_mem_exact
 
 theorem flyingFamilyConcept_not_mem_lower :
     flyingFamilyConcept ∉
@@ -300,8 +299,7 @@ theorem flyingFamilyConcept_not_mem_lower :
   have hNot :
       flyingFamilyConcept ∉
         AbstractInheritance.finiteConceptFamily (gateFamily true) context.evidence := by
-    simpa [gateFamily, thresholds] using
-      (not_mem_finiteConceptFamily_iff
+    exact (not_mem_finiteConceptFamily_iff
         (G := EvidenceGate.positiveThreshold 2)
         (M := context.evidence)
         flyingFamilyConcept).2 flyingFamilyConcept_not_closed_strict
@@ -320,15 +318,13 @@ theorem batOnlyFlyingConcept_not_mem_upper :
       have hNot :
           batOnlyFlyingConcept ∉
             AbstractInheritance.finiteConceptFamily (gateFamily false) context.evidence := by
-        simpa [gateFamily, thresholds, BinaryFcaBenchmarkContext.exactConceptFamily] using
-          batOnlyFlyingConcept_not_mem_exact
+        exact batOnlyFlyingConcept_not_mem_exact
       exact hNot hb
   | true =>
       have hNot :
           batOnlyFlyingConcept ∉
             AbstractInheritance.finiteConceptFamily (gateFamily true) context.evidence := by
-        simpa [gateFamily, thresholds] using
-          (not_mem_finiteConceptFamily_iff
+        exact (not_mem_finiteConceptFamily_iff
             (G := EvidenceGate.positiveThreshold 2)
             (M := context.evidence)
             batOnlyFlyingConcept).2 batOnlyFlyingConcept_not_closed_strict

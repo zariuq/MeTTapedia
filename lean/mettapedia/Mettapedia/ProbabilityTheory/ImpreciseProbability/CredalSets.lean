@@ -159,7 +159,7 @@ noncomputable def ofThetaFamily (op : α → α → α)
           have hy : sInf (range fun j => Θ j y) ≤ Θ i y :=
             csInf_le (hBddBelow y) ⟨i, rfl⟩
           simpa [hAdd i x y] using add_le_add hx hy
-      simpa [add_assoc, add_left_comm, add_comm] using hLower
+      exact hLower
     ·
       have hUpper :
           sSup (range fun i => Θ i (op x y)) ≤
@@ -177,19 +177,19 @@ noncomputable def ofThetaFamily (op : α → α → α)
           have : Θ i (op x y) ≤ sSup (range fun j => Θ j x) + sSup (range fun j => Θ j y) := by
             simpa [hAdd i x y] using add_le_add hx hy
           exact this
-      simpa [add_assoc, add_left_comm, add_comm] using hUpper
+      exact hUpper
 
 /-- Lower bounds are superadditive under the Minkowski containment law. -/
 theorem lower_superadditive (S : IntervalAddSemantics α) (x y : α) :
     (S.μ x).lower + (S.μ y).lower ≤ (S.μ (S.op x y)).lower := by
   have h := (S.containment x y).1
-  simpa [Interval.containedIn, Interval.add] using h
+  exact h
 
 /-- Upper bounds are subadditive under the Minkowski containment law. -/
 theorem upper_subadditive (S : IntervalAddSemantics α) (x y : α) :
     (S.μ (S.op x y)).upper ≤ (S.μ x).upper + (S.μ y).upper := by
   have h := (S.containment x y).2
-  simpa [Interval.containedIn, Interval.add] using h
+  exact h
 
 /-- Interval widths are subadditive under Minkowski containment. -/
 theorem width_subadditive (S : IntervalAddSemantics α) (x y : α) :

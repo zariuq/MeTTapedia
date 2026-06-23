@@ -65,7 +65,7 @@ theorem one_mem_UnitENNReal : (1 : ℝ≥0∞) ∈ UnitENNReal := by
 
 theorem zero_mem_UnitENNReal : (0 : ℝ≥0∞) ∈ UnitENNReal := by
   simp only [UnitENNReal, Set.mem_setOf_eq]
-  exact zero_le 1
+  exact zero_le
 
 theorem mul_mem_UnitENNReal {x y : ℝ≥0∞} (hx : x ∈ UnitENNReal) (hy : y ∈ UnitENNReal) :
     x * y ∈ UnitENNReal := by

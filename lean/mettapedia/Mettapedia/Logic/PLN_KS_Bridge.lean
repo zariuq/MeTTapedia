@@ -1,5 +1,5 @@
 import Mettapedia.Logic.EvidenceQuantale
-import Mettapedia.ProbabilityTheory.KnuthSkilling.Core.TotalityImprecision
+import KnuthSkilling.Core.TotalityImprecision
 
 /-!
 # PLN BinaryEvidence vs Knuth-Skilling: the Totality Gate
@@ -22,7 +22,7 @@ namespace Mettapedia.Logic.PLN_KS_Bridge
 open scoped ENNReal
 
 open Mettapedia.Logic.EvidenceQuantale
-open Mettapedia.ProbabilityTheory.KnuthSkilling.TotalityImprecision
+open KnuthSkilling.TotalityImprecision
 
 /-! ## BinaryEvidence has incomparable elements -/
 

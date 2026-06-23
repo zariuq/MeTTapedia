@@ -48,8 +48,7 @@ theorem continuous_coeffObservable (n : ℕ) :
 
 theorem continuous_weightedModeTerm (W : SummableModeWeights) (n : ℕ) :
     Continuous fun x : ModeState => weightedModeTerm W x n := by
-  simpa [weightedModeTerm] using
-    (continuous_abs.comp (continuous_coeffObservable n)).mul
+  exact (continuous_abs.comp (continuous_coeffObservable n)).mul
       (continuous_const : Continuous fun _ : ModeState => W.weight n)
 
 theorem norm_weightedModeTerm_le (W : SummableModeWeights) (x : ModeState) (n : ℕ) :

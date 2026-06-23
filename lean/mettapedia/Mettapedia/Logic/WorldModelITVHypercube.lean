@@ -176,10 +176,16 @@ theorem queryITVSigma_width_add_credibility_walley
       (State := State) (Srt := Srt) (Query := Query) .walleyIDM ctx W q +
       queryITVSigmaCredibilityOfInterval
         (State := State) (Srt := Srt) (Query := Query) .walleyIDM ctx W q = 1 := by
-  simpa [queryITVSigmaWidthOfInterval, queryITVSigmaCredibilityOfInterval,
-    queryITVSigmaOfInterval, semanticsOfInterval] using
-    (WorldModelSigma.queryITVWidth_add_queryITVCredibility_walley
-      (State := State) (Srt := Srt) (Query := Query) ctx W q)
+  change
+    WorldModelSigma.queryITVWidth
+        (State := State) (Srt := Srt) (Query := Query)
+        ITVSemantics.walleyIDMPredictive ctx W q +
+      WorldModelSigma.queryITVCredibility
+        (State := State) (Srt := Srt) (Query := Query)
+        ITVSemantics.walleyIDMPredictive ctx W q = 1
+  exact
+    WorldModelSigma.queryITVWidth_add_queryITVCredibility_walley
+      (State := State) (Srt := Srt) (Query := Query) ctx W q
 
 /-- Walley interval identity at the interval-axis level (typed): `width = 1 - credibility`. -/
 theorem queryITVSigma_width_eq_one_sub_credibility_walley
@@ -188,10 +194,17 @@ theorem queryITVSigma_width_eq_one_sub_credibility_walley
       (State := State) (Srt := Srt) (Query := Query) .walleyIDM ctx W q =
       1 - queryITVSigmaCredibilityOfInterval
         (State := State) (Srt := Srt) (Query := Query) .walleyIDM ctx W q := by
-  simpa [queryITVSigmaWidthOfInterval, queryITVSigmaCredibilityOfInterval,
-    queryITVSigmaOfInterval, semanticsOfInterval] using
-    (WorldModelSigma.queryITVWidth_eq_one_sub_queryITVCredibility_walley
-      (State := State) (Srt := Srt) (Query := Query) ctx W q)
+  change
+    WorldModelSigma.queryITVWidth
+        (State := State) (Srt := Srt) (Query := Query)
+        ITVSemantics.walleyIDMPredictive ctx W q =
+      1 -
+        WorldModelSigma.queryITVCredibility
+          (State := State) (Srt := Srt) (Query := Query)
+          ITVSemantics.walleyIDMPredictive ctx W q
+  exact
+    WorldModelSigma.queryITVWidth_eq_one_sub_queryITVCredibility_walley
+      (State := State) (Srt := Srt) (Query := Query) ctx W q
 
 /-- Interval-selector transport of typed query-equivalence into ITV views. -/
 theorem WMQueryEqSigma.to_queryITVSigmaOfInterval

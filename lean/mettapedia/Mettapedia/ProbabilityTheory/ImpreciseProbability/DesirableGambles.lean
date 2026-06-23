@@ -353,7 +353,7 @@ theorem lowerProb_singleton_eq_expectedValue {Ω : Type*} [Fintype Ω]
     ext x
     constructor
     · rintro ⟨Q, hQ, rfl⟩
-      have hQP : Q = P := by simpa using hQ
+      have hQP : Q = P := hQ
       simp [hQP]
     · intro hx
       have hx' : x = expectedValue P f := by simpa using hx
@@ -374,7 +374,7 @@ theorem upperProb_singleton_eq_expectedValue {Ω : Type*} [Fintype Ω]
     ext x
     constructor
     · rintro ⟨Q, hQ, rfl⟩
-      have hQP : Q = P := by simpa using hQ
+      have hQP : Q = P := hQ
       simp [hQP]
     · intro hx
       have hx' : x = expectedValue P f := by simpa using hx

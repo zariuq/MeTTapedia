@@ -177,12 +177,32 @@ theorem pettaEvalStep_schedulerFires
         (Mettapedia.Languages.MeTTa.PeTTa.LPSoundness.pettaSpaceToLangDef s),
       ∃ S ∈ fireSourceRule workspace r_source,
         fireExecFact workspace ef = S \ {ef.atom} := by
-  -- Step 1: Source-level fire (from existing PeTTa core fragment bridge)
-  obtain ⟨r_source, hr_mem, hfire⟩ :=
-    evalStep_toMorkSourceFire hr hprem hm hq hcore hground hp_in
-  refine ⟨r_source, hr_mem, applySinks workspace σ ef.rule.tmpl, ?_, ?_⟩
+  rcases pettaCoreRule_fvar hcore with ⟨x, hlhs⟩
+  have hsafe_parts :=
+    (Mettapedia.Languages.MeTTa.PeTTa.LPSoundness.pettaRuleSafe_iff r).1
+      (pettaCoreRule_safe hcore)
+  have htrans_rhs :
+      Mettapedia.Languages.MeTTa.RuntimeExec.morkRuntimeExec0.fragmentPredicate r.right = true := by
+    simpa [Mettapedia.Languages.MeTTa.RuntimeExec.morkRuntimeExec0] using hsafe_parts.2.1
+  have hr_lang :
+      r ∈ (Mettapedia.Languages.MeTTa.PeTTa.LPSoundness.pettaSpaceToLangDef s).rewrites := by
+    simpa [Mettapedia.Languages.MeTTa.PeTTa.LPSoundness.pettaSpaceToLangDef_rewrites] using hr
+  refine ⟨rewriteRuleToSourceExecRule r, ?_, applySinks workspace σ ef.rule.tmpl, ?_, ?_⟩
+  · show rewriteRuleToSourceExecRule r ∈
+        languageDefToSourceExecRules
+          (Mettapedia.Languages.MeTTa.PeTTa.LPSoundness.pettaSpaceToLangDef s)
+    simp only [languageDefToSourceExecRules, List.mem_filterMap]
+    refine ⟨r, hr_lang, ?_⟩
+    simp [hprem, allPremisesTranslatable, premiseToSourceFactor]
   · -- The source-level result is in fireSourceRule
-    rw [hσ_eq, hef_tmpl]; exact hfire
+    rw [hσ_eq, hef_tmpl]
+    simpa [Mettapedia.Languages.MeTTa.RuntimeExec.morkRuntimeExec0,
+      Mettapedia.Languages.MeTTa.RuntimeExec.MeTTaRuntimeExecSurface.bindingsTranslation,
+      Mettapedia.Languages.MeTTa.RuntimeExec.MeTTaRuntimeExecSurface.sourceRuleTranslation] using
+      (Mettapedia.Languages.MeTTa.RuntimeExec.morkRuntimeExec0.noPremiseBridge p q x r
+        Mettapedia.OSLF.MeTTaIL.Engine.RelationEnv.empty
+        (Mettapedia.Languages.MeTTa.PeTTa.LPSoundness.pettaSpaceToLangDef s)
+        hlhs htrans_rhs hprem bs hm hq hground workspace hp_in)
   · -- The scheduler result = source result minus exec atom
     exact fireExecFact_eq_applySinks_sdiff workspace ef hef_in σ consumed hunique hndp
 

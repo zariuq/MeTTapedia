@@ -1,6 +1,7 @@
 import Mettapedia.OSLF.NativeType.Construction
 import Mathlib.CategoryTheory.Comma.Arrow
 import Mathlib.CategoryTheory.Limits.Shapes.Pullback.HasPullback
+import Mathlib.CategoryTheory.Types.Basic
 
 /-!
 # NTT Endpoint Theorems: Props 12, 14, 17, Def 21, Sec 4, Thm 23
@@ -32,42 +33,42 @@ namespace Mettapedia.OSLF.NativeType
 theorem prop12_indexedAdjoints (C : Type u) [Category.{w} C]
     {X Y : Cᵒᵖ ⥤ Type v} (f : X ⟶ Y) :
     GaloisConnection
-      ((GSLT.Topos.presheafChangeOfBase C).directImage f)
-      ((GSLT.Topos.presheafChangeOfBase C).pullback f)
+      ((GSLT.Topos.presheafChangeOfBase.{u, v, w} C).directImage f)
+      ((GSLT.Topos.presheafChangeOfBase.{u, v, w} C).pullback f)
     ∧
     GaloisConnection
-      ((GSLT.Topos.presheafChangeOfBase C).pullback f)
-      ((GSLT.Topos.presheafChangeOfBase C).universalImage f) :=
-  ⟨(GSLT.Topos.presheafChangeOfBase C).direct_pullback_adj f,
-   (GSLT.Topos.presheafChangeOfBase C).pullback_universal_adj f⟩
+      ((GSLT.Topos.presheafChangeOfBase.{u, v, w} C).pullback f)
+      ((GSLT.Topos.presheafChangeOfBase.{u, v, w} C).universalImage f) :=
+  ⟨(GSLT.Topos.presheafChangeOfBase.{u, v, w} C).direct_pullback_adj f,
+   (GSLT.Topos.presheafChangeOfBase.{u, v, w} C).pullback_universal_adj f⟩
 
 /-- NTT Prop 12 (Beck-Chevalley). -/
 noncomputable def prop12_beckChevalley (C : Type u) [Category.{w} C] :
     GSLT.Topos.BeckChevalleyCondition
-      (GSLT.Topos.presheafPredicateFib C)
-      (GSLT.Topos.presheafChangeOfBase C) :=
-  GSLT.Topos.beckChevalleyCondition_presheafChangeOfBase C
+      (GSLT.Topos.presheafPredicateFib.{u, v, w} C)
+      (GSLT.Topos.presheafChangeOfBase.{u, v, w} C) :=
+  GSLT.Topos.beckChevalleyCondition_presheafChangeOfBase.{u, w, v} C
 
 /-- NTT Prop 12 full package. -/
 structure Prop12_IndexedAdjoints (C : Type u) [Category.{w} C] where
   existLeft : ∀ {X Y : Cᵒᵖ ⥤ Type v} (f : X ⟶ Y),
     GaloisConnection
-      ((GSLT.Topos.presheafChangeOfBase C).directImage f)
-      ((GSLT.Topos.presheafChangeOfBase C).pullback f)
+      ((GSLT.Topos.presheafChangeOfBase.{u, v, w} C).directImage f)
+      ((GSLT.Topos.presheafChangeOfBase.{u, v, w} C).pullback f)
   univRight : ∀ {X Y : Cᵒᵖ ⥤ Type v} (f : X ⟶ Y),
     GaloisConnection
-      ((GSLT.Topos.presheafChangeOfBase C).pullback f)
-      ((GSLT.Topos.presheafChangeOfBase C).universalImage f)
+      ((GSLT.Topos.presheafChangeOfBase.{u, v, w} C).pullback f)
+      ((GSLT.Topos.presheafChangeOfBase.{u, v, w} C).universalImage f)
   beckChevalley :
     GSLT.Topos.BeckChevalleyCondition
-      (GSLT.Topos.presheafPredicateFib C)
-      (GSLT.Topos.presheafChangeOfBase C)
+      (GSLT.Topos.presheafPredicateFib.{u, v, w} C)
+      (GSLT.Topos.presheafChangeOfBase.{u, v, w} C)
 
 noncomputable def prop12_package (C : Type u) [Category.{w} C] :
     Prop12_IndexedAdjoints.{u, v, w} C where
-  existLeft f := (GSLT.Topos.presheafChangeOfBase C).direct_pullback_adj f
-  univRight f := (GSLT.Topos.presheafChangeOfBase C).pullback_universal_adj f
-  beckChevalley := GSLT.Topos.beckChevalleyCondition_presheafChangeOfBase C
+  existLeft f := (GSLT.Topos.presheafChangeOfBase.{u, v, w} C).direct_pullback_adj f
+  univRight f := (GSLT.Topos.presheafChangeOfBase.{u, v, w} C).pullback_universal_adj f
+  beckChevalley := GSLT.Topos.beckChevalleyCondition_presheafChangeOfBase.{u, w, v} C
 
 /-! ### Prop 12 Export: Explicit Π/Σ Predicate Rule Package -/
 
@@ -78,54 +79,58 @@ variable {C : Type u} [Category.{w} C]
 /-- A small context bundle for predicate-fibration Π/Σ transport over a map
 `f : A ⟶ B` in the presheaf base. -/
 structure PresheafDepCtx where
-  A : Cᵒᵖ ⥤ Type
-  B : Cᵒᵖ ⥤ Type
+  A : Cᵒᵖ ⥤ Type v
+  B : Cᵒᵖ ⥤ Type v
   f : A ⟶ B
 
 namespace PresheafDepCtx
 
 /-- Reindexing/pullback along the dependent projection. -/
-noncomputable def pb (Δ : PresheafDepCtx (C := C)) :
+noncomputable def pb (Δ : PresheafDepCtx.{u, v, w} (C := C)) :
     CategoryTheory.Subfunctor Δ.B → CategoryTheory.Subfunctor Δ.A :=
-  (GSLT.Topos.presheafChangeOfBase C).pullback Δ.f
+  (GSLT.Topos.presheafChangeOfBase.{u, v, w} C).pullback Δ.f
 
 /-- Σ-forming operator (left adjoint to pullback). -/
-noncomputable def sigmaForm (Δ : PresheafDepCtx (C := C)) :
+noncomputable def sigmaForm (Δ : PresheafDepCtx.{u, v, w} (C := C)) :
     CategoryTheory.Subfunctor Δ.A → CategoryTheory.Subfunctor Δ.B :=
-  (GSLT.Topos.presheafChangeOfBase C).directImage Δ.f
+  (GSLT.Topos.presheafChangeOfBase.{u, v, w} C).directImage Δ.f
 
 /-- Π-forming operator (right adjoint to pullback). -/
-noncomputable def piForm (Δ : PresheafDepCtx (C := C)) :
+noncomputable def piForm (Δ : PresheafDepCtx.{u, v, w} (C := C)) :
     CategoryTheory.Subfunctor Δ.A → CategoryTheory.Subfunctor Δ.B :=
-  (GSLT.Topos.presheafChangeOfBase C).universalImage Δ.f
+  (GSLT.Topos.presheafChangeOfBase.{u, v, w} C).universalImage Δ.f
 
 /-- Σ-η/adjunction law in predicate-fibration form. -/
 theorem sigmaEta_presheaf
-    (Δ : PresheafDepCtx (C := C))
+    (Δ : PresheafDepCtx.{u, v, w} (C := C))
     {φ : CategoryTheory.Subfunctor Δ.A}
     {ψ : CategoryTheory.Subfunctor Δ.B} :
     Δ.sigmaForm φ ≤ ψ ↔ φ ≤ Δ.pb ψ := by
-  rcases prop12_indexedAdjoints (C := C) Δ.f with ⟨hSigma, _hPi⟩
-  simpa [pb, sigmaForm] using (hSigma φ ψ)
+  change
+    (GSLT.Topos.presheafChangeOfBase.{u, v, w} C).directImage Δ.f φ ≤ ψ ↔
+      φ ≤ (GSLT.Topos.presheafChangeOfBase.{u, v, w} C).pullback Δ.f ψ
+  exact (GSLT.Topos.presheafChangeOfBase.{u, v, w} C).direct_pullback_adj Δ.f φ ψ
 
 /-- Π-η/adjunction law in predicate-fibration form. -/
 theorem piEta_presheaf
-    (Δ : PresheafDepCtx (C := C))
+    (Δ : PresheafDepCtx.{u, v, w} (C := C))
     {ψ : CategoryTheory.Subfunctor Δ.B}
     {φ : CategoryTheory.Subfunctor Δ.A} :
     Δ.pb ψ ≤ φ ↔ ψ ≤ Δ.piForm φ := by
-  rcases prop12_indexedAdjoints (C := C) Δ.f with ⟨_hSigma, hPi⟩
-  simpa [pb, piForm] using (hPi ψ φ)
+  change
+    (GSLT.Topos.presheafChangeOfBase.{u, v, w} C).pullback Δ.f ψ ≤ φ ↔
+      ψ ≤ (GSLT.Topos.presheafChangeOfBase.{u, v, w} C).universalImage Δ.f φ
+  exact (GSLT.Topos.presheafChangeOfBase.{u, v, w} C).pullback_universal_adj Δ.f ψ φ
 
 /-- Σ-introduction (unit specialization). -/
 theorem sigmaIntro_presheaf
-    (Δ : PresheafDepCtx (C := C)) (φ : CategoryTheory.Subfunctor Δ.A) :
+    (Δ : PresheafDepCtx.{u, v, w} (C := C)) (φ : CategoryTheory.Subfunctor Δ.A) :
     φ ≤ Δ.pb (Δ.sigmaForm φ) := by
   exact (sigmaEta_presheaf (C := C) (Δ := Δ)).1 le_rfl
 
 /-- Σ-elimination (left-adjoint direction). -/
 theorem sigmaElim_presheaf
-    (Δ : PresheafDepCtx (C := C))
+    (Δ : PresheafDepCtx.{u, v, w} (C := C))
     {φ : CategoryTheory.Subfunctor Δ.A}
     {ψ : CategoryTheory.Subfunctor Δ.B}
     (h : φ ≤ Δ.pb ψ) :
@@ -134,13 +139,13 @@ theorem sigmaElim_presheaf
 
 /-- Σ-β (counit specialization). -/
 theorem sigmaBeta_presheaf
-    (Δ : PresheafDepCtx (C := C)) (ψ : CategoryTheory.Subfunctor Δ.B) :
+    (Δ : PresheafDepCtx.{u, v, w} (C := C)) (ψ : CategoryTheory.Subfunctor Δ.B) :
     Δ.sigmaForm (Δ.pb ψ) ≤ ψ := by
   exact (sigmaEta_presheaf (C := C) (Δ := Δ)).2 le_rfl
 
 /-- Π-introduction (right-adjoint direction). -/
 theorem piIntro_presheaf
-    (Δ : PresheafDepCtx (C := C))
+    (Δ : PresheafDepCtx.{u, v, w} (C := C))
     {ψ : CategoryTheory.Subfunctor Δ.B}
     {φ : CategoryTheory.Subfunctor Δ.A}
     (h : Δ.pb ψ ≤ φ) :
@@ -149,7 +154,7 @@ theorem piIntro_presheaf
 
 /-- Π-elimination (adjunction converse). -/
 theorem piElim_presheaf
-    (Δ : PresheafDepCtx (C := C))
+    (Δ : PresheafDepCtx.{u, v, w} (C := C))
     {ψ : CategoryTheory.Subfunctor Δ.B}
     {φ : CategoryTheory.Subfunctor Δ.A}
     (h : ψ ≤ Δ.piForm φ) :
@@ -158,7 +163,7 @@ theorem piElim_presheaf
 
 /-- Π-β (counit specialization). -/
 theorem piBeta_presheaf
-    (Δ : PresheafDepCtx (C := C)) (φ : CategoryTheory.Subfunctor Δ.A) :
+    (Δ : PresheafDepCtx.{u, v, w} (C := C)) (φ : CategoryTheory.Subfunctor Δ.A) :
     Δ.pb (Δ.piForm φ) ≤ φ := by
   exact (piEta_presheaf (C := C) (Δ := Δ)).2 le_rfl
 
@@ -167,43 +172,43 @@ end PresheafDepCtx
 /-- Reusable theorem package exporting Prop 12 as explicit Π/Σ rule endpoints. -/
 structure PiSigmaPredicateRulePack (C : Type u) [Category.{w} C] where
   piIntro :
-    ∀ (Δ : PresheafDepCtx (C := C))
+    ∀ (Δ : PresheafDepCtx.{u, v, w} (C := C))
       {ψ : CategoryTheory.Subfunctor Δ.B}
       {φ : CategoryTheory.Subfunctor Δ.A},
       Δ.pb ψ ≤ φ → ψ ≤ Δ.piForm φ
   piElim :
-    ∀ (Δ : PresheafDepCtx (C := C))
+    ∀ (Δ : PresheafDepCtx.{u, v, w} (C := C))
       {ψ : CategoryTheory.Subfunctor Δ.B}
       {φ : CategoryTheory.Subfunctor Δ.A},
       ψ ≤ Δ.piForm φ → Δ.pb ψ ≤ φ
   piBeta :
-    ∀ (Δ : PresheafDepCtx (C := C)) (φ : CategoryTheory.Subfunctor Δ.A),
+    ∀ (Δ : PresheafDepCtx.{u, v, w} (C := C)) (φ : CategoryTheory.Subfunctor Δ.A),
       Δ.pb (Δ.piForm φ) ≤ φ
   piEta :
-    ∀ (Δ : PresheafDepCtx (C := C))
+    ∀ (Δ : PresheafDepCtx.{u, v, w} (C := C))
       {ψ : CategoryTheory.Subfunctor Δ.B}
       {φ : CategoryTheory.Subfunctor Δ.A},
       Δ.pb ψ ≤ φ ↔ ψ ≤ Δ.piForm φ
   sigmaIntro :
-    ∀ (Δ : PresheafDepCtx (C := C)) (φ : CategoryTheory.Subfunctor Δ.A),
+    ∀ (Δ : PresheafDepCtx.{u, v, w} (C := C)) (φ : CategoryTheory.Subfunctor Δ.A),
       φ ≤ Δ.pb (Δ.sigmaForm φ)
   sigmaElim :
-    ∀ (Δ : PresheafDepCtx (C := C))
+    ∀ (Δ : PresheafDepCtx.{u, v, w} (C := C))
       {φ : CategoryTheory.Subfunctor Δ.A}
       {ψ : CategoryTheory.Subfunctor Δ.B},
       φ ≤ Δ.pb ψ → Δ.sigmaForm φ ≤ ψ
   sigmaBeta :
-    ∀ (Δ : PresheafDepCtx (C := C)) (ψ : CategoryTheory.Subfunctor Δ.B),
+    ∀ (Δ : PresheafDepCtx.{u, v, w} (C := C)) (ψ : CategoryTheory.Subfunctor Δ.B),
       Δ.sigmaForm (Δ.pb ψ) ≤ ψ
   sigmaEta :
-    ∀ (Δ : PresheafDepCtx (C := C))
+    ∀ (Δ : PresheafDepCtx.{u, v, w} (C := C))
       {φ : CategoryTheory.Subfunctor Δ.A}
       {ψ : CategoryTheory.Subfunctor Δ.B},
       Δ.sigmaForm φ ≤ ψ ↔ φ ≤ Δ.pb ψ
 
 /-- Prop 12 packaged as explicit Π/Σ predicate rules over presheaf fibers. -/
 noncomputable def prop12_piSigmaPredicateRulePack :
-    PiSigmaPredicateRulePack C where
+    PiSigmaPredicateRulePack.{u, v, w} C where
   piIntro := by
     intro Δ ψ φ h
     exact PresheafDepCtx.piIntro_presheaf (C := C) (Δ := Δ) h
@@ -232,7 +237,7 @@ noncomputable def prop12_piSigmaPredicateRulePack :
 /-- Direct exported Π-η endpoint from the Prop 12 ΠΣ rule pack.
 This avoids consumers needing to project fields from the packed structure. -/
 theorem prop12_piEta_presheaf
-    (Δ : PresheafDepCtx (C := C))
+    (Δ : PresheafDepCtx.{u, v, w} (C := C))
     {ψ : CategoryTheory.Subfunctor Δ.B}
     {φ : CategoryTheory.Subfunctor Δ.A} :
     Δ.pb ψ ≤ φ ↔ ψ ≤ Δ.piForm φ := by
@@ -241,7 +246,7 @@ theorem prop12_piEta_presheaf
 /-- Direct exported Σ-η endpoint from the Prop 12 ΠΣ rule pack.
 This avoids consumers needing to project fields from the packed structure. -/
 theorem prop12_sigmaEta_presheaf
-    (Δ : PresheafDepCtx (C := C))
+    (Δ : PresheafDepCtx.{u, v, w} (C := C))
     {φ : CategoryTheory.Subfunctor Δ.A}
     {ψ : CategoryTheory.Subfunctor Δ.B} :
     Δ.sigmaForm φ ≤ ψ ↔ φ ≤ Δ.pb ψ := by
@@ -261,7 +266,7 @@ structure Prop14_CosmicFibration (C : Type u) [Category.{w} C] where
 noncomputable def prop14_cosmicFibration (C : Type u) [Category.{w} C] :
     Prop14_CosmicFibration.{u, v, w} C where
   indexed := prop12_package C
-  frameFibers F := GSLT.Topos.presheafSubfunctorFrame F
+  frameFibers F := GSLT.Topos.presheafSubfunctorFrame (C := Cᵒᵖ) F
 
 /-! ## NTT Proposition 17: Reification Right Adjoint -/
 
@@ -319,7 +324,7 @@ def domainFunctor (C : Type u) [Category.{v} C] : Arrow C ⥤ C :=
 
 structure Def21_CodomainFibration (C : Type u) [Category.{v} C] where
   totalCat : Type (max u v)
-  totalCatCategory : Category totalCat
+  totalCatCategory : Category.{v} totalCat
   codomain : @Functor totalCat totalCatCategory C _
   domain : @Functor totalCat totalCatCategory C _
 
@@ -364,11 +369,15 @@ noncomputable def def21_cartesianLift_universal [Limits.HasPullbacks C]
     (arr : Arrow C) {Y : C} (f : Y ⟶ arr.right)
     {w : Arrow C} (τ : w ⟶ arr) (g : w.right ⟶ Y)
     (hg : g ≫ f = τ.right) :
-    w ⟶ def21_cartesianLift arr f :=
-  Arrow.homMk
-    (Limits.pullback.lift τ.left (w.hom ≫ g) (by rw [Category.assoc, hg, Arrow.w]))
+    w ⟶ def21_cartesianLift arr f := by
+  let hpb : τ.left ≫ arr.hom = (w.hom ≫ g) ≫ f := by
+    rw [Category.assoc, hg, Arrow.w]
+  exact Arrow.homMk
+    (Limits.pullback.lift τ.left (w.hom ≫ g) hpb)
     g
-    (by simp [def21_cartesianLift])
+    (by
+      dsimp [def21_cartesianLift]
+      exact Limits.pullback.lift_snd τ.left (w.hom ≫ g) hpb)
 
 /-- The universal factorization composes to give the original morphism. -/
 theorem def21_cartesianLift_universal_comp [Limits.HasPullbacks C]
@@ -377,9 +386,15 @@ theorem def21_cartesianLift_universal_comp [Limits.HasPullbacks C]
     (hg : g ≫ f = τ.right) :
     def21_cartesianLift_universal arr f τ g hg ≫
       def21_cartesianLiftMorphism arr f = τ := by
+  let hpb : τ.left ≫ arr.hom = (w.hom ≫ g) ≫ f := by
+    rw [Category.assoc, hg, Arrow.w]
   ext
-  · simp [def21_cartesianLift_universal, def21_cartesianLiftMorphism]
-  · simp [def21_cartesianLift_universal, def21_cartesianLiftMorphism, hg]
+  · change
+      Limits.pullback.lift τ.left (w.hom ≫ g) hpb ≫
+          Limits.pullback.fst arr.hom f = τ.left
+    exact Limits.pullback.lift_fst τ.left (w.hom ≫ g) hpb
+  · change g ≫ f = τ.right
+    exact hg
 
 end CartesianLift
 
@@ -421,12 +436,18 @@ theorem imageComprehension_galois_key {G F : Cᵒᵖ ⥤ Type v}
     ∃ (lift : G ⟶ φ.toFunctor), lift ≫ φ.ι = p := by
   refine ⟨?_, ?_⟩
   · exact
-    { app := fun U x => ⟨p.app U x, h U (Set.mem_range_self x)⟩
+    { app := fun U =>
+        ConcreteCategory.ofHom
+          (TypeCat.Fun.mk (fun x => ⟨p.app U x, h U (Set.mem_range_self x)⟩))
       naturality := by
-        intro U V f; ext x
+        intro U V f
+        apply ConcreteCategory.hom_injective
+        apply TypeCat.Fun.ext
+        funext x
         simp [Subfunctor.toFunctor]
-        exact congrFun (p.naturality f) x }
-  · ext U x; simp [Subfunctor.ι]
+    }
+  · ext U x
+    simp [Subfunctor.ι, TypeCat.Fun.coe_mk]
 
 /-- Reverse Galois direction: factoring through `φ.ι` implies `range(p) ≤ φ`.
     If `p = lift ≫ φ.ι`, then `range(p) ⊆ range(φ.ι) = φ`. -/
@@ -506,7 +527,7 @@ open TheoryMorphism in
     and composition of theory morphisms. -/
 structure InternalLanguageFunctorialLaws where
   /-- Identity morphism preserves Π/Ω/Prop. -/
-  map_id : ∀ (L : LambdaTheory) (S : L.Obj)
+  map_id : ∀ (L : LambdaTheory.{u}) (S : L.Obj)
     (types : Set (L.fibration.Sub S)) (φ ψ : L.fibration.Sub S),
     (TheoryMorphism.id L).mapPred (piType L S types) =
       piType L ((TheoryMorphism.id L).mapSort S) ((TheoryMorphism.id L).mapPred '' types)
@@ -518,7 +539,7 @@ structure InternalLanguageFunctorialLaws where
       implType L ((TheoryMorphism.id L).mapSort S)
         ((TheoryMorphism.id L).mapPred φ) ((TheoryMorphism.id L).mapPred ψ)
   /-- Composition of morphisms preserves Π/Ω/Prop. -/
-  map_comp : ∀ {L₁ L₂ L₃ : LambdaTheory}
+  map_comp : ∀ {L₁ L₂ L₃ : LambdaTheory.{u}}
     (F : TheoryMorphism L₁ L₂) (G : TheoryMorphism L₂ L₃)
     (S : L₁.Obj) (types : Set (L₁.fibration.Sub S)) (φ ψ : L₁.fibration.Sub S),
     (TheoryMorphism.comp G F).mapPred (piType L₁ S types) =
@@ -536,7 +557,7 @@ structure InternalLanguageFunctorialLaws where
 open Mettapedia.CategoryTheory.LambdaTheories in
 open TheoryMorphism in
 /-- The internal language functorial laws are satisfied. -/
-def thm23_functorialLaws : InternalLanguageFunctorialLaws where
+def thm23_functorialLaws : InternalLanguageFunctorialLaws.{u} where
   map_id L S types φ ψ :=
     TheoryMorphism.id_piOmegaProp_translation_endpoint L S types φ ψ
   map_comp F G S types φ ψ :=

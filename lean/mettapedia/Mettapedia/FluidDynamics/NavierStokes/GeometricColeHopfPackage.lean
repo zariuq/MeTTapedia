@@ -171,11 +171,7 @@ theorem WeightedObservable.geometricColeHopfPackage_gamma_Wcoeff_le
       selector ν B hν hB cutoff hcutoff_cont hcutoff curlFrame curlBound curlBound_nonneg hcurl x
       : ManuscriptTruncationPackage (Time := Time) (ι := ι) (X := X)
           radiusSq (matchingObservable L))
-  simpa [WeightedObservable.geometricColeHopfFiniteModeKernelData,
-    WeightedObservable.geometricColeHopfKernelSemigroupData,
-    WeightedObservable.geometricColeHopfLowerBound,
-    WeightedObservable.geometricColeHopfEnergyBound,
-    WeightedObservable.geometricColeHopfManuscriptPackage, P] using P.gamma_Wcoeff_le t
+  exact P.gamma_Wcoeff_le t
 
 theorem WeightedObservable.geometricColeHopfPackage_abs_vorticity_le_uniform
     (L : WeightedObservable)
@@ -204,12 +200,7 @@ theorem WeightedObservable.geometricColeHopfPackage_abs_vorticity_le_uniform
       selector ν B hν hB cutoff hcutoff_cont hcutoff curlFrame curlBound curlBound_nonneg hcurl x
       : ManuscriptTruncationPackage (Time := Time) (ι := ι) (X := X)
           radiusSq (matchingObservable L))
-  simpa [WeightedObservable.geometricColeHopfVorticity,
-    WeightedObservable.geometricColeHopfFiniteModeKernelData,
-    WeightedObservable.geometricColeHopfKernelSemigroupData,
-    WeightedObservable.geometricColeHopfLowerBound,
-    WeightedObservable.geometricColeHopfEnergyBound,
-    WeightedObservable.geometricColeHopfManuscriptPackage, P] using P.abs_vorticity_le_uniform
+  exact P.abs_vorticity_le_uniform
 
 end GeometricColeHopfPackage
 

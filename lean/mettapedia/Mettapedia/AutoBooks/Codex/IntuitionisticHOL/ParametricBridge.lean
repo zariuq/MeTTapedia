@@ -84,7 +84,7 @@ def toEmptyParamPrimeSeparatingExtension
         (emptyParamRetraction (Base := Base) (Const := Const)))) ?_ ?_
     · intro chi hchi
       rcases List.mem_map.mp hchi with ⟨theta, htheta, rfl⟩
-      simpa [emptyParamTheorySet] using hGamma theta htheta
+      exact hGamma theta htheta
     · simpa [Mettapedia.Logic.HOL.mapClosedFormula] using
         (ExtDerivation.closedTheory_mapConst
           (Base := Base)
@@ -104,8 +104,8 @@ def toEmptyParamPrimeSeparatingExtension
         (emptyParamRetraction (Base := Base) (Const := Const)))) ?_ ?_
     · intro chi hchi
       rcases List.mem_map.mp hchi with ⟨theta, htheta, rfl⟩
-      simpa [emptyParamTheorySet] using hGamma theta htheta
-    · simpa [Mettapedia.Logic.HOL.mapClosedFormula] using
+      exact hGamma theta htheta
+    · exact
         (ExtDerivation.closedTheory_mapConst
           (Base := Base)
           (Const := ParamConst (Base := Base) Const [])
@@ -119,15 +119,15 @@ def toEmptyParamPrimeSeparatingExtension
         (.or
           (Mettapedia.Logic.HOL.mapClosedFormula
             (emptyParamRetraction (Base := Base) (Const := Const)) phi)
-          (Mettapedia.Logic.HOL.mapClosedFormula
+            (Mettapedia.Logic.HOL.mapClosedFormula
             (emptyParamRetraction (Base := Base) (Const := Const)) psi)
             : ClosedFormula Const) ∈ U := by
-      simpa [emptyParamTheorySet, Mettapedia.Logic.HOL.mapClosedFormula] using hOr
+      exact hOr
     rcases hFU.prime_or hOr' with hphi | hpsi
     · left
-      simpa [emptyParamTheorySet] using hphi
+      exact hphi
     · right
-      simpa [emptyParamTheorySet] using hpsi
+      exact hpsi
   · intro hSucc
     change
       Mettapedia.Logic.HOL.mapClosedFormula
@@ -158,7 +158,7 @@ theorem emptyParamTheorySet_existsWitness
       (.ex (Mettapedia.Logic.HOL.mapConst
         (emptyParamRetraction (Base := Base) (Const := Const)) psi)
           : ClosedFormula Const) ∈ U := by
-    simpa [emptyParamTheorySet, Mettapedia.Logic.HOL.mapClosedFormula] using hEx
+    exact hEx
   rcases hExistsWitness hEx' with ⟨t, ht⟩
   refine ⟨Mettapedia.Logic.HOL.mapConst
     (paramEmbedding (Base := Base) (Const := Const) [])
@@ -195,8 +195,7 @@ theorem emptyParamTheorySet_allCounterexample
         (emptyParamRetraction (Base := Base) (Const := Const)) psi)
           : ClosedFormula Const) ∉ U := by
     intro hMem
-    exact hAll <| by
-      simpa [emptyParamTheorySet, Mettapedia.Logic.HOL.mapClosedFormula] using hMem
+    exact hAll hMem
   rcases hAllCounterexample hAll' with ⟨t, ht⟩
   refine ⟨Mettapedia.Logic.HOL.mapConst
     (paramEmbedding (Base := Base) (Const := Const) [])
@@ -247,7 +246,13 @@ theorem true_mem_close_of_true_mem
     (hphi : (Sign.trueE, phi) ∈ H.close.formulas) :
     P phi := by
   have hphi' : phi = (.top : ClosedFormula Const) ∨ (Sign.trueE, phi) ∈ H.formulas := by
-    simpa [HintikkaSet.close] using hphi
+    rw [HintikkaSet.close] at hphi
+    rcases List.mem_cons.mp hphi with hTop | hRest
+    · cases hTop
+      exact Or.inl rfl
+    rcases List.mem_cons.mp hRest with hBot | hTail
+    · cases hBot
+    · exact Or.inr hTail
   rcases hphi' with rfl | hphi'
   · exact hTop
   · exact hTrue hphi'
@@ -264,7 +269,13 @@ theorem false_mem_close_of_false_mem
     (hphi : (Sign.falseE, phi) ∈ H.close.formulas) :
     P phi := by
   have hphi' : phi = (.bot : ClosedFormula Const) ∨ (Sign.falseE, phi) ∈ H.formulas := by
-    simpa [HintikkaSet.close] using hphi
+    rw [HintikkaSet.close] at hphi
+    rcases List.mem_cons.mp hphi with hTop | hRest
+    · cases hTop
+    rcases List.mem_cons.mp hRest with hBot | hTail
+    · cases hBot
+      exact Or.inl rfl
+    · exact Or.inr hTail
   rcases hphi' with rfl | hphi'
   · exact hBot
   · exact hFalse hphi'
@@ -824,9 +835,9 @@ theorem exists_candidateParamRootCounterworld_of_exists_worldAgreement
               (CompletenessFrontier.paramEmbedding
                 (Base := Base) (Const := Const) Gamma) phi ∉ world.carrier)) :
     Nonempty (CandidateParamRootCounterworld (Base := Base) (Const := Const) C) := by
-  simpa [CertifiedCountermodelCandidate.toCertifiedCompletion] using
-    (CertifiedHeadPriorityCompletion.exists_candidateParamRootCounterworld_of_exists_worldAgreement
-      (C := C.toCertifiedCompletion) hW)
+  exact
+    CertifiedHeadPriorityCompletion.exists_candidateParamRootCounterworld_of_exists_worldAgreement
+      (C := C.toCertifiedCompletion) hW
 
 /-- Raw parameterized prime-extension agreement can be consumed directly at the
 certified candidate layer. -/
@@ -858,9 +869,9 @@ theorem exists_candidateParamPrimeExtension_of_exists_primeExtensionAgreement
               (CompletenessFrontier.paramEmbedding
                 (Base := Base) (Const := Const) Gamma) phi ∉ carrier)) :
     Nonempty (CandidateParamPrimeExtension (Base := Base) (Const := Const) C) := by
-  simpa [CertifiedCountermodelCandidate.toCertifiedCompletion] using
-    (CertifiedHeadPriorityCompletion.exists_candidateParamPrimeExtension_of_exists_primeExtensionAgreement
-      (C := C.toCertifiedCompletion) hW)
+  exact
+    CertifiedHeadPriorityCompletion.exists_candidateParamPrimeExtension_of_exists_primeExtensionAgreement
+      (C := C.toCertifiedCompletion) hW
 
 /-- A certified candidate parameterized world already yields the native
 root-counterworld boundary for the frontier. -/
@@ -882,9 +893,9 @@ theorem exists_candidateParamRootCounterworld_of_exists_candidateParamPrimeExten
     (hW :
       Nonempty (CandidateParamPrimeExtension (Base := Base) (Const := Const) C)) :
     Nonempty (CandidateParamRootCounterworld (Base := Base) (Const := Const) C) := by
-  simpa [CertifiedCountermodelCandidate.toCertifiedCompletion] using
-    (CertifiedHeadPriorityCompletion.exists_candidateParamRootCounterworld_of_exists_candidateParamPrimeExtension
-      (C := C.toCertifiedCompletion) hW)
+  exact
+    CertifiedHeadPriorityCompletion.exists_candidateParamRootCounterworld_of_exists_candidateParamPrimeExtension
+      (C := C.toCertifiedCompletion) hW
 
 /-- A certified candidate parameterized prime extension already yields the
 native root-counterworld boundary for the frontier. -/
@@ -1034,8 +1045,7 @@ theorem agreesWithTheorySet_of_mem_initial
   rcases List.mem_append.mp hsf with hsf | hsf
   · rcases List.mem_map.mp hsf with ⟨phi, hphi, rfl⟩
     exact hFU.contains_antecedents hphi
-  · simp at hsf
-    rcases hsf with rfl
+  · rcases List.mem_singleton.mp hsf with rfl
     exact hFU.omits_succedent
 
 /-- A head-priority derivation is theory-set-guided when every local step it

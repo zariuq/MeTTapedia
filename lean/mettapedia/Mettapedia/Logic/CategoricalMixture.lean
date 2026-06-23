@@ -73,7 +73,7 @@ lemma probSimplex_sum_one {k : ℕ} (θ : ProbSimplex k) :
     ∑ a, (θ : Fin k → ℝ) a = 1 := θ.2.2
 
 lemma measurableSet_stdSimplex (k : ℕ) : MeasurableSet (stdSimplex ℝ (Fin k)) :=
-  (isClosed_stdSimplex (Fin k)).measurableSet
+  (isClosed_stdSimplex ℝ (Fin k)).measurableSet
 
 /-! ## Categorical PMF -/
 

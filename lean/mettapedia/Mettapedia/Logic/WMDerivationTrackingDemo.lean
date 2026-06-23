@@ -302,7 +302,8 @@ theorem extract_fullState_moldRisk :
       (Query := GroundAtom mapleCourtSig)
       (Ev := Which (Fin 2))
       fullState moldRisk₁ = pipeProv := by
-  simpa using fullState_moldRisk
+  change fullState moldRisk₁ = pipeProv
+  exact fullState_moldRisk
 
 theorem extract_fullState_bathroomHumidity :
     AdditiveWorldModel.extract
@@ -310,7 +311,8 @@ theorem extract_fullState_bathroomHumidity :
       (Query := GroundAtom mapleCourtSig)
       (Ev := Which (Fin 2))
       fullState bathroomHumidity₁ = showerProv := by
-  simpa using fullState_bathroomHumidity
+  change fullState bathroomHumidity₁ = showerProv
+  exact fullState_bathroomHumidity
 
 /-! ## 9. Scoped tracked state -/
 

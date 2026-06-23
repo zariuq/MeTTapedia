@@ -79,13 +79,24 @@ inductive DemoRel
   deriving DecidableEq, Fintype, Repr
 
 /-- A function-free propositional LP signature. -/
-abbrev DemoSig : LPSignature where
-  constants := PUnit
-  vars := PEmpty
+abbrev DemoConst : Type := PUnit
+abbrev DemoVar : Type := PEmpty
+abbrev DemoFun : Type := PEmpty
+
+def DemoSig : LPSignature where
+  constants := DemoConst
+  vars := DemoVar
   relationSymbols := DemoRel
   relationArity := fun _ => 0
-  functionSymbols := PEmpty
+  functionSymbols := DemoFun
   functionArity := PEmpty.elim
+
+instance : IsEmpty DemoSig.functionSymbols := inferInstanceAs (IsEmpty DemoFun)
+instance : DecidableEq DemoSig.constants := inferInstanceAs (DecidableEq DemoConst)
+instance : DecidableEq DemoSig.vars := inferInstanceAs (DecidableEq DemoVar)
+instance : DecidableEq DemoSig.relationSymbols := inferInstanceAs (DecidableEq DemoRel)
+instance : Fintype DemoSig.constants := inferInstanceAs (Fintype DemoConst)
+instance : Fintype DemoSig.vars := inferInstanceAs (Fintype DemoVar)
 
 /-- Nullary atom constructor. -/
 def atom₀ (r : DemoRel) : Atom DemoSig where
@@ -107,6 +118,15 @@ theorem groundAtom_eq_gatom₀ (q : GroundAtom DemoSig) : q = gatom₀ q.symbol 
 
 @[simp] theorem groundAtom_symbol_gatom₀ (r : DemoRel) :
     (gatom₀ r).symbol = r := rfl
+
+@[simp] theorem gatom₀_eq_gatom₀ {r s : DemoRel} :
+    gatom₀ r = gatom₀ s ↔ r = s := by
+  constructor
+  · intro h
+    exact congrArg GroundAtom.symbol h
+  · intro h
+    cases h
+    rfl
 
 /-! ## 2. The rule KB -/
 
@@ -159,22 +179,27 @@ noncomputable def seededStep (seed : DemoKState) (I : DemoKState) : DemoKState :
   seed + T_P_K_LP (σ := DemoSig) (Which ObsIx) ruleKB I
 
 /-- The unique grounding of the propositional demo. -/
-def g⋆ : Grounding DemoSig := fun v => PEmpty.elim v
+def gStar : Grounding DemoSig := fun v => PEmpty.elim v
 
 theorem grounding_univ_singleton :
-    (Finset.univ : Finset (Grounding DemoSig)) = {g⋆} := by
+    (Finset.univ : Finset (Grounding DemoSig)) = {gStar} := by
   ext g
-  simp [g⋆]
-  constructor
-  · intro _
-    funext v
-    exact PEmpty.elim v
-  · intro _
-    simp
+  simp
+  funext v
+  exact PEmpty.elim v
 
 @[simp] theorem groundAtom_atom₀ (g : Grounding DemoSig) (r : DemoRel) :
     g.groundAtom (atom₀ r) = gatom₀ r := by
-  rfl
+  apply GroundAtom.ext
+  · rfl
+  · apply heq_of_eq
+    funext i
+    exact Fin.elim0 i
+
+@[simp] theorem groundAtom_nullary_mk (g : Grounding DemoSig) (r : DemoRel) :
+    g.groundAtom ({ symbol := r, args := fun i => Fin.elim0 i } : Atom DemoSig) =
+      gatom₀ r := by
+  simpa [atom₀] using groundAtom_atom₀ g r
 
 /-- One-step evaluation of the demo rule KB at each named atom. -/
 theorem seededStep_apply_named
@@ -216,59 +241,39 @@ def fullClosure : DemoKState := pipeClosure + showerClosure
 theorem pipeClosure_from_two_steps :
     seededStep pipeSeed (seededStep pipeSeed pipeSeed) = pipeClosure := by
   funext q
-  cases q with
-  | mk r args =>
-      have hargs : args = (fun i => Fin.elim0 i) := by
-        funext i
-        exact Fin.elim0 i
-      subst hargs
-      cases r <;>
-        simp [pipeClosure, pipeSeed, ev₁, seededStep_apply_named, gatom₀,
-          o₁, o₂]
+  rw [groundAtom_eq_gatom₀ q]
+  cases q.symbol <;>
+    simp [pipeClosure, pipeSeed, ev₁, seededStep, T_P_K_LP, ruleKB, wallRule,
+      bathroomRule, moldRule, grounding_univ_singleton, atom₀, gatom₀, o₁]
 
 /-- Two seeded rounds compute the shower-only closure exactly. -/
 theorem showerClosure_from_two_steps :
     seededStep showerSeed (seededStep showerSeed showerSeed) = showerClosure := by
   funext q
-  cases q with
-  | mk r args =>
-      have hargs : args = (fun i => Fin.elim0 i) := by
-        funext i
-        exact Fin.elim0 i
-      subst hargs
-      cases r <;>
-        simp [showerClosure, showerSeed, ev₂, seededStep_apply_named, gatom₀,
-          o₁, o₂]
+  rw [groundAtom_eq_gatom₀ q]
+  cases q.symbol <;>
+    simp [showerClosure, showerSeed, ev₂, seededStep, T_P_K_LP, ruleKB, wallRule,
+      bathroomRule, moldRule, grounding_univ_singleton, atom₀, gatom₀, o₂]
 
 /-- Two seeded rounds compute the combined closure exactly. -/
 theorem fullClosure_from_two_steps :
     seededStep bothSeed (seededStep bothSeed bothSeed) = fullClosure := by
   funext q
-  cases q with
-  | mk r args =>
-      have hargs : args = (fun i => Fin.elim0 i) := by
-        funext i
-        exact Fin.elim0 i
-      subst hargs
-      cases r <;>
-        simp [fullClosure, pipeClosure, showerClosure, bothSeed, pipeSeed, showerSeed,
-          ev₁, ev₂, seededStep_apply_named, gatom₀, o₁, o₂, add_comm, add_left_comm,
-          add_assoc]
+  rw [groundAtom_eq_gatom₀ q]
+  cases q.symbol <;>
+    simp [fullClosure, pipeClosure, showerClosure, bothSeed, pipeSeed, showerSeed,
+      ev₁, ev₂, seededStep, T_P_K_LP, ruleKB, wallRule, bathroomRule, moldRule,
+      grounding_univ_singleton, atom₀, gatom₀, o₁, o₂]
 
 /-- The two-round combined closure is already a fixpoint of the seeded operator. -/
 theorem fullClosure_fixpoint :
     seededStep bothSeed fullClosure = fullClosure := by
   funext q
-  cases q with
-  | mk r args =>
-      have hargs : args = (fun i => Fin.elim0 i) := by
-        funext i
-        exact Fin.elim0 i
-      subst hargs
-      cases r <;>
-        simp [fullClosure, pipeClosure, showerClosure, bothSeed, pipeSeed, showerSeed,
-          ev₁, ev₂, seededStep_apply_named, gatom₀, o₁, o₂, add_comm, add_left_comm,
-          add_assoc]
+  rw [groundAtom_eq_gatom₀ q]
+  cases q.symbol <;>
+    simp [fullClosure, pipeClosure, showerClosure, bothSeed, pipeSeed, showerSeed,
+      ev₁, ev₂, seededStep, T_P_K_LP, ruleKB, wallRule, bathroomRule, moldRule,
+      grounding_univ_singleton, atom₀, gatom₀, o₁, o₂]
 
 /-! ## 5. Stage-2 query theorems: provenance visible on derived facts -/
 
@@ -286,14 +291,16 @@ theorem extract_fullClosure_moldRisk :
     AdditiveWorldModel.extract
       (State := DemoKState) (Query := GroundAtom DemoSig) (Ev := Which ObsIx)
       fullClosure (gatom₀ .moldRisk₁) = ev₁ := by
-  simpa [fullClosure, pipeClosure, showerClosure, ev₁]
+  change fullClosure (gatom₀ .moldRisk₁) = ev₁
+  exact fullClosure_moldRisk
 
 
 theorem extract_fullClosure_bathroomHumidity :
     AdditiveWorldModel.extract
       (State := DemoKState) (Query := GroundAtom DemoSig) (Ev := Which ObsIx)
       fullClosure (gatom₀ .bathroomHumidity₁) = ev₂ := by
-  simpa [fullClosure, pipeClosure, showerClosure, ev₂]
+  change fullClosure (gatom₀ .bathroomHumidity₁) = ev₂
+  exact fullClosure_bathroomHumidity
 
 /-! ## 7. Scoped tracked WM state -/
 
@@ -330,8 +337,13 @@ theorem extract_toScopedTrackedWhichState
           (toScopedTrackedWhichState (σ := DemoSig) (n := 2) (m := 2) s I) q = Which.wset support
       rw [scopedTrackedEvidence_eq_wset_of_support_ne_empty _ _ hs]
       unfold scopedTrackedPayloadSupport scopedTrackedUnionSupport toScopedTrackedWhichState
-      ext i
       simp [hI]
+      ext x
+      simp [Finset.mem_biUnion, Finset.mem_image]
+      constructor
+      · rintro ⟨a, (⟨hm, rfl⟩ | ⟨hm, rfl⟩), hxa⟩ <;> simp_all
+      · intro hx
+        exact ⟨some x, by fin_cases x <;> simp_all, by simp⟩
 
 /-- The scoped tracked state exposes the same evidence as the bridged `KRelation`. -/
 theorem extract_fullScoped_eq_fullClosure (q : GroundAtom DemoSig) :
@@ -341,12 +353,14 @@ theorem extract_fullScoped_eq_fullClosure (q : GroundAtom DemoSig) :
     AdditiveWorldModel.extract
       (State := DemoKState) (Query := GroundAtom DemoSig) (Ev := Which ObsIx)
       fullClosure q := by
-  unfold fullScoped fullClosure
+  unfold fullScoped
   rw [AdditiveWorldModel.extract_add'
       (State := DemoScopedState) (Query := GroundAtom DemoSig) (Ev := Which ObsIx)
       showerScoped pipeScoped q]
+  unfold showerScoped pipeScoped fullClosure
   rw [extract_toScopedTrackedWhichState, extract_toScopedTrackedWhichState]
-  simp [add_comm, add_left_comm, add_assoc]
+  change showerClosure q + pipeClosure q = (pipeClosure + showerClosure) q
+  simp [Pi.add_apply, add_comm]
 
 theorem extract_fullScoped_moldRisk :
     AdditiveWorldModel.extract
@@ -412,7 +426,7 @@ theorem forget_o₁_extract_moldRisk :
       (forgetScopedByScope ({s₁} : Finset (Fin 2)) fullScoped)
       (gatom₀ .moldRisk₁) = 0 := by
   rw [forget_s₁_exact]
-  simpa [showerClosure] using
+  simpa [showerScoped, showerClosure] using
     (extract_toScopedTrackedWhichState s₂ showerClosure (gatom₀ .moldRisk₁))
 
 /-- Forgetting `o₁` preserves `BathroomHumidity₁`. -/
@@ -422,7 +436,7 @@ theorem forget_o₁_extract_bathroomHumidity :
       (forgetScopedByScope ({s₁} : Finset (Fin 2)) fullScoped)
       (gatom₀ .bathroomHumidity₁) = ev₂ := by
   rw [forget_s₁_exact]
-  simpa [showerClosure, ev₂] using
+  simpa [showerScoped, showerClosure, ev₂] using
     (extract_toScopedTrackedWhichState s₂ showerClosure (gatom₀ .bathroomHumidity₁))
 
 /-- Forgetting `o₂` kills `BathroomHumidity₁`. -/
@@ -432,7 +446,7 @@ theorem forget_o₂_extract_bathroomHumidity :
       (forgetScopedByScope ({s₂} : Finset (Fin 2)) fullScoped)
       (gatom₀ .bathroomHumidity₁) = 0 := by
   rw [forget_s₂_exact]
-  simpa [pipeClosure] using
+  simpa [pipeScoped, pipeClosure] using
     (extract_toScopedTrackedWhichState s₁ pipeClosure (gatom₀ .bathroomHumidity₁))
 
 /-- Forgetting `o₂` preserves `MoldRisk₁`. -/
@@ -442,7 +456,7 @@ theorem forget_o₂_extract_moldRisk :
       (forgetScopedByScope ({s₂} : Finset (Fin 2)) fullScoped)
       (gatom₀ .moldRisk₁) = ev₁ := by
   rw [forget_s₂_exact]
-  simpa [pipeClosure, ev₁] using
+  simpa [pipeScoped, pipeClosure, ev₁] using
     (extract_toScopedTrackedWhichState s₁ pipeClosure (gatom₀ .moldRisk₁))
 
 /-! ## 10. Stage-5 conservation: forgetting after remembering is identity -/

@@ -61,7 +61,7 @@ Cox's theorem does the same from a different starting point.
 
 import Mettapedia.ProbabilityTheory.Cox
 import Mettapedia.ProbabilityTheory.ImpreciseProbability
-import Mettapedia.ProbabilityTheory.KnuthSkilling
+import KnuthSkilling
 -- Note: BeliefFunctions and QuantumProbability imported separately
 
 namespace Mettapedia.ProbabilityTheory.Unified

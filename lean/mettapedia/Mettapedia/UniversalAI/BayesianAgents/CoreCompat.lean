@@ -78,7 +78,7 @@ theorem wellFormed_historyToCore (h : History) :
               Core.History.wellFormed (Action := Action) (Percept := Percept) (historyToCore tl2) =
                 History.wellFormed tl2 := by
             exact ih tl2.length hlt tl2 rfl
-          simpa using ht2
+          simpa [historyToCore] using ht2
 
 theorem wellFormed_historyFromCore (h : CoreHistory) :
     History.wellFormed (historyFromCore h) =

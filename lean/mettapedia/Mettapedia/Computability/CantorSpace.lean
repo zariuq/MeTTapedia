@@ -240,7 +240,6 @@ theorem coinMeasure_proj (n : ℕ) :
     (s := Finset.range n) (t := fun i => if h : i < n then s ⟨i, h⟩ else Set.univ) h_meas
   rw [h_pi]
   -- Goal: ∏ i ∈ range n, bernoulliHalfMeasure (dite ...) = ∏ i : Fin n, bernoulliHalfMeasure (s i)
-  simp only
   rw [Finset.prod_range (fun i => bernoulliHalfMeasure (if h : i < n then s ⟨i, h⟩ else Set.univ))]
   congr 1
   ext i : 1

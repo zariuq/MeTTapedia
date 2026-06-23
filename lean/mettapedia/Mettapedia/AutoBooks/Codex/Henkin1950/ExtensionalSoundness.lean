@@ -120,7 +120,7 @@ theorem extensional_derivation_sound_of_eqAppArgSound
       simpa using hbody'
   | eqRefl t =>
       intro M ρ hSound hρ hΔ
-      simpa using
+      exact
         HenkinModel.eqv_refl M.toHenkinModel
           (HenkinModel.denote_admissible M.toHenkinModel hρ t)
   | eqSymm h ih =>
@@ -165,7 +165,7 @@ theorem extensional_derivation_sound_of_eqAppArgSound
         (Mettapedia.Logic.HOL.Soundness.satisfies_weakenHyps M.toHenkinModel hΔ x)
   | funExt h ih =>
       intro M ρ hSound hρ hΔ x hx
-      simpa [HenkinModel.denote, PreModel.denote] using
+      simpa [HenkinModel.denote, PreModel.denote, HenkinModel.extend, PreModel.extend] using
         (ih hSound hρ hΔ x hx)
   | beta t u =>
       intro M ρ hSound hρ hΔ
@@ -175,7 +175,7 @@ theorem extensional_derivation_sound_of_eqAppArgSound
             (instantiate (Base := Atom) t u))
   | eta f =>
       intro M ρ hSound hρ hΔ x hx
-      simpa [HenkinModel.denote, PreModel.denote] using
+      simpa [HenkinModel.denote, PreModel.denote, HenkinModel.extend, PreModel.extend] using
         (HenkinModel.eqv_refl M.toHenkinModel
           (M.toHenkinModel.app_mem
             (HenkinModel.denote_admissible M.toHenkinModel hρ f) hx))

@@ -1,5 +1,5 @@
 import Mathlib.Data.Nat.Basic
-import Mathlib.Data.Nat.Lattice
+import Mathlib.Order.Lattice.Nat
 import Mathlib.Data.List.Basic
 import Mathlib.Data.Fintype.BigOperators
 import Mathlib.Computability.Partrec
@@ -72,8 +72,8 @@ theorem exists_program_of_complexity (U : Algorithm) (x : BinString)
 def identityAlgorithm : Algorithm :=
   fun p => Part.some p
 
-theorem identityAlgorithm_partrec : Partrec identityAlgorithm := by
-  simpa [identityAlgorithm] using (Computable.id : Computable (fun p : BinString => p))
+theorem identityAlgorithm_partrec : Partrec identityAlgorithm :=
+  (Computable.id).partrec
 
 /-- For the identity algorithm, `C(x) = |x|`. -/
 theorem complexity_identity (x : BinString) : C[identityAlgorithm](x) = x.length := by

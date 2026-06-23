@@ -674,7 +674,7 @@ mutual
                                | x, x_1 => Pattern.apply "PDrop" [Pattern.apply c args]) = false := by
                         rw [hmatch]
                         exact hdrop'
-                      simpa [hnm] using hgoal
+                      simpa [hnm] using! hgoal
                 | _ =>
                     simp [hnm, hasDerivedHead, hname']
     | .apply "POutput" [n, q], k, hp => by
@@ -739,7 +739,7 @@ mutual
                                    | x, x_1 => Pattern.apply "PDrop" [Pattern.apply c' args']) = false := by
                             rw [hmatch]
                             exact hdrop'
-                          simpa [hnm] using hgoal
+                          simpa [hnm] using! hgoal
                     | _ =>
                         simp [hnm, hasDerivedHead, hname']
           · by_cases hout : c = "POutput" ∧ ∃ n q', args = [n, q']
@@ -941,7 +941,7 @@ theorem coreCanonical_of_core_step {p q : Pattern}
         · exact hsrcAll e (List.mem_append.mpr (Or.inl hBefore))
         · rcases List.mem_append.mp hTail with hMid | hAfter
           · have heq : e = q := by simpa using hMid
-            simpa [heq] using hq
+            subst heq; exact hq
           · exact hsrcAll e (List.mem_append.mpr (Or.inr (List.mem_append.mpr (Or.inr hAfter))))
       have hdstAll : ∀ e ∈ before ++ [q] ++ after, hasDerivedHead e = false := by
         intro e he
@@ -975,7 +975,7 @@ theorem coreCanonical_of_core_step {p q : Pattern}
         · exact hsrcAll e (List.mem_append.mpr (Or.inl hBefore))
         · rcases List.mem_append.mp hTail with hMid | hAfter
           · have heq : e = q := by simpa using hMid
-            simpa [heq] using hq
+            subst heq; exact hq
           · exact hsrcAll e (List.mem_append.mpr (Or.inr (List.mem_append.mpr (Or.inr hAfter))))
       have hdstAll : ∀ e ∈ before ++ [q] ++ after, hasDerivedHead e = false := by
         intro e he

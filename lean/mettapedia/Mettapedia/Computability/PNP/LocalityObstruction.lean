@@ -32,8 +32,12 @@ noncomputable section
 def logRadiusNeighborhood (d c : ℝ) : ℝ → ℝ :=
   fun x => d ^ (c * Real.log x)
 
-/-- A fixed polylogarithmic benchmark. -/
-def polylog (k : ℕ) : ℝ → ℝ :=
+/-- A fixed polylogarithmic benchmark.
+
+`@[reducible]` so that `simp`/`simpa` (which run at `.reducible` transparency since
+Lean 4.31) can unfold it; otherwise the `simpa [polylog, ...]` rewrites below leave
+`polylog k` un-reduced and fail with a type mismatch. -/
+@[reducible] def polylog (k : ℕ) : ℝ → ℝ :=
   fun x => Real.log x ^ k
 
 /-- A degree-`d` neighborhood at radius `log₂ m + 1` already contains at least `m` nodes. -/
@@ -52,7 +56,7 @@ theorem powerOfTwo_le_neighborhoodSize_at_exactBinaryLogRadius {d n : ℕ} (hd :
 theorem quarticPolylogFailsAtPowerTwo20 {d : ℕ} (hd : 2 ≤ d) :
     (Nat.log 2 (2 ^ 20)) ^ 4 < d ^ (Nat.log 2 (2 ^ 20)) := by
   rw [Nat.log_pow Nat.one_lt_two]
-  have hgap : (20 : ℕ) ^ 4 < 2 ^ 20 := by native_decide
+  have hgap : (20 : ℕ) ^ 4 < 2 ^ 20 := by decide
   exact lt_of_lt_of_le hgap (Nat.pow_le_pow_left hd 20)
 
 private theorem logRadiusNeighborhood_eventuallyEq_rpow {d c : ℝ}

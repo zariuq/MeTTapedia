@@ -59,8 +59,8 @@ theorem frozenConfigToPeTTaSpace_rewrites_roundTrip
     (cfg : Algorithms.MeTTa.PeTTa.FrozenPeTTaConfig) :
     (frozenConfigToPeTTaSpace cfg).rules.mapM specToCoreRewriteRule =
       .ok (Algorithms.MeTTa.PeTTa.toLanguageDef cfg).rewrites := by
-  simpa [frozenConfigToPeTTaSpace, Function.comp] using
-    rewriteRule_list_roundTrip ((Algorithms.MeTTa.PeTTa.toLanguageDef cfg).rewrites)
+  simp only [frozenConfigToPeTTaSpace, List.mapM_map, Function.comp_def]
+  exact rewriteRule_list_roundTrip ((Algorithms.MeTTa.PeTTa.toLanguageDef cfg).rewrites)
 
 theorem frozenConfigToPeTTaSpace_rewrites_eq_runtimeLowering
     (cfg : Algorithms.MeTTa.PeTTa.FrozenPeTTaConfig) :

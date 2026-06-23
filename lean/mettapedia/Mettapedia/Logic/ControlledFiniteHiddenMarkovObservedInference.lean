@@ -213,7 +213,7 @@ theorem filteringPosteriorMass_le_one
     filteringPosteriorMass θ zs x ≤ 1 := by
   calc
     filteringPosteriorMass θ zs x ≤ ∑ x' : Fin latent, filteringPosteriorMass θ zs x' := by
-      exact Finset.single_le_sum (fun _ _ => zero_le _) (Finset.mem_univ x)
+      exact Finset.single_le_sum (fun _ _ => by positivity) (Finset.mem_univ x)
     _ = 1 := filteringPosteriorMass_sum_eq_one θ zs hobs
 
 /-- Unnormalized smoothing mass at a split point. -/

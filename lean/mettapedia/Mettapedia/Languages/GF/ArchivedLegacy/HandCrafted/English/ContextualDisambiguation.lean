@@ -102,7 +102,7 @@ abbrev GFPattern := Mettapedia.OSLF.MeTTaIL.Syntax.Pattern
 abbrev TelescopeState := BinaryEvidence × BinaryEvidence
 
 noncomputable instance : EvidenceType TelescopeState :=
-  { inferInstanceAs (AddCommMonoid TelescopeState) with }
+  { toAddCommMonoid := inferInstance }
 
 private def telescopeNPQuery : GFPattern := gfAbstractToPattern telescopeNPAttachmentTree
 private def telescopeVPQuery : GFPattern := gfAbstractToPattern telescopeVPAttachmentTree
@@ -130,6 +130,14 @@ noncomputable instance : BinaryWorldModel TelescopeState GFPattern where
       · subst hvp
         cases W₁
         cases W₂
+        simp [telescopeVPQuery_ne_telescopeNPQuery]
+      · simp [hnp, hvp]
+  evidence_zero q := by
+    by_cases hnp : q = telescopeNPQuery
+    · subst hnp
+      simp
+    · by_cases hvp : q = telescopeVPQuery
+      · subst hvp
         simp [telescopeVPQuery_ne_telescopeNPQuery]
       · simp [hnp, hvp]
 
@@ -254,7 +262,7 @@ private theorem annaVPQuery_ne_annaNPQuery :
 abbrev AnnaState := BinaryEvidence × BinaryEvidence
 
 noncomputable instance : EvidenceType AnnaState :=
-  { inferInstanceAs (AddCommMonoid AnnaState) with }
+  { toAddCommMonoid := inferInstance }
 
 noncomputable instance : BinaryWorldModel AnnaState GFPattern where
   evidence W q :=
@@ -262,6 +270,18 @@ noncomputable instance : BinaryWorldModel AnnaState GFPattern where
     else if q = annaVPQuery then W.2
     else 0
   evidence_add W₁ W₂ q := by
+    by_cases hNP : q = annaNPQuery
+    · subst hNP
+      cases W₁
+      cases W₂
+      simp
+    · by_cases hVP : q = annaVPQuery
+      · subst hVP
+        cases W₁
+        cases W₂
+        simp [annaVPQuery_ne_annaNPQuery]
+      · simp [hNP, hVP]
+  evidence_zero q := by
     by_cases hNP : q = annaNPQuery
     · subst hNP
       simp

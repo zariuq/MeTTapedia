@@ -181,8 +181,8 @@ theorem DynamicCoupledSubsystemStep.left_queryProb_approximately_preserved_expli
     |((infiniteMLNMassSemantics M₁ μ₁ hμ₁).queryProb q).toReal -
       ((infiniteMLNMassSemantics M₂ μ₂ hμ₂).queryProb q).toReal| ≤
         step.errorBound := by
-  simpa [DynamicCoupledSubsystemStep.errorBound]
-    using DynamicTranscendenceStep.queryProb_approximately_preserved_of_uniformConstant
+  unfold DynamicCoupledSubsystemStep.errorBound
+  exact DynamicTranscendenceStep.queryProb_approximately_preserved_of_uniformConstant
       (step := step.toDynamicTranscendenceStep)
       (C := step.contractionConstant)
       (hC_nonneg := step.contractionConstant_nonneg)
@@ -215,8 +215,8 @@ theorem DynamicCoupledSubsystemStep.right_queryProb_approximately_preserved_expl
     |((infiniteMLNMassSemantics M₁ μ₁ hμ₁).queryProb q).toReal -
       ((infiniteMLNMassSemantics M₂ μ₂ hμ₂).queryProb q).toReal| ≤
         step.errorBound := by
-  simpa [DynamicCoupledSubsystemStep.errorBound]
-    using DynamicTranscendenceStep.queryProb_approximately_preserved_of_uniformConstant
+  unfold DynamicCoupledSubsystemStep.errorBound
+  exact DynamicTranscendenceStep.queryProb_approximately_preserved_of_uniformConstant
       (step := step.toDynamicTranscendenceStep)
       (C := step.contractionConstant)
       (hC_nonneg := step.contractionConstant_nonneg)
@@ -251,8 +251,8 @@ theorem DynamicCoupledSubsystemStep.coupled_queryProb_approximately_preserved_ex
     |((infiniteMLNMassSemantics M₁ μ₁ hμ₁).queryProb q).toReal -
       ((infiniteMLNMassSemantics M₂ μ₂ hμ₂).queryProb q).toReal| ≤
         step.errorBound := by
-  simpa [DynamicCoupledSubsystemStep.errorBound]
-    using DynamicTranscendenceStep.queryProb_approximately_preserved_of_uniformConstant
+  unfold DynamicCoupledSubsystemStep.errorBound
+  exact DynamicTranscendenceStep.queryProb_approximately_preserved_of_uniformConstant
       (step := step.toDynamicTranscendenceStep)
       (C := step.contractionConstant)
       (hC_nonneg := step.contractionConstant_nonneg)

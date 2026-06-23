@@ -178,13 +178,13 @@ theorem veWeight_eq_pairWeight
           constructor
           · intro hx q hq
             rcases q with ⟨v, b⟩
-            cases v <;> simpa [pairSatisfies, fullConfigEquiv] using hx ⟨_, b⟩ hq
+            cases v <;> exact hx ⟨_, b⟩ hq
           · intro hx q hq
             rcases q with ⟨v, b⟩
-            cases v <;> simpa [pairSatisfies, fullConfigEquiv] using hx ⟨_, b⟩ hq
+            cases v <;> exact hx ⟨_, b⟩ hq
         simp [hSat, combinedFactor_apply, fullConfigEquiv])
-  simpa [veWeight, pairWeight, combinedFactor]
-    using hsum
+  rw [veWeight, VariableElimination.veQueryWeightList_eq_weightOfConstraintsList]
+  exact hsum
 
 theorem pairWeight_nil (c : MembershipCounts) :
     pairWeight c [] = total c := by
@@ -319,17 +319,25 @@ theorem witnessMessage_eq (c : MembershipCounts) :
       (u := MembershipConcept.feature)
       (hv := by simp [factorGraph, pairScope])
       (hSingle := pairScope_erase_witness)
+  have hsum :
+      ∀ x_v : Bool,
+        witnessMessage c x_v =
+          ∑ x_u : Bool, rawPotential c x_u x_v := by
+    intro x_v
+    have h2 := congrArg (fun φ => φ x_v) h
+    refine h2.trans ?_
+    refine Fintype.sum_congr _ _ ?_
+    intro x_u
+    simp [MessagePassing.unitVarToFactor, factorGraph, pairPotential, rawPotential, pairScope,
+      VariableElimination.Factor.extend_apply_eq, VariableElimination.Factor.extend_apply_ne,
+      MessagePassing.singletonOtherScopeAssign]
   cases b with
   | false =>
-      simpa [witnessMessage, MessagePassing.unitVarToFactor, factorGraph,
-        pairPotential, rawPotential, pairScope, witnessSupport,
-        add_comm, add_left_comm, add_assoc]
-        using congrArg (fun φ => φ false) h
+      rw [hsum]
+      simp [rawPotential, add_comm]
   | true =>
-      simpa [witnessMessage, MessagePassing.unitVarToFactor, factorGraph,
-        pairPotential, rawPotential, pairScope, witnessSupport,
-        add_comm, add_left_comm, add_assoc]
-        using congrArg (fun φ => φ true) h
+      rw [hsum]
+      simp [rawPotential, witnessSupport, add_comm]
 
 theorem featureMessage_eq (c : MembershipCounts) :
     featureMessage c = fun b => if b then featureSupport c else c.neither + c.witnessOnly := by
@@ -343,17 +351,25 @@ theorem featureMessage_eq (c : MembershipCounts) :
       (u := MembershipConcept.witness)
       (hv := by simp [factorGraph, pairScope])
       (hSingle := pairScope_erase_feature)
+  have hsum :
+      ∀ x_v : Bool,
+        featureMessage c x_v =
+          ∑ x_u : Bool, rawPotential c x_v x_u := by
+    intro x_v
+    have h2 := congrArg (fun φ => φ x_v) h
+    refine h2.trans ?_
+    refine Fintype.sum_congr _ _ ?_
+    intro x_u
+    simp [MessagePassing.unitVarToFactor, factorGraph, pairPotential, rawPotential, pairScope,
+      VariableElimination.Factor.extend_apply_eq, VariableElimination.Factor.extend_apply_ne,
+      MessagePassing.singletonOtherScopeAssign]
   cases b with
   | false =>
-      simpa [featureMessage, MessagePassing.unitVarToFactor, factorGraph,
-        pairPotential, rawPotential, pairScope, featureSupport,
-        add_comm, add_left_comm, add_assoc]
-        using congrArg (fun φ => φ false) h
+      rw [hsum]
+      simp [rawPotential, add_comm]
   | true =>
-      simpa [featureMessage, MessagePassing.unitVarToFactor, factorGraph,
-        pairPotential, rawPotential, pairScope, featureSupport,
-        add_comm, add_left_comm, add_assoc]
-        using congrArg (fun φ => φ true) h
+      rw [hsum]
+      simp [rawPotential, featureSupport, add_comm]
 
 theorem witnessMessage_true (c : MembershipCounts) :
     witnessMessage c true = witnessSupport c := by
@@ -497,8 +513,7 @@ ratio on the translated tiny factor graph. -/
 theorem witnessPrior_eq_veWeight_ratio (t : FiniteWitnessFeatureTable) :
     witnessPrior t =
       (veWeight t [⟨MembershipConcept.witness, true⟩] : ℝ) / veWeight t [] := by
-  simpa [witnessPrior, veWeight, toMembershipCounts] using
-    MembershipCounts.priorProbWitness_eq_veWeight_ratio (toMembershipCounts t)
+  exact MembershipCounts.priorProbWitness_eq_veWeight_ratio (toMembershipCounts t)
 
 /-- Generic finite-table VE bridge: the feature-to-witness conditional strength
 is exactly the corresponding VE weight ratio. -/
@@ -509,8 +524,7 @@ theorem featureToWitnessStrength_eq_veWeight_ratio (t : FiniteWitnessFeatureTabl
       else
         (veWeight t [⟨MembershipConcept.feature, true⟩, ⟨MembershipConcept.witness, true⟩] : ℝ) /
           veWeight t [⟨MembershipConcept.feature, true⟩] := by
-  simpa [featureToWitnessStrength, veWeight, toMembershipCounts] using
-    MembershipCounts.extensionalInheritance_eq_veWeight_ratio (toMembershipCounts t)
+  exact MembershipCounts.extensionalInheritance_eq_veWeight_ratio (toMembershipCounts t)
 
 /-- Generic finite-table VE bridge: the finite-table log-ratio score is exactly
 the VE query score induced by the translated graph. -/
@@ -523,15 +537,13 @@ theorem logRatioBits_eq_ve_query_score (t : FiniteWitnessFeatureTable) :
           (veWeight t [⟨MembershipConcept.feature, true⟩, ⟨MembershipConcept.witness, true⟩] : ℝ) /
             veWeight t [⟨MembershipConcept.feature, true⟩])
         ((veWeight t [⟨MembershipConcept.witness, true⟩] : ℝ) / veWeight t []) := by
-  simpa [logRatioBits, veWeight, toMembershipCounts] using
-    MembershipCounts.pointwiseIntensionalScoreBits_eq_ve_query_score (toMembershipCounts t)
+  exact MembershipCounts.pointwiseIntensionalScoreBits_eq_ve_query_score (toMembershipCounts t)
 
 /-- Generic finite-table BP bridge: the witness prior is also recovered by the
 BP message ratio on the translated graph. -/
 theorem witnessPrior_eq_bpMessage_ratio (t : FiniteWitnessFeatureTable) :
     witnessPrior t = (witnessMessage t true : ℝ) / veWeight t [] := by
-  simpa [witnessPrior, witnessMessage, veWeight, toMembershipCounts] using
-    MembershipCounts.priorProbWitness_eq_bpMessage_ratio (toMembershipCounts t)
+  exact MembershipCounts.priorProbWitness_eq_bpMessage_ratio (toMembershipCounts t)
 
 /-- Generic finite-table BP bridge: the feature-to-witness conditional strength
 is recovered by the BP factor-belief/message ratio on the translated graph. -/
@@ -738,10 +750,10 @@ theorem veWeight_eq_pairWeight
       constructor
       · intro hx q hq
         rcases q with ⟨v, y⟩
-        cases v <;> simpa [pairSatisfies, fullConfigEquiv] using hx ⟨_, y⟩ hq
+        cases v <;> exact hx ⟨_, y⟩ hq
       · intro hx q hq
         rcases q with ⟨v, y⟩
-        cases v <;> simpa [pairSatisfies, fullConfigEquiv] using hx ⟨_, y⟩ hq
+        cases v <;> exact hx ⟨_, y⟩ hq
     have hpot := combinedFactor_apply t x
     by_cases hRaw : ∀ q ∈ constraints, x q.1 = q.2
     · have hp' : pairSatisfies t constraints ((fullConfigEquiv t) x) :=
@@ -918,8 +930,13 @@ theorem witnessMessage_eq
       (u := MembershipConcept.feature)
       (hv := by simp [factorGraph, MembershipCounts.pairScope])
       (hSingle := MembershipCounts.pairScope_erase_witness)
-  simpa [witnessMessage, MessagePassing.unitVarToFactor, factorGraph,
-    MembershipCounts.pairScope, witnessSupport] using congrArg (fun φ => φ witness) h
+  rw [witnessSupport]
+  refine (congrArg (fun φ => φ witness) h).trans ?_
+  refine Fintype.sum_congr _ _ ?_
+  intro feature
+  simp [MessagePassing.unitVarToFactor, factorGraph, MembershipCounts.pairScope,
+    VariableElimination.Factor.extend_apply_eq, VariableElimination.Factor.extend_apply_ne,
+    MessagePassing.singletonOtherScopeAssign]
 
 theorem featureMessage_eq
     (t : FiniteFeatureWitnessCountTable Feature Witness) :
@@ -934,8 +951,13 @@ theorem featureMessage_eq
       (u := MembershipConcept.witness)
       (hv := by simp [factorGraph, MembershipCounts.pairScope])
       (hSingle := MembershipCounts.pairScope_erase_feature)
-  simpa [featureMessage, MessagePassing.unitVarToFactor, factorGraph,
-    MembershipCounts.pairScope, featureSupport] using congrArg (fun φ => φ feature) h
+  rw [featureSupport]
+  refine (congrArg (fun φ => φ feature) h).trans ?_
+  refine Fintype.sum_congr _ _ ?_
+  intro witness
+  simp [MessagePassing.unitVarToFactor, factorGraph, MembershipCounts.pairScope,
+    VariableElimination.Factor.extend_apply_eq, VariableElimination.Factor.extend_apply_ne,
+    MessagePassing.singletonOtherScopeAssign]
 
 theorem witnessMessage_value
     (t : FiniteFeatureWitnessCountTable Feature Witness) (witness : Witness) :

@@ -44,14 +44,14 @@ theorem FiniteModeColeHopfKernelData.gamma_Wcoeff_le
     (t : Time) :
     gamma (S.toColeHopfKernelSemigroupData.Wcoeff t) ≤
       (4 * S.ν ^ 2 / S.mPhi ^ 2) * S.energyBound := by
-  simpa using S.toColeHopfKernelSemigroupData.gamma_Wcoeff_le t
+  exact S.toColeHopfKernelSemigroupData.gamma_Wcoeff_le t
 
 theorem FiniteModeColeHopfKernelData.abs_vorticity_le
     (S : FiniteModeColeHopfKernelData (Time := Time) (ι := ι) (X := X))
     (t : Time) (x : X) :
     |S.toColeHopfKernelSemigroupData.vorticity t x| ≤
       Real.sqrt ((4 * S.ν ^ 2 / S.mPhi ^ 2) * S.energyBound) * Real.sqrt S.curlBound := by
-  simpa using S.toColeHopfKernelSemigroupData.abs_vorticity_le t x
+  exact S.toColeHopfKernelSemigroupData.abs_vorticity_le t x
 
 theorem FiniteModeColeHopfKernelData.abs_vorticity_le_uniform
     (S : FiniteModeColeHopfKernelData (Time := Time) (ι := ι) (X := X)) :

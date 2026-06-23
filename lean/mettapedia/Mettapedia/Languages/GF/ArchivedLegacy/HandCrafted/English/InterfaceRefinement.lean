@@ -1,5 +1,5 @@
 import Mettapedia.Languages.GF.OSLFBridge_handcrafted
-import Mettapedia.Languages.GF.HandCrafted.English.InterfaceContrast
+import Mettapedia.Languages.GF.ArchivedLegacy.HandCrafted.English.InterfaceContrast
 import Mettapedia.OSLF.Framework.TypeSynthesis
 
 /-!
@@ -142,7 +142,7 @@ theorem lfpf_to_lf_quotient_map_surjective :
 
 /-- LF-only interface as consequence in the GF reduction relation. -/
 def LFOnlyConsequence (t1 t2 : AbstractNode) : Prop :=
-  langReduces gfRGLLanguageDef (gfAbstractToPattern t1) (gfAbstractToPattern t2)
+  langReduces gfLegacySemanticLanguageDef (gfAbstractToPattern t1) (gfAbstractToPattern t2)
 
 /-- LF+PF interface: LF-only consequence plus PF identity. -/
 def LFPFConsequence (t1 t2 : AbstractNode) : Prop :=

@@ -55,7 +55,7 @@ theorem pointwiseImpliesOn_iff_singletonStrengthLEOn
       rw [queryStrength_singleton_of_satisfies pk φ hφ]
       rw [queryStrength_singleton_of_satisfies pk ψ hψ]
     · rw [queryStrength_singleton_of_not_satisfies pk φ hφ]
-      exact zero_le _
+      exact zero_le
   · intro hle pk hC hφ
     by_contra hψ
     have hsingleton := hle pk hC
@@ -211,7 +211,7 @@ theorem provable_imp_of_singletonStrengthLEOn
     have hpx : pk.satisfies φ → pk.satisfies ψ := himp pk (by simpa [pk] using hF)
     exact Formula.Kripke.Satisfies.imp_def.mpr (by
       intro hx
-      exact hpx (by simpa [PointedKripke.satisfies, pk] using hx))
+      exact hpx hx)
   exact Complete.complete (𝓢 := 𝓢) (𝓜 := C) hvalid
 
 /-- Implication-level proof-theoretic closure for class-indexed singleton WM consequence. -/

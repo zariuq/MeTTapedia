@@ -184,7 +184,7 @@ theorem WeightedObservable.geometricColeHopfHeatApproximation_Phi_lower_eventual
       (ι := ι) (X := X)
       selector ν B hν hB cutoff hcutoff_cont hcutoff
       curlFrame curlBound curlBound_nonneg hcurl
-  simpa [WeightedObservable.coleHopfPhiTime] using S.Phi_lower_eventually x t
+  exact S.Phi_lower_eventually x t
 
 theorem WeightedObservable.geometricColeHopfHeatApproximation_dPhi_energy_eventually
     (L : WeightedObservable)
@@ -210,8 +210,7 @@ theorem WeightedObservable.geometricColeHopfHeatApproximation_dPhi_energy_eventu
       (ι := ι) (X := X)
       selector ν B hν hB cutoff hcutoff_cont hcutoff
       curlFrame curlBound curlBound_nonneg hcurl
-  simpa [WeightedObservable.coleHopfHeatdPhi, heatedSelectedDerivative] using
-    S.dPhi_energy_eventually x t
+  exact S.dPhi_energy_eventually x t
 
 end GeometricColeHopfHeatApproximation
 

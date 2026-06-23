@@ -1,8 +1,8 @@
 import Mettapedia.Logic.TerminalMeasureWorldModel
 import Mettapedia.Logic.BinaryEvidence
 import Mettapedia.Logic.BinEvNat
-import Mettapedia.ProbabilityTheory.KnuthSkilling.Counterexamples.SigmaAdditivityNecessity
-import Mettapedia.ProbabilityTheory.KnuthSkilling.Bridges.ValuationAlgebra
+import KnuthSkilling.Counterexamples.SigmaAdditivityNecessity
+import KnuthSkilling.Bridges.ValuationAlgebra
 
 /-!
 # The KS-Evidence-Measure Triangle
@@ -203,7 +203,7 @@ This boundary is not a gap — it is a theorem about what is derivable from
 the evidence algebra alone. The KS formalization (126K lines, 1,923 theorems)
 proves this boundary rigorously. -/
 
-open Mettapedia.ProbabilityTheory.KnuthSkilling.Counterexamples.SigmaAdditivityNecessity.DiscontinuousValuation in
+open KnuthSkilling.Counterexamples.SigmaAdditivityNecessity.DiscontinuousValuation in
 
 /-- The KS counterexample: the diffuse measure on ℕ is finitely additive
     but NOT σ-additive. Singletons are pairwise disjoint, their union is ℕ,
@@ -247,7 +247,7 @@ The `extract_add` law IS the valuation algebra combination law. -/
 -- regraded factor graphs is correct (ve_correct_regrade, ksVE_correct).
 -- The WM `extract_add` law IS the valuation algebra combination law.
 -- Both imported from KnuthSkilling/Bridges/ValuationAlgebra.lean:
-example := @Mettapedia.ProbabilityTheory.KnuthSkilling.Bridges.ValuationAlgebra.ve_correct_regrade
-example := @Mettapedia.ProbabilityTheory.KnuthSkilling.Bridges.ValuationAlgebra.ksVE_correct
+example := @KnuthSkilling.Bridges.ValuationAlgebra.ve_correct_regrade
+example := @KnuthSkilling.Bridges.ValuationAlgebra.ksVE_correct
 
 end Mettapedia.Logic.KSEvidenceMeasureBridge

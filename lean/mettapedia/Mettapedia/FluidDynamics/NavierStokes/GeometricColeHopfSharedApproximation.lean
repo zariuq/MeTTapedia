@@ -151,7 +151,7 @@ theorem WeightedObservable.geometricColeHopfSharedApproximation_Phi_lower_eventu
     L.geometricColeHopfSharedApproximation
       (Time := Time) (ι := ι) (X := X)
       selector ν B hν hB cutoff hcutoff_cont hcutoff curlFrame curlBound curlBound_nonneg hcurl
-  simpa [WeightedObservable.coleHopfPhiTime] using S.Phi_lower_eventually x t
+  exact S.Phi_lower_eventually x t
 
 theorem WeightedObservable.geometricColeHopfSharedApproximation_dPhi_energy_eventually
     (L : WeightedObservable)
@@ -174,7 +174,7 @@ theorem WeightedObservable.geometricColeHopfSharedApproximation_dPhi_energy_even
     L.geometricColeHopfSharedApproximation
       (Time := Time) (ι := ι) (X := X)
       selector ν B hν hB cutoff hcutoff_cont hcutoff curlFrame curlBound curlBound_nonneg hcurl
-  simpa [WeightedObservable.coleHopfdPhi] using S.dPhi_energy_eventually x t
+  exact S.dPhi_energy_eventually x t
 
 end GeometricColeHopfSharedApproximation
 

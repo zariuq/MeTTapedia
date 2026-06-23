@@ -523,7 +523,9 @@ lemma cyl_zerosThenOnes_diff (X : ℕ → Ω → Bool) (n k : ℕ) :
         cases hx : X (n + k) ω <;> simp [hx] at hnot ⊢
       have : X (n + k) ω = zerosThenOnesThenZero n k (Fin.last (n + k)) := by
         simpa [zerosThenOnesThenZero_last] using hxfalse
-      simpa [cyl] using this
+      have hidx : (Fin.natAdd (n + k) (0 : Fin 1) : Fin (n + k + 1)) = Fin.last (n + k) := by
+        ext; simp
+      simpa [cyl, hidx] using this
   · intro h
     refine And.intro ?_ ?_
     · intro i
@@ -1201,7 +1203,7 @@ theorem countEvidenceMass_eq_zero_of_zeroInteriorMass_of_pos_of_pos
     simpa [μ, Set.inter_eq_left.mpr hsub] using hInterior
   have hOutsideIoo : ∀ᵐ θ ∂μ, θ ∉ Set.Ioo (0 : ℝ) 1 := by
     rw [ae_iff]
-    simpa using hIooZero
+    simpa [Set.Ioo] using hIooZero
   have hZeroAE : (fun θ : ℝ => countLikelihood k l θ) =ᵐ[μ] 0 := by
     filter_upwards [ae_restrict_mem measurableSet_Icc, hOutsideIoo] with θ hθUnit hθBoundary
     rcases hθUnit with ⟨h0, h1⟩
@@ -1236,7 +1238,7 @@ theorem countEvidenceMass_eq_countEvidenceMass_one_zero_of_zeroInteriorMass_of_p
     simpa [μ, Set.inter_eq_left.mpr hsub] using hInterior
   have hOutsideIoo : ∀ᵐ θ ∂μ, θ ∉ Set.Ioo (0 : ℝ) 1 := by
     rw [ae_iff]
-    simpa using hIooZero
+    simpa [Set.Ioo] using hIooZero
   have hEqAE :
       (fun θ : ℝ => countLikelihood k 0 θ) =ᵐ[μ]
         fun θ : ℝ => countLikelihood 1 0 θ := by
@@ -1272,7 +1274,7 @@ theorem countEvidenceMass_eq_countEvidenceMass_zero_one_of_zeroInteriorMass_of_p
     simpa [μ, Set.inter_eq_left.mpr hsub] using hInterior
   have hOutsideIoo : ∀ᵐ θ ∂μ, θ ∉ Set.Ioo (0 : ℝ) 1 := by
     rw [ae_iff]
-    simpa using hIooZero
+    simpa [Set.Ioo] using hIooZero
   have hEqAE :
       (fun θ : ℝ => countLikelihood 0 l θ) =ᵐ[μ]
         fun θ : ℝ => countLikelihood 0 1 θ := by

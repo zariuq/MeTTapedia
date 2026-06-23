@@ -306,7 +306,7 @@ theorem pointwiseImplies_iff_singletonStrengthLE
         (Base := Base) (Const := Const) W ψ hψ]
     · rw [queryStrength_singleton_of_not_satisfies
         (Base := Base) (Const := Const) W φ hφ]
-      exact zero_le _
+      exact zero_le
   · intro hle W hφ
     by_contra hψ
     have hsingleton := hle W

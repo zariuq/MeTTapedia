@@ -555,7 +555,7 @@ theorem filteringPosteriorMass_le_one
     filteringPosteriorMass θ ys q ≤ 1 := by
   calc
     filteringPosteriorMass θ ys q ≤ ∑ x : Fin latent, filteringPosteriorMass θ ys x := by
-      exact Finset.single_le_sum (fun _ _ => zero_le _) (Finset.mem_univ q)
+      exact Finset.single_le_sum (fun _ _ => by positivity) (Finset.mem_univ q)
     _ = 1 := filteringPosteriorMass_sum_eq_one (θ := θ) (ys := ys) hys
 
 /-- Binary WM-style evidence view induced by the observed-only filtering

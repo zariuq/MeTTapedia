@@ -28,29 +28,49 @@ open Mettapedia.Languages.ProcessCalculi.RhoCalculus.Reduction
 /-! ## Shared-fragment translation to ρ syntax -/
 
 mutual
-/-- Translate shared-fragment MeTTa process into ρ process syntax.
+  /-- Translate shared-fragment MeTTa process into ρ process syntax.
 
-Supported constructors:
-- `MZero`
-- `MDrop(MQuote p)` via recursive name translation
-- bag parallel composition
--/
-def toRhoSharedProc? : Proc → Option Pattern
-  | .apply "MZero" [] => some (.apply "PZero" [])
-  | .apply "MDrop" [n] => do
-      let rn ← toRhoSharedName? n
-      pure (.apply "PDrop" [rn])
-  | .collection .hashBag elems none => do
-      let elems' ← elems.mapM toRhoSharedProc?
-      pure (.collection .hashBag elems' none)
-  | _ => none
+  Supported constructors:
+  - `MZero`
+  - `MDrop(MQuote p)` via recursive name translation
+  - bag parallel composition
+  -/
+  def toRhoSharedProc? : Proc → Option Pattern
+    | .apply "MZero" [] => some (.apply "PZero" [])
+    | .apply "MDrop" [n] => do
+        let rn ← toRhoSharedName? n
+        pure (.apply "PDrop" [rn])
+    | .collection .hashBag elems none => do
+        let elems' ← toRhoSharedProcs? elems
+        pure (.collection .hashBag elems' none)
+    | _ => none
+  termination_by p => sizeOf p
+  decreasing_by
+    all_goals simp_wf
+    all_goals omega
 
-/-- Translate shared-fragment MeTTa names into ρ names (`MQuote`). -/
-def toRhoSharedName? : Name → Option Pattern
-  | .apply "MQuote" [p] => do
-      let rp ← toRhoSharedProc? p
-      pure (.apply "NQuote" [rp])
-  | _ => none
+  /-- Translate shared-fragment MeTTa names into ρ names (`MQuote`). -/
+  def toRhoSharedName? : Name → Option Pattern
+    | .apply "MQuote" [p] => do
+        let rp ← toRhoSharedProc? p
+        pure (.apply "NQuote" [rp])
+    | _ => none
+  termination_by n => sizeOf n
+  decreasing_by
+    all_goals simp_wf
+    all_goals omega
+
+  /-- Translate a list of shared-fragment MeTTa processes into ρ process syntax. -/
+  def toRhoSharedProcs? : List Proc → Option (List Pattern)
+    | [] => some []
+    | p :: ps => do
+        let rp ← toRhoSharedProc? p
+        let rps ← toRhoSharedProcs? ps
+        pure (rp :: rps)
+  termination_by ps => sizeOf ps
+  decreasing_by
+    all_goals simp_wf
+    all_goals omega
 end
 
 def InSharedFragment (p : Proc) : Prop := (toRhoSharedProc? p).isSome
@@ -145,27 +165,27 @@ private theorem sharedCore_target_translatable
   | @par_left p p' q hpp' ih =>
       cases hp : toRhoSharedProc? p with
       | none =>
-          simp [pPar, toRhoSharedProc?, hp] at htr
+          simp [pPar, toRhoSharedProc?, toRhoSharedProcs?, hp] at htr
       | some rpl =>
           cases hq : toRhoSharedProc? q with
           | none =>
-              simp [pPar, toRhoSharedProc?, hp, hq] at htr
+              simp [pPar, toRhoSharedProc?, toRhoSharedProcs?, hp, hq] at htr
           | some rpr =>
               obtain ⟨rpl', hp'⟩ := ih hp
               refine ⟨.collection .hashBag [rpl', rpr] none, ?_⟩
-              simp [pPar, toRhoSharedProc?, hp', hq]
+              simp [pPar, toRhoSharedProc?, toRhoSharedProcs?, hp', hq]
   | @par_right p q q' hqq' ih =>
       cases hp : toRhoSharedProc? p with
       | none =>
-          simp [pPar, toRhoSharedProc?, hp] at htr
+          simp [pPar, toRhoSharedProc?, toRhoSharedProcs?, hp] at htr
       | some rpl =>
           cases hq : toRhoSharedProc? q with
           | none =>
-              simp [pPar, toRhoSharedProc?, hp, hq] at htr
+              simp [pPar, toRhoSharedProc?, toRhoSharedProcs?, hp, hq] at htr
           | some rpr =>
               obtain ⟨rpr', hq'⟩ := ih hq
               refine ⟨.collection .hashBag [rpl, rpr'] none, ?_⟩
-              simp [pPar, toRhoSharedProc?, hp, hq']
+              simp [pPar, toRhoSharedProc?, toRhoSharedProcs?, hp, hq']
 
 /-- Forward simulation (one-step), shared-core restricted. -/
 theorem sharedCore_step_forward_restricted

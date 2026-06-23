@@ -390,7 +390,6 @@ theorem mem_pushUniqueAnswer {answers : List EvalValue} {value v : EvalValue} :
       cases hv' with
       | inl hMem => exact Or.inr hMem
       | inr hMem =>
-          simp at hMem
           exact Or.inl hMem
     · intro hv
       have hv' : v ∈ answers ++ [value] := by

@@ -699,7 +699,10 @@ theorem predicateCrispProfileInf_mono_of_inherits
     (x : PredicateObject (Base := Base) (Const := Const) M σ) :
     predicateCrispProfileInf (Base := Base) (Const := Const) M σ p x ≤
       predicateCrispProfileInf (Base := Base) (Const := Const) M σ q x := by
-  simpa [Subtype.mk_le_mk] using
+  change
+    predicateCrispProfile (Base := Base) (Const := Const) M σ p x ≤
+      predicateCrispProfile (Base := Base) (Const := Const) M σ q x
+  exact
     predicateCrispProfile_mono_of_inherits
       (Base := Base) (Const := Const) M σ p q hInh x
 

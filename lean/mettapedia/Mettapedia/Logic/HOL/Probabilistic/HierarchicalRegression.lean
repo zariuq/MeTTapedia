@@ -26,33 +26,36 @@ open Mettapedia.Logic.HOL.Probabilistic.HierarchicalState
 open Mettapedia.Logic.PLNGuardedHigherOrderSemantics
 open scoped ENNReal
 
-private theorem half_pos : (0 : ℝ) < 1 / 2 := by
-  norm_num
-
-private theorem half_le_one : (1 / 2 : ℝ) ≤ 1 := by
-  norm_num
-
 noncomputable abbrev natFlagGeometricMeasure : MeasureTheory.Measure natFlagSpace.Idx :=
-  (ProbabilityTheory.geometricMeasure (p := (1 / 2 : ℝ)) half_pos half_le_one :
+  (ProbabilityTheory.geometricMeasure halfUnitInterval :
     MeasureTheory.Measure natFlagSpace.Idx)
 
 noncomputable instance : MeasureTheory.IsProbabilityMeasure natFlagGeometricMeasure := by
-  simpa [natFlagGeometricMeasure] using
-    (ProbabilityTheory.isProbabilityMeasure_geometricMeasure
-      (p := (1 / 2 : ℝ)) half_pos half_le_one)
+  change @MeasureTheory.IsProbabilityMeasure Nat Nat.instMeasurableSpace
+    (ProbabilityTheory.geometricMeasure halfUnitInterval)
+  exact ProbabilityTheory.isProbabilityMeasure_geometricMeasure
 
 local instance instHierarchicalRegressionEmpiricalMeasurableSpace :
     MeasurableSpace (HenkinModel FixtureBase FixtureConst) := ⊤
 
+private theorem empiricalPair_ne_zero : empiricalPair ≠ 0 := by
+  simp [empiricalPair]
+
+noncomputable abbrev empiricalPairModelSpace : ModelSpace FixtureBase FixtureConst :=
+  empiricalModelSpace (Base := FixtureBase) (Const := FixtureConst) empiricalPair
+
 noncomputable abbrev empiricalPairMeasure :
-    MeasureTheory.Measure (HenkinModel FixtureBase FixtureConst) :=
-  (PMF.ofMultiset empiricalPair (by simp [empiricalPair])).toMeasure
+    MeasureTheory.Measure empiricalPairModelSpace.Idx :=
+  (PMF.ofMultiset empiricalPair empiricalPair_ne_zero).toMeasure
 
 noncomputable instance : MeasureTheory.IsProbabilityMeasure empiricalPairMeasure := by
   classical
-  simpa [empiricalPairMeasure] using
-    (PMF.toMeasure.isProbabilityMeasure
-      (PMF.ofMultiset empiricalPair (by simp [empiricalPair])))
+  change @MeasureTheory.IsProbabilityMeasure
+    (HenkinModel FixtureBase FixtureConst)
+    empiricalPairModelSpace.instMeasurableSpace
+    (PMF.ofMultiset empiricalPair empiricalPair_ne_zero).toMeasure
+  exact PMF.toMeasure.isProbabilityMeasure
+    (PMF.ofMultiset empiricalPair empiricalPair_ne_zero)
 
 /-- Positive infinitary canary: the hierarchical constant-measure special case
 recovers the existing `Nat`-indexed geometric regression exactly. -/
@@ -62,7 +65,7 @@ theorem hierarchical_regression_nat_geometric_flag_half :
         flagSentence =
       (1 / 2 : ℝ≥0∞) := by
   rw [hierarchicalSentenceProb_ofConstantMeasure_eq_sentenceProb]
-  exact regression_nat_geometric_flag_half
+  simpa [natFlagGeometricMeasure] using regression_nat_geometric_flag_half
 
 /-- Negative infinitary canary: the same hierarchical geometric state does not
 force the query with probability `1`. -/
@@ -78,7 +81,7 @@ the hierarchical layer via the constant-measure special case. -/
 theorem hierarchical_regression_empirical_probStrength_eq_static :
     hierarchicalProbQueryStrength
         (HierarchicalState.ofConstantMeasure
-          (empiricalModelSpace (Base := FixtureBase) (Const := FixtureConst) empiricalPair)
+          empiricalPairModelSpace
           empiricalPairMeasure)
         flagSentence =
       Mettapedia.Logic.PLNWorldModel.BinaryWorldModel.queryStrength
@@ -90,7 +93,7 @@ theorem hierarchical_regression_empirical_probStrength_eq_static :
     hierarchicalSentenceProb_ofConstantMeasure_eq_sentenceProb]
   exact empiricalSentenceProb_eq_staticQueryStrength
     (Base := FixtureBase) (Const := FixtureConst)
-    empiricalPair (by simp [empiricalPair]) flagSentence
+    empiricalPair empiricalPair_ne_zero flagSentence
 
 /-- Concrete guarded benchmark payload used to witness the finite hierarchical
 bridge: exact branch succeeds, fallback branch fails, bounded branch is mixed. -/

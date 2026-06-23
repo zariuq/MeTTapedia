@@ -57,8 +57,7 @@ abbrev PairPrefix (k : ℕ) (n : ℕ) := ∀ _ : Finset.Iic n, PairState k
 theorem measurable_initWeight (b : Fin k) :
     Measurable (Function.uncurry
       (fun θ : MarkovParam k => fun _ : Fin k => (initProb (k := k) θ b : ℝ≥0∞))) := by
-  simpa [Function.uncurry] using
-    ((measurable_initProb_borel (k := k) b).coe_nnreal_ennreal.comp measurable_fst)
+  exact ((measurable_initProb_borel (k := k) b).coe_nnreal_ennreal.comp measurable_fst)
 
 /-- Density used to sample the next state from a paired Markov state. -/
 theorem measurable_stepWeight (b : Fin k) :
@@ -68,7 +67,7 @@ theorem measurable_stepWeight (b : Fin k) :
     refine measurable_from_prod_countable_left ?_
     intro a
     simpa using (measurable_stepProb_borel (k := k) a b).coe_nnreal_ennreal
-  simpa [Function.uncurry] using hpair.comp measurable_fst
+  exact hpair.comp measurable_fst
 
 /-- Initial-state kernel on the Borel parameter space. -/
 noncomputable def markovInitialKernel : Kernel (MarkovParam k) (Fin k) :=
@@ -325,8 +324,7 @@ noncomputable def stateSequenceOfPairTrajectory : PairTrajectory k → ℕ → F
 
 theorem measurable_stateSequenceOfPairTrajectory :
     Measurable (stateSequenceOfPairTrajectory (k := k)) := by
-  simpa [stateSequenceOfPairTrajectory] using
-    (show Measurable (fun x : PairTrajectory k => fun n => (x n).2) by
+  exact (show Measurable (fun x : PairTrajectory k => fun n => (x n).2) by
       fun_prop)
 
 /-- The Borel Markov-parameter kernel into infinite state sequences. -/
@@ -648,7 +646,7 @@ theorem markovPairedTrajectoryMeasure_prefix_apply_succAssemble
           (pairPrefixKernel (k := k) n))
           ({(pairedPrefixOfState (k := k) θ n x, (θ, b))} :
             Set (PairPrefix k n × PairState k)) := by
-              simpa [μ] using
+              exact
                 congrArg
                   (fun ν : Measure (PairPrefix k n × PairState k) =>
                     ν ({(pairedPrefixOfState (k := k) θ n x, (θ, b))} :
@@ -876,7 +874,7 @@ theorem markovPairedTrajectoryMeasure_constantPairPrefixSupport
   have hinj : Function.Injective (pairedPrefixOfState (k := k) θ n) := by
     intro x y hxy
     have := congrArg (statePrefixOfPairPrefix (k := k) n) hxy
-    simpa using this
+    simpa [pairedPrefixOfState] using this
   have hsupport :
       μ (constantPairPrefixSupport (k := k) θ n) =
         ∑ x : PrefixState k n,
@@ -916,7 +914,7 @@ theorem pairPrefix_statePrefix_inter_support
       have hyState' : statePrefixOfPairPrefix (k := k) n y = x := by simpa using hyState
       have hstate' := congrArg (statePrefixOfPairPrefix (k := k) n) hy'
       have hstate'' : statePrefixOfPairPrefix (k := k) n y = x' := by
-        simpa [statePrefixOfPairPrefix_pairPrefixOfState] using hstate'
+        simpa [pairedPrefixOfState, statePrefixOfPairPrefix_pairPrefixOfState] using hstate'
       exact hstate''.symm.trans hyState'
     subst this
     simpa using hx'

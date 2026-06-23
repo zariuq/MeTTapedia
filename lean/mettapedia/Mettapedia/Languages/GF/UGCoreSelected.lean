@@ -181,11 +181,11 @@ noncomputable def englishCzechSelectedSignature
         BinaryWorldModel.queryStrength W (gfAbstractToPattern t)
     | .scopeNT => fun t =>
         let p := gfAbstractToPattern t
-        ⟨ formulaToNT Rnt Int Dom envScope (.qexists y (.qforall x φscope)) p X
-        , ⟨ formulaToNT Rnt Int Dom envScope (.qforall x (.qexists y φscope)) p X
-          , scope_ordering_NT Rnt Int Dom envScope hne φscope p X
-          ⟩
-        ⟩
+        Sigma.mk
+          (formulaToNT Rnt Int Dom envScope (.qexists y (.qforall x φscope)) p X)
+          (Sigma.mk
+            (formulaToNT Rnt Int Dom envScope (.qforall x (.qexists y φscope)) p X)
+            (scope_ordering_NT Rnt Int Dom envScope hne φscope p X))
     | .closedNT₁ => fun t =>
         formulaToNT Rnt Int Dom env₁ φclosed (gfAbstractToPattern t) X
     | .closedNT₂ => fun t =>
@@ -230,15 +230,15 @@ noncomputable def semanticCore_preserves_englishCzechSelected
             ⟩
           ⟩, by
             intro t
-            rfl⟩
+            simp [semanticCore, englishCzechSelectedSignature]⟩
     | .closedNT₁ =>
         ⟨fun p => formulaToNT Rnt Int Dom env₁ φclosed p X, by
           intro t
-          rfl⟩
+          simp [semanticCore, englishCzechSelectedSignature]⟩
     | .closedNT₂ =>
         ⟨fun p => formulaToNT Rnt Int Dom env₂ φclosed p X, by
           intro t
-          rfl⟩
+          simp [semanticCore, englishCzechSelectedSignature]⟩
 
 /-- Semantic-core equality implies equality at the selected English/Czech UG
 core. -/
@@ -320,7 +320,7 @@ theorem closedNT_selected_views_agree
       englishCzechSelectedSignature W Isem φsem Rnt Int Dom envScope x y hne φscope X env₁ env₂ φclosed hcl
     sig.observe .closedNT₁ t = sig.observe .closedNT₂ t := by
   dsimp [englishCzechSelectedSignature]
-  simpa using formulaToNT_closed_env_irrel
+  exact formulaToNT_closed_env_irrel
     Rnt Int Dom env₁ env₂ φclosed hcl (gfAbstractToPattern t) X
 
 end EnglishCzech

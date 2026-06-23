@@ -147,7 +147,7 @@ theorem patternMinerFamily_feature_mass_one :
 
 theorem patternMinerFamily_continuation_mass_one :
     (xiGeomApproxSemimeasure patternMinerFamily 1) minedContinuation = (1 / 2 : ENNReal) := by
-  simpa [minedContinuation] using patternMinerFamily_feature_mass_one
+  simpa [minedContinuation, minedFeature] using patternMinerFamily_feature_mass_one
 
 theorem patternMinerFamily_feature_continuation_mass_one :
     (xiGeomApproxSemimeasure patternMinerFamily 1) (minedFeature ++ minedContinuation) =
@@ -180,7 +180,7 @@ theorem patternMinerFamily_feature_floor :
 
 theorem patternMinerFamily_continuation_floor :
     (1 / 2 : ENNReal) ≤ (xiGeomApproxSemimeasure patternMinerFamily 4) minedContinuation := by
-  simpa [minedContinuation] using patternMinerFamily_feature_floor
+  simpa [minedContinuation, minedFeature] using patternMinerFamily_feature_floor
 
 theorem patternMinerFamily_feature_continuation_floor :
     (1 / 2 : ENNReal) ≤

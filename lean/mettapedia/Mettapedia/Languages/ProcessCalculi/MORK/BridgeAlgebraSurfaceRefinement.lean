@@ -214,7 +214,8 @@ example :
     { snapshot := (FTrie.node none
         [(1, FTrie.node (some ()) [(2, FTrie.node (some ()) [])])])
     , path := [1] }
-  simpa [bc, rootedSnapshotExport] using rootedSnapshotExport_lookup_nil (bc := bc)
+  simpa [bc, rootedSnapshotExport, FTrie.lookup, FTrie.lookupChild] using
+    rootedSnapshotExport_lookup_nil (bc := bc)
 
 /-- Negative example: structural subtrie export clears that root value. -/
 example :

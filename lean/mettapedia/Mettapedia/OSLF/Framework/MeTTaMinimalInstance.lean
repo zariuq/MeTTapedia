@@ -683,7 +683,8 @@ theorem mettaMinimal_checkLang_sat_sound_specAtoms
     {fuel : Nat} {p : Pattern} {φ : OSLFFormula}
     (hSat : checkLang mettaMinimal mettaSpecAtomCheck fuel p φ = .sat) :
     sem (langReduces mettaMinimal) mettaSpecAtomSem φ p := by
-  simpa [checkLang, langReduces] using
+  change sem (langReducesUsing RelationEnv.empty mettaMinimal) mettaSpecAtomSem φ p
+  simpa [checkLang] using
     (mettaMinimal_checkLangUsing_sat_sound_specAtoms
       (relEnv := RelationEnv.empty) (fuel := fuel) (p := p) (φ := φ) hSat)
 

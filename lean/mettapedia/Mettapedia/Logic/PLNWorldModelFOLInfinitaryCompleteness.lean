@@ -78,15 +78,14 @@ def wmConsequenceRule_of_singletonStrengthLE {L : Language.{u}} (q₁ q₂ : FOL
         (W := W) (q₁ := q₁) (q₂ := q₂) hSide
 
 /-- State-indexed wrapper promoted from global pointwise implication rule. -/
-def wmConsequenceRuleOn_of_pointwise {L : Language.{u}} (q₁ q₂ : FOLInfQuery L) :
+noncomputable def wmConsequenceRuleOn_of_pointwise {L : Language.{u}} (q₁ q₂ : FOLInfQuery L) :
     WMConsequenceRuleOn (FOLInfState L) (FOLInfQuery L) :=
   WMConsequenceRuleOn.ofGlobal (wmConsequenceRule_of_pointwise (q₁ := q₁) (q₂ := q₂))
 
 /-- State-indexed wrapper promoted from global singleton-strength rule. -/
-def wmConsequenceRuleOn_of_singletonStrengthLE {L : Language.{u}} (q₁ q₂ : FOLInfQuery L) :
+noncomputable def wmConsequenceRuleOn_of_singletonStrengthLE {L : Language.{u}} (q₁ q₂ : FOLInfQuery L) :
     WMConsequenceRuleOn (FOLInfState L) (FOLInfQuery L) :=
   WMConsequenceRuleOn.ofGlobal
     (wmConsequenceRule_of_singletonStrengthLE (q₁ := q₁) (q₂ := q₂))
 
 end Mettapedia.Logic.PLNWorldModelFOLInfinitaryCompleteness
-

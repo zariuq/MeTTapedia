@@ -60,7 +60,8 @@ noncomputable def demoMLN : CountableMLNSemantics DemoWorld DemoQuery DemoFeatur
 
 theorem demo_totalMass_eq_three :
     CountableMLNSemantics.totalMass demoMLN = 3 := by
-  simpa [CountableMLNSemantics.totalMass] using demoWorldWeight_tsum_eq_three
+  change (∑' w : DemoWorld, demoWorldWeight w) = 3
+  exact demoWorldWeight_tsum_eq_three
 
 theorem demo_supportWitness :
     FiniteSupportWitness demoMLN (Finset.univ : Finset DemoWorld) := by

@@ -1,4 +1,4 @@
-import Mettapedia.Languages.GF.HandCrafted.English.InterfaceRefinement
+import Mettapedia.Languages.GF.ArchivedLegacy.HandCrafted.English.InterfaceRefinement
 import Mettapedia.Languages.GF.WorldModelVisibleBridge
 
 /-!

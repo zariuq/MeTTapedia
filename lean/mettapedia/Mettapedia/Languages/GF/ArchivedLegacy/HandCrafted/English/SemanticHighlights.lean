@@ -1,5 +1,5 @@
-import Mettapedia.Languages.GF.HandCrafted.English.InterfaceContrast
-import Mettapedia.Languages.GF.Examples.ScopeAmbiguity
+import Mettapedia.Languages.GF.ArchivedLegacy.HandCrafted.English.InterfaceContrast
+import Mettapedia.Languages.GF.ArchivedLegacy.Examples.ScopeAmbiguity
 import Mettapedia.Languages.GF.WorldModelVisibleBridge
 import Mettapedia.Languages.GF.VisibleLayer
 import Mettapedia.Languages.GF.WorldModelSemantics
@@ -104,7 +104,7 @@ theorem modal_syntax_lifts_to_temporal
     (I : AtomSem) {φ : OSLFFormula} (hpos : positiveFormula φ)
     {p : Pattern}
     (h : sem (Mettapedia.OSLF.Framework.TypeSynthesis.langReduces
-      Mettapedia.Languages.GF.OSLFBridge.gfRGLLanguageDef) I φ p) :
+      Mettapedia.Languages.GF.OSLFBridge.gfLegacySemanticLanguageDef) I φ p) :
     sem (gfReducesTemporal π) I φ p :=
   sem_syntax_lifts_to_temporal π I hpos h
 

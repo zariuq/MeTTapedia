@@ -1,4 +1,4 @@
-import Mathlib.Computability.TMConfig
+import Mathlib.Computability.TuringMachine.Config
 
 /-!
 # Chapter 7: Step-counting semantics (extracted)
@@ -61,7 +61,7 @@ theorem runFor_one_eq_of_step_eq_some {σ : Type u} (step : σ → Option σ) {s
   simp [runFor, hst]
 
 theorem exists_runFor_eq_of_reaches {σ : Type u} {step : σ → Option σ} {a b : σ}
-    (h : Turing.Reaches step a b) : ∃ n, runFor step n a = b := by
+    (h : StateTransition.Reaches step a b) : ∃ n, runFor step n a = b := by
   induction h with
   | refl =>
       exact ⟨0, by simp [runFor]⟩
@@ -76,27 +76,27 @@ theorem exists_runFor_eq_of_reaches {σ : Type u} {step : σ → Option σ} {a b
         _ = c := by simpa using (runFor_one_eq_of_step_eq_some (step := step) (s := b) (t := c) hEqSome)
 
 theorem reaches_runFor {σ : Type u} (step : σ → Option σ) :
-    ∀ n a, Turing.Reaches step a (runFor step n a) := by
+    ∀ n a, StateTransition.Reaches step a (runFor step n a) := by
   intro n
   induction n with
   | zero =>
       intro a
-      simpa [Turing.Reaches, runFor] using
+      simpa [StateTransition.Reaches, runFor] using
         (ReflTransGen.refl : ReflTransGen (fun x y ↦ y ∈ step x) a a)
   | succ n ih =>
       intro a
       cases hs : step a with
       | none =>
-          simpa [Turing.Reaches, runFor, hs] using
+          simpa [StateTransition.Reaches, runFor, hs] using
             (ReflTransGen.refl : ReflTransGen (fun x y ↦ y ∈ step x) a a)
       | some a' =>
           have hab : a' ∈ step a := (Option.mem_def).2 hs
-          have hbc : Turing.Reaches step a' (runFor step n a') := ih a'
+          have hbc : StateTransition.Reaches step a' (runFor step n a') := ih a'
           have hbc' : ReflTransGen (fun x y ↦ y ∈ step x) a' (runFor step n a') := by
-            simpa [Turing.Reaches] using hbc
+            simpa [StateTransition.Reaches] using hbc
           have habc' : ReflTransGen (fun x y ↦ y ∈ step x) a (runFor step n a') :=
             ReflTransGen.head hab hbc'
-          have habc : Turing.Reaches step a (runFor step n a') := habc'
+          have habc : StateTransition.Reaches step a (runFor step n a') := habc'
           have hrw : runFor step (Nat.succ n) a = runFor step n a' := by
             simp [runFor, hs]
           rw [hrw]
@@ -125,11 +125,11 @@ theorem evalWithin_sound {n : ℕ} {c : Code} {v out : List ℕ} (h : evalWithin
     | ret k v' =>
         have h' := h
         simp [evalWithin, cfg0, hcfg] at h'
-  have hreach : Turing.Reaches step cfg0 (Cfg.halt out) := by
-    have : Turing.Reaches step cfg0 (runFor step n cfg0) := reaches_runFor (step := step) n cfg0
+  have hreach : StateTransition.Reaches step cfg0 (Cfg.halt out) := by
+    have : StateTransition.Reaches step cfg0 (runFor step n cfg0) := reaches_runFor (step := step) n cfg0
     simpa [hrun] using this
-  have hmem_eval : Cfg.halt out ∈ Turing.eval step cfg0 :=
-    (Turing.mem_eval).2 ⟨hreach, by simp [step]⟩
+  have hmem_eval : Cfg.halt out ∈ StateTransition.eval step cfg0 :=
+    (StateTransition.mem_eval).2 ⟨hreach, by simp [step]⟩
   have hmem_map : Cfg.halt out ∈ (Cfg.halt <$> c.eval v) := by
     simpa [cfg0, stepNormal_eval] using hmem_eval
   rcases (Part.mem_map_iff (fun x : List ℕ => Cfg.halt x)).1 hmem_map with ⟨out', hout', houtEq⟩
@@ -142,9 +142,9 @@ theorem evalWithin_complete {c : Code} {v out : List ℕ} (h : out ∈ c.eval v)
   let cfg0 := stepNormal c Cont.halt v
   have hmem_map : Cfg.halt out ∈ (Cfg.halt <$> c.eval v) :=
     Part.mem_map (fun x : List ℕ => Cfg.halt x) h
-  have hmem_eval : Cfg.halt out ∈ Turing.eval step cfg0 := by
+  have hmem_eval : Cfg.halt out ∈ StateTransition.eval step cfg0 := by
     simpa [cfg0, stepNormal_eval] using hmem_map
-  rcases (Turing.mem_eval).1 hmem_eval with ⟨hreach, _⟩
+  rcases (StateTransition.mem_eval).1 hmem_eval with ⟨hreach, _⟩
   rcases exists_runFor_eq_of_reaches (step := step) (a := cfg0) (b := Cfg.halt out) hreach with ⟨n, hn⟩
   refine ⟨n, ?_⟩
   simp [evalWithin, cfg0, hn]

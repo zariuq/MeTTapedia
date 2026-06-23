@@ -1224,7 +1224,8 @@ lemma measurable_const_on_fiber
   classical
   have hf' :
       Measurable[MeasurableSpace.comap (fun ω : bn.JointSpace => ω v) (by infer_instance)] f := by
-    simpa [measurableSpaceOfVertices_singleton (bn := bn) v] using hf
+    rw [measurableSpaceOfVertices_singleton (bn := bn) v] at hf
+    exact hf
   have hpre :
       MeasurableSet[
         MeasurableSpace.comap (fun ω : bn.JointSpace => ω v) (by infer_instance)]
@@ -1298,7 +1299,8 @@ lemma measurable_const_on_fiber_set
   have hf' :
       Measurable[
         MeasurableSpace.comap (restrictToSet (bn := bn) S) (by infer_instance)] f := by
-    simpa [measurableSpaceOfVertices_eq_comap_restrict (bn := bn) S] using hf
+    rw [measurableSpaceOfVertices_eq_comap_restrict (bn := bn) S] at hf
+    exact hf
   have hpre :
       MeasurableSet[
         MeasurableSpace.comap (restrictToSet (bn := bn) S) (by infer_instance)]
@@ -1470,7 +1472,7 @@ theorem condIndepVertices_eventEq_mul
     have hInt :
         ∫ x, (eventEq (bn := bn) A valA).indicator (fun _ : bn.JointSpace => (1 : ℝ)) x ∂μ =
           μ.real (eventEq (bn := bn) A valA) := by
-      simpa using (MeasureTheory.integral_indicator_one (μ := μ) (s := eventEq (bn := bn) A valA) hmeas)
+      simpa using! (MeasureTheory.integral_indicator_one (μ := μ) (s := eventEq (bn := bn) A valA) hmeas)
     ext ω
     have h' := congrArg (fun f => f ω) h
     simpa [hInt] using h'
@@ -1485,7 +1487,7 @@ theorem condIndepVertices_eventEq_mul
     have hInt :
         ∫ x, (eventEq (bn := bn) C valC).indicator (fun _ : bn.JointSpace => (1 : ℝ)) x ∂μ =
           μ.real (eventEq (bn := bn) C valC) := by
-      simpa using (MeasureTheory.integral_indicator_one (μ := μ) (s := eventEq (bn := bn) C valC) hmeas)
+      simpa using! (MeasureTheory.integral_indicator_one (μ := μ) (s := eventEq (bn := bn) C valC) hmeas)
     ext ω
     have h' := congrArg (fun f => f ω) h
     simpa [hInt] using h'
@@ -1507,7 +1509,7 @@ theorem condIndepVertices_eventEq_mul
         ∫ x, (eventEq (bn := bn) A valA ∩ eventEq (bn := bn) C valC).indicator
             (fun _ : bn.JointSpace => (1 : ℝ)) x ∂μ =
           μ.real (eventEq (bn := bn) A valA ∩ eventEq (bn := bn) C valC) := by
-      simpa using
+      simpa using!
         (MeasureTheory.integral_indicator_one (μ := μ)
           (s := eventEq (bn := bn) A valA ∩ eventEq (bn := bn) C valC) hmeas)
     ext ω
@@ -1516,7 +1518,10 @@ theorem condIndepVertices_eventEq_mul
   have hconst :
       (fun _ => μ.real (eventEq (bn := bn) A valA ∩ eventEq (bn := bn) C valC)) =ᵐ[μ]
         (fun _ => μ.real (eventEq (bn := bn) A valA) * μ.real (eventEq (bn := bn) C valC)) := by
-    simpa [hAconst, hCconst, hACconst] using hcond'
+    -- The three `condExp = const` rewrites bring `hcond'` to the `μ.real` form; under
+    -- 4.31 also feed `Pi.mul_apply` so the residual `(fun _ => _) * (fun _ => _)` RHS
+    -- is normalised to the `fun _ => _ * _` shape the goal carries.
+    simpa [hAconst, hCconst, hACconst, Pi.mul_def] using hcond'
   have hreal :
       μ.real (eventEq (bn := bn) A valA ∩ eventEq (bn := bn) C valC) =
         μ.real (eventEq (bn := bn) A valA) *

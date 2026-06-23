@@ -167,8 +167,6 @@ def checkMinskyLiteTransitionSpec (outDir : System.FilePath) : IO UInt32 := do
         IO.println s!"minskylite transition artifact check failed: {e}"
         pure 2
 
-end Mettapedia.Languages.MinskyLite.TransitionSpec
-
 private def defaultOutDir : System.FilePath :=
   "artifacts/transition"
 
@@ -185,3 +183,5 @@ def runCli (args : List String) : IO UInt32 := do
   | _ =>
       IO.println "minskylite transition-spec commands: export [out-dir] | check [out-dir]"
       pure 1
+
+end Mettapedia.Languages.MinskyLite.TransitionSpec

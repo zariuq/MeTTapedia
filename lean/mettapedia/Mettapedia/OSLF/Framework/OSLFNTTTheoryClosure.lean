@@ -489,6 +489,7 @@ instance semEStateWorldModel : BinaryWorldModel SemEState SemEQuery where
   evidence W q := W q
   evidence_add W₁ W₂ q := by
     simp
+  evidence_zero q := rfl
 
 /-- OSLF formulas for which we prove one-step evidence monotonicity from
 atom-level step monotonicity. This intentionally excludes implication and modal
@@ -1083,7 +1084,13 @@ theorem semEState_evidence_mono_not_strength_mono :
     have hle' :
         Mettapedia.Logic.EvidenceQuantale.BinaryEvidence.toStrength hi ≤
           Mettapedia.Logic.EvidenceQuantale.BinaryEvidence.toStrength lo := by
-      simpa [WMStrengthObligation, BinaryWorldModel.queryStrength, semEState, semE_atom, I, p, q, hi, lo] using h
+      have h' := h
+      change
+        Mettapedia.Logic.EvidenceQuantale.BinaryEvidence.toStrength
+            ((semEState relEnv I (.atom "a")) p) ≤
+          Mettapedia.Logic.EvidenceQuantale.BinaryEvidence.toStrength
+            ((semEState relEnv I (.atom "a")) q) at h'
+      simpa [semEState, semE_atom, I, p, q, hi, lo] using h'
     have hnum : ((1 : ENNReal) + 1) ≤ (1 : ENNReal) := by
       simpa [hi, lo,
         Mettapedia.Logic.EvidenceQuantale.BinaryEvidence.toStrength,
@@ -1108,6 +1115,7 @@ instance stepStateWorldModel : BinaryWorldModel StepState StepQuery where
   evidence W q := W q
   evidence_add W₁ W₂ q := by
     simp
+  evidence_zero q := rfl
 
 /-- Side-condition used by the concrete pointwise model:
 the state is monotone in query-strength along OSLF one-step reduction. -/
@@ -1156,7 +1164,10 @@ theorem pointwiseStepSide_not_automatic
   have hle' :
       Mettapedia.Logic.EvidenceQuantale.BinaryEvidence.toStrength hi ≤
         Mettapedia.Logic.EvidenceQuantale.BinaryEvidence.toStrength lo := by
-    simpa [BinaryWorldModel.queryStrength, stepStateWorldModel, hWp, hWq] using hle
+    have hle₀ := hle
+    change Mettapedia.Logic.EvidenceQuantale.BinaryEvidence.toStrength (W p) ≤
+      Mettapedia.Logic.EvidenceQuantale.BinaryEvidence.toStrength (W q) at hle₀
+    simpa [hWp, hWq] using hle₀
   have hnum : ((1 : ENNReal) + 1) ≤ (1 : ENNReal) := by
     simpa [hi, lo,
       Mettapedia.Logic.EvidenceQuantale.BinaryEvidence.toStrength,

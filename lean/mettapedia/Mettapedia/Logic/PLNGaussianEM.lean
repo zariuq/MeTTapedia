@@ -158,7 +158,8 @@ noncomputable def responsibilityNNReal (S : GaussianMixtureState ι) (x : ℝ) (
 
 theorem responsibilityNNReal_sum_coe (S : GaussianMixtureState ι) (x : ℝ) :
     ∑ i, (S.responsibilityNNReal x i : ℝ) = 1 := by
-  simp [responsibilityNNReal, responsibility_sum]
+  change ∑ i, S.responsibility x i = 1
+  exact S.responsibility_sum x
 
 /-- The weighted sufficient-statistic surface induced by the E-step. -/
 noncomputable def mStepSurface (S : GaussianMixtureState ι) :
@@ -290,7 +291,8 @@ theorem responsibility_unit (S : GaussianMixtureState Unit) (x : ℝ) :
 theorem responsibilityNNReal_unit_eq_one (S : GaussianMixtureState Unit) (x : ℝ) :
     S.responsibilityNNReal x () = 1 := by
   ext
-  simp [GaussianMixtureState.responsibilityNNReal, S.responsibility_unit x]
+  change S.responsibility x () = (1 : ℝ)
+  exact S.responsibility_unit x
 
 /-- Hard-label reduction at the E/M layer: for a one-component mixture, the
 M-step posterior is exactly the ordinary unweighted Gaussian posterior. -/

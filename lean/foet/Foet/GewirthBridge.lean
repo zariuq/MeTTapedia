@@ -69,7 +69,8 @@ theorem PGC_strong_implies_obligation_nonInterference (I : Gewirth.PGCInterpreta
   have hAtC :=
     hPGC C x hPPA
   -- unfold the bridge semantics: obligation is exactly Gewirth's `Oi`.
-  simpa [deonticSemanticsOfGewirthOi, WorldEmbedding.ofMeaning, WorldEmbedding.toMeaning, Gewirth.RightTo,
+  simpa [deonticSemanticsOfGewirthOi, WorldEmbedding.ofMeaning, WorldEmbedding.toMeaning,
+    WorldEmbedding.toMeaning_ofMeaning, Gewirth.RightTo,
     Gewirth.Oi, Gewirth.NonInterference]
     using hAtC
 

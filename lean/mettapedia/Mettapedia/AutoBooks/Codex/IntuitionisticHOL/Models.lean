@@ -72,27 +72,31 @@ instance (c : α) : CompleteLattice (Set.Iic c) where
     intro y hy
     rcases hy with ⟨z, hz, rfl⟩
     exact z.2⟩
-  le_sSup s x hx := by
-    show x.1 ≤ sSup ((fun x : Set.Iic c => x.1) '' s)
-    exact le_sSup ⟨x, hx, rfl⟩
-  sSup_le s x hx := by
-    show sSup ((fun x : Set.Iic c => x.1) '' s) ≤ x.1
-    exact sSup_le (by
-      intro y hy
-      rcases hy with ⟨z, hz, rfl⟩
-      exact hx z hz)
+  isLUB_sSup s := by
+    constructor
+    · intro x hx
+      show x.1 ≤ sSup ((fun x : Set.Iic c => x.1) '' s)
+      exact le_sSup ⟨x, hx, rfl⟩
+    · intro x hx
+      show sSup ((fun x : Set.Iic c => x.1) '' s) ≤ x.1
+      exact sSup_le (by
+        intro y hy
+        rcases hy with ⟨z, hz, rfl⟩
+        exact hx hz)
   sInf s := ⟨sInf ((fun x : Set.Iic c => x.1) '' s) ⊓ c, inf_le_right⟩
-  le_sInf s x hx := by
-    show x.1 ≤ sInf ((fun x : Set.Iic c => x.1) '' s) ⊓ c
-    apply le_inf
-    · apply le_sInf
-      intro y hy
-      rcases hy with ⟨z, hz, rfl⟩
-      exact hx z hz
-    · exact x.2
-  sInf_le s x hx := by
-    show sInf ((fun x : Set.Iic c => x.1) '' s) ⊓ c ≤ x.1
-    exact le_trans inf_le_left (sInf_le ⟨x, hx, rfl⟩)
+  isGLB_sInf s := by
+    constructor
+    · intro x hx
+      show sInf ((fun x : Set.Iic c => x.1) '' s) ⊓ c ≤ x.1
+      exact le_trans inf_le_left (sInf_le ⟨x, hx, rfl⟩)
+    · intro x hx
+      show x.1 ≤ sInf ((fun x : Set.Iic c => x.1) '' s) ⊓ c
+      apply le_inf
+      · apply le_sInf
+        intro y hy
+        rcases hy with ⟨z, hz, rfl⟩
+        exact hx hz
+      · exact x.2
 
 noncomputable def himp (c : α) : Set.Iic c → Set.Iic c → Set.Iic c :=
   fun x y => ⟨(x.1 ⇨ y.1) ⊓ c, inf_le_right⟩
@@ -520,9 +524,10 @@ noncomputable def relativize (M : SemilocalModel Base Const) (u : M.Omega) :
     antecedentTruth (M.relativize u) ρ Δ = IicFrame.cut u (antecedentTruth M ρ Δ) := by
   induction Δ with
   | nil =>
-      simp [antecedentTruth]
+      exact (IicFrame.cut_top u).symm
   | cons φ Δ ih =>
-      rw [antecedentTruth, antecedentTruth, formulaTruth_relativize, ih, ← IicFrame.cut_inf]
+      rw [antecedentTruth, antecedentTruth, formulaTruth_relativize, ih]
+      exact (IicFrame.cut_inf u (formulaTruth M ρ φ) (antecedentTruth M ρ Δ)).symm
 
 @[simp] theorem coe_antecedentTruth_relativize (M : SemilocalModel Base Const)
     (u : M.Omega) (ρ : Env M Γ) (Δ : List (Formula Const Γ)) :
@@ -538,8 +543,8 @@ noncomputable def relativize (M : SemilocalModel Base Const) (u : M.Omega) :
   · intro h τ t
     have hbound :
         u ≤ M.extent (eval (M.relativize u) ρ t) := by
-      exact (IicFrame.cut_eq_top_iff u (M.extent (eval (M.relativize u) ρ t))).1 (by
-        simpa [IsGlobalEnv, relativize] using h t)
+      have ht := h t
+      exact (IicFrame.cut_eq_top_iff u (M.extent (eval (M.relativize u) ρ t))).1 ht
     simpa [eval_relativize] using hbound
   · intro h τ t
     have hbound :
@@ -548,7 +553,7 @@ noncomputable def relativize (M : SemilocalModel Base Const) (u : M.Omega) :
     have hcut :
         IicFrame.cut u (M.extent (eval (M.relativize u) ρ t)) = (⊤ : Set.Iic u) :=
       (IicFrame.cut_eq_top_iff u (M.extent (eval (M.relativize u) ρ t))).2 hbound
-    simpa [IsGlobalEnv, relativize] using hcut
+    exact hcut
 
 theorem isGlobalEnv_relativize (M : SemilocalModel Base Const)
     (u : M.Omega) (ρ : Env M Γ)
@@ -798,11 +803,9 @@ theorem eval_rename (M : SemilocalModel Base Const) :
     eval M (ApplicativeStructure.Env.extend M.toApplicativeStructure ρ x)
         (weaken (Base := Base) (Const := Const) (σ := σ) t) =
       eval M ρ t := by
-  simpa [weaken, renameEnv] using
-    (eval_rename M
-      (Rename.weaken (Base := Base) (Γ := Γ) (σ := σ))
-      t
-      (ApplicativeStructure.Env.extend M.toApplicativeStructure ρ x))
+  rw [weaken]
+  rw [eval_rename]
+  rfl
 
 /-- Substitute denotations of a term substitution into an environment. -/
 def substEnv (M : SemilocalModel Base Const)

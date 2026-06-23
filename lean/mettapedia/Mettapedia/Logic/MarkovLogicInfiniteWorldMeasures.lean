@@ -53,7 +53,8 @@ theorem measurableSet_localQueryEvent
   unfold localQueryEvent
   convert measurableSet_preimage (measurable_worldRestriction (Atom := Atom) Λ)
     ((Set.to_countable
-      {x : LocalAssignment Atom Λ | satisfiesConstraints x q}).measurableSet)
+      {x : LocalAssignment Atom Λ | satisfiesConstraints x q}).measurableSet) using 1
+  rfl
 
 /-- The unnormalized local weight function as a function on assignments. -/
 noncomputable def finiteVolumeWeightFn

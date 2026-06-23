@@ -270,7 +270,10 @@ private theorem map_syntaxItem_roundTrip (xs : List CSyntaxItem) :
         (fun x => (Except.ok x : Except String CSyntaxItem)) := by
     funext x
     simpa [Function.comp] using syntaxItem_roundTrip x
-  simpa [hfun] using (List.mapM_pure (m := Except String) (l := xs) (f := fun x => x))
+  rw [hfun]
+  induction xs with
+  | nil => rfl
+  | cons x xs ih => simp only [List.mapM_cons, ih]; rfl
 
 private theorem grammarRule_roundTrip (g : CGrammarRule) :
     specToCoreGrammarRule (coreToSpecGrammarRule g) = .ok g := by

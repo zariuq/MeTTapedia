@@ -123,7 +123,7 @@ lemma neighbors_nonadj_of_triangleFree (G : SimpleGraph V) [DecidableRel G.Adj]
       simp only [mem_coe, mem_insert, mem_singleton] at ha hb
       rcases ha with rfl | rfl | rfl <;> rcases hb with rfl | rfl | rfl
       all_goals first | exact absurd rfl hab | exact hx | exact hy | exact hadj
-                      | exact G.symm hx | exact G.symm hy | exact G.symm hadj
+                      | exact G.adj_symm hx | exact G.adj_symm hy | exact G.adj_symm hadj
     · have hv_ne_x := G.ne_of_adj hx
       have hv_ne_y := G.ne_of_adj hy
       rw [card_insert_of_notMem, card_insert_of_notMem, card_singleton]
@@ -198,7 +198,7 @@ G.symm appears 477 times. Provide convenient lemmas.
 
 omit [Fintype V] [DecidableEq V] in
 lemma adj_symm_iff (G : SimpleGraph V) [DecidableRel G.Adj] (x y : V) :
-    G.Adj x y ↔ G.Adj y x := ⟨fun h => G.symm h, fun h => G.symm h⟩
+    G.Adj x y ↔ G.Adj y x := ⟨fun h => G.adj_symm h, fun h => G.adj_symm h⟩
 
 /-! ## Pattern 12: Finset membership cascades
 

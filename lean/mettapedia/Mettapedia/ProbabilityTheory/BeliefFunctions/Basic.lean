@@ -557,15 +557,22 @@ treat Finset Ω as an instance of OrthomodularLattice.
 instance finsetHasCompl : HasCompl (Finset Ω) where
   compl := fun A => Finset.univ \ A
 
+/-- Membership in the power-set complement.  Stated as a `simp` lemma because Lean 4.31's
+`.reducible` `simp` no longer unfolds the `finsetHasCompl` instance's `compl` field on its
+own, so `x ∈ Aᶜ` was left stuck in the orthomodular-lattice proofs below. -/
+@[local simp] theorem mem_finsetHasCompl (x : Ω) (A : Finset Ω) : x ∈ Aᶜ ↔ x ∉ A := by
+  show x ∈ Finset.univ \ A ↔ x ∉ A
+  simp [Finset.mem_sdiff]
+
 /-- Finset Ω forms an orthomodular lattice (via Boolean algebra). -/
 instance finsetOrthomodular : OrthomodularLattice (Finset Ω) where
   -- Orthomodularity: a ≤ b → b = a ⊔ (b ⊓ aᶜ)
   -- In Boolean algebra, this is: b = a ∪ (b ∩ (Ω \ a)) = a ∪ (b \ a) = b ✓
   orthomodular := fun a b hab => by
     ext x
-    simp only [sup_eq_union, inf_eq_inter, HasCompl.compl]
+    simp only [sup_eq_union, inf_eq_inter]
     simp only [Finset.mem_union, Finset.mem_inter, Finset.mem_sdiff,
-               Finset.mem_univ, true_and]
+               Finset.mem_univ, true_and, mem_finsetHasCompl]
     constructor
     · intro hxb
       by_cases hxa : x ∈ a
@@ -576,11 +583,11 @@ instance finsetOrthomodular : OrthomodularLattice (Finset Ω) where
       | inl hxa => exact hab hxa
       | inr hxb => exact hxb.1
   -- Double complement: (Ω \ (Ω \ A)) = A
-  compl_compl := fun a => by simp [HasCompl.compl, Finset.sdiff_sdiff_eq_self (Finset.subset_univ a)]
+  compl_compl := fun a => by simp [mem_finsetHasCompl, Finset.sdiff_sdiff_eq_self (Finset.subset_univ a)]
   -- De Morgan: (A ∪ B)ᶜ = Aᶜ ∩ Bᶜ
   compl_sup := fun a b => by
     ext x
-    simp only [sup_eq_union, inf_eq_inter, HasCompl.compl,
+    simp only [sup_eq_union, inf_eq_inter, mem_finsetHasCompl,
                Finset.mem_inter, Finset.mem_sdiff, Finset.mem_union,
                Finset.mem_univ, true_and]
     constructor
@@ -591,7 +598,7 @@ instance finsetOrthomodular : OrthomodularLattice (Finset Ω) where
   -- De Morgan: (A ∩ B)ᶜ = Aᶜ ∪ Bᶜ
   compl_inf := fun a b => by
     ext x
-    simp only [sup_eq_union, inf_eq_inter, HasCompl.compl,
+    simp only [sup_eq_union, inf_eq_inter, mem_finsetHasCompl,
                Finset.mem_union, Finset.mem_sdiff, Finset.mem_inter,
                Finset.mem_univ, true_and]
     constructor
@@ -602,13 +609,13 @@ instance finsetOrthomodular : OrthomodularLattice (Finset Ω) where
     · intro h ⟨ha, hb⟩
       exact h.elim (fun hna => hna ha) (fun hnb => hnb hb)
   -- ⊥ᶜ = ⊤
-  compl_bot := by simp [HasCompl.compl]
+  compl_bot := by simp [mem_finsetHasCompl]
   -- ⊤ᶜ = ⊥
-  compl_top := by simp [HasCompl.compl]
+  compl_top := by simp [mem_finsetHasCompl]
   -- A ∩ Aᶜ = ⊥
-  inf_compl_self := fun a => by simp [HasCompl.compl]
+  inf_compl_self := fun a => by simp [mem_finsetHasCompl]
   -- A ∪ Aᶜ = ⊤
-  sup_compl_self := fun a => by simp [HasCompl.compl]
+  sup_compl_self := fun a => by simp [mem_finsetHasCompl]
 
 /-- In the Finset OrthomodularLattice, complement matches set difference from univ. -/
 theorem finset_compl_eq_sdiff (A : Finset Ω) : Aᶜ = Finset.univ \ A := rfl

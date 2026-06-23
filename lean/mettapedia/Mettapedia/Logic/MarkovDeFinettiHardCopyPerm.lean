@@ -146,8 +146,7 @@ instance instFintypeCopyPerm (G : EulerGraph k) : Fintype (CopyPerm (k := k) G) 
 theorem card_copyPerm (G : EulerGraph k) :
     Fintype.card (CopyPerm (k := k) G) =
       ∏ a : Fin k, ∏ b : Fin k, (G a b).factorial := by
-  unfold CopyPerm
-  simp [Fintype.card_pi, Fintype.card_perm, Fintype.card_fin]
+  exact (Fintype.card_pi).trans (by simp [Fintype.card_perm, Fintype.card_fin])
 
 /-! ## Block E: Fiber cardinality via Equiv
 

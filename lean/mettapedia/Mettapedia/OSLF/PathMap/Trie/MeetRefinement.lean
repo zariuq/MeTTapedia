@@ -57,7 +57,7 @@ mutual
       | node v₂ c₂ =>
           cases p with
           | nil =>
-              simpa using meet_lookup_nil (FTrie.node v₁ c₁) (FTrie.node v₂ c₂)
+              exact meet_lookup_nil (FTrie.node v₁ c₁) (FTrie.node v₂ c₂)
           | cons b rest =>
               have ⟨hpw₁, hcs₁⟩ := h₁
               have ⟨hpw₂, hcs₂⟩ := h₂
@@ -207,7 +207,7 @@ end
 theorem toCTrie_meet (t₁ t₂ : FTrie V) (h₁ : t₁.Sorted) (h₂ : t₂.Sorted) :
     CTrie.Bisim (t₁.meet t₂).toCTrie (CTrie.inter t₁.toCTrie t₂.toCTrie) :=
   fun p => by
-    simpa [CTrie.lookup_inter] using meet_lookup t₁ t₂ p h₁ h₂
+    exact meet_lookup t₁ t₂ p h₁ h₂
 
 end FTrie
 

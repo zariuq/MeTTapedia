@@ -62,7 +62,7 @@ mutual
       | node v₂ c₂ =>
           cases p with
           | nil =>
-              simpa using subtract_lookup_nil (FTrie.node v₁ c₁) (FTrie.node v₂ c₂)
+              exact subtract_lookup_nil (FTrie.node v₁ c₁) (FTrie.node v₂ c₂)
           | cons b rest =>
               have ⟨hpw₁, hcs₁⟩ := h₁
               have ⟨hpw₂, hcs₂⟩ := h₂
@@ -210,7 +210,7 @@ end
 theorem toCTrie_subtract (t₁ t₂ : FTrie V) (h₁ : t₁.Sorted) (h₂ : t₂.Sorted) :
     CTrie.Bisim (t₁.subtract t₂).toCTrie (CTrie.diff t₁.toCTrie t₂.toCTrie) :=
   fun p => by
-    simpa [CTrie.lookup_diff] using subtract_lookup t₁ t₂ p h₁ h₂
+    exact subtract_lookup t₁ t₂ p h₁ h₂
 
 end FTrie
 

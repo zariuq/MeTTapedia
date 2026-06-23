@@ -46,7 +46,7 @@ partial def rglLeaves : RGLView → List String
   | .advMod a v => rglLeaves a ++ rglLeaves v
   | .prepNP p n => rglLeaves p ++ rglLeaves n
   | .pred s v => rglLeaves s ++ rglLeaves v
-  | .comp s c => rglLeaves s ++ rglLeaves c
+  | .copularSurface _ s c => rglLeaves s ++ rglLeaves c
   | .transV v o => rglLeaves v ++ rglLeaves o
   | .passiveV v => rglLeaves v
   | .reflV v a => rglLeaves v ++ rglLeaves a
@@ -60,7 +60,7 @@ partial def containsKindOf? : RGLView → Option String
   | .kindOf _ o => (rglLeaves o).head?
   | .opaque _ args => args.findSome? containsKindOf?
   | .sentence _ _ c => containsKindOf? c
-  | .comp _ c => containsKindOf? c
+  | .copularSurface _ _ c => containsKindOf? c
   | .pred _ vp => containsKindOf? vp
   | .det _ _ cn => containsKindOf? cn
   | .mass cn => containsKindOf? cn
@@ -69,11 +69,11 @@ partial def containsKindOf? : RGLView → Option String
 
 partial def findIsA? : RGLView → Option (String × String)
   -- "X is a kind of Y" → (X, Y) — works for any structure containing kind_of
-  | v@(.pred subj vp) =>
+  | .pred subj vp =>
     match containsKindOf? vp with
     | some sup => some ((rglLeaves subj).head?.getD "?", sup)
     | none => none
-  | v@(.comp subj compl) =>
+  | .copularSurface _ subj compl =>
     match containsKindOf? compl with
     | some sup => some ((rglLeaves subj).head?.getD "?", sup)
     | none => none

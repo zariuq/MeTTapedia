@@ -192,7 +192,7 @@ def cons (t : I.CtxTerm Γ τ) (σ : I.CtxHom Γ Δ) : I.CtxHom Γ (τ :: Δ) wh
 @[simp] theorem tail_cons (t : I.CtxTerm Γ τ) (σ : I.CtxHom Γ Δ) :
     (cons t σ).comp (CtxHom.tail I τ Δ) = σ := by
   ext x
-  simp [CtxHom.comp, CtxHom.tail, cons, EtaleSpace.prodSnd, Function.Pullback.snd]
+  rfl
 
 @[simp] theorem const_reindex (Γ : List (SimpleTy Base)) (t : I.CtxHom Δ Γ)
     (τ : SimpleTy Base) (c : Const τ.toTy) :

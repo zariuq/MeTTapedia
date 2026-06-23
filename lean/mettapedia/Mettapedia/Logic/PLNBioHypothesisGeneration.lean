@@ -551,7 +551,7 @@ Connect the ℝ≥0∞-valued `queryProb` to the ℝ-valued `noisyOrMulti` from 
 /-- The complement product `Π(1 - p_i)` is at most 1 and hence finite. -/
 private theorem prod_compl_le_one (p : ProbAssignment n) (_ : ∀ i, p i ≤ 1) :
     Finset.univ.prod (fun i => 1 - p i) ≤ 1 :=
-  Finset.prod_le_one (fun i _ => zero_le _) (fun i _ => tsub_le_self)
+  Finset.prod_le_one (fun _ _ => zero_le) (fun _ _ => tsub_le_self)
 
 private theorem prod_compl_ne_top (p : ProbAssignment n) (hp : ∀ i, p i ≤ 1) :
     Finset.univ.prod (fun i => 1 - p i) ≠ ⊤ :=

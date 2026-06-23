@@ -116,7 +116,10 @@ theorem left_trueAll_compatible_in_open_state :
   exact SaturationSearchState.deterministicAdditionCompatible_trueAll
     witnessOpenState (by
       change (Sign.falseE, leftWitnessFormula) ∉ witnessOpenState.hintikka.close.formulas
-      simp [witnessOpenState, HintikkaSet.close, leftWitnessFormula_ne_bot])
+      intro h
+      rw [HintikkaSet.close] at h
+      simp [witnessOpenState] at h
+      nomatch h)
 
 theorem left_trueExWitness_not_compatible :
     ¬ witnessConflictState.DeterministicAdditionCompatible
@@ -146,7 +149,10 @@ theorem left_trueExWitness_compatible_in_open_state :
   exact SaturationSearchState.deterministicAdditionCompatible_trueExWitness
     witnessOpenState (by
       change (Sign.falseE, leftWitnessFormula) ∉ witnessOpenState.hintikka.close.formulas
-      simp [witnessOpenState, HintikkaSet.close, leftWitnessFormula_ne_bot])
+      intro h
+      rw [HintikkaSet.close] at h
+      simp [witnessOpenState] at h
+      nomatch h)
 
 theorem right_trueExWitness_compatible_in_open_state :
     witnessOpenState.DeterministicAdditionCompatible
@@ -154,7 +160,10 @@ theorem right_trueExWitness_compatible_in_open_state :
   exact SaturationSearchState.deterministicAdditionCompatible_trueExWitness
     witnessOpenState (by
       change (Sign.falseE, rightWitnessFormula) ∉ witnessOpenState.hintikka.close.formulas
-      simp [witnessOpenState, HintikkaSet.close, rightWitnessFormula_ne_bot])
+      intro h
+      rw [HintikkaSet.close] at h
+      simp [witnessOpenState] at h
+      nomatch h)
 
 theorem demo_constant_trueExWitness_compatible_in_open_state
     (c : DemoConst atomTy) :
@@ -182,7 +191,10 @@ theorem left_falseAllWitness_compatible_in_open_state :
   exact SaturationSearchState.deterministicAdditionCompatible_falseAllWitness
     positiveWitnessOpenState (by
       change (Sign.trueE, leftWitnessFormula) ∉ positiveWitnessOpenState.hintikka.close.formulas
-      simp [positiveWitnessOpenState, HintikkaSet.close, leftWitnessFormula_ne_top])
+      intro h
+      rw [HintikkaSet.close] at h
+      simp [positiveWitnessOpenState] at h
+      nomatch h)
 
 theorem right_falseAllWitness_not_compatible :
     ¬ positiveWitnessConflictState.DeterministicAdditionCompatible
@@ -196,7 +208,10 @@ theorem right_falseAllWitness_compatible_in_open_state :
   exact SaturationSearchState.deterministicAdditionCompatible_falseAllWitness
     positiveWitnessOpenState (by
       change (Sign.trueE, rightWitnessFormula) ∉ positiveWitnessOpenState.hintikka.close.formulas
-      simp [positiveWitnessOpenState, HintikkaSet.close, rightWitnessFormula_ne_top])
+      intro h
+      rw [HintikkaSet.close] at h
+      simp [positiveWitnessOpenState] at h
+      nomatch h)
 
 theorem left_falseEx_not_compatible :
     ¬ positiveWitnessConflictState.DeterministicAdditionCompatible
@@ -210,7 +225,10 @@ theorem left_falseEx_compatible_in_open_state :
   exact SaturationSearchState.deterministicAdditionCompatible_falseEx
     positiveWitnessOpenState (by
       change (Sign.trueE, leftWitnessFormula) ∉ positiveWitnessOpenState.hintikka.close.formulas
-      simp [positiveWitnessOpenState, HintikkaSet.close, leftWitnessFormula_ne_top])
+      intro h
+      rw [HintikkaSet.close] at h
+      simp [positiveWitnessOpenState] at h
+      nomatch h)
 
 theorem right_falseEx_not_compatible :
     ¬ positiveWitnessConflictState.DeterministicAdditionCompatible
@@ -224,6 +242,9 @@ theorem right_falseEx_compatible_in_open_state :
   exact SaturationSearchState.deterministicAdditionCompatible_falseEx
     positiveWitnessOpenState (by
       change (Sign.trueE, rightWitnessFormula) ∉ positiveWitnessOpenState.hintikka.close.formulas
-      simp [positiveWitnessOpenState, HintikkaSet.close, rightWitnessFormula_ne_top])
+      intro h
+      rw [HintikkaSet.close] at h
+      simp [positiveWitnessOpenState] at h
+      nomatch h)
 
 end Mettapedia.AutoBooks.Codex.IntuitionisticHOL.CompletenessWitnessRegression

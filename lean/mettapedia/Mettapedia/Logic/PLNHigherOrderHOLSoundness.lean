@@ -73,9 +73,8 @@ theorem holProvEq_models {τ : Ty Base} {t u : Term Const [] τ}
     HenkinModel.Eqv M τ
       (HenkinModel.denote M t (fun v => nomatch v))
       (HenkinModel.denote M u (fun v => nomatch v)) := by
-  simpa [Mettapedia.Logic.PLNHigherOrderHOLCore.HOLProvEq, HenkinModel.models,
-    PreModel.models, PreModel.denote] using
-    (holProvable_models (Const := Const) (φ := .eq t u) h M)
+  change HenkinModel.models M (.eq t u)
+  exact holProvable_models (Const := Const) (φ := .eq t u) h M
 
 /-- Provable HOL equivalence transports to pointwise semantic equivalence. -/
 theorem holProvIff_implies_pointwise {φ ψ : HOLQuery Const}

@@ -64,6 +64,22 @@ theorem Grounding.compSubst_comp {σ : LPSignature}
   funext v
   exact g.groundTerm_applyTerm θ₁ (θ₂ v)
 
+private theorem Grounding.groundTerm_compSubst_id {σ : LPSignature}
+    (g : Grounding σ) (t : Term σ) :
+    (g.compSubst (Subst.id σ)).groundTerm t = g.groundTerm t := by
+  induction t with
+  | var v => rfl
+  | const c => rfl
+  | app f ts ih =>
+      simp [Grounding.groundTerm, ih]
+
+private theorem Grounding.groundAtom_compSubst_id {σ : LPSignature}
+    (g : Grounding σ) (a : Atom σ) :
+    (g.compSubst (Subst.id σ)).groundAtom a = g.groundAtom a := by
+  cases a with
+  | mk symbol args =>
+      simp [Grounding.groundAtom, Grounding.groundTerm_compSubst_id]
+
 /-- Key equation: grounding via a composed substitution equals grounding the
     substituted atom. Combines `compSubst_comp` and `groundAtom_applyAtom`. -/
 private theorem ground_comp_eq {σ : LPSignature}
@@ -155,8 +171,7 @@ theorem SLDTree_id_ground {σ : LPSignature} (kb : KnowledgeBase σ)
       g.groundAtom a ∈ leastHerbrandModel kb := by
   intro g a ha
   have := SLDTree_sound kb goals (Subst.id σ) h g a ha
-  simp only [Subst.id] at this
-  convert this using 1
+  simpa [Grounding.groundAtom_compSubst_id] using this
 
 /-- SLD refutation of empty goals is trivially constructible. -/
 theorem SLDTree_nil {σ : LPSignature} (prog : Program σ) :

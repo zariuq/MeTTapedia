@@ -49,7 +49,7 @@ private theorem mettaFull_noArrowToState
     {d : LangSort mettaFull}
     (arr : SortArrow mettaFull d mettaState) : False := by
   have hmem : (arr.label, d.val, "State") ∈ unaryCrossings mettaFull := by
-    simpa [mettaState] using arr.valid
+    simpa [mettaState, mettaLegacyState] using arr.valid
   rw [mettaFull_unaryCrossings] at hmem
   simp at hmem
 
@@ -307,7 +307,8 @@ theorem mettaFull_checkLang_sat_sound_specAtoms
     {fuel : Nat} {p : Pattern} {φ : OSLFFormula}
     (hSat : checkLang mettaFull mettaFullSpecAtomCheck fuel p φ = .sat) :
     sem (langReduces mettaFull) mettaFullSpecAtomSem φ p := by
-  simpa [checkLang, langReduces] using
+  change sem (langReducesUsing RelationEnv.empty mettaFull) mettaFullSpecAtomSem φ p
+  simpa [checkLang] using
     (mettaFull_checkLangUsing_sat_sound_specAtoms
       (relEnv := RelationEnv.empty) (fuel := fuel) (p := p) (φ := φ) hSat)
 

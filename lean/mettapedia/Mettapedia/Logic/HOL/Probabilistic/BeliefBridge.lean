@@ -104,10 +104,11 @@ theorem beliefDayTracksSentenceProbOn_singleton
   · intro htrack ψ hψ
     have hψ' : ψ = encodeClosedFormula φ := by
       simpa using hψ
-    subst hψ'
-    simpa using htrack
+    rw [hψ']
+    simpa [BeliefDayTracksSentenceProb] using htrack
   · intro htrack
-    exact htrack (by simp)
+    have h := htrack (by simp : encodeClosedFormula φ ∈ {encodeClosedFormula φ})
+    simpa [BeliefDayTracksSentenceProb] using h
 
 theorem beliefDayTracksHierarchicalProbOn_singleton
     (H : HierarchicalState.{u, v, w, x} Base Const)
@@ -119,10 +120,11 @@ theorem beliefDayTracksHierarchicalProbOn_singleton
   · intro htrack ψ hψ
     have hψ' : ψ = encodeClosedFormula φ := by
       simpa using hψ
-    subst hψ'
-    simpa using htrack
+    rw [hψ']
+    simpa [BeliefDayTracksHierarchicalProb] using htrack
   · intro htrack
-    exact htrack (by simp)
+    have h := htrack (by simp : encodeClosedFormula φ ∈ {encodeClosedFormula φ})
+    simpa [BeliefDayTracksHierarchicalProb] using h
 
 theorem beliefDayTracksSentenceProbOn_of_subset
     (S : ModelSpace.{u, v, w, x} Base Const)
@@ -250,9 +252,11 @@ theorem empiricalBeliefDay_tracks_empiricalHierarchicalProb
     (φ : ClosedFormula Const) :
     BeliefDayTracksHierarchicalProb
       (Const := Const)
-      (HierarchicalState.ofConstantMeasure
+      (@HierarchicalState.ofConstantMeasure
+        (Base := Base) (Const := Const)
         (empiricalModelSpace (Base := Base) (Const := Const) W)
-        (PMF.ofMultiset W hW).toMeasure)
+        (PMF.ofMultiset W hW).toMeasure
+        (PMF.toMeasure.isProbabilityMeasure (PMF.ofMultiset W hW)))
       (empiricalBeliefDay (Base := Base) (Const := Const) W)
       φ := by
   unfold BeliefDayTracksHierarchicalProb
@@ -274,7 +278,8 @@ theorem empiricalBeliefDay_tracks_empiricalSentenceProbOn
       (empiricalBeliefDay (Base := Base) (Const := Const) W)
       sample := by
   intro φ hφ
-  simpa using empiricalBeliefDay_tracks_empiricalSentenceProb
+  simpa [BeliefDayTracksSentenceProb, BeliefDayTracksSentenceProbOn] using
+    empiricalBeliefDay_tracks_empiricalSentenceProb
     (Base := Base) (Const := Const) W hW (decodeClosedFormula φ)
 
 theorem empiricalBeliefDay_tracks_empiricalHierarchicalProbOn
@@ -283,13 +288,16 @@ theorem empiricalBeliefDay_tracks_empiricalHierarchicalProbOn
     (sample : Finset (ClosedFormulaCode Const)) :
     BeliefDayTracksHierarchicalProbOn
       (Const := Const)
-      (HierarchicalState.ofConstantMeasure
+      (@HierarchicalState.ofConstantMeasure
+        (Base := Base) (Const := Const)
         (empiricalModelSpace (Base := Base) (Const := Const) W)
-        (PMF.ofMultiset W hW).toMeasure)
+        (PMF.ofMultiset W hW).toMeasure
+        (PMF.toMeasure.isProbabilityMeasure (PMF.ofMultiset W hW)))
       (empiricalBeliefDay (Base := Base) (Const := Const) W)
       sample := by
   intro φ hφ
-  simpa using empiricalBeliefDay_tracks_empiricalHierarchicalProb
+  simpa [BeliefDayTracksHierarchicalProb, BeliefDayTracksHierarchicalProbOn] using
+    empiricalBeliefDay_tracks_empiricalHierarchicalProb
     (Base := Base) (Const := Const) W hW (decodeClosedFormula φ)
 
 end Mettapedia.Logic.HOL.Probabilistic

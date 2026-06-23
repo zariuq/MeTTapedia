@@ -69,8 +69,8 @@ theorem declReduces_extended_mork_sourceRuleFire (p q : ILP) (r : ILRRule)
 section Canaries
 #check @declReduces_extended_mork_fire
 #check @declReduces_extended_mork_sourceRuleFire
--- Re-check the base bridge theorem
-#check @Mettapedia.Languages.ProcessCalculi.MORK.morkTranslatable_applyBindings
+#check @fireRule_collectionReplace
+#check @fireSourceRule_collectionReplaceSource
 end Canaries
 
 /-! ## Axiom audit -/

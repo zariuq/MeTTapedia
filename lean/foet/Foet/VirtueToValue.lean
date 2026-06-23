@@ -158,6 +158,7 @@ theorem ValueJudgmentSentence.sat_iff_sat_toVirtueTarget {World : Type u}
     have h :=
       h_align (moralValueToVirtueAspect tag) formula w
     simpa [ValueJudgmentSentence.toVirtueTarget, virtueTargetSemantics, VirtueTargetSemantics.sat,
+      valueJudgmentSemantics, ValueSemantics.sat,
       virtueAspectToMoralValue_moralValueToVirtueAspect] using h.symm
 
 /-- Entailment preservation/equivalence for the virtue-target → value-judgment translation. -/

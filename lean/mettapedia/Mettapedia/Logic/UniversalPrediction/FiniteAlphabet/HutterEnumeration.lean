@@ -104,7 +104,7 @@ theorem relEntropy_le_log_inv_of_LSC (E : LSCSemimeasureEnumeration (α := α)) 
       Dominates (E.xi) μ (Mettapedia.Logic.UniversalPrediction.encodeWeight code) := by
     intro x
     have hdom' : Mettapedia.Logic.UniversalPrediction.encodeWeight code * (E.eval code) x ≤ (E.xi) x := by
-      simpa [LSCSemimeasureEnumeration.xi] using
+      simpa [LSCSemimeasureEnumeration.xi, xiSemimeasure] using
         (xi_dominates_index (ν := E.eval) (w := Mettapedia.Logic.UniversalPrediction.encodeWeight)
           (i := code) (x := x))
     -- Rewrite the chosen semimeasure back to `μ`.

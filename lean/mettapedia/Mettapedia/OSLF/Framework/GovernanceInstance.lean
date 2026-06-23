@@ -181,8 +181,8 @@ noncomputable def govDDLFrameClosed
   pv  := fun ⟨p, _⟩ ⟨q, _⟩ => Relation.ReflTransGen ga.step p q
   ob  := gf.ob
   sem_3a := fun ⟨p, hp⟩ =>
-    let ⟨q, hq⟩ := ga.serial p hp
-    ⟨⟨q, ga.closed p q hp hq⟩, hq⟩
+    match ga.serial p hp with
+    | ⟨q, hq⟩ => ⟨⟨q, ga.closed p q hp hq⟩, hq⟩
   sem_4a := fun _ _ h => Relation.ReflTransGen.single h
   sem_4b := fun _ => Relation.ReflTransGen.refl
   sem_5a := gf.ob_not_bot

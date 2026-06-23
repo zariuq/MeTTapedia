@@ -169,8 +169,7 @@ theorem carrierOfPrimePFilter_prime_or
   have hSup :
       ((⟦φ⟧ : ProvablyEquivalent.LindenbaumSet (Const := Const) T) ⊔
           ⟦ψ⟧) ∈ F := by
-    simpa [carrierOfPFilter,
-      ProvablyEquivalent.LindenbaumSet.sup_def] using hOr
+    exact hOr
   by_cases hφ :
       (⟦φ⟧ : ProvablyEquivalent.LindenbaumSet (Const := Const) T) ∈ F
   · exact Or.inl hφ
@@ -236,7 +235,7 @@ theorem exists_prime_extension_separating
   have hxJ : x ∈ J := (Order.Ideal.principal_le_iff).1 hJContains
   have hOmit : φ ∉ U := by
     intro hφ
-    exact (Set.disjoint_left.1 P.disjoint) (by simpa [P] using hxJ) hφ
+    exact (Set.disjoint_left.1 P.disjoint) hxJ hφ
   refine ⟨U, ?_, carrierOfPFilter_deductivelyClosed (Const := Const) (T := T) (F := F),
     carrierOfPFilter_consistent_of_omits (Const := Const) (T := T) (F := F) hOmit,
     carrierOfPrimePFilter_prime_or (Const := Const) (T := T)

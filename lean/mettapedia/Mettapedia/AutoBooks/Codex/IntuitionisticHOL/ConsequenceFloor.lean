@@ -90,7 +90,7 @@ global-model soundness endpoint.
 -/
 structure SemanticFloor (F : CompletenessFrontier Const Γ) : Prop where
   semilocal :
-    SemilocalSurface (Base := Base) (Const := Const) (Γ := Γ) F
+    SemilocalSurface.{u, v, w, w'} (Base := Base) (Const := Const) (Γ := Γ) F
   global_sound :
     DerivabilityGoal (Base := Base) (Const := Const) F →
       CompletenessFrontier.GlobalSemanticConsequence.{u, v, w, w'}
@@ -358,7 +358,7 @@ singleton-strength world-model/query-strength interface.
 -/
 structure ClosedFrontierFloor (F : CompletenessFrontier Const []) : Prop where
   semantic :
-    SemanticFloor (Base := Base) (Const := Const) (Γ := []) F
+    SemanticFloor.{u, v, w, w'} (Base := Base) (Const := Const) (Γ := []) F
   worldModel :
     ClosedWorldModelSurface (Base := Base) (Const := Const) F
 

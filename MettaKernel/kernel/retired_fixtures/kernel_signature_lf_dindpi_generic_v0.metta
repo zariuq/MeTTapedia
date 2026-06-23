@@ -1,0 +1,2406 @@
+; =============================================================================
+; kernel_signature_lf_dindpi_generic_v0.metta
+;
+; Runnable generic indexed-eliminator slice over kernel_signature_lf_dindpi_v0.metta.
+;
+; New in this checkpoint:
+;   * IndRecPI is a generic checker-level indexed eliminator:
+;       IndRecPI ind params motive cases indices scrut
+;     Its branch types and iota are generated from the admitted constructor
+;     telescope and the constructor result index, not from Vec/Id-specific code.
+;   * Fin n is admitted as DIndPI P0 I1Nat and eliminated by IndRecPI.
+;
+; This file still keeps the scope honest:
+;   * The generic eliminator implemented here is for one nat index (I1Nat) with
+;     P0/P1/P2 Type parameters.
+;   * J remains covered by generated DIndPI + generated iota dispatch from the
+;     previous slice; the fully generic equality eliminator is still future work.
+;
+; Generated/checked in this file:
+;   * carrier lookup:      (Con name) : Type
+;   * constructor lookup:  ctorName : ctorType
+;   * strict positivity for non-parametric constructors
+;   * generated recursor term: IndRec ind P cases scrut
+;   * generated iota rules for non-indexed constructor telescopes whose
+;     recursive arguments are bare I occurrences, e.g.
+;       - nullary constructors       c : I
+;       - unary recursive            c : I -> I
+;       - nonrecursive argument      c : A -> I
+;       - mixed telescope            c : A -> I -> I
+;
+; Demonstrated:
+;   * Nat is admitted as DInd, not DConst nat/z/s.
+;   * plus is a checked DDef whose body uses IndRec nat, not NatRec.
+;   * plus z z = z by computation through generated IndRec.
+;   * forall n. plus n z = n checks by generated IndRec induction.
+;   * Bool is admitted as DInd with bnot, and forall b. bnot (bnot b) = b checks.
+;   * A non-strictly-positive DInd is rejected at admission.
+;
+; Remaining obligation for the full requested generator:
+;   Multiple/non-nat indices and proof-dependent equality eliminators remain out
+;   of scope here.
+;
+; Run:
+;   /home/aimama/aihub/hyperon/CeTTa/cetta kernel_signature_lf_dindpi_generic_v0.metta
+; =============================================================================
+
+; ---------- list helpers -----------------------------------------------------
+(= (is-bad $x) (unify $x (Bad $e) True False))
+
+(= (decl-name (DConst $n $T)) $n)
+(= (decl-name (DDef $n $T $body)) $n)
+(= (decl-name (DAxiom $n $T)) $n)
+(= (decl-name (DInd $n $params $ctors)) $n)
+(= (decl-name (DIndP $n $parity $ctors)) $n)
+(= (decl-name (DIndPI $n $parity $indexity $elim $ctors)) $n)
+
+; Inductive-family declarations used in this v0 slice:
+;   DInd name ParamsNil (ICtors (ICtor ctorName ctorType) ... ICNil)
+; Supported generated recursors:
+;   - nullary constructor:        c : I
+;   - unary recursive constructor c : I -> I
+; This is enough to rederive Nat and Bool without hard-coded NatRec in proofs.
+
+(= (ctor-has-name $n ICNil) False)
+(= (ctor-has-name $n (ICtors (ICtor $c $T) $rest))
+   (if (== $n $c) True (ctor-has-name $n $rest)))
+
+(= (unique-ctors ICNil) True)
+(= (unique-ctors (ICtors (ICtor $c $T) $rest))
+   (if (ctor-has-name $c $rest) False (unique-ctors $rest)))
+
+(= (decl-has-name $n (DConst $c $T)) (== $n $c))
+(= (decl-has-name $n (DDef $c $T $body)) (== $n $c))
+(= (decl-has-name $n (DAxiom $c $T)) (== $n $c))
+(= (decl-has-name $n (DInd $i $params $ctors))
+   (if (== $n $i) True (ctor-has-name $n $ctors)))
+(= (decl-has-name $n (DIndP $i $parity $ctors))
+   (if (== $n $i) True (ctor-has-name $n $ctors)))
+(= (decl-has-name $n (DIndPI $i $parity $indexity $elim $ctors))
+   (if (== $n $i) True
+     (if (== $elim NoElim)
+       (ctor-has-name $n $ctors)
+       (if (== $n $elim) True (ctor-has-name $n $ctors)))))
+
+(= (sig-has-name $n SNil) False)
+(= (sig-has-name $n (SCons $d $rest))
+   (if (decl-has-name $n $d) True (sig-has-name $n $rest)))
+
+(= (decl-names-disjoint-rest (DConst $n $T) $rest) (if (sig-has-name $n $rest) False True))
+(= (decl-names-disjoint-rest (DDef $n $T $body) $rest) (if (sig-has-name $n $rest) False True))
+(= (decl-names-disjoint-rest (DAxiom $n $T) $rest) (if (sig-has-name $n $rest) False True))
+(= (ctors-disjoint-rest ICNil $rest) True)
+(= (ctors-disjoint-rest (ICtors (ICtor $c $T) $cs) $rest)
+   (if (sig-has-name $c $rest) False (ctors-disjoint-rest $cs $rest)))
+(= (decl-names-disjoint-rest (DInd $n $params $ctors) $rest)
+   (if (sig-has-name $n $rest) False
+     (if (unique-ctors $ctors) (ctors-disjoint-rest $ctors $rest) False)))
+(= (decl-names-disjoint-rest (DIndP $n $parity $ctors) $rest)
+   (if (sig-has-name $n $rest) False
+     (if (unique-ctors $ctors) (ctors-disjoint-rest $ctors $rest) False)))
+(= (decl-names-disjoint-rest (DIndPI $n $parity $indexity $elim $ctors) $rest)
+   (if (sig-has-name $n $rest) False
+     (if (ctor-has-name $n $ctors) False
+       (if (== $elim NoElim)
+         (if (unique-ctors $ctors) (ctors-disjoint-rest $ctors $rest) False)
+         (if (sig-has-name $elim $rest) False
+           (if (ctor-has-name $elim $ctors) False
+             (if (unique-ctors $ctors) (ctors-disjoint-rest $ctors $rest) False)))))))
+
+(= (unique-sig SNil) True)
+(= (unique-sig (SCons $d $rest))
+   (if (decl-names-disjoint-rest $d $rest) (unique-sig $rest) False))
+
+(= (ax-union ANil $ys) $ys)
+(= (ax-union (ACons $x $xs) $ys) (ACons $x (ax-union $xs $ys)))
+
+; ---------- finite signature lookup -----------------------------------------
+; Declarations:
+;   DConst name type    -- checked constant/constructor
+;   DDef   name type body -- checked definition, unfolds during normalization
+;   DAxiom name type    -- unchecked postulate, visible in theorem provenance
+
+(= (ctor-type-of ICNil $x) (Bad unknown-constructor))
+(= (ctor-type-of (ICtors (ICtor $c $T) $rest) $x)
+   (if (== $x $c) $T (ctor-type-of $rest $x)))
+
+(= (ind-ctors-of SNil $x) (Bad unknown-inductive))
+(= (ind-ctors-of (SCons (DInd $i $params $ctors) $rest) $x)
+   (if (== $x $i) $ctors (ind-ctors-of $rest $x)))
+(= (ind-ctors-of (SCons (DIndP $i $parity $ctors) $rest) $x)
+   (if (== $x $i) $ctors (ind-ctors-of $rest $x)))
+(= (ind-ctors-of (SCons (DIndPI $i $parity $indexity $elim $ctors) $rest) $x)
+   (if (== $x $i) $ctors (ind-ctors-of $rest $x)))
+(= (ind-ctors-of (SCons (DConst $c $T) $rest) $x) (ind-ctors-of $rest $x))
+(= (ind-ctors-of (SCons (DDef $c $T $body) $rest) $x) (ind-ctors-of $rest $x))
+(= (ind-ctors-of (SCons (DAxiom $c $T) $rest) $x) (ind-ctors-of $rest $x))
+
+(= (ind-param-parity-of SNil $x) (Bad not-parameterized-inductive))
+(= (ind-param-parity-of (SCons (DIndP $i $parity $ctors) $rest) $x)
+   (if (== $x $i) $parity (ind-param-parity-of $rest $x)))
+(= (ind-param-parity-of (SCons (DIndPI $i $parity $indexity $elim $ctors) $rest) $x)
+   (if (== $x $i) $parity (ind-param-parity-of $rest $x)))
+(= (ind-param-parity-of (SCons (DInd $i $params $ctors) $rest) $x)
+   (if (== $x $i) (Bad not-parameterized-inductive) (ind-param-parity-of $rest $x)))
+(= (ind-param-parity-of (SCons (DConst $c $T) $rest) $x) (ind-param-parity-of $rest $x))
+(= (ind-param-parity-of (SCons (DDef $c $T $body) $rest) $x) (ind-param-parity-of $rest $x))
+(= (ind-param-parity-of (SCons (DAxiom $c $T) $rest) $x) (ind-param-parity-of $rest $x))
+
+(= (ind-indexity-of SNil $x) (Bad not-indexed-inductive))
+(= (ind-indexity-of (SCons (DIndPI $i $parity $indexity $elim $ctors) $rest) $x)
+   (if (== $x $i) $indexity (ind-indexity-of $rest $x)))
+(= (ind-indexity-of (SCons (DIndP $i $parity $ctors) $rest) $x)
+   (if (== $x $i) (Bad not-indexed-inductive) (ind-indexity-of $rest $x)))
+(= (ind-indexity-of (SCons (DInd $i $params $ctors) $rest) $x)
+   (if (== $x $i) (Bad not-indexed-inductive) (ind-indexity-of $rest $x)))
+(= (ind-indexity-of (SCons (DConst $c $T) $rest) $x) (ind-indexity-of $rest $x))
+(= (ind-indexity-of (SCons (DDef $c $T $body) $rest) $x) (ind-indexity-of $rest $x))
+(= (ind-indexity-of (SCons (DAxiom $c $T) $rest) $x) (ind-indexity-of $rest $x))
+
+(= (decl-type-of SNil $c) (Bad unknown-declaration))
+(= (decl-type-of (SCons (DConst $c $T) $rest) $x)
+   (if (== $x $c) $T (decl-type-of $rest $x)))
+(= (decl-type-of (SCons (DDef $c $T $body) $rest) $x)
+   (if (== $x $c) $T (decl-type-of $rest $x)))
+(= (decl-type-of (SCons (DAxiom $c $T) $rest) $x)
+   (if (== $x $c) $T (decl-type-of $rest $x)))
+(= (decl-type-of (SCons (DInd $i $params ICNil) $rest) $x)
+   (if (== $x $i) (Srt type) (decl-type-of $rest $x)))
+(= (decl-type-of (SCons (DInd $i $params (ICtors (ICtor $c $T) $ctors)) $rest) $x)
+   (if (== $x $i) (Srt type)
+     (if (== $x $c) $T
+       (decl-type-of (SCons (DInd $i $params $ctors) $rest) $x))))
+(= (param-family-type P1) (Pi (Srt type) (Srt type)))
+(= (param-family-type P2) (Pi (Srt type) (Pi (Srt type) (Srt type))))
+(= (decl-type-of (SCons (DIndP $i $parity ICNil) $rest) $x)
+   (if (== $x $i) (param-family-type $parity) (decl-type-of $rest $x)))
+(= (decl-type-of (SCons (DIndP $i $parity (ICtors (ICtor $c $T) $ctors)) $rest) $x)
+   (if (== $x $i) (param-family-type $parity)
+     (if (== $x $c) $T
+       (decl-type-of (SCons (DIndP $i $parity $ctors) $rest) $x))))
+(= (indexed-family-type P0 I1Nat)
+   (Pi (Con nat) (Srt type)))
+(= (indexed-family-type P1 I1Nat)
+   (Pi (Srt type) (Pi (Con nat) (Srt type))))
+(= (indexed-family-type P1 I2Self)
+   (Pi (Srt type) (Pi (Var 0) (Pi (Var 1) (Srt type)))))
+(= (indexed-vnil-type $i)
+   (Pi (Srt type)
+     (App (App (Con $i) (Var 0)) (Con z))))
+(= (indexed-vcons-type $i)
+   (Pi (Srt type)
+     (Pi (Con nat)
+       (Pi (Var 1)
+         (Pi (App (App (Con $i) (Var 2)) (Var 1))
+           (App (App (Con $i) (Var 3))
+                (App (Con s) (Var 2))))))))
+(= (indexed-rfl-type $i)
+   (Pi (Srt type)
+     (Pi (Var 0)
+       (App (App (App (Con $i) (Var 1)) (Var 0)) (Var 0)))))
+(= (indexed-fz-type $i)
+   (Pi (Con nat)
+     (App (Con $i) (App (Con s) (Var 0)))))
+(= (indexed-fs-type $i)
+   (Pi (Con nat)
+     (Pi (App (Con $i) (Var 0))
+       (App (Con $i) (App (Con s) (Var 1))))))
+(= (indexed-ctors-schema-ok $i $parity $indexity $ctors)
+   (unify $indexity I1Nat
+     (unify $parity P0
+       (unify $ctors
+         (ICtors (ICtor $fz $fzT) (ICtors (ICtor $fs $fsT) ICNil))
+         (if (== $fzT (indexed-fz-type $i))
+           (== $fsT (indexed-fs-type $i))
+           False)
+         False)
+       (unify $parity P1
+         (unify $ctors
+           (ICtors (ICtor $nil $nilT) (ICtors (ICtor $cons $consT) ICNil))
+           (if (== $nilT (indexed-vnil-type $i))
+             (== $consT (indexed-vcons-type $i))
+             False)
+           False)
+         False))
+     (unify $indexity I2Self
+       (unify $parity P1
+         (unify $ctors
+           (ICtors (ICtor $rfl $rflT) ICNil)
+           (== $rflT (indexed-rfl-type $i))
+           False)
+         False)
+       False)))
+(= (indexed-vec-elim-type $i $nil $cons)
+   (Pi (Srt type)
+     (Pi (Pi (Con nat)
+           (Pi (App (App (Con $i) (Var 1)) (Var 0))
+             (Srt type)))
+       (Pi (App (App (Var 0) (Con z)) (App (Con $nil) (Var 1)))
+         (Pi
+           (Pi (Con nat)
+             (Pi (Var 3)
+               (Pi (App (App (Con $i) (Var 4)) (Var 1))
+                 (Pi (App (App (Var 4) (Var 2)) (Var 0))
+                   (App (App (Var 5) (App (Con s) (Var 3)))
+                     (App (App (App (App (Con $cons) (Var 6)) (Var 3)) (Var 2)) (Var 1)))))))
+           (Pi (Con nat)
+             (Pi (App (App (Con $i) (Var 4)) (Var 0))
+               (App (App (Var 4) (Var 1)) (Var 0)))))))))
+(= (indexed-id-elim-type $i $rfl)
+   (Pi (Srt type)
+     (Pi (Var 0)
+       (Pi (Pi (Var 1)
+             (Pi (App (App (App (Con $i) (Var 2)) (Var 1)) (Var 0))
+               (Srt type)))
+         (Pi (App (App (Var 0) (Var 1)) (App (App (Con $rfl) (Var 2)) (Var 1)))
+           (Pi (Var 3)
+             (Pi (App (App (App (Con $i) (Var 4)) (Var 3)) (Var 0))
+               (App (App (Var 3) (Var 1)) (Var 0)))))))))
+(= (indexed-elim-type $i $parity $indexity $elim $ctors)
+   (unify $parity P1
+     (unify $indexity I1Nat
+       (unify $ctors
+         (ICtors (ICtor $nil $nilT) (ICtors (ICtor $cons $consT) ICNil))
+         (indexed-vec-elim-type $i $nil $cons)
+         (Bad vec-schema-requires-nil-cons-constructors))
+       (unify $indexity I2Self
+         (unify $ctors
+           (ICtors (ICtor $rfl $rflT) ICNil)
+           (indexed-id-elim-type $i $rfl)
+           (Bad id-schema-requires-single-rfl-constructor))
+         (Bad unsupported-index-schema)))
+     (Bad unsupported-param-schema)))
+(= (decl-type-of (SCons (DIndPI $i $parity $indexity $elim ICNil) $rest) $x)
+   (if (== $x $i) (indexed-family-type $parity $indexity)
+     (if (== $elim NoElim)
+       (decl-type-of $rest $x)
+       (if (== $x $elim)
+         (indexed-elim-type $i $parity $indexity $elim ICNil)
+         (decl-type-of $rest $x)))))
+(= (decl-type-of (SCons (DIndPI $i $parity $indexity $elim (ICtors (ICtor $c $T) $ctors)) $rest) $x)
+   (if (== $x $i) (indexed-family-type $parity $indexity)
+     (if (== $elim NoElim)
+       (if (== $x $c) $T
+         (decl-type-of (SCons (DIndPI $i $parity $indexity $elim $ctors) $rest) $x))
+       (if (== $x $elim)
+         (indexed-elim-type $i $parity $indexity $elim (ICtors (ICtor $c $T) $ctors))
+         (if (== $x $c) $T
+           (decl-type-of (SCons (DIndPI $i $parity $indexity $elim $ctors) $rest) $x))))))
+
+(= (def-body-of SNil $c) (Bad unknown-definition))
+(= (def-body-of (SCons (DDef $c $T $body) $rest) $x)
+   (if (== $x $c) $body (def-body-of $rest $x)))
+(= (def-body-of (SCons (DConst $c $T) $rest) $x) (def-body-of $rest $x))
+(= (def-body-of (SCons (DAxiom $c $T) $rest) $x) (def-body-of $rest $x))
+(= (def-body-of (SCons (DInd $i $params $ctors) $rest) $x) (def-body-of $rest $x))
+(= (def-body-of (SCons (DIndP $i $parity $ctors) $rest) $x) (def-body-of $rest $x))
+(= (def-body-of (SCons (DIndPI $i $parity $indexity $elim $ctors) $rest) $x) (def-body-of $rest $x))
+
+(= (is-axiom-name SNil $x) False)
+(= (is-axiom-name (SCons (DAxiom $a $T) $rest) $x)
+   (if (== $x $a) True (is-axiom-name $rest $x)))
+(= (is-axiom-name (SCons (DConst $c $T) $rest) $x) (is-axiom-name $rest $x))
+(= (is-axiom-name (SCons (DDef $c $T $body) $rest) $x) (is-axiom-name $rest $x))
+(= (is-axiom-name (SCons (DInd $i $params $ctors) $rest) $x) (is-axiom-name $rest $x))
+(= (is-axiom-name (SCons (DIndP $i $parity $ctors) $rest) $x) (is-axiom-name $rest $x))
+(= (is-axiom-name (SCons (DIndPI $i $parity $indexity $elim $ctors) $rest) $x) (is-axiom-name $rest $x))
+
+; ---------- lambda-Pi term machinery ----------------------------------------
+(= (shift $d $c (Var $k)) (if (< $k $c) (Var $k) (Var (+ $k $d))))
+(= (shift $d $c (Srt $s)) (Srt $s))
+(= (shift $d $c (Con $x)) (Con $x))
+(= (shift $d $c (Def $x)) (Def $x))
+(= (shift $d $c (App $f $a)) (App (shift $d $c $f) (shift $d $c $a)))
+(= (shift $d $c (Pi  $A $B)) (Pi  (shift $d $c $A) (shift $d (+ $c 1) $B)))
+(= (shift $d $c (Lam $A $b)) (Lam (shift $d $c $A) (shift $d (+ $c 1) $b)))
+(= (shift $d $c (NatRec $P $zcase $scase $n))
+   (NatRec (shift $d $c $P) (shift $d $c $zcase) (shift $d $c $scase) (shift $d $c $n)))
+(= (shift $d $c (IndRec $ind $P $cases $n))
+   (IndRec $ind (shift $d $c $P) (shift-cases $d $c $cases) (shift $d $c $n)))
+(= (shift $d $c (IndRecP $ind $params $P $cases $n))
+   (IndRecP $ind (shift-pargs $d $c $params) (shift $d $c $P) (shift-cases $d $c $cases) (shift $d $c $n)))
+(= (shift $d $c (IndRecPI $ind $params $P $cases $indices $n))
+   (IndRecPI $ind (shift-pargs $d $c $params) (shift $d $c $P) (shift-cases $d $c $cases) (shift-pargs $d $c $indices) (shift $d $c $n)))
+(= (shift $d $c (GEq $A $a $b))
+   (GEq (shift $d $c $A) (shift $d $c $a) (shift $d $c $b)))
+(= (shift $d $c (GRfl $A $a))
+   (GRfl (shift $d $c $A) (shift $d $c $a)))
+(= (shift $d $c (Transp $P $a $b $p $x))
+   (Transp (shift $d $c $P) (shift $d $c $a) (shift $d $c $b) (shift $d $c $p) (shift $d $c $x)))
+(= (shift $d $c (GTransp $A $P $a $b $p $x))
+   (GTransp (shift $d $c $A) (shift $d $c $P) (shift $d $c $a) (shift $d $c $b) (shift $d $c $p) (shift $d $c $x)))
+(= (shift $d $c (Bad $e)) (Bad $e))
+(= (shift-cases $d $c CasesNil) CasesNil)
+(= (shift-cases $d $c (Cases (Case $ctor $body) $rest))
+   (Cases (Case $ctor (shift $d $c $body)) (shift-cases $d $c $rest)))
+(= (shift-pargs $d $c PArgsNil) PArgsNil)
+(= (shift-pargs $d $c (PArgsCons $a $rest))
+   (PArgsCons (shift $d $c $a) (shift-pargs $d $c $rest)))
+
+(= (subst $j $s (Var $k)) (if (== $k $j) $s (if (> $k $j) (Var (- $k 1)) (Var $k))))
+(= (subst $j $s (Srt $x)) (Srt $x))
+(= (subst $j $s (Con $x)) (Con $x))
+(= (subst $j $s (Def $x)) (Def $x))
+(= (subst $j $s (App $f $a)) (App (subst $j $s $f) (subst $j $s $a)))
+(= (subst $j $s (Pi  $A $B)) (Pi  (subst $j $s $A) (subst (+ $j 1) (shift 1 0 $s) $B)))
+(= (subst $j $s (Lam $A $b)) (Lam (subst $j $s $A) (subst (+ $j 1) (shift 1 0 $s) $b)))
+(= (subst $j $s (NatRec $P $zcase $scase $n))
+   (NatRec (subst $j $s $P) (subst $j $s $zcase) (subst $j $s $scase) (subst $j $s $n)))
+(= (subst $j $s (IndRec $ind $P $cases $n))
+   (IndRec $ind (subst $j $s $P) (subst-cases $j $s $cases) (subst $j $s $n)))
+(= (subst $j $s (IndRecP $ind $params $P $cases $n))
+   (IndRecP $ind (subst-pargs $j $s $params) (subst $j $s $P) (subst-cases $j $s $cases) (subst $j $s $n)))
+(= (subst $j $s (IndRecPI $ind $params $P $cases $indices $n))
+   (IndRecPI $ind (subst-pargs $j $s $params) (subst $j $s $P) (subst-cases $j $s $cases) (subst-pargs $j $s $indices) (subst $j $s $n)))
+(= (subst $j $s (GEq $A $a $b))
+   (GEq (subst $j $s $A) (subst $j $s $a) (subst $j $s $b)))
+(= (subst $j $s (GRfl $A $a))
+   (GRfl (subst $j $s $A) (subst $j $s $a)))
+(= (subst $j $s (Transp $P $a $b $p $x))
+   (Transp (subst $j $s $P) (subst $j $s $a) (subst $j $s $b) (subst $j $s $p) (subst $j $s $x)))
+(= (subst $j $s (GTransp $A $P $a $b $p $x))
+   (GTransp (subst $j $s $A) (subst $j $s $P) (subst $j $s $a) (subst $j $s $b) (subst $j $s $p) (subst $j $s $x)))
+(= (subst $j $s (Bad $e)) (Bad $e))
+(= (subst-cases $j $s CasesNil) CasesNil)
+(= (subst-cases $j $s (Cases (Case $ctor $body) $rest))
+   (Cases (Case $ctor (subst $j $s $body)) (subst-cases $j $s $rest)))
+(= (subst-pargs $j $s PArgsNil) PArgsNil)
+(= (subst-pargs $j $s (PArgsCons $a $rest))
+   (PArgsCons (subst $j $s $a) (subst-pargs $j $s $rest)))
+
+(= (nf $sig (Var $k)) (Var $k))
+(= (nf $sig (Srt $s)) (Srt $s))
+(= (nf $sig (Con $x)) (Con $x))
+(= (nf $sig (Def $x))
+   (let $body (def-body-of $sig $x)
+     (if (is-bad $body) (Bad unknown-definition) (nf $sig $body))))
+(= (nf $sig (Pi  $A $B)) (Pi  (nf $sig $A) (nf $sig $B)))
+(= (nf $sig (Lam $A $b)) (Lam (nf $sig $A) (nf $sig $b)))
+(= (nf $sig (NatRec $P $zcase $scase $n))
+   (nf-natrec $sig (nf $sig $P) (nf $sig $zcase) (nf $sig $scase) (nf $sig $n)))
+(= (nf $sig (IndRec $ind $P $cases $n))
+   (nf-indrec $sig $ind (nf $sig $P) (nf-cases $sig $cases) (nf $sig $n)))
+(= (nf $sig (IndRecP $ind $params $P $cases $n))
+   (nf-indrec-p $sig $ind (nf-pargs $sig $params) (nf $sig $P) (nf-cases $sig $cases) (nf $sig $n)))
+(= (nf $sig (IndRecPI $ind $params $P $cases $indices $n))
+   (nf-indrec-pi $sig $ind (nf-pargs $sig $params) (nf $sig $P) (nf-cases $sig $cases) (nf-pargs $sig $indices) (nf $sig $n)))
+(= (nf $sig (GEq $A $a $b))
+   (GEq (nf $sig $A) (nf $sig $a) (nf $sig $b)))
+(= (nf $sig (GRfl $A $a))
+   (GRfl (nf $sig $A) (nf $sig $a)))
+(= (nf $sig (Transp $P $a $b $p $x))
+   (nf-transp $sig (nf $sig $P) (nf $sig $a) (nf $sig $b) (nf $sig $p) (nf $sig $x)))
+(= (nf $sig (GTransp $A $P $a $b $p $x))
+   (nf-gtransp $sig (nf $sig $A) (nf $sig $P) (nf $sig $a) (nf $sig $b) (nf $sig $p) (nf $sig $x)))
+(= (nf $sig (Bad $e)) (Bad $e))
+(= (nf-cases $sig CasesNil) CasesNil)
+(= (nf-cases $sig (Cases (Case $ctor $body) $rest))
+   (Cases (Case $ctor (nf $sig $body)) (nf-cases $sig $rest)))
+(= (nf-pargs $sig PArgsNil) PArgsNil)
+(= (nf-pargs $sig (PArgsCons $a $rest))
+   (PArgsCons (nf $sig $a) (nf-pargs $sig $rest)))
+(= (nf $sig (App $f $a)) (nf-app $sig (nf $sig $f) (nf $sig $a)))
+(= (nf-app $sig $f $a)
+   (unify $f (Lam $A $b)
+     (nf $sig (subst 0 $a $b))
+     (indexed-elim-iota $sig $f $a)))
+
+(= (elim-info-of SNil $elim) (Bad unknown-eliminator))
+(= (elim-info-of (SCons (DIndPI $i $parity $indexity $elimName $ctors) $rest) $elim)
+   (if (== $elimName $elim)
+     (ElimInfo $i $indexity $elimName $ctors)
+     (elim-info-of $rest $elim)))
+(= (elim-info-of (SCons (DConst $c $T) $rest) $elim) (elim-info-of $rest $elim))
+(= (elim-info-of (SCons (DDef $c $T $body) $rest) $elim) (elim-info-of $rest $elim))
+(= (elim-info-of (SCons (DAxiom $c $T) $rest) $elim) (elim-info-of $rest $elim))
+(= (elim-info-of (SCons (DInd $i $params $ctors) $rest) $elim) (elim-info-of $rest $elim))
+(= (elim-info-of (SCons (DIndP $i $parity $ctors) $rest) $elim) (elim-info-of $rest $elim))
+
+(= (indexed-elim-iota $sig $f $arg)
+   (let $info (elim-info-of $sig (app-head $f))
+     (unify $info (ElimInfo $ind I1Nat $elim $ctors)
+       (indexed-iota-vec $sig $ind $elim $ctors $f $arg)
+       (unify $info (ElimInfo $ind I2Self $elim $ctors)
+         (indexed-iota-id $sig $ind $elim $ctors $f $arg)
+         (App $f $arg)))))
+
+(= (indexed-iota-vec $sig $ind $elim $ctors $f $arg)
+   (unify $ctors (ICtors (ICtor $nil $nilT) (ICtors (ICtor $cons $consT) ICNil))
+     (unify $f (App (App (App (App (App (Con $elim) $A) $P) $nilCase) $consCase) $n)
+       (unify $arg (App (Con $nil) $A2)
+         (if (== $A $A2)
+           (if (== $n (Con z)) $nilCase (App $f $arg))
+           (App $f $arg))
+         (unify $arg (App (App (App (App (Con $cons) $A2) $k) $x) $xs)
+           (if (== $A $A2)
+             (if (== $n (App (Con s) $k))
+               (nf $sig
+                 (App (App (App (App $consCase $k) $x) $xs)
+                   (App (App (App (App (App (App (Con $elim) $A) $P) $nilCase) $consCase) $k) $xs)))
+               (App $f $arg))
+             (App $f $arg))
+           (App $f $arg)))
+       (App $f $arg))
+     (App $f $arg)))
+
+(= (indexed-iota-id $sig $ind $elim $ctors $f $p)
+   (unify $ctors (ICtors (ICtor $rfl $rflT) ICNil)
+     (unify $f (App (App (App (App (App (Con $elim) $A) $aa) $C) $d) $b)
+       (unify $p (App (App (Con $rfl) $A2) $a2)
+         (if (== $A $A2)
+           (if (== $aa $a2)
+             (if (== $b $aa) $d (App $f $p))
+             (App $f $p))
+           (App $f $p))
+         (App $f $p))
+       (App $f $p))
+     (App $f $p)))
+(= (nf-natrec $sig $P $zcase $scase $n)
+   (unify $n (Con z)
+     $zcase
+     (unify $n (App (Con s) $k)
+       (nf $sig (App (App $scase $k) (NatRec $P $zcase $scase $k)))
+       (NatRec $P $zcase $scase $n))))
+
+(= (case-body-of CasesNil $ctor) (Bad missing-case))
+(= (case-body-of (Cases (Case $c $body) $rest) $ctor)
+   (if (== $c $ctor) $body (case-body-of $rest $ctor)))
+
+(= (args-snoc ArgsNil $a) (ArgsCons $a ArgsNil))
+(= (args-snoc (ArgsCons $x $xs) $a) (ArgsCons $x (args-snoc $xs $a)))
+
+(= (app-head (Con $c)) $c)
+(= (app-head (App $f $a)) (app-head $f))
+(= (app-head (Var $k)) (Bad not-constructor-app))
+(= (app-head (Srt $s)) (Bad not-constructor-app))
+(= (app-head (Def $c)) (Bad not-constructor-app))
+(= (app-head (Pi $A $B)) (Bad not-constructor-app))
+(= (app-head (Lam $A $b)) (Bad not-constructor-app))
+(= (app-head (NatRec $P $zcase $scase $n)) (Bad not-constructor-app))
+(= (app-head (IndRec $ind $P $cases $n)) (Bad not-constructor-app))
+(= (app-head (IndRecP $ind $params $P $cases $n)) (Bad not-constructor-app))
+(= (app-head (IndRecPI $ind $params $P $cases $indices $n)) (Bad not-constructor-app))
+(= (app-head (GEq $A $a $b)) (Bad not-constructor-app))
+(= (app-head (GRfl $A $a)) (Bad not-constructor-app))
+(= (app-head (Transp $P $a $b $p $x)) (Bad not-constructor-app))
+(= (app-head (GTransp $A $P $a $b $p $x)) (Bad not-constructor-app))
+(= (app-head (Bad $e)) (Bad not-constructor-app))
+
+(= (app-args (Con $c)) ArgsNil)
+(= (app-args (App $f $a)) (args-snoc (app-args $f) $a))
+(= (app-args (Var $k)) ArgsNil)
+(= (app-args (Srt $s)) ArgsNil)
+(= (app-args (Def $c)) ArgsNil)
+(= (app-args (Pi $A $B)) ArgsNil)
+(= (app-args (Lam $A $b)) ArgsNil)
+(= (app-args (NatRec $P $zcase $scase $n)) ArgsNil)
+(= (app-args (IndRec $ind $P $cases $n)) ArgsNil)
+(= (app-args (IndRecP $ind $params $P $cases $n)) ArgsNil)
+(= (app-args (IndRecPI $ind $params $P $cases $indices $n)) ArgsNil)
+(= (app-args (GEq $A $a $b)) ArgsNil)
+(= (app-args (GRfl $A $a)) ArgsNil)
+(= (app-args (Transp $P $a $b $p $x)) ArgsNil)
+(= (app-args (GTransp $A $P $a $b $p $x)) ArgsNil)
+(= (app-args (Bad $e)) ArgsNil)
+
+(= (branch-apply $sig $ind $P $cases $body $CT $args)
+   (unify $CT (Con $ind)
+     (unify $args ArgsNil $body (Bad indrec-arity-mismatch))
+     (unify $CT (Pi $A $B)
+       (unify $args (ArgsCons $arg $rest)
+         (branch-apply-arg $sig $ind $P $cases $body $A $B $arg $rest)
+         (Bad indrec-missing-arg))
+       (Bad unsupported-constructor-shape))))
+
+(= (branch-apply-arg $sig $ind $P $cases $body $A $B $arg $rest)
+   (unify $A (Con $ind)
+     (branch-apply $sig $ind $P $cases
+       (App (App $body $arg) (IndRec $ind $P $cases $arg))
+       (subst 0 $arg $B)
+       $rest)
+     (branch-apply $sig $ind $P $cases
+       (App $body $arg)
+       (subst 0 $arg $B)
+       $rest)))
+
+(= (apply-pargs $head PArgsNil) $head)
+(= (apply-pargs $head (PArgsCons $a $rest)) (apply-pargs (App $head $a) $rest))
+(= (apply-args $head ArgsNil) $head)
+(= (apply-args $head (ArgsCons $a $rest)) (apply-args (App $head $a) $rest))
+(= (args-to-pargs ArgsNil) PArgsNil)
+(= (args-to-pargs (ArgsCons $a $rest)) (PArgsCons $a (args-to-pargs $rest)))
+
+(= (inst-param-tel $T PArgsNil) $T)
+(= (inst-param-tel (Pi $A $B) (PArgsCons $arg $rest))
+   (inst-param-tel (subst 0 $arg $B) $rest))
+
+(= (args-drop-pargs PArgsNil $args) $args)
+(= (args-drop-pargs (PArgsCons $p $ps) (ArgsCons $arg $rest))
+   (args-drop-pargs $ps $rest))
+(= (args-drop-pargs (PArgsCons $p $ps) ArgsNil) (Bad param-arity-mismatch))
+
+(= (param-carrier $ind $params) (apply-pargs (Con $ind) $params))
+(= (param-ctor-app $ctor $params) (apply-pargs (Con $ctor) $params))
+(= (indexed-carrier $ind $params $indices)
+   (apply-pargs (apply-pargs (Con $ind) $params) $indices))
+(= (indexed-target-type $params $P $ctorApp $target)
+   (let $idxs (args-drop-pargs $params (app-args $target))
+     (App (apply-args $P $idxs) $ctorApp)))
+
+(= (rec-branch-type-p $ind $params $P $ctor $T)
+   (rec-branch-type-p-go
+     (param-carrier $ind $params)
+     $P
+     (param-ctor-app $ctor $params)
+     (inst-param-tel $T $params)))
+
+(= (rec-branch-type-p-go $carrier $P $ctorApp $carrier)
+   (App $P $ctorApp))
+(= (rec-branch-type-p-go $carrier $P $ctorApp (Pi $A $B))
+   (unify $A $carrier
+     (Pi $A
+       (Pi (App (shift 1 0 $P) (Var 0))
+         (rec-branch-type-p-go
+           (shift 2 0 $carrier)
+           (shift 2 0 $P)
+           (App (shift 2 0 $ctorApp) (Var 1))
+           (shift 2 0 $B))))
+     (if (term-occurs-term $carrier $A)
+       (Bad unsupported-constructor-shape)
+       (Pi $A
+         (rec-branch-type-p-go
+           (shift 1 0 $carrier)
+           (shift 1 0 $P)
+           (App (shift 1 0 $ctorApp) (Var 0))
+           (shift 1 0 $B))))))
+
+(= (branch-apply-p $sig $carrier $ind $params $P $cases $body $carrier ArgsNil)
+   $body)
+(= (branch-apply-p $sig $carrier $ind $params $P $cases $body (Pi $A $B) (ArgsCons $arg $rest))
+   (branch-apply-p-arg $sig $carrier $ind $params $P $cases $body $A $B $arg $rest))
+
+(= (branch-apply-p-arg $sig $carrier $ind $params $P $cases $body $A $B $arg $rest)
+   (unify $A $carrier
+     (branch-apply-p $sig $carrier $ind $params $P $cases
+       (App (App $body $arg) (IndRecP $ind $params $P $cases $arg))
+       (subst 0 $arg $B)
+       $rest)
+     (branch-apply-p $sig $carrier $ind $params $P $cases
+       (App $body $arg)
+       (subst 0 $arg $B)
+       $rest)))
+
+(= (rec-branch-type-pi $ind $params $P $ctor $T)
+   (rec-branch-type-pi-go
+     $ind
+     $params
+     $P
+     (param-ctor-app $ctor $params)
+     (inst-param-tel $T $params)))
+(= (rec-branch-type-pi-go $ind $params $P $ctorApp $T)
+   (if (== (app-head $T) $ind)
+     (indexed-target-type $params $P $ctorApp $T)
+     (unify $T (Pi $A $B)
+       (if (== (app-head $A) $ind)
+         (Pi $A
+           (Pi (indexed-target-type (shift-pargs 1 0 $params) (shift 1 0 $P) (Var 0) (shift 1 0 $A))
+             (rec-branch-type-pi-go
+               $ind
+               (shift-pargs 2 0 $params)
+               (shift 2 0 $P)
+               (App (shift 2 0 $ctorApp) (Var 1))
+               (shift 1 0 $B))))
+         (if (term-occurs-name $ind $A)
+           (Bad unsupported-indexed-constructor-shape)
+           (Pi $A
+             (rec-branch-type-pi-go
+               $ind
+               (shift-pargs 1 0 $params)
+               (shift 1 0 $P)
+               (App (shift 1 0 $ctorApp) (Var 0))
+               $B))))
+       (Bad unsupported-indexed-constructor-shape))))
+
+(= (branch-apply-pi $sig $ind $params $P $cases $body $T $args)
+   (unify $args ArgsNil
+     (if (== (app-head $T) $ind) $body (Bad indrec-arity-mismatch))
+     (unify $args (ArgsCons $arg $rest)
+       (unify $T (Pi $A $B)
+         (branch-apply-pi-arg $sig $ind $params $P $cases $body $A $B $arg $rest)
+         (Bad unsupported-indexed-constructor-shape))
+       (Bad unsupported-indexed-constructor-shape))))
+
+(= (branch-apply-pi-arg $sig $ind $params $P $cases $body $A $B $arg $rest)
+   (if (== (app-head $A) $ind)
+     (let $idxs (args-to-pargs (args-drop-pargs $params (app-args $A)))
+       (branch-apply-pi $sig $ind $params $P $cases
+         (App (App $body $arg) (IndRecPI $ind $params $P $cases $idxs $arg))
+         (subst 0 $arg $B)
+         $rest))
+     (branch-apply-pi $sig $ind $params $P $cases
+       (App $body $arg)
+       (subst 0 $arg $B)
+       $rest)))
+
+(= (nf-indrec $sig $ind $P $cases $n)
+   (let $ctor (app-head $n)
+     (let $ctors (ind-ctors-of $sig $ind)
+       (let $CT (ctor-type-of $ctors $ctor)
+         (if (is-bad $CT)
+           (IndRec $ind $P $cases $n)
+           (let $body (case-body-of $cases $ctor)
+             (if (is-bad $body)
+               (IndRec $ind $P $cases $n)
+               (let $redex (branch-apply $sig $ind $P $cases $body $CT (app-args $n))
+                 (if (is-bad $redex)
+                   (IndRec $ind $P $cases $n)
+                   (nf $sig $redex))))))))))
+(= (nf-indrec-p $sig $ind $params $P $cases $n)
+   (let $ctor (app-head $n)
+     (let $ctors (ind-ctors-of $sig $ind)
+       (let $CT0 (ctor-type-of $ctors $ctor)
+         (if (is-bad $CT0)
+           (IndRecP $ind $params $P $cases $n)
+           (let $body (case-body-of $cases $ctor)
+             (if (is-bad $body)
+               (IndRecP $ind $params $P $cases $n)
+               (let $carrier (param-carrier $ind $params)
+                 (let $CT (inst-param-tel $CT0 $params)
+                   (let $args (args-drop-pargs $params (app-args $n))
+                     (let $redex (branch-apply-p $sig $carrier $ind $params $P $cases $body $CT $args)
+                     (if (is-bad $redex)
+                       (IndRecP $ind $params $P $cases $n)
+                       (nf $sig $redex)))))))))))))
+(= (nf-indrec-pi $sig $ind $params $P $cases $indices $n)
+   (let $ctor (app-head $n)
+     (let $ctors (ind-ctors-of $sig $ind)
+       (let $CT0 (ctor-type-of $ctors $ctor)
+         (if (is-bad $CT0)
+           (IndRecPI $ind $params $P $cases $indices $n)
+           (let $body (case-body-of $cases $ctor)
+             (if (is-bad $body)
+               (IndRecPI $ind $params $P $cases $indices $n)
+               (let $CT (inst-param-tel $CT0 $params)
+                 (let $args (args-drop-pargs $params (app-args $n))
+                   (let $redex (branch-apply-pi $sig $ind $params $P $cases $body $CT $args)
+                      (if (is-bad $redex)
+                       (IndRecPI $ind $params $P $cases $indices $n)
+                       (nf $sig $redex))))))))))))
+(= (nf-transp $sig $P $a $b $p $x)
+   (unify $p (App (Con rfl) $k)
+     (if (== $a $k)
+       (if (== $b $k) $x (Transp $P $a $b $p $x))
+       (Transp $P $a $b $p $x))
+     (Transp $P $a $b $p $x)))
+(= (nf-gtransp $sig $A $P $a $b $p $x)
+   (unify $p (GRfl $A0 $k)
+     (if (== $A $A0)
+       (if (== $a $k)
+         (if (== $b $k) $x (GTransp $A $P $a $b $p $x))
+         (GTransp $A $P $a $b $p $x))
+       (GTransp $A $P $a $b $p $x))
+     (GTransp $A $P $a $b $p $x)))
+
+(= (conv $sig $x $y)
+   (if (is-bad (nf $sig $x)) False
+     (if (is-bad (nf $sig $y)) False
+       (== (nf $sig $x) (nf $sig $y)))))
+
+(= (ctx-nth $i CtxNil) (Bad var-out-of-range))
+(= (ctx-nth $i (CtxCons $h $t)) (if (== $i 0) $h (ctx-nth (- $i 1) $t)))
+(= (ctx-type $i $ctx) (shift (+ $i 1) 0 (ctx-nth $i $ctx)))
+
+(= (pts-rule $sA $sB)
+   (unify $sA (Srt type)
+     (unify $sB (Srt type) (Srt type)
+       (unify $sB (Srt kind) (Srt kind) (Bad pi-bad-codomain)))
+     (unify $sA (Srt kind)
+       (unify $sB (Srt type) (Srt kind)
+         (unify $sB (Srt kind) (Srt kind) (Bad pi-bad-codomain)))
+       (Bad pi-domain-not-type))))
+
+(= (infer $sig $ctx (Srt type)) (Srt kind))
+(= (infer $sig $ctx (Srt kind)) (Bad kind-is-topsort))
+(= (infer $sig $ctx (Bad $e)) (Bad $e))
+(= (infer $sig $ctx (Var $i))  (ctx-type $i $ctx))
+(= (infer $sig $ctx (Con $c))  (decl-type-of $sig $c))
+(= (infer $sig $ctx (Def $c))  (decl-type-of $sig $c))
+(= (infer-pi $sig $ctx $A $B)
+   (let $sA (nf $sig (infer $sig $ctx $A))
+     (let $sB (nf $sig (infer $sig (CtxCons $A $ctx) $B)) (pts-rule $sA $sB))))
+(= (infer $sig $ctx (Pi $A $B)) (infer-pi $sig $ctx $A $B))
+(= (infer-lam $sig $ctx $A $b)
+   (let $sA (nf $sig (infer $sig $ctx $A))
+     (unify $sA (Srt type)
+        (let $tb (infer $sig (CtxCons $A $ctx) $b)
+          (let $ntb (nf $sig $tb)
+            (let $bad (is-bad $ntb)
+              (if $bad (Bad lam-body-bad-type) (Pi $A $tb)))))
+        (Bad lam-domain-not-a-type))))
+(= (infer $sig $ctx (Lam $A $b)) (infer-lam $sig $ctx $A $b))
+(= (infer-app $sig $ctx $f $a)
+   (let $tf (nf $sig (infer $sig $ctx $f))
+     (unify $tf (Pi $A $B)
+        (if (conv $sig (infer $sig $ctx $a) $A) (subst 0 $a $B) (Bad arg-type-mismatch))
+        (Bad applied-a-non-function))))
+(= (infer $sig $ctx (App $f $a)) (infer-app $sig $ctx $f $a))
+(= (natrec-step-type $P)
+   (Pi (Con nat)
+     (Pi (App (shift 1 0 $P) (Var 0))
+       (App (shift 2 0 $P) (App (Con s) (Var 1))))))
+(= (infer-natrec $sig $ctx $P $zcase $scase $n)
+   (if (check-conv $sig $ctx $P (Pi (Con nat) (Srt type)))
+     (if (check-conv $sig $ctx $zcase (App $P (Con z)))
+       (if (check-conv $sig $ctx $scase (natrec-step-type $P))
+         (if (check-conv $sig $ctx $n (Con nat))
+           (App $P $n)
+           (Bad natrec-scrutinee-not-nat))
+         (Bad natrec-bad-step))
+       (Bad natrec-bad-zero))
+     (Bad natrec-bad-motive)))
+(= (infer $sig $ctx (NatRec $P $zcase $scase $n)) (infer-natrec $sig $ctx $P $zcase $scase $n))
+
+(= (rec-branch-type $ind $P $ctor $T)
+   (rec-branch-type-go $ind $P (Con $ctor) $T))
+
+(= (rec-branch-type-go $ind $P $ctorApp $T)
+   (unify $T (Con $ind)
+     (App $P $ctorApp)
+     (unify $T (Pi $A $B)
+       (unify $A (Con $ind)
+         (Pi $A
+           (Pi (App (shift 1 0 $P) (Var 0))
+             (rec-branch-type-go
+               $ind
+               (shift 2 0 $P)
+               (App (shift 2 0 $ctorApp) (Var 1))
+               (shift 2 0 $B))))
+         (if (term-occurs-name $ind $A)
+           (Bad unsupported-constructor-shape)
+           (Pi $A
+             (rec-branch-type-go
+               $ind
+               (shift 1 0 $P)
+               (App (shift 1 0 $ctorApp) (Var 0))
+               (shift 1 0 $B)))))
+       (Bad unsupported-constructor-shape))))
+
+(= (case-remove CasesNil $ctor) (Bad missing-case))
+(= (case-remove (Cases (Case $c $body) $rest) $ctor)
+   (if (== $c $ctor)
+     $rest
+     (let $rest2 (case-remove $rest $ctor)
+       (if (is-bad $rest2) (Bad missing-case) (Cases (Case $c $body) $rest2)))))
+
+(= (cases-empty CasesNil) True)
+(= (cases-empty (Cases (Case $c $body) $rest)) False)
+
+(= (cases-check $sig $ctx $ind $P ICNil $cases) (cases-empty $cases))
+(= (cases-check $sig $ctx $ind $P (ICtors (ICtor $ctor $CT) $rest) $cases)
+   (let $body (case-body-of $cases $ctor)
+     (if (is-bad $body) False
+       (if (check-conv $sig $ctx $body (rec-branch-type $ind $P $ctor $CT))
+         (let $cases2 (case-remove $cases $ctor)
+           (if (is-bad $cases2) False (cases-check $sig $ctx $ind $P $rest $cases2)))
+         False))))
+
+(= (infer-indrec $sig $ctx $ind $P $cases $n)
+   (let $ctors (ind-ctors-of $sig $ind)
+     (if (is-bad $ctors)
+       (Bad unknown-inductive)
+       (if (check-conv $sig $ctx (Con $ind) (Srt type))
+         (if (check-conv $sig $ctx $P (Pi (Con $ind) (Srt type)))
+           (if (cases-check $sig $ctx $ind $P $ctors $cases)
+             (if (check-conv $sig $ctx $n (Con $ind))
+               (App $P $n)
+               (Bad indrec-bad-scrutinee))
+             (Bad indrec-bad-cases))
+           (Bad indrec-bad-motive))
+         (Bad indrec-bad-carrier)))))
+(= (infer $sig $ctx (IndRec $ind $P $cases $n)) (infer-indrec $sig $ctx $ind $P $cases $n))
+
+(= (pargs-check P1 $sig $ctx (PArgsCons $A PArgsNil))
+   (check-conv $sig $ctx $A (Srt type)))
+(= (pargs-check P1 $sig $ctx PArgsNil) False)
+(= (pargs-check P1 $sig $ctx (PArgsCons $A (PArgsCons $B $rest))) False)
+(= (pargs-check P0 $sig $ctx PArgsNil) True)
+(= (pargs-check P0 $sig $ctx (PArgsCons $A $rest)) False)
+(= (pargs-check P2 $sig $ctx (PArgsCons $A (PArgsCons $B PArgsNil)))
+   (if (check-conv $sig $ctx $A (Srt type)) (check-conv $sig $ctx $B (Srt type)) False))
+(= (pargs-check P2 $sig $ctx PArgsNil) False)
+(= (pargs-check P2 $sig $ctx (PArgsCons $A PArgsNil)) False)
+(= (pargs-check P2 $sig $ctx (PArgsCons $A (PArgsCons $B (PArgsCons $C $rest)))) False)
+
+(= (cases-check-p $sig $ctx $ind $params $P ICNil $cases) (cases-empty $cases))
+(= (cases-check-p $sig $ctx $ind $params $P (ICtors (ICtor $ctor $CT) $rest) $cases)
+   (let $body (case-body-of $cases $ctor)
+     (if (is-bad $body) False
+       (if (check-conv $sig $ctx $body (rec-branch-type-p $ind $params $P $ctor $CT))
+         (let $cases2 (case-remove $cases $ctor)
+           (if (is-bad $cases2) False (cases-check-p $sig $ctx $ind $params $P $rest $cases2)))
+         False))))
+
+(= (infer-indrec-p $sig $ctx $ind $params $P $cases $n)
+   (let $ctors (ind-ctors-of $sig $ind)
+     (if (is-bad $ctors)
+       (Bad unknown-inductive)
+       (let $parity (ind-param-parity-of $sig $ind)
+         (if (is-bad $parity)
+           (Bad indrec-not-parameterized)
+           (if (pargs-check $parity $sig $ctx $params)
+             (let $carrier (param-carrier $ind $params)
+               (if (check-conv $sig $ctx $carrier (Srt type))
+                 (if (check-conv $sig $ctx $P (Pi $carrier (Srt type)))
+                   (if (cases-check-p $sig $ctx $ind $params $P $ctors $cases)
+                     (if (check-conv $sig $ctx $n $carrier)
+                       (App $P $n)
+                       (Bad indrec-bad-scrutinee))
+                     (Bad indrec-bad-cases))
+                   (Bad indrec-bad-motive))
+                 (Bad indrec-bad-carrier)))
+             (Bad indrec-bad-params)))))))
+(= (infer $sig $ctx (IndRecP $ind $params $P $cases $n)) (infer-indrec-p $sig $ctx $ind $params $P $cases $n))
+
+(= (indices-check $indexity $sig $ctx $indices)
+   (unify $indexity I1Nat
+     (unify $indices
+       (PArgsCons $n PArgsNil)
+       (check-conv $sig $ctx $n (Con nat))
+       False)
+     False))
+
+(= (motive-type-pi I1Nat $ind $params)
+   (Pi (Con nat)
+     (Pi (indexed-carrier $ind (shift-pargs 1 0 $params) (PArgsCons (Var 0) PArgsNil))
+       (Srt type))))
+
+(= (motive-result-pi $indexity $P $indices $scrut)
+   (unify $indexity I1Nat
+     (unify $indices
+       (PArgsCons $n PArgsNil)
+       (App (App $P $n) $scrut)
+       (Bad bad-index-arity))
+     (Bad unsupported-indexity)))
+
+(= (cases-check-pi $sig $ctx $ind $params $P ICNil $cases) (cases-empty $cases))
+(= (cases-check-pi $sig $ctx $ind $params $P (ICtors (ICtor $ctor $CT) $rest) $cases)
+   (let $body (case-body-of $cases $ctor)
+     (if (is-bad $body) False
+       (if (check-conv $sig $ctx $body (rec-branch-type-pi $ind $params $P $ctor $CT))
+         (let $cases2 (case-remove $cases $ctor)
+           (if (is-bad $cases2) False (cases-check-pi $sig $ctx $ind $params $P $rest $cases2)))
+         False))))
+
+(= (infer-indrec-pi $sig $ctx $ind $params $P $cases $indices $n)
+   (let $ctors (ind-ctors-of $sig $ind)
+     (if (is-bad $ctors)
+       (Bad unknown-inductive)
+       (let $parity (ind-param-parity-of $sig $ind)
+         (if (is-bad $parity)
+           (Bad indrec-not-parameterized)
+           (let $indexity (ind-indexity-of $sig $ind)
+             (if (is-bad $indexity)
+               (Bad indrec-not-indexed)
+               (if (pargs-check $parity $sig $ctx $params)
+                 (if (indices-check $indexity $sig $ctx $indices)
+                   (let $carrier (indexed-carrier $ind $params $indices)
+                     (if (check-conv $sig $ctx $carrier (Srt type))
+                       (if (check-conv $sig $ctx $P (motive-type-pi $indexity $ind $params))
+                         (if (cases-check-pi $sig $ctx $ind $params $P $ctors $cases)
+                           (if (check-conv $sig $ctx $n $carrier)
+                             (motive-result-pi $indexity $P $indices $n)
+                             (Bad indrec-bad-scrutinee))
+                           (Bad indrec-bad-cases))
+                         (Bad indrec-bad-motive))
+                       (Bad indrec-bad-carrier)))
+                   (Bad indrec-bad-indices))
+                 (Bad indrec-bad-params)))))))))
+(= (infer $sig $ctx (IndRecPI $ind $params $P $cases $indices $n))
+   (infer-indrec-pi $sig $ctx $ind $params $P $cases $indices $n))
+
+(= (infer-geq $sig $ctx $A $a $b)
+   (if (check-conv $sig $ctx $A (Srt type))
+     (if (check-conv $sig $ctx $a $A)
+       (if (check-conv $sig $ctx $b $A)
+         (Srt type)
+         (Bad geq-bad-right))
+       (Bad geq-bad-left))
+     (Bad geq-bad-carrier)))
+(= (infer $sig $ctx (GEq $A $a $b)) (infer-geq $sig $ctx $A $a $b))
+(= (infer-grfl $sig $ctx $A $a)
+   (if (check-conv $sig $ctx $A (Srt type))
+     (if (check-conv $sig $ctx $a $A)
+       (GEq $A $a $a)
+       (Bad grfl-bad-term))
+     (Bad grfl-bad-carrier)))
+(= (infer $sig $ctx (GRfl $A $a)) (infer-grfl $sig $ctx $A $a))
+(= (infer-transp $sig $ctx $P $a $b $p $x)
+   (if (check-conv $sig $ctx $P (Pi (Con nat) (Srt type)))
+     (if (check-conv $sig $ctx $a (Con nat))
+       (if (check-conv $sig $ctx $b (Con nat))
+         (if (check-conv $sig $ctx $p (App (App (Con eqn) $a) $b))
+           (if (check-conv $sig $ctx $x (App $P $a))
+             (App $P $b)
+             (Bad transp-bad-elem))
+           (Bad transp-bad-proof))
+         (Bad transp-bad-b))
+       (Bad transp-bad-a))
+     (Bad transp-bad-motive)))
+(= (infer $sig $ctx (Transp $P $a $b $p $x)) (infer-transp $sig $ctx $P $a $b $p $x))
+(= (infer-gtransp $sig $ctx $A $P $a $b $p $x)
+   (if (check-conv $sig $ctx $A (Srt type))
+     (if (check-conv $sig $ctx $P (Pi $A (Srt type)))
+       (if (check-conv $sig $ctx $a $A)
+         (if (check-conv $sig $ctx $b $A)
+           (if (check-conv $sig $ctx $p (GEq $A $a $b))
+             (if (check-conv $sig $ctx $x (App $P $a))
+               (App $P $b)
+               (Bad gtransp-bad-elem))
+             (Bad gtransp-bad-proof))
+           (Bad gtransp-bad-b))
+         (Bad gtransp-bad-a))
+       (Bad gtransp-bad-motive))
+     (Bad gtransp-bad-carrier)))
+(= (infer $sig $ctx (GTransp $A $P $a $b $p $x)) (infer-gtransp $sig $ctx $A $P $a $b $p $x))
+(= (sort-ok $s)
+   (unify $s (Srt type) True
+     (unify $s (Srt kind) True False)))
+(= (type-ok $sig $ctx $ty)
+   (let $ITY (infer $sig $ctx $ty)
+     (let $S (nf $sig $ITY) (sort-ok $S))))
+(= (check-conv $sig $ctx $t $ty) (conv $sig (infer $sig $ctx $t) $ty))
+(= (check $sig $ctx $t $ty)
+   (let $okTy (type-ok $sig $ctx $ty)
+     (if $okTy (check-conv $sig $ctx $t $ty) False)))
+(= (check-result $sig $ctx $t $ty) (check $sig $ctx $t $ty))
+
+; ---------- signature admission ---------------------------------------------
+(= (term-occurs-name $n (Var $k)) False)
+(= (term-occurs-name $n (Srt $s)) False)
+(= (term-occurs-name $n (Con $c)) (== $n $c))
+(= (term-occurs-name $n (Def $c)) (== $n $c))
+(= (term-occurs-name $n (App $f $a))
+   (if (term-occurs-name $n $f) True (term-occurs-name $n $a)))
+(= (term-occurs-name $n (Pi $A $B))
+   (if (term-occurs-name $n $A) True (term-occurs-name $n $B)))
+(= (term-occurs-name $n (Lam $A $b))
+   (if (term-occurs-name $n $A) True (term-occurs-name $n $b)))
+(= (term-occurs-name $n (NatRec $P $zcase $scase $scrut)) True)
+(= (term-occurs-name $n (IndRec $ind $P $cases $scrut)) True)
+(= (term-occurs-name $n (IndRecP $ind $params $P $cases $scrut)) True)
+(= (term-occurs-name $n (IndRecPI $ind $params $P $cases $indices $scrut)) True)
+(= (term-occurs-name $n (GEq $A $a $b))
+   (if (term-occurs-name $n $A) True (if (term-occurs-name $n $a) True (term-occurs-name $n $b))))
+(= (term-occurs-name $n (GRfl $A $a))
+   (if (term-occurs-name $n $A) True (term-occurs-name $n $a)))
+(= (term-occurs-name $n (Transp $P $a $b $p $x)) True)
+(= (term-occurs-name $n (GTransp $A $P $a $b $p $x)) True)
+(= (term-occurs-name $n (Bad $e)) False)
+
+(= (term-occurs-term $needle $hay)
+   (if (== $needle $hay) True (term-occurs-term-go $needle $hay)))
+(= (term-occurs-term-go $needle (Var $k)) False)
+(= (term-occurs-term-go $needle (Srt $s)) False)
+(= (term-occurs-term-go $needle (Con $c)) False)
+(= (term-occurs-term-go $needle (Def $c)) False)
+(= (term-occurs-term-go $needle (App $f $a))
+   (if (term-occurs-term $needle $f) True (term-occurs-term $needle $a)))
+(= (term-occurs-term-go $needle (Pi $A $B))
+   (if (term-occurs-term $needle $A) True (term-occurs-term $needle $B)))
+(= (term-occurs-term-go $needle (Lam $A $b))
+   (if (term-occurs-term $needle $A) True (term-occurs-term $needle $b)))
+(= (term-occurs-term-go $needle (NatRec $P $zcase $scase $scrut)) True)
+(= (term-occurs-term-go $needle (IndRec $ind $P $cases $scrut)) True)
+(= (term-occurs-term-go $needle (IndRecP $ind $params $P $cases $scrut)) True)
+(= (term-occurs-term-go $needle (IndRecPI $ind $params $P $cases $indices $scrut)) True)
+(= (term-occurs-term-go $needle (GEq $A $a $b))
+   (if (term-occurs-term $needle $A) True (if (term-occurs-term $needle $a) True (term-occurs-term $needle $b))))
+(= (term-occurs-term-go $needle (GRfl $A $a))
+   (if (term-occurs-term $needle $A) True (term-occurs-term $needle $a)))
+(= (term-occurs-term-go $needle (Transp $P $a $b $p $x)) True)
+(= (term-occurs-term-go $needle (GTransp $A $P $a $b $p $x)) True)
+(= (term-occurs-term-go $needle (Bad $e)) False)
+
+(= (strict-pos-arg $ind $A)
+   (unify $A (Con $ind)
+     True
+     (if (term-occurs-name $ind $A) False True)))
+(= (strict-pos-ctor-type $ind $T)
+   (unify $T (Con $ind)
+     True
+     (unify $T (Pi $A $B)
+       (if (strict-pos-arg $ind $A) (strict-pos-ctor-type $ind $B) False)
+       False)))
+(= (ctors-strict-pos $ind ICNil) True)
+(= (ctors-strict-pos $ind (ICtors (ICtor $c $T) $rest))
+   (if (strict-pos-ctor-type $ind $T) (ctors-strict-pos $ind $rest) False))
+
+(= (strict-pos-arg-p $ind $A)
+   (if (== (app-head $A) $ind)
+     True
+     (if (term-occurs-name $ind $A) False True)))
+(= (strict-pos-ctor-type-p $ind $T)
+   (if (== (app-head $T) $ind)
+     True
+     (unify $T (Pi $A $B)
+       (if (strict-pos-arg-p $ind $A) (strict-pos-ctor-type-p $ind $B) False)
+       False)))
+(= (ctors-strict-pos-p $ind ICNil) True)
+(= (ctors-strict-pos-p $ind (ICtors (ICtor $c $T) $rest))
+   (if (strict-pos-ctor-type-p $ind $T) (ctors-strict-pos-p $ind $rest) False))
+
+(= (rec-supported-ctor-type $ind $T)
+   (unify $T (Con $ind)
+     True
+     (unify $T (Pi $A $B)
+       (unify $A (Con $ind)
+         (rec-supported-ctor-type $ind $B)
+         (if (term-occurs-name $ind $A) False (rec-supported-ctor-type $ind $B)))
+       False)))
+(= (ctors-rec-supported $ind ICNil) True)
+(= (ctors-rec-supported $ind (ICtors (ICtor $c $T) $rest))
+   (if (rec-supported-ctor-type $ind $T) (ctors-rec-supported $ind $rest) False))
+
+(= (rec-supported-ctor-type-p $ind $T)
+   (if (== (app-head $T) $ind)
+     True
+     (unify $T (Pi $A $B)
+       (if (== (app-head $A) $ind)
+         (rec-supported-ctor-type-p $ind $B)
+         (if (term-occurs-name $ind $A) False (rec-supported-ctor-type-p $ind $B)))
+       False)))
+(= (ctors-rec-supported-p $ind ICNil) True)
+(= (ctors-rec-supported-p $ind (ICtors (ICtor $c $T) $rest))
+   (if (rec-supported-ctor-type-p $ind $T) (ctors-rec-supported-p $ind $rest) False))
+
+(= (indexed-schema-ok $parity $indexity)
+   (unify $indexity I1Nat
+     (unify $parity P0 True
+       (unify $parity P1 True
+         (unify $parity P2 True False)))
+     (unify $indexity I2Self
+       (unify $parity P1 True False)
+       False)))
+
+(= (ctors-prefix ICNil $prefix) $prefix)
+(= (ctors-prefix (ICtors (ICtor $c $T) $rest) $prefix)
+   (ctors-prefix $rest (SCons (DConst $c $T) $prefix)))
+
+(= (elim-ok $prefix $n $parity $indexity $elim $ctors)
+   (if (== $elim NoElim)
+     True
+     (wf-decl (ctors-prefix $ctors (SCons (DConst $n (indexed-family-type $parity $indexity)) $prefix))
+       (DConst $elim (indexed-elim-type $n $parity $indexity $elim $ctors)))))
+
+(= (ctors-types-ok $prefix ICNil) True)
+(= (ctors-types-ok $prefix (ICtors (ICtor $c $T) $rest))
+   (let $IT (infer $prefix CtxNil $T)
+     (let $S (nf $prefix $IT)
+       (if (sort-ok $S) (ctors-types-ok $prefix $rest) False))))
+
+(= (wf-decl $prefix (DConst $n $T))
+   (let $IT (infer $prefix CtxNil $T)
+     (let $S (nf $prefix $IT)
+       (sort-ok $S))))
+(= (wf-decl $prefix (DDef $n $T $body))
+   (let $okT (wf-decl $prefix (DConst $n $T))
+     (if $okT (check-conv $prefix CtxNil $body $T) False)))
+(= (wf-decl $prefix (DAxiom $n $T)) (wf-decl $prefix (DConst $n $T)))
+(= (wf-decl $prefix (DInd $n ParamsNil $ctors))
+   (if (unique-ctors $ctors)
+     (if (ctors-strict-pos $n $ctors)
+       (if (ctors-rec-supported $n $ctors)
+         (ctors-types-ok (SCons (DConst $n (Srt type)) $prefix) $ctors)
+         False)
+       False)
+     False))
+(= (wf-decl $prefix (DIndP $n $parity $ctors))
+   (if (unique-ctors $ctors)
+     (if (ctors-strict-pos-p $n $ctors)
+       (if (ctors-rec-supported-p $n $ctors)
+         (ctors-types-ok (SCons (DConst $n (param-family-type $parity)) $prefix) $ctors)
+         False)
+       False)
+     False))
+(= (wf-decl $prefix (DIndPI $n $parity $indexity $elim $ctors))
+   (if (indexed-schema-ok $parity $indexity)
+     (if (indexed-ctors-schema-ok $n $parity $indexity $ctors)
+       (if (unique-ctors $ctors)
+         (if (ctors-strict-pos-p $n $ctors)
+           (if (ctors-rec-supported-p $n $ctors)
+             (if (ctors-types-ok (SCons (DConst $n (indexed-family-type $parity $indexity)) $prefix) $ctors)
+               (elim-ok $prefix $n $parity $indexity $elim $ctors)
+               False)
+             False)
+           False)
+         False)
+       False)
+     False))
+
+(= (wf-sig-prefix $prefix SNil) True)
+(= (wf-sig-prefix $prefix (SCons $d $rest))
+   (let $ok (wf-decl $prefix $d)
+     (if $ok
+       (wf-sig-prefix (SCons $d $prefix) $rest)
+       False)))
+
+(= (sig-admitted $sig)
+   (let $u (unique-sig $sig)
+     (if $u (wf-sig-prefix SNil $sig) False)))
+
+; ---------- theorem provenance over checked proof terms ----------------------
+(= (term-axioms $sig (Var $k)) ANil)
+(= (term-axioms $sig (Srt $s)) ANil)
+(= (term-axioms $sig (Con $c))
+   (if (is-axiom-name $sig $c) (ACons $c ANil) ANil))
+(= (term-axioms $sig (Def $c)) ANil)
+(= (term-axioms $sig (Pi $A $B)) (ax-union (term-axioms $sig $A) (term-axioms $sig $B)))
+(= (term-axioms $sig (Lam $A $b)) (ax-union (term-axioms $sig $A) (term-axioms $sig $b)))
+(= (term-axioms $sig (App $f $a)) (ax-union (term-axioms $sig $f) (term-axioms $sig $a)))
+(= (term-axioms $sig (NatRec $P $zcase $scase $n))
+   (ax-union (term-axioms $sig $P)
+     (ax-union (term-axioms $sig $zcase)
+       (ax-union (term-axioms $sig $scase) (term-axioms $sig $n)))))
+(= (term-axioms $sig (IndRec $ind $P $cases $n))
+   (ax-union (term-axioms $sig $P)
+     (ax-union (term-axioms-cases $sig $cases) (term-axioms $sig $n))))
+(= (term-axioms $sig (IndRecP $ind $params $P $cases $n))
+   (ax-union (term-axioms-pargs $sig $params)
+     (ax-union (term-axioms $sig $P)
+       (ax-union (term-axioms-cases $sig $cases) (term-axioms $sig $n)))))
+(= (term-axioms $sig (IndRecPI $ind $params $P $cases $indices $n))
+   (ax-union (term-axioms-pargs $sig $params)
+     (ax-union (term-axioms $sig $P)
+       (ax-union (term-axioms-cases $sig $cases)
+         (ax-union (term-axioms-pargs $sig $indices) (term-axioms $sig $n))))))
+(= (term-axioms-cases $sig CasesNil) ANil)
+(= (term-axioms-cases $sig (Cases (Case $ctor $body) $rest))
+   (ax-union (term-axioms $sig $body) (term-axioms-cases $sig $rest)))
+(= (term-axioms-pargs $sig PArgsNil) ANil)
+(= (term-axioms-pargs $sig (PArgsCons $a $rest))
+   (ax-union (term-axioms $sig $a) (term-axioms-pargs $sig $rest)))
+(= (term-axioms $sig (GEq $A $a $b))
+   (ax-union (term-axioms $sig $A)
+     (ax-union (term-axioms $sig $a) (term-axioms $sig $b))))
+(= (term-axioms $sig (GRfl $A $a))
+   (ax-union (term-axioms $sig $A) (term-axioms $sig $a)))
+(= (term-axioms $sig (Transp $P $a $b $p $x))
+   (ax-union (term-axioms $sig $P)
+     (ax-union (term-axioms $sig $a)
+       (ax-union (term-axioms $sig $b)
+         (ax-union (term-axioms $sig $p) (term-axioms $sig $x))))))
+(= (term-axioms $sig (GTransp $A $P $a $b $p $x))
+   (ax-union (term-axioms $sig $A)
+     (ax-union (term-axioms $sig $P)
+       (ax-union (term-axioms $sig $a)
+         (ax-union (term-axioms $sig $b)
+           (ax-union (term-axioms $sig $p) (term-axioms $sig $x)))))))
+(= (term-axioms $sig (Bad $e)) ANil)
+
+(= (kernel-check-checked $sig $term $type True)
+   (let $uses (term-axioms $sig $term)
+     (Ok (CheckedPrf $uses $term $type))))
+(= (kernel-check-checked $sig $term $type False) (Err check-failed))
+(= (kernel-check-admitted $sig $term $type True)
+   (kernel-check-checked $sig $term $type (check-result $sig CtxNil $term $type)))
+(= (kernel-check-admitted $sig $term $type False) (Err signature-not-admitted))
+(= (kernel-check $sig $term $type)
+   (case (sig-admitted $sig)
+     ((True (kernel-check-checked $sig $term $type (check-result $sig CtxNil $term $type)))
+      (False (Err signature-not-admitted)))))
+
+; ---------- finite curriculum signature --------------------------------------
+(= (good-sig)
+   (SCons (DConst o (Srt type))
+   (SCons (DConst prf (Pi (Con o) (Srt type)))
+   (SCons (DConst imp (Pi (Con o) (Pi (Con o) (Con o))))
+   (SCons (DConst impI
+     (Pi (Con o) (Pi (Con o)
+       (Pi (Pi (App (Con prf) (Var 1)) (App (Con prf) (Var 1)))
+           (App (Con prf) (App (App (Con imp) (Var 2)) (Var 1)))))))
+   (SCons (DConst impE
+     (Pi (Con o) (Pi (Con o)
+       (Pi (App (Con prf) (App (App (Con imp) (Var 1)) (Var 0)))
+         (Pi (App (Con prf) (Var 2)) (App (Con prf) (Var 2)))))))
+   (SCons (DConst A (Con o))
+   (SCons (DConst B (Con o))
+   (SCons (DDef holds (Pi (Con o) (Srt type)) (Lam (Con o) (App (Con prf) (Var 0))))
+   (SCons (DInd nat ParamsNil
+     (ICtors (ICtor z (Con nat))
+       (ICtors (ICtor s (Pi (Con nat) (Con nat))) ICNil)))
+   (SCons (DConst eqn (Pi (Con nat) (Pi (Con nat) (Srt type))))
+   (SCons (DConst rfl (Pi (Con nat) (App (App (Con eqn) (Var 0)) (Var 0))))
+   (SCons (DDef plus
+     (Pi (Con nat) (Pi (Con nat) (Con nat)))
+     (Lam (Con nat)
+       (Lam (Con nat)
+         (IndRec nat
+           (Lam (Con nat) (Con nat))
+           (Cases (Case z (Var 0))
+             (Cases (Case s (Lam (Con nat) (Lam (Con nat) (App (Con s) (Var 0))))) CasesNil))
+           (Var 1)))))
+   (SCons (DInd ibool ParamsNil
+     (ICtors (ICtor tt (Con ibool))
+       (ICtors (ICtor ff (Con ibool)) ICNil)))
+   (SCons (DDef bnot
+     (Pi (Con ibool) (Con ibool))
+     (Lam (Con ibool)
+       (IndRec ibool
+         (Lam (Con ibool) (Con ibool))
+         (Cases (Case tt (Con ff))
+           (Cases (Case ff (Con tt)) CasesNil))
+         (Var 0))))
+   (SCons (DConst set (Srt type))
+   (SCons (DConst In (Pi (Con set) (Pi (Con set) (Con o))))
+   (SCons (DConst a (Con set))
+   (SCons (DConst b (Con set))
+   (SCons (DAxiom axMem (App (Con prf) (App (App (Con In) (Con a)) (Con b))))
+   (SCons (DAxiom axSym
+     (App (Con prf) (App (App (Con imp) (App (App (Con In) (Con a)) (Con b)))
+                                        (App (App (Con In) (Con b)) (Con a)))))
+          SNil)))))))))))))))))))))
+
+(= (bad-def-sig)
+   (SCons (DConst o (Srt type))
+   (SCons (DConst A (Con o))
+   (SCons (DConst falseP (Con o))
+   (SCons (DConst prf (Pi (Con o) (Srt type)))
+   (SCons (DDef defAsPrf (App (Con prf) (Con falseP)) (Con A))
+          SNil))))))
+
+(= (dup-sig)
+   (SCons (DConst o (Srt type))
+   (SCons (DConst o (Srt type))
+          SNil)))
+
+(= (forward-ref-sig)
+   (SCons (DDef useLater (Con later) (Con later))
+   (SCons (DConst later (Srt type))
+          SNil)))
+
+(= (inconsistent-ledger-sig)
+   (SCons (DConst o (Srt type))
+   (SCons (DConst prf (Pi (Con o) (Srt type)))
+   (SCons (DConst falseP (Con o))
+   (SCons (DConst B (Con o))
+   (SCons (DConst falseE
+     (Pi (App (Con prf) (Con falseP)) (Pi (Con o) (App (Con prf) (Var 0)))))
+   (SCons (DAxiom boom (App (Con prf) (Con falseP)))
+          SNil)))))))
+
+; ---------- admission regressions -------------------------------------------
+!(assertEqual (sig-admitted (good-sig)) True)
+!(assertEqual (sig-admitted (bad-def-sig)) False)
+!(assertEqual (sig-admitted (dup-sig)) False)
+!(assertEqual (sig-admitted (forward-ref-sig)) False)
+!(assertEqual (sig-admitted (inconsistent-ledger-sig)) True)
+
+; Bad is not a type.
+!(assertEqual (infer (good-sig) CtxNil (Lam (Srt type) (Var 0))) (Bad lam-domain-not-a-type))
+!(assertEqual (check (good-sig) CtxNil (Lam (Con o) (Srt kind)) (Pi (Con o) (Bad kind-is-topsort))) False)
+
+; Delta conversion through an admitted definition.
+!(assertEqual (conv (good-sig) (App (Def holds) (Con A)) (App (Con prf) (Con A))) True)
+
+; Entry examples: DTT rfl, HOL implication proofs, beta, HOTG axiom composition.
+!(assertEqual
+   (kernel-check (good-sig)
+     (App (Con rfl) (Con z))
+     (App (App (Con eqn) (Con z)) (Con z)))
+   (Ok (CheckedPrf ANil (App (Con rfl) (Con z)) (App (App (Con eqn) (Con z)) (Con z)))))
+
+!(assertEqual
+   (kernel-check (good-sig)
+     (App (App (App (Con impI) (Con A)) (Con A)) (Lam (App (Con prf) (Con A)) (Var 0)))
+     (App (Con prf) (App (App (Con imp) (Con A)) (Con A))))
+   (Ok (CheckedPrf ANil
+     (App (App (App (Con impI) (Con A)) (Con A)) (Lam (App (Con prf) (Con A)) (Var 0)))
+     (App (Con prf) (App (App (Con imp) (Con A)) (Con A))))))
+
+!(assertEqual
+   (kernel-check (good-sig)
+     (App (App (App (Con impI) (Con A)) (App (App (Con imp) (Con B)) (Con A)))
+          (Lam (App (Con prf) (Con A))
+               (App (App (App (Con impI) (Con B)) (Con A))
+                    (Lam (App (Con prf) (Con B)) (Var 1)))))
+     (App (Con prf) (App (App (Con imp) (Con A)) (App (App (Con imp) (Con B)) (Con A)))))
+   (Ok (CheckedPrf ANil
+     (App (App (App (Con impI) (Con A)) (App (App (Con imp) (Con B)) (Con A)))
+          (Lam (App (Con prf) (Con A))
+               (App (App (App (Con impI) (Con B)) (Con A))
+                    (Lam (App (Con prf) (Con B)) (Var 1)))))
+     (App (Con prf) (App (App (Con imp) (Con A)) (App (App (Con imp) (Con B)) (Con A)))))))
+
+!(assertEqual
+   (kernel-check (good-sig)
+     (App (Lam (Con nat) (Var 0)) (Con z))
+     (Con nat))
+   (Ok (CheckedPrf ANil (App (Lam (Con nat) (Var 0)) (Con z)) (Con nat))))
+
+; NatRec is a real dependent eliminator, not an opaque constant.
+!(assertEqual
+   (infer (good-sig) CtxNil
+     (NatRec
+       (Lam (Con nat) (Con nat))
+       (Con z)
+       (Lam (Con nat) (Lam (Con nat) (App (Con s) (Var 0))))
+       (Con z)))
+   (App (Lam (Con nat) (Con nat)) (Con z)))
+
+; Iota at zero: NatRec P z s z reduces to the zero case.
+!(assertEqual
+   (conv (good-sig)
+     (NatRec
+       (Lam (Con nat) (Con nat))
+       (Con z)
+       (Lam (Con nat) (Lam (Con nat) (App (Con s) (Var 0))))
+       (Con z))
+     (Con z))
+   True)
+
+; Iota at successor: NatRec P z s (s z) reduces by one successor step.
+!(assertEqual
+   (conv (good-sig)
+     (NatRec
+       (Lam (Con nat) (Con nat))
+       (Con z)
+       (Lam (Con nat) (Lam (Con nat) (App (Con s) (Var 0))))
+       (App (Con s) (Con z)))
+     (App (Con s) (Con z)))
+   True)
+
+; plus is admitted only because its body checks against nat -> nat -> nat.
+!(assertEqual
+   (conv (good-sig)
+     (App (App (Def plus) (Con z)) (App (Con s) (Con z)))
+     (App (Con s) (Con z)))
+   True)
+
+!(assertEqual
+   (conv (good-sig)
+     (App (App (Def plus) (App (Con s) (Con z))) (Con z))
+     (App (Con s) (Con z)))
+   True)
+
+; The old Exp2 wall is closed for concrete plus-zero by computation: rfl now checks.
+!(assertEqual
+   (kernel-check (good-sig)
+     (App (Con rfl) (Con z))
+     (App (App (Con eqn) (App (App (Def plus) (Con z)) (Con z))) (Con z)))
+   (Ok (CheckedPrf ANil
+     (App (Con rfl) (Con z))
+     (App (App (Con eqn) (App (App (Def plus) (Con z)) (Con z))) (Con z)))))
+
+; Negative: the motive must be nat -> Type.
+!(assertEqual
+   (infer (good-sig) CtxNil
+     (NatRec
+       (Con nat)
+       (Con z)
+       (Lam (Con nat) (Lam (Con nat) (App (Con s) (Var 0))))
+       (Con z)))
+   (Bad natrec-bad-motive))
+
+!(assertEqual
+   (kernel-check (good-sig)
+     (App (App (App (App (Con impE) (App (App (Con In) (Con a)) (Con b)))
+                                    (App (App (Con In) (Con b)) (Con a)))
+               (Con axSym)) (Con axMem))
+     (App (Con prf) (App (App (Con In) (Con b)) (Con a))))
+   (Ok (CheckedPrf (ACons axSym (ACons axMem ANil))
+     (App (App (App (App (Con impE) (App (App (Con In) (Con a)) (Con b)))
+                                    (App (App (Con In) (Con b)) (Con a)))
+               (Con axSym)) (Con axMem))
+     (App (Con prf) (App (App (Con In) (Con b)) (Con a))))))
+
+; Old break probes no longer break admitted signatures.
+!(assertEqual
+   (kernel-check (bad-def-sig) (Def defAsPrf) (App (Con prf) (Con falseP)))
+   (Err signature-not-admitted))
+
+!(assertEqual
+   (kernel-check (inconsistent-ledger-sig)
+     (App (App (Con falseE) (Con boom)) (Con B))
+     (App (Con prf) (Con B)))
+   (Ok (CheckedPrf (ACons boom ANil)
+     (App (App (Con falseE) (Con boom)) (Con B))
+     (App (Con prf) (Con B)))))
+
+; Wrong proof targets still reject.
+!(assertEqual
+   (kernel-check (good-sig)
+     (App (Con rfl) (Con z))
+     (App (App (Con eqn) (Con z)) (App (Con s) (Con z))))
+   (Err check-failed))
+
+!(assertEqual
+   (kernel-check (good-sig)
+     (App (App (App (Con impI) (Con A)) (Con A)) (Lam (App (Con prf) (Con A)) (Var 0)))
+     (App (Con prf) (App (App (Con imp) (Con A)) (Con B))))
+   (Err check-failed))
+
+
+; ==================== GENERATED INDUCTIVE ADMISSION SLICE ===================
+; Nat is no longer declared via DConst nat/z/s in good-sig.  DInd generates the
+; carrier and constructor lookup, and IndRec checks using the generated recursor
+; branch types.
+!(assertEqual (decl-type-of (good-sig) nat) (Srt type))
+!(assertEqual (decl-type-of (good-sig) z) (Con nat))
+!(assertEqual (decl-type-of (good-sig) s) (Pi (Con nat) (Con nat)))
+
+(= (bad-ind-sig)
+   (SCons (DInd bad ParamsNil
+     (ICtors (ICtor mkBad (Pi (Pi (Con bad) (Con bad)) (Con bad))) ICNil))
+          SNil))
+!(assertEqual (sig-admitted (bad-ind-sig)) False)
+
+; Generic generated Nat recursor iota, zero and successor.
+!(assertEqual
+   (conv (good-sig)
+     (IndRec nat
+       (Lam (Con nat) (Con nat))
+       (Cases (Case z (Con z))
+         (Cases (Case s (Lam (Con nat) (Lam (Con nat) (App (Con s) (Var 0))))) CasesNil))
+       (Con z))
+     (Con z))
+   True)
+
+!(assertEqual
+   (conv (good-sig)
+     (IndRec nat
+       (Lam (Con nat) (Con nat))
+       (Cases (Case z (Con z))
+         (Cases (Case s (Lam (Con nat) (Lam (Con nat) (App (Con s) (Var 0))))) CasesNil))
+       (App (Con s) (Con z)))
+     (App (Con s) (Con z)))
+   True)
+
+; New generated Bool inductive + generated recursor + worked proof:
+; forall b:ibool. bnot (bnot b) = b, by IndRec over Bool.
+!(assertEqual (decl-type-of (good-sig) ibool) (Srt type))
+!(assertEqual (decl-type-of (good-sig) tt) (Con ibool))
+!(assertEqual (conv (good-sig) (App (Def bnot) (Con tt)) (Con ff)) True)
+!(assertEqual
+   (kernel-check (good-sig)
+     (Lam (Con ibool)
+       (IndRec ibool
+         (Lam (Con ibool)
+           (GEq (Con ibool) (App (Def bnot) (App (Def bnot) (Var 0))) (Var 0)))
+         (Cases (Case tt (GRfl (Con ibool) (Con tt)))
+           (Cases (Case ff (GRfl (Con ibool) (Con ff))) CasesNil))
+         (Var 0)))
+     (Pi (Con ibool)
+       (GEq (Con ibool) (App (Def bnot) (App (Def bnot) (Var 0))) (Var 0))))
+   (Ok (CheckedPrf ANil
+     (Lam (Con ibool)
+       (IndRec ibool
+         (Lam (Con ibool)
+           (GEq (Con ibool) (App (Def bnot) (App (Def bnot) (Var 0))) (Var 0)))
+         (Cases (Case tt (GRfl (Con ibool) (Con tt)))
+           (Cases (Case ff (GRfl (Con ibool) (Con ff))) CasesNil))
+         (Var 0)))
+     (Pi (Con ibool)
+       (GEq (Con ibool) (App (Def bnot) (App (Def bnot) (Var 0))) (Var 0))))))
+
+; ==================== EQUALITY ELIMINATION (transport) ======================
+; transport iota:  Transp P z z (rfl z) z  reduces to  z
+!(assertEqual
+   (conv (good-sig)
+     (Transp (Lam (Con nat) (Con nat)) (Con z) (Con z) (App (Con rfl) (Con z)) (Con z))
+     (Con z))
+   True)
+; transport infers its result type  (App P b)
+!(assertEqual
+   (infer (good-sig) CtxNil
+     (Transp (Lam (Con nat) (Con nat)) (Con z) (Con z) (App (Con rfl) (Con z)) (Con z)))
+   (App (Lam (Con nat) (Con nat)) (Con z)))
+; cong-s : Pi a b. eqn a b -> eqn (s a) (s b)  -- DERIVED from transport (not ad hoc),
+; checks at its declared type:
+!(assertEqual
+   (check (good-sig) CtxNil
+     (Lam (Con nat) (Lam (Con nat) (Lam (App (App (Con eqn) (Var 1)) (Var 0))
+       (Transp (Lam (Con nat) (App (App (Con eqn) (App (Con s) (Var 3))) (App (Con s) (Var 0))))
+               (Var 2) (Var 1) (Var 0) (App (Con rfl) (App (Con s) (Var 2)))))))
+     (Pi (Con nat) (Pi (Con nat) (Pi (App (App (Con eqn) (Var 1)) (Var 0))
+       (App (App (Con eqn) (App (Con s) (Var 2))) (App (Con s) (Var 1)))))))
+   True)
+; negative: a WRONG congruence target is rejected (eqn (s a)(s b) is NOT eqn a b)
+!(assertEqual
+   (check (good-sig) CtxNil
+     (Lam (Con nat) (Lam (Con nat) (Lam (App (App (Con eqn) (Var 1)) (Var 0))
+       (Transp (Lam (Con nat) (App (App (Con eqn) (App (Con s) (Var 3))) (App (Con s) (Var 0))))
+               (Var 2) (Var 1) (Var 0) (App (Con rfl) (App (Con s) (Var 2)))))))
+     (Pi (Con nat) (Pi (Con nat) (Pi (App (App (Con eqn) (Var 1)) (Var 0))
+       (App (App (Con eqn) (Var 2)) (Var 1))))))
+   False)
+; negative: malformed transport motive (P := nat, not nat -> Type) is rejected
+!(assertEqual
+   (infer (good-sig) CtxNil
+     (Transp (Con nat) (Con z) (Con z) (App (Con rfl) (Con z)) (Con z)))
+   (Bad transp-bad-motive))
+
+; negative: Transp iota fires only at matching rfl endpoints.
+!(assertEqual
+   (conv (good-sig)
+     (Transp (Lam (Con nat) (Srt type))
+             (Con z)
+             (App (Con s) (Con z))
+             (App (Con rfl) (Con z))
+             (Con nat))
+     (Con nat))
+   False)
+
+; negative: kernel-check refuses ill-formed expected types instead of normalizing
+; them away.  This is the permanent regression probe for the old exploit.
+!(assertEqual
+   (kernel-check (good-sig)
+     (Con z)
+     (Transp (Lam (Con nat) (Srt type))
+             (Con z)
+             (App (Con s) (Con z))
+             (App (Con rfl) (Con z))
+             (Con nat)))
+   (Err check-failed))
+
+; ==================== GENERAL TRANSPORT (type-indexed identity) ==============
+; GTransp generalizes transport from nat equality to any carrier A : Type.
+!(assertEqual
+   (kernel-check (good-sig)
+     (GTransp (Con nat)
+       (Lam (Con nat) (Con nat))
+       (Con z) (Con z)
+       (GRfl (Con nat) (Con z))
+       (Con z))
+     (Con nat))
+   (Ok (CheckedPrf ANil
+     (GTransp (Con nat)
+       (Lam (Con nat) (Con nat))
+       (Con z) (Con z)
+       (GRfl (Con nat) (Con z))
+       (Con z))
+     (Con nat))))
+
+; Same primitive over propositions: transporting an axiom proof along reflexive
+; proposition equality keeps the axiom provenance visible.
+!(assertEqual
+   (kernel-check (good-sig)
+     (GTransp (Con o)
+       (Lam (Con o) (App (Con prf) (Var 0)))
+       (App (App (Con In) (Con a)) (Con b))
+       (App (App (Con In) (Con a)) (Con b))
+       (GRfl (Con o) (App (App (Con In) (Con a)) (Con b)))
+       (Con axMem))
+     (App (Con prf) (App (App (Con In) (Con a)) (Con b))))
+   (Ok (CheckedPrf (ACons axMem ANil)
+     (GTransp (Con o)
+       (Lam (Con o) (App (Con prf) (Var 0)))
+       (App (App (Con In) (Con a)) (Con b))
+       (App (App (Con In) (Con a)) (Con b))
+       (GRfl (Con o) (App (App (Con In) (Con a)) (Con b)))
+       (Con axMem))
+     (App (Con prf) (App (App (Con In) (Con a)) (Con b))))))
+
+; negative: general transport does not accept a reflexivity proof at mismatched
+; endpoints.
+!(assertEqual
+   (kernel-check (good-sig)
+     (GTransp (Con nat)
+       (Lam (Con nat) (Con nat))
+       (Con z) (App (Con s) (Con z))
+       (GRfl (Con nat) (Con z))
+       (Con z))
+     (Con nat))
+   (Err check-failed))
+
+; ===== INDUCTION:  forall n. plus n z = n  (the curriculum plus_O_r shape) =====
+; `plus` recurses on its FIRST arg, so `plus n z` is STUCK for variable n.
+; This proof uses generated IndRec nat, not hard-coded NatRec.
+(= (cong-s-term)
+   (Lam (Con nat) (Lam (Con nat) (Lam (App (App (Con eqn) (Var 1)) (Var 0))
+     (Transp (Lam (Con nat) (App (App (Con eqn) (App (Con s) (Var 3))) (App (Con s) (Var 0))))
+             (Var 2) (Var 1) (Var 0) (App (Con rfl) (App (Con s) (Var 2))))))))
+
+(= (plus-O-r-type)
+   (Pi (Con nat) (App (App (Con eqn) (App (App (Def plus) (Var 0)) (Con z))) (Var 0))))
+
+(= (plus-O-r-step)
+   (Lam (Con nat)
+     (Lam (App (App (Con eqn) (App (App (Def plus) (Var 0)) (Con z))) (Var 0))
+       (App (App (App (cong-s-term) (App (App (Def plus) (Var 1)) (Con z))) (Var 1)) (Var 0)))))
+
+(= (plus-O-r-term)
+   (Lam (Con nat)
+     (IndRec nat
+       (Lam (Con nat) (App (App (Con eqn) (App (App (Def plus) (Var 0)) (Con z))) (Var 0)))
+       (Cases (Case z (App (Con rfl) (Con z)))
+         (Cases (Case s (plus-O-r-step)) CasesNil))
+       (Var 0))))
+
+!(assertEqual
+   (check (good-sig) CtxNil (plus-O-r-term) (plus-O-r-type))
+   True)
+
+; negative: the FALSE statement  forall n. plus n z = s n  does NOT check (base fails)
+(= (false-plus-O-r-type)
+   (Pi (Con nat) (App (App (Con eqn) (App (App (Def plus) (Var 0)) (Con z))) (App (Con s) (Var 0)))))
+(= (false-plus-O-r-term)
+   (Lam (Con nat)
+     (IndRec nat
+       (Lam (Con nat) (App (App (Con eqn) (App (App (Def plus) (Var 0)) (Con z))) (App (Con s) (Var 0))))
+       (Cases (Case z (App (Con rfl) (Con z)))
+         (Cases (Case s
+           (Lam (Con nat)
+             (Lam (App (App (Con eqn) (App (App (Def plus) (Var 0)) (Con z))) (App (Con s) (Var 0)))
+               (Var 0)))) CasesNil))
+       (Var 0))))
+!(assertEqual (check (good-sig) CtxNil (false-plus-O-r-term) (false-plus-O-r-type)) False)
+
+; =============================================================================
+; TELESCOPE CONSTRUCTOR PROBES
+; =============================================================================
+; v1 supports non-indexed constructor telescopes.  Recursive arguments are bare
+; occurrences of the carrier; non-recursive arguments are passed to the branch
+; without induction hypotheses.
+
+(= (nat-list-base-sig)
+   (SCons (DInd nat ParamsNil
+     (ICtors (ICtor z (Con nat))
+       (ICtors (ICtor s (Pi (Con nat) (Con nat))) ICNil)))
+     (SCons (DInd lst ParamsNil
+       (ICtors (ICtor lnil (Con lst))
+         (ICtors (ICtor lcons (Pi (Con nat) (Pi (Con lst) (Con lst)))) ICNil)))
+       SNil)))
+
+!(assertEqual (ctors-strict-pos lst
+  (ICtors (ICtor lnil (Con lst))
+    (ICtors (ICtor lcons (Pi (Con nat) (Pi (Con lst) (Con lst)))) ICNil)))
+  True)
+!(assertEqual (ctors-rec-supported lst
+  (ICtors (ICtor lnil (Con lst))
+    (ICtors (ICtor lcons (Pi (Con nat) (Pi (Con lst) (Con lst)))) ICNil)))
+  True)
+!(assertEqual (sig-admitted (nat-list-base-sig)) True)
+
+; Branch type for lcons : nat -> lst -> lst:
+;   Pi n:nat. Pi xs:lst. Pi ih:P xs. P (lcons n xs)
+!(assertEqual
+   (rec-branch-type lst
+     (Lam (Con lst) (Con nat))
+     lcons
+     (Pi (Con nat) (Pi (Con lst) (Con lst))))
+   (Pi (Con nat)
+     (Pi (Con lst)
+       (Pi (App (shift 2 0 (Lam (Con lst) (Con nat))) (Var 0))
+         (App (shift 3 0 (Lam (Con lst) (Con nat)))
+           (App (App (Con lcons) (Var 2)) (Var 1)))))))
+
+; A generated List length eliminator: length (lcons z lnil) computes to s z.
+!(assertEqual
+   (conv (nat-list-base-sig)
+     (IndRec lst
+       (Lam (Con lst) (Con nat))
+       (Cases (Case lnil (Con z))
+         (Cases (Case lcons
+           (Lam (Con nat) (Lam (Con lst) (Lam (Con nat) (App (Con s) (Var 0))))))
+           CasesNil))
+       (App (App (Con lcons) (Con z)) (Con lnil)))
+     (App (Con s) (Con z)))
+   True)
+
+; Exact case hygiene: an extra unused branch is rejected.
+!(assertEqual
+   (infer (nat-list-base-sig) CtxNil
+     (IndRec lst
+       (Lam (Con lst) (Con nat))
+       (Cases (Case lnil (Con z))
+         (Cases (Case lcons
+           (Lam (Con nat) (Lam (Con lst) (Lam (Con nat) (App (Con s) (Var 0))))))
+           (Cases (Case ghost (Con z)) CasesNil)))
+       (Con lnil)))
+   (Bad indrec-bad-cases))
+
+(= (nat-tree-base-sig)
+   (SCons (DInd nat ParamsNil
+     (ICtors (ICtor z (Con nat))
+       (ICtors (ICtor s (Pi (Con nat) (Con nat))) ICNil)))
+     (SCons (DInd tree ParamsNil
+       (ICtors (ICtor leaf (Pi (Con nat) (Con tree))) ICNil))
+       SNil)))
+
+!(assertEqual (ctors-strict-pos tree
+  (ICtors (ICtor leaf (Pi (Con nat) (Con tree))) ICNil))
+  True)
+!(assertEqual (ctors-rec-supported tree
+  (ICtors (ICtor leaf (Pi (Con nat) (Con tree))) ICNil))
+  True)
+!(assertEqual (sig-admitted (nat-tree-base-sig)) True)
+
+; A generated Tree leaf eliminator: leaf carries a non-recursive Nat payload.
+!(assertEqual
+   (conv (nat-tree-base-sig)
+     (IndRec tree
+       (Lam (Con tree) (Con nat))
+       (Cases (Case leaf (Lam (Con nat) (Var 0))) CasesNil)
+       (App (Con leaf) (App (Con s) (Con z))))
+     (App (Con s) (Con z)))
+   True)
+
+; ==================== ID/J PORTABILITY SLICE =================================
+; This imports the useful payload from GPT-Pro's native_inference_kernel_idj.metta
+; into the trunk checker.  The PTS is the predicative trunk rule:
+;   Type : Kind, Pi domains must be Type, codomains may be Type or Kind.
+; Id/Rfl/J as raw constants are typechecked here, but iota is reserved for the
+; generated DIndPI declaration below.
+
+(= (id-ty)
+   (Pi (Srt type) (Pi (Var 0) (Pi (Var 1) (Srt type)))))
+
+(= (rfl-ty)
+   (Pi (Srt type)
+     (Pi (Var 0)
+       (App (App (App (Con Id) (Var 1)) (Var 0)) (Var 0)))))
+
+(= (j-ty)
+   (Pi (Srt type)
+     (Pi (Var 0)
+       (Pi (Pi (Var 1)
+             (Pi (App (App (App (Con Id) (Var 2)) (Var 1)) (Var 0))
+               (Srt type)))
+         (Pi (App (App (Var 0) (Var 1)) (App (App (Con Rfl) (Var 2)) (Var 1)))
+           (Pi (Var 3)
+             (Pi (App (App (App (Con Id) (Var 4)) (Var 3)) (Var 0))
+               (App (App (Var 3) (Var 1)) (Var 0)))))))))
+
+(= (idj-sig)
+   (SCons (DConst Id
+     (Pi (Srt type) (Pi (Var 0) (Pi (Var 1) (Srt type)))))
+   (SCons (DConst Rfl
+     (Pi (Srt type)
+       (Pi (Var 0)
+         (App (App (App (Con Id) (Var 1)) (Var 0)) (Var 0)))))
+   (SCons (DConst J
+     (Pi (Srt type)
+       (Pi (Var 0)
+         (Pi (Pi (Var 1)
+               (Pi (App (App (App (Con Id) (Var 2)) (Var 1)) (Var 0))
+                 (Srt type)))
+           (Pi (App (App (Var 0) (Var 1)) (App (App (Con Rfl) (Var 2)) (Var 1)))
+             (Pi (Var 3)
+               (Pi (App (App (App (Con Id) (Var 4)) (Var 3)) (Var 0))
+                 (App (App (Var 3) (Var 1)) (Var 0)))))))))
+   (SCons (DConst o (Srt type))
+   (SCons (DConst c (Con o))
+   (SCons (DConst c2 (Con o))
+          SNil)))))))
+
+(= (IdApp $A $a $b) (App (App (App (Con Id) $A) $a) $b))
+(= (RflApp $A $a) (App (App (Con Rfl) $A) $a))
+(= (JApp $A $a $C $d $b $p)
+   (App (App (App (App (App (App (Con J) $A) $a) $C) $d) $b) $p))
+
+!(assertEqual (pts-rule (Srt kind) (Srt type)) (Srt kind))
+!(assertEqual (pts-rule (Srt kind) (Srt kind)) (Srt kind))
+!(assertEqual (ctx-type 0 (CtxCons (Srt type) CtxNil)) (Srt type))
+!(assertEqual (infer SNil (CtxCons (Srt type) CtxNil) (Var 0)) (Srt type))
+!(assertEqual
+   (ctx-type 1 (CtxCons (Var 0) (CtxCons (Srt type) CtxNil)))
+   (Srt type))
+!(assertEqual
+   (nf SNil
+     (infer SNil
+       (CtxCons (Var 0) (CtxCons (Srt type) CtxNil))
+       (Pi (Var 1) (Srt type))))
+   (Srt kind))
+!(assertEqual
+   (nf SNil
+     (infer SNil
+       (CtxCons (Srt type) CtxNil)
+       (Pi (Var 0) (Pi (Var 1) (Srt type)))))
+   (Srt kind))
+!(assertEqual
+   (nf SNil
+     (infer SNil CtxNil
+       (Pi (Srt type) (Pi (Var 0) (Pi (Var 1) (Srt type))))))
+   (Srt kind))
+!(assertEqual
+   (wf-decl SNil
+     (DConst Id (Pi (Srt type) (Pi (Var 0) (Pi (Var 1) (Srt type))))))
+   True)
+!(assertEqual
+   (wf-decl (SCons (DConst Id (Pi (Srt type) (Pi (Var 0) (Pi (Var 1) (Srt type))))) SNil)
+     (DConst Rfl
+       (Pi (Srt type)
+         (Pi (Var 0)
+           (App (App (App (Con Id) (Var 1)) (Var 0)) (Var 0))))))
+   True)
+!(assertEqual
+   (wf-decl
+     (SCons (DConst Rfl
+       (Pi (Srt type)
+         (Pi (Var 0)
+           (App (App (App (Con Id) (Var 1)) (Var 0)) (Var 0)))))
+       (SCons (DConst Id (Pi (Srt type) (Pi (Var 0) (Pi (Var 1) (Srt type))))) SNil))
+     (DConst J
+       (Pi (Srt type)
+         (Pi (Var 0)
+           (Pi (Pi (Var 1)
+                 (Pi (App (App (App (Con Id) (Var 2)) (Var 1)) (Var 0))
+                   (Srt type)))
+             (Pi (App (App (Var 0) (Var 1)) (App (App (Con Rfl) (Var 2)) (Var 1)))
+               (Pi (Var 3)
+                 (Pi (App (App (App (Con Id) (Var 4)) (Var 3)) (Var 0))
+                   (App (App (Var 3) (Var 1)) (Var 0))))))))))
+   True)
+!(assertEqual (sig-admitted (idj-sig)) True)
+!(assertEqual
+   (nf (idj-sig) (infer (idj-sig) CtxNil (decl-type-of (idj-sig) Id)))
+   (Srt kind))
+!(assertEqual
+   (nf (idj-sig) (infer (idj-sig) CtxNil (decl-type-of (idj-sig) Rfl)))
+   (Srt kind))
+!(assertEqual
+   (nf (idj-sig) (infer (idj-sig) CtxNil (decl-type-of (idj-sig) J)))
+   (Srt kind))
+
+!(assertEqual
+   (kernel-check (idj-sig)
+     (RflApp (Con o) (Con c))
+     (IdApp (Con o) (Con c) (Con c)))
+   (Ok (CheckedPrf ANil
+     (RflApp (Con o) (Con c))
+     (IdApp (Con o) (Con c) (Con c)))))
+
+!(assertEqual
+   (check (idj-sig) CtxNil
+     (JApp (Con o) (Con c)
+       (Lam (Con o) (Lam (IdApp (Con o) (Con c) (Var 0)) (Con o)))
+       (Con c)
+       (Con c)
+       (RflApp (Con o) (Con c)))
+     (Con o))
+   True)
+
+!(assertEqual
+   (nf (idj-sig)
+     (JApp (Con o) (Con c)
+       (Lam (Con o) (Lam (IdApp (Con o) (Con c) (Var 0)) (Con o)))
+       (Con c)
+       (Con c)
+       (RflApp (Con o) (Con c))))
+   (JApp (Con o) (Con c)
+       (Lam (Con o) (Lam (IdApp (Con o) (Con c) (Var 0)) (Con o)))
+       (Con c)
+       (Con c)
+       (RflApp (Con o) (Con c))))
+
+; Off-diagonal/non-Rfl forms stay stuck under normalization.
+!(assertEqual
+   (nf (idj-sig)
+     (JApp (Con o) (Con c)
+       (Lam (Con o) (Lam (IdApp (Con o) (Con c) (Var 0)) (Con o)))
+       (Con c)
+       (Con c2)
+       (Con c2)))
+   (JApp (Con o) (Con c)
+       (Lam (Con o) (Lam (IdApp (Con o) (Con c) (Var 0)) (Con o)))
+       (Con c)
+       (Con c2)
+       (Con c2)))
+
+; A raw term of type o is not accepted as a proof of Id o c c2.
+!(assertEqual
+   (check (idj-sig) CtxNil (Con c2) (IdApp (Con o) (Con c) (Con c2)))
+   False)
+
+; ==================== PARAMETERIZED GENERATED INDUCTIVES =====================
+; v2 slice: parameters, but still no indices.  List A and Pair A B are one
+; declaration each, not separate list_nat / pair_nat_bool carriers.
+
+(= (list-ctors)
+   (ICtors (ICtor lnil
+     (Pi (Srt type) (App (Con list) (Var 0))))
+   (ICtors (ICtor lcons
+     (Pi (Srt type)
+       (Pi (Var 0)
+         (Pi (App (Con list) (Var 1))
+           (App (Con list) (Var 2))))))
+     ICNil)))
+
+(= (pair-ctors)
+   (ICtors (ICtor mkpair
+     (Pi (Srt type)
+       (Pi (Srt type)
+         (Pi (Var 1)
+           (Pi (Var 1)
+             (App (App (Con pair) (Var 3)) (Var 2)))))))
+     ICNil))
+
+(= (param-sig)
+   (SCons (DInd nat ParamsNil
+     (ICtors (ICtor z (Con nat))
+       (ICtors (ICtor s (Pi (Con nat) (Con nat))) ICNil)))
+   (SCons (DInd ibool ParamsNil
+     (ICtors (ICtor tt (Con ibool))
+       (ICtors (ICtor ff (Con ibool)) ICNil)))
+   (SCons (DIndP list P1 (list-ctors))
+   (SCons (DIndP pair P2 (pair-ctors))
+          SNil)))))
+
+(= (list-nat) (App (Con list) (Con nat)))
+(= (pair-nat-bool) (App (App (Con pair) (Con nat)) (Con ibool)))
+(= (lnil-nat) (App (Con lnil) (Con nat)))
+(= (lcons-nat $x $xs) (App (App (App (Con lcons) (Con nat)) $x) $xs))
+(= (mkpair-nat-bool $x $y) (App (App (App (App (Con mkpair) (Con nat)) (Con ibool)) $x) $y))
+
+!(assertEqual (sig-admitted (param-sig)) True)
+!(assertEqual (decl-type-of (param-sig) list) (Pi (Srt type) (Srt type)))
+!(assertEqual (decl-type-of (param-sig) pair) (Pi (Srt type) (Pi (Srt type) (Srt type))))
+!(assertEqual (check (param-sig) CtxNil (list-nat) (Srt type)) True)
+!(assertEqual (check (param-sig) CtxNil (pair-nat-bool) (Srt type)) True)
+
+; Branch type for lcons at parameter nat:
+;   Pi x:nat. Pi xs:list nat. Pi ih:P xs. P (lcons nat x xs)
+!(assertEqual
+   (rec-branch-type-p list (PArgsCons (Con nat) PArgsNil)
+     (Lam (list-nat) (Con nat))
+     lcons
+     (decl-type-of (param-sig) lcons))
+   (Pi (Con nat)
+     (Pi (list-nat)
+       (Pi (App (shift 2 0 (Lam (list-nat) (Con nat))) (Var 0))
+         (App (shift 3 0 (Lam (list-nat) (Con nat)))
+           (App (App (App (Con lcons) (Con nat)) (Var 2)) (Var 1)))))))
+
+; Generated List length: length (lcons nat z (lnil nat)) = s z.
+!(assertEqual
+   (conv (param-sig)
+     (IndRecP list
+       (PArgsCons (Con nat) PArgsNil)
+       (Lam (list-nat) (Con nat))
+       (Cases (Case lnil (Con z))
+         (Cases (Case lcons
+           (Lam (Con nat) (Lam (list-nat) (Lam (Con nat) (App (Con s) (Var 0))))))
+           CasesNil))
+       (lcons-nat (Con z) (lnil-nat)))
+     (App (Con s) (Con z)))
+   True)
+
+; Generated Pair eliminator: fst (mkpair nat ibool z tt) = z.
+!(assertEqual
+   (conv (param-sig)
+     (IndRecP pair
+       (PArgsCons (Con nat) (PArgsCons (Con ibool) PArgsNil))
+       (Lam (pair-nat-bool) (Con nat))
+       (Cases (Case mkpair (Lam (Con nat) (Lam (Con ibool) (Var 1)))) CasesNil)
+       (mkpair-nat-bool (Con z) (Con tt)))
+     (Con z))
+   True)
+
+; Exact case hygiene is retained for parameterized recursors.
+!(assertEqual
+   (infer (param-sig) CtxNil
+     (IndRecP list
+       (PArgsCons (Con nat) PArgsNil)
+       (Lam (list-nat) (Con nat))
+       (Cases (Case lnil (Con z))
+         (Cases (Case lcons
+           (Lam (Con nat) (Lam (list-nat) (Lam (Con nat) (App (Con s) (Var 0))))))
+           (Cases (Case ghost (Con z)) CasesNil)))
+       (lnil-nat)))
+   (Bad indrec-bad-cases))
+
+; Wrong parameter arity rejects.
+!(assertEqual
+   (infer (param-sig) CtxNil
+     (IndRecP list
+       PArgsNil
+       (Lam (list-nat) (Con nat))
+       (Cases (Case lnil (Con z))
+         (Cases (Case lcons
+           (Lam (Con nat) (Lam (list-nat) (Lam (Con nat) (App (Con s) (Var 0))))))
+           CasesNil))
+       (lnil-nat)))
+   (Bad indrec-bad-params))
+
+; Negative occurrence under a function domain still rejects at admission.
+(= (bad-param-sig)
+   (SCons (DIndP badlist P1
+     (ICtors (ICtor mkBad
+       (Pi (Srt type)
+         (Pi (Pi (App (Con badlist) (Var 0)) (Var 0))
+           (App (Con badlist) (Var 1)))))
+       ICNil))
+     SNil))
+!(assertEqual (sig-admitted (bad-param-sig)) False)
+
+; =============================================================================
+; Indexed-family target slice: Vec A n
+; =============================================================================
+
+; Vec is intentionally admitted here as a dependent signature, not generated from
+; DIndP.  It is the executable acceptance target for the next generator:
+; parameters + indices + generated eliminator/iota.
+(= (vec-type)
+   (Pi (Srt type)
+     (Pi (Con nat) (Srt type))))
+
+(= (vnil-type)
+   (Pi (Srt type)
+     (App (App (Con vec) (Var 0)) (Con z))))
+
+(= (vcons-type)
+   (Pi (Srt type)
+     (Pi (Con nat)
+       (Pi (Var 1)
+         (Pi (App (App (Con vec) (Var 2)) (Var 1))
+           (App (App (Con vec) (Var 3))
+                (App (Con s) (Var 2))))))))
+
+(= (vec-sig)
+   (SCons (DInd nat ParamsNil
+     (ICtors (ICtor z (Con nat))
+       (ICtors (ICtor s (Pi (Con nat) (Con nat))) ICNil)))
+   (SCons (DInd ibool ParamsNil
+     (ICtors (ICtor tt (Con ibool))
+       (ICtors (ICtor ff (Con ibool)) ICNil)))
+   (SCons (DIndP list P1 (list-ctors))
+   (SCons (DIndP pair P2 (pair-ctors))
+   (SCons (DConst vec (vec-type))
+   (SCons (DConst vnil (vnil-type))
+   (SCons (DConst vcons (vcons-type))
+          SNil))))))))
+
+(= (sz) (App (Con s) (Con z)))
+(= (ssz) (App (Con s) (sz)))
+(= (vec-of $A $n) (App (App (Con vec) $A) $n))
+(= (vec-nat $n) (vec-of (Con nat) $n))
+(= (vnil-of $A) (App (Con vnil) $A))
+(= (vnil-nat) (vnil-of (Con nat)))
+(= (vcons-of $A $n $x $xs)
+   (App (App (App (App (Con vcons) $A) $n) $x) $xs))
+(= (vcons-nat $n $x $xs) (vcons-of (Con nat) $n $x $xs))
+(= (vec1-z) (vcons-nat (Con z) (Con z) (vnil-nat)))
+
+!(assertEqual (sig-admitted (vec-sig)) True)
+!(assertEqual (decl-type-of (vec-sig) vec) (vec-type))
+!(assertEqual (decl-type-of (vec-sig) vnil) (vnil-type))
+!(assertEqual (decl-type-of (vec-sig) vcons) (vcons-type))
+
+; Positive: the indexed family and constructors check at their exact indices.
+!(assertEqual (check (vec-sig) CtxNil (vec-nat (Con z)) (Srt type)) True)
+!(assertEqual (check (vec-sig) CtxNil (vec-nat (sz)) (Srt type)) True)
+!(assertEqual (check (vec-sig) CtxNil (vnil-nat) (vec-nat (Con z))) True)
+!(assertEqual (check (vec-sig) CtxNil (vec1-z) (vec-nat (sz))) True)
+
+; Negative: the checker must not erase or ignore vector indices.
+!(assertEqual (check (vec-sig) CtxNil (vnil-nat) (vec-nat (sz))) False)
+!(assertEqual (check (vec-sig) CtxNil (vec1-z) (vec-nat (Con z))) False)
+
+; Negative: the tail index of vcons must match the explicit index argument.
+!(assertEqual
+   (infer (vec-sig) CtxNil
+     (vcons-nat (sz) (Con z) (vnil-nat)))
+   (Bad arg-type-mismatch))
+
+; Negative: the element argument must have the parameter type.
+!(assertEqual
+   (infer (vec-sig) CtxNil
+     (App (App (App (Con vcons) (Con nat)) (Con z)) (Con tt)))
+   (Bad arg-type-mismatch))
+
+; Positive: kernel-check returns a checked proof object only for the exact type.
+!(assertEqual
+   (kernel-check (vec-sig) (vec1-z) (vec-nat (sz)))
+   (Ok (CheckedPrf ANil (vec1-z) (vec-nat (sz)))))
+
+; Negative: kernel-check rejects a well-formed but wrong indexed target.
+!(assertEqual
+   (kernel-check (vec-sig) (vec1-z) (vec-nat (ssz)))
+   (Err check-failed))
+
+; =============================================================================
+; Generated indexed declarations: Vec and Id/J from DIndPI
+; =============================================================================
+
+(= (vec-ctors-indexed)
+   (ICtors (ICtor vnil (vnil-type))
+   (ICtors (ICtor vcons (vcons-type)) ICNil)))
+
+(= (dindpi-vec-sig)
+   (SCons (DInd nat ParamsNil
+     (ICtors (ICtor z (Con nat))
+       (ICtors (ICtor s (Pi (Con nat) (Con nat))) ICNil)))
+   (SCons (DInd ibool ParamsNil
+     (ICtors (ICtor tt (Con ibool))
+       (ICtors (ICtor ff (Con ibool)) ICNil)))
+   (SCons (DIndP list P1 (list-ctors))
+   (SCons (DIndP pair P2 (pair-ctors))
+   (SCons (DIndPI vec P1 I1Nat NoElim (vec-ctors-indexed))
+          SNil))))))
+
+!(assertEqual (sig-admitted (dindpi-vec-sig)) True)
+!(assertEqual (decl-type-of (dindpi-vec-sig) vec) (vec-type))
+!(assertEqual (decl-type-of (dindpi-vec-sig) vnil) (vnil-type))
+!(assertEqual (decl-type-of (dindpi-vec-sig) vcons) (vcons-type))
+
+!(assertEqual (check (dindpi-vec-sig) CtxNil (vec-nat (Con z)) (Srt type)) True)
+!(assertEqual (check (dindpi-vec-sig) CtxNil (vnil-nat) (vec-nat (Con z))) True)
+!(assertEqual (check (dindpi-vec-sig) CtxNil (vec1-z) (vec-nat (sz))) True)
+!(assertEqual (check (dindpi-vec-sig) CtxNil (vnil-nat) (vec-nat (sz))) False)
+!(assertEqual (check (dindpi-vec-sig) CtxNil (vec1-z) (vec-nat (Con z))) False)
+!(assertEqual
+   (infer (dindpi-vec-sig) CtxNil
+     (vcons-nat (sz) (Con z) (vnil-nat)))
+   (Bad arg-type-mismatch))
+!(assertEqual
+   (kernel-check (dindpi-vec-sig) (vec1-z) (vec-nat (sz)))
+   (Ok (CheckedPrf ANil (vec1-z) (vec-nat (sz)))))
+
+(= (dindpi-vecrec-sig)
+   (SCons (DInd nat ParamsNil
+     (ICtors (ICtor z (Con nat))
+       (ICtors (ICtor s (Pi (Con nat) (Con nat))) ICNil)))
+   (SCons (DInd ibool ParamsNil
+     (ICtors (ICtor tt (Con ibool))
+       (ICtors (ICtor ff (Con ibool)) ICNil)))
+   (SCons (DIndP list P1 (list-ctors))
+   (SCons (DIndP pair P2 (pair-ctors))
+   (SCons (DIndPI vec P1 I1Nat VecRec (vec-ctors-indexed))
+          SNil))))))
+
+(= (vecrec-type) (indexed-vec-elim-type vec vnil vcons))
+(= (vec-length-motive)
+   (Lam (Con nat)
+     (Lam (vec-nat (Var 0))
+       (Con nat))))
+(= (vec-length-step)
+   (Lam (Con nat)
+     (Lam (Con nat)
+       (Lam (vec-nat (Var 1))
+         (Lam (Con nat)
+           (App (Con s) (Var 0)))))))
+(= (vecrec-nat $n $xs)
+   (App
+     (App
+       (App
+         (App
+           (App
+             (App (Con VecRec) (Con nat))
+             (vec-length-motive))
+           (Con z))
+         (vec-length-step))
+       $n)
+     $xs))
+
+!(assertEqual (sig-admitted (dindpi-vecrec-sig)) True)
+!(assertEqual (decl-type-of (dindpi-vecrec-sig) VecRec) (vecrec-type))
+!(assertEqual (check (dindpi-vecrec-sig) CtxNil (vec-length-motive)
+   (Pi (Con nat) (Pi (vec-nat (Var 0)) (Srt type)))) True)
+!(assertEqual (check (dindpi-vecrec-sig) CtxNil (vec-length-step)
+   (Pi (Con nat)
+     (Pi (Con nat)
+       (Pi (vec-nat (Var 1))
+         (Pi (Con nat)
+           (Con nat)))))) True)
+!(assertEqual (check (dindpi-vecrec-sig) CtxNil
+   (vecrec-nat (Con z) (vnil-nat))
+   (Con nat)) True)
+!(assertEqual (conv (dindpi-vecrec-sig)
+   (vecrec-nat (Con z) (vnil-nat))
+   (Con z)) True)
+!(assertEqual (check (dindpi-vecrec-sig) CtxNil
+   (vecrec-nat (sz) (vec1-z))
+   (Con nat)) True)
+!(assertEqual (conv (dindpi-vecrec-sig)
+   (vecrec-nat (sz) (vec1-z))
+   (sz)) True)
+
+; Negative: index and scrutinee must agree at the eliminator boundary.
+!(assertEqual (check (dindpi-vecrec-sig) CtxNil
+   (vecrec-nat (Con z) (vec1-z))
+   (Con nat)) False)
+
+; Negative: wrong nil case type rejects before any iota story can help.
+!(assertEqual (check (dindpi-vecrec-sig) CtxNil
+   (App
+     (App
+       (App
+         (App
+           (App
+             (App (Con VecRec) (Con nat))
+             (vec-length-motive))
+           (Con tt))
+         (vec-length-step))
+       (Con z))
+     (vnil-nat))
+   (Con nat)) False)
+
+; Bad indexed schemas reject instead of silently becoming unchecked constants.
+(= (bad-index-schema-sig)
+   (SCons (DIndPI mystery P1 IUnknown NoElim ICNil) SNil))
+!(assertEqual (sig-admitted (bad-index-schema-sig)) False)
+
+; The generated eliminator name is part of the declaration namespace.
+(= (bad-elim-name-sig)
+   (SCons (DIndPI Id P1 I2Self Rfl (ICtors (ICtor Rfl (rfl-ty)) ICNil)) SNil))
+!(assertEqual (sig-admitted (bad-elim-name-sig)) False)
+
+; Negative recursive occurrence still rejects for indexed families.
+(= (bad-indexed-positive-sig)
+   (SCons (DIndPI badvec P1 I1Nat NoElim
+     (ICtors (ICtor mkBad
+       (Pi (Srt type)
+         (Pi (Pi (App (App (Con badvec) (Var 0)) (Con z)) (Var 0))
+           (App (App (Con badvec) (Var 1)) (Con z)))))
+       ICNil))
+     SNil))
+!(assertEqual (sig-admitted (bad-indexed-positive-sig)) False)
+
+(= (generated-idj-sig)
+   (SCons (DIndPI Id P1 I2Self J
+     (ICtors (ICtor Rfl (rfl-ty)) ICNil))
+   (SCons (DConst o (Srt type))
+   (SCons (DConst c (Con o))
+   (SCons (DConst c2 (Con o))
+          SNil)))))
+
+!(assertEqual (sig-admitted (generated-idj-sig)) True)
+!(assertEqual (decl-type-of (generated-idj-sig) Id) (id-ty))
+!(assertEqual (decl-type-of (generated-idj-sig) Rfl) (rfl-ty))
+!(assertEqual (decl-type-of (generated-idj-sig) J) (j-ty))
+!(assertEqual
+   (nf (generated-idj-sig) (infer (generated-idj-sig) CtxNil (decl-type-of (generated-idj-sig) J)))
+   (Srt kind))
+
+!(assertEqual
+   (kernel-check (generated-idj-sig)
+     (RflApp (Con o) (Con c))
+     (IdApp (Con o) (Con c) (Con c)))
+   (Ok (CheckedPrf ANil
+     (RflApp (Con o) (Con c))
+     (IdApp (Con o) (Con c) (Con c)))))
+
+!(assertEqual
+   (check (generated-idj-sig) CtxNil
+     (JApp (Con o) (Con c)
+       (Lam (Con o) (Lam (IdApp (Con o) (Con c) (Var 0)) (Con o)))
+       (Con c)
+       (Con c)
+       (RflApp (Con o) (Con c)))
+     (Con o))
+   True)
+
+!(assertEqual
+   (nf (generated-idj-sig)
+     (JApp (Con o) (Con c)
+       (Lam (Con o) (Lam (IdApp (Con o) (Con c) (Var 0)) (Con o)))
+       (Con c)
+       (Con c)
+       (RflApp (Con o) (Con c))))
+   (Con c))
+
+!(assertEqual
+   (check (generated-idj-sig) CtxNil (Con c2) (IdApp (Con o) (Con c) (Con c2)))
+   False)
+
+; Id-like DIndPI with no Rfl constructor cannot generate a valid J type.
+(= (bad-idj-no-rfl-sig)
+   (SCons (DIndPI Id P1 I2Self J ICNil) SNil))
+!(assertEqual (sig-admitted (bad-idj-no-rfl-sig)) False)
+
+; =============================================================================
+; Generic indexed eliminator: Fin n
+; =============================================================================
+
+(= (fin-ctors-indexed)
+   (ICtors (ICtor fz (indexed-fz-type fin))
+   (ICtors (ICtor fs (indexed-fs-type fin)) ICNil)))
+
+(= (fin-sig)
+   (SCons (DInd nat ParamsNil
+     (ICtors (ICtor z (Con nat))
+       (ICtors (ICtor s (Pi (Con nat) (Con nat))) ICNil)))
+   (SCons (DIndPI fin P0 I1Nat NoElim (fin-ctors-indexed))
+          SNil)))
+
+(= (fin $n) (App (Con fin) $n))
+(= (fz-of $n) (App (Con fz) $n))
+(= (fs-of $n $x) (App (App (Con fs) $n) $x))
+(= (fin1) (fin (sz)))
+(= (fin2) (fin (ssz)))
+(= (fz0) (fz-of (Con z)))
+(= (fs0fz0) (fs-of (Con z) (fz0)))
+(= (fs1fz0) (fs-of (sz) (fz0)))
+(= (fin-rank-motive)
+   (Lam (Con nat)
+     (Lam (fin (Var 0))
+       (Con nat))))
+(= (fin-rank-fz)
+   (Lam (Con nat) (Con z)))
+(= (fin-rank-fs)
+   (Lam (Con nat)
+     (Lam (fin (Var 0))
+       (Lam (Con nat)
+         (App (Con s) (Var 0))))))
+(= (fin-rank $n $x)
+   (IndRecPI fin
+     PArgsNil
+     (fin-rank-motive)
+     (Cases (Case fz (fin-rank-fz))
+       (Cases (Case fs (fin-rank-fs)) CasesNil))
+     (PArgsCons $n PArgsNil)
+     $x))
+
+!(assertEqual (sig-admitted (fin-sig)) True)
+!(assertEqual (decl-type-of (fin-sig) fin) (Pi (Con nat) (Srt type)))
+!(assertEqual (decl-type-of (fin-sig) fz) (indexed-fz-type fin))
+!(assertEqual (decl-type-of (fin-sig) fs) (indexed-fs-type fin))
+!(assertEqual (check (fin-sig) CtxNil (fz0) (fin1)) True)
+!(assertEqual (infer (fin-sig) CtxNil (fs0fz0)) (Bad arg-type-mismatch))
+!(assertEqual (check (fin-sig) CtxNil (fs1fz0) (fin2)) True)
+!(assertEqual (check (fin-sig) CtxNil (fz0) (fin (Con z))) False)
+!(assertEqual (check (fin-sig) CtxNil (fs1fz0) (fin1)) False)
+
+; Branch types are generated from constructor telescopes and result indices:
+;   fz : Pi n. fin (s n)
+;   fs : Pi n. fin n -> fin (s n), with an IH for the recursive argument.
+!(assertEqual
+   (rec-branch-type-pi fin PArgsNil (fin-rank-motive) fz (decl-type-of (fin-sig) fz))
+   (Pi (Con nat)
+     (App (App (shift 1 0 (fin-rank-motive)) (App (Con s) (Var 0)))
+       (App (Con fz) (Var 0)))))
+
+!(assertEqual
+   (rec-branch-type-pi fin PArgsNil (fin-rank-motive) fs (decl-type-of (fin-sig) fs))
+   (Pi (Con nat)
+     (Pi (fin (Var 0))
+       (Pi (App (App (shift 1 0 (shift 1 0 (fin-rank-motive))) (Var 1)) (Var 0))
+         (App (App (shift 1 0 (shift 1 0 (shift 1 0 (fin-rank-motive)))) (App (Con s) (Var 2)))
+           (App (App (Con fs) (Var 2)) (Var 1)))))))
+
+!(assertEqual (check (fin-sig) CtxNil (fin-rank-motive)
+   (motive-type-pi I1Nat fin PArgsNil)) True)
+!(assertEqual (check (fin-sig) CtxNil (fin-rank-fz)
+   (rec-branch-type-pi fin PArgsNil (fin-rank-motive) fz (decl-type-of (fin-sig) fz))) True)
+!(assertEqual (check (fin-sig) CtxNil (fin-rank-fs)
+   (rec-branch-type-pi fin PArgsNil (fin-rank-motive) fs (decl-type-of (fin-sig) fs))) True)
+
+!(assertEqual (check (fin-sig) CtxNil (fin-rank (sz) (fz0)) (Con nat)) True)
+!(assertEqual (conv (fin-sig) (fin-rank (sz) (fz0)) (Con z)) True)
+!(assertEqual (check (fin-sig) CtxNil (fin-rank (ssz) (fs1fz0)) (Con nat)) True)
+!(assertEqual (conv (fin-sig) (fin-rank (ssz) (fs1fz0)) (sz)) True)
+
+; Negative: the generic eliminator checks the external index against the
+; scrutinee type before normalization can fire.
+!(assertEqual (check (fin-sig) CtxNil (fin-rank (sz) (fs1fz0)) (Con nat)) False)
+
+; Negative: missing recursive case rejects at the generic case checker.
+!(assertEqual
+   (infer (fin-sig) CtxNil
+     (IndRecPI fin
+       PArgsNil
+       (fin-rank-motive)
+       (Cases (Case fz (fin-rank-fz)) CasesNil)
+       (PArgsCons (sz) PArgsNil)
+       (fz0)))
+   (Bad indrec-bad-cases))

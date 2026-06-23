@@ -43,9 +43,12 @@ theorem exists_nondeceptiveSample_of_card_gap
   have hs_univ : s = Set.univ := by
     ext sample
     simp [s, hnone sample]
-  have hcardEq : Fintype.card (H.DeceptiveSamples target m) = Fintype.card (PointSample Input m) := by
-    simpa [DeceptiveSamples, s] using
-      (set_fintype_card_eq_univ_iff s).2 hs_univ
+  have hcard_s : Fintype.card s = Fintype.card (PointSample Input m) :=
+    (set_fintype_card_eq_univ_iff s).2 hs_univ
+  have hcardEq :
+      Fintype.card (H.DeceptiveSamples target m) = Fintype.card (PointSample Input m) := by
+    change Fintype.card s = Fintype.card (PointSample Input m)
+    exact hcard_s
   exact (ne_of_lt hgap) hcardEq
 
 theorem exists_nondeceptiveSample_of_bound_lt

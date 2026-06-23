@@ -599,7 +599,7 @@ theorem qValue_le_succ (μ : Environment) (π : Agent) (γ : DiscountFactor)
               have : μ.prob ha x ≤ ∑ y ∈ (Finset.univ : Finset Percept), μ.prob ha y := by
                 refine Finset.single_le_sum ?_ (by simp)
                 intro y _hy
-                exact zero_le _
+                exact zero_le
               simpa using this
             have hx_le_one : μ.prob ha x ≤ 1 := hx_le_sum.trans hprob_le_one
             exact ne_top_of_le_ne_top ENNReal.one_ne_top hx_le_one
@@ -727,7 +727,7 @@ theorem value_le (μ : Environment) (π : Agent) (γ : DiscountFactor)
               have : π.policy h a ≤ ∑ b ∈ (Finset.univ : Finset Action), π.policy h b := by
                 refine Finset.single_le_sum ?_ (by simp)
                 intro b _hb
-                exact zero_le _
+                exact zero_le
               simpa using this
             have ha_le_one : π.policy h a ≤ 1 := by simpa [hsum] using ha_le_sum
             exact ne_top_of_le_ne_top ENNReal.one_ne_top ha_le_one
@@ -842,7 +842,7 @@ theorem optimalQValue_le_succ (μ : Environment) (γ : DiscountFactor)
               have : μ.prob ha x ≤ ∑ y ∈ (Finset.univ : Finset Percept), μ.prob ha y := by
                 refine Finset.single_le_sum ?_ (by simp)
                 intro y _hy
-                exact zero_le _
+                exact zero_le
               simpa using this
             have hx_le_one : μ.prob ha x ≤ 1 := hx_le_sum.trans hprob_le_one
             exact ne_top_of_le_ne_top ENNReal.one_ne_top hx_le_one
@@ -1649,19 +1649,19 @@ theorem optimalValue_ge_value (μ : Environment) (γ : DiscountFactor)
           have hle1 : π.policy hist Action.left ≤ 1 := by
             calc π.policy hist Action.left
                 ≤ π.policy hist Action.left + (π.policy hist Action.right + π.policy hist Action.stay) := by
-                  exact le_add_of_nonneg_right (add_nonneg (zero_le _) (zero_le _))
+                  exact le_add_of_nonneg_right (add_nonneg (zero_le) (zero_le))
               _ = π.policy hist Action.left + π.policy hist Action.right + π.policy hist Action.stay := by ring
               _ = 1 := h1
           have hle2 : π.policy hist Action.right ≤ 1 := by
             calc π.policy hist Action.right
-                ≤ π.policy hist Action.left + π.policy hist Action.right := le_add_of_nonneg_left (zero_le _)
+                ≤ π.policy hist Action.left + π.policy hist Action.right := le_add_of_nonneg_left (zero_le)
               _ ≤ π.policy hist Action.left + π.policy hist Action.right + π.policy hist Action.stay :=
-                  le_add_of_nonneg_right (zero_le _)
+                  le_add_of_nonneg_right (zero_le)
               _ = 1 := h1
           have hle3 : π.policy hist Action.stay ≤ 1 := by
             calc π.policy hist Action.stay
                 ≤ (π.policy hist Action.left + π.policy hist Action.right) + π.policy hist Action.stay := by
-                  exact le_add_of_nonneg_left (add_nonneg (zero_le _) (zero_le _))
+                  exact le_add_of_nonneg_left (add_nonneg (zero_le) (zero_le))
               _ = π.policy hist Action.left + π.policy hist Action.right + π.policy hist Action.stay := by ring
               _ = 1 := h1
           have hne1 : π.policy hist Action.left ≠ ⊤ := ne_top_of_le_ne_top ENNReal.one_ne_top hle1

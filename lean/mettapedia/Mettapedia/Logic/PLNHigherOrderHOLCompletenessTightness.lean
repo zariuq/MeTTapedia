@@ -153,6 +153,7 @@ theorem sentenceProb_singletonModelSpace_eq_zero_of_not_models
         ∅ := by
     ext i
     simp [ModelSpace.sentenceEvent, singletonModelSpace, holSatisfies, hφ]
+    exact Iff.rfl
   simp [sentenceProb, hEvent]
 
 /-- The Dirac hierarchical state has real-valued HOL formula strength `1` when

@@ -214,7 +214,7 @@ theorem queryITVWidth_add_queryITVCredibility_walley
       queryITVCredibility (State := State) (Query := Query)
         ITVSemantics.walleyIDMPredictive ctx W q = 1 := by
   unfold queryITVWidth queryITVCredibility queryITV
-  simpa using
+  exact
     (PLNIndefiniteTruth.ITV.fromWalleyIDMPredictive_width_add_credibility
       (e := BinaryWorldModel.evidence (State := State) (Query := Query) W q)
       (s := ctx.s) (hs := ctx.s_pos))
@@ -227,7 +227,7 @@ theorem queryITVWidth_eq_one_sub_queryITVCredibility_walley
       1 - queryITVCredibility (State := State) (Query := Query)
         ITVSemantics.walleyIDMPredictive ctx W q := by
   unfold queryITVWidth queryITVCredibility queryITV
-  simpa using
+  exact
     (PLNIndefiniteTruth.ITV.fromWalleyIDMPredictive_width_eq_one_sub_credibility
       (e := BinaryWorldModel.evidence (State := State) (Query := Query) W q)
       (s := ctx.s) (hs := ctx.s_pos))
@@ -481,7 +481,7 @@ theorem queryITVWidth_add_queryITVCredibility_walley
       queryITVCredibility (State := State) (Srt := Srt) (Query := Query)
         ITVSemantics.walleyIDMPredictive ctx W q = 1 := by
   unfold queryITVWidth queryITVCredibility queryITV
-  simpa using
+  exact
     (PLNIndefiniteTruth.ITV.fromWalleyIDMPredictive_width_add_credibility
       (e := WorldModelSigma.evidence (State := State) (Srt := Srt) (Query := Query) W q)
       (s := ctx.s) (hs := ctx.s_pos))
@@ -494,7 +494,7 @@ theorem queryITVWidth_eq_one_sub_queryITVCredibility_walley
       1 - queryITVCredibility (State := State) (Srt := Srt) (Query := Query)
         ITVSemantics.walleyIDMPredictive ctx W q := by
   unfold queryITVWidth queryITVCredibility queryITV
-  simpa using
+  exact
     (PLNIndefiniteTruth.ITV.fromWalleyIDMPredictive_width_eq_one_sub_credibility
       (e := WorldModelSigma.evidence (State := State) (Srt := Srt) (Query := Query) W q)
       (s := ctx.s) (hs := ctx.s_pos))

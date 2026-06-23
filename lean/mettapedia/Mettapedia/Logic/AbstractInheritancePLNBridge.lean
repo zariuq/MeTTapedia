@@ -49,9 +49,9 @@ theorem self_mem_intent_abstractInterpretationAt
     (G : EvidenceGate BinaryEvidence)
     (W : State) (enc : MembershipQueryBuilder Obj Con Srt Query) (c : Con) :
     c ∈ ((abstractInterpretationAt G W enc).meaning c).intent := by
-  simpa [abstractInterpretationAt] using
-    (AbstractInheritance.self_mem_intent_ofCrispBaseConcept
-      (G := G) (M := memberEvidence W enc) c)
+  change c ∈ (AbstractInheritance.ofCrispBaseConcept G (memberEvidence W enc) c).intent
+  exact AbstractInheritance.self_mem_intent_ofCrispBaseConcept
+    (G := G) (M := memberEvidence W enc) c
 
 @[simp] theorem abstractInterpretationAt_extensionalInherits_iff
     (G : EvidenceGate BinaryEvidence)

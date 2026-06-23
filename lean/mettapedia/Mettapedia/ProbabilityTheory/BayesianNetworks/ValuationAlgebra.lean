@@ -884,7 +884,7 @@ noncomputable def eliminateVars
       simpa [eliminateVars, Mettapedia.ProbabilityTheory.BayesianNetworks.eliminateVars,
         eliminateVar_map_coe] using ih'
 
-  @[simp] theorem combineAll_eliminateVars_toValuation
+@[simp] theorem combineAll_eliminateVars_toValuation
     (fs : List (ScopedValuation V β K)) (order : List V)
     [∀ v, Fintype (β v)] [CommSemiring K] :
     ((combineAll (V := V) (β := β) (K := K)

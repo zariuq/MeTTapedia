@@ -72,7 +72,7 @@ theorem stageContent_cylinder
   calc
     stageContent E M ξ n (MeasureTheory.cylinder I S)
         = stageMarginal E M ξ n I S := by
-          simpa [stageContent] using
+          exact
             (MeasureTheory.projectiveFamilyContent_cylinder
               (P := stageMarginal E M ξ n)
               (I := I) (S := S)

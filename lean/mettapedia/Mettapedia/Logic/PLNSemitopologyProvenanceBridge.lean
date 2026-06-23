@@ -55,7 +55,12 @@ theorem whichSupport_forgetWhichSupportBy
   unfold forgetWhichSupportBy whichSupport
   cases hI : I q with
   | wbot =>
-      simp [hI]
+      change (match I q - Which.wset (S q) with
+        | Which.wset s => s
+        | Which.wbot => ∅) = (∅ : Finset (Fin n)) \ S q
+      rw [hI]
+      change (∅ : Finset (Fin n)) = ∅ \ S q
+      simp
   | wset s =>
       by_cases hs : s ⊆ S q
       · have hdif : s \ S q = ∅ := by

@@ -59,11 +59,11 @@ theorem nonRF_admin_correspondence_umbrella_fresh {N : Finset String}
         .collection .hashBag [Tseed, Tnu] none) ∧
       WeakRestrictedBisimD N Tnu
         (.collection .hashBag
-          [Mettapedia.OSLF.MeTTaIL.Substitution.commSubst nuListenerBody (.fvar "n_init"),
+          [Mettapedia.Languages.ProcessCalculi.RhoCalculus.semanticCommSubst nuListenerBody (.fvar "n_init"),
            rhoInput (.fvar "n_init") x (encode P ("n_init" ++ "_" ++ "n_init") "v_init")] none) ∧
       WeakRestrictedBisimD N Tseed
         (.collection .hashBag
-          [Mettapedia.OSLF.MeTTaIL.Substitution.commSubst seedListenerBody (.apply "PDrop" [.fvar "ns_seed"]),
+          [Mettapedia.Languages.ProcessCalculi.RhoCalculus.semanticCommSubst seedListenerBody (.apply "PDrop" [.fvar "ns_seed"]),
            rhoReplicate (Mettapedia.Languages.ProcessCalculi.PiCalculus.nameServerBody "ns_x" "ns_z" "v_init"),
            dropOperation "ns_x"] none) ∧
       WeakRestrictedBisimD N TrepNu
@@ -112,11 +112,11 @@ theorem nonRF_admin_correspondence_umbrella_fresh_of_obsSuperset
         .collection .hashBag [Tseed, Tnu] none) ∧
       WeakRestrictedBisimD N Tnu
         (.collection .hashBag
-          [Mettapedia.OSLF.MeTTaIL.Substitution.commSubst nuListenerBody (.fvar "n_init"),
+          [Mettapedia.Languages.ProcessCalculi.RhoCalculus.semanticCommSubst nuListenerBody (.fvar "n_init"),
            rhoInput (.fvar "n_init") x (encode P ("n_init" ++ "_" ++ "n_init") "v_init")] none) ∧
       WeakRestrictedBisimD N Tseed
         (.collection .hashBag
-          [Mettapedia.OSLF.MeTTaIL.Substitution.commSubst seedListenerBody (.apply "PDrop" [.fvar "ns_seed"]),
+          [Mettapedia.Languages.ProcessCalculi.RhoCalculus.semanticCommSubst seedListenerBody (.apply "PDrop" [.fvar "ns_seed"]),
            rhoReplicate (Mettapedia.Languages.ProcessCalculi.PiCalculus.nameServerBody "ns_x" "ns_z" "v_init"),
            dropOperation "ns_x"] none) ∧
       WeakRestrictedBisimD N TrepNu
@@ -184,11 +184,11 @@ theorem calculus_correspondence_nonRF_admin_package_fresh_umbrella
         .collection .hashBag [Tseed, Tnu] none) ∧
       WeakRestrictedBisimD N Tnu
         (.collection .hashBag
-          [Mettapedia.OSLF.MeTTaIL.Substitution.commSubst nuListenerBody (.fvar "n_init"),
+          [Mettapedia.Languages.ProcessCalculi.RhoCalculus.semanticCommSubst nuListenerBody (.fvar "n_init"),
            rhoInput (.fvar "n_init") x (encode P ("n_init" ++ "_" ++ "n_init") "v_init")] none) ∧
       WeakRestrictedBisimD N Tseed
         (.collection .hashBag
-          [Mettapedia.OSLF.MeTTaIL.Substitution.commSubst seedListenerBody (.apply "PDrop" [.fvar "ns_seed"]),
+          [Mettapedia.Languages.ProcessCalculi.RhoCalculus.semanticCommSubst seedListenerBody (.apply "PDrop" [.fvar "ns_seed"]),
            rhoReplicate (Mettapedia.Languages.ProcessCalculi.PiCalculus.nameServerBody "ns_x" "ns_z" "v_init"),
            dropOperation "ns_x"] none) ∧
       WeakRestrictedBisimD N TrepNu
@@ -271,11 +271,11 @@ theorem calculus_correspondence_prelude_complete_package_umbrella
         .collection .hashBag [Tseed, Tnu] none) ∧
       WeakRestrictedBisimD N Tnu
         (.collection .hashBag
-          [Mettapedia.OSLF.MeTTaIL.Substitution.commSubst nuListenerBody (.fvar "n_init"),
+          [Mettapedia.Languages.ProcessCalculi.RhoCalculus.semanticCommSubst nuListenerBody (.fvar "n_init"),
            rhoInput (.fvar "n_init") x (encode P ("n_init" ++ "_" ++ "n_init") "v_init")] none) ∧
       WeakRestrictedBisimD N Tseed
         (.collection .hashBag
-          [Mettapedia.OSLF.MeTTaIL.Substitution.commSubst seedListenerBody (.apply "PDrop" [.fvar "ns_seed"]),
+          [Mettapedia.Languages.ProcessCalculi.RhoCalculus.semanticCommSubst seedListenerBody (.apply "PDrop" [.fvar "ns_seed"]),
            rhoReplicate (Mettapedia.Languages.ProcessCalculi.PiCalculus.nameServerBody "ns_x" "ns_z" "v_init"),
            dropOperation "ns_x"] none) ∧
       WeakRestrictedBisimD N TrepNu
@@ -419,11 +419,11 @@ abbrev CalcNonRFAdminFreshClause
       .collection .hashBag [Tseed, Tnu] none) ∧
     WeakRestrictedBisimD N Tnu
       (.collection .hashBag
-        [Mettapedia.OSLF.MeTTaIL.Substitution.commSubst nuListenerBody (.fvar "n_init"),
+        [Mettapedia.Languages.ProcessCalculi.RhoCalculus.semanticCommSubst nuListenerBody (.fvar "n_init"),
          rhoInput (.fvar "n_init") x (encode P ("n_init" ++ "_" ++ "n_init") "v_init")] none) ∧
     WeakRestrictedBisimD N Tseed
       (.collection .hashBag
-        [Mettapedia.OSLF.MeTTaIL.Substitution.commSubst seedListenerBody (.apply "PDrop" [.fvar "ns_seed"]),
+        [Mettapedia.Languages.ProcessCalculi.RhoCalculus.semanticCommSubst seedListenerBody (.apply "PDrop" [.fvar "ns_seed"]),
          rhoReplicate (Mettapedia.Languages.ProcessCalculi.PiCalculus.nameServerBody "ns_x" "ns_z" "v_init"),
          dropOperation "ns_x"] none) ∧
     WeakRestrictedBisimD N TrepNu
@@ -1133,11 +1133,11 @@ theorem calculus_correspondence_prelude_complete_package_userObs
         .collection .hashBag [Tseed, Tnu] none) ∧
       WeakRestrictedBisimD N Tnu
         (.collection .hashBag
-          [Mettapedia.OSLF.MeTTaIL.Substitution.commSubst nuListenerBody (.fvar "n_init"),
+          [Mettapedia.Languages.ProcessCalculi.RhoCalculus.semanticCommSubst nuListenerBody (.fvar "n_init"),
            rhoInput (.fvar "n_init") x (encode P ("n_init" ++ "_" ++ "n_init") "v_init")] none) ∧
       WeakRestrictedBisimD N Tseed
         (.collection .hashBag
-          [Mettapedia.OSLF.MeTTaIL.Substitution.commSubst seedListenerBody (.apply "PDrop" [.fvar "ns_seed"]),
+          [Mettapedia.Languages.ProcessCalculi.RhoCalculus.semanticCommSubst seedListenerBody (.apply "PDrop" [.fvar "ns_seed"]),
            rhoReplicate (Mettapedia.Languages.ProcessCalculi.PiCalculus.nameServerBody "ns_x" "ns_z" "v_init"),
            dropOperation "ns_x"] none) ∧
       WeakRestrictedBisimD N TrepNu
@@ -1392,7 +1392,8 @@ theorem userObs_excludes_n_init_of_encodingFresh
     "n_init" ∉ N := by
   exact reserved_notin_obs_of_subset_freeNames
     (P := P) (N := N) (r := "n_init") hobs hfresh (by
-      simp [fullEncodeReservedNames])
+      simp [fullEncodeReservedNames]
+      decide +kernel)
 
 /-- User-observation hygiene corollary for `v_init`. -/
 theorem userObs_excludes_v_init_of_encodingFresh
@@ -1402,7 +1403,8 @@ theorem userObs_excludes_v_init_of_encodingFresh
     "v_init" ∉ N := by
   exact reserved_notin_obs_of_subset_freeNames
     (P := P) (N := N) (r := "v_init") hobs hfresh (by
-      simp [fullEncodeReservedNames])
+      simp [fullEncodeReservedNames]
+      decide +kernel)
 
 /-- User-observation hygiene corollary for `ns_x`. -/
 theorem userObs_excludes_ns_x_of_encodingFresh
@@ -1412,7 +1414,8 @@ theorem userObs_excludes_ns_x_of_encodingFresh
     "ns_x" ∉ N := by
   exact reserved_notin_obs_of_subset_freeNames
     (P := P) (N := N) (r := "ns_x") hobs hfresh (by
-      simp [fullEncodeReservedNames])
+      simp [fullEncodeReservedNames]
+      decide +kernel)
 
 /-- User-observation hygiene (general reserved-name form):
 under `N ⊆ fn(P)` and `EncodingFresh P`, any reserved full-encode name is
@@ -1434,7 +1437,8 @@ theorem userObs_excludes_ns_seed_of_encodingFresh
     "ns_seed" ∉ N := by
   exact userObs_excludes_reserved_name_of_encodingFresh
     (P := P) (N := N) (r := "ns_seed") hobs hfresh (by
-      simp [fullEncodeReservedNames])
+      simp [fullEncodeReservedNames]
+      decide +kernel)
 
 /-- Bundled user-observation hygiene result for all concrete reserved
 full-encode names/channels. -/

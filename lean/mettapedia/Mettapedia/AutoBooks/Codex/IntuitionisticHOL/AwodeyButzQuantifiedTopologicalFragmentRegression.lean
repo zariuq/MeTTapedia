@@ -151,9 +151,10 @@ theorem eval_existsTop_ne_eval_forallTop :
   have hconst :
       (CtxTerm.const demoInterp [] .prop DemoConst.falsehood).toContinuousMap true =
         (CtxTerm.const demoInterp [] .prop DemoConst.truth).toContinuousMap true := by
-    simpa [existsTop, forallTop,
-      SimpleQuantifiedFormula.SimpleQuantifiedInterpretation.eval,
-      demoQuantInterp, demoPropInterp] using hpoint
+    change
+      (SimpleQuantifiedFormula.SimpleQuantifiedInterpretation.eval demoQuantInterp existsTop).toContinuousMap true =
+        (SimpleQuantifiedFormula.SimpleQuantifiedInterpretation.eval demoQuantInterp forallTop).toContinuousMap true
+    exact hpoint
   rw [falseConst_true, truthConst_true] at hconst
   cases hconst
 

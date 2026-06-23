@@ -6,7 +6,7 @@ package Mettapedia where
   version := v!"0.1.0"
   weakLeanArgs := #["-j", "1"]
 
-require "leanprover-community" / mathlib @ git "v4.28.0"
+require "leanprover-community" / mathlib @ git "v4.31.0"
 
 -- Editable local repos live in ../externals.
 require ordered_semigroups from "../externals/ordered_semigroups"
@@ -32,6 +32,10 @@ require gf_core from "../batteries/gf-core"
 require certifyingDatalog from "../externals/certifyingDatalog"
 
 require «mm-lean4» from "../externals/mm-lean4"
+
+-- Standalone Knuth–Skilling external (canonical home; namespace `KnuthSkilling.*`).
+-- Replaces the previously embedded copy at `Mettapedia/ProbabilityTheory/KnuthSkilling/`.
+require «ks-foundations-of-inference-lean» from "../standalone/ks-foundations-of-inference"
 
 @[default_target] lean_lib Mettapedia
 

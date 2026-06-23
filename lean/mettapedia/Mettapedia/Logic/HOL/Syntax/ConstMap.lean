@@ -643,15 +643,14 @@ theorem substConst_subst
       subst (fun {_} v => substConst f (σs v)) (substConst f t) =
         substConst f (subst σs t)
   | _, .var _ => rfl
-  | _, .const c => by
-      simpa [substConst] using
-        (subst_weakenCtx
-          (Base := Base)
-          (Const := Const')
-          (Γ' := Γ')
-          (Δ' := Δ')
-          (σs := fun {τ} v => substConst f (σs v))
-          (t := f c))
+  | _, .const c =>
+      subst_weakenCtx
+        (Base := Base)
+        (Const := Const')
+        (Γ' := Γ')
+        (Δ' := Δ')
+        (σs := fun {τ} v => substConst f (σs v))
+        (t := f c)
   | _, .app g t => by
       simp [substConst, subst, substConst_subst f σs g, substConst_subst f σs t]
   | _, .lam body => by

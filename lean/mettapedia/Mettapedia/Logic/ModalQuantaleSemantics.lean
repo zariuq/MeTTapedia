@@ -291,12 +291,16 @@ lemma qSatisfies_mono_env (qlts : QLTS Q S Act) {n : ℕ}
               unfold QEnv.extend
               by_cases h0 : j.val = 0
               · simp [h0]
-              · simp [h0]
-                have : ∃ k : Fin _, j = k.succ := by
-                  use ⟨j.val - 1, by have : j.val < _ := j.prop; omega⟩
-                  ext; simp; omega
-                obtain ⟨k, rfl⟩ := this
-                convert h_eq k t' (by intro heq; subst heq; exact hj rfl) using 1
+              · -- 4.31: bare `simp [h0]` no longer fires `dif_neg`; reduce the `dite`s explicitly,
+                -- then apply `h_eq` at the predecessor index (`≠ i`, else `j = i.succ`).
+                simp only [dif_neg h0]
+                exact h_eq ⟨j.val - 1, by omega⟩ t' (by
+                  intro heq
+                  apply hj
+                  apply Fin.ext
+                  have hval : (↑j - 1 : ℕ) = ↑i := congrArg Fin.val heq
+                  simp only [Fin.val_succ]
+                  omega)
             · intro t'; unfold QEnv.extend; by_cases h : i.succ.val = 0
               · exfalso; simp [Fin.val_succ] at h
               · simp [h]; convert h_le t' using 1
@@ -318,12 +322,16 @@ lemma qSatisfies_mono_env (qlts : QLTS Q S Act) {n : ℕ}
               unfold QEnv.extend
               by_cases h0 : j.val = 0
               · simp [h0]
-              · simp [h0]
-                have : ∃ k : Fin _, j = k.succ := by
-                  use ⟨j.val - 1, by have : j.val < _ := j.prop; omega⟩
-                  ext; simp; omega
-                obtain ⟨k, rfl⟩ := this
-                convert h_eq k t' (by intro heq; subst heq; exact hj rfl) using 1
+              · -- 4.31: bare `simp [h0]` no longer fires `dif_neg`; reduce the `dite`s explicitly,
+                -- then apply `h_eq` at the predecessor index (`≠ i`, else `j = i.succ`).
+                simp only [dif_neg h0]
+                exact h_eq ⟨j.val - 1, by omega⟩ t' (by
+                  intro heq
+                  apply hj
+                  apply Fin.ext
+                  have hval : (↑j - 1 : ℕ) = ↑i := congrArg Fin.val heq
+                  simp only [Fin.val_succ]
+                  omega)
             · intro t'; unfold QEnv.extend; by_cases h : i.succ.val = 0
               · exfalso; simp [Fin.val_succ] at h
               · simp [h]; convert h_le t' using 1
@@ -351,12 +359,16 @@ lemma qSatisfies_mono_env (qlts : QLTS Q S Act) {n : ℕ}
               unfold QEnv.extend
               by_cases h0 : j.val = 0
               · simp [h0]
-              · simp [h0]
-                have : ∃ k : Fin _, j = k.succ := by
-                  use ⟨j.val - 1, by have : j.val < _ := j.prop; omega⟩
-                  ext; simp; omega
-                obtain ⟨k, rfl⟩ := this
-                convert h_eq k t' (by intro heq; subst heq; exact hj rfl) using 1
+              · -- 4.31: bare `simp [h0]` no longer fires `dif_neg`; reduce the `dite`s explicitly,
+                -- then apply `h_eq` at the predecessor index (`≠ i`, else `j = i.succ`).
+                simp only [dif_neg h0]
+                exact h_eq ⟨j.val - 1, by omega⟩ t' (by
+                  intro heq
+                  apply hj
+                  apply Fin.ext
+                  have hval : (↑j - 1 : ℕ) = ↑i := congrArg Fin.val heq
+                  simp only [Fin.val_succ]
+                  omega)
             · intro t'; unfold QEnv.extend; by_cases h : i.succ.val = 0
               · exfalso; simp [Fin.val_succ] at h
               · simp [h]; convert h_le t' using 1
@@ -379,12 +391,16 @@ lemma qSatisfies_mono_env (qlts : QLTS Q S Act) {n : ℕ}
               unfold QEnv.extend
               by_cases h0 : j.val = 0
               · simp [h0]
-              · simp [h0]
-                have : ∃ k : Fin _, j = k.succ := by
-                  use ⟨j.val - 1, by have : j.val < _ := j.prop; omega⟩
-                  ext; simp; omega
-                obtain ⟨k, rfl⟩ := this
-                convert h_eq k t' (by intro heq; subst heq; exact hj rfl) using 1
+              · -- 4.31: bare `simp [h0]` no longer fires `dif_neg`; reduce the `dite`s explicitly,
+                -- then apply `h_eq` at the predecessor index (`≠ i`, else `j = i.succ`).
+                simp only [dif_neg h0]
+                exact h_eq ⟨j.val - 1, by omega⟩ t' (by
+                  intro heq
+                  apply hj
+                  apply Fin.ext
+                  have hval : (↑j - 1 : ℕ) = ↑i := congrArg Fin.val heq
+                  simp only [Fin.val_succ]
+                  omega)
             · intro t'; unfold QEnv.extend; by_cases h : i.succ.val = 0
               · exfalso; simp [Fin.val_succ] at h
               · simp [h]; convert h_le t' using 1

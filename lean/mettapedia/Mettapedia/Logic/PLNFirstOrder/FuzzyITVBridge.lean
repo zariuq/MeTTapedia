@@ -129,9 +129,11 @@ theorem fuzzyThereExistsHolds_itvStrength_iff_exchange
     (p : FuzzyQuantifierParams) (itvs : U → ITV) :
     fuzzyThereExistsHolds p (itvStrengthProfile itvs) ↔
       p.PCL ≤ 1 - nearOneFraction p (itvStrengthComplementProfile itvs) := by
-  simpa [itvStrengthComplementProfile] using
-    (fuzzyThereExistsHolds_iff_nearOneComplement
-      (p := p) (profile := itvStrengthProfile itvs))
+  change fuzzyThereExistsHolds p (itvStrengthProfile itvs) ↔
+    p.PCL ≤ 1 - nearOneFraction p (fun u => 1 - itvStrengthProfile itvs u)
+  exact
+    fuzzyThereExistsHolds_iff_nearOneComplement
+      (p := p) (profile := itvStrengthProfile itvs)
 
 /-- Core Chapter-11 rule-family bridge in ITV form (strength coordinate):
 existential generalization + universal specification + exchange. -/

@@ -143,7 +143,7 @@ example :
 /-- Positive example: descendants are still preserved by the structural export. -/
 example :
     (rootedExample.structuralSubtrieAt [10]).lookup [20] = some () := by
-  simpa [rootedExample] using
+  simpa [rootedExample, FTrie.lookup, FTrie.lookupChild, FTrie.singleton] using
     (FTrie.structuralSubtrieAt_lookup_cons rootedExample [10] 20 [])
 
 /-! ## §4: Summary

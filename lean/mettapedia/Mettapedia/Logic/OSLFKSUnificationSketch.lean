@@ -4,7 +4,7 @@ import Mettapedia.Logic.EvidenceQuantale
 import Mettapedia.Logic.PLNWorldModel
 import Mettapedia.Logic.PLNWorldModelCalculus
 import Mettapedia.Logic.PLN_KS_Bridge
-import Mettapedia.ProbabilityTheory.KnuthSkilling.Core.TotalityImprecision
+import KnuthSkilling.Core.TotalityImprecision
 
 /-!
 # OSLF × KS × WM Unification
@@ -29,7 +29,7 @@ open scoped ENNReal
 open Mettapedia.OSLF.Formula
 open Mettapedia.Logic.EvidenceQuantale
 open Mettapedia.Logic.PLNWorldModel
-open Mettapedia.ProbabilityTheory.KnuthSkilling.TotalityImprecision
+open KnuthSkilling.TotalityImprecision
 
 abbrev Pat := Mettapedia.OSLF.MeTTaIL.Syntax.Pattern
 abbrev LangDef := Mettapedia.OSLF.MeTTaIL.Syntax.LanguageDef

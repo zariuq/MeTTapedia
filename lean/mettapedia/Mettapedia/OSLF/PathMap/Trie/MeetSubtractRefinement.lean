@@ -66,12 +66,12 @@ theorem subtract_lookup_nil (t₁ t₂ : FTrie V) :
 /-- The `FTrie → CTrie` embedding agrees with `inter` at the root path. -/
 theorem toCTrie_meet_root (t₁ t₂ : FTrie V) :
     (t₁.meet t₂).toCTrie [] = (CTrie.inter t₁.toCTrie t₂.toCTrie) [] := by
-  simpa [CTrie.lookup_inter] using meet_lookup_nil t₁ t₂
+  exact meet_lookup_nil t₁ t₂
 
 /-- The `FTrie → CTrie` embedding agrees with `diff` at the root path. -/
 theorem toCTrie_subtract_root (t₁ t₂ : FTrie V) :
     (t₁.subtract t₂).toCTrie [] = (CTrie.diff t₁.toCTrie t₂.toCTrie) [] := by
-  simpa [CTrie.lookup_diff] using subtract_lookup_nil t₁ t₂
+  exact subtract_lookup_nil t₁ t₂
 
 /-! ## Summary
 

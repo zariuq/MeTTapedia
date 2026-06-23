@@ -59,7 +59,34 @@ inductive BetaCode where
   | laplace
   | jeffreys
   | haldane
-deriving DecidableEq, Repr, Inhabited, Encodable
+
+instance : Inhabited BetaCode := ⟨.laplace⟩
+
+instance : DecidableEq BetaCode
+  | .laplace, .laplace => isTrue rfl
+  | .laplace, .jeffreys => isFalse (by intro h; cases h)
+  | .laplace, .haldane => isFalse (by intro h; cases h)
+  | .jeffreys, .laplace => isFalse (by intro h; cases h)
+  | .jeffreys, .jeffreys => isTrue rfl
+  | .jeffreys, .haldane => isFalse (by intro h; cases h)
+  | .haldane, .laplace => isFalse (by intro h; cases h)
+  | .haldane, .jeffreys => isFalse (by intro h; cases h)
+  | .haldane, .haldane => isTrue rfl
+
+instance : Encodable BetaCode where
+  encode
+    | .laplace => 0
+    | .jeffreys => 1
+    | .haldane => 2
+  decode
+    | 0 => some .laplace
+    | 1 => some .jeffreys
+    | 2 => some .haldane
+    | _ => none
+  encodek
+    | .laplace => rfl
+    | .jeffreys => rfl
+    | .haldane => rfl
 
 namespace BetaCode
 
@@ -105,7 +132,26 @@ end BetaCode
 inductive MarkovBetaCode where
   | laplace
   | jeffreys
-deriving DecidableEq, Repr, Inhabited, Encodable
+
+instance : Inhabited MarkovBetaCode := ⟨.laplace⟩
+
+instance : DecidableEq MarkovBetaCode
+  | .laplace, .laplace => isTrue rfl
+  | .laplace, .jeffreys => isFalse (by intro h; cases h)
+  | .jeffreys, .laplace => isFalse (by intro h; cases h)
+  | .jeffreys, .jeffreys => isTrue rfl
+
+instance : Encodable MarkovBetaCode where
+  encode
+    | .laplace => 0
+    | .jeffreys => 1
+  decode
+    | 0 => some .laplace
+    | 1 => some .jeffreys
+    | _ => none
+  encodek
+    | .laplace => rfl
+    | .jeffreys => rfl
 
 namespace MarkovBetaCode
 

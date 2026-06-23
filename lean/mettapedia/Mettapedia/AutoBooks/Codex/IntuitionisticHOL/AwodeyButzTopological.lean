@@ -7,7 +7,7 @@ namespace Mettapedia.AutoBooks.Codex.IntuitionisticHOL
 open Mettapedia.Logic.HOL
 open TopologicalSpace Topology
 
-universe u v w
+universe u v w z
 
 /--
 Awodey-Butz's topological carrier notion: an etale space over a base space.
@@ -208,7 +208,7 @@ global sections; product, exponential, and formula semantics are future work.
 structure BasicTopologicalInterpretation
     (Base : Type u) (Const : Ty Base → Type v)
     (X : Type w) [TopologicalSpace X] where
-  space : Ty Base → EtaleSpace X
+  space : Ty Base → EtaleSpace.{w, z} X
   const : {τ : Ty Base} → Const τ → (space τ).GlobalSection
 
 end EtaleSpace

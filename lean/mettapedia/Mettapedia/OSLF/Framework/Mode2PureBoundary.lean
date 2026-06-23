@@ -89,6 +89,6 @@ theorem mettaPure_runtime_behavioral_diamond_transport
       ∃ T, Mettapedia.OSLF.Framework.LangMorphism.LangReducesStar mettaPure
         (mettaPureRuntimeToBehavioral.termMap p) T ∧
         T = mettaPureRuntimeToBehavioral.termMap q := by
-  simpa [mettaPureRuntimeToBehavioral] using runtimeToBehavioral_diamond_witness mettaPure h
+  exact runtimeToBehavioral_diamond_witness mettaPure h
 
 end Mettapedia.OSLF.Framework.Mode2PureBoundary

@@ -297,7 +297,7 @@ theorem valueViaTargetRoundTrip_eq_of_goodOnly {World : Type u} {Virtue : Type v
           cases hTagEq
           cases hFormulaEq
           rfl
-    simpa [hsEq] using hs₁
+    rw [hsEq]; exact hs₁
   · intro hs
     have hTag : s.tag = .MorallyGood :=
       hGoodOnly s hs

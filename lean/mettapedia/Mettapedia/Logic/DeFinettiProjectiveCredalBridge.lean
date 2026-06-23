@@ -327,9 +327,7 @@ theorem externalIIDProductPrefixMeasure_eq_product
     (Exchangeability.Probability.iidProduct ν).map
         (Exchangeability.prefixProj (α := Bool) n) =
       Measure.pi fun _ : Fin n => ν := by
-  simpa [Exchangeability.prefixProj] using
-    (Exchangeability.Probability.iidProduct.cylinder_fintype
-      (ν := ν) (n := n))
+  exact Exchangeability.Probability.iidProduct.cylinder_fintype ν
 
 /-- A finite prefix marginal of an external i.i.d. product measure induces a
 precise prevision on prefix gambles. -/
@@ -2908,9 +2906,8 @@ theorem bernoulliMixturePrefixProcessMarginalConsistent_analytic
     bernoulliMixturePrefixProcessMarginalConsistent C
       (fun M _ n => bernoulliMixturePrefixLaw_analytic M n) := by
   intro M _hM u i hi X
-  simpa [Exchangeability.takePrefix] using
-    (bernoulliMixturePrefixPrevision_takePrefix_eq
-      (M := M) (hmn := prefixWindow_le_jointLength u hi) X)
+  exact bernoulliMixturePrefixPrevision_takePrefix_eq
+    (M := M) (hmn := prefixWindow_le_jointLength u hi) X
 
 /-- Finite-window realization/FIP completion for the imprecise de Finetti
 prefix-process specification.
@@ -3736,10 +3733,9 @@ theorem posteriorBernoulliMixturePrefixProcessMarginalConsistent_analytic
     (hZ : M.countEvidenceMass k l ≠ 0) :
     posteriorBernoulliMixturePrefixProcessMarginalConsistent M k l hZ := by
   intro u i hi X
-  simpa [Exchangeability.takePrefix] using
-    (bernoulliMixturePrefixPrevision_takePrefix_eq
-      (M := M.posteriorBernoulliMixture k l hZ)
-      (hmn := prefixWindow_le_jointLength u hi) X)
+  exact bernoulliMixturePrefixPrevision_takePrefix_eq
+    (M := M.posteriorBernoulliMixture k l hZ)
+    (hmn := prefixWindow_le_jointLength u hi) X
 
 /-- Any precise completion dominating the lower-prevision view of a precise
 prevision agrees with it exactly. -/
@@ -3790,10 +3786,8 @@ noncomputable def posteriorBernoulliMixturePrefixProcessCylinderPrevision
         (M.posteriorBernoulliMixture k l hZ) n).toPrecisePrevision.add X Y
   restrict_compat := by
     intro i j hij X
-    simpa [posteriorBernoulliMixturePrefixProcessLowerSpec,
-      bernoulliMixturePrefixProcessCylinderSystem, Exchangeability.takePrefix] using
-      (bernoulliMixturePrefixPrevision_takePrefix_eq
-        (M := M.posteriorBernoulliMixture k l hZ) (hmn := hij) X)
+    exact bernoulliMixturePrefixPrevision_takePrefix_eq
+      (M := M.posteriorBernoulliMixture k l hZ) (hmn := hij) X
 
 @[simp] theorem posteriorBernoulliMixturePrefixProcessCylinderPrevision_localPrevision
     (M : BernoulliMixture) (k l : ℕ)
@@ -3812,8 +3806,8 @@ theorem posteriorBernoulliMixturePrefixProcessCylinderPrevision_mem_projectiveCy
     posteriorBernoulliMixturePrefixProcessCylinderPrevision M k l hZ ∈
       (posteriorBernoulliMixturePrefixProcessLowerSpec M k l hZ).toCredalSpec.projectiveCylinderCredalSet := by
   intro n X
-  rw [posteriorBernoulliMixturePrefixProcessCylinderPrevision_localPrevision]
-  rw [posteriorBernoulliMixturePrefixProcessLowerSpec_localLower_eq_analytic]
+  exact le_of_eq
+    (posteriorBernoulliMixturePrefixProcessLowerSpec_localLower_eq_analytic M k l hZ n X)
 
 /-- The posterior process lower-prevision specification already has a compatible
 cylinder-domain completion, without any raw all-gambles process witness. -/
@@ -3852,7 +3846,7 @@ theorem posteriorBernoulliMixturePrefixProcessLocalCredal_eq_singleton
           (bernoulliMixturePrefixLaw_analytic
             (M.posteriorBernoulliMixture k l hZ) n).toPrecisePrevision :=
       precisePrevision_eq_of_mem_dominatingPreciseCompletions_toLowerPrevision hR'
-    simp [hEq]
+    exact hEq ▸ rfl
   · intro hR
     rcases Set.mem_singleton_iff.mp hR with rfl
     intro X
@@ -4100,14 +4094,15 @@ theorem firstTruePartialGamble_le_exploding
         · have hfirst :
               firstTrueCylinderGamble (Nat.find hω) ω = 1 :=
             firstTrueCylinderGamble_find hω
-          rw [Pi.smul_apply, hfirst]
-          simp
+          show (w (Nat.find hω))⁻¹ * firstTrueCylinderGamble (Nat.find hω) ω
+            = (w (Nat.find hω))⁻¹
+          rw [hfirst, mul_one]
         · intro n hn hne
           have hz :
               firstTrueCylinderGamble n ω = 0 :=
             firstTrueCylinderGamble_eq_zero_of_ne_find hω hne
-          rw [Pi.smul_apply, hz]
-          simp
+          show (w n)⁻¹ * firstTrueCylinderGamble n ω = 0
+          rw [hz, mul_zero]
         · intro hnot
           exact (hnot hmem).elim
       simp [firstTrueExplodingGamble, hω, hsum]
@@ -4124,8 +4119,8 @@ theorem firstTruePartialGamble_le_exploding
           have hz :
               firstTrueCylinderGamble n ω = 0 :=
             firstTrueCylinderGamble_eq_zero_of_ne_find hω hne
-          rw [Pi.smul_apply, hz]
-          simp
+          show (w n)⁻¹ * firstTrueCylinderGamble n ω = 0
+          rw [hz, mul_zero]
       have hnonneg : 0 ≤ (w (Nat.find hω))⁻¹ := by
         exact inv_nonneg.mpr (le_of_lt (hPos (Nat.find hω)))
       rw [hsum]
@@ -4138,8 +4133,8 @@ theorem firstTruePartialGamble_le_exploding
       intro n hn
       by_cases hfirst : ω n = true ∧ ∀ m < n, ω m = false
       · exact (hω ⟨n, hfirst.1⟩).elim
-      · rw [Pi.smul_apply]
-        simp [firstTrueCylinderGamble, hfirst]
+      · show (w n)⁻¹ * firstTrueCylinderGamble n ω = 0
+        simp only [firstTrueCylinderGamble, if_neg hfirst, mul_zero]
     rw [hsum]
     simp [firstTrueExplodingGamble, hω]
 
@@ -4821,6 +4816,7 @@ theorem posteriorBernoulliMixturePrefixProcessWitness_of_zeroInteriorMixingMass
           ht0 ht1
     rw [ProjectiveCylinderSystem.marginalPrevision_mix]
     rw [hMarginalTrue, hMarginalFalse]
+    rfl
   have hLocalEq :
       (posteriorBernoulliMixturePrefixProcessLowerSpec M k l hZ).cylinders.marginalPrevision n P =
         (bernoulliMixturePrefixLaw_analytic
@@ -4863,11 +4859,14 @@ theorem posteriorBernoulliMixturePrefixProcessWitness_of_zeroInteriorMixingMass
               (bernoulliMixturePrefixLaw_analytic
                   (M.posteriorBernoulliMixture k l hZ) 0).toPrecisePrevision
                 (PrecisePrevision.FiniteWeights.atomGamble (default : Fin 0 → Bool)) = 1 := by
-            simpa [BernoulliMixturePrefixLaw.toPrecisePrevision_atomGamble,
-              PrecisePrevision.FiniteWeights.atomGamble] using hTotal
+            simp only [BernoulliMixturePrefixLaw.toPrecisePrevision_atomGamble]
+            rw [Fintype.sum_unique] at hTotal
+            exact hTotal
           exact hLeft.trans hRight.symm
         have hPrec := congrArg PrecisePrevision.FiniteWeights.toPrecisePrevision hWeights
-        simpa [PrecisePrevision.FiniteWeights.toPrecisePrevision_ofPrecisePrevision] using hPrec
+        rw [PrecisePrevision.FiniteWeights.toPrecisePrevision_ofPrecisePrevision,
+          PrecisePrevision.FiniteWeights.toPrecisePrevision_ofPrecisePrevision] at hPrec
+        exact hPrec
     | succ m =>
         have hWeights :
             PrecisePrevision.FiniteWeights.ofPrecisePrevision
@@ -4969,7 +4968,9 @@ theorem posteriorBernoulliMixturePrefixProcessWitness_of_zeroInteriorMixingMass
                   M k l hZ xs hCountTruePos hCountFalsePos hInterior
               exact hLeft.trans hRight.symm
         have hPrec := congrArg PrecisePrevision.FiniteWeights.toPrecisePrevision hWeights
-        simpa [PrecisePrevision.FiniteWeights.toPrecisePrevision_ofPrecisePrevision] using hPrec
+        rw [PrecisePrevision.FiniteWeights.toPrecisePrevision_ofPrecisePrevision,
+          PrecisePrevision.FiniteWeights.toPrecisePrevision_ofPrecisePrevision] at hPrec
+        exact hPrec
   exact congrArg (fun Q => Q X) hLocalEq
 
 theorem posteriorBernoulliMixturePrefixProcessWitness_iff_zeroInteriorMixingMass
@@ -5106,13 +5107,9 @@ theorem bernoulliMixturePrefixProcess_jointPrevisionsRealizedIn_prefixTailFalseE
   · exact ⟨⟨prefixWindowJointLength u, R⟩, rfl⟩
   · intro i hi
     ext X
-    simpa [ProjectiveLocalLowerPrevisionSpec.FiniteJointWindowSystem.jointMarginalPrevision,
-      ProjectiveLocalLowerPrevisionSpec.FiniteJointWindowSystem.jointCylinderGamble,
-      bernoulliMixturePrefixProcessLowerSpec,
-      bernoulliMixturePrefixProcessFiniteJointWindowSystem] using
-      (prefixTailFalseExtensionPrevision_marginal_eq
-        (n := prefixWindowJointLength u) (i := i)
-        (prefixWindow_le_jointLength u hi) R X)
+    exact prefixTailFalseExtensionPrevision_marginal_eq
+      (n := prefixWindowJointLength u) (i := i)
+      (prefixWindow_le_jointLength u hi) R X
 
 /-- Any raw carrier containing the explicit tail-false finite-window realizers
 inherits canonical carrier realization for the imprecise Bernoulli-mixture
@@ -5132,13 +5129,9 @@ theorem bernoulliMixturePrefixProcess_jointPrevisionsRealizedInCarrier_of_prefix
   · exact hSubset ⟨⟨prefixWindowJointLength u, R⟩, rfl⟩
   · intro i hi
     ext X
-    simpa [ProjectiveLocalLowerPrevisionSpec.FiniteJointWindowSystem.jointMarginalPrevision,
-      ProjectiveLocalLowerPrevisionSpec.FiniteJointWindowSystem.jointCylinderGamble,
-      bernoulliMixturePrefixProcessLowerSpec,
-      bernoulliMixturePrefixProcessFiniteJointWindowSystem] using
-      (prefixTailFalseExtensionPrevision_marginal_eq
-        (n := prefixWindowJointLength u) (i := i)
-        (prefixWindow_le_jointLength u hi) R X)
+    exact prefixTailFalseExtensionPrevision_marginal_eq
+      (n := prefixWindowJointLength u) (i := i)
+      (prefixWindow_le_jointLength u hi) R X
 
 /-- The canonical largest-prefix finite-window system is realized inside the
 explicit tail-false raw carrier, one finite window at a time. -/
@@ -5153,14 +5146,9 @@ theorem posteriorBernoulliMixturePrefixProcess_jointPrevisionsRealizedIn_prefixT
   · exact ⟨⟨prefixWindowJointLength u, R⟩, rfl⟩
   · intro i hi
     ext X
-    simpa [ProjectiveLocalLowerPrevisionSpec.FiniteJointWindowSystem.jointMarginalPrevision,
-      ProjectiveLocalLowerPrevisionSpec.FiniteJointWindowSystem.jointCylinderGamble,
-      posteriorBernoulliMixturePrefixProcessLowerSpec,
-      posteriorBernoulliMixturePrefixProcessFiniteJointWindowSystem,
-      bernoulliMixturePrefixProcessFiniteJointWindowSystem] using
-      (prefixTailFalseExtensionPrevision_marginal_eq
-        (n := prefixWindowJointLength u) (i := i)
-        (prefixWindow_le_jointLength u hi) R X)
+    exact prefixTailFalseExtensionPrevision_marginal_eq
+      (n := prefixWindowJointLength u) (i := i)
+      (prefixWindow_le_jointLength u hi) R X
 
 /-- Any raw carrier containing the explicit tail-false finite-window realizers
 inherits canonical carrier realization for the posterior prefix process. -/
@@ -5177,14 +5165,9 @@ theorem posteriorBernoulliMixturePrefixProcess_jointPrevisionsRealizedInCarrier_
   · exact hSubset ⟨⟨prefixWindowJointLength u, R⟩, rfl⟩
   · intro i hi
     ext X
-    simpa [ProjectiveLocalLowerPrevisionSpec.FiniteJointWindowSystem.jointMarginalPrevision,
-      ProjectiveLocalLowerPrevisionSpec.FiniteJointWindowSystem.jointCylinderGamble,
-      posteriorBernoulliMixturePrefixProcessLowerSpec,
-      posteriorBernoulliMixturePrefixProcessFiniteJointWindowSystem,
-      bernoulliMixturePrefixProcessFiniteJointWindowSystem] using
-      (prefixTailFalseExtensionPrevision_marginal_eq
-        (n := prefixWindowJointLength u) (i := i)
-        (prefixWindow_le_jointLength u hi) R X)
+    exact prefixTailFalseExtensionPrevision_marginal_eq
+      (n := prefixWindowJointLength u) (i := i)
+      (prefixWindow_le_jointLength u hi) R X
 
 /-- Any raw carrier containing the explicit tail-false finite-window realizers
 already satisfies the canonical finite-window compatibility/FIP hypothesis for
@@ -5965,14 +5948,13 @@ theorem posteriorBernoulliMixturePrefixProcess_jointPrevisionsRealizedInCarrier_
     rw [posteriorBernoulliMixturePrefixProcessLowerSpec_localLower_eq_analytic
       M k l hZ i X] at hRi
     simpa [PrecisePrevision.toLowerPrevision_apply] using hRi
-  calc
-    (posteriorBernoulliMixturePrefixProcessLowerSpec M k l hZ).cylinders.marginalPrevision i P
+  have hPmargEq :
+      (posteriorBernoulliMixturePrefixProcessLowerSpec M k l hZ).cylinders.marginalPrevision i P
         = (bernoulliMixturePrefixLaw_analytic
             (M.posteriorBernoulliMixture k l hZ) i).toPrecisePrevision := by
-              ext X
-              exact hPmarg i X
-    _ = (posteriorBernoulliMixturePrefixProcessFiniteJointWindowSystem
-          M k l hZ).jointMarginalPrevision u i hi R := hJointEq.symm
+    ext X
+    exact hPmarg i X
+  exact hPmargEq.trans hJointEq.symm
 
 /-- Paper-facing posterior process-law package from a single global carrier
 witness for the analytic posterior prefix laws.
@@ -6204,7 +6186,7 @@ instance bernoulliMixtureCanonicalProcessMeasure_isProbability
 private theorem bernoulliMixtureCanonical_coordProcess_measurable :
     ∀ i : ℕ, Measurable (coordProcess i) := by
   intro i
-  simpa [coordProcess] using (measurable_pi_apply (a := i))
+  exact measurable_pi_apply (a := i)
 
 /-- The canonical mixed `Bool^ℕ` process measure represents the original
 Bernoulli mixture on every finite prefix.  This packages the internal
@@ -6941,6 +6923,7 @@ theorem BernoulliMixtureAnalyticPrefixProcessWitness_of_zeroInteriorMixingMass
           ht0 ht1
     rw [ProjectiveCylinderSystem.marginalPrevision_mix]
     rw [hMarginalTrue, hMarginalFalse]
+    rfl
   have hLocalEq :
       bernoulliMixturePrefixProcessCylinderSystem.marginalPrevision n P =
         (bernoulliMixturePrefixLaw_analytic M n).toPrecisePrevision := by
@@ -6979,11 +6962,14 @@ theorem BernoulliMixtureAnalyticPrefixProcessWitness_of_zeroInteriorMixingMass
           have hRight :
               (bernoulliMixturePrefixLaw_analytic M 0).toPrecisePrevision
                 (PrecisePrevision.FiniteWeights.atomGamble (default : Fin 0 → Bool)) = 1 := by
-            simpa [BernoulliMixturePrefixLaw.toPrecisePrevision_atomGamble,
-              PrecisePrevision.FiniteWeights.atomGamble] using hTotal
+            simp only [BernoulliMixturePrefixLaw.toPrecisePrevision_atomGamble]
+            rw [Fintype.sum_unique] at hTotal
+            exact hTotal
           exact hLeft.trans hRight.symm
         have hPrec := congrArg PrecisePrevision.FiniteWeights.toPrecisePrevision hWeights
-        simpa [PrecisePrevision.FiniteWeights.toPrecisePrevision_ofPrecisePrevision] using hPrec
+        rw [PrecisePrevision.FiniteWeights.toPrecisePrevision_ofPrecisePrevision,
+          PrecisePrevision.FiniteWeights.toPrecisePrevision_ofPrecisePrevision] at hPrec
+        exact hPrec
     | succ m =>
         have hWeights :
             PrecisePrevision.FiniteWeights.ofPrecisePrevision
@@ -7079,7 +7065,9 @@ theorem BernoulliMixtureAnalyticPrefixProcessWitness_of_zeroInteriorMixingMass
                     M xs hCountTruePos hCountFalsePos hInterior
               exact hLeft.trans hRight.symm
         have hPrec := congrArg PrecisePrevision.FiniteWeights.toPrecisePrevision hWeights
-        simpa [PrecisePrevision.FiniteWeights.toPrecisePrevision_ofPrecisePrevision] using hPrec
+        rw [PrecisePrevision.FiniteWeights.toPrecisePrevision_ofPrecisePrevision,
+          PrecisePrevision.FiniteWeights.toPrecisePrevision_ofPrecisePrevision] at hPrec
+        exact hPrec
   exact congrArg (fun Q => Q X) hLocalEq
 
 /-- Neutral discovered sufficient condition for the analytic family-level raw

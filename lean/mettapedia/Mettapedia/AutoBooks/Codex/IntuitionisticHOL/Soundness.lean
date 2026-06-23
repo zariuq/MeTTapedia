@@ -747,9 +747,9 @@ theorem orL_valid (M : GlobalModel Base Const)
     ValidSequent M (.or φ ψ :: Δ) χ := by
   intro ρ
   have hφρ : formulaTruth M ρ φ ⊓ antecedentTruth M ρ Δ ≤ formulaTruth M ρ χ := by
-    simpa [GlobalModel.antecedentTruth] using hφ ρ
+    simpa [GlobalModel.antecedentTruth, SemilocalModel.antecedentTruth] using hφ ρ
   have hψρ : formulaTruth M ρ ψ ⊓ antecedentTruth M ρ Δ ≤ formulaTruth M ρ χ := by
-    simpa [GlobalModel.antecedentTruth] using hψ ρ
+    simpa [GlobalModel.antecedentTruth, SemilocalModel.antecedentTruth] using hψ ρ
   have horAnte :
       antecedentTruth M ρ (.or φ ψ :: Δ) =
         (formulaTruth M ρ φ ⊔ formulaTruth M ρ ψ) ⊓ antecedentTruth M ρ Δ := by
@@ -797,7 +797,7 @@ theorem impR_valid (M : GlobalModel Base Const)
     ValidSequent M Δ (.imp φ ψ) := by
   intro ρ
   have hρ : formulaTruth M ρ φ ⊓ antecedentTruth M ρ Δ ≤ formulaTruth M ρ ψ := by
-    simpa [GlobalModel.antecedentTruth] using h ρ
+    simpa [GlobalModel.antecedentTruth, SemilocalModel.antecedentTruth] using h ρ
   have himp : antecedentTruth M ρ Δ ≤ formulaTruth M ρ φ ⇨ formulaTruth M ρ ψ := by
     rw [le_himp_iff]
     simpa [inf_assoc, inf_left_comm, inf_comm] using hρ
@@ -816,7 +816,7 @@ theorem impL_valid (M : GlobalModel Base Const)
   let q := formulaTruth M ρ ψ
   have hγp : γ ≤ p := hφ ρ
   have hbody : q ⊓ γ ≤ formulaTruth M ρ χ := by
-    simpa [γ, q, GlobalModel.antecedentTruth] using hχ ρ
+    simpa [γ, q, GlobalModel.antecedentTruth, SemilocalModel.antecedentTruth] using hχ ρ
   have hq : (p ⇨ q) ⊓ γ ≤ q := by
     calc
       (p ⇨ q) ⊓ γ ≤ (p ⇨ q) ⊓ p := inf_le_inf_left _ hγp

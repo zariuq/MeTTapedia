@@ -191,7 +191,7 @@ private theorem diracProba_singleton_eval (x y : Fin 2) :
     simp
   · rw [Set.indicator_of_notMem]
     · simp [h]
-    · simpa [Set.mem_singleton_iff] using h
+    · exact fun hx => h hx
 
 /-- Simple binary latent chain that starts at `0` and always stays at `0`. -/
 noncomputable def binaryAbsorbingZeroLatent : MarkovParam 2 where

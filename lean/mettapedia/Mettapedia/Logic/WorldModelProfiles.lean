@@ -213,7 +213,7 @@ theorem toStrength_not_monotone_info_order :
       e₁ ≤ e₂ ∧ ¬(BinaryEvidence.toStrength e₁ ≤ BinaryEvidence.toStrength e₂) := by
   refine ⟨⟨1, 0⟩, ⟨1, 1⟩, ?_, ?_⟩
   · -- ⟨1, 0⟩ ≤ ⟨1, 1⟩ in information order
-    exact ⟨le_refl _, zero_le _⟩
+    exact ⟨le_refl _, by exact zero_le⟩
   · -- toStrength ⟨1, 0⟩ = 1, toStrength ⟨1, 1⟩ = 1/2
     simp only [BinaryEvidence.toStrength, BinaryEvidence.total]
     norm_num

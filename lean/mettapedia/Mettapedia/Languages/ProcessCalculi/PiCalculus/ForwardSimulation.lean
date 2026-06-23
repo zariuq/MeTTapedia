@@ -153,7 +153,7 @@ private theorem not_mem_freeVars_closeFVar_self (k : Nat) (y : String) (p : Patt
       rw [heq] at hne
       exact hne (beq_self_eq_true x)
   | happly c args ih =>
-    simp only [closeFVar, freeVars, List.mem_flatMap]; push_neg
+    simp only [closeFVar, freeVars, List.mem_flatMap]; push Not
     intro sub hsub_mem
     rw [List.mem_map] at hsub_mem
     obtain ⟨a, ha, rfl⟩ := hsub_mem
@@ -161,10 +161,10 @@ private theorem not_mem_freeVars_closeFVar_self (k : Nat) (y : String) (p : Patt
   | hlambda _ body ih => simp only [closeFVar, freeVars]; exact ih (k + 1)
   | hmultiLambda n _ body ih => simp only [closeFVar, freeVars]; exact ih (k + n)
   | hsubst body repl ihb ihr =>
-    simp only [closeFVar, freeVars, List.mem_append]; push_neg
+    simp only [closeFVar, freeVars, List.mem_append]; push Not
     exact ⟨ihb (k + 1), ihr k⟩
   | hcollection ct elems rest ih =>
-    simp only [closeFVar, freeVars, List.mem_flatMap]; push_neg
+    simp only [closeFVar, freeVars, List.mem_flatMap]; push Not
     intro sub hsub_mem
     rw [List.mem_map] at hsub_mem
     obtain ⟨a, ha, rfl⟩ := hsub_mem
@@ -664,6 +664,556 @@ theorem encode_rf_open_close_subst {Q : Process} (hrf : RestrictionFree Q)
   -- Step 6: By encode_rf_subst_fvar
   exact encode_rf_subst_fvar hrf y z n v hyz hb
 
+/-! ## RF Encoding Shape and Semantic COMM Substitution -/
+
+private theorem struct_refl (p : Pattern) : p ≡ᵨ p :=
+  Mettapedia.Languages.ProcessCalculi.RhoCalculus.StructuralCongruence.refl p
+
+private theorem struct_apply_cong_single {f : String} {p q : Pattern}
+    (hpq : p ≡ᵨ q) :
+    .apply f [p] ≡ᵨ .apply f [q] := by
+  refine apply_cong f [p] [q] rfl ?_
+  intro i h₁ h₂
+  have hi : i = 0 := by
+    have hlt : i < 1 := by simpa using h₁
+    simpa using hlt
+  subst hi
+  simpa using hpq
+
+private theorem struct_apply_cong_two {f : String} {p₁ p₂ q₁ q₂ : Pattern}
+    (h₁ : p₁ ≡ᵨ q₁) (h₂ : p₂ ≡ᵨ q₂) :
+    .apply f [p₁, p₂] ≡ᵨ .apply f [q₁, q₂] := by
+  refine apply_cong f [p₁, p₂] [q₁, q₂] rfl ?_
+  intro i h₁i h₂i
+  have hlt : i < 2 := by simpa using h₁i
+  have hi : i = 0 ∨ i = 1 := by omega
+  cases hi with
+  | inl hi0 =>
+      subst hi0
+      simpa using h₁
+  | inr hi1 =>
+      subst hi1
+      simpa using h₂
+
+private theorem pdrop_quote_drop_sc (z : String) :
+    (.apply "PDrop" [.apply "NQuote" [.apply "PDrop" [.fvar z]]]) ≡ᵨ
+      (.apply "PDrop" [.fvar z]) := by
+  exact struct_apply_cong_single (quote_drop (.fvar z))
+
+mutual
+  private def rhoNoLiteralQuote : Pattern → Bool
+    | .bvar _ => true
+    | .fvar _ => true
+    | .apply "NQuote" _ => false
+    | .apply _ args => rhoNoLiteralQuoteList args
+    | .lambda _ body => rhoNoLiteralQuote body
+    | .multiLambda _ _ body => rhoNoLiteralQuote body
+    | .subst body repl => rhoNoLiteralQuote body && rhoNoLiteralQuote repl
+    | .collection _ elems _ => rhoNoLiteralQuoteList elems
+
+  private def rhoNoLiteralQuoteList : List Pattern → Bool
+    | [] => true
+    | p :: ps => rhoNoLiteralQuote p && rhoNoLiteralQuoteList ps
+end
+
+private theorem rhoNoLiteralQuoteList_append {ps qs : List Pattern}
+    (hps : rhoNoLiteralQuoteList ps = true) (hqs : rhoNoLiteralQuoteList qs = true) :
+    rhoNoLiteralQuoteList (ps ++ qs) = true := by
+  induction ps with
+  | nil => exact hqs
+  | cons p ps ih =>
+      simp [rhoNoLiteralQuoteList, Bool.and_eq_true] at hps ⊢
+      exact ⟨hps.1, ih hps.2⟩
+
+mutual
+  private theorem rhoNoLiteralQuote_closeFVar (k : Nat) (x : String) :
+      ∀ p : Pattern, rhoNoLiteralQuote (closeFVar k x p) = rhoNoLiteralQuote p
+    | .bvar n => by simp [closeFVar, rhoNoLiteralQuote]
+    | .fvar y => by by_cases hy : y = x <;> simp [closeFVar, rhoNoLiteralQuote, hy]
+    | .apply c args => by
+        by_cases hc : c = "NQuote"
+        · subst hc
+          simp [closeFVar, rhoNoLiteralQuote]
+        · simp [closeFVar, rhoNoLiteralQuote, rhoNoLiteralQuoteList_closeFVar]
+    | .lambda nm body => by simp [closeFVar, rhoNoLiteralQuote, rhoNoLiteralQuote_closeFVar]
+    | .multiLambda n nms body => by simp [closeFVar, rhoNoLiteralQuote, rhoNoLiteralQuote_closeFVar]
+    | .subst body repl => by simp [closeFVar, rhoNoLiteralQuote, rhoNoLiteralQuote_closeFVar]
+    | .collection ct elems rest => by simp [closeFVar, rhoNoLiteralQuote, rhoNoLiteralQuoteList_closeFVar]
+
+  private theorem rhoNoLiteralQuoteList_closeFVar (k : Nat) (x : String) :
+      ∀ ps : List Pattern, rhoNoLiteralQuoteList (ps.map (closeFVar k x)) =
+        rhoNoLiteralQuoteList ps
+    | [] => by simp [rhoNoLiteralQuoteList]
+    | p :: ps => by
+        simp [rhoNoLiteralQuoteList, rhoNoLiteralQuote_closeFVar,
+          rhoNoLiteralQuoteList_closeFVar]
+end
+
+mutual
+  private theorem noBoundUnderQuote_of_rhoNoLiteralQuote (j : Nat) :
+      ∀ {p : Pattern}, rhoNoLiteralQuote p = true → noBoundUnderQuote j p = true
+    | .bvar n, _ => by simp [noBoundUnderQuote]
+    | .fvar x, _ => by simp [noBoundUnderQuote]
+    | .apply c args, h => by
+        by_cases hc : c = "NQuote"
+        · subst hc
+          simp [rhoNoLiteralQuote] at h
+        · have hlist : rhoNoLiteralQuoteList args = true := by
+            simpa [rhoNoLiteralQuote, hc] using h
+          simp [noBoundUnderQuote, hc, noBoundUnderQuoteList_of_rhoNoLiteralQuoteList j hlist]
+    | .lambda nm body, h => by
+        simp [rhoNoLiteralQuote] at h
+        simp [noBoundUnderQuote, noBoundUnderQuote_of_rhoNoLiteralQuote (j + 1) h]
+    | .multiLambda n nms body, h => by
+        simp [rhoNoLiteralQuote] at h
+        simp [noBoundUnderQuote, noBoundUnderQuote_of_rhoNoLiteralQuote (j + n) h]
+    | .subst body repl, h => by
+        simp [rhoNoLiteralQuote, Bool.and_eq_true] at h
+        simp [noBoundUnderQuote, noBoundUnderQuote_of_rhoNoLiteralQuote (j + 1) h.1,
+          noBoundUnderQuote_of_rhoNoLiteralQuote j h.2]
+    | .collection ct elems rest, h => by
+        simp [rhoNoLiteralQuote] at h
+        simp [noBoundUnderQuote, noBoundUnderQuoteList_of_rhoNoLiteralQuoteList j h]
+
+  private theorem noBoundUnderQuoteList_of_rhoNoLiteralQuoteList (j : Nat) :
+      ∀ {ps : List Pattern}, rhoNoLiteralQuoteList ps = true →
+        noBoundUnderQuoteList j ps = true
+    | [], _ => by simp [noBoundUnderQuoteList]
+    | p :: ps, h => by
+        simp [rhoNoLiteralQuoteList, Bool.and_eq_true] at h
+        simp [noBoundUnderQuoteList, noBoundUnderQuote_of_rhoNoLiteralQuote j h.1,
+          noBoundUnderQuoteList_of_rhoNoLiteralQuoteList j h.2]
+end
+
+private theorem rhoProcCoreShapeList_append {ps qs : List Pattern}
+    (hps : rhoProcCoreShapeList ps = true) (hqs : rhoProcCoreShapeList qs = true) :
+    rhoProcCoreShapeList (ps ++ qs) = true := by
+  induction ps with
+  | nil => exact hqs
+  | cons p ps ih =>
+      simp [rhoProcCoreShapeList, Bool.and_eq_true] at hps ⊢
+      exact ⟨hps.1, ih hps.2⟩
+
+private theorem rhoNoLiteralQuote_rhoPar {P Q : Pattern}
+    (hP : rhoNoLiteralQuote P = true) (hQ : rhoNoLiteralQuote Q = true) :
+    rhoNoLiteralQuote (rhoPar P Q) = true := by
+  unfold rhoPar
+  split
+  · simp [rhoNoLiteralQuote] at hP hQ ⊢
+    exact rhoNoLiteralQuoteList_append hP hQ
+  · simp [rhoNoLiteralQuote] at hP ⊢
+    exact rhoNoLiteralQuoteList_append hP (by simp [rhoNoLiteralQuoteList, hQ])
+  · simp [rhoNoLiteralQuote] at hQ ⊢
+    simp [rhoNoLiteralQuoteList, hP, hQ]
+  · simp [rhoNoLiteralQuote, rhoNoLiteralQuoteList, hP, hQ]
+
+private theorem rhoProcCoreShape_rhoPar {P Q : Pattern}
+    (hP : rhoProcCoreShape P = true) (hQ : rhoProcCoreShape Q = true) :
+    rhoProcCoreShape (rhoPar P Q) = true := by
+  unfold rhoPar
+  split
+  · simp [rhoProcCoreShape] at hP hQ ⊢
+    exact rhoProcCoreShapeList_append hP hQ
+  · simp [rhoProcCoreShape] at hP ⊢
+    exact rhoProcCoreShapeList_append hP (by simp [rhoProcCoreShapeList, hQ])
+  · simp [rhoProcCoreShape] at hQ ⊢
+    simp [rhoProcCoreShapeList, hP, hQ]
+  · simp [rhoProcCoreShape, rhoProcCoreShapeList, hP, hQ]
+
+private theorem rhoNameCoreShape_apply_nil_local (c : String) :
+    rhoNameCoreShape (.apply c []) = false := by
+  refine rhoNameCoreShape.eq_4 (.apply c []) ?_ ?_ ?_
+  · intro a h; cases h
+  · intro a h; cases h
+  · intro p h; cases h
+
+private theorem rhoNameCoreShape_apply_single_local (c : String) (a : Pattern) :
+    rhoNameCoreShape (.apply c [a]) =
+      (if c = "NQuote" then rhoProcCoreShape a else false) := by
+  by_cases hc : c = "NQuote"
+  · subst hc
+    simp [rhoNameCoreShape]
+  · have hfalse : rhoNameCoreShape (.apply c [a]) = false := by
+      refine rhoNameCoreShape.eq_4 (.apply c [a]) ?_ ?_ ?_
+      · intro n h; cases h
+      · intro x h; cases h
+      · intro p h
+        injection h with hc' hargs
+        exact hc hc'
+    simp [hc, hfalse]
+
+private theorem rhoNameCoreShape_apply_many_local
+    (c : String) (a b : Pattern) (bs : List Pattern) :
+    rhoNameCoreShape (.apply c (a :: b :: bs)) = false := by
+  refine rhoNameCoreShape.eq_4 (.apply c (a :: b :: bs)) ?_ ?_ ?_
+  · intro n h; cases h
+  · intro x h; cases h
+  · intro p h
+    injection h with hc hargs
+    cases hargs
+
+private theorem rhoNameCoreShape_apply_inv_local {c : String} {args : List Pattern}
+    (hshape : rhoNameCoreShape (.apply c args) = true) :
+    ∃ p, c = "NQuote" ∧ args = [p] ∧ rhoProcCoreShape p = true := by
+  cases args with
+  | nil =>
+      rw [rhoNameCoreShape_apply_nil_local c] at hshape
+      cases hshape
+  | cons a as =>
+      cases as with
+      | nil =>
+          rw [rhoNameCoreShape_apply_single_local c a] at hshape
+          by_cases hc : c = "NQuote"
+          · exact ⟨a, hc, rfl, by simpa [hc] using hshape⟩
+          · simp [hc] at hshape
+      | cons b bs =>
+          rw [rhoNameCoreShape_apply_many_local c a b bs] at hshape
+          cases hshape
+
+private theorem rhoProcCoreShape_apply_cases_local {c : String} {args : List Pattern}
+    (hshape : rhoProcCoreShape (.apply c args) = true) :
+    (c = "PZero" ∧ args = []) ∨
+    (∃ n, c = "PDrop" ∧ args = [n] ∧ rhoNameCoreShape n = true) ∨
+    (∃ n payload, c = "POutput" ∧ args = [n, payload] ∧
+      rhoNameCoreShape n = true ∧ rhoProcCoreShape payload = true) ∨
+    (∃ n body, c = "PInput" ∧ args = [n, .lambda none body] ∧
+      rhoNameCoreShape n = true ∧ rhoProcCoreShape body = true) := by
+  cases args with
+  | nil =>
+      by_cases hzero : c = "PZero"
+      · exact Or.inl ⟨hzero, rfl⟩
+      · simp [rhoProcCoreShape, hzero] at hshape
+  | cons a as =>
+      cases as with
+      | nil =>
+          by_cases hdrop : c = "PDrop"
+          · exact Or.inr <| Or.inl
+              ⟨a, hdrop, rfl, by simpa [rhoProcCoreShape, hdrop] using hshape⟩
+          · simp [rhoProcCoreShape, hdrop] at hshape
+      | cons b bs =>
+          cases bs with
+          | nil =>
+              by_cases hout : c = "POutput"
+              · exact Or.inr <| Or.inr <| Or.inl
+                  ⟨a, b, hout, rfl, by simpa [rhoProcCoreShape, hout] using hshape⟩
+              · match b with
+                | .lambda none body =>
+                    by_cases hin : c = "PInput"
+                    · exact Or.inr <| Or.inr <| Or.inr
+                        ⟨a, body, hin, rfl, by simpa [rhoProcCoreShape, hout, hin] using hshape⟩
+                    · simp [rhoProcCoreShape, hout, hin] at hshape
+                | .lambda (.some nm) body => simp [rhoProcCoreShape, hout] at hshape
+                | .bvar n => simp [rhoProcCoreShape, hout] at hshape
+                | .fvar x => simp [rhoProcCoreShape, hout] at hshape
+                | .apply f xs => simp [rhoProcCoreShape, hout] at hshape
+                | .multiLambda n nms body => simp [rhoProcCoreShape, hout] at hshape
+                | .subst body repl => simp [rhoProcCoreShape, hout] at hshape
+                | .collection ct elems rest => simp [rhoProcCoreShape, hout] at hshape
+          | cons b' bs' =>
+              simp [rhoProcCoreShape] at hshape
+
+mutual
+  private theorem rhoNameCoreShape_closeFVar (k : Nat) (x : String) :
+      ∀ {n : Pattern}, rhoNameCoreShape n = true → rhoNameCoreShape (closeFVar k x n) = true
+    | .bvar n, _ => by simp [closeFVar, rhoNameCoreShape]
+    | .fvar y, _ => by by_cases hy : y = x <;> simp [closeFVar, rhoNameCoreShape, hy]
+    | .apply c args, hshape => by
+        rcases rhoNameCoreShape_apply_inv_local hshape with ⟨p, hc, hargs, hp⟩
+        subst hc
+        subst hargs
+        simpa [closeFVar, rhoNameCoreShape] using rhoProcCoreShape_closeFVar k x hp
+    | .lambda nm body, hshape => by simp [rhoNameCoreShape] at hshape
+    | .multiLambda n nms body, hshape => by simp [rhoNameCoreShape] at hshape
+    | .subst body repl, hshape => by simp [rhoNameCoreShape] at hshape
+    | .collection ct elems rest, hshape => by simp [rhoNameCoreShape] at hshape
+
+  private theorem rhoProcCoreShape_closeFVar (k : Nat) (x : String) :
+      ∀ {p : Pattern}, rhoProcCoreShape p = true → rhoProcCoreShape (closeFVar k x p) = true
+    | .bvar n, _ => by simp [closeFVar, rhoProcCoreShape]
+    | .fvar y, _ => by by_cases hy : y = x <;> simp [closeFVar, rhoProcCoreShape, hy]
+    | .lambda nm body, hshape => by simp [rhoProcCoreShape] at hshape
+    | .multiLambda n nms body, hshape => by simp [rhoProcCoreShape] at hshape
+    | .subst body repl, hshape => by simp [rhoProcCoreShape] at hshape
+    | .collection ct elems rest, hshape => by
+        cases ct with
+        | vec => simp [rhoProcCoreShape] at hshape
+        | hashBag =>
+            cases rest with
+            | none =>
+                have hlist : rhoProcCoreShapeList elems = true := by
+                  simpa [rhoProcCoreShape] using hshape
+                simpa [closeFVar, rhoProcCoreShape] using
+                  rhoProcCoreShapeList_closeFVar k x hlist
+            | some g => simp [rhoProcCoreShape] at hshape
+        | hashSet => simp [rhoProcCoreShape] at hshape
+    | .apply c args, hshape => by
+        rcases rhoProcCoreShape_apply_cases_local hshape with
+          hzero | hdrop | houtput | hinput
+        · rcases hzero with ⟨hc, hargs⟩
+          subst hc
+          subst hargs
+          simp [closeFVar, rhoProcCoreShape]
+        · rcases hdrop with ⟨n, hc, hargs, hn⟩
+          subst hc
+          subst hargs
+          simpa [closeFVar, rhoProcCoreShape] using rhoNameCoreShape_closeFVar k x hn
+        · rcases houtput with ⟨n, payload, hc, hargs, hn, hp⟩
+          subst hc
+          subst hargs
+          simpa [closeFVar, rhoProcCoreShape] using
+            ⟨rhoNameCoreShape_closeFVar k x hn, rhoProcCoreShape_closeFVar k x hp⟩
+        · rcases hinput with ⟨n, body, hc, hargs, hn, hb⟩
+          subst hc
+          subst hargs
+          simpa [closeFVar, rhoProcCoreShape] using
+            ⟨rhoNameCoreShape_closeFVar k x hn, rhoProcCoreShape_closeFVar (k + 1) x hb⟩
+
+  private theorem rhoProcCoreShapeList_closeFVar (k : Nat) (x : String) :
+      ∀ {ps : List Pattern}, rhoProcCoreShapeList ps = true →
+        rhoProcCoreShapeList (ps.map (closeFVar k x)) = true
+    | [], _ => by simp [rhoProcCoreShapeList]
+    | p :: ps, h => by
+        simp [rhoProcCoreShapeList, Bool.and_eq_true] at h ⊢
+        exact ⟨rhoProcCoreShape_closeFVar k x h.1,
+          rhoProcCoreShapeList_closeFVar k x h.2⟩
+end
+
+private theorem encode_rf_rhoProcCoreShape {P : Process}
+    (hrf : RestrictionFree P) (n v : String) :
+    rhoProcCoreShape (encode P n v) = true := by
+  induction P generalizing n with
+  | nil => rfl
+  | par P Q ihP ihQ =>
+      simp only [encode]
+      exact rhoProcCoreShape_rhoPar (ihP hrf.1 (n ++ "_L")) (ihQ hrf.2 (n ++ "_R"))
+  | input x y Q ih =>
+      simp only [encode, rhoInput, piNameToRhoName]
+      simp [rhoProcCoreShape, rhoNameCoreShape, rhoProcCoreShape_closeFVar 0 y (ih hrf n)]
+  | output x z =>
+      simp [encode, rhoOutput, rhoDrop, piNameToRhoName, rhoProcCoreShape, rhoNameCoreShape]
+  | nu _ _ => exact absurd hrf id
+  | replicate _ _ _ => exact absurd hrf id
+
+private theorem encode_rf_rhoNoLiteralQuote {P : Process}
+    (hrf : RestrictionFree P) (n v : String) :
+    rhoNoLiteralQuote (encode P n v) = true := by
+  induction P generalizing n with
+  | nil => rfl
+  | par P Q ihP ihQ =>
+      simp only [encode]
+      exact rhoNoLiteralQuote_rhoPar (ihP hrf.1 (n ++ "_L")) (ihQ hrf.2 (n ++ "_R"))
+  | input x y Q ih =>
+      simp only [encode, rhoInput, piNameToRhoName]
+      change rhoNoLiteralQuoteList [.fvar x, .lambda none (closeFVar 0 y (encode Q n v))] = true
+      simp [rhoNoLiteralQuoteList, rhoNoLiteralQuote]
+      simpa [rhoNoLiteralQuote_closeFVar] using ih hrf n
+  | output x z =>
+      simp [encode, rhoOutput, rhoDrop, piNameToRhoName, rhoNoLiteralQuote, rhoNoLiteralQuoteList]
+  | nu _ _ => exact absurd hrf id
+  | replicate _ _ _ => exact absurd hrf id
+
+private theorem closeFVar_encode_rf_rhoProcCoreShape {P : Process}
+    (hrf : RestrictionFree P) (k : Nat) (x n v : String) :
+    rhoProcCoreShape (closeFVar k x (encode P n v)) = true :=
+  rhoProcCoreShape_closeFVar k x (encode_rf_rhoProcCoreShape hrf n v)
+
+private theorem closeFVar_encode_rf_noBoundUnderQuote {P : Process}
+    (hrf : RestrictionFree P) (k : Nat) (x n v : String) (j : Nat) :
+    noBoundUnderQuote j (closeFVar k x (encode P n v)) = true := by
+  have hq := encode_rf_rhoNoLiteralQuote hrf n v
+  have hqc : rhoNoLiteralQuote (closeFVar k x (encode P n v)) = true := by
+    simpa [rhoNoLiteralQuote_closeFVar] using hq
+  exact noBoundUnderQuote_of_rhoNoLiteralQuote j hqc
+
+private theorem semanticSubstNameMark_true_eq_replacement_local
+    (k : Nat) (replacementName name name' : Pattern)
+    (hmark : semanticSubstNameMark k replacementName name = (name', true)) :
+    name' = replacementName := by
+  unfold semanticSubstNameMark at hmark
+  cases hnorm : semanticNormalizeName name with
+  | bvar n =>
+      by_cases hEq : n = k
+      · subst hEq
+        simp [hnorm] at hmark
+        exact hmark.symm
+      · have hbeq : (n == k) = false := beq_eq_false_iff_ne.mpr hEq
+        simp [hnorm, hbeq] at hmark
+  | fvar x => simp [hnorm] at hmark
+  | apply c args => simp [hnorm] at hmark
+  | lambda nm body => simp [hnorm] at hmark
+  | multiLambda n nms body => simp [hnorm] at hmark
+  | subst body repl => simp [hnorm] at hmark
+  | collection ct elems rest => simp [hnorm] at hmark
+
+private theorem semanticSubstName_dropPayload_SC_openBVar (k : Nat) (z : String)
+    {n : Pattern}
+    (hshape : rhoNameCoreShape n = true)
+    (hopaque : noBoundUnderQuote k n = true) :
+    semanticSubstName k (.apply "NQuote" [.apply "PDrop" [.fvar z]]) n ≡ᵨ
+      openBVar k (.fvar z) n := by
+  have hname :=
+    semanticSubstName_equiv_rhoOpenNameBVar_of_rhoNameCoreShape
+      k (.apply "PDrop" [.fvar z]) hshape hopaque
+  have hstruct :
+      semanticSubstName k (.apply "NQuote" [.apply "PDrop" [.fvar z]]) n ≡ᵨ
+        rhoOpenNameBVar k (.apply "NQuote" [.apply "PDrop" [.fvar z]]) n :=
+    nameEquiv_implies_struct hname
+  have hrho :
+      rhoOpenNameBVar k (.apply "NQuote" [.apply "PDrop" [.fvar z]]) n =
+        openBVar k (.apply "NQuote" [.apply "PDrop" [.fvar z]]) n :=
+    rhoOpenNameBVar_eq_openBVar_of_noBoundUnderQuote
+      (u := .apply "NQuote" [.apply "PDrop" [.fvar z]]) hopaque
+  exact trans _ _ _ hstruct (by
+    rw [hrho]
+    exact openBVar_SC_replacement (quote_drop (.fvar z)) n k)
+
+mutual
+  private theorem semanticSubstProc_dropPayload_SC_openBVar (k : Nat) (z : String)
+      {p : Pattern}
+      (hshape : rhoProcCoreShape p = true)
+      (hopaque : noBoundUnderQuote k p = true) :
+      semanticSubstProc k (.apply "NQuote" [.apply "PDrop" [.fvar z]]) p ≡ᵨ
+        openBVar k (.fvar z) p := by
+    match p with
+    | .bvar n =>
+        by_cases hEq : n = k
+        · subst hEq
+          simpa [semanticSubstProc, openBVar, beq_self_eq_true] using quote_drop (.fvar z)
+        · have hbeq : (n == k) = false := beq_eq_false_iff_ne.mpr hEq
+          simpa [semanticSubstProc, openBVar, hbeq] using struct_refl (.bvar n)
+    | .fvar x =>
+        simpa [semanticSubstProc, openBVar] using struct_refl (Pattern.fvar x)
+    | .lambda nm body =>
+        simp [rhoProcCoreShape] at hshape
+    | .multiLambda n nms body =>
+        simp [rhoProcCoreShape] at hshape
+    | .subst body repl =>
+        simp [rhoProcCoreShape] at hshape
+    | .collection ct elems rest =>
+        cases ct with
+        | vec => simp [rhoProcCoreShape] at hshape
+        | hashBag =>
+            cases rest with
+            | none =>
+                have hshapeList : rhoProcCoreShapeList elems = true := by
+                  simpa [rhoProcCoreShape] using hshape
+                have hopaqueList : noBoundUnderQuoteList k elems = true := by
+                  simpa [noBoundUnderQuote] using hopaque
+                have hlenLeft :
+                    (semanticSubstProcList k (.apply "NQuote" [.apply "PDrop" [.fvar z]]) elems).length =
+                      elems.length :=
+                  semanticSubstProcList_length k (.apply "NQuote" [.apply "PDrop" [.fvar z]]) elems
+                have hlen :
+                    (semanticSubstProcList k (.apply "NQuote" [.apply "PDrop" [.fvar z]]) elems).length =
+                      (elems.map (openBVar k (.fvar z))).length := by
+                  rw [hlenLeft, List.length_map]
+                simpa [semanticSubstProc, openBVar] using
+                  collection_general_cong .hashBag
+                    (semanticSubstProcList k (.apply "NQuote" [.apply "PDrop" [.fvar z]]) elems)
+                    (elems.map (openBVar k (.fvar z))) none hlen (by
+                      intro i h₁ h₂
+                      simpa [semanticSubstProcList] using
+                        semanticSubstProcList_dropPayload_SC_openBVarList
+                          k z elems hshapeList hopaqueList i h₁ h₂)
+            | some g => simp [rhoProcCoreShape] at hshape
+        | hashSet => simp [rhoProcCoreShape] at hshape
+    | .apply c args =>
+        rcases rhoProcCoreShape_apply_cases_local hshape with
+          hzero | hdrop | houtput | hinput
+        · rcases hzero with ⟨hc, hargs⟩
+          subst hc
+          subst hargs
+          simpa [semanticSubstProc, openBVar] using struct_refl (.apply "PZero" [])
+        · rcases hdrop with ⟨n, hc, hargs, hshapeN⟩
+          subst hc
+          subst hargs
+          have hopaqueN : noBoundUnderQuote k n = true := by
+            simpa [noBoundUnderQuote, noBoundUnderQuoteList] using hopaque
+          unfold semanticSubstProc
+          cases hmark : semanticSubstNameMark k (.apply "NQuote" [.apply "PDrop" [.fvar z]]) n with
+          | mk name' matched =>
+              cases matched with
+              | false =>
+                  have hname : name' ≡ᵨ openBVar k (.fvar z) n := by
+                    have hname0 := semanticSubstName_dropPayload_SC_openBVar
+                      k z hshapeN hopaqueN
+                    simpa [semanticSubstName, hmark] using hname0
+                  simpa [hmark, openBVar] using struct_apply_cong_single (f := "PDrop") hname
+              | true =>
+                  have hname' : name' = .apply "NQuote" [.apply "PDrop" [.fvar z]] :=
+                    semanticSubstNameMark_true_eq_replacement_local
+                      k (.apply "NQuote" [.apply "PDrop" [.fvar z]]) n name' hmark
+                  have hname :
+                      (.apply "NQuote" [.apply "PDrop" [.fvar z]]) ≡ᵨ
+                        openBVar k (.fvar z) n := by
+                    have hname0 := semanticSubstName_dropPayload_SC_openBVar
+                      k z hshapeN hopaqueN
+                    simpa [semanticSubstName, hmark, hname'] using hname0
+                  have hchain := trans _ _ _ (symm _ _ (pdrop_quote_drop_sc z))
+                    (struct_apply_cong_single (f := "PDrop") hname)
+                  simpa [hmark, hname', openBVar] using hchain
+        · rcases houtput with ⟨n, payload, hc, hargs, hshapeN, hshapePayload⟩
+          subst hc
+          subst hargs
+          have hopaqueSplit :
+              noBoundUnderQuote k n = true ∧ noBoundUnderQuote k payload = true := by
+            simpa [noBoundUnderQuote, noBoundUnderQuoteList] using hopaque
+          have hname :=
+            semanticSubstName_dropPayload_SC_openBVar k z hshapeN hopaqueSplit.1
+          have hpayload :=
+            semanticSubstProc_dropPayload_SC_openBVar k z hshapePayload hopaqueSplit.2
+          simpa [semanticSubstProc, openBVar] using
+            struct_apply_cong_two (f := "POutput") hname hpayload
+        · rcases hinput with ⟨n, body, hc, hargs, hshapeN, hshapeBody⟩
+          subst hc
+          subst hargs
+          have hopaqueSplit :
+              noBoundUnderQuote k n = true ∧ noBoundUnderQuote (k + 1) body = true := by
+            simpa [noBoundUnderQuote, noBoundUnderQuoteList] using hopaque
+          have hname :=
+            semanticSubstName_dropPayload_SC_openBVar k z hshapeN hopaqueSplit.1
+          have hbody :=
+            semanticSubstProc_dropPayload_SC_openBVar (k + 1) z hshapeBody hopaqueSplit.2
+          simpa [semanticSubstProc, openBVar] using
+            struct_apply_cong_two (f := "PInput") hname (lambda_cong none _ _ hbody)
+  termination_by sizeOf p
+
+  private theorem semanticSubstProcList_dropPayload_SC_openBVarList (k : Nat) (z : String) :
+      ∀ elems : List Pattern,
+        rhoProcCoreShapeList elems = true →
+        noBoundUnderQuoteList k elems = true →
+        ∀ i h₁ h₂,
+          ((semanticSubstProcList k (.apply "NQuote" [.apply "PDrop" [.fvar z]]) elems).get ⟨i, h₁⟩) ≡ᵨ
+            ((elems.map (openBVar k (.fvar z))).get ⟨i, h₂⟩)
+    | [], _, _, i, h₁, _ => by
+        cases h₁
+    | p :: ps, hshape, hopaque, 0, h₁, h₂ => by
+        have hshapeSplit :
+            rhoProcCoreShape p = true ∧ rhoProcCoreShapeList ps = true := by
+          simpa [rhoProcCoreShapeList, Bool.and_eq_true] using hshape
+        have hopaqueSplit :
+            noBoundUnderQuote k p = true ∧ noBoundUnderQuoteList k ps = true := by
+          simpa [noBoundUnderQuoteList, Bool.and_eq_true] using hopaque
+        simpa [semanticSubstProcList] using
+          semanticSubstProc_dropPayload_SC_openBVar k z hshapeSplit.1 hopaqueSplit.1
+    | p :: ps, hshape, hopaque, i + 1, h₁, h₂ => by
+        have hshapeSplit :
+            rhoProcCoreShape p = true ∧ rhoProcCoreShapeList ps = true := by
+          simpa [rhoProcCoreShapeList, Bool.and_eq_true] using hshape
+        have hopaqueSplit :
+            noBoundUnderQuote k p = true ∧ noBoundUnderQuoteList k ps = true := by
+          simpa [noBoundUnderQuoteList, Bool.and_eq_true] using hopaque
+        have h₁' :
+            i < (semanticSubstProcList k (.apply "NQuote" [.apply "PDrop" [.fvar z]]) ps).length := by
+          simpa [semanticSubstProcList] using h₁
+        have h₂' : i < (ps.map (openBVar k (.fvar z))).length := by
+          simpa using h₂
+        simpa [semanticSubstProcList] using
+          semanticSubstProcList_dropPayload_SC_openBVarList
+            k z ps hshapeSplit.2 hopaqueSplit.2 i h₁' h₂'
+  termination_by elems => sizeOf elems
+end
+
 /-! ## Forward COMM Case -/
 
 open Mettapedia.Languages.ProcessCalculi.RhoCalculus (ReducesStar)
@@ -685,7 +1235,7 @@ private theorem encode_par_io (x y : Name) (P : Process) (z : Name) (n v : Strin
 
     The proof chain:
     1. par_comm swaps PInput/POutput to match ρ-COMM order
-    2. ρ-COMM fires, producing commSubst body (PDrop(.fvar z))
+    2. ρ-COMM fires, producing semanticCommSubst body (PDrop(.fvar z))
     3. quote_drop: NQuote(PDrop(.fvar z)) ≡ .fvar z
     4. openBVar_SC_replacement bridges to openBVar 0 (.fvar z) body
     5. encode_rf_open_close_subst gives encode(P.substitute y z)
@@ -708,20 +1258,25 @@ theorem forward_comm_rf {P : Process} (hrf : RestrictionFree P)
   · exact par_comm _ _
   -- ρ-COMM fires (rest = [])
   · exact Mettapedia.Languages.ProcessCalculi.RhoCalculus.Reduction.Reduces.comm
-  -- Post-SC: {commSubst body (PDrop(.fvar z))} ≡ᵨ encode(P.subst y z) n v
+  -- Post-SC: {semanticCommSubst body (PDrop(.fvar z))} ≡ᵨ encode(P.subst y z) n v
   · -- Key intermediate facts
-    have h_open_sc : openBVar 0 (.apply "NQuote" [.apply "PDrop" [.fvar z]]) body ≡ᵨ
-                     openBVar 0 (.fvar z) body :=
-      openBVar_SC_replacement (quote_drop (.fvar z)) body 0
+    have h_comm_sc :
+        semanticCommSubst body (.apply "PDrop" [.fvar z]) ≡ᵨ
+          openBVar 0 (.fvar z) body := by
+      have hshape : rhoProcCoreShape body = true := by
+        simpa [body] using closeFVar_encode_rf_rhoProcCoreShape hrf 0 y nL v
+      have hopaque : noBoundUnderQuote 0 body = true := by
+        simpa [body] using closeFVar_encode_rf_noBoundUnderQuote hrf 0 y nL v 0
+      simpa [semanticCommSubst, semanticNormalizeProc, semanticNormalizeName] using
+        semanticSubstProc_dropPayload_SC_openBVar 0 z hshape hopaque
     have h_target : openBVar 0 (.fvar z) body = encode (P.substitute y z) n v :=
       (encode_rf_open_close_subst hrf y z nL v hyz hb).trans
         (encode_rf_ns_independent (rf_substitute hrf y z) nL n v)
-    -- Element-wise SC: commSubst body q ≡ᵨ encode(P.subst y z) n v
-    have h_elt : commSubst body (.apply "PDrop" [.fvar z]) ≡ᵨ
+    -- Element-wise SC: semanticCommSubst body q ≡ᵨ encode(P.subst y z) n v
+    have h_elt : semanticCommSubst body (.apply "PDrop" [.fvar z]) ≡ᵨ
                  encode (P.substitute y z) n v := by
-      show openBVar 0 (.apply "NQuote" [.apply "PDrop" [.fvar z]]) body ≡ᵨ _
       rw [← h_target]
-      exact h_open_sc
+      exact h_comm_sc
     -- Lift to singleton bag, then unwrap via par_singleton
     set target := encode (P.substitute y z) n v
     exact trans _ (.collection .hashBag [target] none) _
@@ -1231,13 +1786,13 @@ theorem rep_comm_after_unfold (n q p : Pattern) :
       ((.collection .hashBag
           [.apply "POutput" [n, q],
            .apply "PReplicate" [.apply "PInput" [n, .lambda none p]]] none) ⇝ᵈ*
-        (.collection .hashBag
-          [commSubst p q, .apply "PReplicate" [.apply "PInput" [n, .lambda none p]]] none)) := by
+          (.collection .hashBag
+            [semanticCommSubst p q, .apply "PReplicate" [.apply "PInput" [n, .lambda none p]]] none)) := by
   let inp : Pattern := .apply "PInput" [n, .lambda none p]
   let rep : Pattern := .apply "PReplicate" [inp]
   let src : Pattern := .collection .hashBag [.apply "POutput" [n, q], rep] none
   let mid : Pattern := .collection .hashBag [.apply "POutput" [n, q], .collection .hashBag [inp, rep] none] none
-  let tgt : Pattern := .collection .hashBag [commSubst p q, rep] none
+  let tgt : Pattern := .collection .hashBag [semanticCommSubst p q, rep] none
   have h₁ : src ⇝ᵈ* mid := by
     simpa [src, mid, inp, rep] using
       (Mettapedia.Languages.ProcessCalculi.RhoCalculus.DerivedRepNu.rep_unfold_par_any
@@ -1248,11 +1803,11 @@ theorem rep_comm_after_unfold (n q p : Pattern) :
         (par_flatten [.apply "POutput" [n, q]] [inp, rep])
     have hcomm :
         (.collection .hashBag [.apply "POutput" [n, q], inp, rep] none) ⇝
-          (.collection .hashBag [commSubst p q, rep] none) := by
+          (.collection .hashBag [semanticCommSubst p q, rep] none) := by
       simpa [inp, rep] using
         (show (.collection .hashBag
             ([.apply "POutput" [n, q], .apply "PInput" [n, .lambda none p]] ++ [rep]) none) ⇝
-              (.collection .hashBag ([commSubst p q] ++ [rep]) none) from
+              (.collection .hashBag ([semanticCommSubst p q] ++ [rep]) none) from
           (Mettapedia.Languages.ProcessCalculi.RhoCalculus.Reduction.Reduces.comm
             (n := n) (q := q) (p := p) (rest := [rep])))
     exact Mettapedia.Languages.ProcessCalculi.RhoCalculus.Reduction.Reduces.equiv hpre hcomm (refl _)

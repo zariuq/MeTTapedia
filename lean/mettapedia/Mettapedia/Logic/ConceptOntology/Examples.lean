@@ -93,7 +93,7 @@ def gate : EvidenceGate BinaryEvidence :=
       intro a b hab ha
       exact lt_of_lt_of_le ha hab.1 }
 
-def typicalityEvidence (W : ToyState) (c d : Concept) : BinaryEvidence :=
+noncomputable def typicalityEvidence (W : ToyState) (c d : Concept) : BinaryEvidence :=
   WorldModelSigma.evidenceAt W (ToyQueryFamily.typical c d)
 
 example :

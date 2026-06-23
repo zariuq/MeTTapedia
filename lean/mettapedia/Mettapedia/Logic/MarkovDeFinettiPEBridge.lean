@@ -62,7 +62,7 @@ lemma measurable_multiRowSelectionMap
     Measurable (multiRowSelectionMap (k := k) anchor idx) := by
   refine measurable_pi_lambda _ ?_
   intro j
-  simpa [multiRowSelectionMap] using
+  simpa only [multiRowSelectionMap, Function.comp_def] using
     (measurable_pi_apply (idx j)).comp
       (measurable_rowSuccessorVisitProcess (k := k) (anchor j))
 
@@ -87,7 +87,8 @@ lemma getElem_anchorFiberList_eq_anchor
     {m : ℕ} (anchor : Fin m → Fin k) (i : Fin k) {n : ℕ}
     (hn : n < (anchorFiberList (k := k) anchor i).length) :
     anchor ((anchorFiberList (k := k) anchor i)[n]) = i := by
-  simpa [anchorFiberList] using
+  simp only [anchorFiberList]
+  exact of_decide_eq_true
     (List.getElem_filter
       (xs := List.finRange m)
       (p := fun j : Fin m => anchor j = i)
@@ -114,7 +115,7 @@ lemma measurable_anchorFiberSelectionMap
     Measurable (anchorFiberSelectionMap (k := k) anchor idx i) := by
   refine measurable_pi_lambda _ ?_
   intro t
-  simpa [anchorFiberSelectionMap] using
+  simpa only [anchorFiberSelectionMap, Function.comp_def] using
     (measurable_pi_apply
       (((anchorFiber (k := k) anchor i).equivFin.symm t).1)).comp
       (measurable_multiRowSelectionMap (k := k) anchor idx)
@@ -124,7 +125,7 @@ lemma measurable_anchorFiberSelectionMapList
     Measurable (anchorFiberSelectionMapList (k := k) anchor idx i) := by
   refine measurable_pi_lambda _ ?_
   intro t
-  simpa [anchorFiberSelectionMapList] using
+  simpa only [anchorFiberSelectionMapList, Function.comp_def] using
     (measurable_pi_apply
       ((anchorFiberList (k := k) anchor i)[t])).comp
       (measurable_multiRowSelectionMap (k := k) anchor idx)
@@ -485,8 +486,9 @@ private lemma carrier_mem_visit_exists_of_mem {N : ℕ}
     nthVisitTimeExists (k := k) (prefixExtend (k := k) N xs) i m := by
   have hmem : prefixExtend (k := k) N xs ∈
       rowVisitCylinderEventUpTo (k := k) i S v N := by
-    simpa [rowVisitCylinderEventUpToPrefixCarrier, Finset.mem_filter, Finset.mem_univ, true_and]
-      using hxs
+    simp only [rowVisitCylinderEventUpToPrefixCarrier, Finset.mem_filter, Finset.mem_univ,
+      true_and] at hxs
+    exact hxs
   rcases hmem m hm with ⟨t, _, htime, _⟩
   exact ⟨t, (nthVisitTime_eq_some_iff (k := k) _ i m t).mp htime⟩
 
@@ -499,8 +501,9 @@ private lemma extractVisitTime_lt_of_carrier_mem_of_mem {N : ℕ}
     extractVisitTime xs i m (carrier_mem_visit_exists_of_mem (k := k) i S v xs hxs m hm) < N := by
   have hmem : prefixExtend (k := k) N xs ∈
       rowVisitCylinderEventUpTo (k := k) i S v N := by
-    simpa [rowVisitCylinderEventUpToPrefixCarrier, Finset.mem_filter, Finset.mem_univ, true_and]
-      using hxs
+    simp only [rowVisitCylinderEventUpToPrefixCarrier, Finset.mem_filter, Finset.mem_univ,
+      true_and] at hxs
+    exact hxs
   rcases hmem m hm with ⟨t, htN, htime, _⟩
   have hspec :
       isNthVisitTime (k := k) (prefixExtend (k := k) N xs) i m
@@ -569,7 +572,7 @@ private theorem carrier_equiv_adjacent {N : ℕ}
         convert h_t2 using 1
         rw [Nat.add_sub_cancel' (Nat.le_of_lt ht01), Nat.add_sub_cancel' (Nat.le_of_lt ht12)]
       refine ⟨rawSwap xs i a hex0 hex1 hex2 hbd1 hbd2, ?_⟩
-      simpa [rawSwap, swapAt] using
+      have hmem :=
         (segmentSwap_multiIndex_carrier_mem (k := k) i a
           (extractVisitTime xs i a hex0)
           (extractVisitTime xs i (a + 1) hex1 - extractVisitTime xs i a hex0)
@@ -583,6 +586,7 @@ private theorem carrier_equiv_adjacent {N : ℕ}
               _ = extractVisitTime xs i (a + 2) hex2 := by omega
               _ ≤ N := Nat.le_of_lt hbd2)
           S v ha ha1 xs hxs h_t0 h_aL1 h_aL1L2)
+      exact hmem
     invFun := fun ⟨ys, hys⟩ => by
       let hex0 := carrier_mem_visit_exists_of_mem (k := k) i S (swapAt (k := k) v a) ys hys a ha
       let hex1 := carrier_mem_visit_exists_of_mem
@@ -722,7 +726,7 @@ theorem startRestricted_jointEvent_adjacent_swap
       rcases carrier_equiv_adjacent (N := N) i S v n hn hn1 hn2 with ⟨e, he⟩
       refine ⟨e, ?_⟩
       intro xs
-      simpa [swapValues, swapAt] using he xs)
+      exact he xs)
 
 /-- Carrier equiv for swapping values at positions a and b (not necessarily adjacent),
 with a < b and all intermediate positions + guard in S.
@@ -1284,8 +1288,7 @@ theorem measure_start_inter_multiRowSelectionMap_const_preimage_eq
     P ({ω | ω 0 = j} ∩
         (multiRowSelectionMap (k := k) (fun _ : Fin n' => i)
           (fun m : Fin n' => ↑m)) ⁻¹' {c}) := by
-  simpa [multiRowSelectionMap] using
-    measure_start_inter_rsp_preimage_eq (k := k) μ hμ P hExt hStrRec i n' σ' c j
+  exact measure_start_inter_rsp_preimage_eq (k := k) μ hμ P hExt hStrRec i n' σ' c j
 
 /-- One-fiber restricted-start invariance for mixed finite selection maps,
 assuming the selected fiber is already enumerated by visit indices `0, ..., n-1`.
@@ -1313,7 +1316,9 @@ theorem measure_start_inter_anchorFiberSelectionMap_perm_eq_of_idx_eq_enum
     P ({ω | ω 0 = j} ∩
         (fun ω (t : Fin (anchorFiber (k := k) anchor i).card) =>
           anchorFiberSelectionMap (k := k) anchor idx i ω t) ⁻¹' {c}) := by
-  simpa [anchorFiberSelectionMap_eq_const (k := k) anchor idx i, hidx] using
+  rw [anchorFiberSelectionMap_eq_const (k := k) anchor idx i]
+  simp only [hidx]
+  exact
     measure_start_inter_multiRowSelectionMap_const_preimage_eq
       (k := k) μ hμ P hExt hStrRec i
       (anchorFiber (k := k) anchor i).card σ' c j
@@ -1354,11 +1359,9 @@ theorem measure_start_inter_anchorFiberSelectionMapList_perm_eq_of_idx_eq_enum
           (fun _ : Fin (anchorFiberList (k := k) anchor i).length => i)
           (fun t : Fin (anchorFiberList (k := k) anchor i).length => ↑t) := by
     funext ω t
-    simp [multiRowSelectionMap]
-    simpa using congrArg
-      (fun n => rowSuccessorVisitProcess (k := k) i ω n) (hidx t)
+    simp only [multiRowSelectionMap, hidx]
   rw [anchorFiberSelectionMapList_eq_const (k := k) anchor idx i, hconst]
-  simpa using
+  exact
     measure_start_inter_multiRowSelectionMap_const_preimage_eq
       (k := k) μ hμ P hExt hStrRec i
       (anchorFiberList (k := k) anchor i).length σ' c j
@@ -1442,8 +1445,7 @@ theorem measure_start_inter_wordSuccessorTupleMap_wordAnchorFiber_perm_eq
         (fun ω (t : Fin (wordAnchorFiberList (k := k) a ys i).length) =>
           wordSuccessorTupleMap (k := k) a ys ω
             ((wordAnchorFiberList (k := k) a ys i)[t])) ⁻¹' {c}) := by
-  simpa [wordAnchorFiberList_eq_anchorFiberList (k := k) a ys i,
-      wordSuccessorTupleMap_eq_anchorFiberSelectionMapList (k := k) a ys i] using
+  exact
     measure_start_inter_anchorFiberSelectionMapList_perm_eq_of_idx_eq_enum
       (k := k) μ hμ P hExt hStrRec
       (anchor := fun j : Fin ys.length => (a :: ys).getD j.1 a)
@@ -1715,10 +1717,9 @@ theorem measure_start_inter_preimage_wordTupleFixedComplementSet_perm_eq
     wordSuccessorTupleMap (k := k) a ys
   have hmap :
       Measure.map f (P.restrict s) = Measure.map g (P.restrict s) := by
-    simpa [f, g, s, anchor, idx, σrow, σNat,
-        wordSuccessorTupleMap_eq_multiRowSelectionMap (k := k) a ys,
-        multiRowSelectionMap] using
-      hPE_restrict j ys.length anchor idx σrow
+    simp only [f, g, s, anchor, idx, σrow, σNat,
+      wordSuccessorTupleMap_eq_multiRowSelectionMap (k := k) a ys]
+    exact hPE_restrict j ys.length anchor idx σrow
   have hf : Measurable f := by
     refine measurable_pi_lambda _ ?_
     intro u

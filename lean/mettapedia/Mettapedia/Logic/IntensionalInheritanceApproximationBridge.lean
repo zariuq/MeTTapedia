@@ -73,7 +73,6 @@ lemma abs_log_sub_le_div_floor_of_le
       field_simp [hb_pos.ne']
     _ ≤ (a - b) / δ := by
       gcongr
-      exact sub_nonneg.mpr hab
     _ = |a - b| / δ := by
       rw [abs_of_nonneg (sub_nonneg.mpr hab)]
 

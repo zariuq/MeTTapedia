@@ -88,7 +88,7 @@ theorem mem_iff (x y z : P) : z ∈ halfOpenInterval x y ↔ x ≤ z ∧ z ≤ y
 @[simp]
 theorem singleton_empty {x : P} : halfOpenInterval x x = ∅ := by
   ext z
-  simp only [mem_iff, Finset.not_mem_empty, iff_false, not_and]
+  simp only [mem_iff, Finset.notMem_empty, iff_false, not_and]
   intro hxz hzx
   intro hne
   exact hne (le_antisymm hzx hxz)

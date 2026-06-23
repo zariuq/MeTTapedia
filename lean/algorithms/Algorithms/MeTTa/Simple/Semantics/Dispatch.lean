@@ -306,22 +306,22 @@ theorem enumerateCallByRules_preserves
       | mk sess outAcc =>
           cases hLeft : rule.left with
           | fvar x =>
-              simp [hLeft]
+              simp
               simpa using hSt
           | bvar n =>
-              simp [hLeft]
+              simp
               simpa using hSt
           | lambda body =>
-              simp [hLeft]
+              simp
               simpa using hSt
           | multiLambda n body =>
-              simp [hLeft]
+              simp
               simpa using hSt
           | subst body repl =>
-              simp [hLeft]
+              simp
               simpa using hSt
           | collection ct elems rest =>
-              simp [hLeft]
+              simp
               simpa using hSt
           | apply relL pArgs =>
               by_cases hEq : relL == rel
@@ -349,8 +349,8 @@ theorem enumerateCallByRules_preserves
                       simpa using
                         H.evalForRuleEnumeration_preserves
                           (s := sessBs) (term := I.applyBindings bs rule.right) rfl hStBs
-                simpa [hLeft, hEq] using hInner
-              · simp [hLeft, hEq]
+                simpa [hEq] using hInner
+              · simp [hEq]
                 simpa using hSt
 
 private def enumerateArgCallVariants (I : Interface σ) (s : σ)
@@ -899,9 +899,9 @@ theorem compatMatchedBs_projection
       simp [hout]
   | cons bs rest ih =>
       simp only [List.foldl]
-      let rhs := I.applyBindings bs rightFresh
-      by_cases hFree : hasFreeVar rhs
-      · let valsFiltered := [rhs].filter (fun v => !containsCompatTaggedVar v)
+      by_cases hFree : hasFreeVar (I.applyBindings bs rightFresh)
+      · let valsFiltered :=
+          [I.applyBindings bs rightFresh].filter (fun v => !containsCompatTaggedVar v)
         have hout' :
           outVals ++ valsFiltered =
             (outPairs ++ valsFiltered.map (fun v => (bs, v))).map Prod.snd := by
@@ -915,12 +915,14 @@ theorem compatMatchedBs_projection
         have hTail :=
           ih sess (outVals ++ valsFiltered)
             (outPairs ++ valsFiltered.map (fun v => (bs, v))) hout'
-        simpa only [hFree, rhs, valsFiltered] using hTail
-      · cases hEval : I.eval sess rhs with
+        rw [if_pos hFree, if_pos hFree]
+        exact hTail
+      · cases hEval : I.eval sess (I.applyBindings bs rightFresh) with
         | mk sessRhs vals0 =>
-            have hEvalFor : I.evalForRuleEnumeration sess rhs = (sessRhs, vals0) := by
-              simpa [hEval] using hEvalEq sess rhs
-            let valsFiltered := (if vals0.isEmpty then [rhs] else vals0).filter
+            have hEvalFor :
+                I.evalForRuleEnumeration sess (I.applyBindings bs rightFresh) = (sessRhs, vals0) := by
+              simpa [hEval] using hEvalEq sess (I.applyBindings bs rightFresh)
+            let valsFiltered := (if vals0.isEmpty then [I.applyBindings bs rightFresh] else vals0).filter
               (fun v => !containsCompatTaggedVar v)
             have hout' :
                 outVals ++ valsFiltered =
@@ -935,7 +937,9 @@ theorem compatMatchedBs_projection
             have hTail :=
               ih sessRhs (outVals ++ valsFiltered)
                 (outPairs ++ valsFiltered.map (fun v => (bs, v))) hout'
-            simpa only [hFree, hEval, hEvalFor, rhs, valsFiltered] using hTail
+            rw [if_neg hFree, if_neg hFree]
+            simp only [hEvalFor, hEval]
+            exact hTail
 
 /-- Operational singleton-rule compat-head seam: if the active head/arity index
 returns exactly one compat-head rule, then the plain compat-head outputs are

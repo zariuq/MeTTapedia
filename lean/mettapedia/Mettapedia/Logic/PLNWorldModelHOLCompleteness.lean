@@ -107,16 +107,16 @@ abbrev wmConsequenceRule_of_pointwise :=
 abbrev wmConsequenceRule_of_singletonStrengthLE :=
   @Mettapedia.Logic.HOL.WorldModelCompleteness.wmConsequenceRule_of_singletonStrengthLE
 
-abbrev wmConsequenceRuleOn_of_pointwise :=
+noncomputable abbrev wmConsequenceRuleOn_of_pointwise :=
   @Mettapedia.Logic.HOL.WorldModelCompleteness.wmConsequenceRuleOn_of_pointwise
 
-abbrev wmConsequenceRuleOn_of_pointwise_categorical :=
+noncomputable abbrev wmConsequenceRuleOn_of_pointwise_categorical :=
   @Mettapedia.Logic.HOL.WorldModelCompleteness.wmConsequenceRuleOn_of_pointwise_categorical
 
-abbrev wmConsequenceRuleOn_of_singletonStrengthLE :=
+noncomputable abbrev wmConsequenceRuleOn_of_singletonStrengthLE :=
   @Mettapedia.Logic.HOL.WorldModelCompleteness.wmConsequenceRuleOn_of_singletonStrengthLE
 
-abbrev wmConsequenceRuleOn_of_singletonStrengthLE_categorical :=
+noncomputable abbrev wmConsequenceRuleOn_of_singletonStrengthLE_categorical :=
   @Mettapedia.Logic.HOL.WorldModelCompleteness.wmConsequenceRuleOn_of_singletonStrengthLE_categorical
 
 /-!
@@ -224,7 +224,7 @@ theorem singletonStrengthLE_singleton_iff_imp
             (Base := Base) (Const := WithParams Const) M ψ hψ]
     · rw [Mettapedia.Logic.HOL.WorldModel.queryStrength_singleton_of_not_satisfies
             (Base := Base) (Const := WithParams Const) M φ hφ]
-      exact zero_le _
+      exact zero_le
 
 /-- Naming alias: singleton consequence on models of a classical HOL theory. -/
 abbrev singletonConsequenceOnTheory
@@ -753,7 +753,7 @@ theorem queryStrength_le_of_pointwise_onTheory
         Multiset.countP pφ W ≤ Multiset.countP pψ W :=
       countP_le_countP_of_imp_on (W := W) (p := pφ) (q := pψ) (by
         intro M hmem hp
-        exact himp M (hW M hmem) (by simpa [pφ] using hp))
+        exact himp M (hW M hmem) hp)
     have hcount :
         (Multiset.countP pφ W : ℝ≥0∞) ≤
           (Multiset.countP pψ W : ℝ≥0∞) := by

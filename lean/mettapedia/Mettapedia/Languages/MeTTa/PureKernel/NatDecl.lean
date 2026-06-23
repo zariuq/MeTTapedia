@@ -245,7 +245,7 @@ theorem natAliasSpec_prefixAdmissible :
         (s := natZeroSpec)
         (hNodup := by decide)
         (hs := by simp [natTySpec, natZeroSpec, natSuccSpec])
-    simpa [liftClosed_zero] using
+    simpa [liftClosed_zero, natAliasSpec] using
       (hasType_const_from_lookup
         (E := envOfSpecs [natTySpec, natZeroSpec, natSuccSpec])
         (Γ := .nil)

@@ -49,7 +49,8 @@ theorem trueSection_range_isOpen : IsOpen trueSection.range := by
 
 theorem false_not_mem_trueSection_range : false ∉ trueSection.range := by
   rw [trueSection_range]
-  simp
+  intro h
+  cases h
 
 theorem emptySection_range : emptySection.range = (∅ : Set X) := by
   ext b

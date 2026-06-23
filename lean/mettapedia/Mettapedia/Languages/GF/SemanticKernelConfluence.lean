@@ -644,7 +644,7 @@ def gfLabeledRewrite : LabeledRewrite GFRewriteLabel Pattern where
   step := GFTopStep
 
 /-- Context-closed labeled rewrite object (top-step + app-arg closure). -/
-def gfContextLabeledRewrite : LabeledRewrite GFRewriteLabel Pattern where
+abbrev gfContextLabeledRewrite : LabeledRewrite GFRewriteLabel Pattern where
   step := GFContextStep
 
 /-- Two independent families cannot both fire as top-level steps on one source. -/
@@ -717,36 +717,36 @@ def gfObservableKernelCtx : ObservableKernel GFRewriteLabel PUnit Pattern where
   symm := gfIdentitySymmetry
   equivariant := gf_context_equivariant
 
-private def useNSeed (p : Pattern) : Pattern := .apply "UseN" [p]
-private def pastSeed (cl : Pattern) : Pattern :=
+private abbrev useNSeed (p : Pattern) : Pattern := .apply "UseN" [p]
+private abbrev pastSeed (cl : Pattern) : Pattern :=
   .apply "UseCl"
     [ .apply "TTAnt" [.apply "TPast" [], .apply "ASimul" []]
     , .apply "PPos" []
     , cl ]
-private def pastOut (cl : Pattern) : Pattern :=
+private abbrev pastOut (cl : Pattern) : Pattern :=
   .apply "⊛temporal" [cl, .apply "-1" []]
 
-private def commuteWitnessSource : Pattern :=
+private abbrev commuteWitnessSource : Pattern :=
   .apply "Pair" [useNSeed (.fvar "n"), pastSeed (.fvar "cl")]
-private def commuteWitnessY1 : Pattern :=
+private abbrev commuteWitnessY1 : Pattern :=
   .apply "Pair" [.fvar "n", pastSeed (.fvar "cl")]
-private def commuteWitnessY2 : Pattern :=
+private abbrev commuteWitnessY2 : Pattern :=
   .apply "Pair" [useNSeed (.fvar "n"), pastOut (.fvar "cl")]
-private def commuteWitnessZ : Pattern :=
+private abbrev commuteWitnessZ : Pattern :=
   .apply "Pair" [.fvar "n", pastOut (.fvar "cl")]
 
-private def activeSeed (v np1 np2 : Pattern) : Pattern :=
+private abbrev activeSeed (v np1 np2 : Pattern) : Pattern :=
   .apply "PredVP" [np1, .apply "ComplSlash" [.apply "SlashV2a" [v], np2]]
-private def activeOut (v np2 : Pattern) : Pattern :=
+private abbrev activeOut (v np2 : Pattern) : Pattern :=
   .apply "PredVP" [np2, .apply "PassV2" [v]]
 
-private def voiceWitnessSource : Pattern :=
+private abbrev voiceWitnessSource : Pattern :=
   .apply "Pair" [useNSeed (.fvar "n"), activeSeed (.fvar "v") (.fvar "np1") (.fvar "np2")]
-private def voiceWitnessY1 : Pattern :=
+private abbrev voiceWitnessY1 : Pattern :=
   .apply "Pair" [.fvar "n", activeSeed (.fvar "v") (.fvar "np1") (.fvar "np2")]
-private def voiceWitnessY2 : Pattern :=
+private abbrev voiceWitnessY2 : Pattern :=
   .apply "Pair" [useNSeed (.fvar "n"), activeOut (.fvar "v") (.fvar "np2")]
-private def voiceWitnessZ : Pattern :=
+private abbrev voiceWitnessZ : Pattern :=
   .apply "Pair" [.fvar "n", activeOut (.fvar "v") (.fvar "np2")]
 
 lemma useN_top_shape {x y : Pattern} (h : GFTopStep .useN x y) :
@@ -945,7 +945,7 @@ lemma useN_step_under_pastSeed
         | .apply g _ => g
         | _ => "") hx
       have : "UseCl" = "UseN" := by
-        simp [hp0, pastSeed, plugFrames, useNSeed] at hhead
+        simp [hp0, plugFrames, useNSeed] at hhead
       exact (False.elim ((by decide : "UseCl" ≠ "UseN") this))
   | cons fr rest =>
       have hhead : "UseCl" = fr.f := by
@@ -1004,7 +1004,7 @@ lemma useN_step_under_pastOut
         | .apply g _ => g
         | _ => "") hx
       have : "⊛temporal" = "UseN" := by
-        simp [hp0, pastOut, plugFrames, useNSeed] at hhead
+        simp [hp0, plugFrames, useNSeed] at hhead
       exact (False.elim ((by decide : "⊛temporal" ≠ "UseN") this))
   | cons fr rest =>
       have hhead : "⊛temporal" = fr.f := by
@@ -1212,11 +1212,11 @@ theorem gf_context_independent_commuting_useN_pastTense :
     (gfObservableKernelCtx.{0}).IndependentCommuting .useN .pastTense :=
   ⟨gf_nonvacuous_pair_independent.{0}, gf_context_commuteAt_useN_pastTense⟩
 
-private def activeCounterSrc : Pattern :=
+private abbrev activeCounterSrc : Pattern :=
   activeSeed (.fvar "v") (useNSeed (.fvar "n")) (.fvar "np2")
-private def activeCounterYUse : Pattern :=
+private abbrev activeCounterYUse : Pattern :=
   activeSeed (.fvar "v") (.fvar "n") (.fvar "np2")
-private def activeCounterYAct : Pattern :=
+private abbrev activeCounterYAct : Pattern :=
   activeOut (.fvar "v") (.fvar "np2")
 
 lemma no_useN_step_fvar {n : String} {y : Pattern} :
@@ -1256,7 +1256,7 @@ lemma no_useN_step_passV2_fvar {v : String} {y : Pattern} :
       rcases singleton_eq_append_cons hargs with ⟨hpre, hpost, hmid⟩
       have hv : .fvar v = plugFrames rest (useNSeed p) := by simpa [hpre, hpost] using hmid
       have hstep : GFContextStep .useN (.fvar v) (plugFrames rest p) := by
-        simpa [hv] using
+        simpa [hv, useNSeed] using
           (gfContextStep_of_frames (frs := rest) (GFTopStep.useN p))
       exact (no_useN_step_fvar hstep)
 
@@ -1271,7 +1271,7 @@ lemma no_useN_step_activeCounterYAct {y : Pattern} :
         match t with
         | .apply f _ => f
         | _ => "") hx
-      simp [hxUse, activeCounterYAct, activeOut, plugFrames, useNSeed] at hhead
+      simp [hxUse, plugFrames, useNSeed] at hhead
   | cons fr rest =>
       have hargs :
           [.fvar "np2", .apply "PassV2" [.fvar "v"]] =
@@ -1286,14 +1286,14 @@ lemma no_useN_step_activeCounterYAct {y : Pattern} :
         have hv : .fvar "np2" = plugFrames rest (useNSeed p) := by
           simpa [hpre, hpost] using hmid.symm
         have hstep : GFContextStep .useN (.fvar "np2") (plugFrames rest p) := by
-          simpa [hv] using
+          simpa [hv, useNSeed] using
             (gfContextStep_of_frames (frs := rest) (GFTopStep.useN p))
         exact no_useN_step_fvar hstep
       · rcases h1 with ⟨hpre, hpost, hmid⟩
         have hv : .apply "PassV2" [.fvar "v"] = plugFrames rest (useNSeed p) := by
           simpa [hpre, hpost] using hmid.symm
         have hstep : GFContextStep .useN (.apply "PassV2" [.fvar "v"]) (plugFrames rest p) := by
-          simpa [hv] using
+          simpa [hv, useNSeed] using
             (gfContextStep_of_frames (frs := rest) (GFTopStep.useN p))
         exact no_useN_step_passV2_fvar hstep
 

@@ -108,8 +108,7 @@ def IsMembershipAdditiveExtension
 theorem aggregate_isMembershipAdditiveExtension
     (S : ObservationSurface Obs Obj Con Ev) :
     IsMembershipAdditiveExtension (observeAt S) (aggregate S) := by
-  simpa [IsMembershipAdditiveExtension, observeAt, aggregate] using
-    (S.aggregate_isAdditiveExtension)
+  exact S.aggregate_isAdditiveExtension
 
 theorem aggregate_eq_of_isMembershipAdditiveExtension
     (S : ObservationSurface Obs Obj Con Ev)

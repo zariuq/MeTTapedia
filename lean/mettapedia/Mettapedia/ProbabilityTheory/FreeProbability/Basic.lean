@@ -691,7 +691,7 @@ theorem freeCumulant_additive_abstract [HasMultilinearCumulants Ω]
           congr 1; ext c; exact hDecomp c
       _ = HasMultilinearCumulants.κ n (fun _ => X) + HasMultilinearCumulants.κ n (fun _ => Y) := by
           -- Split the sum: extract pureX term, then pureY term, rest is 0
-          have hSplit := Finset.sum_eq_add_sum_diff_singleton hPureXMem
+          have hSplit := Finset.sum_eq_add_sum_sdiff_singleton_of_mem hPureXMem
             (f := fun c => if c = Coloring.pureX n then HasMultilinearCumulants.κ n (fun _ => X)
               else if c = Coloring.pureY n then HasMultilinearCumulants.κ n (fun _ => Y) else 0)
           simp only [↓reduceIte] at hSplit
@@ -700,7 +700,7 @@ theorem freeCumulant_additive_abstract [HasMultilinearCumulants Ω]
           have hPureYInRest : Coloring.pureY n ∈ Finset.univ \ {Coloring.pureX n} := by
             simp only [Finset.mem_sdiff, Finset.mem_univ, Finset.mem_singleton, true_and]
             exact hNe.symm
-          have hSplit2 := Finset.sum_eq_add_sum_diff_singleton hPureYInRest
+          have hSplit2 := Finset.sum_eq_add_sum_sdiff_singleton_of_mem hPureYInRest
             (f := fun c => if c = Coloring.pureX n then HasMultilinearCumulants.κ n (fun _ => X)
               else if c = Coloring.pureY n then HasMultilinearCumulants.κ n (fun _ => Y) else 0)
           simp only [Finset.mem_sdiff, Finset.mem_univ, Finset.mem_singleton, true_and,

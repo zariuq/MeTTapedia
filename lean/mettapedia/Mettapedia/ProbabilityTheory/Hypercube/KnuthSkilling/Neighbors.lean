@@ -1,4 +1,8 @@
-import Mettapedia.ProbabilityTheory.KnuthSkilling.Core.Algebra
+/-
+Knuth–Skilling slice of the probability hypercube. See the aggregator
+`Mettapedia/ProbabilityTheory/Hypercube/KnuthSkilling.lean` for the overview.
+-/
+import KnuthSkilling.Core.Algebra
 import Mettapedia.ProbabilityTheory.ImpreciseProbability.CredalSets
 import Mettapedia.ProbabilityTheory.Hypercube.KnuthSkilling.SequentialSemantics
 import Mettapedia.ProbabilityTheory.Hypercube.KnuthSkilling.ScaleDichotomy
@@ -46,14 +50,19 @@ Not all are consistent - some collapse, others are empty.
 4. **Inference properties**: What can you compute at each vertex?
 -/
 
+set_option autoImplicit false
+
 namespace Mettapedia.ProbabilityTheory.Hypercube.KnuthSkilling.Neighbors
 
 open Classical
-open Mettapedia.ProbabilityTheory.KnuthSkilling
+-- `_root_.` forces the standalone K&S package; the enclosing
+-- `…Hypercube.KnuthSkilling` namespace would otherwise shadow `KnuthSkilling`.
+open _root_.KnuthSkilling
 open Mettapedia.ProbabilityTheory.ImpreciseProbability.CredalSets
-open Mettapedia.ProbabilityTheory.KnuthSkilling.Additive
-open Mettapedia.ProbabilityTheory.KnuthSkilling.Additive.Proofs.GridInduction
-open KnuthSkillingAlgebra
+open _root_.KnuthSkilling.Additive
+open _root_.KnuthSkilling.Additive.Proofs.GridInduction
+open _root_.KnuthSkilling.KnuthSkillingAlgebra
+open _root_.KnuthSkilling.KnuthSkillingAlgebraBase
 
 /-!
 ## §1: Vertex Classification
@@ -81,7 +90,7 @@ open KnuthSkillingAlgebra
 /- TODO: "Separation implies commutativity" collapse lemma in hypercube form.
 
 We already have the core commutativity result in the KS development:
-`Mettapedia.ProbabilityTheory.KnuthSkilling.Additive.Proofs.GridInduction.Core.op_comm_of_KSSeparation`.
+`KnuthSkilling.Additive.Proofs.GridInduction.Core.op_comm_of_KSSeparation`.
 
 This file should eventually restate it as a clean emptiness/collapse result for the relevant
 hypercube vertices (2,3,6,7).
@@ -195,7 +204,7 @@ theorem intervalSemantics_width_subadditive (op : α → α → α)
     ((intervalSemantics_ofThetaFamily op ι Θ hAssoc hAdd hBddBelow hBddAbove).μ (op x y)).width ≤
       ((intervalSemantics_ofThetaFamily op ι Θ hAssoc hAdd hBddBelow hBddAbove).μ x).width +
         ((intervalSemantics_ofThetaFamily op ι Θ hAssoc hAdd hBddBelow hBddAbove).μ y).width := by
-  simpa [intervalSemantics_ofThetaFamily] using
+  simpa [intervalSemantics_ofThetaFamily, IntervalAddSemantics.ofThetaFamily] using
     IntervalAddSemantics.width_subadditive
       (S := IntervalAddSemantics.ofThetaFamily op ι Θ hAssoc hAdd hBddBelow hBddAbove) x y
 

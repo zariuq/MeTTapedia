@@ -926,11 +926,11 @@ open MeasureTheory
 instance : DecidableRel forkBN.graph.edges := by
   intro u v; dsimp [forkBN, forkGraph, DirectedGraph.edges]; infer_instance
 
-instance (v : Three) : MeasurableSingletonClass (forkBN.stateSpace v) := by
-  dsimp [forkBN]; infer_instance
+instance (v : Three) : MeasurableSingletonClass (forkBN.stateSpace v) :=
+  inferInstanceAs (MeasurableSingletonClass Bool)
 
-instance (v : Three) : Nonempty (forkBN.stateSpace v) := by
-  dsimp [forkBN]; infer_instance
+instance (v : Three) : Nonempty (forkBN.stateSpace v) :=
+  inferInstanceAs (Nonempty Bool)
 
 -- Abbreviations for fork event sets (matching PLNBayesNetFastRules)
 private abbrev fA' := eventEq (bn := forkBN) Three.A true
@@ -1283,11 +1283,11 @@ compose with the `.toReal` corollary via `linarith`. -/
 instance : DecidableRel colliderBN.graph.edges := by
   intro u v; dsimp [colliderBN, colliderGraph, DirectedGraph.edges]; infer_instance
 
-instance (v : Three) : MeasurableSingletonClass (colliderBN.stateSpace v) := by
-  dsimp [colliderBN]; infer_instance
+instance (v : Three) : MeasurableSingletonClass (colliderBN.stateSpace v) :=
+  inferInstanceAs (MeasurableSingletonClass Bool)
 
-instance (v : Three) : Nonempty (colliderBN.stateSpace v) := by
-  dsimp [colliderBN]; infer_instance
+instance (v : Three) : Nonempty (colliderBN.stateSpace v) :=
+  inferInstanceAs (Nonempty Bool)
 
 omit
   [(v : Three) → Inhabited (colliderBN.stateSpace v)]
@@ -1460,7 +1460,8 @@ noncomputable def wmRewriteRuleToSigmaUnit
   derive := r.derive
   sound := by
     intro hSide W
-    simpa using (r.sound hSide W)
+    change r.derive W = BinaryWorldModel.evidence (State := State) (Query := Query) W r.conclusion
+    exact r.sound hSide W
 
 @[simp] theorem wmRewriteRuleToSigmaUnit_side
     {State Query : Type*}
@@ -1504,7 +1505,8 @@ noncomputable def wmRewriteRuleToSigmaConst
       derive := r.derive
       sound := by
         intro hSide W
-        simpa using (r.sound hSide W) }
+        change r.derive W = BinaryWorldModel.evidence (State := State) (Query := Query) W r.conclusion
+        exact r.sound hSide W }
 
 @[simp] theorem wmRewriteRuleToSigmaConst_side
     {State Srt Query : Type*}
@@ -1570,8 +1572,8 @@ noncomputable def wmRewriteRuleToSigmaIndexed
       derive := r.derive
       sound := by
         intro hSide W
-        simpa [IndexedQuery.ofIndex, worldModelSigmaIndexedFromUntyped,
-          IndexedQuery.erase] using (r.sound hSide W) }
+        change r.derive W = BinaryWorldModel.evidence (State := State) (Query := Query) W r.conclusion
+        exact r.sound hSide W }
 
 @[simp] theorem wmRewriteRuleToSigmaIndexed_side
     {State Srt Query : Type}
@@ -1653,9 +1655,9 @@ noncomputable def wmRewriteRuleToSigmaThreeNative
       derive := r.derive
       sound := by
         intro hSide W
-        cases s0 <;>
-          simpa [ThreeNativeQueryFamily.ofSort, worldModelSigmaThreeNativeFromUntyped] using
-            (r.sound hSide W) }
+        cases s0 <;> all_goals
+          change r.derive W = BinaryWorldModel.evidence (State := State) (Query := Query) W r.conclusion
+          exact r.sound hSide W }
 
 @[simp] theorem wmRewriteRuleToSigmaThreeNative_side
     {State Query : Type}
@@ -1755,10 +1757,9 @@ noncomputable def wmRewriteRuleToSigmaThreeNativeTagged
       derive := r.derive
       sound := by
         intro hSide W
-        cases s0 <;>
-          simpa [ThreeNativeTaggedQueryFamily.ofSort,
-            worldModelSigmaThreeNativeTaggedFromUntyped] using
-            (r.sound hSide W) }
+        cases s0 <;> all_goals
+          change r.derive W = BinaryWorldModel.evidence (State := State) (Query := Query) W r.conclusion
+          exact r.sound hSide W }
 
 @[simp] theorem wmRewriteRuleToSigmaThreeNativeTagged_side
     {State Query : Type}
@@ -1837,9 +1838,9 @@ noncomputable def wmRewriteRuleToSigmaSortTagged
       derive := r.derive
       sound := by
         intro hSide W
-        cases s0 <;>
-          simpa [SortTaggedQuery.ofSort, worldModelSigmaSortTaggedFromUntyped,
-            SortTaggedQuery.erase] using (r.sound hSide W) }
+        cases s0 <;> all_goals
+          change r.derive W = BinaryWorldModel.evidence (State := State) (Query := Query) W r.conclusion
+          exact r.sound hSide W }
 
 @[simp] theorem wmRewriteRuleToSigmaSortTagged_side
     {State Query : Type}

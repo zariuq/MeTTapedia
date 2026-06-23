@@ -363,7 +363,7 @@ theorem greedyChain_gap_geometric_bound
         have hrewrite :
             1 + (i : ℝ) * ((1 - (1 : ℝ) / (k : ℝ)) - 1)
               = (1 : ℝ) - (i : ℝ) / (k : ℝ) := by ring
-        simpa [hrewrite] using hraw
+        simpa [hrewrite, div_eq_mul_inv] using hraw
       have hmul_ber :
           (opt : ℝ) * ((1 : ℝ) - (i : ℝ) / (k : ℝ))
             ≤ (opt : ℝ) * (1 - (1 : ℝ) / (k : ℝ)) ^ i :=

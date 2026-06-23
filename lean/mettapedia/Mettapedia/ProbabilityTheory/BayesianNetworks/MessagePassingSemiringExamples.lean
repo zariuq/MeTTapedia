@@ -215,11 +215,11 @@ theorem sumProductMessageToTarget_eq :
   | false =>
       simpa [sumProductMessageToTarget, MessagePassing.SumProduct.factorToVar,
         MessagePassing.unitVarToFactor, sumProductFg, pairPotentialNat, rawPotential, pairScope]
-        using congrArg (fun φ => φ false) h
+        using! congrArg (fun φ => φ false) h
   | true =>
       simpa [sumProductMessageToTarget, MessagePassing.SumProduct.factorToVar,
         MessagePassing.unitVarToFactor, sumProductFg, pairPotentialNat, rawPotential, pairScope]
-        using congrArg (fun φ => φ true) h
+        using! congrArg (fun φ => φ true) h
 
 theorem maxProductMessageToTarget_eq :
     maxProductMessageToTarget = fun xTarget => if xTarget then ⟨3⟩ else ⟨1⟩ := by
@@ -236,12 +236,12 @@ theorem maxProductMessageToTarget_eq :
       simpa [maxProductMessageToTarget, MessagePassing.MaxProduct.factorToVar,
         MessagePassing.unitVarToFactor, maxProductFg, pairPotentialMax, pairPotentialNat,
         rawPotential, pairScope]
-        using congrArg (fun φ => φ false) h
+        using! congrArg (fun φ => φ false) h
   | true =>
       simpa [maxProductMessageToTarget, MessagePassing.MaxProduct.factorToVar,
         MessagePassing.unitVarToFactor, maxProductFg, pairPotentialMax, pairPotentialNat,
         rawPotential, pairScope]
-        using congrArg (fun φ => φ true) h
+        using! congrArg (fun φ => φ true) h
 
 theorem sumProductMessage_true :
     sumProductMessageToTarget true = 5 := by

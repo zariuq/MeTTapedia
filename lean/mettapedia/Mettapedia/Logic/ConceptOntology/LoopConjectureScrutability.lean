@@ -293,7 +293,7 @@ theorem mem_frontierToFull_iff
     a ∈ frontierToFull B maxOrderApprox premise ↔
       a ∈ closureUpTo B maxOrderApprox premise ∧
         a ∉ fullClosure B premise := by
-  simpa [frontierToFull, closureUpTo, fullClosure, relation, premiseSet, sampleUpTo] using
+  exact
     (mem_attributeScrutabilityFrontier_iff
       (sampleApprox := sampleUpTo B maxOrderApprox)
       (sampleFull := (Set.univ : Set B.LoopObj))

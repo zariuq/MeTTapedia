@@ -123,8 +123,7 @@ noncomputable def momentFunctional : Polynomial ℝ →ₗ[ℝ] ℝ where
 @[simp]
 theorem momentFunctional_X_pow (n : ℕ) : momentFunctional m (X ^ n) = m n := by
   simp only [momentFunctional, LinearMap.coe_mk, AddHom.coe_mk]
-  have hne : (1 : ℝ) ≠ 0 := one_ne_zero
-  rw [Polynomial.support_X_pow hne, Finset.sum_singleton]
+  rw [Polynomial.support_X_pow n, Finset.sum_singleton]
   simp only [Polynomial.coeff_X_pow_self, one_mul]
 
 @[simp]
@@ -941,7 +940,7 @@ private lemma tendsto_sub_div (i : ℕ) :
       exact (tendsto_const_nhds :
         Filter.Tendsto (fun _ : ℕ => (i : ℝ)) Filter.atTop (nhds (i : ℝ)))
     have hdiv' := hconst.mul hinv
-    simpa using hdiv'
+    simpa [div_eq_mul_inv] using hdiv'
   have hEq :
       (fun n : ℕ => ((n : ℝ) - (i : ℝ)) / (n : ℝ)) =ᶠ[Filter.atTop]
         fun n : ℕ => (1 : ℝ) - (i : ℝ) / (n : ℝ) := by
@@ -1443,7 +1442,7 @@ theorem hausdorff_moment_exists (m : ℕ → ℝ)
     -- `bernsteinFunctional_bound` gives a bound by `‖f‖` on absolute values.
     have h := bernsteinFunctional_bound (m := m) (hcm := hcm) (hzero := hzero) n f
     -- convert `|x| ≤ ‖f‖` to `‖x‖ ≤ 1 * ‖f‖`
-    simpa [Real.norm_eq_abs, one_mul] using h
+    simp only [Real.norm_eq_abs, one_mul]; exact h
 
   let Φ : ℕ → C(I, ℝ) →L[ℝ] ℝ := fun n =>
     (Φlin n).mkContinuous 1 (hbound n)
@@ -1530,7 +1529,7 @@ theorem hausdorff_moment_exists (m : ℕ → ℝ)
       (continuous_apply f).continuousAt
     have hcl_f : MapClusterPt (Φinf f) Filter.atTop (fun n => (u n) f) := by
       -- evaluation is continuous, so cluster points map under evaluation
-      simpa [Function.comp] using
+      exact
         (MapClusterPt.continuousAt_comp (x := Φinf) (F := Filter.atTop)
           (u := u) (f := fun g : C(I, ℝ) → ℝ => g f) hcont hu)
     have hcl : ClusterPt (Φinf f) (Filter.map (fun n => (u n) f) Filter.atTop) := by
@@ -1604,7 +1603,7 @@ theorem hausdorff_moment_exists (m : ℕ → ℝ)
       (continuous_apply (monomialFun k)).continuousAt
     have hcl_mono : MapClusterPt (Φinf (monomialFun k)) Filter.atTop
         (fun n => (u n) (monomialFun k)) := by
-      simpa [Function.comp, u] using (MapClusterPt.continuousAt_comp hcont hu)
+      exact (MapClusterPt.continuousAt_comp hcont hu)
     have hlim : Φinf (monomialFun k) = m k := by
       -- Use convergence of the Bernstein moments.
       have hconv' : Filter.Tendsto (fun n => (u n) (monomialFun k)) Filter.atTop (nhds (m k)) := by

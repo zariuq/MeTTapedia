@@ -5396,8 +5396,7 @@ theorem referenceMatchIntrinsicResult_eq_total_of_bindingwise_evalMatchedTemplat
   · intro sess
     rfl
   · intro sess bs
-    simpa [matchTemplateAfterBindings, referenceMatchEvalMatchedTemplate, totalMatchEvalMatchedTemplate] using
-      hEval sess bs
+    exact hEval sess bs
 
 /-- Stronger corollary of the bindingwise theorem: agreement on all substituted
     templates implies intrinsic `match` agreement. -/
@@ -5451,8 +5450,7 @@ theorem referenceMatchEvalMatchedTemplate_getAtoms_eq_total_of_eval_agreement
         referenceEvalWithStateCoreN fuel sess (.apply "get-atoms" [spaceExpr])) :
     referenceMatchEvalMatchedTemplate s0 sess (.apply "get-atoms" [spaceExpr]) =
       totalMatchEvalMatchedTemplate fuel s0 sess (.apply "get-atoms" [spaceExpr]) := by
-  simpa [referenceMatchEvalMatchedTemplate, totalMatchEvalMatchedTemplate,
-    Algorithms.MeTTa.Simple.Semantics.SpaceOps.evalMatchedTemplate] using hEval
+  exact hEval
 
 /-- Unary evaluator-agreement contract for the `get-atoms` head. -/
 abbrev GetAtomsUnaryEvalAgreement (fuel : Nat) : Prop :=
@@ -5621,7 +5619,7 @@ theorem intrinsicStateful_getAtoms_eq_referenceIntrinsicStatefulN_of_pos
   | succ n =>
       unfold intrinsicStateful
       unfold referenceIntrinsicStatefulN
-      simpa using
+      exact
         intrinsicGetAtomsResultWithEval_eval_irrelevant
           evalWithStateCore
           (fun s term => referenceEvalWithStateCoreN n s term)
@@ -5641,7 +5639,7 @@ theorem intrinsicStateful_getAtomsBang_eq_referenceIntrinsicStatefulN_of_pos
   | succ n =>
       unfold intrinsicStateful
       unfold referenceIntrinsicStatefulN
-      simpa using
+      exact
         intrinsicGetAtomsResultWithEval_eval_irrelevant
           evalWithStateCore
           (fun s term => referenceEvalWithStateCoreN n s term)
@@ -5656,7 +5654,7 @@ private theorem referenceIntrinsicStatefulN_getAtomsBang_state_eq
   | zero => contradiction
   | succ n =>
       unfold referenceIntrinsicStatefulN
-      simpa using
+      exact
         intrinsicGetAtomsResultWithEval_state_eq
           (fun s term => referenceEvalWithStateCoreN n s term) s space
 
@@ -5929,8 +5927,7 @@ theorem referenceMatchEvalMatchedTemplate_getAtomsBang_eq_total_of_eval_agreemen
         referenceEvalWithStateCoreN fuel sess (.apply "get-atoms!" [spaceExpr])) :
     referenceMatchEvalMatchedTemplate s0 sess (.apply "get-atoms!" [spaceExpr]) =
       totalMatchEvalMatchedTemplate fuel s0 sess (.apply "get-atoms!" [spaceExpr]) := by
-  simpa [referenceMatchEvalMatchedTemplate, totalMatchEvalMatchedTemplate,
-    Algorithms.MeTTa.Simple.Semantics.SpaceOps.evalMatchedTemplate] using hEval
+  exact hEval
 
 /-- At the `evalMatchedTemplate` waist, `get-atoms!` stays in the same session on the
     first non-degenerate fragment `maxNodes = 1`. -/
@@ -5938,10 +5935,8 @@ theorem referenceMatchEvalMatchedTemplate_getAtomsBang_state_eq_self_of_maxNodes
     (s0 sess : Session) (spaceExpr : Pattern)
     (hNodes : sess.maxNodes = 1) :
     (referenceMatchEvalMatchedTemplate s0 sess (.apply "get-atoms!" [spaceExpr])).1 = sess := by
-  simpa [referenceMatchEvalMatchedTemplate,
-    Algorithms.MeTTa.Simple.Semantics.SpaceOps.evalMatchedTemplate] using
-    referenceEvalWithStateCore_getAtomsBang_state_eq_self_of_maxNodes_one
-      sess spaceExpr hNodes
+  exact referenceEvalWithStateCore_getAtomsBang_state_eq_self_of_maxNodes_one
+    sess spaceExpr hNodes
 
 /-- The fuel-indexed matched-template evaluator has the same one-step state
     invariance for `get-atoms!` on `maxNodes = 1`. -/
@@ -5950,10 +5945,8 @@ theorem totalMatchEvalMatchedTemplate_getAtomsBang_state_eq_self_of_maxNodes_one
     (s0 sess : Session) (spaceExpr : Pattern)
     (hNodes : sess.maxNodes = 1) :
     (totalMatchEvalMatchedTemplate fuel s0 sess (.apply "get-atoms!" [spaceExpr])).1 = sess := by
-  simpa [totalMatchEvalMatchedTemplate,
-    Algorithms.MeTTa.Simple.Semantics.SpaceOps.evalMatchedTemplate] using
-    referenceEvalWithStateCoreN_getAtomsBang_state_eq_self_of_maxNodes_one
-      fuel hFuel sess spaceExpr hNodes
+  exact referenceEvalWithStateCoreN_getAtomsBang_state_eq_self_of_maxNodes_one
+    fuel hFuel sess spaceExpr hNodes
 
 /-- First non-degenerate compositional `match` adequacy theorem for `get-atoms!`
     templates. The proof is specialized to the `maxNodes = 1` fragment so the
@@ -6048,14 +6041,14 @@ theorem referenceMatchIntrinsicResult_eq_total_of_getAtomsBangTemplate_on_oneMax
                     ((referenceSpaceEvalInterface s).applyBindings bs
                       (.apply "get-atoms!" [spaceExpr])) =
                   (sess, out) := by
-              simpa [referenceMatchEvalMatchedTemplate, matchTemplateAfterBindings] using hOut₁
+              exact hOut₁
             have hOut₂' :
                 Algorithms.MeTTa.Simple.Semantics.SpaceOps.evalMatchedTemplate
                     (referenceSpaceEvalInterfaceN fuel s) sess
                     ((referenceSpaceEvalInterfaceN fuel s).applyBindings bs
                       (.apply "get-atoms!" [spaceExpr])) =
                   (sess, out) := by
-              simpa [totalMatchEvalMatchedTemplate, matchTemplateAfterBindings] using hOut₂
+              exact hOut₂
             have hStep₁ : f₁ (sess, collected) bs = (sess, out.reverse ++ collected) := by
               simp [f₁, hOut₁']
             have hStep₂ : f₂ (sess, collected) bs = (sess, out.reverse ++ collected) := by
@@ -6075,8 +6068,7 @@ theorem referenceMatchIntrinsicResult_eq_total_of_getAtomsBangTemplate_on_oneMax
           | [_pat, _tmpl, out] => some out
           | _ => none
     (sDyn, dynamicOut ++ builtinOut3)
-  simpa [finish, bindings, f₁, f₂, referenceSpaceEvalInterface, referenceSpaceEvalInterfaceN] using
-    congrArg finish hFoldEq
+  exact congrArg finish hFoldEq
 
 /-- Lift a unary `get-atoms!` evaluator-agreement hypothesis to the exact
     substituted-template `hEval` shape used by compositional `match` adequacy. -/
@@ -7112,9 +7104,8 @@ private theorem p4_case_branch_preserves
         compiledConsistent_of_referenceCaseIntrinsicInlineN_conj
           fuel hEvalCorePres hEvalCallablePres hEvalForRulePres hIntrinsicPres
           (by
-            simpa [referenceControlFlowInterfaceN,
-              referenceEvalGeneratorValuesN,
-              referenceEvalKeyValuesPreservingMultiplicityN] using h)
+            have hInj := Option.some.inj h
+            exact ⟨congrArg Prod.fst hInj, congrArg Prod.snd hInj⟩)
           hs
 
 private theorem p4_foldall_branch_preserves
@@ -7192,9 +7183,8 @@ private theorem p4_foldall_branch_preserves
         compiledConsistent_of_referenceFoldallIntrinsicInlineN_conj
           fuel hEvalCorePres hEvalCallablePres hEvalForRulePres hIntrinsicPres
           (by
-            simpa [referenceControlFlowInterfaceN,
-              referenceEvalGeneratorValuesN,
-              referenceEvalKeyValuesPreservingMultiplicityN] using h)
+            have hInj := Option.some.inj h
+            exact ⟨congrArg Prod.fst hInj, congrArg Prod.snd hInj⟩)
           hs
 
 private theorem p4_forall_branch_preserves
@@ -7271,9 +7261,8 @@ private theorem p4_forall_branch_preserves
         compiledConsistent_of_referenceForallIntrinsicInlineN_conj
           fuel hEvalCorePres hEvalCallablePres hEvalForRulePres hIntrinsicPres
           (by
-            simpa [referenceControlFlowInterfaceN,
-              referenceEvalGeneratorValuesN,
-              referenceEvalKeyValuesPreservingMultiplicityN] using h)
+            have hInj := Option.some.inj h
+            exact ⟨congrArg Prod.fst hInj, congrArg Prod.snd hInj⟩)
           hs
 
 private theorem p4_match3_branch_preserves
@@ -7591,14 +7580,17 @@ private theorem p4_atomof_branch_preserves
               atomOut.snd
           by_cases hExtEmpty : extracted.isEmpty = true
           · have hEq : some (atomOut.fst, ([] : List Pattern)) = some (s', out) := by
-              simpa only [run, x1, hInner, reducts, atomOut, extracted, hExtEmpty] using h
+              simpa only [run, x1, hInner, reducts, atomOut, extracted, hExtEmpty,
+                ↓reduceIte] using h
             have hStateAtom : atomOut.fst = s' := by
               exact congrArg Prod.fst (Option.some.inj hEq)
             have hStateRun : atomOut.fst = run.1 := by
               by_cases hRedEmpty : reducts.isEmpty = true <;> simp [atomOut, hRedEmpty]
             exact (hStateRun.symm.trans hStateAtom) ▸ hRunCC
           · have hEq : some (atomOut.fst, dedupPatternList extracted) = some (s', out) := by
-              simpa only [run, x1, hInner, reducts, atomOut, extracted, hExtEmpty] using h
+              simp only [run, x1, hInner] at h
+              rw [if_neg hExtEmpty] at h
+              exact h
             have hStateAtom : atomOut.fst = s' := by
               exact congrArg Prod.fst (Option.some.inj hEq)
             have hStateRun : atomOut.fst = run.1 := by
@@ -7621,14 +7613,17 @@ private theorem p4_atomof_branch_preserves
                   atomOut.snd
               by_cases hExtEmpty : extracted.isEmpty = true
               · have hEq : some (atomOut.fst, ([] : List Pattern)) = some (s', out) := by
-                  simpa only [run, x1, hInner, atomOut, extracted, hExtEmpty] using h
+                  simpa only [run, x1, hInner, atomOut, extracted, hExtEmpty,
+                    ↓reduceIte] using h
                 have hStateAtom : atomOut.fst = s' := by
                   exact congrArg Prod.fst (Option.some.inj hEq)
                 have hStateInner : atomOut.fst = sI := by
                   by_cases hOutEmpty : outI.isEmpty = true <;> simp [atomOut, hOutEmpty]
                 exact (hStateInner.symm.trans hStateAtom) ▸ hInnerCC
               · have hEq : some (atomOut.fst, dedupPatternList extracted) = some (s', out) := by
-                  simpa only [run, x1, hInner, atomOut, extracted, hExtEmpty] using h
+                  simp only [run, x1, hInner] at h
+                  rw [if_neg hExtEmpty] at h
+                  exact h
                 have hStateAtom : atomOut.fst = s' := by
                   exact congrArg Prod.fst (Option.some.inj hEq)
                 have hStateInner : atomOut.fst = sI := by
@@ -10359,7 +10354,11 @@ theorem hasMultipleRootRuleChoices_eq_raw_of_compiledRules_consistent
       have hTrue : s = withCompiledIndexes s true := by
         simpa [hUse] using hSelf
       rw [hTrue]
-      simpa using
+      have hCollapse :
+          withCompiledIndexes (withCompiledIndexes s true) false =
+            withCompiledIndexes s false := rfl
+      rw [hCollapse]
+      exact
         hasMultipleRootRuleChoices_enabled_eq_disabled_of_compiledRules_consistent
           (s := s) (term := term) hCompiled
 

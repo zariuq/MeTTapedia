@@ -3,7 +3,7 @@ import Mathlib.Analysis.Complex.Exponential
 import Mathlib.Analysis.SpecialFunctions.Gamma.Basic
 import Mathlib.Analysis.SpecialFunctions.Gamma.BohrMollerup
 import Mathlib.Order.Lattice
-import Mettapedia.ProbabilityTheory.KnuthSkilling
+import KnuthSkilling
 
 /-!
 # Quantum Theory from Symmetry

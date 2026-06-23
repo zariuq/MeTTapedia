@@ -33,8 +33,7 @@ def coleHopfPhi (ν : ℝ) (W : G → ℝ) : G → ℝ :=
 
 theorem continuous_coleHopfScalar (ν : ℝ) :
     Continuous (coleHopfScalar ν) := by
-  simpa [coleHopfScalar] using
-    Real.continuous_exp.comp (continuous_id.neg.div_const (2 * ν))
+  exact Real.continuous_exp.comp (continuous_id.neg.div_const (2 * ν))
 
 theorem injective_coleHopfScalar {ν : ℝ} (hν : ν ≠ 0) :
     Function.Injective (coleHopfScalar ν) := by

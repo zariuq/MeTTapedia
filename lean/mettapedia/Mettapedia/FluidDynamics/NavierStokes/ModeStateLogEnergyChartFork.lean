@@ -53,8 +53,7 @@ theorem continuous_logEnergyTerm (m n : ℕ) :
     refine harg.log ?_
     intro x
     positivity
-  simpa [logEnergyTerm] using
-    hlog.mul (continuous_const : Continuous fun _ : ModeState => sobolevEnergyWeight m n)
+  exact hlog.mul (continuous_const : Continuous fun _ : ModeState => sobolevEnergyWeight m n)
 
 theorem logEnergyTerm_le_sobolevEnergyTerm (m : ℕ) (x : ModeState) (n : ℕ) :
     logEnergyTerm m x n ≤ sobolevEnergyTerm m x n := by

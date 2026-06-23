@@ -204,7 +204,7 @@ theorem filteringStepMass_sum_le_total
   calc
     observationMassGivenAction θ m a y
       ≤ ∑ y' : Fin obs, observationMassGivenAction θ m a y' := by
-          exact Finset.single_le_sum (fun _ _ => zero_le _) (Finset.mem_univ y)
+          exact Finset.single_le_sum (fun _ _ => by positivity) (Finset.mem_univ y)
     _ = ∑ x : Fin latent, m x := observationMassGivenAction_sum_eq θ m a
 
 theorem filteringMassAux_sum_le

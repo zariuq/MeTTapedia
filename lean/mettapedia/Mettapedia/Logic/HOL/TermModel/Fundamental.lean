@@ -175,7 +175,7 @@ theorem models_iff_mem (M : World (WithParams Const))
   have hf := fundamental M hC φ (fun v => nomatch v)
     (Subst.id (Base := Base) (Const := WithParams Const) (Γ := [])) (fun v => nomatch v)
   rw [subst_id] at hf
-  simpa only [PreModel.models, Rep] using hf
+  exact hf
 
 end ClosedTheorySet
 end Mettapedia.Logic.HOL

@@ -1180,7 +1180,7 @@ theorem selfDelimitingEncode_not_isPrefix_of_lt_length {p q : List Bool} (hlt : 
     have :
         (List.replicate q.length true ++ false :: q).take (p.length + 1) =
           (List.replicate q.length true).take (p.length + 1) := by
-            simp [List.take_append, Nat.sub_eq_zero_of_le (by simpa using hle)]
+            simp [List.take_append, Nat.sub_eq_zero_of_le hle]
     -- Now take from the replicate prefix.
     calc
       (List.replicate q.length true ++ false :: q).take (p.length + 1)
@@ -3174,7 +3174,7 @@ theorem per_cycle_steps_aixitlFromProofCheckerToPartrec_le (μ : Environment) (�
       ProofChecker (α := RawToPartrecProgram) (fun p => ValidValueLowerBound μ γ horizon (p.toExtended t)))
     (l l_p : ℕ) :
     (aixitlFromProofCheckerToPartrec μ γ horizon t checker l l_p).validatedPrograms.length * t ≤ 2 ^ (l_p + 1) * t := by
-  simpa using
+  exact
     (per_cycle_steps_aixitlFromDecodeToPartrec_le (decode := checker.decode) (l := l) (l_p := l_p) (t := t))
 
 theorem mem_validatedPrograms_aixitlFromDecodeToPartrec_mono_proofLength {decode : ProofDecoder RawToPartrecProgram}
@@ -4555,9 +4555,8 @@ lemma sum_prefixFreeWeightAt_le_prob_of_checkIdxOutputs (tEnv l : ℕ) (ha : His
             | none => false
           else false) =
           true := by
-    simpa [checkIdxOutputs] using
-      (List.all_eq_true.mp (by
-        simpa [checkIdxOutputs] using hIdx))
+    intro i hi
+    exact (List.all_eq_true.mp (show (idxs.all _) = true from hIdx)) i hi
   have hterm :
       (∑ i ∈ idxs.toFinset, ξ.weights i * (ξ.envs i).prob ha target) =
         ∑ i ∈ idxs.toFinset, xi_tlPrefixFreeWeightAt (bitsAt l) i := by
@@ -4656,7 +4655,7 @@ lemma sum_prefixFreeWeightAt_eq_prob_of_idxsOfOutput (tEnv l : ℕ) (ha : Histor
     unfold idxsOfOutput at hiList
     rcases List.mem_filter.1 hiList with ⟨hiRange, _hiPred⟩
     have hiLt : i < bits.length := by
-      simpa [bits] using (List.mem_range.1 hiRange)
+      simpa [bits, bitsAt] using (List.mem_range.1 hiRange)
     simpa [Finset.mem_range] using hiLt
 
   have hfilter :
@@ -4691,7 +4690,7 @@ lemma sum_prefixFreeWeightAt_eq_prob_of_idxsOfOutput (tEnv l : ℕ) (ha : Histor
                       some target)
             | none => false) =
             true := by
-        simpa [bitsAt, bits, hiBits] using hiPred
+        rw [bitsAt] at hiPred; simpa [bits, hiBits] using hiPred
       cases htm : Coding.decodeEncodableBits (α := Turing.ToPartrec.Code) (bits.get ⟨i, hiBits⟩) with
       | none =>
           have hiPred'' := hiPred'
@@ -4937,8 +4936,7 @@ noncomputable def xi_tlOneStepRewardLowerBoundSoundProofSystemToPartrec (tEnv l 
                   -- Timeout: the wrapper defaults to `(0, stay)`, which is always sound.
                   have hnonneg : 0 ≤ value μ (p.toExtended tProg).toAgent γ h 2 :=
                     value_nonneg (μ := μ) (π := (p.toExtended tProg).toAgent) (γ := γ) (h := h) (n := 2)
-                  simpa [hEval]
-                    using hnonneg
+                  simp only [hEval]; exact hnonneg
               | some out =>
                   -- Successful evaluation: use the code template to identify the output.
                   have houtMem : out ∈ p.tm.eval (Coding.encodeHistoryNat h) :=
@@ -5009,9 +5007,7 @@ noncomputable def xi_tlOneStepRewardLowerBoundSoundProofSystemToPartrec (tEnv l 
                       have hiList : i ∈ cert.idx_false_true := (List.mem_toFinset).1 hi
                       have hall :=
                         List.all_eq_true.mp
-                          (by
-                            simpa [XiTlOneStepRewardLowerBoundCert.checkIdxOutputs, XiTlOneStepRewardLowerBoundCert.bitsAt, ha, xFT]
-                              using hIdxFT)
+                          (show (cert.idx_false_true.all _) = true from hIdxFT)
                       have hpred := hall i hiList
                       by_cases hiBits : i < (bitstringsUpTo l).length
                       ·
@@ -5027,7 +5023,7 @@ noncomputable def xi_tlOneStepRewardLowerBoundSoundProofSystemToPartrec (tEnv l 
                                             some xFT)
                                   | none => false) =
                                   true := by
-                            simpa [hiBits] using hpred
+                            rw [XiTlOneStepRewardLowerBoundCert.bitsAt] at hpred; simpa [hiBits] using hpred
                           cases htm :
                               Coding.decodeEncodableBits (α := Turing.ToPartrec.Code) ((bitstringsUpTo l).get ⟨i, hiBits⟩) with
                           | none =>
@@ -5086,6 +5082,7 @@ noncomputable def xi_tlOneStepRewardLowerBoundSoundProofSystemToPartrec (tEnv l 
                       ·
                           have : False := by
                             have hpred' := hpred
+                            rw [XiTlOneStepRewardLowerBoundCert.bitsAt] at hpred'
                             simp [hiBits] at hpred'
                           cases this
                     have hμprob : (∑' i : ℕ,
@@ -5108,9 +5105,7 @@ noncomputable def xi_tlOneStepRewardLowerBoundSoundProofSystemToPartrec (tEnv l 
                       have hiList : i ∈ cert.idx_true_true := (List.mem_toFinset).1 hi
                       have hall :=
                         List.all_eq_true.mp
-                          (by
-                            simpa [XiTlOneStepRewardLowerBoundCert.checkIdxOutputs, XiTlOneStepRewardLowerBoundCert.bitsAt, ha, xTT]
-                              using hIdxTT)
+                          (show (cert.idx_true_true.all _) = true from hIdxTT)
                       have hpred := hall i hiList
                       by_cases hiBits : i < (bitstringsUpTo l).length
                       ·
@@ -5126,7 +5121,7 @@ noncomputable def xi_tlOneStepRewardLowerBoundSoundProofSystemToPartrec (tEnv l 
                                             some xTT)
                                   | none => false) =
                                   true := by
-                            simpa [hiBits] using hpred
+                            rw [XiTlOneStepRewardLowerBoundCert.bitsAt] at hpred; simpa [hiBits] using hpred
                           cases htm :
                               Coding.decodeEncodableBits (α := Turing.ToPartrec.Code) ((bitstringsUpTo l).get ⟨i, hiBits⟩) with
                           | none =>
@@ -5184,6 +5179,7 @@ noncomputable def xi_tlOneStepRewardLowerBoundSoundProofSystemToPartrec (tEnv l 
                       ·
                           have : False := by
                             have hpred' := hpred
+                            rw [XiTlOneStepRewardLowerBoundCert.bitsAt] at hpred'
                             simp [hiBits] at hpred'
                           cases this
                     have hμprob : (∑' i : ℕ,
@@ -5434,7 +5430,7 @@ noncomputable def xi_tlOneStepRewardLowerBoundSoundProofSystemToPartrec (tEnv l 
                           ({ code := p.code, compute := RawToPartrecProgram.computeWithin tProg p } : ExtendedChronologicalProgram).toAgent
                           γ h 2 := by
                     simpa [hclaim.symm] using hclaim_le_value'
-                  simpa [RawToPartrecProgram.computeWithin] using this
+                  exact this
           | false =>
               -- Guard does not fire: the claimed value is `0` (or times out and defaults to `0`).
               have hclaim0 : ((p.toExtended tProg).compute h').1 = 0 := by
@@ -8330,7 +8326,7 @@ noncomputable def soundProofSystemConvergenceAssumptions_xi_tlUnbounded_of_stabi
 /-- Trivial (but fully concrete) sound-proof-system convergence assumptions at horizon `n = 0`:
 since `optimalValue μ γ h 1 = 0`, the verified `zero'` program is already `ε`-optimal for any `ε > 0`. -/
 noncomputable def soundProofSystemConvergenceAssumptions_zeroPrefix_n0 (μ : Environment) (γ : DiscountFactor) :
-    AIXItlSoundProofSystemConvergenceAssumptions.{0} μ γ 0 := by
+    AIXItlSoundProofSystemConvergenceAssumptions μ γ 0 := by
   classical
   refine
     { proofSystem := zeroPrefixSoundProofSystemToPartrec (μ := μ) (γ := γ) 0
@@ -8356,7 +8352,7 @@ noncomputable def soundProofSystemConvergenceAssumptions_zeroPrefix_n0 (μ : Env
 /-- Trivial sound-proof-system convergence assumptions at horizon `n = 0`, using the slightly more
 permissive `zeroClaimSoundProofSystemToPartrec` verifier. -/
 noncomputable def soundProofSystemConvergenceAssumptions_zeroClaim_n0 (μ : Environment) (γ : DiscountFactor) :
-    AIXItlSoundProofSystemConvergenceAssumptions.{0} μ γ 0 := by
+    AIXItlSoundProofSystemConvergenceAssumptions μ γ 0 := by
   classical
   refine
     { proofSystem := zeroClaimSoundProofSystemToPartrec (μ := μ) (γ := γ) 0
@@ -8381,7 +8377,7 @@ noncomputable def soundProofSystemConvergenceAssumptions_zeroClaim_n0 (μ : Envi
 `zeroValueActionSoundProofSystemToPartrec` verifier (claims are still `0`, but actions can be
 computed nontrivially). -/
 noncomputable def soundProofSystemConvergenceAssumptions_zeroValueAction_n0 (μ : Environment) (γ : DiscountFactor) :
-    AIXItlSoundProofSystemConvergenceAssumptions.{0} μ γ 0 := by
+    AIXItlSoundProofSystemConvergenceAssumptions μ γ 0 := by
   classical
   refine
     { proofSystem := zeroValueActionSoundProofSystemToPartrec (μ := μ) (γ := γ) 0

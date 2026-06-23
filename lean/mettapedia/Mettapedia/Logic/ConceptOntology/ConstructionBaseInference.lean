@@ -49,18 +49,14 @@ theorem inheritanceOpenWorld_iff_exists_strength_disagreement
     apply hNotAll
     intro g h
     by_contra hneq
-    exact hNo ⟨g, h, by
-      simpa [Mettapedia.Logic.ExtensionalIntensionalDivergence.inheritanceTV,
-        Mettapedia.Logic.ExtensionalIntensionalDivergence.inheritanceWTV] using hneq⟩
+    exact hNo ⟨g, h, hneq⟩
   · rintro ⟨g, h, hneq⟩
     have hNotAll :
         ¬ ∀ g h : Gate,
             Mettapedia.Logic.ExtensionalIntensionalDivergence.fullInheritanceStrength (J g) sub super =
               Mettapedia.Logic.ExtensionalIntensionalDivergence.fullInheritanceStrength (J h) sub super := by
       intro hAll
-      exact hneq (by
-        simpa [Mettapedia.Logic.ExtensionalIntensionalDivergence.inheritanceTV,
-          Mettapedia.Logic.ExtensionalIntensionalDivergence.inheritanceWTV] using hAll g h)
+      exact hneq (hAll g h)
     exact
       (inheritanceOpenWorld_iff_not_all_gates_agree (J := J) (sub := sub) (super := super)).2
         hNotAll
@@ -76,14 +72,12 @@ theorem inheritanceThatsAll_iff_all_strength_inputs_agree
           (Mettapedia.Logic.ExtensionalIntensionalDivergence.inheritanceTV (J h) sub super).strength := by
   constructor
   · intro hAll g h
-    simpa [Mettapedia.Logic.ExtensionalIntensionalDivergence.inheritanceTV,
-      Mettapedia.Logic.ExtensionalIntensionalDivergence.inheritanceWTV] using
+    exact
       (inheritanceThatsAll_iff_all_gates_agree (J := J) (sub := sub) (super := super)).1 hAll g h
   · intro hAll
     refine (inheritanceThatsAll_iff_all_gates_agree (J := J) (sub := sub) (super := super)).2 ?_
     intro g h
-    simpa [Mettapedia.Logic.ExtensionalIntensionalDivergence.inheritanceTV,
-      Mettapedia.Logic.ExtensionalIntensionalDivergence.inheritanceWTV] using hAll g h
+    exact hAll g h
 
 /-- If the two premise inheritance edges are already gate-precise (`That’s All`)
 and the three concept priors agree across gates, then the exact concept-native

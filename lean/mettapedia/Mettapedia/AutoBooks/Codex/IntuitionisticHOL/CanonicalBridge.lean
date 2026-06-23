@@ -139,6 +139,13 @@ theorem all_of_const_instance
               intro τ v
               cases v <;> rfl
         _ = t := subst_id (Base := Base) (Const := Const) t
+    have hConstSelf :
+        abstractConstAt (Base := Base) (Γ := []) c [] (.const c) =
+          (.var (.vz : Var [σ] σ)) := by
+      simp only [abstractConstAt, varAtDepth]
+      split
+      · rfl
+      · contradiction
     calc
       abstractConstAt (Base := Base) (Γ := []) (τ := .prop) c []
           (instantiate (Base := Base) (.const c) φ)
@@ -153,16 +160,17 @@ theorem all_of_const_instance
             (rename
               (fun {τ : Ty Base} (v : Var [σ] τ) =>
                 insertRen (Base := Base) (Γ := []) (σ := σ) [σ] v) φ) := by
-            simp [abstractConstAt, varAtDepth]
+            rw [hConstSelf]
             rw [abstractConstAt_noOccurrence
               (Base := Base) (Γ := []) (c := c) [σ] φ hφno]
+            rfl
       _ = φ := hInsertCancel φ
   have hAbs :=
     ExtDerivation.abstractConstAt_deriv (Base := Base) (Γ := []) (Ξ := []) c hInst
   have hWeaken :
       ExtDerivation Const
         (weakenHyps (Base := Base) (Const := Const) (σ := σ) Δ) φ := by
-    simpa [hHyps, hConc] using hAbs
+    exact hConc ▸ hHyps ▸ hAbs
   exact .allI hWeaken
 
 end ClosedTheory.Provable

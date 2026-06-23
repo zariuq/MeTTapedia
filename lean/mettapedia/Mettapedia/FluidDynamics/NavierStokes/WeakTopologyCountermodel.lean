@@ -39,9 +39,8 @@ theorem tendsto_hiddenTail_weakOrigin :
   have hconst : Filter.atTop ≤ Filter.comap (fun _ : ℕ => (0 : ℝ)) (nhds 0) := by
     simpa [tendsto_iff_comap] using
       (tendsto_const_nhds : Tendsto (fun _ : ℕ => (0 : ℝ)) Filter.atTop (nhds 0))
-  have hcomp : Filter.atTop ≤ Filter.comap (Prod.fst ∘ hiddenTail) (nhds 0) := by
-    simpa [hiddenTail, Function.comp] using hconst
-  simpa [Filter.comap_comap, Function.comp] using hcomp
+  have hcomp : Filter.atTop ≤ Filter.comap (Prod.fst ∘ hiddenTail) (nhds 0) := hconst
+  simpa [Filter.comap_comap, Function.comp, weakOrigin] using hcomp
 
 /-- Radius observable carried by the hidden coordinate. -/
 def hiddenRadius : WeakState → ℝ := Prod.snd

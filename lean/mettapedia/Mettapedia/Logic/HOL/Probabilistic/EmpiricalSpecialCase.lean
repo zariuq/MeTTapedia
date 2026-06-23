@@ -121,7 +121,8 @@ theorem empiricalSentenceProb_eq_count_ratio
   have hmeas :
       MeasurableSet
         ((empiricalModelSpace (Base := Base) (Const := Const) W).sentenceEvent φ) := by
-    simp [empiricalModelSpace, ModelSpace.sentenceEvent]
+    change MeasurableSet {i : HenkinModel.{u, v, w} Base Const | holSatisfies i φ}
+    trivial
   have hmeasure' :
       (PMF.ofMultiset W hW).toMeasure
           ((empiricalModelSpace (Base := Base) (Const := Const) W).sentenceEvent φ) =

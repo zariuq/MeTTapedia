@@ -2,7 +2,7 @@ import Mathlib.Data.Real.Basic
 import Mathlib.Analysis.SpecialFunctions.Log.Basic
 import Mettapedia.Logic.PLNDeduction
 import Mettapedia.Logic.PLNFrechetBounds
-import Mettapedia.ProbabilityTheory.KnuthSkilling.Probability.BooleanRepresentation
+import KnuthSkilling.Probability.BooleanRepresentation
 
 /-!
 # PLN Probability Bridge
@@ -16,7 +16,7 @@ This is a PLN bridge layer, not a proof-path module inside Knuth-Skilling.
 namespace Mettapedia.Logic.PLNProbabilityBridge
 
 open Mettapedia.Logic.PLNDeduction
-open Mettapedia.ProbabilityTheory.KnuthSkilling.Probability.BooleanRepresentation
+open KnuthSkilling.Probability.BooleanRepresentation
 
 namespace KSBooleanRepresentation
 
@@ -32,14 +32,14 @@ theorem condProb_consistent (a b : α) (h : R.Θ ⊤ ≠ 0) (ha : R.probability 
   · exact ha_pos
   constructor
   · unfold smallestIntersectionProbability
-    unfold Mettapedia.ProbabilityTheory.KnuthSkilling.Probability.BooleanRepresentation.KSBooleanRepresentation.condProb
+    unfold KnuthSkilling.Probability.BooleanRepresentation.KSBooleanRepresentation.condProb
     simp only [ha, ↓reduceDIte]
     apply max_le
     · apply div_nonneg (R.probability_nonneg _) (le_of_lt ha_pos)
     · apply div_le_div_of_nonneg_right _ (le_of_lt ha_pos)
       exact le_trans (le_max_right 0 _) hfrechet_lower
   · unfold largestIntersectionProbability
-    unfold Mettapedia.ProbabilityTheory.KnuthSkilling.Probability.BooleanRepresentation.KSBooleanRepresentation.condProb
+    unfold KnuthSkilling.Probability.BooleanRepresentation.KSBooleanRepresentation.condProb
     simp only [ha, ↓reduceDIte]
     apply le_min
     · rw [div_le_one ha_pos]
@@ -49,14 +49,14 @@ theorem condProb_consistent (a b : α) (h : R.Θ ⊤ ≠ 0) (ha : R.probability 
 
 /-- Conditional probability is non-negative. -/
 theorem condProb_nonneg (b a : α) : 0 ≤ R.condProb b a := by
-  unfold Mettapedia.ProbabilityTheory.KnuthSkilling.Probability.BooleanRepresentation.KSBooleanRepresentation.condProb
+  unfold KnuthSkilling.Probability.BooleanRepresentation.KSBooleanRepresentation.condProb
   split_ifs
   · exact le_refl 0
   · apply div_nonneg (R.probability_nonneg _) (R.probability_nonneg _)
 
 /-- Conditional probability is at most `1`. -/
 theorem condProb_le_one (b a : α) : R.condProb b a ≤ 1 := by
-  unfold Mettapedia.ProbabilityTheory.KnuthSkilling.Probability.BooleanRepresentation.KSBooleanRepresentation.condProb
+  unfold KnuthSkilling.Probability.BooleanRepresentation.KSBooleanRepresentation.condProb
   split_ifs with h
   · exact zero_le_one
   · have ha_pos : 0 < R.probability a := lt_of_le_of_ne (R.probability_nonneg a) (Ne.symm h)

@@ -112,12 +112,12 @@ theorem SequencePredictionProblem.μ_le_one (sp : SequencePredictionProblem)
     cases b with
     | false =>
       calc sp.μ (init ++ [false])
-          ≤ sp.μ (init ++ [false]) + sp.μ (init ++ [true]) := le_add_of_nonneg_right (zero_le _)
+          ≤ sp.μ (init ++ [false]) + sp.μ (init ++ [true]) := le_add_of_nonneg_right (zero_le)
         _ ≤ sp.μ init := h
         _ ≤ 1 := ih
     | true =>
       calc sp.μ (init ++ [true])
-          ≤ sp.μ (init ++ [false]) + sp.μ (init ++ [true]) := le_add_of_nonneg_left (zero_le _)
+          ≤ sp.μ (init ++ [false]) + sp.μ (init ++ [true]) := le_add_of_nonneg_left (zero_le)
         _ ≤ sp.μ init := h
         _ ≤ 1 := ih
 
@@ -209,7 +209,7 @@ theorem expectedPredictionErrorAtENNReal_le_one (sp : SequencePredictionProblem)
           sp.μ (List.ofFn xs ++ [false]) + sp.μ (List.ofFn xs ++ [true]) := by
     intro xs
     -- `min x y ≤ x ≤ x+y`.
-    exact (min_le_left _ _).trans (le_add_of_nonneg_right (zero_le _))
+    exact (min_le_left _ _).trans (le_add_of_nonneg_right (zero_le))
   have hsum :
       expectedPredictionErrorAtENNReal sp k ≤
         ∑ xs : Fin k → Bool, (sp.μ (List.ofFn xs ++ [false]) + sp.μ (List.ofFn xs ++ [true])) := by
@@ -486,7 +486,7 @@ theorem minimaxValue_le_one (sg : StrategicGameProblem Action Opp) :
         refine ⟨hb, ?_⟩
         intro a _ha
         exact hw a
-      simpa [minimaxValue] using hfold
+      simp only [minimaxValue]; exact hfold
 
 theorem minimaxValue_ge_neg_one (sg : StrategicGameProblem Action Opp) :
     ∀ (position : List (Action × Opp)) (remaining : ℕ), (-1 : ℝ) ≤ minimaxValue sg position remaining := by
@@ -503,7 +503,7 @@ theorem minimaxValue_ge_neg_one (sg : StrategicGameProblem Action Opp) :
         exact
           (Finset.le_fold_max (s := (Finset.univ : Finset Action)) (b := (-1 : ℝ))
               (f := fun a => sgWorstCaseValue (sg := sg) position a n) (c := (-1 : ℝ))).2 (Or.inl le_rfl)
-      simpa [minimaxValue] using this
+      simp only [minimaxValue]; exact this
 
 /-! ### Embedding strategic games as environments -/
 
@@ -1075,7 +1075,9 @@ noncomputable def toEnvironment (fm : FunctionMinimizationProblem) :
                 (∑ x : Percept fm, probFun h x) =
                   ∑ v : fm.Value,
                     ∑ f : fm.Func, if fm.Consistent f h ∧ fm.eval f a = v then fm.prior f else 0 := by
-              simp [probFun, hlast, hk, Percept, Fintype.sum_prod_type]
+              simp only [probFun, hlast, hk, dite_true]
+              refine (Fintype.sum_prod_type _).trans ?_
+              simp [Finset.sum_ite_eq']
             have hswap :
                 (∑ v : fm.Value,
                     ∑ f : fm.Func, if fm.Consistent f h ∧ fm.eval f a = v then fm.prior f else 0) =
@@ -1424,7 +1426,7 @@ theorem μ_le_one (ex : SupervisedLearningProblem) (xs : List (State ex)) : ex.�
             Finset.single_le_sum (s := (Finset.univ : Finset (State ex)))
               (f := fun t : State ex => ex.μ (init ++ [t])) ?_ ?_
           · intro t _ht
-            exact zero_le _
+            exact zero_le
           · simp
         simpa using this
       have hsum : (∑ t : State ex, ex.μ (init ++ [t])) ≤ ex.μ init :=
@@ -1540,7 +1542,7 @@ theorem sum_stepConsistent_μ (ex : SupervisedLearningProblem) (h : ex.Hyp)
                   ex.μ (ex.states hist ++ [ex.stateOfPresentation p])
                 else 0 := by
         -- `abbrev` types do not always reduce during elaboration; introduce an explicit `Presentation` term.
-        simpa [Presentation] using
+        exact
           (Fintype.sum_prod_type (f := fun p : ex.Z × Option ex.V =>
             let p' : Presentation ex := by
               dsimp [Presentation]
@@ -1587,7 +1589,7 @@ theorem sum_stepConsistent_μ (ex : SupervisedLearningProblem) (h : ex.Hyp)
       have :
           (∑ s : State ex, ex.μ (ex.states hist ++ [s])) =
             ∑ z : ex.Z, ∑ b : Bool, ex.μ (ex.states hist ++ [(z, b)]) := by
-        simpa [State] using
+        exact
           (Fintype.sum_prod_type (f := fun s : ex.Z × Bool => ex.μ (ex.states hist ++ [s])))
       -- Evaluate the Bool sum and normalize order.
       have hb (z : ex.Z) :
@@ -1646,11 +1648,12 @@ theorem sum_stepConsistent_μ (ex : SupervisedLearningProblem) (h : ex.Hyp)
               else 0 := by
       -- `stateOfPercept (p,r) = stateOfPresentation p`, and `stepConsistent` unfolds to the conjunction shown.
       -- Avoid `simp` rewriting the Bool sum into `true/false` cases; keep it as `∑ r : Bool, ...`.
-      simpa [Percept, stepConsistent, stateOfPercept, stateOfPresentation] using
+      refine
         (Fintype.sum_prod_type (f := fun x : Presentation ex × Bool =>
           if ex.stepConsistent h hist a x then
             ex.μ (ex.states hist ++ [ex.stateOfPercept x])
-          else 0))
+          else 0)).trans ?_
+      simp only [stepConsistent, stateOfPercept, stateOfPresentation]
     -- Collapse the inner sum over `r` using `hReward` (pointwise in `p`).
     calc
       (∑ x : Percept ex,
@@ -1712,7 +1715,7 @@ noncomputable def toEnvironment (ex : SupervisedLearningProblem) :
           let extSum : ENNReal := ∑ s : State ex, ex.μ (ex.states hist ++ [s])
           have extSum_le_prefix : extSum ≤ ex.μ (ex.states hist) := by
             -- This is exactly the semimeasure property for `μ` at prefix `states hist`.
-            simpa [extSum] using ex.semimeasure (ex.states hist)
+            exact ex.semimeasure (ex.states hist)
           have prefix_le_one : ex.μ (ex.states hist) ≤ 1 :=
             ex.μ_le_one (ex.states hist)
           have extSum_le_one : extSum ≤ 1 := extSum_le_prefix.trans prefix_le_one
@@ -1907,7 +1910,7 @@ noncomputable def toEnvironment (ex : SupervisedLearningProblem) :
                   ≤ (∑ h : ex.Hyp, ex.prior h) * extSum := by
                         simpa [hsum_eq] using hbound
               _ ≤ 1 * extSum := by
-                    exact mul_le_mul_of_nonneg_right ex.prior_sum_le_one (zero_le _)
+                    exact mul_le_mul_of_nonneg_right ex.prior_sum_le_one (zero_le)
               _ = extSum := by simp
               _ ≤ 1 := extSum_le_one
 

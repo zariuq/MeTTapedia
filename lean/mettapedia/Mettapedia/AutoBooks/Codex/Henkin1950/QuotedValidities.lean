@@ -210,11 +210,12 @@ theorem closeFormula_pointwiseEqPred_mem_iff_eq_mem
     exact
       extSetProvable_of_theorem (T := T) <|
         by
-          simpa [pointwiseEqPred, closeFormula, closeTerm, hInst] using
-            (ExtDerivation.beta t'
-              (subst
-                (Subst.lift (Base := Atom) (Const := Primitive) ρ)
-                body))
+          have hbeta :=
+            ExtDerivation.beta (Const := Primitive)
+              (Δ := ([] : List (ClosedFormula Primitive))) t'
+              (subst (Subst.lift (Base := Atom) (Const := Primitive) ρ) body)
+          rw [hInst] at hbeta
+          simpa [t', body, pointwiseEqPred, closeFormula, closeTerm, subst, eq, Subst.lift] using hbeta
   exact
     mem_iff_of_provablyEquivalent_prop hT
       (provablyEquivalent_of_termEquivalent_prop hEq)
@@ -291,11 +292,12 @@ theorem closeFormula_complementPred_mem_iff_not_mem
         (eq
           (closeFormula ρ (.app (complementPred p) t))
           (.not (closeFormula ρ (.app p t)))) := by
-    simpa [body, complementPred, closeFormula, closeTerm, hInst] using
-      (ExtDerivation.beta t'
-        (subst
-          (Subst.lift (Base := Atom) (Const := Primitive) ρ)
-          body))
+    have hbeta :=
+      ExtDerivation.beta (Const := Primitive)
+        (Δ := ([] : List (ClosedFormula Primitive))) t'
+        (subst (Subst.lift (Base := Atom) (Const := Primitive) ρ) body)
+    rw [hInst] at hbeta
+    simpa [t', body, complementPred, closeFormula, closeTerm, subst, eq, not, Subst.lift] using hbeta
   have hBeta :
       TermEquivalent T
         (closeFormula ρ (.app (complementPred p) t))
@@ -641,7 +643,7 @@ theorem derived22_denoteFormula_inCanonicalDescriptionModel
             (t := .app (.var (.vs .vz)) (.var .vz))
             (u := .app (.var (.vs (.vs .vz))) (.var .vz))).2 <|
             by
-              simpa [firstFun, secondFun] using hEqAtXTerms.symm
+              simpa [firstFun, secondFun, ClassAssignment.extend] using hEqAtXTerms.symm
       exact hEqAtXReverse
     · have hWitness :
           M.toCanonicalClassModel.denoteFormula
@@ -1302,7 +1304,7 @@ theorem holds_extensionality_instance
               (.app (weaken (Base := Atom) (Const := Primitive) (σ := β) f) (.var .vz))
               (.app (weaken (Base := Atom) (Const := Primitive) (σ := β) g) (.var .vz))))
           (.eq f g) : Formula Γ) := by
-    simpa [σfg, axiom10, weaken] using hSubst
+    simpa [σfg, axiom10, weaken, subst, eq, imp, Subst.lift] using hSubst
   exact
     holds_of_theoremInContext
       (T := M.T)
@@ -2382,7 +2384,7 @@ theorem holds_derived22_via_derived28
     (M : CanonicalClassModel.CanonicalDescriptionModel)
     (ν : M.toCanonicalClassModel.Assignment [β ⇒ α, β ⇒ α]) :
     Holds M.T ν (derived22 (α := α) (β := β)) := by
-  simpa [derived22, eqAtIotaPointwiseNe] using
+  simpa [derived22, eqAtIotaPointwiseNe, eq] using
     (holds_eqAtIotaPointwiseNe_imp_eq
       (M := M)
       (ν := ν)
@@ -2557,7 +2559,7 @@ theorem derived13_validInGeneral (A B : Sentence) :
   intro hNotAB
   by_cases hA : HenkinModel.models M.toHenkinModel A
   · exact hAB hA
-  · exact hNotAB (by simpa [not] using hA)
+  · exact hNotAB (by simpa [not, HenkinModel.models, PreModel.models] using hA)
 
 /-- Quoted result 14 is valid in all paper-general models: `A = A`. -/
 theorem derived14_validInGeneral {α : HTy} (t : ClosedTerm α) :
@@ -2606,8 +2608,7 @@ theorem derived17_validInGeneral (A B : Sentence) :
   intro hA
   rw [HenkinModel.models_imp]
   intro hEq
-  have hAB : M.toHenkinModel.models A ↔ M.toHenkinModel.models B := by
-    simpa [HenkinModel.models, PreModel.models] using hEq
+  have hAB : M.toHenkinModel.models A ↔ M.toHenkinModel.models B := hEq
   exact hAB.mp hA
 
 /-- Quoted result 18 is valid in all paper-general models:
@@ -2620,8 +2621,7 @@ theorem derived18_validInGeneral (A B : Sentence) :
   intro hNotA
   rw [HenkinModel.models_imp]
   intro hEq
-  have hAB : M.toHenkinModel.models A ↔ M.toHenkinModel.models B := by
-    simpa [HenkinModel.models, PreModel.models] using hEq
+  have hAB : M.toHenkinModel.models A ↔ M.toHenkinModel.models B := hEq
   have hNotA' : ¬ M.toHenkinModel.models A := by
     simpa [not] using hNotA
   simpa [not] using fun hB => hNotA' (hAB.mpr hB)
@@ -2689,11 +2689,10 @@ theorem derived21_models_of_eqAppArgSound
   rw [HenkinModel.models_imp]
   intro htu
   have hft_gt : HenkinModel.Eqv HM β (fv tv) (gv tv) :=
-    HenkinModel.eqv_arr_apply HM (by simpa [fv, gv] using hfg) ht
+    HenkinModel.eqv_arr_apply HM (by exact hfg) ht
   have hgt_gu : HenkinModel.Eqv HM β (gv tv) (gv uv) :=
-    hSound gv hg ht hu (by simpa [tv, uv] using htu)
-  simpa [HM, fv, gv, tv, uv, HenkinModel.models, PreModel.models, HenkinModel.denote, PreModel.denote]
-    using HenkinModel.eqv_trans HM hft_gt hgt_gu
+    hSound gv hg ht hu (by exact htu)
+  exact HenkinModel.eqv_trans HM hft_gt hgt_gu
 
 /-- Quoted result 21 becomes paper-general valid once the model class is
 strengthened by the explicit higher-order argument-congruence principle
@@ -2749,14 +2748,18 @@ theorem derived22_validInGeneral {α β : HTy} :
   · have hqWitness : ∃ y : Ty.denote HM.Carrier β, HM.adm β y ∧ (q y).down := by
       refine ⟨x, hx, ?_⟩
       dsimp [q, f, g]
-      simpa [pointwiseNePred, pointwiseEqPred, complementPred, firstFun, secondFun]
+      simpa [pointwiseNePred, pointwiseEqPred, complementPred, firstFun, secondFun,
+          HenkinModel.denote, PreModel.denote, HenkinModel.extend, PreModel.extend,
+          q, f, g]
         using hfgx
     have hqChoice : (q (HM.constDen (.iota β) q)).down :=
       M.iota_sound β q hq hqWitness
     have hChosenFalse :
         ¬ HenkinModel.Eqv HM α (f (HM.constDen (.iota β) q)) (g (HM.constDen (.iota β) q)) := by
       dsimp [q, f, g] at hqChoice
-      simpa [pointwiseNePred, pointwiseEqPred, complementPred, firstFun, secondFun]
+      simpa [pointwiseNePred, pointwiseEqPred, complementPred, firstFun, secondFun,
+          HenkinModel.denote, PreModel.denote, HenkinModel.extend, PreModel.extend,
+          q, f, g]
         using hqChoice
     exact False.elim (hChosenFalse hChosen)
 
@@ -2782,12 +2785,12 @@ theorem derived28_validInGeneral {α : HTy} :
   · have hqWitness : ∃ y : Ty.denote HM.Carrier α, HM.adm α y ∧ (q y).down := by
       refine ⟨x, hx, ?_⟩
       dsimp [q, p]
-      simpa [complementPred, topPred] using hpx
+      exact hpx
     have hqChoice : (q (HM.constDen (.iota α) q)).down :=
       M.iota_sound α q hq hqWitness
     have hpChoiceFalse : ¬ (p (HM.constDen (.iota α) q)).down := by
       dsimp [q, p] at hqChoice
-      simpa [complementPred, topPred] using hqChoice
+      exact hqChoice
     exact False.elim (hpChoiceFalse hpChoice)
 
 /-- Quoted result 29 is Henkin's description axiom, already available semantically. -/
@@ -2816,6 +2819,6 @@ theorem derived30_validInGeneral (B : Sentence) :
   intro h
   by_cases hB : HenkinModel.models M.toHenkinModel B
   · exact hB
-  · exact False.elim (hB (h (by simpa [not] using hB)))
+  · exact False.elim (hB (h (by simpa [not, HenkinModel.models, PreModel.models] using hB)))
 
 end Mettapedia.AutoBooks.Codex.Henkin1950

@@ -1259,7 +1259,7 @@ theorem evidenceOfFn_snoc {n : ℕ} (xs : Fin n → Bool) (b : Bool) :
             n + 1 := by
         simpa [htrue] using hpart₂
       have hpart₁' : countTrue xs + (countFalse xs + 1) = n + 1 := by
-        simpa only [Nat.add_assoc] using congrArg (fun t => t + 1) hpart₁
+        omega
       have heq :
           countTrue xs +
               countFalse (Fin.snoc (α := fun _ : Fin (n + 1) => Bool) xs false) =

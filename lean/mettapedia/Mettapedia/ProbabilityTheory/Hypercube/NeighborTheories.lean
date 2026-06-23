@@ -34,8 +34,8 @@ import Mathlib.Data.Real.Basic
 import Mathlib.Tactic
 import Mettapedia.ProbabilityTheory.Hypercube.Basic
 import Mettapedia.ProbabilityTheory.Hypercube.NovelTheories
-import Mettapedia.ProbabilityTheory.KnuthSkilling.Core.Basic
-import Mettapedia.ProbabilityTheory.KnuthSkilling.Additive.Proofs.GridInduction.Main
+import KnuthSkilling.Core.Basic
+import KnuthSkilling.Additive.Proofs.GridInduction.Main
 
 namespace Mettapedia.ProbabilityTheory.Hypercube.NeighborTheories
 
@@ -168,7 +168,7 @@ theorem oml_carrier_has_representation
     KnuthSkilling.Additive.associativity_representation (α := α)
   refine ⟨Θ, ?_, ?_⟩
   · intro x y
-    simpa using hΘ_add x y
+    simpa using! hΘ_add x y
   · -- `hΘ_order` is an order-embedding characterization, hence Θ is strictly monotone.
     intro a b hab
     have hle : Θ a ≤ Θ b := (hΘ_order a b).1 (le_of_lt hab)

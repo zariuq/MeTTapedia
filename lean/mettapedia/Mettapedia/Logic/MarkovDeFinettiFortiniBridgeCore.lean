@@ -1498,7 +1498,9 @@ theorem rowProcessLaw_exchangeable_of_perm_invariant
       Exchangeability.FullyExchangeable (rowProcessLaw (k := k) P i)
         (fun n (r : ℕ → Fin k) => r n) := by
     intro π
-    simpa [Exchangeability.reindex, rowPermute] using hperm π
+    have h : Measure.map (fun ω i => ω (π i)) (rowProcessLaw (k := k) P i) =
+        rowProcessLaw (k := k) P i := hperm π
+    simpa [Exchangeability.reindex] using h
   exact (Exchangeability.exchangeable_iff_fullyExchangeable
     (μ := rowProcessLaw (k := k) P i)
     (X := fun n (r : ℕ → Fin k) => r n) hmeas).2 hfull
@@ -1774,7 +1776,7 @@ theorem rowKernelToMarkovParamLaw_reconstruction_singleton_diracInit
       simp [hcyl]
     _ = ∫⁻ ω, ind ω ∂P := by
       have hlin : ∫⁻ ω, ind ω ∂P = P s := by
-        simpa [ind] using (lintegral_indicator_one (μ := P) (s := s) hmeas_s)
+        simpa [ind, Pi.one_def] using (lintegral_indicator_one (μ := P) (s := s) hmeas_s)
       exact hlin.symm
     _ = ∫⁻ ω, wordProb (k := k)
           (rowKernelToMarkovParam (k := k)
@@ -1788,7 +1790,7 @@ theorem rowKernelToMarkovParamLaw_reconstruction_singleton_diracInit
           Set.indicator, hω, hmem]
       · have hmem : ω 0 ∉ (Set.singleton a : Set (Fin k)) := by
           intro hmem'
-          exact hω (by simpa [Set.mem_singleton_iff] using hmem')
+          exact hω hmem'
         simp [rowKernelToMarkovParam, wordProb, wordProbNN, wordProbAux, initProb, s, ind,
           Set.indicator, hω, hmem]
     _ = ∫⁻ θ, wordProb (k := k) θ [a]
@@ -1934,7 +1936,7 @@ lemma lintegral_indicator_mul_indicator_eq_measure_inter
       · simp [Set.indicator, hsω, htω, Set.mem_inter_iff]
       · simp [Set.indicator, hsω, htω, Set.mem_inter_iff]
   have hmeas : MeasurableSet (s ∩ t) := hs.inter ht
-  simpa [hmul] using (lintegral_indicator_one (μ := P) (s := s ∩ t) hmeas)
+  simpa [hmul, Pi.one_def] using (lintegral_indicator_one (μ := P) (s := s ∩ t) hmeas)
 
 lemma lintegral_start_cesaro_eq_const
     (P : Measure (ℕ → Fin k))

@@ -129,8 +129,7 @@ theorem inducedWorldModel_evidence_isAdditiveExtension :
         letI : AdditiveWorldModel (Multiset Obs) Query Ev := S.inducedWorldModel
         AdditiveWorldModel.extract (State := Multiset Obs) (Query := Query) (Ev := Ev) σ q) := by
   letI : EvidenceType (Multiset Obs) := multisetEvidenceType Obs
-  simpa [inducedWorldModel_evidence_eq_aggregate (S := S)] using
-    aggregate_isAdditiveExtension (S := S)
+  exact aggregate_isAdditiveExtension (S := S)
 
 /-- The evidence extracted by the induced generic world model is the canonical
 generic additive extension of the atomic observation encoder. -/
@@ -380,7 +379,7 @@ theorem queryObservationConfidence_inducedWorldModel_eq_worldModel_queryConfiden
   letI : EvidenceType (Multiset Obs) := multisetEvidenceType Obs
   letI : AdditiveWorldModel (Multiset Obs) Query BinaryEvidence := S.inducedWorldModel
   letI : BinaryWorldModel (Multiset Obs) Query := worldModelOfAtomicEvidence S.observe
-  simpa using
+  exact
     AdditiveWorldModel.queryObservationConfidence_eq_queryConfidence
       (State := Multiset Obs) (Query := Query) κ σ q
 
@@ -709,8 +708,7 @@ theorem queryObservationCount_inducedWorldModel_of_unit
       (σ.card : ℝ≥0∞) := by
   letI : EvidenceType (Multiset Obs) := multisetEvidenceType Obs
   letI : AdditiveWorldModel (Multiset Obs) Query Ev := S.inducedWorldModel
-  simpa [UnitObservation] using
-    AdditiveWorldModel.queryObservationCount_of_unit S.observe hunit σ q
+  exact AdditiveWorldModel.queryObservationCount_of_unit S.observe hunit σ q
 
 /-- The generic world model induced by a unit-observation surface has confidence
 equal to the standard `n / (n + κ)` law. -/
@@ -723,8 +721,7 @@ theorem queryObservationConfidence_inducedWorldModel_of_unit
       (σ.card : ℝ≥0∞) / ((σ.card : ℝ≥0∞) + κ) := by
   letI : EvidenceType (Multiset Obs) := multisetEvidenceType Obs
   letI : AdditiveWorldModel (Multiset Obs) Query Ev := S.inducedWorldModel
-  simpa [UnitObservation] using
-    AdditiveWorldModel.queryObservationConfidence_of_unit κ S.observe hunit σ q
+  exact AdditiveWorldModel.queryObservationConfidence_of_unit κ S.observe hunit σ q
 
 /-- In a unit-observation induced world model, an idempotent revision fragment
 must have zero observation count at every query. -/
@@ -1050,10 +1047,15 @@ theorem bernoulliStatistic_unitObservation
     UnitObservation (bernoulliStatistic classify) := by
   intro o q
   by_cases h : classify o q
-  · simp [bernoulliStatistic, bernoulliObservation, h,
-      Mettapedia.Logic.ConjugateEvidenceSurface.instConjugateEvidenceBeta]
-  · simp [bernoulliStatistic, bernoulliObservation, h,
-      Mettapedia.Logic.ConjugateEvidenceSurface.instConjugateEvidenceBeta]
+  · show ConjugateEvidence.observationCount (bernoulliObservation (classify o q)) = 1
+    rw [h]
+    show (1 : ℝ≥0∞) + 0 = 1
+    simp
+  · show ConjugateEvidence.observationCount (bernoulliObservation (classify o q)) = 1
+    rw [Bool.not_eq_true] at h
+    rw [h]
+    show (0 : ℝ≥0∞) + 1 = 1
+    simp
 
 theorem bernoulliStatistic_queryObservationCount
     (classify : Obs → Query → Bool)
@@ -1063,7 +1065,7 @@ theorem bernoulliStatistic_queryObservationCount
       (bernoulliStatistic classify).inducedWorldModel
     AdditiveWorldModel.queryObservationCount (State := Multiset Obs) (Query := Query) (Ev := BinaryEvidence) σ q =
       (σ.card : ℝ≥0∞) := by
-  simpa using
+  exact
     queryObservationCount_inducedWorldModel_of_unit
       (S := bernoulliStatistic classify)
       (bernoulliStatistic_unitObservation classify) σ q
@@ -1837,7 +1839,7 @@ theorem categoricalConjugatePosteriorSurface_eq_of_inducedWorldModelEvidence {k 
   letI : EvidenceType (Multiset Obs) := multisetEvidenceType Obs
   letI : AdditiveWorldModel (Multiset Obs) Query (MultiEvidence k) :=
     (categoricalStatistic classify).inducedWorldModel
-  simpa using
+  exact
     ConjugatePosteriorSurface.posterior_eq_of_inducedWorldModelEvidence
       (P := categoricalConjugatePosteriorSurface classify)
       (lift := fun prior _ e => categoricalPosteriorFromAggregate prior e)
@@ -2134,8 +2136,8 @@ theorem gaussianStatistic_aggregate_realizable
     (aggregate (gaussianStatistic value) σ q).Realizable := by
   induction σ using Multiset.induction_on with
   | empty =>
-      simpa [aggregate_zero] using
-        (NormalGammaEvidence.realizable_zero : (0 : NormalGammaEvidence).Realizable)
+      rw [aggregate_zero]
+      exact (NormalGammaEvidence.realizable_zero : (0 : NormalGammaEvidence).Realizable)
   | @cons o σ ih =>
       rw [aggregate_cons]
       simpa [gaussianStatistic] using
@@ -2251,7 +2253,7 @@ theorem gaussianConjugatePosteriorSurface_eq_of_inducedWorldModelEvidence
   letI : EvidenceType (Multiset Obs) := multisetEvidenceType Obs
   letI : AdditiveWorldModel (Multiset Obs) Query NormalGammaEvidence :=
     (gaussianStatistic value).inducedWorldModel
-  simpa using
+  exact
     ConjugatePosteriorSurface.posterior_eq_of_inducedWorldModelEvidence
       (P := gaussianConjugatePosteriorSurface value)
       (lift := fun prior' _ e => gaussianPosteriorFromAggregate prior' e)
@@ -2362,8 +2364,7 @@ theorem gaussianConjugatePosteriorSurface_hplus_via_evidenceNormalGamma
     let e₂ := aggregate (gaussianStatistic value) σ₂ q
     (gaussianConjugatePosteriorSurface value).posterior prior (σ₁ + σ₂) q =
       posterior (posterior prior e₁) e₂ := by
-  simpa [gaussianConjugatePosteriorSurface_eq_gaussianPosteriorFromAggregate]
-    using gaussianStatistic_normalGamma_conjugate_update prior value σ₁ σ₂ q
+  exact gaussianStatistic_normalGamma_conjugate_update prior value σ₁ σ₂ q
 
 theorem gaussianStatistic_aggregate_n
     (value : Obs → Query → ℝ)

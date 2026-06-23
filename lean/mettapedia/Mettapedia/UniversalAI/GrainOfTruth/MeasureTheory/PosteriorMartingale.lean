@@ -111,7 +111,7 @@ noncomputable def posteriorReal (O : Oracle) (M : ReflectiveEnvironmentClass O)
 
 theorem posteriorReal_adapted (O : Oracle) (M : ReflectiveEnvironmentClass O)
     (prior : PriorOverClass O M) (envs : ℕ → Environment) (ν_idx : EnvironmentIndex) :
-    MeasureTheory.Adapted trajectoryFiltration (posteriorReal O M prior envs ν_idx) := by
+    MeasureTheory.StronglyAdapted trajectoryFiltration (posteriorReal O M prior envs ν_idx) := by
   intro t
   -- We prove measurability by “depends only on the first t steps”.
   have h_meas :
@@ -124,8 +124,9 @@ theorem posteriorReal_adapted (O : Oracle) (M : ReflectiveEnvironmentClass O)
       posteriorWeight_adapted O M prior envs ν_idx t traj₁ traj₂ hprefix
     simpa [posteriorReal] using congrArg ENNReal.toReal hEq
   -- Convert measurability to strong measurability in the filtration σ-algebra.
-  change StronglyMeasurable[sigmaAlgebraUpTo t] (posteriorReal O M prior envs ν_idx t)
-  exact h_meas.stronglyMeasurable
+  apply Measurable.stronglyMeasurable
+  change @Measurable Trajectory ℝ (sigmaAlgebraUpTo t) _ (posteriorReal O M prior envs ν_idx t)
+  exact h_meas
 
 /-! ## A simple bound: posterior weights are ≤ 1 -/
 
@@ -147,7 +148,7 @@ theorem bayesianPosteriorWeight_le_one (O : Oracle) (M : ReflectiveEnvironmentCl
           prior.weight i * historyProbability (envs i) h ≤ prior.weight i := by
         intro i
         have h_prob : historyProbability (envs i) h ≤ 1 := historyProbability_le_one (envs i) h
-        simpa [mul_one] using (mul_le_mul_left' h_prob (prior.weight i))
+        simpa [mul_one] using (mul_le_mul_right h_prob (prior.weight i))
       have h_le : denom ≤ ∑' i, prior.weight i := by
         simpa [denom, mixtureProbability] using (ENNReal.tsum_le_tsum h_term)
       exact le_trans h_le prior.tsum_le_one
@@ -224,7 +225,8 @@ theorem posteriorReal_martingale (O : Oracle) (M : ReflectiveEnvironmentClass O)
 
   -- Any `σ(t)`-measurable set is a preimage under `truncate t`.
   have hs_sigma : @MeasurableSet Trajectory (sigmaAlgebraUpTo t) s := by
-    simpa [trajectoryFiltration] using hs
+    change @MeasurableSet Trajectory (sigmaAlgebraUpTo t) s at hs
+    exact hs
   rcases (by
       simpa [sigmaAlgebraUpTo, MeasurableSpace.measurableSet_comap] using hs_sigma) with
     ⟨w, _hw, hw_eq⟩

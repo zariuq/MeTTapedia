@@ -345,7 +345,7 @@ theorem elaborate_surfacePureClosed_quoteAgreement
     (term : SurfacePureTm 0) :
     (ElaboratedNode.artifact (elaborate (SurfaceNode.surfacePureClosed term))).pattern =
       Mettapedia.Languages.MeTTa.PureKernel.PatternBridge.quoteClosedTm term.toPureTm := by
-  simpa [elaborate, certifySurfacePure] using term.toClosedPattern_eq_quoteClosedTm
+  exact term.toClosedPattern_eq_quoteClosedTm
 
 theorem elaborate_heRuntimeRule_backend
     (pattern : Pattern) :

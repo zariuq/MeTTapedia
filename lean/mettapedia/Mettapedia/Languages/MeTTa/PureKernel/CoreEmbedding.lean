@@ -477,9 +477,8 @@ theorem betaPi_bridge_regression_one_nestedLam_assuming_inst0
       (quoteClosedTm betaPiOneNestedLamRedex)
       (quoteClosedTm betaPiOneNestedLamContractum) := by
   have hred : Red betaPiOneNestedLamRedex betaPiOneNestedLamContractum := by
-    simpa [betaPiOneNestedLamRedex, betaPiOneNestedLamContractum, inst0, subst, subst0, liftSub,
-      rename, wk] using
-      (Red.betaPi (.lam (.var (Fin.succ (0 : Fin 1)))) (.u0))
+    unfold betaPiOneNestedLamRedex betaPiOneNestedLamContractum
+    exact (Red.betaPi (.lam (.var (Fin.succ (0 : Fin 1)))) (.u0))
   exact pureTheoryStep_sound_pureProfileTheoryStep_quoteClosed_assuming_inst0 hinst0 hcompat0 hred
 
 /-- Regression: two nested binders in βΠ body still transports to C1. -/
@@ -490,9 +489,8 @@ theorem betaPi_bridge_regression_two_nestedLam_assuming_inst0
       (quoteClosedTm betaPiTwoNestedLamRedex)
       (quoteClosedTm betaPiTwoNestedLamContractum) := by
   have hred : Red betaPiTwoNestedLamRedex betaPiTwoNestedLamContractum := by
-    simpa [betaPiTwoNestedLamRedex, betaPiTwoNestedLamContractum, inst0, subst, subst0, liftSub,
-      rename, wk] using
-      (Red.betaPi (.lam (.lam (.var (Fin.succ (Fin.succ (0 : Fin 1)))))) (.u0))
+    unfold betaPiTwoNestedLamRedex betaPiTwoNestedLamContractum
+    exact (Red.betaPi (.lam (.lam (.var (Fin.succ (Fin.succ (0 : Fin 1)))))) (.u0))
   exact pureTheoryStep_sound_pureProfileTheoryStep_quoteClosed_assuming_inst0 hinst0 hcompat0 hred
 
 /-- Backwards-compatible name for the A-layer step relation. -/

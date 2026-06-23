@@ -307,7 +307,7 @@ lemma wordProb_rowKernelToMarkovParam_eq_indicator_stepProd
     simp [rowKernelToMarkovParam, wordProb, wordProbNN, initProb, hstart, hmem, haux']
   · have hnotmem : ω 0 ∉ (Set.singleton a : Set (Fin k)) := by
       intro hmem
-      exact hstart (by simpa [Set.mem_singleton_iff] using hmem)
+      exact hstart hmem
     simp [rowKernelToMarkovParam, wordProb, wordProbNN, initProb, hstart, hnotmem]
 
 /-- Cross-anchor product identity implies the cylinder mixing identity. -/
@@ -1434,11 +1434,11 @@ theorem rowProcessLaw_permInvariant_of_successorMatrixPE
           Measure.map
             (fun ω : ℕ → Fin k =>
               fun j : Fin n => rowSuccessorVisitProcess (k := k) i ω j) P := by
-                simpa [Function.comp] using hPE_n
+                exact hPE_n
         _ =
           Measure.map (fun r : ℕ → Fin k => fun j : Fin n => r j)
             (Measure.map (rowSuccessorVisitProcess (k := k) i) P) := by
-              simpa using
+              exact
                 (Measure.map_map
                   (μ := P)
                   (g := fun r : ℕ → Fin k => fun j : Fin n => r j)
@@ -1621,7 +1621,7 @@ lemma sum_start_inter_rowSuccessorValueEvent_eq_start
           refine Finset.sum_congr rfl ?_
           intro b hb
           symm
-          simpa [ν, rowSuccessorValueEvent, rowSuccessorVisitProcess] using
+          exact
             (Measure.map_apply
               (μ := P.restrict s)
               (f := fun ω : ℕ → Fin k => rowSuccessorAtNthVisit (k := k) i n ω)
@@ -2073,7 +2073,7 @@ theorem sharedLatentTransitionCoherence_of_rowSuccessorMatrixInvariance
           simp [hcyl]
         _ = ∫⁻ ω, ind ω ∂P := by
           have hlin : ∫⁻ ω, ind ω ∂P = P s := by
-            simpa [ind] using (lintegral_indicator_one (μ := P) (s := s) hmeas_s)
+            exact (lintegral_indicator_one (μ := P) (s := s) hmeas_s)
           exact hlin.symm
         _ =
           ∫⁻ ω, wordProb (k := k)
@@ -2088,7 +2088,7 @@ theorem sharedLatentTransitionCoherence_of_rowSuccessorMatrixInvariance
                     Set.indicator, hω, hmem]
                 · have hmem : ω 0 ∉ (Set.singleton a : Set (Fin k)) := by
                     intro hmem'
-                    exact hω (by simpa [Set.mem_singleton_iff] using hmem')
+                    exact hω hmem'
                   simp [rowKernelToMarkovParam, wordProb, wordProbNN, wordProbAux, initProb, s, ind,
                     Set.indicator, hω, hmem]
     | cons b rest =>

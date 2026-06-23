@@ -381,9 +381,8 @@ theorem maxPoolingOperator_ne_fuse
       max (2 : ℝ≥0∞) 3 = ((2 : ℝ≥0∞) + 3) := by
     simpa [maxPoolingOperator, maxPool, maxEvidence, fuse, s2, s3, g0, f0,
       constScorer, BinaryEvidence.hplus_def] using congrArg BinaryEvidence.pos hAt
-  have hRealRaw : (max (2 : ℝ) 3) = ((2 : ℝ) + 3) := by
-    simpa using congrArg ENNReal.toReal hPosRaw
-  norm_num at hRealRaw
+  simp only [max_eq_right (by norm_num : (2 : ℝ≥0∞) ≤ 3)] at hPosRaw
+  norm_num at hPosRaw
 
 /-- `fuse` satisfies the pooling-operator axioms. -/
 noncomputable def fusePoolingOperator {Goal Fact : Type*} :

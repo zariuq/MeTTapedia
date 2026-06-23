@@ -38,7 +38,11 @@ theorem subst_instantiate
           | vz =>
               rfl
           | vs v =>
-              simpa [Subst.comp, Subst.lift, instantiate, weaken] using
+              change σs v =
+                subst (Subst.single (Base := Base) (Const := Const) (subst σs t))
+                  (rename
+                    (Rename.weaken (Base := Base) (Γ := Γ') (σ := σ)) (σs v))
+              exact
                 (instantiate_weaken
                   (Base := Base) (Const := Const)
                   (σ := σ) (t := subst σs t) (u := σs v)).symm
@@ -136,7 +140,9 @@ theorem noConstOccurrence_weakenCtx
   | nil =>
       simpa using ht
   | cons ρ Γ ih =>
-      simpa [weakenCtx] using
+      change NoConstOccurrence c
+        (rename (Rename.weaken (Base := Base) (Γ := Γ) (σ := ρ)) (weakenCtx Γ t))
+      exact
         noConstOccurrence_rename
           (Base := Base) (Const := Const)
           (ρ := Rename.weaken (Base := Base) (Γ := Γ) (σ := ρ))
@@ -173,8 +179,8 @@ theorem extDerivation_weakenClosedTheoryToCtx
       rw [weakenClosedTheoryToCtx_empty, weakenClosedFormulaToCtx_nil]
       exact hDer
   | cons σ Γ ih =>
-      simpa [weakenClosedTheoryToCtx, weakenClosedFormulaToCtx, weakenCtx,
-        weakenHyps] using
+      rw [weakenClosedTheoryToCtx_ctx_cons, weakenClosedFormulaToCtx_cons]
+      exact
         (ExtDerivation.rename
           (Base := Base) (Const := Const)
           (ρ := Rename.weaken (Base := Base) (Γ := Γ) (σ := σ))
@@ -235,7 +241,7 @@ theorem subst_derivation
       exact .impE (ihφψ σs) (ihφ σs)
   | notI h ih =>
       exact .notI (by
-        simpa [List.map] using ih σs)
+        simpa [List.map, Mettapedia.Logic.HOL.subst] using ih σs)
   | notE hnot hφ ihnot ihφ =>
       exact .notE (ihnot σs) (ihφ σs)
   | allI h ih =>
@@ -284,13 +290,13 @@ theorem subst_derivation
   | eqLam h ih =>
       rename_i Γ₀ Δ₀ ρ τ t u
       exact .eqLam (by
-        simpa [subst_weakenHyps] using
+        simpa [subst_weakenHyps, Mettapedia.Logic.HOL.subst] using
           ih (Subst.lift (Base := Base) (Const := Const) (σ := ρ) σs))
   | funExt h ih =>
       rename_i Γ₀ Δ₀ ρ τ f g
       exact .funExt (by
-        simpa [Mettapedia.Logic.HOL.subst, Mettapedia.Logic.HOL.subst_weaken] using
-          ih σs)
+        simpa [Mettapedia.Logic.HOL.subst, Mettapedia.Logic.HOL.subst_weaken,
+          Subst.lift] using ih σs)
   | beta t u =>
       rename_i Γ₀ Δ₀ ρ τ
       simpa [Mettapedia.Logic.HOL.subst, Mettapedia.Logic.HOL.subst_instantiate] using
@@ -381,11 +387,18 @@ theorem abstractConstAt_instantiate_const_self
                 (ρ := fun {τ : Ty Base} (v : Var [σ] τ) =>
                   insertRen (Base := Base) (Γ := []) (σ := σ) [σ] v)
                 t)
-      _ = subst (Subst.id (Base := Base) (Const := Const) (Γ := [σ])) t := by
-            apply subst_ext
-            intro τ v
-            cases v <;> rfl
-      _ = t := subst_id (Base := Base) (Const := Const) t
+        _ = subst (Subst.id (Base := Base) (Const := Const) (Γ := [σ])) t := by
+              apply subst_ext
+              intro τ v
+              cases v <;> rfl
+        _ = t := subst_id (Base := Base) (Const := Const) t
+  have hConstSelf :
+      abstractConstAt (Base := Base) (Γ := []) c [] (.const c) =
+        (.var (.vz : Var [σ] σ)) := by
+    simp only [abstractConstAt, varAtDepth]
+    split
+    · rfl
+    · contradiction
   calc
     abstractConstAt (Base := Base) (Γ := []) (τ := .prop) c []
         (instantiate (Base := Base) (.const c) φ)
@@ -400,10 +413,31 @@ theorem abstractConstAt_instantiate_const_self
           (rename
             (fun {τ : Ty Base} (v : Var [σ] τ) =>
               insertRen (Base := Base) (Γ := []) (σ := σ) [σ] v) φ) := by
-          simp [abstractConstAt, varAtDepth]
+          rw [hConstSelf]
           rw [abstractConstAt_noOccurrence
             (Base := Base) (Γ := []) (c := c) [σ] φ hφno]
+          rfl
     _ = φ := hInsertCancel φ
+
+theorem abstractConstAt_closed_imp
+    {σ : Ty Base} (c : Const σ) (φ ψ : ClosedFormula Const) :
+    abstractConstAt (Base := Base) (Γ := []) (τ := .prop) c [] (.imp φ ψ) =
+      .imp
+        (abstractConstAt (Base := Base) (Γ := []) (τ := .prop) c [] φ)
+        (abstractConstAt (Base := Base) (Γ := []) (τ := .prop) c [] ψ) := by
+  simp only [abstractConstAt]
+
+theorem abstractConstAt_closed_ex
+    {σ ρ : Ty Base} (c : Const σ) (φ : Formula Const [ρ]) :
+    abstractConstAt (Base := Base) (Γ := []) (τ := .prop) c [] (.ex φ) =
+      .ex (abstractConstAt (Base := Base) (Γ := []) (τ := .prop) c [ρ] φ) := by
+  simp only [abstractConstAt]
+
+theorem abstractConstAt_closed_all
+    {σ ρ : Ty Base} (c : Const σ) (φ : Formula Const [ρ]) :
+    abstractConstAt (Base := Base) (Γ := []) (τ := .prop) c [] (.all φ) =
+      .all (abstractConstAt (Base := Base) (Γ := []) (τ := .prop) c [ρ] φ) := by
+  simp only [abstractConstAt]
 
 namespace ClosedTheorySet
 
@@ -510,10 +544,38 @@ theorem abstractConstAt_constantHenkinExImplication
         (constantHenkinExImplication (Base := Base) (Const := Const) exConst φ) =
       .imp (.ex (constantHenkinAbstractedBody (Base := Base) (Const := Const) φ))
         φ := by
-  simp [constantHenkinExImplication, constantHenkinAbstractedBody, abstractConstAt,
-    abstractConstAt_instantiate_const_self (Base := Base) (Const := Const)
-      (exConst φ) φ hφno,
-    abstractConstAt_noOccurrence (Base := Base) (Γ := []) (c := exConst φ) [σ] φ hφno]
+  unfold constantHenkinExImplication constantHenkinAbstractedBody
+  change abstractConstAt (Base := Base) (Γ := []) (τ := .prop) (exConst φ) []
+      (.imp (.ex φ : ClosedFormula Const)
+        (instantiate (Base := Base) (.const (exConst φ)) φ)) =
+    .imp (.ex
+        (rename
+          (fun {τ : Ty Base} (v : Var [σ] τ) =>
+            insertRen (Base := Base) (Γ := []) (σ := σ) [σ] v)
+          φ))
+      φ
+  rw [abstractConstAt_closed_imp]
+  have hEx :
+      abstractConstAt (Base := Base) (Γ := []) (τ := .prop) (exConst φ) []
+        (.ex φ : ClosedFormula Const) =
+      .ex
+        (abstractConstAt (Base := Base) (Γ := []) (τ := .prop) (exConst φ) [σ] φ) :=
+    abstractConstAt_closed_ex (Base := Base) (Const := Const) (c := exConst φ) φ
+  have hNo :
+      abstractConstAt (Base := Base) (Γ := []) (τ := .prop) (exConst φ) [σ] φ =
+        rename
+          (fun {τ : Ty Base} (v : Var [σ] τ) =>
+            insertRen (Base := Base) (Γ := []) (σ := σ) [σ] v)
+          φ := by
+    exact abstractConstAt_noOccurrence
+      (Base := Base) (Γ := []) (c := exConst φ) [σ] φ hφno
+  have hInst :
+      abstractConstAt (Base := Base) (Γ := []) (τ := .prop) (exConst φ) []
+        (instantiate (Base := Base) (.const (exConst φ)) φ) = φ :=
+    abstractConstAt_instantiate_const_self
+      (Base := Base) (Const := Const) (exConst φ) φ hφno
+  rw [hEx, hNo, hInst]
+  rfl
 
 theorem abstractConstAt_constantHenkinAllImplication
     (allConst : ∀ {σ : Ty Base}, Formula Const [σ] → Const σ)
@@ -522,10 +584,38 @@ theorem abstractConstAt_constantHenkinAllImplication
     abstractConstAt (Base := Base) (Γ := []) (τ := .prop) (allConst φ) []
         (constantHenkinAllImplication (Base := Base) (Const := Const) allConst φ) =
       .imp φ (.all (constantHenkinAbstractedBody (Base := Base) (Const := Const) φ)) := by
-  simp [constantHenkinAllImplication, constantHenkinAbstractedBody, abstractConstAt,
-    abstractConstAt_instantiate_const_self (Base := Base) (Const := Const)
-      (allConst φ) φ hφno,
-    abstractConstAt_noOccurrence (Base := Base) (Γ := []) (c := allConst φ) [σ] φ hφno]
+  unfold constantHenkinAllImplication constantHenkinAbstractedBody
+  change abstractConstAt (Base := Base) (Γ := []) (τ := .prop) (allConst φ) []
+      (.imp (instantiate (Base := Base) (.const (allConst φ)) φ)
+        (.all φ : ClosedFormula Const)) =
+    .imp φ
+      (.all
+        (rename
+          (fun {τ : Ty Base} (v : Var [σ] τ) =>
+            insertRen (Base := Base) (Γ := []) (σ := σ) [σ] v)
+          φ))
+  rw [abstractConstAt_closed_imp]
+  have hInst :
+      abstractConstAt (Base := Base) (Γ := []) (τ := .prop) (allConst φ) []
+        (instantiate (Base := Base) (.const (allConst φ)) φ) = φ :=
+    abstractConstAt_instantiate_const_self
+      (Base := Base) (Const := Const) (allConst φ) φ hφno
+  have hAll :
+      abstractConstAt (Base := Base) (Γ := []) (τ := .prop) (allConst φ) []
+        (.all φ : ClosedFormula Const) =
+      .all
+        (abstractConstAt (Base := Base) (Γ := []) (τ := .prop) (allConst φ) [σ] φ) :=
+    abstractConstAt_closed_all (Base := Base) (Const := Const) (c := allConst φ) φ
+  have hNo :
+      abstractConstAt (Base := Base) (Γ := []) (τ := .prop) (allConst φ) [σ] φ =
+        rename
+          (fun {τ : Ty Base} (v : Var [σ] τ) =>
+            insertRen (Base := Base) (Γ := []) (σ := σ) [σ] v)
+          φ := by
+    exact abstractConstAt_noOccurrence
+      (Base := Base) (Γ := []) (c := allConst φ) [σ] φ hφno
+  rw [hInst, hAll, hNo]
+  rfl
 
 /-- The closed theory-set freely generated by the fresh-constant Henkin
 implication scheme. The canonical construction should prime-extend a theory
@@ -867,10 +957,15 @@ theorem extDerivation_weaken_closedTheory
     {Γ : ClosedTheory Const} {θ : ClosedFormula Const}
     {σ : Ty Base}
     (hDer : ClosedTheory.Provable (Const := Const) Γ θ) :
-    ExtDerivation Const
+  ExtDerivation Const
       (weakenHyps (Base := Base) (Const := Const) (σ := σ) Γ)
       (weaken (Base := Base) (Const := Const) (σ := σ) θ) := by
-  simpa [weakenHyps] using
+  change ExtDerivation Const
+    (List.map
+      (fun θ : ClosedFormula Const =>
+        rename (Rename.weaken (Base := Base) (Γ := []) (σ := σ)) θ) Γ)
+    (rename (Rename.weaken (Base := Base) (Γ := []) (σ := σ)) θ)
+  exact
     ExtDerivation.rename
       (Base := Base) (Const := Const)
       (ρ := Rename.weaken (Base := Base) (Γ := []) (σ := σ))
@@ -920,6 +1015,7 @@ theorem abstractConstAt_closedTheory_eq_weakenHyps
           weaken (Base := Base) (Const := Const) (σ := σ) ψ ::
             weakenHyps (Base := Base) (Const := Const) (σ := σ) Γ
       rw [hHead, hTail]
+      rfl
 
 theorem extDerivation_abstractConstAt_weaken_of_noOccurrence
     {Γ : ClosedTheory Const} {θ : ClosedFormula Const}
@@ -1155,6 +1251,7 @@ theorem closedTheoryProvable_of_exists_of_fresh_instance_assumption
       (Base := Base) (Const := Const) c φ hφno]
     rw [abstractConstAt_closedTheory_eq_weakenHyps
       (Base := Base) (Const := Const) c hΓno]
+    rfl
   have hθeq :
       abstractConstAt (Base := Base) (Γ := []) (τ := .prop) c [] θ =
         weaken (Base := Base) (Const := Const) (σ := σ) θ := by

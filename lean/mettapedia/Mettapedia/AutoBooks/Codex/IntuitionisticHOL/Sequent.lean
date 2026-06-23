@@ -318,7 +318,8 @@ theorem ext_allR
     {φ : Formula Const (σ :: Γ)}
     (d : ExtDerivation Const (weakenAntecedents (Base := Base) (Const := Const) σ Δ) φ) :
     ExtDerivation Const Δ (.all φ) := by
-  simpa [weakenAntecedents, Mettapedia.Logic.HOL.weakenHyps] using
+  simpa [weakenAntecedents, Mettapedia.Logic.HOL.weakenHyps,
+    Mettapedia.Logic.HOL.weaken] using
     (.allI d)
 
 theorem ext_exR
@@ -366,12 +367,19 @@ theorem ext_formula_weaken
     ExtDerivation Const
       (weakenAntecedents (Base := Base) (Const := Const) σ Δ)
       (weaken (Base := Base) (Const := Const) (σ := σ) φ) := by
-  simpa [weakenAntecedents, Mettapedia.Logic.HOL.weakenHyps] using
-    (ExtDerivation.rename
-      (Base := Base)
-      (Const := Const)
-      (ρ := Rename.weaken (Base := Base) (Γ := Γ) (σ := σ))
-      d)
+  change ExtDerivation Const
+    (List.map
+      (fun ψ =>
+        Mettapedia.Logic.HOL.rename
+          (Rename.weaken (Base := Base) (Γ := Γ) (σ := σ)) ψ)
+      Δ)
+    (Mettapedia.Logic.HOL.rename
+      (Rename.weaken (Base := Base) (Γ := Γ) (σ := σ)) φ)
+  exact ExtDerivation.rename
+    (Base := Base)
+    (Const := Const)
+    (ρ := Rename.weaken (Base := Base) (Γ := Γ) (σ := σ))
+    d
 
 theorem eq_andCongr
     {Γ : Ctx Base}
@@ -603,7 +611,8 @@ theorem eq_exCongr
           (φ :: weakenAntecedents (Base := Base) (Const := Const) σ Δ)
           φ' :=
       ExtDerivation.eqProp_mp_left hEq (.hyp (by simp [weakenAntecedents]))
-    simpa [weakenAntecedents] using
+    simpa [weakenAntecedents, Mettapedia.Logic.HOL.weaken,
+      Mettapedia.Logic.HOL.rename] using
       (ext_exR
         (Base := Base)
         (Const := Const)
@@ -627,7 +636,8 @@ theorem eq_exCongr
           (φ' :: weakenAntecedents (Base := Base) (Const := Const) σ Δ)
           φ :=
       ExtDerivation.eqProp_mp_right hEq (.hyp (by simp [weakenAntecedents]))
-    simpa [weakenAntecedents] using
+    simpa [weakenAntecedents, Mettapedia.Logic.HOL.weaken,
+      Mettapedia.Logic.HOL.rename] using
       (ext_exR
         (Base := Base)
         (Const := Const)

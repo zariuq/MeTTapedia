@@ -1,7 +1,7 @@
 import Mettapedia.InformationTheory.ShannonEntropy.Faddeev
 import Mettapedia.InformationTheory.ShannonEntropy.Shannon1948
 import Mettapedia.InformationTheory.ShannonEntropy.ShannonKhinchin
-import Mettapedia.ProbabilityTheory.KnuthSkilling.Information.InformationEntropy
+import KnuthSkilling.Information.InformationEntropy
 
 /-!
 # Unified Entropy Axiom Interface
@@ -183,7 +183,7 @@ This section provides bidirectional conversions and proves key properties transf
 
 /-- Alias for the K&S ProbDist type. -/
 abbrev KSProbDist (n : ℕ) :=
-  Mettapedia.ProbabilityTheory.KnuthSkilling.Information.InformationEntropy.ProbDist n
+  KnuthSkilling.Information.InformationEntropy.ProbDist n
 
 namespace ProbVec
 
@@ -226,17 +226,17 @@ def probVecEquivProbDist (n : ℕ) : ProbVec n ≃ KSProbDist n where
 
 The three entropy definitions in this codebase agree (up to normalization). -/
 
-open Mettapedia.ProbabilityTheory.KnuthSkilling.Information.InformationEntropy in
+open KnuthSkilling.Information.InformationEntropy in
 /-- **Shannon entropy equivalence**: InformationTheory.shannonEntropy = K&S.shannonEntropy
     via the bridge.
 
 Both use the formula -Σ pᵢ log pᵢ with the 0·log(0) = 0 convention. -/
 theorem shannonEntropy_eq_ks_shannonEntropy {n : ℕ} (p : ProbVec n) :
     shannonEntropy p =
-      Mettapedia.ProbabilityTheory.KnuthSkilling.Information.InformationEntropy.shannonEntropy
+      KnuthSkilling.Information.InformationEntropy.shannonEntropy
         p.toProbDist := by
   unfold shannonEntropy
-  rw [Mettapedia.ProbabilityTheory.KnuthSkilling.Information.InformationEntropy.shannonEntropy_eq'
+  rw [KnuthSkilling.Information.InformationEntropy.shannonEntropy_eq'
     p.toProbDist]
   simp only [negMulLog, ProbVec.toProbDist]
   rw [← Finset.sum_neg_distrib]
@@ -246,41 +246,41 @@ theorem shannonEntropy_eq_ks_shannonEntropy {n : ℕ} (p : ProbVec n) :
 
 /-! ## Uniform Distribution Bridge -/
 
-open Mettapedia.ProbabilityTheory.KnuthSkilling.Information.InformationEntropy in
+open KnuthSkilling.Information.InformationEntropy in
 /-- The InformationTheory uniform distribution matches K&S uniform distribution. -/
 theorem uniformDist_eq_ks_uniformDist (n : ℕ) (hn : 0 < n) :
     (uniformDist n hn).toProbDist =
-      Mettapedia.ProbabilityTheory.KnuthSkilling.Information.InformationEntropy.uniformDist n hn :=
+      KnuthSkilling.Information.InformationEntropy.uniformDist n hn :=
     by
-  apply Mettapedia.ProbabilityTheory.KnuthSkilling.Information.InformationEntropy.ProbDist.ext
+  apply KnuthSkilling.Information.InformationEntropy.ProbDist.ext
   intro i
   simp [ProbVec.toProbDist, uniformDist,
-        Mettapedia.ProbabilityTheory.KnuthSkilling.Information.InformationEntropy.uniformDist]
+        KnuthSkilling.Information.InformationEntropy.uniformDist]
 
 /-! ## KL Divergence Interface
 
 Unified KL divergence across ProbVec and ProbDist. -/
 
-open Mettapedia.ProbabilityTheory.KnuthSkilling.Information.InformationEntropy in
+open KnuthSkilling.Information.InformationEntropy in
 /-- **Unified KL divergence** on ProbVec via the bridge. -/
 noncomputable def klDivergenceVec {n : ℕ} (P Q : ProbVec n)
     (hQ_pos : ∀ i, P.1 i ≠ 0 → 0 < Q.1 i) : ℝ :=
   klDivergence P.toProbDist Q.toProbDist (by intro i hi; exact hQ_pos i hi)
 
-open Mettapedia.ProbabilityTheory.KnuthSkilling.Information.InformationEntropy in
+open KnuthSkilling.Information.InformationEntropy in
 open scoped ENNReal in
 /-- **Extended KL divergence** (ℝ≥0∞-valued) on ProbVec. -/
 noncomputable def klDivergenceVecTop {n : ℕ} (P Q : ProbVec n) : ENNReal :=
   klDivergenceTop P.toProbDist Q.toProbDist
 
-open Mettapedia.ProbabilityTheory.KnuthSkilling.Information.InformationEntropy in
+open KnuthSkilling.Information.InformationEntropy in
 /-- **Gibbs' inequality**: KL divergence is non-negative. -/
 theorem klDivergenceVec_nonneg {n : ℕ} (P Q : ProbVec n)
     (hQ_pos : ∀ i, P.1 i ≠ 0 → 0 < Q.1 i) :
     0 ≤ klDivergenceVec P Q hQ_pos :=
   klDivergence_nonneg' P.toProbDist Q.toProbDist (by intro i hi; exact hQ_pos i hi)
 
-open Mettapedia.ProbabilityTheory.KnuthSkilling.Information.InformationEntropy in
+open KnuthSkilling.Information.InformationEntropy in
 /-- **Shannon entropy via KL**: S(P) = log(n) - D(P ‖ Uniform_n). -/
 theorem shannonEntropy_via_klDivergence {n : ℕ} (P : ProbVec n) (hn : 0 < n) :
     shannonEntropy P = log n - klDivergenceVec P (uniformDist n hn) (by
@@ -289,11 +289,11 @@ theorem shannonEntropy_via_klDivergence {n : ℕ} (P : ProbVec n) (hn : 0 < n) :
   -- Use the K&S theorem connecting entropy and KL divergence
   have hU_pos : ∀ i, P.toProbDist.p i ≠ 0 →
       0 <
-          (Mettapedia.ProbabilityTheory.KnuthSkilling.Information.InformationEntropy.uniformDist n
+          (KnuthSkilling.Information.InformationEntropy.uniformDist n
                 hn).p
             i := by
     intro i _
-    simp [Mettapedia.ProbabilityTheory.KnuthSkilling.Information.InformationEntropy.uniformDist]
+    simp [KnuthSkilling.Information.InformationEntropy.uniformDist]
     positivity
   have h := klDivergence_uniform_eq_log_sub_shannonEntropy P.toProbDist hn
   -- The goal: KS.shannonEntropy P.toProbDist = log n - klDivergenceVec ...
@@ -302,7 +302,7 @@ theorem shannonEntropy_via_klDivergence {n : ℕ} (P : ProbVec n) (hn : 0 < n) :
   -- And klDivergenceVec unfolds to KS.klDivergence P.toProbDist (uniformDist n hn).toProbDist
   -- which equals KS.klDivergence P.toProbDist (KS.uniformDist n hn) by uniformDist_eq_ks_uniformDist
   have heq : (uniformDist n hn).toProbDist =
-      Mettapedia.ProbabilityTheory.KnuthSkilling.Information.InformationEntropy.uniformDist n hn :=
+      KnuthSkilling.Information.InformationEntropy.uniformDist n hn :=
     uniformDist_eq_ks_uniformDist n hn
   simp only [klDivergenceVec, heq]
   linarith

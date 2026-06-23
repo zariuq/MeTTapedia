@@ -20,7 +20,7 @@ private def gfPaperSyntaxLang :=
 private def gfProjectCoreEngPath : System.FilePath :=
   "../algorithms/gf_fragments/generated/GrammarEng.project_core.json"
 
-#eval do
+def writeLanguageFixtures : IO Unit := do
   IO.FS.createDirAll fixtureBase
   let metamathPath := s!"{fixtureBase}/metamath_core.language"
   let rhocalcPath := s!"{fixtureBase}/rhocalc_core.language"

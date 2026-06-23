@@ -65,7 +65,7 @@ theorem ennreal_sum_toReal_eq {α : Type*} [Fintype α] (f : α → ENNReal)
 theorem ennreal_term_ne_top_of_sum_le {α : Type*} [Fintype α] (f : α → ENNReal)
     (hsum_le : ∑ a, f a ≤ 1) (a : α) : f a ≠ ⊤ := by
   have hsum_ne_top : (∑ a, f a) ≠ ⊤ := ne_top_of_le_ne_top ENNReal.one_ne_top hsum_le
-  have ha_le_sum : f a ≤ ∑ b, f b := Finset.single_le_sum (fun _ _ => zero_le _) (Finset.mem_univ a)
+  have ha_le_sum : f a ≤ ∑ b, f b := Finset.single_le_sum (fun _ _ => zero_le) (Finset.mem_univ a)
   exact ne_top_of_le_ne_top hsum_ne_top ha_le_sum
 
 /-- When ENNReal sum ≤ 1, the Real sum also ≤ 1. -/
@@ -245,7 +245,7 @@ theorem playerValue_le_horizon {n : ℕ} (μ : MultiAgentEnvironment n)
           have hja_le_one : jointActionProb π h ja ≤ 1 := by
             simp only [jointActionProb]
             apply Finset.prod_le_one
-            · intro j _; exact zero_le _
+            · intro j _; exact zero_le
             · intro j _
               -- Agent policy probability ≤ 1 (since policies sum to 1)
               have hpview := MultiAgentHistory.playerView_wellFormed j h hw
@@ -253,7 +253,7 @@ theorem playerValue_le_horizon {n : ℕ} (μ : MultiAgentEnvironment n)
                 simpa [tsum_fintype] using (π.agents j).policy_sum_one (h.playerView j) hpview
               have hle : (π.agents j).policy (h.playerView j) (ja j) ≤
                          ∑ a : Action, (π.agents j).policy (h.playerView j) a := by
-                apply Finset.single_le_sum (fun _ _ => zero_le _) (Finset.mem_univ _)
+                apply Finset.single_le_sum (fun _ _ => zero_le) (Finset.mem_univ _)
               simpa [hsum] using hle
           have hja_ne_top : jointActionProb π h ja ≠ ⊤ :=
             ne_top_of_le_ne_top ENNReal.one_ne_top hja_le_one
@@ -475,14 +475,14 @@ theorem othersProb_le_one {n : ℕ} (π : MultiAgentPolicy n)
     (hw : h.wellFormed = true) : othersProb π h ja i ≤ 1 := by
   simp only [othersProb]
   apply Finset.prod_le_one
-  · intro j _; exact zero_le _
+  · intro j _; exact zero_le
   · intro j _hj
     have hpview := MultiAgentHistory.playerView_wellFormed j h hw
     have hsum : (∑ a : Action, (π.agents j).policy (h.playerView j) a) = 1 := by
       simpa [tsum_fintype] using (π.agents j).policy_sum_one (h.playerView j) hpview
     have hle : (π.agents j).policy (h.playerView j) (ja j) ≤
                ∑ a : Action, (π.agents j).policy (h.playerView j) a := by
-      apply Finset.single_le_sum (fun _ _ => zero_le _) (Finset.mem_univ _)
+      apply Finset.single_le_sum (fun _ _ => zero_le) (Finset.mem_univ _)
     simpa [hsum] using hle
 
 /-- Sum over if-then-else: ∑ x, (if x = target then f x else 0) = f target -/

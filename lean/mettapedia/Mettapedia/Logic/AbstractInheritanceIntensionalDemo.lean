@@ -689,7 +689,8 @@ theorem posIntBird_mem_penguinBirdStampedEvidence :
       DualConcept.WitnessStamp.posInt (Obj := Creature) (Attr := Concept) Concept.bird ∈
         (DualConcept.finitePositiveIntensionalWitnesses
           (baseInterpretation.meaning Concept.penguin)
-          (baseInterpretation.meaning Concept.bird)).map DualConcept.posIntEmbedding := by
+          (baseInterpretation.meaning Concept.bird)).map
+            (DualConcept.posIntEmbedding (Obj := Creature) (Attr := Concept)) := by
     exact Finset.mem_map.mpr ⟨Concept.bird, hPosInt, by
       simp [DualConcept.posIntEmbedding]⟩
   apply Finset.mem_union.mpr
@@ -716,7 +717,8 @@ theorem posIntBird_mem_birdBirdStampedEvidence :
       DualConcept.WitnessStamp.posInt (Obj := Creature) (Attr := Concept) Concept.bird ∈
         (DualConcept.finitePositiveIntensionalWitnesses
           (baseInterpretation.meaning Concept.bird)
-          (baseInterpretation.meaning Concept.bird)).map DualConcept.posIntEmbedding := by
+          (baseInterpretation.meaning Concept.bird)).map
+            (DualConcept.posIntEmbedding (Obj := Creature) (Attr := Concept)) := by
     exact Finset.mem_map.mpr ⟨Concept.bird, hPosInt, by
       simp [DualConcept.posIntEmbedding]⟩
   apply Finset.mem_union.mpr
@@ -750,10 +752,21 @@ theorem penguinBirdStampedEvidence_guardedInternalRevision_eq_some :
         (baseInterpretation.meaning Concept.penguin)
         (baseInterpretation.meaning Concept.bird))
       = some penguinBirdStampedEvidence := by
-  simpa [penguinBirdStampedEvidence] using
-    DualConcept.finiteInheritanceStampedEvidence_guardedRevise_eq_some
-      (baseInterpretation.meaning Concept.penguin)
-      (baseInterpretation.meaning Concept.bird)
+  change
+    StampedBinaryEvidence.guardedRevise
+      (DualConcept.positiveStampedEvidence
+        (baseInterpretation.meaning Concept.penguin)
+        (baseInterpretation.meaning Concept.bird))
+      (DualConcept.negativeStampedEvidence
+        (baseInterpretation.meaning Concept.penguin)
+        (baseInterpretation.meaning Concept.bird))
+      =
+        some (DualConcept.finiteInheritanceStampedEvidence
+          (baseInterpretation.meaning Concept.penguin)
+          (baseInterpretation.meaning Concept.bird))
+  exact DualConcept.finiteInheritanceStampedEvidence_guardedRevise_eq_some
+    (baseInterpretation.meaning Concept.penguin)
+    (baseInterpretation.meaning Concept.bird)
 
 theorem birdBirdStampedEvidence_guardedInternalRevision_eq_some :
     StampedBinaryEvidence.guardedRevise
@@ -764,10 +777,21 @@ theorem birdBirdStampedEvidence_guardedInternalRevision_eq_some :
         (baseInterpretation.meaning Concept.bird)
         (baseInterpretation.meaning Concept.bird))
       = some birdBirdStampedEvidence := by
-  simpa [birdBirdStampedEvidence] using
-    DualConcept.finiteInheritanceStampedEvidence_guardedRevise_eq_some
-      (baseInterpretation.meaning Concept.bird)
-      (baseInterpretation.meaning Concept.bird)
+  change
+    StampedBinaryEvidence.guardedRevise
+      (DualConcept.positiveStampedEvidence
+        (baseInterpretation.meaning Concept.bird)
+        (baseInterpretation.meaning Concept.bird))
+      (DualConcept.negativeStampedEvidence
+        (baseInterpretation.meaning Concept.bird)
+        (baseInterpretation.meaning Concept.bird))
+      =
+        some (DualConcept.finiteInheritanceStampedEvidence
+          (baseInterpretation.meaning Concept.bird)
+          (baseInterpretation.meaning Concept.bird))
+  exact DualConcept.finiteInheritanceStampedEvidence_guardedRevise_eq_some
+    (baseInterpretation.meaning Concept.bird)
+    (baseInterpretation.meaning Concept.bird)
 
 theorem assoc_pat_provenance_canary :
     InheritanceQueryBuilder.intensionalAssocEvidence

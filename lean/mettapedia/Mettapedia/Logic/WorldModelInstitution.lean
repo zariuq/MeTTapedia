@@ -120,7 +120,7 @@ theorem satisfactionCondition_evidence
       reindexWorldModelSigma (State := State) sigma
     satEvidence (State := State) sig1 W phi =
       satEvidence (State := State) sig2 W (mapSentence sigma phi) := by
-  simp [satEvidence, reindexWorldModelSigma, mapSentence]
+  rfl
 
 /-- Satisfaction condition (strength view) under signature/query transport. -/
 theorem satisfactionCondition_strength

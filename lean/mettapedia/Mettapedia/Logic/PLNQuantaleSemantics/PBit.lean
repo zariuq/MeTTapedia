@@ -203,11 +203,11 @@ theorem pTrue_pFalse_incomparable : ¬(pTrue ≤ pFalse) ∧ ¬(pFalse ≤ pTrue
     simp only [pTrue, pFalse] at hn
     exact absurd hn (not_le.mpr zero_lt_one)
 
-theorem pNeither_le_pTrue : pNeither ≤ pTrue := ⟨zero_le _, zero_le _⟩
-theorem pNeither_le_pFalse : pNeither ≤ pFalse := ⟨zero_le _, zero_le _⟩
-theorem pNeither_le_pBoth : pNeither ≤ pBoth := ⟨zero_le _, zero_le _⟩
-theorem pTrue_le_pBoth : pTrue ≤ pBoth := ⟨le_refl _, zero_le _⟩
-theorem pFalse_le_pBoth : pFalse ≤ pBoth := ⟨zero_le _, le_refl _⟩
+theorem pNeither_le_pTrue : pNeither ≤ pTrue := ⟨by positivity, by positivity⟩
+theorem pNeither_le_pFalse : pNeither ≤ pFalse := ⟨by positivity, by positivity⟩
+theorem pNeither_le_pBoth : pNeither ≤ pBoth := ⟨by positivity, by positivity⟩
+theorem pTrue_le_pBoth : pTrue ≤ pBoth := ⟨le_refl _, by positivity⟩
+theorem pFalse_le_pBoth : pFalse ≤ pBoth := ⟨by positivity, le_refl _⟩
 
 /-! ## Heyting Algebra Properties -/
 

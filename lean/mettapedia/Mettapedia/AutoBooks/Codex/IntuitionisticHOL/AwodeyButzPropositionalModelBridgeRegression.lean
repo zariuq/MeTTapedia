@@ -84,18 +84,17 @@ theorem derivable_propSelfImp :
     PropositionalDerivable Const
       ([] : List (Formula Const (SimpleTy.toCtx ([.prop] : List (SimpleTy BaseSort)))))
       (SimplePropFormula.toFormula propSelfImp) := by
-  simpa [propSelfImp, propSelfFormula, SimplePropFormula.toFormula,
-    SimpleTerm.toTerm] using
+  simpa [propSelfImp, SimplePropFormula.toFormula] using
     (PropositionalDerivable.impR
       (Const := Const)
       (Δ := ([] : List (Formula Const (SimpleTy.toCtx ([.prop] : List (SimpleTy BaseSort))))))
-      (φ := (.var Var.vz : Formula Const (SimpleTy.toCtx ([.prop] : List (SimpleTy BaseSort)))))
-      (ψ := (.var Var.vz : Formula Const (SimpleTy.toCtx ([.prop] : List (SimpleTy BaseSort)))))
+      (φ := SimplePropFormula.toFormula propSelfFormula)
+      (ψ := SimplePropFormula.toFormula propSelfFormula)
       (PropositionalDerivable.ax
         (Const := Const)
-        (Δ := [(.var Var.vz : Formula Const (SimpleTy.toCtx ([.prop] : List (SimpleTy BaseSort))))])
-        (φ := (.var Var.vz : Formula Const (SimpleTy.toCtx ([.prop] : List (SimpleTy BaseSort)))))
-        (by simp)))
+        (Δ := [SimplePropFormula.toFormula propSelfFormula])
+        (φ := SimplePropFormula.toFormula propSelfFormula)
+        (List.mem_singleton_self _)))
 
 theorem semilocalTruth_toFormula_topConjTop :
     SimplePropFormula.semilocalTruth model emptyEnv topConjTop =
@@ -132,9 +131,10 @@ theorem semilocalTruth_subst_propTail (a : Carrier atomTy) (p : Prop) :
     SimplePropFormula.semilocalTruth model (atomPropEnv a p)
         (SimplePropFormula.subst propTailSubst propSelfFormula) = p := by
   apply propext
-  simp [propTailSubst, propSelfFormula, atomPropEnv,
-    SemilocalModel.formulaTruth, SemilocalModel.eval, model]
-  constructor <;> intro h <;> simpa using h
+  simp [propTailSubst, propSelfFormula,
+    SemilocalModel.formulaTruth, model]
+  change p ↔ p
+  rfl
 
 theorem semilocalTruth_bot_false :
     ¬ SimplePropFormula.semilocalTruth model emptyEnv

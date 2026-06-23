@@ -52,7 +52,12 @@ theorem denote_embedSentence_iff
       (Embedding.FirstOrder.embedSentence φ)
       (fun v => nomatch v)).down ↔
       M ⊧ₘ φ := by
-  simpa [LO.FirstOrder.models_iff, ofSetStructure] using
+  change
+    ((Embedding.FirstOrder.standardModel (L := ℒₛₑₜ) (standardStructure M)).denote
+      (Embedding.FirstOrder.embedSentence φ)
+      (fun v => nomatch v)).down ↔
+      Semiformula.Evalb (standardStructure M) ![] φ
+  exact
     (Embedding.FirstOrder.denote_embedSentence_iff
       (L := ℒₛₑₜ) (s := standardStructure M) (φ := φ))
 
@@ -65,7 +70,12 @@ theorem pointed_denote_embedSentence_iff
       (Embedding.FirstOrder.embedSentence φ)
       (fun v => nomatch v)).down ↔
       S ⊧ φ := by
-  simpa [ofPointed] using
+  change
+    ((Embedding.FirstOrder.standardModel (L := ℒₛₑₜ) S.struc).denote
+      (Embedding.FirstOrder.embedSentence φ)
+      (fun v => nomatch v)).down ↔
+      Semiformula.Evalb S.struc ![] φ
+  exact
     (Embedding.FirstOrder.denote_embedSentence_iff
       (L := ℒₛₑₜ) (s := S.struc) (φ := φ))
 

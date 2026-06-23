@@ -301,7 +301,7 @@ theorem qValue_le {Action : Type uA} {Percept : Type uP}
               have : μ.prob ha x ≤ ∑ y ∈ (Finset.univ : Finset Percept), μ.prob ha y := by
                 refine Finset.single_le_sum ?_ (by simp)
                 intro y _hy
-                exact zero_le _
+                exact zero_le
               simpa using this
             have hx_le_one : μ.prob ha x ≤ 1 := hx_le_sum.trans hprob_le_one
             exact ne_top_of_le_ne_top ENNReal.one_ne_top hx_le_one
@@ -408,7 +408,7 @@ theorem value_le {Action : Type uA} {Percept : Type uP}
               have : π.policy h a ≤ ∑ b ∈ (Finset.univ : Finset Action), π.policy h b := by
                 refine Finset.single_le_sum ?_ (by simp)
                 intro b _hb
-                exact zero_le _
+                exact zero_le
               simpa using this
             have ha_le_one : π.policy h a ≤ 1 := by simpa [hpolicy_sum_one] using ha_le_sum
             exact ne_top_of_le_ne_top ENNReal.one_ne_top ha_le_one
@@ -637,7 +637,7 @@ theorem value_le_optimalValue {Action : Type uA} {Percept : Type uP}
                   have : π.policy h a ≤ ∑ b ∈ (Finset.univ : Finset Action), π.policy h b := by
                     refine Finset.single_le_sum ?_ (by simp)
                     intro b _hb
-                    exact zero_le _
+                    exact zero_le
                   simpa using this
                 have ha_le_one : π.policy h a ≤ 1 := by
                   simpa [hpolicy_sum_one] using ha_le_sum

@@ -42,7 +42,7 @@ theorem unnormalizedPosteriorWeight_le_prior {ι : Type*}
     unnormalizedPosteriorWeight prior envs h i ≤ prior i := by
   have h_prob : historyProbability (envs i) h ≤ 1 :=
     historyProbability_le_one (envs i) h
-  simpa [unnormalizedPosteriorWeight, mul_one] using (mul_le_mul_left' h_prob (prior i))
+  simpa [unnormalizedPosteriorWeight, mul_one] using (mul_le_mul_right h_prob (prior i))
 
 theorem unnormalizedPosteriorTotal_le_priorTotal {ι : Type*}
     (prior : ι → ℝ≥0∞) (envs : ι → Environment) (h : History) :
@@ -127,7 +127,7 @@ noncomputable def thompsonSamplingAgent {ι : Type*} [Inhabited ι]
     | zero =>
         -- Deterministic fallback action.
         -- `∑ a, 𝟙[a = stay] = 1`.
-        simp [tsum_ite_eq]
+        simp
     | succ k =>
         -- Swap sums and use that the posterior is a probability distribution.
         have hPost :
@@ -143,7 +143,9 @@ noncomputable def thompsonSamplingAgent {ι : Type*} [Inhabited ι]
               ∑' a : Action,
                 posteriorWeightNormalized prior envs h i *
                   (if a = optimalAction (envs i) γ h k then 1 else 0) := by
-                simp [ENNReal.tsum_comm]
+                simpa using (ENNReal.tsum_comm (f := fun a : Action => fun i : ι =>
+                  posteriorWeightNormalized prior envs h i *
+                    (if a = optimalAction (envs i) γ h k then (1 : ℝ≥0∞) else 0)))
         have hGoal'' :
             (∑' a : Action,
                   ∑' i : ι,
@@ -166,7 +168,7 @@ noncomputable def thompsonSamplingAgent {ι : Type*} [Inhabited ι]
                 have hAct :
                     (∑' a : Action,
                         (if a = optimalAction (envs i) γ h k then (1 : ℝ≥0∞) else 0)) = 1 := by
-                  simp [tsum_ite_eq]
+                  simp
                 calc
                   (∑' a : Action,
                         posteriorWeightNormalized prior envs h i *
@@ -177,7 +179,7 @@ noncomputable def thompsonSamplingAgent {ι : Type*} [Inhabited ι]
                         (if a = optimalAction (envs i) γ h k then (1 : ℝ≥0∞) else 0) := by
                         -- pull out the constant factor
                         simp
-                  _ = posteriorWeightNormalized prior envs h i := by simp [hAct]
+                  _ = posteriorWeightNormalized prior envs h i := by simp
             _ = 1 := hPost
         -- Unfold `policy` in this branch.
         simpa [hrem] using hGoal''

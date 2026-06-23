@@ -721,7 +721,8 @@ theorem FoldNodupSafe_tail (acc : CSpace) (hd : Subst × List Atom)
   intro ⟨i, hi⟩
   have hi' : i + 1 < (hd :: tl).length := by simp; omega
   have := hsafe ⟨i + 1, hi'⟩
-  convert this using 1
+  simp only [List.take_succ_cons, List.foldl] at this ⊢
+  exact this
 
 /-- Core foldl correspondence: if computable and spec match results have
     the same substitutions in the same order, and `FoldNodupSafe` holds

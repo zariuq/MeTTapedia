@@ -151,9 +151,9 @@ noncomputable def markov_rowExtract {k : ℕ}
     (W₁ W₂ : MarkovTransitionWMState k) (prev : Fin k) :
     markov_rowExtract (W₁ + W₂) prev =
       markov_rowExtract W₁ prev + markov_rowExtract W₂ prev := by
-  simpa [markov_rowExtract] using
-    (AdditiveWorldModel.extract_add'
-      (State := MarkovTransitionWMState k) (Query := Fin k) (Ev := MultiEvidence k) W₁ W₂ prev)
+  unfold markov_rowExtract
+  exact AdditiveWorldModel.extract_add'
+    (State := MarkovTransitionWMState k) (Query := Fin k) (Ev := MultiEvidence k) W₁ W₂ prev
 
 @[simp] theorem markov_rowExtract_zero {k : ℕ}
     (prev : Fin k) :
@@ -179,11 +179,23 @@ noncomputable instance instBinaryWorldModelMarkovTransitionQuery {k : ℕ} :
     BinaryWorldModel (MarkovTransitionWMState k) (MarkovTransitionQuery k) where
   evidence := markov_queryBinaryEvidence
   evidence_add W₁ W₂ q := by
-    simp [markov_queryBinaryEvidence, markov_queryBinaryProjection,
-      markov_rowExtract_add, markov_binaryEvidenceOfRowEvidence_add]
+    change markov_binaryEvidenceOfRowEvidence
+        (markov_rowExtract (W₁ + W₂) (markov_transitionQuerySource q))
+        (markov_transitionQueryTarget q) =
+      markov_binaryEvidenceOfRowEvidence
+        (markov_rowExtract W₁ (markov_transitionQuerySource q))
+        (markov_transitionQueryTarget q) +
+      markov_binaryEvidenceOfRowEvidence
+        (markov_rowExtract W₂ (markov_transitionQuerySource q))
+        (markov_transitionQueryTarget q)
+    rw [markov_rowExtract_add]
+    exact markov_binaryEvidenceOfRowEvidence_add _ _ _
   evidence_zero q := by
-    simp [markov_queryBinaryEvidence, markov_queryBinaryProjection, markov_rowExtract_zero,
-      markov_binaryEvidenceOfRowEvidence_zero]
+    change markov_binaryEvidenceOfRowEvidence
+        (markov_rowExtract (0 : MarkovTransitionWMState k) (markov_transitionQuerySource q))
+        (markov_transitionQueryTarget q) = 0
+    rw [markov_rowExtract_zero]
+    exact markov_binaryEvidenceOfRowEvidence_zero (markov_transitionQueryTarget q)
 
 abbrev markov_transitionMultiset_aggregate_eq_rowEvidence_of_summary :=
   @Mettapedia.Logic.UniversalPrediction.aggregate_transitionMultiset_eq_rowEvidence_of_summary
@@ -232,6 +244,9 @@ theorem markov_linkEvidence_transitionMultiset_eq_of_summary
         (markov_transitionMultiset (k := k) xs)
         (.link prev next) =
       markov_binaryEvidenceOfRowEvidence (markov_rowEvidence c prev) next := by
+  change markov_queryBinaryEvidence (k := k) (markov_transitionMultiset (k := k) xs)
+      (.link prev next) =
+    markov_binaryEvidenceOfRowEvidence (markov_rowEvidence c prev) next
   simpa [markov_queryBinaryEvidence, markov_queryBinaryProjection,
     markov_transitionQuerySource, markov_transitionQueryTarget] using
     markov_queryBinaryEvidence_transitionMultiset_eq_of_summary (k := k) hsum (.link prev next)

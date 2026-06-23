@@ -211,7 +211,7 @@ theorem paretoOptimal_iff (perf : PerformanceMeasure) (p : Predictor) :
   · -- (→) If Pareto optimal, then for any p' that improves somewhere, p is better elsewhere
     intro hPareto p' ⟨μ, n, hlt⟩
     by_contra h
-    push_neg at h
+    push Not at h
     -- h says: ∀ μ' n', perf p' μ' n' ≤ perf p μ' n'
     -- Combined with hlt: perf p' μ n < perf p μ n
     -- This contradicts Pareto optimality
@@ -344,7 +344,7 @@ private lemma ofFn_match_eq_target (target : ℕ → Bool) (n : ℕ) (f : Fin n 
   -- f and (fun i => target i) produce the same list, hence they're equal
   have h : List.ofFn f = List.ofFn fun (i : Fin n) => target i.val := by
     simp only [List.length_ofFn] at hmatch
-    convert hmatch using 1
+    simpa using hmatch
   exact List.ofFn_injective h
 
 /-- For a matching history, expectPrefix evaluates g at that history.
@@ -429,7 +429,7 @@ theorem universal_pareto_optimal (ξ : Semimeasure)
     rw [h_eq] at hp'_better
     exact (lt_irrefl _ hp'_better)
   · -- There exists x where p' ≠ universal
-    push_neg at h_same
+    push Not at h_same
     -- Use a minimal-length history where they differ (via well-founded recursion)
     -- This ensures p' = universal on all strict prefixes
     have ⟨x, hx_diff, hx_min⟩ : ∃ x, p' x ≠ universalPredictor ξ x ∧
@@ -650,7 +650,7 @@ theorem universalPrediction_minimizes_xi_error (μ : PrefixMeasure) (x : BinStri
     · -- trivial: 1 - pt ≤ 1 - pt
       rfl
   · -- Universal predicts false
-    push_neg at h
+    push Not at h
     have hpred : (decide (pt ≥ 1/2)) = false := decide_eq_false (by linarith : ¬pt ≥ 1/2)
     rw [hpt_def, hpred]
     cases b
@@ -1245,7 +1245,7 @@ theorem universalPredictor_minimizes_weighted_step_error
     congr 1
     ext x
     -- `prefixPMF μ k x = μ (List.ofFn x)` by definition.
-    simpa using mu_toReal_mul_errorProb' μ (List.ofFn x) (pred (List.ofFn x))
+    exact mu_toReal_mul_errorProb' μ (List.ofFn x) (pred (List.ofFn x))
 
   have weighted_expectPrefix_eq_xiErrorSum_toReal (pred : Predictor) :
       (∑' μ, (w μ).toReal * expectPrefix μ k (fun x => errorProb μ (pred x) x)) =

@@ -46,7 +46,7 @@ variable [Nontrivial G] [DenselyOrdered G]
 /-- A sharper statement (exclusive-or): subgroups are dense iff they are not `ℤ • g`. -/
 theorem dense_xor'_zmultiples (S : AddSubgroup G) :
     Xor' (Dense (S : Set G)) (∃ g : G, S = AddSubgroup.zmultiples g) := by
-  simpa using (AddSubgroup.dense_xor'_cyclic (s := S) : _)
+  exact AddSubgroup.dense_xor_cyclic S
 
 /-- A convenient corollary: density is equivalent to not being any `ℤ • g`. -/
 theorem dense_iff_ne_zmultiples {S : AddSubgroup G} :

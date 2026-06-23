@@ -304,11 +304,13 @@ theorem premise_mem_of_mem_localBranchTargets {H : HintikkaSet Const Γ}
 
 @[simp] theorem trueTop_mem_close (H : HintikkaSet Const Γ) :
     (Sign.trueE, (.top : Formula Const Γ)) ∈ H.close.formulas := by
-  simp [close]
+  unfold close
+  exact List.mem_cons_self
 
 @[simp] theorem falseBot_mem_close (H : HintikkaSet Const Γ) :
     (Sign.falseE, (.bot : Formula Const Γ)) ∈ H.close.formulas := by
-  simp [close]
+  unfold close
+  exact List.mem_cons_of_mem _ List.mem_cons_self
 
 theorem mem_close_insertAll_singleton_iff {H : HintikkaSet Const Γ}
     {added sf : SignedFormula Const Γ} :
@@ -443,7 +445,8 @@ theorem trueAnd_mem_of_locallySaturated {H : HintikkaSet Const Γ}
     (Sign.trueE, φ) ∈ H.formulas ∧ (Sign.trueE, ψ) ∈ H.formulas := by
   have hsupp := hH (.trueAnd φ ψ)
   have hprem : DeterministicLocalSaturationStep.premise (.trueAnd φ ψ) ∈ H.formulas := by
-    simpa [DeterministicLocalSaturationStep.premise] using h
+    change (Sign.trueE, .and φ ψ) ∈ H.formulas
+    exact h
   constructor
   · exact hsupp hprem _ (by
       simp [DeterministicLocalSaturationStep.additions,
@@ -458,7 +461,9 @@ theorem falseAnd_mem_of_branchClosed {H : HintikkaSet Const Γ}
     (h : (Sign.falseE, .and φ ψ) ∈ H.formulas) :
     (Sign.falseE, φ) ∈ H.formulas ∨ (Sign.falseE, ψ) ∈ H.formulas := by
   rcases exists_resolvingStep_of_branchClosed hH
-      (b := .falseAnd φ ψ) (by simpa [LocalBranchTarget.premise] using h) with
+      (b := .falseAnd φ ψ) (by
+        change (Sign.falseE, .and φ ψ) ∈ H.formulas
+        exact h) with
     ⟨s, hs, hsupp⟩
   have hs' : s = .falseAndLeft φ ψ ∨ s = .falseAndRight φ ψ := by
     simpa [LocalBranchTarget.AcceptsStep, LocalBranchTarget.branches] using hs
@@ -474,7 +479,9 @@ theorem trueOr_mem_of_branchClosed {H : HintikkaSet Const Γ}
     (h : (Sign.trueE, .or φ ψ) ∈ H.formulas) :
     (Sign.trueE, φ) ∈ H.formulas ∨ (Sign.trueE, ψ) ∈ H.formulas := by
   rcases exists_resolvingStep_of_branchClosed hH
-      (b := .trueOr φ ψ) (by simpa [LocalBranchTarget.premise] using h) with
+      (b := .trueOr φ ψ) (by
+        change (Sign.trueE, .or φ ψ) ∈ H.formulas
+        exact h) with
     ⟨s, hs, hsupp⟩
   have hs' : s = .trueOrLeft φ ψ ∨ s = .trueOrRight φ ψ := by
     simpa [LocalBranchTarget.AcceptsStep, LocalBranchTarget.branches] using hs
@@ -491,7 +498,8 @@ theorem falseOr_mem_of_locallySaturated {H : HintikkaSet Const Γ}
     (Sign.falseE, φ) ∈ H.formulas ∧ (Sign.falseE, ψ) ∈ H.formulas := by
   have hsupp := hH (.falseOr φ ψ)
   have hprem : DeterministicLocalSaturationStep.premise (.falseOr φ ψ) ∈ H.formulas := by
-    simpa [DeterministicLocalSaturationStep.premise] using h
+    change (Sign.falseE, .or φ ψ) ∈ H.formulas
+    exact h
   constructor
   · exact hsupp hprem _ (by
       simp [DeterministicLocalSaturationStep.additions,
@@ -507,7 +515,8 @@ theorem trueAll_mem_of_locallySaturated {H : HintikkaSet Const Γ}
     (t : Term Const Γ σ) :
     (Sign.trueE, instantiate (Base := Base) t φ) ∈ H.formulas := by
   have hprem : DeterministicLocalSaturationStep.premise (.trueAll φ t) ∈ H.formulas := by
-    simpa [DeterministicLocalSaturationStep.premise] using h
+    change (Sign.trueE, .all φ) ∈ H.formulas
+    exact h
   exact hH (.trueAll φ t)
     hprem
     _ (by
@@ -521,7 +530,8 @@ theorem falseAll_mem_of_locallySaturated {H : HintikkaSet Const Γ}
     (t : Term Const Γ σ) :
     (Sign.falseE, instantiate (Base := Base) t φ) ∈ H.formulas := by
   have hprem : DeterministicLocalSaturationStep.premise (.falseAllWitness φ t) ∈ H.formulas := by
-    simpa [DeterministicLocalSaturationStep.premise] using h
+    change (Sign.falseE, .all φ) ∈ H.formulas
+    exact h
   exact hH (.falseAllWitness φ t)
     hprem
     _ (by
@@ -535,7 +545,8 @@ theorem trueEx_mem_of_locallySaturated {H : HintikkaSet Const Γ}
     (t : Term Const Γ σ) :
     (Sign.trueE, instantiate (Base := Base) t φ) ∈ H.formulas := by
   have hprem : DeterministicLocalSaturationStep.premise (.trueExWitness φ t) ∈ H.formulas := by
-    simpa [DeterministicLocalSaturationStep.premise] using h
+    change (Sign.trueE, .ex φ) ∈ H.formulas
+    exact h
   exact hH (.trueExWitness φ t)
     hprem
     _ (by
@@ -549,7 +560,8 @@ theorem falseEx_mem_of_locallySaturated {H : HintikkaSet Const Γ}
     (t : Term Const Γ σ) :
     (Sign.falseE, instantiate (Base := Base) t φ) ∈ H.formulas := by
   have hprem : DeterministicLocalSaturationStep.premise (.falseEx φ t) ∈ H.formulas := by
-    simpa [DeterministicLocalSaturationStep.premise] using h
+    change (Sign.falseE, .ex φ) ∈ H.formulas
+    exact h
   exact hH (.falseEx φ t)
     hprem
     _ (by
@@ -612,7 +624,9 @@ theorem falseBot_mem_of_closed {H : HintikkaSet Const Γ}
 
 theorem closed_close (H : HintikkaSet Const Γ) :
     H.close.Closed := by
-  simp [Closed, close]
+  constructor
+  · exact trueTop_mem_close H
+  · exact falseBot_mem_close H
 
 theorem false_not_mem_of_true_mem_of_noncontradictory {H : HintikkaSet Const Γ}
     (hH : H.Noncontradictory)
@@ -654,14 +668,16 @@ theorem noncontradictory_close_insertAll_singleton_of_flip_not_mem
     by_cases hTrueEq : (Sign.trueE, φ) = sf
     · have hFlipNew : SignedFormula.flip sf ∈ (H.insertAll [sf]).close.formulas := by
         cases hTrueEq
-        simpa [SignedFormula.flip] using hFalse
+        change (Sign.falseE, φ) ∈ (H.insertAll [(Sign.trueE, φ)]).close.formulas
+        exact hFalse
       rcases (mem_close_insertAll_singleton_iff.mp hFlipNew) with hEq | hOld
       · exact SignedFormula.flip_ne_self sf hEq
       · exact hFlip hOld
     · by_cases hFalseEq : (Sign.falseE, φ) = sf
       · have hFlipNew : SignedFormula.flip sf ∈ (H.insertAll [sf]).close.formulas := by
           cases hFalseEq
-          simpa [SignedFormula.flip] using hTrue
+          change (Sign.trueE, φ) ∈ (H.insertAll [(Sign.falseE, φ)]).close.formulas
+          exact hTrue
         rcases (mem_close_insertAll_singleton_iff.mp hFlipNew) with hEq | hOld
         · exact SignedFormula.flip_ne_self sf hEq
         · exact hFlip hOld
@@ -705,10 +721,10 @@ theorem noncontradictory_close_insertAll_of_flip_not_mem
   · rcases hConflict with ⟨φ, hTrue, hFalse⟩
     rcases mem_close_insertAll_iff.mp hTrue with hTrueNew | hTrueOld
     · rcases mem_close_insertAll_iff.mp hFalse with hFalseNew | hFalseOld
-      · exact (hInternal hTrueNew) (by simpa [SignedFormula.flip] using hFalseNew)
-      · exact (hCompat hTrueNew) (by simpa [SignedFormula.flip] using hFalseOld)
+      · exact (hInternal hTrueNew) (by simpa [SignedFormula.flip, Sign.flip] using hFalseNew)
+      · exact (hCompat hTrueNew) (by simpa [SignedFormula.flip, Sign.flip] using hFalseOld)
     · rcases mem_close_insertAll_iff.mp hFalse with hFalseNew | hFalseOld
-      · exact (hCompat hFalseNew) (by simpa [SignedFormula.flip] using hTrueOld)
+      · exact (hCompat hFalseNew) (by simpa [SignedFormula.flip, Sign.flip] using hTrueOld)
       · exact hH (contradictory_of_conflict hTrueOld hFalseOld)
   · rcases hContra with hTrueBot | hFalseTop
     · rcases mem_close_insertAll_iff.mp hTrueBot with hTrueBotNew | hTrueBotOld
@@ -806,25 +822,33 @@ theorem false_mem_toHintikkaSet (g : HintikkaGoal Const Γ) :
     g.toHintikkaSet.trueFormulas = g.antecedents := by
   cases g with
   | mk antecedents succedent =>
-      have hcomp :
-          List.filterMap
-              ((fun
-                  | (Sign.trueE, φ) => some φ
-                  | (Sign.falseE, _) => none) ∘
-                fun φ => (Sign.trueE, φ))
-              antecedents =
-            antecedents := by
-        induction antecedents with
-        | nil =>
-            rfl
-        | cons φ Δ ih =>
-            simp [ih]
-      simpa [HintikkaSet.trueFormulas, HintikkaGoal.toHintikkaSet,
-        HintikkaGoal.signedFormulas] using hcomp
+      induction antecedents with
+      | nil =>
+          rfl
+      | cons φ Δ ih =>
+          have htail :
+              ({ antecedents := Δ, succedent := succedent } :
+                HintikkaGoal Const Γ).toHintikkaSet.trueFormulas = Δ := ih
+          change φ ::
+              ({ antecedents := Δ, succedent := succedent } :
+                HintikkaGoal Const Γ).toHintikkaSet.trueFormulas = φ :: Δ
+          rw [htail]
 
 @[simp] theorem falseFormulas_toHintikkaSet (g : HintikkaGoal Const Γ) :
     g.toHintikkaSet.falseFormulas = [g.succedent] := by
-  simp [HintikkaSet.falseFormulas, HintikkaGoal.toHintikkaSet, HintikkaGoal.signedFormulas]
+  cases g with
+  | mk antecedents succedent =>
+      induction antecedents with
+      | nil =>
+          rfl
+      | cons φ Δ ih =>
+          have htail :
+              ({ antecedents := Δ, succedent := succedent } :
+                HintikkaGoal Const Γ).toHintikkaSet.falseFormulas = [succedent] := ih
+          change
+              ({ antecedents := Δ, succedent := succedent } :
+                HintikkaGoal Const Γ).toHintikkaSet.falseFormulas = [succedent]
+          exact htail
 
 theorem icttConsistent_toHintikkaSet_iff_not_derivable (g : HintikkaGoal Const Γ) :
     g.toHintikkaSet.ICTTConsistent ↔

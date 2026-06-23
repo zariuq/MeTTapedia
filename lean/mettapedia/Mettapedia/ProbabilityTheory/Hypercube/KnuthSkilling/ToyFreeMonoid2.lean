@@ -1,3 +1,7 @@
+/-
+Knuth–Skilling slice of the probability hypercube. See the aggregator
+`Mettapedia/ProbabilityTheory/Hypercube/KnuthSkilling.lean` for the overview.
+-/
 import Mathlib.Data.List.Basic
 
 /-!

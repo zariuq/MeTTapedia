@@ -33,10 +33,44 @@ operational semantics agree.
 namespace Mettapedia.Conformance.MapleCourtConformance
 
 open Mettapedia.OSLF.MeTTaIL.Syntax
+open Mettapedia.OSLF.MeTTaIL.Match
+open Mettapedia.OSLF.MeTTaIL.Engine
+open Mettapedia.OSLF.MeTTaIL.DeclReducesPremises
 open Mettapedia.OSLF.Framework.TypeSynthesis
+open Mettapedia.OSLF.Framework.WMCalculusLanguageDef
 open Mettapedia.OSLF.Framework.LangMorphism
 open Mettapedia.OSLF.Framework.WMCalculusEncoding
 open Mettapedia.Logic.PLNMapleCourtDemo
+
+private theorem wmCoreLangReduces_evidenceAdd (pw₁ pw₂ pq : Pattern) :
+    langReduces wmCoreLanguageDef
+      (pExtract (pRevise pw₁ pw₂) pq)
+      (pCombine (pExtract pw₁ pq) (pExtract pw₂ pq)) := by
+  unfold langReduces langReducesUsing
+  let bs : Bindings := [("q", pq), ("W2", pw₂), ("W1", pw₁)]
+  refine DeclReducesWithPremises.topRule
+    (relEnv := RelationEnv.empty) (lang := wmCoreLanguageDef)
+    (r := ruleEvidenceAdd)
+    ?hr bs ?hmatch bs ?hprem ?happly
+  · simp [wmCoreLanguageDef, coreRules]
+  · simp [bs, ruleEvidenceAdd, pExtract, pRevise, matchPattern, matchArgs, mergeBindings]
+  · simp [bs, ruleEvidenceAdd, applyPremisesWithEnv]
+  · simp [bs, ruleEvidenceAdd, pExtract, pCombine, applyBindings]
+
+private theorem wmCoreLangReduces_revisionComm (pw₁ pw₂ : Pattern) :
+    langReduces wmCoreLanguageDef
+      (pRevise pw₁ pw₂)
+      (pRevise pw₂ pw₁) := by
+  unfold langReduces langReducesUsing
+  let bs : Bindings := [("W2", pw₂), ("W1", pw₁)]
+  refine DeclReducesWithPremises.topRule
+    (relEnv := RelationEnv.empty) (lang := wmCoreLanguageDef)
+    (r := ruleRevisionComm)
+    ?hr bs ?hmatch bs ?hprem ?happly
+  · simp [wmCoreLanguageDef, coreRules]
+  · simp [bs, ruleRevisionComm, pRevise, matchPattern, matchArgs, mergeBindings]
+  · simp [bs, ruleRevisionComm, applyPremisesWithEnv]
+  · simp [bs, ruleRevisionComm, pRevise, applyBindings]
 
 /-! ## WM Calculus Encoding of Maple Court Terms
 
@@ -77,7 +111,7 @@ theorem mapleCourtEvidenceAdd_fires :
     langReduces wmCoreLanguageDef
       (evidenceAddPattern "morning" "evening" "humidity")
       (evidenceAddResult "morning" "evening" "humidity") :=
-  wm_evidence_add_step "morning" "evening" "humidity"
+  wmCoreLangReduces_evidenceAdd _ _ _
 
 /-- Sleep consolidation at the rewrite level:
     Extract(Revise(Revise(morning, evening), night), q)
@@ -88,7 +122,7 @@ theorem mapleCourtSleepConsolidation_step1 :
                 (.fvar "humidity"))
       (pCombine (pExtract (pRevise (.fvar "morning") (.fvar "evening")) (.fvar "humidity"))
                 (pExtract (.fvar "night") (.fvar "humidity"))) :=
-  wm_evidence_add_step _ _ _
+  wmCoreLangReduces_evidenceAdd _ _ _
 
 /-- Revision commutativity at the rewrite level:
     Revise(morning, evening) reduces to Revise(evening, morning). -/
@@ -96,6 +130,6 @@ theorem mapleCourtRevisionComm_fires :
     langReduces wmCoreLanguageDef
       (pRevise (.fvar "morning") (.fvar "evening"))
       (pRevise (.fvar "evening") (.fvar "morning")) :=
-  wm_revision_comm_step "morning" "evening"
+  wmCoreLangReduces_revisionComm _ _
 
 end Mettapedia.Conformance.MapleCourtConformance

@@ -18,6 +18,7 @@ import Mettapedia.ProbabilityTheory.BayesianNetworks.DirectedGraph
 import Mettapedia.ProbabilityTheory.BayesianNetworks.BayesianNetwork
 import Mettapedia.ProbabilityTheory.BayesianNetworks.DSeparation
 import Mettapedia.ProbabilityTheory.BayesianNetworks.DSeparationSoundness
+import Mathlib.MeasureTheory.Constructions.Polish.Basic
 
 namespace Mettapedia.ProbabilityTheory.BayesianNetworks.Examples
 
@@ -89,7 +90,7 @@ noncomputable def chainBN : BayesianNetwork Three where
 instance chainBN_stateSpace_standardBorel (v : Three) :
     StandardBorelSpace (chainBN.stateSpace v) := by
   dsimp [chainBN]
-  infer_instance
+  exact (inferInstance : StandardBorelSpace Bool)
 
 instance chainBN_jointSpace_standardBorel :
     StandardBorelSpace chainBN.JointSpace := by
@@ -137,7 +138,7 @@ noncomputable def forkBN : BayesianNetwork Three where
 instance forkBN_stateSpace_standardBorel (v : Three) :
     StandardBorelSpace (forkBN.stateSpace v) := by
   dsimp [forkBN]
-  infer_instance
+  exact (inferInstance : StandardBorelSpace Bool)
 
 instance forkBN_jointSpace_standardBorel :
     StandardBorelSpace forkBN.JointSpace := by
@@ -881,7 +882,8 @@ theorem collider_dsepFull_A_B_given_empty :
 
 instance colliderBN_stateSpace_standardBorel (v : Three) :
     StandardBorelSpace (colliderBN.stateSpace v) := by
-  dsimp [colliderBN]; infer_instance
+  dsimp [colliderBN]
+  exact (inferInstance : StandardBorelSpace Bool)
 
 instance colliderBN_jointSpace_standardBorel :
     StandardBorelSpace colliderBN.JointSpace := by
@@ -912,12 +914,10 @@ private theorem collider_descendants_A :
     cases hreach with
     | refl => exact absurd rfl hne
     | step hedge htail =>
-      unfold colliderGraph at hedge
       rcases hedge with ⟨_, rfl⟩ | ⟨habs, _⟩
       · cases htail with
         | refl => rfl
         | step hedge' _ =>
-          unfold colliderGraph at hedge'
           rcases hedge' with ⟨habs, _⟩ | ⟨habs, _⟩ <;> exact Three.noConfusion habs
       · exact Three.noConfusion habs
   · intro hv; subst hv

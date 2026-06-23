@@ -350,7 +350,7 @@ theorem premiseFreeRulesForHeadArity_build_eq_scan
       scanPremiseFreeRulesForHeadArity rewrites ctor arity := by
   simp [premiseFreeRulesForHeadArity, build, buildPremiseFreeBuckets,
     scanPremiseFreeRulesForHeadArity]
-  simpa using
+  exact
     lookupPremiseFreeBucketRules_buildPremiseFreeBuckets_foldl
       (rows := [])
       (rewrites := rewrites)

@@ -224,7 +224,7 @@ theorem canonicalClassModel_propBivalence
         CanonicalClassModel.denoteTerm, CanonicalFrame.denoteTerm,
         ClassAssignment.closeTerm, ClassAssignment.chooseRepresentatives_extend,
         RepresentativeAssignment.extend,
-        Mettapedia.AutoBooks.Codex.Henkin1950.closeTerm] using hTop
+        Mettapedia.AutoBooks.Codex.Henkin1950.closeTerm, subst] using hTop
     exact
       (CM.denoteFormula_or_iff
         ν
@@ -242,7 +242,7 @@ theorem canonicalClassModel_propBivalence
         CanonicalClassModel.denoteTerm, CanonicalFrame.denoteTerm,
         ClassAssignment.closeTerm, ClassAssignment.chooseRepresentatives_extend,
         RepresentativeAssignment.extend,
-        Mettapedia.AutoBooks.Codex.Henkin1950.closeTerm] using hBot
+        Mettapedia.AutoBooks.Codex.Henkin1950.closeTerm, subst] using hBot
     exact
       (CM.denoteFormula_or_iff
         ν

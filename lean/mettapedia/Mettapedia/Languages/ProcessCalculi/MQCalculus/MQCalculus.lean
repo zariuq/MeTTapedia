@@ -115,8 +115,8 @@ theorem canary_measurement_probs_sum_one (i : ℕ) (p q : Process) (n : ℕ) (ψ
 theorem canary_collapse_norm_one_of_raw_pos (i : ℕ) (r : Outcome) (n : ℕ) (ψ : QVec n)
     (hraw : 0 < rawOutcomeProb i r (QState.mkOf n ψ)) :
     norm ((statevectorBackend.collapse i r (QState.mkOf n ψ)).ψ) = 1 := by
-  simpa [statevectorBackend] using
-    collapseByOutcome_norm_eq_one_of_raw_pos i r (QState.mkOf n ψ) hraw
+  change norm ((collapseByOutcome i r (QState.mkOf n ψ)).ψ) = 1
+  exact collapseByOutcome_norm_eq_one_of_raw_pos i r (QState.mkOf n ψ) hraw
 
 /-! ## π-calculus correspondence -/
 

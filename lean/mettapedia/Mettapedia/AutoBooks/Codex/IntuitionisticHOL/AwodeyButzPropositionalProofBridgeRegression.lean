@@ -25,6 +25,7 @@ theorem toFormula_propAtomFormula :
       (.var Var.vz : Formula DConst (SimpleTy.toCtx [.prop, atomTy])) :=
 by
   simp [propAtomFormula, AwodeyButzSimpleTermsRegression.propVarTerm, SimpleTerm.toTerm]
+  rfl
 
 theorem toFormula_subst_conjFormula :
     SimplePropFormula.toFormula (SimplePropFormula.subst propAtomSynSubst conjFormula) =
@@ -74,13 +75,13 @@ theorem derivable_propAtom_refl :
         (Const := DConst)
         (Δ := [SimplePropFormula.toFormula propAtomFormula])
         (φ := SimplePropFormula.toFormula propAtomFormula)
-        (by simp)))
+        (List.mem_singleton_self _)))
 
 theorem derivable_propAtom_assumption :
     PropositionalDerivable DConst
       [SimplePropFormula.toFormula propAtomFormula]
       (SimplePropFormula.toFormula propAtomFormula) := by
-  exact .ax (by simp)
+  exact .ax (List.mem_singleton_self _)
 
 theorem boundedValid_topConjTop
     (M : SemilocalModel DBase DConst) (u : M.Omega) :

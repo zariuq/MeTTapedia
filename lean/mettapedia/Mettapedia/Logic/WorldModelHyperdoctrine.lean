@@ -26,16 +26,22 @@ open Mettapedia.GSLT.Core
 open Mettapedia.GSLT.Topos
 open scoped ENNReal
 
-universe u v w x
+universe u v w w' x
 
-/-- Hyperdoctrine-style WM bundle over a categorical base. -/
+/-- Hyperdoctrine-style WM bundle over a categorical base.
+
+    Universe parameters:
+    - `u` : base objects, `v` : base morphisms,
+    - `w` : object-indexed typed queries,
+    - `w'` : predicate-fibration fibers (independent of the query universe),
+    - `x` : the evidence state type. -/
 structure WMHyperdoctrine (State : Type x) [EvidenceType State] where
   /-- Base objects (contexts/sorts). -/
   Obj : Type u
   /-- Base category structure. -/
   instCategory : Category.{v} Obj
   /-- Predicate fibration over the base. -/
-  predFib : PredicateFib Obj
+  predFib : PredicateFib.{u, v, w'} Obj
   /-- Typed query family indexed by base objects. -/
   query : Obj → Type w
   /-- WM semantics over object-indexed typed queries. -/
@@ -113,18 +119,11 @@ theorem beckChevalley_transport_exists
     (φ : H.query B) :
     H.interpret (H.reindexQuery f (H.existsQuery g φ)) =
       H.interpret (H.existsQuery π₁ (H.reindexQuery π₂ φ)) := by
-  calc
-    H.interpret (H.reindexQuery f (H.existsQuery g φ))
-        = H.cob.pullback f (H.interpret (H.existsQuery g φ)) := by
-            simpa using H.reindex_interp f (H.existsQuery g φ)
-    _ = H.cob.pullback f (H.cob.directImage g (H.interpret φ)) := by
-          simpa using congrArg (H.cob.pullback f) (H.exists_interp g φ)
-    _ = H.cob.directImage π₁ (H.cob.pullback π₂ (H.interpret φ)) := by
-          exact H.beckChevalley π₁ π₂ f g hpb (H.interpret φ)
-    _ = H.cob.directImage π₁ (H.interpret (H.reindexQuery π₂ φ)) := by
-          simpa using congrArg (H.cob.directImage π₁) (H.reindex_interp π₂ φ).symm
-    _ = H.interpret (H.existsQuery π₁ (H.reindexQuery π₂ φ)) := by
-          simpa using (H.exists_interp π₁ (H.reindexQuery π₂ φ)).symm
+  -- Rewrite both query operators through their fibration-interpretation laws,
+  -- reducing the goal to the Beck-Chevalley base-change identity at the
+  -- change-of-base level (`f* ∘ ∃g = ∃π₁ ∘ π₂*`).
+  simp only [H.reindex_interp, H.exists_interp]
+  exact H.beckChevalley π₁ π₂ f g hpb (H.interpret φ)
 
 end WMHyperdoctrine
 

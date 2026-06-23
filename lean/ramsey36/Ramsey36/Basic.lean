@@ -38,7 +38,7 @@ lemma ramsey_two_right {m : ℕ} (hm : 2 ≤ m) : ramseyNumber m 2 = m := by
         -- Extract that v ≠ w and ¬G.Adj v w from hw
         -- hw : ¬(v ≠ w → G.Adj v w) means the implication is false
         -- An implication is false iff premise is true and conclusion is false
-        push_neg at hw
+        push Not at hw
         obtain ⟨hneq, hnotadj⟩ := hw
         refine ⟨{v, w}, ?_⟩
         constructor
@@ -58,7 +58,7 @@ lemma ramsey_two_right {m : ℕ} (hm : 2 ≤ m) : ramseyNumber m 2 = m := by
     let G := completeGraph (Fin n)
     have h_no : ¬ HasRamseyProperty m 2 G := by
       unfold HasRamseyProperty
-      push_neg
+      push Not
       constructor
       · intro s hs
         -- no m-clique: card s = m > n
@@ -104,15 +104,16 @@ lemma triangleFree_iff_cliqueFree_three {G : SimpleGraph V} :
 /-- Bipartite edge counting symmetry for symmetric relations.
 Both sides count |{(a,b) : a ∈ A, b ∈ B, R a b}|. -/
 lemma bipartite_edge_count_symmetry {V : Type*} [DecidableEq V]
-    (A B : Finset V) (R : V → V → Prop) [DecidableRel R] (hR : Symmetric R) :
+    (A B : Finset V) (R : V → V → Prop) [DecidableRel R] (hR : Std.Symm R) :
     ∑ a ∈ A, (B.filter (R a)).card = ∑ b ∈ B, (A.filter (R b)).card := by
+  haveI := hR
   -- Rewrite card as sum of 1s
   simp_rw [card_eq_sum_ones, sum_filter]
   -- Use sum_comm to swap summation order on LHS
   rw [Finset.sum_comm]
   -- Now both sides are extensionally equal using symmetry of R
   congr 1; ext b; congr 1; ext a
-  simp only [hR.iff]
+  simp only [Std.Symm.iff]
 
 /-- Expand sum over a 4-element set into explicit addition. -/
 lemma sum_over_four {α β : Type*} [DecidableEq α] [AddCommMonoid β]
@@ -122,11 +123,11 @@ lemma sum_over_four {α β : Type*} [DecidableEq α] [AddCommMonoid β]
   -- Rewrite using insert notation
   have ha : a ∉ (insert b (insert c ({d} : Finset α))) := by
     simp only [Finset.mem_insert, Finset.mem_singleton]
-    push_neg
+    push Not
     exact ⟨hab, hac, had⟩
   have hb : b ∉ (insert c ({d} : Finset α)) := by
     simp only [Finset.mem_insert, Finset.mem_singleton]
-    push_neg
+    push Not
     exact ⟨hbc, hbd⟩
   have hc : c ∉ ({d} : Finset α) := by
     simp only [Finset.mem_singleton]
@@ -246,7 +247,7 @@ lemma degree_eq_from_bounds_and_bipartite_total {V : Type*} [DecidableEq V]
   rw [h_total] at h_sym
   -- Sum of values ≤ k equals n*k, so each equals k
   by_contra h_not_all
-  push_neg at h_not_all
+  push Not at h_not_all
   obtain ⟨s₀, hs₀_in, hs₀_lt⟩ := h_not_all
   have hs₀_lt' : (W.filter (G.Adj s₀)).card < k := Nat.lt_of_le_of_ne (h_upper s₀ hs₀_in) hs₀_lt
   -- Sum < n*k, contradiction
@@ -363,7 +364,7 @@ lemma r35_critical_is_4_regular {V : Type*} [Fintype V] [DecidableEq V] (G : Sim
   apply le_antisymm
   · -- Prove degree ≤ 4
     by_contra h_gt
-    push_neg at h_gt
+    push Not at h_gt
     -- Neighbors of v form an independent set (triangle-free)
     -- If deg(v) ≥ 5, neighbors contain a 5-independent set
     have h_nbrs_indep : G.IsIndepSet (G.neighborSet v) := neighborSet_indep_of_triangleFree h_tri v
@@ -388,7 +389,7 @@ lemma r35_critical_is_4_regular {V : Type*} [Fintype V] [DecidableEq V] (G : Sim
     exact h_no5 S hS_indep
   · -- Prove degree ≥ 4
     by_contra h_lt
-    push_neg at h_lt
+    push Not at h_lt
     have h_deg_le_3 : G.degree v ≤ 3 := Nat.lt_succ_iff.mp h_lt
     -- Non-neighbors of v (excluding v)
     let N := G.neighborFinset v
@@ -472,7 +473,7 @@ lemma r35_critical_is_4_regular {V : Type*} [Fintype V] [DecidableEq V] (G : Sim
               rcases Finset.mem_map.mp hx_in_T with ⟨x', _, rfl⟩
               change (e x').val ∈ ↑M9
               exact (e x').property
-            exact h_v_nonadj_M9 x this (G.symm h_adj)
+            exact h_v_nonadj_M9 x this (G.adj_symm h_adj)
           · rcases Finset.mem_map.mp hx_in_T with ⟨x', hx'_in_T, rfl⟩
             rcases Finset.mem_map.mp hy_in_T with ⟨y', hy'_in_T, rfl⟩
             have hne : x' ≠ y' := by intro h_eq; apply hxy; simp [h_eq]
@@ -514,7 +515,7 @@ lemma degree_ge_four_of_triangleFree_no_6indep
     G.degree v ≥ 4 := by
   -- Proof by contradiction: assume deg(v) ≤ 3
   by_contra h_not
-  push_neg at h_not
+  push Not at h_not
   have h_deg_le_3 : G.degree v ≤ 3 := Nat.lt_succ_iff.mp h_not
 
   -- Non-neighbors of v (excluding v itself)
@@ -621,7 +622,7 @@ lemma degree_ge_four_of_triangleFree_no_6indep
             change (e x').val ∈ ↑H14
             exact (e x').property
           have h_x_nonadj_v : ¬ G.Adj y x := h_v_nonadj_H14 x this
-          exact h_x_nonadj_v (G.symm h_adj)
+          exact h_x_nonadj_v (G.adj_symm h_adj)
         · rcases Finset.mem_map.mp hx_in_T with ⟨x', hx'_in_T, rfl⟩
           rcases Finset.mem_map.mp hy_in_T with ⟨y', hy'_in_T, rfl⟩
           have hne : x' ≠ y' := by
@@ -770,7 +771,7 @@ lemma degree_not_four_of_triangleFree_no_6indep
         · rcases Finset.mem_map.mp hy_in_S with ⟨y', _, rfl⟩
           exact h_v_nonadj_M (f y') (hf_in_M y') h_adj
         · rcases Finset.mem_map.mp hx_in_S with ⟨x', _, rfl⟩
-          exact h_v_nonadj_M (f x') (hf_in_M x') (G.symm h_adj)
+          exact h_v_nonadj_M (f x') (hf_in_M x') (G.adj_symm h_adj)
         · rcases Finset.mem_map.mp hx_in_S with ⟨x', hx'_in_S, rfl⟩
           rcases Finset.mem_map.mp hy_in_S with ⟨y', hy'_in_S, rfl⟩
           have hne : x' ≠ y' := by intro h_eq; apply hxy; simp [h_eq]
@@ -938,7 +939,7 @@ lemma degree_not_four_of_triangleFree_no_6indep
     -- x has 4 neighbors in M (from G_M being 4-regular)
     -- x is adjacent to t (outside M) and u (in N, also outside M)
     -- So deg_G(x) ≥ 6 > 5, contradiction
-    have hx_adj_t : G.Adj x t := G.symm (hT_adj_t x hx)
+    have hx_adj_t : G.Adj x t := G.adj_symm (hT_adj_t x hx)
     have hx_adj_u : G.Adj x u := h_adj
     have ht_not_in_M : t ∉ M := by
       simp only [M, Finset.mem_sdiff, Finset.mem_univ, true_and, not_not]
@@ -1053,7 +1054,7 @@ lemma degree_not_four_of_triangleFree_no_6indep
       -- Case 2: x ∈ N \ {t}, y ∈ T_set → no edge by hT_no_N_neighbors
       · have hx_in_N : x ∈ N := (Finset.mem_erase.mp hx_N).2
         have hx_ne_t : x ≠ t := (Finset.mem_erase.mp hx_N).1
-        exact hT_no_N_neighbors y hy_T x hx_in_N hx_ne_t (G.symm h_adj)
+        exact hT_no_N_neighbors y hy_T x hx_in_N hx_ne_t (G.adj_symm h_adj)
       -- Case 3: x ∈ T_set, y ∈ N \ {t} → no edge by hT_no_N_neighbors
       · have hy_in_N : y ∈ N := (Finset.mem_erase.mp hy_N).2
         have hy_ne_t : y ≠ t := (Finset.mem_erase.mp hy_N).1
@@ -1122,7 +1123,7 @@ lemma commonNeighborsCard_pos
     (hw_nonadj : ¬G.Adj v w) :
     0 < commonNeighborsCard G v w := by
   by_contra h_zero
-  push_neg at h_zero
+  push Not at h_zero
   have h_zero' : commonNeighborsCard G v w = 0 := Nat.le_zero.mp h_zero
 
   -- N(v) is independent (triangle-free)
@@ -1202,7 +1203,7 @@ lemma commonNeighborsCard_le_two
     (hw_nonadj : ¬G.Adj v w) :
     commonNeighborsCard G v w ≤ 2 := by
   by_contra h_gt
-  push_neg at h_gt
+  push Not at h_gt
 
   -- Setup: N = neighbors of v, M = non-neighbors of v (excluding v)
   let N := G.neighborFinset v
@@ -1496,9 +1497,9 @@ lemma claim2_neighbor_structure {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
       -- Goal is now: G.Adj v n ∧ G.Adj w n ↔ G.Adj v n ∧ G.Adj n w
       constructor
       · intro ⟨hv_adj_n, hw_adj_n⟩
-        exact ⟨hv_adj_n, G.symm hw_adj_n⟩
+        exact ⟨hv_adj_n, G.adj_symm hw_adj_n⟩
       · intro ⟨hv_adj_n, hn_adj_w⟩
-        exact ⟨hv_adj_n, G.symm hn_adj_w⟩
+        exact ⟨hv_adj_n, G.adj_symm hn_adj_w⟩
 
     -- Rewrite LHS using this
     have h_rewrite : M.sum (fun w => commonNeighborsCard G v w) =
@@ -1536,15 +1537,14 @@ lemma claim2_neighbor_structure {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
       -- v ∈ neighbors(n) since n ∈ N
       have hn_adj_v : G.Adj n v := by
         rw [mem_neighborFinset] at hnN
-        exact G.symm hnN
+        exact G.adj_symm hnN
       -- N \ {n} and M are disjoint from v
       -- neighbors(n) ∩ (N \ {n}) = ∅ by triangle-free
       have h_no_nbr_in_N : ∀ m ∈ N, m ≠ n → ¬G.Adj n m := by
-        intros m hmN hne
-        intro h_adj
+        intro m hmN hne h_adj
         -- Would form triangle: {v, n, m}
         have h_adj_nv : G.Adj n v := hn_adj_v
-        have h_adj_mv : G.Adj m v := by rw [mem_neighborFinset] at hmN; exact G.symm hmN
+        have h_adj_mv : G.Adj m v := by rw [mem_neighborFinset] at hmN; exact G.adj_symm hmN
         -- Construct the triangle
         let T : Finset (Fin 18) := {v, n, m}
         have hT_clique : G.IsNClique 3 T := by
@@ -1555,13 +1555,13 @@ lemma claim2_neighbor_structure {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
             simp only [T, mem_coe, mem_insert, mem_singleton] at ha hb
             rcases ha with rfl | rfl | rfl <;> rcases hb with rfl | rfl | rfl
             · exact absurd rfl hab
-            · exact G.symm h_adj_nv
-            · exact G.symm h_adj_mv
+            · exact G.adj_symm h_adj_nv
+            · exact G.adj_symm h_adj_mv
             · exact h_adj_nv
             · exact absurd rfl hab
             · exact h_adj
             · exact h_adj_mv
-            · exact G.symm h_adj
+            · exact G.adj_symm h_adj
             · exact absurd rfl hab
           · -- card = 3
             simp only [T]
@@ -1714,13 +1714,13 @@ lemma P_partner_in_N {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
     simp only [Finset.mem_inter, mem_neighborFinset] at hs_in
     constructor
     · rw [mem_neighborFinset]; exact hs_in.1
-    · exact G.symm hs_in.2
+    · exact G.adj_symm hs_in.2
   · intro s' hs'
     have hs'_in : s' ∈ G.neighborFinset v ∩ G.neighborFinset p := by
       simp only [Finset.mem_inter, mem_neighborFinset]
       constructor
       · rw [mem_neighborFinset] at hs'; exact hs'.1
-      · exact G.symm hs'.2
+      · exact G.adj_symm hs'.2
     rw [hs] at hs'_in
     exact Finset.mem_singleton.mp hs'_in
 
@@ -1789,7 +1789,7 @@ lemma p_adjacent_of_shared_w {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
     -- So they have different commonNeighborsCard - but we don't have that here directly.
     -- Actually, hw_adj_s1 and hw_adj_s2 mean w is adjacent to both s1 and s2
     -- If p1 = w, then p1 is adjacent to s1 and s2. But hs2_nonadj_p1 says ¬G.Adj s2 p1
-    exact hs2_nonadj_p1 (G.symm hw_adj_s2)
+    exact hs2_nonadj_p1 (G.adj_symm hw_adj_s2)
   have h4 : p2 ≠ s1 := by
     intro h; subst h
     -- p2 = s1 means G.Adj s1 p1 and s1 not adj p2 = s1 not adj s1 (loopless, fine)
@@ -1802,7 +1802,7 @@ lemma p_adjacent_of_shared_w {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
   have h6 : p2 ≠ w := by
     intro h; subst h
     -- Similar to h3: if p2 = w, then w adj s1 and w adj s2, but hs1_nonadj_p2 says ¬G.Adj s1 p2
-    exact hs1_nonadj_p2 (G.symm hw_adj_s1)
+    exact hs1_nonadj_p2 (G.adj_symm hw_adj_s1)
   have h7 : s1 ≠ w := by
     intro h; subst h
     exact G.loopless.irrefl s1 hw_adj_s1
@@ -1880,9 +1880,9 @@ lemma p_adjacent_of_shared_w {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
         · exact hs4_ne_s2 rfl
       · -- x = w: w ∉ N(v) but t, s3, s4 ∈ N(v)
         rcases hxW with rfl | rfl | rfl
-        · exact hw_nonadj_v (G.symm ht_adj_v)
-        · exact hw_nonadj_v (G.symm hs3_adj_v)
-        · exact hw_nonadj_v (G.symm hs4_adj_v)
+        · exact hw_nonadj_v (G.adj_symm ht_adj_v)
+        · exact hw_nonadj_v (G.adj_symm hs3_adj_v)
+        · exact hw_nonadj_v (G.adj_symm hs4_adj_v)
     -- Union has card 6
     let I : Finset (Fin 18) := S ∪ W
     have hI_card : I.card = 6 := by
@@ -1905,13 +1905,13 @@ lemma p_adjacent_of_shared_w {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
         simp only [W, mem_insert, mem_singleton] at hyW
         rcases hxX with rfl | rfl | rfl | rfl | rfl <;> rcases hyW with rfl | rfl | rfl
         -- x = p1, y = t: ht_nonadj_p1
-        · exact ht_nonadj_p1 (G.symm h_adj)
-        · exact hs3_nonadj_p1 (G.symm h_adj)
-        · exact hs4_nonadj_p1 (G.symm h_adj)
+        · exact ht_nonadj_p1 (G.adj_symm h_adj)
+        · exact hs3_nonadj_p1 (G.adj_symm h_adj)
+        · exact hs4_nonadj_p1 (G.adj_symm h_adj)
         -- x = p2, y = t, s3, s4
-        · exact ht_nonadj_p2 (G.symm h_adj)
-        · exact hs3_nonadj_p2 (G.symm h_adj)
-        · exact hs4_nonadj_p2 (G.symm h_adj)
+        · exact ht_nonadj_p2 (G.adj_symm h_adj)
+        · exact hs3_nonadj_p2 (G.adj_symm h_adj)
+        · exact hs4_nonadj_p2 (G.adj_symm h_adj)
         -- x = s1, y = t, s3, s4: all in N(v), so independent
         · have hN_indep := neighborSet_indep_of_triangleFree h_tri v
           exact hN_indep hs1_adj_v ht_adj_v ht_ne_s1.symm h_adj
@@ -1927,9 +1927,9 @@ lemma p_adjacent_of_shared_w {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
         · have hN_indep := neighborSet_indep_of_triangleFree h_tri v
           exact hN_indep hs2_adj_v hs4_adj_v hs4_ne_s2.symm h_adj
         -- x = w, y = t, s3, s4
-        · exact ht_nonadj_w (G.symm h_adj)
-        · exact hs3_nonadj_w (G.symm h_adj)
-        · exact hs4_nonadj_w (G.symm h_adj)
+        · exact ht_nonadj_w (G.adj_symm h_adj)
+        · exact hs3_nonadj_w (G.adj_symm h_adj)
+        · exact hs4_nonadj_w (G.adj_symm h_adj)
       · -- x ∈ W, y ∈ S: symmetric to above
         have hyX : y ∈ X := hS_sub hyS
         simp only [X, mem_insert, mem_singleton] at hyX
@@ -1991,7 +1991,7 @@ lemma p_adjacent_of_shared_w {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
       -- Goal is s1 = p1 ∨ s1 = p2 ∨ s1 = s1 ∨ s1 = s2 ∨ s1 = w
       -- Simplify: s1 = s1 is in there, so True
       tauto
-    · exact G.symm hs1_adj_p1
+    · exact G.adj_symm hs1_adj_p1
 
   -- p1 is not adjacent to s2, w (given), and not to itself
   have hp1_neighbors_in_X : X.filter (G.Adj p1) ⊆ {p2, s1} := by
@@ -2009,10 +2009,10 @@ lemma p_adjacent_of_shared_w {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
       subst hx_eq; right; rfl
     · -- x = s2: not possible since s2 not adj p1
       subst hx_eq
-      exact (hs2_nonadj_p1 (G.symm hx_adj)).elim
+      exact (hs2_nonadj_p1 (G.adj_symm hx_adj)).elim
     · -- x = w: not possible since w not adj p1
       subst hx_eq
-      exact (hw_nonadj_p1 (G.symm hx_adj)).elim
+      exact (hw_nonadj_p1 (G.adj_symm hx_adj)).elim
 
   -- Since |neighbors| = 2 and s1 is one, and neighbors ⊆ {p2, s1}, we need p2
   have h_p2_ne_s1 : p2 ≠ s1 := fun h => h4 h
@@ -2284,7 +2284,7 @@ lemma CariolaroSetup.P_is_cycle {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
       setup.h_s1_adj_p1 setup.h_s2_adj_p2
       setup.h_s1_nonadj_p2 setup.h_s2_nonadj_p1
       setup.h_w1_adj_s1 setup.h_w1_adj_s2
-      (fun h => setup.h_w1_nonadj_v (G.symm h))  -- v w swapped
+      (fun h => setup.h_w1_nonadj_v (G.adj_symm h))  -- v w swapped
       setup.h_w1_nonadj_p1 setup.h_w1_nonadj_p2  -- p cases match
       hs1_s2
       setup.t setup.s3 setup.s4
@@ -2292,8 +2292,8 @@ lemma CariolaroSetup.P_is_cycle {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
       -- ht_ne_s1 ht_ne_s2 hs3_ne_s1 hs3_ne_s2 hs4_ne_s1 hs4_ne_s2 ht_ne_s3 ht_ne_s4 hs3_ne_s4
       ht_ne_s1 ht_ne_s2 hs1_ne_s3.symm hs2_ne_s3.symm hs1_ne_s4.symm hs2_ne_s4.symm ht_ne_s3 ht_ne_s4 hs3_ne_s4
       setup.h_t_nonadj_p1 setup.h_t_nonadj_p2 setup.h_w1_nonadj_t
-      setup.h_s3_nonadj_p1 setup.h_s3_nonadj_p2 (fun h => setup.h_w1_nonadj_s3 (G.symm h))
-      setup.h_s4_nonadj_p1 setup.h_s4_nonadj_p2 (fun h => setup.h_w1_nonadj_s4 (G.symm h))
+      setup.h_s3_nonadj_p1 setup.h_s3_nonadj_p2 (fun h => setup.h_w1_nonadj_s3 (G.adj_symm h))
+      setup.h_s4_nonadj_p1 setup.h_s4_nonadj_p2 (fun h => setup.h_w1_nonadj_s4 (G.adj_symm h))
 
   -- Edge 2: p2-p3 (w2 shares s2, s3)
   have h_p2_p3 : G.Adj setup.p2 setup.p3 :=
@@ -2304,15 +2304,15 @@ lemma CariolaroSetup.P_is_cycle {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
       setup.h_s2_adj_p2 setup.h_s3_adj_p3
       setup.h_s2_nonadj_p3 setup.h_s3_nonadj_p2
       setup.h_w2_adj_s2 setup.h_w2_adj_s3
-      (fun h => setup.h_w2_nonadj_v (G.symm h))
+      (fun h => setup.h_w2_nonadj_v (G.adj_symm h))
       setup.h_w2_nonadj_p2 setup.h_w2_nonadj_p3
       hs2_s3
       setup.t setup.s1 setup.s4
       setup.h_t_adj_v setup.h_s1_adj_v setup.h_s4_adj_v
       ht_ne_s2 ht_ne_s3 hs1_ne_s2 hs1_ne_s3 hs2_ne_s4.symm hs3_ne_s4.symm ht_ne_s1 ht_ne_s4 hs1_ne_s4
       setup.h_t_nonadj_p2 setup.h_t_nonadj_p3 setup.h_w2_nonadj_t
-      setup.h_s1_nonadj_p2 setup.h_s1_nonadj_p3 (fun h => setup.h_w2_nonadj_s1 (G.symm h))
-      setup.h_s4_nonadj_p2 setup.h_s4_nonadj_p3 (fun h => setup.h_w2_nonadj_s4 (G.symm h))
+      setup.h_s1_nonadj_p2 setup.h_s1_nonadj_p3 (fun h => setup.h_w2_nonadj_s1 (G.adj_symm h))
+      setup.h_s4_nonadj_p2 setup.h_s4_nonadj_p3 (fun h => setup.h_w2_nonadj_s4 (G.adj_symm h))
 
   -- Edge 3: p3-p4 (w3 shares s3, s4)
   have h_p3_p4 : G.Adj setup.p3 setup.p4 :=
@@ -2323,15 +2323,15 @@ lemma CariolaroSetup.P_is_cycle {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
       setup.h_s3_adj_p3 setup.h_s4_adj_p4
       setup.h_s3_nonadj_p4 setup.h_s4_nonadj_p3
       setup.h_w3_adj_s3 setup.h_w3_adj_s4
-      (fun h => setup.h_w3_nonadj_v (G.symm h))
+      (fun h => setup.h_w3_nonadj_v (G.adj_symm h))
       setup.h_w3_nonadj_p3 setup.h_w3_nonadj_p4
       hs3_s4
       setup.t setup.s1 setup.s2
       setup.h_t_adj_v setup.h_s1_adj_v setup.h_s2_adj_v
       ht_ne_s3 ht_ne_s4 hs1_ne_s3 hs1_ne_s4 hs2_ne_s3 hs2_ne_s4 ht_ne_s1 ht_ne_s2 hs1_ne_s2
       setup.h_t_nonadj_p3 setup.h_t_nonadj_p4 setup.h_w3_nonadj_t
-      setup.h_s1_nonadj_p3 setup.h_s1_nonadj_p4 (fun h => setup.h_w3_nonadj_s1 (G.symm h))
-      setup.h_s2_nonadj_p3 setup.h_s2_nonadj_p4 (fun h => setup.h_w3_nonadj_s2 (G.symm h))
+      setup.h_s1_nonadj_p3 setup.h_s1_nonadj_p4 (fun h => setup.h_w3_nonadj_s1 (G.adj_symm h))
+      setup.h_s2_nonadj_p3 setup.h_s2_nonadj_p4 (fun h => setup.h_w3_nonadj_s2 (G.adj_symm h))
 
   -- Edge 4: p4-p1 (w4 shares s4, s1)
   have h_p4_p1 : G.Adj setup.p4 setup.p1 :=
@@ -2342,23 +2342,23 @@ lemma CariolaroSetup.P_is_cycle {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
       setup.h_s4_adj_p4 setup.h_s1_adj_p1
       setup.h_s4_nonadj_p1 setup.h_s1_nonadj_p4
       setup.h_w4_adj_s4 setup.h_w4_adj_s1
-      (fun h => setup.h_w4_nonadj_v (G.symm h))
+      (fun h => setup.h_w4_nonadj_v (G.adj_symm h))
       setup.h_w4_nonadj_p4 setup.h_w4_nonadj_p1
-      (fun h => hs1_s4 (G.symm h))
+      (fun h => hs1_s4 (G.adj_symm h))
       setup.t setup.s2 setup.s3
       setup.h_t_adj_v setup.h_s2_adj_v setup.h_s3_adj_v
       ht_ne_s4 ht_ne_s1 hs2_ne_s4 hs1_ne_s2.symm hs3_ne_s4 hs1_ne_s3.symm ht_ne_s2 ht_ne_s3 hs2_ne_s3
       setup.h_t_nonadj_p4 setup.h_t_nonadj_p1 setup.h_w4_nonadj_t
-      setup.h_s2_nonadj_p4 setup.h_s2_nonadj_p1 (fun h => setup.h_w4_nonadj_s2 (G.symm h))
-      setup.h_s3_nonadj_p4 setup.h_s3_nonadj_p1 (fun h => setup.h_w4_nonadj_s3 (G.symm h))
+      setup.h_s2_nonadj_p4 setup.h_s2_nonadj_p1 (fun h => setup.h_w4_nonadj_s2 (G.adj_symm h))
+      setup.h_s3_nonadj_p4 setup.h_s3_nonadj_p1 (fun h => setup.h_w4_nonadj_s3 (G.adj_symm h))
 
   -- Diagonal 1: p1-p3 non-adjacent (else {p1, p2, p3} triangle)
   have h_not_p1_p3 : ¬G.Adj setup.p1 setup.p3 :=
-    neighbors_nonadj_of_triangleFree G h_tri setup.p2 setup.p1 setup.p3 (G.symm h_p1_p2) h_p2_p3 hp1_ne_p3
+    neighbors_nonadj_of_triangleFree G h_tri setup.p2 setup.p1 setup.p3 (G.adj_symm h_p1_p2) h_p2_p3 hp1_ne_p3
 
   -- Diagonal 2: p2-p4 non-adjacent (else {p2, p3, p4} triangle)
   have h_not_p2_p4 : ¬G.Adj setup.p2 setup.p4 :=
-    neighbors_nonadj_of_triangleFree G h_tri setup.p3 setup.p2 setup.p4 (G.symm h_p2_p3) h_p3_p4 hp2_ne_p4
+    neighbors_nonadj_of_triangleFree G h_tri setup.p3 setup.p2 setup.p4 (G.adj_symm h_p2_p3) h_p3_p4 hp2_ne_p4
 
   exact ⟨h_p1_p2, h_p2_p3, h_p3_p4, h_p4_p1, h_not_p1_p3, h_not_p2_p4⟩
 
@@ -2401,7 +2401,7 @@ lemma t_has_four_Q_neighbors {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
   -- Step 2: v is a neighbor of t
   have hv_mem_Nt : v ∈ G.neighborFinset t := by
     simp only [mem_neighborFinset]
-    exact G.symm ht_adj_v
+    exact G.adj_symm ht_adj_v
 
   -- Step 3: Any neighbor x of t with x ≠ v must be in Q
   have h_other_nbrs_in_Q : ∀ x ∈ G.neighborFinset t, x ≠ v → x ∈ Q := by
@@ -2419,7 +2419,7 @@ lemma t_has_four_Q_neighbors {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
         subst h_eq
         exact G.loopless.irrefl x hx_adj_t
       -- So x and t should not be adjacent
-      exact hNv_indep h_adj_vx ht_adj_v hx_ne_t (G.symm hx_adj_t)
+      exact hNv_indep h_adj_vx ht_adj_v hx_ne_t (G.adj_symm hx_adj_t)
     -- x is a non-neighbor of v, so x ∈ P ∪ Q
     -- Apply the bounds from claim2
     have h_pos := commonNeighborsCard_pos h_tri h_no6 h_reg v x hx_ne_v hx_nonadj_v
@@ -2451,7 +2451,7 @@ lemma t_has_four_Q_neighbors {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
         exact ⟨hx_in_Q, hx_adj⟩
     · intro h
       cases h with
-      | inl hxv => subst hxv; exact G.symm ht_adj_v
+      | inl hxv => subst hxv; exact G.adj_symm ht_adj_v
       | inr hxQ => exact hxQ.2
 
   -- Step 6: {v} and Q.filter (G.Adj t) are disjoint
@@ -2486,7 +2486,7 @@ lemma T_vertex_has_one_S_neighbor {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj
   -- t is one of the common neighbors
   have ht_in_inter : t ∈ G.neighborFinset v ∩ G.neighborFinset ti := by
     simp only [Finset.mem_inter, SimpleGraph.mem_neighborFinset]
-    exact ⟨ht_adj_v, G.symm hti_adj_t⟩
+    exact ⟨ht_adj_v, G.adj_symm hti_adj_t⟩
   -- Extract the two elements
   obtain ⟨a, b, hab_ne, h_eq⟩ := Finset.card_eq_two.mp h_inter_card
   have ht_in : t ∈ ({a, b} : Finset (Fin 18)) := by rw [← h_eq]; exact ht_in_inter
@@ -2528,7 +2528,7 @@ lemma W_vertex_has_two_S_neighbors {G : SimpleGraph (Fin 18)} [DecidableRel G.Ad
   have ht_notin_inter : t ∉ G.neighborFinset v ∩ G.neighborFinset wi := by
     simp only [Finset.mem_inter, SimpleGraph.mem_neighborFinset, not_and]
     intro _
-    exact fun h => hwi_nonadj_t (G.symm h)
+    exact fun h => hwi_nonadj_t (G.adj_symm h)
   -- The intersection is a subset of N(v) \ {t} = S
   have h_inter_sub_S : G.neighborFinset v ∩ G.neighborFinset wi ⊆ S := by
     rw [hS_eq]
@@ -2538,7 +2538,7 @@ lemma W_vertex_has_two_S_neighbors {G : SimpleGraph (Fin 18)} [DecidableRel G.Ad
     constructor
     · intro h_eq
       subst h_eq
-      exact hwi_nonadj_t (G.symm hx.2)
+      exact hwi_nonadj_t (G.adj_symm hx.2)
     · exact hx.1
   -- S.filter (G.Adj wi) contains exactly the intersection
   have h_filter_eq : S.filter (G.Adj wi) = G.neighborFinset v ∩ G.neighborFinset wi := by
@@ -2556,7 +2556,7 @@ lemma W_vertex_has_two_S_neighbors {G : SimpleGraph (Fin 18)} [DecidableRel G.Ad
         constructor
         · intro h_eq
           subst h_eq
-          exact hwi_nonadj_t (G.symm hx_adj_wi)
+          exact hwi_nonadj_t (G.adj_symm hx_adj_wi)
         · exact hx_adj_v
       · exact hx_adj_wi
   rw [h_filter_eq, h_inter]
@@ -2583,8 +2583,8 @@ lemma S_pair_share_at_most_one_W {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
   have hs12_nonadj : ¬G.Adj s1 s2 := neighborSet_indep_of_triangleFree h_tri v hs1_adj_v hs2_adj_v hs1_ne_s2
   -- Use the Finset-based commonNeighbors (which is _root_.commonNeighbors)
   -- v is in N(s1) ∩ N(s2): mem_neighborFinset says a ∈ G.neighborFinset b ↔ G.Adj b a
-  have hv_in_Ns1 : v ∈ G.neighborFinset s1 := by rw [mem_neighborFinset]; exact G.symm hs1_adj_v
-  have hv_in_Ns2 : v ∈ G.neighborFinset s2 := by rw [mem_neighborFinset]; exact G.symm hs2_adj_v
+  have hv_in_Ns1 : v ∈ G.neighborFinset s1 := by rw [mem_neighborFinset]; exact G.adj_symm hs1_adj_v
+  have hv_in_Ns2 : v ∈ G.neighborFinset s2 := by rw [mem_neighborFinset]; exact G.adj_symm hs2_adj_v
   have hw1_in_Ns1 : w1 ∈ G.neighborFinset s1 := by rw [mem_neighborFinset]; exact hs1_adj_w1
   have hw1_in_Ns2 : w1 ∈ G.neighborFinset s2 := by rw [mem_neighborFinset]; exact hs2_adj_w1
   have hw2_in_Ns1 : w2 ∈ G.neighborFinset s1 := by rw [mem_neighborFinset]; exact hs1_adj_w2
@@ -3056,7 +3056,7 @@ lemma P_is_two_regular {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
             have hp1_nonadj := (hP_props p1 hp1P).1
             have hp1_common1 := (hP_props p1 hp1P).2
             obtain ⟨sp, hsp, hsp_unique⟩ := P_partner_in_N h_reg h_tri v p1 hp1_nonadj hp1_common1
-            have hy_eq : y = sp := hsp_unique y ⟨hyN, G.symm h_adj⟩
+            have hy_eq : y = sp := hsp_unique y ⟨hyN, G.adj_symm h_adj⟩
             have hs_eq : s = sp := hsp_unique s ⟨hsN, hs_adj_p1⟩
             have : y = s := by simpa [hs_eq] using hy_eq
             exact hy_ne_s this
@@ -3064,7 +3064,7 @@ lemma P_is_two_regular {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
         · subst x
           rcases hy' with hy_p1 | hy'
           · subst y
-            exact fun h => hp1_nonadj_p2 (G.symm h)
+            exact fun h => hp1_nonadj_p2 (G.adj_symm h)
           · rcases hy' with hy_p2 | hyNs
             · subst y
               exact False.elim (hxy rfl)
@@ -3074,7 +3074,7 @@ lemma P_is_two_regular {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
               have hp2_nonadj := (hP_props p2 hp2P).1
               have hp2_common1 := (hP_props p2 hp2P).2
               obtain ⟨sp, hsp, hsp_unique⟩ := P_partner_in_N h_reg h_tri v p2 hp2_nonadj hp2_common1
-              have hy_eq : y = sp := hsp_unique y ⟨hyN, G.symm h_adj⟩
+              have hy_eq : y = sp := hsp_unique y ⟨hyN, G.adj_symm h_adj⟩
               have hs_eq : s = sp := hsp_unique s ⟨hsN, hs_adj_p2⟩
               have : y = s := by simpa [hs_eq] using hy_eq
               exact hy_ne_s this
@@ -3135,7 +3135,7 @@ lemma P_is_two_regular {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
   -- Choose t ∈ N with no P-neighbors.
   have ht_exists : ∃ t ∈ N, (P.filter (G.Adj t)).card = 0 := by
     by_contra h
-    push_neg at h
+    push Not at h
     have h_all_one : ∀ t ∈ N, (P.filter (G.Adj t)).card = 1 := by
       intro t htN
       have ht_ne0 : (P.filter (G.Adj t)).card ≠ 0 := h t htN
@@ -3255,7 +3255,7 @@ lemma P_is_two_regular {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
     intro p hp
     have ht_nonadj : ¬G.Adj p t := by
       intro hpt
-      exact ht_nonadj_P p hp (G.symm hpt)
+      exact ht_nonadj_P p hp (G.adj_symm hpt)
     have hEq : S.filter (G.Adj p) = N.filter (G.Adj p) := by
       ext x
       by_cases hx : x = t
@@ -3305,8 +3305,8 @@ lemma P_is_two_regular {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
     intro p hpP s1 hs1S s2 hs2S hs1p hs2p
     have hcard := hP_S_card p hpP
     obtain ⟨s, hs_eq⟩ := Finset.card_eq_one.mp hcard
-    have hs1 : s1 ∈ S.filter (G.Adj p) := Finset.mem_filter.mpr ⟨hs1S, G.symm hs1p⟩
-    have hs2 : s2 ∈ S.filter (G.Adj p) := Finset.mem_filter.mpr ⟨hs2S, G.symm hs2p⟩
+    have hs1 : s1 ∈ S.filter (G.Adj p) := Finset.mem_filter.mpr ⟨hs1S, G.adj_symm hs1p⟩
+    have hs2 : s2 ∈ S.filter (G.Adj p) := Finset.mem_filter.mpr ⟨hs2S, G.adj_symm hs2p⟩
     have hs1' : s1 = s := by
       have : s1 ∈ ({s} : Finset (Fin 18)) := by simpa [hs_eq] using hs1
       simpa using Finset.mem_singleton.mp this
@@ -3352,7 +3352,7 @@ lemma P_is_two_regular {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
     intro s hsS
     have hs_adj_v : G.Adj v s := hS_adj_v s hsS
     have hv_mem : v ∈ G.neighborFinset s := by
-      simpa [mem_neighborFinset] using (G.symm hs_adj_v)
+      simpa [mem_neighborFinset] using (G.adj_symm hs_adj_v)
     have hs_deg : (G.neighborFinset s).card = 5 := h_reg s
     have hNs_erase_card : ((G.neighborFinset s).erase v).card = 4 := by
       rw [Finset.card_erase_of_mem hv_mem, hs_deg]
@@ -3452,7 +3452,7 @@ lemma P_is_two_regular {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
       have hwQ : w ∈ Q := (Finset.mem_filter.mp hwW).1
       have hw_nonadj_v' : ¬G.Adj v w := (hQ_props w hwQ).1
       intro h
-      exact hw_nonadj_v' (G.symm h)
+      exact hw_nonadj_v' (G.adj_symm h)
     have hw_ne_p1 : w ≠ p1 := by
       intro hwp1
       have hwQ : w ∈ Q := (Finset.mem_filter.mp hwW).1
@@ -3517,8 +3517,8 @@ lemma P_is_two_regular {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
         exact (Finset.mem_erase.mp hs1_in_erase).2
       have := hP_N_card p1 hp1P
       -- (N.filter (Adj p1)) has card 1, contains s1 and s3 -> contradiction
-      have hs1_mem : s1 ∈ N.filter (G.Adj p1) := Finset.mem_filter.mpr ⟨hs1N, G.symm hs1p1'⟩
-      have hs3_mem : s3 ∈ N.filter (G.Adj p1) := Finset.mem_filter.mpr ⟨hs3N, G.symm h⟩
+      have hs1_mem : s1 ∈ N.filter (G.Adj p1) := Finset.mem_filter.mpr ⟨hs1N, G.adj_symm hs1p1'⟩
+      have hs3_mem : s3 ∈ N.filter (G.Adj p1) := Finset.mem_filter.mpr ⟨hs3N, G.adj_symm h⟩
       obtain ⟨z, hz⟩ := Finset.card_eq_one.mp this
       have : s3 = s1 := by
         have hs1z : s1 = z := by
@@ -3538,8 +3538,8 @@ lemma P_is_two_regular {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
         have hs3_in_erase : s3 ∈ N.erase t := by simpa [S] using hs3_in_S
         exact (Finset.mem_erase.mp hs3_in_erase).2
       have := hP_N_card p2 hp2P
-      have hs2_mem : s2 ∈ N.filter (G.Adj p2) := Finset.mem_filter.mpr ⟨hs2N, G.symm hs2p2⟩
-      have hs3_mem : s3 ∈ N.filter (G.Adj p2) := Finset.mem_filter.mpr ⟨hs3N, G.symm h⟩
+      have hs2_mem : s2 ∈ N.filter (G.Adj p2) := Finset.mem_filter.mpr ⟨hs2N, G.adj_symm hs2p2⟩
+      have hs3_mem : s3 ∈ N.filter (G.Adj p2) := Finset.mem_filter.mpr ⟨hs3N, G.adj_symm h⟩
       obtain ⟨z, hz⟩ := Finset.card_eq_one.mp this
       have : s3 = s2 := by
         have hs2z : s2 = z := by
@@ -3559,8 +3559,8 @@ lemma P_is_two_regular {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
         have hs4_in_erase : s4 ∈ N.erase t := by simpa [S] using hs4_in_S
         exact (Finset.mem_erase.mp hs4_in_erase).2
       have := hP_N_card p1 hp1P
-      have hs1_mem : s1 ∈ N.filter (G.Adj p1) := Finset.mem_filter.mpr ⟨hs1N, G.symm hs1p1⟩
-      have hs4_mem : s4 ∈ N.filter (G.Adj p1) := Finset.mem_filter.mpr ⟨hs4N, G.symm h⟩
+      have hs1_mem : s1 ∈ N.filter (G.Adj p1) := Finset.mem_filter.mpr ⟨hs1N, G.adj_symm hs1p1⟩
+      have hs4_mem : s4 ∈ N.filter (G.Adj p1) := Finset.mem_filter.mpr ⟨hs4N, G.adj_symm h⟩
       obtain ⟨z, hz⟩ := Finset.card_eq_one.mp this
       have : s4 = s1 := by
         have hs1z : s1 = z := by
@@ -3580,8 +3580,8 @@ lemma P_is_two_regular {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
         have hs4_in_erase : s4 ∈ N.erase t := by simpa [S] using hs4_in_S
         exact (Finset.mem_erase.mp hs4_in_erase).2
       have := hP_N_card p2 hp2P
-      have hs2_mem : s2 ∈ N.filter (G.Adj p2) := Finset.mem_filter.mpr ⟨hs2N, G.symm hs2p2⟩
-      have hs4_mem : s4 ∈ N.filter (G.Adj p2) := Finset.mem_filter.mpr ⟨hs4N, G.symm h⟩
+      have hs2_mem : s2 ∈ N.filter (G.Adj p2) := Finset.mem_filter.mpr ⟨hs2N, G.adj_symm hs2p2⟩
+      have hs4_mem : s4 ∈ N.filter (G.Adj p2) := Finset.mem_filter.mpr ⟨hs4N, G.adj_symm h⟩
       obtain ⟨z, hz⟩ := Finset.card_eq_one.mp this
       have : s4 = s2 := by
         have hs2z : s2 = z := by
@@ -3596,9 +3596,9 @@ lemma P_is_two_regular {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
     have hs3_nonadj_w : ¬G.Adj s3 w := by
       intro h
       have hcard := hW_S_card w hwW
-      have hs1_mem : s1 ∈ S.filter (G.Adj w) := Finset.mem_filter.mpr ⟨hs1, G.symm hs1w⟩
-      have hs2_mem : s2 ∈ S.filter (G.Adj w) := Finset.mem_filter.mpr ⟨hs2, G.symm hs2w⟩
-      have hs3_mem : s3 ∈ S.filter (G.Adj w) := Finset.mem_filter.mpr ⟨hs3_in_S, G.symm h⟩
+      have hs1_mem : s1 ∈ S.filter (G.Adj w) := Finset.mem_filter.mpr ⟨hs1, G.adj_symm hs1w⟩
+      have hs2_mem : s2 ∈ S.filter (G.Adj w) := Finset.mem_filter.mpr ⟨hs2, G.adj_symm hs2w⟩
+      have hs3_mem : s3 ∈ S.filter (G.Adj w) := Finset.mem_filter.mpr ⟨hs3_in_S, G.adj_symm h⟩
       have hsub : ({s1, s2, s3} : Finset (Fin 18)) ⊆ S.filter (G.Adj w) := by
         intro x hx
         simp only [Finset.mem_insert, Finset.mem_singleton] at hx
@@ -3618,9 +3618,9 @@ lemma P_is_two_regular {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
     have hs4_nonadj_w : ¬G.Adj s4 w := by
       intro h
       have hcard := hW_S_card w hwW
-      have hs1_mem : s1 ∈ S.filter (G.Adj w) := Finset.mem_filter.mpr ⟨hs1, G.symm hs1w⟩
-      have hs2_mem : s2 ∈ S.filter (G.Adj w) := Finset.mem_filter.mpr ⟨hs2, G.symm hs2w⟩
-      have hs4_mem : s4 ∈ S.filter (G.Adj w) := Finset.mem_filter.mpr ⟨hs4_in_S, G.symm h⟩
+      have hs1_mem : s1 ∈ S.filter (G.Adj w) := Finset.mem_filter.mpr ⟨hs1, G.adj_symm hs1w⟩
+      have hs2_mem : s2 ∈ S.filter (G.Adj w) := Finset.mem_filter.mpr ⟨hs2, G.adj_symm hs2w⟩
+      have hs4_mem : s4 ∈ S.filter (G.Adj w) := Finset.mem_filter.mpr ⟨hs4_in_S, G.adj_symm h⟩
       have hsub : ({s1, s2, s4} : Finset (Fin 18)) ⊆ S.filter (G.Adj w) := by
         intro x hx
         simp only [Finset.mem_insert, Finset.mem_singleton] at hx
@@ -3648,7 +3648,7 @@ lemma P_is_two_regular {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
       hs1_adj_v hs2_adj_v hs12
       hs1p1 hs2p2
       hs1_nonadj_p2 hs2_nonadj_p1
-      (G.symm hs1w) (G.symm hs2w)
+      (G.adj_symm hs1w) (G.adj_symm hs2w)
       hw_nonadj_v hw_nonadj_p1 hw_nonadj_p2
       hs1_s2_nonadj
       t s3 s4
@@ -3690,7 +3690,7 @@ lemma P_is_two_regular {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
       intro wi hwi_in hwiW hs_wi
       have hwi_S_card : (S.filter (G.Adj wi)).card = 2 := hW_S_card wi hwiW
       have hs_in_wi : s ∈ S.filter (G.Adj wi) := by
-        simp only [Finset.mem_filter]; exact ⟨hsS, G.symm hs_wi⟩
+        simp only [Finset.mem_filter]; exact ⟨hsS, G.adj_symm hs_wi⟩
       have hwi_other : ((S.filter (G.Adj wi)).erase s).card = 1 := by
         rw [Finset.card_erase_of_mem hs_in_wi, hwi_S_card]
       obtain ⟨oi, hoi_eq⟩ := Finset.card_eq_one.mp hwi_other
@@ -3701,7 +3701,7 @@ lemma P_is_two_regular {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
       have hoiS : oi ∈ S := (Finset.mem_filter.mp hoi_in_filter).1
       have hoi_adj_wi : G.Adj oi wi := by
         have : G.Adj wi oi := (Finset.mem_filter.mp hoi_in_filter).2
-        exact G.symm this
+        exact G.adj_symm this
       have hPi_card : (P.filter (G.Adj oi)).card = 1 := hS_P_card oi hoiS
       obtain ⟨pi, hpi_eq⟩ := Finset.card_eq_one.mp hPi_card
       have hpi_mem : pi ∈ P.filter (G.Adj oi) := by rw [hpi_eq]; simp
@@ -3780,10 +3780,10 @@ lemma P_is_two_regular {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
     have hu2S : u2 ∈ S := (Finset.mem_filter.mp hu2_mem).1
     have hu1_adj_w4 : G.Adj u1 w4 := by
       have : G.Adj w4 u1 := (Finset.mem_filter.mp hu1_mem).2
-      exact G.symm this
+      exact G.adj_symm this
     have hu2_adj_w4 : G.Adj u2 w4 := by
       have : G.Adj w4 u2 := (Finset.mem_filter.mp hu2_mem).2
-      exact G.symm this
+      exact G.adj_symm this
     have hu1_ne_s : u1 ≠ s := by
       intro h
       subst h
@@ -3922,9 +3922,9 @@ lemma P_is_two_regular {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
     have hwa_S_card : (S.filter (G.Adj wa)).card = 2 := hW_S_card wa hwaW
     have hwb_S_card : (S.filter (G.Adj wb)).card = 2 := hW_S_card wb hwbW
     have hsp_in_wa : sp ∈ S.filter (G.Adj wa) := by
-      simp only [Finset.mem_filter]; exact ⟨hsp_in_S, G.symm hsp_wa⟩
+      simp only [Finset.mem_filter]; exact ⟨hsp_in_S, G.adj_symm hsp_wa⟩
     have hsp_in_wb : sp ∈ S.filter (G.Adj wb) := by
-      simp only [Finset.mem_filter]; exact ⟨hsp_in_S, G.symm hsp_wb⟩
+      simp only [Finset.mem_filter]; exact ⟨hsp_in_S, G.adj_symm hsp_wb⟩
     have hwa_other : ((S.filter (G.Adj wa)).erase sp).card = 1 := by
       rw [Finset.card_erase_of_mem hsp_in_wa, hwa_S_card]
     have hwb_other : ((S.filter (G.Adj wb)).erase sp).card = 1 := by
@@ -3941,10 +3941,10 @@ lemma P_is_two_regular {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
     have hobS : ob ∈ S := (Finset.mem_filter.mp hob_in_filter).1
     have hoa_adj_wa : G.Adj oa wa := by
       have : G.Adj wa oa := (Finset.mem_filter.mp hoa_in_filter).2
-      exact G.symm this
+      exact G.adj_symm this
     have hob_adj_wb : G.Adj ob wb := by
       have : G.Adj wb ob := (Finset.mem_filter.mp hob_in_filter).2
-      exact G.symm this
+      exact G.adj_symm this
     have hoa_ne_ob : oa ≠ ob := by
       intro h
       have hsp_adj_v : G.Adj v sp := hS_adj_v sp hsp_in_S
@@ -4192,7 +4192,7 @@ lemma P_is_two_regular {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
     intro x hx
     rw [mem_neighborFinset] at hx
     by_cases hxv : x = v
-    · subst hxv; exfalso; exact hp_nonadj_v (G.symm hx)
+    · subst hxv; exfalso; exact hp_nonadj_v (G.adj_symm hx)
     by_cases hx_Nv : G.Adj v x
     · rw [mem_union, mem_union]; left; right
       simp only [NN, mem_filter, mem_neighborFinset]
@@ -5087,7 +5087,7 @@ lemma P_is_two_regular {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
   -- This leads to a contradiction with 6-IS.
   have hNQ_le2 : NQ.card ≤ 2 := by
     by_contra h_gt2
-    push_neg at h_gt2
+    push Not at h_gt2
     -- NQ.card ≥ 3: extract 3 Q-neighbors using two_lt_card_iff
     have h3 : 2 < NQ.card := by omega
     obtain ⟨q1, q2, q3, hq1_in, hq2_in, hq3_in, hq_ne12, hq_ne13, hq_ne23⟩ :=
@@ -5111,26 +5111,26 @@ lemma P_is_two_regular {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
     have hq23_nonadj : ¬G.Adj q2 q3 :=
       neighbors_nonadj_of_triangleFree G h_tri p q2 q3 hp_adj_q2 hp_adj_q3 hq_ne23
     -- v ≠ qi (since p ~ qi but p ≁ v)
-    have hv_ne_q1 : v ≠ q1 := fun h => hp_nonadj_v (G.symm (h ▸ hp_adj_q1))
-    have hv_ne_q2 : v ≠ q2 := fun h => hp_nonadj_v (G.symm (h ▸ hp_adj_q2))
-    have hv_ne_q3 : v ≠ q3 := fun h => hp_nonadj_v (G.symm (h ▸ hp_adj_q3))
+    have hv_ne_q1 : v ≠ q1 := fun h => hp_nonadj_v (G.adj_symm (h ▸ hp_adj_q1))
+    have hv_ne_q2 : v ≠ q2 := fun h => hp_nonadj_v (G.adj_symm (h ▸ hp_adj_q2))
+    have hv_ne_q3 : v ≠ q3 := fun h => hp_nonadj_v (G.adj_symm (h ▸ hp_adj_q3))
     -- p's unique N(v)-neighbor
     have hNN_nonempty : NN.Nonempty := by rw [← Finset.card_pos]; simp [hNN_card]
     obtain ⟨s, hs_in_NN⟩ := hNN_nonempty
     simp only [NN, mem_filter, mem_neighborFinset] at hs_in_NN
     have hs_adj_v : G.Adj v s := hs_in_NN.1
-    have hs_adj_p : G.Adj s p := G.symm hs_in_NN.2
+    have hs_adj_p : G.Adj s p := G.adj_symm hs_in_NN.2
     -- s ≠ qi (s ∈ N(v) but qi ∉ N(v), so v ~ s but v ≁ qi)
     have hs_ne_q1 : s ≠ q1 := fun h => hq1_nonadj_v (h ▸ hs_adj_v)
     have hs_ne_q2 : s ≠ q2 := fun h => hq2_nonadj_v (h ▸ hs_adj_v)
     have hs_ne_q3 : s ≠ q3 := fun h => hq3_nonadj_v (h ▸ hs_adj_v)
     -- s is not adjacent to qi (would form triangle s-p-qi)
     have hs_nonadj_q1 : ¬G.Adj s q1 :=
-      neighbors_nonadj_of_triangleFree G h_tri p s q1 (G.symm hs_adj_p) hp_adj_q1 hs_ne_q1
+      neighbors_nonadj_of_triangleFree G h_tri p s q1 (G.adj_symm hs_adj_p) hp_adj_q1 hs_ne_q1
     have hs_nonadj_q2 : ¬G.Adj s q2 :=
-      neighbors_nonadj_of_triangleFree G h_tri p s q2 (G.symm hs_adj_p) hp_adj_q2 hs_ne_q2
+      neighbors_nonadj_of_triangleFree G h_tri p s q2 (G.adj_symm hs_adj_p) hp_adj_q2 hs_ne_q2
     have hs_nonadj_q3 : ¬G.Adj s q3 :=
-      neighbors_nonadj_of_triangleFree G h_tri p s q3 (G.symm hs_adj_p) hp_adj_q3 hs_ne_q3
+      neighbors_nonadj_of_triangleFree G h_tri p s q3 (G.adj_symm hs_adj_p) hp_adj_q3 hs_ne_q3
     -- p ≠ qi
     have hp_ne_q1 : p ≠ q1 := G.ne_of_adj hp_adj_q1
     have hp_ne_q2 : p ≠ q2 := G.ne_of_adj hp_adj_q2
@@ -5182,7 +5182,7 @@ lemma P_is_two_regular {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
   -- With v, we get 4-IS. Extend to 6-IS → contradiction.
   have hNQ_ge2 : NQ.card ≥ 2 := by
     by_contra h_lt2
-    push_neg at h_lt2
+    push Not at h_lt2
     -- NQ.card ≤ 1 → NP.card ≥ 3
     have hNP_ge3 : NP.card ≥ 3 := by omega
     -- P \ {p} has exactly 3 elements
@@ -5571,7 +5571,7 @@ lemma claim3_four_cycle {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
           simp only [mem_coe, mem_insert, mem_singleton] at hx hy
           obtain (rfl | rfl | rfl) := hx <;> obtain (rfl | rfl | rfl) := hy
           all_goals first | exact absurd rfl hxy | exact hs_pa | exact hs_pb
-                          | exact G.symm hs_pa | exact G.symm hs_pb | exact hadj | exact G.symm hadj
+                          | exact G.adj_symm hs_pa | exact G.adj_symm hs_pb | exact hadj | exact G.adj_symm hadj
         · have h1 : s ≠ pa := G.ne_of_adj hs_pa
           have h2 : s ≠ pb := G.ne_of_adj hs_pb
           rw [card_insert_of_notMem, card_insert_of_notMem, card_singleton]
@@ -5605,11 +5605,11 @@ lemma claim3_four_cycle {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
         · exact hadj h_edge
         · -- pa adj to y ∈ N', y ≠ s
           have hy_ne_s : y ≠ s := (mem_erase.mp hy_N').1
-          exact hunique_pa y (h_N'_to_N y hy_N') hy_ne_s (G.symm h_edge)
-        · exact hadj (G.symm h_edge)
+          exact hunique_pa y (h_N'_to_N y hy_N') hy_ne_s (G.adj_symm h_edge)
+        · exact hadj (G.adj_symm h_edge)
         · exact hxy rfl
         · have hy_ne_s : y ≠ s := (mem_erase.mp hy_N').1
-          exact hunique_pb y (h_N'_to_N y hy_N') hy_ne_s (G.symm h_edge)
+          exact hunique_pb y (h_N'_to_N y hy_N') hy_ne_s (G.adj_symm h_edge)
         · have hx_ne_s : x ≠ s := (mem_erase.mp hx_N').1
           exact hunique_pa x (h_N'_to_N x hx_N') hx_ne_s h_edge
         · have hx_ne_s : x ≠ s := (mem_erase.mp hx_N').1
@@ -5846,7 +5846,7 @@ lemma claim3_four_cycle {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
 
   -- A 2-regular graph on 4 vertices is a 4-cycle
   have h_cycle := two_regular_four_vertices_is_cycle P hP_card G.Adj
-    (fun _ _ h => G.symm h)
+    (fun _ _ h => G.adj_symm h)
     G.loopless.irrefl
     hP_2reg
 
@@ -5922,7 +5922,7 @@ lemma exists_CariolaroSetup_at {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
           simp only [mem_coe, mem_insert, mem_singleton] at hx hy
           obtain (rfl | rfl | rfl) := hx <;> obtain (rfl | rfl | rfl) := hy
           all_goals first | exact absurd rfl hxy | exact hs_pa | exact hs_pb
-                          | exact G.symm hs_pa | exact G.symm hs_pb | exact hadj | exact G.symm hadj
+                          | exact G.adj_symm hs_pa | exact G.adj_symm hs_pb | exact hadj | exact G.adj_symm hadj
         · have h1 : s ≠ pa := G.ne_of_adj hs_pa
           have h2 : s ≠ pb := G.ne_of_adj hs_pb
           rw [card_insert_of_notMem, card_insert_of_notMem, card_singleton]
@@ -5956,11 +5956,11 @@ lemma exists_CariolaroSetup_at {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
         · exact hadj h_edge
         · -- pa adj to y ∈ N', y ≠ s
           have hy_ne_s : y ≠ s := (mem_erase.mp hy_N').1
-          exact hunique_pa y (h_N'_to_N y hy_N') hy_ne_s (G.symm h_edge)
-        · exact hadj (G.symm h_edge)
+          exact hunique_pa y (h_N'_to_N y hy_N') hy_ne_s (G.adj_symm h_edge)
+        · exact hadj (G.adj_symm h_edge)
         · exact hxy rfl
         · have hy_ne_s : y ≠ s := (mem_erase.mp hy_N').1
-          exact hunique_pb y (h_N'_to_N y hy_N') hy_ne_s (G.symm h_edge)
+          exact hunique_pb y (h_N'_to_N y hy_N') hy_ne_s (G.adj_symm h_edge)
         · have hx_ne_s : x ≠ s := (mem_erase.mp hx_N').1
           exact hunique_pa x (h_N'_to_N x hx_N') hx_ne_s h_edge
         · have hx_ne_s : x ≠ s := (mem_erase.mp hx_N').1
@@ -6249,7 +6249,7 @@ lemma exists_CariolaroSetup_at {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
             · simp only [mem_insert, mem_singleton] at hy_vp
               rcases hy_vp with rfl | rfl
               · -- y = v
-                exact fun h => hp_nonadj_v (G.symm h)
+                exact fun h => hp_nonadj_v (G.adj_symm h)
               · exact absurd rfl hne
             · -- y ∈ T: p not adj to y (by assumption h_empty)
               exact hp_no_T_nbr y hy_T
@@ -6260,9 +6260,9 @@ lemma exists_CariolaroSetup_at {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
             · -- y = v
               have ⟨hx_Q, _⟩ := mem_filter.mp hx_T
               have ⟨hx_nonadj_v, _⟩ := hQ_props x hx_Q
-              exact fun h => hx_nonadj_v (G.symm h)
+              exact fun h => hx_nonadj_v (G.adj_symm h)
             · -- y = p
-              exact fun h => hp_no_T_nbr x hx_T (G.symm h)
+              exact fun h => hp_no_T_nbr x hx_T (G.adj_symm h)
           · -- x, y ∈ T: use T-independence
             exact hT_indep hx_T hy_T hne
       · -- Card = 6
@@ -6556,7 +6556,7 @@ lemma exists_CariolaroSetup_at {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
       by_contra h_not_in_S'
       have hx_in_S_false : x ∉ S := by
         simp only [S, mem_insert, mem_singleton, not_or] at h_not_in_S' ⊢
-        push_neg
+        push Not
         exact h_not_in_S'
       have hx_in_diff : x ∈ N \ S := mem_sdiff.mpr ⟨hx_in_N, hx_in_S_false⟩
       exact hx_notin_diff hx_in_diff
@@ -6610,7 +6610,7 @@ lemma exists_CariolaroSetup_at {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
     -- The "other" neighbors oa, ob, oc are in {s2, s3, s4}.
     -- Pigeonhole: collision → S_pair_share_at_most_one_W; bijective → one is s3 → p1~p3.
     by_contra h_ge3
-    push_neg at h_ge3
+    push Not at h_ge3
     obtain ⟨wa, wb, wc, hwa_mem, hwb_mem, hwc_mem, hab, hac, hbc⟩ :=
       Finset.two_lt_card_iff.mp h_ge3
     simp only [Finset.mem_filter] at hwa_mem hwb_mem hwc_mem
@@ -6619,9 +6619,9 @@ lemma exists_CariolaroSetup_at {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
     have hwb_S := hW_S_neighbors wb hwb_mem.1
     have hwc_S := hW_S_neighbors wc hwc_mem.1
     -- s1 is one of each wi's S-neighbors
-    have hs1_wa : s1 ∈ S.filter (G.Adj wa) := Finset.mem_filter.mpr ⟨hs1_in_S, G.symm hwa_mem.2⟩
-    have hs1_wb : s1 ∈ S.filter (G.Adj wb) := Finset.mem_filter.mpr ⟨hs1_in_S, G.symm hwb_mem.2⟩
-    have hs1_wc : s1 ∈ S.filter (G.Adj wc) := Finset.mem_filter.mpr ⟨hs1_in_S, G.symm hwc_mem.2⟩
+    have hs1_wa : s1 ∈ S.filter (G.Adj wa) := Finset.mem_filter.mpr ⟨hs1_in_S, G.adj_symm hwa_mem.2⟩
+    have hs1_wb : s1 ∈ S.filter (G.Adj wb) := Finset.mem_filter.mpr ⟨hs1_in_S, G.adj_symm hwb_mem.2⟩
+    have hs1_wc : s1 ∈ S.filter (G.Adj wc) := Finset.mem_filter.mpr ⟨hs1_in_S, G.adj_symm hwc_mem.2⟩
     -- Each "other" set has cardinality 1
     have hwa_other : ((S.filter (G.Adj wa)).erase s1).card = 1 := by
       rw [Finset.card_erase_of_mem hs1_wa, hwa_S]
@@ -6699,17 +6699,17 @@ lemma exists_CariolaroSetup_at {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
     · -- oa = ob: s1 and oa share wa and wb → S_pair_share_at_most_one_W
       exact S_pair_share_at_most_one_W h_reg h_tri h_no6 v s1 oa wa wb
         hs1_adj_v hoa_adj_v hoa_ne_s1.symm hv_ne_wa hv_ne_wb hab
-        hwa_mem.2 hwb_mem.2 (G.symm hwa_oa) (h_ab ▸ G.symm hwb_ob)
+        hwa_mem.2 hwb_mem.2 (G.adj_symm hwa_oa) (h_ab ▸ G.adj_symm hwb_ob)
     · by_cases h_ac : oa = oc
       · -- oa = oc: s1 and oa share wa and wc → S_pair_share_at_most_one_W
         exact S_pair_share_at_most_one_W h_reg h_tri h_no6 v s1 oa wa wc
           hs1_adj_v hoa_adj_v hoa_ne_s1.symm hv_ne_wa hv_ne_wc hac
-          hwa_mem.2 hwc_mem.2 (G.symm hwa_oa) (h_ac ▸ G.symm hwc_oc)
+          hwa_mem.2 hwc_mem.2 (G.adj_symm hwa_oa) (h_ac ▸ G.adj_symm hwc_oc)
       · by_cases h_bc : ob = oc
         · -- ob = oc: s1 and ob share wb and wc → S_pair_share_at_most_one_W
           exact S_pair_share_at_most_one_W h_reg h_tri h_no6 v s1 ob wb wc
             hs1_adj_v hob_adj_v hob_ne_s1.symm hv_ne_wb hv_ne_wc hbc
-            hwb_mem.2 hwc_mem.2 (G.symm hwb_ob) (h_bc ▸ G.symm hwc_oc)
+            hwb_mem.2 hwc_mem.2 (G.adj_symm hwb_ob) (h_bc ▸ G.adj_symm hwc_oc)
         · -- Bijective case: oa, ob, oc all distinct in {s2, s3, s4}
             -- Since {oa, ob, oc} ⊆ {s2, s3, s4} are all distinct, one must be s3
             -- Then w shares s1 and s3, so p_adjacent_of_shared_w gives p1 ~ p3
@@ -6740,7 +6740,7 @@ lemma exists_CariolaroSetup_at {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
 
             have h_some_s3 : oa = s3 ∨ ob = s3 ∨ oc = s3 := by
               by_contra h_none
-              push_neg at h_none
+              push Not at h_none
               have hoa_24 : oa = s2 ∨ oa = s4 := by
                 rcases hoa_cases with h2 | h3 | h4
                 · exact Or.inl h2
@@ -6788,7 +6788,7 @@ lemma exists_CariolaroSetup_at {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
                 (hw_adj_s1 : G.Adj w s1) (hw_adj_s3 : G.Adj w s3) :
                 False := by
               have hw_Q := (hW_props w).mp hwW
-              have hw_nonadj_v : ¬G.Adj w v := fun h => hw_Q.1 (G.symm h)
+              have hw_nonadj_v : ¬G.Adj w v := fun h => hw_Q.1 (G.adj_symm h)
               have hw_nonadj_t : ¬G.Adj t w := fun h => hw_Q.2.2 h
               -- w is not adjacent to p1/p3 (else triangle with s1/s3)
               have hw_nonadj_p1 : ¬G.Adj w p1 := by
@@ -6799,11 +6799,11 @@ lemma exists_CariolaroSetup_at {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
                     simp only [Finset.mem_coe, Finset.mem_insert, Finset.mem_singleton] at ha hb
                     rcases ha with rfl | rfl | rfl <;> rcases hb with rfl | rfl | rfl
                     · exact absurd rfl hab
-                    · exact G.symm hs1_adj_p1
-                    · exact G.symm h_adj
+                    · exact G.adj_symm hs1_adj_p1
+                    · exact G.adj_symm h_adj
                     · exact hs1_adj_p1
                     · exact absurd rfl hab
-                    · exact G.symm hw_adj_s1
+                    · exact G.adj_symm hw_adj_s1
                     · exact h_adj
                     · exact hw_adj_s1
                     · exact absurd rfl hab
@@ -6820,11 +6820,11 @@ lemma exists_CariolaroSetup_at {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
                     simp only [Finset.mem_coe, Finset.mem_insert, Finset.mem_singleton] at ha hb
                     rcases ha with rfl | rfl | rfl <;> rcases hb with rfl | rfl | rfl
                     · exact absurd rfl hab
-                    · exact G.symm hs3_adj_p3
-                    · exact G.symm h_adj
+                    · exact G.adj_symm hs3_adj_p3
+                    · exact G.adj_symm h_adj
                     · exact hs3_adj_p3
                     · exact absurd rfl hab
-                    · exact G.symm hw_adj_s3
+                    · exact G.adj_symm hw_adj_s3
                     · exact h_adj
                     · exact hw_adj_s3
                     · exact absurd rfl hab
@@ -6843,7 +6843,7 @@ lemma exists_CariolaroSetup_at {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
                 intro h_adj
                 have hs1_in_f : s1 ∈ S.filter (G.Adj w) := Finset.mem_filter.mpr ⟨hs1_in_S, hw_adj_s1⟩
                 have hs3_in_f : s3 ∈ S.filter (G.Adj w) := Finset.mem_filter.mpr ⟨hs3_in_S, hw_adj_s3⟩
-                have hs2_in_f : s2 ∈ S.filter (G.Adj w) := Finset.mem_filter.mpr ⟨hs2_in_S, G.symm h_adj⟩
+                have hs2_in_f : s2 ∈ S.filter (G.Adj w) := Finset.mem_filter.mpr ⟨hs2_in_S, G.adj_symm h_adj⟩
                 have h_three : ({s1, s3, s2} : Finset (Fin 18)) ⊆ S.filter (G.Adj w) := by
                   intro x hx
                   simp only [Finset.mem_insert, Finset.mem_singleton] at hx
@@ -6862,7 +6862,7 @@ lemma exists_CariolaroSetup_at {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
                 intro h_adj
                 have hs1_in_f : s1 ∈ S.filter (G.Adj w) := Finset.mem_filter.mpr ⟨hs1_in_S, hw_adj_s1⟩
                 have hs3_in_f : s3 ∈ S.filter (G.Adj w) := Finset.mem_filter.mpr ⟨hs3_in_S, hw_adj_s3⟩
-                have hs4_in_f : s4 ∈ S.filter (G.Adj w) := Finset.mem_filter.mpr ⟨hs4_in_S, G.symm h_adj⟩
+                have hs4_in_f : s4 ∈ S.filter (G.Adj w) := Finset.mem_filter.mpr ⟨hs4_in_S, G.adj_symm h_adj⟩
                 have h_three : ({s1, s3, s4} : Finset (Fin 18)) ⊆ S.filter (G.Adj w) := by
                   intro x hx
                   simp only [Finset.mem_insert, Finset.mem_singleton] at hx
@@ -6899,27 +6899,27 @@ lemma exists_CariolaroSetup_at {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
             rcases h_some_s3 with h | h | h
             · -- oa = s3, so wa shares s1 and s3
               have hwa_adj_s3 : G.Adj wa s3 := by simpa [h] using hwa_oa
-              exact contra_of_shared_w wa hwa_mem.1 (G.symm hwa_mem.2) hwa_adj_s3
+              exact contra_of_shared_w wa hwa_mem.1 (G.adj_symm hwa_mem.2) hwa_adj_s3
             · -- ob = s3, so wb shares s1 and s3
               have hwb_adj_s3 : G.Adj wb s3 := by simpa [h] using hwb_ob
-              exact contra_of_shared_w wb hwb_mem.1 (G.symm hwb_mem.2) hwb_adj_s3
+              exact contra_of_shared_w wb hwb_mem.1 (G.adj_symm hwb_mem.2) hwb_adj_s3
             · -- oc = s3, so wc shares s1 and s3
               have hwc_adj_s3 : G.Adj wc s3 := by simpa [h] using hwc_oc
-              exact contra_of_shared_w wc hwc_mem.1 (G.symm hwc_mem.2) hwc_adj_s3
+              exact contra_of_shared_w wc hwc_mem.1 (G.adj_symm hwc_mem.2) hwc_adj_s3
 
   -- Similarly for s2 (same proof structure as s1)
   have hs2_W_le2 : (W.filter (G.Adj s2)).card ≤ 2 := by
     by_contra h_ge3
-    push_neg at h_ge3
+    push Not at h_ge3
     obtain ⟨wa, wb, wc, hwa_mem, hwb_mem, hwc_mem, hab, hac, hbc⟩ :=
       Finset.two_lt_card_iff.mp h_ge3
     simp only [Finset.mem_filter] at hwa_mem hwb_mem hwc_mem
     have hwa_S := hW_S_neighbors wa hwa_mem.1
     have hwb_S := hW_S_neighbors wb hwb_mem.1
     have hwc_S := hW_S_neighbors wc hwc_mem.1
-    have hs2_wa : s2 ∈ S.filter (G.Adj wa) := Finset.mem_filter.mpr ⟨hs2_in_S, G.symm hwa_mem.2⟩
-    have hs2_wb : s2 ∈ S.filter (G.Adj wb) := Finset.mem_filter.mpr ⟨hs2_in_S, G.symm hwb_mem.2⟩
-    have hs2_wc : s2 ∈ S.filter (G.Adj wc) := Finset.mem_filter.mpr ⟨hs2_in_S, G.symm hwc_mem.2⟩
+    have hs2_wa : s2 ∈ S.filter (G.Adj wa) := Finset.mem_filter.mpr ⟨hs2_in_S, G.adj_symm hwa_mem.2⟩
+    have hs2_wb : s2 ∈ S.filter (G.Adj wb) := Finset.mem_filter.mpr ⟨hs2_in_S, G.adj_symm hwb_mem.2⟩
+    have hs2_wc : s2 ∈ S.filter (G.Adj wc) := Finset.mem_filter.mpr ⟨hs2_in_S, G.adj_symm hwc_mem.2⟩
     have hwa_other : ((S.filter (G.Adj wa)).erase s2).card = 1 := by
       rw [Finset.card_erase_of_mem hs2_wa, hwa_S]
     have hwb_other : ((S.filter (G.Adj wb)).erase s2).card = 1 := by
@@ -6988,15 +6988,15 @@ lemma exists_CariolaroSetup_at {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
     by_cases h_ab : oa = ob
     · exact S_pair_share_at_most_one_W h_reg h_tri h_no6 v s2 oa wa wb
         hs2_adj_v hoa_adj_v hoa_ne_s2.symm hv_ne_wa hv_ne_wb hab
-        hwa_mem.2 hwb_mem.2 (G.symm hwa_oa) (h_ab ▸ G.symm hwb_ob)
+        hwa_mem.2 hwb_mem.2 (G.adj_symm hwa_oa) (h_ab ▸ G.adj_symm hwb_ob)
     · by_cases h_ac : oa = oc
       · exact S_pair_share_at_most_one_W h_reg h_tri h_no6 v s2 oa wa wc
           hs2_adj_v hoa_adj_v hoa_ne_s2.symm hv_ne_wa hv_ne_wc hac
-          hwa_mem.2 hwc_mem.2 (G.symm hwa_oa) (h_ac ▸ G.symm hwc_oc)
+          hwa_mem.2 hwc_mem.2 (G.adj_symm hwa_oa) (h_ac ▸ G.adj_symm hwc_oc)
       · by_cases h_bc : ob = oc
         · exact S_pair_share_at_most_one_W h_reg h_tri h_no6 v s2 ob wb wc
             hs2_adj_v hob_adj_v hob_ne_s2.symm hv_ne_wb hv_ne_wc hbc
-            hwb_mem.2 hwc_mem.2 (G.symm hwb_ob) (h_bc ▸ G.symm hwc_oc)
+            hwb_mem.2 hwc_mem.2 (G.adj_symm hwb_ob) (h_bc ▸ G.adj_symm hwc_oc)
         · -- Bijective case: oa, ob, oc all distinct in {s1, s3, s4}
           have hoa_cases : oa = s1 ∨ oa = s3 ∨ oa = s4 := by
             have h' : oa = s1 ∨ oa = s2 ∨ oa = s3 ∨ oa = s4 := by simpa [S] using hoa_in_S
@@ -7022,7 +7022,7 @@ lemma exists_CariolaroSetup_at {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
 
           have h_some_s4 : oa = s4 ∨ ob = s4 ∨ oc = s4 := by
             by_contra h_none
-            push_neg at h_none
+            push Not at h_none
             have hoa_13 : oa = s1 ∨ oa = s3 := by
               rcases hoa_cases with h1 | h3 | h4
               · exact Or.inl h1
@@ -7070,7 +7070,7 @@ lemma exists_CariolaroSetup_at {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
               (hw_adj_s2 : G.Adj w s2) (hw_adj_s4 : G.Adj w s4) :
               False := by
             have hw_Q := (hW_props w).mp hwW
-            have hw_nonadj_v : ¬G.Adj w v := fun h => hw_Q.1 (G.symm h)
+            have hw_nonadj_v : ¬G.Adj w v := fun h => hw_Q.1 (G.adj_symm h)
             have hw_nonadj_t : ¬G.Adj t w := fun h => hw_Q.2.2 h
 
             have hw_nonadj_p2 : ¬G.Adj w p2 := by
@@ -7081,11 +7081,11 @@ lemma exists_CariolaroSetup_at {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
                   simp only [Finset.mem_coe, Finset.mem_insert, Finset.mem_singleton] at ha hb
                   rcases ha with rfl | rfl | rfl <;> rcases hb with rfl | rfl | rfl
                   · exact absurd rfl hab'
-                  · exact G.symm hs2_adj_p2
-                  · exact G.symm h_adj
+                  · exact G.adj_symm hs2_adj_p2
+                  · exact G.adj_symm h_adj
                   · exact hs2_adj_p2
                   · exact absurd rfl hab'
-                  · exact G.symm hw_adj_s2
+                  · exact G.adj_symm hw_adj_s2
                   · exact h_adj
                   · exact hw_adj_s2
                   · exact absurd rfl hab'
@@ -7103,11 +7103,11 @@ lemma exists_CariolaroSetup_at {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
                   simp only [Finset.mem_coe, Finset.mem_insert, Finset.mem_singleton] at ha hb
                   rcases ha with rfl | rfl | rfl <;> rcases hb with rfl | rfl | rfl
                   · exact absurd rfl hab'
-                  · exact G.symm hs4_adj_p4
-                  · exact G.symm h_adj
+                  · exact G.adj_symm hs4_adj_p4
+                  · exact G.adj_symm h_adj
                   · exact hs4_adj_p4
                   · exact absurd rfl hab'
-                  · exact G.symm hw_adj_s4
+                  · exact G.adj_symm hw_adj_s4
                   · exact h_adj
                   · exact hw_adj_s4
                   · exact absurd rfl hab'
@@ -7125,7 +7125,7 @@ lemma exists_CariolaroSetup_at {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
               intro h_adj
               have hs2_in_f : s2 ∈ S.filter (G.Adj w) := Finset.mem_filter.mpr ⟨hs2_in_S, hw_adj_s2⟩
               have hs4_in_f : s4 ∈ S.filter (G.Adj w) := Finset.mem_filter.mpr ⟨hs4_in_S, hw_adj_s4⟩
-              have hs1_in_f : s1 ∈ S.filter (G.Adj w) := Finset.mem_filter.mpr ⟨hs1_in_S, G.symm h_adj⟩
+              have hs1_in_f : s1 ∈ S.filter (G.Adj w) := Finset.mem_filter.mpr ⟨hs1_in_S, G.adj_symm h_adj⟩
               have h_three : ({s2, s4, s1} : Finset (Fin 18)) ⊆ S.filter (G.Adj w) := by
                 intro x hx
                 simp only [Finset.mem_insert, Finset.mem_singleton] at hx
@@ -7144,7 +7144,7 @@ lemma exists_CariolaroSetup_at {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
               intro h_adj
               have hs2_in_f : s2 ∈ S.filter (G.Adj w) := Finset.mem_filter.mpr ⟨hs2_in_S, hw_adj_s2⟩
               have hs4_in_f : s4 ∈ S.filter (G.Adj w) := Finset.mem_filter.mpr ⟨hs4_in_S, hw_adj_s4⟩
-              have hs3_in_f : s3 ∈ S.filter (G.Adj w) := Finset.mem_filter.mpr ⟨hs3_in_S, G.symm h_adj⟩
+              have hs3_in_f : s3 ∈ S.filter (G.Adj w) := Finset.mem_filter.mpr ⟨hs3_in_S, G.adj_symm h_adj⟩
               have h_three : ({s2, s4, s3} : Finset (Fin 18)) ⊆ S.filter (G.Adj w) := by
                 intro x hx
                 simp only [Finset.mem_insert, Finset.mem_singleton] at hx
@@ -7181,26 +7181,26 @@ lemma exists_CariolaroSetup_at {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
           rcases h_some_s4 with h | h | h
           · -- oa = s4, so wa shares s2 and s4
             have hwa_adj_s4 : G.Adj wa s4 := by simpa [h] using hwa_oa
-            exact contra_of_shared_w wa hwa_mem.1 (G.symm hwa_mem.2) hwa_adj_s4
+            exact contra_of_shared_w wa hwa_mem.1 (G.adj_symm hwa_mem.2) hwa_adj_s4
           · -- ob = s4, so wb shares s2 and s4
             have hwb_adj_s4 : G.Adj wb s4 := by simpa [h] using hwb_ob
-            exact contra_of_shared_w wb hwb_mem.1 (G.symm hwb_mem.2) hwb_adj_s4
+            exact contra_of_shared_w wb hwb_mem.1 (G.adj_symm hwb_mem.2) hwb_adj_s4
           · -- oc = s4, so wc shares s2 and s4
             have hwc_adj_s4 : G.Adj wc s4 := by simpa [h] using hwc_oc
-            exact contra_of_shared_w wc hwc_mem.1 (G.symm hwc_mem.2) hwc_adj_s4
+            exact contra_of_shared_w wc hwc_mem.1 (G.adj_symm hwc_mem.2) hwc_adj_s4
 
   have hs3_W_le2 : (W.filter (G.Adj s3)).card ≤ 2 := by
     by_contra h_ge3
-    push_neg at h_ge3
+    push Not at h_ge3
     obtain ⟨wa, wb, wc, hwa_mem, hwb_mem, hwc_mem, hab, hac, hbc⟩ :=
       Finset.two_lt_card_iff.mp h_ge3
     simp only [Finset.mem_filter] at hwa_mem hwb_mem hwc_mem
     have hwa_S := hW_S_neighbors wa hwa_mem.1
     have hwb_S := hW_S_neighbors wb hwb_mem.1
     have hwc_S := hW_S_neighbors wc hwc_mem.1
-    have hs3_wa : s3 ∈ S.filter (G.Adj wa) := Finset.mem_filter.mpr ⟨hs3_in_S, G.symm hwa_mem.2⟩
-    have hs3_wb : s3 ∈ S.filter (G.Adj wb) := Finset.mem_filter.mpr ⟨hs3_in_S, G.symm hwb_mem.2⟩
-    have hs3_wc : s3 ∈ S.filter (G.Adj wc) := Finset.mem_filter.mpr ⟨hs3_in_S, G.symm hwc_mem.2⟩
+    have hs3_wa : s3 ∈ S.filter (G.Adj wa) := Finset.mem_filter.mpr ⟨hs3_in_S, G.adj_symm hwa_mem.2⟩
+    have hs3_wb : s3 ∈ S.filter (G.Adj wb) := Finset.mem_filter.mpr ⟨hs3_in_S, G.adj_symm hwb_mem.2⟩
+    have hs3_wc : s3 ∈ S.filter (G.Adj wc) := Finset.mem_filter.mpr ⟨hs3_in_S, G.adj_symm hwc_mem.2⟩
     have hwa_other : ((S.filter (G.Adj wa)).erase s3).card = 1 := by
       rw [Finset.card_erase_of_mem hs3_wa, hwa_S]
     have hwb_other : ((S.filter (G.Adj wb)).erase s3).card = 1 := by
@@ -7260,15 +7260,15 @@ lemma exists_CariolaroSetup_at {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
     by_cases h_ab : oa = ob
     · exact S_pair_share_at_most_one_W h_reg h_tri h_no6 v s3 oa wa wb
         hs3_adj_v hoa_adj_v hoa_ne_s3.symm hv_ne_wa hv_ne_wb hab
-        hwa_mem.2 hwb_mem.2 (G.symm hwa_oa) (h_ab ▸ G.symm hwb_ob)
+        hwa_mem.2 hwb_mem.2 (G.adj_symm hwa_oa) (h_ab ▸ G.adj_symm hwb_ob)
     · by_cases h_ac : oa = oc
       · exact S_pair_share_at_most_one_W h_reg h_tri h_no6 v s3 oa wa wc
           hs3_adj_v hoa_adj_v hoa_ne_s3.symm hv_ne_wa hv_ne_wc hac
-          hwa_mem.2 hwc_mem.2 (G.symm hwa_oa) (h_ac ▸ G.symm hwc_oc)
+          hwa_mem.2 hwc_mem.2 (G.adj_symm hwa_oa) (h_ac ▸ G.adj_symm hwc_oc)
       · by_cases h_bc : ob = oc
         · exact S_pair_share_at_most_one_W h_reg h_tri h_no6 v s3 ob wb wc
             hs3_adj_v hob_adj_v hob_ne_s3.symm hv_ne_wb hv_ne_wc hbc
-            hwb_mem.2 hwc_mem.2 (G.symm hwb_ob) (h_bc ▸ G.symm hwc_oc)
+            hwb_mem.2 hwc_mem.2 (G.adj_symm hwb_ob) (h_bc ▸ G.adj_symm hwc_oc)
         · -- Bijective case: oa, ob, oc all distinct in {s1, s2, s4}
           have hoa_cases : oa = s1 ∨ oa = s2 ∨ oa = s4 := by
             have h' : oa = s1 ∨ oa = s2 ∨ oa = s3 ∨ oa = s4 := by simpa [S] using hoa_in_S
@@ -7294,7 +7294,7 @@ lemma exists_CariolaroSetup_at {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
 
           have h_some_s1 : oa = s1 ∨ ob = s1 ∨ oc = s1 := by
             by_contra h_none
-            push_neg at h_none
+            push Not at h_none
             have hoa_24 : oa = s2 ∨ oa = s4 := by
               rcases hoa_cases with h1 | h2 | h4
               · exact (h_none.1 h1).elim
@@ -7342,7 +7342,7 @@ lemma exists_CariolaroSetup_at {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
               (hw_adj_s1 : G.Adj w s1) (hw_adj_s3 : G.Adj w s3) :
               False := by
             have hw_Q := (hW_props w).mp hwW
-            have hw_nonadj_v : ¬G.Adj w v := fun h => hw_Q.1 (G.symm h)
+            have hw_nonadj_v : ¬G.Adj w v := fun h => hw_Q.1 (G.adj_symm h)
             have hw_nonadj_t : ¬G.Adj t w := fun h => hw_Q.2.2 h
 
             have hw_nonadj_p1 : ¬G.Adj w p1 := by
@@ -7353,11 +7353,11 @@ lemma exists_CariolaroSetup_at {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
                   simp only [Finset.mem_coe, Finset.mem_insert, Finset.mem_singleton] at ha hb
                   rcases ha with rfl | rfl | rfl <;> rcases hb with rfl | rfl | rfl
                   · exact absurd rfl hab'
-                  · exact G.symm hs1_adj_p1
-                  · exact G.symm h_adj
+                  · exact G.adj_symm hs1_adj_p1
+                  · exact G.adj_symm h_adj
                   · exact hs1_adj_p1
                   · exact absurd rfl hab'
-                  · exact G.symm hw_adj_s1
+                  · exact G.adj_symm hw_adj_s1
                   · exact h_adj
                   · exact hw_adj_s1
                   · exact absurd rfl hab'
@@ -7375,11 +7375,11 @@ lemma exists_CariolaroSetup_at {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
                   simp only [Finset.mem_coe, Finset.mem_insert, Finset.mem_singleton] at ha hb
                   rcases ha with rfl | rfl | rfl <;> rcases hb with rfl | rfl | rfl
                   · exact absurd rfl hab'
-                  · exact G.symm hs3_adj_p3
-                  · exact G.symm h_adj
+                  · exact G.adj_symm hs3_adj_p3
+                  · exact G.adj_symm h_adj
                   · exact hs3_adj_p3
                   · exact absurd rfl hab'
-                  · exact G.symm hw_adj_s3
+                  · exact G.adj_symm hw_adj_s3
                   · exact h_adj
                   · exact hw_adj_s3
                   · exact absurd rfl hab'
@@ -7397,7 +7397,7 @@ lemma exists_CariolaroSetup_at {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
               intro h_adj
               have hs1_in_f : s1 ∈ S.filter (G.Adj w) := Finset.mem_filter.mpr ⟨hs1_in_S, hw_adj_s1⟩
               have hs3_in_f : s3 ∈ S.filter (G.Adj w) := Finset.mem_filter.mpr ⟨hs3_in_S, hw_adj_s3⟩
-              have hs2_in_f : s2 ∈ S.filter (G.Adj w) := Finset.mem_filter.mpr ⟨hs2_in_S, G.symm h_adj⟩
+              have hs2_in_f : s2 ∈ S.filter (G.Adj w) := Finset.mem_filter.mpr ⟨hs2_in_S, G.adj_symm h_adj⟩
               have h_three : ({s1, s3, s2} : Finset (Fin 18)) ⊆ S.filter (G.Adj w) := by
                 intro x hx
                 simp only [Finset.mem_insert, Finset.mem_singleton] at hx
@@ -7416,7 +7416,7 @@ lemma exists_CariolaroSetup_at {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
               intro h_adj
               have hs1_in_f : s1 ∈ S.filter (G.Adj w) := Finset.mem_filter.mpr ⟨hs1_in_S, hw_adj_s1⟩
               have hs3_in_f : s3 ∈ S.filter (G.Adj w) := Finset.mem_filter.mpr ⟨hs3_in_S, hw_adj_s3⟩
-              have hs4_in_f : s4 ∈ S.filter (G.Adj w) := Finset.mem_filter.mpr ⟨hs4_in_S, G.symm h_adj⟩
+              have hs4_in_f : s4 ∈ S.filter (G.Adj w) := Finset.mem_filter.mpr ⟨hs4_in_S, G.adj_symm h_adj⟩
               have h_three : ({s1, s3, s4} : Finset (Fin 18)) ⊆ S.filter (G.Adj w) := by
                 intro x hx
                 simp only [Finset.mem_insert, Finset.mem_singleton] at hx
@@ -7453,26 +7453,26 @@ lemma exists_CariolaroSetup_at {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
           rcases h_some_s1 with h | h | h
           · -- oa = s1, so wa shares s3 and s1
             have hwa_adj_s1 : G.Adj wa s1 := by simpa [h] using hwa_oa
-            exact contra_of_shared_w wa hwa_mem.1 hwa_adj_s1 (G.symm hwa_mem.2)
+            exact contra_of_shared_w wa hwa_mem.1 hwa_adj_s1 (G.adj_symm hwa_mem.2)
           · -- ob = s1, so wb shares s3 and s1
             have hwb_adj_s1 : G.Adj wb s1 := by simpa [h] using hwb_ob
-            exact contra_of_shared_w wb hwb_mem.1 hwb_adj_s1 (G.symm hwb_mem.2)
+            exact contra_of_shared_w wb hwb_mem.1 hwb_adj_s1 (G.adj_symm hwb_mem.2)
           · -- oc = s1, so wc shares s3 and s1
             have hwc_adj_s1 : G.Adj wc s1 := by simpa [h] using hwc_oc
-            exact contra_of_shared_w wc hwc_mem.1 hwc_adj_s1 (G.symm hwc_mem.2)
+            exact contra_of_shared_w wc hwc_mem.1 hwc_adj_s1 (G.adj_symm hwc_mem.2)
 
   have hs4_W_le2 : (W.filter (G.Adj s4)).card ≤ 2 := by
     by_contra h_ge3
-    push_neg at h_ge3
+    push Not at h_ge3
     obtain ⟨wa, wb, wc, hwa_mem, hwb_mem, hwc_mem, hab, hac, hbc⟩ :=
       Finset.two_lt_card_iff.mp h_ge3
     simp only [Finset.mem_filter] at hwa_mem hwb_mem hwc_mem
     have hwa_S := hW_S_neighbors wa hwa_mem.1
     have hwb_S := hW_S_neighbors wb hwb_mem.1
     have hwc_S := hW_S_neighbors wc hwc_mem.1
-    have hs4_wa : s4 ∈ S.filter (G.Adj wa) := Finset.mem_filter.mpr ⟨hs4_in_S, G.symm hwa_mem.2⟩
-    have hs4_wb : s4 ∈ S.filter (G.Adj wb) := Finset.mem_filter.mpr ⟨hs4_in_S, G.symm hwb_mem.2⟩
-    have hs4_wc : s4 ∈ S.filter (G.Adj wc) := Finset.mem_filter.mpr ⟨hs4_in_S, G.symm hwc_mem.2⟩
+    have hs4_wa : s4 ∈ S.filter (G.Adj wa) := Finset.mem_filter.mpr ⟨hs4_in_S, G.adj_symm hwa_mem.2⟩
+    have hs4_wb : s4 ∈ S.filter (G.Adj wb) := Finset.mem_filter.mpr ⟨hs4_in_S, G.adj_symm hwb_mem.2⟩
+    have hs4_wc : s4 ∈ S.filter (G.Adj wc) := Finset.mem_filter.mpr ⟨hs4_in_S, G.adj_symm hwc_mem.2⟩
     have hwa_other : ((S.filter (G.Adj wa)).erase s4).card = 1 := by
       rw [Finset.card_erase_of_mem hs4_wa, hwa_S]
     have hwb_other : ((S.filter (G.Adj wb)).erase s4).card = 1 := by
@@ -7532,15 +7532,15 @@ lemma exists_CariolaroSetup_at {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
     by_cases h_ab : oa = ob
     · exact S_pair_share_at_most_one_W h_reg h_tri h_no6 v s4 oa wa wb
         hs4_adj_v hoa_adj_v hoa_ne_s4.symm hv_ne_wa hv_ne_wb hab
-        hwa_mem.2 hwb_mem.2 (G.symm hwa_oa) (h_ab ▸ G.symm hwb_ob)
+        hwa_mem.2 hwb_mem.2 (G.adj_symm hwa_oa) (h_ab ▸ G.adj_symm hwb_ob)
     · by_cases h_ac : oa = oc
       · exact S_pair_share_at_most_one_W h_reg h_tri h_no6 v s4 oa wa wc
           hs4_adj_v hoa_adj_v hoa_ne_s4.symm hv_ne_wa hv_ne_wc hac
-          hwa_mem.2 hwc_mem.2 (G.symm hwa_oa) (h_ac ▸ G.symm hwc_oc)
+          hwa_mem.2 hwc_mem.2 (G.adj_symm hwa_oa) (h_ac ▸ G.adj_symm hwc_oc)
       · by_cases h_bc : ob = oc
         · exact S_pair_share_at_most_one_W h_reg h_tri h_no6 v s4 ob wb wc
             hs4_adj_v hob_adj_v hob_ne_s4.symm hv_ne_wb hv_ne_wc hbc
-            hwb_mem.2 hwc_mem.2 (G.symm hwb_ob) (h_bc ▸ G.symm hwc_oc)
+            hwb_mem.2 hwc_mem.2 (G.adj_symm hwb_ob) (h_bc ▸ G.adj_symm hwc_oc)
         · -- Bijective case: oa, ob, oc all distinct in {s1, s2, s3}
           have hoa_cases : oa = s1 ∨ oa = s2 ∨ oa = s3 := by
             have h' : oa = s1 ∨ oa = s2 ∨ oa = s3 ∨ oa = s4 := by simpa [S] using hoa_in_S
@@ -7566,7 +7566,7 @@ lemma exists_CariolaroSetup_at {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
 
           have h_some_s2 : oa = s2 ∨ ob = s2 ∨ oc = s2 := by
             by_contra h_none
-            push_neg at h_none
+            push Not at h_none
             have hoa_13 : oa = s1 ∨ oa = s3 := by
               rcases hoa_cases with h1 | h2 | h3
               · exact Or.inl h1
@@ -7614,7 +7614,7 @@ lemma exists_CariolaroSetup_at {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
               (hw_adj_s2 : G.Adj w s2) (hw_adj_s4 : G.Adj w s4) :
               False := by
             have hw_Q := (hW_props w).mp hwW
-            have hw_nonadj_v : ¬G.Adj w v := fun h => hw_Q.1 (G.symm h)
+            have hw_nonadj_v : ¬G.Adj w v := fun h => hw_Q.1 (G.adj_symm h)
             have hw_nonadj_t : ¬G.Adj t w := fun h => hw_Q.2.2 h
 
             have hw_nonadj_p2 : ¬G.Adj w p2 := by
@@ -7625,11 +7625,11 @@ lemma exists_CariolaroSetup_at {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
                   simp only [Finset.mem_coe, Finset.mem_insert, Finset.mem_singleton] at ha hb
                   rcases ha with rfl | rfl | rfl <;> rcases hb with rfl | rfl | rfl
                   · exact absurd rfl hab'
-                  · exact G.symm hs2_adj_p2
-                  · exact G.symm h_adj
+                  · exact G.adj_symm hs2_adj_p2
+                  · exact G.adj_symm h_adj
                   · exact hs2_adj_p2
                   · exact absurd rfl hab'
-                  · exact G.symm hw_adj_s2
+                  · exact G.adj_symm hw_adj_s2
                   · exact h_adj
                   · exact hw_adj_s2
                   · exact absurd rfl hab'
@@ -7647,11 +7647,11 @@ lemma exists_CariolaroSetup_at {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
                   simp only [Finset.mem_coe, Finset.mem_insert, Finset.mem_singleton] at ha hb
                   rcases ha with rfl | rfl | rfl <;> rcases hb with rfl | rfl | rfl
                   · exact absurd rfl hab'
-                  · exact G.symm hs4_adj_p4
-                  · exact G.symm h_adj
+                  · exact G.adj_symm hs4_adj_p4
+                  · exact G.adj_symm h_adj
                   · exact hs4_adj_p4
                   · exact absurd rfl hab'
-                  · exact G.symm hw_adj_s4
+                  · exact G.adj_symm hw_adj_s4
                   · exact h_adj
                   · exact hw_adj_s4
                   · exact absurd rfl hab'
@@ -7669,7 +7669,7 @@ lemma exists_CariolaroSetup_at {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
               intro h_adj
               have hs2_in_f : s2 ∈ S.filter (G.Adj w) := Finset.mem_filter.mpr ⟨hs2_in_S, hw_adj_s2⟩
               have hs4_in_f : s4 ∈ S.filter (G.Adj w) := Finset.mem_filter.mpr ⟨hs4_in_S, hw_adj_s4⟩
-              have hs1_in_f : s1 ∈ S.filter (G.Adj w) := Finset.mem_filter.mpr ⟨hs1_in_S, G.symm h_adj⟩
+              have hs1_in_f : s1 ∈ S.filter (G.Adj w) := Finset.mem_filter.mpr ⟨hs1_in_S, G.adj_symm h_adj⟩
               have h_three : ({s2, s4, s1} : Finset (Fin 18)) ⊆ S.filter (G.Adj w) := by
                 intro x hx
                 simp only [Finset.mem_insert, Finset.mem_singleton] at hx
@@ -7688,7 +7688,7 @@ lemma exists_CariolaroSetup_at {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
               intro h_adj
               have hs2_in_f : s2 ∈ S.filter (G.Adj w) := Finset.mem_filter.mpr ⟨hs2_in_S, hw_adj_s2⟩
               have hs4_in_f : s4 ∈ S.filter (G.Adj w) := Finset.mem_filter.mpr ⟨hs4_in_S, hw_adj_s4⟩
-              have hs3_in_f : s3 ∈ S.filter (G.Adj w) := Finset.mem_filter.mpr ⟨hs3_in_S, G.symm h_adj⟩
+              have hs3_in_f : s3 ∈ S.filter (G.Adj w) := Finset.mem_filter.mpr ⟨hs3_in_S, G.adj_symm h_adj⟩
               have h_three : ({s2, s4, s3} : Finset (Fin 18)) ⊆ S.filter (G.Adj w) := by
                 intro x hx
                 simp only [Finset.mem_insert, Finset.mem_singleton] at hx
@@ -7725,13 +7725,13 @@ lemma exists_CariolaroSetup_at {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
           rcases h_some_s2 with h | h | h
           · -- oa = s2, so wa shares s4 and s2
             have hwa_adj_s2 : G.Adj wa s2 := by simpa [h] using hwa_oa
-            exact contra_of_shared_w wa hwa_mem.1 hwa_adj_s2 (G.symm hwa_mem.2)
+            exact contra_of_shared_w wa hwa_mem.1 hwa_adj_s2 (G.adj_symm hwa_mem.2)
           · -- ob = s2, so wb shares s4 and s2
             have hwb_adj_s2 : G.Adj wb s2 := by simpa [h] using hwb_ob
-            exact contra_of_shared_w wb hwb_mem.1 hwb_adj_s2 (G.symm hwb_mem.2)
+            exact contra_of_shared_w wb hwb_mem.1 hwb_adj_s2 (G.adj_symm hwb_mem.2)
           · -- oc = s2, so wc shares s4 and s2
             have hwc_adj_s2 : G.Adj wc s2 := by simpa [h] using hwc_oc
-            exact contra_of_shared_w wc hwc_mem.1 hwc_adj_s2 (G.symm hwc_mem.2)
+            exact contra_of_shared_w wc hwc_mem.1 hwc_adj_s2 (G.adj_symm hwc_mem.2)
 
   -- Total S-W edges from W side = 4 * 2 = 8
   -- Total S-W edges from S side = sum of W-neighbors of each s
@@ -7832,19 +7832,19 @@ lemma exists_CariolaroSetup_at {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
       -- wa is not adjacent to s2 (disjoint)
       have hwa_nonadj_s2 : ¬G.Adj wa s2 := by
         intro h_adj
-        have hwa_in_s2 : wa ∈ W.filter (G.Adj s2) := Finset.mem_filter.mpr ⟨hwa_mem.1, G.symm h_adj⟩
+        have hwa_in_s2 : wa ∈ W.filter (G.Adj s2) := Finset.mem_filter.mpr ⟨hwa_mem.1, G.adj_symm h_adj⟩
         have hwa_in_inter : wa ∈ (W.filter (G.Adj s1)) ∩ (W.filter (G.Adj s2)) := by
           rw [Finset.mem_inter]; exact ⟨Finset.mem_filter.mpr hwa_mem, hwa_in_s2⟩
         rw [h_empty] at hwa_in_inter; exact Finset.notMem_empty wa hwa_in_inter
       have hwb_nonadj_s2 : ¬G.Adj wb s2 := by
         intro h_adj
-        have hwb_in_s2 : wb ∈ W.filter (G.Adj s2) := Finset.mem_filter.mpr ⟨hwb_mem.1, G.symm h_adj⟩
+        have hwb_in_s2 : wb ∈ W.filter (G.Adj s2) := Finset.mem_filter.mpr ⟨hwb_mem.1, G.adj_symm h_adj⟩
         have hwb_in_inter : wb ∈ (W.filter (G.Adj s1)) ∩ (W.filter (G.Adj s2)) := by
           rw [Finset.mem_inter]; exact ⟨Finset.mem_filter.mpr hwb_mem, hwb_in_s2⟩
         rw [h_empty] at hwb_in_inter; exact Finset.notMem_empty wb hwb_in_inter
       -- wa's "other" S-neighbor (besides s1) must be in {s3, s4}
       have hwa_S_card : (S.filter (G.Adj wa)).card = 2 := hW_S_neighbors wa hwa_mem.1
-      have hwa_s1_mem : s1 ∈ S.filter (G.Adj wa) := Finset.mem_filter.mpr ⟨hs1_in_S, G.symm hwa_mem.2⟩
+      have hwa_s1_mem : s1 ∈ S.filter (G.Adj wa) := Finset.mem_filter.mpr ⟨hs1_in_S, G.adj_symm hwa_mem.2⟩
       -- The other S-neighbor is some sx ∈ S \ {s1}
       have hwa_other : ∃ sx ∈ S, sx ≠ s1 ∧ G.Adj wa sx := by
         have h_sub : {s1} ⊆ S.filter (G.Adj wa) := Finset.singleton_subset_iff.mpr hwa_s1_mem
@@ -7860,7 +7860,7 @@ lemma exists_CariolaroSetup_at {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
         intro h_eq; rw [h_eq] at hwa_adj_sx; exact hwa_nonadj_s2 hwa_adj_sx
       -- Similarly for wb
       have hwb_S_card : (S.filter (G.Adj wb)).card = 2 := hW_S_neighbors wb hwb_mem.1
-      have hwb_s1_mem : s1 ∈ S.filter (G.Adj wb) := Finset.mem_filter.mpr ⟨hs1_in_S, G.symm hwb_mem.2⟩
+      have hwb_s1_mem : s1 ∈ S.filter (G.Adj wb) := Finset.mem_filter.mpr ⟨hs1_in_S, G.adj_symm hwb_mem.2⟩
       have hwb_other : ∃ sy ∈ S, sy ≠ s1 ∧ G.Adj wb sy := by
         have h_sub : {s1} ⊆ S.filter (G.Adj wb) := Finset.singleton_subset_iff.mpr hwb_s1_mem
         have h_diff_card : ((S.filter (G.Adj wb)) \ {s1}).card = 1 := by
@@ -7910,14 +7910,14 @@ lemma exists_CariolaroSetup_at {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
         rw [hsy_eq] at hwb_adj_sy
         exact S_pair_share_at_most_one_W h_reg h_tri h_no6 v s1 s3 wa wb
           hs1_adj_v hs3_adj_v' hs_ne13 hv_ne_wa hv_ne_wb hab_ne
-          hwa_mem.2 hwb_mem.2 (G.symm hwa_adj_sx) (G.symm hwb_adj_sy)
+          hwa_mem.2 hwb_mem.2 (G.adj_symm hwa_adj_sx) (G.adj_symm hwb_adj_sy)
       · -- sx = s3, sy = s4: s1 shares wa with s3
         -- By p_adjacent_of_shared_w, p1-p3 would be adjacent, contradicting h_nonadj_p1p3
         rw [hsx_eq] at hwa_adj_sx
         -- wa is adjacent to both s1 and s3, and is in W (non-neighbor of v)
         have hwa_Q := (hW_props wa).mp hwa_mem.1
-        have hwa_nonadj_v : ¬G.Adj wa v := fun h => hwa_Q.1 (G.symm h)
-        have hwa_nonadj_t : ¬G.Adj wa t := fun h => hwa_Q.2.2 (G.symm h)
+        have hwa_nonadj_v : ¬G.Adj wa v := fun h => hwa_Q.1 (G.adj_symm h)
+        have hwa_nonadj_t : ¬G.Adj wa t := fun h => hwa_Q.2.2 (G.adj_symm h)
         -- wa is not adjacent to p1 (else {p1, s1, wa} is a triangle)
         have hwa_nonadj_p1 : ¬G.Adj wa p1 := by
           intro h_adj
@@ -7927,13 +7927,13 @@ lemma exists_CariolaroSetup_at {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
               simp only [Finset.mem_coe, mem_insert, mem_singleton] at ha hb
               rcases ha with rfl | rfl | rfl <;> rcases hb with rfl | rfl | rfl
               · exact absurd rfl hab
-              · exact G.symm hs1_adj_p1
-              · exact G.symm h_adj
+              · exact G.adj_symm hs1_adj_p1
+              · exact G.adj_symm h_adj
               · exact hs1_adj_p1
               · exact absurd rfl hab
               · exact hwa_mem.2
               · exact h_adj
-              · exact G.symm hwa_mem.2
+              · exact G.adj_symm hwa_mem.2
               · exact absurd rfl hab
             · rw [Finset.card_insert_of_notMem, Finset.card_insert_of_notMem, Finset.card_singleton]
               · simp only [mem_singleton]; exact G.ne_of_adj hwa_mem.2
@@ -7949,11 +7949,11 @@ lemma exists_CariolaroSetup_at {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
               simp only [Finset.mem_coe, mem_insert, mem_singleton] at ha hb
               rcases ha with rfl | rfl | rfl <;> rcases hb with rfl | rfl | rfl
               · exact absurd rfl hab
-              · exact G.symm hs3_adj_p3
-              · exact G.symm h_adj
+              · exact G.adj_symm hs3_adj_p3
+              · exact G.adj_symm h_adj
               · exact hs3_adj_p3
               · exact absurd rfl hab
-              · exact G.symm hwa_adj_sx
+              · exact G.adj_symm hwa_adj_sx
               · exact h_adj
               · exact hwa_adj_sx
               · exact absurd rfl hab
@@ -7979,9 +7979,9 @@ lemma exists_CariolaroSetup_at {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
           -- wa has exactly 2 S-neighbors (from hW_S_neighbors), they are s1 and s3 (from hsx_eq)
           -- If s4 is also adjacent to wa, that's a 3rd S-neighbor
           have hwa_S_card : (S.filter (G.Adj wa)).card = 2 := hW_S_neighbors wa hwa_mem.1
-          have hs1_in_filter : s1 ∈ S.filter (G.Adj wa) := Finset.mem_filter.mpr ⟨hs1_in_S, G.symm hwa_mem.2⟩
+          have hs1_in_filter : s1 ∈ S.filter (G.Adj wa) := Finset.mem_filter.mpr ⟨hs1_in_S, G.adj_symm hwa_mem.2⟩
           have hs3_in_filter : s3 ∈ S.filter (G.Adj wa) := Finset.mem_filter.mpr ⟨hs3_in_S, hwa_adj_sx⟩
-          have hs4_in_filter : s4 ∈ S.filter (G.Adj wa) := Finset.mem_filter.mpr ⟨hs4_in_S, G.symm h_adj⟩
+          have hs4_in_filter : s4 ∈ S.filter (G.Adj wa) := Finset.mem_filter.mpr ⟨hs4_in_S, G.adj_symm h_adj⟩
           have h_three : ({s1, s3, s4} : Finset (Fin 18)) ⊆ S.filter (G.Adj wa) := by
             intro x hx
             simp only [mem_insert, mem_singleton] at hx
@@ -8002,14 +8002,14 @@ lemma exists_CariolaroSetup_at {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
           (by rw [← mem_neighborFinset]; exact hs1_in_N) (by rw [← mem_neighborFinset]; exact hs3_in_N) hs_ne13
           hs1_adj_p1 hs3_adj_p3
           hs1_nonadj_p3 hs3_nonadj_p1
-          (G.symm hwa_mem.2) hwa_adj_sx
+          (G.adj_symm hwa_mem.2) hwa_adj_sx
           hwa_nonadj_v hwa_nonadj_p1 hwa_nonadj_p3
           hs1_s3_nonadj
           t s2 s4
           ht_adj_v (by rw [← mem_neighborFinset]; exact hs2_in_N) (by rw [← mem_neighborFinset]; exact hs4_in_N)
           ht_ne_s1 ht_ne_s3 hs_ne12.symm hs_ne23 hs_ne14.symm hs_ne34.symm
           ht_ne_s2 ht_ne_s4 hs_ne24
-          (h1_unique t ht_in_N ht_ne_s1) (h3_unique t ht_in_N ht_ne_s3) (fun h => hwa_nonadj_t (G.symm h))
+          (h1_unique t ht_in_N ht_ne_s1) (h3_unique t ht_in_N ht_ne_s3) (fun h => hwa_nonadj_t (G.adj_symm h))
           hs2_nonadj_p1 hs2_nonadj_p3 hs2_nonadj_wa
           hs4_nonadj_p1 hs4_nonadj_p3 hs4_nonadj_wa
         exact h_nonadj_p1p3 h_p1_p3
@@ -8018,8 +8018,8 @@ lemma exists_CariolaroSetup_at {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
         rw [hsy_eq] at hwb_adj_sy
         -- wb is adjacent to both s1 and s3, and is in W (non-neighbor of v)
         have hwb_Q := (hW_props wb).mp hwb_mem.1
-        have hwb_nonadj_v : ¬G.Adj wb v := fun h => hwb_Q.1 (G.symm h)
-        have hwb_nonadj_t : ¬G.Adj wb t := fun h => hwb_Q.2.2 (G.symm h)
+        have hwb_nonadj_v : ¬G.Adj wb v := fun h => hwb_Q.1 (G.adj_symm h)
+        have hwb_nonadj_t : ¬G.Adj wb t := fun h => hwb_Q.2.2 (G.adj_symm h)
         -- wb is not adjacent to p1 (else {p1, s1, wb} is a triangle)
         have hwb_nonadj_p1 : ¬G.Adj wb p1 := by
           intro h_adj
@@ -8029,13 +8029,13 @@ lemma exists_CariolaroSetup_at {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
               simp only [Finset.mem_coe, mem_insert, mem_singleton] at ha hb
               rcases ha with rfl | rfl | rfl <;> rcases hb with rfl | rfl | rfl
               · exact absurd rfl hab
-              · exact G.symm hs1_adj_p1
-              · exact G.symm h_adj
+              · exact G.adj_symm hs1_adj_p1
+              · exact G.adj_symm h_adj
               · exact hs1_adj_p1
               · exact absurd rfl hab
               · exact hwb_mem.2
               · exact h_adj
-              · exact G.symm hwb_mem.2
+              · exact G.adj_symm hwb_mem.2
               · exact absurd rfl hab
             · rw [Finset.card_insert_of_notMem, Finset.card_insert_of_notMem, Finset.card_singleton]
               · simp only [mem_singleton]; exact G.ne_of_adj hwb_mem.2
@@ -8051,11 +8051,11 @@ lemma exists_CariolaroSetup_at {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
               simp only [Finset.mem_coe, mem_insert, mem_singleton] at ha hb
               rcases ha with rfl | rfl | rfl <;> rcases hb with rfl | rfl | rfl
               · exact absurd rfl hab
-              · exact G.symm hs3_adj_p3
-              · exact G.symm h_adj
+              · exact G.adj_symm hs3_adj_p3
+              · exact G.adj_symm h_adj
               · exact hs3_adj_p3
               · exact absurd rfl hab
-              · exact G.symm hwb_adj_sy
+              · exact G.adj_symm hwb_adj_sy
               · exact h_adj
               · exact hwb_adj_sy
               · exact absurd rfl hab
@@ -8079,9 +8079,9 @@ lemma exists_CariolaroSetup_at {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
           -- wb has exactly 2 S-neighbors (from hW_S_neighbors), they are s1 and s3
           -- If s4 is also adjacent to wb, that's a 3rd S-neighbor
           have hwb_S_card' : (S.filter (G.Adj wb)).card = 2 := hW_S_neighbors wb hwb_mem.1
-          have hs1_in_filter : s1 ∈ S.filter (G.Adj wb) := Finset.mem_filter.mpr ⟨hs1_in_S, G.symm hwb_mem.2⟩
+          have hs1_in_filter : s1 ∈ S.filter (G.Adj wb) := Finset.mem_filter.mpr ⟨hs1_in_S, G.adj_symm hwb_mem.2⟩
           have hs3_in_filter : s3 ∈ S.filter (G.Adj wb) := Finset.mem_filter.mpr ⟨hs3_in_S, hwb_adj_sy⟩
-          have hs4_in_filter : s4 ∈ S.filter (G.Adj wb) := Finset.mem_filter.mpr ⟨hs4_in_S, G.symm h_adj⟩
+          have hs4_in_filter : s4 ∈ S.filter (G.Adj wb) := Finset.mem_filter.mpr ⟨hs4_in_S, G.adj_symm h_adj⟩
           have h_three : ({s1, s3, s4} : Finset (Fin 18)) ⊆ S.filter (G.Adj wb) := by
             intro x hx
             simp only [mem_insert, mem_singleton] at hx
@@ -8102,14 +8102,14 @@ lemma exists_CariolaroSetup_at {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
           (by rw [← mem_neighborFinset]; exact hs1_in_N) (by rw [← mem_neighborFinset]; exact hs3_in_N) hs_ne13
           hs1_adj_p1 hs3_adj_p3
           hs1_nonadj_p3 hs3_nonadj_p1
-          (G.symm hwb_mem.2) hwb_adj_sy
+          (G.adj_symm hwb_mem.2) hwb_adj_sy
           hwb_nonadj_v hwb_nonadj_p1 hwb_nonadj_p3
           hs1_s3_nonadj
           t s2 s4
           ht_adj_v (by rw [← mem_neighborFinset]; exact hs2_in_N) (by rw [← mem_neighborFinset]; exact hs4_in_N)
           ht_ne_s1 ht_ne_s3 hs_ne12.symm hs_ne23 hs_ne14.symm hs_ne34.symm
           ht_ne_s2 ht_ne_s4 hs_ne24
-          (h1_unique t ht_in_N ht_ne_s1) (h3_unique t ht_in_N ht_ne_s3) (fun h => hwb_nonadj_t (G.symm h))
+          (h1_unique t ht_in_N ht_ne_s1) (h3_unique t ht_in_N ht_ne_s3) (fun h => hwb_nonadj_t (G.adj_symm h))
           hs2_nonadj_p1 hs2_nonadj_p3 hs2_nonadj_wb
           hs4_nonadj_p1 hs4_nonadj_p3 hs4_nonadj_wb
         exact h_nonadj_p1p3 h_p1_p3
@@ -8134,7 +8134,7 @@ lemma exists_CariolaroSetup_at {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
         rw [hsy_eq] at hwb_adj_sy
         exact S_pair_share_at_most_one_W h_reg h_tri h_no6 v s1 s4 wa wb
           hs1_adj_v hs4_adj_v' hs_ne14 hv_ne_wa hv_ne_wb hab_ne
-          hwa_mem.2 hwb_mem.2 (G.symm hwa_adj_sx) (G.symm hwb_adj_sy)
+          hwa_mem.2 hwb_mem.2 (G.adj_symm hwa_adj_sx) (G.adj_symm hwb_adj_sy)
     -- They must differ in at least 1 (since intersection is nonempty but < 2)
     have h_diff : ((W.filter (G.Adj s1)) \ (W.filter (G.Adj s2))).Nonempty := by
       by_contra h_empty
@@ -8193,10 +8193,10 @@ lemma exists_CariolaroSetup_at {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
     exact (Finset.mem_filter.mp h.1).1
   have hw1'_adj_s1 : G.Adj w1' s1 := by
     have h := Finset.mem_inter.mp hw1'_shared
-    exact G.symm (Finset.mem_filter.mp h.1).2
+    exact G.adj_symm (Finset.mem_filter.mp h.1).2
   have hw1'_adj_s2 : G.Adj w1' s2 := by
     have h := Finset.mem_inter.mp hw1'_shared
-    exact G.symm (Finset.mem_filter.mp h.2).2
+    exact G.adj_symm (Finset.mem_filter.mp h.2).2
 
   -- Similarly for other pairs (same pattern as hs12_share_W)
   have hs23_share_W : ((W.filter (G.Adj s2)) ∩ (W.filter (G.Adj s3))).card = 1 := by
@@ -8218,7 +8218,7 @@ lemma exists_CariolaroSetup_at {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
       simp only [Finset.mem_filter] at hwa_mem
       -- wa has exactly 2 S-neighbors
       have hwa_S_card : (S.filter (G.Adj wa)).card = 2 := hW_S_neighbors wa hwa_mem.1
-      have hs2_in_filter : s2 ∈ S.filter (G.Adj wa) := Finset.mem_filter.mpr ⟨hs2_in_S, G.symm hwa_mem.2⟩
+      have hs2_in_filter : s2 ∈ S.filter (G.Adj wa) := Finset.mem_filter.mpr ⟨hs2_in_S, G.adj_symm hwa_mem.2⟩
       -- wa's other S-neighbor is in S \ {s2}
       have hwa_other : ∃ sx ∈ S, sx ≠ s2 ∧ G.Adj wa sx := by
         have h_sub : {s2} ⊆ S.filter (G.Adj wa) := Finset.singleton_subset_iff.mpr hs2_in_filter
@@ -8232,7 +8232,7 @@ lemma exists_CariolaroSetup_at {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
       -- wa is not adjacent to s3 (since disjoint W-neighbors)
       have hwa_nonadj_s3 : ¬G.Adj wa s3 := by
         intro h_adj
-        have hwa_in_s3 : wa ∈ W.filter (G.Adj s3) := Finset.mem_filter.mpr ⟨hwa_mem.1, G.symm h_adj⟩
+        have hwa_in_s3 : wa ∈ W.filter (G.Adj s3) := Finset.mem_filter.mpr ⟨hwa_mem.1, G.adj_symm h_adj⟩
         have hwa_in_inter : wa ∈ (W.filter (G.Adj s2)) ∩ (W.filter (G.Adj s3)) :=
           Finset.mem_inter.mpr ⟨Finset.mem_filter.mpr hwa_mem, hwa_in_s3⟩
         rw [h_empty] at hwa_in_inter
@@ -8264,7 +8264,7 @@ lemma exists_CariolaroSetup_at {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
           exact ⟨wb, hwb_in.1, hwb_in.2⟩
         simp only [Finset.mem_filter] at hwb_mem
         have hwb_S_card : (S.filter (G.Adj wb)).card = 2 := hW_S_neighbors wb hwb_mem.1
-        have hs2_in_wb_filter : s2 ∈ S.filter (G.Adj wb) := Finset.mem_filter.mpr ⟨hs2_in_S, G.symm hwb_mem.2⟩
+        have hs2_in_wb_filter : s2 ∈ S.filter (G.Adj wb) := Finset.mem_filter.mpr ⟨hs2_in_S, G.adj_symm hwb_mem.2⟩
         have hwb_other : ∃ sy ∈ S, sy ≠ s2 ∧ G.Adj wb sy := by
           have h_sub : {s2} ⊆ S.filter (G.Adj wb) := Finset.singleton_subset_iff.mpr hs2_in_wb_filter
           have h_diff_card' : ((S.filter (G.Adj wb)) \ {s2}).card = 1 := by
@@ -8277,7 +8277,7 @@ lemma exists_CariolaroSetup_at {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
         -- wb is not adjacent to s3 (since disjoint W-neighbors)
         have hwb_nonadj_s3 : ¬G.Adj wb s3 := by
           intro h_adj
-          have hwb_in_s3 : wb ∈ W.filter (G.Adj s3) := Finset.mem_filter.mpr ⟨hwb_mem.1, G.symm h_adj⟩
+          have hwb_in_s3 : wb ∈ W.filter (G.Adj s3) := Finset.mem_filter.mpr ⟨hwb_mem.1, G.adj_symm h_adj⟩
           have hwb_in_inter : wb ∈ (W.filter (G.Adj s2)) ∩ (W.filter (G.Adj s3)) :=
             Finset.mem_inter.mpr ⟨Finset.mem_filter.mpr hwb_mem, hwb_in_s3⟩
           rw [h_empty] at hwb_in_inter
@@ -8314,13 +8314,13 @@ lemma exists_CariolaroSetup_at {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
             omega
           exact S_pair_share_at_most_one_W h_reg h_tri h_no6 v s2 s1 wa wb
             hs2_adj_v hs1_adj_v hs_ne12.symm hv_ne_wa hv_ne_wb hab.symm
-            hwa_mem.2 hwb_mem.2 (G.symm hwa_adj_sx) (G.symm hwb_adj_sy)
+            hwa_mem.2 hwb_mem.2 (G.adj_symm hwa_adj_sx) (G.adj_symm hwb_adj_sy)
         · -- sx = s1, sy = s4: s2 shares wb with s4
           -- By p_adjacent_of_shared_w, p2-p4 would be adjacent, contradicting h_nonadj_p2p4
           rw [hsy_eq] at hwb_adj_sy
           have hwb_Q := (hW_props wb).mp hwb_mem.1
-          have hwb_nonadj_v : ¬G.Adj wb v := fun h => hwb_Q.1 (G.symm h)
-          have hwb_nonadj_t : ¬G.Adj wb t := fun h => hwb_Q.2.2 (G.symm h)
+          have hwb_nonadj_v : ¬G.Adj wb v := fun h => hwb_Q.1 (G.adj_symm h)
+          have hwb_nonadj_t : ¬G.Adj wb t := fun h => hwb_Q.2.2 (G.adj_symm h)
           -- wb is not adjacent to p2 (else {p2, s2, wb} is a triangle)
           have hwb_nonadj_p2 : ¬G.Adj wb p2 := by
             intro h_adj
@@ -8330,13 +8330,13 @@ lemma exists_CariolaroSetup_at {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
                 simp only [Finset.mem_coe, mem_insert, mem_singleton] at ha hb
                 rcases ha with rfl | rfl | rfl <;> rcases hb with rfl | rfl | rfl
                 · exact absurd rfl hab'
-                · exact G.symm hs2_adj_p2
-                · exact G.symm h_adj
+                · exact G.adj_symm hs2_adj_p2
+                · exact G.adj_symm h_adj
                 · exact hs2_adj_p2
                 · exact absurd rfl hab'
                 · exact hwb_mem.2
                 · exact h_adj
-                · exact G.symm hwb_mem.2
+                · exact G.adj_symm hwb_mem.2
                 · exact absurd rfl hab'
               · rw [Finset.card_insert_of_notMem, Finset.card_insert_of_notMem, Finset.card_singleton]
                 · simp only [mem_singleton]; exact G.ne_of_adj hwb_mem.2
@@ -8352,11 +8352,11 @@ lemma exists_CariolaroSetup_at {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
                 simp only [Finset.mem_coe, mem_insert, mem_singleton] at ha hb
                 rcases ha with rfl | rfl | rfl <;> rcases hb with rfl | rfl | rfl
                 · exact absurd rfl hab'
-                · exact G.symm hs4_adj_p4
-                · exact G.symm h_adj
+                · exact G.adj_symm hs4_adj_p4
+                · exact G.adj_symm h_adj
                 · exact hs4_adj_p4
                 · exact absurd rfl hab'
-                · exact G.symm hwb_adj_sy
+                · exact G.adj_symm hwb_adj_sy
                 · exact h_adj
                 · exact hwb_adj_sy
                 · exact absurd rfl hab'
@@ -8371,9 +8371,9 @@ lemma exists_CariolaroSetup_at {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
           have hs1_nonadj_wb : ¬G.Adj s1 wb := by
             intro h_adj
             have hwb_S_card' : (S.filter (G.Adj wb)).card = 2 := hW_S_neighbors wb hwb_mem.1
-            have hs2_in_f : s2 ∈ S.filter (G.Adj wb) := Finset.mem_filter.mpr ⟨hs2_in_S, G.symm hwb_mem.2⟩
+            have hs2_in_f : s2 ∈ S.filter (G.Adj wb) := Finset.mem_filter.mpr ⟨hs2_in_S, G.adj_symm hwb_mem.2⟩
             have hs4_in_f : s4 ∈ S.filter (G.Adj wb) := Finset.mem_filter.mpr ⟨hs4_in_S, hwb_adj_sy⟩
-            have hs1_in_f : s1 ∈ S.filter (G.Adj wb) := Finset.mem_filter.mpr ⟨hs1_in_S, G.symm h_adj⟩
+            have hs1_in_f : s1 ∈ S.filter (G.Adj wb) := Finset.mem_filter.mpr ⟨hs1_in_S, G.adj_symm h_adj⟩
             have h_three : ({s2, s4, s1} : Finset (Fin 18)) ⊆ S.filter (G.Adj wb) := by
               intro x hx
               simp only [mem_insert, mem_singleton] at hx
@@ -8388,7 +8388,7 @@ lemma exists_CariolaroSetup_at {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
             have h_le := Finset.card_le_card h_three
             omega
           -- s3 not adjacent to wb: disjoint case
-          have hs3_nonadj_wb' : ¬G.Adj s3 wb := fun h => hwb_nonadj_s3 (G.symm h)
+          have hs3_nonadj_wb' : ¬G.Adj s3 wb := fun h => hwb_nonadj_s3 (G.adj_symm h)
           -- Apply p_adjacent_of_shared_w
           have h_p2_p4 : G.Adj p2 p4 := p_adjacent_of_shared_w h_tri h_no6 v
             p2 p4 s2 s4 wb
@@ -8396,14 +8396,14 @@ lemma exists_CariolaroSetup_at {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
             (by rw [← mem_neighborFinset]; exact hs2_in_N) (by rw [← mem_neighborFinset]; exact hs4_in_N) hs_ne24
             hs2_adj_p2 hs4_adj_p4
             hs2_nonadj_p4 hs4_nonadj_p2
-            (G.symm hwb_mem.2) hwb_adj_sy
+            (G.adj_symm hwb_mem.2) hwb_adj_sy
             hwb_nonadj_v hwb_nonadj_p2 hwb_nonadj_p4
             hs2_s4_nonadj
             t s1 s3
             ht_adj_v (by rw [← mem_neighborFinset]; exact hs1_in_N) (by rw [← mem_neighborFinset]; exact hs3_in_N)
             ht_ne_s2 ht_ne_s4 hs_ne12 hs_ne14 hs_ne23.symm hs_ne34
             ht_ne_s1 ht_ne_s3 hs_ne13
-            (h2_unique t ht_in_N ht_ne_s2) (h4_unique t ht_in_N ht_ne_s4) (fun h => hwb_nonadj_t (G.symm h))
+            (h2_unique t ht_in_N ht_ne_s2) (h4_unique t ht_in_N ht_ne_s4) (fun h => hwb_nonadj_t (G.adj_symm h))
             hs1_nonadj_p2 hs1_nonadj_p4 hs1_nonadj_wb
             hs3_nonadj_p2 hs3_nonadj_p4 hs3_nonadj_wb'
           exact h_nonadj_p2p4 h_p2_p4
@@ -8411,8 +8411,8 @@ lemma exists_CariolaroSetup_at {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
         -- By p_adjacent_of_shared_w, p2-p4 would be adjacent, contradicting h_nonadj_p2p4
         rw [hsx_eq] at hwa_adj_sx
         have hwa_Q := (hW_props wa).mp hwa_mem.1
-        have hwa_nonadj_v : ¬G.Adj wa v := fun h => hwa_Q.1 (G.symm h)
-        have hwa_nonadj_t : ¬G.Adj wa t := fun h => hwa_Q.2.2 (G.symm h)
+        have hwa_nonadj_v : ¬G.Adj wa v := fun h => hwa_Q.1 (G.adj_symm h)
+        have hwa_nonadj_t : ¬G.Adj wa t := fun h => hwa_Q.2.2 (G.adj_symm h)
         -- wa is not adjacent to p2 (else {p2, s2, wa} is a triangle)
         have hwa_nonadj_p2 : ¬G.Adj wa p2 := by
           intro h_adj
@@ -8422,13 +8422,13 @@ lemma exists_CariolaroSetup_at {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
               simp only [Finset.mem_coe, mem_insert, mem_singleton] at ha hb
               rcases ha with rfl | rfl | rfl <;> rcases hb with rfl | rfl | rfl
               · exact absurd rfl hab'
-              · exact G.symm hs2_adj_p2
-              · exact G.symm h_adj
+              · exact G.adj_symm hs2_adj_p2
+              · exact G.adj_symm h_adj
               · exact hs2_adj_p2
               · exact absurd rfl hab'
               · exact hwa_mem.2
               · exact h_adj
-              · exact G.symm hwa_mem.2
+              · exact G.adj_symm hwa_mem.2
               · exact absurd rfl hab'
             · rw [Finset.card_insert_of_notMem, Finset.card_insert_of_notMem, Finset.card_singleton]
               · simp only [mem_singleton]; exact G.ne_of_adj hwa_mem.2
@@ -8444,11 +8444,11 @@ lemma exists_CariolaroSetup_at {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
               simp only [Finset.mem_coe, mem_insert, mem_singleton] at ha hb
               rcases ha with rfl | rfl | rfl <;> rcases hb with rfl | rfl | rfl
               · exact absurd rfl hab'
-              · exact G.symm hs4_adj_p4
-              · exact G.symm h_adj
+              · exact G.adj_symm hs4_adj_p4
+              · exact G.adj_symm h_adj
               · exact hs4_adj_p4
               · exact absurd rfl hab'
-              · exact G.symm hwa_adj_sx
+              · exact G.adj_symm hwa_adj_sx
               · exact h_adj
               · exact hwa_adj_sx
               · exact absurd rfl hab'
@@ -8463,9 +8463,9 @@ lemma exists_CariolaroSetup_at {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
         have hs1_nonadj_wa : ¬G.Adj s1 wa := by
           intro h_adj
           have hwa_S_card' : (S.filter (G.Adj wa)).card = 2 := hW_S_neighbors wa hwa_mem.1
-          have hs2_in_f : s2 ∈ S.filter (G.Adj wa) := Finset.mem_filter.mpr ⟨hs2_in_S, G.symm hwa_mem.2⟩
+          have hs2_in_f : s2 ∈ S.filter (G.Adj wa) := Finset.mem_filter.mpr ⟨hs2_in_S, G.adj_symm hwa_mem.2⟩
           have hs4_in_f : s4 ∈ S.filter (G.Adj wa) := Finset.mem_filter.mpr ⟨hs4_in_S, hwa_adj_sx⟩
-          have hs1_in_f : s1 ∈ S.filter (G.Adj wa) := Finset.mem_filter.mpr ⟨hs1_in_S, G.symm h_adj⟩
+          have hs1_in_f : s1 ∈ S.filter (G.Adj wa) := Finset.mem_filter.mpr ⟨hs1_in_S, G.adj_symm h_adj⟩
           have h_three : ({s2, s4, s1} : Finset (Fin 18)) ⊆ S.filter (G.Adj wa) := by
             intro x hx
             simp only [mem_insert, mem_singleton] at hx
@@ -8480,7 +8480,7 @@ lemma exists_CariolaroSetup_at {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
           have h_le := Finset.card_le_card h_three
           omega
         -- s3 not adjacent to wa: disjoint case
-        have hs3_nonadj_wa' : ¬G.Adj s3 wa := fun h => hwa_nonadj_s3 (G.symm h)
+        have hs3_nonadj_wa' : ¬G.Adj s3 wa := fun h => hwa_nonadj_s3 (G.adj_symm h)
         -- Apply p_adjacent_of_shared_w
         have h_p2_p4 : G.Adj p2 p4 := p_adjacent_of_shared_w h_tri h_no6 v
           p2 p4 s2 s4 wa
@@ -8488,14 +8488,14 @@ lemma exists_CariolaroSetup_at {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
           (by rw [← mem_neighborFinset]; exact hs2_in_N) (by rw [← mem_neighborFinset]; exact hs4_in_N) hs_ne24
           hs2_adj_p2 hs4_adj_p4
           hs2_nonadj_p4 hs4_nonadj_p2
-          (G.symm hwa_mem.2) hwa_adj_sx
+          (G.adj_symm hwa_mem.2) hwa_adj_sx
           hwa_nonadj_v hwa_nonadj_p2 hwa_nonadj_p4
           hs2_s4_nonadj
           t s1 s3
           ht_adj_v (by rw [← mem_neighborFinset]; exact hs1_in_N) (by rw [← mem_neighborFinset]; exact hs3_in_N)
           ht_ne_s2 ht_ne_s4 hs_ne12 hs_ne14 hs_ne23.symm hs_ne34
           ht_ne_s1 ht_ne_s3 hs_ne13
-          (h2_unique t ht_in_N ht_ne_s2) (h4_unique t ht_in_N ht_ne_s4) (fun h => hwa_nonadj_t (G.symm h))
+          (h2_unique t ht_in_N ht_ne_s2) (h4_unique t ht_in_N ht_ne_s4) (fun h => hwa_nonadj_t (G.adj_symm h))
           hs1_nonadj_p2 hs1_nonadj_p4 hs1_nonadj_wa
           hs3_nonadj_p2 hs3_nonadj_p4 hs3_nonadj_wa'
         exact h_nonadj_p2p4 h_p2_p4
@@ -8559,7 +8559,7 @@ lemma exists_CariolaroSetup_at {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
       simp only [Finset.mem_filter] at hwa_mem
       -- wa has exactly 2 S-neighbors
       have hwa_S_card : (S.filter (G.Adj wa)).card = 2 := hW_S_neighbors wa hwa_mem.1
-      have hs3_in_filter : s3 ∈ S.filter (G.Adj wa) := Finset.mem_filter.mpr ⟨hs3_in_S, G.symm hwa_mem.2⟩
+      have hs3_in_filter : s3 ∈ S.filter (G.Adj wa) := Finset.mem_filter.mpr ⟨hs3_in_S, G.adj_symm hwa_mem.2⟩
       -- wa's other S-neighbor is in S \ {s3}
       have hwa_other : ∃ sx ∈ S, sx ≠ s3 ∧ G.Adj wa sx := by
         have h_sub : {s3} ⊆ S.filter (G.Adj wa) := Finset.singleton_subset_iff.mpr hs3_in_filter
@@ -8573,7 +8573,7 @@ lemma exists_CariolaroSetup_at {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
       -- wa is not adjacent to s4 (since disjoint W-neighbors)
       have hwa_nonadj_s4 : ¬G.Adj wa s4 := by
         intro h_adj
-        have hwa_in_s4 : wa ∈ W.filter (G.Adj s4) := Finset.mem_filter.mpr ⟨hwa_mem.1, G.symm h_adj⟩
+        have hwa_in_s4 : wa ∈ W.filter (G.Adj s4) := Finset.mem_filter.mpr ⟨hwa_mem.1, G.adj_symm h_adj⟩
         have hwa_in_inter : wa ∈ (W.filter (G.Adj s3)) ∩ (W.filter (G.Adj s4)) :=
           Finset.mem_inter.mpr ⟨Finset.mem_filter.mpr hwa_mem, hwa_in_s4⟩
         rw [h_empty] at hwa_in_inter
@@ -8592,8 +8592,8 @@ lemma exists_CariolaroSetup_at {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
         -- By p_adjacent_of_shared_w, p1-p3 would be adjacent, contradicting h_nonadj_p1p3
         rw [hsx_eq] at hwa_adj_sx
         have hwa_Q := (hW_props wa).mp hwa_mem.1
-        have hwa_nonadj_v : ¬G.Adj wa v := fun h => hwa_Q.1 (G.symm h)
-        have hwa_nonadj_t : ¬G.Adj wa t := fun h => hwa_Q.2.2 (G.symm h)
+        have hwa_nonadj_v : ¬G.Adj wa v := fun h => hwa_Q.1 (G.adj_symm h)
+        have hwa_nonadj_t : ¬G.Adj wa t := fun h => hwa_Q.2.2 (G.adj_symm h)
         have hwa_nonadj_p1 : ¬G.Adj wa p1 := by
           intro h_adj
           have h_tri_set : G.IsNClique 3 {p1, s1, wa} := by
@@ -8602,11 +8602,11 @@ lemma exists_CariolaroSetup_at {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
               simp only [Finset.mem_coe, mem_insert, mem_singleton] at ha hb
               rcases ha with rfl | rfl | rfl <;> rcases hb with rfl | rfl | rfl
               · exact absurd rfl hab'
-              · exact G.symm hs1_adj_p1
-              · exact G.symm h_adj
+              · exact G.adj_symm hs1_adj_p1
+              · exact G.adj_symm h_adj
               · exact hs1_adj_p1
               · exact absurd rfl hab'
-              · exact G.symm hwa_adj_sx
+              · exact G.adj_symm hwa_adj_sx
               · exact h_adj
               · exact hwa_adj_sx
               · exact absurd rfl hab'
@@ -8623,13 +8623,13 @@ lemma exists_CariolaroSetup_at {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
               simp only [Finset.mem_coe, mem_insert, mem_singleton] at ha hb
               rcases ha with rfl | rfl | rfl <;> rcases hb with rfl | rfl | rfl
               · exact absurd rfl hab'
-              · exact G.symm hs3_adj_p3
-              · exact G.symm h_adj
+              · exact G.adj_symm hs3_adj_p3
+              · exact G.adj_symm h_adj
               · exact hs3_adj_p3
               · exact absurd rfl hab'
               · exact hwa_mem.2
               · exact h_adj
-              · exact G.symm hwa_mem.2
+              · exact G.adj_symm hwa_mem.2
               · exact absurd rfl hab'
             · rw [Finset.card_insert_of_notMem, Finset.card_insert_of_notMem, Finset.card_singleton]
               · simp only [mem_singleton]; exact G.ne_of_adj hwa_mem.2
@@ -8641,8 +8641,8 @@ lemma exists_CariolaroSetup_at {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
           intro h_adj
           have hwa_S_card' : (S.filter (G.Adj wa)).card = 2 := hW_S_neighbors wa hwa_mem.1
           have hs1_in_f : s1 ∈ S.filter (G.Adj wa) := Finset.mem_filter.mpr ⟨hs1_in_S, hwa_adj_sx⟩
-          have hs3_in_f : s3 ∈ S.filter (G.Adj wa) := Finset.mem_filter.mpr ⟨hs3_in_S, G.symm hwa_mem.2⟩
-          have hs2_in_f : s2 ∈ S.filter (G.Adj wa) := Finset.mem_filter.mpr ⟨hs2_in_S, G.symm h_adj⟩
+          have hs3_in_f : s3 ∈ S.filter (G.Adj wa) := Finset.mem_filter.mpr ⟨hs3_in_S, G.adj_symm hwa_mem.2⟩
+          have hs2_in_f : s2 ∈ S.filter (G.Adj wa) := Finset.mem_filter.mpr ⟨hs2_in_S, G.adj_symm h_adj⟩
           have h_three : ({s1, s3, s2} : Finset (Fin 18)) ⊆ S.filter (G.Adj wa) := by
             intro x hx
             simp only [mem_insert, mem_singleton] at hx
@@ -8656,21 +8656,21 @@ lemma exists_CariolaroSetup_at {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
             · simp only [mem_insert, mem_singleton, not_or]; exact ⟨hs_ne13, hs_ne12⟩
           have h_le := Finset.card_le_card h_three
           omega
-        have hs4_nonadj_wa' : ¬G.Adj s4 wa := fun h => hwa_nonadj_s4 (G.symm h)
+        have hs4_nonadj_wa' : ¬G.Adj s4 wa := fun h => hwa_nonadj_s4 (G.adj_symm h)
         have h_p1_p3 : G.Adj p1 p3 := p_adjacent_of_shared_w h_tri h_no6 v
           p1 p3 s1 s3 wa
           hp1_nonadj_v hp3_nonadj_v hp_ne13
           (by rw [← mem_neighborFinset]; exact hs1_in_N) (by rw [← mem_neighborFinset]; exact hs3_in_N) hs_ne13
           hs1_adj_p1 hs3_adj_p3
           hs1_nonadj_p3 hs3_nonadj_p1
-          hwa_adj_sx (G.symm hwa_mem.2)
+          hwa_adj_sx (G.adj_symm hwa_mem.2)
           hwa_nonadj_v hwa_nonadj_p1 hwa_nonadj_p3
           hs1_s3_nonadj
           t s2 s4
           ht_adj_v (by rw [← mem_neighborFinset]; exact hs2_in_N) (by rw [← mem_neighborFinset]; exact hs4_in_N)
           ht_ne_s1 ht_ne_s3 hs_ne12.symm hs_ne23 hs_ne14.symm hs_ne34.symm
           ht_ne_s2 ht_ne_s4 hs_ne24
-          (h1_unique t ht_in_N ht_ne_s1) (h3_unique t ht_in_N ht_ne_s3) (fun h => hwa_nonadj_t (G.symm h))
+          (h1_unique t ht_in_N ht_ne_s1) (h3_unique t ht_in_N ht_ne_s3) (fun h => hwa_nonadj_t (G.adj_symm h))
           hs2_nonadj_p1 hs2_nonadj_p3 hs2_nonadj_wa
           hs4_nonadj_p1 hs4_nonadj_p3 hs4_nonadj_wa'
         exact h_nonadj_p1p3 h_p1_p3
@@ -8687,7 +8687,7 @@ lemma exists_CariolaroSetup_at {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
           exact ⟨wb, hwb_in.1, hwb_in.2⟩
         simp only [Finset.mem_filter] at hwb_mem
         have hwb_S_card : (S.filter (G.Adj wb)).card = 2 := hW_S_neighbors wb hwb_mem.1
-        have hs3_in_wb_filter : s3 ∈ S.filter (G.Adj wb) := Finset.mem_filter.mpr ⟨hs3_in_S, G.symm hwb_mem.2⟩
+        have hs3_in_wb_filter : s3 ∈ S.filter (G.Adj wb) := Finset.mem_filter.mpr ⟨hs3_in_S, G.adj_symm hwb_mem.2⟩
         have hwb_other : ∃ sy ∈ S, sy ≠ s3 ∧ G.Adj wb sy := by
           have h_sub : {s3} ⊆ S.filter (G.Adj wb) := Finset.singleton_subset_iff.mpr hs3_in_wb_filter
           have h_diff_card' : ((S.filter (G.Adj wb)) \ {s3}).card = 1 := by
@@ -8699,7 +8699,7 @@ lemma exists_CariolaroSetup_at {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
         obtain ⟨sy, hsy_in_S, hsy_ne_s3, hwb_adj_sy⟩ := hwb_other
         have hwb_nonadj_s4 : ¬G.Adj wb s4 := by
           intro h_adj
-          have hwb_in_s4 : wb ∈ W.filter (G.Adj s4) := Finset.mem_filter.mpr ⟨hwb_mem.1, G.symm h_adj⟩
+          have hwb_in_s4 : wb ∈ W.filter (G.Adj s4) := Finset.mem_filter.mpr ⟨hwb_mem.1, G.adj_symm h_adj⟩
           have hwb_in_inter : wb ∈ (W.filter (G.Adj s3)) ∩ (W.filter (G.Adj s4)) :=
             Finset.mem_inter.mpr ⟨Finset.mem_filter.mpr hwb_mem, hwb_in_s4⟩
           rw [h_empty] at hwb_in_inter
@@ -8716,8 +8716,8 @@ lemma exists_CariolaroSetup_at {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
         · -- sx = s2, sy = s1: s1 and s3 share wb
           rw [hsy_eq] at hwb_adj_sy
           have hwb_Q := (hW_props wb).mp hwb_mem.1
-          have hwb_nonadj_v : ¬G.Adj wb v := fun h => hwb_Q.1 (G.symm h)
-          have hwb_nonadj_t : ¬G.Adj wb t := fun h => hwb_Q.2.2 (G.symm h)
+          have hwb_nonadj_v : ¬G.Adj wb v := fun h => hwb_Q.1 (G.adj_symm h)
+          have hwb_nonadj_t : ¬G.Adj wb t := fun h => hwb_Q.2.2 (G.adj_symm h)
           have hwb_nonadj_p1 : ¬G.Adj wb p1 := by
             intro h_adj
             have h_tri_set : G.IsNClique 3 {p1, s1, wb} := by
@@ -8726,11 +8726,11 @@ lemma exists_CariolaroSetup_at {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
                 simp only [Finset.mem_coe, mem_insert, mem_singleton] at ha hb
                 rcases ha with rfl | rfl | rfl <;> rcases hb with rfl | rfl | rfl
                 · exact absurd rfl hab'
-                · exact G.symm hs1_adj_p1
-                · exact G.symm h_adj
+                · exact G.adj_symm hs1_adj_p1
+                · exact G.adj_symm h_adj
                 · exact hs1_adj_p1
                 · exact absurd rfl hab'
-                · exact G.symm hwb_adj_sy
+                · exact G.adj_symm hwb_adj_sy
                 · exact h_adj
                 · exact hwb_adj_sy
                 · exact absurd rfl hab'
@@ -8747,13 +8747,13 @@ lemma exists_CariolaroSetup_at {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
                 simp only [Finset.mem_coe, mem_insert, mem_singleton] at ha hb
                 rcases ha with rfl | rfl | rfl <;> rcases hb with rfl | rfl | rfl
                 · exact absurd rfl hab'
-                · exact G.symm hs3_adj_p3
-                · exact G.symm h_adj
+                · exact G.adj_symm hs3_adj_p3
+                · exact G.adj_symm h_adj
                 · exact hs3_adj_p3
                 · exact absurd rfl hab'
                 · exact hwb_mem.2
                 · exact h_adj
-                · exact G.symm hwb_mem.2
+                · exact G.adj_symm hwb_mem.2
                 · exact absurd rfl hab'
               · rw [Finset.card_insert_of_notMem, Finset.card_insert_of_notMem, Finset.card_singleton]
                 · simp only [mem_singleton]; exact G.ne_of_adj hwb_mem.2
@@ -8765,8 +8765,8 @@ lemma exists_CariolaroSetup_at {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
             intro h_adj
             have hwb_S_card' : (S.filter (G.Adj wb)).card = 2 := hW_S_neighbors wb hwb_mem.1
             have hs1_in_f : s1 ∈ S.filter (G.Adj wb) := Finset.mem_filter.mpr ⟨hs1_in_S, hwb_adj_sy⟩
-            have hs3_in_f : s3 ∈ S.filter (G.Adj wb) := Finset.mem_filter.mpr ⟨hs3_in_S, G.symm hwb_mem.2⟩
-            have hs2_in_f : s2 ∈ S.filter (G.Adj wb) := Finset.mem_filter.mpr ⟨hs2_in_S, G.symm h_adj⟩
+            have hs3_in_f : s3 ∈ S.filter (G.Adj wb) := Finset.mem_filter.mpr ⟨hs3_in_S, G.adj_symm hwb_mem.2⟩
+            have hs2_in_f : s2 ∈ S.filter (G.Adj wb) := Finset.mem_filter.mpr ⟨hs2_in_S, G.adj_symm h_adj⟩
             have h_three : ({s1, s3, s2} : Finset (Fin 18)) ⊆ S.filter (G.Adj wb) := by
               intro x hx
               simp only [mem_insert, mem_singleton] at hx
@@ -8780,21 +8780,21 @@ lemma exists_CariolaroSetup_at {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
               · simp only [mem_insert, mem_singleton, not_or]; exact ⟨hs_ne13, hs_ne12⟩
             have h_le := Finset.card_le_card h_three
             omega
-          have hs4_nonadj_wb' : ¬G.Adj s4 wb := fun h => hwb_nonadj_s4 (G.symm h)
+          have hs4_nonadj_wb' : ¬G.Adj s4 wb := fun h => hwb_nonadj_s4 (G.adj_symm h)
           have h_p1_p3 : G.Adj p1 p3 := p_adjacent_of_shared_w h_tri h_no6 v
             p1 p3 s1 s3 wb
             hp1_nonadj_v hp3_nonadj_v hp_ne13
             (by rw [← mem_neighborFinset]; exact hs1_in_N) (by rw [← mem_neighborFinset]; exact hs3_in_N) hs_ne13
             hs1_adj_p1 hs3_adj_p3
             hs1_nonadj_p3 hs3_nonadj_p1
-            hwb_adj_sy (G.symm hwb_mem.2)
+            hwb_adj_sy (G.adj_symm hwb_mem.2)
             hwb_nonadj_v hwb_nonadj_p1 hwb_nonadj_p3
             hs1_s3_nonadj
             t s2 s4
             ht_adj_v (by rw [← mem_neighborFinset]; exact hs2_in_N) (by rw [← mem_neighborFinset]; exact hs4_in_N)
             ht_ne_s1 ht_ne_s3 hs_ne12.symm hs_ne23 hs_ne14.symm hs_ne34.symm
             ht_ne_s2 ht_ne_s4 hs_ne24
-            (h1_unique t ht_in_N ht_ne_s1) (h3_unique t ht_in_N ht_ne_s3) (fun h => hwb_nonadj_t (G.symm h))
+            (h1_unique t ht_in_N ht_ne_s1) (h3_unique t ht_in_N ht_ne_s3) (fun h => hwb_nonadj_t (G.adj_symm h))
             hs2_nonadj_p1 hs2_nonadj_p3 hs2_nonadj_wb
             hs4_nonadj_p1 hs4_nonadj_p3 hs4_nonadj_wb'
           exact h_nonadj_p1p3 h_p1_p3
@@ -8820,7 +8820,7 @@ lemma exists_CariolaroSetup_at {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
             omega
           exact S_pair_share_at_most_one_W h_reg h_tri h_no6 v s3 s2 wa wb
             hs3_adj_v hs2_adj_v hs_ne23.symm hv_ne_wa hv_ne_wb hab.symm
-            hwa_mem.2 hwb_mem.2 (G.symm hwa_adj_sx) (G.symm hwb_adj_sy)
+            hwa_mem.2 hwb_mem.2 (G.adj_symm hwa_adj_sx) (G.adj_symm hwb_adj_sy)
     have h_diff : ((W.filter (G.Adj s3)) \ (W.filter (G.Adj s4))).Nonempty := by
       by_contra h_empty; simp only [Finset.not_nonempty_iff_eq_empty, Finset.sdiff_eq_empty_iff_subset] at h_empty
       have h_eq : W.filter (G.Adj s3) = W.filter (G.Adj s4) :=
@@ -8876,10 +8876,10 @@ lemma exists_CariolaroSetup_at {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
       have hw2'_in_W : w2' ∈ W := (Finset.mem_filter.mp (Finset.mem_inter.mp hw2'_shared).1).1
       have hw2'_adj_s2 : G.Adj w2' s2 := by
         have h := Finset.mem_inter.mp hw2'_shared
-        exact G.symm (Finset.mem_filter.mp h.1).2
+        exact G.adj_symm (Finset.mem_filter.mp h.1).2
       have hw2'_adj_s3 : G.Adj w2' s3 := by
         have h := Finset.mem_inter.mp hw2'_shared
-        exact G.symm (Finset.mem_filter.mp h.2).2
+        exact G.adj_symm (Finset.mem_filter.mp h.2).2
 
       obtain ⟨w3', hw3'_eq⟩ := Finset.card_eq_one.mp hs34_share_W
       have hw3'_shared : w3' ∈ (W.filter (G.Adj s3)) ∩ (W.filter (G.Adj s4)) := by
@@ -8888,10 +8888,10 @@ lemma exists_CariolaroSetup_at {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
       have hw3'_in_W : w3' ∈ W := (Finset.mem_filter.mp (Finset.mem_inter.mp hw3'_shared).1).1
       have hw3'_adj_s3 : G.Adj w3' s3 := by
         have h := Finset.mem_inter.mp hw3'_shared
-        exact G.symm (Finset.mem_filter.mp h.1).2
+        exact G.adj_symm (Finset.mem_filter.mp h.1).2
       have hw3'_adj_s4 : G.Adj w3' s4 := by
         have h := Finset.mem_inter.mp hw3'_shared
-        exact G.symm (Finset.mem_filter.mp h.2).2
+        exact G.adj_symm (Finset.mem_filter.mp h.2).2
 
       -- w1', w2', w3' are all distinct, since each w ∈ W has exactly 2 S-neighbors.
       have hw1'_ne_w2' : w1' ≠ w2' := by
@@ -8987,8 +8987,8 @@ lemma exists_CariolaroSetup_at {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
 
       -- w4 is not adjacent to s2 (else it would be a third element of W.filter (Adj s2)).
       have hs2_W_eq2 : (W.filter (G.Adj s2)).card = 2 := hs_W_eq2 s2 hs2_in_S
-      have hw1'_in_s2 : w1' ∈ W.filter (G.Adj s2) := Finset.mem_filter.mpr ⟨hw1'_in_W, G.symm hw1'_adj_s2⟩
-      have hw2'_in_s2 : w2' ∈ W.filter (G.Adj s2) := Finset.mem_filter.mpr ⟨hw2'_in_W, G.symm hw2'_adj_s2⟩
+      have hw1'_in_s2 : w1' ∈ W.filter (G.Adj s2) := Finset.mem_filter.mpr ⟨hw1'_in_W, G.adj_symm hw1'_adj_s2⟩
+      have hw2'_in_s2 : w2' ∈ W.filter (G.Adj s2) := Finset.mem_filter.mpr ⟨hw2'_in_W, G.adj_symm hw2'_adj_s2⟩
       have hs2_nonadj_w4 : ¬G.Adj s2 w4 := by
         intro h_adj
         have hw4_in_s2 : w4 ∈ W.filter (G.Adj s2) := Finset.mem_filter.mpr ⟨hw4_in_W, h_adj⟩
@@ -9011,8 +9011,8 @@ lemma exists_CariolaroSetup_at {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
 
       -- w4 is not adjacent to s3 (else it would be a third element of W.filter (Adj s3)).
       have hs3_W_eq2 : (W.filter (G.Adj s3)).card = 2 := hs_W_eq2 s3 hs3_in_S
-      have hw2'_in_s3 : w2' ∈ W.filter (G.Adj s3) := Finset.mem_filter.mpr ⟨hw2'_in_W, G.symm hw2'_adj_s3⟩
-      have hw3'_in_s3 : w3' ∈ W.filter (G.Adj s3) := Finset.mem_filter.mpr ⟨hw3'_in_W, G.symm hw3'_adj_s3⟩
+      have hw2'_in_s3 : w2' ∈ W.filter (G.Adj s3) := Finset.mem_filter.mpr ⟨hw2'_in_W, G.adj_symm hw2'_adj_s3⟩
+      have hw3'_in_s3 : w3' ∈ W.filter (G.Adj s3) := Finset.mem_filter.mpr ⟨hw3'_in_W, G.adj_symm hw3'_adj_s3⟩
       have hs3_nonadj_w4 : ¬G.Adj s3 w4 := by
         intro h_adj
         have hw4_in_s3 : w4 ∈ W.filter (G.Adj s3) := Finset.mem_filter.mpr ⟨hw4_in_W, h_adj⟩
@@ -9042,8 +9042,8 @@ lemma exists_CariolaroSetup_at {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
         simp only [S, Finset.mem_insert, Finset.mem_singleton] at hxS
         rcases hxS with rfl | rfl | rfl | rfl
         · simp
-        · exact (hs2_nonadj_w4 (G.symm hxAdj)).elim
-        · exact (hs3_nonadj_w4 (G.symm hxAdj)).elim
+        · exact (hs2_nonadj_w4 (G.adj_symm hxAdj)).elim
+        · exact (hs3_nonadj_w4 (G.adj_symm hxAdj)).elim
         · simp
       have hw4_S_eq : S.filter (G.Adj w4) = ({s1, s4} : Finset (Fin 18)) := by
         apply Finset.eq_of_subset_of_card_le hw4_S_sub
@@ -9057,8 +9057,8 @@ lemma exists_CariolaroSetup_at {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
         exact (Finset.mem_filter.mp this).2
 
       -- Therefore w4 lies in both W.filter (Adj s4) and W.filter (Adj s1).
-      have hw4_in_s4 : w4 ∈ W.filter (G.Adj s4) := Finset.mem_filter.mpr ⟨hw4_in_W, G.symm hw4_adj_s4⟩
-      have hw4_in_s1 : w4 ∈ W.filter (G.Adj s1) := Finset.mem_filter.mpr ⟨hw4_in_W, G.symm hw4_adj_s1⟩
+      have hw4_in_s4 : w4 ∈ W.filter (G.Adj s4) := Finset.mem_filter.mpr ⟨hw4_in_W, G.adj_symm hw4_adj_s4⟩
+      have hw4_in_s1 : w4 ∈ W.filter (G.Adj s1) := Finset.mem_filter.mpr ⟨hw4_in_W, G.adj_symm hw4_adj_s1⟩
       exact ⟨w4, Finset.mem_inter.mpr ⟨hw4_in_s4, hw4_in_s1⟩⟩
     have h_diff : ((W.filter (G.Adj s4)) \ (W.filter (G.Adj s1))).Nonempty := by
       by_contra h_empty; simp only [Finset.not_nonempty_iff_eq_empty, Finset.sdiff_eq_empty_iff_subset] at h_empty
@@ -9119,22 +9119,22 @@ lemma exists_CariolaroSetup_at {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
   -- Adjacency properties
   have hw2'_adj_s2 : G.Adj w2' s2 := by
     have h : w2' ∈ W.filter (G.Adj s2) ∩ W.filter (G.Adj s3) := by rw [hw2'_eq]; simp
-    exact G.symm (Finset.mem_filter.mp (Finset.mem_inter.mp h).1).2
+    exact G.adj_symm (Finset.mem_filter.mp (Finset.mem_inter.mp h).1).2
   have hw2'_adj_s3 : G.Adj w2' s3 := by
     have h : w2' ∈ W.filter (G.Adj s2) ∩ W.filter (G.Adj s3) := by rw [hw2'_eq]; simp
-    exact G.symm (Finset.mem_filter.mp (Finset.mem_inter.mp h).2).2
+    exact G.adj_symm (Finset.mem_filter.mp (Finset.mem_inter.mp h).2).2
   have hw3'_adj_s3 : G.Adj w3' s3 := by
     have h : w3' ∈ W.filter (G.Adj s3) ∩ W.filter (G.Adj s4) := by rw [hw3'_eq]; simp
-    exact G.symm (Finset.mem_filter.mp (Finset.mem_inter.mp h).1).2
+    exact G.adj_symm (Finset.mem_filter.mp (Finset.mem_inter.mp h).1).2
   have hw3'_adj_s4 : G.Adj w3' s4 := by
     have h : w3' ∈ W.filter (G.Adj s3) ∩ W.filter (G.Adj s4) := by rw [hw3'_eq]; simp
-    exact G.symm (Finset.mem_filter.mp (Finset.mem_inter.mp h).2).2
+    exact G.adj_symm (Finset.mem_filter.mp (Finset.mem_inter.mp h).2).2
   have hw4'_adj_s4 : G.Adj w4' s4 := by
     have h : w4' ∈ W.filter (G.Adj s4) ∩ W.filter (G.Adj s1) := by rw [hw4'_eq]; simp
-    exact G.symm (Finset.mem_filter.mp (Finset.mem_inter.mp h).1).2
+    exact G.adj_symm (Finset.mem_filter.mp (Finset.mem_inter.mp h).1).2
   have hw4'_adj_s1 : G.Adj w4' s1 := by
     have h : w4' ∈ W.filter (G.Adj s4) ∩ W.filter (G.Adj s1) := by rw [hw4'_eq]; simp
-    exact G.symm (Finset.mem_filter.mp (Finset.mem_inter.mp h).2).2
+    exact G.adj_symm (Finset.mem_filter.mp (Finset.mem_inter.mp h).2).2
 
   -- Prove distinctness: w1', w2', w3', w4' are all distinct
   -- If w1' = w2', then w1' is adjacent to s1, s2, s3 (3 S-neighbors), but each W has 2
@@ -9450,11 +9450,11 @@ lemma exists_CariolaroSetup_at {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
       simp only [Finset.mem_coe, mem_insert, mem_singleton] at ha hb
       rcases ha with rfl | rfl | rfl <;> rcases hb with rfl | rfl | rfl
       · exact absurd rfl hab
-      · exact G.symm hs1_adj_p1  -- p1,s1: need G.Adj p1 s1
-      · exact G.symm h_adj      -- p1,w1': need G.Adj p1 w1'
+      · exact G.adj_symm hs1_adj_p1  -- p1,s1: need G.Adj p1 s1
+      · exact G.adj_symm h_adj      -- p1,w1': need G.Adj p1 w1'
       · exact hs1_adj_p1        -- s1,p1: need G.Adj s1 p1
       · exact absurd rfl hab
-      · exact G.symm hw1'_adj_s1 -- s1,w1': need G.Adj s1 w1'
+      · exact G.adj_symm hw1'_adj_s1 -- s1,w1': need G.Adj s1 w1'
       · exact h_adj             -- w1',p1: need G.Adj w1' p1
       · exact hw1'_adj_s1       -- w1',s1: need G.Adj w1' s1
       · exact absurd rfl hab, by
@@ -9485,11 +9485,11 @@ lemma exists_CariolaroSetup_at {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
       simp only [Finset.mem_coe, mem_insert, mem_singleton] at ha hb
       rcases ha with rfl | rfl | rfl <;> rcases hb with rfl | rfl | rfl
       · exact absurd rfl hab
-      · exact G.symm hs2_adj_p2
-      · exact G.symm h_adj
+      · exact G.adj_symm hs2_adj_p2
+      · exact G.adj_symm h_adj
       · exact hs2_adj_p2
       · exact absurd rfl hab
-      · exact G.symm hw1'_adj_s2
+      · exact G.adj_symm hw1'_adj_s2
       · exact h_adj
       · exact hw1'_adj_s2
       · exact absurd rfl hab, by
@@ -9511,11 +9511,11 @@ lemma exists_CariolaroSetup_at {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
       simp only [Finset.mem_coe, mem_insert, mem_singleton] at ha hb
       rcases ha with rfl | rfl | rfl <;> rcases hb with rfl | rfl | rfl
       · exact absurd rfl hab
-      · exact G.symm hs2_adj_p2
-      · exact G.symm h_adj
+      · exact G.adj_symm hs2_adj_p2
+      · exact G.adj_symm h_adj
       · exact hs2_adj_p2
       · exact absurd rfl hab
-      · exact G.symm hw2'_adj_s2
+      · exact G.adj_symm hw2'_adj_s2
       · exact h_adj
       · exact hw2'_adj_s2
       · exact absurd rfl hab, by
@@ -9535,11 +9535,11 @@ lemma exists_CariolaroSetup_at {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
       simp only [Finset.mem_coe, mem_insert, mem_singleton] at ha hb
       rcases ha with rfl | rfl | rfl <;> rcases hb with rfl | rfl | rfl
       · exact absurd rfl hab
-      · exact G.symm hs3_adj_p3
-      · exact G.symm h_adj
+      · exact G.adj_symm hs3_adj_p3
+      · exact G.adj_symm h_adj
       · exact hs3_adj_p3
       · exact absurd rfl hab
-      · exact G.symm hw2'_adj_s3
+      · exact G.adj_symm hw2'_adj_s3
       · exact h_adj
       · exact hw2'_adj_s3
       · exact absurd rfl hab, by
@@ -9559,11 +9559,11 @@ lemma exists_CariolaroSetup_at {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
       simp only [Finset.mem_coe, mem_insert, mem_singleton] at ha hb
       rcases ha with rfl | rfl | rfl <;> rcases hb with rfl | rfl | rfl
       · exact absurd rfl hab
-      · exact G.symm hs3_adj_p3
-      · exact G.symm h_adj
+      · exact G.adj_symm hs3_adj_p3
+      · exact G.adj_symm h_adj
       · exact hs3_adj_p3
       · exact absurd rfl hab
-      · exact G.symm hw3'_adj_s3
+      · exact G.adj_symm hw3'_adj_s3
       · exact h_adj
       · exact hw3'_adj_s3
       · exact absurd rfl hab, by
@@ -9583,11 +9583,11 @@ lemma exists_CariolaroSetup_at {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
       simp only [Finset.mem_coe, mem_insert, mem_singleton] at ha hb
       rcases ha with rfl | rfl | rfl <;> rcases hb with rfl | rfl | rfl
       · exact absurd rfl hab
-      · exact G.symm hs4_adj_p4
-      · exact G.symm h_adj
+      · exact G.adj_symm hs4_adj_p4
+      · exact G.adj_symm h_adj
       · exact hs4_adj_p4
       · exact absurd rfl hab
-      · exact G.symm hw3'_adj_s4
+      · exact G.adj_symm hw3'_adj_s4
       · exact h_adj
       · exact hw3'_adj_s4
       · exact absurd rfl hab, by
@@ -9607,11 +9607,11 @@ lemma exists_CariolaroSetup_at {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
       simp only [Finset.mem_coe, mem_insert, mem_singleton] at ha hb
       rcases ha with rfl | rfl | rfl <;> rcases hb with rfl | rfl | rfl
       · exact absurd rfl hab
-      · exact G.symm hs4_adj_p4
-      · exact G.symm h_adj
+      · exact G.adj_symm hs4_adj_p4
+      · exact G.adj_symm h_adj
       · exact hs4_adj_p4
       · exact absurd rfl hab
-      · exact G.symm hw4'_adj_s4
+      · exact G.adj_symm hw4'_adj_s4
       · exact h_adj
       · exact hw4'_adj_s4
       · exact absurd rfl hab, by
@@ -9631,11 +9631,11 @@ lemma exists_CariolaroSetup_at {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
       simp only [Finset.mem_coe, mem_insert, mem_singleton] at ha hb
       rcases ha with rfl | rfl | rfl <;> rcases hb with rfl | rfl | rfl
       · exact absurd rfl hab
-      · exact G.symm hs1_adj_p1
-      · exact G.symm h_adj
+      · exact G.adj_symm hs1_adj_p1
+      · exact G.adj_symm h_adj
       · exact hs1_adj_p1
       · exact absurd rfl hab
-      · exact G.symm hw4'_adj_s1
+      · exact G.adj_symm hw4'_adj_s1
       · exact h_adj
       · exact hw4'_adj_s1
       · exact absurd rfl hab, by
@@ -9831,11 +9831,11 @@ lemma S_three_W_neighbors_yield_setup
     W_vertex_has_two_S_neighbors h_tri v t w3 ht_adj_v hw3_props.2.2 hw3_props.2.1 S hS_card hS_eq
   -- sj is an S-neighbor of each wi
   have hsj_in_w1_filter : sj ∈ S.filter (G.Adj w1) := by
-    simp only [Finset.mem_filter]; exact ⟨hsj_in_S, G.symm hsj_adj_w1⟩
+    simp only [Finset.mem_filter]; exact ⟨hsj_in_S, G.adj_symm hsj_adj_w1⟩
   have hsj_in_w2_filter : sj ∈ S.filter (G.Adj w2) := by
-    simp only [Finset.mem_filter]; exact ⟨hsj_in_S, G.symm hsj_adj_w2⟩
+    simp only [Finset.mem_filter]; exact ⟨hsj_in_S, G.adj_symm hsj_adj_w2⟩
   have hsj_in_w3_filter : sj ∈ S.filter (G.Adj w3) := by
-    simp only [Finset.mem_filter]; exact ⟨hsj_in_S, G.symm hsj_adj_w3⟩
+    simp only [Finset.mem_filter]; exact ⟨hsj_in_S, G.adj_symm hsj_adj_w3⟩
   -- Each wi has exactly one "other" S-neighbor (besides sj)
   have hw1_other_card : ((S.filter (G.Adj w1)).erase sj).card = 1 := by
     rw [Finset.card_erase_of_mem hsj_in_w1_filter, hw1_S_card]
@@ -9900,7 +9900,7 @@ lemma S_three_W_neighbors_yield_setup
       exact ho1_in_S.2
     exact Or.inl (S_pair_share_at_most_one_W h_reg h_tri h_no6 v sj o1 w1 w2
       hsj_adj_v ho1_adj_v ho1_ne_sj.symm hv_ne_w1 hv_ne_w2 hw_ne12
-      hsj_adj_w1 hsj_adj_w2 (G.symm ho1_adj_w1) (h_o12 ▸ G.symm ho2_adj_w2))
+      hsj_adj_w1 hsj_adj_w2 (G.adj_symm ho1_adj_w1) (h_o12 ▸ G.adj_symm ho2_adj_w2))
   · by_cases h_o13 : o1 = o3
     · -- Case: o1 = o3 means sj and o1 share {w1, w3} → contradiction
       have ho1_adj_v : G.Adj v o1 := by
@@ -9909,7 +9909,7 @@ lemma S_three_W_neighbors_yield_setup
         exact ho1_in_S.2
       exact Or.inl (S_pair_share_at_most_one_W h_reg h_tri h_no6 v sj o1 w1 w3
         hsj_adj_v ho1_adj_v ho1_ne_sj.symm hv_ne_w1 hv_ne_w3 hw_ne13
-        hsj_adj_w1 hsj_adj_w3 (G.symm ho1_adj_w1) (h_o13 ▸ G.symm ho3_adj_w3))
+        hsj_adj_w1 hsj_adj_w3 (G.adj_symm ho1_adj_w1) (h_o13 ▸ G.adj_symm ho3_adj_w3))
     · by_cases h_o23 : o2 = o3
       · -- Case: o2 = o3 means sj and o2 share {w2, w3} → contradiction
         have ho2_adj_v : G.Adj v o2 := by
@@ -9918,7 +9918,7 @@ lemma S_three_W_neighbors_yield_setup
           exact ho2_in_S.2
         exact Or.inl (S_pair_share_at_most_one_W h_reg h_tri h_no6 v sj o2 w2 w3
           hsj_adj_v ho2_adj_v ho2_ne_sj.symm hv_ne_w2 hv_ne_w3 hw_ne23
-          hsj_adj_w2 hsj_adj_w3 (G.symm ho2_adj_w2) (h_o23 ▸ G.symm ho3_adj_w3))
+          hsj_adj_w2 hsj_adj_w3 (G.adj_symm ho2_adj_w2) (h_o23 ▸ G.adj_symm ho3_adj_w3))
       · -- Bijective case: this yields a CariolaroSetup witness (handled later)
         -- The explicit 8-cycle pattern provides a valid setup; contradiction comes elsewhere.
         classical
@@ -9972,7 +9972,7 @@ lemma S_vertex_has_one_T_two_W_neighbors {G : SimpleGraph (Fin 18)} [DecidableRe
     rw [← h_filter_split, hsi_Q_neighbors]
   have hT_le : (T.filter (G.Adj si)).card ≤ 1 := by
     by_contra h_ge2
-    push_neg at h_ge2
+    push Not at h_ge2
     have h_si_ge2 : (T.filter (G.Adj si)).card ≥ 2 := h_ge2
     obtain ⟨s1, s2, s3, s4, h12, h13, h14, h23, h24, h34, hS_eq_four⟩ :=
       Finset.card_eq_four.mp hS_card
@@ -10103,7 +10103,7 @@ lemma S_vertex_has_one_T_two_W_neighbors {G : SimpleGraph (Fin 18)} [DecidableRe
         S W hS_card hS_eq s4 hs4_in_S hs4_adj_v hW_props h_W4_three
   have hT_ge : (T.filter (G.Adj si)).card ≥ 1 := by
     by_contra h_lt_1
-    push_neg at h_lt_1
+    push Not at h_lt_1
     have h_T_zero : (T.filter (G.Adj si)).card = 0 := Nat.lt_one_iff.mp h_lt_1
     have h_W_three : (W.filter (G.Adj si)).card = 3 := by omega
     exact S_vertex_cannot_have_three_W_neighbors h_reg h_tri h_no6 no_setup v t ht_adj_v
@@ -10158,11 +10158,11 @@ lemma cycleP_adjacent_to_at_most_one
     intro hq1 hq3
     -- p2, p4, q are three distinct common neighbors of p1 and p3
     have hp2_mem : p2 ∈ G.neighborFinset p1 ∩ G.neighborFinset p3 := by
-      simp [SimpleGraph.mem_neighborFinset, h_adj12, G.symm h_adj23]
+      simp [SimpleGraph.mem_neighborFinset, h_adj12, G.adj_symm h_adj23]
     have hp4_mem : p4 ∈ G.neighborFinset p1 ∩ G.neighborFinset p3 := by
-      simp [SimpleGraph.mem_neighborFinset, G.symm h_adj41, h_adj34]
+      simp [SimpleGraph.mem_neighborFinset, G.adj_symm h_adj41, h_adj34]
     have hq_mem : q ∈ G.neighborFinset p1 ∩ G.neighborFinset p3 := by
-      simp [SimpleGraph.mem_neighborFinset, G.symm hq1, G.symm hq3]
+      simp [SimpleGraph.mem_neighborFinset, G.adj_symm hq1, G.adj_symm hq3]
     have hsub : ({p2, p4, q} : Finset (Fin 18)) ⊆ G.neighborFinset p1 ∩ G.neighborFinset p3 := by
       intro x hx
       simp only [Finset.mem_insert, Finset.mem_singleton] at hx
@@ -10180,7 +10180,7 @@ lemma cycleP_adjacent_to_at_most_one
     have h_ge3 : 3 ≤ (G.neighborFinset p1 ∩ G.neighborFinset p3).card := by
       simpa [hcard3] using hle
     have h_ge3' : 3 ≤ commonNeighborsCard G p1 p3 := by
-      simpa [commonNeighborsCard] using h_ge3
+      simpa [commonNeighborsCard, _root_.commonNeighbors] using h_ge3
     have h_le2 := commonNeighborsCard_le_two h_tri h_no6 h_reg p1 p3 hp_ne13.symm h_nonadj13
     have : Nat.succ 2 ≤ 2 := by
       simpa using le_trans h_ge3' h_le2
@@ -10189,11 +10189,11 @@ lemma cycleP_adjacent_to_at_most_one
   have contra_diag24 : G.Adj q p2 → G.Adj q p4 → False := by
     intro hq2 hq4
     have hp1_mem : p1 ∈ G.neighborFinset p2 ∩ G.neighborFinset p4 := by
-      simp [SimpleGraph.mem_neighborFinset, G.symm h_adj12, h_adj41]
+      simp [SimpleGraph.mem_neighborFinset, G.adj_symm h_adj12, h_adj41]
     have hp3_mem : p3 ∈ G.neighborFinset p2 ∩ G.neighborFinset p4 := by
-      simp [SimpleGraph.mem_neighborFinset, h_adj23, G.symm h_adj34]
+      simp [SimpleGraph.mem_neighborFinset, h_adj23, G.adj_symm h_adj34]
     have hq_mem : q ∈ G.neighborFinset p2 ∩ G.neighborFinset p4 := by
-      simp [SimpleGraph.mem_neighborFinset, G.symm hq2, G.symm hq4]
+      simp [SimpleGraph.mem_neighborFinset, G.adj_symm hq2, G.adj_symm hq4]
     have hsub : ({p1, p3, q} : Finset (Fin 18)) ⊆ G.neighborFinset p2 ∩ G.neighborFinset p4 := by
       intro x hx
       simp only [Finset.mem_insert, Finset.mem_singleton] at hx
@@ -10211,7 +10211,7 @@ lemma cycleP_adjacent_to_at_most_one
     have h_ge3 : 3 ≤ (G.neighborFinset p2 ∩ G.neighborFinset p4).card := by
       simpa [hcard3] using hle
     have h_ge3' : 3 ≤ commonNeighborsCard G p2 p4 := by
-      simpa [commonNeighborsCard] using h_ge3
+      simpa [commonNeighborsCard, _root_.commonNeighbors] using h_ge3
     have h_le2 := commonNeighborsCard_le_two h_tri h_no6 h_reg p2 p4 hp_ne24.symm h_nonadj24
     have : Nat.succ 2 ≤ 2 := by
       simpa using le_trans h_ge3' h_le2
@@ -10228,12 +10228,12 @@ lemma cycleP_adjacent_to_at_most_one
     · subst hb_eq; exact (hab_ne rfl).elim
     · subst hb_eq; exact contra_edge h_adj12 hqa hqb hab_ne
     · subst hb_eq; exact contra_diag13 hqa hqb
-    · subst hb_eq; exact contra_edge (G.symm h_adj41) hqa hqb hab_ne
+    · subst hb_eq; exact contra_edge (G.adj_symm h_adj41) hqa hqb hab_ne
   · subst ha_eq
     rcases (by
       rw [hP_eq] at hbP
       simpa [Finset.mem_insert, Finset.mem_singleton] using hbP) with hb_eq | hb_eq | hb_eq | hb_eq
-    · subst hb_eq; exact contra_edge (G.symm h_adj12) hqa hqb hab_ne
+    · subst hb_eq; exact contra_edge (G.adj_symm h_adj12) hqa hqb hab_ne
     · subst hb_eq; exact (hab_ne rfl).elim
     · subst hb_eq; exact contra_edge h_adj23 hqa hqb hab_ne
     · subst hb_eq; exact contra_diag24 hqa hqb
@@ -10242,7 +10242,7 @@ lemma cycleP_adjacent_to_at_most_one
       rw [hP_eq] at hbP
       simpa [Finset.mem_insert, Finset.mem_singleton] using hbP) with hb_eq | hb_eq | hb_eq | hb_eq
     · subst hb_eq; exact contra_diag13 hqb hqa
-    · subst hb_eq; exact contra_edge (G.symm h_adj23) hqa hqb hab_ne
+    · subst hb_eq; exact contra_edge (G.adj_symm h_adj23) hqa hqb hab_ne
     · subst hb_eq; exact (hab_ne rfl).elim
     · subst hb_eq; exact contra_edge h_adj34 hqa hqb hab_ne
   · subst ha_eq
@@ -10251,7 +10251,7 @@ lemma cycleP_adjacent_to_at_most_one
       simpa [Finset.mem_insert, Finset.mem_singleton] using hbP) with hb_eq | hb_eq | hb_eq | hb_eq
     · subst hb_eq; exact contra_edge h_adj41 hqa hqb hab_ne
     · subst hb_eq; exact contra_diag24 hqb hqa
-    · subst hb_eq; exact contra_edge (G.symm h_adj34) hqa hqb hab_ne
+    · subst hb_eq; exact contra_edge (G.adj_symm h_adj34) hqa hqb hab_ne
     · subst hb_eq; exact (hab_ne rfl).elim
 
 /-- Final step of Cariolaro's proof: derive contradiction from the 4-cycle structure.
@@ -10309,11 +10309,11 @@ lemma final_contradiction {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
         · exact absurd rfl hxy
         · exact hs1_adj_p1
         · exact hs2_adj_p2
-        · exact G.symm hs1_adj_p1
+        · exact G.adj_symm hs1_adj_p1
         · exact absurd rfl hxy
         · exact h_adj12
-        · exact G.symm hs2_adj_p2
-        · exact G.symm h_adj12
+        · exact G.adj_symm hs2_adj_p2
+        · exact G.adj_symm h_adj12
         · exact absurd rfl hxy
       · have h_s_ne_p1 : s1 ≠ p1 := G.ne_of_adj hs1_adj_p1
         have h_s_ne_p2 : s1 ≠ p2 := G.ne_of_adj hs2_adj_p2
@@ -10364,7 +10364,7 @@ lemma final_contradiction {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
     omega
   have ht_exists : ∃ t ∈ N, t ∉ S := by
     by_contra h
-    push_neg at h
+    push Not at h
     have hsub : N ⊆ S := by
       intro x hx
       exact h x hx
@@ -10496,18 +10496,18 @@ lemma final_contradiction {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
     · simp [hp1_nonadj_p3, hp_ne34, hp_ne23.symm]
     · -- In this branch, p = p4 due to rfl substitution
       -- h_adj41 : G.Adj p4 p1, but p4 is now `p`
-      simp [G.symm h_adj41]
+      simp [G.adj_symm h_adj41]
 
   -- p1's N(v)-neighbors consist only of s1
   have hp1_Nv_neighbors : ∀ s ∈ G.neighborFinset v, G.Adj p1 s ↔ s = s1 := by
     intro s hs
     constructor
     · intro h_adj
-      have h_witness : s ∈ G.neighborFinset v ∧ G.Adj s p1 := ⟨hs, G.symm h_adj⟩
+      have h_witness : s ∈ G.neighborFinset v ∧ G.Adj s p1 := ⟨hs, G.adj_symm h_adj⟩
       exact hs1_unique s h_witness
     · intro h_eq
       subst h_eq
-      exact G.symm hs1_adj_p1
+      exact G.adj_symm hs1_adj_p1
 
   -- Count p1's neighbors outside P ∪ N(v) ∪ {v}
   -- These must be in Q (the remaining non-v vertices)
@@ -10575,7 +10575,7 @@ lemma final_contradiction {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
     · intro hx
       rcases hx with rfl | rfl
       · exact ⟨⟨hp_ne12.symm, Or.inr (Or.inl rfl)⟩, h_adj12⟩
-      · exact ⟨⟨hp_ne14.symm, Or.inr (Or.inr (Or.inr rfl))⟩, G.symm h_adj41⟩
+      · exact ⟨⟨hp_ne14.symm, Or.inr (Or.inr (Or.inr rfl))⟩, G.adj_symm h_adj41⟩
 
   have hNP_card : NP.card = 2 := by
     rw [hNP_eq, card_insert_of_notMem, card_singleton]
@@ -10592,7 +10592,7 @@ lemma final_contradiction {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
     · intro hx
       simp only [mem_singleton] at hx
       subst hx
-      exact ⟨hs1_in_N, G.symm hs1_adj_p1⟩
+      exact ⟨hs1_in_N, G.adj_symm hs1_adj_p1⟩
 
   have hNN_card : NN.card = 1 := by rw [hNN_eq, card_singleton]
 
@@ -10630,7 +10630,7 @@ lemma final_contradiction {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
     intro x hx
     rw [mem_neighborFinset] at hx
     by_cases hxv : x = v
-    · subst hxv; exfalso; exact hp1_nonadj_v (G.symm hx)
+    · subst hxv; exfalso; exact hp1_nonadj_v (G.adj_symm hx)
     by_cases hx_Nv : G.Adj v x
     · -- x ∈ N(v), so x ∈ NN
       -- Note: NP ∪ NN ∪ NQ = (NP ∪ NN) ∪ NQ, so we need left; right to get x ∈ NN
@@ -10742,7 +10742,7 @@ lemma final_contradiction {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
     have ht_deg : (G.neighborFinset t).card = 5 := h_reg t
     have hv_in_nt : v ∈ G.neighborFinset t := by
       rw [SimpleGraph.mem_neighborFinset]
-      exact G.symm ht_adj_v
+      exact G.adj_symm ht_adj_v
     have hv_notin_T : v ∉ T := by
       intro hvT
       have hvQ : v ∈ Q := (Finset.mem_filter.mp hvT).1
@@ -10864,7 +10864,7 @@ lemma final_contradiction {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
             rcases Finset.mem_union.mp hy' with hy | hy
             · simp only [Finset.mem_insert, Finset.mem_singleton] at hy
               rcases hy with rfl | rfl
-              · exact fun h => hp_nonadj_v' (G.symm h)
+              · exact fun h => hp_nonadj_v' (G.adj_symm h)
               · exact (hne rfl).elim
             · exact hp_no_T y hy
         · -- x ∈ T
@@ -10873,8 +10873,8 @@ lemma final_contradiction {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
             rcases hy with rfl | rfl
             · have hxQ : x ∈ Q := (Finset.mem_filter.mp hxT).1
               have ⟨hx_nonadj_v, _⟩ := hQ_props x hxQ
-              exact fun h => hx_nonadj_v (G.symm h)
-            · exact fun h => hp_no_T x hxT (G.symm h)
+              exact fun h => hx_nonadj_v (G.adj_symm h)
+            · exact fun h => hp_no_T x hxT (G.adj_symm h)
           · exact hT_indep hxT hy hne
       · have hvp_disj : Disjoint ({v, p} : Finset (Fin 18)) T := by
           rw [Finset.disjoint_iff_ne]
@@ -11087,7 +11087,7 @@ lemma final_contradiction {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
     intro h
     classical
     have hp1_mem : p1 ∈ P.filter (G.Adj w1) := by
-      exact Finset.mem_filter.mpr ⟨hp1_in_P, G.symm hp1_adj_w1⟩
+      exact Finset.mem_filter.mpr ⟨hp1_in_P, G.adj_symm hp1_adj_w1⟩
     have hp3_mem : p3 ∈ P.filter (G.Adj w1) := by
       have hp3_in_P : p3 ∈ P := by rw [hP_eq]; simp
       exact Finset.mem_filter.mpr ⟨hp3_in_P, h⟩
@@ -11108,7 +11108,7 @@ lemma final_contradiction {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
   have hw1_P_card : (P.filter (G.Adj w1)).card = 1 := by
     classical
     have hp1_mem : p1 ∈ P.filter (G.Adj w1) := by
-      exact Finset.mem_filter.mpr ⟨hp1_in_P, G.symm hp1_adj_w1⟩
+      exact Finset.mem_filter.mpr ⟨hp1_in_P, G.adj_symm hp1_adj_w1⟩
     have : 1 ≤ (P.filter (G.Adj w1)).card :=
       Nat.succ_le_iff.mp (Finset.card_pos.mpr ⟨p1, hp1_mem⟩)
     omega
@@ -11150,7 +11150,7 @@ lemma final_contradiction {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
       intro x hx
       rw [mem_neighborFinset] at hx
       by_cases hxv : x = v
-      · subst hxv; exact (hvw1 (G.symm hx)).elim
+      · subst hxv; exact (hvw1 (G.adj_symm hx)).elim
       by_cases hxNv : G.Adj v x
       · -- x ∈ N(v)
         have hx_in : x ∈ G.neighborFinset v := by simpa [mem_neighborFinset] using hxNv
@@ -11227,7 +11227,7 @@ lemma final_contradiction {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
     have hw1_in_Q : w1 ∈ Q := (Finset.mem_filter.mp hw1_in_W).1
     exact (hQ_props w1 hw1_in_Q).1 hw1_adj_v
   have hw1_nonadj_s1 : ¬G.Adj w1 s1 :=
-    neighbors_nonadj_of_triangleFree G h_tri p1 w1 s1 hp1_adj_w1 (G.symm hs1_adj_p1) hs1_ne_w1.symm
+    neighbors_nonadj_of_triangleFree G h_tri p1 w1 s1 hp1_adj_w1 (G.adj_symm hs1_adj_p1) hs1_ne_w1.symm
 
   -- Work with `S0 := N(v) \\ {t}` to reuse the existing S/T/W helper lemmas.
   let S0 : Finset (Fin 18) := (G.neighborFinset v).erase t
@@ -11279,7 +11279,7 @@ lemma final_contradiction {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
       have hx_ne_t : x ≠ t := fun h_eq => by
         subst h_eq
         exact G.loopless.irrefl x htx
-      exact hNv_indep hvx ht_adj_v hx_ne_t (G.symm htx)
+      exact hNv_indep hvx ht_adj_v hx_ne_t (G.adj_symm htx)
     have h_pos := commonNeighborsCard_pos h_tri h_no6 h_reg v x hx_ne_v hx_nonadj_v
     have h_le := commonNeighborsCard_le_two h_tri h_no6 h_reg v x hx_ne_v hx_nonadj_v
     have h_common : commonNeighborsCard G v x = 1 ∨ commonNeighborsCard G v x = 2 := by omega
@@ -11316,7 +11316,7 @@ lemma final_contradiction {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
     have : G.Adj w1 v := by
       have : v ∈ G.neighborFinset w1 := (Finset.mem_inter.mp hu_in_inter).2
       simpa [mem_neighborFinset] using this
-    exact (hQ_props w1 hw1_in_Q).1 (G.symm this)
+    exact (hQ_props w1 hw1_in_Q).1 (G.adj_symm this)
   have hu_in_T : u ∈ T := ht_neighbor_in_T u hu_adj_t hu_ne_v
   have hw1_adj_u : G.Adj w1 u := by
     have : u ∈ G.neighborFinset w1 := (Finset.mem_inter.mp hu_in_inter).2
@@ -11350,7 +11350,7 @@ lemma final_contradiction {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
       intro h
       subst h
       have : ¬G.Adj v w1 := (hQ_props w1 hw1_in_Q).1
-      exact (this (G.symm hu1_adj_w1)).elim
+      exact (this (G.adj_symm hu1_adj_w1)).elim
     have hu1_in_T : u1 ∈ T := ht_neighbor_in_T u1 hu1_adj_t hu1_ne_v
 
     -- Every `p ∈ P` has exactly one `T`-neighbor (pointwise).
@@ -11459,19 +11459,19 @@ lemma final_contradiction {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
             | exact (hxy rfl).elim
             | exact hpu_adj_w1
             | exact hu1_adj_w1
-            | exact G.symm hpu_adj_w1
+            | exact G.adj_symm hpu_adj_w1
             | exact hu1_adj_pu
-            | exact G.symm hu1_adj_w1
-            | exact G.symm hu1_adj_pu
+            | exact G.adj_symm hu1_adj_w1
+            | exact G.adj_symm hu1_adj_pu
         · have hpu_ne_w1 : pu ≠ w1 := G.ne_of_adj hpu_adj_w1
-          have hpu_ne_u1 : pu ≠ u1 := G.ne_of_adj (G.symm hu1_adj_pu)
+          have hpu_ne_u1 : pu ≠ u1 := G.ne_of_adj (G.adj_symm hu1_adj_pu)
           have hw1_ne_u1 : w1 ≠ u1 := G.ne_of_adj hu1_adj_w1
           simp [hpu_ne_w1, hpu_ne_u1, hw1_ne_u1]
       exact h_tri _ h_clique
 
     -- `w1` is adjacent to exactly one P-vertex, namely `p1`, hence not to `pu`.
     have hp1_mem_pw : p1 ∈ P.filter (G.Adj w1) := by
-      exact Finset.mem_filter.mpr ⟨hp1_in_P, G.symm hp1_adj_w1⟩
+      exact Finset.mem_filter.mpr ⟨hp1_in_P, G.adj_symm hp1_adj_w1⟩
     have hPw_eq : P.filter (G.Adj w1) = {p1} := by
       obtain ⟨a, ha⟩ := Finset.card_eq_one.mp hw1_P_card
       have ha' : p1 = a := by
@@ -11490,7 +11490,7 @@ lemma final_contradiction {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
     -- `pu` is adjacent to no vertex of `T.erase u1` (since `u1` is its unique T-neighbor).
     have hpuT1 : (T.filter (G.Adj pu)).card = 1 := hP_T_card pu hpu_in_P
     have hu1_mem_puT : u1 ∈ T.filter (G.Adj pu) := by
-      exact Finset.mem_filter.mpr ⟨hu1_in_T, G.symm hu1_adj_pu⟩
+      exact Finset.mem_filter.mpr ⟨hu1_in_T, G.adj_symm hu1_adj_pu⟩
     have hpu_nonadj_Terase : ∀ x ∈ T.erase u1, ¬G.Adj pu x := by
       intro x hx hpx
       have hxT : x ∈ T := (Finset.mem_erase.mp hx).2
@@ -11558,16 +11558,16 @@ lemma final_contradiction {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
               exact (hP_props y (by simpa using hpu_in_P)).1
             · -- x = w1, y = v
               intro h
-              exact (hQ_props x (by simpa using hw1_in_Q)).1 (G.symm h)
+              exact (hQ_props x (by simpa using hw1_in_Q)).1 (G.adj_symm h)
             · exact (hne rfl).elim
             · -- x = w1, y = pu
               simpa using hw1_nonadj_pu
             · -- x = pu, y = v
               intro h
-              exact (hP_props x (by simpa using hpu_in_P)).1 (G.symm h)
+              exact (hP_props x (by simpa using hpu_in_P)).1 (G.adj_symm h)
             · -- x = pu, y = w1
               intro h
-              exact hw1_nonadj_pu (G.symm h)
+              exact hw1_nonadj_pu (G.adj_symm h)
             · exact (hne rfl).elim
           · -- x ∈ {v,w1,pu}, y ∈ T.erase u1
             have hyT' : y ∈ T := (Finset.mem_erase.mp hyT).2
@@ -11589,11 +11589,11 @@ lemma final_contradiction {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
             · -- y = v
               have hxQ : x ∈ Q := (Finset.mem_filter.mp hxT').1
               have ⟨hx_nonadj_v, _⟩ := hQ_props x hxQ
-              exact fun h => hx_nonadj_v (G.symm h)
+              exact fun h => hx_nonadj_v (G.adj_symm h)
             · -- y = w1
-              exact fun h => hw1_nonadj_Terase x hxT (G.symm h)
+              exact fun h => hw1_nonadj_Terase x hxT (G.adj_symm h)
             · -- y = pu
-              exact fun h => hpu_nonadj_Terase x hxT (G.symm h)
+              exact fun h => hpu_nonadj_Terase x hxT (G.adj_symm h)
           · -- x,y ∈ T.erase u1
             exact hT_indep (Finset.mem_erase.mp hxT).2 (Finset.mem_erase.mp hyT).2 hne
       · -- card = 6
@@ -11676,10 +11676,10 @@ lemma final_contradiction {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
             | exact absurd rfl hxy
             | exact hs_pa
             | exact hs_pb
-            | exact G.symm hs_pa
-            | exact G.symm hs_pb
+            | exact G.adj_symm hs_pa
+            | exact G.adj_symm hs_pb
             | exact hadj
-            | exact G.symm hadj
+            | exact G.adj_symm hadj
         · have h1 : s ≠ pa := G.ne_of_adj hs_pa
           have h2 : s ≠ pb := G.ne_of_adj hs_pb
           rw [card_insert_of_notMem, card_insert_of_notMem, card_singleton]
@@ -11713,11 +11713,11 @@ lemma final_contradiction {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
         · exact hadj h_edge
         · -- pa adj to y ∈ N', y ≠ s
           have hy_ne_s : y ≠ s := (mem_erase.mp hy_N').1
-          exact hunique_pa y (h_N'_to_N y hy_N') hy_ne_s (G.symm h_edge)
-        · exact hadj (G.symm h_edge)
+          exact hunique_pa y (h_N'_to_N y hy_N') hy_ne_s (G.adj_symm h_edge)
+        · exact hadj (G.adj_symm h_edge)
         · exact hxy rfl
         · have hy_ne_s : y ≠ s := (mem_erase.mp hy_N').1
-          exact hunique_pb y (h_N'_to_N y hy_N') hy_ne_s (G.symm h_edge)
+          exact hunique_pb y (h_N'_to_N y hy_N') hy_ne_s (G.adj_symm h_edge)
         · have hx_ne_s : x ≠ s := (mem_erase.mp hx_N').1
           exact hunique_pa x (h_N'_to_N x hx_N') hx_ne_s h_edge
         · have hx_ne_s : x ≠ s := (mem_erase.mp hx_N').1
@@ -11920,10 +11920,10 @@ lemma final_contradiction {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
   have ht2_ne_t1 : t2 ≠ t1 := by
     intro h
     have ht1P : p1 ∈ P.filter (G.Adj t1) := by
-      exact Finset.mem_filter.mpr ⟨hp1_in_P, G.symm hp1_adj_t1⟩
+      exact Finset.mem_filter.mpr ⟨hp1_in_P, G.adj_symm hp1_adj_t1⟩
     have ht2P : p2 ∈ P.filter (G.Adj t1) := by
       subst h
-      exact Finset.mem_filter.mpr ⟨hp2_in_P, G.symm hp2_adj_t2⟩
+      exact Finset.mem_filter.mpr ⟨hp2_in_P, G.adj_symm hp2_adj_t2⟩
     have hsubset : ({p1, p2} : Finset (Fin 18)) ⊆ P.filter (G.Adj t1) := by
       intro x hx
       simp only [Finset.mem_insert, Finset.mem_singleton] at hx
@@ -11939,10 +11939,10 @@ lemma final_contradiction {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
   have ht3_ne_t1 : t3 ≠ t1 := by
     intro h
     have ht1P : p1 ∈ P.filter (G.Adj t1) := by
-      exact Finset.mem_filter.mpr ⟨hp1_in_P, G.symm hp1_adj_t1⟩
+      exact Finset.mem_filter.mpr ⟨hp1_in_P, G.adj_symm hp1_adj_t1⟩
     have ht3P : p3 ∈ P.filter (G.Adj t1) := by
       subst h
-      exact Finset.mem_filter.mpr ⟨hp3_in_P, G.symm hp3_adj_t3⟩
+      exact Finset.mem_filter.mpr ⟨hp3_in_P, G.adj_symm hp3_adj_t3⟩
     have hsubset : ({p1, p3} : Finset (Fin 18)) ⊆ P.filter (G.Adj t1) := by
       intro x hx
       simp only [Finset.mem_insert, Finset.mem_singleton] at hx
@@ -11958,10 +11958,10 @@ lemma final_contradiction {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
   have ht4_ne_t1 : t4 ≠ t1 := by
     intro h
     have ht1P : p1 ∈ P.filter (G.Adj t1) := by
-      exact Finset.mem_filter.mpr ⟨hp1_in_P, G.symm hp1_adj_t1⟩
+      exact Finset.mem_filter.mpr ⟨hp1_in_P, G.adj_symm hp1_adj_t1⟩
     have ht4P : p4 ∈ P.filter (G.Adj t1) := by
       subst h
-      exact Finset.mem_filter.mpr ⟨hp4_in_P, G.symm hp4_adj_t4⟩
+      exact Finset.mem_filter.mpr ⟨hp4_in_P, G.adj_symm hp4_adj_t4⟩
     have hsubset : ({p1, p4} : Finset (Fin 18)) ⊆ P.filter (G.Adj t1) := by
       intro x hx
       simp only [Finset.mem_insert, Finset.mem_singleton] at hx
@@ -11978,10 +11978,10 @@ lemma final_contradiction {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
   have ht2_ne_t3 : t2 ≠ t3 := by
     intro h
     have ht2P : p2 ∈ P.filter (G.Adj t2) := by
-      exact Finset.mem_filter.mpr ⟨hp2_in_P, G.symm hp2_adj_t2⟩
+      exact Finset.mem_filter.mpr ⟨hp2_in_P, G.adj_symm hp2_adj_t2⟩
     have ht3P : p3 ∈ P.filter (G.Adj t2) := by
       subst h
-      exact Finset.mem_filter.mpr ⟨hp3_in_P, G.symm hp3_adj_t3⟩
+      exact Finset.mem_filter.mpr ⟨hp3_in_P, G.adj_symm hp3_adj_t3⟩
     have hsubset : ({p2, p3} : Finset (Fin 18)) ⊆ P.filter (G.Adj t2) := by
       intro x hx
       simp only [Finset.mem_insert, Finset.mem_singleton] at hx
@@ -11997,10 +11997,10 @@ lemma final_contradiction {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
   have ht2_ne_t4 : t2 ≠ t4 := by
     intro h
     have ht2P : p2 ∈ P.filter (G.Adj t2) := by
-      exact Finset.mem_filter.mpr ⟨hp2_in_P, G.symm hp2_adj_t2⟩
+      exact Finset.mem_filter.mpr ⟨hp2_in_P, G.adj_symm hp2_adj_t2⟩
     have ht4P : p4 ∈ P.filter (G.Adj t2) := by
       subst h
-      exact Finset.mem_filter.mpr ⟨hp4_in_P, G.symm hp4_adj_t4⟩
+      exact Finset.mem_filter.mpr ⟨hp4_in_P, G.adj_symm hp4_adj_t4⟩
     have hsubset : ({p2, p4} : Finset (Fin 18)) ⊆ P.filter (G.Adj t2) := by
       intro x hx
       simp only [Finset.mem_insert, Finset.mem_singleton] at hx
@@ -12016,10 +12016,10 @@ lemma final_contradiction {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
   have ht3_ne_t4 : t3 ≠ t4 := by
     intro h
     have ht3P : p3 ∈ P.filter (G.Adj t3) := by
-      exact Finset.mem_filter.mpr ⟨hp3_in_P, G.symm hp3_adj_t3⟩
+      exact Finset.mem_filter.mpr ⟨hp3_in_P, G.adj_symm hp3_adj_t3⟩
     have ht4P : p4 ∈ P.filter (G.Adj t3) := by
       subst h
-      exact Finset.mem_filter.mpr ⟨hp4_in_P, G.symm hp4_adj_t4⟩
+      exact Finset.mem_filter.mpr ⟨hp4_in_P, G.adj_symm hp4_adj_t4⟩
     have hsubset : ({p3, p4} : Finset (Fin 18)) ⊆ P.filter (G.Adj t3) := by
       intro x hx
       simp only [Finset.mem_insert, Finset.mem_singleton] at hx
@@ -12063,10 +12063,10 @@ lemma final_contradiction {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
           | exact absurd rfl hxy
           | exact hp1_adj_t1
           | exact hp1_adj_w1
-          | exact G.symm hp1_adj_t1
-          | exact G.symm hp1_adj_w1
+          | exact G.adj_symm hp1_adj_t1
+          | exact G.adj_symm hp1_adj_w1
           | exact h
-          | exact G.symm h
+          | exact G.adj_symm h
       · have hp1_ne_t1 : p1 ≠ t1 := G.ne_of_adj hp1_adj_t1
         have hp1_ne_w1 : p1 ≠ w1 := G.ne_of_adj hp1_adj_w1
         have ht1_ne_w1 : t1 ≠ w1 := by
@@ -12090,7 +12090,7 @@ lemma final_contradiction {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
         have hx_ne_v : x ≠ v := by
           intro h
           subst h
-          exact hw1_nonadj_v (G.symm hw1x)
+          exact hw1_nonadj_v (G.adj_symm hw1x)
         have hx_in_T : x ∈ T := ht_neighbor_in_T x htx hx_ne_v
         exact Finset.mem_filter.mpr ⟨hx_in_T, hw1x⟩
       · intro hx
@@ -12113,13 +12113,13 @@ lemma final_contradiction {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
     have hs1_nonadj_t : ¬G.Adj s1 t := by
       -- t has no neighbors in N(v)
       intro h
-      exact (ht_no_S_neighbors s1 hs1_in_N) (G.symm h)
+      exact (ht_no_S_neighbors s1 hs1_in_N) (G.adj_symm h)
     have h_le := commonNeighborsCard_le_two h_tri h_no6 h_reg s1 t hs1_ne_t.symm hs1_nonadj_t
     have hv_in : v ∈ G.neighborFinset s1 ∩ G.neighborFinset t := by
       refine Finset.mem_inter.mpr ?_
       constructor
-      · simpa [mem_neighborFinset] using (G.symm (by simpa [mem_neighborFinset] using hs1_in_N))
-      · simpa [mem_neighborFinset] using (G.symm ht_adj_v)
+      · simpa [mem_neighborFinset] using (G.adj_symm (by simpa [mem_neighborFinset] using hs1_in_N))
+      · simpa [mem_neighborFinset] using (G.adj_symm ht_adj_v)
     have h_inter_eq : (G.neighborFinset s1 ∩ G.neighborFinset t) = insert v (T.filter (G.Adj s1)) := by
       ext x
       constructor
@@ -12162,13 +12162,13 @@ lemma final_contradiction {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
     have hs2_ne_t : s2 ≠ t := ht_ne_s2.symm
     have hs2_nonadj_t : ¬G.Adj s2 t := by
       intro h
-      exact (ht_no_S_neighbors s2 hs2_in_N) (G.symm h)
+      exact (ht_no_S_neighbors s2 hs2_in_N) (G.adj_symm h)
     have h_le := commonNeighborsCard_le_two h_tri h_no6 h_reg s2 t hs2_ne_t.symm hs2_nonadj_t
     have hv_in : v ∈ G.neighborFinset s2 ∩ G.neighborFinset t := by
       refine Finset.mem_inter.mpr ?_
       constructor
-      · simpa [mem_neighborFinset] using (G.symm (by simpa [mem_neighborFinset] using hs2_in_N))
-      · simpa [mem_neighborFinset] using (G.symm ht_adj_v)
+      · simpa [mem_neighborFinset] using (G.adj_symm (by simpa [mem_neighborFinset] using hs2_in_N))
+      · simpa [mem_neighborFinset] using (G.adj_symm ht_adj_v)
     have h_inter_eq : (G.neighborFinset s2 ∩ G.neighborFinset t) = insert v (T.filter (G.Adj s2)) := by
       ext x
       constructor
@@ -12210,13 +12210,13 @@ lemma final_contradiction {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
     have hs3_ne_t : s3 ≠ t := ht_ne_s3.symm
     have hs3_nonadj_t : ¬G.Adj s3 t := by
       intro h
-      exact (ht_no_S_neighbors s3 hs3_in_N) (G.symm h)
+      exact (ht_no_S_neighbors s3 hs3_in_N) (G.adj_symm h)
     have h_le := commonNeighborsCard_le_two h_tri h_no6 h_reg s3 t hs3_ne_t.symm hs3_nonadj_t
     have hv_in : v ∈ G.neighborFinset s3 ∩ G.neighborFinset t := by
       refine Finset.mem_inter.mpr ?_
       constructor
-      · simpa [mem_neighborFinset] using (G.symm (by simpa [mem_neighborFinset] using hs3_in_N))
-      · simpa [mem_neighborFinset] using (G.symm ht_adj_v)
+      · simpa [mem_neighborFinset] using (G.adj_symm (by simpa [mem_neighborFinset] using hs3_in_N))
+      · simpa [mem_neighborFinset] using (G.adj_symm ht_adj_v)
     have h_inter_eq : (G.neighborFinset s3 ∩ G.neighborFinset t) = insert v (T.filter (G.Adj s3)) := by
       ext x
       constructor
@@ -12258,13 +12258,13 @@ lemma final_contradiction {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
     have hs4_ne_t : s4 ≠ t := ht_ne_s4.symm
     have hs4_nonadj_t : ¬G.Adj s4 t := by
       intro h
-      exact (ht_no_S_neighbors s4 hs4_in_N) (G.symm h)
+      exact (ht_no_S_neighbors s4 hs4_in_N) (G.adj_symm h)
     have h_le := commonNeighborsCard_le_two h_tri h_no6 h_reg s4 t hs4_ne_t.symm hs4_nonadj_t
     have hv_in : v ∈ G.neighborFinset s4 ∩ G.neighborFinset t := by
       refine Finset.mem_inter.mpr ?_
       constructor
-      · simpa [mem_neighborFinset] using (G.symm (by simpa [mem_neighborFinset] using hs4_in_N))
-      · simpa [mem_neighborFinset] using (G.symm ht_adj_v)
+      · simpa [mem_neighborFinset] using (G.adj_symm (by simpa [mem_neighborFinset] using hs4_in_N))
+      · simpa [mem_neighborFinset] using (G.adj_symm ht_adj_v)
     have h_inter_eq : (G.neighborFinset s4 ∩ G.neighborFinset t) = insert v (T.filter (G.Adj s4)) := by
       ext x
       constructor
@@ -12391,7 +12391,7 @@ lemma final_contradiction {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
   -- Show `w1` is not adjacent to `p2` nor `p4` (its unique P-neighbor is `p1`).
   have hw1_nonadj_p2 : ¬G.Adj w1 p2 := by
     intro h
-    have hp1_mem : p1 ∈ P.filter (G.Adj w1) := Finset.mem_filter.mpr ⟨hp1_in_P, G.symm hp1_adj_w1⟩
+    have hp1_mem : p1 ∈ P.filter (G.Adj w1) := Finset.mem_filter.mpr ⟨hp1_in_P, G.adj_symm hp1_adj_w1⟩
     have hp2_mem : p2 ∈ P.filter (G.Adj w1) := Finset.mem_filter.mpr ⟨hp2_in_P, h⟩
     have hsubset : ({p1, p2} : Finset (Fin 18)) ⊆ P.filter (G.Adj w1) := by
       intro x hx
@@ -12407,7 +12407,7 @@ lemma final_contradiction {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
 
   have hw1_nonadj_p4 : ¬G.Adj w1 p4 := by
     intro h
-    have hp1_mem : p1 ∈ P.filter (G.Adj w1) := Finset.mem_filter.mpr ⟨hp1_in_P, G.symm hp1_adj_w1⟩
+    have hp1_mem : p1 ∈ P.filter (G.Adj w1) := Finset.mem_filter.mpr ⟨hp1_in_P, G.adj_symm hp1_adj_w1⟩
     have hp4_mem : p4 ∈ P.filter (G.Adj w1) := Finset.mem_filter.mpr ⟨hp4_in_P, h⟩
     have hsubset : ({p1, p4} : Finset (Fin 18)) ⊆ P.filter (G.Adj w1) := by
       intro x hx
@@ -12433,9 +12433,9 @@ lemma final_contradiction {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
       simp only [Finset.mem_insert, Finset.mem_singleton] at hx
       rcases hx with rfl | rfl | rfl
       · rw [Finset.mem_inter, mem_neighborFinset, mem_neighborFinset]
-        exact ⟨G.symm hp1_adj_w1, G.symm h_adj12⟩
+        exact ⟨G.adj_symm hp1_adj_w1, G.adj_symm h_adj12⟩
       · rw [Finset.mem_inter, mem_neighborFinset, mem_neighborFinset]
-        exact ⟨hw1s2, G.symm hs2_adj_p2⟩
+        exact ⟨hw1s2, G.adj_symm hs2_adj_p2⟩
       · rw [Finset.mem_inter, mem_neighborFinset, mem_neighborFinset]
         exact ⟨hw1t2, hp2_adj_t2⟩
     have hcard_ge3 : 3 ≤ commonNeighborsCard G w1 p2 := by
@@ -12475,9 +12475,9 @@ lemma final_contradiction {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
       simp only [Finset.mem_insert, Finset.mem_singleton] at hx
       rcases hx with rfl | rfl | rfl
       · rw [Finset.mem_inter, mem_neighborFinset, mem_neighborFinset]
-        exact ⟨G.symm hp1_adj_w1, h_adj41⟩
+        exact ⟨G.adj_symm hp1_adj_w1, h_adj41⟩
       · rw [Finset.mem_inter, mem_neighborFinset, mem_neighborFinset]
-        exact ⟨hw1s4, G.symm hs4_adj_p4⟩
+        exact ⟨hw1s4, G.adj_symm hs4_adj_p4⟩
       · rw [Finset.mem_inter, mem_neighborFinset, mem_neighborFinset]
         exact ⟨hw1t4, hp4_adj_t4⟩
     have hcard_ge3 : 3 ≤ commonNeighborsCard G w1 p4 := by
@@ -12557,11 +12557,11 @@ lemma final_contradiction {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
             | exact absurd rfl hxy
             | exact hs2_adj_p2
             | exact hp2_adj_t2
-            | exact G.symm hs2_adj_p2
-            | exact G.symm hp2_adj_t2
+            | exact G.adj_symm hs2_adj_p2
+            | exact G.adj_symm hp2_adj_t2
             | exact h
-            | exact G.symm h
-        · have hp2_ne_s2 : p2 ≠ s2 := G.ne_of_adj (G.symm hs2_adj_p2)
+            | exact G.adj_symm h
+        · have hp2_ne_s2 : p2 ≠ s2 := G.ne_of_adj (G.adj_symm hs2_adj_p2)
           have hp2_ne_t2 : p2 ≠ t2 := G.ne_of_adj hp2_adj_t2
           have hs2_ne_t2 : s2 ≠ t2 := by
             intro h_eq
@@ -12583,10 +12583,10 @@ lemma final_contradiction {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
             | exact absurd rfl hxy
             | exact hw1s2
             | exact hw1_adj_t3
-            | exact G.symm hw1s2
-            | exact G.symm hw1_adj_t3
+            | exact G.adj_symm hw1s2
+            | exact G.adj_symm hw1_adj_t3
             | exact h
-            | exact G.symm h
+            | exact G.adj_symm h
         · have hw1_ne_s2 : w1 ≠ s2 := G.ne_of_adj hw1s2
           have hw1_ne_t3 : w1 ≠ t3 := G.ne_of_adj hw1_adj_t3
           have hs2_ne_t3 : s2 ≠ t3 := by
@@ -12609,10 +12609,10 @@ lemma final_contradiction {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
             | exact absurd rfl hxy
             | exact hw1s2
             | exact hw1t4
-            | exact G.symm hw1s2
-            | exact G.symm hw1t4
+            | exact G.adj_symm hw1s2
+            | exact G.adj_symm hw1t4
             | exact h
-            | exact G.symm h
+            | exact G.adj_symm h
         · have hw1_ne_s2 : w1 ≠ s2 := G.ne_of_adj hw1s2
           have hw1_ne_t4 : w1 ≠ t4 := G.ne_of_adj hw1t4
           have hs2_ne_t4 : s2 ≠ t4 := by
@@ -12645,7 +12645,7 @@ lemma final_contradiction {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
       · rw [Finset.mem_inter, mem_neighborFinset, mem_neighborFinset]
         exact ⟨hs2_adj_p2, h_adj12⟩
       · rw [Finset.mem_inter, mem_neighborFinset, mem_neighborFinset]
-        exact ⟨G.symm hw1s2, hp1_adj_w1⟩
+        exact ⟨G.adj_symm hw1s2, hp1_adj_w1⟩
       · rw [Finset.mem_inter, mem_neighborFinset, mem_neighborFinset]
         exact ⟨hs2_adj_t1, hp1_adj_t1⟩
     have hcard3 : 3 ≤ commonNeighborsCard G s2 p1 := by
@@ -12687,10 +12687,10 @@ lemma final_contradiction {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
             | exact absurd rfl hxy
             | exact hw1s4
             | exact hw1t2
-            | exact G.symm hw1s4
-            | exact G.symm hw1t2
+            | exact G.adj_symm hw1s4
+            | exact G.adj_symm hw1t2
             | exact h
-            | exact G.symm h
+            | exact G.adj_symm h
         · have hw1_ne_s4 : w1 ≠ s4 := G.ne_of_adj hw1s4
           have hw1_ne_t2 : w1 ≠ t2 := G.ne_of_adj hw1t2
           have hs4_ne_t2 : s4 ≠ t2 := by
@@ -12713,10 +12713,10 @@ lemma final_contradiction {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
             | exact absurd rfl hxy
             | exact hw1s4
             | exact hw1_adj_t3
-            | exact G.symm hw1s4
-            | exact G.symm hw1_adj_t3
+            | exact G.adj_symm hw1s4
+            | exact G.adj_symm hw1_adj_t3
             | exact h
-            | exact G.symm h
+            | exact G.adj_symm h
         · have hw1_ne_s4 : w1 ≠ s4 := G.ne_of_adj hw1s4
           have hw1_ne_t3 : w1 ≠ t3 := G.ne_of_adj hw1_adj_t3
           have hs4_ne_t3 : s4 ≠ t3 := by
@@ -12739,11 +12739,11 @@ lemma final_contradiction {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
             | exact absurd rfl hxy
             | exact hs4_adj_p4
             | exact hp4_adj_t4
-            | exact G.symm hs4_adj_p4
-            | exact G.symm hp4_adj_t4
+            | exact G.adj_symm hs4_adj_p4
+            | exact G.adj_symm hp4_adj_t4
             | exact h
-            | exact G.symm h
-        · have hp4_ne_s4 : p4 ≠ s4 := G.ne_of_adj (G.symm hs4_adj_p4)
+            | exact G.adj_symm h
+        · have hp4_ne_s4 : p4 ≠ s4 := G.ne_of_adj (G.adj_symm hs4_adj_p4)
           have hp4_ne_t4 : p4 ≠ t4 := G.ne_of_adj hp4_adj_t4
           have hs4_ne_t4 : s4 ≠ t4 := by
             intro h_eq
@@ -12778,9 +12778,9 @@ lemma final_contradiction {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
       simp only [Finset.mem_insert, Finset.mem_singleton] at hx
       rcases hx with rfl | rfl | rfl
       · rw [Finset.mem_inter, mem_neighborFinset, mem_neighborFinset]
-        exact ⟨hs4_adj_p4, G.symm h_adj41⟩
+        exact ⟨hs4_adj_p4, G.adj_symm h_adj41⟩
       · rw [Finset.mem_inter, mem_neighborFinset, mem_neighborFinset]
-        exact ⟨G.symm hw1s4, hp1_adj_w1⟩
+        exact ⟨G.adj_symm hw1s4, hp1_adj_w1⟩
       · rw [Finset.mem_inter, mem_neighborFinset, mem_neighborFinset]
         exact ⟨hs4_adj_t1, hp1_adj_t1⟩
     have hcard3 : 3 ≤ commonNeighborsCard G s4 p1 := by
@@ -12830,7 +12830,7 @@ theorem hasRamseyProperty_3_6_18 :
     -- By contradiction, assume NOT Ramsey
     by_contra h_not_ramsey
     unfold HasRamseyProperty at h_not_ramsey
-    push_neg at h_not_ramsey
+    push Not at h_not_ramsey
     rcases h_not_ramsey with ⟨h_no_clique, h_no_indep⟩
     
     have h_tri : TriangleFree G := by

@@ -112,7 +112,7 @@ lemma ramseyNumber_lower {k l : ℕ}
     fun hm => Nat.not_lt.mpr (Nat.sInf_le hm) h_lt
   -- Since m ∉ ramseySet and m > 0, ∃ G without the Ramsey property
   simp only [ramseySet, Set.mem_setOf_eq, not_and] at hm_not_mem
-  push_neg at hm_not_mem
+  push Not at hm_not_mem
   obtain ⟨G, inst, hG⟩ := hm_not_mem h_pos
   exact ⟨G, inst, hG⟩
 
@@ -140,7 +140,7 @@ theorem isRamseyNumber_iff_eq_ramseyNumber {k l : ℕ}
     -- contradicting ramseyNumber_upper.
     apply Nat.le_antisymm _ h_inf_le_n
     by_contra h_lt
-    push_neg at h_lt
+    push Not at h_lt
     obtain ⟨G, _inst, hG⟩ := h_lower _ (ramseyNumber_pos h_ne) h_lt
     exact hG (ramseyNumber_upper h_ne G)
   · -- Backward: n = ramseyNumber k l → classical characterization

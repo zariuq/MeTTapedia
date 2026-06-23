@@ -246,20 +246,23 @@ omit [DecidableEq V] in
 @[simp] theorem factorsOfGraph_toWeight [Fintype fg.factors] :
     factorsOfGraph (fg := FactorGraph.toWeight fg) =
       (factorsOfGraph (fg := fg)).map (Factor.toWeight (fg := fg)) := by
-  simp [factorsOfGraph]
+  simp only [factorsOfGraph, List.map_map]
+  exact List.map_congr_left fun f _ => (Factor.toWeight_ofGraph (fg := fg) f).symm
 
 omit [DecidableEq V] in
 @[simp] theorem factorsOfGraph_toLineage [Fintype fg.factors] :
     factorsOfGraph (fg := FactorGraph.toLineage fg) =
       (factorsOfGraph (fg := fg)).map (Factor.toLineage (fg := fg)) := by
-  simp [factorsOfGraph]
+  simp only [factorsOfGraph, List.map_map]
+  exact List.map_congr_left fun f _ => (Factor.toLineage_ofGraph (fg := fg) f).symm
 
 omit [DecidableEq V] in
 @[simp] theorem factorsOfGraph_mapPotential {K L : Type*} [NonAssocSemiring K] [NonAssocSemiring L]
     {fg : FactorGraph V K} (h : K →+* L) [Fintype fg.factors] :
     factorsOfGraph (fg := FactorGraph.mapPotential h fg) =
       (factorsOfGraph (fg := fg)).map (Factor.mapPotential (fg := fg) h) := by
-  simp [factorsOfGraph]
+  simp only [factorsOfGraph, List.map_map]
+  exact List.map_congr_left fun f _ => (Factor.mapPotential_ofGraph (fg := fg) h f).symm
 
 /-- A semiring homomorphism commutes with finite list products. -/
 lemma map_list_prod {K L α : Type*} [CommSemiring K] [CommSemiring L]
@@ -463,7 +466,7 @@ theorem weightOfConstraintsList_fst
         (fg := FactorGraph.toWeight fg)
         (fs.map (Factor.toWeight (fg := fg)))
         constraints := by
-  simpa [FactorGraph.toWeight, Factor.toWeight, FactorGraph.mapPotential, Factor.mapPotential] using
+  simpa [FactorGraph.toWeight, Factor.toWeight, FactorGraph.mapPotential, Factor.mapPotential] using!
     weightOfConstraintsList_mapPotential
       (fg := fg) (h := RingHom.fst K L) fs constraints
 
@@ -479,7 +482,7 @@ theorem weightOfConstraintsList_snd
         (fg := FactorGraph.toLineage fg)
         (fs.map (Factor.toLineage (fg := fg)))
         constraints := by
-  simpa [FactorGraph.toLineage, Factor.toLineage, FactorGraph.mapPotential, Factor.mapPotential] using
+  simpa [FactorGraph.toLineage, Factor.toLineage, FactorGraph.mapPotential, Factor.mapPotential] using!
     weightOfConstraintsList_mapPotential
       (fg := fg) (h := RingHom.snd K L) fs constraints
 
@@ -491,7 +494,7 @@ theorem weightOfConstraints_fst
     [Fintype fg.factors] [CommSemiring K] [CommSemiring L] :
     (weightOfConstraints (fg := fg) constraints).1 =
       weightOfConstraints (fg := FactorGraph.toWeight fg) constraints := by
-  simpa [FactorGraph.toWeight, FactorGraph.mapPotential] using
+  simpa [FactorGraph.toWeight, FactorGraph.mapPotential] using!
     weightOfConstraints_mapPotential (fg := fg) (h := RingHom.fst K L) constraints
 
 /-- Graph-level exact query lineage on a product semiring recovers the ordinary
@@ -502,7 +505,7 @@ theorem weightOfConstraints_snd
     [Fintype fg.factors] [CommSemiring K] [CommSemiring L] :
     (weightOfConstraints (fg := fg) constraints).2 =
       weightOfConstraints (fg := FactorGraph.toLineage fg) constraints := by
-  simpa [FactorGraph.toLineage, FactorGraph.mapPotential] using
+  simpa [FactorGraph.toLineage, FactorGraph.mapPotential] using!
     weightOfConstraints_mapPotential (fg := fg) (h := RingHom.snd K L) constraints
 
 end VariableElimination
@@ -526,7 +529,7 @@ theorem weight_fst
         constraints := by
   unfold weight
   simpa [FactorGraph.toWeight, VariableElimination.Factor.toWeight,
-    FactorGraph.mapPotential, VariableElimination.Factor.mapPotential] using
+    FactorGraph.mapPotential, VariableElimination.Factor.mapPotential] using!
     VariableElimination.veQueryWeightList_mapPotential
       (fg := fg) (h := RingHom.fst K L) W constraints
 
@@ -544,7 +547,7 @@ theorem weight_snd
         constraints := by
   unfold weight
   simpa [FactorGraph.toLineage, VariableElimination.Factor.toLineage,
-    FactorGraph.mapPotential, VariableElimination.Factor.mapPotential] using
+    FactorGraph.mapPotential, VariableElimination.Factor.mapPotential] using!
     VariableElimination.veQueryWeightList_mapPotential
       (fg := fg) (h := RingHom.snd K L) W constraints
 

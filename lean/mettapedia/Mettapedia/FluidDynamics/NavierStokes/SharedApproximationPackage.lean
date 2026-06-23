@@ -127,8 +127,7 @@ theorem SharedApproximationPackage.coleHopfPhi_tendsto
       (fun n => coleHopfPhi S.ν (cutoffPotential cutoff radius statistic) (S.approx n x))
       Filter.atTop
       (nhds (coleHopfPhi S.ν (cutoffPotential cutoff radius statistic) x)) := by
-  simpa [SharedApproximationPackage.toManuscriptTruncationPackage] using
-    (S.toManuscriptTruncationPackage x cutoff hcutoff).coleHopfPhi_tendsto x
+  exact (S.toManuscriptTruncationPackage x cutoff hcutoff).coleHopfPhi_tendsto x
 
 theorem SharedApproximationPackage.abs_vorticity_le_uniform
     (S : SharedApproximationPackage (Time := Time) (ι := ι) (X := X) radius statistic)
@@ -136,8 +135,7 @@ theorem SharedApproximationPackage.abs_vorticity_le_uniform
     ∀ t y,
       |(S.toFiniteModeColeHopfKernelData x).toColeHopfKernelSemigroupData.vorticity t y| ≤
         Real.sqrt ((4 * S.ν ^ 2 / S.mPhi ^ 2) * S.energyBound) * Real.sqrt S.curlBound := by
-  simpa [SharedApproximationPackage.toManuscriptTruncationPackage] using
-    (S.toManuscriptTruncationPackage x cutoff hcutoff).abs_vorticity_le_uniform
+  exact (S.toManuscriptTruncationPackage x cutoff hcutoff).abs_vorticity_le_uniform
 
 end SharedApproximationPackage
 

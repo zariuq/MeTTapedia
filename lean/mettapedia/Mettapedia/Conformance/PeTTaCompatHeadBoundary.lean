@@ -165,7 +165,8 @@ theorem witnessResidualBindingFlow_sound
     applySubst σ (morkPatternToAtom residualBody) =
       morkPatternToAtom residualInstantiated := by
   rcases hflow with ⟨rfl, hinst⟩
-  simpa [hinst] using applySubst_commutes witnessBindings residualBody htrans
+  simpa [hinst, translateBindings_eq_bindingsToSubst] using
+    applySubst_commutes witnessBindings residualBody htrans
 
 /-- Contract for the current grounded-host `is-member` generator lane.
 

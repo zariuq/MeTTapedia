@@ -1,10 +1,14 @@
-import Mettapedia.ProbabilityTheory.KnuthSkilling.Additive.Axioms.SandwichSeparation
+/-
+Knuth–Skilling slice of the probability hypercube. See the aggregator
+`Mettapedia/ProbabilityTheory/Hypercube/KnuthSkilling.lean` for the overview.
+-/
+import KnuthSkilling.Additive.Axioms.SandwichSeparation
 import Mettapedia.ProbabilityTheory.ImpreciseProbability.CredalSets
 import Mettapedia.ProbabilityTheory.Hypercube.KnuthSkilling.Neighbors
 import Mettapedia.ProbabilityTheory.Hypercube.Basic
 import Mathlib.Order.ConditionallyCompleteLattice.Basic
 import Mathlib.Algebra.Order.Archimedean.Basic
-import Mathlib.Data.Real.Archimedean
+import Mathlib.Algebra.Order.Archimedean.Real.Basic
 import Mathlib.Data.Rat.Defs
 import Mathlib.Data.Int.Order.Basic
 
@@ -47,11 +51,16 @@ The 4 parameters generate 16 cases:
 - Knuth & Skilling, "Foundations of Inference" Appendix A
 -/
 
+set_option autoImplicit false
+
 namespace Mettapedia.ProbabilityTheory.Hypercube.KnuthSkilling.Theory
 
 open Classical
-open Mettapedia.ProbabilityTheory.KnuthSkilling
-open KnuthSkillingAlgebraBase
+-- `_root_.` forces the standalone K&S package; the enclosing
+-- `…Hypercube.KnuthSkilling` namespace would otherwise shadow `KnuthSkilling`.
+open _root_.KnuthSkilling
+open _root_.KnuthSkilling.KnuthSkillingAlgebra
+open _root_.KnuthSkilling.KnuthSkillingAlgebraBase
 
 /-!
 ## §1: V₁₁ - Imprecise Probability (The "Honest" Theory)
@@ -390,7 +399,7 @@ theorem lower_bdd_by_upper (S : ShrinkingIntervals) (m n : ℕ) :
     (S.intervals m).lower ≤ (S.intervals n).upper := by
   by_cases hmn : m ≤ n
   · exact le_trans (lower_mono_trans S m n hmn) (S.intervals n).valid
-  · push_neg at hmn
+  · push Not at hmn
     exact le_trans (S.intervals m).valid (upper_mono_trans S n m (le_of_lt hmn))
 
 /-- The limiting value (using completeness of ℝ) -/

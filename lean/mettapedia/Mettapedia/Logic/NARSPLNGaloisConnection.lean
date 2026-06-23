@@ -164,7 +164,7 @@ noncomputable def U (b : PLNBelief) : NARSTruthValue where
     · have hle : b.evidence.pos / b.evidence.total ≤ 1 := by
         apply ENNReal.div_le_of_le_mul
         rw [one_mul]
-        exact le_add_of_nonneg_right (zero_le _)
+        exact le_add_of_nonneg_right (zero_le : (0 : ℝ≥0∞) ≤ b.evidence.neg)
       have hne_top : b.evidence.pos / b.evidence.total ≠ ⊤ :=
         ne_top_of_le_ne_top ENNReal.one_ne_top hle
       rw [← ENNReal.toReal_one]

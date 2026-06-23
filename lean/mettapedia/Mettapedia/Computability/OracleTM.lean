@@ -137,7 +137,7 @@ theorem oracleOutputProb_le_one (M : OTMIndex) (x : ℕ) (O : Oracle) :
 /-- Oracle output probability is non-negative. -/
 theorem oracleOutputProb_nonneg (M : OTMIndex) (x : ℕ) (O : Oracle) :
     0 ≤ oracleOutputProb M x O :=
-  zero_le _
+  bot_le
 
 /-! ## Reflectivity Conditions
 

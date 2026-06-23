@@ -67,7 +67,8 @@ theorem evaluateDeonticTheoryUnder_eq_evaluateTheoryUnder_toValue {World : Type 
     have hObl :
         EntailsUnder (deonticSemantics World semD) T ctx { tag := .Obligation, formula := φ } ↔
           EntailsUnder (valueJudgmentSemantics World semV) (T.toValueJudgmentTheory) ctx (morallyGood φ) := by
-      simpa [DeontologicalImperativeTheory.toValueJudgmentTheory, morallyGood, valueSentence, DeonticSentence.toValue] using
+      simpa [DeontologicalImperativeTheory.toValueJudgmentTheory, morallyGood, valueSentence, DeonticSentence.toValue,
+        deonticToMoralValue] using
         (entails_map_iff_under
           (sem₁ := deonticSemantics World semD)
           (sem₂ := valueJudgmentSemantics World semV)
@@ -104,7 +105,8 @@ theorem evaluateDeonticTheoryUnder_eq_evaluateTheoryUnder_toValue {World : Type 
     have hObl :
         EntailsUnder (deonticSemantics World semD) T ctx { tag := .Obligation, formula := φ } ↔
           EntailsUnder (valueJudgmentSemantics World semV) (T.toValueJudgmentTheory) ctx (morallyGood φ) := by
-      simpa [DeontologicalImperativeTheory.toValueJudgmentTheory, morallyGood, valueSentence, DeonticSentence.toValue] using
+      simpa [DeontologicalImperativeTheory.toValueJudgmentTheory, morallyGood, valueSentence, DeonticSentence.toValue,
+        deonticToMoralValue] using
         (entails_map_iff_under
           (sem₁ := deonticSemantics World semD)
           (sem₂ := valueJudgmentSemantics World semV)

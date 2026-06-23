@@ -1248,7 +1248,7 @@ theorem declReducesWithPremises_singlePremise_fvar_mork_fireSourceRule
             ⟨ha_in, by simp [ha_ne]⟩)
         · -- matchAtom succeeds
           rw [hbs0_eq, bindingsToSubst_singleton] at ha_match
-          simpa using ha_match
+          simpa [morkPatternToAtom] using ha_match
       · -- go [] σ_final consumed = [(σ_final, consumed)]
         simp only [List.mem_singleton, Prod.mk.injEq]
         exact ⟨trivial, by ext a; simp [Finset.mem_insert, Finset.mem_singleton]⟩
@@ -1311,7 +1311,7 @@ theorem declReducesWithPremises_multiPremise_fvar_mork_fireSourceRule
     exact ⟨morkPatternToAtom p, Finset.mem_toList.mpr (by simp [hp_in]),
            by simp [matchAtom_var_fresh]⟩
   · -- Need: (bindingsToSubst bs, c_prem) ∈ go premFactors [(x, morkPatternToAtom p)] {morkPatternToAtom p}
-    convert hc_prem using 2
+    convert hc_prem using 2 <;> simp [bindingsToSubst]
 
 /-! ## Multi-step closure
 
@@ -1400,7 +1400,7 @@ theorem declReducesWithPremises_multiPremise_fvar_mork_fireSourceRuleExt
     · simp only [List.mem_filterMap]
       exact ⟨morkPatternToAtom p, Finset.mem_toList.mpr (by simp [hp_in]),
              by simp [matchAtom_var_fresh]⟩
-    · convert hc_prem using 2
+    · convert hc_prem using 2 <;> simp [bindingsToSubst]
   · -- Guards pass
     exact hguards
 

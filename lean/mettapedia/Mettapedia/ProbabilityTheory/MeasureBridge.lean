@@ -1,7 +1,7 @@
 import Mathlib.MeasureTheory.Measure.ProbabilityMeasure
 import Mathlib.MeasureTheory.Measure.Count
 import Mathlib.Data.Fintype.Prod
-import Mettapedia.ProbabilityTheory.KnuthSkilling
+import KnuthSkilling
 
 /-!
 # Bridge: Mathlib Measures → Knuth-Skilling Framework
@@ -25,7 +25,7 @@ for finite uniform distributions, which is much simpler than uniformOn.
 noncomputable section
 
 open MeasureTheory ProbabilityTheory
-open Mettapedia.ProbabilityTheory.KnuthSkilling
+open KnuthSkilling
 
 namespace Mettapedia.ProbabilityTheory
 

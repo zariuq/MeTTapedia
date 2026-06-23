@@ -299,46 +299,48 @@ noncomputable instance : CompleteLattice BinaryEvidence where
   -- Complete lattice operations
   sSup := evidenceSSup
   sInf := evidenceSInf
-  le_sSup := fun S x hx => by
-    simp [evidenceSSup, le_def]
-    constructor
-    · exact le_sSup (Set.mem_image_of_mem BinaryEvidence.pos hx)
-    · exact le_sSup (Set.mem_image_of_mem BinaryEvidence.neg hx)
-  sSup_le := fun S x h => by
-    simp only [evidenceSSup, le_def]
-    constructor
-    · -- sSup of positive components ≤ x.pos
-      apply sSup_le
-      intro p hp
-      simp only [Set.mem_image] at hp
-      obtain ⟨e, heS, rfl⟩ := hp
-      exact (h e heS).1
-    · -- sSup of negative components ≤ x.neg
-      apply sSup_le
-      intro n hn
-      simp only [Set.mem_image] at hn
-      obtain ⟨e, heS, rfl⟩ := hn
-      exact (h e heS).2
-  sInf_le := fun S x hx => by
-    simp [evidenceSInf, le_def]
-    constructor
-    · exact sInf_le (Set.mem_image_of_mem BinaryEvidence.pos hx)
-    · exact sInf_le (Set.mem_image_of_mem BinaryEvidence.neg hx)
-  le_sInf := fun S x h => by
-    simp only [evidenceSInf, le_def]
-    constructor
-    · -- x.pos ≤ sInf of positive components
-      apply le_sInf
-      intro p hp
-      simp only [Set.mem_image] at hp
-      obtain ⟨e, heS, rfl⟩ := hp
-      exact (h e heS).1
-    · -- x.neg ≤ sInf of negative components
-      apply le_sInf
-      intro n hn
-      simp only [Set.mem_image] at hn
-      obtain ⟨e, heS, rfl⟩ := hn
-      exact (h e heS).2
+  -- 4.31 `CompleteLattice` field shape: `isLUB_sSup`/`isGLB_sInf` replace the four
+  -- `le_sSup`/`sSup_le`/`sInf_le`/`le_sInf` fields.  An `IsLUB S a` bundles the
+  -- upper-bound fact (`le_sSup`) and the least-upper-bound fact (`sSup_le`) as
+  -- `a ∈ upperBounds S ∧ a ∈ lowerBounds (upperBounds S)`; dually for `IsGLB`.
+  isLUB_sSup := fun S => by
+    refine ⟨fun x hx => ?_, fun x h => ?_⟩
+    · -- `evidenceSSup S` is an upper bound (former `le_sSup`).
+      simp only [evidenceSSup, le_def]
+      exact ⟨le_sSup (Set.mem_image_of_mem BinaryEvidence.pos hx),
+             le_sSup (Set.mem_image_of_mem BinaryEvidence.neg hx)⟩
+    · -- `evidenceSSup S` is below every upper bound (former `sSup_le`).
+      simp only [evidenceSSup, le_def]
+      refine ⟨?_, ?_⟩
+      · apply sSup_le
+        intro p hp
+        simp only [Set.mem_image] at hp
+        obtain ⟨e, heS, rfl⟩ := hp
+        exact (h heS).1
+      · apply sSup_le
+        intro n hn
+        simp only [Set.mem_image] at hn
+        obtain ⟨e, heS, rfl⟩ := hn
+        exact (h heS).2
+  isGLB_sInf := fun S => by
+    refine ⟨fun x hx => ?_, fun x h => ?_⟩
+    · -- `evidenceSInf S` is a lower bound (former `sInf_le`).
+      simp only [evidenceSInf, le_def]
+      exact ⟨sInf_le (Set.mem_image_of_mem BinaryEvidence.pos hx),
+             sInf_le (Set.mem_image_of_mem BinaryEvidence.neg hx)⟩
+    · -- `evidenceSInf S` is above every lower bound (former `le_sInf`).
+      simp only [evidenceSInf, le_def]
+      refine ⟨?_, ?_⟩
+      · apply le_sInf
+        intro p hp
+        simp only [Set.mem_image] at hp
+        obtain ⟨e, heS, rfl⟩ := hp
+        exact (h heS).1
+      · apply le_sInf
+        intro n hn
+        simp only [Set.mem_image] at hn
+        obtain ⟨e, heS, rfl⟩ := hn
+        exact (h heS).2
 
 /-! ### Heyting Algebra Structure
 
@@ -1010,7 +1012,7 @@ theorem toStrength_tensor_ge (x y : BinaryEvidence) :
         calc x.pos * y.pos + x.neg * y.neg
             ≤ x.pos * y.pos + x.neg * y.neg + (x.pos * y.neg + x.neg * y.pos) := by
               apply le_add_of_nonneg_right
-              exact add_nonneg (zero_le _) (zero_le _)
+              exact zero_le
           _ = (x.pos + x.neg) * (y.pos + y.neg) := by ring
 
 end BinaryEvidence

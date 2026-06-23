@@ -499,7 +499,7 @@ theorem reinforcedLineFlipPrefix_origin_of_origin_false
         ⟨lineOrigin, lineOrigin_mem_reinforcedLineExhaustion_region n⟩ = true := by
   have hOrigin' :
       x ⟨0, lineOrigin_mem_reinforcedLineExhaustion_region n⟩ = false := by
-    convert hOrigin
+    exact hOrigin
   simp [reinforcedLineFlipPrefix, lineOrigin, hOrigin']
 
 theorem reinforcedLineFlipPrefix_patch_domainWall_left
@@ -1027,7 +1027,7 @@ theorem reinforcedLine_originFalseQueryMass_le_sum_domainWallMass
       ⟨hPatchOrigin, hk, hleft, hright⟩
     have hnonneg : ∀ j ∈ Finset.range (n + 1), 0 ≤ term j := by
       intro j hj
-      exact zero_le _
+      exact zero_le
     have hsingle : term k ≤ ∑ j ∈ Finset.range (n + 1), term j :=
       Finset.single_le_sum hnonneg hkRange
     have htermk : term k = M.finiteVolumeWeight Λ x linePlusBoundary := by

@@ -56,7 +56,7 @@ abbrev SimpleTemporalPred (Domain Time : Type) : Type :=
     pattern in exactly t reduction steps.
 -/
 def toTemporalPred (target : Pattern) : SimpleTemporalPred Pattern ℕ :=
-  fun p t => p ⇝[t] target
+  fun p t => Nonempty (p ⇝[t] target)
 
 /-- Convert future states to temporal predicate.
 
@@ -126,7 +126,7 @@ theorem spice_is_iterated_lead_sketch : ∀ (p : Pattern) (n : ℕ),
     (∀ q, q ∈ spiceEval p n ↔ ∃ k ≤ n, temporalPred q k) := by
   intro p n
   -- Define the temporal predicate: q is reachable from p in exactly k steps
-  use (fun q k => p ⇝[k] q)
+  use (fun q k => Nonempty (p ⇝[k] q))
   intro q
   simp [spiceEval, reachableStates]
 
@@ -135,7 +135,7 @@ theorem spice_is_iterated_lead_sketch : ∀ (p : Pattern) (n : ℕ),
     If p reduces to q in exactly n steps, then q is "n time units ahead" of p.
 -/
 theorem reduces_n_as_temporal_shift (p q : Pattern) (n : ℕ) :
-    ReducesN n p q ↔ (toTemporalPred q) p n := by
+    Nonempty (ReducesN n p q) ↔ (toTemporalPred q) p n := by
   rfl
 
 /-! ## Temporal Horizon and Lookahead
@@ -174,7 +174,7 @@ The spice calculus gives agents a 3-fold temporal structure:
     which requires extending Pattern with a trace/history component.
 -/
 def past (p : Pattern) : Set Pattern :=
-  { q | q ⇝* p }
+  { q | Nonempty (q ⇝* p) }
 
 /-- Present: Current 1-step interactions. -/
 def present (p : Pattern) : Set Pattern :=
@@ -193,9 +193,9 @@ def future (p : Pattern) (n : ℕ) : Set Pattern :=
     This partitions the future cone of p into present and strict future.
 -/
 theorem future_decomposition (p q : Pattern) :
-    (p ⇝* q) ↔ (q = p ∨ ∃ n > 0, p ⇝[n] q) := by
+    Nonempty (p ⇝* q) ↔ (q = p ∨ ∃ n > 0, Nonempty (p ⇝[n] q)) := by
   constructor
-  · intro h
+  · intro ⟨h⟩
     -- Use star_to_reducesN to get n such that p ⇝[n] q
     obtain ⟨n, hn⟩ := star_to_reducesN h
     cases n with
@@ -215,11 +215,11 @@ theorem future_decomposition (p q : Pattern) :
     | inl heq =>
       -- q = p: use reflexivity
       rw [heq]
-      exact ReducesStar.refl p
+      exact ⟨ReducesStar.refl p⟩
     | inr hex =>
       -- p ⇝[n] q with n > 0
-      obtain ⟨n, _, hn⟩ := hex
-      exact reducesN_to_star hn
+      obtain ⟨n, _, ⟨hn⟩⟩ := hex
+      exact ⟨reducesN_to_star hn⟩
 
 /-! ## Connection to PLN Temporal Operators
 
@@ -247,13 +247,13 @@ theorem future_as_forward_shift : ∀ (p : Pattern) (n : ℕ) (q : Pattern),
       timePred p 0 ∧ timePred q (n : ℤ) := by
   intro p n q hq
   -- Define temporal predicate: x is reachable from p in exactly t steps
-  use (fun x t => ∃ m : ℕ, (m : ℤ) = t ∧ ReducesN m p x)
+  use (fun x t => ∃ m : ℕ, (m : ℤ) = t ∧ Nonempty (ReducesN m p x))
   constructor
   · -- timePred p 0: p is reachable in 0 steps
     use 0
     constructor
     · rfl
-    · exact ReducesN.zero p
+    · exact ⟨ReducesN.zero p⟩
   · -- timePred q n: q is reachable in n steps
     use n
     constructor
@@ -279,15 +279,16 @@ theorem past_as_backward_shift : ∀ (p q : Pattern),
   intro p q hq
   -- q ∈ past p means q ⇝* p
   -- By star_to_reducesN, ∃n such that q ⇝[n] p
+  obtain ⟨hq⟩ := hq
   obtain ⟨n, hn⟩ := star_to_reducesN hq
   use n
   -- Define temporal predicate: x is reachable from q in exactly t steps
-  use (fun x t => ∃ m : ℕ, (m : ℤ) = t ∧ ReducesN m q x)
+  use (fun x t => ∃ m : ℕ, (m : ℤ) = t ∧ Nonempty (ReducesN m q x))
   constructor
   · -- timePred p n: p is reachable from q in n steps
-    use n, rfl, hn
+    exact ⟨n, rfl, hn⟩
   · -- timePred q 0: q is reachable from q in 0 steps
-    use 0, rfl, ReducesN.zero q
+    exact ⟨0, rfl, ⟨ReducesN.zero q⟩⟩
 
 /-! ## Summary
 

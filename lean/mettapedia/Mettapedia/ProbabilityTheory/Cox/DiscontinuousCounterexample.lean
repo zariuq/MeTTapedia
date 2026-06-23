@@ -91,7 +91,7 @@ theorem continuous_additive_is_linear (f : ℝ → ℝ) (hf : IsAdditive f) (hc 
         intro x y
         exact hf x y }
   have hf_cont : Continuous f_add := by
-    simpa using hc
+    simpa using! hc
   refine ⟨f 1, ?_⟩
   intro x
   have hsmul :
@@ -250,7 +250,7 @@ private lemma swapF_discontinuous (b : ℝ) (hb : 1 < b) :
   let g : ℝ → ℝ := fun x => swapF b x b
   have hg_cont : Continuous g := by
     have hpair : Continuous fun x : ℝ => (x, b) := continuous_id.prodMk continuous_const
-    simpa [g] using hcont.comp hpair
+    simpa [g] using! hcont.comp hpair
   have hbpos : (0 : ℝ) < b := lt_trans (by norm_num) hb
   have hb1ne0 : b - 1 ≠ 0 := by linarith
   have hb1neb : b - 1 ≠ b := by linarith
@@ -506,7 +506,7 @@ theorem discontinuousAdditive_graph_dense (f : ℝ → ℝ)
     fun q => ((q.1 : ℝ), (q.2 : ℝ))
   have hRat : DenseRange f_rat := by
     have hQ : DenseRange (fun q : ℚ => (q : ℝ)) := Rat.denseRange_cast
-    simpa [f_rat] using (DenseRange.prodMap hQ hQ)
+    simpa [f_rat] using! (DenseRange.prodMap hQ hQ)
   have hDenseRange : DenseRange (L ∘ f_rat) :=
     DenseRange.comp hL_dense hRat hL_cont
   have hDense : Dense (Set.range (L ∘ f_rat)) := by

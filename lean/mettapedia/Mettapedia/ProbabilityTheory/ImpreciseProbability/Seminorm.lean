@@ -323,10 +323,10 @@ lemma infPrevision_pos_homog (r : ℝ) (X : Gamble ℕ) (hr : 0 ≤ r) :
     subst hr0
     simp only [zero_smul, zero_mul]
     -- zero_smul gives us 0 : ℕ → ℝ, need to show sInf of range of zero function is 0
-    have hrange : range (0 : ℕ → ℝ) = {0} := by
+    have hrange : range (0 : Gamble ℕ) = {0} := by
       apply Set.ext
       intro y
-      simp only [mem_range, mem_singleton_iff, Pi.zero_apply]
+      simp only [mem_range, mem_singleton_iff]
       constructor
       · rintro ⟨_, rfl⟩; rfl
       · intro hy; exact ⟨0, hy.symm⟩
@@ -357,7 +357,8 @@ lemma infPrevision_superadd_of_bddBelow (X Y : Gamble ℕ)
   unfold infPrevisionFun
   apply le_csInf (range_nonempty (X + Y))
   intro z ⟨n, hn⟩
-  rw [← hn, Pi.add_apply]
+  rw [← hn]
+  show sInf (range X) + sInf (range Y) ≤ X n + Y n
   apply add_le_add
   · exact csInf_le hbX ⟨n, rfl⟩
   · exact csInf_le hbY ⟨n, rfl⟩

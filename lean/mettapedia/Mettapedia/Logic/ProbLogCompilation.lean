@@ -348,7 +348,7 @@ theorem sum_add_prod_compl_ge_one_finset {α : Type*} [DecidableEq α]
       _ = S + (P * (1 - q) + P * q) := by rw [hP_split]
       _ = S + P * (1 - q) + P * q := by rw [add_assoc]
       _ ≤ S + P * (1 - q) + q := by
-          gcongr; exact mul_le_of_le_one_left (zero_le _) hP
+          gcongr; exact mul_le_of_le_one_left zero_le hP
       _ = q + S + (1 - q) * P := by rw [mul_comm]; ring
 
 /-- Boole's inequality for `Fin n`. -/
@@ -435,7 +435,7 @@ theorem sum_add_prod_compl_gt_one {n : ℕ} (p : Fin n → ℝ≥0∞)
       Finset.prod_le_one' (fun i _ => tsub_le_self)
     have hS'_ge : 1 - P' ≤ S' := by rwa [tsub_le_iff_right]
     have hP1P' : P * (1 - P') ≤ S' :=
-      le_trans (mul_le_of_le_one_left (zero_le _) hP_le) hS'_ge
+      le_trans (mul_le_of_le_one_left zero_le hP_le) hS'_ge
     calc P = P * 1 := (mul_one P).symm
       _ = P * (P' + (1 - P')) := by rw [add_tsub_cancel_of_le hP']
       _ = P * P' + P * (1 - P') := by rw [mul_add]
@@ -512,7 +512,7 @@ theorem sum_add_prod_ge_one_add_mul {n : ℕ} (p : Fin n → ℝ≥0∞)
     have hP' : P' ≤ 1 := Finset.prod_le_one' (fun i _ => tsub_le_self)
     have hS'_ge : 1 - P' ≤ S' := by rwa [tsub_le_iff_right]
     have hP1P' : P * (1 - P') ≤ S' :=
-      le_trans (mul_le_of_le_one_left (zero_le _) hP_le) hS'_ge
+      le_trans (mul_le_of_le_one_left zero_le hP_le) hS'_ge
     calc P = P * 1 := (mul_one P).symm
       _ = P * (P' + (1 - P')) := by rw [add_tsub_cancel_of_le hP']
       _ = P * P' + P * (1 - P') := by rw [mul_add]

@@ -81,11 +81,11 @@ class ZipperIterationSound (Z : Type*) (V : Type*)
   reachable_in_store : ∀ (root : Z) (v : V),
       ZipperMoving.atRoot root = true →
       ZipperReachableValue root v →
-      v ∈ ZipperStoreValues.allValues root
+      v ∈ ZipperStoreValues.allValues (Z := Z) (V := V) root
   /-- Every stored value is reachable from the root. -/
   store_in_reachable : ∀ (root : Z) (v : V),
       ZipperMoving.atRoot root = true →
-      v ∈ ZipperStoreValues.allValues root →
+      v ∈ ZipperStoreValues.allValues (Z := Z) (V := V) root →
       ZipperReachableValue root v
 
 /-! ## §3: ZAM → RelationalSpace Bridge

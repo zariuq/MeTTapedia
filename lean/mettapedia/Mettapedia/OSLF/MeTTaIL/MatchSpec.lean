@@ -576,7 +576,7 @@ theorem mergeBindings_subsumed_left {b1 b2 bs : Bindings}
     (hx : b1.find? (·.1 == x) = some (x, v)) :
     bs.find? (·.1 == x) = some (x, v) := by
   apply foldlM_merge_preserves_left b2 b1 bs _ hx
-  simpa [mergeBindings] using hm
+  exact hm
 
 /-- Helper: extract the first component from a successful `find?` on `Bindings`. -/
 private theorem find?_fst_eq {bs : Bindings} {x : String} {p : String × Pattern}

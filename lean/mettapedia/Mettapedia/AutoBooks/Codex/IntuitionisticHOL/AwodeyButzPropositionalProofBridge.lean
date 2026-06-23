@@ -106,7 +106,9 @@ def toSubst :
   | vz =>
       simp
   | @vs Γ υ τ x ih =>
-      simpa using ih (σs := tail σs)
+      change toSubst (tail σs) (SimpleVar.toVar x) =
+        SimpleTerm.toTerm ((tail σs) x)
+      exact ih (σs := tail σs)
 
 end SimpleSubst
 
@@ -172,8 +174,12 @@ def toFormula :
       Mettapedia.AutoBooks.Codex.IntuitionisticHOL.subst (SimpleSubst.toSubst σs) (toFormula φ) := by
   induction φ with
   | atom t =>
-      simpa only [SimplePropFormula.subst, toFormula] using
-        (SimpleTerm.toTerm_subst (σs := σs) (t := t))
+      simp only [SimplePropFormula.subst, toFormula]
+      change
+        SimpleTerm.toTerm (SimpleTerm.subst σs t) =
+          Mettapedia.AutoBooks.Codex.IntuitionisticHOL.subst
+            (SimpleSubst.toSubst σs) (SimpleTerm.toTerm t)
+      exact SimpleTerm.toTerm_subst (σs := σs) (t := t)
   | top =>
       simp only [SimplePropFormula.subst, toFormula,
         Mettapedia.AutoBooks.Codex.IntuitionisticHOL.subst]

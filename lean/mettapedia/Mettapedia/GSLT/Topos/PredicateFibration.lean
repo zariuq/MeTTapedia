@@ -246,12 +246,11 @@ noncomputable def presheafChangeOfBase (C : Type u) [Category C] :
           (⨆ θ' : CategoryTheory.Subfunctor Y,
             if CategoryTheory.Subfunctor.preimage θ' f ≤ ψ then θ' else ⊥) :=
         le_iSup_of_le θ (by simp [hθ'])
-      simpa [hθ] using hθsup
+      simp only [if_pos hθ]; exact hθsup
     · simp [hθ]
   · intro X Y f φ ψ
-    simpa using
-      (CategoryTheory.Subfunctor.image_le_iff
-        (G := φ) (f := f) (G' := ψ))
+    exact CategoryTheory.Subfunctor.image_le_iff
+      (G := φ) (f := f) (G' := ψ)
   · intro X Y f ψ φ
     constructor
     · intro h
@@ -318,8 +317,7 @@ theorem beckChevalleyPresheafSubfunctor (C : Type u) [Category.{w} C]
     rcases ha with ⟨b, hbφ, hgb⟩
     have hpbU :
         IsPullback (π₁.app U) (π₂.app U) (f.app U) (g.app U) := by
-      simpa using
-        (hpb.map ((CategoryTheory.evaluation (Cᵒᵖ) (Type v)).obj U))
+      exact hpb.map ((CategoryTheory.evaluation (Cᵒᵖ) (Type v)).obj U)
     have hfb : f.app U a = g.app U b := by simpa [eq_comm] using hgb
     rcases CategoryTheory.Limits.Types.exists_of_isPullback hpbU (x₂ := a) (x₃ := b) hfb with
       ⟨p, hp₁, hp₂⟩
@@ -337,7 +335,7 @@ theorem beckChevalleyPresheafSubfunctor (C : Type u) [Category.{w} C]
     have hwNat : (π₁ ≫ f).app U = (π₂ ≫ g).app U := by
       exact congrArg (fun η => η.app U) hpb.w
     have hw : f.app U (π₁.app U p) = g.app U (π₂.app U p) := by
-      exact congrFun hwNat p
+      exact ConcreteCategory.congr_hom hwNat p
     calc
       g.app U (π₂.app U p) = f.app U (π₁.app U p) := by simpa [eq_comm] using hw
       _ = f.app U a := by simp [hp₁]
@@ -358,8 +356,8 @@ theorem beckChevalleyPresheaf_changeOfBase (C : Type u) [Category.{w} C]
       ((presheafChangeOfBase (C := C)).directImage g φ) =
     (presheafChangeOfBase (C := C)).directImage π₁
       ((presheafChangeOfBase (C := C)).pullback π₂ φ) := by
-  simpa [presheafChangeOfBase] using
-    (beckChevalleyPresheafSubfunctor (C := C) π₁ π₂ f g hpb φ)
+  simp only [presheafChangeOfBase]
+  exact beckChevalleyPresheafSubfunctor (C := C) π₁ π₂ f g hpb φ
 
 /-! ## Beck-Chevalley Condition
 
@@ -405,8 +403,8 @@ theorem beckChevalleyCondition_presheafChangeOfBase
       (presheafChangeOfBase (C := C)) := by
   intro P A B D π₁ π₂ f g hpb _ _ φ
   change CategoryTheory.Subfunctor B at φ
-  simpa [presheafChangeOfBase] using
-    (beckChevalleyPresheafSubfunctor (C := C) π₁ π₂ f g hpb φ)
+  simp only [presheafChangeOfBase]
+  exact beckChevalleyPresheafSubfunctor (C := C) π₁ π₂ f g hpb φ
 
 /-- Concrete Beck–Chevalley square in `Psh(C)` using subobject pullback/map.
 

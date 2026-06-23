@@ -1,4 +1,4 @@
-import Mettapedia.ProbabilityTheory.KnuthSkilling.Core.Hypercube
+import KnuthSkilling.Core.Hypercube
 import Mettapedia.Logic.PLNWorldModelGeneric
 import Mettapedia.Logic.WorldModelOverlap
 
@@ -38,7 +38,7 @@ surfaces fit those choices. The WM calculus instantiates each vertex.
 
 namespace Mettapedia.Logic.WMHypercubeClassification
 
-open Mettapedia.ProbabilityTheory.KnuthSkilling.Hypercube
+open KnuthSkilling.Hypercube
 open Mettapedia.Logic.EvidenceClass
 open Mettapedia.Logic.PLNWorldModelGeneric
 

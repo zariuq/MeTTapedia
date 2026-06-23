@@ -12,7 +12,7 @@ import Mathlib.Analysis.Calculus.MeanValue
 import Mathlib.Topology.Order.IntermediateValue
 import Mathlib.Topology.Order.MonotoneContinuity
 -- Import KS tools for additive functions on positive reals (no extra axioms - pure mathlib theorems)
-import Mettapedia.ProbabilityTheory.KnuthSkilling.Multiplicative.FunctionalEquation
+import KnuthSkilling.Multiplicative.FunctionalEquation
 
 /-!
 # Cox's Theorem: The Product Rule Derivation
@@ -1079,7 +1079,7 @@ lemma g_star_tendsto_one (c : ℝ) (hc_pos : 0 < c) (hc_lt : c < 1) :
   have hN_close : |C.nth_root N hN_ge_2 c hc_pos hc_lt - 1| < ε := by
     have := hN0 N hN_ge_N0
     -- unfold the `if` in `nth_root_tendsto_one` at `N ≥ 2`
-    simpa [N, hN_ge_2] using this
+    simpa [N, hN_ge_2, Real.dist_eq] using this
   -- `g* (1/N) ≤ g*(m/n)` whenever `m/n < 1/N` (antitonicity).
   have hg_lower : C.g_star c hc_pos hc_lt 1 N (by decide : 1 ≤ (1:ℕ)) hN_ge_2
       ≤ C.g_star c hc_pos hc_lt m n hm hn := by
@@ -2711,7 +2711,7 @@ theorem deriv_eq4_4_y {y z : ℝ} (hy : y ∈ Set.Ioo (0 : ℝ) 1) (hz : z ∈ S
     exact (deriv_div_const (c := G) (d := z) (x := y))
   have hderiv_comp : deriv (fun y => G (G y / z)) y =
       G' (G y / z) * (G' y / z) := by
-    simpa [Function.comp, hderiv_inner] using (deriv_comp y hdiff_outer hdiff_inner)
+    simpa [Function.comp_def, hderiv_inner] using (deriv_comp y hdiff_outer hdiff_inner)
   have hderiv_f_simp : deriv f y = G' (G y / z) * G' y := by
     have hz0 : z ≠ 0 := ne_of_gt hzpos
     calc
@@ -2734,14 +2734,14 @@ theorem deriv_eq4_4_y {y z : ℝ} (hy : y ∈ Set.Ioo (0 : ℝ) 1) (hz : z ∈ S
     exact N.G_differentiableAt hpos
   have hderiv_comp' : deriv (fun y => G (G z / y)) y =
       G' (G z / y) * (-(G z) / y ^ 2) := by
-    simpa [Function.comp, hderiv_inner'] using (deriv_comp y hdiff_outer' hdiff_inner')
+    simpa [Function.comp_def, hderiv_inner'] using (deriv_comp y hdiff_outer' hdiff_inner')
   have hderiv_g : deriv g y =
       G (G z / y) - (G z / y) * G' (G z / y) := by
     have hdiff1 : DifferentiableAt ℝ (fun y => y) y := differentiableAt_id
     have hdiff2 : DifferentiableAt ℝ (fun y => G (G z / y)) y := hdiff_outer'.comp y hdiff_inner'
     have hmul : deriv g y =
         G (G z / y) + y * (G' (G z / y) * (-(G z) / y ^ 2)) := by
-      simpa [g, hderiv_comp'] using (deriv_mul hdiff1 hdiff2)
+      simpa [g, hderiv_comp', Pi.mul_def] using (deriv_mul hdiff1 hdiff2)
     have hy0 : y ≠ 0 := ne_of_gt hypos
     calc
       deriv g y = G (G z / y) + y * (G' (G z / y) * (-(G z) / y ^ 2)) := hmul
@@ -2787,7 +2787,7 @@ theorem deriv_eq4_4_yz {y z : ℝ} (hy : y ∈ Set.Ioo (0 : ℝ) 1) (hz : z ∈ 
     simpa using (deriv_fun_div (hc := hdiff_const) (hd := hdiff_id) hz0)
   have hderiv_comp : deriv (fun z => G' (G y / z)) z =
       G'' (G y / z) * (-(G y) / z ^ 2) := by
-    simpa [Function.comp, hderiv_inner] using (deriv_comp z hdiff_outer hdiff_inner)
+    simpa [Function.comp_def, hderiv_inner] using (deriv_comp z hdiff_outer hdiff_inner)
   have hderiv_f_simp : deriv f z = -(G y / z) * G'' (G y / z) * (G' y / z) := by
     have hz0 : z ≠ 0 := ne_of_gt hzpos
     calc
@@ -2805,17 +2805,17 @@ theorem deriv_eq4_4_yz {y z : ℝ} (hy : y ∈ Set.Ioo (0 : ℝ) 1) (hz : z ∈ 
     exact (deriv_div_const (c := G) (d := y) (x := z))
   have hderiv_comp' : deriv (fun z => G (G z / y)) z =
       G' (G z / y) * (G' z / y) := by
-    simpa [Function.comp, hderiv_inner'] using (deriv_comp z hdiff_outer' hdiff_inner')
+    simpa [Function.comp_def, hderiv_inner'] using (deriv_comp z hdiff_outer' hdiff_inner')
   have hdiff_outer'' : DifferentiableAt ℝ G' (G z / y) := by
     have hpos : 0 < G z / y := div_pos hGzpos hypos
     exact N.G'_differentiableAt hpos
   have hderiv_comp'' : deriv (fun z => G' (G z / y)) z =
       G'' (G z / y) * (G' z / y) := by
-    simpa [Function.comp, hderiv_inner'] using (deriv_comp z hdiff_outer'' hdiff_inner')
+    simpa [Function.comp_def, hderiv_inner'] using (deriv_comp z hdiff_outer'' hdiff_inner')
   have hderiv_g_simp : deriv g z = -(G z / y) * G'' (G z / y) * (G' z / y) := by
     have hdiff1 : DifferentiableAt ℝ (fun z => G (G z / y)) z := hdiff_outer'.comp z hdiff_inner'
     have hdiff_d : DifferentiableAt ℝ (fun z => G' (G z / y)) z := by
-      simpa [Function.comp] using (hdiff_outer''.comp z hdiff_inner')
+      simpa [Function.comp_def] using (hdiff_outer''.comp z hdiff_inner')
     have hdiff2 : DifferentiableAt ℝ (fun z => (G z / y) * G' (G z / y)) z :=
       hdiff_inner'.mul hdiff_d
     have hderiv_prod : deriv (fun z => (G z / y) * G' (G z / y)) z =
@@ -2823,7 +2823,7 @@ theorem deriv_eq4_4_yz {y z : ℝ} (hy : y ∈ Set.Ioo (0 : ℝ) 1) (hz : z ∈ 
       have hderiv_c : deriv (fun z => G z / y) z = G' z / y := by
         exact (deriv_div_const (c := G) (d := y) (x := z))
       have hderiv_d : deriv (fun z => G' (G z / y)) z = G'' (G z / y) * (G' z / y) := hderiv_comp''
-      simpa [hderiv_c, hderiv_d, mul_comm, mul_left_comm, mul_assoc] using
+      simpa [hderiv_c, hderiv_d, mul_comm, mul_left_comm, mul_assoc, Pi.mul_def] using
         (deriv_mul (c := fun z => G z / y) (d := fun z => G' (G z / y)) hdiff_inner' hdiff_d)
     have hderiv_g' : deriv g z =
         (G' (G z / y) * (G' z / y)) -
@@ -3032,7 +3032,7 @@ theorem negation_power_family :
         have hdiff_f : DifferentiableAt ℝ (fun x => G x ^ (r - 1)) x :=
           (N.G_differentiableAt hxpos).rpow_const (Or.inl hGne)
         have hdiff_g : DifferentiableAt ℝ G' x := N.G'_differentiableAt hxpos
-        simpa [H] using hdiff_f.mul hdiff_g
+        simpa [H, Pi.mul_def] using hdiff_f.mul hdiff_g
       have hdiff_pow : DifferentiableAt ℝ (fun x => x ^ (1 - r)) x :=
         (differentiableAt_id).rpow_const (Or.inl hxne)
       exact (hdiffH.mul hdiff_pow).differentiableWithinAt
@@ -3045,7 +3045,7 @@ theorem negation_power_family :
         have hdiff_f : DifferentiableAt ℝ (fun x => G x ^ (r - 1)) x :=
           (N.G_differentiableAt hxpos).rpow_const (Or.inl hGne)
         have hdiff_g : DifferentiableAt ℝ G' x := N.G'_differentiableAt hxpos
-        simpa [H] using hdiff_f.mul hdiff_g
+        simpa [H, Pi.mul_def] using hdiff_f.mul hdiff_g
       have hdiff_pow : DifferentiableAt ℝ (fun x => x ^ (1 - r)) x :=
         (differentiableAt_id).rpow_const (Or.inl hxne)
       have hderiv_pow : deriv (fun x => x ^ (1 - r)) x = (1 - r) * x ^ (-r) := by
@@ -3107,7 +3107,7 @@ theorem negation_power_family :
     have hdiff_inner : DifferentiableAt ℝ G x := N.G_differentiableAt hxpos
     have hdiff_outer : DifferentiableAt ℝ G (G x) := N.G_differentiableAt hGpos
     have hderiv_comp : deriv (fun x => G (G x)) x = G' (G x) * G' x := by
-      simpa [Function.comp] using (deriv_comp x hdiff_outer hdiff_inner)
+      simpa [Function.comp_def] using (deriv_comp x hdiff_outer hdiff_inner)
     have hfun : (fun x => G (G x)) = fun x => x := by
       funext x; simpa using N.G_involution x
     have hderiv_eq := congrArg (fun f => deriv f x) hfun
@@ -3186,7 +3186,7 @@ theorem negation_power_family :
     have hH := hH_eq x hx
     calc
       deriv F x = deriv (fun x => G x ^ r) x + deriv (fun x => x ^ r) x := by
-        simpa [F] using (deriv_add (f := fun x => G x ^ r) (g := fun x => x ^ r) hdiffGpow hdiff_xpow)
+        simpa [F, Pi.add_def] using (deriv_add (f := fun x => G x ^ r) (g := fun x => x ^ r) hdiffGpow hdiff_xpow)
       _ = (G' x * r * G x ^ (r - 1)) + (r * x ^ (r - 1)) := by
         simp [hderiv_Gpow, hderiv_xpow]
       _ = r * (G x ^ (r - 1) * G' x) + r * x ^ (r - 1) := by ring

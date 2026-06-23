@@ -86,7 +86,7 @@ theorem clauseWM_weight_eq_queryMass
       (clauseMassSemantics M support).queryMass constraints := by
   classical
   unfold ValuationWorldModel.weight clauseWMSource clauseMassSemantics
-  simpa [VariableElimination.veQueryWeight] using
+  simpa [VariableElimination.veQueryWeight, CountableMLNSemantics.toMassSemantics] using
     veQueryWeight_eq_queryMass M support constraints
 
 /-- The bundled scoped-valuation query lane on the clause WM source also

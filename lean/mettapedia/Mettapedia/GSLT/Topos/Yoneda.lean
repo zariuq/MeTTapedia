@@ -101,7 +101,7 @@ variable (T : LambdaTheoryWithEquality)
 def lambdaYoneda : T.Obj ⥤ Psh(T.Obj) := yoneda
 
 /-- The Yoneda embedding is fully faithful -/
-instance lambdaYonedaFullyFaithful : (lambdaYoneda T).FullyFaithful :=
+def lambdaYonedaFullyFaithful : (lambdaYoneda T).FullyFaithful :=
   Yoneda.fullyFaithful
 
 /-- Yoneda preserves all limits for lambda theories -/

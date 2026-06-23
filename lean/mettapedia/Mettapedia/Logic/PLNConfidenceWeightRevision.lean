@@ -1,5 +1,5 @@
 import Mettapedia.Logic.PLNConfidenceWeight
-import Mettapedia.ProbabilityTheory.KnuthSkilling.Counterexamples.RegradeCounterexample
+import KnuthSkilling.Counterexamples.RegradeCounterexample
 import Mathlib.Analysis.SpecialFunctions.Artanh
 import Mathlib.Analysis.SpecialFunctions.Exp
 import Mathlib.Analysis.SpecialFunctions.Trigonometric.Arctan
@@ -606,7 +606,7 @@ theorem nonnegative_additive_monotone_linear
     rw [harg] at haddxy
     linarith
   have hlinExt :=
-    Mettapedia.ProbabilityTheory.KnuthSkilling.Counterexamples.monotone_additive_is_linear
+    KnuthSkilling.Counterexamples.monotone_additive_is_linear
       hExtAdd hExtMono n
   calc
     f n = fExt n := by rw [hfExt_eq_nonneg hn]

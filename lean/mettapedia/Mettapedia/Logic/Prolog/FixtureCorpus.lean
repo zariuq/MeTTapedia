@@ -1035,7 +1035,7 @@ theorem iso_findall_3_03_like {oracle : EvalOracle} {env : PEnv} :
 theorem iso_findall_3_03 {oracle : EvalOracle} :
     PrologEval oracle (.findall "X" .fail) []
       (.normal [[("X", Pattern.mkList [])]]) := by
-  simpa using (iso_findall_3_03_like (oracle := oracle) (env := []))
+  exact (iso_findall_3_03_like (oracle := oracle) (env := []))
 
 /-- Source-aligned positive fixture with duplicates (`iso_findall_3_04`). -/
 theorem iso_findall_3_04_like {oracle : EvalOracle} :
@@ -1664,7 +1664,7 @@ theorem boundary_disj_cut_then_conj_fail {oracle : EvalOracle} {env : PEnv} :
 theorem iso_findall_3_05_false {oracle : EvalOracle} :
     PrologEval oracle (.findall "X" .fail) []
       (.normal [[("X", Pattern.mkList [])]]) := by
-  simpa using (iso_findall_3_03_like (oracle := oracle) (env := []))
+  exact (iso_findall_3_03_like (oracle := oracle) (env := []))
 
 /-- Source: Logtalk ISO test `iso_disjunction_2_03` (`control/disjunction_2/tests.lgt`).
 The upstream rhs branch uses `call(3)`; this core has no `call/1`, so we model
@@ -2226,7 +2226,7 @@ See `RuntimeErrorSpec.iso_findall_3_07_runtime_error` for the boundary error cla
 theorem iso_findall_3_07 {oracle : EvalOracle} :
     PrologEval oracle (.findall "X" .fail) []
       (.normal [[("X", Pattern.mkList [])]]) := by
-  simpa using (iso_findall_3_03_like (oracle := oracle) (env := []))
+  exact (iso_findall_3_03_like (oracle := oracle) (env := []))
 
 /-- Source: Logtalk ISO test `iso_findall_3_08` (`predicates/findall_3/tests.lgt`).
 Adaptation note: runtime `type_error(callable, ...)` is outside the current core.

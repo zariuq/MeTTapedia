@@ -837,7 +837,7 @@ open Mettapedia.OSLF
 #check @Mettapedia.Logic.LP.leastHerbrandModel_finite
 #check @Mettapedia.Logic.LP.leastHerbrandModel_eq_iter_sup
 -- LP-M4b: CertifyingDatalog bridge
-#check @Mettapedia.Logic.LP.CDLGroundAtom
+#check @_root_.GroundAtom
 #check @Mettapedia.Logic.LP.GroundAtom.equivCDL
 -- LP-M5: Provenance
 #check @Mettapedia.Logic.LP.SemiringWithMonus

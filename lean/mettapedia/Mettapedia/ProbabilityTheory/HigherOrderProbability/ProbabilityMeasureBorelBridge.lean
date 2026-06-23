@@ -54,11 +54,11 @@ theorem borel_le_of_continuous_injective_compact_t2_measurable
       @Measurable α β
         (inferInstance : MeasurableSpace α)
         (borel β)
-        f := by
-    simpa [BorelSpace.measurable_eq (α := β)] using hmeas
+        f :=
+    ‹BorelSpace β›.measurable_eq ▸ hmeas
   calc
-    borel α = MeasurableSpace.comap f (borel β) := by
-      simp [htop, borel_comap]
+    borel α = MeasurableSpace.comap f (borel β) :=
+      hEmbTop.eq_induced ▸ borel_comap
     _ ≤ (inferInstance : MeasurableSpace α) :=
       hmeasBorel.comap_le
 
@@ -136,7 +136,7 @@ theorem instMeasurable_le_borel_finiteMeasure
         (fun μ : FiniteMeasure Ω => (μ : Measure Ω)) :=
     measurable_coe_finiteMeasure_of_closed (Ω := Ω)
   -- Rewrite the comap into the Borel space.
-  simpa using hcoe.comap_le
+  exact hcoe.comap_le
 
 /-- Portmanteau/closed-set direction transported to probability measures:
 the Giry measurable structure on `ProbabilityMeasure Ω` is contained in the
@@ -162,7 +162,7 @@ theorem instMeasurable_le_borel_probabilityMeasure
         (inferInstance : MeasurableSpace (Measure Ω))
         (fun μ : ProbabilityMeasure Ω => (μ : Measure Ω)) :=
     hcoeFin.comp htoFin
-  simpa using hcoe.comap_le
+  exact hcoe.comap_le
 
 /-- Abstract Lévy–Prokhorov bridge:
 if `LevyProkhorov.ofMeasure` is measurable from the Giry measurable space on
@@ -314,7 +314,7 @@ private theorem measurable_toFiniteMeasure :
         IsFiniteMeasure ((fun μ : ProbabilityMeasure Ω => (μ : Measure Ω)) x) := by
     intro x
     infer_instance
-  simpa [ProbabilityMeasure.toFiniteMeasure] using
+  exact
     (Measurable.subtype_mk
       (hf := (measurable_subtype_coe :
         Measurable (fun μ : ProbabilityMeasure Ω => (μ : Measure Ω))))
@@ -327,9 +327,9 @@ private theorem measurableSet_range_toFiniteMeasure :
   have hmassENN :
       Measurable (fun μ : FiniteMeasure Ω => (μ : Measure Ω) Set.univ) :=
     (Measure.measurable_coe (α := Ω) MeasurableSet.univ).comp measurable_subtype_coe
-  have hmass : Measurable (fun μ : FiniteMeasure Ω => μ.mass) := by
-    simpa [FiniteMeasure.ennreal_mass] using hmassENN.ennreal_toNNReal
-  convert hmass (measurableSet_singleton (1 : NNReal))
+  have hmass : Measurable (fun μ : FiniteMeasure Ω => μ.mass) :=
+    hmassENN.ennreal_toNNReal
+  exact hmass (measurableSet_singleton (1 : NNReal))
 
 private def fromRangeToProbabilityMeasure
     (x : Set.range (ProbabilityMeasure.toFiniteMeasure : ProbabilityMeasure Ω → FiniteMeasure Ω)) :
@@ -361,7 +361,7 @@ private theorem measurable_fromRangeToProbabilityMeasure :
       simpa [ProbabilityMeasure.toFiniteMeasure] using
         congrArg (fun ν : FiniteMeasure Ω => (ν : Measure Ω)) hμ.symm
     simpa [hcoe] using (inferInstance : IsProbabilityMeasure (μ : Measure Ω))
-  simpa [fromRangeToProbabilityMeasure] using
+  exact
     (Measurable.subtype_mk
       (hf := (measurable_subtype_coe.comp measurable_subtype_coe :
         Measurable (fun x :

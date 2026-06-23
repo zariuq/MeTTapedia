@@ -88,7 +88,7 @@ theorem finiteVolumePartition_ne_zero
         M.toInfiniteGroundMLNSpec.finiteVolumePartition Λ ξ := by
     unfold InfiniteGroundMLNSpec.finiteVolumePartition
     exact Finset.single_le_sum
-      (fun y hy => show 0 ≤ M.toInfiniteGroundMLNSpec.finiteVolumeWeight Λ y ξ by exact zero_le _)
+      (fun y hy => show 0 ≤ M.toInfiniteGroundMLNSpec.finiteVolumeWeight Λ y ξ by exact zero_le)
       (Finset.mem_univ x₀)
   intro hpart
   have hx₀_le_zero :

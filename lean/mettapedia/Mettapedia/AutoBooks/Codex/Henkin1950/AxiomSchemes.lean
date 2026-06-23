@@ -99,7 +99,7 @@ theorem axiom4_theorem (X Y Z : Sentence) : Theorem (axiom4 X Y Z) := by
 
 theorem axiom5_theorem {α : HTy} : TheoremInContext (axiom5 (α := α)) := by
   refine .impI ?_
-  simpa [axiom5] using
+  exact
     (Derivation.allE (.var .vz)
       (.hyp (show
         (Term.all (.app (.var (.vs (.vs .vz))) (.var .vz))) ∈

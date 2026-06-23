@@ -52,9 +52,9 @@ def krev (k₁ k₂ : KEv3N) : KEv3N := ⟨k₁.c0 + k₂.c0, k₁.c1 + k₂.c1,
 
 /-- DirichletToBinary projection. -/
 def dirToBin (k : KEv3N) (i : Fin 3) : BinEvN :=
-  let ci := match i with | 0 => k.c0 | 1 => k.c1 | 2 => k.c2
+  let ci := if i.val = 0 then k.c0 else if i.val = 1 then k.c1 else k.c2
   let total := k.c0 + k.c1 + k.c2
-  ⟨ci, total - ci⟩
+  { pos := ci, neg := total - ci }
 
 /-- Strength as rational pair (num, den). -/
 def strength (e : BinEvN) : Nat × Nat := (e.pos, e.pos + e.neg)

@@ -222,7 +222,7 @@ def cons (t : I.CtxTerm Γ τ) (σ : I.CtxHom Γ Δ) : I.CtxHom Γ (τ :: Δ) wh
 @[simp] theorem tail_cons (t : I.CtxTerm Γ τ) (σ : I.CtxHom Γ Δ) :
     (cons t σ).comp (CtxHom.tail I τ Δ) = σ := by
   ext x
-  simp [CtxHom.comp, CtxHom.tail, cons, EtaleSpace.prodSnd, Function.Pullback.snd]
+  rfl
 
 @[simp] theorem const_reindex (Γ : Ctx Base) (t : I.CtxHom Δ Γ)
     {τ : Ty Base} (c : Const τ) :
@@ -270,10 +270,11 @@ tail context morphism.
   apply Prod.ext <;> rfl
 
 /-- Every morphism into the empty full HOL context is terminal. -/
-@[simp] theorem toEmpty_eq_terminal (σ : I.CtxHom Γ []) :
+theorem toEmpty_eq_terminal (σ : I.CtxHom Γ []) :
     σ = terminal I Γ := by
   ext x
-  simpa [terminal, EtaleSpace.projMap] using congrFun σ.proj_comp x
+  change (EtaleSpace.terminal X).proj (σ.toContinuousMap x) = (I.ctxSpace Γ).proj x
+  exact congrFun σ.proj_comp x
 
 /--
 Morphisms into an extended full HOL context are equivalently a head term and a

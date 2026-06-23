@@ -89,6 +89,7 @@ theorem modeRadius_truncate_eq_sum (x : ModeState) (N : ℕ) :
 theorem truncateModes_radius_tendsto (x : ModeState) :
     Tendsto (fun N => modeRadius (truncateModes N x))
       Filter.atTop (nhds (modeRadius x)) := by
+  rw [modeRadius]
   convert (summable_modeTerm x).hasSum.tendsto_sum_nat using 1
   ext N
   exact modeRadius_truncate_eq_sum x N

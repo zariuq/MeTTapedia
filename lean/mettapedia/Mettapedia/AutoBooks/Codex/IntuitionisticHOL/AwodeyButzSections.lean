@@ -144,15 +144,18 @@ end GlobalSection
 /-- The presheaf of sections of an etale space. -/
 def sectionPresheaf (E : EtaleSpace X) : (TopCat.of X).Presheaf (Type _) where
   obj U := E.SectionOn U.unop
-  map {_ _} i s := s.restrict i.unop
+  map {U V} i :=
+    TypeCat.ofHom (fun s : E.SectionOn U.unop => s.restrict i.unop)
   map_id := by
     intro U
-    funext s
-    simp
+    apply TypeCat.Hom.ext
+    apply TypeCat.Fun.ext
+    rfl
   map_comp := by
     intro U V W f g
-    funext s
-    simp
+    apply TypeCat.Hom.ext
+    apply TypeCat.Fun.ext
+    rfl
 
 end EtaleSpace
 

@@ -26,15 +26,15 @@ open scoped Classical
 namespace Entropy
 
 /-- The binary "entropy core" function `φ(y) = y log y + (1-y) log(1-y)`. -/
-def phi (y : ℝ) : ℝ :=
+abbrev phi (y : ℝ) : ℝ :=
   y * Real.log y + (1 - y) * Real.log (1 - y)
 
 /-- Formal derivative of `phi` on `(0,1)`: `φ'(y) = log y - log(1-y)`. -/
-def phiDeriv (y : ℝ) : ℝ :=
+abbrev phiDeriv (y : ℝ) : ℝ :=
   Real.log y - Real.log (1 - y)
 
 /-- Formal second derivative of `phi` on `(0,1)`: `φ''(y) = 1/y + 1/(1-y)`. -/
-def phiDeriv2 (y : ℝ) : ℝ :=
+abbrev phiDeriv2 (y : ℝ) : ℝ :=
   y⁻¹ + (1 - y)⁻¹
 
 /-- Binary relative entropy `d(y||z)` written as a Bregman divergence of `phi`.
@@ -42,12 +42,12 @@ def phiDeriv2 (y : ℝ) : ℝ :=
 For `0 < z < 1` this agrees with the usual formula
 `y log (y/z) + (1-y) log ((1-y)/(1-z))`.
 -/
-def klBinary (y z : ℝ) : ℝ :=
+abbrev klBinary (y z : ℝ) : ℝ :=
   phi y - phi z - (y - z) * phiDeriv z
 
 /-- Squared distance between binary probability vectors `(1-y,y)` and `(1-z,z)`.
 This is Hutter's `s` for `|X| = 2`. -/
-def sqDistBinary (y z : ℝ) : ℝ :=
+abbrev sqDistBinary (y z : ℝ) : ℝ :=
   (y - z) ^ 2 + ((1 - y) - (1 - z)) ^ 2
 
 lemma sqDistBinary_eq_two_mul (y z : ℝ) : sqDistBinary y z = 2 * (y - z) ^ 2 := by
@@ -75,12 +75,15 @@ lemma hasDerivWithinAt_phi {y : ℝ} (hy : y ∈ Set.Ioo (0 : ℝ) 1) :
   have h2 :
       HasDerivAt (fun y : ℝ => ((1 : ℝ) - y) * Real.log ((1 : ℝ) - y))
         (-(Real.log ((1 : ℝ) - y) + 1)) y := by
-    have hmul :
-        HasDerivAt (fun t : ℝ => t * Real.log t) (Real.log ((1 : ℝ) - y) + 1) ((1 : ℝ) - y) :=
-      Real.hasDerivAt_mul_log hy1
-    simpa [Function.comp, mul_assoc, mul_comm, mul_left_comm, neg_add] using hmul.comp y hsub
+      have hmul :
+          HasDerivAt (fun t : ℝ => t * Real.log t) (Real.log ((1 : ℝ) - y) + 1) ((1 : ℝ) - y) :=
+        Real.hasDerivAt_mul_log hy1
+      change
+        HasDerivAt ((fun t : ℝ => t * Real.log t) ∘ (fun y : ℝ => (1 : ℝ) - y))
+          (-(Real.log ((1 : ℝ) - y) + 1)) y
+      simpa [Function.comp, mul_assoc, mul_comm, mul_left_comm, neg_add] using hmul.comp y hsub
   have hsum : HasDerivAt phi ((Real.log y + 1) + (-(Real.log ((1 : ℝ) - y) + 1))) y := by
-    simpa [phi] using h1.add h2
+    exact h1.add h2
   have : HasDerivWithinAt phi ((Real.log y + 1) - (Real.log ((1 : ℝ) - y) + 1)) (Set.Ioo (0 : ℝ) 1)
         y := by
     simpa [sub_eq_add_neg, add_assoc, add_comm, add_left_comm] using hsum.hasDerivWithinAt
@@ -102,23 +105,26 @@ lemma hasDerivWithinAt_phiDeriv {y : ℝ} (hy : y ∈ Set.Ioo (0 : ℝ) 1) :
   have hlog2 :
       HasDerivAt (fun y : ℝ => Real.log ((1 : ℝ) - y)) (((1 : ℝ) - y)⁻¹ * (-1)) y := by
     have := (Real.hasDerivAt_log hy1)
+    change
+      HasDerivAt (Real.log ∘ (fun y : ℝ => (1 : ℝ) - y))
+        (((1 : ℝ) - y)⁻¹ * (-1)) y
     simpa [Function.comp, mul_assoc, mul_comm, mul_left_comm] using this.comp y hsub
   have h : HasDerivAt phiDeriv (y⁻¹ - (((1 : ℝ) - y)⁻¹ * (-1))) y := by
-    simpa [phiDeriv] using hlog.sub hlog2
+    exact hlog.sub hlog2
   have : HasDerivAt phiDeriv (y⁻¹ + ((1 : ℝ) - y)⁻¹) y := by
     simpa [mul_assoc, sub_eq_add_neg] using h
   simpa [phiDeriv2] using this.hasDerivWithinAt
 
 /-- The function used to prove Lemma 3.11s: `f(y) = KL(y||z) - s(y,z)`. -/
-def f (z : ℝ) (y : ℝ) : ℝ :=
+abbrev f (z : ℝ) (y : ℝ) : ℝ :=
   klBinary y z - sqDistBinary y z
 
 /-- Formal derivative of `f z` on `(0,1)`. -/
-def fDeriv (z : ℝ) (y : ℝ) : ℝ :=
+abbrev fDeriv (z : ℝ) (y : ℝ) : ℝ :=
   phiDeriv y - phiDeriv z - 4 * (y - z)
 
 /-- Formal second derivative of `f z` on `(0,1)`. -/
-def fDeriv2 (y : ℝ) : ℝ :=
+abbrev fDeriv2 (y : ℝ) : ℝ :=
   phiDeriv2 y - 4
 
 lemma hasDerivWithinAt_sqDistBinary {z y : ℝ} :
@@ -129,6 +135,7 @@ lemma hasDerivWithinAt_sqDistBinary {z y : ℝ} :
   have hsub : HasDerivAt (fun y : ℝ => y - z) (1 : ℝ) y := by
     simpa using (hasDerivAt_id y).sub_const z
   have hpow : HasDerivAt (fun y : ℝ => (y - z) ^ 2) (2 * (y - z)) y := by
+    change HasDerivAt ((fun y : ℝ => y - z) ^ 2) (2 * (y - z)) y
     simpa using (hsub.pow 2)
   have hmul : HasDerivAt (fun y : ℝ => 2 * (y - z) ^ 2) (2 * (2 * (y - z))) y :=
     HasDerivAt.const_mul (2 : ℝ) hpow
@@ -144,9 +151,7 @@ lemma hasDerivWithinAt_klBinary {z y : ℝ} (hy : y ∈ Set.Ioo (0 : ℝ) 1) :
   have hconst : HasDerivWithinAt (fun _y : ℝ => phi z) 0 (Set.Ioo (0 : ℝ) 1) y :=
     (hasDerivAt_const y (phi z)).hasDerivWithinAt
   have hsub1 : HasDerivWithinAt (fun y : ℝ => phi y - phi z) (phiDeriv y) (Set.Ioo (0 : ℝ) 1) y := by
-    have h := hphi.sub hconst
-    convert h using 1
-    ring
+    exact hphi.sub_const (phi z)
   have hlin :
       HasDerivWithinAt (fun y : ℝ => (y - z) * phiDeriv z) (phiDeriv z) (Set.Ioo (0 : ℝ) 1) y := by
     have hsub : HasDerivAt (fun y : ℝ => y - z) (1 : ℝ) y := by
@@ -169,7 +174,7 @@ lemma hasDerivWithinAt_f {z y : ℝ} (hy : y ∈ Set.Ioo (0 : ℝ) 1) :
   have hsq : HasDerivWithinAt (fun y : ℝ => sqDistBinary y z) (4 * (y - z)) (Set.Ioo (0 : ℝ) 1) y :=
     hasDerivWithinAt_sqDistBinary (z := z) (y := y)
   have h := hkl.sub hsq
-  simpa [fDeriv, sub_eq_add_neg, add_assoc, add_comm, add_left_comm, mul_assoc, mul_left_comm, mul_comm] using h
+  exact h
 
 /-- `HasDerivWithinAt` for `fDeriv z` on `(0,1)`. -/
 lemma hasDerivWithinAt_fDeriv {z y : ℝ} (hy : y ∈ Set.Ioo (0 : ℝ) 1) :
@@ -181,9 +186,7 @@ lemma hasDerivWithinAt_fDeriv {z y : ℝ} (hy : y ∈ Set.Ioo (0 : ℝ) 1) :
     (hasDerivAt_const y (phiDeriv z)).hasDerivWithinAt
   have hsub1 :
       HasDerivWithinAt (fun y : ℝ => phiDeriv y - phiDeriv z) (phiDeriv2 y) (Set.Ioo (0 : ℝ) 1) y := by
-    have h := hphi.sub hconst
-    convert h using 1
-    ring
+    exact hphi.sub_const (phiDeriv z)
   have hlin : HasDerivWithinAt (fun y : ℝ => 4 * (y - z)) (4 : ℝ) (Set.Ioo (0 : ℝ) 1) y := by
     have hsub : HasDerivAt (fun y : ℝ => y - z) (1 : ℝ) y := by
       simpa using (hasDerivAt_id y).sub_const z

@@ -160,7 +160,7 @@ theorem consistency_implies_expected_regret_convergence (O : Oracle) (M : Reflec
         simpa [h_eq] using prior.tsum_le_one
       · -- proper posterior: sums to 1
         have hden_pos : denom > 0 := by
-          exact lt_of_le_of_ne (zero_le denom) (Ne.symm hden)
+          exact lt_of_le_of_ne zero_le (Ne.symm hden)
         have h_sum_one :
             (∑' ν_idx, bayesianPosteriorWeight O M prior envs ν_idx h) = 1 :=
           bayesianPosterior_sum_one O M prior envs h hden_pos

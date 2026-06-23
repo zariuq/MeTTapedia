@@ -15,10 +15,11 @@ variable {I : SimpleTopologicalInterpretation Base Const X}
 variable {Γ Δ : List (SimpleTy Base)} {τ : SimpleTy Base}
 
 /-- Every morphism into the empty context is the terminal one. -/
-@[simp] theorem toEmpty_eq_terminal (σ : I.CtxHom Γ []) :
+theorem toEmpty_eq_terminal (σ : I.CtxHom Γ []) :
     σ = terminal I Γ := by
   ext x
-  simpa [terminal, EtaleSpace.projMap] using congrFun σ.proj_comp x
+  change (EtaleSpace.terminal X).proj (σ.toContinuousMap x) = (I.ctxSpace Γ).proj x
+  exact congrFun σ.proj_comp x
 
 /-- Morphisms into the empty context carry no extra information. -/
 def toEmptyEquivPUnit (I : SimpleTopologicalInterpretation Base Const X)
@@ -72,8 +73,7 @@ def predContextEquiv
           = CtxTerm.cons ((genericProp I []).reindex σ) (σ.comp (CtxHom.tail I .prop [])) := by
               rw [CtxHom.toEmpty_eq_terminal (I := I) (σ := σ.comp (CtxHom.tail I .prop []))]
       _ = σ := by
-        simpa [genericProp, genericVar] using
-          (CtxHom.cons_reconstruct (I := I) (Γ := Γ) (Δ := []) (τ := .prop) σ)
+        simp [genericProp, genericVar]
   right_inv := by
     intro p
     exact CtxTerm.genericProp_reindex_cons (I := I) p (CtxHom.terminal I Γ)

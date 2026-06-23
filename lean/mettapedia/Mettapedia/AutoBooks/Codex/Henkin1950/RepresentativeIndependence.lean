@@ -256,7 +256,7 @@ theorem closeFormula_all_iff_forall_closed_instances
   · intro hForall t
     have hAllMem : (.all (subst
         (Subst.lift (Base := Atom) (Const := Primitive) ρ) φ) : Sentence) ∈ T := by
-      simpa [closeFormula, closeTerm] using hForall
+      simpa [closeFormula, closeTerm, subst] using hForall
     have hInst :
         instantiate t
           (subst
@@ -275,7 +275,7 @@ theorem closeFormula_all_iff_forall_closed_instances
     have hNotAll' :
         (.all (subst
           (Subst.lift (Base := Atom) (Const := Primitive) ρ) φ) : Sentence) ∉ T := by
-      simpa [closeFormula, closeTerm] using hNotAll
+      simpa [closeFormula, closeTerm, subst] using hNotAll
     rcases hAll (φ := subst
       (Subst.lift (Base := Atom) (Const := Primitive) ρ) φ) hNotAll' with ⟨t, ht⟩
     exact ht <| by simpa [instantiate_subst_lift] using hInstances t
@@ -296,7 +296,7 @@ theorem closeFormula_ex_iff_exists_closed_witness
     have hExMem' :
         (.ex (subst
           (Subst.lift (Base := Atom) (Const := Primitive) ρ) φ) : Sentence) ∈ T := by
-      simpa [closeFormula, closeTerm] using hExMem
+      simpa [closeFormula, closeTerm, subst] using hExMem
     rcases hEx
       (φ := subst
         (Subst.lift (Base := Atom) (Const := Primitive) ρ) φ)
@@ -318,7 +318,7 @@ theorem closeFormula_ex_iff_exists_closed_witness
         (.ex (subst
           (Subst.lift (Base := Atom) (Const := Primitive) ρ) φ) : Sentence) ∈ T :=
       hT.closed hProv
-    simpa [closeFormula, closeTerm] using hMem
+    simpa [closeFormula, closeTerm, subst] using hMem
 
 namespace RepresentativeAssignment
 
@@ -355,12 +355,12 @@ theorem closeTerm_termEquivalent_of_pointwise
     TermEquivalent T (closeTerm ρ t) (closeTerm σ t) := by
   induction t with
   | var v =>
-      simpa [closeTerm] using hρσ v
+      simpa [closeTerm, subst] using hρσ v
   | const c =>
-      simpa [closeTerm] using
+      simpa [closeTerm, subst] using
         (termEquivalent_refl T (.const c : ClosedTerm _))
   | app f u ihf ihu =>
-      simpa [closeTerm] using
+      simpa [closeTerm, subst] using
         (termEquivalent_app
           (ihf hρσ)
           (ihu hρσ))
@@ -389,7 +389,7 @@ theorem closeTerm_termEquivalent_of_pointwise
           exact
             extSetProvable_of_theorem (T := T) <|
               by
-                simpa [f, closeTerm, instantiate_subst_lift] using
+                simpa [f, closeTerm, instantiate_subst_lift, subst, eq] using
                   (ExtDerivation.beta t
                     (subst
                       (Subst.lift (Base := Atom) (Const := Primitive) ρ)
@@ -401,7 +401,7 @@ theorem closeTerm_termEquivalent_of_pointwise
           exact
             extSetProvable_of_theorem (T := T) <|
               by
-                simpa [g, closeTerm, instantiate_subst_lift] using
+                simpa [g, closeTerm, instantiate_subst_lift, subst, eq] using
                   (ExtDerivation.beta t
                     (subst
                       (Subst.lift (Base := Atom) (Const := Primitive) σ)
@@ -461,25 +461,25 @@ theorem closeTerm_termEquivalent_of_pointwise
           (extSetProvable_of_mem (T := T) hForallMem)
       simpa [f, g] using hEq
   | top =>
-      simpa [closeTerm] using
+      simpa [closeTerm, subst] using
         (termEquivalent_refl T (.top : Sentence))
   | bot =>
-      simpa [closeTerm] using
+      simpa [closeTerm, subst] using
         (termEquivalent_refl T (.bot : Sentence))
   | and φ ψ ihφ ihψ =>
-      simpa [closeTerm] using
+      simpa [closeTerm, subst] using
         (termEquivalent_of_provablyEquivalent_prop
           (Mettapedia.Logic.HOL.ClosedTheorySet.ProvablyEquivalent.and_congr
             (provablyEquivalent_of_termEquivalent_prop (ihφ hρσ))
             (provablyEquivalent_of_termEquivalent_prop (ihψ hρσ))))
   | or φ ψ ihφ ihψ =>
-      simpa [closeTerm] using
+      simpa [closeTerm, subst] using
         (termEquivalent_of_provablyEquivalent_prop
           (Mettapedia.Logic.HOL.ClosedTheorySet.ProvablyEquivalent.or_congr
             (provablyEquivalent_of_termEquivalent_prop (ihφ hρσ))
             (provablyEquivalent_of_termEquivalent_prop (ihψ hρσ))))
   | imp φ ψ ihφ ihψ =>
-      simpa [closeTerm] using
+      simpa [closeTerm, subst] using
         (termEquivalent_of_provablyEquivalent_prop
           (Mettapedia.Logic.HOL.ClosedTheorySet.ProvablyEquivalent.imp_congr
             (provablyEquivalent_of_termEquivalent_prop (ihφ hρσ))
@@ -498,10 +498,10 @@ theorem closeTerm_termEquivalent_of_pointwise
         exact
           ⟨Mettapedia.Logic.HOL.ClosedTheorySet.Provable.not_congr hEqv.2,
             Mettapedia.Logic.HOL.ClosedTheorySet.Provable.not_congr hEqv.1⟩
-      simpa [closeTerm, closeFormula] using
+      simpa [closeTerm, closeFormula, subst] using
         (termEquivalent_of_provablyEquivalent_prop hNotEqv)
   | eq t u iht ihu =>
-      simpa [closeTerm] using
+      simpa [closeTerm, subst, eq] using
         (termEquivalent_of_provablyEquivalent_prop
           (provablyEquivalent_eq_of_termEquivalent
             (iht hρσ) (ihu hρσ)))

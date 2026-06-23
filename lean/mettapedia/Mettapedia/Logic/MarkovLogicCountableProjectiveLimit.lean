@@ -142,7 +142,12 @@ theorem nextKernel_compProd_eq_map
             (frestrictLe₂ (π := fun _ : ℕ => Bool) (Nat.le_succ n))
             (μ (n + 1))) =
         (μ (n + 1)).map (nextPairMap n) := by
-    simpa [nextPairMap] using
+    show ((μ (n + 1)).map (frestrictLe₂ (π := fun _ : ℕ => Bool) (Nat.le_succ n))).compProd
+          (ProbabilityTheory.condDistrib (lastCoord n)
+            (frestrictLe₂ (π := fun _ : ℕ => Bool) (Nat.le_succ n)) (μ (n + 1))) =
+        (μ (n + 1)).map (fun a => (frestrictLe₂ (π := fun _ : ℕ => Bool) (Nat.le_succ n) a,
+          lastCoord n a))
+    exact
       (ProbabilityTheory.compProd_map_condDistrib
       (μ := μ (n + 1))
       (X := frestrictLe₂ (π := fun _ : ℕ => Bool) (Nat.le_succ n))
@@ -270,7 +275,7 @@ theorem countableProjectiveLimit_marginal
       I.restrict ∘ ⇑(MeasurableEquiv.piCongrLeft (fun _ : Atom => Bool) e) =
         ⇑(MeasurableEquiv.piCongrLeft (fun i : I => Bool)
           (e.restrictPreimageFinset I)) ∘ J.restrict := by
-    simpa [J] using
+    simpa [J, MeasurableEquiv.coe_piCongrLeft] using
       (Finset.restrict_comp_piCongrLeft (π := fun _ : Atom => Bool) I e)
   have hcomp :
       ⇑(MeasurableEquiv.piCongrLeft (fun i : I => Bool)
@@ -315,7 +320,7 @@ theorem countableProjectiveLimit_marginal
         (Finset.restrict₂ (π := fun _ : ℕ => Bool) hsub
           ((MeasurableEquiv.piCongrLeft (fun i : K => Bool)
             (prefixEquiv e N)).symm x)) j := by
-      simpa [Function.comp, eJ] using houter
+      simpa [Function.comp, eJ, MeasurableEquiv.coe_piCongrLeft] using houter
     rw [houter']
     change
       ((MeasurableEquiv.piCongrLeft (fun i : K => Bool)
@@ -373,8 +378,7 @@ theorem countableProjectiveLimit_marginal
     _ = (P K).map (Finset.restrict₂ (π := fun _ : Atom => Bool) hIK) := by
       rw [MeasureTheory.inducedFamily, prefixFamily]
       rw [Measure.map_map, Measure.map_map]
-      · simpa [Function.comp] using
-          congrArg (fun f => Measure.map f (P K)) hcomp
+      · exact congrArg (fun f => Measure.map f (P K)) hcomp
       · fun_prop
       · fun_prop
       · fun_prop

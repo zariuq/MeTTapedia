@@ -59,7 +59,7 @@ theorem strengthToENNReal_le_one (s : ℝ) (hs : s ∈ Set.Icc (0 : ℝ) 1) :
 /-- The embedded strength is nonnegative -/
 theorem strengthToENNReal_nonneg (s : ℝ) (hs : s ∈ Set.Icc (0 : ℝ) 1) :
     0 ≤ strengthToENNReal s hs :=
-  zero_le _
+  zero_le
 
 /-! ## PLN-Parameterized MetaMo Dynamics
 

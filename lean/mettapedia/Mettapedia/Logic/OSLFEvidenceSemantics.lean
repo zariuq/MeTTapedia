@@ -746,7 +746,7 @@ theorem presupGated_le_assert_of_presup_le_one
     presupGatedSemE R I presup assert p ≤ semE R I assert p := by
   unfold presupGatedSemE
   simp only [BinaryEvidence.le_def, BinaryEvidence.tensor_def, BinaryEvidence.one] at hp ⊢
-  exact ⟨mul_le_of_le_one_left (zero_le _) hp.1, mul_le_of_le_one_left (zero_le _) hp.2⟩
+  exact ⟨mul_le_of_le_one_left (zero_le) hp.1, mul_le_of_le_one_left (zero_le) hp.2⟩
 
 /-- **Negation projection law**: Negation preserves presupposition.
 

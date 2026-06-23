@@ -91,26 +91,33 @@ noncomputable def bernoulliArmEnvironment (getArm : Action → BanditArm) : Envi
       have huniv : (Finset.univ : Finset Percept) = {Percept.mk false false, Percept.mk false true,
                                                       Percept.mk true false, Percept.mk true true} := by
         decide
-      calc ∑' (x : Percept), (if x.obs = false then ENNReal.ofReal (arm.param.prob x.rewardBit) else 0)
-        _ = ∑ x : Percept, (if x.obs = false then ENNReal.ofReal (arm.param.prob x.rewardBit) else 0) := by
-            exact tsum_fintype _
-        _ = (if (Percept.mk false false).obs = false then ENNReal.ofReal (arm.param.prob (Percept.mk false false).rewardBit) else 0) +
-            (if (Percept.mk false true).obs = false then ENNReal.ofReal (arm.param.prob (Percept.mk false true).rewardBit) else 0) +
-            (if (Percept.mk true false).obs = false then ENNReal.ofReal (arm.param.prob (Percept.mk true false).rewardBit) else 0) +
-            (if (Percept.mk true true).obs = false then ENNReal.ofReal (arm.param.prob (Percept.mk true true).rewardBit) else 0) := by
+      change (∑ x : Percept, if x.obs = false then
+          ENNReal.ofReal ((getArm lastAction).param.prob x.rewardBit) else 0) ≤ 1
+      calc ∑ x : Percept, (if x.obs = false then
+              ENNReal.ofReal ((getArm lastAction).param.prob x.rewardBit) else 0)
+        _ = (if (Percept.mk false false).obs = false then
+                ENNReal.ofReal ((getArm lastAction).param.prob (Percept.mk false false).rewardBit) else 0) +
+            (if (Percept.mk false true).obs = false then
+                ENNReal.ofReal ((getArm lastAction).param.prob (Percept.mk false true).rewardBit) else 0) +
+            (if (Percept.mk true false).obs = false then
+                ENNReal.ofReal ((getArm lastAction).param.prob (Percept.mk true false).rewardBit) else 0) +
+            (if (Percept.mk true true).obs = false then
+                ENNReal.ofReal ((getArm lastAction).param.prob (Percept.mk true true).rewardBit) else 0) := by
             rw [huniv]
             simp [Finset.sum_insert, Finset.sum_singleton]
             ring
-        _ = ENNReal.ofReal (arm.param.prob false) + ENNReal.ofReal (arm.param.prob true) := by
+        _ = ENNReal.ofReal ((getArm lastAction).param.prob false) +
+              ENNReal.ofReal ((getArm lastAction).param.prob true) := by
             simp [Percept.obs, Percept.rewardBit]
-        _ = ENNReal.ofReal (arm.param.prob false + arm.param.prob true) := by
+        _ = ENNReal.ofReal ((getArm lastAction).param.prob false +
+              (getArm lastAction).param.prob true) := by
             rw [← ENNReal.ofReal_add]
             · exact BernoulliDist.prob_nonneg _ _
             · exact BernoulliDist.prob_nonneg _ _
         _ = ENNReal.ofReal 1 := by
             congr 1
             rw [add_comm]
-            exact BernoulliDist.prob_sum_one arm.param
+            exact BernoulliDist.prob_sum_one (getArm lastAction).param
         _ = 1 := ENNReal.ofReal_one
         _ ≤ 1 := le_refl 1
 

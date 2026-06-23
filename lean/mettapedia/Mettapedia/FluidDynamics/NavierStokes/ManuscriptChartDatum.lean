@@ -75,6 +75,7 @@ theorem radiusSq_truncate_eq_sum (x : ModeState) (N : ℕ) :
 theorem truncateModes_radiusSq_tendsto (x : ModeState) :
     Tendsto (fun N => radiusSq (truncateModes N x))
       Filter.atTop (nhds (radiusSq x)) := by
+  rw [radiusSq]
   convert (summable_radiusSqTerm x).hasSum.tendsto_sum_nat using 1
   ext N
   exact radiusSq_truncate_eq_sum x N
@@ -105,7 +106,7 @@ def observableEnvelopeSum (L : WeightedObservable) : ℝ :=
 
 theorem summable_observableEnvelope (L : WeightedObservable) :
     Summable (observableEnvelope L) := by
-  simpa [observableEnvelope] using summable_modeWeight.mul_left L.boundConst
+  exact summable_modeWeight.mul_left L.boundConst
 
 theorem observableTerm_norm_le (L : WeightedObservable) (x : ModeState) (n : ℕ) :
     ‖observableTerm L x n‖ ≤ observableEnvelope L n := by
@@ -154,6 +155,7 @@ theorem matchingObservable_truncate_eq_sum (L : WeightedObservable) (x : ModeSta
 theorem truncateModes_matchingObservable_tendsto (L : WeightedObservable) (x : ModeState) :
     Tendsto (fun N => matchingObservable L (truncateModes N x))
       Filter.atTop (nhds (matchingObservable L x)) := by
+  rw [matchingObservable]
   convert (summable_observableTerm L x).hasSum.tendsto_sum_nat using 1
   ext N
   exact matchingObservable_truncate_eq_sum L x N

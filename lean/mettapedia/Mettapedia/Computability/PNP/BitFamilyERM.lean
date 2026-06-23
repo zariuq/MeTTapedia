@@ -49,8 +49,8 @@ theorem empiricalRiskPredictor_mem_realized
   letI : Nonempty F.toEncodedFamily.Code := by
     change Nonempty (BitCode s)
     exact ⟨fun _ => false⟩
-  simpa [empiricalRiskCode, empiricalRiskPredictor] using
-    F.toEncodedFamily.empiricalRiskPredictor_mem_realized sample
+  change F.toEncodedFamily.empiricalRiskPredictor sample ∈ EncodedFamily.realized F.toEncodedFamily
+  exact F.toEncodedFamily.empiricalRiskPredictor_mem_realized sample
 
 theorem empiricalRiskPredictor_fitsSample_of_exists_code_fits
     (F : BitEncodedClassifierFamily Input s)
@@ -60,8 +60,8 @@ theorem empiricalRiskPredictor_fitsSample_of_exists_code_fits
   letI : Nonempty F.toEncodedFamily.Code := by
     change Nonempty (BitCode s)
     exact ⟨fun _ => false⟩
-  simpa [empiricalRiskCode, empiricalRiskPredictor] using
-    F.toEncodedFamily.empiricalRiskPredictor_fitsSample_of_exists_code_fits sample hfit
+  change FitsSample sample (F.toEncodedFamily.empiricalRiskPredictor sample)
+  exact F.toEncodedFamily.empiricalRiskPredictor_fitsSample_of_exists_code_fits sample hfit
 
 /-- One fixed code per index yields one indexed predictor family. -/
 def indexedCodeFamily

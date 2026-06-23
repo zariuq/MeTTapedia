@@ -79,12 +79,12 @@ private lemma evidenceOf_eq_of_stateOfTraj_eq {n : ℕ} {xs ys : Traj k n}
     MarkovExchangeability.evidenceOf (α := Fin k) (n := n) xs =
       MarkovExchangeability.evidenceOf (α := Fin k) (n := n) ys := by
   apply MarkovExchangeability.MarkovEvidence.ext
-  · simpa [MarkovExchangeability.evidenceOf] using congrArg MarkovState.start h
+  · simpa [MarkovExchangeability.evidenceOf, stateOfTraj] using congrArg MarkovState.start h
   · funext a b
     have hcounts :
         (MarkovExchangeabilityBridge.countsOfFn (k := k) xs).counts a b =
           (MarkovExchangeabilityBridge.countsOfFn (k := k) ys).counts a b := by
-      simpa using congrArg (fun e : MarkovState k => e.counts.counts a b) h
+      simpa [stateOfTraj] using congrArg (fun e : MarkovState k => e.counts.counts a b) h
     simpa [MarkovExchangeability.evidenceOf, MarkovExchangeabilityBridge.countsOfFn] using hcounts
 
 /-- If `μ` is Markov-exchangeable, then `μ` is constant on each evidence fiber. -/

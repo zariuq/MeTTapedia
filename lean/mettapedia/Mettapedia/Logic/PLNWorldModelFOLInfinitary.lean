@@ -92,6 +92,14 @@ theorem folInfEvidence_add {L : Language.{u}}
 noncomputable instance {L : Language.{u}} : BinaryWorldModel (FOLInfState L) (FOLInfQuery L) where
   evidence := folInfEvidence
   evidence_add := folInfEvidence_add
+  evidence_zero := by
+    intro q
+    classical
+    apply BinaryEvidence.ext'
+    · change (folInfEvidence (0 : FOLInfState L) q).pos = 0
+      simp [folInfEvidence]
+    · change (folInfEvidence (0 : FOLInfState L) q).neg = 0
+      simp [folInfEvidence]
 
 theorem folInfEvidence_singleton_of_satisfies {L : Language.{u}}
     (S : PointedFOL L) (q : FOLInfQuery L) (h : SatisfiesInf S q) :
@@ -164,7 +172,7 @@ theorem pointwiseImplies_iff_singletonStrengthLE {L : Language.{u}}
       rw [queryStrength_singleton_of_satisfies S q₁ hq₁]
       rw [queryStrength_singleton_of_satisfies S q₂ hq₂]
     · rw [queryStrength_singleton_of_not_satisfies S q₁ hq₁]
-      exact zero_le _
+      exact zero_le
   · intro hle S hq₁
     by_contra hq₂
     have hsingleton := hle S

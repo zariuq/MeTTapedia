@@ -1,7 +1,7 @@
 import Metamath.DeclarativeSpec
 import Metamath.Verify
 import Metamath.KernelClean
-import Metamath.OperationalBridge
+import Metamath.Spec.Operational
 
 /-!
 # Metamath Bridge to `mm-lean4`
@@ -219,8 +219,19 @@ def mkKernelStateWitness? (db : RuntimeDB) (pr : RuntimeProofState) :
               h_frame := hfr
               h_expr := rfl }
 
-/-- Re-export the existing `mm-lean4` operational carrier profile so mettapedia
-can consume the verified state names directly. -/
-abbrev operationalStateCarriers := Metamath.OperationalBridge.stateCarriers
+/-- Operational carrier profile exposed at the Mettapedia bridge boundary.
+The older upstream `OperationalBridge.stateCarriers` helper is no longer present
+in the current `mm-lean4` layout; this table keeps the same boundary explicit,
+using the verified runtime/spec carriers named above. -/
+structure OperationalStateCarriers where
+  runtimeState : Type := RuntimeState
+  specState : Type := SpecState
+  runtimeDB : Type := RuntimeDB
+  runtimeProofState : Type := RuntimeProofState
+  operationalDatabase : Type := OperationalDatabase
+  operationalFrame : Type := OperationalFrame
+  operationalExpr : Type := OperationalExpr
+
+def operationalStateCarriers : OperationalStateCarriers := {}
 
 end Mettapedia.Languages.Metamath.MMLean4Bridge

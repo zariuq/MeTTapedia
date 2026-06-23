@@ -2292,7 +2292,7 @@ theorem fullSoundness (I : HeytingTopologicalInterpretation Base Const X)
     have h_proj : I.propSpace.proj (I.antecedentsEval Δ' γ) =
                   I.propSpace.proj (I.formulaEval (Term.all φ') γ) := by
       exact (I.antecedentsEval_proj Δ' γ).trans (I.formulaEval_proj (Term.all φ') γ).symm
-    simpa [formulaEval, antecedentsEval] using h_adj γ h_proj
+    simpa [formulaEval, antecedentsEval, evalAll] using h_adj γ h_proj
   | exL _ ih =>
     -- ∃x.φ :: Δ ⊢ χ  from  φ :: weaken(Δ) ⊢ weaken(χ)
     -- Strategy: Use quantEx_elim adjunction
@@ -2371,6 +2371,10 @@ theorem fullSoundness (I : HeytingTopologicalInterpretation Base Const X)
     let exEval := I.formulaEval (Term.ex φ') γ
     let ΔEval := I.antecedentsEval Δ' γ
     let χEval := I.formulaEval χ' γ
+    have h_ex_formula :
+        exEval =
+          I.toTopologicalInterpretation.propCtxEval (I.quantEx σ' Γ' (fullEval I φ')) γ := by
+      exact I.formulaEval_ex φ' γ
     have hExΔ : I.propSpace.proj exEval = I.propSpace.proj ΔEval := by
       exact (I.formulaEval_proj (Term.ex φ') γ).trans (I.antecedentsEval_proj Δ' γ).symm
     let exΔ_pair : PropFiberPair I.propSpace := ⟨(exEval, ΔEval), hExΔ⟩
@@ -2383,7 +2387,7 @@ theorem fullSoundness (I : HeytingTopologicalInterpretation Base Const X)
           I.fiberMeet exΔ_pair := by
       simpa [exEval, ΔEval, exΔ_pair] using
         I.evalAntecedents_cons_fiberMeet (Term.ex φ') Δ' γ
-    simpa [χEval, h_ant_ex, exΔ_pair] using h_adj_γ
+    simpa [χEval, h_ant_ex, exΔ_pair, h_ex_formula, formulaEval, evalEx] using h_adj_γ
   | exR t _ ih =>
     -- Δ ⊢ ∃x.φ  from  Δ ⊢ φ[t/x]
     -- Strategy: Δ ≤ φ[t/x] (by ih), φ[t/x] ≤ ∃x.φ (by quantEx_intro)
@@ -2475,11 +2479,12 @@ noncomputable def counterexample_of_not_fullValidSequent
     (hInvalid : ¬ I.FullValidSequent antecedents succedent) :
     TopologicalInterpretation.Counterexample.{u, v, w}
       (Base := Base) (Const := Const) antecedents succedent :=
-  TopologicalInterpretation.Counterexample.ofInvalid
+    TopologicalInterpretation.Counterexample.ofInvalid
     (I := I.toTopologicalInterpretation)
     antecedents succedent
     (by
-      simpa using hInvalid)
+      change ¬ I.FullValidSequent antecedents succedent
+      exact hInvalid)
 
 /--
 Any failure of `FullValidSequent` in a Heyting topological interpretation yields
@@ -2498,7 +2503,8 @@ theorem exists_counterexample_of_not_fullValidSequent
   TopologicalInterpretation.exists_counterexample_of_not_valid
     (I := I.toTopologicalInterpretation)
     (by
-      simpa using hInvalid)
+      change ¬ I.FullValidSequent antecedents succedent
+      exact hInvalid)
 
 end HeytingTopologicalInterpretation
 

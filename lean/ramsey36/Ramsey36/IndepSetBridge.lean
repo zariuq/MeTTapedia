@@ -97,7 +97,7 @@ theorem hasIndepSetAux_complete
             omega
           have h_skip := ih (s := s) (start := start + 1) (h_fuel := by omega) h_card h_ge' h_indep h_compat
           split <;> simp [h_skip]
-      · rw [dif_neg h_start]; push_neg at h_start; exfalso
+      · rw [dif_neg h_start]; push Not at h_start; exfalso
         have : s = ∅ := Finset.eq_empty_iff_forall_notMem.mpr
           fun u hu => absurd u.isLt (Nat.not_lt.mpr (by have := h_ge u hu; omega))
         rw [this, Finset.card_empty] at h_card; omega

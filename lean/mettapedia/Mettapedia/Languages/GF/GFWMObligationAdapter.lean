@@ -160,7 +160,7 @@ noncomputable def syntaxToWMFunctor_full_of_queryEq_reflects_patternEq
   map_surjective := by
     intro A B f
     refine ⟨PLift.up (hreflect (syntaxQuery A) (syntaxQuery B) ?_), ?_⟩
-    · simpa [wmQuery, syntaxQuery] using f.down
+    · exact f.down
     · cases f
       rfl
 
@@ -190,7 +190,7 @@ theorem syntaxToWMFunctor_not_full_witness_of_constant_evidence
       ¬ ∃ g : A ⟶ B, (syntaxToWMFunctor (State := State)).map g = f := by
   refine ⟨PLift.up ?_, ?_⟩
   · intro W
-    simpa [wmQuery, syntaxQuery] using hconst W (syntaxQuery A) (syntaxQuery B)
+    exact hconst W (syntaxQuery A) (syntaxQuery B)
   · intro hpre
     rcases hpre with ⟨g, _⟩
     exact hneq g.down

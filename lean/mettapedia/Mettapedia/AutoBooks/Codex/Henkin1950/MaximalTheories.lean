@@ -50,8 +50,7 @@ theorem provable_not_of_inconsistent_insert
   have hΔ : ∀ {ψ : Sentence}, ψ ∈ Δ → ψ ∈ T := by
     intro ψ hψ
     have hψΓ : ψ ∈ Γ := (List.mem_filter.mp hψ).1
-    have hψInsert : ψ = φ ∨ ψ ∈ T := by
-      simpa [Set.mem_insert_iff] using (hΓ ψ hψΓ)
+    have hψInsert : ψ = φ ∨ ψ ∈ T := Set.mem_insert_iff.mp (hΓ ψ hψΓ)
     rcases hψInsert with hEq | hψT
     · have hneq : ψ ≠ φ := by
         simpa using (List.mem_filter.mp hψ).2

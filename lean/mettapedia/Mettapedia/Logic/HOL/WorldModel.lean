@@ -148,7 +148,7 @@ theorem pointwiseImplies_iff_singletonStrengthLE (φ ψ : HOLQuery Const) :
       rw [queryStrength_singleton_of_satisfies (Base := Base) (Const := Const) M φ hφ]
       rw [queryStrength_singleton_of_satisfies (Base := Base) (Const := Const) M ψ hψ]
     · rw [queryStrength_singleton_of_not_satisfies (Base := Base) (Const := Const) M φ hφ]
-      exact zero_le _
+      exact bot_le
   · intro hle M hφ
     by_contra hψ
     have hsingleton := hle M

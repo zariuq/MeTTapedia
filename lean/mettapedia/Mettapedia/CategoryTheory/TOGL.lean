@@ -3,7 +3,7 @@ import Mathlib.Data.Finset.Basic
 import Mathlib.Logic.Basic
 import Mathlib.Probability.ConditionalProbability
 import Mathlib.MeasureTheory.Measure.ProbabilityMeasure
-import Mettapedia.ProbabilityTheory.KnuthSkilling.Core.Basic
+import KnuthSkilling.Core.Basic
 
 /-!
 # TOGL: Theory of Generating Languages (Greg Meredith)
@@ -49,7 +49,7 @@ where Γ is a sequence of variable dependencies.
 
 namespace Mettapedia.CategoryTheory.TOGL
 
-open Mettapedia.ProbabilityTheory.KnuthSkilling
+open KnuthSkilling
 
 /-! ## Theories of Variables and Vertices
 

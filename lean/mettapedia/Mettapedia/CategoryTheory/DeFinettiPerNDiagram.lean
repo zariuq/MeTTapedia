@@ -125,18 +125,22 @@ the permutation index category acts on prefix-law objects
 def perNPrefixDiagramFunctor (n : ℕ) :
     CategoryTheory.Functor (PerNPermIndex n) Type where
   obj _ := BoolPrefixObj n
-  map σ := boolPrefixPermAction σ.symm
+  map σ := TypeCat.ofHom (boolPrefixPermAction σ.symm)
   map_id x := by
-    funext f xs
+    apply CategoryTheory.ConcreteCategory.hom_ext
+    intro f
+    funext xs
     rfl
   map_comp f g := by
-    funext h xs
+    apply CategoryTheory.ConcreteCategory.hom_ext
+    intro h
+    funext xs
     rfl
 
 /-- Explicit endomorphism map of the true per-`n` diagram at the unique object. -/
 def perNPrefixDiagramMap (n : ℕ) (σ : Equiv.Perm (Fin n)) :
     BoolPrefixObj n → BoolPrefixObj n :=
-  (perNPrefixDiagramFunctor n).map (X := perNPermStar n) (Y := perNPermStar n) σ
+  ⇑((perNPrefixDiagramFunctor n).map (X := perNPermStar n) (Y := perNPermStar n) σ)
 
 /-- Per-`n` categorical cone-commutativity for the concrete prefix law. -/
 def PerNPrefixLawConeCommutes
@@ -152,13 +156,14 @@ def perNPrefixLawConeOfCommutes
     CategoryTheory.Limits.Cone (perNPrefixDiagramFunctor n) where
   pt := PUnit
   π :=
-    { app := fun _ _ => prefixLaw X μ n
+    { app := fun _ => TypeCat.ofHom (fun _ => prefixLaw X μ n)
       naturality := by
         intro j j' σ
         cases j
         cases j'
-        funext u
-        simpa [perNPrefixDiagramMap] using (hcomm σ).symm }
+        apply CategoryTheory.ConcreteCategory.hom_ext
+        intro u
+        exact (hcomm σ).symm }
 
 /-- Cone-wrapper sanity check: the cone built from commutativity has the
 expected pointwise leg at the unique object. -/
@@ -178,9 +183,9 @@ theorem perNPrefixLawConeCommutes_iff_prefixLawInvariance
         boolPrefixPermAction σ (prefixLaw X μ n) = prefixLaw X μ n := by
   constructor
   · intro hcomm σ
-    simpa [PerNPrefixLawConeCommutes, perNPrefixDiagramMap, perNPermStar] using hcomm σ.symm
+    exact hcomm σ.symm
   · intro hperm σ
-    simpa [PerNPrefixLawConeCommutes, perNPrefixDiagramMap, perNPermStar] using hperm σ.symm
+    exact hperm σ.symm
 
 /-- Global equivalence: the true categorical per-`n` cone-commutativity family
 is equivalent to the existing `IsPrefixLawCone` predicate. -/
@@ -190,11 +195,9 @@ theorem isPrefixLawCone_iff_perNPrefixLawConeCommutes
       ∀ n : ℕ, PerNPrefixLawConeCommutes (Ω := Ω) X μ n := by
   constructor
   · intro h n σ
-    simpa [IsPrefixLawCone, PerNPrefixLawConeCommutes, perNPrefixDiagramMap, perNPermStar] using
-      h n σ.symm
+    exact h n σ.symm
   · intro h n σ
-    simpa [IsPrefixLawCone, PerNPrefixLawConeCommutes, perNPrefixDiagramMap, perNPermStar] using
-      h n σ.symm
+    exact h n σ.symm
 
 /-- Fixed-point object for the true per-`n` permutation diagram. -/
 def PerNPrefixFixedPoints (n : ℕ) : Type :=
@@ -204,33 +207,36 @@ def PerNPrefixFixedPoints (n : ℕ) : Type :=
 def perNPrefixFixedPointsCone (n : ℕ) : Cone (perNPrefixDiagramFunctor n) where
   pt := PerNPrefixFixedPoints n
   π :=
-    { app := fun _ f => f.1
+    { app := fun _ => TypeCat.ofHom (fun f => f.1)
       naturality := by
         intro j j' σ
         cases j
         cases j'
-        funext f
-        simpa [perNPrefixDiagramMap] using (f.2 σ).symm }
+        apply CategoryTheory.ConcreteCategory.hom_ext
+        intro f
+        exact (f.2 σ).symm }
 
 /-- The fixed-point cone is a true `CategoryTheory.Limits.IsLimit` witness
 for the per-`n` permutation diagram. -/
 def perNPrefixFixedPointsConeIsLimit (n : ℕ) :
     CategoryTheory.Limits.IsLimit (perNPrefixFixedPointsCone n) where
-  lift s x := by
+  lift s := TypeCat.ofHom fun x => by
     refine ⟨s.π.app (perNPermStar n) x, ?_⟩
     intro σ
     have hnat := congrArg (fun k => k x)
       (s.π.naturality (X := perNPermStar n) (Y := perNPermStar n) (f := σ))
-    simpa [perNPrefixDiagramMap] using hnat.symm
+    exact hnat.symm
   fac s j := by
     cases j
-    funext x
+    apply CategoryTheory.ConcreteCategory.hom_ext
+    intro x
     rfl
   uniq s m hm := by
-    funext x
+    apply CategoryTheory.ConcreteCategory.hom_ext
+    intro x
     apply Subtype.ext
     have hcomp := congrArg (fun k => k x) (hm (perNPermStar n))
-    simpa using hcomp
+    exact hcomp
 
 /-- True limit-cone packaging for the per-`n` permutation diagram. -/
 def perNPrefixDiagramLimitCone (n : ℕ) :

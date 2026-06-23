@@ -2584,8 +2584,8 @@ private theorem evalAtom_sync_to_eval_step
           (getMetaType atom == Atom.symbolType
             || getMetaType atom == Atom.groundedType
             || atom == Atom.unit) = false := by
-        have h_ne_sym : Atom.expressionType ≠ Atom.symbolType := by native_decide
-        have h_ne_grounded : Atom.expressionType ≠ Atom.groundedType := by native_decide
+        have h_ne_sym : Atom.expressionType ≠ Atom.symbolType := by decide
+        have h_ne_grounded : Atom.expressionType ≠ Atom.groundedType := by decide
         simp [h_expr, h_not_unit, h_ne_sym, h_ne_grounded]
       have h_expr_true : getMetaType atom == Atom.expressionType := by
         simp [h_expr]
@@ -2623,8 +2623,8 @@ private theorem evalAtom_sync_to_eval_step
           (getMetaType atom == Atom.symbolType
             || getMetaType atom == Atom.groundedType
             || atom == Atom.unit) = false := by
-        have h_ne_sym : Atom.expressionType ≠ Atom.symbolType := by native_decide
-        have h_ne_grounded : Atom.expressionType ≠ Atom.groundedType := by native_decide
+        have h_ne_sym : Atom.expressionType ≠ Atom.symbolType := by decide
+        have h_ne_grounded : Atom.expressionType ≠ Atom.groundedType := by decide
         simp [h_expr, h_not_unit, h_ne_sym, h_ne_grounded]
       have h_expr_true : getMetaType atom == Atom.expressionType := by
         simp [h_expr]
@@ -3333,7 +3333,13 @@ private theorem interpretExpression_eval_to_sync_step
                           | .inl _ => true
                           | .inr _ => false
                         else true) = true := by
-                    simpa [List.all_eq_true] using h_all_failed
+                    rw [List.all_eq_true]
+                    intro x hx
+                    rcases h_all_failed x hx with h | h
+                    · simp [h]
+                    · split
+                      · exact h
+                      · rfl
                   exact InterpretExpressionSync.op_type_error n (.expression (op :: args)) type_ b
                     op args funcType errs e rfl h_hasNonFunc h_all_failed_bool
                     h_ft_mem h_is_func h_check h_e_mem

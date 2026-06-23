@@ -11,7 +11,7 @@ without re-encoding the underlying Henkin-model semantics.
 
 namespace Mettapedia.Logic.PLNWorldModelHOLConsequence
 
-abbrev wmConsequenceRuleOn_of_pointwise :=
+noncomputable abbrev wmConsequenceRuleOn_of_pointwise :=
   @Mettapedia.Logic.PLNWorldModelHOLCompleteness.wmConsequenceRuleOn_of_pointwise
 
 end Mettapedia.Logic.PLNWorldModelHOLConsequence

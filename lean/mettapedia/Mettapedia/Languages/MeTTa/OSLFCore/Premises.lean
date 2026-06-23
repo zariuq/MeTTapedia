@@ -771,6 +771,7 @@ theorem groundedCallTuples_int_add_hit :
       [(.apply "+" []), (.apply "GInt" [(.apply "2" [])]), (.apply "GInt" [(.apply "3" [])]), (.fvar "out")]
       = [[(.apply "+" []), (.apply "GInt" [(.apply "2" [])]), (.apply "GInt" [(.apply "3" [])]), (.apply "GInt" [(.apply "5" [])])]] := by
   simp [groundedCallTuples, groundedCallViaCore, executeGroundedOp, GroundedType.execute]
+  rfl
 
 /-- Grounded String call hit (robust encoded output). -/
 theorem groundedCallTuples_string_concat_hit :
@@ -814,6 +815,7 @@ theorem castTuples_string_to_int_hit :
       = [[space0Pattern, (.apply "GString" [(.apply "42" [])]), tyInt, (.apply "GInt" [(.apply "42" [])])]] := by
   simp [castTuples, castConversion?, intOfPattern?, boolOfPattern?, stringOfPattern?, tokenOfPattern?,
     patternOfIntGrounded, tyInt]
+  rfl
 
 /-- Cast conversion hit: Bool-symbol -> String (robust encoded output). -/
 theorem castTuples_bool_to_string_hit :

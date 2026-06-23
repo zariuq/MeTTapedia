@@ -17,6 +17,7 @@ namespace Mettapedia.Languages.ProcessCalculi.PiCalculus.BackwardAdminReflection
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.Languages.ProcessCalculi.PiCalculus
 open Mettapedia.Languages.ProcessCalculi.PiCalculus.EncodingMorphism
+open Mettapedia.Languages.ProcessCalculi.RhoCalculus
 open Mettapedia.Languages.ProcessCalculi.RhoCalculus.DerivedRepNu
 
 /-- Encoded image closed under ρ structural congruence. -/
@@ -62,13 +63,13 @@ inductive AdminCanonicalTarget : Pattern → Pattern → Prop where
       AdminCanonicalTarget
         (rhoPar (encode (.nu x P) n v) (.apply "PInput" [.fvar v, .lambda none listenerBody]))
         (.collection .hashBag
-          [Mettapedia.OSLF.MeTTaIL.Substitution.commSubst listenerBody (.fvar n),
+          [semanticCommSubst listenerBody (.fvar n),
            rhoInput (.fvar n) x (encode P (n ++ "_" ++ n) v)] none)
   | seedListener (x z v s : String) (listenerBody : Pattern) :
       AdminCanonicalTarget
         (rhoPar (nameServer x z v s) (.apply "PInput" [.fvar z, .lambda none listenerBody]))
         (.collection .hashBag
-          [Mettapedia.OSLF.MeTTaIL.Substitution.commSubst listenerBody (.apply "PDrop" [.fvar s]),
+          [semanticCommSubst listenerBody (.apply "PDrop" [.fvar s]),
            rhoReplicate (Mettapedia.Languages.ProcessCalculi.PiCalculus.nameServerBody x z v),
            dropOperation x] none)
   | replicate (x y : Name) (P : Process) (n v : String) :
@@ -91,7 +92,7 @@ theorem admin_source_forward_progress {N : Finset String} {src : Pattern}
           (N := N) x P n v listenerBody with ⟨tgt, hstep, hbisim⟩
       exact ⟨tgt,
         .collection .hashBag
-          [Mettapedia.OSLF.MeTTaIL.Substitution.commSubst listenerBody (.fvar n),
+          [semanticCommSubst listenerBody (.fvar n),
            rhoInput (.fvar n) x (encode P (n ++ "_" ++ n) v)] none,
         hstep, AdminCanonicalTarget.nuListener x P n v listenerBody, hbisim⟩
   | seedListener x z v s listenerBody =>
@@ -99,7 +100,7 @@ theorem admin_source_forward_progress {N : Finset String} {src : Pattern}
           (N := N) x z v s listenerBody with ⟨tgt, hstep, hbisim⟩
       exact ⟨tgt,
         .collection .hashBag
-          [Mettapedia.OSLF.MeTTaIL.Substitution.commSubst listenerBody (.apply "PDrop" [.fvar s]),
+          [semanticCommSubst listenerBody (.apply "PDrop" [.fvar s]),
            rhoReplicate (Mettapedia.Languages.ProcessCalculi.PiCalculus.nameServerBody x z v),
            dropOperation x] none,
         hstep, AdminCanonicalTarget.seedListener x z v s listenerBody, hbisim⟩
@@ -2377,7 +2378,10 @@ theorem weak_backward_outcome_fresh_of_encodedSC_star_source_fresh_canary_nonemp
     exact ⟨by decide, by simp [ForwardSimulation.BarendregtFor]⟩
   have hobs :
       ({ "alpha" } : Finset String) ⊆ Psrc.freeNames := by
-    simp [Psrc, Process.freeNames]
+    intro a ha
+    simp at ha
+    subst a
+    exact Finset.mem_insert_self "alpha" ({"w"} : Finset String)
   have hfresh : EncodingFreshAt Psrc "n_custom" "v_custom" := by
     simp [EncodingFreshAt, Psrc, Process.freeNames]
     decide
@@ -2453,11 +2457,11 @@ theorem full_nonRF_admin_correspondence_bidir {N : Finset String}
         .collection .hashBag [Tseed, Tnu] none) ∧
       WeakRestrictedBisimD N Tnu
         (.collection .hashBag
-          [Mettapedia.OSLF.MeTTaIL.Substitution.commSubst nuListenerBody (.fvar "n_init"),
+          [semanticCommSubst nuListenerBody (.fvar "n_init"),
            rhoInput (.fvar "n_init") x (encode P ("n_init" ++ "_" ++ "n_init") "v_init")] none) ∧
       WeakRestrictedBisimD N Tseed
         (.collection .hashBag
-          [Mettapedia.OSLF.MeTTaIL.Substitution.commSubst seedListenerBody (.apply "PDrop" [.fvar "ns_seed"]),
+          [semanticCommSubst seedListenerBody (.apply "PDrop" [.fvar "ns_seed"]),
            rhoReplicate (Mettapedia.Languages.ProcessCalculi.PiCalculus.nameServerBody "ns_x" "ns_z" "v_init"),
            dropOperation "ns_x"] none) ∧
       WeakRestrictedBisimD N TrepNu
@@ -2523,11 +2527,11 @@ theorem full_nonRF_admin_correspondence_bidir_fresh {N : Finset String}
         .collection .hashBag [Tseed, Tnu] none) ∧
       WeakRestrictedBisimD N Tnu
         (.collection .hashBag
-          [Mettapedia.OSLF.MeTTaIL.Substitution.commSubst nuListenerBody (.fvar "n_init"),
+          [semanticCommSubst nuListenerBody (.fvar "n_init"),
            rhoInput (.fvar "n_init") x (encode P ("n_init" ++ "_" ++ "n_init") "v_init")] none) ∧
       WeakRestrictedBisimD N Tseed
         (.collection .hashBag
-          [Mettapedia.OSLF.MeTTaIL.Substitution.commSubst seedListenerBody (.apply "PDrop" [.fvar "ns_seed"]),
+          [semanticCommSubst seedListenerBody (.apply "PDrop" [.fvar "ns_seed"]),
            rhoReplicate (Mettapedia.Languages.ProcessCalculi.PiCalculus.nameServerBody "ns_x" "ns_z" "v_init"),
            dropOperation "ns_x"] none) ∧
       WeakRestrictedBisimD N TrepNu
@@ -2596,11 +2600,11 @@ theorem full_nonRF_admin_correspondence_bidir_fresh_userObs {N : Finset String}
         .collection .hashBag [Tseed, Tnu] none) ∧
       WeakRestrictedBisimD N Tnu
         (.collection .hashBag
-          [Mettapedia.OSLF.MeTTaIL.Substitution.commSubst nuListenerBody (.fvar "n_init"),
+          [semanticCommSubst nuListenerBody (.fvar "n_init"),
            rhoInput (.fvar "n_init") x (encode P ("n_init" ++ "_" ++ "n_init") "v_init")] none) ∧
       WeakRestrictedBisimD N Tseed
         (.collection .hashBag
-          [Mettapedia.OSLF.MeTTaIL.Substitution.commSubst seedListenerBody (.apply "PDrop" [.fvar "ns_seed"]),
+          [semanticCommSubst seedListenerBody (.apply "PDrop" [.fvar "ns_seed"]),
            rhoReplicate (Mettapedia.Languages.ProcessCalculi.PiCalculus.nameServerBody "ns_x" "ns_z" "v_init"),
            dropOperation "ns_x"] none) ∧
       WeakRestrictedBisimD N TrepNu
@@ -2644,11 +2648,11 @@ theorem backward_reflect_fullEncode_nu_admin_progress {N : Finset String}
         (.collection .hashBag [Tseed, Tnu] none) ∧
       WeakRestrictedBisimD N Tnu
         (.collection .hashBag
-          [Mettapedia.OSLF.MeTTaIL.Substitution.commSubst nuListenerBody (.fvar "n_init"),
+          [semanticCommSubst nuListenerBody (.fvar "n_init"),
            rhoInput (.fvar "n_init") x (encode P ("n_init" ++ "_" ++ "n_init") "v_init")] none) ∧
       WeakRestrictedBisimD N Tseed
         (.collection .hashBag
-          [Mettapedia.OSLF.MeTTaIL.Substitution.commSubst seedListenerBody (.apply "PDrop" [.fvar "ns_seed"]),
+          [semanticCommSubst seedListenerBody (.apply "PDrop" [.fvar "ns_seed"]),
            rhoReplicate (Mettapedia.Languages.ProcessCalculi.PiCalculus.nameServerBody "ns_x" "ns_z" "v_init"),
            dropOperation "ns_x"] none) ∧
       WeakRestrictedBisimD N Trep
@@ -2724,11 +2728,11 @@ theorem backward_reflect_fullEncode_nu_admin_progress_canary_nontrivial_full :
         (.collection .hashBag [Tseed, Tnu] none) ∧
       WeakRestrictedBisimD (∅ : Finset String) Tnu
         (.collection .hashBag
-          [Mettapedia.OSLF.MeTTaIL.Substitution.commSubst (.apply "PDrop" [.fvar "k"]) (.fvar "n_init"),
+          [semanticCommSubst (.apply "PDrop" [.fvar "k"]) (.fvar "n_init"),
            rhoInput (.fvar "n_init") "x" (encode .nil ("n_init" ++ "_" ++ "n_init") "v_init")] none) ∧
       WeakRestrictedBisimD (∅ : Finset String) Tseed
         (.collection .hashBag
-          [Mettapedia.OSLF.MeTTaIL.Substitution.commSubst (.apply "NQuote" [.fvar "m"]) (.apply "PDrop" [.fvar "ns_seed"]),
+          [semanticCommSubst (.apply "NQuote" [.fvar "m"]) (.apply "PDrop" [.fvar "ns_seed"]),
            rhoReplicate (Mettapedia.Languages.ProcessCalculi.PiCalculus.nameServerBody "ns_x" "ns_z" "v_init"),
            dropOperation "ns_x"] none) ∧
       WeakRestrictedBisimD (∅ : Finset String) Trep

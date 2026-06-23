@@ -84,8 +84,8 @@ theorem paper63_statevector_collapse_norm_one_of_raw_pos
     (i : ℕ) (out : Outcome) (st : QState)
     (hraw : 0 < rawOutcomeProb i out st) :
     norm ((statevectorBackend.collapse i out st).ψ) = 1 := by
-  simpa [statevectorBackend] using
-    collapseByOutcome_norm_eq_one_of_raw_pos i out st hraw
+  change norm ((collapseByOutcome i out st).ψ) = 1
+  exact collapseByOutcome_norm_eq_one_of_raw_pos i out st hraw
 
 /-- Executable COMM denotation equals explicit branch-state selection record. -/
 theorem paper63_comm_denote_eq_measurement_selection (i : ℕ) (p q : Process) (st : QState) :

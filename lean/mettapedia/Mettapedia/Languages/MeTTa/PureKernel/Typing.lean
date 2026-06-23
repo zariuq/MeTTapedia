@@ -180,7 +180,7 @@ theorem typing_rename {Γ : Ctx n} {t A : PureTm n} (ht : HasType Γ t A) :
       simpa [rename] using (HasType.u0_type (Γ := Δ))
   | var i =>
       intro m Δ ρ hρ
-      simpa [hρ i] using (HasType.var (Γ := Δ) (i := ρ i))
+      simpa [rename, hρ i] using (HasType.var (Γ := Δ) (i := ρ i))
   | @pi_form n Γ A B hA hB ihA ihB =>
       intro m Δ ρ hρ
       have hA' := ihA (m := m) (Δ := Δ) (ρ := ρ) hρ

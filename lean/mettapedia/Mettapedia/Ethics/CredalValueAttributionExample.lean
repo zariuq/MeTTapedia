@@ -75,7 +75,8 @@ theorem returningWalletGoodConcept_closed_loose :
         · intro _
           simp [returningWalletGoodConcept]
         · intro _ x hx
-          have hx' : x = CaseStudy.returningWallet := by simpa using hx
+          have hx' : x = CaseStudy.returningWallet := by
+            simpa [returningWalletGoodConcept] using hx
           subst x
           simp [crispRelation, looseGate, valueAttributionFromCasesEvidence, yes]
     | MorallyBad =>
@@ -103,7 +104,8 @@ theorem returningWalletGoodConcept_closed_loose :
         · intro _
           simp [returningWalletGoodConcept]
         · intro _ m hm
-          have hm' : m = MoralValueAttribute.MorallyGood := by simpa using hm
+          have hm' : m = MoralValueAttribute.MorallyGood := by
+            simpa [returningWalletGoodConcept] using hm
           subst m
           simp [crispRelation, looseGate, valueAttributionFromCasesEvidence, yes]
     | betrayal =>
@@ -138,7 +140,8 @@ theorem betrayalBadConcept_closed_loose :
         · intro _
           simp [betrayalBadConcept]
         · intro _ x hx
-          have hx' : x = CaseStudy.betrayal := by simpa using hx
+          have hx' : x = CaseStudy.betrayal := by
+            simpa [betrayalBadConcept] using hx
           subst x
           simp [crispRelation, looseGate, valueAttributionFromCasesEvidence, strongYes]
     | MorallyPermissible =>
@@ -166,7 +169,8 @@ theorem betrayalBadConcept_closed_loose :
         · intro _
           simp [betrayalBadConcept]
         · intro _ m hm
-          have hm' : m = MoralValueAttribute.MorallyBad := by simpa using hm
+          have hm' : m = MoralValueAttribute.MorallyBad := by
+            simpa [betrayalBadConcept] using hm
           subst m
           simp [crispRelation, looseGate, valueAttributionFromCasesEvidence, strongYes]
 
@@ -190,7 +194,8 @@ theorem betrayalBadConcept_closed_strict :
         · intro _
           simp [betrayalBadConcept]
         · intro _ x hx
-          have hx' : x = CaseStudy.betrayal := by simpa using hx
+          have hx' : x = CaseStudy.betrayal := by
+            simpa [betrayalBadConcept] using hx
           subst x
           simp [crispRelation, strictGate, valueAttributionFromCasesEvidence, strongYes]
     | MorallyPermissible =>
@@ -218,7 +223,8 @@ theorem betrayalBadConcept_closed_strict :
         · intro _
           simp [betrayalBadConcept]
         · intro _ m hm
-          have hm' : m = MoralValueAttribute.MorallyBad := by simpa using hm
+          have hm' : m = MoralValueAttribute.MorallyBad := by
+            simpa [betrayalBadConcept] using hm
           subst m
           simp [crispRelation, strictGate, valueAttributionFromCasesEvidence, strongYes]
 
@@ -299,14 +305,12 @@ theorem returningWalletGoodConcept_globalEnvelopeMidpoint_eq_half :
       returningWalletGoodConcept ∉
         Mettapedia.Logic.ConceptOntology.lowerConceptFamily
           (Gate := Bool) valueGateFamily valueAttributionFromCasesEvidence := by
-    simpa [CredalValueAttributionCaseTable.lowerConceptFamily] using
-      returningWalletGoodConcept_not_mem_lower
+    exact returningWalletGoodConcept_not_mem_lower
   have hUpper :
       returningWalletGoodConcept ∈
         Mettapedia.Logic.ConceptOntology.upperConceptFamily
           (Gate := Bool) valueGateFamily valueAttributionFromCasesEvidence := by
-    simpa [CredalValueAttributionCaseTable.upperConceptFamily] using
-      returningWalletGoodConcept_mem_upper
+    exact returningWalletGoodConcept_mem_upper
   rw [if_neg hLower, if_pos hUpper] at h
   simpa using h
 
@@ -322,9 +326,7 @@ theorem betrayalBadConcept_globalEnvelopeWidthComplement_eq_one :
             Mettapedia.Logic.ConceptOntology.lowerConceptFamily
               (Gate := Bool) valueGateFamily valueAttributionFromCasesEvidence) := by
     intro hMixed
-    exact hMixed.2 (by
-      simpa [CredalValueAttributionCaseTable.lowerConceptFamily] using
-        betrayalBadConcept_mem_lower)
+    exact hMixed.2 betrayalBadConcept_mem_lower
   have h :=
     Mettapedia.Logic.ConceptOntology.globalEnvelopeWidthComplement_conceptFormationGamble_eq
       (Gate := Bool) valueGateFamily valueAttributionFromCasesEvidence

@@ -47,7 +47,7 @@ def reindex (f : C(Y, X)) (E : EtaleSpace X) : EtaleSpace Y where
         ⟨q.1.fst, by
           have hq : q.1.snd ∈ e.source := q.2
           have hEq : f q.1.fst = e q.1.snd := by
-            simpa [hproj] using q.1.property
+            simpa [Function.Pullback.fst, Function.Pullback.snd, hproj] using q.1.property
           change f q.1.fst ∈ e.target
           rw [hEq]
           exact e.map_source hq⟩
@@ -63,22 +63,22 @@ def reindex (f : C(Y, X)) (E : EtaleSpace X) : EtaleSpace Y where
         · rfl
         · have hq : q.1.snd ∈ e.source := q.2
           have hEq : f q.1.fst = e q.1.snd := by
-            simpa [hproj] using q.1.property
-          simpa [hEq] using e.left_inv hq
+            simpa [Function.Pullback.fst, Function.Pullback.snd, hproj] using q.1.property
+          simpa [Function.Pullback.snd, hEq] using e.left_inv hq
       right_inv := by
         intro y
         apply Subtype.ext
         rfl
       continuous_toFun := by
-        have hfst : Continuous fun q : Function.Pullback f E.proj => q.fst :=
-          continuous_fst.comp continuous_subtype_val
-        exact (hfst.comp continuous_subtype_val).subtype_mk fun q => by
-          have hq : q.1.snd ∈ e.source := q.2
-          have hEq : f q.1.fst = e q.1.snd := by
-            simpa [hproj] using q.1.property
-          change f q.1.fst ∈ e.target
-          rw [hEq]
-          exact e.map_source hq
+          have hfst : Continuous fun q : Function.Pullback f E.proj => q.fst :=
+            continuous_fst.comp continuous_subtype_val
+          exact (hfst.comp continuous_subtype_val).subtype_mk fun q => by
+            have hq : q.1.snd ∈ e.source := q.2
+            have hEq : f q.1.fst = e q.1.snd := by
+              simpa [Function.Pullback.fst, Function.Pullback.snd, hproj] using q.1.property
+            change f q.1.fst ∈ e.target
+            rw [hEq]
+            exact e.map_source hq
       continuous_invFun := by
         have htargetMap : Continuous fun y : target => (⟨f y.1, y.2⟩ : e.target) :=
           (f.continuous.comp continuous_subtype_val).subtype_mk fun y => y.2
@@ -108,14 +108,14 @@ def reindex (f : C(Y, X)) (E : EtaleSpace X) : EtaleSpace Y where
           invFun := fun y =>
             if hy : y ∈ target then
               ⟨(y, (e.toHomeomorphSourceTarget.symm ⟨f y, hy⟩ : e.source)), by
-                simpa [hproj] using (e.right_inv hy).symm⟩
+                simpa [Function.Pullback.fst, Function.Pullback.snd, hproj] using (e.right_inv hy).symm⟩
             else p
           source := source
           target := target
           map_source' := by
             intro q hq
             have hEq : f q.fst = e q.snd := by
-              simpa [hproj] using q.property
+              simpa [Function.Pullback.fst, Function.Pullback.snd, hproj] using q.property
             change f q.fst ∈ e.target
             rw [hEq]
             exact e.map_source hq
@@ -126,7 +126,7 @@ def reindex (f : C(Y, X)) (E : EtaleSpace X) : EtaleSpace Y where
             intro q hq
             have hqy : q.fst ∈ target := by
               have hEq : f q.fst = e q.snd := by
-                simpa [hproj] using q.property
+                simpa [Function.Pullback.fst, Function.Pullback.snd, hproj] using q.property
               change f q.fst ∈ e.target
               rw [hEq]
               exact e.map_source hq
@@ -134,9 +134,9 @@ def reindex (f : C(Y, X)) (E : EtaleSpace X) : EtaleSpace Y where
               simpa [Function.Pullback.fst] using hqy
             apply Subtype.ext
             apply Prod.ext
-            · simp [Function.Pullback.fst, hqy'] 
+            · simp [Function.Pullback.fst, hqy']
             · have hEq : f q.fst = e q.snd := by
-                simpa [hproj] using q.property
+                simpa [Function.Pullback.fst, Function.Pullback.snd, hproj] using q.property
               simpa [Function.Pullback.snd, hqy, hEq] using e.left_inv hq
           right_inv' := by
             intro y hy
@@ -151,7 +151,9 @@ def reindex (f : C(Y, X)) (E : EtaleSpace X) : EtaleSpace Y where
           have hHomeo :
               IsOpenMap fun q : source => ((homeo q : target) : Y) :=
             hSubtype.comp homeo.isOpenMap
-          simpa using hHomeo)
+          show IsOpenMap (fun q : source => q.1.fst)
+          dsimp [homeo, Function.Pullback.fst] at hHomeo
+          exact hHomeo)
         hsource
     refine ⟨chart, hp, ?_⟩
     intro q hq
@@ -167,8 +169,9 @@ def prod (E F : EtaleSpace X) : EtaleSpace X where
   carrierTopologicalSpace := inferInstance
   proj := fun p => E.proj p.fst
   isLocalHomeomorph_proj := by
-    simpa [reindex, projMap, Function.comp] using
-      E.isLocalHomeomorph_proj.comp (reindex E.projMap F).isLocalHomeomorph_proj
+    change IsLocalHomeomorph
+      (fun p : (reindex E.projMap F).Carrier => E.proj (Function.Pullback.fst p))
+    exact E.isLocalHomeomorph_proj.comp (reindex E.projMap F).isLocalHomeomorph_proj
 
 /-- First projection from the fiber product. -/
 def prodFst (E F : EtaleSpace X) : C((prod E F).Carrier, E.Carrier) where

@@ -1,5 +1,4 @@
 import Mettapedia.Languages.GF.GFCoreNTTDiagnostics
-import Mettapedia.Languages.GF.OSLFBridge
 import Mettapedia.Languages.Metamath.NTTDiagnostics
 import Mettapedia.Languages.Metamath.CrownJewelFixtures
 import Mettapedia.OSLF.Framework.TypeSynthesis

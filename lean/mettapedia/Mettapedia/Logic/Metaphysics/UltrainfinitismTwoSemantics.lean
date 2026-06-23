@@ -110,10 +110,10 @@ theorem sat_isUltrafilterFml_iff :
   constructor
   · rintro ⟨⟨h1, h2⟩, h3, h4⟩
     exact ⟨fun a b => by simpa using h1 a b, fun a b => by simpa using h2 a b,
-      by simpa using h3, fun a => by simpa using h4 a⟩
+      by simpa [properFml] using h3, fun a => by simpa using h4 a⟩
   · rintro ⟨h1, h2, h3, h4⟩
     exact ⟨⟨fun a b => by simpa using h1 a b, fun a b => by simpa using h2 a b⟩,
-      by simpa using h3, fun a => by simpa using h4 a⟩
+      by simpa [properFml] using h3, fun a => by simpa using h4 a⟩
 
 theorem sat_hasLeastFml_iff :
     Sat 𝒮 Fin.elim0 vS hasLeastFml ↔ HasLeast (vS 0) := by

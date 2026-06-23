@@ -61,9 +61,8 @@ theorem categoricalDeFinetti_factorization_of_exchangeable
     [IsProbabilityMeasure μ]
     (hX : ∀ i : ℕ, Measurable (X i))
     (hexch : InfiniteExchangeable X μ) :
-    CategoricalDeFinettiFactorization X μ := by
-  simpa [CategoricalDeFinettiFactorization] using
-    (deFinetti_infinite X μ hX hexch)
+    CategoricalDeFinettiFactorization X μ :=
+  deFinetti_infinite X μ hX hexch
 
 /-- Kernel-flavored alias of
 `categoricalDeFinetti_factorization_of_exchangeable`. -/

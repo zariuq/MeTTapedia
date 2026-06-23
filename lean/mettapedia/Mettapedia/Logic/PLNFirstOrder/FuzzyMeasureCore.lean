@@ -220,22 +220,8 @@ theorem countingCapacity_isNormalized [Nonempty U] :
   have h0 : Fintype.card U ≠ 0 := by
     exact Nat.ne_of_gt (Fintype.card_pos_iff.mpr ‹Nonempty U›)
   unfold countingValue
-  have hden_ne : (Fintype.card U : ℝ) ≠ 0 := by
-    exact_mod_cast h0
   apply Subtype.ext
   simp [h0]
-  have hfilter :
-      @Finset.filter U (Membership.mem Set.univ) (fun a => propDecidable (a ∈ Set.univ))
-          Finset.univ = (@Finset.univ U inferInstance) := by
-    ext u
-    simp
-  calc
-    ((@Finset.filter U (Membership.mem Set.univ) (fun a => propDecidable (a ∈ Set.univ))
-        Finset.univ).card : ℝ) /
-        (Fintype.card U : ℝ)
-        = (Fintype.card U : ℝ) / (Fintype.card U : ℝ) := by
-            rw [hfilter, Finset.card_univ]
-    _ = 1 := by field_simp [hden_ne]
 
 end Counting
 

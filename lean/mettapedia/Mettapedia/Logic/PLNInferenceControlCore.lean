@@ -62,11 +62,22 @@ theorem ch13_selector_default_ranking_iff
       ∧ (BayesOptimalRanking η (ch13ScorePooled globalPrior localPrior likelihood g)
           ↔
           BayesOptimalRanking η (ch13ScoreTwoStage globalPrior localPrior likelihood g)) := by
-  simpa [ch13ScorePooled, ch13ScoreTwoStage] using
-    (selectorSpec_default_priorNB_ranking_transfer
-      (A := A) (η := η)
-      (globalPrior := globalPrior) (localPrior := localPrior)
-      (likelihood := likelihood) (g := g) hLocal)
+  change
+    A.topK ≤ Fintype.card Fact
+      ∧ (∀ g' f',
+          0 ≤ (selectorDefaults_halfGate Goal Fact).gate g' f'
+            ∧ (selectorDefaults_halfGate Goal Fact).gate g' f' ≤ 1)
+      ∧ ((BayesOptimalRanking η fun x =>
+            ((normalizeScorer (selectorDefaults_halfGate Goal Fact).tPrior
+              (priorNBPosterior globalPrior localPrior likelihood)).score g x).toStrength.toReal)
+          ↔
+          (BayesOptimalRanking η fun x =>
+            ((normalizeScorer (selectorDefaults_halfGate Goal Fact).tPrior
+              (priorNBPosteriorTwoStage globalPrior localPrior likelihood)).score g x).toStrength.toReal))
+  exact selectorSpec_default_priorNB_ranking_transfer
+    (A := A) (η := η)
+    (globalPrior := globalPrior) (localPrior := localPrior)
+    (likelihood := likelihood) (g := g) hLocal
 
 /-- If two-stage Prior-NB ranking is Bayes-optimal, then pooled Prior-NB ranking remains
 Bayes-optimal under bounded perturbations and strict pairwise margins. -/

@@ -1,5 +1,5 @@
 import Mettapedia.InformationTheory.ShannonEntropy.Main
-import Mettapedia.ProbabilityTheory.KnuthSkilling.Information.Main
+import KnuthSkilling.Information.Main
 
 /-!
 # Unified Entropy + KL (Curated Entry Point)
@@ -18,7 +18,7 @@ same page:
 ## What to import
 
 - For a reviewer-friendly K&S-only entrypoint (Appendices A/B/C + σ-additivity + probability + entropy):
-  `import Mettapedia.ProbabilityTheory.KnuthSkilling.FoundationsOfInference`
+  `import KnuthSkilling.FoundationsOfInference`
 
 - For "entropy/KL from *all* routes":
   `import Mettapedia.InformationTheory.EntropyKL`

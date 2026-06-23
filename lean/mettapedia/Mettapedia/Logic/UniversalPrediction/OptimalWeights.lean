@@ -364,7 +364,7 @@ theorem exists_prefixFreeMachine_const_mul_pow2_len
   have pref_mono : ∀ {m n : ℕ}, m ≤ n → pref v m ≤ pref v n := by
     intro m n hmn
     have hsub : Finset.range m ⊆ Finset.range n := Finset.range_mono hmn
-    have hnonneg : ∀ i, 0 ≤ vNat v i := by intro i; exact zero_le _
+    have hnonneg : ∀ i, 0 ≤ vNat v i := by intro i; exact bot_le
     have := Finset.sum_le_sum_of_subset_of_nonneg hsub (by
       intro i _ _; exact hnonneg i)
     simpa [pref] using this
@@ -736,7 +736,7 @@ theorem exists_const_mul_kpfWeight
   have pref_mono : ∀ {m n : ℕ}, m ≤ n → pref v m ≤ pref v n := by
     intro m n hmn
     have hsub : Finset.range m ⊆ Finset.range n := Finset.range_mono hmn
-    have hnonneg : ∀ i, 0 ≤ vNat v i := by intro i; exact zero_le _
+    have hnonneg : ∀ i, 0 ≤ vNat v i := by intro i; exact bot_le
     have := Finset.sum_le_sum_of_subset_of_nonneg hsub (by
       intro i _ _; exact hnonneg i)
     simpa [pref] using this

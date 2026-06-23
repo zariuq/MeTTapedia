@@ -68,7 +68,8 @@ theorem derivationConsistent_of_finiteSubsetSatisfiable
     nomatch v
   have hSat : Mettapedia.Logic.HOL.Soundness.SatisfiesHyps M.toHenkinModel ρ Δ := by
     intro ψ hψ
-    simpa [ρ, HenkinModel.models, PreModel.models, emptyValuation] using hM ψ hψ
+    simp only [ρ]
+    exact hM ψ hψ
   have hFalse :=
     Mettapedia.Logic.HOL.Soundness.derivation_sound hDeriv hρ hSat
   exact (HenkinModel.models_bot M.toHenkinModel) hFalse

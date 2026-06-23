@@ -416,7 +416,7 @@ def constructorPredFiberFunctorDual (lang : LanguageDef) :
       intro φ
       funext p
       apply propext
-      simpa [constructorReindexDualOrderHom] using
+      simpa [constructorReindexDualOrderHom, CategoryTheory.CategoryStruct.id] using
         congrArg (fun χ : Pattern → Prop => χ p)
           (constructorReindex_id lang (Opposite.unop X) (show Pattern → Prop from φ))
     map_comp := by
@@ -426,7 +426,7 @@ def constructorPredFiberFunctorDual (lang : LanguageDef) :
       intro φ
       funext p
       apply propext
-      simpa [constructorReindexDualOrderHom] using
+      simpa [constructorReindexDualOrderHom, CategoryTheory.CategoryStruct.comp] using
         congrArg (fun χ : Pattern → Prop => χ p)
           (constructorReindex_comp lang (Quiver.Hom.unop g) (Quiver.Hom.unop f)
             (show Pattern → Prop from φ)) }
@@ -470,7 +470,7 @@ def constructorNatTypeHom_to_grothHom {lang : LanguageDef}
       have hdual :
           (show OrderDual (Pattern → Prop) from constructorReindex lang h.sortMap B.pred) ≤
             (show OrderDual (Pattern → Prop) from A.pred) := by
-        simpa using h.predLe
+        exact h.predLe
       simpa [constructorPredFiberFunctorDual, constructorNatType_toGrothObj,
         constructorReindexDualOrderHom] using hdual }
 
@@ -490,15 +490,16 @@ def grothHom_to_constructorNatTypeHom {lang : LanguageDef}
         simpa [constructorPredFiberFunctorDual, constructorNatType_toGrothObj,
           constructorReindexDualOrderHom] using
           (CategoryTheory.Grothendieck.Hom.fiber k).down.down
-      simpa using hdual }
+      exact hdual }
 
 /-- Scoped morphism roundtrip:
 constructor transport -> Grothendieck morphism -> constructor transport. -/
-theorem constructorNatTypeHom_groth_roundtrip {lang : LanguageDef}
+  theorem constructorNatTypeHom_groth_roundtrip {lang : LanguageDef}
     {A B : ConstructorNatType lang} (h : ConstructorNatTypeHom lang A B) :
     grothHom_to_constructorNatTypeHom (constructorNatTypeHom_to_grothHom h) = h := by
   cases h
   simp [constructorNatTypeHom_to_grothHom, grothHom_to_constructorNatTypeHom]
+  rfl
 
 end ConcreteMathlibGrothendieck
 
@@ -668,12 +669,12 @@ structure ScopedConstructorPredHom (lang : LanguageDef)
 namespace ScopedConstructorPredHom
 
 /-- Identity scoped morphism. -/
-def id {lang : LanguageDef} (A : ScopedConstructorPred lang) :
+  def id {lang : LanguageDef} (A : ScopedConstructorPred lang) :
     ScopedConstructorPredHom lang A A where
   base := CategoryTheory.CategoryStruct.id (X := ConstructorObj.mk A.sort)
   fiberLe := by
     intro U x hx
-    simpa [CategoryTheory.Subfunctor.preimage, CategoryTheory.yoneda] using hx
+    exact hx
 
 /-- Composition of scoped morphisms. -/
 def comp {lang : LanguageDef}
@@ -692,8 +693,10 @@ def comp {lang : LanguageDef}
       exact le_trans f.fiberLe (by
         intro U x hx
         exact g.fiberLe U hx)
-    simpa [CategoryTheory.Subfunctor.preimage_comp, CategoryTheory.yoneda]
-      using hstep
+    intro U x hx
+    have hx' := hstep U hx
+    change SortPath.comp x (SortPath.comp f.base g.base) ∈ C.toFullGrothObj.fiber.obj U
+    exact (SortPath.comp_assoc x f.base g.base).symm ▸ hx'
 
 /-- Interpret a scoped constructor morphism in the full presheaf endpoint. -/
 def toFullGrothHom {lang : LanguageDef}
@@ -709,14 +712,15 @@ theorem toFullGrothHom_base {lang : LanguageDef}
     h.toFullGrothHom.base = CategoryTheory.yoneda.map h.base := by
   rfl
 
-theorem toFullGrothHom_comp {lang : LanguageDef}
-    {A B C : ScopedConstructorPred lang}
-    (f : ScopedConstructorPredHom lang A B)
-    (g : ScopedConstructorPredHom lang B C) :
-    (comp f g).toFullGrothHom =
-      FullPresheafGrothendieckHom.comp f.toFullGrothHom g.toFullGrothHom := by
-  apply FullPresheafGrothendieckHom.ext
-  simp [toFullGrothHom, ScopedConstructorPredHom.comp, FullPresheafGrothendieckHom.comp]
+  theorem toFullGrothHom_comp {lang : LanguageDef}
+      {A B C : ScopedConstructorPred lang}
+      (f : ScopedConstructorPredHom lang A B)
+      (g : ScopedConstructorPredHom lang B C) :
+      (comp f g).toFullGrothHom =
+        FullPresheafGrothendieckHom.comp f.toFullGrothHom g.toFullGrothHom := by
+    apply FullPresheafGrothendieckHom.ext
+    simp [toFullGrothHom, ScopedConstructorPredHom.comp, FullPresheafGrothendieckHom.comp]
+    rfl
 
 end ScopedConstructorPredHom
 
@@ -864,18 +868,13 @@ instance fullPresheafGrothendieckCategory (lang : LanguageDef) :
     CategoryTheory.Category (FullPresheafGrothendieckObj lang) where
   id_comp := by
     intro X Y f
-    apply FullPresheafGrothendieckHom.ext
-    simp [fullPresheafGrothendieckCategoryStruct, FullPresheafGrothendieckHom.id,
-      FullPresheafGrothendieckHom.comp]
+    rfl
   comp_id := by
     intro X Y f
-    apply FullPresheafGrothendieckHom.ext
-    simp [fullPresheafGrothendieckCategoryStruct, FullPresheafGrothendieckHom.id,
-      FullPresheafGrothendieckHom.comp]
+    rfl
   assoc := by
     intro W X Y Z f g h
-    apply FullPresheafGrothendieckHom.ext
-    simp [fullPresheafGrothendieckCategoryStruct, FullPresheafGrothendieckHom.comp]
+    rfl
 
 /-! ### Genuine Equivalence at Representable Objects (NTT Proposition 12)
 

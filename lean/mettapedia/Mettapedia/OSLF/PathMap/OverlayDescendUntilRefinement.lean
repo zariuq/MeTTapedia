@@ -138,8 +138,8 @@ theorem OverlayTrie.descendUntilPath_stops (ot : OverlayTrie V) (start : List UI
       exact hLookupVirtual
   | inr hbranch =>
       right
-      simpa [OverlayTrie.childCountAt, OverlayTrie.descendUntilPath, focus,
-        FTrie.subtreeAt_append]
+      simpa [OverlayTrie.childCountAt, OverlayTrie.descendUntilPath, FTrie.descendUntilPath,
+        focus, FTrie.subtreeAt_append]
         using hbranch
 
 /-! ## Examples -/

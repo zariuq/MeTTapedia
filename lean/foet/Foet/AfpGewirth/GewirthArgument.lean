@@ -276,8 +276,8 @@ theorem RightTo_of_ActsOnPurpose (C : c) (I : e) (E : m) :
     have hCJ := (CJ_14p (A := boxD (Good I (FWB I))) (B := FWB I)) C (World C)
     apply hCJ
     refine ⟨hOcondFWB, hBoxA, hDiapFWB, ?_⟩
-    -- `CJ_14p` expects `diap (¬B)`; our `mnot` is `¬`.
-    simpa using hDiapNotFWB
+    -- `CJ_14p` expects `diap (¬B)`; our `mnot` is `¬` (definitionally).
+    exact hDiapNotFWB
 
   have hOiDiaFWB : Oᵢ (◇ₐ (FWB I)) C (World C) := by
     have hAx : ⌊(Oᵢ (FWB I)) →ₘ (Oᵢ (◇ₐ (FWB I)))⌋₍C₎ :=
@@ -301,7 +301,7 @@ theorem RightTo_of_ActsOnPurpose (C : c) (I : e) (E : m) :
     exact hCong
 
   -- Finally: RightTo I FWB holds by definition.
-  simpa [RightTo] using hOiNonInterf
+  simpa [RightTo, ldtruectx] using hOiNonInterf
 
 theorem RightTo_of_PPA (C : c) (I : e) :
     ⌊PPA I⌋₍C₎ → ⌊RightTo I FWB⌋₍C₎ := by

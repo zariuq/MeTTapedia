@@ -34,7 +34,7 @@ import Mathlib.Data.Set.Basic
 import Mathlib.Data.Real.Basic
 import Mathlib.Order.Lattice
 import Mettapedia.Logic.EvidenceQuantale
-import Mettapedia.ProbabilityTheory.KnuthSkilling.Core.HeytingIntervalRepresentation
+import KnuthSkilling.Core.HeytingIntervalRepresentation
 
 namespace Mettapedia.Logic.EvidenceIntervalBounds
 
@@ -57,7 +57,7 @@ theorem strength_le_one (e : BinaryEvidence) : strength e ≤ 1 := by
     have hp : e.pos = 0 := by
       by_contra hp'
       have hpos : 0 < e.pos := pos_iff_ne_zero.mpr hp'
-      have : 0 < e.pos + e.neg := add_pos_of_pos_of_nonneg hpos (zero_le _)
+      have : 0 < e.pos + e.neg := add_pos_of_pos_of_nonneg hpos bot_le
       exact (ne_of_gt this) h₀
     simp [hp, ENNReal.zero_div]
   · by_cases h_top : e.pos + e.neg = ⊤
@@ -68,7 +68,7 @@ theorem strength_le_one (e : BinaryEvidence) : strength e ≤ 1 := by
       exact le_self_add
 
 /-- Strength is non-negative (trivially true for ℝ≥0∞). -/
-theorem strength_nonneg (e : BinaryEvidence) : 0 ≤ strength e := zero_le _
+theorem strength_nonneg (e : BinaryEvidence) : 0 ≤ strength e := bot_le
 
 /-- Strength of zero evidence is zero. -/
 theorem strength_zero : strength ⟨0, 0⟩ = 0 := by simp [strength]
@@ -88,7 +88,7 @@ Uses the general `Incomparable` definition from `HeytingIntervalRepresentation.l
 which applies to any Preorder. BinaryEvidence inherits this via its PartialOrder instance.
 -/
 
-open Mettapedia.ProbabilityTheory.KnuthSkilling.Heyting (Incomparable)
+open KnuthSkilling.Heyting (Incomparable)
 
 /-- Incomparability is symmetric (specialization to BinaryEvidence of the general theorem). -/
 theorem incomparable_symm (e₁ e₂ : BinaryEvidence) :

@@ -76,7 +76,7 @@ theorem exists_stageProbabilityFamily_tendsto_subseq
       ∃ φ : ℕ → ℕ,
         StrictMono φ ∧
           Tendsto (fun n => stageProbabilityFamily E M ξ (φ n)) atTop (𝓝 P) := by
-  simpa using
+  exact
     (CompactSpace.tendsto_subseq (fun n => stageProbabilityFamily E M ξ n))
 
 /-- Countable extraction restated using an explicit enumeration `e : ℕ ≃ Atom`.

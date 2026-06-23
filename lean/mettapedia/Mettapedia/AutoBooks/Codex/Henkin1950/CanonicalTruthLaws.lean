@@ -40,7 +40,7 @@ variable (ν : ClassAssignment T Γ)
 /-- Canonical truth always contains `⊤`. -/
 theorem holds_top (hT : CompleteConsistentTheory T) :
     Holds T ν (.top : Formula Γ) := by
-  simpa [Holds, ClassAssignment.closeFormula, ClassAssignment.closeTerm, closeTerm] using
+  simpa [Holds, ClassAssignment.closeFormula, ClassAssignment.closeTerm, closeTerm, subst] using
     (hT.closed <|
       Mettapedia.Logic.HOL.ClosedTheorySet.provable_top
         (Const := Primitive) T)
@@ -51,7 +51,7 @@ theorem holds_top (hT : CompleteConsistentTheory T) :
   constructor
   · intro hBot
     have hBotMem : (.bot : Sentence) ∈ T := by
-      simpa [Holds, ClassAssignment.closeFormula, ClassAssignment.closeTerm, closeTerm] using hBot
+      simpa [Holds, ClassAssignment.closeFormula, ClassAssignment.closeTerm, closeTerm, subst] using hBot
     exact hT.consistent <|
       Mettapedia.Logic.HOL.ClosedTheorySet.provable_of_mem
         (Const := Primitive) hBotMem
@@ -69,7 +69,7 @@ consistent theory. -/
 @[simp] theorem holds_not_iff_not_holds
     (hT : CompleteConsistentTheory T) (φ : Formula Γ) :
     Holds T ν (not φ) ↔ ¬ Holds T ν φ := by
-  simpa [Holds, ClassAssignment.closeFormula, ClassAssignment.closeTerm, closeTerm, not] using
+  simpa [Holds, ClassAssignment.closeFormula, ClassAssignment.closeTerm, closeTerm, subst, not] using
     (CompleteConsistentTheory.neg_mem_iff_not_mem
       (T := T) hT (φ := ClassAssignment.closeFormula ν φ))
 
@@ -82,7 +82,7 @@ consistent theory. -/
   constructor
   · intro hAnd
     have hAndMem : and A B ∈ T := by
-      simpa [Holds, A, B, and, ClassAssignment.closeFormula, ClassAssignment.closeTerm, closeTerm]
+      simpa [Holds, A, B, and, ClassAssignment.closeFormula, ClassAssignment.closeTerm, closeTerm, subst]
         using hAnd
     constructor
     · have hAProv :=
@@ -125,7 +125,7 @@ consistent theory. -/
           (ψ := B)
           hAProv
           hBProv
-    simpa [Holds, A, B, and, ClassAssignment.closeFormula, ClassAssignment.closeTerm, closeTerm]
+    simpa [Holds, A, B, and, ClassAssignment.closeFormula, ClassAssignment.closeTerm, closeTerm, subst]
       using hAndMem
 
 /-- Canonical disjunction is truth-functional. -/
@@ -137,7 +137,7 @@ consistent theory. -/
   constructor
   · intro hOr
     have hOrMem : or A B ∈ T := by
-      simpa [Holds, A, B, or, ClassAssignment.closeFormula, ClassAssignment.closeTerm, closeTerm]
+      simpa [Holds, A, B, or, ClassAssignment.closeFormula, ClassAssignment.closeTerm, closeTerm, subst]
         using hOr
     rcases hT.prime_or hOrMem with hA | hB
     · exact Or.inl (by simpa [Holds, A] using hA)
@@ -157,7 +157,7 @@ consistent theory. -/
             (φ := A)
             (ψ := B)
             hAProv
-      simpa [Holds, A, B, or, ClassAssignment.closeFormula, ClassAssignment.closeTerm, closeTerm]
+      simpa [Holds, A, B, or, ClassAssignment.closeFormula, ClassAssignment.closeTerm, closeTerm, subst]
         using hOrMem
     · have hBProv :
         SetProvable T B :=
@@ -172,7 +172,7 @@ consistent theory. -/
             (φ := A)
             (ψ := B)
             hBProv
-      simpa [Holds, A, B, or, ClassAssignment.closeFormula, ClassAssignment.closeTerm, closeTerm]
+      simpa [Holds, A, B, or, ClassAssignment.closeFormula, ClassAssignment.closeTerm, closeTerm, subst]
         using hOrMem
 
 /-- Canonical implication supports modus ponens. -/
@@ -188,7 +188,7 @@ theorem holds_imp_mp
     Mettapedia.Logic.HOL.ClosedTheorySet.provable_of_mem
       (Const := Primitive)
       (by
-        simpa [Holds, A, B, imp, ClassAssignment.closeFormula, ClassAssignment.closeTerm, closeTerm]
+        simpa [Holds, A, B, imp, ClassAssignment.closeFormula, ClassAssignment.closeTerm, closeTerm, subst]
           using hImp)
   have hAProv : SetProvable T A :=
     Mettapedia.Logic.HOL.ClosedTheorySet.provable_of_mem
@@ -237,14 +237,15 @@ theorem holds_imp_iff
                 (hΔ := by intro ξ hξ; cases hξ)
                 (hφ := theorem_imp_of_right A B))
             (hφ := hBProv)
-      simpa [Holds, A, B, imp, ClassAssignment.closeFormula, ClassAssignment.closeTerm, closeTerm]
+      simpa [Holds, A, B, imp, ClassAssignment.closeFormula, ClassAssignment.closeTerm, closeTerm, subst]
         using hImpMem
     · have hNotA : Holds T ν (not φ) := by
         exact (holds_not_iff_not_holds (T := T) hT (ν := ν) φ).2 hA
       have hNotAProv : SetProvable T (not A) :=
         Mettapedia.Logic.HOL.ClosedTheorySet.provable_of_mem
           (Const := Primitive)
-          (by simpa [Holds, A, not] using hNotA)
+          (by simpa [Holds, A, not, ClassAssignment.closeFormula, ClassAssignment.closeTerm,
+            closeTerm, subst] using hNotA)
       have hImpMem : imp A B ∈ T := by
         exact hT.closed <|
           Mettapedia.Logic.HOL.ClosedTheorySet.provable_mp
@@ -260,7 +261,7 @@ theorem holds_imp_iff
                 (hΔ := by intro ξ hξ; cases hξ)
                 (hφ := theorem_imp_of_not_left A B))
             (hφ := hNotAProv)
-      simpa [Holds, A, B, imp, ClassAssignment.closeFormula, ClassAssignment.closeTerm, closeTerm]
+      simpa [Holds, A, B, imp, ClassAssignment.closeFormula, ClassAssignment.closeTerm, closeTerm, subst]
         using hImpMem
 
 end CompleteConsistentTheory

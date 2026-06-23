@@ -334,9 +334,13 @@ theorem benchmarkBeliefDay_tracks_benchmarkSentenceProb
     (S := benchmarkSpace)
     (μ := (benchmarkHierarchicalState payload hvalid).flattenedModelMeasure)
     (hμ := by
-      unfold HierarchicalState.flattenedModelMeasure
-      infer_instance)]
-  simpa [benchmarkBeliefPrice] using
+      change MeasureTheory.IsProbabilityMeasure
+        (Mettapedia.ProbabilityTheory.HigherOrderProbability.ParametrizedDistribution.flatten
+          (benchmarkHierarchicalState payload hvalid).pd)
+      exact
+        Mettapedia.ProbabilityTheory.HigherOrderProbability.ParametrizedDistribution.flatten_isProbability
+          (benchmarkHierarchicalState payload hvalid).pd)]
+  simpa [benchmarkBeliefPrice, hierarchicalSentenceProb, benchmarkHierarchicalState] using
     (benchmarkHierarchicalSentenceProb_eq_higherOrderSemanticValue payload hvalid).symm
 
 /-- Hierarchical version of the preceding benchmark belief-day tracking

@@ -61,7 +61,8 @@ noncomputable def weightedRightBiasOverlapLayer {Query : Type*} :
         AdditiveWorldModel.extract
           (State := WeightedQueryState Query)
           (Query := Query) (Ev := WeightedNormalGammaEvidence) I₁ q = 0 := by
-      simpa using hleft
+      change I₁ q = 0
+      exact hleft
     simp [weightedRightBiasMerge, hleftE]
 
 /-- Concrete weighted swap anomaly count. -/
@@ -114,7 +115,8 @@ theorem weightedSwapAnomalyCount_eq_zero_of_query_eq {Query : Type*}
         AdditiveWorldModel.extract
           (State := WeightedQueryState Query)
           (Query := Query) (Ev := WeightedNormalGammaEvidence) I₂ q := by
-      simpa using hq
+      change I₁ q = I₂ q
+      exact hq
     unfold AdditiveWorldModel.queryObservationCount
     simpa [weightedRightBiasMerge] using
       congrArg ConjugateEvidence.observationCount hqE.symm
@@ -137,7 +139,8 @@ theorem weightedSwapAnomalyCount_eq_weight_of_zero_then_single {Query : Type*}
         AdditiveWorldModel.extract
           (State := WeightedQueryState Query)
           (Query := Query) (Ev := WeightedNormalGammaEvidence) I₁ q = 0 := by
-      simpa using h₁
+      change I₁ q = 0
+      exact h₁
     unfold AdditiveWorldModel.queryObservationCount
     rw [h₁E]
     exact ConjugateEvidence.observationCount_zero (Ev := WeightedNormalGammaEvidence)
@@ -150,7 +153,8 @@ theorem weightedSwapAnomalyCount_eq_weight_of_zero_then_single {Query : Type*}
           (State := WeightedQueryState Query)
           (Query := Query) (Ev := WeightedNormalGammaEvidence) I₂ q =
         WeightedNormalGammaEvidence.single w x := by
-      simpa using h₂
+      change I₂ q = WeightedNormalGammaEvidence.single w x
+      exact h₂
     unfold AdditiveWorldModel.queryObservationCount
     rw [h₂E]
     simpa using
@@ -185,7 +189,8 @@ theorem weightedScheduleErrorCount_twoStep_eq_weight_of_zero_then_single {Query 
         AdditiveWorldModel.extract
           (State := WeightedQueryState Query)
           (Query := Query) (Ev := WeightedNormalGammaEvidence) I₁ q = 0 := by
-      simpa using h₁
+      change I₁ q = 0
+      exact h₁
     unfold AdditiveWorldModel.queryObservationCount
     rw [h₁E]
     exact ConjugateEvidence.observationCount_zero (Ev := WeightedNormalGammaEvidence)
@@ -198,7 +203,8 @@ theorem weightedScheduleErrorCount_twoStep_eq_weight_of_zero_then_single {Query 
           (State := WeightedQueryState Query)
           (Query := Query) (Ev := WeightedNormalGammaEvidence) I₂ q =
         WeightedNormalGammaEvidence.single w x := by
-      simpa using h₂
+      change I₂ q = WeightedNormalGammaEvidence.single w x
+      exact h₂
     unfold AdditiveWorldModel.queryObservationCount
     rw [h₂E]
     simpa using

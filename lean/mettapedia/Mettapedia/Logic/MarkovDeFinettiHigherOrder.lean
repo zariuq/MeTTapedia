@@ -407,9 +407,12 @@ theorem measurable_symbolSequenceOfContextTrajectory :
   intro n
   by_cases h : n < m
   · let idx : Fin m := ⟨n, h⟩
-    simpa [symbolSequenceOfContextTrajectory, h, idx] using
-      (((measurable_pi_apply (a := idx) : Measurable (fun ctx : Context k m => ctx idx)).comp
-        (measurable_pi_apply (a := (0 : ℕ)))))
+    -- 4.31: the `Measurable.comp` term is `(· ⟨n,h⟩) ∘ (· 0)`, defeq to the eta-reduced goal
+    -- `fun x => x 0 ⟨n,⋯⟩`; `simp only [Function.comp_def]` bridges the two normal forms.
+    simp only [symbolSequenceOfContextTrajectory, h, idx, ↓reduceDIte]
+    exact ((measurable_pi_apply (a := idx) :
+      Measurable (fun ctx : Context k m => ctx idx)).comp
+        (measurable_pi_apply (a := (0 : ℕ))))
   · simp [symbolSequenceOfContextTrajectory, h]
     exact (measurable_lastSymbol (k := k) (m := m)).comp
       (measurable_pi_apply (a := n - m + 1))
@@ -457,7 +460,11 @@ omit [Fact (0 < m)] in
       ⟨m - 1, Nat.sub_lt hm (by decide)⟩
   have hidx : i.1 + 1 + (m - 1) = m + i.1 := by
     omega
-  simpa [lastSymbol, contextPathTupleOfWord, hidx, Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using h
+  -- 4.31: `contextPathOfWord_get` now produces the `getElem` form while
+  -- `contextPathTupleOfWord` is a `List.get`; reduce both with simp, then bridge the
+  -- index `Fin.mk` value via `hidx` (the underlying `List.get` is proof-irrelevant).
+  simp only [lastSymbol, contextPathTupleOfWord, List.get_eq_getElem, contextPathOfWord_get]
+  exact getElem_congr_idx (by simp only [Fin.val_succ]; omega)
 
 omit [Fact (0 < m)] in
 theorem contextPathTupleOfWord_succ
@@ -476,7 +483,10 @@ theorem contextPathTupleOfWord_succ
     calc
       contextPathTupleOfWord (k := k) (m := m) xs hxs i.succ j =
           xs.get ⟨i.1 + (j.1 + 1), by omega⟩ := by
-            simpa [contextPathTupleOfWord, Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using hleft
+            -- 4.31: `contextPathOfWord_get` is now in `getElem` form; bridge `.get`→`[·]`,
+            -- then the residual is a `getElem` index equality.
+            simp only [contextPathTupleOfWord, List.get_eq_getElem, contextPathOfWord_get]
+            exact getElem_congr_idx (by simp only [Fin.val_succ]; omega)
       _ =
           shift (k := k) (m := m)
             (contextPathTupleOfWord (k := k) (m := m) xs hxs ⟨i.1, by omega⟩)
@@ -493,7 +503,10 @@ theorem contextPathTupleOfWord_succ
     calc
       contextPathTupleOfWord (k := k) (m := m) xs hxs i.succ j =
           xs.get ⟨i.1 + 1 + j.1, by omega⟩ := by
-            simpa [contextPathTupleOfWord, Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using hleft
+            -- 4.31: bridge `.get`→`[·]`, fire `contextPathOfWord_get`, then close the
+            -- residual `getElem` index equality (`↑i.succ + ↑j = ↑i + 1 + ↑j`).
+            simp only [contextPathTupleOfWord, List.get_eq_getElem, contextPathOfWord_get]
+            exact getElem_congr_idx (by simp only [Fin.val_succ])
       _ = xs.get ⟨m + i.1, by omega⟩ := by
             simp [hidx]
       _ =
@@ -1025,7 +1038,9 @@ theorem toMarkovParam_stepProb_eq_zero_of_ne_shift
                   ((Fintype.equivFin (Context k m)).symm
                     ((Fintype.equivFin (Context k m)) ctx)) a)) ⁻¹'
             ({(Fintype.equivFin (Context k m)) nextCtx} : Set (EncodedContext k m))) := by
-    simpa using
+    -- 4.31: `map_apply` yields the `{x}` set-builder form, which is defeq to the
+    -- `Set.singleton x` written in `hmap`; `simpa` over-normalizes, so close by `exact`.
+    exact
       (MeasureTheory.ProbabilityMeasure.map_apply
         (θ.next ((Fintype.equivFin (Context k m)).symm ((Fintype.equivFin (Context k m)) ctx)))
         (measurable_shiftEncoded (k := k) (m := m)

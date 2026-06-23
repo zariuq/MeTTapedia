@@ -40,7 +40,7 @@ theorem five_cycle_structure
   -- Step 1: Prove minimum degree ≥ 2
   have h_min_deg : 2 ≤ deg := by
     by_contra h_not
-    push_neg at h_not
+    push Not at h_not
     -- v has degree ≤ 1 in vertices, so at least 3 non-neighbors (among the other 4)
     -- Pick 3 non-neighbors; they can't all be pairwise adjacent (triangle-free)
     -- So get a non-adjacent pair among them → 3-IS with v
@@ -95,7 +95,7 @@ theorem five_cycle_structure
     -- So ∃ a, b ∈ S with a ≠ b and ¬G.Adj a b
     have h_exists_non_edge : ∃ a ∈ S, ∃ b ∈ S, a ≠ b ∧ ¬G.Adj a b := by
       by_contra h_all_adj
-      push_neg at h_all_adj
+      push Not at h_all_adj
       -- All pairs in S are adjacent → S is a 3-clique
       have h_S_clique : G.IsNClique 3 S := by
         rw [isNClique_iff]
@@ -137,11 +137,11 @@ theorem five_cycle_structure
       · exact hxy rfl
       · exact ha_nonadj_v h_adj
       · exact hb_nonadj_v h_adj
-      · exact ha_nonadj_v (G.symm h_adj)
+      · exact ha_nonadj_v (G.adj_symm h_adj)
       · exact hxy rfl
       · exact hab_non_adj h_adj
-      · exact hb_nonadj_v (G.symm h_adj)
-      · exact hab_non_adj (G.symm h_adj)
+      · exact hb_nonadj_v (G.adj_symm h_adj)
+      · exact hab_non_adj (G.adj_symm h_adj)
       · exact hxy rfl
 
     have h_I_in_vertices : I ⊆ vertices := by
@@ -167,7 +167,7 @@ theorem five_cycle_structure
   -- Step 2: Prove maximum degree ≤ 2
   have h_max_deg : deg ≤ 2 := by
     by_contra h_not
-    push_neg at h_not
+    push Not at h_not
     -- v has degree ≥ 3, neighborhood has ≥ 3 vertices
     -- In triangle-free graph, neighborhood is independent → 3-IS
 
@@ -202,11 +202,11 @@ theorem five_cycle_structure
           · exact absurd rfl hab_ne
           · exact hx_in_nbhd.2
           · exact hy_in_nbhd.2
-          · exact G.symm hx_in_nbhd.2
+          · exact G.adj_symm hx_in_nbhd.2
           · exact absurd rfl hab_ne
           · exact h_adj
-          · exact G.symm hy_in_nbhd.2
-          · exact G.symm h_adj
+          · exact G.adj_symm hy_in_nbhd.2
+          · exact G.adj_symm h_adj
           · exact absurd rfl hab_ne
         · -- tri.card = 3
           have h_v_ne_x : v ≠ x := G.ne_of_adj hx_in_nbhd.2

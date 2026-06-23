@@ -67,7 +67,7 @@ theorem symm : Symmetric (OrbitRel A) := by
     _ = A.act 1 x := by simp
     _ = x := A.one_act x
 
-  theorem trans : Transitive (OrbitRel A) := by
+theorem trans : Transitive (OrbitRel A) := by
   intro x y z hxy hyz
   rcases hxy with ⟨g, rfl⟩
   rcases hyz with ⟨h, rfl⟩

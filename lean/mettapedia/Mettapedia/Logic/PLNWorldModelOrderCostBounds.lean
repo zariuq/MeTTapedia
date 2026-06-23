@@ -215,7 +215,7 @@ theorem scheduleErrorBound_twoStep_of_swapStepBound
     scheduleErrorBound
       (State := State) (Query := Query) (Ev := Ev) (Ov := Ov)
       L base [A, B] [B, A] q Bnd := by
-  simpa [scheduleErrorBound, scheduleError_twoStep_eq_swapStepAnomalyCount] using h
+  simpa [scheduleErrorBound, swapStepAnomalyBound, scheduleError_twoStep_eq_swapStepAnomalyCount] using h
 
 end ScheduleError
 

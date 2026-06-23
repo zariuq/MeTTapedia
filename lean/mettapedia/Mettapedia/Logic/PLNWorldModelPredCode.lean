@@ -138,8 +138,10 @@ theorem singleton_adequacy_strength_one_is_crispSpecialization {U : Type*}
     pw.satisfies q ↔
       BinaryWorldModel.queryStrength (State := PredCodeState U) (Query := PredCodeQuery U)
         ({pw} : PredCodeState U) q = 1 := by
-  simpa [Mettapedia.Logic.PLNWorldModelCrispSpecialization.crispQueryStrength,
-    BinaryWorldModel.queryStrength, predCodeEvidence_eq_crispEvidence]
+  change pw.satisfies q ↔
+    BinaryEvidence.toStrength (predCodeEvidence ({pw} : PredCodeState U) q) = 1
+  simpa [predCodeEvidence_eq_crispEvidence,
+    Mettapedia.Logic.PLNWorldModelCrispSpecialization.crispQueryStrength]
     using
       (Mettapedia.Logic.PLNWorldModelCrispSpecialization.singleton_adequacy_strength_one
         (satisfies := PointedPredCode.satisfies) pw q)
@@ -166,7 +168,7 @@ theorem pointwiseImplies_iff_singletonStrengthLE {U : Type*}
       rw [queryStrength_singleton_of_satisfies pw q₁ hq₁]
       rw [queryStrength_singleton_of_satisfies pw q₂ hq₂]
     · rw [queryStrength_singleton_of_not_satisfies pw q₁ hq₁]
-      exact zero_le _
+      exact zero_le
   · intro hle pw hq₁
     by_contra hq₂
     have hsingleton := hle pw

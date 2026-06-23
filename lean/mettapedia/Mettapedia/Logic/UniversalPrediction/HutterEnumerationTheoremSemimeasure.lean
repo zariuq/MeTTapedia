@@ -105,7 +105,7 @@ theorem surj_evalLSC :
   exact codeWitness_unique c hChosen hW
 
 /-- The concrete `LSCSemimeasureEnumeration` (Levin/Hutter enumeration theorem, semimeasure form). -/
-noncomputable def lscSemimeasureEnumeration : HutterEnumeration.LSCSemimeasureEnumeration :=
+noncomputable abbrev lscSemimeasureEnumeration : HutterEnumeration.LSCSemimeasureEnumeration :=
   { Code := Nat.Partrec.Code
     eval := evalLSC
     surj_eval := surj_evalLSC }
@@ -127,4 +127,3 @@ theorem relEntropy_le_log_inv_of_LSC_semimeasure_concrete (μ : PrefixMeasure)
       (E := HutterEnumerationTheoremSemimeasure.lscSemimeasureEnumeration) (μ := μ) hμ n)
 
 end Mettapedia.Logic.UniversalPrediction
-

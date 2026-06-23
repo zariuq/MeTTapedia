@@ -48,11 +48,11 @@ def rightZeroDepth : Pattern → Nat
 
 /-- Depth counter for `addRightZeroNestComm`. -/
 def rightZeroDepthComm : Pattern → Nat
-  | .collection .hashBag [p] none => rightZeroDepthCommBase p
-  | _ => 0
+  | p => rightZeroDepthCommBase p
 where
   rightZeroDepthCommBase : Pattern → Nat
     | .apply "PZero" [] => 0
+    | .collection .hashBag [p] none => rightZeroDepthCommBase p
     | .collection .hashBag [p, .apply "PZero" []] none => rightZeroDepthCommBase p + 1
     | _ => 0
 
@@ -74,9 +74,12 @@ theorem rightZeroDepthComm_addRightZeroNestComm (n : Nat) :
     rightZeroDepthComm (addRightZeroNestComm n) = n := by
   induction n with
   | zero =>
-      simp [addRightZeroNestComm, rightZeroDepthComm, commBasePat, zeroPat]
+      simp [addRightZeroNestComm, rightZeroDepthComm, rightZeroDepthComm.rightZeroDepthCommBase,
+        commBasePat, zeroPat]
   | succ n ih =>
-      simp [addRightZeroNestComm, rightZeroDepthComm, zeroPat, ih]
+      simp [addRightZeroNestComm, rightZeroDepthComm, rightZeroDepthComm.rightZeroDepthCommBase,
+        zeroPat]
+      simpa [rightZeroDepthComm] using ih
 
 theorem addRightZeroNestComm_injective : Function.Injective addRightZeroNestComm := by
   intro n m h
@@ -87,12 +90,12 @@ theorem addRightZeroNestComm_injective : Function.Injective addRightZeroNestComm
   simpa [rightZeroDepthComm_addRightZeroNestComm] using hd
 
 theorem commBase_sc_addRightZeroNestComm : ∀ n, StructuralCongruence commBasePat (addRightZeroNestComm n)
-  | 0 => StructuralCongruence.refl basePat
+  | 0 => StructuralCongruence.refl commBasePat
   | n + 1 =>
       StructuralCongruence.trans commBasePat (addRightZeroNestComm n) (addRightZeroNestComm (n + 1))
         (commBase_sc_addRightZeroNestComm n)
         (by
-          simpa [addRightZeroNestComm] using
+          simpa [addRightZeroNestComm, zeroPat] using
             (StructuralCongruence.symm _ _
               (StructuralCongruence.par_nil_right (addRightZeroNestComm n))))
 
@@ -109,7 +112,8 @@ def commSource_reduces_to_addRightZeroNestComm (n : Nat) :
     (p' := commSource) (q' := commBasePat)
     (StructuralCongruence.refl commSource)
     (by
-      simpa [commSource, commBasePat, zeroPat, commSubst, openBVar] using
+      simpa [commSource, commBasePat, zeroPat, semanticCommSubst, semanticSubstProc,
+        semanticSubstNameMark, semanticNormalizeName, semanticNormalizeProc] using
         (@Reduces.comm (.fvar "c") zeroPat zeroPat []))
     (by simpa [commBasePat] using commBase_sc_addRightZeroNestComm n)
 
@@ -332,7 +336,7 @@ theorem counterexample_hAtomAll_for_global_diaBox_transfer :
   · intro hall
     have hAt : Mettapedia.OSLF.Formula.sem relAll atomNone (.atom "a") witnessPat :=
       hall witnessPat
-    simpa [atomNone] using hAt
+    simp [Mettapedia.OSLF.Formula.sem, atomNone] at hAt
 
 /-- Counterexample pattern: dropping global `◇⊤` (`hDiaTopAll`) from the same
 global transfer shape is unsound even when atoms are universally true. -/

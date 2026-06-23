@@ -422,7 +422,7 @@ theorem markovSequenceMeasure_prefix_apply_succAssemble
                 (MeasurableSet.singleton (x, b))
       _ = ((μ.map (frestrictLe (π := fun _ : ℕ => Fin k) n)).compProd
             (nextKernel (k := k) θ n)) ({(x, b)} : Set (PrefixState k n × Fin k)) := by
-              simpa [μ] using
+              exact
                 congrArg
                   (fun ν : Measure (PrefixState k n × Fin k) =>
                     ν ({(x, b)} : Set (PrefixState k n × Fin k)))
@@ -556,7 +556,7 @@ theorem prefixEvent_prefixOfFin_eq_cylinder_ofFn
     calc
       ω i.1 = prefixOfFin (k := k) n x ⟨i.1, Finset.mem_Iic.2 (Nat.le_of_lt_succ hi_lt)⟩ := hi
       _ = (List.ofFn x).get i := by
-        simpa [prefixOfFin] using (List.get_ofFn x i).symm
+        simp only [prefixOfFin]; exact (List.get_ofFn x i).symm
   · intro h
     change frestrictLe (π := fun _ : ℕ => Fin k) n ω = prefixOfFin (k := k) n x
     funext i
@@ -567,7 +567,7 @@ theorem prefixEvent_prefixOfFin_eq_cylinder_ofFn
     calc
       ω i.1 = (List.ofFn x).get ⟨i.1, by simpa using Nat.lt_succ_of_le (Finset.mem_Iic.1 i.2)⟩ := hi
       _ = prefixOfFin (k := k) n x i := by
-        simpa [prefixOfFin] using (List.get_ofFn x ⟨i.1, by simpa using Nat.lt_succ_of_le (Finset.mem_Iic.1 i.2)⟩)
+        simp only [prefixOfFin]; exact (List.get_ofFn x ⟨i.1, by simpa using Nat.lt_succ_of_le (Finset.mem_Iic.1 i.2)⟩)
 
 /-- The canonical sequence law of `θ` evaluates finite cylinders by `wordProb`. -/
 theorem markovSequenceMeasure_cylinder_eq_wordProb

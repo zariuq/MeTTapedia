@@ -38,11 +38,11 @@ variable {μ : Mettapedia.Logic.UniversalPrediction.FiniteAlphabet.PrefixMeasure
 /-- Terminal-source object used for constant measure mediators in
 `Kleisli(MeasCat.Giry)`. -/
 abbrev KleisliUnitObj : KleisliGiry :=
-  (MeasCat.of PUnit : CategoryTheory.Kleisli (C := MeasCat) MeasCat.Giry)
+  CategoryTheory.Kleisli.mk MeasCat.Giry (MeasCat.of PUnit)
 
 /-- Markov-parameter object in `Kleisli(MeasCat.Giry)`. -/
 abbrev KleisliMarkovParamObj (k : ℕ) : KleisliGiry :=
-  (MeasCat.of (MarkovParam k) : CategoryTheory.Kleisli (C := MeasCat) MeasCat.Giry)
+  CategoryTheory.Kleisli.mk MeasCat.Giry (MeasCat.of (MarkovParam k))
 
 /-- A terminal-source Kleisli(Giry) mediator into the Markov-parameter object. -/
 structure MarkovKleisliMediator (k : ℕ) where
@@ -600,7 +600,7 @@ private theorem diracProba_singleton_eval (x y : Fin 2) :
     simp
   · rw [Set.indicator_of_notMem]
     · simp [h]
-    · simpa [Set.mem_singleton_iff] using h
+    · exact h
 
 @[simp] theorem deadRowTheta₀_initProb_zero :
     initProb (k := 2) deadRowTheta₀ 0 = 1 := by

@@ -39,9 +39,9 @@ lemma neighbors34_symm (v w : V34) : w ∈ neighbors34 v ↔ v ∈ neighbors34 w
 
 def critical34 : SimpleGraph V34 where
   Adj := adj34
-  symm := by
+  symm := ⟨by
     intro v w h
-    exact (neighbors34_symm v w).mp h
+    exact (neighbors34_symm v w).mp h⟩
   loopless := by
     constructor; intro v hv
     fin_cases v <;> simp [adj34, neighbors34] at hv
@@ -81,7 +81,7 @@ lemma critical34_no_4_indep : NoKIndepSet 4 critical34 := by
 
 lemma not_hasRamseyProperty_34 : ¬ HasRamseyProperty 3 4 critical34 := by
   unfold HasRamseyProperty
-  push_neg
+  push Not
   constructor
   · intro s hs
     exact critical34_triangleFree s hs
@@ -107,9 +107,9 @@ lemma neighbors33_symm (v w : V33) : w ∈ neighbors33 v ↔ v ∈ neighbors33 w
 
 def critical33 : SimpleGraph V33 where
   Adj := adj33
-  symm := by
+  symm := ⟨by
     intro v w h
-    exact (neighbors33_symm v w).mp h
+    exact (neighbors33_symm v w).mp h⟩
   loopless := by
     constructor; intro v hv
     fin_cases v <;> simp [adj33, neighbors33] at hv
@@ -144,7 +144,7 @@ lemma critical33_no_3_indep : NoKIndepSet 3 critical33 := by
 
 lemma not_hasRamseyProperty_33 : ¬ HasRamseyProperty 3 3 critical33 := by
   unfold HasRamseyProperty
-  push_neg
+  push Not
   constructor
   · intro s hs
     exact critical33_triangleFree s hs
@@ -180,9 +180,9 @@ lemma neighbors35_symm (v w : V35) : w ∈ neighbors35 v ↔ v ∈ neighbors35 w
 
 def critical35 : SimpleGraph V35 where
   Adj := adj35
-  symm := by
+  symm := ⟨by
     intro v w h
-    exact (neighbors35_symm v w).mp h
+    exact (neighbors35_symm v w).mp h⟩
   loopless := by
     constructor; intro v hv
     fin_cases v <;> simp [adj35, neighbors35] at hv
@@ -221,7 +221,7 @@ lemma critical35_no_5_indep : NoKIndepSet 5 critical35 := by
 /-- The critical 13-vertex graph does not have the Ramsey property (3,5). -/
 lemma not_hasRamseyProperty_35 : ¬ HasRamseyProperty 3 5 critical35 := by
   unfold HasRamseyProperty
-  push_neg
+  push Not
   constructor
   · intro s hs
     exact critical35_triangleFree s hs
@@ -412,7 +412,7 @@ theorem ramsey_recursion {r s : ℕ} (hr : r ≥ 2) (hs : s ≥ 2)
   have h_pigeon : adjacent.card ≥ ramseyNumber (r-1) s ∨
                    nonadjacent.card ≥ ramseyNumber r (s-1) := by
     by_contra h_not
-    push_neg at h_not
+    push Not at h_not
     have : adjacent.card + nonadjacent.card < ramseyNumber (r-1) s + ramseyNumber r (s-1) := by
       omega
     rw [h_sum] at this
@@ -494,7 +494,7 @@ theorem ramsey_recursion {r s : ℕ} (hr : r ≥ 2) (hs : s ≥ 2)
             have : f x' ∈ S := by
               change (e x').val ∈ S
               exact (e x').property
-            exact G.symm (h_v_adj_S _ this)
+            exact G.adj_symm (h_v_adj_S _ this)
           · rcases Finset.mem_map.mp hx_in with ⟨x', hx', rfl⟩
             rcases Finset.mem_map.mp hy_in with ⟨y', hy', rfl⟩
             have hne_f : f x' ≠ f y' := by
@@ -613,7 +613,7 @@ theorem ramsey_recursion {r s : ℕ} (hr : r ≥ 2) (hs : s ≥ 2)
             have : f x' ∈ S := by
               change (e x').val ∈ S
               exact (e x').property
-            exact h_v_nonadj_S _ this (G.symm h_adj)
+            exact h_v_nonadj_S _ this (G.adj_symm h_adj)
           · rcases Finset.mem_map.mp hx_in with ⟨x', hx', rfl⟩
             rcases Finset.mem_map.mp hy_in with ⟨y', hy', rfl⟩
             have hne_f : f x' ≠ f y' := by
@@ -703,11 +703,11 @@ theorem hasRamseyProperty_3_3_6 :
           · contradiction
           · exact hv_a
           · exact hv_b
-          · exact G.symm hv_a
+          · exact G.adj_symm hv_a
           · contradiction
           · exact h_ab
-          · exact G.symm hv_b
-          · exact G.symm h_ab
+          · exact G.adj_symm hv_b
+          · exact G.adj_symm h_ab
           · contradiction
         · -- Cardinality = 3
           have hv_ne_a : v ≠ a := by
@@ -724,7 +724,7 @@ theorem hasRamseyProperty_3_3_6 :
             simp [others] at this
           simp [hv_ne_a, hv_ne_b, hab]
       · -- S has no edges → independent
-        push_neg at h_edge
+        push Not at h_edge
         right
         use S
         constructor
@@ -742,7 +742,7 @@ theorem hasRamseyProperty_3_3_6 :
         -- S has 3 vertices, get third vertex c
         have h_exists_c : ∃ c ∈ S, c ≠ a ∧ c ≠ b := by
           by_contra h_not
-          push_neg at h_not
+          push Not at h_not
           have : S ⊆ {a, b} := by
             intro x hx
             by_cases hxa : x = a
@@ -768,11 +768,11 @@ theorem hasRamseyProperty_3_3_6 :
               · contradiction
               · exact h_ab
               · exact h_ac
-              · exact G.symm h_ab
+              · exact G.adj_symm h_ab
               · contradiction
               · exact h_bc
-              · exact G.symm h_ac
-              · exact G.symm h_bc
+              · exact G.adj_symm h_ac
+              · exact G.adj_symm h_bc
               · contradiction
             · simp [Ne.symm hca, Ne.symm hcb, hab]
           · -- a-b, a-c exist but not b-c: {v,b,c} is independent
@@ -788,11 +788,11 @@ theorem hasRamseyProperty_3_3_6 :
               · contradiction
               · exact hv_b h_adj
               · exact hv_c h_adj
-              · exact hv_b (G.symm h_adj)
+              · exact hv_b (G.adj_symm h_adj)
               · contradiction
               · exact h_bc h_adj
-              · exact hv_c (G.symm h_adj)
-              · exact h_bc (G.symm h_adj)
+              · exact hv_c (G.adj_symm h_adj)
+              · exact h_bc (G.adj_symm h_adj)
               · contradiction
             · have hv_ne_b : v ≠ b := by
                 intro h_eq
@@ -819,11 +819,11 @@ theorem hasRamseyProperty_3_3_6 :
               · contradiction
               · exact hv_a h_adj
               · exact hv_c h_adj
-              · exact hv_a (G.symm h_adj)
+              · exact hv_a (G.adj_symm h_adj)
               · contradiction
               · exact h_ac h_adj
-              · exact hv_c (G.symm h_adj)
-              · exact h_ac (G.symm h_adj)
+              · exact hv_c (G.adj_symm h_adj)
+              · exact h_ac (G.adj_symm h_adj)
               · contradiction
             · have hv_ne_a : v ≠ a := by
                 intro h_eq
@@ -849,11 +849,11 @@ theorem hasRamseyProperty_3_3_6 :
               · contradiction
               · exact hv_a h_adj
               · exact hv_c h_adj
-              · exact hv_a (G.symm h_adj)
+              · exact hv_a (G.adj_symm h_adj)
               · contradiction
               · exact h_ac h_adj
-              · exact hv_c (G.symm h_adj)
-              · exact h_ac (G.symm h_adj)
+              · exact hv_c (G.adj_symm h_adj)
+              · exact h_ac (G.adj_symm h_adj)
               · contradiction
             · have hv_ne_a : v ≠ a := by
                 intro h_eq
@@ -867,7 +867,7 @@ theorem hasRamseyProperty_3_3_6 :
                 simp [others] at this
               simp [hv_ne_a, hv_ne_c, Ne.symm hca]
       · -- S has no edges → independent
-        push_neg at h_edge
+        push Not at h_edge
         right
         use S
         constructor
@@ -914,7 +914,7 @@ lemma degree_ge_three_of_triangleFree_no_4indep
     G.degree v ≥ 3 := by
   -- Proof by contradiction: assume deg(v) ≤ 2
   by_contra h_not
-  push_neg at h_not
+  push Not at h_not
   have h_deg_le_2 : G.degree v ≤ 2 := Nat.lt_succ_iff.mp h_not
 
   -- The non-neighbors of v (excluding v itself) form a set H of size ≥ 6
@@ -1045,7 +1045,7 @@ lemma degree_ge_three_of_triangleFree_no_4indep
             change (e x').val ∈ ↑H6
             exact (e x').property
           have h_y_nonadj_x : ¬ G.Adj y x := h_v_nonadj_H6 x this
-          exact h_y_nonadj_x (G.symm h_adj)
+          exact h_y_nonadj_x (G.adj_symm h_adj)
         · -- x, y ∈ T.map f: T is independent in G_H6, lifts to G
           -- Need to show: x and y not adjacent in G
           -- Since they map from T via f, and T is independent in G_H6
@@ -1197,7 +1197,7 @@ theorem hasRamseyProperty_3_4_9 :
   · intro G _
     unfold HasRamseyProperty
     by_contra h_not
-    push_neg at h_not
+    push Not at h_not
     obtain ⟨h_no_clique, h_no_indep⟩ := h_not
     have h_tri : TriangleFree G := by
       intro s hs
@@ -1326,7 +1326,7 @@ theorem hasRamseyProperty_3_5_14 :
               rcases Finset.mem_map.mp hx_in_T with ⟨x', _, rfl⟩
               change (e x').val ∈ ↑M9
               exact (e x').property
-            exact h_v_nonadj_M9 x this (G.symm h_adj)
+            exact h_v_nonadj_M9 x this (G.adj_symm h_adj)
           · rcases Finset.mem_map.mp hx_in_T with ⟨x', hx'_in_T, rfl⟩
             rcases Finset.mem_map.mp hy_in_T with ⟨y', hy'_in_T, rfl⟩
             have hne : x' ≠ y' := by

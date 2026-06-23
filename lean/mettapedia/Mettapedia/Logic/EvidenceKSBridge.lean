@@ -1,5 +1,5 @@
 import Mettapedia.Logic.EvidenceQuantale
-import Mettapedia.ProbabilityTheory.KnuthSkilling.Core.Basic
+import KnuthSkilling.Core.Basic
 
 /-!
 # BinaryEvidence ↔ Knuth-Skilling Bridge: Intuitionistic Probability Theory
@@ -35,7 +35,7 @@ giving us **intuitionistic probability theory** where:
 namespace Mettapedia.Logic.EvidenceKSBridge
 
 open Mettapedia.Logic.EvidenceQuantale
-open Mettapedia.ProbabilityTheory.KnuthSkilling
+open KnuthSkilling
 
 /-! ## BinaryEvidence IS a PlausibilitySpace
 

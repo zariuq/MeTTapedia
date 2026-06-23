@@ -323,7 +323,7 @@ theorem semE_fragment_interface_step_fixture
 project the institution/Beck-Chevalley endpoint together with one-step evidence
 closure. -/
 theorem semE_fragment_categorical_endpoint_step_fixture
-    (H : Mettapedia.Logic.PLNWorldModelHyperdoctrine.WMHyperdoctrine SemEState)
+    (H : Mettapedia.Logic.PLNWorldModelHyperdoctrine.WMHyperdoctrine.{u, v, 0, 0} SemEState)
     {P Aobj Bobj D : H.Obj}
     (pi1 : P ⟶ Aobj) (pi2 : P ⟶ Bobj) (fcat : Aobj ⟶ D) (gcat : Bobj ⟶ D)
     (hpb : CategoryTheory.IsPullback pi1 pi2 fcat gcat)
@@ -362,7 +362,7 @@ theorem semE_fragment_categorical_endpoint_step_fixture
 /-- SemE fragment fixture (star): consume the star-closure categorical endpoint
 and project endpoint statement + evidence obligation. -/
 theorem semE_fragment_categorical_endpoint_stepStar_fixture
-    (H : Mettapedia.Logic.PLNWorldModelHyperdoctrine.WMHyperdoctrine SemEState)
+    (H : Mettapedia.Logic.PLNWorldModelHyperdoctrine.WMHyperdoctrine.{u, v, 0, 0} SemEState)
     {P Aobj Bobj D : H.Obj}
     (pi1 : P ⟶ Aobj) (pi2 : P ⟶ Bobj) (fcat : Aobj ⟶ D) (gcat : Bobj ⟶ D)
     (hpb : CategoryTheory.IsPullback pi1 pi2 fcat gcat)
@@ -401,7 +401,7 @@ theorem semE_fragment_categorical_endpoint_stepStar_fixture
 /-- SemE fragment fixture (policy star): consume the policy-indexed star
 categorical endpoint wrapper directly (no ad-hoc atom/modal assumptions). -/
 theorem semE_fragment_categorical_endpoint_policy_stepStar_fixture
-    (H : Mettapedia.Logic.PLNWorldModelHyperdoctrine.WMHyperdoctrine SemEState)
+    (H : Mettapedia.Logic.PLNWorldModelHyperdoctrine.WMHyperdoctrine.{u, v, 0, 0} SemEState)
     {P Aobj Bobj D : H.Obj}
     (pi1 : P ⟶ Aobj) (pi2 : P ⟶ Bobj) (fcat : Aobj ⟶ D) (gcat : Bobj ⟶ D)
     (hpb : CategoryTheory.IsPullback pi1 pi2 fcat gcat)
@@ -437,7 +437,7 @@ theorem semE_fragment_categorical_endpoint_policy_stepStar_fixture
 /-- SemE fragment fixture (star-rule): consume the dedicated evidence-rule
 constructor generated from the star categorical endpoint package. -/
 theorem semE_fragment_evidence_rule_stepStar_fixture
-    (H : Mettapedia.Logic.PLNWorldModelHyperdoctrine.WMHyperdoctrine SemEState)
+    (H : Mettapedia.Logic.PLNWorldModelHyperdoctrine.WMHyperdoctrine.{u, v, 0, 0} SemEState)
     {P Aobj Bobj D : H.Obj}
     (pi1 : P ⟶ Aobj) (pi2 : P ⟶ Bobj) (fcat : Aobj ⟶ D) (gcat : Bobj ⟶ D)
     (hpb : CategoryTheory.IsPullback pi1 pi2 fcat gcat)
@@ -475,7 +475,7 @@ theorem semE_fragment_evidence_rule_stepStar_fixture
 /-- SemE fragment fixture (policy star-rule): consume the dedicated
 policy-indexed evidence-rule constructor. -/
 theorem semE_fragment_evidence_rule_policy_stepStar_fixture
-    (H : Mettapedia.Logic.PLNWorldModelHyperdoctrine.WMHyperdoctrine SemEState)
+    (H : Mettapedia.Logic.PLNWorldModelHyperdoctrine.WMHyperdoctrine.{u, v, 0, 0} SemEState)
     {P Aobj Bobj D : H.Obj}
     (pi1 : P ⟶ Aobj) (pi2 : P ⟶ Bobj) (fcat : Aobj ⟶ D) (gcat : Bobj ⟶ D)
     (hpb : CategoryTheory.IsPullback pi1 pi2 fcat gcat)
@@ -528,7 +528,7 @@ theorem formula_pathOrder_star_endpoint_projection_fixture
     (hfm : CategoryTheory.Mono fm) (hpi2m : CategoryTheory.Mono pi2m)
     {Xmodal : Opposite (ConstructorObj lang)}
     (pmodal : Pattern)
-    (H : Mettapedia.Logic.PLNWorldModelHyperdoctrine.WMHyperdoctrine SemEState)
+    (H : Mettapedia.Logic.PLNWorldModelHyperdoctrine.WMHyperdoctrine.{u, v, 0, 0} SemEState)
     {P Aobj Bobj D : H.Obj}
     (pi1 : P ⟶ Aobj) (pi2 : P ⟶ Bobj) (fcat : Aobj ⟶ D) (gcat : Bobj ⟶ D)
     (hpb : CategoryTheory.IsPullback pi1 pi2 fcat gcat)
@@ -580,7 +580,7 @@ theorem canonical_context_fixpoint_endpoint_fixture
     (hfm : CategoryTheory.Mono fm) (hpi2m : CategoryTheory.Mono pi2m)
     {Xmodal : Opposite (ConstructorObj ctx.lang)}
     (pmodal : Pattern)
-    (H : Mettapedia.Logic.PLNWorldModelHyperdoctrine.WMHyperdoctrine SemEState)
+    (H : Mettapedia.Logic.PLNWorldModelHyperdoctrine.WMHyperdoctrine.{u, v, 0, 0} SemEState)
     {P Aobj Bobj D : H.Obj}
     (pi1 : P ⟶ Aobj) (pi2 : P ⟶ Bobj) (fcat : Aobj ⟶ D) (gcat : Bobj ⟶ D)
     (hpb : CategoryTheory.IsPullback pi1 pi2 fcat gcat)
@@ -660,7 +660,7 @@ theorem canonical_context_rulePack_fixpoint_endpoint_fixture
     (hfm : CategoryTheory.Mono fm) (hpi2m : CategoryTheory.Mono pi2m)
     {Xmodal : Opposite (ConstructorObj ctx.lang)}
     (pmodal : Pattern)
-    (H : Mettapedia.Logic.PLNWorldModelHyperdoctrine.WMHyperdoctrine SemEState)
+    (H : Mettapedia.Logic.PLNWorldModelHyperdoctrine.WMHyperdoctrine.{u, v, 0, 0} SemEState)
     {P Aobj Bobj D : H.Obj}
     (pi1 : P ⟶ Aobj) (pi2 : P ⟶ Bobj) (fcat : Aobj ⟶ D) (gcat : Bobj ⟶ D)
     (hpb : CategoryTheory.IsPullback pi1 pi2 fcat gcat)
@@ -778,10 +778,11 @@ theorem canonical_context_rulePack_fixpoint_endpoint_fixture
     ψ := ψ
     goal := goal
   }
-  simpa [modal, cat, fa, goal, transportGoal] using
+  simpa [modal, cat, fa, goal, transportGoal, canonicalConsequenceRuleOn_compact_of_goal,
+    canonicalConsequenceRuleOn_compact] using
     canonical_rulePack_transport_piSigma_and_fixpoint_of_transportGoal
       (ctx := ctx) (modal := modal) (cat := cat) (fa := fa)
-      (hPiSigmaPack := Mettapedia.OSLF.NativeType.prop12_piSigmaPredicateRulePack
+      (hPiSigmaPack := Mettapedia.OSLF.NativeType.prop12_piSigmaPredicateRulePack.{0, 0, 0}
         (C := ConstructorObj ctx.lang))
       (transportGoal := transportGoal)
 
@@ -794,7 +795,7 @@ theorem canonical_context_transportGoal_rulePack_fixpoint_endpoint_fixture_via_r
     (cat : CanonicalHyperSquare ctx)
     (fa : CanonicalFormulaArgs ctx)
     (hPiSigmaPack :
-      Mettapedia.OSLF.NativeType.PiSigmaPredicateRulePack
+      Mettapedia.OSLF.NativeType.PiSigmaPredicateRulePack.{0, 0, 0}
         (C := ConstructorObj ctx.lang))
     (transportGoal : CanonicalTransportGoalArgs ctx modal cat fa) :
     ((((Mettapedia.GSLT.Topos.presheafChangeOfBase
@@ -981,7 +982,7 @@ theorem canonical_compact_rule_fixpoint_fixture
     φcat := φcat
     hStrengthFromEvidence := hStrengthFromEvidence
   }
-  simpa [goal] using canonicalConsequenceRuleOn_compact_fixpoint_of_goal
+  simpa [goal, canonicalConsequenceRuleOn_compact_of_goal] using canonicalConsequenceRuleOn_compact_fixpoint_of_goal
     (ctx := ctx) (modal := modal) (cat := cat) (fa := fa) (goal := goal)
 
 /-- Canonical compact fixture:

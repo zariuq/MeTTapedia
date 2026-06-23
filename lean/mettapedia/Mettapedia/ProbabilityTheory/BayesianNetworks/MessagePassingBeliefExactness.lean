@@ -142,7 +142,7 @@ theorem variableBelief_of_exactIncoming
         rfl
     | cons f fs ih =>
         simp [ih]
-        simpa [VariableElimination.Factor.toValuation] using hIncoming f x
+        simpa [VariableElimination.Factor.toValuation] using! hIncoming f x
   have hCombine :
       (VariableElimination.Factor.toValuation
         (φ := VariableElimination.combineAll (fg := fg)
@@ -151,7 +151,7 @@ theorem variableBelief_of_exactIncoming
           (fun φ =>
             φ.potential
               (VariableElimination.FactorGraph.fullAssign (fg := fg) x φ.scope))).prod := by
-    simpa [VariableElimination.Factor.toValuation] using
+    simpa [VariableElimination.Factor.toValuation] using!
       VariableElimination.combineAll_potential_fullAssign
         (fg := fg) (fs := incomingFactorListAtVar (fg := fg) v ψ) x
   calc
@@ -218,7 +218,7 @@ theorem factorBelief_of_exactIncoming
         rfl
     | cons u us ih =>
         simp [ih]
-        simpa [VariableElimination.Factor.toValuation] using hIncoming u x
+        simpa [VariableElimination.Factor.toValuation] using! hIncoming u x
   have hCombine :
       (VariableElimination.Factor.toValuation
         (φ := VariableElimination.combineAll (fg := fg)
@@ -229,7 +229,7 @@ theorem factorBelief_of_exactIncoming
           (fun φ =>
             φ.potential
               (VariableElimination.FactorGraph.fullAssign (fg := fg) x φ.scope))).prod := by
-    simpa [VariableElimination.Factor.toValuation] using
+    simpa [VariableElimination.Factor.toValuation] using!
       VariableElimination.combineAll_potential_fullAssign
         (fg := fg)
         (fs := VariableElimination.Factor.ofGraph (fg := fg) h ::
@@ -894,7 +894,7 @@ theorem pairwiseFactorBelief_of_exactIncoming
         fg.potential h (fg.restrictToScope h x) *
           (VariableElimination.Factor.toValuation
             (φ := ψ)).val x := by
-    simpa [VariableElimination.Factor.ofGraph] using congrArg
+    simpa [VariableElimination.Factor.ofGraph] using! congrArg
       (fun η => η.val x)
       (VariableElimination.Factor.toValuation_mul
         (φ := VariableElimination.Factor.ofGraph (fg := fg) h)
@@ -911,7 +911,7 @@ theorem pairwiseFactorBelief_of_exactIncoming
             ψ)).val x *
         (VariableElimination.Factor.toValuation
           (φ := χ)).val x := by
-    simpa using congrArg
+    simpa using! congrArg
       (fun η => η.val x)
       (VariableElimination.Factor.toValuation_mul
         (φ := VariableElimination.Factor.mul (fg := fg)
@@ -1003,7 +1003,7 @@ theorem twoStableIncoming_variableBelief_exact
         (φ := VariableElimination.Factor.mul (fg := fg) Tf.factor Tg.factor)).val x =
       (VariableElimination.Factor.toValuation (φ := Tf.factor)).val x *
       (VariableElimination.Factor.toValuation (φ := Tg.factor)).val x := by
-    simpa using congrArg
+    simpa using! congrArg
       (fun η => η.val x)
       (VariableElimination.Factor.toValuation_mul
         (φ := Tf.factor) (ψ := Tg.factor))
@@ -1134,7 +1134,7 @@ theorem twoLeaf_variableBelief_exact
           (φ := leafEliminatedFactor (fg := fg) f u)).val x *
         (VariableElimination.Factor.toValuation
           (φ := leafEliminatedFactor (fg := fg) g w)).val x := by
-    simpa using congrArg
+    simpa using! congrArg
       (fun ψ => ψ.val x)
       (VariableElimination.Factor.toValuation_mul
         (φ := leafEliminatedFactor (fg := fg) f u)
@@ -1235,7 +1235,7 @@ theorem twoSidedLeaf_factorBelief_exact
         fg.potential g (fg.restrictToScope g x) *
           (VariableElimination.Factor.toValuation
             (φ := leafEliminatedFactor (fg := fg) f u)).val x := by
-    simpa [VariableElimination.Factor.ofGraph] using congrArg
+    simpa [VariableElimination.Factor.ofGraph] using! congrArg
       (fun ψ => ψ.val x)
       (VariableElimination.Factor.toValuation_mul
         (φ := VariableElimination.Factor.ofGraph (fg := fg) g)
@@ -1253,7 +1253,7 @@ theorem twoSidedLeaf_factorBelief_exact
             (leafEliminatedFactor (fg := fg) f u))).val x *
         (VariableElimination.Factor.toValuation
           (φ := leafEliminatedFactor (fg := fg) h z)).val x := by
-    simpa using congrArg
+    simpa using! congrArg
       (fun ψ => ψ.val x)
       (VariableElimination.Factor.toValuation_mul
         (φ := VariableElimination.Factor.mul (fg := fg)
@@ -1377,7 +1377,7 @@ theorem twoSubtree_variableBelief_exact
         (VariableElimination.Factor.toValuation
           (φ := VariableElimination.Factor.sumOut
             (φ := twoFactorSubtreeFactor (fg := fg) h j y) z)).val x := by
-    simpa using congrArg
+    simpa using! congrArg
       (fun ψ => ψ.val x)
       (VariableElimination.Factor.toValuation_mul
         (φ := VariableElimination.Factor.sumOut

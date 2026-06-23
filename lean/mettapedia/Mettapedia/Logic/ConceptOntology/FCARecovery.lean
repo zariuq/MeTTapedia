@@ -47,7 +47,7 @@ noncomputable def formedConceptOrderIsoCrispConcept
   toEquiv := formedConceptEquivCrispConcept G M
   map_rel_iff' := by
     intro A B
-    simpa using
+    exact
       (DualConcept.toConcept_le_iff A.1 B.1
         (AbstractInheritance.formedConcept_isClosed G M A)
         (AbstractInheritance.formedConcept_isClosed G M B))

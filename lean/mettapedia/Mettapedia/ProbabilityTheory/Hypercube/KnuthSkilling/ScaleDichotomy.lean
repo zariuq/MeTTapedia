@@ -1,8 +1,12 @@
+/-
+Knuth–Skilling slice of the probability hypercube. See the aggregator
+`Mettapedia/ProbabilityTheory/Hypercube/KnuthSkilling.lean` for the overview.
+-/
 import Mathlib.Topology.Algebra.Order.Archimedean
 import Mathlib.Topology.Algebra.Order.Group
 
 import Mettapedia.ProbabilityTheory.Hypercube.ScaleDichotomy
-import Mettapedia.ProbabilityTheory.KnuthSkilling.Additive.Proofs.GridInduction.Main
+import KnuthSkilling.Additive.Proofs.GridInduction.Main
 
 /-!
 # K&S Neighbor Theory: Discrete-vs-Dense Scale Dichotomy

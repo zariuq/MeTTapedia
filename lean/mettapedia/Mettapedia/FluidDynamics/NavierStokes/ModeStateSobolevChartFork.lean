@@ -58,14 +58,12 @@ def hardSobolevRadius (m : ℕ) (x : ModeState) : ℝ :=
 
 theorem continuous_sobolevAmplification (m n : ℕ) :
     Continuous fun x : ModeState => sobolevAmplification m x n := by
-  simpa [sobolevAmplification] using
-    (continuous_const : Continuous fun _ : ModeState => ((n + 1 : ℝ) ^ m)).mul
+  exact (continuous_const : Continuous fun _ : ModeState => ((n + 1 : ℝ) ^ m)).mul
       (continuous_coeffObservable n)
 
 theorem continuous_softSobolevTerm (m n : ℕ) :
     Continuous fun x : ModeState => softSobolevTerm m x n := by
-  simpa [softSobolevTerm] using
-    (continuous_softSupportScalar.comp (continuous_sobolevAmplification m n)).mul
+  exact (continuous_softSupportScalar.comp (continuous_sobolevAmplification m n)).mul
       (continuous_const : Continuous fun _ : ModeState => inverseSquareModeWeights.weight n)
 
 theorem norm_softSobolevTerm_le (m : ℕ) (x : ModeState) (n : ℕ) :

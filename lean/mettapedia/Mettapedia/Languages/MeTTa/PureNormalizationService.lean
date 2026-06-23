@@ -75,7 +75,9 @@ def defEqClosed? (A B : PureTm 0) : Option (ClosedDefEqWitness A B) :=
     some
       { commonCanonicalDevelopment := left.canonicalDevelopment
         leftReduction := left.reductionToCanonicalDevelopment
-        rightReduction := by simpa [h] using right.reductionToCanonicalDevelopment
+        rightReduction := by
+          rw [show left.canonicalDevelopment = right.canonicalDevelopment from h]
+          exact right.reductionToCanonicalDevelopment
         conv := conv_of_cdev_eq h }
   else
     none
@@ -96,7 +98,9 @@ def asPiClosed? (t : PureTm 0) : Option (ClosedPiView t) :=
           dom := dom
           cod := cod
           canonicalDevelopment_eq := hcanon
-          conv := by simpa [hcanon] using canonical.conversionToCanonicalDevelopment }
+          conv := by
+            rw [show (dom.pi cod) = canonical.canonicalDevelopment from hcanon.symm]
+            exact canonical.conversionToCanonicalDevelopment }
   | _ => none
 
 structure ClosedSigmaView (t : PureTm 0) where
@@ -115,7 +119,9 @@ def asSigmaClosed? (t : PureTm 0) : Option (ClosedSigmaView t) :=
           dom := dom
           cod := cod
           canonicalDevelopment_eq := hcanon
-          conv := by simpa [hcanon] using canonical.conversionToCanonicalDevelopment }
+          conv := by
+            rw [show (dom.sigma cod) = canonical.canonicalDevelopment from hcanon.symm]
+            exact canonical.conversionToCanonicalDevelopment }
   | _ => none
 
 def PureCheckingBoundary.canonicalizeClosed

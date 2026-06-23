@@ -33,7 +33,7 @@ open Mettapedia.Logic.EvidenceClass
 open Mettapedia.Logic.PLNWorldModel
 open Mettapedia.Logic.OSLFKSUnificationSketch
 open Mettapedia.OSLF.Formula
-open Mettapedia.ProbabilityTheory.KnuthSkilling.TotalityImprecision
+open KnuthSkilling.TotalityImprecision
 
 open scoped ENNReal
 

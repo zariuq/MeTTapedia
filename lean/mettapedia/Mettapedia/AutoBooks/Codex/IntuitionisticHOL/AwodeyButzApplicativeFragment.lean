@@ -171,16 +171,25 @@ namespace ApplicativeTopologicalInterpretation
       rw [SemilocalModel.eval]
       exact var_val_decode (M := M) v γ
   | const c =>
-      simp [ApplicativeTopologicalInterpretation.evalTerm, ApplicativeTerm.toTerm,
-        ApplicativeTopologicalInterpretation.evalTerm, applicativeInterp,
+      change pointCarrierVal (M := M)
+          (((applicativeInterp M).evalTerm (.const c)).toContinuousMap γ) =
+        SemilocalModel.eval M.toSemilocalModel (decodeEnv (M := M) γ) (.const c)
+      dsimp [ApplicativeTopologicalInterpretation.evalTerm, applicativeInterp,
         EtaleSpace.BasicTopologicalInterpretation.CtxTerm.const,
         HigherOrderPointTopologicalGlobalModelBridge.basicInterp,
         SimpleQuantifiedTopologicalGlobalModelBridge.pointSection,
-        SemilocalModel.eval, pointCarrierVal]
+        EtaleSpace.projMap, SemilocalModel.eval, pointCarrierVal]
+      rfl
   | app f a ihf iha =>
-      simpa [ApplicativeTopologicalInterpretation.evalTerm, ApplicativeTerm.toTerm,
-        applicativeInterp, SemilocalModel.eval] using
-        congrArg₂ (fun u v => M.app u v) (ihf γ) (iha γ)
+      change M.app
+          (pointCarrierVal (M := M) (((applicativeInterp M).evalTerm f).toContinuousMap γ))
+          (pointCarrierVal (M := M) (((applicativeInterp M).evalTerm a).toContinuousMap γ)) =
+        M.app
+          (SemilocalModel.eval M.toSemilocalModel (decodeEnv (M := M) γ)
+            (ApplicativeTerm.toTerm f))
+          (SemilocalModel.eval M.toSemilocalModel (decodeEnv (M := M) γ)
+            (ApplicativeTerm.toTerm a))
+      exact congrArg₂ (fun u v => M.app u v) (ihf γ) (iha γ)
   | @lam Γ σ τ t iht =>
       simp [ApplicativeTopologicalInterpretation.evalTerm, ApplicativeTerm.toTerm,
         applicativeInterp, SemilocalModel.eval]

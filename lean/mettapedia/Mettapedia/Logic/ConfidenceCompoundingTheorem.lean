@@ -144,7 +144,7 @@ theorem tensor_positive_total (e1 e2 : BinaryEvidence)
 theorem tensor_nonneg (e1 e2 : BinaryEvidence) :
     0 ≤ (e1 * e2).pos ∧ 0 ≤ (e1 * e2).neg := by
   simp only [BinaryEvidence.tensor_def]
-  exact ⟨zero_le _, zero_le _⟩
+  exact ⟨bot_le, bot_le⟩
 
 /-- The tensor product has non-zero positive when both inputs have non-zero positive. -/
 theorem tensor_pos_ne_zero (e1 e2 : BinaryEvidence)

@@ -335,13 +335,15 @@ theorem defaultBackendSpace_instantiatedMatch_pettaEval
       (s.spaceMatch (applyBindings bs innerPat) (applyBindings bs innerTmpl)) := by
   cases hspace with
   | self =>
-      simpa [normalizeDefaultBackendSpaceExpr, normalizeDefaultBackendSpaceRef]
+      simpa [normalizeDefaultBackendSpaceExpr, normalizeDefaultBackendSpaceRef,
+        Mettapedia.OSLF.MeTTaIL.Match.applyBindings]
         using petta_eval_spaceQuery_correct
           s
           (applyBindings bs innerPat)
           (applyBindings bs innerTmpl)
   | mork =>
-      simpa [normalizeDefaultBackendSpaceExpr, normalizeDefaultBackendSpaceRef]
+      simpa [normalizeDefaultBackendSpaceExpr, normalizeDefaultBackendSpaceRef,
+        Mettapedia.OSLF.MeTTaIL.Match.applyBindings]
         using petta_eval_spaceQuery_correct
           s
           (applyBindings bs innerPat)
@@ -365,7 +367,8 @@ theorem defaultBackendSpace_instantiatedMatch_meTTaEval
       ((s.spaceMatch (applyBindings bs innerPat) (applyBindings bs innerTmpl)).map (·, bindings)) := by
   cases hspace with
   | self =>
-      simpa [normalizeDefaultBackendSpaceExpr, normalizeDefaultBackendSpaceRef]
+      simpa [normalizeDefaultBackendSpaceExpr, normalizeDefaultBackendSpaceRef,
+        Mettapedia.OSLF.MeTTaIL.Match.applyBindings]
         using
           (MeTTaEval.spaceQuery
             (applyBindings bs innerPat)
@@ -375,7 +378,8 @@ theorem defaultBackendSpace_instantiatedMatch_meTTaEval
             ((s.spaceMatch (applyBindings bs innerPat) (applyBindings bs innerTmpl)).map (·, bindings))
             rfl)
   | mork =>
-      simpa [normalizeDefaultBackendSpaceExpr, normalizeDefaultBackendSpaceRef]
+      simpa [normalizeDefaultBackendSpaceExpr, normalizeDefaultBackendSpaceRef,
+        Mettapedia.OSLF.MeTTaIL.Match.applyBindings]
         using
           (MeTTaEval.spaceQuery
             (applyBindings bs innerPat)
@@ -402,13 +406,15 @@ theorem defaultBackendSpace_instantiatedCollapseMatch_pettaEval
         none] := by
   cases hspace with
   | self =>
-      simpa [normalizeDefaultBackendSpaceExpr, normalizeDefaultBackendSpaceRef]
+      simpa [normalizeDefaultBackendSpaceExpr, normalizeDefaultBackendSpaceRef,
+        Mettapedia.OSLF.MeTTaIL.Match.applyBindings]
         using petta_eval_collapse_spaceQuery
           s
           (applyBindings bs innerPat)
           (applyBindings bs innerTmpl)
   | mork =>
-      simpa [normalizeDefaultBackendSpaceExpr, normalizeDefaultBackendSpaceRef]
+      simpa [normalizeDefaultBackendSpaceExpr, normalizeDefaultBackendSpaceRef,
+        Mettapedia.OSLF.MeTTaIL.Match.applyBindings]
         using petta_eval_collapse_spaceQuery
           s
           (applyBindings bs innerPat)
@@ -437,7 +443,8 @@ theorem defaultBackendSpace_instantiatedCollapseMatch_meTTaEval
         bindings)] := by
   cases hspace with
   | self =>
-      simpa [normalizeDefaultBackendSpaceExpr, normalizeDefaultBackendSpaceRef]
+      simpa [normalizeDefaultBackendSpaceExpr, normalizeDefaultBackendSpaceRef,
+        Mettapedia.OSLF.MeTTaIL.Match.applyBindings]
         using
           (meTTaEval_collapse_spaceQuery
             (s := s)
@@ -446,7 +453,8 @@ theorem defaultBackendSpace_instantiatedCollapseMatch_meTTaEval
             (ty := ty)
             (bindings := bindings))
   | mork =>
-      simpa [normalizeDefaultBackendSpaceExpr, normalizeDefaultBackendSpaceRef]
+      simpa [normalizeDefaultBackendSpaceExpr, normalizeDefaultBackendSpaceRef,
+        Mettapedia.OSLF.MeTTaIL.Match.applyBindings]
         using
           (meTTaEval_collapse_spaceQuery
             (s := s)

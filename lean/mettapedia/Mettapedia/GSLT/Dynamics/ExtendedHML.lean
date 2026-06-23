@@ -80,30 +80,37 @@ def satisfies [LE A] (wm : WeightMap S W) :
 def hmlEquiv [LE A] (wm : WeightMap S W) (t u : S.Term) : Prop :=
   ∀ ϕ : ExtHMLFormula S W A k, satisfies wm t ϕ ↔ satisfies wm u ϕ
 
+-- `A` only appears in `hmlEquiv`'s `[LE A]` constraint and the phantom
+-- `ExtHMLFormula S W A k`, so it is not determined by `wm`/`t`; Lean 4.31 no longer
+-- unifies the call's metavariable with the ambient `A`, leaving `LE ?A` stuck.  Pass
+-- `(A := A)` explicitly at each use.
 theorem hmlEquiv_refl [LE A] (wm : WeightMap S W) (t : S.Term) :
-    hmlEquiv (k := k) wm t t :=
+    hmlEquiv (A := A) (k := k) wm t t :=
   fun _ => Iff.rfl
 
 theorem hmlEquiv_symm [LE A] {wm : WeightMap S W} {t u : S.Term}
-    (h : hmlEquiv (k := k) wm t u) : hmlEquiv (k := k) wm u t :=
+    (h : hmlEquiv (A := A) (k := k) wm t u) : hmlEquiv (A := A) (k := k) wm u t :=
   fun ϕ => (h ϕ).symm
 
 theorem hmlEquiv_trans [LE A] {wm : WeightMap S W} {t u v : S.Term}
-    (h1 : hmlEquiv (k := k) wm t u) (h2 : hmlEquiv (k := k) wm u v) :
-    hmlEquiv (k := k) wm t v :=
+    (h1 : hmlEquiv (A := A) (k := k) wm t u) (h2 : hmlEquiv (A := A) (k := k) wm u v) :
+    hmlEquiv (A := A) (k := k) wm t v :=
   fun ϕ => (h1 ϕ).trans (h2 ϕ)
 
 def hmlSetoid [LE A] (wm : WeightMap S W) : Setoid S.Term where
-  r := hmlEquiv (k := k) wm
-  iseqv := ⟨hmlEquiv_refl (k := k) wm,
-            fun h => hmlEquiv_symm h,
-            fun h1 h2 => hmlEquiv_trans h1 h2⟩
+  r := hmlEquiv (A := A) (k := k) wm
+  iseqv := ⟨hmlEquiv_refl (A := A) (k := k) wm,
+            fun h => hmlEquiv_symm (A := A) h,
+            fun h1 h2 => hmlEquiv_trans (A := A) h1 h2⟩
 
 end ExtHMLFormula
 
 /-! ## Embedding Plain HML into Extended HML -/
 
-def HMLFormula.toExtended {W : Type*} {A : Type*} {k : Nat} :
+-- `HMLFormula S` carries a `[HasMinimalContexts S]` requirement; Lean 4.31 no longer
+-- auto-includes it from the bare `variable (S : GSLT)`, so the instance must be bound
+-- explicitly on every declaration that mentions `HMLFormula S`.
+def HMLFormula.toExtended [HasMinimalContexts S] {W : Type*} {A : Type*} {k : Nat} :
     HMLFormula S → ExtHMLFormula S W A k
   | .top => .top
   | .bot => .bot
@@ -111,28 +118,30 @@ def HMLFormula.toExtended {W : Type*} {A : Type*} {k : Nat} :
   | .neg ϕ => .neg (toExtended ϕ)
   | .diamond K ϕ => .diamond K (toExtended ϕ)
 
-theorem HMLFormula.toExtended_satisfies [LE A]
+theorem HMLFormula.toExtended_satisfies [HasMinimalContexts S] [LE A]
     (wm : WeightMap S W) (t : S.Term) (ϕ : HMLFormula S) :
-    ExtHMLFormula.satisfies (k := k) wm t (ϕ.toExtended) ↔
+    ExtHMLFormula.satisfies (A := A) (k := k) wm t (ϕ.toExtended (W := W) (A := A)) ↔
     HMLFormula.satisfies S t ϕ := by
-  induction ϕ with
+  -- The `diamond`/`neg` cases recurse on a *different* term `t'`, so the induction
+  -- hypothesis must be quantified over `t`; generalize it before inducting.
+  induction ϕ generalizing t with
   | top => simp [toExtended, ExtHMLFormula.satisfies, HMLFormula.satisfies]
   | bot => simp [toExtended, ExtHMLFormula.satisfies, HMLFormula.satisfies]
   | conj ϕ ψ ihϕ ihψ =>
     simp only [toExtended, ExtHMLFormula.satisfies, HMLFormula.satisfies]
-    exact ⟨fun ⟨h1, h2⟩ => ⟨ihϕ.mp h1, ihψ.mp h2⟩,
-           fun ⟨h1, h2⟩ => ⟨ihϕ.mpr h1, ihψ.mpr h2⟩⟩
+    exact ⟨fun ⟨h1, h2⟩ => ⟨(ihϕ t).mp h1, (ihψ t).mp h2⟩,
+           fun ⟨h1, h2⟩ => ⟨(ihϕ t).mpr h1, (ihψ t).mpr h2⟩⟩
   | neg ϕ ih =>
     simp only [toExtended, ExtHMLFormula.satisfies, HMLFormula.satisfies]
-    exact ⟨fun h hsat => h (ih.mpr hsat), fun h hsat => h (ih.mp hsat)⟩
+    exact ⟨fun h hsat => h ((ih t).mpr hsat), fun h hsat => h ((ih t).mp hsat)⟩
   | diamond K ϕ ih =>
     simp only [toExtended, ExtHMLFormula.satisfies, HMLFormula.satisfies]
-    exact ⟨fun ⟨t', hs, hsat⟩ => ⟨t', hs, ih.mp hsat⟩,
-           fun ⟨t', hs, hsat⟩ => ⟨t', hs, ih.mpr hsat⟩⟩
+    exact ⟨fun ⟨t', hs, hsat⟩ => ⟨t', hs, (ih t').mp hsat⟩,
+           fun ⟨t', hs, hsat⟩ => ⟨t', hs, (ih t').mpr hsat⟩⟩
 
-theorem extHML_refines_plainHML [LE A]
+theorem extHML_refines_plainHML [HasMinimalContexts S] [LE A]
     (wm : WeightMap S W) {t u : S.Term}
-    (h : ExtHMLFormula.hmlEquiv (k := k) wm t u) :
+    (h : ExtHMLFormula.hmlEquiv (A := A) (k := k) wm t u) :
     HMLFormula.hmlEquiv S t u := by
   intro ϕ
   have := h ϕ.toExtended
@@ -151,25 +160,41 @@ def WeightBisimilar (wm : WeightMap S W) (t u : S.Term) : Prop :=
 
 theorem weightBisimilar_refl (wm : WeightMap S W) (t : S.Term) :
     WeightBisimilar S wm t t := by
-  refine ⟨Eq, ⟨?_, ?_⟩, rfl⟩
+  -- `WeightBisimilar` is a plain `def` unfolding to `∃ R, …`; Lean 4.31's anonymous
+  -- constructor no longer unfolds it, so expose the `Exists` explicitly.
+  unfold WeightBisimilar
+  refine ⟨Eq, ?_, ?_, rfl⟩
   · intro a b hab a' hs; subst hab; exact ⟨a', hs, rfl, rfl⟩
   · intro a b hab b' hs; subst hab; exact ⟨b', hs, rfl, rfl⟩
 
 theorem weightBisimilar_symm {wm : WeightMap S W} {t u : S.Term}
     (h : WeightBisimilar S wm t u) : WeightBisimilar S wm u t := by
-  obtain ⟨R, ⟨hfwd, hbwd⟩, hr⟩ := h
-  exact ⟨fun a b => R b a, ⟨fun hab => hbwd hab, fun hab => hfwd hab⟩, hr⟩
+  unfold WeightBisimilar at h ⊢
+  obtain ⟨R, hfwd, hbwd, hr⟩ := h
+  -- Use the flipped relation `R' a b := R b a`.  Its forward simulation is `R`'s
+  -- backward simulation and vice versa; the weight equations are oriented oppositely
+  -- in the two clauses, so flip them with `.symm`.
+  refine ⟨fun a b => R b a, ?_, ?_, hr⟩
+  · intro a b hab a' hstep
+    obtain ⟨b', h', hw, hR⟩ := hbwd hab hstep
+    exact ⟨b', h', hw.symm, hR⟩
+  · intro a b hab b' hstep
+    obtain ⟨a', h', hw, hR⟩ := hfwd hab hstep
+    exact ⟨a', h', hw.symm, hR⟩
 
-def adequacy_extended_sound (wm : WeightMap S W) : Prop :=
+-- `k`/`A` are not auto-bound by Lean 4.31 (they appear only inside `(k := k)` /
+-- `ExtHMLFormula.hmlEquiv`, not in an earlier explicit argument), so bind them.
+def adequacy_extended_sound {A : Type*} {k : Nat} [LE A] (wm : WeightMap S W) : Prop :=
   ∀ {t u : S.Term}, WeightBisimilar S wm t u →
-    ExtHMLFormula.hmlEquiv (k := k) wm t u
+    ExtHMLFormula.hmlEquiv (A := A) (k := k) wm t u
 
-def adequacy_extended_complete (wm : WeightMap S W) : Prop :=
-  ∀ {t u : S.Term}, ExtHMLFormula.hmlEquiv (k := k) wm t u →
+def adequacy_extended_complete {A : Type*} {k : Nat} [LE A] (wm : WeightMap S W) : Prop :=
+  ∀ {t u : S.Term}, ExtHMLFormula.hmlEquiv (A := A) (k := k) wm t u →
     WeightBisimilar S wm t u
 
-def adequacy_extended (wm : WeightMap S W) : Prop :=
-  adequacy_extended_sound (k := k) S wm ∧ adequacy_extended_complete (k := k) S wm
+def adequacy_extended {A : Type*} {k : Nat} [LE A] (wm : WeightMap S W) : Prop :=
+  adequacy_extended_sound (A := A) (k := k) S wm ∧
+    adequacy_extended_complete (A := A) (k := k) S wm
 
 /-! ## Summary
 

@@ -172,7 +172,7 @@ theorem ci_canary_fixed_three_comm_steps
   have hb3 : ForwardSimulation.BarendregtFor "q" "r" Process.nil := by
     simp [ForwardSimulation.BarendregtFor]
   have h1 : ciStart ⇝ₛ* ciMid1 := by
-    simpa [ciStart, ciMid1, ciRedex1, ciRedex2, ciRedex3] using
+    simpa [ciStart, ciMid1, ciRedex1, ciRedex2, ciRedex3, Process.substitute] using
       ForwardSimulation.MultiStepSafe.of_comm_par_left_chain "x" "y" "z" Process.nil ciRedex2 ciRedex3 hyz hb1
   have h2step : ciMid1 ⇝ₛ ciMid2 := by
     simpa [ciMid1, ciMid2, ciRedex2, ciRedex3] using

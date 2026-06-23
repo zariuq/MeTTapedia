@@ -29,6 +29,16 @@ theorem renameVal_lift (M : HenkinModel.{u, v, w} Base Const)
   funext τ v
   cases v <;> rfl
 
+/-- Weakening a valuation by `x` and then precomposing with `Rename.weaken`
+recovers the original valuation: the two operations cancel definitionally. -/
+theorem renameVal_weaken_extend (M : HenkinModel.{u, v, w} Base Const)
+    {Γ : Ctx Base} (ρ : HenkinModel.Valuation M Γ) (x : Ty.denote M.Carrier σ) :
+    (renameVal M (Rename.weaken (Base := Base) (Γ := Γ) (σ := σ))
+        (HenkinModel.extend M ρ x) : HenkinModel.Valuation M Γ) =
+      (fun {_τ} => ρ : HenkinModel.Valuation M Γ) := by
+  funext _ v
+  rfl
+
 theorem denote_rename (M : HenkinModel.{u, v, w} Base Const) :
     ∀ {Γ Δ : Ctx Base} {τ : Ty Base}
       (ρr : Rename Base Γ Δ) (t : Term Const Γ τ) (ν : HenkinModel.Valuation M Δ),
@@ -107,9 +117,10 @@ theorem denote_rename (M : HenkinModel.{u, v, w} Base Const) :
     (ρ : HenkinModel.Valuation M Γ) (x : Ty.denote M.Carrier σ) :
     HenkinModel.denote M (weaken (Base := Base) (σ := σ) t) (HenkinModel.extend M ρ x) =
       HenkinModel.denote M t ρ := by
-  simpa [weaken, renameVal, renameVal_lift] using
-    (denote_rename M (Rename.weaken (Base := Base) (Γ := Γ) (σ := σ)) t
-      (HenkinModel.extend M ρ x))
+  rw [weaken,
+    denote_rename M (Rename.weaken (Base := Base) (Γ := Γ) (σ := σ)) t
+      (HenkinModel.extend M ρ x),
+    renameVal_weaken_extend M ρ x]
 
 /-- Substitute denotations of a term substitution into a valuation. -/
 def substVal (M : HenkinModel.{u, v, w} Base Const)
@@ -129,7 +140,8 @@ theorem substVal_lift (M : HenkinModel.{u, v, w} Base Const)
       rfl
   | vs v =>
       have h := denote_weaken (M := M) (t := σs v) (ρ := ν) (x := x)
-      simpa [substVal, Subst.lift, weaken] using h
+      simp only [substVal, Subst.lift, HenkinModel.extend, PreModel.extend]
+      exact h
 
 theorem denote_subst (M : HenkinModel.{u, v, w} Base Const) :
     ∀ {Γ Δ : Ctx Base} {τ : Ty Base}
@@ -341,7 +353,7 @@ theorem derivation_sound
       simpa using hbody'
   | eqRefl t =>
       intro M ρ hρ hΔ
-      simpa using HenkinModel.eqv_refl M (HenkinModel.denote_admissible M hρ t)
+      exact HenkinModel.eqv_refl M (HenkinModel.denote_admissible M hρ t)
   | eqSymm h ih =>
       intro M ρ hρ hΔ
       exact HenkinModel.eqv_symm M (ih hρ hΔ)
@@ -359,7 +371,8 @@ theorem derivation_sound
   | funExt h ih =>
       intro M ρ hρ hΔ x hx
       have hpoint := ih hρ hΔ x hx
-      simpa [HenkinModel.denote, PreModel.denote] using hpoint
+      simpa [HenkinModel.denote, PreModel.denote, HenkinModel.extend, PreModel.extend]
+        using hpoint
   | beta t u =>
       intro M ρ hρ hΔ
       simpa [HenkinModel.denote, PreModel.denote] using
@@ -367,7 +380,7 @@ theorem derivation_sound
           (HenkinModel.denote_admissible M hρ (instantiate (Base := Base) t u))
   | eta f =>
       intro M ρ hρ hΔ x hx
-      simpa [HenkinModel.denote, PreModel.denote] using
+      simpa [HenkinModel.denote, PreModel.denote, HenkinModel.extend, PreModel.extend] using
         (HenkinModel.eqv_refl M
           (M.app_mem (HenkinModel.denote_admissible M hρ f) hx))
 
@@ -471,7 +484,7 @@ theorem extDerivation_sound
       simpa using hbody'
   | eqRefl t =>
       intro M ρ hExt hρ hΔ
-      simpa using HenkinModel.eqv_refl M (HenkinModel.denote_admissible M hρ t)
+      exact HenkinModel.eqv_refl M (HenkinModel.denote_admissible M hρ t)
   | eqSymm h ih =>
       intro M ρ hExt hρ hΔ
       exact HenkinModel.eqv_symm M (ih hExt hρ hΔ)
@@ -509,7 +522,8 @@ theorem extDerivation_sound
   | funExt h ih =>
       intro M ρ hExt hρ hΔ x hx
       have hpoint := ih hExt hρ hΔ x hx
-      simpa [HenkinModel.denote, PreModel.denote] using hpoint
+      simpa [HenkinModel.denote, PreModel.denote, HenkinModel.extend, PreModel.extend]
+        using hpoint
   | beta t u =>
       intro M ρ hExt hρ hΔ
       simpa [HenkinModel.denote, PreModel.denote] using
@@ -517,7 +531,7 @@ theorem extDerivation_sound
           (HenkinModel.denote_admissible M hρ (instantiate (Base := Base) t u))
   | eta f =>
       intro M ρ hExt hρ hΔ x hx
-      simpa [HenkinModel.denote, PreModel.denote] using
+      simpa [HenkinModel.denote, PreModel.denote, HenkinModel.extend, PreModel.extend] using
         (HenkinModel.eqv_refl M
           (M.app_mem (HenkinModel.denote_admissible M hρ f) hx))
 

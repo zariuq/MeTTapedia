@@ -3528,7 +3528,7 @@ noncomputable def equivStdSimplex : FiniteWeights Ω ≃ stdSimplex ℝ Ω where
 compact standard simplex. -/
 theorem stdSimplexCarrierCompact :
     IsCompact (stdSimplex ℝ Ω) :=
-  isCompact_stdSimplex Ω
+  isCompact_stdSimplex ℝ Ω
 
 section AtomicRepresentation
 
@@ -3619,7 +3619,6 @@ noncomputable def toPrecisePrevision (w : FiniteWeights Ω) :
           ∑ ω : Ω, r * (w.weight ω * X ω) := by
         apply Finset.sum_congr rfl
         intro ω _hω
-        rw [Pi.smul_apply, smul_eq_mul]
         change w.weight ω * (r * X ω) = r * (w.weight ω * X ω)
         ring
       _ = r * ∑ ω : Ω, w.weight ω * X ω := by
@@ -3631,7 +3630,7 @@ noncomputable def toPrecisePrevision (w : FiniteWeights Ω) :
           ∑ ω : Ω, (w.weight ω * X ω + w.weight ω * Y ω) := by
         apply Finset.sum_congr rfl
         intro ω _hω
-        rw [Pi.add_apply]
+        show w.weight ω * (X ω + Y ω) = w.weight ω * X ω + w.weight ω * Y ω
         ring
       _ = (∑ ω : Ω, w.weight ω * X ω) +
           ∑ ω : Ω, w.weight ω * Y ω := by
@@ -3806,9 +3805,13 @@ noncomputable def precisePrevisionOfStdSimplex
 theorem precisePrevisionOfStdSimplex_continuous :
     @Continuous (stdSimplex ℝ Ω) (PrecisePrevision Ω)
       inferInstance finiteEvaluationTopology precisePrevisionOfStdSimplex := by
-  rw [continuous_induced_rng]
-  simpa [Function.comp_def] using
-    (continuous_id : Continuous (fun w : stdSimplex ℝ Ω => w))
+  rw [finiteEvaluationTopology, continuous_induced_rng]
+  have h : (fun P : PrecisePrevision Ω => finiteEvaluationCoordinate P) ∘
+      precisePrevisionOfStdSimplex = fun w : stdSimplex ℝ Ω => w := by
+    funext w
+    simp [Function.comp_def, finiteEvaluationCoordinate_precisePrevisionOfStdSimplex]
+  rw [h]
+  exact continuous_id
 
 /-- The whole finite precise-prevision carrier is compact in the finite
 evaluation topology, by transport from the compact standard simplex. -/
@@ -4181,12 +4184,16 @@ def restrictBoundedMeasurable
     exact P.lower_bound X.toGamble c hc
   pos_homog := by
     intro r X hr
-    simpa [BoundedMeasurableGamble.toGamble] using
-      P.pos_homog r X.toGamble hr
+    have h : (r • X).toGamble = r • X.toGamble := by
+      funext ω; show r * X.toFun ω = r * X.toFun ω; rfl
+    rw [h]
+    exact P.pos_homog r X.toGamble hr
   add := by
     intro X Y
-    simpa [BoundedMeasurableGamble.toGamble] using
-      P.add X.toGamble Y.toGamble
+    have h : (X + Y).toGamble = X.toGamble + Y.toGamble := by
+      funext ω; show X.toFun ω + Y.toFun ω = X.toFun ω + Y.toFun ω; rfl
+    rw [h]
+    exact P.add X.toGamble Y.toGamble
 
 @[simp] theorem restrictBoundedMeasurable_apply
     {Ω : Type*} [MeasurableSpace Ω] (P : PrecisePrevision Ω)
@@ -5784,7 +5791,7 @@ theorem exists_dominatingPreciseCompletion_touching
     simp [f]
   have hgX := hg_extends ⟨X, hXmem⟩
   have hfX : f ⟨X, hXmem⟩ = L X := by
-    simp [f]
+    exact LinearPMap.mkSpanSingleton'_apply_self X (L.toFun X) hKernel hXmem
   refine ⟨P, ?_, ?_⟩
   · intro Y
     exact hDominates Y
@@ -6267,8 +6274,8 @@ and every local window has a projection from the global state.
 
 The `restrict` and `project_restrict` fields are the local-to-local
 compatibility square. -/
-structure ProjectiveCylinderSystem (Window Global : Type*) [LE Window] where
-  Local : Window → Type*
+structure ProjectiveCylinderSystem.{u, v} (Window : Type u) (Global : Type v) [LE Window] where
+  Local : Window → Type v
   project : ∀ i : Window, Global → Local i
   restrict : ∀ {i j : Window}, i ≤ j → Local j → Local i
   project_restrict :
@@ -6453,8 +6460,8 @@ end ProjectiveCylinderSystem
 /-! ## Projective-limit credal sets and natural extension -/
 
 /-- Local credal data over a projective cylinder system. -/
-structure ProjectiveLocalCredalSpec (Window Global : Type*) [LE Window] where
-  cylinders : ProjectiveCylinderSystem Window Global
+structure ProjectiveLocalCredalSpec.{u, v} (Window : Type u) (Global : Type v) [LE Window] where
+  cylinders : ProjectiveCylinderSystem.{u, v} Window Global
   localCredal : ∀ i : Window, CredalPrevisionSet (cylinders.Local i)
 
 namespace ProjectiveLocalCredalSpec
@@ -10049,9 +10056,9 @@ The induced local credal set at each window is the set of precise previsions
 dominating the local lower prevision.  This is the input shape needed for an
 open-ended KB: local finite-window lower assessments are primary, and global
 compatible completions are produced by projective compactness/FIP. -/
-structure ProjectiveLocalLowerPrevisionSpec
-    (Window Global : Type*) [LE Window] where
-  cylinders : ProjectiveCylinderSystem Window Global
+structure ProjectiveLocalLowerPrevisionSpec.{u, v}
+    (Window : Type u) (Global : Type v) [LE Window] where
+  cylinders : ProjectiveCylinderSystem.{u, v} Window Global
   localLower : ∀ i : Window, LowerPrevision (cylinders.Local i)
 
 namespace ProjectiveLocalLowerPrevisionSpec
@@ -10385,7 +10392,7 @@ theorem hasCompatibleCompletion_of_finiteWindowCompatibleInCarrier
       exact S.localCredal_isConvex i
     constraint_closed := by
       intro i
-      simpa [toCredalSpec] using hClosed i
+      exact hClosed i
     finite_satisfiable := by
       intro u
       rcases hFIP u with ⟨P, hPcarrier, hPwindows⟩
@@ -10396,7 +10403,7 @@ theorem hasCompatibleCompletion_of_finiteWindowCompatibleInCarrier
         intro i
         refine Set.mem_iInter.2 ?_
         intro hi
-        simpa [toCredalSpec] using hPwindows i hi }
+        exact hPwindows i hi }
   exact ProjectiveLocalCredalSpec.CompactConvexProjectiveCredalSystem.hasCompatibleCompletion K
 
 /-- Compact/FIP crown form for local lower-prevision data.
@@ -10490,10 +10497,11 @@ theorem boolFalseExact_compactFIP_hasCompatibleCompletion :
               boolFalseExactProjectiveSpec.localCredal i := by
         intro i
         rw [boolFalseExactProjectiveSpec.marginalPrevision_dirac i false]
-        simp [boolFalseExactProjectiveSpec, boolOneWindowCylinderSystem]
+        simp only [boolFalseExactProjectiveSpec, boolOneWindowCylinderSystem]
+        exact Set.mem_singleton _
       refine ⟨PrecisePrevision.dirac false, ?_⟩
       constructor
-      · simp
+      · exact Set.mem_singleton _
       · exact Set.mem_iInter.mpr fun i =>
           Set.mem_iInter.mpr fun _hi => hcompat i
   }
@@ -10530,7 +10538,7 @@ theorem boolUnrestricted_finiteEvaluationCompact_hasCompatibleCompletion :
       · simp
       · exact Set.mem_iInter.mpr fun i =>
           Set.mem_iInter.mpr fun _hi => by
-            simp [boolUnrestrictedProjectiveSpec]
+            exact Set.mem_univ _
   }
   exact ProjectiveLocalCredalSpec.CompactConvexProjectiveCredalSystem.hasCompatibleCompletion K
 
@@ -10939,7 +10947,7 @@ theorem finiteUnrestricted_finiteEvaluationCompact_hasCompatibleCompletion
       · simp
       · exact Set.mem_iInter.mpr fun i =>
           Set.mem_iInter.mpr fun _hi => by
-            simp [finiteUnrestrictedProjectiveSpec]
+            exact Set.mem_univ _
   }
   exact ProjectiveLocalCredalSpec.CompactConvexProjectiveCredalSystem.hasCompatibleCompletion K
 
@@ -10965,7 +10973,7 @@ theorem singletonIdentityProjectiveSpec_projectiveLimitCredalSet
       ext X
       rfl
     rw [hMarg] at h
-    simpa using h
+    exact h
   · intro hQ i
     have hMarg :
         (singletonIdentityProjectiveSpec P).cylinders.marginalPrevision
@@ -10973,7 +10981,7 @@ theorem singletonIdentityProjectiveSpec_projectiveLimitCredalSet
       ext X
       rfl
     rw [hMarg]
-    simpa using hQ
+    exact hQ
 
 theorem singletonIdentityProjectiveSpec_hasCompatibleCompletion
     {Ω : Type*} (P : PrecisePrevision Ω) :
@@ -10987,7 +10995,7 @@ theorem singletonIdentityProjectiveSpec_hasCompatibleCompletion
     ext X
     rfl
   rw [hMarg]
-  simp [singletonIdentityProjectiveSpec]
+  exact Set.mem_singleton _
 
 /-! ## Profile surface -/
 
@@ -11537,9 +11545,9 @@ structure ProjectiveCredalProfile where
             S.finiteWindowCompatibleInCarrier carrier →
               S.toCredalSpec.hasCompatibleCompletion
   boolFalseExactCompactFIPCompletion :
-    boolFalseExactProjectiveSpec.hasCompatibleCompletion
+    boolFalseExactProjectiveSpec.{0}.hasCompatibleCompletion
   boolUnrestrictedFiniteEvaluationCompactCompletion :
-    boolUnrestrictedProjectiveSpec.hasCompatibleCompletion
+    boolUnrestrictedProjectiveSpec.{0}.hasCompatibleCompletion
   finiteUnrestrictedFiniteEvaluationCompactCompletion :
     ∀ (Ω : Type*) [Fintype Ω] [DecidableEq Ω] [Nonempty Ω],
       (finiteUnrestrictedProjectiveSpec Ω).hasCompatibleCompletion

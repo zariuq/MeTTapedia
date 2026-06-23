@@ -145,7 +145,7 @@ theorem resume?_decompose (body : ResultPair → ResultList) :
       resume? body frame = some (r, next) →
       run body frame = r :: run body next
   | .source sf, r, next, h => by
-      simpa [resume?] using nextFromSource?_decompose body sf.remaining r next h
+      exact nextFromSource?_decompose body sf.remaining r next h
   | .body ⟨[], sf⟩, r, next, h => by
       simpa [resume?, run] using nextFromSource?_decompose body sf.remaining r next h
   | .body ⟨r0 :: rs, sf⟩, r, next, h => by
@@ -157,7 +157,7 @@ theorem resume?_decompose (body : ResultPair → ResultList) :
 theorem resume?_none_iff_run_nil (body : ResultPair → ResultList) :
     ∀ frame : LetChainFrame, resume? body frame = none ↔ run body frame = []
   | .source sf => by
-      simpa [resume?] using nextFromSource?_none_iff_runFromSource_nil body sf.remaining
+      exact nextFromSource?_none_iff_runFromSource_nil body sf.remaining
   | .body ⟨[], sf⟩ => by
       simpa [resume?, run] using nextFromSource?_none_iff_runFromSource_nil body sf.remaining
   | .body ⟨r :: rs, sf⟩ => by

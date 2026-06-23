@@ -166,6 +166,7 @@ theorem deterministicAdditionCompatible_trueAnd_iff
   simp [DeterministicAdditionCompatible, DeterministicLocalSaturationStep.additions,
     DeterministicLocalSaturationStep.toLocalSaturationStep, LocalSaturationStep.additions,
     SignedFormula.flip, Sign.flip]
+  rfl
 
 theorem deterministicAdditionCompatible_falseOr_iff
     (S : SaturationSearchState Const Γ)
@@ -176,6 +177,7 @@ theorem deterministicAdditionCompatible_falseOr_iff
   simp [DeterministicAdditionCompatible, DeterministicLocalSaturationStep.additions,
     DeterministicLocalSaturationStep.toLocalSaturationStep, LocalSaturationStep.additions,
     SignedFormula.flip, Sign.flip]
+  rfl
 
 theorem deterministicAdditionCompatible_trueAll_iff
     (S : SaturationSearchState Const Γ)
@@ -185,6 +187,7 @@ theorem deterministicAdditionCompatible_trueAll_iff
   simp [DeterministicAdditionCompatible, DeterministicLocalSaturationStep.additions,
     DeterministicLocalSaturationStep.toLocalSaturationStep, LocalSaturationStep.additions,
     SignedFormula.flip, Sign.flip]
+  rfl
 
 theorem deterministicAdditionCompatible_falseAllWitness_iff
     (S : SaturationSearchState Const Γ)
@@ -194,6 +197,7 @@ theorem deterministicAdditionCompatible_falseAllWitness_iff
   simp [DeterministicAdditionCompatible, DeterministicLocalSaturationStep.additions,
     DeterministicLocalSaturationStep.toLocalSaturationStep, LocalSaturationStep.additions,
     SignedFormula.flip, Sign.flip]
+  rfl
 
 theorem deterministicAdditionCompatible_trueExWitness_iff
     (S : SaturationSearchState Const Γ)
@@ -203,6 +207,7 @@ theorem deterministicAdditionCompatible_trueExWitness_iff
   simp [DeterministicAdditionCompatible, DeterministicLocalSaturationStep.additions,
     DeterministicLocalSaturationStep.toLocalSaturationStep, LocalSaturationStep.additions,
     SignedFormula.flip, Sign.flip]
+  rfl
 
 theorem deterministicAdditionCompatible_falseEx_iff
     (S : SaturationSearchState Const Γ)
@@ -212,6 +217,7 @@ theorem deterministicAdditionCompatible_falseEx_iff
   simp [DeterministicAdditionCompatible, DeterministicLocalSaturationStep.additions,
     DeterministicLocalSaturationStep.toLocalSaturationStep, LocalSaturationStep.additions,
     SignedFormula.flip, Sign.flip]
+  rfl
 
 theorem branchAdditionCompatible_iff_of_singleton_addition
     (S : SaturationSearchState Const Γ)
@@ -322,6 +328,7 @@ theorem branchAdditionCompatible_falseAndLeft_iff
   rw [branchAdditionCompatible_iff_of_singleton_addition
     (S := S) (r := r) (sf := (Sign.falseE, φ))]
   · simp [SignedFormula.flip, Sign.flip]
+    rfl
   · simp [hstep, LocalSaturationStep.additions]
 
 theorem branchAdditionCompatible_falseAndRight_iff
@@ -333,6 +340,7 @@ theorem branchAdditionCompatible_falseAndRight_iff
   rw [branchAdditionCompatible_iff_of_singleton_addition
     (S := S) (r := r) (sf := (Sign.falseE, ψ))]
   · simp [SignedFormula.flip, Sign.flip]
+    rfl
   · simp [hstep, LocalSaturationStep.additions]
 
 theorem branchAdditionCompatible_trueOrLeft_iff
@@ -344,6 +352,7 @@ theorem branchAdditionCompatible_trueOrLeft_iff
   rw [branchAdditionCompatible_iff_of_singleton_addition
     (S := S) (r := r) (sf := (Sign.trueE, φ))]
   · simp [SignedFormula.flip, Sign.flip]
+    rfl
   · simp [hstep, LocalSaturationStep.additions]
 
 theorem branchAdditionCompatible_trueOrRight_iff
@@ -355,6 +364,7 @@ theorem branchAdditionCompatible_trueOrRight_iff
   rw [branchAdditionCompatible_iff_of_singleton_addition
     (S := S) (r := r) (sf := (Sign.trueE, ψ))]
   · simp [SignedFormula.flip, Sign.flip]
+    rfl
   · simp [hstep, LocalSaturationStep.additions]
 
 /-- Consume a chosen focused agenda item by removing exactly that target and
@@ -981,30 +991,35 @@ def toSearchRun {F : CompletenessFrontier Const Γ} {S : SaturationSearchState C
 theorem frontier_eq {F : CompletenessFrontier Const Γ}
     {S : SaturationSearchState Const Γ} (D : HeadSearchDerivation F S) :
     S.frontier = F := by
-  simpa using D.toSearchRun.frontier_eq
+  change D.toSearchRun.state.frontier = F
+  exact D.toSearchRun.frontier_eq
 
 theorem agendaVisible {F : CompletenessFrontier Const Γ}
     {S : SaturationSearchState Const Γ} (D : HeadSearchDerivation F S) :
     S.AgendaVisible := by
-  simpa using D.toSearchRun.agendaVisible
+  change D.toSearchRun.state.AgendaVisible
+  exact D.toSearchRun.agendaVisible
 
 theorem formula_mem {F : CompletenessFrontier Const Γ}
     {S : SaturationSearchState Const Γ} (D : HeadSearchDerivation F S)
     {sf : SignedFormula Const Γ}
     (hsf : sf ∈ (SaturationSearchState.initial F).hintikka.formulas) :
     sf ∈ S.hintikka.formulas := by
-  simpa using D.toSearchRun.formula_mem hsf
+  change sf ∈ D.toSearchRun.state.hintikka.formulas
+  exact D.toSearchRun.formula_mem hsf
 
 theorem true_mem {F : CompletenessFrontier Const Γ}
     {S : SaturationSearchState Const Γ} (D : HeadSearchDerivation F S)
     {φ : Formula Const Γ} (hφ : φ ∈ F.antecedents) :
     (Sign.trueE, φ) ∈ S.hintikka.formulas := by
-  simpa using D.toSearchRun.true_mem hφ
+  change (Sign.trueE, φ) ∈ D.toSearchRun.state.hintikka.formulas
+  exact D.toSearchRun.true_mem hφ
 
 theorem false_mem {F : CompletenessFrontier Const Γ}
     {S : SaturationSearchState Const Γ} (D : HeadSearchDerivation F S) :
     (Sign.falseE, F.succedent) ∈ S.hintikka.formulas := by
-  simpa using D.toSearchRun.false_mem
+  change (Sign.falseE, F.succedent) ∈ D.toSearchRun.state.hintikka.formulas
+  exact D.toSearchRun.false_mem
 
 end HeadSearchDerivation
 
@@ -1050,30 +1065,35 @@ def toSearchRun {F : CompletenessFrontier Const Γ} {S : SaturationSearchState C
 theorem frontier_eq {F : CompletenessFrontier Const Γ}
     {S : SaturationSearchState Const Γ} (D : ProductiveHeadSearchDerivation F S) :
     S.frontier = F := by
-  simpa using D.toSearchRun.frontier_eq
+  change D.toSearchRun.state.frontier = F
+  exact D.toSearchRun.frontier_eq
 
 theorem agendaVisible {F : CompletenessFrontier Const Γ}
     {S : SaturationSearchState Const Γ} (D : ProductiveHeadSearchDerivation F S) :
     S.AgendaVisible := by
-  simpa using D.toSearchRun.agendaVisible
+  change D.toSearchRun.state.AgendaVisible
+  exact D.toSearchRun.agendaVisible
 
 theorem formula_mem {F : CompletenessFrontier Const Γ}
     {S : SaturationSearchState Const Γ} (D : ProductiveHeadSearchDerivation F S)
     {sf : SignedFormula Const Γ}
     (hsf : sf ∈ (SaturationSearchState.initial F).hintikka.formulas) :
     sf ∈ S.hintikka.formulas := by
-  simpa using D.toSearchRun.formula_mem hsf
+  change sf ∈ D.toSearchRun.state.hintikka.formulas
+  exact D.toSearchRun.formula_mem hsf
 
 theorem true_mem {F : CompletenessFrontier Const Γ}
     {S : SaturationSearchState Const Γ} (D : ProductiveHeadSearchDerivation F S)
     {φ : Formula Const Γ} (hφ : φ ∈ F.antecedents) :
     (Sign.trueE, φ) ∈ S.hintikka.formulas := by
-  simpa using D.toSearchRun.true_mem hφ
+  change (Sign.trueE, φ) ∈ D.toSearchRun.state.hintikka.formulas
+  exact D.toSearchRun.true_mem hφ
 
 theorem false_mem {F : CompletenessFrontier Const Γ}
     {S : SaturationSearchState Const Γ} (D : ProductiveHeadSearchDerivation F S) :
     (Sign.falseE, F.succedent) ∈ S.hintikka.formulas := by
-  simpa using D.toSearchRun.false_mem
+  change (Sign.falseE, F.succedent) ∈ D.toSearchRun.state.hintikka.formulas
+  exact D.toSearchRun.false_mem
 
 end ProductiveHeadSearchDerivation
 
@@ -1156,30 +1176,35 @@ def toSearchRun {F : CompletenessFrontier Const Γ} {S : SaturationSearchState C
 theorem frontier_eq {F : CompletenessFrontier Const Γ}
     {S : SaturationSearchState Const Γ} (D : HeadPrioritySearchDerivation F S) :
     S.frontier = F := by
-  simpa using D.toSearchRun.frontier_eq
+  change D.toSearchRun.state.frontier = F
+  exact D.toSearchRun.frontier_eq
 
 theorem agendaVisible {F : CompletenessFrontier Const Γ}
     {S : SaturationSearchState Const Γ} (D : HeadPrioritySearchDerivation F S) :
     S.AgendaVisible := by
-  simpa using D.toSearchRun.agendaVisible
+  change D.toSearchRun.state.AgendaVisible
+  exact D.toSearchRun.agendaVisible
 
 theorem formula_mem {F : CompletenessFrontier Const Γ}
     {S : SaturationSearchState Const Γ} (D : HeadPrioritySearchDerivation F S)
     {sf : SignedFormula Const Γ}
     (hsf : sf ∈ (SaturationSearchState.initial F).hintikka.formulas) :
     sf ∈ S.hintikka.formulas := by
-  simpa using D.toSearchRun.formula_mem hsf
+  change sf ∈ D.toSearchRun.state.hintikka.formulas
+  exact D.toSearchRun.formula_mem hsf
 
 theorem true_mem {F : CompletenessFrontier Const Γ}
     {S : SaturationSearchState Const Γ} (D : HeadPrioritySearchDerivation F S)
     {φ : Formula Const Γ} (hφ : φ ∈ F.antecedents) :
     (Sign.trueE, φ) ∈ S.hintikka.formulas := by
-  simpa using D.toSearchRun.true_mem hφ
+  change (Sign.trueE, φ) ∈ D.toSearchRun.state.hintikka.formulas
+  exact D.toSearchRun.true_mem hφ
 
 theorem false_mem {F : CompletenessFrontier Const Γ}
     {S : SaturationSearchState Const Γ} (D : HeadPrioritySearchDerivation F S) :
     (Sign.falseE, F.succedent) ∈ S.hintikka.formulas := by
-  simpa using D.toSearchRun.false_mem
+  change (Sign.falseE, F.succedent) ∈ D.toSearchRun.state.hintikka.formulas
+  exact D.toSearchRun.false_mem
 
 theorem closed_noncontradictory {F : CompletenessFrontier Const Γ}
     {S : SaturationSearchState Const Γ} (D : HeadPrioritySearchDerivation F S)
@@ -1581,33 +1606,33 @@ end LocalAgreementWitness
 frontier-facing local Hintikka certificate. This packages existence of the
 model together with the already-defined root agreement witness. -/
 structure LocalCountermodel (F : CompletenessFrontier Const Γ) where
-  model : SemilocalModel Base Const
-  agreement : LocalAgreementWitness model F
+  model : SemilocalModel.{u, v, w, w'} Base Const
+  agreement : LocalAgreementWitness.{u, v, w, w'} model F
 
 namespace LocalCountermodel
 
 def certificate {F : CompletenessFrontier Const Γ}
-    (C : LocalCountermodel (Base := Base) (Const := Const) F) :
+    (C : LocalCountermodel F) :
     LocalHintikkaCertificate F :=
   C.agreement.certificate
 
 theorem antecedentTruth_eq_top {F : CompletenessFrontier Const Γ}
-    (C : LocalCountermodel (Base := Base) (Const := Const) F) :
+    (C : LocalCountermodel F) :
     SemilocalModel.antecedentTruth C.model C.agreement.env F.antecedents = ⊤ :=
   C.agreement.antecedentTruth_eq_top
 
 theorem succedent_ne_top {F : CompletenessFrontier Const Γ}
-    (C : LocalCountermodel (Base := Base) (Const := Const) F) :
+    (C : LocalCountermodel F) :
     SemilocalModel.formulaTruth C.model C.agreement.env F.succedent ≠ ⊤ :=
   C.agreement.succedent_ne_top
 
 theorem not_validSequent {F : CompletenessFrontier Const Γ}
-    (C : LocalCountermodel (Base := Base) (Const := Const) F) :
+    (C : LocalCountermodel F) :
     ¬ SemilocalModel.ValidSequent C.model F.antecedents F.succedent :=
   C.agreement.not_validSequent
 
 theorem not_derivable {F : CompletenessFrontier Const Γ}
-    (C : LocalCountermodel (Base := Base) (Const := Const) F)
+    (C : LocalCountermodel F)
     (hM : SemilocalModel.SupportsUniformRelativization C.model) :
     ¬ Derivable (Base := Base) (Const := Const) F.antecedents F.succedent :=
   C.agreement.not_derivable hM
@@ -1617,19 +1642,19 @@ end LocalCountermodel
 /-- A local countermodel whose underlying semilocal model also satisfies the
 uniform relativization hypothesis needed by the current soundness theorem. -/
 structure SoundLocalCountermodel (F : CompletenessFrontier Const Γ)
-    extends LocalCountermodel (Base := Base) (Const := Const) F where
+    extends LocalCountermodel F where
   supportsUniformRelativization :
     SemilocalModel.SupportsUniformRelativization model
 
 namespace SoundLocalCountermodel
 
 theorem not_validSequent {F : CompletenessFrontier Const Γ}
-    (C : SoundLocalCountermodel (Base := Base) (Const := Const) F) :
+    (C : SoundLocalCountermodel F) :
     ¬ SemilocalModel.ValidSequent C.model F.antecedents F.succedent :=
   C.toLocalCountermodel.not_validSequent
 
 theorem not_derivable {F : CompletenessFrontier Const Γ}
-    (C : SoundLocalCountermodel (Base := Base) (Const := Const) F) :
+    (C : SoundLocalCountermodel F) :
     ¬ Derivable (Base := Base) (Const := Const) F.antecedents F.succedent :=
   C.toLocalCountermodel.not_derivable C.supportsUniformRelativization
 
@@ -1641,7 +1666,7 @@ namespace LocalAgreementWitness
 def toLocalCountermodel
     {M : SemilocalModel Base Const} {F : CompletenessFrontier Const Γ}
     (W : LocalAgreementWitness M F) :
-    LocalCountermodel (Base := Base) (Const := Const) F :=
+    LocalCountermodel F :=
   { model := M
     agreement := W }
 
@@ -1651,7 +1676,7 @@ def toSoundLocalCountermodel
     {M : SemilocalModel Base Const} {F : CompletenessFrontier Const Γ}
     (W : LocalAgreementWitness M F)
     (hM : SemilocalModel.SupportsUniformRelativization M) :
-    SoundLocalCountermodel (Base := Base) (Const := Const) F :=
+    SoundLocalCountermodel F :=
   { toLocalCountermodel := W.toLocalCountermodel
     supportsUniformRelativization := hM }
 
@@ -1877,7 +1902,7 @@ def toLocalCountermodel
       ∀ {φ : Formula Const Γ},
         (Sign.falseE, φ) ∈ C.hintikka.formulas →
           SemilocalModel.formulaTruth M env φ ≠ ⊤) :
-    LocalCountermodel (Base := Base) (Const := Const) C.frontier :=
+    LocalCountermodel C.frontier :=
   (C.toLocalAgreementWitness hClosed hCons env global true_top false_ne_top).toLocalCountermodel
 
 /-- Strengthen the candidate-to-countermodel bridge with the semilocal soundness
@@ -1898,7 +1923,7 @@ def toSoundLocalCountermodel
         (Sign.falseE, φ) ∈ C.hintikka.formulas →
           SemilocalModel.formulaTruth M env φ ≠ ⊤)
     (hM : SemilocalModel.SupportsUniformRelativization M) :
-    SoundLocalCountermodel (Base := Base) (Const := Const) C.frontier :=
+    SoundLocalCountermodel C.frontier :=
   (C.toLocalAgreementWitness hClosed hCons env global true_top false_ne_top).toSoundLocalCountermodel hM
 
 /-- Turn the closed hull of a terminal search candidate into an agreement
@@ -1973,7 +1998,7 @@ def toClosedLocalCountermodelOfNoncontradictory
       ∀ {φ : Formula Const Γ},
         (Sign.falseE, φ) ∈ C.closedHintikka.formulas →
           SemilocalModel.formulaTruth M env φ ≠ ⊤) :
-    LocalCountermodel (Base := Base) (Const := Const) C.frontier :=
+    LocalCountermodel C.frontier :=
   (C.toClosedLocalAgreementWitnessOfNoncontradictory
       hNoncontradictory env global true_top false_ne_top).toLocalCountermodel
 
@@ -1994,7 +2019,7 @@ def toClosedLocalCountermodel
       ∀ {φ : Formula Const Γ},
         (Sign.falseE, φ) ∈ C.closedHintikka.formulas →
           SemilocalModel.formulaTruth M env φ ≠ ⊤) :
-    LocalCountermodel (Base := Base) (Const := Const) C.frontier :=
+    LocalCountermodel C.frontier :=
   C.toClosedLocalCountermodelOfNoncontradictory
     (C.toClosedLocalConsistentHintikka hCons).noncontradictory
     env global true_top false_ne_top
@@ -2017,7 +2042,7 @@ def toClosedSoundLocalCountermodelOfNoncontradictory
         (Sign.falseE, φ) ∈ C.closedHintikka.formulas →
           SemilocalModel.formulaTruth M env φ ≠ ⊤)
     (hM : SemilocalModel.SupportsUniformRelativization M) :
-    SoundLocalCountermodel (Base := Base) (Const := Const) C.frontier :=
+    SoundLocalCountermodel C.frontier :=
   (C.toClosedLocalAgreementWitnessOfNoncontradictory
       hNoncontradictory env global true_top false_ne_top).toSoundLocalCountermodel hM
 
@@ -2039,7 +2064,7 @@ def toClosedSoundLocalCountermodel
         (Sign.falseE, φ) ∈ C.closedHintikka.formulas →
           SemilocalModel.formulaTruth M env φ ≠ ⊤)
     (hM : SemilocalModel.SupportsUniformRelativization M) :
-    SoundLocalCountermodel (Base := Base) (Const := Const) C.frontier :=
+    SoundLocalCountermodel C.frontier :=
   C.toClosedSoundLocalCountermodelOfNoncontradictory
     (C.toClosedLocalConsistentHintikka hCons).noncontradictory
     env global true_top false_ne_top hM
@@ -2091,6 +2116,24 @@ theorem true_mem_initialClosedHintikka_iff
       φ = (.top : Formula Const Γ) ∨ φ ∈ F.antecedents := by
   simp [initialHintikkaSet, toHintikkaGoal, HintikkaGoal.toHintikkaSet,
     HintikkaGoal.signedFormulas, HintikkaSet.close]
+  constructor
+  · intro h
+    rcases List.mem_cons.mp h with hTop | hRest
+    · cases hTop
+      exact Or.inl rfl
+    rcases List.mem_cons.mp hRest with hFalseBot | hTail
+    · cases hFalseBot
+    rcases List.mem_append.mp hTail with hMap | hSucc
+    · rcases List.mem_map.mp hMap with ⟨ψ, hψ, hEq⟩
+      cases hEq
+      exact Or.inr hψ
+    · rcases List.mem_singleton.mp hSucc with hEq
+      cases hEq
+  · rintro (rfl | hφ)
+    · exact List.mem_cons_self
+    · exact List.mem_cons_of_mem _ <|
+        List.mem_cons_of_mem _ <|
+          List.mem_append.mpr (Or.inl (List.mem_map.mpr ⟨φ, hφ, rfl⟩))
 
 theorem false_mem_initialClosedHintikka_iff
     (F : CompletenessFrontier Const Γ)
@@ -2099,6 +2142,24 @@ theorem false_mem_initialClosedHintikka_iff
       φ = (.bot : Formula Const Γ) ∨ φ = F.succedent := by
   simp [initialHintikkaSet, toHintikkaGoal, HintikkaGoal.toHintikkaSet,
     HintikkaGoal.signedFormulas, HintikkaSet.close]
+  constructor
+  · intro h
+    rcases List.mem_cons.mp h with hTrueTop | hRest
+    · cases hTrueTop
+    rcases List.mem_cons.mp hRest with hBot | hTail
+    · cases hBot
+      exact Or.inl rfl
+    rcases List.mem_append.mp hTail with hMap | hSucc
+    · rcases List.mem_map.mp hMap with ⟨ψ, _hψ, hEq⟩
+      cases hEq
+    · rcases List.mem_singleton.mp hSucc with hEq
+      cases hEq
+      exact Or.inr rfl
+  · rintro (rfl | rfl)
+    · exact List.mem_cons_of_mem _ List.mem_cons_self
+    · exact List.mem_cons_of_mem _ <|
+        List.mem_cons_of_mem _ <|
+          List.mem_append.mpr (Or.inr (List.mem_singleton_self (Sign.falseE, F.succedent)))
 
 theorem initialHintikkaSet_close_noncontradictory_iff
     (F : CompletenessFrontier Const Γ) :
@@ -2114,8 +2175,7 @@ theorem initialHintikkaSet_close_noncontradictory_iff
     · intro hTop
       have hFalseTop :
           (Sign.falseE, (.top : Formula Const Γ)) ∈ F.initialHintikkaSet.close.formulas := by
-        exact HintikkaSet.mem_close_of_mem (by
-          simpa [hTop] using F.false_mem_initialHintikkaSet)
+        exact (F.false_mem_initialClosedHintikka_iff).2 (Or.inr hTop.symm)
       exact (HintikkaSet.falseTop_not_mem_of_noncontradictory hNoncontradictory) hFalseTop
     · intro hSucc
       have hTrueSucc :
@@ -2532,7 +2592,7 @@ def toClosedLocalCountermodelOfClosedNonconflicting
       ∀ {φ : Formula Const Γ},
         (Sign.falseE, φ) ∈ C.closedHintikka.formulas →
           SemilocalModel.formulaTruth M env φ ≠ ⊤) :
-    LocalCountermodel (Base := Base) (Const := Const) C.frontier :=
+    LocalCountermodel C.frontier :=
   (C.toClosedLocalAgreementWitnessOfClosedNonconflicting
       hInitial hCompat env global true_top false_ne_top).toLocalCountermodel
 
@@ -2555,7 +2615,7 @@ def toClosedSoundLocalCountermodelOfClosedNonconflicting
         (Sign.falseE, φ) ∈ C.closedHintikka.formulas →
           SemilocalModel.formulaTruth M env φ ≠ ⊤)
     (hM : SemilocalModel.SupportsUniformRelativization M) :
-    SoundLocalCountermodel (Base := Base) (Const := Const) C.frontier :=
+    SoundLocalCountermodel C.frontier :=
   (C.toClosedLocalAgreementWitnessOfClosedNonconflicting
       hInitial hCompat env global true_top false_ne_top).toSoundLocalCountermodel hM
 
@@ -2652,7 +2712,7 @@ def toClosedLocalCountermodel
       ∀ {φ : Formula Const Γ},
         (Sign.falseE, φ) ∈ C.closedHintikka.formulas →
           SemilocalModel.formulaTruth M env φ ≠ ⊤) :
-    LocalCountermodel (Base := Base) (Const := Const) C.frontier :=
+    LocalCountermodel C.frontier :=
   C.candidate.toClosedLocalCountermodelOfClosedNonconflicting
     C.closedNonconflicting C.compatible env global true_top false_ne_top
 
@@ -2670,7 +2730,7 @@ def toClosedSoundLocalCountermodel
         (Sign.falseE, φ) ∈ C.closedHintikka.formulas →
           SemilocalModel.formulaTruth M env φ ≠ ⊤)
     (hM : SemilocalModel.SupportsUniformRelativization M) :
-    SoundLocalCountermodel (Base := Base) (Const := Const) C.frontier :=
+    SoundLocalCountermodel C.frontier :=
   C.candidate.toClosedSoundLocalCountermodelOfClosedNonconflicting
     C.closedNonconflicting C.compatible env global true_top false_ne_top hM
 
@@ -2800,7 +2860,7 @@ def toClosedLocalCountermodel
       ∀ {φ : Formula Const Γ},
         (Sign.falseE, φ) ∈ C.closedHintikka.formulas →
           SemilocalModel.formulaTruth M env φ ≠ ⊤) :
-    LocalCountermodel (Base := Base) (Const := Const) F :=
+    LocalCountermodel F :=
   C.toCertifiedCountermodelCandidate.toClosedLocalCountermodel
     env global true_top false_ne_top
 
@@ -2830,7 +2890,7 @@ theorem exists_closedLocalCountermodel_of_exists_semantics
         (∀ {φ : Formula Const Γ},
             (Sign.falseE, φ) ∈ C.closedHintikka.formulas →
               SemilocalModel.formulaTruth M env φ ≠ ⊤)) :
-    Nonempty (LocalCountermodel.{u, v, w, w'} (Base := Base) (Const := Const) F) := by
+    Nonempty (LocalCountermodel.{u, v, w, w'} F) := by
   rcases C.exists_closedLocalAgreementWitness_of_exists_semantics hSem with ⟨⟨_, W⟩⟩
   exact ⟨W.toLocalCountermodel⟩
 
@@ -2846,7 +2906,7 @@ theorem exists_closedSoundLocalCountermodel_of_exists_semantics
             (Sign.falseE, φ) ∈ C.closedHintikka.formulas →
               SemilocalModel.formulaTruth M env φ ≠ ⊤) ∧
         SemilocalModel.SupportsUniformRelativization M) :
-    Nonempty (SoundLocalCountermodel.{u, v, w, w'} (Base := Base) (Const := Const) F) := by
+    Nonempty (SoundLocalCountermodel.{u, v, w', w} F) := by
   rcases hSem with ⟨M, env, global, true_top, false_ne_top, hM⟩
   exact ⟨C.toCertifiedCountermodelCandidate.toClosedSoundLocalCountermodel
     (M := M) env global true_top false_ne_top hM⟩
@@ -2903,7 +2963,7 @@ def toClosedSoundLocalCountermodel
         (Sign.falseE, φ) ∈ C.closedHintikka.formulas →
           SemilocalModel.formulaTruth M env φ ≠ ⊤)
     (hM : SemilocalModel.SupportsUniformRelativization M) :
-    SoundLocalCountermodel (Base := Base) (Const := Const) F :=
+    SoundLocalCountermodel F :=
   C.toCertifiedCountermodelCandidate.toClosedSoundLocalCountermodel
     env global true_top false_ne_top hM
 
@@ -2947,7 +3007,7 @@ theorem exists_closedLocalCountermodel_of_exists_semantics
         (∀ {φ : Formula Const Γ},
             (Sign.falseE, φ) ∈ C.state.hintikka.close.formulas →
               SemilocalModel.formulaTruth M env φ ≠ ⊤)) :
-    Nonempty (LocalCountermodel.{u, v, w, w'} (Base := Base) (Const := Const) F) := by
+    Nonempty (LocalCountermodel.{u, v, w, w'} F) := by
   simpa [SaturationSearchState.HeadPriorityCompletion.toCertified,
     CertifiedHeadPriorityCompletion.state,
     CertifiedHeadPriorityCompletion.hintikka,
@@ -2970,7 +3030,7 @@ theorem exists_closedSoundLocalCountermodel_of_exists_semantics
             (Sign.falseE, φ) ∈ C.state.hintikka.close.formulas →
               SemilocalModel.formulaTruth M env φ ≠ ⊤) ∧
         SemilocalModel.SupportsUniformRelativization M) :
-    Nonempty (SoundLocalCountermodel.{u, v, w, w'} (Base := Base) (Const := Const) F) := by
+    Nonempty (SoundLocalCountermodel.{u, v, w', w} F) := by
   simpa [SaturationSearchState.HeadPriorityCompletion.toCertified,
     CertifiedHeadPriorityCompletion.state,
     CertifiedHeadPriorityCompletion.hintikka,
@@ -3410,7 +3470,7 @@ def toClosedLocalCountermodel
       ∀ {φ : Formula Const Γ},
         (Sign.falseE, φ) ∈ D.closedHintikka.formulas →
           SemilocalModel.formulaTruth M env φ ≠ ⊤) :
-    LocalCountermodel (Base := Base) (Const := Const) F :=
+    LocalCountermodel F :=
   (D.toCertifiedCompletion terminal branchClosed).toClosedLocalCountermodel
     env global true_top false_ne_top
 
@@ -3448,7 +3508,7 @@ theorem exists_closedLocalCountermodel_of_exists_semantics
         (∀ {φ : Formula Const Γ},
             (Sign.falseE, φ) ∈ D.closedHintikka.formulas →
               SemilocalModel.formulaTruth M env φ ≠ ⊤)) :
-    Nonempty (LocalCountermodel.{u, v, w, w'} (Base := Base) (Const := Const) F) := by
+    Nonempty (LocalCountermodel.{u, v, w, w'} F) := by
   rcases
       D.exists_closedLocalAgreementWitness_of_exists_semantics
         terminal branchClosed hSem with ⟨⟨_, W⟩⟩
@@ -3469,7 +3529,7 @@ theorem exists_closedSoundLocalCountermodel_of_exists_semantics
             (Sign.falseE, φ) ∈ D.closedHintikka.formulas →
               SemilocalModel.formulaTruth M env φ ≠ ⊤) ∧
         SemilocalModel.SupportsUniformRelativization M) :
-    Nonempty (SoundLocalCountermodel.{u, v, w, w'} (Base := Base) (Const := Const) F) := by
+    Nonempty (SoundLocalCountermodel.{u, v, w', w} F) := by
   rcases hSem with ⟨M, env, global, true_top, false_ne_top, hM⟩
   exact ⟨(D.toCertifiedCompletion terminal branchClosed).toCertifiedCountermodelCandidate
     |>.toClosedSoundLocalCountermodel
@@ -3539,7 +3599,7 @@ def toClosedLocalCountermodelOfCandidate
         (Sign.falseE, φ) ∈
             (D.toCertifiedCountermodelCandidate terminal branchClosed).closedHintikka.formulas →
           SemilocalModel.formulaTruth M env φ ≠ ⊤) :
-    LocalCountermodel (Base := Base) (Const := Const) F :=
+    LocalCountermodel F :=
   (D.toCertifiedCompletion terminal branchClosed).toClosedLocalCountermodel
     env global
     (fun hφ =>
@@ -3576,7 +3636,7 @@ def toClosedLocalCountermodelOfCandidateClassified
       ∀ {φ : Formula Const Γ},
         Pfalse φ →
           SemilocalModel.formulaTruth M env φ ≠ ⊤) :
-    LocalCountermodel (Base := Base) (Const := Const) F :=
+    LocalCountermodel F :=
   D.toClosedLocalCountermodelOfCandidate
     terminal branchClosed env global
     (fun hφ => true_top_of_class (candidate_true_class hφ))
@@ -3591,7 +3651,7 @@ def toClosedLocalCountermodelOfSemantics
     (env : SemilocalModel.Env M Γ)
     (global : SemilocalModel.IsGlobalEnv M env)
     (S : CandidateClosedHintikkaSemantics D terminal branchClosed env) :
-    LocalCountermodel (Base := Base) (Const := Const) F :=
+    LocalCountermodel F :=
   D.toClosedLocalCountermodelOfCandidateClassified
     terminal branchClosed env global
     (Ptrue := S.trueClass)
@@ -3618,7 +3678,7 @@ def toClosedSoundLocalCountermodel
         (Sign.falseE, φ) ∈ D.closedHintikka.formulas →
           SemilocalModel.formulaTruth M env φ ≠ ⊤)
     (hM : SemilocalModel.SupportsUniformRelativization M) :
-    SoundLocalCountermodel (Base := Base) (Const := Const) F :=
+    SoundLocalCountermodel F :=
   (D.toCertifiedCompletion terminal branchClosed).toClosedSoundLocalCountermodel
     env global true_top false_ne_top hM
 
@@ -3641,7 +3701,7 @@ def toClosedSoundLocalCountermodelOfCandidate
             (D.toCertifiedCountermodelCandidate terminal branchClosed).closedHintikka.formulas →
           SemilocalModel.formulaTruth M env φ ≠ ⊤)
     (hM : SemilocalModel.SupportsUniformRelativization M) :
-    SoundLocalCountermodel (Base := Base) (Const := Const) F :=
+    SoundLocalCountermodel F :=
   (D.toCertifiedCompletion terminal branchClosed).toClosedSoundLocalCountermodel
     env global
     (fun hφ =>
@@ -3680,7 +3740,7 @@ def toClosedSoundLocalCountermodelOfCandidateClassified
         Pfalse φ →
           SemilocalModel.formulaTruth M env φ ≠ ⊤)
     (hM : SemilocalModel.SupportsUniformRelativization M) :
-    SoundLocalCountermodel (Base := Base) (Const := Const) F :=
+    SoundLocalCountermodel F :=
   D.toClosedSoundLocalCountermodelOfCandidate
     terminal branchClosed env global
     (fun hφ => true_top_of_class (candidate_true_class hφ))
@@ -3697,7 +3757,7 @@ def toClosedSoundLocalCountermodelOfSemantics
     (global : SemilocalModel.IsGlobalEnv M env)
     (S : CandidateClosedHintikkaSemantics D terminal branchClosed env)
     (hM : SemilocalModel.SupportsUniformRelativization M) :
-    SoundLocalCountermodel (Base := Base) (Const := Const) F :=
+    SoundLocalCountermodel F :=
   D.toClosedSoundLocalCountermodelOfCandidateClassified
     terminal branchClosed env global
     (Ptrue := S.trueClass)
@@ -3736,7 +3796,7 @@ def toClosedLocalCountermodel
     {env : SemilocalModel.Env M Γ}
     (S : CandidateClosedHintikkaSemantics D terminal branchClosed env)
     (global : SemilocalModel.IsGlobalEnv M env) :
-    LocalCountermodel (Base := Base) (Const := Const) F :=
+    LocalCountermodel F :=
   D.toClosedLocalCountermodelOfSemantics
     terminal branchClosed env global S
 
@@ -3750,7 +3810,7 @@ def toClosedSoundLocalCountermodel
     (S : CandidateClosedHintikkaSemantics D terminal branchClosed env)
     (global : SemilocalModel.IsGlobalEnv M env)
     (hM : SemilocalModel.SupportsUniformRelativization M) :
-    SoundLocalCountermodel (Base := Base) (Const := Const) F :=
+    SoundLocalCountermodel F :=
   D.toClosedSoundLocalCountermodelOfSemantics
     terminal branchClosed env global S hM
 
@@ -3854,7 +3914,7 @@ def toClosedLocalCountermodelOfSemantics
     (env : SemilocalModel.Env M Γ)
     (global : SemilocalModel.IsGlobalEnv M env)
     (S : CandidateClosedHintikkaSemantics C env) :
-    LocalCountermodel (Base := Base) (Const := Const) F :=
+    LocalCountermodel F :=
   CertifiedHeadPriorityDerivation.CandidateClosedHintikkaSemantics.toClosedLocalCountermodel
     (D := C.toCertifiedDerivation)
     (terminal := C.completion.terminal)
@@ -3869,7 +3929,7 @@ def toClosedSoundLocalCountermodelOfSemantics
     (global : SemilocalModel.IsGlobalEnv M env)
     (S : CandidateClosedHintikkaSemantics C env)
     (hM : SemilocalModel.SupportsUniformRelativization M) :
-    SoundLocalCountermodel (Base := Base) (Const := Const) F :=
+    SoundLocalCountermodel F :=
   CertifiedHeadPriorityDerivation.CandidateClosedHintikkaSemantics.toClosedSoundLocalCountermodel
     (D := C.toCertifiedDerivation)
     (terminal := C.completion.terminal)
@@ -3993,7 +4053,7 @@ def toClosedLocalCountermodelOfSemantics
     (env : SemilocalModel.Env M Γ)
     (global : SemilocalModel.IsGlobalEnv M env)
     (S : CandidateClosedHintikkaSemantics C env) :
-    LocalCountermodel (Base := Base) (Const := Const) C.frontier :=
+    LocalCountermodel C.frontier :=
   C.toCertifiedCompletion.toClosedLocalCountermodelOfSemantics env global S
 
 /-- Recover the sound local countermodel object directly from a certified
@@ -4005,7 +4065,7 @@ def toClosedSoundLocalCountermodelOfSemantics
     (global : SemilocalModel.IsGlobalEnv M env)
     (S : CandidateClosedHintikkaSemantics C env)
     (hM : SemilocalModel.SupportsUniformRelativization M) :
-    SoundLocalCountermodel (Base := Base) (Const := Const) C.frontier :=
+    SoundLocalCountermodel C.frontier :=
   C.toCertifiedCompletion.toClosedSoundLocalCountermodelOfSemantics env global S hM
 
 /-- Any closed local agreement witness whose certificate matches the certified
@@ -4015,9 +4075,11 @@ def toCandidateClosedHintikkaSemanticsOfClosedLocalAgreementWitness
     (C : CertifiedCountermodelCandidate Const Γ)
     (W : LocalAgreementWitness M C.frontier)
     (hCert : W.certificate = C.toClosedLocalHintikkaCertificate) :
-    CandidateClosedHintikkaSemantics C W.env :=
+  CandidateClosedHintikkaSemantics C W.env :=
   C.toCertifiedCompletion.toCandidateClosedHintikkaSemanticsOfClosedLocalAgreementWitness
-    W (by simpa [CertifiedCountermodelCandidate.toCertifiedCompletion] using hCert)
+    W (by
+      rw [hCert]
+      rfl)
 
 @[simp] theorem toClosedLocalAgreementWitnessOfSemantics_certificate
     {M : SemilocalModel Base Const}
@@ -4091,7 +4153,7 @@ theorem exists_semilocal_truth_counterexample_of_exists_semantics
   rcases hSem with ⟨M, env, global, true_top, false_ne_top, hM⟩
   let S : CandidateClosedHintikkaSemantics C env :=
     C.toCandidateClosedHintikkaSemantics env true_top false_ne_top
-  let CM : SoundLocalCountermodel (Base := Base) (Const := Const) C.frontier :=
+  let CM : SoundLocalCountermodel C.frontier :=
     C.toClosedSoundLocalCountermodelOfSemantics env global S hM
   exact ⟨M, env, global, CM.agreement.antecedentTruth_eq_top,
     CM.agreement.succedent_ne_top, hM⟩
@@ -4109,7 +4171,7 @@ theorem exists_semilocal_truth_counterexample_of_exists_candidateClosedHintikkaS
       SemilocalModel.formulaTruth M env C.frontier.succedent ≠ ⊤ ∧
       SemilocalModel.SupportsUniformRelativization M := by
   rcases hSem with ⟨M, env, global, ⟨S⟩, hM⟩
-  let CM : SoundLocalCountermodel (Base := Base) (Const := Const) C.frontier :=
+  let CM : SoundLocalCountermodel C.frontier :=
     C.toClosedSoundLocalCountermodelOfSemantics env global S hM
   exact ⟨M, env, global, CM.agreement.antecedentTruth_eq_top,
     CM.agreement.succedent_ne_top, hM⟩

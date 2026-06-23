@@ -3,7 +3,7 @@ import Mettapedia.Logic.EvidenceBeta
 import Mettapedia.Logic.EvidenceClass
 import Mettapedia.Logic.PLNConfidenceWeight
 import Mettapedia.Logic.PLNWeightTV
-import Mettapedia.ProbabilityTheory.KnuthSkilling.Additive.Main
+import KnuthSkilling.Additive.Main
 -- import Mettapedia.Logic.HigherOrder.PLNKyburgReduction  -- TODO: Re-add in Phase 4 for Kyburg theorems
 
 /-!

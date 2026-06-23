@@ -391,7 +391,7 @@ def screeningOff_rewrite
       AtomQuery.linkEvidence (State := State) (Atom := Atom) W B C
     sound := by
       intro hSigma W
-      simpa using (hsound hSigma W).symm }
+      exact (hsound hSigma W).symm }
 
 /-- D-separation-style rewrite template: `Σ` yields query equivalence. -/
 def dsep_rewrite

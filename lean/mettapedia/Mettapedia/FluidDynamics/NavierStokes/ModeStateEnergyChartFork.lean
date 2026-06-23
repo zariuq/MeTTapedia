@@ -60,8 +60,7 @@ theorem sobolevEnergyWeight_nonneg (m n : ℕ) :
 
 theorem continuous_sobolevEnergyTerm (m n : ℕ) :
     Continuous fun x : ModeState => sobolevEnergyTerm m x n := by
-  simpa [sobolevEnergyTerm] using
-    ((continuous_sobolevAmplification m n).pow 2).mul
+  exact ((continuous_sobolevAmplification m n).pow 2).mul
       (continuous_const : Continuous fun _ : ModeState => sobolevEnergyWeight m n)
 
 theorem sobolevEnergyTerm_eq_inverseSquareScaled (m : ℕ) (x : ModeState) (n : ℕ) :

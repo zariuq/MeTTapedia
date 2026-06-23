@@ -57,8 +57,12 @@ def lift (σs : SimpleSubst Base Const Γ Δ) :
           exact SimpleTerm.toTerm_weaken (υ := υ)
             (t := σs (SimpleVar.vz : SimpleVar Base (τ :: Γ) τ))
       | vs x =>
-          simpa [SimpleSubst.toSubst, SimpleSubst.toSubstAux, SimpleSubst.tail] using
-            (ih (σs := SimpleSubst.tail σs) (x := x))
+          change SimpleSubst.toSubst
+              (fun {_τ} y => SimpleTerm.weaken (υ := υ) ((SimpleSubst.tail σs) y)) x =
+            rename
+              (Rename.weaken (Base := Base) (Γ := SimpleTy.toCtx Δ) (σ := υ.toTy))
+              (SimpleSubst.toSubst (SimpleSubst.tail σs) x)
+          exact ih (σs := SimpleSubst.tail σs) (x := x)
 
 @[simp] theorem toSubst_lift_apply
     (σs : SimpleSubst Base Const Γ Δ) {ρ : Ty Base}
@@ -137,8 +141,11 @@ def toFormula :
       Mettapedia.AutoBooks.Codex.IntuitionisticHOL.subst (SimpleSubst.toSubst σs) (toFormula φ) := by
   induction φ generalizing Δ with
   | atom t =>
-      simpa only [subst, toFormula] using
-        (SimpleTerm.toTerm_subst (σs := σs) (t := t))
+      simp only [subst, toFormula]
+      change SimpleTerm.toTerm (SimpleTerm.subst σs t) =
+        Mettapedia.AutoBooks.Codex.IntuitionisticHOL.subst
+          (SimpleSubst.toSubst σs) (SimpleTerm.toTerm t)
+      exact SimpleTerm.toTerm_subst (σs := σs) (t := t)
   | top =>
       simp [subst, toFormula,
         Mettapedia.AutoBooks.Codex.IntuitionisticHOL.subst]

@@ -5,7 +5,7 @@ import Mathlib.Order.ConditionallyCompleteLattice.Basic
 import Mathlib.Data.Real.Basic
 import Mathlib.Data.Real.Archimedean
 import Mathlib.Topology.Order.Basic
-import Mettapedia.ProbabilityTheory.KnuthSkilling.Literature.Residuated
+import KnuthSkilling.Literature.Residuated
 
 /-!
 # The Unit Interval [0,1] as a Frame
@@ -284,7 +284,8 @@ theorem product_residuation (a b c : 𝕀) :
   · constructor
     · intro _
       change b.val ≤ (productImp a c).val
-      simpa [productImp, ha] using b.prop.2
+      rw [productImp_val_of_eq _ _ ha]
+      exact b.prop.2
     · intro _
       change a.val * b.val ≤ c.val
       simpa [ha] using c.prop.1
@@ -294,7 +295,8 @@ theorem product_residuation (a b c : 𝕀) :
       change b.val ≤ (productImp a c).val
       rw [productImp_val_of_ne _ _ ha]
       refine le_min b.prop.2 ?_
-      exact (le_div_iff₀ ha0).2 (by simpa [mul_comm] using hab)
+      have hab' : a.val * b.val ≤ c.val := hab
+      exact (le_div_iff₀ ha0).2 (by rw [mul_comm]; exact hab')
     · intro hbc
       change a.val * b.val ≤ c.val
       have hbc' : b.val ≤ c.val / a.val := by
@@ -318,17 +320,15 @@ theorem product_le_inf (a b : 𝕀) : a * b ≤ a ⊓ b := by
   · change a.val * b.val ≤ b.val
     simpa [mul_comm] using (mul_le_of_le_one_right b.prop.1 a.prop.2)
 
-noncomputable instance : Mettapedia.ProbabilityTheory.KnuthSkilling.Literature.ResiduatedMonoid 𝕀 where
+noncomputable instance : KnuthSkilling.Literature.ResiduatedMonoid 𝕀 where
   res := productImp
   adj := product_residuation
 
 /-- Exchange law for product residuation:
 `(a * b) ⇒ c = a ⇒ (b ⇒ c)`. -/
 theorem productImp_exchange (a b c : 𝕀) :
-    productImp (a * b) c = productImp a (productImp b c) := by
-  simpa using
-    (Mettapedia.ProbabilityTheory.KnuthSkilling.Literature.ResiduatedMonoidLemmas.exchange
-      (α := 𝕀) a b c)
+    productImp (a * b) c = productImp a (productImp b c) :=
+  KnuthSkilling.Literature.ResiduatedMonoidLemmas.exchange (α := 𝕀) a b c
 
 end UnitInterval
 

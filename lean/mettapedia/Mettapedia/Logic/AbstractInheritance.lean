@@ -425,7 +425,7 @@ theorem crispInterpretation_inherits_iff
     (G : EvidenceGate Q) (M : Obj → Con → Q) (c d : Con) :
     (crispInterpretation G M).Inherits c d ↔
       crispExtensionalInherits G M c d := by
-  simpa [crispInterpretation] using inherits_ofCrispBaseConcept_iff G M c d
+  exact inherits_ofCrispBaseConcept_iff G M c d
 
 end FCA
 

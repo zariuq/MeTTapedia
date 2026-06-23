@@ -88,7 +88,7 @@ noncomputable def posteriorBernoulliMixturePrefixWidthComplementITVSource
     (hZ : M.countEvidenceMass k l ≠ 0)
     (X : Gamble (Fin n → Bool))
     (hX : ∀ ω, X ω ∈ Set.Icc (0 : ℝ) 1) :
-    ProjectiveCredalWidthComplementITVSource.{0, 0, 0} PUnit (Fin n → Bool) :=
+    ProjectiveCredalWidthComplementITVSource.{0, 0} PUnit (Fin n → Bool) :=
   ProjectiveCredalWidthComplementITVSource.finite
     (bernoulliMixturePrefixProjectiveSpec
       (posteriorBernoulliMixtureSet M k l hZ) n
@@ -114,7 +114,7 @@ noncomputable def posteriorBernoulliMixturePrefixTypedWidthComplementITV
     (hZ : M.countEvidenceMass k l ≠ 0)
     (X : Gamble (Fin n → Bool))
     (hX : ∀ ω, X ω ∈ Set.Icc (0 : ℝ) 1) :
-    TypedITV (projectiveCredalWidthComplementITVSemantics.{0, 0, 0} PUnit
+    TypedITV (projectiveCredalWidthComplementITVSemantics.{0, 0} PUnit
       (Fin n → Bool)) :=
   TypedITV.fromProjectiveCredalWidthComplement
     (posteriorBernoulliMixturePrefixWidthComplementITVSource M k l n hZ X hX)

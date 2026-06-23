@@ -89,10 +89,10 @@ instance stepKernel_isMarkov
 noncomputable def trajKernelOf (X : Nat -> Type uX)
     [∀ n, MeasurableSpace (X n)]
     (κ : (n : Nat) -> ProbabilityTheory.Kernel (PrefixOf X n) (X (n + 1)))
-    [hκ : (n : Nat) -> ProbabilityTheory.IsMarkovKernel (κ n)]
+    [hκ : ∀ n, ProbabilityTheory.IsMarkovKernel (κ n)]
     (a : Nat) :
     ProbabilityTheory.Kernel (PrefixOf X a) (TrajectoryOf X) :=
-  ProbabilityTheory.Kernel.traj (κ := κ) a
+  @ProbabilityTheory.Kernel.traj X _ κ hκ a
 
 noncomputable def trajMeasureOf (X : Nat -> Type uX)
     [∀ n, MeasurableSpace (X n)]
@@ -105,35 +105,39 @@ noncomputable def trajMeasureOf (X : Nat -> Type uX)
 @[simp] theorem trajKernelOf_eq (X : Nat -> Type uX)
     [∀ n, MeasurableSpace (X n)]
     (κ : (n : Nat) -> ProbabilityTheory.Kernel (PrefixOf X n) (X (n + 1)))
-    [hκ : (n : Nat) -> ProbabilityTheory.IsMarkovKernel (κ n)]
+    [hκ : ∀ n, ProbabilityTheory.IsMarkovKernel (κ n)]
     (a : Nat) :
-    trajKernelOf (X := X) (κ := κ) a = ProbabilityTheory.Kernel.traj (κ := κ) a := rfl
+    trajKernelOf (X := X) (κ := κ) a = @ProbabilityTheory.Kernel.traj X _ κ hκ a := rfl
 
 @[simp] theorem trajMeasureOf_eq (X : Nat -> Type uX)
     [∀ n, MeasurableSpace (X n)]
     (κ : (n : Nat) -> ProbabilityTheory.Kernel (PrefixOf X n) (X (n + 1)))
-    [hκ : (n : Nat) -> ProbabilityTheory.IsMarkovKernel (κ n)]
+    [hκ : ∀ n, ProbabilityTheory.IsMarkovKernel (κ n)]
     (a : Nat) (mu0 : MeasureTheory.Measure (PrefixOf X a)) :
     trajMeasureOf (X := X) (κ := κ) a mu0 =
-      MeasureTheory.Measure.bind mu0 (ProbabilityTheory.Kernel.traj (κ := κ) a) := rfl
+      MeasureTheory.Measure.bind mu0 (@ProbabilityTheory.Kernel.traj X _ κ hκ a) := rfl
 
 instance trajKernelOf_isMarkov (X : Nat -> Type uX)
     [∀ n, MeasurableSpace (X n)]
     (κ : (n : Nat) -> ProbabilityTheory.Kernel (PrefixOf X n) (X (n + 1)))
-    [hκ : (n : Nat) -> ProbabilityTheory.IsMarkovKernel (κ n)]
-    (a : Nat) : ProbabilityTheory.IsMarkovKernel (trajKernelOf (X := X) (κ := κ) a) := by
-  dsimp [trajKernelOf]
-  infer_instance
+    [hκ : ∀ n, ProbabilityTheory.IsMarkovKernel (κ n)]
+    (a : Nat) : ProbabilityTheory.IsMarkovKernel (trajKernelOf (X := X) (κ := κ) a) :=
+  inferInstanceAs
+    (ProbabilityTheory.IsMarkovKernel (@ProbabilityTheory.Kernel.traj X _ κ hκ a))
 
 instance trajMeasureOf_isProbability (X : Nat -> Type uX)
     [∀ n, MeasurableSpace (X n)]
     (κ : (n : Nat) -> ProbabilityTheory.Kernel (PrefixOf X n) (X (n + 1)))
-    [hκ : (n : Nat) -> ProbabilityTheory.IsMarkovKernel (κ n)]
+    [hκ : ∀ n, ProbabilityTheory.IsMarkovKernel (κ n)]
     (a : Nat) (mu0 : MeasureTheory.Measure (PrefixOf X a))
     [MeasureTheory.IsProbabilityMeasure mu0] :
-    MeasureTheory.IsProbabilityMeasure (trajMeasureOf (X := X) (κ := κ) a mu0) := by
-  dsimp [trajMeasureOf]
-  infer_instance
+    MeasureTheory.IsProbabilityMeasure (trajMeasureOf (X := X) (κ := κ) a mu0) :=
+  haveI : ProbabilityTheory.IsMarkovKernel (trajKernelOf (X := X) (κ := κ) a) :=
+    inferInstanceAs
+      (ProbabilityTheory.IsMarkovKernel (@ProbabilityTheory.Kernel.traj X _ κ hκ a))
+  inferInstanceAs
+    (MeasureTheory.IsProbabilityMeasure
+      (MeasureTheory.Measure.bind mu0 (trajKernelOf (X := X) (κ := κ) a)))
 
 /-- Kernel on trajectories given a policy/environment kernel family. -/
 noncomputable def trajKernel
@@ -223,7 +227,7 @@ theorem measurable_reward_at
     (reward : Action × Percept → ℝ) (k : ℕ) (h_reward : Measurable reward) :
     Measurable fun traj : Trajectory Action Percept => reward (traj k) := by
   have h_eval : Measurable fun traj : Trajectory Action Percept => traj k := by
-    simpa using (measurable_pi_apply (a := k))
+    exact measurable_pi_apply k
   exact h_reward.comp h_eval
 
 theorem measurable_discountedUtilityTrunc

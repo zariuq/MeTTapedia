@@ -132,7 +132,7 @@ theorem gaP_in_leastHerbrandModel_kbPQ : gaP ∈ leastHerbrandModel kbPQ := by
   · intro b hb
     simp [rulePfromQ] at hb
     rcases hb with rfl
-    simpa [gaQ] using gaQ_in_leastHerbrandModel_kbPQ
+    simpa [gaQ, factQ] using gaQ_in_leastHerbrandModel_kbPQ
 
 /-- Positive canary: semantic completeness endpoint derives executable success
 for the ground fact present in the least Herbrand model. -/

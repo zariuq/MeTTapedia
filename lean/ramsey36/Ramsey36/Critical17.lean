@@ -55,9 +55,9 @@ lemma neighbors17_symm (v w : V) : w ∈ neighbors17 v ↔ v ∈ neighbors17 w :
 
 def criticalGraph17 : SimpleGraph V where
   Adj := adj17
-  symm := by
+  symm := ⟨by
     intros v w h
-    exact (neighbors17_symm v w).mp h
+    exact (neighbors17_symm v w).mp h⟩
   loopless := by
     constructor; intro v h
     unfold adj17 neighbors17 at h
@@ -103,7 +103,7 @@ lemma criticalGraph17_no_6_indep : NoKIndepSet 6 criticalGraph17 :=
 
 lemma not_hasRamseyProperty_17 : ¬ HasRamseyProperty 3 6 criticalGraph17 := by
   unfold HasRamseyProperty
-  push_neg
+  push Not
   constructor
   · intro s h_clique
     exact criticalGraph17_triangleFree s h_clique
@@ -119,7 +119,7 @@ theorem ramsey_three_six_ge_18_of_nonempty
     rw [Set.mem_setOf_eq] at hn
     rcases hn with ⟨h_pos, h_forall⟩
     by_contra h_lt
-    push_neg at h_lt
+    push Not at h_lt
     have h_le : n ≤ 17 := Nat.le_of_lt_succ h_lt
     let f : Fin n ↪ Fin 17 := (Fin.castLEOrderEmb h_le).toEmbedding
     let G' := criticalGraph17.comap f

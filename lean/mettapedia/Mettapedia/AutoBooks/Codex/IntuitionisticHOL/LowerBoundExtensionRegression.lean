@@ -174,7 +174,9 @@ def collapseEnv : Env [atomTy ⇒ atomTy]
 theorem collapseEnv_good : GoodEnv collapseEnv := by
   intro τ v
   cases v with
-  | vz => simpa using good_const .collapse
+  | vz =>
+      change Good collapseFn
+      exact good_const .collapse
   | vs v => cases v
 
 /-- Applying the older collapse variable to the newly adjoined bad element. -/
@@ -204,7 +206,9 @@ theorem not_supportsLowerBoundExtension :
     simp [badElem, model, extent]
   have hworseExtent :
       model.extent (SemilocalModel.eval model extendedCollapseEnv badCollapseTerm) :=
-    hbad (by simpa [model] using And.intro hbadExtent trivial)
+    hbad (by
+      change extent badElem ⊓ ⊤
+      exact And.intro hbadExtent trivial)
   rw [eval_badCollapseTerm] at hworseExtent
   simp [model, extent] at hworseExtent
 

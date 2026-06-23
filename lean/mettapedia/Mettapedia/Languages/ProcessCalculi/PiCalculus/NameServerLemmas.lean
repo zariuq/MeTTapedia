@@ -13,6 +13,7 @@ namespace Mettapedia.Languages.ProcessCalculi.PiCalculus
 
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.Substitution
+open Mettapedia.Languages.ProcessCalculi.RhoCalculus
 open Mettapedia.Languages.ProcessCalculi.RhoCalculus.Reduction
 open Mettapedia.Languages.ProcessCalculi.RhoCalculus.DerivedRepNu
 
@@ -24,7 +25,7 @@ theorem nameServer_request_response_progress_general
     Nonempty
       ((rhoPar (nameServer x z v s) (.apply "PInput" [.fvar z, .lambda none body])) ⇝ᵈ*
         (.collection .hashBag
-          [Mettapedia.OSLF.MeTTaIL.Substitution.commSubst body (.apply "PDrop" [.fvar s]),
+          [semanticCommSubst body (.apply "PDrop" [.fvar s]),
            rhoReplicate (Mettapedia.Languages.ProcessCalculi.PiCalculus.nameServerBody x z v),
            dropOperation x] none)) := by
   let listener : Pattern := .apply "PInput" [.fvar z, .lambda none body]
@@ -34,7 +35,7 @@ theorem nameServer_request_response_progress_general
   let src : Pattern := rhoPar (nameServer x z v s) listener
   let preComm : Pattern := .collection .hashBag [out, listener, rep, dropX] none
   let tgt : Pattern := .collection .hashBag
-    [Mettapedia.OSLF.MeTTaIL.Substitution.commSubst body (.apply "PDrop" [.fvar s]), rep, dropX] none
+    [semanticCommSubst body (.apply "PDrop" [.fvar s]), rep, dropX] none
   have hdecomp :=
     Mettapedia.Languages.ProcessCalculi.PiCalculus.BackwardNormalization.nameServer_listener_comm_decompose
       x z v s body
@@ -46,7 +47,8 @@ theorem nameServer_request_response_progress_general
       using hdecomp.1)
   have hcomm : preComm ⇝ tgt := by
     exact (by simpa
-      [tgt, rep, dropX,
+      [preComm, tgt, listener, rep, dropX, out,
+       Mettapedia.Languages.ProcessCalculi.PiCalculus.BackwardNormalization.nameServerListenerPreComm,
        Mettapedia.Languages.ProcessCalculi.PiCalculus.BackwardNormalization.nameServerListenerTarget]
       using (Classical.choice hdecomp.2))
   have hcore : src ⇝ tgt := by
@@ -59,7 +61,7 @@ theorem nameServer_request_response_progress (x z v s : String) :
     Nonempty
       ((rhoPar (nameServer x z v s) (rhoInput (.fvar z) "u" rhoNil)) ⇝ᵈ*
         (.collection .hashBag
-          [Mettapedia.OSLF.MeTTaIL.Substitution.commSubst rhoNil (.apply "PDrop" [.fvar s]),
+          [semanticCommSubst rhoNil (.apply "PDrop" [.fvar s]),
            rhoReplicate (Mettapedia.Languages.ProcessCalculi.PiCalculus.nameServerBody x z v),
            dropOperation x] none)) := by
   simpa [rhoInput, rhoNil, Mettapedia.OSLF.MeTTaIL.Substitution.closeFVar] using
@@ -71,7 +73,7 @@ theorem nameServer_request_response_progress_canary :
       ((rhoPar (nameServer "ns_x" "ns_z" "v_init" "ns_seed")
          (rhoInput (.fvar "ns_z") "u" rhoNil)) ⇝ᵈ*
         (.collection .hashBag
-          [Mettapedia.OSLF.MeTTaIL.Substitution.commSubst rhoNil (.apply "PDrop" [.fvar "ns_seed"]),
+          [semanticCommSubst rhoNil (.apply "PDrop" [.fvar "ns_seed"]),
            rhoReplicate (Mettapedia.Languages.ProcessCalculi.PiCalculus.nameServerBody "ns_x" "ns_z" "v_init"),
            dropOperation "ns_x"] none)) := by
   simpa using

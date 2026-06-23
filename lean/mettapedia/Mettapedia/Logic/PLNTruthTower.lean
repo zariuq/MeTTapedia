@@ -6,7 +6,7 @@ import Mettapedia.Logic.WalleyMultinomialIDM
 import Mettapedia.ProbabilityTheory.ImpreciseProbability.Basic
 import Mettapedia.ProbabilityTheory.ImpreciseProbability.ProjectiveCredal
 import Mettapedia.ProbabilityTheory.Hypercube.ThetaSemantics
-import Mettapedia.ProbabilityTheory.KnuthSkilling.Core.TotalityImprecision
+import KnuthSkilling.Core.TotalityImprecision
 
 /-!
 # PLN Truth Tower
@@ -260,9 +260,10 @@ theorem ofNatCounts_prior_matters_example :
             (ofNatCounts 0 1) =
           (1 / 3 : ℝ) := by
   have h := Mettapedia.Logic.EvidenceBeta.prior_matters_example
-  simpa [ofNatCounts_mleStrength_eq_predHaldane,
+  rw [ofNatCounts_mleStrength_eq_predHaldane,
     ofNatCounts_jeffreysPosterior_eq_predJeffreys,
-    ofNatCounts_uniformPosterior_eq_predLaplace] using h
+    ofNatCounts_uniformPosterior_eq_predLaplace]
+  exact h
 
 /-- Laplace/uniform posterior strength differs from Haldane/PLN strength by
 the existing `O(1/n)` Nat-count bound, now phrased over `BinaryCounts`. -/
@@ -1494,7 +1495,7 @@ compatible-completion envelope width.  This is a named bridge law, not a generic
 fact about every credal interval. -/
 structure ProjectiveCredalWidthComplementITVSource
     (Window : Type u) (Global : Type v) [LE Window] where
-  spec : ProjectiveLocalCredalSpec.{u, v, w} Window Global
+  spec : ProjectiveLocalCredalSpec.{u, v} Window Global
   compatible : spec.hasCompatibleCompletion
   gamble : Mettapedia.ProbabilityTheory.ImpreciseProbability.Gamble Global
   gamble_in_unit : ∀ ω, gamble ω ∈ Set.Icc (0 : ℝ) 1
@@ -1512,7 +1513,7 @@ automatic, so the source only needs the coherent-completion and unit-gamble
 gates. -/
 noncomputable def finite
     {Window : Type u} {Global : Type v} [LE Window] [Fintype Global] [Nonempty Global]
-    (spec : ProjectiveLocalCredalSpec.{u, v, w} Window Global)
+    (spec : ProjectiveLocalCredalSpec.{u, v} Window Global)
     (compatible : spec.hasCompatibleCompletion)
     (gamble : Mettapedia.ProbabilityTheory.ImpreciseProbability.Gamble Global)
     (gamble_in_unit : ∀ ω, gamble ω ∈ Set.Icc (0 : ℝ) 1) :
@@ -1530,7 +1531,7 @@ end ProjectiveCredalWidthComplementITVSource
 width-complement law. -/
 noncomputable def projectiveCredalWidthComplementITV
     {Window : Type u} {Global : Type v} [LE Window]
-    (src : ProjectiveCredalWidthComplementITVSource.{u, v, w} Window Global) : ITV where
+    (src : ProjectiveCredalWidthComplementITVSource.{u, v} Window Global) : ITV where
   lower := src.spec.globalNaturalExtension src.gamble
   upper := upperEnvelope src.spec.projectiveLimitCredalSet src.gamble
   credibility := src.spec.globalEnvelopeWidthComplement src.gamble
@@ -1549,35 +1550,35 @@ noncomputable def projectiveCredalWidthComplementITV
 
 @[simp] theorem projectiveCredalWidthComplementITV_lower
     {Window : Type u} {Global : Type v} [LE Window]
-    (src : ProjectiveCredalWidthComplementITVSource.{u, v, w} Window Global) :
+    (src : ProjectiveCredalWidthComplementITVSource.{u, v} Window Global) :
     (projectiveCredalWidthComplementITV src).lower =
       src.spec.globalNaturalExtension src.gamble :=
   rfl
 
 @[simp] theorem projectiveCredalWidthComplementITV_upper
     {Window : Type u} {Global : Type v} [LE Window]
-    (src : ProjectiveCredalWidthComplementITVSource.{u, v, w} Window Global) :
+    (src : ProjectiveCredalWidthComplementITVSource.{u, v} Window Global) :
     (projectiveCredalWidthComplementITV src).upper =
       upperEnvelope src.spec.projectiveLimitCredalSet src.gamble :=
   rfl
 
 @[simp] theorem projectiveCredalWidthComplementITV_credibility
     {Window : Type u} {Global : Type v} [LE Window]
-    (src : ProjectiveCredalWidthComplementITVSource.{u, v, w} Window Global) :
+    (src : ProjectiveCredalWidthComplementITVSource.{u, v} Window Global) :
     (projectiveCredalWidthComplementITV src).credibility =
       src.spec.globalEnvelopeWidthComplement src.gamble :=
   rfl
 
 @[simp] theorem projectiveCredalWidthComplementITV_width
     {Window : Type u} {Global : Type v} [LE Window]
-    (src : ProjectiveCredalWidthComplementITVSource.{u, v, w} Window Global) :
+    (src : ProjectiveCredalWidthComplementITVSource.{u, v} Window Global) :
     (projectiveCredalWidthComplementITV src).width =
       src.spec.globalEnvelopeWidth src.gamble := by
   rfl
 
 @[simp] theorem projectiveCredalWidthComplementITV_strength
     {Window : Type u} {Global : Type v} [LE Window]
-    (src : ProjectiveCredalWidthComplementITVSource.{u, v, w} Window Global) :
+    (src : ProjectiveCredalWidthComplementITVSource.{u, v} Window Global) :
     (projectiveCredalWidthComplementITV src).strength =
       src.spec.globalEnvelopeMidpoint src.gamble := by
   rfl
@@ -1586,7 +1587,7 @@ noncomputable def projectiveCredalWidthComplementITV
 to one. -/
 theorem projectiveCredalWidthComplementITV_width_add_credibility
     {Window : Type u} {Global : Type v} [LE Window]
-    (src : ProjectiveCredalWidthComplementITVSource.{u, v, w} Window Global) :
+    (src : ProjectiveCredalWidthComplementITVSource.{u, v} Window Global) :
     (projectiveCredalWidthComplementITV src).width +
         (projectiveCredalWidthComplementITV src).credibility = 1 := by
   simp [projectiveCredalWidthComplementITV, ITV.width,
@@ -1598,8 +1599,8 @@ theorem projectiveCredalWidthComplementITV_width_add_credibility
 width-complement credibility convention. -/
 noncomputable def projectiveCredalWidthComplementITVSemantics
     (Window : Type u) (Global : Type v) [LE Window] :
-    ITVSemantics.{max (max u v) (w+1)} where
-  Source := ProjectiveCredalWidthComplementITVSource.{u, v, w} Window Global
+    ITVSemantics.{max u (v + 1)} where
+  Source := ProjectiveCredalWidthComplementITVSource.{u, v} Window Global
   toITV := projectiveCredalWidthComplementITV
 
 namespace TypedITV
@@ -1608,13 +1609,13 @@ namespace TypedITV
 width-complement bridge law. -/
 noncomputable def fromProjectiveCredalWidthComplement
     {Window : Type u} {Global : Type v} [LE Window]
-    (src : ProjectiveCredalWidthComplementITVSource.{u, v, w} Window Global) :
-    TypedITV (projectiveCredalWidthComplementITVSemantics.{u, v, w} Window Global) :=
+    (src : ProjectiveCredalWidthComplementITVSource.{u, v} Window Global) :
+    TypedITV (projectiveCredalWidthComplementITVSemantics.{u, v} Window Global) :=
   ⟨src⟩
 
 @[simp] theorem value_fromProjectiveCredalWidthComplement
     {Window : Type u} {Global : Type v} [LE Window]
-    (src : ProjectiveCredalWidthComplementITVSource.{u, v, w} Window Global) :
+    (src : ProjectiveCredalWidthComplementITVSource.{u, v} Window Global) :
     (fromProjectiveCredalWidthComplement src).value =
       projectiveCredalWidthComplementITV src := by
   simp [fromProjectiveCredalWidthComplement, TypedITV.value,
@@ -1622,7 +1623,7 @@ noncomputable def fromProjectiveCredalWidthComplement
 
 @[simp] theorem fromProjectiveCredalWidthComplement_lower
     {Window : Type u} {Global : Type v} [LE Window]
-    (src : ProjectiveCredalWidthComplementITVSource.{u, v, w} Window Global) :
+    (src : ProjectiveCredalWidthComplementITVSource.{u, v} Window Global) :
     (fromProjectiveCredalWidthComplement src).lower =
       src.spec.globalNaturalExtension src.gamble := by
   simp [fromProjectiveCredalWidthComplement, TypedITV.lower, TypedITV.value,
@@ -1631,7 +1632,7 @@ noncomputable def fromProjectiveCredalWidthComplement
 
 @[simp] theorem fromProjectiveCredalWidthComplement_upper
     {Window : Type u} {Global : Type v} [LE Window]
-    (src : ProjectiveCredalWidthComplementITVSource.{u, v, w} Window Global) :
+    (src : ProjectiveCredalWidthComplementITVSource.{u, v} Window Global) :
     (fromProjectiveCredalWidthComplement src).upper =
       upperEnvelope src.spec.projectiveLimitCredalSet src.gamble := by
   simp [fromProjectiveCredalWidthComplement, TypedITV.upper, TypedITV.value,
@@ -1640,7 +1641,7 @@ noncomputable def fromProjectiveCredalWidthComplement
 
 @[simp] theorem fromProjectiveCredalWidthComplement_credibility
     {Window : Type u} {Global : Type v} [LE Window]
-    (src : ProjectiveCredalWidthComplementITVSource.{u, v, w} Window Global) :
+    (src : ProjectiveCredalWidthComplementITVSource.{u, v} Window Global) :
     (fromProjectiveCredalWidthComplement src).credibility =
       src.spec.globalEnvelopeWidthComplement src.gamble := by
   simp [fromProjectiveCredalWidthComplement, TypedITV.credibility,
@@ -1649,7 +1650,7 @@ noncomputable def fromProjectiveCredalWidthComplement
 
 @[simp] theorem fromProjectiveCredalWidthComplement_width
     {Window : Type u} {Global : Type v} [LE Window]
-    (src : ProjectiveCredalWidthComplementITVSource.{u, v, w} Window Global) :
+    (src : ProjectiveCredalWidthComplementITVSource.{u, v} Window Global) :
     (fromProjectiveCredalWidthComplement src).width =
       src.spec.globalEnvelopeWidth src.gamble := by
   simp [fromProjectiveCredalWidthComplement, TypedITV.width, TypedITV.value,
@@ -1657,7 +1658,7 @@ noncomputable def fromProjectiveCredalWidthComplement
 
 @[simp] theorem fromProjectiveCredalWidthComplement_midpoint
     {Window : Type u} {Global : Type v} [LE Window]
-    (src : ProjectiveCredalWidthComplementITVSource.{u, v, w} Window Global) :
+    (src : ProjectiveCredalWidthComplementITVSource.{u, v} Window Global) :
     (fromProjectiveCredalWidthComplement src).midpoint =
       src.spec.globalEnvelopeMidpoint src.gamble := by
   simp [fromProjectiveCredalWidthComplement, TypedITV.midpoint, TypedITV.value,
@@ -1909,7 +1910,7 @@ noncomputable def probDistLowerPrevision
     exact expectedValue_smul P r X
   superadd := by
     intro X Y
-    rw [expectedValue_add]
+    exact le_of_eq (expectedValue_add P X Y).symm
 
 @[simp] theorem probDistLowerPrevision_apply
     {Ω : Type u} [Fintype Ω]
@@ -1925,7 +1926,7 @@ noncomputable def probDistLowerPrevision
     (probDistLowerPrevision P).conjugate X = expectedValue P X := by
   dsimp [Mettapedia.ProbabilityTheory.ImpreciseProbability.LowerPrevision.conjugate,
     probDistLowerPrevision]
-  rw [expectedValue_neg]
+  rw [show expectedValue P (-X) = -expectedValue P X from expectedValue_neg P X]
   ring
 
 /-- The lower-prevision source associated with a singleton precise
@@ -2097,7 +2098,8 @@ noncomputable def credalLowerPrevision
 upper envelope. -/
 theorem credalLowerPrevision_conjugate_apply
     {Ω : Type u} [Fintype Ω]
-    (K : CredalSetFinite Ω) (hK : K.Nonempty) (X : Gamble Ω) :
+    (K : CredalSetFinite Ω) (hK : K.Nonempty)
+    (X : Mettapedia.ProbabilityTheory.ImpreciseProbability.Gamble Ω) :
     (credalLowerPrevision K hK).conjugate X = upperProb K X := by
   dsimp [Mettapedia.ProbabilityTheory.ImpreciseProbability.LowerPrevision.conjugate,
     credalLowerPrevision, lowerProb, upperProb]
@@ -2109,12 +2111,18 @@ theorem credalLowerPrevision_conjugate_apply
     · rintro ⟨P, hP, rfl⟩
       rw [Set.mem_neg]
       refine ⟨P, hP, ?_⟩
-      simp [SingletonCredalLowerPrevision.expectedValue_neg]
+      simp only []
+      rw [show expectedValue P (-X) = -expectedValue P X from
+        SingletonCredalLowerPrevision.expectedValue_neg P X]
+      ring
     · intro hy
       rw [Set.mem_neg] at hy
       rcases hy with ⟨P, hP, hy⟩
       refine ⟨P, hP, ?_⟩
-      simp [SingletonCredalLowerPrevision.expectedValue_neg, hy]
+      simp only [] at hy ⊢
+      rw [show expectedValue P (-X) = -expectedValue P X from
+        SingletonCredalLowerPrevision.expectedValue_neg P X, hy]
+      ring
   rw [hset, Real.sInf_neg]
   ring
 
@@ -2258,7 +2266,6 @@ theorem lowerPrevision_lower_bound
   apply le_of_forall_pos_le_add
   intro ε hε
   have hmem : c - ε ∈ acceptablePrices C X := by
-    dsimp
     apply C.D2
     intro ω
     have hcx := hc ω
@@ -2277,7 +2284,6 @@ theorem lowerPrevision_zero
   apply le_antisymm
   · apply csSup_le
     · refine ⟨-1, ?_⟩
-      dsimp
       apply C.D2
       intro ω
       dsimp
@@ -2293,7 +2299,6 @@ theorem lowerPrevision_zero
   · apply le_of_forall_pos_le_add
     intro ε hε
     have hmem : -ε ∈ acceptablePrices C (0 : Gamble Ω) := by
-      dsimp
       apply C.D2
       intro ω
       dsimp
@@ -2468,13 +2473,13 @@ noncomputable def coherentDesirableSet
     change P X > 0 at hX
     change P Y > 0 at hY
     change P (X + Y) > 0
-    have hsup := P.superadd X Y
+    have hsup : P.toFun (X + Y) ≥ P.toFun X + P.toFun Y := P.superadd X Y
     linarith
   D4 := by
     intro X c hX hc
     change P X > 0 at hX
     change P (c • X) > 0
-    rw [P.pos_homog c X (le_of_lt hc)]
+    rw [show P.toFun (c • X) = c * P.toFun X from P.pos_homog c X (le_of_lt hc)]
     exact mul_pos hc hX
 
 @[simp] theorem coherentDesirableSet_mem
@@ -2604,10 +2609,10 @@ theorem coherentDesirableSet_acceptablePrices_eq_Iio
     DesirableLowerPrevisionBridge.acceptablePrices
       (coherentDesirableSet P hReg) X = Set.Iio (P X) := by
   ext α
-  dsimp [DesirableLowerPrevisionBridge.acceptablePrices,
-    coherentDesirableSet]
-  change P (X - Gamble.const α) > 0 ↔ α < P X
-  rw [lowerPrevision_sub_const]
+  rw [Set.mem_Iio,
+    show (α ∈ DesirableLowerPrevisionBridge.acceptablePrices (coherentDesirableSet P hReg) X)
+        = (P (X - Gamble.const α) > 0) from rfl,
+    lowerPrevision_sub_const]
   constructor <;> intro h <;> linarith
 
 /-- Regular lower previsions round-trip through their induced desirable-gamble
@@ -2814,7 +2819,7 @@ theorem nonpositive_lowerPrevision_not_recovered_by_strict_roundtrip
       (finiteCoherentDesirableSet
         (DesirableLowerPrevisionBridge.finiteLowerPrevision C)).D := by
   intro hX
-  rw [finiteCoherentDesirableSet_mem] at hX
+  replace hX : DesirableLowerPrevisionBridge.finiteLowerPrevision C X > 0 := hX
   have hpos :
       0 <
         Mettapedia.ProbabilityTheory.ImpreciseProbability.DesirableGambles.lowerPrevision
@@ -2843,7 +2848,7 @@ theorem original_subset_finiteDesirableRoundTrip_of_archimedean
     change ε ≤ sSup (DesirableLowerPrevisionBridge.acceptablePrices C X)
     apply le_csSup (DesirableLowerPrevisionBridge.acceptablePrices_bddAbove C X)
     change X - (fun _ => ε) ∈ C.D
-    simpa [Gamble.const] using hε
+    exact hε
   simpa [DesirableLowerPrevisionBridge.finiteLowerPrevision_apply] using
     (lt_of_lt_of_le hεpos hle)
 
@@ -2949,9 +2954,9 @@ theorem finiteCoherentDesirableSet_archimedean
     (P : LowerPrevision Ω) :
     ArchimedeanDesirableSet (finiteCoherentDesirableSet P) := by
   intro X hX
-  rw [finiteCoherentDesirableSet_mem] at hX
+  replace hX : P X > 0 := hX
   refine ⟨P X / 2, by linarith, ?_⟩
-  rw [finiteCoherentDesirableSet_mem]
+  show P (X - Gamble.const (P X / 2)) > 0
   rw [lowerPrevision_sub_const]
   linarith
 
@@ -3007,7 +3012,8 @@ theorem finiteStrictRoundTrip_mono_D
     (hCD : C.D ⊆ D.D) :
     (finiteStrictRoundTrip C).D ⊆ (finiteStrictRoundTrip D).D := by
   intro X hX
-  rw [finiteStrictRoundTrip_mem] at hX ⊢
+  replace hX : DesirableGambles.lowerPrevision C X > 0 := hX
+  show DesirableGambles.lowerPrevision D X > 0
   have hle := finiteLowerPrevision_mono_of_desirable_subset C D hCD X
   linarith
 
@@ -3089,7 +3095,6 @@ theorem strictlyPositiveDesirableSet_archimedean
       exact hω₀_min ω (Finset.mem_univ ω)
   have hm_pos : 0 < m := hm_eq ▸ hX ω₀
   refine ⟨m / 2, by linarith, ?_⟩
-  rw [strictlyPositiveDesirableSet_mem_iff]
   intro ω
   have hm_le : m ≤ X ω := Finset.inf'_le X (Finset.mem_univ ω)
   change 0 < X ω - Gamble.const (m / 2) ω
@@ -3130,7 +3135,7 @@ theorem strictlyPositiveDesirableSet_acceptablePrices_eq_Iio
       Set.Iio (DesirableLowerPrevisionBridge.finiteMinimum X) := by
   ext α
   dsimp [DesirableLowerPrevisionBridge.acceptablePrices]
-  rw [strictlyPositiveDesirableSet_mem_iff]
+  rw [Set.mem_Iio]
   constructor
   · intro hα
     rcases DesirableLowerPrevisionBridge.exists_apply_eq_finiteMinimum X with
@@ -3220,7 +3225,6 @@ theorem nonnegativeNonzeroDesirableSet_lowerPrevision_eq_finiteMinimum
         (nonnegativeNonzeroDesirableSet Ω) X
     · intro α hα
       dsimp [DesirableLowerPrevisionBridge.acceptablePrices] at hα
-      rw [nonnegativeNonzeroDesirableSet_mem_iff] at hα
       rcases DesirableLowerPrevisionBridge.exists_apply_eq_finiteMinimum X with
         ⟨ω₀, hω₀⟩
       have hω := hα.1 ω₀
@@ -3237,8 +3241,7 @@ theorem nonnegativeNonzeroDesirableSet_lowerPrevision_eq_finiteMinimum
           DesirableLowerPrevisionBridge.acceptablePrices
             (nonnegativeNonzeroDesirableSet Ω) X := by
       dsimp [DesirableLowerPrevisionBridge.acceptablePrices]
-      rw [nonnegativeNonzeroDesirableSet_mem_iff]
-      constructor
+      refine ⟨?_, ?_⟩
       · intro ω
         have hmle := DesirableLowerPrevisionBridge.finiteMinimum_le_apply X ω
         dsimp
@@ -3371,8 +3374,7 @@ theorem boolBoundaryGamble_lowerPrevision_eq_zero :
         DesirableLowerPrevisionBridge.acceptablePrices
           (nonnegativeNonzeroDesirableSet Bool) boolBoundaryGamble := by
     dsimp [DesirableLowerPrevisionBridge.acceptablePrices]
-    rw [nonnegativeNonzeroDesirableSet_mem_iff]
-    constructor
+    refine ⟨?_, ?_⟩
     · intro b
       cases b <;> norm_num [boolBoundaryGamble]
     · exact ⟨true, by norm_num [boolBoundaryGamble]⟩
@@ -3383,7 +3385,6 @@ theorem boolBoundaryGamble_lowerPrevision_eq_zero :
         α ≤ 0 := by
     intro α hα
     dsimp [DesirableLowerPrevisionBridge.acceptablePrices] at hα
-    rw [nonnegativeNonzeroDesirableSet_mem_iff] at hα
     have hfalse := hα.1 false
     dsimp [boolBoundaryGamble] at hfalse
     linarith
@@ -3421,7 +3422,6 @@ theorem nonnegativeNonzeroBool_not_archimedean :
   intro hArch
   rcases hArch boolBoundaryGamble boolBoundaryGamble_mem_nonnegativeNonzero with
     ⟨ε, hεpos, hεmem⟩
-  rw [nonnegativeNonzeroDesirableSet_mem_iff] at hεmem
   have hfalse := hεmem.1 false
   change 0 ≤ boolBoundaryGamble false - Gamble.const ε false at hfalse
   have hfalse' : 0 ≤ -ε := by
@@ -3883,13 +3883,13 @@ forced: a crisp scalar view would have to collapse a genuinely partial order
 into a total one. -/
 theorem ks_incomparable_forces_no_faithful_point_representation
     {α : Type*}
-    [Mettapedia.ProbabilityTheory.KnuthSkilling.TotalityImprecision.PartialKnuthSkillingAlgebra α]
+    [KnuthSkilling.TotalityImprecision.PartialKnuthSkillingAlgebra α]
     (x y : α)
     (hxy :
-      Mettapedia.ProbabilityTheory.KnuthSkilling.TotalityImprecision.PartialKnuthSkillingAlgebra.Incomparable
+      KnuthSkilling.TotalityImprecision.PartialKnuthSkillingAlgebra.Incomparable
         x y) :
     ¬ ∃ (Θ : α → ℝ), ∀ a b : α, a ≤ b ↔ Θ a ≤ Θ b :=
-  Mettapedia.ProbabilityTheory.KnuthSkilling.TotalityImprecision.no_pointRepresentation_with_incomparables
+  KnuthSkilling.TotalityImprecision.no_pointRepresentation_with_incomparables
     x y hxy
 
 end Mettapedia.Logic.PLNTruthTower

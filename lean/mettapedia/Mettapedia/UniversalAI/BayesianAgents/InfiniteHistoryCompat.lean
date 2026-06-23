@@ -60,8 +60,10 @@ instance : MeasurableSingletonClass Step := by
 instance (n : ℕ) : Fintype (Prefix n) := by
   infer_instance
 
-instance (n : ℕ) : MeasurableSingletonClass (Prefix n) := by
-  infer_instance
+instance (n : ℕ) : MeasurableSingletonClass (Prefix n) :=
+  -- 4.31: synthesis no longer auto-finds the pi instance for `Prefix n = (i : Iic n) → StepFamily i`;
+  -- provide it explicitly (each coordinate `StepFamily i = Step` is a singleton class, `Iic n` countable).
+  Pi.instMeasurableSingletonClass
 
 /-- Convert a prefix into a Core `History` by flattening step pairs. -/
 def prefixToHistory (n : ℕ) (x : Prefix n) : History Action Percept :=
@@ -505,7 +507,9 @@ noncomputable def initialMeasureIic0WithPolicy
     MeasureTheory.Measure (Prefix 0) :=
   (initialStepMeasureWithPolicy μ π).map stepToIic0
 
-instance initialMeasureIic0WithPolicy_isProbability
+-- 4.31: an `instance` may not carry a non-inferable explicit hypothesis (`h_stoch`);
+-- it is only ever applied explicitly downstream, so state it as a theorem.
+theorem initialMeasureIic0WithPolicy_isProbability
     (μ : Environment Action Percept) (π : Agent Action Percept) (h_stoch : isStochastic μ) :
     MeasureTheory.IsProbabilityMeasure (initialMeasureIic0WithPolicy μ π) := by
   haveI : MeasureTheory.IsProbabilityMeasure (initialStepMeasureWithPolicy μ π) :=
@@ -574,12 +578,22 @@ theorem environmentMeasureWithPolicy_step0_singleton
       fun n => transitionKernelWithPolicy_isMarkov μ π n h_stoch
     have hf : Measurable (frestrictLe (π := StepFamily) 0) :=
       measurable_frestrictLe (X := StepFamily) 0
-    simp [environmentMeasureWithPolicy]
+    -- 4.31: a `∀ n`-shaped local instance is not consulted by `rw`/`simp` synthesis, so build the
+    -- `trajKernelOf` term explicitly (threading `this` for its `hκ` binder, letting `_` unify the
+    -- measurable-space family against the kernel's `Prefix`-domain instance) and rewrite via
+    -- `trajKernelOf_eq` to land on `Kernel.traj`, whose map lemma is then threaded the same way.
+    rw [environmentMeasureWithPolicy, Mettapedia.UniversalAI.InfiniteHistory.trajMeasureOf]
+    have hKmap :
+        (@Mettapedia.UniversalAI.InfiniteHistory.trajKernelOf StepFamily _
+            (transitionKernelWithPolicy μ π) this 0).map (frestrictLe (π := StepFamily) 0) =
+          Kernel.partialTraj (transitionKernelWithPolicy μ π) 0 0 := by
+      rw [Mettapedia.UniversalAI.InfiniteHistory.trajKernelOf_eq]
+      exact @Kernel.traj_map_frestrictLe StepFamily _ (transitionKernelWithPolicy μ π) this 0 0
     rw [MeasureTheory.Measure.map_comp (μ := initialMeasureIic0WithPolicy μ π)
-      (κ := @Kernel.traj StepFamily (fun _ => inferInstance) (transitionKernelWithPolicy μ π)
-        (fun n => transitionKernelWithPolicy_isMarkov μ π n h_stoch) 0) hf]
-    rw [Kernel.traj_map_frestrictLe, Kernel.partialTraj_self]
-    simp
+      (κ := @Mettapedia.UniversalAI.InfiniteHistory.trajKernelOf StepFamily _
+        (transitionKernelWithPolicy μ π) this 0) hf,
+      hKmap, Kernel.partialTraj_self]
+    exact MeasureTheory.Measure.id_comp
 
   have hs_iic0 : MeasurableSet ({stepToIic0 s} : Set (Prefix 0)) := by
     simp
@@ -622,11 +636,23 @@ theorem environmentMeasureWithPolicy_map_frestrictLe
     fun k => transitionKernelWithPolicy_isMarkov μ π k h_stoch
   have hf : Measurable (frestrictLe (π := StepFamily) n) :=
     measurable_frestrictLe (X := StepFamily) n
-  simp [environmentMeasureWithPolicy]
+  -- 4.31: a `∀ n`-shaped local instance is not consulted by `rw`/`simp` synthesis.  Keep the
+  -- kernel as the `trajKernelOf` def (which threads `this` for its `hκ` binder and unifies the
+  -- measurable-space family against the `Prefix`-domain instance), prove its `frestrictLe`-map
+  -- equation through the `trajKernelOf_eq`/`Kernel.traj_map_frestrictLe` bridge with `exact`
+  -- (defeq-tolerant), and rewrite with that.
+  rw [environmentMeasureWithPolicy, Mettapedia.UniversalAI.InfiniteHistory.trajMeasureOf]
+  have hKmap :
+      (@Mettapedia.UniversalAI.InfiniteHistory.trajKernelOf StepFamily _
+          (transitionKernelWithPolicy μ π) this 0).map (frestrictLe (π := StepFamily) n) =
+        Kernel.partialTraj (transitionKernelWithPolicy μ π) 0 n := by
+    rw [Mettapedia.UniversalAI.InfiniteHistory.trajKernelOf_eq]
+    exact @Kernel.traj_map_frestrictLe StepFamily _ (transitionKernelWithPolicy μ π) this 0 n
   rw [MeasureTheory.Measure.map_comp (μ := initialMeasureIic0WithPolicy μ π)
-    (κ := @Kernel.traj StepFamily (fun _ => inferInstance) (transitionKernelWithPolicy μ π)
-      (fun k => transitionKernelWithPolicy_isMarkov μ π k h_stoch) 0) hf]
-  simp [Kernel.traj_map_frestrictLe]
+    (κ := @Mettapedia.UniversalAI.InfiniteHistory.trajKernelOf StepFamily _
+      (transitionKernelWithPolicy μ π) this 0) hf,
+    hKmap]
+  rfl
 
 theorem environmentMeasureWithPolicy_cylinderSetAt_succ
     (μ : Environment Action Percept) (π : Agent Action Percept) (h_stoch : isStochastic μ)
@@ -656,8 +682,9 @@ theorem environmentMeasureWithPolicy_cylinderSetAt_succ
     _ = MeasureTheory.Measure.bind (initialMeasureIic0WithPolicy μ π)
           (Kernel.partialTraj (transitionKernelWithPolicy μ π) 0 t)
           ({p | prefixToHistory t p = h} : Set (Prefix t)) := by
-            simp [environmentMeasureWithPolicy_map_frestrictLe (μ := μ) (π := π)
+            rw [environmentMeasureWithPolicy_map_frestrictLe (μ := μ) (π := π)
               (h_stoch := h_stoch) (n := t)]
+            rfl
 
 section FiniteHorizonUtility
 
@@ -674,13 +701,12 @@ theorem measurable_trajShift (k : ℕ) :
     Measurable (trajShift (Action := Action) (Percept := Percept) k) := by
   refine measurable_pi_iff.mpr ?_
   intro n
-  simpa [trajShift] using (measurable_pi_apply (a := k + n))
+  exact measurable_pi_apply (a := k + n)
 
 omit [Fintype Action] [Fintype Percept] [PerceptReward Percept] in
 theorem measurable_trajTail :
     Measurable (trajTail (Action := Action) (Percept := Percept)) := by
-  simpa [trajTail] using
-    (measurable_trajShift (Action := Action) (Percept := Percept) (k := 1))
+  exact measurable_trajShift (Action := Action) (Percept := Percept) (k := 1)
 
 omit [Fintype Action] [Fintype Percept] in
 theorem measurable_reward_at (k : ℕ) :
@@ -689,7 +715,7 @@ theorem measurable_reward_at (k : ℕ) :
     simpa using
       (measurable_from_top (β := ℝ) (f := fun p : Percept => PerceptReward.reward p))
   have h_eval : Measurable fun traj : Trajectory => (traj k).2 := by
-    simpa using (measurable_snd.comp (measurable_pi_apply (a := k)))
+    exact measurable_snd.comp (measurable_pi_apply (a := k))
   exact h_reward.comp h_eval
 
 omit [Fintype Action] [Fintype Percept] in
@@ -705,9 +731,8 @@ theorem measurable_reward_prefix (a : ℕ) :
     have h_step :
         Measurable fun z : PrefixT Action Percept (a + 1) =>
           z ⟨a + 1, mem_Iic.2 (le_rfl)⟩ := by
-      simpa using
-        (measurable_pi_apply
-          (a := (⟨a + 1, mem_Iic.2 (le_rfl)⟩ : Finset.Iic (a + 1))))
+      exact measurable_pi_apply
+          (a := (⟨a + 1, mem_Iic.2 (le_rfl)⟩ : Finset.Iic (a + 1)))
     exact measurable_snd.comp h_step
   exact h_reward.comp h_eval
 
@@ -770,8 +795,7 @@ theorem measurable_discountedRewardSum (γ : DiscountFactor) (t : ℕ) :
 omit [Fintype Action] [Fintype Percept] in
 theorem measurable_discountedRewardSumFrom (γ : DiscountFactor) (k t : ℕ) :
     Measurable (discountedRewardSumFrom (Action := Action) (Percept := Percept) γ k t) := by
-  simpa [discountedRewardSumFrom] using
-    (measurable_discountedRewardSum (Action := Action) (Percept := Percept) γ t).comp
+  exact (measurable_discountedRewardSum (Action := Action) (Percept := Percept) γ t).comp
       (measurable_trajShift (Action := Action) (Percept := Percept) (k := k))
 
 omit [Fintype Action] [Fintype Percept] in
@@ -1004,12 +1028,18 @@ theorem discountedRewardSumFrom_integrable
     refine Filter.Eventually.of_forall ?_
     intro traj
     exact discountedRewardSumFrom_norm_le (Action := Action) (Percept := Percept) γ k t traj
+  -- 4.31: a `∀ n`-shaped instance binder is not consulted by synthesis, so register the
+  -- `trajKernelOf` Markov instance explicitly (threading `hκ`); a Markov kernel is a probability
+  -- (hence finite) measure at every point.
+  haveI : ProbabilityTheory.IsMarkovKernel
+      (@Mettapedia.UniversalAI.InfiniteHistory.trajKernelOf StepFamily _
+        (transitionKernelWithPolicy μ π) hκ a) :=
+    @Mettapedia.UniversalAI.InfiniteHistory.trajKernelOf_isMarkov StepFamily _
+      (transitionKernelWithPolicy μ π) hκ a
   haveI :
       MeasureTheory.IsFiniteMeasure
         ((Mettapedia.UniversalAI.InfiniteHistory.trajKernelOf (X := StepFamily)
-          (κ := transitionKernelWithPolicy μ π) a) pref) := by
-    refine ⟨?_⟩
-    simp [ENNReal.one_lt_top]
+          (κ := transitionKernelWithPolicy μ π) a) pref) := inferInstance
   exact MeasureTheory.Integrable.of_bound (h_meas.aestronglyMeasurable) (t : ℝ) h_bound
 
 omit [Fintype Action] [Fintype Percept] in
@@ -1135,15 +1165,19 @@ theorem integral_trajKernelOf_succ
         (Mettapedia.UniversalAI.InfiniteHistory.trajKernelOf (X := StepFamily)
           (κ := transitionKernelWithPolicy μ π) (a + 1)) x
         ∂ (ProbabilityTheory.Kernel.partialTraj (transitionKernelWithPolicy μ π) a (a + 1) pref) := by
+  -- 4.31: a `∀ n`-shaped instance binder is not consulted by synthesis, so a standalone
+  -- `Kernel.traj (κ := …)` term cannot be elaborated.  Rewrite the `trajKernelOf` goal to
+  -- `Kernel.traj` (the `@[simp]` `trajKernelOf_eq`, instances carried from the goal), then close
+  -- with the mathlib lemma threaded `hκ` via `@` (`exact` tolerates the `TrajectoryOf`/`pi` defeq).
   have hf' :
       MeasureTheory.Integrable f
-        (ProbabilityTheory.Kernel.traj (κ := transitionKernelWithPolicy μ π) a pref) := by
-    simpa [Mettapedia.UniversalAI.InfiniteHistory.trajKernelOf_eq] using hf
+        ((@ProbabilityTheory.Kernel.traj StepFamily _ (transitionKernelWithPolicy μ π) hκ a) pref) :=
+    hf
   have h :=
-    (ProbabilityTheory.Kernel.integral_traj_partialTraj
-      (κ := transitionKernelWithPolicy μ π) (a := a) (b := a + 1) (x₀ := pref)
-      (hab := Nat.le_succ a) (f := f) hf')
-  simpa [Mettapedia.UniversalAI.InfiniteHistory.trajKernelOf_eq] using h.symm
+    (@ProbabilityTheory.Kernel.integral_traj_partialTraj StepFamily _
+      (transitionKernelWithPolicy μ π) hκ ℝ _ _ a (a + 1) (Nat.le_succ a) pref f hf')
+  simp only [Mettapedia.UniversalAI.InfiniteHistory.trajKernelOf_eq]
+  exact h.symm
 
 omit [PerceptReward Percept] in
 theorem trajKernelOf_map_frestrictLe_self
@@ -1152,16 +1186,18 @@ theorem trajKernelOf_map_frestrictLe_self
     (Mettapedia.UniversalAI.InfiniteHistory.trajKernelOf (X := StepFamily)
         (κ := transitionKernelWithPolicy μ π) a pref).map
       (frestrictLe (π := StepFamily) a) = MeasureTheory.Measure.dirac pref := by
+  -- 4.31: a `∀ n`-shaped instance binder is not consulted by synthesis; thread `hκ` via `@`.
+  -- The `@`-built `Kernel.traj` and the goal's `trajKernelOf` agree only up to defeq (measurable
+  -- space family), so finish with `exact` rather than `rw`.
   have h_map :=
-    (ProbabilityTheory.Kernel.traj_map_frestrictLe_apply
-      (κ := transitionKernelWithPolicy μ π) (a := a) (b := a) pref)
-  have h_map' :
-      (ProbabilityTheory.Kernel.traj (κ := transitionKernelWithPolicy μ π) a pref).map
-        (frestrictLe (π := StepFamily) a) =
-        ProbabilityTheory.Kernel.id pref := by
-    simpa [ProbabilityTheory.Kernel.partialTraj_self] using h_map
-  simpa [Mettapedia.UniversalAI.InfiniteHistory.trajKernelOf_eq,
-    ProbabilityTheory.Kernel.id_apply] using h_map'
+    (@ProbabilityTheory.Kernel.traj_map_frestrictLe_apply StepFamily _
+      (transitionKernelWithPolicy μ π) hκ a a pref)
+  have h_ptself :
+      (ProbabilityTheory.Kernel.partialTraj (transitionKernelWithPolicy μ π) a a) pref =
+        MeasureTheory.Measure.dirac pref := by
+    rw [ProbabilityTheory.Kernel.partialTraj_self]
+    exact ProbabilityTheory.Kernel.id_apply pref
+  exact h_map.trans h_ptself
 
 omit [PerceptReward Percept] in
 theorem integral_comp_frestrictLe_trajKernelOf_eq
@@ -1173,12 +1209,15 @@ theorem integral_comp_frestrictLe_trajKernelOf_eq
         (Mettapedia.UniversalAI.InfiniteHistory.trajKernelOf (X := StepFamily)
           (κ := transitionKernelWithPolicy μ π) a) pref =
       g pref := by
+  -- 4.31: a `∀ n`-shaped instance binder is not consulted by synthesis; a standalone
+  -- `Kernel.traj (κ := …)` term cannot elaborate, so phrase the map over the `trajKernelOf` def
+  -- (the same measure) and use the already-proved `trajKernelOf_map_frestrictLe_self`.
   have h_map :
       MeasureTheory.Measure.map (frestrictLe (π := StepFamily) a)
-          ((ProbabilityTheory.Kernel.traj (κ := transitionKernelWithPolicy μ π) a) pref) =
-        MeasureTheory.Measure.dirac pref := by
-    simpa [Mettapedia.UniversalAI.InfiniteHistory.trajKernelOf_eq] using
-      (trajKernelOf_map_frestrictLe_self (μ := μ) (π := π) (a := a) (pref := pref))
+          ((Mettapedia.UniversalAI.InfiniteHistory.trajKernelOf (X := StepFamily)
+            (κ := transitionKernelWithPolicy μ π) a) pref) =
+        MeasureTheory.Measure.dirac pref :=
+    trajKernelOf_map_frestrictLe_self (μ := μ) (π := π) (a := a) (pref := pref)
   have h_phi :
       AEMeasurable (frestrictLe (π := StepFamily) a)
         ((Mettapedia.UniversalAI.InfiniteHistory.trajKernelOf (X := StepFamily)
@@ -1190,12 +1229,12 @@ theorem integral_comp_frestrictLe_trajKernelOf_eq
           (κ := transitionKernelWithPolicy μ π) a) pref
         = ∫ z, g z ∂ MeasureTheory.Measure.map
             (frestrictLe (π := StepFamily) a)
-            ((ProbabilityTheory.Kernel.traj (κ := transitionKernelWithPolicy μ π) a) pref) := by
+            ((Mettapedia.UniversalAI.InfiniteHistory.trajKernelOf (X := StepFamily)
+              (κ := transitionKernelWithPolicy μ π) a) pref) := by
           symm
-          simpa [Mettapedia.UniversalAI.InfiniteHistory.trajKernelOf_eq] using
-            (MeasureTheory.integral_map h_phi (hg.aestronglyMeasurable))
+          exact MeasureTheory.integral_map h_phi (hg.aestronglyMeasurable)
     _ = ∫ z, g z ∂ MeasureTheory.Measure.dirac pref := by
-          simp [h_map]
+          rw [h_map]
     _ = g pref := by
           simp
 
@@ -1281,12 +1320,19 @@ theorem valueFromPrefix_succ
       have h_nonneg : 0 ≤ PerceptReward.reward (y (a + 1)).2 := PerceptReward.nonneg _
       have h_le : PerceptReward.reward (y (a + 1)).2 ≤ 1 := PerceptReward.le_one _
       simpa [Real.norm_eq_abs, abs_of_nonneg h_nonneg] using h_le
+    -- 4.31: register the `trajKernelOf` Markov instance explicitly (the `∀ n`-shaped local
+    -- instance is not consulted by synthesis); a Markov kernel is finite at every point.
+    haveI hκ : ∀ n, ProbabilityTheory.IsMarkovKernel (transitionKernelWithPolicy μ π n) :=
+      fun n => transitionKernelWithPolicy_isMarkov μ π n h_stoch
+    haveI : ProbabilityTheory.IsMarkovKernel
+        (@Mettapedia.UniversalAI.InfiniteHistory.trajKernelOf StepFamily _
+          (transitionKernelWithPolicy μ π) hκ (a + 1)) :=
+      @Mettapedia.UniversalAI.InfiniteHistory.trajKernelOf_isMarkov StepFamily _
+        (transitionKernelWithPolicy μ π) hκ (a + 1)
     haveI :
         MeasureTheory.IsFiniteMeasure
           ((Mettapedia.UniversalAI.InfiniteHistory.trajKernelOf (X := StepFamily)
-            (κ := transitionKernelWithPolicy μ π) (a + 1)) x) := by
-      refine ⟨?_⟩
-      simp [ENNReal.one_lt_top]
+            (κ := transitionKernelWithPolicy μ π) (a + 1)) x) := inferInstance
     exact MeasureTheory.Integrable.of_bound (h_meas.aestronglyMeasurable) 1 h_bound
   have h_tail_integrable :
       MeasureTheory.Integrable

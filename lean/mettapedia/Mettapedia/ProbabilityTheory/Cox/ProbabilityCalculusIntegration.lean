@@ -1,4 +1,4 @@
-import Mettapedia.ProbabilityTheory.KnuthSkilling.Probability.ProbabilityCalculus
+import KnuthSkilling.Probability.ProbabilityCalculus
 
 /-!
 # Cox → ProbabilityCalculus (Event-Level Integration)
@@ -18,7 +18,7 @@ an instance of `ProbabilityCalculusClass` (the common interface used across K&S)
 
 namespace Mettapedia.ProbabilityTheory.Cox
 
-open Mettapedia.ProbabilityTheory.KnuthSkilling
+open KnuthSkilling
 
 /-!
 ## Cox regraded event model
@@ -115,7 +115,7 @@ theorem sum_rule_disjoint (M : CoxProbabilityModel α) {a b : α} (h : Disjoint 
 /-! ## ProbabilityCalculus interface -/
 
 instance (M : CoxProbabilityModel α) :
-    Mettapedia.ProbabilityTheory.KnuthSkilling.Probability.ProbabilityCalculus.ProbabilityCalculusClass α
+    KnuthSkilling.Probability.ProbabilityCalculus.ProbabilityCalculusClass α
       M.valuation where
   sum_rule' := fun {a b} h => M.sum_rule_disjoint h
   complement_rule' := by

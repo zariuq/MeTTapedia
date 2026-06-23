@@ -54,7 +54,8 @@ theorem singleton_descendUntilPath_root (p : List UInt8) :
       | cons c cs =>
           simp [FTrie.descendUntilPath, FTrie.singleton, FTrie.descendUntilSuffix,
             FTrie.rootVal?, FTrie.subtreeAt]
-          simpa [FTrie.descendUntilPath, FTrie.subtreeAt_nil] using ih
+          simpa [FTrie.descendUntilPath, FTrie.subtreeAt_nil, FTrie.singleton,
+            FTrie.descendUntilSuffix, FTrie.rootVal?] using ih
 
 /-- Under the singleton-parse contract, `path-of-atom` returns the encoded byte path. -/
 theorem pathOfAtom_eq_encodedPath (contract : PathOfAtomContract) (a : Atom) :

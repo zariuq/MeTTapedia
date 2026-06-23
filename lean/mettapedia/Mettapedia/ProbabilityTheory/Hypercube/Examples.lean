@@ -19,17 +19,17 @@ import Mathlib.Logic.Function.Iterate
 import Mathlib.Probability.ProbabilityMassFunction.Basic
 import Mathlib.Probability.Distributions.Uniform
 import Mathlib.Tactic
-import Mettapedia.ProbabilityTheory.KnuthSkilling.Additive.Axioms.SandwichSeparation
-import Mettapedia.ProbabilityTheory.KnuthSkilling.Additive.Counterexamples.ProductFailsSeparation
+import KnuthSkilling.Additive.Axioms.SandwichSeparation
+import KnuthSkilling.Additive.Counterexamples.ProductFailsSeparation
 
 namespace Mettapedia.ProbabilityTheory.Hypercube.Examples
 
-open Mettapedia.ProbabilityTheory.KnuthSkilling
+open KnuthSkilling
 open KnuthSkillingAlgebraBase
 open KnuthSkillingAlgebra
 
-open Mettapedia.ProbabilityTheory.KnuthSkilling.SandwichSeparation
-open Mettapedia.ProbabilityTheory.KnuthSkilling.Additive.Counterexamples.ProductFailsSeparation
+open KnuthSkilling.SandwichSeparation
+open KnuthSkilling.Additive.Counterexamples.ProductFailsSeparation
 
 /-!
 ## §1. Positive Example for KnuthSkillingAlgebraBase: ℕ with Addition

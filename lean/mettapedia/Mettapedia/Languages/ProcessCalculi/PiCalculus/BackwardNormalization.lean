@@ -164,7 +164,7 @@ def nuListenerPreComm (x : Name) (P : Process) (n v : String) (listenerBody : Pa
 /-- Canonical ν-listener COMM target. -/
 def nuListenerTarget (x : Name) (P : Process) (n v : String) (listenerBody : Pattern) : Pattern :=
   .collection .hashBag
-    [Mettapedia.OSLF.MeTTaIL.Substitution.commSubst listenerBody (.fvar n),
+    [semanticCommSubst listenerBody (.fvar n),
      rhoInput (.fvar n) x (encode P (n ++ "_" ++ n) v)] none
 
 /-- Flattened source shape for the ν-listener administrative step. -/
@@ -216,7 +216,7 @@ def nu_listener_preComm_reduces
     Mettapedia.Languages.ProcessCalculi.RhoCalculus.Reduction.Reduces
       (nuListenerPreComm x P n v listenerBody)
       (nuListenerTarget x P n v listenerBody) := by
-  simpa [nuListenerPreComm, nuListenerTarget] using
+  simpa [nuListenerPreComm, nuListenerTarget, rhoOutput] using
     (Mettapedia.Languages.ProcessCalculi.RhoCalculus.Reduction.Reduces.comm
       (n := (.fvar v))
       (q := (.fvar n))
@@ -251,7 +251,7 @@ def nameServerListenerPreComm (x z v s : String) (listenerBody : Pattern) : Patt
 /-- Canonical name-server listener COMM target. -/
 def nameServerListenerTarget (x z v s : String) (listenerBody : Pattern) : Pattern :=
   .collection .hashBag
-    [Mettapedia.OSLF.MeTTaIL.Substitution.commSubst listenerBody (.apply "PDrop" [.fvar s]),
+    [semanticCommSubst listenerBody (.apply "PDrop" [.fvar s]),
      rhoReplicate (Mettapedia.Languages.ProcessCalculi.PiCalculus.nameServerBody x z v),
      dropOperation x] none
 
@@ -309,7 +309,7 @@ def nameServer_listener_preComm_reduces
     Mettapedia.Languages.ProcessCalculi.RhoCalculus.Reduction.Reduces
       (nameServerListenerPreComm x z v s listenerBody)
       (nameServerListenerTarget x z v s listenerBody) := by
-  simpa [nameServerListenerPreComm, nameServerListenerTarget] using
+  simpa [nameServerListenerPreComm, nameServerListenerTarget, rhoOutput] using
     (Mettapedia.Languages.ProcessCalculi.RhoCalculus.Reduction.Reduces.comm
       (n := (.fvar z))
       (q := (.apply "PDrop" [.fvar s]))

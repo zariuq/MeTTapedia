@@ -90,7 +90,8 @@ theorem denoteFormula_eq_implies_denoteTerm_eq
     extSetProvable_of_mem
       (T := T)
       (by
-        simpa [denoteFormula, Holds, denoteTerm, ClassAssignment.closeFormula, ClassAssignment.closeTerm]
+        simpa [denoteFormula, Holds, denoteTerm, ClassAssignment.closeFormula, ClassAssignment.closeTerm,
+            closeTerm, subst, eq]
           using hEq)
 
 /-- Conversely, over a complete consistent theory, equal denotations yield
@@ -111,7 +112,8 @@ theorem denoteFormula_eq_of_denoteTerm_eq
   have hEqMem :
       eq (ClassAssignment.closeTerm ν t) (ClassAssignment.closeTerm ν u) ∈ T :=
     hT.closed hTermEq
-  simpa [denoteFormula, Holds, denoteTerm, ClassAssignment.closeFormula, ClassAssignment.closeTerm]
+  simpa [denoteFormula, Holds, denoteTerm, ClassAssignment.closeFormula, ClassAssignment.closeTerm,
+      closeTerm, subst, eq]
     using hEqMem
 
 @[simp] theorem denoteFormula_eq_iff

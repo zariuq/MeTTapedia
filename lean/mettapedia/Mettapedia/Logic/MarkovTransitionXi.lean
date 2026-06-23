@@ -134,9 +134,9 @@ theorem markovTransitionAtom_semE_eq_rowProjection
         (markovTransitionAtomPattern src dst)) by
           rfl]
   rw [markovTransitionXiPLN_queryOfAtom_link (k := k) src dst]
-  simp [WMMarkovCanonical.instBinaryWorldModelMarkovTransitionQuery,
-    markov_queryBinaryEvidence, markov_queryBinaryProjection,
-    markov_transitionQuerySource, markov_transitionQueryTarget]
+  change markov_queryBinaryEvidence (k := k) W (.link src dst) =
+    markov_binaryEvidenceOfRowEvidence (markov_rowExtract (k := k) W src) dst
+  rfl
 
 /-- Strength-level restatement of the direct Markov transition atom semantics. -/
 theorem markovTransitionAtom_queryStrength_eq_rowProjection
@@ -148,9 +148,9 @@ theorem markovTransitionAtom_queryStrength_eq_rowProjection
         (Query := MarkovTransitionQuery k)
         W
         (.link src dst) =
-      BinaryEvidence.toStrength
-        (markov_binaryEvidenceOfRowEvidence
-          (markov_rowExtract (k := k) W src) dst) := by
+     BinaryEvidence.toStrength
+      (markov_binaryEvidenceOfRowEvidence
+        (markov_rowExtract (k := k) W src) dst) := by
   unfold BinaryWorldModel.queryStrength
   rw [show
     BinaryWorldModel.evidence
@@ -160,29 +160,28 @@ theorem markovTransitionAtom_queryStrength_eq_rowProjection
       (.link src dst) =
     markov_binaryEvidenceOfRowEvidence
       (markov_rowExtract (k := k) W src) dst by
-        simp [WMMarkovCanonical.instBinaryWorldModelMarkovTransitionQuery,
-          markov_queryBinaryEvidence, markov_queryBinaryProjection,
-          markov_transitionQuerySource, markov_transitionQueryTarget]]
+        change markov_queryBinaryEvidence (k := k) W (.link src dst) =
+          markov_binaryEvidenceOfRowEvidence (markov_rowExtract (k := k) W src) dst
+        rfl]
 
 /-- Direct WM evidence for a well-formed Markov transition atom agrees with the
 row-conditioned binary projection selected by the encoded link query. -/
 theorem markovTransitionAtom_wmEvidence_eq_rowProjection
     (W : MarkovTransitionWMState k)
     (src dst : Fin k) :
-    BinaryWorldModel.evidence
-        (State := MarkovTransitionWMState k)
-        (Query := MarkovTransitionQuery k)
-        W
-        ((markovTransitionXiPLN (k := k)).queryOfAtom
-          markovTransitionAtomName
-          (markovTransitionAtomPattern src dst)) =
-      markov_binaryEvidenceOfRowEvidence
-        (markov_rowExtract (k := k) W src) dst := by
+      BinaryWorldModel.evidence
+          (State := MarkovTransitionWMState k)
+          (Query := MarkovTransitionQuery k)
+          W
+          ((markovTransitionXiPLN (k := k)).queryOfAtom
+            markovTransitionAtomName
+            (markovTransitionAtomPattern src dst)) =
+          markov_binaryEvidenceOfRowEvidence
+            (markov_rowExtract (k := k) W src) dst := by
   rw [markovTransitionXiPLN_queryOfAtom_link (k := k) src dst]
-  simp [WMMarkovCanonical.instBinaryWorldModelMarkovTransitionQuery,
-    markov_queryBinaryEvidence, markov_queryBinaryProjection,
-    markov_transitionQuerySource,
-    markov_transitionQueryTarget]
+  change markov_queryBinaryEvidence (k := k) W (.link src dst) =
+    markov_binaryEvidenceOfRowEvidence (markov_rowExtract (k := k) W src) dst
+  rfl
 
 /-- On a transition-summary multiset, the direct Markov Xi atom semantics agree
 with the row evidence selected by the summary counts. -/
@@ -199,13 +198,11 @@ theorem markovTransitionAtom_semE_transitionMultiset_eq_of_summary
         (wmEvidenceAtomSemQ
           (markov_transitionMultiset (k := k) xs)
           ((markovTransitionXiPLN (k := k)).queryOfAtom))
-        (.atom markovTransitionAtomName)
-        (markovTransitionAtomPattern src dst) =
-      markov_binaryEvidenceOfRowEvidence (markov_rowEvidence c src) dst := by
+          (.atom markovTransitionAtomName)
+          (markovTransitionAtomPattern src dst) =
+          markov_binaryEvidenceOfRowEvidence (markov_rowEvidence c src) dst := by
   rw [markovTransitionAtom_semE_eq_rowProjection (k := k)]
-  simpa using
-    markov_linkEvidence_transitionMultiset_eq_of_summary
-      (k := k) hsum src dst
+  rw [markov_rowExtract_transitionMultiset_eq_rowEvidence_of_summary (k := k) hsum src]
 
 /-- Threshold truth for a direct Markov transition atom follows from the
 corresponding row-projected binary evidence. -/

@@ -200,7 +200,7 @@ theorem bayesianPosteriorWeight_mul_mixtureMeasureWithPolicy_cylinderSet (O : Or
     have hterm0 : prior.weight ν_idx * historyProbability (envs ν_idx) h = 0 := by
       have hle : prior.weight ν_idx * historyProbability (envs ν_idx) h ≤ denom := by
         simpa [denom, mixtureProbability] using ENNReal.le_tsum ν_idx
-      exact le_antisymm (le_trans hle (by simp [hden])) (zero_le _)
+      exact le_antisymm (le_trans hle (by simp [hden])) (zero_le)
     have hmix0 : mixtureMeasureWithPolicy O M prior envs π h_stoch (cylinderSet h) = 0 := by
       simp [mixtureMeasureWithPolicy_cylinderSet_eq (O := O) (M := M) (prior := prior) (envs := envs)
         (π := π) (h_stoch := h_stoch) (h := h) (h_wf := h_wf) (h_complete := h_complete), denom, hden]

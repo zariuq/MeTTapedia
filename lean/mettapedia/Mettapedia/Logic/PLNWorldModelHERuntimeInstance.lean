@@ -59,6 +59,7 @@ noncomputable instance : EvidenceType HERuntimeEvidenceState where
 instance : BinaryWorldModel HERuntimeEvidenceState Pattern where
   evidence W q := W q
   evidence_add _ _ _ := rfl
+  evidence_zero _ := rfl
 
 @[simp] theorem he_pointwise_queryStrength
     (W : HERuntimeEvidenceState) (p : Pattern) :
@@ -211,7 +212,7 @@ def heStep_wmConsequenceRule
 
 /-- A single HE step yields a WM consequence rule in the concrete pointwise
 interpretation. -/
-def hePointwiseStep_wmConsequenceRule
+noncomputable def hePointwiseStep_wmConsequenceRule
     {p q : Pattern} (hstep : DeclReducesRel mettaHE p q) :
     WMConsequenceRuleOn HERuntimeEvidenceState Pattern :=
   hePointwiseWMInterface.toRuntimeJudgmentWMInterface.wmConsequenceRuleOn_of_step hstep

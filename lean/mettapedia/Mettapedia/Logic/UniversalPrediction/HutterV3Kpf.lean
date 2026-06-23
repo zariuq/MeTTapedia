@@ -1,5 +1,5 @@
 import Mathlib.Analysis.SpecialFunctions.Log.Basic
-import Mathlib.Data.Nat.Lattice
+import Mathlib.Order.Lattice.Nat
 import Mathlib.Data.Nat.Digits.Defs
 import Mathlib.Topology.Algebra.InfiniteSum.ENNReal
 import Mettapedia.Logic.UniversalPrediction.FiniteHorizon

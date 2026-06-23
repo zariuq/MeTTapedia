@@ -37,7 +37,7 @@ theorem eventOfConstraints_cons (c : Σ v : V, bn.stateSpace v)
   · rintro ⟨h1, h2⟩ c' hc'
     rcases List.mem_cons.mp hc' with h | h
     · subst h
-      simpa using h1
+      exact h1
     · exact h2 c' h
 
 theorem measurable_eventEq

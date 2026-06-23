@@ -4,7 +4,7 @@ namespace Mettapedia.AutoBooks.Codex.IntuitionisticHOL
 
 open Mettapedia.Logic.HOL
 
-universe u v w
+universe u v w z
 
 /--
 The simple typed fragment currently supported by the live topological route:
@@ -35,8 +35,8 @@ interpreted with the current archive-free etale-space foundation.
 structure SimpleTopologicalInterpretation
     (Base : Type u) (Const : Ty Base → Type v)
     (X : Type w) [TopologicalSpace X] where
-  propSpace : EtaleSpace X
-  baseSpace : Base → EtaleSpace X
+  propSpace : EtaleSpace.{w, z} X
+  baseSpace : Base → EtaleSpace.{w, z} X
   constProp : Const (.prop) → propSpace.GlobalSection
   constBase : {b : Base} → Const (.base b) → (baseSpace b).GlobalSection
 
@@ -46,7 +46,8 @@ variable {Base : Type u} {Const : Ty Base → Type v}
 variable {X : Type w} [TopologicalSpace X]
 
 /-- Interpret a supported simple type as an etale space over the base. -/
-def space (I : SimpleTopologicalInterpretation Base Const X) : SimpleTy Base → EtaleSpace X
+def space (I : SimpleTopologicalInterpretation Base Const X) :
+    SimpleTy Base → EtaleSpace.{w, z} X
   | .prop => I.propSpace
   | .base b => I.baseSpace b
 

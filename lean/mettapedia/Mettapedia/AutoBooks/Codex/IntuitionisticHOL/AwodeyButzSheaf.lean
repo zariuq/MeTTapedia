@@ -67,7 +67,8 @@ theorem coverMap_compatible (U : ι → Opens X) (sf : ∀ i, E.SectionOn (U i))
     congrArg
       (fun t : E.SectionOn (U i ⊓ U j) => t.toContinuousMap ⟨x.1, ⟨hxi', hxj'⟩⟩)
       (hcompat i j)
-  simpa [coverMap, sectionPresheaf, SectionOn.restrict] using hij
+  dsimp [sectionPresheaf, SectionOn.restrict, coverMap] at hij ⊢
+  exact hij
 
 /-- The glued section over the union-open of a compatible family of sections. -/
 noncomputable def glue (U : ι → Opens X)
@@ -115,7 +116,8 @@ theorem glue_isGluing (U : ι → Opens X)
         (hφ := coverMap_compatible U sf hcompat)
         (hS := cover_mem_nhds U)
         (x := coverPoint U i (unionPoint U i x) x.2))
-  simpa [sectionPresheaf, SectionOn.restrict, unionPoint] using hglue
+  dsimp [sectionPresheaf, SectionOn.restrict, unionPoint] at hglue ⊢
+  exact hglue
 
 theorem eq_glue_of_isGluing (U : ι → Opens X)
     (sf : ∀ i, E.SectionOn (U i))
@@ -128,10 +130,12 @@ theorem eq_glue_of_isGluing (U : ι → Opens X)
   rcases mem_iSup.mp x.2 with ⟨i, hxi⟩
   have hsx :
       s.toContinuousMap x = (sf i).toContinuousMap ⟨x.1, hxi⟩ := by
-    simpa [sectionPresheaf, SectionOn.restrict] using
+    have hsi :=
       congrArg
         (fun t : E.SectionOn (U i) => t.toContinuousMap ⟨x.1, hxi⟩)
         (hs i)
+    dsimp [sectionPresheaf, SectionOn.restrict] at hsi
+    exact hsi
   have hgx :
       (glue U sf hcompat).toContinuousMap x = (sf i).toContinuousMap ⟨x.1, hxi⟩ := by
     simpa [glue, coverMap, coverPoint] using

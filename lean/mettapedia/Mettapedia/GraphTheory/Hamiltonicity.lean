@@ -304,13 +304,13 @@ lemma cycle_exchange_increases_blue (G : SimpleGraph V) [DecidableRel G.Adj]
   have hx_notin_S : x ∉ S := by
     intro h
     rw [SimpleGraph.mem_neighborFinset] at h
-    exact G.loopless x h
+    exact G.loopless.irrefl x h
 
   -- Step 4: x_plus ∉ T (no self-loops)
   have hx_plus_notin_T : x_plus ∉ T := by
     intro h
     rw [SimpleGraph.mem_neighborFinset] at h
-    exact G.loopless x_plus h
+    exact G.loopless.irrefl x_plus h
 
   -- Step 5: x_plus ∉ S_plus
   -- Because if y⁺ = x⁺ for some y ∈ S, then y = x (by succ injectivity), but x ∉ S
@@ -389,7 +389,7 @@ lemma cycle_exchange_increases_blue (G : SimpleGraph V) [DecidableRel G.Adj]
   -- 3. y⁺ ≠ x (since G.Adj x⁺ y⁺ but ¬G.Adj x⁺ x = ¬G.Adj x x⁺)
   have hy_plus_ne_x : y_plus ≠ x := fun h => by
     rw [h] at hx_plus_y_plus
-    have := G.symm hx_plus_y_plus
+    have := G.symm.symm x_plus x hx_plus_y_plus
     exact hred this
 
   -- For the complete graph ⊤, ANY bijection gives a valid Hamilton cycle
@@ -474,9 +474,11 @@ def OreCondition (G : SimpleGraph V) : Prop :=
 def singleEdge (u v : V) (huv : u ≠ v) : SimpleGraph V where
   Adj x y := (x = u ∧ y = v) ∨ (x = v ∧ y = u)
   symm := by
+    constructor
     intro x y h
     rcases h with ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ <;> simp [*]
   loopless := by
+    constructor
     intro x h
     rcases h with ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ <;> exact huv rfl
 

@@ -138,7 +138,8 @@ lemma sum_outdeg_of_mem_stateFinset {N : ℕ} {eN : MarkovState k}
   have hsum : ∑ a : Fin k, outdeg (k := k) eN a =
       ∑ a : Fin k, ∑ b : Fin k, eN.counts.counts a b := by
     simp [outdeg, TransCounts.rowTotal]
-  simpa [hsum] using (sum_counts_of_mem_stateFinset (k := k) (N := N) (eN := eN) heN)
+  rw [hsum]
+  exact (sum_counts_of_mem_stateFinset (k := k) (N := N) (eN := eN) heN)
 
 lemma sum_indeg_of_mem_stateFinset {N : ℕ} {eN : MarkovState k}
     (heN : eN ∈ stateFinset k N) :

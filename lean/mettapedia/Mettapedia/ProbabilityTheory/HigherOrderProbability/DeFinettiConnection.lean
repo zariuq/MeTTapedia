@@ -62,9 +62,14 @@ instance mixingMeasureTheta_isProbability (M : BernoulliMixture) :
   have hIcc :
       mixingMeasureTheta M Set.univ = M.mixingMeasure (Set.Icc (0 : ℝ) 1) := by
     -- `comap_subtype_coe_apply` identifies the pullback with the image set.
-    simpa [mixingMeasureTheta, Theta, measurableSet_Icc] using
-      (comap_subtype_coe_apply (s := Set.Icc (0 : ℝ) 1) measurableSet_Icc
-        (μ := M.mixingMeasure) (t := (Set.univ : Set (Set.Icc (0 : ℝ) 1))))
+    have hcomap :
+        (mixingMeasureTheta M) Set.univ =
+          M.mixingMeasure (Subtype.val '' (Set.univ : Set (Set.Icc (0 : ℝ) 1))) :=
+      comap_subtype_coe_apply (s := Set.Icc (0 : ℝ) 1) measurableSet_Icc
+        (μ := M.mixingMeasure) (t := (Set.univ : Set (Set.Icc (0 : ℝ) 1)))
+    rw [hcomap]
+    congr 1
+    rw [Subtype.coe_image_univ]
   -- Since `M.mixingMeasure` is a probability measure supported on `Icc 0 1`,
   -- the measure of `Icc 0 1` is `1`.
   have hIcc_one : M.mixingMeasure (Set.Icc (0 : ℝ) 1) = 1 := by
@@ -85,7 +90,7 @@ theorem mixingMeasure_eq_of_mixingMeasureTheta_eq
     M1.mixingMeasure = M2.mixingMeasure := by
   ext t ht
   have hμ1_diff0 : M1.mixingMeasure (t \ Set.Icc (0 : ℝ) 1) = 0 := by
-    refine le_antisymm ?_ (zero_le _)
+    refine le_antisymm ?_ (zero_le)
     calc
       M1.mixingMeasure (t \ Set.Icc (0 : ℝ) 1) ≤ M1.mixingMeasure (Set.Icc (0 : ℝ) 1)ᶜ := by
         refine measure_mono ?_
@@ -93,7 +98,7 @@ theorem mixingMeasure_eq_of_mixingMeasureTheta_eq
         exact hx.2
       _ = 0 := M1.support_unit
   have hμ2_diff0 : M2.mixingMeasure (t \ Set.Icc (0 : ℝ) 1) = 0 := by
-    refine le_antisymm ?_ (zero_le _)
+    refine le_antisymm ?_ (zero_le)
     calc
       M2.mixingMeasure (t \ Set.Icc (0 : ℝ) 1) ≤ M2.mixingMeasure (Set.Icc (0 : ℝ) 1)ᶜ := by
         refine measure_mono ?_
@@ -431,13 +436,13 @@ private lemma measurable_weight (xs : Fin n → Bool) :
       have hm1 : Measurable fun t : ℝ => t ^ (countTrue xs) := by
         simpa using (measurable_id.pow_const (countTrue xs))
       have hm2 : Measurable fun t : ℝ => (1 - t) ^ (countFalse xs) := by
-        have : Measurable fun t : ℝ => 1 - t := by
-          simpa [sub_eq_add_neg] using (measurable_const.sub measurable_id)
-        simpa using this.pow_const (countFalse xs)
+        have : Measurable fun t : ℝ => 1 - t := measurable_const.sub measurable_id
+        exact this.pow_const (countFalse xs)
       exact hm1.mul hm2
     simpa [bernoulliProductPMF_eq_power] using this
   -- Restrict to the subtype and apply `ENNReal.measurable_ofReal`.
-  simpa [weight] using (ENNReal.measurable_ofReal.comp (hmeas.comp measurable_subtype_coe))
+  simpa [weight, Function.comp_def] using
+    (ENNReal.measurable_ofReal.comp (hmeas.comp measurable_subtype_coe))
 
 private lemma measurable_pmf_toMeasure_apply (s : Set (Fin n → Bool)) :
     Measurable fun θ : Theta => (pmf (n := n) θ).toMeasure s := by
@@ -467,7 +472,8 @@ private lemma measurable_pmf_toMeasure_apply (s : Set (Fin n → Bool)) :
       (Finset.measurable_fun_sum (s := (Finset.univ : Finset (Fin n → Bool)))
         (f := fun x : Fin n → Bool => fun θ : Theta => (if x ∈ s then weight (n := n) θ x else 0))
         (fun x _hx => hmeasTerm x))
-  simpa [hrewrite] using hsum
+  rw [hrewrite]
+  exact hsum
 
 /-- The Bernoulli product kernel on `Theta` at horizon `n`. -/
 def kernel (n : ℕ) : ProbabilityTheory.Kernel Theta (Fin n → Bool) :=
@@ -547,10 +553,11 @@ theorem flatten_apply_singleton (M : BernoulliMixture) (n : ℕ) (xs : Fin n →
     have h1 : Continuous fun t : ℝ => t ^ (countTrue xs) := by
       simpa using (continuous_pow (countTrue xs))
     have h2 : Continuous fun t : ℝ => (1 - t) ^ (countFalse xs) := by
-      have : Continuous fun t : ℝ => 1 - t := by
-        simpa [sub_eq_add_neg] using (continuous_const.sub continuous_id)
-      simpa using (continuous_pow (countFalse xs)).comp this
-    simpa [bernoulliProductPMF_eq_power] using h1.mul h2
+      have hsub : Continuous fun t : ℝ => 1 - t := continuous_const.sub continuous_id
+      exact (continuous_pow (countFalse xs)).comp hsub
+    have hmul : Continuous fun t : ℝ => t ^ (countTrue xs) * (1 - t) ^ (countFalse xs) :=
+      h1.mul h2
+    simpa [bernoulliProductPMF_eq_power] using hmul
   have hint :
       Integrable (fun t : ℝ => bernoulliProductPMF t xs)
         (M.mixingMeasure.restrict (Set.Icc (0 : ℝ) 1)) := by

@@ -67,7 +67,7 @@ abbrev PureClosedTheoryBridgeStar : Prop :=
 private theorem defaultBinderName_injective : Function.Injective defaultBinderName := by
   intro a b hab
   rw [← natStringValue_repr a, ← natStringValue_repr b]
-  simpa [defaultBinderName, natStringValue] using congrArg natStringValue hab
+  simpa [defaultBinderName, natStringValue, parseDigits, digitNat] using congrArg natStringValue hab
 
 private theorem defaultBinderName_quoteCompat0 :
     QuoteCompat defaultBinderName 0 emptyEnv :=

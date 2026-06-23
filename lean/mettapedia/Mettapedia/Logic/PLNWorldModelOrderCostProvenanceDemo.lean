@@ -31,6 +31,7 @@ variable {σ : LPSignature} {n : ℕ}
 
 /-- `Which` count view for order-cost auditing:
 `wbot` has count `0`, every `wset _` has count `⊤`. -/
+@[reducible]
 noncomputable def whichTopCountConjugateEvidence {α : Type} [DecidableEq α] :
     ConjugateEvidence (Which α) where
   observationCount
@@ -63,6 +64,17 @@ noncomputable instance instConjugateEvidenceWhichTopCount {α : Type} [Decidable
     ConjugateEvidence (Which α) :=
   whichTopCountConjugateEvidence
 
+noncomputable local instance instProvenanceDemoEvidenceType :
+    EvidenceType (KRelation σ (Which (Fin n))) where
+  toAddCommMonoid := inferInstance
+
+noncomputable local instance instProvenanceDemoAdditiveWorldModel :
+    AdditiveWorldModel (KRelation σ (Which (Fin n))) (GroundAtom σ) (Which (Fin n)) where
+  extract := fun I q => I q
+  extract_add := by
+    intro I₁ I₂ q
+    simp [Pi.add_apply]
+
 /-- Right-biased policy merge (`latest-wins`) on provenance states. -/
 def provenanceRightBiasMerge
     (_I₁ I₂ : KRelation σ (Which (Fin n))) : KRelation σ (Which (Fin n)) :=
@@ -83,6 +95,11 @@ noncomputable def provenanceRightBiasOverlapLayer :
     change I₂ q = I₁ q + I₂ q
     simp [hleft]
 
+private noncomputable abbrev provenanceRightBiasOverlapLayerFor
+    (σ : LPSignature) (n : ℕ) :
+    OverlapLayer (KRelation σ (Which (Fin n))) (GroundAtom σ) (Which (Fin n)) Unit :=
+  provenanceRightBiasOverlapLayer
+
 /-- Concrete swap anomaly count for the right-biased provenance layer. -/
 noncomputable def provenanceSwapAnomalyCount
     (I₁ I₂ : KRelation σ (Which (Fin n))) (q : GroundAtom σ) : ℝ≥0∞ := by
@@ -90,7 +107,7 @@ noncomputable def provenanceSwapAnomalyCount
     SwapAnomalyCount
       (State := KRelation σ (Which (Fin n)))
       (Query := GroundAtom σ) (Ev := Which (Fin n)) (Ov := Unit)
-      (provenanceRightBiasOverlapLayer (σ := σ) (n := n)) I₁ I₂ q
+      (provenanceRightBiasOverlapLayerFor σ n) I₁ I₂ q
 
 /-- Concrete schedule error count for the right-biased provenance layer. -/
 noncomputable def provenanceScheduleErrorCount
@@ -101,7 +118,7 @@ noncomputable def provenanceScheduleErrorCount
     scheduleErrorCount
       (State := KRelation σ (Which (Fin n)))
       (Query := GroundAtom σ) (Ev := Which (Fin n)) (Ov := Unit)
-      (provenanceRightBiasOverlapLayer (σ := σ) (n := n))
+      (provenanceRightBiasOverlapLayerFor σ n)
       base steps₁ steps₂ q
 
 def provenanceScheduleErrorBound
@@ -126,12 +143,13 @@ theorem provenanceSwapAnomalyCount_eq_zero_of_query_eq
         (State := KRelation σ (Which (Fin n)))
         (Query := GroundAtom σ) (Ev := Which (Fin n))
         (provenanceRightBiasMerge (σ := σ) (n := n) I₂ I₁) q := by
-    simpa [AdditiveWorldModel.queryObservationCount, provenanceRightBiasMerge] using
-      congrArg ConjugateEvidence.observationCount hq.symm
+    change ConjugateEvidence.observationCount (I₂ q) =
+      ConjugateEvidence.observationCount (I₁ q)
+    exact congrArg ConjugateEvidence.observationCount hq.symm
   exact swapAnomalyCount_zero_of_count_eq
     (State := KRelation σ (Which (Fin n)))
     (Query := GroundAtom σ) (Ev := Which (Fin n)) (Ov := Unit)
-    (L := provenanceRightBiasOverlapLayer (σ := σ) (n := n)) I₁ I₂ q hcount
+    (L := provenanceRightBiasOverlapLayerFor σ n) I₁ I₂ q hcount
 
 /-- Policy/order-cost example:
 if `I₁` is zero and `I₂` is nonzero at `q`, swapping order has top anomaly. -/
@@ -143,8 +161,9 @@ theorem provenanceSwapAnomalyCount_eq_top_of_zero_then_nonzero
       AdditiveWorldModel.queryObservationCount
         (State := KRelation σ (Which (Fin n)))
         (Query := GroundAtom σ) (Ev := Which (Fin n)) I₁ q = 0 := by
-    simpa [AdditiveWorldModel.queryObservationCount] using
-      congrArg ConjugateEvidence.observationCount h₁
+    change ConjugateEvidence.observationCount (I₁ q) = 0
+    rw [h₁]
+    rfl
   cases hI₂ : I₂ q with
   | wbot =>
       exfalso
@@ -165,14 +184,16 @@ theorem provenanceSwapAnomalyCount_eq_top_of_zero_then_nonzero
           AdditiveWorldModel.queryObservationCount
             (State := KRelation σ (Which (Fin n)))
             (Query := GroundAtom σ) (Ev := Which (Fin n))
-            ((provenanceRightBiasOverlapLayer (σ := σ) (n := n)).merge I₁ I₂) q = ⊤ := by
-        simpa [provenanceRightBiasOverlapLayer, provenanceRightBiasMerge] using hcount₂
+            ((provenanceRightBiasOverlapLayerFor σ n).merge I₁ I₂) q = ⊤ := by
+        simpa [provenanceRightBiasOverlapLayerFor, provenanceRightBiasOverlapLayer,
+          provenanceRightBiasMerge] using hcount₂
       have hmerge₂₁ :
           AdditiveWorldModel.queryObservationCount
             (State := KRelation σ (Which (Fin n)))
             (Query := GroundAtom σ) (Ev := Which (Fin n))
-            ((provenanceRightBiasOverlapLayer (σ := σ) (n := n)).merge I₂ I₁) q = 0 := by
-        simpa [provenanceRightBiasOverlapLayer, provenanceRightBiasMerge] using hcount₁
+            ((provenanceRightBiasOverlapLayerFor σ n).merge I₂ I₁) q = 0 := by
+        simpa [provenanceRightBiasOverlapLayerFor, provenanceRightBiasOverlapLayer,
+          provenanceRightBiasMerge] using hcount₁
       unfold provenanceSwapAnomalyCount SwapAnomalyCount
       rw [hmerge₁₂, hmerge₂₁]
       simp
@@ -187,8 +208,9 @@ theorem provenanceScheduleErrorCount_twoStep_eq_top_of_zero_then_nonzero
       AdditiveWorldModel.queryObservationCount
         (State := KRelation σ (Which (Fin n)))
         (Query := GroundAtom σ) (Ev := Which (Fin n)) I₁ q = 0 := by
-    simpa [AdditiveWorldModel.queryObservationCount] using
-      congrArg ConjugateEvidence.observationCount h₁
+    change ConjugateEvidence.observationCount (I₁ q) = 0
+    rw [h₁]
+    rfl
   cases hI₂ : I₂ q with
   | wbot =>
       exfalso
@@ -209,21 +231,23 @@ theorem provenanceScheduleErrorCount_twoStep_eq_top_of_zero_then_nonzero
           AdditiveWorldModel.queryObservationCount
             (State := KRelation σ (Which (Fin n)))
             (Query := GroundAtom σ) (Ev := Which (Fin n))
-            ((provenanceRightBiasOverlapLayer (σ := σ) (n := n)).merge
-              ((provenanceRightBiasOverlapLayer (σ := σ) (n := n)).merge base I₁) I₂) q = ⊤ := by
-        simpa [provenanceRightBiasOverlapLayer, provenanceRightBiasMerge] using hcount₂
+            ((provenanceRightBiasOverlapLayerFor σ n).merge
+              ((provenanceRightBiasOverlapLayerFor σ n).merge base I₁) I₂) q = ⊤ := by
+        simpa [provenanceRightBiasOverlapLayerFor, provenanceRightBiasOverlapLayer,
+          provenanceRightBiasMerge] using hcount₂
       have hstep₂₁ :
           AdditiveWorldModel.queryObservationCount
             (State := KRelation σ (Which (Fin n)))
             (Query := GroundAtom σ) (Ev := Which (Fin n))
-            ((provenanceRightBiasOverlapLayer (σ := σ) (n := n)).merge
-              ((provenanceRightBiasOverlapLayer (σ := σ) (n := n)).merge base I₂) I₁) q = 0 := by
-        simpa [provenanceRightBiasOverlapLayer, provenanceRightBiasMerge] using hcount₁
+            ((provenanceRightBiasOverlapLayerFor σ n).merge
+              ((provenanceRightBiasOverlapLayerFor σ n).merge base I₂) I₁) q = 0 := by
+        simpa [provenanceRightBiasOverlapLayerFor, provenanceRightBiasOverlapLayer,
+          provenanceRightBiasMerge] using hcount₁
       unfold provenanceScheduleErrorCount
       rw [scheduleError_twoStep_eq_swapStepAnomalyCount
         (State := KRelation σ (Which (Fin n)))
         (Query := GroundAtom σ) (Ev := Which (Fin n)) (Ov := Unit)
-        (L := provenanceRightBiasOverlapLayer (σ := σ) (n := n))
+        (L := provenanceRightBiasOverlapLayerFor σ n)
         (base := base) (A := I₁) (B := I₂) (q := q)]
       unfold swapStepAnomalyCount
       rw [hstep₁₂, hstep₂₁]

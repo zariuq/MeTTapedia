@@ -36,7 +36,7 @@ noncomputable def dlrQueryOutcomeWidthComplementITVSource
     (M : ClassicalInfiniteGroundMLNSpec Atom ClauseId)
     [Nonempty (DLRCompletion M)]
     (q : ConstraintQuery Atom) :
-    ProjectiveCredalWidthComplementITVSource.{0, 0, 0} PUnit Bool :=
+    ProjectiveCredalWidthComplementITVSource.{0, 0} PUnit Bool :=
   ProjectiveCredalWidthComplementITVSource.finite
     (dlrQueryOutcomeProjectiveSpec M q)
     (dlrQueryOutcomeProjectiveSpec_hasCompatibleCompletion M q)
@@ -58,7 +58,7 @@ noncomputable def dlrQueryOutcomeTypedWidthComplementITV
     (M : ClassicalInfiniteGroundMLNSpec Atom ClauseId)
     [Nonempty (DLRCompletion M)]
     (q : ConstraintQuery Atom) :
-    TypedITV (projectiveCredalWidthComplementITVSemantics.{0, 0, 0} PUnit Bool) :=
+    TypedITV (projectiveCredalWidthComplementITVSemantics.{0, 0} PUnit Bool) :=
   TypedITV.fromProjectiveCredalWidthComplement
     (dlrQueryOutcomeWidthComplementITVSource M q)
 

@@ -242,7 +242,7 @@ theorem boolAliasSpec_prefixAdmissible :
         (s := boolTrueSpec)
         (hNodup := by decide)
         (hs := by simp [boolTySpec, boolTrueSpec, boolFalseSpec])
-    simpa [liftClosed_zero] using
+    simpa [liftClosed_zero, boolAliasSpec] using
       (hasType_const_from_lookup
         (E := envOfSpecs [boolTySpec, boolTrueSpec, boolFalseSpec])
         (Γ := .nil)

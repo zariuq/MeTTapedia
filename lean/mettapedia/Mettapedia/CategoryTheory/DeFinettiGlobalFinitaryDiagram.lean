@@ -163,8 +163,9 @@ theorem globalPrefixLawActionFromSeqLaw_compatible_with_lift
       simpa using h (σ.symm i)
   unfold globalPrefixLawActionFromSeqLaw prefixLawObjOfSeqLaw
   simp [finSuppPermActionOnSeqLaw, perNPrefixDiagramMap, perNPrefixDiagramFunctor,
-    boolPrefixPermAction, globalSeqPrefixEvent, finSuppPermuteSeq, finPermToFinSuppPermNat,
-    extendFinPermToNat, permuteBoolTuple, hset]
+    globalSeqPrefixEvent, finSuppPermuteSeq, finPermToFinSuppPermNat,
+    extendFinPermToNat, hset]
+  rfl
 
 /-- Lifted commutation predicate using the global finitary-permutation index. -/
 def GlobalLiftedPrefixLawConeCommutes
@@ -192,10 +193,8 @@ theorem isPrefixLawCone_iff_globalLiftedPrefixLawConeCommutes
       GlobalLiftedPrefixLawConeCommutes (Ω := Ω) X μ := by
   constructor
   · intro h n σ
-    simpa [GlobalLiftedPrefixLawConeCommutes, perNPrefixDiagramMapFromGlobalLift,
-      IsPrefixLawCone, perNPrefixDiagramMap, perNPermStar] using h n σ.symm
+    exact h n σ.symm
   · intro h n σ
-    simpa [GlobalLiftedPrefixLawConeCommutes, perNPrefixDiagramMapFromGlobalLift,
-      IsPrefixLawCone, perNPrefixDiagramMap, perNPermStar] using h n σ.symm
+    exact h n σ.symm
 
 end Mettapedia.CategoryTheory

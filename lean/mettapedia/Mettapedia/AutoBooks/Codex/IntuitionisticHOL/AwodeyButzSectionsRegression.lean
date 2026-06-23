@@ -71,12 +71,11 @@ theorem topSection_restrict_comp :
 theorem false_not_mem_trueRestriction_range :
     false ∉
       ((topSection.toSectionOnTop.restrict trueInclTop).toLocalSection.range : Set reflEtale.Carrier) := by
+  rw [trueRestriction_of_topSection]
   intro hfalse
   rcases hfalse with ⟨x, hx⟩
-  have hx' : x.1 = false := by
-    simpa using hx
-  have htf : true = false := x.2.symm.trans hx'
-  cases htf
+  rcases x with ⟨b, hb⟩
+  cases b <;> simp [trueOpen, trueSectionOn, EtaleSpace.SectionOn.toLocalSection] at hb hx
 
 theorem sectionPresheaf_obj_top :
     reflEtale.sectionPresheaf.obj (Opposite.op ⊤) = reflEtale.SectionOn ⊤ := rfl

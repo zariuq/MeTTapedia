@@ -143,8 +143,7 @@ lemma weightOfConstraints_eq_jointWeight_sum
   intro x hx
   by_cases hmem : x ∈ BayesianNetwork.eventOfConstraints (bn := bn) cs
   ·
-    have hsat : ∀ c ∈ cs, x c.1 = c.2 := by
-      simpa [BayesianNetwork.eventOfConstraints] using hmem
+    have hsat : ∀ c ∈ cs, x c.1 = c.2 := hmem
     calc
       (if ∀ c ∈ cs, x c.1 = c.2 then
           (VariableElimination.combineAll (factorsOfGraph cpt.toFactorGraph)).potential
@@ -163,8 +162,7 @@ lemma weightOfConstraints_eq_jointWeight_sum
   ·
     have hsat : ¬∀ c ∈ cs, x c.1 = c.2 := by
       intro hsat
-      apply hmem
-      simpa [BayesianNetwork.eventOfConstraints] using hsat
+      exact hmem hsat
     calc
       (if ∀ c ∈ cs, x c.1 = c.2 then
           (VariableElimination.combineAll (factorsOfGraph cpt.toFactorGraph)).potential
@@ -229,7 +227,9 @@ lemma weightOfConstraints_eq_jointMeasure_eventEq
     weightOfConstraints_eq_jointMeasure_eventOfConstraints (bn := bn) (cpt := cpt)
       (cs := [⟨v, val⟩])
   -- `eventOfConstraints [⟨v,val⟩] = eventEq v val`.
-  simpa [BayesianNetwork.eventOfConstraints_cons, BayesianNetwork.eventOfConstraints_nil] using h
+  rw [BayesianNetwork.eventOfConstraints_cons, BayesianNetwork.eventOfConstraints_nil,
+    Set.inter_univ] at h
+  exact h
 
 lemma veQueryWeight_eq_jointMeasure_eventEq
     (cpt : bn.DiscreteCPT) (v : V) (val : bn.stateSpace v)
@@ -259,21 +259,22 @@ lemma propProbVE_eq_jointMeasure_eventEq
   have hden :
       VariableElimination.veQueryWeight (fg := DiscreteCPT.toFactorGraph (bn := bn) cpt) [] =
         cpt.jointMeasure (Set.univ : Set bn.JointSpace) := by
-    simpa [BayesianNetwork.eventOfConstraints_nil] using
-      (veQueryWeight_eq_jointMeasure_eventOfConstraints (bn := bn) (cpt := cpt) (cs := []))
+    have h := veQueryWeight_eq_jointMeasure_eventOfConstraints (bn := bn) (cpt := cpt) (cs := [])
+    rw [BayesianNetwork.eventOfConstraints_nil] at h
+    exact h
   -- Denominator is 1 because `jointMeasure` is a probability measure.
   have hden' : cpt.jointMeasure (Set.univ : Set bn.JointSpace) = 1 := by
     simp
-  have hnumWeight :
-      VariableElimination.weightOfConstraints (fg := DiscreteCPT.toFactorGraph (bn := bn) cpt) [⟨v, val⟩] =
-        cpt.jointMeasure (BayesianNetwork.eventEq (bn := bn) v val) := by
-    simpa using hnum
-  have hdenWeight :
-      VariableElimination.weightOfConstraints (fg := DiscreteCPT.toFactorGraph (bn := bn) cpt) [] =
-        cpt.jointMeasure (Set.univ : Set bn.JointSpace) := by
-    simpa using hden
-  -- Finish by unfolding the VE definition.
-  simp [BayesianNetwork.propProbVE, hnumWeight, hdenWeight, hden']
+  -- Finish by unfolding the VE definition.  The explicit `rfl` unfolding keeps the
+  -- ambient `Fintype` instances (rather than the definition-internal `letI` ones), so the
+  -- `veQueryWeight` rewrites below match.
+  rw [show BayesianNetwork.propProbVE bn cpt v val =
+        if VariableElimination.veQueryWeight (fg := DiscreteCPT.toFactorGraph (bn := bn) cpt) [] = 0
+          then 0
+          else VariableElimination.veQueryWeight (fg := DiscreteCPT.toFactorGraph (bn := bn) cpt) [⟨v, val⟩] /
+            VariableElimination.veQueryWeight (fg := DiscreteCPT.toFactorGraph (bn := bn) cpt) []
+        from rfl,
+    hden, hden', if_neg one_ne_zero, hnum, div_one]
 
 lemma linkProbVE_eq_jointMeasure_eventEq
     (cpt : bn.DiscreteCPT) (a b : V) (valA : bn.stateSpace a) (valB : bn.stateSpace b)
@@ -299,27 +300,24 @@ lemma linkProbVE_eq_jointMeasure_eventEq
       veQueryWeight_eq_jointMeasure_eventOfConstraints (bn := bn) (cpt := cpt)
         (cs := [⟨a, valA⟩, ⟨b, valB⟩])
     -- `eventOfConstraints` for two constraints is the intersection.
-    simpa [BayesianNetwork.eventOfConstraints_cons, BayesianNetwork.eventOfConstraints_nil,
-      Set.inter_assoc, Set.inter_left_comm, Set.inter_comm] using h
+    rw [BayesianNetwork.eventOfConstraints_cons, BayesianNetwork.eventOfConstraints_cons,
+      BayesianNetwork.eventOfConstraints_nil, Set.inter_univ] at h
+    exact h
   have hden :
       VariableElimination.veQueryWeight (fg := DiscreteCPT.toFactorGraph (bn := bn) cpt)
           [⟨a, valA⟩] =
         cpt.jointMeasure (BayesianNetwork.eventEq (bn := bn) a valA) :=
     veQueryWeight_eq_jointMeasure_eventEq (bn := bn) (cpt := cpt) a valA
-  have hnumWeight :
-      VariableElimination.weightOfConstraints (fg := DiscreteCPT.toFactorGraph (bn := bn) cpt)
-          [⟨a, valA⟩, ⟨b, valB⟩] =
-        cpt.jointMeasure
-          (BayesianNetwork.eventEq (bn := bn) a valA ∩
-            BayesianNetwork.eventEq (bn := bn) b valB) := by
-    simpa using hnum
-  have hdenWeight :
-      VariableElimination.weightOfConstraints (fg := DiscreteCPT.toFactorGraph (bn := bn) cpt)
-          [⟨a, valA⟩] =
-        cpt.jointMeasure (BayesianNetwork.eventEq (bn := bn) a valA) := by
-    simpa using hden
-  -- Unfold the VE definition and rewrite numerator/denominator.
-  simp [BayesianNetwork.linkProbVE, hnumWeight, hdenWeight]
+  -- Unfold the VE definition and rewrite numerator/denominator.  The explicit `rfl`
+  -- unfolding keeps the ambient `Fintype` instances so the `veQueryWeight` rewrites match.
+  rw [show BayesianNetwork.linkProbVE bn cpt a b valA valB =
+        if VariableElimination.veQueryWeight (fg := DiscreteCPT.toFactorGraph (bn := bn) cpt) [⟨a, valA⟩] = 0
+          then 0
+          else VariableElimination.veQueryWeight (fg := DiscreteCPT.toFactorGraph (bn := bn) cpt)
+              [⟨a, valA⟩, ⟨b, valB⟩] /
+            VariableElimination.veQueryWeight (fg := DiscreteCPT.toFactorGraph (bn := bn) cpt) [⟨a, valA⟩]
+        from rfl,
+    hnum, hden]
 
 /-- Bridge for multi-antecedent conditional probability. -/
 lemma linkProbVECond_eq_jointMeasure_eventOfConstraints
@@ -347,17 +345,16 @@ lemma linkProbVECond_eq_jointMeasure_eventOfConstraints
         cpt.jointMeasure (BayesianNetwork.eventOfConstraints (bn := bn) constraints) := by
     exact veQueryWeight_eq_jointMeasure_eventOfConstraints
       (bn := bn) (cpt := cpt) (cs := constraints)
-  have hnumWeight :
-      VariableElimination.weightOfConstraints (fg := DiscreteCPT.toFactorGraph (bn := bn) cpt)
-          (constraints ++ [b]) =
-        cpt.jointMeasure (BayesianNetwork.eventOfConstraints (bn := bn) (constraints ++ [b])) := by
-    simpa using hnum
-  have hdenWeight :
-      VariableElimination.weightOfConstraints (fg := DiscreteCPT.toFactorGraph (bn := bn) cpt)
-          constraints =
-        cpt.jointMeasure (BayesianNetwork.eventOfConstraints (bn := bn) constraints) := by
-    simpa using hden
-  simp [BayesianNetwork.linkProbVECond, hnumWeight, hdenWeight]
+  -- The explicit `rfl` unfolding keeps the ambient `Fintype` instances so the
+  -- `veQueryWeight` rewrites match.
+  rw [show BayesianNetwork.linkProbVECond bn cpt constraints b =
+        if VariableElimination.veQueryWeight (fg := DiscreteCPT.toFactorGraph (bn := bn) cpt) constraints = 0
+          then 0
+          else VariableElimination.veQueryWeight (fg := DiscreteCPT.toFactorGraph (bn := bn) cpt)
+              (constraints ++ [b]) /
+            VariableElimination.veQueryWeight (fg := DiscreteCPT.toFactorGraph (bn := bn) cpt) constraints
+        from rfl,
+    hnum, hden]
 
 end BayesianNetwork
 

@@ -158,6 +158,7 @@ theorem ValueJudgmentSentence.sat_iff_sat_toVirtueTarget {World : Type u}
   | mk tag formula =>
       have h := h_align (moralValueToVirtueAspect tag) formula w
       simpa [ValueJudgmentSentence.toVirtueTarget, virtueTargetSemantics, VirtueTargetSemantics.sat,
+        valueJudgmentSemantics, ValueSemantics.sat,
         virtueAspectToMoralValue_moralValueToVirtueAspect] using h.symm
 
 theorem entails_virtueTarget_iff_entails_value {World : Type u}

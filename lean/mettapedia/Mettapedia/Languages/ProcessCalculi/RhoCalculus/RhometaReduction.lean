@@ -2058,22 +2058,19 @@ private theorem scDecodeDeferredPayload_singleton (payload : Atom) :
     scDecodeDeferredPayload?
       (.collection .hashBag [deferredPayload payload] none) =
         some payload := by
-  simp [scDecodeDeferredPayload?, stripSCWrappers, stripSCWrappersList]
-  simpa [deferredPayload] using scDecodeAtom_atomToPattern payload
+  exact scDecodeDeferredPayload_deferredPayload payload
 
 private theorem scDecodeDeferredPayload_zero_left (payload : Atom) :
     scDecodeDeferredPayload?
       (.collection .hashBag [.apply "PZero" [], deferredPayload payload] none) =
         some payload := by
-  simp [scDecodeDeferredPayload?, stripSCWrappers, stripSCWrappersList]
-  simpa [deferredPayload] using scDecodeAtom_atomToPattern payload
+  exact scDecodeDeferredPayload_deferredPayload payload
 
 private theorem scDecodeDeferredPayload_zero_right (payload : Atom) :
     scDecodeDeferredPayload?
       (.collection .hashBag [deferredPayload payload, .apply "PZero" []] none) =
         some payload := by
-  simp [scDecodeDeferredPayload?, stripSCWrappers, stripSCWrappersList]
-  simpa [deferredPayload] using scDecodeAtom_atomToPattern payload
+  exact scDecodeDeferredPayload_deferredPayload payload
 
 private theorem scDecodeDeferredPayload_hashBag_of_strippedNonZeroElems
     {elems : List Pattern} {payload : Atom}
@@ -2439,22 +2436,19 @@ private theorem scDecodeWrappedValue_singleton (value : Atom) :
     scDecodeWrappedValue?
       (.collection .hashBag [wrappedValue value] none) =
         some value := by
-  simp [scDecodeWrappedValue?, stripSCWrappers, stripSCWrappersList]
-  simpa [wrappedValue] using scDecodeAtom_atomToPattern value
+  exact scDecodeWrappedValue?_wrappedValue value
 
 private theorem scDecodeWrappedValue_zero_left (value : Atom) :
     scDecodeWrappedValue?
       (.collection .hashBag [.apply "PZero" [], wrappedValue value] none) =
         some value := by
-  simp [scDecodeWrappedValue?, stripSCWrappers, stripSCWrappersList]
-  simpa [wrappedValue] using scDecodeAtom_atomToPattern value
+  exact scDecodeWrappedValue?_wrappedValue value
 
 private theorem scDecodeWrappedValue_zero_right (value : Atom) :
     scDecodeWrappedValue?
       (.collection .hashBag [wrappedValue value, .apply "PZero" []] none) =
         some value := by
-  simp [scDecodeWrappedValue?, stripSCWrappers, stripSCWrappersList]
-  simpa [wrappedValue] using scDecodeAtom_atomToPattern value
+  exact scDecodeWrappedValue?_wrappedValue value
 
 private theorem scDecodeWrappedValue_hashBag_of_strippedNonZeroElems
     {elems : List Pattern} {value : Atom}
@@ -12084,7 +12078,7 @@ theorem evalDropSystem_singleton_run_of_certified
         (chan := chan) (payload := payload) hcert))
       (o, PUnit.unit)
   simpa [sys, e, o, evalDropSystem, evalDropEvent,
-      EventSystem.fireMany, MatchingRealization.aggregate_singleton,
+      EventSystem.fireMany, MatchingRealization.aggregate,
       MatchingRealization.singletonObs, accMul] using
     (runOutcomes_succ_of_step sys hstep (self_mem_runOutcomes sys singletonPol 0 _))
 
@@ -12165,7 +12159,7 @@ theorem evalDropSystem_macro_collapse
         (evalDropSystem space dispatch chan payload).enabled s' = ∅} =
     {acc' | ∃ x ∈ foldOutcomesΩ [certifiedPayloadReified space dispatch payload],
         acc' = accMul acc x} := by
-  simpa [evalDropSystem, evalDropEvent] using
+  simpa [evalDropSystem, evalDropEvent, matchingPayloads] using
     (macro_collapse_corollary
       (sys := evalDropSystem space dispatch chan payload)
       (s := evalDropSource chan payload)

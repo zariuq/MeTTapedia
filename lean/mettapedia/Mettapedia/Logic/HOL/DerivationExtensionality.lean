@@ -206,12 +206,135 @@ theorem abstractConstAt_weakenHyps
         (Const := Const)
         (σ := σ)
         (Δ.map
-          (fun ψ =>
-            abstractConstAt (Base := Base) (Γ := Γ) (τ := .prop) c Ξ ψ)) =
+          (abstractConstAt (Base := Base) (Γ := Γ) (τ := .prop) c Ξ)) =
       (weakenHyps (Base := Base) (Const := Const) (σ := σ) Δ).map
-        (fun ψ =>
-          abstractConstAt (Base := Base) (Γ := Γ) (τ := .prop) c (σ :: Ξ) ψ) := by
+        (abstractConstAt (Base := Base) (Γ := Γ) (τ := .prop) c (σ :: Ξ)) := by
   simp [weakenHyps, List.map_map, Function.comp]
+
+/-- Push `abstractConstAt` through the `eq` constructor.
+
+This is the auto-generated `abstractConstAt` equation for the `.eq` case, restated as an
+explicit (non-`simp`) rewrite. Under Lean v4.31, `simp [abstractConstAt]` no longer fires
+the well-founded equation lemma on a derivation hypothesis once the surrounding `hctx ▸`
+transport has been collapsed, so the binder cases drive these by explicit `rw`. They are
+kept out of the global `simp` set to avoid disturbing the existing normal forms. -/
+theorem abstractConstAt_eq
+    {ρ : Ty Base} {c : Const ρ} (Ξ : Ctx Base) {τ : Ty Base}
+    (t u : Term Const (Ξ ++ Γ) τ) :
+    abstractConstAt (Base := Base) (Γ := Γ) c Ξ (.eq t u) =
+      .eq (abstractConstAt (Base := Base) (Γ := Γ) c Ξ t)
+        (abstractConstAt (Base := Base) (Γ := Γ) c Ξ u) := by
+  rw [abstractConstAt]
+
+/-- Push `abstractConstAt` through the `app` constructor (explicit rewrite). -/
+theorem abstractConstAt_app
+    {ρ : Ty Base} {c : Const ρ} (Ξ : Ctx Base) {α β : Ty Base}
+    (f : Term Const (Ξ ++ Γ) (α ⇒ β)) (t : Term Const (Ξ ++ Γ) α) :
+    abstractConstAt (Base := Base) (Γ := Γ) c Ξ (.app f t) =
+      .app (abstractConstAt (Base := Base) (Γ := Γ) c Ξ f)
+        (abstractConstAt (Base := Base) (Γ := Γ) c Ξ t) := by
+  rw [abstractConstAt]
+
+/-- Push `abstractConstAt` through the `var` constructor (explicit rewrite). -/
+theorem abstractConstAt_var
+    {ρ : Ty Base} {c : Const ρ} (Ξ : Ctx Base) {τ : Ty Base}
+    (v : Var (Ξ ++ Γ) τ) :
+    abstractConstAt (Base := Base) (Γ := Γ) c Ξ (.var v) =
+      .var (insertRen (Γ := Γ) (σ := ρ) Ξ v) := by
+  rw [abstractConstAt]
+
+/-- Push `abstractConstAt` through the `lam` constructor (explicit rewrite). -/
+theorem abstractConstAt_lam
+    {ρ : Ty Base} {c : Const ρ} (Ξ : Ctx Base) {α β : Ty Base}
+    (b : Term Const (α :: (Ξ ++ Γ)) β) :
+    abstractConstAt (Base := Base) (Γ := Γ) c Ξ (.lam b) =
+      .lam (abstractConstAt (Base := Base) (Γ := Γ) c (α :: Ξ) b) := by
+  rw [abstractConstAt]
+
+/-- Push `abstractConstAt` through the `all` constructor (explicit rewrite). -/
+theorem abstractConstAt_all
+    {ρ : Ty Base} {c : Const ρ} (Ξ : Ctx Base) {α : Ty Base}
+    (b : Formula Const (α :: (Ξ ++ Γ))) :
+    abstractConstAt (Base := Base) (Γ := Γ) (τ := .prop) c Ξ (.all b) =
+      .all (abstractConstAt (Base := Base) (Γ := Γ) (τ := .prop) c (α :: Ξ) b) := by
+  rw [abstractConstAt]
+
+/-- Push `abstractConstAt` through a two-sided `eq` of `weaken`-then-`var` applications.
+
+Stated as its own lemma so that, when applied at the binder-incremented prefix `σ :: Ξ`,
+the goal is consistently typed and the well-founded equation lemmas for `abstractConstAt`
+fire under full transparency (`simp [abstractConstAt]` cannot re-derive the `?Ξ ++ Γ`
+match at that depth in v4.31). -/
+theorem abstractConstAt_eqAppWeaken
+    {ρ σ τ : Ty Base} (c : Const ρ) (Ξ : Ctx Base)
+    (f g : Term Const (Ξ ++ Γ) (σ ⇒ τ)) :
+    abstractConstAt (Base := Base) (Γ := Γ) (τ := .prop) c (σ :: Ξ)
+        (.eq (.app (weaken (Base := Base) (σ := σ) f) (.var .vz))
+             (.app (weaken (Base := Base) (σ := σ) g) (.var .vz))) =
+      .eq (.app (weaken (Base := Base) (σ := σ)
+              (abstractConstAt (Base := Base) (Γ := Γ) c Ξ f)) (.var .vz))
+          (.app (weaken (Base := Base) (σ := σ)
+              (abstractConstAt (Base := Base) (Γ := Γ) c Ξ g)) (.var .vz)) := by
+  rw [abstractConstAt_eq (Γ := Γ) (c := c) (σ :: Ξ)
+        (.app (weaken (Base := Base) (σ := σ) f) (.var .vz))
+        (.app (weaken (Base := Base) (σ := σ) g) (.var .vz))]
+  rw [abstractConstAt_app (Γ := Γ) (c := c) (σ :: Ξ)
+        (weaken (Base := Base) (σ := σ) f) (.var .vz)]
+  rw [abstractConstAt_app (Γ := Γ) (c := c) (σ :: Ξ)
+        (weaken (Base := Base) (σ := σ) g) (.var .vz)]
+  rw [abstractConstAt_weaken Ξ f, abstractConstAt_weaken Ξ g]
+  rw [abstractConstAt_var (Γ := Γ) (c := c) (σ :: Ξ) Var.vz, insertRen, Rename.lift]
+
+/-- One-sided variant of `abstractConstAt_eqAppWeaken` for the `eta` body. -/
+theorem abstractConstAt_appWeaken
+    {ρ σ τ : Ty Base} (c : Const ρ) (Ξ : Ctx Base)
+    (f : Term Const (Ξ ++ Γ) (σ ⇒ τ)) :
+    abstractConstAt (Base := Base) (Γ := Γ) (τ := τ) c (σ :: Ξ)
+        (.app (weaken (Base := Base) (σ := σ) f) (.var .vz)) =
+      .app (weaken (Base := Base) (σ := σ)
+          (abstractConstAt (Base := Base) (Γ := Γ) c Ξ f)) (.var .vz) := by
+  rw [abstractConstAt_app (Γ := Γ) (c := c) (σ :: Ξ)
+        (weaken (Base := Base) (σ := σ) f) (.var .vz)]
+  rw [abstractConstAt_weaken Ξ f]
+  rw [abstractConstAt_var (Γ := Γ) (c := c) (σ :: Ξ) Var.vz, insertRen, Rename.lift]
+
+/-- Push `abstractConstAt` through the closed `funExt`-premise body in one step.
+
+Bundling the `all`/`eq`/`app`/`weaken`/`var` pushes into a single rewrite avoids the
+v4.31 `simp` matching gap at the binder-incremented depth (where `(σ :: Ξ) ++ Γ` and
+`σ :: (Ξ ++ Γ)` fail to unify under reducible transparency). -/
+theorem abstractConstAt_funextBody
+    {ρ σ τ : Ty Base} (c : Const ρ) (Ξ : Ctx Base)
+    (f g : Term Const (Ξ ++ Γ) (σ ⇒ τ)) :
+    abstractConstAt (Base := Base) (Γ := Γ) (τ := .prop) c Ξ
+        (.all (.eq (.app (weaken (Base := Base) (σ := σ) f) (.var .vz))
+                   (.app (weaken (Base := Base) (σ := σ) g) (.var .vz)))) =
+      .all (.eq (.app (weaken (Base := Base) (σ := σ)
+                  (abstractConstAt (Base := Base) (Γ := Γ) c Ξ f)) (.var .vz))
+                (.app (weaken (Base := Base) (σ := σ)
+                  (abstractConstAt (Base := Base) (Γ := Γ) c Ξ g)) (.var .vz))) := by
+  rw [abstractConstAt_all (Γ := Γ) (c := c) Ξ
+        (.eq (.app (weaken (Base := Base) (σ := σ) f) (.var .vz))
+             (.app (weaken (Base := Base) (σ := σ) g) (.var .vz)))]
+  congr 1
+  exact abstractConstAt_eqAppWeaken (Γ := Γ) (c := c) (σ := σ) Ξ f g
+
+/-- Push `abstractConstAt` through the closed `eta`-equation body in one step. -/
+theorem abstractConstAt_etaBody
+    {ρ σ τ : Ty Base} (c : Const ρ) (Ξ : Ctx Base)
+    (f : Term Const (Ξ ++ Γ) (σ ⇒ τ)) :
+    abstractConstAt (Base := Base) (Γ := Γ) (τ := .prop) c Ξ
+        (.eq (.lam (.app (weaken (Base := Base) (σ := σ) f) (.var .vz))) f) =
+      .eq (.lam (.app (weaken (Base := Base) (σ := σ)
+              (abstractConstAt (Base := Base) (Γ := Γ) c Ξ f)) (.var .vz)))
+          (abstractConstAt (Base := Base) (Γ := Γ) c Ξ f) := by
+  rw [abstractConstAt_eq (Γ := Γ) (c := c) Ξ
+        (.lam (.app (weaken (Base := Base) (σ := σ) f) (.var .vz))) f]
+  congr 1
+  rw [abstractConstAt_lam (Γ := Γ) (c := c) Ξ
+        (.app (weaken (Base := Base) (σ := σ) f) (.var .vz))]
+  congr 1
+  exact abstractConstAt_appWeaken (Γ := Γ) (c := c) (σ := σ) Ξ f
 
 @[simp] theorem rename_instantiate
     {Γ' : Ctx Base}
@@ -370,7 +493,7 @@ theorem mapConst
       exact .eqAppArg (Mettapedia.Logic.HOL.mapConst f g) ih
   | eqLam h ih =>
       exact .eqLam (by
-        simpa [mapConst_weakenHyps] using ih)
+        simpa [Mettapedia.Logic.HOL.mapConst, mapConst_weakenHyps] using ih)
   | funExt h ih =>
       exact .funExt (by
         simpa [Mettapedia.Logic.HOL.mapConst, Mettapedia.Logic.HOL.mapConst_weaken] using ih)
@@ -453,7 +576,7 @@ theorem substConst_derivation
       exact .eqAppArg (Mettapedia.Logic.HOL.substConst f g) ih
   | eqLam h ih =>
       exact .eqLam (by
-        simpa [substConst_weakenHyps] using ih)
+        simpa [Mettapedia.Logic.HOL.substConst, substConst_weakenHyps] using ih)
   | funExt h ih =>
       exact .funExt (by
         simpa [Mettapedia.Logic.HOL.substConst, Mettapedia.Logic.HOL.substConst_weaken] using ih)
@@ -501,7 +624,7 @@ theorem rename
       exact .impE (ihimp ρ) (ihφ ρ)
   | notI h ih =>
       exact .notI (by
-        simpa [List.map] using ih ρ)
+        simpa [List.map, Mettapedia.Logic.HOL.rename] using ih ρ)
   | notE hnot hφ ihnot ihφ =>
       exact .notE (ihnot ρ) (ihφ ρ)
   | allI h ih =>
@@ -548,21 +671,21 @@ theorem rename
   | eqLam h ih =>
       rename_i Γ₀ Δ₀ σ τ t u
       exact .eqLam (by
-        simpa [rename_weakenHyps] using
+        simpa [Mettapedia.Logic.HOL.rename, rename_weakenHyps] using
           ih (Rename.lift (Base := Base) (σ := σ) ρ))
   | funExt h ih =>
       rename_i Γ₀ Δ₀ σ τ f g
       exact .funExt (by
-        simpa [Mettapedia.Logic.HOL.rename, rename_weaken] using ih ρ)
+        simpa [Mettapedia.Logic.HOL.rename, Rename.lift, rename_weaken] using ih ρ)
   | beta t u =>
       rename_i Γ₀ Δ₀ σ τ
-      simpa [Mettapedia.Logic.HOL.rename, rename_instantiate] using
+      simpa [Mettapedia.Logic.HOL.rename, Rename.lift, rename_instantiate] using
         (.beta (Mettapedia.Logic.HOL.rename ρ t)
           (Mettapedia.Logic.HOL.rename
             (Rename.lift (Base := Base) (σ := σ) ρ) u))
   | eta f =>
       rename_i Γ₀ Δ₀ σ τ
-      simpa [Mettapedia.Logic.HOL.rename, rename_weaken] using
+      simpa [Mettapedia.Logic.HOL.rename, Rename.lift, rename_weaken] using
         (.eta (Mettapedia.Logic.HOL.rename ρ f))
 
 /-- The theorem on constants: abstracting a constant from a derivation.
@@ -748,21 +871,40 @@ theorem abstractConstAt_deriv
         intro Γ Ξ ρ hctx c
         subst hctx
         rename_i _ σ τ Δ t u
+        have e :
+            ExtDerivation Const
+              (List.map (abstractConstAt (Base := Base) (Γ := Γ) c (σ :: Ξ))
+                (weakenHyps (Base := Base) (Const := Const) (σ := σ) Δ))
+              (abstractConstAt (Base := Base) (Γ := Γ) c (σ :: Ξ) (.eq t u)) :=
+          ih (Γ := Γ) (Ξ := σ :: Ξ) rfl c
+        rw [abstractConstAt_eq (Γ := Γ) (c := c) (σ :: Ξ) t u] at e
         have ih' :
             ExtDerivation Const
               (weakenHyps (Base := Base) (Const := Const) (σ := σ)
                 (Δ.map (abstractConstAt (Base := Base) (Γ := Γ) c Ξ)))
               (.eq (abstractConstAt (Base := Base) (Γ := Γ) c (σ :: Ξ) t)
                 (abstractConstAt (Base := Base) (Γ := Γ) c (σ :: Ξ) u)) := by
-          simpa [abstractConstAt, abstractConstAt_weakenHyps] using
-            (ih (Γ := Γ) (Ξ := σ :: Ξ) rfl c)
-        simpa [abstractConstAt] using (.eqLam ih')
+          rw [abstractConstAt_weakenHyps]; exact e
+        rw [abstractConstAt_eq (Γ := Γ) (c := c) Ξ (.lam t) (.lam u),
+          abstractConstAt_lam, abstractConstAt_lam]
+        exact .eqLam ih'
     | funExt h ih =>
         intro Γ Ξ ρ hctx c
         subst hctx
-        simpa [abstractConstAt, abstractConstAt_weaken] using
-          (.funExt (by
-            simpa [abstractConstAt, abstractConstAt_weaken] using ih rfl c))
+        rename_i σ τ Δ₀ f g
+        have e :
+            ExtDerivation Const
+              (List.map (abstractConstAt (Base := Base) (Γ := Γ) c Ξ) Δ₀)
+              (abstractConstAt (Base := Base) (Γ := Γ) c Ξ
+                (.all (.eq (.app (weaken (Base := Base) (σ := σ) f) (.var .vz))
+                           (.app (weaken (Base := Base) (σ := σ) g) (.var .vz))))) :=
+          ih (Γ := Γ) (Ξ := Ξ) rfl c
+        rw [abstractConstAt_funextBody (Γ := Γ) (c := c) Ξ f g] at e
+        show ExtDerivation Const
+            (List.map (abstractConstAt (Base := Base) (Γ := Γ) c Ξ) Δ₀)
+            (abstractConstAt (Base := Base) (Γ := Γ) c Ξ (.eq f g))
+        rw [abstractConstAt_eq (Γ := Γ) (c := c) Ξ f g]
+        exact .funExt e
     | beta t u =>
         intro Γ Ξ ρ hctx c
         subst hctx
@@ -772,8 +914,13 @@ theorem abstractConstAt_deriv
     | eta f =>
         intro Γ Ξ ρ hctx c
         subst hctx
-        simpa [abstractConstAt, abstractConstAt_weaken] using
-          (.eta (abstractConstAt (Base := Base) (Γ := Γ) c Ξ f))
+        rename_i σ τ Δ₀
+        show ExtDerivation Const
+            (List.map (abstractConstAt (Base := Base) (Γ := Γ) c Ξ) Δ₀)
+            (abstractConstAt (Base := Base) (Γ := Γ) c Ξ
+              (.eq (.lam (.app (weaken (Base := Base) (σ := σ) f) (.var .vz))) f))
+        rw [abstractConstAt_etaBody (Γ := Γ) (c := c) Ξ f]
+        exact .eta (abstractConstAt (Base := Base) (Γ := Γ) c Ξ f)
   simpa using go d rfl c
 
 theorem closedTheory_mapConst

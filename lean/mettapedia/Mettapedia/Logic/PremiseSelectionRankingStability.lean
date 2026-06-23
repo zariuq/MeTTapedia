@@ -119,8 +119,11 @@ theorem bayesRanking_stable_of_weakNegative_margin
       (η := η) (s := s) (δ := δ) (ε := w)
       hopt hbound hmargin htieδ
   -- `weakNegativeAdjusted` is exactly this perturbation form.
-  simpa [weakNegativeAdjusted, perturbedScore, δ, sub_eq_add_neg, add_comm, add_left_comm,
-    add_assoc, mul_comm] using hstable
+  have hscore :
+      weakNegativeAdjusted s z w = perturbedScore s δ := by
+    funext x
+    simp [weakNegativeAdjusted, perturbedScore, δ, sub_eq_add_neg]
+  exact ranking_transfer η (weakNegativeAdjusted s z w) (perturbedScore s δ) hscore hstable
 
 /-- Support-bias perturbation theorem:
 adding `λ * u(x)` with `u(x) ∈ [0,1]` preserves Bayes ranking under margin `> 2λ`
@@ -152,6 +155,10 @@ theorem bayesRanking_stable_of_support_bias_margin
     bayesRanking_stable_of_margin_and_tie_equivariant
       (η := η) (s := s) (δ := δ) (ε := lam)
       hopt hbound hmargin htieδ
-  simpa [perturbedScore, δ, add_comm, add_left_comm, add_assoc] using hstable
+  have hscore :
+      (fun x => s x + lam * u x) = perturbedScore s δ := by
+    funext x
+    simp [perturbedScore, δ]
+  exact ranking_transfer η (fun x => s x + lam * u x) (perturbedScore s δ) hscore hstable
 
 end Mettapedia.Logic.PremiseSelectionOptimality

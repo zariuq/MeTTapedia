@@ -262,10 +262,11 @@ omit [Fact (0 < m)] in
     rowExtract (k := k) (m := m) (W₁ + W₂) ctx =
       rowExtract (k := k) (m := m) W₁ ctx +
         rowExtract (k := k) (m := m) W₂ ctx := by
-  simpa [rowExtract] using
-    (AdditiveWorldModel.extract_add'
-      (State := Multiset (HigherOrderObservation k m))
-      (Query := Context k m) (Ev := MultiEvidence k) W₁ W₂ ctx)
+  change AdditiveWorldModel.extract (W₁ + W₂) ctx =
+    AdditiveWorldModel.extract W₁ ctx + AdditiveWorldModel.extract W₂ ctx
+  exact AdditiveWorldModel.extract_add'
+    (State := Multiset (HigherOrderObservation k m))
+    (Query := Context k m) (Ev := MultiEvidence k) W₁ W₂ ctx
 
 omit [Fact (0 < m)] in
 /-- The higher-order observation multiset extracted from a word yields exactly

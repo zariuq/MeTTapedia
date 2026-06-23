@@ -2163,14 +2163,16 @@ theorem instantiateBaseExecFact_toBaseStep?
     (instantiateBaseExecFact execAtom step).toBaseStep? = some step := by
   cases step with
   | mk qid result priority inBase =>
-      have hd1 : Nat.decLe 32 priority = isTrue inBase.1 := by
+      have hinBase : 32 ≤ priority ∧ priority ≤ 63 := by
+        simpa [inPhase, phaseRange] using inBase
+      have hd1 : Nat.decLe 32 priority = isTrue hinBase.1 := by
         cases h : Nat.decLe 32 priority with
         | isTrue h' => simp
-        | isFalse h' => exact (False.elim (h' inBase.1))
-      have hd2 : Nat.decLe priority 63 = isTrue inBase.2 := by
+        | isFalse h' => exact (False.elim (h' hinBase.1))
+      have hd2 : Nat.decLe priority 63 = isTrue hinBase.2 := by
         cases h : Nat.decLe priority 63 with
         | isTrue h' => simp
-        | isFalse h' => exact (False.elim (h' inBase.2))
+        | isFalse h' => exact (False.elim (h' hinBase.2))
       simp [instantiateBaseExecFact, ExecFact.toBaseStep?, mkExecRule, mkPattern, mkTemplate, hd1, hd2]
 
 /-- The encoded unfold exec fact has exactly the unfold template shape needed by
@@ -2245,7 +2247,7 @@ theorem instantiateBaseStep_fireExecFact_exact
     simpa [ef, step, instantiateBaseStep] using
       consumeExec_instantiateBaseExecFact_singleton execAtom step hneq
   rw [hcons] at hexact
-  simpa [step, instantiateBaseStep, applyBase, compileBaseStep] using hexact
+  simpa [ef, step, instantiateBaseStep, instantiateBaseExecFact, applyBase, compileBaseStep] using hexact
 
 /-- Scheduler-level exactness for the singleton instantiated unfold step. -/
 theorem instantiateUnfoldStep_fireExecFact_exact
@@ -2282,7 +2284,8 @@ theorem instantiateUnfoldStep_fireExecFact_exact
     simpa [ef, step, instantiateUnfoldStep] using
       consumeExec_instantiateUnfoldExecFact_singleton execAtom step hneq
   rw [hcons] at hexact
-  simpa [step, instantiateUnfoldStep, defaultWaitAtom, applyUnfold, compileUnfoldStep] using hexact
+  simpa [ef, step, instantiateUnfoldStep, instantiateUnfoldExecFact, defaultWaitAtom,
+    applyUnfold, compileUnfoldStep] using hexact
 
 /-- Scheduler-level exactness for the singleton instantiated fold step. -/
 theorem instantiateFoldStep_fireExecFact_exact

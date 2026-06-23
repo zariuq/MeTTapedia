@@ -154,7 +154,7 @@ noncomputable def checkImportedPureCertificateUpToConv
   convertCheckedPureCertificate
     (checkImportedPureCertificate imported sourceType typing)
     targetType
-    (by simpa using hconv)
+    (by simpa [checkImportedPureCertificate] using hconv)
 
 theorem checkImportedPureCertificateUpToConv_term
     (imported : PureCertificateImport)
@@ -386,7 +386,9 @@ theorem PureCheckingBoundary.checkClosedTerm_typing
     HasType .nil
       (svc.checkClosedTerm term claimedType typing).term
       claimedType := by
-  simpa [PureCheckingBoundary.checkClosedTerm] using typing
+  simpa [PureCheckingBoundary.checkClosedTerm, PureCheckingBoundary.checkImported,
+    checkImportedPureCertificate, CheckedPureCertificate.term, closedPureImport,
+    PureCertificateImport.term] using typing
 
 /-! ## Declaration-aware closed constant checking -/
 

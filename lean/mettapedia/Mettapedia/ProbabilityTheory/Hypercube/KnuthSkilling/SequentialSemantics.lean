@@ -1,4 +1,8 @@
-import Mettapedia.ProbabilityTheory.KnuthSkilling.Additive.Axioms.SandwichSeparation
+/-
+Knuth–Skilling slice of the probability hypercube. See the aggregator
+`Mettapedia/ProbabilityTheory/Hypercube/KnuthSkilling.lean` for the overview.
+-/
+import KnuthSkilling.Additive.Axioms.SandwichSeparation
 
 /-!
 # K&S Neighbor Theory: Sequential (Noncommutative) Semantics
@@ -18,11 +22,15 @@ and define a general notion of *process semantics* (monoid action-style), plus t
 instance given by right-multiplication.
 -/
 
+set_option autoImplicit false
+
 namespace Mettapedia.ProbabilityTheory.Hypercube.KnuthSkilling.SequentialSemantics
 
 open Classical
-open Mettapedia.ProbabilityTheory.KnuthSkilling
-open KnuthSkillingAlgebraBase
+-- `_root_.` forces the standalone K&S package; the enclosing
+-- `…Hypercube.KnuthSkilling` namespace would otherwise shadow `KnuthSkilling`.
+open _root_.KnuthSkilling
+open _root_.KnuthSkilling.KnuthSkillingAlgebraBase
 
 variable {α : Type*} [KnuthSkillingAlgebraBase α]
 

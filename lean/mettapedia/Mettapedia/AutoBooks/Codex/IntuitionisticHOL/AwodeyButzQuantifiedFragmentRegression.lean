@@ -30,12 +30,13 @@ theorem derivable_forallPropSelfImp :
   simp [forallPropSelfImp, SimpleQuantifiedFormula.toFormula]
   apply Derivable.allR
   apply Derivable.impR
-  exact Derivable.ax (by simp)
+  exact Derivable.ax (List.mem_singleton_self _)
 
 theorem semilocalTruth_forallPropSelfImp_model :
     SimpleQuantifiedFormula.semilocalTruth model emptyEnv forallPropSelfImp = ⊤ := by
   rw [SimpleQuantifiedFormula.semilocalTruth_toFormula]
   simp [forallPropSelfImp, SimpleQuantifiedFormula.toFormula, model]
+  trivial
 
 theorem globalTruth_forallPropSelfImp
     (M : GlobalModel BaseSort Const)

@@ -97,7 +97,7 @@ theorem policy_sum_toReal_eq_one (π : Agent) (h : History) (hw : h.wellFormed) 
       have : π.policy h a ≤ ∑ b ∈ (Finset.univ : Finset Action), π.policy h b := by
         refine Finset.single_le_sum ?_ (by simp)
         intro b _hb
-        exact zero_le _
+        exact bot_le
       simpa using this
     have ha_le_one : π.policy h a ≤ 1 := by
       simpa [hsum] using ha_le_sum
@@ -279,10 +279,10 @@ noncomputable def dogmaticMixture (ξ : Environment) (targetAction : Action)
          ENNReal.ofReal (ε/2) * ∑' x, ξ.prob h x
         ≤ (1/2) * 1 + (1/2) * 1 := by
           apply add_le_add
-          · exact mul_le_mul_left' hdog_le _
+          · exact mul_le_mul_right hdog_le _
           · calc ENNReal.ofReal (ε/2) * ∑' x, ξ.prob h x
-                ≤ (1/2) * ∑' x, ξ.prob h x := mul_le_mul_right' hε2_le _
-              _ ≤ (1/2) * 1 := mul_le_mul_left' hξ_le _
+                ≤ (1/2) * ∑' x, ξ.prob h x := mul_le_mul_left hε2_le _
+              _ ≤ (1/2) * 1 := mul_le_mul_right hξ_le _
       _ = 1 := by simpa using ENNReal.inv_two_add_inv_two
 
 /-! ### Main Theorem Statement
@@ -330,7 +330,7 @@ theorem optimalQValue_horizon1_le_one (μ : Environment) (γ : DiscountFactor) (
           have : μ.prob ha x ≤ ∑ y ∈ (Finset.univ : Finset Percept), μ.prob ha y := by
             refine Finset.single_le_sum ?_ (by simp)
             intro y _hy
-            exact zero_le _
+            exact bot_le
           simpa using this
         have hx_le_one : μ.prob ha x ≤ 1 := hx_le_sum.trans hprob_le_one
         exact ne_top_of_le_ne_top ENNReal.one_ne_top hx_le_one
@@ -435,7 +435,7 @@ theorem dogmaticMixture_prefers_target_horizon1 (ξ : Environment) (γ : Discoun
         have : μm.prob ha x ≤ ∑ y ∈ (Finset.univ : Finset Percept), μm.prob ha y := by
           refine Finset.single_le_sum ?_ (by simp)
           intro y _hy
-          exact zero_le _
+          exact bot_le
         simpa using this
       exact hx_le_sum.trans hprob_le_one
     have hprob_ne_top : ∀ x : Percept, μm.prob ha x ≠ (⊤ : ENNReal) := by
@@ -460,7 +460,7 @@ theorem dogmaticMixture_prefers_target_horizon1 (ξ : Environment) (γ : Discoun
       -- Use monotonicity of `ENNReal.toReal` on finite values.
       have hle : (1/2 : ENNReal) * ξ.prob ha x ≤ μm.prob ha x := by
         -- `a ≤ a + b` with `b ≥ 0`.
-        have hnonneg : 0 ≤ w * ξ.prob ha x := mul_nonneg (zero_le _) (zero_le _)
+        have hnonneg : 0 ≤ w * ξ.prob ha x := mul_nonneg bot_le bot_le
         rw [hprob]
         exact le_add_of_nonneg_right hnonneg
       exact ENNReal.toReal_mono (hprob_ne_top x) hle

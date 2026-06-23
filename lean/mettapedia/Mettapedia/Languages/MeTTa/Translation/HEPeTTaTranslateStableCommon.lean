@@ -487,9 +487,9 @@ theorem translatePeTTa_foldall_preserves_stableCommonForm
   have hhead : isStableCommonHead (.symbol name) = true := by
     simpa [isStableCommonHead, isStableCommonForm] using hnot
   let accVar : Atom :=
-    .var ("$__tr_acc_" ++ toString ((translatePeTTa init (translatePeTTa goal s).2).2 + 1 + 1))
+    .var ("$__tr_acc_" ++ ((translatePeTTa init (translatePeTTa goal s).2).2 + 1 + 1).repr)
   let itemVar : Atom :=
-    .var ("$__tr_item_" ++ toString ((translatePeTTa init (translatePeTTa goal s).2).2 + 1 + 1 + 1))
+    .var ("$__tr_item_" ++ ((translatePeTTa init (translatePeTTa goal s).2).2 + 1 + 1 + 1).repr)
   have happ : isStableCommonForm (.expression [.symbol name, accVar, itemVar]) = true := by
     have hcons := stableCommonForm_cons_of_head (.symbol name) [accVar, itemVar] hhead
     rw [hcons]
@@ -513,9 +513,9 @@ theorem translatePeTTa_foldlAtomShort_preserves_stableCommonForm
   have hhead : isStableCommonHead (.symbol name) = true := by
     simpa [isStableCommonHead, isStableCommonForm] using hnot
   let accVar : Atom :=
-    .var ("$__tr_acc_" ++ toString ((translatePeTTa init (translatePeTTa xs s).2).2 + 1))
+    .var ("$__tr_acc_" ++ ((translatePeTTa init (translatePeTTa xs s).2).2 + 1).repr)
   let itemVar : Atom :=
-    .var ("$__tr_item_" ++ toString ((translatePeTTa init (translatePeTTa xs s).2).2 + 1 + 1))
+    .var ("$__tr_item_" ++ ((translatePeTTa init (translatePeTTa xs s).2).2 + 1 + 1).repr)
   have happ : isStableCommonForm (.expression [.symbol name, accVar, itemVar]) = true := by
     have hcons := stableCommonForm_cons_of_head (.symbol name) [accVar, itemVar] hhead
     rw [hcons]

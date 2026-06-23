@@ -45,18 +45,14 @@ theorem abstractConstAt_nil_instantiate_const
       = (Term.var (varAtDepth (Γ := Γ) (σ := σ) []) : Term Const (σ :: Γ) σ) := by
     simp only [abstractConstAt]
     split
-    · simp only [cast_eq]
+    · rfl
     · next heq => exact absurd trivial heq
   rw [hconst]
   -- The remaining goal is the pure renaming identity
   --   `instantiate (.var vz) (rename (insertRen [σ]) φ) = φ`.
   unfold instantiate
-  rw [subst_rename]
-  refine Eq.trans (subst_ext ?_ φ) (subst_id φ)
-  intro τ' v
-  cases v with
-  | vz => rfl
-  | vs w => rfl
+  exact (subst_rename _ _ φ).trans
+    ((subst_ext (fun v => by cases v <;> rfl) φ).trans (subst_id φ))
 
 /-- Fresh-parameter `∀`-introduction at the derivation level: if `c : Const σ`
 occurs in neither the hypotheses `Δ` nor the body `φ`, then a derivation of the
@@ -74,8 +70,8 @@ theorem ExtDerivation.allI_fresh
     apply List.map_congr_left
     intro ψ hψ
     exact abstractConstAt_noOccurrence (c := c) [] ψ (hΔ ψ hψ)
-  rw [hmap, abstractConstAt_nil_instantiate_const c φ hφ] at key
-  exact ExtDerivation.allI key
+  rw [hmap] at key
+  exact ExtDerivation.allI (abstractConstAt_nil_instantiate_const c φ hφ ▸ key)
 
 namespace ClosedTheorySet
 

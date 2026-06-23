@@ -88,7 +88,7 @@ theorem frechet_lower_bound
   rw [← h_inter]
   apply max_le
   · -- 0 ≤ μ A + μ B - μ (A ∪ B)
-    exact zero_le _
+    exact zero_le
   · -- μ A + μ B - 1 ≤ μ A + μ B - μ (A ∪ B)
     -- This holds because μ (A ∪ B) ≤ 1
     exact tsub_le_tsub_left h_union_le_one _

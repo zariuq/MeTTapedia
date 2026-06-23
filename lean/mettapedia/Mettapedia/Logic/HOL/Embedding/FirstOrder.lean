@@ -195,8 +195,18 @@ theorem denote_mkApps {L : Language.{u}} {M : Type w} (s : Structure L M)
           (fun i => HenkinModel.denote (standardModel s) (v i) ρ)
   | 0, t, v => rfl
   | k + 1, t, v => by
-      simpa [Term.mkApps, Const.applyCurried] using
-        (denote_mkApps s (ρ := ρ) (τ := τ) (t := .app t (v 0)) (v := fun i => v i.succ))
+      calc
+        HenkinModel.denote (standardModel s)
+            (Term.mkApps (τ := τ) (.app t (v 0)) (fun i => v i.succ)) ρ =
+          Const.applyCurried (τ := τ) (k := k)
+            (HenkinModel.denote (standardModel s) (.app t (v 0)) ρ)
+            (fun i => HenkinModel.denote (standardModel s) (v i.succ) ρ) := by
+              exact denote_mkApps s (ρ := ρ) (τ := τ)
+                (t := .app t (v 0)) (v := fun i => v i.succ)
+        _ = Const.applyCurried (τ := τ) (k := k)
+            (HenkinModel.denote (standardModel s) t ρ
+              (HenkinModel.denote (standardModel s) (v 0) ρ))
+            (fun i => HenkinModel.denote (standardModel s) (v i.succ) ρ) := rfl
 
 theorem denote_embedSemiterm {L : Language.{u}} {M : Type w} (s : Structure L M)
     {n : ℕ} (t : ClosedSemiterm L n) (e : Fin n → M) :
@@ -312,15 +322,19 @@ theorem denote_embedSemiformula_iff {L : Language.{u}} {M : Type w} (s : Structu
       (HenkinModel.denote (standardModel s) (embedSemiformula φ) (envVal s e)).down ↔
         Semiformula.Evalb s e φ
   | _, φ, e => by
-      simpa [Semiformula.Evalb, Semiformula.Eval] using
-        (denote_embedSemiformula_iffAux s (φ := φ) (e := e))
+      change
+        (HenkinModel.denote (standardModel s) (embedSemiformula φ) (envVal s e)).down ↔
+          Semiformula.EvalAux s Empty.elim e φ
+      exact denote_embedSemiformula_iffAux s (φ := φ) (e := e)
 
 /-- Truth preservation for first-order sentences in the induced standard HOL model. -/
 theorem denote_embedSentence_iff {L : Language.{u}} {M : Type w} (s : Structure L M)
     (φ : LO.FirstOrder.Sentence L) :
     (HenkinModel.denote (standardModel s) (embedSentence φ) (fun v => nomatch v)).down ↔
       Semiformula.Evalb s ![] φ := by
-  simpa [embedSentence, envVal] using
-    (denote_embedSemiformula_iff s (φ := φ) (e := ![]))
+  change
+    (HenkinModel.denote (standardModel s) (embedSemiformula φ) (envVal s ![])).down ↔
+      Semiformula.EvalAux s Empty.elim ![] φ
+  exact denote_embedSemiformula_iffAux s (φ := φ) (e := ![])
 
 end Mettapedia.Logic.HOL.Embedding.FirstOrder

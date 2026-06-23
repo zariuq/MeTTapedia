@@ -58,13 +58,17 @@ instance : EvidenceType ToyState := { (inferInstance : AddCommMonoid ToyState) w
 def supportToken (W : ToyState) : BinaryEvidence :=
   ⟨(W : ℝ≥0∞), 0⟩
 
+@[simp] theorem binaryEvidence_zero_pos : (0 : BinaryEvidence).pos = 0 := by
+  change BinaryEvidence.zero.pos = 0
+  rfl
+
+@[simp] theorem binaryEvidence_zero_neg : (0 : BinaryEvidence).neg = 0 := by
+  change BinaryEvidence.zero.neg = 0
+  rfl
+
 @[simp] theorem supportToken_zero :
     supportToken 0 = 0 := by
-  apply BinaryEvidence.ext'
-  · change (0 : ℝ≥0∞) = 0
-    rfl
-  · change (0 : ℝ≥0∞) = 0
-    rfl
+  ext <;> simp [supportToken]
 
 @[simp] theorem supportToken_add (W₁ W₂ : ToyState) :
     supportToken (W₁ + W₂) = supportToken W₁ + supportToken W₂ := by
@@ -110,46 +114,46 @@ instance : BinaryWorldModel ToyState (AtomQuery OntologyAtom) where
         | member x c =>
             simpa [BinaryEvidence.hplus_def] using
               ite_supportToken_add (p := x ∈ conceptExtent c) W₁ W₂
-        | extensional c => rfl
-        | assoc c => rfl
-        | pat c => rfl
+        | extensional c => simp
+        | assoc c => simp
+        | pat c => simp
     | link a b =>
         cases a with
         | member x c =>
-            cases b <;> rfl
+            cases b <;> simp
         | extensional a =>
             cases b with
             | extensional b =>
                 simpa [subsetSummary, BinaryEvidence.hplus_def] using
                   ite_supportToken_add (p := conceptExtent a ⊆ conceptExtent b) W₁ W₂
-            | member x c => rfl
-            | assoc c => rfl
-            | pat c => rfl
+            | member x c => simp
+            | assoc c => simp
+            | pat c => simp
         | assoc a =>
             cases b with
             | assoc b =>
                 simpa [BinaryEvidence.hplus_def] using
                   ite_supportToken_add
                     (p := (a = .penguin ∧ b = .bird) ∨ (a = .bird ∧ b = .fly)) W₁ W₂
-            | member x c => rfl
-            | extensional c => rfl
-            | pat c => rfl
+            | member x c => simp
+            | extensional c => simp
+            | pat c => simp
         | pat a =>
             cases b with
             | pat b =>
                 simpa [BinaryEvidence.hplus_def] using
                   ite_supportToken_add (p := a = .penguin ∧ b = .bird) W₁ W₂
-            | member x c => rfl
-            | extensional c => rfl
-            | assoc c => rfl
+            | member x c => simp
+            | extensional c => simp
+            | assoc c => simp
     | linkCond xs a =>
-        simp [BinaryEvidence.hplus_def]
+        simp
   evidence_zero q := by
     cases q with
     | prop a =>
         cases a with
         | member x c =>
-            simpa using ite_supportToken_zero (p := x ∈ conceptExtent c)
+            simp
         | extensional c => rfl
         | assoc c => rfl
         | pat c => rfl
@@ -160,24 +164,21 @@ instance : BinaryWorldModel ToyState (AtomQuery OntologyAtom) where
         | extensional a =>
             cases b with
             | extensional b =>
-                simpa [subsetSummary] using
-                  ite_supportToken_zero (p := conceptExtent a ⊆ conceptExtent b)
+                simp [subsetSummary]
             | member x c => rfl
             | assoc c => rfl
             | pat c => rfl
         | assoc a =>
             cases b with
             | assoc b =>
-                simpa using
-                  ite_supportToken_zero
-                    (p := (a = .penguin ∧ b = .bird) ∨ (a = .bird ∧ b = .fly))
+                simp
             | member x c => rfl
             | extensional c => rfl
             | pat c => rfl
         | pat a =>
             cases b with
             | pat b =>
-                simpa using ite_supportToken_zero (p := a = .penguin ∧ b = .bird)
+                simp
             | member x c => rfl
             | extensional c => rfl
             | assoc c => rfl
@@ -214,12 +215,14 @@ theorem subsetSummary_mono
   · have hCD : C ⊆ D := by
       intro x hxC
       exact hBD (hAB (hCA hxC))
-    simp [subsetSummary, hAB, hCD, supportToken, BinaryEvidence.le_def]
+    simp [subsetSummary, hAB, hCD, supportToken]
   · by_cases hCD : C ⊆ D
-    · simpa [subsetSummary, hAB, hCD, supportToken, BinaryEvidence.le_def] using
-        (show (0 : ℝ≥0∞) ≤ (W : ℝ≥0∞) ∧ (0 : ℝ≥0∞) ≤ 0 by
-          exact ⟨bot_le, le_rfl⟩)
-    · simp [subsetSummary, hAB, hCD, BinaryEvidence.le_def]
+    · dsimp [subsetSummary]
+      rw [if_neg hAB, if_pos hCD]
+      constructor
+      · exact bot_le
+      · rfl
+    · simp [subsetSummary, hAB, hCD]
 
 def activeExtent (W : ToyState) (c : Concept) : Set Creature :=
   if W = 0 then ∅ else conceptExtent c
@@ -245,12 +248,37 @@ theorem crispExtentAt_eq_activeExtent (W : ToyState) (c : Concept) :
   rw [MembershipQueryBuilder.mem_crispExtentAt_iff, activeExtent]
   by_cases hW : W = 0
   · by_cases hx : x ∈ conceptExtent c
-    · simp [memberEvidence_eq_support, gate, hW, hx, conceptExtent, supportToken_zero]
-    · simp [memberEvidence_eq_support, gate, hW, hx, conceptExtent, supportToken_zero]
+    · rw [if_pos hW, memberEvidence_eq_support, if_pos hx]
+      constructor
+      · intro h
+        have hf : False := by
+          simp [gate, hW, supportToken_zero] at h
+        exact False.elim hf
+      · intro h
+        cases h
+    · rw [if_pos hW, memberEvidence_eq_support, if_neg hx]
+      constructor
+      · intro h
+        have hf : False := by
+          simp [gate] at h
+        exact False.elim hf
+      · intro h
+        cases h
   · by_cases hx : x ∈ conceptExtent c
-    · simpa [memberEvidence_eq_support, gate, hW, hx, conceptExtent] using
-        supportToken_pos_of_ne_zero hW
-    · simp [memberEvidence_eq_support, gate, hW, hx, conceptExtent]
+    · rw [if_neg hW, memberEvidence_eq_support, if_pos hx]
+      constructor
+      · intro _
+        exact hx
+      · intro _
+        simpa [gate] using supportToken_pos_of_ne_zero hW
+    · rw [if_neg hW, memberEvidence_eq_support, if_neg hx]
+      constructor
+      · intro h
+        have hf : False := by
+          simp [gate] at h
+        exact False.elim hf
+      · intro h
+        exact False.elim (hx h)
 
 def factorization :
     ExtensionalHookFactorization

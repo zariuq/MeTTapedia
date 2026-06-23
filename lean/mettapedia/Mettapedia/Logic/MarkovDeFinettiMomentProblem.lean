@@ -66,10 +66,8 @@ lemma continuous_toProd : Continuous (toProd (k := k)) :=
 
 lemma continuous_ofProd : Continuous (ofProd (k := k)) := by
   have : Continuous ((toProd (k := k)) ∘ (ofProd (k := k))) := by
-    simpa using
-      (continuous_id :
-        Continuous (fun p :
-          ProbabilityMeasure (Fin k) × (Fin k → ProbabilityMeasure (Fin k)) => p))
+    simp only [Function.comp_def, toProd_ofProd]
+    exact continuous_id
   exact (continuous_induced_rng (f := toProd (k := k)) (g := ofProd (k := k))).2 this
 
 noncomputable def homeomorphProd :
@@ -145,7 +143,7 @@ private lemma continuous_apply_singleton (b : Fin k) :
 private lemma continuous_initProb (a : Fin k) :
     Continuous (fun θ : MarkovParam k => initProb (k := k) θ a) := by
   have hθ : Continuous (fun θ : MarkovParam k => θ.init) := by
-    simpa [MarkovParam.toProd] using
+    simpa [MarkovParam.toProd, Function.comp_def] using
       (continuous_fst.comp (MarkovParam.continuous_toProd (k := k)))
   exact (continuous_apply_singleton (k := k) a).comp hθ
 
@@ -174,7 +172,7 @@ private lemma continuous_wordProbAux (a : Fin k) :
   induction xs generalizing a with
   | nil => simpa [wordProbAux] using continuous_const
   | cons b xs ih =>
-    simpa [wordProbAux] using (continuous_stepProb (k := k) a b).mul (ih (a := b))
+    simpa [wordProbAux, Pi.mul_def] using (continuous_stepProb (k := k) a b).mul (ih (a := b))
 
 theorem continuous_wordProbNN :
     ∀ xs : List (Fin k), Continuous (fun θ : MarkovParam k => wordProbNN (k := k) θ xs) := by
@@ -182,7 +180,7 @@ theorem continuous_wordProbNN :
   cases xs with
   | nil => simpa [wordProbNN] using continuous_const
   | cons a xs =>
-    simpa [wordProbNN] using
+    simpa [wordProbNN, Pi.mul_def] using
       (continuous_initProb (k := k) a).mul (continuous_wordProbAux (k := k) (a := a) xs)
 
 theorem continuous_wordProb :

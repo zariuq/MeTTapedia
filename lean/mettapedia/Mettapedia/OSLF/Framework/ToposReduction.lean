@@ -35,7 +35,7 @@ structure InternalReductionGraph (C : Type u) [CategoryTheory.Category.{v} C] wh
 def patternConstPresheaf (C : Type u) [CategoryTheory.Category.{v} C] :
     CategoryTheory.Functor (Opposite C) (Type (max u v)) where
   obj _ := ULift Pattern
-  map _ := id
+  map _ := CategoryTheory.CategoryStruct.id _
   map_id := by intro _; rfl
   map_comp := by intro _ _ _ _ _; rfl
 
@@ -43,7 +43,7 @@ def patternConstPresheaf (C : Type u) [CategoryTheory.Category.{v} C] :
 def pairConstPresheaf (C : Type u) [CategoryTheory.Category.{v} C] :
     CategoryTheory.Functor (Opposite C) (Type (max u v)) where
   obj _ := ULift (Prod Pattern Pattern)
-  map _ := id
+  map _ := CategoryTheory.CategoryStruct.id _
   map_id := by intro _; rfl
   map_comp := by intro _ _ _ _ _; rfl
 
@@ -56,10 +56,7 @@ def reductionSubfunctorUsing (C : Type u) [CategoryTheory.Category.{v} C]
     langReducesUsing relEnv lang pq.down.1 pq.down.2 }
   map := by
     intro X Y f pq hpq
-    change langReducesUsing relEnv lang
-      (((pairConstPresheaf (C := C)).map f pq).down.1)
-      (((pairConstPresheaf (C := C)).map f pq).down.2)
-    simpa [pairConstPresheaf] using hpq
+    exact hpq
 
 /-- Default internal reduction relation (`RelationEnv.empty`). -/
 def reductionSubfunctor (C : Type u) [CategoryTheory.Category.{v} C] (lang : LanguageDef) :
@@ -72,10 +69,11 @@ def reductionSourceUsing (C : Type u) [CategoryTheory.Category.{v} C]
     (relEnv : RelationEnv) (lang : LanguageDef) :
     (reductionSubfunctorUsing (C := C) relEnv lang).toFunctor ⟶
       patternConstPresheaf (C := C) where
-  app X e := ULift.up e.1.down.1
+  app X := TypeCat.ofHom
+    (fun (e : (reductionSubfunctorUsing (C := C) relEnv lang).toFunctor.obj X) =>
+      ULift.up e.1.down.1)
   naturality := by
     intro X Y f
-    funext e
     rfl
 
 /-- Target map `E ⟶ V` for the internal reduction graph:
@@ -84,10 +82,11 @@ def reductionTargetUsing (C : Type u) [CategoryTheory.Category.{v} C]
     (relEnv : RelationEnv) (lang : LanguageDef) :
     (reductionSubfunctorUsing (C := C) relEnv lang).toFunctor ⟶
       patternConstPresheaf (C := C) where
-  app X e := ULift.up e.1.down.2
+  app X := TypeCat.ofHom
+    (fun (e : (reductionSubfunctorUsing (C := C) relEnv lang).toFunctor.obj X) =>
+      ULift.up e.1.down.2)
   naturality := by
     intro X Y f
-    funext e
     rfl
 
 /-- Internal reduction graph object over `Psh(C)`:
@@ -141,15 +140,15 @@ theorem reductionGraphUsing_edge_endpoints_iff
   constructor
   · rintro ⟨e, hs, ht⟩
     have hs' : e.1.down.1 = p := by
-      simpa [reductionGraphUsing, reductionSourceUsing] using hs
+      simp only [reductionGraphUsing, reductionSourceUsing] at hs; exact hs
     have ht' : e.1.down.2 = q := by
-      simpa [reductionGraphUsing, reductionTargetUsing] using ht
+      simp only [reductionGraphUsing, reductionTargetUsing] at ht; exact ht
     have hred : langReducesUsing relEnv lang e.1.down.1 e.1.down.2 := e.2
     simpa [hs', ht'] using hred
   · intro hred
     refine ⟨⟨ULift.up (p, q), hred⟩, ?_, ?_⟩
-    · simp [reductionGraphUsing, reductionSourceUsing]
-    · simp [reductionGraphUsing, reductionTargetUsing]
+    · rfl
+    · rfl
 
 /-- Canonical packaged reduction graph object for a language/env pair. -/
 def reductionGraphObjUsing (C : Type u) [CategoryTheory.Category.{v} C]
@@ -160,7 +159,7 @@ def reductionGraphObjUsing (C : Type u) [CategoryTheory.Category.{v} C]
   target := (reductionGraphUsing (C := C) relEnv lang).target
   edge_endpoints_iff := by
     intro X p q
-    simpa using
+    exact
       (reductionGraphUsing_edge_endpoints_iff
         (C := C) (relEnv := relEnv) (lang := lang) (X := X) (p := p) (q := q))
 
@@ -183,8 +182,8 @@ theorem langDiamondUsing_iff_exists_graphStep
   · intro h
     rcases (langDiamondUsing_spec relEnv lang φ p).1 h with ⟨q, hred, hφ⟩
     refine ⟨⟨ULift.up (p, q), hred⟩, ?_, ?_⟩
-    · simp [reductionGraphUsing, reductionSourceUsing]
-    · simpa [reductionGraphUsing, reductionTargetUsing] using hφ
+    · rfl
+    · exact hφ
   · rintro ⟨e, hs, hφ⟩
     refine (langDiamondUsing_spec relEnv lang φ p).2 ?_
     refine ⟨((reductionGraphUsing (C := C) relEnv lang).target.app X e).down, ?_, hφ⟩
@@ -216,9 +215,9 @@ theorem langBoxUsing_iff_forall_graphIncoming
     let e : (reductionGraphUsing (C := C) relEnv lang).Edge.obj X :=
       ⟨ULift.up (q, p), hqp⟩
     have ht : ((reductionGraphUsing (C := C) relEnv lang).target.app X e).down = p := by
-      simp [e, reductionGraphUsing, reductionTargetUsing]
+      rfl
     have hs : ((reductionGraphUsing (C := C) relEnv lang).source.app X e).down = q := by
-      simp [e, reductionGraphUsing, reductionSourceUsing]
+      rfl
     have hq' := h e ht
     simpa [hs] using hq'
 
@@ -302,7 +301,7 @@ theorem langDiamond_iff_exists_graphStep
       ∃ e : (reductionGraph (C := C) lang).Edge.obj X,
         ((reductionGraph (C := C) lang).source.app X e).down = p ∧
         φ (((reductionGraph (C := C) lang).target.app X e).down) := by
-  simpa [langDiamond, reductionGraph] using
+  exact
     (langDiamondUsing_iff_exists_graphStep
       (C := C) (relEnv := RelationEnv.empty) (lang := lang) (X := X) (φ := φ) (p := p))
 
@@ -315,7 +314,7 @@ theorem langBox_iff_forall_graphIncoming
       ∀ e : (reductionGraph (C := C) lang).Edge.obj X,
         ((reductionGraph (C := C) lang).target.app X e).down = p →
         φ (((reductionGraph (C := C) lang).source.app X e).down) := by
-  simpa [langBox, reductionGraph] using
+  exact
     (langBoxUsing_iff_forall_graphIncoming
       (C := C) (relEnv := RelationEnv.empty) (lang := lang) (X := X) (φ := φ) (p := p))
 

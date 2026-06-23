@@ -37,7 +37,7 @@ space together with a higher-order probability over measures on that space. -/
 structure HierarchicalState (Base : Type u) (Const : Ty Base → Type v) where
   Θ : Type x
   instMeasurableSpace : MeasurableSpace Θ
-  baseSpace : ModelSpace Base Const
+  baseSpace : ModelSpace.{u, v, w, x} Base Const
   pd : ParametrizedDistribution Θ baseSpace.Idx
 
 attribute [instance] HierarchicalState.instMeasurableSpace
@@ -82,13 +82,13 @@ noncomputable def ofConstantMeasure
     (μIdx : MeasureTheory.Measure S.Idx)
     [MeasureTheory.IsProbabilityMeasure μIdx] :
     HierarchicalState Base Const where
-  Θ := Unit
+  Θ := PUnit.{x + 1}
   instMeasurableSpace := inferInstance
   baseSpace := S
   pd := {
-    kernel := ProbabilityTheory.Kernel.const Unit μIdx
+    kernel := ProbabilityTheory.Kernel.const PUnit μIdx
     kernel_isMarkov := by infer_instance
-    mixingMeasure := MeasureTheory.Measure.dirac ()
+    mixingMeasure := MeasureTheory.Measure.dirac PUnit.unit
     mixing_isProbability := by infer_instance
   }
 

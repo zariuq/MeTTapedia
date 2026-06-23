@@ -311,7 +311,8 @@ theorem QuoteEnvGood.envCons {P : BinderPolicy} {k : Nat} {ρ : QuoteEnv n}
             have hneq : ρ i' ≠ P.name k := hρ.compat.2 i' k (by omega)
             exact hneq hij
         | succ j' =>
-            have hij' : ρ i' = ρ j' := by simpa [envCons] using hij
+            have hij' : ρ i' = ρ j' := by
+              simp only [PatternBridge.envCons, Fin.cases_succ] at hij; exact hij
             have heq : i' = j' := hρ.env_inj hij'
             cases heq
             rfl
@@ -504,11 +505,8 @@ theorem quoteSubstEnv_subst0_decompose
     (ν : Nat → String) (k : Nat) (ρ : QuoteEnv n) (a : PureTm n) :
     quoteSubstEnv ν k (envCons (ν k) ρ) ρ (subst0 a) =
       SubstEnv.extend (quoteSubstEnv ν k ρ ρ ids) (ν k) (quoteTmWith ν k ρ a) := by
-  simpa [ids] using (by
-    simp [quoteSubstEnv, envCons, subst0] :
-      quoteSubstEnv ν k (envCons (ν k) ρ) ρ (subst0 a) =
-        SubstEnv.extend (quoteSubstEnv ν k (fun i => ρ i) ρ (fun i => PureTm.var i))
-          (ν k) (quoteTmWith ν k ρ a))
+  simp [quoteSubstEnv, envCons, subst0]
+  rfl
 
 theorem quoteSubstEnv_rename_wk_envCons_find
     (ν : Nat → String) (k : Nat) (x : String)

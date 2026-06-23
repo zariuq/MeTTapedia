@@ -74,12 +74,12 @@ def wmConsequenceRule_of_singletonStrengthLE {U : Type*} (q₁ q₂ : PredCodeIn
         (W := W) (q₁ := q₁) (q₂ := q₂) hSide
 
 /-- State-indexed wrapper promoted from global pointwise implication rule. -/
-def wmConsequenceRuleOn_of_pointwise {U : Type*} (q₁ q₂ : PredCodeInfQuery U) :
+noncomputable def wmConsequenceRuleOn_of_pointwise {U : Type*} (q₁ q₂ : PredCodeInfQuery U) :
     WMConsequenceRuleOn (PredCodeInfState U) (PredCodeInfQuery U) :=
   WMConsequenceRuleOn.ofGlobal (wmConsequenceRule_of_pointwise (q₁ := q₁) (q₂ := q₂))
 
 /-- State-indexed wrapper promoted from global singleton-strength rule. -/
-def wmConsequenceRuleOn_of_singletonStrengthLE {U : Type*} (q₁ q₂ : PredCodeInfQuery U) :
+noncomputable def wmConsequenceRuleOn_of_singletonStrengthLE {U : Type*} (q₁ q₂ : PredCodeInfQuery U) :
     WMConsequenceRuleOn (PredCodeInfState U) (PredCodeInfQuery U) :=
   WMConsequenceRuleOn.ofGlobal
     (wmConsequenceRule_of_singletonStrengthLE (q₁ := q₁) (q₂ := q₂))
