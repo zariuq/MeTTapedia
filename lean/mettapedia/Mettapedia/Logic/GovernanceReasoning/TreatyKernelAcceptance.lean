@@ -43,7 +43,7 @@ namespace Mettapedia.Logic.GovernanceReasoning.TreatyKernelAcceptance
 open Mettapedia.Logic.GovernanceReasoning.Core
 open Mettapedia.Logic.GovernanceReasoning.Subsumption
 open Mettapedia.Logic.GovernanceReasoning.TreatyKernel
-open Mettapedia.Logic.EvidenceQuantale
+open Mettapedia.PLN.Evidence.EvidenceQuantale
 
 /-! ## §1 Assessed Treaty Event Wrapper
 

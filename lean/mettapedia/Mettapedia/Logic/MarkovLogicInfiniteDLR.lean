@@ -111,7 +111,7 @@ theorem finiteVolumeSpecification_queryStrength_eq_finiteVolume
     (Λ : Region Atom) (ξ : BoundaryCondition Atom)
     (hZ : M.finiteVolumePartition Λ ξ ≠ 0)
     (q : LocalConstraintQuery Atom Λ) :
-    Mettapedia.Logic.PLNWorldModel.BinaryWorldModel.queryStrength
+    Mettapedia.PLN.WorldModel.PLNWorldModel.BinaryWorldModel.queryStrength
       ({(finiteVolumeSpecification M).kernelMassSemantics Λ ξ hZ} :
         MassState (LocalConstraintQuery Atom Λ)) q =
       (finiteVolumeMassSemantics M Λ ξ).queryProb q := by

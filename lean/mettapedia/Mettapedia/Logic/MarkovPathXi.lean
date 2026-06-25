@@ -1,8 +1,8 @@
 import Mettapedia.Logic.MarkovLogicAbstract
-import Mettapedia.Logic.OSLFEvidenceSemantics
+import Mettapedia.OSLF.Framework.EvidenceSemantics
 import Mettapedia.Logic.WMMarkovCanonical
 import Mettapedia.Logic.MarkovPredictiveChaining
-import Mettapedia.Logic.PLNWMOSLFBridge
+import Mettapedia.PLN.Bridges.Languages.PLNWMOSLFBridge
 
 /-!
 # Direct Markov Xi Surface for Multi-Step Transition Paths
@@ -23,14 +23,14 @@ noncomputable section
 namespace Mettapedia.Logic.MarkovPathXi
 
 open Mettapedia.Logic
-open Mettapedia.Logic.EvidenceDirichlet
-open Mettapedia.Logic.EvidenceQuantale
+open Mettapedia.PLN.Bridges.ProbabilityTheory.EvidenceDirichlet
+open Mettapedia.PLN.Evidence.EvidenceQuantale
 open Mettapedia.Logic.MarkovLogicAbstract
-open Mettapedia.Logic.OSLFEvidenceSemantics
+open Mettapedia.OSLF.Framework.EvidenceSemantics
 open Mettapedia.Logic.WMMarkovCanonical
 open Mettapedia.Logic.MarkovPredictiveChaining
-open Mettapedia.Logic.PLNWMOSLFBridge
-open Mettapedia.Logic.PLNWorldModel
+open Mettapedia.PLN.Bridges.Languages.PLNWMOSLFBridge
+open Mettapedia.PLN.WorldModel.PLNWorldModel
 open Mettapedia.OSLF.Formula
 open Mettapedia.OSLF.MeTTaIL.Syntax
 
@@ -136,7 +136,7 @@ def markovTransitionPathXiPLN :
   markovTransitionPathQueryOfAtom_path (k := k) start tail
 
 /-- Extract the full Markov transition-count matrix from the additive WM carrier. -/
-def markov_countsExtract (W : MarkovTransitionWMState k) : UniversalPrediction.TransCounts k :=
+def markov_countsExtract (W : MarkovTransitionWMState k) : _root_.Mettapedia.UniversalAI.UniversalPrediction.TransCounts k :=
   ⟨fun prev next => (markov_rowExtract (k := k) W prev).counts next⟩
 
 omit [NeZero k] in
@@ -151,9 +151,9 @@ transition counts exactly. -/
 theorem markov_countsExtract_transitionMultiset_eq_of_summary
     {k : ℕ}
     {xs : List (Fin k)}
-    {c : UniversalPrediction.TransCounts k}
+    {c : _root_.Mettapedia.UniversalAI.UniversalPrediction.TransCounts k}
     {last : Fin k}
-    (hsum : UniversalPrediction.TransCounts.summary (k := k) xs = some (c, last)) :
+    (hsum : _root_.Mettapedia.UniversalAI.UniversalPrediction.TransCounts.summary (k := k) xs = some (c, last)) :
     markov_countsExtract (k := k) (markov_transitionMultiset (k := k) xs) = c := by
   ext prev next
   rw [markov_countsExtract_counts]
@@ -168,7 +168,7 @@ def markovPathEvidenceOfProb (p : ℝ≥0∞) : BinaryEvidence :=
 chain. This is the honest non-additive carrier for path queries. -/
 def markovPathMassSemantics
     (hk : 0 < k) (prior : Fin k → DirichletParams k)
-    (c : UniversalPrediction.TransCounts k) :
+    (c : _root_.Mettapedia.UniversalAI.UniversalPrediction.TransCounts k) :
     MassSemantics (MarkovTransitionPathQuery k) where
   queryMass q := markovWMPosteriorChain hk prior q.start c q.tail
   totalMass := 1
@@ -178,7 +178,7 @@ def markovPathMassSemantics
 @[simp] theorem markovPathMassSemantics_queryProb
     {k : ℕ}
     (hk : 0 < k) (prior : Fin k → DirichletParams k)
-    (c : UniversalPrediction.TransCounts k) (q : MarkovTransitionPathQuery k) :
+    (c : _root_.Mettapedia.UniversalAI.UniversalPrediction.TransCounts k) (q : MarkovTransitionPathQuery k) :
     (markovPathMassSemantics (k := k) hk prior c).queryProb q =
       markovWMPosteriorChain hk prior q.start c q.tail := by
   simp [MassSemantics.queryProb, markovPathMassSemantics]
@@ -186,7 +186,7 @@ def markovPathMassSemantics
 @[simp] theorem markovPathMassSemantics_evidenceOfMasses
     {k : ℕ}
     (hk : 0 < k) (prior : Fin k → DirichletParams k)
-    (c : UniversalPrediction.TransCounts k) (q : MarkovTransitionPathQuery k) :
+    (c : _root_.Mettapedia.UniversalAI.UniversalPrediction.TransCounts k) (q : MarkovTransitionPathQuery k) :
     (markovPathMassSemantics (k := k) hk prior c).evidenceOfMasses q =
       markovPathEvidenceOfProb (markovWMPosteriorChain hk prior q.start c q.tail) := by
   simp [MassSemantics.evidenceOfMasses, markovPathMassSemantics, markovPathEvidenceOfProb]
@@ -251,9 +251,9 @@ word depends only on the transition-count summary. -/
 theorem markovTransitionPathAtom_queryStrength_transitionMultiset_eq_of_summary
     (hk : 0 < k) (prior : Fin k → DirichletParams k)
     {xs : List (Fin k)}
-    {c : UniversalPrediction.TransCounts k}
+    {c : _root_.Mettapedia.UniversalAI.UniversalPrediction.TransCounts k}
     {last : Fin k}
-    (hsum : UniversalPrediction.TransCounts.summary (k := k) xs = some (c, last))
+    (hsum : _root_.Mettapedia.UniversalAI.UniversalPrediction.TransCounts.summary (k := k) xs = some (c, last))
     (start : Fin k) (tail : List (Fin k)) :
     BinaryWorldModel.queryStrength
         (State := MarkovTransitionPathState k)
@@ -296,9 +296,9 @@ two-step predictive chain on any summarized history. -/
 theorem bit001_queryStrength_transitionMultiset_eq_of_summary
     (hk : 0 < 2) (prior : Fin 2 → DirichletParams 2)
     {xs : List (Fin 2)}
-    {c : UniversalPrediction.TransCounts 2}
+    {c : _root_.Mettapedia.UniversalAI.UniversalPrediction.TransCounts 2}
     {last : Fin 2}
-    (hsum : UniversalPrediction.TransCounts.summary (k := 2) xs = some (c, last)) :
+    (hsum : _root_.Mettapedia.UniversalAI.UniversalPrediction.TransCounts.summary (k := 2) xs = some (c, last)) :
     BinaryWorldModel.queryStrength
         (State := MarkovTransitionPathState 2)
         (Query := MarkovTransitionPathQuery 2)
@@ -316,9 +316,9 @@ two-step predictive chain on any summarized history. -/
 theorem bit011_queryStrength_transitionMultiset_eq_of_summary
     (hk : 0 < 2) (prior : Fin 2 → DirichletParams 2)
     {xs : List (Fin 2)}
-    {c : UniversalPrediction.TransCounts 2}
+    {c : _root_.Mettapedia.UniversalAI.UniversalPrediction.TransCounts 2}
     {last : Fin 2}
-    (hsum : UniversalPrediction.TransCounts.summary (k := 2) xs = some (c, last)) :
+    (hsum : _root_.Mettapedia.UniversalAI.UniversalPrediction.TransCounts.summary (k := 2) xs = some (c, last)) :
     BinaryWorldModel.queryStrength
         (State := MarkovTransitionPathState 2)
         (Query := MarkovTransitionPathQuery 2)

@@ -23,7 +23,7 @@ noncomputable section
 
 namespace Mettapedia.UniversalAI.ControlledFiniteHiddenMarkovPlanningExamples
 
-open Mettapedia.Logic.ControlledFiniteHiddenMarkovModel
+open Mettapedia.ProbabilityTheory.HiddenMarkovModels.ControlledFiniteHiddenMarkovModel
 open Mettapedia.Logic.WMControlledFiniteHiddenMarkovCredal
 open Mettapedia.UniversalAI.BayesianAgents.Core
 open Mettapedia.UniversalAI.ControlledFiniteHiddenMarkovBridge

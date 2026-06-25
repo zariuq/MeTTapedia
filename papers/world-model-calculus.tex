@@ -699,29 +699,29 @@ The main Lean artifacts (all in \code{Mettapedia/}):
   worlds) \\
 \code{Logic/PLNJointEvidenceNoGo.lean} & No-go theorem
   (Theorem~\ref{thm:nogo}) \\
-\code{Logic/PLNBayesNetWorldModel.lean} & BN sublayer: CPT evidence,
+\code{PLN/WorldModel/BayesNet/PLNBayesNetWorldModel.lean} & BN sublayer: CPT evidence,
   marginalization \\
-\code{Logic/PLNBNCompilation.lean} & Screening-off rewrites for BN \\
+\code{PLN/Bridges/ProbabilityTheory/BayesNet/PLNBNCompilation.lean} & Screening-off rewrites for BN \\
 \code{Logic/PLNBayesNetFastRules.lean} & Compiled fast BN rules \\
 \code{Logic/PLNIntensionalWorldModel.lean} & Sort-indexed queries,
   \code{WorldModelSigma} \\
 \code{Logic/PLNWorldModelInstitution.lean} & Institution-style signature
   transport with explicit satisfaction-condition theorems \\
-\code{Logic/PLNWorldModelHyperdoctrine.lean} & Hyperdoctrine-style typed
+\code{Mettapedia/PLN/Bridges/CategoryTheory/WorldModel/PLNWorldModelHyperdoctrine.lean} & Hyperdoctrine-style typed
   query fibers, change-of-base, Beck-Chevalley transport \\
-\code{Logic/PLNWorldModelCategoricalBridge.lean} & Unified endpoint
+\code{Mettapedia/PLN/Bridges/CategoryTheory/WorldModel/PLNWorldModelCategoricalBridge.lean} & Unified endpoint
   theorem linking institution transport and Beck-Chevalley transport \\
 \code{Logic/PLNWorldModelITV.lean} & ITV semantics (Bayes and
   Walley~IDM) \\
 \code{Logic/PLNWorldModelITVHypercube.lean} & Interval-selector layer,
   typed ITV transport \\
-\code{Logic/PLNCanonicalAPI.lean} & One-call end-to-end endpoints \\
-\code{Logic/PLNFirstOrder/QuantifierSemantics.lean} & Extensional vs
+\code{PLN/Core/PLNCanonicalAPI.lean} & One-call end-to-end endpoints \\
+\code{PLN/RuleFamilies/FirstOrder/Quantifiers/QuantifierSemantics.lean} & Extensional vs
   typicality quantifiers \\
-\code{Logic/PLNFirstOrder/QuantifierAlgorithmTheorems.lean} &
+\code{PLN/RuleFamilies/FirstOrder/Quantifiers/QuantifierAlgorithmTheorems.lean} &
   Ch.~11 algorithmic quantifier monotonicity, crisp endpoints, rule-4
   discrepancy bounds (361 lines) \\
-\code{Logic/PLNFirstOrder/ThirdOrderQuantifierSemantics.lean} &
+\code{PLN/RuleFamilies/FirstOrder/Quantifiers/ThirdOrderQuantifierSemantics.lean} &
   Third-order distribution model, weakness bridge,
   confidence-degradation bound (200 lines) \\
 \code{ProbabilityTheory/BayesianNetworks/FactorGraph.lean} & Factor graph
@@ -736,34 +736,34 @@ The main Lean artifacts (all in \code{Mettapedia/}):
 \code{Logic/LP/WorldModelBridge.lean} & LP least Herbrand model bridge \\
 \code{OSLF/Framework/QuantaleCoherence.lean} & Quantale
   transport/coherence \\
-\code{Logic/PLNWorldModelKripke.lean} & Kripke WM instance,
+\code{Mettapedia/PLN/Bridges/Logic/WorldModel/PLNWorldModelKripke.lean} & Kripke WM instance,
   singleton adequacy \\
-\code{Logic/PLNWorldModelKripkeConsequence.lean} & Deontic Kripke
+\code{Mettapedia/PLN/Bridges/Logic/WorldModel/PLNWorldModelKripkeConsequence.lean} & Deontic Kripke
   consequence rules \\
-\code{Logic/PLNWorldModelKripkeCompleteness.lean} & Kripke
+\code{Mettapedia/PLN/Bridges/Logic/WorldModel/PLNWorldModelKripkeCompleteness.lean} & Kripke
   sound/complete proof-theoretic bridge \\
-\code{Logic/PLNWorldModelNeighborhood.lean} & Neighborhood WM instance,
+\code{Mettapedia/PLN/Bridges/Logic/WorldModel/PLNWorldModelNeighborhood.lean} & Neighborhood WM instance,
   singleton adequacy \\
-\code{Logic/PLNWorldModelNeighborhoodCompleteness.lean} &
+\code{Mettapedia/PLN/Bridges/Logic/WorldModel/PLNWorldModelNeighborhoodCompleteness.lean} &
   Sound/complete proof-theoretic bridge \\
-\code{Logic/PLNWorldModelNeighborhoodConsequence.lean} & Governance
+\code{Mettapedia/PLN/Bridges/Logic/WorldModel/PLNWorldModelNeighborhoodConsequence.lean} & Governance
   translation, modal families \\
-\code{Logic/PLNWorldModelKripkeNeighborhoodEmbedding.lean} &
+\code{Mettapedia/PLN/Bridges/Logic/WorldModel/PLNWorldModelKripkeNeighborhoodEmbedding.lean} &
   Generic Kripke-to-neighborhood embedding \\
-\code{Logic/PLNWorldModelKripkeNeighborhoodCanonical.lean} &
+\code{Mettapedia/PLN/Bridges/Logic/WorldModel/PLNWorldModelKripkeNeighborhoodCanonical.lean} &
   Canonical representation bridge \\
-\code{Logic/PLNWorldModelKripkeWeighted.lean} &
+\code{Mettapedia/PLN/Bridges/Logic/WorldModel/PLNWorldModelKripkeWeighted.lean} &
   Weighted/trusted-gate multiset semantics \\
 \code{Logic/PLNWorldModelHOLCompleteness.lean} &
   HOL consequence-transfer wrappers +
   external-implication sound/complete bridge schema \\
-\code{Logic/PLNWorldModelFOLCompleteness.lean} &
+\code{Mettapedia/PLN/Bridges/Logic/WorldModel/PLNWorldModelFOLCompleteness.lean} &
   FOL consequence transfer +
   provable $\Leftrightarrow$ singleton consequence on $T$-models \\
-\code{Logic/PLNWorldModelSetTheoryBridge.lean} &
+\code{Mettapedia/PLN/Bridges/Logic/WorldModel/PLNWorldModelSetTheoryBridge.lean} &
   Set-theory specialization (\code{Z/ZF/ZC/ZFC}) of the FOL
   implication bridge + categorical wrappers \\
-\code{Logic/PLNWorldModelSetTheoryBridgeRegression.lean} &
+\code{Mettapedia/PLN/Bridges/Logic/WorldModel/PLNWorldModelSetTheoryBridgeRegression.lean} &
   Concrete singleton ZF fixture endpoints for rule packaging
   and categorical transport \\
 \code{Languages/GF/GFWMObligationAdapter.lean} &
@@ -773,18 +773,18 @@ The main Lean artifacts (all in \code{Mettapedia/}):
 \code{Languages/GF/GFWMObligationAdapterRegression.lean} &
   GF$\rightarrow$WM regression fixtures: direct transport, end-to-end
   rule consumption, and non-fullness witness \\
-\code{Logic/PLNWorldModelExperiment.lean} &
+\code{PLN/WorldModel/Experiment/PLNWorldModelExperiment.lean} &
   Deterministic experiment/channel WM interface + Blackwell consequence wrapper \\
-\code{Logic/PLNWorldModelExperimentRegression.lean} &
+\code{PLN/WorldModel/Experiment/PLNWorldModelExperimentRegression.lean} &
   Finite deterministic experiment fixture regression \\
-\code{Logic/PLNWorldModelExperimentStochastic.lean} &
+\code{PLN/WorldModel/Experiment/PLNWorldModelExperimentStochastic.lean} &
   Stochastic-channel Blackwell utility layer + weighted/trusted-source transfer \\
-\code{Logic/PLNWorldModelExperimentStochasticRegression.lean} &
+\code{PLN/WorldModel/Experiment/PLNWorldModelExperimentStochasticRegression.lean} &
   Finite stochastic Blackwell/weighted-policy fixture regression \\
-\code{Logic/PLNWorldModelFixpointClosure.lean} &
+\code{PLN/WorldModel/Fixpoint/PLNWorldModelFixpointClosure.lean} &
   Monotone WM consequence operator, least-fixpoint closure, and
   threshold-soundness transport \\
-\code{Logic/PLNWorldModelFixpointClosureRegression.lean} &
+\code{PLN/WorldModel/Fixpoint/PLNWorldModelFixpointClosureRegression.lean} &
   Positive/negative finite closure fixtures (rule-driven growth vs empty-rule collapse) \\
 \code{Logic/PLNWorldModelHOLInfinitary.lean} &
   Countable $\bigwedge$/$\bigvee$ HOL WM instance, singleton adequacy,
@@ -792,13 +792,13 @@ The main Lean artifacts (all in \code{Mettapedia/}):
 \code{Logic/PLNWorldModelHOLInfinitaryCompleteness.lean} &
   Implication consequence-transfer wrappers: \code{WMConsequenceRule} from
   pointwise/singleton-strength (89 lines) \\
-\code{Logic/PLNWorldModelFOLInfinitary.lean} &
+\code{Mettapedia/PLN/Bridges/Logic/WorldModel/PLNWorldModelFOLInfinitary.lean} &
   Countable $\bigwedge$/$\bigvee$ FOL WM instance, singleton adequacy,
   pointwise-implication strength transfer (297 lines) \\
-\code{Logic/PLNWorldModelFOLInfinitaryCompleteness.lean} &
+\code{Mettapedia/PLN/Bridges/Logic/WorldModel/PLNWorldModelFOLInfinitaryCompleteness.lean} &
   Implication consequence-transfer wrappers: \code{WMConsequenceRule} from
   pointwise/singleton-strength (93 lines) \\
-\code{Logic/PLNWorldModelInfinitaryRegression.lean} &
+\code{Mettapedia/PLN/Bridges/Logic/WorldModel/PLNWorldModelInfinitaryRegression.lean} &
   Concrete HOL+FOL infinitary fixture endpoints (129 lines) \\
 \hline
 \end{longtable}

@@ -8,7 +8,7 @@ import Mathlib.Algebra.Order.BigOperators.Group.Finset
 # Logic Programming Kernel: Core Types
 
 First-order logic programming syntax over an arbitrary signature with function symbols.
-Generalizes `Mettapedia.Logic.Datalog.Core` by allowing compound terms.
+Generalizes the retired standalone Datalog core by allowing compound terms.
 
 ## Design choices
 

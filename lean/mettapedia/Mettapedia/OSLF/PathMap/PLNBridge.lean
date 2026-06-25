@@ -1,5 +1,5 @@
 import Mettapedia.OSLF.PathMap.Core
-import Mettapedia.Logic.EvidenceQuantale
+import Mettapedia.PLN.Evidence.EvidenceQuantale
 import Mathlib.Data.Finset.Card
 
 /-!
@@ -62,7 +62,7 @@ This extension is left for future work.
 namespace Mettapedia.OSLF.PathMap.PLNBridge
 
 open Mettapedia.PathMap
-open Mettapedia.Logic.EvidenceQuantale
+open Mettapedia.PLN.Evidence.EvidenceQuantale
 open scoped ENNReal
 
 /-! ## Section 1: BinaryEvidence Extraction -/

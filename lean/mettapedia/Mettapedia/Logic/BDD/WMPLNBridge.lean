@@ -1,6 +1,6 @@
-import Mettapedia.Logic.ProbLogDistributionSemantics
+import Mettapedia.PLN.Bridges.Languages.ProbLog.DistributionSemantics
 import Mettapedia.Logic.BDD.ProbMeTTaBridge
-import Mettapedia.Logic.BinaryEvidence
+import Mettapedia.PLN.Evidence.BinaryEvidence
 
 /-!
 # WM-PLN = ProbMeTTa = ProbLog: The Full Bridge
@@ -36,9 +36,9 @@ sources contributed.
 namespace Mettapedia.Logic.BDDCore
 
 open scoped ENNReal
-open Mettapedia.Logic.ProbLogDistributionSemantics
-open Mettapedia.Logic.ProbLogCompilation
-open Mettapedia.Logic.CompletePLN
+open Mettapedia.PLN.Bridges.Languages.ProbLog.DistributionSemantics
+open Mettapedia.PLN.Bridges.Languages.ProbLog.Compilation
+open Mettapedia.PLN.Core.CompletePLN
 
 /-! ## §1 Weight Correspondence
 
@@ -92,7 +92,7 @@ The revised strength is the weighted average by evidence count.
 The revised confidence is HIGHER than either individual source.
 ProbLog has no mechanism for this combination. -/
 
-open Mettapedia.Logic.EvidenceQuantale
+open Mettapedia.PLN.Evidence.EvidenceQuantale
 
 /-- Concrete revision example: two independent sensors combined.
     ProbLog computes P(alarm) = 0.6 from one source.

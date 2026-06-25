@@ -1,6 +1,7 @@
 import Mettapedia.CategoryTheory.DeFinettiMarkovGiryBridge
-import Mettapedia.Logic.MarkovDeFinettiHigherOrder
-import Mettapedia.Logic.UniversalPrediction.FiniteAlphabet.PrefixMeasure
+import Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiHigherOrder
+import Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiRecurrence
+import Mettapedia.UniversalAI.UniversalPrediction.FiniteAlphabet.PrefixMeasure
 import Mathlib.Probability.ProbabilityMassFunction.Constructions
 
 /-!
@@ -27,14 +28,14 @@ noncomputable section
 namespace Mettapedia.CategoryTheory
 
 open MeasureTheory
-open Mettapedia.Logic
-open Mettapedia.Logic.MarkovDeFinettiHard
-open Mettapedia.Logic.MarkovDeFinettiHigherOrder
-open Mettapedia.Logic.UniversalPrediction.FiniteAlphabet
+open Mettapedia.ProbabilityTheory.Exchangeability
+open Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiHard
+open Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiHigherOrder
+open Mettapedia.UniversalAI.UniversalPrediction.FiniteAlphabet
 open scoped BigOperators ENNReal NNReal
 
 variable {k m : ℕ} [Fact (0 < m)]
-variable {μ : Mettapedia.Logic.UniversalPrediction.FiniteAlphabet.PrefixMeasure (Fin k)}
+variable {μ : Mettapedia.UniversalAI.UniversalPrediction.FiniteAlphabet.PrefixMeasure (Fin k)}
 
 /-- The ordinary finite Markov state count obtained by encoding length-`m`
 contexts over `Fin k`. -/
@@ -58,7 +59,7 @@ def higherOrderEncodedContextWord
 ordinary context-state sequence kernel over a Borel probability law on encoded
 context-state Markov parameters. -/
 def higherOrderLongWordWeightViaProbMarkov
-    (π : Mettapedia.Logic.MarkovDeFinettiHard.ProbMarkov (HigherOrderContextCard k m))
+    (π : Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiHard.ProbMarkov (HigherOrderContextCard k m))
     (xs : List (Fin k)) (hxs : m ≤ xs.length) : ℝ≥0∞ :=
   borelMarkovCylinderWeightViaProbMarkov (k := HigherOrderContextCard k m) π
     (higherOrderEncodedContextWord (k := k) (m := m) xs hxs)
@@ -70,10 +71,10 @@ variable {k m : ℕ}
 /-- The higher-order Borel/Giry long-word weight is exactly the ordinary moment
 map on the encoded context path. -/
 theorem higherOrderLongWordWeightViaProbMarkov_eq_momentMapWord
-    (π : Mettapedia.Logic.MarkovDeFinettiHard.ProbMarkov (HigherOrderContextCard k m))
+    (π : Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiHard.ProbMarkov (HigherOrderContextCard k m))
     (xs : List (Fin k)) (hxs : m ≤ xs.length) :
     higherOrderLongWordWeightViaProbMarkov (k := k) (m := m) π xs hxs =
-      Mettapedia.Logic.MarkovDeFinettiHard.momentMapWord
+      Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiHard.momentMapWord
         (k := HigherOrderContextCard k m)
         (higherOrderEncodedContextWord (k := k) (m := m) xs hxs) π :=
   borelMarkovCylinderWeightViaProbMarkov_eq_momentMapWord
@@ -88,16 +89,16 @@ context-state cylinder weights over a Borel law on encoded context-state
 parameters. -/
 def CategoricalBorelHigherOrderLongWordFactorization
     (k m : ℕ) [Fact (0 < m)]
-    (μ : Mettapedia.Logic.UniversalPrediction.FiniteAlphabet.PrefixMeasure (Fin k)) : Prop :=
-  ∃ π : Mettapedia.Logic.MarkovDeFinettiHard.ProbMarkov (HigherOrderContextCard k m),
+    (μ : Mettapedia.UniversalAI.UniversalPrediction.FiniteAlphabet.PrefixMeasure (Fin k)) : Prop :=
+  ∃ π : Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiHard.ProbMarkov (HigherOrderContextCard k m),
     ∀ xs : List (Fin k), ∀ hxs : m ≤ xs.length,
       μ xs = higherOrderLongWordWeightViaProbMarkov (k := k) (m := m) π xs hxs
 
 /-- Public Borel-side mixture object for the higher-order long-word surface. -/
 structure BorelHigherOrderLongWordMixture
     (k m : ℕ) [Fact (0 < m)]
-    (μ : Mettapedia.Logic.UniversalPrediction.FiniteAlphabet.PrefixMeasure (Fin k)) where
-  mixingLaw : Mettapedia.Logic.MarkovDeFinettiHard.ProbMarkov (HigherOrderContextCard k m)
+    (μ : Mettapedia.UniversalAI.UniversalPrediction.FiniteAlphabet.PrefixMeasure (Fin k)) where
+  mixingLaw : Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiHard.ProbMarkov (HigherOrderContextCard k m)
   represents :
     ∀ xs : List (Fin k), ∀ hxs : m ≤ xs.length,
       μ xs = higherOrderLongWordWeightViaProbMarkov (k := k) (m := m) mixingLaw xs hxs
@@ -144,16 +145,16 @@ theorem higherOrderLongWordWeightViaProbMarkov_dirac_eq_longWordProb
     higherOrderLongWordWeightViaProbMarkov (k := k) (m := m)
         ((MeasureTheory.diracProba
           (toMarkovParam (k := k) (m := m) θ)) :
-            Mettapedia.Logic.MarkovDeFinettiHard.ProbMarkov
+            Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiHard.ProbMarkov
               (HigherOrderContextCard k m))
         xs hxs =
       longWordProb (k := k) (m := m) θ xs hxs := by
   rw [higherOrderLongWordWeightViaProbMarkov_eq_momentMapWord (k := k) (m := m)
     (π := ((MeasureTheory.diracProba
       (toMarkovParam (k := k) (m := m) θ)) :
-        Mettapedia.Logic.MarkovDeFinettiHard.ProbMarkov
+        Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiHard.ProbMarkov
           (HigherOrderContextCard k m))) xs hxs]
-  rw [Mettapedia.Logic.MarkovDeFinettiHard.momentMapWord]
+  rw [Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiHard.momentMapWord]
   change
     ∫⁻ θ' : MarkovParam (HigherOrderContextCard k m),
         MarkovDeFinettiHard.wordProb θ' (higherOrderEncodedContextWord (k := k) (m := m) xs hxs)
@@ -170,14 +171,14 @@ Markov parameter. This is the honest trivial direction, not a full de Finetti
 mixture theorem. -/
 theorem borelHigherOrderLongWordFactorization_diracWitness
     (θ : HigherOrderMarkovParam k m) :
-    ∃ π : Mettapedia.Logic.MarkovDeFinettiHard.ProbMarkov (HigherOrderContextCard k m),
+    ∃ π : Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiHard.ProbMarkov (HigherOrderContextCard k m),
       ∀ xs : List (Fin k), ∀ hxs : m ≤ xs.length,
         higherOrderSequenceMeasure (k := k) (m := m) θ
             (MarkovDeFinettiRecurrence.cylinder (k := k) xs) =
           higherOrderLongWordWeightViaProbMarkov (k := k) (m := m) π xs hxs := by
   refine ⟨((MeasureTheory.diracProba
     (toMarkovParam (k := k) (m := m) θ)) :
-      Mettapedia.Logic.MarkovDeFinettiHard.ProbMarkov
+      Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiHard.ProbMarkov
         (HigherOrderContextCard k m)), ?_⟩
   intro xs hxs
   rw [higherOrderLongWordWeightViaProbMarkov_dirac_eq_longWordProb
@@ -190,7 +191,7 @@ image theorem remains future work. -/
 @[deprecated borelHigherOrderLongWordFactorization_diracWitness (since := "2026-04-16")]
 theorem exists_borelHigherOrderLongWordFactorization_of_param
     (θ : HigherOrderMarkovParam k m) :
-    ∃ π : Mettapedia.Logic.MarkovDeFinettiHard.ProbMarkov (HigherOrderContextCard k m),
+    ∃ π : Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiHard.ProbMarkov (HigherOrderContextCard k m),
       ∀ xs : List (Fin k), ∀ hxs : m ≤ xs.length,
         higherOrderSequenceMeasure (k := k) (m := m) θ
             (MarkovDeFinettiRecurrence.cylinder (k := k) xs) =
@@ -319,7 +320,7 @@ mixture surface for the higher-order bridge. -/
 noncomputable def finiteHigherOrderEncodedMixingLaw
     (w : Fin n → ℝ≥0∞) (hw : ∑ i : Fin n, w i = 1)
     (Θ : Fin n → HigherOrderMarkovParam k m) :
-    Mettapedia.Logic.MarkovDeFinettiHard.ProbMarkov (HigherOrderContextCard k m) :=
+    Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiHard.ProbMarkov (HigherOrderContextCard k m) :=
   let p : PMF (Fin n) := PMF.ofFintype w (by simpa using hw)
   let μ : ProbabilityMeasure (Fin n) := ⟨p.toMeasure, PMF.toMeasure.isProbabilityMeasure _⟩
   let g : Fin n → MarkovParam (HigherOrderContextCard k m) :=
@@ -346,7 +347,7 @@ theorem higherOrderLongWordWeightViaProbMarkov_eq_finiteDiracMixture
   rw [higherOrderLongWordWeightViaProbMarkov_eq_momentMapWord (k := k) (m := m)
     (π := finiteHigherOrderEncodedMixingLaw (k := k) (m := m) w hw Θ) xs hxs]
   dsimp [finiteHigherOrderEncodedMixingLaw]
-  rw [Mettapedia.Logic.MarkovDeFinettiHard.momentMapWord]
+  rw [Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiHard.momentMapWord]
   have hwordMeas :
       Measurable
         (fun θ : MarkovParam (HigherOrderContextCard k m) =>
@@ -363,7 +364,7 @@ theorem higherOrderLongWordWeightViaProbMarkov_eq_finiteDiracMixture
           MarkovDeFinettiHard.wordProb θ
             (higherOrderEncodedContextWord (k := k) (m := m) xs hxs))
         (((finiteHigherOrderEncodedMixingLaw (k := k) (m := m) w hw Θ) :
-            Mettapedia.Logic.MarkovDeFinettiHard.ProbMarkov (HigherOrderContextCard k m)) :
+            Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiHard.ProbMarkov (HigherOrderContextCard k m)) :
           Measure (MarkovParam (HigherOrderContextCard k m))) :=
     hwordMeas.aemeasurable
   have hmap := MeasureTheory.lintegral_map'
@@ -379,7 +380,7 @@ theorem higherOrderLongWordWeightViaProbMarkov_eq_finiteDiracMixture
         MarkovDeFinettiHard.wordProb θ
           (higherOrderEncodedContextWord (k := k) (m := m) xs hxs)
           ∂(((finiteHigherOrderEncodedMixingLaw (k := k) (m := m) w hw Θ) :
-              Mettapedia.Logic.MarkovDeFinettiHard.ProbMarkov (HigherOrderContextCard k m)) :
+              Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiHard.ProbMarkov (HigherOrderContextCard k m)) :
             Measure (MarkovParam (HigherOrderContextCard k m))) =
       ∫⁻ i : Fin n,
         MarkovDeFinettiHard.wordProb (g i)

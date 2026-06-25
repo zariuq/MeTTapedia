@@ -372,7 +372,7 @@ given $B$ and given $\lnot B$.
 \item Deduction strength formula: \code{plnDeductionStrength} ---
   \codepath{Mettapedia/Logic/PLNDeduction.lean}
 \item Induction and abduction strength formulas ---
-  \codepath{Mettapedia/Logic/PLNDerivation.lean}
+  \codepath{Mettapedia/PLN/RuleFamilies/FirstOrder/PLNDerivation.lean}
 \item Full inference rule set ---
   \codepath{Mettapedia/Logic/PLNInferenceRules.lean}
 \item MeTTa truth function parity / analysis ---
@@ -458,9 +458,9 @@ values (intervals) rather than simple truth values.
 
 \begin{itemize}
 \item ITV semantics transported through WM rewrites ---
-  \codepath{Mettapedia/Logic/PLNWMOSLFBridgeITV.lean}
+  \codepath{Mettapedia/PLN/Bridges/Languages/PLNWMOSLFBridgeITV.lean}
 \item One-call API bundles for ITV-coordinated inference ---
-  \codepath{Mettapedia/Logic/PLNCanonicalAPI.lean}
+  \codepath{Mettapedia/PLN/Core/PLNCanonicalAPI.lean}
 \item Coordinate-specialized coherence theorems ---
   same file
 \end{itemize}
@@ -531,7 +531,7 @@ $\text{posterior}(\pi, e_1 \hplus e_2)
   = \text{posterior}(\text{posterior}(\pi, e_1), e_2)$
 \end{quote}
 
-See \codepath{Mettapedia/Logic/EvidenceNormalGamma.lean}.
+See \codepath{Mettapedia/PLN/Bridges/ProbabilityTheory/EvidenceNormalGamma.lean}.
 
 Six applied demos (broken sensor, widget factory, Kalman filter, gas
 sensor drift, steel faults, NAB anomaly) exercise these properties
@@ -603,18 +603,18 @@ Chapter~8 discusses how errors accumulate through chains of inference
   interpretation views all preserved ---
   \codepath{Mettapedia/Logic/PLNWorldModelCalculus.lean}
 \item Confidence-threshold atom semantics and rewrite soundness ---
-  \codepath{Mettapedia/Logic/PLNErrorMagnificationGrounding.lean}
+  \codepath{Mettapedia/PLN/Bridges/Languages/PLNErrorMagnificationGrounding.lean}
 \item One-call WM rewrite $\to$ OSLF truth transport $\to$ threshold
-  acceptance --- \codepath{Mettapedia/Logic/PLNCanonicalAPI.lean}
+  acceptance --- \codepath{Mettapedia/PLN/Core/PLNCanonicalAPI.lean}
 \item WM consequence-rule layer with Kripke deontic lifts ---
-  \codepath{Mettapedia/Logic/PLNWorldModelKripkeConsequence.lean}
+  \codepath{Mettapedia/PLN/Bridges/Logic/WorldModel/PLNWorldModelKripkeConsequence.lean}
 \item Categorical WM transport (institution, hyperdoctrine,
   Beck-Chevalley) ---
-  \codepath{Mettapedia/Logic/PLNWorldModelCategoricalBridge.lean}
+  \codepath{Mettapedia/PLN/Bridges/CategoryTheory/WorldModel/PLNWorldModelCategoricalBridge.lean}
 \item Kripke and neighborhood proof-theoretic closure (K, KT, KD, K4,
   E, EMN, EMT, ED) ---
-  \codepath{Mettapedia/Logic/PLNWorldModelKripkeCompleteness.lean},
-  \codepath{Mettapedia/Logic/PLNWorldModelNeighborhoodCompleteness.lean}
+  \codepath{Mettapedia/PLN/Bridges/Logic/WorldModel/PLNWorldModelKripkeCompleteness.lean},
+  \codepath{Mettapedia/PLN/Bridges/Logic/WorldModel/PLNWorldModelNeighborhoodCompleteness.lean}
 \end{itemize}
 
 \section{What Required Correction}
@@ -671,7 +671,7 @@ and evidence pooling.
 \begin{itemize}
 \item Finite BRGI object with policy-sensitive optimum characterization:
   \code{exists\_optimal\_feasible\_set\_with\_policy\_characterization} ---
-  \codepath{Mettapedia/Logic/PremiseSelectionBRGI.lean}
+  \codepath{Mettapedia/PLN/InferenceControl/PremiseSelection/BRGI.lean}
 \item Graph-level BRGI with optimality-preserving refinement ---
   same file
 \end{itemize}
@@ -721,11 +721,11 @@ knowing or bounding the residual $R$).
 \paragraph{What formalizes.}
 \begin{itemize}
 \item Class-packaged BN d-separation discharge ---
-  \codepath{Mettapedia/Logic/PLNBNLocalMarkovPackages.lean}
+  \codepath{Mettapedia/PLN/Bridges/ProbabilityTheory/BayesNet/PLNBNLocalMarkovPackages.lean}
 \item One-call selector $\to$ rewrite $\to$ threshold composition ---
-  \codepath{Mettapedia/Logic/PLNCanonicalAPI.lean}
+  \codepath{Mettapedia/PLN/Core/PLNCanonicalAPI.lean}
 \item Chain/fork/collider concrete endpoints ---
-  \codepath{Mettapedia/Logic/PLNXiDerivedBNRules.lean}
+  \codepath{Mettapedia/PLN/RuleFamilies/FirstOrder/PLNXiDerivedBNRules.lean}
 \end{itemize}
 
 \paragraph{Verdict.}
@@ -746,13 +746,13 @@ fixed point.
   where the undamped trail-free update enters a 2-cycle
   $s_0 \to s_1 \to s_0 \to \cdots$ and never reaches a fixed point.
   The construction is explicit and decidable. ---
-  \codepath{Mettapedia/Logic/PLNTrailFreeDynamicsCounterexample.lean}
+  \codepath{Mettapedia/PLN/InferenceControl/ProtocolDynamics/PLNTrailFreeDynamicsCounterexample.lean}
 \item \textbf{Damped convergence:} with a damping factor
   $\alpha \in (0,1)$ and eventual fresh evidence, the orbit
   eventually stabilizes:
   \code{damped\_sp\_spn\_eventually\_constant\_of\_eventual\_fresh}.
   The inconsistency measure drops to zero. ---
-  \codepath{Mettapedia/Logic/PLNTrailFreeDampedConvergence.lean}
+  \codepath{Mettapedia/PLN/InferenceControl/ProtocolDynamics/PLNTrailFreeDampedConvergence.lean}
 \item \textbf{Bounded-gap fairness:} if fresh evidence arrives with
   bounded gaps (at most $g$ steps between arrivals), stabilization
   occurs within an explicit bound:
@@ -775,7 +775,7 @@ with bounded gaps).
 \begin{itemize}
 \item Pooling axioms non-uniqueness:
   \code{maxPoolingOperator\_ne\_fuse} ---
-  \codepath{Mettapedia/Logic/PremiseSelectionExternalBayesianity.lean}
+  \codepath{Mettapedia/PLN/InferenceControl/PremiseSelection/ExternalBayesianity.lean}
 \item Corrected uniqueness: external Bayes + total additivity ---
   same file
 \end{itemize}
@@ -789,7 +789,7 @@ with bounded gaps).
 \paragraph{What formalizes.}
 \begin{itemize}
 \item Blackwell factorization and expected utility ---
-  \codepath{Mettapedia/Logic/PLNWorldModelExperimentStochastic.lean}
+  \codepath{Mettapedia/PLN/WorldModel/Experiment/PLNWorldModelExperimentStochastic.lean}
 \item Weighted source policies and trusted-gate transfer ---
   same file
 \end{itemize}
@@ -875,18 +875,18 @@ strength.
 
 \begin{itemize}
 \item Finite-model quantifier semantics with weakness connection ---
-  \codepath{Mettapedia/Logic/PLNFirstOrder/QuantifierSemantics.lean}
+  \codepath{Mettapedia/PLN/RuleFamilies/FirstOrder/Quantifiers/QuantifierSemantics.lean}
 \item Soundness theorems ---
-  \codepath{Mettapedia/Logic/PLNFirstOrder/Soundness.lean}
+  \codepath{Mettapedia/PLN/RuleFamilies/FirstOrder/Quantifiers/Soundness.lean}
 \item Fuzzy quantifier semantics (QFM) ---
-  \codepath{Mettapedia/Logic/PLNFirstOrder/FuzzyQuantifierSemantics.lean}
+  \codepath{Mettapedia/PLN/RuleFamilies/FirstOrder/Quantifiers/FuzzyQuantifierSemantics.lean}
 \item Fuzzy-to-ITV bridge ---
-  \codepath{Mettapedia/Logic/PLNFirstOrder/FuzzyITVBridge.lean}
+  \codepath{Mettapedia/PLN/RuleFamilies/FirstOrder/Quantifiers/FuzzyITVBridge.lean}
 \item End-to-end canaries:
   \code{canary\_ch11\_rule\_family\_end\_to\_end\_ext},
   \code{fuzzyIntervalHolds\_strength\_of\_lower\_upper}
 \item Regression target:
-  \codepath{Mettapedia/Logic/PLNFirstOrder/QuantifierRegression.lean}
+  \codepath{Mettapedia/PLN/RuleFamilies/FirstOrder/Quantifiers/QuantifierRegression.lean}
 \end{itemize}
 
 \section{What Required Correction}
@@ -906,7 +906,7 @@ infinitary semantic layer already exists in Lean.
 \section{What Remains Heuristic}
 
 Arbitrary-domain infinitary semantics already exist in
-\codepath{Mettapedia/Logic/PLNFirstOrder/Infinite.lean}; what remains
+\codepath{Mettapedia/PLN/RuleFamilies/FirstOrder/Quantifiers/Infinite.lean}; what remains
 beyond the current reviewed scope is stronger metatheory, chapter-level
 canary/regression parity, and measure-theoretic strengthening for
 probabilistic infinite spaces.
@@ -938,7 +938,7 @@ an explicit no-go against collapsing back to the old binary law.
 \item Solomonoff-linked semantic transport ---
   \codepath{Mettapedia/Logic/IntensionalInheritanceSolomonoffBridge.lean}
 \item Canonical \code{AssocPatSemanticModel} packaging ---
-  \codepath{Mettapedia/Logic/PLNCanonicalAPI.lean}
+  \codepath{Mettapedia/PLN/Core/PLNCanonicalAPI.lean}
 \item Selector-specialized end-to-end endpoints ---
   same file
 \item Canary and regression targets ---
@@ -1060,18 +1060,18 @@ which premises to select, how to allocate computational resources.
 
 \begin{itemize}
 \item Formal selector specifications ---
-  \codepath{Mettapedia/Logic/PremiseSelectionSelectorSpec.lean}
+  \codepath{Mettapedia/PLN/InferenceControl/PremiseSelection/SelectorSpec.lean}
 \item Ranking transfer (optimality under distribution shift) ---
-  \codepath{Mettapedia/Logic/PremiseSelectionOptimality.lean}
+  \codepath{Mettapedia/PLN/InferenceControl/PremiseSelection/Optimality.lean}
 \item Ranking stability ---
-  \codepath{Mettapedia/Logic/PremiseSelectionRankingStability.lean}
+  \codepath{Mettapedia/PLN/InferenceControl/PremiseSelection/RankingStability.lean}
 \item Coverage/submodularity with greedy guarantee ---
-  \codepath{Mettapedia/Logic/PremiseSelectionCoverage.lean}
+  \codepath{Mettapedia/PLN/InferenceControl/PremiseSelection/Coverage.lean}
 \item Inference-control core composition ---
-  \codepath{Mettapedia/Logic/PLNInferenceControlCore.lean}
+  \codepath{Mettapedia/PLN/InferenceControl/PremiseSelection/PLNInferenceControlCore.lean}
 \item Canary and regression targets ---
-  \codepath{Mettapedia/Logic/PLNInferenceControlCanary.lean},
-  \codepath{Mettapedia/Logic/PLNInferenceControlRegression.lean}
+  \codepath{Mettapedia/PLN/InferenceControl/PremiseSelection/PLNInferenceControlCanary.lean},
+  \codepath{Mettapedia/PLN/InferenceControl/PremiseSelection/PLNInferenceControlRegression.lean}
 \end{itemize}
 
 \section{What Required Correction}
@@ -1120,12 +1120,12 @@ causal inference (cause-effect relationships).
 \item Predictive implication:
   $\mathrm{PredImpl}(P, Q)(x, t) = P(x, t) \Rightarrow \exists \Delta.\; Q(x, t + \Delta)$
 \item 3-node predictive chain with temporal bounds ---
-  \codepath{Mettapedia/Logic/PLNTemporalCausalInference.lean}
+  \codepath{Mettapedia/PLN/RuleFamilies/Temporal/PLNTemporalCausalInference.lean}
 \item Probabilistic event calculus ($\mathrm{Happens}$, $\mathrm{Initiates}$,
   $\mathrm{Terminates}$, $\mathrm{HoldsAt}$) ---
-  \codepath{Mettapedia/Logic/PLNProbabilisticEventCalculus.lean}
+  \codepath{Mettapedia/PLN/RuleFamilies/Temporal/PLNProbabilisticEventCalculus.lean}
 \item One-call event endpoints ---
-  \codepath{Mettapedia/Logic/PLNCanonicalAPI.lean}
+  \codepath{Mettapedia/PLN/Core/PLNCanonicalAPI.lean}
 \end{itemize}
 
 \section{What Required Correction}
@@ -1168,11 +1168,11 @@ Reasoning System), showing correspondences and differences.
 
 \begin{itemize}
 \item Consolidated PLN$\leftrightarrow$NARS comparison package ---
-  \codepath{Mettapedia/Logic/PLNNARSRuleCorrespondence.lean}
+  \codepath{Mettapedia/PLN/Comparisons/NARS/PLNNARSRuleCorrespondence.lean}
 \item Confidence transforms between PLN and NARS evidence ---
-  \codepath{Mettapedia/Logic/NARSEvidenceBridge.lean}
+  \codepath{Mettapedia/PLN/Comparisons/NARS/NARSEvidenceBridge.lean}
 \item Galois connection between evidence algebras ---
-  \codepath{Mettapedia/Logic/NARSPLNGaloisConnection.lean}
+  \codepath{Mettapedia/PLN/Comparisons/NARS/NARSPLNGaloisConnection.lean}
 \end{itemize}
 
 \section{What Required Correction}
@@ -1206,8 +1206,8 @@ The complete theorem ledger is maintained in the Lean codebase.
 Key entry points:
 
 \begin{itemize}
-\item \codepath{Mettapedia/Logic/PLNCore.lean} --- umbrella module
-\item \codepath{Mettapedia/Logic/PLNCanonicalAPI.lean} --- canonical API (3806 lines)
+\item \codepath{Mettapedia/PLN/Core/PLNCore.lean} --- umbrella module
+\item \codepath{Mettapedia/PLN/Core/PLNCanonicalAPI.lean} --- canonical API (3806 lines)
 \item \codepath{Mettapedia/Logic/README.md} --- status table and theorem index
 \item \codepath{Mettapedia/Implementation/PLNParityChecklist.lean} --- MeTTa parity
 \end{itemize}

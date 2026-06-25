@@ -32,7 +32,7 @@ theorem deFinettiStable_existsUnique_latentThetaMeasure_of_exchangeable
     (X : ℕ → Ω → Bool) (μ : Measure Ω)
     [IsProbabilityMeasure μ]
     (hX : ∀ i : ℕ, Measurable (X i))
-    (hexch : Mettapedia.Logic.Exchangeability.InfiniteExchangeable X μ) :
+    (hexch : Mettapedia.ProbabilityTheory.Exchangeability.InfiniteExchangeable X μ) :
     ∃! ν : Measure DeFinettiConnection.Theta, RepresentsLatentTheta X μ ν :=
   deFinetti_limitCone_universalMediator_latentTheta X μ hX hexch
 

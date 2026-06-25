@@ -45,7 +45,7 @@ In this setting:
   identification of theories.
 
 See:
-- `Mettapedia/Logic/EvidenceQuantale.lean` (evidence counts, Heyting/Frame structure, `toStrength`)
+- `Mettapedia/PLN/Evidence/EvidenceQuantale.lean` (evidence counts, Heyting/Frame structure, `toStrength`)
 
 ### Practical Takeaway
 

@@ -92,7 +92,7 @@ theorem diamond_scope_evidence_monotone
     (R : Pattern → Pattern → Prop) (I : QEvidenceAtomSem)
     (Dom : Domain2) (env : VarEnv2)
     {x y : String} (hne : x ≠ y) (φ : QFormula2)
-    (P : _root_.Mettapedia.Logic.EvidenceQuantale.BinaryEvidence → Prop)
+    (P : _root_.Mettapedia.PLN.Evidence.EvidenceQuantale.BinaryEvidence → Prop)
     (hP : Monotone P) :
     let invPred := fun p => P (qsemE2 R I Dom env (.qexists y (.qforall x φ)) p)
     let surfPred := fun p => P (qsemE2 R I Dom env (.qforall x (.qexists y φ)) p)

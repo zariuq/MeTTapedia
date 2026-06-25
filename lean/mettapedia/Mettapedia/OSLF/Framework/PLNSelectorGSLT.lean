@@ -1,6 +1,6 @@
 import Mathlib.Logic.Relation
 import Mettapedia.OSLF.Framework.RewriteSystem
-import Mettapedia.Logic.PremiseSelectionExternalBayesianity
+import Mettapedia.PLN.InferenceControl.PremiseSelection.ExternalBayesianity
 
 /-!
 # PLN Selector Rules as a GSLT/OSLF Rewrite System
@@ -28,8 +28,8 @@ We then prove:
 namespace Mettapedia.OSLF.Framework.PLNSelectorGSLT
 
 open scoped ENNReal
-open Mettapedia.Logic.PremiseSelection
-open Mettapedia.Logic.EvidenceQuantale
+open Mettapedia.PLN.InferenceControl.PremiseSelection
+open Mettapedia.PLN.Evidence.EvidenceQuantale
 
 universe u v
 
@@ -57,9 +57,9 @@ mutual
   noncomputable def eval : PLNSelectorExpr Goal Fact → Scorer Goal Fact
     | .atom s => s
     | .fuse a b =>
-        Mettapedia.Logic.PremiseSelection.fuse (eval a) (eval b)
+        Mettapedia.PLN.InferenceControl.PremiseSelection.fuse (eval a) (eval b)
     | .update p l =>
-        Mettapedia.Logic.PremiseSelection.update (eval p) (eval l)
+        Mettapedia.PLN.InferenceControl.PremiseSelection.update (eval p) (eval l)
     | .normalize t e => normalizeScorer t (eval e)
     | .fuseFamily xs => evalFamily xs
 
@@ -67,7 +67,7 @@ mutual
   noncomputable def evalFamily : List (PLNSelectorExpr Goal Fact) → Scorer Goal Fact
     | [] => zeroScorer
     | x :: xs =>
-        Mettapedia.Logic.PremiseSelection.fuse (eval x) (evalFamily xs)
+        Mettapedia.PLN.InferenceControl.PremiseSelection.fuse (eval x) (evalFamily xs)
 
 end
 
@@ -77,12 +77,12 @@ noncomputable def strengthAt (e : PLNSelectorExpr Goal Fact) (g : Goal) (f : Fac
 
 @[simp] theorem eval_update (p l : PLNSelectorExpr Goal Fact) :
     eval (.update p l) =
-      Mettapedia.Logic.PremiseSelection.update (eval p) (eval l) := by
+      Mettapedia.PLN.InferenceControl.PremiseSelection.update (eval p) (eval l) := by
   rfl
 
 @[simp] theorem eval_fuse (a b : PLNSelectorExpr Goal Fact) :
     eval (.fuse a b) =
-      Mettapedia.Logic.PremiseSelection.fuse (eval a) (eval b) := by
+      Mettapedia.PLN.InferenceControl.PremiseSelection.fuse (eval a) (eval b) := by
   rfl
 
 @[simp] theorem eval_normalize (t : ℝ≥0∞) (e : PLNSelectorExpr Goal Fact) :
@@ -97,47 +97,47 @@ noncomputable def strengthAt (e : PLNSelectorExpr Goal Fact) (g : Goal) (f : Fac
 
 @[simp] theorem evalFamily_cons (x : PLNSelectorExpr Goal Fact) (xs : List (PLNSelectorExpr Goal Fact)) :
     evalFamily (x :: xs) =
-      Mettapedia.Logic.PremiseSelection.fuse (eval x) (evalFamily xs) := by
+      Mettapedia.PLN.InferenceControl.PremiseSelection.fuse (eval x) (evalFamily xs) := by
   rfl
 
 /-- Updating a fused family equals fusing updates (list form). -/
 theorem evalFamily_map_update
     (xs : List (PLNSelectorExpr Goal Fact)) (l : PLNSelectorExpr Goal Fact) :
     evalFamily (xs.map (fun e => PLNSelectorExpr.update e l)) =
-      Mettapedia.Logic.PremiseSelection.update (evalFamily xs) (eval l) := by
+      Mettapedia.PLN.InferenceControl.PremiseSelection.update (evalFamily xs) (eval l) := by
   induction xs with
   | nil =>
       apply Scorer.ext
       intro g f
       apply BinaryEvidence.ext'
-      · simp [evalFamily, Mettapedia.Logic.PremiseSelection.update,
+      · simp [evalFamily, Mettapedia.PLN.InferenceControl.PremiseSelection.update,
           zeroScorer, BinaryEvidence.tensor_def, BinaryEvidence.zero]
-      · simp [evalFamily, Mettapedia.Logic.PremiseSelection.update,
+      · simp [evalFamily, Mettapedia.PLN.InferenceControl.PremiseSelection.update,
           zeroScorer, BinaryEvidence.tensor_def, BinaryEvidence.zero]
   | cons x xs ih =>
       calc
         evalFamily ((x :: xs).map (fun e => PLNSelectorExpr.update e l))
             =
-            Mettapedia.Logic.PremiseSelection.fuse
-              (Mettapedia.Logic.PremiseSelection.update (eval x) (eval l))
-              (Mettapedia.Logic.PremiseSelection.update (evalFamily xs) (eval l)) := by
+            Mettapedia.PLN.InferenceControl.PremiseSelection.fuse
+              (Mettapedia.PLN.InferenceControl.PremiseSelection.update (eval x) (eval l))
+              (Mettapedia.PLN.InferenceControl.PremiseSelection.update (evalFamily xs) (eval l)) := by
                 simp [ih]
         _ =
-            Mettapedia.Logic.PremiseSelection.update
-              (Mettapedia.Logic.PremiseSelection.fuse (eval x) (evalFamily xs))
+            Mettapedia.PLN.InferenceControl.PremiseSelection.update
+              (Mettapedia.PLN.InferenceControl.PremiseSelection.fuse (eval x) (evalFamily xs))
               (eval l) := by
               simpa using
                 (externalBayesianity_hplus_tensor
                   (s₁ := eval x) (s₂ := evalFamily xs) (likelihood := eval l))
         _ =
-            Mettapedia.Logic.PremiseSelection.update (evalFamily (x :: xs)) (eval l) := by
+            Mettapedia.PLN.InferenceControl.PremiseSelection.update (evalFamily (x :: xs)) (eval l) := by
               simp [evalFamily]
 
 /-- Fold-level external Bayesianity: updating a fused family is equivalent to
 fusing the per-expert updates. -/
 theorem externalBayesianity_evalFamily
     (xs : List (PLNSelectorExpr Goal Fact)) (l : PLNSelectorExpr Goal Fact) :
-    Mettapedia.Logic.PremiseSelection.update (evalFamily xs) (eval l) =
+    Mettapedia.PLN.InferenceControl.PremiseSelection.update (evalFamily xs) (eval l) =
       evalFamily (xs.map (fun e => PLNSelectorExpr.update e l)) := by
   simpa using (evalFamily_map_update (xs := xs) (l := l)).symm
 

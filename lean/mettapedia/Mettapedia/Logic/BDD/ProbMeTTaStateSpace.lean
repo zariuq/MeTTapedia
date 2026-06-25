@@ -29,7 +29,7 @@ namespace Mettapedia.Logic.BDDCore
 
 open scoped ENNReal
 open Mettapedia.Logic.LP
-open Mettapedia.Logic.ProbLogDistributionSemantics
+open Mettapedia.PLN.Bridges.Languages.ProbLog.DistributionSemantics
 
 /-- Pure state model for the literal ProbMeTTa spaces. -/
 structure ProbMeTTaSpaceState (σ : LPSignature) where

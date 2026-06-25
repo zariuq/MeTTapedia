@@ -1,0 +1,212 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage[hidelinks]{hyperref}
+
+\lstset{basicstyle=\ttfamily\footnotesize,breaklines=true,columns=fullflexible,
+        keepspaces=true,frame=single,framesep=3pt,xleftmargin=2pt}
+
+\title{The MeTTaKernel Appendix on Interactive Theorem Proving\\[2pt]
+  \large A runnable, multi-system oracle curriculum --- sufficient to focus a
+  Lean-grade DTT + HOTG kernel}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+This appendix is the ground-truth oracle for the MeTTa-hosted proof/inference kernel
+(see \texttt{papers/MettaKernel.tex}). It is a graded, \emph{runnable} curriculum in four real
+checkers --- \textbf{Coq/Rocq} and \textbf{Lean~4} (dependent type theory), \textbf{Megalodon}
+(higher-order Tarski--Grothendieck set theory), and \textbf{HOL4/CakeML} (verified programs). It is
+built to be \emph{sufficient}: it exercises every feature a faithful kernel must implement
+\emph{and} the proof-construction layers real users rely on. Every rung carries \emph{positives}
+(theorems that check) and \emph{negatives} (mistakes the checker catches). The single gate is
+\texttt{run\_all.sh}: at the time of writing it reports \textbf{282 theorems across 56 files, 16
+negatives caught, 0 failures}, plus an assumption ledger and a proved/tested/executed breakdown.
+\end{abstract}
+
+\section{Purpose and method}
+A small trusted kernel is only as good as the behaviours it is focused against. This corpus is that
+focusing set. The discipline is strict: a positive must be \emph{kernel-checked}; a negative must be
+\emph{rejected by the real checker} (never asserted); ``a test passed'' is never recorded as ``a
+theorem proved'' (\S\ref{sec:ledger}); and no binder-free or ``representative'' toy is allowed to
+stand in for the real feature.
+
+\paragraph{Reproducing.} \texttt{bash Mettapedia/MettaKernel/Curriculum/run\_all.sh}.
+
+\section{The four checkers and what each pins}
+\begin{center}\small
+\begin{tabular}{@{}llp{6.4cm}@{}}
+\toprule
+Checker & Foundation & What it pins for the kernel \\
+\midrule
+Coq/Rocq 9.1 & CIC (DTT) & terms/types, definitional conversion, inductive families, the
+elimination restriction, universe polymorphism, type classes \\
+Lean 4       & CIC (DTT) & universes/\texttt{imax}, recursors, well-founded recursion, quotients,
+proof irrelevance, $\eta$, the trusted-axiom base, and the tactic/metaprogramming layer \\
+Megalodon    & HOTG & sets, extensionality, $\in$-induction, choice, Tarski--Grothendieck universes,
+Replacement/Separation, $\omega$ \\
+HOL4 / CakeML & classical HO logic (Church STT) + LCF; verified compilation & a foundations ladder
+(HOL01--06, incl.\ the LCF primitive-rule kernel) \emph{and} proofs about programs / verified execution \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\section{Foundations ladders}
+\textbf{Coq --- the ICL spine (Smolka \& Brown), Ch.\,1--12}, self-contained vanilla Rocq, negatives
+inline via \texttt{Fail}: types/props/equality/induction (01--04), the \emph{elimination
+restriction} (05), sum/sigma + decidability (06), inductive predicates (07), lists (08), syntactic
+unification (09), natural deduction + Hilbert (10), Boolean semantics + tableau closure (11), Gentzen
+LJ (12). \textbf{Plus the metatheory I had skipped:} ND \textbf{soundness} (13); the classical
+\textbf{Kalmár completeness} theorem --- every Boolean tautology is derivable (14, with weakening, the
+classical case-split, Kalmár's lemma, and atom elimination all carried out); and a \textbf{verified
+validity decision procedure} (15) --- exhaustive valuation enumeration (the semantic tableau closing
+every branch), with soundness \emph{and} completeness w.r.t.\ the semantics proved.
+
+\smallskip\noindent\textbf{Lean --- the DTT mirror} (vanilla Lean~4): basics/induction/props/equality/
+inductive types/$\Sigma$ (01--06), then universes + explicit \texttt{Nat.rec} + definitional
+conversion + well-founded recursion (07).
+
+\smallskip\noindent\textbf{Megalodon --- HOTG} (Egal mode): props/tactics/sets (01--03),
+extensionality + $\in$-induction + no-self-membership (04), iterated Tarski--Grothendieck closure
+(05), and --- under the Egal preamble (loaded via a \texttt{.pre} sidecar) --- unordered pairs/binary
+union/\textbf{choice via $\varepsilon$}/$\omega$ (06) and \textbf{Replacement/Separation/\texttt{ordsucc}
+with a genuine \texttt{nat\_ind}} proof (07).
+
+\smallskip\noindent\textbf{HOL --- classical higher-order logic / LCF} (HOL4): a fourth, distinct
+foundation. \textbf{HOL01} logic+tactics (\texttt{rw}/\texttt{simp}/\texttt{metis\_tac}/\texttt{decide\_tac};
+forward + backward), \textbf{HOL02} induction (\texttt{Induct}/\texttt{Cases\_on}), \textbf{HOL03}
+\texttt{Definition}/\texttt{Datatype}/\texttt{Inductive}, \textbf{HOL04} higher-order quantification +
+the Hilbert choice operator \texttt{@}/\texttt{SELECT}, \textbf{HOL05} classical reasoning, and
+\textbf{HOL06 the LCF kernel} --- theorems built by the primitive inference rules
+(\texttt{REFL}/\texttt{ASSUME}/\texttt{DISCH}/\texttt{BETA\_CONV}), the trusted core a MeTTa-hosted HOL
+kernel mirrors. Built into \texttt{.hol/objs}; negatives (a type error; an unprovable goal) are
+expected-fail \texttt{Holmake} builds.
+
+\paragraph{HOL vs DTT vs HOTG (named exactly).} The curriculum spans \emph{three distinct foundation
+families}: \textbf{DTT} (Coq, Lean --- the Calculus of Inductive Constructions); \textbf{HOTG}
+(Megalodon --- higher-order Tarski--Grothendieck \emph{set} theory); and \textbf{HOL} (HOL4 ---
+classical Church \emph{simple type theory} + Hilbert choice on an LCF kernel). HOL is not a weaker
+Megalodon: HOTG is HO \emph{set} theory, HOL is HO \emph{type} theory --- different primitives,
+different kernels.
+
+\section{Proof construction: how real proofs are actually built}
+A kernel that checks terms is not enough; real developments are written through layers the curriculum
+now pins (Lean rungs 08--12, Coq \texttt{FEAT01}):
+\begin{itemize}\itemsep1pt
+  \item \textbf{Type classes + instance resolution} (Lean 08; Coq \texttt{FEAT01}): dispatch by type,
+        law-carrying classes, inheritance/derived instances; the negative is a failed instance synthesis.
+  \item \textbf{Functor/Monad + \texttt{do}} (Lean 09): the monad laws proved, a user-defined
+        \texttt{Monad} instance, \texttt{do} desugaring to \texttt{>>=}.
+  \item \textbf{Tactic-mode} proving (Lean 10; Coq Ltac in \texttt{FEAT01}):
+        \texttt{intro/apply/exact/cases/induction/rw/simp/omega/calc}.
+  \item \textbf{\texttt{conv}} (Lean 11): navigate to a sub-term and rewrite there.
+  \item \textbf{Metaprogramming} (Lean 12): \texttt{macro}, \texttt{syntax}+\texttt{macro\_rules}, a
+        custom tactic, and a term \texttt{elab}orator producing an \texttt{Expr}.
+\end{itemize}
+
+\section{Kernel adequacy: what a faithful Lean kernel must implement}\label{sec:adeq}
+A kernel built only to the core DTT skeleton is \emph{insufficient} --- it fails on the first real
+proof that uses any of these. The curriculum exercises each (Lean rungs 13--15), and the trusted
+axioms are reported by \texttt{\#print axioms} and recorded in the ledger:
+\begin{center}\small
+\begin{tabular}{@{}lp{8.0cm}@{}}
+\toprule
+Feature (rung) & Why a kernel needs it \\
+\midrule
+\textbf{Quotients} (13) & \texttt{Quot}/\texttt{Quot.mk}/\texttt{Quot.lift} (definitional computation)
++ \texttt{Quot.sound}/\texttt{Quot.ind}. Mathlib's \texttt{Int}, \texttt{Rat}, quotient groups are
+quotients --- a quotient-less kernel is dead on arrival. \\
+\textbf{Proof irrelevance} (14) & any two proofs of a \texttt{Prop} are \emph{definitionally} equal
+(Lean's kernel has this; Coq's does not). \\
+\textbf{$\eta$-conversion} (14) & for functions \emph{and} structures. \\
+\textbf{Impredicative \texttt{Prop} / \texttt{imax}} (15) & \texttt{imax\,u\,0 = 0}: a $\forall$ landing
+in \texttt{Prop} is a \texttt{Prop} regardless of the domain's universe. \\
+\textbf{Axioms} (15) & \texttt{propext}, \texttt{Classical.choice} (and \texttt{funext} \emph{derived}
+from \texttt{Quot}) --- exercised and ledgered. \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\section{Program verification (the 4th pillar)}
+\begin{itemize}\itemsep1pt
+  \item \textbf{CoqPLF}: \texttt{Imp} big-step semantics; \textbf{Hoare logic} (rules proved sound
+        against the semantics + a worked triple); type safety via \textbf{progress + preservation}
+        for a typed expression language (\texttt{PV03\_types\_safety.v}, the labeled binder-free prelude);
+        and the \textbf{real STLC} (\texttt{PV04\_stlc.v} + \texttt{PV05\_stlc\_preservation.v}) with $\lambda$,
+        substitution (SF-style, capture-permitting but sound for the closed values it is applied to),
+        the substitution lemma, \textbf{progress AND preservation}.
+  \item \textbf{Lean}: verified \texttt{reverse}/invariants/proof-carrying \texttt{Subtype}/type-indexed
+        \texttt{Vec}.
+  \item \textbf{MeTTaM1}: wires into the existing \texttt{metta-ref} development (a verified MeTTa
+        interpreter slice in HOL4/CakeML). \texttt{run\_all} uses the fast \texttt{make check-coverage}
+        gate; the heavier \texttt{make test-hol} (HOL proofs + SML/CakeML) and \texttt{make test-oracle}
+        (32 CeTTa-normalized comparisons) were run and \emph{pass}.
+  \item \textbf{HOL4CakeML}: a tutorial-scale verified function (\texttt{dbl}, with \texttt{dbl\_two}
+        and \texttt{dbl\_add} proved) \emph{and} its \textbf{CakeML translation} --- the CakeML
+        translator emits verified CakeML for \texttt{dbl} with a correctness certificate. Both build
+        green under \texttt{Holmake}. HOL4-verified content is additionally exercised through MeTTaM1.
+\end{itemize}
+
+\section{How the checker stops you: the error gallery}
+The payload of a negative is the rejection (the kernel must reproduce the soundness behaviour).
+\begin{center}\small
+\begin{tabular}{@{}lll@{}}
+\toprule
+Negative & Checker & Message (verbatim, abridged) \\
+\midrule
+ill-typed application       & Lean & \texttt{Application type mismatch} \\
+non-definitional \texttt{rfl}  & Lean & \texttt{Not a definitional eq} \\
+non-exhaustive \texttt{match}  & Lean & \texttt{Missing cases} \\
+\texttt{sorry} (as error)   & Lean & \texttt{declaration uses 'sorry'} \\
+missing type-class instance & Lean & \texttt{failed to synthesize} \\
+bad \texttt{Quot.lift} (no respect proof) & Lean & \texttt{type mismatch} \\
+non-terminating recursion   & Lean & termination checker error \\
+project an $\exists$ witness to data & Coq & elimination restriction: \texttt{Fail} \\
+non-guarded \texttt{Fixpoint} & Coq & termination checker: \texttt{Fail} \\
+wrong proof term            & Megalodon & \texttt{does not match the current claim} \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\section{Assumptions: proved vs.\ tested vs.\ executed}\label{sec:ledger}
+The verifier never conflates three honesty classes: \textbf{proved} (kernel-checked theorem),
+\textbf{tested} (a test ran and passed), \textbf{executed} (a CakeML/oracle artifact ran). It prints
+an assumption ledger: the only classical axiom in the DTT ladder is excluded-middle \texttt{XM} (Coq
+Ch.\,2; note the Kalmár calculus of Ch.\,14 is classical by its \texttt{nd\_raa} rule); the Lean
+kernel-adequacy rung is ledgered by \texttt{\#print axioms} (\texttt{propext},
+\texttt{Classical.choice}, \texttt{Quot.sound}); the Megalodon choice/$\omega$ rungs rest on the Egal
+preamble's HOTG axioms; and the HOTG ladder's own axioms (extensionality, $\in$-induction, the
+Tarski--Grothendieck universe axioms) are listed. None is counted as constructive evidence.
+
+\section{Map: each rung $\to$ the MeTTa-kernel feature it pins}
+\begin{center}\small
+\begin{tabular}{@{}lp{8.2cm}@{}}
+\toprule
+Rung & Kernel feature it focuses \\
+\midrule
+Coq 01--03 / Lean 01--04 & term \& type representation; \textbf{definitional conversion} ($\beta\delta\iota\zeta\eta$) \\
+Coq 04 / Lean 02         & structural recursion and induction \\
+Coq 05--06               & the \texttt{Prop}/\texttt{Type} split + the \textbf{elimination restriction} \\
+Coq 07, 10--12           & inductive judgments + the \textbf{proof-rule layer}: ND/Hilbert, tableau closure, Gentzen LJ --- as calculi with worked derivations (\emph{not} Gentzen cut-elimination) \\
+Coq 13--15               & ND \textbf{soundness}, classical \textbf{Kalmár completeness} (every tautology derivable), and a verified validity \textbf{decision procedure} (semantic/tableau) \\
+Coq 09                   & the \textbf{unifier} for matching/elaboration \\
+Lean 05--07              & inductive families, \textbf{recursors}, universes, well-founded recursion \\
+Lean 08--12 / Coq FEAT01 & \textbf{proof-construction}: type classes/instance resolution, monads, tactics, \texttt{conv}, \textbf{metaprogramming} \\
+Lean 13--15              & \textbf{kernel adequacy}: quotients, proof irrelevance, $\eta$, \texttt{imax}/impredicative \texttt{Prop}, the trusted axioms \\
+Megalodon 03--07         & the \textbf{HO-set side}: sets, extensionality, $\in$-induction, choice, TG universes, Replacement/Separation, $\omega$ \\
+HOL 01--06               & the \textbf{HOL/LCF side}: classical HO simple type theory, Hilbert choice, the LCF primitive-rule kernel \\
+CoqPLF (Imp/Hoare/STLC)  & \textbf{proofs about programs and execution} --- the EvalSpec capstone in miniature \\
+MeTTaM1                  & the kernel running against \textbf{real MeTTa (M1) execution} \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\noindent The right-hand column is the bridge to a future \texttt{Curriculum/MeTTa/}: the same rungs,
+re-expressed for the MeTTa-hosted kernel and measured against the oracle above.
+
+\end{document}

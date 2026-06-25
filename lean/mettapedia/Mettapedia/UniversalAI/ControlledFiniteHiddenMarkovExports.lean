@@ -1,5 +1,5 @@
 import Mettapedia.Logic.WMControlledFiniteHiddenMarkovCredal
-import Mettapedia.Logic.ControlledFiniteHiddenMarkovUniversalPredictionBridge
+import Mettapedia.UniversalAI.ControlledFiniteHiddenMarkovUniversalPredictionBridge
 import Mettapedia.UniversalAI.ControlledFiniteHiddenMarkovPlanningExamples
 
 /-!
@@ -27,9 +27,9 @@ set_option autoImplicit false
 
 namespace Mettapedia.UniversalAI
 
-open Mettapedia.Logic.ControlledFiniteHiddenMarkovModel
-open Mettapedia.Logic.ControlledFiniteHiddenMarkovObservedInference
-open Mettapedia.Logic.ControlledFiniteHiddenMarkovUniversalPredictionBridge
+open Mettapedia.ProbabilityTheory.HiddenMarkovModels.ControlledFiniteHiddenMarkovModel
+open Mettapedia.ProbabilityTheory.HiddenMarkovModels.ControlledFiniteHiddenMarkovObservedInference
+open Mettapedia.UniversalAI.ControlledFiniteHiddenMarkovUniversalPredictionBridge
 open Mettapedia.Logic.WMControlledFiniteHiddenMarkovCredal
 open Mettapedia.UniversalAI.ControlledFiniteHiddenMarkovBridge
 open Mettapedia.UniversalAI.ControlledFiniteHiddenMarkovPlanningExamples
@@ -48,7 +48,7 @@ abbrev controlledHMMParam (Action : Type uA) (latent obs : ℕ) :=
 lower-semicomputability witnesses needed for the fixed-action-stream
 Solomonoff regret theorem. -/
 abbrev lscControlledHMMParam (Action : Type uA) (latent obs : ℕ) :=
-  Mettapedia.Logic.ControlledFiniteHiddenMarkovUniversalPredictionBridge.LSCControlledFiniteHMMParam
+  Mettapedia.UniversalAI.ControlledFiniteHiddenMarkovUniversalPredictionBridge.LSCControlledFiniteHMMParam
     Action latent obs
 
 /-- Recommended export: convert a completed action-observation trace into a
@@ -64,13 +64,13 @@ noncomputable abbrev controlledHMM_toEnvironment {Action : Type uA} {latent obs 
 /-- Recommended export: package a controlled finite HMM as a controlled prefix
 law for the action-conditioned universal-prediction interface. -/
 noncomputable abbrev controlledHMM_toControlledPrefixMeasure {Action : Type uA} {latent obs : ℕ} :=
-  @Mettapedia.Logic.ControlledFiniteHiddenMarkovUniversalPredictionBridge.toControlledPrefixMeasure
+  @Mettapedia.UniversalAI.ControlledFiniteHiddenMarkovUniversalPredictionBridge.toControlledPrefixMeasure
     Action latent obs
 
 /-- Recommended export: concrete controlled Solomonoff-style semimeasure used
 for fixed-action-stream universal prediction bounds. -/
 noncomputable abbrev controlledSolomonoffM₂ {Action : Type uA} {obs : ℕ} :=
-  @Mettapedia.Logic.UniversalPrediction.FiniteAlphabet.ControlledSolomonoffBridge.M₂ Action (Fin obs)
+  @Mettapedia.UniversalAI.UniversalPrediction.FiniteAlphabet.ControlledSolomonoffBridge.M₂ Action (Fin obs)
 
 /-- Recommended export: next-percept law after a completed trace and pending
 action is exactly the controlled-HMM observation mass. -/
@@ -85,12 +85,12 @@ theorem controlledHMM_environmentProb_historyOfCycles_append_act
 /-- Recommended export: history-level filtering mass for the completed cycles
 contained in a BayesianAgents history. -/
 noncomputable abbrev controlledHMM_historyFilteringMass {Action : Type uA} {latent obs : ℕ} :=
-  @Mettapedia.Logic.ControlledFiniteHiddenMarkovObservedInference.historyFilteringMass Action latent obs
+  @Mettapedia.ProbabilityTheory.HiddenMarkovModels.ControlledFiniteHiddenMarkovObservedInference.historyFilteringMass Action latent obs
 
 /-- Recommended export: history-level observed probability for completed cycles
 contained in a BayesianAgents history. -/
 noncomputable abbrev controlledHMM_observedHistoryProb {Action : Type uA} {latent obs : ℕ} :=
-  @Mettapedia.Logic.ControlledFiniteHiddenMarkovObservedInference.observedHistoryProb Action latent obs
+  @Mettapedia.ProbabilityTheory.HiddenMarkovModels.ControlledFiniteHiddenMarkovObservedInference.observedHistoryProb Action latent obs
 
 /-- Recommended export: appending a completed action-observation cycle to a
 history updates the history-level filtering mass exactly by the controlled
@@ -218,20 +218,20 @@ regret bound along every fixed action stream. -/
 theorem controlledHMM_relEntropy_le_log_inv_of_dominates
     (θ : ControlledFiniteHMMParam Action latent obs)
     (ξ :
-      Mettapedia.Logic.UniversalPrediction.FiniteAlphabet.ControlledSemimeasure
+      Mettapedia.UniversalAI.UniversalPrediction.FiniteAlphabet.ControlledSemimeasure
         Action (Fin obs))
     {c : ENNReal}
     (hdom :
-      Mettapedia.Logic.UniversalPrediction.FiniteAlphabet.ControlledDominates
+      Mettapedia.UniversalAI.UniversalPrediction.FiniteAlphabet.ControlledDominates
         ξ (toControlledPrefixMeasure θ) c)
     (hc0 : c ≠ 0)
     (u : ℕ → Action)
     (n : ℕ) :
-    Mettapedia.Logic.UniversalPrediction.FiniteAlphabet.ControlledFiniteHorizon.relEntropy
+    Mettapedia.UniversalAI.UniversalPrediction.FiniteAlphabet.ControlledFiniteHorizon.relEntropy
         (toControlledPrefixMeasure θ) ξ u n ≤
       Real.log (1 / c.toReal) := by
   simpa using
-    Mettapedia.Logic.ControlledFiniteHiddenMarkovUniversalPredictionBridge.relEntropy_le_log_inv_of_dominates
+    Mettapedia.UniversalAI.ControlledFiniteHiddenMarkovUniversalPredictionBridge.relEntropy_le_log_inv_of_dominates
       (θ := θ) (ξ := ξ) (hdom := hdom) (hc0 := hc0) (u := u) (n := n)
 
 /-- Recommended export: the concrete controlled Solomonoff-style predictor
@@ -241,21 +241,21 @@ theorem controlledHMM_relEntropy_le_log_inv_controlledSolomonoffM₂
     (θ : ControlledFiniteHMMParam Action latent obs)
     (u : ℕ → Action)
     (hμ :
-      Mettapedia.Logic.UniversalPrediction.FiniteAlphabet.LowerSemicomputablePrefixMeasure
+      Mettapedia.UniversalAI.UniversalPrediction.FiniteAlphabet.LowerSemicomputablePrefixMeasure
         (α := Fin obs)
         ((toControlledPrefixMeasure θ).conditionOnActionStream u))
     (n : ℕ) :
     ∃ c : ENNReal, c ≠ 0 ∧
-      Mettapedia.Logic.UniversalPrediction.FiniteAlphabet.Dominates
+      Mettapedia.UniversalAI.UniversalPrediction.FiniteAlphabet.Dominates
           ((controlledSolomonoffM₂ (Action := Action) (obs := obs)).conditionOnActionStream u)
           ((toControlledPrefixMeasure θ).conditionOnActionStream u) c ∧
-      Mettapedia.Logic.UniversalPrediction.FiniteAlphabet.ControlledFiniteHorizon.relEntropy
+      Mettapedia.UniversalAI.UniversalPrediction.FiniteAlphabet.ControlledFiniteHorizon.relEntropy
           (toControlledPrefixMeasure θ)
           (controlledSolomonoffM₂ (Action := Action) (obs := obs))
           u n ≤
         Real.log (1 / c.toReal) := by
   simpa [controlledSolomonoffM₂] using
-    Mettapedia.Logic.ControlledFiniteHiddenMarkovUniversalPredictionBridge.relEntropy_le_log_inv_controlledM₂
+    Mettapedia.UniversalAI.ControlledFiniteHiddenMarkovUniversalPredictionBridge.relEntropy_le_log_inv_controlledM₂
       (θ := θ) (u := u) (hμ := hμ) (n := n)
 
 /-- Recommended export: packaged version of the fixed-action-stream Solomonoff
@@ -266,16 +266,16 @@ theorem controlledHMM_relEntropy_le_log_inv_controlledSolomonoffM₂_of_lscParam
     (u : ℕ → Action)
     (n : ℕ) :
     ∃ c : ENNReal, c ≠ 0 ∧
-      Mettapedia.Logic.UniversalPrediction.FiniteAlphabet.Dominates
+      Mettapedia.UniversalAI.UniversalPrediction.FiniteAlphabet.Dominates
           ((controlledSolomonoffM₂ (Action := Action) (obs := obs)).conditionOnActionStream u)
           ((toControlledPrefixMeasure (θ : ControlledFiniteHMMParam Action latent obs)).conditionOnActionStream u) c ∧
-      Mettapedia.Logic.UniversalPrediction.FiniteAlphabet.ControlledFiniteHorizon.relEntropy
+      Mettapedia.UniversalAI.UniversalPrediction.FiniteAlphabet.ControlledFiniteHorizon.relEntropy
           (toControlledPrefixMeasure (θ : ControlledFiniteHMMParam Action latent obs))
           (controlledSolomonoffM₂ (Action := Action) (obs := obs))
           u n ≤
         Real.log (1 / c.toReal) := by
   simpa [controlledSolomonoffM₂] using
-    Mettapedia.Logic.ControlledFiniteHiddenMarkovUniversalPredictionBridge.relEntropy_le_log_inv_controlledM₂_of_lscParam
+    Mettapedia.UniversalAI.ControlledFiniteHiddenMarkovUniversalPredictionBridge.relEntropy_le_log_inv_controlledM₂_of_lscParam
       (θ := θ) (u := u) (n := n)
 
 /-- Recommended export: the tiny deterministic controlled switch example has

@@ -240,7 +240,7 @@ theorem projectiveLimitMeasure_queryStrength_eq_family
     [∀ I, IsProbabilityMeasure (P I)]
     (hP : MeasureTheory.IsProjectiveMeasureFamily P)
     (Λ : Region Atom) (q : LocalConstraintQuery Atom Λ) :
-    Mettapedia.Logic.PLNWorldModel.BinaryWorldModel.queryStrength
+    Mettapedia.PLN.WorldModel.PLNWorldModel.BinaryWorldModel.queryStrength
       ({globalMeasureMassSemantics (Atom := Atom)
         (projectiveLimitMeasure (Atom := Atom) e P hP) Λ} :
           MassState (LocalConstraintQuery Atom Λ)) q =

@@ -1,5 +1,5 @@
 import Mettapedia.Languages.MeTTa.PeTTa.Eval
-import Mettapedia.Logic.LP.MeTTaILBridge
+import Mettapedia.OSLF.MeTTaIL.LPBridge
 
 /-!
 # PeTTa ↔ LP Soundness Bridge
@@ -47,7 +47,7 @@ deferred to future work.
 
 ## References
 
-- `Mettapedia.Logic.LP.MeTTaILBridge` — LP encoding of MeTTaIL patterns
+- `Mettapedia.OSLF.MeTTaIL.LPBridge` — LP encoding of MeTTaIL patterns
 - `Mettapedia.OSLF.MeTTaIL.MatchSpec` — `matchPattern_correct`
 - `Mettapedia.Languages.MeTTa.PeTTa.Eval` — `PeTTaEval` inductive
 -/
@@ -59,7 +59,7 @@ open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.Match
 open Mettapedia.OSLF.MeTTaIL.MatchSpec
 open Mettapedia.Logic.LP
-open Mettapedia.Logic.LP.MeTTaILBridge
+open Mettapedia.OSLF.MeTTaIL.LPBridge
 open Mettapedia.Languages.ProcessCalculi.MORK (morkTranslatable)
 
 /-! ## Compiling PeTTaSpace to LP -/

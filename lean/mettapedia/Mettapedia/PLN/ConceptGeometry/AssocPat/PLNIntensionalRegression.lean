@@ -1,0 +1,194 @@
+import Mettapedia.PLN.ConceptGeometry.AssocPat.PLNIntensionalWorldModel
+import Mettapedia.KR.ConceptGeometry.Bridges.UniversalAI.IntensionalInheritanceSolomonoffBridge
+import Mettapedia.KR.ConceptGeometry.EmpiricalIntensionalInformation
+import Mettapedia.PLN.Core.PLNCanonicalAPI
+import Mettapedia.PLN.ConceptGeometry.AssocPat.PLNIntensionalAssocPatClosure
+import Mettapedia.PLN.ConceptGeometry.AssocPat.PLNIntensionalCanary
+import Mettapedia.KR.ConceptGeometry.Examples.IntensionalInheritanceAllCanary
+
+/-!
+# Chapter 12 Regression Target
+
+Single-entry build target for Chapter-12 intensional inheritance:
+
+- WM typed inheritance channels
+- Solomonoff log-ratio bridge
+- canonical one-call API composition
+- executable positive/negative canaries
+
+Build command:
+
+```bash
+cd /home/zar/claude/Mettapedia/lean/mettapedia
+ulimit -Sv 6291456 && export LAKE_JOBS=3 && nice -n 19 \
+  lake build Mettapedia.PLN.ConceptGeometry.AssocPat.PLNIntensionalRegression
+```
+-/
+
+namespace Mettapedia.PLN.ConceptGeometry.AssocPat.PLNIntensionalRegression
+
+/-! ## Chapter 12 Surface -/
+
+abbrev ch12_inheritanceSort :=
+  PLNIntensionalWorldModel.InheritanceSort
+
+abbrev ch12_inheritanceQueryFamily :=
+  PLNIntensionalWorldModel.InheritanceQueryFamily
+
+abbrev ch12_inheritanceQueryBuilder :=
+  PLNIntensionalWorldModel.InheritanceQueryBuilder
+
+abbrev ch12_extensional_evidence :=
+  @PLNIntensionalWorldModel.InheritanceQueryBuilder.extensionalEvidence
+
+abbrev ch12_assoc_evidence :=
+  @PLNIntensionalWorldModel.InheritanceQueryBuilder.intensionalAssocEvidence
+
+abbrev ch12_pat_evidence :=
+  @PLNIntensionalWorldModel.InheritanceQueryBuilder.intensionalPATEvidence
+
+abbrev ch12_mixed_evidence :=
+  @PLNIntensionalWorldModel.InheritanceQueryBuilder.mixedEvidence
+
+abbrev ch12_assocPatSemanticModel :=
+  @PLNIntensionalWorldModel.InheritanceQueryBuilder.AssocPatSemanticModel
+
+abbrev ch12_assoc_score_correspondence :=
+  @PLNIntensionalWorldModel.InheritanceQueryBuilder.AssocScoreCorrespondence
+
+abbrev ch12_pat_score_correspondence :=
+  @PLNIntensionalWorldModel.InheritanceQueryBuilder.PATScoreCorrespondence
+
+abbrev ch12_assoc_score_lift :=
+  @PLNIntensionalWorldModel.InheritanceQueryBuilder.assocEvidence_eq_scoreToEvidence_of_assocScore_eq
+
+abbrev ch12_pat_score_lift :=
+  @PLNIntensionalWorldModel.InheritanceQueryBuilder.patEvidence_eq_scoreToEvidence_of_patScore_eq
+
+abbrev ch12_goertzel_formula :=
+  @Mettapedia.KR.ConceptGeometry.IntensionalInheritance.MembershipCounts.empirical_goertzel_formula
+
+abbrev ch12_pointwise_logRatio_reduction :=
+  @Mettapedia.KR.ConceptGeometry.IntensionalInheritance.MembershipCounts.empirical_pointwise_logRatio_reduction
+
+abbrev ch12_mixed_assoc_rewrite_apply :=
+  @PLNIntensionalWorldModel.InheritanceQueryBuilder.mixedRewriteRule_of_assoc_apply
+
+abbrev ch12_mixed_assocPat_rewrite_apply :=
+  @PLNIntensionalWorldModel.InheritanceQueryBuilder.mixedRewriteRule_of_assoc_pat_apply
+
+abbrev ch12_solomonoff_log2_ratio :=
+  @Mettapedia.KR.ConceptGeometry.IntensionalInheritance.intensionalFromConditional_eq_log2_ratio
+
+abbrev ch12_solomonoff_xiSemimeasure_log2_ratio :=
+  @Mettapedia.KR.ConceptGeometry.IntensionalInheritance.intensionalFromXiSemimeasure_eq_log2_ratio
+
+abbrev ch12_solomonoff_xiGeom_log2_ratio :=
+  @Mettapedia.KR.ConceptGeometry.IntensionalInheritance.intensionalFromXiGeom_eq_log2_ratio
+
+abbrev ch12_assocPat_mixed_policy :=
+  Mettapedia.PLN.ConceptGeometry.AssocPat.PLNIntensionalAssocPatConcrete.mixedPolicy_assocPat
+
+abbrev ch12_pat_channel_nontrivial :=
+  Mettapedia.PLN.ConceptGeometry.AssocPat.PLNIntensionalAssocPatConcrete.pat_channel_nontrivial
+
+abbrev ch12_mixed_not_assoc_only :=
+  Mettapedia.PLN.ConceptGeometry.AssocPat.PLNIntensionalAssocPatConcrete.mixed_not_assoc_only
+
+abbrev ch12_binary_mixed_policy_collapse_no_go :=
+  Mettapedia.PLN.ConceptGeometry.AssocPat.PLNIntensionalAssocPatConcrete.binary_mixed_policy_collapse_no_go
+
+abbrev ch12_assocPat_bayesNormal_lower :=
+  Mettapedia.PLN.ConceptGeometry.AssocPat.PLNIntensionalAssocPatConcrete.end_to_end_assocPat_bayesNormal_lower
+
+abbrev ch12_assocPat_bayesExact_lower :=
+  Mettapedia.PLN.ConceptGeometry.AssocPat.PLNIntensionalAssocPatConcrete.end_to_end_assocPat_bayesExact_lower
+
+abbrev ch12_assocPat_walley_lower :=
+  Mettapedia.PLN.ConceptGeometry.AssocPat.PLNIntensionalAssocPatConcrete.end_to_end_assocPat_walley_lower
+
+abbrev ch12_mixed_projection_non_equivalent :=
+  PLNIntensionalCanary.canary_ch12_mixed_projection_non_equivalent
+
+abbrev ch12_mixed_extensional_projection :=
+  PLNIntensionalCanary.canary_ch12_mixed_extensional_projection
+
+abbrev ch12_mixed_assoc_projection :=
+  PLNIntensionalCanary.canary_ch12_mixed_assoc_projection
+
+abbrev ch12_positiveExample_prior_eq_ve_ratio :=
+  Mettapedia.KR.ConceptGeometry.Examples.IntensionalInheritanceAllCanary.positiveExample_prior_eq_ve_ratio
+
+abbrev ch12_positiveExample_semantic_prior_eq_ve_ratio :=
+  Mettapedia.KR.ConceptGeometry.Examples.IntensionalInheritanceAllCanary.positiveExample_semantic_prior_eq_ve_ratio
+
+abbrev ch12_positiveExample_ext_eq_bp_ratio :=
+  Mettapedia.KR.ConceptGeometry.Examples.IntensionalInheritanceAllCanary.positiveExample_ext_eq_bp_ratio
+
+abbrev ch12_positiveExample_semantic_ext_eq_bp_ratio :=
+  Mettapedia.KR.ConceptGeometry.Examples.IntensionalInheritanceAllCanary.positiveExample_semantic_ext_eq_bp_ratio
+
+abbrev ch12_positiveExample_score_eq_ve_query_score :=
+  Mettapedia.KR.ConceptGeometry.Examples.IntensionalInheritanceAllCanary.positiveExample_score_eq_ve_query_score
+
+abbrev ch12_positiveExample_semantic_score_eq_ve_query_score :=
+  Mettapedia.KR.ConceptGeometry.Examples.IntensionalInheritanceAllCanary.positiveExample_semantic_score_eq_ve_query_score
+
+abbrev ch12_positiveTable_witnessPrior_eq_ve_ratio :=
+  Mettapedia.KR.ConceptGeometry.Examples.IntensionalInheritanceAllCanary.positiveTable_witnessPrior_eq_ve_ratio
+
+abbrev ch12_positiveTable_featureToWitness_eq_bp_ratio :=
+  Mettapedia.KR.ConceptGeometry.Examples.IntensionalInheritanceAllCanary.positiveTable_featureToWitness_eq_bp_ratio
+
+abbrev ch12_positiveExample_generic_semantic_prior_eq_generated_ve_ratio :=
+  Mettapedia.KR.ConceptGeometry.Examples.IntensionalInheritanceAllCanary.positiveExample_generic_semantic_prior_eq_generated_ve_ratio
+
+abbrev ch12_positiveExample_generic_semantic_ext_eq_generated_bp_ratio :=
+  Mettapedia.KR.ConceptGeometry.Examples.IntensionalInheritanceAllCanary.positiveExample_generic_semantic_ext_eq_generated_bp_ratio
+
+abbrev ch12_positiveExample_generic_semantic_score_eq_generated_ve_query_score :=
+  Mettapedia.KR.ConceptGeometry.Examples.IntensionalInheritanceAllCanary.positiveExample_generic_semantic_score_eq_generated_ve_query_score
+
+abbrev ch12_toy_penguinBird_generic_semantic_prior_eq_generated_ve_ratio :=
+  Mettapedia.KR.ConceptGeometry.Examples.IntensionalInheritanceAllCanary.toy_penguinBird_generic_semantic_prior_eq_generated_ve_ratio
+
+abbrev ch12_toy_penguinBird_generic_semantic_ext_eq_generated_bp_ratio :=
+  Mettapedia.KR.ConceptGeometry.Examples.IntensionalInheritanceAllCanary.toy_penguinBird_generic_semantic_ext_eq_generated_bp_ratio
+
+abbrev ch12_toy_penguinBird_generic_semantic_score_eq_generated_ve_query_score :=
+  Mettapedia.KR.ConceptGeometry.Examples.IntensionalInheritanceAllCanary.toy_penguinBird_generic_semantic_score_eq_generated_ve_query_score
+
+abbrev ch12_toy_birdFly_generic_semantic_ext_eq_generated_bp_ratio :=
+  Mettapedia.KR.ConceptGeometry.Examples.IntensionalInheritanceAllCanary.toy_birdFly_generic_semantic_ext_eq_generated_bp_ratio
+
+abbrev ch12_toy_birdFly_generic_semantic_score_eq_generated_ve_query_score :=
+  Mettapedia.KR.ConceptGeometry.Examples.IntensionalInheritanceAllCanary.toy_birdFly_generic_semantic_score_eq_generated_ve_query_score
+
+abbrev ch12_toyObservation_penguinBird_prior_eq_generated_ve_ratio :=
+  Mettapedia.KR.ConceptGeometry.Examples.IntensionalInheritanceAllCanary.toyObservation_penguinBird_prior_eq_generated_ve_ratio
+
+abbrev ch12_toyObservation_penguinBird_ext_eq_generated_bp_ratio :=
+  Mettapedia.KR.ConceptGeometry.Examples.IntensionalInheritanceAllCanary.toyObservation_penguinBird_ext_eq_generated_bp_ratio
+
+abbrev ch12_toyObservation_birdFly_score_eq_generated_ve_query_score :=
+  Mettapedia.KR.ConceptGeometry.Examples.IntensionalInheritanceAllCanary.toyObservation_birdFly_score_eq_generated_ve_query_score
+
+abbrev ch12_toyThreeByTwo_witness0_prior_eq_generated_ve_ratio :=
+  Mettapedia.KR.ConceptGeometry.Examples.IntensionalInheritanceAllCanary.toyThreeByTwo_witness0_prior_eq_generated_ve_ratio
+
+abbrev ch12_toyThreeByTwo_feature2_witness1_strength_eq_generated_bp_ratio :=
+  Mettapedia.KR.ConceptGeometry.Examples.IntensionalInheritanceAllCanary.toyThreeByTwo_feature2_witness1_strength_eq_generated_bp_ratio
+
+abbrev ch12_toyThreeByTwo_feature2_witness1_score_eq_generated_ve_query_score :=
+  Mettapedia.KR.ConceptGeometry.Examples.IntensionalInheritanceAllCanary.toyThreeByTwo_feature2_witness1_score_eq_generated_ve_query_score
+
+abbrev ch12_solomonoff_threshold_bayesNormal :=
+  @Mettapedia.PLN.Core.PLNCanonical.intensional_mixed_assoc_threshold_atom_bayesNormal_of_solomonoff_semantic_linked_strong
+
+abbrev ch12_solomonoff_threshold_bayesExact :=
+  @Mettapedia.PLN.Core.PLNCanonical.intensional_mixed_assoc_threshold_atom_bayesExact_of_solomonoff_semantic_linked_strong
+
+abbrev ch12_solomonoff_threshold_walley :=
+  @Mettapedia.PLN.Core.PLNCanonical.intensional_mixed_assoc_threshold_atom_walley_of_solomonoff_semantic_linked_strong
+
+end Mettapedia.PLN.ConceptGeometry.AssocPat.PLNIntensionalRegression

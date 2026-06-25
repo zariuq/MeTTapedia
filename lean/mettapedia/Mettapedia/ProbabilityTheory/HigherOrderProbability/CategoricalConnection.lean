@@ -7,7 +7,7 @@ LLM primer:
 - Measurability of the kernel uses polynomial structure of categoricalProductPMF
 - The flatten bridge identifies `flatten(pd M n) {xs} = ENNReal.ofReal (M.prob xs)`
 -/
-import Mettapedia.Logic.CategoricalMixture
+import Mettapedia.ProbabilityTheory.Exchangeability.CategoricalMixture
 import Mettapedia.ProbabilityTheory.HigherOrderProbability.Basic
 import Mathlib.Data.Fin.Tuple.Basic
 import Mathlib.Probability.ProbabilityMassFunction.Constructions
@@ -53,7 +53,7 @@ noncomputable section
 namespace Mettapedia.ProbabilityTheory.HigherOrderProbability
 
 open MeasureTheory ProbabilityTheory Finset BigOperators ENNReal
-open Mettapedia.Logic.CategoricalDeFinetti
+open Mettapedia.ProbabilityTheory.Exchangeability.CategoricalDeFinetti
 
 namespace CategoricalConnection
 

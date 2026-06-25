@@ -1,7 +1,0 @@
-import Mettapedia.Logic.AbstractInheritance
-import Mettapedia.Logic.AbstractInheritanceWitness
-import Mettapedia.Logic.AbstractInheritanceOverlap
-import Mettapedia.Logic.AbstractInheritanceStampedWitness
-import Mettapedia.Logic.AbstractInheritancePLNBridge
-import Mettapedia.Logic.AbstractInheritanceCanary
-import Mettapedia.Logic.AbstractInheritanceIntensionalDemo

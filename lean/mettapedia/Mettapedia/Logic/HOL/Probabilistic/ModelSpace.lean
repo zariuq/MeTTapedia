@@ -1,5 +1,5 @@
 import Mathlib.MeasureTheory.MeasurableSpace.Defs
-import Mettapedia.Logic.HOL.WorldModel
+import Mettapedia.Logic.HOL.Semantics.Satisfaction
 
 /-!
 # Indexed Model Spaces for Probabilistic HOL
@@ -20,7 +20,6 @@ separate from that layer.
 namespace Mettapedia.Logic.HOL.Probabilistic
 
 open Mettapedia.Logic.HOL
-open Mettapedia.Logic.HOL.WorldModel
 
 universe u v w x
 

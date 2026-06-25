@@ -68,7 +68,6 @@ lake build Mettapedia.Logic.LP
 |--------|-------------|
 | [FunctionFree.lean](FunctionFree.lean) | Function-free fragment with finite evaluation guarantees |
 | [FunctionFreeEvaluation.lean](FunctionFreeEvaluation.lean) | Evaluation in the function-free fragment |
-| [FunctionFreePeTTa.lean](FunctionFreePeTTa.lean) | PeTTa-specific function-free specialization |
 | [RangeRestriction.lean](RangeRestriction.lean) | Range-restricted clauses and unit-KB LHM characterization |
 | [MMMeasure.lean](MMMeasure.lean) | Term-size measure for well-founded recursion |
 | [Stratification.lean](Stratification.lean) | Stratified fixpoint semantics for normal programs with negation-as-failure (per-stratum `OrderHom.lfp`) |
@@ -79,12 +78,15 @@ lake build Mettapedia.Logic.LP
 
 | Module | What it does |
 |--------|-------------|
-| [MeTTaILBridge.lean](MeTTaILBridge.lean) | `DeclReduces` implies LHM membership |
 | [WorldModelBridge.lean](WorldModelBridge.lean) | LP knowledge base as PLN world-model instance |
 | [PathMapBridge.lean](PathMapBridge.lean) | PathMap lattice operations as LP queries |
-| [OSLFBridge.lean](OSLFBridge.lean) | OSLF language instance for LP |
 | [CertifyingDatalogBridge.lean](CertifyingDatalogBridge.lean) | Bridge to certifying Datalog evaluation |
 | [Provenance.lean](Provenance.lean) | Derivation provenance tracking |
+
+Moved language bridge: [MeTTaIL LP bridge](../../OSLF/MeTTaIL/LPBridge.lean)
+now lives with the MeTTaIL/OSLF source language.
+Moved RelationEnv bridge: [LP RelationEnv bridge](../../OSLF/MeTTaIL/LPRelationEnvBridge.lean)
+now lives with the MeTTaIL/OSLF source language.
 
 ### ATP / chainer
 

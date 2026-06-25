@@ -23,7 +23,7 @@ Negative example:
 namespace Mettapedia.Logic.LP
 
 open Mettapedia.Logic.BDDCore
-open Mettapedia.Logic.ProbLogCompilation
+open Mettapedia.PLN.Bridges.Languages.ProbLog.Compilation
 
 /-- A first-order goal literal for normal-rule bodies. -/
 inductive FirstOrderGoalLit (σ : LPSignature) where

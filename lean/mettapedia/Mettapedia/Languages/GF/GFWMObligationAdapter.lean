@@ -1,7 +1,7 @@
 import Mathlib.CategoryTheory.Functor.FullyFaithful
 import Mettapedia.Languages.GF.GFWMConnections
-import Mettapedia.Logic.PLNWorldModelPureKernelBridge
-import Mettapedia.Logic.PLNWorldModelCategoricalBridge
+import Mettapedia.PLN.Bridges.Languages.WorldModel.PLNWorldModelPureKernelBridge
+import Mettapedia.PLN.Bridges.CategoryTheory.WorldModel.PLNWorldModelCategoricalBridge
 
 /-!
 # GF → WM Obligation Adapter (Pure-Interface Aligned)
@@ -25,10 +25,10 @@ open CategoryTheory
 open Mettapedia.Languages.GF.HandCrafted.Abstract
 open Mettapedia.Languages.GF.OSLFBridge
 open Mettapedia.Languages.GF.GFWMConnections
-open Mettapedia.Logic.PLNWorldModel
-open Mettapedia.Logic.PLNWorldModelPureKernelBridge
-open Mettapedia.Logic.PLNWorldModelCategoricalBridge.WMHyperdoctrine
-open Mettapedia.Logic.EvidenceClass
+open Mettapedia.PLN.WorldModel.PLNWorldModel
+open Mettapedia.PLN.Bridges.Languages.WorldModel.PLNWorldModelPureKernelBridge
+open Mettapedia.PLN.Bridges.CategoryTheory.WorldModel.PLNWorldModelCategoricalBridge.WMHyperdoctrine
+open Mettapedia.PLN.Evidence.EvidenceClass
 open Mettapedia.Languages.MeTTa.PureKernel.ProfileTheory
 open Mettapedia.OSLF.MeTTaIL.Syntax
 
@@ -115,7 +115,7 @@ variable [EvidenceType State] [BinaryWorldModel State Query]
 This gives one theorem-level entry point from GF adapter obligations into the
 categorical WM endpoint surface. -/
 theorem gfSyntaxHom_and_institution_beckChevalley_endpoint
-    (H : Mettapedia.Logic.PLNWorldModelHyperdoctrine.WMHyperdoctrine State)
+    (H : Mettapedia.PLN.Bridges.CategoryTheory.WorldModel.PLNWorldModelHyperdoctrine.WMHyperdoctrine State)
     {P Aobj Bobj D : H.Obj}
     (pi1 : P ⟶ Aobj) (pi2 : P ⟶ Bobj) (fcat : Aobj ⟶ D) (gcat : Bobj ⟶ D)
     (hpb : CategoryTheory.IsPullback pi1 pi2 fcat gcat)

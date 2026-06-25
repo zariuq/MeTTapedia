@@ -1,5 +1,5 @@
 import Mettapedia.Logic.GovernanceReasoning.Core
-import Mettapedia.Logic.PLNWorldModelCalculus
+import Mettapedia.PLN.WorldModel.PLNWorldModelCalculus
 
 /-!
 # Governance Reasoning: WM Calculus Bridge
@@ -23,9 +23,9 @@ PLN world-model calculus (`BinaryWorldModel`, `WMRewriteRule`, `BinaryEvidence`)
 
 namespace Mettapedia.Logic.GovernanceReasoning.Bridge
 
-open Mettapedia.Logic.EvidenceClass
-open Mettapedia.Logic.EvidenceQuantale
-open Mettapedia.Logic.PLNWorldModel
+open Mettapedia.PLN.Evidence.EvidenceClass
+open Mettapedia.PLN.Evidence.EvidenceQuantale
+open Mettapedia.PLN.WorldModel.PLNWorldModel
 open Mettapedia.Logic.GovernanceReasoning.Core
 
 open scoped ENNReal

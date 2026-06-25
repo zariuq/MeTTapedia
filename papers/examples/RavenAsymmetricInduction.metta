@@ -6,7 +6,7 @@
 ;; Runnable on Hyperon Experimental:   metta RavenAsymmetricInduction.metta
 ;; (uses only grounded float arithmetic; integers floor-divide, so use floats.)
 ;;
-;; Mirrors  Mettapedia/Logic/RavenAsymmetricInduction.lean
+;; Mirrors  Mettapedia/PLN/RuleFamilies/FirstOrder/RavenAsymmetricInduction.lean
 ;;   evidence  = (Ev pos neg)          (BinaryEvidence ⟨pos, neg⟩)
 ;;   strength  = pos / (pos + neg)      (toStrength)
 ;;   revision  = componentwise add      (revision = (+))

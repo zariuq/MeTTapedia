@@ -1,4 +1,4 @@
-import Mettapedia.Logic.FormedConceptFixpointClosureBridge
+import Mettapedia.PLN.Bridges.KR.ConceptClosure.FormedConceptFixpointClosureBridge
 import Mettapedia.Logic.MarkovLogicOntologyGrowth
 
 /-!
@@ -19,9 +19,11 @@ then be re-applied on the grown side without re-proving the semantic slice.
 namespace Mettapedia.Logic.FormedConceptOntologyGrowthBridge
 
 open Mettapedia.Logic
+open Mettapedia.KR.ConceptGeometry
 open Mettapedia.Logic.MarkovLogicClauseFactorGraph
-open Mettapedia.Logic.PLNWorldModel
-open Mettapedia.Logic.PLNWorldModelFixpointClosure
+open Mettapedia.PLN.WorldModel.PLNWorldModel
+open Mettapedia.PLN.WorldModel.Fixpoint.PLNWorldModelFixpointClosure
+open Mettapedia.PLN.Bridges.KR.ConceptClosure
 open Mettapedia.Logic.MarkovLogicAbstract
 open Mettapedia.Logic.MarkovLogicInfiniteWorldModel
 open Mettapedia.Logic.MarkovLogicOntologyGrowth
@@ -55,7 +57,7 @@ theorem formedConceptQueryStrength_eq_of_specAgreesOnRegion
     (hμ₂ : MarkovLogicInfiniteFixedRegionDLR.FixedRegionCylinderDLR
       M₂.toStrictlyPositiveInfiniteGroundMLNSpec
       (μ₂ : MeasureTheory.Measure (MarkovLogicInfiniteSpecification.InfiniteWorld Atom)))
-    (G : ConceptOntology.EvidenceGate Q) (M : Obj → Attr → Q)
+    (G : _root_.Mettapedia.KR.ConceptOntology.EvidenceGate Q) (M : Obj → Attr → Q)
     (encode :
       AbstractInheritance.FormedConcept G M →
         AbstractInheritance.FormedConcept G M →
@@ -97,7 +99,7 @@ theorem thresholdValid_formedConceptQuerySet_stable_of_specAgreesOnRegion
     (hμ₂ : MarkovLogicInfiniteFixedRegionDLR.FixedRegionCylinderDLR
       M₂.toStrictlyPositiveInfiniteGroundMLNSpec
       (μ₂ : MeasureTheory.Measure (MarkovLogicInfiniteSpecification.InfiniteWorld Atom)))
-    (G : ConceptOntology.EvidenceGate Q) (M : Obj → Attr → Q)
+    (G : _root_.Mettapedia.KR.ConceptOntology.EvidenceGate Q) (M : Obj → Attr → Q)
     (tau : ENNReal)
     (encode :
       AbstractInheritance.FormedConcept G M →
@@ -156,7 +158,7 @@ theorem leastRuleClosure_thresholdValid_formedConceptQuerySet_of_specAgreesOnReg
     (hμ₂ : MarkovLogicInfiniteFixedRegionDLR.FixedRegionCylinderDLR
       M₂.toStrictlyPositiveInfiniteGroundMLNSpec
       (μ₂ : MeasureTheory.Measure (MarkovLogicInfiniteSpecification.InfiniteWorld Atom)))
-    (G : ConceptOntology.EvidenceGate Q) (M : Obj → Attr → Q)
+    (G : _root_.Mettapedia.KR.ConceptOntology.EvidenceGate Q) (M : Obj → Attr → Q)
     (tau : ENNReal)
     (encode :
       AbstractInheritance.FormedConcept G M →
@@ -221,7 +223,7 @@ theorem generic_availableRegionAt_subset_wmAdmissibleRegionAt_of_specAgreesOnReg
     (hμ₂ : MarkovLogicInfiniteFixedRegionDLR.FixedRegionCylinderDLR
       M₂.toStrictlyPositiveInfiniteGroundMLNSpec
       (μ₂ : MeasureTheory.Measure (MarkovLogicInfiniteSpecification.InfiniteWorld Atom)))
-    (G : ConceptOntology.EvidenceGate Q) (M : Obj → Attr → Q)
+    (G : _root_.Mettapedia.KR.ConceptOntology.EvidenceGate Q) (M : Obj → Attr → Q)
     (B : Cost) (guard : Set (ConstraintQuery Atom)) (tau : ENNReal)
     (encode :
       AbstractInheritance.FormedConcept G M →
@@ -246,11 +248,11 @@ theorem generic_availableRegionAt_subset_wmAdmissibleRegionAt_of_specAgreesOnReg
           R ({infiniteMLNMassSemantics M₂ μ₂ hμ₂})
           (FormedConceptFixpointClosureBridge.formedConceptQuerySet G M encode seed)) :
     availableRegionAt P ({infiniteMLNMassSemantics M₂ μ₂ hμ₂}) B guard ⊆
-      PLNWorldModelRegimeAdmissibility.wmAdmissibleRegionAt
+      Mettapedia.PLN.RuleFamilies.HigherOrder.PLNWorldModelRegimeAdmissibility.wmAdmissibleRegionAt
         (State := MassState (ConstraintQuery Atom))
         (Query := ConstraintQuery Atom)
         P ({infiniteMLNMassSemantics M₂ μ₂ hμ₂}) B guard tau := by
-  apply PLNWorldModelRegimeAdmissibility.availableRegionAt_subset_wmAdmissibleRegionAt_of_thresholdValid
+  apply Mettapedia.PLN.RuleFamilies.HigherOrder.PLNWorldModelRegimeAdmissibility.availableRegionAt_subset_wmAdmissibleRegionAt_of_thresholdValid
     (S := leastRuleClosure
       (State := MassState (ConstraintQuery Atom))
       (Query := ConstraintQuery Atom)
@@ -285,7 +287,7 @@ theorem generic_wmAdmissibleRegionAt_eq_availableRegionAt_of_specAgreesOnRegion
     (hμ₂ : MarkovLogicInfiniteFixedRegionDLR.FixedRegionCylinderDLR
       M₂.toStrictlyPositiveInfiniteGroundMLNSpec
       (μ₂ : MeasureTheory.Measure (MarkovLogicInfiniteSpecification.InfiniteWorld Atom)))
-    (G : ConceptOntology.EvidenceGate Q) (M : Obj → Attr → Q)
+    (G : _root_.Mettapedia.KR.ConceptOntology.EvidenceGate Q) (M : Obj → Attr → Q)
     (B : Cost) (guard : Set (ConstraintQuery Atom)) (tau : ENNReal)
     (encode :
       AbstractInheritance.FormedConcept G M →
@@ -309,12 +311,12 @@ theorem generic_wmAdmissibleRegionAt_eq_availableRegionAt_of_specAgreesOnRegion
           (Query := ConstraintQuery Atom)
           R ({infiniteMLNMassSemantics M₂ μ₂ hμ₂})
           (FormedConceptFixpointClosureBridge.formedConceptQuerySet G M encode seed)) :
-    PLNWorldModelRegimeAdmissibility.wmAdmissibleRegionAt
+    Mettapedia.PLN.RuleFamilies.HigherOrder.PLNWorldModelRegimeAdmissibility.wmAdmissibleRegionAt
         (State := MassState (ConstraintQuery Atom))
         (Query := ConstraintQuery Atom)
         P ({infiniteMLNMassSemantics M₂ μ₂ hμ₂}) B guard tau =
       availableRegionAt P ({infiniteMLNMassSemantics M₂ μ₂ hμ₂}) B guard := by
-  apply PLNWorldModelRegimeAdmissibility.wmAdmissibleRegionAt_eq_availableRegionAt_of_thresholdValid
+  apply Mettapedia.PLN.RuleFamilies.HigherOrder.PLNWorldModelRegimeAdmissibility.wmAdmissibleRegionAt_eq_availableRegionAt_of_thresholdValid
   exact thresholdValid_mono
     (State := MassState (ConstraintQuery Atom))
     (Query := ConstraintQuery Atom)
@@ -353,37 +355,37 @@ theorem ConceptOntology.ObservationSurface.thresholdValid_observationFormedConce
     (hμ₂ : MarkovLogicInfiniteFixedRegionDLR.FixedRegionCylinderDLR
       M₂.toStrictlyPositiveInfiniteGroundMLNSpec
       (μ₂ : MeasureTheory.Measure (MarkovLogicInfiniteSpecification.InfiniteWorld Atom)))
-    (S : ConceptOntology.ObservationSurface Obs Obj Attr Q)
-    (G : ConceptOntology.EvidenceGate Q) (σ : Multiset Obs)
+    (S : _root_.Mettapedia.KR.ConceptOntology.ObservationSurface Obs Obj Attr Q)
+    (G : _root_.Mettapedia.KR.ConceptOntology.EvidenceGate Q) (σ : Multiset Obs)
     (tau : ENNReal)
     (encode :
-      ConceptOntology.ObservationSurface.FormedConcept S G σ →
-        ConceptOntology.ObservationSurface.FormedConcept S G σ →
+      _root_.Mettapedia.KR.ConceptOntology.ObservationSurface.FormedConcept S G σ →
+        _root_.Mettapedia.KR.ConceptOntology.ObservationSurface.FormedConcept S G σ →
           ConstraintQuery Atom)
     (seed :
       Set
-        (ConceptOntology.ObservationSurface.FormedConcept S G σ ×
-          ConceptOntology.ObservationSurface.FormedConcept S G σ))
+        (_root_.Mettapedia.KR.ConceptOntology.ObservationSurface.FormedConcept S G σ ×
+          _root_.Mettapedia.KR.ConceptOntology.ObservationSurface.FormedConcept S G σ))
     (hSeed :
       thresholdValid
         (State := MassState (ConstraintQuery Atom))
         (Query := ConstraintQuery Atom)
         ({infiniteMLNMassSemantics M₁ μ₁ hμ₁}) tau
         (FormedConceptFixpointClosureBridge.formedConceptQuerySet G
-          (ConceptOntology.ObservationSurface.aggregate S σ) encode seed))
+          (_root_.Mettapedia.KR.ConceptOntology.ObservationSurface.aggregate S σ) encode seed))
     (hSupport :
-      ∀ p : ConceptOntology.ObservationSurface.FormedConcept S G σ ×
-          ConceptOntology.ObservationSurface.FormedConcept S G σ, p ∈ seed →
+      ∀ p : _root_.Mettapedia.KR.ConceptOntology.ObservationSurface.FormedConcept S G σ ×
+          _root_.Mettapedia.KR.ConceptOntology.ObservationSurface.FormedConcept S G σ, p ∈ seed →
         ∀ c ∈ encode p.1 p.2, (c : Sigma fun _ : Atom => Bool).1 ∈ Γ) :
     thresholdValid
       (State := MassState (ConstraintQuery Atom))
       (Query := ConstraintQuery Atom)
       ({infiniteMLNMassSemantics M₂ μ₂ hμ₂}) tau
       (FormedConceptFixpointClosureBridge.formedConceptQuerySet G
-        (ConceptOntology.ObservationSurface.aggregate S σ) encode seed) := by
+        (_root_.Mettapedia.KR.ConceptOntology.ObservationSurface.aggregate S σ) encode seed) := by
   exact thresholdValid_formedConceptQuerySet_stable_of_specAgreesOnRegion
     hagree hclosed₁ hclosed₂ hbudget₁ hbudget₂ μ₁ μ₂ hμ₁ hμ₂
-    G (ConceptOntology.ObservationSurface.aggregate S σ) tau encode seed hSeed hSupport
+    G (_root_.Mettapedia.KR.ConceptOntology.ObservationSurface.aggregate S σ) tau encode seed hSeed hSupport
 
 /-- Observation-level closure corollary: once an observation-formed seed family
 is locally stable under ontology growth, generic WM consequence closure on the
@@ -408,27 +410,27 @@ theorem ConceptOntology.ObservationSurface.leastRuleClosure_thresholdValid_obser
     (hμ₂ : MarkovLogicInfiniteFixedRegionDLR.FixedRegionCylinderDLR
       M₂.toStrictlyPositiveInfiniteGroundMLNSpec
       (μ₂ : MeasureTheory.Measure (MarkovLogicInfiniteSpecification.InfiniteWorld Atom)))
-    (S : ConceptOntology.ObservationSurface Obs Obj Attr Q)
-    (G : ConceptOntology.EvidenceGate Q) (σ : Multiset Obs)
+    (S : _root_.Mettapedia.KR.ConceptOntology.ObservationSurface Obs Obj Attr Q)
+    (G : _root_.Mettapedia.KR.ConceptOntology.EvidenceGate Q) (σ : Multiset Obs)
     (tau : ENNReal)
     (encode :
-      ConceptOntology.ObservationSurface.FormedConcept S G σ →
-        ConceptOntology.ObservationSurface.FormedConcept S G σ →
+      _root_.Mettapedia.KR.ConceptOntology.ObservationSurface.FormedConcept S G σ →
+        _root_.Mettapedia.KR.ConceptOntology.ObservationSurface.FormedConcept S G σ →
           ConstraintQuery Atom)
     (seed :
       Set
-        (ConceptOntology.ObservationSurface.FormedConcept S G σ ×
-          ConceptOntology.ObservationSurface.FormedConcept S G σ))
+        (_root_.Mettapedia.KR.ConceptOntology.ObservationSurface.FormedConcept S G σ ×
+          _root_.Mettapedia.KR.ConceptOntology.ObservationSurface.FormedConcept S G σ))
     (hSeed :
       thresholdValid
         (State := MassState (ConstraintQuery Atom))
         (Query := ConstraintQuery Atom)
         ({infiniteMLNMassSemantics M₁ μ₁ hμ₁}) tau
         (FormedConceptFixpointClosureBridge.formedConceptQuerySet G
-          (ConceptOntology.ObservationSurface.aggregate S σ) encode seed))
+          (_root_.Mettapedia.KR.ConceptOntology.ObservationSurface.aggregate S σ) encode seed))
     (hSupport :
-      ∀ p : ConceptOntology.ObservationSurface.FormedConcept S G σ ×
-          ConceptOntology.ObservationSurface.FormedConcept S G σ, p ∈ seed →
+      ∀ p : _root_.Mettapedia.KR.ConceptOntology.ObservationSurface.FormedConcept S G σ ×
+          _root_.Mettapedia.KR.ConceptOntology.ObservationSurface.FormedConcept S G σ, p ∈ seed →
         ∀ c ∈ encode p.1 p.2, (c : Sigma fun _ : Atom => Bool).1 ∈ Γ) :
     thresholdValid
       (State := MassState (ConstraintQuery Atom))
@@ -439,10 +441,10 @@ theorem ConceptOntology.ObservationSurface.leastRuleClosure_thresholdValid_obser
         (Query := ConstraintQuery Atom)
         R ({infiniteMLNMassSemantics M₂ μ₂ hμ₂})
         (FormedConceptFixpointClosureBridge.formedConceptQuerySet G
-          (ConceptOntology.ObservationSurface.aggregate S σ) encode seed)) := by
+          (_root_.Mettapedia.KR.ConceptOntology.ObservationSurface.aggregate S σ) encode seed)) := by
   exact leastRuleClosure_thresholdValid_formedConceptQuerySet_of_specAgreesOnRegion
     R hagree hclosed₁ hclosed₂ hbudget₁ hbudget₂ μ₁ μ₂ hμ₁ hμ₂
-    G (ConceptOntology.ObservationSurface.aggregate S σ) tau encode seed hSeed hSupport
+    G (_root_.Mettapedia.KR.ConceptOntology.ObservationSurface.aggregate S σ) tau encode seed hSeed hSupport
 
 section ObservationAdmissibility
 
@@ -474,27 +476,27 @@ theorem ConceptOntology.ObservationSurface.availableRegionAt_subset_wmAdmissible
     (hμ₂ : MarkovLogicInfiniteFixedRegionDLR.FixedRegionCylinderDLR
       M₂.toStrictlyPositiveInfiniteGroundMLNSpec
       (μ₂ : MeasureTheory.Measure (MarkovLogicInfiniteSpecification.InfiniteWorld Atom)))
-    (S : ConceptOntology.ObservationSurface Obs Obj Attr Q)
-    (G : ConceptOntology.EvidenceGate Q) (σ : Multiset Obs)
+    (S : _root_.Mettapedia.KR.ConceptOntology.ObservationSurface Obs Obj Attr Q)
+    (G : _root_.Mettapedia.KR.ConceptOntology.EvidenceGate Q) (σ : Multiset Obs)
     (B : Cost) (guard : Set (ConstraintQuery Atom)) (tau : ENNReal)
     (encode :
-      ConceptOntology.ObservationSurface.FormedConcept S G σ →
-        ConceptOntology.ObservationSurface.FormedConcept S G σ →
+      _root_.Mettapedia.KR.ConceptOntology.ObservationSurface.FormedConcept S G σ →
+        _root_.Mettapedia.KR.ConceptOntology.ObservationSurface.FormedConcept S G σ →
           ConstraintQuery Atom)
     (seed :
       Set
-        (ConceptOntology.ObservationSurface.FormedConcept S G σ ×
-          ConceptOntology.ObservationSurface.FormedConcept S G σ))
+        (_root_.Mettapedia.KR.ConceptOntology.ObservationSurface.FormedConcept S G σ ×
+          _root_.Mettapedia.KR.ConceptOntology.ObservationSurface.FormedConcept S G σ))
     (hSeed :
       thresholdValid
         (State := MassState (ConstraintQuery Atom))
         (Query := ConstraintQuery Atom)
         ({infiniteMLNMassSemantics M₁ μ₁ hμ₁}) tau
         (FormedConceptFixpointClosureBridge.formedConceptQuerySet G
-          (ConceptOntology.ObservationSurface.aggregate S σ) encode seed))
+          (_root_.Mettapedia.KR.ConceptOntology.ObservationSurface.aggregate S σ) encode seed))
     (hSupport :
-      ∀ p : ConceptOntology.ObservationSurface.FormedConcept S G σ ×
-          ConceptOntology.ObservationSurface.FormedConcept S G σ, p ∈ seed →
+      ∀ p : _root_.Mettapedia.KR.ConceptOntology.ObservationSurface.FormedConcept S G σ ×
+          _root_.Mettapedia.KR.ConceptOntology.ObservationSurface.FormedConcept S G σ, p ∈ seed →
         ∀ c ∈ encode p.1 p.2, (c : Sigma fun _ : Atom => Bool).1 ∈ Γ)
     (hAvail :
       availableRegionAt P ({infiniteMLNMassSemantics M₂ μ₂ hμ₂}) B guard ⊆
@@ -503,15 +505,15 @@ theorem ConceptOntology.ObservationSurface.availableRegionAt_subset_wmAdmissible
           (Query := ConstraintQuery Atom)
           R ({infiniteMLNMassSemantics M₂ μ₂ hμ₂})
           (FormedConceptFixpointClosureBridge.formedConceptQuerySet G
-            (ConceptOntology.ObservationSurface.aggregate S σ) encode seed)) :
+            (_root_.Mettapedia.KR.ConceptOntology.ObservationSurface.aggregate S σ) encode seed)) :
     availableRegionAt P ({infiniteMLNMassSemantics M₂ μ₂ hμ₂}) B guard ⊆
-      PLNWorldModelRegimeAdmissibility.wmAdmissibleRegionAt
+      Mettapedia.PLN.RuleFamilies.HigherOrder.PLNWorldModelRegimeAdmissibility.wmAdmissibleRegionAt
         (State := MassState (ConstraintQuery Atom))
         (Query := ConstraintQuery Atom)
         P ({infiniteMLNMassSemantics M₂ μ₂ hμ₂}) B guard tau := by
   exact generic_availableRegionAt_subset_wmAdmissibleRegionAt_of_specAgreesOnRegion
     P R hagree hclosed₁ hclosed₂ hbudget₁ hbudget₂ μ₁ μ₂ hμ₁ hμ₂
-    G (ConceptOntology.ObservationSurface.aggregate S σ) B guard tau encode seed hSeed hSupport hAvail
+    G (_root_.Mettapedia.KR.ConceptOntology.ObservationSurface.aggregate S σ) B guard tau encode seed hSeed hSupport hAvail
 
 /-- Observation-level admissible-region collapse corollary for locally stable
 formed-concept obligations under ontology growth. -/
@@ -536,27 +538,27 @@ theorem ConceptOntology.ObservationSurface.wmAdmissibleRegionAt_eq_availableRegi
     (hμ₂ : MarkovLogicInfiniteFixedRegionDLR.FixedRegionCylinderDLR
       M₂.toStrictlyPositiveInfiniteGroundMLNSpec
       (μ₂ : MeasureTheory.Measure (MarkovLogicInfiniteSpecification.InfiniteWorld Atom)))
-    (S : ConceptOntology.ObservationSurface Obs Obj Attr Q)
-    (G : ConceptOntology.EvidenceGate Q) (σ : Multiset Obs)
+    (S : _root_.Mettapedia.KR.ConceptOntology.ObservationSurface Obs Obj Attr Q)
+    (G : _root_.Mettapedia.KR.ConceptOntology.EvidenceGate Q) (σ : Multiset Obs)
     (B : Cost) (guard : Set (ConstraintQuery Atom)) (tau : ENNReal)
     (encode :
-      ConceptOntology.ObservationSurface.FormedConcept S G σ →
-        ConceptOntology.ObservationSurface.FormedConcept S G σ →
+      _root_.Mettapedia.KR.ConceptOntology.ObservationSurface.FormedConcept S G σ →
+        _root_.Mettapedia.KR.ConceptOntology.ObservationSurface.FormedConcept S G σ →
           ConstraintQuery Atom)
     (seed :
       Set
-        (ConceptOntology.ObservationSurface.FormedConcept S G σ ×
-          ConceptOntology.ObservationSurface.FormedConcept S G σ))
+        (_root_.Mettapedia.KR.ConceptOntology.ObservationSurface.FormedConcept S G σ ×
+          _root_.Mettapedia.KR.ConceptOntology.ObservationSurface.FormedConcept S G σ))
     (hSeed :
       thresholdValid
         (State := MassState (ConstraintQuery Atom))
         (Query := ConstraintQuery Atom)
         ({infiniteMLNMassSemantics M₁ μ₁ hμ₁}) tau
         (FormedConceptFixpointClosureBridge.formedConceptQuerySet G
-          (ConceptOntology.ObservationSurface.aggregate S σ) encode seed))
+          (_root_.Mettapedia.KR.ConceptOntology.ObservationSurface.aggregate S σ) encode seed))
     (hSupport :
-      ∀ p : ConceptOntology.ObservationSurface.FormedConcept S G σ ×
-          ConceptOntology.ObservationSurface.FormedConcept S G σ, p ∈ seed →
+      ∀ p : _root_.Mettapedia.KR.ConceptOntology.ObservationSurface.FormedConcept S G σ ×
+          _root_.Mettapedia.KR.ConceptOntology.ObservationSurface.FormedConcept S G σ, p ∈ seed →
         ∀ c ∈ encode p.1 p.2, (c : Sigma fun _ : Atom => Bool).1 ∈ Γ)
     (hAvail :
       availableRegionAt P ({infiniteMLNMassSemantics M₂ μ₂ hμ₂}) B guard ⊆
@@ -565,15 +567,15 @@ theorem ConceptOntology.ObservationSurface.wmAdmissibleRegionAt_eq_availableRegi
           (Query := ConstraintQuery Atom)
           R ({infiniteMLNMassSemantics M₂ μ₂ hμ₂})
           (FormedConceptFixpointClosureBridge.formedConceptQuerySet G
-            (ConceptOntology.ObservationSurface.aggregate S σ) encode seed)) :
-    PLNWorldModelRegimeAdmissibility.wmAdmissibleRegionAt
+            (_root_.Mettapedia.KR.ConceptOntology.ObservationSurface.aggregate S σ) encode seed)) :
+    Mettapedia.PLN.RuleFamilies.HigherOrder.PLNWorldModelRegimeAdmissibility.wmAdmissibleRegionAt
         (State := MassState (ConstraintQuery Atom))
         (Query := ConstraintQuery Atom)
         P ({infiniteMLNMassSemantics M₂ μ₂ hμ₂}) B guard tau =
       availableRegionAt P ({infiniteMLNMassSemantics M₂ μ₂ hμ₂}) B guard := by
   exact generic_wmAdmissibleRegionAt_eq_availableRegionAt_of_specAgreesOnRegion
     P R hagree hclosed₁ hclosed₂ hbudget₁ hbudget₂ μ₁ μ₂ hμ₁ hμ₂
-    G (ConceptOntology.ObservationSurface.aggregate S σ) B guard tau encode seed hSeed hSupport hAvail
+    G (_root_.Mettapedia.KR.ConceptOntology.ObservationSurface.aggregate S σ) B guard tau encode seed hSeed hSupport hAvail
 
 end ObservationAdmissibility
 

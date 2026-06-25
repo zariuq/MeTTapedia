@@ -1,9 +1,9 @@
-import Mettapedia.Logic.EvidenceQuantale
-import Mettapedia.Logic.EvidenceQuantale
-import Mettapedia.Logic.EvidenceBeta
-import Mettapedia.Logic.HeytingValuationOnEvidence
-import Mettapedia.Logic.ConfidenceCompoundingTheorem
-import Mettapedia.Logic.EvidenceIntervalBounds
+import Mettapedia.PLN.Evidence.EvidenceQuantale
+import Mettapedia.PLN.Evidence.EvidenceQuantale
+import Mettapedia.PLN.Bridges.ProbabilityTheory.EvidenceBeta
+import Mettapedia.PLN.Evidence.HeytingValuationOnEvidence
+import Mettapedia.PLN.Evidence.ConfidenceCompoundingTheorem
+import Mettapedia.PLN.Evidence.EvidenceIntervalBounds
 import Mettapedia.ProbabilityTheory.BayesianNetworks.DirectedGraph
 import Mettapedia.ProbabilityTheory.BayesianNetworks.BayesianNetwork
 import Mettapedia.ProbabilityTheory.BayesianNetworks.DSeparation
@@ -44,12 +44,12 @@ and inference:
 
 namespace Mettapedia.ProbabilityTheory.UnifiedProbabilityBridge
 
-open Mettapedia.Logic.EvidenceQuantale
-open Mettapedia.Logic.EvidenceQuantale
-open Mettapedia.Logic.EvidenceBeta
-open Mettapedia.Logic.HeytingValuationOnEvidence
-open Mettapedia.Logic.ConfidenceCompoundingTheorem
-open Mettapedia.Logic.EvidenceIntervalBounds
+open Mettapedia.PLN.Evidence.EvidenceQuantale
+open Mettapedia.PLN.Evidence.EvidenceQuantale
+open Mettapedia.PLN.Bridges.ProbabilityTheory.EvidenceBeta
+open Mettapedia.PLN.Evidence.HeytingValuationOnEvidence
+open Mettapedia.PLN.Evidence.ConfidenceCompoundingTheorem
+open Mettapedia.PLN.Evidence.EvidenceIntervalBounds
 open Mettapedia.ProbabilityTheory.BayesianNetworks
 
 /-! ## Pillar 1: Bayesian Networks - Conditional Independence -/

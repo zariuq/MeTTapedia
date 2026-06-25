@@ -1,0 +1,2022 @@
+%% CeTTa: A Direct C Runtime for MeTTa with Verified Translation
+%%
+%% Build:
+%%   pdflatex CeTTa.tex
+
+\documentclass[11pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage{geometry}
+\geometry{margin=1in}
+\usepackage{hyperref}
+\usepackage{longtable}
+\usepackage{booktabs}
+\usepackage{listings}
+\usepackage{multirow}
+\usepackage{array}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,fit,backgrounds}
+\setlength{\emergencystretch}{3em}
+\lstset{
+  basicstyle=\ttfamily\small,
+  breaklines=true,
+  frame=single,
+  columns=fullflexible
+}
+
+\newcommand{\code}[1]{\texttt{#1}}
+\newcommand{\PeTTa}{\textup{PeTTa}}
+\newcommand{\HE}{\textup{HE}}
+\newcommand{\CeTTa}{\textup{CeTTa}}
+\newcommand{\PathMap}{\textup{PathMap}}
+\newcommand{\RhoCalc}{\textup{RhoCalc}}
+
+\title{\CeTTa{}:\\
+\large A Direct C Runtime for MeTTa with Verified Translation}
+\author{Zar Goertzel\\Oru\v{z}i}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+MeTTa is a reflective, non-deterministic meta-language with three
+actively maintained runtimes: Hyperon Experimental (\HE{}, Rust),
+\PeTTa{} (Prolog), and \CeTTa{} (C).  This paper describes \CeTTa{},
+a direct C implementation of the \HE{} MeTTa evaluator that passes a
+375-file regression suite with zero failures (equally green in the
+MORK-bridge build), backed by a 333-case rule-indexed conformance
+catalog against upstream \HE{}~v0.2.10 covering 24/24 specification
+rule capacities, and achieves \textbf{9.5$\times$ speedup over
+\PeTTa{}} on genuine depth-10 PLN backward chaining with truth-value
+propagation (19{,}845~hypotheses over 1.4M~atoms in 15\,s vs.\
+\PeTTa{}'s 143\,s), while losing 13$\times$ on pure branching search
+(8-queens) and 30$\times$ on BFS state exploration (tilepuzzle).
+The runtime is organized as an explicit profile family:
+\code{he-compat} mirrors Rust \HE{} literally (including its quirks);
+the principled \code{he} line carries exact rationals, true division,
+and per-case recorded divergences; \code{he-extended} adds labeled
+extensions; \code{he-prime} adds dependent telescopes.  The one-step
+reduction relation is reflected into MeTTa itself as a modal surface
+(\code{transitions}, \code{box}, \code{diamond}, normal-form tests)
+aligned with the OSLF
+$\mathrm{LanguageDef}\to\mathrm{ReductionSpan}\to\Diamond/\Box$
+pipeline proven in Lean, and the first rule classes (grounded dispatch,
+argument congruence, equation matching) are welded to a reflectable
+small-step rule table whose rule-removal tests prove the engine
+genuinely depends on the declared rules.
+The runtime features SymbolId-based dispatch (38\% instruction
+reduction), structured space kinds (queue, hash, stack), a pluggable
+match backend with PathMap/MORK integration, and compiled space
+artifacts via MORK's \code{.act} format for zero-copy indexed loading.
+It is backed by a sorry-free Lean proof (5{,}400+ lines) establishing
+semantic correspondence between \HE{} and \PeTTa{} evaluation on the
+pure fragment, including import commutativity and operational bridges
+for state and space allocation.  A kernel-checked HE$'$ telescope
+formalization extends the type system with dependent binder semantics.
+The \RhoCalc{} reaction machine's eval-at-\textsc{comm} semantics is given a
+witness-free, axiom-clean Lean characterization: the quiescent run of the
+canonical payload-evaluation process equals its structurally observable
+outcome set.
+We present a complete benchmark ladder from shallow evaluation through
+depth-10 PLN inference, callgrind/massif-based performance analysis,
+a specification gap analysis, and a three-machine architecture (local
+search, indexed shared-space, type elaboration) informed by GPT-5.4~Pro
+architectural review.
+\end{abstract}
+
+%% ────────────────────────────────────────────────────────────────────
+\section{Introduction}
+
+MeTTa~\cite{metta} is a reflective, typed, non-deterministic language
+designed as the core language of the OpenCog Hyperon AGI framework.
+Three implementations exist:
+
+\begin{description}
+\item[\HE{}] Hyperon Experimental (Rust, v0.2.10).  The reference
+  implementation with Python bindings and a large standard library.
+\item[\PeTTa{}] Prolog-based MeTTa (SWI-Prolog).  Leverages Prolog's
+  SLD resolution for backward chaining and pattern matching.
+\item[\CeTTa{}] Direct C evaluator (this work).  Targets the \HE{} spec
+  with arena allocation, discrimination-trie indexing, and tail-call
+  optimization.
+\end{description}
+
+\paragraph{Contributions.}
+\begin{enumerate}
+\item A direct C runtime passing a 375-file regression suite (0
+  failures) plus 104 profile tests, validated against upstream \HE{}
+  v0.2.10 as oracle.
+\item An explicit profile family (\code{he-compat} / \code{he} /
+  \code{he-extended} / \code{he-prime}) with per-case recorded
+  divergences and a fail-by-default conformance harness: a 333-case
+  rule-indexed catalog (all agree, 24/24 spec-rule capacities) and a
+  378-example broad corpus with every difference classified
+  (Section~\ref{sec:specdriven}).
+\item A reflective modal LTS surface over the evaluator's one-step
+  reduction relation---successor set, $\Box$/$\Diamond$,
+  normal-form tests---with runtime De~Morgan self-tests mirroring the
+  Galois connection proven in the Lean OSLF framework.
+\item The first specification weld: a reflectable small-step rule
+  table gating grounded dispatch, argument congruence, and equation
+  matching, with anti-decorative rule-removal tests.  This converts a
+  cross-branch one-step soundness bug (missing argument congruence)
+  into a structurally prevented class.
+\item A bidirectional \HE{}$\leftrightarrow$\PeTTa{} translator
+  (Prolog + executable Lean), with a sorry-free Lean proof of semantic
+  correspondence.
+\item Cross-runtime benchmarks showing \CeTTa{} 10--67$\times$ faster
+  than \HE{} on shallow evaluation, \PeTTa{} 3$\times$ faster on deep
+  proof search, and a callgrind analysis identifying 46\% of \CeTTa{}'s
+  runtime as optimizable string operations.
+\item A characterization of the semantic boundary between \HE{} and
+  \PeTTa{}: the shared fragment (85\% of programs) runs identically; the
+  divergence is in free-variable scoping across non-deterministic branches.
+\item A specification gap analysis of non-determinism plus mutable state,
+  with 8~concrete examples showing that sequential-per-iteration semantics
+  (CeTTa's default) is correct in 6/8~cases, while \HE{}'s interleaved
+  side-effect evaluation loses atoms in real code (the pattern miner).
+\item \code{with-space-snapshot}: a CeTTa extension for branch-isolated
+  mutation, enabling semi-naive forward chaining and speculative search
+  without the side-effect hazards of shared mutable state.
+\item A witness-free, axiom-clean Lean characterization of the \RhoCalc{}
+  reaction machine's eval-at-\textsc{comm} semantics: the quiescent run of the
+  canonical payload-evaluation process equals its
+  structural-congruence-observed outcome set, with no certification witness in
+  the carrier (Section~\ref{sec:rho-lean}).
+\end{enumerate}
+
+%% ────────────────────────────────────────────────────────────────────
+\section{\CeTTa{} Architecture}
+
+\CeTTa{} is a direct evaluator, not a compiler or boot pipeline.  It
+implements the six mutual functions of the \HE{} evaluation spec
+(\code{EvalAtom}, \code{MettaCall}, \code{InterpretExpression},
+\code{InterpretFunction}, \code{InterpretArgs}, \code{InterpretTuple})
+as C functions with a shared arena allocator.
+
+\subsection{Core Design}
+
+\begin{description}
+\item[Arena allocation.] All atoms are allocated from 64\,KB arena blocks.
+  No per-atom \code{malloc}/\code{free}.  Batch deallocation at scope exit.
+\item[Symbol interning.] A hash table maps symbol strings to unique
+  pointers, enabling O(1) pointer comparison for symbol equality.
+\item[Equation index.] Equations \code{(= lhs rhs)} are indexed by
+  head-symbol hash into 256 buckets, with a discrimination trie within
+  each bucket for fast LHS matching.
+\item[Substitution tree.] An epoch-based discrimination tree
+  (\code{SubstTree}) eliminates per-candidate variable renaming during
+  equation queries by tagging indexed variables with monotonic epochs.
+\item[Tail-call optimization.] A \code{TAIL\_REENTER} trampoline with
+  \code{goto tail\_call} eliminates stack growth for recursive equation
+  dispatch.
+\item[Unlimited fuel.] Default fuel is $-1$ (unlimited), matching the
+  \HE{} spec.  Stack overflow is caught via \code{sigaltstack} +
+  \code{SIGSEGV} handler with a clean error message.
+\item[Two-stage stdlib.] The standard library is precompiled into a
+  binary blob at build time (\code{cetta-stage0} $\to$
+  \code{--compile-stdlib} $\to$ blob $\to$ \code{cetta}), giving 6\,ms
+  startup.
+\end{description}
+
+\subsection{Test Suite}
+
+\CeTTa{} is validated against the \HE{} CLI (v0.2.10) as oracle.
+Golden regression files are oracle-validated when introduced;
+\code{make test} replays them on every build.  Current status:
+\textbf{375 passed, 0 failed, 40 skipped} on the default build and
+\textbf{371 passed, 0 failed, 44 skipped} on the MORK-bridge build
+(all bridge sub-lanes green), plus 104 profile tests covering module
+imports, foreign (Python) function dispatch, numeric-tower and
+profile-surface splits, and extension surfaces.  Two further lanes are
+fail-by-default: \code{make test-step-rules} disables individual
+rule-table entries and \emph{requires} the witnesses to fail
+(Section~\ref{sec:specdriven}), and the semantic conformance suite
+re-runs the curated oracle corpus live against upstream \HE{}
+(Section~\ref{sec:conformance}).
+
+%% ────────────────────────────────────────────────────────────────────
+\section{Specification-Driven Semantics: Profiles, Conformance, and the
+  Small-Step Rule Table}
+\label{sec:specdriven}
+
+\CeTTa{} is organized around an explicit principle: \emph{the semantics
+is a named object, not an emergent property of the implementation}.
+This section describes the profile family, the oracle-conformance
+campaign against upstream \HE{}, the evaluator bug classes that
+campaign exposed, the reflective modal surface over the one-step
+reduction relation, and the first welded rule pack that makes the
+reduction rules themselves runtime data.
+
+\subsection{The Profile Family}
+\label{sec:profiles}
+
+Profiles are distinct semantic products, implemented as additive
+layers---never as visibility masks over one shared universe:
+
+\begin{description}
+\item[\code{he-compat}] A literal mirror of Rust \HE{}~v0.2.10,
+  including its quirks: integer division for \code{/}, the strict
+  three-argument \code{if} surface, Rust's library inventory behavior.
+  Compatibility means matching upstream \emph{behavior}, not
+  reproducing its library set; library availability is out of scope
+  for conformance.
+\item[\code{he}] The principled line.  Spec-faithful where the written
+  specification speaks; where \HE{}'s implementation and its
+  specification diverge, the divergence is adjudicated and recorded
+  per-case.  Carries exact arbitrary-precision rationals, true
+  division for \code{/}, floor division \code{//}, Euclidean
+  \code{math:mod}, and the clean \code{math:} namespace over the
+  Rust-heritage \code{*-math} ops.  Extensions that accept more
+  programs (e.g.\ two-argument \code{if}) are deliberate, recorded
+  surface choices.
+\item[\code{he-extended}] \code{he} plus labeled \CeTTa{} extensions:
+  typed space kinds, \code{with-space-snapshot}, the \code{lts}
+  reflection surface, MORK/PathMap-backed spaces.
+\item[\code{he-prime}] The dependent-telescope extension
+  (Section~\ref{sec:heprime}).
+\end{description}
+
+Two rules keep this family honest.  First, unknown symbols stay
+inert: MeTTa's philosophy is to leave uninterpreted what it does not
+know how to interpret, so no profile ever raises an ``unsupported
+feature'' error---a profile determines what is \emph{interpreted},
+never what is \emph{legal}.  Second, profile differences are explicit
+splits with named tests (e.g.\ \code{profile\_if\_compat\_arity}
+pins that \code{he-compat} rejects two-argument \code{if} exactly as
+upstream does, while \code{he}/\code{he-extended} accept it as a
+recorded extension).
+
+\subsection{Oracle Conformance}
+\label{sec:conformance}
+
+For \code{he-compat}, upstream \HE{}~v0.2.10 is the sole oracle, and
+the harness is a fail-by-default gate, not a green-manufacturing
+report.  Comparison is by \emph{result-bag equality}---multisets of
+parsed results, never byte-equality of output text---so formatting
+differences cannot masquerade as semantic agreement, and duplicate
+results (which are semantically real in MeTTa) are counted.
+
+\begin{description}
+\item[Curated catalog.] 333 cases, every one oracle-validated and in
+  agreement, each mapped to the specification rules it exercises:
+  24/24 spec-rule capacities are covered, and every capacity is
+  classified into one of three lanes---\emph{reduction-span} (the
+  one-step semantics the modal layer consumes),
+  \emph{supporting-surface} (match, unify, grounded dispatch
+  plumbing), and \emph{spatial-policy} (module import, inventory,
+  space policy).  The lane split keeps policy surfaces out of the
+  reduction relation.
+\item[Broad corpus.] 378 upstream examples: 302 agree, 59 classified
+  differences (library availability, which is out of conformance
+  scope; path-import capabilities upstream rejects; environment and
+  rendering differences; and adjudicated upstream drift), 7 timeouts,
+  10 not runnable upstream.  No difference is left unclassified.
+\item[Adjudicated divergences.] Where \CeTTa{} deliberately diverges
+  from upstream, each case carries independent grounds.  Three
+  examples: upstream's post-0.2.10 \code{function}/\code{NoReturn}
+  behavior contradicts its own written specification (a deliberate
+  loop fix that left the document stale); upstream's \code{get-doc}
+  errors on \HE{}'s own documentation example (an arity regression);
+  and the user-visible result of top-level \code{eval} on a
+  non-reducible term is genuinely under-determined by the
+  specification---both engines deviate from the literal
+  instruction-layer reading, in opposite directions.
+\end{description}
+
+The catalog carries an explicit
+\code{no\_runtime\_trace\_or\_certificate\_surface} flag, enforced by
+the suite: conformance is \emph{testing}, and the specification is
+what gets \emph{proven about} in Lean.  \CeTTa{} does not emit
+execution traces or certificates, and a per-run check is never
+presented as a proof.
+
+\subsection{Evaluator Bug Classes the Campaign Exposed}
+\label{sec:bugclasses}
+
+Three bug classes were found and fixed, all instructive.
+
+\paragraph{The Empty algebra.}  When overlapping equations yield a
+branch that reduces to \code{Empty}, two dual defects appeared: the
+surviving sibling branch was returned without being re-driven to
+applicative normal form (violating the spec's applicative order), and
+in other shapes \code{Empty} itself leaked into the visible result bag
+(the spec is explicit that \code{Empty} ``is not returned among other
+results'').  The fix treats the evaluator's outcome set as an algebra
+with \code{Empty} as its absorbing zero and re-drives surviving
+branches independently of their siblings.  In modal terms
+(Section~\ref{sec:modal}): the successor algebra must satisfy
+$\Diamond\bot = \bot$.
+
+\paragraph{The one-step congruence bug.}  The reflective one-step
+surface reported \code{(+ 1 (+ 2 3))} as a \emph{normal form}: the
+one-step relation lacked argument congruence (stepping a reducible
+argument when the head cannot fire), while the big-step evaluator had
+it.  Because the one-step relation and the evaluator were separately
+hand-maintained C branch sets, the gap replicated identically across
+three development branches and was invisible to every test that only
+exercised head-reducible terms.  The bug was diagnosed through the
+modal surface itself ($\Box\bot$ holding on a reducible term), fixed
+as deterministic left-to-right congruence matching the evaluator's
+applicative order---and is the direct motivation for the rule-pack
+weld in Section~\ref{sec:langdefpack}.
+
+\paragraph{The switch/switch-minimal conflation.}  Upstream \HE{}
+types \code{switch} as \code{(-> \%Undefined\% Expression
+\%Undefined\%)}---the scrutinee is \emph{evaluated} before
+matching---while \code{switch-minimal} is \code{(-> Atom Expression
+Atom)}, matching the raw scrutinee structurally.  \CeTTa{} routed both
+spellings through one structural handler, so
+\code{(switch (+ 1 2) ((3 three) ((\$x \$y) (got \$x \$y))))} returned
+\code{(got 1 2)} where upstream returns \code{three}.  The defect was
+exposed not by testing but by the certification campaign
+(Section~\ref{sec:rulecert}): modeling the rules in Lean forced a
+precise reading of the two upstream type contracts, and an oracle
+probe confirmed the divergence.  The fix splits the rule into
+\code{HES\_Switch} (evaluated scrutinee) and \code{HES\_SwitchMinimal}
+(structural), with a distinguishing witness pair pinned in the test
+suite.
+
+\subsection{The Reflective Modal Surface}
+\label{sec:modal}
+
+The library surface \code{lts} (generic, step-parameterized) and
+\code{lts:he} (bound to the \HE{} evaluator's one-step relation) reflect the
+one-step reduction relation into MeTTa as data:
+
+\begin{itemize}
+\item \code{lts:he:transitions} emits the one-step successor set
+  of an atom as quoted states (zero results on quiescent atoms);
+  \code{lts:he:trace-2} enumerates two-step traces.
+\item \code{lts:he:is-normal-form} is exactly $\Box\bot$ (every
+  successor satisfies falsity, i.e.\ no successor exists);
+  \code{lts:he:is-can-step} is $\Diamond\top$.
+\item \code{lts:he:box}~$\phi$ and \code{lts:he:diamond}~$\phi$
+  generalize these to arbitrary unary predicates: $\Box\phi$ holds
+  when every one-step successor satisfies $\phi$ (vacuously at normal
+  forms), $\Diamond\phi$ when some successor does.
+\end{itemize}
+
+The De~Morgan law $\Box\phi = \lnot\Diamond\lnot\phi$ is installed as
+a runtime self-test; it is the executable mirror of the Galois
+connection proven once and for all in the Mettapedia OSLF framework,
+where $\mathrm{LanguageDef}\to\mathrm{RewriteSystem}\to
+\mathrm{ReductionSpan}\to(\Diamond,\Box)$ is derived generically and
+\code{langGalois} establishes the adjunction.  Native behavioral types
+in the sense of Native Type Theory arise as predicates over exactly
+this reduction span; the runtime surface and the Lean derivation
+describe the same object at two levels.
+
+Multiplicity discipline: \code{transitions} preserves the result
+\emph{bag} (duplicate successors are semantically real), while the
+modal predicates quotient to reachability.  Evaluation and conformance
+compare bags; $\Diamond/\Box$ use support.  Result sets are never
+deduplicated for speed.
+
+\subsection{The Small-Step Rule Table}
+\label{sec:langdefpack}
+
+The congruence bug demonstrated the structural disease: reduction
+rules as anonymous, duplicated C branches are invisible, unremovable,
+and untestable-by-absence.  The cure is to make the rule set a
+\emph{named, reflectable object} the evaluator provably depends on.
+
+Three granularity strata are kept distinct.  \emph{HEFine} is the Lean
+\code{mettaHE} instruction machine (59 rules over interpreter states;
+the proof reference).  \emph{HE small-step} is the coarse user-visible
+one-step relation---one observable surface rewrite, e.g.\
+\code{(+ 1 (+ 2 3))} $\to$ \code{(+ 1 5)}---which is what the
+\code{lts} surface exposes.  \emph{HEBigStep} is full evaluation.  The
+table encodes the small-step relation; its relationship to the fine machine is a
+collapse/simulation with explicit provenance links (each coarse rule
+names the fine rules that justify it), never a label identity.
+
+The runtime object, \code{CettaLangDefPack}, carries: language,
+profile, and granularity identifiers; a schema version; a source
+digest over the canonical rule-descriptor text; the rule table; a
+disabled-rule mask populated from the
+\code{CETTA\_LANGDEF\_DISABLED\_RULES} environment variable; and a
+\emph{per-rule claim level} recording the strongest evidence behind
+each rule (Section~\ref{sec:rulecert}).  Ten rule classes are live and
+gate the \emph{only} implementations of their behavior in the one-step
+subsystem: grounded dispatch, leftmost expression congruence, equation
+match, \code{eval}, \code{chain}, \code{let}, \code{let*},
+\code{case}, \code{switch}, and \code{switch-minimal} (the last two
+split per their distinct upstream contracts,
+Section~\ref{sec:bugclasses}).  Quote/return and empty/error
+quiescence are structural rows: accounted in the table with written
+reasons, but not gateable, since disabling them would make the
+semantics incoherent rather than smaller.  Each row carries a
+provenance string naming the fine-machine rules that justify it.  The
+pack is reflected into MeTTa by \code{lts:he:step-rules}.
+
+The load-bearing test is \emph{anti-decorative}: a dedicated lane
+re-runs the witness suite with each live rule disabled and
+\emph{requires} the witnesses to fail (the successor set must go
+empty; normal-form must flip)---baseline plus ten rule-removal
+failures confirmed.  If the witnesses still passed with a rule
+removed, a duplicate hidden code path would exist---precisely the
+disease that produced the congruence bug.  A disabled special form
+goes \emph{inert} (its head stays uninterpreted; congruence still
+applies), per the principle that unknown symbols are data, never
+errors.  The lane fails closed in both directions and runs on both the
+default and MORK-bridge builds.
+
+Claim levels are deliberately \emph{excluded} from the digest: the
+digest fingerprints rule \emph{content} (names, profiles, provenance,
+schema), while claims are \emph{evidence about} that content.
+Upgrading a rule's certification therefore must not---and verifiably
+does not---move the semantic object: the digest
+(\code{fnv1a64:12eec5b655a75904} at the time of writing) stayed fixed
+across every claim flip.  The pack is, by design, a hand-authored
+object kept honest by the removal lane and the digest; we deliberately
+parked an earlier plan to generate specialized C from the rule source,
+because the weld's value lies in the named semantic object and its
+fail-closed tests, and code generation is machinery the certification
+program does not need.
+
+\subsection{Lean Certification of the Rule Table}
+\label{sec:rulecert}
+
+Each per-rule claim takes one of three values, in increasing strength:
+\emph{bag-tested-adequate} (the rule's behavior matches the legacy
+path and oracle bags on the witness corpus),
+\emph{rule-sound-on-fragment} (a compiled, sorry-free Lean theorem
+proves the rule absorbed by the official declarative semantics on an
+explicitly characterized fragment), and \emph{rule-sound} (the same,
+unconditionally).  A claim flips only when the compiled theorem
+exists, so the reflective surface can never overclaim.  The
+certification route is \emph{absorption}: for each coarse rule, a
+theorem that whenever the rule relates $a \to a'$, the official
+declarative judgment of the Mettapedia \HE{} formalization
+(\code{MettaCall}, \code{MinimalStep}, or \code{EvalAtom}) already
+relates the same atoms.  At the time of writing five of the ten live
+rules carry certification:
+
+\begin{center}\footnotesize
+\begin{tabular}{lll}
+\toprule
+rule & claim & Lean witness \\
+\midrule
+\code{HES\_GroundedDispatch} & rule-sound &
+  \code{mettaCall\_absorbs\_grounded\_dispatch} \\
+\code{HES\_EquationMatch} & rule-sound &
+  \code{mettaCall\_absorbs\_equation\_match} \\
+\code{HES\_Eval} & rule-sound &
+  \code{minimalStep\_absorbs\_eval} \\
+\code{HES\_Chain} & rule-sound-on-fragment &
+  \code{minimalStep\_absorbs\_chain\_source}/\code{\_subst} \\
+\code{HES\_LeftmostExprCongruence} & rule-sound-on-fragment &
+  \code{evalAtom\_absorbs\_congruence\_frag} \\
+\code{HES\_Let}, \code{LetStar}, \code{Case}, & bag-tested-adequate &
+  in progress \\
+\quad\code{Switch}, \code{SwitchMinimal} & & \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The certified fragment for the congruence and chain rules is
+characterized positively: untyped constructor-headed expressions with
+quiescent spectator arguments and a grounded-dispatch or
+equation-match redex.  Its supporting theory is a short ladder of
+compiled lemmas: a quiescence domain on which atoms officially
+self-evaluate, uniqueness of that self-evaluation, transport of
+official evaluation across a single changed argument, and absorption
+of inner fragment steps---about which the honest surprises accumulated
+(e.g.\ a bare \code{Error} \emph{symbol} at tuple head becomes
+error-shaped, so the fragment must exclude it explicitly).
+
+The five remaining rules are upstream \emph{stdlib sugar}: their
+one-step behavior is the upstream definition of \code{let},
+\code{let*}, \code{case}, \code{switch}, and \code{switch-minimal} as
+\code{unify}/\code{chain} programs.  Certifying them required a
+\emph{matcher bridge}: relating \CeTTa{}'s one-way matcher on ground
+scrutinees to the official \code{matchAtoms}/\code{mergeBindings}
+semantics.  Its keystone is a singleton-seed factorization
+theorem---any official match run seeded with bindings $b$ factors
+through the empty-seeded run followed by one deterministic merge back
+into $b$---proven via an extensional lookup-specification of ground
+merging under a key-uniqueness invariant, together with its
+sorry-free instantiation into a full success bridge.  The final link
+between the declarative judgment and the running evaluator's
+\code{unify} is stated \emph{once} as a named two-field interface
+(match-hit and match-miss stabilization); every sugar-rule
+certification spends that interface explicitly, and discharging it is
+a theorem in progress rather than a hidden assumption.
+
+%% ────────────────────────────────────────────────────────────────────
+\section{Verified \HE{}$\leftrightarrow$\PeTTa{} Translation}
+
+\subsection{Bidirectional Translator}
+
+A bidirectional translator converts between \HE{} and \PeTTa{} dialects.
+It is implemented both as relational Prolog
+(\code{he\_petta\_relational.pl}, with explicit freshness threading) and
+as computable Lean functions (\code{translateHE}, \code{translatePeTTa}).
+
+The translator handles 8 \HE{}$\to$\PeTTa{} rewrite rules
+(\code{chain}$\to$\code{let}, \code{collapse-bind}$\to$\code{collapse},
+\code{nop}$\to$\code{let~\$fresh~X~()}, etc.)\ and 5
+\PeTTa{}$\to$\HE{} rules (\code{progn}$\to$nested \code{let},
+\code{prog1}$\to$\code{let} with result capture, etc.).  All 437 real
+\code{.metta} files parse and translate successfully.
+
+\subsection{Sorry-Free Lean Proof}
+
+The translation is backed by a \textbf{sorry-free, axiom-free} Lean
+proof across two files totaling 4{,}979 lines and 102
+definitions/theorems:
+
+\begin{description}
+\item[\code{HEPeTTaSound.lean}] (1{,}063 lines, 44 theorems.)
+  Proves that \HE{}'s equation matching corresponds to \PeTTa{}'s
+  \code{ruleApp} evaluation.  The key result:
+  \begin{quote}
+  \code{simpleMatch\_applyBindings\_comm}: if \HE{}'s
+  \code{simpleMatch} succeeds on two \code{PureTranslatable} atoms,
+  then applying the translated bindings via \code{heBindingsToOSLF} to
+  the translated pattern recovers the translated target.
+  \end{quote}
+  This commutation property, combined with the existing
+  \code{matchPattern\_applyBindings\_complete} from the OSLF framework,
+  establishes that a \PeTTa{} \code{matchPattern} witness exists
+  whenever \HE{}'s \code{simpleMatch} succeeds.
+
+\item[\code{HEPeTTaTranslate.lean}] (3{,}916 lines, 58 theorems.)
+  The executable translator with:
+  \begin{itemize}
+  \item \code{translateHE\_translatable}: translation preserves
+    \code{Translatable} (output admits \code{atomToPattern}).
+  \item \code{translateHE\_preserves\_pureTranslatable}: translation
+    preserves the stronger \code{PureTranslatable} fragment.
+  \item \code{translatePeTTa\_translatable}: same for the reverse
+    direction.
+  \item 9 \code{\#eval} tests matching Prolog output on concrete atoms.
+  \item 6 \code{rfl} examples kernel-verified by Lean.
+  \item Roundtrip idempotence examples (kernel-verified).
+  \end{itemize}
+\end{description}
+
+%% ────────────────────────────────────────────────────────────────────
+\section{\RhoCalc{}: A Concurrent Reaction Machine}
+\label{sec:rhocalc}
+
+So far \CeTTa{} has been a MeTTa evaluator: a term goes in, normal forms come
+out.  Under \code{--lang rhocalc} the same runtime becomes something different in
+kind---a \emph{concurrent process engine} whose unit of work is not a rewrite but
+a \emph{reaction}: a rendezvous between a sender and a receiver on a shared
+channel.  This gives MeTTa three things plain evaluation lacks---channels and
+private names, genuine concurrency, and, the reason it earns its own section,
+\emph{evaluation triggered by communication}.  That last capability, together
+with the MeTTa library that exposes it, is what we call \emph{rhometta}.
+
+\subsection{A reaction, in one picture}
+
+The calculus is Meredith and Radestock's reflective higher-order
+$\rho$-calculus~\cite{rho2005}.  Its single rewrite rule, \textsc{comm}, is a
+handshake: a sender \code{x!(m)} offering a message \code{m} on channel \code{x},
+sitting next to a receiver \code{for(y <- x)\{P\}} waiting on that same channel,
+react---the message is consumed and the receiver resumes with \code{m}
+substituted for its bound name \code{y}:
+\[
+  x!(m) \;\big|\; \mathsf{for}(y \leftarrow x)\{P\}
+  \;\;\xrightarrow{\;\textsc{comm}\;}\;\; P[y := m].
+\]
+
+\begin{figure}[h]\centering
+\begin{tikzpicture}[>=Stealth,
+  box/.style={draw, rounded corners, align=center, inner sep=4pt,
+    font=\small\ttfamily}]
+  \node[box] (s) {x!(m)};
+  \node (par) [right=3mm of s, font=\large] {$\mid$};
+  \node[box] (r) [right=3mm of par] {for(y<-x)\{P\}};
+  \node[box, fill=black!8] (out) [right=16mm of r] {P[y:=m]};
+  \draw[->, thick] (r) -- node[above, font=\scriptsize\sffamily] {\textsc{comm}} (out);
+\end{tikzpicture}
+\caption{A reaction: a send and a matching receive on channel \code{x} rendezvous;
+  the receiver continues with the message substituted in.}
+\end{figure}
+
+A little vocabulary makes the rest precise.  \code{0} is the inert process;
+\code{P | Q} runs \code{P} and \code{Q} concurrently; \code{new x in P} makes a
+fresh private channel.  Two reflection operators let processes become names and
+names become processes again: \code{@P} \emph{quotes} a process into a name, and
+\code{*x} \emph{drops} (runs) the process a name quotes, with \code{*@P = P}.
+Channels are themselves quoted processes---this is what makes the calculus
+\emph{higher-order}, and it is the hinge of the next subsection.
+
+\subsection{Eval-at-\textsc{comm}: communication that computes}
+
+Reflection turns an ordinary handshake into a computation.  Let the receiver do
+nothing but \emph{drop} whatever it receives:
+\[
+  \texttt{eval\_drop}(x,p)\;\equiv\;
+  \underbrace{x!(@p)}_{\text{send the quoted program } p}\;\big|\;
+  \underbrace{\mathsf{for}(y \leftarrow x)\{\,*y\,\}}_{\text{run whatever arrives}}.
+\]
+The \textsc{comm} delivers the name \code{@p}; the drop \code{*@p} runs \code{p};
+the process settles at the \emph{result of running} \code{p}.  A handshake has
+become an evaluation step: \emph{communication is computation}.  And because
+\code{p} may itself evaluate to \emph{more process}, a reaction can plant the
+next reactions---\emph{communication is computation is construction}.  This
+eval-at-\textsc{comm} pattern, and its MeTTa library, is rhometta.
+
+\subsection{Engine, profiles, libraries}
+
+rhometta is three layers over the engine, not one monolith (Figure~\ref{fig:rho-layers}).
+
+\begin{figure}[h]\centering
+\begin{tikzpicture}[
+  lyr/.style={draw, rounded corners, minimum width=86mm, align=center,
+    inner sep=4pt, font=\small}]
+  \node[lyr] (a) {demos --- \code{benchmarks/rho/rhometta-*} (self-unfolding prover, AGI showcase)};
+  \node[lyr, below=1.6mm of a] (b) {\code{lib/rhometta.metta} --- \code{rhometta:run}, \code{:eval}, \code{:transitions}};
+  \node[lyr, below=1.6mm of b] (c) {\code{lib/rho.metta} --- strict-core $\rho$ constructor surface};
+  \node[lyr, below=1.6mm of c, fill=black!8] (d) {\code{--lang rhocalc} engine \;|\; profiles: \code{strict-core}, \code{cost}};
+\end{tikzpicture}
+\caption{The rhometta stack.  A \emph{profile} is a named variant of the
+  reduction relation; a \emph{library} is MeTTa-level surface that delegates
+  reduction to the engine.}
+\label{fig:rho-layers}
+\end{figure}
+
+\begin{description}
+\item[The engine.] \code{--lang rhocalc} reduces $\rho$ terms in either a
+  Rholang-like \code{.rho} surface or a MeTTa-style s-expression \code{.mrho}
+  surface.  Reduction lives in a dedicated \code{RhoMachine} (run budget,
+  fresh-name counter, and a live index of sends and receive-sites rebuilt after
+  each reaction) rather than being threaded through the ordinary evaluator.
+  Internally allocated fresh names are opaque identities; quoted process names
+  are compared as whole names and never bound through, so the fast index covers
+  only directly comparable names and quoted names take a structural fallback.
+\item[Profiles.] A \emph{profile} names a variant of the reduction relation.
+  \code{strict-core} is the pure asynchronous $\rho$ spine; \code{cost} accounts
+  the resource each reaction consumes (Section~\ref{sec:rho-cost}).  As
+  everywhere in \CeTTa{}, a profile fixes what is \emph{interpreted}, never what
+  is legal.
+\item[Libraries.] \code{lib/rho.metta} is the base vocabulary for building
+  strict-core $\rho$ terms; \code{lib/rhometta.metta} is the rhometta surface
+  (\code{rhometta:run} reduces to the quiescent outcome set,
+  \code{rhometta:eval} is eval-at-\textsc{comm}, \code{rhometta:transitions}
+  gives one-step successors), delegating reduction to the engine.
+\end{description}
+
+\subsection{What you observe is what it computes}
+\label{sec:rho-lean}
+
+A fair worry: when eval-at-\textsc{comm} fires, is the result the engine reports
+really the result of running the payload---or could the machinery quietly change
+the answer?  We settle this in Lean.
+
+In plain terms: run \code{eval\_drop(x,p)} to quiescence and collect every
+outcome you can observe \emph{up to structural rearrangement} of the process.
+That set of observations is exactly the set of results a correct evaluation of
+\code{p} would produce---no more, no less---and the statement refers only to what
+is observable, never to any internal ``this is the answer'' tag.
+
+Precisely, the theorem \code{rhometta\_bridge\_scObserved} (in
+\code{RhometaReduction.lean}) equates the concrete quiescent run of
+\code{eval\_drop(x,p)} with \code{RhometaSCObservedOutcomes} of the same
+process---the outcomes visible up to structural congruence---with no
+result-certificate carried in the answer.  It is axiom-clean
+(\code{\{propext, Classical.choice, Quot.sound\}}, zero sorries).  Two ingredients
+are load-bearing and worth stating honestly:
+\begin{itemize}
+\item \textbf{The proof technique.}  Inductions directly on structural
+  congruence stall at the symmetry and transitivity steps.  The fix is a
+  canonical-form normalizer \code{nfAtom} that is \emph{complete}: two processes
+  are structurally congruent exactly when they share a normal form.  Equality of
+  normal forms is then an ordinary equation, and the stall is gone.
+\item \textbf{One side condition.}  The communicated variable must not occur
+  \emph{under a quote} (a hygiene predicate, \code{noBoundUnderQuote}).  This is
+  necessary, not bureaucratic: a payload that hides a bound occurrence inside a
+  quoted name can defeat the characterization, and a concrete counterexample
+  exhibits exactly that failure.
+\end{itemize}
+
+\subsection{rhometta as a cognitive substrate}
+
+eval-at-\textsc{comm} is more than a soundness curiosity---it is a way to
+program.  Because a reaction's payload can emit new reactions, a reaction network
+can \emph{grow itself}.  Two self-contained demos (both run on the
+\code{make BUILD=core} binary, under \code{benchmarks/rho/rhometta-*}) show what
+that buys.
+
+\paragraph{A self-unfolding prover.}  Seed a \emph{single} cell for a goal.  Each
+\textsc{comm} evaluates one backward-chaining step whose result is the cells for
+that goal's subgoals, so \code{rhometta:run} keeps reducing and the reaction
+network unfolds itself into a proof tree.  Where a goal has several rules the
+payload has several results, so the \textsc{comm} \emph{forks}: nondeterministic
+inference becomes branching reduction, and \code{rhometta:run} returns one
+quiescent residual per complete proof tree (Figure~\ref{fig:cake})---two for the
+sample ``can I bake a cake?'' goal, while a single-rule goal stays confluent at
+one.
+
+\begin{figure}[h]\centering
+\begin{tikzpicture}[>=Stealth, level distance=8mm, sibling distance=15mm,
+  every node/.style={font=\scriptsize\ttfamily}, edge from parent/.style={draw,-}]
+  \begin{scope}
+  \node {cake} child { node {batter} child { node {flour} } child { node {egg} } }
+               child { node {oven} };
+  \end{scope}
+  \begin{scope}[xshift=42mm]
+  \node {cake} child { node {batter} child { node {mix} } }
+               child { node {oven} };
+  \end{scope}
+\end{tikzpicture}
+\caption{The self-unfolding prover's may-set for ``cake'': two complete proof
+  trees, one per rule for \code{batter}.  The trees are not enumerated up front---%
+  they are \emph{grown} by reactions whose payloads plant their children.}
+\label{fig:cake}
+\end{figure}
+
+\paragraph{Cognitive services as parallel reactions.}  A larger showcase runs
+three OpenCog/Hyperon primitives concurrently---a PLN two-hop proof search,
+overlap-corrected evidence revision across two agents, and one ECAN
+attention-spreading round---and chains their channel-gathered results into a
+final payload that synthesizes one action plan per proof path.  Plain Rholang can
+pass names and spawn processes but cannot evaluate a MeTTa term at \textsc{comm};
+a bare MeTTa interpreter has the inference but no channels, concurrency, or
+may-set.  rhometta is the fusion, and this showcase is the smallest program that
+exhibits all of it at once.
+
+\paragraph{Backward chaining, in the standard idiom.}  The cake prover is the
+intuition; a small ladder of demos puts the reaction machine in the exact
+representation the Hyperon community recognizes as backward chaining---typed judgments
+\code{(: proof theorem)}, rules \code{(: r (-> (: p1 P1) (: p2 P2) Concl))}, and
+Curry--Howard proof terms---and they form a deliberate ladder
+(Figure~\ref{fig:rho-ladder}).  In \code{rhometta-typed-bc} the recognizable mortal
+syllogism (\code{researcher}\,$\wedge$\,\code{curious}\,$\Rightarrow$\,%
+\code{mortal}) is proved by reactions: the two premises run as parallel cells, and
+the join re-matches the rule so its shared variable is unified---a spurious pairing
+(\code{researcher}~$r_1$ with \code{curious}~$e_1$) cannot survive.  In
+\code{rhometta-type-inference} type inference \emph{is} the proof search: an
+overloaded \code{plus} produces a genuine may-set (an \code{Int} and a \code{Float}
+typing of \code{(plus one one)}), while \code{(plus x one)} with \code{x\,:\,Int}
+prunes the \code{Float} overload at the unification join.  Proof terms stay pure,
+\code{(: (app pf pa pb) (HasType e t))}; a PLN truth value rides \emph{outside} the
+judgment as derivation metadata that ranks the overloads.  Each demo is gated by
+negative canaries---a bad pairing yields no proof and, because the join is made
+total, no stuck reaction---and is checked differentially against a sequential nilbc
+chainer on the same knowledge base, which produces the same proof-term skeletons.
+Two companion type-inference demos then separate the two deeper motifs:
+\code{rhometta-type-inference-nested} sends a deterministic sub-proof back to its
+parent join, while \code{rhometta-type-inference-mayset} uses
+\code{rho:patterns:!recv} to let two inner typings feed one outer continuation.
+
+\begin{figure}[h]\centering
+\begin{tikzpicture}[>=Stealth, node distance=3mm,
+  rung/.style={draw, rounded corners, align=left, inner sep=4pt, font=\footnotesize,
+    text width=104mm},
+  hero/.style={rung, line width=1pt, draw=orange!85!black, fill=orange!8}]
+  \node[rung] (a) {\textbf{\code{rhometta-typed-bc}} --- standard nilbc shape.\\
+    {\scriptsize\itshape facts/rules $\to$ Curry--Howard proof terms;\quad output: 2 mortal proofs.}};
+  \node[rung, below=of a] (b) {\textbf{\code{rhometta-type-inference}} --- proof search as typing.\\
+    {\scriptsize\itshape overloads fork, the join prunes bad types;\quad output: Int/Float may-set, then Int-only.}};
+  \node[rung, below=of b] (n) {\textbf{\code{rhometta-type-inference-nested}} --- recursive sub-proof flow.\\
+    {\scriptsize\itshape a deterministic sub-proof returns to its parent join;\quad output: \code{(f (g x))} : Bool.}};
+  \node[rung, below=of n] (m) {\textbf{\code{rhometta-type-inference-mayset}} --- recursive may-set at depth.\\
+    {\scriptsize\itshape derived inner proofs fan in via \code{!recv};\quad output: boxed typings, including multi-premise.}};
+  \node[hero, below=of m] (c) {\textbf{\code{rhometta-deployment-planner}} --- application-shaped constraint join.\\
+    {\scriptsize\itshape 7 premises in parallel, shared variables agree at the join;\quad output: 2 valid EU chat plans.}};
+  \node[rung, below=of c] (d) {\textbf{\code{rhometta-agi-showcase}} --- cognitive workflow.\\
+    {\scriptsize\itshape PLN $+$ belief revision $+$ ECAN $\to$ plans;\quad output: one plan per proof path.}};
+  \draw[->] (a)--(b); \draw[->] (b)--(n); \draw[->] (n)--(m); \draw[->] (m)--(c); \draw[->] (c)--(d);
+\end{tikzpicture}
+\caption{The rhometta demo ladder, from the smallest recognizable
+  backward-chaining shape up to an AGI cognitive workflow.  The first two isolate
+  the proof-search motifs; the next two add recursion (deterministic, then a
+  may-set at depth via replicated input); the highlighted deployment planner is
+  the reader-facing, application-shaped showcase.}
+\label{fig:rho-ladder}
+\end{figure}
+
+The first two demos are intentionally small: they isolate the two proof-search
+motifs---a shared-variable AND-join, and may-set OR-forking with join-time pruning.
+The third, \code{rhometta-deployment-planner}, composes those motifs into an
+application-shaped query (Figure~\ref{fig:rho-join}).  A deployment plan is not
+selected by post-filtering a list; it is \emph{derived} by backward chaining: rho
+supplies the concurrent premise cells, and the join enforces that the same request,
+model, GPU, provider, region, and latency are used across all seven premises.  A
+plan for \code{eu-chat} (an EU, low-latency, GDPR-safe dialogue request) exists only
+if all seven judgments agree---request task/privacy/offer, model task/privacy/%
+GPU-need, and a matching provider offer---so the engine returns the two valid plans
+(\code{cloudA}+\code{llm70bq4} on H100 and \code{cloudB}+\code{llm7b} on L40S) while
+the US-region, standard-latency, and HIPAA-only candidates die at the join.
+
+\begin{figure}[t]\centering
+\resizebox{\textwidth}{!}{%
+\begin{tikzpicture}[>=Stealth, font=\scriptsize,
+  req/.style={draw, rounded corners, align=left, inner sep=4pt, fill=black!4},
+  cell/.style={draw, rounded corners, fill=blue!8, inner sep=2.5pt, align=left,
+    font=\scriptsize, text width=46mm},
+  jbox/.style={draw, line width=1pt, draw=orange!85!black, fill=orange!12,
+    align=center, inner sep=5pt, rounded corners, text width=26mm},
+  good/.style={draw, fill=green!14, align=left, inner sep=4pt, rounded corners, text width=32mm},
+  bad/.style={draw, fill=black!7, align=left, inner sep=4pt, rounded corners,
+    text=black!55, text width=32mm}]
+  \node[req] (req) {\textbf{Request} \code{eu-chat}\\ task $=$ Dialogue\\
+    privacy $=$ GDPR\\ region $=$ EU\\ latency $=$ LowLatency};
+  \node[cell] (p1) [above right=14mm and 8mm of req] {ReqTask(req, task)};
+  \node[cell, below=1mm of p1] (p2) {ReqPrivacy(req, privacy)};
+  \node[cell, below=1mm of p2] (p3) {ModelTask(model, task)};
+  \node[cell, below=1mm of p3] (p4) {ModelPrivacy(model, privacy)};
+  \node[cell, below=1mm of p4] (p5) {ModelNeeds(model, gpu)};
+  \node[cell, below=1mm of p5] (p6) {ProviderOffer(provider, gpu, region, latency)};
+  \node[cell, below=1mm of p6] (p7) {ReqOffer(req, region, latency)};
+  \node[jbox] (join) [right=10mm of p4] {\textbf{JOIN}\\ shared variables agree:
+    req, model, provider, gpu, region, latency};
+  \node[good] (good) [above right=1mm and 10mm of join] {\textbf{Valid may-set}\\
+    cloudA $+$ llm70bq4 (H100)\\ cloudB $+$ llm7b (L40S)};
+  \node[bad] (bad) [below right=1mm and 10mm of join] {Pruned\\
+    cloudC: wrong region (US)\\ cloudD: wrong latency\\ voicegen: wrong privacy};
+  \draw[->, thick] (req) -- (p4.west);
+  \foreach \p in {p1,p2,p3,p4,p5,p6,p7} \draw[->, blue!55] (\p.east) -- (join.west);
+  \draw[->, green!55!black, thick] (join) -- (good);
+  \draw[->, black!45, thick] (join) -- (bad);
+\end{tikzpicture}}
+\caption{The deployment planner's constraint join.  Each premise is solved in its
+  own rho cell (blue); independent premise search \emph{generates} invalid
+  cross-products, but they are killed at the join (gold), where the shared variables
+  must agree.  The surviving residuals are exactly the valid plans (green); the
+  pruned branches (grey) never reach the may-set.}
+\label{fig:rho-join}
+\end{figure}
+
+The ladder keeps the reader-facing story staged.  The deployment planner prunes a
+premise \emph{cross-product} at the join, so it is a semantic demo rather than an
+indexed large-catalog planner: a production planner would thread bindings or index
+premise lookup earlier.
+
+Two companion demos carry the deeper recursive motifs.
+\code{rhometta-type-inference-nested} exercises a \emph{deterministic} recursive
+search with a join: the sub-proof for \code{(g x)} flows back along a channel to
+the parent reaction for \code{(f (g x))}, which assembles the nested proof term.
+\code{rhometta-type-inference-mayset} handles the sharper case---a recursive
+may-set \emph{at depth}, where a compound subgoal has several proofs that must all
+reach one parent continuation---and here the mechanics matter.  The inner subgoal
+\code{(box one)} is type-checked by a real overload \textsc{comm}-fork over the
+knowledge base: both \code{(Boxed Int)} and \code{(Boxed Float)} are
+\emph{derived}, their proof terms are built by re-matching the rule against the
+resolved premise, and the result is cross-checked by set membership against an
+independent sequential nilbc chainer rather than against a constant.  One boundary
+is stated plainly rather than hidden.  Because the engine forks a multi-result
+payload into separate may-set \emph{branches}---one delivered message per branch---a
+single send would give a replicated input nothing to gather; so the derived inner
+set is collapsed to data, \emph{re-lifted} as parallel sends on the parent channel,
+and \code{rho:patterns:!recv} fans them in.  This ``derived-then-delivered'' bridge
+means the inner search and the outer join are two reductions joined by a collapse
+and re-lift, not one uninterrupted rho reduction.
+
+The fan-in itself is genuine: \code{rho:patterns:!recv} is the lazy
+Meredith--Radestock replicated-input encoding, derived from strict-core reflection
+(quote/drop), so a primitive persistent receive would be a performance and
+residual-cleanliness convenience, not an expressiveness requirement.  Nor is
+multiplicity at depth confined to a single overloaded premise: a further check
+derives \code{(box (plus one one))}---an eight-way premise cross-product
+($2\times2\times2$ over an overloaded operator and two overloaded arguments) pruned
+at the join to two typings---and fans both boxed results into the parent join
+through the same replicated input.  Multi-premise cross-products compose at depth
+with no starvation.
+
+\subsection{Cost-accounted reactions}
+\label{sec:rho-cost}
+
+Reactions are also the natural place to \emph{meter} computation: each
+\textsc{comm} is one unit of work, so a resource budget can be charged per
+reaction.  \CeTTa{}'s \code{cost} profile does this directly---it reduces an
+annotated $\rho$ dialect and reports the resource each reaction consumes.  It is
+the executable end of an ongoing program to equip the $\rho$-calculus with a
+\emph{cost endofunctor}: a construction that wraps a calculus with resource
+accounting once and for all~\cite{costendofunctor}.  We return to it in future
+work.
+
+%% ────────────────────────────────────────────────────────────────────
+\section{Cross-Runtime Benchmarks}
+
+All benchmarks use dialect-agnostic MeTTa (shared syntax) unless noted.
+Output is verified identical across runtimes.
+
+\subsection{Shallow Evaluation}
+
+Nil Geisweiller's typed backward chainer over 30 entities with 3 binary
+rules at depth~1.  All three runtimes produce identical 30
+proof-carrying witnesses, e.g.\
+\code{(: (r-mortal r01 r01c) (mortal r01))}.
+
+\begin{center}
+\begin{tabular}{lrrl}
+\toprule
+Runtime & Time & vs.\ \CeTTa{} & Output \\
+\midrule
+\CeTTa{} & 15\,ms  & 1$\times$           & 30 witnesses \\
+\PeTTa{} & 151\,ms & 10$\times$ slower    & 30 witnesses \\
+\HE{}    & 1{,}010\,ms & 67$\times$ slower & 30 witnesses \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\paragraph{Startup overhead.}
+\HE{}'s 138\,ms startup (Rust binary + Python stdlib) dominates small
+tests.  \CeTTa{} starts in 6\,ms (precompiled stdlib blob).  On
+computation-heavy benchmarks the startup amortizes, revealing the true
+compute speedup of $\sim$17$\times$.
+
+\subsection{Deep Proof Search: \PeTTa{} Wins}
+
+Metamath proof search at depth~5 (2 axioms, proving $t = t$,
+85{,}013 proof trees) reverses the performance ordering:
+
+\begin{center}
+\begin{tabular}{lrrl}
+\toprule
+Runtime & Time & vs.\ \PeTTa{} & Status \\
+\midrule
+\PeTTa{} & 31.7\,s  & 1$\times$          & 85{,}013 proofs \\
+\CeTTa{} & 94.2\,s  & 3.0$\times$ slower & 85{,}013 proofs \\
+\HE{}    & $>$120\,s & timeout            & killed \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\PeTTa{}'s Prolog SLD resolution with first-argument indexing is
+3$\times$ faster on deep, branching proof search.  \HE{} cannot finish
+within 120\,s.
+
+\subsection{Forward Chaining at Scale}
+
+Nil Geisweiller's propositional-calculus forward chainer at depth~4
+($\sim$11.7M generated pairs) completes in 120\,s on \CeTTa{}.  \HE{}
+times out.
+
+\subsection{Translator Validation}
+
+A PeTTa-native benchmark using \code{prog1} (PeTTa-specific construct)
+was translated PeTTa$\to$HE and run on \CeTTa{}.  The translator
+converts \code{prog1} to nested \code{let} with fresh variables:
+\begin{lstlisting}[language={},basicstyle=\ttfamily\scriptsize]
+; PeTTa original:
+(= (run-query) (prog1 (bc &kb ...) (println! "done")))
+; Translated to HE:
+(= (run-query) (let $__tr_result_1 (bc &kb ...)
+                 (let $__tr_discard_2 (println! "done")
+                   $__tr_result_1)))
+\end{lstlisting}
+The translated version produces identical output on \CeTTa{} and \HE{},
+matching the \PeTTa{} original.
+
+\subsection{PLN Evidence Aggregation over Genomic KB}
+
+To benchmark inference over real data, we run PLN evidence aggregation
+over the Rejuve genomic knowledge base (chr16 pilot: 41~GWAS SNPs,
+183~SNP--gene pairs, 3~evidence channels).  Each pair carries
+eQTL tissue counts (GTEx, 49~tissues), ABC enhancer--gene contact
+counts, and a regulatory presence flag.  The PLN evidence quantale
+combines channels via revision (\code{evidence-hplus}), producing a
+calibrated SimpleTruthValue per pair.  The evidence operations are
+Lean-verified: \code{power}, \code{toLogOdds\_power\_mul}, and
+\code{power\_power\_inv} are proved in
+\code{Mettapedia/Logic/BinaryEvidence.lean}.
+
+The benchmark is dialect-agnostic (shared MeTTa, no translation
+needed).  Both runtimes produce identical 183 scored pairs:
+
+\begin{center}
+\begin{tabular}{lrrl}
+\toprule
+Runtime & Time & vs.\ \CeTTa{} & Output \\
+\midrule
+\CeTTa{} & 50\,ms  & 1$\times$        & 183 bio-scores \\
+\PeTTa{} & 276\,ms & 5.5$\times$ slower & 183 bio-scores \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Scores carry genuine biological signal: \code{rs9923732}$\to$\code{ENSG00000166455}
+scores strength 0.735 (131 ABC contacts across cell types), while
+most pairs score 0.04 (minimal evidence).
+
+\paragraph{Scaling behavior.}
+Synthetic stress tests reveal a crossover:
+
+\begin{center}
+\begin{tabular}{rrrl}
+\toprule
+KB size & \CeTTa{} & \PeTTa{} & Winner \\
+\midrule
+143        & 47\,ms    & 193\,ms   & \CeTTa{} (4.1$\times$) \\
+1{,}000    & 20\,ms    & 271\,ms   & \CeTTa{} (13$\times$) \\
+10{,}000   & 336\,ms   & 1{,}616\,ms & \CeTTa{} (4.8$\times$) \\
+100{,}000  & 27.1\,s   & 14.9\,s   & \PeTTa{} (1.8$\times$) \\
+1{,}400{,}000 & 386\,s$^\dagger$ & 132\,s & \PeTTa{} (2.9$\times$) \\
+\bottomrule
+\end{tabular}
+\smallskip\\
+{\footnotesize $^\dagger$After bulk-load optimization: loading 5\,s
+(faster than \PeTTa{}), inference 381\,s (O($N$) match scan).
+Pre-optimization: $>$1200\,s timeout during loading.}
+\end{center}
+
+\CeTTa{} wins on small knowledge bases ($<$10K facts) due to fast
+startup and equation dispatch.  \PeTTa{} wins on large KBs
+($>$50K facts) because Prolog's first-argument indexing gives O(1)
+fact lookup, while \CeTTa{}'s \code{match~\&self} performs O($N$)
+linear scan.  The pre-interning optimization (Section~5) would
+improve \CeTTa{}'s constant factor but not the asymptotic scaling;
+indexing the match backend for \code{match~\&self} queries is the
+structural fix.
+
+\subsection{Genomic Pattern Mining}
+
+To exercise real algorithmic depth, we run the Hyperon pattern
+miner~\cite{metta} on real GTEx eQTL data, discovering surprising
+co-regulation patterns---pairs of SNPs or genes that share eQTL
+evidence more often than expected by independence.  The data is
+extracted from the Rejuve genomic KB (338M Prolog lines, 57\,GB)
+and discretized into categorical attributes (tissue breadth, effect
+size) for pattern mining.
+
+\begin{center}
+\begin{tabular}{rrrrl}
+\toprule
+Atoms & \PeTTa{} & \CeTTa{} & Patterns & Mode \\
+\midrule
+200    & ---      & 268\,ms  &  29 & specialization only \\
+1{,}000  & 16\,s   & 1.1\,s  & 61/20  & full / with surprisingness \\
+5{,}000  & ---     & 11.6\,s  & 574 & specialization only \\
+10{,}000 & 271\,s  & $\sim$23\,s & 883 & with surprisingness \\
+20{,}000 & 580\,s  & ---     & 3{,}002 & frequent only \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\CeTTa{} runs the miner pipeline $\sim$12$\times$ faster than \PeTTa{}
+at comparable scale.  At 10K atoms the miner discovers 883 surprising
+co-regulation patterns in 4.5~minutes on \PeTTa{} vs.\ $\sim$23\,s on
+\CeTTa{}.  These are genuine biological findings: shared cis-regulatory
+control, detectable only by cross-evidence pattern analysis.
+
+The miner's Python helper module (\code{freq-pat}: De Bruijn index
+conversion, redundancy removal) loads on \CeTTa{} via its Python FFI
+bridge, which provides a compatibility layer for the \code{hyperon}
+Python API\@.  The miner's \code{build-specialization} function now
+runs on \CeTTa{}, producing identical specialization patterns.
+A discovered interaction between \code{superpose} and mutable
+state---where \HE{} interleaves side effects across non-deterministic
+branches, losing atoms---is correctly handled by \CeTTa{}'s
+sequential-per-iteration evaluation (Section~\ref{sec:nondet-state}).
+The \emph{inference} phase---using discovered patterns as PLN rules
+for gene prioritization---runs on both runtimes (\CeTTa{}: 76\,ms,
+\PeTTa{}: 193\,ms on the focused 143-atom KB).
+
+\subsection{Backward Chaining over Mined Patterns}
+
+The mined co-regulation patterns serve as typed inference rules for
+Geisweiller's \code{nilbc} backward chainer, closing the
+\emph{mine$\to$chain} pipeline.  The knowledge base combines:
+\begin{itemize}
+\item 100{,}000 real GTEx eQTL links (40{,}484~SNPs $\times$ 14{,}043~genes),
+\item 13 co-regulation patterns and 7 co-expression patterns (mined,
+  surprisingness $>$\,0.98),
+\item 3 typed PLN rules: \emph{direct-target} (eQTL $\to$ target),
+  \emph{coreg-transfer} (co-regulation $+$ target $\to$ target), and
+  \emph{coexpr-transfer} (target $+$ co-expression $\to$ target).
+\end{itemize}
+Bridge base cases let \code{nilbc} consume untyped data atoms
+(\code{eqtl-link}, \code{co-regulate}) directly, avoiding a format
+conversion pass over the 100K-atom KB\@.
+
+At depth~2, backward chaining discovers \textbf{5~novel gene targets}
+unreachable by direct eQTL lookup:
+
+\begin{center}
+\begin{tabular}{llll}
+\toprule
+Gene & Symbol & Via SNP & Evidence path \\
+\midrule
+ENSG00000150961 & SEC24D  & rs10000795 & \code{(ct cr3 (dt eq37))} \\
+ENSG00000172399 & MYOZ2   & rs10000795 & \code{(ct cr3 (dt eq39))} \\
+ENSG00000178636 & MRPL42P1 & rs10000726 & \code{(ct cr1 (dt eq30))} \\
+ENSG00000248394 & FOSL1P1  & rs10001048 & \code{(ct cr25 (dt eq87))} \\
+ENSG00000273077 & (lncRNA)  & rs10001048 & \code{(ct cr25 (dt eq89))} \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The proof terms are machine-checkable evidence chains: \code{(ct cr3
+(dt eq37))} reads ``co-regulation transfer via \code{cr3}
+(rs10000544$\leftrightarrow$rs10000795), applied to direct eQTL
+\code{eq37} (rs10000795$\to$SEC24D).''  For rs10000620, the chainer
+finds 4~independent evidence paths per gene (1~direct $+$
+3~co-regulation partners), producing 32~proof terms suitable for PLN
+revision.
+
+\begin{center}
+\begin{tabular}{lrrrl}
+\toprule
+Query SNP & Genes & Novel & Proofs & Time (\PeTTa{} / \CeTTa{}) \\
+\midrule
+rs10000544 & 12 & 3 & 96  & \multirow{3}{*}{193\,ms / 76\,ms} \\
+rs10000620 &  5 & 0 & 32  & \\
+rs10000960 &  8 & 2 & 14  & \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Biologically, the novel discoveries include MYOZ2 (hypertrophic
+cardiomyopathy gene, OMIM CMH16) and SEC24D (Cole-Carpenter bone
+syndrome), both on chr4q26---suggesting a trans-regulatory link from a
+metabolic locus (PDE5A/FABP2) to cardiac and skeletal gene targets via
+shared cis-regulatory architecture.
+
+The full 100K-atom benchmark with all 7~query SNPs at depth~2--3
+plus reverse queries completes in 63\,s on \PeTTa{} (564~hypotheses).
+
+\paragraph{Complete benchmark ladder.}
+The following table summarizes all benchmarks, including both genomic
+inference (where \CeTTa{} wins) and pure search (where \PeTTa{} wins):
+
+\begin{center}
+\begin{tabular}{lrrrl}
+\toprule
+Benchmark & Scale & \CeTTa{} & \PeTTa{} & Speedup \\
+\midrule
+\multicolumn{5}{l}{\emph{Genomic inference (\CeTTa{} wins)}} \\
+Focused BC         &     143 atoms &   66\,ms &   216\,ms & 3.3$\times$ \\
+PLN evidence       &     143 atoms &   61\,ms &   177\,ms & 2.9$\times$ \\
+Pattern inference  &     143 atoms &   17\,ms &   194\,ms & 11.4$\times$ \\
+PLN 100K           & 128K atoms    &  13.9\,s &   20.8\,s & 1.5$\times$ \\
+Deep 9-rule BC     & 261K atoms    & 3m\,22s  &  5m\,24s  & 1.6$\times$ \\
+\textbf{Depth-10 PLN}  & \textbf{1.4M atoms}
+                        & \textbf{15\,s} & \textbf{143\,s} & \textbf{9.5$\times$} \\
+\midrule
+\multicolumn{5}{l}{\emph{Pure search (\PeTTa{} wins)}} \\
+8-Queens (92 solutions) &  8$\times$8 &  2.75\,s &  0.21\,s & 13$\times$ slower \\
+BTree 4{,}095           & on-the-fly  &  0.87\,s &  0.15\,s & 5.8$\times$ slower \\
+BTree 16{,}383          & on-the-fly  &  24.7\,s &  0.14\,s & 176$\times$ slower \\
+Tilepuzzle (181K)       & 181K states & 3m\,14s  &  6.4\,s  & 30$\times$ slower \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\CeTTa{} wins decisively on inference-heavy workloads: the depth-10
+PLN benchmark produces 19{,}845~hypotheses with calibrated truth values
+(including 1{,}632~depth-10 drug hypotheses at strength~0.084) in
+15\,s vs.\ \PeTTa{}'s 143\,s---a \textbf{9.5$\times$} speedup.
+\PeTTa{}'s Prolog WAM wins on pure search due to trail-based rollback,
+first-argument clause indexing, and compact term representation.
+The BTree~16{,}383 gap (176$\times$) exposes \CeTTa{}'s remaining
+equation dispatch bottleneck: 80\% of candidates still use linear scan.
+
+\paragraph{Multi-relational deep chaining.}
+Extending the rule set from 3 to 6~rules---adding Reactome pathway
+membership, same-pathway gene, and pathway-mediated target---enables
+cross-ontology chains at depth~4:
+SNP $\xrightarrow{\text{coreg}}$ SNP$'$
+$\xrightarrow{\text{eQTL}}$ Gene
+$\xrightarrow{\text{pathway}}$ Pathway
+$\xrightarrow{\text{co-member}}$ Gene$'$.
+The 6-rule chainer over 100K eQTL $+$ 943 pathway edges produces
+\textbf{10{,}036 hypotheses} (256~unique genes, 62~pathways)
+in 24\,s on \PeTTa{}.  Each hop introduces a genuinely different
+relation type, preventing circular chains and enabling the kind of
+multi-source inference that single-relation depth cannot achieve.
+
+Adding Hetionet disease associations, compound--target bindings,
+and scaled Reactome pathways (132{,}556~edges, 35{,}738~genes)
+extends the chain to the full variant-to-drug pipeline.  A 9-rule
+chainer produces \textbf{1{,}411{,}430~scored hypotheses}---identical
+on both runtimes---in \textbf{3m\,22s on \CeTTa{}} vs.\ 5m\,24s on
+\PeTTa{} (1.6$\times$ speedup), including 295K depth-3 pathway targets,
+797K depth-4 pathway targets, 488~drug hypotheses, and 17{,}429~unique
+reachable genes from 47~direct targets.  The textbook chain
+rs10000544 $\to$ PDE5A $\to$ hypertension $\leftarrow$ Sildenafil
+composes three independent data sources (GTEx, Hetionet, DrugBank) by
+typed backward chaining with proof terms at every step.
+
+\paragraph{Dependent binder encoding.}
+PLN rule declarations use \code{(rule-sig name type)} instead of
+\code{(: name type)} to avoid a current HE spec limitation: the
+\code{(: \$e T)} syntax in arrow-domain positions is treated as a
+literal expected type, not a dependent binder, causing \code{BadArgType}
+on both HE and \CeTTa{} (see Section~\ref{sec:heprime}).
+The \code{rule-sig} encoding is semantically equivalent on all runtimes.
+
+%% ────────────────────────────────────────────────────────────────────
+\section{Performance Analysis}
+
+\subsection{SymbolId Conversion: 38\% Instruction Reduction}
+
+The original \CeTTa{} profiling revealed 46\% of runtime in string
+operations (\code{intern}, \code{strcmp}, \code{atom\_is\_symbol}).
+We completed a comprehensive SymbolId conversion: all semantic
+dispatch---evaluator special forms, grounded operators, library hooks,
+registry lookups---now uses integer SymbolId comparison instead of
+string comparison.
+
+Callgrind on the 8-puzzle BFS (5{,}000 steps) shows the impact:
+
+\begin{center}
+\begin{tabular}{lrrl}
+\toprule
+& Before SymbolId & After SymbolId & Change \\
+\midrule
+Total instructions & 4{,}551M & 2{,}810M & $-$38\% \\
+\#1 hotspot & \code{intern} (18\%) & \code{bindings\_apply} (5.5\%) & eliminated \\
+\#2 & \code{atom\_is\_symbol} (11\%) & \code{bindings\_free} (5.4\%) & eliminated \\
+\#3 & \code{strcmp} (11\%) & \code{resolve\_refs} (4.4\%) & eliminated \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The remaining profile is uniform: no single function dominates.
+The top costs are now binding management (\code{apply}, \code{clone},
+\code{free}) and heap allocation (\code{malloc}/\code{free}), pointing
+to trail/rollback as the next optimization target.
+
+\subsection{Tilepuzzle: 30$\times$ Gap with PeTTa}
+
+The 8-puzzle BFS (181{,}440 reachable states) is a WAM-class benchmark
+that exposes \CeTTa{}'s remaining architectural gap:
+
+\begin{center}
+\begin{tabular}{lrrl}
+\toprule
+Runtime & Time & Memory & Status \\
+\midrule
+\PeTTa{} (Prolog/WAM) & 6.4\,s & 114\,MB & baseline \\
+\CeTTa{} (C/arena) & 3m\,14s & 4.68\,GB & 30$\times$ / 41$\times$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Massif heap profiling identifies the root causes:
+44\% of peak memory is arena allocation via \code{bindings\_apply}
+(variable substitution creating fresh atoms with no hash-consing on
+the evaluation arena); 12\% is \code{atom\_expr} (expression
+construction); 7\% is \code{rename\_vars} (deep-copying equations
+for standardization-apart).  Runtime counters show 7M
+\code{bindings\_free}, 3.5M \code{bindings\_clone}, and 1.4M
+\code{rename\_vars} calls for 5{,}000 BFS steps.
+
+\subsection{Structured Space Kinds}
+
+\CeTTa{} now supports three ordered space kinds beyond plain atomspaces:
+
+\begin{center}
+\begin{tabular}{lll}
+\toprule
+Kind & Discipline & Use case \\
+\midrule
+\code{queue} & FIFO push/pop & BFS frontiers, work queues \\
+\code{stack} & LIFO push/pop & DFS, continuation stacks \\
+\code{hash} & O(1) membership & Visited sets, deduplication \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+These are created via \code{(new-space queue)}, \code{(new-space hash)},
+etc., and support universal pattern matching through the standard
+\code{match} API\@.  The tilepuzzle uses queue-space for its BFS
+frontier and hash-space for visited-set deduplication, reducing
+peak memory from 6.3\,GB (plain atomspace) to 4.68\,GB.
+
+\subsection{Architecture: Three Machines}
+
+Profiling and design analysis (informed by GPT-5.4 Pro architectural
+review) identifies three semantically distinct machines that should
+not share mutable state:
+
+\begin{enumerate}
+\item \textbf{Local search machine.}
+  Branch-local bindings, trail/rollback, choice frames, scratch arenas.
+  WAM-inspired: cheap undo via watermarks, not clone/free churn.
+  This is the next implementation priority.
+
+\item \textbf{Indexed shared-space machine.}
+  Persistent PathMap/MORK-backed spaces, snapshot/epoch discipline,
+  conjunction query planning, leapfrog triejoin.
+  Deterministic and committed---no backtracking through the index.
+
+\item \textbf{Type/elaboration machine} (future).
+  Scoped binders, metavariables, constraint solving, delayed
+  assignments.  Separate from runtime bindings.
+\end{enumerate}
+
+Language profiles (\code{he\_compat}, \code{he\_extended},
+\code{he\_prime}, future \code{petta}) are compositional assemblies
+over these machines, not ad-hoc forks in the evaluator.
+
+\subsection{Faithful Backend Obligations}
+
+The indexed shared-space machine needs a sharper correctness contract than
+``the backend is fast and seems to return the same answers.''  Recent Lean
+work factors the backend story into three explicit runtime seams:
+\begin{enumerate}
+\item \textbf{Candidate selection.}
+  The index narrows candidate atoms, while \CeTTa{}'s native matcher performs
+  exact variable-sensitive matching.  This is the two-phase architecture now
+  validated by concrete selector theorems over \PathMap{} tries and by a
+  concrete matcher instantiation on the \HE{} side.
+\item \textbf{Canonical storage.}
+  Storage may quotient results to canonical support, but it must preserve
+  co-reference.  Repeated source variables must remain repeated after storage
+  and materialization; distinct variables must remain distinct.
+\item \textbf{Revision-based caching.}
+  Cached query answers are valid only across mutations that preserve the
+  relevant support boundary.  Duplicate adds or high-count decrements may
+  preserve cache validity; first adds and last removes must invalidate.
+  Variant-normalized cache keys must also preserve right-hand-side answers and
+  result shape under materialization.
+\end{enumerate}
+
+This yields a practical division of labor for the PathMap/MORK backend:
+\begin{enumerate}
+\item \PathMap{} stores canonical support and performs prefix-based candidate
+  narrowing;
+\item the native matcher remains the source of truth for exact bindings and
+  binder hygiene;
+\item count metadata, not trie-key distortion, carries bag semantics.
+\end{enumerate}
+
+\paragraph{Verified runtime contracts.}
+Recent Lean work extends the backend correctness story with three new contract files:
+\begin{itemize}
+\item \code{CeTTaRuntimeContracts.lean} (20 theorems): canonicalization injectivity and BEq preservation (\code{term\_canon.c}), search-context save/rollback correctness (\code{search\_machine.c}), effect classification safety (\code{runtime\_effect\_classes.json}), and profile hierarchy (\code{session.c}).  Each theorem maps to a concrete refactoring risk it reduces.
+\item \code{IncrementalTableSemantics.lean} (15 theorems): specifies partial-table soundness, answer monotonicity, and completion for future tabling in \code{table\_store.c}.  Any correct implementation must satisfy \code{TableEntry.Sound} (partial reads are genuine) and \code{TableEntry.Exact} (completed tables equal \code{queryEquations}).
+\item \code{ProducerChoicePoint.lean} (10 theorems): formalizes the search-machine save/rollback/nested-choice-point protocol with combined bindings+scratch state.
+\end{itemize}
+
+Crucially, \CeTTa{}'s imported backend is binding-correct not through trusted direct bridge bindings, but because candidate narrowing is followed by seeded native rematch (\code{space\_subst\_match\_with\_seed}).  The theorem \code{imported\_seedRematch\_binding\_parity} in \code{SeedRematchContract.lean} formalizes this: when imported candidates are sound, the two-phase query produces the same result set as direct matching.
+
+\paragraph{Positive example.}
+Adding an existing atom to a counted space may increment multiplicity without
+changing trie support or invalidating unrelated cached queries.
+
+\paragraph{Negative example.}
+Letting the backend bridge perform full unification over serialized query
+terms invites exactly the binder-hygiene failures that arise when
+canonicalization preserves shape but breaks co-reference.
+
+These obligations are now mapped one-for-one to runtime seams:
+\code{space\_match\_backend.c} for candidate selection, \code{term\_universe.c}
+for canonical storage, and \code{table\_store.c} for cache invalidation.  The
+companion note \emph{Faithful Backends for HE MeTTa} develops the full proof
+story, including the variant-query and binding-cache lemmas; the present
+paper uses those results to justify the architecture of \CeTTa{}'s indexed
+shared-space machine.
+
+\subsection{MM2 Integration}
+
+MM2 is a deterministic, priority-scheduled, forward-chaining term rewriting
+language implemented by MORK\@.  Its programs are not a separate execution
+layer---they are atoms in MORK-backed spaces, stepped by MeTTa via
+\code{step!}.  The hybrid interaction requires no special protocol: MeTTa
+creates spaces, adds data, steps MM2 rules, and reads results through ordinary
+\code{match}.
+
+\begin{verbatim}
+!(bind! &ws (new-space mork))
+!(add-atom &ws (exec (0 step)
+  (, (edge $x $y) (edge $y $z))
+  (O (+ (path $x $z)))))
+!(add-atom &ws (edge a b))
+!(add-atom &ws (edge b c))
+!(step! &ws)
+!(match &ws (path $x $y) ($x $y)) ; -> (a c)
+\end{verbatim}
+
+Three import paths exist: \code{.mm2} file import (\code{import!} or
+\code{include} into a target space, which auto-enables the MORK backend),
+inline \code{add-atom} of exec rules from MeTTa, and compiled \code{.act}
+artifact loading via \code{mork:open-act}.
+
+Because MM2 rules are ordinary atoms, MeTTa can pattern-match over them as
+data---inspecting priorities, rewriting source/sink templates, or extracting
+rules for analysis:
+\begin{verbatim}
+!(match &ws (exec $p $src $snk) (rule $p))
+\end{verbatim}
+
+\CeTTa{}'s \code{mm2\_lower.c} handles bidirectional
+surface$\leftrightarrow$IR lowering
+(\code{exec}$\leftrightarrow$\code{mm2\_exec},
+\code{,}$\leftrightarrow$\code{mm2\_pattern\_and}, etc.), preserving
+round-trip fidelity between MM2 surface syntax and \CeTTa{}'s internal
+representation.
+
+%% ────────────────────────────────────────────────────────────────────
+\section{The MeTTa Dialect Landscape}
+
+\subsection{Shared Fragment}
+
+85\% of MeTTa programs use only shared constructs (\code{let},
+\code{let*}, \code{match}, \code{if}, \code{case}, \code{bind!},
+\code{add-atom}, \code{new-space}).  These run identically on all three
+runtimes without translation.  The Metamath proof search benchmark is
+dialect-agnostic.
+
+\subsection{Translated Constructs}
+
+\begin{center}
+\begin{tabular}{lll}
+\toprule
+Direction & Construct & Translation \\
+\midrule
+\HE{}$\to$\PeTTa{} & \code{chain} & \code{let} \\
+& \code{collapse-bind} & \code{collapse} \\
+& \code{superpose-bind} & \code{superpose} \\
+& \code{nop X} & \code{let \$fresh X ()} \\
+& \code{function (return X)} & \code{X} (unwrap) \\
+\PeTTa{}$\to$\HE{} & \code{progn A B} & \code{let \$fresh A B} \\
+& \code{prog1 A B} & \code{let \$r A (let \$d B \$r)} \\
+& \code{@<} & \code{<s} \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{Semantic Divergence: Constraint Store vs.\ Independent Scope}
+
+The translation preserves semantics on the \emph{pure fragment}
+(ground terms, or variables scoped by \code{let*}).  A genuine
+divergence exists for free variables in non-deterministic branches:
+\begin{lstlisting}[language={},basicstyle=\ttfamily\scriptsize]
+(= (deduce (And $a $b)) (And (deduce $a) (deduce $b)))
+\end{lstlisting}
+When \code{deduce} returns via \code{match \&self} with a free
+variable~\code{\$x}, \HE{}/\CeTTa{} bind \code{\$x} consistently
+across both branches of \code{And}, while \PeTTa{} gives each branch
+its own copy.
+
+This divergence has a precise theoretical characterization.
+Saraswat et al.~\cite{saraswat1988} showed that concurrent constraint
+languages based on Tell-and-Ask over a shared store satisfy a
+\emph{monotonicity property}: constraints accumulate monotonically,
+and any reduction possible in a later configuration was already
+possible in an earlier one (their Proposition~2.1).  \HE{}/\CeTTa{}'s
+\code{match~\&self} operates on a shared constraint store---bindings
+produced by one branch propagate to all others via the shared space.
+\PeTTa{}'s Prolog backend evaluates branches with independent variable
+scopes, closer to what Saraswat et al.\ identify as the
+``read-only variable'' model of Flat Concurrent Prolog, which they
+explicitly note does \emph{not} possess the monotonicity property.
+
+\paragraph{The depth-1 standard form.}
+Saraswat et al.\ define a clause to be in \emph{standard form} when
+each atom in the body is depth-1 (no shared variables between
+conjunction branches).  Nil Geisweiller's typed backward chainer
+uses exactly this form: \code{let*} threads variable bindings
+explicitly between premises, eliminating implicit sharing.  This is
+why the typed chainer works identically on all three runtimes---it
+stays within the standard-form fragment where the constraint-store
+and independent-scope semantics coincide.
+
+\paragraph{Lean formalization.}
+The \code{Translatable} and \code{PureTranslatable} predicates in
+\code{HEPeTTaSound.lean} characterize precisely this fragment: atoms
+where \code{atomToPattern} succeeds and produces
+\code{isMatchCorrect} patterns (no lambda, subst, or collection
+nodes).  The sorry-free proof establishes that equation-matching
+semantics are preserved under translation on this fragment.  Extending
+the proof to the shared-variable conjunction fragment would require
+formalizing the monotonic constraint-store semantics of \HE{}'s
+\code{match~\&self}---a natural target for Phase~3 of the Lean proof.
+
+%% ────────────────────────────────────────────────────────────────────
+\section{Non-determinism and Mutable State}
+\label{sec:nondet-state}
+
+A fundamental specification gap in MeTTa concerns the interaction of
+non-deterministic evaluation with mutable space operations.  When
+\code{let~\$x~(match~\&db~...)~(add-atom~\&result~(stored~\$x))}
+executes with multiple match results, what happens to the shared
+\code{\&result} space?
+
+\subsection{The Problem}
+
+Consider:
+\begin{lstlisting}[language={},basicstyle=\ttfamily\scriptsize]
+!(bind! &db (new-space))
+!(add-atom &db (item A))
+!(add-atom &db (item B))
+!(bind! &result (new-space))
+!(let $x (match &db (item $y) $y)
+   (superpose ((remove-atom &result (stored $x))
+               (add-atom &result (stored $x)))))
+!(get-atoms &result)
+\end{lstlisting}
+
+\HE{} returns \code{[]}---all atoms lost.  \CeTTa{} returns
+\code{[(stored~A)~(stored~B)]}---correct.  The root cause:
+\HE{} interleaves side effects from different non-deterministic
+branches, so \code{remove-atom} from one iteration cancels
+\code{add-atom} from another.  \CeTTa{} evaluates each iteration's
+body to completion before starting the next.  This is the exact
+pattern used by the Hyperon pattern miner's
+\code{build-specialization}, explaining why the miner produces
+empty results on \HE{}.
+
+\subsection{Four Possible Semantics}
+
+We analyzed four options across eight representative examples
+(accumulation, logging, constraint checking, search with
+backtracking, speculative execution, order-dependent processing,
+accidental non-determinism, and the real miner code):
+
+\begin{center}
+\begin{tabular}{lcccc}
+\toprule
+Option & Wins & Loses & Character \\
+\midrule
+Sequential (CeTTa)  & 6/8 & 1/8 & accumulation-friendly \\
+Interleaved (HE)    & 0/8 & 4/8 & always worse than sequential \\
+Forked (copy-on-write) & 1/8 & 4/8 & search-friendly \\
+Illegal (UB)        & 1/8 & 5/8 & safest, least ergonomic \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Sequential evaluation loses only on \emph{search with backtracking},
+where each branch needs isolated state.  Interleaved evaluation
+is strictly dominated---it provides no advantage over sequential
+while introducing race conditions on shared mutable state.
+
+\subsection{\code{with-space-snapshot}: The Escape Hatch}
+
+For the one case where sequential semantics is wrong (search with
+mutable state), \CeTTa{} provides \code{with-space-snapshot}:
+\begin{lstlisting}[language={},basicstyle=\ttfamily\scriptsize]
+(= (fs-add-to-ss $rb $ss)
+   (with-space-snapshot $ss0 $ss
+     (match $ss0 (: $x1 $a1)
+       (match $ss0 (: $x2 $a2)
+         (match $rb (: $f (-> $a1 $a2 $b))
+           (add-atom $ss (: ($f $x1 $x2) $b)))))))
+\end{lstlisting}
+
+This pattern, from Geisweiller's propositional forward chainer,
+reads from a frozen snapshot \code{\$ss0} while writing to the
+live space \code{\$ss}---the standard \emph{semi-naive} discipline
+for stratified forward inference.  This is a \CeTTa{} extension;
+\HE{} does not currently implement it.
+
+\subsection{Proposed Spec Clarification}
+
+The MeTTa spec~\cite{metta} uses sequential Python pseudocode
+(line~368: a list comprehension over results) that implies
+sequential side-effect ordering, but does not explicitly require
+it.  We propose:
+
+\begin{quote}
+\emph{When a non-deterministic expression produces multiple results
+and those results are bound via \code{let}/\code{chain}/equation
+dispatch, the body for each result is evaluated to completion---including
+all side effects---before the body for the next result begins.
+To evaluate branches with isolated state, use \code{collapse}
+first, then iterate explicitly.}
+\end{quote}
+
+A future \code{snapshot-space} primitive would provide clean
+copy-on-write semantics for search/backtracking without baking
+merge semantics into the language core.
+
+%% ────────────────────────────────────────────────────────────────────
+\section{HE$'$: Dependent Telescope Extension}
+\label{sec:heprime}
+
+Both HE and \CeTTa{} treat \code{(: \$e T)} in arrow-domain positions as a
+literal expected type, not a dependent binder.  This means Curry-Howard
+backward chainers cannot store rule types as \code{(: dt (-> (: \$e
+(eqtl \$snp \$gene)) (target \$snp \$gene)))} in \code{\&self} without
+triggering \code{BadArgType}.  This is a current HE spec limitation, not
+a \CeTTa{} bug.
+
+We formalize an explicit extension, HE$'$ (he\_prime), as a
+\emph{telescope interpretation} of arrow domains.  The extension is
+exactly one function: \code{splitDomain}, which recognizes \code{(: \$x
+T)} as a dependent binder instead of a literal.  Everything else
+(matching, bindings, space operations, equation dispatch) is inherited
+from HE unchanged.
+
+The telescope walk checks arguments left-to-right: each successful
+type match extends the binding environment, and later domains and the
+codomain are instantiated under accumulated bindings.  This is
+formalized in Lean (230~lines, 0~sorries) at
+\code{HEPrime/Telescope.lean}, with kernel-checked positive and
+negative examples:
+
+\begin{itemize}
+\item \textbf{Positive:} applying \code{dt} to \code{eqtl\_rs1\_gene1}
+  infers return type \code{(target rs1 gene1)} via dependent
+  substitution.  Binary rule \code{ct} with cross-domain dependency
+  ($\code{\$snp2}$ bound by first argument, constraining second domain)
+  also kernel-checked.
+\item \textbf{Negative:} mismatched SNP ($\code{rs2} \neq \code{rs1}$)
+  correctly produces \code{none}.  Standard HE telescope parsing treats
+  the same domain as a plain atom, proving the semantics are distinct.
+\end{itemize}
+
+\CeTTa{} implements HE$'$ as an opt-in profile (\code{he\_prime}),
+gated by a single flag (\code{enable\_dependent\_telescope}).  The
+implementation mirrors the Lean formalization: \code{split\_dependent\_domain},
+\code{function\_domain\_type}, \code{bind\_domain\_binder}, and
+\code{infer\_dependent\_application\_types} in \code{eval.c}.
+
+%% ────────────────────────────────────────────────────────────────────
+\section{Related Work}
+
+\paragraph{Concurrent constraint programming.}
+Saraswat et al.~\cite{saraswat1988} established the theoretical
+framework for detecting stable properties of networks in concurrent
+logic programming languages.  Their cc($\downarrow$,$|$) language,
+with Tell/Ask on shared variables over a monotonic constraint store,
+provides the semantic model that most closely matches \HE{}/\CeTTa{}'s
+\code{match~\&self} evaluation.  The distinction between monotonic
+constraint stores and independent-scope evaluation (Flat Concurrent
+Prolog) precisely characterizes the semantic boundary between \HE{} and
+\PeTTa{}.
+
+\paragraph{MeTTa ecosystem.}
+The MeTTaIL boot compilation pipeline~\cite{mettail} provides a
+contract-first, Lean-backed compilation path for MeTTa stdlib modules,
+complementing \CeTTa{}'s direct evaluation approach.  The Mettapedia
+formalization project provides the Lean specifications (\code{EvalSpec},
+\code{MeTTaEval}, \code{MatchSpec}) that ground both the translation
+proof and the \CeTTa{} evaluator design.  The PLN (Probabilistic Logic
+Networks) framework uses MeTTa's backward chaining extensively; the
+typed chainer pattern from Nil Geisweiller's \code{nilbc.metta} is
+the standard PLN idiom that works across all three runtimes.
+
+%% ────────────────────────────────────────────────────────────────────
+\section{Conclusion}
+
+\CeTTa{} demonstrates that a direct C implementation of the MeTTa
+evaluator can achieve \textbf{9.5$\times$ speedup} over \PeTTa{} on
+genuine depth-10 PLN backward chaining with truth-value propagation
+(19{,}845~hypotheses, 1{,}632~depth-10 drug candidates, 15\,s vs.\
+143\,s), while maintaining oracle-verified correctness across a
+375-file regression suite and a 333-case rule-indexed conformance
+catalog (24/24 spec-rule capacities, all agree) against upstream
+\HE{}~v0.2.10.
+The sorry-free Lean proof of \HE{}$\leftrightarrow$\PeTTa{} semantic
+correspondence (5{,}400+ lines, 0~sorries), including import
+commutativity and operational bridges for state and space allocation,
+establishes that MeTTa's three runtimes are semantically compatible
+on the shared fragment.  The compiled \code{.act} space format via
+MORK enables zero-copy indexed loading of large knowledge bases.
+On the process-calculus side, the \RhoCalc{} reaction machine's
+eval-at-\textsc{comm} semantics now has a witness-free, axiom-clean Lean
+characterization (Section~\ref{sec:rho-lean}): the quiescent run of the
+canonical payload-evaluation process is exactly its structurally observable
+outcome set, with no certification witness in the carrier.
+
+Beyond raw performance, \CeTTa{} now treats its own semantics as a
+first-class object.  The profile family makes \code{he-compat} (literal
+Rust \HE{}) and the principled \code{he} line distinct, recorded
+semantic products; the reflective modal surface exposes the one-step
+reduction relation---$\Diamond$, $\Box$, normal-form---to MeTTa
+programs themselves, aligned with the Lean OSLF derivation; and the
+small-step rule table makes the first reduction-rule classes named,
+reflectable, and removable, with rule-removal tests proving the engine
+depends on the declared rules rather than on duplicate hidden branches.
+The congruence bug that motivated this weld---an argument-congruence
+rule silently missing from the one-step relation on three branches at
+once---is exactly the drift class this architecture eliminates.
+
+The 30$\times$ gap with \PeTTa{} on the 8-puzzle BFS benchmark
+is precisely diagnosed by callgrind/massif profiling: binding
+clone/free churn (7M free calls for 5K steps) and equation
+deep-copying (1.4M \code{rename\_vars} calls).  These are
+addressable by WAM-inspired trail/rollback without converting
+\CeTTa{} into a Prolog engine.  The guiding principle:
+\emph{backtracking should be rare, local, and hidden---not global,
+ambient, or user-visible.}
+
+\paragraph{Future work.}
+\begin{itemize}
+\item \textbf{Complete HE one-step coverage:} equation matching is
+  table-routed; migrate the special forms (\code{chain}, \code{let},
+  \code{let*}, \code{case}, \code{switch}) one rule class at a time,
+  each with bag-equality and rule-removal gates.
+\item \textbf{\code{--compile-langdef} codegen:} a generator emitting
+  both the reflectable pack and specialized C for the hot evaluator
+  under one shared source digest, extending the
+  \code{--compile-stdlib} blob precedent; an
+  evaluate-by-iterating-one-step mode as reference oracle.
+\item \textbf{Small-step / official-HE correspondence:} the
+  \code{HESmallStep} relation and its OSLF span exist in Lean
+  (proven; zero sorries); the remaining climb is the delimited
+  collapse/simulation theorems connecting it to the fine
+  \code{mettaHE} instruction machine.
+\item \textbf{Bounded modal operators:} fuel-bounded
+  \code{reachable-within} ($\Diamond^{\le k}$) and
+  \code{invariant-within} ($\Box^{\le k}$) over the now-faithful
+  one-step relation.
+\item \textbf{Local search machine:} trail/watermark rollback,
+  \code{BindingsBuilder}, arena mark/reset for scratch atoms.
+  Target: 3--5$\times$ on search-heavy workloads (tilepuzzle gap
+  from 30$\times$ to $\sim$6--10$\times$).
+\item \textbf{Indexed shared-space engine:} leapfrog triejoin
+  (from Vandervorst's \code{trie\_synth.py}), conjunction query
+  planning, SpaceEngine boundary (formalized in
+  \code{SpaceEngineBoundary.lean}: native $\subset$ pathmap $\subset$ mork,
+  with ACT as artifact-only surface; \code{ACTArtifactBoundary.lean}
+  classifies \code{open-act}/\code{load-act!}/\code{dump!} as storage seams).
+  Target: 10--100$\times$ on large-KB multi-pattern conjunctions.
+\item \textbf{MM2 as MeTTa data (working):} MM2 exec rules are atoms in
+  MORK-backed spaces.  MeTTa creates, inspects, rewrites, and steps them
+  through the ordinary space API\@.  \code{step!} is the execution interface;
+  \code{.mm2} files import via \code{include}/\code{import!}.  MeTTa can
+  pattern-match over MM2 code to analyze or transform programs---the
+  meta-language relationship is native.
+\item \textbf{morkl: expert \PathMap{} algebra (future):}  Direct access to
+  \PathMap{}'s zipper navigation (5{,}800 lines of Rust), product-zipper
+  Cartesian joins (2{,}000 lines), and lattice operations
+  (\code{pjoin}/\code{pmeet}/\code{psubtract}/\code{prestrict}, 1{,}600
+  lines).  MORK's kernel already implements 15+ sink types (count, sum, head,
+  hash, and, Z3, WASM) and source types (BTM, ACT, equality/inequality
+  constraints).  The Lean formalization (46 files, 19K+ lines) proves the
+  three-phase execution protocol, fold-level aggregation, and \PathMap{}
+  lattice correspondence.  The gap is FFI exposure and MeTTa surface: the
+  Rust substrate exists, \code{lib/morkl.metta} does not yet.
+\item \textbf{HO search engine:} Lash-inspired SAT-driven proof
+  search for PLN and type-directed synthesis.  PicoSAT as
+  embedded SAT solver.  Separate from the evaluator.
+\item \textbf{Translator CLI:} \code{translate.sh} with
+  \code{he2petta}/\code{petta2he}, recursive and bundle modes.
+  Lean proof covers pure fragment + state + spaces (0~sorries).
+\item \textbf{Reaction-semantics formalization:} extend the witness-free
+  eval-at-\textsc{comm} characterization (Section~\ref{sec:rho-lean}) from the
+  single-reaction bag fragment to concurrent and persistent reactions, and
+  relax the hash-set-free channel side condition.
+\item Full pattern miner on \CeTTa{} end-to-end
+  ($\sim$12$\times$ speedup over \PeTTa{}).
+\end{itemize}
+
+\appendix
+
+%% ════════════════════════════════════════════════════════════════════
+\section{\textsc{Experimental} --- MAM: The MeTTa Abstract Machine}
+\label{app:mam}
+
+\emph{This appendix is explicitly experimental.  It captures design
+exploration from ongoing discussions (April~2026) between the authors
+and external reviewers (GPT-5.4 Pro), concerning the
+post-phase-1f abstract-machine layer for \CeTTa{}.  Nothing here is yet
+implemented or committed architecture.  It is recorded to preserve
+design rationale; the authoritative implementation plan remains
+\code{implementation\_plan.tex}.}
+
+\subsection{Motivation}
+
+The phase-1f-era extraction seam (\code{src/search\_machine.\{h,c\}})
+pulls policy parsing, stream combinators, and a \code{TableStore}
+plugin out of \code{eval.c}, and wraps them in a thin callback struct
+\code{CettaSearchMachine = \{stream\_source, eval\_bound\_single,
+  eval\_ctx, table\_plugin\}}, stack-allocated at each call site.
+This is a useful refactor, but it is a \emph{plug interface} — not an
+abstract machine in the WAM / ZAM / SLG-WAM sense.  Real abstract
+machines (XSB's SLG-WAM, SWI's tabling runtime, Soufflé's compiled
+Datalog, miniKanren's CPS-transformed search) have persistent machine
+state, explicit visitor protocols, capability advertisement, and
+episode lifetimes.
+
+The proposal here is a \emph{principled} next layer that retains the
+current code as \code{SearchAdapter} (transitional helper) while
+naming the real abstraction from first principles.
+
+\subsection{Current categorical reading}
+
+The MAM's present semantic reading, under active revision, models it
+as a \textbf{quantale-enriched traced profunctor}, fibrated for
+reflection.  This reading is provisional --- it captures the current
+best understanding of the structure, not a definitional claim that
+binds future architecture.  Unpacked:
+
+\begin{itemize}
+\item \textbf{Profunctor} $P : \mathcal{Q}^{\mathrm{op}} \times
+  \mathcal{A} \to \mathcal{V}$: \emph{search}.  Queries in
+  $\mathcal{Q}$ relate to answer streams in $\mathcal{A}$, with
+  intensity weighted by elements of $\mathcal{V}$.
+\item \textbf{Quantale enrichment} $\mathcal{V} = (L, \otimes, \le,
+  \bigvee)$: \emph{multiplicity}.  Answer weights live in a quantale:
+  $\mathcal{V} = \mathbf{2}$ for classical boolean search;
+  $\mathcal{V} = \mathbb{N}$ for counted answers;
+  $\mathcal{V} = [0,1]^2$ (strength $\times$ confidence) for PLN.
+  \PathMap{}'s trie-algebra is natively a quantale.
+\item \textbf{Trace} $\mathrm{Tr}_X^{A,B} : \mathrm{Hom}(A \otimes X, B
+  \otimes X) \to \mathrm{Hom}(A, B)$: \emph{fixpoint}.  Feedback /
+  saturation / tabling / cyclic queries are all instances of
+  categorical trace (Joyal--Street--Verity, Hasegawa).
+\item \textbf{Kleisli structure over an effect monad} (or algebraic
+  effect handlers \emph{\`a la} Plotkin--Pretnar): \emph{control}.
+  Demand, cut, suspension, resumption, and schedule are composable
+  effect operations.
+\item \textbf{Fibration} $p : \mathcal{T} \to \mathcal{B}$ (optional,
+  for reflective MeTTa): rules-over-machine-state.
+\end{itemize}
+
+A trace operator is provably equivalent to taking the least fixpoint
+of a parameterised endofunction (Hasegawa 1997); this is why tabling,
+PLN-convergence, and saturation all fit one uniform operator.
+
+\subsection{The proposed machine family: MAM}
+
+We name the machine family \textbf{MAM: MeTTa Abstract Machine}.
+The name is chosen by identity rather than by current structure or
+scope: MAM is the abstract machine for the MeTTa language family,
+and that identification remains accurate as the internal architecture
+evolves.  The naming tradition (WAM, ZAM, STG, CEK, CAM) uses either
+author identity or component decomposition; MAM uses the language
+identity it serves, which is stable across architectural iteration.
+Specifically, MAM does \emph{not} hardcode a categorical claim (as
+``QAM = Quantale Abstract Machine'' would have done), and does
+\emph{not} hardcode a functional scope (as ``SCAM = Search \& Control
+Abstract Machine'' would have done).  The categorical reading and the
+current feature set are both free to evolve without renaming.
+
+\begin{center}
+\begin{tabular}{ll}
+\toprule
+\textbf{Concept} & \textbf{Name} \\
+\midrule
+Machine family & \code{MAM} (Quantale Abstract Machine) \\
+Formal description & Quantale-enriched traced profunctor \\
+Engine 1 (goal-directed, Kleisli/effect) & \code{Chainer} \\
+\quad first realization (native) & \code{native\_chainer} \\
+Engine 2 (fixpoint, trace) & \code{Saturator} \\
+\quad first realization (pathmap) & \code{pathmap\_saturator} \\
+Per-session state & \code{Episode} \\
+Dispatch vtable & \code{MAMOps} \\
+Answer & \code{Answer} / \code{WeightedAnswer} \\
+Schedule axis & \code{dfs} / \code{bfs} / \code{iddfs} / \code{interleave} / \code{native} \\
+Demand axis & \code{unbounded} / \code{once} / \code{limit-k} / \code{fold} \\
+Visitor control & \code{CONTINUE} / \code{STOP} / \code{ERROR} / \code{SUSPEND} \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{The two-engine pressure strategy}
+
+Rather than over-specifying a first concrete machine, MAM is
+pressured from day~1 by \emph{two} independent realizations that
+stress complementary axes of the seam:
+
+\begin{description}
+\item[\code{Chainer} (goal-directed).]  WAM-lineage control: explicit
+  environments/frames, choicepoints, trail/undo, deterministic
+  tail-path handling, bounded-demand response, direct conjunction
+  when advertised.  Design-guide workload: \textbf{metamath backward
+    chaining} (where \PeTTa{} currently completes and \CeTTa{}~OOMs).
+  First realization: \code{native\_chainer}.
+\item[\code{Saturator} (fixpoint).]  SLG / Datalog / saturation
+  lineage: snapshots, delta-sets, conjunction planning, exact
+  membership, counted answers, eventual path toward PLN and
+  ATP-style saturation.  Design-guide workload: \textbf{PLN
+    multi-pattern deduction}.  First realization: \code{pathmap\_saturator}
+  (because \PathMap{}'s quantale structure makes weighted answer
+  aggregation natural).
+\end{description}
+
+This pair creates the right kind of pressure on the seam: Chainer
+forces frames, choicepoints, \code{EnvRef}, demand handling, and
+explicit scheduling; Saturator forces snapshots, delta sets,
+conjunction planning, exact membership, counted answers, and the
+eventual path to PLN and ATP.
+
+Compiled / bytecode (ZAM-lineage) and ATP saturation engines are
+explicit \emph{later} lanes --- they risk freezing the protocol in
+the wrong shape if pursued before Chainer and Saturator coexist
+cleanly under one MAM.
+
+\subsection{Axes that must stay separate}
+
+A core architectural commitment is that the following axes are
+\textbf{distinct data} in \code{SearchRequest}, not tangled behind
+surface-level operators:
+
+\begin{description}
+\item[Schedule.]  \code{dfs}~/~\code{bfs}~/~\code{iddfs}~/\code{interleave}
+  are \emph{fairness policies}, not engines.  Korf's classic result
+  motivates \code{iddfs} as a completeness-friendly default over raw
+  \code{bfs} (BFS completeness with DFS memory); miniKanren's
+  interleaving exists precisely to avoid starvation on infinite
+  branches.
+\item[Demand.]  \code{once}~/~\code{limit-k}~/~\code{unbounded}~/\code{fold}
+  describes how many answers are requested, independently of schedule.
+  \code{once} and \code{select~1} must build \code{demand = FIRST};
+  they must \emph{not} silently hardcode DFS.
+\item[Table mode.]  \code{none}~/~\code{variant}~/~\code{subsumptive}~/\code{incremental}
+  mirrors the XSB / SWI ladder; each is an explicit engine-level choice.
+\item[Backend.]  \code{native}~/~\PathMap{}~/~MORK chosen by the
+  actual \code{Space}, not by a global preference.
+\item[Lane.]  \code{recursive-dependent-proof}~/~\code{atp-saturation}~/\code{solver-oracle}~/~\dots{}
+  chosen at surface.
+\end{description}
+
+The request builder (one per \code{--lang}) normalizes surface syntax
+into \code{SearchRequest~+~SearchLangContract}; the MAM consumes the
+normalized object, never raw surface atoms.
+
+\subsection{The seven-type vocabulary}
+
+Seven types are proposed to land together before the first real
+backend optimization (counted-answer variant table, \PathMap{}-native
+conjunction, native exact-match index).  Landing them simultaneously
+prevents the "first optimization forces a rewrite" pathology.
+
+\begin{center}
+\begin{tabular}{ll}
+\toprule
+\textbf{Type} & \textbf{Categorical role} \\
+\midrule
+\code{SearchRequest} & Object of $\mathcal{Q}$ \\
+\code{SearchAnswer} & Object of $\mathcal{A}$ (quantale-weighted) \\
+\code{SearchLangContract} & Subcategory inclusion $\mathcal{C} \hookrightarrow \mathrm{MAM}$ \\
+\code{SearchCaps} & Capabilities = presence of morphisms/natural transformations \\
+\code{VisitCtl} & Algebra of the effect operation $\mathrm{visit}$ \\
+\code{MAMOps} & Kleisli dispatch vtable \\
+\code{Episode} & One trace-iteration instance \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Implementation-actual \code{SUSPEND/RESUME} behavior, cancellation
+tokens, snapshot-token machinery, and per-\code{--lang} registration
+remain explicitly deferred.
+
+\subsection{Reference base}
+
+The proposal draws on the following literature, all available in the
+local library:
+
+\begin{itemize}
+\item \emph{A\"{\i}t-Kaci 1991, WAM Tutorial Reconstruction} --
+  foundational WAM semantics; drives \code{Chainer} design.
+\item \emph{Swift \& Warren, XSB System Manual; Sagonas et al.\ 1994} --
+  SLG-WAM tabling; drives \code{Saturator} / table-mode ladder.
+\item \emph{Scholz, Jordan, Suboti\'c, Westmann 2016, Soufflé: On Fast
+  Large-Scale Program Analysis in Datalog (CC)} -- staged compilation
+  of fixpoint computation; compiled \code{Saturator} path.
+\item \emph{Keoliya \& Byrd 2020, microKanren} -- interleaving search
+  as a distinct schedule axis.
+\item \emph{Ager, Biernacki, Danvy, Midtgaard 2003, A Functional
+  Correspondence Between Evaluators and Abstract Machines (BRICS)} --
+  derivation methodology for machines from evaluator semantics.
+\item \emph{Leroy 1990, The ZINC Experiment} -- machine-description
+  vs.\ run-instance separation (maps to
+  \code{MAMOps}~/~\code{MAM}~/~\code{Episode}).
+\item \emph{Russell \& Norvig, AIMA Ch.~3} -- IDDFS completeness;
+  uniform treatment of uninformed search.
+\end{itemize}
+
+\subsection{Status}
+
+This appendix records design rationale; it does not commit
+implementation.  Reasoned design review converged on $\sim$0.88
+confidence on MAM naming and two-engine strategy.  The concrete
+implementation plan (phase~2 seam; phase~3 tabling plugin;
+phase~4 backend parity) is the authoritative schedule and is
+unchanged by this appendix.
+
+\emph{This text should be revisited at each phase boundary and
+revised as implementation reveals which proposals held and which
+did not.}
+
+%% ════════════════════════════════════════════════════════════════════
+
+\begin{thebibliography}{9}
+\bibitem{metta}
+  B.~Goertzel et al.,
+  ``MeTTa: A Reflective Language for AGI,''
+  OpenCog Foundation, 2024.
+
+\bibitem{saraswat1988}
+  V.~Saraswat, D.~Weinbaum, K.~Kahn, and E.~Shapiro,
+  ``Detecting Stable Properties of Networks in Concurrent Logic
+  Programming Languages,''
+  in \emph{Proc.\ 7th ACM Symposium on Principles of Distributed
+  Computing (PODC)}, pp.~210--222, 1988.
+
+\bibitem{mettail}
+  Z.~Goertzel and Oru\v{z}i,
+  ``MeTTaIL: Contract-First Boot Compilation for Direct C MeTTa Runtimes,''
+  Working paper, 2026.
+
+\bibitem{rho2005}
+  L.~G.~Meredith and M.~Radestock,
+  ``A Reflective Higher-Order Calculus,''
+  \emph{Electronic Notes in Theoretical Computer Science}, vol.~141, no.~5,
+  pp.~49--67, 2005.
+
+\bibitem{costendofunctor}
+  L.~G.~Meredith,
+  ``Continued Interactive GSLTs and the Cost Endofunctor: Wrapping by
+  Construction,'' Working paper, 2026.
+\end{thebibliography}
+
+\end{document}

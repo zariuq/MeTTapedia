@@ -152,7 +152,7 @@ theorem massSemanticsSequence_queryStrength_eq_finiteVolume
     (M : StrictlyPositiveInfiniteGroundMLNSpec Atom ClauseId)
     (ξ : BoundaryCondition Atom)
     (n : ℕ) (q : LocalConstraintQuery Atom (E.region n)) :
-    Mettapedia.Logic.PLNWorldModel.BinaryWorldModel.queryStrength
+    Mettapedia.PLN.WorldModel.PLNWorldModel.BinaryWorldModel.queryStrength
       ({massSemanticsSequence E M ξ n} :
         MassState (LocalConstraintQuery Atom (E.region n))) q =
       (finiteVolumeMassSemantics M.toInfiniteGroundMLNSpec (E.region n) ξ).queryProb q := by

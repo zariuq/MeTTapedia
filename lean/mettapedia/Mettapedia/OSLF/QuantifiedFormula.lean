@@ -1,5 +1,5 @@
 import Mettapedia.OSLF.Formula
-import Mettapedia.Logic.OSLFEvidenceSemantics
+import Mettapedia.OSLF.Framework.EvidenceSemantics
 
 /-!
 # Quantified OSLF Formula Extension
@@ -36,8 +36,8 @@ namespace Mettapedia.OSLF.QuantifiedFormula
 
 open Mettapedia.OSLF.Formula
 open Mettapedia.OSLF.MeTTaIL.Syntax
-open Mettapedia.Logic.OSLFEvidenceSemantics
-open Mettapedia.Logic.EvidenceQuantale
+open Mettapedia.OSLF.Framework.EvidenceSemantics
+open Mettapedia.PLN.Evidence.EvidenceQuantale
 
 /-! ## Quantified Formula AST -/
 

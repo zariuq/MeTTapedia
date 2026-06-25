@@ -1,10 +1,10 @@
 import Mettapedia.ProbabilityTheory.Hypercube.Basic
-import Mettapedia.Logic.EvidenceQuantale
-import Mettapedia.Logic.PLN_KS_Bridge
+import Mettapedia.PLN.Evidence.EvidenceQuantale
+import Mettapedia.PLN.Evidence.PLN_KS_Bridge
 
 namespace Mettapedia.ProbabilityTheory.Hypercube.EvidenceQuantalePointer
 
-open Mettapedia.Logic.EvidenceQuantale
+open Mettapedia.PLN.Evidence.EvidenceQuantale
 
 /-!
 # PLN BinaryEvidence vs KS (Hypercube Pointer)
@@ -17,26 +17,26 @@ Key point:
   `Θ : BinaryEvidence → ℝ` representation.
 
 For the formal statements, see:
-- `Mettapedia.Logic.PLN_KS_Bridge`
-- `Mettapedia.Logic.EvidenceQuantale`
+- `Mettapedia.PLN.Evidence.PLN_KS_Bridge`
+- `Mettapedia.PLN.Evidence.EvidenceQuantale`
 -/
 
 /-! ## BinaryEvidence Sits on the “Drop Totality” Face -/
 
 theorem evidence_has_incomparables :
     ∃ x y : BinaryEvidence, ¬(x ≤ y) ∧ ¬(y ≤ x) :=
-  Mettapedia.Logic.PLN_KS_Bridge.evidence_has_incomparables
+  Mettapedia.PLN.Evidence.PLN_KS_Bridge.evidence_has_incomparables
 
 /-! ## BinaryEvidence Cannot Have a Faithful Point-Valued Representation -/
 
 theorem evidence_no_point_representation :
     ¬ ∃ (Θ : BinaryEvidence → ℝ), ∀ a b : BinaryEvidence, a ≤ b ↔ Θ a ≤ Θ b :=
-  Mettapedia.Logic.PLN_KS_Bridge.evidence_no_point_representation
+  Mettapedia.PLN.Evidence.PLN_KS_Bridge.evidence_no_point_representation
 
 /-! ## BinaryEvidence Is Heyting, Not Boolean -/
 
 theorem evidence_not_boolean :
     ∃ e : BinaryEvidence, e ⊔ e.compl ≠ (⊤ : BinaryEvidence) :=
-  Mettapedia.Logic.PLN_KS_Bridge.evidence_not_boolean
+  Mettapedia.PLN.Evidence.PLN_KS_Bridge.evidence_not_boolean
 
 end Mettapedia.ProbabilityTheory.Hypercube.EvidenceQuantalePointer

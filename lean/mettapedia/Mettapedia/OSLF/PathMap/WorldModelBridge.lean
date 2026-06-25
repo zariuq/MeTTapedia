@@ -1,5 +1,5 @@
 import Mettapedia.OSLF.PathMap.PLNBridge
-import Mettapedia.Logic.PLNWorldModel
+import Mettapedia.PLN.WorldModel.PLNWorldModel
 import Mathlib.Data.Multiset.Filter
 
 /-!
@@ -40,9 +40,9 @@ extension is future work; the Multiset case covers the counting evidence.
 
 namespace Mettapedia.OSLF.PathMap.WorldModelBridge
 
-open Mettapedia.Logic.EvidenceClass
-open Mettapedia.Logic.EvidenceQuantale
-open Mettapedia.Logic.PLNWorldModel
+open Mettapedia.PLN.Evidence.EvidenceClass
+open Mettapedia.PLN.Evidence.EvidenceQuantale
+open Mettapedia.PLN.WorldModel.PLNWorldModel
 open Mettapedia.OSLF.PathMap.PLNBridge
 open scoped ENNReal
 

@@ -32,7 +32,7 @@ namespace Mettapedia.UniversalAI.Intelligence
 
 open Mettapedia.UniversalAI.BayesianAgents
 open Mettapedia.UniversalAI.SimplicityUncertainty
-open Mettapedia.Logic.UniversalPrediction
+open Mettapedia.UniversalAI.UniversalPrediction
 
 /-! ## Intelligence as Value in Mixture
 

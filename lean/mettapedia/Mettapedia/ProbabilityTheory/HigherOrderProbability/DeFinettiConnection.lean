@@ -1,5 +1,5 @@
 import Mettapedia.ProbabilityTheory.HigherOrderProbability.Basic
-import Mettapedia.Logic.DeFinetti
+import Mettapedia.ProbabilityTheory.Exchangeability.DeFinetti
 import Mettapedia.ProbabilityTheory.FiniteMeasureSupport
 import Exchangeability.Core
 import Mathlib.MeasureTheory.Integral.Lebesgue.Map
@@ -14,7 +14,7 @@ import Mathlib.Data.Fin.Tuple.Basic
 /-!
 # De Finetti as Kyburg Flattening
 
-This file packages the Bernoulli-mixture model from `Mettapedia.Logic.DeFinetti` as an instance of
+This file packages the Bernoulli-mixture model from `Mettapedia.ProbabilityTheory.Exchangeability.DeFinetti` as an instance of
 Kyburg's higher-order probability structure (`ParametrizedDistribution`).
 
 The key theorem is the singleton-level identification:
@@ -37,8 +37,8 @@ open Mettapedia.ProbabilityTheory.FiniteMeasureSupport
 
 namespace DeFinettiConnection
 
-open Mettapedia.Logic.DeFinetti
-open Mettapedia.Logic.Exchangeability
+open Mettapedia.ProbabilityTheory.Exchangeability.DeFinetti
+open Mettapedia.ProbabilityTheory.Exchangeability
 
 /-! ## Parameter space and mixing measure -/
 

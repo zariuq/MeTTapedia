@@ -13,6 +13,7 @@ import Mettapedia.Languages.MeTTa.PureNormalizationService
 import Mettapedia.Languages.MeTTa.PureCanonicalEvaluation
 import Mettapedia.Languages.MeTTa.PureBidirectionalChecking
 import Mettapedia.Languages.MeTTa.ElaboratedCore
+import Mettapedia.Languages.MeTTa.PureKernel.HOLLogicalInductionBridge
 import Mettapedia.Languages.MeTTa.AbstractMachineBoundary
 import Mettapedia.Languages.MeTTa.CeTTaSpaceEngineRefinement
 import Mettapedia.Languages.MeTTa.HEPureKernelFragmentBridge

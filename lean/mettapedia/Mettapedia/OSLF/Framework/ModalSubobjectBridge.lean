@@ -30,7 +30,7 @@ open Mettapedia.OSLF.Framework.TypeSynthesis
 open Mettapedia.OSLF.Framework.CategoryBridge
 open Mettapedia.OSLF.Framework.BeckChevalleyOSLF
 open Mettapedia.OSLF.Framework.OSLFNTTTheoryClosure
-open Mettapedia.Logic.OSLFEvidenceSemantics
+open Mettapedia.OSLF.Framework.EvidenceSemantics
 
 section Canonical
 
@@ -156,7 +156,7 @@ structure ModalSubobjectControlledPolicy
     (lang : LanguageDef) (s : LangSort lang)
     (seed q : Pattern)
     (relEnv : RelationEnv)
-    (I : Mettapedia.Logic.OSLFEvidenceSemantics.EvidenceAtomSem) where
+    (I : Mettapedia.OSLF.Framework.EvidenceSemantics.EvidenceAtomSem) where
   pathLiftPkg : CommDiPathSemLiftPkg lang s seed q
   semEPolicy : ControlledStepPolicy relEnv I
 
@@ -166,7 +166,7 @@ def ModalSubobjectControlledPolicy.of_pathOrder
     (lang : LanguageDef) (s : LangSort lang)
     (seed q : Pattern)
     (relEnv : RelationEnv)
-    (I : Mettapedia.Logic.OSLFEvidenceSemantics.EvidenceAtomSem)
+    (I : Mettapedia.OSLF.Framework.EvidenceSemantics.EvidenceAtomSem)
     (hPathOrder :
       ∀ {a b : LangSort lang}
         (g : SortPath lang a b) (h : SortPath lang b s),
@@ -184,7 +184,7 @@ theorem modalSubobject_policy_semE_step_mono
     (lang : LanguageDef) (s : LangSort lang)
     (seed q : Pattern)
     (relEnv : RelationEnv)
-    (I : Mettapedia.Logic.OSLFEvidenceSemantics.EvidenceAtomSem)
+    (I : Mettapedia.OSLF.Framework.EvidenceSemantics.EvidenceAtomSem)
     (policy : ModalSubobjectControlledPolicy lang s seed q relEnv I)
     {φf : Mettapedia.OSLF.Formula.OSLFFormula}
     (hφf : StepEvidenceControlledByPolicy policy.semEPolicy φf)
@@ -380,7 +380,7 @@ theorem modalSubobject_commDi_bc_graph_endpoint_of_policy
     (lang : LanguageDef) (s : LangSort lang)
     (seed q : Pattern) (φ : Pattern → Prop)
     (relEnv : RelationEnv)
-    (I : Mettapedia.Logic.OSLFEvidenceSemantics.EvidenceAtomSem)
+    (I : Mettapedia.OSLF.Framework.EvidenceSemantics.EvidenceAtomSem)
     (policy : ModalSubobjectControlledPolicy lang s seed q relEnv I)
     {P B D : CategoryTheory.Functor (Opposite (ConstructorObj lang)) (Type _)}
     (pi1 : P ⟶ (languageSortRepresentableObj lang s))

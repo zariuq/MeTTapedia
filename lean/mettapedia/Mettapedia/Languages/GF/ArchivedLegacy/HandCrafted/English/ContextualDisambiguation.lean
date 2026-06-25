@@ -4,8 +4,8 @@ import Mettapedia.Languages.GF.Typing
 import Mettapedia.Languages.GF.LinguisticInvariance
 import Mettapedia.Languages.GF.WorldModelSemantics
 import Mettapedia.Languages.GF.Generated.PaperAmbiguityPGFWitnesses
-import Mettapedia.Logic.PLNWorldModel
-import Mettapedia.Logic.EvidenceQuantale
+import Mettapedia.PLN.WorldModel.PLNWorldModel
+import Mettapedia.PLN.Evidence.EvidenceQuantale
 
 namespace Mettapedia.Languages.GF.HandCrafted.English.ContextualDisambiguation
 
@@ -16,9 +16,9 @@ open Mettapedia.Languages.GF.Typing
 open Mettapedia.Languages.GF.LinguisticInvariance
 open Mettapedia.Languages.GF.WorldModelSemantics
 open Mettapedia.Languages.GF.Generated.PaperAmbiguityPGFWitnesses
-open Mettapedia.Logic.EvidenceClass
-open Mettapedia.Logic.PLNWorldModel
-open Mettapedia.Logic.EvidenceQuantale
+open Mettapedia.PLN.Evidence.EvidenceClass
+open Mettapedia.PLN.WorldModel.PLNWorldModel
+open Mettapedia.PLN.Evidence.EvidenceQuantale
 open Mettapedia.Languages.GF.HandCrafted.English
 open Mettapedia.Languages.GF.HandCrafted.English.Examples
 open Nouns Verbs Adjectives Syntax Pronouns Relatives

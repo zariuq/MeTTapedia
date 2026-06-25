@@ -1,4 +1,4 @@
-import Mettapedia.Logic.EvidentialLedger
+import Mettapedia.PLN.Evidence.EvidentialLedger
 import Mettapedia.Languages.GF.SUMO.EvidenceModel
 import Provenance.Semirings.Which
 
@@ -29,8 +29,7 @@ This file provides:
 
 namespace Mettapedia.Languages.GF.SUMO.PainEvidenceWM
 
-open Mettapedia.Logic
-open Mettapedia.Logic.EvidentialLedger
+open Mettapedia.PLN.Evidence.EvidentialLedger
 
 /-! ## 1. Sources and candidates -/
 

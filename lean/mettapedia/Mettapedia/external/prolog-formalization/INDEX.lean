@@ -12,8 +12,9 @@ Source roadmap:
   `~/claude/literature/AI Deep Research/
     Do deep research on formalizing a clean Prolog fragment compatible with SWI-Prolog in Lean 4.pdf`
 
-Existing Datalog formalization (pattern to follow):
-  `Mettapedia/Logic/Datalog/` — Core, Substitution, Semantics, Evaluation, Provenance, bridges
+Existing logic-programming formalization (pattern to follow):
+  `Mettapedia/Logic/LP/` — Core, Substitution, Semantics, Evaluation, Provenance, bridges;
+  Datalog is represented as the function-free LP fragment.
 
 ## Papers (24 gathered, 2 ungathered)
 
@@ -105,7 +106,7 @@ Prolog interpreter.** This formalization would be genuinely novel.
 
 ## Formalization Architecture (from PDF roadmap)
 
-Target Lean 4 module: `Mettapedia/Logic/Prolog/`
+Target Lean 4 module: `Mettapedia/Languages/Prolog/`
 
 Planned files (following Datalog pattern):
 - `Core.lean` — Signature, Term, Atom, Clause, Program, Goal

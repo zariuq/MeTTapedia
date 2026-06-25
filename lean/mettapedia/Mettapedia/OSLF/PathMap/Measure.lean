@@ -28,10 +28,10 @@ extended-real weight to each store, respecting:
 namespace Mettapedia.OSLF.PathMap.Measure
 
 open Mettapedia.PathMap
-open Mettapedia.Logic.EvidenceQuantale
+open Mettapedia.PLN.Evidence.EvidenceQuantale
 open Mettapedia.OSLF.PathMap.PLNBridge
 open Mettapedia.OSLF.PathMap.SolomonoffBridge
-open Mettapedia.Logic.SolomonoffPrior
+open Mettapedia.UniversalAI.SolomonoffPrior
 open scoped ENNReal
 open Finset BigOperators
 

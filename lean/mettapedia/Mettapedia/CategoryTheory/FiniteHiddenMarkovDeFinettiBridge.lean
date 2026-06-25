@@ -1,5 +1,6 @@
 import Mettapedia.CategoryTheory.DeFinettiMarkovGiryBridge
-import Mettapedia.Logic.FiniteHiddenMarkovModel
+import Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiRecurrence
+import Mettapedia.ProbabilityTheory.HiddenMarkovModels.FiniteHiddenMarkovModel
 import Mathlib.MeasureTheory.Measure.DiracProba
 
 /-!
@@ -24,14 +25,15 @@ noncomputable section
 namespace Mettapedia.CategoryTheory
 
 open MeasureTheory
-open Mettapedia.Logic
-open Mettapedia.Logic.MarkovDeFinettiHard
-open Mettapedia.Logic.FiniteHiddenMarkovModel
+open Mettapedia.ProbabilityTheory.Exchangeability
+open Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiHard
+open Mettapedia.ProbabilityTheory.HiddenMarkovModels
+open Mettapedia.ProbabilityTheory.HiddenMarkovModels.FiniteHiddenMarkovModel
 open scoped BigOperators ENNReal NNReal
 
 variable {latent obs : ℕ}
 variable {emission : Fin latent → ProbabilityMeasure (Fin obs)}
-variable {μ : Mettapedia.Logic.UniversalPrediction.FiniteAlphabet.PrefixMeasure (Fin obs)}
+variable {μ : Mettapedia.UniversalAI.UniversalPrediction.FiniteAlphabet.PrefixMeasure (Fin obs)}
 
 local instance : MeasurableSpace (MarkovParam latent) := MarkovParam.borelMS (k := latent)
 local instance : BorelSpace (MarkovParam latent) := ⟨rfl⟩
@@ -76,7 +78,7 @@ theorem measurable_observedWordProb_borel
 a fixed emission kernel. -/
 def observedWordWeightViaProbMarkov
     (emission : Fin latent → ProbabilityMeasure (Fin obs))
-    (π : Mettapedia.Logic.MarkovDeFinettiHard.ProbMarkov latent)
+    (π : Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiHard.ProbMarkov latent)
     (ys : List (Fin obs)) : ℝ≥0∞ :=
   ∫⁻ θ : MarkovParam latent,
     observedWordProb (latent := latent) (obs := obs) ⟨θ, emission⟩ ys
@@ -86,8 +88,8 @@ def observedWordWeightViaProbMarkov
 def CategoricalBorelFiniteHMMFactorization
     (latent obs : ℕ)
     (emission : Fin latent → ProbabilityMeasure (Fin obs))
-    (μ : Mettapedia.Logic.UniversalPrediction.FiniteAlphabet.PrefixMeasure (Fin obs)) : Prop :=
-  ∃ π : Mettapedia.Logic.MarkovDeFinettiHard.ProbMarkov latent,
+    (μ : Mettapedia.UniversalAI.UniversalPrediction.FiniteAlphabet.PrefixMeasure (Fin obs)) : Prop :=
+  ∃ π : Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiHard.ProbMarkov latent,
     ∀ ys : List (Fin obs),
       μ ys = observedWordWeightViaProbMarkov (latent := latent) (obs := obs) emission π ys
 
@@ -95,8 +97,8 @@ def CategoricalBorelFiniteHMMFactorization
 structure BorelFiniteHMMMixture
     (latent obs : ℕ)
     (emission : Fin latent → ProbabilityMeasure (Fin obs))
-    (μ : Mettapedia.Logic.UniversalPrediction.FiniteAlphabet.PrefixMeasure (Fin obs)) where
-  mixingLaw : Mettapedia.Logic.MarkovDeFinettiHard.ProbMarkov latent
+    (μ : Mettapedia.UniversalAI.UniversalPrediction.FiniteAlphabet.PrefixMeasure (Fin obs)) where
+  mixingLaw : Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiHard.ProbMarkov latent
   represents :
     ∀ ys : List (Fin obs),
       μ ys = observedWordWeightViaProbMarkov (latent := latent) (obs := obs) emission mixingLaw ys
@@ -152,7 +154,7 @@ by concentrating the latent Markov law at its own parameter. This is the honest
 trivial direction, not a mixture characterization theorem. -/
 theorem borelFiniteHMMFactorization_diracWitness
     (θ : FiniteHMMParam latent obs) :
-    ∃ π : Mettapedia.Logic.MarkovDeFinettiHard.ProbMarkov latent,
+    ∃ π : Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiHard.ProbMarkov latent,
       ∀ ys : List (Fin obs),
         observedSequenceMeasure (latent := latent) (obs := obs) θ
             (MarkovDeFinettiRecurrence.cylinder (k := obs) ys) =
@@ -167,7 +169,7 @@ image theorem remains future work. -/
 @[deprecated borelFiniteHMMFactorization_diracWitness (since := "2026-04-16")]
 theorem exists_borelFiniteHMMFactorization_of_param
     (θ : FiniteHMMParam latent obs) :
-    ∃ π : Mettapedia.Logic.MarkovDeFinettiHard.ProbMarkov latent,
+    ∃ π : Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiHard.ProbMarkov latent,
       ∀ ys : List (Fin obs),
         observedSequenceMeasure (latent := latent) (obs := obs) θ
             (MarkovDeFinettiRecurrence.cylinder (k := obs) ys) =
@@ -354,7 +356,7 @@ fixed emission kernel, defined from the observed sequence law on cylinders. -/
 noncomputable def observedCylinderPrefixMeasure
     (emission : Fin latent → ProbabilityMeasure (Fin obs))
     (θ : MarkovParam latent) :
-    Mettapedia.Logic.UniversalPrediction.FiniteAlphabet.PrefixMeasure (Fin obs) where
+    Mettapedia.UniversalAI.UniversalPrediction.FiniteAlphabet.PrefixMeasure (Fin obs) where
   toFun ys :=
     observedSequenceMeasure (latent := latent) (obs := obs) ⟨θ, emission⟩
       (MarkovDeFinettiRecurrence.cylinder (k := obs) ys)
@@ -456,7 +458,7 @@ kernel. -/
 noncomputable def finiteHMMLatentMixingLaw
     (w : Fin n → ℝ≥0∞) (hw : ∑ i : Fin n, w i = 1)
     (Θ : Fin n → MarkovParam latent) :
-    Mettapedia.Logic.MarkovDeFinettiHard.ProbMarkov latent :=
+    Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiHard.ProbMarkov latent :=
   let p : PMF (Fin n) := PMF.ofFintype w (by simpa using hw)
   let μ : ProbabilityMeasure (Fin n) := ⟨p.toMeasure, PMF.toMeasure.isProbabilityMeasure _⟩
   let g : Fin n → MarkovParam latent := fun i => Θ i
@@ -490,7 +492,7 @@ theorem observedWordWeightViaProbMarkov_eq_finiteDiracMixture
         (fun θ : MarkovParam latent =>
           observedWordProb (latent := latent) (obs := obs) ⟨θ, emission⟩ ys)
         (((finiteHMMLatentMixingLaw (latent := latent) w hw Θ) :
-            Mettapedia.Logic.MarkovDeFinettiHard.ProbMarkov latent) :
+            Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiHard.ProbMarkov latent) :
           Measure (MarkovParam latent)) :=
     hobsMeas.aemeasurable
   have hmap := MeasureTheory.lintegral_map'
@@ -504,7 +506,7 @@ theorem observedWordWeightViaProbMarkov_eq_finiteDiracMixture
     ∫⁻ θ : MarkovParam latent,
         observedWordProb (latent := latent) (obs := obs) ⟨θ, emission⟩ ys
           ∂(((finiteHMMLatentMixingLaw (latent := latent) w hw Θ) :
-              Mettapedia.Logic.MarkovDeFinettiHard.ProbMarkov latent) :
+              Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiHard.ProbMarkov latent) :
             Measure (MarkovParam latent)) =
       ∫⁻ i : Fin n,
         observedWordProb (latent := latent) (obs := obs) ⟨g i, emission⟩ ys
@@ -540,15 +542,15 @@ theorem categoricalBorelFiniteHMMFactorization_of_finiteDiscreteMixture
     (w : Fin n → ℝ≥0∞) (hw : ∑ i : Fin n, w i = 1)
     (Θ : Fin n → MarkovParam latent) :
     CategoricalBorelFiniteHMMFactorization latent obs emission
-      (Mettapedia.Logic.UniversalPrediction.FiniteAlphabet.xiPrefixMeasure
+      (Mettapedia.UniversalAI.UniversalPrediction.FiniteAlphabet.xiPrefixMeasure
         (ν := fun i : Fin n => observedCylinderPrefixMeasure (latent := latent) (obs := obs) emission (Θ i))
         (w := w)
         (hw := by simpa [tsum_fintype] using hw)) := by
   refine ⟨finiteHMMLatentMixingLaw (latent := latent) w hw Θ, ?_⟩
   intro ys
-  unfold Mettapedia.Logic.UniversalPrediction.FiniteAlphabet.xiPrefixMeasure
-    Mettapedia.Logic.UniversalPrediction.FiniteAlphabet.xiFun
-  simp only [Mettapedia.Logic.UniversalPrediction.FiniteAlphabet.PrefixMeasure.toSemimeasure_apply]
+  unfold Mettapedia.UniversalAI.UniversalPrediction.FiniteAlphabet.xiPrefixMeasure
+    Mettapedia.UniversalAI.UniversalPrediction.FiniteAlphabet.xiFun
+  simp only [Mettapedia.UniversalAI.UniversalPrediction.FiniteAlphabet.PrefixMeasure.toSemimeasure_apply]
   calc
     ∑' i : Fin n,
         w i *

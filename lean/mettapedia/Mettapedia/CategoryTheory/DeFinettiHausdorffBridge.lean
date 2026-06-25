@@ -1,4 +1,4 @@
-import Mettapedia.Logic.HausdorffMoment
+import Mettapedia.ProbabilityTheory.Moments.HausdorffMoment
 import Mettapedia.ProbabilityTheory.HigherOrderProbability.DeFinettiConnection
 
 /-!
@@ -16,8 +16,8 @@ noncomputable section
 namespace Mettapedia.CategoryTheory
 
 open MeasureTheory
-open Mettapedia.Logic.DeFinetti
-open Mettapedia.Logic.Exchangeability
+open Mettapedia.ProbabilityTheory.Exchangeability.DeFinetti
+open Mettapedia.ProbabilityTheory.Exchangeability
 open Mettapedia.ProbabilityTheory.HigherOrderProbability
 
 /-- Helper: the count of `false` values in an all-`true` `Fin k → Bool` tuple is `0`. -/
@@ -97,7 +97,7 @@ theorem mixingMeasureTheta_eq_of_moments_eq
         ∫ θ : DeFinettiConnection.Theta, (θ : ℝ) ^ k ∂DeFinettiConnection.mixingMeasureTheta M1
           = ∫ θ : DeFinettiConnection.Theta, (θ : ℝ) ^ k ∂DeFinettiConnection.mixingMeasureTheta M2) :
     DeFinettiConnection.mixingMeasureTheta M1 = DeFinettiConnection.mixingMeasureTheta M2 := by
-  exact Mettapedia.Logic.HausdorffMoment.probMeasure_unitInterval_eq_of_moments_eq
+  exact Mettapedia.ProbabilityTheory.Moments.HausdorffMoment.probMeasure_unitInterval_eq_of_moments_eq
     (μ := DeFinettiConnection.mixingMeasureTheta M1)
     (ν := DeFinettiConnection.mixingMeasureTheta M2)
     hmom

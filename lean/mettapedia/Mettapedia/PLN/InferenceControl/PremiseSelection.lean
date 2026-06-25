@@ -1,0 +1,30 @@
+import Mettapedia.PLN.InferenceControl.PremiseSelection.BRGI
+import Mettapedia.PLN.InferenceControl.PremiseSelection.BestPLNDraft
+import Mettapedia.PLN.InferenceControl.PremiseSelection.Coverage
+import Mettapedia.PLN.InferenceControl.PremiseSelection.CoverageCounterexamples
+import Mettapedia.PLN.InferenceControl.PremiseSelection.ExternalBayesianity
+import Mettapedia.PLN.InferenceControl.PremiseSelection.Fusion
+import Mettapedia.PLN.InferenceControl.PremiseSelection.KNN
+import Mettapedia.PLN.InferenceControl.PremiseSelection.KNN_PLNBridge
+import Mettapedia.PLN.InferenceControl.PremiseSelection.LocalMixtureBridge
+import Mettapedia.PLN.InferenceControl.PremiseSelection.OperatorRoles
+import Mettapedia.PLN.InferenceControl.PremiseSelection.Optimality
+import Mettapedia.PLN.InferenceControl.PremiseSelection.PLNInferenceControlAlgorithms
+import Mettapedia.PLN.InferenceControl.PremiseSelection.PLNInferenceControlCanary
+import Mettapedia.PLN.InferenceControl.PremiseSelection.PLNInferenceControlChainer
+import Mettapedia.PLN.InferenceControl.PremiseSelection.PLNInferenceControlCore
+import Mettapedia.PLN.InferenceControl.PremiseSelection.PLNInferenceControlExamples
+import Mettapedia.PLN.InferenceControl.PremiseSelection.PLNInferenceControlRegression
+import Mettapedia.PLN.InferenceControl.PremiseSelection.PUCalibration
+import Mettapedia.PLN.InferenceControl.PremiseSelection.PartitionedPriorNB
+import Mettapedia.PLN.InferenceControl.PremiseSelection.PriorNB
+import Mettapedia.PLN.InferenceControl.PremiseSelection.RankingStability
+import Mettapedia.PLN.InferenceControl.PremiseSelection.SelectorSpec
+
+/-!
+# PLN premise-selection inference control
+
+Chapter-13 PLN inference-control surfaces over premise-selection objectives,
+selector fusion/revision, ranking transfer, greedy selection, chainer interfaces,
+and executable regression canaries.
+-/

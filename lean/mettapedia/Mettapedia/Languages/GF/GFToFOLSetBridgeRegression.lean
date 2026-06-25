@@ -11,7 +11,7 @@ namespace Mettapedia.Languages.GF.GFToFOLSetBridgeRegression
 
 open LO
 open LO.FirstOrder.SetTheory
-open Mettapedia.Logic.PLNWorldModel
+open Mettapedia.PLN.WorldModel.PLNWorldModel
 open Mettapedia.Languages.GF.GFToFOLSetBridge
 
 /-- End-to-end fixture:

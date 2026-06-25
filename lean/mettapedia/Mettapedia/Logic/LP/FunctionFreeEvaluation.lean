@@ -7,7 +7,7 @@ import Mathlib.Data.Set.Finite.Basic
 /-!
 # Function-Free LP Evaluation: Soundness and Finiteness
 
-Port of `Mettapedia.Logic.Datalog.Evaluation` onto LP types.
+Port of the retired standalone Datalog evaluation surface onto LP types.
 
 - `HerbrandBase` — finite set of all ground atoms (function-free + `Fintype`)
 - `mem_HerbrandBase` — every ground atom lies in the Herbrand base

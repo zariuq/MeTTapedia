@@ -1,0 +1,42 @@
+import Mettapedia.PLN.RuleFamilies.HigherOrder.PLNContextGuardBridge
+import Mettapedia.PLN.RuleFamilies.HigherOrder.PLNGWASHigherOrderBridge
+import Mettapedia.PLN.RuleFamilies.HigherOrder.PLNGuardedHigherOrderSemantics
+import Mettapedia.PLN.RuleFamilies.HigherOrder.PLNHigherOrderCalibrationContracts
+import Mettapedia.PLN.RuleFamilies.HigherOrder.PLNHigherOrderCertifiedChainingRegression
+import Mettapedia.PLN.RuleFamilies.HigherOrder.PLNHigherOrderCertifiedEstimates
+import Mettapedia.PLN.RuleFamilies.HigherOrder.PLNHigherOrderChainBounds
+import Mettapedia.PLN.RuleFamilies.HigherOrder.PLNHigherOrderChainingRegression
+import Mettapedia.PLN.RuleFamilies.HigherOrder.PLNHigherOrderChainingTheorems
+import Mettapedia.PLN.RuleFamilies.HigherOrder.PLNHigherOrderDecisionTheorems
+import Mettapedia.PLN.RuleFamilies.HigherOrder.PLNHigherOrderIndependentChainBounds
+import Mettapedia.PLN.RuleFamilies.HigherOrder.PLNHigherOrderInformationSets
+import Mettapedia.PLN.RuleFamilies.HigherOrder.PLNHigherOrderNoGoBridge
+import Mettapedia.PLN.RuleFamilies.HigherOrder.PLNHigherOrderPosteriorUpdate
+import Mettapedia.PLN.RuleFamilies.HigherOrder.PLNHigherOrderVOITheorems
+import Mettapedia.PLN.RuleFamilies.HigherOrder.PLNHigherOrderVarianceUpdate
+import Mettapedia.PLN.RuleFamilies.HigherOrder.PLNMixedModeChainComposition
+import Mettapedia.PLN.RuleFamilies.HigherOrder.PLNProbGuardedAdmissibility
+import Mettapedia.PLN.RuleFamilies.HigherOrder.PLNProbGuardedAdmissibilityDemo
+import Mettapedia.PLN.RuleFamilies.HigherOrder.PLNProbGuardedAdmissibilityRegression
+import Mettapedia.PLN.RuleFamilies.HigherOrder.PLNProbHOLPlannerBridge
+import Mettapedia.PLN.RuleFamilies.HigherOrder.PLNProbHOLPlannerBridgeRegression
+import Mettapedia.PLN.RuleFamilies.HigherOrder.PLNProofCarryingContractionDemo
+import Mettapedia.PLN.RuleFamilies.HigherOrder.PLNRegimeMixtureBenchmarkBridge
+import Mettapedia.PLN.RuleFamilies.HigherOrder.PLNRegimeMixtureRegression
+import Mettapedia.PLN.RuleFamilies.HigherOrder.PLNRegimeMixtureTheorems
+import Mettapedia.PLN.RuleFamilies.HigherOrder.PLNRegimeUnderdetermination
+import Mettapedia.PLN.RuleFamilies.HigherOrder.PLNTopologyCPTNoGo
+import Mettapedia.PLN.RuleFamilies.HigherOrder.PLNUntrustedOracleAdapterRegression
+import Mettapedia.PLN.RuleFamilies.HigherOrder.PLNUntrustedOracleAdapters
+import Mettapedia.PLN.RuleFamilies.HigherOrder.PLNVarianceChainNoGo
+import Mettapedia.PLN.RuleFamilies.HigherOrder.PLNWorldModelRegimeAdmissibility
+import Mettapedia.PLN.RuleFamilies.HigherOrder.PLNWorldModelRegimeAdmissibilityRegression
+import Mettapedia.PLN.RuleFamilies.HigherOrder.Reduction
+
+/-!
+# Higher-order PLN rule-family surfaces
+
+Higher-order PLN chaining, certification, decision, value-of-information, and
+variance/posterior update surfaces, together with their guarded admissibility,
+planner-shadow, regime-mixture, and no-go support surfaces.
+-/

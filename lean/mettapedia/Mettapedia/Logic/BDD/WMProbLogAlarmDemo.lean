@@ -1,5 +1,5 @@
 import Mettapedia.Logic.BDD.WMPLNBridge
-import Mettapedia.Logic.BinEvNat
+import Mettapedia.PLN.Evidence.BinEvNat
 
 /-!
 # Alarm Network: ProbLog vs WM-PLN
@@ -36,6 +36,7 @@ All proofs kernel-checked via `decide` on `BinEvNat` (Nat arithmetic).
 namespace Mettapedia.Logic.BDDCore.AlarmDemo
 
 open Mettapedia.Logic
+open Mettapedia.PLN.Evidence
 
 /-! ## §1 ProbLog Answer: P(alarm) = 0.28
 

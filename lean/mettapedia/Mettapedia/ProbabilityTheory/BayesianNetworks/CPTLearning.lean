@@ -25,10 +25,10 @@ via Beta posterior means.
 -/
 
 import Mettapedia.ProbabilityTheory.BayesianNetworks.BayesianNetwork
-import Mettapedia.Logic.EvidenceBeta
+import Mettapedia.PLN.Bridges.ProbabilityTheory.EvidenceBeta
 
 open Mettapedia.ProbabilityTheory.BayesianNetworks
-open Mettapedia.Logic.EvidenceBeta
+open Mettapedia.PLN.Bridges.ProbabilityTheory.EvidenceBeta
 
 namespace Mettapedia.ProbabilityTheory.BayesianNetworks.CPTLearning
 

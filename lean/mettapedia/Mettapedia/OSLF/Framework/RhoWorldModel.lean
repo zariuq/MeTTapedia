@@ -1,5 +1,5 @@
 import Mettapedia.OSLF.Framework.GSLTEvidence
-import Mettapedia.Logic.PLNWorldModel
+import Mettapedia.PLN.WorldModel.PLNWorldModel
 
 /-!
 # Rho Calculus BinaryWorldModel Instance
@@ -39,10 +39,10 @@ calculus.  This is the first step toward the universal theorem:
 namespace Mettapedia.OSLF.Framework.RhoWorldModel
 
 open Mettapedia.OSLF.MeTTaIL.Syntax
-open Mettapedia.Logic.EvidenceQuantale
+open Mettapedia.PLN.Evidence.EvidenceQuantale
 open Mettapedia.OSLF.Framework.GSLTEvidence
-open Mettapedia.Logic.PLNWorldModel
-open Mettapedia.Logic.EvidenceClass
+open Mettapedia.PLN.WorldModel.PLNWorldModel
+open Mettapedia.PLN.Evidence.EvidenceClass
 
 /-! ## Process Ensemble -/
 

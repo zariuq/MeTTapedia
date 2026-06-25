@@ -196,7 +196,7 @@ theorem IndividuatedSubsystem.wmQueryStrength_unique
 -- ═══════════════════════════════════════════════════════════════════════════
 
 open Mettapedia.Logic.MarkovLogicAbstract
-open Mettapedia.Logic.PLNWorldModel
+open Mettapedia.PLN.WorldModel.PLNWorldModel
 open Mettapedia.Logic.MarkovLogicAbstract.MassState
 
 /-- **Capstone theorem: WM query strength is stable under ontology extension.**

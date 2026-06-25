@@ -3,7 +3,7 @@ import Mettapedia.CategoryTheory.PLNInstance
 import Mettapedia.CategoryTheory.NativeTypeTheory
 import Mettapedia.CategoryTheory.PLNTerms
 import Mettapedia.CategoryTheory.ModalTypes
-import Mettapedia.Logic.EvidenceQuantale
+import Mettapedia.PLN.Evidence.EvidenceQuantale
 
 /-!
 # The Hypercube Construction H_Σ
@@ -51,7 +51,7 @@ open Mettapedia.CategoryTheory.PLNInstance
 open Mettapedia.CategoryTheory.NativeTypeTheory
 open Mettapedia.CategoryTheory.PLNTerms
 open Mettapedia.CategoryTheory.ModalTypes
-open Mettapedia.Logic.EvidenceQuantale
+open Mettapedia.PLN.Evidence.EvidenceQuantale
 
 /-! ## Section 3.1: Per-Object Enrichment
 

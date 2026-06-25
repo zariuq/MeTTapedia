@@ -24,9 +24,9 @@ open Mettapedia.Languages.GF.UniversalGrammarCore
 open Mettapedia.OSLF.Framework.TypeSynthesis
 open Mettapedia.OSLF.Formula
 open Mettapedia.OSLF.MeTTaIL.Syntax
-open Mettapedia.Logic.EvidenceQuantale
-open Mettapedia.Logic.EvidenceClass
-open Mettapedia.Logic.PLNWorldModel
+open Mettapedia.PLN.Evidence.EvidenceQuantale
+open Mettapedia.PLN.Evidence.EvidenceClass
+open Mettapedia.PLN.WorldModel.PLNWorldModel
 open scoped ENNReal
 
 universe u v

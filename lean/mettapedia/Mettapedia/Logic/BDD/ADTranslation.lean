@@ -26,7 +26,7 @@ such that `P(auxᵢ ∧ ¬aux₁ ∧ ... ∧ ¬aux_{i-1}) = pᵢ`.
 namespace Mettapedia.Logic.BDDCore
 
 open Mettapedia.Logic.LP
-open Mettapedia.Logic.ProbLogCompilation
+open Mettapedia.PLN.Bridges.Languages.ProbLog.Compilation
 
 /-! ## §1 Annotated Disjunction Syntax -/
 

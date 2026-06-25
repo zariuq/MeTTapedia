@@ -1,5 +1,5 @@
 import Mettapedia.OSLF.Framework.TypeSynthesis
-import Mettapedia.Logic.EvidenceQuantale
+import Mettapedia.PLN.Evidence.EvidenceQuantale
 
 /-!
 # GSLT BinaryEvidence Assignment: The Universal Bridge
@@ -33,7 +33,7 @@ The `GSLTEvidenceAssignment` structure captures this uniformly.
 namespace Mettapedia.OSLF.Framework.GSLTEvidence
 
 open Mettapedia.OSLF.MeTTaIL.Syntax
-open Mettapedia.Logic.EvidenceQuantale
+open Mettapedia.PLN.Evidence.EvidenceQuantale
 
 /-! ## GSLT BinaryEvidence Assignment -/
 

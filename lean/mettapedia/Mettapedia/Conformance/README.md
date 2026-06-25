@@ -117,7 +117,7 @@ file (`he_b2_backchain.metta`) still exposes a missing reasoning capability.
 
 Bridges the **algebraic** Maple Court model to the **typed rewrite calculus**.
 It proves that each Maple Court algebraic operation (revision, extraction) from
-`Logic.PLNMapleCourtDemo` corresponds to a WM-calculus rewrite step in
+`Examples.PLN.MapleCourtDemo` corresponds to a WM-calculus rewrite step in
 `wmCoreLanguageDef`: the evidence-add law fires as the `RewriteRule`
 `ruleEvidenceAdd` via `langReduces`, and batch-vs-sequential sleep
 consolidation is witnessed at the rewrite level. The payoff: the same
@@ -130,7 +130,7 @@ semantics agree.
 Kernel-checked verification of the Maple Court *full-day* evidence profile
 across three layers: a reflected Nat-arithmetic model (`BinEvN`/`KEv3N` with
 `hplus`/`krev`/`dirToBin`/`strength`, checked by `decide`); a bridge proving the
-reflected values agree with `mapleCourtEvidence` from `PLNMapleCourtDemo.lean`;
+reflected values agree with `mapleCourtEvidence` from `MapleCourtDemo.lean`;
 and correspondence to the PeTTa runtime fixture
 `artifacts/conformance/maple_court_full_profile.metta`. It also includes
 negative-example discrimination tests proving that wrong values are rejected,
@@ -156,7 +156,7 @@ world model for the book's running example.  6 tests covering:
 
 Run: `cd hyperon/PeTTa && ./run.sh <path>/maple_court_simple.metta --silent`
 
-Lean side: `Logic/PLNMapleCourtDemo.lean` (sorry-free) proves the
+Lean side: `Examples/PLN/MapleCourtDemo.lean` (sorry-free) proves the
 same operations algebraically.  The two sides agree by construction —
 PeTTa's `pln_evidence.metta` implements the same formulas as Lean's
 `BinaryEvidence`.

@@ -1,5 +1,5 @@
 import Mettapedia.Logic.MarkovLogicInfiniteCredalBridge
-import Mettapedia.Logic.PLNTruthTower
+import Mettapedia.PLN.TruthValues.PLNTruthTower
 
 /-!
 # Infinite MLN Query Envelopes as PLN Width-Complement ITVs
@@ -18,8 +18,8 @@ open Mettapedia.Logic.MarkovLogicClauseFactorGraph
 open Mettapedia.Logic.MarkovLogicInfiniteSpecification
 open Mettapedia.Logic.MarkovLogicInfiniteUniqueness
 open Mettapedia.Logic.MarkovLogicInfiniteCredalBridge
-open Mettapedia.Logic.PLNIndefiniteTruth
-open Mettapedia.Logic.PLNTruthTower
+open Mettapedia.PLN.TruthValues.PLNIndefiniteTruth
+open Mettapedia.PLN.TruthValues.PLNTruthTower
 open Mettapedia.ProbabilityTheory.ImpreciseProbability
 open Mettapedia.ProbabilityTheory.ImpreciseProbability.ProjectiveCredal
 

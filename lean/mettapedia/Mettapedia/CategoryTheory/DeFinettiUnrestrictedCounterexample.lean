@@ -37,15 +37,15 @@ private lemma singleton_subset_seqPrefixEvent (ω : GlobalBinarySeq) (n : ℕ) :
 -- ============================================================
 
 private lemma mixedSeq_prefix_countTrue (n : ℕ) (hn : 1 ≤ n) :
-    Mettapedia.Logic.Exchangeability.countTrue (fun i : Fin n => mixedSeq i) = 1 := by
-  simp only [Mettapedia.Logic.Exchangeability.countTrue, mixedSeq]
+    Mettapedia.ProbabilityTheory.Exchangeability.countTrue (fun i : Fin n => mixedSeq i) = 1 := by
+  simp only [Mettapedia.ProbabilityTheory.Exchangeability.countTrue, mixedSeq]
   have : (Finset.univ.filter (fun i : Fin n => ((i : ℕ) == 0) = true)) =
       ({⟨0, by omega⟩} : Finset (Fin n)) := by ext i; simp [Fin.ext_iff, beq_iff_eq]
   rw [this]; simp
 
 private lemma mixedSeq_prefix_countFalse (n : ℕ) (hn : 1 ≤ n) :
-    Mettapedia.Logic.Exchangeability.countFalse (fun i : Fin n => mixedSeq i) = n - 1 := by
-  have hpart := Mettapedia.Logic.Exchangeability.count_partition (fun i : Fin n => mixedSeq i)
+    Mettapedia.ProbabilityTheory.Exchangeability.countFalse (fun i : Fin n => mixedSeq i) = n - 1 := by
+  have hpart := Mettapedia.ProbabilityTheory.Exchangeability.count_partition (fun i : Fin n => mixedSeq i)
   have hct := mixedSeq_prefix_countTrue n hn; omega
 
 -- ============================================================
@@ -61,14 +61,14 @@ private lemma iid_mixedSeq_le_prefix_bound (θ : LatentTheta) (n : ℕ) (hn : 2 
           measure_mono (singleton_subset_seqPrefixEvent mixedSeq n)
     _ = (iidPrefixKernel n θ) ({fun i : Fin n => mixedSeq i} : Set (Fin n → Bool)) :=
           iidSequenceKernelTheta_prefix_apply_unconditional θ n _
-    _ = ENNReal.ofReal (Mettapedia.Logic.DeFinetti.bernoulliProductPMF (θ : ℝ)
+    _ = ENNReal.ofReal (Mettapedia.ProbabilityTheory.Exchangeability.DeFinetti.bernoulliProductPMF (θ : ℝ)
           (fun i : Fin n => mixedSeq i)) := by
           simp [iidPrefixKernel,
             Mettapedia.ProbabilityTheory.HigherOrderProbability.DeFinettiConnection.kernel,
             Mettapedia.ProbabilityTheory.HigherOrderProbability.DeFinettiConnection.weight]
     _ = ENNReal.ofReal ((θ : ℝ) * (1 - (θ : ℝ)) ^ (n - 1)) := by
           congr 1
-          rw [Mettapedia.Logic.DeFinetti.bernoulliProductPMF_eq_power,
+          rw [Mettapedia.ProbabilityTheory.Exchangeability.DeFinetti.bernoulliProductPMF_eq_power,
               mixedSeq_prefix_countTrue n (by omega), mixedSeq_prefix_countFalse n (by omega)]
           ring
 

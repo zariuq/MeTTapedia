@@ -24,9 +24,9 @@ open Mettapedia.Logic.MarkovLogicCountable
 open Mettapedia.Logic.MarkovLogicClauseSemantics
 open Mettapedia.Logic.MarkovLogicClauseFactorGraph
 open Mettapedia.Logic.MarkovLogicClauseWorldModel
-open Mettapedia.Logic.PLNWorldModel
-open Mettapedia.Logic.EvidenceClass
-open Mettapedia.Logic.EvidenceQuantale
+open Mettapedia.PLN.WorldModel.PLNWorldModel
+open Mettapedia.PLN.Evidence.EvidenceClass
+open Mettapedia.PLN.Evidence.EvidenceQuantale
 open Mettapedia.ProbabilityTheory.BayesianNetworks
 
 /-! ## Shared Helpers -/

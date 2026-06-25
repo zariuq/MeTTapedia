@@ -1,4 +1,4 @@
-import Mettapedia.Logic.ControlledFiniteHiddenMarkovModel
+import Mettapedia.ProbabilityTheory.HiddenMarkovModels.ControlledFiniteHiddenMarkovModel
 import Mettapedia.UniversalAI.BayesianAgents.Core
 
 /-!
@@ -25,7 +25,7 @@ noncomputable section
 
 namespace Mettapedia.UniversalAI.ControlledFiniteHiddenMarkovBridge
 
-open Mettapedia.Logic.ControlledFiniteHiddenMarkovModel
+open Mettapedia.ProbabilityTheory.HiddenMarkovModels.ControlledFiniteHiddenMarkovModel
 open Mettapedia.UniversalAI.BayesianAgents.Core
 open scoped BigOperators ENNReal
 

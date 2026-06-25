@@ -1,5 +1,5 @@
 import Mettapedia.OSLF.PathMap.PLNBridge
-import Mettapedia.Logic.SolomonoffPrior
+import Mettapedia.UniversalAI.SolomonoffPrior
 import Mathlib.Data.Finset.Basic
 
 /-!
@@ -33,7 +33,7 @@ World-Model Calculus paper for the semantic motivation.
 namespace Mettapedia.OSLF.PathMap.SolomonoffBridge
 
 open Mettapedia.PathMap
-open Mettapedia.Logic.EvidenceQuantale
+open Mettapedia.PLN.Evidence.EvidenceQuantale
 open Mettapedia.OSLF.PathMap.PLNBridge
 open scoped ENNReal
 open Finset BigOperators
@@ -141,7 +141,7 @@ theorem finsetPathEvidence_eq_uniform {α : Type*} [DecidableEq α] (W q : Finse
 
 /-! ## Section 4: Solomonoff BinaryEvidence -/
 
-open Mettapedia.Logic.SolomonoffPrior
+open Mettapedia.UniversalAI.SolomonoffPrior
 
 /-- BinaryEvidence from a PathMap store weighted by Solomonoff semimeasure `sm`.
 

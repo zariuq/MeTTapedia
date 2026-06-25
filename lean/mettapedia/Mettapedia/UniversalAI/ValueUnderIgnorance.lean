@@ -19,7 +19,7 @@ import Mathlib.Algebra.BigOperators.Ring.Finset
 import Mathlib.Probability.Kernel.IonescuTulcea.Traj
 import Mathlib.Probability.Kernel.Basic
 import Mathlib.Order.KonigLemma
-import Mettapedia.Logic.SolomonoffInduction
+import Mettapedia.UniversalAI.SolomonoffInduction
 import Mettapedia.UniversalAI.BayesianAgents
 import Mettapedia.Computability.ArithmeticalHierarchy.Basic
 
@@ -57,7 +57,7 @@ the probability mass that "leaks" when a hypothesis only predicts finite prefixe
 
 ## Implementation Notes
 
-- Uses existing `Semimeasure` from `Logic/SolomonoffInduction.lean`
+- Uses existing `Semimeasure` from `UniversalAI/SolomonoffInduction.lean`
 - Extends existing AIXI `value` functions from `BayesianAgents.lean`
 - Choquet integral defined via characteristic function integration
 -/
@@ -65,8 +65,8 @@ the probability mass that "leaks" when a hypothesis only predicts finite prefixe
 namespace Mettapedia.UniversalAI.ValueUnderIgnorance
 
 open scoped Classical ENNReal
-open Mettapedia.Logic.SolomonoffInduction
-open Mettapedia.Logic.SolomonoffPrior (BinString)
+open Mettapedia.UniversalAI.SolomonoffInduction
+open Mettapedia.UniversalAI.SolomonoffPrior (BinString)
 open Mettapedia.UniversalAI.BayesianAgents
 open MeasureTheory
 

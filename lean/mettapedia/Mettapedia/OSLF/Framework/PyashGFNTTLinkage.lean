@@ -1,7 +1,7 @@
 import Mettapedia.OSLF.Framework.PyashGF
 import Mettapedia.CategoryTheory.NativeTypeTheory
 import Mettapedia.CategoryTheory.PLNInstance
-import Mettapedia.Logic.EvidenceQuantale
+import Mettapedia.PLN.Evidence.EvidenceQuantale
 
 /-!
 # Pyash GF Canary OSLF→NTT Linkage
@@ -20,7 +20,7 @@ open Mettapedia.OSLF.Framework.PyashCoreInstance
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.CategoryTheory.PLNInstance
 open Mettapedia.CategoryTheory.NativeTypeTheory
-open Mettapedia.Logic.EvidenceQuantale
+open Mettapedia.PLN.Evidence.EvidenceQuantale
 
 /-- Lightweight OSLF→NTT linkage record keyed by exported canary label. -/
 structure PyashGFCanaryNTTLink where

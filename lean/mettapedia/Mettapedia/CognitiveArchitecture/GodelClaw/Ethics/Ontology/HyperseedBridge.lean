@@ -23,7 +23,7 @@ namespace Mettapedia.CognitiveArchitecture.GodelClaw.Ethics.Ontology
 
 open Mettapedia.CognitiveArchitecture.GodelClaw.Ethics
 open Mettapedia.Hyperseed
-open Mettapedia.Logic.PLNWorldModel
+open Mettapedia.PLN.WorldModel.PLNWorldModel
 open Mettapedia.Logic.MarkovLogicClauseSemantics
 open Mettapedia.Logic.MarkovLogicClauseFactorGraph
 open Mettapedia.Logic.MarkovLogicInfiniteSpecification

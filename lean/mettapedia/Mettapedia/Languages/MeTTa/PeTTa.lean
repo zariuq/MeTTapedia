@@ -2,6 +2,7 @@ import Mettapedia.Languages.MeTTa.PeTTa.Answers
 import Mettapedia.Languages.MeTTa.PeTTa.SpaceSemantics
 import Mettapedia.Languages.MeTTa.PeTTa.Eval
 import Mettapedia.Languages.MeTTa.PeTTa.LPSoundness
+import Mettapedia.Languages.MeTTa.PeTTa.FunctionFreeLPBridge
 import Mettapedia.Languages.MeTTa.PeTTa.Effects
 import Mettapedia.Languages.MeTTa.PeTTa.TypeSystem
 import Mettapedia.Languages.MeTTa.PeTTa.TypedEval

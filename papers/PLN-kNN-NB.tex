@@ -217,7 +217,7 @@ R5 (\(\mathrm{pow}\), regraduation) &
 \lpath{pln_inference/pln_evidence.metta}, \lid{xiPLN.Rule.RegraduatedEvidence} \\
 R6 (\(\mathrm{Norm}\), mass control) &
 \lid{normalizeEvidence_toStrength} &
-\lpath{Mettapedia/Logic/PremiseSelectionFusion.lean}, normalized selector stages \\
+\lpath{Mettapedia/PLN/InferenceControl/PremiseSelection/Fusion.lean}, normalized selector stages \\
 R8 (staged posterior map) &
 \lid{stagedFamilyPosterior_commute},\\
 \lid{stagedFamilyPosterior_regrade_roundtrip_commute} &
@@ -328,7 +328,7 @@ The staged map commutes in the external-Bayes sense and is stable under
 regrade/unregrade round-trip:
 \lid{stagedFamilyPosterior_commute} and
 \lid{stagedFamilyPosterior_regrade_roundtrip_commute}
-(\lpath{Mettapedia/Logic/PremiseSelectionExternalBayesianity.lean}).
+(\lpath{Mettapedia/PLN/InferenceControl/PremiseSelection/ExternalBayesianity.lean}).
 
 \begin{figure}[h]
 \centering
@@ -378,20 +378,20 @@ The operator laws are shared.
 
 \section{Lean Contracts for the Rule Stack}
 The implementation-level rules above are tied to explicit Lean contracts.
-Abbreviation: \texttt{EB} = \lpath{PremiseSelectionExternalBayesianity.lean}.
+Abbreviation: \texttt{EB} = \lpath{ExternalBayesianity.lean}.
 
 \paragraph{Core bridges.}
 \begin{itemize}
 \item \textbf{NB bridge}: \lid{toStrength_nbEvidence_eq_nbPosterior}\\
       (\lpath{PLNBayesNetInference.lean}).
 \item \textbf{k-NN bridge}: \lid{PLN_hplusPos_eq_knnRelevance}\\
-      (\lpath{PremiseSelectionKNN_PLNBridge.lean}).
+      (\lpath{KNN_PLNBridge.lean}).
 \item \textbf{Revision = linear pooling}:\\
       \lid{PLN_revisionStrength_eq_linearPool}
-      (\lpath{PremiseSelectionFusion.lean}).
+      (\lpath{Fusion.lean}).
 \item \textbf{Prior/NB two-stage}:\\
       \lid{priorNBPosterior_eq_twoStage}
-      (\lpath{PremiseSelectionPriorNB.lean}).
+      (\lpath{PriorNB.lean}).
 \end{itemize}
 
 \paragraph{Evidence-algebra laws (in \lpath{EvidenceQuantale.lean}).}
@@ -400,7 +400,7 @@ Regraduation: \lid{Evidence.toLogOdds_power_mul},
 Round-trip canaries: \lid{Evidence.power_power_inv},
 \lid{Evidence.toLogOdds_power_power_inv}.
 
-\paragraph{Normalization and fusion (in \lpath{PremiseSelectionFusion.lean}).}
+\paragraph{Normalization and fusion (in \lpath{Fusion.lean}).}
 \lid{normalizeEvidence_toStrength} (preserves strength for $t\neq 0$, $t\neq\top$);
 \lid{fuse_toStrength_normalized_totals} (explicit convex weights).
 
@@ -417,16 +417,16 @@ plus counterexample \lid{maxPoolingOperator_ne_fuse}.
 
 \paragraph{Additional contracts.}
 \lid{finite_statistic_tv_mixture_bound_m16_R4551}
-(\lpath{PremiseSelectionLocalMixtureBridge.lean});
+(\lpath{LocalMixtureBridge.lean});
 \lid{fusion_ranking_after_normalization_toReal}
-(\lpath{PremiseSelectionOptimality.lean});
+(\lpath{Optimality.lean});
 OSLF modal corollaries \lid{oslf_diamond_stagedFamily_roundtrip} and
 \lid{oslf_box_stagedFamily_roundtrip}
 (\lpath{OSLF/Framework/PLNSelectorGSLT.lean}).
 
 \noindent
 For a selector-level composition theorem that mirrors the staged architecture, see
-\lpath{Mettapedia/Logic/PremiseSelectionBestPLNDraft.lean}.
+\lpath{Mettapedia/PLN/InferenceControl/PremiseSelection/BestPLNDraft.lean}.
 
 \section{Experimental validation on extended MPTP 5k (rounds 1--4)}
 \subsection{Protocol and data integrity}
@@ -691,38 +691,38 @@ Abbreviation: \texttt{M/L/} = \texttt{Mettapedia/Logic/}.
 \endhead
 \lpath{M/L/EvidenceQuantale.lean}
   & Evidence carrier, semiring/quantale laws, odds/log-odds and power laws \\
-\lpath{M/L/PLNCore.lean}
+\lpath{M/PLN/Core/PLNCore.lean}
   & Curated top-level import surface for the theorem-complete PLN stack \\
-\lpath{M/L/PremiseSelectionKNN.lean}
+\lpath{M/PLN/InferenceControl/PremiseSelection/KNN.lean}
   & General k-NN definitions; MaSh instance \\
-\lpath{M/L/PremiseSelectionKNN_PLNBridge.lean}
+\lpath{M/PLN/InferenceControl/PremiseSelection/KNN_PLNBridge.lean}
   & PLN--k-NN bridge; paper-form equivalence \\
 \lpath{M/L/PLNBayesNetInference.lean}
   & PLN NB bridge; strength = NB posterior \\
-\lpath{M/L/PremiseSelectionFusion.lean}
+\lpath{M/PLN/InferenceControl/PremiseSelection/Fusion.lean}
   & Fusion via revision; normalization \\
-\lpath{M/L/PremiseSelectionOptimality.lean}
+\lpath{M/PLN/InferenceControl/PremiseSelection/Optimality.lean}
   & Optimality transfer lemmas (NB, k-NN, PLN, fusion, ranking) \\
-\lpath{M/L/PremiseSelectionExternalBayesianity.lean}
+\lpath{M/PLN/InferenceControl/PremiseSelection/ExternalBayesianity.lean}
   & Counterexample + corrected uniqueness; regraduation invariance;
     staged commutation canaries \\
-\lpath{M/L/PremiseSelectionOperatorRoles.lean}
+\lpath{M/PLN/InferenceControl/PremiseSelection/OperatorRoles.lean}
   & Role discipline structures \\
-\lpath{M/L/PremiseSelectionPriorNB.lean}
+\lpath{M/PLN/InferenceControl/PremiseSelection/PriorNB.lean}
   & Prior-NB composition; canonical aliases \\
-\lpath{M/L/PremiseSelectionLocalMixtureBridge.lean}
+\lpath{M/PLN/InferenceControl/PremiseSelection/LocalMixtureBridge.lean}
   & Finite local-mixture TV bounds \\
 \lpath{M/L/DiaconisFreedmanFinite.lean}
   & Base collision bound \\
-\lpath{M/L/PremiseSelectionCoverage.lean}
+\lpath{M/PLN/InferenceControl/PremiseSelection/Coverage.lean}
   & Submodular coverage \\
-\lpath{M/L/PremiseSelectionPUCalibration.lean}
+\lpath{M/PLN/InferenceControl/PremiseSelection/PUCalibration.lean}
   & PU weak-negative calibration \\
-\lpath{M/L/PremiseSelectionRankingStability.lean}
+\lpath{M/PLN/InferenceControl/PremiseSelection/RankingStability.lean}
   & Ranking stability \\
-\lpath{M/L/PremiseSelectionSelectorSpec.lean}
+\lpath{M/PLN/InferenceControl/PremiseSelection/SelectorSpec.lean}
   & Selector spec defaults/checklist \\
-\lpath{M/L/PremiseSelectionPartitionedPriorNB.lean}
+\lpath{M/PLN/InferenceControl/PremiseSelection/PartitionedPriorNB.lean}
   & Partitioned normalized Prior-NB \\
 \lpath{hyperon/PeTTa/tests/test_lib_pln_xi_rules.metta}
   & Deterministic xiPLN rule tests \\

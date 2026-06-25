@@ -1,5 +1,5 @@
 import Mettapedia.Logic.DDLPlus.Core
-import Mettapedia.Logic.PLNTemporalCausalInference
+import Mettapedia.PLN.RuleFamilies.Temporal.PLNTemporalCausalInference
 import Mettapedia.Logic.GovernanceReasoning.Core
 
 /-!
@@ -37,7 +37,7 @@ These together give the **temporal-lag persistence** theorem: ideal obligation a
 namespace Mettapedia.Logic.TemporalDeonticBridge
 
 open Mettapedia.Logic.DDLPlus.Core
-open Mettapedia.Logic.PLNTemporalCausalInference
+open Mettapedia.PLN.RuleFamilies.Temporal.PLNTemporalCausalInference
 open Mettapedia.Logic.GovernanceReasoning.Core
 
 /-! ## §1 Temporal Meanings -/

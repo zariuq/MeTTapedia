@@ -16,7 +16,7 @@ Critch, Soares, and Taylor, *Logical Induction*, arXiv:1609.03543v5 (2020).
 namespace Mettapedia.Logic.HOL.Probabilistic
 
 open Mettapedia.Logic.HOL.Probabilistic.ModelSpace
-open Mettapedia.Logic.HOL.WorldModel
+open Mettapedia.Logic.HOL
 open MeasureTheory
 open scoped ENNReal
 

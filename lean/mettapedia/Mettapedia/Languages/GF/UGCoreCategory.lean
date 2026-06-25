@@ -141,8 +141,8 @@ open Mettapedia.OSLF.Framework.TypeSynthesis
 open Mettapedia.OSLF.Formula
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.QuantifiedFormula2
-open Mettapedia.Logic.EvidenceClass
-open Mettapedia.Logic.PLNWorldModel
+open Mettapedia.PLN.Evidence.EvidenceClass
+open Mettapedia.PLN.WorldModel.PLNWorldModel
 
 variable {State : Type u} [EvidenceType State] [BinaryWorldModel State Mettapedia.OSLF.MeTTaIL.Syntax.Pattern]
 

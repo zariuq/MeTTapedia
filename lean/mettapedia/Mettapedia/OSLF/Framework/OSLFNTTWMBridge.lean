@@ -1,7 +1,7 @@
 import Mettapedia.OSLF.Framework.MeTTaLegacyToNTT
-import Mettapedia.Logic.PLNWMOSLFBridge
-import Mettapedia.Logic.PLNWorldModelCategoricalBridge
-import Mettapedia.Logic.OSLFEvidenceSemantics
+import Mettapedia.PLN.Bridges.Languages.PLNWMOSLFBridge
+import Mettapedia.PLN.Bridges.CategoryTheory.WorldModel.PLNWorldModelCategoricalBridge
+import Mettapedia.OSLF.Framework.EvidenceSemantics
 import Mettapedia.OSLF.Framework.ToposReduction
 
 /-!
@@ -23,13 +23,13 @@ open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.Engine
 open Mettapedia.OSLF.Formula
 open Mettapedia.CategoryTheory.PLNInstance
-open Mettapedia.Logic.EvidenceClass
-open Mettapedia.Logic.EvidenceQuantale
-open Mettapedia.Logic.PLNWorldModel
-open Mettapedia.Logic.PLNWMOSLFBridge
-open Mettapedia.Logic.OSLFEvidenceSemantics
+open Mettapedia.PLN.Evidence.EvidenceClass
+open Mettapedia.PLN.Evidence.EvidenceQuantale
+open Mettapedia.PLN.WorldModel.PLNWorldModel
+open Mettapedia.PLN.Bridges.Languages.PLNWMOSLFBridge
+open Mettapedia.OSLF.Framework.EvidenceSemantics
 open Mettapedia.OSLF.Framework
-open Mettapedia.Logic.PLNWorldModelCategoricalBridge.WMHyperdoctrine
+open Mettapedia.PLN.Bridges.CategoryTheory.WorldModel.PLNWorldModelCategoricalBridge.WMHyperdoctrine
 
 section AtomTriangle
 
@@ -83,9 +83,9 @@ Categorical-surface wrapper: same atom-level endpoint, with explicit
 WM categorical endpoint surface argument to align with WM bridge APIs.
 -/
 theorem oslf_atom_ntt_wm_triangle_categorical
-    (H : Mettapedia.Logic.PLNWorldModelHyperdoctrine.WMHyperdoctrine State)
+    (H : Mettapedia.PLN.Bridges.CategoryTheory.WorldModel.PLNWorldModelHyperdoctrine.WMHyperdoctrine State)
     (_hcat :
-      Mettapedia.Logic.PLNWorldModelCategoricalBridge.WMHyperdoctrine.EndpointSurface (H := H))
+      Mettapedia.PLN.Bridges.CategoryTheory.WorldModel.PLNWorldModelCategoricalBridge.WMHyperdoctrine.EndpointSurface (H := H))
     {XH : H.Obj} (_φc : H.query XH)
     (relEnv : MeTTaIL.Engine.RelationEnv)
     (W : State)
@@ -308,7 +308,7 @@ Formula-level unified categorical endpoint:
    endpoint statement.
 -/
 theorem oslf_formula_ntt_graph_triangle_categorical
-    (H : Mettapedia.Logic.PLNWorldModelHyperdoctrine.WMHyperdoctrine State)
+    (H : Mettapedia.PLN.Bridges.CategoryTheory.WorldModel.PLNWorldModelHyperdoctrine.WMHyperdoctrine State)
     {P Aobj Bobj D : H.Obj}
     (pi1 : P ⟶ Aobj) (pi2 : P ⟶ Bobj) (fcat : Aobj ⟶ D) (gcat : Bobj ⟶ D)
     (hpb : CategoryTheory.IsPullback pi1 pi2 fcat gcat)

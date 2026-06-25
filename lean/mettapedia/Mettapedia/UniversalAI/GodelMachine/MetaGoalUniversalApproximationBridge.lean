@@ -1,5 +1,5 @@
 import Mettapedia.UniversalAI.GodelMachine.MetaGoalShellPreservationPath
-import Mettapedia.Logic.UniversalPredictionConditionalWMBridge
+import Mettapedia.UniversalAI.UniversalPredictionConditionalWMBridge
 
 /-!
 # Meta-Goal Stability + Universal-Mixture Refinement
@@ -37,10 +37,10 @@ open Mettapedia.Logic.MarkovLogicInfiniteUniqueness.ClassicalInfiniteGroundMLNSp
 open Mettapedia.Logic.MarkovLogicInfiniteWorldModel
 open Mettapedia.Logic.MarkovLogicOntologyGrowth
 open Mettapedia.Logic.MarkovLogicDynamicIndividuation
-open Mettapedia.Logic.PLNWorldModel
+open Mettapedia.PLN.WorldModel.PLNWorldModel
 open Mettapedia.Logic.MarkovLogicAbstract
 open Mettapedia.Logic.MarkovLogicAbstract.MassState
-open Mettapedia.Logic.UniversalPrediction
+open Mettapedia.UniversalAI.UniversalPrediction
 open MeasureTheory
 
 variable {Atom ClauseId : Type*} [DecidableEq Atom] [DecidableEq ClauseId]

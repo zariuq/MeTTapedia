@@ -91,7 +91,7 @@ theorem exchangeable_iff_categoricalDeFinettiFactorization_bridge
     (X : ℕ → Ω → Bool) (μ : MeasureTheory.Measure Ω)
     [MeasureTheory.IsProbabilityMeasure μ]
     (hX : ∀ i : ℕ, Measurable (X i)) :
-    Mettapedia.Logic.Exchangeability.InfiniteExchangeable X μ ↔
+    Mettapedia.ProbabilityTheory.Exchangeability.InfiniteExchangeable X μ ↔
       Mettapedia.CategoryTheory.CategoricalDeFinettiFactorization X μ := by
   simpa using
     (Mettapedia.CategoryTheory.exchangeable_iff_categoricalDeFinettiFactorization
@@ -176,8 +176,8 @@ theorem existsUnique_latentBernoulliMixtureKernel_of_identifiable_bridge
     [ProbabilityTheory.IsMarkovKernel κ]
     (hfac : Mettapedia.CategoryTheory.KernelIIDFactorization X κ)
     (hident : Mettapedia.CategoryTheory.KernelMixtureIdentifiable X κ) :
-    ∃! L : Y → Mettapedia.Logic.DeFinetti.BernoulliMixture,
-      ∀ y : Y, Mettapedia.Logic.DeFinetti.Represents (L y) X (κ y) := by
+    ∃! L : Y → Mettapedia.ProbabilityTheory.Exchangeability.DeFinetti.BernoulliMixture,
+      ∀ y : Y, Mettapedia.ProbabilityTheory.Exchangeability.DeFinetti.Represents (L y) X (κ y) := by
   simpa using
     (Mettapedia.CategoryTheory.existsUnique_latentBernoulliMixtureKernel_of_identifiable
       (hfac := hfac) (hident := hident))
@@ -219,7 +219,7 @@ theorem deFinetti_perNPrefixDiagram_hasLimit_bridge
 equality of all moments on the latent parameter space `Theta = [0,1]`
 implies equality of the latent mixing measures on `Theta`. -/
 theorem mixingMeasureTheta_eq_of_moments_eq_bridge
-    (M1 M2 : Mettapedia.Logic.DeFinetti.BernoulliMixture)
+    (M1 M2 : Mettapedia.ProbabilityTheory.Exchangeability.DeFinetti.BernoulliMixture)
     (hmom :
       ∀ k : ℕ,
         ∫ θ : Mettapedia.ProbabilityTheory.HigherOrderProbability.DeFinettiConnection.Theta,
@@ -238,9 +238,9 @@ if two Bernoulli-mixture objects represent the same process law, then their late
 theorem mixingMeasureTheta_eq_of_represents_bridge
     {Ω : Type*} [MeasurableSpace Ω]
     (X : ℕ → Ω → Bool) (μ : MeasureTheory.Measure Ω)
-    (M1 M2 : Mettapedia.Logic.DeFinetti.BernoulliMixture)
-    (hrep1 : Mettapedia.Logic.DeFinetti.Represents M1 X μ)
-    (hrep2 : Mettapedia.Logic.DeFinetti.Represents M2 X μ) :
+    (M1 M2 : Mettapedia.ProbabilityTheory.Exchangeability.DeFinetti.BernoulliMixture)
+    (hrep1 : Mettapedia.ProbabilityTheory.Exchangeability.DeFinetti.Represents M1 X μ)
+    (hrep2 : Mettapedia.ProbabilityTheory.Exchangeability.DeFinetti.Represents M2 X μ) :
     Mettapedia.ProbabilityTheory.HigherOrderProbability.DeFinettiConnection.mixingMeasureTheta M1 =
       Mettapedia.ProbabilityTheory.HigherOrderProbability.DeFinettiConnection.mixingMeasureTheta M2 := by
   simpa using

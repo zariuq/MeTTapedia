@@ -38,9 +38,9 @@ Three bridge strengths form a hierarchy:
 
 namespace Mettapedia.Logic.GovernanceReasoning.ActualityPolicy
 
-open Mettapedia.Logic.EvidenceClass
-open Mettapedia.Logic.EvidenceQuantale
-open Mettapedia.Logic.PLNWorldModel
+open Mettapedia.PLN.Evidence.EvidenceClass
+open Mettapedia.PLN.Evidence.EvidenceQuantale
+open Mettapedia.PLN.WorldModel.PLNWorldModel
 open Mettapedia.Logic.GovernanceReasoning.Core
 open Mettapedia.Logic.GovernanceReasoning.Bridge
 open scoped ENNReal

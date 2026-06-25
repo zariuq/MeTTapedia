@@ -2,8 +2,11 @@
 set -u
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-CETTA="/home/aimama/aihub/hyperon/CeTTa/cetta"
-PETTA="/home/aimama/aihub/hyperon/PeTTa/run.sh"
+CETTA="${CETTA:-/home/aimama/aihub/hyperon/CeTTa/cetta}"
+PETTA="${PETTA:-/home/aimama/aihub/hyperon/PeTTa/run.sh}"
+RUN_TIMEOUT_SECONDS="${RUN_TIMEOUT_SECONDS:-240}"
+CETTA_AS_LIMIT_BYTES="${CETTA_AS_LIMIT_BYTES:-17179869184}"
+PETTA_AS_LIMIT_BYTES="${PETTA_AS_LIMIT_BYTES:-17179869184}"
 LOGDIR="$ROOT/parity_logs"
 mkdir -p "$LOGDIR"
 
@@ -53,22 +56,26 @@ rows=(
   "NIK Metamath stack|PeTTa|nik_metamath_stack_v0_petta.metta|same claims; PeTTa adapter names/assertions"
   "NIK Metamath L0 ingestion|CeTTa|nik_metamath_l0_v0.metta|parsed-AST admission validates labels/floats/DV/assertion/proof invariants before lowering to the NIK checker"
   "NIK Metamath L0 ingestion|PeTTa|nik_metamath_l0_v0_petta.metta|same claims; PeTTa adapter names/assertions"
-  "NIK Metamath CeTTa parser smoke|CeTTa|nik_metamath_l0_cetta_parse_smoke.metta|actual tiny .mm file parsed by CeTTa textual parser, lowered through L0 admission, then checked by NIK"
+  # RETIRED v1: the standalone CeTTa Metamath .mm parser smoke depended on the
+  # old `metamath` module, now removed/deferred with full Metamath parsing.
+  # Active NIK coverage is the binder-free proof stack plus the parsed-AST L0
+  # admission layer above; concrete syntax belongs inside each calculus
+  # LanguageDef, not as a separate Metamath parser lane.
   "Provenance tree|CeTTa|provenance_tree_v0.metta|same checked trace projects to Boolean ledger and WM evidence; evidence cannot mint theorem"
   "Provenance tree|PeTTa|provenance_tree_v0_petta.metta|same claims; PeTTa adapter names/assertions"
   "Evaluator ground-recursion invariant|CeTTa|evaluator_ground_recursion_invariant.metta|ground recursive same-head infer reaches spec normal form (Srt kind) and still rejects bad domains; guards the CeTTa bind-mode regression against the LeaTTa/Hyperon/PeTTa oracle; client of kernel_binding_waist_v1 with local binding replay teeth"
   "Evaluator ground-recursion invariant|PeTTa|evaluator_ground_recursion_invariant_petta.metta|same invariant; PeTTa adapter names/assertions"
   "Vec OSLF/NTT target contract|CeTTa|oslf_targets/vec_indexed_family_ntt_target.metta|post-upgrade Lean target: indexed Vec LanguageDef/NTT diagnostics must go beyond unaryCrossings-only"
   "Vec OSLF/NTT target contract|PeTTa|oslf_targets/vec_indexed_family_ntt_target_petta.metta|same target contract; PeTTa adapter names/assertions"
-  "Indexed telescope IR (DIndG) Phase 1+2+3+4|CeTTa|kernel_signature_lf_indexed_v0.metta|DIndG telescope IR: generated family/ctor/eliminator types for Nat/List/Pair/Vec/Fin/Id plus v4 slice-collapse replays for Bool/Tree/Vec constructor indices/positivity/empty inductives; strengthened admission view; generated constructor-headed iota including J diagonal; typed IndG checking against generated eliminator type; CheckedPrf minting with axiom provenance; retirement gate proved via generated J (no GEq/GRfl/GTransp/Transp): cong-s + checked plus DDef over the generated recursor + forall n. plus n z = n by generated Nat induction; eta-free + predicative calculus verdicts pinned; SR wedge: infer t = infer (nf t) for generated iota witnesses nat/list/vec/fin/J/pair; positive replays and typed negatives (incl. plus-O-r off-by-one); binding capture spec v1 (B1-B6: de Bruijn shift/subst/conv capture-avoidance + alpha + IndG-binder teeth); indexed_v0 is a client of kernel_binding_waist_v1: no active client-side shift/subst/Args/Cases dispatch remains; public evaluator-stable fast path and arity table are owned by the waist; gated by run_binding_mutation_gate.sh (mutation-complete M1-M5 indexed live-waist mutations + L1-L5 lower LF/NatRec client mutations + P1-P4 parity-demo client mutations incl. exp3 + G1-G14 replay/arity/BindingDecl mutations; baseline guards enforce 116/102/23/32/20/9/15/14/7/32)"
+  "Indexed telescope IR (DIndG) Phase 1+2+3+4|CeTTa|kernel_signature_lf_indexed_v0.metta|DIndG telescope IR: generated family/ctor/eliminator types for Nat/List/Pair/Vec/Fin/Id plus v4 slice-collapse replays for Bool/Tree/Vec constructor indices/positivity/empty inductives; strengthened admission view; generated constructor-headed iota including J diagonal; typed IndG checking against generated eliminator type; CheckedPrf minting with axiom provenance; retirement gate proved via generated J (no GEq/GRfl/GTransp/Transp): cong-s + checked plus DDef over the generated recursor + forall n. plus n z = n by generated Nat induction; eta-free + predicative calculus verdicts pinned; SR admission gate: sig-admitted-with-elims now requires generated eliminator typechecks, explicit constructor-head orthogonality, and generated-iota LHS/RHS type-preservation certificates; infer t = infer (nf t) witnesses for nat/list/vec/fin/J/pair plus bad-target/type-mismatch negatives; universal SR/confluence theorem remains open; binding capture spec v1 (B1-B6: de Bruijn shift/subst/conv capture-avoidance + alpha + IndG-binder teeth); indexed_v0 is a client of kernel_binding_waist_v1: no active client-side shift/subst/Args/Cases dispatch remains; public evaluator-stable fast path and arity table are owned by the waist; gated by run_binding_mutation_gate.sh and run_sr_admission_gate.sh (SR mutants SR1-SR5 caught incl. generated-RHS corruption; binding mutation-complete M1-M5 indexed live-waist mutations + L1-L5 lower LF/NatRec client mutations + P1-P4 parity-demo client mutations incl. exp3 + G1-G16 replay/arity/recursive-BindingDecl mutations)"
   "Indexed telescope IR (DIndG) Phase 1+2+3+4|PeTTa|kernel_signature_lf_indexed_v0_petta.metta|same claims; PeTTa adapter names/assertions"
   "Minimal binding waist v1|CeTTa|kernel_binding_waist_v1.metta|import-free ABT/de-Bruijn waist owns checked arities, generic bind-shift/bind-subst, and the public evaluator-stable shift/subst/Args/Cases fast path over Var/Srt/Con/Def/Bad/App/Pi/Lam/IndG/NatRec/Args/Cases; no checker/nf/conv/iota/signature dependency"
   "Minimal binding waist v1|PeTTa|kernel_binding_waist_v1_petta.metta|same waist; PeTTa adapter names/assertions"
-  "BindingDecl LanguageDef interface v1|CeTTa|kernel_binding_decl_v1.metta|shared hosted-LanguageDef binding declarations over the minimal waist: Bind0/Bind1/BindFields/BindPi, dependent-Pi domain/codomain depths, forall/exists body binding, comprehension field binding, duplicate/depth negatives, and depth-2 LanguageDef traversal helpers"
+  "BindingDecl LanguageDef interface v1|CeTTa|kernel_binding_decl_v1.metta|shared hosted-LanguageDef binding declarations over the minimal waist: Bind0/Bind1/BindFields/BindPi, dependent-Pi domain/codomain depths, forall/exists body binding, comprehension field binding, duplicate negatives, fail-closed undeclared fields, and recursive arbitrary-depth LanguageDef traversal helpers"
   "BindingDecl LanguageDef interface v1|PeTTa|kernel_binding_decl_v1_petta.metta|same BindingDecl interface; PeTTa adapter imports the PeTTa waist exactly once"
   "ABT binding shared engine v1|CeTTa|kernel_binding_abt_engine_v1.metta|compatibility wrapper imports only the minimal waist; indexed routing is proved by run_binding_mutation_gate.sh to avoid duplicate imports and CeTTa/LeaTTa re-export fragility"
   "ABT binding shared engine v1|PeTTa|kernel_binding_abt_engine_v1_petta.metta|same wrapper; PeTTa adapter imports the PeTTa waist"
-  "ABT binding generic replay v1|CeTTa|kernel_binding_abtg_replay_v1.metta|client replay oracle imports the waist + BindingDecl layer and checks public shift/subst/Args/Cases fast path against generic bind-shift/bind-subst over Var/App/Pi/Lam/IndG/Args/Cases, plus hosted BindingDecl examples for Pi/forall/exists/comprehension/depth-2; client-side indexed dispatch retired"
+  "ABT binding generic replay v1|CeTTa|kernel_binding_abtg_replay_v1.metta|client replay oracle imports the waist + BindingDecl layer and checks public shift/subst/Args/Cases fast path against generic bind-shift/bind-subst over Var/App/Pi/Lam/IndG/Args/Cases, plus hosted BindingDecl examples for Pi/forall/exists/comprehension, fail-closed missing fields, and PLFA-style depth>2 substitution replays; client-side indexed dispatch retired"
   "ABT binding generic replay v1|PeTTa|kernel_binding_abtg_replay_v1_petta.metta|same claims; PeTTa adapter imports BindingDecl, which imports the PeTTa waist exactly once"
   "Conv-soundness shadow v1|CeTTa|conv_soundness_shadow_v1.metta|conv is a SOUND decidable shadow of context-bisimulation (conv subset of ~): structural-congruence 0-unit conv => bounded bisim; strict gap conv (XS) ~ exhibited (+-idempotence, +/|-commutativity, expansion law are ~-only); discriminators a.b+a.c vs a.(b+c) and a|a vs a refused by both; gated by run_conv_soundness_gate.sh (mutation-complete 4/4: unsound conv coarsenings + ~ over-match caught). Operational complement to knot-rho/knotted-topoi FA"
   "Conv-soundness shadow v1|PeTTa|conv_soundness_shadow_v1_petta.metta|same claims; PeTTa adapter names/assertions"
@@ -86,9 +93,9 @@ run_one() {
   local status="PASS"
 
   if [[ "$engine" == "CeTTa" ]]; then
-    timeout 120 "$CETTA" "$src" >"$log" 2>&1
+    timeout "$RUN_TIMEOUT_SECONDS" prlimit --as="$CETTA_AS_LIMIT_BYTES" -- "$CETTA" "$src" >"$log" 2>&1
   else
-    timeout 120 "$PETTA" "$src" >"$log" 2>&1
+    timeout "$RUN_TIMEOUT_SECONDS" prlimit --as="$PETTA_AS_LIMIT_BYTES" -- "$PETTA" "$src" >"$log" 2>&1
   fi
 
   local code=$?

@@ -1,5 +1,5 @@
 import Mettapedia.CategoryTheory.DeFinettiCategoricalInterface
-import Mettapedia.Logic.Exchangeability
+import Mettapedia.ProbabilityTheory.Exchangeability.Core
 
 /-!
 # Permutation-Cone Interface for de Finetti
@@ -14,7 +14,7 @@ set_option autoImplicit false
 namespace Mettapedia.CategoryTheory
 
 open MeasureTheory
-open Mettapedia.Logic.Exchangeability
+open Mettapedia.ProbabilityTheory.Exchangeability
 
 variable {Ω : Type*} [MeasurableSpace Ω]
 

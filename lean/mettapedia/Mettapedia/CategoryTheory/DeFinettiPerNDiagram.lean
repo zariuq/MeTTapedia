@@ -26,7 +26,7 @@ namespace Mettapedia.CategoryTheory
 
 open MeasureTheory
 open ProbabilityTheory
-open Mettapedia.Logic.Exchangeability
+open Mettapedia.ProbabilityTheory.Exchangeability
 open Mettapedia.ProbabilityTheory.HigherOrderProbability
 open CategoryTheory
 open CategoryTheory.Limits

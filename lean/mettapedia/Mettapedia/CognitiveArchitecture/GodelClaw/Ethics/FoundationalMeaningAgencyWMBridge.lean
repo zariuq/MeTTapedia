@@ -46,9 +46,9 @@ namespace Mettapedia.CognitiveArchitecture.GodelClaw.Ethics
 
 open scoped ENNReal
 
-open Mettapedia.Logic.EvidenceClass
-open Mettapedia.Logic.EvidenceQuantale
-open Mettapedia.Logic.PLNWorldModel
+open Mettapedia.PLN.Evidence.EvidenceClass
+open Mettapedia.PLN.Evidence.EvidenceQuantale
+open Mettapedia.PLN.WorldModel.PLNWorldModel
 open Mettapedia.Hyperseed
 open Mettapedia.Logic.MarkovLogicClauseSemantics
 open Mettapedia.Logic.MarkovLogicClauseFactorGraph

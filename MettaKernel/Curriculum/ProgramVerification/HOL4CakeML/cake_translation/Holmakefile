@@ -1,0 +1,9 @@
+INCLUDES = $(CAKEMLDIR)/misc $(CAKEMLDIR)/semantics $(CAKEMLDIR)/semantics/proofs\
+           $(CAKEMLDIR)/basis/pure $(CAKEMLDIR)/basis\
+           $(CAKEMLDIR)/translator $(CAKEMLDIR)/characteristic\
+           $(CAKEMLDIR)/compiler/parsing\
+           $(CAKEMLDIR)/unverified/sexpr-bootstrap
+
+ifdef POLY
+HOLHEAP = $(CAKEMLDIR)/basis/basis-heap
+endif

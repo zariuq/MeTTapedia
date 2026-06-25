@@ -6,7 +6,7 @@ import Mathlib.Data.Multiset.Basic
 /-!
 # LP ↔ PathMap Bridge
 
-Port of `Mettapedia.Logic.Datalog.PathMapBridge` onto LP types.
+Port of the retired standalone Datalog PathMap bridge onto LP types.
 
 A finite LP model (`FinInterpretation σ = Finset (GroundAtom σ)`) can serve as
 a relational store for conjunctive queries.

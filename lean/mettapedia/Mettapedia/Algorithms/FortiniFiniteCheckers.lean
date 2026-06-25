@@ -1,6 +1,6 @@
-import Mettapedia.Logic.MarkovDeFinettiFortiniBridgeCore
-import Mettapedia.Logic.MarkovExchangeability
-import Mettapedia.Logic.Bridges.CheckerReflection
+import Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiFortiniBridgeCore
+import Mettapedia.ProbabilityTheory.Exchangeability.MarkovExchangeability
+import Mettapedia.Algorithms.CheckerReflection
 import Mathlib.Data.Fintype.EquivFin
 
 /-!
@@ -20,7 +20,8 @@ namespace Mettapedia.Logic
 
 namespace MarkovDeFinettiHard
 
-open Mettapedia.Logic.MarkovExchangeability
+open Mettapedia.ProbabilityTheory.Exchangeability.MarkovExchangeability
+open Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiHard
 
 section FinsetCard
 
@@ -189,8 +190,8 @@ theorem exists_prefixCarrier_equiv_with_evidence_of_checker_true
         rowVisitCylinderEventUpToPrefixCarrier (k := k) i₂ S₂ v₂ N,
       ∀ xs :
         rowVisitCylinderEventUpToPrefixCarrier (k := k) i₁ S₁ v₁ N,
-        Mettapedia.Logic.MarkovExchangeability.evidenceOf (n := N) xs.1 =
-          Mettapedia.Logic.MarkovExchangeability.evidenceOf (n := N) (e xs).1 := by
+        Mettapedia.ProbabilityTheory.Exchangeability.MarkovExchangeability.evidenceOf (n := N) xs.1 =
+          Mettapedia.ProbabilityTheory.Exchangeability.MarkovExchangeability.evidenceOf (n := N) (e xs).1 := by
   simpa [prefixCarrierEvidencePreservingBijectiveChecker] using
     (exists_equiv_and_evidence_of_bijectiveChecker_true
       (n := N) (s := rowVisitCylinderEventUpToPrefixCarrier (k := k) i₁ S₁ v₁ N)
@@ -220,8 +221,8 @@ def rowVisitSingletonCarrierEvidenceEquivChecker
         ∀ xs :
           rowVisitCylinderEventUpToPrefixCarrier (k := k) i ({n} : Finset ℕ)
             (fun m => if m = n then a else i) N,
-          Mettapedia.Logic.MarkovExchangeability.evidenceOf (n := N) xs.1 =
-            Mettapedia.Logic.MarkovExchangeability.evidenceOf (n := N) (e xs).1)
+          Mettapedia.ProbabilityTheory.Exchangeability.MarkovExchangeability.evidenceOf (n := N) xs.1 =
+            Mettapedia.ProbabilityTheory.Exchangeability.MarkovExchangeability.evidenceOf (n := N) (e xs).1)
 
 end PrefixCarrierSpecialized
 

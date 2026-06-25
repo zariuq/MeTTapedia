@@ -18,9 +18,9 @@ noncomputable section
 namespace Mettapedia.Logic.MarkovPredictiveChaining
 
 open Mettapedia.Logic
-open Mettapedia.Logic.EvidenceDirichlet
+open Mettapedia.PLN.Bridges.ProbabilityTheory.EvidenceDirichlet
 open Mettapedia.Logic.WMMarkovCanonical
-open Mettapedia.Logic.UniversalPrediction
+open Mettapedia.UniversalAI.UniversalPrediction
 
 open scoped BigOperators ENNReal
 
@@ -61,14 +61,14 @@ theorem markovWMPosteriorChain_eq_prefixAux
     (prev : Fin k) (c : TransCounts k) :
     ∀ ys : List (Fin k),
       markovWMPosteriorChain hk prior prev c ys =
-        Mettapedia.Logic.UniversalPrediction.MarkovDirichlet.prefixAux
+        Mettapedia.UniversalAI.UniversalPrediction.MarkovDirichlet.prefixAux
           (k := k) prior prev c ys := by
   intro ys
   induction ys generalizing prev c with
   | nil =>
       rfl
   | cons next ys ih =>
-      simp [markovWMPosteriorChain, Mettapedia.Logic.UniversalPrediction.MarkovDirichlet.prefixAux,
+      simp [markovWMPosteriorChain, Mettapedia.UniversalAI.UniversalPrediction.MarkovDirichlet.prefixAux,
         rowEvidence_posteriorMean_eq_stepProb, ih]
 
 /-- Every predictive chain weight is a subprobability mass. This is the key
@@ -135,7 +135,7 @@ theorem markovTwoStepArrivalMass_eq_prefixAux_sum
     (prev : Fin k) (c : TransCounts k) (dst : Fin k) :
     markovTwoStepArrivalMass hk prior prev c dst =
       ∑ mid : Fin k,
-        Mettapedia.Logic.UniversalPrediction.MarkovDirichlet.prefixAux
+        Mettapedia.UniversalAI.UniversalPrediction.MarkovDirichlet.prefixAux
           (k := k) prior prev c [mid, dst] := by
   simp [markovTwoStepArrivalMass, markovWMPosteriorChain_eq_prefixAux]
 
@@ -173,9 +173,9 @@ theorem binary_markovTwoStepArrivalMass_eq_prefixAux_expand
     (hk : 0 < 2) (prior : Fin 2 → DirichletParams 2)
     (prev dst : Fin 2) (c : TransCounts 2) :
     markovTwoStepArrivalMass (k := 2) hk prior prev c dst =
-      Mettapedia.Logic.UniversalPrediction.MarkovDirichlet.prefixAux
+      Mettapedia.UniversalAI.UniversalPrediction.MarkovDirichlet.prefixAux
         (k := 2) prior prev c [bit0, dst] +
-      Mettapedia.Logic.UniversalPrediction.MarkovDirichlet.prefixAux
+      Mettapedia.UniversalAI.UniversalPrediction.MarkovDirichlet.prefixAux
         (k := 2) prior prev c [bit1, dst] := by
   rw [binary_markovTwoStepArrivalMass_expand (hk := hk) (prior := prior) (prev := prev)
     (dst := dst) (c := c)]

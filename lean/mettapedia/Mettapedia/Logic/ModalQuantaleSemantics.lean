@@ -1,7 +1,7 @@
 import Mathlib.Algebra.Order.Quantale
 import Mettapedia.Algebra.QuantaleWeakness
 import Mettapedia.Logic.ModalMuCalculus
-import Mettapedia.Logic.TemporalQuantale
+import Mettapedia.Algebra.TemporalQuantale
 
 /-!
 # Quantale-Valued Modal μ-Calculus Semantics

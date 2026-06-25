@@ -95,9 +95,9 @@ theorem trustTriangle_full_stack_exact_example
         {infiniteMLNMassSemantics (triangleChainSpec wt wc₂) μ₂ hμ₂}
       Mettapedia.UniversalAI.GodelMachine.expectedUtilityFromStart (toyMachine 1) >
           Mettapedia.UniversalAI.GodelMachine.expectedUtilityFromStart (toyMachine 0) ∧
-        Mettapedia.Logic.PLNWorldModel.BinaryWorldModel.queryStrength oldW
+        Mettapedia.PLN.WorldModel.PLNWorldModel.BinaryWorldModel.queryStrength oldW
             (trustTriangleTheoryGuidedMeaningProfile.activeGoalQuery trustTriangleStructuredEncoder) =
-          Mettapedia.Logic.PLNWorldModel.BinaryWorldModel.queryStrength newW
+          Mettapedia.PLN.WorldModel.PLNWorldModel.BinaryWorldModel.queryStrength newW
             (trustTriangleTheoryGuidedMeaningProfile.activeGoalQuery trustTriangleStructuredEncoder) := by
   have hRec := trustTriangleTheoryGuidedDecisionProblem_recommends_safeEscalation
   rcases trustTriangle_metaEthical_capstone with ⟨_, hAdm, hGoalEq⟩

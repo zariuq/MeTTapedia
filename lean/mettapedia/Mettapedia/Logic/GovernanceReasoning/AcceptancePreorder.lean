@@ -17,7 +17,7 @@ This module introduces:
 
 namespace Mettapedia.Logic.GovernanceReasoning.AcceptancePreorder
 
-open Mettapedia.Logic.EvidenceQuantale
+open Mettapedia.PLN.Evidence.EvidenceQuantale
 open Mettapedia.Logic.GovernanceReasoning.TreatyKernel
 open Mettapedia.Logic.GovernanceReasoning.TreatyKernelAcceptance
 open scoped ENNReal

@@ -33,9 +33,14 @@ Every `dof*.metta` example here is **portable across CeTTa(HE) and PeTTa** (floa
 `import!`/`!`, no dialect-specific keywords). Where one source genuinely cannot serve both engines
 we ship `*.he.metta` / `*.petta.metta` variants (none needed so far). See `docs/PORTABILITY.md`.
 
+DoF 7 now comes in three complementary shadows: the raw joint-shape loss (`dof07_credal_shape`),
+the hidden-joint distinction shadow (`dof07b_distinction_credal_shadow`), and the observer-resolution
+shadow (`dof07c_oslf_observer_resolution`) showing coarse-observer width collapsing under sharper
+distinction.
+
 ## Layout
 ```
-metta/        one dofNN_<name>.metta per Runnable/Structural DoF (intuitive write-up inline)
+metta/        dofNN_<name>.metta shadows for the Runnable/Structural DoFs (some DoFs have a second shadow where it helps)
 lib/          pln_evidence.metta + lib_pln.metta (the portable PLN API; also copied into metta/ so imports resolve)
 lean/         DOF-LEAN-MAP.md; the Lean canary source lives in ../../lean/mettapedia/Mettapedia/Logic/
 docs/         PORTABILITY.md, EXPECTED.md (paper's numbers for spot-check)

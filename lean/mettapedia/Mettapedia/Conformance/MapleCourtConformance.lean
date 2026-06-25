@@ -1,4 +1,4 @@
-import Mettapedia.Logic.PLNMapleCourtDemo
+import Mettapedia.Examples.PLN.MapleCourtDemo
 import Mettapedia.OSLF.Framework.WMCalculusOSLFBridge
 import Mettapedia.OSLF.Framework.WMCalculusEncoding
 
@@ -6,7 +6,7 @@ import Mettapedia.OSLF.Framework.WMCalculusEncoding
 # Maple Court Conformance: Algebraic Model ↔ Typed Rewrite Calculus
 
 This file proves that the Maple Court world-model examples from
-`PLNMapleCourtDemo.lean` are faithfully represented in the
+`MapleCourtDemo.lean` are faithfully represented in the
 WM typed rewrite calculus (`WMCalculusLanguageDef`).
 
 Specifically:
@@ -40,7 +40,7 @@ open Mettapedia.OSLF.Framework.TypeSynthesis
 open Mettapedia.OSLF.Framework.WMCalculusLanguageDef
 open Mettapedia.OSLF.Framework.LangMorphism
 open Mettapedia.OSLF.Framework.WMCalculusEncoding
-open Mettapedia.Logic.PLNMapleCourtDemo
+open Mettapedia.Examples.PLN.MapleCourtDemo
 
 private theorem wmCoreLangReduces_evidenceAdd (pw₁ pw₂ pq : Pattern) :
     langReduces wmCoreLanguageDef

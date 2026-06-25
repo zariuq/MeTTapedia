@@ -29,7 +29,7 @@ open Mettapedia.Languages.GF.WorldModelSemantics
 open Mettapedia.Languages.GF.WorldModelVisibleBridge
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.QuantifiedFormula2
-open Mettapedia.Logic.EvidenceQuantale
+open Mettapedia.PLN.Evidence.EvidenceQuantale
 
 /-- Store-mediated semantic coordination:
 if two agents share the same term and the same bind/ref footprint

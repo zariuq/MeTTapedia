@@ -2,7 +2,7 @@ import Mettapedia.OSLF.Framework.WMCalculusLanguageDef
 import Mettapedia.OSLF.Framework.WMCalculusContextClosure
 import Mettapedia.OSLF.Framework.WMCalculusOSLFBridge
 import Mettapedia.OSLF.Framework.WMCalculusEncoding
-import Mettapedia.Logic.EvidenceQuantale
+import Mettapedia.PLN.Evidence.EvidenceQuantale
 
 /-!
 # WM Calculus — Bayesian Network Compiled Inference Bridge
@@ -40,7 +40,7 @@ open Mettapedia.OSLF.Framework.PLNWMHypercubeBasis
 open Mettapedia.OSLF.Framework.WMCalculusLanguageDef
 open Mettapedia.OSLF.Framework.WMCalculusContextClosure
 open Mettapedia.OSLF.Framework.WMCalculusOSLFBridge
-open Mettapedia.Logic.EvidenceQuantale
+open Mettapedia.PLN.Evidence.EvidenceQuantale
 open Mettapedia.OSLF.Framework.WMCalculusEncoding
 
 /-! ## §1: Rule Membership -/

@@ -3,12 +3,12 @@ import Mettapedia.Languages.GF.HandCrafted.Abstract
 import Mettapedia.Languages.GF.OSLFBridge_handcrafted
 import Mettapedia.Languages.GF.Typing
 import Mettapedia.Languages.GF.LinguisticInvariance
-import Mettapedia.Logic.PLNWorldModel
-import Mettapedia.Logic.EvidenceQuantale
+import Mettapedia.PLN.WorldModel.PLNWorldModel
+import Mettapedia.PLN.Evidence.EvidenceQuantale
 import Mettapedia.OSLF.Formula
 import Mettapedia.OSLF.MeTTaIL.Syntax
 import Mettapedia.OSLF.Framework.TypeSynthesis
-import Mettapedia.Logic.OSLFEvidenceSemantics
+import Mettapedia.OSLF.Framework.EvidenceSemantics
 import Mettapedia.OSLF.MeTTaIL.DeclReducesWithPremises
 import Mettapedia.OSLF.QuantifiedFormula
 
@@ -45,13 +45,13 @@ open Mettapedia.Languages.GF.HandCrafted.Abstract
 open Mettapedia.Languages.GF.OSLFBridge
 open Mettapedia.Languages.GF.Typing
 open Mettapedia.Languages.GF.LinguisticInvariance
-open Mettapedia.Logic.EvidenceClass
-open Mettapedia.Logic.PLNWorldModel
-open Mettapedia.Logic.EvidenceQuantale
+open Mettapedia.PLN.Evidence.EvidenceClass
+open Mettapedia.PLN.WorldModel.PLNWorldModel
+open Mettapedia.PLN.Evidence.EvidenceQuantale
 open Mettapedia.OSLF.Formula
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.Framework.TypeSynthesis
-open Mettapedia.Logic.OSLFEvidenceSemantics
+open Mettapedia.OSLF.Framework.EvidenceSemantics
 
 open scoped ENNReal
 
@@ -1239,7 +1239,7 @@ Map to Table 5 in the paper. -/
 section PaperTheorems
 
 open Mettapedia.Languages.GF.LinguisticInvariance
-open Mettapedia.Logic.PLNWorldModel
+open Mettapedia.PLN.WorldModel.PLNWorldModel
 
 /-- **Translation preserves evidence (all W).**
     Same abstract tree → same evidence in all world-model states.

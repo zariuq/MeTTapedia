@@ -1,5 +1,5 @@
 import Mettapedia.OSLF.Framework.WMCalculusOSLFBridge
-import Mettapedia.Logic.PLNWorldModelNeighborhood
+import Mettapedia.PLN.Bridges.Logic.WorldModel.PLNWorldModelNeighborhood
 
 /-!
 # WM Calculus ↔ Neighborhood Semantics OSLF Bridge
@@ -40,10 +40,10 @@ open Mettapedia.OSLF.Framework.TypeSynthesis
 open Mettapedia.OSLF.Framework.WMCalculusLanguageDef
 open Mettapedia.OSLF.Framework.WMCalculusOSLFBridge
 open Mettapedia.OSLF.Framework.PLNWMHypercubeBasis
-open Mettapedia.Logic.PLNWorldModel
-open Mettapedia.Logic.PLNWorldModelNeighborhood
-open Mettapedia.Logic.EvidenceClass
-open Mettapedia.Logic.EvidenceQuantale
+open Mettapedia.PLN.WorldModel.PLNWorldModel
+open Mettapedia.PLN.Bridges.Logic.WorldModel.PLNWorldModelNeighborhood
+open Mettapedia.PLN.Evidence.EvidenceClass
+open Mettapedia.PLN.Evidence.EvidenceQuantale
 open scoped ENNReal
 
 /-! ## Section 1: Neighborhood Valuation

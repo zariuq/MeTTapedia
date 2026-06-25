@@ -1,5 +1,5 @@
 import Mettapedia.Languages.GF.WorldModelSemantics
-import Mettapedia.Logic.IdentityEvidence
+import Mettapedia.PLN.Evidence.IdentityEvidence
 
 /-!
 # GF Identity BinaryEvidence Semantics
@@ -15,11 +15,11 @@ namespace Mettapedia.Languages.GF.IdentityEvidenceSemantics
 
 open Mettapedia.Languages.GF.WorldModelSemantics
 open Mettapedia.Languages.GF.OSLFBridge
-open Mettapedia.Logic.EvidenceClass
-open Mettapedia.Logic.PLNWorldModel
-open Mettapedia.Logic.EvidenceQuantale
-open Mettapedia.Logic.IdentityEvidence
-open Mettapedia.Logic.OSLFEvidenceSemantics
+open Mettapedia.PLN.Evidence.EvidenceClass
+open Mettapedia.PLN.WorldModel.PLNWorldModel
+open Mettapedia.PLN.Evidence.EvidenceQuantale
+open Mettapedia.PLN.Evidence.IdentityEvidence
+open Mettapedia.OSLF.Framework.EvidenceSemantics
 open Mettapedia.OSLF.Formula
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.Framework.TypeSynthesis

@@ -17,8 +17,8 @@ namespace Mettapedia.CategoryTheory
 
 open MeasureTheory
 open ProbabilityTheory
-open Mettapedia.Logic.Exchangeability
-open Mettapedia.Logic.DeFinetti
+open Mettapedia.ProbabilityTheory.Exchangeability
+open Mettapedia.ProbabilityTheory.Exchangeability.DeFinetti
 open Mettapedia.ProbabilityTheory.HigherOrderProbability
 
 variable {Y Ω : Type*} [MeasurableSpace Y] [MeasurableSpace Ω]

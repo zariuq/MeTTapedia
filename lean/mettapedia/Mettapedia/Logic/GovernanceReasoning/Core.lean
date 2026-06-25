@@ -1,5 +1,5 @@
 import Mettapedia.Logic.ModalMuCalculus
-import Mettapedia.Logic.EvidenceQuantale
+import Mettapedia.PLN.Evidence.EvidenceQuantale
 
 /-!
 # Governance Reasoning: Core Types and Deontic Traditional Scheme
@@ -27,7 +27,7 @@ and the Deontic Traditional Scheme (DTS), based on the governance-reasoning-engi
 namespace Mettapedia.Logic.GovernanceReasoning.Core
 
 open Mettapedia.Logic.ModalMuCalculus
-open Mettapedia.Logic.EvidenceQuantale
+open Mettapedia.PLN.Evidence.EvidenceQuantale
 
 /-! ## §1 Thematic Roles (ISO 24617-4)
 

@@ -82,7 +82,7 @@ def renderLogicClaim : LogicClaim → String
           (properNameNP "probability theory, Heyting semantics, quantales, and Solomonoff-style prediction"))
   | .semanticsDecisionTreePath =>
       mkPresPos (properNameNP "The semantics decision tree")
-        (copulaNP (properNameNP "`Mettapedia/Logic/SemanticsDecisionTree.lean`"))
+        (copulaNP (properNameNP "`Mettapedia/PLN/Comparisons/NARS/SemanticsDecisionTree.lean`"))
   | .chapter11RegressionHasOneCommand =>
       mkPresPos (properNameNP "Chapter 11 quantifier regression")
         (copulaNP (properNameNP "a one-command build target"))
@@ -132,7 +132,7 @@ def renderLogicClaim : LogicClaim → String
         (copulaNP (properNameNP "the k-NN bridge theorem"))
   | .rankingTransferTheoremsExist =>
       mkPresPos (properNameNP "Premise-selection ranking transfer")
-        (copulaNP (properNameNP "a theorem family in `PremiseSelectionOptimality.lean`"))
+        (copulaNP (properNameNP "a theorem family in `Optimality.lean`"))
   | .tierCompositionSpineExists =>
       mkPresPos (properNameNP "Tier A-to-B composition")
         (copulaNP (properNameNP "a proven spine in `PLNXiDerivedBNRules.lean`"))
@@ -308,10 +308,10 @@ def logicReadmeBlocks : List ReadmeBlock :=
       ]
   , .heading 2 (renderLogicHeading .moduleOverview)
   , .codeBlock ""
-      "| Category | Files | Status |\n|----------|-------|--------|\n| Core PLN Inference | 9 | Complete |\n| Weight/Confidence | 2 | Complete |\n| Bounds/Consistency | 2 | Complete |\n| Algebraic Structure | 8 | Complete |\n| Solomonoff/Exchangeability | 6 | Complete |\n| Convergence/ | 4 | Complete |\n| Comparison/ | 3 | Complete |\n| MeasureTheoreticPLN/ | 3 | Complete |\n| PLNQuantaleSemantics/ | 4 | Complete |\n| UniversalPrediction/ | 21 | WIP |\n| Foundations/ | 90+ | Embedded |\n| System Bridges | 4 | Complete |"
+      "| Category | Files | Status |\n|----------|-------|--------|\n| Core PLN Inference | 9 | Complete |\n| Weight/Confidence | 2 | Complete |\n| Bounds/Consistency | 2 | Complete |\n| Algebraic Structure | 8 | Complete |\n| Solomonoff/Exchangeability bridge | UniversalAI bridge | See `UniversalAI/` |\n| Convergence/ | 4 | Complete |\n| Comparison/ | 3 | Complete |\n| MeasureTheoreticPLN/ | 3 | Complete |\n| PLNQuantaleSemantics/ | 4 | Complete |\n| Foundations/ | 90+ | Embedded |\n| System Bridges | 4 | Complete |"
   , .heading 2 (renderLogicHeading .semanticsDecisionTree)
   , .claimBullets [claimBullet .semanticsDecisionTreePath]
-  , .pathItems [{path := "Mettapedia/Logic/SemanticsDecisionTree.lean"}]
+  , .pathItems [{path := "Mettapedia/PLN/Comparisons/NARS/SemanticsDecisionTree.lean"}]
   , .heading 2 (renderLogicHeading .chapter11QuantifierRegression)
   , .claimBullets
       [ claimBullet .chapter11RegressionHasOneCommand
@@ -320,15 +320,15 @@ def logicReadmeBlocks : List ReadmeBlock :=
       , claimBullet .chapter11RegressionHasCanarySuite
       ]
   , .codeBlock "bash"
-      "cd /home/zar/claude/Mettapedia/lean/mettapedia\nulimit -Sv 6291456 && export LAKE_JOBS=3 && nice -n 19 \\\n  lake build Mettapedia.Logic.PLNFirstOrder.QuantifierRegression"
+      "cd /home/zar/claude/Mettapedia/lean/mettapedia\nulimit -Sv 6291456 && export LAKE_JOBS=3 && nice -n 19 \\\n  lake build Mettapedia.PLN.RuleFamilies.FirstOrder.Quantifiers.QuantifierRegression"
   , .codeBlock "bash"
       "cd /home/zar/claude/Mettapedia/lean/mettapedia\n./scripts/check_ch11_quantifiers.sh\n./scripts/check_ch11_fuzzy_syllogism.sh"
   , .pathItems
-      [ {path := "Mettapedia/Logic/PLNFirstOrder/QuantifierSemantics.lean"}
-      , {path := "Mettapedia/Logic/PLNFirstOrder/FuzzyQuantifierSemantics.lean"}
-      , {path := "Mettapedia/Logic/PLNFirstOrder/FuzzyITVBridge.lean"}
-      , {path := "Mettapedia/Logic/PLNFirstOrder/QuantifierCanary.lean"}
-      , {path := "Mettapedia/Logic/PLNFirstOrder/QuantifierWorkedExamples.lean"}
+      [ {path := "Mettapedia/PLN/RuleFamilies/FirstOrder/Quantifiers/QuantifierSemantics.lean"}
+      , {path := "Mettapedia/PLN/RuleFamilies/FirstOrder/Quantifiers/FuzzyQuantifierSemantics.lean"}
+      , {path := "Mettapedia/PLN/RuleFamilies/FirstOrder/Quantifiers/FuzzyITVBridge.lean"}
+      , {path := "Mettapedia/PLN/RuleFamilies/FirstOrder/Quantifiers/QuantifierCanary.lean"}
+      , {path := "Mettapedia/PLN/RuleFamilies/FirstOrder/Quantifiers/QuantifierWorkedExamples.lean"}
       ]
   , .heading 2 (renderLogicHeading .chapter12IntensionalInheritanceRegression)
   , .claimBullets
@@ -336,13 +336,13 @@ def logicReadmeBlocks : List ReadmeBlock :=
       , claimBullet .chapter12RegressionHasWrappersAndCanaries
       ]
   , .codeBlock "bash"
-      "cd /home/zar/claude/Mettapedia/lean/mettapedia\nulimit -Sv 6291456 && export LAKE_JOBS=3 && nice -n 19 \\\n  lake build Mettapedia.Logic.PLNIntensionalRegression"
+      "cd /home/zar/claude/Mettapedia/lean/mettapedia\nulimit -Sv 6291456 && export LAKE_JOBS=3 && nice -n 19 \\\n  lake build Mettapedia.PLN.ConceptGeometry.AssocPat.PLNIntensionalRegression"
   , .codeBlock "bash"
       "cd /home/zar/claude/Mettapedia/lean/mettapedia\n./scripts/check_ch12_intensional.sh"
   , .pathItems
       [ {path := "Mettapedia/Logic/PLNIntensionalWorldModel.lean"}
       , {path := "Mettapedia/Logic/IntensionalInheritanceSolomonoffBridge.lean"}
-      , {path := "Mettapedia/Logic/PLNCanonicalAPI.lean"}
+      , {path := "Mettapedia/PLN/Core/PLNCanonicalAPI.lean"}
       , {path := "Mettapedia/Logic/PLNIntensionalCanary.lean"}
       , {path := "Mettapedia/Logic/PLNIntensionalRegression.lean"}
       ]
@@ -352,17 +352,17 @@ def logicReadmeBlocks : List ReadmeBlock :=
       , claimBullet .chapter13RegressionHasSelectorCoverageCanaries
       ]
   , .codeBlock "bash"
-      "cd /home/zar/claude/Mettapedia/lean/mettapedia\nulimit -Sv 6291456 && export LAKE_JOBS=3 && nice -n 19 \\\n  lake build Mettapedia.Logic.PLNInferenceControlRegression"
+      "cd /home/zar/claude/Mettapedia/lean/mettapedia\nulimit -Sv 6291456 && export LAKE_JOBS=3 && nice -n 19 \\\n  lake build Mettapedia.PLN.InferenceControl.PremiseSelection.PLNInferenceControlRegression"
   , .codeBlock "bash"
       "cd /home/zar/claude/Mettapedia/lean/mettapedia\n./scripts/check_ch13_inference_control.sh"
   , .pathItems
-      [ {path := "Mettapedia/Logic/PremiseSelectionSelectorSpec.lean"}
-      , {path := "Mettapedia/Logic/PremiseSelectionOptimality.lean"}
-      , {path := "Mettapedia/Logic/PremiseSelectionRankingStability.lean"}
-      , {path := "Mettapedia/Logic/PremiseSelectionCoverage.lean"}
-      , {path := "Mettapedia/Logic/PLNInferenceControlCore.lean"}
-      , {path := "Mettapedia/Logic/PLNInferenceControlCanary.lean"}
-      , {path := "Mettapedia/Logic/PLNInferenceControlRegression.lean"}
+      [ {path := "Mettapedia/PLN/InferenceControl/PremiseSelection/SelectorSpec.lean"}
+      , {path := "Mettapedia/PLN/InferenceControl/PremiseSelection/Optimality.lean"}
+      , {path := "Mettapedia/PLN/InferenceControl/PremiseSelection/RankingStability.lean"}
+      , {path := "Mettapedia/PLN/InferenceControl/PremiseSelection/Coverage.lean"}
+      , {path := "Mettapedia/PLN/InferenceControl/PremiseSelection/PLNInferenceControlCore.lean"}
+      , {path := "Mettapedia/PLN/InferenceControl/PremiseSelection/PLNInferenceControlCanary.lean"}
+      , {path := "Mettapedia/PLN/InferenceControl/PremiseSelection/PLNInferenceControlRegression.lean"}
       ]
   , .heading 2 (renderLogicHeading .unificationThesis)
   , .claimBullets
@@ -374,7 +374,7 @@ def logicReadmeBlocks : List ReadmeBlock :=
   , .heading 2 (renderLogicHeading .criticalProvenTheorems)
   , .claimBullets [claimBullet .criticalTheoremsSectionSummarizesAnchors]
   , .codeBlock ""
-      "| Theorem | File |\n|---------|------|\n| Frechet bounds | PLNFrechetBounds.lean |\n| PLN consistency | PLNFrechetBounds.lean |\n| Weight-space min | PLNConfidenceWeight.lean |\n| BinaryEvidence not boolean | HeytingValuationOnEvidence.lean |\n| Quantale transitivity | EvidenceQuantale.lean |\n| Solomonoff collapse | SolomonoffExchangeable.lean |\n| De Finetti | DeFinetti.lean |"
+      "| Theorem | File |\n|---------|------|\n| Frechet bounds | PLNFrechetBounds.lean |\n| PLN consistency | PLNFrechetBounds.lean |\n| Weight-space min | PLNConfidenceWeight.lean |\n| BinaryEvidence not boolean | HeytingValuationOnEvidence.lean |\n| Quantale transitivity | EvidenceQuantale.lean |\n| Solomonoff collapse | ../UniversalAI/SolomonoffExchangeable.lean |\n| De Finetti | DeFinetti.lean |"
   , .heading 2 (renderLogicHeading .proofsForNbAndKnn)
   , .claimBullets
       [ claimBullet .nbBridgeTheoremExists
@@ -385,12 +385,12 @@ def logicReadmeBlocks : List ReadmeBlock :=
       , claimBullet .mettaParityAnchorsAreTracked
       ]
   , .pathItems
-      [ {path := "Mettapedia/Logic/PLNBayesNetInference.lean:296"}
-      , {path := "Mettapedia/Logic/PremiseSelectionKNN_PLNBridge.lean:111"}
-      , {path := "Mettapedia/Logic/PremiseSelectionOptimality.lean:333"}
-      , {path := "Mettapedia/Logic/PLNBNCompilation.lean:161"}
-      , {path := "Mettapedia/Logic/PLNXiDerivedBNRules.lean:464"}
-      , {path := "Mettapedia/Logic/PLNXiDerivedBNRules.lean:1172"}
+      [ {path := "Mettapedia/PLN/WorldModel/BayesNet/PLNBayesNetInference.lean:296"}
+      , {path := "Mettapedia/PLN/InferenceControl/PremiseSelection/KNN_PLNBridge.lean:111"}
+      , {path := "Mettapedia/PLN/InferenceControl/PremiseSelection/Optimality.lean:333"}
+      , {path := "Mettapedia/PLN/Bridges/ProbabilityTheory/BayesNet/PLNBNCompilation.lean:161"}
+      , {path := "Mettapedia/PLN/RuleFamilies/FirstOrder/PLNXiDerivedBNRules.lean:464"}
+      , {path := "Mettapedia/PLN/RuleFamilies/FirstOrder/PLNXiDerivedBNRules.lean:1172"}
       , {path := "Mettapedia/Implementation/MettaVerification.lean:77"}
       , {path := "Mettapedia/Implementation/PLNParityChecklist.lean:66"}
       ]
@@ -399,15 +399,15 @@ def logicReadmeBlocks : List ReadmeBlock :=
       [ claimBullet .narsCorrespondencePackageExists
       , claimBullet .narsPackageHasFourFamilies
       ]
-  , .pathItems [{path := "Mettapedia/Logic/PLNNARSRuleCorrespondence.lean"}]
+  , .pathItems [{path := "Mettapedia/PLN/Comparisons/NARS/PLNNARSRuleCorrespondence.lean"}]
   , .heading 2 (renderLogicHeading .subdirectories)
   , .claimBullets [claimBullet .subdirectoriesAreCataloged]
   , .codeBlock ""
-      "Comparison/ (3 files)\nConvergence/ (4 files)\nFoundations/ (90+ files)\nMeasureTheoreticPLN/ (3 files)\nPLNQuantaleSemantics/ (4 files)\nUniversalPrediction/ (21 files)"
+      "Comparison/ (3 files)\nConvergence/ (4 files)\nFoundations/ (90+ files)\nMeasureTheoreticPLN/ (3 files)\nPLNQuantaleSemantics/ (4 files)"
   , .heading 2 (renderLogicHeading .fileIndexByPurpose)
   , .claimBullets [claimBullet .fileIndexIsGroupedByPurpose]
   , .codeBlock ""
-      "PLN core, inference rules, weight/confidence, bounds/consistency,\nalgebraic structure, Solomonoff/exchangeability, system bridges,\nanalysis/comparison, and other files are indexed by purpose."
+      "PLN core, inference rules, weight/confidence, bounds/consistency,\nalgebraic structure, UniversalAI exchangeability bridges, system bridges,\nanalysis/comparison, and other files are indexed by purpose."
   , .heading 2 (renderLogicHeading .dependencyGraph)
   , .claimBullets [claimBullet .dependencyGraphSectionExists]
   , .codeBlock ""
@@ -419,7 +419,7 @@ def logicReadmeBlocks : List ReadmeBlock :=
   , .heading 2 (renderLogicHeading .build)
   , .claimBullets [claimBullet .buildSectionListsCommands]
   , .codeBlock "bash"
-      "cd /home/zar/claude/Mettapedia/lean/mettapedia\n# Quantifier regression\nlake build Mettapedia.Logic.PLNFirstOrder.QuantifierRegression\n# Intensional inheritance regression\nlake build Mettapedia.Logic.PLNIntensionalRegression\n# Inference-control regression\nlake build Mettapedia.Logic.PLNInferenceControlRegression\n# Core files\nlake build Mettapedia.Logic.PLNBayesNetInference Mettapedia.Logic.PremiseSelectionKNN_PLNBridge\n# Build all (slow)\nlake build"
+      "cd /home/zar/claude/Mettapedia/lean/mettapedia\n# Quantifier regression\nlake build Mettapedia.PLN.RuleFamilies.FirstOrder.Quantifiers.QuantifierRegression\n# Intensional inheritance regression\nlake build Mettapedia.PLN.ConceptGeometry.AssocPat.PLNIntensionalRegression\n# Inference-control regression\nlake build Mettapedia.PLN.InferenceControl.PremiseSelection.PLNInferenceControlRegression\n# Core files\nlake build Mettapedia.PLN.WorldModel.BayesNet.PLNBayesNetInference Mettapedia.PLN.InferenceControl.PremiseSelection.KNN_PLNBridge\n# Build all (slow)\nlake build"
   , .heading 2 (renderLogicHeading .references)
   , .claimBullets [claimBullet .referencesSectionListsSources]
   , .codeBlock ""

@@ -3,7 +3,7 @@ import Mettapedia.AutoBooks.Codex.IntuitionisticHOL.ClosedTermWorldModelCounterm
 namespace Mettapedia.AutoBooks.Codex.IntuitionisticHOL.ClosedTermWorldModelCountermodelRegression
 
 open Mettapedia.Logic.HOL
-open Mettapedia.Logic.PLNWorldModel
+open Mettapedia.PLN.WorldModel.PLNWorldModel
 open CompletenessFrontier
 open ClosedTermCanonicalWorldModel
 open scoped ENNReal

@@ -1,8 +1,8 @@
 import Mettapedia.UniversalAI.GodelMachine.MetaGoalShellPreservationExample
 import Mettapedia.UniversalAI.GodelMachine.MetaGoalUniversalApproximationBridge
 import Mettapedia.Logic.MarkovLogicTrustTriangleExample
-import Mettapedia.Logic.UniversalPrediction.Optimality
-import Mettapedia.Logic.UniversalPredictionConditionalApproximation
+import Mettapedia.UniversalAI.UniversalPrediction.Optimality
+import Mettapedia.UniversalAI.UniversalPredictionConditionalApproximation
 
 /-!
 # Concrete Example: Protected Goals + Approximate Universal Prediction
@@ -28,7 +28,7 @@ Negative example:
 
 namespace Mettapedia.UniversalAI.GodelMachine.MetaGoalUniversalApproximationExample
 
-open Mettapedia.Logic.UniversalPrediction
+open Mettapedia.UniversalAI.UniversalPrediction
 open Mettapedia.UniversalAI.GodelMachine.MetaGoalShellPreservationExample
 open Mettapedia.UniversalAI.GodelMachine.MetaGoalShellPreservation
 open Mettapedia.Logic.MarkovLogicClauseFactorGraph
@@ -39,7 +39,7 @@ open Mettapedia.Logic.MarkovLogicInfiniteFixedRegionDLR
 open Mettapedia.Logic.MarkovLogicInfiniteVariableNeighborhoodWorldOfViews
 open Mettapedia.Logic.MarkovLogicInfiniteWorldModel
 open Mettapedia.Logic.MarkovLogicTrustTriangleExample
-open Mettapedia.Logic.PLNWorldModel
+open Mettapedia.PLN.WorldModel.PLNWorldModel
 
 /-- A tiny semimeasure concentrating all first-step mass on `false`. -/
 def falseFirstBitSemimeasure : Semimeasure where

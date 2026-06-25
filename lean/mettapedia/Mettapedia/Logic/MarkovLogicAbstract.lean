@@ -1,6 +1,6 @@
 import Mathlib.Data.ENNReal.Basic
 import Mathlib.Data.Multiset.Basic
-import Mettapedia.Logic.PLNWorldModel
+import Mettapedia.PLN.WorldModel.PLNWorldModel
 
 /-!
 # Abstract MLN Semantics
@@ -20,9 +20,9 @@ whenever the extracted evidence matches the semantic query mass and total mass.
 
 namespace Mettapedia.Logic.MarkovLogicAbstract
 
-open Mettapedia.Logic.EvidenceClass
-open Mettapedia.Logic.EvidenceQuantale
-open Mettapedia.Logic.PLNWorldModel
+open Mettapedia.PLN.Evidence.EvidenceClass
+open Mettapedia.PLN.Evidence.EvidenceQuantale
+open Mettapedia.PLN.WorldModel.PLNWorldModel
 open scoped ENNReal
 
 /-- Abstract MLN-style semantics: world weights, query truth, and feature potentials.

@@ -2,8 +2,10 @@ import Mettapedia.OSLF.Main
 import Mettapedia.OSLF.CoreMain
 import Mettapedia.Languages.MeTTa.PeTTa
 import Mettapedia.Logic.LP
+import Mettapedia.OSLF.MeTTaIL.LPRelationEnvBridge
+import Mettapedia.PLN.Bridges.Logic.LPWorldModelBridge
 import Mettapedia.OSLF.PathMap
-import Mettapedia.Logic.OSLFImageFinite
+import Mettapedia.OSLF.Framework.ImageFinite
 import Mettapedia.OSLF.Framework.PiRhoCanonicalBridge
 import Mettapedia.OSLF.Framework.AssumptionNecessity
 import Mettapedia.OSLF.Framework.ToposTOGLBridge
@@ -326,11 +328,11 @@ open Mettapedia.OSLF
 #check @langGalois
 #check @langDiamond
 #check @langBox
-#check @Mettapedia.Logic.OSLFImageFinite.imageFinite_langReducesExecUsing
-#check @Mettapedia.Logic.OSLFImageFinite.imageFinite_langReducesUsing
-#check @Mettapedia.Logic.OSLFImageFinite.imageFinite_langReduces
-#check @Mettapedia.Logic.OSLFImageFinite.hm_converse_langReducesUsing
-#check @Mettapedia.Logic.OSLFImageFinite.hm_converse_langReduces
+#check @Mettapedia.OSLF.Framework.ImageFinite.imageFinite_langReducesExecUsing
+#check @Mettapedia.OSLF.Framework.ImageFinite.imageFinite_langReducesUsing
+#check @Mettapedia.OSLF.Framework.ImageFinite.imageFinite_langReduces
+#check @Mettapedia.OSLF.Framework.ImageFinite.hm_converse_langReducesUsing
+#check @Mettapedia.OSLF.Framework.ImageFinite.hm_converse_langReduces
 #check @Mettapedia.OSLF.Framework.LangMorphism.sem_transfer_of_broadFragment
 #check @Mettapedia.OSLF.Framework.LangMorphism.sem_transfer_of_diaBoxFragment
 #check @Mettapedia.OSLF.Framework.LangMorphism.sem_of_diaBoxFragment_on_domain
@@ -848,14 +850,14 @@ open Mettapedia.OSLF
 #check @Mettapedia.Logic.LP.positiveEvidence
 #check @Mettapedia.Logic.LP.evidence_total
 #check @Mettapedia.Logic.LP.leastHerbrandModel_monotone_in_rules
--- LP-M7: OSLFBridge
-#check @Mettapedia.Logic.LP.lpToRelEnv
-#check @Mettapedia.Logic.LP.mem_lpToRelEnv
-#check @Mettapedia.Logic.LP.leastHerbrandModelRelEnv
--- LP-M8: WorldModelBridge
-#check @Mettapedia.Logic.LP.lpModelEvidence
-#check @Mettapedia.Logic.LP.lpLeastModelEvidence
-#check @Mettapedia.Logic.LP.lpEvidence_monotone
-#check @Mettapedia.Logic.LP.lpEDB_posEvidence
+-- LP-M7: OSLF/MeTTaIL RelationEnv bridge
+#check @Mettapedia.OSLF.MeTTaIL.LPRelationEnvBridge.lpToRelEnv
+#check @Mettapedia.OSLF.MeTTaIL.LPRelationEnvBridge.mem_lpToRelEnv
+#check @Mettapedia.OSLF.MeTTaIL.LPRelationEnvBridge.leastHerbrandModelRelEnv
+-- LP-M8: PLN world-model bridge
+#check @Mettapedia.PLN.Bridges.Logic.LPWorldModelBridge.lpModelEvidence
+#check @Mettapedia.PLN.Bridges.Logic.LPWorldModelBridge.lpLeastModelEvidence
+#check @Mettapedia.PLN.Bridges.Logic.LPWorldModelBridge.lpEvidence_monotone
+#check @Mettapedia.PLN.Bridges.Logic.LPWorldModelBridge.lpEDB_posEvidence
 
 end Mettapedia.OSLF.SpecIndex

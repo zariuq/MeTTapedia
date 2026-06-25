@@ -1,5 +1,5 @@
-import Mettapedia.Logic.FiniteHiddenMarkovModel
-import Mettapedia.Logic.SufficientStatisticSurface
+import Mettapedia.ProbabilityTheory.HiddenMarkovModels.FiniteHiddenMarkovModel
+import Mettapedia.PLN.WorldModel.SufficientStatisticSurface
 import Mettapedia.Logic.WMMarkov
 
 /-!
@@ -27,13 +27,14 @@ set_option autoImplicit false
 namespace Mettapedia.Logic.WMFiniteHiddenMarkov
 
 open Mettapedia.Logic
-open Mettapedia.Logic.EvidenceClass
-open Mettapedia.Logic.EvidenceDirichlet
-open Mettapedia.Logic.FiniteHiddenMarkovModel
-open Mettapedia.Logic.PLNWorldModelAdditive
-open Mettapedia.Logic.PLNWorldModelGeneric
-open Mettapedia.Logic.SufficientStatisticSurface
-open Mettapedia.Logic.UniversalPrediction
+open Mettapedia.PLN.Evidence.EvidenceClass
+open Mettapedia.PLN.Bridges.ProbabilityTheory.EvidenceDirichlet
+open Mettapedia.ProbabilityTheory.HiddenMarkovModels.FiniteHiddenMarkovModel
+open Mettapedia.PLN.WorldModel.PLNWorldModelAdditive
+open Mettapedia.PLN.WorldModel.PLNWorldModelGeneric
+open Mettapedia.PLN.WorldModel
+open Mettapedia.PLN.WorldModel.SufficientStatisticSurface
+open Mettapedia.UniversalAI.UniversalPrediction
 
 open scoped ENNReal
 

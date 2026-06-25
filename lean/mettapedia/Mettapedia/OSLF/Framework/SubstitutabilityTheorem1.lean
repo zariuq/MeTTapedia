@@ -1,4 +1,4 @@
-import Mettapedia.Logic.OSLFDistinctionGraph
+import Mettapedia.OSLF.Framework.DistinctionGraph
 
 /-!
 # Theorem-1-Style Substitutability Endpoint
@@ -15,8 +15,8 @@ image-finite scoped iff theorem as the first full equivalence instance.
 
 namespace Mettapedia.OSLF.Framework
 
-open Mettapedia.Logic.OSLFDistinctionGraph
-open Mettapedia.Logic.OSLFKSUnificationSketch
+open Mettapedia.OSLF.Framework.DistinctionGraph
+open Mettapedia.OSLF.Framework.KSUnificationSketch
 
 abbrev Pat := Mettapedia.OSLF.MeTTaIL.Syntax.Pattern
 

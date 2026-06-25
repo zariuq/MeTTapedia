@@ -3,7 +3,7 @@ import Mettapedia.AutoBooks.Codex.IntuitionisticHOL.ClosedTermHenkinWorldBridge
 namespace Mettapedia.AutoBooks.Codex.IntuitionisticHOL.ClosedTermHenkinWorldBridgeRegression
 
 open Mettapedia.Logic.HOL
-open Mettapedia.Logic.PLNWorldModel
+open Mettapedia.PLN.WorldModel.PLNWorldModel
 open CompletenessFrontier
 open ClosedTermCanonicalWorldModel
 open scoped ENNReal

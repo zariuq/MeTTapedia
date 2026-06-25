@@ -24,6 +24,7 @@
 
 (= (decl-name (DConst $n $T)) $n)
 (= (decl-name (DDef $n $T $body)) $n)
+(= (decl-name (DThm $n $T $body)) $n)
 (= (decl-name (DAxiom $n $T)) $n)
 
 (= (sig-has-name $n SNil) False)
@@ -42,12 +43,16 @@
 ; Declarations:
 ;   DConst name type    -- checked constant/constructor
 ;   DDef   name type body -- checked definition, unfolds during normalization
+;   DThm   name type body -- checked opaque theorem/proof constant;
+;                           uses of the constant preserve the body's axiom footprint
 ;   DAxiom name type    -- unchecked postulate, visible in theorem provenance
 
 (= (decl-type-of SNil $c) (Bad unknown-declaration))
 (= (decl-type-of (SCons (DConst $c $T) $rest) $x)
    (if (== $x $c) $T (decl-type-of $rest $x)))
 (= (decl-type-of (SCons (DDef $c $T $body) $rest) $x)
+   (if (== $x $c) $T (decl-type-of $rest $x)))
+(= (decl-type-of (SCons (DThm $c $T $body) $rest) $x)
    (if (== $x $c) $T (decl-type-of $rest $x)))
 (= (decl-type-of (SCons (DAxiom $c $T) $rest) $x)
    (if (== $x $c) $T (decl-type-of $rest $x)))
@@ -56,6 +61,7 @@
 (= (def-body-of (SCons (DDef $c $T $body) $rest) $x)
    (if (== $x $c) $body (def-body-of $rest $x)))
 (= (def-body-of (SCons (DConst $c $T) $rest) $x) (def-body-of $rest $x))
+(= (def-body-of (SCons (DThm $c $T $body) $rest) $x) (def-body-of $rest $x))
 (= (def-body-of (SCons (DAxiom $c $T) $rest) $x) (def-body-of $rest $x))
 
 (= (is-axiom-name SNil $x) False)
@@ -63,6 +69,7 @@
    (if (== $x $a) True (is-axiom-name $rest $x)))
 (= (is-axiom-name (SCons (DConst $c $T) $rest) $x) (is-axiom-name $rest $x))
 (= (is-axiom-name (SCons (DDef $c $T $body) $rest) $x) (is-axiom-name $rest $x))
+(= (is-axiom-name (SCons (DThm $c $T $body) $rest) $x) (is-axiom-name $rest $x))
 
 ; ---------- lambda-Pi term machinery ----------------------------------------
 ; Public capture-avoiding `shift`/`subst` traversal comes from
@@ -81,10 +88,10 @@
 (= (nf $sig (App $f $a)) (nf-app $sig (nf $sig $f) (nf $sig $a)))
 (= (nf-app $sig $f $a) (unify $f (Lam $A $b) (nf $sig (subst 0 $a $b)) (App $f $a)))
 
-(= (conv $sig $x $y)
-   (if (is-bad (nf $sig $x)) False
-     (if (is-bad (nf $sig $y)) False
-       (== (nf $sig $x) (nf $sig $y)))))
+(= (conv-nf $x $y)
+   (unify $x (Bad $e) False
+     (unify $y (Bad $e) False (== $x $y))))
+(= (conv $sig $x $y) (conv-nf (nf $sig $x) (nf $sig $y)))
 
 (= (ctx-nth $i CtxNil) (Bad var-out-of-range))
 (= (ctx-nth $i (CtxCons $h $t)) (if (== $i 0) $h (ctx-nth (- $i 1) $t)))
@@ -133,13 +140,32 @@
    (if (wf-decl $prefix (DConst $n $T))
        (check $prefix CtxNil $body $T)
        False))
+(= (wf-decl $prefix (DThm $n $T $body))
+   (if (wf-decl $prefix (DConst $n $T))
+       (check $prefix CtxNil $body $T)
+       False))
 (= (wf-decl $prefix (DAxiom $n $T)) (wf-decl $prefix (DConst $n $T)))
 
 (= (wf-sig-prefix $prefix SNil) True)
-(= (wf-sig-prefix $prefix (SCons $d $rest))
-   (let $ok (wf-decl $prefix $d)
+(= (wf-sig-prefix $prefix (SCons (DConst $n $T) $rest))
+   (let $ok (wf-decl $prefix (DConst $n $T))
      (if $ok
-       (wf-sig-prefix (SCons $d $prefix) $rest)
+       (wf-sig-prefix (SCons (DConst $n $T) $prefix) $rest)
+       False)))
+(= (wf-sig-prefix $prefix (SCons (DDef $n $T $body) $rest))
+   (let $ok (wf-decl $prefix (DDef $n $T $body))
+     (if $ok
+       (wf-sig-prefix (SCons (DDef $n $T $body) $prefix) $rest)
+       False)))
+(= (wf-sig-prefix $prefix (SCons (DThm $n $T $body) $rest))
+   (let $ok (wf-decl $prefix (DThm $n $T $body))
+     (if $ok
+       (wf-sig-prefix (SCons (DConst $n $T) $prefix) $rest)
+       False)))
+(= (wf-sig-prefix $prefix (SCons (DAxiom $n $T) $rest))
+   (let $ok (wf-decl $prefix (DAxiom $n $T))
+     (if $ok
+       (wf-sig-prefix (SCons (DAxiom $n $T) $prefix) $rest)
        False)))
 
 (= (sig-admitted $sig)
@@ -147,10 +173,17 @@
      (if $u (wf-sig-prefix SNil $sig) False)))
 
 ; ---------- theorem provenance over checked proof terms ----------------------
+(= (decl-axioms-of SNil $sig $x) ANil)
+(= (decl-axioms-of (SCons (DThm $c $T $body) $rest) $sig $x)
+   (if (== $x $c) (term-axioms $sig $body) (decl-axioms-of $rest $sig $x)))
+(= (decl-axioms-of (SCons (DConst $c $T) $rest) $sig $x) (decl-axioms-of $rest $sig $x))
+(= (decl-axioms-of (SCons (DDef $c $T $body) $rest) $sig $x) (decl-axioms-of $rest $sig $x))
+(= (decl-axioms-of (SCons (DAxiom $c $T) $rest) $sig $x) (decl-axioms-of $rest $sig $x))
+
 (= (term-axioms $sig (Var $k)) ANil)
 (= (term-axioms $sig (Srt $s)) ANil)
 (= (term-axioms $sig (Con $c))
-   (if (is-axiom-name $sig $c) (ACons $c ANil) ANil))
+   (if (is-axiom-name $sig $c) (ACons $c ANil) (decl-axioms-of $sig $sig $c)))
 (= (term-axioms $sig (Def $c)) ANil)
 (= (term-axioms $sig (Pi $A $B)) (ax-union (term-axioms $sig $A) (term-axioms $sig $B)))
 (= (term-axioms $sig (Lam $A $b)) (ax-union (term-axioms $sig $A) (term-axioms $sig $b)))
@@ -168,6 +201,75 @@
    (case (sig-admitted $sig)
      ((True (kernel-check-checked $sig $term $type (check-result $sig CtxNil $term $type)))
       (False (Err signature-not-admitted)))))
+
+; Batch checking keeps the admission fact lexical: `sig-admitted` is computed once
+; for the batch, and no public "checked signature" token is exposed or forgeable.
+(= (kernel-check-job $sig (Check $term $type))
+   (kernel-check-checked $sig $term $type (check-result $sig CtxNil $term $type)))
+(= (kernel-check-batch-open $sig Nil) Nil)
+(= (kernel-check-batch-open $sig (Cons $job $rest))
+   (Cons (kernel-check-job $sig $job) (kernel-check-batch-open $sig $rest)))
+(= (kernel-check-batch $sig $jobs)
+   (case (sig-admitted $sig)
+     ((True (kernel-check-batch-open $sig $jobs))
+      (False (Err signature-not-admitted)))))
+
+(= (kernel-check-expect-job $sig (Expect $term $type $expected))
+   (== (kernel-check-job $sig (Check $term $type)) $expected))
+(= (kernel-check-batch-expect-open $sig Nil) True)
+(= (kernel-check-batch-expect-open $sig (Cons $job $rest))
+   (if (kernel-check-expect-job $sig $job)
+     (kernel-check-batch-expect-open $sig $rest)
+     False))
+(= (kernel-check-batch-expect $sig $jobs)
+   (case (sig-admitted $sig)
+     ((True (kernel-check-batch-expect-open $sig $jobs))
+      (False False))))
+
+; Compact batch judgment checking avoids retaining the full CheckedPrf payload for
+; every job.  Use the one-shot `kernel-check` path when the proof/provenance value
+; itself is the artifact under test.
+(= (kernel-check-judgment $sig (Accept $term $type))
+   (check-result $sig CtxNil $term $type))
+(= (kernel-check-judgment $sig (Reject $term $type))
+   (if (check-result $sig CtxNil $term $type) False True))
+(= (kernel-check-batch-judgments-open $sig Nil) True)
+(= (kernel-check-batch-judgments-open $sig (Cons $job $rest))
+   (if (kernel-check-judgment $sig $job)
+     (kernel-check-batch-judgments-open $sig $rest)
+     False))
+(= (kernel-check-batch-judgments $sig $jobs)
+   (case (sig-admitted $sig)
+     ((True (kernel-check-batch-judgments-open $sig $jobs))
+      (False False))))
+
+; Scoped derived-theorem chains: check each DThm body once, extend the local
+; checking prefix with only its opaque constant interface, then check the batch.
+; This keeps the admission fact lexical and exposes no forgeable checked token.
+(= (thm-chain-admitted $prefix SNil) True)
+(= (thm-chain-admitted $prefix (SCons (DThm $n $T $body) $rest))
+   (if (sig-has-name $n $prefix)
+     False
+     (let $ok (wf-decl $prefix (DThm $n $T $body))
+       (if $ok
+         (thm-chain-admitted (SCons (DConst $n $T) $prefix) $rest)
+         False))))
+(= (thm-chain-admitted $prefix (SCons (DConst $n $T) $rest)) False)
+(= (thm-chain-admitted $prefix (SCons (DDef $n $T $body) $rest)) False)
+(= (thm-chain-admitted $prefix (SCons (DAxiom $n $T) $rest)) False)
+
+(= (thm-chain-prefix $prefix SNil) $prefix)
+(= (thm-chain-prefix $prefix (SCons (DThm $n $T $body) $rest))
+   (thm-chain-prefix (SCons (DConst $n $T) $prefix) $rest))
+
+(= (kernel-check-batch-judgments-with-thms-open $sig $thms $jobs)
+   (case (thm-chain-admitted $sig $thms)
+     ((True (kernel-check-batch-judgments-open (thm-chain-prefix $sig $thms) $jobs))
+      (False False))))
+(= (kernel-check-batch-judgments-with-thms $sig $thms $jobs)
+   (case (sig-admitted $sig)
+     ((True (kernel-check-batch-judgments-with-thms-open $sig $thms $jobs))
+      (False False))))
 
 ; ---------- finite curriculum signature --------------------------------------
 (= (good-sig)
@@ -208,6 +310,26 @@
    (SCons (DDef defAsPrf (App (Con prf) (Con falseP)) (Con A))
           SNil))))))
 
+(= (thm-sig)
+   (SCons (DConst nat (Srt type))
+   (SCons (DConst z (Con nat))
+   (SCons (DConst eqn (Pi (Con nat) (Pi (Con nat) (Srt type))))
+   (SCons (DConst rfl (Pi (Con nat) (App (App (Con eqn) (Var 0)) (Var 0))))
+   (SCons (DThm zRefl
+             (App (App (Con eqn) (Con z)) (Con z))
+             (App (Con rfl) (Con z)))
+          SNil))))))
+
+(= (bad-thm-sig)
+   (SCons (DConst nat (Srt type))
+   (SCons (DConst z (Con nat))
+   (SCons (DConst eqn (Pi (Con nat) (Pi (Con nat) (Srt type))))
+   (SCons (DConst rfl (Pi (Con nat) (App (App (Con eqn) (Var 0)) (Var 0))))
+   (SCons (DThm badZRefl
+             (App (App (Con eqn) (Con z)) (Con z))
+             (Con z))
+          SNil))))))
+
 (= (dup-sig)
    (SCons (DConst o (Srt type))
    (SCons (DConst o (Srt type))
@@ -227,6 +349,16 @@
      (Pi (App (Con prf) (Con falseP)) (Pi (Con o) (App (Con prf) (Var 0)))))
    (SCons (DAxiom boom (App (Con prf) (Con falseP)))
           SNil)))))))
+
+(= (thm-axiom-sig)
+   (SCons (DConst o (Srt type))
+   (SCons (DConst prf (Pi (Con o) (Srt type)))
+   (SCons (DConst A (Con o))
+   (SCons (DAxiom axA (App (Con prf) (Con A)))
+   (SCons (DThm useAx
+             (App (Con prf) (Con A))
+             (Con axA))
+          SNil))))))
 
 ; ---------- admission regressions -------------------------------------------
 !(assertEqual (sig-admitted (good-sig)) True)
@@ -285,6 +417,141 @@
      (App (Lam (Con nat) (Var 0)) (Con z))
      (Con nat))
    (Ok (CheckedPrf ANil (App (Lam (Con nat) (Var 0)) (Con z)) (Con nat))))
+
+; Admit-once batch path: one signature admission, many theorem checks, no
+; forgeable checked-signature value escapes.
+!(assertEqual
+   (kernel-check-batch (good-sig)
+     (Cons (Check (App (Con rfl) (Con z)) (App (App (Con eqn) (Con z)) (Con z)))
+     (Cons (Check (Con z) (Con nat))
+     (Cons (Check (Con z) (Con o))
+           Nil))))
+   (Cons (Ok (CheckedPrf ANil
+          (App (Con rfl) (Con z))
+          (App (App (Con eqn) (Con z)) (Con z))))
+   (Cons (Ok (CheckedPrf ANil (Con z) (Con nat)))
+   (Cons (Err check-failed)
+         Nil))))
+
+!(assertEqual
+   (kernel-check-batch (bad-def-sig)
+     (Cons (Check (Def defAsPrf) (App (Con prf) (Con falseP))) Nil))
+   (Err signature-not-admitted))
+
+!(assertEqual
+   (kernel-check-batch-expect (good-sig)
+     (Cons (Expect
+       (App (Con rfl) (Con z))
+       (App (App (Con eqn) (Con z)) (Con z))
+       (Ok (CheckedPrf ANil
+         (App (Con rfl) (Con z))
+         (App (App (Con eqn) (Con z)) (Con z)))))
+     (Cons (Expect (Con z) (Con o) (Err check-failed))
+           Nil)))
+   True)
+
+!(assertEqual
+   (kernel-check-batch-expect (bad-def-sig)
+     (Cons (Expect
+       (Def defAsPrf)
+       (App (Con prf) (Con falseP))
+       (Ok (CheckedPrf ANil (Def defAsPrf) (App (Con prf) (Con falseP)))))
+       Nil))
+   False)
+
+!(assertEqual
+   (kernel-check-batch-judgments (good-sig)
+     (Cons (Accept
+       (App (Con rfl) (Con z))
+       (App (App (Con eqn) (Con z)) (Con z)))
+     (Cons (Reject (Con z) (Con o))
+           Nil)))
+   True)
+
+!(assertEqual
+   (kernel-check-batch-judgments (bad-def-sig)
+     (Cons (Accept (Def defAsPrf) (App (Con prf) (Con falseP))) Nil))
+   False)
+
+!(assertEqual
+   (thm-chain-admitted (good-sig)
+     (SCons (DThm localZRefl
+       (App (App (Con eqn) (Con z)) (Con z))
+       (App (Con rfl) (Con z)))
+       SNil))
+   True)
+
+!(assertEqual
+   (thm-chain-admitted (good-sig)
+     (SCons (DThm z
+       (App (App (Con eqn) (Con z)) (Con z))
+       (App (Con rfl) (Con z)))
+       SNil))
+   False)
+
+!(assertEqual
+   (thm-chain-admitted (good-sig)
+     (SCons (DThm badLocalZRefl
+       (App (App (Con eqn) (Con z)) (Con z))
+       (Con z))
+       SNil))
+   False)
+
+!(assertEqual
+   (kernel-check-batch-judgments-with-thms (good-sig)
+     (SCons (DThm localZRefl
+       (App (App (Con eqn) (Con z)) (Con z))
+       (App (Con rfl) (Con z)))
+       SNil)
+     (Cons (Accept
+       (Con localZRefl)
+       (App (App (Con eqn) (Con z)) (Con z)))
+       Nil))
+   True)
+
+!(assertEqual
+   (kernel-check-batch-judgments-with-thms (bad-def-sig)
+     (SCons (DThm localZRefl
+       (App (App (Con eqn) (Con z)) (Con z))
+       (App (Con rfl) (Con z)))
+       SNil)
+     (Cons (Accept
+       (Con localZRefl)
+       (App (App (Con eqn) (Con z)) (Con z)))
+       Nil))
+   False)
+
+!(assertEqual
+   (kernel-check-batch-judgments-with-thms-open (good-sig)
+     (SCons (DThm openLocalZRefl
+       (App (App (Con eqn) (Con z)) (Con z))
+       (App (Con rfl) (Con z)))
+       SNil)
+     (Cons (Accept
+       (Con openLocalZRefl)
+       (App (App (Con eqn) (Con z)) (Con z)))
+       Nil))
+   True)
+
+!(assertEqual (sig-admitted (thm-sig)) True)
+
+!(assertEqual
+   (kernel-check (thm-sig)
+     (Con zRefl)
+     (App (App (Con eqn) (Con z)) (Con z)))
+   (Ok (CheckedPrf ANil (Con zRefl) (App (App (Con eqn) (Con z)) (Con z)))))
+
+!(assertEqual
+   (kernel-check (thm-axiom-sig)
+     (Con useAx)
+     (App (Con prf) (Con A)))
+   (Ok (CheckedPrf (ACons axA ANil) (Con useAx) (App (Con prf) (Con A)))))
+
+!(assertEqual
+   (def-body-of (thm-sig) zRefl)
+   (Bad unknown-definition))
+
+!(assertEqual (sig-admitted (bad-thm-sig)) False)
 
 !(assertEqual
    (kernel-check (good-sig)

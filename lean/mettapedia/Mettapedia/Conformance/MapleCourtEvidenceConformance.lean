@@ -1,5 +1,5 @@
 import Mettapedia.OSLF.Framework.WMCalculusLanguageDef
-import Mettapedia.Logic.PLNMapleCourtDemo
+import Mettapedia.Examples.PLN.MapleCourtDemo
 
 /-!
 # Maple Court Evidence Conformance: Full Semantic Coherence
@@ -12,7 +12,7 @@ computes correctly through evidence arithmetic operations.
 1. **Reflected arithmetic model** (this file, §1): `BinEvN`/`KEv3N` with
    `hplus`/`krev`/`dirToBin`/`strength` — kernel-checked via `decide`
 2. **Real extractor bridge** (this file, §2): proves the reflected values
-   agree with `mapleCourtEvidence` from `PLNMapleCourtDemo.lean`
+   agree with `mapleCourtEvidence` from `MapleCourtDemo.lean`
 3. **PeTTa runtime**: `maple_court_full_profile.metta` (20+ assertEqual, all pass)
 
 ## Negative examples (§3)
@@ -123,47 +123,47 @@ theorem compositionality_elevator_0 :
 /-! ## §2: Bridge to Real Extractor
 
 The reflected model (§1) uses its own `BinEvN`/`hplus`/`dirToBin`.
-The real extractor is `mapleCourtEvidence` from `PLNMapleCourtDemo.lean`
+The real extractor is `mapleCourtEvidence` from `MapleCourtDemo.lean`
 which operates on `BinaryEvidence` (ℝ≥0∞ pairs) and `MultiEvidence`.
 
 These bridge theorems prove both sides agree on the same concrete values.
 The reflected side uses `decide`; the extractor side reuses the existing
 `fullDay_*` theorems (proved by `simp + norm_num`, also kernel-checked). -/
 
-open Mettapedia.Logic.PLNMapleCourtDemo in
+open Mettapedia.Examples.PLN.MapleCourtDemo in
 /-- Bridge: reflected (4,0) = real extractor roomOccupied output. -/
 theorem bridge_roomOccupied (spec aptP bldP) :
     refl_roomOccupied = ⟨4, 0⟩ ∧
     mapleCourtEvidence spec aptP bldP fullDay .roomOccupied = ⟨4, 0⟩ :=
-  ⟨by decide, Mettapedia.Logic.PLNMapleCourtDemo.fullDay_roomOccupied spec aptP bldP⟩
+  ⟨by decide, Mettapedia.Examples.PLN.MapleCourtDemo.fullDay_roomOccupied spec aptP bldP⟩
 
-open Mettapedia.Logic.PLNMapleCourtDemo in
+open Mettapedia.Examples.PLN.MapleCourtDemo in
 /-- Bridge: reflected (1,0) = real extractor pipeLeak output. -/
 theorem bridge_pipeLeak (spec aptP bldP) :
     refl_pipeLeak = ⟨1, 0⟩ ∧
     mapleCourtEvidence spec aptP bldP fullDay .pipeLeak = ⟨1, 0⟩ :=
-  ⟨by decide, Mettapedia.Logic.PLNMapleCourtDemo.fullDay_pipeLeak spec aptP bldP⟩
+  ⟨by decide, Mettapedia.Examples.PLN.MapleCourtDemo.fullDay_pipeLeak spec aptP bldP⟩
 
-open Mettapedia.Logic.PLNMapleCourtDemo in
+open Mettapedia.Examples.PLN.MapleCourtDemo in
 /-- Bridge: reflected (1,1) = real extractor laundryFree output. -/
 theorem bridge_laundryFree (spec aptP bldP) :
     dirToBin refl_laundry 0 = ⟨1, 1⟩ ∧
     mapleCourtEvidence spec aptP bldP fullDay (.laundryInState 0) = ⟨1, 1⟩ :=
-  ⟨by decide, Mettapedia.Logic.PLNMapleCourtDemo.fullDay_laundryFree spec aptP bldP⟩
+  ⟨by decide, Mettapedia.Examples.PLN.MapleCourtDemo.fullDay_laundryFree spec aptP bldP⟩
 
-open Mettapedia.Logic.PLNMapleCourtDemo in
+open Mettapedia.Examples.PLN.MapleCourtDemo in
 /-- Bridge: reflected (2,0) = real extractor elevatorNormal output. -/
 theorem bridge_elevatorNormal (spec aptP bldP) :
     dirToBin refl_elevator 0 = ⟨2, 0⟩ ∧
     mapleCourtEvidence spec aptP bldP fullDay (.elevatorInState 0) = ⟨2, 0⟩ :=
-  ⟨by decide, Mettapedia.Logic.PLNMapleCourtDemo.fullDay_elevatorNormal spec aptP bldP⟩
+  ⟨by decide, Mettapedia.Examples.PLN.MapleCourtDemo.fullDay_elevatorNormal spec aptP bldP⟩
 
-open Mettapedia.Logic.PLNMapleCourtDemo in
+open Mettapedia.Examples.PLN.MapleCourtDemo in
 /-- Bridge: reflected (0,2) = real extractor elevatorSlow output. -/
 theorem bridge_elevatorSlow (spec aptP bldP) :
     dirToBin refl_elevator 1 = ⟨0, 2⟩ ∧
     mapleCourtEvidence spec aptP bldP fullDay (.elevatorInState 1) = ⟨0, 2⟩ :=
-  ⟨by decide, Mettapedia.Logic.PLNMapleCourtDemo.fullDay_elevatorSlow spec aptP bldP⟩
+  ⟨by decide, Mettapedia.Examples.PLN.MapleCourtDemo.fullDay_elevatorSlow spec aptP bldP⟩
 
 /-! ## §3: Negative Examples (Discrimination Tests)
 
@@ -200,7 +200,7 @@ theorem neg_pipeLeak_not_0_1 : refl_pipeLeak ≠ ⟨0, 1⟩ := by decide
 
 ### Three-layer coherence
 - **Reflected model** (§1): `BinEvN`/`KEv3N` arithmetic, kernel-checked via `decide`
-- **Real extractor** (§2): `mapleCourtEvidence` from `PLNMapleCourtDemo.lean`,
+- **Real extractor** (§2): `mapleCourtEvidence` from `MapleCourtDemo.lean`,
   proved via `simp + norm_num` (also kernel-checked)
 - **PeTTa runtime**: `maple_court_full_profile.metta`, 20+ assertions, all pass
 

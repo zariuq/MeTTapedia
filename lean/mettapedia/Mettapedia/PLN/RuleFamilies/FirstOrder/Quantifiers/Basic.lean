@@ -1,0 +1,52 @@
+import Mettapedia.PLN.Evidence.EvidenceQuantale
+import Mettapedia.Algebra.QuantaleWeakness
+import Foundation.Logic.Predicate.Quantifier
+import Mettapedia.PLN.RuleFamilies.QuantaleSemantics.PBit
+import Mathlib.Data.Fintype.Basic
+import Mathlib.Data.Finset.Basic
+
+/-!
+# PLN First-Order Quantifiers - Basic Definitions
+
+Formalization of PLN first-order quantifiers via:
+- **SatisfyingSet** as subobject classifier (χ : U → Ω where Ω = BinaryEvidence)
+- **Quantifier evaluation** via Goertzel's quantale weakness theory
+- **Integration** with Foundation's first-order logic infrastructure
+
+## Key Insight
+
+Quantifiers = Weakness of Diagonal Relation
+
+For predicate P : U → BinaryEvidence:
+- ForAll($X : P($X)) = weakness({(u,v) | P(u) ∧ P(v)})
+- High weakness = many satisfiers = general statement
+- Low weakness = few satisfiers = specific statement
+
+This gives PLN's third-order probability interpretation naturally.
+
+## Architecture
+
+```
+Foundation FOL          PLN Semantics          Quantale Weakness
+   (syntax)      →    (Frame-valued)    →     (computation)
+      ∀', ∃'             BinaryEvidence              weakness(H)
+```
+
+## References
+
+- Goertzel, "Weakness and Its Quantale"
+- Foundation library (Foundation/Logic/Predicate/Quantifier.lean)
+- This formalization plan (hashed-baking-bumblebee.md)
+-/
+
+namespace Mettapedia.PLN.RuleFamilies.FirstOrder.Quantifiers
+
+open Mettapedia.PLN.Evidence.EvidenceQuantale
+open Mettapedia.Algebra.QuantaleWeakness
+open Mettapedia.PLN.RuleFamilies.QuantaleSemantics.PBit
+open scoped ENNReal
+
+-- Re-export key concepts for convenience
+-- (These are already available via the open statements above)
+
+end Mettapedia.PLN.RuleFamilies.FirstOrder.Quantifiers

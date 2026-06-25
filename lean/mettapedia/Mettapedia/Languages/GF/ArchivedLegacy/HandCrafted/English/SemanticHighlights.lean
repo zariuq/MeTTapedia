@@ -6,7 +6,7 @@ import Mettapedia.Languages.GF.WorldModelSemantics
 import Mettapedia.OSLF.Formula
 import Mettapedia.OSLF.MeTTaIL.Syntax
 import Mettapedia.OSLF.QuantifiedFormula2
-import Mettapedia.Logic.EvidenceQuantale
+import Mettapedia.PLN.Evidence.EvidenceQuantale
 
 /-!
 # GF English Semantic Highlights
@@ -19,7 +19,7 @@ namespace Mettapedia.Languages.GF.HandCrafted.English.SemanticHighlights
 
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.QuantifiedFormula2
-open Mettapedia.Logic.EvidenceQuantale
+open Mettapedia.PLN.Evidence.EvidenceQuantale
 open Mettapedia.Languages.GF.VisibleLayer
 open Mettapedia.Languages.GF.WorldModelSemantics
 open Mettapedia.Languages.GF.WorldModelVisibleBridge

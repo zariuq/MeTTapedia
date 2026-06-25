@@ -1,0 +1,28 @@
+# MettaKernel — build artifacts (do not commit).
+# Sources are: *Script.sml, *.v, *.lean, *.mg, *.metta, *.tex, Holmakefile(s).
+# Result ledgers (*.tsv) are intentionally NOT ignored — decide per-file when staging.
+
+# HOL4 / CakeML: all generated objects, logs, and make-deps live under .hol/
+.hol/
+*Theory.sml
+*Theory.sig
+*Theory.dat
+*.uo
+*.ui
+
+# Megalodon: generated preprocessed includes
+*.mg.pre
+
+# Coq (precautionary — should builds ever land here)
+*.vo
+*.vok
+*.vos
+*.glob
+*.aux
+
+# Lean (precautionary)
+.lake/
+
+# editor / OS
+*~
+.DS_Store

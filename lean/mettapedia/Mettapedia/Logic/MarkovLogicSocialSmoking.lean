@@ -81,7 +81,7 @@ end Templates
 
 section SocialSmoking
 
-open Mettapedia.Logic.PLNWorldModel
+open Mettapedia.PLN.WorldModel.PLNWorldModel
 
 /-- Clause identifiers for the social-smoking ground MLN. -/
 inductive SocialClauseId where

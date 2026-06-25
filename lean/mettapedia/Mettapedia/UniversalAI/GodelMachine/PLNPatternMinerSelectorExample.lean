@@ -1,5 +1,5 @@
 import Mettapedia.UniversalAI.GodelMachine.MetaGoalShellPreservationExample
-import Mettapedia.Logic.IntensionalInheritanceApproximationBridge
+import Mettapedia.KR.ConceptGeometry.Bridges.UniversalAI.IntensionalInheritanceApproximationBridge
 
 /-!
 # Concrete Example: Self-Improving PLN Pattern-Miner Selector
@@ -23,8 +23,8 @@ Negative example:
 
 namespace Mettapedia.UniversalAI.GodelMachine.PLNPatternMinerSelectorExample
 
-open Mettapedia.Logic.UniversalPrediction
-open Mettapedia.Logic.IntensionalInheritance
+open Mettapedia.UniversalAI.UniversalPrediction
+open Mettapedia.KR.ConceptGeometry.IntensionalInheritance
 open Mettapedia.UniversalAI.GodelMachine.MetaGoalShellPreservationExample
 open Mettapedia.UniversalAI.GodelMachine.MetaGoalShellPreservation
 open Mettapedia.Logic.MarkovLogicClauseFactorGraph
@@ -33,10 +33,10 @@ open Mettapedia.Logic.MarkovLogicAbstract.MassState
 open Mettapedia.Logic.MarkovLogicInfiniteVariableNeighborhoodWorldOfViews
 open Mettapedia.Logic.MarkovLogicInfiniteWorldModel
 open Mettapedia.Logic.MarkovLogicTrustTriangleExample
-open Mettapedia.Logic.PLNWorldModel
+open Mettapedia.PLN.WorldModel.PLNWorldModel
 
-abbrev BinString := Mettapedia.Logic.UniversalPrediction.BinString
-abbrev Semimeasure := Mettapedia.Logic.UniversalPrediction.Semimeasure
+abbrev BinString := Mettapedia.UniversalAI.UniversalPrediction.BinString
+abbrev Semimeasure := Mettapedia.UniversalAI.UniversalPrediction.Semimeasure
 
 /-- Deterministic pattern model: once `[false]` is seen, `[false]` remains the
 favored continuation. -/

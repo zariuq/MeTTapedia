@@ -458,16 +458,16 @@ PLN occupies a special position in the hypercube:
    - Carrier: `BinaryEvidence := (n⁺, n⁻)` with the coordinatewise (partial) order
    - Incomparables are fundamental ("more positive evidence but less negative evidence")
    - Therefore there is **no faithful** point-valued representation `Θ : BinaryEvidence → ℝ`
-     (formalized in `Mettapedia.Logic.PLN_KS_Bridge`)
+     (formalized in `Mettapedia.PLN.Evidence.PLN_KS_Bridge`)
    - `toStrength : BinaryEvidence → [0,1]` is a lossy *view* (a forgetful projection), not an identification
 
 The PLN deduction formula:
   sAC = sAB * sBC + (1 - sAB) * (pC - pB * sBC) / (1 - pB)
 
 is best treated as a **strength-level view** of an underlying evidence semantics:
-- foundational carrier: `Mettapedia.Logic.EvidenceQuantale` (evidence counts `(n⁺, n⁻)`)
-- “no faithful point semantics” gate: `Mettapedia.Logic.PLN_KS_Bridge`
-- measure-theoretic derivation (with explicit independence assumptions): `Mettapedia.Logic.PLNDerivation`
+- foundational carrier: `Mettapedia.PLN.Evidence.EvidenceQuantale` (evidence counts `(n⁺, n⁻)`)
+- “no faithful point semantics” gate: `Mettapedia.PLN.Evidence.PLN_KS_Bridge`
+- measure-theoretic derivation (with explicit independence assumptions): `Mettapedia.PLN.RuleFamilies.FirstOrder.PLNDerivation`
 
 ### PLN vs K&S vs Cox Comparison
 
@@ -487,7 +487,7 @@ The deduction formula is DERIVABLE from:
 2. Independence assumption P(C|A,B) ≈ P(C|B)
 3. Fréchet bounds (from basic probability theory)
 
-See: `Mettapedia.Logic.PLNDeduction` and `Mettapedia.Logic.PLNFrechetBounds` -/
+See: `Mettapedia.PLN.RuleFamilies.FirstOrder.PLNDeduction` and `Mettapedia.PLN.RuleFamilies.FirstOrder.PLNFrechetBounds` -/
 def plnSimple : ProbabilityVertex where
   commutativity := .commutative   -- Tensor independence is commutative
   distributivity := .boolean      -- Works on Boolean algebra of events
@@ -514,7 +514,7 @@ This extends Walley's imprecise probabilities but with different semantics:
 - Walley: worst-case bounds
 - PLN: expected-case with credibility levels
 
-See: Chapter 4 of PLN book, `Mettapedia.Logic.EvidenceQuantale` -/
+See: Chapter 4 of PLN book, `Mettapedia.PLN.Evidence.EvidenceQuantale` -/
 def plnIndefinite : ProbabilityVertex where
   commutativity := .commutative   -- Still commutative (tensor)
   distributivity := .boolean
@@ -618,8 +618,8 @@ The Fréchet bounds (proven in PLNFrechetBounds.lean) ensure this is well-define
 
 **Key insight (consistent story)**:
 - The foundational carrier for PLN-style reasoning is **evidence** `(n⁺, n⁻)`, which has a natural
-  partial order with incomparables; see `Mettapedia.Logic.EvidenceQuantale` and
-  `Mettapedia.Logic.PLN_KS_Bridge`.
+  partial order with incomparables; see `Mettapedia.PLN.Evidence.EvidenceQuantale` and
+  `Mettapedia.PLN.Evidence.PLN_KS_Bridge`.
 - The familiar `[0,1]` strength formula is a lossy projection/view (via `toStrength`), not a
   faithful identification of the underlying semantics.
 - In this view, the deduction formula decomposes into a “direct path” term `sAB * sBC` plus an
@@ -1375,16 +1375,16 @@ The hypercube has a deep connection to quantale theory:
 **Key insight (consistent story)**:
 
 - The canonical “PLN” value space in this repo is **evidence** `(n⁺, n⁻)` (see
-  `Mettapedia.Logic.EvidenceQuantale`). This carrier has a natural *partial order* with incomparable
+  `Mettapedia.PLN.Evidence.EvidenceQuantale`). This carrier has a natural *partial order* with incomparable
   elements, so it does **not** admit a faithful point-valued representation `Θ : BinaryEvidence → ℝ`
-  (see `Mettapedia.Logic.PLN_KS_Bridge`).
+  (see `Mettapedia.PLN.Evidence.PLN_KS_Bridge`).
 
 - The familiar strength-level formulas in `[0,1]` are therefore best treated as **views/projections**
   (e.g. `toStrength`) of a richer underlying semantics, not as the foundational carrier.
 
 When a domain *does* support total comparability (the K&S gate), one recovers point-valued
 probability/conditioning and can express deduction in the usual `[0,1]` formulas; see
-`Mettapedia.Logic.PLNDerivation` for the explicit measure-theoretic derivation under independence.
+`Mettapedia.PLN.RuleFamilies.FirstOrder.PLNDerivation` for the explicit measure-theoretic derivation under independence.
 
 ### PLN Inference as Quantale Operations
 
@@ -1398,11 +1398,11 @@ probability/conditioning and can express deduction in the usual `[0,1]` formulas
 
 ### Formalization Files
 
-- `Mettapedia.Logic.PLNDeduction` - Core deduction formula (numeric)
-- `Mettapedia.Logic.PLNDerivation` - Measure-theoretic derivation (explicit independence)
-- `Mettapedia.Logic.PLNInferenceRules` - Chapter 5-style rules (similarity, MP, etc.)
-- `Mettapedia.Logic.EvidenceQuantale` - BinaryEvidence counts as a (Heyting/Frame) truth-value carrier
-- `Mettapedia.Logic.PLN_KS_Bridge` - Totality gate: no faithful `Θ : BinaryEvidence → ℝ`
+- `Mettapedia.PLN.RuleFamilies.FirstOrder.PLNDeduction` - Core deduction formula (numeric)
+- `Mettapedia.PLN.RuleFamilies.FirstOrder.PLNDerivation` - Measure-theoretic derivation (explicit independence)
+- `Mettapedia.PLN.RuleFamilies.FirstOrder.PLNInferenceRules` - Chapter 5-style rules (similarity, MP, etc.)
+- `Mettapedia.PLN.Evidence.EvidenceQuantale` - BinaryEvidence counts as a (Heyting/Frame) truth-value carrier
+- `Mettapedia.PLN.Evidence.PLN_KS_Bridge` - Totality gate: no faithful `Θ : BinaryEvidence → ℝ`
 - `Mettapedia.Implementation.MettaVerification` - MeTTa parity (deduction + consistency helpers)
 - `Mettapedia.Algebra.QuantaleWeakness` - Abstract quantale theory
 
@@ -1498,8 +1498,8 @@ is the enrichment of that operad over [0,1] or ℝ≥0.
 - `Mettapedia.Algebra.QuantaleWeakness` - Quantale morphisms + weakness transport (`map_weakness`)
 - `Mettapedia.ProbabilityTheory.Hypercube.QuantaleSemantics` - Concrete quantale value spaces + morphisms
 - `Mettapedia.ProbabilityTheory.FreeProbability.Basic` - Noncrossing partitions
-- `Mettapedia.Logic.EvidenceQuantale` - BinaryEvidence truth values (partial order + tensor + Heyting ops)
-- `Mettapedia.Logic.PLN_KS_Bridge` - Totality gate: no faithful `Θ : BinaryEvidence → ℝ`
+- `Mettapedia.PLN.Evidence.EvidenceQuantale` - BinaryEvidence truth values (partial order + tensor + Heyting ops)
+- `Mettapedia.PLN.Evidence.PLN_KS_Bridge` - Totality gate: no faithful `Θ : BinaryEvidence → ℝ`
 - Future: `Mettapedia.Algebra.IntervalQuantale` - Imprecise probability
 - Future: `Mettapedia.Algebra.FreeQuantale` - Free probability quantale
 -/

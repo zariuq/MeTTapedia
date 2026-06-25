@@ -131,7 +131,7 @@ concrete DocTextClaimsEng of DocTextClaims = {
     Clm_00126 = {s = "Positive and negative evidence counts correspond to known bits in partial bit vectors"} ;
     Clm_00127 = {s = "PredicateFibration.lean is presheaf change-of-base, frame fibers, and Beck-Chevalley components used by NTT"} ;
     Clm_00128 = {s = "Premise is freshness, congruence, and relationQuery constraints"} ;
-    Clm_00129 = {s = "Premise-selection ranking transfer is a theorem family in `PremiseSelectionOptimality.lean`"} ;
+    Clm_00129 = {s = "Premise-selection ranking transfer is a theorem family in `Optimality.lean`"} ;
     Clm_00130 = {s = "Process-calculus modules are available"} ;
     Clm_00131 = {s = "ProcessCalculi formalizes pi-calculus and rho-calculus with operational semantics, structural congruence, and OSLF instances"} ;
     Clm_00132 = {s = "ProcessCalculi/README.md contains detailed architecture and proof status"} ;
@@ -251,7 +251,7 @@ concrete DocTextClaimsEng of DocTextClaims = {
     Clm_00246 = {s = "The scope isn't blanket future-work parity"} ;
     Clm_00247 = {s = "The semantic bridge is GF -> Pattern -> Store -> QFormula -> Evidence -> NTT"} ;
     Clm_00248 = {s = "The semantic bridge targets OSLF evidence semantics"} ;
-    Clm_00249 = {s = "The semantics decision tree is `Mettapedia/Logic/SemanticsDecisionTree.lean`"} ;
+    Clm_00249 = {s = "The semantics decision tree is `Mettapedia/PLN/Comparisons/NARS/SemanticsDecisionTree.lean`"} ;
     Clm_00250 = {s = "The small-only test suite is 141 of 141"} ;
     Clm_00251 = {s = "The spec-facing MeTTa slice uses `Mettapedia/OSLF/MeTTaCore/FullLanguageDef.lean`"} ;
     Clm_00252 = {s = "The structure map lists core module paths and theorem hosts"} ;

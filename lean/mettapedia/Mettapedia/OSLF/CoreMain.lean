@@ -51,12 +51,12 @@ import Mettapedia.OSLF.Formula
 import Mettapedia.OSLF.Decidability
 import Mettapedia.OSLF.QuantifiedFormula
 import Mettapedia.OSLF.QuantifiedFormula2
-import Mettapedia.Logic.OSLFDistinctionGraph
-import Mettapedia.Logic.OSLFDistinctionGraphWeighted
-import Mettapedia.Logic.OSLFDistinctionGraphWM
-import Mettapedia.Logic.OSLFDistinctionGraphEntropy
-import Mettapedia.Logic.OSLFKripkeBridge
-import Mettapedia.Logic.OSLFImageFinite
+import Mettapedia.OSLF.Framework.DistinctionGraph
+import Mettapedia.OSLF.Framework.DistinctionGraph.Weighted
+import Mettapedia.OSLF.Framework.DistinctionGraph.WorldModel
+import Mettapedia.OSLF.Framework.DistinctionGraph.Entropy
+import Mettapedia.OSLF.Bridges.Foundation.Kripke
+import Mettapedia.OSLF.Framework.ImageFinite
 import Mettapedia.OSLF.Framework.PiRhoCanonicalBridge
 import Mettapedia.OSLF.Framework.SubstitutabilityTheorem1
 import Mettapedia.OSLF.PathMap
@@ -313,14 +313,14 @@ theorem coreMain_piRho_contract_projection_api
           Mettapedia.OSLF.Framework.PiRhoCanonicalBridge.rhoCoreStarRel)
       (I : Mettapedia.OSLF.Formula.AtomSem)
       {p q : Mettapedia.OSLF.MeTTaIL.Syntax.Pattern},
-      Mettapedia.Logic.OSLFKSUnificationSketch.OSLFObsEq S.rel I p q →
-      Mettapedia.Logic.OSLFKSUnificationSketch.Bisimilar S.rel p q)
+      Mettapedia.OSLF.Framework.KSUnificationSketch.OSLFObsEq S.rel I p q →
+      Mettapedia.OSLF.Framework.KSUnificationSketch.Bisimilar S.rel p q)
     ∧
     (∀ (I : Mettapedia.OSLF.Formula.AtomSem)
       {p q : Mettapedia.OSLF.MeTTaIL.Syntax.Pattern},
-      Mettapedia.Logic.OSLFKSUnificationSketch.OSLFObsEq
+      Mettapedia.OSLF.Framework.KSUnificationSketch.OSLFObsEq
         Mettapedia.OSLF.Framework.PiRhoCanonicalBridge.rhoCoreCanonicalRel I p q →
-      Mettapedia.Logic.OSLFKSUnificationSketch.Bisimilar
+      Mettapedia.OSLF.Framework.KSUnificationSketch.Bisimilar
         Mettapedia.OSLF.Framework.PiRhoCanonicalBridge.rhoCoreCanonicalRel p q) := by
   let C :=
     coreMain_piRho_canonical_contract
@@ -883,7 +883,7 @@ theorem coreMain_theorem1_langReduces_imageFinite
   exact coreMain_theorem1_substitutability_imageFinite
     (R := Mettapedia.OSLF.Framework.TypeSynthesis.langReduces lang)
     (I := I)
-    (hImageFinite := Mettapedia.Logic.OSLFImageFinite.imageFinite_langReduces lang)
+    (hImageFinite := Mettapedia.OSLF.Framework.ImageFinite.imageFinite_langReduces lang)
     hPredFinite
 
 /-- CoreMain-facing global-vs-scoped HM endpoint map for canonical π→ρ
@@ -901,10 +901,10 @@ structure CoreMainHMEndpointMap : Prop where
         Set.Finite {q : Mettapedia.OSLF.Framework.Pat |
           Mettapedia.OSLF.Framework.PiRhoCanonicalBridge.rhoCoreCanonicalRel q p})
       (p q : Mettapedia.OSLF.Framework.Pat),
-      Mettapedia.Logic.OSLFDistinctionGraph.indistObs
+      Mettapedia.OSLF.Framework.DistinctionGraph.indistObs
         Mettapedia.OSLF.Framework.PiRhoCanonicalBridge.rhoCoreCanonicalRel I p q
       ↔
-      Mettapedia.Logic.OSLFDistinctionGraph.FullBisimilar
+      Mettapedia.OSLF.Framework.DistinctionGraph.FullBisimilar
         Mettapedia.OSLF.Framework.PiRhoCanonicalBridge.rhoCoreCanonicalRel I p q
   global_derived :
     ∀ (I : Mettapedia.OSLF.Formula.AtomSem)
@@ -912,31 +912,31 @@ structure CoreMainHMEndpointMap : Prop where
         Set.Finite {q : Mettapedia.OSLF.Framework.Pat |
           Mettapedia.OSLF.Framework.PiRhoCanonicalBridge.rhoDerivedCanonicalRel q p})
       (p q : Mettapedia.OSLF.Framework.Pat),
-      Mettapedia.Logic.OSLFDistinctionGraph.indistObs
+      Mettapedia.OSLF.Framework.DistinctionGraph.indistObs
         Mettapedia.OSLF.Framework.PiRhoCanonicalBridge.rhoDerivedCanonicalRel I p q
       ↔
-      Mettapedia.Logic.OSLFDistinctionGraph.FullBisimilar
+      Mettapedia.OSLF.Framework.DistinctionGraph.FullBisimilar
         Mettapedia.OSLF.Framework.PiRhoCanonicalBridge.rhoDerivedCanonicalRel I p q
   scoped_scquot_core :
     ∀ (I : Mettapedia.OSLF.Formula.AtomSem)
       (carrier : Finset Mettapedia.OSLF.Framework.Pat)
       (p q : Mettapedia.OSLF.Framework.Pat),
-      Mettapedia.Logic.OSLFDistinctionGraph.indistObs
+      Mettapedia.OSLF.Framework.DistinctionGraph.indistObs
         (Mettapedia.OSLF.Framework.PiRhoCanonicalBridge.rhoCoreCanonicalSCQuotRelOn carrier)
         I p q
       ↔
-      Mettapedia.Logic.OSLFDistinctionGraph.FullBisimilar
+      Mettapedia.OSLF.Framework.DistinctionGraph.FullBisimilar
         (Mettapedia.OSLF.Framework.PiRhoCanonicalBridge.rhoCoreCanonicalSCQuotRelOn carrier)
         I p q
   scoped_scquot_derived :
     ∀ (I : Mettapedia.OSLF.Formula.AtomSem)
       (carrier : Finset Mettapedia.OSLF.Framework.Pat)
       (p q : Mettapedia.OSLF.Framework.Pat),
-      Mettapedia.Logic.OSLFDistinctionGraph.indistObs
+      Mettapedia.OSLF.Framework.DistinctionGraph.indistObs
         (Mettapedia.OSLF.Framework.PiRhoCanonicalBridge.rhoDerivedCanonicalSCQuotRelOn carrier)
         I p q
       ↔
-      Mettapedia.Logic.OSLFDistinctionGraph.FullBisimilar
+      Mettapedia.OSLF.Framework.DistinctionGraph.FullBisimilar
         (Mettapedia.OSLF.Framework.PiRhoCanonicalBridge.rhoDerivedCanonicalSCQuotRelOn carrier)
         I p q
 
@@ -1067,7 +1067,7 @@ theorem coreMain_paper_parity_theorem_package_langReduces
     ⟨hContract, hFrag, hTogl⟩
   refine ⟨?_, hFrag, hTogl⟩
   exact hContract.imageFinite_iff
-    (Mettapedia.Logic.OSLFImageFinite.imageFinite_langReduces lang) hPredFinite
+    (Mettapedia.OSLF.Framework.ImageFinite.imageFinite_langReduces lang) hPredFinite
 
 /-- Canonical CoreMain paper-parity contract record:
 packages the `langReduces` Theorem-1 endpoint, fragment-parametric full-route
@@ -1204,8 +1204,8 @@ theorem coreMain_paper_parity_full_package
 #check Mettapedia.OSLF.Framework.FULLStatus.strictRemainingCount_eq_zero
 #check Mettapedia.Languages.MeTTa.OSLFCore.FullLanguageDef.mettaFull
 #check Mettapedia.Languages.MeTTa.OSLFCore.FullLanguageDef.mettaFullOSLF
-#check Mettapedia.Logic.OSLFImageFinite.imageFinite_langReduces
-#check Mettapedia.Logic.OSLFImageFinite.hm_converse_langReduces
+#check Mettapedia.OSLF.Framework.ImageFinite.imageFinite_langReduces
+#check Mettapedia.OSLF.Framework.ImageFinite.hm_converse_langReduces
 #check @Mettapedia.OSLF.Framework.PiRhoCanonicalBridge.piRho_coreMain_canonical_contract_end_to_end
 #check @coreMain_piRho_canonical_contract
 #check @coreMain_piRho_contract_projection_api

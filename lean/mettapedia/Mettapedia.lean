@@ -29,6 +29,8 @@ import Mettapedia.GraphTheory.Basic
 
 -- Probability Theory
 import Mettapedia.ProbabilityTheory.Basic
+import Mettapedia.ProbabilityTheory.Moments
+import Mettapedia.ProbabilityTheory.Exchangeability
 import Mettapedia.ProbabilityTheory.Cox
 import Mettapedia.ProbabilityTheory.ImpreciseProbability
 import KnuthSkilling
@@ -91,6 +93,7 @@ import Mettapedia.QuantumTheory.FromSymmetry
 
 -- Algebra
 import Mettapedia.Algebra.QuantaleWeakness
+import Mettapedia.Algebra.TemporalQuantale
 
 -- Category Theory (Hypercube/OSLF framework for quantales)
 import Mettapedia.CategoryTheory.FuzzyFrame
@@ -125,55 +128,57 @@ import Mettapedia.Languages.ProcessCalculi.RhoCalculus.PresentMoment
 -- by `subst; exact` instead of relying on `simp` to unfold the plain `def`).
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.DerivedRepNu
 
+-- Taxonomy migration ledger
+import Mettapedia.TaxonomyMigrationLedger
+
+-- Knowledge representation
+import Mettapedia.KR
+
 -- Logic
 import Mettapedia.Logic.GunkyMereology
 import Mettapedia.Logic.StoneGunkDuality
 import Mettapedia.Logic.Metaphysics
-import Mettapedia.Logic.SolomonoffPrior
-import Mettapedia.Logic.SolomonoffInduction
--- import Mettapedia.Logic.SolomonoffMeasure  -- WIP (outer measure construction is incomplete)
-import Mettapedia.Logic.UniversalPrediction
-import Mettapedia.Logic.PLNDistributional
-import Mettapedia.Logic.PLNTemporal
-import Mettapedia.Logic.PLNDeduction
-import Mettapedia.Logic.PLNFrechetBounds
-import Mettapedia.Logic.PLNQuantaleConnection
-import Mettapedia.Logic.PLNQuantaleDivergence
-import Mettapedia.Logic.PLNEnrichedCategory
-import Mettapedia.Logic.PLNEvidence
-import Mettapedia.Logic.PLN_KS_Bridge
-import Mettapedia.Logic.PLNDeductionComposition
-import Mettapedia.Logic.TemporalQuantale
-import Mettapedia.Logic.WeightedOpenMaps
-import Mettapedia.Logic.OSLFOpenMapBridge
-import Mettapedia.Logic.OpenMapBridgeRegression
-import Mettapedia.Logic.PLNWorldModelHOL
-import Mettapedia.Logic.PLNWorldModelFOL
-import Mettapedia.Logic.PLNWorldModelHOLCompleteness
-import Mettapedia.Logic.PLNWorldModelHOLConsequence
-import Mettapedia.Logic.PLNWorldModelFOLCompleteness
-import Mettapedia.Logic.PLNWorldModelSetTheoryBridge
-import Mettapedia.Logic.PLNWorldModelSetTheoryBridgeRegression
-import Mettapedia.Logic.PLNWorldModelPureKernelBridge
-import Mettapedia.Logic.PLNWorldModelInstitution
-import Mettapedia.Logic.PLNWorldModelHyperdoctrine
-import Mettapedia.Logic.PLNWorldModelCategoricalBridge
-import Mettapedia.Logic.PLNWorldModelNeighborhoodConsequence
-import Mettapedia.Logic.PLNWorldModelKripkeCompleteness
-import Mettapedia.Logic.PLNWorldModelKripkeNeighborhoodEmbedding
-import Mettapedia.Logic.PLNWorldModelKripkeNeighborhoodCanonical
-import Mettapedia.Logic.PLNWorldModelKripkeWeighted
-import Mettapedia.Logic.ConceptOntology
-import Mettapedia.Logic.AbstractInheritance
-import Mettapedia.Logic.NARSInheritance
-import Mettapedia.Logic.PLNWorldModelExperiment
-import Mettapedia.Logic.PLNWorldModelExperimentRegression
-import Mettapedia.Logic.PLNWorldModelExperimentStochastic
-import Mettapedia.Logic.PLNWorldModelExperimentStochasticRegression
+import Mettapedia.UniversalAI.SolomonoffPrior
+import Mettapedia.UniversalAI.SolomonoffInduction
+import Mettapedia.UniversalAI.SolomonoffMeasure
+import Mettapedia.UniversalAI.UniversalPrediction
+import Mettapedia.PLN.TruthValues.PLNDistributional
+import Mettapedia.PLN.RuleFamilies.Temporal
+import Mettapedia.PLN.RuleFamilies.FirstOrder.PLNDeduction
+import Mettapedia.PLN.RuleFamilies.FirstOrder.PLNFrechetBounds
+import Mettapedia.PLN.RuleFamilies.QuantaleSemantics.PLNQuantaleConnection
+import Mettapedia.PLN.RuleFamilies.QuantaleSemantics.PLNQuantaleDivergence
+import Mettapedia.PLN.Bridges.CategoryTheory.PLNEnrichedCategory
+import Mettapedia.PLN.Bridges.KR
+import Mettapedia.PLN.Evidence.PLNEvidence
+import Mettapedia.PLN.Evidence.PLN_KS_Bridge
+import Mettapedia.PLN.RuleFamilies.FirstOrder.PLNDeductionComposition
+import Mettapedia.CategoryTheory.GeneralizedOpenMaps.Weighted
+import Mettapedia.OSLF.Bridges.CategoryTheory.OpenMap
+import Mettapedia.OSLF.Bridges.CategoryTheory.OpenMapRegression
+import Mettapedia.PLN.Bridges.HOL.PLNWorldModelHOL
+import Mettapedia.PLN.Bridges.Logic.WorldModel.PLNWorldModelFOL
+import Mettapedia.PLN.Bridges.HOL.PLNWorldModelHOLCompleteness
+import Mettapedia.PLN.Bridges.HOL.PLNWorldModelHOLConsequence
+import Mettapedia.PLN.Bridges.Logic.WorldModel.PLNWorldModelFOLCompleteness
+import Mettapedia.PLN.Bridges.Logic.WorldModel.PLNWorldModelSetTheoryBridge
+import Mettapedia.PLN.Bridges.Logic.WorldModel.PLNWorldModelSetTheoryBridgeRegression
+import Mettapedia.PLN.Bridges.Languages.WorldModel.PLNWorldModelPureKernelBridge
+import Mettapedia.PLN.WorldModel.PLNWorldModelInstitution
+import Mettapedia.PLN.Bridges.CategoryTheory.WorldModel.PLNWorldModelHyperdoctrine
+import Mettapedia.PLN.Bridges.CategoryTheory.WorldModel.PLNWorldModelCategoricalBridge
+import Mettapedia.PLN.Bridges.Logic.WorldModel.PLNWorldModelNeighborhoodConsequence
+import Mettapedia.PLN.Bridges.Logic.WorldModel.PLNWorldModelKripkeCompleteness
+import Mettapedia.PLN.Bridges.Logic.WorldModel.PLNWorldModelKripkeNeighborhoodEmbedding
+import Mettapedia.PLN.Bridges.Logic.WorldModel.PLNWorldModelKripkeNeighborhoodCanonical
+import Mettapedia.PLN.Bridges.Logic.WorldModel.PLNWorldModelKripkeWeighted
+import Mettapedia.KR.ConceptGeometry.AbstractInheritance
+import Mettapedia.PLN.Comparisons.NARS.NARSInheritance
+import Mettapedia.PLN.WorldModel.Experiment
 -- PLN confidence/strength/ITV characterization tower (finite + infinite:
 -- Ising/Gibbs/DLR and i.i.d. de Finetti).  `PLNTruthTheoryIndex` is the
 -- proof-carrying crown index (headline package `plnTruthTheoryPackage`).
-import Mettapedia.Logic.PLNTruthTheoryIndex
+import Mettapedia.PLN.TruthValues.PLNTruthTheoryIndex
 
 -- Universal AI (Hutter Chapters 2-7)
 import Mettapedia.UniversalAI.SimplicityUncertainty
@@ -216,6 +221,7 @@ import Mettapedia.Conformance.SimplePeTTa
 
 -- Examples
 import Mettapedia.Examples.SymmetricMeasures
+import Mettapedia.Examples.PLN
 
 -- 100 Creative Proofs
 import Mettapedia.HundredProofs

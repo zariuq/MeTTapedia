@@ -62,7 +62,7 @@ open Mettapedia.Languages.GF.StoreToLogicalForm
 open Mettapedia.Languages.GF.WorldModelVisibleBridge
 open Mettapedia.CategoryTheory.PLNInstance
 open Mettapedia.CategoryTheory.NativeTypeTheory
-open Mettapedia.Logic.EvidenceQuantale
+open Mettapedia.PLN.Evidence.EvidenceQuantale
 
 /-! ## 1. BinaryEvidence → NT Object -/
 

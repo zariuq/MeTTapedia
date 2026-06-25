@@ -1,7 +1,7 @@
-import Mettapedia.Logic.ControlledFiniteHiddenMarkovObservedInference
-import Mettapedia.Logic.PLNIndefiniteTruth
-import Mettapedia.Logic.PLNIndefiniteTruthBridge
-import Mettapedia.Logic.PLNWeightTV
+import Mettapedia.ProbabilityTheory.HiddenMarkovModels.ControlledFiniteHiddenMarkovObservedInference
+import Mettapedia.PLN.TruthValues.PLNIndefiniteTruth
+import Mettapedia.PLN.TruthValues.PLNIndefiniteTruthBridge
+import Mettapedia.PLN.TruthValues.PLNWeightTV
 import Mettapedia.UniversalAI.ControlledFiniteHiddenMarkovBridge
 import Mettapedia.UniversalAI.BayesianAgents.Core
 
@@ -24,8 +24,8 @@ noncomputable section
 
 namespace Mettapedia.Logic.WMControlledFiniteHiddenMarkovCredal
 
-open Mettapedia.Logic.ControlledFiniteHiddenMarkovModel
-open Mettapedia.Logic.ControlledFiniteHiddenMarkovObservedInference
+open Mettapedia.ProbabilityTheory.HiddenMarkovModels.ControlledFiniteHiddenMarkovModel
+open Mettapedia.ProbabilityTheory.HiddenMarkovModels.ControlledFiniteHiddenMarkovObservedInference
 open Mettapedia.UniversalAI.ControlledFiniteHiddenMarkovBridge
 open Mettapedia.UniversalAI.BayesianAgents.Core
 open scoped ENNReal BigOperators
@@ -141,7 +141,7 @@ width. -/
 noncomputable def cycleCountCredibility
     (κ : ℝ)
     (zs : List (CycleObservation Action obs)) : ℝ :=
-  Mettapedia.Logic.PLNWeightTV.w2c ((zs.length : ℝ) / κ)
+  Mettapedia.PLN.TruthValues.PLNWeightTV.w2c ((zs.length : ℝ) / κ)
 
 theorem cycleCountCredibility_mem_unit
     (κ : ℝ)
@@ -151,7 +151,7 @@ theorem cycleCountCredibility_mem_unit
   unfold cycleCountCredibility
   have hw_nonneg : 0 ≤ (zs.length : ℝ) / κ := by
     exact div_nonneg (Nat.cast_nonneg zs.length) (le_of_lt hκ)
-  exact Mettapedia.Logic.PLNWeightTV.WTV.w2c_bounds _ hw_nonneg
+  exact Mettapedia.PLN.TruthValues.PLNWeightTV.WTV.w2c_bounds _ hw_nonneg
 
 /-- Generic bridge from the local controlled-HMM credal interval into the live
 PLN indefinite truth-value surface. -/
@@ -159,8 +159,8 @@ noncomputable abbrev IndefiniteTruthValue.toPLNITV
     (tv : IndefiniteTruthValue)
     (credibility : ℝ)
     (hcred : credibility ∈ Set.Icc 0 1) :
-    Mettapedia.Logic.PLNIndefiniteTruth.ITV :=
-  Mettapedia.Logic.PLNIndefiniteTruthBridge.ofBoundsAndCredibility
+    Mettapedia.PLN.TruthValues.PLNIndefiniteTruth.ITV :=
+  Mettapedia.PLN.TruthValues.PLNIndefiniteTruthBridge.ofBoundsAndCredibility
     tv.lower tv.upper credibility tv.valid tv.lower_nonneg tv.upper_le_one hcred
 
 /-- Operational bridge: turn a controlled-HMM credal filtering interval into the
@@ -173,7 +173,7 @@ noncomputable def filteringCredalPLNITV
     (zs : List (CycleObservation Action obs))
     (q : Fin latent)
     (hobs : ∀ i, observedCycleProb (Θ i) zs ≠ 0) :
-    Mettapedia.Logic.PLNIndefiniteTruth.ITV :=
+    Mettapedia.PLN.TruthValues.PLNIndefiniteTruth.ITV :=
   (filteringCredalTruthValue Θ zs q hobs).toPLNITV
     (cycleCountCredibility (Action := Action) (obs := obs) κ zs)
     (cycleCountCredibility_mem_unit (Action := Action) (obs := obs) κ hκ zs)
@@ -488,7 +488,7 @@ noncomputable abbrev oneStepQValuePLNITV
     (Θ : ι → ControlledFiniteHMMParam Action latent obs)
     (zs : List (CycleObservation Action obs))
     (a : Action) :
-    Mettapedia.Logic.PLNIndefiniteTruth.ITV :=
+    Mettapedia.PLN.TruthValues.PLNIndefiniteTruth.ITV :=
   IndefiniteTruthValue.toPLNITV
     (oneStepQValueCredalTruthValue Θ zs a)
     (cycleCountCredibility (Action := Action) (obs := obs) κ zs)
@@ -529,7 +529,7 @@ theorem qValue_historyOfCycles_one_mem_PLNITV_interval
     itv.lower ≤ qValue (toEnvironment (Θ i)) π γ (historyOfCycles zs) a 1 ∧
       qValue (toEnvironment (Θ i)) π γ (historyOfCycles zs) a 1 ≤ itv.upper := by
   simpa [oneStepQValuePLNITV, IndefiniteTruthValue.toPLNITV,
-    Mettapedia.Logic.PLNIndefiniteTruthBridge.ofBoundsAndCredibility,
+    Mettapedia.PLN.TruthValues.PLNIndefiniteTruthBridge.ofBoundsAndCredibility,
     oneStepQValueCredalTruthValue]
     using qValue_historyOfCycles_one_mem_envelope Θ π γ zs a i
 
@@ -623,7 +623,7 @@ noncomputable abbrev oneStepOptimalValuePLNITV
     (hκ : 0 < κ)
     (Θ : ι → ControlledFiniteHMMParam Action latent obs)
     (zs : List (CycleObservation Action obs)) :
-    Mettapedia.Logic.PLNIndefiniteTruth.ITV :=
+    Mettapedia.PLN.TruthValues.PLNIndefiniteTruth.ITV :=
   IndefiniteTruthValue.toPLNITV
     (oneStepOptimalValueCredalTruthValue Θ zs)
     (cycleCountCredibility (Action := Action) (obs := obs) κ zs)
@@ -657,7 +657,7 @@ theorem optimalValue_historyOfCycles_two_mem_PLNITV_interval
     itv.lower ≤ optimalValue (toEnvironment (Θ i)) γ (historyOfCycles zs) 2 ∧
       optimalValue (toEnvironment (Θ i)) γ (historyOfCycles zs) 2 ≤ itv.upper := by
   simpa [oneStepOptimalValuePLNITV, IndefiniteTruthValue.toPLNITV,
-    Mettapedia.Logic.PLNIndefiniteTruthBridge.ofBoundsAndCredibility,
+    Mettapedia.PLN.TruthValues.PLNIndefiniteTruthBridge.ofBoundsAndCredibility,
     oneStepOptimalValueCredalTruthValue]
     using optimalValue_historyOfCycles_two_mem_envelope Θ γ zs i
 

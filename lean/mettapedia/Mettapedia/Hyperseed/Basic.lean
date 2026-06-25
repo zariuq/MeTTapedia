@@ -1,6 +1,6 @@
-import Mettapedia.Logic.SufficientStatisticSurface
-import Mettapedia.Logic.PLNWorldModelFixpointCascade
-import Mettapedia.Logic.PLNWorldModelFixpointClosure
+import Mettapedia.PLN.WorldModel.SufficientStatisticSurface
+import Mettapedia.PLN.WorldModel.Fixpoint.PLNWorldModelFixpointCascade
+import Mettapedia.PLN.WorldModel.Fixpoint.PLNWorldModelFixpointClosure
 import Mettapedia.Hyperseed.Ultrainfinitism
 
 /-!
@@ -18,14 +18,14 @@ machinery into forms that are convenient for OpenClaw-style observation flows.
 
 namespace Mettapedia.Hyperseed
 
-open Mettapedia.Logic
-open Mettapedia.Logic.EvidenceClass
-open Mettapedia.Logic.EvidenceQuantale
-open Mettapedia.Logic.PLNWorldModel
-open Mettapedia.Logic.PLNWorldModelAdditive
-open Mettapedia.Logic.PLNWorldModelFixpointClosure
-open Mettapedia.Logic.PLNWorldModelFixpointCascade
-open Mettapedia.Logic.SufficientStatisticSurface
+open Mettapedia.PLN.Evidence.EvidenceClass
+open Mettapedia.PLN.Evidence.EvidenceQuantale
+open Mettapedia.PLN.WorldModel.PLNWorldModel
+open Mettapedia.PLN.WorldModel.PLNWorldModelAdditive
+open Mettapedia.PLN.WorldModel.Fixpoint.PLNWorldModelFixpointClosure
+open Mettapedia.PLN.WorldModel.Fixpoint.PLNWorldModelFixpointCascade
+open Mettapedia.PLN.WorldModel
+open Mettapedia.PLN.WorldModel.SufficientStatisticSurface
 
 /-! ## Observation envelope -/
 

@@ -23,6 +23,8 @@ require catLogic from "Mettapedia/CategoricalLogic"
 
 require Metatheory from "../externals/Metatheory"
 
+require MettaHyperonFull from "../externals/LeaTTa"
+
 require algorithms from "../algorithms"
 
 require mettail_core from "../batteries/mettail-core"

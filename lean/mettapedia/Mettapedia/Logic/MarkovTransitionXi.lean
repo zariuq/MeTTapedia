@@ -1,6 +1,6 @@
 import Mettapedia.Logic.WMMarkovCanonical
-import Mettapedia.Logic.PLNWMOSLFBridge
-import Mettapedia.Logic.OSLFEvidenceSemantics
+import Mettapedia.PLN.Bridges.Languages.PLNWMOSLFBridge
+import Mettapedia.OSLF.Framework.EvidenceSemantics
 
 /-!
 # Direct Xi Surface for Markov Transition Atoms
@@ -26,11 +26,11 @@ Negative example:
 namespace Mettapedia.Logic.MarkovTransitionXi
 
 open Mettapedia.Logic
-open Mettapedia.Logic.EvidenceQuantale
+open Mettapedia.PLN.Evidence.EvidenceQuantale
 open Mettapedia.Logic.WMMarkovCanonical
-open Mettapedia.Logic.PLNWorldModel
-open Mettapedia.Logic.PLNWMOSLFBridge
-open Mettapedia.Logic.OSLFEvidenceSemantics
+open Mettapedia.PLN.WorldModel.PLNWorldModel
+open Mettapedia.PLN.Bridges.Languages.PLNWMOSLFBridge
+open Mettapedia.OSLF.Framework.EvidenceSemantics
 open Mettapedia.OSLF.Formula
 open Mettapedia.OSLF.MeTTaIL.Syntax
 
@@ -187,10 +187,10 @@ theorem markovTransitionAtom_wmEvidence_eq_rowProjection
 with the row evidence selected by the summary counts. -/
 theorem markovTransitionAtom_semE_transitionMultiset_eq_of_summary
     {xs : List (Fin k)}
-    {c : Mettapedia.Logic.UniversalPrediction.TransCounts k}
+    {c : Mettapedia.UniversalAI.UniversalPrediction.TransCounts k}
     {last : Fin k}
     (hsum :
-      Mettapedia.Logic.UniversalPrediction.TransCounts.summary (k := k) xs =
+      Mettapedia.UniversalAI.UniversalPrediction.TransCounts.summary (k := k) xs =
         some (c, last))
     (R : Pattern → Pattern → Prop)
     (src dst : Fin k) :
@@ -208,10 +208,10 @@ theorem markovTransitionAtom_semE_transitionMultiset_eq_of_summary
 corresponding row-projected binary evidence. -/
 theorem markovTransitionAtom_threshold_of_summary
     {xs : List (Fin k)}
-    {c : Mettapedia.Logic.UniversalPrediction.TransCounts k}
+    {c : Mettapedia.UniversalAI.UniversalPrediction.TransCounts k}
     {last : Fin k}
     (hsum :
-      Mettapedia.Logic.UniversalPrediction.TransCounts.summary (k := k) xs =
+      Mettapedia.UniversalAI.UniversalPrediction.TransCounts.summary (k := k) xs =
         some (c, last))
     (R : Pattern → Pattern → Prop)
     (tau : ℝ≥0∞)

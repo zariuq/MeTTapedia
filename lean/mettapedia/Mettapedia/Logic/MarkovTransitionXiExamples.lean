@@ -10,10 +10,10 @@ and packages the main semantics as user-facing WM query judgments.
 namespace Mettapedia.Logic.MarkovTransitionXiExamples
 
 open Mettapedia.Logic
-open Mettapedia.Logic.EvidenceQuantale
+open Mettapedia.PLN.Evidence.EvidenceQuantale
 open Mettapedia.Logic.WMMarkovCanonical
 open Mettapedia.Logic.MarkovTransitionXi
-open Mettapedia.Logic.PLNWorldModel
+open Mettapedia.PLN.WorldModel.PLNWorldModel
 open Mettapedia.OSLF.MeTTaIL.Syntax
 
 open scoped ENNReal
@@ -75,10 +75,10 @@ theorem markovTransitionAtom_queryJudgment
 encoded transition atom extracts the row selected by the Markov summary. -/
 theorem markovTransitionAtom_queryJudgment_of_summary
     {xs : List (Fin k)}
-    {c : Mettapedia.Logic.UniversalPrediction.TransCounts k}
+    {c : Mettapedia.UniversalAI.UniversalPrediction.TransCounts k}
     {last : Fin k}
     (hsum :
-      Mettapedia.Logic.UniversalPrediction.TransCounts.summary (k := k) xs =
+      Mettapedia.UniversalAI.UniversalPrediction.TransCounts.summary (k := k) xs =
         some (c, last))
     (src dst : Fin k) :
     ⊢q (markov_transitionMultiset (k := k) xs) ⇓
@@ -96,10 +96,10 @@ theorem markovTransitionAtom_queryJudgment_of_summary
 `0 → 1`. -/
 theorem bit01_queryJudgment_of_summary
     {xs : List (Fin 2)}
-    {c : Mettapedia.Logic.UniversalPrediction.TransCounts 2}
+    {c : Mettapedia.UniversalAI.UniversalPrediction.TransCounts 2}
     {last : Fin 2}
     (hsum :
-      Mettapedia.Logic.UniversalPrediction.TransCounts.summary (k := 2) xs =
+      Mettapedia.UniversalAI.UniversalPrediction.TransCounts.summary (k := 2) xs =
         some (c, last)) :
     ⊢q (markov_transitionMultiset (k := 2) xs) ⇓
       ((markovTransitionXiPLN (k := 2)).queryOfAtom

@@ -1071,7 +1071,7 @@ formalized and compiled.
 \code{Match.lean}             & 201 & algorithmic matcher & 0 \\
 \code{MatchSpec.lean}         & 821 & \codepath{matchPattern_correct} & 0 \\
 \hline
-\multicolumn{4}{l}{\textit{Prolog Goal Language (\code{Logic/Prolog/})}} \\
+\multicolumn{4}{l}{\textit{Prolog Goal Language (\code{Languages/Prolog/})}} \\
 \code{Core.lean}              & 220 & \code{PrologGoal} inductive (14 ctors) & 0 \\
 \code{Eval.lean}              & 443 & Prolog evaluation relation & 0 \\
 \code{Prolog.lean}            & 54  & module re-export & 0 \\
@@ -1450,9 +1450,9 @@ goals before evaluation.  We formalize this pipeline in five files.
 
 \subsection{Prolog Goal Language}
 
-\code{Logic/Prolog/Core.lean} (220 lines) defines a Prolog-style goal language
+\code{Languages/Prolog/Core.lean} (220 lines) defines a Prolog-style goal language
 with 14~constructors covering the ISO Prolog control and meta-predicate
-repertoire (re-exported via \code{Logic/Prolog/Prolog.lean} and referenced by
+repertoire (re-exported via \code{Languages/Prolog/Prolog.lean} and referenced by
 \code{PrologBridge.lean}):
 
 \begin{lstlisting}[language=lean]
@@ -1800,7 +1800,7 @@ in Lean~4.
 \paragraph{\MeTTa{} and Hyperon.}
 MeTTa and the Hyperon architecture are described in Goertzel et al.~\cite{goertzel2009pln}.
 The PLN reasoning layer is formalized in other Mettapedia papers
-(see \code{Mettapedia/Logic/PLNCore.lean} et al.).
+(see \code{Mettapedia/PLN/Core/PLNCore.lean} et al.).
 The \OSLF{} framework and its modal type system are formalized separately
 in the companion paper~\cite{leanOSLF2025}.
 

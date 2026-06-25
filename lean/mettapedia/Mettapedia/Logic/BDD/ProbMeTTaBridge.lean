@@ -29,7 +29,7 @@ namespace Mettapedia.Logic.BDDCore
 
 open scoped ENNReal
 open Mettapedia.Logic.LP
-open Mettapedia.Logic.ProbLogCompilation
+open Mettapedia.PLN.Bridges.Languages.ProbLog.Compilation
 
 /-! ## §1 Crown Theorem: BDD-WMC ≥ ProbLog Query Mass (Soundness Direction)
 

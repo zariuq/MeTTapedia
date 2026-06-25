@@ -112,7 +112,7 @@ rg -n --glob '*.lean' 'native_decide' .
 ## Related
 
 - [LP kernel](../../../Logic/LP) — unification, SLD resolution, Herbrand semantics
-- [Prolog layer](../../../Logic/Prolog) — goal language, cut semantics, ISO conformance fixtures (proven against the Lean evaluator)
+- [Prolog layer](../../../Languages/Prolog) — goal language, cut semantics, ISO conformance fixtures (proven against the Lean evaluator)
 - [Conformance harness](../../../../scripts/prolog) — SWI parity checks and ISO coverage
 
 ## References

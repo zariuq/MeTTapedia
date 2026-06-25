@@ -922,14 +922,14 @@ def markovSequenceKernel : Kernel (MarkovParam k) (Nat -> Fin k) :=
 \end{lstlisting}
 
 The critical measurability lemmas are established in
-\texttt{Logic/MarkovDeFinettiMomentProblem.lean}:
+\texttt{ProbabilityTheory/Exchangeability/MarkovDeFinettiMomentProblem.lean}:
 \begin{itemize}
 \item \texttt{continuous\_initProb\_borel}: $\theta \mapsto \theta.\mathrm{init}(a)$ is continuous
 \item \texttt{continuous\_stepProb\_borel}: $\theta \mapsto \theta.\mathrm{trans}(a,b)$ is continuous
 \item \texttt{measurable\_initProb\_borel}, \texttt{measurable\_stepProb\_borel}: Borel measurability follows
 \end{itemize}
 
-The new file \texttt{Logic/MarkovDeFinettiSequenceKernelBorel.lean} (1055 lines)
+The new file \texttt{ProbabilityTheory/Exchangeability/MarkovDeFinettiSequenceKernelBorel.lean} (1055 lines)
 builds the full kernel with \texttt{IsMarkovKernel} instances at each stage,
 including the critical theorem:
 \begin{lstlisting}

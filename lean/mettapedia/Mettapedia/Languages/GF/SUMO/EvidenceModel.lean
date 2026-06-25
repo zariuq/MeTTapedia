@@ -1,6 +1,6 @@
 import Mettapedia.Languages.GF.HandCrafted.Core
-import Mettapedia.Logic.EvidenceKind
-import Mettapedia.Logic.BinEvNat
+import Mettapedia.PLN.Evidence.EvidenceKind
+import Mettapedia.PLN.Evidence.BinEvNat
 
 /-!
 # SUMO Repair BinaryEvidence Model
@@ -24,7 +24,7 @@ Assurance is computed via weighted Beta aggregation:
 
 ## Compatibility
 
-- BinaryEvidence counts (n⁺, n⁻) align with `Mettapedia.Logic.EvidenceQuantale`
+- BinaryEvidence counts (n⁺, n⁻) align with `Mettapedia.PLN.Evidence.EvidenceQuantale`
 - Strength/confidence align with PLN SimpleTruthValue
 - Review votes are meta-evidence with source_type = llmReview/humanReview
 
@@ -37,6 +37,8 @@ Assurance is computed via weighted Beta aggregation:
 -/
 
 namespace Mettapedia.Languages.GF.SUMO.EvidenceModel
+
+open Mettapedia.PLN.Evidence
 
 /-! ## Repair Archetypes (prior strength by error kind)
 
@@ -281,7 +283,7 @@ These govern automatic state transitions:
 def autoApplyThreshold : Float := 0.98
 def holdForReviewThreshold : Float := 0.93
 
-open Mettapedia.Logic
+open Mettapedia.PLN.Evidence
 
 /-! ## Evidence Envelope — Epistemic Assessment Layer
 
@@ -296,7 +298,6 @@ The `contribution` field IS the evidence (Skilling/Goertzel): a "strong against"
 judgment with ESS=3 is `⟨0, 3⟩`. Mixed evidence like "partially supports" is
 `⟨1, 2⟩`. The ESS is `contribution.pos + contribution.neg` (derived, not stored). -/
 
-open Mettapedia.Logic in
 structure EvidenceEnvelope where
   atom : EvidenceAtom
   kind : EvidenceKind

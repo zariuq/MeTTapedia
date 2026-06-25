@@ -1,5 +1,5 @@
 import Mettapedia.Logic.DDLPlus.Core
-import Mettapedia.Logic.WorldModelAdditive
+import Mettapedia.PLN.WorldModel.WorldModelAdditive
 import Mettapedia.Ethics.Core
 import Mettapedia.Ethics.GewirthBridge
 
@@ -30,10 +30,10 @@ WM meta-stability stack (MarkovLogic*, MetaGoalShellPreservation*)
 namespace Mettapedia.Logic.DDLPlus.WMBridge
 
 open Mettapedia.Logic.DDLPlus.Core
-open Mettapedia.Logic.PLNWorldModel
-open Mettapedia.Logic.EvidenceClass
-open Mettapedia.Logic.EvidenceQuantale
-open Mettapedia.Logic.PLNWorldModelAdditive
+open Mettapedia.PLN.WorldModel.PLNWorldModel
+open Mettapedia.PLN.Evidence.EvidenceClass
+open Mettapedia.PLN.Evidence.EvidenceQuantale
+open Mettapedia.PLN.WorldModel.PLNWorldModelAdditive
 open Mettapedia.Ethics
 open Mettapedia.Ethics.Gewirth
 open Mettapedia.Ethics.GewirthBridge

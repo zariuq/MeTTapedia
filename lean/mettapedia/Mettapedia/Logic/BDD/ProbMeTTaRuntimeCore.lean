@@ -30,7 +30,7 @@ Negative example:
 namespace Mettapedia.Logic.BDDCore
 
 open Mettapedia.Logic.LP
-open Mettapedia.Logic.ProbLogCompilation
+open Mettapedia.PLN.Bridges.Languages.ProbLog.Compilation
 
 /-- Source-level ProbMeTTa runtime expressions for the BDD-producing query core
 of `lib_prob.metta`. -/

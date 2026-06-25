@@ -23,9 +23,9 @@ open Mettapedia.Languages.GF.UGCoreFamily
 open Mettapedia.Languages.GF.UGCommonViewCore
 open Mettapedia.Languages.GF.WorldModelSemantics
 open Mettapedia.OSLF.MeTTaIL.Syntax
-open Mettapedia.Logic.EvidenceClass
-open Mettapedia.Logic.EvidenceQuantale
-open Mettapedia.Logic.PLNWorldModel
+open Mettapedia.PLN.Evidence.EvidenceClass
+open Mettapedia.PLN.Evidence.EvidenceQuantale
+open Mettapedia.PLN.WorldModel.PLNWorldModel
 open scoped ENNReal
 
 universe u v

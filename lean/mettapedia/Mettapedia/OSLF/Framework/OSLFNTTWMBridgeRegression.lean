@@ -22,15 +22,15 @@ open Mettapedia.OSLF.Framework.ModalSubobjectBridge
 open Mettapedia.OSLF.Framework.OSLFNTTWMCanonicalClosure
 open Mettapedia.OSLF.Framework.ConstructorCategory
 open Mettapedia.OSLF.Framework.CategoryBridge
-open Mettapedia.Logic.EvidenceClass
-open Mettapedia.Logic.OSLFEvidenceSemantics
-open Mettapedia.Logic.PLNWorldModel
-open Mettapedia.Logic.PLNWorldModelCategoricalBridge.WMHyperdoctrine
+open Mettapedia.PLN.Evidence.EvidenceClass
+open Mettapedia.OSLF.Framework.EvidenceSemantics
+open Mettapedia.PLN.WorldModel.PLNWorldModel
+open Mettapedia.PLN.Bridges.CategoryTheory.WorldModel.PLNWorldModelCategoricalBridge.WMHyperdoctrine
 
 universe u v x
 
 abbrev WMHyper (State : Type x) [EvidenceType State] :=
-  Mettapedia.Logic.PLNWorldModelHyperdoctrine.WMHyperdoctrine.{u, v, 0, x} State
+  Mettapedia.PLN.Bridges.CategoryTheory.WorldModel.PLNWorldModelHyperdoctrine.WMHyperdoctrine.{u, v, 0, x} State
 
 variable {State : Type x} [EvidenceType State] [BinaryWorldModel State Pattern]
 
@@ -208,7 +208,7 @@ theorem topos_representable_transport_pack_fixture
 combines graph-witness transport with the WM institution+Beck-Chevalley
 endpoint statement. -/
 theorem formula_graph_triangle_categorical_fixture
-    (H : Mettapedia.Logic.PLNWorldModelHyperdoctrine.WMHyperdoctrine State)
+    (H : Mettapedia.PLN.Bridges.CategoryTheory.WorldModel.PLNWorldModelHyperdoctrine.WMHyperdoctrine State)
     {P Aobj Bobj D : H.Obj}
     (pi1 : P ⟶ Aobj) (pi2 : P ⟶ Bobj) (fcat : Aobj ⟶ D) (gcat : Bobj ⟶ D)
     (hpb : CategoryTheory.IsPullback pi1 pi2 fcat gcat)
@@ -226,7 +226,7 @@ theorem formula_graph_triangle_categorical_fixture
       (queryOfAtom := queryOfAtom) (φf := φf) (Xobj := Xobj)
       (X := Xgr) (p := p)
     ∧
-    Mettapedia.Logic.PLNWorldModelCategoricalBridge.WMHyperdoctrine.EndpointStatement
+    Mettapedia.PLN.Bridges.CategoryTheory.WorldModel.PLNWorldModelCategoricalBridge.WMHyperdoctrine.EndpointStatement
       (H := H) pi1 pi2 fcat gcat W φcat := by
   simpa using
     (oslf_formula_ntt_graph_triangle_categorical
@@ -323,7 +323,7 @@ theorem semE_fragment_interface_step_fixture
 project the institution/Beck-Chevalley endpoint together with one-step evidence
 closure. -/
 theorem semE_fragment_categorical_endpoint_step_fixture
-    (H : Mettapedia.Logic.PLNWorldModelHyperdoctrine.WMHyperdoctrine.{u, v, 0, 0} SemEState)
+    (H : Mettapedia.PLN.Bridges.CategoryTheory.WorldModel.PLNWorldModelHyperdoctrine.WMHyperdoctrine.{u, v, 0, 0} SemEState)
     {P Aobj Bobj D : H.Obj}
     (pi1 : P ⟶ Aobj) (pi2 : P ⟶ Bobj) (fcat : Aobj ⟶ D) (gcat : Bobj ⟶ D)
     (hpb : CategoryTheory.IsPullback pi1 pi2 fcat gcat)
@@ -343,7 +343,7 @@ theorem semE_fragment_categorical_endpoint_step_fixture
     (p q : Pattern)
     (hstep : OSLFTheoryStep relEnv p q)
     (φcat : H.query Bobj) :
-    Mettapedia.Logic.PLNWorldModelCategoricalBridge.WMHyperdoctrine.EndpointStatement
+    Mettapedia.PLN.Bridges.CategoryTheory.WorldModel.PLNWorldModelCategoricalBridge.WMHyperdoctrine.EndpointStatement
       (H := H) pi1 pi2 fcat gcat (semEState relEnv Iatom φ) φcat
     ∧
     WMEvidenceObligation SemEState SemEQuery
@@ -362,7 +362,7 @@ theorem semE_fragment_categorical_endpoint_step_fixture
 /-- SemE fragment fixture (star): consume the star-closure categorical endpoint
 and project endpoint statement + evidence obligation. -/
 theorem semE_fragment_categorical_endpoint_stepStar_fixture
-    (H : Mettapedia.Logic.PLNWorldModelHyperdoctrine.WMHyperdoctrine.{u, v, 0, 0} SemEState)
+    (H : Mettapedia.PLN.Bridges.CategoryTheory.WorldModel.PLNWorldModelHyperdoctrine.WMHyperdoctrine.{u, v, 0, 0} SemEState)
     {P Aobj Bobj D : H.Obj}
     (pi1 : P ⟶ Aobj) (pi2 : P ⟶ Bobj) (fcat : Aobj ⟶ D) (gcat : Bobj ⟶ D)
     (hpb : CategoryTheory.IsPullback pi1 pi2 fcat gcat)
@@ -382,7 +382,7 @@ theorem semE_fragment_categorical_endpoint_stepStar_fixture
     (p q : Pattern)
     (hstar : OSLFTheoryStepStar relEnv p q)
     (φcat : H.query Bobj) :
-    Mettapedia.Logic.PLNWorldModelCategoricalBridge.WMHyperdoctrine.EndpointStatement
+    Mettapedia.PLN.Bridges.CategoryTheory.WorldModel.PLNWorldModelCategoricalBridge.WMHyperdoctrine.EndpointStatement
       (H := H) pi1 pi2 fcat gcat (semEState relEnv Iatom φ) φcat
     ∧
     WMEvidenceObligation SemEState SemEQuery
@@ -401,7 +401,7 @@ theorem semE_fragment_categorical_endpoint_stepStar_fixture
 /-- SemE fragment fixture (policy star): consume the policy-indexed star
 categorical endpoint wrapper directly (no ad-hoc atom/modal assumptions). -/
 theorem semE_fragment_categorical_endpoint_policy_stepStar_fixture
-    (H : Mettapedia.Logic.PLNWorldModelHyperdoctrine.WMHyperdoctrine.{u, v, 0, 0} SemEState)
+    (H : Mettapedia.PLN.Bridges.CategoryTheory.WorldModel.PLNWorldModelHyperdoctrine.WMHyperdoctrine.{u, v, 0, 0} SemEState)
     {P Aobj Bobj D : H.Obj}
     (pi1 : P ⟶ Aobj) (pi2 : P ⟶ Bobj) (fcat : Aobj ⟶ D) (gcat : Bobj ⟶ D)
     (hpb : CategoryTheory.IsPullback pi1 pi2 fcat gcat)
@@ -418,7 +418,7 @@ theorem semE_fragment_categorical_endpoint_policy_stepStar_fixture
     (p q : Pattern)
     (hstar : OSLFTheoryStepStar relEnv p q)
     (φcat : H.query Bobj) :
-    Mettapedia.Logic.PLNWorldModelCategoricalBridge.WMHyperdoctrine.EndpointStatement
+    Mettapedia.PLN.Bridges.CategoryTheory.WorldModel.PLNWorldModelCategoricalBridge.WMHyperdoctrine.EndpointStatement
       (H := H) pi1 pi2 fcat gcat (semEState relEnv Iatom φ) φcat
     ∧
     WMEvidenceObligation SemEState SemEQuery
@@ -437,7 +437,7 @@ theorem semE_fragment_categorical_endpoint_policy_stepStar_fixture
 /-- SemE fragment fixture (star-rule): consume the dedicated evidence-rule
 constructor generated from the star categorical endpoint package. -/
 theorem semE_fragment_evidence_rule_stepStar_fixture
-    (H : Mettapedia.Logic.PLNWorldModelHyperdoctrine.WMHyperdoctrine.{u, v, 0, 0} SemEState)
+    (H : Mettapedia.PLN.Bridges.CategoryTheory.WorldModel.PLNWorldModelHyperdoctrine.WMHyperdoctrine.{u, v, 0, 0} SemEState)
     {P Aobj Bobj D : H.Obj}
     (pi1 : P ⟶ Aobj) (pi2 : P ⟶ Bobj) (fcat : Aobj ⟶ D) (gcat : Bobj ⟶ D)
     (hpb : CategoryTheory.IsPullback pi1 pi2 fcat gcat)
@@ -475,7 +475,7 @@ theorem semE_fragment_evidence_rule_stepStar_fixture
 /-- SemE fragment fixture (policy star-rule): consume the dedicated
 policy-indexed evidence-rule constructor. -/
 theorem semE_fragment_evidence_rule_policy_stepStar_fixture
-    (H : Mettapedia.Logic.PLNWorldModelHyperdoctrine.WMHyperdoctrine.{u, v, 0, 0} SemEState)
+    (H : Mettapedia.PLN.Bridges.CategoryTheory.WorldModel.PLNWorldModelHyperdoctrine.WMHyperdoctrine.{u, v, 0, 0} SemEState)
     {P Aobj Bobj D : H.Obj}
     (pi1 : P ⟶ Aobj) (pi2 : P ⟶ Bobj) (fcat : Aobj ⟶ D) (gcat : Bobj ⟶ D)
     (hpb : CategoryTheory.IsPullback pi1 pi2 fcat gcat)
@@ -528,7 +528,7 @@ theorem formula_pathOrder_star_endpoint_projection_fixture
     (hfm : CategoryTheory.Mono fm) (hpi2m : CategoryTheory.Mono pi2m)
     {Xmodal : Opposite (ConstructorObj lang)}
     (pmodal : Pattern)
-    (H : Mettapedia.Logic.PLNWorldModelHyperdoctrine.WMHyperdoctrine.{u, v, 0, 0} SemEState)
+    (H : Mettapedia.PLN.Bridges.CategoryTheory.WorldModel.PLNWorldModelHyperdoctrine.WMHyperdoctrine.{u, v, 0, 0} SemEState)
     {P Aobj Bobj D : H.Obj}
     (pi1 : P ⟶ Aobj) (pi2 : P ⟶ Bobj) (fcat : Aobj ⟶ D) (gcat : Bobj ⟶ D)
     (hpb : CategoryTheory.IsPullback pi1 pi2 fcat gcat)
@@ -542,7 +542,7 @@ theorem formula_pathOrder_star_endpoint_projection_fixture
     (p q : Pattern)
     (hstar : OSLFTheoryStepStar relEnv p q)
     (φcat : H.query Bobj) :
-    Mettapedia.Logic.PLNWorldModelCategoricalBridge.WMHyperdoctrine.EndpointStatement
+    Mettapedia.PLN.Bridges.CategoryTheory.WorldModel.PLNWorldModelCategoricalBridge.WMHyperdoctrine.EndpointStatement
       (H := H) pi1 pi2 fcat gcat (semEState relEnv I φf) φcat
     ∧
     WMEvidenceObligation SemEState SemEQuery
@@ -580,7 +580,7 @@ theorem canonical_context_fixpoint_endpoint_fixture
     (hfm : CategoryTheory.Mono fm) (hpi2m : CategoryTheory.Mono pi2m)
     {Xmodal : Opposite (ConstructorObj ctx.lang)}
     (pmodal : Pattern)
-    (H : Mettapedia.Logic.PLNWorldModelHyperdoctrine.WMHyperdoctrine.{u, v, 0, 0} SemEState)
+    (H : Mettapedia.PLN.Bridges.CategoryTheory.WorldModel.PLNWorldModelHyperdoctrine.WMHyperdoctrine.{u, v, 0, 0} SemEState)
     {P Aobj Bobj D : H.Obj}
     (pi1 : P ⟶ Aobj) (pi2 : P ⟶ Bobj) (fcat : Aobj ⟶ D) (gcat : Bobj ⟶ D)
     (hpb : CategoryTheory.IsPullback pi1 pi2 fcat gcat)
@@ -625,10 +625,10 @@ theorem canonical_context_fixpoint_endpoint_fixture
           rcases hRest with ⟨_hDia, hRest⟩
           rcases hRest with ⟨_hEndpoint, hEv⟩
           exact hStrengthFromEvidence hEv }
-    let R : Mettapedia.Logic.PLNWorldModelFixpointClosure.RuleSet SemEState SemEQuery := ({r} : Set _)
-    p ∈ Mettapedia.Logic.PLNWorldModelFixpointClosure.immediateIter R W0 ({p} : Set SemEQuery) 0
-      ∧ q ∈ Mettapedia.Logic.PLNWorldModelFixpointClosure.immediateIter R W0 ({p} : Set SemEQuery) 1
-      ∧ q ∈ Mettapedia.Logic.PLNWorldModelFixpointClosure.leastRuleClosure R W0 ({p} : Set SemEQuery) := by
+    let R : Mettapedia.PLN.WorldModel.Fixpoint.PLNWorldModelFixpointClosure.RuleSet SemEState SemEQuery := ({r} : Set _)
+    p ∈ Mettapedia.PLN.WorldModel.Fixpoint.PLNWorldModelFixpointClosure.immediateIter R W0 ({p} : Set SemEQuery) 0
+      ∧ q ∈ Mettapedia.PLN.WorldModel.Fixpoint.PLNWorldModelFixpointClosure.immediateIter R W0 ({p} : Set SemEQuery) 1
+      ∧ q ∈ Mettapedia.PLN.WorldModel.Fixpoint.PLNWorldModelFixpointClosure.leastRuleClosure R W0 ({p} : Set SemEQuery) := by
   simpa using
     (canonical_star_to_fixpoint_endpoint
       (ctx := ctx)
@@ -660,7 +660,7 @@ theorem canonical_context_rulePack_fixpoint_endpoint_fixture
     (hfm : CategoryTheory.Mono fm) (hpi2m : CategoryTheory.Mono pi2m)
     {Xmodal : Opposite (ConstructorObj ctx.lang)}
     (pmodal : Pattern)
-    (H : Mettapedia.Logic.PLNWorldModelHyperdoctrine.WMHyperdoctrine.{u, v, 0, 0} SemEState)
+    (H : Mettapedia.PLN.Bridges.CategoryTheory.WorldModel.PLNWorldModelHyperdoctrine.WMHyperdoctrine.{u, v, 0, 0} SemEState)
     {P Aobj Bobj D : H.Obj}
     (pi1 : P ⟶ Aobj) (pi2 : P ⟶ Bobj) (fcat : Aobj ⟶ D) (gcat : Bobj ⟶ D)
     (hpb : CategoryTheory.IsPullback pi1 pi2 fcat gcat)
@@ -726,10 +726,10 @@ theorem canonical_context_rulePack_fixpoint_endpoint_fixture
             rcases hRest with ⟨_hDia, hRest⟩
             rcases hRest with ⟨_hEndpoint, hEv⟩
             exact hStrengthFromEvidence hEv }
-      let R : Mettapedia.Logic.PLNWorldModelFixpointClosure.RuleSet SemEState SemEQuery := ({r} : Set _)
-      p ∈ Mettapedia.Logic.PLNWorldModelFixpointClosure.immediateIter R W0 ({p} : Set SemEQuery) 0
-        ∧ q ∈ Mettapedia.Logic.PLNWorldModelFixpointClosure.immediateIter R W0 ({p} : Set SemEQuery) 1
-        ∧ q ∈ Mettapedia.Logic.PLNWorldModelFixpointClosure.leastRuleClosure R W0 ({p} : Set SemEQuery)) := by
+      let R : Mettapedia.PLN.WorldModel.Fixpoint.PLNWorldModelFixpointClosure.RuleSet SemEState SemEQuery := ({r} : Set _)
+      p ∈ Mettapedia.PLN.WorldModel.Fixpoint.PLNWorldModelFixpointClosure.immediateIter R W0 ({p} : Set SemEQuery) 0
+        ∧ q ∈ Mettapedia.PLN.WorldModel.Fixpoint.PLNWorldModelFixpointClosure.immediateIter R W0 ({p} : Set SemEQuery) 1
+        ∧ q ∈ Mettapedia.PLN.WorldModel.Fixpoint.PLNWorldModelFixpointClosure.leastRuleClosure R W0 ({p} : Set SemEQuery)) := by
   let modal : CanonicalModalSquare ctx := {
     Pm := Pm
     Bm := Bm
@@ -826,10 +826,10 @@ theorem canonical_context_transportGoal_rulePack_fixpoint_endpoint_fixture_via_r
         canonicalConsequenceRuleOn_compact_of_goal
           (ctx := ctx) (modal := modal) (cat := cat) (fa := fa)
           (goal := transportGoal.goal)
-      let R : Mettapedia.Logic.PLNWorldModelFixpointClosure.RuleSet SemEState SemEQuery := ({r} : Set _)
-      transportGoal.goal.p ∈ Mettapedia.Logic.PLNWorldModelFixpointClosure.immediateIter R W0 ({transportGoal.goal.p} : Set SemEQuery) 0
-        ∧ transportGoal.goal.q ∈ Mettapedia.Logic.PLNWorldModelFixpointClosure.immediateIter R W0 ({transportGoal.goal.p} : Set SemEQuery) 1
-        ∧ transportGoal.goal.q ∈ Mettapedia.Logic.PLNWorldModelFixpointClosure.leastRuleClosure R W0 ({transportGoal.goal.p} : Set SemEQuery)) := by
+      let R : Mettapedia.PLN.WorldModel.Fixpoint.PLNWorldModelFixpointClosure.RuleSet SemEState SemEQuery := ({r} : Set _)
+      transportGoal.goal.p ∈ Mettapedia.PLN.WorldModel.Fixpoint.PLNWorldModelFixpointClosure.immediateIter R W0 ({transportGoal.goal.p} : Set SemEQuery) 0
+        ∧ transportGoal.goal.q ∈ Mettapedia.PLN.WorldModel.Fixpoint.PLNWorldModelFixpointClosure.immediateIter R W0 ({transportGoal.goal.p} : Set SemEQuery) 1
+        ∧ transportGoal.goal.q ∈ Mettapedia.PLN.WorldModel.Fixpoint.PLNWorldModelFixpointClosure.leastRuleClosure R W0 ({transportGoal.goal.p} : Set SemEQuery)) := by
   simpa using canonical_rulePack_transport_piSigma_and_fixpoint_of_transportGoal
     (ctx := ctx) (modal := modal) (cat := cat) (fa := fa)
     (hPiSigmaPack := hPiSigmaPack)
@@ -872,10 +872,10 @@ theorem canonical_context_transportGoal_rulePack_fixpoint_endpoint_fixture
         canonicalConsequenceRuleOn_compact_of_goal
           (ctx := ctx) (modal := modal) (cat := cat) (fa := fa)
           (goal := transportGoal.goal)
-      let R : Mettapedia.Logic.PLNWorldModelFixpointClosure.RuleSet SemEState SemEQuery := ({r} : Set _)
-      transportGoal.goal.p ∈ Mettapedia.Logic.PLNWorldModelFixpointClosure.immediateIter R W0 ({transportGoal.goal.p} : Set SemEQuery) 0
-        ∧ transportGoal.goal.q ∈ Mettapedia.Logic.PLNWorldModelFixpointClosure.immediateIter R W0 ({transportGoal.goal.p} : Set SemEQuery) 1
-        ∧ transportGoal.goal.q ∈ Mettapedia.Logic.PLNWorldModelFixpointClosure.leastRuleClosure R W0 ({transportGoal.goal.p} : Set SemEQuery)) := by
+      let R : Mettapedia.PLN.WorldModel.Fixpoint.PLNWorldModelFixpointClosure.RuleSet SemEState SemEQuery := ({r} : Set _)
+      transportGoal.goal.p ∈ Mettapedia.PLN.WorldModel.Fixpoint.PLNWorldModelFixpointClosure.immediateIter R W0 ({transportGoal.goal.p} : Set SemEQuery) 0
+        ∧ transportGoal.goal.q ∈ Mettapedia.PLN.WorldModel.Fixpoint.PLNWorldModelFixpointClosure.immediateIter R W0 ({transportGoal.goal.p} : Set SemEQuery) 1
+        ∧ transportGoal.goal.q ∈ Mettapedia.PLN.WorldModel.Fixpoint.PLNWorldModelFixpointClosure.leastRuleClosure R W0 ({transportGoal.goal.p} : Set SemEQuery)) := by
   simpa using canonical_context_transportGoal_rulePack_fixpoint_endpoint_fixture_via_rulePack
     (ctx := ctx) (modal := modal) (cat := cat) (fa := fa)
     (hPiSigmaPack := Mettapedia.OSLF.NativeType.prop12_piSigmaPredicateRulePack
@@ -971,10 +971,10 @@ theorem canonical_compact_rule_fixpoint_fixture
         (ctx := ctx) (modal := modal) (cat := cat) (fa := fa)
         (p := p) (q := q) (hstar := hstar) (φcat := φcat)
         (hStrengthFromEvidence := hStrengthFromEvidence)
-    let R : Mettapedia.Logic.PLNWorldModelFixpointClosure.RuleSet SemEState SemEQuery := ({r} : Set _)
-    p ∈ Mettapedia.Logic.PLNWorldModelFixpointClosure.immediateIter R W0 ({p} : Set SemEQuery) 0
-      ∧ q ∈ Mettapedia.Logic.PLNWorldModelFixpointClosure.immediateIter R W0 ({p} : Set SemEQuery) 1
-      ∧ q ∈ Mettapedia.Logic.PLNWorldModelFixpointClosure.leastRuleClosure R W0 ({p} : Set SemEQuery) := by
+    let R : Mettapedia.PLN.WorldModel.Fixpoint.PLNWorldModelFixpointClosure.RuleSet SemEState SemEQuery := ({r} : Set _)
+    p ∈ Mettapedia.PLN.WorldModel.Fixpoint.PLNWorldModelFixpointClosure.immediateIter R W0 ({p} : Set SemEQuery) 0
+      ∧ q ∈ Mettapedia.PLN.WorldModel.Fixpoint.PLNWorldModelFixpointClosure.immediateIter R W0 ({p} : Set SemEQuery) 1
+      ∧ q ∈ Mettapedia.PLN.WorldModel.Fixpoint.PLNWorldModelFixpointClosure.leastRuleClosure R W0 ({p} : Set SemEQuery) := by
   let goal : CanonicalGoalArgs ctx cat fa := {
     p := p
     q := q
@@ -1013,10 +1013,10 @@ theorem canonical_compact_rulePack_transport_fixpoint_fixture
           (ctx := ctx) (modal := modal) (cat := cat) (fa := fa)
           (p := p) (q := q) (hstar := hstar) (φcat := φcat)
           (hStrengthFromEvidence := hStrengthFromEvidence)
-      let R : Mettapedia.Logic.PLNWorldModelFixpointClosure.RuleSet SemEState SemEQuery := ({r} : Set _)
-      p ∈ Mettapedia.Logic.PLNWorldModelFixpointClosure.immediateIter R W0 ({p} : Set SemEQuery) 0
-        ∧ q ∈ Mettapedia.Logic.PLNWorldModelFixpointClosure.immediateIter R W0 ({p} : Set SemEQuery) 1
-        ∧ q ∈ Mettapedia.Logic.PLNWorldModelFixpointClosure.leastRuleClosure R W0 ({p} : Set SemEQuery)) := by
+      let R : Mettapedia.PLN.WorldModel.Fixpoint.PLNWorldModelFixpointClosure.RuleSet SemEState SemEQuery := ({r} : Set _)
+      p ∈ Mettapedia.PLN.WorldModel.Fixpoint.PLNWorldModelFixpointClosure.immediateIter R W0 ({p} : Set SemEQuery) 0
+        ∧ q ∈ Mettapedia.PLN.WorldModel.Fixpoint.PLNWorldModelFixpointClosure.immediateIter R W0 ({p} : Set SemEQuery) 1
+        ∧ q ∈ Mettapedia.PLN.WorldModel.Fixpoint.PLNWorldModelFixpointClosure.leastRuleClosure R W0 ({p} : Set SemEQuery)) := by
   simpa using canonical_prop12_transport_pack_and_fixpoint_endpoint_compact
     (ctx := ctx) (modal := modal) (cat := cat) (fa := fa)
     (hφTop := hφTop)
@@ -1042,10 +1042,10 @@ theorem canonical_compact_goal_endpoint_fixture
       let r : WMConsequenceRuleOn SemEState SemEQuery :=
         canonicalConsequenceRuleOn_compact_of_goal
           (ctx := ctx) (modal := modal) (cat := cat) (fa := fa) (goal := goal)
-      let R : Mettapedia.Logic.PLNWorldModelFixpointClosure.RuleSet SemEState SemEQuery := ({r} : Set _)
-      goal.p ∈ Mettapedia.Logic.PLNWorldModelFixpointClosure.immediateIter R W0 ({goal.p} : Set SemEQuery) 0
-        ∧ goal.q ∈ Mettapedia.Logic.PLNWorldModelFixpointClosure.immediateIter R W0 ({goal.p} : Set SemEQuery) 1
-        ∧ goal.q ∈ Mettapedia.Logic.PLNWorldModelFixpointClosure.leastRuleClosure R W0 ({goal.p} : Set SemEQuery)) := by
+      let R : Mettapedia.PLN.WorldModel.Fixpoint.PLNWorldModelFixpointClosure.RuleSet SemEState SemEQuery := ({r} : Set _)
+      goal.p ∈ Mettapedia.PLN.WorldModel.Fixpoint.PLNWorldModelFixpointClosure.immediateIter R W0 ({goal.p} : Set SemEQuery) 0
+        ∧ goal.q ∈ Mettapedia.PLN.WorldModel.Fixpoint.PLNWorldModelFixpointClosure.immediateIter R W0 ({goal.p} : Set SemEQuery) 1
+        ∧ goal.q ∈ Mettapedia.PLN.WorldModel.Fixpoint.PLNWorldModelFixpointClosure.leastRuleClosure R W0 ({goal.p} : Set SemEQuery)) := by
   simpa using canonical_prop12_transport_pack_and_fixpoint_endpoint_of_goal
     (ctx := ctx) (modal := modal) (cat := cat) (fa := fa)
     (hφTop := hφTop) (goal := goal)

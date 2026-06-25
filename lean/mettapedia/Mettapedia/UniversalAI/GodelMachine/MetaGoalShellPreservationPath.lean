@@ -25,7 +25,7 @@ open Mettapedia.Logic.MarkovLogicInfiniteFixedRegionDLR
 open Mettapedia.Logic.MarkovLogicInfiniteUniqueness
 open Mettapedia.Logic.MarkovLogicInfiniteUniqueness.ClassicalInfiniteGroundMLNSpec
 open Mettapedia.Logic.MarkovLogicInfiniteWorldModel
-open Mettapedia.Logic.PLNWorldModel
+open Mettapedia.PLN.WorldModel.PLNWorldModel
 open Mettapedia.Logic.MarkovLogicAbstract
 open Mettapedia.Logic.MarkovLogicAbstract.MassState
 open MeasureTheory

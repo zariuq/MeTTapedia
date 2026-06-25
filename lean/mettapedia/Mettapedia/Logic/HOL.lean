@@ -18,6 +18,7 @@ import Mettapedia.Logic.HOL.WitnessedWorld
 import Mettapedia.Logic.HOL.WorldEquality
 import Mettapedia.Logic.HOL.ClassicalExcludedMiddle
 import Mettapedia.Logic.HOL.ClassicalWorld
+import Mettapedia.Logic.HOL.Semantics.Satisfaction
 import Mettapedia.Logic.HOL.TermModel.Domain
 import Mettapedia.Logic.HOL.TermModel.Truth
 import Mettapedia.Logic.HOL.TermModel.Realize

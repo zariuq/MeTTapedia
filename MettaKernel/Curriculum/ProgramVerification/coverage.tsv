@@ -1,0 +1,12 @@
+file	system	status	covers	gap_or_note
+CoqPLF/PV01_imp.v	coq	proved	Imp toy language + big-step operational semantics + concrete evaluations	+ inline Fail negatives; determinism is an optional extension
+CoqPLF/PV02_hoare.v	coq	proved	Hoare logic: skip/assign/seq/consequence rules proved sound vs the semantics + a worked triple	+ inline Fail negative
+CoqPLF/PV03_types_safety.v	coq	proved	progress + preservation for a typed expression language (binder-free; labeled prelude to real STLC)	+ inline Fail negative
+CoqPLF/PV04_stlc.v	coq	proved	REAL STLC (lambda + capture-substitution): canonical forms + PROGRESS	+ inline Fail negative
+CoqPLF/PV05_stlc_preservation.v	coq	proved	REAL STLC: weakening + the SUBSTITUTION LEMMA + PRESERVATION	+ inline Fail negative
+Lean/01_verified_programs.lean	lean	proved	verified rev (involution), length invariant, proof-carrying Subtype, type-indexed Vec.map	-
+Lean/neg_nonterminating.lean	lean	negative	termination checker rejects non-decreasing recursion	-
+MeTTaM1 (metta-ref)	hol4+cakeml+m1	proved+tested+executed	make test-hol (HOL proofs + SML/CakeML) AND make test-oracle (32 CeTTa-normalized comparisons) both PASS, verified this session	run_all uses the fast `make check-coverage` as the default gate; the heavier test-hol/test-oracle were run separately and passed
+HOL4CakeML/smokeScript.sml	hol4	executed	HOL4-verified: dbl with dbl_two and dbl_add proved (built into .hol/objs/)	rung 1 of HOL4CakeML
+HOL4CakeML/cake_translation/dbl_cakeScript.sml	hol4+cakeml	executed	CakeML TRANSLATION: the translator emits verified CakeML for dbl (translate dbl_def)	rung 2 of HOL4CakeML
+HOL4CakeML/neg/neg_typeerrorScript.sml	hol4	negative	HOL4 rejects an ill-typed term (num where bool required)	expected-fail; Holmake produces no theory artifact

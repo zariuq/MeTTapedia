@@ -1,4 +1,4 @@
-import Mettapedia.Logic.DeFinetti
+import Mettapedia.ProbabilityTheory.Exchangeability.DeFinetti
 import Mettapedia.CategoryTheory.DeFinettiHausdorffBridge
 
 /-!
@@ -15,8 +15,8 @@ set_option autoImplicit false
 namespace Mettapedia.CategoryTheory
 
 open MeasureTheory
-open Mettapedia.Logic.Exchangeability
-open Mettapedia.Logic.DeFinetti
+open Mettapedia.ProbabilityTheory.Exchangeability
+open Mettapedia.ProbabilityTheory.Exchangeability.DeFinetti
 open Mettapedia.ProbabilityTheory.HigherOrderProbability
 
 variable {Ω : Type*} [MeasurableSpace Ω]

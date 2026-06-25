@@ -41,7 +41,7 @@ open Mettapedia.Logic.MarkovLogicInfiniteWorldModel
 open Mettapedia.Logic.MarkovLogicInfiniteVariableNeighborhoodWorldOfViews
 open Mettapedia.Logic.MarkovLogicOntologyGrowth
 open Mettapedia.Logic.MarkovLogicTrustTriangleExample
-open Mettapedia.Logic.PLNWorldModel
+open Mettapedia.PLN.WorldModel.PLNWorldModel
 open Mettapedia.Logic.MarkovLogicAbstract
 open Mettapedia.Logic.MarkovLogicAbstract.MassState
 open Mettapedia.UniversalAI.GodelMachine

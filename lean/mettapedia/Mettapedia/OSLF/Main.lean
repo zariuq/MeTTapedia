@@ -53,11 +53,11 @@ import Mettapedia.OSLF.Formula
 import Mettapedia.OSLF.Decidability
 import Mettapedia.OSLF.QuantifiedFormula
 import Mettapedia.OSLF.QuantifiedFormula2
-import Mettapedia.Logic.OSLFDistinctionGraph
-import Mettapedia.Logic.OSLFDistinctionGraphWeighted
-import Mettapedia.Logic.OSLFDistinctionGraphWM
-import Mettapedia.Logic.OSLFDistinctionGraphEntropy
-import Mettapedia.Logic.OSLFKripkeBridge
+import Mettapedia.OSLF.Framework.DistinctionGraph
+import Mettapedia.OSLF.Framework.DistinctionGraph.Weighted
+import Mettapedia.OSLF.Framework.DistinctionGraph.WorldModel
+import Mettapedia.OSLF.Framework.DistinctionGraph.Entropy
+import Mettapedia.OSLF.Bridges.Foundation.Kripke
 -- SpecIndex.lean imports Main (not vice versa) — no cycle
 
 /-!

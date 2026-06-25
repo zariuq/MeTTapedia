@@ -1,7 +1,7 @@
 import Mettapedia.OSLF.Framework.MeTTaFullInstance
 import Mettapedia.OSLF.MeTTaIL.Engine
-import Mettapedia.Logic.OSLFEvidenceSemantics
-import Mettapedia.Logic.PLNWorldModel
+import Mettapedia.OSLF.Framework.EvidenceSemantics
+import Mettapedia.PLN.WorldModel.PLNWorldModel
 import Mettapedia.CategoryTheory.NativeTypeTheory
 import Mettapedia.CategoryTheory.PLNInstance
 
@@ -19,9 +19,9 @@ open Mettapedia.OSLF.MeTTaIL.Engine
 open Mettapedia.OSLF.Framework.TypeSynthesis
 open Mettapedia.OSLF.Framework.MeTTaFullInstance
 open Mettapedia.OSLF.Formula
-open Mettapedia.Logic.EvidenceQuantale
-open Mettapedia.Logic.OSLFEvidenceSemantics
-open Mettapedia.Logic.PLNWorldModel
+open Mettapedia.PLN.Evidence.EvidenceQuantale
+open Mettapedia.OSLF.Framework.EvidenceSemantics
+open Mettapedia.PLN.WorldModel.PLNWorldModel
 open Mettapedia.CategoryTheory.PLNInstance
 open Mettapedia.CategoryTheory.NativeTypeTheory
 
@@ -51,8 +51,8 @@ def mettaEvidenceToNT_hom (X : PLNObj) (e₁ e₂ : BinaryEvidence) (h : e₁ �
 section WMBridge
 
 variable {State : Type*}
-variable [Mettapedia.Logic.EvidenceClass.EvidenceType State]
-variable [Mettapedia.Logic.PLNWorldModel.BinaryWorldModel State Pattern]
+variable [Mettapedia.PLN.Evidence.EvidenceClass.EvidenceType State]
+variable [Mettapedia.PLN.WorldModel.PLNWorldModel.BinaryWorldModel State Pattern]
 
 /-- BinaryEvidence semantics for MeTTaFullLegacy formulas from a world-model state. -/
 noncomputable def mettaSemE

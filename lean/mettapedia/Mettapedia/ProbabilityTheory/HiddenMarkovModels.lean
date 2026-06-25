@@ -1,0 +1,10 @@
+import Mettapedia.ProbabilityTheory.HiddenMarkovModels.FiniteHiddenMarkovModel
+import Mettapedia.ProbabilityTheory.HiddenMarkovModels.FiniteHiddenMarkovObservedInference
+import Mettapedia.ProbabilityTheory.HiddenMarkovModels.ControlledFiniteHiddenMarkovModel
+import Mettapedia.ProbabilityTheory.HiddenMarkovModels.ControlledFiniteHiddenMarkovObservedInference
+
+/-!
+# Hidden Markov models
+
+Finite and controlled hidden Markov model probability surfaces.
+-/

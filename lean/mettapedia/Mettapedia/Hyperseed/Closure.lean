@@ -1,5 +1,5 @@
 import Mettapedia.Hyperseed.ObservationTrace
-import Mettapedia.Logic.PLNWorldModelFixpointCascade
+import Mettapedia.PLN.WorldModel.Fixpoint.PLNWorldModelFixpointCascade
 
 /-!
 # Hyperseed: Closure Wrappers
@@ -14,10 +14,10 @@ seed queries.
 
 namespace Mettapedia.Hyperseed
 
-open Mettapedia.Logic.PLNWorldModel
-open Mettapedia.Logic.EvidenceClass
-open Mettapedia.Logic.PLNWorldModelFixpointClosure
-open Mettapedia.Logic.PLNWorldModelFixpointCascade
+open Mettapedia.PLN.WorldModel.PLNWorldModel
+open Mettapedia.PLN.Evidence.EvidenceClass
+open Mettapedia.PLN.WorldModel.Fixpoint.PLNWorldModelFixpointClosure
+open Mettapedia.PLN.WorldModel.Fixpoint.PLNWorldModelFixpointCascade
 open scoped ENNReal
 
 variable {Obs State Query : Type*}

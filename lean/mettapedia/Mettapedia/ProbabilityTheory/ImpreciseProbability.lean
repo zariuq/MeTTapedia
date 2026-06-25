@@ -5,6 +5,9 @@ import Mettapedia.ProbabilityTheory.ImpreciseProbability.DesirableGambles
 import Mettapedia.ProbabilityTheory.ImpreciseProbability.ProjectiveCredal
 import Mettapedia.ProbabilityTheory.ImpreciseProbability.ProjectiveFiniteWindowRealization
 import Mettapedia.ProbabilityTheory.ImpreciseProbability.Seminorm
+import Mettapedia.ProbabilityTheory.ImpreciseProbability.WalleyBinaryIDM
+import Mettapedia.ProbabilityTheory.ImpreciseProbability.WalleyMultinomialIDM
+import Mettapedia.ProbabilityTheory.ImpreciseProbability.WalleyMultinomialIDMExamples
 
 /-!
 # Imprecise Probability

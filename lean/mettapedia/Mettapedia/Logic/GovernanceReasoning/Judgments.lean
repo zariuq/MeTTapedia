@@ -17,9 +17,9 @@ Formalizes the 3-level inference architecture from the governance-reasoning-engi
 
 namespace Mettapedia.Logic.GovernanceReasoning.Judgments
 
-open Mettapedia.Logic.EvidenceClass
-open Mettapedia.Logic.EvidenceQuantale
-open Mettapedia.Logic.PLNWorldModel
+open Mettapedia.PLN.Evidence.EvidenceClass
+open Mettapedia.PLN.Evidence.EvidenceQuantale
+open Mettapedia.PLN.WorldModel.PLNWorldModel
 open Mettapedia.Logic.GovernanceReasoning.Core
 open Mettapedia.Logic.GovernanceReasoning.Bridge
 

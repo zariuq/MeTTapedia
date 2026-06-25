@@ -2,7 +2,7 @@ import Mettapedia.Logic.LP.Core
 import Mettapedia.Logic.LP.Semantics
 import Mettapedia.Logic.LP.FunctionFree
 import GFCore
-import Mettapedia.Logic.EvidenceKind
+import Mettapedia.PLN.Evidence.EvidenceKind
 
 /-!
 # GFCoreLPBridge — Bridge from GFCore.Atom to LP Herbrand Model

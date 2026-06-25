@@ -37,7 +37,15 @@ trap 'rm -f "$tmp"' EXIT
   # :a;...;ta loops the substitution so multi-hyphen names (decl-type-of) fully convert.
   # The pattern requires alphanumerics on BOTH sides of '-', so the arithmetic minus
   # operator "(- $k 1)" (spaces around it) is left untouched.
-  sed -E ':a; s/([A-Za-z0-9])-([A-Za-z0-9])/\1_\2/g; ta; s/\bassertEqual\b/test/g' "$src"
+  sed -E ':a; s/([A-Za-z0-9])-([A-Za-z0-9])/\1_\2/g; ta; s/\bassertEqual\b/test/g; s/(!\(import! &self kernel_binding_waist_v1)\)/\1_petta)/g; s/(!\(import! &self kernel_binding_decl_v1)\)/\1_petta)/g' "$src" |
+    awk '
+      { lines[NR] = $0; if ($0 == "!(import! &self kernel_binding_decl_v1_petta)") has_decl = 1 }
+      END {
+        for (i = 1; i <= NR; i++) {
+          if (has_decl && lines[i] == "!(import! &self kernel_binding_waist_v1_petta)") continue
+          print lines[i]
+        }
+      }'
 } > "$tmp"
 
 mv -f "$tmp" "$out"   # atomic replace

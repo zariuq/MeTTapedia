@@ -1,0 +1,11 @@
+feature	status	exercised_in	trusted_kernel_or_axiom_note
+impredicative-prop/imax	proved	Lean/15_impredicative_axioms.lean:ImpredTrue,BigProp	a forall landing in Prop is a Prop regardless of the domain's universe (imax u 0 = 0); requires Lean's level algebra.
+function-eta	proved	Lean/14_proof_irrelevance_eta.lean (example: f = fun x => f x)	function eta is accepted by definitional equality.
+structure-eta	proved	Lean/14_proof_irrelevance_eta.lean (example: p = mk p.x p.y)	single-constructor structure eta is accepted by definitional equality.
+proof-irrelevance	proved	Lean/14_proof_irrelevance_eta.lean (example: h1 = h2 : p)	Lean's kernel treats any two proofs of a Prop as definitionally equal.
+quot-lift-computation	proved	Lean/13_quotients.lean:par (examples par(mk 4)=0, par(mk 7)=1)	Quot.lift f h (Quot.mk r a) reduces to f a through a kernel rule.
+quot-ind	proved	Lean/13_quotients.lean (example: par q < 2 by Quot.ind)	induction principle for quotients.
+quot-sound	axiom/trusted	Lean/13_quotients.lean (example: Quot.mk 0 = Quot.mk 2)	Quot.sound is part of Lean's quotient foundation; tracked as a trusted axiom.
+propext	axiom/trusted	Lean/15_impredicative_axioms.lean:eq_of_iff	propositional extensionality; reported by #print axioms in the runner ledger.
+classical-choice	axiom/trusted	Lean/15_impredicative_axioms.lean:em'	Classical.choice (em' depends on propext+Classical.choice+Quot.sound); reported by #print axioms.
+funext	derived/trusted	Lean/15_impredicative_axioms.lean:fun_ext	function extensionality; #print axioms shows it depends on Quot.sound (derived from quotients).

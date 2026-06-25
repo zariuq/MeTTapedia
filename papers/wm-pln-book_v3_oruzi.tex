@@ -240,7 +240,7 @@ patterns---all developed in subsequent chapters.  Semantic drift would
 occur if, for example, the cleaning robot chained strength values
 through the leak$\to$humidity$\to$mold path without tracking the
 variance lost at each step.  The Lean formalization
-(\codepath{Mettapedia/Logic/PLNMapleCourtDemo.lean})
+(\codepath{Mettapedia/Examples/PLN/MapleCourtDemo.lean})
 provides a kernel-checked reference instance.
 
 
@@ -943,7 +943,7 @@ and
 \textbf{Markov extension (April 2026):} The Diaconis--Freedman (1980)
 theorem---extending de~Finetti from i.i.d.\ to Markov-exchangeable
 sequences---is now fully formalized in
-\codepath{Mettapedia/Logic/MarkovDeFinetti*.lean} (28~files,
+\codepath{Mettapedia/ProbabilityTheory/Exchangeability/MarkovDeFinetti*.lean} (28~files,
 ${\sim}$23{,}900~lines, 0~sorry).  Under Markov exchangeability, the
 transition-count matrix $N(i,j)$ is the sufficient statistic,
 extending the chain: Markov exchangeability $\to$ Markov mixture
@@ -1084,7 +1084,7 @@ Under a Beta prior $\text{Beta}(\alpha, \beta)$, the posterior is
 $\text{Beta}(\alpha + n^+, \beta + n^-)$.  The Laplace-smoothed
 strength is $s = (1 + n^+) / (2 + n)$.%
 \footnote{Formalized in \codepath{Mettapedia/Logic/BinaryEvidence.lean}
-and \codepath{Mettapedia/Logic/EvidenceBeta.lean}.}
+and \codepath{Mettapedia/PLN/Bridges/ProbabilityTheory/EvidenceBeta.lean}.}
 
 \paragraph{Dirichlet-Multinomial ($k$-valued).}
 For queries with $k$ outcomes---``Is the elevator normal, slow, or
@@ -1093,7 +1093,7 @@ $(\alpha_1, \ldots, \alpha_k) \in \mathbb{R}_{\ge 0}^k$.
 The posterior mean for category~$i$ is
 $\alpha_i / \sum_j \alpha_j$; confidence is
 $(\sum \alpha_j) / (\sum \alpha_j + k)$.%
-\footnote{Formalized in \codepath{Mettapedia/Logic/EvidenceDirichlet.lean}.}
+\footnote{Formalized in \codepath{Mettapedia/PLN/Bridges/ProbabilityTheory/EvidenceDirichlet.lean}.}
 
 \paragraph{Normal-Gamma (continuous).}
 For real-valued observations such as humidity readings, the sufficient
@@ -1103,7 +1103,7 @@ posterior parameters update as
 $\kappa_n = \kappa_0 + n$,
 $\mu_n = (\kappa_0 \mu_0 + \sum x_i) / \kappa_n$,
 $\alpha_n = \alpha_0 + n/2$.%
-\footnote{Formalized in \codepath{Mettapedia/Logic/EvidenceNormalGamma.lean}.}
+\footnote{Formalized in \codepath{Mettapedia/PLN/Bridges/ProbabilityTheory/EvidenceNormalGamma.lean}.}
 
 \medskip\noindent
 In each case, revision is componentwise addition of sufficient
@@ -1131,7 +1131,7 @@ readings and batch-update at dawn with identical results.}%
 \footnote{The Maple Court example enjoys three-way conformance:
 (1)~30 PeTTa runtime tests across four \code{.metta} files, all
 passing; (2)~34 algebraic theorems in
-\codepath{Mettapedia/Logic/PLNMapleCourtDemo.lean}; and
+\codepath{Mettapedia/Examples/PLN/MapleCourtDemo.lean}; and
 (3)~4 unconditional kernel-checked conformance theorems via a
 specialized reflection checker (the Ramsey36 pattern: write a
 simple pattern match the kernel can reduce, then close with
@@ -1502,7 +1502,7 @@ records a source label and an evidence contribution.  The total
 evidence is the sum over chunks; the provenance is the set of source
 labels.%
 \footnote{Formalized in
-\codepath{Mettapedia/Logic/PLNProvenanceTrackedState.lean}
+\codepath{Mettapedia/PLN/WorldModel/Provenance/PLNProvenanceTrackedState.lean}
 .}%
 \footnote{The underlying provenance-semiring
 framework~\cite{GreenKarvounarakisTannen2007} supports different
@@ -1616,7 +1616,7 @@ PLN v0.9 checks stamps at runtime; the WM calculus proves disjointness
 at compile time via \code{decide}.  PLN v0.9 has no forgetting; the WM
 calculus adds it with proved conservation.%
 \footnote{Formalized in
-\codepath{Mettapedia/Logic/PLNProvenanceInference.lean} (general
+\codepath{Mettapedia/PLN/WorldModel/Provenance/PLNProvenanceInference.lean} (general
 theory) and
 \codepath{Mettapedia/Logic/PLNClassicExamples.lean}
 (20~conformance checks).}
@@ -2464,7 +2464,7 @@ Induction and abduction are
 Bayes-inversions of deduction, with their own screening-off
 conditions.  Revision is evidence addition
 (\S\ref{sec:additive-regime}).%
-\footnote{Formalized in \codepath{Mettapedia/Logic/PLNDerivation.lean}
+\footnote{Formalized in \codepath{Mettapedia/PLN/RuleFamilies/FirstOrder/PLNDerivation.lean}
 (strength formulas, bounds, and Bayes-inversion theorems) and
 \codepath{Mettapedia/Logic/PLNBayesNetFastRules.lean} (BN exactness
 theorems).}
@@ -2511,7 +2511,7 @@ updating); query answering proceeds by exact inference.  The DAG
 structure provides the $\Sigma$ that chain/fork/collider rules
 require.%
 \footnote{Formalized in
-\codepath{Mettapedia/Logic/PLNBayesNetWorldModel.lean}.}
+\codepath{Mettapedia/PLN/WorldModel/BayesNet/PLNBayesNetWorldModel.lean}.}
 
 
 \section{Exact BN Query Bridge}
@@ -2529,7 +2529,7 @@ For a BN world-model class with DAG~$G$ and evidence state~$W$,
 for every query~$q$ in the scope of the BN.%
 \footnote{Formalized:
 \code{bnQueryBridge\_extraction\_eq} in
-\codepath{Mettapedia/Logic/PLNBayesNetWorldModel.lean}.}
+\codepath{Mettapedia/PLN/WorldModel/BayesNet/PLNBayesNetWorldModel.lean}.}
 \end{theorem}
 
 \noindent
@@ -2637,7 +2637,7 @@ the deduction formula with $s_{AB}$.
 $P(A \mid C)$.  Invert:
 $s_{BC} = s_{CB} \cdot s_C / s_B$, then deduction.%
 \footnote{Formalized in
-\codepath{Mettapedia/Logic/PLNDerivation.lean}:
+\codepath{Mettapedia/PLN/RuleFamilies/FirstOrder/PLNDerivation.lean}:
 \code{plnInduction\_eq\_bayes\_deduction},
 \code{plnAbduction\_eq\_bayes\_deduction}.}
 
@@ -2674,7 +2674,7 @@ chain, fork, and collider exactness theorems are simultaneously
 unlocked for that model.  The BN DAG structure itself constitutes
 the proof of the side condition.%
 \footnote{Formalized in
-\codepath{Mettapedia/Logic/PLNBayesNetWorldModel.lean}.}
+\codepath{Mettapedia/PLN/WorldModel/BayesNet/PLNBayesNetWorldModel.lean}.}
 
 
 \section{Worked Proof-Carrying Contraction}
@@ -2743,7 +2743,7 @@ class), and the prediction is the extraction from their sum
 $e_1 \hplus \cdots \hplus e_k$.  The ``nearest'' selection is a scope
 restriction (only the $k$ closest sources revise the state).%
 \footnote{Formalized in
-\codepath{Mettapedia/Logic/PLNBayesNetInference.lean}.}
+\codepath{Mettapedia/PLN/WorldModel/BayesNet/PLNBayesNetInference.lean}.}
 
 \noindent
 These are exact bridges, not analogies: the standard ML classifiers
@@ -2776,7 +2776,7 @@ agrees with the full extraction applied to the same state.  The BN
 structure is the $\Sigma$ that licenses this agreement.%
 \footnote{Formalized:
 \code{factorGraphBridge\_extraction\_comm} in
-\codepath{Mettapedia/Logic/PLNBayesNetInference.lean}.}
+\codepath{Mettapedia/PLN/WorldModel/BayesNet/PLNBayesNetInference.lean}.}
 
 %% ─────────────────────────────────────────────────────────────────
 
@@ -2806,14 +2806,14 @@ chaining at the scalar (view) level rather than the distributional
   $K$-Lipschitz, composing $n$ steps yields a $K^n$-Lipschitz chain.
   For $K > 1$, errors amplify exponentially.%
   \footnote{Formalized in
-  \codepath{Mettapedia/Logic/PLNSensitivityNoGo.lean}.}
+  \codepath{Mettapedia/PLN/InferenceControl/CertifiedChaining/PLNSensitivityNoGo.lean}.}
 
 \item \textbf{Coverage collapse.}  If each step has per-step
   coverage at most $1 - \alpha$, the joint coverage decays as
   $(1 - \alpha)^n \to 0$.  Certified per-step guarantees do not
   compose into chain-length-independent certificates.%
   \footnote{Formalized in
-  \codepath{Mettapedia/Logic/PLNCoverageCollapseNoGo.lean}.}
+  \codepath{Mettapedia/PLN/InferenceControl/CertifiedChaining/PLNCoverageCollapseNoGo.lean}.}
 
 \item \textbf{Topology-CPT gap.}  For a BN with fixed DAG topology,
   the conditioning residual can vary arbitrarily across CPT
@@ -3142,7 +3142,7 @@ There exists a two-state system where the trail-free deterministic
 update enters a period-2 cycle and never reaches a fixed point.%
 \footnote{Formalized:
 \code{orbit\_not\_eventually\_constant}
-in \codepath{Mettapedia/Logic/PLNTrailFreeDynamicsCounterexample.lean}
+in \codepath{Mettapedia/PLN/InferenceControl/ProtocolDynamics/PLNTrailFreeDynamicsCounterexample.lean}
   The counterexample is a single toggle function on
 \code{Bool} with no fixed point.}
 \end{theorem}
@@ -3176,7 +3176,7 @@ $B + 1$ steps of any point.%
 \footnote{Formalized:
 \code{damped\_sp\_spn\_eventually\_constant\_of\_eventual\_fresh}
 and \code{inconsistency\_zero\_within\_bound\_of\_boundedGapFresh}
-in \codepath{Mettapedia/Logic/PLNTrailFreeDampedConvergence.lean}
+in \codepath{Mettapedia/PLN/InferenceControl/ProtocolDynamics/PLNTrailFreeDampedConvergence.lean}
 }
 \end{theorem}
 
@@ -3256,7 +3256,7 @@ Bayesianity---yet differs from additive fusion.%
 \code{maxPoolingOperator} (satisfies all fields of
 \code{PoolingOperator}) and
 \code{maxPoolingOperator\_ne\_fuse} in
-\codepath{Mettapedia/Logic/PremiseSelectionExternalBayesianity.lean}
+\codepath{Mettapedia/PLN/InferenceControl/PremiseSelection/ExternalBayesianity.lean}
 }
 \end{theorem}
 
@@ -3328,7 +3328,7 @@ schedule error.%
 \footnote{Formalized:
 \code{scheduleErrorBound\_of\_pairwise\_bounds} and
 \code{swapAnomalyCount\_zero\_of\_commutativeMergeEvidence}
-in \codepath{Mettapedia/Logic/PLNWorldModelOrderCostBounds.lean}
+in \codepath{Mettapedia/PLN/WorldModel/OrderCost/PLNWorldModelOrderCostBounds.lean}
 }
 \end{theorem}
 
@@ -3340,7 +3340,7 @@ conclusions follow.  A single swap-step check certifies the
 two-step policy threshold.%
 \footnote{Formalized:
 \code{runtimePairwiseOrderCheck\_certifies\_scheduleErrorBound}
-in \codepath{Mettapedia/Logic/PLNWorldModelOrderCostAuditCertificate.lean}
+in \codepath{Mettapedia/PLN/WorldModel/OrderCost/PLNWorldModelOrderCostAuditCertificate.lean}
 }
 \end{theorem}
 
@@ -3349,8 +3349,8 @@ Concrete demos prove that (a)~weighted numeric merge has nontrivial
 non-commutative behavior, and (b)~batch swap under additive merge
 has certified zero order-cost.%
 \footnote{Formalized in
-\codepath{Mettapedia/Logic/PLNWorldModelOrderCostWeightedDemo.lean} and
-\codepath{Mettapedia/Logic/PLNWorldModelOrderCostGasPolicyDemo.lean}.}
+\codepath{Mettapedia/PLN/WorldModel/OrderCost/PLNWorldModelOrderCostWeightedDemo.lean} and
+\codepath{Mettapedia/PLN/WorldModel/OrderCost/PLNWorldModelOrderCostGasPolicyDemo.lean}.}
 
 
 \section{Stochastic Experiment and Blackwell Factorization}
@@ -3372,7 +3372,7 @@ experiments (Blackwell 1953, Le Cam 1964): the value-of-information
 computation is a world-model query about the expected gain from
 evidence not yet observed.%
 \footnote{Formalized in
-\codepath{Mettapedia/Logic/PLNWorldModelExperimentStochastic.lean}
+\codepath{Mettapedia/PLN/WorldModel/Experiment/PLNWorldModelExperimentStochastic.lean}
 }
 
 
@@ -3401,9 +3401,9 @@ catastrophically fail when deployed on a slightly different one---a
 concern entirely absent from the original PLN book but pressing in
 any practical system.%
 \footnote{Formalized in
-\codepath{Mettapedia/Logic/PremiseSelectionSelectorSpec.lean}
+\codepath{Mettapedia/PLN/InferenceControl/PremiseSelection/SelectorSpec.lean}
  and
-\codepath{Mettapedia/Logic/PremiseSelectionRankingStability.lean}
+\codepath{Mettapedia/PLN/InferenceControl/PremiseSelection/RankingStability.lean}
 }
 
 
@@ -3433,7 +3433,7 @@ construction.%
 \code{dependencyCoverage\_mono},
 \code{dependencyCoverage\_insert} (diminishing returns),
 and \code{GreedyChain} in
-\codepath{Mettapedia/Logic/PremiseSelectionCoverage.lean}
+\codepath{Mettapedia/PLN/InferenceControl/PremiseSelection/Coverage.lean}
 }
 
 \maplecourt{%
@@ -3461,7 +3461,7 @@ Coverage and cardinality together are insufficient for risk-sensitive
 selection.  There exist premise sets with identical coverage and
 cardinality but different false-positive risk.%
 \footnote{Formalized:
-\codepath{Mettapedia/Logic/PremiseSelectionCoverageCounterexamples.lean}
+\codepath{Mettapedia/PLN/InferenceControl/PremiseSelection/CoverageCounterexamples.lean}
 }
 \end{theorem}
 \boundaryend
@@ -3490,7 +3490,7 @@ BRGI connects the WM calculus to the combinatorial optimization
 literature: the inference-control problem is a submodular optimization
 problem on a graph of possible inference steps.%
 \footnote{Formalized in
-\codepath{Mettapedia/Logic/PremiseSelectionBRGI.lean}}
+\codepath{Mettapedia/PLN/InferenceControl/PremiseSelection/BRGI.lean}}
 
 
 \section{The Composed End-to-End Pipeline}
@@ -3510,7 +3510,7 @@ the distributional approximation bound of
 Chapter~\ref{ch:error-transport}.%
 \footnote{Formalized:
 \code{ch9\_selector\_rewrite\_threshold\_end\_to\_end\_of\_interval}
-in \codepath{Mettapedia/Logic/PLNCanonicalAPI.lean}}
+in \codepath{Mettapedia/PLN/Core/PLNCanonicalAPI.lean}}
 \end{theorem}
 
 \begin{figure}[htbp]
@@ -3582,8 +3582,8 @@ nearest neighbors.  The formalization makes this explicit: a
 $k$-NN premise selector IS an additive world-model query, and the
 coverage bound applies to it.%
 \footnote{Formalized in
-\codepath{Mettapedia/Logic/PremiseSelectionKNN.lean} and
-\codepath{Mettapedia/Logic/PremiseSelectionKNN\_PLNBridge.lean}.}
+\codepath{Mettapedia/PLN/InferenceControl/PremiseSelection/KNN.lean} and
+\codepath{Mettapedia/PLN/InferenceControl/PremiseSelection/KNN\_PLNBridge.lean}.}
 
 Three questions that this bridge raises for the ATP community:
 
@@ -3823,7 +3823,7 @@ The 3-node predictive chain composes:
 $\mathrm{PredChain}_3(T_1, T_2, A, B, C) :=
 \mathrm{SeqAND}_{T_1}(A,\; \mathrm{SeqAND}_{T_2}(B, C))$.%
 \footnote{Formalized in
-\codepath{Mettapedia/Logic/PLNTemporalCausalInference.lean}
+\codepath{Mettapedia/PLN/RuleFamilies/Temporal/PLNTemporalCausalInference.lean}
 }
 \end{definition}
 
@@ -3891,8 +3891,8 @@ temporal lags:
   \;\mid\; \Delta \in [1, T_{\max}]\bigr\}
 \]%
 \footnote{Formalized in
-\codepath{Mettapedia/Logic/PLNTemporalCausalInference.lean} and
-\codepath{Mettapedia/Logic/PLNProbabilisticEventCalculus.lean}
+\codepath{Mettapedia/PLN/RuleFamilies/Temporal/PLNTemporalCausalInference.lean} and
+\codepath{Mettapedia/PLN/RuleFamilies/Temporal/PLNProbabilisticEventCalculus.lean}
 }
 
 
@@ -3926,7 +3926,7 @@ If the intensional component of the causal profile holds at $(x, t)$,
 then the candidate is not spurious.%
 \footnote{Formalized:
 \code{not\_spurious\_of\_intensional} in
-\codepath{Mettapedia/Logic/PLNTemporalCausalInference.lean}.}
+\codepath{Mettapedia/PLN/RuleFamilies/Temporal/PLNTemporalCausalInference.lean}.}
 \end{theorem}
 
 \noindent

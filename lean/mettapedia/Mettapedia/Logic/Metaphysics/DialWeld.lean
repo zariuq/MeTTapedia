@@ -1,7 +1,8 @@
 import Mettapedia.Logic.Metaphysics.UltrainfinitismCore
 import Mettapedia.Logic.Metaphysics.UltrainfinitismTwoSemantics
 import Mettapedia.Logic.Metaphysics.SiderNihilism
-import Mettapedia.Logic.ConceptOntology.ConstructionBase
+import Mettapedia.KR.ConceptOntology.ConstructionBase
+import Mettapedia.KR.ConceptGeometry.AbstractInheritance
 
 /-!
 # The dial weld: one dial across the ultrafilter, concept, and world layers
@@ -29,7 +30,8 @@ proves they are the **same dial**:
 
 namespace Mettapedia.Logic.Metaphysics
 
-open Mettapedia.Foundations.Gunk Mettapedia.Logic.ConceptOntology
+open Mettapedia.Foundations.Gunk Mettapedia.KR.ConceptOntology
+open Mettapedia.KR.ConceptGeometry
 
 universe u v
 
@@ -127,4 +129,3 @@ theorem cantorWorld_not_siderNihilism :
   gunky_not_siderNihilism cantorWorld_toMereology_gunky
 
 end Mettapedia.Logic.Metaphysics
-

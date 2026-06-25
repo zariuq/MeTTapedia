@@ -5,7 +5,7 @@ import Mettapedia.Logic.HOL.Soundness
 namespace Mettapedia.AutoBooks.Codex.IntuitionisticHOL
 
 open Mettapedia.Logic.HOL
-open Mettapedia.Logic.PLNWorldModel
+open Mettapedia.PLN.WorldModel.PLNWorldModel
 open ClosedTermCanonicalWorldModel
 open scoped ENNReal
 

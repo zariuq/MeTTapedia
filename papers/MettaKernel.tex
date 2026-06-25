@@ -4,8 +4,10 @@
 %% Build:
 %%   pdflatex MettaKernel.tex
 %%
-%% Status: design + curriculum memo (prototype-first). The MeTTa kernel is a
-%% SUBJECT under construction; Lean PureKernel and Megalodon are the oracles.
+%% Status: design + curriculum memo (prototype-first), with a realized-architecture
+%% update (June 2026): the MeTTa kernel is now built and runnable. Lean PureKernel,
+%% Megalodon, and the Lean-verified LeaTTa are the oracles. The universal
+%% subject-reduction/confluence metatheorem remains the open soundness obligation.
 
 \documentclass[11pt]{article}
 \usepackage[T1]{fontenc}
@@ -39,7 +41,7 @@
 Dependent Type Theory and Higher-Order Tarski--Grothendieck Set Theory\\
 \large Design, Curriculum, and a Prototype-First Build Plan}
 \author{Oru\v{z}i \and Zar Goertzel}
-\date{2026-06-18 (draft)}
+\date{2026-06-18 (design draft); realized-architecture update 2026-06-23}
 
 \begin{document}
 \maketitle
@@ -97,8 +99,11 @@ prototype-first build. It records: the reference kernels we mirror
 (\S\ref{sec:oracles}); the \MeTTa-program architecture (\S\ref{sec:arch}); the
 graded curriculum that defines ``smallest fully expressive'' (\S\ref{sec:curric});
 the build plan and its first milestone, a capacity ledger (\S\ref{sec:plan});
-the conversion discipline that is the central hazard (\S\ref{sec:conv}); and the
-open questions we deliberately leave open (\S\ref{sec:open}).
+the conversion discipline that is the central hazard (\S\ref{sec:conv}); the
+open questions we deliberately leave open (\S\ref{sec:open}); and --- added in this
+revision --- the \emph{realized architecture and results} (\S\ref{sec:realized})
+recording the as-built kernel that now exists, including where realization refined
+the plan.
 
 \section{The two reference kernels (our oracles and templates)}
 \label{sec:oracles}
@@ -266,6 +271,99 @@ divergences are bugs versus legitimate language semantics --- not whether the fi
 kernel is settled. The \MeTTa{}-kernel verdicts are labelled \textbf{subject}; the
 Lean \code{PureKernel} and Megalodon are the \textbf{oracles}.
 
+\section{Realized architecture and results (June 2026)}
+\label{sec:realized}
+
+The prototype is built and runs. This section records the \emph{as-built} kernel and,
+honestly, where realization \emph{refined} the plan above; the earlier sections stand
+as the original intent.
+
+\paragraph{One $\lambda\Pi$-modulo checker; object logics as signatures.} Rather than
+two separate term languages (\code{PureTm} and \code{tp/tm/pf}), the realized kernel is
+a \emph{single} $\lambda\Pi$-style logical-framework checker
+(\code{Srt}/\code{Con}/\code{Var}/\code{Pi}/\code{Lam}/\code{App}/\code{Def}) with one
+\code{infer}/\code{check}/\code{conv}; each object logic enters as a \emph{signature} of
+typed declarations over that one checker. \DTT{}, \HOTG{}, and HOL all appear in
+\code{kernel/curriculum\_lf\_demo.metta} as signatures over the same checker, each with
+positive proofs and a rejected negative. This keeps every logic's rules first-class (as
+signature declarations) while sharing the trusted waist --- LF-hosting, deliberately
+distinct from desugaring every logic into one ambient rewrite theory.
+
+\paragraph{One generic inductive engine (\code{DIndG}).} The hard-coded inductive
+families of the \DTT{} ladder (D6--D9) are subsumed by a single generic
+\emph{indexed-inductive} declaration, \code{DIndG}: a telescope IR (parameters $\Delta$,
+indices $\Xi$, constructors) from which the family kind, constructor types, the
+eliminator, branch types, and constructor-headed $\iota$-rules are \emph{generated and
+checked}. \code{Nat}, \code{Bool}, \code{List}, \code{Tree}, \code{Pair}, \code{Vec},
+\code{Fin}, and \code{Id} are all instances; crucially \code{Id} is itself a
+\code{DIndG} and \code{J} is its \emph{generated} (diagonal) recursor, so the equality
+primitives and six special-case inductive slices retired onto the one engine. (This
+resolves the original \code{VecN}/index-domain open question: indices are an arbitrary
+telescope, not a single \code{Nat}.)
+
+\paragraph{Binding as a declared property (the ABT waist).} Binding lives in one
+import-free waist (\code{kernel\_binding\_waist\_v1}): de Bruijn under the hood, with
+capture-avoiding \code{shift}/\code{subst} written once and \emph{arity-parameterized};
+clients delegate to it rather than re-implementing substitution. A \code{BindingDecl}
+layer (\code{kernel\_binding\_decl\_v1}) lets each hosted LanguageDef \emph{declare} its
+binders (\code{Bind0}/\code{Bind1}/\code{BindFields}/\code{BindPi}: dependent $\Pi$,
+$\forall$/$\exists$ bodies, comprehension predicates, proof binders) without disturbing
+the hot waist. Capture-avoidance is mutation-gated.
+
+\paragraph{Admission, checked-once theorems, and the admit-once lesson.} A signature is
+\emph{admitted} only if every declaration is well-formed: constants' types check,
+definitions' bodies check against their declared types (\code{wf-decl}), and inductive
+declarations are fully generatable. Two declaration forms serve derived libraries:
+\code{DAxiom} (an honest postulate, recorded in \emph{axiom provenance}) and \code{DThm}
+(a \emph{checked} theorem constant --- its proof body is checked \emph{once} at
+admission, then used opaquely by its type, transparent only for provenance). A memory
+hazard forced the central engineering lesson: naively, \code{kernel-check} re-ran full
+signature admission on \emph{every} theorem check, so a file checking 21 theorems
+against a signature carrying two large derived-proof bodies re-normalized those bodies
+21 times and exhausted memory ($\sim$48\,GiB, OOM). The fix is \emph{admit-once batch
+checking} --- admission computed once, lexically, for a batch of jobs, with \emph{no}
+forgeable ``checked-signature'' token exposed (in \MeTTa{} a token is plain data anyone
+could fabricate). This is exactly HOL-Light's discipline (a derived rule is a program
+calling primitives, never one giant proof term re-normalized from scratch) and it
+dropped the same file to $\sim$8\,GiB.
+
+\paragraph{Faithful object-logic hosting: HOL-Light's equality kernel.} HOL is hosted
+not as a convenient natural-deduction surrogate but on HOL-Light's \emph{actual}
+primitive basis --- \code{REFL}, \code{TRANS}, \code{MK\_COMB}, \code{ABS}, \code{BETA},
+\code{ASSUME}, \code{EQ\_MP}, \code{DEDUCT\_ANTISYM} as LF rule certificates checked by
+the imported kernel --- with $\top$/$\wedge$/$\Rightarrow$ defined over equality and
+$\lambda$ (matching \code{bool.ml}) and derived \code{MP}/\code{DISCH} shards admitted as
+checked \code{DThm}s. Each primitive and each shard carries a mutation tooth.
+\emph{Faithfulness caveat:} the definitional equations are currently \emph{postulated}
+as constants matching \code{bool.ml} rather than introduced through a checked
+conservative-definition principle, and the derived \code{MP}/\code{DISCH} are specific
+checked replays, not yet a fully general derived-rule library.
+
+\paragraph{The curriculum as a calibration matrix.} The curriculum is now an explicit
+ledger (\code{Curriculum/oracle\_cases.tsv}): each row is a kernel capacity $\times$
+profile (\DTT{}/HOL/\HOTG{}/Metamath/\dots) $\times$ the SOTA system that calibrates the
+verdict (Lean/Coq/Agda/Megalodon/HOL-Light), with status \textsc{checked} or
+\textsc{planned} and a per-row gate. The external systems are the \emph{calibration
+oracle}; the destination is to \emph{host each core logic as a LanguageDef and re-prove
+the curriculum's theorems in our own kernel}. Verdicts are differential --- a row
+borrows its expectation from the source system, not from our own guess.
+
+\paragraph{Validation discipline.} Every checkpoint runs on three engines --- \CeTTa{}
+(C), PeTTa (Prolog), and the Lean-verified \emph{LeaTTa} as a deterministic oracle ---
+in parity, with per-feature mutation gates (corrupt the rule, require red) and the
+fail-by-default negative corpus, all behind one \code{run\_all} gate; heavy runs are
+memory-capped.
+
+\paragraph{Soundness status (honest).} Admission plus provenance close the per-input
+declaration holes (a \code{break\_probes} probe documents what the bare term-checker
+would accept \emph{without} admission; the real kernel rejects those). The \emph{one}
+genuinely-open soundness obligation is metatheoretic, not a per-input check:
+\textbf{universal subject-reduction, confluence, and termination of the generated
+$\iota$-rules are not yet machine-proven} --- we have an executable SR-wedge self-test
+and the LeaTTa engine-floor, not the theorem. That metatheorem is the live Lean target.
+The kernel is today \emph{checked-correct per input} but not yet \emph{proven-correct as
+a calculus}.
+
 \section{Conversion discipline (the central hazard)}
 \label{sec:conv}
 The single biggest architectural risk is identifying kernel conversion with general
@@ -284,12 +382,24 @@ in effectful evaluation.
 
 \section{Open questions (kept deliberately open)}
 \label{sec:open}
-(1) Should \code{VecN String -1} be accepted under \code{Number} indexing, or should
-tranche~1 restrict indexed families to \code{Nat}? (2) How much definitional
-equality belongs in the first tranche? (3) What stays in the trusted runtime core
-versus later self-hosted \MeTTa{} rules? (4) What fragment of dependent typing is
-promised first? (5) Does the \code{PureKernel}-style core remain the convergence
-target for the runtime-facing tranche, given \code{directExecEquivalence = false}?
+\emph{Resolved or refined by the realized architecture (\S\ref{sec:realized}):}
+the \code{VecN}/index-domain question (indices are an arbitrary telescope under
+\code{DIndG}); the first dependent-typing fragment ($\lambda\Pi$ + \code{DIndG}
+indexed inductives, predicative); the trust boundary (it is signature
+\emph{admission}); and the convergence target (the kernel is its own $\lambda\Pi$-LF,
+with \code{PureKernel}/Megalodon as templates and the Lean-verified LeaTTa as the
+runnable oracle floor, rather than \code{PureKernel} itself).
+
+\emph{Live and deliberately open:} (1)~the \textbf{universal subject-reduction /
+confluence / termination metatheorem} for the generated $\iota$-rules --- the single
+open soundness obligation, now a Lean target (the toolchain is unblocked at v4.31);
+(2)~\textbf{engine-level term sharing} (hash-consing / DAG / normalization-by-evaluation
+in \CeTTa{}) for deeper scaling, of which admit-once batch checking is the cheaper
+architectural half already in hand; (3)~a \textbf{checked conservative-definition
+principle} so hosted definitional equations are derived rather than postulated;
+(4)~a \textbf{fully general derived-rule library} (beyond specific checked replays); and
+(5)~\textbf{breadth} --- hosting further core logics as LanguageDefs (fuller \HOTG{}
+via Megalodon, then Lean-core/CIC) over the now-shared, now-affordable waist.
 
 \section*{References (local anchors)}
 \begin{itemize}

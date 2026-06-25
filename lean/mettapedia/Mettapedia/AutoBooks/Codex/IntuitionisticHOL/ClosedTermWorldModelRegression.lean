@@ -3,8 +3,8 @@ import Mettapedia.AutoBooks.Codex.IntuitionisticHOL.ClosedTermWorldModel
 namespace Mettapedia.AutoBooks.Codex.IntuitionisticHOL.ClosedTermWorldModelRegression
 
 open Mettapedia.Logic.HOL
-open Mettapedia.Logic.PLNWorldModel
-open Mettapedia.Logic.EvidenceQuantale
+open Mettapedia.PLN.WorldModel.PLNWorldModel
+open Mettapedia.PLN.Evidence.EvidenceQuantale
 open ClosedTermCanonicalWorldModel
 open scoped ENNReal
 

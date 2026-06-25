@@ -6,6 +6,18 @@ rebuilds just the UniversalAI development.
 -/
 
 import Mettapedia.UniversalAI.SimplicityUncertainty
+import Mettapedia.UniversalAI.SolomonoffPrior
+import Mettapedia.UniversalAI.SolomonoffInduction
+import Mettapedia.UniversalAI.SolomonoffMeasure
+import Mettapedia.UniversalAI.UniversalPrediction
+import Mettapedia.UniversalAI.UniversalPrediction.SolomonoffBridge
+import Mettapedia.UniversalAI.UniversalPredictionApproximation
+import Mettapedia.UniversalAI.UniversalPredictionApproximationWMBridge
+import Mettapedia.UniversalAI.UniversalPredictionConditionalWMBridge
+import Mettapedia.UniversalAI.UniversalPredictionConditionalApproximation
+import Mettapedia.UniversalAI.ControlledFiniteHiddenMarkovUniversalPredictionBridge
+import Mettapedia.UniversalAI.SolomonoffExchangeable
+import Mettapedia.UniversalAI.UniversalHyperprior
 import Mettapedia.UniversalAI.BadUniversalPriors
 import Mettapedia.UniversalAI.BayesianAgents
 import Mettapedia.UniversalAI.BayesianAgents.CoreCompat

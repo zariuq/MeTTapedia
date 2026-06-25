@@ -1,6 +1,6 @@
 import Mettapedia.OSLF.Framework.TypeSynthesis
 import Mettapedia.OSLF.Framework.SubstitutabilityTheorem1
-import Mettapedia.Logic.OSLFImageFinite
+import Mettapedia.OSLF.Framework.ImageFinite
 import Mettapedia.OSLF.MeTTaIL.MatchSpec
 
 /-!
@@ -510,7 +510,7 @@ theorem theorem1_substitutability_predFiniteSafe
     Mettapedia.OSLF.Framework.Theorem1SubstitutabilityEquiv
       (langReduces lang) I :=
   Mettapedia.OSLF.Framework.theorem1_substitutability_imageFinite
-    (Mettapedia.Logic.OSLFImageFinite.imageFinite_langReduces lang)
+    (Mettapedia.OSLF.Framework.ImageFinite.imageFinite_langReduces lang)
     (predFinite_langReduces_of_langPredFiniteSafe lang hSafe)
 
 /-! ## Exclusion: rhoCalc fails the condition -/

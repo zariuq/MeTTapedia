@@ -1,8 +1,8 @@
 import Mettapedia.UniversalAI.GodelMachine.SelfImprovement
 import Mettapedia.UniversalAI.ValueUnderIgnorance
-import Mettapedia.Logic.UniversalPrediction.SolomonoffBridge
-import Mettapedia.Logic.SolomonoffPrior
-import Mettapedia.Logic.SolomonoffInduction
+import Mettapedia.UniversalAI.UniversalPrediction.SolomonoffBridge
+import Mettapedia.UniversalAI.SolomonoffPrior
+import Mettapedia.UniversalAI.SolomonoffInduction
 
 /-!
 # Solomonoff Bridge: Connecting Gödel Machines to Universal Prediction
@@ -46,9 +46,9 @@ From Hutter (2005), Everitt et al. (2016), and Schmidhuber (2003):
 namespace Mettapedia.UniversalAI.GodelMachine.SolomonoffBridge
 
 open SelfModification BayesianAgents Classical
-open Mettapedia.Logic.SolomonoffPrior
-open Mettapedia.Logic.SolomonoffInduction
-open Mettapedia.Logic.UniversalPrediction.SolomonoffBridge
+open Mettapedia.UniversalAI.SolomonoffPrior
+open Mettapedia.UniversalAI.SolomonoffInduction
+open Mettapedia.UniversalAI.UniversalPrediction.SolomonoffBridge
 
 /-! ## Part 1: Solomonoff Environment Model
 
@@ -63,15 +63,15 @@ structure SolomonoffEnv (U : PrefixFreeMachine) [UniversalPFM U] where
 /-- The universal semimeasure used for prediction.
 
 In this project we use the theorem-grade “Solomonoff-style” mixture `M₃(U)`
-from `Mettapedia.Logic.UniversalPrediction.SolomonoffBridge`, built as a
+from `Mettapedia.UniversalAI.UniversalPrediction.SolomonoffBridge`, built as a
 mixture over lower-semicomputable semimeasures.
 
 We intentionally make this a *definition* (not a structure field) so that
 all later theorems are automatically tied to the canonical `M₂` without
 needing extra "consistency" hypotheses. -/
 noncomputable def SolomonoffEnv.universal {U : PrefixFreeMachine} [UniversalPFM U]
-    (_env : SolomonoffEnv U) : Mettapedia.Logic.SolomonoffInduction.Semimeasure :=
-  Mettapedia.Logic.UniversalPrediction.SolomonoffBridge.M₃ U
+    (_env : SolomonoffEnv U) : Mettapedia.UniversalAI.SolomonoffInduction.Semimeasure :=
+  Mettapedia.UniversalAI.UniversalPrediction.SolomonoffBridge.M₃ U
 
 /-- Convert a SolomonoffEnv to the environment probability function format. -/
 noncomputable def SolomonoffEnv.perceptPrefix {U : PrefixFreeMachine} [UniversalPFM U]
@@ -116,19 +116,19 @@ The Solomonoff prior dominates any computable environment model.
 
 /-- The universal prior dominates any computable environment. -/
 theorem solomonoff_dominates_LSC {U : PrefixFreeMachine} [UniversalPFM U]
-    (G : SolomonoffGodelMachine U) (μ : Mettapedia.Logic.UniversalPrediction.PrefixMeasure)
-    (hμ : Mettapedia.Logic.UniversalPrediction.HutterEnumeration.LowerSemicomputablePrefixMeasure μ) :
+    (G : SolomonoffGodelMachine U) (μ : Mettapedia.UniversalAI.UniversalPrediction.PrefixMeasure)
+    (hμ : Mettapedia.UniversalAI.UniversalPrediction.HutterEnumeration.LowerSemicomputablePrefixMeasure μ) :
     ∃ c : ENNReal, c ≠ 0 ∧ ∀ x : BinString, c * μ x ≤ G.solomonoffEnv.universal x := by
   -- Our default `SolomonoffEnv.universal` is `M₃(U)`, for which we have a code-level dominance theorem.
   classical
   rcases
-      (Mettapedia.Logic.UniversalPrediction.SolomonoffBridge.relEntropy_le_codeKpf_log2_M₃
+      (Mettapedia.UniversalAI.UniversalPrediction.SolomonoffBridge.relEntropy_le_codeKpf_log2_M₃
         (U := U) (μ := μ) hμ 0) with ⟨code, hdom, _⟩
-  let c : ENNReal := Mettapedia.Logic.UniversalPrediction.HutterV3Kpf.codeWeight (U := U) code
+  let c : ENNReal := Mettapedia.UniversalAI.UniversalPrediction.HutterV3Kpf.codeWeight (U := U) code
   have hc0 : c ≠ 0 := by
     -- `kpfWeight` is a positive power of 2.
-    unfold c Mettapedia.Logic.UniversalPrediction.HutterV3Kpf.codeWeight
-      Mettapedia.Logic.UniversalPrediction.kpfWeight
+    unfold c Mettapedia.UniversalAI.UniversalPrediction.HutterV3Kpf.codeWeight
+      Mettapedia.UniversalAI.UniversalPrediction.kpfWeight
     have hne0 : (2 : ENNReal) ≠ 0 := by norm_num
     have hneTop : (2 : ENNReal) ≠ (⊤ : ENNReal) := by simp
     exact ne_of_gt (ENNReal.zpow_pos hne0 hneTop _)
@@ -138,8 +138,8 @@ theorem solomonoff_dominates_LSC {U : PrefixFreeMachine} [UniversalPFM U]
 
 /-- Corollary: Predictions under M are never too far from any computable model. -/
 theorem prediction_dominance {U : PrefixFreeMachine} [UniversalPFM U]
-    (G : SolomonoffGodelMachine U) (μ : Mettapedia.Logic.UniversalPrediction.PrefixMeasure)
-    (hμ : Mettapedia.Logic.UniversalPrediction.HutterEnumeration.LowerSemicomputablePrefixMeasure μ)
+    (G : SolomonoffGodelMachine U) (μ : Mettapedia.UniversalAI.UniversalPrediction.PrefixMeasure)
+    (hμ : Mettapedia.UniversalAI.UniversalPrediction.HutterEnumeration.LowerSemicomputablePrefixMeasure μ)
     (x : BinString) :
     ∃ c : ENNReal, c ≠ 0 ∧ G.solomonoffEnv.universal x ≥ c * μ x := by
   rcases solomonoff_dominates_LSC (G := G) (μ := μ) hμ with ⟨c, hc0, hdom⟩

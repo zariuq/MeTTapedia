@@ -1,4 +1,4 @@
-import Mettapedia.Logic.EvidenceQuantale
+import Mettapedia.PLN.Evidence.EvidenceQuantale
 
 /-!
 # PLN Semiring Quantale
@@ -21,7 +21,7 @@ This file formalizes the semiring quantale structure on BinaryEvidence:
 
 namespace Mettapedia.CategoryTheory.PLNSemiringQuantale
 
-open Mettapedia.Logic.EvidenceQuantale
+open Mettapedia.PLN.Evidence.EvidenceQuantale
 
 /-! ## Semiring Quantale Operations -/
 

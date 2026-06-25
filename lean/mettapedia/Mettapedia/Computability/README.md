@@ -46,7 +46,7 @@ through *computable dyadic-rational approximations from below* rather than direc
 Plain complexity `C[U](x)` for a universal (partial) algorithm `U`, the prefix-free
 variant `Kpf` together with the Kraft/summability bound, and the **noncomputability
 theorem** (Hutter 2005, Thm 2.13): `C` is not finitely computable. The prefix-free
-machinery is shared with `Mettapedia.Logic.SolomonoffPrior`, so this lane is the
+machinery is shared with `Mettapedia.UniversalAI.SolomonoffPrior`, so this lane is the
 computability backbone underneath the Solomonoff-prior / universal-prediction work.
 
 ### `PNP/` — P vs NP obstruction research lane

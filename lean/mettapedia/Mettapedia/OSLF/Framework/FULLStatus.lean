@@ -21,7 +21,7 @@ import Mettapedia.OSLF.Framework.MeTTaMinimalInstance
 import Mettapedia.OSLF.Framework.MeTTaFullLegacyInstance
 import Mettapedia.Languages.GF.WorldModelSemantics
 import Mettapedia.Languages.GF.IdentityEvidenceSemantics
-import Mettapedia.Logic.IdentityEvidence
+import Mettapedia.PLN.Evidence.IdentityEvidence
 import Mettapedia.OSLF.QuantifiedFormula
 import Mettapedia.OSLF.Framework.SimulationPreservation
 
@@ -117,7 +117,7 @@ def tracker : List Milestone :=
   , { area := "GF BinaryEvidence Semantics"
       title := "Presupposition as evidence tensor-gating"
       status := .done
-      codeRef := "Mettapedia/Logic/OSLFEvidenceSemantics.lean: presupGatedSemE / presupGated_one_presup / presupGated_bot_presup; Mettapedia/Languages/GF/WorldModelSemantics.lean: definiteDescriptionEvidence / negation_preserves_definite_presup / conditional_filters_definite_presup"
+      codeRef := "Mettapedia/OSLF/Framework/EvidenceSemantics.lean: presupGatedSemE / presupGated_one_presup / presupGated_bot_presup; Mettapedia/Languages/GF/WorldModelSemantics.lean: definiteDescriptionEvidence / negation_preserves_definite_presup / conditional_filters_definite_presup"
       note := "Presupposition = tensor gating. Projection laws: negation preserves, conditional filters. Definite description bridge with existence presupposition." }
   , { area := "GF BinaryEvidence Semantics"
       title := "Quantified formulas with scope ambiguity"
@@ -446,10 +446,10 @@ These checks tie tracker statements to concrete constants in the codebase.
 #check @Mettapedia.Languages.GF.WorldModelSemantics.conditional_filters_definite_presup
 #check @Mettapedia.Languages.GF.WorldModelSemantics.inverse_scope_le_surface_scope_evidence
 #check @Mettapedia.Languages.GF.WorldModelSemantics.iSup_inf_le_inf_iSup
-#check @Mettapedia.Logic.IdentityEvidence.transport_enabled_canary_guard_pass
-#check @Mettapedia.Logic.IdentityEvidence.transport_enabled_canary_guard_fail
-#check @Mettapedia.Logic.IdentityEvidence.transport_enabled_path_canary
-#check @Mettapedia.Logic.IdentityEvidence.competing_identities_retained_canary
+#check @Mettapedia.PLN.Evidence.IdentityEvidence.transport_enabled_canary_guard_pass
+#check @Mettapedia.PLN.Evidence.IdentityEvidence.transport_enabled_canary_guard_fail
+#check @Mettapedia.PLN.Evidence.IdentityEvidence.transport_enabled_path_canary
+#check @Mettapedia.PLN.Evidence.IdentityEvidence.competing_identities_retained_canary
 #check @Mettapedia.Languages.GF.IdentityEvidenceSemantics.gfWMFormulaSem_withIdentity_disabled
 #check @Mettapedia.Languages.GF.IdentityEvidenceSemantics.oslf_sat_implies_wm_semantics_withIdentity_unused
 #check @Mettapedia.OSLF.Framework.IdentityEvidenceTransfer.IdentityAtomLayerConfig
@@ -464,15 +464,15 @@ These checks tie tracker statements to concrete constants in the codebase.
 #check @Mettapedia.OSLF.QuantifiedFormula.qsemE_forall_le_exists
 #check @Mettapedia.OSLF.QuantifiedFormula.iSup_iInf_le_iInf_iSup
 -- Presupposition layer
-#check @Mettapedia.Logic.OSLFEvidenceSemantics.presupGatedSemE
-#check @Mettapedia.Logic.OSLFEvidenceSemantics.presupGated_one_presup
-#check @Mettapedia.Logic.OSLFEvidenceSemantics.presupGated_bot_presup
-#check @Mettapedia.Logic.OSLFEvidenceSemantics.negation_preserves_presup
+#check @Mettapedia.OSLF.Framework.EvidenceSemantics.presupGatedSemE
+#check @Mettapedia.OSLF.Framework.EvidenceSemantics.presupGated_one_presup
+#check @Mettapedia.OSLF.Framework.EvidenceSemantics.presupGated_bot_presup
+#check @Mettapedia.OSLF.Framework.EvidenceSemantics.negation_preserves_presup
 -- Temporal semantics
-#check @Mettapedia.Logic.OSLFEvidenceSemantics.temporalPattern
-#check @Mettapedia.Logic.OSLFEvidenceSemantics.lagLeadIdentity
-#check @Mettapedia.Logic.OSLFEvidenceSemantics.predictiveImplication_mp
-#check @Mettapedia.Logic.OSLFEvidenceSemantics.sequentialAnd_le_left
+#check @Mettapedia.OSLF.Framework.EvidenceSemantics.temporalPattern
+#check @Mettapedia.OSLF.Framework.EvidenceSemantics.lagLeadIdentity
+#check @Mettapedia.OSLF.Framework.EvidenceSemantics.predictiveImplication_mp
+#check @Mettapedia.OSLF.Framework.EvidenceSemantics.sequentialAnd_le_left
 
 -- Decidability & reflection
 #check @Mettapedia.OSLF.Formula.semFuel

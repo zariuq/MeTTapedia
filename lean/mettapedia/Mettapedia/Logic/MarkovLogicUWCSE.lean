@@ -127,7 +127,7 @@ end Atoms
 
 section UWCSE
 
-open Mettapedia.Logic.PLNWorldModel
+open Mettapedia.PLN.WorldModel.PLNWorldModel
 
 /-- Clause identifiers for the UW-CSE micro-slice ground MLN.
 Naming: rule family + grounding substitution. -/

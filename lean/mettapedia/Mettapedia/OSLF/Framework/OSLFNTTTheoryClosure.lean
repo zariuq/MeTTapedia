@@ -1,7 +1,7 @@
 import Mettapedia.OSLF.Framework.OSLFNTTWMBridge
-import Mettapedia.Logic.PLNWorldModelCalculus
-import Mettapedia.Logic.PLNWorldModelCategoricalBridge
-import Mettapedia.Logic.PLNWorldModelFixpointClosure
+import Mettapedia.PLN.WorldModel.PLNWorldModelCalculus
+import Mettapedia.PLN.Bridges.CategoryTheory.WorldModel.PLNWorldModelCategoricalBridge
+import Mettapedia.PLN.WorldModel.Fixpoint.PLNWorldModelFixpointClosure
 
 /-!
 # OSLF -> NTT Theory Closure
@@ -21,12 +21,12 @@ open CategoryTheory
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.Engine
 open Mettapedia.OSLF.Formula
-open Mettapedia.Logic.OSLFEvidenceSemantics
+open Mettapedia.OSLF.Framework.EvidenceSemantics
 open Mettapedia.OSLF.Framework.OSLFNTTWMBridge
 open Mettapedia.CategoryTheory.PLNInstance
-open Mettapedia.Logic.EvidenceClass
-open Mettapedia.Logic.PLNWorldModel
-open Mettapedia.Logic.PLNWorldModelCategoricalBridge.WMHyperdoctrine
+open Mettapedia.PLN.Evidence.EvidenceClass
+open Mettapedia.PLN.WorldModel.PLNWorldModel
+open Mettapedia.PLN.Bridges.CategoryTheory.WorldModel.PLNWorldModelCategoricalBridge.WMHyperdoctrine
 
 universe u v x
 
@@ -75,7 +75,7 @@ theorem formulaEndpointBridge_of_oslf_formula_ntt_graph_triangle
 
 /-- Categorical formula endpoint bridge package over all source patterns. -/
 abbrev FormulaCategoricalEndpointBridge
-    (H : Mettapedia.Logic.PLNWorldModelHyperdoctrine.WMHyperdoctrine State)
+    (H : Mettapedia.PLN.Bridges.CategoryTheory.WorldModel.PLNWorldModelHyperdoctrine.WMHyperdoctrine State)
     {P Aobj Bobj D : H.Obj}
     (pi1 : P ⟶ Aobj) (pi2 : P ⟶ Bobj) (fcat : Aobj ⟶ D) (gcat : Bobj ⟶ D)
     (relEnv : RelationEnv)
@@ -96,7 +96,7 @@ abbrev FormulaCategoricalEndpointBridge
 /-- Canonical categorical formula endpoint bridge is derivable directly from
 `oslf_formula_ntt_graph_triangle_categorical`. -/
 theorem formulaCategoricalEndpointBridge_of_oslf_formula_ntt_graph_triangle
-    (H : Mettapedia.Logic.PLNWorldModelHyperdoctrine.WMHyperdoctrine State)
+    (H : Mettapedia.PLN.Bridges.CategoryTheory.WorldModel.PLNWorldModelHyperdoctrine.WMHyperdoctrine State)
     {P Aobj Bobj D : H.Obj}
     (pi1 : P ⟶ Aobj) (pi2 : P ⟶ Bobj) (fcat : Aobj ⟶ D) (gcat : Bobj ⟶ D)
     (hpb : CategoryTheory.IsPullback pi1 pi2 fcat gcat)
@@ -125,7 +125,7 @@ theorem formulaCategoricalEndpointBridge_of_oslf_formula_ntt_graph_triangle
 /-- Build the unified categorical bridge package from separate formula-level and
 categorical endpoint components. -/
 theorem formulaCategoricalEndpointBridge_of_components
-    (H : Mettapedia.Logic.PLNWorldModelHyperdoctrine.WMHyperdoctrine State)
+    (H : Mettapedia.PLN.Bridges.CategoryTheory.WorldModel.PLNWorldModelHyperdoctrine.WMHyperdoctrine State)
     {P Aobj Bobj D : H.Obj}
     (pi1 : P ⟶ Aobj) (pi2 : P ⟶ Bobj) (fcat : Aobj ⟶ D) (gcat : Bobj ⟶ D)
     (relEnv : RelationEnv)
@@ -362,7 +362,7 @@ def WMEvidenceRuleSet.toStrengthRuleSet
           BinaryWorldModel.evidence (State := State) (Query := Query) W q₂ →
         BinaryWorldModel.queryStrength (State := State) (Query := Query) W q₁ ≤
           BinaryWorldModel.queryStrength (State := State) (Query := Query) W q₂) :
-    Mettapedia.Logic.PLNWorldModelFixpointClosure.RuleSet State Query :=
+    Mettapedia.PLN.WorldModel.Fixpoint.PLNWorldModelFixpointClosure.RuleSet State Query :=
   { r | ∃ re ∈ R,
       r = re.toStrengthRuleOn
         (hStrengthMono := fun _hside hle => hStrengthMono hle) }
@@ -393,17 +393,17 @@ theorem immediateIter_subset_leastRuleClosure_of_evidenceRuleSet
         BinaryWorldModel.queryStrength (State := State) (Query := Query) W q₁ ≤
           BinaryWorldModel.queryStrength (State := State) (Query := Query) W q₂)
     (W : State) (seed : Set Query) (n : ℕ) :
-    Mettapedia.Logic.PLNWorldModelFixpointClosure.immediateIter
+    Mettapedia.PLN.WorldModel.Fixpoint.PLNWorldModelFixpointClosure.immediateIter
       (State := State) (Query := Query)
       (R := WMEvidenceRuleSet.toStrengthRuleSet (State := State) (Query := Query) R hStrengthMono)
       (W := W) (seed := seed) n
       ⊆
-    Mettapedia.Logic.PLNWorldModelFixpointClosure.leastRuleClosure
+    Mettapedia.PLN.WorldModel.Fixpoint.PLNWorldModelFixpointClosure.leastRuleClosure
       (State := State) (Query := Query)
       (R := WMEvidenceRuleSet.toStrengthRuleSet (State := State) (Query := Query) R hStrengthMono)
       (W := W) (seed := seed) := by
   exact
-    Mettapedia.Logic.PLNWorldModelFixpointClosure.immediateIter_subset_leastRuleClosure
+    Mettapedia.PLN.WorldModel.Fixpoint.PLNWorldModelFixpointClosure.immediateIter_subset_leastRuleClosure
       (State := State) (Query := Query)
       (R := WMEvidenceRuleSet.toStrengthRuleSet (State := State) (Query := Query) R hStrengthMono)
       (W := W) (seed := seed) n
@@ -424,12 +424,12 @@ theorem leastRuleClosure_rule_closed_of_evidenceRuleSet
     (hside : re.side W)
     (hprem :
       re.premise ∈
-        Mettapedia.Logic.PLNWorldModelFixpointClosure.leastRuleClosure
+        Mettapedia.PLN.WorldModel.Fixpoint.PLNWorldModelFixpointClosure.leastRuleClosure
           (State := State) (Query := Query)
           (R := WMEvidenceRuleSet.toStrengthRuleSet (State := State) (Query := Query) R hStrengthMono)
           (W := W) (seed := seed)) :
     re.conclusion ∈
-      Mettapedia.Logic.PLNWorldModelFixpointClosure.leastRuleClosure
+      Mettapedia.PLN.WorldModel.Fixpoint.PLNWorldModelFixpointClosure.leastRuleClosure
         (State := State) (Query := Query)
         (R := WMEvidenceRuleSet.toStrengthRuleSet (State := State) (Query := Query) R hStrengthMono)
         (W := W) (seed := seed) := by
@@ -444,12 +444,12 @@ theorem leastRuleClosure_rule_closed_of_evidenceRuleSet
   have hside' : r.side W := hside
   have hprem' :
       r.premise ∈
-        Mettapedia.Logic.PLNWorldModelFixpointClosure.leastRuleClosure
+        Mettapedia.PLN.WorldModel.Fixpoint.PLNWorldModelFixpointClosure.leastRuleClosure
           (State := State) (Query := Query)
           (R := WMEvidenceRuleSet.toStrengthRuleSet (State := State) (Query := Query) R hStrengthMono)
           (W := W) (seed := seed) := hprem
   have hconc' :=
-    Mettapedia.Logic.PLNWorldModelFixpointClosure.leastRuleClosure_rule_closed
+    Mettapedia.PLN.WorldModel.Fixpoint.PLNWorldModelFixpointClosure.leastRuleClosure_rule_closed
       (State := State) (Query := Query)
       (R := WMEvidenceRuleSet.toStrengthRuleSet (State := State) (Query := Query) R hStrengthMono)
       (W := W) (seed := seed) (r := r) hr hside' hprem'
@@ -478,7 +478,7 @@ def wmConsequenceRuleOn_of_oslfTheoryStepStar_viaEvidence
 section FormulaEvidenceFragment
 
 /-- Pointwise evidence model used for semE-induced closure in this fragment. -/
-abbrev SemEState := Pattern → Mettapedia.Logic.EvidenceQuantale.BinaryEvidence
+abbrev SemEState := Pattern → Mettapedia.PLN.Evidence.EvidenceQuantale.BinaryEvidence
 /-- Query type for the semE pointwise model. -/
 abbrev SemEQuery := Pattern
 
@@ -830,7 +830,7 @@ theorem semE_step_mono_of_policy
 combines the categorical formula endpoint package with one-step evidence
 closure on the same semantic state. -/
 theorem semE_fragment_formulaCategoricalEndpoint_step
-    (H : Mettapedia.Logic.PLNWorldModelHyperdoctrine.WMHyperdoctrine SemEState)
+    (H : Mettapedia.PLN.Bridges.CategoryTheory.WorldModel.PLNWorldModelHyperdoctrine.WMHyperdoctrine SemEState)
     {P Aobj Bobj D : H.Obj}
     (pi1 : P ⟶ Aobj) (pi2 : P ⟶ Bobj) (fcat : Aobj ⟶ D) (gcat : Bobj ⟶ D)
     (hpb : CategoryTheory.IsPullback pi1 pi2 fcat gcat)
@@ -877,7 +877,7 @@ The categorical endpoint component is formula-structural (state/query surface),
 while the evidence closure component is transported along `OSLFTheoryStepStar`
 through `semEFragmentEvidenceInterface`. -/
 theorem semE_fragment_formulaCategoricalEndpoint_stepStar
-    (H : Mettapedia.Logic.PLNWorldModelHyperdoctrine.WMHyperdoctrine SemEState)
+    (H : Mettapedia.PLN.Bridges.CategoryTheory.WorldModel.PLNWorldModelHyperdoctrine.WMHyperdoctrine SemEState)
     {P Aobj Bobj D : H.Obj}
     (pi1 : P ⟶ Aobj) (pi2 : P ⟶ Bobj) (fcat : Aobj ⟶ D) (gcat : Bobj ⟶ D)
     (hpb : CategoryTheory.IsPullback pi1 pi2 fcat gcat)
@@ -943,7 +943,7 @@ def semEPolicyEvidenceInterface
 categorical formula endpoint + semE evidence closure transported along
 `OSLFTheoryStepStar` via a policy-indexed interface. -/
 theorem semE_fragment_formulaCategoricalEndpoint_stepStar_of_policy
-    (H : Mettapedia.Logic.PLNWorldModelHyperdoctrine.WMHyperdoctrine SemEState)
+    (H : Mettapedia.PLN.Bridges.CategoryTheory.WorldModel.PLNWorldModelHyperdoctrine.WMHyperdoctrine SemEState)
     {P Aobj Bobj D : H.Obj}
     (pi1 : P ⟶ Aobj) (pi2 : P ⟶ Bobj) (fcat : Aobj ⟶ D) (gcat : Bobj ⟶ D)
     (hpb : CategoryTheory.IsPullback pi1 pi2 fcat gcat)
@@ -985,7 +985,7 @@ theorem semE_fragment_formulaCategoricalEndpoint_stepStar_of_policy
 /-- Build an evidence-rule constructor directly from the semE categorical
 endpoint + theory-star closure package. -/
 def semE_fragment_evidenceRuleOn_of_formulaCategoricalEndpoint_stepStar
-    (H : Mettapedia.Logic.PLNWorldModelHyperdoctrine.WMHyperdoctrine SemEState)
+    (H : Mettapedia.PLN.Bridges.CategoryTheory.WorldModel.PLNWorldModelHyperdoctrine.WMHyperdoctrine SemEState)
     {P Aobj Bobj D : H.Obj}
     (pi1 : P ⟶ Aobj) (pi2 : P ⟶ Bobj) (fcat : Aobj ⟶ D) (gcat : Bobj ⟶ D)
     (hpb : CategoryTheory.IsPullback pi1 pi2 fcat gcat)
@@ -1025,7 +1025,7 @@ def semE_fragment_evidenceRuleOn_of_formulaCategoricalEndpoint_stepStar
 /-- Policy-driven evidence-rule constructor from the semE categorical star
 endpoint package. -/
 def semE_fragment_evidenceRuleOn_of_formulaCategoricalEndpoint_stepStar_of_policy
-    (H : Mettapedia.Logic.PLNWorldModelHyperdoctrine.WMHyperdoctrine SemEState)
+    (H : Mettapedia.PLN.Bridges.CategoryTheory.WorldModel.PLNWorldModelHyperdoctrine.WMHyperdoctrine SemEState)
     {P Aobj Bobj D : H.Obj}
     (pi1 : P ⟶ Aobj) (pi2 : P ⟶ Bobj) (fcat : Aobj ⟶ D) (gcat : Bobj ⟶ D)
     (hpb : CategoryTheory.IsPullback pi1 pi2 fcat gcat)
@@ -1072,29 +1072,29 @@ theorem semEState_evidence_mono_not_strength_mono :
         (semEState relEnv I (.atom "a")) p q := by
   let p : Pattern := .fvar "p"
   let q : Pattern := .fvar "q"
-  let hi : Mettapedia.Logic.EvidenceQuantale.BinaryEvidence := ⟨1, 0⟩
-  let lo : Mettapedia.Logic.EvidenceQuantale.BinaryEvidence := ⟨1, 1⟩
+  let hi : Mettapedia.PLN.Evidence.EvidenceQuantale.BinaryEvidence := ⟨1, 0⟩
+  let lo : Mettapedia.PLN.Evidence.EvidenceQuantale.BinaryEvidence := ⟨1, 1⟩
   let I : EvidenceAtomSem :=
-    fun _ r => if r = p then hi else if r = q then lo else (⊥ : Mettapedia.Logic.EvidenceQuantale.BinaryEvidence)
+    fun _ r => if r = p then hi else if r = q then lo else (⊥ : Mettapedia.PLN.Evidence.EvidenceQuantale.BinaryEvidence)
   let relEnv : RelationEnv := RelationEnv.empty
   refine ⟨relEnv, I, p, q, ?_, ?_⟩
   · change hi ≤ lo
-    simp [hi, lo, Mettapedia.Logic.EvidenceQuantale.BinaryEvidence.le_def]
+    simp [hi, lo, Mettapedia.PLN.Evidence.EvidenceQuantale.BinaryEvidence.le_def]
   · intro h
     have hle' :
-        Mettapedia.Logic.EvidenceQuantale.BinaryEvidence.toStrength hi ≤
-          Mettapedia.Logic.EvidenceQuantale.BinaryEvidence.toStrength lo := by
+        Mettapedia.PLN.Evidence.EvidenceQuantale.BinaryEvidence.toStrength hi ≤
+          Mettapedia.PLN.Evidence.EvidenceQuantale.BinaryEvidence.toStrength lo := by
       have h' := h
       change
-        Mettapedia.Logic.EvidenceQuantale.BinaryEvidence.toStrength
+        Mettapedia.PLN.Evidence.EvidenceQuantale.BinaryEvidence.toStrength
             ((semEState relEnv I (.atom "a")) p) ≤
-          Mettapedia.Logic.EvidenceQuantale.BinaryEvidence.toStrength
+          Mettapedia.PLN.Evidence.EvidenceQuantale.BinaryEvidence.toStrength
             ((semEState relEnv I (.atom "a")) q) at h'
       simpa [semEState, semE_atom, I, p, q, hi, lo] using h'
     have hnum : ((1 : ENNReal) + 1) ≤ (1 : ENNReal) := by
       simpa [hi, lo,
-        Mettapedia.Logic.EvidenceQuantale.BinaryEvidence.toStrength,
-        Mettapedia.Logic.EvidenceQuantale.BinaryEvidence.total] using hle'
+        Mettapedia.PLN.Evidence.EvidenceQuantale.BinaryEvidence.toStrength,
+        Mettapedia.PLN.Evidence.EvidenceQuantale.BinaryEvidence.total] using hle'
     have hfalse : ¬ (((1 : ENNReal) + 1) ≤ (1 : ENNReal)) := by
       norm_num
     exact hfalse hnum
@@ -1105,7 +1105,7 @@ section ConcretePointwiseModel
 
 /-- Concrete state/query model for closure testing:
 state is a pointwise evidence assignment over patterns, and queries are patterns. -/
-abbrev StepState := Pattern → Mettapedia.Logic.EvidenceQuantale.BinaryEvidence
+abbrev StepState := Pattern → Mettapedia.PLN.Evidence.EvidenceQuantale.BinaryEvidence
 abbrev StepQuery := Pattern
 
 noncomputable instance stepStateEvidenceType : EvidenceType StepState := by
@@ -1144,10 +1144,10 @@ theorem pointwiseStepSide_not_automatic
     (hstep : OSLFTheoryStep relEnv p q) :
     ∃ W : StepState, ¬ pointwiseStepSide relEnv W := by
   classical
-  let hi : Mettapedia.Logic.EvidenceQuantale.BinaryEvidence := ⟨1, 0⟩
-  let lo : Mettapedia.Logic.EvidenceQuantale.BinaryEvidence := ⟨1, 1⟩
+  let hi : Mettapedia.PLN.Evidence.EvidenceQuantale.BinaryEvidence := ⟨1, 0⟩
+  let lo : Mettapedia.PLN.Evidence.EvidenceQuantale.BinaryEvidence := ⟨1, 1⟩
   let W : StepState :=
-    fun r => if r = p then hi else if r = q then lo else (⊥ : Mettapedia.Logic.EvidenceQuantale.BinaryEvidence)
+    fun r => if r = p then hi else if r = q then lo else (⊥ : Mettapedia.PLN.Evidence.EvidenceQuantale.BinaryEvidence)
   refine ⟨W, ?_⟩
   intro hmono
   have hle :
@@ -1162,16 +1162,16 @@ theorem pointwiseStepSide_not_automatic
   have hWq : W q = lo := by
     simp [W, hneq']
   have hle' :
-      Mettapedia.Logic.EvidenceQuantale.BinaryEvidence.toStrength hi ≤
-        Mettapedia.Logic.EvidenceQuantale.BinaryEvidence.toStrength lo := by
+      Mettapedia.PLN.Evidence.EvidenceQuantale.BinaryEvidence.toStrength hi ≤
+        Mettapedia.PLN.Evidence.EvidenceQuantale.BinaryEvidence.toStrength lo := by
     have hle₀ := hle
-    change Mettapedia.Logic.EvidenceQuantale.BinaryEvidence.toStrength (W p) ≤
-      Mettapedia.Logic.EvidenceQuantale.BinaryEvidence.toStrength (W q) at hle₀
+    change Mettapedia.PLN.Evidence.EvidenceQuantale.BinaryEvidence.toStrength (W p) ≤
+      Mettapedia.PLN.Evidence.EvidenceQuantale.BinaryEvidence.toStrength (W q) at hle₀
     simpa [hWp, hWq] using hle₀
   have hnum : ((1 : ENNReal) + 1) ≤ (1 : ENNReal) := by
     simpa [hi, lo,
-      Mettapedia.Logic.EvidenceQuantale.BinaryEvidence.toStrength,
-      Mettapedia.Logic.EvidenceQuantale.BinaryEvidence.total] using hle'
+      Mettapedia.PLN.Evidence.EvidenceQuantale.BinaryEvidence.toStrength,
+      Mettapedia.PLN.Evidence.EvidenceQuantale.BinaryEvidence.total] using hle'
   have hfalse : ¬ (((1 : ENNReal) + 1) ≤ (1 : ENNReal)) := by
     norm_num
   exact hfalse hnum

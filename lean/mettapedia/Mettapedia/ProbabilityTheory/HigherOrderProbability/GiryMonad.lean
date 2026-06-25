@@ -231,7 +231,7 @@ ParametrizedDistribution, hence inherits the Giry monad structure.
 flattening. Now we make explicit that it's also a Giry monad instance.
 -/
 theorem bernoulliMixture_flatten_apply_singleton
-    (M : Mettapedia.Logic.DeFinetti.BernoulliMixture) (n : ℕ) (xs : Fin n → Bool) :
+    (M : Mettapedia.ProbabilityTheory.Exchangeability.DeFinetti.BernoulliMixture) (n : ℕ) (xs : Fin n → Bool) :
     (ParametrizedDistribution.flatten (DeFinettiConnection.pd M n)) {xs} =
       ENNReal.ofReal (M.prob xs) := by
   simpa using DeFinettiConnection.flatten_apply_singleton (M := M) (n := n) (xs := xs)

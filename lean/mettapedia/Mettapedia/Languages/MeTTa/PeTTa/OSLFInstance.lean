@@ -43,7 +43,7 @@ open Mettapedia.OSLF.MeTTaIL.Export
 open Mettapedia.OSLF.Framework.TypeSynthesis
 open Mettapedia.Languages.MeTTa.PeTTa.LPSoundness
 open Mettapedia.Logic.LP (leastHerbrandModel GroundAtom)
-open Mettapedia.Logic.LP.MeTTaILBridge (encodeReduces mettailLPSig)
+open Mettapedia.OSLF.MeTTaIL.LPBridge (encodeReduces mettailLPSig)
 
 /-! ## §1 OSLF Type System -/
 

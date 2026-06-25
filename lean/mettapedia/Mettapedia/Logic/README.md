@@ -19,14 +19,15 @@ simultaneously as
 - a valuation in a **Heyting frame** — so PLN strictly generalizes intuitionistic truth
   rather than collapsing to Boolean true/false;
 - a **Beta statistic** — the conjugate-prior summary of a sequence of binary trials;
-- and the **collapse of an exchangeable binary Solomonoff mixture** — tying PLN to universal
-  prediction (de Finetti's theorem says exchangeable beliefs *are* a mixture over evidence
-  frequencies).
+- and the **collapse of an exchangeable binary Solomonoff mixture** — tying PLN to
+  `UniversalAI/` prediction (de Finetti's theorem says exchangeable beliefs *are*
+  a mixture over evidence frequencies).
 
 Building all four views and the bridges between them in Lean turns "PLN unifies these
 frameworks" from a slogan into checked theorems. On top of that core sit first-order and
-fuzzy quantifiers, Bayesian-network inference, deontic/governance reasoning, a PLN↔NARS
-comparison, and a work-in-progress universal-hyperprior lane for second-order uncertainty.
+fuzzy quantifiers, Bayesian-network inference, deontic/governance reasoning, and a PLN↔NARS
+comparison. Universal prediction and hyperprior developments now live under `UniversalAI/`;
+the remaining Logic-facing files are bridges into that room.
 
 Most of this directory's files sit directly under `Logic/`; several focused sub-areas have
 their own READMEs (linked below).
@@ -39,15 +40,15 @@ their own READMEs (linked below).
 | Weight / confidence | `PLNConfidenceWeight.lean`, … | sorry-free |
 | Bounds / consistency | `PLNFrechetBounds.lean`, … | sorry-free |
 | Algebraic structure (quantale/Heyting) | `EvidenceQuantale.lean`, `HeytingValuationOnEvidence.lean`, `PLNQuantaleSemantics/` | sorry-free |
-| Solomonoff / exchangeability | `SolomonoffExchangeable.lean`, `DeFinetti.lean` | sorry-free |
+| Solomonoff / exchangeability bridge | `../UniversalAI/SolomonoffExchangeable.lean`, `DeFinetti.lean` | bridge built; see `UniversalAI/` |
 | First-order & fuzzy quantifiers | `PLNFirstOrder/` (own README) | sorry-free |
-| Logic programming | `LP/`, `Prolog/` (own READMEs) | sorry-free |
+| Logic programming theory | `LP/` | sorry-free |
 | Governance / deontic | `GovernanceReasoning/`, `DDLPlus/` | sorry-free |
-| Concept ontology / Mizar benchmark | `ConceptOntology/` | sorry-free (uses `native_decide`, see below) |
-| Universal prediction (Hutter Ch 2–3) | `UniversalPrediction/` (own README) | sorry-free |
+| Concept ontology / Mizar benchmark | `../KR/ConceptOntology/` | sorry-free (uses `native_decide`, see below) |
+| Universal prediction (Hutter Ch 2–3) | `../UniversalAI/UniversalPrediction/` (own README) | sorry-free |
 | Bayesian-network inference | `PLNBayesNetInference.lean`, `PLN*BNLocalMarkov*.lean` | sorry-free |
 | Higher-order / measure-theoretic PLN | `HigherOrder/`, `MeasureTheoreticPLN/` | sorry-free |
-| **Universal hyperprior (2nd-order uncertainty)** | `UniversalHyperprior/` + `UniversalHyperprior.lean` | **work in progress — open sorries** |
+| **Universal hyperprior (2nd-order uncertainty)** | `../UniversalAI/UniversalHyperprior/` + `../UniversalAI/UniversalHyperprior.lean` | **work in progress — open proof obligations** |
 
 Other subdirectories: `Archive/` (frozen — do not build on), `BDD/`, `Bridges/`,
 `Comparison/` (3), `Convergence/` (4), `HOL/`, `Metaphysics/`, `StratifiedPLN/`.
@@ -61,7 +62,7 @@ PLN Evidence (n⁺, n⁻)
   → Quantale (tensor / chaining)
   → Heyting frame (intuitionistic valuation)
   → Beta statistic (conjugate summary)
-  → Solomonoff exchangeable binary collapse (de Finetti)
+  → UniversalAI Solomonoff exchangeable binary collapse (de Finetti)
 ```
 
 Anchor theorems (files all verified present):
@@ -72,12 +73,12 @@ Anchor theorems (files all verified present):
 | Weight-space minimization | `PLNConfidenceWeight.lean` |
 | Evidence is not Boolean | `HeytingValuationOnEvidence.lean` |
 | Quantale transitivity | `EvidenceQuantale.lean` |
-| Solomonoff collapse | `SolomonoffExchangeable.lean` |
+| Solomonoff collapse | `../UniversalAI/SolomonoffExchangeable.lean` |
 | De Finetti | `DeFinetti.lean` |
 
 The PLN evidence object is further shown to recover **Naive Bayes**
 (`PLN_tensorStrength_eq_nbPosterior`, in `PLNBayesNetInference.lean`) and **k-NN relevance**
-(`PLN_hplusPos_eq_knnRelevance`, in `PremiseSelectionKNN_PLNBridge.lean`), and a
+(`PLN_hplusPos_eq_knnRelevance`, in `KNN_PLNBridge.lean`), and a
 consolidated **PLN↔NARS** comparison lives in `PLNNARSRuleCorrespondence.lean`.
 
 ## Chapter regressions (one-command build targets)
@@ -88,16 +89,16 @@ root (`Mettapedia/lean/mettapedia`):
 
 ```bash
 # Ch 11 — quantifier / fuzzy / ITV bridges
-lake build Mettapedia.Logic.PLNFirstOrder.QuantifierRegression
+lake build Mettapedia.PLN.RuleFamilies.FirstOrder.Quantifiers.QuantifierRegression
 # Ch 12 — intensional inheritance
-lake build Mettapedia.Logic.PLNIntensionalRegression
+lake build Mettapedia.PLN.ConceptGeometry.AssocPat.PLNIntensionalRegression
 # Ch 13 — inference control (premise selection)
-lake build Mettapedia.Logic.PLNInferenceControlRegression
+lake build Mettapedia.PLN.InferenceControl.PremiseSelection.PLNInferenceControlRegression
 # Ch 8 — neighborhood consequence + categorical endpoints
-lake build Mettapedia.Logic.PLNWorldModelNeighborhoodConsequence \
-             Mettapedia.Logic.PLNWorldModelCategoricalRegression
+lake build Mettapedia.PLN.Bridges.Logic.WorldModel.PLNWorldModelNeighborhoodConsequence \
+             Mettapedia.PLN.Bridges.CategoryTheory.WorldModel.PLNWorldModelCategoricalRegression
 # Ch 9 — Bayesian-network positive path
-lake build Mettapedia.Logic.PLNSelectorRewriteThresholdRegression
+lake build Mettapedia.PLN.InferenceControl.SelectorRewriteThreshold.PLNSelectorRewriteThresholdRegression
 ```
 
 Matching shell checkers live under `scripts/` (`check_ch11_quantifiers.sh`,
@@ -109,25 +110,22 @@ Matching shell checkers live under `scripts/` (`check_ch11_quantifiers.sh`,
 PLN's bisimulation/observation bridges connect to the generalized-open-map machinery in
 `../CategoryTheory/GeneralizedOpenMaps.lean`:
 
-- `WeightedOpenMaps.lean` — `weightedBisim_iff_gopen_span`
-- `OSLFOpenMapBridge.lean` — `pathBisim_implies_bisimilar`, `fullOpenWitness_implies_obsEq`,
+- `../CategoryTheory/GeneralizedOpenMaps/Weighted.lean` — `weightedBisim_iff_gopen_span`
+- `../OSLF/Bridges/CategoryTheory/OpenMap.lean` — `pathBisim_implies_bisimilar`, `fullOpenWitness_implies_obsEq`,
   `fullOpenWitness_not_distinguished`
-- `OpenMapBridgeRegression.lean` — regression checks for the above
+- `../OSLF/Bridges/CategoryTheory/OpenMapRegression.lean` — regression checks for the above
 - π/ρ side: `../Languages/ProcessCalculi/PiCalculus/WeakBisimOpenMapBridge.lean`
   (`weakRestrictedBisim_iff_pathBisim`)
 
 ## Formalization status
 
-This README's **own scope** (files whose nearest-ancestor README is `Logic/` — i.e.
-everything except the `LP/`, `Prolog/`, `PLNFirstOrder/`, `GovernanceReasoning/`, and
-`UniversalPrediction/` sub-trees, which have their own READMEs) is **668 `.lean` files**.
-Of these, **5 files carry open `sorry`s, all in the work-in-progress `UniversalHyperprior/`
-lane** (a Normal-Normal universal-hyperprior development whose computability and dyadic
-real-arithmetic obligations are not yet discharged); every other lane is `sorry`-free. There
-are no source-level `axiom` declarations in this scope (a source grep, *not* a per-theorem
+This README's **own scope** is the current `Logic/` room: formal systems, proof/model
+theory, logic-programming theory, and the still-unmigrated PLN-facing bridges. UniversalAI,
+KR ConceptOntology, and concrete Prolog have moved to their own rooms. Source-level axiom
+declarations are still absent in this scope (a source grep, *not* a per-theorem
 `#print axioms` audit, so a theorem can still inherit a standard Mathlib axiom transitively).
 
-**Trusted base — `native_decide`.** `ConceptOntology/MizarBenchmarkEndpoint.lean` uses
+**Trusted base — `native_decide`.** `../KR/ConceptOntology/MizarBenchmarkEndpoint.lean` uses
 `native_decide` for **7** finite-cardinality / sum-counting fixtures (e.g.
 `Fintype.card MizarFamilyPilotArticle = 13`). `native_decide` compile-evaluates rather than
 kernel-checks, so it trusts the Lean compiler and enlarges the trusted base; these are
@@ -135,16 +133,13 @@ flagged for migration to kernel `decide`. No other file in this scope uses it.
 
 Reproduce from this directory — the `sorry` regex is a *raw* scan that also matches prose in
 comments/strings, so the footer's per-file figures are the authoritative comment-stripped
-counts (every real hit is under `UniversalHyperprior/`):
+counts (UniversalAI hyperprior proof obligations are outside this Logic room):
 
 ```bash
 rg -n --glob '*.lean' '\b(sorry|admit)\b' .
 rg -n --glob '*.lean' '^\s*(@\[[^]]*\]\s*)*axiom\s' .   # prints nothing
 rg -n --glob '*.lean' 'native_decide' .                 # ConceptOntology/MizarBenchmarkEndpoint.lean
 ```
-
-Recursively (including the sub-README sub-trees) the whole `Mettapedia/Logic` tree is
-797 `.lean` files.
 
 ## References
 
@@ -155,9 +150,5 @@ Recursively (including the sub-README sub-trees) the whole `Mettapedia/Logic` tr
 - Jan Jakubův et al., [*MizAR 60 for Mizar 50*](https://doi.org/10.4230/LIPIcs.ITP.2023.19), ITP 2023 — the Mizar benchmark referenced by `ConceptOntology/`.
 
 ---
-*Status (drafted 2026-06-22 by Claude Code, Opus 4.8): 668 .lean files, 5 with sorries.*
-- `UniversalHyperprior.lean` — 5 sorries
-- `UniversalHyperprior/ApproximationBounds.lean` — 6 sorries
-- `UniversalHyperprior/Computability.lean` — 12 sorries
-- `UniversalHyperprior/DyadicArithmetic.lean` — 4 sorries
-- `UniversalHyperprior/DyadicRealization.lean` — 1 sorry
+*Status note:* this README is being narrowed during the taxonomy migration; UniversalAI
+status is now reported in the `UniversalAI/` room.

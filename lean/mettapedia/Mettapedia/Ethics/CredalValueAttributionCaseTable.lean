@@ -1,6 +1,8 @@
 import Mettapedia.Ethics.Core
-import Mettapedia.Logic.BinaryEvidence
-import Mettapedia.Logic.EmpiricalIntensionalFactorGraphBridge
+import Mettapedia.PLN.Evidence.BinaryEvidence
+import Mettapedia.KR.ConceptGeometry.AbstractInheritance
+import Mettapedia.KR.ConceptGeometry.IntensionalInheritance
+import Mettapedia.KR.ConceptGeometry.Bridges.ProbabilityTheory.EmpiricalIntensionalFactorGraphBridge
 
 /-!
 # Credal Value Attribution from Case Tables
@@ -11,10 +13,10 @@ uncertainty-native credal concept-formation surface.
 
 namespace Mettapedia.Ethics
 
-open Mettapedia.Logic
-open Mettapedia.Logic.ConceptOntology
-open Mettapedia.Logic.EvidenceQuantale
-open Mettapedia.Logic.AbstractInheritance
+open Mettapedia.KR.ConceptOntology
+open Mettapedia.KR.ConceptGeometry
+open Mettapedia.PLN.Evidence.EvidenceQuantale
+open Mettapedia.KR.ConceptGeometry.AbstractInheritance
 
 universe u v
 
@@ -34,26 +36,26 @@ def lowerConceptFamily
     (T : CredalValueAttributionCaseTable Case)
     (Γ : Gate → EvidenceGate BinaryEvidence) :
     Set (DualConcept Case MoralValueAttribute) :=
-  ConceptOntology.lowerConceptFamily Γ T.evidence
+  _root_.Mettapedia.KR.ConceptOntology.lowerConceptFamily Γ T.evidence
 
 /-- Upper credal concept family induced by a finite gate family. -/
 def upperConceptFamily
     (T : CredalValueAttributionCaseTable Case)
     (Γ : Gate → EvidenceGate BinaryEvidence) :
     Set (DualConcept Case MoralValueAttribute) :=
-  ConceptOntology.upperConceptFamily Γ T.evidence
+  _root_.Mettapedia.KR.ConceptOntology.upperConceptFamily Γ T.evidence
 
 /-- Robust lower-formed concepts induced by the case table. -/
 abbrev LowerFormedConcept
     (T : CredalValueAttributionCaseTable Case)
     (Γ : Gate → EvidenceGate BinaryEvidence) :=
-  ConceptOntology.LowerFormedConcept Γ T.evidence
+  _root_.Mettapedia.KR.ConceptOntology.LowerFormedConcept Γ T.evidence
 
 /-- Permissive upper-formed concepts induced by the case table. -/
 abbrev UpperFormedConcept
     (T : CredalValueAttributionCaseTable Case)
     (Γ : Gate → EvidenceGate BinaryEvidence) :=
-  ConceptOntology.UpperFormedConcept Γ T.evidence
+  _root_.Mettapedia.KR.ConceptOntology.UpperFormedConcept Γ T.evidence
 
 /-- Canonical interpretation of robust lower-formed case concepts. -/
 noncomputable def lowerFormedConceptInterpretation
@@ -61,7 +63,7 @@ noncomputable def lowerFormedConceptInterpretation
     (Γ : Gate → EvidenceGate BinaryEvidence) :
     AbstractInheritance.Interpretation (LowerFormedConcept T Γ)
       Case MoralValueAttribute :=
-  ConceptOntology.lowerFormedConceptInterpretation Γ T.evidence
+  _root_.Mettapedia.KR.ConceptOntology.lowerFormedConceptInterpretation Γ T.evidence
 
 /-- Robust lower-formed inheritance table for case-level value attribution. -/
 noncomputable def lowerInheritanceTable

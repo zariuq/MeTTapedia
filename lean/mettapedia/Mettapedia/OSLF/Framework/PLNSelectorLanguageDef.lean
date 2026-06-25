@@ -33,7 +33,7 @@ open Mettapedia.OSLF.Framework.TypeSynthesis
 open Mettapedia.OSLF.Framework.PLNSelectorGSLT
 open Mettapedia.OSLF.Framework.PLNSelectorGSLT.PLNSelectorExpr
 open Mettapedia.OSLF.Formula
-open Mettapedia.Logic.PremiseSelection
+open Mettapedia.PLN.InferenceControl.PremiseSelection
 
 universe u v
 
@@ -109,7 +109,7 @@ mutual
   /-- Relational decoding from selector patterns to DSL expressions.
   `pAtom` can represent any underlying scorer atom. -/
   inductive ExprEncodes : Pattern → PLNSelectorExpr Goal Fact → Prop where
-    | atom (s : Mettapedia.Logic.PremiseSelection.Scorer Goal Fact) :
+    | atom (s : Mettapedia.PLN.InferenceControl.PremiseSelection.Scorer Goal Fact) :
         ExprEncodes pAtom (.atom s)
     | fuse {pa pb ea eb} :
         ExprEncodes pa ea →
@@ -623,7 +623,7 @@ theorem langReduces_encode_to_encode_reduces_of_atomFree
 
 /-- Atom nodes are excluded from the encode-injective fragment. -/
 theorem not_encodeInjective_atom
-    (s : Mettapedia.Logic.PremiseSelection.Scorer Goal Fact) :
+    (s : Mettapedia.PLN.InferenceControl.PremiseSelection.Scorer Goal Fact) :
     ¬ EncodeInjective (.atom s) := by
   intro h
   cases h
@@ -637,7 +637,7 @@ theorem not_encodeInjective_normalize
 
 /-- Atom payload is abstracted by encoding: all atoms map to the same pattern. -/
 @[simp] theorem encodeExpr_atom_const
-    (s₁ s₂ : Mettapedia.Logic.PremiseSelection.Scorer Goal Fact) :
+    (s₁ s₂ : Mettapedia.PLN.InferenceControl.PremiseSelection.Scorer Goal Fact) :
     encodeExpr (.atom s₁) = encodeExpr (.atom s₂) := by
   rfl
 

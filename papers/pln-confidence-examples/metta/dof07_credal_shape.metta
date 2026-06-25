@@ -11,8 +11,14 @@
 ;   interval but differ in adverse-event dependence; an STV per marginal hides
 ;   the incompatible joint structure.
 ;
-; Lean oracle: PLNTruthTower.CredalProjectionTower (credal envelope vs projective
-;   width-complement vs lower-prevision bounds — four distinct semantics of "shape").
+; Lean oracles: PLNTruthTower.CredalProjectionTower (credal envelope vs projective
+;   width-complement vs lower-prevision bounds — four distinct semantics of "shape"),
+;   plus the generic observation bridge
+;   PLNDistinctionCredalBridge.observationCredalSet_indicatorGamble_has_strict_width_of_related_ne
+;   / observationCredalSet_indicatorGamble_collapses_of_class_subsingleton
+;   and the OSLF specialization
+;   PLNDistinctionCredalOSLFBridge.indistObs_indicatorGamble_has_strict_width
+;   / indistObs_indicatorGamble_collapses_of_class_subsingleton.
 ; Portable: self-contained, float literals -> CeTTa(HE) + PeTTa.
 ; ============================================================================
 

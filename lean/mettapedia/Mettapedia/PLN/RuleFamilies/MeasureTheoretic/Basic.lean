@@ -1,0 +1,304 @@
+import Mettapedia.PLN.Evidence.EvidenceQuantale
+import Mathlib.MeasureTheory.Measure.ProbabilityMeasure
+import Mathlib.Topology.UnitInterval
+
+/-!
+# Measure-Theoretic PLN Semantics: Basic Definitions
+
+This file establishes the core definitions connecting PLN BinaryEvidence to measure-theoretic
+probability via the Beta distribution interpretation.
+
+## Key Definitions
+
+- `EvidenceInterpretation`: Parameters specifying how BinaryEvidence maps to Beta distributions
+- `BinaryEvidence.toBetaParams`: Convert BinaryEvidence (n⁺, n⁻) to Beta(α, β) parameters
+- `ThetaSpace`: The sample space [0,1] for Bernoulli parameter θ
+
+## The Main Interpretation
+
+BinaryEvidence `(n⁺, n⁻)` represents:
+- `n⁺` positive observations (successes)
+- `n⁻` negative observations (failures)
+
+With prior pseudo-counts `(α₀, β₀)`, this induces a Beta distribution:
+- Beta(α₀ + n⁺, β₀ + n⁻)
+
+The standard prior choices are:
+- Uniform (Laplace): α₀ = β₀ = 1
+- Jeffreys: α₀ = β₀ = 0.5
+- Improper (Haldane): α₀ = β₀ → 0 (limiting case)
+
+## References
+
+- de Finetti, "Theory of Probability" (1974)
+- Goertzel et al., "Probabilistic Logic Networks" (2009)
+- Existing `EvidenceBeta.lean` for the convergence bounds
+-/
+
+namespace Mettapedia.PLN.RuleFamilies.MeasureTheoretic
+
+open Mettapedia.PLN.Evidence.EvidenceQuantale
+open MeasureTheory
+open scoped ENNReal NNReal unitInterval
+
+/-! ## Sample Space -/
+
+/-- The sample space for Bernoulli parameter θ: the unit interval [0,1].
+
+    This is the support of the Beta distribution representing our belief about
+    the "true" probability underlying the observed evidence.
+-/
+abbrev ThetaSpace := Set.Icc (0 : ℝ) 1
+
+/-- ThetaSpace is nonempty (contains 0 and 1) -/
+theorem thetaSpace_nonempty : (Set.Icc (0 : ℝ) 1).Nonempty := Set.nonempty_Icc.mpr (by norm_num)
+
+/-! ## BinaryEvidence Interpretation Parameters -/
+
+/-- Parameters specifying how BinaryEvidence maps to probability distributions.
+
+    The key parameters are the prior pseudo-counts for the Beta distribution:
+    - `prior_alpha`: pseudo-count for positive evidence (α₀)
+    - `prior_beta`: pseudo-count for negative evidence (β₀)
+
+    Common choices:
+    - Uniform prior: α₀ = β₀ = 1
+    - Jeffreys prior: α₀ = β₀ = 0.5
+-/
+structure EvidenceInterpretation where
+  /-- Prior pseudo-count for positive evidence (α₀ in Beta prior) -/
+  prior_alpha : ℝ
+  /-- Prior pseudo-count for negative evidence (β₀ in Beta prior) -/
+  prior_beta : ℝ
+  /-- Prior parameters must be positive for proper Beta distribution -/
+  prior_pos : 0 < prior_alpha ∧ 0 < prior_beta
+
+namespace EvidenceInterpretation
+
+/-- The uniform (Laplace) prior: Beta(1, 1) -/
+def uniform : EvidenceInterpretation where
+  prior_alpha := 1
+  prior_beta := 1
+  prior_pos := ⟨by norm_num, by norm_num⟩
+
+/-- The Jeffreys prior: Beta(0.5, 0.5) -/
+def jeffreys : EvidenceInterpretation where
+  prior_alpha := 0.5
+  prior_beta := 0.5
+  prior_pos := ⟨by norm_num, by norm_num⟩
+
+/-- A general symmetric prior: Beta(k, k) for any k > 0 -/
+def symmetric (k : ℝ) (hk : 0 < k) : EvidenceInterpretation where
+  prior_alpha := k
+  prior_beta := k
+  prior_pos := ⟨hk, hk⟩
+
+/-- Total prior pseudo-counts: α₀ + β₀ -/
+noncomputable def totalPrior (interp : EvidenceInterpretation) : ℝ :=
+  interp.prior_alpha + interp.prior_beta
+
+/-- Total prior is positive -/
+theorem totalPrior_pos (interp : EvidenceInterpretation) : 0 < interp.totalPrior := by
+  unfold totalPrior
+  linarith [interp.prior_pos.1, interp.prior_pos.2]
+
+/-- Updating an interpretation by finite natural-count evidence yields the
+posterior Beta prior for the next evidence batch. -/
+def posteriorFromNat (interp : EvidenceInterpretation)
+    (npos nneg : ℕ) : EvidenceInterpretation where
+  prior_alpha := interp.prior_alpha + npos
+  prior_beta := interp.prior_beta + nneg
+  prior_pos := by
+    constructor
+    · have hn : (0 : ℝ) ≤ npos := Nat.cast_nonneg npos
+      linarith [interp.prior_pos.1, hn]
+    · have hn : (0 : ℝ) ≤ nneg := Nat.cast_nonneg nneg
+      linarith [interp.prior_pos.2, hn]
+
+@[simp] theorem posteriorFromNat_prior_alpha
+    (interp : EvidenceInterpretation) (npos nneg : ℕ) :
+    (interp.posteriorFromNat npos nneg).prior_alpha =
+      interp.prior_alpha + npos :=
+  rfl
+
+@[simp] theorem posteriorFromNat_prior_beta
+    (interp : EvidenceInterpretation) (npos nneg : ℕ) :
+    (interp.posteriorFromNat npos nneg).prior_beta =
+      interp.prior_beta + nneg :=
+  rfl
+
+/-- The posterior interpretation's total prior concentration is the old prior
+concentration plus the observed evidence concentration. -/
+theorem posteriorFromNat_totalPrior
+    (interp : EvidenceInterpretation) (npos nneg : ℕ) :
+    (interp.posteriorFromNat npos nneg).totalPrior =
+      interp.totalPrior + npos + nneg := by
+  unfold posteriorFromNat totalPrior
+  ring
+
+end EvidenceInterpretation
+
+/-! ## Converting BinaryEvidence to Beta Parameters -/
+
+/-- Beta distribution parameters derived from BinaryEvidence and prior.
+
+    Given BinaryEvidence `(n⁺, n⁻)` and prior `(α₀, β₀)`:
+    - α = α₀ + n⁺
+    - β = β₀ + n⁻
+-/
+structure BetaParams where
+  /-- α parameter (shape for success) -/
+  alpha : ℝ
+  /-- β parameter (shape for failure) -/
+  beta : ℝ
+  /-- α must be positive -/
+  alpha_pos : 0 < alpha
+  /-- β must be positive -/
+  beta_pos : 0 < beta
+
+namespace BetaParams
+
+/-- Total concentration: α + β -/
+noncomputable def total (p : BetaParams) : ℝ := p.alpha + p.beta
+
+/-- Total is positive -/
+theorem total_pos (p : BetaParams) : 0 < p.total := by
+  unfold total
+  linarith [p.alpha_pos, p.beta_pos]
+
+/-- Beta mean: α / (α + β) -/
+noncomputable def mean (p : BetaParams) : ℝ := p.alpha / p.total
+
+/-- Beta mean is in [0, 1] -/
+theorem mean_mem_unit (p : BetaParams) : p.mean ∈ Set.Icc (0 : ℝ) 1 := by
+  unfold mean total
+  constructor
+  · apply div_nonneg
+    · linarith [p.alpha_pos]
+    · linarith [p.alpha_pos, p.beta_pos]
+  · rw [div_le_one (by linarith [p.alpha_pos, p.beta_pos])]
+    have hbeta : 0 < p.beta := p.beta_pos
+    linarith [hbeta]
+
+/-- Beta variance: αβ / ((α+β)²(α+β+1)) -/
+noncomputable def variance (p : BetaParams) : ℝ :=
+  (p.alpha * p.beta) / (p.total ^ 2 * (p.total + 1))
+
+/-- Variance is non-negative -/
+theorem variance_nonneg (p : BetaParams) : 0 ≤ p.variance := by
+  unfold variance total
+  apply div_nonneg
+  · apply mul_nonneg <;> linarith [p.alpha_pos, p.beta_pos]
+  · apply mul_nonneg
+    · apply sq_nonneg
+    · linarith [p.alpha_pos, p.beta_pos]
+
+end BetaParams
+
+/-! ## BinaryEvidence to Beta Conversion -/
+
+/-- Convert BinaryEvidence to Beta parameters with given prior.
+
+    Given evidence `e = (n⁺, n⁻)` and interpretation `interp = (α₀, β₀)`:
+    Returns BetaParams with α = α₀ + n⁺, β = β₀ + n⁻
+
+    Requires: n⁺ and n⁻ are finite (not ⊤)
+-/
+noncomputable def evidenceToBetaParams (e : BinaryEvidence) (interp : EvidenceInterpretation)
+    (_hpos_fin : e.pos ≠ ⊤) (_hneg_fin : e.neg ≠ ⊤) : BetaParams where
+  alpha := interp.prior_alpha + e.pos.toReal
+  beta := interp.prior_beta + e.neg.toReal
+  alpha_pos := by
+    have h : 0 ≤ e.pos.toReal := ENNReal.toReal_nonneg
+    linarith [interp.prior_pos.1]
+  beta_pos := by
+    have h : 0 ≤ e.neg.toReal := ENNReal.toReal_nonneg
+    linarith [interp.prior_pos.2]
+
+/-- The Beta mean from evidence equals PLN strength asymptotically.
+
+    For evidence `(n⁺, n⁻)` with total n = n⁺ + n⁻:
+    - PLN strength = n⁺/n
+    - Beta mean = (α₀ + n⁺)/(α₀ + β₀ + n)
+
+    As n → ∞, the difference → 0 at rate O(1/n).
+
+    This is proven more carefully in `EvidenceBeta.lean`.
+-/
+theorem evidenceToBetaParams_mean (e : BinaryEvidence) (interp : EvidenceInterpretation)
+    (hpos_fin : e.pos ≠ ⊤) (hneg_fin : e.neg ≠ ⊤) :
+    let bp := evidenceToBetaParams e interp hpos_fin hneg_fin
+    bp.mean = (interp.prior_alpha + e.pos.toReal) /
+              (interp.totalPrior + e.total.toReal) := by
+  simp only [evidenceToBetaParams, BetaParams.mean, BetaParams.total,
+             EvidenceInterpretation.totalPrior]
+  congr 1
+  unfold BinaryEvidence.total
+  rw [ENNReal.toReal_add hpos_fin hneg_fin]
+  ring
+
+/-- BinaryEvidence with finite components yields well-defined Beta parameters -/
+theorem evidenceToBetaParams_total (e : BinaryEvidence) (interp : EvidenceInterpretation)
+    (hpos_fin : e.pos ≠ ⊤) (hneg_fin : e.neg ≠ ⊤) :
+    (evidenceToBetaParams e interp hpos_fin hneg_fin).total =
+    interp.totalPrior + e.total.toReal := by
+  simp only [evidenceToBetaParams, BetaParams.total, EvidenceInterpretation.totalPrior,
+             BinaryEvidence.total]
+  rw [ENNReal.toReal_add hpos_fin hneg_fin]
+  ring
+
+/-! ## Finite BinaryEvidence -/
+
+/-- Predicate for evidence with finite components (necessary for measure-theoretic interpretation) -/
+def EvidenceIsFinite (e : BinaryEvidence) : Prop := e.pos ≠ ⊤ ∧ e.neg ≠ ⊤
+
+/-- Zero evidence is finite -/
+theorem evidenceIsFinite_zero : EvidenceIsFinite BinaryEvidence.zero := by
+  simp [EvidenceIsFinite, BinaryEvidence.zero]
+
+/-- One evidence is finite -/
+theorem evidenceIsFinite_one : EvidenceIsFinite BinaryEvidence.one := by
+  simp [EvidenceIsFinite, BinaryEvidence.one]
+
+/-- hplus preserves finiteness when both inputs are finite -/
+theorem evidenceIsFinite_hplus {e₁ e₂ : BinaryEvidence} (h₁ : EvidenceIsFinite e₁) (h₂ : EvidenceIsFinite e₂) :
+    EvidenceIsFinite (e₁ + e₂) := by
+  simp only [EvidenceIsFinite, BinaryEvidence.hplus_def] at *
+  constructor
+  · exact ENNReal.add_ne_top.mpr ⟨h₁.1, h₂.1⟩
+  · exact ENNReal.add_ne_top.mpr ⟨h₁.2, h₂.2⟩
+
+/-- Construct evidence from natural numbers (always finite) -/
+def evidenceFromNat (npos nneg : ℕ) : BinaryEvidence := ⟨npos, nneg⟩
+
+/-- BinaryEvidence from natural numbers is finite -/
+theorem evidenceFromNat_isFinite (npos nneg : ℕ) : EvidenceIsFinite (evidenceFromNat npos nneg) := by
+  unfold EvidenceIsFinite evidenceFromNat
+  constructor <;> exact ENNReal.natCast_ne_top _
+
+/-! ## Summary
+
+This file establishes:
+
+1. **ThetaSpace**: The sample space [0,1] for Bernoulli parameter θ
+
+2. **EvidenceInterpretation**: Prior parameters (α₀, β₀) for Beta distribution
+   - `uniform`: Laplace prior (1, 1)
+   - `jeffreys`: Jeffreys prior (0.5, 0.5)
+
+3. **BetaParams**: Parameters (α, β) for Beta distribution with:
+   - `mean`: Expected value α/(α+β)
+   - `variance`: Variance αβ/((α+β)²(α+β+1))
+
+4. **BinaryEvidence.toBetaParams**: Convert evidence (n⁺, n⁻) to Beta(α₀+n⁺, β₀+n⁻)
+
+5. **BinaryEvidence.IsFinite**: Predicate for finite evidence (required for measure-theoretic ops)
+
+## Next Steps
+
+- `BetaMeasure.lean`: Construct the actual Beta measure on [0,1]
+- `EvidenceSemantics.lean`: Define the probability kernel BinaryEvidence → Measure ThetaSpace
+- Integration with Convergence module for LLN proofs
+-/
+
+end Mettapedia.PLN.RuleFamilies.MeasureTheoretic

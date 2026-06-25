@@ -104,7 +104,7 @@ theorem sleepStep1_conformance : check_sleepStep1 = true := by decide
 The conformance story for Maple Court is now three-layered:
 
 1. **PeTTa runtime** (`maple_court_simple.metta`): 6 assertEqual tests pass
-2. **Lean algebra** (`PLNMapleCourtDemo.lean`): 34 theorems, 0 sorry
+2. **Lean algebra** (`MapleCourtDemo.lean`): 34 theorems, 0 sorry
 3. **Lean checker** (this file): 4 kernel-checked conformance theorems
 
 The checker `wmCoreCheck` is a simple pattern match that the kernel

@@ -12,7 +12,8 @@
 ;     each GENERATED ctor type well-formed, strict positivity)
 ;   * generated eliminator + branch TYPES
 ;   * strengthened `sig-admitted-with-elims` view: admitted signature plus every
-;     DIndG's generated eliminator type typechecks
+;     DIndG's generated eliminator type typechecks, constructor heads are
+;     non-overlapping, and generated-iota SR obligations are admitted
 ;   * generated constructor-headed iota: the (IndG ...) eliminator term computes
 ;     by reducing on a constructor; J for Id is the diagonal iota from the SAME
 ;     generic path (no special rule)
@@ -559,10 +560,46 @@
    (let $et (dindg-elim-type $sig $name)
      (if (is-bad $et) False (sort-ok (nf $sig (infer $sig CtxNil $et))))))
 
+; Admission-level generated-iota SR gate helpers.  These must be in scope before
+; `sig-admitted-with-elims`, because CeTTa leaves unknown heads inert.
+(= (dindg-orthogonality-status SNil) (Ok orthogonal))
+(= (dindg-orthogonality-status (SCons (DIndG $n $pT $iT $ctors) $rest))
+   (if (unique-gctors $ctors)
+     (dindg-orthogonality-status $rest)
+     (Bad confluence-via-checked-orthogonality)))
+(= (dindg-orthogonality-status (SCons (DConst $n $T) $rest)) (dindg-orthogonality-status $rest))
+(= (dindg-orthogonality-status (SCons (DDef $n $T $b) $rest)) (dindg-orthogonality-status $rest))
+(= (dindg-orthogonality-status (SCons (DAxiom $n $T) $rest)) (dindg-orthogonality-status $rest))
+(= (status-ok $v)
+   (case $v (((Ok $x) True) ((Bad $e) False) ($_ False))))
+(= (confluence-via-checked-orthogonality $sig)
+   (status-ok (dindg-orthogonality-status $sig)))
+
+; Target-shape tooth for hand-mutated/generated-iota targets: an iota conclusion
+; must be a motive application to the same constructor-headed scrutinee family it
+; reduced on.
+(= (sr-iota-target-status $ctor $target)
+   (unify $target (App $motiveAtIdx $ctorApp)
+     (if (== (app-head $ctorApp) $ctor)
+       (Ok sr-iota-preserves-type)
+       (Bad sr-iota-mismatch))
+     (Bad sr-iota-mismatch)))
+(= (dindg-ctor-type-wellsorted-status $sig $name $pT (GCtor $c $aT $ri))
+   (let $ct (dindg-ctor-type $name $pT (GCtor $c $aT $ri))
+     (if (sort-ok (nf $sig (infer $sig CtxNil $ct)))
+       (Ok ctor-type-wellsorted)
+       (Bad ctor-type-not-wellsorted))))
+(= (dindg-ctors-type-wellsorted-status $sig $name $pT GCNil) (Ok ctor-type-wellsorted))
+(= (dindg-ctors-type-wellsorted-status $sig $name $pT (GCtors $ctor $rest))
+   (let $st (dindg-ctor-type-wellsorted-status $sig $name $pT $ctor)
+     (if (status-ok $st)
+       (dindg-ctors-type-wellsorted-status $sig $name $pT $rest)
+       (Bad ctor-type-not-wellsorted))))
+
 ; Strengthened admission view: first admit the signature, then require every
 ; DIndG declaration in that admitted signature to have a generated eliminator
-; type that itself typechecks.  This is factored into small helpers because the
-; earlier inline fold was evaluator-sensitive in CeTTa.
+; type that itself typechecks, non-overlapping constructor heads, and generated
+; iota rules that preserve type.
 (= (dindg-elims-ok $sig SNil) True)
 (= (dindg-elims-ok $sig (SCons (DIndG $n $pT $iT $ctors) $rest))
    (if (dindg-elim-typechecks $sig $n) (dindg-elims-ok $sig $rest) False))
@@ -570,7 +607,13 @@
 (= (dindg-elims-ok $sig (SCons (DDef $n $T $b) $rest)) (dindg-elims-ok $sig $rest))
 (= (dindg-elims-ok $sig (SCons (DAxiom $n $T) $rest)) (dindg-elims-ok $sig $rest))
 (= (sig-admitted-with-elims $sig)
-   (if (sig-admitted $sig) (dindg-elims-ok $sig $sig) False))
+   (if (sig-admitted $sig)
+     (if (dindg-elims-ok $sig $sig)
+       (if (confluence-via-checked-orthogonality $sig)
+         (dindg-iota-preservation-ok $sig)
+         False)
+       False)
+     False))
 
 ; ---- REPLAY: generated eliminator types equal the known eliminator shapes ----
 ; Nat recursor:
@@ -607,9 +650,6 @@
 !(assertEqual (dindg-elim-typechecks (good-sig-G) fin) True)
 !(assertEqual (dindg-elim-typechecks (good-sig-G) Id) True)
 !(assertEqual (dindg-elim-typechecks (pair-sig-G) pair) True)
-!(assertEqual (sig-admitted-with-elims (good-sig-G)) True)
-!(assertEqual (sig-admitted-with-elims (pair-sig-G)) True)
-!(assertEqual (sig-admitted-with-elims (bad-ctor-sig)) False)
 
 ; ---- negative-replay: the generator does NOT emit a wrong recursive-IH index --
 ; (the Vec cons IH must be P n xs = (App (App (Var 4) (Var 2)) (Var 0)); a variant
@@ -789,6 +829,118 @@
        (App $body $arg)
        (subst 0 $arg $B)
        $rest)))
+
+; ---- admission-level generated-iota certificates ----------------------------
+; Build the canonical iota LHS/RHS for each constructor, close it under the same
+; params/motive/branches/constructor-args binders, then compare inferred types.
+; This checks generated ι preservation; constructor-type sortedness above is only
+; a separate wellformedness fact.
+(= (tel-to-lam TNil $body) $body)
+(= (tel-to-lam (TCons $A $r) $body) (Lam $A (tel-to-lam $r $body)))
+
+(= (dindg-branches-lam $name $np GCNil $pb $body) $body)
+(= (dindg-branches-lam $name $np (GCtors $ctor $rest) $pb $body)
+   (Lam (dindg-branch-type $name $np $ctor $pb)
+     (dindg-branches-lam $name $np $rest (+ $pb 1) $body)))
+
+(= (dindg-branch-var $k $pb $na) (Var (+ $na (- (- $k 1) $pb))))
+(= (dindg-cases-from-branches GCNil $pb $k $na) CasesNil)
+(= (dindg-cases-from-branches (GCtors (GCtor $c $aT $ri) $rest) $pb $k $na)
+   (Cases (Case $c (dindg-branch-var $k $pb $na))
+     (dindg-cases-from-branches $rest (+ $pb 1) $k $na)))
+
+(= (dindg-iota-params $pT $ctors $aT)
+   (tel-var-args (tel-len $pT) (+ (+ (tel-len $aT) (gctors-len $ctors)) 1)))
+(= (dindg-iota-args $aT) (tel-var-args (tel-len $aT) 0))
+(= (dindg-iota-motive $ctors $aT) (Var (+ (tel-len $aT) (gctors-len $ctors))))
+(= (dindg-iota-cases $ctors $aT)
+   (dindg-cases-from-branches $ctors 0 (gctors-len $ctors) (tel-len $aT)))
+(= (dindg-iota-indices $ctors $aT $resultIdx)
+   (shift-args (+ (gctors-len $ctors) 1) (tel-len $aT) $resultIdx))
+(= (dindg-iota-scrut $c $params $args)
+   (apply-args (apply-args (Con $c) $params) $args))
+
+(= (dindg-iota-lhs-body $name $pT $ctors (GCtor $c $aT $ri))
+   (let $params (dindg-iota-params $pT $ctors $aT)
+     (let $args (dindg-iota-args $aT)
+       (IndG $name
+         $params
+         (dindg-iota-motive $ctors $aT)
+         (dindg-iota-cases $ctors $aT)
+         (dindg-iota-indices $ctors $aT $ri)
+         (dindg-iota-scrut $c $params $args)))))
+
+(= (dindg-iota-rhs-body $sig $name $pT $ctors (GCtor $c $aT $ri) $pb)
+   (let $params (dindg-iota-params $pT $ctors $aT)
+     (let $args (dindg-iota-args $aT)
+       (let $motive (dindg-iota-motive $ctors $aT)
+         (let $cases (dindg-iota-cases $ctors $aT)
+           (let $body (dindg-branch-var (gctors-len $ctors) $pb (tel-len $aT))
+             (let $ct (dindg-ctor-type $name $pT (GCtor $c $aT $ri))
+               (branch-apply-g $sig $name $params $motive $cases $body
+                 (inst-tel-args $ct $params)
+                 $args))))))))
+
+(= (dindg-iota-wrap $name $pT $iT $ctors (GCtor $c $aT $ri) $body)
+   (let $np (tel-len $pT)
+     (let $k (gctors-len $ctors)
+       (tel-to-lam $pT
+         (Lam (dindg-motive-type $name $np $iT)
+           (dindg-branches-lam $name $np $ctors 0
+             (tel-to-lam (shift-tel (+ $k 1) 0 $aT) $body)))))))
+
+(= (dindg-iota-lhs-cert $name $pT $iT $ctors $ctor)
+   (dindg-iota-wrap $name $pT $iT $ctors $ctor
+     (dindg-iota-lhs-body $name $pT $ctors $ctor)))
+(= (dindg-iota-rhs-cert $sig $name $pT $iT $ctors $ctor $pb)
+   (dindg-iota-wrap $name $pT $iT $ctors $ctor
+     (dindg-iota-rhs-body $sig $name $pT $ctors $ctor $pb)))
+
+(= (sr-iota-rule-status-ctx $sig $ctx $lhs $rhs)
+   (let $a (infer $sig $ctx $lhs)
+     (let $b (infer $sig $ctx $rhs)
+       (case (conv $sig $a $b)
+         ((True (Ok sr-iota-preserves-type))
+          (False (Bad sr-iota-mismatch))
+          ($_ (Bad sr-iota-mismatch)))))))
+(= (sr-iota-rule-status $sig $lhs $rhs)
+   (sr-iota-rule-status-ctx $sig CtxNil $lhs $rhs))
+
+(= (dindg-ctor-iota-preservation-status $sig $name $pT $iT $ctors $ctor $pb)
+   (let $lhs (dindg-iota-lhs-cert $name $pT $iT $ctors $ctor)
+     (let $rhs (dindg-iota-rhs-cert $sig $name $pT $iT $ctors $ctor $pb)
+       (sr-iota-rule-status $sig $lhs $rhs))))
+(= (dindg-ctors-iota-preservation-status $sig $name $pT $iT GCNil $all $pb)
+   (Ok sr-iota-preserves-type))
+(= (dindg-ctors-iota-preservation-status $sig $name $pT $iT (GCtors $ctor $rest) $all $pb)
+   (let $st (dindg-ctor-iota-preservation-status $sig $name $pT $iT $all $ctor $pb)
+     (if (status-ok $st)
+       (dindg-ctors-iota-preservation-status $sig $name $pT $iT $rest $all (+ $pb 1))
+       (Bad sr-iota-mismatch))))
+(= (dindg-iota-preservation-status $sig SNil) (Ok sr-iota-preserves-type))
+(= (dindg-iota-preservation-status $sig (SCons (DIndG $n $pT $iT $ctors) $rest))
+   (let $st (dindg-ctors-iota-preservation-status $sig $n $pT $iT $ctors $ctors 0)
+     (if (status-ok $st)
+       (dindg-iota-preservation-status $sig $rest)
+       (Bad sr-iota-mismatch))))
+(= (dindg-iota-preservation-status $sig (SCons (DConst $n $T) $rest))
+   (dindg-iota-preservation-status $sig $rest))
+(= (dindg-iota-preservation-status $sig (SCons (DDef $n $T $b) $rest))
+   (dindg-iota-preservation-status $sig $rest))
+(= (dindg-iota-preservation-status $sig (SCons (DAxiom $n $T) $rest))
+   (dindg-iota-preservation-status $sig $rest))
+(= (dindg-iota-preservation-ok $sig)
+   (status-ok (dindg-iota-preservation-status $sig $sig)))
+
+!(assertEqual (dindg-ctors-type-wellsorted-status (good-sig-G) nat TNil
+   (GCtors (GCtor z TNil ArgsNil)
+     (GCtors (GCtor s (TCons (Con nat) TNil) ArgsNil) GCNil)))
+   (Ok ctor-type-wellsorted))
+!(assertEqual (dindg-iota-preservation-status (good-sig-G) (good-sig-G)) (Ok sr-iota-preserves-type))
+!(assertEqual (dindg-iota-preservation-status (pair-sig-G) (pair-sig-G)) (Ok sr-iota-preserves-type))
+!(assertEqual (sig-admitted-with-elims (good-sig-G)) True)
+!(assertEqual (sig-admitted-with-elims (pair-sig-G)) True)
+!(assertEqual (sig-admitted-with-elims (bad-ctor-sig)) False)
 
 ; ---------- checked proof objects + provenance over typed terms ---------------
 (= (args-axioms $sig ArgsNil) ANil)
@@ -1064,22 +1216,51 @@
 !(assertEqual (conv (good-sig-G) (Lam (Con nat) (App (Con s) (Var 0))) (Con s)) False)   ; eta-free: (lambda x. s x) is NOT defeq s
 !(assertEqual (infer (good-sig-G) CtxNil (Pi (Srt type) (Var 0))) (Srt kind))            ; predicative: (Pi X:Type. X) : kind, not Type
 
-; --- SR WEDGE (v2 oracle): the generated iota PRESERVES inferred type (subject reduction, first step) ---
-; The iota is constructor-headed + non-overlapping by construction (off-constructor scrutinees stay stuck,
-; tested above), so here we seal the observable SR property on each family's redex: infer t ≡ infer (nf t).
-; This is the admission-level SR step; full universal SR/confluence is the Lean v3 metatheorem.
+; --- SR ADMISSION GATE (v2 oracle): generated iota preserves inferred type ---
+; The admission view requires constructor-head orthogonality and generated-iota
+; preservation statuses before kernel-check can mint CheckedPrf.  The gate builds
+; canonical generated-iota LHS/RHS certificates for each constructor and compares
+; their inferred types.  The witnesses below also exercise the observable SR
+; property on each family's redex: infer t == infer (nf t).  This is still not
+; the universal SR/confluence metatheorem; it is the fail-closed admission gate
+; that theorem will justify.
 ; helper-factored (let-bind intermediates — deep inline infer(nf t) is CeTTa-eval-fragile)
 (= (sr-ok $sig $t)
    (let $nft (nf $sig $t)
      (let $a (infer $sig CtxNil $t)
        (let $b (infer $sig CtxNil $nft)
          (conv $sig $a $b)))))
+
+!(assertEqual (confluence-via-checked-orthogonality (good-sig-G)) True)
+!(assertEqual (dindg-orthogonality-status (dup-ctor-sig)) (Bad confluence-via-checked-orthogonality))
+!(assertEqual
+   (sr-iota-target-status vcons
+     (App (App (Var 4) (App (Con s) (Var 3)))
+       (App (App (App (App (Con vnil) (Var 6)) (Var 3)) (Var 2)) (Var 1))))
+   (Bad sr-iota-mismatch))
+!(assertEqual
+   (sr-iota-target-status vcons
+     (App (App (Var 4) (Var 2))
+       (App (App (App (App (Con vcons) (Var 6)) (Var 3)) (Var 2)) (Var 1))))
+   (Ok sr-iota-preserves-type))
 !(assertEqual (sr-ok (good-sig-G) (nat-id-indg-typed)) True)
 !(assertEqual (sr-ok (good-sig-G) (list-length-indg-typed)) True)
 !(assertEqual (sr-ok (good-sig-G) (vec-length-indg-typed)) True)
 !(assertEqual (sr-ok (good-sig-G) (fin-rank-indg-typed)) True)
 !(assertEqual (sr-ok (good-sig-G) (id-j-indg-typed)) True)
 !(assertEqual (sr-ok (pair-nat-sig-G) (pair-fst-indg-typed)) True)
+!(assertEqual
+   (sr-iota-rule-status (good-sig-G) (vec-length-indg-typed) (nf (good-sig-G) (vec-length-indg-typed)))
+   (Ok sr-iota-preserves-type))
+!(assertEqual
+   (sr-iota-rule-status (good-sig-G) (vec-length-indg-typed) (Con nat))
+   (Bad sr-iota-mismatch))
+!(assertEqual
+   (sr-iota-rule-status (pair-nat-sig-G) (pair-fst-indg-typed) (nf (pair-nat-sig-G) (pair-fst-indg-typed)))
+   (Ok sr-iota-preserves-type))
+!(assertEqual
+   (sr-iota-rule-status (pair-nat-sig-G) (pair-fst-indg-typed) (Srt type))
+   (Bad sr-iota-mismatch))
 
 ; =============================================================================
 ; v4 SLICE-COLLAPSE REPLAY: re-derive the remaining inductive slices' EXACT

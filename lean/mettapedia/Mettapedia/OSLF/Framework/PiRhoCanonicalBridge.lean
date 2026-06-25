@@ -4,10 +4,10 @@ import Mettapedia.OSLF.Framework.TypeSynthesis
 import Mettapedia.OSLF.Framework.LanguageMorphism
 import Mettapedia.OSLF.Formula
 import Mettapedia.Logic.ModalMuCalculus
-import Mettapedia.Logic.OSLFKripkeBridge
-import Mettapedia.Logic.OSLFImageFinite
-import Mettapedia.Logic.OSLFKSUnificationSketch
-import Mettapedia.Logic.OSLFDistinctionGraph
+import Mettapedia.OSLF.Bridges.Foundation.Kripke
+import Mettapedia.OSLF.Framework.ImageFinite
+import Mettapedia.OSLF.Framework.KSUnificationSketch
+import Mettapedia.OSLF.Framework.DistinctionGraph
 
 /-!
 # π→ρ Canonical Package Bridge (Pre-OSLF)
@@ -191,7 +191,7 @@ abbrev rhoDerivedCanonicalRel : Pattern → Pattern → Prop :=
 theorem imageFinite_rhoCoreCanonicalRel
     (p : Pattern) : Set.Finite {q : Pattern | rhoCoreCanonicalRel p q} := by
   simpa [rhoCoreCanonicalRel] using
-    Mettapedia.Logic.OSLFImageFinite.imageFinite_langReduces
+    Mettapedia.OSLF.Framework.ImageFinite.imageFinite_langReduces
       Mettapedia.OSLF.MeTTaIL.Syntax.rhoCalc p
 
 /-- Concrete image-finiteness for the canonical executable derived-facing
@@ -199,7 +199,7 @@ relation. -/
 theorem imageFinite_rhoDerivedCanonicalRel
     (p : Pattern) : Set.Finite {q : Pattern | rhoDerivedCanonicalRel p q} := by
   simpa [rhoDerivedCanonicalRel] using
-    Mettapedia.Logic.OSLFImageFinite.imageFinite_langReduces
+    Mettapedia.OSLF.Framework.ImageFinite.imageFinite_langReduces
       Mettapedia.OSLF.MeTTaIL.Syntax.rhoCalcSetExt p
 
 /-- `◇⊤` over core-star always holds (via reflexivity). -/
@@ -443,10 +443,10 @@ theorem hm_converse_of_finiteSubrelation
     (I : Mettapedia.OSLF.Formula.AtomSem)
     {p q : Pattern}
     (hobs :
-      Mettapedia.Logic.OSLFKSUnificationSketch.OSLFObsEq S.rel I p q) :
-    Mettapedia.Logic.OSLFKSUnificationSketch.Bisimilar S.rel p q := by
+      Mettapedia.OSLF.Framework.KSUnificationSketch.OSLFObsEq S.rel I p q) :
+    Mettapedia.OSLF.Framework.KSUnificationSketch.Bisimilar S.rel p q := by
   exact
-    Mettapedia.Logic.OSLFKSUnificationSketch.hm_converse_schema
+    Mettapedia.OSLF.Framework.KSUnificationSketch.hm_converse_schema
       (R := S.rel)
       (I := I)
       (hImageFinite := S.imageFinite)
@@ -489,11 +489,11 @@ theorem hm_converse_rhoCoreStarRel
     (hImageFinite : ∀ p : Pattern, Set.Finite {q : Pattern | rhoCoreStarRel p q})
     {p q : Pattern}
     (hobs :
-      Mettapedia.Logic.OSLFKSUnificationSketch.OSLFObsEq
+      Mettapedia.OSLF.Framework.KSUnificationSketch.OSLFObsEq
         rhoCoreStarRel I p q) :
-    Mettapedia.Logic.OSLFKSUnificationSketch.Bisimilar rhoCoreStarRel p q := by
+    Mettapedia.OSLF.Framework.KSUnificationSketch.Bisimilar rhoCoreStarRel p q := by
   exact
-    Mettapedia.Logic.OSLFKSUnificationSketch.hm_converse_schema
+    Mettapedia.OSLF.Framework.KSUnificationSketch.hm_converse_schema
       (R := rhoCoreStarRel)
       (I := I)
       (hImageFinite := hImageFinite)
@@ -506,11 +506,11 @@ theorem hm_converse_rhoDerivedStarRel
     (hImageFinite : ∀ p : Pattern, Set.Finite {q : Pattern | rhoDerivedStarRel p q})
     {p q : Pattern}
     (hobs :
-      Mettapedia.Logic.OSLFKSUnificationSketch.OSLFObsEq
+      Mettapedia.OSLF.Framework.KSUnificationSketch.OSLFObsEq
         rhoDerivedStarRel I p q) :
-    Mettapedia.Logic.OSLFKSUnificationSketch.Bisimilar rhoDerivedStarRel p q := by
+    Mettapedia.OSLF.Framework.KSUnificationSketch.Bisimilar rhoDerivedStarRel p q := by
   exact
-    Mettapedia.Logic.OSLFKSUnificationSketch.hm_converse_schema
+    Mettapedia.OSLF.Framework.KSUnificationSketch.hm_converse_schema
       (R := rhoDerivedStarRel)
       (I := I)
       (hImageFinite := hImageFinite)
@@ -522,12 +522,12 @@ theorem hm_converse_rhoCoreCanonicalRel
     (I : Mettapedia.OSLF.Formula.AtomSem)
     {p q : Pattern}
     (hobs :
-      Mettapedia.Logic.OSLFKSUnificationSketch.OSLFObsEq
+      Mettapedia.OSLF.Framework.KSUnificationSketch.OSLFObsEq
         rhoCoreCanonicalRel I p q) :
-    Mettapedia.Logic.OSLFKSUnificationSketch.Bisimilar
+    Mettapedia.OSLF.Framework.KSUnificationSketch.Bisimilar
       rhoCoreCanonicalRel p q := by
   exact
-    Mettapedia.Logic.OSLFKSUnificationSketch.hm_converse_schema
+    Mettapedia.OSLF.Framework.KSUnificationSketch.hm_converse_schema
       (R := rhoCoreCanonicalRel)
       (I := I)
       (hImageFinite := imageFinite_rhoCoreCanonicalRel)
@@ -539,12 +539,12 @@ theorem hm_converse_rhoDerivedCanonicalRel
     (I : Mettapedia.OSLF.Formula.AtomSem)
     {p q : Pattern}
     (hobs :
-      Mettapedia.Logic.OSLFKSUnificationSketch.OSLFObsEq
+      Mettapedia.OSLF.Framework.KSUnificationSketch.OSLFObsEq
         rhoDerivedCanonicalRel I p q) :
-    Mettapedia.Logic.OSLFKSUnificationSketch.Bisimilar
+    Mettapedia.OSLF.Framework.KSUnificationSketch.Bisimilar
       rhoDerivedCanonicalRel p q := by
   exact
-    Mettapedia.Logic.OSLFKSUnificationSketch.hm_converse_schema
+    Mettapedia.OSLF.Framework.KSUnificationSketch.hm_converse_schema
       (R := rhoDerivedCanonicalRel)
       (I := I)
       (hImageFinite := imageFinite_rhoDerivedCanonicalRel)
@@ -557,13 +557,13 @@ theorem hm_iff_fullBisim_rhoCoreCanonicalRel
     (I : Mettapedia.OSLF.Formula.AtomSem)
     (hPredFinite : ∀ p : Pattern, Set.Finite {q : Pattern | rhoCoreCanonicalRel q p})
     (p q : Pattern) :
-    Mettapedia.Logic.OSLFDistinctionGraph.indistObs
+    Mettapedia.OSLF.Framework.DistinctionGraph.indistObs
       rhoCoreCanonicalRel I p q
     ↔
-    Mettapedia.Logic.OSLFDistinctionGraph.FullBisimilar
+    Mettapedia.OSLF.Framework.DistinctionGraph.FullBisimilar
       rhoCoreCanonicalRel I p q := by
   exact
-    Mettapedia.Logic.OSLFDistinctionGraph.indist_iff_fullBisim_imageFinite
+    Mettapedia.OSLF.Framework.DistinctionGraph.indist_iff_fullBisim_imageFinite
       (R := rhoCoreCanonicalRel)
       (I := I)
       (hImageFinite := imageFinite_rhoCoreCanonicalRel)
@@ -577,13 +577,13 @@ theorem hm_iff_fullBisim_rhoDerivedCanonicalRel
     (I : Mettapedia.OSLF.Formula.AtomSem)
     (hPredFinite : ∀ p : Pattern, Set.Finite {q : Pattern | rhoDerivedCanonicalRel q p})
     (p q : Pattern) :
-    Mettapedia.Logic.OSLFDistinctionGraph.indistObs
+    Mettapedia.OSLF.Framework.DistinctionGraph.indistObs
       rhoDerivedCanonicalRel I p q
     ↔
-    Mettapedia.Logic.OSLFDistinctionGraph.FullBisimilar
+    Mettapedia.OSLF.Framework.DistinctionGraph.FullBisimilar
       rhoDerivedCanonicalRel I p q := by
   exact
-    Mettapedia.Logic.OSLFDistinctionGraph.indist_iff_fullBisim_imageFinite
+    Mettapedia.OSLF.Framework.DistinctionGraph.indist_iff_fullBisim_imageFinite
       (R := rhoDerivedCanonicalRel)
       (I := I)
       (hImageFinite := imageFinite_rhoDerivedCanonicalRel)
@@ -666,13 +666,13 @@ theorem hm_iff_fullBisim_rhoCoreCanonicalRelOn
     (I : Mettapedia.OSLF.Formula.AtomSem)
     (carrier : Finset Pattern)
     (p q : Pattern) :
-    Mettapedia.Logic.OSLFDistinctionGraph.indistObs
+    Mettapedia.OSLF.Framework.DistinctionGraph.indistObs
       (rhoCoreCanonicalRelOn carrier) I p q
     ↔
-    Mettapedia.Logic.OSLFDistinctionGraph.FullBisimilar
+    Mettapedia.OSLF.Framework.DistinctionGraph.FullBisimilar
       (rhoCoreCanonicalRelOn carrier) I p q := by
   exact
-    Mettapedia.Logic.OSLFDistinctionGraph.indist_iff_fullBisim_imageFinite
+    Mettapedia.OSLF.Framework.DistinctionGraph.indist_iff_fullBisim_imageFinite
       (R := rhoCoreCanonicalRelOn carrier)
       (I := I)
       (hImageFinite := imageFinite_rhoCoreCanonicalRelOn carrier)
@@ -685,13 +685,13 @@ theorem hm_iff_fullBisim_rhoDerivedCanonicalRelOn
     (I : Mettapedia.OSLF.Formula.AtomSem)
     (carrier : Finset Pattern)
     (p q : Pattern) :
-    Mettapedia.Logic.OSLFDistinctionGraph.indistObs
+    Mettapedia.OSLF.Framework.DistinctionGraph.indistObs
       (rhoDerivedCanonicalRelOn carrier) I p q
     ↔
-    Mettapedia.Logic.OSLFDistinctionGraph.FullBisimilar
+    Mettapedia.OSLF.Framework.DistinctionGraph.FullBisimilar
       (rhoDerivedCanonicalRelOn carrier) I p q := by
   exact
-    Mettapedia.Logic.OSLFDistinctionGraph.indist_iff_fullBisim_imageFinite
+    Mettapedia.OSLF.Framework.DistinctionGraph.indist_iff_fullBisim_imageFinite
       (R := rhoDerivedCanonicalRelOn carrier)
       (I := I)
       (hImageFinite := imageFinite_rhoDerivedCanonicalRelOn carrier)
@@ -703,10 +703,10 @@ over a two-state carrier. -/
 theorem hm_iff_fullBisim_rhoCoreCanonicalRelOn_pair_canary
     (I : Mettapedia.OSLF.Formula.AtomSem)
     (p q : Pattern) :
-    Mettapedia.Logic.OSLFDistinctionGraph.indistObs
+    Mettapedia.OSLF.Framework.DistinctionGraph.indistObs
       (rhoCoreCanonicalRelOn ({p, q} : Finset Pattern)) I p q
     ↔
-    Mettapedia.Logic.OSLFDistinctionGraph.FullBisimilar
+    Mettapedia.OSLF.Framework.DistinctionGraph.FullBisimilar
       (rhoCoreCanonicalRelOn ({p, q} : Finset Pattern)) I p q := by
   simpa using
     hm_iff_fullBisim_rhoCoreCanonicalRelOn
@@ -717,10 +717,10 @@ over a two-state carrier. -/
 theorem hm_iff_fullBisim_rhoDerivedCanonicalRelOn_pair_canary
     (I : Mettapedia.OSLF.Formula.AtomSem)
     (p q : Pattern) :
-    Mettapedia.Logic.OSLFDistinctionGraph.indistObs
+    Mettapedia.OSLF.Framework.DistinctionGraph.indistObs
       (rhoDerivedCanonicalRelOn ({p, q} : Finset Pattern)) I p q
     ↔
-    Mettapedia.Logic.OSLFDistinctionGraph.FullBisimilar
+    Mettapedia.OSLF.Framework.DistinctionGraph.FullBisimilar
       (rhoDerivedCanonicalRelOn ({p, q} : Finset Pattern)) I p q := by
   simpa using
     hm_iff_fullBisim_rhoDerivedCanonicalRelOn
@@ -794,13 +794,13 @@ theorem hm_iff_fullBisim_rhoCoreCanonicalSCQuotRelOn
     (I : Mettapedia.OSLF.Formula.AtomSem)
     (carrier : Finset Pattern)
     (p q : Pattern) :
-    Mettapedia.Logic.OSLFDistinctionGraph.indistObs
+    Mettapedia.OSLF.Framework.DistinctionGraph.indistObs
       (rhoCoreCanonicalSCQuotRelOn carrier) I p q
     ↔
-    Mettapedia.Logic.OSLFDistinctionGraph.FullBisimilar
+    Mettapedia.OSLF.Framework.DistinctionGraph.FullBisimilar
       (rhoCoreCanonicalSCQuotRelOn carrier) I p q := by
   exact
-    Mettapedia.Logic.OSLFDistinctionGraph.indist_iff_fullBisim_imageFinite
+    Mettapedia.OSLF.Framework.DistinctionGraph.indist_iff_fullBisim_imageFinite
       (R := rhoCoreCanonicalSCQuotRelOn carrier)
       (I := I)
       (hImageFinite := imageFinite_rhoCoreCanonicalSCQuotRelOn carrier)
@@ -814,13 +814,13 @@ theorem hm_iff_fullBisim_rhoDerivedCanonicalSCQuotRelOn
     (I : Mettapedia.OSLF.Formula.AtomSem)
     (carrier : Finset Pattern)
     (p q : Pattern) :
-    Mettapedia.Logic.OSLFDistinctionGraph.indistObs
+    Mettapedia.OSLF.Framework.DistinctionGraph.indistObs
       (rhoDerivedCanonicalSCQuotRelOn carrier) I p q
     ↔
-    Mettapedia.Logic.OSLFDistinctionGraph.FullBisimilar
+    Mettapedia.OSLF.Framework.DistinctionGraph.FullBisimilar
       (rhoDerivedCanonicalSCQuotRelOn carrier) I p q := by
   exact
-    Mettapedia.Logic.OSLFDistinctionGraph.indist_iff_fullBisim_imageFinite
+    Mettapedia.OSLF.Framework.DistinctionGraph.indist_iff_fullBisim_imageFinite
       (R := rhoDerivedCanonicalSCQuotRelOn carrier)
       (I := I)
       (hImageFinite := imageFinite_rhoDerivedCanonicalSCQuotRelOn carrier)
@@ -832,10 +832,10 @@ relation over a two-state carrier. -/
 theorem hm_iff_fullBisim_rhoCoreCanonicalSCQuotRelOn_pair_canary
     (I : Mettapedia.OSLF.Formula.AtomSem)
     (p q : Pattern) :
-    Mettapedia.Logic.OSLFDistinctionGraph.indistObs
+    Mettapedia.OSLF.Framework.DistinctionGraph.indistObs
       (rhoCoreCanonicalSCQuotRelOn ({p, q} : Finset Pattern)) I p q
     ↔
-    Mettapedia.Logic.OSLFDistinctionGraph.FullBisimilar
+    Mettapedia.OSLF.Framework.DistinctionGraph.FullBisimilar
       (rhoCoreCanonicalSCQuotRelOn ({p, q} : Finset Pattern)) I p q := by
   simpa using
     hm_iff_fullBisim_rhoCoreCanonicalSCQuotRelOn
@@ -846,10 +846,10 @@ relation over a two-state carrier. -/
 theorem hm_iff_fullBisim_rhoDerivedCanonicalSCQuotRelOn_pair_canary
     (I : Mettapedia.OSLF.Formula.AtomSem)
     (p q : Pattern) :
-    Mettapedia.Logic.OSLFDistinctionGraph.indistObs
+    Mettapedia.OSLF.Framework.DistinctionGraph.indistObs
       (rhoDerivedCanonicalSCQuotRelOn ({p, q} : Finset Pattern)) I p q
     ↔
-    Mettapedia.Logic.OSLFDistinctionGraph.FullBisimilar
+    Mettapedia.OSLF.Framework.DistinctionGraph.FullBisimilar
       (rhoDerivedCanonicalSCQuotRelOn ({p, q} : Finset Pattern)) I p q := by
   simpa using
     hm_iff_fullBisim_rhoDerivedCanonicalSCQuotRelOn
@@ -891,10 +891,10 @@ theorem hm_scoped_coreSC_edge_preservation_canary
     (hq : q ∈ carrier)
     (hstep : rhoCoreCanonicalRel p q)
     (hobs :
-      Mettapedia.Logic.OSLFDistinctionGraph.indistObs
+      Mettapedia.OSLF.Framework.DistinctionGraph.indistObs
         (rhoCoreCanonicalSCQuotRelOn carrier) I p q) :
     rhoCoreCanonicalSCQuotRelOn carrier p q ∧
-    Mettapedia.Logic.OSLFDistinctionGraph.FullBisimilar
+    Mettapedia.OSLF.Framework.DistinctionGraph.FullBisimilar
       (rhoCoreCanonicalSCQuotRelOn carrier) I p q := by
   refine ⟨rhoCoreCanonicalSCQuotRelOn_of_core_step carrier hp hq hstep, ?_⟩
   exact (hm_iff_fullBisim_rhoCoreCanonicalSCQuotRelOn I carrier p q).1 hobs
@@ -910,10 +910,10 @@ theorem hm_scoped_derivedSC_edge_preservation_canary
     (hq : q ∈ carrier)
     (hstep : rhoDerivedCanonicalRel p q)
     (hobs :
-      Mettapedia.Logic.OSLFDistinctionGraph.indistObs
+      Mettapedia.OSLF.Framework.DistinctionGraph.indistObs
         (rhoDerivedCanonicalSCQuotRelOn carrier) I p q) :
     rhoDerivedCanonicalSCQuotRelOn carrier p q ∧
-    Mettapedia.Logic.OSLFDistinctionGraph.FullBisimilar
+    Mettapedia.OSLF.Framework.DistinctionGraph.FullBisimilar
       (rhoDerivedCanonicalSCQuotRelOn carrier) I p q := by
   refine ⟨rhoDerivedCanonicalSCQuotRelOn_of_derived_step carrier hp hq hstep, ?_⟩
   exact (hm_iff_fullBisim_rhoDerivedCanonicalSCQuotRelOn I carrier p q).1 hobs
@@ -1832,21 +1832,21 @@ structure PiRhoCoreMainCanonicalContract
   hm_converse_coreStar_subrel :
     ∀ (S : FiniteSubrelation rhoCoreStarRel) (I : Mettapedia.OSLF.Formula.AtomSem)
       {p q : Pattern},
-      Mettapedia.Logic.OSLFKSUnificationSketch.OSLFObsEq S.rel I p q →
-      Mettapedia.Logic.OSLFKSUnificationSketch.Bisimilar S.rel p q
+      Mettapedia.OSLF.Framework.KSUnificationSketch.OSLFObsEq S.rel I p q →
+      Mettapedia.OSLF.Framework.KSUnificationSketch.Bisimilar S.rel p q
   hm_converse_derivedStar_subrel :
     ∀ (S : FiniteSubrelation rhoDerivedStarRel) (I : Mettapedia.OSLF.Formula.AtomSem)
       {p q : Pattern},
-      Mettapedia.Logic.OSLFKSUnificationSketch.OSLFObsEq S.rel I p q →
-      Mettapedia.Logic.OSLFKSUnificationSketch.Bisimilar S.rel p q
+      Mettapedia.OSLF.Framework.KSUnificationSketch.OSLFObsEq S.rel I p q →
+      Mettapedia.OSLF.Framework.KSUnificationSketch.Bisimilar S.rel p q
   hm_converse_coreCanonical :
     ∀ (I : Mettapedia.OSLF.Formula.AtomSem) {p q : Pattern},
-      Mettapedia.Logic.OSLFKSUnificationSketch.OSLFObsEq rhoCoreCanonicalRel I p q →
-      Mettapedia.Logic.OSLFKSUnificationSketch.Bisimilar rhoCoreCanonicalRel p q
+      Mettapedia.OSLF.Framework.KSUnificationSketch.OSLFObsEq rhoCoreCanonicalRel I p q →
+      Mettapedia.OSLF.Framework.KSUnificationSketch.Bisimilar rhoCoreCanonicalRel p q
   hm_converse_derivedCanonical :
     ∀ (I : Mettapedia.OSLF.Formula.AtomSem) {p q : Pattern},
-      Mettapedia.Logic.OSLFKSUnificationSketch.OSLFObsEq rhoDerivedCanonicalRel I p q →
-      Mettapedia.Logic.OSLFKSUnificationSketch.Bisimilar rhoDerivedCanonicalRel p q
+      Mettapedia.OSLF.Framework.KSUnificationSketch.OSLFObsEq rhoDerivedCanonicalRel I p q →
+      Mettapedia.OSLF.Framework.KSUnificationSketch.Bisimilar rhoDerivedCanonicalRel p q
 
 /-- End-to-end construction of the canonical CoreMain-facing π→ρ semantic
 contract. -/
@@ -2094,9 +2094,9 @@ theorem predDomain_derivedStar_fragment_canary_nontrivial_progress :
 
 /-- Foundation-modal connection for the canonical `◇⊤` claim:
 the OSLF endpoint is translated into Foundation Kripke satisfaction via the
-existing `OSLFKripkeBridge` forward correspondence. -/
+existing `OSLF`-to-Foundation Kripke forward correspondence. -/
 theorem piRho_canonical_sem_diaTop_star_to_foundation
-    (enc : Mettapedia.Logic.OSLFKripkeBridge.AtomEncoding)
+    (enc : Mettapedia.OSLF.Bridges.Foundation.Kripke.AtomEncoding)
     {N : Finset String}
     (x : Name) (P : Process)
     (nuListenerBody seedListenerBody : Pattern)
@@ -2108,27 +2108,27 @@ theorem piRho_canonical_sem_diaTop_star_to_foundation
     (hrf : Mettapedia.Languages.ProcessCalculi.PiCalculus.ForwardSimulation.RestrictionFree P0)
     (hsafe : Mettapedia.Languages.ProcessCalculi.PiCalculus.ForwardSimulation.MultiCommSafe hstep) :
     LO.Modal.Formula.Kripke.Satisfies
-      (Mettapedia.Logic.OSLFKripkeBridge.oslfForwardModel
+      (Mettapedia.OSLF.Bridges.Foundation.Kripke.oslfForwardModel
         rhoCoreStarRel (fun _ _ => True) enc)
       (encode P0 n v)
-      (Mettapedia.Logic.OSLFKripkeBridge.translateForward enc (.dia .top)) := by
+      (Mettapedia.OSLF.Bridges.Foundation.Kripke.translateForward enc (.dia .top)) := by
   have hSem :
       Mettapedia.OSLF.Formula.sem rhoCoreStarRel (fun _ _ => True)
         (.dia .top) (encode P0 n v) :=
     piRho_canonical_package_end_to_end_sem_diaTop_star
       (N := N) x P nuListenerBody seedListenerBody xr yr Pr n v
       hobs hfresh hstep hrf hsafe
-  have hDiaOnly : Mettapedia.Logic.OSLFKripkeBridge.diaOnly (.dia .top) := by
-    simp [Mettapedia.Logic.OSLFKripkeBridge.diaOnly]
+  have hDiaOnly : Mettapedia.OSLF.Bridges.Foundation.Kripke.diaOnly (.dia .top) := by
+    simp [Mettapedia.OSLF.Bridges.Foundation.Kripke.diaOnly]
   exact
-    (Mettapedia.Logic.OSLFKripkeBridge.sem_iff_satisfies_forward
+    (Mettapedia.OSLF.Bridges.Foundation.Kripke.sem_iff_satisfies_forward
       (enc := enc) (R := rhoCoreStarRel) (I := fun _ _ => True)
       (φ := .dia .top) hDiaOnly (p := encode P0 n v)).mp hSem
 
 /-- Parameterized-atom Foundation-modal connection for the canonical `◇⊤`
 claim: same endpoint as above, but for any atom interpretation `I`. -/
 theorem piRho_canonical_sem_diaTop_star_to_foundation_paramAtom
-    (enc : Mettapedia.Logic.OSLFKripkeBridge.AtomEncoding)
+    (enc : Mettapedia.OSLF.Bridges.Foundation.Kripke.AtomEncoding)
     (I : Mettapedia.OSLF.Formula.AtomSem)
     {N : Finset String}
     (x : Name) (P : Process)
@@ -2141,10 +2141,10 @@ theorem piRho_canonical_sem_diaTop_star_to_foundation_paramAtom
     (hrf : Mettapedia.Languages.ProcessCalculi.PiCalculus.ForwardSimulation.RestrictionFree P0)
     (hsafe : Mettapedia.Languages.ProcessCalculi.PiCalculus.ForwardSimulation.MultiCommSafe hstep) :
     LO.Modal.Formula.Kripke.Satisfies
-      (Mettapedia.Logic.OSLFKripkeBridge.oslfForwardModel
+      (Mettapedia.OSLF.Bridges.Foundation.Kripke.oslfForwardModel
         rhoCoreStarRel I enc)
       (encode P0 n v)
-      (Mettapedia.Logic.OSLFKripkeBridge.translateForward enc (.dia .top)) := by
+      (Mettapedia.OSLF.Bridges.Foundation.Kripke.translateForward enc (.dia .top)) := by
   have hend :
       CalcPreludeDomainIndexedSemanticMorphism
         N x P nuListenerBody seedListenerBody xr yr Pr n v hfresh :=
@@ -2153,10 +2153,10 @@ theorem piRho_canonical_sem_diaTop_star_to_foundation_paramAtom
   have hSem :
       Mettapedia.OSLF.Formula.sem rhoCoreStarRel I (.dia .top) (encode P0 n v) :=
     hend.transfer_rf_sem_diaTop_star_paramAtom I hstep hrf hsafe
-  have hDiaOnly : Mettapedia.Logic.OSLFKripkeBridge.diaOnly (.dia .top) := by
-    simp [Mettapedia.Logic.OSLFKripkeBridge.diaOnly]
+  have hDiaOnly : Mettapedia.OSLF.Bridges.Foundation.Kripke.diaOnly (.dia .top) := by
+    simp [Mettapedia.OSLF.Bridges.Foundation.Kripke.diaOnly]
   exact
-    (Mettapedia.Logic.OSLFKripkeBridge.sem_iff_satisfies_forward
+    (Mettapedia.OSLF.Bridges.Foundation.Kripke.sem_iff_satisfies_forward
       (enc := enc) (R := rhoCoreStarRel) (I := I)
       (φ := .dia .top) hDiaOnly (p := encode P0 n v)).mp hSem
 

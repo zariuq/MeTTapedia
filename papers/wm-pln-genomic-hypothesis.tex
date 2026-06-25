@@ -199,7 +199,7 @@ folds.
 We formalize the correspondence in Lean~4, building on Mathlib~v4.28.0.
 The generic bridge lives in \code{ProbLogDistributionSemantics.lean} (237~lines,
 0~\code{sorry}); the concrete biological instantiation and noisy-OR probability
-theorem live in \code{PLNBioHypothesisGeneration.lean} (${\sim}550$~lines,
+theorem live in \code{BioHypothesisGeneration.lean} (${\sim}550$~lines,
 0~\code{sorry}).  Together they prove the following.
 
 \subsection{Compilation: ProbLog $\to$ JointEvidence}
@@ -314,7 +314,7 @@ ProbLog's native semantics does not directly support.
 
 \subsection{Noisy-OR Probability Theorem}
 
-The module \code{PLNBioHypothesisGeneration.lean} proves the \emph{noisy-OR
+The module \code{BioHypothesisGeneration.lean} proves the \emph{noisy-OR
 probability theorem} for the distribution semantics: when $n$ independent
 probabilistic facts have $p_i \le 1$, the query probability of their disjunction
 equals the noisy-OR formula.
@@ -1163,7 +1163,7 @@ mechanism evidence that ProbLog's binary activation discards.
 
 The four-layer architecture---generic subsumption bridge
 (\code{ProbLogDistributionSemantics}), concrete biological instantiation
-(\code{PLNBioHypothesisGeneration}), syntactic compilation
+(\code{BioHypothesisGeneration}), syntactic compilation
 (\code{ProbLogCompilation}), empirical benchmark---demonstrates a workflow
 where verified mathematical foundations directly inform and improve practical
 probabilistic reasoning systems.

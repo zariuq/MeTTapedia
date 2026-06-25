@@ -57,7 +57,7 @@ namespace Mettapedia.Languages.MeTTa.PeTTa
 
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.Match
-open Mettapedia.Logic.Prolog
+open Mettapedia.Languages.Prolog
 
 /-! ## compileExpr -/
 

@@ -1,7 +1,7 @@
 import Mettapedia.UniversalAI.GodelMachine.SolomonoffBridge
-import Mettapedia.Logic.SolomonoffExchangeable
-import Mettapedia.Logic.EvidenceBeta
-import Mettapedia.Logic.EvidenceQuantale
+import Mettapedia.UniversalAI.SolomonoffExchangeable
+import Mettapedia.PLN.Bridges.ProbabilityTheory.EvidenceBeta
+import Mettapedia.PLN.Evidence.EvidenceQuantale
 import Mathlib.Data.Bool.Count
 
 /-!
@@ -45,11 +45,11 @@ This means a Gödel Machine using PLN for exchangeable domains achieves:
 namespace Mettapedia.UniversalAI.GodelMachine.PLNSpecialCase
 
 open SelfModification BayesianAgents Classical
-open Mettapedia.Logic.SolomonoffPrior
-open Mettapedia.Logic.SolomonoffExchangeable
-open Mettapedia.Logic.Exchangeability
-open Mettapedia.Logic.EvidenceQuantale
-open Mettapedia.Logic.EvidenceBeta
+open Mettapedia.UniversalAI.SolomonoffPrior
+open Mettapedia.UniversalAI.SolomonoffExchangeable
+open Mettapedia.ProbabilityTheory.Exchangeability
+open Mettapedia.PLN.Evidence.EvidenceQuantale
+open Mettapedia.PLN.Bridges.ProbabilityTheory.EvidenceBeta
 
 /-! ## Part 1: PLN BinaryEvidence as Sufficient Statistic
 
@@ -118,11 +118,11 @@ theorem pln_strength_approximates_beta_mean (s : PLNState) :
   have hstrength :
       s.strength = plnStrength s.n_pos s.n_neg := by
     unfold PLNState.strength PLNState.total plnStrength
-    simp [Mettapedia.Logic.EvidenceCounts.plnStrength, hpair]
+    simp [Mettapedia.PLN.Evidence.EvidenceCounts.plnStrength, hpair]
   have hmean :
       s.betaMean = uniformPosteriorMean s.n_pos s.n_neg := by
     unfold PLNState.betaMean PLNState.toBetaParams
-    simp [uniformPosteriorMean, Mettapedia.Logic.EvidenceCounts.uniformPosteriorMean,
+    simp [uniformPosteriorMean, Mettapedia.PLN.Evidence.EvidenceCounts.uniformPosteriorMean,
       withUniformPrior, EvidenceBetaParams.posteriorMean, EvidenceBetaParams.alpha,
       EvidenceBetaParams.beta, add_assoc, add_left_comm, add_comm]
     ring
@@ -252,8 +252,8 @@ theorem pln_godelMachine_efficient_prediction (G : PLNGodelMachine) :
 
 -- TODO: For exchangeable binary domains, connect the Gödel-machine-level story to the proven νPLN
 -- results:
--- `Mettapedia.Logic.SolomonoffExchangeable.solomonoff_exchangeable_counts_sufficient`
--- and the Beta/PLN optimality lemmas in `Mettapedia.Logic.EvidenceBeta`.
+-- `Mettapedia.UniversalAI.SolomonoffExchangeable.solomonoff_exchangeable_counts_sufficient`
+-- and the Beta/PLN optimality lemmas in `Mettapedia.PLN.Bridges.ProbabilityTheory.EvidenceBeta`.
 
 /-! ## Part 6: Complexity Comparison
 

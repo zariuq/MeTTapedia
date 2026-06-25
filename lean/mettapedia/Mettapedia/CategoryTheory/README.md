@@ -151,9 +151,9 @@ Three strands, 29 files in total:
   - Core theorem: `weakRestrictedBisim_iff_pathBisim`
 - `../Languages/ProcessCalculi/PiCalculus/BranchingBisim.lean`
   - Core theorem: `branching_implies_weak`
-- `../Logic/WeightedOpenMaps.lean`
+- `GeneralizedOpenMaps/Weighted.lean`
   - Core theorem: `weightedBisim_iff_gopen_span`
-- `../Logic/OSLFOpenMapBridge.lean`
+- `../OSLF/Bridges/CategoryTheory/OpenMap.lean`
   - Core theorem: `fullOpenWitness_implies_obsEq`
 
 ## Formalization status

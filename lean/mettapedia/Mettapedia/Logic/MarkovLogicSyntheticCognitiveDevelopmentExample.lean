@@ -32,7 +32,7 @@ open Mettapedia.Logic.MarkovLogicInfiniteWorldModel
 open Mettapedia.Logic.MarkovLogicCoupledCommunitiesExample
 open Mettapedia.Logic.MarkovLogicDynamicCoupledSubsystems
 open Mettapedia.Logic.MarkovLogicSyntheticCognitiveDevelopment
-open Mettapedia.Logic.PLNWorldModel
+open Mettapedia.PLN.WorldModel.PLNWorldModel
 open Mettapedia.Logic.MarkovLogicAbstract
 open Mettapedia.Logic.MarkovLogicAbstract.MassState
 open MeasureTheory

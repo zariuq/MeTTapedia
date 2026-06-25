@@ -18,7 +18,7 @@ import Mettapedia.UniversalAI.TimeBoundedAIXI.ProofSystem
 import Mettapedia.UniversalAI.TimeBoundedAIXI.StepCounting
 import Mettapedia.UniversalAI.TimeBoundedAIXI.ToPartrecEncodable
 import Mettapedia.UniversalAI.TimeBoundedAIXI.CodingBits
-import Mettapedia.Logic.SolomonoffPrior
+import Mettapedia.UniversalAI.SolomonoffPrior
 
 /-!
 # Computational Aspects: Time-Bounded AIXI (Hutter 2005, Chapter 7)
@@ -2190,7 +2190,7 @@ theorem tsum_xi_tlPrefixFreeWeightAt_le_one (bits : List (List Bool)) (hnd : bit
     have : (⟨i, hi'⟩ : Fin bits.length) = ⟨j, hj'⟩ :=
       (List.Nodup.get_inj_iff hnd).1 hBits
     exact congrArg Fin.val this
-  have hprefix : Mettapedia.Logic.SolomonoffPrior.PrefixFree (↑S : Set (List Bool)) := by
+  have hprefix : Mettapedia.UniversalAI.SolomonoffPrior.PrefixFree (↑S : Set (List Bool)) := by
     intro s hs t ht hne
     have hs' : s ∈ S := by simpa using hs
     have ht' : t ∈ S := by simpa using ht
@@ -2212,14 +2212,14 @@ theorem tsum_xi_tlPrefixFreeWeightAt_le_one (bits : List (List Bool)) (hnd : bit
     simpa [codeAt, hi', hj'] using
       (Coding.selfDelimitingEncode_not_isPrefix_of_ne (p := bits.get ⟨i, hi'⟩)
         (q := bits.get ⟨j, hj'⟩) hbitsne)
-  have hkraft : Mettapedia.Logic.SolomonoffPrior.kraftSum S ≤ 1 :=
-    Mettapedia.Logic.SolomonoffPrior.kraft_inequality S hprefix
+  have hkraft : Mettapedia.UniversalAI.SolomonoffPrior.kraftSum S ≤ 1 :=
+    Mettapedia.UniversalAI.SolomonoffPrior.kraft_inequality S hprefix
   have hS_ne_top : (∑ s ∈ S, xi_tlPrefixWeight s) ≠ (⊤ : ENNReal) := by
     refine (ENNReal.sum_ne_top).2 ?_
     intro s hs
     simp [xi_tlPrefixWeight]
   have htoReal :
-      (∑ s ∈ S, xi_tlPrefixWeight s).toReal = Mettapedia.Logic.SolomonoffPrior.kraftSum S := by
+      (∑ s ∈ S, xi_tlPrefixWeight s).toReal = Mettapedia.UniversalAI.SolomonoffPrior.kraftSum S := by
     have hnotTop : ∀ s ∈ S, xi_tlPrefixWeight s ≠ (⊤ : ENNReal) := by
       intro s hs
       simp [xi_tlPrefixWeight]
@@ -2232,8 +2232,8 @@ theorem tsum_xi_tlPrefixFreeWeightAt_le_one (bits : List (List Bool)) (hnd : bit
         have hnonneg : 0 ≤ (2 : ℝ) ^ (-(s.length : ℤ)) :=
           zpow_nonneg (by norm_num : (0 : ℝ) ≤ 2) _
         simp [xi_tlPrefixWeight]
-      _ = Mettapedia.Logic.SolomonoffPrior.kraftSum S := by
-        simp [Mettapedia.Logic.SolomonoffPrior.kraftSum]
+      _ = Mettapedia.UniversalAI.SolomonoffPrior.kraftSum S := by
+        simp [Mettapedia.UniversalAI.SolomonoffPrior.kraftSum]
   have hS_le : (∑ s ∈ S, xi_tlPrefixWeight s) ≤ 1 := by
     have htoReal_le : (∑ s ∈ S, xi_tlPrefixWeight s).toReal ≤ (1 : ENNReal).toReal := by
       -- `toReal` converts the ENNReal sum to the real Kraft sum, which is ≤ 1.
@@ -2274,14 +2274,14 @@ noncomputable def xi_tlBayesianMixtureWithPrograms (t : ℕ) (programs : List Ra
         (programs.get ⟨i, hi⟩).toEnvironmentWithin t
       else
         zeroEnvironment
-    weights := Mettapedia.Logic.UniversalPrediction.geometricWeight
-    weights_le_one := Mettapedia.Logic.UniversalPrediction.tsum_geometricWeight_le_one }
+    weights := Mettapedia.UniversalAI.UniversalPrediction.geometricWeight
+    weights_le_one := Mettapedia.UniversalAI.UniversalPrediction.tsum_geometricWeight_le_one }
 
 /-! #### Equation (7.3): prefix-free length weights
 
 To mirror Hutter’s `2^{-ℓ(p)}` weighting, we attach weights `2^{-|code(p)|}` where `code(p)` is a
 prefix-free self-delimiting code obtained by `Coding.selfDelimitingEncode`.  The Kraft inequality
-(`Mettapedia.Logic.SolomonoffPrior.kraft_inequality`) yields the required `tsum` bound. -/
+(`Mettapedia.UniversalAI.SolomonoffPrior.kraft_inequality`) yields the required `tsum` bound. -/
 
 noncomputable def xi_tlBayesianMixturePrefixFree (t l : ℕ) : BayesianMixture :=
   let bits := bitstringsUpTo l
@@ -2310,8 +2310,8 @@ noncomputable def xi_tlBayesianMixtureUnboundedWithPrograms (programs : List Raw
         (programs.get ⟨i, hi⟩).toEnvironmentUnbounded
       else
         zeroEnvironment
-    weights := Mettapedia.Logic.UniversalPrediction.geometricWeight
-    weights_le_one := Mettapedia.Logic.UniversalPrediction.tsum_geometricWeight_le_one }
+    weights := Mettapedia.UniversalAI.UniversalPrediction.geometricWeight
+    weights_le_one := Mettapedia.UniversalAI.UniversalPrediction.tsum_geometricWeight_le_one }
 
 noncomputable def xi_tlBayesianMixtureUnboundedPrefixFree (l : ℕ) : BayesianMixture :=
   let bits := bitstringsUpTo l

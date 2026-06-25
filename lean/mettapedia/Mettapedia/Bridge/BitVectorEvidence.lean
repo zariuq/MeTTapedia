@@ -38,7 +38,7 @@ import Mathlib.InformationTheory.Hamming
 import Mathlib.Data.Finset.Card
 import Mathlib.Algebra.BigOperators.Group.Finset.Basic
 import Mathlib.Data.Rat.Cast.CharZero
-import Mettapedia.Logic.PLNDistributional
+import Mettapedia.PLN.TruthValues.PLNDistributional
 
 
 namespace Mettapedia.Bridge.BitVectorEvidence
@@ -523,7 +523,7 @@ our discrete counts. The key insight is that the discrete combinatorics
 (completions, Hamming weights) give an exact semantics for BinaryEvidence.
 -/
 
-open Mettapedia.Logic.PLN.Distributional
+open Mettapedia.PLN.TruthValues.Distributional
 
 /-- Convert a partial vector to discrete evidence.
 

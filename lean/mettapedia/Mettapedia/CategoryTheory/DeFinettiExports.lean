@@ -4,8 +4,8 @@ import Mettapedia.CategoryTheory.DeFinettiHigherOrderGiryBridge
 import Mettapedia.CategoryTheory.FiniteHiddenMarkovDeFinettiBridge
 import Mettapedia.CategoryTheory.DeFinettiExternalBridge
 import Mettapedia.CategoryTheory.DeFinettiMarkovCategoryBridge
-import Mettapedia.Logic.SolomonoffExchangeable
-import Mettapedia.Logic.CategoricalNuPLNBridge
+import Mettapedia.UniversalAI.SolomonoffExchangeable
+import Mettapedia.PLN.Bridges.ProbabilityTheory.CategoricalNuPLNBridge
 
 /-!
 # De Finetti Category Exports (Recommended Import Surface)
@@ -54,7 +54,7 @@ theorem deFinettiExport_existsUnique_latentThetaMeasure_of_exchangeable
     (X : ℕ → Ω → Bool) (μ : Measure Ω)
     [IsProbabilityMeasure μ]
     (hX : ∀ i : ℕ, Measurable (X i))
-    (hexch : Mettapedia.Logic.Exchangeability.InfiniteExchangeable X μ) :
+    (hexch : Mettapedia.ProbabilityTheory.Exchangeability.InfiniteExchangeable X μ) :
     ∃! ν : Measure DeFinettiConnection.Theta, RepresentsLatentTheta X μ ν :=
   deFinettiStable_existsUnique_latentThetaMeasure_of_exchangeable X μ hX hexch
 
@@ -63,8 +63,8 @@ mediator from the terminal object into the Markov-parameter space, and that
 mediator recovers the prefix law. -/
 theorem deFinettiExport_markovMixture_to_kleisliGiryFactorization
     {k : ℕ}
-    {μ : Mettapedia.Logic.UniversalPrediction.FiniteAlphabet.PrefixMeasure (Fin k)}
-    (M : Mettapedia.Logic.MarkovMixture k μ) :
+    {μ : Mettapedia.UniversalAI.UniversalPrediction.FiniteAlphabet.PrefixMeasure (Fin k)}
+    (M : Mettapedia.ProbabilityTheory.Exchangeability.MarkovMixture k μ) :
     KleisliGiryMarkovDeFinettiFactorization k μ :=
   kleisliGiryMarkovDeFinettiFactorization_of_markovMixture (k := k) M
 
@@ -73,8 +73,8 @@ sequence-cylinder Kleisli(Giry) factorization obtained by integrating the
 canonical fixed-parameter sequence law. -/
 theorem deFinettiExport_markovMixture_to_kleisliGirySequenceCylinderFactorization
     {k : ℕ}
-    {μ : Mettapedia.Logic.UniversalPrediction.FiniteAlphabet.PrefixMeasure (Fin k)}
-    (M : Mettapedia.Logic.MarkovMixture k μ) :
+    {μ : Mettapedia.UniversalAI.UniversalPrediction.FiniteAlphabet.PrefixMeasure (Fin k)}
+    (M : Mettapedia.ProbabilityTheory.Exchangeability.MarkovMixture k μ) :
     KleisliGiryMarkovSequenceCylinderFactorization k μ :=
   kleisliGiryMarkovSequenceCylinderFactorization_of_markovMixture (k := k) M
 
@@ -82,7 +82,7 @@ theorem deFinettiExport_markovMixture_to_kleisliGirySequenceCylinderFactorizatio
 interfaces are equivalent. -/
 theorem deFinettiExport_categoricalMarkovDeFinettiFactorization_iff_kleisliGiry
     {k : ℕ}
-    {μ : Mettapedia.Logic.UniversalPrediction.FiniteAlphabet.PrefixMeasure (Fin k)} :
+    {μ : Mettapedia.UniversalAI.UniversalPrediction.FiniteAlphabet.PrefixMeasure (Fin k)} :
     CategoricalMarkovDeFinettiFactorization k μ ↔
       KleisliGiryMarkovDeFinettiFactorization k μ :=
   categoricalMarkovDeFinettiFactorization_iff_kleisliGiry (k := k) (μ := μ)
@@ -91,7 +91,7 @@ theorem deFinettiExport_categoricalMarkovDeFinettiFactorization_iff_kleisliGiry
 factorization interfaces are equivalent at the measure level. -/
 theorem deFinettiExport_categoricalMarkovSequenceCylinderFactorization_iff_prefixLaw
     {k : ℕ}
-    {μ : Mettapedia.Logic.UniversalPrediction.FiniteAlphabet.PrefixMeasure (Fin k)} :
+    {μ : Mettapedia.UniversalAI.UniversalPrediction.FiniteAlphabet.PrefixMeasure (Fin k)} :
     CategoricalMarkovSequenceCylinderFactorization k μ ↔
       CategoricalMarkovDeFinettiFactorization k μ :=
   categoricalMarkovSequenceCylinderFactorization_iff_categoricalMarkovDeFinettiFactorization
@@ -101,7 +101,7 @@ theorem deFinettiExport_categoricalMarkovSequenceCylinderFactorization_iff_prefi
 factorization interfaces are equivalent in Kleisli(Giry). -/
 theorem deFinettiExport_kleisliGiryMarkovSequenceCylinderFactorization_iff_prefixLaw
     {k : ℕ}
-    {μ : Mettapedia.Logic.UniversalPrediction.FiniteAlphabet.PrefixMeasure (Fin k)} :
+    {μ : Mettapedia.UniversalAI.UniversalPrediction.FiniteAlphabet.PrefixMeasure (Fin k)} :
     KleisliGiryMarkovSequenceCylinderFactorization k μ ↔
       KleisliGiryMarkovDeFinettiFactorization k μ :=
   kleisliGiryMarkovSequenceCylinderFactorization_iff_kleisliGiryMarkovDeFinettiFactorization
@@ -111,9 +111,9 @@ theorem deFinettiExport_kleisliGiryMarkovSequenceCylinderFactorization_iff_prefi
 equivalent to the existing public `MarkovMixture` witness. -/
 theorem deFinettiExport_kleisliGiryMarkovDeFinettiFactorization_iff_nonempty_markovMixture
     {k : ℕ}
-    {μ : Mettapedia.Logic.UniversalPrediction.FiniteAlphabet.PrefixMeasure (Fin k)} :
+    {μ : Mettapedia.UniversalAI.UniversalPrediction.FiniteAlphabet.PrefixMeasure (Fin k)} :
     KleisliGiryMarkovDeFinettiFactorization k μ ↔
-      Nonempty (Mettapedia.Logic.MarkovMixture k μ) :=
+      Nonempty (Mettapedia.ProbabilityTheory.Exchangeability.MarkovMixture k μ) :=
   kleisliGiryMarkovDeFinettiFactorization_iff_nonempty_markovMixture
     (k := k) (μ := μ)
 
@@ -121,9 +121,9 @@ theorem deFinettiExport_kleisliGiryMarkovDeFinettiFactorization_iff_nonempty_mar
 factorization interface is equivalent to the public `MarkovMixture` witness. -/
 theorem deFinettiExport_kleisliGiryMarkovSequenceCylinderFactorization_iff_nonempty_markovMixture
     {k : ℕ}
-    {μ : Mettapedia.Logic.UniversalPrediction.FiniteAlphabet.PrefixMeasure (Fin k)} :
+    {μ : Mettapedia.UniversalAI.UniversalPrediction.FiniteAlphabet.PrefixMeasure (Fin k)} :
     KleisliGiryMarkovSequenceCylinderFactorization k μ ↔
-      Nonempty (Mettapedia.Logic.MarkovMixture k μ) :=
+      Nonempty (Mettapedia.ProbabilityTheory.Exchangeability.MarkovMixture k μ) :=
   kleisliGiryMarkovSequenceCylinderFactorization_iff_nonempty_markovMixture
     (k := k) (μ := μ)
 
@@ -132,7 +132,7 @@ theorem deFinettiExport_kleisliGiryMarkovSequenceCylinderFactorization_iff_nonem
 Borel probability law on parameters. -/
 theorem deFinettiExport_borelMarkovSequenceMixture_prob
     {k : ℕ}
-    (π : Mettapedia.Logic.MarkovDeFinettiHard.ProbMarkov k) :
+    (π : Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiHard.ProbMarkov k) :
     IsProbabilityMeasure (borelMarkovSequenceMixture (k := k) π) :=
   borelMarkovSequenceMixture_isProbability (k := k) π
 
@@ -141,10 +141,10 @@ finite cylinders by integrating the corresponding cylinder weights of the
 measurable sequence kernel. -/
 theorem deFinettiExport_borelMarkovSequenceMixture_cylinder_eq
     {k : ℕ}
-    (π : Mettapedia.Logic.MarkovDeFinettiHard.ProbMarkov k)
+    (π : Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiHard.ProbMarkov k)
     (xs : List (Fin k)) :
     borelMarkovSequenceMixture (k := k) π
-        (Mettapedia.Logic.MarkovDeFinettiRecurrence.cylinder (k := k) xs) =
+        (Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiRecurrence.cylinder (k := k) xs) =
       borelMarkovCylinderWeightViaProbMarkov (k := k) π xs :=
   borelMarkovSequenceMixture_cylinder_eq (k := k) π xs
 
@@ -152,17 +152,17 @@ theorem deFinettiExport_borelMarkovSequenceMixture_cylinder_eq
 weights are exactly the older Borel prefix-law moments. -/
 theorem deFinettiExport_borelMarkovCylinderWeightViaProbMarkov_eq_momentMapWord
     {k : ℕ}
-    (π : Mettapedia.Logic.MarkovDeFinettiHard.ProbMarkov k)
+    (π : Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiHard.ProbMarkov k)
     (xs : List (Fin k)) :
     borelMarkovCylinderWeightViaProbMarkov (k := k) π xs =
-      Mettapedia.Logic.MarkovDeFinettiHard.momentMapWord (k := k) xs π :=
+      Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiHard.momentMapWord (k := k) xs π :=
   borelMarkovCylinderWeightViaProbMarkov_eq_momentMapWord (k := k) π xs
 
 /-- Recommended export: the Borel-side sequence-kernel factorization is
 equivalent to the honest Borel prefix-law factorization. -/
 theorem deFinettiExport_categoricalBorelMarkovSequenceKernelFactorization_iff_prefixLaw
     {k : ℕ}
-    {μ : Mettapedia.Logic.UniversalPrediction.FiniteAlphabet.PrefixMeasure (Fin k)} :
+    {μ : Mettapedia.UniversalAI.UniversalPrediction.FiniteAlphabet.PrefixMeasure (Fin k)} :
     CategoricalBorelMarkovSequenceKernelFactorization k μ ↔
       CategoricalBorelMarkovDeFinettiFactorization k μ :=
   categoricalBorelMarkovSequenceKernelFactorization_iff_categoricalBorelMarkovDeFinettiFactorization
@@ -172,13 +172,13 @@ theorem deFinettiExport_categoricalBorelMarkovSequenceKernelFactorization_iff_pr
 presented either by cylinder weights or by the induced sequence mixture. -/
 theorem deFinettiExport_categoricalBorelMarkovSequenceKernelFactorization_iff_exists_borelMarkovSequenceMixture
     {k : ℕ}
-    {μ : Mettapedia.Logic.UniversalPrediction.FiniteAlphabet.PrefixMeasure (Fin k)} :
+    {μ : Mettapedia.UniversalAI.UniversalPrediction.FiniteAlphabet.PrefixMeasure (Fin k)} :
     CategoricalBorelMarkovSequenceKernelFactorization k μ ↔
-      ∃ π : Mettapedia.Logic.MarkovDeFinettiHard.ProbMarkov k,
+      ∃ π : Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiHard.ProbMarkov k,
         ∀ xs : List (Fin k),
           μ xs =
             borelMarkovSequenceMixture (k := k) π
-              (Mettapedia.Logic.MarkovDeFinettiRecurrence.cylinder (k := k) xs) :=
+              (Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiRecurrence.cylinder (k := k) xs) :=
   categoricalBorelMarkovSequenceKernelFactorization_iff_exists_borelMarkovSequenceMixture
     (k := k) (μ := μ)
 
@@ -187,7 +187,7 @@ kernel construction is `BorelMarkovMixture`, not the older active-space
 `MarkovMixture`. -/
 theorem deFinettiExport_categoricalBorelMarkovSequenceKernelFactorization_iff_nonempty_borelMarkovMixture
     {k : ℕ}
-    {μ : Mettapedia.Logic.UniversalPrediction.FiniteAlphabet.PrefixMeasure (Fin k)} :
+    {μ : Mettapedia.UniversalAI.UniversalPrediction.FiniteAlphabet.PrefixMeasure (Fin k)} :
     CategoricalBorelMarkovSequenceKernelFactorization k μ ↔
       Nonempty (BorelMarkovMixture k μ) :=
   categoricalBorelMarkovSequenceKernelFactorization_iff_nonempty_borelMarkovMixture
@@ -198,7 +198,7 @@ the older active prefix-law factorization by trimming the Borel law down to the
 wordProb-generated σ-algebra. -/
 theorem deFinettiExport_categoricalMarkovDeFinettiFactorization_of_categoricalBorel
     {k : ℕ}
-    {μ : Mettapedia.Logic.UniversalPrediction.FiniteAlphabet.PrefixMeasure (Fin k)}
+    {μ : Mettapedia.UniversalAI.UniversalPrediction.FiniteAlphabet.PrefixMeasure (Fin k)}
     (hfac : CategoricalBorelMarkovDeFinettiFactorization k μ) :
     CategoricalMarkovDeFinettiFactorization k μ :=
   categoricalMarkovDeFinettiFactorization_of_categoricalBorelMarkovDeFinettiFactorization
@@ -208,17 +208,17 @@ theorem deFinettiExport_categoricalMarkovDeFinettiFactorization_of_categoricalBo
 active `MarkovMixture`. -/
 noncomputable def deFinettiExport_markovMixture_of_borelMarkovMixture
     {k : ℕ}
-    {μ : Mettapedia.Logic.UniversalPrediction.FiniteAlphabet.PrefixMeasure (Fin k)}
+    {μ : Mettapedia.UniversalAI.UniversalPrediction.FiniteAlphabet.PrefixMeasure (Fin k)}
     (M : BorelMarkovMixture k μ) :
-    Mettapedia.Logic.MarkovMixture k μ :=
+    Mettapedia.ProbabilityTheory.Exchangeability.MarkovMixture k μ :=
   markovMixtureOfBorelMarkovMixture (k := k) (μ := μ) M
 
 /-- Recommended export: any Borel-side mixture witness yields an active
 `MarkovMixture` witness. -/
 theorem deFinettiExport_nonempty_markovMixture_of_nonempty_borelMarkovMixture
     {k : ℕ}
-    {μ : Mettapedia.Logic.UniversalPrediction.FiniteAlphabet.PrefixMeasure (Fin k)} :
-    Nonempty (BorelMarkovMixture k μ) → Nonempty (Mettapedia.Logic.MarkovMixture k μ) :=
+    {μ : Mettapedia.UniversalAI.UniversalPrediction.FiniteAlphabet.PrefixMeasure (Fin k)} :
+    Nonempty (BorelMarkovMixture k μ) → Nonempty (Mettapedia.ProbabilityTheory.Exchangeability.MarkovMixture k μ) :=
   nonempty_markovMixture_of_nonempty_borelMarkovMixture (k := k) (μ := μ)
 
 /-- Recommended export: the Borel moment map is not injective in the binary
@@ -226,9 +226,9 @@ case, so the reverse Borel lift cannot be expected to be uniquely determined
 by active prefix data. -/
 theorem deFinettiExport_not_injective_borelMomentMapWord_fin2 :
     ¬ Function.Injective
-      (fun π : Mettapedia.Logic.MarkovDeFinettiHard.ProbMarkov 2 =>
+      (fun π : Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiHard.ProbMarkov 2 =>
         fun xs : List (Fin 2) =>
-          Mettapedia.Logic.MarkovDeFinettiHard.momentMapWord (k := 2) xs π) :=
+          Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiHard.momentMapWord (k := 2) xs π) :=
   not_injective_borelMomentMapWord_fin2
 
 /-- Recommended export: the dead-row binary counterexample gives two distinct
@@ -241,10 +241,10 @@ theorem deFinettiExport_deadRowPrefixMeasure_has_two_distinct_borelMarkovMixture
 the ordinary encoded-context moment map. -/
 theorem deFinettiExport_higherOrderLongWordWeightViaProbMarkov_eq_momentMapWord
     {k m : ℕ} [Fact (0 < m)]
-    (π : Mettapedia.Logic.MarkovDeFinettiHard.ProbMarkov (HigherOrderContextCard k m))
+    (π : Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiHard.ProbMarkov (HigherOrderContextCard k m))
     (xs : List (Fin k)) (hxs : m ≤ xs.length) :
     higherOrderLongWordWeightViaProbMarkov (k := k) (m := m) π xs hxs =
-      Mettapedia.Logic.MarkovDeFinettiHard.momentMapWord
+      Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiHard.momentMapWord
         (k := HigherOrderContextCard k m)
         (higherOrderEncodedContextWord (k := k) (m := m) xs hxs) π :=
   higherOrderLongWordWeightViaProbMarkov_eq_momentMapWord
@@ -254,7 +254,7 @@ theorem deFinettiExport_higherOrderLongWordWeightViaProbMarkov_eq_momentMapWord
 package is equivalent to having the public higher-order mixture witness. -/
 theorem deFinettiExport_categoricalBorelHigherOrderLongWordFactorization_iff_nonempty_borelHigherOrderLongWordMixture
     {k m : ℕ} [Fact (0 < m)]
-    {μ : Mettapedia.Logic.UniversalPrediction.FiniteAlphabet.PrefixMeasure (Fin k)} :
+    {μ : Mettapedia.UniversalAI.UniversalPrediction.FiniteAlphabet.PrefixMeasure (Fin k)} :
     CategoricalBorelHigherOrderLongWordFactorization k m μ ↔
       Nonempty (BorelHigherOrderLongWordMixture k m μ) :=
   BorelHigherOrderLongWordMixture.categoricalBorelHigherOrderLongWordFactorization_iff_nonempty_borelHigherOrderLongWordMixture
@@ -265,11 +265,11 @@ Dirac Borel witness on encoded context-state parameters. This is the honest
 trivial direction, not a higher-order de Finetti mixture theorem. -/
 theorem deFinettiExport_borelHigherOrderLongWordFactorization_diracWitness
     {k m : ℕ} [Fact (0 < m)]
-    (θ : Mettapedia.Logic.MarkovDeFinettiHigherOrder.HigherOrderMarkovParam k m) :
-    ∃ π : Mettapedia.Logic.MarkovDeFinettiHard.ProbMarkov (HigherOrderContextCard k m),
+    (θ : Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiHigherOrder.HigherOrderMarkovParam k m) :
+    ∃ π : Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiHard.ProbMarkov (HigherOrderContextCard k m),
       ∀ xs : List (Fin k), ∀ hxs : m ≤ xs.length,
-        Mettapedia.Logic.MarkovDeFinettiHigherOrder.higherOrderSequenceMeasure (k := k) (m := m) θ
-            (Mettapedia.Logic.MarkovDeFinettiRecurrence.cylinder (k := k) xs) =
+        Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiHigherOrder.higherOrderSequenceMeasure (k := k) (m := m) θ
+            (Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiRecurrence.cylinder (k := k) xs) =
           higherOrderLongWordWeightViaProbMarkov (k := k) (m := m) π xs hxs :=
   borelHigherOrderLongWordFactorization_diracWitness (k := k) (m := m) θ
 
@@ -278,9 +278,9 @@ parameters yields an honest non-Dirac higher-order long-word factorization. -/
 theorem deFinettiExport_categoricalBorelHigherOrderLongWordFactorization_of_finiteDiscreteMixture
     {k m n : ℕ} [Fact (0 < m)]
     (w : Fin n → ℝ≥0∞) (hw : Finset.sum (Finset.univ : Finset (Fin n)) (fun i => w i) = 1)
-    (Θ : Fin n → Mettapedia.Logic.MarkovDeFinettiHigherOrder.HigherOrderMarkovParam k m) :
+    (Θ : Fin n → Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiHigherOrder.HigherOrderMarkovParam k m) :
     CategoricalBorelHigherOrderLongWordFactorization k m
-      (Mettapedia.Logic.UniversalPrediction.FiniteAlphabet.xiPrefixMeasure
+      (Mettapedia.UniversalAI.UniversalPrediction.FiniteAlphabet.xiPrefixMeasure
         (ν := fun i : Fin n =>
           higherOrderCylinderPrefixMeasure (k := k) (m := m) (Θ i))
         (w := w)
@@ -292,11 +292,11 @@ theorem deFinettiExport_categoricalBorelHigherOrderLongWordFactorization_of_fini
 @[deprecated deFinettiExport_borelHigherOrderLongWordFactorization_diracWitness (since := "2026-04-16")]
 theorem deFinettiExport_exists_borelHigherOrderLongWordFactorization_of_param
     {k m : ℕ} [Fact (0 < m)]
-    (θ : Mettapedia.Logic.MarkovDeFinettiHigherOrder.HigherOrderMarkovParam k m) :
-    ∃ π : Mettapedia.Logic.MarkovDeFinettiHard.ProbMarkov (HigherOrderContextCard k m),
+    (θ : Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiHigherOrder.HigherOrderMarkovParam k m) :
+    ∃ π : Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiHard.ProbMarkov (HigherOrderContextCard k m),
       ∀ xs : List (Fin k), ∀ hxs : m ≤ xs.length,
-        Mettapedia.Logic.MarkovDeFinettiHigherOrder.higherOrderSequenceMeasure (k := k) (m := m) θ
-            (Mettapedia.Logic.MarkovDeFinettiRecurrence.cylinder (k := k) xs) =
+        Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiHigherOrder.higherOrderSequenceMeasure (k := k) (m := m) θ
+            (Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiRecurrence.cylinder (k := k) xs) =
           higherOrderLongWordWeightViaProbMarkov (k := k) (m := m) π xs hxs :=
   deFinettiExport_borelHigherOrderLongWordFactorization_diracWitness (k := k) (m := m) θ
 
@@ -305,7 +305,7 @@ equivalent to having the public finite-HMM mixture witness. -/
 theorem deFinettiExport_categoricalBorelFiniteHMMFactorization_iff_nonempty_borelFiniteHMMMixture
     {latent obs : ℕ}
     {emission : Fin latent → ProbabilityMeasure (Fin obs)}
-    {μ : Mettapedia.Logic.UniversalPrediction.FiniteAlphabet.PrefixMeasure (Fin obs)} :
+    {μ : Mettapedia.UniversalAI.UniversalPrediction.FiniteAlphabet.PrefixMeasure (Fin obs)} :
     CategoricalBorelFiniteHMMFactorization latent obs emission μ ↔
       Nonempty (BorelFiniteHMMMixture latent obs emission μ) :=
   BorelFiniteHMMMixture.categoricalBorelFiniteHMMFactorization_iff_nonempty_borelFiniteHMMMixture
@@ -316,11 +316,11 @@ factorization through the latent Markov parameter space. This is the honest
 trivial direction, not a finite-HMM de Finetti mixture theorem. -/
 theorem deFinettiExport_borelFiniteHMMFactorization_diracWitness
     {latent obs : ℕ}
-    (θ : Mettapedia.Logic.FiniteHiddenMarkovModel.FiniteHMMParam latent obs) :
-    ∃ π : Mettapedia.Logic.MarkovDeFinettiHard.ProbMarkov latent,
+    (θ : Mettapedia.ProbabilityTheory.HiddenMarkovModels.FiniteHiddenMarkovModel.FiniteHMMParam latent obs) :
+    ∃ π : Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiHard.ProbMarkov latent,
       ∀ ys : List (Fin obs),
-        Mettapedia.Logic.FiniteHiddenMarkovModel.observedSequenceMeasure (latent := latent) (obs := obs) θ
-            (Mettapedia.Logic.MarkovDeFinettiRecurrence.cylinder (k := obs) ys) =
+        Mettapedia.ProbabilityTheory.HiddenMarkovModels.FiniteHiddenMarkovModel.observedSequenceMeasure (latent := latent) (obs := obs) θ
+            (Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiRecurrence.cylinder (k := obs) ys) =
           observedWordWeightViaProbMarkov (latent := latent) (obs := obs) θ.emission π ys :=
   borelFiniteHMMFactorization_diracWitness (latent := latent) (obs := obs) θ
 
@@ -328,11 +328,11 @@ theorem deFinettiExport_borelFiniteHMMFactorization_diracWitness
 @[deprecated deFinettiExport_borelFiniteHMMFactorization_diracWitness (since := "2026-04-16")]
 theorem deFinettiExport_exists_borelFiniteHMMFactorization_of_param
     {latent obs : ℕ}
-    (θ : Mettapedia.Logic.FiniteHiddenMarkovModel.FiniteHMMParam latent obs) :
-    ∃ π : Mettapedia.Logic.MarkovDeFinettiHard.ProbMarkov latent,
+    (θ : Mettapedia.ProbabilityTheory.HiddenMarkovModels.FiniteHiddenMarkovModel.FiniteHMMParam latent obs) :
+    ∃ π : Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiHard.ProbMarkov latent,
       ∀ ys : List (Fin obs),
-        Mettapedia.Logic.FiniteHiddenMarkovModel.observedSequenceMeasure (latent := latent) (obs := obs) θ
-            (Mettapedia.Logic.MarkovDeFinettiRecurrence.cylinder (k := obs) ys) =
+        Mettapedia.ProbabilityTheory.HiddenMarkovModels.FiniteHiddenMarkovModel.observedSequenceMeasure (latent := latent) (obs := obs) θ
+            (Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiRecurrence.cylinder (k := obs) ys) =
           observedWordWeightViaProbMarkov (latent := latent) (obs := obs) θ.emission π ys :=
   deFinettiExport_borelFiniteHMMFactorization_diracWitness (latent := latent) (obs := obs) θ
 
@@ -343,9 +343,9 @@ theorem deFinettiExport_categoricalBorelFiniteHMMFactorization_of_finiteDiscrete
     {latent obs n : ℕ}
     (emission : Fin latent → ProbabilityMeasure (Fin obs))
     (w : Fin n → ℝ≥0∞) (hw : Finset.sum (Finset.univ : Finset (Fin n)) (fun i => w i) = 1)
-    (Θ : Fin n → Mettapedia.Logic.MarkovDeFinettiHard.MarkovParam latent) :
+    (Θ : Fin n → Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiHard.MarkovParam latent) :
     CategoricalBorelFiniteHMMFactorization latent obs emission
-      (Mettapedia.Logic.UniversalPrediction.FiniteAlphabet.xiPrefixMeasure
+      (Mettapedia.UniversalAI.UniversalPrediction.FiniteAlphabet.xiPrefixMeasure
         (ν := fun i : Fin n =>
           observedCylinderPrefixMeasure (latent := latent) (obs := obs) emission (Θ i))
         (w := w)
@@ -356,15 +356,15 @@ theorem deFinettiExport_categoricalBorelFiniteHMMFactorization_of_finiteDiscrete
 /-- Recommended export: the concrete binary copy HMM assigns observed cylinder
 mass `1` to `[0]`. -/
 theorem deFinettiExport_binaryCopyHMM_observedCylinder_0 :
-    Mettapedia.Logic.FiniteHiddenMarkovModel.observedSequenceMeasure (latent := 2) (obs := 2) binaryCopyHMM
-        (Mettapedia.Logic.MarkovDeFinettiRecurrence.cylinder (k := 2) ([0] : List (Fin 2))) = 1 :=
+    Mettapedia.ProbabilityTheory.HiddenMarkovModels.FiniteHiddenMarkovModel.observedSequenceMeasure (latent := 2) (obs := 2) binaryCopyHMM
+        (Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiRecurrence.cylinder (k := 2) ([0] : List (Fin 2))) = 1 :=
   binaryCopyHMM_observedCylinder_0
 
 /-- Recommended export: the concrete binary copy HMM assigns observed cylinder
 mass `0` to `[1]`. -/
 theorem deFinettiExport_binaryCopyHMM_observedCylinder_1 :
-    Mettapedia.Logic.FiniteHiddenMarkovModel.observedSequenceMeasure (latent := 2) (obs := 2) binaryCopyHMM
-        (Mettapedia.Logic.MarkovDeFinettiRecurrence.cylinder (k := 2) ([1] : List (Fin 2))) = 0 :=
+    Mettapedia.ProbabilityTheory.HiddenMarkovModels.FiniteHiddenMarkovModel.observedSequenceMeasure (latent := 2) (obs := 2) binaryCopyHMM
+        (Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiRecurrence.cylinder (k := 2) ([1] : List (Fin 2))) = 0 :=
   binaryCopyHMM_observedCylinder_1
 
 /-- Recommended export: kernel-level universal mediator API is equivalent to
@@ -1340,8 +1340,8 @@ if a probability law on infinite binary sequences realizes the finite-prefix
 weights of a restricted exchangeable Solomonoff prior, then the coordinate
 process admits a unique latent-`Theta` de Finetti mediator. -/
 theorem deFinettiExport_restrictedSolomonoff_prefixLaw_implies_unique_latentThetaMediator
-    (M : Mettapedia.Logic.SolomonoffExchangeable.RestrictedSolomonoffPrior)
-    (μ : Measure Mettapedia.Logic.SolomonoffPrior.InfBinString)
+    (M : Mettapedia.UniversalAI.SolomonoffExchangeable.RestrictedSolomonoffPrior)
+    (μ : Measure Mettapedia.UniversalAI.SolomonoffPrior.InfBinString)
     [IsProbabilityMeasure μ]
     (hprefix :
       ∀ (n : ℕ) (xs : Fin n → Bool),
@@ -1351,12 +1351,12 @@ theorem deFinettiExport_restrictedSolomonoff_prefixLaw_implies_unique_latentThet
       RepresentsLatentTheta (X := fun i ω => ω i) (μ := μ) ν := by
   have hX :
       ∀ i : ℕ, Measurable
-        (fun ω : Mettapedia.Logic.SolomonoffPrior.InfBinString => ω i) := by
+        (fun ω : Mettapedia.UniversalAI.SolomonoffPrior.InfBinString => ω i) := by
     intro i
     simpa using (measurable_pi_apply (a := i))
   have hexch :
-      Mettapedia.Logic.Exchangeability.InfiniteExchangeable (fun i ω => ω i) μ :=
-    Mettapedia.Logic.SolomonoffExchangeable.restrictedSolomonoff_infiniteExchangeable_of_prefixLaw
+      Mettapedia.ProbabilityTheory.Exchangeability.InfiniteExchangeable (fun i ω => ω i) μ :=
+    Mettapedia.UniversalAI.SolomonoffExchangeable.restrictedSolomonoff_infiniteExchangeable_of_prefixLaw
       (M := M) (μ := μ) (hμprob := inferInstance) hprefix
   exact deFinettiStable_existsUnique_latentThetaMeasure_of_exchangeable
     (X := fun i ω => ω i) (μ := μ) hX hexch
@@ -1372,29 +1372,29 @@ the restricted Solomonoff cylinder law yields both
 1. the full `nupln_master_chain` conclusion, and
 2. the unique latent-`Theta` mediator conclusion. -/
 theorem deFinettiExport_restrictedSolomonoff_cylinderLaw_implies_nupln_master_chain_and_unique_latentThetaMediator
-    (M : Mettapedia.Logic.SolomonoffExchangeable.RestrictedSolomonoffPrior)
-    (μ : Measure Mettapedia.Logic.SolomonoffPrior.InfBinString)
+    (M : Mettapedia.UniversalAI.SolomonoffExchangeable.RestrictedSolomonoffPrior)
+    (μ : Measure Mettapedia.UniversalAI.SolomonoffPrior.InfBinString)
     [IsProbabilityMeasure μ]
     (hNoLeak :
-      Mettapedia.Logic.NoLeakageAtCylindersLaw (U := M.U) (programs := M.programs) μ) :
-    (∃ (B : Mettapedia.Logic.DeFinetti.BernoulliMixture),
-      Mettapedia.Logic.DeFinetti.Represents B (fun i ω => ω i) μ ∧
+      Mettapedia.UniversalAI.SolomonoffMeasure.NoLeakageAtCylindersLaw (U := M.U) (programs := M.programs) μ) :
+    (∃ (B : Mettapedia.ProbabilityTheory.Exchangeability.DeFinetti.BernoulliMixture),
+      Mettapedia.ProbabilityTheory.Exchangeability.DeFinetti.Represents B (fun i ω => ω i) μ ∧
       (∀ (n : ℕ) (xs₁ xs₂ : Fin n → Bool),
-        Mettapedia.Logic.Exchangeability.countTrue xs₁ =
-          Mettapedia.Logic.Exchangeability.countTrue xs₂ →
+        Mettapedia.ProbabilityTheory.Exchangeability.countTrue xs₁ =
+          Mettapedia.ProbabilityTheory.Exchangeability.countTrue xs₂ →
           B.prob xs₁ = B.prob xs₂)) ∧
     (∃! ν : Measure Mettapedia.ProbabilityTheory.HigherOrderProbability.DeFinettiConnection.Theta,
       RepresentsLatentTheta (X := fun i ω => ω i) (μ := μ) ν) := by
   have hX :
       ∀ i : ℕ, Measurable
-        (fun ω : Mettapedia.Logic.SolomonoffPrior.InfBinString => ω i) := by
+        (fun ω : Mettapedia.UniversalAI.SolomonoffPrior.InfBinString => ω i) := by
     intro i
     simpa using (measurable_pi_apply (a := i))
   have hexch :
-      Mettapedia.Logic.Exchangeability.InfiniteExchangeable (fun i ω => ω i) μ :=
-    Mettapedia.Logic.SolomonoffExchangeable.restrictedSolomonoff_infiniteExchangeable_of_noLeakageAtCylindersLaw
+      Mettapedia.ProbabilityTheory.Exchangeability.InfiniteExchangeable (fun i ω => ω i) μ :=
+    Mettapedia.UniversalAI.SolomonoffExchangeable.restrictedSolomonoff_infiniteExchangeable_of_noLeakageAtCylindersLaw
       (M := M) (μ := μ) (hμprob := inferInstance) hNoLeak
-  have hmaster := Mettapedia.Logic.DeFinetti.nupln_master_chain
+  have hmaster := Mettapedia.ProbabilityTheory.Exchangeability.DeFinetti.nupln_master_chain
       (X := fun i ω => ω i) (μ := μ) hX hexch
   rcases hmaster with ⟨B, hrep, hsuff, _hevidence, _hconv⟩
   refine ⟨?_, ?_⟩
@@ -1407,30 +1407,30 @@ if selected programs are total-output and root mass is normalized, the canonical
 machine-induced measure yields both `nupln_master_chain` and unique latent-`Theta`
 mediation, with no external cylinder-law witness required. -/
 theorem deFinettiExport_restrictedSolomonoff_totalOutput_implies_nupln_master_chain_and_unique_latentThetaMediator
-    (M : Mettapedia.Logic.SolomonoffExchangeable.RestrictedSolomonoffPrior)
-    (htot : Mettapedia.Logic.TotalOutputOnPrograms (U := M.U) M.programs)
+    (M : Mettapedia.UniversalAI.SolomonoffExchangeable.RestrictedSolomonoffPrior)
+    (htot : Mettapedia.UniversalAI.SolomonoffMeasure.TotalOutputOnPrograms (U := M.U) M.programs)
     (hroot : M.μ [] = 1) :
-    let μ := Mettapedia.Logic.totalOutputProgramMeasure
+    let μ := Mettapedia.UniversalAI.SolomonoffMeasure.totalOutputProgramMeasure
       (U := M.U) (programs := M.programs) htot
-    (∃ (B : Mettapedia.Logic.DeFinetti.BernoulliMixture),
-      Mettapedia.Logic.DeFinetti.Represents B (fun i ω => ω i) μ ∧
+    (∃ (B : Mettapedia.ProbabilityTheory.Exchangeability.DeFinetti.BernoulliMixture),
+      Mettapedia.ProbabilityTheory.Exchangeability.DeFinetti.Represents B (fun i ω => ω i) μ ∧
       (∀ (n : ℕ) (xs₁ xs₂ : Fin n → Bool),
-        Mettapedia.Logic.Exchangeability.countTrue xs₁ =
-          Mettapedia.Logic.Exchangeability.countTrue xs₂ →
+        Mettapedia.ProbabilityTheory.Exchangeability.countTrue xs₁ =
+          Mettapedia.ProbabilityTheory.Exchangeability.countTrue xs₂ →
           B.prob xs₁ = B.prob xs₂)) ∧
     (∃! ν : Measure Mettapedia.ProbabilityTheory.HigherOrderProbability.DeFinettiConnection.Theta,
       RepresentsLatentTheta (X := fun i ω => ω i) (μ := μ) ν) := by
-  let μ : Measure Mettapedia.Logic.SolomonoffPrior.InfBinString :=
-    Mettapedia.Logic.totalOutputProgramMeasure (U := M.U) (programs := M.programs) htot
+  let μ : Measure Mettapedia.UniversalAI.SolomonoffPrior.InfBinString :=
+    Mettapedia.UniversalAI.SolomonoffMeasure.totalOutputProgramMeasure (U := M.U) (programs := M.programs) htot
   have hμprob : IsProbabilityMeasure μ := by
-    simpa [μ, Mettapedia.Logic.SolomonoffExchangeable.RestrictedSolomonoffPrior.μ] using
-      (Mettapedia.Logic.isProbabilityMeasure_totalOutputProgramMeasure_of_root_one
+    simpa [μ, Mettapedia.UniversalAI.SolomonoffExchangeable.RestrictedSolomonoffPrior.μ] using
+      (Mettapedia.UniversalAI.SolomonoffMeasure.isProbabilityMeasure_totalOutputProgramMeasure_of_root_one
         (U := M.U) (programs := M.programs) (htot := htot) hroot)
   letI : IsProbabilityMeasure μ := hμprob
   have hNoLeak :
-      Mettapedia.Logic.NoLeakageAtCylindersLaw (U := M.U) (programs := M.programs) μ := by
+      Mettapedia.UniversalAI.SolomonoffMeasure.NoLeakageAtCylindersLaw (U := M.U) (programs := M.programs) μ := by
     simpa [μ] using
-      (Mettapedia.Logic.noLeakageAtCylindersLaw_totalOutputProgramMeasure
+      (Mettapedia.UniversalAI.SolomonoffMeasure.noLeakageAtCylindersLaw_totalOutputProgramMeasure
         (U := M.U) (programs := M.programs) htot)
   simpa [μ] using
     (deFinettiExport_restrictedSolomonoff_cylinderLaw_implies_nupln_master_chain_and_unique_latentThetaMediator
@@ -1442,23 +1442,23 @@ completeness (`kraftSum = 1`), then derive the same
 `nupln_master_chain + unique latent-Theta mediator` conclusion with no explicit
 `hroot` argument. -/
 theorem deFinettiExport_restrictedSolomonoff_totalOutput_and_programMassComplete_implies_nupln_master_chain_and_unique_latentThetaMediator
-    (M : Mettapedia.Logic.SolomonoffExchangeable.RestrictedSolomonoffPrior)
-    (htot : Mettapedia.Logic.TotalOutputOnPrograms (U := M.U) M.programs)
-    (hcomplete : Mettapedia.Logic.SolomonoffExchangeable.RestrictedSolomonoffPrior.ProgramMassComplete M) :
-    let μ := Mettapedia.Logic.totalOutputProgramMeasure
+    (M : Mettapedia.UniversalAI.SolomonoffExchangeable.RestrictedSolomonoffPrior)
+    (htot : Mettapedia.UniversalAI.SolomonoffMeasure.TotalOutputOnPrograms (U := M.U) M.programs)
+    (hcomplete : Mettapedia.UniversalAI.SolomonoffExchangeable.RestrictedSolomonoffPrior.ProgramMassComplete M) :
+    let μ := Mettapedia.UniversalAI.SolomonoffMeasure.totalOutputProgramMeasure
       (U := M.U) (programs := M.programs) htot
-    (∃ (B : Mettapedia.Logic.DeFinetti.BernoulliMixture),
-      Mettapedia.Logic.DeFinetti.Represents B (fun i ω => ω i) μ ∧
+    (∃ (B : Mettapedia.ProbabilityTheory.Exchangeability.DeFinetti.BernoulliMixture),
+      Mettapedia.ProbabilityTheory.Exchangeability.DeFinetti.Represents B (fun i ω => ω i) μ ∧
       (∀ (n : ℕ) (xs₁ xs₂ : Fin n → Bool),
-        Mettapedia.Logic.Exchangeability.countTrue xs₁ =
-          Mettapedia.Logic.Exchangeability.countTrue xs₂ →
+        Mettapedia.ProbabilityTheory.Exchangeability.countTrue xs₁ =
+          Mettapedia.ProbabilityTheory.Exchangeability.countTrue xs₂ →
           B.prob xs₁ = B.prob xs₂)) ∧
     (∃! ν : Measure Mettapedia.ProbabilityTheory.HigherOrderProbability.DeFinettiConnection.Theta,
       RepresentsLatentTheta (X := fun i ω => ω i) (μ := μ) ν) := by
   exact deFinettiExport_restrictedSolomonoff_totalOutput_implies_nupln_master_chain_and_unique_latentThetaMediator
     (M := M) (htot := htot)
     (hroot :=
-      Mettapedia.Logic.SolomonoffExchangeable.RestrictedSolomonoffPrior.mu_nil_eq_one_of_programMassComplete
+      Mettapedia.UniversalAI.SolomonoffExchangeable.RestrictedSolomonoffPrior.mu_nil_eq_one_of_programMassComplete
         (M := M) hcomplete)
 
 /-- Public API: finite-mass universality is equivalent to Markov-only
@@ -1553,12 +1553,12 @@ abbrev deFinetti_measure :=
     (= same `MultiEvidence k`) have the same probability. This connects
     the categorical de Finetti infrastructure to the PLN evidence chain. -/
 abbrev deFinettiExport_categorical_pln_sufficiency :=
-  @Mettapedia.Logic.CategoricalNuPLNBridge.categorical_pln_sufficiency
+  @Mettapedia.PLN.Bridges.ProbabilityTheory.CategoricalNuPLNBridge.categorical_pln_sufficiency
 
 /-- Export: For k=2, categorical product PMF equals Bernoulli product PMF.
     This is the compatibility theorem showing the categorical generalization
     subsumes the binary theory. -/
 abbrev deFinettiExport_categoricalProductPMF_fin2_eq_bernoulliProductPMF :=
-  @Mettapedia.Logic.CategoricalNuPLNBridge.categoricalProductPMF_fin2_eq_bernoulliProductPMF
+  @Mettapedia.PLN.Bridges.ProbabilityTheory.CategoricalNuPLNBridge.categoricalProductPMF_fin2_eq_bernoulliProductPMF
 
 end Mettapedia.CategoryTheory

@@ -168,7 +168,7 @@ theorem flatten_is_monad_multiplication (pd : ParametrizedDistribution Θ X) :
 
 3. **Connection to PLN**: PLN's evidence (n⁺, n⁻) is exactly the sufficient statistic
    for a Beta-Bernoulli Kyburg flattening. This will be formalized in
-   Logic/HigherOrder/PLNKyburgReduction.lean (Phase 2).
+   PLN/Bridges/ProbabilityTheory/PLNKyburgReduction.lean (Phase 2).
 
 4. **De Finetti Connection**: De Finetti's representation theorem is a special case
    where Θ = [0,1] and kernel(θ) = Bernoulli(θ). This will be formalized in

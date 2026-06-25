@@ -1,0 +1,7 @@
+import Mettapedia.KR.ConceptGeometry.AbstractInheritance
+import Mettapedia.KR.ConceptGeometry.AbstractInheritanceWitness
+import Mettapedia.KR.ConceptGeometry.Bridges.PLN.AbstractInheritanceOverlap
+import Mettapedia.KR.ConceptGeometry.AbstractInheritanceStampedWitness
+import Mettapedia.KR.ConceptGeometry.Bridges.PLN.AbstractInheritancePLNBridge
+import Mettapedia.KR.ConceptGeometry.Examples.AbstractInheritanceCanary
+import Mettapedia.PLN.ConceptGeometry.AssocPat.AbstractInheritanceIntensionalDemo

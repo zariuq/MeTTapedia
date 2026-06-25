@@ -1,14 +1,14 @@
 import Mathlib.Data.Multiset.AddSub
 import Mathlib.Data.Multiset.Count
 import Mettapedia.AutoBooks.Codex.IntuitionisticHOL.ClosedTermQuotient
-import Mettapedia.Logic.PLNWorldModel
+import Mettapedia.PLN.WorldModel.PLNWorldModel
 
 namespace Mettapedia.AutoBooks.Codex.IntuitionisticHOL
 
 open Mettapedia.Logic.HOL
-open Mettapedia.Logic.PLNWorldModel
-open Mettapedia.Logic.EvidenceClass
-open Mettapedia.Logic.EvidenceQuantale
+open Mettapedia.PLN.WorldModel.PLNWorldModel
+open Mettapedia.PLN.Evidence.EvidenceClass
+open Mettapedia.PLN.Evidence.EvidenceQuantale
 open scoped ENNReal
 
 universe u v

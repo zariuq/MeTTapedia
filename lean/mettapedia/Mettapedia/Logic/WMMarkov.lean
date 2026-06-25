@@ -1,5 +1,5 @@
-import Mettapedia.Logic.SufficientStatisticSurface
-import Mettapedia.Logic.UniversalPrediction.MarkovDirichletPredictor
+import Mettapedia.PLN.WorldModel.SufficientStatisticSurface
+import Mettapedia.UniversalAI.UniversalPrediction.MarkovDirichletPredictor
 
 /-!
 # Markov Transition Summaries as WM/PLN Sufficient Statistics
@@ -28,11 +28,11 @@ Negative example:
   boundary datum is not additive under multiset union.
 -/
 
-namespace Mettapedia.Logic.UniversalPrediction
+namespace Mettapedia.UniversalAI.UniversalPrediction
 
-open Mettapedia.Logic
-open Mettapedia.Logic.EvidenceDirichlet
-open Mettapedia.Logic.SufficientStatisticSurface
+open Mettapedia.PLN.WorldModel
+open Mettapedia.PLN.Bridges.ProbabilityTheory.EvidenceDirichlet
+open Mettapedia.PLN.WorldModel.SufficientStatisticSurface
 
 open scoped ENNReal
 
@@ -215,7 +215,8 @@ theorem inducedWorldModel_extract_transitionMultiset_eq_rowEvidence_of_summary
     {xs : List (Fin k)} {c : TransCounts k} {last : Fin k}
     (hsum : TransCounts.summary (k := k) xs = some (c, last))
     (q : Fin k) :
-    letI : EvidenceClass.EvidenceType (Multiset (TransitionObservation k)) :=
+    letI : Mettapedia.PLN.Evidence.EvidenceClass.EvidenceType
+        (Multiset (TransitionObservation k)) :=
       PLNWorldModelAdditive.multisetEvidenceType (TransitionObservation k)
     letI : PLNWorldModelGeneric.AdditiveWorldModel
       (Multiset (TransitionObservation k)) (Fin k) (MultiEvidence k) :=
@@ -226,7 +227,8 @@ theorem inducedWorldModel_extract_transitionMultiset_eq_rowEvidence_of_summary
         (Ev := MultiEvidence k)
         (transitionMultiset (k := k) xs) q =
       rowEvidence c q := by
-  letI : EvidenceClass.EvidenceType (Multiset (TransitionObservation k)) :=
+  letI : Mettapedia.PLN.Evidence.EvidenceClass.EvidenceType
+      (Multiset (TransitionObservation k)) :=
     PLNWorldModelAdditive.multisetEvidenceType (TransitionObservation k)
   letI : PLNWorldModelGeneric.AdditiveWorldModel
     (Multiset (TransitionObservation k)) (Fin k) (MultiEvidence k) :=
@@ -240,7 +242,8 @@ theorem inducedWorldModel_queryObservationCount_transitionMultiset_eq_rowTotal_o
     {xs : List (Fin k)} {c : TransCounts k} {last : Fin k}
     (hsum : TransCounts.summary (k := k) xs = some (c, last))
     (q : Fin k) :
-    letI : EvidenceClass.EvidenceType (Multiset (TransitionObservation k)) :=
+    letI : Mettapedia.PLN.Evidence.EvidenceClass.EvidenceType
+        (Multiset (TransitionObservation k)) :=
       PLNWorldModelAdditive.multisetEvidenceType (TransitionObservation k)
     letI : PLNWorldModelGeneric.AdditiveWorldModel
       (Multiset (TransitionObservation k)) (Fin k) (MultiEvidence k) :=
@@ -251,7 +254,8 @@ theorem inducedWorldModel_queryObservationCount_transitionMultiset_eq_rowTotal_o
         (Ev := MultiEvidence k)
         (transitionMultiset (k := k) xs) q =
       c.rowTotal q := by
-  letI : EvidenceClass.EvidenceType (Multiset (TransitionObservation k)) :=
+  letI : Mettapedia.PLN.Evidence.EvidenceClass.EvidenceType
+      (Multiset (TransitionObservation k)) :=
     PLNWorldModelAdditive.multisetEvidenceType (TransitionObservation k)
   letI : PLNWorldModelGeneric.AdditiveWorldModel
     (Multiset (TransitionObservation k)) (Fin k) (MultiEvidence k) :=
@@ -332,4 +336,4 @@ theorem markovRowConjugatePosteriorSurface_posteriorMean_eq_stepProb_of_summary
   rw [zero_add, aggregate_transitionMultiset_eq_rowEvidence_of_summary (k := k) hsum last]
   exact rowEvidence_posteriorMean_eq_stepProb (k := k) hk prior c last next
 
-end Mettapedia.Logic.UniversalPrediction
+end Mettapedia.UniversalAI.UniversalPrediction

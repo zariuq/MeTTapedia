@@ -16,8 +16,8 @@ namespace Mettapedia.CategoryTheory
 
 open MeasureTheory
 open ProbabilityTheory
-open Mettapedia.Logic.Exchangeability
-open Mettapedia.Logic.DeFinetti
+open Mettapedia.ProbabilityTheory.Exchangeability
+open Mettapedia.ProbabilityTheory.Exchangeability.DeFinetti
 
 variable {Y : Type*} [MeasurableSpace Y]
 

@@ -80,7 +80,7 @@ uniqueness claim is made or could be made.
 
 namespace Mettapedia.Logic.MarkovLogicInfiniteWorldModel
 
-open Mettapedia.Logic.PLNWorldModel
+open Mettapedia.PLN.WorldModel.PLNWorldModel
 open Mettapedia.Logic.MarkovLogicAbstract
 open Mettapedia.Logic.MarkovLogicClauseSemantics
 open Mettapedia.Logic.MarkovLogicClauseFactorGraph

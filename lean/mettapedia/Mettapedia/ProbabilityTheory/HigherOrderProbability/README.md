@@ -39,8 +39,8 @@ de Finetti mixture models elsewhere in Mettapedia are themselves Kyburg flatteni
 | `Basic.lean` | the core object `ParametrizedDistribution` (a Markov kernel `κ : Θ → Measure X` plus a mixing measure `μ` over parameters); `flatten` (the marginal `κ ∘ₘ μ`); `kyburgJoint` (`μ ⊗ₘ κ` on `Θ × X`); the probability-measure instances and the marginal/sum/deterministic basic lemmas |
 | `KyburgFlattening.lean` | the flattening results: `kyburg_flattening` (marginalizing the joint recovers the mixture), `flatten_is_marginal`, `expectation_consistency` (`E[U] = E[E[U∣θ]]`), `kyburg_no_advantage` (decision-theoretic equivalence), and `flatten_is_monad_multiplication` |
 | `GiryMonad.lean` | the categorical identification: `flatten_is_bind`, `flatten_is_join`, and the monad laws `flatten_left_identity`, `flatten_right_identity`, `flatten_associativity` (plus a kernel-level associativity and a monad-route `kyburg_no_advantage_via_monad`) |
-| `DeFinettiConnection.lean` | packages the Bernoulli-mixture model from `Mettapedia.Logic.DeFinetti` as a `ParametrizedDistribution`; the singleton bridge `flatten(pd M n) {xs} = ENNReal.ofReal (M.prob xs)` — "de Finetti is Kyburg" for binary observations |
-| `CategoricalConnection.lean` | the same bridge generalized from binary (Bool) to k-ary (`Fin k`) observations, built on `Mettapedia.Logic.CategoricalMixture`: `catKernel`, `catPMF`, `sum_catWeight_eq_one`, `flatten_apply_singleton` |
+| `DeFinettiConnection.lean` | packages the Bernoulli-mixture model from `Mettapedia.ProbabilityTheory.Exchangeability.DeFinetti` as a `ParametrizedDistribution`; the singleton bridge `flatten(pd M n) {xs} = ENNReal.ofReal (M.prob xs)` — "de Finetti is Kyburg" for binary observations |
+| `CategoricalConnection.lean` | the same bridge generalized from binary (Bool) to k-ary (`Fin k`) observations, built on `Mettapedia.ProbabilityTheory.Exchangeability.CategoricalMixture`: `catKernel`, `catPMF`, `sum_catWeight_eq_one`, `flatten_apply_singleton` |
 | `ProbabilityMeasureBorelBridge.lean` | supporting measurability infrastructure: derives `BorelSpace (ProbabilityMeasure Ω)` from `BorelSpace (FiniteMeasure Ω)` via `ProbabilityMeasure.toFiniteMeasure` (needed so mixing measures over the parameter space are well-typed) |
 
 ### Connection to PLN (developed elsewhere)
@@ -48,10 +48,11 @@ de Finetti mixture models elsewhere in Mettapedia are themselves Kyburg flatteni
 The motivation for this directory is the higher-order PLN story: PLN's evidence
 counts `(n⁺, n⁻)` are the sufficient statistic for a Beta–Bernoulli Kyburg
 flattening, so PLN's compact strength/confidence pair *is* a flattened second-order
-belief. That reduction is formalized in the **sibling** directory
-`Mettapedia/Logic/HigherOrder/` (`PLNKyburgReduction.lean`), which builds on the
-flattening API here together with `Mettapedia/Logic/EvidenceQuantale.lean`. It is
-out of scope for this directory and not counted in the file totals below.
+belief. That reduction is formalized in the PLN/probability bridge
+`Mettapedia/PLN/Bridges/ProbabilityTheory/PLNKyburgReduction.lean`, which builds
+on the flattening API here together with
+`Mettapedia/PLN/Evidence/EvidenceQuantale.lean`. It is out of scope for this
+directory and not counted in the file totals below.
 
 ## Formalization status
 
@@ -82,7 +83,7 @@ rg -n --glob '*.lean' 'native_decide' .
 - Henry E. Kyburg, Jr., [*Higher Order Probabilities*](https://arxiv.org/pdf/1304.2714), in Uncertainty in Artificial Intelligence 3 (1987/88) — the flattening theorem this directory formalizes ("higher-order probabilities can always be replaced by marginal distributions of joint probability distributions").
 - Michèle Giry, [*A categorical approach to probability theory*](https://doi.org/10.1007/BFb0092872), Lecture Notes in Mathematics 915 (Springer, 1982), 68–85 — the Giry monad that makes `flatten` a monadic bind/join.
 - F. William Lawvere, [*The category of probabilistic mappings*](https://ncatlab.org/nlab/files/lawvereprobability1962.pdf) (seminar notes, 1962; [Lawvere Archives scan](https://lawverearchives.com/wp-content/uploads/2025/07/1962.probmap.pdf)) — the origin of the categorical view of probabilistic maps, cited in `GiryMonad.lean`.
-- de Finetti's exchangeability/mixture theory, as formalized in `Mettapedia/Logic/DeFinetti.lean` and `Mettapedia/Logic/CategoricalMixture.lean` — the source of the mixture models the `*Connection.lean` files identify as Kyburg flattenings.
+- de Finetti's exchangeability/mixture theory, as formalized in `Mettapedia/ProbabilityTheory/Exchangeability/DeFinetti.lean` and `Mettapedia/ProbabilityTheory/Exchangeability/CategoricalMixture.lean` — the source of the mixture models the `*Connection.lean` files identify as Kyburg flattenings.
 
 ---
 *Status (drafted 2026-06-22 by Claude Code, Opus 4.8): 6 .lean files, 0 with sorries.*

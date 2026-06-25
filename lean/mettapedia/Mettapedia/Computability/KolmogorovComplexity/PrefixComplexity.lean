@@ -11,7 +11,7 @@ This file provides the minimal Chapter‑2 interface needed for Chapter 3 (Hutte
 - Invariance: universal prefix-free machines agree up to an additive constant.
 - Kraft/summability: `∑' x, 2^{-Kpf(x)} ≤ 1` (as an `ENNReal` statement).
 
-We reuse the existing prefix-free machine framework from `Mettapedia.Logic.SolomonoffPrior` and the
+We reuse the existing prefix-free machine framework from `Mettapedia.UniversalAI.SolomonoffPrior` and the
 finite Kraft inequality from `Mettapedia.Computability.KolmogorovComplexity.Prefix`.
 -/
 
@@ -19,14 +19,14 @@ namespace KolmogorovComplexity
 
 open scoped Classical BigOperators
 
-open Mettapedia.Logic.SolomonoffPrior
+open Mettapedia.UniversalAI.SolomonoffPrior
 
-abbrev PrefixFreeMachine := Mettapedia.Logic.SolomonoffPrior.PrefixFreeMachine
-abbrev UniversalPFM := Mettapedia.Logic.SolomonoffPrior.UniversalPFM
+abbrev PrefixFreeMachine := Mettapedia.UniversalAI.SolomonoffPrior.PrefixFreeMachine
+abbrev UniversalPFM := Mettapedia.UniversalAI.SolomonoffPrior.UniversalPFM
 
 /-- Prefix-free Kolmogorov complexity relative to a prefix-free machine `U`. -/
 noncomputable abbrev prefixComplexity (U : PrefixFreeMachine) (x : BinString) : ℕ :=
-  Mettapedia.Logic.SolomonoffPrior.kolmogorovComplexity U x
+  Mettapedia.UniversalAI.SolomonoffPrior.kolmogorovComplexity U x
 
 notation "Kpf[" U "](" x ")" => prefixComplexity U x
 
@@ -56,7 +56,7 @@ theorem universalPFM_has_program (U : PrefixFreeMachine) [UniversalPFM U] (x : B
 /-- A chosen shortest program for `x` under a universal prefix-free machine. -/
 noncomputable def shortestProgram (U : PrefixFreeMachine) [UniversalPFM U] (x : BinString) : BinString :=
   Classical.choose
-    (Mettapedia.Logic.SolomonoffPrior.exists_program_of_complexity (U := U) (x := x)
+    (Mettapedia.UniversalAI.SolomonoffPrior.exists_program_of_complexity (U := U) (x := x)
       (h := universalPFM_has_program (U := U) x))
 
 theorem shortestProgram_spec (U : PrefixFreeMachine) [UniversalPFM U] (x : BinString) :
@@ -64,7 +64,7 @@ theorem shortestProgram_spec (U : PrefixFreeMachine) [UniversalPFM U] (x : BinSt
   classical
   simpa [shortestProgram, prefixComplexity] using
     (Classical.choose_spec
-      (Mettapedia.Logic.SolomonoffPrior.exists_program_of_complexity (U := U) (x := x)
+      (Mettapedia.UniversalAI.SolomonoffPrior.exists_program_of_complexity (U := U) (x := x)
         (h := universalPFM_has_program (U := U) x)))
 
 theorem shortestProgram_injective (U : PrefixFreeMachine) [UniversalPFM U] :
@@ -81,7 +81,7 @@ theorem shortestProgram_injective (U : PrefixFreeMachine) [UniversalPFM U] :
 /-- Invariance: universal prefix-free machines agree up to an additive constant. -/
 theorem invariance_Kpf (U V : PrefixFreeMachine) [UniversalPFM U] [UniversalPFM V] :
     ∃ c : ℕ, ∀ x : BinString, Kpf[U](x) ≤ Kpf[V](x) + c := by
-  obtain ⟨c, hc⟩ := Mettapedia.Logic.SolomonoffPrior.invariance (U := U) (V := V)
+  obtain ⟨c, hc⟩ := Mettapedia.UniversalAI.SolomonoffPrior.invariance (U := U) (V := V)
   refine ⟨c, ?_⟩
   intro x
   have hx : ∃ p, V.compute p = some x := universalPFM_has_program (U := V) x
@@ -144,7 +144,7 @@ theorem sum_weightByKpf_le_one (U : PrefixFreeMachine) [UniversalPFM U] (s : Fin
 
   have h_kraft :
       (∑ p ∈ progSet, (2 : ℝ) ^ (-(p.length : ℤ))) ≤ 1 := by
-    simpa [kraftSum, Mettapedia.Logic.SolomonoffPrior.kraftSum] using
+    simpa [kraftSum, Mettapedia.UniversalAI.SolomonoffPrior.kraftSum] using
       (kraft_inequality (S := progSet) (hpf := hpf))
 
   have h_real :

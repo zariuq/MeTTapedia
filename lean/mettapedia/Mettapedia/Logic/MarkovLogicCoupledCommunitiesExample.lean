@@ -38,7 +38,7 @@ open Mettapedia.Logic.MarkovLogicInfiniteWorldModel
 open Mettapedia.Logic.MarkovLogicOntologyGrowth
 open Mettapedia.Logic.MarkovLogicCoupledSubsystems
 open Mettapedia.Logic.MarkovLogicInfiniteVariableNeighborhoodWorldOfViews
-open Mettapedia.Logic.PLNWorldModel
+open Mettapedia.PLN.WorldModel.PLNWorldModel
 open Mettapedia.Logic.MarkovLogicAbstract
 open Mettapedia.Logic.MarkovLogicAbstract.MassState
 open MeasureTheory

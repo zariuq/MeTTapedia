@@ -11,7 +11,7 @@ import Mathlib.Topology.Algebra.InfiniteSum.Basic
 /-!
 # LP Provenance: Semiring Annotations (K-Relations)
 
-Port of `Mettapedia.Logic.Datalog.Provenance` onto LP types.
+Port of the retired standalone Datalog provenance surface onto LP types.
 
 - `SemiringWithMonus` — extends `CommSemiring` with truncated subtraction.
 - `KRelation` — semiring-valued annotations on ground atoms.

@@ -1,5 +1,5 @@
 import Mettapedia.Logic.BDD.FirstOrderADTranslation
-import Mettapedia.Logic.ProbLogDistributionSemantics
+import Mettapedia.PLN.Bridges.Languages.ProbLog.DistributionSemantics
 
 /-!
 # ProbMeTTa Source Surface
@@ -34,8 +34,8 @@ namespace Mettapedia.Logic.BDDCore
 
 open scoped ENNReal
 open Mettapedia.Logic.LP
-open Mettapedia.Logic.ProbLogCompilation
-open Mettapedia.Logic.ProbLogDistributionSemantics
+open Mettapedia.PLN.Bridges.Languages.ProbLog.Compilation
+open Mettapedia.PLN.Bridges.Languages.ProbLog.DistributionSemantics
 
 /-- Normalized source-level body syntax for `body-goals`. -/
 inductive ProbMeTTaBody (σ : LPSignature) where

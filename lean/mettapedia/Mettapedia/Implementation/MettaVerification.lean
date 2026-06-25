@@ -14,18 +14,18 @@ MeTTa Formula:
 
 ## The Specification
 
-We prove this matches `plnDeductionStrength` derived in `Mettapedia.Logic.PLNDerivation`.
+We prove this matches `plnDeductionStrength` derived in `Mettapedia.PLN.RuleFamilies.FirstOrder.PLNDerivation`.
 
 ## References
 
 - `hyperon/pln-experimental/metta/common/formula/DeductionFormula.metta`
 -/
 
-import Mettapedia.Logic.PLNDerivation
+import Mettapedia.PLN.RuleFamilies.FirstOrder.PLNDerivation
 
 namespace Mettapedia.Implementation.MettaVerification
 
-open Mettapedia.Logic.PLN
+open Mettapedia.PLN.RuleFamilies.FirstOrder.PLNDerivation
 
 /-! ## MeTTa Interpreter Semantics
 

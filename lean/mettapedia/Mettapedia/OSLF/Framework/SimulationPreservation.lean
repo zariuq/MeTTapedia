@@ -1,5 +1,5 @@
 import Mettapedia.OSLF.Formula
-import Mettapedia.Logic.OSLFDistinctionGraph
+import Mettapedia.OSLF.Framework.DistinctionGraph
 
 /-!
 # Simulation Maps Preserve Modal Semantics
@@ -31,8 +31,8 @@ namespace Mettapedia.OSLF.Framework.SimulationPreservation
 
 open Mettapedia.OSLF.Formula
 open Mettapedia.OSLF.MeTTaIL.Syntax
-open Mettapedia.Logic.OSLFDistinctionGraph
-open Mettapedia.Logic.OSLFKSUnificationSketch
+open Mettapedia.OSLF.Framework.DistinctionGraph
+open Mettapedia.OSLF.Framework.KSUnificationSketch
 
 /-! ## Simulation Map Structures -/
 

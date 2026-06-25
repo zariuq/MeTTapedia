@@ -1,6 +1,6 @@
 import Mettapedia.CognitiveArchitecture.GodelClaw.Core
-import Mettapedia.Logic.EvidenceQuantale
-import Mettapedia.Logic.PLNNegation
+import Mettapedia.PLN.Evidence.EvidenceQuantale
+import Mettapedia.PLN.RuleFamilies.FirstOrder.PLNNegation
 
 /-!
 # GodelClaw: Epistemic Universal Loving Care
@@ -53,8 +53,8 @@ beings without collapsing into "desire everything."
 
 namespace Mettapedia.CognitiveArchitecture.GodelClaw.EpistemicLove
 
-open Mettapedia.Logic.EvidenceQuantale
-open Mettapedia.Logic.PLNNegation
+open Mettapedia.PLN.Evidence.EvidenceQuantale
+open Mettapedia.PLN.RuleFamilies.FirstOrder.PLNNegation
 open BinaryEvidence
 
 /-! ## Core definitions (mirroring FOET)

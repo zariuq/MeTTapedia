@@ -4,7 +4,7 @@ import Mettapedia.Languages.ProcessCalculi.MORK.ExecutionBoundary
 import Mettapedia.Languages.MeTTa.PureKernel.CoreEmbedding
 import Mettapedia.Languages.MeTTa.PureKernel.PatternBridge
 import Mettapedia.Languages.MeTTa.PureKernel.ProfileTheory
-import Mettapedia.Logic.PLNWorldModelPureKernelBridge
+import Mettapedia.PLN.Bridges.Languages.WorldModel.PLNWorldModelPureKernelBridge
 
 /-!
 # Pure ↔ Runtime Frontier
@@ -28,9 +28,9 @@ open Mettapedia.Languages.MeTTa.PureKernel.Syntax
 open Mettapedia.Languages.MeTTa.PureKernel.CoreEmbedding
 open Mettapedia.Languages.MeTTa.PureKernel.PatternBridge
 open Mettapedia.Languages.MeTTa.PureKernel.ProfileTheory
-open Mettapedia.Logic.PLNWorldModelPureKernelBridge
-open Mettapedia.Logic.PLNWorldModel
-open Mettapedia.Logic.EvidenceClass
+open Mettapedia.PLN.Bridges.Languages.WorldModel.PLNWorldModelPureKernelBridge
+open Mettapedia.PLN.WorldModel.PLNWorldModel
+open Mettapedia.PLN.Evidence.EvidenceClass
 
 private def betaPiRule : RewriteRule :=
   { name := "BetaPi",

@@ -19,7 +19,7 @@ This gives:
 namespace Mettapedia.Logic.MarkovLogicRegression
 
 open scoped ENNReal
-open Mettapedia.Logic.PLNWorldModel
+open Mettapedia.PLN.WorldModel.PLNWorldModel
 open Mettapedia.Logic.MarkovLogicAbstract
 open Mettapedia.Logic.MarkovLogicCountable
 open Mettapedia.Logic.MarkovLogicFiniteRestriction
@@ -180,7 +180,7 @@ theorem singleton_evidence_ideal_eq_two_one :
     ({ pos := compiledQueryMass demoMLN (Finset.univ : Finset DemoWorld) DemoQuery.ideal,
        neg := compiledPartition demoMLN (Finset.univ : Finset DemoWorld) -
          compiledQueryMass demoMLN (Finset.univ : Finset DemoWorld) DemoQuery.ideal } :
-      Mettapedia.Logic.EvidenceQuantale.BinaryEvidence) = ⟨2, 1⟩
+      Mettapedia.PLN.Evidence.EvidenceQuantale.BinaryEvidence) = ⟨2, 1⟩
   rw [demo_compiledQueryMass_ideal_eq_two, demo_compiledPartition_eq_three]
   ext <;> simp
   exact (ENNReal.eq_sub_of_add_eq (a := (1 : ENNReal)) (b := (3 : ENNReal)) (c := (2 : ENNReal))
@@ -213,16 +213,16 @@ theorem doubled_evidence_ideal_eq_four_two :
             ({compiledMassSemantics demoMLN demo_supportWitness} : MassState DemoQuery)
             DemoQuery.ideal).pos = 2 := by
         simpa using
-          congrArg Mettapedia.Logic.EvidenceQuantale.BinaryEvidence.pos
+          congrArg Mettapedia.PLN.Evidence.EvidenceQuantale.BinaryEvidence.pos
             singleton_evidence_ideal_eq_two_one
       have hneg :
           (BinaryWorldModel.evidence
             ({compiledMassSemantics demoMLN demo_supportWitness} : MassState DemoQuery)
             DemoQuery.ideal).neg = 1 := by
         simpa using
-          congrArg Mettapedia.Logic.EvidenceQuantale.BinaryEvidence.neg
+          congrArg Mettapedia.PLN.Evidence.EvidenceQuantale.BinaryEvidence.neg
             singleton_evidence_ideal_eq_two_one
-      ext <;> simp [Mettapedia.Logic.EvidenceQuantale.BinaryEvidence.hplus_def, hpos, hneg] <;> norm_num
+      ext <;> simp [Mettapedia.PLN.Evidence.EvidenceQuantale.BinaryEvidence.hplus_def, hpos, hneg] <;> norm_num
 
 theorem additive_revision_changes_evidence :
     BinaryWorldModel.evidence
@@ -234,7 +234,7 @@ theorem additive_revision_changes_evidence :
       DemoQuery.ideal := by
   intro hEq
   have hPos :=
-    congrArg Mettapedia.Logic.EvidenceQuantale.BinaryEvidence.pos hEq
+    congrArg Mettapedia.PLN.Evidence.EvidenceQuantale.BinaryEvidence.pos hEq
   rw [doubled_evidence_ideal_eq_four_two, singleton_evidence_ideal_eq_two_one] at hPos
   norm_num at hPos
 

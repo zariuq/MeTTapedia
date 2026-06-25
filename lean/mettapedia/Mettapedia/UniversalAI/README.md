@@ -16,7 +16,7 @@ Legg–Hutter intelligence measure and asymptotic optimality / grain-of-truth (C
 5); the reduction of standard problem classes — sequence prediction, strategic
 games, function minimization, supervised learning — to AIXI (Ch 6); and the
 *computable* approximation AIXI*tl* via Levin search (Ch 7). The companion
-directory `Mettapedia/Logic/UniversalPrediction/` covers the prediction-theory
+directory `Mettapedia/UniversalAI/UniversalPrediction/` covers the prediction-theory
 prerequisites of Chapters 2–3 (~12,900 lines, sorry-free).
 
 ## Coverage

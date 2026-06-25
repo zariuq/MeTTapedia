@@ -1,7 +1,8 @@
 import Mettapedia.CategoryTheory.DeFinettiKleisliGirySkeleton
-import Mettapedia.Logic.MarkovDeFinettiMixtureRepresentation
-import Mettapedia.Logic.MarkovDeFinettiSequenceKernel
-import Mettapedia.Logic.MarkovDeFinettiSequenceKernelBorel
+import Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiMixtureRepresentation
+import Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiRecurrence
+import Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiSequenceKernel
+import Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiSequenceKernelBorel
 import Mathlib.MeasureTheory.Measure.DiracProba
 
 /-!
@@ -27,13 +28,13 @@ namespace Mettapedia.CategoryTheory
 
 open CategoryTheory
 open MeasureTheory
-open Mettapedia.Logic
-open Mettapedia.Logic.MarkovDeFinettiHard
-open Mettapedia.Logic.UniversalPrediction
+open Mettapedia.ProbabilityTheory.Exchangeability
+open Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiHard
+open Mettapedia.UniversalAI.UniversalPrediction
 open scoped NNReal ENNReal
 
 variable {k : ℕ}
-variable {μ : Mettapedia.Logic.UniversalPrediction.FiniteAlphabet.PrefixMeasure (Fin k)}
+variable {μ : Mettapedia.UniversalAI.UniversalPrediction.FiniteAlphabet.PrefixMeasure (Fin k)}
 
 /-- Terminal-source object used for constant measure mediators in
 `Kleisli(MeasCat.Giry)`. -/
@@ -51,7 +52,7 @@ structure MarkovKleisliMediator (k : ℕ) where
 /-- Measure-level Markov de Finetti factorization through the parameter space. -/
 def CategoricalMarkovDeFinettiFactorization
     (k : ℕ)
-    (μ : Mettapedia.Logic.UniversalPrediction.FiniteAlphabet.PrefixMeasure (Fin k)) : Prop :=
+    (μ : Mettapedia.UniversalAI.UniversalPrediction.FiniteAlphabet.PrefixMeasure (Fin k)) : Prop :=
   ∃ π : Measure (MarkovParam k), IsProbabilityMeasure π ∧
     ∀ xs : List (Fin k), μ xs = ∫⁻ θ, wordProb (k := k) θ xs ∂π
 
@@ -108,7 +109,7 @@ def markovCylinderWeightViaMediator
     (xs : List (Fin k)) :
     MarkovKleisliMediator k → ℝ≥0∞ :=
   fun m => ∫⁻ θ,
-    Mettapedia.Logic.MarkovDeFinettiSequenceKernel.markovSequenceMeasure (k := k) θ
+    Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiSequenceKernel.markovSequenceMeasure (k := k) θ
       (MarkovDeFinettiRecurrence.cylinder (k := k) xs) ∂(m.hom.1 PUnit.unit)
 
 /-- The sequence-cylinder mediator weight is exactly the prefix-word weight,
@@ -118,14 +119,14 @@ theorem markovCylinderWeightViaMediator_eq_markovWordWeightViaMediator
     markovCylinderWeightViaMediator (k := k) xs m =
       markovWordWeightViaMediator (k := k) xs m := by
   simp [markovCylinderWeightViaMediator, markovWordWeightViaMediator,
-    Mettapedia.Logic.MarkovDeFinettiSequenceKernel.markovSequenceMeasure_cylinder_eq_wordProb]
+    Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiSequenceKernel.markovSequenceMeasure_cylinder_eq_wordProb]
 
 /-- Kleisli(Giry) formulation of Markov de Finetti at the finite-prefix level:
 there exists a Markov mediator into the parameter object whose fibers recover
 the prefix law. -/
 def KleisliGiryMarkovDeFinettiFactorization
     (k : ℕ)
-    (μ : Mettapedia.Logic.UniversalPrediction.FiniteAlphabet.PrefixMeasure (Fin k)) : Prop :=
+    (μ : Mettapedia.UniversalAI.UniversalPrediction.FiniteAlphabet.PrefixMeasure (Fin k)) : Prop :=
   ∃ m : MarkovKleisliMediator k,
     IsProbabilityMeasure (m.hom.1 PUnit.unit) ∧
       ∀ xs : List (Fin k), μ xs = markovWordWeightViaMediator (k := k) xs m
@@ -135,17 +136,17 @@ the prefix law is recovered by integrating the canonical sequence law over the
 mixing measure on `MarkovParam k`. -/
 def CategoricalMarkovSequenceCylinderFactorization
     (k : ℕ)
-    (μ : Mettapedia.Logic.UniversalPrediction.FiniteAlphabet.PrefixMeasure (Fin k)) : Prop :=
+    (μ : Mettapedia.UniversalAI.UniversalPrediction.FiniteAlphabet.PrefixMeasure (Fin k)) : Prop :=
   ∃ π : Measure (MarkovParam k), IsProbabilityMeasure π ∧
     ∀ xs : List (Fin k),
       μ xs = ∫⁻ θ,
-        Mettapedia.Logic.MarkovDeFinettiSequenceKernel.markovSequenceMeasure (k := k) θ
+        Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiSequenceKernel.markovSequenceMeasure (k := k) θ
           (MarkovDeFinettiRecurrence.cylinder (k := k) xs) ∂π
 
 /-- Sequence-level cylinder formulation of the Kleisli(Giry) Markov factorization. -/
 def KleisliGiryMarkovSequenceCylinderFactorization
     (k : ℕ)
-    (μ : Mettapedia.Logic.UniversalPrediction.FiniteAlphabet.PrefixMeasure (Fin k)) : Prop :=
+    (μ : Mettapedia.UniversalAI.UniversalPrediction.FiniteAlphabet.PrefixMeasure (Fin k)) : Prop :=
   ∃ m : MarkovKleisliMediator k,
     IsProbabilityMeasure (m.hom.1 PUnit.unit) ∧
       ∀ xs : List (Fin k), μ xs = markovCylinderWeightViaMediator (k := k) xs m
@@ -215,7 +216,7 @@ theorem categoricalMarkovSequenceCylinderFactorization_of_markovMixture
   refine ⟨M.mixingLaw, M.mixingLaw_prob, ?_⟩
   intro xs
   simpa [CategoricalMarkovSequenceCylinderFactorization,
-    Mettapedia.Logic.MarkovDeFinettiSequenceKernel.markovSequenceMeasure_cylinder_eq_wordProb] using
+    Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiSequenceKernel.markovSequenceMeasure_cylinder_eq_wordProb] using
     M.represents xs
 
 /-- Any `MarkovMixture` yields the sequence-cylinder Kleisli(Giry) factorization. -/
@@ -267,12 +268,12 @@ theorem categoricalMarkovSequenceCylinderFactorization_iff_categoricalMarkovDeFi
   · rintro ⟨π, hπ, hrep⟩
     refine ⟨π, hπ, ?_⟩
     intro xs
-    simpa [Mettapedia.Logic.MarkovDeFinettiSequenceKernel.markovSequenceMeasure_cylinder_eq_wordProb]
+    simpa [Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiSequenceKernel.markovSequenceMeasure_cylinder_eq_wordProb]
       using hrep xs
   · rintro ⟨π, hπ, hrep⟩
     refine ⟨π, hπ, ?_⟩
     intro xs
-    simpa [Mettapedia.Logic.MarkovDeFinettiSequenceKernel.markovSequenceMeasure_cylinder_eq_wordProb]
+    simpa [Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiSequenceKernel.markovSequenceMeasure_cylinder_eq_wordProb]
       using hrep xs
 
 /-- The sequence-cylinder and prefix-word Kleisli(Giry) factorization packages
@@ -326,9 +327,9 @@ local instance : BorelSpace (MarkovParam k) := ⟨rfl⟩
 
 /-- Cylinders in `Fin k`-valued sequence space are measurable. -/
 lemma measurableSet_markovCylinder (xs : List (Fin k)) :
-    MeasurableSet (Mettapedia.Logic.MarkovDeFinettiRecurrence.cylinder (k := k) xs) := by
+    MeasurableSet (Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiRecurrence.cylinder (k := k) xs) := by
   classical
-  unfold Mettapedia.Logic.MarkovDeFinettiRecurrence.cylinder
+  unfold Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiRecurrence.cylinder
   refine MeasurableSet.iInter ?_
   intro i
   simpa [Set.setOf_eq_eq_singleton] using
@@ -339,8 +340,8 @@ space on `MarkovParam k`. This mirrors the older prefix-law surface, but does
 not claim any transport back to the coarser active measurable space. -/
 def CategoricalBorelMarkovDeFinettiFactorization
     (k : ℕ)
-    (μ : Mettapedia.Logic.UniversalPrediction.FiniteAlphabet.PrefixMeasure (Fin k)) : Prop :=
-  ∃ π : Mettapedia.Logic.MarkovDeFinettiHard.ProbMarkov k,
+    (μ : Mettapedia.UniversalAI.UniversalPrediction.FiniteAlphabet.PrefixMeasure (Fin k)) : Prop :=
+  ∃ π : Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiHard.ProbMarkov k,
     ∀ xs : List (Fin k), μ xs = momentMapWord (k := k) xs π
 
 /-- Public Borel-side mixture object. This is the honest interface boundary for
@@ -348,8 +349,8 @@ the stronger measurable sequence-kernel construction: unlike `MarkovMixture`,
 it lives entirely on the Borel parameter space. -/
 structure BorelMarkovMixture
     (k : ℕ)
-    (μ : Mettapedia.Logic.UniversalPrediction.FiniteAlphabet.PrefixMeasure (Fin k)) where
-  mixingLaw : Mettapedia.Logic.MarkovDeFinettiHard.ProbMarkov k
+    (μ : Mettapedia.UniversalAI.UniversalPrediction.FiniteAlphabet.PrefixMeasure (Fin k)) where
+  mixingLaw : Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiHard.ProbMarkov k
   represents : ∀ xs : List (Fin k), μ xs = momentMapWord (k := k) xs mixingLaw
 
 namespace BorelMarkovMixture
@@ -384,14 +385,14 @@ end BorelMarkovMixture
 /-- Borel-side sequence mixture obtained by binding a Borel probability law on
 `MarkovParam k` against the measurable sequence kernel. -/
 noncomputable def borelMarkovSequenceMixture
-    (π : Mettapedia.Logic.MarkovDeFinettiHard.ProbMarkov k) :
+    (π : Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiHard.ProbMarkov k) :
     Measure (ℕ → Fin k) :=
   (π : Measure (MarkovParam k)).bind
-    (Mettapedia.Logic.MarkovDeFinettiSequenceKernelBorel.markovSequenceKernel (k := k))
+    (Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiSequenceKernelBorel.markovSequenceKernel (k := k))
 
 /-- The Borel-side sequence mixture is a probability measure. -/
 instance borelMarkovSequenceMixture_isProbability
-    (π : Mettapedia.Logic.MarkovDeFinettiHard.ProbMarkov k) :
+    (π : Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiHard.ProbMarkov k) :
     IsProbabilityMeasure (borelMarkovSequenceMixture (k := k) π) := by
   letI : IsProbabilityMeasure (π : Measure (MarkovParam k)) := by infer_instance
   exact MeasureTheory.isProbabilityMeasure_bind
@@ -401,30 +402,30 @@ instance borelMarkovSequenceMixture_isProbability
 /-- Sequence-cylinder weight induced by a Borel probability law on
 `MarkovParam k` through the measurable sequence kernel. -/
 def borelMarkovCylinderWeightViaProbMarkov
-    (π : Mettapedia.Logic.MarkovDeFinettiHard.ProbMarkov k)
+    (π : Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiHard.ProbMarkov k)
     (xs : List (Fin k)) : ℝ≥0∞ :=
   ∫⁻ θ,
-    Mettapedia.Logic.MarkovDeFinettiSequenceKernelBorel.markovSequenceKernel (k := k) θ
-      (Mettapedia.Logic.MarkovDeFinettiRecurrence.cylinder (k := k) xs) ∂(π : Measure (MarkovParam k))
+    Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiSequenceKernelBorel.markovSequenceKernel (k := k) θ
+      (Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiRecurrence.cylinder (k := k) xs) ∂(π : Measure (MarkovParam k))
 
 /-- The Borel-side kernel cylinder weights coincide with the older Borel
 prefix-law moment map. -/
 theorem borelMarkovCylinderWeightViaProbMarkov_eq_momentMapWord
-    (π : Mettapedia.Logic.MarkovDeFinettiHard.ProbMarkov k)
+    (π : Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiHard.ProbMarkov k)
     (xs : List (Fin k)) :
     borelMarkovCylinderWeightViaProbMarkov (k := k) π xs =
       momentMapWord (k := k) xs π := by
   simp [borelMarkovCylinderWeightViaProbMarkov,
-    Mettapedia.Logic.MarkovDeFinettiSequenceKernelBorel.markovSequenceKernel_cylinder_eq_wordProb,
+    Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiSequenceKernelBorel.markovSequenceKernel_cylinder_eq_wordProb,
     momentMapWord]
 
 /-- The Borel-side sequence mixture evaluates cylinders by integrating the
 corresponding cylinder weights of the measurable sequence kernel. -/
 theorem borelMarkovSequenceMixture_cylinder_eq
-    (π : Mettapedia.Logic.MarkovDeFinettiHard.ProbMarkov k)
+    (π : Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiHard.ProbMarkov k)
     (xs : List (Fin k)) :
     borelMarkovSequenceMixture (k := k) π
-        (Mettapedia.Logic.MarkovDeFinettiRecurrence.cylinder (k := k) xs) =
+        (Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiRecurrence.cylinder (k := k) xs) =
       borelMarkovCylinderWeightViaProbMarkov (k := k) π xs := by
   letI : IsProbabilityMeasure (π : Measure (MarkovParam k)) := by infer_instance
   rw [borelMarkovSequenceMixture, Measure.bind_apply
@@ -438,8 +439,8 @@ stronger kernel construction before transporting back to the coarser active
 parameter σ-algebra. -/
 def CategoricalBorelMarkovSequenceKernelFactorization
     (k : ℕ)
-    (μ : Mettapedia.Logic.UniversalPrediction.FiniteAlphabet.PrefixMeasure (Fin k)) : Prop :=
-  ∃ π : Mettapedia.Logic.MarkovDeFinettiHard.ProbMarkov k,
+    (μ : Mettapedia.UniversalAI.UniversalPrediction.FiniteAlphabet.PrefixMeasure (Fin k)) : Prop :=
+  ∃ π : Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiHard.ProbMarkov k,
     ∀ xs : List (Fin k),
       μ xs = borelMarkovCylinderWeightViaProbMarkov (k := k) π xs
 
@@ -464,11 +465,11 @@ theorem categoricalBorelMarkovSequenceKernelFactorization_iff_categoricalBorelMa
 sequence mixture measure. -/
 theorem categoricalBorelMarkovSequenceKernelFactorization_iff_exists_borelMarkovSequenceMixture :
     CategoricalBorelMarkovSequenceKernelFactorization k μ ↔
-      ∃ π : Mettapedia.Logic.MarkovDeFinettiHard.ProbMarkov k,
+      ∃ π : Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiHard.ProbMarkov k,
         ∀ xs : List (Fin k),
           μ xs =
             borelMarkovSequenceMixture (k := k) π
-              (Mettapedia.Logic.MarkovDeFinettiRecurrence.cylinder (k := k) xs) := by
+              (Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiRecurrence.cylinder (k := k) xs) := by
   constructor
   · rintro ⟨π, hπ⟩
     refine ⟨π, ?_⟩
@@ -504,34 +505,34 @@ section BorelToActiveLift
 wordProb-generated measurable space. This is the honest one-way bridge from the
 stronger Borel-side interface back to the older active theorem surface. -/
 noncomputable def probMarkovToActiveMeasure
-    (π : Mettapedia.Logic.MarkovDeFinettiHard.ProbMarkov k) :
+    (π : Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiHard.ProbMarkov k) :
     Measure (MarkovParam k) :=
   (π : @Measure (MarkovParam k) MarkovParam.borelMS).trim
-    (Mettapedia.Logic.MarkovDeFinettiHard.wordProbGenerated_le_borel (k := k))
+    (Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiHard.wordProbGenerated_le_borel (k := k))
 
 /-- The trimmed active-space law of a Borel probability measure is still a
 probability measure. -/
 theorem probMarkovToActiveMeasure_isProbability
-    (π : Mettapedia.Logic.MarkovDeFinettiHard.ProbMarkov k) :
+    (π : Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiHard.ProbMarkov k) :
     IsProbabilityMeasure (probMarkovToActiveMeasure (k := k) π) := by
   refine ⟨?_⟩
   rw [probMarkovToActiveMeasure,
     trim_measurableSet_eq
-      (Mettapedia.Logic.MarkovDeFinettiHard.wordProbGenerated_le_borel (k := k))
+      (Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiHard.wordProbGenerated_le_borel (k := k))
       MeasurableSet.univ]
   exact measure_univ
 
 /-- Trimming a Borel law down to the active σ-algebra preserves the integrals of
 all active `wordProb` coordinates. -/
 theorem lintegral_probMarkovToActiveMeasure_wordProb
-    (π : Mettapedia.Logic.MarkovDeFinettiHard.ProbMarkov k)
+    (π : Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiHard.ProbMarkov k)
     (xs : List (Fin k)) :
     ∫⁻ θ, wordProb (k := k) θ xs ∂(probMarkovToActiveMeasure (k := k) π) =
-      Mettapedia.Logic.MarkovDeFinettiHard.momentMapWord (k := k) xs π := by
-  rw [probMarkovToActiveMeasure, Mettapedia.Logic.MarkovDeFinettiHard.momentMapWord]
+      Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiHard.momentMapWord (k := k) xs π := by
+  rw [probMarkovToActiveMeasure, Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiHard.momentMapWord]
   exact MeasureTheory.lintegral_trim
-    (Mettapedia.Logic.MarkovDeFinettiHard.wordProbGenerated_le_borel (k := k))
-    (Mettapedia.Logic.MarkovDeFinettiHard.measurable_wordProb (k := k) xs)
+    (Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiHard.wordProbGenerated_le_borel (k := k))
+    (Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiHard.measurable_wordProb (k := k) xs)
 
 /-- One-way lift: a Borel-side prefix-law factorization yields the older active
 prefix-law factorization after trimming the mixing law to the active σ-algebra. -/
@@ -543,7 +544,7 @@ theorem categoricalMarkovDeFinettiFactorization_of_categoricalBorelMarkovDeFinet
     probMarkovToActiveMeasure_isProbability (k := k) π, ?_⟩
   intro xs
   calc
-    μ xs = Mettapedia.Logic.MarkovDeFinettiHard.momentMapWord (k := k) xs π := hπ xs
+    μ xs = Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiHard.momentMapWord (k := k) xs π := hπ xs
     _ = ∫⁻ θ, wordProb (k := k) θ xs ∂(probMarkovToActiveMeasure (k := k) π) := by
           symm
           exact lintegral_probMarkovToActiveMeasure_wordProb (k := k) π xs
@@ -682,18 +683,18 @@ theorem not_injective_wordProbProfile_fin2 :
   exact deadRowTheta_wordProb_eq xs
 
 /-- Dirac Borel laws at the two indistinguishable binary parameters. -/
-noncomputable def deadRowPi₀ : Mettapedia.Logic.MarkovDeFinettiHard.ProbMarkov 2 :=
+noncomputable def deadRowPi₀ : Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiHard.ProbMarkov 2 :=
   MeasureTheory.diracProba deadRowTheta₀
 
 /-- Dirac Borel laws at the two indistinguishable binary parameters. -/
-noncomputable def deadRowPi₁ : Mettapedia.Logic.MarkovDeFinettiHard.ProbMarkov 2 :=
+noncomputable def deadRowPi₁ : Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiHard.ProbMarkov 2 :=
   MeasureTheory.diracProba deadRowTheta₁
 
 theorem deadRowPi₀_ne_deadRowPi₁ :
     deadRowPi₀ ≠ deadRowPi₁ := by
   intro h
   have happly := congrArg
-    (fun π : Mettapedia.Logic.MarkovDeFinettiHard.ProbMarkov 2 =>
+    (fun π : Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiHard.ProbMarkov 2 =>
       (π : Measure (MarkovParam 2)) ({deadRowTheta₁} : Set (MarkovParam 2))) h
   have hzero : (0 : ℝ≥0∞) = 1 := by
     simp [deadRowPi₀, deadRowPi₁, deadRowTheta₀_ne_deadRowTheta₁] at happly
@@ -701,25 +702,25 @@ theorem deadRowPi₀_ne_deadRowPi₁ :
 
 theorem momentMapWord_diracProba_eq_wordProb
     (θ : MarkovParam 2) (xs : List (Fin 2)) :
-    Mettapedia.Logic.MarkovDeFinettiHard.momentMapWord (k := 2) xs
+    Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiHard.momentMapWord (k := 2) xs
         (MeasureTheory.diracProba θ) =
       wordProb (k := 2) θ xs := by
-  simp only [Mettapedia.Logic.MarkovDeFinettiHard.momentMapWord, MeasureTheory.diracProba,
+  simp only [Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiHard.momentMapWord, MeasureTheory.diracProba,
     ProbabilityMeasure.coe_mk,
     MeasureTheory.lintegral_dirac' θ
-      (Mettapedia.Logic.MarkovDeFinettiHard.measurable_wordProb_borel (k := 2) xs)]
+      (Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiHard.measurable_wordProb_borel (k := 2) xs)]
 
 /-- The Borel moment map also forgets this unreachable-row information. -/
 theorem deadRowPi_momentMapWord_eq (xs : List (Fin 2)) :
-    Mettapedia.Logic.MarkovDeFinettiHard.momentMapWord (k := 2) xs deadRowPi₀ =
-      Mettapedia.Logic.MarkovDeFinettiHard.momentMapWord (k := 2) xs deadRowPi₁ := by
+    Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiHard.momentMapWord (k := 2) xs deadRowPi₀ =
+      Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiHard.momentMapWord (k := 2) xs deadRowPi₁ := by
   calc
-    Mettapedia.Logic.MarkovDeFinettiHard.momentMapWord (k := 2) xs deadRowPi₀
+    Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiHard.momentMapWord (k := 2) xs deadRowPi₀
         = wordProb (k := 2) deadRowTheta₀ xs := by
           simpa [deadRowPi₀] using
             momentMapWord_diracProba_eq_wordProb deadRowTheta₀ xs
     _ = wordProb (k := 2) deadRowTheta₁ xs := deadRowTheta_wordProb_eq xs
-    _ = Mettapedia.Logic.MarkovDeFinettiHard.momentMapWord (k := 2) xs deadRowPi₁ := by
+    _ = Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiHard.momentMapWord (k := 2) xs deadRowPi₁ := by
           simpa [deadRowPi₁] using
             (momentMapWord_diracProba_eq_wordProb deadRowTheta₁ xs).symm
 
@@ -728,9 +729,9 @@ the binary case, so Borel lifts of active prefix data are not unique in
 general. -/
 theorem not_injective_borelMomentMapWord_fin2 :
     ¬ Function.Injective
-      (fun π : Mettapedia.Logic.MarkovDeFinettiHard.ProbMarkov 2 =>
+      (fun π : Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiHard.ProbMarkov 2 =>
         fun xs : List (Fin 2) =>
-          Mettapedia.Logic.MarkovDeFinettiHard.momentMapWord (k := 2) xs π) := by
+          Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiHard.momentMapWord (k := 2) xs π) := by
   intro hinj
   apply deadRowPi₀_ne_deadRowPi₁
   apply hinj
@@ -740,12 +741,12 @@ theorem not_injective_borelMomentMapWord_fin2 :
 /-- Prefix measure carried by the shared finite-word law of the dead-row
 counterexample. -/
 noncomputable def deadRowPrefixMeasure :
-    Mettapedia.Logic.UniversalPrediction.FiniteAlphabet.PrefixMeasure (Fin 2) where
+    Mettapedia.UniversalAI.UniversalPrediction.FiniteAlphabet.PrefixMeasure (Fin 2) where
   toFun := fun xs => wordProb (k := 2) deadRowTheta₀ xs
   root_eq_one' := by simp [wordProb, wordProbNN]
   additive' := by
     intro xs
-    exact (Mettapedia.Logic.MarkovDeFinettiHard.wordProb_append_sum
+    exact (Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiHard.wordProb_append_sum
       (k := 2) deadRowTheta₀ xs).symm
 
 /-- First Borel mixture witness for the dead-row prefix law. -/
@@ -767,7 +768,7 @@ noncomputable def deadRowBorelMarkovMixture₁ :
       deadRowPrefixMeasure xs = wordProb (k := 2) deadRowTheta₀ xs := by
         rfl
       _ = wordProb (k := 2) deadRowTheta₁ xs := deadRowTheta_wordProb_eq xs
-      _ = Mettapedia.Logic.MarkovDeFinettiHard.momentMapWord (k := 2) xs deadRowPi₁ := by
+      _ = Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiHard.momentMapWord (k := 2) xs deadRowPi₁ := by
             simpa [deadRowPi₁] using
               (momentMapWord_diracProba_eq_wordProb deadRowTheta₁ xs).symm
 

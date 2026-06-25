@@ -35,7 +35,7 @@ namespace Mettapedia.Logic.LP
 
 open Mettapedia.Logic.BDDCore
 open Mettapedia.Logic.LP
-open Mettapedia.Logic.ProbLogCompilation
+open Mettapedia.PLN.Bridges.Languages.ProbLog.Compilation
 
 /-! ## §1 Stratification -/
 

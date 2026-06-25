@@ -1,4 +1,4 @@
-import Mettapedia.Logic.MarkovDeFinettiHigherOrder
+import Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiHigherOrder
 import Mettapedia.Logic.WMMarkov
 
 /-!
@@ -20,12 +20,13 @@ set_option autoImplicit false
 namespace Mettapedia.Logic.WMHigherOrderMarkov
 
 open Mettapedia.Logic
-open Mettapedia.Logic.EvidenceClass
-open Mettapedia.Logic.EvidenceDirichlet
-open Mettapedia.Logic.MarkovDeFinettiHigherOrder
-open Mettapedia.Logic.PLNWorldModelAdditive
-open Mettapedia.Logic.PLNWorldModelGeneric
-open Mettapedia.Logic.SufficientStatisticSurface
+open Mettapedia.PLN.Evidence.EvidenceClass
+open Mettapedia.PLN.Bridges.ProbabilityTheory.EvidenceDirichlet
+open Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiHigherOrder
+open Mettapedia.PLN.WorldModel.PLNWorldModelAdditive
+open Mettapedia.PLN.WorldModel.PLNWorldModelGeneric
+open Mettapedia.PLN.WorldModel
+open Mettapedia.PLN.WorldModel.SufficientStatisticSurface
 
 open scoped ENNReal
 

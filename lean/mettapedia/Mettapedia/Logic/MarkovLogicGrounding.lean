@@ -290,7 +290,7 @@ We resolve this by providing a local equivalence
 
 section SmokesQueryStrength
 
-open Mettapedia.Logic.PLNWorldModel
+open Mettapedia.PLN.WorldModel.PLNWorldModel
 
 /-! ### Local Fintype for grounded smoke atoms -/
 

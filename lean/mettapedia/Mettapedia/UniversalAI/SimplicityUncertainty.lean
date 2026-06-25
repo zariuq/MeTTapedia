@@ -1,8 +1,8 @@
 import Mettapedia.Computability.KolmogorovComplexity.PrefixComplexity
 import Mettapedia.Computability.HutterComputability
 import Mettapedia.Computability.KolmogorovComplexity.Uncomputability
-import Mettapedia.Logic.SolomonoffInduction
-import Mettapedia.Logic.UniversalPrediction
+import Mettapedia.UniversalAI.SolomonoffInduction
+import Mettapedia.UniversalAI.UniversalPrediction
 
 /-!
 # Simplicity & Uncertainty (Hutter 2005, Chapter 2) — entrypoint
@@ -26,15 +26,15 @@ namespace Mettapedia.UniversalAI.SimplicityUncertainty
 open scoped Classical BigOperators
 
 open Mettapedia.Computability.Hutter
-open Mettapedia.Logic.SolomonoffPrior
-open Mettapedia.Logic.SolomonoffInduction
-open Mettapedia.Logic.UniversalPrediction
+open Mettapedia.UniversalAI.SolomonoffPrior
+open Mettapedia.UniversalAI.SolomonoffInduction
+open Mettapedia.UniversalAI.UniversalPrediction
 
-abbrev BinString := Mettapedia.Logic.SolomonoffPrior.BinString
-abbrev PrefixFreeMachine := Mettapedia.Logic.SolomonoffPrior.PrefixFreeMachine
-abbrev UniversalPFM := Mettapedia.Logic.SolomonoffPrior.UniversalPFM
-abbrev MonotoneMachine := Mettapedia.Logic.SolomonoffPrior.MonotoneMachine
-abbrev Semimeasure := Mettapedia.Logic.SolomonoffInduction.Semimeasure
+abbrev BinString := Mettapedia.UniversalAI.SolomonoffPrior.BinString
+abbrev PrefixFreeMachine := Mettapedia.UniversalAI.SolomonoffPrior.PrefixFreeMachine
+abbrev UniversalPFM := Mettapedia.UniversalAI.SolomonoffPrior.UniversalPFM
+abbrev MonotoneMachine := Mettapedia.UniversalAI.SolomonoffPrior.MonotoneMachine
+abbrev Semimeasure := Mettapedia.UniversalAI.SolomonoffInduction.Semimeasure
 
 /-! ## Kolmogorov complexity (prefix-free)
 
@@ -95,41 +95,41 @@ background and is tracked as a separate checklist item.
 
 /-- Algorithmic prior weight `w(i) = 2^{-Kpf(i)}` (ENNReal form). -/
 noncomputable abbrev kpfWeight (U : PrefixFreeMachine) [UniversalPFM U] (i : BinString) : ENNReal :=
-  Mettapedia.Logic.UniversalPrediction.kpfWeight (U := U) i
+  Mettapedia.UniversalAI.UniversalPrediction.kpfWeight (U := U) i
 
 /-- The universal mixture `ξ` built from a `BinString`-indexed family of semimeasures. -/
 noncomputable abbrev xiKpf (U : PrefixFreeMachine) [UniversalPFM U] (ν : BinString → Semimeasure) :
     Semimeasure :=
-  Mettapedia.Logic.UniversalPrediction.xiKpfSemimeasure (U := U) ν
+  Mettapedia.UniversalAI.UniversalPrediction.xiKpfSemimeasure (U := U) ν
 
 /-- Dominance of `ξ` over each component (Hutter Eq. (2.27)). -/
 theorem xiKpf_dominates_index (U : PrefixFreeMachine) [UniversalPFM U]
     (ν : BinString → Semimeasure) (i x : BinString) :
     kpfWeight U i * ν i x ≤ (xiKpf (U := U) ν) x := by
   simpa [kpfWeight, xiKpf] using
-    (Mettapedia.Logic.UniversalPrediction.xiKpf_dominates_index (U := U) (ν := ν) i x)
+    (Mettapedia.UniversalAI.UniversalPrediction.xiKpf_dominates_index (U := U) (ν := ν) i x)
 
 /-! ## Bayes update for countable mixtures (Theorem 2.19-style) -/
 
 /-- Generic countable mixture `ξ(x) := ∑ᵢ w(i) νᵢ(x)` as an `ENNReal` function. -/
 noncomputable abbrev xiFun {ι : Type*} (ν : ι → Semimeasure) (w : ι → ENNReal) (x : BinString) :
     ENNReal :=
-  Mettapedia.Logic.UniversalPrediction.xiFun ν w x
+  Mettapedia.UniversalAI.UniversalPrediction.xiFun ν w x
 
 /-- Posterior weight `w(i|x) = w(i) νᵢ(x) / ξ(x)` (and `0` when `ξ(x)=0`). -/
 noncomputable abbrev posteriorWeight {ι : Type*} (ν : ι → Semimeasure) (w : ι → ENNReal)
     (x : BinString) (i : ι) : ENNReal :=
-  Mettapedia.Logic.UniversalPrediction.posteriorWeight ν w x i
+  Mettapedia.UniversalAI.UniversalPrediction.posteriorWeight ν w x i
 
 theorem tsum_posteriorWeight {ι : Type*} (ν : ι → Semimeasure) (w : ι → ENNReal)
     (hw : (∑' i : ι, w i) ≤ 1) (x : BinString) :
     (∑' i : ι, posteriorWeight ν w x i) = if xiFun ν w x = 0 then 0 else 1 := by
   simpa [xiFun, posteriorWeight] using
-    (Mettapedia.Logic.UniversalPrediction.tsum_posteriorWeight (ν := ν) (w := w) hw x)
+    (Mettapedia.UniversalAI.UniversalPrediction.tsum_posteriorWeight (ν := ν) (w := w) hw x)
 
 /-- ENNReal conditional probability for a semimeasure: `μ(y|x) := μ(xy) / μ(x)`. -/
 noncomputable abbrev conditionalENN (μ : Semimeasure) (y x : BinString) : ENNReal :=
-  Mettapedia.Logic.UniversalPrediction.conditionalENN μ y x
+  Mettapedia.UniversalAI.UniversalPrediction.conditionalENN μ y x
 
 /-- Mixture conditional as posterior-weighted sum of component conditionals (Bayes mixture form). -/
 theorem xi_conditionalENN_eq_tsum_posterior_mul {ι : Type*} (ν : ι → Semimeasure) (w : ι → ENNReal)
@@ -137,7 +137,7 @@ theorem xi_conditionalENN_eq_tsum_posterior_mul {ι : Type*} (ν : ι → Semime
     xiFun ν w (x ++ y) / xiFun ν w x =
       ∑' i : ι, posteriorWeight ν w x i * conditionalENN (ν i) y x := by
   simpa [xiFun, posteriorWeight, conditionalENN] using
-    (Mettapedia.Logic.UniversalPrediction.xi_conditionalENN_eq_tsum_posterior_mul (ν := ν) (w := w) x y)
+    (Mettapedia.UniversalAI.UniversalPrediction.xi_conditionalENN_eq_tsum_posterior_mul (ν := ν) (w := w) x y)
 
 /-! ## (Semi)measures and Solomonoff induction
 

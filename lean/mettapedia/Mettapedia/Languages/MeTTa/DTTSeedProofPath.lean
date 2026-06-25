@@ -27,7 +27,7 @@ open Mettapedia.Languages.MeTTa.PeTTa.LPSoundness
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.Match
 open Mettapedia.Logic.LP
-open Mettapedia.Logic.LP.MeTTaILBridge
+open Mettapedia.OSLF.MeTTaIL.LPBridge
 open Mettapedia.Languages.MeTTa.PureKernel.Syntax
 open Mettapedia.Languages.MeTTa.PureKernel.Context
 open Mettapedia.Languages.MeTTa.PureKernel.DeclarationEnv

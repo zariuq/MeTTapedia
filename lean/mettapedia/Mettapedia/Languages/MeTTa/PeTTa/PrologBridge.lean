@@ -1,21 +1,21 @@
-import Mettapedia.Logic.Prolog.Prolog
+import Mettapedia.Languages.Prolog.Prolog
 import Mettapedia.Languages.MeTTa.PeTTa.Eval
 
 /-!
 # Bridge: PeTTa Evaluation ↔ Prolog Oracle
 
-This file wires the abstract `EvalOracle` (from `Logic.Prolog.Eval`) to the
+This file wires the abstract `EvalOracle` (from `Languages.Prolog.Eval`) to the
 concrete `PeTTaEval` relation (from `OSLF.PeTTa.Eval`), producing the
 **MeTTa Prolog oracle** that instantiates `reduceCall` with PeTTa semantics.
 
 ## Architecture
 
 ```
-EvalOracle (abstract)          ← Logic.Prolog.Eval
+EvalOracle (abstract)          ← Languages.Prolog.Eval
   ↑ instantiated by
 MeTTaPrologOracle (s)          ← this file
   ↑ used in
-PrologEval oracle goal env r   ← Logic.Prolog.Eval.PrologEval
+PrologEval oracle goal env r   ← Languages.Prolog.Eval.PrologEval
   ↑ correctness via
 compileExpr_correct             ← OSLF.PeTTa.TranslateExpr
 ```
@@ -38,7 +38,7 @@ namespace Mettapedia.Languages.MeTTa.PeTTa
 
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.Match
-open Mettapedia.Logic.Prolog
+open Mettapedia.Languages.Prolog
 
 /-! ## Space Adapter -/
 

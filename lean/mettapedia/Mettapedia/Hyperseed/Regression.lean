@@ -18,15 +18,15 @@ Negative example:
 
 namespace Mettapedia.Hyperseed.Regression
 
-open Mettapedia.Logic
-open Mettapedia.Logic.EvidenceClass
-open Mettapedia.Logic.EvidenceQuantale
-open Mettapedia.Logic.PLNWorldModel
-open Mettapedia.Logic.PLNWorldModelGeneric
-open Mettapedia.Logic.PLNWorldModelAdditive
-open Mettapedia.Logic.PLNWorldModelFixpointClosure
-open Mettapedia.Logic.PLNWorldModelFixpointCascade
-open Mettapedia.Logic.SufficientStatisticSurface
+open Mettapedia.PLN.Evidence.EvidenceClass
+open Mettapedia.PLN.Evidence.EvidenceQuantale
+open Mettapedia.PLN.WorldModel.PLNWorldModel
+open Mettapedia.PLN.WorldModel.PLNWorldModelGeneric
+open Mettapedia.PLN.WorldModel.PLNWorldModelAdditive
+open Mettapedia.PLN.WorldModel.Fixpoint.PLNWorldModelFixpointClosure
+open Mettapedia.PLN.WorldModel.Fixpoint.PLNWorldModelFixpointCascade
+open Mettapedia.PLN.WorldModel
+open Mettapedia.PLN.WorldModel.SufficientStatisticSurface
 open Mettapedia.Hyperseed
 open scoped ENNReal
 

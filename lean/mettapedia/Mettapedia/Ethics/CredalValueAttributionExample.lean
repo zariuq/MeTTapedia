@@ -19,10 +19,10 @@ formation.
 
 namespace Mettapedia.Ethics
 
-open Mettapedia.Logic
-open Mettapedia.Logic.EvidenceQuantale
-open Mettapedia.Logic.ConceptOntology
-open Mettapedia.Logic.AbstractInheritance
+open Mettapedia.PLN.Evidence.EvidenceQuantale
+open Mettapedia.KR.ConceptOntology
+open Mettapedia.KR.ConceptGeometry
+open Mettapedia.KR.ConceptGeometry.AbstractInheritance
 
 inductive CaseStudy where
   | returningWallet
@@ -298,17 +298,17 @@ theorem returningWalletGoodConcept_globalEnvelopeMidpoint_eq_half :
           valueAttributionFromCasesEvidence returningWalletGoodConcept) =
       (1 / 2 : ℝ) := by
   have h :=
-    Mettapedia.Logic.ConceptOntology.globalEnvelopeMidpoint_conceptFormationGamble_eq
+    Mettapedia.KR.ConceptOntology.globalEnvelopeMidpoint_conceptFormationGamble_eq
       (Gate := Bool) valueGateFamily valueAttributionFromCasesEvidence
       returningWalletGoodConcept
   have hLower :
       returningWalletGoodConcept ∉
-        Mettapedia.Logic.ConceptOntology.lowerConceptFamily
+        Mettapedia.KR.ConceptOntology.lowerConceptFamily
           (Gate := Bool) valueGateFamily valueAttributionFromCasesEvidence := by
     exact returningWalletGoodConcept_not_mem_lower
   have hUpper :
       returningWalletGoodConcept ∈
-        Mettapedia.Logic.ConceptOntology.upperConceptFamily
+        Mettapedia.KR.ConceptOntology.upperConceptFamily
           (Gate := Bool) valueGateFamily valueAttributionFromCasesEvidence := by
     exact returningWalletGoodConcept_mem_upper
   rw [if_neg hLower, if_pos hUpper] at h
@@ -320,15 +320,15 @@ theorem betrayalBadConcept_globalEnvelopeWidthComplement_eq_one :
           valueAttributionFromCasesEvidence betrayalBadConcept) = 1 := by
   have hNotMixed :
       ¬ (betrayalBadConcept ∈
-            Mettapedia.Logic.ConceptOntology.upperConceptFamily
+            Mettapedia.KR.ConceptOntology.upperConceptFamily
               (Gate := Bool) valueGateFamily valueAttributionFromCasesEvidence ∧
           betrayalBadConcept ∉
-            Mettapedia.Logic.ConceptOntology.lowerConceptFamily
+            Mettapedia.KR.ConceptOntology.lowerConceptFamily
               (Gate := Bool) valueGateFamily valueAttributionFromCasesEvidence) := by
     intro hMixed
     exact hMixed.2 betrayalBadConcept_mem_lower
   have h :=
-    Mettapedia.Logic.ConceptOntology.globalEnvelopeWidthComplement_conceptFormationGamble_eq
+    Mettapedia.KR.ConceptOntology.globalEnvelopeWidthComplement_conceptFormationGamble_eq
       (Gate := Bool) valueGateFamily valueAttributionFromCasesEvidence
       betrayalBadConcept
   rw [if_neg hNotMixed] at h

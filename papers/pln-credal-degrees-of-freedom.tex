@@ -555,7 +555,7 @@ answers \emph{every} question coherently. That stronger claim is not automatic:
 it holds exactly at a precise compatibility boundary (Appendix~\ref{app:formal},
 item~\ref{item:exch}).\footnote{Lean: the \emph{sharp compatibility} crown (and
 its refuted ``every component degenerate'' tightening) in
-\lpath{Mettapedia/Logic/DeFinettiProjectiveCredalBridge.lean}; full name and
+\lpath{Mettapedia/ProbabilityTheory/Exchangeability/DeFinettiProjectiveCredalBridge.lean}; full name and
 statement in Appendix~\ref{app:formal}, item~\ref{item:exch}.}
 
 \begin{quote}
@@ -752,12 +752,21 @@ own display point. Lower / midpoint / upper on one interval: $0.2/0.5/0.8$.
 \end{tikzpicture}}
 
 \item \textbf{Credal shape beyond one interval.}\footnote{Lean:
-\lid{CredalProjectionTower} in \lpath{Mettapedia/Logic/PLNTruthTower.lean}.} Two spreads can agree on one
+\lid{CredalProjectionTower} in \lpath{Mettapedia/Logic/PLNTruthTower.lean};
+\lid{observationCredalSet\_indicatorGamble\_has\_strict\_width\_of\_related\_ne} and
+\lid{observationCredalSet\_indicatorGamble\_collapses\_of\_class\_subsingleton} in
+\lpath{Mettapedia/Logic/PLNDistinctionCredalBridge.lean}; and the OSLF specialization
+\lid{indistObs\_indicatorGamble\_has\_strict\_width} /
+\lid{indistObs\_indicatorGamble\_collapses\_of\_class\_subsingleton} in
+\lpath{Mettapedia/Logic/PLNDistinctionCredalOSLFBridge.lean}.} Two spreads can agree on one
 question and disagree on another --- the very reason $\STV{s}{c}$ is a
 compression. Two joint models with identical marginals $P(A)=P(B)=0.5$ can have
 conjunction $0.5$ (perfectly dependent) or $0.0$ (mutually exclusive); the whole
 range $[0,0.5]$ is invisible to the marginal summary. \emph{Trap:} certifying two
-incompatible joint models ``the same'' because their margins match.
+incompatible joint models ``the same'' because their margins match. A second,
+operational source of the same width is unresolved observational distinction:
+if the observer cannot yet tell two states apart, the relevant truth query can
+remain interval-valued until that distinction is resolved.
 
 \knobpic{%
 \begin{tikzpicture}
@@ -871,7 +880,7 @@ single precise prior, so later confidence looks unjustifiably high.
 \end{tikzpicture}}
 
 \item \textbf{Compatible completion.}\footnote{Lean: the sharp-compatibility
-crown in \lpath{Mettapedia/Logic/DeFinettiProjectiveCredalBridge.lean}; see
+crown in \lpath{Mettapedia/ProbabilityTheory/Exchangeability/DeFinettiProjectiveCredalBridge.lean}; see
 Appendix~\ref{app:formal}, item~\ref{item:exch}.} Finite-prefix forecasts always exist; a
 full infinite law does not always exist (Section~\ref{sec:exch}). The Laplace
 readout $3/5\to0.5714$, $30/50\to0.5962$ is always available; the consistent
@@ -933,7 +942,7 @@ just because the local rules are fixed.
 
 \item \textbf{Exchangeability / mixture readout.}\footnote{Lean: the imprecise
 de Finetti mixing-family in
-\lpath{Mettapedia/Logic/DeFinettiProjectiveCredalBridge.lean}; see
+\lpath{Mettapedia/ProbabilityTheory/Exchangeability/DeFinettiProjectiveCredalBridge.lean}; see
 Appendix~\ref{app:formal}, item~\ref{item:exch}.} An order-free stream has a
 canonical mixture forecast, but the raw all-questions law depends on the
 compatibility boundary of Section~\ref{sec:exch}. \emph{Trap:} demanding every
@@ -1099,7 +1108,7 @@ real-valued function on the outcome space (a random variable / payoff); a
 (\code{Omega} for $\Omega$, \code{->} for $\to$, and \code{forall}/\code{exists}/%
 \code{in}/\code{and}/\code{not} for the binders and connectives). The source
 files are \lpath{Mettapedia/ProbabilityTheory/ImpreciseProbability/ProjectiveCredal.lean}
-(the credal stack), \lpath{Mettapedia/Logic/DeFinettiProjectiveCredalBridge.lean},
+(the credal stack), \lpath{Mettapedia/ProbabilityTheory/Exchangeability/DeFinettiProjectiveCredalBridge.lean},
 \lpath{Mettapedia/Logic/MarkovLogicInfiniteCredalBridge.lean}, and
 \lpath{Mettapedia/Logic/MarkovLogicInfiniteSymmetricGridExample.lean}.
 

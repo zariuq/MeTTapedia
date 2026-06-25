@@ -1,7 +1,7 @@
 import Mettapedia.Languages.GF.OSLFBridge_handcrafted
 import Mettapedia.Languages.GF.SUMO.SumoAbstract
 import Mettapedia.OSLF.MeTTaIL.Syntax
-import Mettapedia.Logic.PLNWorldModelSetTheoryBridge
+import Mettapedia.PLN.Bridges.Logic.WorldModel.PLNWorldModelSetTheoryBridge
 
 /-!
 # GF → FOL(Set) Typed Fragment Bridge
@@ -29,13 +29,13 @@ open Mettapedia.Languages.GF.HandCrafted.Abstract
 open Mettapedia.Languages.GF.OSLFBridge
 open Mettapedia.Languages.GF.SUMO.SumoAbstract
 open OSLF.MeTTaIL.Syntax
-open Mettapedia.Logic.PLNWorldModel
-open Mettapedia.Logic.PLNWorldModelSetTheoryBridge
+open Mettapedia.PLN.WorldModel.PLNWorldModel
+open Mettapedia.PLN.Bridges.Logic.WorldModel.PLNWorldModelSetTheoryBridge
 
-abbrev SetLang := Mettapedia.Logic.PLNWorldModelSetTheoryBridge.SetLang
-abbrev SetQuery := Mettapedia.Logic.PLNWorldModelSetTheoryBridge.SetQuery
-abbrev SetPointed := Mettapedia.Logic.PLNWorldModelSetTheoryBridge.SetPointed
-abbrev SetState := Mettapedia.Logic.PLNWorldModelSetTheoryBridge.SetState
+abbrev SetLang := Mettapedia.PLN.Bridges.Logic.WorldModel.PLNWorldModelSetTheoryBridge.SetLang
+abbrev SetQuery := Mettapedia.PLN.Bridges.Logic.WorldModel.PLNWorldModelSetTheoryBridge.SetQuery
+abbrev SetPointed := Mettapedia.PLN.Bridges.Logic.WorldModel.PLNWorldModelSetTheoryBridge.SetPointed
+abbrev SetState := Mettapedia.PLN.Bridges.Logic.WorldModel.PLNWorldModelSetTheoryBridge.SetState
 abbrev GFPattern := OSLF.MeTTaIL.Syntax.Pattern
 
 abbrev SetOpenTerm := LO.FirstOrder.Term SetLang String

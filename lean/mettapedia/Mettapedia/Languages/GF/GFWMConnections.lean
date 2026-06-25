@@ -4,7 +4,7 @@ import Mettapedia.Languages.GF.WorldModelSemantics
 import Mettapedia.Languages.GF.WorldModelVisibleBridge
 import Mettapedia.Languages.GF.OSLFToNTT
 import Mettapedia.Languages.GF.LinguisticInvariance
-import Mettapedia.Logic.PLNWorldModelCalculus
+import Mettapedia.PLN.WorldModel.PLNWorldModelCalculus
 
 /-!
 # GF ↔ WM Connections
@@ -30,9 +30,9 @@ open Mettapedia.Languages.GF.Typing
 open Mettapedia.Languages.GF.WorldModelSemantics
 open Mettapedia.Languages.GF.WorldModelVisibleBridge
 open Mettapedia.Languages.GF.OSLFToNTT
-open Mettapedia.Logic.PLNWorldModel
-open Mettapedia.Logic.EvidenceClass
-open Mettapedia.Logic.EvidenceQuantale
+open Mettapedia.PLN.WorldModel.PLNWorldModel
+open Mettapedia.PLN.Evidence.EvidenceClass
+open Mettapedia.PLN.Evidence.EvidenceQuantale
 open Mettapedia.CategoryTheory.NativeTypeTheory
 open Mettapedia.CategoryTheory.PLNInstance
 open Mettapedia.OSLF.MeTTaIL.Syntax

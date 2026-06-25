@@ -7,7 +7,7 @@ import Mathlib.Analysis.SpecificLimits.Basic
 import Mathlib.MeasureTheory.Measure.MeasureSpaceDef
 import Mathlib.MeasureTheory.Measure.Lebesgue.Basic
 import Mettapedia.Computability.KolmogorovComplexity.Basic
-import Mettapedia.Logic.SolomonoffPrior
+import Mettapedia.UniversalAI.SolomonoffPrior
 
 /-!
 # Prefix-Free Codes and the Kraft Inequality
@@ -32,7 +32,7 @@ This file develops prefix-free codes and proves the Kraft inequality, following:
 
 ## Implementation Notes
 
-This file is ported from `Mettapedia/Logic/SolomonoffPrior.lean` to provide
+This file is ported from `Mettapedia/UniversalAI/SolomonoffPrior.lean` to provide
 a foundation for prefix-free Kolmogorov complexity independent of the Solomonoff
 prior formalization.
 
@@ -47,24 +47,24 @@ This file is the Phase‑2 / Chapter‑2 bridge needed for Hutter Chapter 3:
 prefix-free codes and Kraft inequality, so we can later justify `2^{-K}`-style weights.
 
 The fully‑proved Kraft inequality development already exists in
-`Mettapedia.Logic.SolomonoffPrior`.  For now, we re-export the key definitions/lemmas
+`Mettapedia.UniversalAI.SolomonoffPrior`.  For now, we re-export the key definitions/lemmas
 from there (no axioms/sorries) and keep the previous draft (Lean3-era) content
 commented out below for reference.
 -/
 
 abbrev PrefixFree (S : Set BinString) : Prop :=
-  Mettapedia.Logic.SolomonoffPrior.PrefixFree (S := S)
+  Mettapedia.UniversalAI.SolomonoffPrior.PrefixFree (S := S)
 
 noncomputable abbrev kraftSum (S : Finset BinString) : ℝ :=
-  Mettapedia.Logic.SolomonoffPrior.kraftSum (S := S)
+  Mettapedia.UniversalAI.SolomonoffPrior.kraftSum (S := S)
 
 theorem kraftSum_nonneg (S : Finset BinString) : 0 ≤ kraftSum S := by
-  simpa [kraftSum] using Mettapedia.Logic.SolomonoffPrior.kraftSum_nonneg (S := S)
+  simpa [kraftSum] using Mettapedia.UniversalAI.SolomonoffPrior.kraftSum_nonneg (S := S)
 
 theorem kraft_inequality (S : Finset BinString) (hpf : PrefixFree (↑S : Set BinString)) :
     kraftSum S ≤ 1 := by
   simpa [PrefixFree, kraftSum] using
-    (Mettapedia.Logic.SolomonoffPrior.kraft_inequality (S := S) (hpf := hpf))
+    (Mettapedia.UniversalAI.SolomonoffPrior.kraft_inequality (S := S) (hpf := hpf))
 
 end KolmogorovComplexity
 

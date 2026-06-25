@@ -1,7 +1,7 @@
 import Mettapedia.OSLF.Formula
 import Mettapedia.OSLF.Framework.TypeSynthesis
-import Mettapedia.Logic.PLNWorldModel
-import Mettapedia.Logic.IdentityEvidence
+import Mettapedia.PLN.WorldModel.PLNWorldModel
+import Mettapedia.PLN.Evidence.IdentityEvidence
 
 /-!
 # Identity BinaryEvidence Transfer (Framework-Level)
@@ -16,10 +16,10 @@ This module is intentionally independent of GF/Pi/Rho internals. It provides:
 
 namespace Mettapedia.OSLF.Framework.IdentityEvidenceTransfer
 
-open Mettapedia.Logic.EvidenceClass
-open Mettapedia.Logic.PLNWorldModel
-open Mettapedia.Logic.EvidenceQuantale
-open Mettapedia.Logic.IdentityEvidence
+open Mettapedia.PLN.Evidence.EvidenceClass
+open Mettapedia.PLN.WorldModel.PLNWorldModel
+open Mettapedia.PLN.Evidence.EvidenceQuantale
+open Mettapedia.PLN.Evidence.IdentityEvidence
 open Mettapedia.OSLF.Formula
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.Engine
