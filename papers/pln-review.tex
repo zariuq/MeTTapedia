@@ -153,6 +153,12 @@ stack split:
 \item \textbf{Decision tree}: \codepath{Mettapedia/Logic/SemanticsDecisionTree.lean}
 \end{itemize}
 
+For the completed strength/confidence characterization itself, the current
+public endpoint is \codepath{Mettapedia/PLN/Core/PLNCanonicalAPI.lean} under
+\code{confidenceCharacterizationEndpointProfile}; the companion paper is
+\codepath{papers/pln-credal-degrees-of-freedom.tex}.  This review points to
+that endpoint rather than re-deriving it here.
+
 \section{What Required Correction}
 
 The book does not explicitly separate the three layers, leading to the
@@ -378,7 +384,7 @@ given $B$ and given $\lnot B$.
 \item MeTTa truth function parity / analysis ---
   \codepath{Mettapedia/Logic/PeTTaLibPLNTruthFunctions.lean},
   \codepath{Mettapedia/Logic/WMPLNJustifiedTruthFunctions.lean},
-  \codepath{Mettapedia/Logic/PeTTaLibPLNFormalAnalysis.lean}
+  \codepath{Mettapedia/PLN/Comparisons/PeTTa/PeTTaLibPLNFormalAnalysis.lean}
 \item BN chain exactness: \code{chainBN\_plnDeductionStrength\_exact} ---
   \codepath{Mettapedia/Logic/PLNBayesNetFastRules.lean}
 \item BN fork exactness: \code{forkBN\_plnDeductionStrength\_exact} ---

@@ -1,4 +1,5 @@
 import Mettapedia.KR.ConceptGeometry.Bridges.ProbabilityTheory.EmpiricalIntensionalFactorGraphBridge
+import Mettapedia.OSLF.MeTTaIL.Syntax
 import Mettapedia.PLN.ConceptGeometry.AssocPat.PLNHigherOrderHOLAssocPatBridge
 import Mettapedia.PLN.ConceptGeometry.AssocPat.PLNTypedSemanticLayerAssocPatBridge
 
@@ -635,6 +636,73 @@ theorem witnessFeature_formedConcept_assocLogRatio_eq_veQueryScore :
       (subConcept := witnessImpliesFeatureFormedConcept MembershipConcept.feature)
       (superConcept := witnessImpliesFeatureFormedConcept MembershipConcept.witness)
 
+/-- Proof-carrying profile for the concrete formed-concept Chapter-12 source.
+
+The fields keep the semantic source together: actual formed concepts provide a
+pair-subset fact, an equivalent-source same-intent canary, and the ASSOC
+log-ratio readout through the finite-table VE bridge.  Downstream HO ASSOC/PAT
+theorems consume this profile through calibrated intent; this profile itself is
+not a separate PAT semantics. -/
+structure FormedConceptChapter12SourceProfile where
+  witnessInheritsFeature :
+    (Mettapedia.KR.ConceptGeometry.AbstractInheritance.formedConceptInterpretation
+      Mettapedia.KR.ConceptOntology.EvidenceGate.positiveSupport
+      witnessImpliesFeatureMemberEvidence).Inherits
+      (witnessImpliesFeatureFormedConcept MembershipConcept.witness)
+      (witnessImpliesFeatureFormedConcept MembershipConcept.feature)
+  equivalentWitnessFeatureMutualInherits :
+    (Mettapedia.KR.ConceptGeometry.AbstractInheritance.formedConceptInterpretation
+      Mettapedia.KR.ConceptOntology.EvidenceGate.positiveSupport
+      witnessEquivalentFeatureMemberEvidence).MutualInherits
+      (witnessEquivalentFeatureFormedConcept MembershipConcept.witness)
+      (witnessEquivalentFeatureFormedConcept MembershipConcept.feature)
+  witnessFeaturePairSubset :
+    (Mettapedia.KR.ConceptGeometry.AbstractInheritance.formedConceptInterpretation
+      Mettapedia.KR.ConceptOntology.EvidenceGate.positiveSupport
+      witnessImpliesFeatureMemberEvidence).PairSubsetRel
+      (witnessImpliesFeatureFormedConcept MembershipConcept.feature)
+      (witnessImpliesFeatureFormedConcept MembershipConcept.feature)
+      (witnessImpliesFeatureFormedConcept MembershipConcept.witness)
+      (witnessImpliesFeatureFormedConcept MembershipConcept.feature)
+  assocLogRatioReadout :
+    Mettapedia.KR.ConceptGeometry.IntensionalInheritance.Interpretation.finiteInheritanceLogRatioBits
+        (Mettapedia.KR.ConceptGeometry.AbstractInheritance.formedConceptInterpretation
+          Mettapedia.KR.ConceptOntology.EvidenceGate.positiveSupport
+          witnessImpliesFeatureMemberEvidence)
+        (witnessImpliesFeatureFormedConcept MembershipConcept.feature)
+        (witnessImpliesFeatureFormedConcept MembershipConcept.witness) =
+      logRatioInformationGainFromEvidence
+        (if FiniteWitnessFeatureTable.veWeight
+            witnessFeatureFormedInheritanceTable
+            [⟨MembershipConcept.feature, true⟩] = 0 then
+          0
+        else
+          (FiniteWitnessFeatureTable.veWeight
+            witnessFeatureFormedInheritanceTable
+            [⟨MembershipConcept.feature, true⟩,
+              ⟨MembershipConcept.witness, true⟩] : ℝ) /
+            FiniteWitnessFeatureTable.veWeight
+              witnessFeatureFormedInheritanceTable
+              [⟨MembershipConcept.feature, true⟩])
+        ((FiniteWitnessFeatureTable.veWeight
+          witnessFeatureFormedInheritanceTable
+          [⟨MembershipConcept.witness, true⟩] : ℝ) /
+            FiniteWitnessFeatureTable.veWeight
+              witnessFeatureFormedInheritanceTable [])
+
+/-- Concrete formed-concept Chapter-12 source package consumed by the public
+ASSOC/PAT theorem index. -/
+noncomputable def formedConceptChapter12SourceProfile :
+    FormedConceptChapter12SourceProfile where
+  witnessInheritsFeature :=
+    witness_formedConcept_inherits_feature_formedConcept_canary
+  equivalentWitnessFeatureMutualInherits :=
+    witnessEquivalentFeature_formedConcept_mutualInherits_canary
+  witnessFeaturePairSubset :=
+    witnessFeature_formedConcept_pairSubsetRel_canary
+  assocLogRatioReadout :=
+    witnessFeature_formedConcept_assocLogRatio_eq_veQueryScore
+
 /-- The finite-table version of the canary has the same empirical inheritance
 fact. -/
 theorem witness_inherits_feature_table_canary :
@@ -669,6 +737,728 @@ theorem witnessFeature_pairSubsetRel_table_canary :
         (I := MembershipCounts.semanticInterpretation
           (FiniteWitnessFeatureTable.toMembershipCounts witnessImpliesFeatureTable))
         MembershipConcept.feature⟩
+
+/-- Tiny finite-table guardrail with a real witness-only case.
+
+Here the witness marginal is strictly larger than the feature/witness joint
+mass, so the no-witness-only hypothesis in the positive VE source theorem is
+load-bearing. -/
+def witnessOnlyCounterexampleTable : FiniteWitnessFeatureTable where
+  neither := 0
+  witnessOnly := 1
+  featureOnly := 0
+  both := 1
+  total_pos := by decide
+
+/-- Negative finite-table source canary: if a witness-only case exists, the
+witness marginal need not equal the feature/witness joint. -/
+theorem witnessOnlyCounterexampleTable_veWeight_witness_ne_feature_witness :
+    FiniteWitnessFeatureTable.veWeight witnessOnlyCounterexampleTable
+        [⟨MembershipConcept.witness, true⟩] ≠
+      FiniteWitnessFeatureTable.veWeight witnessOnlyCounterexampleTable
+        [⟨MembershipConcept.feature, true⟩, ⟨MembershipConcept.witness, true⟩] := by
+  change
+    MembershipCounts.veWeight (FiniteWitnessFeatureTable.toMembershipCounts witnessOnlyCounterexampleTable)
+        [⟨MembershipConcept.witness, true⟩] ≠
+      MembershipCounts.veWeight (FiniteWitnessFeatureTable.toMembershipCounts witnessOnlyCounterexampleTable)
+        [⟨MembershipConcept.feature, true⟩, ⟨MembershipConcept.witness, true⟩]
+  rw [MembershipCounts.veWeight_witness_true,
+    MembershipCounts.veWeight_feature_witness_true]
+  norm_num [FiniteWitnessFeatureTable.toMembershipCounts,
+    MembershipCounts.witnessSupport,
+    witnessOnlyCounterexampleTable]
+
+/-- Proof-carrying profile for the finite-table Chapter-12 source algebra.
+
+This packages the positive no-witness-only VE equality, the pair-subset source
+fact it supports, and the matching witness-only counterexample.  It is a source
+profile for the empirical/factor-graph side of ASSOC/PAT, not a new rule
+semantics. -/
+structure FiniteTableChapter12SourceProfile where
+  noWitnessOnlyVEReadout :
+    FiniteWitnessFeatureTable.veWeight witnessImpliesFeatureTable
+        [⟨MembershipConcept.witness, true⟩] =
+      FiniteWitnessFeatureTable.veWeight witnessImpliesFeatureTable
+        [⟨MembershipConcept.feature, true⟩, ⟨MembershipConcept.witness, true⟩]
+  pairSubset :
+    (MembershipCounts.semanticInterpretation
+      (FiniteWitnessFeatureTable.toMembershipCounts witnessImpliesFeatureTable)).PairSubsetRel
+      MembershipConcept.feature MembershipConcept.feature
+      MembershipConcept.witness MembershipConcept.feature
+  witnessOnlyCounterexample :
+    FiniteWitnessFeatureTable.veWeight witnessOnlyCounterexampleTable
+        [⟨MembershipConcept.witness, true⟩] ≠
+      FiniteWitnessFeatureTable.veWeight witnessOnlyCounterexampleTable
+        [⟨MembershipConcept.feature, true⟩, ⟨MembershipConcept.witness, true⟩]
+
+/-- Concrete finite-table Chapter-12 source algebra package consumed by the
+public ASSOC/PAT theorem index. -/
+noncomputable def finiteTableChapter12SourceProfile :
+    FiniteTableChapter12SourceProfile where
+  noWitnessOnlyVEReadout :=
+    witnessImpliesFeatureTable_veWeight_witness_eq_feature_witness
+  pairSubset :=
+    witnessFeature_pairSubsetRel_table_canary
+  witnessOnlyCounterexample :=
+    witnessOnlyCounterexampleTable_veWeight_witness_ne_feature_witness
+
+/-! ## OSLF pattern-coded source surface -/
+
+/-- The concrete OSLF pattern type used to name the Chapter-12 finite-table
+source concepts. -/
+abbrev Chapter12Pattern := Mettapedia.OSLF.MeTTaIL.Syntax.Pattern
+
+/-- OSLF surface name for the feature concept in the finite-table canary. -/
+def chapter12FeaturePattern : Chapter12Pattern :=
+  .apply "chapter12-feature" []
+
+/-- OSLF surface name for the witness concept in the finite-table canary. -/
+def chapter12WitnessPattern : Chapter12Pattern :=
+  .apply "chapter12-witness" []
+
+/-- Tiny classifier from OSLF pattern names into the Chapter-12 membership
+concepts.  Unknown patterns default to `feature`; the named witness pattern is
+the only witness-classified pattern in this minimal source surface. -/
+def chapter12PatternConcept (p : Chapter12Pattern) : MembershipConcept :=
+  if p = chapter12WitnessPattern then
+    MembershipConcept.witness
+  else
+    MembershipConcept.feature
+
+/-- The concrete feature and witness OSLF names are distinct. -/
+theorem chapter12FeaturePattern_ne_witnessPattern :
+    chapter12FeaturePattern ≠ chapter12WitnessPattern := by
+  decide
+
+/-- The feature OSLF name classifies as the feature concept. -/
+theorem chapter12PatternConcept_feature :
+    chapter12PatternConcept chapter12FeaturePattern = MembershipConcept.feature := by
+  simp [chapter12PatternConcept, chapter12FeaturePattern_ne_witnessPattern]
+
+/-- The witness OSLF name classifies as the witness concept. -/
+theorem chapter12PatternConcept_witness :
+    chapter12PatternConcept chapter12WitnessPattern = MembershipConcept.witness := by
+  simp [chapter12PatternConcept]
+
+/-- Role-wrapped OSLF pattern syntax for Chapter-12 concept sources.
+
+The role name supplies the concept channel while the payload stays available to
+carry richer surface syntax.  This is a source classifier over OSLF patterns,
+not a new ASSOC/PAT evidence semantics. -/
+def chapter12RolePattern (role : String) (payload : Chapter12Pattern) : Chapter12Pattern :=
+  .apply "chapter12-role" [.apply role [], payload]
+
+/-- Richer Chapter-12 pattern classifier.
+
+Role-wrapped patterns classify by their explicit role.  Other patterns fall
+back to the tiny literal classifier above, so the original finite-table canary
+remains a special case. -/
+def chapter12RichPatternConcept : Chapter12Pattern → MembershipConcept
+  | .apply "chapter12-role" [.apply "witness" [], _] => MembershipConcept.witness
+  | .apply "chapter12-role" [.apply "feature" [], _] => MembershipConcept.feature
+  | p => chapter12PatternConcept p
+
+/-- Any role-wrapped feature payload classifies as the feature concept. -/
+theorem chapter12RichPatternConcept_featureRole (payload : Chapter12Pattern) :
+    chapter12RichPatternConcept (chapter12RolePattern "feature" payload) =
+      MembershipConcept.feature := by
+  rfl
+
+/-- Any role-wrapped witness payload classifies as the witness concept. -/
+theorem chapter12RichPatternConcept_witnessRole (payload : Chapter12Pattern) :
+    chapter12RichPatternConcept (chapter12RolePattern "witness" payload) =
+      MembershipConcept.witness := by
+  rfl
+
+/-- A role outside the Chapter-12 source vocabulary falls back to the underlying
+literal classifier.  The concrete fallback remains feature for this canary. -/
+theorem chapter12RichPatternConcept_otherRole_fallback (payload : Chapter12Pattern) :
+    chapter12RichPatternConcept (chapter12RolePattern "distractor" payload) =
+      MembershipConcept.feature := by
+  simp [chapter12RichPatternConcept, chapter12RolePattern, chapter12PatternConcept,
+    chapter12WitnessPattern]
+
+/-- Negative classifier guardrail: a feature role never classifies as witness. -/
+theorem chapter12RichPatternConcept_featureRole_ne_witness (payload : Chapter12Pattern) :
+    chapter12RichPatternConcept (chapter12RolePattern "feature" payload) ≠
+      MembershipConcept.witness := by
+  simp [chapter12RichPatternConcept_featureRole payload]
+
+/-- Negative classifier guardrail: a witness role never classifies as feature. -/
+theorem chapter12RichPatternConcept_witnessRole_ne_feature (payload : Chapter12Pattern) :
+    chapter12RichPatternConcept (chapter12RolePattern "witness" payload) ≠
+      MembershipConcept.feature := by
+  simp [chapter12RichPatternConcept_witnessRole payload]
+
+/-- Negative classifier guardrail: an out-of-vocabulary role's concrete
+fallback is not witness in this finite canary. -/
+theorem chapter12RichPatternConcept_otherRole_ne_witness (payload : Chapter12Pattern) :
+    chapter12RichPatternConcept (chapter12RolePattern "distractor" payload) ≠
+      MembershipConcept.witness := by
+  simp [chapter12RichPatternConcept_otherRole_fallback payload]
+
+/-- Rich feature source: a role wrapper with a nontrivial payload. -/
+def chapter12RichFeaturePattern : Chapter12Pattern :=
+  chapter12RolePattern "feature" (.apply "observed" [chapter12FeaturePattern])
+
+/-- Rich witness source: a role wrapper with a nontrivial payload. -/
+def chapter12RichWitnessPattern : Chapter12Pattern :=
+  chapter12RolePattern "witness" (.apply "observed" [chapter12WitnessPattern])
+
+/-- The rich feature and witness source patterns are syntactically distinct. -/
+theorem chapter12RichFeaturePattern_ne_witnessPattern :
+    chapter12RichFeaturePattern ≠ chapter12RichWitnessPattern := by
+  decide
+
+/-- The concrete rich feature source classifies as the feature concept. -/
+theorem chapter12RichPatternConcept_feature :
+    chapter12RichPatternConcept chapter12RichFeaturePattern =
+      MembershipConcept.feature :=
+  chapter12RichPatternConcept_featureRole _
+
+/-- The concrete rich witness source classifies as the witness concept. -/
+theorem chapter12RichPatternConcept_witness :
+    chapter12RichPatternConcept chapter12RichWitnessPattern =
+      MembershipConcept.witness :=
+  chapter12RichPatternConcept_witnessRole _
+
+/-- Classifier-parametric pattern-coded finite-table transport.
+
+Any OSLF pattern classifier with designated feature and witness patterns can
+feed the existing finite-table pair-subset source into the predicate-vocabulary
+ASSOC/PAT target.  The classifier supplies only the source typing; the evidence
+flow remains the existing calibrated-intent bridge. -/
+theorem chapter12PatternCoded_pairSubsetRel_transports_to_predicateVocabulary_of_classifies
+    (conceptOf : Chapter12Pattern → MembershipConcept)
+    (featurePattern witnessPattern : Chapter12Pattern)
+    (hFeature : conceptOf featurePattern = MembershipConcept.feature)
+    (hWitness : conceptOf witnessPattern = MembershipConcept.witness)
+    (M : HenkinModel.{u, v, w} Base Const)
+    (σ : Ty Base)
+    {Pred : Type}
+    (code : Chapter12Pattern → Pred)
+    (decode : Pred →
+      Mettapedia.PLN.Bridges.HOL.PLNHigherOrderHOLInheritanceBridge.UnaryPredicate
+        (Base := Base) (Const := Const) σ)
+    (attrOf : Pred → MembershipConcept)
+    (hCal : ∀ {p : Chapter12Pattern} {r : Pred},
+      r ∈ ((Mettapedia.PLN.Bridges.HOL.PLNHigherOrderHOLInheritanceBridge.predicateVocabularyInterpretation
+          (Base := Base) (Const := Const) M σ decode).meaning (code p)).intent ↔
+        attrOf r ∈
+          ((MembershipCounts.semanticInterpretation
+              (FiniteWitnessFeatureTable.toMembershipCounts witnessImpliesFeatureTable)).meaning
+            (conceptOf p)).intent)
+    {AssocState : Type} (W : AssocState) :
+    Mettapedia.PLN.ConceptGeometry.AssocPat.PLNHigherOrderHOLAssocPatBridge.predicateVocabularyIntensionalPairSubsetRel
+      (Base := Base) (Const := Const) M σ decode W
+      (code featurePattern) (code featurePattern)
+      (code witnessPattern) (code featurePattern) := by
+  let conceptCode : MembershipConcept → Pred := fun c =>
+    match c with
+    | MembershipConcept.feature => code featurePattern
+    | MembershipConcept.witness => code witnessPattern
+  have hCalConcept :
+      ∀ {p : MembershipConcept} {r : Pred},
+        r ∈ ((Mettapedia.PLN.Bridges.HOL.PLNHigherOrderHOLInheritanceBridge.predicateVocabularyInterpretation
+            (Base := Base) (Const := Const) M σ decode).meaning (conceptCode p)).intent ↔
+          attrOf r ∈
+            ((MembershipCounts.semanticInterpretation
+                (FiniteWitnessFeatureTable.toMembershipCounts witnessImpliesFeatureTable)).meaning p).intent := by
+    intro p r
+    cases p with
+    | feature =>
+        simpa [conceptCode, hFeature] using
+          (hCal (p := featurePattern) (r := r))
+    | witness =>
+        simpa [conceptCode, hWitness] using
+          (hCal (p := witnessPattern) (r := r))
+  simpa [conceptCode] using
+    predicateVocabularyIntensionalPairSubsetRel_of_finiteWitnessFeatureTablePairSubsetRel_viaIntentCalibration
+      (table := witnessImpliesFeatureTable)
+      (Base := Base) (Const := Const) (M := M) (σ := σ)
+      (code := conceptCode) (decode := decode) attrOf hCalConcept W
+      witnessFeature_pairSubsetRel_table_canary
+
+/-- Proof-carrying profile for the pattern-coded Chapter-12 finite-table
+surface.
+
+The profile records that concrete OSLF pattern names select the same
+witness/feature source algebra already proven for the finite table.  It is a
+source classifier for the existing calibrated-intent bridge, not a new
+ASSOC/PAT semantics. -/
+structure PatternCodedChapter12SourceProfile where
+  featureClassifies :
+    chapter12PatternConcept chapter12FeaturePattern = MembershipConcept.feature
+  witnessClassifies :
+    chapter12PatternConcept chapter12WitnessPattern = MembershipConcept.witness
+  featureWitnessDistinct :
+    chapter12FeaturePattern ≠ chapter12WitnessPattern
+  finiteTableSource :
+    FiniteTableChapter12SourceProfile
+
+/-- Concrete pattern-coded Chapter-12 source package consumed by the public
+ASSOC/PAT theorem index. -/
+noncomputable def patternCodedChapter12SourceProfile :
+    PatternCodedChapter12SourceProfile where
+  featureClassifies :=
+    chapter12PatternConcept_feature
+  witnessClassifies :=
+    chapter12PatternConcept_witness
+  featureWitnessDistinct :=
+    chapter12FeaturePattern_ne_witnessPattern
+  finiteTableSource :=
+    finiteTableChapter12SourceProfile
+
+/-- End-to-end pattern-coded finite-table canary.
+
+The concrete OSLF pattern names for `feature` and `witness` are first classified
+into the Chapter-12 finite witness/feature table.  The already-proven finite
+table pair-subset source then feeds the finite HO predicate-vocabulary
+ASSOC/PAT target through the same calibrated-intent seam. -/
+theorem chapter12PatternCoded_pairSubsetRel_transports_to_predicateVocabulary_viaFiniteTableCalibration
+    (M : HenkinModel.{u, v, w} Base Const)
+    (σ : Ty Base)
+    {Pred : Type}
+    (code : Chapter12Pattern → Pred)
+    (decode : Pred →
+      Mettapedia.PLN.Bridges.HOL.PLNHigherOrderHOLInheritanceBridge.UnaryPredicate
+        (Base := Base) (Const := Const) σ)
+    (attrOf : Pred → MembershipConcept)
+    (hCal : ∀ {p : Chapter12Pattern} {r : Pred},
+      r ∈ ((Mettapedia.PLN.Bridges.HOL.PLNHigherOrderHOLInheritanceBridge.predicateVocabularyInterpretation
+          (Base := Base) (Const := Const) M σ decode).meaning (code p)).intent ↔
+        attrOf r ∈
+          ((MembershipCounts.semanticInterpretation
+              (FiniteWitnessFeatureTable.toMembershipCounts witnessImpliesFeatureTable)).meaning
+            (chapter12PatternConcept p)).intent)
+    {AssocState : Type} (W : AssocState) :
+    Mettapedia.PLN.ConceptGeometry.AssocPat.PLNHigherOrderHOLAssocPatBridge.predicateVocabularyIntensionalPairSubsetRel
+      (Base := Base) (Const := Const) M σ decode W
+      (code chapter12FeaturePattern) (code chapter12FeaturePattern)
+      (code chapter12WitnessPattern) (code chapter12FeaturePattern) := by
+  exact
+    chapter12PatternCoded_pairSubsetRel_transports_to_predicateVocabulary_of_classifies
+      chapter12PatternConcept chapter12FeaturePattern chapter12WitnessPattern
+      chapter12PatternConcept_feature chapter12PatternConcept_witness
+      M σ code decode attrOf hCal W
+
+/-- Rich role-pattern finite-table transport.
+
+The source patterns are no longer bare concept names: they are role wrappers
+with payloads.  The proof is still the classifier-parametric finite-table
+transport above, so richer syntax does not create a parallel ASSOC/PAT
+semantics. -/
+theorem chapter12RichPatternCoded_pairSubsetRel_transports_to_predicateVocabulary_viaFiniteTableCalibration
+    (M : HenkinModel.{u, v, w} Base Const)
+    (σ : Ty Base)
+    {Pred : Type}
+    (code : Chapter12Pattern → Pred)
+    (decode : Pred →
+      Mettapedia.PLN.Bridges.HOL.PLNHigherOrderHOLInheritanceBridge.UnaryPredicate
+        (Base := Base) (Const := Const) σ)
+    (attrOf : Pred → MembershipConcept)
+    (hCal : ∀ {p : Chapter12Pattern} {r : Pred},
+      r ∈ ((Mettapedia.PLN.Bridges.HOL.PLNHigherOrderHOLInheritanceBridge.predicateVocabularyInterpretation
+          (Base := Base) (Const := Const) M σ decode).meaning (code p)).intent ↔
+        attrOf r ∈
+          ((MembershipCounts.semanticInterpretation
+              (FiniteWitnessFeatureTable.toMembershipCounts witnessImpliesFeatureTable)).meaning
+            (chapter12RichPatternConcept p)).intent)
+    {AssocState : Type} (W : AssocState) :
+    Mettapedia.PLN.ConceptGeometry.AssocPat.PLNHigherOrderHOLAssocPatBridge.predicateVocabularyIntensionalPairSubsetRel
+      (Base := Base) (Const := Const) M σ decode W
+      (code chapter12RichFeaturePattern) (code chapter12RichFeaturePattern)
+      (code chapter12RichWitnessPattern) (code chapter12RichFeaturePattern) := by
+  exact
+    chapter12PatternCoded_pairSubsetRel_transports_to_predicateVocabulary_of_classifies
+      chapter12RichPatternConcept chapter12RichFeaturePattern chapter12RichWitnessPattern
+      chapter12RichPatternConcept_feature chapter12RichPatternConcept_witness
+      M σ code decode attrOf hCal W
+
+/-- Proof-carrying profile for the richer role-pattern Chapter-12 source.
+
+This records the payload-parametric role classifier and the concrete rich
+feature/witness source used by the rule-facing transport. -/
+structure RichPatternCodedChapter12SourceProfile where
+  featureRoleClassifies :
+    ∀ payload : Chapter12Pattern,
+      chapter12RichPatternConcept (chapter12RolePattern "feature" payload) =
+        MembershipConcept.feature
+  witnessRoleClassifies :
+    ∀ payload : Chapter12Pattern,
+      chapter12RichPatternConcept (chapter12RolePattern "witness" payload) =
+        MembershipConcept.witness
+  otherRoleFallsBack :
+    ∀ payload : Chapter12Pattern,
+      chapter12RichPatternConcept (chapter12RolePattern "distractor" payload) =
+        MembershipConcept.feature
+  featureRoleNotWitness :
+    ∀ payload : Chapter12Pattern,
+      chapter12RichPatternConcept (chapter12RolePattern "feature" payload) ≠
+        MembershipConcept.witness
+  witnessRoleNotFeature :
+    ∀ payload : Chapter12Pattern,
+      chapter12RichPatternConcept (chapter12RolePattern "witness" payload) ≠
+        MembershipConcept.feature
+  otherRoleNotWitness :
+    ∀ payload : Chapter12Pattern,
+      chapter12RichPatternConcept (chapter12RolePattern "distractor" payload) ≠
+        MembershipConcept.witness
+  richFeatureWitnessDistinct :
+    chapter12RichFeaturePattern ≠ chapter12RichWitnessPattern
+  finiteTableSource :
+    FiniteTableChapter12SourceProfile
+
+/-- Concrete richer role-pattern Chapter-12 source package. -/
+noncomputable def richPatternCodedChapter12SourceProfile :
+    RichPatternCodedChapter12SourceProfile where
+  featureRoleClassifies :=
+    chapter12RichPatternConcept_featureRole
+  witnessRoleClassifies :=
+    chapter12RichPatternConcept_witnessRole
+  otherRoleFallsBack :=
+    chapter12RichPatternConcept_otherRole_fallback
+  featureRoleNotWitness :=
+    chapter12RichPatternConcept_featureRole_ne_witness
+  witnessRoleNotFeature :=
+    chapter12RichPatternConcept_witnessRole_ne_feature
+  otherRoleNotWitness :=
+    chapter12RichPatternConcept_otherRole_ne_witness
+  richFeatureWitnessDistinct :=
+    chapter12RichFeaturePattern_ne_witnessPattern
+  finiteTableSource :=
+    finiteTableChapter12SourceProfile
+
+/-- Pattern-coded finite-table transport drives typed semantic-layer ASSOC/PAT
+evidence monotonicity.
+
+This is the rule-facing consumer of the OSLF pattern source above: the concrete
+pattern names supply the pair-subset relation, while the typed layer still
+selects the existing weighted ASSOC/PAT evidence channels. -/
+theorem chapter12PatternCoded_semanticLayerAssocPatEvidence_mono_viaFiniteTableCalibration
+    {State Pred PairQuery : Type}
+    [EvidenceType State]
+    [WorldModelSigma State InheritanceSort (InheritanceQueryFamily PairQuery)]
+    (layer : SemanticInheritanceLayer)
+    (hLayer :
+      Mettapedia.PLN.ConceptGeometry.AssocPat.PLNHigherOrderHOLAssocPatBridge.semanticLayerIntensionalFacing
+        layer)
+    (M : HenkinModel.{u, v, w} Base Const)
+    (σ : Ty Base)
+    [Fintype Pred]
+    (code : Chapter12Pattern → Pred)
+    (decode : Pred →
+      Mettapedia.PLN.Bridges.HOL.PLNHigherOrderHOLInheritanceBridge.UnaryPredicate
+        (Base := Base) (Const := Const) σ)
+    (attrOf : Pred → MembershipConcept)
+    (hCal : ∀ {p : Chapter12Pattern} {r : Pred},
+      r ∈ ((Mettapedia.PLN.Bridges.HOL.PLNHigherOrderHOLInheritanceBridge.predicateVocabularyInterpretation
+          (Base := Base) (Const := Const) M σ decode).meaning (code p)).intent ↔
+        attrOf r ∈
+          ((MembershipCounts.semanticInterpretation
+              (FiniteWitnessFeatureTable.toMembershipCounts witnessImpliesFeatureTable)).meaning
+            (chapter12PatternConcept p)).intent)
+    (pairEnc : InheritanceQueryBuilder Pred PairQuery)
+    (model : InheritanceQueryBuilder.IntensionalScoreModel
+      (State := State) (Atom := Pred) (Query := PairQuery) pairEnc)
+    {assocLeftWeight assocRightWeight patLeftWeight patRightWeight : ℝ}
+    (hAssocLeftWeight : 0 ≤ assocLeftWeight)
+    (hAssocRightWeight : 0 ≤ assocRightWeight)
+    (hPatLeftWeight : 0 ≤ patLeftWeight)
+    (hPatRightWeight : 0 ≤ patRightWeight)
+    (hAssocScore : ∀ (W : State) (a b : Pred),
+      model.assocScore W a b =
+        Mettapedia.PLN.ConceptGeometry.AssocPat.PLNHigherOrderHOLAssocPatBridge.predicateVocabularyWeightedPairOrderRankScore
+          (Base := Base) (Const := Const) M σ decode
+          assocLeftWeight assocRightWeight a b)
+    (hPatScore : ∀ (W : State) (a b : Pred),
+      model.patScore W a b =
+        Mettapedia.PLN.ConceptGeometry.AssocPat.PLNHigherOrderHOLAssocPatBridge.predicateVocabularyWeightedPairOrderRankScore
+          (Base := Base) (Const := Const) M σ decode
+          patLeftWeight patRightWeight a b)
+    {W : State} :
+    InheritanceQueryBuilder.semanticLayerEvidence
+        (State := State) (Atom := Pred) (Query := PairQuery)
+        layer .assoc W pairEnc
+        (code chapter12FeaturePattern)
+        (code chapter12FeaturePattern) ≤
+        InheritanceQueryBuilder.semanticLayerEvidence
+          (State := State) (Atom := Pred) (Query := PairQuery)
+          layer .assoc W pairEnc
+          (code chapter12WitnessPattern)
+          (code chapter12FeaturePattern)
+      ∧
+      InheritanceQueryBuilder.semanticLayerEvidence
+        (State := State) (Atom := Pred) (Query := PairQuery)
+        layer .pat W pairEnc
+        (code chapter12FeaturePattern)
+        (code chapter12FeaturePattern) ≤
+        InheritanceQueryBuilder.semanticLayerEvidence
+          (State := State) (Atom := Pred) (Query := PairQuery)
+          layer .pat W pairEnc
+          (code chapter12WitnessPattern)
+          (code chapter12FeaturePattern) := by
+  have hRel :
+      Mettapedia.PLN.ConceptGeometry.AssocPat.PLNHigherOrderHOLAssocPatBridge.predicateVocabularyIntensionalPairSubsetRel
+        (Base := Base) (Const := Const) M σ decode W
+        (code chapter12FeaturePattern) (code chapter12FeaturePattern)
+        (code chapter12WitnessPattern) (code chapter12FeaturePattern) :=
+    chapter12PatternCoded_pairSubsetRel_transports_to_predicateVocabulary_viaFiniteTableCalibration
+      (Base := Base) (Const := Const) M σ code decode attrOf hCal W
+  exact
+    Mettapedia.PLN.ConceptGeometry.AssocPat.PLNHigherOrderHOLAssocPatBridge.semanticLayerAssocPatEvidence_mono_of_predicateVocabularyWeightedPairOrderRankScore
+      (Base := Base) (Const := Const) (State := State) (Pred := Pred) (PairQuery := PairQuery)
+      layer hLayer M σ decode pairEnc model
+      hAssocLeftWeight hAssocRightWeight hPatLeftWeight hPatRightWeight
+      hAssocScore hPatScore hRel
+
+/-- Rich role-pattern finite-table transport drives typed semantic-layer
+ASSOC/PAT evidence monotonicity.
+
+This is the same consumer theorem as the bare pattern-coded canary, but the
+source patterns are role wrappers with payloads.  The proof deliberately routes
+through the existing rich classifier transport and the shared typed
+semantic-layer ASSOC/PAT monotonicity theorem. -/
+theorem chapter12RichPatternCoded_semanticLayerAssocPatEvidence_mono_viaFiniteTableCalibration
+    {State Pred PairQuery : Type}
+    [EvidenceType State]
+    [WorldModelSigma State InheritanceSort (InheritanceQueryFamily PairQuery)]
+    (layer : SemanticInheritanceLayer)
+    (hLayer :
+      Mettapedia.PLN.ConceptGeometry.AssocPat.PLNHigherOrderHOLAssocPatBridge.semanticLayerIntensionalFacing
+        layer)
+    (M : HenkinModel.{u, v, w} Base Const)
+    (σ : Ty Base)
+    [Fintype Pred]
+    (code : Chapter12Pattern → Pred)
+    (decode : Pred →
+      Mettapedia.PLN.Bridges.HOL.PLNHigherOrderHOLInheritanceBridge.UnaryPredicate
+        (Base := Base) (Const := Const) σ)
+    (attrOf : Pred → MembershipConcept)
+    (hCal : ∀ {p : Chapter12Pattern} {r : Pred},
+      r ∈ ((Mettapedia.PLN.Bridges.HOL.PLNHigherOrderHOLInheritanceBridge.predicateVocabularyInterpretation
+          (Base := Base) (Const := Const) M σ decode).meaning (code p)).intent ↔
+        attrOf r ∈
+          ((MembershipCounts.semanticInterpretation
+              (FiniteWitnessFeatureTable.toMembershipCounts witnessImpliesFeatureTable)).meaning
+            (chapter12RichPatternConcept p)).intent)
+    (pairEnc : InheritanceQueryBuilder Pred PairQuery)
+    (model : InheritanceQueryBuilder.IntensionalScoreModel
+      (State := State) (Atom := Pred) (Query := PairQuery) pairEnc)
+    {assocLeftWeight assocRightWeight patLeftWeight patRightWeight : ℝ}
+    (hAssocLeftWeight : 0 ≤ assocLeftWeight)
+    (hAssocRightWeight : 0 ≤ assocRightWeight)
+    (hPatLeftWeight : 0 ≤ patLeftWeight)
+    (hPatRightWeight : 0 ≤ patRightWeight)
+    (hAssocScore : ∀ (W : State) (a b : Pred),
+      model.assocScore W a b =
+        Mettapedia.PLN.ConceptGeometry.AssocPat.PLNHigherOrderHOLAssocPatBridge.predicateVocabularyWeightedPairOrderRankScore
+          (Base := Base) (Const := Const) M σ decode
+          assocLeftWeight assocRightWeight a b)
+    (hPatScore : ∀ (W : State) (a b : Pred),
+      model.patScore W a b =
+        Mettapedia.PLN.ConceptGeometry.AssocPat.PLNHigherOrderHOLAssocPatBridge.predicateVocabularyWeightedPairOrderRankScore
+          (Base := Base) (Const := Const) M σ decode
+          patLeftWeight patRightWeight a b)
+    {W : State} :
+    InheritanceQueryBuilder.semanticLayerEvidence
+        (State := State) (Atom := Pred) (Query := PairQuery)
+        layer .assoc W pairEnc
+        (code chapter12RichFeaturePattern)
+        (code chapter12RichFeaturePattern) ≤
+        InheritanceQueryBuilder.semanticLayerEvidence
+          (State := State) (Atom := Pred) (Query := PairQuery)
+          layer .assoc W pairEnc
+          (code chapter12RichWitnessPattern)
+          (code chapter12RichFeaturePattern)
+      ∧
+      InheritanceQueryBuilder.semanticLayerEvidence
+        (State := State) (Atom := Pred) (Query := PairQuery)
+        layer .pat W pairEnc
+        (code chapter12RichFeaturePattern)
+        (code chapter12RichFeaturePattern) ≤
+        InheritanceQueryBuilder.semanticLayerEvidence
+          (State := State) (Atom := Pred) (Query := PairQuery)
+          layer .pat W pairEnc
+          (code chapter12RichWitnessPattern)
+          (code chapter12RichFeaturePattern) := by
+  have hRel :
+      Mettapedia.PLN.ConceptGeometry.AssocPat.PLNHigherOrderHOLAssocPatBridge.predicateVocabularyIntensionalPairSubsetRel
+        (Base := Base) (Const := Const) M σ decode W
+        (code chapter12RichFeaturePattern) (code chapter12RichFeaturePattern)
+        (code chapter12RichWitnessPattern) (code chapter12RichFeaturePattern) :=
+    chapter12RichPatternCoded_pairSubsetRel_transports_to_predicateVocabulary_viaFiniteTableCalibration
+      (Base := Base) (Const := Const) M σ code decode attrOf hCal W
+  exact
+    Mettapedia.PLN.ConceptGeometry.AssocPat.PLNHigherOrderHOLAssocPatBridge.semanticLayerAssocPatEvidence_mono_of_predicateVocabularyWeightedPairOrderRankScore
+      (Base := Base) (Const := Const) (State := State) (Pred := Pred) (PairQuery := PairQuery)
+      layer hLayer M σ decode pairEnc model
+      hAssocLeftWeight hAssocRightWeight hPatLeftWeight hPatRightWeight
+      hAssocScore hPatScore hRel
+
+/-- Proof-carrying profile for the pattern-coded Chapter-12 semantic-layer
+consumer.
+
+This packages the source classifier together with the theorem that consumes it
+through the existing typed semantic-layer ASSOC/PAT monotonicity bridge. It is
+not a new semantics and it does not assert numeric endpoint tightness. -/
+structure PatternCodedSemanticLayerConsumerProfile where
+  source :
+    PatternCodedChapter12SourceProfile
+  semanticLayerAssocPatMono :
+    ∀ {Base : Type u} {Const : Ty Base → Type v}
+      {State Pred PairQuery : Type}
+      [EvidenceType State]
+      [WorldModelSigma State InheritanceSort (InheritanceQueryFamily PairQuery)]
+      (layer : SemanticInheritanceLayer)
+      (_hLayer :
+        Mettapedia.PLN.ConceptGeometry.AssocPat.PLNHigherOrderHOLAssocPatBridge.semanticLayerIntensionalFacing
+          layer)
+      (M : HenkinModel.{u, v, w} Base Const)
+      (σ : Ty Base)
+      [Fintype Pred]
+      (code : Chapter12Pattern → Pred)
+      (decode : Pred →
+        Mettapedia.PLN.Bridges.HOL.PLNHigherOrderHOLInheritanceBridge.UnaryPredicate
+          (Base := Base) (Const := Const) σ)
+      (attrOf : Pred → MembershipConcept)
+      (_hCal : ∀ {p : Chapter12Pattern} {r : Pred},
+        r ∈ ((Mettapedia.PLN.Bridges.HOL.PLNHigherOrderHOLInheritanceBridge.predicateVocabularyInterpretation
+            (Base := Base) (Const := Const) M σ decode).meaning (code p)).intent ↔
+          attrOf r ∈
+            ((MembershipCounts.semanticInterpretation
+                (FiniteWitnessFeatureTable.toMembershipCounts witnessImpliesFeatureTable)).meaning
+              (chapter12PatternConcept p)).intent)
+      (pairEnc : InheritanceQueryBuilder Pred PairQuery)
+      (model : InheritanceQueryBuilder.IntensionalScoreModel
+        (State := State) (Atom := Pred) (Query := PairQuery) pairEnc)
+      {assocLeftWeight assocRightWeight patLeftWeight patRightWeight : ℝ}
+      (_hAssocLeftWeight : 0 ≤ assocLeftWeight)
+      (_hAssocRightWeight : 0 ≤ assocRightWeight)
+      (_hPatLeftWeight : 0 ≤ patLeftWeight)
+      (_hPatRightWeight : 0 ≤ patRightWeight)
+      (_hAssocScore : ∀ (W : State) (a b : Pred),
+        model.assocScore W a b =
+          Mettapedia.PLN.ConceptGeometry.AssocPat.PLNHigherOrderHOLAssocPatBridge.predicateVocabularyWeightedPairOrderRankScore
+            (Base := Base) (Const := Const) M σ decode
+            assocLeftWeight assocRightWeight a b)
+      (_hPatScore : ∀ (W : State) (a b : Pred),
+        model.patScore W a b =
+          Mettapedia.PLN.ConceptGeometry.AssocPat.PLNHigherOrderHOLAssocPatBridge.predicateVocabularyWeightedPairOrderRankScore
+            (Base := Base) (Const := Const) M σ decode
+            patLeftWeight patRightWeight a b)
+      {W : State},
+      InheritanceQueryBuilder.semanticLayerEvidence
+          (State := State) (Atom := Pred) (Query := PairQuery)
+          layer .assoc W pairEnc
+          (code chapter12FeaturePattern)
+          (code chapter12FeaturePattern) ≤
+          InheritanceQueryBuilder.semanticLayerEvidence
+            (State := State) (Atom := Pred) (Query := PairQuery)
+            layer .assoc W pairEnc
+            (code chapter12WitnessPattern)
+            (code chapter12FeaturePattern)
+        ∧
+        InheritanceQueryBuilder.semanticLayerEvidence
+          (State := State) (Atom := Pred) (Query := PairQuery)
+          layer .pat W pairEnc
+          (code chapter12FeaturePattern)
+          (code chapter12FeaturePattern) ≤
+          InheritanceQueryBuilder.semanticLayerEvidence
+            (State := State) (Atom := Pred) (Query := PairQuery)
+            layer .pat W pairEnc
+            (code chapter12WitnessPattern)
+            (code chapter12FeaturePattern)
+
+/-- Concrete pattern-coded semantic-layer consumer package. -/
+noncomputable def patternCodedSemanticLayerConsumerProfile :
+    PatternCodedSemanticLayerConsumerProfile where
+  source :=
+    patternCodedChapter12SourceProfile
+  semanticLayerAssocPatMono :=
+    @chapter12PatternCoded_semanticLayerAssocPatEvidence_mono_viaFiniteTableCalibration
+
+/-- Proof-carrying profile for the richer role-pattern Chapter-12 semantic-layer
+consumer.
+
+The source classifier recognizes payload-carrying role wrappers before the same
+finite-table and typed semantic-layer ASSOC/PAT machinery consumes the source.
+It is intentionally a source-syntax refinement, not a new evidence semantics. -/
+structure RichPatternCodedSemanticLayerConsumerProfile where
+  source :
+    RichPatternCodedChapter12SourceProfile
+  semanticLayerAssocPatMono :
+    ∀ {Base : Type u} {Const : Ty Base → Type v}
+      {State Pred PairQuery : Type}
+      [EvidenceType State]
+      [WorldModelSigma State InheritanceSort (InheritanceQueryFamily PairQuery)]
+      (layer : SemanticInheritanceLayer)
+      (_hLayer :
+        Mettapedia.PLN.ConceptGeometry.AssocPat.PLNHigherOrderHOLAssocPatBridge.semanticLayerIntensionalFacing
+          layer)
+      (M : HenkinModel.{u, v, w} Base Const)
+      (σ : Ty Base)
+      [Fintype Pred]
+      (code : Chapter12Pattern → Pred)
+      (decode : Pred →
+        Mettapedia.PLN.Bridges.HOL.PLNHigherOrderHOLInheritanceBridge.UnaryPredicate
+          (Base := Base) (Const := Const) σ)
+      (attrOf : Pred → MembershipConcept)
+      (_hCal : ∀ {p : Chapter12Pattern} {r : Pred},
+        r ∈ ((Mettapedia.PLN.Bridges.HOL.PLNHigherOrderHOLInheritanceBridge.predicateVocabularyInterpretation
+            (Base := Base) (Const := Const) M σ decode).meaning (code p)).intent ↔
+          attrOf r ∈
+            ((MembershipCounts.semanticInterpretation
+                (FiniteWitnessFeatureTable.toMembershipCounts witnessImpliesFeatureTable)).meaning
+              (chapter12RichPatternConcept p)).intent)
+      (pairEnc : InheritanceQueryBuilder Pred PairQuery)
+      (model : InheritanceQueryBuilder.IntensionalScoreModel
+        (State := State) (Atom := Pred) (Query := PairQuery) pairEnc)
+      {assocLeftWeight assocRightWeight patLeftWeight patRightWeight : ℝ}
+      (_hAssocLeftWeight : 0 ≤ assocLeftWeight)
+      (_hAssocRightWeight : 0 ≤ assocRightWeight)
+      (_hPatLeftWeight : 0 ≤ patLeftWeight)
+      (_hPatRightWeight : 0 ≤ patRightWeight)
+      (_hAssocScore : ∀ (W : State) (a b : Pred),
+        model.assocScore W a b =
+          Mettapedia.PLN.ConceptGeometry.AssocPat.PLNHigherOrderHOLAssocPatBridge.predicateVocabularyWeightedPairOrderRankScore
+            (Base := Base) (Const := Const) M σ decode
+            assocLeftWeight assocRightWeight a b)
+      (_hPatScore : ∀ (W : State) (a b : Pred),
+        model.patScore W a b =
+          Mettapedia.PLN.ConceptGeometry.AssocPat.PLNHigherOrderHOLAssocPatBridge.predicateVocabularyWeightedPairOrderRankScore
+            (Base := Base) (Const := Const) M σ decode
+            patLeftWeight patRightWeight a b)
+      {W : State},
+      InheritanceQueryBuilder.semanticLayerEvidence
+          (State := State) (Atom := Pred) (Query := PairQuery)
+          layer .assoc W pairEnc
+          (code chapter12RichFeaturePattern)
+          (code chapter12RichFeaturePattern) ≤
+          InheritanceQueryBuilder.semanticLayerEvidence
+            (State := State) (Atom := Pred) (Query := PairQuery)
+            layer .assoc W pairEnc
+            (code chapter12RichWitnessPattern)
+            (code chapter12RichFeaturePattern)
+        ∧
+        InheritanceQueryBuilder.semanticLayerEvidence
+          (State := State) (Atom := Pred) (Query := PairQuery)
+          layer .pat W pairEnc
+          (code chapter12RichFeaturePattern)
+          (code chapter12RichFeaturePattern) ≤
+          InheritanceQueryBuilder.semanticLayerEvidence
+            (State := State) (Atom := Pred) (Query := PairQuery)
+            layer .pat W pairEnc
+            (code chapter12RichWitnessPattern)
+            (code chapter12RichFeaturePattern)
+
+/-- Concrete richer role-pattern semantic-layer consumer package. -/
+noncomputable def richPatternCodedSemanticLayerConsumerProfile :
+    RichPatternCodedSemanticLayerConsumerProfile where
+  source :=
+    richPatternCodedChapter12SourceProfile
+  semanticLayerAssocPatMono :=
+    @chapter12RichPatternCoded_semanticLayerAssocPatEvidence_mono_viaFiniteTableCalibration
 
 /-- End-to-end empirical canary: the concrete 2x2 table's pair-subset fact
 feeds the finite HO predicate-vocabulary ASSOC/PAT target once the decoded
@@ -971,6 +1761,96 @@ theorem witnessEquivalentFeature_semanticLayerAssocPatEvidence_eq_viaFormedConce
       hAssocLeftWeight hAssocRightWeight hPatLeftWeight hPatRightWeight
       hAssocScore hPatScore hSame hSame
 
+/-- Proof-carrying profile for the formed-concept ASSOC/PAT semantic-layer
+equality theorem.
+
+The source is the actual Chapter-12 formed-concept mutual-inheritance canary.
+The consumer theorem routes same intent through the existing typed semantic
+layer, so only intensional-facing layers expose ASSOC/PAT equality. This is a
+reader-facing package for the proven equality theorem, not a new ASSOC/PAT
+semantics. -/
+structure FormedConceptSemanticLayerAssocPatEqualityProfile where
+  source :
+    FormedConceptChapter12SourceProfile
+  assocPatEqOfIntensionalFacing :
+    ∀ {Base : Type u} {Const : Ty Base → Type v}
+      {State Pred PairQuery : Type}
+      [EvidenceType State]
+      [WorldModelSigma State InheritanceSort (InheritanceQueryFamily PairQuery)]
+      (layer : SemanticInheritanceLayer)
+      (_hLayer :
+        Mettapedia.PLN.ConceptGeometry.AssocPat.PLNHigherOrderHOLAssocPatBridge.semanticLayerIntensionalFacing
+          layer)
+      (M : HenkinModel.{u, v, w} Base Const)
+      (σ : Ty Base)
+      [Fintype Pred]
+      (code :
+        Mettapedia.KR.ConceptGeometry.AbstractInheritance.FormedConcept
+          Mettapedia.KR.ConceptOntology.EvidenceGate.positiveSupport
+          witnessEquivalentFeatureMemberEvidence → Pred)
+      (decode : Pred →
+        Mettapedia.PLN.Bridges.HOL.PLNHigherOrderHOLInheritanceBridge.UnaryPredicate
+          (Base := Base) (Const := Const) σ)
+      (attrOf : Pred → MembershipConcept)
+      (_hCal : ∀
+        {p : Mettapedia.KR.ConceptGeometry.AbstractInheritance.FormedConcept
+          Mettapedia.KR.ConceptOntology.EvidenceGate.positiveSupport
+          witnessEquivalentFeatureMemberEvidence} {r : Pred},
+        r ∈ ((Mettapedia.PLN.Bridges.HOL.PLNHigherOrderHOLInheritanceBridge.predicateVocabularyInterpretation
+            (Base := Base) (Const := Const) M σ decode).meaning (code p)).intent ↔
+          attrOf r ∈
+            ((Mettapedia.KR.ConceptGeometry.AbstractInheritance.formedConceptInterpretation
+              Mettapedia.KR.ConceptOntology.EvidenceGate.positiveSupport
+              witnessEquivalentFeatureMemberEvidence).meaning p).intent)
+      (pairEnc : InheritanceQueryBuilder Pred PairQuery)
+      (model : InheritanceQueryBuilder.IntensionalScoreModel
+        (State := State) (Atom := Pred) (Query := PairQuery) pairEnc)
+      {assocLeftWeight assocRightWeight patLeftWeight patRightWeight : ℝ}
+      (_hAssocLeftWeight : 0 ≤ assocLeftWeight)
+      (_hAssocRightWeight : 0 ≤ assocRightWeight)
+      (_hPatLeftWeight : 0 ≤ patLeftWeight)
+      (_hPatRightWeight : 0 ≤ patRightWeight)
+      (_hAssocScore : ∀ (W : State) (a b : Pred),
+        model.assocScore W a b =
+          Mettapedia.PLN.ConceptGeometry.AssocPat.PLNHigherOrderHOLAssocPatBridge.predicateVocabularyWeightedPairOrderRankScore
+            (Base := Base) (Const := Const) M σ decode
+            assocLeftWeight assocRightWeight a b)
+      (_hPatScore : ∀ (W : State) (a b : Pred),
+        model.patScore W a b =
+          Mettapedia.PLN.ConceptGeometry.AssocPat.PLNHigherOrderHOLAssocPatBridge.predicateVocabularyWeightedPairOrderRankScore
+            (Base := Base) (Const := Const) M σ decode
+            patLeftWeight patRightWeight a b)
+      {W : State},
+      InheritanceQueryBuilder.semanticLayerEvidence
+          (State := State) (Atom := Pred) (Query := PairQuery)
+          layer .assoc W pairEnc
+          (code (witnessEquivalentFeatureFormedConcept MembershipConcept.witness))
+          (code (witnessEquivalentFeatureFormedConcept MembershipConcept.witness)) =
+          InheritanceQueryBuilder.semanticLayerEvidence
+            (State := State) (Atom := Pred) (Query := PairQuery)
+            layer .assoc W pairEnc
+            (code (witnessEquivalentFeatureFormedConcept MembershipConcept.feature))
+            (code (witnessEquivalentFeatureFormedConcept MembershipConcept.feature))
+        ∧
+        InheritanceQueryBuilder.semanticLayerEvidence
+          (State := State) (Atom := Pred) (Query := PairQuery)
+          layer .pat W pairEnc
+          (code (witnessEquivalentFeatureFormedConcept MembershipConcept.witness))
+          (code (witnessEquivalentFeatureFormedConcept MembershipConcept.witness)) =
+          InheritanceQueryBuilder.semanticLayerEvidence
+            (State := State) (Atom := Pred) (Query := PairQuery)
+            layer .pat W pairEnc
+            (code (witnessEquivalentFeatureFormedConcept MembershipConcept.feature))
+            (code (witnessEquivalentFeatureFormedConcept MembershipConcept.feature))
+
+/-- Concrete formed-concept ASSOC/PAT semantic-layer equality package. -/
+noncomputable def formedConceptSemanticLayerAssocPatEqualityProfile :
+    FormedConceptSemanticLayerAssocPatEqualityProfile where
+  source :=
+    formedConceptChapter12SourceProfile
+  assocPatEqOfIntensionalFacing :=
+    @witnessEquivalentFeature_semanticLayerAssocPatEvidence_eq_viaFormedConceptCalibration
+
 /-- Mixed evidence preservation for the same formed-concept same-intent source.
 
 The extensional channel is deliberately an explicit hypothesis: formed-concept
@@ -1051,6 +1931,183 @@ theorem witnessEquivalentFeature_mixedEvidence_eq_viaFormedConceptCalibration
       M σ decode pairEnc m
       hAssocLeftWeight hAssocRightWeight hPatLeftWeight hPatRightWeight
       hAssocScore hPatScore hExt hSame hSame
+
+/-- Formed-concept same-intent turns the typed mixed/extensional channel
+separation theorem into a concrete Chapter-12 consumer.
+
+The source is the actual `witnessEquivalentFeature` formed-concept calibration
+canary: formed concepts provide same intent, weighted ASSOC/PAT correspondences
+fix the intensional channels, and a left-cancellable mixed combiner makes mixed
+evidence equality equivalent to extensional evidence equality. -/
+theorem witnessEquivalentFeature_semanticLayerMixedEvidence_eq_iff_extensionalEvidence_eq_viaFormedConceptCalibration
+    {State Pred PairQuery : Type}
+    [EvidenceType State]
+    [WorldModelSigma State InheritanceSort (InheritanceQueryFamily PairQuery)]
+    (M : HenkinModel.{u, v, w} Base Const)
+    (σ : Ty Base)
+    [Fintype Pred]
+    (code :
+      Mettapedia.KR.ConceptGeometry.AbstractInheritance.FormedConcept
+        Mettapedia.KR.ConceptOntology.EvidenceGate.positiveSupport
+        witnessEquivalentFeatureMemberEvidence → Pred)
+    (decode : Pred →
+      Mettapedia.PLN.Bridges.HOL.PLNHigherOrderHOLInheritanceBridge.UnaryPredicate
+        (Base := Base) (Const := Const) σ)
+    (attrOf : Pred → MembershipConcept)
+    (hCal : ∀
+      {p : Mettapedia.KR.ConceptGeometry.AbstractInheritance.FormedConcept
+        Mettapedia.KR.ConceptOntology.EvidenceGate.positiveSupport
+        witnessEquivalentFeatureMemberEvidence} {r : Pred},
+      r ∈ ((Mettapedia.PLN.Bridges.HOL.PLNHigherOrderHOLInheritanceBridge.predicateVocabularyInterpretation
+          (Base := Base) (Const := Const) M σ decode).meaning (code p)).intent ↔
+        attrOf r ∈
+          ((Mettapedia.KR.ConceptGeometry.AbstractInheritance.formedConceptInterpretation
+            Mettapedia.KR.ConceptOntology.EvidenceGate.positiveSupport
+            witnessEquivalentFeatureMemberEvidence).meaning p).intent)
+    (pairEnc : InheritanceQueryBuilder Pred PairQuery)
+    (m : InheritanceQueryBuilder.AssocPatSemanticModel
+      (State := State) (Atom := Pred) (Query := PairQuery) pairEnc)
+    {assocLeftWeight assocRightWeight patLeftWeight patRightWeight : ℝ}
+    (hAssocLeftWeight : 0 ≤ assocLeftWeight)
+    (hAssocRightWeight : 0 ≤ assocRightWeight)
+    (hPatLeftWeight : 0 ≤ patLeftWeight)
+    (hPatRightWeight : 0 ≤ patRightWeight)
+    (hAssocScore : ∀ (W : State) (a b : Pred),
+      m.scoreModel.assocScore W a b =
+        Mettapedia.PLN.ConceptGeometry.AssocPat.PLNHigherOrderHOLAssocPatBridge.predicateVocabularyWeightedPairOrderRankScore
+          (Base := Base) (Const := Const) M σ decode
+          assocLeftWeight assocRightWeight a b)
+    (hPatScore : ∀ (W : State) (a b : Pred),
+      m.scoreModel.patScore W a b =
+        Mettapedia.PLN.ConceptGeometry.AssocPat.PLNHigherOrderHOLAssocPatBridge.predicateVocabularyWeightedPairOrderRankScore
+          (Base := Base) (Const := Const) M σ decode
+          patLeftWeight patRightWeight a b)
+    (hCancel :
+      ∀ {x y assoc pat :
+          Mettapedia.PLN.Evidence.EvidenceQuantale.BinaryEvidence},
+        m.combine x assoc pat = m.combine y assoc pat → x = y)
+    {W : State} :
+    InheritanceQueryBuilder.semanticLayerEvidence
+        (State := State) (Atom := Pred) (Query := PairQuery)
+        .mixed .assoc W pairEnc
+        (code (witnessEquivalentFeatureFormedConcept MembershipConcept.witness))
+        (code (witnessEquivalentFeatureFormedConcept MembershipConcept.witness)) =
+      InheritanceQueryBuilder.semanticLayerEvidence
+        (State := State) (Atom := Pred) (Query := PairQuery)
+        .mixed .assoc W pairEnc
+        (code (witnessEquivalentFeatureFormedConcept MembershipConcept.feature))
+        (code (witnessEquivalentFeatureFormedConcept MembershipConcept.feature)) ↔
+    InheritanceQueryBuilder.semanticLayerEvidence
+        (State := State) (Atom := Pred) (Query := PairQuery)
+        .extensional .assoc W pairEnc
+        (code (witnessEquivalentFeatureFormedConcept MembershipConcept.witness))
+        (code (witnessEquivalentFeatureFormedConcept MembershipConcept.witness)) =
+      InheritanceQueryBuilder.semanticLayerEvidence
+        (State := State) (Atom := Pred) (Query := PairQuery)
+        .extensional .assoc W pairEnc
+        (code (witnessEquivalentFeatureFormedConcept MembershipConcept.feature))
+        (code (witnessEquivalentFeatureFormedConcept MembershipConcept.feature)) := by
+  have hSame :
+      Mettapedia.PLN.Bridges.HOL.PLNHigherOrderHOLSimilarityBridge.predicateVocabularySameIntent
+        (Base := Base) (Const := Const) M σ decode
+        (code (witnessEquivalentFeatureFormedConcept MembershipConcept.witness))
+        (code (witnessEquivalentFeatureFormedConcept MembershipConcept.feature)) :=
+    witnessEquivalentFeature_sameIntent_transports_to_predicateVocabulary_viaFormedConceptCalibration
+      (Base := Base) (Const := Const) M σ code decode attrOf hCal
+  exact
+    Mettapedia.PLN.ConceptGeometry.AssocPat.PLNHigherOrderHOLAssocPatBridge.semanticLayerMixedEvidence_eq_iff_extensionalEvidence_eq_of_predicateVocabularyWeightedPairOrderRankScore_sameIntent
+      (Base := Base) (Const := Const) (State := State) (Pred := Pred) (PairQuery := PairQuery)
+      M σ decode pairEnc m
+      hAssocLeftWeight hAssocRightWeight hPatLeftWeight hPatRightWeight
+      hAssocScore hPatScore hCancel hSame hSame
+
+/-- Proof-carrying profile for the formed-concept mixed semantic-layer
+boundary.
+
+The source is actual Chapter-12 concept formation. The consumer theorem says
+that, once same intent fixes the ASSOC/PAT channels, mixed-channel equality is
+equivalent to extensional equality exactly under the explicit cancellativity
+side condition. This is a boundary package, not a new mixed semantics. -/
+structure FormedConceptMixedSemanticLayerBoundaryProfile where
+  source :
+    FormedConceptChapter12SourceProfile
+  mixedEqIffExtensionalEq :
+    ∀ {Base : Type u} {Const : Ty Base → Type v}
+      {State Pred PairQuery : Type}
+      [EvidenceType State]
+      [WorldModelSigma State InheritanceSort (InheritanceQueryFamily PairQuery)]
+      (M : HenkinModel.{u, v, w} Base Const)
+      (σ : Ty Base)
+      [Fintype Pred]
+      (code :
+        Mettapedia.KR.ConceptGeometry.AbstractInheritance.FormedConcept
+          Mettapedia.KR.ConceptOntology.EvidenceGate.positiveSupport
+          witnessEquivalentFeatureMemberEvidence → Pred)
+      (decode : Pred →
+        Mettapedia.PLN.Bridges.HOL.PLNHigherOrderHOLInheritanceBridge.UnaryPredicate
+          (Base := Base) (Const := Const) σ)
+      (attrOf : Pred → MembershipConcept)
+      (_hCal : ∀
+        {p : Mettapedia.KR.ConceptGeometry.AbstractInheritance.FormedConcept
+          Mettapedia.KR.ConceptOntology.EvidenceGate.positiveSupport
+          witnessEquivalentFeatureMemberEvidence} {r : Pred},
+        r ∈ ((Mettapedia.PLN.Bridges.HOL.PLNHigherOrderHOLInheritanceBridge.predicateVocabularyInterpretation
+            (Base := Base) (Const := Const) M σ decode).meaning (code p)).intent ↔
+          attrOf r ∈
+            ((Mettapedia.KR.ConceptGeometry.AbstractInheritance.formedConceptInterpretation
+              Mettapedia.KR.ConceptOntology.EvidenceGate.positiveSupport
+              witnessEquivalentFeatureMemberEvidence).meaning p).intent)
+      (pairEnc : InheritanceQueryBuilder Pred PairQuery)
+      (m : InheritanceQueryBuilder.AssocPatSemanticModel
+        (State := State) (Atom := Pred) (Query := PairQuery) pairEnc)
+      {assocLeftWeight assocRightWeight patLeftWeight patRightWeight : ℝ}
+      (_hAssocLeftWeight : 0 ≤ assocLeftWeight)
+      (_hAssocRightWeight : 0 ≤ assocRightWeight)
+      (_hPatLeftWeight : 0 ≤ patLeftWeight)
+      (_hPatRightWeight : 0 ≤ patRightWeight)
+      (_hAssocScore : ∀ (W : State) (a b : Pred),
+        m.scoreModel.assocScore W a b =
+          Mettapedia.PLN.ConceptGeometry.AssocPat.PLNHigherOrderHOLAssocPatBridge.predicateVocabularyWeightedPairOrderRankScore
+            (Base := Base) (Const := Const) M σ decode
+            assocLeftWeight assocRightWeight a b)
+      (_hPatScore : ∀ (W : State) (a b : Pred),
+        m.scoreModel.patScore W a b =
+          Mettapedia.PLN.ConceptGeometry.AssocPat.PLNHigherOrderHOLAssocPatBridge.predicateVocabularyWeightedPairOrderRankScore
+            (Base := Base) (Const := Const) M σ decode
+            patLeftWeight patRightWeight a b)
+      (_hCancel :
+        ∀ {x y assoc pat :
+            Mettapedia.PLN.Evidence.EvidenceQuantale.BinaryEvidence},
+          m.combine x assoc pat = m.combine y assoc pat → x = y)
+      {W : State},
+      InheritanceQueryBuilder.semanticLayerEvidence
+          (State := State) (Atom := Pred) (Query := PairQuery)
+          .mixed .assoc W pairEnc
+          (code (witnessEquivalentFeatureFormedConcept MembershipConcept.witness))
+          (code (witnessEquivalentFeatureFormedConcept MembershipConcept.witness)) =
+        InheritanceQueryBuilder.semanticLayerEvidence
+          (State := State) (Atom := Pred) (Query := PairQuery)
+          .mixed .assoc W pairEnc
+          (code (witnessEquivalentFeatureFormedConcept MembershipConcept.feature))
+          (code (witnessEquivalentFeatureFormedConcept MembershipConcept.feature)) ↔
+      InheritanceQueryBuilder.semanticLayerEvidence
+          (State := State) (Atom := Pred) (Query := PairQuery)
+          .extensional .assoc W pairEnc
+          (code (witnessEquivalentFeatureFormedConcept MembershipConcept.witness))
+          (code (witnessEquivalentFeatureFormedConcept MembershipConcept.witness)) =
+        InheritanceQueryBuilder.semanticLayerEvidence
+          (State := State) (Atom := Pred) (Query := PairQuery)
+          .extensional .assoc W pairEnc
+          (code (witnessEquivalentFeatureFormedConcept MembershipConcept.feature))
+          (code (witnessEquivalentFeatureFormedConcept MembershipConcept.feature))
+
+/-- Concrete formed-concept mixed semantic-layer boundary package. -/
+noncomputable def formedConceptMixedSemanticLayerBoundaryProfile :
+    FormedConceptMixedSemanticLayerBoundaryProfile where
+  source :=
+    formedConceptChapter12SourceProfile
+  mixedEqIffExtensionalEq :=
+    @witnessEquivalentFeature_semanticLayerMixedEvidence_eq_iff_extensionalEvidence_eq_viaFormedConceptCalibration
 
 /-- Formed-concept pair-subset transport drives typed semantic-layer ASSOC/PAT
 evidence monotonicity.
@@ -1141,6 +2198,96 @@ theorem witnessFeature_semanticLayerAssocPatEvidence_mono_viaFormedConceptCalibr
       layer hLayer M σ decode pairEnc model
       hAssocLeftWeight hAssocRightWeight hPatLeftWeight hPatRightWeight
       hAssocScore hPatScore hRel
+
+/-- Proof-carrying profile for the formed-concept ASSOC/PAT semantic-layer
+monotonicity theorem.
+
+The source is the actual Chapter-12 formed-concept pair-subset canary. The
+consumer theorem routes it through the existing typed semantic-layer gate, so
+the layer must be intensional-facing and the ASSOC/PAT score channels must be
+the nonnegatively weighted finite-vocabulary scores. This packages an existing
+theorem; it does not introduce a parallel ASSOC/PAT semantics. -/
+structure FormedConceptSemanticLayerAssocPatMonotonicityProfile where
+  source :
+    FormedConceptChapter12SourceProfile
+  assocPatMonoOfIntensionalFacing :
+    ∀ {Base : Type u} {Const : Ty Base → Type v}
+      {State Pred PairQuery : Type}
+      [EvidenceType State]
+      [WorldModelSigma State InheritanceSort (InheritanceQueryFamily PairQuery)]
+      (layer : SemanticInheritanceLayer)
+      (_hLayer :
+        Mettapedia.PLN.ConceptGeometry.AssocPat.PLNHigherOrderHOLAssocPatBridge.semanticLayerIntensionalFacing
+          layer)
+      (M : HenkinModel.{u, v, w} Base Const)
+      (σ : Ty Base)
+      [Fintype Pred]
+      (code :
+        Mettapedia.KR.ConceptGeometry.AbstractInheritance.FormedConcept
+          Mettapedia.KR.ConceptOntology.EvidenceGate.positiveSupport
+          witnessImpliesFeatureMemberEvidence → Pred)
+      (decode : Pred →
+        Mettapedia.PLN.Bridges.HOL.PLNHigherOrderHOLInheritanceBridge.UnaryPredicate
+          (Base := Base) (Const := Const) σ)
+      (attrOf : Pred → MembershipConcept)
+      (_hCal : ∀
+        {p : Mettapedia.KR.ConceptGeometry.AbstractInheritance.FormedConcept
+          Mettapedia.KR.ConceptOntology.EvidenceGate.positiveSupport
+          witnessImpliesFeatureMemberEvidence} {r : Pred},
+        r ∈ ((Mettapedia.PLN.Bridges.HOL.PLNHigherOrderHOLInheritanceBridge.predicateVocabularyInterpretation
+            (Base := Base) (Const := Const) M σ decode).meaning (code p)).intent ↔
+          attrOf r ∈
+            ((Mettapedia.KR.ConceptGeometry.AbstractInheritance.formedConceptInterpretation
+              Mettapedia.KR.ConceptOntology.EvidenceGate.positiveSupport
+              witnessImpliesFeatureMemberEvidence).meaning p).intent)
+      (pairEnc : InheritanceQueryBuilder Pred PairQuery)
+      (model : InheritanceQueryBuilder.IntensionalScoreModel
+        (State := State) (Atom := Pred) (Query := PairQuery) pairEnc)
+      {assocLeftWeight assocRightWeight patLeftWeight patRightWeight : ℝ}
+      (_hAssocLeftWeight : 0 ≤ assocLeftWeight)
+      (_hAssocRightWeight : 0 ≤ assocRightWeight)
+      (_hPatLeftWeight : 0 ≤ patLeftWeight)
+      (_hPatRightWeight : 0 ≤ patRightWeight)
+      (_hAssocScore : ∀ (W : State) (a b : Pred),
+        model.assocScore W a b =
+          Mettapedia.PLN.ConceptGeometry.AssocPat.PLNHigherOrderHOLAssocPatBridge.predicateVocabularyWeightedPairOrderRankScore
+            (Base := Base) (Const := Const) M σ decode
+            assocLeftWeight assocRightWeight a b)
+      (_hPatScore : ∀ (W : State) (a b : Pred),
+        model.patScore W a b =
+          Mettapedia.PLN.ConceptGeometry.AssocPat.PLNHigherOrderHOLAssocPatBridge.predicateVocabularyWeightedPairOrderRankScore
+            (Base := Base) (Const := Const) M σ decode
+            patLeftWeight patRightWeight a b)
+      {W : State},
+      InheritanceQueryBuilder.semanticLayerEvidence
+          (State := State) (Atom := Pred) (Query := PairQuery)
+          layer .assoc W pairEnc
+          (code (witnessImpliesFeatureFormedConcept MembershipConcept.feature))
+          (code (witnessImpliesFeatureFormedConcept MembershipConcept.feature)) ≤
+          InheritanceQueryBuilder.semanticLayerEvidence
+            (State := State) (Atom := Pred) (Query := PairQuery)
+            layer .assoc W pairEnc
+            (code (witnessImpliesFeatureFormedConcept MembershipConcept.witness))
+            (code (witnessImpliesFeatureFormedConcept MembershipConcept.feature))
+        ∧
+        InheritanceQueryBuilder.semanticLayerEvidence
+          (State := State) (Atom := Pred) (Query := PairQuery)
+          layer .pat W pairEnc
+          (code (witnessImpliesFeatureFormedConcept MembershipConcept.feature))
+          (code (witnessImpliesFeatureFormedConcept MembershipConcept.feature)) ≤
+          InheritanceQueryBuilder.semanticLayerEvidence
+            (State := State) (Atom := Pred) (Query := PairQuery)
+            layer .pat W pairEnc
+            (code (witnessImpliesFeatureFormedConcept MembershipConcept.witness))
+            (code (witnessImpliesFeatureFormedConcept MembershipConcept.feature))
+
+/-- Concrete formed-concept ASSOC/PAT semantic-layer monotonicity package. -/
+noncomputable def formedConceptSemanticLayerAssocPatMonotonicityProfile :
+    FormedConceptSemanticLayerAssocPatMonotonicityProfile where
+  source :=
+    formedConceptChapter12SourceProfile
+  assocPatMonoOfIntensionalFacing :=
+    @witnessFeature_semanticLayerAssocPatEvidence_mono_viaFormedConceptCalibration
 
 /-- Formed-concept pair-subset transport drives mixed semantic-layer evidence
 monotonicity, provided the extensional channel and the mixed combiner are
@@ -1235,5 +2382,96 @@ theorem witnessFeature_semanticLayerMixedEvidence_mono_viaFormedConceptCalibrati
       M σ decode pairEnc m
       hAssocLeftWeight hAssocRightWeight hPatLeftWeight hPatRightWeight
       hAssocScore hPatScore hCombineMono hExt hRel
+
+/-- Proof-carrying profile for the formed-concept mixed semantic-layer
+monotonicity theorem.
+
+The source is still the actual Chapter-12 formed-concept pair-subset canary.
+The consumer theorem records the honest mixed-channel side conditions:
+extensional evidence must be monotone, and the mixed combiner must be monotone
+in all three evidence inputs. This packages an existing theorem; it does not
+introduce a new mixed semantics or a numeric-tightness claim. -/
+structure FormedConceptMixedSemanticLayerMonotonicityProfile where
+  source :
+    FormedConceptChapter12SourceProfile
+  mixedMonoOfExtensionalAndCombinerMono :
+    ∀ {Base : Type u} {Const : Ty Base → Type v}
+      {State Pred PairQuery : Type}
+      [EvidenceType State]
+      [WorldModelSigma State InheritanceSort (InheritanceQueryFamily PairQuery)]
+      (M : HenkinModel.{u, v, w} Base Const)
+      (σ : Ty Base)
+      [Fintype Pred]
+      (code :
+        Mettapedia.KR.ConceptGeometry.AbstractInheritance.FormedConcept
+          Mettapedia.KR.ConceptOntology.EvidenceGate.positiveSupport
+          witnessImpliesFeatureMemberEvidence → Pred)
+      (decode : Pred →
+        Mettapedia.PLN.Bridges.HOL.PLNHigherOrderHOLInheritanceBridge.UnaryPredicate
+          (Base := Base) (Const := Const) σ)
+      (attrOf : Pred → MembershipConcept)
+      (_hCal : ∀
+        {p : Mettapedia.KR.ConceptGeometry.AbstractInheritance.FormedConcept
+          Mettapedia.KR.ConceptOntology.EvidenceGate.positiveSupport
+          witnessImpliesFeatureMemberEvidence} {r : Pred},
+        r ∈ ((Mettapedia.PLN.Bridges.HOL.PLNHigherOrderHOLInheritanceBridge.predicateVocabularyInterpretation
+            (Base := Base) (Const := Const) M σ decode).meaning (code p)).intent ↔
+          attrOf r ∈
+            ((Mettapedia.KR.ConceptGeometry.AbstractInheritance.formedConceptInterpretation
+              Mettapedia.KR.ConceptOntology.EvidenceGate.positiveSupport
+              witnessImpliesFeatureMemberEvidence).meaning p).intent)
+      (pairEnc : InheritanceQueryBuilder Pred PairQuery)
+      (m : InheritanceQueryBuilder.AssocPatSemanticModel
+        (State := State) (Atom := Pred) (Query := PairQuery) pairEnc)
+      {assocLeftWeight assocRightWeight patLeftWeight patRightWeight : ℝ}
+      (_hAssocLeftWeight : 0 ≤ assocLeftWeight)
+      (_hAssocRightWeight : 0 ≤ assocRightWeight)
+      (_hPatLeftWeight : 0 ≤ patLeftWeight)
+      (_hPatRightWeight : 0 ≤ patRightWeight)
+      (_hAssocScore : ∀ (W : State) (a b : Pred),
+        m.scoreModel.assocScore W a b =
+          Mettapedia.PLN.ConceptGeometry.AssocPat.PLNHigherOrderHOLAssocPatBridge.predicateVocabularyWeightedPairOrderRankScore
+            (Base := Base) (Const := Const) M σ decode
+            assocLeftWeight assocRightWeight a b)
+      (_hPatScore : ∀ (W : State) (a b : Pred),
+        m.scoreModel.patScore W a b =
+          Mettapedia.PLN.ConceptGeometry.AssocPat.PLNHigherOrderHOLAssocPatBridge.predicateVocabularyWeightedPairOrderRankScore
+            (Base := Base) (Const := Const) M σ decode
+            patLeftWeight patRightWeight a b)
+      (_hCombineMono :
+        ∀ {e₁ e₂ a₁ a₂ p₁ p₂ :
+            Mettapedia.PLN.Evidence.EvidenceQuantale.BinaryEvidence},
+          e₁ ≤ e₂ → a₁ ≤ a₂ → p₁ ≤ p₂ →
+            m.combine e₁ a₁ p₁ ≤ m.combine e₂ a₂ p₂)
+      {W : State}
+      (_hExt :
+        InheritanceQueryBuilder.semanticLayerEvidence
+            (State := State) (Atom := Pred) (Query := PairQuery)
+            .extensional .assoc W pairEnc
+            (code (witnessImpliesFeatureFormedConcept MembershipConcept.feature))
+            (code (witnessImpliesFeatureFormedConcept MembershipConcept.feature)) ≤
+          InheritanceQueryBuilder.semanticLayerEvidence
+            (State := State) (Atom := Pred) (Query := PairQuery)
+            .extensional .assoc W pairEnc
+            (code (witnessImpliesFeatureFormedConcept MembershipConcept.witness))
+            (code (witnessImpliesFeatureFormedConcept MembershipConcept.feature))),
+      InheritanceQueryBuilder.semanticLayerEvidence
+          (State := State) (Atom := Pred) (Query := PairQuery)
+          .mixed .assoc W pairEnc
+          (code (witnessImpliesFeatureFormedConcept MembershipConcept.feature))
+          (code (witnessImpliesFeatureFormedConcept MembershipConcept.feature)) ≤
+        InheritanceQueryBuilder.semanticLayerEvidence
+          (State := State) (Atom := Pred) (Query := PairQuery)
+          .mixed .assoc W pairEnc
+          (code (witnessImpliesFeatureFormedConcept MembershipConcept.witness))
+          (code (witnessImpliesFeatureFormedConcept MembershipConcept.feature))
+
+/-- Concrete formed-concept mixed semantic-layer monotonicity package. -/
+noncomputable def formedConceptMixedSemanticLayerMonotonicityProfile :
+    FormedConceptMixedSemanticLayerMonotonicityProfile where
+  source :=
+    formedConceptChapter12SourceProfile
+  mixedMonoOfExtensionalAndCombinerMono :=
+    @witnessFeature_semanticLayerMixedEvidence_mono_viaFormedConceptCalibration
 
 end Mettapedia.PLN.ConceptGeometry.AssocPat.PLNHigherOrderHOLEmpiricalAssocPatBridge

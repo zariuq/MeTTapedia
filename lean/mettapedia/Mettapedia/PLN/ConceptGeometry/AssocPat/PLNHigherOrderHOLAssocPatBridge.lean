@@ -1826,6 +1826,300 @@ theorem extensionalEvidence_eq_of_mixedEvidence_eq_predicateVocabularyPairOrderR
     simpa [hAssocLift, hPatLift] using hCombined
   exact hCancel hAligned
 
+/-- Weighted mixed evidence has the same necessary extensional-channel
+guardrail as the unweighted pair-order score: if same-intent replacement has
+already fixed the weighted ASSOC and PAT channels, then equality of mixed
+evidence under a left-cancellable combiner forces equality of the extensional
+channel. -/
+theorem extensionalEvidence_eq_of_mixedEvidence_eq_predicateVocabularyWeightedPairOrderRankScore_sameIntent
+    (M : HenkinModel.{u, v, w} Base Const)
+    (σ : Ty Base)
+    (decode : Pred →
+      Mettapedia.PLN.Bridges.HOL.PLNHigherOrderHOLInheritanceBridge.UnaryPredicate
+        (Base := Base) (Const := Const) σ)
+    [Fintype Pred]
+    (pairEnc : InheritanceQueryBuilder Pred PairQuery)
+    (model : InheritanceQueryBuilder.IntensionalScoreModel
+      (State := State) (Atom := Pred) (Query := PairQuery) pairEnc)
+    (combine :
+      Mettapedia.PLN.Evidence.EvidenceQuantale.BinaryEvidence →
+        Mettapedia.PLN.Evidence.EvidenceQuantale.BinaryEvidence →
+          Mettapedia.PLN.Evidence.EvidenceQuantale.BinaryEvidence →
+            Mettapedia.PLN.Evidence.EvidenceQuantale.BinaryEvidence)
+    (hMixed :
+      InheritanceQueryBuilder.MixedAssocPatScoreCorrespondence
+        (State := State) (Atom := Pred) (Query := PairQuery)
+        pairEnc combine model.assocScore model.patScore model.scoreToEvidence)
+    {assocLeftWeight assocRightWeight patLeftWeight patRightWeight : ℝ}
+    (hAssocLeftWeight : 0 ≤ assocLeftWeight)
+    (hAssocRightWeight : 0 ≤ assocRightWeight)
+    (hPatLeftWeight : 0 ≤ patLeftWeight)
+    (hPatRightWeight : 0 ≤ patRightWeight)
+    (hAssocScore : ∀ (W : State) (a b : Pred),
+      model.assocScore W a b =
+        predicateVocabularyWeightedPairOrderRankScore
+          (Base := Base) (Const := Const) M σ decode
+          assocLeftWeight assocRightWeight a b)
+    (hPatScore : ∀ (W : State) (a b : Pred),
+      model.patScore W a b =
+        predicateVocabularyWeightedPairOrderRankScore
+          (Base := Base) (Const := Const) M σ decode
+          patLeftWeight patRightWeight a b)
+    (hCancel :
+      ∀ {x y assoc pat :
+          Mettapedia.PLN.Evidence.EvidenceQuantale.BinaryEvidence},
+        combine x assoc pat = combine y assoc pat → x = y)
+    {W : State} {a b c d : Pred}
+    (hMixedEq :
+      InheritanceQueryBuilder.mixedEvidence
+          (State := State) (Atom := Pred) (Query := PairQuery) W pairEnc a b =
+        InheritanceQueryBuilder.mixedEvidence
+          (State := State) (Atom := Pred) (Query := PairQuery) W pairEnc c d)
+    (hLeft :
+      Mettapedia.PLN.Bridges.HOL.PLNHigherOrderHOLSimilarityBridge.predicateVocabularySameIntent
+        (Base := Base) (Const := Const) M σ decode a c)
+    (hRight :
+      Mettapedia.PLN.Bridges.HOL.PLNHigherOrderHOLSimilarityBridge.predicateVocabularySameIntent
+        (Base := Base) (Const := Const) M σ decode b d) :
+    InheritanceQueryBuilder.extensionalEvidence
+        (State := State) (Atom := Pred) (Query := PairQuery) W pairEnc a b =
+      InheritanceQueryBuilder.extensionalEvidence
+        (State := State) (Atom := Pred) (Query := PairQuery) W pairEnc c d := by
+  have hAssocPat :
+      InheritanceQueryBuilder.intensionalAssocEvidence
+          (State := State) (Atom := Pred) (Query := PairQuery) W pairEnc a b =
+          InheritanceQueryBuilder.intensionalAssocEvidence
+            (State := State) (Atom := Pred) (Query := PairQuery) W pairEnc c d ∧
+        InheritanceQueryBuilder.intensionalPATEvidence
+          (State := State) (Atom := Pred) (Query := PairQuery) W pairEnc a b =
+          InheritanceQueryBuilder.intensionalPATEvidence
+            (State := State) (Atom := Pred) (Query := PairQuery) W pairEnc c d :=
+    assocPatEvidence_eq_of_predicateVocabularyWeightedPairOrderRankScore_sameIntent
+      (Base := Base) (Const := Const) M σ decode pairEnc model
+      hAssocLeftWeight hAssocRightWeight hPatLeftWeight hPatRightWeight
+      hAssocScore hPatScore hLeft hRight
+  have hAssocLift :
+      model.scoreToEvidence (model.assocScore W a b) =
+        model.scoreToEvidence (model.assocScore W c d) := by
+    calc
+      model.scoreToEvidence (model.assocScore W a b)
+          = InheritanceQueryBuilder.intensionalAssocEvidence
+              (State := State) (Atom := Pred) (Query := PairQuery) W pairEnc a b :=
+        (model.assoc_sound W a b).symm
+      _ = InheritanceQueryBuilder.intensionalAssocEvidence
+            (State := State) (Atom := Pred) (Query := PairQuery) W pairEnc c d :=
+        hAssocPat.1
+      _ = model.scoreToEvidence (model.assocScore W c d) :=
+        model.assoc_sound W c d
+  have hPatLift :
+      model.scoreToEvidence (model.patScore W a b) =
+        model.scoreToEvidence (model.patScore W c d) := by
+    calc
+      model.scoreToEvidence (model.patScore W a b)
+          = InheritanceQueryBuilder.intensionalPATEvidence
+              (State := State) (Atom := Pred) (Query := PairQuery) W pairEnc a b :=
+        (model.pat_sound W a b).symm
+      _ = InheritanceQueryBuilder.intensionalPATEvidence
+            (State := State) (Atom := Pred) (Query := PairQuery) W pairEnc c d :=
+        hAssocPat.2
+      _ = model.scoreToEvidence (model.patScore W c d) :=
+        model.pat_sound W c d
+  have hCombined :
+      combine
+          (InheritanceQueryBuilder.extensionalEvidence
+            (State := State) (Atom := Pred) (Query := PairQuery) W pairEnc a b)
+          (model.scoreToEvidence (model.assocScore W a b))
+          (model.scoreToEvidence (model.patScore W a b)) =
+        combine
+          (InheritanceQueryBuilder.extensionalEvidence
+            (State := State) (Atom := Pred) (Query := PairQuery) W pairEnc c d)
+          (model.scoreToEvidence (model.assocScore W c d))
+          (model.scoreToEvidence (model.patScore W c d)) := by
+    calc
+      combine
+          (InheritanceQueryBuilder.extensionalEvidence
+            (State := State) (Atom := Pred) (Query := PairQuery) W pairEnc a b)
+          (model.scoreToEvidence (model.assocScore W a b))
+          (model.scoreToEvidence (model.patScore W a b))
+          = InheritanceQueryBuilder.mixedEvidence
+              (State := State) (Atom := Pred) (Query := PairQuery) W pairEnc a b :=
+        (hMixed W a b).symm
+      _ = InheritanceQueryBuilder.mixedEvidence
+            (State := State) (Atom := Pred) (Query := PairQuery) W pairEnc c d :=
+        hMixedEq
+      _ = combine
+            (InheritanceQueryBuilder.extensionalEvidence
+              (State := State) (Atom := Pred) (Query := PairQuery) W pairEnc c d)
+            (model.scoreToEvidence (model.assocScore W c d))
+            (model.scoreToEvidence (model.patScore W c d)) :=
+        hMixed W c d
+  have hAligned :
+      combine
+          (InheritanceQueryBuilder.extensionalEvidence
+            (State := State) (Atom := Pred) (Query := PairQuery) W pairEnc a b)
+          (model.scoreToEvidence (model.assocScore W c d))
+          (model.scoreToEvidence (model.patScore W c d)) =
+        combine
+          (InheritanceQueryBuilder.extensionalEvidence
+            (State := State) (Atom := Pred) (Query := PairQuery) W pairEnc c d)
+          (model.scoreToEvidence (model.assocScore W c d))
+          (model.scoreToEvidence (model.patScore W c d)) := by
+    simpa [hAssocLift, hPatLift] using hCombined
+  exact hCancel hAligned
+
+/-- Under weighted same-intent ASSOC/PAT score correspondences and a
+left-cancellable mixed combiner, mixed evidence equality is equivalent to
+extensional-channel equality.
+
+This is the exact three-channel separation theorem: same intent fixes the
+weighted ASSOC/PAT channels, so the mixed channel contains precisely the
+extensional degree of freedom. -/
+theorem mixedEvidence_eq_iff_extensionalEvidence_eq_of_predicateVocabularyWeightedPairOrderRankScore_sameIntent
+    (M : HenkinModel.{u, v, w} Base Const)
+    (σ : Ty Base)
+    (decode : Pred →
+      Mettapedia.PLN.Bridges.HOL.PLNHigherOrderHOLInheritanceBridge.UnaryPredicate
+        (Base := Base) (Const := Const) σ)
+    [Fintype Pred]
+    (pairEnc : InheritanceQueryBuilder Pred PairQuery)
+    (model : InheritanceQueryBuilder.IntensionalScoreModel
+      (State := State) (Atom := Pred) (Query := PairQuery) pairEnc)
+    (combine :
+      Mettapedia.PLN.Evidence.EvidenceQuantale.BinaryEvidence →
+        Mettapedia.PLN.Evidence.EvidenceQuantale.BinaryEvidence →
+          Mettapedia.PLN.Evidence.EvidenceQuantale.BinaryEvidence →
+            Mettapedia.PLN.Evidence.EvidenceQuantale.BinaryEvidence)
+    (hMixed :
+      InheritanceQueryBuilder.MixedAssocPatScoreCorrespondence
+        (State := State) (Atom := Pred) (Query := PairQuery)
+        pairEnc combine model.assocScore model.patScore model.scoreToEvidence)
+    {assocLeftWeight assocRightWeight patLeftWeight patRightWeight : ℝ}
+    (hAssocLeftWeight : 0 ≤ assocLeftWeight)
+    (hAssocRightWeight : 0 ≤ assocRightWeight)
+    (hPatLeftWeight : 0 ≤ patLeftWeight)
+    (hPatRightWeight : 0 ≤ patRightWeight)
+    (hAssocScore : ∀ (W : State) (a b : Pred),
+      model.assocScore W a b =
+        predicateVocabularyWeightedPairOrderRankScore
+          (Base := Base) (Const := Const) M σ decode
+          assocLeftWeight assocRightWeight a b)
+    (hPatScore : ∀ (W : State) (a b : Pred),
+      model.patScore W a b =
+        predicateVocabularyWeightedPairOrderRankScore
+          (Base := Base) (Const := Const) M σ decode
+          patLeftWeight patRightWeight a b)
+    (hCancel :
+      ∀ {x y assoc pat :
+          Mettapedia.PLN.Evidence.EvidenceQuantale.BinaryEvidence},
+        combine x assoc pat = combine y assoc pat → x = y)
+    {W : State} {a b c d : Pred}
+    (hLeft :
+      Mettapedia.PLN.Bridges.HOL.PLNHigherOrderHOLSimilarityBridge.predicateVocabularySameIntent
+        (Base := Base) (Const := Const) M σ decode a c)
+    (hRight :
+      Mettapedia.PLN.Bridges.HOL.PLNHigherOrderHOLSimilarityBridge.predicateVocabularySameIntent
+        (Base := Base) (Const := Const) M σ decode b d) :
+    InheritanceQueryBuilder.mixedEvidence
+        (State := State) (Atom := Pred) (Query := PairQuery) W pairEnc a b =
+      InheritanceQueryBuilder.mixedEvidence
+        (State := State) (Atom := Pred) (Query := PairQuery) W pairEnc c d ↔
+    InheritanceQueryBuilder.extensionalEvidence
+        (State := State) (Atom := Pred) (Query := PairQuery) W pairEnc a b =
+      InheritanceQueryBuilder.extensionalEvidence
+        (State := State) (Atom := Pred) (Query := PairQuery) W pairEnc c d := by
+  constructor
+  · intro hMixedEq
+    exact
+      extensionalEvidence_eq_of_mixedEvidence_eq_predicateVocabularyWeightedPairOrderRankScore_sameIntent
+        (Base := Base) (Const := Const) M σ decode pairEnc model combine hMixed
+        hAssocLeftWeight hAssocRightWeight hPatLeftWeight hPatRightWeight
+        hAssocScore hPatScore hCancel hMixedEq hLeft hRight
+  · intro hExt
+    exact
+      mixedEvidence_eq_of_predicateVocabularyWeightedPairOrderRankScore_sameIntent
+        (Base := Base) (Const := Const) M σ decode pairEnc model combine hMixed
+        hAssocLeftWeight hAssocRightWeight hPatLeftWeight hPatRightWeight
+        hAssocScore hPatScore hExt hLeft hRight
+
+/-- If a mixed combiner ignores its extensional coordinate, mixed equality can
+hold while the extensional evidence differs.
+
+This is the negative guardrail for the cancellativity hypothesis in
+`mixedEvidence_eq_iff_extensionalEvidence_eq_of_predicateVocabularyWeightedPairOrderRankScore_sameIntent`.
+The witness uses real `BinaryEvidence` values: zero evidence and one unit of
+positive evidence are extensionally distinct, but an ASSOC/PAT-only combiner
+cannot see the difference. -/
+theorem ignoreExtensionalCombiner_mixedEvidence_eq_without_extensionalEvidence_eq :
+    ∃ x y assoc pat : Mettapedia.PLN.Evidence.EvidenceQuantale.BinaryEvidence,
+      (fun _ assoc pat => assoc + pat) x assoc pat =
+          (fun _ assoc pat => assoc + pat) y assoc pat ∧
+        x ≠ y := by
+  let x : Mettapedia.PLN.Evidence.EvidenceQuantale.BinaryEvidence :=
+    Mettapedia.PLN.Evidence.EvidenceQuantale.BinaryEvidence.zero
+  let y : Mettapedia.PLN.Evidence.EvidenceQuantale.BinaryEvidence :=
+    { pos := 1, neg := 0 }
+  let assoc : Mettapedia.PLN.Evidence.EvidenceQuantale.BinaryEvidence :=
+    Mettapedia.PLN.Evidence.EvidenceQuantale.BinaryEvidence.zero
+  let pat : Mettapedia.PLN.Evidence.EvidenceQuantale.BinaryEvidence :=
+    Mettapedia.PLN.Evidence.EvidenceQuantale.BinaryEvidence.zero
+  refine ⟨x, y, assoc, pat, ?_, ?_⟩
+  · rfl
+  · intro h
+    have hpos :=
+      congrArg Mettapedia.PLN.Evidence.EvidenceQuantale.BinaryEvidence.pos h
+    norm_num [x, y, Mettapedia.PLN.Evidence.EvidenceQuantale.BinaryEvidence.zero] at hpos
+
+/-- The ASSOC/PAT-only mixed combiner is not left-cancellable in the
+extensional coordinate.  Therefore the cancellativity assumption in the mixed
+iff theorem is load-bearing, not proof boilerplate. -/
+theorem ignoreExtensionalCombiner_not_leftCancellable :
+    ¬ (∀ {x y assoc pat : Mettapedia.PLN.Evidence.EvidenceQuantale.BinaryEvidence},
+      (fun _ assoc pat => assoc + pat) x assoc pat =
+          (fun _ assoc pat => assoc + pat) y assoc pat →
+        x = y) := by
+  intro hCancel
+  rcases ignoreExtensionalCombiner_mixedEvidence_eq_without_extensionalEvidence_eq with
+    ⟨x, y, assoc, pat, hMixed, hNe⟩
+  exact hNe (hCancel hMixed)
+
+/-- ASSOC/PAT monotonicity alone does not force mixed-channel monotonicity.
+
+The concrete sum combiner `ext + assoc + pat` is monotone in all three
+coordinates, but if the extensional coordinate drops far enough then increasing
+ASSOC and PAT evidence still decreases the mixed evidence.  Thus the explicit
+extensional monotonicity premise in
+`semanticLayerMixedEvidence_mono_of_predicateVocabularyWeightedPairOrderRankScore`
+is load-bearing, not proof boilerplate. -/
+theorem mixedEvidence_mono_requires_extensional_mono_counterexample :
+    ∃ ext₁ ext₂ assoc₁ assoc₂ pat₁ pat₂ :
+        Mettapedia.PLN.Evidence.EvidenceQuantale.BinaryEvidence,
+      assoc₁ ≤ assoc₂ ∧
+        pat₁ ≤ pat₂ ∧
+        ¬ ext₁ ≤ ext₂ ∧
+        ¬ (ext₁ + assoc₁ + pat₁ ≤ ext₂ + assoc₂ + pat₂) := by
+  let ext₁ : Mettapedia.PLN.Evidence.EvidenceQuantale.BinaryEvidence :=
+    { pos := 10, neg := 0 }
+  let ext₂ : Mettapedia.PLN.Evidence.EvidenceQuantale.BinaryEvidence :=
+    { pos := 0, neg := 0 }
+  let assoc₁ : Mettapedia.PLN.Evidence.EvidenceQuantale.BinaryEvidence :=
+    { pos := 11, neg := 0 }
+  let assoc₂ : Mettapedia.PLN.Evidence.EvidenceQuantale.BinaryEvidence :=
+    { pos := 13, neg := 0 }
+  let pat₁ : Mettapedia.PLN.Evidence.EvidenceQuantale.BinaryEvidence :=
+    { pos := 17, neg := 0 }
+  let pat₂ : Mettapedia.PLN.Evidence.EvidenceQuantale.BinaryEvidence :=
+    { pos := 19, neg := 0 }
+  refine ⟨ext₁, ext₂, assoc₁, assoc₂, pat₁, pat₂, ?_, ?_, ?_, ?_⟩
+  · norm_num [assoc₁, assoc₂, Mettapedia.PLN.Evidence.EvidenceQuantale.BinaryEvidence.le_def]
+  · norm_num [pat₁, pat₂, Mettapedia.PLN.Evidence.EvidenceQuantale.BinaryEvidence.le_def]
+  · intro h
+    have hpos := h.1
+    norm_num [ext₁, ext₂] at hpos
+  · intro h
+    have hpos := h.1
+    norm_num [ext₁, ext₂, assoc₁, assoc₂, pat₁, pat₂,
+      Mettapedia.PLN.Evidence.EvidenceQuantale.BinaryEvidence.hplus_def] at hpos
+
 end Evidence
 
 end Mettapedia.PLN.ConceptGeometry.AssocPat.PLNHigherOrderHOLAssocPatBridge

@@ -114,4 +114,29 @@ theorem closedPure_overlap_via_abc_to_wm
       (I.encode (quoteClosedTm u)) := by
   exact pureTheoryStep_to_wmStrengthObligation_default I hW (pureOpStep_to_pureTheoryStep h)
 
+/-- The same closed overlap extends to the strongest assumption-free
+declaration-aware slice: when declaration values are absent, declaration
+multi-step reduction collapses to core PureKernel reduction, so the quoted
+closed terms inherit the existing WM-strength obligation bridge. -/
+theorem closedNoValuesDecl_overlap_via_abc_to_wm
+    {State Query : Type*}
+    [EvidenceType State] [BinaryWorldModel State Query]
+    (I : PureJudgmentWMInterface State Query)
+    {specs : List Mettapedia.Languages.MeTTa.PureKernel.DeclarationSpec.DeclSpec}
+    (hSig :
+      Mettapedia.Languages.MeTTa.PureKernel.DeclarationSpec.SignatureWellFormed
+        specs)
+    (hNone : ∀ s ∈ specs, s.value? = none)
+    {W : State} (hW : I.side W)
+    {t u : PureTm 0}
+    (h :
+      Mettapedia.Languages.MeTTa.PureKernel.DeclarationSemantics.RedStarDecl
+        (Mettapedia.Languages.MeTTa.PureKernel.DeclarationSpec.envOfSpecs specs) t u) :
+    WMStrengthObligation State Query W
+      (I.encode (quoteClosedTm t))
+      (I.encode (quoteClosedTm u)) := by
+  exact
+    checkedNoValuesDeclKernelStar_to_wmStrengthObligation_default
+      I hSig hNone hW h
+
 end Mettapedia.Languages.MeTTa.PureRuntimeFrontier

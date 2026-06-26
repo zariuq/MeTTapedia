@@ -527,4 +527,146 @@ theorem semanticLayerMixedEvidence_eq_of_predicateVocabularyWeightedPairOrderRan
       hAssocScore hPatScore hExt' hLeft hRight
   simpa using hMixed
 
+/-- If the typed mixed semantic layer is equal under same-intent replacement
+and the mixed combiner is left-cancellable, then the typed extensional layer
+was equal too.
+
+This is the typed semantic-layer form of the weighted three-channel guardrail:
+same intent fixes ASSOC/PAT, but a mixed-channel equality can only recover the
+extensional channel through the mixed evidence itself. -/
+theorem semanticLayerExtensionalEvidence_eq_of_mixedEvidence_eq_predicateVocabularyWeightedPairOrderRankScore_sameIntent
+    (M : HenkinModel.{u, v, w} Base Const)
+    (σ : Ty Base)
+    (decode : Pred →
+      Mettapedia.PLN.Bridges.HOL.PLNHigherOrderHOLInheritanceBridge.UnaryPredicate
+        (Base := Base) (Const := Const) σ)
+    [Fintype Pred]
+    (pairEnc : InheritanceQueryBuilder Pred PairQuery)
+    (m : InheritanceQueryBuilder.AssocPatSemanticModel
+      (State := State) (Atom := Pred) (Query := PairQuery) pairEnc)
+    {assocLeftWeight assocRightWeight patLeftWeight patRightWeight : ℝ}
+    (hAssocLeftWeight : 0 ≤ assocLeftWeight)
+    (hAssocRightWeight : 0 ≤ assocRightWeight)
+    (hPatLeftWeight : 0 ≤ patLeftWeight)
+    (hPatRightWeight : 0 ≤ patRightWeight)
+    (hAssocScore : ∀ (W : State) (a b : Pred),
+      m.scoreModel.assocScore W a b =
+        predicateVocabularyWeightedPairOrderRankScore
+          (Base := Base) (Const := Const) M σ decode
+          assocLeftWeight assocRightWeight a b)
+    (hPatScore : ∀ (W : State) (a b : Pred),
+      m.scoreModel.patScore W a b =
+        predicateVocabularyWeightedPairOrderRankScore
+          (Base := Base) (Const := Const) M σ decode
+          patLeftWeight patRightWeight a b)
+    (hCancel :
+      ∀ {x y assoc pat :
+          Mettapedia.PLN.Evidence.EvidenceQuantale.BinaryEvidence},
+        m.combine x assoc pat = m.combine y assoc pat → x = y)
+    {W : State} {a b c d : Pred}
+    (hMixedEq :
+      InheritanceQueryBuilder.semanticLayerEvidence
+          (State := State) (Atom := Pred) (Query := PairQuery)
+          .mixed .assoc W pairEnc a b =
+        InheritanceQueryBuilder.semanticLayerEvidence
+          (State := State) (Atom := Pred) (Query := PairQuery)
+          .mixed .assoc W pairEnc c d)
+    (hLeft :
+      Mettapedia.PLN.Bridges.HOL.PLNHigherOrderHOLSimilarityBridge.predicateVocabularySameIntent
+        (Base := Base) (Const := Const) M σ decode a c)
+    (hRight :
+      Mettapedia.PLN.Bridges.HOL.PLNHigherOrderHOLSimilarityBridge.predicateVocabularySameIntent
+        (Base := Base) (Const := Const) M σ decode b d) :
+    InheritanceQueryBuilder.semanticLayerEvidence
+        (State := State) (Atom := Pred) (Query := PairQuery)
+        .extensional .assoc W pairEnc a b =
+      InheritanceQueryBuilder.semanticLayerEvidence
+        (State := State) (Atom := Pred) (Query := PairQuery)
+        .extensional .assoc W pairEnc c d := by
+  have hMixedEq' :
+      InheritanceQueryBuilder.mixedEvidence
+          (State := State) (Atom := Pred) (Query := PairQuery) W pairEnc a b =
+        InheritanceQueryBuilder.mixedEvidence
+          (State := State) (Atom := Pred) (Query := PairQuery) W pairEnc c d := by
+    simpa using hMixedEq
+  have hExt :
+      InheritanceQueryBuilder.extensionalEvidence
+          (State := State) (Atom := Pred) (Query := PairQuery) W pairEnc a b =
+        InheritanceQueryBuilder.extensionalEvidence
+          (State := State) (Atom := Pred) (Query := PairQuery) W pairEnc c d :=
+    extensionalEvidence_eq_of_mixedEvidence_eq_predicateVocabularyWeightedPairOrderRankScore_sameIntent
+      (Base := Base) (Const := Const) (State := State) (Pred := Pred) (PairQuery := PairQuery)
+      M σ decode pairEnc m.scoreModel m.combine m.mixed_sound
+      hAssocLeftWeight hAssocRightWeight hPatLeftWeight hPatRightWeight
+      hAssocScore hPatScore hCancel hMixedEq' hLeft hRight
+  simpa using hExt
+
+/-- Typed semantic-layer version of the weighted three-channel separation
+theorem: under same-intent weighted ASSOC/PAT correspondences and a
+left-cancellable mixed combiner, equality of the mixed layer is equivalent to
+equality of the extensional layer. -/
+theorem semanticLayerMixedEvidence_eq_iff_extensionalEvidence_eq_of_predicateVocabularyWeightedPairOrderRankScore_sameIntent
+    (M : HenkinModel.{u, v, w} Base Const)
+    (σ : Ty Base)
+    (decode : Pred →
+      Mettapedia.PLN.Bridges.HOL.PLNHigherOrderHOLInheritanceBridge.UnaryPredicate
+        (Base := Base) (Const := Const) σ)
+    [Fintype Pred]
+    (pairEnc : InheritanceQueryBuilder Pred PairQuery)
+    (m : InheritanceQueryBuilder.AssocPatSemanticModel
+      (State := State) (Atom := Pred) (Query := PairQuery) pairEnc)
+    {assocLeftWeight assocRightWeight patLeftWeight patRightWeight : ℝ}
+    (hAssocLeftWeight : 0 ≤ assocLeftWeight)
+    (hAssocRightWeight : 0 ≤ assocRightWeight)
+    (hPatLeftWeight : 0 ≤ patLeftWeight)
+    (hPatRightWeight : 0 ≤ patRightWeight)
+    (hAssocScore : ∀ (W : State) (a b : Pred),
+      m.scoreModel.assocScore W a b =
+        predicateVocabularyWeightedPairOrderRankScore
+          (Base := Base) (Const := Const) M σ decode
+          assocLeftWeight assocRightWeight a b)
+    (hPatScore : ∀ (W : State) (a b : Pred),
+      m.scoreModel.patScore W a b =
+        predicateVocabularyWeightedPairOrderRankScore
+          (Base := Base) (Const := Const) M σ decode
+          patLeftWeight patRightWeight a b)
+    (hCancel :
+      ∀ {x y assoc pat :
+          Mettapedia.PLN.Evidence.EvidenceQuantale.BinaryEvidence},
+        m.combine x assoc pat = m.combine y assoc pat → x = y)
+    {W : State} {a b c d : Pred}
+    (hLeft :
+      Mettapedia.PLN.Bridges.HOL.PLNHigherOrderHOLSimilarityBridge.predicateVocabularySameIntent
+        (Base := Base) (Const := Const) M σ decode a c)
+    (hRight :
+      Mettapedia.PLN.Bridges.HOL.PLNHigherOrderHOLSimilarityBridge.predicateVocabularySameIntent
+        (Base := Base) (Const := Const) M σ decode b d) :
+    InheritanceQueryBuilder.semanticLayerEvidence
+        (State := State) (Atom := Pred) (Query := PairQuery)
+        .mixed .assoc W pairEnc a b =
+      InheritanceQueryBuilder.semanticLayerEvidence
+        (State := State) (Atom := Pred) (Query := PairQuery)
+        .mixed .assoc W pairEnc c d ↔
+    InheritanceQueryBuilder.semanticLayerEvidence
+        (State := State) (Atom := Pred) (Query := PairQuery)
+        .extensional .assoc W pairEnc a b =
+      InheritanceQueryBuilder.semanticLayerEvidence
+        (State := State) (Atom := Pred) (Query := PairQuery)
+        .extensional .assoc W pairEnc c d := by
+  constructor
+  · intro hMixedEq
+    exact
+      semanticLayerExtensionalEvidence_eq_of_mixedEvidence_eq_predicateVocabularyWeightedPairOrderRankScore_sameIntent
+        (Base := Base) (Const := Const) (State := State) (Pred := Pred) (PairQuery := PairQuery)
+        M σ decode pairEnc m
+        hAssocLeftWeight hAssocRightWeight hPatLeftWeight hPatRightWeight
+        hAssocScore hPatScore hCancel hMixedEq hLeft hRight
+  · intro hExt
+    exact
+      semanticLayerMixedEvidence_eq_of_predicateVocabularyWeightedPairOrderRankScore_sameIntent
+        (Base := Base) (Const := Const) (State := State) (Pred := Pred) (PairQuery := PairQuery)
+        M σ decode pairEnc m
+        hAssocLeftWeight hAssocRightWeight hPatLeftWeight hPatRightWeight
+        hAssocScore hPatScore hExt hLeft hRight
+
 end Mettapedia.PLN.ConceptGeometry.AssocPat.PLNHigherOrderHOLAssocPatBridge

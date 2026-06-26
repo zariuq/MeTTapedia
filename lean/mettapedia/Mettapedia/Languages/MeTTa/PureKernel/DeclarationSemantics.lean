@@ -1,4 +1,6 @@
 import Mathlib.Logic.Relation
+import Mettapedia.Languages.MeTTa.PureKernel.Confluence
+import Mettapedia.Languages.MeTTa.PureKernel.DefEq
 import Mettapedia.Languages.MeTTa.PureKernel.Typing
 import Mettapedia.Languages.MeTTa.PureKernel.DeclarationEnv
 
@@ -11,6 +13,8 @@ open Mettapedia.Languages.MeTTa.PureKernel.Substitution
 open Mettapedia.Languages.MeTTa.PureKernel.Reduction
 open Mettapedia.Languages.MeTTa.PureKernel.Typing
 open Mettapedia.Languages.MeTTa.PureKernel.DeclarationEnv
+open Mettapedia.Languages.MeTTa.PureKernel.Parallel
+  (ParRed par_refl red_to_par par_rename par_subst par_inst0 par_to_redStar)
 
 /-- Declaration-aware one-step reduction.
 Includes the base Pure reduction plus fail-closed constant unfolding from `DeclEnv`. -/
@@ -57,9 +61,526 @@ abbrev RedStarDecl (E : DeclEnv) (t u : PureTm n) : Prop :=
 abbrev ConvDecl (E : DeclEnv) (t u : PureTm n) : Prop :=
   Relation.EqvGen (RedDecl E) t u
 
+/-- Declaration-aware parallel one-step reduction.
+This is the missing structural layer between declaration-aware one-step reduction
+and the deferred declaration-level Church-Rosser theorem: it mirrors core
+parallel reduction, but also permits `δ`-unfolding from the declaration
+environment. -/
+inductive ParRedDecl (E : DeclEnv) : PureTm n → PureTm n → Prop where
+  | var (i : Fin n) : ParRedDecl E (.var i) (.var i)
+  | const (c : DeclName) : ParRedDecl E (.const c : PureTm n) (.const c)
+  | u0 : ParRedDecl E (.u0 : PureTm n) .u0
+  | u1 : ParRedDecl E (.u1 : PureTm n) .u1
+  | deltaConst {c : DeclName} {v : PureTm 0} :
+      valueOf? E c = some v →
+      ParRedDecl E (.const c) (liftClosed v)
+  | pi {A A' : PureTm n} {B B' : PureTm (n + 1)} :
+      ParRedDecl E A A' → ParRedDecl E B B' → ParRedDecl E (.pi A B) (.pi A' B')
+  | sigma {A A' : PureTm n} {B B' : PureTm (n + 1)} :
+      ParRedDecl E A A' → ParRedDecl E B B' → ParRedDecl E (.sigma A B) (.sigma A' B')
+  | id {A A' a a' b b' : PureTm n} :
+      ParRedDecl E A A' → ParRedDecl E a a' → ParRedDecl E b b' →
+      ParRedDecl E (.id A a b) (.id A' a' b')
+  | lam {b b' : PureTm (n + 1)} :
+      ParRedDecl E b b' → ParRedDecl E (.lam b) (.lam b')
+  | app {f f' a a' : PureTm n} :
+      ParRedDecl E f f' → ParRedDecl E a a' → ParRedDecl E (.app f a) (.app f' a')
+  | pair {a a' b b' : PureTm n} :
+      ParRedDecl E a a' → ParRedDecl E b b' → ParRedDecl E (.pair a b) (.pair a' b')
+  | fst {p p' : PureTm n} :
+      ParRedDecl E p p' → ParRedDecl E (.fst p) (.fst p')
+  | snd {p p' : PureTm n} :
+      ParRedDecl E p p' → ParRedDecl E (.snd p) (.snd p')
+  | refl {a a' : PureTm n} :
+      ParRedDecl E a a' → ParRedDecl E (.refl a) (.refl a')
+  | betaPi {body body' : PureTm (n + 1)} {a a' : PureTm n} :
+      ParRedDecl E body body' → ParRedDecl E a a' →
+      ParRedDecl E (.app (.lam body) a) (inst0 a' body')
+  | betaSigmaFst {a a' b b' : PureTm n} :
+      ParRedDecl E a a' → ParRedDecl E b b' →
+      ParRedDecl E (.fst (.pair a b)) a'
+  | betaSigmaSnd {a a' b b' : PureTm n} :
+      ParRedDecl E a a' → ParRedDecl E b b' →
+      ParRedDecl E (.snd (.pair a b)) b'
+
+/-- Declaration-level Church-Rosser interface. This is the honest frontier for
+value-bearing declaration environments: a named hypothesis package, not yet a
+discharged global metatheorem. -/
+abbrev DeclChurchRosser (E : DeclEnv) : Prop :=
+  ∀ {k : Nat} {s t : PureTm k},
+    ConvDecl E s t →
+      ∃ u, RedStarDecl E s u ∧ RedStarDecl E t u
+
 theorem redDecl_implies_conv {E : DeclEnv} {t u : PureTm n} (h : RedDecl E t u) :
     ConvDecl E t u :=
   Relation.EqvGen.rel _ _ h
+
+theorem redStarDecl_implies_conv {E : DeclEnv} {t u : PureTm n} (h : RedStarDecl E t u) :
+    ConvDecl E t u := by
+  induction h with
+  | refl =>
+      exact Relation.EqvGen.refl _
+  | tail hxy hyz ih =>
+      exact Relation.EqvGen.trans _ _ _ ih (redDecl_implies_conv hyz)
+
+theorem redDecl_to_star {E : DeclEnv} {t u : PureTm n} (h : RedDecl E t u) :
+    RedStarDecl E t u :=
+  Relation.ReflTransGen.tail Relation.ReflTransGen.refl h
+
+namespace RedStarDecl
+
+theorem refl {E : DeclEnv} (t : PureTm n) : RedStarDecl E t t :=
+  Relation.ReflTransGen.refl
+
+theorem tail {E : DeclEnv} {t u v : PureTm n}
+    (h₁ : RedStarDecl E t u) (h₂ : RedDecl E u v) : RedStarDecl E t v :=
+  Relation.ReflTransGen.tail h₁ h₂
+
+theorem trans {E : DeclEnv} {t u v : PureTm n}
+    (h₁ : RedStarDecl E t u) (h₂ : RedStarDecl E u v) : RedStarDecl E t v :=
+  Relation.ReflTransGen.trans h₁ h₂
+
+theorem map {E : DeclEnv} {F : PureTm n → PureTm n}
+    (hF : ∀ {x y}, RedDecl E x y → RedDecl E (F x) (F y))
+    {t u : PureTm n} (h : RedStarDecl E t u) :
+    RedStarDecl E (F t) (F u) := by
+  induction h with
+  | refl =>
+      exact Relation.ReflTransGen.refl
+  | tail hxy hyz ih =>
+      exact Relation.ReflTransGen.tail ih (hF hyz)
+
+theorem congPiDom {E : DeclEnv} {A A' : PureTm n} {B : PureTm (n + 1)}
+    (h : RedStarDecl E A A') : RedStarDecl E (.pi A B) (.pi A' B) :=
+  map (F := fun t => .pi t B) (fun hstep => .congPiDom hstep) h
+
+theorem congPiCod {E : DeclEnv} {A : PureTm n} {B B' : PureTm (n + 1)}
+    (h : RedStarDecl E B B') : RedStarDecl E (.pi A B) (.pi A B') := by
+  induction h with
+  | refl =>
+      exact Relation.ReflTransGen.refl
+  | tail hxy hyz ih =>
+      exact .tail ih (.congPiCod hyz)
+
+theorem congSigmaDom {E : DeclEnv} {A A' : PureTm n} {B : PureTm (n + 1)}
+    (h : RedStarDecl E A A') : RedStarDecl E (.sigma A B) (.sigma A' B) :=
+  map (F := fun t => .sigma t B) (fun hstep => .congSigmaDom hstep) h
+
+theorem congSigmaCod {E : DeclEnv} {A : PureTm n} {B B' : PureTm (n + 1)}
+    (h : RedStarDecl E B B') : RedStarDecl E (.sigma A B) (.sigma A B') := by
+  induction h with
+  | refl =>
+      exact Relation.ReflTransGen.refl
+  | tail hxy hyz ih =>
+      exact .tail ih (.congSigmaCod hyz)
+
+theorem congIdTy {E : DeclEnv} {A A' a b : PureTm n}
+    (h : RedStarDecl E A A') : RedStarDecl E (.id A a b) (.id A' a b) :=
+  map (F := fun t => .id t a b) (fun hstep => .congIdTy hstep) h
+
+theorem congIdLeft {E : DeclEnv} {A a a' b : PureTm n}
+    (h : RedStarDecl E a a') : RedStarDecl E (.id A a b) (.id A a' b) :=
+  map (F := fun t => .id A t b) (fun hstep => .congIdLeft hstep) h
+
+theorem congIdRight {E : DeclEnv} {A a b b' : PureTm n}
+    (h : RedStarDecl E b b') : RedStarDecl E (.id A a b) (.id A a b') :=
+  map (F := fun t => .id A a t) (fun hstep => .congIdRight hstep) h
+
+theorem congLam {E : DeclEnv} {b b' : PureTm (n + 1)}
+    (h : RedStarDecl E b b') : RedStarDecl E (.lam b) (.lam b') := by
+  induction h with
+  | refl =>
+      exact Relation.ReflTransGen.refl
+  | tail hxy hyz ih =>
+      exact .tail ih (.congLam hyz)
+
+theorem congAppFun {E : DeclEnv} {f f' a : PureTm n}
+    (h : RedStarDecl E f f') : RedStarDecl E (.app f a) (.app f' a) :=
+  map (F := fun t => .app t a) (fun hstep => .congAppFun hstep) h
+
+theorem congAppArg {E : DeclEnv} {f a a' : PureTm n}
+    (h : RedStarDecl E a a') : RedStarDecl E (.app f a) (.app f a') :=
+  map (F := fun t => .app f t) (fun hstep => .congAppArg hstep) h
+
+theorem congPairFst {E : DeclEnv} {a a' b : PureTm n}
+    (h : RedStarDecl E a a') : RedStarDecl E (.pair a b) (.pair a' b) :=
+  map (F := fun t => .pair t b) (fun hstep => .congPairFst hstep) h
+
+theorem congPairSnd {E : DeclEnv} {a b b' : PureTm n}
+    (h : RedStarDecl E b b') : RedStarDecl E (.pair a b) (.pair a b') :=
+  map (F := fun t => .pair a t) (fun hstep => .congPairSnd hstep) h
+
+theorem congFst {E : DeclEnv} {p p' : PureTm n}
+    (h : RedStarDecl E p p') : RedStarDecl E (.fst p) (.fst p') :=
+  map (F := fun t => .fst t) (fun hstep => .congFst hstep) h
+
+theorem congSnd {E : DeclEnv} {p p' : PureTm n}
+    (h : RedStarDecl E p p') : RedStarDecl E (.snd p) (.snd p') :=
+  map (F := fun t => .snd t) (fun hstep => .congSnd hstep) h
+
+theorem congRefl {E : DeclEnv} {a a' : PureTm n}
+    (h : RedStarDecl E a a') : RedStarDecl E (.refl a) (.refl a') :=
+  map (F := fun t => .refl t) (fun hstep => .congRefl hstep) h
+
+end RedStarDecl
+
+@[simp] theorem parDecl_refl {E : DeclEnv} : ∀ t : PureTm n, ParRedDecl E t t := by
+  intro t
+  induction t with
+  | var i => exact .var i
+  | const c => exact .const c
+  | u0 => exact .u0
+  | u1 => exact .u1
+  | pi A B ihA ihB => exact .pi ihA ihB
+  | sigma A B ihA ihB => exact .sigma ihA ihB
+  | id A a b ihA iha ihb => exact .id ihA iha ihb
+  | lam b ih => exact .lam ih
+  | app f a ihf iha => exact .app ihf iha
+  | pair a b iha ihb => exact .pair iha ihb
+  | fst p ih => exact .fst ih
+  | snd p ih => exact .snd ih
+  | refl a iha => exact .refl iha
+
+theorem parDecl_core {E : DeclEnv} {t u : PureTm n} (h : ParRed t u) :
+    ParRedDecl E t u := by
+  induction h with
+  | var i =>
+      exact .var i
+  | const c =>
+      exact .const c
+  | u0 =>
+      exact .u0
+  | u1 =>
+      exact .u1
+  | pi hA hB ihA ihB =>
+      exact .pi ihA ihB
+  | sigma hA hB ihA ihB =>
+      exact .sigma ihA ihB
+  | id hA ha hb ihA iha ihb =>
+      exact .id ihA iha ihb
+  | lam hb ih =>
+      exact .lam ih
+  | app hf ha ihf iha =>
+      exact .app ihf iha
+  | pair ha hb iha ihb =>
+      exact .pair iha ihb
+  | fst hp ih =>
+      exact .fst ih
+  | snd hp ih =>
+      exact .snd ih
+  | refl ha ih =>
+      exact .refl ih
+  | betaPi hbody ha ihbody iha =>
+      exact .betaPi ihbody iha
+  | betaSigmaFst ha hb iha ihb =>
+      exact .betaSigmaFst iha ihb
+  | betaSigmaSnd ha hb iha ihb =>
+      exact .betaSigmaSnd iha ihb
+
+theorem redDecl_to_parDecl {E : DeclEnv} {t u : PureTm n} (h : RedDecl E t u) :
+    ParRedDecl E t u := by
+  induction h with
+  | core hred =>
+      exact parDecl_core (red_to_par hred)
+  | deltaConst hVal =>
+      exact .deltaConst hVal
+  | congPiDom hred ih =>
+      exact .pi ih (parDecl_refl _)
+  | congPiCod hred ih =>
+      exact .pi (parDecl_refl _) ih
+  | congSigmaDom hred ih =>
+      exact .sigma ih (parDecl_refl _)
+  | congSigmaCod hred ih =>
+      exact .sigma (parDecl_refl _) ih
+  | congIdTy hred ih =>
+      exact .id ih (parDecl_refl _) (parDecl_refl _)
+  | congIdLeft hred ih =>
+      exact .id (parDecl_refl _) ih (parDecl_refl _)
+  | congIdRight hred ih =>
+      exact .id (parDecl_refl _) (parDecl_refl _) ih
+  | congLam hred ih =>
+      exact .lam ih
+  | congAppFun hred ih =>
+      exact .app ih (parDecl_refl _)
+  | congAppArg hred ih =>
+      exact .app (parDecl_refl _) ih
+  | congPairFst hred ih =>
+      exact .pair ih (parDecl_refl _)
+  | congPairSnd hred ih =>
+      exact .pair (parDecl_refl _) ih
+  | congFst hred ih =>
+      exact .fst ih
+  | congSnd hred ih =>
+      exact .snd ih
+  | congRefl hred ih =>
+      exact .refl ih
+
+theorem parDecl_rename {E : DeclEnv} {n m : Nat} (ρ : Ren n m) {t u : PureTm n}
+    (h : ParRedDecl E t u) : ParRedDecl E (rename ρ t) (rename ρ u) := by
+  induction h generalizing m with
+  | var i =>
+      exact .var (ρ i)
+  | const c =>
+      exact .const c
+  | u0 =>
+      exact .u0
+  | u1 =>
+      exact .u1
+  | @deltaConst _ c v hVal =>
+      have hdelta : ParRedDecl E ((.const c : PureTm m)) (liftClosed (n := m) v) := .deltaConst hVal
+      simpa [rename, rename_liftClosed] using hdelta
+  | pi hA hB ihA ihB =>
+      simpa [rename] using .pi (ihA (ρ := ρ)) (ihB (ρ := liftRen ρ))
+  | sigma hA hB ihA ihB =>
+      simpa [rename] using .sigma (ihA (ρ := ρ)) (ihB (ρ := liftRen ρ))
+  | id hA ha hb ihA iha ihb =>
+      simpa [rename] using .id (ihA (ρ := ρ)) (iha (ρ := ρ)) (ihb (ρ := ρ))
+  | lam hb ih =>
+      simpa [rename] using .lam (ih (ρ := liftRen ρ))
+  | app hf ha ihf iha =>
+      simpa [rename] using .app (ihf (ρ := ρ)) (iha (ρ := ρ))
+  | pair ha hb iha ihb =>
+      simpa [rename] using .pair (iha (ρ := ρ)) (ihb (ρ := ρ))
+  | fst hp ih =>
+      simpa [rename] using .fst (ih (ρ := ρ))
+  | snd hp ih =>
+      simpa [rename] using .snd (ih (ρ := ρ))
+  | refl ha ih =>
+      simpa [rename] using .refl (ih (ρ := ρ))
+  | betaPi hbody ha ihbody iha =>
+      simpa [rename, rename_inst0] using
+        (ParRedDecl.betaPi (ihbody (ρ := liftRen ρ)) (iha (ρ := ρ)))
+  | betaSigmaFst ha hb iha ihb =>
+      simpa [rename] using
+        (ParRedDecl.betaSigmaFst (iha (ρ := ρ)) (ihb (ρ := ρ)))
+  | betaSigmaSnd ha hb iha ihb =>
+      simpa [rename] using
+        (ParRedDecl.betaSigmaSnd (iha (ρ := ρ)) (ihb (ρ := ρ)))
+
+theorem parDecl_to_redStarDecl {E : DeclEnv} {t u : PureTm n} (h : ParRedDecl E t u) :
+    RedStarDecl E t u := by
+  induction h with
+  | var i =>
+      exact .refl _
+  | const c =>
+      exact .refl _
+  | u0 =>
+      exact .refl _
+  | u1 =>
+      exact .refl _
+  | deltaConst hVal =>
+      exact redDecl_to_star (.deltaConst hVal)
+  | pi hA hB ihA ihB =>
+      exact .trans (.congPiDom ihA) (.congPiCod ihB)
+  | sigma hA hB ihA ihB =>
+      exact .trans (.congSigmaDom ihA) (.congSigmaCod ihB)
+  | id hA ha hb ihA iha ihb =>
+      exact .trans
+        (.trans
+          (RedStarDecl.map (F := fun t => .id t _ _) (fun hstep => .congIdTy hstep) ihA)
+          (RedStarDecl.map (F := fun t => .id _ t _) (fun hstep => .congIdLeft hstep) iha))
+        (RedStarDecl.map (F := fun t => .id _ _ t) (fun hstep => .congIdRight hstep) ihb)
+  | lam hb ih =>
+      exact .congLam ih
+  | app hf ha ihf iha =>
+      exact .trans (.congAppFun ihf) (.congAppArg iha)
+  | pair ha hb iha ihb =>
+      exact .trans (.congPairFst iha) (.congPairSnd ihb)
+  | fst hp ih =>
+      exact .congFst ih
+  | snd hp ih =>
+      exact .congSnd ih
+  | refl ha iha =>
+      exact .congRefl iha
+  | betaPi hb ha ihb iha =>
+      exact .trans
+        (.trans
+          (.congAppFun (.congLam ihb))
+          (.congAppArg iha))
+        (redDecl_to_star (.core (.betaPi _ _)))
+  | betaSigmaFst ha hb iha ihb =>
+      exact .trans
+        (.trans
+          (.congFst (.congPairFst iha))
+          (.congFst (.congPairSnd ihb)))
+        (redDecl_to_star (.core (.betaSigmaFst _ _)))
+  | betaSigmaSnd ha hb iha ihb =>
+      exact .trans
+        (.trans
+          (.congSnd (.congPairFst iha))
+          (.congSnd (.congPairSnd ihb)))
+        (redDecl_to_star (.core (.betaSigmaSnd _ _)))
+
+abbrev ParStarDecl (E : DeclEnv) (t u : PureTm n) : Prop :=
+  Relation.ReflTransGen (ParRedDecl E) t u
+
+/-- Complete development for declaration-aware parallel reduction.
+This mirrors core `cdev`, but performs at most one fail-closed `δ`-unfolding at
+each constant occurrence; the declaration-level diamond argument only needs a
+one-step common join, not recursive normalization of looked-up values. -/
+def cdevDecl (E : DeclEnv) : PureTm n → PureTm n
+  | .var i => .var i
+  | .const c =>
+      match valueOf? E c with
+      | some v => liftClosed v
+      | none => .const c
+  | .u0 => .u0
+  | .u1 => .u1
+  | .pi A B => .pi (cdevDecl E A) (cdevDecl E B)
+  | .sigma A B => .sigma (cdevDecl E A) (cdevDecl E B)
+  | .id A a b => .id (cdevDecl E A) (cdevDecl E a) (cdevDecl E b)
+  | .lam b => .lam (cdevDecl E b)
+  | .app (.lam b) a => inst0 (cdevDecl E a) (cdevDecl E b)
+  | .app f a => .app (cdevDecl E f) (cdevDecl E a)
+  | .pair a b => .pair (cdevDecl E a) (cdevDecl E b)
+  | .fst (.pair a _) => cdevDecl E a
+  | .fst p => .fst (cdevDecl E p)
+  | .snd (.pair _ b) => cdevDecl E b
+  | .snd p => .snd (cdevDecl E p)
+  | .refl a => .refl (cdevDecl E a)
+
+/-- Strong local diamond target for declaration-aware parallel reduction.
+Proving this for value-bearing environments is the remaining declaration-level
+confluence keystone. -/
+abbrev ParDeclDiamond (E : DeclEnv) : Prop :=
+  ∀ {n : Nat} {s t₁ t₂ : PureTm n},
+    ParRedDecl E s t₁ →
+    ParRedDecl E s t₂ →
+    ∃ u, ParRedDecl E t₁ u ∧ ParRedDecl E t₂ u
+
+theorem redStarDecl_to_parStarDecl {E : DeclEnv} {t u : PureTm n} (h : RedStarDecl E t u) :
+    ParStarDecl E t u := by
+  induction h with
+  | refl =>
+      exact Relation.ReflTransGen.refl
+  | tail hxy hyz ih =>
+      exact Relation.ReflTransGen.tail ih (redDecl_to_parDecl hyz)
+
+theorem parStarDecl_to_redStarDecl {E : DeclEnv} {t u : PureTm n} (h : ParStarDecl E t u) :
+    RedStarDecl E t u := by
+  induction h with
+  | refl =>
+      exact Relation.ReflTransGen.refl
+  | tail hxy hyz ih =>
+      exact Relation.ReflTransGen.trans ih (parDecl_to_redStarDecl hyz)
+
+
+/-- Parallel-star confluence follows from a local diamond for declaration-aware
+parallel reduction. This isolates the remaining work for value-bearing
+environments to the `ParRedDecl` layer. -/
+theorem parStarDecl_confluence_of_parDecl_diamond {E : DeclEnv}
+    (hdiamond : ParDeclDiamond E)
+    {s t₁ t₂ : PureTm n}
+    (h₁ : ParStarDecl E s t₁)
+    (h₂ : ParStarDecl E s t₂) :
+    ∃ u, ParStarDecl E t₁ u ∧ ParStarDecl E t₂ u := by
+  have hlocal :
+      ∀ (a b c : PureTm n),
+        ParRedDecl E a b →
+        ParRedDecl E a c →
+        ∃ d : PureTm n,
+          Relation.ReflGen (ParRedDecl E) b d ∧
+            Relation.ReflTransGen (ParRedDecl E) c d := by
+    intro a b c hab hac
+    rcases hdiamond hab hac with ⟨d, hbd, hcd⟩
+    exact ⟨d, Relation.ReflGen.single hbd,
+      Relation.ReflTransGen.tail Relation.ReflTransGen.refl hcd⟩
+  rcases Relation.church_rosser (r := ParRedDecl E) hlocal h₁ h₂ with ⟨u, hu₁, hu₂⟩
+  exact ⟨u, hu₁, hu₂⟩
+
+theorem redStarDecl_confluence_of_parDecl_diamond {E : DeclEnv}
+    (hdiamond : ParDeclDiamond E)
+    {s t₁ t₂ : PureTm n}
+    (h₁ : RedStarDecl E s t₁)
+    (h₂ : RedStarDecl E s t₂) :
+    ∃ u, RedStarDecl E t₁ u ∧ RedStarDecl E t₂ u := by
+  rcases parStarDecl_confluence_of_parDecl_diamond
+      (E := E) hdiamond
+      (redStarDecl_to_parStarDecl h₁)
+      (redStarDecl_to_parStarDecl h₂) with
+    ⟨u, hu₁, hu₂⟩
+  exact ⟨u, parStarDecl_to_redStarDecl hu₁, parStarDecl_to_redStarDecl hu₂⟩
+
+/-- Generic Church-Rosser bridge from declaration-aware parallel diamond to the
+declaration conversion relation. This is the reusable scaffold for the future
+value-bearing confluence theorem. -/
+theorem declChurchRosser_of_parDecl_diamond {E : DeclEnv}
+    (hdiamond : ParDeclDiamond E) :
+    DeclChurchRosser E := by
+  intro n s t h
+  refine Relation.EqvGen.rec ?hrel ?hrefl ?hsymm ?htrans h
+  · intro a b hred
+    exact ⟨b, redDecl_to_star hred, RedStarDecl.refl _⟩
+  · intro a
+    exact ⟨a, RedStarDecl.refl _, RedStarDecl.refl _⟩
+  · intro a b _ ih
+    rcases ih with ⟨u, ha, hb⟩
+    exact ⟨u, hb, ha⟩
+  · intro a b c _ _ ihab ihbc
+    rcases ihab with ⟨u₁, ha_u₁, hb_u₁⟩
+    rcases ihbc with ⟨u₂, hb_u₂, hc_u₂⟩
+    rcases redStarDecl_confluence_of_parDecl_diamond (E := E) hdiamond hb_u₁ hb_u₂ with
+      ⟨w, hu₁_w, hu₂_w⟩
+    exact ⟨w, RedStarDecl.trans ha_u₁ hu₁_w, RedStarDecl.trans hc_u₂ hu₂_w⟩
+
+theorem parDecl_to_core_of_no_values {E : DeclEnv}
+    (hNone : ∀ c : DeclName, valueOf? E c = none)
+    {t u : PureTm n} (h : ParRedDecl E t u) :
+    ParRed t u := by
+  induction h with
+  | var i =>
+      exact .var i
+  | const c =>
+      exact .const c
+  | u0 =>
+      exact .u0
+  | u1 =>
+      exact .u1
+  | @deltaConst _ c _ hVal =>
+      exfalso
+      have : valueOf? E c = none := hNone c
+      simp [this] at hVal
+  | pi hA hB ihA ihB =>
+      exact .pi ihA ihB
+  | sigma hA hB ihA ihB =>
+      exact .sigma ihA ihB
+  | id hA ha hb ihA iha ihb =>
+      exact .id ihA iha ihb
+  | lam hb ih =>
+      exact .lam ih
+  | app hf ha ihf iha =>
+      exact .app ihf iha
+  | pair ha hb iha ihb =>
+      exact .pair iha ihb
+  | fst hp ih =>
+      exact .fst ih
+  | snd hp ih =>
+      exact .snd ih
+  | refl ha ih =>
+      exact .refl ih
+  | betaPi hbody ha ihbody iha =>
+      exact .betaPi ihbody iha
+  | betaSigmaFst ha hb iha ihb =>
+      exact .betaSigmaFst iha ihb
+  | betaSigmaSnd ha hb iha ihb =>
+      exact .betaSigmaSnd iha ihb
+
+theorem parDecl_to_cdev_of_no_values {E : DeclEnv}
+    (hNone : ∀ c : DeclName, valueOf? E c = none)
+    {t u : PureTm n} (h : ParRedDecl E t u) :
+    ParRedDecl E u (Mettapedia.Languages.MeTTa.PureKernel.Confluence.cdev t) :=
+  parDecl_core <|
+    Mettapedia.Languages.MeTTa.PureKernel.Confluence.par_to_cdev <|
+      parDecl_to_core_of_no_values hNone h
+
+theorem diamond_parRedDecl_of_no_values {E : DeclEnv}
+    (hNone : ∀ c : DeclName, valueOf? E c = none)
+    {s t₁ t₂ : PureTm n}
+    (h₁ : ParRedDecl E s t₁) (h₂ : ParRedDecl E s t₂) :
+    ∃ u, ParRedDecl E t₁ u ∧ ParRedDecl E t₂ u :=
+  ⟨ Mettapedia.Languages.MeTTa.PureKernel.Confluence.cdev s
+  , parDecl_to_cdev_of_no_values hNone h₁
+  , parDecl_to_cdev_of_no_values hNone h₂ ⟩
 
 theorem conv_core_to_decl {E : DeclEnv} {t u : PureTm n} (h : Conv t u) :
     ConvDecl E t u := by
@@ -72,6 +593,362 @@ theorem conv_core_to_decl {E : DeclEnv} {t u : PureTm n} (h : Conv t u) :
       exact .symm _ _ ih
   | trans x y z hxy hyz ihxy ihyz =>
       exact .trans _ _ _ ihxy ihyz
+
+theorem red_core_to_decl {E : DeclEnv} {t u : PureTm n} (h : Red t u) :
+    RedDecl E t u :=
+  .core h
+
+theorem redStar_core_to_decl {E : DeclEnv} {t u : PureTm n} (h : RedStar t u) :
+    RedStarDecl E t u := by
+  induction h with
+  | refl =>
+      exact Relation.ReflTransGen.refl
+  | tail hxy hyz ih =>
+      exact .tail ih (.core hyz)
+
+theorem redDecl_to_core_of_no_values {E : DeclEnv}
+    (hNone : ∀ c : DeclName, valueOf? E c = none)
+    {t u : PureTm n} (h : RedDecl E t u) :
+    Red t u := by
+  induction h with
+  | core hred =>
+      exact hred
+  | @deltaConst _ c _ hVal =>
+      exfalso
+      have : valueOf? E c = none := hNone c
+      simp [this] at hVal
+  | congPiDom _ ih =>
+      exact .congPiDom ih
+  | congPiCod _ ih =>
+      exact .congPiCod ih
+  | congSigmaDom _ ih =>
+      exact .congSigmaDom ih
+  | congSigmaCod _ ih =>
+      exact .congSigmaCod ih
+  | congIdTy _ ih =>
+      exact .congIdTy ih
+  | congIdLeft _ ih =>
+      exact .congIdLeft ih
+  | congIdRight _ ih =>
+      exact .congIdRight ih
+  | congLam _ ih =>
+      exact .congLam ih
+  | congAppFun _ ih =>
+      exact .congAppFun ih
+  | congAppArg _ ih =>
+      exact .congAppArg ih
+  | congPairFst _ ih =>
+      exact .congPairFst ih
+  | congPairSnd _ ih =>
+      exact .congPairSnd ih
+  | congFst _ ih =>
+      exact .congFst ih
+  | congSnd _ ih =>
+      exact .congSnd ih
+  | congRefl _ ih =>
+      exact .congRefl ih
+
+theorem redStarDecl_to_core_of_no_values {E : DeclEnv}
+    (hNone : ∀ c : DeclName, valueOf? E c = none)
+    {t u : PureTm n} (h : RedStarDecl E t u) :
+    RedStar t u := by
+  induction h with
+  | refl =>
+      exact .refl _
+  | tail hxy hyz ih =>
+      exact .tail ih (redDecl_to_core_of_no_values hNone hyz)
+
+theorem convDecl_to_core_of_no_values {E : DeclEnv}
+    (hNone : ∀ c : DeclName, valueOf? E c = none)
+    {t u : PureTm n} (h : ConvDecl E t u) :
+    Conv t u := by
+  induction h with
+  | rel x y hred =>
+      exact .rel _ _ (redDecl_to_core_of_no_values hNone hred)
+  | refl x =>
+      exact .refl x
+  | symm x y hxy ih =>
+      exact .symm _ _ ih
+  | trans x y z hxy hyz ihxy ihyz =>
+      exact .trans _ _ _ ihxy ihyz
+
+private theorem redDecl_pi_head {E : DeclEnv} {A : PureTm n} {B : PureTm (n + 1)}
+    {t : PureTm n} (h : RedDecl E (.pi A B) t) :
+    ∃ (A' : PureTm n) (B' : PureTm (n + 1)), t = .pi A' B' := by
+  cases h with
+  | core hred =>
+      cases hred with
+      | congPiDom _ =>
+          exact ⟨_, _, rfl⟩
+      | congPiCod _ =>
+          exact ⟨_, _, rfl⟩
+  | congPiDom _ =>
+      exact ⟨_, _, rfl⟩
+  | congPiCod _ =>
+      exact ⟨_, _, rfl⟩
+
+private theorem redDecl_sigma_head {E : DeclEnv} {A : PureTm n} {B : PureTm (n + 1)}
+    {t : PureTm n} (h : RedDecl E (.sigma A B) t) :
+    ∃ (A' : PureTm n) (B' : PureTm (n + 1)), t = .sigma A' B' := by
+  cases h with
+  | core hred =>
+      cases hred with
+      | congSigmaDom _ =>
+          exact ⟨_, _, rfl⟩
+      | congSigmaCod _ =>
+          exact ⟨_, _, rfl⟩
+  | congSigmaDom _ =>
+      exact ⟨_, _, rfl⟩
+  | congSigmaCod _ =>
+      exact ⟨_, _, rfl⟩
+
+theorem redStarDecl_pi_head {E : DeclEnv} {A : PureTm n} {B : PureTm (n + 1)}
+    {t : PureTm n} (h : RedStarDecl E (.pi A B) t) :
+    ∃ (A' : PureTm n) (B' : PureTm (n + 1)), t = .pi A' B' := by
+  induction h with
+  | refl =>
+      exact ⟨A, B, rfl⟩
+  | tail hxy hyz ih =>
+      rcases ih with ⟨Am, Bm, hm⟩
+      subst hm
+      exact redDecl_pi_head hyz
+
+theorem redStarDecl_sigma_head {E : DeclEnv} {A : PureTm n} {B : PureTm (n + 1)}
+    {t : PureTm n} (h : RedStarDecl E (.sigma A B) t) :
+    ∃ (A' : PureTm n) (B' : PureTm (n + 1)), t = .sigma A' B' := by
+  induction h with
+  | refl =>
+      exact ⟨A, B, rfl⟩
+  | tail hxy hyz ih =>
+      rcases ih with ⟨Am, Bm, hm⟩
+      subst hm
+      exact redDecl_sigma_head hyz
+
+private theorem redStarDecl_pi_decomp_full {E : DeclEnv} {A : PureTm n} {B : PureTm (n + 1)}
+    {t : PureTm n} (h : RedStarDecl E (.pi A B) t) :
+    ∃ (A' : PureTm n) (B' : PureTm (n + 1)), t = .pi A' B' ∧
+      RedStarDecl E A A' ∧ RedStarDecl E B B' := by
+  induction h with
+  | refl =>
+      exact ⟨A, B, rfl, Relation.ReflTransGen.refl, Relation.ReflTransGen.refl⟩
+  | tail hxy hyz ih =>
+      rcases ih with ⟨Am, Bm, hm, hA, hB⟩
+      subst hm
+      cases hyz with
+      | core hred =>
+          cases hred with
+          | congPiDom hAstep =>
+              exact ⟨_, _, rfl, .tail hA (.core hAstep), hB⟩
+          | congPiCod hBstep =>
+              exact ⟨_, _, rfl, hA, .tail hB (.core hBstep)⟩
+      | congPiDom hAstep =>
+          exact ⟨_, _, rfl, .tail hA hAstep, hB⟩
+      | congPiCod hBstep =>
+          exact ⟨_, _, rfl, hA, .tail hB hBstep⟩
+
+theorem redStarDecl_pi_decomp {E : DeclEnv} {A A' : PureTm n} {B B' : PureTm (n + 1)}
+    (h : RedStarDecl E (.pi A B) (.pi A' B')) :
+    RedStarDecl E A A' ∧ RedStarDecl E B B' := by
+  rcases redStarDecl_pi_decomp_full h with ⟨A₁, B₁, ht, hA, hB⟩
+  simp at ht
+  obtain ⟨rfl, rfl⟩ := ht
+  exact ⟨hA, hB⟩
+
+private theorem redStarDecl_sigma_decomp_full {E : DeclEnv} {A : PureTm n} {B : PureTm (n + 1)}
+    {t : PureTm n} (h : RedStarDecl E (.sigma A B) t) :
+    ∃ (A' : PureTm n) (B' : PureTm (n + 1)), t = .sigma A' B' ∧
+      RedStarDecl E A A' ∧ RedStarDecl E B B' := by
+  induction h with
+  | refl =>
+      exact ⟨A, B, rfl, Relation.ReflTransGen.refl, Relation.ReflTransGen.refl⟩
+  | tail hxy hyz ih =>
+      rcases ih with ⟨Am, Bm, hm, hA, hB⟩
+      subst hm
+      cases hyz with
+      | core hred =>
+          cases hred with
+          | congSigmaDom hAstep =>
+              exact ⟨_, _, rfl, .tail hA (.core hAstep), hB⟩
+          | congSigmaCod hBstep =>
+              exact ⟨_, _, rfl, hA, .tail hB (.core hBstep)⟩
+      | congSigmaDom hAstep =>
+          exact ⟨_, _, rfl, .tail hA hAstep, hB⟩
+      | congSigmaCod hBstep =>
+          exact ⟨_, _, rfl, hA, .tail hB hBstep⟩
+
+theorem redStarDecl_sigma_decomp {E : DeclEnv} {A A' : PureTm n} {B B' : PureTm (n + 1)}
+    (h : RedStarDecl E (.sigma A B) (.sigma A' B')) :
+    RedStarDecl E A A' ∧ RedStarDecl E B B' := by
+  rcases redStarDecl_sigma_decomp_full h with ⟨A₁, B₁, ht, hA, hB⟩
+  simp at ht
+  obtain ⟨rfl, rfl⟩ := ht
+  exact ⟨hA, hB⟩
+
+theorem redStarDecl_confluence_of_no_values {E : DeclEnv}
+    (hNone : ∀ c : DeclName, valueOf? E c = none)
+    {s t₁ t₂ : PureTm n}
+    (h₁ : RedStarDecl E s t₁) (h₂ : RedStarDecl E s t₂) :
+    ∃ u, RedStarDecl E t₁ u ∧ RedStarDecl E t₂ u := by
+  have h₁core : RedStar s t₁ := redStarDecl_to_core_of_no_values hNone h₁
+  have h₂core : RedStar s t₂ := redStarDecl_to_core_of_no_values hNone h₂
+  rcases Mettapedia.Languages.MeTTa.PureKernel.Confluence.redStar_confluence h₁core h₂core with
+    ⟨u, hu₁, hu₂⟩
+  exact ⟨u, redStar_core_to_decl hu₁, redStar_core_to_decl hu₂⟩
+
+theorem church_rosser_convDecl_of_no_values {E : DeclEnv}
+    (hNone : ∀ c : DeclName, valueOf? E c = none)
+    {s t : PureTm n} (h : ConvDecl E s t) :
+    ∃ u, RedStarDecl E s u ∧ RedStarDecl E t u := by
+  exact declChurchRosser_of_parDecl_diamond
+    (E := E)
+    (hdiamond := by
+      intro n s t₁ t₂ h₁ h₂
+      exact diamond_parRedDecl_of_no_values hNone h₁ h₂)
+    h
+
+theorem declChurchRosser_of_no_values {E : DeclEnv}
+    (hNone : ∀ c : DeclName, valueOf? E c = none) :
+    DeclChurchRosser E :=
+  church_rosser_convDecl_of_no_values hNone
+
+theorem pi_injectivity_decl_of_church_rosser {E : DeclEnv}
+    (hCR : DeclChurchRosser E)
+    {A A' : PureTm n} {B B' : PureTm (n + 1)}
+    (h : ConvDecl E (.pi A B) (.pi A' B')) :
+    ConvDecl E A A' ∧ ConvDecl E B B' := by
+  rcases hCR h with ⟨u, h₁, h₂⟩
+  rcases redStarDecl_pi_head h₁ with ⟨U, V, hu⟩
+  have h₂' : RedStarDecl E (.pi A' B') (.pi U V) := by
+    simpa [hu] using h₂
+  have h₁' : RedStarDecl E (.pi A B) (.pi U V) := by
+    simpa [hu] using h₁
+  have hdec₁ := redStarDecl_pi_decomp h₁'
+  have hdec₂ := redStarDecl_pi_decomp h₂'
+  have hAU : ConvDecl E A U := redStarDecl_implies_conv hdec₁.1
+  have hA'U : ConvDecl E A' U := redStarDecl_implies_conv hdec₂.1
+  have hBV : ConvDecl E B V := redStarDecl_implies_conv hdec₁.2
+  have hB'V : ConvDecl E B' V := redStarDecl_implies_conv hdec₂.2
+  have hUA' : ConvDecl E U A' := Relation.EqvGen.symm _ _ hA'U
+  have hVB' : ConvDecl E V B' := Relation.EqvGen.symm _ _ hB'V
+  exact
+    ⟨Relation.EqvGen.trans _ _ _ hAU hUA', Relation.EqvGen.trans _ _ _ hBV hVB'⟩
+
+theorem sigma_injectivity_decl_of_church_rosser {E : DeclEnv}
+    (hCR : DeclChurchRosser E)
+    {A A' : PureTm n} {B B' : PureTm (n + 1)}
+    (h : ConvDecl E (.sigma A B) (.sigma A' B')) :
+    ConvDecl E A A' ∧ ConvDecl E B B' := by
+  rcases hCR h with ⟨u, h₁, h₂⟩
+  rcases redStarDecl_sigma_head h₁ with ⟨U, V, hu⟩
+  have h₂' : RedStarDecl E (.sigma A' B') (.sigma U V) := by
+    simpa [hu] using h₂
+  have h₁' : RedStarDecl E (.sigma A B) (.sigma U V) := by
+    simpa [hu] using h₁
+  have hdec₁ := redStarDecl_sigma_decomp h₁'
+  have hdec₂ := redStarDecl_sigma_decomp h₂'
+  have hAU : ConvDecl E A U := redStarDecl_implies_conv hdec₁.1
+  have hA'U : ConvDecl E A' U := redStarDecl_implies_conv hdec₂.1
+  have hBV : ConvDecl E B V := redStarDecl_implies_conv hdec₁.2
+  have hB'V : ConvDecl E B' V := redStarDecl_implies_conv hdec₂.2
+  have hUA' : ConvDecl E U A' := Relation.EqvGen.symm _ _ hA'U
+  have hVB' : ConvDecl E V B' := Relation.EqvGen.symm _ _ hB'V
+  exact
+    ⟨Relation.EqvGen.trans _ _ _ hAU hUA', Relation.EqvGen.trans _ _ _ hBV hVB'⟩
+
+theorem convDecl_to_cdev_of_no_values {E : DeclEnv}
+    (_hNone : ∀ c : DeclName, valueOf? E c = none)
+    (t : PureTm n) :
+    ConvDecl E t (Mettapedia.Languages.MeTTa.PureKernel.Confluence.cdev t) :=
+  conv_core_to_decl (Mettapedia.Languages.MeTTa.PureKernel.conv_to_cdev t)
+
+theorem convDecl_of_cdev_eq_of_no_values {E : DeclEnv}
+    (_hNone : ∀ c : DeclName, valueOf? E c = none)
+    {A B : PureTm n}
+    (h : Mettapedia.Languages.MeTTa.PureKernel.Confluence.cdev A =
+        Mettapedia.Languages.MeTTa.PureKernel.Confluence.cdev B) :
+    ConvDecl E A B := by
+  exact conv_core_to_decl
+    (Mettapedia.Languages.MeTTa.PureKernel.conv_of_cdev_eq h)
+
+structure DefEqDeclWitness (E : DeclEnv) (A B : PureTm n) : Type where
+  conv : ConvDecl E A B
+
+def defEqByNormalizationDeclOfNoValues?
+    (E : DeclEnv)
+    (hNone : ∀ c : DeclName, valueOf? E c = none)
+    (A B : PureTm n) : Option (DefEqDeclWitness E A B) :=
+  if h :
+      Mettapedia.Languages.MeTTa.PureKernel.Confluence.cdev A =
+        Mettapedia.Languages.MeTTa.PureKernel.Confluence.cdev B then
+    some ⟨convDecl_of_cdev_eq_of_no_values hNone h⟩
+  else
+    none
+
+theorem defEqByNormalizationDeclOfNoValues?_sound
+    {E : DeclEnv}
+    (hNone : ∀ c : DeclName, valueOf? E c = none)
+    {A B : PureTm n} {w : DefEqDeclWitness E A B}
+    (h : defEqByNormalizationDeclOfNoValues? E hNone A B = some w) :
+    ConvDecl E A B := by
+  unfold defEqByNormalizationDeclOfNoValues? at h
+  split at h
+  · cases h
+    exact w.conv
+  · simp at h
+
+theorem defEqByNormalizationDeclOfNoValues?_ne_none_implies_conv
+    {E : DeclEnv}
+    (hNone : ∀ c : DeclName, valueOf? E c = none)
+    {A B : PureTm n}
+    (h : defEqByNormalizationDeclOfNoValues? E hNone A B ≠ none) :
+    ConvDecl E A B := by
+  by_cases hEq :
+      Mettapedia.Languages.MeTTa.PureKernel.Confluence.cdev A =
+        Mettapedia.Languages.MeTTa.PureKernel.Confluence.cdev B
+  · exact convDecl_of_cdev_eq_of_no_values hNone hEq
+  · exfalso
+    exact h (by simp [defEqByNormalizationDeclOfNoValues?, hEq])
+
+theorem parDecl_monotone {Epre Efull : DeclEnv}
+    (hExt : Extends Epre Efull)
+    {t u : PureTm n}
+    (h : ParRedDecl Epre t u) :
+    ParRedDecl Efull t u := by
+  induction h with
+  | var i =>
+      exact .var i
+  | const c =>
+      exact .const c
+  | u0 =>
+      exact .u0
+  | u1 =>
+      exact .u1
+  | deltaConst hVal =>
+      exact .deltaConst (Extends.valueOf hExt hVal)
+  | pi hA hB ihA ihB =>
+      exact .pi ihA ihB
+  | sigma hA hB ihA ihB =>
+      exact .sigma ihA ihB
+  | id hA ha hb ihA iha ihb =>
+      exact .id ihA iha ihb
+  | lam hb ih =>
+      exact .lam ih
+  | app hf ha ihf iha =>
+      exact .app ihf iha
+  | pair ha hb iha ihb =>
+      exact .pair iha ihb
+  | fst hp ih =>
+      exact .fst ih
+  | snd hp ih =>
+      exact .snd ih
+  | refl ha ih =>
+      exact .refl ih
+  | betaPi hbody ha ihbody iha =>
+      exact .betaPi ihbody iha
+  | betaSigmaFst ha hb iha ihb =>
+      exact .betaSigmaFst iha ihb
+  | betaSigmaSnd ha hb iha ihb =>
+      exact .betaSigmaSnd iha ihb
 
 theorem redDecl_monotone {Epre Efull : DeclEnv}
     (hExt : Extends Epre Efull)
@@ -113,6 +990,17 @@ theorem redDecl_monotone {Epre Efull : DeclEnv}
       exact .congSnd ih
   | congRefl hred ih =>
       exact .congRefl ih
+
+theorem redStarDecl_monotone {Epre Efull : DeclEnv}
+    (hExt : Extends Epre Efull)
+    {t u : PureTm n}
+    (h : RedStarDecl Epre t u) :
+    RedStarDecl Efull t u := by
+  induction h with
+  | refl =>
+      exact .refl _
+  | tail hxy hyz ih =>
+      exact .tail ih (redDecl_monotone hExt hyz)
 
 theorem convDecl_monotone {Epre Efull : DeclEnv}
     (hExt : Extends Epre Efull)
@@ -225,6 +1113,263 @@ private theorem subst_vars_eq_rename (ρ : Ren n m) (t : PureTm n) :
           intro i
           nomatch i
     _ = rename ρ0 t := subst_vars_eq_rename ρ0 t
+
+theorem parDecl_subst {E : DeclEnv} {n m : Nat} {σ σ' : Sub n m}
+    (hσ : ∀ i, ParRedDecl E (σ i) (σ' i))
+    {t u : PureTm n} (h : ParRedDecl E t u) :
+    ParRedDecl E (subst σ t) (subst σ' u) := by
+  induction h generalizing m with
+  | var i =>
+      exact hσ i
+  | const c =>
+      exact .const c
+  | u0 =>
+      exact .u0
+  | u1 =>
+      exact .u1
+  | @deltaConst _ c v hVal =>
+      have hdelta : ParRedDecl E ((.const c : PureTm m)) (liftClosed (n := m) v) := .deltaConst hVal
+      simpa [subst, subst_liftClosed] using hdelta
+  | pi hA hB ihA ihB =>
+      have hσlift : ∀ i, ParRedDecl E (liftSub σ i) (liftSub σ' i) := by
+        intro i
+        refine Fin.cases ?_ ?_ i
+        · exact .var 0
+        · intro j
+          simpa [liftSub] using parDecl_rename (E := E) (ρ := wk) (hσ j)
+      simpa [subst] using .pi (ihA hσ) (ihB hσlift)
+  | sigma hA hB ihA ihB =>
+      have hσlift : ∀ i, ParRedDecl E (liftSub σ i) (liftSub σ' i) := by
+        intro i
+        refine Fin.cases ?_ ?_ i
+        · exact .var 0
+        · intro j
+          simpa [liftSub] using parDecl_rename (E := E) (ρ := wk) (hσ j)
+      simpa [subst] using .sigma (ihA hσ) (ihB hσlift)
+  | id hA ha hb ihA iha ihb =>
+      simpa [subst] using .id (ihA hσ) (iha hσ) (ihb hσ)
+  | lam hb ih =>
+      have hσlift : ∀ i, ParRedDecl E (liftSub σ i) (liftSub σ' i) := by
+        intro i
+        refine Fin.cases ?_ ?_ i
+        · exact .var 0
+        · intro j
+          simpa [liftSub] using parDecl_rename (E := E) (ρ := wk) (hσ j)
+      simpa [subst] using .lam (ih hσlift)
+  | app hf ha ihf iha =>
+      simpa [subst] using .app (ihf hσ) (iha hσ)
+  | pair ha hb iha ihb =>
+      simpa [subst] using .pair (iha hσ) (ihb hσ)
+  | fst hp ih =>
+      simpa [subst] using .fst (ih hσ)
+  | snd hp ih =>
+      simpa [subst] using .snd (ih hσ)
+  | refl ha ih =>
+      simpa [subst] using .refl (ih hσ)
+  | betaPi hbody ha ihbody iha =>
+      have hσlift : ∀ i, ParRedDecl E (liftSub σ i) (liftSub σ' i) := by
+        intro i
+        refine Fin.cases ?_ ?_ i
+        · exact .var 0
+        · intro j
+          simpa [liftSub] using parDecl_rename (E := E) (ρ := wk) (hσ j)
+      simpa [subst, subst_inst0] using (ParRedDecl.betaPi (ihbody hσlift) (iha hσ))
+  | betaSigmaFst ha hb iha ihb =>
+      simpa [subst] using (ParRedDecl.betaSigmaFst (iha hσ) (ihb hσ))
+  | betaSigmaSnd ha hb iha ihb =>
+      simpa [subst] using (ParRedDecl.betaSigmaSnd (iha hσ) (ihb hσ))
+
+theorem parDecl_inst0 {E : DeclEnv} {a a' : PureTm n} {b b' : PureTm (n + 1)}
+    (ha : ParRedDecl E a a') (hb : ParRedDecl E b b') :
+    ParRedDecl E (inst0 a b) (inst0 a' b') := by
+  have hσ : ∀ i, ParRedDecl E (subst0 a i) (subst0 a' i) := by
+    intro i
+    refine Fin.cases ?_ ?_ i
+    · simpa using ha
+    · intro j
+      exact .var j
+  simpa [inst0] using (parDecl_subst (E := E) (σ := subst0 a) (σ' := subst0 a') hσ hb)
+
+/-- Declaration-aware parallel reduction always reaches declaration complete
+development. This is the local diamond keystone for value-bearing environments:
+the only new overlap relative to core parallel reduction is `const` versus
+`δ`-unfolding, and the chosen `cdevDecl` target resolves that branch in one
+more declaration-parallel step. -/
+theorem parDecl_to_cdev {E : DeclEnv} :
+    ∀ {t u : PureTm n}, ParRedDecl E t u → ParRedDecl E u (cdevDecl E t) := by
+  intro t u h
+  induction h with
+  | var i =>
+      simp [cdevDecl]
+  | const c =>
+      simp [cdevDecl]
+      split
+      · rename_i v hVal
+        exact .deltaConst hVal
+      · exact .const c
+  | u0 =>
+      simp [cdevDecl]
+  | u1 =>
+      simp [cdevDecl]
+  | @deltaConst _ c v hVal =>
+      simp [cdevDecl, hVal]
+  | pi hA hB ihA ihB =>
+      simpa [cdevDecl] using ParRedDecl.pi ihA ihB
+  | sigma hA hB ihA ihB =>
+      simpa [cdevDecl] using ParRedDecl.sigma ihA ihB
+  | id hA ha hb ihA iha ihb =>
+      simpa [cdevDecl] using ParRedDecl.id ihA iha ihb
+  | lam hb ih =>
+      simpa [cdevDecl] using ParRedDecl.lam ih
+  | @app _ f f' a a' hf ha ihf iha =>
+      cases f with
+      | var i =>
+          simpa [cdevDecl] using ParRedDecl.app ihf iha
+      | const c =>
+          simpa [cdevDecl] using ParRedDecl.app ihf iha
+      | u0 =>
+          simpa [cdevDecl] using ParRedDecl.app ihf iha
+      | u1 =>
+          simpa [cdevDecl] using ParRedDecl.app ihf iha
+      | pi A B =>
+          simpa [cdevDecl] using ParRedDecl.app ihf iha
+      | sigma A B =>
+          simpa [cdevDecl] using ParRedDecl.app ihf iha
+      | id A a b =>
+          simpa [cdevDecl] using ParRedDecl.app ihf iha
+      | lam b =>
+          cases hf with
+          | lam hb =>
+              cases ihf with
+              | lam hbc =>
+                  simpa [cdevDecl] using (ParRedDecl.betaPi hbc iha)
+      | app f a =>
+          simpa [cdevDecl] using ParRedDecl.app ihf iha
+      | pair a b =>
+          simpa [cdevDecl] using ParRedDecl.app ihf iha
+      | fst p =>
+          simpa [cdevDecl] using ParRedDecl.app ihf iha
+      | snd p =>
+          simpa [cdevDecl] using ParRedDecl.app ihf iha
+      | refl a =>
+          simpa [cdevDecl] using ParRedDecl.app ihf iha
+  | pair ha hb iha ihb =>
+      simpa [cdevDecl] using ParRedDecl.pair iha ihb
+  | @fst _ p p' hp ih =>
+      cases p with
+      | var i =>
+          simpa [cdevDecl] using ParRedDecl.fst ih
+      | const c =>
+          simpa [cdevDecl] using ParRedDecl.fst ih
+      | u0 =>
+          simpa [cdevDecl] using ParRedDecl.fst ih
+      | u1 =>
+          simpa [cdevDecl] using ParRedDecl.fst ih
+      | pi A B =>
+          simpa [cdevDecl] using ParRedDecl.fst ih
+      | sigma A B =>
+          simpa [cdevDecl] using ParRedDecl.fst ih
+      | id A a b =>
+          simpa [cdevDecl] using ParRedDecl.fst ih
+      | lam b =>
+          simpa [cdevDecl] using ParRedDecl.fst ih
+      | app f a =>
+          simpa [cdevDecl] using ParRedDecl.fst ih
+      | pair a b =>
+          cases hp with
+          | pair ha hb =>
+              cases ih with
+              | pair ha' hb' =>
+                  simpa [cdevDecl] using (ParRedDecl.betaSigmaFst ha' hb')
+      | fst q =>
+          simpa [cdevDecl] using ParRedDecl.fst ih
+      | snd q =>
+          simpa [cdevDecl] using ParRedDecl.fst ih
+      | refl a =>
+          simpa [cdevDecl] using ParRedDecl.fst ih
+  | @snd _ p p' hp ih =>
+      cases p with
+      | var i =>
+          simpa [cdevDecl] using ParRedDecl.snd ih
+      | const c =>
+          simpa [cdevDecl] using ParRedDecl.snd ih
+      | u0 =>
+          simpa [cdevDecl] using ParRedDecl.snd ih
+      | u1 =>
+          simpa [cdevDecl] using ParRedDecl.snd ih
+      | pi A B =>
+          simpa [cdevDecl] using ParRedDecl.snd ih
+      | sigma A B =>
+          simpa [cdevDecl] using ParRedDecl.snd ih
+      | id A a b =>
+          simpa [cdevDecl] using ParRedDecl.snd ih
+      | lam b =>
+          simpa [cdevDecl] using ParRedDecl.snd ih
+      | app f a =>
+          simpa [cdevDecl] using ParRedDecl.snd ih
+      | pair a b =>
+          cases hp with
+          | pair ha hb =>
+              cases ih with
+              | pair ha' hb' =>
+                  simpa [cdevDecl] using (ParRedDecl.betaSigmaSnd ha' hb')
+      | fst q =>
+          simpa [cdevDecl] using ParRedDecl.snd ih
+      | snd q =>
+          simpa [cdevDecl] using ParRedDecl.snd ih
+      | refl a =>
+          simpa [cdevDecl] using ParRedDecl.snd ih
+  | refl ha iha =>
+      simpa [cdevDecl] using ParRedDecl.refl iha
+  | betaPi hbody ha ihbody iha =>
+      simpa [cdevDecl] using parDecl_inst0 iha ihbody
+  | betaSigmaFst ha hb iha ihb =>
+      simpa [cdevDecl] using iha
+  | betaSigmaSnd ha hb iha ihb =>
+      simpa [cdevDecl] using ihb
+
+/-- Diamond property for declaration-aware parallel reduction via declaration
+complete development. This is the actual declaration-level Church-Rosser
+keystone: it handles value-bearing `δ`-environments without appealing to the
+false structural ConvDecl-injectivity route. -/
+theorem diamond_parRedDecl {E : DeclEnv} {s t₁ t₂ : PureTm n}
+    (h₁ : ParRedDecl E s t₁) (h₂ : ParRedDecl E s t₂) :
+    ∃ u, ParRedDecl E t₁ u ∧ ParRedDecl E t₂ u :=
+  ⟨cdevDecl E s, parDecl_to_cdev h₁, parDecl_to_cdev h₂⟩
+
+/-- Church-Rosser for declaration conversion, discharged generically via the
+declaration-parallel diamond. This is the delta-aware confluence route that
+legitimately yields declaration-side Pi/Sigma injectivity. -/
+theorem church_rosser_convDecl {E : DeclEnv}
+    {s t : PureTm n} (h : ConvDecl E s t) :
+    ∃ u, RedStarDecl E s u ∧ RedStarDecl E t u := by
+  exact declChurchRosser_of_parDecl_diamond
+    (E := E)
+    (hdiamond := by
+      intro n s t₁ t₂ h₁ h₂
+      exact diamond_parRedDecl h₁ h₂)
+    h
+
+theorem declChurchRosser {E : DeclEnv} : DeclChurchRosser E :=
+  church_rosser_convDecl
+
+theorem pi_injectivity_decl {E : DeclEnv}
+    {A A' : PureTm n} {B B' : PureTm (n + 1)}
+    (h : ConvDecl E (.pi A B) (.pi A' B')) :
+    ConvDecl E A A' ∧ ConvDecl E B B' := by
+  exact pi_injectivity_decl_of_church_rosser
+    (E := E)
+    (hCR := declChurchRosser)
+    h
+
+theorem sigma_injectivity_decl {E : DeclEnv}
+    {A A' : PureTm n} {B B' : PureTm (n + 1)}
+    (h : ConvDecl E (.sigma A B) (.sigma A' B')) :
+    ConvDecl E A A' ∧ ConvDecl E B B' := by
+  exact sigma_injectivity_decl_of_church_rosser
+    (E := E)
+    (hCR := declChurchRosser)
+    h
 
 theorem redDecl_subst {E : DeclEnv} {t u : PureTm n} (h : RedDecl E t u) :
     ∀ {m : Nat} (σ : Sub n m), RedDecl E (subst σ t) (subst σ u) := by
@@ -670,6 +1815,27 @@ theorem hasType_core_to_decl {E : DeclEnv} {Γ : Ctx n} {t A : PureTm n}
       exact .refl_intro iha
   | conv ht hAB iht =>
       exact .conv iht (conv_core_to_decl hAB)
+
+theorem defEqByNormalizationDeclOfNoValues_not_complete {E : DeclEnv}
+    (hNone : ∀ c : DeclName, valueOf? E c = none) :
+    ∃ (Γ : Ctx 1) (t u A : PureTm 1),
+      HasTypeDecl E Γ t A ∧
+      HasTypeDecl E Γ u A ∧
+      ConvDecl E t u ∧
+      defEqByNormalizationDeclOfNoValues? E hNone t u = none := by
+  rcases Mettapedia.Languages.MeTTa.PureKernel.defEqByNormalization_not_complete with
+    ⟨Γ, t, u, A, ht, hu, hconv, hnone⟩
+  have hcdev :
+      Mettapedia.Languages.MeTTa.PureKernel.Confluence.cdev t ≠
+        Mettapedia.Languages.MeTTa.PureKernel.Confluence.cdev u := by
+    intro hEq
+    have hSome :
+        Mettapedia.Languages.MeTTa.PureKernel.defEqByNormalization? t u ≠ none := by
+      simp [Mettapedia.Languages.MeTTa.PureKernel.defEqByNormalization?, hEq]
+    exact hSome hnone
+  refine ⟨Γ, t, u, A, hasType_core_to_decl ht, hasType_core_to_decl hu,
+    conv_core_to_decl hconv, ?_⟩
+  simp [defEqByNormalizationDeclOfNoValues?, hcdev]
 
 /-- Typed context morphism for declaration-aware simultaneous substitution. -/
 def CtxMorDecl (E : DeclEnv) (Γ : Ctx n) (Δ : Ctx m) (σ : Sub n m) : Prop :=
@@ -1673,6 +2839,413 @@ theorem redStarDecl_preserves_type_of_injective
     (inst0ArgConv := inst0_arg_conv_decl)
     (hWf := hWf)
     ht hs
+
+theorem redDecl_step_preserves_type_of_church_rosser
+    {E : DeclEnv}
+    (hCR : DeclChurchRosser E)
+    (hWf : DeclEnvWellFormed E)
+    {Γ : Ctx n} {t t' A : PureTm n}
+    (ht : HasTypeDecl E Γ t A) (hr : RedDecl E t t') :
+    HasTypeDecl E Γ t' A := by
+  exact redDecl_step_preserves_type_of_injective
+    (E := E)
+    (piInjective := pi_injectivity_decl_of_church_rosser hCR)
+    (sigmaInjective := sigma_injectivity_decl_of_church_rosser hCR)
+    (hWf := hWf)
+    (ht := ht)
+    (hr := hr)
+
+theorem redDecl_step_preserves_type
+    {E : DeclEnv}
+    (hWf : DeclEnvWellFormed E)
+    {Γ : Ctx n} {t t' A : PureTm n}
+    (ht : HasTypeDecl E Γ t A) (hr : RedDecl E t t') :
+    HasTypeDecl E Γ t' A := by
+  exact redDecl_step_preserves_type_of_church_rosser
+    (E := E)
+    (hCR := declChurchRosser)
+    (hWf := hWf)
+    (ht := ht)
+    (hr := hr)
+
+theorem redStarDecl_preserves_type_of_church_rosser
+    {E : DeclEnv}
+    (hCR : DeclChurchRosser E)
+    (hWf : DeclEnvWellFormed E)
+    {Γ : Ctx n} {t u A : PureTm n}
+    (ht : HasTypeDecl E Γ t A) (hs : RedStarDecl E t u) :
+    HasTypeDecl E Γ u A := by
+  exact redStarDecl_preserves_type_of_injective
+    (E := E)
+    (piInjective := pi_injectivity_decl_of_church_rosser hCR)
+    (sigmaInjective := sigma_injectivity_decl_of_church_rosser hCR)
+    (hWf := hWf)
+    (ht := ht)
+    (hs := hs)
+
+theorem redStarDecl_preserves_type
+    {E : DeclEnv}
+    (hWf : DeclEnvWellFormed E)
+    {Γ : Ctx n} {t u A : PureTm n}
+    (ht : HasTypeDecl E Γ t A) (hs : RedStarDecl E t u) :
+    HasTypeDecl E Γ u A := by
+  exact redStarDecl_preserves_type_of_church_rosser
+    (E := E)
+    (hCR := declChurchRosser)
+    (hWf := hWf)
+    (ht := ht)
+    (hs := hs)
+
+theorem redStarDecl_confluence_of_church_rosser
+    {E : DeclEnv}
+    (hCR : DeclChurchRosser E)
+    {s t₁ t₂ : PureTm n}
+    (h₁ : RedStarDecl E s t₁)
+    (h₂ : RedStarDecl E s t₂) :
+    ∃ u, RedStarDecl E t₁ u ∧ RedStarDecl E t₂ u := by
+  have h₁conv : ConvDecl E s t₁ := redStarDecl_implies_conv h₁
+  have h₂conv : ConvDecl E s t₂ := redStarDecl_implies_conv h₂
+  have h₁symm : ConvDecl E t₁ s := Relation.EqvGen.symm _ _ h₁conv
+  have hConv : ConvDecl E t₁ t₂ := Relation.EqvGen.trans _ _ _ h₁symm h₂conv
+  exact hCR hConv
+
+theorem redStarDecl_confluence
+    {E : DeclEnv}
+    {s t₁ t₂ : PureTm n}
+    (h₁ : RedStarDecl E s t₁)
+    (h₂ : RedStarDecl E s t₂) :
+    ∃ u, RedStarDecl E t₁ u ∧ RedStarDecl E t₂ u := by
+  exact redStarDecl_confluence_of_church_rosser
+    (E := E)
+    (hCR := declChurchRosser)
+    h₁ h₂
+
+/-- Declaration-side star-preservation service packaged on its own, so clients
+can name the exact green boundary without re-spelling the whole theorem type. -/
+abbrev DeclStarPreservationPackage
+    (E : DeclEnv) : Prop :=
+  ∀ {n : Nat} {Γ : Ctx n} {t u A : PureTm n},
+    HasTypeDecl E Γ t A →
+    RedStarDecl E t u →
+    HasTypeDecl E Γ u A
+
+/-- Declaration-side star-confluence service packaged on its own. -/
+abbrev DeclStarConfluencePackage
+    (E : DeclEnv) : Prop :=
+  ∀ {n : Nat} {s t₁ t₂ : PureTm n},
+    RedStarDecl E s t₁ →
+    RedStarDecl E s t₂ →
+    ∃ u, RedStarDecl E t₁ u ∧ RedStarDecl E t₂ u
+
+/-- Declaration-side Pi-convertibility injectivity.
+
+It is exposed here as a reusable package field; the unconditional theorem is
+now discharged via declaration-level Church-Rosser (`declChurchRosser`). -/
+abbrev DeclPiInjectivityPackage
+    (E : DeclEnv) : Prop :=
+  ∀ {n : Nat} {A A' : PureTm n} {B B' : PureTm (n + 1)},
+    ConvDecl E (.pi A B) (.pi A' B') →
+      ConvDecl E A A' ∧ ConvDecl E B B'
+
+/-- Declaration-side Sigma-convertibility injectivity. -/
+abbrev DeclSigmaInjectivityPackage
+    (E : DeclEnv) : Prop :=
+  ∀ {n : Nat} {A A' : PureTm n} {B B' : PureTm (n + 1)},
+    ConvDecl E (.sigma A B) (.sigma A' B') →
+      ConvDecl E A A' ∧ ConvDecl E B B'
+
+/-- Honest declaration-side frontier for value-bearing environments: checked
+well-formedness plus declaration-side SR/confluence and the now-discharged
+Church-Rosser/injectivity boundary. -/
+abbrev DeclChurchRosserFrontierPackage
+    (E : DeclEnv) : Prop :=
+  DeclEnvWellFormed E ∧
+    DeclStarPreservationPackage E ∧
+    DeclStarConfluencePackage E ∧
+    DeclChurchRosser E ∧
+    DeclPiInjectivityPackage E ∧
+    DeclSigmaInjectivityPackage E
+
+/-- Assumption-free normalization/conversion service on the all-none slice. -/
+abbrev DeclNoValuesNormalizationPackage
+    (E : DeclEnv) (hNone : ∀ c : DeclName, valueOf? E c = none) : Prop :=
+  (∀ {n : Nat} {A B : PureTm n} {w : DefEqDeclWitness E A B},
+    defEqByNormalizationDeclOfNoValues? E hNone A B = some w →
+      ConvDecl E A B) ∧
+  (∀ {n : Nat} {A B : PureTm n},
+    defEqByNormalizationDeclOfNoValues? E hNone A B ≠ none →
+      ConvDecl E A B)
+
+/-- Stronger declaration-side frontier on the all-none slice: the value-bearing
+Church-Rosser package plus normalization-sound conversion. -/
+abbrev DeclNoValuesFrontierPackage
+    (E : DeclEnv) (hNone : ∀ c : DeclName, valueOf? E c = none) : Prop :=
+  DeclChurchRosserFrontierPackage E ∧
+    DeclNoValuesNormalizationPackage E hNone
+
+theorem DeclChurchRosserFrontierPackage.declChurchRosser
+    {E : DeclEnv}
+    (hPkg : DeclChurchRosserFrontierPackage E) :
+    DeclChurchRosser E :=
+  hPkg.2.2.2.1
+
+theorem DeclNoValuesFrontierPackage.asChurchRosser
+    {E : DeclEnv} {hNone : ∀ c : DeclName, valueOf? E c = none}
+    (hPkg : DeclNoValuesFrontierPackage E hNone) :
+    DeclChurchRosserFrontierPackage E :=
+  hPkg.1
+
+theorem DeclNoValuesFrontierPackage.normalization
+    {E : DeclEnv} {hNone : ∀ c : DeclName, valueOf? E c = none}
+    (hPkg : DeclNoValuesFrontierPackage E hNone) :
+    DeclNoValuesNormalizationPackage E hNone :=
+  hPkg.2
+
+theorem decl_sound_confluent_and_injectivity_of_church_rosser
+    {E : DeclEnv}
+    (hCR : DeclChurchRosser E)
+    (hWf : DeclEnvWellFormed E) :
+    (∀ {Γ : Ctx n} {t u A : PureTm n},
+      HasTypeDecl E Γ t A →
+      RedStarDecl E t u →
+      HasTypeDecl E Γ u A) ∧
+    (∀ {s t₁ t₂ : PureTm n},
+      RedStarDecl E s t₁ →
+      RedStarDecl E s t₂ →
+      ∃ u,
+        RedStarDecl E t₁ u ∧
+        RedStarDecl E t₂ u) ∧
+    (∀ {s t : PureTm n},
+      ConvDecl E s t →
+      ∃ u,
+        RedStarDecl E s u ∧
+        RedStarDecl E t u) ∧
+    (∀ {A A' : PureTm n} {B B' : PureTm (n + 1)},
+      ConvDecl E (.pi A B) (.pi A' B') →
+        ConvDecl E A A' ∧ ConvDecl E B B') ∧
+    (∀ {A A' : PureTm n} {B B' : PureTm (n + 1)},
+      ConvDecl E (.sigma A B) (.sigma A' B') →
+        ConvDecl E A A' ∧ ConvDecl E B B') := by
+  refine ⟨?_, ?_, ?_, ?_, ?_⟩
+  · intro Γ t u A hTy hStar
+    exact redStarDecl_preserves_type_of_church_rosser
+      (E := E)
+      hCR hWf hTy hStar
+  · intro s t₁ t₂ h₁ h₂
+    exact redStarDecl_confluence_of_church_rosser
+      (E := E)
+      hCR h₁ h₂
+  · intro s t hConv
+    exact hCR hConv
+  · intro A A' B B' hConv
+    exact pi_injectivity_decl_of_church_rosser
+      (E := E)
+      hCR hConv
+  · intro A A' B B' hConv
+    exact sigma_injectivity_decl_of_church_rosser
+      (E := E)
+      hCR hConv
+
+theorem decl_sound_confluent_and_injectivity
+    {E : DeclEnv}
+    (hWf : DeclEnvWellFormed E) :
+    (∀ {Γ : Ctx n} {t u A : PureTm n},
+      HasTypeDecl E Γ t A →
+      RedStarDecl E t u →
+      HasTypeDecl E Γ u A) ∧
+    (∀ {s t₁ t₂ : PureTm n},
+      RedStarDecl E s t₁ →
+      RedStarDecl E s t₂ →
+      ∃ u,
+        RedStarDecl E t₁ u ∧
+        RedStarDecl E t₂ u) ∧
+    (∀ {s t : PureTm n},
+      ConvDecl E s t →
+      ∃ u,
+        RedStarDecl E s u ∧
+        RedStarDecl E t u) ∧
+    (∀ {A A' : PureTm n} {B B' : PureTm (n + 1)},
+      ConvDecl E (.pi A B) (.pi A' B') →
+        ConvDecl E A A' ∧ ConvDecl E B B') ∧
+    (∀ {A A' : PureTm n} {B B' : PureTm (n + 1)},
+      ConvDecl E (.sigma A B) (.sigma A' B') →
+        ConvDecl E A A' ∧ ConvDecl E B B') := by
+  exact decl_sound_confluent_and_injectivity_of_church_rosser
+    (E := E)
+    (hCR := declChurchRosser)
+    hWf
+
+theorem decl_sound_confluent_and_injectivity_of_church_rosser_package
+    {E : DeclEnv}
+    (hCR : DeclChurchRosser E)
+    (hWf : DeclEnvWellFormed E) :
+    DeclChurchRosserFrontierPackage E := by
+  refine ⟨hWf, ?_, ?_, hCR, ?_, ?_⟩
+  · intro n Γ t u A hTy hStar
+    exact redStarDecl_preserves_type_of_church_rosser
+      (E := E)
+      (hCR := hCR)
+      (hWf := hWf)
+      (ht := hTy)
+      (hs := hStar)
+  · intro n s t₁ t₂ h₁ h₂
+    exact redStarDecl_confluence_of_church_rosser
+      (E := E)
+      (hCR := hCR)
+      (h₁ := h₁)
+      (h₂ := h₂)
+  · intro n A A' B B' hConv
+    exact pi_injectivity_decl_of_church_rosser
+      (E := E)
+      (hCR := hCR)
+      (h := hConv)
+  · intro n A A' B B' hConv
+    exact sigma_injectivity_decl_of_church_rosser
+      (E := E)
+      (hCR := hCR)
+      (h := hConv)
+
+theorem decl_sound_confluent_and_injectivity_package
+    {E : DeclEnv}
+    (hWf : DeclEnvWellFormed E) :
+    DeclChurchRosserFrontierPackage E := by
+  exact decl_sound_confluent_and_injectivity_of_church_rosser_package
+    (E := E)
+    (hCR := declChurchRosser)
+    hWf
+
+theorem pi_injectivity_decl_of_no_values {E : DeclEnv}
+    (hNone : ∀ c : DeclName, valueOf? E c = none)
+    {A A' : PureTm n} {B B' : PureTm (n + 1)}
+    (h : ConvDecl E (.pi A B) (.pi A' B')) :
+    ConvDecl E A A' ∧ ConvDecl E B B' := by
+  exact pi_injectivity_decl_of_church_rosser
+    (E := E)
+    (hCR := church_rosser_convDecl_of_no_values hNone)
+    h
+
+theorem sigma_injectivity_decl_of_no_values {E : DeclEnv}
+    (hNone : ∀ c : DeclName, valueOf? E c = none)
+    {A A' : PureTm n} {B B' : PureTm (n + 1)}
+    (h : ConvDecl E (.sigma A B) (.sigma A' B')) :
+    ConvDecl E A A' ∧ ConvDecl E B B' := by
+  exact sigma_injectivity_decl_of_church_rosser
+    (E := E)
+    (hCR := church_rosser_convDecl_of_no_values hNone)
+    h
+
+theorem redDecl_step_preserves_type_of_no_values
+    {E : DeclEnv}
+    (hNone : ∀ c : DeclName, valueOf? E c = none)
+    (hWf : DeclEnvWellFormed E)
+    {Γ : Ctx n} {t t' A : PureTm n}
+    (ht : HasTypeDecl E Γ t A) (hr : RedDecl E t t') :
+    HasTypeDecl E Γ t' A := by
+  exact redDecl_step_preserves_type_of_injective
+    (E := E)
+    (piInjective := pi_injectivity_decl_of_no_values hNone)
+    (sigmaInjective := sigma_injectivity_decl_of_no_values hNone)
+    (hWf := hWf)
+    (ht := ht)
+    (hr := hr)
+
+theorem redStarDecl_preserves_type_of_no_values
+    {E : DeclEnv}
+    (hNone : ∀ c : DeclName, valueOf? E c = none)
+    (hWf : DeclEnvWellFormed E)
+    {Γ : Ctx n} {t u A : PureTm n}
+    (ht : HasTypeDecl E Γ t A) (hs : RedStarDecl E t u) :
+    HasTypeDecl E Γ u A := by
+  exact redStarDecl_preserves_type_of_injective
+    (E := E)
+    (piInjective := pi_injectivity_decl_of_no_values hNone)
+    (sigmaInjective := sigma_injectivity_decl_of_no_values hNone)
+    (hWf := hWf)
+    (ht := ht)
+    (hs := hs)
+
+theorem decl_sound_confluent_and_conversion_of_no_values
+    {E : DeclEnv}
+    (hNone : ∀ c : DeclName, valueOf? E c = none)
+    (hWf : DeclEnvWellFormed E) :
+    (∀ {Γ : Ctx n} {t u A : PureTm n},
+      HasTypeDecl E Γ t A →
+      RedStarDecl E t u →
+      HasTypeDecl E Γ u A) ∧
+    (∀ {s t₁ t₂ : PureTm n},
+      RedStarDecl E s t₁ →
+      RedStarDecl E s t₂ →
+      ∃ u,
+        RedStarDecl E t₁ u ∧
+        RedStarDecl E t₂ u) ∧
+    (∀ {s t : PureTm n},
+      ConvDecl E s t →
+      ∃ u,
+        RedStarDecl E s u ∧
+        RedStarDecl E t u) ∧
+    (∀ {A A' : PureTm n} {B B' : PureTm (n + 1)},
+      ConvDecl E (.pi A B) (.pi A' B') →
+        ConvDecl E A A' ∧ ConvDecl E B B') ∧
+    (∀ {A A' : PureTm n} {B B' : PureTm (n + 1)},
+      ConvDecl E (.sigma A B) (.sigma A' B') →
+        ConvDecl E A A' ∧ ConvDecl E B B') ∧
+    (∀ {A B : PureTm n} {w : DefEqDeclWitness E A B},
+      defEqByNormalizationDeclOfNoValues? E hNone A B = some w →
+      ConvDecl E A B) ∧
+    (∀ {A B : PureTm n},
+      defEqByNormalizationDeclOfNoValues? E hNone A B ≠ none →
+      ConvDecl E A B) := by
+  refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
+  · intro Γ t u A hTy hStar
+    exact redStarDecl_preserves_type_of_no_values
+      (E := E)
+      hNone hWf hTy hStar
+  · intro s t₁ t₂ h₁ h₂
+    exact redStarDecl_confluence_of_no_values
+      (E := E)
+      hNone h₁ h₂
+  · intro s t hConv
+    exact church_rosser_convDecl_of_no_values
+      (E := E)
+      hNone hConv
+  · intro A A' B B' hConv
+    exact pi_injectivity_decl_of_no_values
+      (E := E)
+      hNone hConv
+  · intro A A' B B' hConv
+    exact sigma_injectivity_decl_of_no_values
+      (E := E)
+      hNone hConv
+  · intro A B w hSome
+    exact defEqByNormalizationDeclOfNoValues?_sound
+      (E := E)
+      hNone hSome
+  · intro A B hNeNone
+    exact defEqByNormalizationDeclOfNoValues?_ne_none_implies_conv
+      (E := E)
+      hNone hNeNone
+
+theorem decl_sound_confluent_and_conversion_of_no_values_package
+    {E : DeclEnv}
+    (hNone : ∀ c : DeclName, valueOf? E c = none)
+    (hWf : DeclEnvWellFormed E) :
+    DeclNoValuesFrontierPackage E hNone := by
+  refine ⟨?_, ?_⟩
+  · exact decl_sound_confluent_and_injectivity_of_church_rosser_package
+      (E := E)
+      (hCR := church_rosser_convDecl_of_no_values hNone)
+      hWf
+  · refine ⟨?_, ?_⟩
+    · intro n A B w hSome
+      exact defEqByNormalizationDeclOfNoValues?_sound
+        (E := E)
+        (hNone := hNone)
+        (h := hSome)
+    · intro n A B hNeNone
+      exact defEqByNormalizationDeclOfNoValues?_ne_none_implies_conv
+        (E := E)
+        (hNone := hNone)
+        (h := hNeNone)
 
 theorem deltaConst_preserves_type_closed {E : DeclEnv} {c : DeclName} {v0 C : PureTm 0}
     (hStep : RedDecl E ((.const c : PureTm 0)) (liftClosed v0))

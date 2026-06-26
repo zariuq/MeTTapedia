@@ -3,8 +3,8 @@
 ; ============================================================================
 ;
 ; This implements the Evidence type and operations as formalized in:
-;   Mettapedia/Logic/BinaryEvidence.lean
-;   Mettapedia/Logic/PLNConfidenceDoFCanary.lean
+;   Mettapedia/PLN/Evidence/BinaryEvidence.lean
+;   Mettapedia/PLN/TruthValues/PLNConfidenceDoFCanary.lean
 ;
 ; Key insight from the Lean formalization:
 ;   Evidence counts (n⁺, n⁻) ∈ ℝ≥0 × ℝ≥0 form a QUANTALE, and

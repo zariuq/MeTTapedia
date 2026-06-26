@@ -21,6 +21,11 @@
 ; Same target pattern p, two observation regimes:
 ;   coarse observer: {p, q} still look the same -> admissible point masses disagree
 ;   sharp observer : only p remains live       -> the singleton query collapses
+;
+; Read this as a toy OSLF scene: the observer is querying the truth of pattern p.
+; In the coarse regime, p is still observationally identified with a distinct q.
+; In the sharp regime, the live class has shrunk to {p}. The numbers below are
+; exactly the width story the OSLF bridge theorem formalizes.
 
 (= (coarse-lower) 0.0)
 (= (coarse-upper) 1.0)

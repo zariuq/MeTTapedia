@@ -11,10 +11,11 @@ setoid says which states the observer has not distinguished, and the induced
 credal set contains all probability distributions supported on the observed
 equivalence class.
 
-The Bool canary proves the intended reading.  If `false` and `true` are not
-distinguished, the truth-indicator gamble has strict credal width.  If the
-observation distinguishes them and the observed state is `true`, the same
-gamble collapses to a point.
+The generic bridge is the real statement: if an observed equivalence class
+contains a genuinely distinct alternative, the singleton query for the target
+state has strict credal width; if the observed class is already singleton, the
+same query collapses.  A concrete Bool witness remains below as a sanity check,
+not as the mathematical content of the bridge.
 -/
 
 namespace Mettapedia.PLN.TruthValues.PLNDistinctionCredalBridge
@@ -258,7 +259,7 @@ theorem observationCredalSet_indicatorGamble_collapses_of_class_subsingleton
 
 end GenericObservationBridge
 
-/-! ## Bool canary: coarse vs sharp distinctions -/
+/-! ## Bool sanity witness: coarse vs sharp distinctions -/
 
 abbrev boolCoarseObservation : Setoid Bool := indiscreteSetoid' Bool
 

@@ -222,6 +222,103 @@ def freshMapping (counter : Nat) (vars : List String) : List (String × String) 
     else ((v, s!"{v}#{n}") :: acc, n + 1))
   ([], counter)
 
+/-- Parse a variable of the form `base#n`, returning `n` when the whole
+    spelling is exactly a freshened instance of `base`. -/
+private def freshSuffixFor? (base s : String) : Option Nat :=
+  let prefix := base ++ "#"
+  if s.startsWith prefix then
+    let suffix := s.drop prefix.length
+    match suffix.toNat? with
+    | some n =>
+        if s = s!"{base}#{n}" then some n else none
+    | none => none
+  else
+    none
+
+/-- Largest successor suffix already occupied by `base#n` names in the avoid
+    set. If `avoid` contains `base#7`, the result is at least `8`. -/
+private def maxFreshSuffixFor (base : String) : List String → Nat
+  | [] => 0
+  | s :: ss =>
+      match freshSuffixFor? base s with
+      | some n => max (n + 1) (maxFreshSuffixFor base ss)
+      | none => maxFreshSuffixFor base ss
+
+private theorem freshSuffixFor?_self (base : String) (n : Nat) :
+    freshSuffixFor? base s!"{base}#{n}" = some n := by
+  simp [freshSuffixFor?, Nat.toNat?_repr]
+
+private theorem lt_maxFreshSuffixFor_of_mem
+    {base s : String} {avoid : List String} {n : Nat}
+    (hmem : s ∈ avoid) (hsuf : freshSuffixFor? base s = some n) :
+    n < maxFreshSuffixFor base avoid := by
+  induction avoid with
+  | nil =>
+      cases hmem
+  | cons hd tl ih =>
+      simp at hmem
+      simp [maxFreshSuffixFor]
+      rcases hmem with rfl | htail
+      · rw [hsuf]
+        omega
+      · cases hhd : freshSuffixFor? base hd with
+        | none =>
+            exact ih htail hsuf
+        | some m =>
+            exact lt_of_lt_of_le (ih htail hsuf) (Nat.le_max_right (m + 1) (maxFreshSuffixFor base tl))
+
+/-- Choose a fresh name for `base`, starting at `counter`, while avoiding all
+    externally visible names in `avoid`. The chosen spelling still follows the
+    runtime-style `base#n` convention, but it skips any already-visible
+    `base#n` names instead of merely incrementing blindly. -/
+def chooseFreshName (base : String) (avoid : List String) (counter : Nat) : String × Nat :=
+  let next := max counter (maxFreshSuffixFor base avoid)
+  (s!"{base}#{next}", next + 1)
+
+theorem chooseFreshName_not_mem
+    (base : String) (avoid : List String) (counter : Nat) :
+    (chooseFreshName base avoid counter).1 ∉ avoid := by
+  intro hmem
+  unfold chooseFreshName at hmem
+  dsimp at hmem
+  have hsuf :
+      freshSuffixFor? base s!"{base}#{max counter (maxFreshSuffixFor base avoid)}" =
+        some (max counter (maxFreshSuffixFor base avoid)) :=
+    freshSuffixFor?_self base (max counter (maxFreshSuffixFor base avoid))
+  have hlt :=
+    lt_maxFreshSuffixFor_of_mem
+      (base := base) (s := s!"{base}#{max counter (maxFreshSuffixFor base avoid)}")
+      (avoid := avoid) (n := max counter (maxFreshSuffixFor base avoid))
+      hmem hsuf
+  have hge : maxFreshSuffixFor base avoid ≤ max counter (maxFreshSuffixFor base avoid) :=
+    Nat.le_max_right counter (maxFreshSuffixFor base avoid)
+  omega
+
+/-- Fresh-variable mapping that avoids an external visible-name set while still
+    producing runtime-style `base#n` names. Previously generated fresh names
+    are also included in the avoid set so distinct source variables cannot
+    collapse onto the same visible spelling. -/
+def freshMappingAgainst (counter : Nat) (avoid vars : List String) :
+    List (String × String) × Nat :=
+  vars.foldl (fun (acc, n) v =>
+    if acc.any (fun p => p.1 == v) then (acc, n)
+    else
+      let used := avoid ++ acc.map Prod.snd
+      let (fresh, n') := chooseFreshName v used n
+      ((v, fresh) :: acc, n'))
+  ([], counter)
+
+/-- Alpha-rename equation-local variables while avoiding a visible-name set
+    supplied by the caller, typically the query atom's currently visible
+    variables. This models the stronger "standardize apart from the query"
+    discipline that the concrete runtime enforces with epoch-tagged internal
+    variable identities. -/
+def freshenEquationAgainst (avoid : List String)
+    (idx : Nat) (lhs rhs : Atom) (fuel : Nat := 100) : Atom × Atom :=
+  let vars := (collectVars lhs fuel ++ collectVars rhs fuel).eraseDups
+  let (mapping, _) := freshMappingAgainst idx avoid vars
+  (renameVars mapping lhs fuel, renameVars mapping rhs fuel)
+
 /-- Alpha-rename equation-local variables using the equation's index as a
     unique prefix. Returns `(renamed_lhs, renamed_rhs)`.
     Uses the same fuel as the parent query for kernel reduction. -/

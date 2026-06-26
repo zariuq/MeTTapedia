@@ -53,6 +53,183 @@ theorem pureKernel_embedding_target :
     pureKernelIntoPureProfile.profile.lang.name = "MeTTaPure" := by
   rfl
 
+/-- Canonical embedding of the checked non-unfolding declaration kernel into
+the Pure core profile.
+
+This is the strongest declaration-aware embedding currently available without
+crossing the value-bearing/delta frontier: ordered checked specs, no
+declaration values, and the packaged declaration-side boundary from
+`TypedLangDef`. -/
+def checkedNoValuesDeclKernelIntoPureProfileOfPackage
+    {specs : List Mettapedia.Languages.MeTTa.PureKernel.DeclarationSpec.DeclSpec}
+    (hSig :
+      Mettapedia.Languages.MeTTa.PureKernel.DeclarationSpec.SignatureWellFormed
+        specs)
+    (hNone : ∀ s ∈ specs, s.value? = none)
+    (hPkg :
+      Mettapedia.Languages.MeTTa.PureKernel.DeclarationSpec.DeclSpecAndNoValuesPackage
+        specs hNone) :
+    KernelEmbedding where
+  profile := pureProfile
+  kernel := (checkedNoValuesDeclKernelBoundaryOfPackage hSig hNone hPkg).typed
+  quoteClosed := quoteClosedTm
+  quoteClosed_lc := by
+    intro t
+    simpa [quoteClosedTm, quoteTm, emptyEnv] using
+      lc_quoteTmWith defaultBinderName 0 emptyEnv t
+
+def checkedNoValuesDeclKernelIntoPureProfile
+    {specs : List Mettapedia.Languages.MeTTa.PureKernel.DeclarationSpec.DeclSpec}
+    (hSig :
+      Mettapedia.Languages.MeTTa.PureKernel.DeclarationSpec.SignatureWellFormed
+        specs)
+    (hNone : ∀ s ∈ specs, s.value? = none) :
+    KernelEmbedding :=
+  checkedNoValuesDeclKernelIntoPureProfileOfPackage
+    hSig hNone
+    (hSig.declSpecAndNoValuesPackage_of_all_none hNone)
+
+theorem checkedNoValuesDeclKernelIntoPureProfile_kernel
+    {specs : List Mettapedia.Languages.MeTTa.PureKernel.DeclarationSpec.DeclSpec}
+    (hSig :
+      Mettapedia.Languages.MeTTa.PureKernel.DeclarationSpec.SignatureWellFormed
+        specs)
+    (hNone : ∀ s ∈ specs, s.value? = none) :
+    (checkedNoValuesDeclKernelIntoPureProfile hSig hNone).kernel =
+      checkedNoValuesDeclKernelTyped hSig hNone := by
+  simpa [checkedNoValuesDeclKernelIntoPureProfile,
+    checkedNoValuesDeclKernelIntoPureProfileOfPackage] using
+    (checkedNoValuesDeclKernelBoundaryOfPackage
+      hSig hNone
+      (hSig.declSpecAndNoValuesPackage_of_all_none hNone)).typed_eq
+
+theorem checkedNoValuesDeclKernelIntoPureProfile_target
+    {specs : List Mettapedia.Languages.MeTTa.PureKernel.DeclarationSpec.DeclSpec}
+    (hSig :
+      Mettapedia.Languages.MeTTa.PureKernel.DeclarationSpec.SignatureWellFormed
+        specs)
+    (hNone : ∀ s ∈ specs, s.value? = none) :
+    (checkedNoValuesDeclKernelIntoPureProfile hSig hNone).profile.lang.name =
+      "MeTTaPure" := by
+  rfl
+
+/-- Canonical embedding of the checked declaration kernel into the Pure core
+profile under an explicit declaration-aware Church-Rosser hypothesis.
+
+This is the current honest value-bearing embedding boundary: ordered checked
+specs plus the packaged Church-Rosser frontier from `TypedLangDef`, without yet
+claiming a declaration-side normalization/decision layer. -/
+def checkedChurchRosserDeclKernelIntoPureProfileOfPackage
+    {specs : List Mettapedia.Languages.MeTTa.PureKernel.DeclarationSpec.DeclSpec}
+    (hSig :
+      Mettapedia.Languages.MeTTa.PureKernel.DeclarationSpec.SignatureWellFormed
+        specs)
+    (hPkg :
+      Mettapedia.Languages.MeTTa.PureKernel.DeclarationSpec.DeclSpecChurchRosserPackage
+        specs) :
+    KernelEmbedding where
+  profile := pureProfile
+  kernel := (checkedChurchRosserDeclKernelBoundaryOfPackage hSig hPkg).typed
+  quoteClosed := quoteClosedTm
+  quoteClosed_lc := by
+    intro t
+    simpa [quoteClosedTm, quoteTm, emptyEnv] using
+      lc_quoteTmWith defaultBinderName 0 emptyEnv t
+
+def checkedChurchRosserDeclKernelIntoPureProfile
+    {specs : List Mettapedia.Languages.MeTTa.PureKernel.DeclarationSpec.DeclSpec}
+    (hSig :
+      Mettapedia.Languages.MeTTa.PureKernel.DeclarationSpec.SignatureWellFormed
+        specs)
+    (hCR :
+      Mettapedia.Languages.MeTTa.PureKernel.DeclarationSemantics.DeclChurchRosser
+        (Mettapedia.Languages.MeTTa.PureKernel.DeclarationSpec.envOfSpecs specs)) :
+    KernelEmbedding :=
+  checkedChurchRosserDeclKernelIntoPureProfileOfPackage
+    hSig
+    (hSig.declSpecChurchRosserPackage_of_church_rosser hCR)
+
+theorem checkedChurchRosserDeclKernelIntoPureProfile_kernel
+    {specs : List Mettapedia.Languages.MeTTa.PureKernel.DeclarationSpec.DeclSpec}
+    (hSig :
+      Mettapedia.Languages.MeTTa.PureKernel.DeclarationSpec.SignatureWellFormed
+        specs)
+    (hCR :
+      Mettapedia.Languages.MeTTa.PureKernel.DeclarationSemantics.DeclChurchRosser
+        (Mettapedia.Languages.MeTTa.PureKernel.DeclarationSpec.envOfSpecs specs)) :
+    (checkedChurchRosserDeclKernelIntoPureProfile hSig hCR).kernel =
+      checkedChurchRosserDeclKernelTyped hSig hCR := by
+  simpa [checkedChurchRosserDeclKernelIntoPureProfile,
+    checkedChurchRosserDeclKernelIntoPureProfileOfPackage] using
+    (checkedChurchRosserDeclKernelBoundaryOfPackage
+      hSig
+      (hSig.declSpecChurchRosserPackage_of_church_rosser hCR)).typed_eq
+
+theorem checkedChurchRosserDeclKernelIntoPureProfile_target
+    {specs : List Mettapedia.Languages.MeTTa.PureKernel.DeclarationSpec.DeclSpec}
+    (hSig :
+      Mettapedia.Languages.MeTTa.PureKernel.DeclarationSpec.SignatureWellFormed
+        specs)
+    (hCR :
+      Mettapedia.Languages.MeTTa.PureKernel.DeclarationSemantics.DeclChurchRosser
+        (Mettapedia.Languages.MeTTa.PureKernel.DeclarationSpec.envOfSpecs specs)) :
+    (checkedChurchRosserDeclKernelIntoPureProfile hSig hCR).profile.lang.name =
+      "MeTTaPure" := by
+  rfl
+
+theorem checkedChurchRosserDeclKernelIntoPureProfile_profile
+    {specs : List Mettapedia.Languages.MeTTa.PureKernel.DeclarationSpec.DeclSpec}
+    (hSig :
+      Mettapedia.Languages.MeTTa.PureKernel.DeclarationSpec.SignatureWellFormed
+        specs)
+    (hCR :
+      Mettapedia.Languages.MeTTa.PureKernel.DeclarationSemantics.DeclChurchRosser
+        (Mettapedia.Languages.MeTTa.PureKernel.DeclarationSpec.envOfSpecs specs)) :
+    (checkedChurchRosserDeclKernelIntoPureProfile hSig hCR).profile = pureProfile := by
+  rfl
+
+/-- The assembled value-bearing declaration boundary exposes the same
+engine-facing kernel/profile surface as the generic Church-Rosser embedding.
+This is the honest interface theorem for later clients: carrying the packaged
+boundary is enough to recover the kernel identity and target profile without
+re-proving anything about the embedding layer. -/
+theorem checkedChurchRosserDeclKernelBoundary_kernel_and_target
+    {specs : List Mettapedia.Languages.MeTTa.PureKernel.DeclarationSpec.DeclSpec}
+    {hSig :
+      Mettapedia.Languages.MeTTa.PureKernel.DeclarationSpec.SignatureWellFormed
+        specs}
+    {hCR :
+      Mettapedia.Languages.MeTTa.PureKernel.DeclarationSemantics.DeclChurchRosser
+        (Mettapedia.Languages.MeTTa.PureKernel.DeclarationSpec.envOfSpecs specs)}
+    (hBoundary :
+      CheckedChurchRosserDeclKernelBoundary hSig hCR) :
+    (checkedChurchRosserDeclKernelIntoPureProfile hSig hCR).kernel =
+        hBoundary.typed ∧
+      (checkedChurchRosserDeclKernelIntoPureProfile hSig hCR).profile.lang.name =
+        "MeTTaPure" := by
+  constructor
+  · rw [hBoundary.typed_eq]
+    exact checkedChurchRosserDeclKernelIntoPureProfile_kernel hSig hCR
+  · exact checkedChurchRosserDeclKernelIntoPureProfile_target hSig hCR
+
+theorem checkedChurchRosserDeclKernelBoundary_kernel_and_profile
+    {specs : List Mettapedia.Languages.MeTTa.PureKernel.DeclarationSpec.DeclSpec}
+    {hSig :
+      Mettapedia.Languages.MeTTa.PureKernel.DeclarationSpec.SignatureWellFormed
+        specs}
+    {hCR :
+      Mettapedia.Languages.MeTTa.PureKernel.DeclarationSemantics.DeclChurchRosser
+        (Mettapedia.Languages.MeTTa.PureKernel.DeclarationSpec.envOfSpecs specs)}
+    (hBoundary :
+      CheckedChurchRosserDeclKernelBoundary hSig hCR) :
+    (checkedChurchRosserDeclKernelIntoPureProfile hSig hCR).kernel =
+        hBoundary.typed ∧
+      (checkedChurchRosserDeclKernelIntoPureProfile hSig hCR).profile = pureProfile := by
+  constructor
+  · rw [hBoundary.typed_eq]
+    exact checkedChurchRosserDeclKernelIntoPureProfile_kernel hSig hCR
+  · exact checkedChurchRosserDeclKernelIntoPureProfile_profile hSig hCR
+
 private def betaPiRule : RewriteRule :=
   { name := "BetaPi",
     typeContext := [("body", .base "Tm"), ("a", .base "Tm")],
@@ -456,6 +633,112 @@ theorem pureTheoryStepStar_sound_pureProfileTheoryStepStar_quoteClosed
     {t u : PureTm 0} (h : PureTheoryStepStar t u) :
     PureProfileTheoryStepStar (quoteClosedTm t) (quoteClosedTm u) :=
   pureTheoryStepStar_sound_pureProfileTheoryStepStar_quoteClosed_assuming_inst0 hinst0 hcompat0 h
+
+/-- Declaration-aware closed one-step soundness into C1 for the strongest
+currently fully discharged declaration slice: ordered checked specs with no
+declaration values. In that slice, declaration reduction collapses to the core
+kernel reduction and therefore transports through the existing quotation bridge. -/
+theorem checkedNoValuesDeclKernel_sound_pureProfileTheoryStep_quoteClosed
+    {specs : List Mettapedia.Languages.MeTTa.PureKernel.DeclarationSpec.DeclSpec}
+    (_hSig :
+      Mettapedia.Languages.MeTTa.PureKernel.DeclarationSpec.SignatureWellFormed
+        specs)
+    (hNone : ∀ s ∈ specs, s.value? = none)
+    (hinst0 : Inst0OpenBridgeCompat defaultBinderName)
+    (hcompat0 : QuoteCompat defaultBinderName 0 emptyEnv)
+    {t u : PureTm 0}
+    (h : Mettapedia.Languages.MeTTa.PureKernel.DeclarationSemantics.RedDecl
+      (Mettapedia.Languages.MeTTa.PureKernel.DeclarationSpec.envOfSpecs specs) t u) :
+    PureProfileTheoryStep (quoteClosedTm t) (quoteClosedTm u) := by
+  have hNoValues :=
+    Mettapedia.Languages.MeTTa.PureKernel.DeclarationSpec.valueOf_envOfSpecs_eq_none_of_all_none
+      specs hNone
+  have hCore :
+      Red t u :=
+    Mettapedia.Languages.MeTTa.PureKernel.DeclarationSemantics.redDecl_to_core_of_no_values
+      hNoValues h
+  exact pureTheoryStep_sound_pureProfileTheoryStep_quoteClosed hinst0 hcompat0 hCore
+
+/-- Declaration-aware closed star soundness into C1 for the all-none
+declaration slice. This is the honest declaration-to-profile bridge available
+today without crossing the value-bearing delta frontier. -/
+theorem checkedNoValuesDeclKernel_star_sound_pureProfileTheoryStepStar_quoteClosed
+    {specs : List Mettapedia.Languages.MeTTa.PureKernel.DeclarationSpec.DeclSpec}
+    (_hSig :
+      Mettapedia.Languages.MeTTa.PureKernel.DeclarationSpec.SignatureWellFormed
+        specs)
+    (hNone : ∀ s ∈ specs, s.value? = none)
+    (hinst0 : Inst0OpenBridgeCompat defaultBinderName)
+    (hcompat0 : QuoteCompat defaultBinderName 0 emptyEnv)
+    {t u : PureTm 0}
+    (h :
+      Mettapedia.Languages.MeTTa.PureKernel.DeclarationSemantics.RedStarDecl
+        (Mettapedia.Languages.MeTTa.PureKernel.DeclarationSpec.envOfSpecs specs) t u) :
+    PureProfileTheoryStepStar (quoteClosedTm t) (quoteClosedTm u) := by
+  have hNoValues :=
+    Mettapedia.Languages.MeTTa.PureKernel.DeclarationSpec.valueOf_envOfSpecs_eq_none_of_all_none
+      specs hNone
+  have hCore :
+      RedStar t u :=
+    Mettapedia.Languages.MeTTa.PureKernel.DeclarationSemantics.redStarDecl_to_core_of_no_values
+      hNoValues h
+  exact pureTheoryStepStar_sound_pureProfileTheoryStepStar_quoteClosed hinst0 hcompat0 hCore
+
+/-- Packaged closed theoremic bridge for the strongest assumption-free
+declaration boundary: declaration-level star subject reduction paired with the
+quoted Pure-profile execution witness. -/
+theorem checkedNoValuesDeclKernelBoundary_closedSubjectReduction_and_profileBridge
+    {specs : List Mettapedia.Languages.MeTTa.PureKernel.DeclarationSpec.DeclSpec}
+    {hSig :
+      Mettapedia.Languages.MeTTa.PureKernel.DeclarationSpec.SignatureWellFormed
+        specs}
+    {hNone : ∀ s ∈ specs, s.value? = none}
+    (hBoundary : CheckedNoValuesDeclKernelBoundary hSig hNone)
+    (hinst0 : Inst0OpenBridgeCompat defaultBinderName)
+    (hcompat0 : QuoteCompat defaultBinderName 0 emptyEnv)
+    {t u A : PureTm 0}
+    (ht :
+      Mettapedia.Languages.MeTTa.PureKernel.DeclarationSemantics.HasTypeDecl
+        (Mettapedia.Languages.MeTTa.PureKernel.DeclarationSpec.envOfSpecs specs) .nil t A)
+    (h :
+      Mettapedia.Languages.MeTTa.PureKernel.DeclarationSemantics.RedStarDecl
+        (Mettapedia.Languages.MeTTa.PureKernel.DeclarationSpec.envOfSpecs specs) t u) :
+    Mettapedia.Languages.MeTTa.PureKernel.DeclarationSemantics.HasTypeDecl
+        (Mettapedia.Languages.MeTTa.PureKernel.DeclarationSpec.envOfSpecs specs) .nil u A ∧
+      PureProfileTheoryStepStar (quoteClosedTm t) (quoteClosedTm u) := by
+  exact
+    ⟨ hBoundary.starSubjectReduction ht h
+    , checkedNoValuesDeclKernel_star_sound_pureProfileTheoryStepStar_quoteClosed
+        hSig hNone hinst0 hcompat0 h
+    ⟩
+
+/-- Packaged closed conversion bridge for the strongest assumption-free
+declaration boundary: declaration conversion yields a quoted common reduct in
+the Pure profile theory step star. -/
+theorem checkedNoValuesDeclKernelBoundary_closedCommonReduct_profileBridge
+    {specs : List Mettapedia.Languages.MeTTa.PureKernel.DeclarationSpec.DeclSpec}
+    {hSig :
+      Mettapedia.Languages.MeTTa.PureKernel.DeclarationSpec.SignatureWellFormed
+        specs}
+    {hNone : ∀ s ∈ specs, s.value? = none}
+    (hBoundary : CheckedNoValuesDeclKernelBoundary hSig hNone)
+    (hinst0 : Inst0OpenBridgeCompat defaultBinderName)
+    (hcompat0 : QuoteCompat defaultBinderName 0 emptyEnv)
+    {t u : PureTm 0}
+    (h :
+      Mettapedia.Languages.MeTTa.PureKernel.DeclarationSemantics.ConvDecl
+        (Mettapedia.Languages.MeTTa.PureKernel.DeclarationSpec.envOfSpecs specs) t u) :
+    ∃ q : Pattern,
+      PureProfileTheoryStepStar (quoteClosedTm t) q ∧
+      PureProfileTheoryStepStar (quoteClosedTm u) q := by
+  rcases hBoundary.commonReduct h with ⟨w, ht, hu⟩
+  exact
+    ⟨ quoteClosedTm w
+    , checkedNoValuesDeclKernel_star_sound_pureProfileTheoryStepStar_quoteClosed
+        hSig hNone hinst0 hcompat0 ht
+    , checkedNoValuesDeclKernel_star_sound_pureProfileTheoryStepStar_quoteClosed
+        hSig hNone hinst0 hcompat0 hu
+    ⟩
 
 private def betaPiOneNestedLamRedex : PureTm 0 :=
   .app (.lam (.lam (.var (Fin.succ (0 : Fin 1))))) .u0

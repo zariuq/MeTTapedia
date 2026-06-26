@@ -35,18 +35,24 @@ we ship `*.he.metta` / `*.petta.metta` variants (none needed so far). See `docs/
 
 DoF 7 now comes in three complementary shadows: the raw joint-shape loss (`dof07_credal_shape`),
 the hidden-joint distinction shadow (`dof07b_distinction_credal_shadow`), and the observer-resolution
-shadow (`dof07c_oslf_observer_resolution`) showing coarse-observer width collapsing under sharper
-distinction.
+shadow (`dof07c_oslf_observer_resolution`) where the same target pattern `p` is left interval-valued
+when a coarse observer still identifies it with a distinct `q`, but collapses once the observer class
+shrinks to `{p}`.
 
 ## Layout
 ```
 metta/        dofNN_<name>.metta shadows for the Runnable/Structural DoFs (some DoFs have a second shadow where it helps)
 lib/          pln_evidence.metta + lib_pln.metta (the portable PLN API; also copied into metta/ so imports resolve)
-lean/         DOF-LEAN-MAP.md; the Lean canary source lives in ../../lean/mettapedia/Mettapedia/Logic/
+lean/         DOF-LEAN-MAP.md; the Lean canary source lives in ../../lean/mettapedia/Mettapedia/PLN/TruthValues/
 docs/         PORTABILITY.md, EXPECTED.md (paper's numbers for spot-check)
 DOF-INDEX.md  the 19-row master table: DoF -> metta file -> Lean oracle -> tier
 run_all.sh    the reproducibility harness
 ```
+
+The sealed public capstone for the finished confidence characterization is
+`confidenceCharacterizationEndpointProfile` in
+`../../lean/mettapedia/Mettapedia/PLN/Core/PLNCanonicalAPI.lean`, backed by the
+full theorem bundle in `../../lean/mettapedia/Mettapedia/PLN/TruthValues/PLNTruthTheoryIndex.lean`.
 
 ## What you can verify in 30 seconds
 `metta/dof01_kappa_calibration.metta` → `0.8333 / 0.3333 / 0.0909` = confidence of the *same* 5 units

@@ -205,6 +205,106 @@ theorem pureTheoryStep_to_wmStrengthObligation_default
       (I.encode (quoteClosedTm u)) :=
   pureTheoryStep_to_wmStrengthObligation I pureClosedTheoryBridge_default hW hred
 
+/-- Closed declaration-aware multi-step reduction on the strongest
+assumption-free slice transports all the way to the WM-strength endpoint.
+
+This is the canonical no-values declaration-side bridge for downstream WM
+consumers: ordered checked specs, no declaration values, and the existing
+quoted Pure-profile bridge. It intentionally stays off the value-bearing delta
+frontier. -/
+theorem checkedNoValuesDeclKernelStar_to_wmStrengthObligation_default
+    (I : PureJudgmentWMInterface State Query)
+    {specs : List Mettapedia.Languages.MeTTa.PureKernel.DeclarationSpec.DeclSpec}
+    (hSig :
+      Mettapedia.Languages.MeTTa.PureKernel.DeclarationSpec.SignatureWellFormed
+        specs)
+    (hNone : ∀ s ∈ specs, s.value? = none)
+    {W : State} {t u : PureTm 0}
+    (hW : I.side W)
+    (hred :
+      Mettapedia.Languages.MeTTa.PureKernel.DeclarationSemantics.RedStarDecl
+        (Mettapedia.Languages.MeTTa.PureKernel.DeclarationSpec.envOfSpecs specs) t u) :
+    WMStrengthObligation State Query W
+      (I.encode (quoteClosedTm t))
+      (I.encode (quoteClosedTm u)) := by
+  have hprofile :
+      PureProfileTheoryStepStar (quoteClosedTm t) (quoteClosedTm u) :=
+    checkedNoValuesDeclKernel_star_sound_pureProfileTheoryStepStar_quoteClosed
+      hSig hNone inst0OpenBridgeCompat_defaultBinderName defaultBinderName_quoteCompat0 hred
+  exact I.profileStepStar_sound hW hprofile
+
+/-- Packaged no-values declaration-side closed subject reduction plus the WM
+endpoint obligation.
+
+This is the strongest fully discharged declaration-aware endpoint theorem
+available today without crossing into value-bearing delta reasoning. -/
+theorem checkedNoValuesDeclKernelBoundary_closedSubjectReduction_and_wmBridge
+    (I : PureJudgmentWMInterface State Query)
+    {specs : List Mettapedia.Languages.MeTTa.PureKernel.DeclarationSpec.DeclSpec}
+    {hSig :
+      Mettapedia.Languages.MeTTa.PureKernel.DeclarationSpec.SignatureWellFormed
+        specs}
+    {hNone : ∀ s ∈ specs, s.value? = none}
+    (hBoundary :
+      Mettapedia.Languages.MeTTa.PureKernel.Assembly.CheckedNoValuesDeclKernelBoundary
+        hSig hNone)
+    {W : State} (hW : I.side W)
+    {t u A : PureTm 0}
+    (ht :
+      Mettapedia.Languages.MeTTa.PureKernel.DeclarationSemantics.HasTypeDecl
+        (Mettapedia.Languages.MeTTa.PureKernel.DeclarationSpec.envOfSpecs specs) .nil t A)
+    (hred :
+      Mettapedia.Languages.MeTTa.PureKernel.DeclarationSemantics.RedStarDecl
+        (Mettapedia.Languages.MeTTa.PureKernel.DeclarationSpec.envOfSpecs specs) t u) :
+    Mettapedia.Languages.MeTTa.PureKernel.DeclarationSemantics.HasTypeDecl
+        (Mettapedia.Languages.MeTTa.PureKernel.DeclarationSpec.envOfSpecs specs) .nil u A ∧
+      WMStrengthObligation State Query W
+        (I.encode (quoteClosedTm t))
+        (I.encode (quoteClosedTm u)) := by
+  exact
+    ⟨ hBoundary.starSubjectReduction ht hred
+    , checkedNoValuesDeclKernelStar_to_wmStrengthObligation_default
+        I hSig hNone hW hred
+    ⟩
+
+/-- Closed declaration conversion on the strongest assumption-free slice yields
+an explicit quoted common reduct that both endpoints strengthen to in the WM
+surface.
+
+This packages the no-values refinement into the same endpoint shape used by the
+generic closed Pure bridge, while keeping the value-bearing delta case honest
+and separate. -/
+theorem checkedNoValuesDeclKernelBoundary_closedCommonReduct_wmBridge
+    (I : PureJudgmentWMInterface State Query)
+    {specs : List Mettapedia.Languages.MeTTa.PureKernel.DeclarationSpec.DeclSpec}
+    {hSig :
+      Mettapedia.Languages.MeTTa.PureKernel.DeclarationSpec.SignatureWellFormed
+        specs}
+    {hNone : ∀ s ∈ specs, s.value? = none}
+    (hBoundary :
+      Mettapedia.Languages.MeTTa.PureKernel.Assembly.CheckedNoValuesDeclKernelBoundary
+        hSig hNone)
+    {W : State} (hW : I.side W)
+    {t u : PureTm 0}
+    (hconv :
+      Mettapedia.Languages.MeTTa.PureKernel.DeclarationSemantics.ConvDecl
+        (Mettapedia.Languages.MeTTa.PureKernel.DeclarationSpec.envOfSpecs specs) t u) :
+    ∃ w : PureTm 0,
+      WMStrengthObligation State Query W
+        (I.encode (quoteClosedTm t))
+        (I.encode (quoteClosedTm w)) ∧
+      WMStrengthObligation State Query W
+        (I.encode (quoteClosedTm u))
+        (I.encode (quoteClosedTm w)) := by
+  rcases hBoundary.commonReduct hconv with ⟨w, htw, huw⟩
+  exact
+    ⟨ w
+    , checkedNoValuesDeclKernelStar_to_wmStrengthObligation_default
+        I hSig hNone hW htw
+    , checkedNoValuesDeclKernelStar_to_wmStrengthObligation_default
+        I hSig hNone hW huw
+    ⟩
+
 /-- Categorical-aligned wrapper:
 same Pure one-step WM obligation transport, with explicit endpoint-surface input. -/
 theorem pureTheoryStep_to_wmStrengthObligation_categorical

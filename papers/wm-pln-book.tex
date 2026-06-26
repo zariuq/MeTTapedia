@@ -9,6 +9,36 @@
 \usepackage{url}
 \usetikzlibrary{arrows.meta,positioning,calc,decorations.pathreplacing}
 
+\newcommand{\wmplnincludegraphics}[2][]{%
+  \IfFileExists{#2}{%
+    \includegraphics[#1]{#2}%
+  }{%
+    \fbox{%
+      \parbox[c][0.22\textheight][c]{0.85\linewidth}{%
+        \centering
+        \footnotesize Missing external figure\\
+        \texttt{\detokenize{#2}}%
+      }%
+    }%
+  }%
+}
+
+\newcommand{\wmplninputfile}[1]{%
+  \IfFileExists{#1}{%
+    \input{#1}%
+  }{%
+    \begin{center}
+    \fbox{%
+      \parbox{0.9\linewidth}{%
+        \centering
+        \footnotesize Missing external generated content\\
+        \texttt{\detokenize{#1}}%
+      }%
+    }
+    \end{center}
+  }%
+}
+
 \title{WM-PLN:\\[4pt]
   The World-Model Calculus\\[12pt]
   \large\texttt{(DRAFT --- \today)}}
@@ -2189,7 +2219,7 @@ Key results (all kernel-checked):
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=0.85\textwidth]{../results/figures/broken_sensor.pdf}
+\wmplnincludegraphics[width=0.85\textwidth]{../results/figures/broken_sensor.pdf}
 \caption{Broken sensor demo: prior predictive (gray dashed), posterior
   after morning shift (blue, concentrated around 16\textdegree{}C),
   after night shift (red, shifted to 22\textdegree{}C), and
@@ -2357,7 +2387,7 @@ from different epochs, which the framework supports but does not automate.
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=\textwidth]{../results/figures/gas_sensor_drift.pdf}
+\wmplnincludegraphics[width=\textwidth]{../results/figures/gas_sensor_drift.pdf}
 \caption{Gas sensor array drift.  Solid curves: batch~1 posterior
   predictive (2007).  Dashed: consolidated posterior after both
   batches.  Toluene shows dramatic drift: batch~10 responses (crosses)
@@ -2367,7 +2397,7 @@ from different epochs, which the framework supports but does not automate.
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=\textwidth]{../results/figures/gas_drift_protocols.pdf}
+\wmplnincludegraphics[width=\textwidth]{../results/figures/gas_drift_protocols.pdf}
 \caption{Gas sensor drift protocols on the full 128-feature representation.
   Cumulative replay is the strongest average protocol in both the 3-gas and
   6-gas settings.  Iterative unlabeled replay / E-M is scientifically useful
@@ -2436,7 +2466,7 @@ experiment layer is designed to express.
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=\textwidth]{../results/figures/gas_xgboost_wm_support.pdf}
+\wmplnincludegraphics[width=\textwidth]{../results/figures/gas_xgboost_wm_support.pdf}
 \caption{Gas drift support for a stronger base learner.  The relevant question
   is not whether WM-PLN replaces XGBoost, but whether WM-derived agreement
   signals can support abstention and replay decisions under drift.
@@ -2554,7 +2584,7 @@ Best $\le 25\%$ labels & Best raw accuracy \\
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=\textwidth]{../results/figures/gas_policy_frontier.pdf}
+\wmplnincludegraphics[width=\textwidth]{../results/figures/gas_policy_frontier.pdf}
 \caption{Sequential gas-drift support policies.  Each point is a batch-level
   retraining policy over batches~2\ldots10, trading sample-weighted
   accuracy against label budget.  XGBoost confidence is the best cheap
@@ -2634,7 +2664,7 @@ this via per-fault exceedance evidence extraction.
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=\textwidth]{../results/figures/steel_classification.pdf}
+\wmplnincludegraphics[width=\textwidth]{../results/figures/steel_classification.pdf}
 \caption{Steel fault classification.  \emph{Left:} Student-$t$
   predictive densities for each fault type after 5~observations;
   K\_Scratch (red) is clearly separated rightward.  \emph{Right:}
@@ -2699,7 +2729,7 @@ the plain GaussianNB baseline under the same split.
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=\textwidth]{../results/figures/steel_selective_prediction.pdf}
+\wmplnincludegraphics[width=\textwidth]{../results/figures/steel_selective_prediction.pdf}
 \caption{Selective prediction on Steel Plates Faults.
   WM-PLN yields a better accuracy--coverage tradeoff than GaussianNB in both
   the 3-class and 7-class settings, but native XGBoost remains stronger on
@@ -2795,7 +2825,7 @@ replayed in a deferred batch, the result is identical.
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=0.85\textwidth]{../results/figures/nab_kalman_tracking.pdf}
+\wmplnincludegraphics[width=0.85\textwidth]{../results/figures/nab_kalman_tracking.pdf}
 \caption{NAB anomaly detection.  \emph{Upper:} Kalman filter posterior
   mean (blue) with $\pm 2\sigma$ band tracking through calm, hot, and
   anomaly regimes.  The anomaly regime drives the mean below both
@@ -2839,12 +2869,12 @@ report holdout metrics only.
 \caption{NAB strict frozen holdout governance summary, including matched-budget
 Windowed Gaussian comparators (matched on train, evaluated on holdout).}
 \label{tab:nab-governance-summary}
-\input{../results/nab_governance_summary_table.tex}
+\wmplninputfile{../results/nab_governance_summary_table.tex}
 \end{table}
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=0.78\textwidth]{../results/figures/nab_governance_delta.pdf}
+\wmplnincludegraphics[width=0.78\textwidth]{../results/figures/nab_governance_delta.pdf}
 \caption{NAB strict holdout deltas versus Windowed Gaussian, including
 train-matched FP and train-matched alert comparators.  All holdout deltas
 remain negative in this split.}
@@ -2891,7 +2921,7 @@ generated by \codepath{scripts/wm\_pln\_nab\_strict\_multisplit.py}.
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=0.86\textwidth]{../results/figures/nab_governance_frontier_series.pdf}
+\wmplnincludegraphics[width=0.86\textwidth]{../results/figures/nab_governance_frontier_series.pdf}
 \caption{Per-series frontier on strict holdout:
 $\Delta$FP vs.\ $\Delta$score with rationale labels
 (helped/harmed under suppression cost).}
@@ -2900,7 +2930,7 @@ $\Delta$FP vs.\ $\Delta$score with rationale labels
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=0.86\textwidth]{../results/figures/nab_governance_frontier_category.pdf}
+\wmplnincludegraphics[width=0.86\textwidth]{../results/figures/nab_governance_frontier_category.pdf}
 \caption{Category frontier on strict holdout:
 category-level $\Sigma\Delta$FP vs.\ $\Sigma\Delta$score, showing where
 governance suppression helps or harms.}
@@ -3039,7 +3069,7 @@ when the underlying aggregation family is already strong.
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=\textwidth]{../results/figures/gjp_forecasting.pdf}
+\wmplnincludegraphics[width=\textwidth]{../results/figures/gjp_forecasting.pdf}
 \caption{Good Judgment Project forecasting as a WM-PLN application.
   \emph{Left:} year-4 Brier scores for stronger aggregation baselines:
   plain log/logit pooling, top-$k$ temperature-tuned pooling, and
@@ -3061,7 +3091,7 @@ and controlled recalibration on a real forecasting stream.
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=0.6\textwidth]{../results/figures/confidence_curves.pdf}
+\wmplnincludegraphics[width=0.6\textwidth]{../results/figures/confidence_curves.pdf}
 \caption{PLN confidence $c = n/(n + \kappa_0)$ as a function of
   observation count, for various prior strengths $\kappa_0$.
   Monotonicity is proved in Lean (\texttt{confidence\_monotone}).
@@ -3286,7 +3316,7 @@ provenance, overlap/stamps, context, and richer posterior shape.
 
 Consequently, the familiar PLN/NARS formula $c=n/(n+k)$ is not forced
 by the two-count reconstruction problem alone.  The formal coordinate
-theorem in \codepath{Mettapedia/Logic/PLNConfidenceWeight.lean} proves
+theorem in \codepath{Mettapedia/PLN/TruthValues/PLNConfidenceWeight.lean} proves
 that any displayed confidence coordinate with a known left inverse on
 nonnegative evidence weights can recover the binary counts from
 $(s,c)$.  A deliberately different ``reserve-half'' coordinate,
@@ -3294,6 +3324,28 @@ $c=n/(2n+k)$, is proved to reconstruct the same counts while keeping
 all displayed confidence below $1/2$.  The usual formula is forced only
 after adding a stronger interpretation, such as odds-linearity
 $c/(1-c)=n/k$.
+
+The finished public capstone for this whole confidence-formula story now lives
+in \codepath{Mettapedia/PLN/Core/PLNCanonicalAPI.lean} as
+\code{confidenceCharacterizationEndpointProfile}; the expository companion is
+\codepath{papers/pln-credal-degrees-of-freedom.tex}.  We use that as the
+authoritative pointer rather than reproducing the full classification inside
+this book.
+
+\paragraph{Future work: distinction graphs.}
+So far this chapter has treated width mostly as something driven by evidence
+totals or by hidden joint structure.  Another honest source of width is
+unresolved distinction: an observer may still be unable to tell two states or
+patterns apart.  Then the query ``is this $p$?'' can have a real interval not
+because the arithmetic is vague, but because one admissible completion says
+``it is $p$'' while another says ``it is a distinct $q$ that the observer still
+confounds with $p$.''  A richer distinction-graph account would make that
+source explicit.  Coarser graphs would encode what the observer still
+identifies; refinement would encode learning new distinctions; and confidence
+would be read against both sample size and observational resolution.  The
+current Lean development already has the minimal version of this idea for
+OSLF-style observational indistinguishability, but a broader graph-based
+treatment remains future work.
 
 \begin{figure}[htbp]
 \centering
@@ -11508,7 +11560,7 @@ deterministic subprocess fallback path in the bridge.
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=0.96\textwidth]{../results/figures/pplbench_refresh_checks.pdf}
+\wmplnincludegraphics[width=0.96\textwidth]{../results/figures/pplbench_refresh_checks.pdf}
 \caption{Bridge and rule-surface checks for the refreshed PPLBench $\leftrightarrow$
 PeTTa path.  The checks are intentionally small and auditable: arithmetic
 smoke, xiPLN deterministic rewrite loading, one discrete STV projection, one
@@ -11574,7 +11626,7 @@ Generated artifacts:
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=0.98\textwidth]{../results/figures/pplbench_normal_holdout.pdf}
+\wmplnincludegraphics[width=0.98\textwidth]{../results/figures/pplbench_normal_holdout.pdf}
 \caption{Held-out Normal-Normal benchmark lane through the real PPLBench PLN
 interface.  Top left: final held-out predictive log-likelihood improves as
 more of the dataset is used for training.  Top right: posterior mean error to
@@ -11912,7 +11964,7 @@ gap dramatically and slightly exceeds Stan on final PLL in this recorded run.}
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=0.92\textwidth]{../results/figures/pplbench_noisy_or_topic_pll.png}
+\wmplnincludegraphics[width=0.92\textwidth]{../results/figures/pplbench_noisy_or_topic_pll.png}
 \caption{Stan vs semantic WM-PLN on the refreshed noisy-or lane.  The semantic
 WM-PLN run tracks Stan closely across the held-out PLL curve on this small
 configuration, in contrast to the earlier heuristic lane.}
@@ -12022,7 +12074,7 @@ matches the right abstraction boundary and remains materially faster.}
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=0.92\textwidth]{../results/figures/pplbench_crowd_sourced_annotation_pll.png}
+\wmplnincludegraphics[width=0.92\textwidth]{../results/figures/pplbench_crowd_sourced_annotation_pll.png}
 \caption{Stan vs refreshed WM-PLN on the crowd annotation lane.  The WM-PLN
 curve stays close to Stan while using the explicit multiclass message carrier
 rather than the archived hybrid heuristic.}
@@ -12132,7 +12184,7 @@ to the analytic posterior mean vector.}
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=0.92\textwidth]{../results/figures/pplbench_dirichlet_categorical_pll.png}
+\wmplnincludegraphics[width=0.92\textwidth]{../results/figures/pplbench_dirichlet_categorical_pll.png}
 \caption{Stan vs exact WM-PLN on the Dirichlet-Categorical lane.  Because both
 sides are exact conjugate updates here, the comparison isolates sampling and
 benchmark-surface behavior rather than scheduler quality.}
@@ -12253,7 +12305,7 @@ substantially faster and keeps the hierarchical carrier/query split explicit.}
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=0.92\textwidth]{../results/figures/pplbench_n_schools_pll.png}
+\wmplnincludegraphics[width=0.92\textwidth]{../results/figures/pplbench_n_schools_pll.png}
 \caption{Stan vs refreshed WM-PLN on the hierarchical \texttt{n\_schools}
 lane.  The WM-PLN curve stays close to Stan while using explicit hierarchical
 evidence carriers rather than the archived hybrid shrinkage wrapper.}
@@ -12395,7 +12447,7 @@ but the current variational scheduler still lags Stan on both fit and runtime.}
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=0.92\textwidth]{../results/figures/pplbench_logistic_regression_pll.png}
+\wmplnincludegraphics[width=0.92\textwidth]{../results/figures/pplbench_logistic_regression_pll.png}
 \caption{Stan vs refreshed WM-PLN on the logistic-regression lane.  The WM-PLN
 curve is stable and model-matched, but the diagonal variational scheduler keeps
 a clear gap to Stan on this first slice.}
@@ -12535,7 +12587,7 @@ predictive-fit and runtime edge on this first heavy-tailed benchmark slice.}
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=0.92\textwidth]{../results/figures/pplbench_robust_regression_pll.png}
+\wmplnincludegraphics[width=0.92\textwidth]{../results/figures/pplbench_robust_regression_pll.png}
 \caption{Stan vs refreshed WM-PLN on the robust-regression lane.  The WM-PLN
 curve is stable, but the current robust scheduler pays both a predictive-fit
 and runtime penalty relative to Stan on this first run.}

@@ -1,6 +1,6 @@
-import Mathlib.Data.List.OfFn
-import Mathlib.Tactic
-#check take_append_of_le_length
-#check drop_append_of_le_length
-#check List.take_append_of_le_length
-#check List.drop_append_of_le_length
+import Mettapedia.Languages.MeTTa.PureKernel.AlgorithmicTyping
+#print checkPureType
+#print checkPureType.match_1
+#print checkPureType.eq_1
+#print checkPureType.eq_2
+#print checkPureType.eq_3

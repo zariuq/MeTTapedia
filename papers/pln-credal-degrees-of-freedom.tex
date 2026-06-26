@@ -99,7 +99,9 @@ Along the way we catalogue nineteen design choices --- ``degrees of freedom''
 --- that two numbers either expose or hide, each with a numeric example
 you can run. Every claim has a machine-checked counterpart; the formal
 statements are collected, de-jargoned, in an appendix, and a runnable example
-pack reproduces every number in the paper.
+pack reproduces every number in the paper. The sealed public Lean endpoint for
+the whole characterization is \lpath{Mettapedia/PLN/Core/PLNCanonicalAPI.lean}
+under \lid{confidenceCharacterizationEndpointProfile}.
 \end{abstract}
 
 \tableofcontents
@@ -215,7 +217,7 @@ set per domain; nothing in the mathematics picks it for you. (We will see in
 Section~\ref{sec:zoo} that, once you fix a couple of natural conventions, the
 \emph{shape} $c=N/(N+\kappa)$ is forced\footnote{Lean:
 \lid{walley\_width\_complement\_forces\_plnOdds} in
-\lpath{Mettapedia/Logic/PLNConfidenceWeight.lean}; see Appendix~\ref{app:formal}.}
+\lpath{Mettapedia/PLN/TruthValues/PLNConfidenceWeight.lean}; see Appendix~\ref{app:formal}.}
 --- but the value of $\kappa$ never is.)
 
 \begin{figure}[ht]
@@ -636,15 +638,15 @@ a sentence, the smallest number that shows it, and the trap it prevents. Every
 number here is reproduced by the runnable pack (Appendix~\ref{app:run}); every
 entry names its formal anchor in Appendix~\ref{app:formal}.\footnote{The new
 canaries for DoF 8, 11, and 18 are in
-\lpath{Mettapedia/Logic/PLNConfidenceDoFCanary.lean};
+\lpath{Mettapedia/PLN/TruthValues/PLNConfidenceDoFCanary.lean};
 \lpath{papers/pln-confidence-examples/lean/DOF-LEAN-MAP.md} maps every degree of
 freedom to its theorem.}
 
 \begin{enumerate}
 \item \textbf{Evidence scale $\kappa$.}\footnote{Lean:
 \lid{walley\_width\_complement\_forces\_plnOdds} forces the odds shape while
-leaving $\kappa$ free (\lpath{Mettapedia/Logic/PLNConfidenceWeight.lean});
-strength is \lid{posteriorMeanStrength} (\lpath{Mettapedia/Logic/PLNTruthTower.lean}).}
+leaving $\kappa$ free (\lpath{Mettapedia/PLN/TruthValues/PLNConfidenceWeight.lean});
+strength is \lid{posteriorMeanStrength} (\lpath{Mettapedia/PLN/TruthValues/PLNTruthTower.lean}).}
 How much evidence counts as ``a lot'' is
 a domain choice. The same $N=5$ gives confidence $0.833/0.333/0.091$ at
 $\kappa=1/10/50$. \emph{Trap:} fixing $\kappa=1$ everywhere lets a lone weak hit
@@ -662,7 +664,7 @@ claim $0.83$ confidence it never earned.
 
 \item \textbf{Prior context for strength.}\footnote{Lean:
 \lid{posteriorMeanStrength\_improper\_eq\_mle} in
-\lpath{Mettapedia/Logic/PLNTruthTower.lean}.} The same counts read differently
+\lpath{Mettapedia/PLN/TruthValues/PLNTruthTower.lean}.} The same counts read differently
 under maximum-likelihood, a uniform prior, or Jeffreys'. From a single positive
 $(1,0)$: MLE $1.0$, uniform-prior mean $0.667$, Jeffreys $0.75$ --- and all
 converge to $\approx0.999$ once $1000$ observations pile up. \emph{Trap:}
@@ -681,7 +683,7 @@ pretending strength is context-free silently bakes in a prior.
 
 \item \textbf{Total versus ratio.}\footnote{Lean:
 \lid{strength\_mem\_unit\_of\_total\_ne\_zero} in
-\lpath{Mettapedia/Logic/PLNTruthTower.lean}.} Strength reads the ratio, confidence the
+\lpath{Mettapedia/PLN/TruthValues/PLNTruthTower.lean}.} Strength reads the ratio, confidence the
 total --- the reason there are two numbers at all. $1/1,10/10,100/100$ all have
 strength $0.5$ with confidence $0.667/0.952/0.995$; $1/1$ versus $2/0$ share the
 total (confidence $0.667$) but split on strength ($0.5$ vs $1.0$). \emph{Trap:}
@@ -700,7 +702,7 @@ any one-number truth value equates $1/1$ with $100/100$.
 \item \textbf{Confidence chart.}\footnote{Lean:
 \lid{reserveHalfCoordinate\_not\_walley\_width\_complement} (a chart that
 reconstructs evidence yet is not the odds chart) in
-\lpath{Mettapedia/Logic/PLNConfidenceWeight.lean}.} Recovering the evidence count needs only
+\lpath{Mettapedia/PLN/TruthValues/PLNConfidenceWeight.lean}.} Recovering the evidence count needs only
 \emph{some} invertible scale; it does not force PLN's particular one. The same
 recovered evidence displayed three ways gives $0.833$ (PLN odds), $0.455$
 (a reserve-half chart), $0.874$ (an arctangent chart). \emph{Trap:} combining
@@ -717,9 +719,9 @@ evidence in a display chart instead of in evidence-count space.
 \end{tikzpicture}}
 
 \item \textbf{Width-complement convention.}\footnote{Lean:
-\lid{WidthComplementCompatible} (\lpath{Mettapedia/Logic/PLNTruthTower.lean})
+\lid{WidthComplementCompatible} (\lpath{Mettapedia/PLN/TruthValues/PLNTruthTower.lean})
 and \lid{walley\_width\_complement\_forces\_plnOdds}
-(\lpath{Mettapedia/Logic/PLNConfidenceWeight.lean}).} Setting confidence $=1-\text{width}$
+(\lpath{Mettapedia/PLN/TruthValues/PLNConfidenceWeight.lean}).} Setting confidence $=1-\text{width}$
 is natural but still a convention, and it needs a scale. A binary interval gives
 $0.4$; a bounded utility, correctly range-normalized, also $0.4$; the same
 utility left un-normalized gives the deliberate nonsense $-59.0$. \emph{Trap:}
@@ -735,7 +737,7 @@ applying width-complement to dollar-valued gambles without normalizing.
 
 \item \textbf{Interval point selector.}\footnote{Lean:
 \lid{generic\_itv\_does\_not\_force\_point\_projection} in
-\lpath{Mettapedia/Logic/PLNTruthTheoryIndex.lean}.} A real interval $[L,U]$ does not pick its
+\lpath{Mettapedia/PLN/TruthValues/PLNTruthTheoryIndex.lean}.} A real interval $[L,U]$ does not pick its
 own display point. Lower / midpoint / upper on one interval: $0.2/0.5/0.8$.
 \emph{Trap:} a safety decision shown the midpoint when it needed the lower bound.
 
@@ -752,13 +754,13 @@ own display point. Lower / midpoint / upper on one interval: $0.2/0.5/0.8$.
 \end{tikzpicture}}
 
 \item \textbf{Credal shape beyond one interval.}\footnote{Lean:
-\lid{CredalProjectionTower} in \lpath{Mettapedia/Logic/PLNTruthTower.lean};
+\lid{CredalProjectionTower} in \lpath{Mettapedia/PLN/TruthValues/PLNTruthTower.lean};
 \lid{observationCredalSet\_indicatorGamble\_has\_strict\_width\_of\_related\_ne} and
 \lid{observationCredalSet\_indicatorGamble\_collapses\_of\_class\_subsingleton} in
-\lpath{Mettapedia/Logic/PLNDistinctionCredalBridge.lean}; and the OSLF specialization
+\lpath{Mettapedia/PLN/TruthValues/PLNDistinctionCredalBridge.lean}; and the OSLF specialization
 \lid{indistObs\_indicatorGamble\_has\_strict\_width} /
 \lid{indistObs\_indicatorGamble\_collapses\_of\_class\_subsingleton} in
-\lpath{Mettapedia/Logic/PLNDistinctionCredalOSLFBridge.lean}.} Two spreads can agree on one
+\lpath{Mettapedia/PLN/Bridges/Languages/PLNDistinctionCredalOSLFBridge.lean}.} Two spreads can agree on one
 question and disagree on another --- the very reason $\STV{s}{c}$ is a
 compression. Two joint models with identical marginals $P(A)=P(B)=0.5$ can have
 conjunction $0.5$ (perfectly dependent) or $0.0$ (mutually exclusive); the whole
@@ -783,7 +785,7 @@ remain interval-valued until that distinction is resolved.
 
 \item \textbf{Which uncertainty method (the ``backend'').}\footnote{Lean:
 \lid{beta\_mean\_strictly\_inside\_walley\_idm\_interval} in
-\lpath{Mettapedia/Logic/PLNConfidenceDoFCanary.lean}; see Appendix~\ref{app:formal}.} Feed the \emph{same}
+\lpath{Mettapedia/PLN/TruthValues/PLNConfidenceDoFCanary.lean}; see Appendix~\ref{app:formal}.} Feed the \emph{same}
 data to two different uncertainty methods and you get answers of different
 \emph{shape}. From $2$ ``yes'' and $3$ ``no'': a single-distribution Bayesian
 method returns one best number (the Beta posterior mean $\tfrac{3}{7}\approx
@@ -810,7 +812,7 @@ convenience,'' silently discarding the safety margin.
 
 \item \textbf{Credible level / tolerance.}\footnote{Lean:
 \lid{walleyCategorical\_credibility\_eq} in
-\lpath{Mettapedia/Logic/PLNTruthTower.lean}.} A Bayesian interval also carries a
+\lpath{Mettapedia/PLN/TruthValues/PLNTruthTower.lean}.} A Bayesian interval also carries a
 chosen level ($90/95/99\%$) --- a different knob from $\kappa$. $\kappa$ governs
 how evidence accumulates; the level governs what you \emph{ask} of a finished
 posterior. \emph{Trap:} confusing ``more evidence'' with ``a tighter requested
@@ -827,7 +829,7 @@ interval.''
 
 \item \textbf{Categorical query.}\footnote{Lean:
 \lid{categoricalSurface\_idmEnvelope\_forced\_by\_aggregate} in
-\lpath{Mettapedia/Logic/PLNTruthTower.lean}.} In a multi-class model the total evidence is
+\lpath{Mettapedia/PLN/TruthValues/PLNTruthTower.lean}.} In a multi-class model the total evidence is
 shared but each category has its own confidence. In a $1000$-sample $3$-class
 model: the common class has strength $0.90$, confidence $0.999$; a rare class has
 strength $0.002$, confidence $0.167$ \emph{despite} the huge total. \emph{Trap:}
@@ -845,7 +847,7 @@ observations.
 
 \item \textbf{Evidence discounting.}\footnote{Lean:
 \lid{power\_discount\_scales\_logodds} in
-\lpath{Mettapedia/Logic/PLNConfidenceDoFCanary.lean}.} Evidence can be reweighted for quality,
+\lpath{Mettapedia/PLN/TruthValues/PLNConfidenceDoFCanary.lean}.} Evidence can be reweighted for quality,
 rarity, or route before it counts. Power-discounting scales the log-odds
 linearly; discounted totals of $4.57,12,104$ give confidences
 $0.821/0.923/0.991$. \emph{Trap:} treating correlated hits as independent and
@@ -863,7 +865,7 @@ overstating confidence.
 
 \item \textbf{Local credal specification.}\footnote{Lean:
 \lid{finiteLowerPrevision} and \lid{coherentDesirableSet} in
-\lpath{Mettapedia/Logic/PLNTruthTower.lean}.} In a built-up model the modeller
+\lpath{Mettapedia/PLN/TruthValues/PLNTruthTower.lean}.} In a built-up model the modeller
 chooses how wide each local piece is --- the intended-imprecision knob (source
 (A) of Section~\ref{sec:three}). \emph{Trap:} hiding local ambiguity behind a
 single precise prior, so later confidence looks unjustifiably high.
@@ -960,7 +962,7 @@ mixture component be degenerate, which wrongly rejects legitimate
 
 \item \textbf{Rule-level confidence transport (revision).}\footnote{Lean:
 \lid{transportedConfidenceRevision} and \lid{plnConfidenceRevision} in
-\lpath{Mettapedia/Logic/PLNConfidenceWeightRevision.lean}.} Combining two
+\lpath{Mettapedia/PLN/TruthValues/PLNConfidenceWeightRevision.lean}.} Combining two
 independent bodies of evidence is ``add the counts, then re-read,'' not ``average
 the confidences.'' $(4,2)\oplus(3,1)=(7,3)$ gives $\STV{0.7}{0.909}$ --- higher
 than either source ($\STV{0.667}{0.857}$ and $\STV{0.75}{0.800}$). \emph{Trap:}
@@ -979,7 +981,7 @@ seeing \emph{more} evidence.
 
 \item \textbf{Provenance / route.}\footnote{Lean:
 \lid{route\_kappa\_changes\_confidence\_not\_strength} in
-\lpath{Mettapedia/Logic/PLNConfidenceDoFCanary.lean}.} Same counts, different route, route-specific
+\lpath{Mettapedia/PLN/TruthValues/PLNConfidenceDoFCanary.lean}.} Same counts, different route, route-specific
 confidence. From $(3,0)$: strength $1.0$ on every route, but confidence $0.75$ on
 a direct route ($\kappa=1$) versus $0.273$ on a pathway-mediated route
 ($\kappa=8$). \emph{Trap:} merging routes before applying route-specific
@@ -995,7 +997,7 @@ $\kappa$, destroying both the audit trail and the discount.
 
 \item \textbf{Extra structure beyond $\STV{s}{c}$.}\footnote{Lean:
 \lid{phase\_not\_visible\_to\_standard\_pln\_view} in
-\lpath{Mettapedia/Logic/PLNAmplitudePhase.lean}.} Some beliefs carry more than
+\lpath{Mettapedia/PLN/TruthValues/PLNAmplitudePhase.lean}.} Some beliefs carry more than
 strength and confidence --- a ``phase'' or dependence witness --- and two beliefs
 with identical $\STV{s}{c}$ can differ once a composition rule that \emph{sees}
 the extra coordinate is in play. \emph{Trap:} both carrying phase needlessly in a
@@ -1083,6 +1085,14 @@ for a human spot-check. The honest contract is stated there and bears repeating:
 \textbf{the Lean theorems of Appendix~\ref{app:formal} are the correctness
 oracle; the \texttt{.metta} runs are intuition and reproducibility, never proof.}
 Matching output is an illustration check, not a verification.
+
+For DoF~7 specifically, the pack carries three complementary shadows: the raw
+joint-shape loss (\lpath{metta/dof07_credal_shape.metta}), the hidden-joint
+distinction shadow (\lpath{metta/dof07b_distinction_credal_shadow.metta}), and
+the OSLF observer-resolution shadow
+(\lpath{metta/dof07c_oslf_observer_resolution.metta}), where the same target
+pattern remains interval-valued under a coarse observational class $\{p,q\}$ but
+collapses once the observer class sharpens to $\{p\}$.
 
 A few entries (the infinite-boundary ones --- exchangeable streams, weak/strong
 coupling, completion extreme points, hidden phase) have no finite executable that

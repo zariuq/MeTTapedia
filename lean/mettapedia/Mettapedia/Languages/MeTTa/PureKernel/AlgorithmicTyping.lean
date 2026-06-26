@@ -149,4 +149,58 @@ def inferClosedPureType (t : PureTm 0) : Except String (InferredTyping .nil t) :
 def checkClosedPureType (t A : PureTm 0) : Except String (CheckedTyping .nil t A) :=
   checkPureType .nil t A
 
+/-- A small open-term counterexample showing that `checkPureType` is not
+complete for expected types merely convertible to `Pi`: the expected type below
+is convertible to a `Pi`, but `asPi?` only inspects `cdev`, so lambda checking
+fails before conversion can help. -/
+private def lambdaCheckCounterCtx : Ctx 1 :=
+  .snoc .nil .u0
+
+private def lambdaCheckCounterExpectedRight : PureTm 1 :=
+  .pi (.u0 : PureTm 1) (.u0 : PureTm 2)
+
+private def lambdaCheckCounterExpectedBody : PureTm 2 :=
+  rename wk lambdaCheckCounterExpectedRight
+
+private def lambdaCheckCounterExpected : PureTm 1 :=
+  .app (.fst (.pair (.lam lambdaCheckCounterExpectedBody) (.var 0))) (.var 0)
+
+private def lambdaCheckCounterTerm : PureTm 1 :=
+  .lam (.var 0)
+
+private theorem lambdaCheckCounterTerm_typed_right :
+    HasType lambdaCheckCounterCtx lambdaCheckCounterTerm lambdaCheckCounterExpectedRight := by
+  apply HasType.lam_intro
+  simpa [lambdaCheckCounterCtx, lambdaCheckCounterTerm, lambdaCheckCounterExpectedRight,
+    Context.lookup_snoc_zero, Renaming.rename] using
+    (HasType.var (Γ := .snoc lambdaCheckCounterCtx (.u0 : PureTm 1)) (i := (0 : Fin 2)))
+
+private theorem lambdaCheckCounterExpected_conv :
+    Conv lambdaCheckCounterExpected lambdaCheckCounterExpectedRight := by
+  refine Relation.EqvGen.trans _ _ _
+    (red_implies_conv
+      (.congAppFun
+        (.betaSigmaFst (.lam lambdaCheckCounterExpectedBody) (.var 0))))
+    ?_
+  exact red_implies_conv (.betaPi lambdaCheckCounterExpectedBody (.var 0))
+
+private theorem lambdaCheckCounterTerm_typed_expected :
+    HasType lambdaCheckCounterCtx lambdaCheckCounterTerm lambdaCheckCounterExpected := by
+  exact HasType.conv lambdaCheckCounterTerm_typed_right
+    (Relation.EqvGen.symm _ _ lambdaCheckCounterExpected_conv)
+
+private theorem lambdaCheckCounterExpected_asPi_none :
+    asPi? lambdaCheckCounterExpected = none := by
+  simp [asPi?, lambdaCheckCounterExpected, cdev]
+
+theorem checkPureType_not_complete_for_convertible_pi :
+    ∃ (Γ : Ctx 1) (t A : PureTm 1),
+      HasType Γ t A ∧
+      checkPureType Γ t A = Except.error "lambda requires an expected Pi type" := by
+  refine ⟨lambdaCheckCounterCtx, lambdaCheckCounterTerm, lambdaCheckCounterExpected,
+    lambdaCheckCounterTerm_typed_expected, ?_⟩
+  unfold checkPureType
+  simp [lambdaCheckCounterTerm, lambdaCheckCounterExpected_asPi_none]
+  rfl
+
 end Mettapedia.Languages.MeTTa.PureKernel

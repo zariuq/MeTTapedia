@@ -4,6 +4,7 @@ import Mettapedia.Languages.MeTTa.PureKernel.NatDecl
 import Mettapedia.Languages.MeTTa.PureKernel.RecursorDecl
 import Mettapedia.Languages.MeTTa.PureKernel.InductiveDecl
 import Mettapedia.Languages.MeTTa.PureKernel.Substitution
+import Mettapedia.Languages.MeTTa.PureKernel.CoreEmbedding
 
 /-!
 # DTT Seed Proof Path
@@ -38,6 +39,10 @@ open Mettapedia.Languages.MeTTa.PureKernel.NatDecl
 open Mettapedia.Languages.MeTTa.PureKernel.RecursorDecl
 open Mettapedia.Languages.MeTTa.PureKernel.IndDecl
 open Mettapedia.Languages.MeTTa.PureKernel.Substitution
+open Mettapedia.Languages.MeTTa.PureKernel.PatternBridge
+open Mettapedia.Languages.MeTTa.PureKernel.ProfileTheory
+open Mettapedia.Languages.MeTTa.PureKernel.Assembly
+open Mettapedia.Languages.MeTTa.PureKernel.CoreEmbedding
 
 /-! ## PeTTa-side typed program -/
 
@@ -158,6 +163,75 @@ theorem pureUnitRec_iota_oracle :
       HasTypeDecl unitRecDeclEnv .nil unitCtorTerm (.const unitTyName) :=
   unitRecOnCtor_preserves_type_to_result
 
+structure PureUnitRecBoundaryOracle where
+  frontier :
+    GeneratedRecursorCurrentBoundaryConditionalFrontierPackage unitRecContract
+  sourceType :
+    HasTypeDecl unitRecDeclEnv .nil unitRecOnCtor (.const unitTyName)
+  reduces :
+    RedStarDecl unitRecDeclEnv unitRecOnCtor unitCtorTerm
+  targetType :
+    HasTypeDecl unitRecDeclEnv .nil unitCtorTerm (.const unitTyName)
+
+/-- Closed Unit-rec seed packaged with the current declaration-side frontier.
+This reuses the historically named conditional-frontier package, now discharged
+through the declaration-side Church-Rosser theorem. It is a reusable
+certificate, not a re-proof of the metatheorem. -/
+def pureUnitRec_currentBoundary_conditional_oracle_certificate_of_decl_package
+    (hDeclPkg :
+      DeclChurchRosserFrontierPackage unitRecDeclEnv) :
+    PureUnitRecBoundaryOracle :=
+  let hAdm : GeneratedRecursorContractAdmitted unitRecContract :=
+    ⟨{ contract := unitRecContract
+       obligations := [unitRecCtorIotaObligation]
+       value? := some unitRecValue },
+      generatedRecursorPilot_unit⟩
+  { frontier :=
+      generatedRecursorContract_admitted_current_boundary_package_of_conditional_frontier_of_decl_package
+        (contract := unitRecContract) hAdm hDeclPkg
+    sourceType := pureUnitRec_iota_oracle.1
+    reduces := pureUnitRec_iota_oracle.2.1
+    targetType := pureUnitRec_iota_oracle.2.2 }
+
+def pureUnitRec_currentBoundary_conditional_oracle_certificate
+    : PureUnitRecBoundaryOracle :=
+  let hAdm : GeneratedRecursorContractAdmitted unitRecContract :=
+    ⟨{ contract := unitRecContract
+       obligations := [unitRecCtorIotaObligation]
+       value? := some unitRecValue },
+      generatedRecursorPilot_unit⟩
+  { frontier :=
+      generatedRecursorContract_admitted_current_boundary_package_of_conditional_frontier_sealed
+        (contract := unitRecContract) hAdm
+    sourceType := pureUnitRec_iota_oracle.1
+    reduces := pureUnitRec_iota_oracle.2.1
+    targetType := pureUnitRec_iota_oracle.2.2 }
+
+theorem pureUnitRec_currentBoundary_conditional_oracle_connection_of_decl_package
+    (hDeclPkg :
+      DeclChurchRosserFrontierPackage unitRecDeclEnv) :
+    GeneratedRecursorCurrentBoundaryConditionalFrontierPackage unitRecContract ∧
+      HasTypeDecl unitRecDeclEnv .nil unitRecOnCtor (.const unitTyName) ∧
+      RedStarDecl unitRecDeclEnv unitRecOnCtor unitCtorTerm ∧
+      HasTypeDecl unitRecDeclEnv .nil unitCtorTerm (.const unitTyName) :=
+  ⟨ pureUnitRec_currentBoundary_conditional_oracle_certificate_of_decl_package hDeclPkg |>.frontier
+  , pureUnitRec_currentBoundary_conditional_oracle_certificate_of_decl_package hDeclPkg |>.sourceType
+  , pureUnitRec_currentBoundary_conditional_oracle_certificate_of_decl_package hDeclPkg |>.reduces
+  , pureUnitRec_currentBoundary_conditional_oracle_certificate_of_decl_package hDeclPkg |>.targetType
+  ⟩
+
+theorem pureUnitRec_currentBoundary_conditional_oracle_connection
+    :
+    GeneratedRecursorCurrentBoundaryConditionalFrontierPackage unitRecContract ∧
+      HasTypeDecl unitRecDeclEnv .nil unitRecOnCtor (.const unitTyName) ∧
+      RedStarDecl unitRecDeclEnv unitRecOnCtor unitCtorTerm ∧
+      HasTypeDecl unitRecDeclEnv .nil unitCtorTerm (.const unitTyName) :=
+  ⟨ pureUnitRec_currentBoundary_conditional_oracle_certificate |>.frontier
+  , pureUnitRec_currentBoundary_conditional_oracle_certificate |>.sourceType
+  , pureUnitRec_currentBoundary_conditional_oracle_certificate |>.reduces
+  , pureUnitRec_currentBoundary_conditional_oracle_certificate |>.targetType
+  ⟩
+
 /-! ## Smallest he-prime runtime/oracle connection -/
 
 def tutUnitPattern : Pattern := .apply "TutUnit" []
@@ -210,6 +284,153 @@ theorem hePrime_tutUnitRecSurface_oracle_connection :
   , hePrime_tutUnitRecSurface_oracle_certificate.reduces
   , hePrime_tutUnitRecSurface_oracle_certificate.targetType
   ⟩
+
+/-! ## Current-boundary no-values slice -> quoted profile bridge -/
+
+/-- On the strongest assumption-free checked-spec slice, any generated closed
+recursor step chain transports through the declaration kernel into the quoted
+Pure-profile theory star. This is the current honest interface theorem between
+the recursor admission frontier and the engine-facing profile bridge: it uses
+the all-none declaration package and does not cross the value-bearing delta
+frontier. -/
+theorem generatedRecursor_currentBoundary_noValues_profileBridge_of_all_none_specs
+    {contract : FamilyRecursorDeclContract}
+    {specs : List DeclSpec}
+    (hAdm : GeneratedRecursorContractAdmitted contract)
+    (hSig : SignatureWellFormed specs)
+    (hNone : ∀ s ∈ specs, s.value? = none)
+    (hReal : GeneratedRecursorContractClosedIotaRealizedIn (envOfSpecs specs) contract)
+    (hinst0 : Inst0OpenBridgeCompat defaultBinderName)
+    (hcompat0 : QuoteCompat defaultBinderName 0 emptyEnv)
+    {t u : PureTm 0}
+    (h :
+      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u) :
+    PureProfileTheoryStepStar (quoteClosedTm t) (quoteClosedTm u) := by
+  let hPkg :=
+    generatedRecursorContract_admitted_current_boundary_package_of_all_none_specs
+      (contract := contract) (specs := specs) hAdm hSig hNone hReal
+  let hBoundary :=
+    checkedNoValuesDeclKernelBoundaryOfPackage
+      hSig hNone (hSig.declSpecAndNoValuesPackage_of_all_none hNone)
+  have hStepToDecl :
+      ∀ {t u : PureTm 0},
+        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
+          RedStarDecl (envOfSpecs specs) t u :=
+    hPkg.2.2.1.2.1
+  exact
+    checkedNoValuesDeclKernel_star_sound_pureProfileTheoryStepStar_quoteClosed
+      hSig hNone hinst0 hcompat0 (hStepToDecl h)
+
+/-- The same no-values current-boundary package gives the full typed/profile
+transport: a generated closed recursor step chain preserves the declaration
+type of a closed term and simultaneously yields the quoted Pure-profile star
+witness. -/
+theorem generatedRecursor_currentBoundary_noValues_subjectReduction_and_profileBridge_of_all_none_specs
+    {contract : FamilyRecursorDeclContract}
+    {specs : List DeclSpec}
+    (hAdm : GeneratedRecursorContractAdmitted contract)
+    (hSig : SignatureWellFormed specs)
+    (hNone : ∀ s ∈ specs, s.value? = none)
+    (hReal : GeneratedRecursorContractClosedIotaRealizedIn (envOfSpecs specs) contract)
+    (hinst0 : Inst0OpenBridgeCompat defaultBinderName)
+    (hcompat0 : QuoteCompat defaultBinderName 0 emptyEnv)
+    {t u A : PureTm 0}
+    (ht : HasTypeDecl (envOfSpecs specs) .nil t A)
+    (h :
+      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u) :
+    HasTypeDecl (envOfSpecs specs) .nil u A ∧
+      PureProfileTheoryStepStar (quoteClosedTm t) (quoteClosedTm u) := by
+  let hPkg :=
+    generatedRecursorContract_admitted_current_boundary_package_of_all_none_specs
+      (contract := contract) (specs := specs) hAdm hSig hNone hReal
+  let hBoundary :=
+    checkedNoValuesDeclKernelBoundaryOfPackage
+      hSig hNone (hSig.declSpecAndNoValuesPackage_of_all_none hNone)
+  have hStepToDecl :
+      ∀ {t u : PureTm 0},
+        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
+          RedStarDecl (envOfSpecs specs) t u :=
+    hPkg.2.2.1.2.1
+  exact
+    checkedNoValuesDeclKernelBoundary_closedSubjectReduction_and_profileBridge
+      hBoundary hinst0 hcompat0 ht (hStepToDecl h)
+
+/-- On the same assumption-free slice, a successful generated recursor
+conversion-by-normalization witness yields a quoted common reduct in the
+Pure-profile theory. This is the current bridge from the checked recursor
+conversion service to the engine-facing quoted proof surface. -/
+theorem generatedRecursor_currentBoundary_noValues_convByNormalization_profileBridge_of_all_none_specs
+    {contract : FamilyRecursorDeclContract}
+    {specs : List DeclSpec}
+    (hAdm : GeneratedRecursorContractAdmitted contract)
+    (hSig : SignatureWellFormed specs)
+    (hNone : ∀ s ∈ specs, s.value? = none)
+    (hReal : GeneratedRecursorContractClosedIotaRealizedIn (envOfSpecs specs) contract)
+    (hinst0 : Inst0OpenBridgeCompat defaultBinderName)
+    (hcompat0 : QuoteCompat defaultBinderName 0 emptyEnv)
+    {t u : PureTm 0}
+    {w : GeneratedRecursorContractClosedIotaConvWitness contract t u}
+    (hw :
+      generatedRecursorContractClosedIotaConvByNormalization? contract t u = some w) :
+    ∃ q : Pattern,
+      PureProfileTheoryStepStar (quoteClosedTm t) q ∧
+      PureProfileTheoryStepStar (quoteClosedTm u) q := by
+  let hPkg :=
+    generatedRecursorContract_admitted_current_boundary_package_of_all_none_specs
+      (contract := contract) (specs := specs) hAdm hSig hNone hReal
+  let hBoundary :=
+    checkedNoValuesDeclKernelBoundaryOfPackage
+      hSig hNone (hSig.declSpecAndNoValuesPackage_of_all_none hNone)
+  have hConvSome :
+      ∀ {t u : PureTm 0}
+        {w : GeneratedRecursorContractClosedIotaConvWitness contract t u},
+        generatedRecursorContractClosedIotaConvByNormalization? contract t u = some w →
+          ConvDecl (envOfSpecs specs) t u :=
+    hPkg.2.2.1.2.2.2.2.2.2.1
+  exact
+    checkedNoValuesDeclKernelBoundary_closedCommonReduct_profileBridge
+      hBoundary hinst0 hcompat0 (hConvSome hw)
+
+/-- Value-bearing current-boundary recursor packages over checked specs sit in
+the same declaration kernel that already embeds into the Pure profile under a
+Church-Rosser hypothesis. This is the current honest interface theorem on the
+value-bearing side: it packages the admitted recursor frontier together with
+the assembled declaration kernel boundary and the engine-facing kernel identity
+and target profile, without overclaiming a quoted-step transport across delta. -/
+theorem generatedRecursor_currentBoundary_churchRosser_frontier_and_embedding_of_specs
+    {contract : FamilyRecursorDeclContract}
+    {specs : List DeclSpec}
+    (hAdm : GeneratedRecursorContractAdmitted contract)
+    (hSig : SignatureWellFormed specs)
+    (hCR : DeclChurchRosser (envOfSpecs specs))
+    (hReal : GeneratedRecursorContractClosedIotaRealizedIn (envOfSpecs specs) contract) :
+    GeneratedRecursorCurrentBoundaryChurchRosserFrontierPackage
+        (envOfSpecs specs) contract ∧
+      ∃ hBoundary : CheckedChurchRosserDeclKernelBoundary hSig hCR,
+        (checkedChurchRosserDeclKernelIntoPureProfile hSig hCR).kernel =
+          hBoundary.typed ∧
+        (checkedChurchRosserDeclKernelIntoPureProfile hSig hCR).profile =
+          Mettapedia.Languages.MeTTa.CoreProfile.pureProfile := by
+  have hWf : DeclEnvWellFormed (envOfSpecs specs) :=
+    envOfSpecs_wellFormed_of_specObligations specs hSig.obligations
+  have hFrontier :
+      GeneratedRecursorCurrentBoundaryChurchRosserFrontierPackage
+        (envOfSpecs specs) contract :=
+    generatedRecursorContract_admitted_current_boundary_package_of_church_rosser
+      (contract := contract)
+      (E := envOfSpecs specs)
+      hAdm hWf hReal hCR
+  let hBoundary := checkedChurchRosserDeclKernelBoundary hSig hCR
+  have hEmbed :
+      (checkedChurchRosserDeclKernelIntoPureProfile hSig hCR).kernel =
+          hBoundary.typed ∧
+        (checkedChurchRosserDeclKernelIntoPureProfile hSig hCR).profile =
+          Mettapedia.Languages.MeTTa.CoreProfile.pureProfile :=
+    checkedChurchRosserDeclKernelBoundary_kernel_and_profile hBoundary
+  exact
+    ⟨ hFrontier
+    , ⟨ hBoundary, hEmbed ⟩
+    ⟩
 
 /-- General inductive checker pilot: standard Unit/Nat declarations are accepted
 and a strictly negative constructor is rejected. -/

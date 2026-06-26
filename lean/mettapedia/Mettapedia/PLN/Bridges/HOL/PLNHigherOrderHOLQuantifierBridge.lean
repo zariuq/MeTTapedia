@@ -1,4 +1,5 @@
 import Mettapedia.PLN.Bridges.HOL.PLNHigherOrderHOLInheritanceBridge
+import Mettapedia.Logic.HOL.Soundness
 import Mettapedia.PLN.RuleFamilies.FirstOrder.Quantifiers.QuantifierSemantics
 import Mettapedia.PLN.RuleFamilies.FirstOrder.Quantifiers.FuzzyQuantifierSemanticsFin
 import Mettapedia.PLN.RuleFamilies.FirstOrder.Quantifiers.FuzzyQuantifierSoundnessInf
@@ -663,6 +664,985 @@ def predicateExtension
     (p : UnaryPredicate (Base := Base) (Const := Const) σ) :
     Set (PredicateObject (Base := Base) (Const := Const) M σ) :=
   {x | predicateHoldsAt (Base := Base) (Const := Const) M σ p x}
+
+/-- Arbitrary finite cardinality thresholds for a HOL predicate extension are
+equivalent to arbitrary finite witness sets of admissible objects satisfying
+the predicate.  This is the generic semantic spine behind the constructed
+`∃`, `at least two`, and `at least three` HOL counting sentences below. -/
+theorem predicateExtension_ncard_ge_iff_exists_witnessSet
+    (M : HenkinModel.{u, v, w} Base Const)
+    (σ : Ty Base)
+    [Fintype (PredicateObject (Base := Base) (Const := Const) M σ)]
+    (p : UnaryPredicate (Base := Base) (Const := Const) σ)
+    (k : Nat) :
+    k ≤ (predicateExtension (Base := Base) (Const := Const) M σ p).ncard ↔
+      ∃ W : Set (PredicateObject (Base := Base) (Const := Const) M σ),
+        W.ncard = k ∧
+          ∀ x ∈ W, predicateHoldsAt (Base := Base) (Const := Const) M σ p x := by
+  constructor
+  · intro hk
+    rcases Set.exists_subset_card_eq hk with ⟨W, hWsub, hWcard⟩
+    refine ⟨W, hWcard, ?_⟩
+    intro x hx
+    exact hWsub hx
+  · rintro ⟨W, hWcard, hW⟩
+    rw [← hWcard]
+    exact Set.ncard_le_ncard
+      (by
+        intro x hx
+        exact hW x hx)
+      (Set.toFinite _)
+
+/-- Arbitrary finite cardinality thresholds for the complement of a HOL
+predicate extension are equivalent to arbitrary finite non-witness sets. -/
+theorem predicateExtension_compl_ncard_ge_iff_exists_nonwitnessSet
+    (M : HenkinModel.{u, v, w} Base Const)
+    (σ : Ty Base)
+    [Fintype (PredicateObject (Base := Base) (Const := Const) M σ)]
+    (p : UnaryPredicate (Base := Base) (Const := Const) σ)
+    (k : Nat) :
+    k ≤ (predicateExtension (Base := Base) (Const := Const) M σ p)ᶜ.ncard ↔
+      ∃ W : Set (PredicateObject (Base := Base) (Const := Const) M σ),
+        W.ncard = k ∧
+          ∀ x ∈ W, ¬ predicateHoldsAt (Base := Base) (Const := Const) M σ p x := by
+  constructor
+  · intro hk
+    rcases Set.exists_subset_card_eq hk with ⟨W, hWsub, hWcard⟩
+    refine ⟨W, hWcard, ?_⟩
+    intro x hx
+    exact hWsub hx
+  · rintro ⟨W, hWcard, hW⟩
+    rw [← hWcard]
+    exact Set.ncard_le_ncard
+      (by
+        intro x hx
+        exact hW x hx)
+      (Set.toFinite _)
+
+/-- Right-associated finite conjunction over a `Fin n`-indexed formula
+family.  The empty conjunction is truth. -/
+def finiteConjunctionFormula {Γ : Ctx Base} : {n : Nat} →
+    (Fin n → Formula Const Γ) → Formula Const Γ
+  | 0, _ => .top
+  | n + 1, f => .and (f 0) (finiteConjunctionFormula (fun i : Fin n => f i.succ))
+
+/-- Constants absent from every member of a finite family remain absent from
+its finite conjunction. -/
+theorem noConstOccurrence_finiteConjunctionFormula
+    {τ : Ty Base} {c : Const τ} {Γ : Ctx Base} {n : Nat}
+    (f : Fin n → Formula Const Γ)
+    (hf : ∀ i, NoConstOccurrence c (f i)) :
+    NoConstOccurrence c (finiteConjunctionFormula f) := by
+  induction n with
+  | zero => exact NoConstOccurrence.top
+  | succ n ih =>
+      exact NoConstOccurrence.and (hf 0)
+        (ih (fun i : Fin n => f i.succ) (fun i => hf i.succ))
+
+/-- A closed base-type unary predicate weakened into a repeated base-variable
+context.  The `n` variables are precisely the candidate witnesses used by
+`predicateAtLeastNBaseFormula`. -/
+def repeatedBasePredicate
+    (b : Base)
+    (p : UnaryPredicate (Base := Base) (Const := Const) (.base b)) :
+    (n : Nat) → Term Const (List.replicate n (.base b)) ((.base b) ⇒ propTy)
+  | 0 => p
+  | n + 1 =>
+      weaken (Base := Base) (Const := Const) (σ := .base b)
+        (repeatedBasePredicate b p n)
+
+/-- Constants absent from a closed predicate remain absent after weakening it
+into any repeated base-variable context. -/
+theorem noConstOccurrence_repeatedBasePredicate
+    {τ : Ty Base} {c : Const τ}
+    (b : Base)
+    (p : UnaryPredicate (Base := Base) (Const := Const) (.base b))
+    (hpc : NoConstOccurrence c p) :
+    ∀ n, NoConstOccurrence c
+      (repeatedBasePredicate (Base := Base) (Const := Const) b p n)
+  | 0 => hpc
+  | n + 1 =>
+      noConstOccurrence_rename
+        (Rename.weaken (Base := Base) (Γ := List.replicate n (.base b))
+          (σ := .base b))
+        (repeatedBasePredicate (Base := Base) (Const := Const) b p n)
+        (noConstOccurrence_repeatedBasePredicate b p hpc n)
+
+/-- Conjunction saying that all `n` candidate base witnesses satisfy the
+predicate. -/
+def predicateWitnessConjunctionBaseFormula
+    (b : Base)
+    (p : UnaryPredicate (Base := Base) (Const := Const) (.base b)) :
+    (n : Nat) → Formula Const (List.replicate n (.base b))
+  | 0 => .top
+  | n + 1 =>
+      .and
+        (.app (repeatedBasePredicate (Base := Base) (Const := Const) b p (n + 1))
+          (.var .vz))
+        (weaken (Base := Base) (Const := Const) (σ := .base b)
+          (predicateWitnessConjunctionBaseFormula b p n))
+
+/-- Constants absent from the predicate remain absent from the finite witness
+conjunction. -/
+theorem noConstOccurrence_predicateWitnessConjunctionBaseFormula
+    {τ : Ty Base} {c : Const τ}
+    (b : Base)
+    (p : UnaryPredicate (Base := Base) (Const := Const) (.base b))
+    (hpc : NoConstOccurrence c p) :
+    ∀ n, NoConstOccurrence c
+      (predicateWitnessConjunctionBaseFormula (Base := Base) (Const := Const) b p n)
+  | 0 => NoConstOccurrence.top
+  | n + 1 => by
+      refine NoConstOccurrence.and ?_ ?_
+      · exact NoConstOccurrence.app
+          (noConstOccurrence_repeatedBasePredicate b p hpc (n + 1))
+          NoConstOccurrence.var
+      · exact noConstOccurrence_rename
+          (Rename.weaken (Base := Base) (Γ := List.replicate n (.base b))
+            (σ := .base b))
+          (predicateWitnessConjunctionBaseFormula (Base := Base) (Const := Const) b p n)
+          (noConstOccurrence_predicateWitnessConjunctionBaseFormula b p hpc n)
+
+/-- The newest candidate base witness is distinct from every previous
+candidate in the repeated base-variable context. -/
+def newestDistinctFromPreviousBaseFormula
+    (b : Base) (n : Nat) :
+    Formula Const ((.base b) :: List.replicate n (.base b)) :=
+  finiteConjunctionFormula (fun i : Fin n =>
+    .not (.eq (.var .vz)
+      (.var (.vs (Var.ofFinRepeat (.base b) n i)))))
+
+/-- The distinctness-only formula contains no constants. -/
+theorem noConstOccurrence_newestDistinctFromPreviousBaseFormula
+    {τ : Ty Base} {c : Const τ}
+    (b : Base) (n : Nat) :
+    NoConstOccurrence c
+      (newestDistinctFromPreviousBaseFormula (Base := Base) (Const := Const) b n) := by
+  exact noConstOccurrence_finiteConjunctionFormula _ (fun _ =>
+    NoConstOccurrence.not (NoConstOccurrence.eq NoConstOccurrence.var NoConstOccurrence.var))
+
+/-- Pairwise distinctness for all candidate base witnesses in a repeated
+base-variable context. -/
+def pairwiseDistinctBaseFormula
+    (b : Base) : (n : Nat) → Formula Const (List.replicate n (.base b))
+  | 0 => .top
+  | n + 1 =>
+      .and (newestDistinctFromPreviousBaseFormula (Base := Base) (Const := Const) b n)
+        (weaken (Base := Base) (Const := Const) (σ := .base b)
+          (pairwiseDistinctBaseFormula b n))
+
+/-- Pairwise distinctness formulas contain no constants. -/
+theorem noConstOccurrence_pairwiseDistinctBaseFormula
+    {τ : Ty Base} {c : Const τ}
+    (b : Base) :
+    ∀ n, NoConstOccurrence c
+      (pairwiseDistinctBaseFormula (Base := Base) (Const := Const) b n)
+  | 0 => NoConstOccurrence.top
+  | n + 1 => by
+      refine NoConstOccurrence.and ?_ ?_
+      · exact noConstOccurrence_newestDistinctFromPreviousBaseFormula b n
+      · exact noConstOccurrence_rename
+          (Rename.weaken (Base := Base) (Γ := List.replicate n (.base b))
+            (σ := .base b))
+          (pairwiseDistinctBaseFormula (Base := Base) (Const := Const) b n)
+          (noConstOccurrence_pairwiseDistinctBaseFormula b n)
+
+/-- Close a formula over `n` repeated base variables by existentially
+quantifying all of them. -/
+def closeExistsBaseFormula
+    (b : Base) :
+    (n : Nat) → Formula Const (List.replicate n (.base b)) → ClosedFormula Const
+  | 0, φ => φ
+  | n + 1, φ => closeExistsBaseFormula b n (.ex φ)
+
+/-- Closing by repeated existential quantification preserves absence of
+constants. -/
+theorem noConstOccurrence_closeExistsBaseFormula
+    {τ : Ty Base} {c : Const τ}
+    (b : Base) :
+    ∀ (n : Nat) (φ : Formula Const (List.replicate n (.base b))),
+      NoConstOccurrence c φ →
+        NoConstOccurrence c
+          (closeExistsBaseFormula (Base := Base) (Const := Const) b n φ)
+  | 0, _, hφ => hφ
+  | n + 1, φ, hφ =>
+      noConstOccurrence_closeExistsBaseFormula b n (.ex φ)
+        (NoConstOccurrence.ex hφ)
+
+/-- The uniform closed HOL sentence asserting that at least `k` distinct base
+objects satisfy a unary HOL predicate.
+
+The semantic cardinality theorem for this uniform syntax is intentionally a
+separate layer: this definition provides the reusable closed formula and the
+param-freeness theorem below, while concrete endpoint tightness still requires
+a discharged `represents_ge` bridge. -/
+def predicateAtLeastNBaseFormula
+    (b : Base)
+    (p : UnaryPredicate (Base := Base) (Const := Const) (.base b))
+    (k : Nat) : ClosedFormula Const :=
+  closeExistsBaseFormula b k
+    (.and
+      (predicateWitnessConjunctionBaseFormula (Base := Base) (Const := Const) b p k)
+      (pairwiseDistinctBaseFormula (Base := Base) (Const := Const) b k))
+
+/-- Constants absent from the predicate remain absent from the uniform
+`at least k base witnesses` sentence. -/
+theorem noConstOccurrence_predicateAtLeastNBaseFormula
+    {τ : Ty Base} {c : Const τ}
+    (b : Base)
+    (p : UnaryPredicate (Base := Base) (Const := Const) (.base b))
+    (hpc : NoConstOccurrence c p)
+    (k : Nat) :
+    NoConstOccurrence c
+      (predicateAtLeastNBaseFormula (Base := Base) (Const := Const) b p k) := by
+  exact noConstOccurrence_closeExistsBaseFormula b k _
+    (NoConstOccurrence.and
+      (noConstOccurrence_predicateWitnessConjunctionBaseFormula b p hpc k)
+      (noConstOccurrence_pairwiseDistinctBaseFormula b k))
+
+/-- Valuation generated by a finite tuple of base-type admissible objects.
+Index `0` is the newest de Bruijn variable, matching the syntax generated by
+`predicateAtLeastNBaseFormula`. -/
+def repeatedBaseValuation
+    (M : HenkinModel.{u, v, w} Base Const)
+    (b : Base) : {n : Nat} →
+    (Fin n → PredicateObject (Base := Base) (Const := Const) M (.base b)) →
+      HenkinModel.Valuation M (List.replicate n (.base b))
+  | 0, _ => closedValuation M
+  | n + 1, xs =>
+      HenkinModel.extend M (repeatedBaseValuation M b (fun i : Fin n => xs i.succ))
+        (xs 0).1
+
+/-- Looking up `Fin`-indexed repeated variables in the repeated-base valuation
+returns the corresponding tuple element. -/
+theorem repeatedBaseValuation_ofFinRepeat
+    (M : HenkinModel.{u, v, w} Base Const)
+    (b : Base) : ∀ {n : Nat}
+    (xs : Fin n → PredicateObject (Base := Base) (Const := Const) M (.base b))
+    (i : Fin n),
+      repeatedBaseValuation (Base := Base) (Const := Const) M b xs
+        (Var.ofFinRepeat (.base b) n i) = (xs i).1 := by
+  intro n
+  induction n with
+  | zero =>
+      intro xs i
+      exact Fin.elim0 i
+  | succ n ih =>
+      intro xs i
+      cases i using Fin.cases with
+      | zero => rfl
+      | succ i =>
+          change repeatedBaseValuation (Base := Base) (Const := Const) M b
+              (fun j : Fin n => xs j.succ)
+              (Var.ofFinRepeat (.base b) n i) = (xs i.succ).1
+          exact ih (fun j : Fin n => xs j.succ) i
+
+/-- Weakening a closed base predicate into a repeated base-variable context
+does not change its denotation under the repeated-base valuation. -/
+theorem denote_repeatedBasePredicate_eq_closed
+    (M : HenkinModel.{u, v, w} Base Const)
+    (b : Base)
+    (p : UnaryPredicate (Base := Base) (Const := Const) (.base b)) :
+    ∀ {n : Nat}
+    (xs : Fin n → PredicateObject (Base := Base) (Const := Const) M (.base b)),
+      HenkinModel.denote M
+        (repeatedBasePredicate (Base := Base) (Const := Const) b p n)
+        (repeatedBaseValuation (Base := Base) (Const := Const) M b xs) =
+      HenkinModel.denote M p (closedValuation M) := by
+  intro n
+  induction n with
+  | zero =>
+      intro xs
+      rfl
+  | succ n ih =>
+      intro xs
+      change HenkinModel.denote M
+          (weaken (Base := Base) (Const := Const) (σ := .base b)
+            (repeatedBasePredicate (Base := Base) (Const := Const) b p n))
+          (HenkinModel.extend M
+            (repeatedBaseValuation (Base := Base) (Const := Const) M b
+              (fun i : Fin n => xs i.succ)) (xs 0).1) =
+        HenkinModel.denote M p (closedValuation M)
+      rw [Mettapedia.Logic.HOL.Soundness.denote_weaken]
+      exact ih (fun i : Fin n => xs i.succ)
+
+/-- Applying the repeated-context predicate to the `i`th repeated variable is
+equivalent to ordinary HOL predicate satisfaction at the `i`th tuple element. -/
+theorem denote_repeatedBasePredicate_app_iff
+    (M : HenkinModel.{u, v, w} Base Const)
+    (b : Base)
+    (p : UnaryPredicate (Base := Base) (Const := Const) (.base b))
+    {n : Nat}
+    (xs : Fin n → PredicateObject (Base := Base) (Const := Const) M (.base b))
+    (i : Fin n) :
+    (HenkinModel.denote M
+      (.app (repeatedBasePredicate (Base := Base) (Const := Const) b p n)
+        (.var (Var.ofFinRepeat (.base b) n i)))
+      (repeatedBaseValuation (Base := Base) (Const := Const) M b xs)).down ↔
+      predicateHoldsAt (Base := Base) (Const := Const) M (.base b) p (xs i) := by
+  unfold predicateHoldsAt
+  change ((HenkinModel.denote M
+      (repeatedBasePredicate (Base := Base) (Const := Const) b p n)
+      (repeatedBaseValuation (Base := Base) (Const := Const) M b xs))
+        (repeatedBaseValuation (Base := Base) (Const := Const) M b xs
+          (Var.ofFinRepeat (.base b) n i))).down ↔
+      ((HenkinModel.denote M
+        (weaken (Base := Base) (Const := Const) (σ := .base b) p)
+        (HenkinModel.extend M (closedValuation M) (xs i).1))
+          (HenkinModel.extend M (closedValuation M) (xs i).1 Var.vz)).down
+  rw [denote_repeatedBasePredicate_eq_closed]
+  rw [repeatedBaseValuation_ofFinRepeat]
+  rw [Mettapedia.Logic.HOL.Soundness.denote_weaken]
+  rfl
+
+/-- Weakening the witness conjunction into one more repeated variable drops
+back to the tail tuple under the repeated-base valuation. -/
+theorem denote_weaken_predicateWitnessConjunctionBaseFormula_tail
+    (M : HenkinModel.{u, v, w} Base Const)
+    (b : Base)
+    (p : UnaryPredicate (Base := Base) (Const := Const) (.base b))
+    {n : Nat}
+    (xs : Fin (n + 1) → PredicateObject (Base := Base) (Const := Const) M (.base b)) :
+    HenkinModel.denote M
+      (weaken (Base := Base) (Const := Const) (σ := .base b)
+        (predicateWitnessConjunctionBaseFormula (Base := Base) (Const := Const) b p n))
+      (repeatedBaseValuation (Base := Base) (Const := Const) M b xs) =
+    HenkinModel.denote M
+      (predicateWitnessConjunctionBaseFormula (Base := Base) (Const := Const) b p n)
+      (repeatedBaseValuation (Base := Base) (Const := Const) M b
+        (fun i : Fin n => xs i.succ)) := by
+  change HenkinModel.denote M
+      (weaken (Base := Base) (Const := Const) (σ := .base b)
+        (predicateWitnessConjunctionBaseFormula (Base := Base) (Const := Const) b p n))
+      (HenkinModel.extend M
+        (repeatedBaseValuation (Base := Base) (Const := Const) M b
+          (fun i : Fin n => xs i.succ)) (xs 0).1) =
+    HenkinModel.denote M
+      (predicateWitnessConjunctionBaseFormula (Base := Base) (Const := Const) b p n)
+      (repeatedBaseValuation (Base := Base) (Const := Const) M b
+        (fun i : Fin n => xs i.succ))
+  rw [Mettapedia.Logic.HOL.Soundness.denote_weaken]
+
+/-- The finite witness conjunction generated by `predicateAtLeastNBaseFormula`
+is true exactly when every tuple entry satisfies the HOL predicate. -/
+theorem denote_predicateWitnessConjunctionBaseFormula_iff_forall
+    (M : HenkinModel.{u, v, w} Base Const)
+    (b : Base)
+    (p : UnaryPredicate (Base := Base) (Const := Const) (.base b)) :
+    ∀ {n : Nat}
+    (xs : Fin n → PredicateObject (Base := Base) (Const := Const) M (.base b)),
+    (HenkinModel.denote M
+      (predicateWitnessConjunctionBaseFormula (Base := Base) (Const := Const) b p n)
+      (repeatedBaseValuation (Base := Base) (Const := Const) M b xs)).down ↔
+      ∀ i : Fin n,
+        predicateHoldsAt (Base := Base) (Const := Const) M (.base b) p (xs i) := by
+  intro n
+  induction n with
+  | zero =>
+      intro xs
+      simp [predicateWitnessConjunctionBaseFormula]
+  | succ n ih =>
+      intro xs
+      change ((HenkinModel.denote M
+        (.app (repeatedBasePredicate (Base := Base) (Const := Const) b p (n + 1))
+          (.var (Var.ofFinRepeat (.base b) (n + 1) 0)))
+        (repeatedBaseValuation (Base := Base) (Const := Const) M b xs)).down ∧
+        (HenkinModel.denote M
+          (weaken (Base := Base) (Const := Const) (σ := .base b)
+            (predicateWitnessConjunctionBaseFormula (Base := Base) (Const := Const) b p n))
+          (repeatedBaseValuation (Base := Base) (Const := Const) M b xs)).down) ↔
+          ∀ i : Fin (n + 1),
+            predicateHoldsAt (Base := Base) (Const := Const) M (.base b) p (xs i)
+      rw [denote_weaken_predicateWitnessConjunctionBaseFormula_tail]
+      constructor
+      · rintro ⟨h0, htail⟩ i
+        cases i using Fin.cases with
+        | zero =>
+            exact (denote_repeatedBasePredicate_app_iff
+              (Base := Base) (Const := Const) M b p xs 0).mp h0
+        | succ i =>
+            exact (ih (fun j : Fin n => xs j.succ)).mp htail i
+      · intro h
+        constructor
+        · exact (denote_repeatedBasePredicate_app_iff
+            (Base := Base) (Const := Const) M b p xs 0).mpr (h 0)
+        · exact (ih (fun j : Fin n => xs j.succ)).mpr (fun i => h i.succ)
+
+/-- Constants absent from the predicate remain absent from the existential
+witness sentence. -/
+theorem noConstOccurrence_predicateExistsFormula
+    {τ : Ty Base} {c : Const τ}
+    (σ : Ty Base)
+    (p : UnaryPredicate (Base := Base) (Const := Const) σ)
+    (hpc : NoConstOccurrence c p) :
+    NoConstOccurrence c
+      (predicateExistsFormula (Base := Base) (Const := Const) σ p) := by
+  exact NoConstOccurrence.ex
+    (NoConstOccurrence.app
+      (noConstOccurrence_rename
+        (Rename.weaken (Base := Base) (Γ := []) (σ := σ)) p hpc)
+      NoConstOccurrence.var)
+
+/-- The HOL sentence `∃ x, p x` is satisfied exactly when the predicate
+extension has at least one element. -/
+theorem models_predicateExistsFormula_iff_one_le_ncard_extension
+    (M : HenkinModel.{u, v, w} Base Const)
+    (σ : Ty Base)
+    [Fintype (PredicateObject (Base := Base) (Const := Const) M σ)]
+    (p : UnaryPredicate (Base := Base) (Const := Const) σ) :
+    HenkinModel.models M (predicateExistsFormula (Base := Base) (Const := Const) σ p) ↔
+      1 ≤ (predicateExtension (Base := Base) (Const := Const) M σ p).ncard := by
+  rw [models_predicateExistsFormula_iff]
+  constructor
+  · intro h
+    rcases h with ⟨x, hx⟩
+    have hExtNonempty :
+        (predicateExtension (Base := Base) (Const := Const) M σ p).Nonempty :=
+      ⟨x, by simpa [predicateExtension] using hx⟩
+    have hExtPos :
+        0 < (predicateExtension (Base := Base) (Const := Const) M σ p).ncard := by
+      exact (Set.ncard_pos).2 hExtNonempty
+    omega
+  · intro h
+    have hExtPos :
+        0 < (predicateExtension (Base := Base) (Const := Const) M σ p).ncard := by
+      omega
+    rcases (Set.ncard_pos).1 hExtPos with ⟨x, hx⟩
+    exact ⟨x, by simpa [predicateExtension] using hx⟩
+
+/-- The closed HOL sentence expressing `∃ x, ¬ p x`.  This is the direct
+formula-level witness for a nonempty complement of the HOL predicate
+extension. -/
+def predicateExistsNotFormula
+    (σ : Ty Base)
+    (p : UnaryPredicate (Base := Base) (Const := Const) σ) :
+    ClosedFormula Const :=
+  .ex (.not (.app (weaken (Base := Base) (σ := σ) p) (.var .vz)))
+
+/-- Constants absent from the predicate remain absent from the existential
+non-witness sentence. -/
+theorem noConstOccurrence_predicateExistsNotFormula
+    {τ : Ty Base} {c : Const τ}
+    (σ : Ty Base)
+    (p : UnaryPredicate (Base := Base) (Const := Const) σ)
+    (hpc : NoConstOccurrence c p) :
+    NoConstOccurrence c
+      (predicateExistsNotFormula (Base := Base) (Const := Const) σ p) := by
+  exact NoConstOccurrence.ex
+    (NoConstOccurrence.not
+      (NoConstOccurrence.app
+        (noConstOccurrence_rename
+          (Rename.weaken (Base := Base) (Γ := []) (σ := σ)) p hpc)
+        NoConstOccurrence.var))
+
+/-- The HOL sentence `∃ x, ¬ p x` is satisfied exactly when there is an
+admissible object outside the predicate extension. -/
+theorem models_predicateExistsNotFormula_iff
+    (M : HenkinModel.{u, v, w} Base Const)
+    (σ : Ty Base)
+    (p : UnaryPredicate (Base := Base) (Const := Const) σ) :
+    HenkinModel.models M (predicateExistsNotFormula (Base := Base) (Const := Const) σ p) ↔
+      ∃ x : PredicateObject (Base := Base) (Const := Const) M σ,
+        ¬ predicateHoldsAt (Base := Base) (Const := Const) M σ p x := by
+  constructor
+  · intro h
+    have hex :
+        ∃ y : Ty.denote M.Carrier σ, M.adm σ y ∧
+          ¬ (HenkinModel.denote M
+              (.app (weaken (Base := Base) (σ := σ) p) (.var .vz))
+              (HenkinModel.extend M (closedValuation M) y)).down := by
+      change ∃ y : Ty.denote M.Carrier σ, M.adm σ y ∧
+          ¬ (HenkinModel.denote M
+              (.app (weaken (Base := Base) (σ := σ) p) (.var .vz))
+              (HenkinModel.extend M (closedValuation M) y)).down at h
+      exact h
+    rcases hex with ⟨y, hy, hp⟩
+    exact ⟨⟨y, hy⟩, by
+      intro hholds
+      exact hp (by simpa [predicateHoldsAt, closedValuation] using hholds)⟩
+  · intro h
+    rcases h with ⟨x, hp⟩
+    have hex :
+        ∃ y : Ty.denote M.Carrier σ, M.adm σ y ∧
+          ¬ (HenkinModel.denote M
+              (.app (weaken (Base := Base) (σ := σ) p) (.var .vz))
+              (HenkinModel.extend M (closedValuation M) y)).down :=
+      ⟨x.1, x.2, by
+        intro hden
+        exact hp (by simpa [predicateHoldsAt, closedValuation] using hden)⟩
+    change HenkinModel.models M (predicateExistsNotFormula (Base := Base) (Const := Const) σ p)
+    exact hex
+
+/-- In a finite carrier of exact cardinality `N`, the non-witness sentence
+represents the upper-cardinality event `ncard(ext p) + 1 ≤ N`. -/
+theorem models_predicateExistsNotFormula_iff_ncard_extension_add_one_le
+    (M : HenkinModel.{u, v, w} Base Const)
+    (σ : Ty Base)
+    [Fintype (PredicateObject (Base := Base) (Const := Const) M σ)]
+    (p : UnaryPredicate (Base := Base) (Const := Const) σ)
+    (N : Nat)
+    (hCard :
+      Fintype.card (PredicateObject (Base := Base) (Const := Const) M σ) = N) :
+    HenkinModel.models M (predicateExistsNotFormula (Base := Base) (Const := Const) σ p) ↔
+      (predicateExtension (Base := Base) (Const := Const) M σ p).ncard + 1 ≤ N := by
+  rw [models_predicateExistsNotFormula_iff]
+  have hNatCard :
+      Nat.card (PredicateObject (Base := Base) (Const := Const) M σ) = N := by
+    rw [Nat.card_eq_fintype_card, hCard]
+  constructor
+  · intro h
+    rcases h with ⟨x, hx⟩
+    have hComplNonempty :
+        ((predicateExtension (Base := Base) (Const := Const) M σ p)ᶜ).Nonempty :=
+      ⟨x, by simpa [predicateExtension] using hx⟩
+    have hComplPos :
+        0 < ((predicateExtension (Base := Base) (Const := Const) M σ p)ᶜ).ncard := by
+      exact (Set.ncard_pos).2 hComplNonempty
+    rw [Set.ncard_compl, hNatCard] at hComplPos
+    exact Nat.add_one_le_iff.mpr (Nat.lt_of_sub_pos hComplPos)
+  · intro h
+    by_contra hNo
+    have hAll :
+        ∀ x : PredicateObject (Base := Base) (Const := Const) M σ,
+          x ∈ predicateExtension (Base := Base) (Const := Const) M σ p := by
+      intro x
+      by_contra hx
+      exact hNo ⟨x, by simpa [predicateExtension] using hx⟩
+    have hExtEq :
+        predicateExtension (Base := Base) (Const := Const) M σ p = Set.univ := by
+      ext x
+      simp [hAll x]
+    have hncard :
+        (predicateExtension (Base := Base) (Const := Const) M σ p).ncard = N := by
+      rw [hExtEq, Set.ncard_univ, hNatCard]
+    omega
+
+/-- The closed base-type HOL sentence expressing that at least two distinct
+objects satisfy a unary predicate.
+
+The base-type restriction is intentional: at higher HOL types, equality is the
+model's extensional equivalence relation, while the counting support below is a
+set of admissible objects.  For base objects, extensional equality is literal
+object equality, so the formula exactly represents a cardinality-`2` event. -/
+def predicateAtLeastTwoBaseFormula
+    (b : Base)
+    (p : UnaryPredicate (Base := Base) (Const := Const) (.base b)) :
+    ClosedFormula Const :=
+  .ex (.ex
+    (.and
+      (.and
+        (.app
+          (weaken (Base := Base) (Const := Const) (σ := .base b)
+            (weaken (Base := Base) (Const := Const) (σ := .base b) p))
+          (.var (.vs .vz)))
+        (.app
+          (weaken (Base := Base) (Const := Const) (σ := .base b)
+            (weaken (Base := Base) (Const := Const) (σ := .base b) p))
+          (.var .vz)))
+      (.not (.eq (.var (.vs .vz)) (.var .vz)))))
+
+/-- Constants absent from the predicate remain absent from the base-type
+`at least two witnesses` sentence. -/
+theorem noConstOccurrence_predicateAtLeastTwoBaseFormula
+    {τ : Ty Base} {c : Const τ}
+    (b : Base)
+    (p : UnaryPredicate (Base := Base) (Const := Const) (.base b))
+    (hpc : NoConstOccurrence c p) :
+    NoConstOccurrence c
+      (predicateAtLeastTwoBaseFormula (Base := Base) (Const := Const) b p) := by
+  refine NoConstOccurrence.ex ?_
+  refine NoConstOccurrence.ex ?_
+  refine NoConstOccurrence.and ?_ ?_
+  · refine NoConstOccurrence.and ?_ ?_
+    · exact NoConstOccurrence.app
+        (noConstOccurrence_rename
+          (Rename.weaken (Base := Base) (Γ := [.base b]) (σ := .base b))
+          (weaken (Base := Base) (Const := Const) (σ := .base b) p)
+          (noConstOccurrence_rename
+            (Rename.weaken (Base := Base) (Γ := []) (σ := .base b)) p hpc))
+        NoConstOccurrence.var
+    · exact NoConstOccurrence.app
+        (noConstOccurrence_rename
+          (Rename.weaken (Base := Base) (Γ := [.base b]) (σ := .base b))
+          (weaken (Base := Base) (Const := Const) (σ := .base b) p)
+          (noConstOccurrence_rename
+            (Rename.weaken (Base := Base) (Γ := []) (σ := .base b)) p hpc))
+        NoConstOccurrence.var
+  · exact NoConstOccurrence.not
+      (NoConstOccurrence.eq NoConstOccurrence.var NoConstOccurrence.var)
+
+/-- The base-type `at least two witnesses` sentence is satisfied exactly when
+there are two distinct admissible base objects satisfying the predicate. -/
+theorem models_predicateAtLeastTwoBaseFormula_iff_exists_distinct
+    (M : HenkinModel.{u, v, w} Base Const)
+    (b : Base)
+    (p : UnaryPredicate (Base := Base) (Const := Const) (.base b)) :
+    HenkinModel.models M (predicateAtLeastTwoBaseFormula (Base := Base) (Const := Const) b p) ↔
+      ∃ x y : PredicateObject (Base := Base) (Const := Const) M (.base b),
+        predicateHoldsAt (Base := Base) (Const := Const) M (.base b) p x ∧
+        predicateHoldsAt (Base := Base) (Const := Const) M (.base b) p y ∧ x ≠ y := by
+  simp only [predicateAtLeastTwoBaseFormula, HenkinModel.models, PreModel.models,
+    PreModel.denote, PreModel.Eqv]
+  constructor
+  · intro h
+    rcases h with ⟨x, hx, y, hy, ⟨hpx, hpy⟩, hne⟩
+    have hOuterEq :
+        HenkinModel.denote M
+          (.app
+            (weaken (Base := Base) (Const := Const) (σ := .base b)
+              (weaken (Base := Base) (Const := Const) (σ := .base b) p))
+            (.var (.vs .vz)))
+          (HenkinModel.extend M (HenkinModel.extend M (closedValuation M) x) y) =
+        HenkinModel.denote M
+          (.app (weaken (Base := Base) (Const := Const) (σ := .base b) p) (.var .vz))
+          (HenkinModel.extend M (closedValuation M) x) := by
+      simp [HenkinModel.denote, PreModel.denote,
+        Mettapedia.Logic.HOL.Soundness.denote_weaken]
+      change M.denote p (closedValuation M) x = M.denote p (closedValuation M) x
+      rfl
+    have hInnerEq :
+        HenkinModel.denote M
+          (.app
+            (weaken (Base := Base) (Const := Const) (σ := .base b)
+              (weaken (Base := Base) (Const := Const) (σ := .base b) p))
+            (.var .vz))
+          (HenkinModel.extend M (HenkinModel.extend M (closedValuation M) x) y) =
+        HenkinModel.denote M
+          (.app (weaken (Base := Base) (Const := Const) (σ := .base b) p) (.var .vz))
+          (HenkinModel.extend M (closedValuation M) y) := by
+      simp [HenkinModel.denote, PreModel.denote,
+        Mettapedia.Logic.HOL.Soundness.denote_weaken]
+      change M.denote p (closedValuation M) y = M.denote p (closedValuation M) y
+      rfl
+    refine ⟨⟨x, hx⟩, ⟨y, hy⟩, ?_, ?_, ?_⟩
+    · unfold predicateHoldsAt
+      exact (congrArg ULift.down hOuterEq).mp hpx
+    · unfold predicateHoldsAt
+      exact (congrArg ULift.down hInnerEq).mp hpy
+    · intro hxy
+      exact hne (congrArg Subtype.val hxy)
+  · intro h
+    rcases h with ⟨x, y, hpx, hpy, hne⟩
+    have hOuterEq :
+        HenkinModel.denote M
+          (.app
+            (weaken (Base := Base) (Const := Const) (σ := .base b)
+              (weaken (Base := Base) (Const := Const) (σ := .base b) p))
+            (.var (.vs .vz)))
+          (HenkinModel.extend M (HenkinModel.extend M (closedValuation M) x.1) y.1) =
+        HenkinModel.denote M
+          (.app (weaken (Base := Base) (Const := Const) (σ := .base b) p) (.var .vz))
+          (HenkinModel.extend M (closedValuation M) x.1) := by
+      simp [HenkinModel.denote, PreModel.denote,
+        Mettapedia.Logic.HOL.Soundness.denote_weaken]
+      change M.denote p (closedValuation M) x.1 = M.denote p (closedValuation M) x.1
+      rfl
+    have hInnerEq :
+        HenkinModel.denote M
+          (.app
+            (weaken (Base := Base) (Const := Const) (σ := .base b)
+              (weaken (Base := Base) (Const := Const) (σ := .base b) p))
+            (.var .vz))
+          (HenkinModel.extend M (HenkinModel.extend M (closedValuation M) x.1) y.1) =
+        HenkinModel.denote M
+          (.app (weaken (Base := Base) (Const := Const) (σ := .base b) p) (.var .vz))
+          (HenkinModel.extend M (closedValuation M) y.1) := by
+      simp [HenkinModel.denote, PreModel.denote,
+        Mettapedia.Logic.HOL.Soundness.denote_weaken]
+      change M.denote p (closedValuation M) y.1 = M.denote p (closedValuation M) y.1
+      rfl
+    refine ⟨x.1, x.2, y.1, y.2, ⟨?_, ?_⟩, ?_⟩
+    · unfold predicateHoldsAt at hpx
+      exact (congrArg ULift.down hOuterEq).mpr hpx
+    · unfold predicateHoldsAt at hpy
+      exact (congrArg ULift.down hInnerEq).mpr hpy
+    · intro hxy
+      exact hne (Subtype.ext hxy)
+
+/-- On base types, the `at least two witnesses` sentence represents the
+cardinality-threshold event `2 ≤ ncard (ext p)`. -/
+theorem models_predicateAtLeastTwoBaseFormula_iff_two_le_ncard_extension
+    (M : HenkinModel.{u, v, w} Base Const)
+    (b : Base)
+    [Fintype (PredicateObject (Base := Base) (Const := Const) M (.base b))]
+    (p : UnaryPredicate (Base := Base) (Const := Const) (.base b)) :
+    HenkinModel.models M (predicateAtLeastTwoBaseFormula (Base := Base) (Const := Const) b p) ↔
+      2 ≤ (predicateExtension (Base := Base) (Const := Const) M (.base b) p).ncard := by
+  rw [models_predicateAtLeastTwoBaseFormula_iff_exists_distinct]
+  constructor
+  · intro h
+    rcases h with ⟨x, y, hpx, hpy, hne⟩
+    have hOne :
+        1 < (predicateExtension (Base := Base) (Const := Const) M (.base b) p).ncard := by
+      rw [Set.one_lt_ncard]
+      exact ⟨x, by simpa [predicateExtension] using hpx, y,
+        by simpa [predicateExtension] using hpy, hne⟩
+    omega
+  · intro h
+    have hOne :
+        1 < (predicateExtension (Base := Base) (Const := Const) M (.base b) p).ncard := by
+      omega
+    rcases (Set.one_lt_ncard
+        (s := predicateExtension (Base := Base) (Const := Const) M (.base b) p)).mp hOne with
+      ⟨x, hx, y, hy, hne⟩
+    exact ⟨x, y, by simpa [predicateExtension] using hx,
+      by simpa [predicateExtension] using hy, hne⟩
+
+/-- The closed HOL sentence expressing that at least three distinct base
+objects satisfy a unary HOL predicate.
+
+As with `predicateAtLeastTwoBaseFormula`, this is restricted to base types:
+base equality is literal object equality, so the formula represents a concrete
+cardinality threshold for the admissible-object extension. -/
+def predicateAtLeastThreeBaseFormula
+    (b : Base)
+    (p : UnaryPredicate (Base := Base) (Const := Const) (.base b)) :
+    ClosedFormula Const :=
+  .ex (.ex (.ex
+    (.and
+      (.and
+        (.and
+          (.app
+            (weaken (Base := Base) (Const := Const) (σ := .base b)
+              (weaken (Base := Base) (Const := Const) (σ := .base b)
+                (weaken (Base := Base) (Const := Const) (σ := .base b) p)))
+            (.var (.vs (.vs .vz))))
+          (.app
+            (weaken (Base := Base) (Const := Const) (σ := .base b)
+              (weaken (Base := Base) (Const := Const) (σ := .base b)
+                (weaken (Base := Base) (Const := Const) (σ := .base b) p)))
+            (.var (.vs .vz))))
+        (.app
+          (weaken (Base := Base) (Const := Const) (σ := .base b)
+            (weaken (Base := Base) (Const := Const) (σ := .base b)
+              (weaken (Base := Base) (Const := Const) (σ := .base b) p)))
+          (.var .vz)))
+      (.and
+        (.and
+          (.not (.eq (.var (.vs (.vs .vz))) (.var (.vs .vz))))
+          (.not (.eq (.var (.vs (.vs .vz))) (.var .vz))))
+        (.not (.eq (.var (.vs .vz)) (.var .vz)))))))
+
+/-- Constants absent from the predicate remain absent from the base-type
+`at least three witnesses` sentence. -/
+theorem noConstOccurrence_predicateAtLeastThreeBaseFormula
+    {τ : Ty Base} {c : Const τ}
+    (b : Base)
+    (p : UnaryPredicate (Base := Base) (Const := Const) (.base b))
+    (hpc : NoConstOccurrence c p) :
+    NoConstOccurrence c
+      (predicateAtLeastThreeBaseFormula (Base := Base) (Const := Const) b p) := by
+  have hp1 : NoConstOccurrence c
+      (weaken (Base := Base) (Const := Const) (σ := .base b) p) :=
+    noConstOccurrence_rename
+      (Rename.weaken (Base := Base) (Γ := []) (σ := .base b)) p hpc
+  have hp2 : NoConstOccurrence c
+      (weaken (Base := Base) (Const := Const) (σ := .base b)
+        (weaken (Base := Base) (Const := Const) (σ := .base b) p)) :=
+    noConstOccurrence_rename
+      (Rename.weaken (Base := Base) (Γ := [.base b]) (σ := .base b))
+      (weaken (Base := Base) (Const := Const) (σ := .base b) p) hp1
+  have hp3 : NoConstOccurrence c
+      (weaken (Base := Base) (Const := Const) (σ := .base b)
+        (weaken (Base := Base) (Const := Const) (σ := .base b)
+          (weaken (Base := Base) (Const := Const) (σ := .base b) p))) :=
+    noConstOccurrence_rename
+      (Rename.weaken (Base := Base) (Γ := [.base b, .base b]) (σ := .base b))
+      (weaken (Base := Base) (Const := Const) (σ := .base b)
+        (weaken (Base := Base) (Const := Const) (σ := .base b) p)) hp2
+  refine NoConstOccurrence.ex ?_
+  refine NoConstOccurrence.ex ?_
+  refine NoConstOccurrence.ex ?_
+  refine NoConstOccurrence.and ?_ ?_
+  · refine NoConstOccurrence.and ?_ ?_
+    · refine NoConstOccurrence.and ?_ ?_
+      · exact NoConstOccurrence.app hp3 NoConstOccurrence.var
+      · exact NoConstOccurrence.app hp3 NoConstOccurrence.var
+    · exact NoConstOccurrence.app hp3 NoConstOccurrence.var
+  · refine NoConstOccurrence.and ?_ ?_
+    · refine NoConstOccurrence.and ?_ ?_
+      · exact NoConstOccurrence.not
+          (NoConstOccurrence.eq NoConstOccurrence.var NoConstOccurrence.var)
+      · exact NoConstOccurrence.not
+          (NoConstOccurrence.eq NoConstOccurrence.var NoConstOccurrence.var)
+    · exact NoConstOccurrence.not
+        (NoConstOccurrence.eq NoConstOccurrence.var NoConstOccurrence.var)
+
+/-- The base-type `at least three witnesses` sentence is satisfied exactly
+when three pairwise distinct admissible base objects satisfy the predicate. -/
+theorem models_predicateAtLeastThreeBaseFormula_iff_exists_distinct
+    (M : HenkinModel.{u, v, w} Base Const)
+    (b : Base)
+    (p : UnaryPredicate (Base := Base) (Const := Const) (.base b)) :
+    HenkinModel.models M (predicateAtLeastThreeBaseFormula (Base := Base) (Const := Const) b p) ↔
+      ∃ x y z : PredicateObject (Base := Base) (Const := Const) M (.base b),
+        predicateHoldsAt (Base := Base) (Const := Const) M (.base b) p x ∧
+        predicateHoldsAt (Base := Base) (Const := Const) M (.base b) p y ∧
+        predicateHoldsAt (Base := Base) (Const := Const) M (.base b) p z ∧
+          x ≠ y ∧ x ≠ z ∧ y ≠ z := by
+  simp only [predicateAtLeastThreeBaseFormula, HenkinModel.models, PreModel.models,
+    PreModel.denote, PreModel.Eqv]
+  constructor
+  · intro h
+    rcases h with
+      ⟨x, hx, y, hy, z, hz, ⟨⟨hpx, hpy⟩, hpz⟩, ⟨⟨hxy, hxz⟩, hyz⟩⟩
+    have hOuterEq :
+        HenkinModel.denote M
+          (.app
+            (weaken (Base := Base) (Const := Const) (σ := .base b)
+              (weaken (Base := Base) (Const := Const) (σ := .base b)
+                (weaken (Base := Base) (Const := Const) (σ := .base b) p)))
+            (.var (.vs (.vs .vz))))
+          (HenkinModel.extend M
+            (HenkinModel.extend M (HenkinModel.extend M (closedValuation M) x) y) z) =
+        HenkinModel.denote M
+          (.app (weaken (Base := Base) (Const := Const) (σ := .base b) p) (.var .vz))
+          (HenkinModel.extend M (closedValuation M) x) := by
+      simp [HenkinModel.denote, PreModel.denote,
+        Mettapedia.Logic.HOL.Soundness.denote_weaken]
+      change M.denote p (closedValuation M) x = M.denote p (closedValuation M) x
+      rfl
+    have hMiddleEq :
+        HenkinModel.denote M
+          (.app
+            (weaken (Base := Base) (Const := Const) (σ := .base b)
+              (weaken (Base := Base) (Const := Const) (σ := .base b)
+                (weaken (Base := Base) (Const := Const) (σ := .base b) p)))
+            (.var (.vs .vz)))
+          (HenkinModel.extend M
+            (HenkinModel.extend M (HenkinModel.extend M (closedValuation M) x) y) z) =
+        HenkinModel.denote M
+          (.app (weaken (Base := Base) (Const := Const) (σ := .base b) p) (.var .vz))
+          (HenkinModel.extend M (closedValuation M) y) := by
+      simp [HenkinModel.denote, PreModel.denote,
+        Mettapedia.Logic.HOL.Soundness.denote_weaken]
+      change M.denote p (closedValuation M) y = M.denote p (closedValuation M) y
+      rfl
+    have hInnerEq :
+        HenkinModel.denote M
+          (.app
+            (weaken (Base := Base) (Const := Const) (σ := .base b)
+              (weaken (Base := Base) (Const := Const) (σ := .base b)
+                (weaken (Base := Base) (Const := Const) (σ := .base b) p)))
+            (.var .vz))
+          (HenkinModel.extend M
+            (HenkinModel.extend M (HenkinModel.extend M (closedValuation M) x) y) z) =
+        HenkinModel.denote M
+          (.app (weaken (Base := Base) (Const := Const) (σ := .base b) p) (.var .vz))
+          (HenkinModel.extend M (closedValuation M) z) := by
+      simp [HenkinModel.denote, PreModel.denote,
+        Mettapedia.Logic.HOL.Soundness.denote_weaken]
+      change M.denote p (closedValuation M) z = M.denote p (closedValuation M) z
+      rfl
+    refine ⟨⟨x, hx⟩, ⟨y, hy⟩, ⟨z, hz⟩, ?_, ?_, ?_, ?_, ?_, ?_⟩
+    · unfold predicateHoldsAt
+      exact (congrArg ULift.down hOuterEq).mp hpx
+    · unfold predicateHoldsAt
+      exact (congrArg ULift.down hMiddleEq).mp hpy
+    · unfold predicateHoldsAt
+      exact (congrArg ULift.down hInnerEq).mp hpz
+    · intro h
+      exact hxy (congrArg Subtype.val h)
+    · intro h
+      exact hxz (congrArg Subtype.val h)
+    · intro h
+      exact hyz (congrArg Subtype.val h)
+  · intro h
+    rcases h with ⟨x, y, z, hpx, hpy, hpz, hxy, hxz, hyz⟩
+    have hOuterEq :
+        HenkinModel.denote M
+          (.app
+            (weaken (Base := Base) (Const := Const) (σ := .base b)
+              (weaken (Base := Base) (Const := Const) (σ := .base b)
+                (weaken (Base := Base) (Const := Const) (σ := .base b) p)))
+            (.var (.vs (.vs .vz))))
+          (HenkinModel.extend M
+            (HenkinModel.extend M (HenkinModel.extend M (closedValuation M) x.1) y.1) z.1) =
+        HenkinModel.denote M
+          (.app (weaken (Base := Base) (Const := Const) (σ := .base b) p) (.var .vz))
+          (HenkinModel.extend M (closedValuation M) x.1) := by
+      simp [HenkinModel.denote, PreModel.denote,
+        Mettapedia.Logic.HOL.Soundness.denote_weaken]
+      change M.denote p (closedValuation M) x.1 = M.denote p (closedValuation M) x.1
+      rfl
+    have hMiddleEq :
+        HenkinModel.denote M
+          (.app
+            (weaken (Base := Base) (Const := Const) (σ := .base b)
+              (weaken (Base := Base) (Const := Const) (σ := .base b)
+                (weaken (Base := Base) (Const := Const) (σ := .base b) p)))
+            (.var (.vs .vz)))
+          (HenkinModel.extend M
+            (HenkinModel.extend M (HenkinModel.extend M (closedValuation M) x.1) y.1) z.1) =
+        HenkinModel.denote M
+          (.app (weaken (Base := Base) (Const := Const) (σ := .base b) p) (.var .vz))
+          (HenkinModel.extend M (closedValuation M) y.1) := by
+      simp [HenkinModel.denote, PreModel.denote,
+        Mettapedia.Logic.HOL.Soundness.denote_weaken]
+      change M.denote p (closedValuation M) y.1 = M.denote p (closedValuation M) y.1
+      rfl
+    have hInnerEq :
+        HenkinModel.denote M
+          (.app
+            (weaken (Base := Base) (Const := Const) (σ := .base b)
+              (weaken (Base := Base) (Const := Const) (σ := .base b)
+                (weaken (Base := Base) (Const := Const) (σ := .base b) p)))
+            (.var .vz))
+          (HenkinModel.extend M
+            (HenkinModel.extend M (HenkinModel.extend M (closedValuation M) x.1) y.1) z.1) =
+        HenkinModel.denote M
+          (.app (weaken (Base := Base) (Const := Const) (σ := .base b) p) (.var .vz))
+          (HenkinModel.extend M (closedValuation M) z.1) := by
+      simp [HenkinModel.denote, PreModel.denote,
+        Mettapedia.Logic.HOL.Soundness.denote_weaken]
+      change M.denote p (closedValuation M) z.1 = M.denote p (closedValuation M) z.1
+      rfl
+    refine ⟨x.1, x.2, y.1, y.2, z.1, z.2, ?_, ?_⟩
+    · refine ⟨⟨?_, ?_⟩, ?_⟩
+      · unfold predicateHoldsAt at hpx
+        exact (congrArg ULift.down hOuterEq).mpr hpx
+      · unfold predicateHoldsAt at hpy
+        exact (congrArg ULift.down hMiddleEq).mpr hpy
+      · unfold predicateHoldsAt at hpz
+        exact (congrArg ULift.down hInnerEq).mpr hpz
+    · refine ⟨⟨?_, ?_⟩, ?_⟩
+      · intro h
+        exact hxy (Subtype.ext h)
+      · intro h
+        exact hxz (Subtype.ext h)
+      · intro h
+        exact hyz (Subtype.ext h)
+
+/-- On base types, the `at least three witnesses` sentence represents the
+cardinality-threshold event `3 ≤ ncard (ext p)`. -/
+theorem models_predicateAtLeastThreeBaseFormula_iff_three_le_ncard_extension
+    (M : HenkinModel.{u, v, w} Base Const)
+    (b : Base)
+    [Fintype (PredicateObject (Base := Base) (Const := Const) M (.base b))]
+    (p : UnaryPredicate (Base := Base) (Const := Const) (.base b)) :
+    HenkinModel.models M (predicateAtLeastThreeBaseFormula (Base := Base) (Const := Const) b p) ↔
+      3 ≤ (predicateExtension (Base := Base) (Const := Const) M (.base b) p).ncard := by
+  rw [models_predicateAtLeastThreeBaseFormula_iff_exists_distinct]
+  constructor
+  · intro h
+    rcases h with ⟨x, y, z, hpx, hpy, hpz, hxy, hxz, hyz⟩
+    have hTwo :
+        2 < (predicateExtension (Base := Base) (Const := Const) M (.base b) p).ncard := by
+      rw [Set.two_lt_ncard_iff]
+      exact ⟨x, y, z, by simpa [predicateExtension] using hpx,
+        by simpa [predicateExtension] using hpy,
+        by simpa [predicateExtension] using hpz, hxy, hxz, hyz⟩
+    omega
+  · intro h
+    have hTwo :
+        2 < (predicateExtension (Base := Base) (Const := Const) M (.base b) p).ncard := by
+      omega
+    rcases (Set.two_lt_ncard_iff
+        (s := predicateExtension (Base := Base) (Const := Const) M (.base b) p)).mp hTwo with
+      ⟨x, y, z, hx, hy, hz, hxy, hxz, hyz⟩
+    exact ⟨x, y, z, by simpa [predicateExtension] using hx,
+      by simpa [predicateExtension] using hy,
+      by simpa [predicateExtension] using hz, hxy, hxz, hyz⟩
 
 /-- The arbitrary-domain fuzzy profile induced by a HOL predicate is exactly
 the crisp indicator of its Henkin-model extension. -/
