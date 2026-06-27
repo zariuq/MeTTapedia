@@ -47,9 +47,8 @@ expect_reject() {
   fi
 }
 
-copy_guest() {
+rewrite_kernel_imports() {
   local target="$1"
-  cp "$DIR/01_dedukti_guest_micro.metta" "$target"
   python3 - "$target" <<'PY'
 from pathlib import Path
 import sys
@@ -66,6 +65,21 @@ text = text.replace(
 )
 path.write_text(text)
 PY
+}
+
+copy_guest() {
+  local target="$1"
+  cp "$DIR/01_dedukti_guest_micro.metta" "$target"
+  rewrite_kernel_imports "$target"
+}
+
+copy_cic_stage3_guest() {
+  local target="$1"
+  local target_dir
+  target_dir="$(dirname "$target")"
+  cp "$DIR/02_cic_guest_sorts_pi_micro.metta" "$target_dir/02_cic_guest_sorts_pi_micro.metta"
+  cp "$DIR/04_cic_guest_universes_micro.metta" "$target"
+  rewrite_kernel_imports "$target_dir/02_cic_guest_sorts_pi_micro.metta"
 }
 
 mutate_file_exact() {
@@ -120,6 +134,63 @@ mutate_file_exact "$work/dk_untracked_rewrite_accept.metta" \
   '(Err untracked-rewrite-obligation)' \
   'True'
 expect_reject "dedukti-guest-untracked-rewrite-obligation-accept" "$work/dk_untracked_rewrite_accept.metta"
+
+copy_cic_stage3_guest "$work/cic_stage3_baseline.metta"
+expect_accept "cic-stage3-baseline-copy" "$work/cic_stage3_baseline.metta"
+
+copy_cic_stage3_guest "$work/cic_stage3_wrong_max_rule.metta"
+mutate_file_exact "$work/cic_stage3_wrong_max_rule.metta" \
+  '      ((App (Con max) $lhs)
+        (case $a
+          (((Con prop) (cic-stage3-nf $lhs))
+           ($rhs
+             (case $lhs
+               (((Con prop) $rhs)
+                ((App (Con type) $i)
+                  (case $rhs
+                    (((App (Con type) $j)
+                       (App (Con type) (cic-nat-nf (App (App (Con m) $i) $j))))
+                     ($other (App $f $a)))))
+                ($other (App $f $a))))))))' \
+  '      ((App (Con max) $lhs)
+        (case $a
+          (((Con prop) (cic-stage3-nf $lhs))
+           ($rhs
+             (case $lhs
+               (((Con prop) $rhs)
+                ((App (Con type) $i)
+                  (case $rhs
+                    (((App (Con type) $j)
+                       (Con prop))
+                     ($other (App $f $a)))))
+                ($other (App $f $a))))))))'
+expect_reject "cic-stage3-wrong-max-rule" "$work/cic_stage3_wrong_max_rule.metta"
+
+copy_cic_stage3_guest "$work/cic_stage3_wrong_lift_id.metta"
+mutate_file_exact "$work/cic_stage3_wrong_lift_id.metta" \
+  '(if (== $s1 $s2)
+          $a
+          (App $f $a)))' \
+  '(if (== $s1 $s2)
+          (App $f $a)
+          (App $f $a)))'
+expect_reject "cic-stage3-wrong-lift-id" "$work/cic_stage3_wrong_lift_id.metta"
+
+copy_cic_stage3_guest "$work/cic_stage3_wrong_term_lift.metta"
+mutate_file_exact "$work/cic_stage3_wrong_term_lift.metta" \
+  '           ((App (App (App (Con lift) $s1) $s2) $u)
+             (cic-stage3-nf
+               (App (App (Con Term) $s1) $u)))' \
+  '           ((App (App (App (Con lift) $s1) $s2) $u)
+             (cic-stage3-nf
+               (App (App (Con Term) $s2) $u)))'
+expect_reject "cic-stage3-wrong-term-lift" "$work/cic_stage3_wrong_term_lift.metta"
+
+copy_cic_stage3_guest "$work/cic_stage3_untracked_rewrite_accept.metta"
+mutate_file_exact "$work/cic_stage3_untracked_rewrite_accept.metta" \
+  '(Err untracked-cic-rewrite-obligation)' \
+  'True'
+expect_reject "cic-stage3-untracked-rewrite-obligation-accept" "$work/cic_stage3_untracked_rewrite_accept.metta"
 
 if [ "$failures" -eq 0 ]; then
   echo "  [mutation] all Dedukti-guest mutations caught"

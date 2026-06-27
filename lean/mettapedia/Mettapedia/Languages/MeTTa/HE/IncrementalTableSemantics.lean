@@ -6,10 +6,9 @@ import Mettapedia.Languages.MeTTa.HE.VariantQueryCorrectness
 # Incremental Table Semantics
 
 Specifies correctness conditions for **incremental tabling**: accumulating
-answers incrementally while consumers read partial results. Bridges CeTTa's
-current full-result caching to future XSB-style tabled evaluation.
+answers incrementally while consumers read partial results.
 
-## Key Results (0 sorry)
+## Key Results
 
 - `TableEntry.Sound` — every answer is a genuine query result
 - `addAnswer_sound` — adding genuine answers preserves soundness
@@ -17,7 +16,7 @@ current full-result caching to future XSB-style tabled evaluation.
 - `markComplete_sound` — completion preserves soundness
 - `exact_is_sound` — exact tables are sound
 - `tableEntry_addAtom_invalidates` — revision invalidation
-- `tableEntry_variant_rhs_agree` — variant queries share RHS atoms
+- `tableEntry_variant_rhs_agree` — legacy variant queries share RHS atoms
 -/
 
 namespace Mettapedia.Languages.MeTTa.HE
@@ -125,6 +124,14 @@ def TableEntry.populateExact (rs : RevisionedSpace) (q : Atom) (fuel : Nat) :
   { query := q, spaceRevision := rs.revision,
     answers := queryEquations rs.space q fuel, status := .completed }
 
+/-- Historical simpleMatch-based population model retained only for the legacy
+variant-key cache theorem. The repaired public query surface is
+`TableEntry.populateExact`. -/
+def TableEntry.populateExactLegacy (rs : RevisionedSpace) (q : Atom) (fuel : Nat) :
+    TableEntry :=
+  { query := q, spaceRevision := rs.revision,
+    answers := variantLegacyQueryEquations rs.space q fuel, status := .completed }
+
 theorem TableEntry.populateExact_exact (rs : RevisionedSpace) (q : Atom)
     (fuel : Nat) :
     (TableEntry.populateExact rs q fuel).Exact rs.space fuel :=
@@ -147,12 +154,12 @@ theorem tableEntry_snapshot_permanent (rs : RevisionedSpace) (q : Atom)
     let te := TableEntry.populateExact ⟨⟨snap.atoms⟩, snap.frozenRevision⟩ q fuel
     te.spaceRevision = snap.frozenRevision := rfl
 
-/-! ## §6: Variant-key compatibility -/
+/-! ## §6: Legacy variant-key compatibility -/
 
 theorem tableEntry_variant_rhs_agree
     (rs : RevisionedSpace) (q₁ q₂ : Atom) (hvar : VariantEquiv q₁ q₂) (fuel : Nat) :
-    (TableEntry.populateExact rs q₁ fuel).answers.map Prod.fst =
-    (TableEntry.populateExact rs q₂ fuel).answers.map Prod.fst :=
+    (TableEntry.populateExactLegacy rs q₁ fuel).answers.map Prod.fst =
+    (TableEntry.populateExactLegacy rs q₂ fuel).answers.map Prod.fst :=
   variant_queries_same_rhs rs.space q₁ q₂ hvar fuel
 
 /-! ## §7: Table store -/

@@ -1,4 +1,4 @@
-import Mettapedia.Languages.MeTTa.HE.Matching
+import Mettapedia.Languages.MeTTa.HE.Space
 
 /-!
 # HE MeTTa Type Checking

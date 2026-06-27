@@ -54,7 +54,7 @@ This file documents and witnesses the cross-stack architecture connecting:
 - `simpleMatch_isSome_rename_empty` — VariantQueryCorrectness.lean: isSome corollary
 
 ### Layer 5: Query correctness
-- `variant_queries_same_rhs` — VariantQueryCorrectness.lean: variant queries → same RHS
+- `variant_queries_same_rhs` — VariantQueryCorrectness.lean: legacy variant queries → same RHS
 
 ### Layer 6: Cache / revision
 - `addAtom_invalidates` — CacheCorrectness.lean: mutation → revision bump
@@ -99,12 +99,13 @@ theorem contract_match_monotonic :
     seed.Extends result :=
   fun fuel => (simpleMatch_extends fuel).1
 
-/-- **Contract 2**: Variant-equivalent queries produce identical RHS atoms.
-    Any runtime using variant-keyed tabling can reuse cached RHS atoms. -/
+/-- **Contract 2**: Variant-equivalent queries produce identical RHS atoms on
+    the legacy simpleMatch query model. The repaired public faithful query
+    surface needs a separate matcher-invariance theorem. -/
 theorem contract_variant_rhs_reuse :
     ∀ (space : Space) (q₁ q₂ : Atom) (_hvar : VariantEquiv q₁ q₂) (fuel : Nat),
-    (queryEquations space q₁ fuel).map Prod.fst =
-    (queryEquations space q₂ fuel).map Prod.fst :=
+    (variantLegacyQueryEquations space q₁ fuel).map Prod.fst =
+    (variantLegacyQueryEquations space q₂ fuel).map Prod.fst :=
   variant_queries_same_rhs
 
 /-- **Contract 3**: Revision bump invalidates cache.

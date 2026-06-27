@@ -2,13 +2,13 @@ import Mettapedia.Languages.MeTTa.HE.IncrementalTableSemantics
 import Mettapedia.Languages.MeTTa.HE.BridgeMatrix
 
 /-!
-# CeTTa Runtime Contracts
+# Runtime Cache Contracts
 
-Implementation-facing contracts that make the CeTTa runtime safe. Each contract
-corresponds to a concrete C runtime invariant and can serve as a checklist for
-safe refactoring.
+Historical implementation-facing contracts for cache/tabling sketches. The
+variant-key theorem in this file is now explicitly legacy simpleMatch-surface
+only; it is not evidence for the repaired public faithful query surface.
 
-## Contracts (all proved, 0 sorry)
+## Contracts
 
 ### §1: Alpha-Canonicalization (`term_universe.c`, `term_canon.c`)
 - Any injective variable renaming gives a safe canonicalization
@@ -94,13 +94,13 @@ theorem faithful_variables (c : Canonicalization) (v₁ v₂ : String) :
     v₁ = v₂ ↔ c.ren.rename v₁ = c.ren.rename v₂ :=
   VarRenaming.faithful_iff c.ren c.inj v₁ v₂
 
-/-- **Contract 1g**: Variant-equivalent queries share canonical RHS atoms.
-    If `q₂ = canon(q₁)` for some canonicalization, then tabled results are the same.
-    Risk: variant-key cache returning wrong RHS after canonicalization change. -/
+/-- **Contract 1g**: Variant-equivalent queries share canonical RHS atoms on
+    the legacy simpleMatch query model. The public faithful query surface still
+    needs its own invariant. -/
 theorem variant_cache_safe (c : Canonicalization)
     (space : Space) (q : Atom) (fuel : Nat) :
-    (queryEquations space q fuel).map Prod.fst =
-    (queryEquations space (c.apply q) fuel).map Prod.fst := by
+    (variantLegacyQueryEquations space q fuel).map Prod.fst =
+    (variantLegacyQueryEquations space (c.apply q) fuel).map Prod.fst := by
   have hvar : VariantEquiv q (c.apply q) := ⟨c.ren, c.inj, rfl⟩
   exact variant_queries_same_rhs space q (c.apply q) hvar fuel
 
@@ -142,7 +142,7 @@ def rollback (bb : BindingsBuilder) (mark : BindingsMark) : BindingsBuilder :=
     Risk: save/rollback cycle corrupting bindings. -/
 theorem rollback_save_noop (bb : BindingsBuilder) :
     bb.rollback (bb.save) = bb := by
-  simp [rollback, save, Nat.sub_self]
+  simp [rollback, save]
 
 /-- **Contract 2b**: Rollback discards bindings added after mark.
     Risk: rollback failing to undo recent bindings. -/

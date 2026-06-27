@@ -110,7 +110,8 @@ def SpecialFormHead (a : Atom) : Prop :=
 
 /-- `a` is an equation redex: a non-grounded-headed expression with at least
 one matching `(= lhs rhs)` equation in the space.  `queryEquations` is the
-official query from `Space.lean` (alpha-freshened, `simpleMatch`-based). -/
+official query from `Space.lean` (alpha-freshened, using the faithful
+`matchAtoms`/`mergeBindings` surface). -/
 def EquationRedex (space : Space) (d : GroundedDispatch) (fuel : Nat)
     (a : Atom) : Prop :=
   (∃ es, a = .expression es) ∧
@@ -713,7 +714,7 @@ example : ∃ b, HESmallStep eqSpace plusDispatch 100
 example (d : GroundedDispatch) (fuel : Nat) (a : Atom) :
     ¬ EquationRedex Space.empty d fuel a := by
   rintro ⟨⟨es, rfl⟩, -, -, p, h_mem, -⟩
-  simp [queryEquations, Space.empty] at h_mem
+  cases fuel <;> simp [queryEquations, Space.empty] at h_mem
 
 /-- Bare symbols cannot step (no constructor applies). -/
 theorem symbol_normalForm (space : Space) (d : GroundedDispatch) (fuel : Nat)

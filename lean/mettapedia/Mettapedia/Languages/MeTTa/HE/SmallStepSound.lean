@@ -51,11 +51,7 @@ without fuel, so no equation can fire.  (Hence fuel-zero coarse equation
 steps are impossible, and the absorption theorem needs no fuel premise.) -/
 theorem queryEquations_zero (space : Space) (a : Atom) :
     queryEquations space a 0 = [] := by
-  simp only [queryEquations, List.filterMap_eq_nil_iff]
-  intro p _hp
-  split
-  · simp [simpleMatch]
-  · rfl
+  simp [queryEquations]
 
 /-- **Absorption, grounded dispatch.**  A coarse `HES_GroundedDispatch` step
 from `(op args…)` to result atom `r` (with result bindings `bs`) composes

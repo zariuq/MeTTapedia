@@ -1,16 +1,24 @@
 import Mettapedia.Languages.MeTTa.HE.BindingComposition
 import Mettapedia.Languages.MeTTa.HE.CoReferencePreservation
 import Mettapedia.Languages.MeTTa.HE.BagSupportBridge
+import Mettapedia.Languages.MeTTa.HE.Space
 
 /-!
-# Variant-Key Query Correctness
+# Legacy Variant-Key Query Correctness
 
 Defines variant equivalence and proves structural properties of variant-based
 tabling. The core theorem (`simpleMatch_rename_bisim`) is a bisimulation
 argument: two parallel executions of `simpleMatch` — one with target `t`,
 one with target `applyAtomTotal r t` — step in lockstep.
 
-## Key Results (proved, 0 sorry)
+After G3, the public equation-query surface in `Space.lean` is the faithful
+`matchAtoms` / `mergeBindings` surface, not the historical one-way
+`simpleMatch` surface.  This module therefore proves the variant-cache result
+only for the legacy model used by older table-cache sketches.  A theorem for
+the repaired public `queryEquations` surface is a separate faithful-matcher
+invariance problem, not something to smuggle through this simpleMatch proof.
+
+## Key Results (proved, no proof holes)
 
 - `VariantEquiv` — definition using fuel-free `applyAtomTotal`
 - `BindingsRenamedBy` — the bisimulation relation (fuel-free)
@@ -19,13 +27,15 @@ one with target `applyAtomTotal r t` — step in lockstep.
 - `simpleMatch_rename_bisim` — THE bisimulation mutual induction
 - `simpleMatch_isSome_rename_empty` — isSome preserved (corollary)
 
-## Key Result (proved)
+## Key Result (proved, legacy surface only)
 
-- `variant_queries_same_rhs` — via matchStep extraction + List.map_filterMap
+- `variant_legacy_queries_same_rhs` — via matchStep extraction + List.map_filterMap
 
-## Connection to CeTTa
+## Boundary
 
-Maps to `table_store.c` variant-key lookup soundness.
+This is not an SR runtime certificate and not a theorem about the public G3
+query surface.  It is retained as the honest legacy cache proof while the MIK /
+LeaTTa runtime line uses the faithful query surface directly.
 -/
 
 namespace Mettapedia.Languages.MeTTa.HE
@@ -537,57 +547,76 @@ private theorem filterMap_map_fst_eq {α β γ : Type*}
       · exact ih (fun x hx => hsome x (List.mem_cons_of_mem a hx))
                 (fun x hx => hfst x (List.mem_cons_of_mem a hx))
 
-/-- The inner matching step: match freshened lhs against query, return (rhs, bindings). -/
-private def matchStep (atom : Atom) (fuel : Nat) (lhs' rhs' : Atom) :
+/-- The legacy inner matching step: match freshened lhs against query, return
+(rhs, bindings) through the historical one-way `simpleMatch` surface. -/
+private def legacyMatchStep (atom : Atom) (fuel : Nat) (lhs' rhs' : Atom) :
     Option (Atom × Bindings) :=
   match simpleMatch lhs' atom Bindings.empty fuel with
   | some b => some (rhs', b)
   | none => none
 
-/-- matchStep agrees on isSome for variant-equivalent queries. -/
-private theorem matchStep_isSome_agree
+/-- `legacyMatchStep` agrees on isSome for variant-equivalent queries. -/
+private theorem legacyMatchStep_isSome_agree
     (q₁ q₂ : Atom) (r : VarRenaming) (hr : r.Injective) (heq : applyAtomTotal r q₁ = q₂)
     (fuel : Nat) (lhs' rhs' : Atom) :
-    (matchStep q₁ fuel lhs' rhs').isSome = (matchStep q₂ fuel lhs' rhs').isSome := by
-  unfold matchStep
+    (legacyMatchStep q₁ fuel lhs' rhs').isSome =
+      (legacyMatchStep q₂ fuel lhs' rhs').isSome := by
+  unfold legacyMatchStep
   have hbisim := simpleMatch_isSome_rename_empty r hr lhs' q₁ fuel
   rw [heq] at hbisim
   cases h₁ : simpleMatch lhs' q₁ Bindings.empty fuel <;>
     cases h₂ : simpleMatch lhs' q₂ Bindings.empty fuel <;>
     simp_all
 
-/-- matchStep returns the same fst (rhs') for both queries. -/
-private theorem matchStep_fst_agree
+/-- `legacyMatchStep` returns the same fst (rhs') for both queries. -/
+private theorem legacyMatchStep_fst_agree
     (q₁ q₂ : Atom) (fuel : Nat) (lhs' rhs' : Atom)
     (b₁ : Atom) (c₁ : Bindings) (b₂ : Atom) (c₂ : Bindings)
-    (h₁ : matchStep q₁ fuel lhs' rhs' = some (b₁, c₁))
-    (h₂ : matchStep q₂ fuel lhs' rhs' = some (b₂, c₂)) :
+    (h₁ : legacyMatchStep q₁ fuel lhs' rhs' = some (b₁, c₁))
+    (h₂ : legacyMatchStep q₂ fuel lhs' rhs' = some (b₂, c₂)) :
     b₁ = b₂ := by
-  unfold matchStep at h₁ h₂
+  unfold legacyMatchStep at h₁ h₂
   revert h₁ h₂
   cases simpleMatch lhs' q₁ Bindings.empty fuel <;>
     cases simpleMatch lhs' q₂ Bindings.empty fuel <;>
     intro h₁ h₂ <;> simp_all
 
-/-- queryEquations uses matchStep after equation decomposition + freshening. -/
-private theorem queryEquations_matchStep (space : Space) (atom : Atom) (fuel : Nat) :
-    queryEquations space atom fuel =
+/-- The historical equation-query helper, kept only to state the old
+simpleMatch-based cache theorem honestly after the public surface moved to
+`matchAtoms`/`mergeBindings`. -/
+def variantLegacyQueryEquations (space : Space) (atom : Atom) (fuel : Nat) :
+    List (Atom × Bindings) :=
     space.atoms.zipIdx.filterMap fun ⟨eq, idx⟩ =>
       match eq with
       | .expression [.symbol "=", lhs, rhs] =>
-        matchStep atom fuel (freshenEquation idx lhs rhs fuel).1
-                            (freshenEquation idx lhs rhs fuel).2
-      | _ => none := by
+        legacyMatchStep atom fuel (freshenEquation idx lhs rhs fuel).1
+                                (freshenEquation idx lhs rhs fuel).2
+      | _ => none
+
+/-- `variantLegacyQueryEquations` unfolds to the legacy matching step after
+equation decomposition + freshening. -/
+private theorem variantLegacyQueryEquations_matchStep
+    (space : Space) (atom : Atom) (fuel : Nat) :
+    variantLegacyQueryEquations space atom fuel =
+      space.atoms.zipIdx.filterMap fun ⟨eq, idx⟩ =>
+        match eq with
+        | .expression [.symbol "=", lhs, rhs] =>
+          legacyMatchStep atom fuel (freshenEquation idx lhs rhs fuel).1
+                                  (freshenEquation idx lhs rhs fuel).2
+        | _ => none := by
   rfl
 
-/-- Variant-equivalent queries produce the same RHS atoms.
-    Uses `List.map_filterMap` to push `Prod.fst` inside `filterMap`, then
-    `split` on the Atom equation pattern + `simpleMatch_isSome_rename_empty`. -/
-theorem variant_queries_same_rhs
+/-- Variant-equivalent queries produce the same RHS atoms on the legacy
+`simpleMatch` query model.
+
+This is the old table-cache theorem at its true abstraction layer.  It should
+not be read as a theorem about public `queryEquations`, whose repaired faithful
+matcher surface is intentionally stronger and can expose equality-threading. -/
+theorem variant_legacy_queries_same_rhs
     (space : Space) (q₁ q₂ : Atom) (hvar : VariantEquiv q₁ q₂) (fuel : Nat) :
-    (queryEquations space q₁ fuel).map Prod.fst =
-    (queryEquations space q₂ fuel).map Prod.fst := by
-  simp only [queryEquations, List.map_filterMap]
+    (variantLegacyQueryEquations space q₁ fuel).map Prod.fst =
+    (variantLegacyQueryEquations space q₂ fuel).map Prod.fst := by
+  simp only [variantLegacyQueryEquations, List.map_filterMap]
   congr 1; funext ⟨eq, idx⟩
   split
   · rename_i lhs rhs _
@@ -596,16 +625,38 @@ theorem variant_queries_same_rhs
     rw [hvar.eq] at hm
     cases h₁ : simpleMatch (freshenEquation idx lhs rhs fuel).1 q₁ Bindings.empty fuel <;>
       cases h₂ : simpleMatch (freshenEquation idx lhs rhs fuel).1 q₂ Bindings.empty fuel <;>
-      simp_all
+      simp [legacyMatchStep, h₁, h₂] at hm ⊢
   · rfl
 
-/-- Cache reuse is sound at the RHS level. -/
-theorem canonical_cache_reusable
+/-- Deprecated compatibility spelling for the legacy theorem.  The statement is
+now deliberately over `variantLegacyQueryEquations`, not public `queryEquations`. -/
+theorem variant_queries_same_rhs
+    (space : Space) (q₁ q₂ : Atom) (hvar : VariantEquiv q₁ q₂) (fuel : Nat) :
+    (variantLegacyQueryEquations space q₁ fuel).map Prod.fst =
+    (variantLegacyQueryEquations space q₂ fuel).map Prod.fst :=
+  variant_legacy_queries_same_rhs space q₁ q₂ hvar fuel
+
+/-- Cache reuse is sound at the RHS level for the legacy query model. -/
+theorem canonical_legacy_cache_reusable
     (space : Space) (q₁ q₂ : Atom) (fuel : Nat)
     (hvar : VariantEquiv q₁ q₂) :
+    (variantLegacyQueryEquations space q₁ fuel).map Prod.fst =
+    (variantLegacyQueryEquations space q₂ fuel).map Prod.fst :=
+  variant_legacy_queries_same_rhs space q₁ q₂ hvar fuel
+
+/-! The pre-G3 public-surface theorem had the following shape:
+
+```
+theorem variant_queries_same_rhs
+    (space : Space) (q₁ q₂ : Atom) (hvar : VariantEquiv q₁ q₂) (fuel : Nat) :
     (queryEquations space q₁ fuel).map Prod.fst =
-    (queryEquations space q₂ fuel).map Prod.fst :=
-  variant_queries_same_rhs space q₁ q₂ hvar fuel
+    (queryEquations space q₂ fuel).map Prod.fst
+```
+
+That statement cannot be recovered from this legacy simpleMatch proof after
+`queryEquations` moved to the faithful `matchAtoms`/`mergeBindings` surface.
+It belongs to the later faithful-matcher invariance/equality-threading tranche.
+-/
 
 /-! ## §6: Status
 
@@ -618,9 +669,10 @@ CoReferencePreservation.lean §4a) ensures BEq preservation.
 
 ### 0 sorries total
 
-`variant_queries_same_rhs` proved via `List.map_filterMap` + `funext` +
-`split` on the Atom equation pattern + `simpleMatch_isSome_rename_empty`.
-Helper `matchStep` avoids nested Atom pattern match reduction issues.
+`variant_legacy_queries_same_rhs` is proved via `List.map_filterMap` +
+`funext` + `split` on the Atom equation pattern +
+`simpleMatch_isSome_rename_empty`. Helper `legacyMatchStep` avoids nested Atom
+pattern match reduction issues.
 -/
 
 end Mettapedia.Languages.MeTTa.HE

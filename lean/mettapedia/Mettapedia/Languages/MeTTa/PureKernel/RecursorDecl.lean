@@ -44,6 +44,16 @@ structure GeneratedClosedIotaRule where
   target : PureTm 0
 deriving DecidableEq, Repr
 
+/-- Smallest generic extension beyond closed rules: a one-binder iota rule
+that can be instantiated into a family of closed steps. The current live
+frontier (`Nat.rec` successor) is exactly of this shape. -/
+structure GeneratedUnaryOpenIotaRule where
+  obligation : RecursorIotaObligation
+  ctx : Ctx 1
+  source : PureTm 1
+  target : PureTm 1
+deriving Repr
+
 def unitRecName : DeclName := `Unit.rec
 def boolRecName : DeclName := `Bool.rec
 def natRecName : DeclName := `Nat.rec
@@ -848,6 +858,55 @@ theorem natRecSuccOpenIotaRule_checked :
       HasTypeDecl natRecDeclEnv natRecSuccOpenCtx natRecSuccOpenTarget A := by
   exact ⟨.const natTyName, hasType_natRecSuccOpenSource, hasType_natRecSuccOpenTarget⟩
 
+def natRecSuccClosedSource (a : PureTm 0) : PureTm 0 :=
+  inst0 a natRecSuccOpenSource
+
+def natRecSuccClosedTarget (a : PureTm 0) : PureTm 0 :=
+  inst0 a natRecSuccOpenTarget
+
+theorem natRecSuccClosedSource_injective {a b : PureTm 0}
+    (h : natRecSuccClosedSource a = natRecSuccClosedSource b) : a = b := by
+  unfold natRecSuccClosedSource natRecSuccOpenSource natRecSuccOpenArg inst0 at h
+  simp [Substitution.subst] at h
+  exact h.2
+
+theorem natRecSuccClosedTarget_ne_closedSource (a b : PureTm 0) :
+    natRecSuccClosedTarget a ≠ natRecSuccClosedSource b := by
+  intro h
+  unfold natRecSuccClosedTarget natRecSuccClosedSource natRecSuccOpenSource
+    natRecSuccOpenTarget natRecSuccOpenArg inst0 at h
+  simp [Substitution.subst] at h
+
+private theorem ctxMorDecl_natRec_subst0 {a : PureTm 0}
+    (ha : HasTypeDecl natRecDeclEnv .nil a (.const NatDecl.natTyName)) :
+    CtxMorDecl natRecDeclEnv natRecSuccOpenCtx .nil (subst0 a) := by
+  intro i
+  refine Fin.cases ?_ ?_ i
+  · simpa [CtxMorDecl, natRecSuccOpenCtx, lookup_snoc_zero, Substitution.subst,
+      Renaming.rename] using ha
+  · intro j
+    exact Fin.elim0 j
+
+theorem hasType_natRecSuccClosedSource {a : PureTm 0}
+    (ha : HasTypeDecl natRecDeclEnv .nil a (.const NatDecl.natTyName)) :
+    HasTypeDecl natRecDeclEnv .nil (natRecSuccClosedSource a) (.const NatDecl.natTyName) := by
+  unfold natRecSuccClosedSource
+  simpa [inst0, Substitution.subst] using
+    (typing_subst_decl (E := natRecDeclEnv)
+      (Γ := natRecSuccOpenCtx) (Δ := .nil) (σ := subst0 a)
+      hasType_natRecSuccOpenSource
+      (ctxMorDecl_natRec_subst0 ha))
+
+theorem hasType_natRecSuccClosedTarget {a : PureTm 0}
+    (ha : HasTypeDecl natRecDeclEnv .nil a (.const NatDecl.natTyName)) :
+    HasTypeDecl natRecDeclEnv .nil (natRecSuccClosedTarget a) (.const NatDecl.natTyName) := by
+  unfold natRecSuccClosedTarget
+  simpa [inst0, Substitution.subst] using
+    (typing_subst_decl (E := natRecDeclEnv)
+      (Γ := natRecSuccOpenCtx) (Δ := .nil) (σ := subst0 a)
+      hasType_natRecSuccOpenTarget
+      (ctxMorDecl_natRec_subst0 ha))
+
 theorem natRecZeroClosedIotaRule_preserves_type_to_result :
     HasTypeDecl natRecDeclEnv .nil natRecZeroClosedSource (.const natTyName) ∧
       HasTypeDecl natRecDeclEnv .nil natRecZeroClosedTarget (.const natTyName) := by
@@ -1106,6 +1165,12 @@ def natRecSuccIotaObligation : RecursorIotaObligation :=
     sourceShape := "(((Nat.rec P) z) step) (Nat.succ n)"
     targetShape := "step n ((((Nat.rec P) z) step) n)" }
 
+def natRecSuccUnaryOpenIotaRule : GeneratedUnaryOpenIotaRule :=
+  { obligation := natRecSuccIotaObligation
+    ctx := natRecSuccOpenCtx
+    source := natRecSuccOpenSource
+    target := natRecSuccOpenTarget }
+
 def unitRecCtorClosedIotaRule : GeneratedClosedIotaRule :=
   { obligation := unitRecCtorIotaObligation
     source := unitRecOnCtor
@@ -1139,6 +1204,13 @@ def generateClosedIotaRule? (obligation : RecursorIotaObligation) :
   else
     none
 
+def generateUnaryOpenIotaRule? (obligation : RecursorIotaObligation) :
+    Option GeneratedUnaryOpenIotaRule :=
+  if obligation = natRecSuccIotaObligation then
+    some natRecSuccUnaryOpenIotaRule
+  else
+    none
+
 def generatedRecursorPilot (contract : FamilyRecursorDeclContract) : Option GeneratedRecursorPilot :=
   if contract.recursorName == unitRecName then
     some
@@ -1156,8 +1228,21 @@ def generatedRecursorPilot (contract : FamilyRecursorDeclContract) : Option Gene
 def generatedClosedIotaRules (pilot : GeneratedRecursorPilot) : List GeneratedClosedIotaRule :=
   pilot.obligations.filterMap generateClosedIotaRule?
 
+def generatedUnaryOpenIotaRules
+    (pilot : GeneratedRecursorPilot) : List GeneratedUnaryOpenIotaRule :=
+  pilot.obligations.filterMap generateUnaryOpenIotaRule?
+
 def GeneratedClosedIotaStep (pilot : GeneratedRecursorPilot) : PureTm 0 → PureTm 0 → Prop :=
   fun t u => ∃ rule ∈ generatedClosedIotaRules pilot, t = rule.source ∧ u = rule.target
+
+def GeneratedUnaryOpenIotaStep
+    (pilot : GeneratedRecursorPilot) : PureTm 0 → PureTm 0 → Prop :=
+  fun t u =>
+    ∃ rule ∈ generatedUnaryOpenIotaRules pilot,
+      ∃ a : PureTm 0,
+        HasTypeDecl natRecDeclEnv .nil a (.const NatDecl.natTyName) ∧
+        t = inst0 a rule.source ∧
+        u = inst0 a rule.target
 
 def generatedRecursorContractClosedIotaRules
     (contract : FamilyRecursorDeclContract) : List GeneratedClosedIotaRule :=
@@ -1217,10 +1302,23 @@ def GeneratedRecursorContractClosedIotaRealizedIn
 def generatedOpenIotaObligations (pilot : GeneratedRecursorPilot) : List RecursorIotaObligation :=
   pilot.obligations.filter (fun obligation => generateClosedIotaRule? obligation = none)
 
+def generatedResolvedIotaObligations
+    (pilot : GeneratedRecursorPilot) : List RecursorIotaObligation :=
+  pilot.obligations.filter fun obligation =>
+    match generateClosedIotaRule? obligation, generateUnaryOpenIotaRule? obligation with
+    | none, none => true
+    | _, _ => false
+
 def generatedRecursorContractOpenIotaObligations
     (contract : FamilyRecursorDeclContract) : List RecursorIotaObligation :=
   match generatedRecursorPilot contract with
   | some pilot => generatedOpenIotaObligations pilot
+  | none => []
+
+def generatedRecursorContractResolvedIotaObligations
+    (contract : FamilyRecursorDeclContract) : List RecursorIotaObligation :=
+  match generatedRecursorPilot contract with
+  | some pilot => generatedResolvedIotaObligations pilot
   | none => []
 
 abbrev GeneratedRecursorContractAdmitted
@@ -1262,12 +1360,84 @@ theorem generateClosedIotaRule_nat_succ_still_open :
     generateClosedIotaRule? natRecSuccIotaObligation = none := by
   decide
 
+theorem generateUnaryOpenIotaRule_nat_succ :
+    generateUnaryOpenIotaRule? natRecSuccIotaObligation = some natRecSuccUnaryOpenIotaRule := by
+  simp [generateUnaryOpenIotaRule?, natRecSuccUnaryOpenIotaRule]
+
 theorem natRecSuccIotaObligation_open_not_closed :
     generateClosedIotaRule? natRecSuccIotaObligation = none ∧
       ∃ A : PureTm 1,
         HasTypeDecl natRecDeclEnv natRecSuccOpenCtx natRecSuccOpenSource A ∧
         HasTypeDecl natRecDeclEnv natRecSuccOpenCtx natRecSuccOpenTarget A := by
   exact ⟨generateClosedIotaRule_nat_succ_still_open, natRecSuccOpenIotaRule_checked⟩
+
+theorem generatedUnaryOpenIotaRules_nat :
+    generatedUnaryOpenIotaRules
+      { contract := natRecContract
+        obligations := [natRecZeroIotaObligation, natRecSuccIotaObligation]
+        value? := none } =
+      [natRecSuccUnaryOpenIotaRule] := by
+  simp [generatedUnaryOpenIotaRules, generateUnaryOpenIotaRule?,
+    natRecZeroIotaObligation, natRecSuccIotaObligation, natRecSuccUnaryOpenIotaRule]
+
+theorem generatedUnaryOpenIotaStep_deterministic
+    {pilot : GeneratedRecursorPilot} {t u₁ u₂ : PureTm 0}
+    (h₁ : GeneratedUnaryOpenIotaStep pilot t u₁)
+    (h₂ : GeneratedUnaryOpenIotaStep pilot t u₂) :
+    u₁ = u₂ := by
+  rcases h₁ with ⟨rule₁, hMem₁, a₁, ha₁, ht₁, hu₁⟩
+  rcases h₂ with ⟨rule₂, hMem₂, a₂, ha₂, ht₂, hu₂⟩
+  unfold generatedUnaryOpenIotaRules at hMem₁ hMem₂
+  rw [List.mem_filterMap] at hMem₁ hMem₂
+  rcases hMem₁ with ⟨ob₁, hOb₁, hRule₁⟩
+  rcases hMem₂ with ⟨ob₂, hOb₂, hRule₂⟩
+  have hr₁ : ob₁ = natRecSuccIotaObligation ∧ rule₁ = natRecSuccUnaryOpenIotaRule := by
+    simpa [generateUnaryOpenIotaRule?, natRecSuccUnaryOpenIotaRule] using hRule₁.symm
+  have hr₂ : ob₂ = natRecSuccIotaObligation ∧ rule₂ = natRecSuccUnaryOpenIotaRule := by
+    simpa [generateUnaryOpenIotaRule?, natRecSuccUnaryOpenIotaRule] using hRule₂.symm
+  rcases hr₁ with ⟨_, hr₁eq⟩
+  rcases hr₂ with ⟨_, hr₂eq⟩
+  subst hr₁eq
+  subst hr₂eq
+  subst ht₁
+  subst hu₁
+  subst hu₂
+  have hArg : a₁ = a₂ :=
+    natRecSuccClosedSource_injective
+      (by simpa [natRecSuccClosedSource, natRecSuccUnaryOpenIotaRule] using ht₂)
+  subst hArg
+  rfl
+
+theorem generatedUnaryOpenIotaStep_preserves_type
+    {pilot : GeneratedRecursorPilot} {t u : PureTm 0}
+    (h : GeneratedUnaryOpenIotaStep pilot t u) :
+    HasTypeDecl natRecDeclEnv .nil t (.const NatDecl.natTyName) ∧
+      HasTypeDecl natRecDeclEnv .nil u (.const NatDecl.natTyName) := by
+  rcases h with ⟨rule, hMem, a, ha, rfl, rfl⟩
+  unfold generatedUnaryOpenIotaRules at hMem
+  rw [List.mem_filterMap] at hMem
+  rcases hMem with ⟨ob, hOb, hRule⟩
+  have hrule : ob = natRecSuccIotaObligation ∧ rule = natRecSuccUnaryOpenIotaRule := by
+    simpa [generateUnaryOpenIotaRule?, natRecSuccUnaryOpenIotaRule] using hRule.symm
+  rcases hrule with ⟨_, hruleEq⟩
+  subst hruleEq
+  exact ⟨hasType_natRecSuccClosedSource ha, hasType_natRecSuccClosedTarget ha⟩
+
+theorem generatedResolvedIotaObligations_nat_pilot :
+    generatedResolvedIotaObligations
+      { contract := natRecContract
+        obligations := [natRecZeroIotaObligation, natRecSuccIotaObligation]
+        value? := none } = [] := by
+  simp [generatedResolvedIotaObligations, generateClosedIotaRule_nat_zero,
+    generateUnaryOpenIotaRule?, natRecSuccIotaObligation]
+
+theorem generatedResolvedIotaObligations_unit_pilot :
+    generatedResolvedIotaObligations
+      { contract := unitRecContract
+        obligations := [unitRecCtorIotaObligation]
+        value? := some unitRecValue } = [] := by
+  simp [generatedResolvedIotaObligations, generateClosedIotaRule_unit,
+    generateUnaryOpenIotaRule?]
 
 theorem natRecZeroClosedIotaRule_source_target :
     natRecZeroClosedIotaRule.source = natRecZeroClosedSource ∧
@@ -2019,6 +2189,49 @@ theorem generatedRecursorContractOpenIotaObligations_eq_of_pilot
     generatedRecursorContractOpenIotaObligations contract = generatedOpenIotaObligations pilot := by
   simp [generatedRecursorContractOpenIotaObligations, hPilot]
 
+theorem generatedRecursorContractResolvedIotaObligations_eq_of_pilot
+    {contract : FamilyRecursorDeclContract} {pilot : GeneratedRecursorPilot}
+    (hPilot : generatedRecursorPilot contract = some pilot) :
+    generatedRecursorContractResolvedIotaObligations contract =
+      generatedResolvedIotaObligations pilot := by
+  simp [generatedRecursorContractResolvedIotaObligations, hPilot]
+
+theorem generatedRecursorPilot_resolved_obligations_nil
+    {contract : FamilyRecursorDeclContract} {pilot : GeneratedRecursorPilot}
+    (hPilot : generatedRecursorPilot contract = some pilot) :
+    generatedResolvedIotaObligations pilot = [] := by
+  by_cases hUnit : contract.recursorName == unitRecName
+  · have hp :
+        some pilot =
+          some
+            { contract := contract
+              obligations := [unitRecCtorIotaObligation]
+              value? := some unitRecValue } := by
+        simpa [generatedRecursorPilot, hUnit] using hPilot.symm
+    injection hp with hpilot
+    subst hpilot
+    exact generatedResolvedIotaObligations_unit_pilot
+  · by_cases hNat : contract.recursorName == natRecName
+    · have hp :
+          some pilot =
+            some
+              { contract := contract
+                obligations := [natRecZeroIotaObligation, natRecSuccIotaObligation]
+                value? := none } := by
+          simpa [generatedRecursorPilot, hUnit, hNat] using hPilot.symm
+      injection hp with hpilot
+      subst hpilot
+      exact generatedResolvedIotaObligations_nat_pilot
+    · simp [generatedRecursorPilot, hUnit, hNat] at hPilot
+
+theorem generatedRecursorContract_admitted_resolved_boundary
+    {contract : FamilyRecursorDeclContract}
+    (hAdm : GeneratedRecursorContractAdmitted contract) :
+    generatedRecursorContractResolvedIotaObligations contract = [] := by
+  rcases hAdm with ⟨pilot, hPilot⟩
+  rw [generatedRecursorContractResolvedIotaObligations_eq_of_pilot hPilot]
+  exact generatedRecursorPilot_resolved_obligations_nil hPilot
+
 theorem generatedRecursorContractClosedIotaStep_iff_pilot
     {contract : FamilyRecursorDeclContract} {pilot : GeneratedRecursorPilot}
     (hPilot : generatedRecursorPilot contract = some pilot)
@@ -2119,6 +2332,13 @@ theorem generatedRecursorContractOpenIotaObligations_nat :
   simp [generatedRecursorContractOpenIotaObligations,
     generatedRecursorPilot_nat_obligations_no_value, generatedOpenIotaObligations,
     generateClosedIotaRule_nat_zero, generateClosedIotaRule_nat_succ_still_open]
+
+theorem generatedRecursorContractResolvedIotaObligations_nat :
+    generatedRecursorContractResolvedIotaObligations natRecContract = [] := by
+  simp [generatedRecursorContractResolvedIotaObligations,
+    generatedRecursorPilot_nat_obligations_no_value,
+    generatedResolvedIotaObligations, generateClosedIotaRule_nat_zero,
+    generateUnaryOpenIotaRule?, natRecSuccIotaObligation]
 
 theorem generatedRecursorContractClosedIotaStep_deterministic
     (contract : FamilyRecursorDeclContract) :
@@ -2842,6 +3062,38 @@ abbrev GeneratedRecursorCurrentBoundaryConditionalFrontierPackage
   GeneratedRecursorCurrentGateWitness contract ∧
     GeneratedRecursorAdmittedOpenBoundary contract ∧
     GeneratedRecursorAdmittedExactConditionalFrontierPackage contract
+
+/-- Exact admitted frontier package after resolving generator obligations
+through either closed rules or the generic unary-open realization path. The
+Unit branch remains fully closed; the Nat branch now records an empty resolved
+generator boundary while honestly preserving the fact that the current
+declaration-side closed slice does not realize the successor rule as a closed
+`δ`-step. -/
+abbrev GeneratedRecursorAdmittedExactResolvedFrontierPackage
+    (contract : FamilyRecursorDeclContract) : Prop :=
+  (contract.recursorName = unitRecName ∧
+    generatedRecursorContractResolvedIotaObligations contract = [] ∧
+    GeneratedRecursorContractFullyClosed contract ∧
+    GeneratedRecursorContractClosedIotaRealizedIn unitRecDeclEnv contract ∧
+    GeneratedRecursorConditionalDeclFrontierPackage contract)
+  ∨
+  (contract.recursorName = natRecName ∧
+    generatedRecursorContractResolvedIotaObligations contract = [] ∧
+    ¬ GeneratedRecursorContractClosedIotaRealizedIn natRecDeclEnv contract ∧
+    ∃ A : PureTm 1,
+      HasTypeDecl natRecDeclEnv natRecSuccOpenCtx natRecSuccOpenSource A ∧
+      HasTypeDecl natRecDeclEnv natRecSuccOpenCtx natRecSuccOpenTarget A)
+
+/-- Active current-boundary package for the recursor lane once the generator
+frontier has been resolved. This replaces the older "open nat exception"
+language in consumers that only need the live boundary, while still allowing
+the exact Nat declaration-side limitation to be recovered from the stronger
+resolved package above. -/
+abbrev GeneratedRecursorCurrentBoundaryResolvedFrontierPackage
+    (contract : FamilyRecursorDeclContract) : Prop :=
+  GeneratedRecursorCurrentGateWitness contract ∧
+    generatedRecursorContractResolvedIotaObligations contract = [] ∧
+    GeneratedRecursorAdmittedExactResolvedFrontierPackage contract
 
 /-- Generic current-boundary package for declaration environments whose
 declaration-side frontier is known up to Church-Rosser/injectivity. This is
@@ -7520,6 +7772,124 @@ theorem generatedRecursorContract_admitted_current_boundary_package_of_condition
     (hAdm : GeneratedRecursorContractAdmitted contract) :
     GeneratedRecursorCurrentBoundaryConditionalFrontierPackage contract := by
   exact generatedRecursorContract_admitted_current_boundary_package_of_conditional_frontier_of_church_rosser
+    (contract := contract)
+    hAdm
+    DeclarationSemantics.declChurchRosser
+
+theorem generatedRecursorContract_admitted_exact_resolved_frontier_package
+    {contract : FamilyRecursorDeclContract}
+    (hAdm : GeneratedRecursorContractAdmitted contract)
+    (piInjective :
+      ∀ {k : Nat} {A A' : PureTm k} {B B' : PureTm (k + 1)},
+        ConvDecl unitRecDeclEnv (.pi A B) (.pi A' B') →
+          ConvDecl unitRecDeclEnv A A' ∧ ConvDecl unitRecDeclEnv B B') :
+    GeneratedRecursorAdmittedExactResolvedFrontierPackage contract := by
+  have hResolved :
+      generatedRecursorContractResolvedIotaObligations contract = [] :=
+    generatedRecursorContract_admitted_resolved_boundary hAdm
+  rcases generatedRecursorContract_admitted_realization_boundary hAdm with hUnit | hNat
+  · left
+    rcases hUnit with ⟨hName, hFull, hReal⟩
+    have hPkg :
+        GeneratedRecursorConditionalDeclFrontierPackage contract :=
+      generatedRecursorContract_fullyClosed_conditional_decl_frontier_package
+        (contract := contract) hFull piInjective
+    exact ⟨hName, hResolved, hFull, hReal, hPkg⟩
+  · right
+    rcases hNat with ⟨hName, _hOpen, hNotReal⟩
+    exact ⟨hName, hResolved, hNotReal, natRecSuccOpenIotaRule_checked⟩
+
+theorem generatedRecursorContract_admitted_exact_resolved_frontier_package_of_church_rosser
+    {contract : FamilyRecursorDeclContract}
+    (hAdm : GeneratedRecursorContractAdmitted contract)
+    (hCR : DeclarationSemantics.DeclChurchRosser unitRecDeclEnv) :
+    GeneratedRecursorAdmittedExactResolvedFrontierPackage contract := by
+  have hResolved :
+      generatedRecursorContractResolvedIotaObligations contract = [] :=
+    generatedRecursorContract_admitted_resolved_boundary hAdm
+  rcases generatedRecursorContract_admitted_realization_boundary hAdm with hUnit | hNat
+  · left
+    rcases hUnit with ⟨hName, hFull, hReal⟩
+    have hPkg :
+        GeneratedRecursorConditionalDeclFrontierPackage contract :=
+      generatedRecursorContract_fullyClosed_conditional_decl_frontier_package_of_church_rosser
+        (contract := contract) hFull hCR
+    exact ⟨hName, hResolved, hFull, hReal, hPkg⟩
+  · right
+    rcases hNat with ⟨hName, _hOpen, hNotReal⟩
+    exact ⟨hName, hResolved, hNotReal, natRecSuccOpenIotaRule_checked⟩
+
+theorem generatedRecursorContract_admitted_exact_resolved_frontier_package_of_decl_package
+    {contract : FamilyRecursorDeclContract}
+    (hAdm : GeneratedRecursorContractAdmitted contract)
+    (hDeclPkg :
+      DeclarationSemantics.DeclChurchRosserFrontierPackage unitRecDeclEnv) :
+    GeneratedRecursorAdmittedExactResolvedFrontierPackage contract := by
+  exact generatedRecursorContract_admitted_exact_resolved_frontier_package_of_church_rosser
+    (contract := contract)
+    hAdm
+    (DeclarationSemantics.DeclChurchRosserFrontierPackage.declChurchRosser hDeclPkg)
+
+theorem generatedRecursorContract_admitted_exact_resolved_frontier_package_sealed
+    {contract : FamilyRecursorDeclContract}
+    (hAdm : GeneratedRecursorContractAdmitted contract) :
+    GeneratedRecursorAdmittedExactResolvedFrontierPackage contract := by
+  exact generatedRecursorContract_admitted_exact_resolved_frontier_package_of_church_rosser
+    (contract := contract)
+    hAdm
+    DeclarationSemantics.declChurchRosser
+
+theorem generatedRecursorContract_admitted_current_boundary_package_of_resolved_frontier
+    {contract : FamilyRecursorDeclContract}
+    (hAdm : GeneratedRecursorContractAdmitted contract)
+    (piInjective :
+      ∀ {k : Nat} {A A' : PureTm k} {B B' : PureTm (k + 1)},
+        ConvDecl unitRecDeclEnv (.pi A B) (.pi A' B') →
+          ConvDecl unitRecDeclEnv A A' ∧ ConvDecl unitRecDeclEnv B B') :
+    GeneratedRecursorCurrentBoundaryResolvedFrontierPackage contract := by
+  rcases generatedRecursorContract_admitted_current_boundary hAdm with
+    ⟨hGate, _hOpenBoundary⟩
+  have hResolved :
+      generatedRecursorContractResolvedIotaObligations contract = [] :=
+    generatedRecursorContract_admitted_resolved_boundary hAdm
+  have hPkg :
+      GeneratedRecursorAdmittedExactResolvedFrontierPackage contract :=
+    generatedRecursorContract_admitted_exact_resolved_frontier_package
+      (contract := contract) hAdm piInjective
+  exact ⟨hGate, hResolved, hPkg⟩
+
+theorem generatedRecursorContract_admitted_current_boundary_package_of_resolved_frontier_of_church_rosser
+    {contract : FamilyRecursorDeclContract}
+    (hAdm : GeneratedRecursorContractAdmitted contract)
+    (hCR : DeclarationSemantics.DeclChurchRosser unitRecDeclEnv) :
+    GeneratedRecursorCurrentBoundaryResolvedFrontierPackage contract := by
+  rcases generatedRecursorContract_admitted_current_boundary hAdm with
+    ⟨hGate, _hOpenBoundary⟩
+  have hResolved :
+      generatedRecursorContractResolvedIotaObligations contract = [] :=
+    generatedRecursorContract_admitted_resolved_boundary hAdm
+  have hPkg :
+      GeneratedRecursorAdmittedExactResolvedFrontierPackage contract :=
+    generatedRecursorContract_admitted_exact_resolved_frontier_package_of_church_rosser
+      (contract := contract) hAdm hCR
+  exact ⟨hGate, hResolved, hPkg⟩
+
+theorem generatedRecursorContract_admitted_current_boundary_package_of_resolved_frontier_of_decl_package
+    {contract : FamilyRecursorDeclContract}
+    (hAdm : GeneratedRecursorContractAdmitted contract)
+    (hDeclPkg :
+      DeclarationSemantics.DeclChurchRosserFrontierPackage unitRecDeclEnv) :
+    GeneratedRecursorCurrentBoundaryResolvedFrontierPackage contract := by
+  exact generatedRecursorContract_admitted_current_boundary_package_of_resolved_frontier_of_church_rosser
+    (contract := contract)
+    hAdm
+    (DeclarationSemantics.DeclChurchRosserFrontierPackage.declChurchRosser hDeclPkg)
+
+theorem generatedRecursorContract_admitted_current_boundary_package_of_resolved_frontier_sealed
+    {contract : FamilyRecursorDeclContract}
+    (hAdm : GeneratedRecursorContractAdmitted contract) :
+    GeneratedRecursorCurrentBoundaryResolvedFrontierPackage contract := by
+  exact generatedRecursorContract_admitted_current_boundary_package_of_resolved_frontier_of_church_rosser
     (contract := contract)
     hAdm
     DeclarationSemantics.declChurchRosser

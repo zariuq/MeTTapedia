@@ -23,4 +23,5 @@ import Mettapedia.Languages.MeTTa.PureKernel.Inst0BridgeDerived
 import Mettapedia.Languages.MeTTa.PureKernel.ProfileTheory
 import Mettapedia.Languages.MeTTa.PureKernel.TypedLangDef
 import Mettapedia.Languages.MeTTa.PureKernel.CoreEmbedding
+import Mettapedia.Languages.MeTTa.PureKernel.CICGuestBridge
 import Mettapedia.Languages.MeTTa.PureKernel.HOLLogicalInductionBridge

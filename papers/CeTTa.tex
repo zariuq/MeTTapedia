@@ -49,13 +49,23 @@ actively maintained runtimes: Hyperon Experimental (\HE{}, Rust),
 \PeTTa{} (Prolog), and \CeTTa{} (C).  This paper describes \CeTTa{},
 a direct C implementation of the \HE{} MeTTa evaluator that passes a
 375-file regression suite with zero failures (equally green in the
-MORK-bridge build), backed by a 333-case rule-indexed conformance
-catalog against upstream \HE{}~v0.2.10 covering 24/24 specification
-rule capacities, and achieves \textbf{9.5$\times$ speedup over
-\PeTTa{}} on genuine depth-10 PLN backward chaining with truth-value
-propagation (19{,}845~hypotheses over 1.4M~atoms in 15\,s vs.\
-\PeTTa{}'s 143\,s), while losing 13$\times$ on pure branching search
-(8-queens) and 30$\times$ on BFS state exploration (tilepuzzle).
+MORK-bridge build; suite snapshot 2026-06), backed by a 333-case
+rule-indexed conformance catalog against upstream \HE{}~v0.2.10
+covering 24/24 specification rule capacities (catalog dated 2026-06).
+On freshly rerun cross-runtime benchmarks dated 2026-06-27,
+\CeTTa{} is fastest on startup-dominated shallow inference and on
+several current genomic-inference rows (for example, the 183-pair PLN
+evidence core and the 1{,}411{,}430-hypothesis deep genomic backward
+chaining row), while \PeTTa{} wins on pure branching search (the
+85{,}013-proof Metamath depth-5 benchmark).  A rerun-backed
+cross-engine chaining suite built on community chainers
+(Geisweiller's dependent-typed chainers and Metamath proofs;
+Treutlein's PeTTaChainer problems) shows that \CeTTa{}'s shallow
+advantage is startup-dominated rather than a general scaling property.
+Historical rows whose current drivers now disagree or fail---the old
+cross-engine miner speed table, the current 1.4M WM-PLN seam,
+8-Queens, and tilepuzzle---are explicitly excluded from the revised
+benchmark ladder.
 The runtime is organized as an explicit profile family:
 \code{he-compat} mirrors Rust \HE{} literally (including its quirks);
 the principled \code{he} line carries exact rationals, true division,
@@ -82,11 +92,12 @@ The \RhoCalc{} reaction machine's eval-at-\textsc{comm} semantics is given a
 witness-free, axiom-clean Lean characterization: the quiescent run of the
 canonical payload-evaluation process equals its structurally observable
 outcome set.
-We present a complete benchmark ladder from shallow evaluation through
-depth-10 PLN inference, callgrind/massif-based performance analysis,
-a specification gap analysis, and a three-machine architecture (local
-search, indexed shared-space, type elaboration) informed by GPT-5.4~Pro
-architectural review.
+We present a benchmark ladder from shallow evaluation through
+large-scale genomic inference and a cross-engine chaining suite, a
+freshness-first performance re-audit and triage, a specification gap
+analysis, and a three-machine architecture (local search, indexed
+shared-space, type elaboration) informed by GPT-5.4~Pro architectural
+review.
 \end{abstract}
 
 %% ────────────────────────────────────────────────────────────────────
@@ -129,10 +140,11 @@ Three implementations exist:
 \item A bidirectional \HE{}$\leftrightarrow$\PeTTa{} translator
   (Prolog + executable Lean), with a sorry-free Lean proof of semantic
   correspondence.
-\item Cross-runtime benchmarks showing \CeTTa{} 10--67$\times$ faster
-  than \HE{} on shallow evaluation, \PeTTa{} 3$\times$ faster on deep
-  proof search, and a callgrind analysis identifying 46\% of \CeTTa{}'s
-  runtime as optimizable string operations.
+\item Cross-runtime benchmarks rerun on the current tree: \CeTTa{} is
+  10--100$\times$ faster than \HE{} on shallow evaluation, wins several
+  current genomic-inference rows, while \PeTTa{} is 4.8$\times$ faster
+  on the audited depth-5 Metamath proof-search row; unresolved rows are
+  explicitly quarantined from the revised ladder.
 \item A characterization of the semantic boundary between \HE{} and
   \PeTTa{}: the shared fragment (85\% of programs) runs identically; the
   divergence is in free-variable scoping across non-deterministic branches.
@@ -495,19 +507,43 @@ The five remaining rules are upstream \emph{stdlib sugar}: their
 one-step behavior is the upstream definition of \code{let},
 \code{let*}, \code{case}, \code{switch}, and \code{switch-minimal} as
 \code{unify}/\code{chain} programs.  Certifying them required a
-\emph{matcher bridge}: relating \CeTTa{}'s one-way matcher on ground
-scrutinees to the official \code{matchAtoms}/\code{mergeBindings}
-semantics.  Its keystone is a singleton-seed factorization
-theorem---any official match run seeded with bindings $b$ factors
-through the empty-seeded run followed by one deterministic merge back
-into $b$---proven via an extensional lookup-specification of ground
-merging under a key-uniqueness invariant, together with its
-sorry-free instantiation into a full success bridge.  The final link
-between the declarative judgment and the running evaluator's
-\code{unify} is stated \emph{once} as a named two-field interface
-(match-hit and match-miss stabilization); every sugar-rule
-certification spends that interface explicitly, and discharging it is
-a theorem in progress rather than a hidden assumption.
+\emph{matcher bridge}: relating the public equation-query surface to the
+official \code{matchAtoms}/\code{mergeBindings} semantics.  The key
+insight from this tranche was that the real seam was \emph{not} merely a
+direct one-way-to-two-way matcher comparison.  The public \HE{} query
+surface had historically routed equation lookup through the simplified
+\code{simpleMatch} path, while the faithful two-sided matcher already
+existed separately.  We therefore split the bridge into three explicit
+layers.
+
+First, \code{DeclMatchSpec.lean} states the author's
+\code{match\_atoms} semantics declaratively and proves the executable
+\code{matchAtoms} helper sound and complete against it
+(\code{matchAtoms\_sound}, \code{matchAtoms\_complete}).  Second,
+\code{DeclMergeSpec.lean} does the same for
+\code{merge\_bindings}/\code{add\_var\_binding}/\code{add\_var\_equality},
+proving \code{mergeBindings\_sound} and
+\code{mergeBindings\_complete}.  Third,
+\code{QuerySurfaceAgreement.lean} proves a bounded adequacy theorem for
+the \emph{public} query interface:
+\code{queryEquations\_ground\_two\_way\_adequate} and its
+\code{queryEquationsAgainstVisible}-companion show that, on the
+ground-query fragment and under the explicit freshening adequacy
+hypothesis \code{EquationFresheningAdequate}, the repaired
+\code{matchAtoms}/\code{mergeBindings} surface and the legacy
+\code{simpleMatch}-based scan agree in both directions up to replay
+fuel.
+
+The earlier singleton-seed factorization theorem remains one ingredient
+inside this story, but it is no longer the whole story.  The decisive
+insight is the G3/G3b split: equality-threading becomes observable only
+when the queried atom itself still contains variables, because that is
+the point at which \code{Bindings.resolve}/\code{Bindings.apply} must
+honor equalities rather than plain assignments.  We therefore bank the
+ground-query adequacy result as the honest current certification
+surface, and carry the variable-bearing query case as an explicit next
+obligation rather than silently pretending the legacy surface was already
+faithful.
 
 %% ────────────────────────────────────────────────────────────────────
 \section{Verified \HE{}$\leftrightarrow$\PeTTa{} Translation}
@@ -758,15 +794,52 @@ resource accounting once and for all~\cite{costendofunctor}. We return to it in 
 
 %% ────────────────────────────────────────────────────────────────────
 \section{Cross-Runtime Benchmarks}
+\label{sec:benchmark-programs}
 
 All benchmarks use dialect-agnostic MeTTa (shared syntax) unless noted.
-Output is verified identical across runtimes.
+All timing rows in this section were rerun on the current tree on
+2026-06-27 unless they are explicitly described as excluded,
+methodological, or unresolved.  For rows whose single-run wall time is
+below 0.1\,s, we report averaged full-process wall time over repeated
+invocations to avoid timer quantization.  Output is verified identical
+across runtimes whenever a row is presented as a clean cross-runtime
+benchmark.  So a reader can see
+precisely what is measured, each subsection below opens with the core of
+the program it runs; the full sources are linked inline and collected at
+\href{https://github.com/zariuq/CeTTa/tree/main/benchmarks/chaining_crossengine}{\code{benchmarks/chaining\_crossengine}}.
+
+Most of the inference benchmarks are driven by one small dependent-typed
+\emph{backward chainer}.  To prove a goal \code{(: \$proof \$theorem)} it
+either matches a fact in the knowledge base, or---for a rule application
+\code{(\$rule \$prem)}---looks up the rule's type and recurses on its
+premise (the binary and $n$-ary cases follow the same shape):
+\begin{lstlisting}[language={},basicstyle=\ttfamily\scriptsize]
+(: bc (-> $a Nat $b $b))                                  ; KB, depth, goal -> goal
+(= (bc $kb $_ (: $proof $theorem))                        ; base case: it's a fact
+   (match $kb (: $proof $theorem) (: $proof $theorem)))
+(= (bc $kb (S $d) (: ($rule $prem) $theorem))             ; step: apply a rule
+   (let* (((: $rule (-> (: $prem $t) $theorem))
+            (bc $kb $d (: $rule (-> (: $prem $t) $theorem))))
+          ((: $prem $t) (bc $kb $d (: $prem $t))))
+     (: ($rule $prem) $theorem)))
+\end{lstlisting}
+Each benchmark below supplies its own typed rules and facts to this
+chainer (or, where noted, a forward chainer or a truth-value kernel).
 
 \subsection{Shallow Evaluation}
 
-Nil Geisweiller's typed backward chainer over 30 entities with 3 binary
-rules at depth~1.  All three runtimes produce identical 30
-proof-carrying witnesses, e.g.\
+Nil Geisweiller's typed backward chainer (the \code{bc} above) over
+60 ground entities at depth~1 (20 researchers, 20 engineers, 20
+artists).  The rules are typed binary implications; for example,
+\code{r-mortal} combines a researcher fact with a curious fact to
+derive a mortal witness:
+\begin{lstlisting}[language={},basicstyle=\ttfamily\scriptsize]
+(: r-mortal (-> (: $r (researcher $x))
+                (: $c (curious $x))
+                (mortal $x)))
+!(bc &kb (fromNumber 1) (: $proof (mortal $x)))      ; -> 60 witnesses
+\end{lstlisting}
+All three runtimes produce identical 60 proof-carrying witnesses, e.g.\
 \code{(: (r-mortal r01 r01c) (mortal r01))}.
 
 \begin{center}
@@ -774,45 +847,75 @@ proof-carrying witnesses, e.g.\
 \toprule
 Runtime & Time & vs.\ \CeTTa{} & Output \\
 \midrule
-\CeTTa{} & 15\,ms  & 1$\times$           & 30 witnesses \\
-\PeTTa{} & 151\,ms & 10$\times$ slower    & 30 witnesses \\
-\HE{}    & 1{,}010\,ms & 67$\times$ slower & 30 witnesses \\
+\CeTTa{} & 4.0\,ms avg  & 1$\times$           & 60 witnesses \\
+\PeTTa{} & 45.4\,ms avg & 11.3$\times$ slower & 60 witnesses \\
+\HE{}    & 402\,ms avg  & 100$\times$ slower  & 60 witnesses \\
 \bottomrule
 \end{tabular}
 \end{center}
 
-\paragraph{Startup overhead.}
-\HE{}'s 138\,ms startup (Rust binary + Python stdlib) dominates small
-tests.  \CeTTa{} starts in 6\,ms (precompiled stdlib blob).  On
-computation-heavy benchmarks the startup amortizes, revealing the true
-compute speedup of $\sim$17$\times$.
+This is a startup-dominated sanity row, not a scaling claim.  It is
+useful because it exercises the typed proof-carrying surface while
+remaining small enough that translator and runtime drift are easy to
+spot.
 
 \subsection{Deep Proof Search: \PeTTa{} Wins}
 
 Metamath proof search at depth~5 (2 axioms, proving $t = t$,
-85{,}013 proof trees) reverses the performance ordering:
+85{,}013 proof trees) reverses the performance ordering.  The knowledge
+base is Geisweiller's \code{demo0} (axiom \code{a1}: equality is
+right-Euclidean; \code{a2}: $0$ is a right identity; \code{mp}: modus
+ponens), and the goal is \code{t = t}
+(\href{https://github.com/zariuq/CeTTa/blob/main/benchmarks/chaining_crossengine/01_nilbc/nilbc_th1.metta}{\code{01\_nilbc/nilbc\_th1.metta}};
+glyphs shown ASCII here):
+\begin{lstlisting}[language={},basicstyle=\ttfamily\scriptsize]
+(: a1 (-> (: $t term) (: $r term) (: $s term)
+          (-> (= $t $r) (-> (= $t $s) (= $r $s)))))   ; right-Euclidean
+(: a2 (-> (: $t term) (= (+ $t 0) $t)))               ; 0 right-identity
+(: mp (-> (: $maj (-> $P $Q)) (: $P wff) (: $Q wff)
+          (: $min $P) $Q))                            ; modus ponens
+!(bc &kbh (fromNumber 5) (: $prf (= t t)))            ; prove t = t
+\end{lstlisting}
 
 \begin{center}
 \begin{tabular}{lrrl}
 \toprule
 Runtime & Time & vs.\ \PeTTa{} & Status \\
 \midrule
-\PeTTa{} & 31.7\,s  & 1$\times$          & 85{,}013 proofs \\
-\CeTTa{} & 94.2\,s  & 3.0$\times$ slower & 85{,}013 proofs \\
+\PeTTa{} & 7.60\,s  & 1$\times$          & 85{,}013 proofs \\
+\CeTTa{} & 36.42\,s & 4.8$\times$ slower & 85{,}013 proofs \\
 \HE{}    & $>$120\,s & timeout            & killed \\
 \bottomrule
 \end{tabular}
 \end{center}
 
-\PeTTa{}'s Prolog SLD resolution with first-argument indexing is
-3$\times$ faster on deep, branching proof search.  \HE{} cannot finish
-within 120\,s.
+\PeTTa{}'s Prolog search remains decisively better on deep branching
+proof search; the current rerun widens the gap to roughly
+4.8$\times$.  \HE{} still cannot finish within 120\,s.
 
 \subsection{Forward Chaining at Scale}
 
 Nil Geisweiller's propositional-calculus forward chainer at depth~4
-($\sim$11.7M generated pairs) completes in 120\,s on \CeTTa{}.  \HE{}
-times out.
+uses a solution space that is extended in place by forward application
+of modus ponens:
+\begin{lstlisting}[language={},basicstyle=\ttfamily\scriptsize]
+(= (fs-add-to-ss $rb $ss)
+   (with-space-snapshot $ss0 $ss
+     (match $ss0 (: $x1 $a1)
+       (match $ss0 (: $x2 $a2)
+         (match $rb (: $f (-> $a1 $a2 $b))
+           (add-atom $ss (: ($f $x1 $x2) $b)))))))
+!(count-atoms &ss)
+\end{lstlisting}
+The current \CeTTa{} rerun of
+\href{https://github.com/zariuq/CeTTa/blob/main/tests/nil_pc_fc_d4.metta}{\code{tests/nil\_pc\_fc\_d4.metta}}
+completes in 100.86\,s and reports 8.19M accumulated results after the
+four forward passes.  We do \emph{not} reuse the older
+``11.7M generated pairs'' sentence as benchmark evidence, because the
+current HE lane does not time out on this driver; it errors immediately
+(\code{match expects a space as the first argument}).  So the forward
+row remains a useful workload, but it is not yet paper-ready as a clean
+cross-runtime benchmark.
 
 \subsection{Translator Validation}
 
@@ -827,8 +930,24 @@ converts \code{prog1} to nested \code{let} with fresh variables:
                  (let $__tr_discard_2 (println! "done")
                    $__tr_result_1)))
 \end{lstlisting}
-The translated version produces identical output on \CeTTa{} and \HE{},
-matching the \PeTTa{} original.
+The current source file
+\href{https://github.com/zariuq/CeTTa/blob/main/tests/bench_backchain_petta_native.metta}{\code{tests/bench\_backchain\_petta\_native.metta}}
+produces 30 proof-carrying witnesses on native \PeTTa{}, and the
+current translated artifact produces the same 30 witnesses on both
+\CeTTa{} and \HE{}:
+\begin{center}
+\begin{tabular}{lrrl}
+\toprule
+Runtime & Time & vs.\ \CeTTa{} & Output \\
+\midrule
+\CeTTa{} & 3.7\,ms avg  & 1$\times$          & 30 proofs \\
+\PeTTa{} & 44.8\,ms avg & 12.1$\times$ slower & 30 proofs \\
+\HE{}    & 319\,ms avg  & 86$\times$ slower  & 30 proofs \\
+\bottomrule
+\end{tabular}
+\end{center}
+This row is a translator benchmark, not just a syntax example: the
+observable runtime behavior survives translation.
 
 \subsection{PLN Evidence Aggregation over Genomic KB}
 
@@ -843,16 +962,27 @@ Lean-verified: \code{power}, \code{toLogOdds\_power\_mul}, and
 \code{power\_power\_inv} are proved in
 \code{Mettapedia/Logic/BinaryEvidence.lean}.
 
+The core arithmetic is ordinary MeTTa over numbers:
+\begin{lstlisting}[language={},basicstyle=\ttfamily\scriptsize]
+(= (Truth_ModusPonens (stv $f1 $c1) (stv $f2 $c2))
+   (stv (+ (* $f1 $f2) (* 0.02 (- 1 $f1))) (* $c1 $c2)))
+(= (Truth_Revision (stv $f1 $c1) (stv $f2 $c2))
+   (let* (($w1 (Truth_c2w $c1)) ($w2 (Truth_c2w $c2)) ($w (+ $w1 $w2))
+          ($f (/ (+ (* $w1 $f1) (* $w2 $f2)) $w)) ($c (Truth_w2c $w)))
+     (stv (min 1.0 $f) (min 1.0 $c))))
+\end{lstlisting}
 The benchmark is dialect-agnostic (shared MeTTa, no translation
-needed).  Both runtimes produce identical 183 scored pairs:
+needed).  The current flattened chr16 pilot driver produces identical
+183 scored pairs on \CeTTa{}, \PeTTa{}, and \HE{}:
 
 \begin{center}
-\begin{tabular}{lrrl}
+\begin{tabular}{lrrrl}
 \toprule
-Runtime & Time & vs.\ \CeTTa{} & Output \\
+Runtime & Time & vs.\ \CeTTa{} & Output & Status \\
 \midrule
-\CeTTa{} & 50\,ms  & 1$\times$        & 183 bio-scores \\
-\PeTTa{} & 276\,ms & 5.5$\times$ slower & 183 bio-scores \\
+\CeTTa{} & 9.5\,ms avg & 1$\times$ & 183 bio-scores & identical \\
+\PeTTa{} & 62\,ms avg  & 6.6$\times$ slower & 183 bio-scores & identical \\
+\HE{}    & 4.80\,s     & 505$\times$ slower & 183 bio-scores & identical \\
 \bottomrule
 \end{tabular}
 \end{center}
@@ -861,83 +991,60 @@ Scores carry genuine biological signal: \code{rs9923732}$\to$\code{ENSG000001664
 scores strength 0.735 (131 ABC contacts across cell types), while
 most pairs score 0.04 (minimal evidence).
 
-\paragraph{Scaling behavior.}
-Synthetic stress tests reveal a crossover:
-
-\begin{center}
-\begin{tabular}{rrrl}
-\toprule
-KB size & \CeTTa{} & \PeTTa{} & Winner \\
-\midrule
-143        & 47\,ms    & 193\,ms   & \CeTTa{} (4.1$\times$) \\
-1{,}000    & 20\,ms    & 271\,ms   & \CeTTa{} (13$\times$) \\
-10{,}000   & 336\,ms   & 1{,}616\,ms & \CeTTa{} (4.8$\times$) \\
-100{,}000  & 27.1\,s   & 14.9\,s   & \PeTTa{} (1.8$\times$) \\
-1{,}400{,}000 & 386\,s$^\dagger$ & 132\,s & \PeTTa{} (2.9$\times$) \\
-\bottomrule
-\end{tabular}
-\smallskip\\
-{\footnotesize $^\dagger$After bulk-load optimization: loading 5\,s
-(faster than \PeTTa{}), inference 381\,s (O($N$) match scan).
-Pre-optimization: $>$1200\,s timeout during loading.}
-\end{center}
-
-\CeTTa{} wins on small knowledge bases ($<$10K facts) due to fast
-startup and equation dispatch.  \PeTTa{} wins on large KBs
-($>$50K facts) because Prolog's first-argument indexing gives O(1)
-fact lookup, while \CeTTa{}'s \code{match~\&self} performs O($N$)
-linear scan.  The pre-interning optimization (Section~5) would
-improve \CeTTa{}'s constant factor but not the asymptotic scaling;
-indexing the match backend for \code{match~\&self} queries is the
-structural fix.
+\paragraph{What we no longer claim here.}
+Earlier drafts included a synthetic scaling table from 143 to
+1.4M atoms.  We no longer treat that table as benchmark evidence in the
+paper.  The current \CeTTa{} 1.4M checkpoint regression reruns with the
+expected semantics (\code{34} proofs, \code{8} unique supported-drug
+hypotheses, \code{2} thresholded hypotheses), but the current
+PeTTa-compatible flat/top checkpoint lanes still fail at import time.
+So the small 183-pair core remains grounded, while the large-scale
+cross-engine WM-PLN loader comparison is withheld until those
+compatibility seams are repaired.
 
 \subsection{Genomic Pattern Mining}
 
 To exercise real algorithmic depth, we run the Hyperon pattern
 miner~\cite{metta} on real GTEx eQTL data, discovering surprising
 co-regulation patterns---pairs of SNPs or genes that share eQTL
-evidence more often than expected by independence.  The data is
-extracted from the Rejuve genomic KB (338M Prolog lines, 57\,GB)
-and discretized into categorical attributes (tissue breadth, effect
-size) for pattern mining.
+evidence more often than expected by independence.  The miner is run
+unmodified from
+\href{https://github.com/iCog-Labs-Dev/hyperon-miner}{github.com/iCog-Labs-Dev/hyperon-miner};
+its core loop alternates \code{build-specialization} (extend a candidate
+pattern by one link) with a \code{surprisingness} score that keeps only
+patterns whose support exceeds the independence expectation.  The data
+is extracted from the Rejuve genomic KB (338M Prolog lines, 57\,GB) and
+discretized into categorical attributes (tissue breadth, effect size)
+for pattern mining.
 
-\begin{center}
-\begin{tabular}{rrrrl}
-\toprule
-Atoms & \PeTTa{} & \CeTTa{} & Patterns & Mode \\
-\midrule
-200    & ---      & 268\,ms  &  29 & specialization only \\
-1{,}000  & 16\,s   & 1.1\,s  & 61/20  & full / with surprisingness \\
-5{,}000  & ---     & 11.6\,s  & 574 & specialization only \\
-10{,}000 & 271\,s  & $\sim$23\,s & 883 & with surprisingness \\
-20{,}000 & 580\,s  & ---     & 3{,}002 & frequent only \\
-\bottomrule
-\end{tabular}
-\end{center}
-
-\CeTTa{} runs the miner pipeline $\sim$12$\times$ faster than \PeTTa{}
-at comparable scale.  At 10K atoms the miner discovers 883 surprising
-co-regulation patterns in 4.5~minutes on \PeTTa{} vs.\ $\sim$23\,s on
-\CeTTa{}.  These are genuine biological findings: shared cis-regulatory
-control, detectable only by cross-evidence pattern analysis.
-
-The miner's Python helper module (\code{freq-pat}: De Bruijn index
-conversion, redundancy removal) loads on \CeTTa{} via its Python FFI
-bridge, which provides a compatibility layer for the \code{hyperon}
-Python API\@.  The miner's \code{build-specialization} function now
-runs on \CeTTa{}, producing identical specialization patterns.
-A discovered interaction between \code{superpose} and mutable
-state---where \HE{} interleaves side effects across non-deterministic
-branches, losing atoms---is correctly handled by \CeTTa{}'s
-sequential-per-iteration evaluation (Section~\ref{sec:nondet-state}).
-The \emph{inference} phase---using discovered patterns as PLN rules
-for gene prioritization---runs on both runtimes (\CeTTa{}: 76\,ms,
-\PeTTa{}: 193\,ms on the focused 143-atom KB).
+The current audit does \emph{not} reuse the older cross-engine mining
+speed table as benchmark evidence.  What \emph{is} currently grounded is
+the portability boundary of the miner's specialization core.  The
+original PeTTa-style dynamic-head tuple encoding in
+\code{replace}/\code{replacev} is cross-dialect fragile; a tagged-return
+rewrite restores identical specialization-core behavior on \CeTTa{} and
+\PeTTa{} in the current probe, which produces the same 9
+\code{SpecializationOf} atoms on both runtimes.  The remaining HE blocker
+is a stateful pattern inside \code{superpose}:
+\begin{lstlisting}[language={},basicstyle=\ttfamily\scriptsize]
+(superpose ((remove-atom $specspace $spec1)
+            (add-atom    $specspace $spec1)
+            (remove-atom $specspace $spec2)
+            (add-atom    $specspace $spec2)
+            (remove-atom $specspace $spec3)
+            (add-atom    $specspace $spec3)))
+\end{lstlisting}
+Current \CeTTa{} preserves all three specialization atoms in this
+pattern, while current \HE{} still drops the third one.  So in this
+revision we keep the miner as a methodological workload and as a
+portability/debugging result, but not as a fresh cross-engine speed
+table.
 
 \subsection{Backward Chaining over Mined Patterns}
 
 The mined co-regulation patterns serve as typed inference rules for
-Geisweiller's \code{nilbc} backward chainer, closing the
+Geisweiller's \code{nilbc} backward chainer (the same dependent-typed
+\code{bc} listed at the start of Section~\ref{sec:benchmark-programs}), closing the
 \emph{mine$\to$chain} pipeline.  The knowledge base combines:
 \begin{itemize}
 \item 100{,}000 real GTEx eQTL links (40{,}484~SNPs $\times$ 14{,}043~genes),
@@ -947,12 +1054,40 @@ Geisweiller's \code{nilbc} backward chainer, closing the
   \emph{coreg-transfer} (co-regulation $+$ target $\to$ target), and
   \emph{coexpr-transfer} (target $+$ co-expression $\to$ target).
 \end{itemize}
+The three rules are typed implications fed to the \code{bc} chainer of
+Section~\ref{sec:benchmark-programs}; \emph{direct-target} reads an eQTL
+fact, \emph{coreg-transfer} chains a co-regulation edge onto an existing
+target:
+\begin{lstlisting}[language={},basicstyle=\ttfamily\scriptsize]
+(rule-sig dt (-> (: $e (eqtl $snp $gene))            ; direct-target
+                 (target $snp $gene)))
+(rule-sig ct (-> (: $e1 (coreg $snp1 $snp2))         ; coreg-transfer
+                 (: $e2 (target $snp2 $gene))
+                 (target $snp1 $gene)))
+!(bc &kb (fromNumber 2) (: $proof (target rs10000544 $gene)))
+\end{lstlisting}
 Bridge base cases let \code{nilbc} consume untyped data atoms
 (\code{eqtl-link}, \code{co-regulate}) directly, avoiding a format
 conversion pass over the 100K-atom KB\@.
 
-At depth~2, backward chaining discovers \textbf{5~novel gene targets}
-unreachable by direct eQTL lookup:
+On the current focused driver
+\href{https://github.com/zariuq/CeTTa/blob/main/benchmarks/bench_mine_chain_focus_20260627.metta}{\code{benchmarks/bench\_mine\_chain\_focus\_20260627.metta}},
+\CeTTa{} and \PeTTa{} agree exactly on the direct and depth-2 target
+sets for three representative query SNPs:
+
+\begin{center}
+\begin{tabular}{lrrr}
+\toprule
+Query SNP & direct targets & depth-2 targets & novel \\
+\midrule
+rs10000544 & 9 & 12 & 3 \\
+rs10000620 & 5 & 5  & 0 \\
+rs10000960 & 6 & 8  & 2 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The five novel depth-2 targets are:
 
 \begin{center}
 \begin{tabular}{llll}
@@ -971,22 +1106,11 @@ ENSG00000273077 & (lncRNA)  & rs10001048 & \code{(ct cr25 (dt eq89))} \\
 The proof terms are machine-checkable evidence chains: \code{(ct cr3
 (dt eq37))} reads ``co-regulation transfer via \code{cr3}
 (rs10000544$\leftrightarrow$rs10000795), applied to direct eQTL
-\code{eq37} (rs10000795$\to$SEC24D).''  For rs10000620, the chainer
-finds 4~independent evidence paths per gene (1~direct $+$
-3~co-regulation partners), producing 32~proof terms suitable for PLN
-revision.
-
-\begin{center}
-\begin{tabular}{lrrrl}
-\toprule
-Query SNP & Genes & Novel & Proofs & Time (\PeTTa{} / \CeTTa{}) \\
-\midrule
-rs10000544 & 12 & 3 & 96  & \multirow{3}{*}{193\,ms / 76\,ms} \\
-rs10000620 &  5 & 0 & 32  & \\
-rs10000960 &  8 & 2 & 14  & \\
-\bottomrule
-\end{tabular}
-\end{center}
+\code{eq37} (rs10000795$\to$SEC24D).''  On this focused three-query
+driver the total wall-clock time is 0.15\,s on \CeTTa{} versus
+3.33\,s on \PeTTa{}.  We therefore keep the novel-gene discovery story,
+but we do \emph{not} reuse the older proof-count/time row as benchmark
+evidence in this revision.
 
 Biologically, the novel discoveries include MYOZ2 (hypertrophic
 cardiomyopathy gene, OMIM CMH16) and SEC24D (Cole-Carpenter bone
@@ -994,8 +1118,9 @@ syndrome), both on chr4q26---suggesting a trans-regulatory link from a
 metabolic locus (PDE5A/FABP2) to cardiac and skeletal gene targets via
 shared cis-regulatory architecture.
 
-The full 100K-atom benchmark with all 7~query SNPs at depth~2--3
-plus reverse queries completes in 63\,s on \PeTTa{} (564~hypotheses).
+The older ``all 7~query SNPs plus reverse queries'' timing line is not
+used as a fresh paper benchmark here; the audited evidence in this
+revision is the focused cross-runtime driver above.
 
 \paragraph{Complete benchmark ladder.}
 The following table summarizes all benchmarks, including both genomic
@@ -1004,57 +1129,74 @@ inference (where \CeTTa{} wins) and pure search (where \PeTTa{} wins):
 \begin{center}
 \begin{tabular}{lrrrl}
 \toprule
-Benchmark & Scale & \CeTTa{} & \PeTTa{} & Speedup \\
+Benchmark & Scale / note & \CeTTa{} & \PeTTa{} & \HE{} \\
 \midrule
-\multicolumn{5}{l}{\emph{Genomic inference (\CeTTa{} wins)}} \\
-Focused BC         &     143 atoms &   66\,ms &   216\,ms & 3.3$\times$ \\
-PLN evidence       &     143 atoms &   61\,ms &   177\,ms & 2.9$\times$ \\
-Pattern inference  &     143 atoms &   17\,ms &   194\,ms & 11.4$\times$ \\
-PLN 100K           & 128K atoms    &  13.9\,s &   20.8\,s & 1.5$\times$ \\
-Deep 9-rule BC     & 261K atoms    & 3m\,22s  &  5m\,24s  & 1.6$\times$ \\
-\textbf{Depth-10 PLN}  & \textbf{1.4M atoms}
-                        & \textbf{15\,s} & \textbf{143\,s} & \textbf{9.5$\times$} \\
-\midrule
-\multicolumn{5}{l}{\emph{Pure search (\PeTTa{} wins)}} \\
-8-Queens (92 solutions) &  8$\times$8 &  2.75\,s &  0.21\,s & 13$\times$ slower \\
-BTree 4{,}095           & on-the-fly  &  0.87\,s &  0.15\,s & 5.8$\times$ slower \\
-BTree 16{,}383          & on-the-fly  &  24.7\,s &  0.14\,s & 176$\times$ slower \\
-Tilepuzzle (181K)       & 181K states & 3m\,14s  &  6.4\,s  & 30$\times$ slower \\
+Shallow typed BC & 60 proof witnesses & 4.0\,ms avg & 45.4\,ms avg & 402\,ms avg \\
+Translator (\code{prog1}) & 30 proof witnesses & 3.7\,ms avg & 44.8\,ms avg & 319\,ms avg \\
+PLN evidence core & 183 scored pairs & 9.5\,ms avg & 62\,ms avg & 4.80\,s \\
+Mine$\to$chain focus & 3 query SNPs, 5 novel genes & 0.15\,s & 3.33\,s & --- \\
+Deep 17-phase genomic BC & 1{,}411{,}430 hypotheses & 32.32\,s & 55.43\,s & --- \\
+Deep proof search & 85{,}013 proofs & 36.42\,s & 7.60\,s & $>$120\,s \\
 \bottomrule
 \end{tabular}
 \end{center}
 
-\CeTTa{} wins decisively on inference-heavy workloads: the depth-10
-PLN benchmark produces 19{,}845~hypotheses with calibrated truth values
-(including 1{,}632~depth-10 drug hypotheses at strength~0.084) in
-15\,s vs.\ \PeTTa{}'s 143\,s---a \textbf{9.5$\times$} speedup.
-\PeTTa{}'s Prolog WAM wins on pure search due to trail-based rollback,
-first-argument clause indexing, and compact term representation.
-The BTree~16{,}383 gap (176$\times$) exposes \CeTTa{}'s remaining
-equation dispatch bottleneck: 80\% of candidates still use linear scan.
+\CeTTa{} still wins on several real inference rows, but the revised
+ladder is intentionally smaller than earlier drafts.  We exclude the
+historical cross-engine miner speed table, the current 1.4M WM-PLN
+loader comparison, BTree, the current 8-Queens row, and the full
+tilepuzzle row from this ladder because the present tree either lacks a
+stable current cross-runtime driver for them or exposes a current
+correctness/comparability issue.  The benchmark rows shown here are only
+those rerun directly in this audit.
+
+\subsection{Cross-Engine Chaining Suite}
+\label{sec:chaining-suite}
+
+To ground the inference-side comparison on community-authored code
+rather than bespoke benchmarks, we assembled a cross-engine chaining
+suite that builds matched cross-engine rows from the same chainer
+families on \CeTTa{} (\code{--lang he}) and \PeTTa{}, with a per-row
+cross-engine contract (every result is
+validated against the other engine's output, never against \CeTTa{}'s
+own output).  The sources are
+Geisweiller's dependent-typed DTL chainers and Metamath \code{demo0}
+proofs (\href{https://github.com/ngeiswei/chaining}{github.com/ngeiswei/chaining}),
+Treutlein's \code{PeTTaChainer}
+(\href{https://github.com/rTreutlein/PeTTaChainer}{github.com/rTreutlein/PeTTaChainer}),
+and the \PeTTa{} engine and its PLN library
+(\href{https://github.com/patham9/PeTTa}{github.com/patham9/PeTTa}).
+The suite, generators, and driver are in the \CeTTa{} repository under
+\href{https://github.com/zariuq/CeTTa/tree/main/benchmarks/chaining_crossengine}{\code{benchmarks/chaining\_crossengine}}.
+In this paper revision we use the suite as audited reproducibility
+material rather than as an extra source of unevaluated claims: the
+benchmark rows retained in the paper are only the subset rerun directly
+in this audit.
 
 \paragraph{Multi-relational deep chaining.}
-Extending the rule set from 3 to 6~rules---adding Reactome pathway
-membership, same-pathway gene, and pathway-mediated target---enables
-cross-ontology chains at depth~4:
-SNP $\xrightarrow{\text{coreg}}$ SNP$'$
-$\xrightarrow{\text{eQTL}}$ Gene
-$\xrightarrow{\text{pathway}}$ Pathway
-$\xrightarrow{\text{co-member}}$ Gene$'$.
-The 6-rule chainer over 100K eQTL $+$ 943 pathway edges produces
-\textbf{10{,}036 hypotheses} (256~unique genes, 62~pathways)
-in 24\,s on \PeTTa{}.  Each hop introduces a genuinely different
-relation type, preventing circular chains and enabling the kind of
-multi-source inference that single-relation depth cannot achieve.
-
-Adding Hetionet disease associations, compound--target bindings,
-and scaled Reactome pathways (132{,}556~edges, 35{,}738~genes)
-extends the chain to the full variant-to-drug pipeline.  A 9-rule
-chainer produces \textbf{1{,}411{,}430~scored hypotheses}---identical
-on both runtimes---in \textbf{3m\,22s on \CeTTa{}} vs.\ 5m\,24s on
-\PeTTa{} (1.6$\times$ speedup), including 295K depth-3 pathway targets,
-797K depth-4 pathway targets, 488~drug hypotheses, and 17{,}429~unique
-reachable genes from 47~direct targets.  The textbook chain
+The strongest current multi-relational row is the 17-phase snapshot
+\href{https://github.com/zariuq/CeTTa/blob/main/tests/bench_bio_bc_deep_snapshot_20260327.metta}{\code{tests/bench\_bio\_bc\_deep\_snapshot\_20260327.metta}}.
+It extends the mined-pattern chainer with pathway membership,
+same-pathway transfer, disease associations, compound--disease
+treatment links, and compound--gene binding links.  The full
+variant-to-drug row is still a typed backward-chaining program:
+\begin{lstlisting}[language={},basicstyle=\ttfamily\scriptsize]
+(rule-sig dg (-> (: $e1 (target $snp $gene))
+                 (: $e2 (has-disease $gene $disease))
+                 (disease-reach $snp $disease $gene)))
+(rule-sig td (-> (: $e1 (disease-reach $snp $disease $gene))
+                 (: $e2 (treats $compound $disease))
+                 (drug-hypothesis $snp $compound $disease $gene)))
+\end{lstlisting}
+The current rerun produces exactly \textbf{1{,}411{,}430 hypotheses}
+across 17 query phases, with the same totals on both runtimes.  The
+largest buckets are 613{,}978 \code{pw-target} hypotheses and
+796{,}964 \code{deep-pw} hypotheses; the smaller focused buckets are
+11~binding hypotheses, 11~disease hypotheses, 210~drug hypotheses,
+240~deep-drug hypotheses, and 16~pathway-reach hypotheses.  The current
+timings are \textbf{32.32\,s on \CeTTa{}} versus 55.43\,s on
+\PeTTa{}.
+The textbook chain
 rs10000544 $\to$ PDE5A $\to$ hypertension $\leftarrow$ Sildenafil
 composes three independent data sources (GTEx, Hetionet, DrugBank) by
 typed backward chaining with proof terms at every step.
@@ -1070,59 +1212,30 @@ The \code{rule-sig} encoding is semantically equivalent on all runtimes.
 %% ────────────────────────────────────────────────────────────────────
 \section{Performance Analysis}
 
-\subsection{SymbolId Conversion: 38\% Instruction Reduction}
+\subsection{Current profiling status}
 
-The original \CeTTa{} profiling revealed 46\% of runtime in string
-operations (\code{intern}, \code{strcmp}, \code{atom\_is\_symbol}).
-We completed a comprehensive SymbolId conversion: all semantic
-dispatch---evaluator special forms, grounded operators, library hooks,
-registry lookups---now uses integer SymbolId comparison instead of
-string comparison.
+Earlier drafts included exact Callgrind and Massif tables for the
+SymbolId conversion and for tilepuzzle.  Those low-level profiles were
+not rerun as part of the present benchmark re-audit, so we do not use
+their historical percentages as current measurement claims here.  The
+qualitative engineering picture is unchanged---string-heavy dispatch is
+no longer the main story, and the next bottlenecks are still binding
+management, variable renaming, and arena allocation---but the exact
+profile tables are omitted until they are rerun on the current build.
 
-Callgrind on the 8-puzzle BFS (5{,}000 steps) shows the impact:
+\subsection{Tilepuzzle as a live regression target}
 
-\begin{center}
-\begin{tabular}{lrrl}
-\toprule
-& Before SymbolId & After SymbolId & Change \\
-\midrule
-Total instructions & 4{,}551M & 2{,}810M & $-$38\% \\
-\#1 hotspot & \code{intern} (18\%) & \code{bindings\_apply} (5.5\%) & eliminated \\
-\#2 & \code{atom\_is\_symbol} (11\%) & \code{bindings\_free} (5.4\%) & eliminated \\
-\#3 & \code{strcmp} (11\%) & \code{resolve\_refs} (4.4\%) & eliminated \\
-\bottomrule
-\end{tabular}
-\end{center}
-
-The remaining profile is uniform: no single function dominates.
-The top costs are now binding management (\code{apply}, \code{clone},
-\code{free}) and heap allocation (\code{malloc}/\code{free}), pointing
-to trail/rollback as the next optimization target.
-
-\subsection{Tilepuzzle: 30$\times$ Gap with PeTTa}
-
-The 8-puzzle BFS (181{,}440 reachable states) is a WAM-class benchmark
-that exposes \CeTTa{}'s remaining architectural gap:
-
-\begin{center}
-\begin{tabular}{lrrl}
-\toprule
-Runtime & Time & Memory & Status \\
-\midrule
-\PeTTa{} (Prolog/WAM) & 6.4\,s & 114\,MB & baseline \\
-\CeTTa{} (C/arena) & 3m\,14s & 4.68\,GB & 30$\times$ / 41$\times$ \\
-\bottomrule
-\end{tabular}
-\end{center}
-
-Massif heap profiling identifies the root causes:
-44\% of peak memory is arena allocation via \code{bindings\_apply}
-(variable substitution creating fresh atoms with no hash-consing on
-the evaluation arena); 12\% is \code{atom\_expr} (expression
-construction); 7\% is \code{rename\_vars} (deep-copying equations
-for standardization-apart).  Runtime counters show 7M
-\code{bindings\_free}, 3.5M \code{bindings\_clone}, and 1.4M
-\code{rename\_vars} calls for 5{,}000 BFS steps.
+The 8-puzzle BFS remains a useful WAM-class stress test, but the current
+rerun exposes a correctness/comparability issue rather than a clean
+paper benchmark row.  The current \CeTTa{} port
+(\href{https://github.com/zariuq/CeTTa/blob/main/tests/test_tilepuzzle.metta}{\code{tests/test\_tilepuzzle.metta}})
+returns 181{,}440 reachable states in 26.41\,s, while the current
+\PeTTa{} reference example
+(\href{https://github.com/patham9/PeTTa/blob/main/examples/tilepuzzle.metta}{\code{examples/tilepuzzle.metta}})
+self-checks 181{,}441 states in 1.40\,s.  We therefore exclude
+tilepuzzle from the benchmark ladder in this revision and treat it as a
+live debugging target for state-accounting and port faithfulness rather
+than as settled benchmark evidence.
 
 \subsection{Structured Space Kinds}
 
@@ -1516,13 +1629,22 @@ the standard PLN idiom that works across all three runtimes.
 \section{Conclusion}
 
 \CeTTa{} demonstrates that a direct C implementation of the MeTTa
-evaluator can achieve \textbf{9.5$\times$ speedup} over \PeTTa{} on
-genuine depth-10 PLN backward chaining with truth-value propagation
-(19{,}845~hypotheses, 1{,}632~depth-10 drug candidates, 15\,s vs.\
-143\,s), while maintaining oracle-verified correctness across a
-375-file regression suite and a 333-case rule-indexed conformance
-catalog (24/24 spec-rule capacities, all agree) against upstream
-\HE{}~v0.2.10.
+evaluator is competitive with \PeTTa{} on inference workloads, but not
+uniformly faster.  In the fresh reruns reported here, \CeTTa{} wins on
+startup-dominated shallow inference and on several genomic-inference
+rows (the 183-pair PLN evidence core and the 1{,}411{,}430-hypothesis
+deep genomic backward-chaining row), while \PeTTa{} wins decisively on
+pure branching search (the 85{,}013-proof Metamath row).  A
+cross-engine chaining suite (Section~\ref{sec:chaining-suite})
+confirms that \CeTTa{}'s shallow advantage is a startup-and-dispatch
+effect rather than a scaling property.  Historical rows whose current
+drivers are unresolved---the old miner speed table, the current 1.4M
+WM-PLN seam, 8-Queens, and tilepuzzle---are excluded from the revised
+benchmark ladder rather than carried forward on trust.  Throughout,
+\CeTTa{} maintains
+oracle-verified correctness across a 375-file regression suite and a
+333-case rule-indexed conformance catalog (24/24 spec-rule capacities,
+all agree) against upstream \HE{}~v0.2.10.
 The sorry-free Lean proof of \HE{}$\leftrightarrow$\PeTTa{} semantic
 correspondence (5{,}400+ lines, 0~sorries), including import
 commutativity and operational bridges for state and space allocation,
@@ -1548,14 +1670,17 @@ The congruence bug that motivated this weld---an argument-congruence
 rule silently missing from the one-step relation on three branches at
 once---is exactly the drift class this architecture eliminates.
 
-The 30$\times$ gap with \PeTTa{} on the 8-puzzle BFS benchmark
-is precisely diagnosed by callgrind/massif profiling: binding
-clone/free churn (7M free calls for 5K steps) and equation
-deep-copying (1.4M \code{rename\_vars} calls).  These are
-addressable by WAM-inspired trail/rollback without converting
-\CeTTa{} into a Prolog engine.  The guiding principle:
-\emph{backtracking should be rare, local, and hidden---not global,
-ambient, or user-visible.}
+Tilepuzzle is now treated as a live regression target rather than as
+settled speed evidence.  The fresh rerun exposes a one-state mismatch
+between the current ports (\CeTTa{} reaches 181{,}440 states, the
+current \PeTTa{} reference self-checks 181{,}441), so the immediate
+engineering priority is state-accounting and rollback faithfulness
+before reinstating any low-level profiling claim.  Once the counts
+agree again, trail-style rollback, bindings builders, and arena
+mark/reset remain the main candidates for improving search-heavy
+workloads without converting \CeTTa{} into a Prolog engine.  The
+guiding principle: \emph{backtracking should be rare, local, and
+hidden---not global, ambient, or user-visible.}
 
 \paragraph{Future work.}
 \begin{itemize}
@@ -1579,8 +1704,8 @@ ambient, or user-visible.}
   one-step relation.
 \item \textbf{Local search machine:} trail/watermark rollback,
   \code{BindingsBuilder}, arena mark/reset for scratch atoms.
-  Target: 3--5$\times$ on search-heavy workloads (tilepuzzle gap
-  from 30$\times$ to $\sim$6--10$\times$).
+  Target: materially improve search-heavy workloads such as
+  tilepuzzle once the current state-count mismatch is resolved.
 \item \textbf{Indexed shared-space engine:} leapfrog triejoin
   (from Vandervorst's \code{trie\_synth.py}), conjunction query
   planning, SpaceEngine boundary (formalized in
@@ -1684,6 +1809,27 @@ checkout), remain to be diagnosed. \\
 \normalsize
 \end{center}
 
+\paragraph{Spec repair triggered by the cross-check.}
+The \LeaTTa{} comparison was useful not only as an oracle but as a
+debugger for our own \HE{} Lean surface.  During this pass we found that
+the public equation-query path had been routed through the simplified
+\code{simpleMatch} helper even though the faithful two-sided
+\code{matchAtoms}/\code{mergeBindings} semantics already existed.  The
+repair is now written down in three Lean files:
+\code{DeclMatchSpec.lean} gives a declarative specification of
+\code{match\_atoms} and proves \code{matchAtoms\_sound}/\code{\_complete};
+\code{DeclMergeSpec.lean} does the same for
+\code{merge\_bindings}, proving \code{mergeBindings\_sound}/\code{\_complete};
+and \code{QuerySurfaceAgreement.lean} proves the staged ground-fragment
+adequacy theorems
+\code{queryEquations\_ground\_two\_way\_adequate} and
+\code{queryEquationsAgainstVisible\_ground\_two\_way\_adequate}.  So the
+cross-check is now anchored on the faithful ground-query surface rather
+than on the older simplified one.  The remaining variable-bearing query
+case is deliberately left explicit: it requires the next repair, namely
+threading equalities through \code{Bindings.resolve}/\code{Bindings.apply},
+and is the right next theorem rather than a hidden assumption.
+
 \paragraph{Performance.}
 On matched runs \LeaTTa{} is correct where it is in scope but slower and
 markedly more memory-hungry than \CeTTa{}'s C runtime---operational
@@ -1722,9 +1868,11 @@ The raw \CeTTa{} tilepuzzle benchmark depends on \CeTTa{}'s typed
 those spaces with a functional queue and plain named-space membership
 does run: a 100-step witness reaches 171 visited states in 18.47\,s,
 while the 500-step version did not finish under a 30\,s cap.  For
-reference, native \CeTTa{} completes the full BFS witness (181440
-states) in 26.31\,s.  The adaptation confirms the meaning transfers; the
-gap is purely the executable runtime's headroom for optimization.
+reference, native \CeTTa{} currently reaches 181{,}440 states in
+26.41\,s, while the current \PeTTa{} reference self-checks
+181{,}441 states.  So this bounded adaptation is only evidence that the
+surface idea transfers; the full native row remains a live
+state-accounting mismatch rather than settled performance evidence.
 
 \paragraph{Bottom line.}
 \LeaTTa{} is a credible independent oracle and a candidate verified
@@ -1734,7 +1882,11 @@ deliberately omits and on a float-only numeric model, and pays an
 expected interpreter-speed cost.  Linking \LeaTTa{} to the \HE{} Lean
 specification is therefore well-founded on the core, provided the
 numeric tower and error-contour divergences are encoded as known
-boundaries.
+boundaries.  The specification side is now in a better state than when
+this appendix was first drafted: the ground-query fragment is connected
+to the faithful \HE{} matcher/merge semantics by proved two-way adequacy,
+and the remaining variable-bearing query case has been isolated cleanly
+enough to be attacked next rather than smudged into the oracle story.
 
 %% ════════════════════════════════════════════════════════════════════
 \section{\textsc{Experimental} --- MAM: The MeTTa Abstract Machine}

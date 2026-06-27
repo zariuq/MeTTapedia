@@ -1,5 +1,5 @@
 ; =============================================================================
-; kernel_signature_lf_indexed_v0.metta
+; kernel_signature_lf_indexed_lib_v0.metta
 ;
 ; PHASES 1+2+3+4 plus v3/v4 convergence of the general indexed-inductive
 ; "telescope IR" engine.
@@ -33,6 +33,7 @@
 ; replay block below.  A fully generic transport combinator remains future
 ; helper-factoring work; it is not a live primitive in this engine.
 ;
+; Library extraction note: top-level oracle asserts/prints are stripped here so this file can be imported by other lanes.
 ; Validation status: generated family/constructor/eliminator types replay the
 ; hand-written Nat/List/Vec/Fin/Id/J shapes, and the v4 block below adds the
 ; remaining Bool/Tree/Vec/positivity/empty-inductive slice claims before
@@ -380,39 +381,10 @@
             SNil)))
 
 ; ---------- generated family kinds match the slices' hand-written kinds -------
-!(assertEqual (decl-type-of (good-sig-G) nat) (Srt type))
-!(assertEqual (decl-type-of (good-sig-G) lst) (Pi (Srt type) (Srt type)))
-!(assertEqual (decl-type-of (good-sig-G) vec) (Pi (Srt type) (Pi (Con nat) (Srt type))))
-!(assertEqual (decl-type-of (good-sig-G) fin) (Pi (Con nat) (Srt type)))
-!(assertEqual (decl-type-of (good-sig-G) Id) (Pi (Srt type) (Pi (Var 0) (Pi (Var 1) (Srt type)))))
-!(assertEqual (decl-type-of (pair-sig-G) pair) (Pi (Srt type) (Pi (Srt type) (Srt type))))
 
 ; ---------- generated constructor types match the hand-written ones -----------
-!(assertEqual (decl-type-of (good-sig-G) z) (Con nat))
-!(assertEqual (decl-type-of (good-sig-G) s) (Pi (Con nat) (Con nat)))
-!(assertEqual (decl-type-of (good-sig-G) lnil) (Pi (Srt type) (App (Con lst) (Var 0))))
-!(assertEqual (decl-type-of (good-sig-G) lcons)
-   (Pi (Srt type) (Pi (Var 0) (Pi (App (Con lst) (Var 1)) (App (Con lst) (Var 2))))))
-!(assertEqual (decl-type-of (good-sig-G) vnil)
-   (Pi (Srt type) (App (App (Con vec) (Var 0)) (Con z))))
-!(assertEqual (decl-type-of (good-sig-G) vcons)
-   (Pi (Srt type) (Pi (Con nat) (Pi (Var 1) (Pi (App (App (Con vec) (Var 2)) (Var 1))
-     (App (App (Con vec) (Var 3)) (App (Con s) (Var 2))))))))
-!(assertEqual (decl-type-of (good-sig-G) fz)
-   (Pi (Con nat) (App (Con fin) (App (Con s) (Var 0)))))
-!(assertEqual (decl-type-of (good-sig-G) fs)
-   (Pi (Con nat) (Pi (App (Con fin) (Var 0)) (App (Con fin) (App (Con s) (Var 1))))))
-!(assertEqual (decl-type-of (good-sig-G) refl)
-   (Pi (Srt type) (Pi (Var 0) (App (App (App (Con Id) (Var 1)) (Var 0)) (Var 0)))))
-!(assertEqual (decl-type-of (pair-sig-G) mkpair)
-   (Pi (Srt type) (Pi (Srt type) (Pi (Var 1) (Pi (Var 1)
-     (App (App (Con pair) (Var 3)) (Var 2)))))))
 
 ; ---------- the whole telescope signature is admitted -------------------------
-!(assertEqual (sig-admitted (good-sig-G)) True)
-!(assertEqual (sig-admitted (pair-sig-G)) True)
-!(assertEqual (sig-admitted (pair-nat-sig-G)) True)
-!(assertEqual (sig-admitted (axiom-nat-sig-G)) True)
 
 ; ---------- negatives ---------------------------------------------------------
 ; non-strictly-positive constructor (mkBad : (bad -> bad) -> bad) is rejected
@@ -420,7 +392,6 @@
    (SCons (DIndG bad TNil TNil
             (GCtors (GCtor mkBad (TCons (Pi (Con bad) (Con bad)) TNil) ArgsNil) GCNil))
           SNil))
-!(assertEqual (sig-admitted (bad-pos-sig)) False)
 
 ; A recursive occurrence headed by the family is allowed only when its
 ; parameters/indices are recursive-free.  This nested negative occurrence was
@@ -431,7 +402,6 @@
               (TCons (App (Con bad) (Pi (App (Con bad) (Var 0)) (Var 1))) TNil)
               ArgsNil) GCNil))
           SNil))
-!(assertEqual (sig-admitted (bad-nested-pos-sig)) False)
 
 ; Parameters are uniform: a family declared as w A may not recursively mention
 ; w at a different parameter, even if the occurrence is strictly positive.
@@ -442,21 +412,18 @@
    (SCons (DIndG w (TCons (Srt type) TNil) TNil
             (GCtors (GCtor mkW (TCons (App (Con w) (Con nat)) TNil) ArgsNil) GCNil))
           SNil)))
-!(assertEqual (sig-admitted (bad-param-change-sig)) False)
 
 ; duplicate constructor names are rejected
 (= (dup-ctor-sig)
    (SCons (DIndG twoc TNil TNil
             (GCtors (GCtor c1 TNil ArgsNil) (GCtors (GCtor c1 TNil ArgsNil) GCNil)))
           SNil))
-!(assertEqual (sig-admitted (dup-ctor-sig)) False)
 
 ; an ill-typed family kind (index type references a non-existent constant) is rejected
 (= (bad-kind-sig)
    (SCons (DIndG bk TNil (TCons (Con nope) TNil)
             (GCtors (GCtor bkc TNil (ArgsCons (Con z) ArgsNil)) GCNil))
           SNil))
-!(assertEqual (sig-admitted (bad-kind-sig)) False)
 
 ; a constructor whose generated type is ill-typed (wrong index count: vnil given
 ; an extra index) is rejected by gctors-types-ok
@@ -467,7 +434,6 @@
    (SCons (DIndG vv (TCons (Srt type) TNil) (TCons (Con nat) TNil)
             (GCtors (GCtor vv0 TNil (ArgsCons (Con z) (ArgsCons (Con z) ArgsNil))) GCNil))
           SNil)))
-!(assertEqual (sig-admitted (bad-ctor-sig)) False)
 
 ; =============================================================================
 ; PHASE 2: generated eliminator + branch TYPES (no iota/computation yet).
@@ -596,7 +562,7 @@
        (dindg-ctors-type-wellsorted-status $sig $name $pT $rest)
        (Bad ctor-type-not-wellsorted))))
 
-; Strengthened admission view: first accept the signature, then require every
+; Strengthened admission view: first admit the signature, then require every
 ; DIndG declaration in that admitted signature to have a generated eliminator
 ; type that itself typechecks, non-overlapping constructor heads, and generated
 ; iota rules that preserve type.
@@ -617,47 +583,21 @@
 
 ; ---- REPLAY: generated eliminator types equal the known eliminator shapes ----
 ; Nat recursor:
-!(assertEqual (dindg-elim-type (good-sig-G) nat)
-   (Pi (Pi (Con nat) (Srt type)) (Pi (App (Var 0) (Con z)) (Pi (Pi (Con nat) (Pi (App (Var 2) (Var 0)) (App (Var 3) (App (Con s) (Var 1))))) (Pi (Con nat) (App (Var 3) (Var 0)))))))
 ; List A recursor (parameter + recursive arg with IH):
-!(assertEqual (dindg-elim-type (good-sig-G) lst)
-   (Pi (Srt type) (Pi (Pi (App (Con lst) (Var 0)) (Srt type)) (Pi (App (Var 0) (App (Con lnil) (Var 1))) (Pi (Pi (Var 2) (Pi (App (Con lst) (Var 3)) (Pi (App (Var 3) (Var 0)) (App (Var 4) (App (App (App (Con lcons) (Var 5)) (Var 2)) (Var 1)))))) (Pi (App (Con lst) (Var 3)) (App (Var 3) (Var 0))))))))
 ; Vec A n eliminator (indexed; matches the hand-written indexed-vec-elim-type):
-!(assertEqual (dindg-elim-type (good-sig-G) vec)
-   (Pi (Srt type) (Pi (Pi (Con nat) (Pi (App (App (Con vec) (Var 1)) (Var 0)) (Srt type))) (Pi (App (App (Var 0) (Con z)) (App (Con vnil) (Var 1))) (Pi (Pi (Con nat) (Pi (Var 3) (Pi (App (App (Con vec) (Var 4)) (Var 1)) (Pi (App (App (Var 4) (Var 2)) (Var 0)) (App (App (Var 5) (App (Con s) (Var 3))) (App (App (App (App (Con vcons) (Var 6)) (Var 3)) (Var 2)) (Var 1))))))) (Pi (Con nat) (Pi (App (App (Con vec) (Var 4)) (Var 0)) (App (App (Var 4) (Var 1)) (Var 0)))))))))
 ; Fin n eliminator (indexed, no params):
-!(assertEqual (dindg-elim-type (good-sig-G) fin)
-   (Pi (Pi (Con nat) (Pi (App (Con fin) (Var 0)) (Srt type))) (Pi (Pi (Con nat) (App (App (Var 1) (App (Con s) (Var 0))) (App (Con fz) (Var 0)))) (Pi (Pi (Con nat) (Pi (App (Con fin) (Var 0)) (Pi (App (App (Var 3) (Var 1)) (Var 0)) (App (App (Var 4) (App (Con s) (Var 2))) (App (App (Con fs) (Var 2)) (Var 1)))))) (Pi (Con nat) (Pi (App (Con fin) (Var 0)) (App (App (Var 4) (Var 1)) (Var 0))))))))
 ; Id eliminator == J, generated purely from the Id DIndG declaration (the keystone payoff):
-!(assertEqual (dindg-elim-type (good-sig-G) Id)
-   (Pi (Srt type) (Pi (Var 0) (Pi (Pi (Var 1) (Pi (App (App (App (Con Id) (Var 2)) (Var 1)) (Var 0)) (Srt type))) (Pi (App (App (Var 0) (Var 1)) (App (App (Con refl) (Var 2)) (Var 1))) (Pi (Var 3) (Pi (App (App (App (Con Id) (Var 4)) (Var 3)) (Var 0)) (App (App (Var 3) (Var 1)) (Var 0)))))))))
 ; Pair A B eliminator: Pi A B. Pi P:(pair A B)->Type.
 ;   (Pi x:A. Pi y:B. P (mkpair A B x y)) -> Pi p:pair A B. P p
-!(assertEqual (dindg-elim-type (pair-sig-G) pair)
-   (Pi (Srt type) (Pi (Srt type)
-     (Pi (Pi (App (App (Con pair) (Var 1)) (Var 0)) (Srt type))
-       (Pi (Pi (Var 2) (Pi (Var 2)
-         (App (Var 2) (App (App (App (App (Con mkpair) (Var 4)) (Var 3)) (Var 1)) (Var 0)))))
-         (Pi (App (App (Con pair) (Var 3)) (Var 2)) (App (Var 2) (Var 0))))))))
 
 ; ---- lockstep (verified per-family): every generated eliminator type typechecks
 ;      via the decidable predicate dindg-elim-typechecks.  This is the Phase-2
 ;      "no claimed eliminator without complete branch typing" property, checked
 ;      for each family below (Nat, List, Pair, indexed Vec/Fin, and J-for-Id).
-!(assertEqual (dindg-elim-typechecks (good-sig-G) nat) True)
-!(assertEqual (dindg-elim-typechecks (good-sig-G) lst) True)
-!(assertEqual (dindg-elim-typechecks (good-sig-G) vec) True)
-!(assertEqual (dindg-elim-typechecks (good-sig-G) fin) True)
-!(assertEqual (dindg-elim-typechecks (good-sig-G) Id) True)
-!(assertEqual (dindg-elim-typechecks (pair-sig-G) pair) True)
 
 ; ---- negative-replay: the generator does NOT emit a wrong recursive-IH index --
 ; (the Vec cons IH must be P n xs = (App (App (Var 4) (Var 2)) (Var 0)); a variant
 ;  with the IH at P (s n) xs is wrong and must NOT be what we generate)
-!(assertEqual
-   (== (dindg-elim-type (good-sig-G) vec)
-       (Pi (Srt type) (Pi (Pi (Con nat) (Pi (App (App (Con vec) (Var 1)) (Var 0)) (Srt type))) (Pi (App (App (Var 0) (Con z)) (App (Con vnil) (Var 1))) (Pi (Pi (Con nat) (Pi (Var 3) (Pi (App (App (Con vec) (Var 4)) (Var 1)) (Pi (App (App (Var 4) (App (Con s) (Var 2))) (Var 0)) (App (App (Var 5) (App (Con s) (Var 3))) (App (App (App (App (Con vcons) (Var 6)) (Var 3)) (Var 2)) (Var 1))))))) (Pi (Con nat) (Pi (App (App (Con vec) (Var 4)) (Var 0)) (App (App (Var 4) (Var 1)) (Var 0)))))))))
-   False)
 
 ; =============================================================================
 ; PHASE 3: generated constructor-headed iota (computation) from the SAME DIndG
@@ -932,15 +872,6 @@
 (= (dindg-iota-preservation-ok $sig)
    (status-ok (dindg-iota-preservation-status $sig $sig)))
 
-!(assertEqual (dindg-ctors-type-wellsorted-status (good-sig-G) nat TNil
-   (GCtors (GCtor z TNil ArgsNil)
-     (GCtors (GCtor s (TCons (Con nat) TNil) ArgsNil) GCNil)))
-   (Ok ctor-type-wellsorted))
-!(assertEqual (dindg-iota-preservation-status (good-sig-G) (good-sig-G)) (Ok sr-iota-preserves-type))
-!(assertEqual (dindg-iota-preservation-status (pair-sig-G) (pair-sig-G)) (Ok sr-iota-preserves-type))
-!(assertEqual (sig-admitted-with-elims (good-sig-G)) True)
-!(assertEqual (sig-admitted-with-elims (pair-sig-G)) True)
-!(assertEqual (sig-admitted-with-elims (bad-ctor-sig)) False)
 
 ; ---------- checked proof objects + provenance over typed terms ---------------
 (= (args-axioms $sig ArgsNil) ANil)
@@ -1079,88 +1010,17 @@
            (ArgsCons (Var 1) ArgsNil)
            (Var 0))))))
 
-!(assertEqual (check (good-sig-G) CtxNil (nat-id-indg-typed) (Con nat)) True)
-!(assertEqual (conv (good-sig-G) (nat-id-indg-typed) (App (Con s) (Con z))) True)
-!(assertEqual (check (good-sig-G) CtxNil (nat-id-indg-typed-swapped) (Con nat)) True)
-!(assertEqual (conv (good-sig-G) (nat-id-indg-typed-swapped) (App (Con s) (Con z))) True)
-!(assertEqual (check (good-sig-G) CtxNil (list-length-indg-typed) (Con nat)) True)
-!(assertEqual (conv (good-sig-G) (list-length-indg-typed) (App (Con s) (Con z))) True)
-!(assertEqual (check (pair-nat-sig-G) CtxNil (pair-fst-indg-typed) (Con nat)) True)
-!(assertEqual (conv (pair-nat-sig-G) (pair-fst-indg-typed) (Con z)) True)
-!(assertEqual (check (good-sig-G) CtxNil (vec-length-indg-typed) (Con nat)) True)
-!(assertEqual (conv (good-sig-G) (vec-length-indg-typed) (App (Con s) (Con z))) True)
-!(assertEqual (check (good-sig-G) CtxNil (fin-rank-indg-typed) (Con nat)) True)
-!(assertEqual (conv (good-sig-G) (fin-rank-indg-typed) (App (Con s) (Con z))) True)
-!(assertEqual (check (good-sig-G) CtxNil (id-j-indg-typed) (Con nat)) True)
-!(assertEqual (conv (good-sig-G) (id-j-indg-typed) (Con z)) True)
-!(assertEqual (check (good-sig-G) CtxNil (cong-s-generated-J-term) (cong-s-generated-J-type)) True)
-!(assertEqual
-   (check (good-sig-G) CtxNil
-     (cong-s-generated-J-term)
-     (Pi (Con nat)
-       (Pi (Con nat)
-         (Pi (IdNat (Var 1) (Var 0))
-           (IdNat (Var 2) (Var 1))))))
-   False)
 
 ; typed negatives
-!(assertEqual
-   (check (good-sig-G) CtxNil
-     (IndG nat ArgsNil (Con mtv) (nat-id-cases-typed) ArgsNil (App (Con s) (Con z)))
-     (Con nat))
-   False)
-!(assertEqual
-   (check (good-sig-G) CtxNil
-     (IndG nat ArgsNil (nat-motive-nat) (Cases (Case z (Con z)) CasesNil)
-       ArgsNil (App (Con s) (Con z)))
-     (Con nat))
-   False)
-!(assertEqual
-   (check (good-sig-G) CtxNil
-     (IndG nat ArgsNil (nat-motive-nat)
-       (Cases (Case z (Con nat))
-         (Cases (Case s (Lam (Con nat) (Lam (Con nat) (App (Con s) (Var 0))))) CasesNil))
-       ArgsNil (App (Con s) (Con z)))
-     (Con nat))
-   False)
-!(assertEqual
-   (check (good-sig-G) CtxNil
-     (IndG nat ArgsNil (nat-motive-nat) (nat-id-cases-typed) ArgsNil (Con nat))
-     (Con nat))
-   False)
-!(assertEqual
-   (check (good-sig-G) CtxNil
-     (IndG vec (ArgsCons (Con nat) ArgsNil) (vec-motive-nat) (vec-length-cases-typed)
-       (ArgsCons (Con z) ArgsNil) (vec-one-term))
-     (Con nat))
-   False)
-!(assertEqual
-   (check (good-sig-G) CtxNil
-     (IndG nat ArgsNil (nat-motive-nat)
-       (Cases (Case z (Con z))
-         (Cases (Case s (Lam (Con nat) (Lam (Con nat) (App (Con s) (Var 0)))))
-           (Cases (Case bogus (Con z)) CasesNil)))
-       ArgsNil (Con z))
-     (Con nat))
-   False)
 
 ; CheckedPrf/provenance: pure generated IndG is axiom-free; axiom use in a case
 ; is reflected in provenance.
-!(assertEqual
-   (kernel-check (good-sig-G) (id-j-indg-typed) (Con nat))
-   (Ok (CheckedPrf ANil (id-j-indg-typed) (Con nat))))
-!(assertEqual
-   (kernel-check (good-sig-G) (cong-s-generated-J-term) (cong-s-generated-J-type))
-   (Ok (CheckedPrf ANil (cong-s-generated-J-term) (cong-s-generated-J-type))))
 
 (= (nat-axiom-cases-typed)
    (Cases (Case z (Con axN))
      (Cases (Case s (Lam (Con nat) (Lam (Con nat) (Var 0)))) CasesNil)))
 (= (nat-axiom-indg-typed)
    (IndG nat ArgsNil (nat-motive-nat) (nat-axiom-cases-typed) ArgsNil (Con z)))
-!(assertEqual
-   (kernel-check (axiom-nat-sig-G) (nat-axiom-indg-typed) (Con nat))
-   (Ok (CheckedPrf (ACons axN ANil) (nat-axiom-indg-typed) (Con nat))))
 
 ; =============================================================================
 ; RETIREMENT GATE (item 4): re-derive the equality theorems that the old slices
@@ -1184,10 +1044,6 @@
 (= (plus-sig-G) (snoc-decl (good-sig-G) (DDef plus (Pi (Con nat) (Pi (Con nat) (Con nat))) (plus-body))))
 
 ; (1) plus admits as a CHECKED DDef over the generated recursor, and computes
-!(assertEqual (sig-admitted (plus-sig-G)) True)
-!(assertEqual (conv (plus-sig-G) (App (App (Def plus) (App (Con s) (Con z))) (Con z)) (App (Con s) (Con z))) True)
-!(assertEqual (conv (plus-sig-G) (App (App (Def plus) (Con z)) (App (Con s) (Con z))) (App (Con s) (Con z))) True)
-!(assertEqual (conv (plus-sig-G) (App (App (Def plus) (App (Con s) (Con z))) (App (Con s) (Con z))) (App (Con s) (App (Con s) (Con z)))) True)
 
 ; (2) forall n. plus n z = n  — generated Nat induction; base refl; step cong-s(IH)
 (= (plus-O-r-type) (Pi (Con nat) (IdNat (App (App (Def plus) (Var 0)) (Con z)) (Var 0))))
@@ -1204,17 +1060,12 @@
                     (Var 1))
                  (Var 0))))) CasesNil))
        ArgsNil (Var 0))))
-!(assertEqual (check (plus-sig-G) CtxNil (plus-O-r-term) (plus-O-r-type)) True)
 ; negative: the proof does NOT check at the off-by-one claim plus n z = s n
-!(assertEqual (check (plus-sig-G) CtxNil (plus-O-r-term)
-   (Pi (Con nat) (IdNat (App (App (Def plus) (Var 0)) (Con z)) (App (Con s) (Var 0))))) False)
 ; With J diagonal, cong-s, and plus-O-r all derived via generated J, the old
 ; GEq/GRfl/GTransp/Transp and Id/J slices are retired to `retired_fixtures/`.
 
 ; --- calculus character (v2 oracle): our core is ETA-FREE and PREDICATIVE ---
 ; (pinned verdicts; cf. Lean which has function/structure eta by defeq + impredicative Prop)
-!(assertEqual (conv (good-sig-G) (Lam (Con nat) (App (Con s) (Var 0))) (Con s)) False)   ; eta-free: (lambda x. s x) is NOT defeq s
-!(assertEqual (infer (good-sig-G) CtxNil (Pi (Srt type) (Var 0))) (Srt kind))            ; predicative: (Pi X:Type. X) : kind, not Type
 
 ; --- SR ADMISSION GATE (v2 oracle): generated iota preserves inferred type ---
 ; The admission view requires constructor-head orthogonality and generated-iota
@@ -1224,66 +1075,13 @@
 ; property on each family's redex: infer t == infer (nf t).  This is still not
 ; the universal SR/confluence metatheorem; it is the fail-closed admission gate
 ; that theorem will justify.
-; helper-factored (let-bind intermediates — deep inline infer(nf t) is CeTTa-eval-fragile).
-; The data readout is the artifact seam mirrored by Lean: nf, source infer,
-; normalized infer, and the conv verdict are all exposed together.
-(= (sr-core-readout $sig $t)
+; helper-factored (let-bind intermediates — deep inline infer(nf t) is CeTTa-eval-fragile)
+(= (sr-ok $sig $t)
    (let $nft (nf $sig $t)
      (let $a (infer $sig CtxNil $t)
        (let $b (infer $sig CtxNil $nft)
-         (SRCoreReadout $nft $a $b (conv $sig $a $b))))))
-(= (sr-core-readout-ok (SRCoreReadout $nft $a $b True)) True)
-(= (sr-core-readout-ok (SRCoreReadout $nft $a $b False)) False)
-(= (sr-ok $sig $t)
-   (sr-core-readout-ok (sr-core-readout $sig $t)))
+         (conv $sig $a $b)))))
 
-!(assertEqual (confluence-via-checked-orthogonality (good-sig-G)) True)
-!(assertEqual (dindg-orthogonality-status (dup-ctor-sig)) (Bad confluence-via-checked-orthogonality))
-!(assertEqual
-   (sr-iota-target-status vcons
-     (App (App (Var 4) (App (Con s) (Var 3)))
-       (App (App (App (App (Con vnil) (Var 6)) (Var 3)) (Var 2)) (Var 1))))
-   (Bad sr-iota-mismatch))
-!(assertEqual
-   (sr-iota-target-status vcons
-     (App (App (Var 4) (Var 2))
-       (App (App (App (App (Con vcons) (Var 6)) (Var 3)) (Var 2)) (Var 1))))
-   (Ok sr-iota-preserves-type))
-!(assertEqual (sr-ok (good-sig-G) (nat-id-indg-typed)) True)
-!(assertEqual (sr-ok (good-sig-G) (list-length-indg-typed)) True)
-!(assertEqual (sr-ok (good-sig-G) (vec-length-indg-typed)) True)
-!(assertEqual (sr-ok (good-sig-G) (fin-rank-indg-typed)) True)
-!(assertEqual (sr-ok (good-sig-G) (id-j-indg-typed)) True)
-!(assertEqual (sr-ok (pair-nat-sig-G) (pair-fst-indg-typed)) True)
-!(assertEqual
-   (sr-core-readout (good-sig-G) (vec-length-indg-typed))
-   (SRCoreReadout
-     (nf (good-sig-G) (vec-length-indg-typed))
-     (infer (good-sig-G) CtxNil (vec-length-indg-typed))
-     (infer (good-sig-G) CtxNil (nf (good-sig-G) (vec-length-indg-typed)))
-     True))
-!(assertEqual
-   (sr-core-readout-ok (sr-core-readout (good-sig-G) (vec-length-indg-typed)))
-   (sr-ok (good-sig-G) (vec-length-indg-typed)))
-!(assertEqual
-   (sr-core-readout (pair-nat-sig-G) (pair-fst-indg-typed))
-   (SRCoreReadout
-     (nf (pair-nat-sig-G) (pair-fst-indg-typed))
-     (infer (pair-nat-sig-G) CtxNil (pair-fst-indg-typed))
-     (infer (pair-nat-sig-G) CtxNil (nf (pair-nat-sig-G) (pair-fst-indg-typed)))
-     True))
-!(assertEqual
-   (sr-iota-rule-status (good-sig-G) (vec-length-indg-typed) (nf (good-sig-G) (vec-length-indg-typed)))
-   (Ok sr-iota-preserves-type))
-!(assertEqual
-   (sr-iota-rule-status (good-sig-G) (vec-length-indg-typed) (Con nat))
-   (Bad sr-iota-mismatch))
-!(assertEqual
-   (sr-iota-rule-status (pair-nat-sig-G) (pair-fst-indg-typed) (nf (pair-nat-sig-G) (pair-fst-indg-typed)))
-   (Ok sr-iota-preserves-type))
-!(assertEqual
-   (sr-iota-rule-status (pair-nat-sig-G) (pair-fst-indg-typed) (Srt type))
-   (Bad sr-iota-mismatch))
 
 ; =============================================================================
 ; v4 SLICE-COLLAPSE REPLAY: re-derive the remaining inductive slices' EXACT
@@ -1335,16 +1133,7 @@
          (Cases (Case ff (RflBool (Con ff))) CasesNil))
        ArgsNil (Var 0))))
 
-!(assertEqual (decl-type-of (bool-sig-G) ibool) (Srt type))
-!(assertEqual (decl-type-of (bool-sig-G) tt) (Con ibool))
-!(assertEqual (decl-type-of (bool-sig-G) ff) (Con ibool))
-!(assertEqual (sig-admitted (bool-sig-G)) True)
-!(assertEqual (conv (bool-sig-G) (App (Def bnot) (Con tt)) (Con ff)) True)
-!(assertEqual (conv (bool-sig-G) (App (Def bnot) (Con ff)) (Con tt)) True)
-!(assertEqual (check (bool-sig-G) CtxNil (bnot-invol-term) (bnot-invol-type)) True)
 ; negative: bnot (bnot b) = bnot b is FALSE; the proof must NOT check at it
-!(assertEqual (check (bool-sig-G) CtxNil (bnot-invol-term)
-   (Pi (Con ibool) (IdBool (App (Def bnot) (App (Def bnot) (Var 0))) (App (Def bnot) (Var 0))))) False)
 
 ; ---------- Tree-leaf: non-recursive payload + generated eliminator -----------
 (= (tree-sig-G)
@@ -1354,34 +1143,12 @@
    (SCons (DIndG tree TNil TNil
             (GCtors (GCtor leaf (TCons (Con nat) TNil) ArgsNil) GCNil))
           SNil)))
-!(assertEqual (decl-type-of (tree-sig-G) leaf) (Pi (Con nat) (Con tree)))
-!(assertEqual (sig-admitted (tree-sig-G)) True)
-!(assertEqual
-   (conv (tree-sig-G)
-     (IndG tree ArgsNil (Lam (Con tree) (Con nat))
-       (Cases (Case leaf (Lam (Con nat) (Var 0))) CasesNil)
-       ArgsNil (App (Con leaf) (App (Con s) (Con z))))
-     (App (Con s) (Con z)))
-   True)
 
 ; ---------- Vec: constructor-application index discrimination -----------------
 ; vnil : vec A z checks at index z, NOT at s z (the checker must not erase indices)
-!(assertEqual (check (good-sig-G) CtxNil (App (Con vnil) (Con nat))
-   (App (App (Con vec) (Con nat)) (Con z))) True)
-!(assertEqual (check (good-sig-G) CtxNil (App (Con vnil) (Con nat))
-   (App (App (Con vec) (Con nat)) (App (Con s) (Con z)))) False)
 ; vcons nat z z vnil : vec nat (s z) at the EXACT index
-!(assertEqual (check (good-sig-G) CtxNil
-   (App (App (App (App (Con vcons) (Con nat)) (Con z)) (Con z)) (App (Con vnil) (Con nat)))
-   (App (App (Con vec) (Con nat)) (App (Con s) (Con z)))) True)
 ; wrong tail index: vcons claims length (s z) but tail vnil : vec nat z
-!(assertEqual (infer (good-sig-G) CtxNil
-   (App (App (App (App (Con vcons) (Con nat)) (App (Con s) (Con z))) (Con z)) (App (Con vnil) (Con nat))))
-   (Bad arg-type-mismatch))
 ; wrong element type: element (Con nat):Type where the parameter type nat is expected
-!(assertEqual (infer (good-sig-G) CtxNil
-   (App (App (App (Con vcons) (Con nat)) (Con z)) (Con nat)))
-   (Bad arg-type-mismatch))
 
 ; ---------- Indexed+parameterized positivity negative -------------------------
 ; mkBad : Pi A. ((badvec A z) -> A) -> badvec A z  — family in an arg's Pi-domain
@@ -1394,16 +1161,12 @@
               (TCons (Pi (App (App (Con badvec) (Var 0)) (Con z)) (Var 1)) TNil)
               (ArgsCons (Con z) ArgsNil)) GCNil))
           SNil)))
-!(assertEqual (sig-admitted (bad-indexed-pos-sig-G)) False)
 
 ; ---------- Empty inductive: the dissolved bad-idj-no-rfl ---------------------
 ; An inductive with NO constructors is admitted and its vacuous eliminator
 ; (the absurd/Empty recursor) typechecks.  This is exactly why "Id without refl"
 ; is no longer a rejection: DIndG treats it as an ordinary empty family.
 (= (emp-sig-G) (SCons (DIndG emp TNil TNil GCNil) SNil))
-!(assertEqual (sig-admitted (emp-sig-G)) True)
-!(assertEqual (dindg-elim-typechecks (emp-sig-G) emp) True)
-!(assertEqual (sig-admitted-with-elims (emp-sig-G)) True)
 
 ; =============================================================================
 ; BINDING CAPTURE SPEC v1: capture-specific teeth for the de Bruijn machinery.
@@ -1419,39 +1182,18 @@
 ; =============================================================================
 
 ; B1 shift: a free var moves; a var bound under its own binder is fixed.
-!(assertEqual (shift 1 0 (Var 0)) (Var 1))
-!(assertEqual (shift 1 0 (Lam (Con nat) (Var 0))) (Lam (Con nat) (Var 0)))          ; bound var fixed
-!(assertEqual (shift 1 0 (Lam (Con nat) (Var 1))) (Lam (Con nat) (Var 2)))          ; free var moves under binder
 ; negative: a capturing shift would FIX the free Var 1 (treat it as bound) — reject that value
-!(assertEqual (== (shift 1 0 (Lam (Con nat) (Var 1))) (Lam (Con nat) (Var 1))) False)
 
 ; B2 subst capture-AVOIDANCE: substituting a free var into a lambda body shifts it,
 ; so it stays free (Var 1) and is NEVER captured by the binder (Var 0).
-!(assertEqual (subst 0 (Var 0) (Lam (Con nat) (Var 1))) (Lam (Con nat) (Var 1)))
 ; negative: the captured value (Var 0) — what a subst missing (shift 1 0 $s) would produce — is rejected
-!(assertEqual (== (subst 0 (Var 0) (Lam (Con nat) (Var 1))) (Lam (Con nat) (Var 0))) False)
 
 ; B3 subst index decrement: the substituted var is replaced; strictly-higher free vars decrement.
-!(assertEqual (subst 0 (Con z) (Var 0)) (Con z))
-!(assertEqual (subst 0 (Con z) (Var 2)) (Var 1))
-!(assertEqual (subst 1 (Con z) (Var 0)) (Var 0))                                    ; var below the subst point unchanged
 
 ; B4 alpha as conv: de Bruijn identifies alpha-equivalents; bound != free is preserved.
-!(assertEqual (conv (good-sig-G) (Lam (Con nat) (Var 0)) (Lam (Con nat) (Var 0))) True)
-!(assertEqual (conv (good-sig-G) (Lam (Con nat) (Var 0)) (Lam (Con nat) (Var 1))) False)
 ; beta UNDER a binder substitutes the right occurrence: (\x.\y. x) z  ~>  \y. z
-!(assertEqual (conv (good-sig-G)
-   (App (Lam (Con nat) (Lam (Con nat) (Var 1))) (Con z))
-   (Lam (Con nat) (Con z))) True)
 
 ; B5 shadowing: a substituted free var travels through nested binders, staying free.
-!(assertEqual (subst 0 (Var 0) (Lam (Con nat) (Lam (Con nat) (Var 2))))
-   (Lam (Con nat) (Lam (Con nat) (Var 2))))
 
 ; B6 IndG binders: shift traverses params/motive/cases/indices/scrut (the nullary-case
 ; body shifts at the IndG's own depth; binders inside case bodies are handled by Lam).
-!(assertEqual
-   (shift 1 0 (IndG nat ArgsNil (Lam (Con nat) (Con nat))
-                (Cases (Case z (Var 0)) CasesNil) ArgsNil (Var 0)))
-   (IndG nat ArgsNil (Lam (Con nat) (Con nat))
-     (Cases (Case z (Var 1)) CasesNil) ArgsNil (Var 1)))

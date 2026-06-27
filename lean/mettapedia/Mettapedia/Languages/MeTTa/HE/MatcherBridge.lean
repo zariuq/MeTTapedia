@@ -1983,6 +1983,17 @@ private theorem ground_matchAtoms_mem_empty_eq : ∀ n : Nat,
                   htail'
                 exact ⟨hres, by simp [hlr, hEqTail]⟩
 
+/-- If both the queried atom and the pattern are ground, any successful
+official match is the empty binding witness and therefore certifies literal
+atom equality. -/
+theorem matchAtoms_ground_rigid_exact
+    {left right : Atom} {result : Bindings} {n : Nat}
+    (hleft : GroundAtom left)
+    (hright : GroundAtom right)
+    (hmem : result ∈ matchAtoms left right (n + 1)) :
+    result = Bindings.empty ∧ left = right :=
+  (ground_matchAtoms_mem_empty_eq n).1 left right result hleft hright hmem
+
 /-- Two different ground atoms never officially match. -/
 private theorem matchAtoms_ground_ne_nil
     {left right : Atom} {n : Nat}
@@ -2200,6 +2211,17 @@ private theorem matchAtoms_ground_canon
     (hmem : result ∈ matchAtoms left right n) :
     GroundBindingsCanon result :=
   (matcher_ground_singleton_canon n).1 left right result hleft hmem
+
+/-- On the ground-query fragment, every official matcher result has only ground
+assignment values and no equality constraints. This is exactly the bounded
+surface G3 needs: equalities can only arise when the queried atom itself still
+contains variables. -/
+theorem matchAtoms_ground_bindings
+    {left right : Atom} {result : Bindings} {n : Nat}
+    (hleft : GroundAtom left)
+    (hmem : result ∈ matchAtoms left right n) :
+    GroundBindings result :=
+  (matchAtoms_ground_canon hleft hmem).1
 
 private theorem matchAtomsList_ground_empty_canon
     {lefts rights : List Atom} {result : Bindings} {n : Nat}
@@ -2525,6 +2547,47 @@ private theorem mem_mergeBindings_ground_iff
   | some b =>
       simp [eq_comm]
 
+/-- Deterministic ground merges stabilize once fuel reaches `2`: any successful
+run at fuel `k + 2` is already the same successful run at fuel `2`. This is
+the public fuel-collapse fact later ground-fragment replay proofs use when they
+want the canonical seeded merge witness without carrying larger local merge
+budgets around. -/
+theorem mergeBindings_ground_to_two
+    {left right result : Bindings} {fuel : Nat}
+    (hleft : GroundBindings left) (hright : GroundBindings right)
+    (hmem : result ∈ mergeBindings left right (fuel + 2)) :
+    result ∈ mergeBindings left right 2 := by
+  have hdet :
+      mergeGround? left right = some result :=
+    (mem_mergeBindings_ground_iff
+      (left := left) (right := right) (result := result) (fuel := fuel)
+      hleft hright).mp hmem
+  exact
+    (mem_mergeBindings_ground_iff
+      (left := left) (right := right) (result := result) (fuel := 0)
+      hleft hright).mpr hdet
+
+/-- Variant of `mergeBindings_ground_to_two` with an explicit lower-bound
+assumption on the caller's fuel. -/
+theorem mergeBindings_ground_of_ge_two
+    {left right result : Bindings} {fuel : Nat}
+    (hleft : GroundBindings left) (hright : GroundBindings right)
+    (hfuel : 2 ≤ fuel)
+    (hmem : result ∈ mergeBindings left right fuel) :
+    result ∈ mergeBindings left right 2 := by
+  cases fuel with
+  | zero =>
+      omega
+  | succ fuel =>
+      cases fuel with
+      | zero =>
+          omega
+      | succ k =>
+          simpa using
+            (mergeBindings_ground_to_two
+              (left := left) (right := right) (result := result) (fuel := k)
+              hleft hright hmem)
+
 /-- A seeded official head match on a ground scrutinee factors through the
 same head binding merged at fuel 2.  This removes fuel-skew from the
 head-step part of the matcher bridge; the remaining bottleneck is the
@@ -2605,6 +2668,19 @@ private theorem matchAtomsList_empty_cons_inv_ground
     symm
     exact hEq
   exact ⟨b', by simpa [hb'eq] using hmb0, htail⟩
+
+/-- Empty-seed cons inversion on the ground fragment: an official list-matcher
+run on `(t :: ts)` against `(p :: ps)` decomposes into a head witness for
+`matchAtoms t p` and a tail run seeded by that exact head bindings value. This
+is the structural public inverse the staged G3 ground agreement proof needs. -/
+theorem matchAtomsList_ground_empty_cons_inv
+    {t p : Atom} {ts ps : List Atom} {result : Bindings} {fuel : Nat}
+    (ht : GroundAtom t)
+    (hmem : result ∈ matchAtomsList (t :: ts) (p :: ps) [Bindings.empty] (fuel + 1)) :
+    ∃ mb,
+      mb ∈ matchAtoms t p fuel ∧
+      result ∈ matchAtomsList ts ps [mb] fuel := by
+  exact matchAtomsList_empty_cons_inv_ground ht hmem
 
 /-- Deterministic ground merge composes at the equation level on the canonical
 ground fragment: if `c` is the result of merging `mb` into `b`, and `x` is the
@@ -2814,6 +2890,227 @@ private theorem matchAtomsList_seed_transport_ground : ∀ fuel : Nat,
                 List.mem_flatMap.mpr ⟨mb, hmb', hgMemHead⟩
               obtain ⟨fuelWhole, hwhole⟩ := matchAtomsList_cons_of_head_tail hhead hfr
               exact ⟨fuelWhole + 1, fr, by simpa using hwhole, hmergeFinal⟩
+
+/-- Reverse seeded-composition on the ground fragment: if a canonical ground
+head fragment `mb` merges with a canonical ground tail fragment `frTail` to
+produce `fr`, and `fr` in turn merges into a ground seed `seed` to produce
+`x`, then there is an intermediate seeded head result `c = seed ⋆ mb` such
+that the tail fragment still merges from `c` to exactly the same final `x`.
+
+This is the converse algebraic direction to `mergeGround_seed_compose`, and it
+is the missing merge fact needed to rebuild seeded official list runs from an
+empty-seeded official factor plus a final seed merge. -/
+private theorem mergeGround_seed_decompose
+    {seed mb frTail fr x : Bindings}
+    (hseed : GroundBindings seed)
+    (hmbCanon : GroundBindingsCanon mb)
+    (hfrTailCanon : GroundBindingsCanon frTail)
+    (hmid : mergeGround? mb frTail = some fr)
+    (hx : mergeGround? seed fr = some x) :
+    ∃ c,
+      mergeGround? seed mb = some c ∧
+      mergeGround? c frTail = some x := by
+  have hfrMem :
+      fr ∈ mergeBindings mb frTail 2 :=
+    (mem_mergeBindings_ground_iff
+      (left := mb) (right := frTail) (result := fr) (fuel := 0)
+      hmbCanon.1 hfrTailCanon.1).mpr hmid
+  have hfrCanon : GroundBindingsCanon fr :=
+    mergeBindings_canon hmbCanon hfrTailCanon hfrMem
+  have hmbExtFr : mb.Extends fr :=
+    mergeGround_extends_left_of_nodup hfrTailCanon.1.2 hfrTailCanon.2 hmid
+  have hagSeedMb :
+      ∀ {v aS aM},
+        seed.lookup v = some aS →
+        mb.lookup v = some aM →
+        aS = aM := by
+    intro v aS aM hseedLook hmbLook
+    have hfrLook : fr.lookup v = some aM := hmbExtFr v aM hmbLook
+    exact mergeGround_overlap_agree hfrCanon.1.2 hfrCanon.2 hx hseedLook hfrLook
+  obtain ⟨c, hc⟩ :=
+    mergeGround_exists_of_overlap_agree hmbCanon.1.2 hmbCanon.2 hagSeedMb
+  have hseedExtC : seed.Extends c :=
+    mergeGround_extends_left_of_nodup hmbCanon.1.2 hmbCanon.2 hc
+  have hmbExtC : mb.Extends c :=
+    mergeGround_extends_right_of_nodup hmbCanon.1.2 hmbCanon.2 hc
+  have hfrTailExtFr : frTail.Extends fr :=
+    mergeGround_extends_right_of_nodup hfrTailCanon.1.2 hfrTailCanon.2 hmid
+  have hagCTail :
+      ∀ {v aC aF},
+        c.lookup v = some aC →
+        frTail.lookup v = some aF →
+        aC = aF := by
+    intro v aC aF hcLook htailLook
+    have hfrLook : fr.lookup v = some aF := hfrTailExtFr v aF htailLook
+    by_cases hmbv : ∃ aM, mb.lookup v = some aM
+    · rcases hmbv with ⟨aM, hmbLook⟩
+      have hcSpec :=
+        mergeGround_lookup_spec
+          (left := seed) (right := mb) (out := c)
+          hmbCanon.1.2 hmbCanon.2 hc v
+      rw [hmbLook] at hcSpec
+      have haCM : aC = aM := by
+        simpa [hcLook] using hcSpec
+      have haMF : aM = aF :=
+        mergeGround_overlap_agree hfrTailCanon.1.2 hfrTailCanon.2 hmid hmbLook htailLook
+      exact haCM.trans haMF
+    · have hmbNone : mb.lookup v = none := by
+        cases hlook : mb.lookup v with
+        | none =>
+            rfl
+        | some aM =>
+            exfalso
+            exact hmbv ⟨aM, hlook⟩
+      have hcSpec :=
+        mergeGround_lookup_spec
+          (left := seed) (right := mb) (out := c)
+          hmbCanon.1.2 hmbCanon.2 hc v
+      rw [hmbNone] at hcSpec
+      have hseedLook : seed.lookup v = some aC := by
+        simpa [hcLook] using hcSpec.symm
+      exact mergeGround_overlap_agree hfrCanon.1.2 hfrCanon.2 hx hseedLook hfrLook
+  obtain ⟨x', hx'⟩ :=
+    mergeGround_exists_of_overlap_agree hfrTailCanon.1.2 hfrTailCanon.2 hagCTail
+  obtain ⟨g, hg, hseedg⟩ :=
+    mergeGround_seed_compose hseed hmbCanon hfrTailCanon hc hx'
+  have hsameFr : g = fr := by
+    rw [hmid] at hg
+    injection hg with hEq
+    exact hEq.symm
+  rw [hsameFr] at hseedg
+  rw [hx] at hseedg
+  injection hseedg with hEq
+  exact ⟨c, hc, hEq ▸ hx'⟩
+
+/-- Converse seed transport on the ground fragment: if an official empty-seeded
+list run produces `fr`, and merging `fr` into a ground seed `base` yields
+`x`, then there is also a seeded official list run from `[base]` that yields
+the same final `x` (possibly at a larger fuel).
+
+This is the reverse direction to `matchAtomsList_seed_transport_ground`, and
+is the key algebraic bridge from empty-seeded official matches to seeded
+official matches. -/
+theorem matchAtomsList_empty_factor_to_seeded_ground : ∀ fuel : Nat,
+    ∀ {lefts rights base fr x},
+      (∀ t ∈ lefts, GroundAtom t) →
+      GroundBindings base →
+      fr ∈ matchAtomsList lefts rights [Bindings.empty] fuel →
+      x ∈ mergeBindings base fr 2 →
+        ∃ fuel', x ∈ matchAtomsList lefts rights [base] fuel' := by
+  intro fuel lefts
+  induction lefts generalizing fuel with
+  | nil =>
+      intro rights base fr x hlefts hbase hfr hx
+      cases rights with
+      | nil =>
+          cases fuel with
+          | zero =>
+              simp [matchAtomsList] at hfr
+          | succ n =>
+              have hfrEq : fr = Bindings.empty := by
+                simpa [matchAtomsList] using hfr
+              subst hfrEq
+              have hxDet : mergeGround? base Bindings.empty = some x := by
+                exact
+                  (mem_mergeBindings_ground_iff
+                    (left := base) (right := Bindings.empty) (result := x)
+                    (fuel := 0) hbase GroundBindings.empty).mp hx
+              have hxEq : x = base := by
+                simp [mergeGround?] at hxDet
+                injection hxDet with hEq
+                exact hEq.symm
+              subst hxEq
+              refine ⟨1, ?_⟩
+              simp [matchAtomsList]
+      | cons r rs =>
+          cases fuel <;> simp [matchAtomsList] at hfr
+  | cons t ts ih =>
+      intro rights base fr x hlefts hbase hfr hx
+      cases rights with
+      | nil =>
+          cases fuel <;> simp [matchAtomsList] at hfr
+      | cons p ps =>
+          cases fuel with
+          | zero =>
+              simp [matchAtomsList] at hfr
+          | succ n =>
+              have ht : GroundAtom t := hlefts t (by simp)
+              have htsGround : ∀ u ∈ ts, GroundAtom u := by
+                intro u hu
+                exact hlefts u (by simp [hu])
+              obtain ⟨mbHead, hhead, htail⟩ :=
+                matchAtomsList_ground_empty_cons_inv
+                  (t := t) (p := p) (ts := ts) (ps := ps)
+                  (result := fr) (fuel := n) ht hfr
+              have hmbCanon : GroundBindingsCanon mbHead :=
+                matchAtoms_ground_canon ht hhead
+              have hseedHead :
+                  mbHead ∈ mergeBindings mbHead Bindings.empty 2 := by
+                rw [mergeBindings_empty_right mbHead 1]
+                simp
+              obtain ⟨fuelTail, frTail, hfrTail, hfrMerge⟩ :=
+                matchAtomsList_seed_transport_ground n
+                  (lefts := ts) (rights := ps)
+                  (base := mbHead) (delta := Bindings.empty)
+                  (seed := mbHead) (x := fr)
+                  htsGround hmbCanon.1 GroundBindingsCanon.empty
+                  hseedHead htail
+              have hfrTailCanon : GroundBindingsCanon frTail :=
+                matchAtomsList_ground_empty_canon htsGround hfrTail
+              have hfrCanon : GroundBindingsCanon fr :=
+                matchAtomsList_ground_empty_canon hlefts hfr
+              have hfrMergeEq : mergeGround? mbHead frTail = some fr := by
+                exact
+                  (mem_mergeBindings_ground_iff
+                    (left := mbHead) (right := frTail) (result := fr)
+                    (fuel := 0) hmbCanon.1 hfrTailCanon.1).mp hfrMerge
+              have hxEq : mergeGround? base fr = some x := by
+                exact
+                  (mem_mergeBindings_ground_iff
+                    (left := base) (right := fr) (result := x)
+                    (fuel := 0) hbase hfrCanon.1).mp hx
+              obtain ⟨c, hcEq, hxTailEq⟩ :=
+                mergeGround_seed_decompose hbase hmbCanon hfrTailCanon hfrMergeEq hxEq
+              have hcMem :
+                  c ∈ mergeBindings base mbHead 2 :=
+                (mem_mergeBindings_ground_iff
+                  (left := base) (right := mbHead) (result := c)
+                  (fuel := 0) hbase hmbCanon.1).mpr hcEq
+              have hcGround : GroundBindings c := by
+                have hmatchers := matcher_ground 2
+                rcases hmatchers with ⟨_hA, _hL, hM, _hB⟩
+                exact hM base mbHead c hbase hmbCanon.1 hcMem
+              have hxTailMem :
+                  x ∈ mergeBindings c frTail 2 :=
+                (mem_mergeBindings_ground_iff
+                  (left := c) (right := frTail) (result := x)
+                  (fuel := 0) hcGround hfrTailCanon.1).mpr hxTailEq
+              obtain ⟨fuelTail', htailSeeded⟩ :=
+                ih (fuel := fuelTail) (rights := ps)
+                  (base := c) (fr := frTail) (x := x) htsGround
+                  hcGround hfrTail hxTailMem
+              let fuelHead := max n 2
+              have hHeadLe : n ≤ fuelHead := by
+                dsimp [fuelHead]
+                exact Nat.le_max_left _ _
+              have hhead' : mbHead ∈ matchAtoms t p fuelHead := by
+                have hEq : n + (fuelHead - n) = fuelHead :=
+                  Nat.add_sub_of_le hHeadLe
+                simpa [hEq] using
+                  (matchAtoms_mono_add t p n (fuelHead - n)) mbHead hhead
+              have hcMem' : c ∈ mergeBindings base mbHead fuelHead := by
+                have hEq : 2 + (fuelHead - 2) = fuelHead := by
+                  dsimp [fuelHead]
+                  exact Nat.add_sub_of_le (Nat.le_max_right _ _)
+                simpa [hEq] using
+                  (mergeBindings_mono_add base mbHead 2 (fuelHead - 2)) c hcMem
+              have hheadSeeded :
+                  c ∈ (matchAtoms t p fuelHead).flatMap
+                    (fun mb => mergeBindings base mb fuelHead) :=
+                List.mem_flatMap.mpr ⟨mbHead, hhead', hcMem'⟩
+              obtain ⟨fuelWhole, hwhole⟩ :=
+                matchAtomsList_cons_of_head_tail hheadSeeded htailSeeded
+              exact ⟨fuelWhole + 1, hwhole⟩
 
 /-- Singleton-seed factorization on the ground fragment: any official list run
 from `[b]` factors through an empty-seeded run at some (possibly larger) fuel,

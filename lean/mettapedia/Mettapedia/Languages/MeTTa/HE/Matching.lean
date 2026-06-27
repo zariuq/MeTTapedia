@@ -1,4 +1,4 @@
-import Mettapedia.Languages.MeTTa.HE.Space
+import Mettapedia.Languages.MeTTa.HE.SimpleMatch
 
 /-!
 # HE MeTTa Matching

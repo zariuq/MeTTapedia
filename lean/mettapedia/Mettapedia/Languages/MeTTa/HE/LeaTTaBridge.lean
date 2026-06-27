@@ -1,4 +1,5 @@
 import Mettapedia.Languages.MeTTa.HE.MatcherBridge
+import Mettapedia.Languages.MeTTa.HE.DeclMatchSpec
 import MettaHyperonFull.Minimal.Interpreter
 import MettaHyperonFull.Operational.Properties
 import MettaHyperonFull.Proofs.Alpha
@@ -235,6 +236,51 @@ private theorem lookup_some_mem_assignments {xs : List (String × Atom)}
         simp
       · simp [List.lookup_cons, hk] at h
         simpa using Or.inr (ih h)
+
+private theorem lookup_some_of_mem_assignment {xs : List (String × Atom)}
+    {v : String} {a : Atom} (hmem : (v, a) ∈ xs) :
+    ∃ a', List.lookup v xs = some a' := by
+  induction xs with
+  | nil =>
+      cases hmem
+  | cons x xs ih =>
+      rcases x with ⟨k, b⟩
+      simp at hmem
+      rcases hmem with h | h
+      · rcases h with ⟨rfl, rfl⟩
+        refine ⟨a, ?_⟩
+        simp
+      · by_cases hk : v == k
+        · exact ⟨b, by simp [List.lookup_cons, hk]⟩
+        · rcases ih h with ⟨a', ha'⟩
+          exact ⟨a', by simp [List.lookup_cons, hk, ha']⟩
+
+/-- On the honest no-variable-values fragment, HE bindings are loop-free:
+every successful lookup terminates immediately at a non-variable payload, so
+`hasLoopFrom` can never follow an edge. This is the precise semantic reason the
+restricted bridge should carry `NoVarAssignmentValues` rather than a separate
+loop premise. -/
+theorem NoVarAssignmentValues.hasLoop_false {b : Bindings}
+    (hno : NoVarAssignmentValues b) :
+    b.hasLoop = false := by
+  unfold Mettapedia.Languages.MeTTa.HE.Bindings.hasLoop
+  rw [List.any_eq_false]
+  intro p hp
+  rcases p with ⟨v, val⟩
+  simp
+  rcases lookup_some_of_mem_assignment hp with ⟨a', hlookup⟩
+  cases a' with
+  | var w =>
+      exact False.elim (hno hlookup)
+  | symbol s =>
+      unfold Mettapedia.Languages.MeTTa.HE.Bindings.hasLoop.hasLoopFrom
+      simp [Bindings.lookup, hlookup]
+  | grounded g =>
+      unfold Mettapedia.Languages.MeTTa.HE.Bindings.hasLoop.hasLoopFrom
+      simp [Bindings.lookup, hlookup]
+  | expression es =>
+      unfold Mettapedia.Languages.MeTTa.HE.Bindings.hasLoop.hasLoopFrom
+      simp [Bindings.lookup, hlookup]
 
 private theorem lookup_none_not_mem_assignment_keys {xs : List (String × Atom)}
     {v : String} (h : List.lookup v xs = none) :
@@ -2533,6 +2579,32 @@ theorem toLeaTTaAtom_freshenEquation_snd
   simp [freshenEquation]
   exact toLeaTTaAtom_renameVars_of_depth _ fuel rhs hdepth
 
+/-- The translated avoid-aware freshened LHS is exactly LeaTTa renaming
+applied to the translated raw LHS, provided the fuel reaches the atom depth. -/
+theorem toLeaTTaAtom_freshenEquationAgainst_fst
+    (avoid : List String) (idx : Nat) (lhs rhs : Atom) (fuel : Nat)
+    (hdepth : atomDepth lhs + 1 ≤ fuel) :
+    toLeaTTaAtom (freshenEquationAgainst avoid idx lhs rhs fuel).1 =
+      Metta.renameVars
+        ((freshMappingAgainst idx avoid
+          ((collectVars lhs fuel ++ collectVars rhs fuel).eraseDups)).1)
+        (toLeaTTaAtom lhs) := by
+  simp [freshenEquationAgainst]
+  exact toLeaTTaAtom_renameVars_of_depth _ fuel lhs hdepth
+
+/-- The translated avoid-aware freshened RHS is exactly LeaTTa renaming
+applied to the translated raw RHS, provided the fuel reaches the atom depth. -/
+theorem toLeaTTaAtom_freshenEquationAgainst_snd
+    (avoid : List String) (idx : Nat) (lhs rhs : Atom) (fuel : Nat)
+    (hdepth : atomDepth rhs + 1 ≤ fuel) :
+    toLeaTTaAtom (freshenEquationAgainst avoid idx lhs rhs fuel).2 =
+      Metta.renameVars
+        ((freshMappingAgainst idx avoid
+          ((collectVars lhs fuel ++ collectVars rhs fuel).eraseDups)).1)
+        (toLeaTTaAtom rhs) := by
+  simp [freshenEquationAgainst]
+  exact toLeaTTaAtom_renameVars_of_depth _ fuel rhs hdepth
+
 /-- HE-side model of LeaTTa's runtime freshening discipline: every variable
 from the rule gets the same runtime counter suffix, matching
 `Minimal.Interpreter.freshenRule`. We keep the original variable-order list
@@ -2953,6 +3025,16 @@ private theorem simpleMatch_ground_empty_exact :
                     exact matchAll_cons_of_head_tail hheadSeeded htail
       exact ⟨hAtomSucc, hListSucc⟩
 
+/-- Faithful post-G3 query witness: the public equation-query surface now
+matches the queried atom against the freshened rule LHS with `matchAtoms`,
+merges the result with the empty ambient bindings, and filters loops. The old
+`simpleMatch = some qb` shape is valid only on staged fragments. -/
+def FaithfulQueryWitness (atom lhs' : Atom) (qb : Bindings) (fuel : Nat) : Prop :=
+  ∃ mb,
+    mb ∈ matchAtoms atom lhs' fuel ∧
+    qb ∈ mergeBindings mb Bindings.empty fuel ∧
+    qb.hasLoop = false
+
 /-- A `queryEquations` witness comes from a specific indexed raw equation in the
 space together with its freshened matcher witness. This is the precise bridge
 entry point for transporting HE query evidence into LeaTTa. -/
@@ -2962,54 +3044,126 @@ theorem mem_queryEquations_decompose
     ∃ eqidx ∈ space.atoms.zipIdx, ∃ lhs rawRhs,
       eqidx.1 = .expression [.symbol "=", lhs, rawRhs] ∧
       (freshenEquation eqidx.2 lhs rawRhs fuel).2 = rhs ∧
-      simpleMatch (freshenEquation eqidx.2 lhs rawRhs fuel).1 atom Bindings.empty fuel = some qb := by
-  rcases List.mem_filterMap.mp hmem with ⟨eqidx, heqidx, hout⟩
-  rcases eqidx with ⟨eq, idx⟩
-  cases eq with
-  | symbol s =>
-      simp at hout
-  | var v =>
-      simp at hout
-  | grounded g =>
-      simp at hout
-  | expression es =>
-      cases es with
-      | nil =>
+      FaithfulQueryWitness atom (freshenEquation eqidx.2 lhs rawRhs fuel).1 qb fuel := by
+  cases fuel with
+  | zero =>
+      simp [queryEquations] at hmem
+  | succ n =>
+      rcases List.mem_flatMap.mp hmem with ⟨eqidx, heqidx, hout⟩
+      rcases eqidx with ⟨eq, idx⟩
+      cases eq with
+      | symbol s =>
           simp at hout
-      | cons hd tl =>
-          cases hd with
-          | symbol s =>
-              by_cases hs : s = "="
-              · subst hs
-                cases tl with
-                | nil =>
-                    simp at hout
-                | cons lhs tl1 =>
-                    cases tl1 with
+      | var v =>
+          simp at hout
+      | grounded g =>
+          simp at hout
+      | expression es =>
+          cases es with
+          | nil =>
+              simp at hout
+          | cons hd tl =>
+              cases hd with
+              | symbol s =>
+                  by_cases hs : s = "="
+                  · subst hs
+                    cases tl with
                     | nil =>
                         simp at hout
-                    | cons rawRhs tl2 =>
-                        cases tl2 with
+                    | cons lhs tl1 =>
+                        cases tl1 with
                         | nil =>
-                            cases hsm : simpleMatch (freshenEquation idx lhs rawRhs fuel).1 atom Bindings.empty fuel with
-                            | none =>
-                                simp [hsm] at hout
-                            | some b =>
-                                simp [hsm] at hout
-                                rcases hout with ⟨hRhs, hQb⟩
-                                refine
-                                  ⟨(Atom.expression [Atom.symbol "=", lhs, rawRhs], idx), heqidx,
-                                    lhs, rawRhs, rfl, hRhs, ?_⟩
-                                simpa [hQb] using hsm
-                        | cons extra tl3 =>
                             simp at hout
-              · simp [hs] at hout
-          | var v =>
+                        | cons rawRhs tl2 =>
+                            cases tl2 with
+                            | nil =>
+                                rcases List.mem_flatMap.mp hout with ⟨mb, hmb, hfiltered⟩
+                                rcases List.mem_filterMap.mp hfiltered with ⟨merged, hmerge, hout'⟩
+                                by_cases hloop : merged.hasLoop
+                                · simp [hloop] at hout'
+                                · simp [hloop] at hout'
+                                  rcases hout' with ⟨hRhs, hQb⟩
+                                  refine
+                                    ⟨(Atom.expression [Atom.symbol "=", lhs, rawRhs], idx), heqidx,
+                                      lhs, rawRhs, rfl, hRhs, ?_⟩
+                                  subst hQb
+                                  exact ⟨mb, hmb, hmerge, by simpa using (Bool.eq_false_iff.mpr hloop)⟩
+                            | cons extra tl3 =>
+                                simp at hout
+                  · simp [hs] at hout
+              | var v =>
+                  simp at hout
+              | grounded g =>
+                  simp at hout
+              | expression es' =>
+                  simp at hout
+
+/-- The visible-avoid query surface has the same raw-rule decomposition shape
+as `queryEquations`: every witness still comes from a specific indexed raw
+equation together with its avoid-aware freshened matcher witness. This lets the
+bridge reuse the same candidate-transport architecture once it pivots to the
+stronger freshness discipline. -/
+theorem mem_queryEquationsAgainstVisible_decompose
+    {space : Space} {atom rhs : Atom} {qb : Bindings} {fuel : Nat}
+    (hmem : (rhs, qb) ∈ queryEquationsAgainstVisible space atom fuel) :
+    ∃ eqidx ∈ space.atoms.zipIdx, ∃ lhs rawRhs,
+      eqidx.1 = .expression [.symbol "=", lhs, rawRhs] ∧
+      (freshenEquationAgainst ((collectVars atom fuel).eraseDups) eqidx.2 lhs rawRhs fuel).2 = rhs ∧
+      FaithfulQueryWitness atom
+        (freshenEquationAgainst ((collectVars atom fuel).eraseDups) eqidx.2 lhs rawRhs fuel).1
+        qb fuel := by
+  cases fuel with
+  | zero =>
+      simp [queryEquationsAgainstVisible] at hmem
+  | succ n =>
+      rcases List.mem_flatMap.mp hmem with ⟨eqidx, heqidx, hout⟩
+      rcases eqidx with ⟨eq, idx⟩
+      cases eq with
+      | symbol s =>
+          simp at hout
+      | var v =>
+          simp at hout
+      | grounded g =>
+          simp at hout
+      | expression es =>
+          cases es with
+          | nil =>
               simp at hout
-          | grounded g =>
-              simp at hout
-          | expression inner =>
-              simp at hout
+          | cons hd tl =>
+              cases hd with
+              | symbol s =>
+                  by_cases hs : s = "="
+                  · subst hs
+                    cases tl with
+                    | nil =>
+                        simp at hout
+                    | cons lhs tl1 =>
+                        cases tl1 with
+                        | nil =>
+                            simp at hout
+                        | cons rawRhs tl2 =>
+                            cases tl2 with
+                            | nil =>
+                                rcases List.mem_flatMap.mp hout with ⟨mb, hmb, hfiltered⟩
+                                rcases List.mem_filterMap.mp hfiltered with ⟨merged, hmerge, hout'⟩
+                                by_cases hloop : merged.hasLoop
+                                · simp [hloop] at hout'
+                                · simp [hloop] at hout'
+                                  rcases hout' with ⟨hRhs, hQb⟩
+                                  refine
+                                    ⟨(Atom.expression [Atom.symbol "=", lhs, rawRhs], idx), heqidx,
+                                      lhs, rawRhs, rfl, hRhs, ?_⟩
+                                  subst hQb
+                                  exact ⟨mb, hmb, hmerge, by simpa using (Bool.eq_false_iff.mpr hloop)⟩
+                            | cons extra tl3 =>
+                                simp at hout
+                  · simp [hs] at hout
+              | var v =>
+                  simp at hout
+              | grounded g =>
+                  simp at hout
+              | expression es' =>
+                  simp at hout
 
 /-- The translation preserves the head key used by LeaTTa's first-argument
 indexing layer. -/
@@ -3057,6 +3211,43 @@ private theorem heHeadKey_freshenEquation_fst
           | nil =>
               simp [freshenEquation, renameVars, heHeadKey, freshMapping,
                 renameVars.renameVarsList]
+          | cons hd tl =>
+              cases hd with
+              | symbol s =>
+                  cases n <;> rfl
+              | var v =>
+                  cases n <;> rfl
+              | grounded g =>
+                  cases n <;> rfl
+              | expression inner =>
+                  cases n <;> rfl
+
+/-- The visible-avoid HE freshening surface also preserves the structural head
+key of the LHS. Avoiding visible names may change fresh suffix choices, but it
+never changes the rule head that candidate indexing sees. -/
+private theorem heHeadKey_freshenEquationAgainst_fst
+    (avoid : List String) (idx : Nat) (lhs rhs : Atom) (fuel : Nat) :
+    heHeadKey (freshenEquationAgainst avoid idx lhs rhs fuel).1 = heHeadKey lhs := by
+  cases fuel with
+  | zero =>
+      cases lhs <;> simp [freshenEquationAgainst, renameVars, heHeadKey,
+        freshMappingAgainst, chooseFreshName]
+  | succ n =>
+      cases lhs with
+      | symbol s =>
+          simp [freshenEquationAgainst, renameVars, heHeadKey, freshMappingAgainst,
+            chooseFreshName]
+      | var v =>
+          simp [freshenEquationAgainst, renameVars, heHeadKey, freshMappingAgainst,
+            chooseFreshName]
+      | grounded g =>
+          simp [freshenEquationAgainst, renameVars, heHeadKey, freshMappingAgainst,
+            chooseFreshName]
+      | expression es =>
+          cases es with
+          | nil =>
+              simp [freshenEquationAgainst, renameVars, heHeadKey, freshMappingAgainst,
+                chooseFreshName, renameVars.renameVarsList]
           | cons hd tl =>
               cases hd with
               | symbol s =>
@@ -3186,6 +3377,70 @@ private theorem simpleMatch_headKey_compat :
                       | expression inner =>
                           exact Or.inr rfl
 
+private theorem matchListAccRel_headKey_compat
+    {targets patterns : List Atom} {seed out : Bindings} {k : String}
+    (h : DeclMatchSpec.MatchListAccRel targets patterns seed out)
+    (htarget : heHeadKey (.expression targets) = some k) :
+    heHeadKey (.expression patterns) = some k ∨
+      heHeadKey (.expression patterns) = none := by
+  cases targets with
+  | nil =>
+      cases h
+      simp [heHeadKey] at htarget
+  | cons t ts =>
+      cases patterns with
+      | nil =>
+          cases h
+      | cons p ps =>
+          cases h with
+          | cons hHead _hTail =>
+              cases t with
+              | symbol s =>
+                  have hsk : s = k := by
+                    simpa [heHeadKey] using htarget
+                  cases hHead with
+                  | symSym =>
+                      subst hsk
+                      exact Or.inl rfl
+                  | nonVarVar hnv =>
+                      exact Or.inr rfl
+              | var v =>
+                  simp [heHeadKey] at htarget
+              | grounded g =>
+                  simp [heHeadKey] at htarget
+              | expression es =>
+                  simp [heHeadKey] at htarget
+
+private theorem matchRel_headKey_compat
+    {target pattern : Atom} {b : Bindings} {k : String}
+    (h : DeclMatchSpec.MatchRel target pattern b)
+    (htarget : heHeadKey target = some k) :
+    heHeadKey pattern = some k ∨ heHeadKey pattern = none := by
+  cases h with
+  | symSym s =>
+      have hsk : s = k := by
+        simpa [heHeadKey] using htarget
+      subst hsk
+      exact Or.inl rfl
+  | varVar a b =>
+      simp [heHeadKey] at htarget
+  | varNonVar hnv =>
+      simp [heHeadKey] at htarget
+  | nonVarVar hnv =>
+      exact Or.inr rfl
+  | grounded g =>
+      simp [heHeadKey] at htarget
+  | expr hlist =>
+      exact matchListAccRel_headKey_compat hlist htarget
+
+private theorem faithfulQueryWitness_headKey_compat
+    {atom lhs' : Atom} {qb : Bindings} {fuel : Nat} {k : String}
+    (h : FaithfulQueryWitness atom lhs' qb fuel)
+    (hatom : heHeadKey atom = some k) :
+    heHeadKey lhs' = some k ∨ heHeadKey lhs' = none := by
+  rcases h with ⟨mb, hmb, _hmerge, _hloop⟩
+  exact matchRel_headKey_compat (DeclMatchSpec.matchAtoms_sound hmb) hatom
+
 /-- The translated `(= lhs rhs)` rules present in an HE atom list. This helper
 matches the exact rule surface consumed by both LeaTTa `Space.equalityRules`
 and LeaTTa's indexed-kernel `extractRules`. -/
@@ -3312,13 +3567,39 @@ theorem queryEquations_extractRule_witness
       (Atom.expression [Atom.symbol "=", lhs, rawRhs], idx) ∈ space.atoms.zipIdx ∧
       (toLeaTTaAtom lhs, toLeaTTaAtom rawRhs) ∈
         Metta.Minimal.extractRules (toLeaTTaSpace space).atoms ∧
-      simpleMatch (freshenEquation idx lhs rawRhs fuel).1 atom Bindings.empty fuel = some qb := by
+      FaithfulQueryWitness atom (freshenEquation idx lhs rawRhs fuel).1 qb fuel := by
   obtain ⟨eqidx, heqidx, lhs, rawRhs, hshape, _hRhs, hmatch⟩ :=
     mem_queryEquations_decompose hmem
   rcases eqidx with ⟨eq, idx⟩
   cases hshape
   have hrawMem : Atom.expression [Atom.symbol "=", lhs, rawRhs] ∈ space.atoms := by
     exact mem_of_mem_zipIdx (x := Atom.expression [Atom.symbol "=", lhs, rawRhs]) (i := idx) heqidx
+  refine ⟨idx, lhs, rawRhs, ?_, ?_, hmatch⟩
+  · simpa using heqidx
+  · simpa [toLeaTTaSpace] using
+      (mem_extractRules_of_mem_eq_atom (atoms := space.atoms) (lhs := lhs) (rhs := rawRhs) hrawMem)
+
+/-- The visible-avoid query surface also pins every witness to a concrete raw
+translated rule in LeaTTa's extracted rule set. This is the repaired-surface
+analogue of `queryEquations_extractRule_witness`, ready for later transport
+theorems that use the stronger freshness discipline. -/
+theorem queryEquationsAgainstVisible_extractRule_witness
+    {space : Space} {atom rhs : Atom} {qb : Bindings} {fuel : Nat}
+    (hmem : (rhs, qb) ∈ queryEquationsAgainstVisible space atom fuel) :
+    ∃ idx lhs rawRhs,
+      (Atom.expression [Atom.symbol "=", lhs, rawRhs], idx) ∈ space.atoms.zipIdx ∧
+      (toLeaTTaAtom lhs, toLeaTTaAtom rawRhs) ∈
+        Metta.Minimal.extractRules (toLeaTTaSpace space).atoms ∧
+      FaithfulQueryWitness atom
+        (freshenEquationAgainst ((collectVars atom fuel).eraseDups) idx lhs rawRhs fuel).1
+        qb fuel := by
+  obtain ⟨eqidx, heqidx, lhs, rawRhs, hshape, _hRhs, hmatch⟩ :=
+    mem_queryEquationsAgainstVisible_decompose hmem
+  rcases eqidx with ⟨eq, idx⟩
+  cases hshape
+  have hrawMem : Atom.expression [Atom.symbol "=", lhs, rawRhs] ∈ space.atoms := by
+    exact mem_of_mem_zipIdx
+      (x := Atom.expression [Atom.symbol "=", lhs, rawRhs]) (i := idx) heqidx
   refine ⟨idx, lhs, rawRhs, ?_, ?_, hmatch⟩
   · simpa using heqidx
   · simpa [toLeaTTaSpace] using
@@ -3336,7 +3617,7 @@ theorem queryEquations_extractCandidate_split
     (hmem : (rhs, qb) ∈ queryEquations space src fuel) :
     ∃ idx lhs rawRhs pre post,
       (Atom.expression [Atom.symbol "=", lhs, rawRhs], idx) ∈ space.atoms.zipIdx ∧
-      simpleMatch (freshenEquation idx lhs rawRhs fuel).1 src Bindings.empty fuel = some qb ∧
+      FaithfulQueryWitness src (freshenEquation idx lhs rawRhs fuel).1 qb fuel ∧
       Metta.Minimal.candidatesW
           (Metta.Minimal.MinEnv.ofAtomsGT (toLeaTTaAtoms space.atoms) gt)
           Metta.Minimal.World.empty (toLeaTTaAtom src) =
@@ -3348,7 +3629,7 @@ theorem queryEquations_extractCandidate_split
   have hfreshHead :
       heHeadKey (freshenEquation idx lhs rawRhs fuel).1 = some k ∨
         heHeadKey (freshenEquation idx lhs rawRhs fuel).1 = none :=
-    simpleMatch_headKey_compat hmatch hsrcHead
+    faithfulQueryWitness_headKey_compat hmatch hsrcHead
   have hlhsHead : heHeadKey lhs = some k ∨ heHeadKey lhs = none := by
     simpa [heHeadKey_freshenEquation_fst idx lhs rawRhs fuel] using hfreshHead
   have hcandCore :
@@ -3381,16 +3662,91 @@ theorem queryEquations_extractCandidate_split
   rcases list_mem_split hcand with ⟨pre, post, hsplit⟩
   exact ⟨idx, lhs, rawRhs, pre, post, hzip, hmatch, hsplit⟩
 
-/-- Every HE equation-query witness inherits the no-duplicate-key discipline of
-the underlying successful `simpleMatch` from the empty seed. This is available
-even on the non-ground fragment, so later restricted bridge theorems should use
-it directly instead of dragging in a stronger groundness assumption. -/
-theorem queryEquations_assignmentsNodup
+/-- The repaired visible-avoid HE query surface also identifies the concrete
+raw translated rule bucket that LeaTTa's indexed kernel will inspect for the
+same symbol-headed query. This is the avoid-aware analogue of
+`queryEquations_extractCandidate_split`, ready for the repaired transport
+theorems. -/
+theorem queryEquationsAgainstVisible_extractCandidate_split
+    {space : Space} {src rhs : Atom} {qb : Bindings} {fuel : Nat}
+    {gt : Metta.GroundingTable} {k : String}
+    (hk : Metta.Minimal.headKey (toLeaTTaAtom src) = some k)
+    (hmem : (rhs, qb) ∈ queryEquationsAgainstVisible space src fuel) :
+    ∃ idx lhs rawRhs pre post,
+      (Atom.expression [Atom.symbol "=", lhs, rawRhs], idx) ∈ space.atoms.zipIdx ∧
+      FaithfulQueryWitness src
+        (freshenEquationAgainst ((collectVars src fuel).eraseDups) idx lhs rawRhs fuel).1
+        qb fuel ∧
+      Metta.Minimal.candidatesW
+          (Metta.Minimal.MinEnv.ofAtomsGT (toLeaTTaAtoms space.atoms) gt)
+          Metta.Minimal.World.empty (toLeaTTaAtom src) =
+        pre ++ (toLeaTTaAtom lhs, toLeaTTaAtom rawRhs) :: post := by
+  obtain ⟨idx, lhs, rawRhs, hzip, hrule, hmatch⟩ :=
+    queryEquationsAgainstVisible_extractRule_witness hmem
+  have hsrcHead : heHeadKey src = some k := by
+    simpa [headKey_toLeaTTaAtom] using hk
+  have hfreshHead :
+      heHeadKey
+          (freshenEquationAgainst ((collectVars src fuel).eraseDups) idx lhs rawRhs fuel).1 =
+            some k ∨
+        heHeadKey
+          (freshenEquationAgainst ((collectVars src fuel).eraseDups) idx lhs rawRhs fuel).1 =
+            none :=
+    faithfulQueryWitness_headKey_compat hmatch hsrcHead
+  have hlhsHead : heHeadKey lhs = some k ∨ heHeadKey lhs = none := by
+    simpa [heHeadKey_freshenEquationAgainst_fst ((collectVars src fuel).eraseDups) idx lhs rawRhs fuel]
+      using hfreshHead
+  have hcandCore :
+      (toLeaTTaAtom lhs, toLeaTTaAtom rawRhs) ∈
+        (Metta.Minimal.MinEnv.ofAtomsGT (toLeaTTaAtoms space.atoms) gt).candidates
+          (toLeaTTaAtom src) := by
+    unfold Metta.Minimal.MinEnv.candidates
+    rw [hk]
+    cases hlhsHead with
+    | inl hlhsSome =>
+        have hbucket :
+            (toLeaTTaAtom lhs, toLeaTTaAtom rawRhs) ∈
+              (Metta.Minimal.MinEnv.ofAtomsGT (toLeaTTaAtoms space.atoms) gt).ruleIndex.getD k [] := by
+          rw [Metta.ruleIndex_getD]
+          exact List.mem_filter.mpr ⟨hrule, by simp [headKey_toLeaTTaAtom, hlhsSome]⟩
+        exact List.mem_append.mpr <| Or.inl hbucket
+    | inr hlhsNone =>
+        have hvar :
+            (toLeaTTaAtom lhs, toLeaTTaAtom rawRhs) ∈
+              (Metta.Minimal.MinEnv.ofAtomsGT (toLeaTTaAtoms space.atoms) gt).varRules := by
+          rw [Metta.ofAtomsGT_varRules]
+          exact List.mem_filter.mpr ⟨hrule, by simp [headKey_toLeaTTaAtom, hlhsNone]⟩
+        exact List.mem_append.mpr <| Or.inr hvar
+  have hcand :
+      (toLeaTTaAtom lhs, toLeaTTaAtom rawRhs) ∈
+        Metta.Minimal.candidatesW
+          (Metta.Minimal.MinEnv.ofAtomsGT (toLeaTTaAtoms space.atoms) gt)
+          Metta.Minimal.World.empty (toLeaTTaAtom src) := by
+    simpa [Metta.Minimal.candidatesW, Metta.Minimal.World.empty] using hcandCore
+  rcases list_mem_split hcand with ⟨pre, post, hsplit⟩
+  exact ⟨idx, lhs, rawRhs, pre, post, hzip, hmatch, hsplit⟩
+
+/-- Every faithful HE equation-query witness has passed the public loop filter.
+The stronger assignment-key uniqueness invariant is a separate matcher/merge
+theorem; consumers that need it should keep it as an explicit fragment
+hypothesis. -/
+theorem queryEquations_hasLoop_false
     {space : Space} {atom rhs : Atom} {qb : Bindings} {fuel : Nat}
     (hmem : (rhs, qb) ∈ queryEquations space atom fuel) :
-    AssignmentsNodup qb := by
-  obtain ⟨_, _, _, _, _, hmatch⟩ := mem_queryEquations_decompose hmem
-  exact simpleMatch_assignmentsNodup hmatch.2
+    qb.hasLoop = false := by
+  obtain ⟨_, _, _, _, _, hfw⟩ := mem_queryEquations_decompose hmem
+  rcases hfw with ⟨_, _hmb, hmergeLoop⟩
+  exact hmergeLoop.2.2
+
+/-- The repaired visible-avoid query surface inherits the same loop-freedom
+fact from the public filter. -/
+theorem queryEquationsAgainstVisible_hasLoop_false
+    {space : Space} {atom rhs : Atom} {qb : Bindings} {fuel : Nat}
+    (hmem : (rhs, qb) ∈ queryEquationsAgainstVisible space atom fuel) :
+    qb.hasLoop = false := by
+  obtain ⟨_, _, _, _, _, hfw⟩ := mem_queryEquationsAgainstVisible_decompose hmem
+  rcases hfw with ⟨_, _hmb, hmergeLoop⟩
+  exact hmergeLoop.2.2
 
 /-- Explicit alpha-boundary package for `queryEquations`: once the fuel reaches
 the relevant term depths, the HE freshened rule seen by the matcher is exactly
@@ -3421,6 +3777,45 @@ theorem queryEquations_alphaBoundary
     exact toLeaTTaAtom_freshenEquation_fst idx lhs rawRhs fuel hdepth
   · intro hdepth
     simpa [hRhs] using toLeaTTaAtom_freshenEquation_snd idx lhs rawRhs fuel hdepth
+
+/-- The repaired visible-avoid query surface has the same exact translation
+boundary shape: once the fuel reaches the relevant depths, the HE freshened
+rule seen by the matcher is exactly the LeaTTa translation of the raw rule
+under the avoid-aware HE renaming. This packages the stronger freshness
+discipline in the same form as `queryEquations_alphaBoundary`, so later
+transport proofs can reuse the same translation skeleton on the repaired
+surface. -/
+theorem queryEquationsAgainstVisible_alphaBoundary
+    {space : Space} {atom rhs : Atom} {qb : Bindings} {fuel : Nat}
+    (hmem : (rhs, qb) ∈ queryEquationsAgainstVisible space atom fuel) :
+    ∃ idx lhs rawRhs,
+      (Atom.expression [Atom.symbol "=", lhs, rawRhs], idx) ∈ space.atoms.zipIdx ∧
+      (atomDepth lhs + 1 ≤ fuel →
+        toLeaTTaAtom (freshenEquationAgainst ((collectVars atom fuel).eraseDups) idx lhs rawRhs fuel).1 =
+          Metta.renameVars
+            ((freshMappingAgainst idx ((collectVars atom fuel).eraseDups)
+              ((collectVars lhs fuel ++ collectVars rawRhs fuel).eraseDups)).1)
+            (toLeaTTaAtom lhs)) ∧
+      (atomDepth rawRhs + 1 ≤ fuel →
+        toLeaTTaAtom rhs =
+          Metta.renameVars
+            ((freshMappingAgainst idx ((collectVars atom fuel).eraseDups)
+              ((collectVars lhs fuel ++ collectVars rawRhs fuel).eraseDups)).1)
+            (toLeaTTaAtom rawRhs)) := by
+  obtain ⟨eqidx, heqidx, lhs, rawRhs, hshape, hRhs, _hmatch⟩ :=
+    mem_queryEquationsAgainstVisible_decompose hmem
+  rcases eqidx with ⟨eq, idx⟩
+  cases hshape
+  refine ⟨idx, lhs, rawRhs, ?_, ?_, ?_⟩
+  · simpa using heqidx
+  · intro hdepth
+    exact
+      toLeaTTaAtom_freshenEquationAgainst_fst
+        ((collectVars atom fuel).eraseDups) idx lhs rawRhs fuel hdepth
+  · intro hdepth
+    simpa [hRhs] using
+      toLeaTTaAtom_freshenEquationAgainst_snd
+        ((collectVars atom fuel).eraseDups) idx lhs rawRhs fuel hdepth
 
 /-- Once a translated LeaTTa rule-and-match witness has been transported, it
 fires in LeaTTa's published QUERY relation. This isolates the remaining proof
@@ -3465,8 +3860,10 @@ theorem mem_equalityReductions_of_ground_rule_query
   refine mem_equalityReductions_of_extractRule_match hrule hmb ?_
   simpa [Metta.Bindings.empty] using (Metta.instantiate_nil (toLeaTTaAtom rawRhs)).symm
 
-/-- The one-candidate worklist generated by LeaTTa's `queryOp` fold step. -/
-private def queryOpItemsOfRule (prev : Metta.Minimal.Stack) (toEval : Metta.Atom)
+/-- The one-candidate worklist generated by LeaTTa's `queryOp` fold step.
+Kept reusable for sibling bridge modules so the exact runtime candidate seam
+stays defined in one place. -/
+def queryOpItemsOfRule (prev : Metta.Minimal.Stack) (toEval : Metta.Atom)
     (b : Metta.Bindings) (counter : Nat) (p : Metta.Atom × Metta.Atom) :
     List Metta.Minimal.Item :=
   let (lhs', rhs') := Metta.Minimal.freshenRule counter p.1 p.2
@@ -3544,8 +3941,9 @@ private theorem mem_queryOpFold_of_split_candidate
 process and that the candidate's one-step worklist already contains `item` at
 its actual fold counter, the final executable `queryOp` output contains `item`
 as well. This packages all remaining fold/`isEmpty` bookkeeping so the
-non-ground bridge can focus on transporting the freshened witness itself. -/
-private theorem queryOp_contains_item_of_splitCandidate
+non-ground bridge can focus on transporting the freshened witness itself. This
+is intentionally reusable by later canonical/avoid-aware bridge modules. -/
+theorem queryOp_contains_item_of_splitCandidate
     (env : Metta.Minimal.MinEnv) (st : Metta.Minimal.St)
     (prev : Metta.Minimal.Stack) (toEval : Metta.Atom) (b : Metta.Bindings)
     {pre post : List (Metta.Atom × Metta.Atom)} {p : Metta.Atom × Metta.Atom}
@@ -3726,7 +4124,7 @@ def QueryOpWitnessTransport
   ∀ {idx lhs rawRhs k}
     (_hk : Metta.Minimal.headKey (toLeaTTaAtom src) = some k)
     (_hzip : (Atom.expression [Atom.symbol "=", lhs, rawRhs], idx) ∈ space.atoms.zipIdx)
-    (_hmatch : simpleMatch (freshenEquation idx lhs rawRhs fuel).1 src Bindings.empty fuel = some qb),
+    (_hmatch : FaithfulQueryWitness src (freshenEquation idx lhs rawRhs fuel).1 qb fuel),
     ∃ pre post,
       Metta.Minimal.candidatesW
           (Metta.Minimal.MinEnv.ofAtomsGT (toLeaTTaAtoms space.atoms) gt)
@@ -3811,8 +4209,9 @@ theorem queryOp_contains_equation_match_visible_successor_of_instantiated_item
     {space : Space} {src rhs : Atom} {qb : Bindings} {fuel : Nat}
     {gt : Metta.GroundingTable}
     (prev : Metta.Minimal.Stack) (counter : Nat)
-    (hquery : (rhs, qb) ∈ queryEquations space src fuel)
+    (_hquery : (rhs, qb) ∈ queryEquations space src fuel)
     (hno : NoVarAssignmentValues qb)
+    (hkeys : AssignmentsNodup qb)
     (hdepth : atomDepth rhs + 2 ≤ fuel)
     (hitem :
       Metta.Minimal.evalResult prev
@@ -3831,7 +4230,39 @@ theorem queryOp_contains_equation_match_visible_successor_of_instantiated_item
       Metta.AlphaEq emitted (toLeaTTaAtom (qb.apply rhs fuel)) := by
   exact
     visible_successor_of_instantiated_item
-      hno (queryEquations_assignmentsNodup hquery) hdepth hitem
+      hno hkeys hdepth hitem
+
+/-- The same instantiated-item visible-successor bridge on the repaired
+visible-avoid query surface. Once the translated instantiated RHS item is
+present on LeaTTa's executable `queryOp` surface, the avoid-aware HE
+`equation_match` successor is already visible up to α-equivalence on the
+no-variable-values fragment. -/
+theorem queryOp_contains_equation_match_visible_successor_of_instantiated_item_againstVisible
+    {space : Space} {src rhs : Atom} {qb : Bindings} {fuel : Nat}
+    {gt : Metta.GroundingTable}
+    (prev : Metta.Minimal.Stack) (counter : Nat)
+    (_hquery : (rhs, qb) ∈ queryEquationsAgainstVisible space src fuel)
+    (hno : NoVarAssignmentValues qb)
+    (hkeys : AssignmentsNodup qb)
+    (hdepth : atomDepth rhs + 2 ≤ fuel)
+    (hitem :
+      Metta.Minimal.evalResult prev
+          (Metta.instantiate (toLeaTTaMatchBindings qb) (toLeaTTaAtom rhs))
+          (toLeaTTaMatchBindings qb) ∈
+        (Metta.Minimal.queryOp
+          (Metta.Minimal.MinEnv.ofAtomsGT (toLeaTTaAtoms space.atoms) gt)
+          { counter := counter, world := Metta.Minimal.World.empty }
+          prev (toLeaTTaAtom src) Metta.Bindings.empty).1) :
+    ∃ emitted m,
+      Metta.Minimal.evalResult prev emitted m ∈
+        (Metta.Minimal.queryOp
+          (Metta.Minimal.MinEnv.ofAtomsGT (toLeaTTaAtoms space.atoms) gt)
+          { counter := counter, world := Metta.Minimal.World.empty }
+          prev (toLeaTTaAtom src) Metta.Bindings.empty).1 ∧
+      Metta.AlphaEq emitted (toLeaTTaAtom (qb.apply rhs fuel)) := by
+  exact
+    visible_successor_of_instantiated_item
+      hno hkeys hdepth hitem
 
 /-- Typed specialization of the previous executable `queryOp` bridge: if the
 translated instantiated RHS item is already present on LeaTTa's `queryOp`
@@ -3844,8 +4275,9 @@ theorem queryOp_contains_typed_equation_match_visible_successor_of_instantiated_
     {gt : Metta.GroundingTable}
     {env : Metta.TypeEnv} {Γ : List (String × Metta.Atom)} {T : Metta.Atom}
     (prev : Metta.Minimal.Stack) (counter : Nat)
-    (hquery : (rhs, qb) ∈ queryEquations space src fuel)
+    (_hquery : (rhs, qb) ∈ queryEquations space src fuel)
     (hno : NoVarAssignmentValues qb)
+    (hkeys : AssignmentsNodup qb)
     (hdepth : atomDepth rhs + 2 ≤ fuel)
     (hitem :
       Metta.Minimal.evalResult prev
@@ -3868,7 +4300,42 @@ theorem queryOp_contains_typed_equation_match_visible_successor_of_instantiated_
       Metta.WT env [] emitted T := by
   exact
     typed_visible_successor_of_instantiated_item
-      hno (queryEquations_assignmentsNodup hquery) hdepth hitem hσ hL hR
+      hno hkeys hdepth hitem hσ hL hR
+
+/-- Typed instantiated-item bridge on the repaired visible-avoid query surface.
+The same avoid-aware HE witness already yields a typed alpha-visible LeaTTa
+successor once the instantiated RHS item is present on `queryOp`. -/
+theorem queryOp_contains_typed_equation_match_visible_successor_of_instantiated_item_againstVisible
+    {space : Space} {src lhs rhs : Atom} {qb : Bindings} {fuel : Nat}
+    {gt : Metta.GroundingTable}
+    {env : Metta.TypeEnv} {Γ : List (String × Metta.Atom)} {T : Metta.Atom}
+    (prev : Metta.Minimal.Stack) (counter : Nat)
+    (_hquery : (rhs, qb) ∈ queryEquationsAgainstVisible space src fuel)
+    (hno : NoVarAssignmentValues qb)
+    (hkeys : AssignmentsNodup qb)
+    (hdepth : atomDepth rhs + 2 ≤ fuel)
+    (hitem :
+      Metta.Minimal.evalResult prev
+          (Metta.instantiate (toLeaTTaMatchBindings qb) (toLeaTTaAtom rhs))
+          (toLeaTTaMatchBindings qb) ∈
+        (Metta.Minimal.queryOp
+          (Metta.Minimal.MinEnv.ofAtomsGT (toLeaTTaAtoms space.atoms) gt)
+          { counter := counter, world := Metta.Minimal.World.empty }
+          prev (toLeaTTaAtom src) Metta.Bindings.empty).1)
+    (hσ : Metta.Grounds env (toLeaTTaSubst qb.assignments) Γ)
+    (hL : Metta.WT env Γ (toLeaTTaAtom lhs) T)
+    (hR : Metta.WT env Γ (toLeaTTaAtom rhs) T) :
+    ∃ emitted m,
+      Metta.Minimal.evalResult prev emitted m ∈
+        (Metta.Minimal.queryOp
+          (Metta.Minimal.MinEnv.ofAtomsGT (toLeaTTaAtoms space.atoms) gt)
+          { counter := counter, world := Metta.Minimal.World.empty }
+          prev (toLeaTTaAtom src) Metta.Bindings.empty).1 ∧
+      Metta.AlphaEq emitted (toLeaTTaAtom (qb.apply rhs fuel)) ∧
+      Metta.WT env [] emitted T := by
+  exact
+    typed_visible_successor_of_instantiated_item
+      hno hkeys hdepth hitem hσ hL hR
 
 /-- Typed semantic package for the executable `equation_match` seam on the
 instantiated-item surface. When the translated instantiated RHS item is already
@@ -3885,8 +4352,8 @@ theorem equation_match_typed_queryOp_visible_successor_of_instantiated_item
     (h_not_special : ¬ SpecialFormHead (.expression es))
     (h_not_grounded : HeadNotExecutable d (.expression es))
     (hquery : (rhs, qb) ∈ queryEquations space (.expression es) fuel)
-    (h_no_loop : qb.hasLoop = false)
     (hno : NoVarAssignmentValues qb)
+    (hkeys : AssignmentsNodup qb)
     (hdepth : atomDepth rhs + 2 ≤ fuel)
     (hitem :
       Metta.Minimal.evalResult prev
@@ -3908,12 +4375,13 @@ theorem equation_match_typed_queryOp_visible_successor_of_instantiated_item
           prev (toLeaTTaAtom (.expression es)) Metta.Bindings.empty).1 ∧
       Metta.AlphaEq emitted (toLeaTTaAtom (qb.apply rhs fuel)) ∧
       Metta.WT env [] emitted T := by
-  refine ⟨HESmallStep.equation_match h_not_special h_not_grounded hquery h_no_loop, ?_⟩
+  refine ⟨HESmallStep.equation_match h_not_special h_not_grounded hquery
+    (NoVarAssignmentValues.hasLoop_false hno), ?_⟩
   exact
     queryOp_contains_typed_equation_match_visible_successor_of_instantiated_item
       (space := space) (src := .expression es) (lhs := lhs) (rhs := rhs)
       (qb := qb) (fuel := fuel) (gt := gt) (env := env) (Γ := Γ) (T := T)
-      prev counter hquery hno hdepth hitem hσ hL hR
+      prev counter hquery hno hkeys hdepth hitem hσ hL hR
 
 /-- True P1 simulation boundary for `HESmallStep.equation_match`: after
 transporting the freshened query witness, `queryOp` should emit some concrete
@@ -3931,7 +4399,7 @@ def EquationMatchVisibleItemTransport
   ∀ {idx lhs rawRhs k}
     (_hk : Metta.Minimal.headKey (toLeaTTaAtom src) = some k)
     (_hzip : (Atom.expression [Atom.symbol "=", lhs, rawRhs], idx) ∈ space.atoms.zipIdx)
-    (_hmatch : simpleMatch (freshenEquation idx lhs rawRhs fuel).1 src Bindings.empty fuel = some qb),
+    (_hmatch : FaithfulQueryWitness src (freshenEquation idx lhs rawRhs fuel).1 qb fuel),
     ∃ pre post emitted m,
       Metta.Minimal.candidatesW
           (Metta.Minimal.MinEnv.ofAtomsGT (toLeaTTaAtoms space.atoms) gt)
@@ -4039,6 +4507,38 @@ theorem equation_match_queryOp_visible_successor_package_of_transport
       (space := space) (d := d) (fuel := fuel) (es := es) (rhs := rhs)
       (qb := qb) (gt := gt) (k := k) prev counter
       h_not_special h_not_grounded hk h_query h_no_loop htransport
+
+/-- No-var package at the same semantic frontier: once the visible transport is
+available and the HE witness carries no variable-valued assignments, the
+loop-freedom premise for `HESmallStep.equation_match` is derivable rather than
+assumed. This is the honest package theorem the repaired restricted bridge
+should target. -/
+theorem equation_match_queryOp_visible_successor_package_of_transport_noVar
+    {space : Space} {d : GroundedDispatch} {fuel : Nat}
+    {es : List Atom} {rhs : Atom} {qb : Bindings}
+    {gt : Metta.GroundingTable} {k : String}
+    (prev : Metta.Minimal.Stack) (counter : Nat)
+    (h_not_special : ¬ SpecialFormHead (.expression es))
+    (h_not_grounded : HeadNotExecutable d (.expression es))
+    (hk : Metta.Minimal.headKey (toLeaTTaAtom (.expression es)) = some k)
+    (h_query : (rhs, qb) ∈ queryEquations space (.expression es) fuel)
+    (hno : NoVarAssignmentValues qb)
+    (htransport : EquationMatchVisibleItemTransport
+      space (.expression es) rhs qb fuel gt prev counter) :
+    HESmallStep space d fuel (.expression es) (qb.apply rhs fuel) ∧
+    ∃ emitted m,
+      Metta.Minimal.evalResult prev emitted m ∈
+        (Metta.Minimal.queryOp
+          (Metta.Minimal.MinEnv.ofAtomsGT (toLeaTTaAtoms space.atoms) gt)
+          { counter := counter, world := Metta.Minimal.World.empty }
+          prev (toLeaTTaAtom (.expression es)) Metta.Bindings.empty).1 ∧
+      Metta.AlphaEq emitted (toLeaTTaAtom (qb.apply rhs fuel)) := by
+  exact
+    equation_match_queryOp_visible_successor_package_of_transport
+      (space := space) (d := d) (fuel := fuel) (es := es) (rhs := rhs)
+      (qb := qb) (gt := gt) (k := k) prev counter
+      h_not_special h_not_grounded hk h_query
+      (NoVarAssignmentValues.hasLoop_false hno) htransport
 
 /-!
 The previous theorem closes the final MOPS membership step once an exact raw
@@ -4187,9 +4687,16 @@ theorem not_QueryOpWitnessTransport_freshRhsBoundary_counter5
         freshRhsBoundarySpace.atoms.zipIdx := by
     simp [freshRhsBoundarySpace, Space.ofList]
   have hmatch :
-      simpleMatch (freshenEquation 0 (.expression [.symbol "q"]) (.var "z") 10).1
-        (.expression [.symbol "q"]) Bindings.empty 10 = some Bindings.empty := by
-    rfl
+      FaithfulQueryWitness (.expression [.symbol "q"])
+        (freshenEquation 0 (.expression [.symbol "q"]) (.var "z") 10).1
+        Bindings.empty 10 := by
+    unfold FaithfulQueryWitness
+    refine ⟨Bindings.empty, ?_⟩
+    constructor
+    · decide
+    constructor
+    · simp [mergeBindings, Bindings.empty]
+    · rfl
   obtain ⟨pre, post, hsplit, hitem⟩ := htransport hk hzip hmatch
   have hsingle :
       Metta.Minimal.candidatesW
@@ -4444,8 +4951,12 @@ private def chainResolveBoundarySpace : Space :=
         .var "x"]]
 
 private def chainResolveBoundaryQueryBindings : Bindings :=
-  { assignments := [("x#0", .var "y#1"), ("y#1", .symbol "a")]
-  , equalities := [] }
+  { assignments := [("y#1", .symbol "a")]
+  , equalities := [("y#1", "x#0")] }
+
+private def chainResolveBoundaryVisibleQueryBindings : Bindings :=
+  { assignments := [("y#2", .symbol "a")]
+  , equalities := [("y#1", "x#0")] }
 
 private theorem queryEquations_chainResolveBoundary :
     queryEquations chainResolveBoundarySpace
@@ -4453,17 +4964,41 @@ private theorem queryEquations_chainResolveBoundary :
       [(.var "x#0", chainResolveBoundaryQueryBindings)] := by
   rfl
 
+/-- The visible-avoid query surface repairs the generated-name collision in the
+boundary example: the freshened rule variable corresponding to the raw `y`
+parameter is renamed to `y#2`, avoiding the query's already-visible `y#1`.
+After G3's faithful matcher migration, the `x`/`y#1` relationship is an
+equality, not the old oriented assignment chain. -/
+private theorem queryEquationsAgainstVisible_chainResolveBoundary :
+    queryEquationsAgainstVisible chainResolveBoundarySpace
+        (.expression [.symbol "f", .var "y#1", .symbol "a"]) 10 =
+      [(.var "x#0", chainResolveBoundaryVisibleQueryBindings)] := by
+  rfl
+
+/-- On the repaired visible-avoid query surface, the chain boundary no longer
+reuses the query-visible name `y#1` for the freshened rule parameter `y`; the
+freshened binding key is `y#2` instead. The equality relation `y#1 = x#0`
+remains explicit, which is the G3b equality-threading seam. -/
+theorem chainResolveBoundary_queryEquationsAgainstVisible_avoids_query_name :
+    queryEquationsAgainstVisible chainResolveBoundarySpace
+        (.expression [.symbol "f", .var "y#1", .symbol "a"]) 10 =
+      [(.var "x#0", chainResolveBoundaryVisibleQueryBindings)] ∧
+    chainResolveBoundaryVisibleQueryBindings.lookup "y#1" = none ∧
+    chainResolveBoundaryVisibleQueryBindings.lookup "y#2" = some (.symbol "a") ∧
+    ("y#1", "x#0") ∈ chainResolveBoundaryVisibleQueryBindings.equalities := by
+  exact ⟨queryEquationsAgainstVisible_chainResolveBoundary, rfl, rfl, by simp [chainResolveBoundaryVisibleQueryBindings]⟩
+
 private theorem chainResolveBoundary_queryBindings_no_loop :
     chainResolveBoundaryQueryBindings.hasLoop = false := by
   rfl
 
-private theorem chainResolveBoundary_he_successor :
-    chainResolveBoundaryQueryBindings.apply (.var "x#0") 10 = .symbol "a" := by
+private theorem chainResolveBoundary_he_successor_unresolved :
+    chainResolveBoundaryQueryBindings.apply (.var "x#0") 10 = .var "x#0" := by
   rfl
 
 theorem equation_match_chainResolveBoundary_step :
     HESmallStep chainResolveBoundarySpace GroundedDispatch.none 10
-      (.expression [.symbol "f", .var "y#1", .symbol "a"]) (.symbol "a") := by
+      (.expression [.symbol "f", .var "y#1", .symbol "a"]) (.var "x#0") := by
   have hstep :
       HESmallStep chainResolveBoundarySpace GroundedDispatch.none 10
         (.expression [.symbol "f", .var "y#1", .symbol "a"])
@@ -4473,7 +5008,7 @@ theorem equation_match_chainResolveBoundary_step :
     · simp [HeadNotExecutable, GroundedDispatch.none]
     · simp [queryEquations_chainResolveBoundary]
     · exact chainResolveBoundary_queryBindings_no_loop
-  simpa [chainResolveBoundary_he_successor] using hstep
+  simpa [chainResolveBoundary_he_successor_unresolved] using hstep
 
 private def chainResolveBoundaryQueryAtom : Metta.Atom :=
   toLeaTTaAtom (.expression [.symbol "f", .var "y#1", .symbol "a"])
@@ -4498,7 +5033,7 @@ private theorem queryOpItemsOfRule_chainResolveBoundary_counter0 :
         , Metta.Atom.var "x#0") := by
     simp [chainResolveBoundaryQueryRule, toLeaTTaAtom, Metta.Minimal.freshenRule,
       Metta.Atom.vars, Metta.Subst.apply, Metta.Subst.lookup]
-    native_decide
+    decide
   have hmatch :
       Metta.matchAtoms
           (Metta.Atom.expr [Metta.Atom.sym "f", Metta.Atom.var "x#0", Metta.Atom.var "y#0"])
@@ -4592,32 +5127,5 @@ theorem chainResolveBoundary_no_visible_successor_counter0
   | expr xs =>
       unfold Metta.AlphaEq Metta.canonicalizeVars at halpha
       simp [Metta.Atom.vars, Metta.distinctVarsAux, Metta.renameVars] at halpha
-
-theorem not_EquationMatchVisibleItemTransport_chainResolveBoundary_counter0
-    (gt : Metta.GroundingTable) :
-    ¬ EquationMatchVisibleItemTransport
-        chainResolveBoundarySpace
-        (.expression [.symbol "f", .var "y#1", .symbol "a"])
-        (.var "x#0") chainResolveBoundaryQueryBindings 10 gt [] 0 := by
-  intro htransport
-  have hk :
-      Metta.Minimal.headKey chainResolveBoundaryQueryAtom = some "f" := by
-    simp [chainResolveBoundaryQueryAtom, toLeaTTaAtom, Metta.Minimal.headKey]
-  have hzip :
-      (Atom.expression
-        [Atom.symbol "=",
-          .expression [.symbol "f", .var "x", .var "y"], .var "x"], 0) ∈
-        chainResolveBoundarySpace.atoms.zipIdx := by
-    simp [chainResolveBoundarySpace, Space.ofList]
-  have hmatch :
-      simpleMatch
-          (freshenEquation 0 (.expression [.symbol "f", .var "x", .var "y"]) (.var "x") 10).1
-          (.expression [.symbol "f", .var "y#1", .symbol "a"])
-          Bindings.empty 10 =
-        some chainResolveBoundaryQueryBindings := by
-    rfl
-  obtain ⟨pre, post, emitted, m, hsplit, hitem, halpha⟩ := htransport hk hzip hmatch
-  exact chainResolveBoundary_no_visible_successor_counter0 gt
-    ⟨pre, post, emitted, m, hsplit, hitem, halpha⟩
 
 end Mettapedia.Languages.MeTTa.HE.LeaTTaBridge
