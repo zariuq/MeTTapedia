@@ -1254,6 +1254,72 @@ theorem toStrength_of_scaled (s t : ℝ≥0∞) (hs : s ≤ 1) (ht0 : t ≠ 0) (
   rw [h_sum, if_neg ht0]
   exact ENNReal.mul_div_cancel_right ht0 htT
 
+/-- Finite, ordered ENNReal residual strengths read out as the real residual
+conditional used by the PLN deduction formula. -/
+theorem complementStrength_toReal_eq_complementConditionalFromMarginal
+    (pB pC sBC : ℝ≥0∞)
+    (hpB_le_one : pB ≤ 1)
+    (hprod_le : pB * sBC ≤ pC)
+    (hpB_ne_one : pB ≠ 1)
+    (hpC_ne_top : pC ≠ ⊤) :
+    (complementStrength pB pC sBC).toReal =
+      complementConditionalFromMarginal pB.toReal pC.toReal sBC.toReal := by
+  unfold complementStrength complementConditionalFromMarginal
+  rw [if_neg hpB_ne_one]
+  rw [ENNReal.toReal_div]
+  rw [ENNReal.toReal_sub_of_le hprod_le hpC_ne_top]
+  rw [ENNReal.toReal_sub_of_le hpB_le_one ENNReal.one_ne_top]
+  simp [ENNReal.toReal_mul]
+
+/-- Under explicit finiteness, order, and PLN consistency hypotheses, the
+BinaryEvidence deduction-strength expression projects to the classic real
+`simpleDeductionStrengthFormula`.
+
+This theorem is intentionally a `toReal` bridge: exact evidence statements live
+over `BinaryEvidence`; the real-valued PLN formula is recovered only after the
+lossy strength projection and its admissibility side conditions are named. -/
+theorem deductionStrength_toReal_eq_simpleDeductionStrengthFormula
+    (pA : ℝ) (sAB sBC pB pC : ℝ≥0∞)
+    (hsAB_le_one : sAB ≤ 1)
+    (hpB_le_one : pB ≤ 1)
+    (hprod_le : pB * sBC ≤ pC)
+    (hpC_ne_top : pC ≠ ⊤)
+    (hdirect_ne_top : directPathStrength sAB sBC ≠ ⊤)
+    (hindirect_ne_top : indirectPathStrength sAB pB pC sBC ≠ ⊤)
+    (hpB_small : pB.toReal ≤ 0.99)
+    (h_consist :
+      conditionalProbabilityConsistency pA pB.toReal sAB.toReal ∧
+        conditionalProbabilityConsistency pB.toReal pC.toReal sBC.toReal) :
+    (deductionStrength sAB sBC pB pC).toReal =
+      simpleDeductionStrengthFormula pA pB.toReal pC.toReal sAB.toReal sBC.toReal := by
+  have hpB_ne_one : pB ≠ 1 := by
+    intro h
+    have hpB_toReal : pB.toReal = 1 := by simp [h]
+    linarith
+  have hcomp :
+      (complementStrength pB pC sBC).toReal =
+        complementConditionalFromMarginal pB.toReal pC.toReal sBC.toReal :=
+    complementStrength_toReal_eq_complementConditionalFromMarginal
+      pB pC sBC hpB_le_one hprod_le hpB_ne_one hpC_ne_top
+  calc
+    (deductionStrength sAB sBC pB pC).toReal
+        = (directPathStrength sAB sBC).toReal +
+            (indirectPathStrength sAB pB pC sBC).toReal := by
+          unfold deductionStrength
+          exact ENNReal.toReal_add hdirect_ne_top hindirect_ne_top
+    _ = sAB.toReal * sBC.toReal +
+          (1 - sAB.toReal) *
+            complementConditionalFromMarginal pB.toReal pC.toReal sBC.toReal := by
+          unfold directPathStrength indirectPathStrength
+          rw [ENNReal.toReal_mul, ENNReal.toReal_mul, hcomp]
+          rw [ENNReal.toReal_sub_of_le hsAB_le_one ENNReal.one_ne_top]
+          simp
+    _ = simpleDeductionStrengthFormula
+          pA pB.toReal pC.toReal sAB.toReal sBC.toReal := by
+          exact (simpleDeductionStrengthFormula_eq_total_probability_residual
+            pA pB.toReal pC.toReal sAB.toReal sBC.toReal
+            hpB_small h_consist).symm
+
 /-- When converted to strengths, deductionEvidence produces the deduction formula.
 
     This is the key theorem connecting BinaryEvidence-based computation to the

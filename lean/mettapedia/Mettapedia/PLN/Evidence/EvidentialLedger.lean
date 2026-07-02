@@ -10,7 +10,7 @@ import Mettapedia.PLN.Evidence.BinaryEvidence
 A domain-independent framework for multi-source evidence aggregation with
 compositionality, source forgetting, and AdditiveWorldModel integration.
 
-## Architecture (GPT-5.4 Pro / council consensus)
+## Architecture
 
 **Additive WM is the base evidence-composition layer.**
 It is not supposed to encode every aspect of trust, dependence, or governance
@@ -37,7 +37,9 @@ namespace Mettapedia.PLN.Evidence.EvidentialLedger
 
 open Mettapedia.PLN.Evidence
 open Mettapedia.PLN.Evidence.EvidenceClass
+open Mettapedia.PLN.Evidence.EvidenceQuantale
 open Mettapedia.PLN.WorldModel.PLNWorldModelGeneric
+open scoped ENNReal
 
 /-! ## 1. Source items: one per source, vector over all candidates -/
 
@@ -68,6 +70,46 @@ def forget [DecidableEq Source] (s : Source)
     (items : List (SourceItem Source Candidate)) : List (SourceItem Source Candidate) :=
   items.filter (fun item => !decide (item.source = s))
 
+/-- The residual ledger after removing a source.  This names the post-forgetting
+ledger so retraction theorems can state "forget, then aggregate" against an
+explicit source-free object. -/
+def sourceFreeResidual [DecidableEq Source] (s : Source)
+    (items : List (SourceItem Source Candidate)) : List (SourceItem Source Candidate) :=
+  items.filter (fun item => !decide (item.source = s))
+
+@[simp] theorem sourceFreeResidual_eq_forget [DecidableEq Source]
+    (s : Source) (items : List (SourceItem Source Candidate)) :
+    sourceFreeResidual s items = forget s items := rfl
+
+theorem mem_sourceFreeResidual_source_ne [DecidableEq Source]
+    {s : Source} {item : SourceItem Source Candidate}
+    {items : List (SourceItem Source Candidate)}
+    (h : item ∈ sourceFreeResidual s items) :
+    item.source ≠ s := by
+  have h' : item ∈ items ∧ item.source ≠ s := by
+    simpa [sourceFreeResidual] using h
+  exact h'.2
+
+theorem sourceFreeResidual_source_free [DecidableEq Source]
+    (s : Source) (items : List (SourceItem Source Candidate)) :
+    ∀ item ∈ sourceFreeResidual s items, item.source ≠ s := by
+  intro item h
+  exact mem_sourceFreeResidual_source_ne h
+
+theorem forget_cons_source_eq [DecidableEq Source]
+    (s : Source) (item : SourceItem Source Candidate)
+    (items : List (SourceItem Source Candidate))
+    (h : item.source = s) :
+    forget s (item :: items) = forget s items := by
+  simp [forget, h]
+
+theorem forget_cons_source_ne [DecidableEq Source]
+    (s : Source) (item : SourceItem Source Candidate)
+    (items : List (SourceItem Source Candidate))
+    (h : item.source ≠ s) :
+    forget s (item :: items) = item :: forget s items := by
+  simp [forget, h]
+
 /-! ## 4. World-model integration -/
 
 instance : EvidenceType BinEvNat := {}
@@ -97,19 +139,61 @@ private theorem foldl_add_acc (l : List BinEvNat) (init : BinEvNat) :
     rw [ih, ih (init := hd)]
     exact add_assoc init hd _
 
+@[simp] theorem aggregate_nil [BEq Candidate] (c : Candidate) :
+    aggregate ([] : List (SourceItem Source Candidate)) c = 0 := rfl
+
+theorem aggregate_cons [BEq Candidate]
+    (item : SourceItem Source Candidate)
+    (items : List (SourceItem Source Candidate))
+    (c : Candidate) :
+    aggregate (item :: items) c = item.support c + aggregate items c := by
+  simp only [aggregate, List.map_cons, List.foldl_cons, zero_add]
+  exact foldl_add_acc _ _
+
+theorem aggregate_append [BEq Candidate]
+    (l₁ l₂ : List (SourceItem Source Candidate)) (c : Candidate) :
+    aggregate (l₁ ++ l₂) c = aggregate l₁ c + aggregate l₂ c := by
+  simp only [aggregate, List.map_append, List.foldl_append]
+  exact foldl_add_acc _ _
+
 /-- Evidence from two groups of sources combines additively in the state.
     This is the compositionality property that makes WM-PLN non-ad-hoc:
     you can reason about subsets without recomputing from scratch. -/
 theorem toState_append [BEq Candidate] (l₁ l₂ : List (SourceItem Source Candidate)) :
     toState (l₁ ++ l₂) = fun c => toState l₁ c + toState l₂ c := by
-  funext c; simp only [toState, aggregate, List.map_append, List.foldl_append]
-  exact foldl_add_acc _ _
+  funext c
+  simp [toState, aggregate_append]
+
+theorem aggregate_forget_eq_sourceFreeResidual [BEq Candidate]
+    [DecidableEq Source] (s : Source)
+    (items : List (SourceItem Source Candidate)) (c : Candidate) :
+    aggregate (forget s items) c =
+      aggregate (sourceFreeResidual s items) c := rfl
+
+theorem aggregate_forget_cons_source_eq [BEq Candidate]
+    [DecidableEq Source] (s : Source)
+    (item : SourceItem Source Candidate)
+    (items : List (SourceItem Source Candidate))
+    (c : Candidate) (h : item.source = s) :
+    aggregate (forget s (item :: items)) c =
+      aggregate (forget s items) c := by
+  simp [forget_cons_source_eq, h]
+
+theorem aggregate_forget_cons_source_ne [BEq Candidate]
+    [DecidableEq Source] (s : Source)
+    (item : SourceItem Source Candidate)
+    (items : List (SourceItem Source Candidate))
+    (c : Candidate) (h : item.source ≠ s) :
+    aggregate (forget s (item :: items)) c =
+      item.support c + aggregate (forget s items) c := by
+  rw [forget_cons_source_ne s item items h]
+  exact aggregate_cons item (forget s items) c
 
 /-! ## 6. Weighted aggregation (Layer 2 extension)
 
 Reliability-weighted evidence synthesis: each source's contribution is
 scaled by an integer weight before aggregation. Higher weight = more
-trusted source. Uses Nat (not Float) per Codex/council consensus. -/
+trusted source. Uses Nat weights for kernel-checkable scaling. -/
 
 /-- A weighted evidence source: the base SourceItem plus a reliability weight. -/
 structure WeightedSourceItem (Source Candidate : Type*) extends SourceItem Source Candidate where
@@ -183,5 +267,21 @@ theorem DataBackedState.revise_compressed (s₁ s₂ : DataBackedState) :
 noncomputable def BinEvNat.toBinaryEvidence (e : BinEvNat) :
     Mettapedia.PLN.Evidence.EvidenceQuantale.BinaryEvidence :=
   ⟨↑e.pos, ↑e.neg⟩
+
+@[simp] theorem BinEvNat.toBinaryEvidence_zero :
+    BinEvNat.toBinaryEvidence 0 =
+      (0 : Mettapedia.PLN.Evidence.EvidenceQuantale.BinaryEvidence) := by
+  ext <;> simp [BinEvNat.toBinaryEvidence]
+
+@[simp] theorem BinEvNat.toBinaryEvidence_add (e₁ e₂ : BinEvNat) :
+    BinEvNat.toBinaryEvidence (e₁ + e₂) =
+      BinEvNat.toBinaryEvidence e₁ + BinEvNat.toBinaryEvidence e₂ := by
+  ext
+  · change (((e₁.pos + e₂.pos : Nat) : ℝ≥0∞) =
+      (e₁.pos : ℝ≥0∞) + (e₂.pos : ℝ≥0∞))
+    exact Nat.cast_add e₁.pos e₂.pos
+  · change (((e₁.neg + e₂.neg : Nat) : ℝ≥0∞) =
+      (e₁.neg : ℝ≥0∞) + (e₂.neg : ℝ≥0∞))
+    exact Nat.cast_add e₁.neg e₂.neg
 
 end Mettapedia.PLN.Evidence.EvidentialLedger

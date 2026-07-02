@@ -282,39 +282,223 @@ theorem nonempty_iff_extDerivation :
     Nonempty (DerivationTree Const Δ φ) ↔ ExtDerivation Const Δ φ :=
   ⟨fun h => h.elim (fun d => d.erase), nonempty_of_extDerivation⟩
 
-/-- Rule-counting semiring evaluation of a single derivation tree. -/
-def eval {K : Type w} [Semiring K] :
+/-- Per-constructor algebra for grading a derivation tree.  The recursive
+spine is `gradeWith`; payloads supply only the local evidence operation for
+each rule node. -/
+structure GradePayload (Const : Ty Base → Type v) (Q : Type w) where
+  hyp :
     {Γ : Ctx Base} → {Δ : List (Formula Const Γ)} → {φ : Formula Const Γ} →
-      DerivationTree Const Δ φ → K
-  | _, _, _, hyp _ => 1
-  | _, _, _, topI => 1
-  | _, _, _, botE d => 1 + d.eval
-  | _, _, _, andI dφ dψ => 1 + dφ.eval + dψ.eval
-  | _, _, _, andEL d => 1 + d.eval
-  | _, _, _, andER d => 1 + d.eval
-  | _, _, _, orIL d => 1 + d.eval
-  | _, _, _, orIR d => 1 + d.eval
-  | _, _, _, orE dor dφ dψ => 1 + dor.eval + dφ.eval + dψ.eval
-  | _, _, _, impI d => 1 + d.eval
-  | _, _, _, impE dImp dφ => 1 + dImp.eval + dφ.eval
-  | _, _, _, notI d => 1 + d.eval
-  | _, _, _, notE dNot dφ => 1 + dNot.eval + dφ.eval
-  | _, _, _, allI d => 1 + d.eval
-  | _, _, _, allE _ d => 1 + d.eval
-  | _, _, _, exI _ d => 1 + d.eval
-  | _, _, _, exE dEx dψ => 1 + dEx.eval + dψ.eval
-  | _, _, _, eqRefl _ => 1
-  | _, _, _, eqSymm d => 1 + d.eval
-  | _, _, _, eqTrans d₁ d₂ => 1 + d₁.eval + d₂.eval
-  | _, _, _, eqPropI d₁ d₂ => 1 + d₁.eval + d₂.eval
-  | _, _, _, eqPropEL d => 1 + d.eval
-  | _, _, _, eqPropER d => 1 + d.eval
-  | _, _, _, eqApp _ d => 1 + d.eval
-  | _, _, _, eqAppArg _ d => 1 + d.eval
-  | _, _, _, eqLam d => 1 + d.eval
-  | _, _, _, funExt d => 1 + d.eval
-  | _, _, _, beta _ _ => 1
-  | _, _, _, eta _ => 1
+      φ ∈ Δ → Q
+  topI : Q
+  botE :
+    {Γ : Ctx Base} → {Δ : List (Formula Const Γ)} →
+      DerivationTree Const Δ .bot → Q → Q
+  andI :
+    {Γ : Ctx Base} → {Δ : List (Formula Const Γ)} →
+      {φ ψ : Formula Const Γ} →
+      DerivationTree Const Δ φ → DerivationTree Const Δ ψ → Q → Q → Q
+  andEL :
+    {Γ : Ctx Base} → {Δ : List (Formula Const Γ)} →
+      {φ ψ : Formula Const Γ} →
+      DerivationTree Const Δ (.and φ ψ) → Q → Q
+  andER :
+    {Γ : Ctx Base} → {Δ : List (Formula Const Γ)} →
+      {φ ψ : Formula Const Γ} →
+      DerivationTree Const Δ (.and φ ψ) → Q → Q
+  orIL :
+    {Γ : Ctx Base} → {Δ : List (Formula Const Γ)} →
+      {φ : Formula Const Γ} →
+      DerivationTree Const Δ φ → Q → Q
+  orIR :
+    {Γ : Ctx Base} → {Δ : List (Formula Const Γ)} →
+      {ψ : Formula Const Γ} →
+      DerivationTree Const Δ ψ → Q → Q
+  orE :
+    {Γ : Ctx Base} → {Δ : List (Formula Const Γ)} →
+      {φ ψ χ : Formula Const Γ} →
+      DerivationTree Const Δ (.or φ ψ) →
+      DerivationTree Const (φ :: Δ) χ →
+      DerivationTree Const (ψ :: Δ) χ →
+      Q → Q → Q → Q
+  impI :
+    {Γ : Ctx Base} → {Δ : List (Formula Const Γ)} →
+      {φ ψ : Formula Const Γ} →
+      DerivationTree Const (φ :: Δ) ψ → Q → Q
+  impE :
+    {Γ : Ctx Base} → {Δ : List (Formula Const Γ)} →
+      {φ ψ : Formula Const Γ} →
+      DerivationTree Const Δ (.imp φ ψ) →
+      DerivationTree Const Δ φ → Q → Q → Q
+  notI :
+    {Γ : Ctx Base} → {Δ : List (Formula Const Γ)} →
+      {φ : Formula Const Γ} →
+      DerivationTree Const (φ :: Δ) .bot → Q → Q
+  notE :
+    {Γ : Ctx Base} → {Δ : List (Formula Const Γ)} →
+      {φ : Formula Const Γ} →
+      DerivationTree Const Δ (.not φ) →
+      DerivationTree Const Δ φ → Q → Q → Q
+  allI :
+    {Γ : Ctx Base} → {Δ : List (Formula Const Γ)} →
+      {σ : Ty Base} → {φ : Formula Const (σ :: Γ)} →
+      DerivationTree Const (weakenHyps (Base := Base) (σ := σ) Δ) φ → Q → Q
+  allE :
+    {Γ : Ctx Base} → {Δ : List (Formula Const Γ)} →
+      {σ : Ty Base} → {φ : Formula Const (σ :: Γ)} →
+      (t : Term Const Γ σ) →
+      DerivationTree Const Δ (.all φ) → Q → Q
+  exI :
+    {Γ : Ctx Base} → {Δ : List (Formula Const Γ)} → {σ : Ty Base} →
+      {φ : Formula Const Γ} →
+      (t : Term Const Γ σ) →
+      DerivationTree Const Δ φ → Q → Q
+  exE :
+    {Γ : Ctx Base} → {Δ : List (Formula Const Γ)} →
+      {σ : Ty Base} → {φ : Formula Const (σ :: Γ)} →
+      {χ : Formula Const (σ :: Γ)} →
+      DerivationTree Const Δ (.ex φ) →
+      DerivationTree Const (φ :: weakenHyps (Base := Base) (σ := σ) Δ) χ →
+      Q → Q → Q
+  eqRefl :
+    {Γ : Ctx Base} → {τ : Ty Base} → Term Const Γ τ → Q
+  eqSymm :
+    {Γ : Ctx Base} → {Δ : List (Formula Const Γ)} →
+      {τ : Ty Base} → {t u : Term Const Γ τ} →
+      DerivationTree Const Δ (.eq t u) → Q → Q
+  eqTrans :
+    {Γ : Ctx Base} → {Δ : List (Formula Const Γ)} →
+      {τ : Ty Base} → {t u v : Term Const Γ τ} →
+      DerivationTree Const Δ (.eq t u) →
+      DerivationTree Const Δ (.eq u v) → Q → Q → Q
+  eqPropI :
+    {Γ : Ctx Base} → {Δ : List (Formula Const Γ)} →
+      {p q : Formula Const Γ} →
+      DerivationTree Const Δ (.imp p q) →
+      DerivationTree Const Δ (.imp q p) → Q → Q → Q
+  eqPropEL :
+    {Γ : Ctx Base} → {Δ : List (Formula Const Γ)} →
+      {p q : Formula Const Γ} →
+      DerivationTree Const Δ (.eq p q) → Q → Q
+  eqPropER :
+    {Γ : Ctx Base} → {Δ : List (Formula Const Γ)} →
+      {p q : Formula Const Γ} →
+      DerivationTree Const Δ (.eq p q) → Q → Q
+  eqApp :
+    {Γ : Ctx Base} → {Δ : List (Formula Const Γ)} →
+      {σ τ : Ty Base} → {f g : Term Const Γ (σ ⇒ τ)} →
+      Term Const Γ σ → DerivationTree Const Δ (.eq f g) → Q → Q
+  eqAppArg :
+    {Γ : Ctx Base} → {Δ : List (Formula Const Γ)} →
+      {σ τ : Ty Base} → {t u : Term Const Γ σ} →
+      Term Const Γ (σ ⇒ τ) →
+      DerivationTree Const Δ (.eq t u) → Q → Q
+  eqLam :
+    {Γ : Ctx Base} → {Δ : List (Formula Const Γ)} →
+      {σ τ : Ty Base} → {t u : Term Const (σ :: Γ) τ} →
+      DerivationTree Const (weakenHyps (Base := Base) (σ := σ) Δ) (.eq t u) →
+      Q → Q
+  funExt :
+    {Γ : Ctx Base} → {Δ : List (Formula Const Γ)} →
+      {σ τ : Ty Base} → {f g : Term Const Γ (σ ⇒ τ)} →
+      DerivationTree Const Δ
+        (.all (.eq (.app (weaken (Base := Base) (σ := σ) f) (.var .vz))
+                   (.app (weaken (Base := Base) (σ := σ) g) (.var .vz)))) →
+      Q → Q
+  beta :
+    {Γ : Ctx Base} → {σ τ : Ty Base} →
+      Term Const Γ σ → Term Const (σ :: Γ) τ → Q
+  eta :
+    {Γ : Ctx Base} → {σ τ : Ty Base} → Term Const Γ (σ ⇒ τ) → Q
+
+/-- Generic derivation-tree grading fold. -/
+@[simp] def gradeWith {Q : Type w} (payload : GradePayload Const Q) :
+    {Γ : Ctx Base} → {Δ : List (Formula Const Γ)} → {φ : Formula Const Γ} →
+      DerivationTree Const Δ φ → Q
+  | _, _, _, hyp h => payload.hyp h
+  | _, _, _, topI => payload.topI
+  | _, _, _, botE d => payload.botE d (gradeWith payload d)
+  | _, _, _, andI dφ dψ =>
+      payload.andI dφ dψ (gradeWith payload dφ) (gradeWith payload dψ)
+  | _, _, _, andEL d => payload.andEL d (gradeWith payload d)
+  | _, _, _, andER d => payload.andER d (gradeWith payload d)
+  | _, _, _, orIL d => payload.orIL d (gradeWith payload d)
+  | _, _, _, orIR d => payload.orIR d (gradeWith payload d)
+  | _, _, _, orE dor dφ dψ =>
+      payload.orE dor dφ dψ (gradeWith payload dor)
+        (gradeWith payload dφ) (gradeWith payload dψ)
+  | _, _, _, impI d => payload.impI d (gradeWith payload d)
+  | _, _, _, impE dImp dφ =>
+      payload.impE dImp dφ (gradeWith payload dImp) (gradeWith payload dφ)
+  | _, _, _, notI d => payload.notI d (gradeWith payload d)
+  | _, _, _, notE dNot dφ =>
+      payload.notE dNot dφ (gradeWith payload dNot) (gradeWith payload dφ)
+  | _, _, _, allI d => payload.allI d (gradeWith payload d)
+  | _, _, _, allE t d => payload.allE t d (gradeWith payload d)
+  | _, _, _, exI t d => payload.exI t d (gradeWith payload d)
+  | _, _, _, exE dEx dψ =>
+      payload.exE dEx dψ (gradeWith payload dEx) (gradeWith payload dψ)
+  | _, _, _, eqRefl t => payload.eqRefl t
+  | _, _, _, eqSymm d => payload.eqSymm d (gradeWith payload d)
+  | _, _, _, eqTrans d1 d2 =>
+      payload.eqTrans d1 d2 (gradeWith payload d1) (gradeWith payload d2)
+  | _, _, _, eqPropI d1 d2 =>
+      payload.eqPropI d1 d2 (gradeWith payload d1) (gradeWith payload d2)
+  | _, _, _, eqPropEL d => payload.eqPropEL d (gradeWith payload d)
+  | _, _, _, eqPropER d => payload.eqPropER d (gradeWith payload d)
+  | _, _, _, eqApp t d => payload.eqApp t d (gradeWith payload d)
+  | _, _, _, eqAppArg f d => payload.eqAppArg f d (gradeWith payload d)
+  | _, _, _, eqLam d => payload.eqLam d (gradeWith payload d)
+  | _, _, _, funExt d => payload.funExt d (gradeWith payload d)
+  | _, _, _, beta t u => payload.beta t u
+  | _, _, _, eta f => payload.eta f
+
+@[simp] theorem gradeWith_impE {Q : Type w} (payload : GradePayload Const Q)
+    (dImp : DerivationTree Const Δ (.imp φ ψ))
+    (dφ : DerivationTree Const Δ φ) :
+    gradeWith payload (impE dImp dφ) =
+      payload.impE dImp dφ (gradeWith payload dImp) (gradeWith payload dφ) := rfl
+
+@[simp] theorem gradeWith_allE {Q : Type w} (payload : GradePayload Const Q)
+    {σ : Ty Base} {θ : Formula Const (σ :: Γ)}
+    (t : Term Const Γ σ) (d : DerivationTree Const Δ (.all θ)) :
+    gradeWith payload (allE t d) =
+      payload.allE t d (gradeWith payload d) := rfl
+
+/-- Semiring payload that recovers the original rule-counting evaluator. -/
+def evalPayload {K : Type w} [Semiring K] : GradePayload Const K where
+  hyp _ := 1
+  topI := 1
+  botE _ x := 1 + x
+  andI _ _ x y := 1 + x + y
+  andEL _ x := 1 + x
+  andER _ x := 1 + x
+  orIL _ x := 1 + x
+  orIR _ x := 1 + x
+  orE _ _ _ x y z := 1 + x + y + z
+  impI _ x := 1 + x
+  impE _ _ x y := 1 + x + y
+  notI _ x := 1 + x
+  notE _ _ x y := 1 + x + y
+  allI _ x := 1 + x
+  allE _ _ x := 1 + x
+  exI _ _ x := 1 + x
+  exE _ _ x y := 1 + x + y
+  eqRefl _ := 1
+  eqSymm _ x := 1 + x
+  eqTrans _ _ x y := 1 + x + y
+  eqPropI _ _ x y := 1 + x + y
+  eqPropEL _ x := 1 + x
+  eqPropER _ x := 1 + x
+  eqApp _ _ x := 1 + x
+  eqAppArg _ _ x := 1 + x
+  eqLam _ x := 1 + x
+  funExt _ x := 1 + x
+  beta _ _ := 1
+  eta _ := 1
+
+/-- Rule-counting semiring evaluation of a single derivation tree. -/
+def eval {K : Type w} [Semiring K] (d : DerivationTree Const Δ φ) : K :=
+  gradeWith (evalPayload (Const := Const) (K := K)) d
 
 /-- Boolean evaluation of a tree in the provenance Boolean semiring. -/
 def evalBool (d : DerivationTree Const Δ φ) : Bool :=
@@ -326,16 +510,26 @@ def evalNat (d : DerivationTree Const Δ φ) : Nat :=
 
 @[simp] theorem evalBool_eq_true (d : DerivationTree Const Δ φ) :
     d.evalBool = true := by
-  induction d <;> simp only [evalBool, eval] at * <;> aesop
+  induction d <;> simp_all [evalBool, eval, gradeWith, evalPayload] <;> aesop
 
 @[simp] theorem evalNat_topI :
     (topI (Const := Const) (Γ := Γ) (Δ := Δ)).evalNat = 1 := by
-  simp [evalNat, eval]
+  simp [evalNat, eval, gradeWith, evalPayload]
 
 @[simp] theorem evalNat_andI
     (dφ : DerivationTree Const Δ φ) (dψ : DerivationTree Const Δ ψ) :
     (andI dφ dψ).evalNat = 1 + dφ.evalNat + dψ.evalNat := by
-  simp [evalNat, eval]
+  simp [evalNat, eval, gradeWith, evalPayload]
+
+@[simp] theorem evalNat_impE
+    (dImp : DerivationTree Const Δ (.imp φ ψ))
+    (dφ : DerivationTree Const Δ φ) :
+    (impE dImp dφ).evalNat = 1 + dImp.evalNat + dφ.evalNat := by
+  simp [evalNat, eval, gradeWith, evalPayload]
+
+@[simp] theorem evalNat_pos (d : DerivationTree Const Δ φ) :
+    0 < d.evalNat := by
+  induction d <;> simp [evalNat, eval, evalPayload]
 
 /-- A concrete positive counting example: deriving `top ∧ top` uses three
 rule tokens in this local tree evaluator. -/
@@ -347,7 +541,7 @@ def topAndTopTree (Δ : List (Formula Const Γ)) :
 @[simp] theorem evalNat_topAndTopTree
     (Δ : List (Formula Const Γ)) :
     (topAndTopTree (Const := Const) Δ).evalNat = 3 := by
-  simp [topAndTopTree, evalNat, eval]
+  simp [topAndTopTree, evalNat, eval, gradeWith, evalPayload]
 
 /-- A second concrete tree for `top ∧ top`, useful as a positive
 multi-derivation example. -/
@@ -359,7 +553,7 @@ def topAndTopTreeAlt (Δ : List (Formula Const Γ)) :
 @[simp] theorem evalNat_topAndTopTreeAlt
     (Δ : List (Formula Const Γ)) :
     (topAndTopTreeAlt (Const := Const) Δ).evalNat = 6 := by
-  simp [topAndTopTreeAlt, topAndTopTree, evalNat, eval]
+  simp [topAndTopTreeAlt, topAndTopTree, evalNat, eval, gradeWith, evalPayload]
 
 theorem topAndTopTree_ne_topAndTopTreeAlt
     (Δ : List (Formula Const Γ)) :
@@ -419,9 +613,9 @@ def sourceSupport :
   | _, _, _, beta _ _ => {SourceToken.axiom AxiomLeaf.beta}
   | _, _, _, eta _ => {SourceToken.axiom AxiomLeaf.eta}
 
-/-- Stage-2 independence predicate.  The actual ledger-backed discharge is a
-WM-3b task; at this stage the predicate is the honest set-disjointness of
-leaf-source ledgers. -/
+/-- Set-level independence predicate over the leaf-source support readout.
+The ledger-backed WM-3b bridge is proved in the BinaryEvidence readout layer,
+where concrete `EvidentialLedger` items are available. -/
 def SourceDisjoint (d e : DerivationTree Const Δ φ) : Prop :=
   Disjoint d.sourceSupport e.sourceSupport
 
@@ -583,19 +777,22 @@ def mono :
     (hsub : ∀ {χ : Formula Const Γ}, χ ∈ Δ → χ ∈ Δ')
     (d : DerivationTree Const Δ φ) :
     (mono hsub d).eval (K := K) = d.eval (K := K) := by
-  induction d <;> simp_all [mono, eval]
+  induction d <;> simp_all [mono, eval, gradeWith, evalPayload]
   case allI d ih =>
     have h := ih (weakenHyps_mono hsub)
-    simpa [mono, eval] using congrArg (fun x => (1 : K) + x) h
+    simpa [mono, eval, gradeWith, evalPayload] using
+      congrArg (fun x => (1 : K) + x) h
   case exE φEx ψ dEx dψ ihEx ihψ =>
+    have hEx := ihEx hsub
     have hψ := ihψ (Δ' := φEx :: weakenHyps (Base := Base) Δ')
       (by exact List.mem_cons_self) (by
       intro a ha
       exact List.mem_cons_of_mem φEx (weakenHyps_mono hsub ha))
-    rw [hψ]
+    simp [hψ]
   case eqLam d ih =>
     have h := ih (weakenHyps_mono hsub)
-    simpa [mono, eval] using congrArg (fun x => (1 : K) + x) h
+    simpa [mono, eval, gradeWith, evalPayload] using
+      congrArg (fun x => (1 : K) + x) h
 
 @[simp] theorem evalNat_mono
     {Δ Δ' : List (Formula Const Γ)}
@@ -649,9 +846,7 @@ def composeImp
     (composeImp (Const := Const) dImp dφ).evalNat =
       1 + dImp.evalNat + dφ.evalNat := by
   unfold composeImp
-  change 1 + (appendLeft (Const := Const) (Δ₂ := Δφ) dImp).evalNat +
-      (appendRight (Const := Const) (Δ₁ := ΔImp) dφ).evalNat =
-    1 + dImp.evalNat + dφ.evalNat
+  rw [evalNat_impE]
   simp
 
 end DerivationTree

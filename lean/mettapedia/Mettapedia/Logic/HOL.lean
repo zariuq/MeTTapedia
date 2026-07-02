@@ -24,10 +24,13 @@ import Mettapedia.Logic.HOL.Semantics.KripkeHenkin
 import Mettapedia.Logic.HOL.Semantics.KripkeHenkinGeneral
 import Mettapedia.Logic.HOL.Semantics.KripkeHenkinCanonical
 import Mettapedia.Logic.HOL.Semantics.KripkeHenkinCountermodel
+import Mettapedia.Logic.HOL.Semantics.ForkedFrameCountermodel
 import Mettapedia.Logic.HOL.Semantics.KripkeHenkinGeneral
 import Mettapedia.Logic.HOL.Semantics.KripkeHenkinCanonicalGeneral
 import Mettapedia.Logic.HOL.Semantics.HeytingGeneral
 import Mettapedia.Logic.HOL.Semantics.HeytingCompleteness
+import Mettapedia.Logic.HOL.Semantics.GoedelDummett
+import Mettapedia.Logic.HOL.Semantics.GoedelDummettCountermodel
 import Mettapedia.Logic.HOL.Semantics.KripkeHenkinBridge
 import Mettapedia.Logic.HOL.TermModel.Domain
 import Mettapedia.Logic.HOL.TermModel.Truth

@@ -2041,6 +2041,22 @@ theorem mixedEvidence_eq_iff_extensionalEvidence_eq_of_predicateVocabularyWeight
         hAssocLeftWeight hAssocRightWeight hPatLeftWeight hPatRightWeight
         hAssocScore hPatScore hExt hLeft hRight
 
+/-- Positive bound certificate for the concrete ASSOC/PAT sum combiner: if the
+extensional, ASSOC, and PAT channels are each monotone, then their BinaryEvidence
+sum is monotone. -/
+theorem assocPatSumCombiner_mono
+    {ext₁ ext₂ assoc₁ assoc₂ pat₁ pat₂ :
+      Mettapedia.PLN.Evidence.EvidenceQuantale.BinaryEvidence}
+    (hExt : ext₁ ≤ ext₂)
+    (hAssoc : assoc₁ ≤ assoc₂)
+    (hPat : pat₁ ≤ pat₂) :
+    ext₁ + assoc₁ + pat₁ ≤ ext₂ + assoc₂ + pat₂ := by
+  constructor
+  · simp [Mettapedia.PLN.Evidence.EvidenceQuantale.BinaryEvidence.hplus_def]
+    exact add_le_add (add_le_add hExt.1 hAssoc.1) hPat.1
+  · simp [Mettapedia.PLN.Evidence.EvidenceQuantale.BinaryEvidence.hplus_def]
+    exact add_le_add (add_le_add hExt.2 hAssoc.2) hPat.2
+
 /-- If a mixed combiner ignores its extensional coordinate, mixed equality can
 hold while the extensional evidence differs.
 

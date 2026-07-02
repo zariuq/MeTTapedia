@@ -9106,6 +9106,546 @@ theorem nf_eq_fragment_nameFree_to_fragment
   | lam hDomain hBody ihDomain ihBody =>
       exact NfEqFragmentTerm.lam ihDomain ihBody
 
+/-- Stage-3 raw terms whose current `nf` behavior is covered by the existing
+equality fragment plus the one banked witness-`Def` delta bridge. -/
+inductive CicStage3ResolvedNfTerm : DIndGArtifactTerm → Prop
+  | var (k : Nat) : CicStage3ResolvedNfTerm (.var k)
+  | srt (sort : DIndGArtifactSort) : CicStage3ResolvedNfTerm (.srt sort)
+  | con {name : DeclName}
+      (hName : cicStage3RawNameWithPropToType0WitnessBounded name) :
+      CicStage3ResolvedNfTerm (.con name)
+  | witnessDefn :
+      CicStage3ResolvedNfTerm (.defn cicStage3PropToType0WitnessName)
+  | bad (reason : String) : CicStage3ResolvedNfTerm (.bad reason)
+  | pi {rawDomain rawBody : DIndGArtifactTerm}
+      (hDomain : CicStage3ResolvedNfTerm rawDomain)
+      (hBody : CicStage3ResolvedNfTerm rawBody) :
+      CicStage3ResolvedNfTerm (.pi rawDomain rawBody)
+  | lam {rawDomain rawBody : DIndGArtifactTerm}
+      (hDomain : CicStage3ResolvedNfTerm rawDomain)
+      (hBody : CicStage3ResolvedNfTerm rawBody) :
+      CicStage3ResolvedNfTerm (.lam rawDomain rawBody)
+
+/-- Honest frontier left after the bounded Stage-3 alphabet split.
+
+These are exactly the shapes not covered by the current equality-fragment nf
+proofs or the concrete witness-`Def` delta bridge: non-witness `Def`, `App`,
+`IndG`, and binder contexts containing such a frontier subterm. -/
+inductive CicStage3NfSoundnessFrontier : DIndGArtifactTerm → Prop
+  | defn {name : DeclName}
+      (hName : cicStage3RawNameWithPropToType0WitnessBounded name)
+      (hNotWitness : name ≠ cicStage3PropToType0WitnessName) :
+      CicStage3NfSoundnessFrontier (.defn name)
+  | app {fn arg : DIndGArtifactTerm}
+      (hFn : CicStage3RawTermTranslationVisibleNamesBounded fn)
+      (hArg : CicStage3RawTermTranslationVisibleNamesBounded arg) :
+      CicStage3NfSoundnessFrontier (.app fn arg)
+  | indG
+      {familyName : DeclName}
+      {params : List DIndGArtifactTerm}
+      {motive : DIndGArtifactTerm}
+      {cases : List (DeclName × DIndGArtifactTerm)}
+      {indices : List DIndGArtifactTerm}
+      {scrutinee : DIndGArtifactTerm}
+      (hFamily : cicStage3RawNameWithPropToType0WitnessBounded familyName) :
+      CicStage3NfSoundnessFrontier
+        (.indG familyName params motive cases indices scrutinee)
+  | piDomain {rawDomain rawBody : DIndGArtifactTerm}
+      (hDomain : CicStage3NfSoundnessFrontier rawDomain)
+      (hBody : CicStage3RawTermTranslationVisibleNamesBounded rawBody) :
+      CicStage3NfSoundnessFrontier (.pi rawDomain rawBody)
+  | piBody {rawDomain rawBody : DIndGArtifactTerm}
+      (hDomain : CicStage3ResolvedNfTerm rawDomain)
+      (hBody : CicStage3NfSoundnessFrontier rawBody) :
+      CicStage3NfSoundnessFrontier (.pi rawDomain rawBody)
+  | lamDomain {rawDomain rawBody : DIndGArtifactTerm}
+      (hDomain : CicStage3NfSoundnessFrontier rawDomain)
+      (hBody : CicStage3RawTermTranslationVisibleNamesBounded rawBody) :
+      CicStage3NfSoundnessFrontier (.lam rawDomain rawBody)
+  | lamBody {rawDomain rawBody : DIndGArtifactTerm}
+      (hDomain : CicStage3ResolvedNfTerm rawDomain)
+      (hBody : CicStage3NfSoundnessFrontier rawBody) :
+      CicStage3NfSoundnessFrontier (.lam rawDomain rawBody)
+
+theorem cicStage3_visible_bounded_resolved_or_frontier
+    {raw : DIndGArtifactTerm}
+    (h : CicStage3RawTermTranslationVisibleNamesBounded raw) :
+    CicStage3ResolvedNfTerm raw ∨ CicStage3NfSoundnessFrontier raw := by
+  induction h with
+  | var index =>
+      exact Or.inl (CicStage3ResolvedNfTerm.var index)
+  | srt sort =>
+      exact Or.inl (CicStage3ResolvedNfTerm.srt sort)
+  | con hName =>
+      exact Or.inl (CicStage3ResolvedNfTerm.con hName)
+  | defn hName =>
+      rename_i name
+      by_cases hWitness : name = cicStage3PropToType0WitnessName
+      · subst name
+        exact Or.inl CicStage3ResolvedNfTerm.witnessDefn
+      · exact Or.inr (CicStage3NfSoundnessFrontier.defn hName hWitness)
+  | pi hDomain hBody ihDomain ihBody =>
+      rcases ihDomain with hDomainResolved | hDomainFrontier
+      · rcases ihBody with hBodyResolved | hBodyFrontier
+        · exact Or.inl
+            (CicStage3ResolvedNfTerm.pi hDomainResolved hBodyResolved)
+        · exact Or.inr
+            (CicStage3NfSoundnessFrontier.piBody
+              hDomainResolved hBodyFrontier)
+      · exact Or.inr
+          (CicStage3NfSoundnessFrontier.piDomain
+            hDomainFrontier hBody)
+  | lam hDomain hBody ihDomain ihBody =>
+      rcases ihDomain with hDomainResolved | hDomainFrontier
+      · rcases ihBody with hBodyResolved | hBodyFrontier
+        · exact Or.inl
+            (CicStage3ResolvedNfTerm.lam hDomainResolved hBodyResolved)
+        · exact Or.inr
+            (CicStage3NfSoundnessFrontier.lamBody
+              hDomainResolved hBodyFrontier)
+      · exact Or.inr
+          (CicStage3NfSoundnessFrontier.lamDomain
+            hDomainFrontier hBody)
+  | app hFn hArg _ _ =>
+      exact Or.inr (CicStage3NfSoundnessFrontier.app hFn hArg)
+  | indG hFamily =>
+      exact Or.inr (CicStage3NfSoundnessFrontier.indG hFamily)
+  | bad reason =>
+      exact Or.inl (CicStage3ResolvedNfTerm.bad reason)
+
+theorem cicStage3_translated_resolved_or_frontier
+    {n : Nat} {raw : DIndGArtifactTerm} {term : PureTm n}
+    (h :
+      DIndGArtifactTermTranslates
+        cicStage3RawNameTranslatesWithPropToType0Witness n raw term) :
+    CicStage3ResolvedNfTerm raw ∨ CicStage3NfSoundnessFrontier raw := by
+  exact
+    cicStage3_visible_bounded_resolved_or_frontier
+      (cicStage3RawTermTranslatesWithPropToType0Witness_visible_names_bounded h)
+
+theorem cicStage3_resolved_nf_term_not_frontier
+    {raw : DIndGArtifactTerm}
+    (hResolved : CicStage3ResolvedNfTerm raw) :
+    ¬ CicStage3NfSoundnessFrontier raw := by
+  induction hResolved with
+  | var k =>
+      intro hFrontier
+      cases hFrontier
+  | srt sort =>
+      intro hFrontier
+      cases hFrontier
+  | con hName =>
+      intro hFrontier
+      cases hFrontier
+  | witnessDefn =>
+      intro hFrontier
+      cases hFrontier with
+      | defn hName hNotWitness =>
+          exact hNotWitness rfl
+  | bad reason =>
+      intro hFrontier
+      cases hFrontier
+  | pi hDomain hBody ihDomain ihBody =>
+      intro hFrontier
+      cases hFrontier with
+      | piDomain hDomainFrontier _ =>
+          exact ihDomain hDomainFrontier
+      | piBody _ hBodyFrontier =>
+          exact ihBody hBodyFrontier
+  | lam hDomain hBody ihDomain ihBody =>
+      intro hFrontier
+      cases hFrontier with
+      | lamDomain hDomainFrontier _ =>
+          exact ihDomain hDomainFrontier
+      | lamBody _ hBodyFrontier =>
+          exact ihBody hBodyFrontier
+
+theorem cicStage3_translated_not_frontier_iff_resolved
+    {n : Nat} {raw : DIndGArtifactTerm} {term : PureTm n}
+    (h :
+      DIndGArtifactTermTranslates
+        cicStage3RawNameTranslatesWithPropToType0Witness n raw term) :
+    ¬ CicStage3NfSoundnessFrontier raw ↔ CicStage3ResolvedNfTerm raw := by
+  constructor
+  · intro hNotFrontier
+    rcases cicStage3_translated_resolved_or_frontier h with
+      hResolved | hFrontier
+    · exact hResolved
+    · exact False.elim (hNotFrontier hFrontier)
+  · intro hResolved hFrontier
+    exact cicStage3_resolved_nf_term_not_frontier hResolved hFrontier
+
+theorem cicStage3RawIdentityWitness_resolved_nf_term :
+    CicStage3ResolvedNfTerm cicStage3RawIdentityWitness := by
+  simpa [cicStage3RawIdentityWitness] using
+    (CicStage3ResolvedNfTerm.lam
+      (CicStage3ResolvedNfTerm.srt .type)
+      (CicStage3ResolvedNfTerm.lam
+        (CicStage3ResolvedNfTerm.srt .type)
+        (CicStage3ResolvedNfTerm.var 0)))
+
+theorem cicStage3RawPropToType0WitnessType_nf_frontier :
+    CicStage3NfSoundnessFrontier cicStage3RawPropToType0WitnessType := by
+  have hBounded :
+      CicStage3RawTermTranslationVisibleNamesBounded
+        cicStage3RawPropToType0WitnessType :=
+    cicStage3RawTermTranslatesWithPropToType0Witness_visible_names_bounded
+      cicStage3RawPropToType0WitnessType_translates
+  unfold cicStage3RawPropToType0WitnessType
+  exact CicStage3NfSoundnessFrontier.piDomain
+    (CicStage3NfSoundnessFrontier.app
+      (CicStage3RawTermTranslationVisibleNamesBounded.con
+        (by
+          exact Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inl rfl))))))
+      )
+      (CicStage3RawTermTranslationVisibleNamesBounded.con
+        (by
+          exact Or.inr (Or.inr (Or.inr (Or.inr (Or.inl rfl)))))
+      ))
+    (by
+      simpa [cicStage3RawPropToType0WitnessType] using
+        (by
+          cases hBounded with
+          | pi _ hBody => exact hBody))
+
+theorem cicStage3PropToType0Witness_defn_decl_reduces_any_depth
+    {n : Nat} :
+    RedStarDecl
+      (envOfSpecs cicStage3RawArtifactSigWithPropToType0Witness.translatedSpecs)
+      ((.const cicStage3PropToType0WitnessName : PureTm n))
+      (Mettapedia.Languages.MeTTa.PureKernel.DeclarationEnv.liftClosed
+        (n := n) cicStage3IdentityWitness) := by
+  have hDelta :
+      RedDecl cicStage3PropToType0WitnessDeclEnv
+        ((.const cicStage3PropToType0WitnessName : PureTm n))
+        (Mettapedia.Languages.MeTTa.PureKernel.DeclarationEnv.liftClosed
+          (n := n) cicStage3IdentityWitness) :=
+    RedDecl.deltaConst valueOf_cicStage3PropToType0Witness
+  simpa [cicStage3RawArtifactSigWithPropToType0Witness,
+    cicStage3PropToType0WitnessDeclEnv] using
+    (redDecl_to_star hDelta)
+
+inductive CicStage3ResolvedNfDeclTarget :
+    (n : Nat) → DIndGArtifactTerm → PureTm n → Prop where
+  | var {n index : Nat} (hIndex : index < n) :
+      CicStage3ResolvedNfDeclTarget n (.var index) (.var ⟨index, hIndex⟩)
+  | srt_type {n : Nat} :
+      CicStage3ResolvedNfDeclTarget n (.srt .type) .u0
+  | srt_kind {n : Nat} :
+      CicStage3ResolvedNfDeclTarget n (.srt .kind) .u1
+  | con {n : Nat} {raw lean : DeclName}
+      (hName : cicStage3RawNameTranslatesWithPropToType0Witness raw lean) :
+      CicStage3ResolvedNfDeclTarget n (.con raw) (.const lean)
+  | witnessDefn {n : Nat} :
+      CicStage3ResolvedNfDeclTarget n
+        (.defn cicStage3PropToType0WitnessName)
+        (Mettapedia.Languages.MeTTa.PureKernel.DeclarationEnv.liftClosed
+          (n := n) cicStage3IdentityWitness)
+  | pi {n : Nat}
+      {rawDomain rawBody : DIndGArtifactTerm}
+      {domainTarget : PureTm n} {bodyTarget : PureTm (n + 1)}
+      (hDomain :
+        CicStage3ResolvedNfDeclTarget n rawDomain domainTarget)
+      (hBody :
+        CicStage3ResolvedNfDeclTarget (n + 1) rawBody bodyTarget) :
+      CicStage3ResolvedNfDeclTarget n
+        (.pi rawDomain rawBody) (.pi domainTarget bodyTarget)
+  | lam {n : Nat}
+      {rawDomain rawBody : DIndGArtifactTerm}
+      {bodyTarget : PureTm (n + 1)}
+      (hBody :
+        CicStage3ResolvedNfDeclTarget (n + 1) rawBody bodyTarget) :
+      CicStage3ResolvedNfDeclTarget n
+        (.lam rawDomain rawBody) (.lam bodyTarget)
+
+theorem cicStage3RawNameTranslatesWithPropToType0Witness_witness_lean
+    {lean : DeclName}
+    (h :
+      cicStage3RawNameTranslatesWithPropToType0Witness
+        cicStage3PropToType0WitnessName lean) :
+    lean = cicStage3PropToType0WitnessName := by
+  rcases cicStage3RawNameTranslatesWithPropToType0Witness_cases h with
+    hNat | hRec | hZero | hSucc | hProp | hUniv | hTerm | hWitness
+  · exact False.elim
+      ((by decide :
+        cicStage3PropToType0WitnessName ≠ (`nat : DeclName)) hNat.1)
+  · exact False.elim
+      ((by decide :
+        cicStage3PropToType0WitnessName ≠ (`nat.rec : DeclName)) hRec.1)
+  · exact False.elim
+      ((by decide :
+        cicStage3PropToType0WitnessName ≠ (`z : DeclName)) hZero.1)
+  · exact False.elim
+      ((by decide :
+        cicStage3PropToType0WitnessName ≠ (`s : DeclName)) hSucc.1)
+  · exact False.elim
+      ((by decide :
+        cicStage3PropToType0WitnessName ≠ cicPropName) hProp.1)
+  · exact False.elim
+      ((by decide :
+        cicStage3PropToType0WitnessName ≠ cicUnivName) hUniv.1)
+  · exact False.elim
+      ((by decide :
+        cicStage3PropToType0WitnessName ≠ cicTermName) hTerm.1)
+  · exact hWitness.2
+
+theorem cicStage3_resolved_nf_decl_target_exists
+    {n : Nat} {raw : DIndGArtifactTerm} {term : PureTm n}
+    (hResolved : CicStage3ResolvedNfTerm raw)
+    (hTrans :
+      DIndGArtifactTermTranslates
+        cicStage3RawNameTranslatesWithPropToType0Witness n raw term) :
+    ∃ target : PureTm n,
+      CicStage3ResolvedNfDeclTarget n raw target ∧
+        RedStarDecl
+          (envOfSpecs
+            cicStage3RawArtifactSigWithPropToType0Witness.translatedSpecs)
+          term target := by
+  induction hResolved generalizing n term with
+  | var index =>
+      cases hTrans with
+      | var hIndex =>
+          exact ⟨.var ⟨index, hIndex⟩,
+            CicStage3ResolvedNfDeclTarget.var hIndex,
+            RedStarDecl.refl _⟩
+  | srt sort =>
+      cases sort with
+      | type =>
+          cases hTrans with
+          | srt_type =>
+              exact ⟨.u0, CicStage3ResolvedNfDeclTarget.srt_type,
+                RedStarDecl.refl _⟩
+      | kind =>
+          cases hTrans with
+          | srt_kind =>
+              exact ⟨.u1, CicStage3ResolvedNfDeclTarget.srt_kind,
+                RedStarDecl.refl _⟩
+  | con hNameResolved =>
+      cases hTrans with
+      | con hName =>
+          exact ⟨.const _, CicStage3ResolvedNfDeclTarget.con hName,
+            RedStarDecl.refl _⟩
+  | witnessDefn =>
+      rcases cicStage3RawDefnTranslatesWithPropToType0Witness_raw_cases
+          hTrans with
+        ⟨lean, hTerm, hName, _hCases⟩
+      have hLean :
+          lean = cicStage3PropToType0WitnessName :=
+        cicStage3RawNameTranslatesWithPropToType0Witness_witness_lean hName
+      subst term
+      subst lean
+      exact ⟨Mettapedia.Languages.MeTTa.PureKernel.DeclarationEnv.liftClosed
+          (n := n) cicStage3IdentityWitness,
+        CicStage3ResolvedNfDeclTarget.witnessDefn,
+        cicStage3PropToType0Witness_defn_decl_reduces_any_depth⟩
+  | bad reason =>
+      cases hTrans
+  | pi hDomain hBody ihDomain ihBody =>
+      cases hTrans with
+      | pi hDomainTrans hBodyTrans =>
+          rcases ihDomain hDomainTrans with
+            ⟨domainTarget, hDomainTarget, hDomainRed⟩
+          rcases ihBody hBodyTrans with
+            ⟨bodyTarget, hBodyTarget, hBodyRed⟩
+          exact ⟨.pi domainTarget bodyTarget,
+            CicStage3ResolvedNfDeclTarget.pi hDomainTarget hBodyTarget,
+            RedStarDecl.trans
+              (RedStarDecl.congPiDom hDomainRed)
+              (RedStarDecl.congPiCod hBodyRed)⟩
+  | lam hDomain hBody ihDomain ihBody =>
+      cases hTrans with
+      | lam hDomainTrans hBodyTrans =>
+          rcases ihBody hBodyTrans with
+            ⟨bodyTarget, hBodyTarget, hBodyRed⟩
+          exact ⟨.lam bodyTarget,
+            CicStage3ResolvedNfDeclTarget.lam hBodyTarget,
+            RedStarDecl.congLam hBodyRed⟩
+
+theorem cicStage3_resolved_nf_decl_target_conv_exists
+    {n : Nat} {raw : DIndGArtifactTerm} {term : PureTm n}
+    (hResolved : CicStage3ResolvedNfTerm raw)
+    (hTrans :
+      DIndGArtifactTermTranslates
+        cicStage3RawNameTranslatesWithPropToType0Witness n raw term) :
+    ∃ target : PureTm n,
+      CicStage3ResolvedNfDeclTarget n raw target ∧
+        ConvDecl
+          (envOfSpecs
+            cicStage3RawArtifactSigWithPropToType0Witness.translatedSpecs)
+          term target := by
+  rcases cicStage3_resolved_nf_decl_target_exists hResolved hTrans with
+    ⟨target, hTarget, hRed⟩
+  exact ⟨target, hTarget, redStarDecl_implies_conv hRed⟩
+
+theorem cicStage3_resolved_nf_decl_target_unique
+    {n : Nat} {raw : DIndGArtifactTerm} {target₁ target₂ : PureTm n}
+    (hResolved : CicStage3ResolvedNfTerm raw)
+    (hTarget₁ : CicStage3ResolvedNfDeclTarget n raw target₁)
+    (hTarget₂ : CicStage3ResolvedNfDeclTarget n raw target₂) :
+    target₁ = target₂ := by
+  induction hResolved generalizing n target₁ target₂ with
+  | var k =>
+      cases hTarget₁
+      cases hTarget₂
+      simp
+  | srt sort =>
+      cases sort <;> cases hTarget₁ <;> cases hTarget₂ <;> rfl
+  | con hNameResolved =>
+      cases hTarget₁ with
+      | con hName₁ =>
+          cases hTarget₂ with
+          | con hName₂ =>
+              have hName :
+                  _ = _ :=
+                cicStage3RawNameTranslatesWithPropToType0Witness_unique
+                  hName₁ hName₂
+              subst hName
+              rfl
+  | witnessDefn =>
+      cases hTarget₁
+      cases hTarget₂
+      rfl
+  | bad reason =>
+      cases hTarget₁
+  | pi hDomain hBody ihDomain ihBody =>
+      cases hTarget₁ with
+      | pi hDomain₁ hBody₁ =>
+          cases hTarget₂ with
+          | pi hDomain₂ hBody₂ =>
+              have hDomainEq := ihDomain hDomain₁ hDomain₂
+              have hBodyEq := ihBody hBody₁ hBody₂
+              simp [hDomainEq, hBodyEq]
+  | lam hDomain hBody ihDomain ihBody =>
+      cases hTarget₁ with
+      | lam hBody₁ =>
+          cases hTarget₂ with
+          | lam hBody₂ =>
+              have hBodyEq := ihBody hBody₁ hBody₂
+              simp [hBodyEq]
+
+theorem cicStage3_resolved_decl_conv_of_common_target
+    {rawLeft rawRight : DIndGArtifactTerm}
+    {left right : PureTm 0}
+    (hLeftResolved : CicStage3ResolvedNfTerm rawLeft)
+    (hRightResolved : CicStage3ResolvedNfTerm rawRight)
+    (hLeft :
+      DIndGArtifactTermTranslates
+        cicStage3RawNameTranslatesWithPropToType0Witness 0 rawLeft left)
+    (hRight :
+      DIndGArtifactTermTranslates
+        cicStage3RawNameTranslatesWithPropToType0Witness 0 rawRight right)
+    (hCommon :
+      ∃ target : PureTm 0,
+        CicStage3ResolvedNfDeclTarget 0 rawLeft target ∧
+          CicStage3ResolvedNfDeclTarget 0 rawRight target) :
+    ConvDecl
+      (envOfSpecs
+        cicStage3RawArtifactSigWithPropToType0Witness.translatedSpecs)
+      left right := by
+  rcases hCommon with ⟨target, hLeftTarget, hRightTarget⟩
+  rcases cicStage3_resolved_nf_decl_target_exists hLeftResolved hLeft with
+    ⟨leftTarget, hLeftTarget', hLeftRed⟩
+  rcases cicStage3_resolved_nf_decl_target_exists hRightResolved hRight with
+    ⟨rightTarget, hRightTarget', hRightRed⟩
+  have hLeftTargetEq : leftTarget = target :=
+    cicStage3_resolved_nf_decl_target_unique
+      hLeftResolved hLeftTarget' hLeftTarget
+  have hRightTargetEq : rightTarget = target :=
+    cicStage3_resolved_nf_decl_target_unique
+      hRightResolved hRightTarget' hRightTarget
+  subst leftTarget
+  subst rightTarget
+  exact convDecl_of_common_reduct hLeftRed hRightRed
+
+/-- Lift a resolved common-target conversion for two runtime `nf` readouts
+back to the original translated terms.
+
+The runtime extractor supplies the two declaration reductions into the readout
+terms; the resolved-fragment theorem supplies conversion between the readouts.
+This lemma keeps the final `conv_sound` composition at the declaration level,
+with no retained binding details in its public statement. -/
+theorem cicStage3_convDecl_of_reductions_to_resolved_common_target
+    {rawLeftNf rawRightNf : DIndGArtifactTerm}
+    {left right leftNf rightNf : PureTm 0}
+    (hLeftRed :
+      RedStarDecl
+        (envOfSpecs
+          cicStage3RawArtifactSigWithPropToType0Witness.translatedSpecs)
+        left leftNf)
+    (hRightRed :
+      RedStarDecl
+        (envOfSpecs
+          cicStage3RawArtifactSigWithPropToType0Witness.translatedSpecs)
+        right rightNf)
+    (hLeftResolved : CicStage3ResolvedNfTerm rawLeftNf)
+    (hRightResolved : CicStage3ResolvedNfTerm rawRightNf)
+    (hLeftNf :
+      DIndGArtifactTermTranslates
+        cicStage3RawNameTranslatesWithPropToType0Witness 0 rawLeftNf leftNf)
+    (hRightNf :
+      DIndGArtifactTermTranslates
+        cicStage3RawNameTranslatesWithPropToType0Witness 0 rawRightNf rightNf)
+    (hCommon :
+      ∃ target : PureTm 0,
+        CicStage3ResolvedNfDeclTarget 0 rawLeftNf target ∧
+          CicStage3ResolvedNfDeclTarget 0 rawRightNf target) :
+    ConvDecl
+      (envOfSpecs
+        cicStage3RawArtifactSigWithPropToType0Witness.translatedSpecs)
+      left right := by
+  let E :=
+    envOfSpecs
+      cicStage3RawArtifactSigWithPropToType0Witness.translatedSpecs
+  have hNfConv : ConvDecl E leftNf rightNf :=
+    cicStage3_resolved_decl_conv_of_common_target
+      hLeftResolved hRightResolved hLeftNf hRightNf hCommon
+  have hLeftConv : ConvDecl E left leftNf :=
+    redStarDecl_implies_conv hLeftRed
+  have hRightConv : ConvDecl E right rightNf :=
+    redStarDecl_implies_conv hRightRed
+  exact
+    Relation.EqvGen.trans _ _ _
+      hLeftConv
+      (Relation.EqvGen.trans _ _ _
+        hNfConv
+        (Relation.EqvGen.symm _ _ hRightConv))
+
+theorem cicStage3RawIdentityWitness_resolved_nf_decl_target :
+    ∃ target : PureTm 0,
+      CicStage3ResolvedNfDeclTarget 0 cicStage3RawIdentityWitness target ∧
+        RedStarDecl
+          (envOfSpecs
+            cicStage3RawArtifactSigWithPropToType0Witness.translatedSpecs)
+          cicStage3IdentityWitness target := by
+  exact cicStage3_resolved_nf_decl_target_exists
+    cicStage3RawIdentityWitness_resolved_nf_term
+    cicStage3RawIdentityWitness_translates
+
+theorem cicStage3RawPropToType0WitnessDefn_resolved_nf_decl_target :
+    ∃ target : PureTm 0,
+      CicStage3ResolvedNfDeclTarget 0
+        (.defn cicStage3PropToType0WitnessName) target ∧
+        RedStarDecl
+          (envOfSpecs
+            cicStage3RawArtifactSigWithPropToType0Witness.translatedSpecs)
+          (.const cicStage3PropToType0WitnessName : PureTm 0) target := by
+  exact cicStage3_resolved_nf_decl_target_exists
+    CicStage3ResolvedNfTerm.witnessDefn
+    cicStage3RawPropToType0WitnessDefn_translates
+
+theorem cicStage3RawPropToType0WitnessDefn_identity_common_decl_target :
+    ∃ target : PureTm 0,
+      CicStage3ResolvedNfDeclTarget 0
+        (.defn cicStage3PropToType0WitnessName) target ∧
+        CicStage3ResolvedNfDeclTarget 0 cicStage3RawIdentityWitness target := by
+  refine ⟨cicStage3IdentityWitness, ?_, ?_⟩
+  · simpa using
+      (CicStage3ResolvedNfDeclTarget.witnessDefn (n := 0))
+  · unfold cicStage3RawIdentityWitness cicStage3IdentityWitness
+    exact CicStage3ResolvedNfDeclTarget.lam
+      (CicStage3ResolvedNfDeclTarget.lam
+        (CicStage3ResolvedNfDeclTarget.var (by decide)))
+
 /-- Non-`Bad` name-free normalized terms do not match the `is-bad` witness pattern. -/
 theorem termAtom_not_match_bad_pattern_nameFree
     {raw : DIndGArtifactTerm}
@@ -9610,6 +10150,379 @@ theorem termAtom_beq_injective_on_nf_eq_fragment_nameFree
           exact False.elim (termAtom_head_contra (tagL := "Lam") (tagR := "Pi")
             (by decide) (by simpa [termAtom, mExpr, mSym] using hEq))
 
+/-- Stage-3 resolved `nf` terms whose equality readout does not need
+declaration-name payload injectivity.
+
+This keeps the witness `Def` delta readout available while leaving `Con` names
+behind the explicit `Lean.Name.toString` seam. -/
+inductive CicStage3NoConResolvedNfTerm : DIndGArtifactTerm → Prop
+  | var (k : Nat) : CicStage3NoConResolvedNfTerm (.var k)
+  | srt (sort : DIndGArtifactSort) :
+      CicStage3NoConResolvedNfTerm (.srt sort)
+  | witnessDefn :
+      CicStage3NoConResolvedNfTerm (.defn cicStage3PropToType0WitnessName)
+  | bad (reason : String) :
+      CicStage3NoConResolvedNfTerm (.bad reason)
+  | pi {rawDomain rawBody : DIndGArtifactTerm}
+      (hDomain : CicStage3NoConResolvedNfTerm rawDomain)
+      (hBody : CicStage3NoConResolvedNfTerm rawBody) :
+      CicStage3NoConResolvedNfTerm (.pi rawDomain rawBody)
+  | lam {rawDomain rawBody : DIndGArtifactTerm}
+      (hDomain : CicStage3NoConResolvedNfTerm rawDomain)
+      (hBody : CicStage3NoConResolvedNfTerm rawBody) :
+      CicStage3NoConResolvedNfTerm (.lam rawDomain rawBody)
+
+theorem cicStage3_no_con_resolved_nf_to_resolved
+    {raw : DIndGArtifactTerm}
+    (h : CicStage3NoConResolvedNfTerm raw) :
+    CicStage3ResolvedNfTerm raw := by
+  induction h with
+  | var k =>
+      exact CicStage3ResolvedNfTerm.var k
+  | srt sort =>
+      exact CicStage3ResolvedNfTerm.srt sort
+  | witnessDefn =>
+      exact CicStage3ResolvedNfTerm.witnessDefn
+  | bad reason =>
+      exact CicStage3ResolvedNfTerm.bad reason
+  | pi hDomain hBody ihDomain ihBody =>
+      exact CicStage3ResolvedNfTerm.pi ihDomain ihBody
+  | lam hDomain hBody ihDomain ihBody =>
+      exact CicStage3ResolvedNfTerm.lam ihDomain ihBody
+
+theorem cicStage3_no_con_resolved_nf_decl_target_exists
+    {n : Nat} {raw : DIndGArtifactTerm} {term : PureTm n}
+    (hResolved : CicStage3NoConResolvedNfTerm raw)
+    (hTrans :
+      DIndGArtifactTermTranslates
+        cicStage3RawNameTranslatesWithPropToType0Witness n raw term) :
+    ∃ target : PureTm n,
+      CicStage3ResolvedNfDeclTarget n raw target ∧
+        RedStarDecl
+          (envOfSpecs
+            cicStage3RawArtifactSigWithPropToType0Witness.translatedSpecs)
+          term target := by
+  exact cicStage3_resolved_nf_decl_target_exists
+    (cicStage3_no_con_resolved_nf_to_resolved hResolved) hTrans
+
+theorem cicStage3_no_con_resolved_nf_decl_target_conv_exists
+    {n : Nat} {raw : DIndGArtifactTerm} {term : PureTm n}
+    (hResolved : CicStage3NoConResolvedNfTerm raw)
+    (hTrans :
+      DIndGArtifactTermTranslates
+        cicStage3RawNameTranslatesWithPropToType0Witness n raw term) :
+    ∃ target : PureTm n,
+      CicStage3ResolvedNfDeclTarget n raw target ∧
+        ConvDecl
+          (envOfSpecs
+            cicStage3RawArtifactSigWithPropToType0Witness.translatedSpecs)
+          term target := by
+  rcases cicStage3_no_con_resolved_nf_decl_target_exists hResolved hTrans with
+    ⟨target, hTarget, hRed⟩
+  exact ⟨target, hTarget, redStarDecl_implies_conv hRed⟩
+
+theorem cicStage3_no_con_resolved_nf_decl_target_unique
+    {n : Nat} {raw : DIndGArtifactTerm} {target₁ target₂ : PureTm n}
+    (hResolved : CicStage3NoConResolvedNfTerm raw)
+    (hTarget₁ : CicStage3ResolvedNfDeclTarget n raw target₁)
+    (hTarget₂ : CicStage3ResolvedNfDeclTarget n raw target₂) :
+    target₁ = target₂ := by
+  induction hResolved generalizing n target₁ target₂ with
+  | var k =>
+      cases hTarget₁
+      cases hTarget₂
+      simp
+  | srt sort =>
+      cases sort <;> cases hTarget₁ <;> cases hTarget₂ <;> rfl
+  | witnessDefn =>
+      cases hTarget₁
+      cases hTarget₂
+      rfl
+  | bad reason =>
+      cases hTarget₁
+  | pi hDomain hBody ihDomain ihBody =>
+      cases hTarget₁ with
+      | pi hDomain₁ hBody₁ =>
+          cases hTarget₂ with
+          | pi hDomain₂ hBody₂ =>
+              have hDomainEq := ihDomain hDomain₁ hDomain₂
+              have hBodyEq := ihBody hBody₁ hBody₂
+              simp [hDomainEq, hBodyEq]
+  | lam hDomain hBody ihDomain ihBody =>
+      cases hTarget₁ with
+      | lam hBody₁ =>
+          cases hTarget₂ with
+          | lam hBody₂ =>
+              have hBodyEq := ihBody hBody₁ hBody₂
+              simp [hBodyEq]
+
+theorem cicStage3_no_con_resolved_decl_conv_of_common_target
+    {rawLeft rawRight : DIndGArtifactTerm}
+    {left right : PureTm 0}
+    (hLeftResolved : CicStage3NoConResolvedNfTerm rawLeft)
+    (hRightResolved : CicStage3NoConResolvedNfTerm rawRight)
+    (hLeft :
+      DIndGArtifactTermTranslates
+        cicStage3RawNameTranslatesWithPropToType0Witness 0 rawLeft left)
+    (hRight :
+      DIndGArtifactTermTranslates
+        cicStage3RawNameTranslatesWithPropToType0Witness 0 rawRight right)
+    (hCommon :
+      ∃ target : PureTm 0,
+        CicStage3ResolvedNfDeclTarget 0 rawLeft target ∧
+          CicStage3ResolvedNfDeclTarget 0 rawRight target) :
+    ConvDecl
+      (envOfSpecs
+        cicStage3RawArtifactSigWithPropToType0Witness.translatedSpecs)
+      left right := by
+  rcases hCommon with ⟨target, hLeftTarget, hRightTarget⟩
+  rcases cicStage3_no_con_resolved_nf_decl_target_exists hLeftResolved hLeft with
+    ⟨leftTarget, hLeftTarget', hLeftRed⟩
+  rcases cicStage3_no_con_resolved_nf_decl_target_exists hRightResolved hRight with
+    ⟨rightTarget, hRightTarget', hRightRed⟩
+  have hLeftTargetEq : leftTarget = target :=
+    cicStage3_no_con_resolved_nf_decl_target_unique
+      hLeftResolved hLeftTarget' hLeftTarget
+  have hRightTargetEq : rightTarget = target :=
+    cicStage3_no_con_resolved_nf_decl_target_unique
+      hRightResolved hRightTarget' hRightTarget
+  subst leftTarget
+  subst rightTarget
+  exact convDecl_of_common_reduct hLeftRed hRightRed
+
+theorem cicStage3RawIdentityWitness_no_con_resolved_nf_term :
+    CicStage3NoConResolvedNfTerm cicStage3RawIdentityWitness := by
+  simpa [cicStage3RawIdentityWitness] using
+    (CicStage3NoConResolvedNfTerm.lam
+      (CicStage3NoConResolvedNfTerm.srt .type)
+      (CicStage3NoConResolvedNfTerm.lam
+        (CicStage3NoConResolvedNfTerm.srt .type)
+        (CicStage3NoConResolvedNfTerm.var 0)))
+
+theorem cicStage3RawPropToType0WitnessDefn_no_con_resolved_nf_term :
+    CicStage3NoConResolvedNfTerm
+      (.defn cicStage3PropToType0WitnessName) := by
+  exact CicStage3NoConResolvedNfTerm.witnessDefn
+
+/-- Non-`Bad` no-`Con` Stage-3 resolved terms do not match the `is-bad`
+witness pattern. -/
+theorem termAtom_not_match_bad_pattern_no_con_resolved
+    {raw : DIndGArtifactTerm}
+    (badVar : String)
+    (hResolved : CicStage3NoConResolvedNfTerm raw)
+    (hNotBad : ∀ reason, raw ≠ .bad reason) :
+    Metta.matchAtoms (termAtom raw) (mExpr "Bad" [mVar badVar]) = [] := by
+  induction hResolved with
+  | var k =>
+      simp [termAtom, mExpr, mSym, mVar, mNat, Metta.matchAtoms,
+        Metta.matchAtomsWith, Metta.matchAll]
+  | srt sort =>
+      cases sort <;>
+        simp [termAtom, sortAtom, mExpr, mSym, mVar, Metta.matchAtoms,
+          Metta.matchAtomsWith, Metta.matchAll]
+  | witnessDefn =>
+      simp [termAtom, declNameAtom, mExpr, mSym, mVar, Metta.matchAtoms,
+        Metta.matchAtomsWith, Metta.matchAll]
+  | bad reason =>
+      exact False.elim (hNotBad reason rfl)
+  | pi hDomain hBody ihDomain ihBody =>
+      simp [termAtom, mExpr, mSym, mVar, Metta.matchAtoms,
+        Metta.matchAtomsWith, Metta.matchAll]
+  | lam hDomain hBody ihDomain ihBody =>
+      simp [termAtom, mExpr, mSym, mVar, Metta.matchAtoms,
+        Metta.matchAtomsWith, Metta.matchAll]
+
+theorem termAtom_not_match_bad_pattern_resolved
+    {raw : DIndGArtifactTerm}
+    (badVar : String)
+    (hResolved : CicStage3ResolvedNfTerm raw)
+    (hNotBad : ∀ reason, raw ≠ .bad reason) :
+    Metta.matchAtoms (termAtom raw) (mExpr "Bad" [mVar badVar]) = [] := by
+  induction hResolved with
+  | var k =>
+      simp [termAtom, mExpr, mSym, mVar, mNat, Metta.matchAtoms,
+        Metta.matchAtomsWith, Metta.matchAll]
+  | srt sort =>
+      cases sort <;>
+        simp [termAtom, sortAtom, mExpr, mSym, mVar, Metta.matchAtoms,
+          Metta.matchAtomsWith, Metta.matchAll]
+  | con hName =>
+      simp [termAtom, declNameAtom, mExpr, mSym, mVar, Metta.matchAtoms,
+        Metta.matchAtomsWith, Metta.matchAll]
+  | witnessDefn =>
+      simp [termAtom, declNameAtom, mExpr, mSym, mVar, Metta.matchAtoms,
+        Metta.matchAtomsWith, Metta.matchAll]
+  | bad reason =>
+      exact False.elim (hNotBad reason rfl)
+  | pi hDomain hBody ihDomain ihBody =>
+      simp [termAtom, mExpr, mSym, mVar, Metta.matchAtoms,
+        Metta.matchAtomsWith, Metta.matchAll]
+  | lam hDomain hBody ihDomain ihBody =>
+      simp [termAtom, mExpr, mSym, mVar, Metta.matchAtoms,
+        Metta.matchAtomsWith, Metta.matchAll]
+
+theorem declNameAtom_beq_true_to_string_eq
+    {left right : DeclName}
+    (hEq : (declNameAtom left == declNameAtom right) = true) :
+    Lean.Name.toString (show Lean.Name from left) =
+      Lean.Name.toString (show Lean.Name from right) := by
+  change
+    Metta.Atom.beq
+      (Metta.Atom.sym (Lean.Name.toString (show Lean.Name from left)))
+      (Metta.Atom.sym (Lean.Name.toString (show Lean.Name from right))) =
+      true at hEq
+  simpa [Metta.Atom.beq] using hEq
+
+/-- Encoded artifact terms are injective on the Stage-3 resolved `nf`
+subfragment that excludes declaration-name payload comparison. -/
+theorem termAtom_beq_injective_on_cicStage3_no_con_resolved
+    {rawL rawR : DIndGArtifactTerm}
+    (hL : CicStage3NoConResolvedNfTerm rawL)
+    (hR : CicStage3NoConResolvedNfTerm rawR)
+    (hEq : (termAtom rawL == termAtom rawR) = true) : rawL = rawR := by
+  change Metta.Atom.beq (termAtom rawL) (termAtom rawR) = true at hEq
+  induction hL generalizing rawR with
+  | var k =>
+      cases hR with
+      | var l =>
+          exact congrArg DIndGArtifactTerm.var (termAtom_var_beq_true hEq)
+      | srt sort =>
+          cases sort <;>
+            exact False.elim (termAtom_head_contra (tagL := "Var") (tagR := "Srt")
+              (by decide) (by simpa [termAtom, sortAtom, mExpr, mSym, mNat] using hEq))
+      | witnessDefn =>
+          exact False.elim (termAtom_head_contra (tagL := "Var") (tagR := "Def")
+            (by decide) (by simpa [termAtom, declNameAtom, mExpr, mSym, mNat] using hEq))
+      | bad reason =>
+          exact False.elim (termAtom_head_contra (tagL := "Var") (tagR := "Bad")
+            (by decide) (by simpa [termAtom, mExpr, mSym, mNat] using hEq))
+      | pi _ _ =>
+          exact False.elim (termAtom_head_contra (tagL := "Var") (tagR := "Pi")
+            (by decide) (by simpa [termAtom, mExpr, mSym, mNat] using hEq))
+      | lam _ _ =>
+          exact False.elim (termAtom_head_contra (tagL := "Var") (tagR := "Lam")
+            (by decide) (by simpa [termAtom, mExpr, mSym, mNat] using hEq))
+  | srt sort =>
+      cases hR with
+      | var k =>
+          cases sort <;>
+            exact False.elim (termAtom_head_contra (tagL := "Srt") (tagR := "Var")
+              (by decide) (by simpa [termAtom, sortAtom, mExpr, mSym, mNat] using hEq))
+      | srt sortR =>
+          exact congrArg DIndGArtifactTerm.srt (termAtom_srt_beq_true hEq)
+      | witnessDefn =>
+          cases sort <;>
+            exact False.elim (termAtom_head_contra (tagL := "Srt") (tagR := "Def")
+              (by decide) (by simpa [termAtom, sortAtom, declNameAtom, mExpr, mSym] using hEq))
+      | bad reason =>
+          cases sort <;>
+            exact False.elim (termAtom_head_contra (tagL := "Srt") (tagR := "Bad")
+              (by decide) (by simpa [termAtom, sortAtom, mExpr, mSym] using hEq))
+      | pi _ _ =>
+          cases sort <;>
+            exact False.elim (termAtom_head_contra (tagL := "Srt") (tagR := "Pi")
+              (by decide) (by simpa [termAtom, sortAtom, mExpr, mSym] using hEq))
+      | lam _ _ =>
+          cases sort <;>
+            exact False.elim (termAtom_head_contra (tagL := "Srt") (tagR := "Lam")
+              (by decide) (by simpa [termAtom, sortAtom, mExpr, mSym] using hEq))
+  | witnessDefn =>
+      cases hR with
+      | witnessDefn =>
+          rfl
+      | var k =>
+          exact False.elim (termAtom_head_contra (tagL := "Def") (tagR := "Var")
+            (by decide) (by simpa [termAtom, declNameAtom, mExpr, mSym, mNat] using hEq))
+      | srt sort =>
+          cases sort <;>
+            exact False.elim (termAtom_head_contra (tagL := "Def") (tagR := "Srt")
+              (by decide) (by simpa [termAtom, sortAtom, declNameAtom, mExpr, mSym] using hEq))
+      | bad reason =>
+          exact False.elim (termAtom_head_contra (tagL := "Def") (tagR := "Bad")
+            (by decide) (by simpa [termAtom, declNameAtom, mExpr, mSym] using hEq))
+      | pi _ _ =>
+          exact False.elim (termAtom_head_contra (tagL := "Def") (tagR := "Pi")
+            (by decide) (by simpa [termAtom, declNameAtom, mExpr, mSym] using hEq))
+      | lam _ _ =>
+          exact False.elim (termAtom_head_contra (tagL := "Def") (tagR := "Lam")
+            (by decide) (by simpa [termAtom, declNameAtom, mExpr, mSym] using hEq))
+  | bad reason =>
+      cases hR with
+      | bad reasonR =>
+          exact congrArg DIndGArtifactTerm.bad (termAtom_bad_beq_true hEq)
+      | var k =>
+          exact False.elim (termAtom_head_contra (tagL := "Bad") (tagR := "Var")
+            (by decide) (by simpa [termAtom, mExpr, mSym, mNat] using hEq))
+      | srt sort =>
+          cases sort <;>
+            exact False.elim (termAtom_head_contra (tagL := "Bad") (tagR := "Srt")
+              (by decide) (by simpa [termAtom, sortAtom, mExpr, mSym] using hEq))
+      | witnessDefn =>
+          exact False.elim (termAtom_head_contra (tagL := "Bad") (tagR := "Def")
+            (by decide) (by simpa [termAtom, declNameAtom, mExpr, mSym] using hEq))
+      | pi _ _ =>
+          exact False.elim (termAtom_head_contra (tagL := "Bad") (tagR := "Pi")
+            (by decide) (by simpa [termAtom, mExpr, mSym] using hEq))
+      | lam _ _ =>
+          exact False.elim (termAtom_head_contra (tagL := "Bad") (tagR := "Lam")
+            (by decide) (by simpa [termAtom, mExpr, mSym] using hEq))
+  | pi hDomain hBody ihDomain ihBody =>
+      cases hR with
+      | pi hDomainR hBodyR =>
+          have hp := atom_beq_expr_binary_payload_true (tag := "Pi")
+            (a := termAtom _) (b := termAtom _)
+            (c := termAtom _) (d := termAtom _) (by
+              simpa [termAtom, mExpr, mSym] using hEq)
+          have hdeq := ihDomain hDomainR hp.1
+          have hbeq := ihBody hBodyR hp.2
+          cases hdeq
+          cases hbeq
+          rfl
+      | var k =>
+          exact False.elim (termAtom_head_contra (tagL := "Pi") (tagR := "Var")
+            (by decide) (by simpa [termAtom, mExpr, mSym, mNat] using hEq))
+      | srt sort =>
+          cases sort <;>
+            exact False.elim (termAtom_head_contra (tagL := "Pi") (tagR := "Srt")
+              (by decide) (by simpa [termAtom, sortAtom, mExpr, mSym] using hEq))
+      | witnessDefn =>
+          exact False.elim (termAtom_head_contra (tagL := "Pi") (tagR := "Def")
+            (by decide) (by simpa [termAtom, declNameAtom, mExpr, mSym] using hEq))
+      | bad reason =>
+          exact False.elim (termAtom_head_contra (tagL := "Pi") (tagR := "Bad")
+            (by decide) (by simpa [termAtom, mExpr, mSym] using hEq))
+      | lam _ _ =>
+          exact False.elim (termAtom_head_contra (tagL := "Pi") (tagR := "Lam")
+            (by decide) (by simpa [termAtom, mExpr, mSym] using hEq))
+  | lam hDomain hBody ihDomain ihBody =>
+      cases hR with
+      | lam hDomainR hBodyR =>
+          have hp := atom_beq_expr_binary_payload_true (tag := "Lam")
+            (a := termAtom _) (b := termAtom _)
+            (c := termAtom _) (d := termAtom _) (by
+              simpa [termAtom, mExpr, mSym] using hEq)
+          have hdeq := ihDomain hDomainR hp.1
+          have hbeq := ihBody hBodyR hp.2
+          cases hdeq
+          cases hbeq
+          rfl
+      | var k =>
+          exact False.elim (termAtom_head_contra (tagL := "Lam") (tagR := "Var")
+            (by decide) (by simpa [termAtom, mExpr, mSym, mNat] using hEq))
+      | srt sort =>
+          cases sort <;>
+            exact False.elim (termAtom_head_contra (tagL := "Lam") (tagR := "Srt")
+              (by decide) (by simpa [termAtom, sortAtom, mExpr, mSym] using hEq))
+      | witnessDefn =>
+          exact False.elim (termAtom_head_contra (tagL := "Lam") (tagR := "Def")
+            (by decide) (by simpa [termAtom, declNameAtom, mExpr, mSym] using hEq))
+      | bad reason =>
+          exact False.elim (termAtom_head_contra (tagL := "Lam") (tagR := "Bad")
+            (by decide) (by simpa [termAtom, mExpr, mSym] using hEq))
+      | pi _ _ =>
+          exact False.elim (termAtom_head_contra (tagL := "Lam") (tagR := "Pi")
+            (by decide) (by simpa [termAtom, mExpr, mSym] using hEq))
+
 /-- The quoted `nf` query wrapper is injective on the name-free fragment. -/
 theorem nfQuery_injective_on_nf_eq_fragment_nameFree
     {sig : DIndGArtifactSig}
@@ -9976,6 +10889,152 @@ theorem dindg_translate_unique_on_nf_eq_fragment_nameFree
           have hBodyEq := ihBody hBodyL hBodyR
           exact congrArg PureTm.lam hBodyEq
 
+/-- Translation of the no-`Con` Stage-3 witness fragment is functional.
+
+The only name-bearing constructor in this fragment is the concrete witness
+`Def`, so the proof pins both translations through the witness-specific name
+relation instead of requiring general declaration-name encoder injectivity. -/
+theorem dindg_translate_unique_on_cicStage3_no_con_resolved
+    {n : Nat} {raw : DIndGArtifactTerm} {left right : PureTm n}
+    (hfrag : CicStage3NoConResolvedNfTerm raw)
+    (hL :
+      DIndGArtifactTermTranslates
+        cicStage3RawNameTranslatesWithPropToType0Witness n raw left)
+    (hR :
+      DIndGArtifactTermTranslates
+        cicStage3RawNameTranslatesWithPropToType0Witness n raw right) :
+    left = right := by
+  induction hfrag generalizing n left right with
+  | var k =>
+      cases hL with
+      | var hLeft =>
+          cases hR with
+          | var hRight =>
+              simp
+  | srt sort =>
+      cases sort <;> cases hL <;> cases hR <;> rfl
+  | witnessDefn =>
+      rcases cicStage3RawDefnTranslatesWithPropToType0Witness_raw_cases
+          hL with
+        ⟨leanLeft, hTermLeft, hNameLeft, _hCasesLeft⟩
+      rcases cicStage3RawDefnTranslatesWithPropToType0Witness_raw_cases
+          hR with
+        ⟨leanRight, hTermRight, hNameRight, _hCasesRight⟩
+      have hLeanLeft :
+          leanLeft = cicStage3PropToType0WitnessName :=
+        cicStage3RawNameTranslatesWithPropToType0Witness_witness_lean
+          hNameLeft
+      have hLeanRight :
+          leanRight = cicStage3PropToType0WitnessName :=
+        cicStage3RawNameTranslatesWithPropToType0Witness_witness_lean
+          hNameRight
+      subst left
+      subst right
+      subst leanLeft
+      subst leanRight
+      rfl
+  | bad reason =>
+      cases hL
+  | pi hDomain hBody ihDomain ihBody =>
+      cases hL with
+      | pi hDomainL hBodyL =>
+          cases hR with
+          | pi hDomainR hBodyR =>
+              have hDomainEq := ihDomain hDomainL hDomainR
+              have hBodyEq := ihBody hBodyL hBodyR
+              simp [hDomainEq, hBodyEq]
+  | lam hDomain hBody ihDomain ihBody =>
+      cases hL with
+      | lam hDomainL hBodyL =>
+          cases hR with
+          | lam hDomainR hBodyR =>
+              have hBodyEq := ihBody hBodyL hBodyR
+              exact congrArg PureTm.lam hBodyEq
+
+theorem dindg_translate_unique_on_cicStage3_resolved
+    {n : Nat} {raw : DIndGArtifactTerm} {left right : PureTm n}
+    (hfrag : CicStage3ResolvedNfTerm raw)
+    (hL :
+      DIndGArtifactTermTranslates
+        cicStage3RawNameTranslatesWithPropToType0Witness n raw left)
+    (hR :
+      DIndGArtifactTermTranslates
+        cicStage3RawNameTranslatesWithPropToType0Witness n raw right) :
+    left = right := by
+  induction hfrag generalizing n left right with
+  | var k =>
+      cases hL with
+      | var hLeft =>
+          cases hR with
+          | var hRight =>
+              simp
+  | srt sort =>
+      cases sort <;> cases hL <;> cases hR <;> rfl
+  | con hName =>
+      cases hL with
+      | con hNameLeft =>
+          cases hR with
+          | con hNameRight =>
+              exact congrArg PureTm.const
+                (cicStage3RawNameTranslatesWithPropToType0Witness_unique
+                  hNameLeft hNameRight)
+  | witnessDefn =>
+      rcases cicStage3RawDefnTranslatesWithPropToType0Witness_raw_cases
+          hL with
+        ⟨leanLeft, hTermLeft, hNameLeft, _hCasesLeft⟩
+      rcases cicStage3RawDefnTranslatesWithPropToType0Witness_raw_cases
+          hR with
+        ⟨leanRight, hTermRight, hNameRight, _hCasesRight⟩
+      have hLeanLeft :
+          leanLeft = cicStage3PropToType0WitnessName :=
+        cicStage3RawNameTranslatesWithPropToType0Witness_witness_lean
+          hNameLeft
+      have hLeanRight :
+          leanRight = cicStage3PropToType0WitnessName :=
+        cicStage3RawNameTranslatesWithPropToType0Witness_witness_lean
+          hNameRight
+      subst left
+      subst right
+      subst leanLeft
+      subst leanRight
+      rfl
+  | bad reason =>
+      cases hL
+  | pi hDomain hBody ihDomain ihBody =>
+      cases hL with
+      | pi hDomainL hBodyL =>
+          cases hR with
+          | pi hDomainR hBodyR =>
+              have hDomainEq := ihDomain hDomainL hDomainR
+              have hBodyEq := ihBody hBodyL hBodyR
+              simp [hDomainEq, hBodyEq]
+  | lam hDomain hBody ihDomain ihBody =>
+      cases hL with
+      | lam hDomainL hBodyL =>
+          cases hR with
+          | lam hDomainR hBodyR =>
+              have hBodyEq := ihBody hBodyL hBodyR
+              exact congrArg PureTm.lam hBodyEq
+
+theorem cicStage3_resolved_same_raw_decl_conv
+    {raw : DIndGArtifactTerm} {left right : PureTm 0}
+    (hResolved : CicStage3ResolvedNfTerm raw)
+    (hLeft :
+      DIndGArtifactTermTranslates
+        cicStage3RawNameTranslatesWithPropToType0Witness 0 raw left)
+    (hRight :
+      DIndGArtifactTermTranslates
+        cicStage3RawNameTranslatesWithPropToType0Witness 0 raw right) :
+    ConvDecl
+      (envOfSpecs
+        cicStage3RawArtifactSigWithPropToType0Witness.translatedSpecs)
+      left right := by
+  have hTerm : left = right :=
+    dindg_translate_unique_on_cicStage3_resolved
+      hResolved hLeft hRight
+  subst right
+  exact Relation.EqvGen.refl left
+
 /-- Declaration-side consequence of equal name-free runtime `nf` root readouts.
 
 The current name-free control-flow route can only yield reflexive conversion:
@@ -10152,6 +11211,57 @@ theorem termAtom_grounded_eq_true_nameFree_decl_conv
   have hTerm : left = right :=
     dindg_translate_unique_on_nf_eq_fragment_nameFree
       (raw := rawLeft) hNameLeft hLeft hRight
+  subst right
+  exact Relation.EqvGen.refl left
+
+/-- Final grounded equality inversion for the no-`Con` Stage-3 witness fragment. -/
+theorem termAtom_grounded_eq_true_no_con_resolved_raw_eq
+    {rawLeft rawRight : DIndGArtifactTerm}
+    (hLeft : CicStage3NoConResolvedNfTerm rawLeft)
+    (hRight : CicStage3NoConResolvedNfTerm rawRight)
+    (hEqTrue :
+      Metta.callGrounded Metta.Minimal.stdGroundings "=="
+          [termAtom rawLeft, termAtom rawRight] =
+        Metta.ReduceResult.ok [mBool true]) :
+    rawLeft = rawRight := by
+  have hBeq :
+      (termAtom rawLeft == termAtom rawRight) = true :=
+    callGrounded_eq_true_implies_beq_true
+      (termAtom rawLeft) (termAtom rawRight)
+      (termAtom_isError_false rawLeft)
+      (termAtom_isError_false rawRight)
+      hEqTrue
+  exact termAtom_beq_injective_on_cicStage3_no_con_resolved
+    hLeft hRight hBeq
+
+/-- Declaration-side final equality bridge for the no-`Con` Stage-3 witness
+fragment under the concrete witness-extended signature. -/
+theorem termAtom_grounded_eq_true_no_con_resolved_decl_conv
+    {rawLeft rawRight : DIndGArtifactTerm}
+    {left right : PureTm 0}
+    (hLeftResolved : CicStage3NoConResolvedNfTerm rawLeft)
+    (hRightResolved : CicStage3NoConResolvedNfTerm rawRight)
+    (hEqTrue :
+      Metta.callGrounded Metta.Minimal.stdGroundings "=="
+          [termAtom rawLeft, termAtom rawRight] =
+        Metta.ReduceResult.ok [mBool true])
+    (hLeft :
+      DIndGArtifactTermTranslates
+        cicStage3RawNameTranslatesWithPropToType0Witness 0 rawLeft left)
+    (hRight :
+      DIndGArtifactTermTranslates
+        cicStage3RawNameTranslatesWithPropToType0Witness 0 rawRight right) :
+    ConvDecl
+      (envOfSpecs
+        cicStage3RawArtifactSigWithPropToType0Witness.translatedSpecs)
+      left right := by
+  have hRaw : rawLeft = rawRight :=
+    termAtom_grounded_eq_true_no_con_resolved_raw_eq
+      hLeftResolved hRightResolved hEqTrue
+  subst rawRight
+  have hTerm : left = right :=
+    dindg_translate_unique_on_cicStage3_no_con_resolved
+      (raw := rawLeft) hLeftResolved hLeft hRight
   subst right
   exact Relation.EqvGen.refl left
 
@@ -10477,6 +11587,38 @@ theorem prop_to_type0_witness_decl_conv_nonreflexive :
       simpa [cicStage3RawArtifactSigWithPropToType0Witness,
         cicStage3PropToType0WitnessDeclEnv] using
         (redDecl_implies_conv cicStage3PropToType0DeclaredDelta_deltaStep),
+    prop_to_type0_witness_const_ne_identity⟩
+
+theorem prop_to_type0_witness_decl_conv_nonreflexive_via_join :
+    ConvDecl
+      (envOfSpecs
+        cicStage3RawArtifactSigWithPropToType0Witness.translatedSpecs)
+      (.const cicStage3PropToType0WitnessName : PureTm 0)
+      cicStage3IdentityWitness ∧
+    (.const cicStage3PropToType0WitnessName : PureTm 0) ≠
+      cicStage3IdentityWitness := by
+  let admission : DIndGSRAdmissionMirror cicStage3PropToType0WitnessSpecs :=
+    DIndGSRAdmissionMirror.ofSignatureWellFormed
+      cicStage3PropToType0WitnessSignatureWellFormed
+  have hRefl :
+      RedStarDecl cicStage3PropToType0WitnessDeclEnv
+        (.const cicStage3PropToType0WitnessName : PureTm 0)
+        (.const cicStage3PropToType0WitnessName : PureTm 0) :=
+    Relation.ReflTransGen.refl
+  have hDelta :
+      RedStarDecl cicStage3PropToType0WitnessDeclEnv
+        (.const cicStage3PropToType0WitnessName : PureTm 0)
+        cicStage3IdentityWitness :=
+    redDecl_to_star cicStage3PropToType0DeclaredDelta_deltaStep
+  have hConv :
+      ConvDecl cicStage3PropToType0WitnessDeclEnv
+        (.const cicStage3PropToType0WitnessName : PureTm 0)
+        cicStage3IdentityWitness :=
+    DIndGSRAdmissionMirror.convDecl_of_normalizations
+      admission hRefl hDelta
+  exact ⟨by
+      simpa [cicStage3RawArtifactSigWithPropToType0Witness,
+        cicStage3PropToType0WitnessDeclEnv] using hConv,
     prop_to_type0_witness_const_ne_identity⟩
 
 def leattaDefControlNonWitnessName :
@@ -11030,6 +12172,75 @@ theorem conv_evalAtomMin_body_bridge_of_decl
     ⟨hmem, hreach, halpha⟩
   exact ⟨hmem, hreach, halpha, hLeft, hRight, hconv⟩
 
+/-- Stage-3 witness-signature body bridge that derives the declaration
+conversion from resolved common-target evidence.
+
+This is the body-bridge form needed by the SR `conv` composition: the public
+contract stays at resolved terms, translations, and a common declaration target,
+while the retained runtime bindings remain hidden inside the existing MOPS
+body bridge. -/
+theorem conv_evalAtomMin_body_bridge_resolved_common_target
+    (rawLeft rawRight : DIndGArtifactTerm)
+    {left right : PureTm 0}
+    (hLeftResolved : CicStage3ResolvedNfTerm rawLeft)
+    (hRightResolved : CicStage3ResolvedNfTerm rawRight)
+    (hLeft :
+      DIndGArtifactTermTranslates
+        cicStage3RawNameTranslatesWithPropToType0Witness 0 rawLeft left)
+    (hRight :
+      DIndGArtifactTermTranslates
+        cicStage3RawNameTranslatesWithPropToType0Witness 0 rawRight right)
+    (hCommon :
+      ∃ target : PureTm 0,
+        CicStage3ResolvedNfDeclTarget 0 rawLeft target ∧
+          CicStage3ResolvedNfDeclTarget 0 rawRight target) :
+    Metta.instantiate
+        (renameBindings (counterSuffix St.init.counter)
+          (convRuleBindings
+            cicStage3RawArtifactSigWithPropToType0Witness
+            rawLeft rawRight)).reverse
+        (freshenRule St.init.counter convRuleLhs convRuleRhs).2 ∈
+        evalAtomMin kernelCoreEnv 1
+          (convQuery
+            cicStage3RawArtifactSigWithPropToType0Witness
+            rawLeft rawRight) ∧
+      Relation.ReflTransGen (Metta.MopsStep kernelCoreRules)
+        (convQuery
+          cicStage3RawArtifactSigWithPropToType0Witness
+          rawLeft rawRight)
+        (convReadout
+          cicStage3RawArtifactSigWithPropToType0Witness
+          rawLeft rawRight) ∧
+      Metta.AlphaEq
+        (Metta.instantiate
+          (renameBindings (counterSuffix St.init.counter)
+            (convRuleBindings
+              cicStage3RawArtifactSigWithPropToType0Witness
+              rawLeft rawRight)).reverse
+          (freshenRule St.init.counter convRuleLhs convRuleRhs).2)
+        (convReadout
+          cicStage3RawArtifactSigWithPropToType0Witness
+          rawLeft rawRight) ∧
+      DIndGArtifactTermTranslates
+        cicStage3RawNameTranslatesWithPropToType0Witness 0 rawLeft left ∧
+      DIndGArtifactTermTranslates
+        cicStage3RawNameTranslatesWithPropToType0Witness 0 rawRight right ∧
+      ConvDecl
+        (envOfSpecs
+          cicStage3RawArtifactSigWithPropToType0Witness.translatedSpecs)
+        left right := by
+  have hconv :
+      ConvDecl
+        (envOfSpecs
+          cicStage3RawArtifactSigWithPropToType0Witness.translatedSpecs)
+        left right :=
+    cicStage3_resolved_decl_conv_of_common_target
+      hLeftResolved hRightResolved hLeft hRight hCommon
+  rcases conv_evalAtomMin_bridge_alpha_mops_readout
+      cicStage3RawArtifactSigWithPropToType0Witness rawLeft rawRight with
+    ⟨hmem, hreach, halpha⟩
+  exact ⟨hmem, hreach, halpha, hLeft, hRight, hconv⟩
+
 theorem conv_sound_prop_to_type0_witness_nonreflexive_body_bridge :
     Metta.instantiate
         (renameBindings (counterSuffix St.init.counter)
@@ -11091,6 +12302,66 @@ theorem conv_sound_prop_to_type0_witness_nonreflexive_body_bridge :
       hconv with
     ⟨hmem, hreach, halpha, hleft, hright, hconv⟩
   exact ⟨hmem, hreach, halpha, hleft, hright, hconv, hne⟩
+
+theorem conv_sound_prop_to_type0_witness_common_target_body_bridge :
+    Metta.instantiate
+        (renameBindings (counterSuffix St.init.counter)
+          (convRuleBindings
+            cicStage3RawArtifactSigWithPropToType0Witness
+            (.defn cicStage3PropToType0WitnessName)
+            cicStage3RawIdentityWitness)).reverse
+        (freshenRule St.init.counter convRuleLhs convRuleRhs).2 ∈
+        evalAtomMin kernelCoreEnv 1
+          (convQuery
+            cicStage3RawArtifactSigWithPropToType0Witness
+            (.defn cicStage3PropToType0WitnessName)
+            cicStage3RawIdentityWitness) ∧
+      Relation.ReflTransGen (Metta.MopsStep kernelCoreRules)
+        (convQuery
+          cicStage3RawArtifactSigWithPropToType0Witness
+          (.defn cicStage3PropToType0WitnessName)
+          cicStage3RawIdentityWitness)
+        (convReadout
+          cicStage3RawArtifactSigWithPropToType0Witness
+          (.defn cicStage3PropToType0WitnessName)
+          cicStage3RawIdentityWitness) ∧
+      Metta.AlphaEq
+        (Metta.instantiate
+          (renameBindings (counterSuffix St.init.counter)
+            (convRuleBindings
+              cicStage3RawArtifactSigWithPropToType0Witness
+              (.defn cicStage3PropToType0WitnessName)
+              cicStage3RawIdentityWitness)).reverse
+          (freshenRule St.init.counter convRuleLhs convRuleRhs).2)
+        (convReadout
+          cicStage3RawArtifactSigWithPropToType0Witness
+          (.defn cicStage3PropToType0WitnessName)
+          cicStage3RawIdentityWitness) ∧
+      (∃ target : PureTm 0,
+        CicStage3ResolvedNfDeclTarget 0
+          (.defn cicStage3PropToType0WitnessName) target ∧
+          CicStage3ResolvedNfDeclTarget 0
+            cicStage3RawIdentityWitness target) ∧
+      ConvDecl
+        (envOfSpecs
+          cicStage3RawArtifactSigWithPropToType0Witness.translatedSpecs)
+        (.const cicStage3PropToType0WitnessName : PureTm 0)
+        cicStage3IdentityWitness ∧
+      (.const cicStage3PropToType0WitnessName : PureTm 0) ≠
+        cicStage3IdentityWitness := by
+  rcases conv_evalAtomMin_body_bridge_resolved_common_target
+      (.defn cicStage3PropToType0WitnessName)
+      cicStage3RawIdentityWitness
+      CicStage3ResolvedNfTerm.witnessDefn
+      cicStage3RawIdentityWitness_resolved_nf_term
+      cicStage3RawPropToType0WitnessDefn_translates
+      cicStage3RawIdentityWitness_translates
+      cicStage3RawPropToType0WitnessDefn_identity_common_decl_target with
+    ⟨hmem, hreach, halpha, _hleft, _hright, hconv⟩
+  exact ⟨hmem, hreach, halpha,
+    cicStage3RawPropToType0WitnessDefn_identity_common_decl_target,
+    hconv,
+    prop_to_type0_witness_const_ne_identity⟩
 
 /-- Reflexive corollary of the `conv` body bridge.
 
@@ -14652,6 +15923,80 @@ theorem mettaEval_kernelDefControlEnv_termAtom_eq_true_nameFree_raw_eq
     rw [hEval] at hmem
     simp [mBool] at hmem
 
+theorem mettaEval_kernelDefControlEnv_termAtom_eq_true_no_con_resolved_raw_eq
+    (fuel : Nat) (st : St)
+    {rawLeft rawRight : DIndGArtifactTerm} {outBnd : Metta.Bindings}
+    (hWorld : st.world = St.init.world)
+    (hLeft : CicStage3NoConResolvedNfTerm rawLeft)
+    (hRight : CicStage3NoConResolvedNfTerm rawRight)
+    (hmem :
+      (mBool true, outBnd) ∈
+        (mettaEval kernelDefControlEnv (fuel + 2) st []
+          (mExpr "==" [termAtom rawLeft, termAtom rawRight])).1) :
+    rawLeft = rawRight := by
+  by_cases hBeq : (termAtom rawLeft == termAtom rawRight) = true
+  · exact termAtom_beq_injective_on_cicStage3_no_con_resolved
+      hLeft hRight hBeq
+  · have hBeqFalse : (termAtom rawLeft == termAtom rawRight) = false := by
+      cases h : (termAtom rawLeft == termAtom rawRight) <;> simp [h] at hBeq ⊢
+    have hcall :
+        callGrounded stdGroundings "=="
+            [termAtom rawLeft, termAtom rawRight] =
+          ReduceResult.ok [mBool false] :=
+      callGrounded_eq_false_of_beq_false
+        (termAtom rawLeft) (termAtom rawRight)
+        (termAtom_isError_false rawLeft)
+        (termAtom_isError_false rawRight)
+        hBeqFalse
+    have hEval :
+        mettaEval kernelDefControlEnv (fuel + 2) st []
+            (mExpr "==" [termAtom rawLeft, termAtom rawRight]) =
+          ([(mBool false, [])], st) :=
+      mettaEval_kernelDefControlEnv_eq_false_eq_state
+        fuel st (termAtom rawLeft) (termAtom rawRight) hWorld
+        (by
+          have hstate := termAtom_resolveStates_init_world rawLeft
+          simpa [hWorld] using hstate)
+        (by
+          have hstate := termAtom_resolveStates_init_world rawRight
+          simpa [hWorld] using hstate)
+        (termAtom_isError_false rawLeft)
+        (termAtom_isError_false rawRight)
+        hcall
+    rw [hEval] at hmem
+    simp [mBool] at hmem
+
+theorem mettaEval_kernelDefControlEnv_termAtom_eq_true_no_con_resolved_decl_conv
+    (fuel : Nat) (st : St)
+    {rawLeft rawRight : DIndGArtifactTerm}
+    {left right : PureTm 0} {outBnd : Metta.Bindings}
+    (hWorld : st.world = St.init.world)
+    (hLeftResolved : CicStage3NoConResolvedNfTerm rawLeft)
+    (hRightResolved : CicStage3NoConResolvedNfTerm rawRight)
+    (hLeft :
+      DIndGArtifactTermTranslates
+        cicStage3RawNameTranslatesWithPropToType0Witness 0 rawLeft left)
+    (hRight :
+      DIndGArtifactTermTranslates
+        cicStage3RawNameTranslatesWithPropToType0Witness 0 rawRight right)
+    (hmem :
+      (mBool true, outBnd) ∈
+        (mettaEval kernelDefControlEnv (fuel + 2) st []
+          (mExpr "==" [termAtom rawLeft, termAtom rawRight])).1) :
+    ConvDecl
+      (envOfSpecs
+        cicStage3RawArtifactSigWithPropToType0Witness.translatedSpecs)
+      left right := by
+  have hRaw : rawLeft = rawRight :=
+    mettaEval_kernelDefControlEnv_termAtom_eq_true_no_con_resolved_raw_eq
+      fuel st hWorld hLeftResolved hRightResolved hmem
+  subst rawRight
+  have hTerm : left = right :=
+    dindg_translate_unique_on_cicStage3_no_con_resolved
+      (raw := rawLeft) hLeftResolved hLeft hRight
+  subst right
+  exact Relation.EqvGen.refl left
+
 theorem conv_final_eq_branch_nameFree_kernelDefControlEnv_runtime_decl_conv
     {sig : DIndGArtifactSig} {rawLeft rawRight : DIndGArtifactTerm}
     {outLeft outRight : Metta.Atom} {left right : PureTm 0}
@@ -14722,6 +16067,94 @@ theorem conv_final_eq_branch_nameFree_termAtoms_kernelDefControlEnv_runtime_decl
       (nf_eq_fragment_nameFree_readout_termAtom (sig := sig) hNameLeft)
       (nf_eq_fragment_nameFree_readout_termAtom (sig := sig) hNameRight)
       hEqTrue hLeft hRight
+
+theorem conv_final_eq_branch_no_con_resolved_termAtoms_kernelDefControlEnv_runtime_decl_conv
+    {rawLeft rawRight : DIndGArtifactTerm}
+    {left right : PureTm 0}
+    (fuel : Nat) (st : St)
+    (hWorld : st.world = St.init.world)
+    (hLeftResolved : CicStage3NoConResolvedNfTerm rawLeft)
+    (hRightResolved : CicStage3NoConResolvedNfTerm rawRight)
+    (hEqTrue :
+      callGrounded stdGroundings "==" [termAtom rawLeft, termAtom rawRight] =
+        ReduceResult.ok [mBool true])
+    (hLeft :
+      DIndGArtifactTermTranslates
+        cicStage3RawNameTranslatesWithPropToType0Witness 0 rawLeft left)
+    (hRight :
+      DIndGArtifactTermTranslates
+        cicStage3RawNameTranslatesWithPropToType0Witness 0 rawRight right) :
+    (mBool true, []) ∈
+        (mettaEval kernelDefControlEnv (fuel + 2) st []
+          (mExpr "==" [termAtom rawLeft, termAtom rawRight])).1 ∧
+      ConvDecl
+        (envOfSpecs
+          cicStage3RawArtifactSigWithPropToType0Witness.translatedSpecs)
+        left right := by
+  constructor
+  · rw [mettaEval_kernelDefControlEnv_eq_true_eq_state
+      fuel st (termAtom rawLeft) (termAtom rawRight) hWorld
+      (by
+        have hstate := termAtom_resolveStates_init_world rawLeft
+        simpa [hWorld] using hstate)
+      (by
+        have hstate := termAtom_resolveStates_init_world rawRight
+        simpa [hWorld] using hstate)
+      (termAtom_isError_false rawLeft)
+      (termAtom_isError_false rawRight)
+      hEqTrue]
+    simp
+  · exact termAtom_grounded_eq_true_no_con_resolved_decl_conv
+      hLeftResolved hRightResolved hEqTrue hLeft hRight
+
+/-- Final grounded equality bridge for the full Stage-3 resolved fragment, once
+the readout inversion has supplied the common declaration target.
+
+This is the full-resolved analogue of the no-`Con` final branch above, but its
+declaration half consumes the resolved-target witness instead of trying to
+recover raw declaration-name equality from `Lean.Name.toString`. -/
+theorem conv_final_eq_branch_resolved_common_target_termAtoms_kernelDefControlEnv_runtime_decl_conv
+    {rawLeft rawRight : DIndGArtifactTerm}
+    {left right : PureTm 0}
+    (fuel : Nat) (st : St)
+    (hWorld : st.world = St.init.world)
+    (hLeftResolved : CicStage3ResolvedNfTerm rawLeft)
+    (hRightResolved : CicStage3ResolvedNfTerm rawRight)
+    (hEqTrue :
+      callGrounded stdGroundings "==" [termAtom rawLeft, termAtom rawRight] =
+        ReduceResult.ok [mBool true])
+    (hLeft :
+      DIndGArtifactTermTranslates
+        cicStage3RawNameTranslatesWithPropToType0Witness 0 rawLeft left)
+    (hRight :
+      DIndGArtifactTermTranslates
+        cicStage3RawNameTranslatesWithPropToType0Witness 0 rawRight right)
+    (hCommon :
+      ∃ target : PureTm 0,
+        CicStage3ResolvedNfDeclTarget 0 rawLeft target ∧
+          CicStage3ResolvedNfDeclTarget 0 rawRight target) :
+    (mBool true, []) ∈
+        (mettaEval kernelDefControlEnv (fuel + 2) st []
+          (mExpr "==" [termAtom rawLeft, termAtom rawRight])).1 ∧
+      ConvDecl
+        (envOfSpecs
+          cicStage3RawArtifactSigWithPropToType0Witness.translatedSpecs)
+        left right := by
+  constructor
+  · rw [mettaEval_kernelDefControlEnv_eq_true_eq_state
+      fuel st (termAtom rawLeft) (termAtom rawRight) hWorld
+      (by
+        have hstate := termAtom_resolveStates_init_world rawLeft
+        simpa [hWorld] using hstate)
+      (by
+        have hstate := termAtom_resolveStates_init_world rawRight
+        simpa [hWorld] using hstate)
+      (termAtom_isError_false rawLeft)
+      (termAtom_isError_false rawRight)
+      hEqTrue]
+    simp
+  · exact cicStage3_resolved_decl_conv_of_common_target
+      hLeftResolved hRightResolved hLeft hRight hCommon
 
 theorem kernelDefControlEnv_queryOp_eq_kernelEnv
     (st : St) (prev : Stack) (target : Metta.Atom) (b : Bindings) :
@@ -18779,6 +20212,130 @@ private theorem mettaEval_quaternary_expr_pair_mem_implies_root_eval_mem_of_inst
   rcases hmem with ⟨finalBnd, hFinal, _hOut⟩
   exact ⟨finalBnd, by simpa [List.flatMap] using hFinal⟩
 
+private theorem mettaEval_kernelDefControlEnv_embedded_unify_success_selfExtra_bnd
+    (fuel : Nat) (st : St) (b mb rootBnd : Metta.Bindings)
+    (atom pattern template elseAtom : Metta.Atom)
+    (hinst :
+      Metta.instantiate b (mExpr "unify" [atom, pattern, template, elseAtom]) =
+        mExpr "unify" [atom, pattern, template, elseAtom])
+    (hmatch : Metta.matchAtoms atom pattern = [mb])
+    (hmerge : Metta.Bindings.merge b mb = [rootBnd])
+    (hloop : Metta.Bindings.hasLoop rootBnd = false)
+    (hNoErr :
+      (([atom, pattern, template, elseAtom].zip
+          [atom, pattern, template, elseAtom]).find?
+        (fun ho : Metta.Atom × Metta.Atom => ho.1.isError && ho.1 != ho.2)) = none)
+    (hRootNotNotReducible :
+      (Metta.instantiate rootBnd (Metta.instantiate rootBnd template) == notReducibleA) = false)
+    (hRootNotSelf :
+      (Metta.instantiate rootBnd (Metta.instantiate rootBnd template) ==
+        mExpr "unify" [atom, pattern, template, elseAtom]) = false)
+    (hTemplateStatic :
+      ((mettaEval kernelDefControlEnv (fuel + 1) st
+        (restrictBnd (([atom, pattern, template, elseAtom]).flatMap Metta.Atom.vars)
+          ((Metta.Bindings.merge [] rootBnd).head?.getD rootBnd))
+        (Metta.instantiate rootBnd (Metta.instantiate rootBnd template))).2).world.selfExtra = []) :
+    ((mettaEval kernelDefControlEnv (fuel + 2) st b
+      (mExpr "unify" [atom, pattern, template, elseAtom])).2).world.selfExtra = [] := by
+  let qvars := ([atom, pattern, template, elseAtom]).flatMap Metta.Atom.vars
+  have hRoot :
+      interpretFuel kernelDefControlEnv ((fuel + 1) + 1) st
+          [{ stack := atomToStack (Metta.Atom.expr [Metta.Atom.sym "eval",
+              Metta.Atom.expr [Metta.Atom.sym "unify", atom, pattern, template, elseAtom]]) [],
+             bnd := b }] [] =
+        ([(Metta.instantiate rootBnd (Metta.instantiate rootBnd template), rootBnd)], st) := by
+    simpa [evalItemBnd, mExpr, mSym, Nat.add_assoc] using
+      interpretFuel_eval_embedded_unify_success_eq_of_gt_instantiate
+        (env := kernelDefControlEnv) (fuel := fuel) (st := st)
+        (b := b) (mb := mb) (rootBnd := rootBnd)
+        (atom := atom) (pattern := pattern) (template := template) (elseAtom := elseAtom)
+        (by rfl) hinst hmatch hmerge hloop
+  unfold mettaEval
+  rw [hinst]
+  simp only [mExpr, mSym]
+  rw [kernelDefControlEnv_unify_typeMismatch st atom pattern template elseAtom]
+  simp [kernelDefControlEnv_unify_argMask, Metta.instantiate_nil]
+  have hNoErrInst :
+      List.find? (fun ho : Metta.Atom × Metta.Atom => ho.1.isError && ho.1 != ho.2)
+        [(atom, atom), (pattern, pattern), (template, template), (elseAtom, elseAtom)] =
+          none := by
+    simpa [mSym, Metta.instantiate_nil] using hNoErr
+  rw [hNoErrInst]
+  rw [hRoot]
+  have hReturns :
+      returnsAtom kernelDefControlEnv
+        (Metta.Atom.expr [Metta.Atom.sym "unify", atom, pattern, template, elseAtom]) = false := by
+    simpa [mExpr, mSym] using
+      kernelDefControlEnv_unify_returnsAtom atom pattern template elseAtom
+  have hRootNotSelfAtom :
+      (Metta.instantiate rootBnd (Metta.instantiate rootBnd template) ==
+        Metta.Atom.expr [Metta.Atom.sym "unify", atom, pattern, template, elseAtom]) = false := by
+    simpa [mExpr, mSym] using hRootNotSelf
+  have hRootNotSelfTrue :
+      ¬ ((Metta.instantiate rootBnd (Metta.instantiate rootBnd template) ==
+        Metta.Atom.expr [Metta.Atom.sym "unify", atom, pattern, template, elseAtom]) = true) := by
+    intro h
+    rw [h] at hRootNotSelfAtom
+    cases hRootNotSelfAtom
+  simp [hRootNotNotReducible, hRootNotSelfTrue, hReturns] at hTemplateStatic ⊢
+  simpa [qvars] using hTemplateStatic
+
+private theorem mettaEval_kernelDefControlEnv_embedded_unify_var_success_selfExtra_bnd
+    (fuel : Nat) (st : St) (b rootBnd : Metta.Bindings)
+    (nx : Metta.Atom) (nxBinder : String)
+    (template : Metta.Atom)
+    (hNxNonVar : ∀ w, nx ≠ Metta.Atom.var w)
+    (hNxNoErr : nx.isError = false)
+    (hTemplateNoErr : template.isError = false)
+    (hinst :
+      Metta.instantiate b (mExpr "unify" [nx, mVar nxBinder, template, mSym "Empty"]) =
+        mExpr "unify" [nx, mVar nxBinder, template, mSym "Empty"])
+    (hmerge :
+      Metta.Bindings.merge b [Metta.BindingRel.val nxBinder nx] = [rootBnd])
+    (hloop : Metta.Bindings.hasLoop rootBnd = false)
+    (hRootNotNotReducible :
+      (Metta.instantiate rootBnd (Metta.instantiate rootBnd template) ==
+        notReducibleA) = false)
+    (hRootNotSelf :
+      (Metta.instantiate rootBnd (Metta.instantiate rootBnd template) ==
+        mExpr "unify" [nx, mVar nxBinder, template, mSym "Empty"]) = false)
+    (hTemplateStatic :
+      ((mettaEval kernelDefControlEnv (fuel + 1) st
+        (restrictBnd (([nx, mVar nxBinder, template, mSym "Empty"]).flatMap
+            Metta.Atom.vars)
+          ((Metta.Bindings.merge [] rootBnd).head?.getD rootBnd))
+        (Metta.instantiate rootBnd (Metta.instantiate rootBnd template))).2).world.selfExtra = []) :
+    ((mettaEval kernelDefControlEnv (fuel + 2) st b
+      (mExpr "unify" [nx, mVar nxBinder, template, mSym "Empty"])).2).world.selfExtra = [] := by
+  have hmatch :
+      Metta.matchAtoms nx (mVar nxBinder) =
+        [[Metta.BindingRel.val nxBinder nx]] :=
+    matchAtoms_nonvar_var_eq nxBinder nx hNxNonVar
+  have hNoErr :
+      (([nx, mVar nxBinder, template, mSym "Empty"].zip
+          [nx, mVar nxBinder, template, mSym "Empty"]).find?
+        (fun ho : Metta.Atom × Metta.Atom => ho.1.isError && ho.1 != ho.2)) = none := by
+    simp [mVar, mSym, Metta.Atom.isError]
+    constructor
+    · intro hx
+      have hx' : nx.isError = true := by
+        simpa [Metta.Atom.isError] using hx
+      rw [hNxNoErr] at hx'
+      cases hx'
+    · intro ht
+      have ht' : template.isError = true := by
+        simpa [Metta.Atom.isError] using ht
+      rw [hTemplateNoErr] at ht'
+      cases ht'
+  exact
+    mettaEval_kernelDefControlEnv_embedded_unify_success_selfExtra_bnd
+      (fuel := fuel) (st := st) (b := b)
+      (mb := [Metta.BindingRel.val nxBinder nx]) (rootBnd := rootBnd)
+      (atom := nx) (pattern := mVar nxBinder)
+      (template := template) (elseAtom := mSym "Empty")
+      hinst hmatch hmerge hloop hNoErr hRootNotNotReducible hRootNotSelf
+      hTemplateStatic
+
 private theorem mettaEval_kernelDefControlEnv_embedded_unify_success_true_pair_implies_template_pair_bnd
     (fuel : Nat) (st : St) (b mb rootBnd outBnd : Metta.Bindings)
     (atom pattern template elseAtom : Metta.Atom)
@@ -19030,6 +20587,100 @@ private theorem mettaEval_kernelDefControlEnv_recursive_unify_var_success_true_p
       (template := template)
       hNxNonVar hNxNoErr hTemplateNoErr hinst hmerge hloop
       hRootNotNotReducible hRootNotSelf hTemplateEq hTemplateStable hmem
+
+private theorem mettaEvalExprRootFoldStep_preserves_state_pred_local
+    (env : MinEnv) (fuel : Nat) (queryVars : List String)
+    (w : Metta.Atom) (partBnd : Metta.Bindings) (P : St → Prop)
+    (hrec :
+      ∀ (acc : List (Metta.Atom × Metta.Bindings) × St)
+        (p : Metta.Atom × Metta.Bindings),
+        P acc.2 →
+          P (mettaEval env fuel acc.2
+            (restrictBnd queryVars
+              ((Metta.Bindings.merge partBnd p.2).head?.getD p.2))
+            p.1).2)
+    (p : Metta.Atom × Metta.Bindings)
+    (acc : List (Metta.Atom × Metta.Bindings) × St)
+    (hacc : P acc.2) :
+    P (mettaEvalExprRootFoldStep env fuel queryVars w partBnd acc p).2 := by
+  unfold mettaEvalExprRootFoldStep
+  split
+  · exact hacc
+  · split
+    · exact hacc
+    · exact hrec acc p hacc
+
+private theorem mettaEvalExprRootFold_preserves_state_pred_local
+    (env : MinEnv) (fuel : Nat) (queryVars : List String)
+    (w : Metta.Atom) (partBnd : Metta.Bindings) (P : St → Prop)
+    (hrec :
+      ∀ (acc : List (Metta.Atom × Metta.Bindings) × St)
+        (p : Metta.Atom × Metta.Bindings),
+        P acc.2 →
+          P (mettaEval env fuel acc.2
+            (restrictBnd queryVars
+              ((Metta.Bindings.merge partBnd p.2).head?.getD p.2))
+            p.1).2)
+    (pairs : List (Metta.Atom × Metta.Bindings))
+    (acc : List (Metta.Atom × Metta.Bindings) × St)
+    (hacc : P acc.2) :
+    P (pairs.foldl
+      (mettaEvalExprRootFoldStep env fuel queryVars w partBnd) acc).2 := by
+  induction pairs generalizing acc with
+  | nil =>
+      simpa using hacc
+  | cons p ps ih =>
+      exact ih _
+        (mettaEvalExprRootFoldStep_preserves_state_pred_local
+          env fuel queryVars w partBnd P hrec p acc hacc)
+
+private theorem mettaEvalExprPartFoldStep_preserves_state_pred_of_root_local
+    (env : MinEnv) (fuel : Nat) (queryVars : List String)
+    (op : String) (args : List Metta.Atom) (bnd : Metta.Bindings)
+    (P : St → Prop)
+    (hroot :
+      ∀ (acc : List (Metta.Atom × Metta.Bindings) × St)
+        (part : List Metta.Atom × Metta.Bindings),
+        P acc.2 →
+          P (interpretFuel env (fuel + 1) acc.2
+            [{ stack := atomToStack (Metta.Atom.expr [Metta.Atom.sym "eval",
+                Metta.Atom.expr (Metta.Atom.sym op :: part.1)]) [], bnd := bnd }] []).2)
+    (hrec :
+      ∀ (partBnd : Metta.Bindings)
+        (acc : List (Metta.Atom × Metta.Bindings) × St)
+        (p : Metta.Atom × Metta.Bindings),
+        P acc.2 →
+          P (mettaEval env fuel acc.2
+            (restrictBnd queryVars
+              ((Metta.Bindings.merge partBnd p.2).head?.getD p.2))
+            p.1).2)
+    (acc : List (Metta.Atom × Metta.Bindings) × St)
+    (part : List Metta.Atom × Metta.Bindings)
+    (hacc : P acc.2) :
+    P (mettaEvalExprPartFoldStep env fuel queryVars op args bnd acc part).2 := by
+  unfold mettaEvalExprPartFoldStep
+  split
+  · exact hacc
+  · cases hpairs : interpretFuel env (fuel + 1) acc.2
+      [{ stack := atomToStack (Metta.Atom.expr [Metta.Atom.sym "eval",
+          Metta.Atom.expr (Metta.Atom.sym op :: part.1)]) [], bnd := bnd }] [] with
+    | mk pairs stRoot =>
+        have hrootState : P stRoot := by
+          have h := hroot acc part hacc
+          rw [hpairs] at h
+          simpa using h
+        have hfold :
+            P
+              (pairs.foldl
+                (mettaEvalExprRootFoldStep env fuel queryVars
+                  (Metta.Atom.expr (Metta.Atom.sym op :: part.1)) part.2)
+                ([], stRoot)).2 :=
+          mettaEvalExprRootFold_preserves_state_pred_local
+            env fuel queryVars
+            (Metta.Atom.expr (Metta.Atom.sym op :: part.1)) part.2 P
+            (fun acc p hP => hrec part.2 acc p hP)
+            pairs ([], stRoot) hrootState
+        simpa [hpairs] using hfold
 
 theorem mettaEval_binary_expr_mem_of_quoted_args_and_open_root_eval_member_state_pred
     (env : MinEnv) (fuel : Nat) (st : St)
@@ -21821,6 +23472,94 @@ private theorem mettaEval_kernelDefControlEnv_convReadoutNamed_instantiated_bind
       (by simpa [template] using hTemplateStable)
       (by simpa using hRec)
 
+/-- Static obligations needed to extract both `nf` readouts from a successful
+named `conv` body.
+
+The retained binding arithmetic is deliberately quarantined inside this
+contract. Downstream composition lemmas consume only the resulting existence of
+left/right `nf` readouts. -/
+structure ConvReadoutNamedNfExtractionObligations
+    (fuel : Nat) (st : St)
+    (nxBinder nyBinder : String)
+    (sig : DIndGArtifactSig) (rawLeft rawRight : DIndGArtifactTerm) :
+    Prop where
+  argStatic :
+    ((mettaEval kernelDefControlEnv (fuel + 2) st []
+      (nfQuery sig rawLeft)).2).world.selfExtra = []
+  partStepStatic :
+    let pattern := mVar nxBinder
+    let bodyQuery := nfQuery sig rawLeft
+    let template :=
+      convReadoutAfterNxNamed nyBinder sig rawRight (mVar nxBinder)
+    let qvars := ([pattern, bodyQuery, template]).flatMap Metta.Atom.vars
+    let argPairs :=
+      (mettaEval kernelDefControlEnv (fuel + 2) st [] bodyQuery).1
+    let parts0 : List (List Metta.Atom × Metta.Bindings) :=
+      argPairs.map (fun q : Metta.Atom × Metta.Bindings =>
+        ([pattern, q.1],
+          restrictBnd qvars ((Metta.Bindings.merge [] q.2).head?.getD q.2)))
+    let parts : List (List Metta.Atom × Metta.Bindings) :=
+      parts0.map
+        (fun part0 =>
+          (part0.1 ++ [Metta.instantiate part0.2 template], part0.2))
+    ∀ (acc0 : List (Metta.Atom × Metta.Bindings) × St)
+      (part : List Metta.Atom × Metta.Bindings),
+      part ∈ parts →
+        acc0.2.world.selfExtra = [] →
+          (mettaEvalExprPartFoldStep kernelDefControlEnv (fuel + 2) qvars
+            "let" [pattern, bodyQuery, template] [] acc0 part).2.world.selfExtra = []
+  rootObligations :
+    ∀ nx nxBnd partBnd stPart pairs stRoot root rootBnd stBefore recBnd,
+      let qvars :=
+        (([mVar nxBinder, nfQuery sig rawLeft,
+            convReadoutAfterNxNamed nyBinder sig rawRight (mVar nxBinder)]).flatMap
+          Metta.Atom.vars)
+      let recB :=
+        restrictBnd qvars
+          ((Metta.Bindings.merge partBnd rootBnd).head?.getD rootBnd)
+      let template :=
+        Metta.instantiate partBnd
+          (convReadoutAfterNxNamed nyBinder sig rawRight (mVar nxBinder))
+      stPart.world.selfExtra = [] →
+      (nx, nxBnd) ∈
+        (mettaEval kernelDefControlEnv (fuel + 2) st []
+          (nfQuery sig rawLeft)).1 →
+      partBnd =
+        restrictBnd qvars ((Metta.Bindings.merge [] nxBnd).head?.getD nxBnd) →
+      interpretFuel kernelDefControlEnv ((fuel + 2) + 1) stPart
+          [{ stack := atomToStack
+              (Metta.Atom.expr
+                [ Metta.Atom.sym "eval"
+                , Metta.Atom.expr
+                    (Metta.Atom.sym "let" ::
+                      [ mVar nxBinder
+                      , nx
+                      , template ]) ]) [],
+             bnd := [] }] [] =
+        (pairs, stRoot) →
+      (root, rootBnd) ∈ pairs →
+      (mBool true, recBnd) ∈
+        (mettaEval kernelDefControlEnv (fuel + 2) stBefore recB root).1 →
+        (∀ w, nx ≠ Metta.Atom.var w) ∧
+        nx.isError = false ∧
+        template.isError = false ∧
+        RenamedValueKeysFreshForValues (counterSuffix stPart.counter)
+          (letRuleBindings nxBinder nx template) ∧
+        Metta.instantiate recB
+            (mExpr "unify" [nx, mVar nxBinder, template, mSym "Empty"]) =
+          mExpr "unify" [nx, mVar nxBinder, template, mSym "Empty"] ∧
+        Metta.Bindings.merge recB [Metta.BindingRel.val nxBinder nx] =
+          [rootBnd] ∧
+        Metta.Bindings.hasLoop rootBnd = false ∧
+        Metta.instantiate rootBnd (Metta.instantiate rootBnd template) =
+          convReadoutAfterNxNamed nyBinder sig rawRight nx ∧
+        Metta.instantiate
+            (restrictBnd (([nx, mVar nxBinder, template, mSym "Empty"]).flatMap
+                Metta.Atom.vars)
+              ((Metta.Bindings.merge [] rootBnd).head?.getD rootBnd))
+            (convReadoutAfterNxNamed nyBinder sig rawRight nx) =
+          convReadoutAfterNxNamed nyBinder sig rawRight nx
+
 private theorem mettaEval_kernelDefControlEnv_convReadoutNamed_true_pair_implies_left_right_nf_pair_exists_of_static_obligations
     (fuel : Nat) (st : St)
     (nxBinder nyBinder : String)
@@ -21970,6 +23709,62 @@ private theorem mettaEval_kernelDefControlEnv_convReadoutNamed_true_pair_implies
         hRec' with
     ⟨ny, nyBnd, hRight⟩
   exact ⟨nx, nxBnd, ny, nyBnd, stBefore, hNf, hRight⟩
+
+theorem mettaEval_kernelDefControlEnv_convReadoutNamed_true_pair_implies_left_right_nf_pair_exists_of_obligations
+    (fuel : Nat) (st : St)
+    (nxBinder nyBinder : String)
+    (sig : DIndGArtifactSig) (rawLeft rawRight : DIndGArtifactTerm)
+    (outBnd : Metta.Bindings)
+    (hStatic :
+      ConvReadoutNamedNfExtractionObligations
+        fuel st nxBinder nyBinder sig rawLeft rawRight)
+    (hmem :
+      (mBool true, outBnd) ∈
+        (mettaEval kernelDefControlEnv ((fuel + 2) + 1) st []
+          (convReadoutNamed nxBinder nyBinder sig rawLeft rawRight)).1) :
+    ∃ nx nxBnd ny nyBnd stBefore,
+      (nx, nxBnd) ∈
+        (mettaEval kernelDefControlEnv (fuel + 2) st []
+          (nfQuery sig rawLeft)).1 ∧
+      (ny, nyBnd) ∈
+        (mettaEval kernelDefControlEnv fuel stBefore []
+          (nfQuery sig rawRight)).1 :=
+  mettaEval_kernelDefControlEnv_convReadoutNamed_true_pair_implies_left_right_nf_pair_exists_of_static_obligations
+    fuel st nxBinder nyBinder sig rawLeft rawRight outBnd
+    hStatic.argStatic hStatic.partStepStatic hStatic.rootObligations hmem
+
+theorem mettaEval_kernelDefControlEnv_convReadoutNamed_true_value_implies_left_right_nf_values_of_obligations
+    (fuel : Nat) (st : St)
+    (nxBinder nyBinder : String)
+    (sig : DIndGArtifactSig) (rawLeft rawRight : DIndGArtifactTerm)
+    (hStatic :
+      ConvReadoutNamedNfExtractionObligations
+        fuel st nxBinder nyBinder sig rawLeft rawRight)
+    (hmem :
+      mBool true ∈
+        (mettaEval kernelDefControlEnv ((fuel + 2) + 1) st []
+          (convReadoutNamed nxBinder nyBinder sig rawLeft rawRight)).1.map (·.1)) :
+    ∃ nx ny stBefore,
+      nx ∈
+        (mettaEval kernelDefControlEnv (fuel + 2) st []
+          (nfQuery sig rawLeft)).1.map (·.1) ∧
+      ny ∈
+        (mettaEval kernelDefControlEnv fuel stBefore []
+          (nfQuery sig rawRight)).1.map (·.1) := by
+  rcases List.mem_map.mp hmem with ⟨⟨a, outBnd⟩, hpair, ha⟩
+  dsimp at ha
+  subst a
+  rcases
+      mettaEval_kernelDefControlEnv_convReadoutNamed_true_pair_implies_left_right_nf_pair_exists_of_obligations
+        (fuel := fuel) (st := st)
+        (nxBinder := nxBinder) (nyBinder := nyBinder)
+        (sig := sig) (rawLeft := rawLeft) (rawRight := rawRight)
+        (outBnd := outBnd) hStatic hpair with
+    ⟨nx, nxBnd, ny, nyBnd, stBefore, hLeft, hRight⟩
+  exact
+    ⟨nx, ny, stBefore,
+      List.mem_map.mpr ⟨(nx, nxBnd), hLeft, rfl⟩,
+      List.mem_map.mpr ⟨(ny, nyBnd), hRight, rfl⟩⟩
 
 private theorem queryOpItems_if_true_eq
     (counter : Nat) (thenA elseA : Metta.Atom)
@@ -22627,6 +24422,570 @@ theorem mettaEval_kernelDefControlEnv_termAtom_conv_tail_true_nameFree_raw_eq
       (fuel := fuel + 1) (st := stRoot₂)
       hWorldRoot₂ hNameLeft hNameRight
       (by simpa [nx, ny, eqA] using hEqMem)
+
+theorem mettaEval_kernelDefControlEnv_termAtom_conv_tail_true_no_con_resolved_raw_eq
+    (fuel : Nat) (st : St)
+    {rawLeft rawRight : DIndGArtifactTerm} {outBnd : Metta.Bindings}
+    (hWorld : st.world = St.init.world)
+    (hLeft : CicStage3NoConResolvedNfTerm rawLeft)
+    (hRight : CicStage3NoConResolvedNfTerm rawRight)
+    (hNotBadLeft : ∀ reason, rawLeft ≠ .bad reason)
+    (hNotBadRight : ∀ reason, rawRight ≠ .bad reason)
+    (hmem :
+      (mBool true, outBnd) ∈
+        (mettaEval kernelDefControlEnv (fuel + 5) st []
+          (mExpr "if"
+            [ mExpr "is-bad" [termAtom rawLeft]
+            , mBool false
+            , mExpr "if"
+                [ mExpr "is-bad" [termAtom rawRight]
+                , mBool false
+                , mExpr "==" [termAtom rawLeft, termAtom rawRight] ] ])).1) :
+    rawLeft = rawRight := by
+  let nx := termAtom rawLeft
+  let ny := termAtom rawRight
+  let cond₁ := mExpr "is-bad" [nx]
+  let cond₂ := mExpr "is-bad" [ny]
+  let eqA := mExpr "==" [nx, ny]
+  let else₁ := mExpr "if" [cond₂, mBool false, eqA]
+  let stCond₁ : St := { counter := st.counter + 1, world := st.world }
+  let stRoot₁ : St := { counter := st.counter + 3, world := st.world }
+  let stCond₂ : St := { counter := st.counter + 4, world := st.world }
+  let stRoot₂ : St := { counter := st.counter + 6, world := st.world }
+  let rootBnd₁ : Metta.Bindings :=
+    (renameBindings (counterSuffix (st.counter + 2))
+      [Metta.BindingRel.val "e" else₁,
+       Metta.BindingRel.val "t" (mBool false)]).reverse
+  let rootBnd₂ : Metta.Bindings :=
+    (renameBindings (counterSuffix (st.counter + 5))
+      [Metta.BindingRel.val "e" eqA,
+       Metta.BindingRel.val "t" (mBool false)]).reverse
+  have hStatic : st.world.selfExtra = [] := by
+    simpa [hWorld] using (show St.init.world.selfExtra = [] by rfl)
+  have hCond₁ :
+      mettaEval kernelDefControlEnv ((fuel + 3) + 1) st [] cond₁ =
+        ([(mBool false, [])], stCond₁) := by
+    have hmatch :
+        Metta.matchAtoms nx
+          (mExpr "Bad" [mVar (counterSuffix st.counter "e")]) = [] := by
+      simpa [nx] using
+        termAtom_not_match_bad_pattern_no_con_resolved
+          (counterSuffix st.counter "e") hLeft hNotBadLeft
+    simpa [cond₁, nx, stCond₁, Nat.add_assoc] using
+      mettaEval_kernelDefControlEnv_is_bad_false_eq
+        (fuel := fuel + 1) (st := st) (a := nx)
+        hStatic
+        (by simpa [nx] using termAtom_vars_nil rawLeft)
+        (by simpa [nx] using termAtom_isError_false rawLeft)
+        (by simpa [nx] using termAtom_beq_self_true rawLeft)
+        (by
+          intro w
+          simpa [nx] using termAtom_not_var rawLeft w)
+        hmatch
+  have hRoot₁ :
+      interpretFuel kernelDefControlEnv ((fuel + 3) + 1 + 1) stCond₁
+          [evalItemNil
+            (mExpr "if"
+              [ mBool false
+              , mBool false
+              , mExpr "if"
+                  [ mExpr "is-bad" [ny]
+                  , mBool false
+                  , mExpr "==" [nx, ny] ] ])] [] =
+        ([(mExpr "if"
+            [ mExpr "is-bad" [ny]
+            , mBool false
+            , mExpr "==" [nx, ny] ], rootBnd₁)], stRoot₁) := by
+    have hStaticCond : stCond₁.world.selfExtra = [] := by
+      simpa [stCond₁] using hStatic
+    have hThenClosed : (mBool false).vars = [] := by
+      simp [mBool, Metta.Atom.vars]
+    have hElseClosed : else₁.vars = [] := by
+      simp [else₁, cond₂, eqA, nx, ny, termAtom_vars_nil, mExpr, mSym, mBool,
+        Metta.Atom.vars]
+    have hThenNonVar : ∀ w, mBool false ≠ Metta.Atom.var w := by
+      intro w
+      simp [mBool]
+    have hElseNonVar : ∀ w, else₁ ≠ Metta.Atom.var w := by
+      intro w
+      simp [else₁, mExpr, mSym]
+    have hElseNotFunction :
+        ∀ tail, else₁ ≠ Metta.Atom.expr (Metta.Atom.sym "function" :: tail) := by
+      intro tail
+      simp [else₁, cond₂, eqA, mExpr, mSym]
+    simpa [stCond₁, stRoot₁, rootBnd₁, else₁, cond₂, eqA,
+      Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using
+      interpretFuel_kernelDefControlEnv_if_false_root_eq
+        (fuel := fuel + 4) (st := stCond₁) (mBool false) else₁
+        hStaticCond hThenClosed hElseClosed hThenNonVar hElseNonVar
+        hElseNotFunction
+  have hStaticRoot₁ : stRoot₁.world.selfExtra = [] := by
+    simpa [stRoot₁] using hStatic
+  have hCond₂ :
+      mettaEval kernelDefControlEnv (fuel + 3) stRoot₁ [] cond₂ =
+        ([(mBool false, [])], stCond₂) := by
+    have hmatch :
+        Metta.matchAtoms ny
+          (mExpr "Bad" [mVar (counterSuffix stRoot₁.counter "e")]) = [] := by
+      simpa [ny] using
+        termAtom_not_match_bad_pattern_no_con_resolved
+          (counterSuffix stRoot₁.counter "e") hRight hNotBadRight
+    simpa [cond₂, ny, stRoot₁, stCond₂, Nat.add_assoc,
+      Nat.add_comm, Nat.add_left_comm] using
+      mettaEval_kernelDefControlEnv_is_bad_false_eq
+        (fuel := fuel) (st := stRoot₁) (a := ny)
+        hStaticRoot₁
+        (by simpa [ny] using termAtom_vars_nil rawRight)
+        (by simpa [ny] using termAtom_isError_false rawRight)
+        (by simpa [ny] using termAtom_beq_self_true rawRight)
+        (by
+          intro w
+          simpa [ny] using termAtom_not_var rawRight w)
+        hmatch
+  have hRoot₂ :
+      interpretFuel kernelDefControlEnv ((fuel + 3) + 1) stCond₂
+          [evalItemNil
+            (mExpr "if" [mBool false, mBool false, mExpr "==" [nx, ny]])] [] =
+        ([(mExpr "==" [nx, ny], rootBnd₂)], stRoot₂) := by
+    have hStaticCond : stCond₂.world.selfExtra = [] := by
+      simpa [stCond₂] using hStatic
+    have hThenClosed : (mBool false).vars = [] := by
+      simp [mBool, Metta.Atom.vars]
+    have hElseClosed : eqA.vars = [] := by
+      simp [eqA, nx, ny, termAtom_vars_nil, mExpr, mSym,
+        Metta.Atom.vars]
+    have hThenNonVar : ∀ w, mBool false ≠ Metta.Atom.var w := by
+      intro w
+      simp [mBool]
+    have hElseNonVar : ∀ w, eqA ≠ Metta.Atom.var w := by
+      intro w
+      simp [eqA, mExpr, mSym]
+    have hElseNotFunction :
+        ∀ tail, eqA ≠ Metta.Atom.expr (Metta.Atom.sym "function" :: tail) := by
+      intro tail
+      simp [eqA, mExpr, mSym]
+    simpa [stCond₂, stRoot₂, rootBnd₂, eqA,
+      Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using
+      interpretFuel_kernelDefControlEnv_if_false_root_eq
+        (fuel := fuel + 3) (st := stCond₂) (mBool false) eqA
+        hStaticCond hThenClosed hElseClosed hThenNonVar hElseNonVar
+        hElseNotFunction
+  have hWorldRoot₁ : stRoot₁.world = St.init.world := by
+    simpa [stRoot₁] using hWorld
+  have hmemConv :
+      (mBool true, outBnd) ∈
+        (mettaEval kernelDefControlEnv ((fuel + 3) + 2) st []
+          (convReadoutAfterNxNy nx ny)).1 := by
+    simpa [convReadoutAfterNxNy, nx, ny, cond₁, cond₂, eqA, else₁,
+      Nat.add_assoc] using hmem
+  rcases
+      mettaEval_kernelDefControlEnv_convReadoutAfterNxNy_true_pair_implies_eq_pair_of_false_branches
+        (fuel := fuel + 3) (st := st)
+        (stCond₁ := stCond₁) (stRoot₁ := stRoot₁)
+        (stCond₂ := stCond₂) (stRoot₂ := stRoot₂)
+        (nx := nx) (ny := ny)
+        (rootBnd₁ := rootBnd₁) (rootBnd₂ := rootBnd₂)
+        (outBnd := outBnd)
+        hWorld hWorldRoot₁
+        (by simpa [nx] using termAtom_vars_nil rawLeft)
+        (by simpa [ny] using termAtom_vars_nil rawRight)
+        hCond₁ hRoot₁ hCond₂ hRoot₂ hmemConv with
+    ⟨finalBnd, hEqMem⟩
+  have hWorldRoot₂ : stRoot₂.world = St.init.world := by
+    simpa [stRoot₂] using hWorld
+  exact
+    mettaEval_kernelDefControlEnv_termAtom_eq_true_no_con_resolved_raw_eq
+      (fuel := fuel + 1) (st := stRoot₂)
+      hWorldRoot₂ hLeft hRight
+      (by simpa [nx, ny, eqA] using hEqMem)
+
+theorem mettaEval_kernelDefControlEnv_termAtom_conv_tail_true_resolved_common_target_eq_pair_decl_conv
+    (fuel : Nat) (st : St)
+    {rawLeft rawRight : DIndGArtifactTerm}
+    {left right : PureTm 0} {outBnd : Metta.Bindings}
+    (hWorld : st.world = St.init.world)
+    (hLeftResolved : CicStage3ResolvedNfTerm rawLeft)
+    (hRightResolved : CicStage3ResolvedNfTerm rawRight)
+    (hLeft :
+      DIndGArtifactTermTranslates
+        cicStage3RawNameTranslatesWithPropToType0Witness 0 rawLeft left)
+    (hRight :
+      DIndGArtifactTermTranslates
+        cicStage3RawNameTranslatesWithPropToType0Witness 0 rawRight right)
+    (hCommon :
+      ∃ target : PureTm 0,
+        CicStage3ResolvedNfDeclTarget 0 rawLeft target ∧
+          CicStage3ResolvedNfDeclTarget 0 rawRight target)
+    (hmem :
+      (mBool true, outBnd) ∈
+        (mettaEval kernelDefControlEnv (fuel + 5) st []
+          (mExpr "if"
+            [ mExpr "is-bad" [termAtom rawLeft]
+            , mBool false
+            , mExpr "if"
+                [ mExpr "is-bad" [termAtom rawRight]
+                , mBool false
+                , mExpr "==" [termAtom rawLeft, termAtom rawRight] ] ])).1) :
+    let nx := termAtom rawLeft
+    let ny := termAtom rawRight
+    let stRoot₂ : St := { counter := st.counter + 6, world := st.world }
+    ∃ finalBnd,
+      (mBool true, finalBnd) ∈
+          (mettaEval kernelDefControlEnv (fuel + 3) stRoot₂ []
+            (mExpr "==" [nx, ny])).1 ∧
+        ConvDecl
+          (envOfSpecs
+            cicStage3RawArtifactSigWithPropToType0Witness.translatedSpecs)
+          left right := by
+  dsimp
+  let nx := termAtom rawLeft
+  let ny := termAtom rawRight
+  let cond₁ := mExpr "is-bad" [nx]
+  let cond₂ := mExpr "is-bad" [ny]
+  let eqA := mExpr "==" [nx, ny]
+  let else₁ := mExpr "if" [cond₂, mBool false, eqA]
+  let stCond₁ : St := { counter := st.counter + 1, world := st.world }
+  let stRoot₁ : St := { counter := st.counter + 3, world := st.world }
+  let stCond₂ : St := { counter := st.counter + 4, world := st.world }
+  let stRoot₂ : St := { counter := st.counter + 6, world := st.world }
+  let rootBnd₁ : Metta.Bindings :=
+    (renameBindings (counterSuffix (st.counter + 2))
+      [Metta.BindingRel.val "e" else₁,
+       Metta.BindingRel.val "t" (mBool false)]).reverse
+  let rootBnd₂ : Metta.Bindings :=
+    (renameBindings (counterSuffix (st.counter + 5))
+      [Metta.BindingRel.val "e" eqA,
+       Metta.BindingRel.val "t" (mBool false)]).reverse
+  have hStatic : st.world.selfExtra = [] := by
+    simpa [hWorld] using (show St.init.world.selfExtra = [] by rfl)
+  have hCond₁ :
+      mettaEval kernelDefControlEnv ((fuel + 3) + 1) st [] cond₁ =
+        ([(mBool false, [])], stCond₁) := by
+    have hmatch :
+        Metta.matchAtoms nx
+          (mExpr "Bad" [mVar (counterSuffix st.counter "e")]) = [] := by
+      simpa [nx] using
+        termAtom_not_match_bad_pattern_resolved
+          (counterSuffix st.counter "e") hLeftResolved
+          (dindg_translate_not_bad hLeft)
+    simpa [cond₁, nx, stCond₁, Nat.add_assoc] using
+      mettaEval_kernelDefControlEnv_is_bad_false_eq
+        (fuel := fuel + 1) (st := st) (a := nx)
+        hStatic
+        (by simpa [nx] using termAtom_vars_nil rawLeft)
+        (by simpa [nx] using termAtom_isError_false rawLeft)
+        (by simpa [nx] using termAtom_beq_self_true rawLeft)
+        (by
+          intro w
+          simpa [nx] using termAtom_not_var rawLeft w)
+        hmatch
+  have hRoot₁ :
+      interpretFuel kernelDefControlEnv ((fuel + 3) + 1 + 1) stCond₁
+          [evalItemNil
+            (mExpr "if"
+              [ mBool false
+              , mBool false
+              , mExpr "if"
+                  [ mExpr "is-bad" [ny]
+                  , mBool false
+                  , mExpr "==" [nx, ny] ] ])] [] =
+        ([(mExpr "if"
+            [ mExpr "is-bad" [ny]
+            , mBool false
+            , mExpr "==" [nx, ny] ], rootBnd₁)], stRoot₁) := by
+    have hStaticCond : stCond₁.world.selfExtra = [] := by
+      simpa [stCond₁] using hStatic
+    have hThenClosed : (mBool false).vars = [] := by
+      simp [mBool, Metta.Atom.vars]
+    have hElseClosed : else₁.vars = [] := by
+      simp [else₁, cond₂, eqA, nx, ny, termAtom_vars_nil, mExpr, mSym, mBool,
+        Metta.Atom.vars]
+    have hThenNonVar : ∀ w, mBool false ≠ Metta.Atom.var w := by
+      intro w
+      simp [mBool]
+    have hElseNonVar : ∀ w, else₁ ≠ Metta.Atom.var w := by
+      intro w
+      simp [else₁, mExpr, mSym]
+    have hElseNotFunction :
+        ∀ tail, else₁ ≠ Metta.Atom.expr (Metta.Atom.sym "function" :: tail) := by
+      intro tail
+      simp [else₁, cond₂, eqA, mExpr, mSym]
+    simpa [stCond₁, stRoot₁, rootBnd₁, else₁, cond₂, eqA,
+      Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using
+      interpretFuel_kernelDefControlEnv_if_false_root_eq
+        (fuel := fuel + 4) (st := stCond₁) (mBool false) else₁
+        hStaticCond hThenClosed hElseClosed hThenNonVar hElseNonVar
+        hElseNotFunction
+  have hStaticRoot₁ : stRoot₁.world.selfExtra = [] := by
+    simpa [stRoot₁] using hStatic
+  have hCond₂ :
+      mettaEval kernelDefControlEnv (fuel + 3) stRoot₁ [] cond₂ =
+        ([(mBool false, [])], stCond₂) := by
+    have hmatch :
+        Metta.matchAtoms ny
+          (mExpr "Bad" [mVar (counterSuffix stRoot₁.counter "e")]) = [] := by
+      simpa [ny] using
+        termAtom_not_match_bad_pattern_resolved
+          (counterSuffix stRoot₁.counter "e") hRightResolved
+          (dindg_translate_not_bad hRight)
+    simpa [cond₂, ny, stRoot₁, stCond₂, Nat.add_assoc,
+      Nat.add_comm, Nat.add_left_comm] using
+      mettaEval_kernelDefControlEnv_is_bad_false_eq
+        (fuel := fuel) (st := stRoot₁) (a := ny)
+        hStaticRoot₁
+        (by simpa [ny] using termAtom_vars_nil rawRight)
+        (by simpa [ny] using termAtom_isError_false rawRight)
+        (by simpa [ny] using termAtom_beq_self_true rawRight)
+        (by
+          intro w
+          simpa [ny] using termAtom_not_var rawRight w)
+        hmatch
+  have hRoot₂ :
+      interpretFuel kernelDefControlEnv ((fuel + 3) + 1) stCond₂
+          [evalItemNil
+            (mExpr "if" [mBool false, mBool false, mExpr "==" [nx, ny]])] [] =
+        ([(mExpr "==" [nx, ny], rootBnd₂)], stRoot₂) := by
+    have hStaticCond : stCond₂.world.selfExtra = [] := by
+      simpa [stCond₂] using hStatic
+    have hThenClosed : (mBool false).vars = [] := by
+      simp [mBool, Metta.Atom.vars]
+    have hElseClosed : eqA.vars = [] := by
+      simp [eqA, nx, ny, termAtom_vars_nil, mExpr, mSym,
+        Metta.Atom.vars]
+    have hThenNonVar : ∀ w, mBool false ≠ Metta.Atom.var w := by
+      intro w
+      simp [mBool]
+    have hElseNonVar : ∀ w, eqA ≠ Metta.Atom.var w := by
+      intro w
+      simp [eqA, mExpr, mSym]
+    have hElseNotFunction :
+        ∀ tail, eqA ≠ Metta.Atom.expr (Metta.Atom.sym "function" :: tail) := by
+      intro tail
+      simp [eqA, mExpr, mSym]
+    simpa [stCond₂, stRoot₂, rootBnd₂, eqA,
+      Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using
+      interpretFuel_kernelDefControlEnv_if_false_root_eq
+        (fuel := fuel + 3) (st := stCond₂) (mBool false) eqA
+        hStaticCond hThenClosed hElseClosed hThenNonVar hElseNonVar
+        hElseNotFunction
+  have hWorldRoot₁ : stRoot₁.world = St.init.world := by
+    simpa [stRoot₁] using hWorld
+  have hmemConv :
+      (mBool true, outBnd) ∈
+        (mettaEval kernelDefControlEnv ((fuel + 3) + 2) st []
+          (convReadoutAfterNxNy nx ny)).1 := by
+    simpa [convReadoutAfterNxNy, nx, ny, cond₁, cond₂, eqA, else₁,
+      Nat.add_assoc] using hmem
+  rcases
+      mettaEval_kernelDefControlEnv_convReadoutAfterNxNy_true_pair_implies_eq_pair_of_false_branches
+        (fuel := fuel + 3) (st := st)
+        (stCond₁ := stCond₁) (stRoot₁ := stRoot₁)
+        (stCond₂ := stCond₂) (stRoot₂ := stRoot₂)
+        (nx := nx) (ny := ny)
+        (rootBnd₁ := rootBnd₁) (rootBnd₂ := rootBnd₂)
+        (outBnd := outBnd)
+        hWorld hWorldRoot₁
+        (by simpa [nx] using termAtom_vars_nil rawLeft)
+        (by simpa [ny] using termAtom_vars_nil rawRight)
+        hCond₁ hRoot₁ hCond₂ hRoot₂ hmemConv with
+    ⟨finalBnd, hEqMem⟩
+  have hconv :
+      ConvDecl
+        (envOfSpecs
+          cicStage3RawArtifactSigWithPropToType0Witness.translatedSpecs)
+        left right :=
+    cicStage3_resolved_decl_conv_of_common_target
+      hLeftResolved hRightResolved hLeft hRight hCommon
+  exact ⟨finalBnd, by simpa [nx, ny, eqA, stRoot₂] using hEqMem, hconv⟩
+
+theorem mettaEval_kernelDefControlEnv_convReadoutAfterNxNy_termAtom_true_resolved_common_target_decl_conv
+    (fuel : Nat) (st : St)
+    {rawLeft rawRight : DIndGArtifactTerm}
+    {left right : PureTm 0} {outBnd : Metta.Bindings}
+    (hWorld : st.world = St.init.world)
+    (hLeftResolved : CicStage3ResolvedNfTerm rawLeft)
+    (hRightResolved : CicStage3ResolvedNfTerm rawRight)
+    (hLeft :
+      DIndGArtifactTermTranslates
+        cicStage3RawNameTranslatesWithPropToType0Witness 0 rawLeft left)
+    (hRight :
+      DIndGArtifactTermTranslates
+        cicStage3RawNameTranslatesWithPropToType0Witness 0 rawRight right)
+    (hCommon :
+      ∃ target : PureTm 0,
+        CicStage3ResolvedNfDeclTarget 0 rawLeft target ∧
+          CicStage3ResolvedNfDeclTarget 0 rawRight target)
+    (hmem :
+      (mBool true, outBnd) ∈
+        (mettaEval kernelDefControlEnv (fuel + 5) st []
+          (convReadoutAfterNxNy (termAtom rawLeft) (termAtom rawRight))).1) :
+    ConvDecl
+      (envOfSpecs
+        cicStage3RawArtifactSigWithPropToType0Witness.translatedSpecs)
+      left right := by
+  rcases
+      mettaEval_kernelDefControlEnv_termAtom_conv_tail_true_resolved_common_target_eq_pair_decl_conv
+        (fuel := fuel) (st := st) (rawLeft := rawLeft) (rawRight := rawRight)
+        (left := left) (right := right) (outBnd := outBnd)
+        hWorld hLeftResolved hRightResolved hLeft hRight hCommon
+        (by simpa [convReadoutAfterNxNy] using hmem) with
+    ⟨_finalBnd, _hEqMem, hConv⟩
+  exact hConv
+
+/-- Final resolved-`nf` composition point for the `conv` runtime.
+
+Once the runtime decomposition has supplied terminal `nf` readouts for both
+sides, the Boolean tail of `conv` is consumed at the `convReadoutAfterNxNy`
+boundary and the declaration reductions lift the resolved readout conversion
+back to the original translated terms. -/
+theorem mettaEval_kernelDefControlEnv_convReadoutAfterNxNy_termAtom_true_resolved_common_target_reductions_decl_conv
+    (fuel : Nat) (st : St)
+    {rawLeftNf rawRightNf : DIndGArtifactTerm}
+    {left right leftNf rightNf : PureTm 0} {outBnd : Metta.Bindings}
+    (hWorld : st.world = St.init.world)
+    (hLeftRed :
+      RedStarDecl
+        (envOfSpecs
+          cicStage3RawArtifactSigWithPropToType0Witness.translatedSpecs)
+        left leftNf)
+    (hRightRed :
+      RedStarDecl
+        (envOfSpecs
+          cicStage3RawArtifactSigWithPropToType0Witness.translatedSpecs)
+        right rightNf)
+    (hLeftResolved : CicStage3ResolvedNfTerm rawLeftNf)
+    (hRightResolved : CicStage3ResolvedNfTerm rawRightNf)
+    (hLeftNf :
+      DIndGArtifactTermTranslates
+        cicStage3RawNameTranslatesWithPropToType0Witness 0 rawLeftNf leftNf)
+    (hRightNf :
+      DIndGArtifactTermTranslates
+        cicStage3RawNameTranslatesWithPropToType0Witness 0 rawRightNf rightNf)
+    (hCommon :
+      ∃ target : PureTm 0,
+        CicStage3ResolvedNfDeclTarget 0 rawLeftNf target ∧
+          CicStage3ResolvedNfDeclTarget 0 rawRightNf target)
+    (hmem :
+      (mBool true, outBnd) ∈
+        (mettaEval kernelDefControlEnv (fuel + 5) st []
+          (convReadoutAfterNxNy
+            (termAtom rawLeftNf) (termAtom rawRightNf))).1) :
+    ConvDecl
+      (envOfSpecs
+        cicStage3RawArtifactSigWithPropToType0Witness.translatedSpecs)
+      left right := by
+  let E :=
+    envOfSpecs
+      cicStage3RawArtifactSigWithPropToType0Witness.translatedSpecs
+  have hNfConv : ConvDecl E leftNf rightNf := by
+    simpa [E] using
+      mettaEval_kernelDefControlEnv_convReadoutAfterNxNy_termAtom_true_resolved_common_target_decl_conv
+        (fuel := fuel) (st := st)
+        (rawLeft := rawLeftNf) (rawRight := rawRightNf)
+        (left := leftNf) (right := rightNf) (outBnd := outBnd)
+        hWorld hLeftResolved hRightResolved hLeftNf hRightNf hCommon hmem
+  have hLeftConv : ConvDecl E left leftNf := by
+    simpa [E] using redStarDecl_implies_conv hLeftRed
+  have hRightConv : ConvDecl E right rightNf := by
+    simpa [E] using redStarDecl_implies_conv hRightRed
+  simpa [E] using
+    Relation.EqvGen.trans _ _ _ hLeftConv
+      (Relation.EqvGen.trans _ _ _ hNfConv
+        (Relation.EqvGen.symm _ _ hRightConv))
+
+/-- Value-projection form of
+`mettaEval_kernelDefControlEnv_convReadoutAfterNxNy_termAtom_true_resolved_common_target_reductions_decl_conv`.
+
+The final `conv` composition observes only that `True` is among the returned
+values; the terminal readout binding is an implementation detail. -/
+theorem mettaEval_kernelDefControlEnv_convReadoutAfterNxNy_termAtom_true_value_resolved_common_target_reductions_decl_conv
+    (fuel : Nat) (st : St)
+    {rawLeftNf rawRightNf : DIndGArtifactTerm}
+    {left right leftNf rightNf : PureTm 0}
+    (hWorld : st.world = St.init.world)
+    (hLeftRed :
+      RedStarDecl
+        (envOfSpecs
+          cicStage3RawArtifactSigWithPropToType0Witness.translatedSpecs)
+        left leftNf)
+    (hRightRed :
+      RedStarDecl
+        (envOfSpecs
+          cicStage3RawArtifactSigWithPropToType0Witness.translatedSpecs)
+        right rightNf)
+    (hLeftResolved : CicStage3ResolvedNfTerm rawLeftNf)
+    (hRightResolved : CicStage3ResolvedNfTerm rawRightNf)
+    (hLeftNf :
+      DIndGArtifactTermTranslates
+        cicStage3RawNameTranslatesWithPropToType0Witness 0 rawLeftNf leftNf)
+    (hRightNf :
+      DIndGArtifactTermTranslates
+        cicStage3RawNameTranslatesWithPropToType0Witness 0 rawRightNf rightNf)
+    (hCommon :
+      ∃ target : PureTm 0,
+        CicStage3ResolvedNfDeclTarget 0 rawLeftNf target ∧
+          CicStage3ResolvedNfDeclTarget 0 rawRightNf target)
+    (hmem :
+      mBool true ∈
+        (mettaEval kernelDefControlEnv (fuel + 5) st []
+          (convReadoutAfterNxNy
+            (termAtom rawLeftNf) (termAtom rawRightNf))).1.map (·.1)) :
+    ConvDecl
+      (envOfSpecs
+        cicStage3RawArtifactSigWithPropToType0Witness.translatedSpecs)
+      left right := by
+  rcases List.mem_map.mp hmem with ⟨⟨a, outBnd⟩, hpair, ha⟩
+  dsimp at ha
+  subst a
+  exact
+    mettaEval_kernelDefControlEnv_convReadoutAfterNxNy_termAtom_true_resolved_common_target_reductions_decl_conv
+      (fuel := fuel) (st := st)
+      (rawLeftNf := rawLeftNf) (rawRightNf := rawRightNf)
+      (left := left) (right := right)
+      (leftNf := leftNf) (rightNf := rightNf)
+      (outBnd := outBnd)
+      hWorld hLeftRed hRightRed hLeftResolved hRightResolved
+      hLeftNf hRightNf hCommon hpair
+
+theorem mettaEval_kernelDefControlEnv_termAtom_conv_tail_true_no_con_resolved_decl_conv
+    (fuel : Nat) (st : St)
+    {rawLeft rawRight : DIndGArtifactTerm}
+    {left right : PureTm 0} {outBnd : Metta.Bindings}
+    (hWorld : st.world = St.init.world)
+    (hLeftResolved : CicStage3NoConResolvedNfTerm rawLeft)
+    (hRightResolved : CicStage3NoConResolvedNfTerm rawRight)
+    (hLeft :
+      DIndGArtifactTermTranslates
+        cicStage3RawNameTranslatesWithPropToType0Witness 0 rawLeft left)
+    (hRight :
+      DIndGArtifactTermTranslates
+        cicStage3RawNameTranslatesWithPropToType0Witness 0 rawRight right)
+    (hmem :
+      (mBool true, outBnd) ∈
+        (mettaEval kernelDefControlEnv (fuel + 5) st []
+          (mExpr "if"
+            [ mExpr "is-bad" [termAtom rawLeft]
+            , mBool false
+            , mExpr "if"
+                [ mExpr "is-bad" [termAtom rawRight]
+                , mBool false
+                , mExpr "==" [termAtom rawLeft, termAtom rawRight] ] ])).1) :
+    ConvDecl
+      (envOfSpecs
+        cicStage3RawArtifactSigWithPropToType0Witness.translatedSpecs)
+      left right := by
+  have hRaw : rawLeft = rawRight :=
+    mettaEval_kernelDefControlEnv_termAtom_conv_tail_true_no_con_resolved_raw_eq
+      fuel st hWorld hLeftResolved hRightResolved
+      (dindg_translate_not_bad hLeft)
+      (dindg_translate_not_bad hRight)
+      hmem
+  subst rawRight
+  have hTerm : left = right :=
+    dindg_translate_unique_on_cicStage3_no_con_resolved
+      (raw := rawLeft) hLeftResolved hLeft hRight
+  subst right
+  exact Relation.EqvGen.refl left
 
 theorem mettaEval_kernelDefControlEnv_termAtom_conv_tail_true_nameFree_decl_conv
     (fuel : Nat) (st : St)
@@ -25938,6 +28297,15 @@ theorem mettaEval_kernelDefControlEnv_nf_rawIdentityWitness_eq_state
     termAtom_vars_nil cicStage3RawIdentityWitness, Nat.add_assoc,
     nfLamCandidatePre, nfPiCandidatePre] using hExact
 
+theorem mettaEval_kernelDefControlEnv_nf_rawIdentityWitness_selfExtra
+    (fuel : Nat) (st : St) (sig : DIndGArtifactSig)
+    (hStatic : st.world.selfExtra = []) :
+    ((mettaEval kernelDefControlEnv (fuel + 7) st []
+        (nfQuery sig cicStage3RawIdentityWitness)).2).world.selfExtra = [] := by
+  rw [mettaEval_kernelDefControlEnv_nf_rawIdentityWitness_eq_state
+    fuel st sig hStatic]
+  simpa using hStatic
+
 theorem mettaEval_kernelDefControlEnv_nonWitness_body_if_false_nf_eq_state
     (fuel : Nat) (st : St)
     (hWorld : st.world = St.init.world) :
@@ -29173,6 +31541,19 @@ private theorem mettaEval_kernelDefControlEnv_propToType0Witness_nf_def_body_eq_
       stOut, stLetAtom, stLetRoot, Nat.add_assoc] using hEval
   · simpa [stOut, stLetAtom, stLetRoot, stRoot] using hWorld
 
+private theorem mettaEval_kernelDefControlEnv_propToType0Witness_nf_def_body_selfExtra
+    (fuel : Nat) (st : St)
+    (hWorld : st.world = St.init.world) :
+    ((mettaEval kernelDefControlEnv (fuel + 11) st []
+        (nfQuery cicStage3RawArtifactSigWithPropToType0Witness
+          (.defn cicStage3PropToType0WitnessName))).2).world.selfExtra = [] := by
+  rcases
+      mettaEval_kernelDefControlEnv_propToType0Witness_nf_def_body_eq_state_exists
+        fuel st hWorld with
+    ⟨stOut, hExact, hWorldOut⟩
+  rw [hExact]
+  simpa [hWorldOut] using (show St.init.world.selfExtra = [] by rfl)
+
 private theorem mettaEval_kernelDefControlEnv_propToType0Witness_nf_def_body_mem_state
     (fuel : Nat) (st : St)
     (hWorld : st.world = St.init.world) :
@@ -29299,6 +31680,119 @@ theorem evaluator_nf_propToType0Witness_def_body :
   refine ⟨10, ?_⟩
   simpa using
     mettaEval_kernelDefControlEnv_propToType0Witness_nf_def_body_any 0
+
+theorem evaluator_nf_propToType0Witness_identity :
+    evaluator.nf cicStage3RawArtifactSigWithPropToType0Witness
+      cicStage3RawIdentityWitness
+      cicStage3RawIdentityWitness := by
+  refine ⟨6, ?_⟩
+  have hEval :=
+    mettaEval_kernelDefControlEnv_nf_rawIdentityWitness_eq_state
+      0 St.init cicStage3RawArtifactSigWithPropToType0Witness rfl
+  rw [hEval]
+  simpa using termAtom_beq_self_true cicStage3RawIdentityWitness
+
+theorem evaluator_nf_propToType0Witness_def_body_decl_reduction :
+    evaluator.nf cicStage3RawArtifactSigWithPropToType0Witness
+        (.defn cicStage3PropToType0WitnessName)
+        cicStage3RawIdentityWitness ∧
+      DIndGArtifactTermTranslates
+        cicStage3RawArtifactSigWithPropToType0Witness.nameTranslates 0
+        (.defn cicStage3PropToType0WitnessName)
+        (.const cicStage3PropToType0WitnessName : PureTm 0) ∧
+      DIndGArtifactTermTranslates
+        cicStage3RawArtifactSigWithPropToType0Witness.nameTranslates 0
+        cicStage3RawIdentityWitness
+        cicStage3IdentityWitness ∧
+      RedStarDecl
+        (envOfSpecs
+          cicStage3RawArtifactSigWithPropToType0Witness.translatedSpecs)
+        (.const cicStage3PropToType0WitnessName : PureTm 0)
+        cicStage3IdentityWitness ∧
+      ConvDecl
+        (envOfSpecs
+          cicStage3RawArtifactSigWithPropToType0Witness.translatedSpecs)
+        (.const cicStage3PropToType0WitnessName : PureTm 0)
+        cicStage3IdentityWitness ∧
+      (.const cicStage3PropToType0WitnessName : PureTm 0) ≠
+        cicStage3IdentityWitness := by
+  exact ⟨evaluator_nf_propToType0Witness_def_body,
+    cicStage3RawPropToType0WitnessDefn_translates,
+    cicStage3RawIdentityWitness_translates,
+    by
+      simpa [cicStage3RawArtifactSigWithPropToType0Witness,
+        cicStage3PropToType0WitnessDeclEnv] using
+        (redDecl_to_star cicStage3PropToType0DeclaredDelta_deltaStep),
+    by
+      simpa [cicStage3RawArtifactSigWithPropToType0Witness,
+        cicStage3PropToType0WitnessDeclEnv] using
+        (redDecl_implies_conv cicStage3PropToType0DeclaredDelta_deltaStep),
+    prop_to_type0_witness_const_ne_identity⟩
+
+theorem evaluator_nf_propToType0Witness_pair_join_decl_conv :
+    evaluator.nf cicStage3RawArtifactSigWithPropToType0Witness
+        (.defn cicStage3PropToType0WitnessName)
+        cicStage3RawIdentityWitness ∧
+      evaluator.nf cicStage3RawArtifactSigWithPropToType0Witness
+        cicStage3RawIdentityWitness
+        cicStage3RawIdentityWitness ∧
+      DIndGArtifactTermTranslates
+        cicStage3RawArtifactSigWithPropToType0Witness.nameTranslates 0
+        (.defn cicStage3PropToType0WitnessName)
+        (.const cicStage3PropToType0WitnessName : PureTm 0) ∧
+      DIndGArtifactTermTranslates
+        cicStage3RawArtifactSigWithPropToType0Witness.nameTranslates 0
+        cicStage3RawIdentityWitness
+        cicStage3IdentityWitness ∧
+      ConvDecl
+        (envOfSpecs
+          cicStage3RawArtifactSigWithPropToType0Witness.translatedSpecs)
+        (.const cicStage3PropToType0WitnessName : PureTm 0)
+        cicStage3IdentityWitness ∧
+      (.const cicStage3PropToType0WitnessName : PureTm 0) ≠
+        cicStage3IdentityWitness := by
+  exact ⟨evaluator_nf_propToType0Witness_def_body,
+    evaluator_nf_propToType0Witness_identity,
+    cicStage3RawPropToType0WitnessDefn_translates,
+    cicStage3RawIdentityWitness_translates,
+    prop_to_type0_witness_decl_conv_nonreflexive_via_join.1,
+    prop_to_type0_witness_decl_conv_nonreflexive_via_join.2⟩
+
+theorem evaluator_nf_propToType0Witness_pair_common_target_decl_conv :
+    evaluator.nf cicStage3RawArtifactSigWithPropToType0Witness
+        (.defn cicStage3PropToType0WitnessName)
+        cicStage3RawIdentityWitness ∧
+      evaluator.nf cicStage3RawArtifactSigWithPropToType0Witness
+        cicStage3RawIdentityWitness
+        cicStage3RawIdentityWitness ∧
+      (∃ target : PureTm 0,
+        CicStage3ResolvedNfDeclTarget 0
+          (.defn cicStage3PropToType0WitnessName) target ∧
+          CicStage3ResolvedNfDeclTarget 0 cicStage3RawIdentityWitness target) ∧
+      ConvDecl
+        (envOfSpecs
+          cicStage3RawArtifactSigWithPropToType0Witness.translatedSpecs)
+        (.const cicStage3PropToType0WitnessName : PureTm 0)
+        cicStage3IdentityWitness ∧
+      (.const cicStage3PropToType0WitnessName : PureTm 0) ≠
+        cicStage3IdentityWitness := by
+  have hConv :
+      ConvDecl
+        (envOfSpecs
+          cicStage3RawArtifactSigWithPropToType0Witness.translatedSpecs)
+        (.const cicStage3PropToType0WitnessName : PureTm 0)
+        cicStage3IdentityWitness :=
+    cicStage3_resolved_decl_conv_of_common_target
+      CicStage3ResolvedNfTerm.witnessDefn
+      cicStage3RawIdentityWitness_resolved_nf_term
+      cicStage3RawPropToType0WitnessDefn_translates
+      cicStage3RawIdentityWitness_translates
+      cicStage3RawPropToType0WitnessDefn_identity_common_decl_target
+  exact ⟨evaluator_nf_propToType0Witness_def_body,
+    evaluator_nf_propToType0Witness_identity,
+    cicStage3RawPropToType0WitnessDefn_identity_common_decl_target,
+    hConv,
+    prop_to_type0_witness_const_ne_identity⟩
 
 private theorem mettaEval_kernelDefControlEnv_propToType0Witness_conv_tail_true_mem
     (fuel : Nat) (st : St)
@@ -30665,6 +33159,80 @@ theorem evaluator_conv_true_named_readout_pair_exists
   exact ⟨fuel, finalBnd, by
     simpa [convFreshReadoutAt_eq_named] using hFinal⟩
 
+theorem evaluator_conv_true_named_readout_pair_exists_succ
+    {sig : DIndGArtifactSig} {rawLeft rawRight : DIndGArtifactTerm}
+    (hconv : evaluator.conv sig rawLeft rawRight) :
+    ∃ fuel finalBnd,
+      let nxBinder := counterSuffix St.init.counter "nx"
+      let nyBinder := counterSuffix St.init.counter "ny"
+      let stRoot : St := { counter := St.init.counter + 1, world := St.init.world }
+      (mBool true, finalBnd) ∈
+        (mettaEval kernelDefControlEnv (fuel + 1) stRoot []
+          (convReadoutNamed nxBinder nyBinder sig rawLeft rawRight)).1 := by
+  rcases evaluator_conv_true_named_readout_pair_exists hconv with
+    ⟨fuel, finalBnd, hFinal⟩
+  dsimp at hFinal ⊢
+  cases fuel with
+  | zero =>
+      exact False.elim (mettaEval_zero_true_pair_false hFinal)
+  | succ fuel' =>
+      exact ⟨fuel', finalBnd, by simpa [Nat.succ_eq_add_one] using hFinal⟩
+
+theorem evaluator_conv_true_named_readout_value_exists_succ
+    {sig : DIndGArtifactSig} {rawLeft rawRight : DIndGArtifactTerm}
+    (hconv : evaluator.conv sig rawLeft rawRight) :
+    ∃ fuel,
+      let nxBinder := counterSuffix St.init.counter "nx"
+      let nyBinder := counterSuffix St.init.counter "ny"
+      let stRoot : St := { counter := St.init.counter + 1, world := St.init.world }
+      mBool true ∈
+        (mettaEval kernelDefControlEnv (fuel + 1) stRoot []
+          (convReadoutNamed nxBinder nyBinder sig rawLeft rawRight)).1.map (·.1) := by
+  rcases evaluator_conv_true_named_readout_pair_exists_succ hconv with
+    ⟨fuel, finalBnd, hFinal⟩
+  exact ⟨fuel, by
+    dsimp at hFinal ⊢
+    exact mettaEval_value_mem_of_pair_mem hFinal⟩
+
+/-- Evaluator-facing specialization of the named-readout extraction contract.
+
+The public conclusion is value-projection only: the retained bindings needed to
+thread the two nested `let`/`unify` steps remain inside
+`ConvReadoutNamedNfExtractionObligations`. -/
+theorem evaluator_conv_named_readout_true_value_implies_left_right_nf_values_of_obligations
+    (fuel : Nat)
+    {sig : DIndGArtifactSig} {rawLeft rawRight : DIndGArtifactTerm}
+    (hStatic :
+      let nxBinder := counterSuffix St.init.counter "nx"
+      let nyBinder := counterSuffix St.init.counter "ny"
+      let stNamed : St := { counter := St.init.counter + 1, world := St.init.world }
+      ConvReadoutNamedNfExtractionObligations
+        fuel stNamed nxBinder nyBinder sig rawLeft rawRight)
+    (hmem :
+      let nxBinder := counterSuffix St.init.counter "nx"
+      let nyBinder := counterSuffix St.init.counter "ny"
+      let stNamed : St := { counter := St.init.counter + 1, world := St.init.world }
+      mBool true ∈
+        (mettaEval kernelDefControlEnv ((fuel + 2) + 1) stNamed []
+          (convReadoutNamed nxBinder nyBinder sig rawLeft rawRight)).1.map (·.1)) :
+    ∃ nx ny stBefore,
+      let stNamed : St := { counter := St.init.counter + 1, world := St.init.world }
+      nx ∈
+        (mettaEval kernelDefControlEnv (fuel + 2) stNamed []
+          (nfQuery sig rawLeft)).1.map (·.1) ∧
+      ny ∈
+        (mettaEval kernelDefControlEnv fuel stBefore []
+          (nfQuery sig rawRight)).1.map (·.1) := by
+  dsimp at hStatic hmem ⊢
+  exact
+    mettaEval_kernelDefControlEnv_convReadoutNamed_true_value_implies_left_right_nf_values_of_obligations
+      (fuel := fuel)
+      (st := { counter := St.init.counter + 1, world := St.init.world })
+      (nxBinder := counterSuffix St.init.counter "nx")
+      (nyBinder := counterSuffix St.init.counter "ny")
+      (sig := sig) (rawLeft := rawLeft) (rawRight := rawRight)
+      hStatic hmem
+
 theorem evaluator_conv_true_left_nf_pair_exists
     {sig : DIndGArtifactSig} {rawLeft rawRight : DIndGArtifactTerm}
     (hconv : evaluator.conv sig rawLeft rawRight) :
@@ -30690,6 +33258,20 @@ theorem evaluator_conv_true_left_nf_pair_exists
             sig rawLeft rawRight finalBnd hFinal with
         ⟨nx, nxBnd, hNf⟩
       exact ⟨fuel', nx, nxBnd, hNf⟩
+
+theorem evaluator_conv_true_left_nf_value_exists
+    {sig : DIndGArtifactSig} {rawLeft rawRight : DIndGArtifactTerm}
+    (hconv : evaluator.conv sig rawLeft rawRight) :
+    ∃ fuel nx,
+      let stRoot : St := { counter := St.init.counter + 1, world := St.init.world }
+      nx ∈
+        (mettaEval kernelDefControlEnv fuel stRoot []
+          (nfQuery sig rawLeft)).1.map (·.1) := by
+  rcases evaluator_conv_true_left_nf_pair_exists hconv with
+    ⟨fuel, nx, nxBnd, hNf⟩
+  exact ⟨fuel, nx, by
+    dsimp at hNf ⊢
+    exact mettaEval_value_mem_of_pair_mem hNf⟩
 
 private theorem evaluator_conv_true_left_nf_and_named_recursive_root_pair_exists
     {sig : DIndGArtifactSig} {rawLeft rawRight : DIndGArtifactTerm}
@@ -33594,11 +36176,118 @@ theorem propToType0Witness_runtime_decl_conv_nonreflexive_demo :
         cicStage3IdentityWitness ∧
       (.const cicStage3PropToType0WitnessName : PureTm 0) ≠
         cicStage3IdentityWitness := by
-  rcases prop_to_type0_witness_decl_conv_nonreflexive with ⟨hconv, hne⟩
+  rcases prop_to_type0_witness_decl_conv_nonreflexive_via_join with
+    ⟨hconv, hne⟩
   exact ⟨evaluator_propToType0Witness_def_left_conv_true,
     cicStage3RawPropToType0WitnessDefn_translates,
     cicStage3RawIdentityWitness_translates,
     hconv, hne⟩
+
+theorem propToType0Witness_runtime_decl_conv_common_target_demo :
+    evaluator.conv cicStage3RawArtifactSigWithPropToType0Witness
+        (.defn cicStage3PropToType0WitnessName)
+        cicStage3RawIdentityWitness ∧
+      (∃ target : PureTm 0,
+        CicStage3ResolvedNfDeclTarget 0
+          (.defn cicStage3PropToType0WitnessName) target ∧
+          CicStage3ResolvedNfDeclTarget 0 cicStage3RawIdentityWitness target) ∧
+      ConvDecl
+        (envOfSpecs
+          cicStage3RawArtifactSigWithPropToType0Witness.translatedSpecs)
+        (.const cicStage3PropToType0WitnessName : PureTm 0)
+        cicStage3IdentityWitness ∧
+      (.const cicStage3PropToType0WitnessName : PureTm 0) ≠
+        cicStage3IdentityWitness := by
+  have hConv :
+      ConvDecl
+        (envOfSpecs
+          cicStage3RawArtifactSigWithPropToType0Witness.translatedSpecs)
+        (.const cicStage3PropToType0WitnessName : PureTm 0)
+        cicStage3IdentityWitness :=
+    cicStage3_resolved_decl_conv_of_common_target
+      CicStage3ResolvedNfTerm.witnessDefn
+      cicStage3RawIdentityWitness_resolved_nf_term
+      cicStage3RawPropToType0WitnessDefn_translates
+      cicStage3RawIdentityWitness_translates
+      cicStage3RawPropToType0WitnessDefn_identity_common_decl_target
+  exact ⟨evaluator_propToType0Witness_def_left_conv_true,
+    cicStage3RawPropToType0WitnessDefn_identity_common_decl_target,
+    hConv,
+    prop_to_type0_witness_const_ne_identity⟩
+
+/-- The concrete non-reflexive witness conversion, routed through the terminal
+`convReadoutAfterNxNy` readout and the resolved common-target bridge.
+
+This is the closed demo instance of the final `conv_sound` composition shape:
+the runtime Boolean readout is consumed at the same boundary as the general
+term-atom theorem, while the outer witness definition is related to that
+resolved normal form by the existing declaration reduction. -/
+theorem propToType0Witness_terminal_readout_resolved_common_target_demo :
+    (∃ bnd,
+      (mBool true, bnd) ∈
+        (mettaEval kernelDefControlEnv 6 St.init []
+          (convReadoutAfterNxNy
+            (termAtom cicStage3RawIdentityWitness)
+            (termAtom cicStage3RawIdentityWitness))).1) ∧
+      ConvDecl
+        (envOfSpecs
+          cicStage3RawArtifactSigWithPropToType0Witness.translatedSpecs)
+        (.const cicStage3PropToType0WitnessName : PureTm 0)
+        cicStage3IdentityWitness ∧
+      (.const cicStage3PropToType0WitnessName : PureTm 0) ≠
+        cicStage3IdentityWitness := by
+  let E :=
+    envOfSpecs
+      cicStage3RawArtifactSigWithPropToType0Witness.translatedSpecs
+  have hTerminal :
+      (mBool true, []) ∈
+        (mettaEval kernelDefControlEnv 6 St.init []
+          (convReadoutAfterNxNy
+            (termAtom cicStage3RawIdentityWitness)
+            (termAtom cicStage3RawIdentityWitness))).1 := by
+    simpa using
+      mettaEval_kernelDefControlEnv_propToType0Witness_convReadoutAfterNxNy_true_mem
+        0 St.init rfl
+  have hCommonIdentity :
+      ∃ target : PureTm 0,
+        CicStage3ResolvedNfDeclTarget 0 cicStage3RawIdentityWitness target ∧
+          CicStage3ResolvedNfDeclTarget 0 cicStage3RawIdentityWitness target := by
+    rcases cicStage3RawIdentityWitness_resolved_nf_decl_target with
+      ⟨target, hTarget, _hRed⟩
+    exact ⟨target, hTarget, hTarget⟩
+  have hLeftRed :
+      RedStarDecl E
+        (.const cicStage3PropToType0WitnessName : PureTm 0)
+        cicStage3IdentityWitness := by
+    simpa [E] using
+      (cicStage3PropToType0Witness_defn_decl_reduces_any_depth (n := 0))
+  have hRightRed :
+      RedStarDecl E cicStage3IdentityWitness cicStage3IdentityWitness :=
+    RedStarDecl.refl _
+  have hConv :
+      ConvDecl E
+        (.const cicStage3PropToType0WitnessName : PureTm 0)
+        cicStage3IdentityWitness := by
+    simpa [E] using
+      mettaEval_kernelDefControlEnv_convReadoutAfterNxNy_termAtom_true_resolved_common_target_reductions_decl_conv
+        (fuel := 1) (st := St.init)
+        (rawLeftNf := cicStage3RawIdentityWitness)
+        (rawRightNf := cicStage3RawIdentityWitness)
+        (left := (.const cicStage3PropToType0WitnessName : PureTm 0))
+        (right := cicStage3IdentityWitness)
+        (leftNf := cicStage3IdentityWitness)
+        (rightNf := cicStage3IdentityWitness)
+        (outBnd := [])
+        rfl hLeftRed hRightRed
+        cicStage3RawIdentityWitness_resolved_nf_term
+        cicStage3RawIdentityWitness_resolved_nf_term
+        cicStage3RawIdentityWitness_translates
+        cicStage3RawIdentityWitness_translates
+        hCommonIdentity
+        (by simpa using hTerminal)
+  exact ⟨⟨[], hTerminal⟩,
+    by simpa [E] using hConv,
+    prop_to_type0_witness_const_ne_identity⟩
 
 /-- Negative side of the witness demo: an undeclared raw `Def` name cannot be
 used as the Stage-3 witness constant in the translation contract consumed by
@@ -36023,6 +38712,28 @@ theorem infer_sound_srt
   exact infer_srt_type_decl_sound
 
 namespace DIndGArtifactTermTranslates
+
+/-- Inversion for translated raw constants. The finite-alphabet `conv` cases use
+this before applying signature-specific name bounds. -/
+theorem con_inv {nameTranslates : DeclName → DeclName → Prop}
+    {raw : DeclName} {term : PureTm n}
+    (h : DIndGArtifactTermTranslates nameTranslates n (.con raw) term) :
+    ∃ lean : DeclName,
+      term = .const lean ∧ nameTranslates raw lean := by
+  cases h with
+  | con hName =>
+      exact ⟨_, rfl, hName⟩
+
+/-- Inversion for translated raw definitions. The finite-alphabet `conv` cases
+use this before applying signature-specific name bounds. -/
+theorem defn_inv {nameTranslates : DeclName → DeclName → Prop}
+    {raw : DeclName} {term : PureTm n}
+    (h : DIndGArtifactTermTranslates nameTranslates n (.defn raw) term) :
+    ∃ lean : DeclName,
+      term = .const lean ∧ nameTranslates raw lean := by
+  cases h with
+  | defn hName =>
+      exact ⟨_, rfl, hName⟩
 
 /-- Inversion for translated raw applications. This is the App-case shape the
 eventual `MettaCall` induction must expose before it can consume sub-`infer`

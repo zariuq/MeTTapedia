@@ -1,4 +1,5 @@
 import Mettapedia.PLN.Bridges.HOL.DefinableCuts.Core
+import Mettapedia.PLN.Bridges.HOL.DefinableCuts.OrderReflection
 import Mettapedia.PLN.Bridges.HOL.DefinableCuts.Predicate
 import Mettapedia.PLN.Bridges.HOL.DefinableCuts.QFMEndpoint
 import Mettapedia.PLN.Bridges.HOL.DefinableCuts.Counting

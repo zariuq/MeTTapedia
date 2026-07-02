@@ -10669,6 +10669,64 @@ theorem cicStage3RawNameTranslatesWithPropToType0Witness_cases
     · exact Or.inr
         (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr hWitness))))))
 
+theorem cicStage3RawNameTranslatesWithPropToType0Witness_unique
+    {raw lean₁ lean₂ : DeclName}
+    (h₁ :
+      cicStage3RawNameTranslatesWithPropToType0Witness raw lean₁)
+    (h₂ :
+      cicStage3RawNameTranslatesWithPropToType0Witness raw lean₂) :
+    lean₁ = lean₂ := by
+  rcases cicStage3RawNameTranslatesWithPropToType0Witness_cases h₁ with
+    hNat | hRec | hZero | hSucc | hProp | hUniv | hTerm | hWitness
+  · rw [hNat.1] at h₂
+    rw [hNat.2]
+    symm
+    simpa [cicStage3RawNameTranslatesWithPropToType0Witness,
+      cicStage3RawNameTranslates, cicStage3RawCICWitnessTypeNameTranslates,
+      cicPropName, cicUnivName, cicTermName, cicStage3PropToType0WitnessName] using h₂
+  · rw [hRec.1] at h₂
+    rw [hRec.2]
+    symm
+    simpa [cicStage3RawNameTranslatesWithPropToType0Witness,
+      cicStage3RawNameTranslates, cicStage3RawCICWitnessTypeNameTranslates,
+      cicPropName, cicUnivName, cicTermName, cicStage3PropToType0WitnessName] using h₂
+  · rw [hZero.1] at h₂
+    rw [hZero.2]
+    symm
+    simpa [cicStage3RawNameTranslatesWithPropToType0Witness,
+      cicStage3RawNameTranslates, cicStage3RawCICWitnessTypeNameTranslates,
+      cicPropName, cicUnivName, cicTermName, cicStage3PropToType0WitnessName] using h₂
+  · rw [hSucc.1] at h₂
+    rw [hSucc.2]
+    symm
+    simpa [cicStage3RawNameTranslatesWithPropToType0Witness,
+      cicStage3RawNameTranslates, cicStage3RawCICWitnessTypeNameTranslates,
+      cicPropName, cicUnivName, cicTermName, cicStage3PropToType0WitnessName] using h₂
+  · rw [hProp.1] at h₂
+    rw [hProp.2]
+    symm
+    simpa [cicStage3RawNameTranslatesWithPropToType0Witness,
+      cicStage3RawNameTranslates, cicStage3RawCICWitnessTypeNameTranslates,
+      cicPropName, cicUnivName, cicTermName, cicStage3PropToType0WitnessName] using h₂
+  · rw [hUniv.1] at h₂
+    rw [hUniv.2]
+    symm
+    simpa [cicStage3RawNameTranslatesWithPropToType0Witness,
+      cicStage3RawNameTranslates, cicStage3RawCICWitnessTypeNameTranslates,
+      cicPropName, cicUnivName, cicTermName, cicStage3PropToType0WitnessName] using h₂
+  · rw [hTerm.1] at h₂
+    rw [hTerm.2]
+    symm
+    simpa [cicStage3RawNameTranslatesWithPropToType0Witness,
+      cicStage3RawNameTranslates, cicStage3RawCICWitnessTypeNameTranslates,
+      cicPropName, cicUnivName, cicTermName, cicStage3PropToType0WitnessName] using h₂
+  · rw [hWitness.1] at h₂
+    rw [hWitness.2]
+    symm
+    simpa [cicStage3RawNameTranslatesWithPropToType0Witness,
+      cicStage3RawNameTranslates, cicStage3RawCICWitnessTypeNameTranslates,
+      cicPropName, cicUnivName, cicTermName, cicStage3PropToType0WitnessName] using h₂
+
 theorem cicStage3RawNameTranslatesWithPropToType0Witness_raw_cases
     {raw lean : DeclName}
     (h :
@@ -10687,6 +10745,122 @@ theorem cicStage3RawNameTranslatesWithPropToType0Witness_raw_cases
   · exact Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inl hTerm.1))))))
   · exact Or.inr
       (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr hWitness.1))))))
+
+def cicStage3RawNameWithPropToType0WitnessBounded
+    (raw : DeclName) : Prop :=
+  raw = `nat ∨ raw = `nat.rec ∨ raw = `z ∨ raw = `s ∨
+    raw = cicPropName ∨ raw = cicUnivName ∨ raw = cicTermName ∨
+    raw = cicStage3PropToType0WitnessName
+
+theorem cicStage3RawNameTranslatesWithPropToType0Witness_bounded
+    {raw lean : DeclName}
+    (h :
+      cicStage3RawNameTranslatesWithPropToType0Witness raw lean) :
+    cicStage3RawNameWithPropToType0WitnessBounded raw := by
+  exact cicStage3RawNameTranslatesWithPropToType0Witness_raw_cases h
+
+inductive CicStage3RawTermTranslationVisibleNamesBounded :
+    DIndGArtifactTerm → Prop where
+  | var (index : Nat) :
+      CicStage3RawTermTranslationVisibleNamesBounded (.var index)
+  | srt (sort : DIndGArtifactSort) :
+      CicStage3RawTermTranslationVisibleNamesBounded (.srt sort)
+  | con {name : DeclName}
+      (hName : cicStage3RawNameWithPropToType0WitnessBounded name) :
+      CicStage3RawTermTranslationVisibleNamesBounded (.con name)
+  | defn {name : DeclName}
+      (hName : cicStage3RawNameWithPropToType0WitnessBounded name) :
+      CicStage3RawTermTranslationVisibleNamesBounded (.defn name)
+  | pi {domain body : DIndGArtifactTerm}
+      (hDomain : CicStage3RawTermTranslationVisibleNamesBounded domain)
+      (hBody : CicStage3RawTermTranslationVisibleNamesBounded body) :
+      CicStage3RawTermTranslationVisibleNamesBounded (.pi domain body)
+  | lam {domain body : DIndGArtifactTerm}
+      (hDomain : CicStage3RawTermTranslationVisibleNamesBounded domain)
+      (hBody : CicStage3RawTermTranslationVisibleNamesBounded body) :
+      CicStage3RawTermTranslationVisibleNamesBounded (.lam domain body)
+  | app {fn arg : DIndGArtifactTerm}
+      (hFn : CicStage3RawTermTranslationVisibleNamesBounded fn)
+      (hArg : CicStage3RawTermTranslationVisibleNamesBounded arg) :
+      CicStage3RawTermTranslationVisibleNamesBounded (.app fn arg)
+  | indG
+      {familyName : DeclName}
+      {params : List DIndGArtifactTerm}
+      {motive : DIndGArtifactTerm}
+      {cases : List (DeclName × DIndGArtifactTerm)}
+      {indices : List DIndGArtifactTerm}
+      {scrutinee : DIndGArtifactTerm}
+      (hFamily : cicStage3RawNameWithPropToType0WitnessBounded familyName) :
+      CicStage3RawTermTranslationVisibleNamesBounded
+        (.indG familyName params motive cases indices scrutinee)
+  | bad (reason : String) :
+      CicStage3RawTermTranslationVisibleNamesBounded (.bad reason)
+
+theorem cicStage3RawTermTranslatesWithPropToType0Witness_visible_names_bounded
+    {n : Nat} {raw : DIndGArtifactTerm} {term : PureTm n}
+    (h :
+      DIndGArtifactTermTranslates
+        cicStage3RawNameTranslatesWithPropToType0Witness n raw term) :
+    CicStage3RawTermTranslationVisibleNamesBounded raw := by
+  induction h with
+  | var hIndex =>
+      exact CicStage3RawTermTranslationVisibleNamesBounded.var _
+  | srt_type =>
+      exact CicStage3RawTermTranslationVisibleNamesBounded.srt .type
+  | srt_kind =>
+      exact CicStage3RawTermTranslationVisibleNamesBounded.srt .kind
+  | con hName =>
+      exact CicStage3RawTermTranslationVisibleNamesBounded.con
+        (cicStage3RawNameTranslatesWithPropToType0Witness_bounded hName)
+  | defn hName =>
+      exact CicStage3RawTermTranslationVisibleNamesBounded.defn
+        (cicStage3RawNameTranslatesWithPropToType0Witness_bounded hName)
+  | pi hDomain hBody ihDomain ihBody =>
+      exact CicStage3RawTermTranslationVisibleNamesBounded.pi ihDomain ihBody
+  | lam hDomain hBody ihDomain ihBody =>
+      exact CicStage3RawTermTranslationVisibleNamesBounded.lam ihDomain ihBody
+  | app hFn hArg ihFn ihArg =>
+      exact CicStage3RawTermTranslationVisibleNamesBounded.app ihFn ihArg
+  | indG readout =>
+      exact CicStage3RawTermTranslationVisibleNamesBounded.indG
+        (cicStage3RawNameTranslatesWithPropToType0Witness_bounded
+          readout.family_translates)
+
+/-- Translating a raw `Con` through the Stage-3 witness-extended alphabet pins
+the raw name to one of the finite declared names. -/
+theorem cicStage3RawConTranslatesWithPropToType0Witness_raw_cases
+    {n : Nat} {raw : DeclName} {term : PureTm n}
+    (h :
+      DIndGArtifactTermTranslates
+        cicStage3RawNameTranslatesWithPropToType0Witness n (.con raw) term) :
+    ∃ lean : DeclName,
+      term = .const lean ∧
+        cicStage3RawNameTranslatesWithPropToType0Witness raw lean ∧
+        (raw = `nat ∨ raw = `nat.rec ∨ raw = `z ∨ raw = `s ∨
+          raw = cicPropName ∨ raw = cicUnivName ∨ raw = cicTermName ∨
+          raw = cicStage3PropToType0WitnessName) := by
+  cases h with
+  | con hName =>
+      exact ⟨_, rfl, hName,
+        cicStage3RawNameTranslatesWithPropToType0Witness_raw_cases hName⟩
+
+/-- Translating a raw `Def` through the Stage-3 witness-extended alphabet pins
+the raw name to one of the finite declared names. -/
+theorem cicStage3RawDefnTranslatesWithPropToType0Witness_raw_cases
+    {n : Nat} {raw : DeclName} {term : PureTm n}
+    (h :
+      DIndGArtifactTermTranslates
+        cicStage3RawNameTranslatesWithPropToType0Witness n (.defn raw) term) :
+    ∃ lean : DeclName,
+      term = .const lean ∧
+        cicStage3RawNameTranslatesWithPropToType0Witness raw lean ∧
+        (raw = `nat ∨ raw = `nat.rec ∨ raw = `z ∨ raw = `s ∨
+          raw = cicPropName ∨ raw = cicUnivName ∨ raw = cicTermName ∨
+          raw = cicStage3PropToType0WitnessName) := by
+  cases h with
+  | defn hName =>
+      exact ⟨_, rfl, hName,
+        cicStage3RawNameTranslatesWithPropToType0Witness_raw_cases hName⟩
 
 theorem cicStage3RawCICProp_translates {n : Nat} :
     DIndGArtifactTermTranslates

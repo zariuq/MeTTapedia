@@ -844,6 +844,70 @@ structure CredalConceptFullInheritanceClosureBridgeProfile where
       thresholdValid (State := State) (Query := Query) W τ
         (leastRuleClosure (State := State) (Query := Query) R W
           (lowerFormedConceptQuerySet Γ M encode seed))
+  lowerAvailableRegionAdmissible :
+    ∀ {State Query Obj Attr Q Gate Signal Cost : Type}
+      [_root_.Mettapedia.PLN.Evidence.EvidenceClass.EvidenceType State]
+      [BinaryWorldModel State Query] [Preorder Q] [Fintype Obj] [Fintype Attr]
+      [Preorder Cost],
+      (P : StatefulPerspective State Query Signal Cost) →
+      (R : RuleSet State Query) →
+      (Γ : Gate → _root_.Mettapedia.KR.ConceptOntology.EvidenceGate Q) →
+      (M : Obj → Attr → Q) → (W : State) → (B : Cost) →
+      (guard : Set Query) → (τ : ℝ≥0∞) →
+      (encode :
+        _root_.Mettapedia.KR.ConceptOntology.LowerFormedConcept Γ M →
+          _root_.Mettapedia.KR.ConceptOntology.LowerFormedConcept Γ M → Query) →
+      (seed : Set (LowerFormedConceptPair Γ M)) →
+      (∀ subConcept superConcept,
+        BinaryWorldModel.queryStrength (State := State) (Query := Query) W
+            (encode subConcept superConcept) =
+          ENNReal.ofReal
+            (Mettapedia.KR.ConceptGeometry.ExtensionalIntensionalDivergence.fullInheritanceStrength
+              (_root_.Mettapedia.KR.ConceptOntology.lowerFormedConceptInterpretation Γ M)
+              subConcept superConcept)) →
+      (∀ p : LowerFormedConceptPair Γ M, p ∈ seed →
+        τ ≤ ENNReal.ofReal
+          (Mettapedia.KR.ConceptGeometry.ExtensionalIntensionalDivergence.fullInheritanceStrength
+            (_root_.Mettapedia.KR.ConceptOntology.lowerFormedConceptInterpretation Γ M)
+            p.1 p.2)) →
+      (availableRegionAt P W B guard ⊆
+        leastRuleClosure (State := State) (Query := Query) R W
+          (lowerFormedConceptQuerySet Γ M encode seed)) →
+      availableRegionAt P W B guard ⊆
+        Mettapedia.PLN.RuleFamilies.HigherOrder.PLNWorldModelRegimeAdmissibility.wmAdmissibleRegionAt
+          (State := State) (Query := Query) P W B guard τ
+  lowerAdmissibleRegionEqualsAvailable :
+    ∀ {State Query Obj Attr Q Gate Signal Cost : Type}
+      [_root_.Mettapedia.PLN.Evidence.EvidenceClass.EvidenceType State]
+      [BinaryWorldModel State Query] [Preorder Q] [Fintype Obj] [Fintype Attr]
+      [Preorder Cost],
+      (P : StatefulPerspective State Query Signal Cost) →
+      (R : RuleSet State Query) →
+      (Γ : Gate → _root_.Mettapedia.KR.ConceptOntology.EvidenceGate Q) →
+      (M : Obj → Attr → Q) → (W : State) → (B : Cost) →
+      (guard : Set Query) → (τ : ℝ≥0∞) →
+      (encode :
+        _root_.Mettapedia.KR.ConceptOntology.LowerFormedConcept Γ M →
+          _root_.Mettapedia.KR.ConceptOntology.LowerFormedConcept Γ M → Query) →
+      (seed : Set (LowerFormedConceptPair Γ M)) →
+      (∀ subConcept superConcept,
+        BinaryWorldModel.queryStrength (State := State) (Query := Query) W
+            (encode subConcept superConcept) =
+          ENNReal.ofReal
+            (Mettapedia.KR.ConceptGeometry.ExtensionalIntensionalDivergence.fullInheritanceStrength
+              (_root_.Mettapedia.KR.ConceptOntology.lowerFormedConceptInterpretation Γ M)
+              subConcept superConcept)) →
+      (∀ p : LowerFormedConceptPair Γ M, p ∈ seed →
+        τ ≤ ENNReal.ofReal
+          (Mettapedia.KR.ConceptGeometry.ExtensionalIntensionalDivergence.fullInheritanceStrength
+            (_root_.Mettapedia.KR.ConceptOntology.lowerFormedConceptInterpretation Γ M)
+            p.1 p.2)) →
+      (availableRegionAt P W B guard ⊆
+        leastRuleClosure (State := State) (Query := Query) R W
+          (lowerFormedConceptQuerySet Γ M encode seed)) →
+      Mettapedia.PLN.RuleFamilies.HigherOrder.PLNWorldModelRegimeAdmissibility.wmAdmissibleRegionAt
+          (State := State) (Query := Query) P W B guard τ =
+        availableRegionAt P W B guard
   upperClosureThresholdValid :
     ∀ {State Query Obj Attr Q Gate : Type}
       [_root_.Mettapedia.PLN.Evidence.EvidenceClass.EvidenceType State]
@@ -870,6 +934,70 @@ structure CredalConceptFullInheritanceClosureBridgeProfile where
       thresholdValid (State := State) (Query := Query) W τ
         (leastRuleClosure (State := State) (Query := Query) R W
           (upperFormedConceptQuerySet Γ M encode seed))
+  upperAvailableRegionAdmissible :
+    ∀ {State Query Obj Attr Q Gate Signal Cost : Type}
+      [_root_.Mettapedia.PLN.Evidence.EvidenceClass.EvidenceType State]
+      [BinaryWorldModel State Query] [Preorder Q] [Fintype Obj] [Fintype Attr]
+      [Preorder Cost],
+      (P : StatefulPerspective State Query Signal Cost) →
+      (R : RuleSet State Query) →
+      (Γ : Gate → _root_.Mettapedia.KR.ConceptOntology.EvidenceGate Q) →
+      (M : Obj → Attr → Q) → (W : State) → (B : Cost) →
+      (guard : Set Query) → (τ : ℝ≥0∞) →
+      (encode :
+        _root_.Mettapedia.KR.ConceptOntology.UpperFormedConcept Γ M →
+          _root_.Mettapedia.KR.ConceptOntology.UpperFormedConcept Γ M → Query) →
+      (seed : Set (UpperFormedConceptPair Γ M)) →
+      (∀ subConcept superConcept,
+        BinaryWorldModel.queryStrength (State := State) (Query := Query) W
+            (encode subConcept superConcept) =
+          ENNReal.ofReal
+            (Mettapedia.KR.ConceptGeometry.ExtensionalIntensionalDivergence.fullInheritanceStrength
+              (_root_.Mettapedia.KR.ConceptOntology.upperFormedConceptInterpretation Γ M)
+              subConcept superConcept)) →
+      (∀ p : UpperFormedConceptPair Γ M, p ∈ seed →
+        τ ≤ ENNReal.ofReal
+          (Mettapedia.KR.ConceptGeometry.ExtensionalIntensionalDivergence.fullInheritanceStrength
+            (_root_.Mettapedia.KR.ConceptOntology.upperFormedConceptInterpretation Γ M)
+            p.1 p.2)) →
+      (availableRegionAt P W B guard ⊆
+        leastRuleClosure (State := State) (Query := Query) R W
+          (upperFormedConceptQuerySet Γ M encode seed)) →
+      availableRegionAt P W B guard ⊆
+        Mettapedia.PLN.RuleFamilies.HigherOrder.PLNWorldModelRegimeAdmissibility.wmAdmissibleRegionAt
+          (State := State) (Query := Query) P W B guard τ
+  upperAdmissibleRegionEqualsAvailable :
+    ∀ {State Query Obj Attr Q Gate Signal Cost : Type}
+      [_root_.Mettapedia.PLN.Evidence.EvidenceClass.EvidenceType State]
+      [BinaryWorldModel State Query] [Preorder Q] [Fintype Obj] [Fintype Attr]
+      [Preorder Cost],
+      (P : StatefulPerspective State Query Signal Cost) →
+      (R : RuleSet State Query) →
+      (Γ : Gate → _root_.Mettapedia.KR.ConceptOntology.EvidenceGate Q) →
+      (M : Obj → Attr → Q) → (W : State) → (B : Cost) →
+      (guard : Set Query) → (τ : ℝ≥0∞) →
+      (encode :
+        _root_.Mettapedia.KR.ConceptOntology.UpperFormedConcept Γ M →
+          _root_.Mettapedia.KR.ConceptOntology.UpperFormedConcept Γ M → Query) →
+      (seed : Set (UpperFormedConceptPair Γ M)) →
+      (∀ subConcept superConcept,
+        BinaryWorldModel.queryStrength (State := State) (Query := Query) W
+            (encode subConcept superConcept) =
+          ENNReal.ofReal
+            (Mettapedia.KR.ConceptGeometry.ExtensionalIntensionalDivergence.fullInheritanceStrength
+              (_root_.Mettapedia.KR.ConceptOntology.upperFormedConceptInterpretation Γ M)
+              subConcept superConcept)) →
+      (∀ p : UpperFormedConceptPair Γ M, p ∈ seed →
+        τ ≤ ENNReal.ofReal
+          (Mettapedia.KR.ConceptGeometry.ExtensionalIntensionalDivergence.fullInheritanceStrength
+            (_root_.Mettapedia.KR.ConceptOntology.upperFormedConceptInterpretation Γ M)
+            p.1 p.2)) →
+      (availableRegionAt P W B guard ⊆
+        leastRuleClosure (State := State) (Query := Query) R W
+          (upperFormedConceptQuerySet Γ M encode seed)) →
+      Mettapedia.PLN.RuleFamilies.HigherOrder.PLNWorldModelRegimeAdmissibility.wmAdmissibleRegionAt
+          (State := State) (Query := Query) P W B guard τ =
+        availableRegionAt P W B guard
   lowerClosureEmbedsUpperClosure :
     ∀ {State Query Obj Attr Q Gate : Type}
       [_root_.Mettapedia.PLN.Evidence.EvidenceClass.EvidenceType State]
@@ -963,19 +1091,123 @@ structure CredalConceptFullInheritanceClosureBridgeProfile where
       thresholdValid (State := State) (Query := Query) W τ
         (leastRuleClosure (State := State) (Query := Query) R W
           (upperFormedConceptQuerySet Γ M encodeUpper seed))
+  determinedUpperAvailableRegionAdmissible :
+    ∀ {State Query Obj Attr Q Gate Signal Cost : Type}
+      [_root_.Mettapedia.PLN.Evidence.EvidenceClass.EvidenceType State]
+      [BinaryWorldModel State Query] [Preorder Q] [Fintype Obj] [Fintype Attr]
+      [Preorder Cost],
+      (P : StatefulPerspective State Query Signal Cost) →
+      (R : RuleSet State Query) →
+      (Γ : Gate → _root_.Mettapedia.KR.ConceptOntology.EvidenceGate Q) →
+      (M : Obj → Attr → Q) → (W : State) → (B : Cost) →
+      (guard : Set Query) → (τ : ℝ≥0∞) →
+      (encodeUpper :
+        _root_.Mettapedia.KR.ConceptOntology.UpperFormedConcept Γ M →
+          _root_.Mettapedia.KR.ConceptOntology.UpperFormedConcept Γ M → Query) →
+      (encodeLower :
+        _root_.Mettapedia.KR.ConceptOntology.LowerFormedConcept Γ M →
+          _root_.Mettapedia.KR.ConceptOntology.LowerFormedConcept Γ M → Query) →
+      (seed : Set (UpperFormedConceptPair Γ M)) →
+      (hDet : ∀ p : UpperFormedConceptPair Γ M, p ∈ seed →
+        (_root_.Mettapedia.KR.ConceptOntology.gateCredalProjectiveSpec (Gate := Gate)).determinesGlobalGamble
+          (_root_.Mettapedia.KR.ConceptOntology.conceptFormationGamble Γ M p.1.1) ∧
+        (_root_.Mettapedia.KR.ConceptOntology.gateCredalProjectiveSpec (Gate := Gate)).determinesGlobalGamble
+          (_root_.Mettapedia.KR.ConceptOntology.conceptFormationGamble Γ M p.2.1)) →
+      (∀ (p : UpperFormedConceptPair Γ M) (hp : p ∈ seed),
+        encodeUpper p.1 p.2 =
+          encodeLower
+            (upperToLowerFormedConceptOfDetermines Γ M p.1 (hDet p hp).1)
+            (upperToLowerFormedConceptOfDetermines Γ M p.2 (hDet p hp).2)) →
+      (∀ subConcept superConcept,
+        BinaryWorldModel.queryStrength (State := State) (Query := Query) W
+            (encodeLower subConcept superConcept) =
+          ENNReal.ofReal
+            (Mettapedia.KR.ConceptGeometry.ExtensionalIntensionalDivergence.fullInheritanceStrength
+              (_root_.Mettapedia.KR.ConceptOntology.lowerFormedConceptInterpretation Γ M)
+              subConcept superConcept)) →
+      (∀ p : LowerFormedConceptPair Γ M,
+        p ∈ determinedUpperSeedAsLower Γ M seed hDet →
+          τ ≤ ENNReal.ofReal
+            (Mettapedia.KR.ConceptGeometry.ExtensionalIntensionalDivergence.fullInheritanceStrength
+              (_root_.Mettapedia.KR.ConceptOntology.lowerFormedConceptInterpretation Γ M)
+              p.1 p.2)) →
+      (availableRegionAt P W B guard ⊆
+        leastRuleClosure (State := State) (Query := Query) R W
+          (upperFormedConceptQuerySet Γ M encodeUpper seed)) →
+      availableRegionAt P W B guard ⊆
+        Mettapedia.PLN.RuleFamilies.HigherOrder.PLNWorldModelRegimeAdmissibility.wmAdmissibleRegionAt
+          (State := State) (Query := Query) P W B guard τ
+  determinedUpperAdmissibleRegionEqualsAvailable :
+    ∀ {State Query Obj Attr Q Gate Signal Cost : Type}
+      [_root_.Mettapedia.PLN.Evidence.EvidenceClass.EvidenceType State]
+      [BinaryWorldModel State Query] [Preorder Q] [Fintype Obj] [Fintype Attr]
+      [Preorder Cost],
+      (P : StatefulPerspective State Query Signal Cost) →
+      (R : RuleSet State Query) →
+      (Γ : Gate → _root_.Mettapedia.KR.ConceptOntology.EvidenceGate Q) →
+      (M : Obj → Attr → Q) → (W : State) → (B : Cost) →
+      (guard : Set Query) → (τ : ℝ≥0∞) →
+      (encodeUpper :
+        _root_.Mettapedia.KR.ConceptOntology.UpperFormedConcept Γ M →
+          _root_.Mettapedia.KR.ConceptOntology.UpperFormedConcept Γ M → Query) →
+      (encodeLower :
+        _root_.Mettapedia.KR.ConceptOntology.LowerFormedConcept Γ M →
+          _root_.Mettapedia.KR.ConceptOntology.LowerFormedConcept Γ M → Query) →
+      (seed : Set (UpperFormedConceptPair Γ M)) →
+      (hDet : ∀ p : UpperFormedConceptPair Γ M, p ∈ seed →
+        (_root_.Mettapedia.KR.ConceptOntology.gateCredalProjectiveSpec (Gate := Gate)).determinesGlobalGamble
+          (_root_.Mettapedia.KR.ConceptOntology.conceptFormationGamble Γ M p.1.1) ∧
+        (_root_.Mettapedia.KR.ConceptOntology.gateCredalProjectiveSpec (Gate := Gate)).determinesGlobalGamble
+          (_root_.Mettapedia.KR.ConceptOntology.conceptFormationGamble Γ M p.2.1)) →
+      (∀ (p : UpperFormedConceptPair Γ M) (hp : p ∈ seed),
+        encodeUpper p.1 p.2 =
+          encodeLower
+            (upperToLowerFormedConceptOfDetermines Γ M p.1 (hDet p hp).1)
+            (upperToLowerFormedConceptOfDetermines Γ M p.2 (hDet p hp).2)) →
+      (∀ subConcept superConcept,
+        BinaryWorldModel.queryStrength (State := State) (Query := Query) W
+            (encodeLower subConcept superConcept) =
+          ENNReal.ofReal
+            (Mettapedia.KR.ConceptGeometry.ExtensionalIntensionalDivergence.fullInheritanceStrength
+              (_root_.Mettapedia.KR.ConceptOntology.lowerFormedConceptInterpretation Γ M)
+              subConcept superConcept)) →
+      (∀ p : LowerFormedConceptPair Γ M,
+        p ∈ determinedUpperSeedAsLower Γ M seed hDet →
+          τ ≤ ENNReal.ofReal
+            (Mettapedia.KR.ConceptGeometry.ExtensionalIntensionalDivergence.fullInheritanceStrength
+              (_root_.Mettapedia.KR.ConceptOntology.lowerFormedConceptInterpretation Γ M)
+              p.1 p.2)) →
+      (availableRegionAt P W B guard ⊆
+        leastRuleClosure (State := State) (Query := Query) R W
+          (upperFormedConceptQuerySet Γ M encodeUpper seed)) →
+      Mettapedia.PLN.RuleFamilies.HigherOrder.PLNWorldModelRegimeAdmissibility.wmAdmissibleRegionAt
+          (State := State) (Query := Query) P W B guard τ =
+        availableRegionAt P W B guard
 
 /-- Public handle for the shared credal concept-closure bridge. -/
 def credalConceptFullInheritanceClosureBridgeProfile :
     CredalConceptFullInheritanceClosureBridgeProfile where
   lowerClosureThresholdValid :=
     leastRuleClosure_thresholdValid_of_exactFullInheritanceStrength
+  lowerAvailableRegionAdmissible :=
+    availableRegionAt_subset_wmAdmissibleRegionAt_of_exactFullInheritanceStrength
+  lowerAdmissibleRegionEqualsAvailable :=
+    wmAdmissibleRegionAt_eq_availableRegionAt_of_exactFullInheritanceStrength
   upperClosureThresholdValid :=
     leastRuleClosure_thresholdValid_of_upperExactFullInheritanceStrength
+  upperAvailableRegionAdmissible :=
+    availableRegionAt_subset_wmAdmissibleRegionAt_of_upperExactFullInheritanceStrength
+  upperAdmissibleRegionEqualsAvailable :=
+    wmAdmissibleRegionAt_eq_availableRegionAt_of_upperExactFullInheritanceStrength
   lowerClosureEmbedsUpperClosure :=
     leastRuleClosure_lowerFormedConceptQuerySet_subset_upperFormedConceptQuerySet_of_liftEncode
   determinedUpperClosureEmbedsLowerClosure :=
     leastRuleClosure_upperFormedConceptQuerySet_subset_lowerFormedConceptQuerySet_of_determined_liftEncode
   determinedUpperClosureThresholdValid :=
     leastRuleClosure_thresholdValid_of_determinedUpperExactFullInheritanceStrength
+  determinedUpperAvailableRegionAdmissible :=
+    availableRegionAt_subset_wmAdmissibleRegionAt_of_determinedUpperExactFullInheritanceStrength
+  determinedUpperAdmissibleRegionEqualsAvailable :=
+    wmAdmissibleRegionAt_eq_availableRegionAt_of_determinedUpperExactFullInheritanceStrength
 
 end Mettapedia.PLN.Bridges.KR.ConceptClosure.CredalConceptFullInheritanceClosureBridge

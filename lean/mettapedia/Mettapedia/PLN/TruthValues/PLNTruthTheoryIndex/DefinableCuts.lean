@@ -101,6 +101,46 @@ abbrev definable_cut_width_eq_zero_iff_decides
   ExtensionalDefinableCut.width_eq_zero_iff_decides
     (Base := Base) (Const := Const) (T := T)
 
+/-- Public theorem-index name for the order-fragment certificate extracted
+from a cut's `represents_ge` field. -/
+abbrev definable_cut_fragment_order_tight
+    {Base : Type u} {Const : Ty Base → Type v}
+    {T : ClosedTheorySet (WithParams Const)} :=
+  ExtensionalDefinableCut.fragmentOrderTight
+    (Base := Base) (Const := Const) (T := T)
+
+/-- Public theorem-index constructor for the Boolean event readout associated
+with one certified cut. -/
+noncomputable abbrev definable_cut_order_reflecting_readout
+    {Base : Type u} {Const : Ty Base → Type v}
+    {T : ClosedTheorySet (WithParams Const)} :=
+  ExtensionalDefinableCut.orderReflectingWMReadout
+    (Base := Base) (Const := Const) (T := T)
+
+/-- Public theorem-index name for the converse direction of a certified cut's
+Boolean event readout. -/
+abbrev definable_cut_order_reflecting_readout_reflects
+    {Base : Type u} {Const : Ty Base → Type v}
+    {T : ClosedTheorySet (WithParams Const)} :=
+  ExtensionalDefinableCut.orderReflectingWMReadout_reflects
+    (Base := Base) (Const := Const) (T := T)
+
+/-- Public theorem-index constructor for finite families of certified cuts as
+jointly separating Boolean event readouts. -/
+noncomputable abbrev definable_cut_family_separating_readouts
+    {Base : Type u} {Const : Ty Base → Type v}
+    {T : ClosedTheorySet (WithParams Const)} :=
+  certifiedCutFamilySeparatingWMReadouts
+    (Base := Base) (Const := Const) (T := T)
+
+/-- Public theorem-index name for the separation theorem of a finite certified
+cut family. -/
+abbrev definable_cut_family_separating_readouts_separates
+    {Base : Type u} {Const : Ty Base → Type v}
+    {T : ClosedTheorySet (WithParams Const)} :=
+  certifiedCutFamilySeparatingWMReadouts_separates
+    (Base := Base) (Const := Const) (T := T)
+
 /-- Public theorem-index name for positive affine calibration of already
 certified numeric cuts. This is unit/scale transport for a discharged cut, not
 an existence theorem for arbitrary numeric observables. -/
@@ -2057,6 +2097,30 @@ structure DefinableCutTightnessProfile where
       (hEM : ∀ ψ ∈ EMSchema Const, ψ ∈ T),
       (C.intervalOfConsistent enum henum hCons hT0 hEM).width = 0 ↔
         T.Provable C.formula ∨ T.Provable (Term.not C.formula)
+  certifiedFragmentOrderTight :
+    ∀ {Base : Type u} {Const : Ty Base → Type v}
+      {T : ClosedTheorySet (WithParams Const)}
+      (C : ExtensionalDefinableCut T),
+      CutFragmentOrderTight C.score C.threshold C.formula
+  certifiedOrderReflects :
+    ∀ {Base : Type u} {Const : Ty Base → Type v}
+      {T : ClosedTheorySet (WithParams Const)}
+      (C : ExtensionalDefinableCut T)
+      {M N : Mettapedia.PLN.Bridges.HOL.PLNHigherOrderHOLCompletenessTightness.ExtensionalTheoryModel T},
+      cutEventBoolLE
+        ((ExtensionalDefinableCut.orderReflectingWMReadout C).mu M)
+        ((ExtensionalDefinableCut.orderReflectingWMReadout C).mu N) →
+      cutFormulaFragmentLE C.formula M N
+  certifiedFamilySeparates :
+    ∀ {Base : Type u} {Const : Ty Base → Type v}
+      {T : ClosedTheorySet (WithParams Const)}
+      (cuts : List (ExtensionalDefinableCut T))
+      {M N : Mettapedia.PLN.Bridges.HOL.PLNHigherOrderHOLCompletenessTightness.ExtensionalTheoryModel T},
+      (∀ i : CertifiedCutFamilyIndex cuts,
+        cutEventBoolLE
+          ((certifiedCutFamilySeparatingWMReadouts cuts).mu i M)
+          ((certifiedCutFamilySeparatingWMReadouts cuts).mu i N)) →
+      certifiedCutFamilyFragmentLE cuts M N
   formulaIndicatorPositiveThresholdWidth :
     ∀ {Base : Type u} {Const : Ty Base → Type v}
       {T : ClosedTheorySet (WithParams Const)}
@@ -2281,6 +2345,10 @@ surface. -/
 def definableCutTightnessProfile : DefinableCutTightnessProfile where
   genericLowerEndpoint := ExtensionalDefinableCut.lower_eq_one_iff_provable
   genericWidthCollapse := ExtensionalDefinableCut.width_eq_zero_iff_decides
+  certifiedFragmentOrderTight := ExtensionalDefinableCut.fragmentOrderTight
+  certifiedOrderReflects :=
+    ExtensionalDefinableCut.orderReflectingWMReadout_reflects
+  certifiedFamilySeparates := certifiedCutFamilySeparatingWMReadouts_separates
   formulaIndicatorPositiveThresholdWidth :=
     formulaIndicatorPositiveThresholdCut_width_eq_zero_iff_decides
   qfmCountingCardinalityWidth :=

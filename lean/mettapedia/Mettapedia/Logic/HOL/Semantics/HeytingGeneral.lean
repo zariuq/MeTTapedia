@@ -463,10 +463,16 @@ theorem all_intro_of_instances
     · exact hT0 ψ hψ σ' k
   · exact noConstOccurrence_param_of_ge k φb (le_max_right _ _)
 
-/-- The Lindenbaum Heyting-valued model of a parameter-free theory. -/
-noncomputable def lindenbaumModel (T : ClosedTheorySet (WithParams Const))
-    (hT0 : ∀ ψ ∈ T, ∀ (σ : Ty Base) (k : Nat),
-      NoConstOccurrence (param σ k : WithParams Const σ) ψ) :
+/-- The Lindenbaum Heyting-valued model of a theory equipped with a
+fresh-parameter universal-introduction capability (parameter-free theories and
+schema-extensions of them both qualify). -/
+noncomputable def lindenbaumModelOfAllIntro (T : ClosedTheorySet (WithParams Const))
+    (hAll : ∀ {σ' : Ty Base} {φb : Formula (WithParams Const) [σ']}
+      {ω : ClosedFormula (WithParams Const)},
+      (∀ t : ClosedTerm (WithParams Const) σ',
+        Provable (Const := WithParams Const) (insert ω T)
+          (instantiate (Base := Base) t φb)) →
+      Provable (Const := WithParams Const) (insert ω T) (.all φb)) :
     HeytingGeneralModel Base (WithParams Const) where
   Ω := ClosedFormula (WithParams Const)
   le a b := Provable (Const := WithParams Const) (insert a T) b
@@ -542,14 +548,14 @@ noncomputable def lindenbaumModel (T : ClosedTheorySet (WithParams Const))
       (ExtDerivation.hyp (List.Mem.head _))))
   val_all_le := fun φb t => provable_of_der1
     (ExtDerivation.allE (φ := φb) t (ExtDerivation.hyp (List.Mem.head _)))
-  le_val_all := fun φb ω h => all_intro_of_instances hT0 h
+  le_val_all := fun φb ω h => hAll h
   val_ex_le := fun {σ'} φb ω h => by
     refine provable_of_ex_and_all_imp (Const := WithParams Const)
       (provable_of_mem (Set.mem_insert _ _)) ?_
     have hAll : Provable (Const := WithParams Const)
         (insert (.ex φb : ClosedFormula (WithParams Const)) T)
         (.all (.imp φb (weaken (Base := Base) ω))) := by
-      refine all_intro_of_instances hT0 (fun t => ?_)
+      refine hAll (fun t => ?_)
       have hinst :
           instantiate (Base := Base) t (.imp φb (weaken (Base := Base) ω))
             = .imp (instantiate (Base := Base) t φb) ω := by
@@ -585,7 +591,7 @@ noncomputable def lindenbaumModel (T : ClosedTheorySet (WithParams Const))
     (ExtDerivation.eqPropER (ExtDerivation.hyp (List.Mem.head _)))
   val_eq_lam := fun {σ' τ'} t u ω h => by
     refine provable_funExt ?_
-    refine all_intro_of_instances hT0 (fun w => ?_)
+    refine hAll (fun w => ?_)
     have hshape :
         instantiate (Base := Base) w
             (.eq (.app (weaken (Base := Base) (σ := σ') (.lam t)) (.var .vz))
@@ -631,6 +637,14 @@ noncomputable def lindenbaumModel (T : ClosedTheorySet (WithParams Const))
     (provable_of_mem (Set.mem_insert _ _))
   val_beta := fun t u => ⟨[], by simp, ExtDerivation.beta t u⟩
   val_eta := fun f => ⟨[], by simp, ExtDerivation.eta f⟩
+
+/-- The Lindenbaum Heyting-valued model of a parameter-free theory. -/
+noncomputable def lindenbaumModel (T : ClosedTheorySet (WithParams Const))
+    (hT0 : ∀ ψ ∈ T, ∀ (σ : Ty Base) (k : Nat),
+      NoConstOccurrence (param σ k : WithParams Const σ) ψ) :
+    HeytingGeneralModel Base (WithParams Const) :=
+  lindenbaumModelOfAllIntro (Base := Base) T
+    (fun {σ' φb ω} h => all_intro_of_instances hT0 h)
 
 end Lindenbaum
 

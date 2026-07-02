@@ -48,14 +48,16 @@ MeTTa is a reflective, non-deterministic meta-language with three
 actively maintained runtimes: Hyperon Experimental (\HE{}, Rust),
 \PeTTa{} (Prolog), and \CeTTa{} (C).  This paper describes \CeTTa{},
 a direct C implementation of the \HE{} MeTTa evaluator that passes a
-535-test MeTTa regression suite (a 539-row manifest) with a fast
-regression gate at 405 passed / 0 failed and a heavy-golden lane at
-17 passed / 0 failed (suite snapshot 2026-07-02), backed by a 333-case
+535-test MeTTa regression suite (a 539-row manifest): 405 passed /
+0 failed on the default build and 401 passed / 0 failed on the
+MORK-bridge build, plus a heavy-golden lane at 17 passed / 0 failed
+(suite snapshot 2026-07-02, commit 9237afd), backed by a 333-case
 rule-indexed conformance catalog against upstream \HE{}~v0.2.10
 covering 24/24 specification rule capacities (catalog dated 2026-06).
-On freshly rerun cross-runtime benchmarks dated 2026-06-27,
-\CeTTa{} is fastest on startup-dominated shallow inference and on
-several current genomic-inference rows (the 183-pair PLN evidence
+On cross-runtime benchmarks---genomic-inference rows re-receipted
+2026-07-02 on commit 9237afd, branching-search rows measured
+2026-06-27---\CeTTa{} is fastest on startup-dominated shallow inference
+and on several genomic-inference rows (the 183-pair PLN evidence
 core, the full 1{,}399{,}997-line WM-PLN raw-loader checkpoint, and
 the 1{,}411{,}430-hypothesis deep genomic backward-chaining row),
 while \PeTTa{} wins on pure branching search (the 85{,}013-proof
@@ -127,7 +129,8 @@ Three implementations exist:
 \paragraph{Contributions.}
 \begin{enumerate}
 \item A direct C runtime passing a 535-test MeTTa regression suite
-  (539-row manifest; fast gate 405/0, heavy-golden lane 17/0) plus 104
+  (539-row manifest; default build 405/0, MORK-bridge build 401/0,
+  heavy-golden lane 17/0) plus 112
   profile tests, validated against upstream \HE{} v0.2.10 as oracle.
 \item An explicit profile family (\code{he-compat} / \code{he} /
   \code{he-extended} / \code{he-prime}) with per-case recorded
@@ -147,7 +150,9 @@ Three implementations exist:
 \item A bidirectional \HE{}$\leftrightarrow$\PeTTa{} translator
   (Prolog + executable Lean), with a sorry-free Lean proof of semantic
   correspondence.
-\item Cross-runtime benchmarks rerun on 2026-06-27 (the pre-GC tree):
+\item Cross-runtime benchmarks (genomic-inference rows re-receipted
+  2026-07-02 on commit 9237afd; branching-search rows measured
+  2026-06-27, pre-GC):
   \CeTTa{} is
   10--100$\times$ faster than \HE{} on shallow evaluation, wins several
   current genomic-inference rows (including the full TFBS-inclusive
@@ -217,18 +222,18 @@ as C functions with a shared arena allocator.
 
 \CeTTa{} is validated against the \HE{} CLI (v0.2.10) as oracle.
 Golden regression files are oracle-validated when introduced;
-\code{make test} replays them on every build.  As of the 2026-06 suite
-snapshot:
-\textbf{375 passed, 0 failed, 40 skipped} on the default build and
-\textbf{371 passed, 0 failed, 44 skipped} on the MORK-bridge build
-(all bridge sub-lanes green), plus 104 profile tests covering module
+\code{make test} replays them on every build.  As of the 2026-07-02
+snapshot on commit 9237afd:
+\textbf{405 passed, 0 failed, 71 skipped} on the default build and
+\textbf{401 passed, 0 failed, 75 skipped} on the MORK-bridge build
+(all bridge sub-lanes green), plus 112 profile tests covering module
 imports, foreign (Python) function dispatch, numeric-tower and
 profile-surface splits, and extension surfaces.  Two further lanes are
 fail-by-default: \code{make test-step-rules} disables individual
 rule-table entries and \emph{requires} the witnesses to fail
 (Section~\ref{sec:specdriven}), and the semantic conformance suite
-re-runs the curated oracle corpus live against upstream \HE{}
-(Section~\ref{sec:conformance}).
+re-runs a 23-case subset of the curated oracle corpus live against
+upstream \HE{} (Section~\ref{sec:conformance}).
 
 %% ────────────────────────────────────────────────────────────────────
 \section{Specification-Driven Semantics: Profiles, Conformance, and the
@@ -301,7 +306,10 @@ results (which are semantically real in MeTTa) are counted.
   \emph{supporting-surface} (match, unify, grounded dispatch
   plumbing), and \emph{spatial-policy} (module import, inventory,
   space policy).  The lane split keeps policy surfaces out of the
-  reduction relation.
+  reduction relation.  This full rule-indexed sweep is a periodically
+  refreshed artifact (2026-06); the per-build oracle gate
+  (\code{make test-he-compat-semantic-suite}) re-runs a 23-case subset
+  of it live against upstream \HE{} on every build.
 \item[Broad corpus.] 378 upstream examples: 302 agree, 59 classified
   differences (library availability, which is out of conformance
   scope; path-import capabilities upstream rejects; environment and
@@ -815,9 +823,16 @@ resource accounting once and for all~\cite{costendofunctor}. We return to it in 
 \label{sec:benchmark-programs}
 
 All benchmarks use dialect-agnostic MeTTa (shared syntax) unless noted.
-All timing rows in this section were rerun on 2026-06-27 (the pre-GC
-tree) unless they are explicitly described as excluded,
-methodological, or unresolved.  For rows whose single-run wall time is
+Timing rows in this section were measured on 2026-06-27 (the pre-GC
+tree), except the grounded genomic-inference rows (PLN evidence core,
+full WM-PLN raw-loader, mine$\to$chain focus, and deep genomic
+backward chaining), which were re-receipted on 2026-07-02 on commit
+9237afd; rows explicitly described as excluded, methodological, or
+unresolved carry their own status.  The two heavy genomic rows (full
+WM-PLN raw-loader and deep genomic backward chaining) were re-measured
+on a quiescent host with the same binary at commit 9237afd; because the
+two engines are always compared within one session, the cross-engine
+ratios are the load-bearing claims.  For rows whose single-run wall time is
 below 0.1\,s, we report averaged full-process wall time over repeated
 invocations to avoid timer quantization.  Output is verified identical
 across runtimes whenever a row is presented as a clean cross-runtime
@@ -990,7 +1005,9 @@ The core arithmetic is ordinary MeTTa over numbers:
      (stv (min 1.0 $f) (min 1.0 $c))))
 \end{lstlisting}
 The benchmark is dialect-agnostic (shared MeTTa, no translation
-needed).  The current flattened chr16 pilot driver produces identical
+needed).  The portable
+\href{https://github.com/zariuq/CeTTa/tree/main/benchmarks/bio_pln}{\code{benchmarks/bio\_pln}}
+evidence-score drivers produce numerically identical
 183 scored pairs on \CeTTa{}, \PeTTa{}, and \HE{}:
 
 \begin{center}
@@ -998,16 +1015,22 @@ needed).  The current flattened chr16 pilot driver produces identical
 \toprule
 Runtime & Time & vs.\ \CeTTa{} & Output & Status \\
 \midrule
-\CeTTa{} & 9.5\,ms avg & 1$\times$ & 183 bio-scores & identical \\
-\PeTTa{} & 62\,ms avg  & 6.6$\times$ slower & 183 bio-scores & identical \\
-\HE{}    & 4.80\,s     & 505$\times$ slower & 183 bio-scores & identical \\
+\CeTTa{} & 10.9\,ms avg & 1$\times$ & 183 bio-scores & identical \\
+\PeTTa{} & 58.1\,ms avg  & 5.4$\times$ slower & 183 bio-scores & identical \\
+\HE{}    & 7.56\,s     & 696$\times$ slower & 183 bio-scores & identical \\
 \bottomrule
 \end{tabular}
 \end{center}
 
-Scores carry genuine biological signal: \code{rs9923732}$\to$\code{ENSG00000166455}
-scores strength 0.735 (131 ABC contacts across cell types), while
-most pairs score 0.04 (minimal evidence).
+Scores carry genuine biological signal:
+\code{rs9923732}$\to$\code{ENSG00000166455} scores strength
+0.7348066298342542 ($133/181$) and confidence 0.9945054945054945
+($181/182$), while most pairs score 0.04 (minimal evidence).  All three
+engines reproduce every one of the 183 scores to full numeric
+precision on the portable drivers; the earlier non-portable driver
+diverged only because upstream \HE{} integer-divided the evidence ratio
+to zero and \PeTTa{} left imported evidence-library calls unreduced.
+Exact three-engine numeric agreement is this row's validation story.
 
 \paragraph{What we no longer claim here.}
 Earlier drafts included a synthetic scaling table from 143 to
@@ -1023,8 +1046,8 @@ disease proofs, \code{34} supported-drug proof witnesses, and
 vs.\ hypothesis-count split matters here: the \code{34} traces are
 genuinely multiple proof routes collapsing to \code{8} unique
 \code{(gene,disease,drug,tissue)} hypotheses, not a stale counting
-mistake.  Fresh timings on this grounded full row are 15.31\,s on
-\CeTTa{} and 42.72\,s on \PeTTa{}.  Upstream \HE{} does not currently
+mistake.  Fresh timings on this grounded full row are 16.4\,s on
+\CeTTa{} and 44.5\,s on \PeTTa{} (about 2.7$\times$ faster).  Upstream \HE{} does not currently
 run this loader shape directly: its \code{metta} runner rejects the
 relative-file \code{import! ./support/...} surface as an illegal module
 name, so the \HE{} column for this row remains a loader blocker rather
@@ -1048,14 +1071,12 @@ discretized into categorical attributes (tissue breadth, effect size)
 for pattern mining.
 
 The current audit does \emph{not} reuse the older cross-engine mining
-speed table as benchmark evidence.  What \emph{is} currently grounded is
-the portability boundary of the miner's specialization core.  The
-original PeTTa-style dynamic-head tuple encoding in
-\code{replace}/\code{replacev} is cross-dialect fragile; a tagged-return
-rewrite restores identical specialization-core behavior on \CeTTa{} and
-\PeTTa{} in the current probe, which produces the same 9
-\code{SpecializationOf} atoms on both runtimes.  The remaining HE blocker
-is a stateful pattern inside \code{superpose}:
+speed table as benchmark evidence, and no current in-tree driver
+re-emits the earlier specialization-core atom count, so we do not carry
+that number forward.  We keep the pattern miner as a methodological
+workload.  Its portability boundary in this revision is HE's stateful
+use of \code{superpose}: a remove/add pattern that mutates a shared
+space in the middle of a \code{superpose} branch:
 \begin{lstlisting}[language={},basicstyle=\ttfamily\scriptsize]
 (superpose ((remove-atom $specspace $spec1)
             (add-atom    $specspace $spec1)
@@ -1064,11 +1085,12 @@ is a stateful pattern inside \code{superpose}:
             (remove-atom $specspace $spec3)
             (add-atom    $specspace $spec3)))
 \end{lstlisting}
-Current \CeTTa{} preserves all three specialization atoms in this
-pattern, while current \HE{} still drops the third one.  So in this
-revision we keep the miner as a methodological workload and as a
-portability/debugging result, but not as a fresh cross-engine speed
-table.
+Current \CeTTa{} preserves all three atoms produced by this pattern,
+while current \HE{}'s interleaved side-effect evaluation drops the
+third---the same atom-loss hazard analyzed in
+Section~\ref{sec:nondet-state} (the pattern miner).  So we keep the
+miner as a portability/debugging result, not as a fresh cross-engine
+speed table.
 
 \subsection{Backward Chaining over Mined Patterns}
 
@@ -1100,10 +1122,12 @@ Bridge base cases let \code{nilbc} consume untyped data atoms
 (\code{eqtl-link}, \code{co-regulate}) directly, avoiding a format
 conversion pass over the 100K-atom KB\@.
 
-On the current focused driver
-\href{https://github.com/zariuq/CeTTa/blob/main/benchmarks/bench_mine_chain_focus_20260627.metta}{\code{benchmarks/bench\_mine\_chain\_focus\_20260627.metta}},
-\CeTTa{} and \PeTTa{} agree exactly on the direct and depth-2 target
-sets for three representative query SNPs:
+On the portable
+\href{https://github.com/zariuq/CeTTa/tree/main/benchmarks/mine_chain_focus}{\code{benchmarks/mine\_chain\_focus}}
+focus-summary drivers,
+\CeTTa{} and \PeTTa{} agree exactly on the distinct direct and depth-2
+target genes for three representative query SNPs (the raw proof rows
+dedupe by target gene to these counts):
 
 \begin{center}
 \begin{tabular}{lrrr}
@@ -1136,9 +1160,9 @@ ENSG00000273077 & (lncRNA)  & rs10001048 & \code{(ct cr25 (dt eq89))} \\
 The proof terms are machine-checkable evidence chains: \code{(ct cr3
 (dt eq37))} reads ``co-regulation transfer via \code{cr3}
 (rs10000544$\leftrightarrow$rs10000795), applied to direct eQTL
-\code{eq37} (rs10000795$\to$SEC24D).''  On this focused three-query
-driver the total wall-clock time is 0.15\,s on \CeTTa{} versus
-3.33\,s on \PeTTa{}.  We therefore keep the novel-gene discovery story,
+\code{eq37} (rs10000795$\to$SEC24D).''  On these focused three-query
+drivers the total wall-clock time is 0.13\,s on \CeTTa{} versus
+4.27\,s on \PeTTa{}.  We therefore keep the novel-gene discovery story,
 but we do \emph{not} reuse the older proof-count/time row as benchmark
 evidence in this revision.
 
@@ -1163,15 +1187,22 @@ Benchmark & Scale / note & \CeTTa{} & \PeTTa{} & \HE{} \\
 \midrule
 Shallow typed BC & 60 proof witnesses & 4.0\,ms avg & 45.4\,ms avg & 402\,ms avg \\
 Translator (\code{prog1}) & 30 proof witnesses & 3.7\,ms avg & 44.8\,ms avg & 319\,ms avg \\
-PLN evidence core & 183 scored pairs & 9.5\,ms avg & 62\,ms avg & 4.80\,s \\
-Full WM-PLN raw-loader & 1{,}399{,}997 lines, 34 proofs / 8 hyps & 15.31\,s & 42.72\,s & import block \\
-Mine$\to$chain focus & 3 query SNPs, 5 novel genes & 0.15\,s & 3.33\,s & --- \\
-Deep 17-phase genomic BC & 1{,}411{,}430 hypotheses & 32.32\,s & 55.43\,s & --- \\
+PLN evidence core & 183 scored pairs & 10.9\,ms avg & 58.1\,ms avg & 7.56\,s \\
+Full WM-PLN raw-loader & 1{,}399{,}997 lines, 34 proofs / 8 hyps & 16.4\,s & 44.5\,s & import block \\
+Mine$\to$chain focus & 3 query SNPs, 5 novel genes & 0.13\,s & 4.27\,s & --- \\
+Deep 17-phase genomic BC & 1{,}411{,}430 hypotheses & 34.0\,s & 58.1\,s & --- \\
 8-Queens (direct shared lane) & 92 solutions & 8.22\,s & 0.05\,s & 2:08.77 \\
 Deep proof search & 85{,}013 proofs & 36.42\,s & 7.60\,s & $>$120\,s \\
 \bottomrule
 \end{tabular}
 \end{center}
+
+\noindent\emph{Peak resident memory on the two heavy rows.}  On the full
+WM-PLN raw-loader, \CeTTa{} uses 2.10\,GiB against \PeTTa{}'s 4.75\,GiB
+(\CeTTa{} lower).  On the deep 17-phase genomic BC the direction
+reverses: \CeTTa{} uses 15.6\,GiB against \PeTTa{}'s 4.86\,GiB---about
+3.2$\times$ \PeTTa{}'s footprint, the memory-multiplicity cost of
+\CeTTa{}'s answer materialization on the high-fan-out row.
 
 \CeTTa{} still wins on several real inference rows, but the revised
 ladder is intentionally smaller than earlier drafts.  In the 2026-06-27
@@ -1230,8 +1261,8 @@ largest buckets are 613{,}978 \code{pw-target} hypotheses and
 796{,}964 \code{deep-pw} hypotheses; the smaller focused buckets are
 11~binding hypotheses, 11~disease hypotheses, 210~drug hypotheses,
 240~deep-drug hypotheses, and 16~pathway-reach hypotheses.  The current
-timings are \textbf{32.32\,s on \CeTTa{}} versus 55.43\,s on
-\PeTTa{}.
+timings are \textbf{34.0\,s on \CeTTa{}} versus 58.1\,s on
+\PeTTa{} (about 1.7$\times$ faster).
 The textbook chain
 rs10000544 $\to$ PDE5A $\to$ hypertension $\leftarrow$ Sildenafil
 composes three independent data sources (GTEx, Hetionet, DrugBank) by
@@ -1733,7 +1764,8 @@ correspondence (5{,}400+ lines, 0~sorries), including import
 commutativity and operational bridges for state and space allocation,
 establishes that MeTTa's three runtimes are semantically compatible
 on the shared fragment.  The compiled \code{.act} space format via
-MORK enables zero-copy indexed loading of large knowledge bases.
+MORK enables zero-copy indexed loading, demonstrated at the 100k-atom
+scale, with the large-scale attach path still under repair.
 On the process-calculus side, the \RhoCalc{} reaction machine's
 eval-at-\textsc{comm} semantics now has a witness-free, axiom-clean Lean
 characterization (Section~\ref{sec:rho-lean}): the quiescent run of the
@@ -2091,7 +2123,11 @@ stress complementary axes of the seam:
   environments/frames, choicepoints, trail/undo, deterministic
   tail-path handling, bounded-demand response, direct conjunction
   when advertised.  Design-guide workload: \textbf{metamath backward
-    chaining} (where \PeTTa{} currently completes and \CeTTa{}~OOMs).
+    chaining}.  Before the evaluation-arena garbage collector this
+  workload could exhaust memory on \CeTTa{}; with the collector
+  \CeTTa{} now completes the Metamath proof-search rows
+  (Section~\ref{sec:benchmark-programs}), so the remaining motivation
+  here is WAM-lineage control, not a memory-exhaustion gap.
   First realization: \code{native\_chainer}.
 \item[\code{Saturator} (fixpoint).]  SLG / Datalog / saturation
   lineage: snapshots, delta-sets, conjunction planning, exact
