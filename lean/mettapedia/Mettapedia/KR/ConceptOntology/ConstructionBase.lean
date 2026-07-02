@@ -108,6 +108,21 @@ theorem closureAt_antitone_of_refines
       (sampleLarge := B.visibleAt j)
       h)
 
+/-- Once a vantage has reached the full closure, every refinement of that
+vantage is also closure-complete.  Seeing more phenomena may discharge
+over-strong conjectures; it cannot reopen a concept that was already equal to
+the full context. -/
+theorem thatsAllAt_of_refines
+    {i j : B.Indexicality} (premise : Set B.Abstract)
+    (h : B.Refines i j) (hAll : B.thatsAllAt i premise) :
+    B.thatsAllAt j premise := by
+  apply Set.Subset.antisymm
+  · intro a ha
+    have hji : a ∈ B.closureAt i premise :=
+      B.closureAt_antitone_of_refines premise h ha
+    simpa [ConstructionBase.thatsAllAt] using hAll ▸ hji
+  · exact B.fullClosure_subset_closureAt j premise
+
 theorem frontierAt_eq_empty_iff_thatsAllAt
     (ι : B.Indexicality) (premise : Set B.Abstract) :
     B.frontierAt ι premise = ∅ ↔ B.thatsAllAt ι premise := by
@@ -135,6 +150,18 @@ theorem openWorldAt_iff_not_thatsAllAt
     exact hOpen ((B.frontierAt_eq_empty_iff_thatsAllAt ι premise).2 hAll)
   · intro hNot hEmpty
     exact hNot ((B.frontierAt_eq_empty_iff_thatsAllAt ι premise).1 hEmpty)
+
+/-- If even a refined vantage is still open-world, then every coarser vantage
+it refines was already open-world.  Equivalently, refinement can close a
+frontier but cannot create one after the coarse view had reached the full
+closure. -/
+theorem openWorldAt_of_refines_of_openWorldAt
+    {i j : B.Indexicality} (premise : Set B.Abstract)
+    (h : B.Refines i j) (hOpen : B.openWorldAt j premise) :
+    B.openWorldAt i premise := by
+  rw [B.openWorldAt_iff_not_thatsAllAt] at hOpen ⊢
+  intro hAll
+  exact hOpen (B.thatsAllAt_of_refines premise h hAll)
 
 end ConstructionBase
 
@@ -178,6 +205,28 @@ theorem toConstructionBase_openWorldAt_iff
     (premise : Finset LoopProperty) :
     (toConstructionBase B).openWorldAt maxOrder (premiseSet premise) ↔
       frontierToFull B maxOrder premise ≠ ∅ := Iff.rfl
+
+theorem toConstructionBase_refines_of_le
+    (B : LoopBenchmarkContext) {small large : ℕ} (h : small ≤ large) :
+    (toConstructionBase B).Refines small large := by
+  show sampleUpTo B small ⊆ sampleUpTo B large
+  exact sampleUpTo_mono B h
+
+theorem toConstructionBase_thatsAllAt_of_le
+    (B : LoopBenchmarkContext) {small large : ℕ}
+    (premise : Finset LoopProperty) (h : small ≤ large)
+    (hAll : (toConstructionBase B).thatsAllAt small (premiseSet premise)) :
+    (toConstructionBase B).thatsAllAt large (premiseSet premise) := by
+  exact ConstructionBase.thatsAllAt_of_refines (toConstructionBase B)
+    (premiseSet premise) (toConstructionBase_refines_of_le B h) hAll
+
+theorem toConstructionBase_openWorldAt_of_le
+    (B : LoopBenchmarkContext) {small large : ℕ}
+    (premise : Finset LoopProperty) (h : small ≤ large)
+    (hOpen : (toConstructionBase B).openWorldAt large (premiseSet premise)) :
+    (toConstructionBase B).openWorldAt small (premiseSet premise) := by
+  exact ConstructionBase.openWorldAt_of_refines_of_openWorldAt (toConstructionBase B)
+    (premiseSet premise) (toConstructionBase_refines_of_le B h) hOpen
 
 end LoopBenchmark
 
@@ -234,6 +283,28 @@ theorem thatsAllConcept_iff_globalEnvelopeWidth_eq_zero
       exact (openWorldConcept_iff_globalEnvelopeWidth_eq_one
         (Γ := Γ) (M := M) (A := A)).mp hGap
     exact zero_ne_one (hWidth.symm.trans hOne)
+
+omit [Fintype Gate] [Nonempty Gate] in
+theorem openWorldConcept_iff_hasStrictGlobalWidth
+    (Γ : Gate → EvidenceGate Q) (M : Obj → Attr → Q)
+    (A : Mettapedia.KR.ConceptGeometry.AbstractInheritance.DualConcept Obj Attr) :
+    openWorldConcept Γ M A ↔
+      (gateCredalProjectiveSpec (Gate := Gate)).hasStrictGlobalWidth
+        (conceptFormationGamble Γ M A) := by
+  simpa [openWorldConcept] using
+    (mem_credalScrutabilityGap_iff_hasStrictGlobalWidth
+      (Γ := Γ) (M := M) (A := A))
+
+omit [Fintype Gate] [Nonempty Gate] in
+theorem thatsAllConcept_iff_determinesGlobalGamble
+    (Γ : Gate → EvidenceGate Q) (M : Obj → Attr → Q)
+    (A : Mettapedia.KR.ConceptGeometry.AbstractInheritance.DualConcept Obj Attr) :
+    thatsAllConcept Γ M A ↔
+      (gateCredalProjectiveSpec (Gate := Gate)).determinesGlobalGamble
+        (conceptFormationGamble Γ M A) := by
+  simpa [thatsAllConcept] using
+    (not_mem_credalScrutabilityGap_iff_determinesGlobalGamble
+      (Γ := Γ) (M := M) (A := A))
 
 end CredalOT
 
@@ -293,6 +364,38 @@ theorem control_credal_family_supports_both_world_assumptions :
     openWorldConcept gateFamily context.evidence flyingFamilyConcept ∧
       thatsAllConcept gateFamily context.evidence batOnlyFlyingConcept := by
   exact ⟨flyingFamilyConcept_openWorldConcept, batOnlyFlyingConcept_thatsAllConcept⟩
+
+theorem flyingFamilyConcept_hasStrictGlobalWidth :
+    (gateCredalProjectiveSpec (Gate := Bool)).hasStrictGlobalWidth
+        (conceptFormationGamble gateFamily context.evidence flyingFamilyConcept) := by
+  exact (openWorldConcept_iff_hasStrictGlobalWidth
+    (Γ := gateFamily) (M := context.evidence) (A := flyingFamilyConcept)).mp
+      flyingFamilyConcept_openWorldConcept
+
+theorem flyingFamilyConcept_not_determinesGlobalGamble :
+    ¬ (gateCredalProjectiveSpec (Gate := Bool)).determinesGlobalGamble
+        (conceptFormationGamble gateFamily context.evidence flyingFamilyConcept) := by
+  intro hDet
+  have hThatsAll : thatsAllConcept gateFamily context.evidence flyingFamilyConcept :=
+    (thatsAllConcept_iff_determinesGlobalGamble
+      (Γ := gateFamily) (M := context.evidence) (A := flyingFamilyConcept)).mpr hDet
+  exact flyingFamilyConcept_thatsAllConcept_not hThatsAll
+
+theorem batOnlyFlyingConcept_determinesGlobalGamble :
+    (gateCredalProjectiveSpec (Gate := Bool)).determinesGlobalGamble
+        (conceptFormationGamble gateFamily context.evidence batOnlyFlyingConcept) := by
+  exact (thatsAllConcept_iff_determinesGlobalGamble
+    (Γ := gateFamily) (M := context.evidence) (A := batOnlyFlyingConcept)).mp
+      batOnlyFlyingConcept_thatsAllConcept
+
+theorem batOnlyFlyingConcept_not_hasStrictGlobalWidth :
+    ¬ (gateCredalProjectiveSpec (Gate := Bool)).hasStrictGlobalWidth
+        (conceptFormationGamble gateFamily context.evidence batOnlyFlyingConcept) := by
+  intro hWidth
+  have hOpen : openWorldConcept gateFamily context.evidence batOnlyFlyingConcept :=
+    (openWorldConcept_iff_hasStrictGlobalWidth
+      (Γ := gateFamily) (M := context.evidence) (A := batOnlyFlyingConcept)).mpr hWidth
+  exact batOnlyFlyingConcept_thatsAllConcept hOpen
 
 end ControlExample
 
@@ -388,6 +491,10 @@ theorem thatsAllAt_order2 :
     (toConstructionBase context).thatsAllAt (2 : ℕ) (premiseSet premise) := by
   rw [toConstructionBase_thatsAllAt_iff]
   exact closureUpTo_order2_eq_fullClosure
+
+theorem thatsAllAt_order3 :
+    (toConstructionBase context).thatsAllAt (3 : ℕ) (premiseSet premise) := by
+  exact toConstructionBase_thatsAllAt_of_le context premise (by decide) thatsAllAt_order2
 
 end LoopToyExample
 

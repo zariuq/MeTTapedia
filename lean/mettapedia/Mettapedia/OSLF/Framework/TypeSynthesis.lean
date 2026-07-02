@@ -415,6 +415,15 @@ def rhoSetDropWitness : Pattern :=
 def rhoSetDropWitnessNF : Pattern :=
   .collection .hashSet [.apply "PZero" []] none
 
+/-- A vector-context DROP witness used as a negative control for policy
+    selectivity: the set extension enables sets, not every collection form. -/
+def rhoVecDropWitness : Pattern :=
+  .collection .vec [.apply "PDrop" [.apply "NQuote" [.apply "PZero" []]]] none
+
+/-- The normal-form target one would get if vector-context DROP descent were enabled. -/
+def rhoVecDropWitnessNF : Pattern :=
+  .collection .vec [.apply "PZero" []] none
+
 set_option maxRecDepth 4096 in
 set_option maxHeartbeats 800000 in
 /-- In canonical `rhoCalc`, set-context congruence descent is blocked. -/
@@ -459,6 +468,70 @@ theorem rhoSetDropWitness_canonical_vs_setExt :
   · intro q
     exact rhoSetDropWitness_no_langReduces_canonical q
   · exact rhoSetDropWitness_exists_langReduces_setExt
+
+set_option maxRecDepth 4096 in
+set_option maxHeartbeats 800000 in
+/-- Canonical `rhoCalc` also blocks vector-context DROP descent. -/
+theorem rhoVecDropWitness_exec_nil_canonical :
+    rewriteWithContextWithPremisesUsing RelationEnv.empty rhoCalc rhoVecDropWitness = [] := by
+  decide +kernel
+
+/-- The collection-descent component of canonical `rhoCalc` blocks the
+    vector-context DROP witness because vector congruence is not enabled. -/
+theorem rhoVecDropWitness_collectionDescent_nil_canonical :
+    rewriteInCollectionWithPremisesUsing RelationEnv.empty rhoCalc .vec
+      [.apply "PDrop" [.apply "NQuote" [.apply "PZero" []]]] none = [] := by
+  exact rewriteInCollectionWithPremisesUsing_eq_nil_of_not_allowsCongruence
+    RelationEnv.empty rhoCalc .vec
+    [.apply "PDrop" [.apply "NQuote" [.apply "PZero" []]]] none (by decide)
+
+/-- Canonical `rhoCalc` has no one-step successor from the vector-context
+    DROP witness. -/
+theorem rhoVecDropWitness_no_langReduces_canonical (q : Pattern) :
+    ¬ langReduces rhoCalc rhoVecDropWitness q := by
+  intro hred
+  have hmem :
+      q ∈ rewriteWithContextWithPremisesUsing RelationEnv.empty rhoCalc rhoVecDropWitness :=
+    langReducesUsing_to_exec (relEnv := RelationEnv.empty) (lang := rhoCalc) hred
+  simp [rhoVecDropWitness_exec_nil_canonical] at hmem
+
+set_option maxRecDepth 4096 in
+set_option maxHeartbeats 800000 in
+/-- Even `rhoCalcSetExt` blocks vector-context DROP descent: the optional
+    extension enables set contexts, not arbitrary collection contexts. -/
+theorem rhoVecDropWitness_exec_nil_setExt :
+    rewriteWithContextWithPremisesUsing RelationEnv.empty rhoCalcSetExt rhoVecDropWitness = [] := by
+  decide +kernel
+
+/-- The collection-descent component of `rhoCalcSetExt` also blocks the
+    vector-context DROP witness: the extension enables sets, not vectors. -/
+theorem rhoVecDropWitness_collectionDescent_nil_setExt :
+    rewriteInCollectionWithPremisesUsing RelationEnv.empty rhoCalcSetExt .vec
+      [.apply "PDrop" [.apply "NQuote" [.apply "PZero" []]]] none = [] := by
+  exact rewriteInCollectionWithPremisesUsing_eq_nil_of_not_allowsCongruence
+    RelationEnv.empty rhoCalcSetExt .vec
+    [.apply "PDrop" [.apply "NQuote" [.apply "PZero" []]]] none (by decide)
+
+/-- The set-extension language has no one-step successor from the vector-context
+    DROP witness. -/
+theorem rhoVecDropWitness_no_langReduces_setExt (q : Pattern) :
+    ¬ langReduces rhoCalcSetExt rhoVecDropWitness q := by
+  intro hred
+  have hmem :
+      q ∈ rewriteWithContextWithPremisesUsing RelationEnv.empty rhoCalcSetExt rhoVecDropWitness :=
+    langReducesUsing_to_exec (relEnv := RelationEnv.empty) (lang := rhoCalcSetExt) hred
+  simp [rhoVecDropWitness_exec_nil_setExt] at hmem
+
+/-- Selectivity of the optional context policy: `rhoCalcSetExt` admits the
+    concrete set-context descent witness while still rejecting the corresponding
+    vector-context witness. -/
+theorem rhoCalcSetExt_set_not_vec_context_policy :
+    (∃ q, langReduces rhoCalcSetExt rhoSetDropWitness q) ∧
+      (∀ q, ¬ langReduces rhoCalcSetExt rhoVecDropWitness q) := by
+  constructor
+  · exact rhoSetDropWitness_exists_langReduces_setExt
+  · intro q
+    exact rhoVecDropWitness_no_langReduces_setExt q
 
 /-! ## Executable Tests -/
 

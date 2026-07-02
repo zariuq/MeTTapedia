@@ -147,6 +147,43 @@ if [ -x DeduktiLambdapi/run_dedukti_guest_mutation_gate.sh ]; then
   fi
 fi
 
+echo "================= GRADED MODAL / BRIDGE SEEDS (CeTTa) ================="
+graded_modal_files=(../kernel/ocoherence_hm_adequacy_v1.metta ../kernel/imp_coherence_exp1.metta)
+for f in "${graded_modal_files[@]}"; do [ -e "$f" ] || continue
+  if run_cetta_capped "$f" >"$log" 2>&1; then
+    tc=$(grep -c '^!(assertEqual' "$f")
+    echo "  [graded] $(basename "$f")  OK  (${tc} assertions)"
+    pass=$((pass+1))
+  else
+    echo "  [graded] $(basename "$f")  FAIL"
+    tail -8 "$log" | sed 's/^/        /'
+    pfail=$((pfail+1))
+  fi
+done
+if [ -f ../kernel/run_ocoherence_gate.sh ]; then
+  if bash ../kernel/run_ocoherence_gate.sh >"$log" 2>&1; then
+    echo "  [mutation] Ocoherence graded/modal mutations caught"
+    pass=$((pass+1))
+  else
+    echo "  [mutation] Ocoherence graded/modal mutation check FAIL"
+    tail -12 "$log" | sed 's/^/        /'
+    pfail=$((pfail+1))
+  fi
+fi
+
+echo "================= SELFMETTA WITNESS SEEDS (CeTTa) ================="
+for f in SelfMeTTa/[0-9]*.metta; do [ -e "$f" ] || continue
+  if run_cetta_capped "$f" >"$log" 2>&1; then
+    tc=$(grep -c '^!(assertEqual' "$f")
+    echo "  [selfmetta] $(basename "$f")  OK  (${tc} assertions)"
+    pass=$((pass+1))
+  else
+    echo "  [selfmetta] $(basename "$f")  FAIL"
+    tail -8 "$log" | sed 's/^/        /'
+    pfail=$((pfail+1))
+  fi
+done
+
 echo "================= ORACLE CASE LEDGER ================="
 trim_ws() {
   local s="$1"

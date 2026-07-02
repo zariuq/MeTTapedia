@@ -2443,6 +2443,49 @@ theorem bernoulliMixturePrefixProjectiveSpec_determinesGlobalGamble_of_mixtureAg
   rcases hQ with ⟨N, hN, rfl⟩
   exact hAgree M hM N hN
 
+/-- A finite-prefix Bernoulli-mixture projective spec determines a gamble
+exactly when all admissible mixtures agree on that gamble.  This is the
+honest boundary between a sharp finite-prefix readout and a genuine credal
+spread over the mixture family. -/
+theorem bernoulliMixturePrefixProjectiveSpec_determinesGlobalGamble_iff_mixtureAgreement
+    (C : Set BernoulliMixture) (n : ℕ)
+    (hLaw : ∀ M : BernoulliMixture, M ∈ C →
+      BernoulliMixturePrefixLaw M n)
+    (X : Mettapedia.ProbabilityTheory.ImpreciseProbability.Gamble
+      (Fin n → Bool)) :
+    (bernoulliMixturePrefixProjectiveSpec C n hLaw).determinesGlobalGamble X ↔
+      ∀ M : BernoulliMixture, ∀ hM : M ∈ C,
+        ∀ N : BernoulliMixture, ∀ hN : N ∈ C,
+          (hLaw M hM).toPrecisePrevision X =
+            (hLaw N hN).toPrecisePrevision X := by
+  rw [bernoulliMixturePrefixProjectiveSpec,
+    identityCredalProjectiveSpec_determinesGlobalGamble_iff]
+  constructor
+  · intro hDet M hM N hN
+    exact hDet (hLaw M hM).toPrecisePrevision ⟨M, hM, rfl⟩
+      (hLaw N hN).toPrecisePrevision ⟨N, hN, rfl⟩
+  · intro hAgree P hP Q hQ
+    rcases hP with ⟨M, hM, rfl⟩
+    rcases hQ with ⟨N, hN, rfl⟩
+    exact hAgree M hM N hN
+
+/-- A finite-prefix Bernoulli-mixture projective spec has strict global width
+on a gamble exactly when the admissible mixtures do not all agree on that
+gamble. -/
+theorem bernoulliMixturePrefixProjectiveSpec_hasStrictGlobalWidth_iff_not_mixtureAgreement
+    (C : Set BernoulliMixture) (n : ℕ)
+    (hLaw : ∀ M : BernoulliMixture, M ∈ C →
+      BernoulliMixturePrefixLaw M n)
+    (X : Mettapedia.ProbabilityTheory.ImpreciseProbability.Gamble
+      (Fin n → Bool)) :
+    (bernoulliMixturePrefixProjectiveSpec C n hLaw).hasStrictGlobalWidth X ↔
+      ¬ ∀ M : BernoulliMixture, ∀ hM : M ∈ C,
+        ∀ N : BernoulliMixture, ∀ hN : N ∈ C,
+          (hLaw M hM).toPrecisePrevision X =
+            (hLaw N hN).toPrecisePrevision X := by
+  rw [ProjectiveLocalCredalSpec.hasStrictGlobalWidth_iff_not_determinesGlobalGamble,
+    bernoulliMixturePrefixProjectiveSpec_determinesGlobalGamble_iff_mixtureAgreement]
+
 /-- If two admissible Bernoulli mixtures disagree on a finite-prefix gamble, the
 projective de Finetti prefix credal set has strict global width on that gamble. -/
 theorem bernoulliMixturePrefixProjectiveSpec_hasStrictGlobalWidth_of_mixtureDisagreement
@@ -10211,6 +10254,28 @@ structure ProjectiveDeFinettiCredalBridgeProfile where
           (_hLaw M hM).toPrecisePrevision X =
             (_hLaw N hN).toPrecisePrevision X) →
         (bernoulliMixturePrefixProjectiveSpec C n _hLaw).determinesGlobalGamble X
+  prefixProjectiveDeterminesIffMixtureAgreement :
+    ∀ (C : Set BernoulliMixture) (n : ℕ)
+      (_hLaw : ∀ M : BernoulliMixture, M ∈ C →
+        BernoulliMixturePrefixLaw M n)
+      (X : Mettapedia.ProbabilityTheory.ImpreciseProbability.Gamble
+        (Fin n → Bool)),
+      (bernoulliMixturePrefixProjectiveSpec C n _hLaw).determinesGlobalGamble X ↔
+        ∀ M : BernoulliMixture, ∀ hM : M ∈ C,
+          ∀ N : BernoulliMixture, ∀ hN : N ∈ C,
+            (_hLaw M hM).toPrecisePrevision X =
+              (_hLaw N hN).toPrecisePrevision X
+  prefixProjectiveStrictWidthIffNotMixtureAgreement :
+    ∀ (C : Set BernoulliMixture) (n : ℕ)
+      (_hLaw : ∀ M : BernoulliMixture, M ∈ C →
+        BernoulliMixturePrefixLaw M n)
+      (X : Mettapedia.ProbabilityTheory.ImpreciseProbability.Gamble
+        (Fin n → Bool)),
+      (bernoulliMixturePrefixProjectiveSpec C n _hLaw).hasStrictGlobalWidth X ↔
+        ¬ ∀ M : BernoulliMixture, ∀ hM : M ∈ C,
+          ∀ N : BernoulliMixture, ∀ hN : N ∈ C,
+            (_hLaw M hM).toPrecisePrevision X =
+              (_hLaw N hN).toPrecisePrevision X
   prefixProjectiveStrictWidthOfMixtureDisagreement :
     ∀ (C : Set BernoulliMixture) (n : ℕ)
       (_hLaw : ∀ M : BernoulliMixture, M ∈ C →
@@ -10471,6 +10536,10 @@ noncomputable def projectiveDeFinettiCredalBridgeProfile :
     impreciseDeFinettiPrefixUpperEnvelope_least_upper_bound
   prefixProjectiveDeterminesOfMixtureAgreement :=
     bernoulliMixturePrefixProjectiveSpec_determinesGlobalGamble_of_mixtureAgreement
+  prefixProjectiveDeterminesIffMixtureAgreement :=
+    bernoulliMixturePrefixProjectiveSpec_determinesGlobalGamble_iff_mixtureAgreement
+  prefixProjectiveStrictWidthIffNotMixtureAgreement :=
+    bernoulliMixturePrefixProjectiveSpec_hasStrictGlobalWidth_iff_not_mixtureAgreement
   prefixProjectiveStrictWidthOfMixtureDisagreement :=
     bernoulliMixturePrefixProjectiveSpec_hasStrictGlobalWidth_of_mixtureDisagreement
   prefixCredalSetEnvelopeNontrivialOfMixtureDisagreement :=

@@ -1,4 +1,5 @@
 import Mettapedia.PLN.Bridges.Languages.PLNDistinctionCredalOSLFBridge
+import Mettapedia.PLN.Bridges.Languages.PLNContextGuardOSLFDescentBridge
 import Mettapedia.PLN.Bridges.Languages.PLNErrorMagnificationGrounding
 import Mettapedia.PLN.Bridges.Languages.PLNMeTTaCore
 import Mettapedia.PLN.Bridges.Languages.PLNMeTTaCoreEvidence

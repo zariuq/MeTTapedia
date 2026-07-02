@@ -74,6 +74,14 @@ def rewriteInCollectionNoPremises (lang : LanguageDef) (ct : CollType) (elems : 
   else
     []
 
+/-- If a language has not enabled congruence descent for a collection shape,
+    the no-premise collection-descent engine produces no subterm reducts. -/
+theorem rewriteInCollectionNoPremises_eq_nil_of_not_allowsCongruence
+    (lang : LanguageDef) (ct : CollType) (elems : List Pattern) (rest : Option String)
+    (h : ¬ LanguageDef.allowsCongruenceIn lang ct) :
+    rewriteInCollectionNoPremises lang ct elems rest = [] := by
+  simp [rewriteInCollectionNoPremises, h]
+
 /-- Apply all rules to a term, including subterms (one level of congruence).
     This handles both top-level rewriting and PAR-like congruence. -/
 def rewriteWithContextNoPremises (lang : LanguageDef) (term : Pattern) : List Pattern :=
@@ -525,10 +533,28 @@ def rewriteInCollectionWithPremisesUsing (relEnv : RelationEnv) (lang : Language
   else
     []
 
+/-- If a language has not enabled congruence descent for a collection shape,
+    the premise-aware collection-descent engine produces no subterm reducts. -/
+theorem rewriteInCollectionWithPremisesUsing_eq_nil_of_not_allowsCongruence
+    (relEnv : RelationEnv) (lang : LanguageDef)
+    (ct : CollType) (elems : List Pattern) (rest : Option String)
+    (h : ¬ LanguageDef.allowsCongruenceIn lang ct) :
+    rewriteInCollectionWithPremisesUsing relEnv lang ct elems rest = [] := by
+  simp [rewriteInCollectionWithPremisesUsing, h]
+
 /-- Premise-aware subterm rewriting in collections. -/
 def rewriteInCollectionWithPremises (lang : LanguageDef) (ct : CollType) (elems : List Pattern)
     (rest : Option String) : List Pattern :=
   rewriteInCollectionWithPremisesUsing RelationEnv.empty lang ct elems rest
+
+/-- Default-env specialization of
+    `rewriteInCollectionWithPremisesUsing_eq_nil_of_not_allowsCongruence`. -/
+theorem rewriteInCollectionWithPremises_eq_nil_of_not_allowsCongruence
+    (lang : LanguageDef) (ct : CollType) (elems : List Pattern) (rest : Option String)
+    (h : ¬ LanguageDef.allowsCongruenceIn lang ct) :
+    rewriteInCollectionWithPremises lang ct elems rest = [] := by
+  exact rewriteInCollectionWithPremisesUsing_eq_nil_of_not_allowsCongruence
+    RelationEnv.empty lang ct elems rest h
 
 /-- Premise-aware one-step rewriting including one-level congruence,
     with pluggable relation environment. -/

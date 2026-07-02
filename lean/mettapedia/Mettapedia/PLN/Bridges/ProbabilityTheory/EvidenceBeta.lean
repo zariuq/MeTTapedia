@@ -1,4 +1,5 @@
 import Mettapedia.PLN.Evidence.EvidenceQuantale
+import Mettapedia.PLN.RuleFamilies.FirstOrder.PLNRevision
 import Mettapedia.ProbabilityTheory.Exchangeability.Core
 import Mettapedia.PLN.Evidence.EvidenceCounts
 import Mettapedia.ProbabilityTheory.Distributions.BetaBernoulli
@@ -42,7 +43,9 @@ PLN BinaryEvidence (k, m) captures exactly the sufficient statistic, and:
 
 namespace Mettapedia.PLN.Bridges.ProbabilityTheory.EvidenceBeta
 
+open scoped ENNReal
 open Mettapedia.PLN.Evidence.EvidenceQuantale
+open Mettapedia.PLN.RuleFamilies.FirstOrder.PLNRevision
 open Mettapedia.ProbabilityTheory.Exchangeability
 open Mettapedia.ProbabilityTheory
 
@@ -112,6 +115,12 @@ theorem posteriorMean_mem_unit (p : EvidenceBetaParams) :
     calc p.prior_param + ↑p.evidence_pos
       _ ≤ p.prior_param + ↑p.evidence_pos + p.prior_param := by linarith
       _ ≤ p.prior_param + ↑p.evidence_pos + (p.prior_param + ↑p.evidence_neg) := by linarith
+
+/-- Viewing the same parameters as a `BetaBernoulliPrior` preserves the
+posterior-predictive success probability. -/
+@[simp] theorem toBetaPrior_mean (p : EvidenceBetaParams) :
+    p.toBetaPrior.mean = p.posteriorMean := by
+  rfl
 
 end EvidenceBetaParams
 
@@ -656,6 +665,201 @@ theorem hplus_is_beta_aggregation (e₁ e₂ : BinaryEvidence) :
   constructor <;> rfl
 
 end AggregationUpdate
+
+/-! ## Finite Revision Batches as Beta Sufficient Statistics -/
+
+section FiniteBatchRevision
+
+/-- Count-pair packets viewed as PLN binary evidence.
+
+This is the finite-source interface used to compare `revisionMany` with the
+Beta-Bernoulli sufficient-statistic update. -/
+noncomputable def countPairEvidence (nm : ℕ × ℕ) : BinaryEvidence where
+  pos := (nm.1 : ℝ≥0∞)
+  neg := (nm.2 : ℝ≥0∞)
+
+@[simp] theorem countPairEvidence_pos (nm : ℕ × ℕ) :
+    (countPairEvidence nm).pos = (nm.1 : ℝ≥0∞) := rfl
+
+@[simp] theorem countPairEvidence_neg (nm : ℕ × ℕ) :
+    (countPairEvidence nm).neg = (nm.2 : ℝ≥0∞) := rfl
+
+/-- Beta posterior parameters after a finite batch of positive/negative count
+packets.  This is the raw-count side of finite-source Revision, before any
+projection to a single point truth value. -/
+def batchEvidenceBetaParams
+    (prior_param : ℝ) (hprior : 0 < prior_param) (xs : List (ℕ × ℕ)) :
+    EvidenceBetaParams where
+  prior_param := prior_param
+  prior_pos := hprior
+  evidence_pos := (xs.map Prod.fst).sum
+  evidence_neg := (xs.map Prod.snd).sum
+
+@[simp] theorem batchEvidenceBetaParams_alpha
+    (prior_param : ℝ) (hprior : 0 < prior_param) (xs : List (ℕ × ℕ)) :
+    (batchEvidenceBetaParams prior_param hprior xs).alpha =
+      prior_param + (xs.map Prod.fst).sum := by
+  simp [batchEvidenceBetaParams, EvidenceBetaParams.alpha]
+
+@[simp] theorem batchEvidenceBetaParams_beta
+    (prior_param : ℝ) (hprior : 0 < prior_param) (xs : List (ℕ × ℕ)) :
+    (batchEvidenceBetaParams prior_param hprior xs).beta =
+      prior_param + (xs.map Prod.snd).sum := by
+  simp [batchEvidenceBetaParams, EvidenceBetaParams.beta]
+
+/-- Posterior mean after a finite evidence batch, in raw Beta-parameter
+coordinates. -/
+theorem batchEvidenceBetaParams_posteriorMean_eq
+    (prior_param : ℝ) (hprior : 0 < prior_param) (xs : List (ℕ × ℕ)) :
+    (batchEvidenceBetaParams prior_param hprior xs).posteriorMean =
+      (prior_param + (xs.map Prod.fst).sum) /
+        ((prior_param + (xs.map Prod.fst).sum) +
+          (prior_param + (xs.map Prod.snd).sum)) := by
+  simp [EvidenceBetaParams.posteriorMean]
+
+theorem batchEvidenceBetaParams_posteriorMean_mem_unit
+    (prior_param : ℝ) (hprior : 0 < prior_param) (xs : List (ℕ × ℕ)) :
+    (batchEvidenceBetaParams prior_param hprior xs).posteriorMean ∈ Set.Icc (0 : ℝ) 1 := by
+  exact ⟨(batchEvidenceBetaParams prior_param hprior xs).posteriorMean_mem_unit.1,
+    (batchEvidenceBetaParams prior_param hprior xs).posteriorMean_mem_unit.2⟩
+
+/-- With the Laplace/uniform prior, the finite batch's Beta posterior mean is
+exactly the usual `uniformPosteriorMean` of the same positive/negative count
+ledger. -/
+theorem batchEvidenceBetaParams_uniformPosteriorMean
+    (xs : List (ℕ × ℕ)) :
+    (batchEvidenceBetaParams 1 (by norm_num : 0 < (1 : ℝ)) xs).posteriorMean =
+      uniformPosteriorMean (xs.map Prod.fst).sum (xs.map Prod.snd).sum := by
+  simp [EvidenceBetaParams.posteriorMean, uniformPosteriorMean,
+    Mettapedia.PLN.Evidence.EvidenceCounts.uniformPosteriorMean]
+  ring
+
+/-- The finite batch's Beta-Bernoulli predictive success probability is the
+same posterior point readout exposed by `EvidenceBetaParams`. -/
+theorem batchEvidenceBetaParams_toBetaPrior_mean
+    (prior_param : ℝ) (hprior : 0 < prior_param) (xs : List (ℕ × ℕ)) :
+    ((batchEvidenceBetaParams prior_param hprior xs).toBetaPrior).mean =
+      (batchEvidenceBetaParams prior_param hprior xs).posteriorMean := by
+  simp
+
+/-- Under the Laplace/uniform prior, the finite batch's Beta-Bernoulli
+predictive success probability is the existing `uniformPosteriorMean` of the
+same count ledger. -/
+theorem batchEvidenceBetaParams_toBetaPrior_mean_uniformPosteriorMean
+    (xs : List (ℕ × ℕ)) :
+    ((batchEvidenceBetaParams 1 (by norm_num : 0 < (1 : ℝ)) xs).toBetaPrior).mean =
+      uniformPosteriorMean (xs.map Prod.fst).sum (xs.map Prod.snd).sum := by
+  rw [batchEvidenceBetaParams_toBetaPrior_mean,
+    batchEvidenceBetaParams_uniformPosteriorMean]
+
+/-- The finite Beta-Bernoulli batch update is insensitive to source order:
+permuting the count packets preserves the positive/negative sufficient
+statistics, hence the posterior parameter record. -/
+theorem batchEvidenceBetaParams_perm
+    (prior_param : ℝ) (hprior : 0 < prior_param)
+    {xs ys : List (ℕ × ℕ)} (h : xs.Perm ys) :
+    batchEvidenceBetaParams prior_param hprior xs =
+      batchEvidenceBetaParams prior_param hprior ys := by
+  have hpos : (xs.map Prod.fst).sum = (ys.map Prod.fst).sum :=
+    (h.map Prod.fst).sum_eq
+  have hneg : (xs.map Prod.snd).sum = (ys.map Prod.snd).sum :=
+    (h.map Prod.snd).sum_eq
+  simp [batchEvidenceBetaParams, hpos, hneg]
+
+/-- Finite-source PLN Revision over count-pair packets is also insensitive to
+source order, by the raw `revisionMany` permutation theorem. -/
+theorem revisionMany_countPairEvidence_perm
+    {xs ys : List (ℕ × ℕ)} (h : xs.Perm ys) :
+    revisionMany (xs.map countPairEvidence) =
+      revisionMany (ys.map countPairEvidence) := by
+  exact revisionMany_perm (h.map countPairEvidence)
+
+/-- Order invariance is shared by the two finite-batch views: raw PLN Revision
+over `BinaryEvidence` count packets and the Beta-Bernoulli posterior parameter
+update over the same count ledger. -/
+theorem revisionMany_countPairEvidence_beta_batch_update_perm
+    (prior_param : ℝ) (hprior : 0 < prior_param)
+    {xs ys : List (ℕ × ℕ)} (h : xs.Perm ys) :
+    revisionMany (xs.map countPairEvidence) =
+        revisionMany (ys.map countPairEvidence) ∧
+      batchEvidenceBetaParams prior_param hprior xs =
+        batchEvidenceBetaParams prior_param hprior ys := by
+  exact ⟨revisionMany_countPairEvidence_perm h,
+    batchEvidenceBetaParams_perm prior_param hprior h⟩
+
+/-- The positive coordinate of finite-source PLN Revision over count-pair
+packets is the finite batch's positive sufficient statistic. -/
+theorem revisionMany_countPairEvidence_pos (xs : List (ℕ × ℕ)) :
+    (revisionMany (xs.map countPairEvidence)).pos =
+      (xs.map (fun nm => (nm.1 : ℝ≥0∞))).sum := by
+  rw [revisionMany_pos]
+  congr 1
+  induction xs with
+  | nil => rfl
+  | cons x xs ih => simp [ih]
+
+/-- The negative coordinate of finite-source PLN Revision over count-pair
+packets is the finite batch's negative sufficient statistic. -/
+theorem revisionMany_countPairEvidence_neg (xs : List (ℕ × ℕ)) :
+    (revisionMany (xs.map countPairEvidence)).neg =
+      (xs.map (fun nm => (nm.2 : ℝ≥0∞))).sum := by
+  rw [revisionMany_neg]
+  congr 1
+  induction xs with
+  | nil => rfl
+  | cons x xs ih => simp [ih]
+
+/-- Finite-source PLN Revision and the Beta-Bernoulli posterior update consume
+the same finite batch of sufficient statistics.  The Revision side is stated in
+the `BinaryEvidence` carrier, while the Beta side keeps the raw `ℕ` count
+ledger used by `EvidenceBetaParams`. -/
+theorem revisionMany_countPairEvidence_is_beta_batch_update
+    (prior_param : ℝ) (hprior : 0 < prior_param) (xs : List (ℕ × ℕ)) :
+    (revisionMany (xs.map countPairEvidence)).pos =
+        (xs.map (fun nm => (nm.1 : ℝ≥0∞))).sum ∧
+      (revisionMany (xs.map countPairEvidence)).neg =
+        (xs.map (fun nm => (nm.2 : ℝ≥0∞))).sum ∧
+      (batchEvidenceBetaParams prior_param hprior xs).alpha =
+        prior_param + (xs.map Prod.fst).sum ∧
+      (batchEvidenceBetaParams prior_param hprior xs).beta =
+        prior_param + (xs.map Prod.snd).sum := by
+  exact ⟨revisionMany_countPairEvidence_pos xs,
+    revisionMany_countPairEvidence_neg xs,
+    batchEvidenceBetaParams_alpha prior_param hprior xs,
+    batchEvidenceBetaParams_beta prior_param hprior xs⟩
+
+/-- Laplace finite-batch Revision readout: finite-source `revisionMany` over
+count-pair packets and the Beta posterior mean are two views of the same
+positive/negative sufficient-statistic ledger. -/
+theorem revisionMany_countPairEvidence_laplace_posteriorMean
+    (xs : List (ℕ × ℕ)) :
+    (revisionMany (xs.map countPairEvidence)).pos =
+        (xs.map (fun nm => (nm.1 : ℝ≥0∞))).sum ∧
+      (revisionMany (xs.map countPairEvidence)).neg =
+        (xs.map (fun nm => (nm.2 : ℝ≥0∞))).sum ∧
+      (batchEvidenceBetaParams 1 (by norm_num : 0 < (1 : ℝ)) xs).posteriorMean =
+        uniformPosteriorMean (xs.map Prod.fst).sum (xs.map Prod.snd).sum := by
+  exact ⟨revisionMany_countPairEvidence_pos xs,
+    revisionMany_countPairEvidence_neg xs,
+    batchEvidenceBetaParams_uniformPosteriorMean xs⟩
+
+/-- Laplace finite-batch Revision readout through the core
+`BetaBernoulliPrior` API: the same evidence list, when aggregated by
+`revisionMany`, yields the count ledger whose Beta-Bernoulli predictive success
+probability is `uniformPosteriorMean`. -/
+theorem revisionMany_countPairEvidence_laplace_betaBernoulliPredictive
+    (xs : List (ℕ × ℕ)) :
+    (revisionMany (xs.map countPairEvidence)).pos =
+        (xs.map (fun nm => (nm.1 : ℝ≥0∞))).sum ∧
+      (revisionMany (xs.map countPairEvidence)).neg =
+        (xs.map (fun nm => (nm.2 : ℝ≥0∞))).sum ∧
+      ((batchEvidenceBetaParams 1 (by norm_num : 0 < (1 : ℝ)) xs).toBetaPrior).mean =
+        uniformPosteriorMean (xs.map Prod.fst).sum (xs.map Prod.snd).sum := by
+  exact ⟨revisionMany_countPairEvidence_pos xs,
+    revisionMany_countPairEvidence_neg xs,
+    batchEvidenceBetaParams_toBetaPrior_mean_uniformPosteriorMean xs⟩
+
+end FiniteBatchRevision
 
 /-! ## The Main Connection Theorem -/
 

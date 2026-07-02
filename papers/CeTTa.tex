@@ -48,24 +48,31 @@ MeTTa is a reflective, non-deterministic meta-language with three
 actively maintained runtimes: Hyperon Experimental (\HE{}, Rust),
 \PeTTa{} (Prolog), and \CeTTa{} (C).  This paper describes \CeTTa{},
 a direct C implementation of the \HE{} MeTTa evaluator that passes a
-375-file regression suite with zero failures (equally green in the
-MORK-bridge build; suite snapshot 2026-06), backed by a 333-case
+535-test MeTTa regression suite (a 539-row manifest) with a fast
+regression gate at 405 passed / 0 failed and a heavy-golden lane at
+17 passed / 0 failed (suite snapshot 2026-07-02), backed by a 333-case
 rule-indexed conformance catalog against upstream \HE{}~v0.2.10
 covering 24/24 specification rule capacities (catalog dated 2026-06).
 On freshly rerun cross-runtime benchmarks dated 2026-06-27,
 \CeTTa{} is fastest on startup-dominated shallow inference and on
-several current genomic-inference rows (for example, the 183-pair PLN
-evidence core and the 1{,}411{,}430-hypothesis deep genomic backward
-chaining row), while \PeTTa{} wins on pure branching search (the
-85{,}013-proof Metamath depth-5 benchmark).  A rerun-backed
+several current genomic-inference rows (the 183-pair PLN evidence
+core, the full 1{,}399{,}997-line WM-PLN raw-loader checkpoint, and
+the 1{,}411{,}430-hypothesis deep genomic backward-chaining row),
+while \PeTTa{} wins on pure branching search (the 85{,}013-proof
+Metamath depth-5 benchmark) and on direct 8-Queens search.  A rerun-backed
 cross-engine chaining suite built on community chainers
 (Geisweiller's dependent-typed chainers and Metamath proofs;
 Treutlein's PeTTaChainer problems) shows that \CeTTa{}'s shallow
 advantage is startup-dominated rather than a general scaling property.
 Historical rows whose current drivers now disagree or fail---the old
-cross-engine miner speed table, the current 1.4M WM-PLN seam,
-8-Queens, and tilepuzzle---are explicitly excluded from the revised
-benchmark ladder.
+cross-engine miner speed table, the old full-1.4M WM-PLN scaling
+headline, and BTree---are explicitly excluded from the revised
+benchmark ladder.  The earlier tilepuzzle regression was root-caused
+to unbounded growth of the evaluation arena and closed by a tail-safe
+evaluation-arena garbage collector (on by default), restoring
+tilepuzzle as benchmark evidence: the full 181{,}440-state 8-puzzle
+search now completes in 8.80\,s at 233\,MiB peak resident memory
+(commit 9237afd).
 The runtime is organized as an explicit profile family:
 \code{he-compat} mirrors Rust \HE{} literally (including its quirks);
 the principled \code{he} line carries exact rationals, true division,
@@ -119,9 +126,9 @@ Three implementations exist:
 
 \paragraph{Contributions.}
 \begin{enumerate}
-\item A direct C runtime passing a 375-file regression suite (0
-  failures) plus 104 profile tests, validated against upstream \HE{}
-  v0.2.10 as oracle.
+\item A direct C runtime passing a 535-test MeTTa regression suite
+  (539-row manifest; fast gate 405/0, heavy-golden lane 17/0) plus 104
+  profile tests, validated against upstream \HE{} v0.2.10 as oracle.
 \item An explicit profile family (\code{he-compat} / \code{he} /
   \code{he-extended} / \code{he-prime}) with per-case recorded
   divergences and a fail-by-default conformance harness: a 333-case
@@ -140,11 +147,21 @@ Three implementations exist:
 \item A bidirectional \HE{}$\leftrightarrow$\PeTTa{} translator
   (Prolog + executable Lean), with a sorry-free Lean proof of semantic
   correspondence.
-\item Cross-runtime benchmarks rerun on the current tree: \CeTTa{} is
+\item Cross-runtime benchmarks rerun on 2026-06-27 (the pre-GC tree):
+  \CeTTa{} is
   10--100$\times$ faster than \HE{} on shallow evaluation, wins several
-  current genomic-inference rows, while \PeTTa{} is 4.8$\times$ faster
-  on the audited depth-5 Metamath proof-search row; unresolved rows are
-  explicitly quarantined from the revised ladder.
+  current genomic-inference rows (including the full TFBS-inclusive
+  WM-PLN raw-loader checkpoint), while \PeTTa{} is 4.8$\times$ faster
+  on the audited depth-5 Metamath proof-search row and faster on
+  direct 8-Queens search; only still-unresolved rows are quarantined
+  from the revised ladder.
+\item A tail-safe evaluation-arena garbage collector, on by default,
+  differentially validated (not verified) against the collector-off
+  reference across the fast regression corpus (406/406 agree) and under
+  ASan/UBSan with provenance assertions (404/404 agree); its headline
+  effect is the restored tilepuzzle capacity row---the full
+  181{,}440-state search completes in 8.80\,s at 233\,MiB, versus
+  unbounded arena growth before (Section~\ref{sec:tilepuzzle-gc}).
 \item A characterization of the semantic boundary between \HE{} and
   \PeTTa{}: the shared fragment (85\% of programs) runs identically; the
   divergence is in free-variable scoping across non-deterministic branches.
@@ -200,7 +217,8 @@ as C functions with a shared arena allocator.
 
 \CeTTa{} is validated against the \HE{} CLI (v0.2.10) as oracle.
 Golden regression files are oracle-validated when introduced;
-\code{make test} replays them on every build.  Current status:
+\code{make test} replays them on every build.  As of the 2026-06 suite
+snapshot:
 \textbf{375 passed, 0 failed, 40 skipped} on the default build and
 \textbf{371 passed, 0 failed, 44 skipped} on the MORK-bridge build
 (all bridge sub-lanes green), plus 104 profile tests covering module
@@ -797,8 +815,8 @@ resource accounting once and for all~\cite{costendofunctor}. We return to it in 
 \label{sec:benchmark-programs}
 
 All benchmarks use dialect-agnostic MeTTa (shared syntax) unless noted.
-All timing rows in this section were rerun on the current tree on
-2026-06-27 unless they are explicitly described as excluded,
+All timing rows in this section were rerun on 2026-06-27 (the pre-GC
+tree) unless they are explicitly described as excluded,
 methodological, or unresolved.  For rows whose single-run wall time is
 below 0.1\,s, we report averaged full-process wall time over repeated
 invocations to avoid timer quantization.  Output is verified identical
@@ -993,14 +1011,26 @@ most pairs score 0.04 (minimal evidence).
 
 \paragraph{What we no longer claim here.}
 Earlier drafts included a synthetic scaling table from 143 to
-1.4M atoms.  We no longer treat that table as benchmark evidence in the
-paper.  The current \CeTTa{} 1.4M checkpoint regression reruns with the
-expected semantics (\code{34} proofs, \code{8} unique supported-drug
-hypotheses, \code{2} thresholded hypotheses), but the current
-PeTTa-compatible flat/top checkpoint lanes still fail at import time.
-So the small 183-pair core remains grounded, while the large-scale
-cross-engine WM-PLN loader comparison is withheld until those
-compatibility seams are repaired.
+1.4M atoms.  We still do not treat that older synthetic table itself as
+benchmark evidence in the paper.  What \emph{is} now grounded again is
+the true full raw-loader checkpoint lane: the fresh \CeTTa{} and
+\PeTTa{} reruns both execute the same TFBS-inclusive
+1{,}399{,}997-line data tier and agree on the labeled observable
+contract
+(\code{9} seed targets, \code{9} contextual targets, \code{85}
+disease proofs, \code{34} supported-drug proof witnesses, and
+\code{8} unique supported-drug hypotheses).  The explicit proof-count
+vs.\ hypothesis-count split matters here: the \code{34} traces are
+genuinely multiple proof routes collapsing to \code{8} unique
+\code{(gene,disease,drug,tissue)} hypotheses, not a stale counting
+mistake.  Fresh timings on this grounded full row are 15.31\,s on
+\CeTTa{} and 42.72\,s on \PeTTa{}.  Upstream \HE{} does not currently
+run this loader shape directly: its \code{metta} runner rejects the
+relative-file \code{import! ./support/...} surface as an illegal module
+name, so the \HE{} column for this row remains a loader blocker rather
+than a performance number.  The 183-pair core therefore remains the
+grounded small PLN row, while the full TFBS-inclusive checkpoint is now
+the grounded large WM-PLN row.
 
 \subsection{Genomic Pattern Mining}
 
@@ -1134,21 +1164,27 @@ Benchmark & Scale / note & \CeTTa{} & \PeTTa{} & \HE{} \\
 Shallow typed BC & 60 proof witnesses & 4.0\,ms avg & 45.4\,ms avg & 402\,ms avg \\
 Translator (\code{prog1}) & 30 proof witnesses & 3.7\,ms avg & 44.8\,ms avg & 319\,ms avg \\
 PLN evidence core & 183 scored pairs & 9.5\,ms avg & 62\,ms avg & 4.80\,s \\
+Full WM-PLN raw-loader & 1{,}399{,}997 lines, 34 proofs / 8 hyps & 15.31\,s & 42.72\,s & import block \\
 Mine$\to$chain focus & 3 query SNPs, 5 novel genes & 0.15\,s & 3.33\,s & --- \\
 Deep 17-phase genomic BC & 1{,}411{,}430 hypotheses & 32.32\,s & 55.43\,s & --- \\
+8-Queens (direct shared lane) & 92 solutions & 8.22\,s & 0.05\,s & 2:08.77 \\
 Deep proof search & 85{,}013 proofs & 36.42\,s & 7.60\,s & $>$120\,s \\
 \bottomrule
 \end{tabular}
 \end{center}
 
 \CeTTa{} still wins on several real inference rows, but the revised
-ladder is intentionally smaller than earlier drafts.  We exclude the
-historical cross-engine miner speed table, the current 1.4M WM-PLN
-loader comparison, BTree, the current 8-Queens row, and the full
-tilepuzzle row from this ladder because the present tree either lacks a
-stable current cross-runtime driver for them or exposes a current
-correctness/comparability issue.  The benchmark rows shown here are only
-those rerun directly in this audit.
+ladder is intentionally smaller than earlier drafts.  In the 2026-06-27
+audit we excluded the
+historical cross-engine miner speed table, the old full-1.4M WM-PLN
+scaling table, BTree, and the full tilepuzzle row from this cross-engine
+ladder because at that point the tree either lacked a
+stable current cross-runtime driver for them or exposed a
+correctness/comparability issue.  (The tilepuzzle regression has since
+been closed as a single-runtime capacity result by the evaluation-arena
+garbage collector, Section~\ref{sec:tilepuzzle-gc}; a cross-engine
+tilepuzzle row has not yet been rerun on the post-GC tree.)  The
+benchmark rows shown here are only those rerun directly in that audit.
 
 \subsection{Cross-Engine Chaining Suite}
 \label{sec:chaining-suite}
@@ -1214,28 +1250,71 @@ The \code{rule-sig} encoding is semantically equivalent on all runtimes.
 
 \subsection{Current profiling status}
 
-Earlier drafts included exact Callgrind and Massif tables for the
-SymbolId conversion and for tilepuzzle.  Those low-level profiles were
-not rerun as part of the present benchmark re-audit, so we do not use
-their historical percentages as current measurement claims here.  The
-qualitative engineering picture is unchanged---string-heavy dispatch is
-no longer the main story, and the next bottlenecks are still binding
-management, variable renaming, and arena allocation---but the exact
-profile tables are omitted until they are rerun on the current build.
+Valgrind reruns on the grounded targets, measured on the pre-GC tree
+(2026-06-27), split into one success
+mode and one blocker.  Massif reruns succeeded on both the restored
+8-Queens row and the full TFBS-inclusive WM-PLN row.  On direct
+8-Queens, the fresh peak useful heap is 173.5\,MB, dominated by arena
+allocation (\code{arena\_claim\_block}), \code{atom\_symbol\_id},
+\code{atom\_deep\_copy\_impl}, and the typed dispatch / match / eval
+path.  On the full WM-PLN row, the fresh peak useful heap is
+2.09\,GB, dominated first by import-time term-universe growth and
+symbol interning
+(\code{cetta\_realloc}, \code{term\_universe\_insert\_new\_record},
+\code{tu\_intern\_symbol}, \code{parse\_metta\_file\_ids}), then by
+query-time delayed result storage
+(\code{stree\_insert}, \code{native\_query}).  By contrast, fresh
+Callgrind reruns on both grounded targets do \emph{not} yet yield a
+usable callgraph file: Valgrind hits a \code{brk segment overflow}
+before emitting a nonempty callgrind output.  We therefore report fresh
+Massif measurements here, but continue to withhold exact Callgrind
+percentages on the current build.
 
-\subsection{Tilepuzzle as a live regression target}
+\subsection{Tilepuzzle: regression closed by the evaluation-arena garbage collector}
+\label{sec:tilepuzzle-gc}
 
-The 8-puzzle BFS remains a useful WAM-class stress test, but the current
-rerun exposes a correctness/comparability issue rather than a clean
-paper benchmark row.  The current \CeTTa{} port
+The 8-puzzle breadth-first search (BFS) remains a useful WAM-class
+stress test.  The patched \CeTTa{} port
 (\href{https://github.com/zariuq/CeTTa/blob/main/tests/test_tilepuzzle.metta}{\code{tests/test\_tilepuzzle.metta}})
-returns 181{,}440 reachable states in 26.41\,s, while the current
+returns the labeled result
+\code{(tilepuzzle-reachable-state-count including-start 181440)},
+which matches an independent BFS check of the solved 8-puzzle parity
+class.  The current
 \PeTTa{} reference example
 (\href{https://github.com/patham9/PeTTa/blob/main/examples/tilepuzzle.metta}{\code{examples/tilepuzzle.metta}})
-self-checks 181{,}441 states in 1.40\,s.  We therefore exclude
-tilepuzzle from the benchmark ladder in this revision and treat it as a
-live debugging target for state-accounting and port faithfulness rather
-than as settled benchmark evidence.
+self-checks 181{,}441 states, so that older reference lane is off by
+one under the clarified contract.
+
+The whole search runs as a single top-level form, and each BFS step
+builds a fresh evaluation environment.  Before the fix, those per-step
+environments were never reclaimed inside the evaluation arena, so memory
+grew linearly in the number of visited states and the full run outgrew
+its time and memory envelope.  The fix is a tail-safe garbage collector
+for the evaluation arena, on by default.  It (i)~skips environment
+merging for \emph{closed} queries---queries with no free variables
+escaping to the caller---and (ii)~at tail-call-safe points evacuates the
+live root set (the current term, its environment, and its evaluation
+type) into a small survivor arena, then resets the evaluation arena to a
+per-call anchor; the survivor arena is itself reset at each top-level
+form boundary.  Because only the roots that outlive a step are copied
+forward, the transient per-step environments are freed in bulk instead
+of accumulating.
+
+With the collector on (commit 9237afd), the full run visits all
+181{,}440 states in 8.80\,s at 233\,MiB peak resident memory.  Over that
+run it reclaims 5{,}704{,}882{,}536 bytes (about 5.3\,GiB) of transient
+evaluation-arena memory, while the survivor arena peaks at only
+135{,}432 bytes (about 132\,KiB) and is reset once.  The result is
+independent of the collection budget: at a 1\,MB collection budget the
+run returns the identical 181{,}440-state payload as at the default
+budget, with peak resident memory even lower at the tighter budget
+(178\,MiB vs.\ 233\,MiB)---evidence that the collector preserves the
+computed result rather than changing it.  The collector is
+differentially validated, not verified: a collector-on versus
+collector-off comparison over the fast regression corpus agrees on all
+406 cases, and the same comparison under ASan/UBSan with provenance
+assertions agrees on all 404 cases it runs (2 further cases skipped only
+because the collector-off reference exceeded its bounded time limit).
 
 \subsection{Structured Space Kinds}
 
@@ -1256,8 +1335,11 @@ Kind & Discipline & Use case \\
 These are created via \code{(new-space queue)}, \code{(new-space hash)},
 etc., and support universal pattern matching through the standard
 \code{match} API\@.  The tilepuzzle uses queue-space for its BFS
-frontier and hash-space for visited-set deduplication, reducing
-peak memory from 6.3\,GB (plain atomspace) to 4.68\,GB.
+frontier and hash-space for visited-set deduplication.  Peak memory
+fell from 6.3\,GB with a plain atomspace to 4.68\,GB with the queue and
+hash spaces (pre-GC), and then to 233\,MiB once the tail-safe
+evaluation-arena garbage collector also reclaims the transient per-step
+environments (commit 9237afd; Section~\ref{sec:tilepuzzle-gc}).
 
 \subsection{Architecture: Three Machines}
 
@@ -1638,11 +1720,12 @@ pure branching search (the 85{,}013-proof Metamath row).  A
 cross-engine chaining suite (Section~\ref{sec:chaining-suite})
 confirms that \CeTTa{}'s shallow advantage is a startup-and-dispatch
 effect rather than a scaling property.  Historical rows whose current
-drivers are unresolved---the old miner speed table, the current 1.4M
-WM-PLN seam, 8-Queens, and tilepuzzle---are excluded from the revised
+drivers are unresolved or no longer the same computation as their old
+headline---the old miner speed table and BTree---are
+excluded from the revised
 benchmark ladder rather than carried forward on trust.  Throughout,
 \CeTTa{} maintains
-oracle-verified correctness across a 375-file regression suite and a
+oracle-verified correctness across a 535-test MeTTa regression suite and a
 333-case rule-indexed conformance catalog (24/24 spec-rule capacities,
 all agree) against upstream \HE{}~v0.2.10.
 The sorry-free Lean proof of \HE{}$\leftrightarrow$\PeTTa{} semantic
@@ -1670,16 +1753,17 @@ The congruence bug that motivated this weld---an argument-congruence
 rule silently missing from the one-step relation on three branches at
 once---is exactly the drift class this architecture eliminates.
 
-Tilepuzzle is now treated as a live regression target rather than as
-settled speed evidence.  The fresh rerun exposes a one-state mismatch
-between the current ports (\CeTTa{} reaches 181{,}440 states, the
-current \PeTTa{} reference self-checks 181{,}441), so the immediate
-engineering priority is state-accounting and rollback faithfulness
-before reinstating any low-level profiling claim.  Once the counts
-agree again, trail-style rollback, bindings builders, and arena
-mark/reset remain the main candidates for improving search-heavy
-workloads without converting \CeTTa{} into a Prolog engine.  The
-guiding principle: \emph{backtracking should be rare, local, and
+Tilepuzzle is settled capacity evidence again.  The clarified contract
+counts 181{,}440 reachable boards including the start state, and the
+older \PeTTa{} example's 181{,}441 self-check is understood as an
+off-by-one reference expectation.  The performance regression that had
+made the full run outgrow its envelope was root-caused to unbounded
+evaluation-arena growth and closed by a tail-safe evaluation-arena
+garbage collector: the full search now completes in 8.80\,s at 233\,MiB
+(Section~\ref{sec:tilepuzzle-gc}).  Trail-style rollback, bindings
+builders, and arena mark/reset remain candidates for further improving
+search-heavy workloads without converting \CeTTa{} into a Prolog engine.
+The guiding principle: \emph{backtracking should be rare, local, and
 hidden---not global, ambient, or user-visible.}
 
 \paragraph{Future work.}
@@ -1705,7 +1789,10 @@ hidden---not global, ambient, or user-visible.}
 \item \textbf{Local search machine:} trail/watermark rollback,
   \code{BindingsBuilder}, arena mark/reset for scratch atoms.
   Target: materially improve search-heavy workloads such as
-  tilepuzzle once the current state-count mismatch is resolved.
+  tilepuzzle; the state-count contract is settled and the earlier
+  arena-growth regression is closed by the evaluation-arena garbage
+  collector, so this is now an optimization opportunity rather than a
+  correctness or capacity blocker.
 \item \textbf{Indexed shared-space engine:} leapfrog triejoin
   (from Vandervorst's \code{trie\_synth.py}), conjunction query
   planning, SpaceEngine boundary (formalized in
@@ -1868,11 +1955,15 @@ The raw \CeTTa{} tilepuzzle benchmark depends on \CeTTa{}'s typed
 those spaces with a functional queue and plain named-space membership
 does run: a 100-step witness reaches 171 visited states in 18.47\,s,
 while the 500-step version did not finish under a 30\,s cap.  For
-reference, native \CeTTa{} currently reaches 181{,}440 states in
-26.41\,s, while the current \PeTTa{} reference self-checks
-181{,}441 states.  So this bounded adaptation is only evidence that the
-surface idea transfers; the full native row remains a live
-state-accounting mismatch rather than settled performance evidence.
+reference, the clarified native contract counts
+181{,}440 reachable states including the start board, while the older
+\PeTTa{} example's 181{,}441 self-check is now understood as an
+off-by-one reference expectation.  A fresh full native \CeTTa{} run now
+completes with the tail-safe evaluation-arena garbage collector:
+181{,}440 states in 8.80\,s at 233\,MiB (Section~\ref{sec:tilepuzzle-gc}).
+So this bounded \LeaTTa{} adaptation is only evidence that the surface
+idea transfers, while the full native \CeTTa{} row is settled capacity
+evidence.
 
 \paragraph{Bottom line.}
 \LeaTTa{} is a credible independent oracle and a candidate verified

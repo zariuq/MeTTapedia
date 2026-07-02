@@ -46,21 +46,15 @@ rows=(
   "Lambda-Pi curriculum demo|PeTTa|curriculum_lf_demo_petta.metta|same claims; PeTTa adapter names/assertions"
   "Lambda-Pi break probes|CeTTa|break_probes.metta|documents currently accepted raw-signature holes; client of kernel_binding_waist_v1 with local binding replay teeth"
   "Lambda-Pi break probes|PeTTa|break_probes_petta.metta|same probes; PeTTa adapter names/assertions"
-  "Imp coherence exp1|CeTTa|imp_coherence_exp1.metta|bounded derivability search emits certs accepted by checker"
+  "Imp coherence exp1|CeTTa|imp_coherence_exp1.metta|bounded derivability search emits certs accepted by checker; ProofDepthQ bridge seed erases graded witnesses to pure Seq and lifts pure certs back with footprint"
   "Imp coherence exp1|PeTTa|imp_coherence_exp1_petta.metta|same claims; PeTTa adapter names/assertions"
   "DTT wall exp2|CeTTa|exp2_dtt_wall.metta|beta/delta/rfl pass; recursor/iota/induction wall documented; client of kernel_binding_waist_v1 with local binding replay teeth"
   "DTT wall exp2|PeTTa|exp2_dtt_wall_petta.metta|same claims; PeTTa adapter names/assertions"
   "HOTG both-ways exp3|CeTTa|exp3_hotg_both_ways.metta|same tiny HO-Set fragment as sequent certificate and lambda-Pi proof term; lambda-Pi side is a client of kernel_binding_waist_v1 with local binding replay teeth"
   "HOTG both-ways exp3|PeTTa|exp3_hotg_both_ways_petta.metta|same claims; PeTTa adapter names/assertions"
-  "NIK Metamath stack|CeTTa|nik_metamath_stack_v0.metta|floating-hypothesis FH/Use proof layer; id theorem; DV and essential-hyp negatives"
-  "NIK Metamath stack|PeTTa|nik_metamath_stack_v0_petta.metta|same claims; PeTTa adapter names/assertions"
-  "NIK Metamath L0 ingestion|CeTTa|nik_metamath_l0_v0.metta|parsed-AST admission validates labels/floats/DV/assertion/proof invariants before lowering to the NIK checker"
-  "NIK Metamath L0 ingestion|PeTTa|nik_metamath_l0_v0_petta.metta|same claims; PeTTa adapter names/assertions"
-  # RETIRED v1: the standalone CeTTa Metamath .mm parser smoke depended on the
-  # old `metamath` module, now removed/deferred with full Metamath parsing.
-  # Active NIK coverage is the binder-free proof stack plus the parsed-AST L0
-  # admission layer above; concrete syntax belongs inside each calculus
-  # LanguageDef, not as a separate Metamath parser lane.
+  # RETIRED v1: bespoke NIK Metamath proof-stack / parsed-AST admission lanes.
+  # Metamath coverage must route through languageDef -> generic parser/cert ->
+  # generic kernel, not a hand-coded benchmark-specific checker.
   "Provenance tree|CeTTa|provenance_tree_v0.metta|same checked trace projects to Boolean ledger and WM evidence; evidence cannot mint theorem"
   "Provenance tree|PeTTa|provenance_tree_v0_petta.metta|same claims; PeTTa adapter names/assertions"
   "Evaluator ground-recursion invariant|CeTTa|evaluator_ground_recursion_invariant.metta|ground recursive same-head infer reaches spec normal form (Srt kind) and still rejects bad domains; guards the CeTTa bind-mode regression against the LeaTTa/Hyperon/PeTTa oracle; client of kernel_binding_waist_v1 with local binding replay teeth"
@@ -79,7 +73,7 @@ rows=(
   "ABT binding generic replay v1|PeTTa|kernel_binding_abtg_replay_v1_petta.metta|same claims; PeTTa adapter imports BindingDecl, which imports the PeTTa waist exactly once"
   "Conv-soundness shadow v1|CeTTa|conv_soundness_shadow_v1.metta|conv is a SOUND decidable shadow of context-bisimulation (conv subset of ~): structural-congruence 0-unit conv => bounded bisim; strict gap conv (XS) ~ exhibited (+-idempotence, +/|-commutativity, expansion law are ~-only); discriminators a.b+a.c vs a.(b+c) and a|a vs a refused by both; gated by run_conv_soundness_gate.sh (mutation-complete 4/4: unsound conv coarsenings + ~ over-match caught). Operational complement to knot-rho/knotted-topoi FA"
   "Conv-soundness shadow v1|PeTTa|conv_soundness_shadow_v1_petta.metta|same claims; PeTTa adapter names/assertions"
-  "Ocoherence HM-adequacy v1|CeTTa|ocoherence_hm_adequacy_v1.metta|bounded OSLF/Hennessy-Milner adequacy shadow: bisimilar examples agree on probe formulae; each listed ~/~ pair is split by an EXPLICIT separating <F>phi (a.b+a.c vs a.(b+c); a|a vs a; a.b vs a.c); triangle tie conv subset of ~ subset of modal-eq on the finitary core, with dT-label = LTS-label = modal-index; gated by run_ocoherence_gate.sh (mutation-complete 4/4: modal label-ignore/vacuous-diamond/dropped-conjunct + ~ over-match). Operational shadow of knotted-topoi keystone Omega-classifies-bisimilarity"
+  "Ocoherence HM-adequacy v1|CeTTa|ocoherence_hm_adequacy_v1.metta|bounded OSLF/Hennessy-Milner adequacy shadow: bisimilar examples agree on probe formulae; each listed ~/~ pair is split by an EXPLICIT separating <F>phi (a.b+a.c vs a.(b+c); a|a vs a; a.b vs a.c); FBox checks universal a-successors and StepCountQ=(Nat,0,+,<=) surfaces sat fuel with composition/order teeth; triangle tie conv subset of ~ subset of modal-eq on the finitary core, with dT-label = LTS-label = modal-index; gated by run_ocoherence_gate.sh (mutation-complete 6/6: modal label-ignore/vacuous-diamond/dropped-conjunct + ~ over-match + FBox failing-successor + grade-order over-accept). Operational shadow of knotted-topoi keystone Omega-classifies-bisimilarity"
   "Ocoherence HM-adequacy v1|PeTTa|ocoherence_hm_adequacy_v1_petta.metta|same claims; PeTTa adapter names/assertions"
   "MeTTa2rho opcorr shadow v1|CeTTa|mettarho_opcorr_shadow_v1.metta|bounded operational shadow of knotted-topoi ob:opcorr on a genuine 2-rule Peano-add GSLT: the desugaring's dT-transitions correspond to the GSLT rewrites, each on its location channel c(l)=quote(l) (FORWARD+BACKWARD via list eq; rw is the independent term-side reference, dfire reads channels off the annotation -- non-circular); channel injectivity (distinct locations -> distinct channels, collapse caught); bounded bisimulation to normal form with explicit multi-step normalisation witnesses; gated by run_mettarho_opcorr_gate.sh (mutation-complete 4/4: channel collision/wrong location/dropped+wrong re-emit, exact-19 baseline). Lifts the conv/~/<> shadows onto a real LanguageDef"
   "MeTTa2rho opcorr shadow v1|PeTTa|mettarho_opcorr_shadow_v1_petta.metta|same claims; PeTTa adapter names/assertions"

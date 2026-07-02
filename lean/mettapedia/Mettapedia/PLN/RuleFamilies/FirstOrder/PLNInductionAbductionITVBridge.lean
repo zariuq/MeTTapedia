@@ -454,6 +454,38 @@ other.  This is the negative canary for point-only abductive ranking. -/
 def abductionIntervalsOverlap (x y : ITV) : Prop :=
   x.lower ≤ y.upper ∧ y.lower ≤ x.upper
 
+/-- Overlap is symmetric: a candidate pair is unresolved independent of which
+candidate is named first. -/
+theorem abductionIntervalsOverlap_symm {x y : ITV} :
+    abductionIntervalsOverlap x y → abductionIntervalsOverlap y x := by
+  intro h
+  exact ⟨h.2, h.1⟩
+
+/-- Strict interval ranking excludes overlap.
+
+This is the abstract version of the abductive-search guardrail: once the worse
+candidate's upper endpoint is below the better candidate's lower endpoint, the
+two explanations are separated rather than merely point-ranked. -/
+theorem not_abductionIntervalsOverlap_of_strictlyRanks
+    {better worse : ITV}
+    (hRank : abductionIntervalStrictlyRanks better worse) :
+    ¬ abductionIntervalsOverlap better worse := by
+  intro hOverlap
+  exact (not_lt_of_ge hOverlap.1) hRank
+
+/-- If neither candidate's interval is strictly separated above the other, the
+honest conservative relation is overlap.
+
+Point scores may still differ, but the interval calculus refuses to rank the
+pair unless one direction satisfies `abductionIntervalStrictlyRanks`. -/
+theorem abductionIntervalsOverlap_of_not_strictlyRanks
+    {x y : ITV}
+    (hxy : ¬ abductionIntervalStrictlyRanks x y)
+    (hyx : ¬ abductionIntervalStrictlyRanks y x) :
+    abductionIntervalsOverlap x y := by
+  unfold abductionIntervalsOverlap abductionIntervalStrictlyRanks at *
+  exact ⟨le_of_not_gt hxy, le_of_not_gt hyx⟩
+
 /-- A strict interval ranking is sound for every point value selected from the
 ranked intervals.  This is the theorem-level version of the abductive-search
 discipline: point scores may suggest candidates, but only separated intervals

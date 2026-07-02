@@ -1,4 +1,5 @@
 import Mettapedia.PLN.RuleFamilies.FirstOrder.PLNAlgorithmicAbductionBridge
+import Mettapedia.PLN.RuleFamilies.FirstOrder.PLNInductionAbductionProfile
 import Mettapedia.PLN.RuleFamilies.FirstOrder.PLNBayesInversionBridge
 import Mettapedia.PLN.RuleFamilies.FirstOrder.PLNBayesNetFastRules
 import Mettapedia.PLN.RuleFamilies.FirstOrder.BNTopologyRegression
@@ -27,6 +28,7 @@ import Mettapedia.PLN.RuleFamilies.FirstOrder.RavenAsymmetricInduction
 import Mettapedia.PLN.RuleFamilies.FirstOrder.PLNRavenAbductionBridge
 import Mettapedia.PLN.RuleFamilies.FirstOrder.PLNRavenInductionBridge
 import Mettapedia.PLN.RuleFamilies.FirstOrder.PLNRevision
+import Mettapedia.PLN.RuleFamilies.FirstOrder.PLNRevisionProfile
 import Mettapedia.PLN.RuleFamilies.FirstOrder.PLNXiDerivedBNRules
 import Mettapedia.PLN.RuleFamilies.FirstOrder.PLNXiRuleRegistry
 import Mettapedia.PLN.RuleFamilies.FirstOrder.Quantifiers

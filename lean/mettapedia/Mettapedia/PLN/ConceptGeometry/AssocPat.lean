@@ -5,6 +5,7 @@ import Mettapedia.PLN.ConceptGeometry.AssocPat.PLNIntensionalAssocPatClosure
 import Mettapedia.PLN.ConceptGeometry.AssocPat.PLNIntensionalCanary
 import Mettapedia.PLN.ConceptGeometry.AssocPat.PLNIntensionalRegression
 import Mettapedia.PLN.ConceptGeometry.AssocPat.PLNIntensionalWorldModel
+import Mettapedia.PLN.ConceptGeometry.AssocPat.PLNTypedSemanticLayerConceptClosureBridge
 import Mettapedia.PLN.ConceptGeometry.AssocPat.PLNTypedSemanticLayerAssocPatBridge
 import Mettapedia.PLN.ConceptGeometry.AssocPat.PLNTypedSemanticLayerBridge
 

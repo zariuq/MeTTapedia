@@ -3,6 +3,7 @@ import Mettapedia.KR.ConceptGeometry.Bridges.PLN.AbstractInheritanceOverlap
 import Mettapedia.KR.ConceptGeometry.AbstractInheritanceStampedWitness
 import Mettapedia.KR.ConceptOntology.Examples
 import Mettapedia.PLN.ConceptGeometry.AssocPat.PLNHigherOrderHOLAssocPatBridge
+import Mettapedia.PLN.ConceptGeometry.AssocPat.PLNTypedSemanticLayerBridge
 import Mathlib.Tactic
 
 /-!
@@ -650,6 +651,63 @@ theorem patEvidence_birdBird_le_penguinBird :
     (G := gate) (memberEnc := membershipBuilder)
     pairEnc demoScoreModel patSubsetSemantics positive_pair_subset_rel
 
+/-- The same concrete `penguin ≤ bird` witness drives the typed semantic-layer
+ASSOC channel.  The semantic tag selects the existing ASSOC query; it does not
+introduce a separate intensional semantics. -/
+theorem semanticLayerAssocEvidence_birdBird_le_penguinBird :
+    InheritanceQueryBuilder.semanticLayerEvidence
+        (State := DemoState) (Atom := Concept) (Query := DemoPairQuery)
+        .intensional .assoc 1 pairEnc Concept.bird Concept.bird ≤
+      InheritanceQueryBuilder.semanticLayerEvidence
+        (State := DemoState) (Atom := Concept) (Query := DemoPairQuery)
+        .intensional .assoc 1 pairEnc Concept.penguin Concept.bird := by
+  simpa using assocEvidence_birdBird_le_penguinBird
+
+/-- The same concrete `penguin ≤ bird` witness drives the typed semantic-layer
+PAT channel. -/
+theorem semanticLayerPATEvidence_birdBird_le_penguinBird :
+    InheritanceQueryBuilder.semanticLayerEvidence
+        (State := DemoState) (Atom := Concept) (Query := DemoPairQuery)
+        .intensional .pat 1 pairEnc Concept.bird Concept.bird ≤
+      InheritanceQueryBuilder.semanticLayerEvidence
+        (State := DemoState) (Atom := Concept) (Query := DemoPairQuery)
+        .intensional .pat 1 pairEnc Concept.penguin Concept.bird := by
+  simpa using patEvidence_birdBird_le_penguinBird
+
+/-- The mixed demo evidence is monotone for the same concrete `penguin ≤ bird`
+witness: its extensional component is unchanged when the consequent is `bird`,
+while both ASSOC and PAT components increase with the antecedent intent. -/
+theorem mixBaseEvidence_birdBird_le_penguinBird :
+    mixBaseEvidence Concept.bird Concept.bird ≤
+      mixBaseEvidence Concept.penguin Concept.bird := by
+  rw [BinaryEvidence.le_def]
+  constructor
+  · simp only [mixBaseEvidence, BinaryEvidence.hplus_def, scoreToEvidenceNNReal]
+    apply add_le_add
+    · apply add_le_add
+      · exact_mod_cast le_rfl
+      · exact_mod_cast assocBaseScore_mono
+          penguin_inherits_bird_at_one
+          (baseInterpretation.inherits_refl Concept.bird)
+    · exact_mod_cast patBaseScore_mono
+        penguin_inherits_bird_at_one
+        (baseInterpretation.inherits_refl Concept.bird)
+  · simp [mixBaseEvidence, BinaryEvidence.hplus_def, scoreToEvidenceNNReal]
+
+/-- The concrete mixed semantic-layer channel also carries the `penguin ≤ bird`
+witness.  This exercises the extensional+ASSOC+PAT surface without collapsing it
+to either intensional channel alone. -/
+theorem semanticLayerMixedEvidence_birdBird_le_penguinBird :
+    InheritanceQueryBuilder.semanticLayerEvidence
+        (State := DemoState) (Atom := Concept) (Query := DemoPairQuery)
+        .mixed .assoc 1 pairEnc Concept.bird Concept.bird ≤
+      InheritanceQueryBuilder.semanticLayerEvidence
+        (State := DemoState) (Atom := Concept) (Query := DemoPairQuery)
+        .mixed .assoc 1 pairEnc Concept.penguin Concept.bird := by
+  change natScaleEvidence 1 (mixBaseEvidence Concept.bird Concept.bird) ≤
+    natScaleEvidence 1 (mixBaseEvidence Concept.penguin Concept.bird)
+  simpa only [natScaleEvidence_one] using mixBaseEvidence_birdBird_le_penguinBird
+
 /-- The toy bird concept has a concrete positive extent witness.  This keeps the
 PAT/ASSOC channel-separation canary below nonvacuous. -/
 theorem tweety_mem_bird_finiteExtent :
@@ -714,6 +772,18 @@ theorem assocEvidence_birdBird_ne_patEvidence_birdBird :
     ne_of_lt assocBaseScore_birdBird_lt_patBaseScore_birdBird
   simp [natScaleEvidence, scoreToEvidenceNNReal] at hp
   exact hne hp
+
+/-- The typed semantic-layer gate preserves the concrete ASSOC/PAT channel
+separation canary.  Selecting `.assoc` and `.pat` through the layer tag still
+lands on different rule-facing evidence in this ontology. -/
+theorem semanticLayerAssocEvidence_birdBird_ne_semanticLayerPATEvidence_birdBird :
+    InheritanceQueryBuilder.semanticLayerEvidence
+        (State := DemoState) (Atom := Concept) (Query := DemoPairQuery)
+        .intensional .assoc 1 pairEnc Concept.bird Concept.bird ≠
+      InheritanceQueryBuilder.semanticLayerEvidence
+        (State := DemoState) (Atom := Concept) (Query := DemoPairQuery)
+        .intensional .pat 1 pairEnc Concept.bird Concept.bird := by
+  simpa using assocEvidence_birdBird_ne_patEvidence_birdBird
 
 noncomputable def penguinBirdStampedEvidence :
     StampedBinaryEvidence (DualConcept.WitnessStamp Creature Concept) :=
@@ -1042,6 +1112,47 @@ theorem assoc_pat_provenance_canary :
         penguinBirdStampedEvidence birdBirdStampedEvidence = none := by
   exact ⟨assocEvidence_birdBird_le_penguinBird,
     patEvidence_birdBird_le_penguinBird,
+    premiseStampedEvidence_guardedRevise_eq_none⟩
+
+/-- Worked semantic-layer canary for the concrete ontology: the same
+`penguin ≤ bird` witness drives ASSOC, PAT, and the mixed extensional+intensional
+channel; ASSOC and PAT still do not collapse; and overlap-aware revision still
+rejects double-counting the same premise provenance. -/
+theorem semanticLayer_assoc_pat_mixed_provenance_canary :
+    InheritanceQueryBuilder.semanticLayerEvidence
+        (State := DemoState) (Atom := Concept) (Query := DemoPairQuery)
+        .intensional .assoc 1 pairEnc Concept.bird Concept.bird ≤
+      InheritanceQueryBuilder.semanticLayerEvidence
+        (State := DemoState) (Atom := Concept) (Query := DemoPairQuery)
+        .intensional .assoc 1 pairEnc Concept.penguin Concept.bird
+      ∧
+      InheritanceQueryBuilder.semanticLayerEvidence
+        (State := DemoState) (Atom := Concept) (Query := DemoPairQuery)
+        .intensional .pat 1 pairEnc Concept.bird Concept.bird ≤
+      InheritanceQueryBuilder.semanticLayerEvidence
+        (State := DemoState) (Atom := Concept) (Query := DemoPairQuery)
+        .intensional .pat 1 pairEnc Concept.penguin Concept.bird
+      ∧
+      InheritanceQueryBuilder.semanticLayerEvidence
+        (State := DemoState) (Atom := Concept) (Query := DemoPairQuery)
+        .mixed .assoc 1 pairEnc Concept.bird Concept.bird ≤
+      InheritanceQueryBuilder.semanticLayerEvidence
+        (State := DemoState) (Atom := Concept) (Query := DemoPairQuery)
+        .mixed .assoc 1 pairEnc Concept.penguin Concept.bird
+      ∧
+      InheritanceQueryBuilder.semanticLayerEvidence
+        (State := DemoState) (Atom := Concept) (Query := DemoPairQuery)
+        .intensional .assoc 1 pairEnc Concept.bird Concept.bird ≠
+      InheritanceQueryBuilder.semanticLayerEvidence
+        (State := DemoState) (Atom := Concept) (Query := DemoPairQuery)
+        .intensional .pat 1 pairEnc Concept.bird Concept.bird
+      ∧
+      StampedBinaryEvidence.guardedRevise
+        penguinBirdStampedEvidence birdBirdStampedEvidence = none := by
+  exact ⟨semanticLayerAssocEvidence_birdBird_le_penguinBird,
+    semanticLayerPATEvidence_birdBird_le_penguinBird,
+    semanticLayerMixedEvidence_birdBird_le_penguinBird,
+    semanticLayerAssocEvidence_birdBird_ne_semanticLayerPATEvidence_birdBird,
     premiseStampedEvidence_guardedRevise_eq_none⟩
 
 /-- The provenance guardrail is visible through both concept-geometry channels:

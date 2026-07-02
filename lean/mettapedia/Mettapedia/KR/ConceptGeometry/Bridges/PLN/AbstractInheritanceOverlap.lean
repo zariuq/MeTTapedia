@@ -1,4 +1,5 @@
 import Mettapedia.KR.ConceptGeometry.AbstractInheritanceStampedWitness
+import Mettapedia.PLN.RuleFamilies.FirstOrder.PLNRevision
 import Mettapedia.PLN.WorldModel.WorldModelOverlap
 
 /-!
@@ -26,10 +27,6 @@ noncomputable instance : Sub BinaryEvidence where
 @[simp] theorem sub_def (x y : BinaryEvidence) :
     x - y = ⟨x.pos - y.pos, x.neg - y.neg⟩ := rfl
 
-@[simp] theorem zero_pos : (0 : BinaryEvidence).pos = 0 := rfl
-
-@[simp] theorem zero_neg : (0 : BinaryEvidence).neg = 0 := rfl
-
 @[simp] theorem sub_zero (x : BinaryEvidence) : x - 0 = x := by
   apply BinaryEvidence.ext'
   · simp [sub_def]
@@ -41,6 +38,7 @@ namespace Mettapedia.KR.ConceptGeometry.AbstractInheritance
 
 open Mettapedia.PLN.Evidence.EvidenceClass
 open Mettapedia.PLN.Evidence.EvidenceQuantale
+open Mettapedia.PLN.RuleFamilies.FirstOrder.PLNRevision
 open Mettapedia.PLN.WorldModel.PLNWorldModelGeneric
 open Mettapedia.PLN.WorldModel.WorldModelOverlap
 open scoped ENNReal
@@ -138,6 +136,17 @@ instance because raw stamped addition can double-count overlapping provenance. -
       extract_add := by
         intro _ _ _
         rfl }
+
+/-- If guarded stamped Revision succeeds, its evidence component is exactly
+the PLN finite-source `revisionMany` of the packet evidence list.  The guard is
+load-bearing: without pairwise-disjoint stamps, additive `revisionMany` would
+double-count source provenance. -/
+theorem guardedListRevise_evidence_eq_revisionMany
+    {xs : List (StampedBinaryEvidence Stamp)}
+    {r : StampedBinaryEvidence Stamp}
+    (hr : guardedListRevise xs = some r) :
+    r.evidence = revisionMany (xs.map (fun x => x.evidence)) := by
+  rw [evidence_of_guardedListRevise_eq_some hr, revisionMany_eq_sum]
 
 end StampedBinaryEvidence
 
@@ -804,6 +813,24 @@ theorem stampSetPacketJointMerge_eq_of_guardedListRevise_eq_some
     StampedBinaryEvidence.guardedListRevise_eq_some_imp_eq_listRevise
       (Ss.map stampSetPacket) h
   rw [stampSetPacketJointMerge_eq_union, ← hList, ← hr]
+
+omit [Fintype Obj] [Fintype Attr] in
+/-- When the guarded source-list Revision succeeds, the overlap-corrected
+source-union merge has exactly the same evidence as PLN finite-source
+`revisionMany` on the packet evidence list.  When the guard fails, this theorem
+does not apply; the overlap-corrected merge remains the provenance-aware
+alternative to raw additive over-counting. -/
+theorem stampSetPacketJointMerge_evidence_eq_revisionMany_of_guardedListRevise_eq_some
+    (Ss : List (Finset (WitnessStamp Obj Attr)))
+    {r : StampedBinaryEvidence (WitnessStamp Obj Attr)}
+    (h :
+      StampedBinaryEvidence.guardedListRevise (Ss.map stampSetPacket) =
+        some r) :
+    (stampSetPacketJointMerge Ss).evidence =
+      revisionMany ((Ss.map stampSetPacket).map (fun x => x.evidence)) := by
+  have hMerge := stampSetPacketJointMerge_eq_of_guardedListRevise_eq_some Ss h
+  rw [hMerge]
+  exact StampedBinaryEvidence.guardedListRevise_evidence_eq_revisionMany h
 
 /-- Concrete stamped-overlap layer for inheritance witness packets. -/
 noncomputable def witnessStampOverlapLayer :

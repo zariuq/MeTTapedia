@@ -380,4 +380,139 @@ theorem requiredContext_missing_source_blocks_query_canary :
   rintro ⟨_, hq⟩
   exact requiredContext_missing_source_blocks_state_canary hq.1
 
+/-- The same wrong-source context blocks the ITV surface: there is no
+context-indexed ITV readout for a state that the context cannot derive. -/
+theorem requiredContext_missing_source_blocks_ITVCtx_canary :
+    ¬ ∃ itv,
+      BinaryWorldModel.WMITVJudgmentCtx
+        (State := BinaryEvidence) (Query := ContextDemoQuery)
+        ITVSemantics.walleyIDMPredictive IDMPredictiveContext.default
+        {demoEvidence₂} demoEvidence observed itv := by
+  rintro ⟨_, hitv⟩
+  exact requiredContext_missing_source_blocks_state_canary hitv.1
+
+/-! ## Proof-carrying context-guard profile -/
+
+/-- Compact public handle for the current context-guard bridge.
+
+The profile deliberately records generic context weakening / union facts and
+the concrete positive/negative canaries.  It does not claim a full context
+calculus: richer syntactic context descent remains a separate frontier. -/
+structure ContextGuardBridgeProfile where
+  queryContextWeakening :
+    ∀ {State Query : Type*}
+      [Mettapedia.PLN.Evidence.EvidenceClass.EvidenceType State]
+      [BinaryWorldModel State Query]
+      {Γ Δ : Set State} {W : State} {q : Query} {e : BinaryEvidence},
+      Γ ⊆ Δ →
+        WMQueryJudgmentCtx
+          (State := State) (Query := Query) Γ W q e →
+        WMQueryJudgmentCtx
+          (State := State) (Query := Query) Δ W q e
+  itvContextWeakening :
+    ∀ {State Query Ctx : Type*}
+      [Mettapedia.PLN.Evidence.EvidenceClass.EvidenceType State]
+      [BinaryWorldModel State Query]
+      (sem : ITVSemantics Ctx) (ctx : Ctx)
+      {Γ Δ : Set State} {W : State} {q : Query}
+      {itv : Mettapedia.PLN.TruthValues.PLNIndefiniteTruth.ITV},
+      Γ ⊆ Δ →
+        BinaryWorldModel.WMITVJudgmentCtx
+          (State := State) (Query := Query) sem ctx Γ W q itv →
+        BinaryWorldModel.WMITVJudgmentCtx
+          (State := State) (Query := Query) sem ctx Δ W q itv
+  queryUnionRevision :
+    ∀ {State Query : Type*}
+      [Mettapedia.PLN.Evidence.EvidenceClass.EvidenceType State]
+      [BinaryWorldModel State Query]
+      {Γ₁ Γ₂ : Set State} {W₁ W₂ : State} {q : Query} {e₁ e₂ : BinaryEvidence},
+      WMQueryJudgmentCtx
+          (State := State) (Query := Query) Γ₁ W₁ q e₁ →
+        WMQueryJudgmentCtx
+          (State := State) (Query := Query) Γ₂ W₂ q e₂ →
+        WMQueryJudgmentCtx
+          (State := State) (Query := Query) (Γ₁ ∪ Γ₂)
+          (W₁ + W₂) q (e₁ + e₂)
+  contextCompleteQuery : ⊢q[{demoEvidence}] demoEvidence ⇓ observed ↦ demoEvidence
+  contextCompleteITV :
+    BinaryWorldModel.WMITVJudgmentCtx
+      (State := BinaryEvidence) (Query := ContextDemoQuery)
+      ITVSemantics.walleyIDMPredictive IDMPredictiveContext.default
+      {demoEvidence} demoEvidence observed
+      (ITVSemantics.walleyIDMPredictive.eval
+        IDMPredictiveContext.default demoEvidence)
+  contextUnionQuery :
+    ⊢q[{demoEvidence} ∪ {demoEvidence₂}]
+      (demoEvidence + demoEvidence₂) ⇓ observed ↦ (demoEvidence + demoEvidence₂)
+  contextUnionITV :
+    BinaryWorldModel.WMITVJudgmentCtx
+      (State := BinaryEvidence) (Query := ContextDemoQuery)
+      ITVSemantics.walleyIDMPredictive IDMPredictiveContext.default
+      ({demoEvidence} ∪ {demoEvidence₂})
+      (demoEvidence + demoEvidence₂) observed
+      (ITVSemantics.walleyIDMPredictive.eval
+        IDMPredictiveContext.default (demoEvidence + demoEvidence₂))
+  contextWidenQuery :
+    ⊢q[{demoEvidence} ∪ {demoEvidence₂}]
+      demoEvidence ⇓ observed ↦ demoEvidence
+  contextWidenITV :
+    BinaryWorldModel.WMITVJudgmentCtx
+      (State := BinaryEvidence) (Query := ContextDemoQuery)
+      ITVSemantics.walleyIDMPredictive IDMPredictiveContext.default
+      ({demoEvidence} ∪ {demoEvidence₂})
+      demoEvidence observed
+      (ITVSemantics.walleyIDMPredictive.eval
+        IDMPredictiveContext.default demoEvidence)
+  requiredContextRuleFiring :
+    ⊢q[{demoEvidence} ∪ {demoEvidence₂}]
+      demoEvidence ⇓ observed ↦ demoEvidence
+  requiredContextITV :
+    BinaryWorldModel.WMITVJudgmentCtx
+      (State := BinaryEvidence) (Query := ContextDemoQuery)
+      ITVSemantics.walleyIDMPredictive IDMPredictiveContext.default
+      ({demoEvidence} ∪ {demoEvidence₂})
+      demoEvidence observed
+      (ITVSemantics.walleyIDMPredictive.eval
+        IDMPredictiveContext.default demoEvidence)
+  emptyContextBlocksQuery :
+    ¬ ∃ e, ⊢q[(∅ : Set BinaryEvidence)] demoEvidence ⇓ observed ↦ e
+  emptyContextBlocksITV :
+    ¬ ∃ itv,
+      BinaryWorldModel.WMITVJudgmentCtx
+        (State := BinaryEvidence) (Query := ContextDemoQuery)
+        ITVSemantics.walleyIDMPredictive IDMPredictiveContext.default
+        (∅ : Set BinaryEvidence) demoEvidence observed itv
+  wrongSourceBlocksQuery :
+    ¬ ∃ e, ⊢q[{demoEvidence₂}] demoEvidence ⇓ observed ↦ e
+  wrongSourceBlocksITV :
+    ¬ ∃ itv,
+      BinaryWorldModel.WMITVJudgmentCtx
+        (State := BinaryEvidence) (Query := ContextDemoQuery)
+        ITVSemantics.walleyIDMPredictive IDMPredictiveContext.default
+        {demoEvidence₂} demoEvidence observed itv
+
+/-- Public proof-carrying profile for the current WM-PLN context-guard bridge. -/
+def contextGuardBridgeProfile : ContextGuardBridgeProfile where
+  queryContextWeakening := by
+    intro State Query _ _ Γ Δ W q e hSub h
+    exact queryJudgmentCtx_mono (State := State) (Query := Query) hSub h
+  itvContextWeakening := by
+    intro State Query Ctx _ _ sem ctx Γ Δ W q itv hSub h
+    exact itvJudgmentCtx_mono (State := State) (Query := Query) sem ctx hSub h
+  queryUnionRevision := by
+    intro State Query _ _ Γ₁ Γ₂ W₁ W₂ q e₁ e₂ h₁ h₂
+    exact queryJudgmentCtx_union_revise (State := State) (Query := Query) h₁ h₂
+  contextCompleteQuery := contextComplete_query_exact_canary
+  contextCompleteITV := contextComplete_applyITVCtx_canary
+  contextUnionQuery := contextUnion_queryRevisedEvidence_canary
+  contextUnionITV := contextUnion_applyITVCtx_canary
+  contextWidenQuery := contextWiden_applyRewriteCtx_canary
+  contextWidenITV := contextWiden_applyITVCtx_canary
+  requiredContextRuleFiring := requiredContext_subset_applyRewriteCtx_canary
+  requiredContextITV := requiredContext_subset_applyITVCtx_canary
+  emptyContextBlocksQuery := contextMissing_blocks_query_canary
+  emptyContextBlocksITV := contextMissing_blocks_ITVCtx_canary
+  wrongSourceBlocksQuery := requiredContext_missing_source_blocks_query_canary
+  wrongSourceBlocksITV := requiredContext_missing_source_blocks_ITVCtx_canary
+
 end Mettapedia.PLN.RuleFamilies.HigherOrder.PLNContextGuardBridge

@@ -61,8 +61,12 @@
 (= (conv_p $P $Q) (== (cnf $P) (cnf $Q)))
 
 ; ---------- OSLF Hennessy_Milner modal logic (NEW) ----------------------------
-; phi ::= FTop | (FNeg phi) | (FAnd phi psi) | (FDia a phi)    <a>phi = "some
-;   a_labelled transition reaches a phi_state".  bounded satisfaction (depth $n).
+; phi ::= FTop | (FNeg phi) | (FAnd phi psi) | (FDia a phi) | (FBox a phi)
+;   <a>phi = "some a_labelled transition reaches a phi_state".
+;   [a]phi = "every a_labelled transition reaches a phi_state".
+;   bounded satisfaction (depth $n).
+; GradedModal tranche witness:
+;   Q_step = (Nat, 0, +, <=), represented below as GZ/GS with gadd/gleq.
 (= (not_b True) False)
 (= (not_b False) True)
 (= (sat $n $P FTop) True)
@@ -75,6 +79,25 @@
    (if (== $a $b)
        (if (sat $n $P1 $phi) True (dia_search $n $a $phi $rest))
        (dia_search $n $a $phi $rest)))
+(= (sat $n $P (FBox $a $phi))
+   (if (== $n 0) True (box_check (- $n 1) $a $phi (trans $P))))
+(= (box_check $n $a $phi LNil) True)
+(= (box_check $n $a $phi (LCons (Tr $b $P1) $rest))
+   (if (== $a $b)
+       (if (sat $n $P1 $phi) (box_check $n $a $phi $rest) False)
+       (box_check $n $a $phi $rest)))
+(= (gadd GZ $n) $n)
+(= (gadd (GS $m) $n) (GS (gadd $m $n)))
+(= (gleq GZ $n) True)
+(= (gleq (GS $m) GZ) False)
+(= (gleq (GS $m) (GS $n)) (gleq $m $n))
+(= (gnat GZ) 0)
+(= (gnat (GS $n)) (+ 1 (gnat $n)))
+(= (sat_step $g $P $phi) (sat (gnat $g) $P $phi))
+(= (grade_carrier StepCountQ) Nat)
+(= (grade_unit StepCountQ) GZ)
+(= (grade_compose StepCountQ $m $n) (gadd $m $n))
+(= (grade_order StepCountQ $m $n) (gleq $m $n))
 ; agreement on a formula, and the separating_witness predicate (the teeth)
 (= (agree $n $P $Q $phi) (== (sat $n $P $phi) (sat $n $Q $phi)))
 (= (separates $n $P $Q $phi) (not_b (agree $n $P $Q $phi)))
@@ -124,6 +147,34 @@
 ; a.b  ~/~  a.c: only a.b reaches a b_doer.
 !(test (bisim 8 (Pab) (Pac)) False)
 !(test (separates 8 (Pab) (Pac) (FDia a (FDia b FTop))) True)
+
+; FBox positives and negatives over the existing LTS.
+!(test (sat 8 (Pab) (FBox a (FDia b FTop))) True)
+!(test (sat 8 (Pdiscm) (FBox a (FDia b FTop))) False)
+!(test (sat 8 (Pdiscm) (FBox a (FAnd (FDia b FTop) (FDia c FTop)))) False)
+!(test (sat 8 (PA) (FBox a FTop)) True)
+!(test (sat 8 (PA) (FBox a (FDia b FTop))) False)
+!(test (sat 8 (Pac) (FBox b FTop)) True)
+
+; Q_step row contract: carrier, unit, composition, order.
+!(test (grade_carrier StepCountQ) Nat)
+!(test (grade_unit StepCountQ) GZ)
+!(test (grade_compose StepCountQ (GS GZ) (GS GZ)) (GS (GS GZ)))
+!(test (grade_order StepCountQ (GS GZ) (GS (GS GZ))) True)
+!(test (grade_order StepCountQ (GS (GS GZ)) (GS GZ)) False)
+
+; Step_count grade surfaced from sat fuel.
+!(test (sat_step (GS (GS GZ)) (Pab) (FDia a (FDia b FTop))) True)
+!(test (sat_step (GS GZ) (Pab) (FDia a (FDia b FTop))) False)
+!(test (sat_step (grade_compose StepCountQ (GS GZ) (GS GZ)) (Pab) (FDia a (FDia b FTop))) True)
+!(test (if (grade_order StepCountQ (GS GZ) (GS (GS GZ)))
+                  (sat_step (GS (GS GZ)) (PA) (FDia a FTop))
+                  False)
+              True)
+!(test (if (sat_step (GS (GS GZ)) (Pab) (FDia a (FDia b FTop)))
+                  (sat_step (GS GZ) (Pab) (FDia a (FDia b FTop)))
+                  False)
+              False)
 
 ; =============================================================================
 ; (iii) TRIANGLE TIE: conv subset of ~ subset of modal_eq, on the 0_unit pair;

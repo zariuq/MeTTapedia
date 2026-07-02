@@ -102,6 +102,44 @@
 (= (PAIRS) (all-pairs (contexts1) (formulas3)))
 (= (D) (S (S Z)))   ; depth 2 — complete for size≤3 goals (max proof depth 2); adequacy checks 2 vs 3
 
+; ============ GRADED BRIDGE SEED: ProofDepthQ and charter-shaped probes ======
+; Q_depth = (Nat, 0, +, <=), represented by the existing Z/S depth fuel.
+(= (qadd Z $n) $n)
+(= (qadd (S $m) $n) (S (qadd $m $n)))
+(= (qleq Z $n) True)
+(= (qleq (S $m) Z) False)
+(= (qleq (S $m) (S $n)) (qleq $m $n))
+(= (q-carrier ProofDepthQ) Nat)
+(= (q-unit ProofDepthQ) Z)
+(= (q-compose ProofDepthQ $m $n) (qadd $m $n))
+(= (q-order ProofDepthQ $m $n) (qleq $m $n))
+(= (id-A-cert) (CDisch (Atom A) (CAssume (Atom A))))
+(= (bridge-erase $d $ctx $phi)
+   (let $r (prove $d $ctx $phi)
+     (unify $r (Found $c)
+       (let $kc (k-check $c)
+         (unify $kc (Ok (Seq $gg $cc))
+           (if (and-b (== $cc $phi) (subset $gg $ctx))
+               (Ok (ErasesTo (Seq $gg $cc)))
+               (Err erase-mismatch))
+           (Err erase-rejected)))
+       (Err no-graded-witness))))
+(= (bridge-lift $d $ctx $phi $cert)
+   (let $kc (k-check $cert)
+     (unify $kc (Ok (Seq $gg $cc))
+       (if (and-b (== $cc $phi) (subset $gg $ctx))
+           (let $r (prove $d $ctx $phi)
+             (unify $r (Found $c)
+               (Ok (Lifted ProofDepthQ $d $c))
+               (Err no-graded-witness)))
+           (Err pure-witness-mismatch))
+       (Err pure-witness-rejected))))
+(= (bridge-roundtrip-concl $d $ctx $phi $cert)
+   (let $lifted (bridge-lift $d $ctx $phi $cert)
+     (unify $lifted (Ok (Lifted ProofDepthQ $qd $c2))
+       (== (concl (k-check $cert)) (concl (k-check $c2)))
+       False)))
+
 ; ============ AUDIT: criteria (2)+(3) — every Found cert is kernel-accepted ===
 (= (check-found NoProof $g $phi) OK)                       ; negative: search exhausted
 (= (check-found (Found $c) $g $phi)
@@ -131,12 +169,25 @@
               (Yes (Atom B)))
 !(assertEqual (coh (D) HNil (Imp (Atom A) (Atom B))) No)
 !(assertEqual (coh (D) HNil (Atom B)) No)
+!(assertEqual (q-carrier ProofDepthQ) Nat)
+!(assertEqual (q-unit ProofDepthQ) Z)
+!(assertEqual (q-compose ProofDepthQ (S Z) (S Z)) (S (S Z)))
+!(assertEqual (q-order ProofDepthQ (S Z) (S (S Z))) True)
+!(assertEqual (q-order ProofDepthQ (S (S Z)) (S Z)) False)
+!(assertEqual (bridge-erase (D) HNil (Imp (Atom A) (Atom A)))
+              (Ok (ErasesTo (Seq HNil (Imp (Atom A) (Atom A))))))
+!(assertEqual (bridge-lift (D) HNil (Imp (Atom A) (Atom A)) (id-A-cert))
+              (Ok (Lifted ProofDepthQ (D) (id-A-cert))))
+!(assertEqual (bridge-roundtrip-concl (D) HNil (Imp (Atom A) (Atom A)) (id-A-cert)) True)
+!(assertEqual (bridge-erase Z HNil (Imp (Atom A) (Atom A))) (Err no-graded-witness))
+!(assertEqual (bridge-lift Z HNil (Imp (Atom A) (Atom A)) (id-A-cert)) (Err no-graded-witness))
+!(assertEqual (bridge-lift (D) HNil (Imp (Atom A) (Atom B)) (id-A-cert)) (Err pure-witness-mismatch))
+!(assertEqual (bridge-roundtrip-concl (D) HNil (Imp (Atom A) (Atom B)) (id-A-cert)) False)
 
 ; ============================ EXHAUSTIVE TERMINAL ===========================
 ; (1) report N actually checked:
-!(h-length (PAIRS))
+!(assertEqual (h-length (PAIRS)) 156)
 ; (2)+(3) coherence + witness-soundness over ALL pairs  → must be HNil (green):
-!(audit (D) (PAIRS))
 !(assertEqual (audit (D) (PAIRS)) HNil)
 ; (4) bound adequacy: provability verdict identical at D and D+1:
 !(assertEqual (found-stable (D) (PAIRS)) True)

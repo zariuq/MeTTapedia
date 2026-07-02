@@ -40,6 +40,69 @@ noncomputable def priorWeightedLower (prior : ℝ) (itv : ITV) : ℝ :=
 noncomputable def priorWeightedUpper (prior : ℝ) (itv : ITV) : ℝ :=
   prior * itv.upper
 
+/-- A nonnegative hypothesis prior preserves the ordering of an abduction
+interval's endpoints. -/
+theorem priorWeightedLower_le_upper_of_nonneg
+    {prior : ℝ} {itv : ITV}
+    (hPrior : 0 ≤ prior) :
+    priorWeightedLower prior itv ≤ priorWeightedUpper prior itv := by
+  unfold priorWeightedLower priorWeightedUpper
+  exact mul_le_mul_of_nonneg_left itv.lower_le_upper hPrior
+
+/-- If a selected abduction point lies inside its credal interval, then a
+nonnegative hypothesis prior keeps the weighted point inside the
+prior-weighted interval. -/
+theorem priorWeightedPoint_mem_interval_of_mem
+    {prior point : ℝ} {itv : ITV}
+    (hPrior : 0 ≤ prior)
+    (hPoint : itv.lower ≤ point ∧ point ≤ itv.upper) :
+    priorWeightedLower prior itv ≤ priorWeightedPoint prior point ∧
+      priorWeightedPoint prior point ≤ priorWeightedUpper prior itv := by
+  unfold priorWeightedLower priorWeightedPoint priorWeightedUpper
+  exact ⟨mul_le_mul_of_nonneg_left hPoint.1 hPrior,
+    mul_le_mul_of_nonneg_left hPoint.2 hPrior⟩
+
+/-- If the prior is itself a probability score, prior weighting keeps both
+abduction interval endpoints in `[0,1]`. -/
+theorem priorWeightedEndpoints_mem_unit_of_prior_mem_unit
+    {prior : ℝ} {itv : ITV}
+    (hPrior : prior ∈ Set.Icc (0 : ℝ) 1) :
+    priorWeightedLower prior itv ∈ Set.Icc (0 : ℝ) 1 ∧
+      priorWeightedUpper prior itv ∈ Set.Icc (0 : ℝ) 1 := by
+  constructor
+  · constructor
+    · unfold priorWeightedLower
+      exact mul_nonneg hPrior.1 itv.lower_in_unit.1
+    · calc
+        priorWeightedLower prior itv = prior * itv.lower := rfl
+        _ ≤ prior * 1 := mul_le_mul_of_nonneg_left itv.lower_in_unit.2 hPrior.1
+        _ = prior := by ring
+        _ ≤ 1 := hPrior.2
+  · constructor
+    · unfold priorWeightedUpper
+      exact mul_nonneg hPrior.1 itv.upper_in_unit.1
+    · calc
+        priorWeightedUpper prior itv = prior * itv.upper := rfl
+        _ ≤ prior * 1 := mul_le_mul_of_nonneg_left itv.upper_in_unit.2 hPrior.1
+        _ = prior := by ring
+        _ ≤ 1 := hPrior.2
+
+/-- If both the prior and the point readout are probability scores, their
+prior-weighted point score stays in `[0,1]`. -/
+theorem priorWeightedPoint_mem_unit_of_mem_unit
+    {prior point : ℝ}
+    (hPrior : prior ∈ Set.Icc (0 : ℝ) 1)
+    (hPoint : point ∈ Set.Icc (0 : ℝ) 1) :
+    priorWeightedPoint prior point ∈ Set.Icc (0 : ℝ) 1 := by
+  constructor
+  · unfold priorWeightedPoint
+    exact mul_nonneg hPrior.1 hPoint.1
+  · calc
+      priorWeightedPoint prior point = prior * point := rfl
+      _ ≤ prior * 1 := mul_le_mul_of_nonneg_left hPoint.2 hPrior.1
+      _ = prior := by ring
+      _ ≤ 1 := hPrior.2
+
 /-- Robust explanation ranking after applying hypothesis priors. -/
 def priorWeightedIntervalStrictlyRanks
     (betterPrior worsePrior : ℝ) (better worse : ITV) : Prop :=
@@ -51,6 +114,37 @@ def priorWeightedIntervalsOverlap
     (xPrior yPrior : ℝ) (x y : ITV) : Prop :=
   priorWeightedLower xPrior x ≤ priorWeightedUpper yPrior y ∧
     priorWeightedLower yPrior y ≤ priorWeightedUpper xPrior x
+
+/-- Prior-weighted overlap is symmetric, including the attached hypothesis
+priors. -/
+theorem priorWeightedIntervalsOverlap_symm
+    {xPrior yPrior : ℝ} {x y : ITV} :
+    priorWeightedIntervalsOverlap xPrior yPrior x y →
+      priorWeightedIntervalsOverlap yPrior xPrior y x := by
+  intro h
+  exact ⟨h.2, h.1⟩
+
+/-- A strict prior-weighted interval ranking excludes weighted overlap. -/
+theorem not_priorWeightedIntervalsOverlap_of_strictlyRanks
+    {betterPrior worsePrior : ℝ} {better worse : ITV}
+    (hRank :
+      priorWeightedIntervalStrictlyRanks
+        betterPrior worsePrior better worse) :
+    ¬ priorWeightedIntervalsOverlap betterPrior worsePrior better worse := by
+  intro hOverlap
+  exact (not_lt_of_ge hOverlap.1) hRank
+
+/-- If neither prior-weighted interval strictly ranks the other, the honest
+conservative relation is weighted overlap. -/
+theorem priorWeightedIntervalsOverlap_of_not_strictlyRanks
+    {xPrior yPrior : ℝ} {x y : ITV}
+    (hxy :
+      ¬ priorWeightedIntervalStrictlyRanks xPrior yPrior x y)
+    (hyx :
+      ¬ priorWeightedIntervalStrictlyRanks yPrior xPrior y x) :
+    priorWeightedIntervalsOverlap xPrior yPrior x y := by
+  unfold priorWeightedIntervalsOverlap priorWeightedIntervalStrictlyRanks at *
+  exact ⟨le_of_not_gt hxy, le_of_not_gt hyx⟩
 
 /-- A strict prior-weighted interval ranking is sound for every pair of point
 values selected from the ranked intervals, as long as the priors are
@@ -102,6 +196,31 @@ theorem priorFromConditional_nonneg
     (ctx hypothesis : Mettapedia.KR.ConceptGeometry.IntensionalInheritance.BinString) :
     0 ≤ priorFromConditional ξ ctx hypothesis :=
   ENNReal.toReal_nonneg
+
+/-- Universal-mixture hypothesis priors preserve the order of abduction
+interval endpoints. -/
+theorem universalMixtureAbduction_lower_le_upper
+    (ξ : Mettapedia.KR.ConceptGeometry.IntensionalInheritance.Semimeasure)
+    (ctx hypothesis : Mettapedia.KR.ConceptGeometry.IntensionalInheritance.BinString)
+    (itv : ITV) :
+    universalMixtureAbductionLower ξ ctx hypothesis itv ≤
+      universalMixtureAbductionUpper ξ ctx hypothesis itv := by
+  exact priorWeightedLower_le_upper_of_nonneg
+    (priorFromConditional_nonneg ξ ctx hypothesis)
+
+/-- Universal-mixture prior weighting preserves point membership inside the
+weighted abduction interval. -/
+theorem universalMixtureAbduction_point_mem_interval
+    (ξ : Mettapedia.KR.ConceptGeometry.IntensionalInheritance.Semimeasure)
+    (ctx hypothesis : Mettapedia.KR.ConceptGeometry.IntensionalInheritance.BinString)
+    (itv : ITV) {point : ℝ}
+    (hPoint : itv.lower ≤ point ∧ point ≤ itv.upper) :
+    universalMixtureAbductionLower ξ ctx hypothesis itv ≤
+        priorWeightedPoint (priorFromConditional ξ ctx hypothesis) point ∧
+      priorWeightedPoint (priorFromConditional ξ ctx hypothesis) point ≤
+        universalMixtureAbductionUpper ξ ctx hypothesis itv := by
+  exact priorWeightedPoint_mem_interval_of_mem
+    (priorFromConditional_nonneg ξ ctx hypothesis) hPoint
 
 /-- A separated universal-mixture-prior interval ranking is sound for every
 selected point inside the ranked intervals.
@@ -306,6 +425,43 @@ theorem conditionalENN_ne_top
     (ctx hyp : Mettapedia.UniversalAI.UniversalPrediction.BinString) :
     Mettapedia.UniversalAI.UniversalPrediction.conditionalENN μ hyp ctx ≠ ⊤ := by
   exact ne_top_of_le_ne_top (by simp) (conditionalENN_le_one μ ctx hyp)
+
+/-- Universal-mixture conditional priors flatten to real probability scores. -/
+theorem priorFromConditional_mem_unit
+    (ξ : Mettapedia.KR.ConceptGeometry.IntensionalInheritance.Semimeasure)
+    (ctx hypothesis : Mettapedia.KR.ConceptGeometry.IntensionalInheritance.BinString) :
+    priorFromConditional ξ ctx hypothesis ∈ Set.Icc (0 : ℝ) 1 := by
+  constructor
+  · exact priorFromConditional_nonneg ξ ctx hypothesis
+  · have hle :
+        (Mettapedia.UniversalAI.UniversalPrediction.conditionalENN ξ
+            hypothesis ctx).toReal ≤ (1 : ENNReal).toReal :=
+      ENNReal.toReal_mono ENNReal.one_ne_top
+        (conditionalENN_le_one ξ ctx hypothesis)
+    simpa [priorFromConditional] using hle
+
+/-- Universal-mixture prior weighting keeps abduction score endpoints bounded
+in `[0,1]`. -/
+theorem universalMixtureAbduction_endpoints_mem_unit
+    (ξ : Mettapedia.KR.ConceptGeometry.IntensionalInheritance.Semimeasure)
+    (ctx hypothesis : Mettapedia.KR.ConceptGeometry.IntensionalInheritance.BinString)
+    (itv : ITV) :
+    universalMixtureAbductionLower ξ ctx hypothesis itv ∈ Set.Icc (0 : ℝ) 1 ∧
+      universalMixtureAbductionUpper ξ ctx hypothesis itv ∈ Set.Icc (0 : ℝ) 1 := by
+  exact priorWeightedEndpoints_mem_unit_of_prior_mem_unit
+    (priorFromConditional_mem_unit ξ ctx hypothesis)
+
+/-- Universal-mixture prior weighting keeps every in-unit point readout bounded
+as a probability score. -/
+theorem universalMixtureAbduction_point_mem_unit
+    (ξ : Mettapedia.KR.ConceptGeometry.IntensionalInheritance.Semimeasure)
+    (ctx hypothesis : Mettapedia.KR.ConceptGeometry.IntensionalInheritance.BinString)
+    {point : ℝ}
+    (hPoint : point ∈ Set.Icc (0 : ℝ) 1) :
+    priorWeightedPoint (priorFromConditional ξ ctx hypothesis) point ∈
+      Set.Icc (0 : ℝ) 1 := by
+  exact priorWeightedPoint_mem_unit_of_mem_unit
+    (priorFromConditional_mem_unit ξ ctx hypothesis) hPoint
 
 /-- Real-valued multiplicative factor obtained from two prefix-complexity
 invariance constants. -/

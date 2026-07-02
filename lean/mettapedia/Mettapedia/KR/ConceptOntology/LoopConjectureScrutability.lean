@@ -343,6 +343,28 @@ theorem mem_credalScrutabilityGap_iff_globalEnvelopeWidth_eq_one
           (conceptFormationGamble Γ M A) = 1 := by
   simp [globalEnvelopeWidth_conceptFormationGamble_eq_indicator_credalScrutabilityGap]
 
+omit [Fintype Gate] [Nonempty Gate] in
+theorem mem_credalScrutabilityGap_iff_hasStrictGlobalWidth
+    (Γ : Gate → EvidenceGate Q) (M : Obj → Attr → Q)
+    (A : Mettapedia.KR.ConceptGeometry.AbstractInheritance.DualConcept Obj Attr) :
+    A ∈ credalScrutabilityGap Γ M ↔
+      (gateCredalProjectiveSpec (Gate := Gate)).hasStrictGlobalWidth
+        (conceptFormationGamble Γ M A) := by
+  simpa [credalScrutabilityGap] using
+    (gateCredalProjectiveSpec_hasStrictGlobalWidth_conceptFormationGamble_iff
+      (Γ := Γ) (M := M) (A := A)).symm
+
+omit [Fintype Gate] [Nonempty Gate] in
+theorem not_mem_credalScrutabilityGap_iff_determinesGlobalGamble
+    (Γ : Gate → EvidenceGate Q) (M : Obj → Attr → Q)
+    (A : Mettapedia.KR.ConceptGeometry.AbstractInheritance.DualConcept Obj Attr) :
+    A ∉ credalScrutabilityGap Γ M ↔
+      (gateCredalProjectiveSpec (Gate := Gate)).determinesGlobalGamble
+        (conceptFormationGamble Γ M A) := by
+  simpa [credalScrutabilityGap] using
+    (gateCredalProjectiveSpec_determinesGlobalGamble_conceptFormationGamble_iff
+      (Γ := Γ) (M := M) (A := A)).symm
+
 end CredalScrutability
 
 namespace ControlExample
@@ -390,8 +412,6 @@ theorem flies_not_mem_full_winged_closure :
   have hnotPenguin : ¬ contextRel Animal.penguin Trait.flies := by
     simp [contextRel, crispRelation, BinaryFcaBenchmarkContext.exactGate,
       EvidenceGate.positiveThreshold, context]
-    change (0 : ℝ≥0∞) < 1
-    norm_num
   exact hnotPenguin hpenguin
 
 theorem flies_mem_winged_scrutability_frontier :

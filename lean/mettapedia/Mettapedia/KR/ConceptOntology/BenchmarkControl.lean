@@ -181,8 +181,6 @@ theorem flyingFamilyConcept_closed_exact :
           simp [crispRelation, BinaryFcaBenchmarkContext.exactGate,
             EvidenceGate.positiveThreshold, context,
             BinaryFcaBenchmarkContext.supportToken] at hFly
-          change 1 ≤ (0 : ℝ≥0∞) at hFly
-          simp at hFly
         · intro h
           simp [flyingFamilyConcept] at h
     | bat =>

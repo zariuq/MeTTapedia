@@ -394,6 +394,55 @@ theorem finiteExtensionalProb_semanticInterpretation_feature_witness
     semanticInterpretation_extentCount_feature,
     semanticInterpretation_jointExtentCount_feature_witness]
 
+/-- In the empirical 2×2 source, zero witness-only mass is exactly the
+extensional inheritance condition `witness ≤ feature`.
+
+This is the source-level crisp criterion behind the finite-table ASSOC/PAT
+readouts; downstream PLN profiles consume it rather than postulating a separate
+rule-family condition. -/
+theorem witnessOnly_eq_zero_iff_semanticInterpretation_extensionalInherits
+    (c : MembershipCounts) :
+    c.witnessOnly = 0 ↔
+      (semanticInterpretation c).ExtensionalInherits
+        MembershipConcept.witness MembershipConcept.feature := by
+  constructor
+  · intro hZero x hxWitness
+    rw [mem_semanticInterpretation_feature_extent_iff_pos]
+    rw [mem_semanticInterpretation_witness_extent_iff_pos] at hxWitness
+    cases x with
+    | inl n =>
+        simp [empiricalMembershipAtom,
+          Mettapedia.PLN.Evidence.EvidenceQuantale.BinaryEvidence.zero] at hxWitness
+    | inr rest =>
+        cases rest with
+        | inl w =>
+            exact False.elim (Nat.not_lt_zero w.val (by simpa [hZero] using w.isLt))
+        | inr rest =>
+            cases rest with
+            | inl f =>
+                simp [empiricalMembershipAtom,
+                  Mettapedia.PLN.Evidence.EvidenceQuantale.BinaryEvidence.zero] at hxWitness
+            | inr b =>
+                simp [empiricalMembershipAtom,
+                  Mettapedia.PLN.Evidence.EvidenceQuantale.BinaryEvidence.one]
+  · intro hExt
+    by_contra hNonzero
+    have hPos : 0 < c.witnessOnly := Nat.pos_of_ne_zero hNonzero
+    let w : Fin c.witnessOnly := ⟨0, hPos⟩
+    have hw :
+        (Sum.inr (Sum.inl w) : EmpiricalObject c) ∈
+          ((semanticInterpretation c).meaning MembershipConcept.witness).extent := by
+      simp [mem_semanticInterpretation_witness_extent_iff_pos,
+        empiricalMembershipAtom,
+        Mettapedia.PLN.Evidence.EvidenceQuantale.BinaryEvidence.one]
+    have hf :
+        (Sum.inr (Sum.inl w) : EmpiricalObject c) ∈
+          ((semanticInterpretation c).meaning MembershipConcept.feature).extent :=
+      hExt hw
+    simp [mem_semanticInterpretation_feature_extent_iff_pos,
+      empiricalMembershipAtom,
+      Mettapedia.PLN.Evidence.EvidenceQuantale.BinaryEvidence.zero] at hf
+
 theorem finitePointwiseLogRatioBits_semanticInterpretation_feature_witness
     (c : MembershipCounts) :
     Interpretation.finitePointwiseLogRatioBits

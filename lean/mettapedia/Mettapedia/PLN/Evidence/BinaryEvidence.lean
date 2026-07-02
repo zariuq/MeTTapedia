@@ -188,6 +188,17 @@ theorem zero_hplus (x : BinaryEvidence) : zero + x = x := by
 
 instance : Zero BinaryEvidence := ⟨zero⟩
 
+@[simp] theorem zero_pos : (0 : BinaryEvidence).pos = 0 := by
+  change zero.pos = 0
+  rfl
+
+@[simp] theorem zero_neg : (0 : BinaryEvidence).neg = 0 := by
+  change zero.neg = 0
+  rfl
+
+@[simp] theorem zero_total : (0 : BinaryEvidence).total = 0 := by
+  simp [total]
+
 /-! ### EvidenceType / AddCommMonoid (Revision Algebra)
 
 PLN revision combines independent evidence additively:

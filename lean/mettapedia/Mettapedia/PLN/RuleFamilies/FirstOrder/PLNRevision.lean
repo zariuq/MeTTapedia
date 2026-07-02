@@ -62,6 +62,84 @@ theorem revision_zero (e : BinaryEvidence) : revision e 0 = e := hplus_zero e
 /-- Zero evidence revised with e -/
 theorem zero_revision (e : BinaryEvidence) : revision 0 e = e := zero_hplus e
 
+/-! ## Finite Multi-Source Revision -/
+
+/-- Finite-source PLN Revision: revise a finite list of independent evidence
+packets by summing their underlying binary evidence counts. -/
+noncomputable def revisionMany (xs : List BinaryEvidence) : BinaryEvidence :=
+  xs.sum
+
+@[simp] theorem revisionMany_nil :
+    revisionMany [] = (0 : BinaryEvidence) := rfl
+
+@[simp] theorem revisionMany_cons (x : BinaryEvidence) (xs : List BinaryEvidence) :
+    revisionMany (x :: xs) = revision x (revisionMany xs) := rfl
+
+theorem revisionMany_eq_sum (xs : List BinaryEvidence) :
+    revisionMany xs = xs.sum := rfl
+
+/-- Revising two packets through the finite-source interface is the binary
+Revision rule. -/
+@[simp] theorem revisionMany_pair (e₁ e₂ : BinaryEvidence) :
+    revisionMany [e₁, e₂] = revision e₁ e₂ := by
+  simp [revisionMany, revision, hplus_def]
+
+/-- Appending independent batches corresponds to binary Revision of their
+already-aggregated evidence. -/
+theorem revisionMany_append (xs ys : List BinaryEvidence) :
+    revisionMany (xs ++ ys) = revision (revisionMany xs) (revisionMany ys) := by
+  simp [revisionMany, revision, List.sum_append]
+
+/-- Finite-source Revision is insensitive to source order.  The only finite
+structure retained by the raw rule is the summed positive/negative evidence
+count, so any provenance-sensitive duplicate suppression must happen before
+calling `revisionMany`. -/
+theorem revisionMany_perm {xs ys : List BinaryEvidence} (h : xs.Perm ys) :
+    revisionMany xs = revisionMany ys := by
+  simpa [revisionMany] using h.sum_eq
+
+@[simp] theorem revisionMany_pos (xs : List BinaryEvidence) :
+    (revisionMany xs).pos = (xs.map (fun e => e.pos)).sum := by
+  induction xs with
+  | nil => simp [revisionMany]
+  | cons x xs ih => simp [revisionMany_cons, revision, hplus_def, ih]
+
+@[simp] theorem revisionMany_neg (xs : List BinaryEvidence) :
+    (revisionMany xs).neg = (xs.map (fun e => e.neg)).sum := by
+  induction xs with
+  | nil => simp [revisionMany]
+  | cons x xs ih => simp [revisionMany_cons, revision, hplus_def, ih]
+
+/-- Finite-source Revision adds total evidence counts. -/
+@[simp] theorem revisionMany_total (xs : List BinaryEvidence) :
+    (revisionMany xs).total = (xs.map (fun e => e.total)).sum := by
+  induction xs with
+  | nil => simp [revisionMany]
+  | cons x xs _ih =>
+      simp [revisionMany_cons, revision, hplus_def, total, revisionMany_pos,
+        revisionMany_neg, add_assoc, add_left_comm]
+
+/-! ### Concrete finite-source canaries -/
+
+/-- One unit of positive evidence and no negative evidence. -/
+def positiveUnitEvidence : BinaryEvidence where
+  pos := 1
+  neg := 0
+
+@[simp] theorem positiveUnitEvidence_pos : positiveUnitEvidence.pos = 1 := rfl
+
+@[simp] theorem positiveUnitEvidence_neg : positiveUnitEvidence.neg = 0 := rfl
+
+/-- Negative canary: unguarded finite-source Revision double-counts duplicate
+evidence packets.  Provenance-aware callers must guard duplicates before using
+the additive rule. -/
+theorem revisionMany_duplicate_positiveUnitEvidence_ne_singleton :
+    revisionMany [positiveUnitEvidence, positiveUnitEvidence] ≠
+      positiveUnitEvidence := by
+  intro h
+  have hp := congrArg BinaryEvidence.pos h
+  norm_num [revisionMany, revision, hplus_def, positiveUnitEvidence] at hp
+
 /-! ## Strength as Weighted Average
 
 The key property: when combining two evidence sources, the resulting strength

@@ -1179,6 +1179,54 @@ theorem mixturePredictiveThatsAll_of_prefixAgreement
     impreciseDeFinettiPrefixEnvelopeWidth_eq_zero_of_mixtureAgreement
       C n (bernoulliMixturePrefixLawAt C hLaw n) hC X (hAgree n X)
 
+theorem not_mixturePredictiveOpenWorld_of_mixturePredictiveThatsAll
+    {C : Set BernoulliMixture}
+    {hLaw : ∀ M : BernoulliMixture, M ∈ C → ∀ n : ℕ,
+      BernoulliMixturePrefixLaw M n}
+    (hAll : mixturePredictiveThatsAll C hLaw) :
+    ¬ mixturePredictiveOpenWorld C hLaw := by
+  rintro ⟨n, X, hpos⟩
+  have hzero := hAll n X
+  rw [hzero] at hpos
+  exact (lt_irrefl (0 : ℝ)) hpos
+
+theorem mixturePredictiveOpenWorld_iff_not_mixturePredictiveThatsAll_of_nonempty
+    (C : Set BernoulliMixture)
+    (hLaw : ∀ M : BernoulliMixture, M ∈ C → ∀ n : ℕ,
+      BernoulliMixturePrefixLaw M n)
+    (hC : C.Nonempty) :
+    mixturePredictiveOpenWorld C hLaw ↔ ¬ mixturePredictiveThatsAll C hLaw := by
+  classical
+  constructor
+  · intro hOpen hAll
+    exact not_mixturePredictiveOpenWorld_of_mixturePredictiveThatsAll hAll hOpen
+  · intro hNotAll
+    by_contra hNoOpen
+    apply hNotAll
+    intro n X
+    by_contra hne
+    have hnonneg :
+        0 ≤ impreciseDeFinettiPrefixEnvelopeWidth C n
+          (bernoulliMixturePrefixLawAt C hLaw n) X := by
+      unfold impreciseDeFinettiPrefixEnvelopeWidth
+      exact
+        credalEnvelopeWidth_nonneg_of_nonempty
+          (bernoulliMixturePrefixCredalSet C n
+            (bernoulliMixturePrefixLawAt C hLaw n)) X
+          (bernoulliMixturePrefixCredalSet_nonempty C n
+            (bernoulliMixturePrefixLawAt C hLaw n) hC)
+          (finite_credalRange_bddBelow
+            (bernoulliMixturePrefixCredalSet C n
+              (bernoulliMixturePrefixLawAt C hLaw n)) X)
+          (finite_credalRange_bddAbove
+            (bernoulliMixturePrefixCredalSet C n
+              (bernoulliMixturePrefixLawAt C hLaw n)) X)
+    have hpos :
+        0 < impreciseDeFinettiPrefixEnvelopeWidth C n
+          (bernoulliMixturePrefixLawAt C hLaw n) X :=
+      lt_of_le_of_ne hnonneg (Ne.symm hne)
+    exact hNoOpen ⟨n, X, hpos⟩
+
 theorem mixturePredictiveOpenWorld_of_prefixDisagreement
     (C : Set BernoulliMixture)
     (hLaw : ∀ M : BernoulliMixture, M ∈ C → ∀ n : ℕ,

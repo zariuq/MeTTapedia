@@ -539,6 +539,40 @@ theorem logRatioBits_eq_ve_query_score (t : FiniteWitnessFeatureTable) :
         ((veWeight t [⟨MembershipConcept.witness, true⟩] : ℝ) / veWeight t []) := by
   exact MembershipCounts.pointwiseIntensionalScoreBits_eq_ve_query_score (toMembershipCounts t)
 
+/-- If there are no witness-only cases in the finite 2x2 table, the witness
+marginal VE weight is exactly the feature-and-witness joint VE weight. -/
+theorem veWeight_witness_eq_feature_witness_of_no_witnessOnly
+    (t : FiniteWitnessFeatureTable)
+    (hNoWitnessOnly : t.witnessOnly = 0) :
+    veWeight t [⟨MembershipConcept.witness, true⟩] =
+      veWeight t [⟨MembershipConcept.feature, true⟩,
+        ⟨MembershipConcept.witness, true⟩] := by
+  have hWitness :
+      veWeight t [⟨MembershipConcept.witness, true⟩] =
+        (toMembershipCounts t).witnessSupport := by
+    simpa [veWeight] using
+      MembershipCounts.veWeight_witness_true (toMembershipCounts t)
+  have hJoint :
+      veWeight t [⟨MembershipConcept.feature, true⟩,
+          ⟨MembershipConcept.witness, true⟩] =
+        (toMembershipCounts t).both := by
+    simpa [veWeight] using
+      MembershipCounts.veWeight_feature_witness_true (toMembershipCounts t)
+  rw [hWitness, hJoint]
+  simp [toMembershipCounts, MembershipCounts.witnessSupport, hNoWitnessOnly]
+
+/-- For a finite witness/feature table, zero witness-only mass is exactly the
+extensional inheritance condition in the table's crisp semantic
+interpretation. -/
+theorem witnessOnly_eq_zero_iff_extensionalInherits
+    (t : FiniteWitnessFeatureTable) :
+    t.witnessOnly = 0 ↔
+      (MembershipCounts.semanticInterpretation (toMembershipCounts t)).ExtensionalInherits
+        MembershipConcept.witness MembershipConcept.feature := by
+  simpa [toMembershipCounts] using
+    MembershipCounts.witnessOnly_eq_zero_iff_semanticInterpretation_extensionalInherits
+      (toMembershipCounts t)
+
 /-- Generic finite-table BP bridge: the witness prior is also recovered by the
 BP message ratio on the translated graph. -/
 theorem witnessPrior_eq_bpMessage_ratio (t : FiniteWitnessFeatureTable) :
@@ -1189,6 +1223,69 @@ theorem toFiniteWitnessFeatureTable_total
   rw [Fintype.card_congr (pairPartitionEquiv I feature witness)]
   simp [Nat.add_assoc]
 
+/-- If the interpreted witness concept inherits the feature concept, the 2x2
+finite table generated from the pair has no witness-only region.
+
+This is the structural reason the witness marginal collapses to the
+feature-and-witness joint in the Chapter-12 finite-table readouts. -/
+theorem toFiniteWitnessFeatureTable_witnessOnly_eq_zero_of_inherits
+    (I : Mettapedia.KR.ConceptGeometry.AbstractInheritance.Interpretation Carrier Obj Attr)
+    {feature witness : Carrier}
+    (hInherits : I.Inherits witness feature) :
+    (toFiniteWitnessFeatureTable I feature witness).witnessOnly = 0 := by
+  classical
+  unfold toFiniteWitnessFeatureTable
+  have hEmpty : IsEmpty (WitnessOnlyRegion I feature witness) := by
+    refine ⟨?empty⟩
+    intro x
+    exact x.2.1 (hInherits.1 x.2.2)
+  exact Fintype.card_eq_zero
+
+/-- In a finite interpreted witness/feature source, the no-witness-only table
+criterion is exactly extensional inheritance of the witness concept by the
+feature concept. -/
+theorem toFiniteWitnessFeatureTable_witnessOnly_eq_zero_iff_extensionalInherits
+    (I : Mettapedia.KR.ConceptGeometry.AbstractInheritance.Interpretation Carrier Obj Attr)
+    (feature witness : Carrier) :
+    (toFiniteWitnessFeatureTable I feature witness).witnessOnly = 0 ↔
+      I.ExtensionalInherits witness feature := by
+  constructor
+  · intro hNoWitnessOnly x hxWitness
+    classical
+    by_contra hxFeature
+    have hEmpty : IsEmpty (WitnessOnlyRegion I feature witness) := by
+      rw [← Fintype.card_eq_zero_iff]
+      simpa [toFiniteWitnessFeatureTable] using hNoWitnessOnly
+    exact isEmptyElim
+      (⟨x, hxFeature, hxWitness⟩ : WitnessOnlyRegion I feature witness)
+  · intro hExt
+    classical
+    unfold toFiniteWitnessFeatureTable
+    have hEmpty : IsEmpty (WitnessOnlyRegion I feature witness) := by
+      refine ⟨?empty⟩
+      intro x
+      exact x.2.1 (hExt x.2.2)
+    exact Fintype.card_eq_zero
+
+/-- If an interpreted witness concept inherits the feature concept, the
+generated finite table exposes that source fact as equality between the witness
+marginal VE weight and the feature-and-witness joint VE weight. -/
+theorem toFiniteWitnessFeatureTable_veWeight_witness_eq_feature_witness_of_inherits
+    (I : Mettapedia.KR.ConceptGeometry.AbstractInheritance.Interpretation Carrier Obj Attr)
+    {feature witness : Carrier}
+    (hInherits : I.Inherits witness feature) :
+    FiniteWitnessFeatureTable.veWeight
+        (toFiniteWitnessFeatureTable I feature witness)
+        [⟨MembershipConcept.witness, true⟩] =
+      FiniteWitnessFeatureTable.veWeight
+        (toFiniteWitnessFeatureTable I feature witness)
+        [⟨MembershipConcept.feature, true⟩,
+          ⟨MembershipConcept.witness, true⟩] := by
+  exact
+    FiniteWitnessFeatureTable.veWeight_witness_eq_feature_witness_of_no_witnessOnly
+      (toFiniteWitnessFeatureTable I feature witness)
+      (toFiniteWitnessFeatureTable_witnessOnly_eq_zero_of_inherits I hInherits)
+
 theorem extentCount_witness_eq_toFiniteWitnessFeatureTable
     (I : Mettapedia.KR.ConceptGeometry.AbstractInheritance.Interpretation Carrier Obj Attr)
     (feature witness : Carrier) :
@@ -1366,6 +1463,43 @@ noncomputable def formedConceptInheritanceTable
   Mettapedia.KR.ConceptGeometry.IntensionalInheritance.Interpretation.toFiniteWitnessFeatureTable
     (Mettapedia.KR.ConceptGeometry.AbstractInheritance.formedConceptInterpretation G M)
     subConcept superConcept
+
+/-- Formed-concept inheritance supplies the exact finite-table VE readout:
+when the formed witness inherits the formed feature, the generated table's
+witness marginal equals its feature-and-witness joint mass. -/
+theorem formedConceptInheritanceTable_veWeight_witness_eq_feature_witness_of_inherits
+    (G : Mettapedia.KR.ConceptOntology.EvidenceGate Q)
+    (M : Obj → Attr → Q)
+    (feature witness : Mettapedia.KR.ConceptGeometry.AbstractInheritance.FormedConcept G M)
+    (hInherits :
+      (Mettapedia.KR.ConceptGeometry.AbstractInheritance.formedConceptInterpretation G M).Inherits
+        witness feature) :
+    FiniteWitnessFeatureTable.veWeight
+        (formedConceptInheritanceTable G M feature witness)
+        [⟨MembershipConcept.witness, true⟩] =
+      FiniteWitnessFeatureTable.veWeight
+        (formedConceptInheritanceTable G M feature witness)
+        [⟨MembershipConcept.feature, true⟩,
+          ⟨MembershipConcept.witness, true⟩] := by
+  simpa [formedConceptInheritanceTable] using
+    Interpretation.toFiniteWitnessFeatureTable_veWeight_witness_eq_feature_witness_of_inherits
+      (I := Mettapedia.KR.ConceptGeometry.AbstractInheritance.formedConceptInterpretation G M)
+      (feature := feature) (witness := witness) hInherits
+
+/-- For formed concepts, the generated table has no witness-only mass exactly
+when the witness concept is extensionally inherited by the feature concept in
+the formed-concept interpretation. -/
+theorem formedConceptInheritanceTable_witnessOnly_eq_zero_iff_extensionalInherits
+    (G : Mettapedia.KR.ConceptOntology.EvidenceGate Q)
+    (M : Obj → Attr → Q)
+    (feature witness : Mettapedia.KR.ConceptGeometry.AbstractInheritance.FormedConcept G M) :
+    (formedConceptInheritanceTable G M feature witness).witnessOnly = 0 ↔
+      (Mettapedia.KR.ConceptGeometry.AbstractInheritance.formedConceptInterpretation G M).ExtensionalInherits
+        witness feature := by
+  simpa [formedConceptInheritanceTable] using
+    Interpretation.toFiniteWitnessFeatureTable_witnessOnly_eq_zero_iff_extensionalInherits
+      (Mettapedia.KR.ConceptGeometry.AbstractInheritance.formedConceptInterpretation G M)
+      feature witness
 
 theorem finitePriorProb_formedConceptInterpretation_eq_toFiniteWitnessFeatureTable_witnessPrior
     (G : Mettapedia.KR.ConceptOntology.EvidenceGate Q)
@@ -2819,7 +2953,7 @@ theorem lowerEnvelope_credalInheritanceGamble_eq
           ¬ (subConcept ∈ AbstractInheritance.finiteConceptFamily (Γ gs.1) M ∧
             superConcept ∈ AbstractInheritance.finiteConceptFamily (Γ gs.2) M) := by
       by_contra hNoWitness
-      push_neg at hNoWitness
+      push Not at hNoWitness
       apply hPrecise
       exact ⟨fun g => (hNoWitness (g, Classical.choice ‹Nonempty Gate›)).1,
         fun g => (hNoWitness (Classical.choice ‹Nonempty Gate›, g)).2⟩

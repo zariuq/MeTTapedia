@@ -59,7 +59,271 @@ theorem mem_interpretStack1_evalc_iff (env : MinEnv) (fuel : Nat) (st : St)
       item ∈ (evalOp env st prev x b).1 := by
   rw [interpretStack1_evalc_eq]
 
+/-! ## Scheduler control-flow boundary -/
+
+/-- A non-final `(chain nested $v templ)` frame pushes the substituted continuation. -/
+theorem interpretStack1_chain_eq (env : MinEnv) (fuel : Nat) (st : St)
+    (prev : Stack) (nested : Atom) (v : VarName) (templ : Atom) (b : Bindings) :
+    interpretStack1 env fuel st
+        { stack := { atom := Atom.expr [Atom.sym "chain", nested, Atom.var v, templ] } :: prev,
+          bnd := b } =
+      ([{ stack := atomToStack (Metta.Subst.apply [(v, nested)] templ) prev, bnd := b }], st) := by
+  unfold interpretStack1
+  rfl
+
+/-- Membership form of `interpretStack1_chain_eq`. -/
+theorem mem_interpretStack1_chain_iff (env : MinEnv) (fuel : Nat) (st : St)
+    (prev : Stack) (nested : Atom) (v : VarName) (templ : Atom) (b : Bindings)
+    (item : Item) :
+    item ∈ (interpretStack1 env fuel st
+        { stack := { atom := Atom.expr [Atom.sym "chain", nested, Atom.var v, templ] } :: prev,
+          bnd := b }).1 ↔
+      item = { stack := atomToStack (Metta.Subst.apply [(v, nested)] templ) prev, bnd := b } := by
+  rw [interpretStack1_chain_eq]
+  simp
+
+/-- Returning from the nested child of a `chain` frame rewrites the parent to the resulting
+continuation. -/
+theorem interpretStack1_finished_chain_parent_eq (env : MinEnv) (fuel : Nat) (st : St)
+    (pprev : Stack) (res nested : Atom) (v : VarName) (templ : Atom) (b : Bindings)
+    (vars : List VarName) :
+    interpretStack1 env fuel st
+        { stack :=
+            { atom := res, fin := true } ::
+            { atom := Atom.expr [Atom.sym "chain", nested, Atom.var v, templ],
+              ret := Ret.chain, vars := vars } ::
+            pprev,
+          bnd := b } =
+      ([{ stack :=
+            { atom := Atom.expr [Atom.sym "chain", instantiate b res, Atom.var v, templ],
+              ret := Ret.chain, vars := vars, fin := false } :: pprev,
+          bnd := b }], st) := by
+  unfold interpretStack1
+  simp
+
+/-- Membership form of `interpretStack1_finished_chain_parent_eq`. -/
+theorem mem_interpretStack1_finished_chain_parent_iff
+    (env : MinEnv) (fuel : Nat) (st : St)
+    (pprev : Stack) (res nested : Atom) (v : VarName) (templ : Atom) (b : Bindings)
+    (vars : List VarName) (item : Item) :
+    item ∈ (interpretStack1 env fuel st
+        { stack :=
+            { atom := res, fin := true } ::
+            { atom := Atom.expr [Atom.sym "chain", nested, Atom.var v, templ],
+              ret := Ret.chain, vars := vars } ::
+            pprev,
+          bnd := b }).1 ↔
+      item =
+        { stack :=
+            { atom := Atom.expr [Atom.sym "chain", instantiate b res, Atom.var v, templ],
+              ret := Ret.chain, vars := vars, fin := false } :: pprev,
+          bnd := b } := by
+  rw [interpretStack1_finished_chain_parent_eq]
+  simp
+
+/-- A non-final `(unify a p t e)` frame delegates exactly to `unifyOp`. -/
+theorem interpretStack1_unify_eq (env : MinEnv) (fuel : Nat) (st : St)
+    (prev : Stack) (a p t e : Atom) (b : Bindings) :
+    interpretStack1 env fuel st
+        { stack := { atom := Atom.expr [Atom.sym "unify", a, p, t, e] } :: prev,
+          bnd := b } =
+      (unifyOp prev a p t e b, st) := by
+  unfold interpretStack1
+  rfl
+
+/-- Membership form of `interpretStack1_unify_eq`. -/
+theorem mem_interpretStack1_unify_iff (env : MinEnv) (fuel : Nat) (st : St)
+    (prev : Stack) (a p t e : Atom) (b : Bindings) (item : Item) :
+    item ∈ (interpretStack1 env fuel st
+        { stack := { atom := Atom.expr [Atom.sym "unify", a, p, t, e] } :: prev,
+          bnd := b }).1 ↔
+      item ∈ unifyOp prev a p t e b := by
+  rw [interpretStack1_unify_eq]
+
+/-- Successful matching and non-cyclic merge produce the instantiated `then` branch of `unifyOp`. -/
+theorem mem_unifyOp_success_of_match_merge_noLoop
+    (prev : Stack) (a p t e : Atom) (b mb m : Bindings)
+    (hmatch : mb ∈ matchAtoms a p)
+    (hmerge : m ∈ Bindings.merge b mb)
+    (hloop : Bindings.hasLoop m = false) :
+    finItem prev (instantiate m t) m ∈ unifyOp prev a p t e b := by
+  unfold unifyOp
+  let ms := (matchAtoms a p).flatMap fun mb =>
+    (Bindings.merge b mb).filterMap fun m =>
+      if Bindings.hasLoop m then none else some (finItem prev (instantiate m t) m)
+  have hmem_ms : finItem prev (instantiate m t) m ∈ ms := by
+    dsimp [ms]
+    apply List.mem_flatMap.mpr
+    refine ⟨mb, hmatch, ?_⟩
+    apply List.mem_filterMap.mpr
+    refine ⟨m, hmerge, ?_⟩
+    simp [hloop]
+  by_cases hempty : ms.isEmpty
+  · have hnil : ms = [] := by
+      simpa [List.isEmpty_iff] using hempty
+    rw [hnil] at hmem_ms
+    cases hmem_ms
+  · simpa [ms, hempty] using hmem_ms
+
+/-- If the local matcher has no results, `unifyOp` takes the explicit else branch. -/
+theorem mem_unifyOp_fallback_of_matchAtoms_nil
+    (prev : Stack) (a p t e : Atom) (b : Bindings)
+    (hmatch : matchAtoms a p = []) :
+    finItem prev e b ∈ unifyOp prev a p t e b := by
+  unfold unifyOp
+  simp [hmatch]
+
+/-- Exact form of `mem_unifyOp_fallback_of_matchAtoms_nil`. -/
+theorem unifyOp_fallback_eq_of_matchAtoms_nil
+    (prev : Stack) (a p t e : Atom) (b : Bindings)
+    (hmatch : matchAtoms a p = []) :
+    unifyOp prev a p t e b = [finItem prev e b] := by
+  unfold unifyOp
+  simp [hmatch]
+
+/-- Scheduler-level form of `mem_unifyOp_fallback_of_matchAtoms_nil`. -/
+theorem interpretStack1_unify_fallback_of_matchAtoms_nil
+    (env : MinEnv) (fuel : Nat) (st : St)
+    (prev : Stack) (a p t e : Atom) (b : Bindings)
+    (hmatch : matchAtoms a p = []) :
+    finItem prev e b ∈
+      (interpretStack1 env fuel st
+        { stack := { atom := Atom.expr [Atom.sym "unify", a, p, t, e] } :: prev,
+          bnd := b }).1 := by
+  exact
+    (mem_interpretStack1_unify_iff env fuel st prev a p t e b (finItem prev e b)).2
+      (mem_unifyOp_fallback_of_matchAtoms_nil prev a p t e b hmatch)
+
+/-- Exact scheduler-level form of `unifyOp_fallback_eq_of_matchAtoms_nil`. -/
+theorem interpretStack1_unify_fallback_eq_of_matchAtoms_nil
+    (env : MinEnv) (fuel : Nat) (st : St)
+    (prev : Stack) (a p t e : Atom) (b : Bindings)
+    (hmatch : matchAtoms a p = []) :
+    interpretStack1 env fuel st
+        { stack := { atom := Atom.expr [Atom.sym "unify", a, p, t, e] } :: prev,
+          bnd := b } =
+      ([finItem prev e b], st) := by
+  rw [interpretStack1_unify_eq]
+  simp [unifyOp_fallback_eq_of_matchAtoms_nil prev a p t e b hmatch]
+
 /-! ## `evalOp` fall-through to equation lookup -/
+
+/- The initial empty world has no token bindings, so token substitution is identity. -/
+mutual
+  theorem subTokens_init_world_eq_self : ∀ a : Atom, subTokens St.init.world a = a
+    | Atom.sym s => by simp [subTokens, St.init, World.empty]
+    | Atom.expr xs => by
+        simp only [subTokens]
+        rw [subTokens_init_world_list_eq_self xs]
+    | Atom.var _ => by simp [subTokens]
+    | Atom.gnd _ => by simp [subTokens]
+
+  theorem subTokens_init_world_list_eq_self : ∀ xs : List Atom,
+      xs.map (subTokens St.init.world) = xs
+    | [] => by simp
+    | x :: xs => by
+        simp [subTokens_init_world_eq_self x, subTokens_init_world_list_eq_self xs]
+end
+
+/-- If grounded dispatch succeeds, `evalOp` emits exactly those grounded results as evaluated
+items. -/
+theorem evalOp_grounded_ok_eq
+    (env : MinEnv) (st : St) (prev : Stack) (x : Atom) (b : Bindings)
+    (op : String) (args results : List Atom)
+    (hinst : instantiate b x = Atom.expr (Atom.sym op :: args))
+    (hcall : callGrounded env.gt op
+        (args.map (fun a => resolveStates st.world (subTokens st.world a))) =
+      ReduceResult.ok results) :
+    evalOp env st prev x b = (results.map (fun r => evalResult prev r b), st) := by
+  unfold evalOp
+  simp [hinst, hcall]
+
+/-- Membership form of `evalOp_grounded_ok_eq`. -/
+theorem mem_evalOp_grounded_ok_iff
+    (env : MinEnv) (st : St) (prev : Stack) (x : Atom) (b : Bindings)
+    (op : String) (args results : List Atom) (item : Item)
+    (hinst : instantiate b x = Atom.expr (Atom.sym op :: args))
+    (hcall : callGrounded env.gt op
+        (args.map (fun a => resolveStates st.world (subTokens st.world a))) =
+      ReduceResult.ok results) :
+    item ∈ (evalOp env st prev x b).1 ↔
+      item ∈ results.map (fun r => evalResult prev r b) := by
+  rw [evalOp_grounded_ok_eq env st prev x b op args results hinst hcall]
+
+private theorem extractRules_append
+    (atoms extra : List Atom) :
+    extractRules (atoms ++ extra) = extractRules atoms ++ extractRules extra := by
+  simp [extractRules, List.filterMap_append]
+
+/-- Candidate preservation for a statically indexed query when appended rules
+cannot fire for that query's head.
+
+This is the generic environment-monotonicity invariant used by the SR return path:
+helper slices may append rules, but if those rules have neither the queried head key
+nor a headless LHS, they do not change the executable candidate surface in the
+initial static world. -/
+theorem candidatesW_append_nonfiring_for_head
+    {atoms extra : List Atom} {gt : GroundingTable}
+    {toEval : Atom} {k : String}
+    (hhead : headKey toEval = some k)
+    (hidx : (extractRules extra).filter (fun r => headKey r.1 == some k) = [])
+    (hvar : (extractRules extra).filter (fun r => (headKey r.1).isNone) = []) :
+    candidatesW (MinEnv.ofAtomsGT (atoms ++ extra) gt) St.init.world toEval =
+      candidatesW (MinEnv.ofAtomsGT atoms gt) St.init.world toEval := by
+  have hrules := extractRules_append atoms extra
+  simp [candidatesW, MinEnv.candidates, hhead, St.init, World.empty,
+    Metta.ruleIndex_getD, Metta.ofAtomsGT_varRules, hrules, List.filter_append,
+    hidx, hvar]
+
+/-- Executable query monotonicity for helper slices that cannot fire on the queried head.
+
+This lifts `candidatesW_append_nonfiring_for_head` to the real `queryOp` readout without
+unfolding candidate folds or redoing matcher proofs. -/
+theorem queryOp_append_nonfiring_for_head
+    {atoms extra : List Atom} {gt : GroundingTable}
+    {toEval : Atom} {k : String} {prev : Stack} {b : Bindings}
+    (hhead : headKey toEval = some k)
+    (hidx : (extractRules extra).filter (fun r => headKey r.1 == some k) = [])
+    (hvar : (extractRules extra).filter (fun r => (headKey r.1).isNone) = []) :
+    queryOp (MinEnv.ofAtomsGT (atoms ++ extra) gt) St.init prev toEval b =
+      queryOp (MinEnv.ofAtomsGT atoms gt) St.init prev toEval b := by
+  exact queryOp_eq_of_candidatesW_eq
+    (candidatesW_append_nonfiring_for_head
+      (atoms := atoms) (extra := extra) (gt := gt) (toEval := toEval) (k := k)
+      hhead hidx hvar)
+
+/-- Candidate preservation for a statically indexed query when prepended rules
+cannot fire for that query's head.
+
+This is the orientation used by environments of the form `prelude ++ core`: if the
+prelude contributes neither rules for the queried head nor headless rules, loading
+it before a core rule set leaves the core candidate surface unchanged. -/
+theorem candidatesW_prepend_nonfiring_for_head
+    {pre atoms : List Atom} {gt : GroundingTable}
+    {toEval : Atom} {k : String}
+    (hhead : headKey toEval = some k)
+    (hidx : (extractRules pre).filter (fun r => headKey r.1 == some k) = [])
+    (hvar : (extractRules pre).filter (fun r => (headKey r.1).isNone) = []) :
+    candidatesW (MinEnv.ofAtomsGT (pre ++ atoms) gt) St.init.world toEval =
+      candidatesW (MinEnv.ofAtomsGT atoms gt) St.init.world toEval := by
+  have hrules := extractRules_append pre atoms
+  simp [candidatesW, MinEnv.candidates, hhead, St.init, World.empty,
+    Metta.ruleIndex_getD, Metta.ofAtomsGT_varRules, hrules, List.filter_append,
+    hidx, hvar]
+
+/-- Executable query monotonicity for prepended non-firing rule sets. -/
+theorem queryOp_prepend_nonfiring_for_head
+    {pre atoms : List Atom} {gt : GroundingTable}
+    {toEval : Atom} {k : String} {prev : Stack} {b : Bindings}
+    (hhead : headKey toEval = some k)
+    (hidx : (extractRules pre).filter (fun r => headKey r.1 == some k) = [])
+    (hvar : (extractRules pre).filter (fun r => (headKey r.1).isNone) = []) :
+    queryOp (MinEnv.ofAtomsGT (pre ++ atoms) gt) St.init prev toEval b =
+      queryOp (MinEnv.ofAtomsGT atoms gt) St.init prev toEval b := by
+  exact queryOp_eq_of_candidatesW_eq
+    (candidatesW_prepend_nonfiring_for_head
+      (pre := pre) (atoms := atoms) (gt := gt) (toEval := toEval) (k := k)
+      hhead hidx hvar)
 
 /-- If an `evalOp` input instantiates to a symbol-headed expression, grounded dispatch reports
 `noReduce`, and the atom is not an embedded minimal operation, then `evalOp` falls through exactly
@@ -91,6 +355,72 @@ theorem mem_evalOp_queryOp_iff_of_instantiated_noReduce
     item ∈ (evalOp env st prev x b).1 ↔
       item ∈ (queryOp env st prev (Atom.expr (Atom.sym op :: args)) b).1 := by
   rw [evalOp_queryOp_of_instantiated_noReduce env st prev x b op args hinst hcall hembed]
+
+/-- Immediate evaluator monotonicity for helper slices that cannot fire on the instantiated head.
+
+This is the one-step runtime form of environment monotonicity: after grounded dispatch falls through
+to the equality-rule query path on both environments, a non-firing append leaves the `evalOp` readout
+unchanged. -/
+theorem evalOp_append_nonfiring_for_head
+    {atoms extra : List Atom} {gt : GroundingTable}
+    {x : Atom} {k : String} {prev : Stack} {b : Bindings}
+    {op : String} {args : List Atom}
+    (hhead : headKey (Atom.expr (Atom.sym op :: args)) = some k)
+    (hidx : (extractRules extra).filter (fun r => headKey r.1 == some k) = [])
+    (hvar : (extractRules extra).filter (fun r => (headKey r.1).isNone) = [])
+    (hinst : instantiate b x = Atom.expr (Atom.sym op :: args))
+    (hcallApp : callGrounded (MinEnv.ofAtomsGT (atoms ++ extra) gt).gt op
+        (args.map (fun a => resolveStates St.init.world (subTokens St.init.world a))) =
+      ReduceResult.noReduce)
+    (hcallCore : callGrounded (MinEnv.ofAtomsGT atoms gt).gt op
+        (args.map (fun a => resolveStates St.init.world (subTokens St.init.world a))) =
+      ReduceResult.noReduce)
+    (hembed : isEmbeddedOp (Atom.expr (Atom.sym op :: args)) = false) :
+    evalOp (MinEnv.ofAtomsGT (atoms ++ extra) gt) St.init prev x b =
+      evalOp (MinEnv.ofAtomsGT atoms gt) St.init prev x b := by
+  rw [evalOp_queryOp_of_instantiated_noReduce
+      (env := MinEnv.ofAtomsGT (atoms ++ extra) gt) (st := St.init) (prev := prev)
+      (x := x) (b := b) (op := op) (args := args) hinst hcallApp hembed,
+    evalOp_queryOp_of_instantiated_noReduce
+      (env := MinEnv.ofAtomsGT atoms gt) (st := St.init) (prev := prev)
+      (x := x) (b := b) (op := op) (args := args) hinst hcallCore hembed]
+  exact queryOp_append_nonfiring_for_head
+    (atoms := atoms) (extra := extra) (gt := gt)
+    (toEval := Atom.expr (Atom.sym op :: args)) (k := k) (prev := prev) (b := b)
+    hhead hidx hvar
+
+/-- Immediate evaluator monotonicity for prepended non-firing rule sets.
+
+This is the `prelude ++ core` counterpart of `evalOp_append_nonfiring_for_head`: after grounded
+dispatch falls through to the equality-rule query path on both environments, a non-firing pre
+leaves the `evalOp` readout unchanged. -/
+theorem evalOp_prepend_nonfiring_for_head
+    {pre atoms : List Atom} {gt : GroundingTable}
+    {x : Atom} {k : String} {prev : Stack} {b : Bindings}
+    {op : String} {args : List Atom}
+    (hhead : headKey (Atom.expr (Atom.sym op :: args)) = some k)
+    (hidx : (extractRules pre).filter (fun r => headKey r.1 == some k) = [])
+    (hvar : (extractRules pre).filter (fun r => (headKey r.1).isNone) = [])
+    (hinst : instantiate b x = Atom.expr (Atom.sym op :: args))
+    (hcallPrefix : callGrounded (MinEnv.ofAtomsGT (pre ++ atoms) gt).gt op
+        (args.map (fun a => resolveStates St.init.world (subTokens St.init.world a))) =
+      ReduceResult.noReduce)
+    (hcallCore : callGrounded (MinEnv.ofAtomsGT atoms gt).gt op
+        (args.map (fun a => resolveStates St.init.world (subTokens St.init.world a))) =
+      ReduceResult.noReduce)
+    (hembed : isEmbeddedOp (Atom.expr (Atom.sym op :: args)) = false) :
+    evalOp (MinEnv.ofAtomsGT (pre ++ atoms) gt) St.init prev x b =
+      evalOp (MinEnv.ofAtomsGT atoms gt) St.init prev x b := by
+  rw [evalOp_queryOp_of_instantiated_noReduce
+      (env := MinEnv.ofAtomsGT (pre ++ atoms) gt) (st := St.init) (prev := prev)
+      (x := x) (b := b) (op := op) (args := args) hinst hcallPrefix hembed,
+    evalOp_queryOp_of_instantiated_noReduce
+      (env := MinEnv.ofAtomsGT atoms gt) (st := St.init) (prev := prev)
+      (x := x) (b := b) (op := op) (args := args) hinst hcallCore hembed]
+  exact queryOp_prepend_nonfiring_for_head
+    (pre := pre) (atoms := atoms) (gt := gt)
+    (toEval := Atom.expr (Atom.sym op :: args)) (k := k) (prev := prev) (b := b)
+    hhead hidx hvar
 
 /-! ## Scheduler fall-through to equation lookup -/
 
@@ -311,6 +641,88 @@ theorem interpretStack1_eval_var_id_closed
     exact hquery.1
   · exact hquery.2
 
+/-- Scheduler-level variable-LHS crossing over a closed symbol-headed redex.
+
+This is the one-variable RHS-general form of `interpretStack1_eval_var_id_closed`: the selected
+static rule has LHS `$v`, the closed query supplies the singleton core binding `$v ↦ target`, and
+all RHS variables are covered by that binding. The freshened executable item and the certified
+`KernelStep` reduct therefore agree without an external result-equivalence premise. -/
+theorem interpretStack1_eval_var_lhs_closed
+    {atoms : List Atom} {gt : GroundingTable} {st : St} {fuel : Nat}
+    {prev : Stack} {x rhs : Atom} {op v : String} {args : List Atom}
+    {pre post : List (Atom × Atom)}
+    (hclosed : (Atom.expr (Atom.sym op :: args)).vars = [])
+    (hstatic : st.world.selfExtra = [])
+    (hinst : instantiate [] x = Atom.expr (Atom.sym op :: args))
+    (hcall : callGrounded (MinEnv.ofAtomsGT atoms gt).gt op
+        (args.map (fun a => resolveStates st.world (subTokens st.world a))) =
+      ReduceResult.noReduce)
+    (hembed : isEmbeddedOp (Atom.expr (Atom.sym op :: args)) = false)
+    (hsplit : (MinEnv.ofAtomsGT atoms gt).candidates (Atom.expr (Atom.sym op :: args)) =
+      pre ++ (Atom.var v, rhs) :: post)
+    (hboundVars : ∀ w ∈ rhs.vars, w = v) :
+    evalResult prev (instantiate [BindingRel.val v (Atom.expr (Atom.sym op :: args))] rhs)
+          [BindingRel.val (counterSuffix (st.counter + pre.length) v)
+            (Atom.expr (Atom.sym op :: args))] ∈
+        (interpretStack1 (MinEnv.ofAtomsGT atoms gt) fuel st
+          { stack := { atom := Atom.expr [Atom.sym "eval", x] } :: prev, bnd := [] }).1 ∧
+      KernelStep atoms gt (Atom.expr (Atom.sym op :: args))
+        (instantiate [BindingRel.val v (Atom.expr (Atom.sym op :: args))] rhs) := by
+  have hquery := queryOp_item_and_kernelStep_var_lhs_closed
+    (st := st) (prev := prev) (target := Atom.expr (Atom.sym op :: args))
+    (rhs := rhs) (v := v) (pre := pre) (post := post)
+    hclosed hstatic (by simp [isVariableHeaded]) (by simp [headKey]) hsplit hboundVars
+  constructor
+  · rw [mem_interpretStack1_eval_queryOp_iff_of_instantiated_noReduce
+      (MinEnv.ofAtomsGT atoms gt) fuel st prev x [] op args
+      (evalResult prev (instantiate [BindingRel.val v (Atom.expr (Atom.sym op :: args))] rhs)
+        [BindingRel.val (counterSuffix (st.counter + pre.length) v)
+          (Atom.expr (Atom.sym op :: args))]) hinst hcall hembed]
+    exact hquery.1
+  · exact hquery.2
+
+/-- Scheduler-level open-target variable-LHS crossing.
+
+This is the scheduler-facing counterpart of
+`queryOp_item_and_kernelStep_var_lhs_open`: the selected rule has LHS `$v`, the queried target may
+contain variables, and the two explicit freshness hypotheses exclude exactly the raw/fresh
+same-variable cases where open-target matcher transport is false. -/
+theorem interpretStack1_eval_var_lhs_open
+    {atoms : List Atom} {gt : GroundingTable} {st : St} {fuel : Nat}
+    {prev : Stack} {x rhs : Atom} {op v : String} {args : List Atom}
+    {pre post : List (Atom × Atom)}
+    (hraw : v ∉ (Atom.expr (Atom.sym op :: args)).vars)
+    (hfresh : counterSuffix (st.counter + pre.length) v ∉
+      (Atom.expr (Atom.sym op :: args)).vars)
+    (hstatic : st.world.selfExtra = [])
+    (hinst : instantiate [] x = Atom.expr (Atom.sym op :: args))
+    (hcall : callGrounded (MinEnv.ofAtomsGT atoms gt).gt op
+        (args.map (fun a => resolveStates st.world (subTokens st.world a))) =
+      ReduceResult.noReduce)
+    (hembed : isEmbeddedOp (Atom.expr (Atom.sym op :: args)) = false)
+    (hsplit : (MinEnv.ofAtomsGT atoms gt).candidates (Atom.expr (Atom.sym op :: args)) =
+      pre ++ (Atom.var v, rhs) :: post)
+    (hboundVars : ∀ w ∈ rhs.vars, w = v) :
+    evalResult prev (instantiate [BindingRel.val v (Atom.expr (Atom.sym op :: args))] rhs)
+          [BindingRel.val (counterSuffix (st.counter + pre.length) v)
+            (Atom.expr (Atom.sym op :: args))] ∈
+        (interpretStack1 (MinEnv.ofAtomsGT atoms gt) fuel st
+          { stack := { atom := Atom.expr [Atom.sym "eval", x] } :: prev, bnd := [] }).1 ∧
+      KernelStep atoms gt (Atom.expr (Atom.sym op :: args))
+        (instantiate [BindingRel.val v (Atom.expr (Atom.sym op :: args))] rhs) := by
+  have hquery := queryOp_item_and_kernelStep_var_lhs_open
+    (st := st) (prev := prev) (target := Atom.expr (Atom.sym op :: args))
+    (rhs := rhs) (v := v) (pre := pre) (post := post)
+    hraw hfresh hstatic (by simp [isVariableHeaded]) (by simp [headKey]) hsplit hboundVars
+  constructor
+  · rw [mem_interpretStack1_eval_queryOp_iff_of_instantiated_noReduce
+      (MinEnv.ofAtomsGT atoms gt) fuel st prev x [] op args
+      (evalResult prev (instantiate [BindingRel.val v (Atom.expr (Atom.sym op :: args))] rhs)
+        [BindingRel.val (counterSuffix (st.counter + pre.length) v)
+          (Atom.expr (Atom.sym op :: args))]) hinst hcall hembed]
+    exact hquery.1
+  · exact hquery.2
+
 /-- Scheduler-level variable-free symbolic-rule crossing. This composes the `interpretStack1` /
 `evalOp` boundary with the generic `queryOp`/`KernelStep` bridge for symbolic closed rules, while
 leaving the ordinary matcher witness as a premise rather than recomputing a concrete rule. -/
@@ -427,6 +839,140 @@ theorem interpretStack1_eval_renamed_closed_coreBinding_reverse
     exact hquery.1
   · exact hquery.2
 
+/-- Scheduler-level closed-target form of
+`interpretStack1_eval_renamed_closed_coreBinding_reverse`: the runtime-freshened matcher witness is
+derived from the core match instead of being supplied as a premise. -/
+theorem interpretStack1_eval_renamed_closed_coreBinding_reverse_of_match
+    {atoms : List Atom} {gt : GroundingTable} {st : St} {fuel : Nat}
+    {prev : Stack} {x lhs rhs : Atom} {coreB : Bindings}
+    {op : String} {args : List Atom} {pre post : List (Atom × Atom)}
+    (hclosedTarget : (Atom.expr (Atom.sym op :: args)).vars = [])
+    (hclosedB : ClosedValueBindings coreB)
+    (hnodup : (bindingValueKeys coreB).Nodup)
+    (hstatic : st.world.selfExtra = [])
+    (hinst : instantiate [] x = Atom.expr (Atom.sym op :: args))
+    (hcall : callGrounded (MinEnv.ofAtomsGT atoms gt).gt op
+        (args.map (fun a => resolveStates st.world (subTokens st.world a))) =
+      ReduceResult.noReduce)
+    (hembed : isEmbeddedOp (Atom.expr (Atom.sym op :: args)) = false)
+    (hsplit : (MinEnv.ofAtomsGT atoms gt).candidates (Atom.expr (Atom.sym op :: args)) =
+      pre ++ (lhs, rhs) :: post)
+    (hmatchCore : coreB ∈ matchAtoms lhs (Atom.expr (Atom.sym op :: args)))
+    (hbound : ∀ v ∈ rhs.vars, ∃ t, Bindings.lookupVal coreB v = some t) :
+    evalResult prev (instantiate coreB rhs)
+          (renameBindings (counterSuffix (st.counter + pre.length)) coreB).reverse ∈
+        (interpretStack1 (MinEnv.ofAtomsGT atoms gt) fuel st
+          { stack := { atom := Atom.expr [Atom.sym "eval", x] } :: prev, bnd := [] }).1 ∧
+      KernelStep atoms gt (Atom.expr (Atom.sym op :: args)) (instantiate coreB rhs) := by
+  have hquery := queryOp_item_and_kernelStep_of_renamed_closed_coreBinding_reverse_of_match
+    (atoms := atoms) (gt := gt) (st := st) (prev := prev)
+    (toEval := Atom.expr (Atom.sym op :: args)) (lhs := lhs) (rhs := rhs)
+    (coreB := coreB) (pre := pre) (post := post)
+    hclosedTarget hclosedB hnodup hstatic (by simp [isVariableHeaded]) (by simp [headKey])
+    hsplit hmatchCore hbound
+  constructor
+  · rw [mem_interpretStack1_eval_queryOp_iff_of_instantiated_noReduce
+      (MinEnv.ofAtomsGT atoms gt) fuel st prev x [] op args
+      (evalResult prev (instantiate coreB rhs)
+        (renameBindings (counterSuffix (st.counter + pre.length)) coreB).reverse)
+      hinst hcall hembed]
+    exact hquery.1
+  · exact hquery.2
+
+/-! ## Scheduler crossing for α-related runtime/certified results -/
+
+/-- Scheduler-level α lift of
+`queryOp_item_and_kernelStep_alpha_of_renamed_closed_coreBinding_reverse`.
+
+This is the B1 crossing for rules whose RHS contains variables not bound by the matcher. The
+runtime item carries the freshened executable RHS; the certified `KernelStep` carries the
+unfreshened `firedReducts` RHS; `AlphaEq` records the canonical-core agreement. -/
+theorem interpretStack1_eval_renamed_closed_coreBinding_reverse_alpha
+    {atoms : List Atom} {gt : GroundingTable} {st : St} {fuel : Nat}
+    {prev : Stack} {x lhs rhs : Atom} {coreB : Bindings}
+    {op : String} {args : List Atom} {pre post : List (Atom × Atom)}
+    (hclosedB : ClosedValueBindings coreB)
+    (hnodup : (bindingValueKeys coreB).Nodup)
+    (hstatic : st.world.selfExtra = [])
+    (hinst : instantiate [] x = Atom.expr (Atom.sym op :: args))
+    (hcall : callGrounded (MinEnv.ofAtomsGT atoms gt).gt op
+        (args.map (fun a => resolveStates st.world (subTokens st.world a))) =
+      ReduceResult.noReduce)
+    (hembed : isEmbeddedOp (Atom.expr (Atom.sym op :: args)) = false)
+    (hsplit : (MinEnv.ofAtomsGT atoms gt).candidates (Atom.expr (Atom.sym op :: args)) =
+      pre ++ (lhs, rhs) :: post)
+    (hmatchFresh : renameBindings (counterSuffix (st.counter + pre.length)) coreB ∈
+      matchAtoms (freshenRule (st.counter + pre.length) lhs rhs).1
+        (Atom.expr (Atom.sym op :: args)))
+    (hmatchCore : coreB ∈ matchAtoms lhs (Atom.expr (Atom.sym op :: args))) :
+    evalResult prev
+          (instantiate (renameBindings (counterSuffix (st.counter + pre.length)) coreB).reverse
+            (freshenRule (st.counter + pre.length) lhs rhs).2)
+          (renameBindings (counterSuffix (st.counter + pre.length)) coreB).reverse ∈
+        (interpretStack1 (MinEnv.ofAtomsGT atoms gt) fuel st
+          { stack := { atom := Atom.expr [Atom.sym "eval", x] } :: prev, bnd := [] }).1 ∧
+      KernelStep atoms gt (Atom.expr (Atom.sym op :: args)) (instantiate coreB rhs) ∧
+      Metta.AlphaEq
+        (instantiate (renameBindings (counterSuffix (st.counter + pre.length)) coreB).reverse
+          (freshenRule (st.counter + pre.length) lhs rhs).2)
+        (instantiate coreB rhs) := by
+  have hquery := queryOp_item_and_kernelStep_alpha_of_renamed_closed_coreBinding_reverse
+    (atoms := atoms) (gt := gt) (st := st) (prev := prev)
+    (toEval := Atom.expr (Atom.sym op :: args)) (lhs := lhs) (rhs := rhs)
+    (coreB := coreB) (pre := pre) (post := post)
+    hclosedB hnodup hstatic (by simp [isVariableHeaded]) (by simp [headKey])
+    hsplit hmatchFresh hmatchCore
+  constructor
+  · rw [mem_interpretStack1_eval_queryOp_iff_of_instantiated_noReduce
+      (MinEnv.ofAtomsGT atoms gt) fuel st prev x [] op args
+      (evalResult prev
+        (instantiate (renameBindings (counterSuffix (st.counter + pre.length)) coreB).reverse
+          (freshenRule (st.counter + pre.length) lhs rhs).2)
+        (renameBindings (counterSuffix (st.counter + pre.length)) coreB).reverse)
+      hinst hcall hembed]
+    exact hquery.1
+  · exact ⟨hquery.2.1, hquery.2.2⟩
+
+/-- Closed-target scheduler α form: matcher freshening is derived from the unfreshened core match,
+leaving only the static split and closed binding shape as obligations. -/
+theorem interpretStack1_eval_renamed_closed_coreBinding_reverse_alpha_of_match
+    {atoms : List Atom} {gt : GroundingTable} {st : St} {fuel : Nat}
+    {prev : Stack} {x lhs rhs : Atom} {coreB : Bindings}
+    {op : String} {args : List Atom} {pre post : List (Atom × Atom)}
+    (hclosedTarget : (Atom.expr (Atom.sym op :: args)).vars = [])
+    (hclosedB : ClosedValueBindings coreB)
+    (hnodup : (bindingValueKeys coreB).Nodup)
+    (hstatic : st.world.selfExtra = [])
+    (hinst : instantiate [] x = Atom.expr (Atom.sym op :: args))
+    (hcall : callGrounded (MinEnv.ofAtomsGT atoms gt).gt op
+        (args.map (fun a => resolveStates st.world (subTokens st.world a))) =
+      ReduceResult.noReduce)
+    (hembed : isEmbeddedOp (Atom.expr (Atom.sym op :: args)) = false)
+    (hsplit : (MinEnv.ofAtomsGT atoms gt).candidates (Atom.expr (Atom.sym op :: args)) =
+      pre ++ (lhs, rhs) :: post)
+    (hmatchCore : coreB ∈ matchAtoms lhs (Atom.expr (Atom.sym op :: args))) :
+    evalResult prev
+          (instantiate (renameBindings (counterSuffix (st.counter + pre.length)) coreB).reverse
+            (freshenRule (st.counter + pre.length) lhs rhs).2)
+          (renameBindings (counterSuffix (st.counter + pre.length)) coreB).reverse ∈
+        (interpretStack1 (MinEnv.ofAtomsGT atoms gt) fuel st
+          { stack := { atom := Atom.expr [Atom.sym "eval", x] } :: prev, bnd := [] }).1 ∧
+      KernelStep atoms gt (Atom.expr (Atom.sym op :: args)) (instantiate coreB rhs) ∧
+      Metta.AlphaEq
+        (instantiate (renameBindings (counterSuffix (st.counter + pre.length)) coreB).reverse
+          (freshenRule (st.counter + pre.length) lhs rhs).2)
+        (instantiate coreB rhs) := by
+  have hmatchFresh : renameBindings (counterSuffix (st.counter + pre.length)) coreB ∈
+      matchAtoms (freshenRule (st.counter + pre.length) lhs rhs).1
+        (Atom.expr (Atom.sym op :: args)) :=
+    matchAtoms_freshenRule_lhs_closed_target_mem
+      (st.counter + pre.length) hclosedTarget hmatchCore
+  exact interpretStack1_eval_renamed_closed_coreBinding_reverse_alpha
+    (atoms := atoms) (gt := gt) (st := st) (fuel := fuel) (prev := prev)
+    (x := x) (lhs := lhs) (rhs := rhs) (coreB := coreB)
+    (op := op) (args := args) (pre := pre) (post := post)
+    hclosedB hnodup hstatic hinst hcall hembed hsplit hmatchFresh hmatchCore
+
 /-! ## Scheduler crossing for the no-candidate `NotReducible` case -/
 
 /-- Symbols are unaffected by instantiation under any binding set. -/
@@ -511,6 +1057,72 @@ theorem interpretStack1_eval_symbol_notReducible_of_no_candidates_eq
   simp [hinst, hembed]
   exact queryOp_notReducible_of_no_candidates_eq env st prev (Atom.sym op) b
     (by simp [isVariableHeaded]) hnone
+
+/-- Grounded-atom version of `interpretStack1_eval_symbol_notReducible_of_no_candidates`.
+
+Bare grounded atoms skip grounded function dispatch, enter `queryOp` directly, and reduce to
+`NotReducible` when the current space has no matching candidate. This is the scheduler rung needed
+for Boolean control-flow leaves such as `False` in embedded `unify` fallbacks. -/
+theorem interpretStack1_eval_ground_notReducible_of_no_candidates
+    (env : MinEnv) (st : St) (fuel : Nat) (prev : Stack) (x : Atom) (b : Bindings)
+    (g : Ground)
+    (hinst : instantiate b x = Atom.gnd g)
+    (hembed : isEmbeddedOp (Atom.gnd g) = false)
+    (hnone : candidatesW env st.world (Atom.gnd g) = []) :
+    finItem prev notReducibleA b ∈
+      (interpretStack1 env fuel st
+        { stack := { atom := Atom.expr [Atom.sym "eval", x] } :: prev, bnd := b }).1 := by
+  rw [mem_interpretStack1_eval_iff]
+  unfold evalOp
+  simp [hinst, hembed]
+  exact queryOp_contains_notReducible_of_no_candidates env st prev (Atom.gnd g) b
+    (by simp [isVariableHeaded]) hnone
+
+/-- Exact scheduler form for bare-grounded no-candidate evaluation. -/
+theorem interpretStack1_eval_ground_notReducible_of_no_candidates_eq
+    (env : MinEnv) (st : St) (fuel : Nat) (prev : Stack) (x : Atom) (b : Bindings)
+    (g : Ground)
+    (hinst : instantiate b x = Atom.gnd g)
+    (hembed : isEmbeddedOp (Atom.gnd g) = false)
+    (hnone : candidatesW env st.world (Atom.gnd g) = []) :
+    interpretStack1 env fuel st
+        { stack := { atom := Atom.expr [Atom.sym "eval", x] } :: prev, bnd := b } =
+      ([finItem prev notReducibleA b], st) := by
+  rw [interpretStack1_eval_eq]
+  unfold evalOp
+  simp [hinst, hembed]
+  exact queryOp_notReducible_of_no_candidates_eq env st prev (Atom.gnd g) b
+    (by simp [isVariableHeaded]) hnone
+
+/-- Bare-variable evaluation is guarded as variable-headed and emits `NotReducible`.
+
+Unlike symbols and grounded atoms, this does not need a no-candidates premise: LeaTTa's `queryOp`
+short-circuits variable-headed redexes before rule lookup so a bare query variable does not match
+every equality rule. -/
+theorem interpretStack1_eval_var_notReducible
+    (env : MinEnv) (st : St) (fuel : Nat) (prev : Stack) (x : Atom) (b : Bindings)
+    (v : VarName)
+    (hinst : instantiate b x = Atom.var v)
+    (hembed : isEmbeddedOp (Atom.var v) = false) :
+    finItem prev notReducibleA b ∈
+      (interpretStack1 env fuel st
+        { stack := { atom := Atom.expr [Atom.sym "eval", x] } :: prev, bnd := b }).1 := by
+  rw [mem_interpretStack1_eval_iff]
+  unfold evalOp
+  simp [hinst, hembed, queryOp, isVariableHeaded]
+
+/-- Exact scheduler form for bare-variable evaluation. -/
+theorem interpretStack1_eval_var_notReducible_eq
+    (env : MinEnv) (st : St) (fuel : Nat) (prev : Stack) (x : Atom) (b : Bindings)
+    (v : VarName)
+    (hinst : instantiate b x = Atom.var v)
+    (hembed : isEmbeddedOp (Atom.var v) = false) :
+    interpretStack1 env fuel st
+        { stack := { atom := Atom.expr [Atom.sym "eval", x] } :: prev, bnd := b } =
+      ([finItem prev notReducibleA b], st) := by
+  rw [interpretStack1_eval_eq]
+  unfold evalOp
+  simp [hinst, hembed, queryOp, isVariableHeaded]
 
 /-! ## One-step harvesting by the fuel driver -/
 
@@ -653,6 +1265,34 @@ theorem restrictBnd_nil_vars (b : Bindings) : restrictBnd [] b = [] := by
   apply List.filter_eq_nil_iff.mpr
   intro r _hr
   cases r <;> simp
+
+/-- Bare variables compare equal to themselves under LeaTTa's structural `BEq`.
+
+This is intentionally only the variable fragment; `BEq Atom` is not globally lawful because
+grounded floats inherit host IEEE equality. -/
+theorem atom_var_beq_self_true (v : VarName) :
+    (Atom.var v == Atom.var v) = true := by
+  change Atom.beq (Atom.var v) (Atom.var v) = true
+  simp [Atom.beq]
+
+/-- Resolving a bare variable through the empty binding set is inert at any fuel depth. -/
+theorem resolveAtom_nil_var (n : Nat) (v : VarName) :
+    resolveAtom ([] : Bindings) n (Atom.var v) = Atom.var v := by
+  induction n with
+  | zero => rfl
+  | succ _ _ =>
+      simp [resolveAtom, Metta.instantiate_nil, atom_var_beq_self_true]
+
+/-- Restricting the empty binding set to any query-variable list is empty. -/
+theorem restrictBnd_nil_bindings (vars : List VarName) :
+    restrictBnd vars ([] : Bindings) = [] := by
+  simp [restrictBnd, resolveAtom_nil_var, atom_var_beq_self_true]
+
+/-- Empty argument readouts remain empty after LeaTTa's merge-and-retain step, even when the
+surrounding expression has query variables. -/
+theorem restrictBnd_empty_merge_empty (vars : List VarName) :
+    restrictBnd vars ((Bindings.merge [] ([] : Bindings)).head?.getD []) = [] := by
+  simp [Bindings.merge, restrictBnd_nil_bindings]
 
 /-- The public `evalAtomMin` wrapper builds exactly the singleton `(eval a)` frame used by the
 fuel-driver bridge lemmas. -/
@@ -848,15 +1488,182 @@ theorem interpretFuel_eval_staticCandidateSplit_eqResult_contains_mops
   · simpa [it, out, heval, finItem, finalPair, hstable] using hmemFuel
   · exact hstep.2
 
+/-- Closed-binding convenience form of
+`interpretFuel_eval_staticCandidateSplit_eqResult_contains_mops`.
+
+The exact-result theorem is intentionally general and therefore asks for the final-readout
+stability premise explicitly.  In the runtime bridge's closed matcher fragment, that premise is
+not extra data: it follows from closed-value substitution idempotence. -/
+theorem interpretFuel_eval_staticCandidateSplit_eqResult_contains_mops_of_closed_bindings
+    {atoms : List Atom} {gt : GroundingTable} {st : St} {fuel : Nat}
+    {x lhs rhs : Atom} {mb m coreB : Bindings}
+    {op : String} {args : List Atom} {pre post : List (Atom × Atom)}
+    (hstatic : st.world.selfExtra = [])
+    (hinst : instantiate [] x = Atom.expr (Atom.sym op :: args))
+    (hcall : callGrounded (MinEnv.ofAtomsGT atoms gt).gt op
+        (args.map (fun a => resolveStates st.world (subTokens st.world a))) =
+      ReduceResult.noReduce)
+    (hembed : isEmbeddedOp (Atom.expr (Atom.sym op :: args)) = false)
+    (hNotVarHead : isVariableHeaded (Atom.expr (Atom.sym op :: args)) = false)
+    (hhead : ∃ k, headKey (Atom.expr (Atom.sym op :: args)) = some k)
+    (hsplit : (MinEnv.ofAtomsGT atoms gt).candidates (Atom.expr (Atom.sym op :: args)) =
+      pre ++ (lhs, rhs) :: post)
+    (hmatchFresh : mb ∈ matchAtoms (freshenRule (st.counter + pre.length) lhs rhs).1
+      (Atom.expr (Atom.sym op :: args)))
+    (hmerge : m ∈ Bindings.merge [] mb)
+    (hloop : Bindings.hasLoop m = false)
+    (hclosedM : ClosedValueBindings m)
+    (hmatchCore : coreB ∈ matchAtoms lhs (Atom.expr (Atom.sym op :: args)))
+    (hresult :
+      instantiate m (freshenRule (st.counter + pre.length) lhs rhs).2 =
+        instantiate coreB rhs)
+    (hnotFunction : isFunctionResult (instantiate coreB rhs) = false) :
+    (instantiate coreB rhs, m) ∈
+        (interpretFuel (MinEnv.ofAtomsGT atoms gt) (fuel + 1) st
+          [{ stack := [{ atom := Atom.expr [Atom.sym "eval", x] }], bnd := [] }] []).1 ∧
+      ExprCtxMopsStep atoms (Atom.expr (Atom.sym op :: args)) (instantiate coreB rhs) := by
+  have hstable : instantiate m (instantiate coreB rhs) = instantiate coreB rhs := by
+    rw [← hresult]
+    exact instantiate_closed_value_bindings_idempotent hclosedM
+      (freshenRule (st.counter + pre.length) lhs rhs).2
+  exact interpretFuel_eval_staticCandidateSplit_eqResult_contains_mops
+    (atoms := atoms) (gt := gt) (st := st) (fuel := fuel) (x := x)
+    (lhs := lhs) (rhs := rhs) (mb := mb) (m := m) (coreB := coreB)
+    (op := op) (args := args) (pre := pre) (post := post)
+    hstatic hinst hcall hembed hNotVarHead hhead hsplit hmatchFresh hmerge hloop
+    hmatchCore hresult hnotFunction hstable
+
+/-- Open-value version of the fuel-driver static-candidate crossing.
+
+This is the reusable fuel-level surface for open matcher values: the binding set need not be closed,
+but the runtime-renamed value keys must be fresh for all values they carry. Under that invariant,
+empty-ambient merge, loop pruning, freshened-RHS equality, and final-readout stability are all
+discharged once, rather than supplied as per-rule premises. Matcher equivariance (`hmatchFresh`) is
+still explicit; callers that know a source-specific matcher theorem should discharge it separately. -/
+theorem interpretFuel_eval_renamed_value_coreBinding_reverse_contains_mops
+    {atoms : List Atom} {gt : GroundingTable} {st : St} {fuel : Nat}
+    {x lhs rhs : Atom} {coreB : Bindings}
+    {op : String} {args : List Atom} {pre post : List (Atom × Atom)}
+    (hvalB : ValueBindings coreB)
+    (hnodup : (bindingValueKeys coreB).Nodup)
+    (hfreshValues :
+      RenamedValueKeysFreshForValues (counterSuffix (st.counter + pre.length)) coreB)
+    (hstatic : st.world.selfExtra = [])
+    (hinst : instantiate [] x = Atom.expr (Atom.sym op :: args))
+    (hcall : callGrounded (MinEnv.ofAtomsGT atoms gt).gt op
+        (args.map (fun a => resolveStates st.world (subTokens st.world a))) =
+      ReduceResult.noReduce)
+    (hembed : isEmbeddedOp (Atom.expr (Atom.sym op :: args)) = false)
+    (hsplit : (MinEnv.ofAtomsGT atoms gt).candidates (Atom.expr (Atom.sym op :: args)) =
+      pre ++ (lhs, rhs) :: post)
+    (hmatchFresh : renameBindings (counterSuffix (st.counter + pre.length)) coreB ∈
+      matchAtoms (freshenRule (st.counter + pre.length) lhs rhs).1
+        (Atom.expr (Atom.sym op :: args)))
+    (hmatchCore : coreB ∈ matchAtoms lhs (Atom.expr (Atom.sym op :: args)))
+    (hbound : ∀ v ∈ rhs.vars, ∃ t, Bindings.lookupVal coreB v = some t)
+    (hnotFunction : isFunctionResult (instantiate coreB rhs) = false) :
+    (instantiate coreB rhs,
+        (renameBindings (counterSuffix (st.counter + pre.length)) coreB).reverse) ∈
+        (interpretFuel (MinEnv.ofAtomsGT atoms gt) (fuel + 1) st
+          [{ stack := [{ atom := Atom.expr [Atom.sym "eval", x] }], bnd := [] }] []).1 ∧
+      Relation.ReflTransGen (ExprCtxMopsStep atoms)
+        (Atom.expr (Atom.sym op :: args)) (instantiate coreB rhs) := by
+  let f := counterSuffix (st.counter + pre.length)
+  have hf : Function.Injective f := by
+    simpa [f] using counterSuffix_injective (st.counter + pre.length)
+  have hvalRen : ValueBindings (renameBindings f coreB) := ValueBindings.rename hvalB
+  have hnodupRen : (bindingValueKeys (renameBindings f coreB)).Nodup := by
+    rw [bindingValueKeys_renameBindings]
+    exact List.Nodup.map hf hnodup
+  have hmerge : (renameBindings f coreB).reverse ∈ Bindings.merge [] (renameBindings f coreB) := by
+    exact merge_empty_renamed_value_nodup_mem hf hvalB hnodup
+  have hloop : Bindings.hasLoop (renameBindings f coreB).reverse = false := by
+    exact ValueBindings.rename_reverse_hasLoop_false_of_not_mem_vars hvalB (by
+      intro key value hmem
+      simpa [f] using renamedValueKeysFreshForValues_self hfreshValues key value hmem)
+  have hreverseInst :
+      instantiate (renameBindings f coreB).reverse
+          (freshenRule (st.counter + pre.length) lhs rhs).2 =
+        instantiate (renameBindings f coreB) (freshenRule (st.counter + pre.length) lhs rhs).2 :=
+    instantiate_reverse_value_nodup hvalRen hnodupRen _
+  have hfreshInst :
+      instantiate (renameBindings f coreB) (freshenRule (st.counter + pre.length) lhs rhs).2 =
+        instantiate coreB rhs := by
+    simpa [f] using instantiate_freshenRule_rhs_of_renamed_bindings
+      (st.counter + pre.length) lhs rhs coreB hbound
+  have hresult :
+      instantiate (renameBindings f coreB).reverse
+          (freshenRule (st.counter + pre.length) lhs rhs).2 =
+        instantiate coreB rhs := by
+    rw [hreverseInst, hfreshInst]
+  have hstable :
+      instantiate (renameBindings f coreB).reverse (instantiate coreB rhs) =
+        instantiate coreB rhs := by
+    simpa [f] using instantiate_renamed_reverse_stable_after_value_subst
+      hf hvalB hnodup hfreshValues rhs hbound
+  rcases interpretFuel_eval_staticCandidateSplit_eqResult_contains_mops
+      (atoms := atoms) (gt := gt) (st := st) (fuel := fuel) (x := x)
+      (lhs := lhs) (rhs := rhs) (mb := renameBindings f coreB)
+      (m := (renameBindings f coreB).reverse) (coreB := coreB)
+      (op := op) (args := args) (pre := pre) (post := post)
+      hstatic hinst hcall hembed (by simp [isVariableHeaded]) (by simp [headKey])
+      hsplit (by simpa [f] using hmatchFresh) (by simpa [f] using hmerge)
+      (by simpa [f] using hloop) hmatchCore hresult hnotFunction hstable with
+    ⟨hmem, hstep⟩
+  exact ⟨by simpa [f] using hmem, Relation.ReflTransGen.single hstep⟩
+
+/-- Source-origin open-target form of
+`interpretFuel_eval_renamed_value_coreBinding_reverse_contains_mops`.
+
+This discharges the matcher-equivariance premise from `LeftPatternShape`, then reuses the existing
+fuel-level open-value crossing. -/
+theorem interpretFuel_eval_renamed_value_coreBinding_reverse_contains_mops_of_leftPattern
+    {atoms : List Atom} {gt : GroundingTable} {st : St} {fuel : Nat}
+    {x lhs rhs : Atom} {coreB : Bindings}
+    {op : String} {args : List Atom} {pre post : List (Atom × Atom)}
+    (hshape : LeftPatternShape (counterSuffix (st.counter + pre.length)) lhs
+      (Atom.expr (Atom.sym op :: args)))
+    (hvalB : ValueBindings coreB)
+    (hnodup : (bindingValueKeys coreB).Nodup)
+    (hfreshValues :
+      RenamedValueKeysFreshForValues (counterSuffix (st.counter + pre.length)) coreB)
+    (hstatic : st.world.selfExtra = [])
+    (hinst : instantiate [] x = Atom.expr (Atom.sym op :: args))
+    (hcall : callGrounded (MinEnv.ofAtomsGT atoms gt).gt op
+        (args.map (fun a => resolveStates st.world (subTokens st.world a))) =
+      ReduceResult.noReduce)
+    (hembed : isEmbeddedOp (Atom.expr (Atom.sym op :: args)) = false)
+    (hsplit : (MinEnv.ofAtomsGT atoms gt).candidates (Atom.expr (Atom.sym op :: args)) =
+      pre ++ (lhs, rhs) :: post)
+    (hmatchCore : coreB ∈ matchAtoms lhs (Atom.expr (Atom.sym op :: args)))
+    (hbound : ∀ v ∈ rhs.vars, ∃ t, Bindings.lookupVal coreB v = some t)
+    (hnotFunction : isFunctionResult (instantiate coreB rhs) = false) :
+    (instantiate coreB rhs,
+        (renameBindings (counterSuffix (st.counter + pre.length)) coreB).reverse) ∈
+        (interpretFuel (MinEnv.ofAtomsGT atoms gt) (fuel + 1) st
+          [{ stack := [{ atom := Atom.expr [Atom.sym "eval", x] }], bnd := [] }] []).1 ∧
+      Relation.ReflTransGen (ExprCtxMopsStep atoms)
+        (Atom.expr (Atom.sym op :: args)) (instantiate coreB rhs) := by
+  have hmatchFresh :
+      renameBindings (counterSuffix (st.counter + pre.length)) coreB ∈
+        matchAtoms (freshenRule (st.counter + pre.length) lhs rhs).1
+          (Atom.expr (Atom.sym op :: args)) :=
+    matchAtoms_freshenRule_lhs_leftPattern_mem
+      (st.counter + pre.length) hshape hmatchCore
+  exact interpretFuel_eval_renamed_value_coreBinding_reverse_contains_mops
+    (hvalB := hvalB) (hnodup := hnodup) (hfreshValues := hfreshValues)
+    (hstatic := hstatic) (hinst := hinst) (hcall := hcall) (hembed := hembed)
+    (hsplit := hsplit) (hmatchFresh := hmatchFresh)
+    (hmatchCore := hmatchCore) (hbound := hbound) (hnotFunction := hnotFunction)
+
 /-- Fuel-driver harvest of the generic renamed-core binding crossing when the emitted RHS is
 already final.
 
 This is the first B2 theorem that composes the generic B1 crossing all the way through a real
 `interpretFuel` readout: the scheduler emits a final item, the fuel driver harvests it, and the
-certified root step is returned as a `ReflTransGen KernelStep` chain. The `hstable` premise is the
-ordinary final-readout stability condition: applying the harvested bindings to the already
-instantiated RHS does not change it. Closed RHS results discharge it by a separate closedness lemma
-at use sites. -/
+certified root step is returned as a `ReflTransGen KernelStep` chain. The returned atom is the
+actual `finalPair` projection, namely the certified reduct after the harvested bindings are applied
+once more. Closed-result wrappers below collapse that projection back to the certified reduct. -/
 theorem interpretFuel_eval_renamed_closed_coreBinding_reverse_contains_final
     {atoms : List Atom} {gt : GroundingTable} {st : St} {fuel : Nat}
     {x lhs rhs : Atom} {coreB : Bindings}
@@ -876,12 +1683,9 @@ theorem interpretFuel_eval_renamed_closed_coreBinding_reverse_contains_final
         (Atom.expr (Atom.sym op :: args)))
     (hmatchCore : coreB ∈ matchAtoms lhs (Atom.expr (Atom.sym op :: args)))
     (hbound : ∀ v ∈ rhs.vars, ∃ t, Bindings.lookupVal coreB v = some t)
-    (hnotFunction : isFunctionResult (instantiate coreB rhs) = false)
-    (hstable :
-      instantiate (renameBindings (counterSuffix (st.counter + pre.length)) coreB).reverse
-          (instantiate coreB rhs) =
-        instantiate coreB rhs) :
-    (instantiate coreB rhs,
+    (hnotFunction : isFunctionResult (instantiate coreB rhs) = false) :
+    (instantiate (renameBindings (counterSuffix (st.counter + pre.length)) coreB).reverse
+        (instantiate coreB rhs),
         (renameBindings (counterSuffix (st.counter + pre.length)) coreB).reverse) ∈
         (interpretFuel (MinEnv.ofAtomsGT atoms gt) (fuel + 1) st
           [{ stack := [{ atom := Atom.expr [Atom.sym "eval", x] }], bnd := [] }] []).1 ∧
@@ -908,8 +1712,182 @@ theorem interpretFuel_eval_renamed_closed_coreBinding_reverse_contains_final
       (MinEnv.ofAtomsGT atoms gt) fuel st it out [] [] (by
         simpa [it, out, m] using hstep.1) hfinal
   constructor
-  · simpa [it, out, heval, finItem, finalPair, m, hstable] using hmemFuel
+  · simpa [it, out, heval, finItem, finalPair, m] using hmemFuel
   · exact Relation.ReflTransGen.single hstep.2
+
+/-- Fuel-driver harvest of the α-shaped renamed-core crossing.
+
+This is the `interpretFuel` counterpart of
+`interpretStack1_eval_renamed_closed_coreBinding_reverse_alpha`: the actual executable readout is
+the runtime-freshened RHS, while the certified `KernelStep` target is the unfreshened RHS. They are
+kept separate and related by `AlphaEq`; no raw-name equality is forced. -/
+theorem interpretFuel_eval_renamed_closed_coreBinding_reverse_alpha_final
+    {atoms : List Atom} {gt : GroundingTable} {st : St} {fuel : Nat}
+    {x lhs rhs : Atom} {coreB : Bindings}
+    {op : String} {args : List Atom} {pre post : List (Atom × Atom)}
+    (hclosedB : ClosedValueBindings coreB)
+    (hnodup : (bindingValueKeys coreB).Nodup)
+    (hstatic : st.world.selfExtra = [])
+    (hinst : instantiate [] x = Atom.expr (Atom.sym op :: args))
+    (hcall : callGrounded (MinEnv.ofAtomsGT atoms gt).gt op
+        (args.map (fun a => resolveStates st.world (subTokens st.world a))) =
+      ReduceResult.noReduce)
+    (hembed : isEmbeddedOp (Atom.expr (Atom.sym op :: args)) = false)
+    (hsplit : (MinEnv.ofAtomsGT atoms gt).candidates (Atom.expr (Atom.sym op :: args)) =
+      pre ++ (lhs, rhs) :: post)
+    (hmatchFresh : renameBindings (counterSuffix (st.counter + pre.length)) coreB ∈
+      matchAtoms (freshenRule (st.counter + pre.length) lhs rhs).1
+        (Atom.expr (Atom.sym op :: args)))
+    (hmatchCore : coreB ∈ matchAtoms lhs (Atom.expr (Atom.sym op :: args)))
+    (hnotFunction :
+      isFunctionResult
+        (instantiate (renameBindings (counterSuffix (st.counter + pre.length)) coreB).reverse
+          (freshenRule (st.counter + pre.length) lhs rhs).2) = false) :
+    (instantiate (renameBindings (counterSuffix (st.counter + pre.length)) coreB).reverse
+        (freshenRule (st.counter + pre.length) lhs rhs).2,
+      (renameBindings (counterSuffix (st.counter + pre.length)) coreB).reverse) ∈
+        (interpretFuel (MinEnv.ofAtomsGT atoms gt) (fuel + 1) st
+          [{ stack := [{ atom := Atom.expr [Atom.sym "eval", x] }], bnd := [] }] []).1 ∧
+      Relation.ReflTransGen (KernelStep atoms gt)
+        (Atom.expr (Atom.sym op :: args)) (instantiate coreB rhs) ∧
+      Metta.AlphaEq
+        (instantiate (renameBindings (counterSuffix (st.counter + pre.length)) coreB).reverse
+          (freshenRule (st.counter + pre.length) lhs rhs).2)
+        (instantiate coreB rhs) := by
+  let m : Bindings := (renameBindings (counterSuffix (st.counter + pre.length)) coreB).reverse
+  let actual : Atom := instantiate m (freshenRule (st.counter + pre.length) lhs rhs).2
+  let certified : Atom := instantiate coreB rhs
+  have hstep := interpretStack1_eval_renamed_closed_coreBinding_reverse_alpha
+    (atoms := atoms) (gt := gt) (st := st) (fuel := fuel) (prev := [])
+    (x := x) (lhs := lhs) (rhs := rhs) (coreB := coreB)
+    (op := op) (args := args) (pre := pre) (post := post)
+    hclosedB hnodup hstatic hinst hcall hembed hsplit hmatchFresh hmatchCore
+  let it : Item := { stack := [{ atom := Atom.expr [Atom.sym "eval", x] }], bnd := [] }
+  let out : Item := evalResult [] actual m
+  have hmemStack : out ∈ (interpretStack1 (MinEnv.ofAtomsGT atoms gt) fuel st it).1 := by
+    simpa [it, out, actual, m] using hstep.1
+  have heval : out = finItem [] actual m := by
+    simpa [out, actual, m] using
+      (evalResult_nil_eq_finItem_of_not_function
+        (a := actual) (b := m) (by simpa [actual, m] using hnotFunction))
+  have hfinal : isFinal out = true := by
+    simp [out, heval, finItem, isFinal]
+  have hmemFuel :
+      finalPair out ∈
+        (interpretFuel (MinEnv.ofAtomsGT atoms gt) (fuel + 1) st [it] []).1 :=
+    mem_interpretFuel_cons_final_of_mem_interpretStack1
+      (MinEnv.ofAtomsGT atoms gt) fuel st it out [] [] hmemStack hfinal
+  have hclosedRen :
+      ClosedValueBindings (renameBindings (counterSuffix (st.counter + pre.length)) coreB) :=
+    ClosedValueBindings.rename hclosedB
+  have hclosedM : ClosedValueBindings m := by
+    simpa [m] using ClosedValueBindings.reverse hclosedRen
+  have hstable : instantiate m actual = actual := by
+    simpa [actual] using
+      instantiate_closed_value_bindings_idempotent hclosedM
+        (freshenRule (st.counter + pre.length) lhs rhs).2
+  constructor
+  · simpa [it, out, heval, finItem, finalPair, actual, m, hstable] using hmemFuel
+  · exact ⟨Relation.ReflTransGen.single hstep.2.1,
+      by simpa [actual, certified, m] using hstep.2.2⟩
+
+/-- MOPS-facing form of
+`interpretFuel_eval_renamed_closed_coreBinding_reverse_alpha_final`.
+
+This is the reusable Gate-2 bridge for static symbol-headed rules whose runtime
+readout differs from the certified reduct only by rule-variable freshening:
+`interpretFuel` returns the actual freshened atom, MOPS reaches the certified
+unfreshened reduct, and the two are related by LeaTTa's canonical `AlphaEq`. -/
+theorem interpretFuel_eval_renamed_closed_coreBinding_reverse_alpha_final_mops
+    {atoms : List Atom} {gt : GroundingTable} {st : St} {fuel : Nat}
+    {x lhs rhs : Atom} {coreB : Bindings}
+    {op : String} {args : List Atom} {pre post : List (Atom × Atom)}
+    (hclosedB : ClosedValueBindings coreB)
+    (hnodup : (bindingValueKeys coreB).Nodup)
+    (hstatic : st.world.selfExtra = [])
+    (hinst : instantiate [] x = Atom.expr (Atom.sym op :: args))
+    (hcall : callGrounded (MinEnv.ofAtomsGT atoms gt).gt op
+        (args.map (fun a => resolveStates st.world (subTokens st.world a))) =
+      ReduceResult.noReduce)
+    (hembed : isEmbeddedOp (Atom.expr (Atom.sym op :: args)) = false)
+    (hsplit : (MinEnv.ofAtomsGT atoms gt).candidates (Atom.expr (Atom.sym op :: args)) =
+      pre ++ (lhs, rhs) :: post)
+    (hmatchFresh : renameBindings (counterSuffix (st.counter + pre.length)) coreB ∈
+      matchAtoms (freshenRule (st.counter + pre.length) lhs rhs).1
+        (Atom.expr (Atom.sym op :: args)))
+    (hmatchCore : coreB ∈ matchAtoms lhs (Atom.expr (Atom.sym op :: args)))
+    (hnotFunction :
+      isFunctionResult
+        (instantiate (renameBindings (counterSuffix (st.counter + pre.length)) coreB).reverse
+          (freshenRule (st.counter + pre.length) lhs rhs).2) = false) :
+    (instantiate (renameBindings (counterSuffix (st.counter + pre.length)) coreB).reverse
+        (freshenRule (st.counter + pre.length) lhs rhs).2,
+      (renameBindings (counterSuffix (st.counter + pre.length)) coreB).reverse) ∈
+        (interpretFuel (MinEnv.ofAtomsGT atoms gt) (fuel + 1) st
+          [{ stack := [{ atom := Atom.expr [Atom.sym "eval", x] }], bnd := [] }] []).1 ∧
+      Relation.ReflTransGen (MopsStep atoms)
+        (Atom.expr (Atom.sym op :: args)) (instantiate coreB rhs) ∧
+      Metta.AlphaEq
+        (instantiate (renameBindings (counterSuffix (st.counter + pre.length)) coreB).reverse
+          (freshenRule (st.counter + pre.length) lhs rhs).2)
+        (instantiate coreB rhs) := by
+  rcases interpretFuel_eval_renamed_closed_coreBinding_reverse_alpha_final
+    (atoms := atoms) (gt := gt) (st := st) (fuel := fuel) (x := x)
+    (lhs := lhs) (rhs := rhs) (coreB := coreB) (op := op) (args := args)
+    (pre := pre) (post := post)
+    hclosedB hnodup hstatic hinst hcall hembed hsplit hmatchFresh hmatchCore
+    hnotFunction with
+    ⟨hmem, hkernel, halpha⟩
+  exact
+    ⟨hmem,
+      (reflTransGen_kernelStep_iff_mops atoms gt
+        (Atom.expr (Atom.sym op :: args)) (instantiate coreB rhs)).1 hkernel,
+      halpha⟩
+
+/-- MOPS-facing alpha form with the matcher-freshening premise discharged by
+the generic closed-target matcher-renaming theorem. -/
+theorem interpretFuel_eval_renamed_closed_coreBinding_reverse_alpha_final_mops_of_match
+    {atoms : List Atom} {gt : GroundingTable} {st : St} {fuel : Nat}
+    {x lhs rhs : Atom} {coreB : Bindings}
+    {op : String} {args : List Atom} {pre post : List (Atom × Atom)}
+    (hclosedTarget : (Atom.expr (Atom.sym op :: args)).vars = [])
+    (hclosedB : ClosedValueBindings coreB)
+    (hnodup : (bindingValueKeys coreB).Nodup)
+    (hstatic : st.world.selfExtra = [])
+    (hinst : instantiate [] x = Atom.expr (Atom.sym op :: args))
+    (hcall : callGrounded (MinEnv.ofAtomsGT atoms gt).gt op
+        (args.map (fun a => resolveStates st.world (subTokens st.world a))) =
+      ReduceResult.noReduce)
+    (hembed : isEmbeddedOp (Atom.expr (Atom.sym op :: args)) = false)
+    (hsplit : (MinEnv.ofAtomsGT atoms gt).candidates (Atom.expr (Atom.sym op :: args)) =
+      pre ++ (lhs, rhs) :: post)
+    (hmatchCore : coreB ∈ matchAtoms lhs (Atom.expr (Atom.sym op :: args)))
+    (hnotFunction :
+      isFunctionResult
+        (instantiate (renameBindings (counterSuffix (st.counter + pre.length)) coreB).reverse
+          (freshenRule (st.counter + pre.length) lhs rhs).2) = false) :
+    (instantiate (renameBindings (counterSuffix (st.counter + pre.length)) coreB).reverse
+        (freshenRule (st.counter + pre.length) lhs rhs).2,
+      (renameBindings (counterSuffix (st.counter + pre.length)) coreB).reverse) ∈
+        (interpretFuel (MinEnv.ofAtomsGT atoms gt) (fuel + 1) st
+          [{ stack := [{ atom := Atom.expr [Atom.sym "eval", x] }], bnd := [] }] []).1 ∧
+      Relation.ReflTransGen (MopsStep atoms)
+        (Atom.expr (Atom.sym op :: args)) (instantiate coreB rhs) ∧
+      Metta.AlphaEq
+        (instantiate (renameBindings (counterSuffix (st.counter + pre.length)) coreB).reverse
+          (freshenRule (st.counter + pre.length) lhs rhs).2)
+        (instantiate coreB rhs) := by
+  have hmatchFresh : renameBindings (counterSuffix (st.counter + pre.length)) coreB ∈
+      matchAtoms (freshenRule (st.counter + pre.length) lhs rhs).1
+        (Atom.expr (Atom.sym op :: args)) :=
+    matchAtoms_freshenRule_lhs_closed_target_mem
+      (st.counter + pre.length) hclosedTarget hmatchCore
+  exact interpretFuel_eval_renamed_closed_coreBinding_reverse_alpha_final_mops
+    (atoms := atoms) (gt := gt) (st := st) (fuel := fuel) (x := x)
+    (lhs := lhs) (rhs := rhs) (coreB := coreB) (op := op) (args := args)
+    (pre := pre) (post := post)
+    hclosedB hnodup hstatic hinst hcall hembed hsplit hmatchFresh hmatchCore
+    hnotFunction
 
 /-- Closed-result convenience form of
 `interpretFuel_eval_renamed_closed_coreBinding_reverse_contains_final`. Variable-free certified
@@ -941,10 +1919,15 @@ theorem interpretFuel_eval_renamed_closed_coreBinding_reverse_contains_closed
         (interpretFuel (MinEnv.ofAtomsGT atoms gt) (fuel + 1) st
           [{ stack := [{ atom := Atom.expr [Atom.sym "eval", x] }], bnd := [] }] []).1 ∧
       Relation.ReflTransGen (KernelStep atoms gt)
-        (Atom.expr (Atom.sym op :: args)) (instantiate coreB rhs) :=
-  interpretFuel_eval_renamed_closed_coreBinding_reverse_contains_final
-    hclosedB hnodup hstatic hinst hcall hembed hsplit hmatchFresh hmatchCore hbound
-    hnotFunction (instantiate_eq_self_of_vars_nil _ hclosedResult)
+        (Atom.expr (Atom.sym op :: args)) (instantiate coreB rhs) := by
+  have hbase :=
+    interpretFuel_eval_renamed_closed_coreBinding_reverse_contains_final
+      (atoms := atoms) (gt := gt) (st := st) (fuel := fuel) (x := x)
+      (lhs := lhs) (rhs := rhs) (coreB := coreB) (op := op) (args := args)
+      (pre := pre) (post := post)
+      hclosedB hnodup hstatic hinst hcall hembed hsplit hmatchFresh hmatchCore hbound
+      hnotFunction
+  simpa [instantiate_eq_self_of_vars_nil _ hclosedResult] using hbase
 
 /-- MOPS-facing closed-result form of
 `interpretFuel_eval_renamed_closed_coreBinding_reverse_contains_closed`. -/
@@ -985,6 +1968,188 @@ theorem interpretFuel_eval_renamed_closed_coreBinding_reverse_contains_closed_mo
   exact ⟨hmem,
     exprCtxKernelChain_to_mops (kernelChain_to_exprCtxKernelChain hreach)⟩
 
+/-- MOPS-facing closed-result form with the matcher-freshening premise discharged by the generic
+closed-target matcher-renaming theorem. -/
+theorem interpretFuel_eval_renamed_closed_coreBinding_reverse_contains_closed_mops_of_match
+    {atoms : List Atom} {gt : GroundingTable} {st : St} {fuel : Nat}
+    {x lhs rhs : Atom} {coreB : Bindings}
+    {op : String} {args : List Atom} {pre post : List (Atom × Atom)}
+    (hclosedTarget : (Atom.expr (Atom.sym op :: args)).vars = [])
+    (hclosedB : ClosedValueBindings coreB)
+    (hnodup : (bindingValueKeys coreB).Nodup)
+    (hstatic : st.world.selfExtra = [])
+    (hinst : instantiate [] x = Atom.expr (Atom.sym op :: args))
+    (hcall : callGrounded (MinEnv.ofAtomsGT atoms gt).gt op
+        (args.map (fun a => resolveStates st.world (subTokens st.world a))) =
+      ReduceResult.noReduce)
+    (hembed : isEmbeddedOp (Atom.expr (Atom.sym op :: args)) = false)
+    (hsplit : (MinEnv.ofAtomsGT atoms gt).candidates (Atom.expr (Atom.sym op :: args)) =
+      pre ++ (lhs, rhs) :: post)
+    (hmatchCore : coreB ∈ matchAtoms lhs (Atom.expr (Atom.sym op :: args)))
+    (hbound : ∀ v ∈ rhs.vars, ∃ t, Bindings.lookupVal coreB v = some t)
+    (hclosedResult : (instantiate coreB rhs).vars = [])
+    (hnotFunction : isFunctionResult (instantiate coreB rhs) = false) :
+    (instantiate coreB rhs,
+        (renameBindings (counterSuffix (st.counter + pre.length)) coreB).reverse) ∈
+        (interpretFuel (MinEnv.ofAtomsGT atoms gt) (fuel + 1) st
+          [{ stack := [{ atom := Atom.expr [Atom.sym "eval", x] }], bnd := [] }] []).1 ∧
+      Relation.ReflTransGen (ExprCtxMopsStep atoms)
+        (Atom.expr (Atom.sym op :: args)) (instantiate coreB rhs) := by
+  have hmatchFresh : renameBindings (counterSuffix (st.counter + pre.length)) coreB ∈
+      matchAtoms (freshenRule (st.counter + pre.length) lhs rhs).1
+        (Atom.expr (Atom.sym op :: args)) :=
+    matchAtoms_freshenRule_lhs_closed_target_mem
+      (st.counter + pre.length) hclosedTarget hmatchCore
+  exact interpretFuel_eval_renamed_closed_coreBinding_reverse_contains_closed_mops
+    (atoms := atoms) (gt := gt) (st := st) (fuel := fuel) (x := x)
+    (lhs := lhs) (rhs := rhs) (coreB := coreB) (op := op) (args := args)
+    (pre := pre) (post := post)
+    hclosedB hnodup hstatic hinst hcall hembed hsplit hmatchFresh hmatchCore hbound
+    hclosedResult hnotFunction
+
+/-- Fuel-driver harvest for a static variable-LHS rule over a closed symbol-headed redex.
+
+This is a no-`hresult`/no-`hstable` specialization of the renamed-core bridge: the core binding is
+the singleton `$v ↦ target`, runtime freshening only renames that binding key, and a closed final
+reduct is stable under the harvested binding set. -/
+theorem interpretFuel_eval_var_lhs_closed_contains_mops
+    {atoms : List Atom} {gt : GroundingTable} {st : St} {fuel : Nat}
+    {x rhs : Atom} {op v : String} {args : List Atom} {pre post : List (Atom × Atom)}
+    (hclosedTarget : (Atom.expr (Atom.sym op :: args)).vars = [])
+    (hstatic : st.world.selfExtra = [])
+    (hinst : instantiate [] x = Atom.expr (Atom.sym op :: args))
+    (hcall : callGrounded (MinEnv.ofAtomsGT atoms gt).gt op
+        (args.map (fun a => resolveStates st.world (subTokens st.world a))) =
+      ReduceResult.noReduce)
+    (hembed : isEmbeddedOp (Atom.expr (Atom.sym op :: args)) = false)
+    (hsplit : (MinEnv.ofAtomsGT atoms gt).candidates (Atom.expr (Atom.sym op :: args)) =
+      pre ++ (Atom.var v, rhs) :: post)
+    (hboundVars : ∀ w ∈ rhs.vars, w = v)
+    (hclosedResult :
+      (instantiate [BindingRel.val v (Atom.expr (Atom.sym op :: args))] rhs).vars = [])
+    (hnotFunction :
+      isFunctionResult (instantiate [BindingRel.val v (Atom.expr (Atom.sym op :: args))] rhs) =
+        false) :
+    (instantiate [BindingRel.val v (Atom.expr (Atom.sym op :: args))] rhs,
+        [BindingRel.val (counterSuffix (st.counter + pre.length) v)
+          (Atom.expr (Atom.sym op :: args))]) ∈
+        (interpretFuel (MinEnv.ofAtomsGT atoms gt) (fuel + 1) st
+          [{ stack := [{ atom := Atom.expr [Atom.sym "eval", x] }], bnd := [] }] []).1 ∧
+      Relation.ReflTransGen (ExprCtxMopsStep atoms)
+        (Atom.expr (Atom.sym op :: args))
+        (instantiate [BindingRel.val v (Atom.expr (Atom.sym op :: args))] rhs) := by
+  let target := Atom.expr (Atom.sym op :: args)
+  let coreB : Bindings := [BindingRel.val v target]
+  have hclosedB : ClosedValueBindings coreB := by
+    exact ClosedValueBindings.val (by simpa [target] using hclosedTarget) ClosedValueBindings.nil
+  have hnodup : (bindingValueKeys coreB).Nodup := by
+    simp [coreB, bindingValueKeys]
+  have hmatchFresh :
+      renameBindings (counterSuffix (st.counter + pre.length)) coreB ∈
+        matchAtoms (freshenRule (st.counter + pre.length) (Atom.var v) rhs).1 target := by
+    have hfr := freshenRule_eq_renBy (st.counter + pre.length) (Atom.var v) rhs
+    rw [hfr]
+    simp [coreB, target, renameBindings]
+    exact matchAtoms_var_closed_mem (counterSuffix (st.counter + pre.length) v)
+      (Atom.expr (Atom.sym op :: args)) hclosedTarget
+  have hmatchCore : coreB ∈ matchAtoms (Atom.var v) target := by
+    simpa [coreB, target] using
+      matchAtoms_var_closed_mem v (Atom.expr (Atom.sym op :: args)) hclosedTarget
+  have hbound : ∀ w ∈ rhs.vars, ∃ t, Bindings.lookupVal coreB w = some t := by
+    intro w hw
+    have hwv : w = v := hboundVars w hw
+    subst hwv
+    exact ⟨target, by simp [coreB, target, Bindings.lookupVal]⟩
+  simpa [coreB, target, renameBindings] using
+    (interpretFuel_eval_renamed_closed_coreBinding_reverse_contains_closed_mops
+      (atoms := atoms) (gt := gt) (st := st) (fuel := fuel) (x := x)
+      (lhs := Atom.var v) (rhs := rhs) (coreB := coreB) (op := op) (args := args)
+      (pre := pre) (post := post)
+      hclosedB hnodup hstatic hinst hcall hembed hsplit hmatchFresh hmatchCore hbound
+      (by simpa [coreB, target] using hclosedResult)
+      (by simpa [coreB, target] using hnotFunction))
+
+/-- Fuel-driver harvest for a static variable-LHS rule over an open symbol-headed redex.
+
+This is the fuel-level counterpart of `interpretStack1_eval_var_lhs_open`. The two freshness
+hypotheses exclude exactly the open-target matcher counterexamples: the queried redex is neither the
+raw rule variable nor the runtime-freshened rule variable. The final-readout stability side condition
+is discharged structurally from the RHS variable discipline instead of by exact fuel computation. -/
+theorem interpretFuel_eval_var_lhs_open_contains_mops
+    {atoms : List Atom} {gt : GroundingTable} {st : St} {fuel : Nat}
+    {x rhs : Atom} {op v : String} {args : List Atom} {pre post : List (Atom × Atom)}
+    (hraw : v ∉ (Atom.expr (Atom.sym op :: args)).vars)
+    (hfresh : counterSuffix (st.counter + pre.length) v ∉
+      (Atom.expr (Atom.sym op :: args)).vars)
+    (hstatic : st.world.selfExtra = [])
+    (hinst : instantiate [] x = Atom.expr (Atom.sym op :: args))
+    (hcall : callGrounded (MinEnv.ofAtomsGT atoms gt).gt op
+        (args.map (fun a => resolveStates st.world (subTokens st.world a))) =
+      ReduceResult.noReduce)
+    (hembed : isEmbeddedOp (Atom.expr (Atom.sym op :: args)) = false)
+    (hsplit : (MinEnv.ofAtomsGT atoms gt).candidates (Atom.expr (Atom.sym op :: args)) =
+      pre ++ (Atom.var v, rhs) :: post)
+    (hboundVars : ∀ w ∈ rhs.vars, w = v)
+    (hnotFunction :
+      isFunctionResult (instantiate [BindingRel.val v (Atom.expr (Atom.sym op :: args))] rhs) =
+        false) :
+    (instantiate [BindingRel.val v (Atom.expr (Atom.sym op :: args))] rhs,
+        [BindingRel.val (counterSuffix (st.counter + pre.length) v)
+          (Atom.expr (Atom.sym op :: args))]) ∈
+        (interpretFuel (MinEnv.ofAtomsGT atoms gt) (fuel + 1) st
+          [{ stack := [{ atom := Atom.expr [Atom.sym "eval", x] }], bnd := [] }] []).1 ∧
+      Relation.ReflTransGen (ExprCtxMopsStep atoms)
+        (Atom.expr (Atom.sym op :: args))
+        (instantiate [BindingRel.val v (Atom.expr (Atom.sym op :: args))] rhs) := by
+  let target := Atom.expr (Atom.sym op :: args)
+  let fresh := counterSuffix (st.counter + pre.length) v
+  let coreB : Bindings := [BindingRel.val v target]
+  have hmatchFresh : [BindingRel.val fresh target] ∈
+      matchAtoms (freshenRule (st.counter + pre.length) (Atom.var v) rhs).1 target := by
+    have hfr := freshenRule_eq_renBy (st.counter + pre.length) (Atom.var v) rhs
+    rw [hfr]
+    simp [fresh, target]
+    exact matchAtoms_var_not_mem (counterSuffix (st.counter + pre.length) v)
+      (Atom.expr (Atom.sym op :: args)) hfresh
+  have hmerge : [BindingRel.val fresh target] ∈
+      Bindings.merge [] [BindingRel.val fresh target] := by
+    exact singleton_val_mem_merge_empty_left fresh target
+  have hloop : Bindings.hasLoop [BindingRel.val fresh target] = false := by
+    exact hasLoop_singleton_val_not_false fresh target (by simpa [fresh, target] using hfresh)
+  have hmatchCore : coreB ∈ matchAtoms (Atom.var v) target := by
+    simpa [coreB, target] using
+      matchAtoms_var_not_mem v (Atom.expr (Atom.sym op :: args)) hraw
+  have hbound : ∀ w ∈ rhs.vars, ∃ t, Bindings.lookupVal coreB w = some t := by
+    intro w hw
+    have hwv : w = v := hboundVars w hw
+    subst hwv
+    exact ⟨target, by simp [coreB, target, Bindings.lookupVal]⟩
+  have hresult :
+      instantiate [BindingRel.val fresh target]
+          (freshenRule (st.counter + pre.length) (Atom.var v) rhs).2 =
+        instantiate coreB rhs := by
+    simpa [coreB, fresh, target, renameBindings] using
+      (instantiate_freshenRule_rhs_of_renamed_bindings
+        (st.counter + pre.length) (Atom.var v) rhs coreB hbound)
+  have hstable :
+      instantiate [BindingRel.val fresh target] (instantiate coreB rhs) = instantiate coreB rhs := by
+    simpa [coreB, fresh, target] using
+      (instantiate_singleton_val_stable_after_singleton_subst
+        (counterSuffix (st.counter + pre.length) v) v (Atom.expr (Atom.sym op :: args))
+        hfresh (rhs := rhs) hboundVars)
+  have hbase := interpretFuel_eval_staticCandidateSplit_eqResult_contains_mops
+    (atoms := atoms) (gt := gt) (st := st) (fuel := fuel) (x := x)
+    (lhs := Atom.var v) (rhs := rhs)
+    (mb := [BindingRel.val fresh target])
+    (m := [BindingRel.val fresh target])
+    (coreB := coreB) (op := op) (args := args) (pre := pre) (post := post)
+    hstatic hinst hcall hembed (by simp [isVariableHeaded]) (by simp [headKey])
+    hsplit hmatchFresh hmerge hloop hmatchCore hresult
+    (by simpa [coreB, target] using hnotFunction) hstable
+  constructor
+  · simpa [coreB, target, fresh] using hbase.1
+  · exact Relation.ReflTransGen.single hbase.2
+
 /-- Public minimal-evaluator form of
 `interpretFuel_eval_renamed_closed_coreBinding_reverse_contains_closed_mops`. -/
 theorem evalAtomMin_renamed_closed_coreBinding_reverse_contains_closed_mops
@@ -1024,6 +2189,105 @@ theorem evalAtomMin_renamed_closed_coreBinding_reverse_contains_closed_mops
           (renameBindings (counterSuffix (St.init.counter + pre.length)) coreB).reverse),
         by simpa [atomToStack_eval] using hmem, rfl⟩
   · exact hreach
+
+/-- Public minimal-evaluator α form of
+`interpretFuel_eval_renamed_closed_coreBinding_reverse_alpha_final_mops`.
+
+This is the compact Gate-2 surface for static symbol-headed rules with
+freshened escaping RHS variables: the executable minimal evaluator emits the
+runtime-freshened readout, the certified MOPS relation reaches the unfreshened
+reduct, and the two atoms agree up to `AlphaEq`. -/
+theorem evalAtomMin_renamed_closed_coreBinding_reverse_alpha_mops
+    {atoms : List Atom} {gt : GroundingTable} {fuel : Nat}
+    {x lhs rhs : Atom} {coreB : Bindings}
+    {op : String} {args : List Atom} {pre post : List (Atom × Atom)}
+    (hclosedB : ClosedValueBindings coreB)
+    (hnodup : (bindingValueKeys coreB).Nodup)
+    (hinst : instantiate [] x = Atom.expr (Atom.sym op :: args))
+    (hcall : callGrounded (MinEnv.ofAtomsGT atoms gt).gt op
+        (args.map (fun a => resolveStates St.init.world (subTokens St.init.world a))) =
+      ReduceResult.noReduce)
+    (hembed : isEmbeddedOp (Atom.expr (Atom.sym op :: args)) = false)
+    (hsplit : (MinEnv.ofAtomsGT atoms gt).candidates (Atom.expr (Atom.sym op :: args)) =
+      pre ++ (lhs, rhs) :: post)
+    (hmatchFresh : renameBindings (counterSuffix (St.init.counter + pre.length)) coreB ∈
+      matchAtoms (freshenRule (St.init.counter + pre.length) lhs rhs).1
+        (Atom.expr (Atom.sym op :: args)))
+    (hmatchCore : coreB ∈ matchAtoms lhs (Atom.expr (Atom.sym op :: args)))
+    (hnotFunction :
+      isFunctionResult
+        (instantiate (renameBindings (counterSuffix (St.init.counter + pre.length)) coreB).reverse
+          (freshenRule (St.init.counter + pre.length) lhs rhs).2) = false) :
+    instantiate (renameBindings (counterSuffix (St.init.counter + pre.length)) coreB).reverse
+        (freshenRule (St.init.counter + pre.length) lhs rhs).2 ∈
+        evalAtomMin (MinEnv.ofAtomsGT atoms gt) (fuel + 1) x ∧
+      Relation.ReflTransGen (MopsStep atoms)
+        (Atom.expr (Atom.sym op :: args)) (instantiate coreB rhs) ∧
+      Metta.AlphaEq
+        (instantiate (renameBindings (counterSuffix (St.init.counter + pre.length)) coreB).reverse
+          (freshenRule (St.init.counter + pre.length) lhs rhs).2)
+        (instantiate coreB rhs) := by
+  rcases interpretFuel_eval_renamed_closed_coreBinding_reverse_alpha_final_mops
+    (atoms := atoms) (gt := gt) (st := St.init) (fuel := fuel) (x := x)
+    (lhs := lhs) (rhs := rhs) (coreB := coreB) (op := op) (args := args)
+    (pre := pre) (post := post)
+    hclosedB hnodup rfl hinst hcall hembed hsplit hmatchFresh hmatchCore
+    hnotFunction with
+    ⟨hmem, hreach, halpha⟩
+  constructor
+  · unfold evalAtomMin interpretAtom
+    exact List.mem_map.mpr
+      ⟨(instantiate (renameBindings (counterSuffix (St.init.counter + pre.length)) coreB).reverse
+          (freshenRule (St.init.counter + pre.length) lhs rhs).2,
+        (renameBindings (counterSuffix (St.init.counter + pre.length)) coreB).reverse),
+        by simpa [atomToStack_eval] using hmem, rfl⟩
+  · exact ⟨hreach, halpha⟩
+
+/-- Public minimal-evaluator alpha form with matcher freshening discharged for
+closed static targets. -/
+theorem evalAtomMin_renamed_closed_coreBinding_reverse_alpha_mops_of_match
+    {atoms : List Atom} {gt : GroundingTable} {fuel : Nat}
+    {x lhs rhs : Atom} {coreB : Bindings}
+    {op : String} {args : List Atom} {pre post : List (Atom × Atom)}
+    (hclosedTarget : (Atom.expr (Atom.sym op :: args)).vars = [])
+    (hclosedB : ClosedValueBindings coreB)
+    (hnodup : (bindingValueKeys coreB).Nodup)
+    (hinst : instantiate [] x = Atom.expr (Atom.sym op :: args))
+    (hcall : callGrounded (MinEnv.ofAtomsGT atoms gt).gt op
+        (args.map (fun a => resolveStates St.init.world (subTokens St.init.world a))) =
+      ReduceResult.noReduce)
+    (hembed : isEmbeddedOp (Atom.expr (Atom.sym op :: args)) = false)
+    (hsplit : (MinEnv.ofAtomsGT atoms gt).candidates (Atom.expr (Atom.sym op :: args)) =
+      pre ++ (lhs, rhs) :: post)
+    (hmatchCore : coreB ∈ matchAtoms lhs (Atom.expr (Atom.sym op :: args)))
+    (hnotFunction :
+      isFunctionResult
+        (instantiate (renameBindings (counterSuffix (St.init.counter + pre.length)) coreB).reverse
+          (freshenRule (St.init.counter + pre.length) lhs rhs).2) = false) :
+    instantiate (renameBindings (counterSuffix (St.init.counter + pre.length)) coreB).reverse
+        (freshenRule (St.init.counter + pre.length) lhs rhs).2 ∈
+        evalAtomMin (MinEnv.ofAtomsGT atoms gt) (fuel + 1) x ∧
+      Relation.ReflTransGen (MopsStep atoms)
+        (Atom.expr (Atom.sym op :: args)) (instantiate coreB rhs) ∧
+      Metta.AlphaEq
+        (instantiate (renameBindings (counterSuffix (St.init.counter + pre.length)) coreB).reverse
+          (freshenRule (St.init.counter + pre.length) lhs rhs).2)
+        (instantiate coreB rhs) := by
+  rcases interpretFuel_eval_renamed_closed_coreBinding_reverse_alpha_final_mops_of_match
+    (atoms := atoms) (gt := gt) (st := St.init) (fuel := fuel) (x := x)
+    (lhs := lhs) (rhs := rhs) (coreB := coreB) (op := op) (args := args)
+    (pre := pre) (post := post)
+    hclosedTarget hclosedB hnodup rfl hinst hcall hembed hsplit hmatchCore
+    hnotFunction with
+    ⟨hmem, hreach, halpha⟩
+  constructor
+  · unfold evalAtomMin interpretAtom
+    exact List.mem_map.mpr
+      ⟨(instantiate (renameBindings (counterSuffix (St.init.counter + pre.length)) coreB).reverse
+          (freshenRule (St.init.counter + pre.length) lhs rhs).2,
+        (renameBindings (counterSuffix (St.init.counter + pre.length)) coreB).reverse),
+        by simpa [atomToStack_eval] using hmem, rfl⟩
+  · exact ⟨hreach, halpha⟩
 
 /-- Abstract B2 soundness induction for the fuel driver.
 
@@ -1725,6 +2989,73 @@ theorem interpretFuel_eval_symbol_notReducible_of_no_candidates_eq
     env st fuel [] x b op hinst hembed hnone
   simp [interpretFuel, hstep, finItem, isFinal, finalPair, instantiate_notReducibleA]
 
+/-- Fuel-driver harvest of
+`interpretStack1_eval_ground_notReducible_of_no_candidates`. This is the executable root-evaluator
+bridge for bare grounded normal forms such as Boolean control-flow leaves. -/
+theorem interpretFuel_eval_ground_notReducible_of_no_candidates
+    (env : MinEnv) (st : St) (fuel : Nat) (x : Atom) (b : Bindings) (g : Ground)
+    (hinst : instantiate b x = Atom.gnd g)
+    (hembed : isEmbeddedOp (Atom.gnd g) = false)
+    (hnone : candidatesW env st.world (Atom.gnd g) = []) :
+    (notReducibleA, b) ∈
+      (interpretFuel env (fuel + 1) st
+        [{ stack := [{ atom := Atom.expr [Atom.sym "eval", x] }], bnd := b }] []).1 := by
+  let it : Item := { stack := [{ atom := Atom.expr [Atom.sym "eval", x] }], bnd := b }
+  let out : Item := finItem [] notReducibleA b
+  have hmem : out ∈ (interpretStack1 env fuel st it).1 := by
+    simpa [it, out] using
+      interpretStack1_eval_ground_notReducible_of_no_candidates env st fuel [] x b g
+        hinst hembed hnone
+  have hfinal : isFinal out = true := by
+    simp [out, finItem, isFinal]
+  have hharvest :=
+    mem_interpretFuel_single_of_mem_interpretStack1_final env fuel st it out hmem hfinal
+  simpa [it, out, finItem, finalPair, instantiate_notReducibleA] using hharvest
+
+/-- Exact fuel-driver form for bare-grounded no-candidate evaluation. -/
+theorem interpretFuel_eval_ground_notReducible_of_no_candidates_eq
+    (env : MinEnv) (st : St) (fuel : Nat) (x : Atom) (b : Bindings) (g : Ground)
+    (hinst : instantiate b x = Atom.gnd g)
+    (hembed : isEmbeddedOp (Atom.gnd g) = false)
+    (hnone : candidatesW env st.world (Atom.gnd g) = []) :
+    interpretFuel env (fuel + 1) st
+        [{ stack := [{ atom := Atom.expr [Atom.sym "eval", x] }], bnd := b }] [] =
+      ([(notReducibleA, b)], st) := by
+  have hstep := interpretStack1_eval_ground_notReducible_of_no_candidates_eq
+    env st fuel [] x b g hinst hembed hnone
+  simp [interpretFuel, hstep, finItem, isFinal, finalPair, instantiate_notReducibleA]
+
+/-- Fuel-driver harvest of `interpretStack1_eval_var_notReducible`. -/
+theorem interpretFuel_eval_var_notReducible
+    (env : MinEnv) (st : St) (fuel : Nat) (x : Atom) (b : Bindings) (v : VarName)
+    (hinst : instantiate b x = Atom.var v)
+    (hembed : isEmbeddedOp (Atom.var v) = false) :
+    (notReducibleA, b) ∈
+      (interpretFuel env (fuel + 1) st
+        [{ stack := [{ atom := Atom.expr [Atom.sym "eval", x] }], bnd := b }] []).1 := by
+  let it : Item := { stack := [{ atom := Atom.expr [Atom.sym "eval", x] }], bnd := b }
+  let out : Item := finItem [] notReducibleA b
+  have hmem : out ∈ (interpretStack1 env fuel st it).1 := by
+    simpa [it, out] using
+      interpretStack1_eval_var_notReducible env st fuel [] x b v hinst hembed
+  have hfinal : isFinal out = true := by
+    simp [out, finItem, isFinal]
+  have hharvest :=
+    mem_interpretFuel_single_of_mem_interpretStack1_final env fuel st it out hmem hfinal
+  simpa [it, out, finItem, finalPair, instantiate_notReducibleA] using hharvest
+
+/-- Exact fuel-driver form for bare-variable evaluation. -/
+theorem interpretFuel_eval_var_notReducible_eq
+    (env : MinEnv) (st : St) (fuel : Nat) (x : Atom) (b : Bindings) (v : VarName)
+    (hinst : instantiate b x = Atom.var v)
+    (hembed : isEmbeddedOp (Atom.var v) = false) :
+    interpretFuel env (fuel + 1) st
+        [{ stack := [{ atom := Atom.expr [Atom.sym "eval", x] }], bnd := b }] [] =
+      ([(notReducibleA, b)], st) := by
+  have hstep := interpretStack1_eval_var_notReducible_eq
+    env st fuel [] x b v hinst hembed
+  simp [interpretFuel, hstep, finItem, isFinal, finalPair, instantiate_notReducibleA]
+
 /-! ## Full `mettaEval` consumption of `NotReducible` root readouts -/
 
 private def mettaEvalBareFoldStep (env : MinEnv) (fuel : Nat) (w : Atom) (bnd : Bindings) :
@@ -1813,6 +3144,73 @@ theorem mettaEval_symbol_eq_of_notReducible_eq
   have hnr : (notReducibleA == notReducibleA) = true := rfl
   simp [hnr]
 
+/-- Full `mettaEval` keeps a bare grounded atom when the root minimal interpreter reports
+`NotReducible`. This is the Boolean-control-flow sibling of
+`mettaEval_symbol_keeps_of_notReducible_readout`. -/
+theorem mettaEval_ground_keeps_of_notReducible_readout
+    (env : MinEnv) (fuel : Nat) (st : St) (bnd : Bindings) (g : Ground)
+    (hreadout : (notReducibleA, bnd) ∈
+      (interpretFuel env (fuel + 1) st
+        [{ stack := atomToStack (Atom.expr [Atom.sym "eval", Atom.gnd g]) [], bnd := bnd }] []).1) :
+    (Atom.gnd g, bnd) ∈ (mettaEval env (fuel + 1) st bnd (Atom.gnd g)).1 := by
+  unfold mettaEval
+  simp [Metta.instantiate, Metta.Subst.apply]
+  cases hpairs : interpretFuel env (fuel + 1) st
+        [{ stack := atomToStack (Atom.expr [Atom.sym "eval", Atom.gnd g]) [], bnd := bnd }] [] with
+  | mk pairs st' =>
+      simp only [hpairs] at hreadout ⊢
+      exact mettaEvalBareFold_keeps_of_notReducible_readout env fuel (Atom.gnd g) bnd pairs st'
+        hreadout
+
+/-- Exact version of `mettaEval_ground_keeps_of_notReducible_readout`. -/
+theorem mettaEval_ground_eq_of_notReducible_eq
+    (env : MinEnv) (fuel : Nat) (st : St) (bnd : Bindings) (g : Ground)
+    (hreadout : interpretFuel env (fuel + 1) st
+        [{ stack := atomToStack (Atom.expr [Atom.sym "eval", Atom.gnd g]) [], bnd := bnd }] [] =
+      ([(notReducibleA, bnd)], st)) :
+    mettaEval env (fuel + 1) st bnd (Atom.gnd g) = ([(Atom.gnd g, bnd)], st) := by
+  unfold mettaEval
+  simp [Metta.instantiate, Metta.Subst.apply]
+  rw [hreadout]
+  have hnr : (notReducibleA == notReducibleA) = true := rfl
+  simp [hnr]
+
+/-- Full `mettaEval` keeps a bare variable when the root minimal interpreter reports
+`NotReducible`. -/
+theorem mettaEval_var_keeps_of_notReducible_readout
+    (env : MinEnv) (fuel : Nat) (st : St) (bnd : Bindings) (v : VarName)
+    (hinst : instantiate bnd (Atom.var v) = Atom.var v)
+    (hreadout : (notReducibleA, bnd) ∈
+      (interpretFuel env (fuel + 1) st
+        [{ stack := atomToStack (Atom.expr [Atom.sym "eval", Atom.var v]) [], bnd := bnd }] []).1) :
+    (Atom.var v, bnd) ∈ (mettaEval env (fuel + 1) st bnd (Atom.var v)).1 := by
+  unfold mettaEval
+  rw [hinst]
+  simp only
+  cases hpairs : interpretFuel env (fuel + 1) st
+        [{ stack := atomToStack (Atom.expr [Atom.sym "eval", Atom.var v]) [], bnd := bnd }] [] with
+  | mk pairs st' =>
+      simp only [hpairs, Bool.or_eq_true] at hreadout ⊢
+      change (Atom.var v, bnd) ∈
+        (pairs.foldl (mettaEvalBareFoldStep env fuel (Atom.var v) bnd) ([], st')).1
+      exact mettaEvalBareFold_keeps_of_notReducible_readout
+        env fuel (Atom.var v) bnd pairs st' hreadout
+
+/-- Exact version of `mettaEval_var_keeps_of_notReducible_readout`. -/
+theorem mettaEval_var_eq_of_notReducible_eq
+    (env : MinEnv) (fuel : Nat) (st : St) (bnd : Bindings) (v : VarName)
+    (hinst : instantiate bnd (Atom.var v) = Atom.var v)
+    (hreadout : interpretFuel env (fuel + 1) st
+        [{ stack := atomToStack (Atom.expr [Atom.sym "eval", Atom.var v]) [], bnd := bnd }] [] =
+      ([(notReducibleA, bnd)], st)) :
+    mettaEval env (fuel + 1) st bnd (Atom.var v) = ([(Atom.var v, bnd)], st) := by
+  unfold mettaEval
+  rw [hinst]
+  simp only
+  rw [hreadout]
+  have hnr : (notReducibleA == notReducibleA) = true := rfl
+  simp [hnr]
+
 /-- The inner fold used by `mettaEval` after evaluating a symbol-headed expression's arguments and
 running the root `(eval w)` step.
 
@@ -1847,6 +3245,19 @@ private theorem mettaEvalExprRootFoldStep_preserves_mem
     · exact List.mem_append.mpr (Or.inl hmem)
     · exact List.mem_append.mpr (Or.inl hmem)
 
+private theorem mettaEvalExprRootFoldStep_preserves_target_mem
+    (env : MinEnv) (fuel : Nat) (queryVars : List String)
+    (w : Atom) (partBnd : Bindings) (p : Atom × Bindings)
+    (acc : List (Atom × Bindings) × St) {target : Atom × Bindings}
+    (hmem : target ∈ acc.1) :
+    target ∈ (mettaEvalExprRootFoldStep env fuel queryVars w partBnd acc p).1 := by
+  unfold mettaEvalExprRootFoldStep
+  split
+  · exact List.mem_append.mpr (Or.inl hmem)
+  · split
+    · exact List.mem_append.mpr (Or.inl hmem)
+    · exact List.mem_append.mpr (Or.inl hmem)
+
 private theorem mettaEvalExprRootFoldStep_hits_notReducible
     (env : MinEnv) (fuel : Nat) (queryVars : List String)
     (w : Atom) (partBnd : Bindings) (acc : List (Atom × Bindings) × St)
@@ -1869,6 +3280,19 @@ private theorem mettaEvalExprRootFold_preserves_mem
   | nil => simpa using hmem
   | cons p ps ih =>
       exact ih _ (mettaEvalExprRootFoldStep_preserves_mem env fuel queryVars w partBnd p acc hmem)
+
+private theorem mettaEvalExprRootFold_preserves_target_mem
+    (env : MinEnv) (fuel : Nat) (queryVars : List String)
+    (w : Atom) (partBnd : Bindings)
+    (pairs : List (Atom × Bindings)) (acc : List (Atom × Bindings) × St)
+    {target : Atom × Bindings} (hmem : target ∈ acc.1) :
+    target ∈
+      (pairs.foldl (mettaEvalExprRootFoldStep env fuel queryVars w partBnd) acc).1 := by
+  induction pairs generalizing acc with
+  | nil => simpa using hmem
+  | cons p ps ih =>
+      exact ih _ (mettaEvalExprRootFoldStep_preserves_target_mem
+        env fuel queryVars w partBnd p acc hmem)
 
 private theorem mettaEvalExprRootFoldStep_preserves_state_pred
     (env : MinEnv) (fuel : Nat) (queryVars : List String)
@@ -1917,6 +3341,166 @@ theorem mettaEval_expr_root_keeps_of_notReducible_readout
   simp only [List.foldl_cons]
   exact mettaEvalExprRootFold_preserves_mem env fuel queryVars w partBnd post _
     (mettaEvalExprRootFoldStep_hits_notReducible env fuel queryVars w partBnd _ rootBnd)
+
+/-- One root-fold step keeps an Atom-returning root readout. -/
+private theorem mettaEvalExprRootFoldStep_hits_returnsAtom
+    (env : MinEnv) (fuel : Nat) (queryVars : List String)
+    (w : Atom) (partBnd : Bindings) (acc : List (Atom × Bindings) × St)
+    (p : Atom × Bindings)
+    (hReturns : returnsAtom env w = true)
+    (hembed : isEmbeddedOp p.1 = false)
+    (hnotNR : (p.1 == notReducibleA) = false)
+    (hnotSelf : (p.1 == w) = false) :
+    (p.1, restrictBnd queryVars ((Bindings.merge partBnd p.2).head?.getD p.2)) ∈
+      (mettaEvalExprRootFoldStep env fuel queryVars w partBnd acc p).1 := by
+  unfold mettaEvalExprRootFoldStep
+  have hfirst :
+      ¬ ((p.1 == notReducibleA) = true ∨ (p.1 == w) = true) := by
+    intro h
+    cases h with
+    | inl hnr =>
+        rw [hnotNR] at hnr
+        cases hnr
+    | inr hself =>
+        rw [hnotSelf] at hself
+        cases hself
+  simp [hfirst, hReturns, hembed]
+
+/-- The expression-root fold keeps any selected Atom-returning root readout.
+
+This is the `returnsAtom` sibling of `mettaEval_expr_root_keeps_of_notReducible_readout`.
+It is the right outer-loop fact for calls such as `nf`, whose declared result type is `Atom`:
+the evaluator returns the root readout inert instead of recursively evaluating inside it. -/
+theorem mettaEval_expr_root_keeps_of_returnsAtom_readout
+    (env : MinEnv) (fuel : Nat) (queryVars : List String)
+    (w : Atom) (partBnd : Bindings)
+    (p : Atom × Bindings) (pairs : List (Atom × Bindings)) (st : St)
+    (hmem : p ∈ pairs)
+    (hReturns : returnsAtom env w = true)
+    (hembed : isEmbeddedOp p.1 = false)
+    (hnotNR : (p.1 == notReducibleA) = false)
+    (hnotSelf : (p.1 == w) = false) :
+    (p.1, restrictBnd queryVars ((Bindings.merge partBnd p.2).head?.getD p.2)) ∈
+      (pairs.foldl (mettaEvalExprRootFoldStep env fuel queryVars w partBnd) ([], st)).1 := by
+  rcases List.mem_iff_append.mp hmem with ⟨pre, post, hpairs⟩
+  rw [hpairs, List.foldl_append]
+  simp only [List.foldl_cons]
+  exact mettaEvalExprRootFold_preserves_target_mem env fuel queryVars w partBnd post _
+    (mettaEvalExprRootFoldStep_hits_returnsAtom
+      env fuel queryVars w partBnd _ p hReturns hembed hnotNR hnotSelf)
+
+/-- One root-fold step recursively evaluates a selected root readout. -/
+private theorem mettaEvalExprRootFoldStep_hits_recursive_eval
+    (env : MinEnv) (fuel : Nat) (queryVars : List String)
+    (w : Atom) (partBnd : Bindings) (acc : List (Atom × Bindings) × St)
+    (p : Atom × Bindings) (final : Atom)
+    (hnotNR : (p.1 == notReducibleA) = false)
+    (hnotSelf : (p.1 == w) = false)
+    (hReturns : returnsAtom env w = false)
+    (hFinal : (final, []) ∈
+      (mettaEval env fuel acc.2
+        (restrictBnd queryVars ((Bindings.merge partBnd p.2).head?.getD p.2)) p.1).1) :
+    (final,
+        restrictBnd queryVars
+          (((restrictBnd queryVars ((Bindings.merge partBnd p.2).head?.getD p.2)).merge
+              ([] : Bindings)).head?.getD [])) ∈
+      (mettaEvalExprRootFoldStep env fuel queryVars w partBnd acc p).1 := by
+  unfold mettaEvalExprRootFoldStep
+  have hfirst : ¬ ((p.1 == notReducibleA) = true ∨ (p.1 == w) = true) := by
+    intro h
+    cases h with
+    | inl hnr =>
+        rw [hnotNR] at hnr
+        cases hnr
+    | inr hself =>
+        rw [hnotSelf] at hself
+        cases hself
+  split
+  · rename_i hbranch
+    exact False.elim (hfirst hbranch)
+  · split
+    · rename_i hbranch
+      have hret : returnsAtom env w = true := hbranch.1
+      rw [hReturns] at hret
+      cases hret
+    · exact List.mem_append.mpr
+        (Or.inr (List.mem_map.mpr ⟨(final, []), hFinal, by simp⟩))
+
+/-- The expression-root fold recursively evaluates any selected root readout.
+
+The recursive premise is state-polymorphic because the selected readout may be processed after
+earlier readouts have threaded the evaluator state. -/
+theorem mettaEval_expr_root_evals_selected_readout_all_states
+    (env : MinEnv) (fuel : Nat) (queryVars : List String)
+    (w : Atom) (partBnd : Bindings)
+    (p : Atom × Bindings) (pairs : List (Atom × Bindings)) (st : St) (final : Atom)
+    (hmem : p ∈ pairs)
+    (hnotNR : (p.1 == notReducibleA) = false)
+    (hnotSelf : (p.1 == w) = false)
+    (hReturns : returnsAtom env w = false)
+    (hFinal : ∀ st0,
+      (final, []) ∈
+        (mettaEval env fuel st0
+          (restrictBnd queryVars ((Bindings.merge partBnd p.2).head?.getD p.2)) p.1).1) :
+    (final,
+        restrictBnd queryVars
+          (((restrictBnd queryVars ((Bindings.merge partBnd p.2).head?.getD p.2)).merge
+              ([] : Bindings)).head?.getD [])) ∈
+      (pairs.foldl (mettaEvalExprRootFoldStep env fuel queryVars w partBnd) ([], st)).1 := by
+  rcases List.mem_iff_append.mp hmem with ⟨pre, post, hpairs⟩
+  rw [hpairs, List.foldl_append]
+  simp only [List.foldl_cons]
+  let accPre :=
+    pre.foldl (mettaEvalExprRootFoldStep env fuel queryVars w partBnd) ([], st)
+  have hhit :=
+    mettaEvalExprRootFoldStep_hits_recursive_eval
+      env fuel queryVars w partBnd accPre p final hnotNR hnotSelf hReturns
+      (hFinal accPre.2)
+  exact mettaEvalExprRootFold_preserves_target_mem env fuel queryVars w partBnd post _ hhit
+
+/-- State-invariant version of `mettaEval_expr_root_evals_selected_readout_all_states`.
+
+Earlier root readouts may thread the evaluator state before the selected readout is processed.
+When a recursive readout theorem is valid only under a state invariant (for example, no local
+world rules), this lemma carries that invariant through the prefix of the fold and uses it at the
+selected readout. -/
+theorem mettaEval_expr_root_evals_selected_readout_state_pred
+    (env : MinEnv) (fuel : Nat) (queryVars : List String)
+    (w : Atom) (partBnd : Bindings) (P : St → Prop)
+    (p : Atom × Bindings) (pairs : List (Atom × Bindings)) (st : St) (final : Atom)
+    (hmem : p ∈ pairs)
+    (hnotNR : (p.1 == notReducibleA) = false)
+    (hnotSelf : (p.1 == w) = false)
+    (hReturns : returnsAtom env w = false)
+    (hinit : P st)
+    (hstep :
+      ∀ (acc : List (Atom × Bindings) × St) (p : Atom × Bindings),
+        P acc.2 →
+          P (mettaEval env fuel acc.2
+            (restrictBnd queryVars ((Bindings.merge partBnd p.2).head?.getD p.2)) p.1).2)
+    (hFinal : ∀ st0,
+      P st0 →
+        (final, []) ∈
+          (mettaEval env fuel st0
+            (restrictBnd queryVars ((Bindings.merge partBnd p.2).head?.getD p.2)) p.1).1) :
+    (final,
+        restrictBnd queryVars
+          (((restrictBnd queryVars ((Bindings.merge partBnd p.2).head?.getD p.2)).merge
+              ([] : Bindings)).head?.getD [])) ∈
+      (pairs.foldl (mettaEvalExprRootFoldStep env fuel queryVars w partBnd) ([], st)).1 := by
+  rcases List.mem_iff_append.mp hmem with ⟨pre, post, hpairs⟩
+  rw [hpairs, List.foldl_append]
+  simp only [List.foldl_cons]
+  let accPre :=
+    pre.foldl (mettaEvalExprRootFoldStep env fuel queryVars w partBnd) ([], st)
+  have hpre : P accPre.2 := by
+    exact mettaEvalExprRootFold_preserves_state_pred
+      env fuel queryVars w partBnd P hstep pre ([], st) hinit
+  have hhit :=
+    mettaEvalExprRootFoldStep_hits_recursive_eval
+      env fuel queryVars w partBnd accPre p final hnotNR hnotSelf hReturns
+      (hFinal accPre.2 hpre)
+  exact mettaEvalExprRootFold_preserves_target_mem env fuel queryVars w partBnd post _ hhit
 
 /-- Exact singleton form of the expression-root fold's `NotReducible` case. -/
 theorem mettaEvalExprRootFold_eq_of_notReducible_singleton
@@ -2128,6 +3712,104 @@ theorem mettaEvalExprPartFold_keeps_of_part_notReducible_of_state_pred
   have hhit :=
     mettaEvalExprPartFoldStep_hits_notReducible
       env fuel queryVars op args bnd part accPre rootBnd hnoerr (hroot accPre haccPre)
+  exact mettaEvalExprPartFold_preserves_mem env fuel queryVars op args bnd post _ hhit
+
+/-- Invariant-aware selected-readout form of the expression-part fold.
+
+This is the part-fold analogue of
+`mettaEval_expr_root_evals_selected_readout_state_pred`: once one selected
+partial application has been chosen, the theorem carries a state invariant
+through the prefix of the part fold, through the selected root `interpretFuel`
+step, and through the selected recursive `mettaEval` call on the resulting root
+readout.  It is the reusable scheduler fact behind control operators such as
+stdlib `let` and `if`, where the evaluated argument may have many readouts but a
+later proof wants to follow one concrete branch honestly. -/
+theorem mettaEvalExprPartFold_evals_selected_readout_state_pred
+    (env : MinEnv) (fuel : Nat) (queryVars : List String)
+    (op : String) (args : List Atom) (bnd : Bindings)
+    (P : St → Prop)
+    (parts : List (List Atom × Bindings)) (init : List (Atom × Bindings) × St)
+    (part : List Atom × Bindings)
+    (p : Atom × Bindings) (final : Atom)
+    (hinit : P init.2)
+    (hpart : part ∈ parts)
+    (hnoerr : (part.1.zip args).find? (fun ho => ho.1.isError && ho.1 != ho.2) = none)
+    (hrootState :
+      ∀ (acc : List (Atom × Bindings) × St) (part : List Atom × Bindings),
+        P acc.2 →
+          P (interpretFuel env (fuel + 1) acc.2
+            [{ stack := atomToStack (Atom.expr [Atom.sym "eval",
+                Atom.expr (Atom.sym op :: part.1)]) [], bnd := bnd }] []).2)
+    (hrecState :
+      ∀ (partBnd : Bindings)
+        (acc : List (Atom × Bindings) × St) (p : Atom × Bindings),
+        P acc.2 →
+          P (mettaEval env fuel acc.2
+            (restrictBnd queryVars ((Bindings.merge partBnd p.2).head?.getD p.2)) p.1).2)
+    (hroot :
+      ∀ acc : List (Atom × Bindings) × St,
+        P acc.2 →
+          p ∈
+            (interpretFuel env (fuel + 1) acc.2
+              [{ stack := atomToStack (Atom.expr [Atom.sym "eval",
+                  Atom.expr (Atom.sym op :: part.1)]) [], bnd := bnd }] []).1)
+    (hnotNR : (p.1 == notReducibleA) = false)
+    (hnotSelf : (p.1 == Atom.expr (Atom.sym op :: part.1)) = false)
+    (hReturns : returnsAtom env (Atom.expr (Atom.sym op :: part.1)) = false)
+    (hFinal :
+      ∀ st0,
+        P st0 →
+          (final, []) ∈
+            (mettaEval env fuel st0
+              (restrictBnd queryVars ((Bindings.merge part.2 p.2).head?.getD p.2)) p.1).1) :
+    (final,
+        restrictBnd queryVars
+          (((restrictBnd queryVars ((Bindings.merge part.2 p.2).head?.getD p.2)).merge
+              ([] : Bindings)).head?.getD [])) ∈
+      (parts.foldl (mettaEvalExprPartFoldStep env fuel queryVars op args bnd) init).1 := by
+  rcases List.mem_iff_append.mp hpart with ⟨pre, post, hparts⟩
+  rw [hparts, List.foldl_append]
+  simp only [List.foldl_cons]
+  let accPre :=
+    pre.foldl (mettaEvalExprPartFoldStep env fuel queryVars op args bnd) init
+  have haccPre : P accPre.2 := by
+    exact mettaEvalExprPartFold_preserves_state_pred
+      env fuel queryVars op args bnd P
+      (fun acc part hP =>
+        mettaEvalExprPartFoldStep_preserves_state_pred_of_root
+          env fuel queryVars op args bnd P hrootState hrecState acc part hP)
+      pre init hinit
+  have hhit :
+      (final,
+          restrictBnd queryVars
+            (((restrictBnd queryVars ((Bindings.merge part.2 p.2).head?.getD p.2)).merge
+                ([] : Bindings)).head?.getD [])) ∈
+        (mettaEvalExprPartFoldStep env fuel queryVars op args bnd accPre part).1 := by
+    unfold mettaEvalExprPartFoldStep
+    rw [hnoerr]
+    simp only
+    cases hpairs : interpretFuel env (fuel + 1) accPre.2
+        [{ stack := atomToStack (Atom.expr [Atom.sym "eval",
+            Atom.expr (Atom.sym op :: part.1)]) [], bnd := bnd }] [] with
+    | mk pairs st' =>
+        have hrootPairs : p ∈ pairs := by
+          have hrootMem := hroot accPre haccPre
+          rw [hpairs] at hrootMem
+          simpa using hrootMem
+        have hstate' : P st' := by
+          have hrootState' := hrootState accPre part haccPre
+          rw [hpairs] at hrootState'
+          simpa using hrootState'
+        have hfold :=
+          mettaEval_expr_root_evals_selected_readout_state_pred
+            env fuel queryVars (Atom.expr (Atom.sym op :: part.1)) part.2 P
+            p pairs st' final hrootPairs hnotNR hnotSelf hReturns
+            hstate'
+            (fun acc p hP => hrecState part.2 acc p hP)
+            (by
+              intro st0 hP
+              simpa using hFinal st0 hP)
+        exact List.mem_append.mpr (Or.inr hfold)
   exact mettaEvalExprPartFold_preserves_mem env fuel queryVars op args bnd post _ hhit
 
 /-- The singleton work item used by the minimal interpreter to evaluate `a` with empty bindings. -/
@@ -2522,6 +4204,1106 @@ theorem mettaEval_binary_expr_mem_of_arg_singletons_and_root_eval_mem
   simp [hRootNotNotReducible, hRootNotSelf, hReturns]
   exact ⟨[], hFinal⟩
 
+/-! ## Closed quaternary expression fold -/
+
+/-- Four-argument expression fold where all argument evaluators return empty bindings, but the
+arguments themselves may contain query variables.
+
+The existing closed-argument fold is enough for ordinary data constructors.  Embedded control
+operators such as `(unify atom (Bad $e) then else)` deliberately contain an open pattern argument;
+when each argument nevertheless evaluates to a singleton with empty bindings and the root readout
+also carries empty bindings, the same executable fold is valid. -/
+theorem mettaEval_quaternary_expr_mem_of_arg_singletons_and_empty_root_eval_member
+    (env : MinEnv) (fuel : Nat) (st st₁ st₂ st₃ st₄ : St)
+    (op : String)
+    (w x y z w' x' y' z' root final : Atom)
+    (hw : mettaEval env fuel st [] w = ([(w', [])], st₁))
+    (hx : mettaEval env fuel st₁ [] x = ([(x', [])], st₂))
+    (hy : mettaEval env fuel st₂ [] y = ([(y', [])], st₃))
+    (hz : mettaEval env fuel st₃ [] z = ([(z', [])], st₄))
+    (hType : typeMismatch env st.world op [w, x, y, z] = none)
+    (hMask : argMask env op 4 = [true, true, true, true])
+    (hNoErr :
+      (([w', x', y', z'].zip [w, x, y, z]).find?
+        (fun ho => ho.1.isError && ho.1 != ho.2)) = none)
+    (hRoot : (root, []) ∈
+      (interpretFuel env (fuel + 1) st₄
+        [evalItemNil (Atom.expr [Atom.sym op, w', x', y', z'])] []).1)
+    (hRootNotNotReducible : (root == notReducibleA) = false)
+    (hRootNotSelf : (root == Atom.expr [Atom.sym op, w', x', y', z']) = false)
+    (hReturns : returnsAtom env (Atom.expr [Atom.sym op, w', x', y', z']) = false)
+    (hFinal : ∀ st0, (final, []) ∈ (mettaEval env fuel st0 [] root).1) :
+    (final, []) ∈
+      (mettaEval env (fuel + 1) st [] (Atom.expr [Atom.sym op, w, x, y, z])).1 := by
+  let qvars := ([w, x, y, z]).flatMap Atom.vars
+  unfold mettaEval
+  rw [instantiate_nil (Atom.expr [Atom.sym op, w, x, y, z])]
+  simp only [hType, hMask, List.length_cons, List.length_nil, Nat.reduceAdd,
+    List.zip_cons_cons, List.zip_nil_right, List.foldl_cons, List.foldl_nil]
+  rw [hw]
+  simp [restrictBnd_empty_merge_empty]
+  rw [hx]
+  simp [restrictBnd_empty_merge_empty]
+  rw [hy]
+  simp [restrictBnd_empty_merge_empty]
+  rw [hz]
+  simp [restrictBnd_empty_merge_empty]
+  have hNoErr' :
+      List.find? (fun ho : Atom × Atom => ho.1.isError && ho.1 != ho.2)
+        [(w', w), (x', x), (y', y), (z', z)] = none := by
+    simpa using hNoErr
+  rw [hNoErr']
+  let rootItem : Item :=
+    { stack := atomToStack (Atom.expr [Atom.sym "eval",
+        Atom.expr [Atom.sym op, w', x', y', z']]) [],
+      bnd := [] }
+  cases hpairs : interpretFuel env (fuel + 1) st₄ [rootItem] [] with
+  | mk pairs stRoot =>
+      have hRootPairs : (root, []) ∈ pairs := by
+        have hrootItem :
+            [rootItem] = [evalItemNil (Atom.expr [Atom.sym op, w', x', y', z'])] := by
+          simp [rootItem, evalItemNil]
+        rw [hrootItem] at hpairs
+        rw [hpairs] at hRoot
+        exact hRoot
+      have hfold :=
+        mettaEval_expr_root_evals_selected_readout_all_states
+          env fuel qvars (Atom.expr [Atom.sym op, w', x', y', z']) []
+          (root, []) pairs stRoot final
+          hRootPairs hRootNotNotReducible hRootNotSelf hReturns (by
+            intro st0
+            simpa [restrictBnd_empty_merge_empty] using hFinal st0)
+      rw [show
+        (fun a2 p =>
+          if (p.1 == notReducibleA) = true ∨
+              (p.1 == Atom.expr [Atom.sym op, w', x', y', z']) = true then
+            (a2.1 ++ [(Atom.expr [Atom.sym op, w', x', y', z'], [])], a2.2)
+          else if returnsAtom env (Atom.expr [Atom.sym op, w', x', y', z']) = true ∧
+              isEmbeddedOp p.1 = false then
+            (a2.1 ++
+              [(p.1,
+                restrictBnd (w.vars ++ (x.vars ++ (y.vars ++ z.vars)))
+                  ((Bindings.merge [] p.2).head?.getD p.2))],
+              a2.2)
+          else
+            (a2.1 ++
+                (mettaEval env fuel a2.2
+                  (restrictBnd (w.vars ++ (x.vars ++ (y.vars ++ z.vars)))
+                    ((Bindings.merge [] p.2).head?.getD p.2)) p.1).1.map (fun m =>
+                    (m.1,
+                      restrictBnd (w.vars ++ (x.vars ++ (y.vars ++ z.vars)))
+                        ((Bindings.merge
+                          (restrictBnd (w.vars ++ (x.vars ++ (y.vars ++ z.vars)))
+                            ((Bindings.merge [] p.2).head?.getD p.2)) m.2).head?.getD m.2))),
+              (mettaEval env fuel a2.2
+                (restrictBnd (w.vars ++ (x.vars ++ (y.vars ++ z.vars)))
+                  ((Bindings.merge [] p.2).head?.getD p.2)) p.1).2)) =
+          mettaEvalExprRootFoldStep env fuel qvars
+            (Atom.expr [Atom.sym op, w', x', y', z']) [] by
+        funext a2 p
+        simp [mettaEvalExprRootFoldStep, qvars]]
+      simpa [restrictBnd_empty_merge_empty, qvars] using hfold
+
+/-- Membership-shaped four-argument expression fold for an open root readout.
+
+This is the binding-carrying sibling of
+`mettaEval_quaternary_expr_mem_of_arg_singletons_and_empty_root_eval_member`.
+It is needed for embedded `unify` success: the root `unify` frame returns a
+readout together with a matcher binding, and the outer expression fold must
+thread exactly the binding restricted to the original query variables.  The
+theorem stays generic in the operator and selected root readout; it does not
+unfold a concrete control-flow trace. -/
+theorem mettaEval_quaternary_expr_mem_of_arg_singletons_and_open_root_eval_member
+    (env : MinEnv) (fuel : Nat) (st st₁ st₂ st₃ st₄ : St)
+    (op : String)
+    (w x y z w' x' y' z' root final : Atom) (rootBnd : Bindings)
+    (hw : mettaEval env fuel st [] w = ([(w', [])], st₁))
+    (hx : mettaEval env fuel st₁ [] x = ([(x', [])], st₂))
+    (hy : mettaEval env fuel st₂ [] y = ([(y', [])], st₃))
+    (hz : mettaEval env fuel st₃ [] z = ([(z', [])], st₄))
+    (hType : typeMismatch env st.world op [w, x, y, z] = none)
+    (hMask : argMask env op 4 = [true, true, true, true])
+    (hNoErr :
+      (([w', x', y', z'].zip [w, x, y, z]).find?
+        (fun ho => ho.1.isError && ho.1 != ho.2)) = none)
+    (hRoot : (root, rootBnd) ∈
+      (interpretFuel env (fuel + 1) st₄
+        [evalItemNil (Atom.expr [Atom.sym op, w', x', y', z'])] []).1)
+    (hRootNotNotReducible : (root == notReducibleA) = false)
+    (hRootNotSelf : (root == Atom.expr [Atom.sym op, w', x', y', z']) = false)
+    (hReturns : returnsAtom env (Atom.expr [Atom.sym op, w', x', y', z']) = false)
+    (hFinal : ∀ st0,
+      (final, []) ∈
+        (mettaEval env fuel st0
+          (restrictBnd (([w, x, y, z]).flatMap Atom.vars)
+            ((Bindings.merge [] rootBnd).head?.getD rootBnd)) root).1) :
+    (final,
+        restrictBnd (([w, x, y, z]).flatMap Atom.vars)
+          (((restrictBnd (([w, x, y, z]).flatMap Atom.vars)
+              ((Bindings.merge [] rootBnd).head?.getD rootBnd)).merge
+              ([] : Bindings)).head?.getD [])) ∈
+      (mettaEval env (fuel + 1) st [] (Atom.expr [Atom.sym op, w, x, y, z])).1 := by
+  let qvars := ([w, x, y, z]).flatMap Atom.vars
+  unfold mettaEval
+  rw [instantiate_nil (Atom.expr [Atom.sym op, w, x, y, z])]
+  simp only [hType, hMask, List.length_cons, List.length_nil, Nat.reduceAdd,
+    List.zip_cons_cons, List.zip_nil_right, List.foldl_cons, List.foldl_nil]
+  rw [hw]
+  simp [restrictBnd_empty_merge_empty]
+  rw [hx]
+  simp [restrictBnd_empty_merge_empty]
+  rw [hy]
+  simp [restrictBnd_empty_merge_empty]
+  rw [hz]
+  simp [restrictBnd_empty_merge_empty]
+  have hNoErr' :
+      List.find? (fun ho : Atom × Atom => ho.1.isError && ho.1 != ho.2)
+        [(w', w), (x', x), (y', y), (z', z)] = none := by
+    simpa using hNoErr
+  rw [hNoErr']
+  let rootItem : Item :=
+    { stack := atomToStack (Atom.expr [Atom.sym "eval",
+        Atom.expr [Atom.sym op, w', x', y', z']]) [],
+      bnd := [] }
+  cases hpairs : interpretFuel env (fuel + 1) st₄ [rootItem] [] with
+  | mk pairs stRoot =>
+      have hRootPairs : (root, rootBnd) ∈ pairs := by
+        have hrootItem :
+            [rootItem] = [evalItemNil (Atom.expr [Atom.sym op, w', x', y', z'])] := by
+          simp [rootItem, evalItemNil]
+        rw [hrootItem] at hpairs
+        rw [hpairs] at hRoot
+        exact hRoot
+      have hfold :=
+        mettaEval_expr_root_evals_selected_readout_all_states
+          env fuel qvars (Atom.expr [Atom.sym op, w', x', y', z']) []
+          (root, rootBnd) pairs stRoot final
+          hRootPairs hRootNotNotReducible hRootNotSelf hReturns (by
+            intro st0
+            simpa [qvars] using hFinal st0)
+      rw [show
+        (fun a2 p =>
+          if (p.1 == notReducibleA) = true ∨
+              (p.1 == Atom.expr [Atom.sym op, w', x', y', z']) = true then
+            (a2.1 ++ [(Atom.expr [Atom.sym op, w', x', y', z'], [])], a2.2)
+          else if returnsAtom env (Atom.expr [Atom.sym op, w', x', y', z']) = true ∧
+              isEmbeddedOp p.1 = false then
+            (a2.1 ++
+              [(p.1,
+                restrictBnd (w.vars ++ (x.vars ++ (y.vars ++ z.vars)))
+                  ((Bindings.merge [] p.2).head?.getD p.2))],
+              a2.2)
+          else
+            (a2.1 ++
+                (mettaEval env fuel a2.2
+                  (restrictBnd (w.vars ++ (x.vars ++ (y.vars ++ z.vars)))
+                    ((Bindings.merge [] p.2).head?.getD p.2)) p.1).1.map (fun m =>
+                    (m.1,
+                      restrictBnd (w.vars ++ (x.vars ++ (y.vars ++ z.vars)))
+                        ((Bindings.merge
+                          (restrictBnd (w.vars ++ (x.vars ++ (y.vars ++ z.vars)))
+                            ((Bindings.merge [] p.2).head?.getD p.2)) m.2).head?.getD m.2))),
+              (mettaEval env fuel a2.2
+                (restrictBnd (w.vars ++ (x.vars ++ (y.vars ++ z.vars)))
+                  ((Bindings.merge [] p.2).head?.getD p.2)) p.1).2)) =
+          mettaEvalExprRootFoldStep env fuel qvars
+            (Atom.expr [Atom.sym op, w', x', y', z']) [] by
+        funext a2 p
+        simp [mettaEvalExprRootFoldStep, qvars]]
+      simpa [qvars] using hfold
+
+/-- Membership-shaped four-argument expression fold for quoted arguments.
+
+This is the executable scheduler shape for prelude operators whose signatures
+mark all four arguments as `Atom`-like data, such as stdlib `unify`: the outer
+`mettaEval` loop quotes all arguments, reduces the rebuilt root expression, and
+then recursively evaluates the selected root readout.  Callers still supply the
+operator's concrete signature facts (`hType`, `hMask`, and `hReturns`) rather
+than forcing this generic theorem to unfold a large environment. -/
+theorem mettaEval_quaternary_expr_mem_of_quoted_args_and_open_root_eval_member
+    (env : MinEnv) (fuel : Nat) (st : St)
+    (op : String)
+    (w x y z root final : Atom) (rootBnd : Bindings)
+    (hType : typeMismatch env st.world op [w, x, y, z] = none)
+    (hMask : argMask env op 4 = [false, false, false, false])
+    (hNoErr :
+      (([w, x, y, z].zip [w, x, y, z]).find?
+        (fun ho => ho.1.isError && ho.1 != ho.2)) = none)
+    (hRoot : (root, rootBnd) ∈
+      (interpretFuel env (fuel + 1) st
+        [evalItemNil (Atom.expr [Atom.sym op, w, x, y, z])] []).1)
+    (hRootNotNotReducible : (root == notReducibleA) = false)
+    (hRootNotSelf : (root == Atom.expr [Atom.sym op, w, x, y, z]) = false)
+    (hReturns : returnsAtom env (Atom.expr [Atom.sym op, w, x, y, z]) = false)
+    (hFinal : ∀ st0,
+      (final, []) ∈
+        (mettaEval env fuel st0
+          (restrictBnd (([w, x, y, z]).flatMap Atom.vars)
+            ((Bindings.merge [] rootBnd).head?.getD rootBnd)) root).1) :
+    (final,
+        restrictBnd (([w, x, y, z]).flatMap Atom.vars)
+          (((restrictBnd (([w, x, y, z]).flatMap Atom.vars)
+              ((Bindings.merge [] rootBnd).head?.getD rootBnd)).merge
+              ([] : Bindings)).head?.getD [])) ∈
+      (mettaEval env (fuel + 1) st [] (Atom.expr [Atom.sym op, w, x, y, z])).1 := by
+  let qvars := ([w, x, y, z]).flatMap Atom.vars
+  unfold mettaEval
+  rw [instantiate_nil (Atom.expr [Atom.sym op, w, x, y, z])]
+  simp only [hType, hMask, List.length_cons, List.length_nil, Nat.reduceAdd,
+    List.zip_cons_cons, List.zip_nil_right, List.foldl_cons, List.foldl_nil]
+  simp [Metta.instantiate_nil]
+  have hNoErr' :
+      List.find? (fun ho : Atom × Atom => ho.1.isError && ho.1 != ho.2)
+        [(w, w), (x, x), (y, y), (z, z)] = none := by
+    simpa using hNoErr
+  rw [hNoErr']
+  let rootItem : Item :=
+    { stack := atomToStack (Atom.expr [Atom.sym "eval",
+        Atom.expr [Atom.sym op, w, x, y, z]]) [],
+      bnd := [] }
+  cases hpairs : interpretFuel env (fuel + 1) st [rootItem] [] with
+  | mk pairs stRoot =>
+      have hRootPairs : (root, rootBnd) ∈ pairs := by
+        have hrootItem :
+            [rootItem] = [evalItemNil (Atom.expr [Atom.sym op, w, x, y, z])] := by
+          simp [rootItem, evalItemNil]
+        rw [hrootItem] at hpairs
+        rw [hpairs] at hRoot
+        exact hRoot
+      have hfold :=
+        mettaEval_expr_root_evals_selected_readout_all_states
+          env fuel qvars (Atom.expr [Atom.sym op, w, x, y, z]) []
+          (root, rootBnd) pairs stRoot final
+          hRootPairs hRootNotNotReducible hRootNotSelf hReturns (by
+            intro st0
+            simpa [qvars] using hFinal st0)
+      rw [show
+        (fun a2 p =>
+          if (p.1 == notReducibleA) = true ∨
+              (p.1 == Atom.expr [Atom.sym op, w, x, y, z]) = true then
+            (a2.1 ++ [(Atom.expr [Atom.sym op, w, x, y, z], [])], a2.2)
+          else if returnsAtom env (Atom.expr [Atom.sym op, w, x, y, z]) = true ∧
+              isEmbeddedOp p.1 = false then
+            (a2.1 ++
+              [(p.1,
+                restrictBnd (w.vars ++ (x.vars ++ (y.vars ++ z.vars)))
+                  ((Bindings.merge [] p.2).head?.getD p.2))],
+              a2.2)
+          else
+            (a2.1 ++
+                (mettaEval env fuel a2.2
+                  (restrictBnd (w.vars ++ (x.vars ++ (y.vars ++ z.vars)))
+                    ((Bindings.merge [] p.2).head?.getD p.2)) p.1).1.map (fun m =>
+                    (m.1,
+                      restrictBnd (w.vars ++ (x.vars ++ (y.vars ++ z.vars)))
+                        ((Bindings.merge
+                          (restrictBnd (w.vars ++ (x.vars ++ (y.vars ++ z.vars)))
+                            ((Bindings.merge [] p.2).head?.getD p.2)) m.2).head?.getD m.2))),
+              (mettaEval env fuel a2.2
+                (restrictBnd (w.vars ++ (x.vars ++ (y.vars ++ z.vars)))
+                  ((Bindings.merge [] p.2).head?.getD p.2)) p.1).2)) =
+          mettaEvalExprRootFoldStep env fuel qvars
+            (Atom.expr [Atom.sym op, w, x, y, z]) [] by
+        funext a2 p
+        simp [mettaEvalExprRootFoldStep, qvars]]
+      simpa [qvars] using hfold
+
+/-- Membership-shaped ternary expression fold for quoted arguments.
+
+This is the arity-three sibling of
+`mettaEval_quaternary_expr_mem_of_quoted_args_and_open_root_eval_member`: the
+outer `mettaEval` loop quotes all three arguments according to the runtime
+signature, reduces the rebuilt root expression once, and then recursively
+evaluates the selected root readout.  Callers still provide the operator's
+concrete signature facts rather than forcing this scheduler lemma to unfold a
+large environment. -/
+theorem mettaEval_ternary_expr_mem_of_quoted_args_and_open_root_eval_member
+    (env : MinEnv) (fuel : Nat) (st : St)
+    (op : String)
+    (x y z root final : Atom) (rootBnd : Bindings)
+    (hType : typeMismatch env st.world op [x, y, z] = none)
+    (hMask : argMask env op 3 = [false, false, false])
+    (hNoErr :
+      (([x, y, z].zip [x, y, z]).find?
+        (fun ho => ho.1.isError && ho.1 != ho.2)) = none)
+    (hRoot : (root, rootBnd) ∈
+      (interpretFuel env (fuel + 1) st
+        [evalItemNil (Atom.expr [Atom.sym op, x, y, z])] []).1)
+    (hRootNotNotReducible : (root == notReducibleA) = false)
+    (hRootNotSelf : (root == Atom.expr [Atom.sym op, x, y, z]) = false)
+    (hReturns : returnsAtom env (Atom.expr [Atom.sym op, x, y, z]) = false)
+    (hFinal : ∀ st0,
+      (final, []) ∈
+        (mettaEval env fuel st0
+          (restrictBnd (([x, y, z]).flatMap Atom.vars)
+            ((Bindings.merge [] rootBnd).head?.getD rootBnd)) root).1) :
+    (final,
+        restrictBnd (([x, y, z]).flatMap Atom.vars)
+          (((restrictBnd (([x, y, z]).flatMap Atom.vars)
+              ((Bindings.merge [] rootBnd).head?.getD rootBnd)).merge
+              ([] : Bindings)).head?.getD [])) ∈
+      (mettaEval env (fuel + 1) st [] (Atom.expr [Atom.sym op, x, y, z])).1 := by
+  let qvars := ([x, y, z]).flatMap Atom.vars
+  unfold mettaEval
+  rw [instantiate_nil (Atom.expr [Atom.sym op, x, y, z])]
+  simp only [hType, hMask, List.length_cons, List.length_nil, Nat.reduceAdd,
+    List.zip_cons_cons, List.zip_nil_right, List.foldl_cons, List.foldl_nil]
+  simp [Metta.instantiate_nil]
+  have hNoErr' :
+      List.find? (fun ho : Atom × Atom => ho.1.isError && ho.1 != ho.2)
+        [(x, x), (y, y), (z, z)] = none := by
+    simpa using hNoErr
+  rw [hNoErr']
+  let rootItem : Item :=
+    { stack := atomToStack (Atom.expr [Atom.sym "eval",
+        Atom.expr [Atom.sym op, x, y, z]]) [],
+      bnd := [] }
+  cases hpairs : interpretFuel env (fuel + 1) st [rootItem] [] with
+  | mk pairs stRoot =>
+      have hRootPairs : (root, rootBnd) ∈ pairs := by
+        have hrootItem :
+            [rootItem] = [evalItemNil (Atom.expr [Atom.sym op, x, y, z])] := by
+          simp [rootItem, evalItemNil]
+        rw [hrootItem] at hpairs
+        rw [hpairs] at hRoot
+        exact hRoot
+      have hfold :=
+        mettaEval_expr_root_evals_selected_readout_all_states
+          env fuel qvars (Atom.expr [Atom.sym op, x, y, z]) []
+          (root, rootBnd) pairs stRoot final
+          hRootPairs hRootNotNotReducible hRootNotSelf hReturns (by
+            intro st0
+            simpa [qvars] using hFinal st0)
+      rw [show
+        (fun a2 p =>
+          if (p.1 == notReducibleA) = true ∨
+              (p.1 == Atom.expr [Atom.sym op, x, y, z]) = true then
+            (a2.1 ++ [(Atom.expr [Atom.sym op, x, y, z], [])], a2.2)
+          else if returnsAtom env (Atom.expr [Atom.sym op, x, y, z]) = true ∧
+              isEmbeddedOp p.1 = false then
+            (a2.1 ++
+              [(p.1,
+                restrictBnd (x.vars ++ (y.vars ++ z.vars))
+                  ((Bindings.merge [] p.2).head?.getD p.2))],
+              a2.2)
+          else
+            (a2.1 ++
+                (mettaEval env fuel a2.2
+                  (restrictBnd (x.vars ++ (y.vars ++ z.vars))
+                    ((Bindings.merge [] p.2).head?.getD p.2)) p.1).1.map (fun m =>
+                    (m.1,
+                      restrictBnd (x.vars ++ (y.vars ++ z.vars))
+                        ((Bindings.merge
+                          (restrictBnd (x.vars ++ (y.vars ++ z.vars))
+                            ((Bindings.merge [] p.2).head?.getD p.2)) m.2).head?.getD m.2))),
+              (mettaEval env fuel a2.2
+                (restrictBnd (x.vars ++ (y.vars ++ z.vars))
+                  ((Bindings.merge [] p.2).head?.getD p.2)) p.1).2)) =
+          mettaEvalExprRootFoldStep env fuel qvars
+            (Atom.expr [Atom.sym op, x, y, z]) [] by
+        funext a2 p
+        simp [mettaEvalExprRootFoldStep, qvars]]
+      simpa [qvars] using hfold
+
+/-- Membership-shaped one-argument expression fold for quoted arguments.
+
+This is the executable scheduler shape for unary prelude operators whose signatures quote their
+sole argument as data, reduce the rebuilt root expression, and then recursively evaluate the
+selected root readout.  It is the unary companion to
+`mettaEval_quaternary_expr_mem_of_quoted_args_and_open_root_eval_member`; callers provide the
+operator's concrete signature and root-step facts. -/
+theorem mettaEval_unary_expr_mem_of_quoted_arg_and_open_root_eval_member
+    (env : MinEnv) (fuel : Nat) (st : St)
+    (op : String)
+    (x root final : Atom) (rootBnd : Bindings)
+    (hType : typeMismatch env st.world op [x] = none)
+    (hMask : argMask env op 1 = [false])
+    (hNoErr :
+      (([x].zip [x]).find?
+        (fun ho => ho.1.isError && ho.1 != ho.2)) = none)
+    (hRoot : (root, rootBnd) ∈
+      (interpretFuel env (fuel + 1) st
+        [evalItemNil (Atom.expr [Atom.sym op, x])] []).1)
+    (hRootNotNotReducible : (root == notReducibleA) = false)
+    (hRootNotSelf : (root == Atom.expr [Atom.sym op, x]) = false)
+    (hReturns : returnsAtom env (Atom.expr [Atom.sym op, x]) = false)
+    (hFinal : ∀ st0,
+      (final, []) ∈
+        (mettaEval env fuel st0
+          (restrictBnd x.vars ((Bindings.merge [] rootBnd).head?.getD rootBnd))
+          root).1) :
+    (final,
+        restrictBnd x.vars
+          (((restrictBnd x.vars ((Bindings.merge [] rootBnd).head?.getD rootBnd)).merge
+              ([] : Bindings)).head?.getD [])) ∈
+      (mettaEval env (fuel + 1) st [] (Atom.expr [Atom.sym op, x])).1 := by
+  let qvars := x.vars
+  unfold mettaEval
+  rw [instantiate_nil (Atom.expr [Atom.sym op, x])]
+  simp only [hType, hMask, List.length_cons, List.length_nil, Nat.reduceAdd,
+    List.zip_cons_cons, List.zip_nil_right, List.foldl_cons, List.foldl_nil]
+  simp [Metta.instantiate_nil]
+  have hNoErr' :
+      List.find? (fun ho : Atom × Atom => ho.1.isError && ho.1 != ho.2)
+        [(x, x)] = none := by
+    simpa using hNoErr
+  have hNoErrIf :
+      (if x.isError = true ∧ (x != x) = true then some (x, x) else none) = none := by
+    cases hx : x.isError <;> cases hxx : (x != x) <;>
+      simp [hx, hxx] at hNoErr' ⊢
+  rw [hNoErrIf]
+  let rootItem : Item :=
+    { stack := atomToStack (Atom.expr [Atom.sym "eval",
+        Atom.expr [Atom.sym op, x]]) [],
+      bnd := [] }
+  cases hpairs : interpretFuel env (fuel + 1) st [rootItem] [] with
+  | mk pairs stRoot =>
+      have hRootPairs : (root, rootBnd) ∈ pairs := by
+        have hrootItem :
+            [rootItem] = [evalItemNil (Atom.expr [Atom.sym op, x])] := by
+          simp [rootItem, evalItemNil]
+        rw [hrootItem] at hpairs
+        rw [hpairs] at hRoot
+        exact hRoot
+      have hfold :=
+        mettaEval_expr_root_evals_selected_readout_all_states
+          env fuel qvars (Atom.expr [Atom.sym op, x]) []
+          (root, rootBnd) pairs stRoot final
+          hRootPairs hRootNotNotReducible hRootNotSelf hReturns (by
+            intro st0
+            simpa [qvars] using hFinal st0)
+      rw [show
+        (fun a2 p =>
+          if (p.1 == notReducibleA) = true ∨
+              (p.1 == Atom.expr [Atom.sym op, x]) = true then
+            (a2.1 ++ [(Atom.expr [Atom.sym op, x], [])], a2.2)
+          else if returnsAtom env (Atom.expr [Atom.sym op, x]) = true ∧
+              isEmbeddedOp p.1 = false then
+            (a2.1 ++
+              [(p.1,
+                restrictBnd x.vars ((Bindings.merge [] p.2).head?.getD p.2))],
+              a2.2)
+          else
+            (a2.1 ++
+                (mettaEval env fuel a2.2
+                  (restrictBnd x.vars ((Bindings.merge [] p.2).head?.getD p.2))
+                  p.1).1.map (fun m =>
+                    (m.1,
+                      restrictBnd x.vars
+                        ((Bindings.merge
+                          (restrictBnd x.vars ((Bindings.merge [] p.2).head?.getD p.2))
+                          m.2).head?.getD m.2))),
+              (mettaEval env fuel a2.2
+                (restrictBnd x.vars ((Bindings.merge [] p.2).head?.getD p.2)) p.1).2)) =
+          mettaEvalExprRootFoldStep env fuel qvars
+            (Atom.expr [Atom.sym op, x]) [] by
+        funext a2 p
+        simp [mettaEvalExprRootFoldStep, qvars]]
+      simpa [qvars] using hfold
+
+/-- Membership-shaped ternary expression fold for a quoted/evaluated/quoted argument mask.
+
+This is the executable scheduler shape of stdlib `let`: `let` quotes the
+pattern, evaluates the bound atom, quotes the template, then reduces the rebuilt
+root expression.  The theorem is generic in the operator and environment;
+callers provide the actual signature facts via `hType` and `hMask`.  It is the
+`kernelEnv` control-flow companion to the all-arguments-evaluated quaternary
+folds above, and avoids re-expanding a concrete `convReadout` trace. -/
+theorem mettaEval_ternary_expr_mem_of_quoted_eval_quoted_and_root_eval_member
+    (env : MinEnv) (fuel : Nat) (st stArg : St)
+    (op : String)
+    (p atom templ atom' root final : Atom) (rootBnd : Bindings)
+    (hArg : mettaEval env fuel st [] atom = ([(atom', [])], stArg))
+    (hType : typeMismatch env st.world op [p, atom, templ] = none)
+    (hMask : argMask env op 3 = [false, true, false])
+    (hNoErr :
+      (([p, atom', templ].zip [p, atom, templ]).find?
+        (fun ho => ho.1.isError && ho.1 != ho.2)) = none)
+    (hRoot : (root, rootBnd) ∈
+      (interpretFuel env (fuel + 1) stArg
+        [evalItemNil (Atom.expr [Atom.sym op, p, atom', templ])] []).1)
+    (hRootNotNotReducible : (root == notReducibleA) = false)
+    (hRootNotSelf : (root == Atom.expr [Atom.sym op, p, atom', templ]) = false)
+    (hReturns : returnsAtom env (Atom.expr [Atom.sym op, p, atom', templ]) = false)
+    (hFinal : ∀ st0,
+      (final, []) ∈
+        (mettaEval env fuel st0
+          (restrictBnd (([p, atom, templ]).flatMap Atom.vars)
+            ((Bindings.merge [] rootBnd).head?.getD rootBnd)) root).1) :
+    (final,
+        restrictBnd (([p, atom, templ]).flatMap Atom.vars)
+          (((restrictBnd (([p, atom, templ]).flatMap Atom.vars)
+              ((Bindings.merge [] rootBnd).head?.getD rootBnd)).merge
+              ([] : Bindings)).head?.getD [])) ∈
+      (mettaEval env (fuel + 1) st [] (Atom.expr [Atom.sym op, p, atom, templ])).1 := by
+  let qvars := p.vars ++ (atom.vars ++ templ.vars)
+  unfold mettaEval
+  rw [instantiate_nil (Atom.expr [Atom.sym op, p, atom, templ])]
+  simp only [hType, hMask, List.length_cons, List.length_nil, Nat.reduceAdd,
+    List.zip_cons_cons, List.zip_nil_right, List.foldl_cons, List.foldl_nil]
+  simp [Metta.instantiate_nil]
+  rw [hArg]
+  simp [restrictBnd_empty_merge_empty]
+  rw [Metta.instantiate_nil templ]
+  have hNoErr' :
+      List.find? (fun ho : Atom × Atom => ho.1.isError && ho.1 != ho.2)
+        [(p, p), (atom', atom), (templ, templ)] = none := by
+    simpa using hNoErr
+  rw [hNoErr']
+  let rootItem : Item :=
+    { stack := atomToStack (Atom.expr [Atom.sym "eval",
+        Atom.expr [Atom.sym op, p, atom', templ]]) [],
+      bnd := [] }
+  cases hpairs : interpretFuel env (fuel + 1) stArg [rootItem] [] with
+  | mk pairs stRoot =>
+      have hRootPairs : (root, rootBnd) ∈ pairs := by
+        have hrootItem :
+            [rootItem] = [evalItemNil (Atom.expr [Atom.sym op, p, atom', templ])] := by
+          simp [rootItem, evalItemNil]
+        rw [hrootItem] at hpairs
+        rw [hpairs] at hRoot
+        exact hRoot
+      have hfold :=
+        mettaEval_expr_root_evals_selected_readout_all_states
+          env fuel qvars (Atom.expr [Atom.sym op, p, atom', templ]) []
+          (root, rootBnd) pairs stRoot final
+          hRootPairs hRootNotNotReducible hRootNotSelf hReturns (by
+            intro st0
+            simpa [qvars] using hFinal st0)
+      rw [show
+        (fun a2 p2 =>
+          if (p2.1 == notReducibleA) = true ∨
+              (p2.1 == Atom.expr [Atom.sym op, p, atom', templ]) = true then
+            (a2.1 ++ [(Atom.expr [Atom.sym op, p, atom', templ], [])], a2.2)
+          else if returnsAtom env (Atom.expr [Atom.sym op, p, atom', templ]) = true ∧
+              isEmbeddedOp p2.1 = false then
+            (a2.1 ++
+              [(p2.1,
+                restrictBnd (p.vars ++ (atom.vars ++ templ.vars))
+                  ((Bindings.merge [] p2.2).head?.getD p2.2))],
+              a2.2)
+          else
+            (a2.1 ++
+                (mettaEval env fuel a2.2
+                  (restrictBnd (p.vars ++ (atom.vars ++ templ.vars))
+                    ((Bindings.merge [] p2.2).head?.getD p2.2)) p2.1).1.map (fun m =>
+                    (m.1,
+                      restrictBnd (p.vars ++ (atom.vars ++ templ.vars))
+                        ((Bindings.merge
+                          (restrictBnd (p.vars ++ (atom.vars ++ templ.vars))
+                            ((Bindings.merge [] p2.2).head?.getD p2.2)) m.2).head?.getD m.2))),
+              (mettaEval env fuel a2.2
+                (restrictBnd (p.vars ++ (atom.vars ++ templ.vars))
+                  ((Bindings.merge [] p2.2).head?.getD p2.2)) p2.1).2)) =
+          mettaEvalExprRootFoldStep env fuel qvars
+            (Atom.expr [Atom.sym op, p, atom', templ]) [] by
+        funext a2 p2
+        simp [mettaEvalExprRootFoldStep, qvars]]
+      simpa [restrictBnd_empty_merge_empty, qvars] using hfold
+
+/-- Membership-shaped ternary expression fold for a quoted/evaluated/quoted argument mask,
+following one selected evaluated-argument readout with empty bindings under a
+state invariant.
+
+This is the variant needed by static fragments such as `nf`: the evaluated
+middle argument may return many readouts, but the selected runtime readout
+itself carries no query bindings.  The theorem follows that one readout through
+the template-appending part fold and then through the selected root readout
+under a state predicate `P`. -/
+theorem mettaEval_ternary_expr_mem_of_quoted_eval_quoted_and_root_eval_member_state_pred
+    (env : MinEnv) (fuel : Nat) (st stArg : St)
+    (op : String)
+    (p atom templ atom' root final : Atom) (argPairs : List (Atom × Bindings))
+    (rootBnd : Bindings)
+    (P : St → Prop)
+    (hArg : mettaEval env fuel st [] atom = (argPairs, stArg))
+    (hmemArg : (atom', []) ∈ argPairs)
+    (hType : typeMismatch env st.world op [p, atom, templ] = none)
+    (hMask : argMask env op 3 = [false, true, false])
+    (hNoErr :
+      (([p, atom', templ].zip [p, atom, templ]).find?
+        (fun ho => ho.1.isError && ho.1 != ho.2)) = none)
+    (hinit : P stArg)
+    (hrootState :
+      ∀ (acc : List (Atom × Bindings) × St) (part : List Atom × Bindings),
+        P acc.2 →
+          P (interpretFuel env (fuel + 1) acc.2
+            [{ stack := atomToStack (Atom.expr [Atom.sym "eval",
+                Atom.expr (Atom.sym op :: part.1)]) [], bnd := [] }] []).2)
+    (hrecState :
+      ∀ (partBnd : Bindings)
+        (acc : List (Atom × Bindings) × St) (p' : Atom × Bindings),
+        P acc.2 →
+          P (mettaEval env fuel acc.2
+            (restrictBnd (([p, atom, templ]).flatMap Atom.vars)
+              ((Bindings.merge partBnd p'.2).head?.getD p'.2)) p'.1).2)
+    (hroot :
+      ∀ acc : List (Atom × Bindings) × St,
+        P acc.2 →
+          (root, rootBnd) ∈
+            (interpretFuel env (fuel + 1) acc.2
+              [evalItemNil (Atom.expr [Atom.sym op, p, atom', templ])] []).1)
+    (hRootBndEmpty :
+      restrictBnd (([p, atom, templ]).flatMap Atom.vars)
+        ((Bindings.merge [] rootBnd).head?.getD rootBnd) = [])
+    (hRootNotNotReducible : (root == notReducibleA) = false)
+    (hRootNotSelf : (root == Atom.expr [Atom.sym op, p, atom', templ]) = false)
+    (hReturns : returnsAtom env (Atom.expr [Atom.sym op, p, atom', templ]) = false)
+    (hFinal :
+      ∀ st0,
+        P st0 →
+          (final, []) ∈
+            (mettaEval env fuel st0
+              (restrictBnd (([p, atom, templ]).flatMap Atom.vars)
+                ((Bindings.merge [] rootBnd).head?.getD rootBnd)) root).1) :
+    (final, []) ∈
+      (mettaEval env (fuel + 1) st [] (Atom.expr [Atom.sym op, p, atom, templ])).1 := by
+  let qvars := p.vars ++ (atom.vars ++ templ.vars)
+  let parts0 : List (List Atom × Bindings) :=
+    argPairs.map (fun q : Atom × Bindings =>
+      ([p, q.1], restrictBnd qvars ((Bindings.merge [] q.2).head?.getD q.2)))
+  let appendTempl :=
+    fun acc2 : List (List Atom × Bindings) × St => fun part0 : List Atom × Bindings =>
+      (acc2.1 ++ [(part0.1 ++ [instantiate part0.2 templ], part0.2)], acc2.2)
+  let parts : List (List Atom × Bindings) :=
+    parts0.map (fun part0 => (part0.1 ++ [instantiate part0.2 templ], part0.2))
+  let part : List Atom × Bindings := ([p, atom', templ], [])
+  have hArg1 : (mettaEval env fuel st [] atom).1 = argPairs := by
+    simpa [hArg] using congrArg Prod.fst hArg
+  have hArg2 : (mettaEval env fuel st [] atom).2 = stArg := by
+    simpa [hArg] using congrArg Prod.snd hArg
+  have hpart : part ∈ parts := by
+    refine List.mem_map.mpr ?_
+    refine ⟨([p, atom'], []), ?_, by simp [part, Metta.instantiate_nil]⟩
+    refine List.mem_map.mpr ?_
+    exact ⟨(atom', []), hmemArg, by simp [qvars, restrictBnd_empty_merge_empty]⟩
+  have hNoErrPart :
+      (part.1.zip [p, atom, templ]).find? (fun ho => ho.1.isError && ho.1 != ho.2) = none := by
+    simpa [part] using hNoErr
+  have hrecState' :
+      ∀ (partBnd : Bindings)
+        (acc : List (Atom × Bindings) × St) (p' : Atom × Bindings),
+        P acc.2 →
+          P (mettaEval env fuel acc.2
+            (restrictBnd qvars ((Bindings.merge partBnd p'.2).head?.getD p'.2)) p'.1).2 := by
+    intro partBnd acc p' hP
+    simpa [qvars] using hrecState partBnd acc p' hP
+  have hFinal' :
+      ∀ st0,
+        P st0 →
+          (final, []) ∈
+            (mettaEval env fuel st0
+              (restrictBnd qvars ((Bindings.merge [] rootBnd).head?.getD rootBnd)) root).1 := by
+    intro st0 hP
+    simpa [qvars] using hFinal st0 hP
+  have hRootBndEmpty' :
+      restrictBnd qvars ((Bindings.merge [] rootBnd).head?.getD rootBnd) = [] := by
+    simpa [qvars] using hRootBndEmpty
+  have hprep :
+      List.foldl appendTempl ([], stArg) parts0 = (parts, stArg) := by
+    have hprepGen :
+        ∀ (pref : List (List Atom × Bindings)) (ps : List (List Atom × Bindings)),
+          List.foldl appendTempl (pref, stArg) ps =
+            (pref ++ ps.map (fun part0 => (part0.1 ++ [instantiate part0.2 templ], part0.2)), stArg) := by
+      intro pref ps
+      induction ps generalizing pref with
+      | nil =>
+          simp [appendTempl]
+      | cons x xs ih =>
+          simp [appendTempl, ih, List.append_assoc]
+    simpa [parts] using hprepGen [] parts0
+  have hprep1 :
+      (List.foldl appendTempl ([], stArg) parts0).1 = parts := by
+    simpa [hprep] using congrArg Prod.fst hprep
+  have hprep2 :
+      (List.foldl appendTempl ([], stArg) parts0).2 = stArg := by
+    simpa [hprep] using congrArg Prod.snd hprep
+  unfold mettaEval
+  rw [instantiate_nil (Atom.expr [Atom.sym op, p, atom, templ])]
+  simp only [hType, hMask, List.length_cons, List.length_nil, Nat.reduceAdd,
+    List.zip_cons_cons, List.zip_nil_right, List.foldl_cons, List.foldl_nil]
+  simp [Metta.instantiate_nil]
+  rw [hArg1, hArg2]
+  rw [hprep1, hprep2]
+  have hstepEq :
+      mettaEvalExprPartFoldStep env fuel qvars op [p, atom, templ] [] =
+        (fun acc part =>
+          match List.find? (fun ho => ho.1.isError && ho.1 != ho.2) (part.1.zip [p, atom, templ]) with
+          | some (err, _) => (acc.1 ++ [(err, part.2)], acc.2)
+          | none =>
+              (acc.1 ++
+              (List.foldl
+                  (fun a2 p_1 =>
+                        if (p_1.1 == notReducibleA) = true ∨
+                            (p_1.1 == Atom.expr (Atom.sym op :: part.1)) = true then
+                          (a2.1 ++ [(Atom.expr (Atom.sym op :: part.1), part.2)], a2.2)
+                        else
+                          if returnsAtom env (Atom.expr (Atom.sym op :: part.1)) = true ∧
+                              isEmbeddedOp p_1.1 = false then
+                            (a2.1 ++
+                                [(p_1.1,
+                                    restrictBnd (p.vars ++ (atom.vars ++ templ.vars))
+                                      ((part.2.merge p_1.2).head?.getD p_1.2))],
+                              a2.2)
+                          else
+                            (a2.1 ++
+                                List.map
+                                  (fun m =>
+                                    (m.1,
+                                      restrictBnd (p.vars ++ (atom.vars ++ templ.vars))
+                                        (((restrictBnd (p.vars ++ (atom.vars ++ templ.vars))
+                                              ((part.2.merge p_1.2).head?.getD p_1.2)).merge
+                                            m.2).head?.getD m.2)))
+                                  (mettaEval env fuel a2.2
+                                      (restrictBnd (p.vars ++ (atom.vars ++ templ.vars))
+                                        ((part.2.merge p_1.2).head?.getD p_1.2))
+                                      p_1.1).1,
+                              (mettaEval env fuel a2.2
+                                  (restrictBnd (p.vars ++ (atom.vars ++ templ.vars))
+                                    ((part.2.merge p_1.2).head?.getD p_1.2))
+                                  p_1.1).2))
+                      ([],
+                        (interpretFuel env (fuel + 1) acc.2
+                            [{ stack := atomToStack (Atom.expr [Atom.sym "eval",
+                                Atom.expr (Atom.sym op :: part.1)]) [], bnd := [] }] []).2)
+                      (interpretFuel env (fuel + 1) acc.2
+                          [{ stack := atomToStack (Atom.expr [Atom.sym "eval",
+                              Atom.expr (Atom.sym op :: part.1)]) [], bnd := [] }] []).1).1,
+                (List.foldl
+                    (fun a2 p_1 =>
+                      if (p_1.1 == notReducibleA) = true ∨
+                          (p_1.1 == Atom.expr (Atom.sym op :: part.1)) = true then
+                        (a2.1 ++ [(Atom.expr (Atom.sym op :: part.1), part.2)], a2.2)
+                      else
+                        if returnsAtom env (Atom.expr (Atom.sym op :: part.1)) = true ∧
+                            isEmbeddedOp p_1.1 = false then
+                          (a2.1 ++
+                              [(p_1.1,
+                                  restrictBnd (p.vars ++ (atom.vars ++ templ.vars))
+                                    ((part.2.merge p_1.2).head?.getD p_1.2))],
+                            a2.2)
+                        else
+                          (a2.1 ++
+                              List.map
+                                (fun m =>
+                                  (m.1,
+                                    restrictBnd (p.vars ++ (atom.vars ++ templ.vars))
+                                      (((restrictBnd (p.vars ++ (atom.vars ++ templ.vars))
+                                            ((part.2.merge p_1.2).head?.getD p_1.2)).merge
+                                          m.2).head?.getD m.2)))
+                                (mettaEval env fuel a2.2
+                                    (restrictBnd (p.vars ++ (atom.vars ++ templ.vars))
+                                      ((part.2.merge p_1.2).head?.getD p_1.2))
+                                    p_1.1).1,
+                            (mettaEval env fuel a2.2
+                                (restrictBnd (p.vars ++ (atom.vars ++ templ.vars))
+                                  ((part.2.merge p_1.2).head?.getD p_1.2))
+                                p_1.1).2))
+                    ([],
+                      (interpretFuel env (fuel + 1) acc.2
+                          [{ stack := atomToStack (Atom.expr [Atom.sym "eval",
+                              Atom.expr (Atom.sym op :: part.1)]) [], bnd := [] }] []).2)
+                    (interpretFuel env (fuel + 1) acc.2
+                        [{ stack := atomToStack (Atom.expr [Atom.sym "eval",
+                            Atom.expr (Atom.sym op :: part.1)]) [], bnd := [] }] []).1).2)) := by
+    funext acc part
+    unfold mettaEvalExprPartFoldStep
+    split
+    · rfl
+    · have hrootEq :
+          (fun a2 p_1 =>
+            if (p_1.1 == notReducibleA) = true ∨
+                (p_1.1 == Atom.expr (Atom.sym op :: part.1)) = true then
+              (a2.1 ++ [(Atom.expr (Atom.sym op :: part.1), part.2)], a2.2)
+            else
+              if returnsAtom env (Atom.expr (Atom.sym op :: part.1)) = true ∧
+                  isEmbeddedOp p_1.1 = false then
+                (a2.1 ++
+                    [(p_1.1,
+                        restrictBnd (p.vars ++ (atom.vars ++ templ.vars))
+                          ((part.2.merge p_1.2).head?.getD p_1.2))],
+                  a2.2)
+              else
+                (a2.1 ++
+                    List.map
+                      (fun m =>
+                        (m.1,
+                          restrictBnd (p.vars ++ (atom.vars ++ templ.vars))
+                            (((restrictBnd (p.vars ++ (atom.vars ++ templ.vars))
+                                        ((part.2.merge p_1.2).head?.getD p_1.2)).merge
+                                    m.2).head?.getD
+                              m.2)))
+                      (mettaEval env fuel a2.2
+                          (restrictBnd (p.vars ++ (atom.vars ++ templ.vars))
+                            ((part.2.merge p_1.2).head?.getD p_1.2))
+                          p_1.1).1,
+                  (mettaEval env fuel a2.2
+                      (restrictBnd (p.vars ++ (atom.vars ++ templ.vars))
+                        ((part.2.merge p_1.2).head?.getD p_1.2))
+                      p_1.1).2)) =
+          mettaEvalExprRootFoldStep env fuel qvars (Atom.expr (Atom.sym op :: part.1)) part.2 := by
+        funext a2 p_1
+        simp [mettaEvalExprRootFoldStep, qvars]
+      simp [hrootEq]
+  have hfold :=
+    mettaEvalExprPartFold_evals_selected_readout_state_pred
+      env fuel qvars op [p, atom, templ] [] P parts ([], stArg)
+      part (root, rootBnd) final
+      hinit hpart hNoErrPart hrootState hrecState'
+      (by
+        intro acc hP
+        simpa [part, evalItemNil] using hroot acc hP)
+      hRootNotNotReducible hRootNotSelf hReturns
+      (by
+        intro st0 hP
+        simpa [part] using hFinal' st0 hP)
+  have hfold' :
+      (final, []) ∈
+        (parts.foldl (mettaEvalExprPartFoldStep env fuel qvars op [p, atom, templ] [])
+          ([], stArg)).1 := by
+    simpa [part, qvars, hRootBndEmpty', restrictBnd_empty_merge_empty] using hfold
+  change
+    (final, []) ∈
+      (parts.foldl (mettaEvalExprPartFoldStep env fuel qvars op [p, atom, templ] [])
+        ([], stArg)).1
+  exact hfold'
+
+/-- Membership-shaped ternary expression fold for an evaluated/quoted/quoted argument mask.
+
+This is the executable scheduler shape of stdlib `if`: evaluate the Boolean
+condition, quote both branches, reduce the rebuilt root expression, then
+recursively evaluate the selected branch.  As with the other scheduler folds,
+the theorem is generic in the operator and environment; callers provide the
+operator's concrete signature facts. -/
+theorem mettaEval_ternary_expr_mem_of_eval_quoted_quoted_and_root_eval_member
+    (env : MinEnv) (fuel : Nat) (st stCond : St)
+    (op : String)
+    (cond thenA elseA cond' root final : Atom) (rootBnd : Bindings)
+    (hCond : mettaEval env fuel st [] cond = ([(cond', [])], stCond))
+    (hType : typeMismatch env st.world op [cond, thenA, elseA] = none)
+    (hMask : argMask env op 3 = [true, false, false])
+    (hNoErr :
+      (([cond', thenA, elseA].zip [cond, thenA, elseA]).find?
+        (fun ho => ho.1.isError && ho.1 != ho.2)) = none)
+    (hRoot : (root, rootBnd) ∈
+      (interpretFuel env (fuel + 1) stCond
+        [evalItemNil (Atom.expr [Atom.sym op, cond', thenA, elseA])] []).1)
+    (hRootNotNotReducible : (root == notReducibleA) = false)
+    (hRootNotSelf : (root == Atom.expr [Atom.sym op, cond', thenA, elseA]) = false)
+    (hReturns : returnsAtom env (Atom.expr [Atom.sym op, cond', thenA, elseA]) = false)
+    (hFinal : ∀ st0,
+      (final, []) ∈
+        (mettaEval env fuel st0
+          (restrictBnd (([cond, thenA, elseA]).flatMap Atom.vars)
+            ((Bindings.merge [] rootBnd).head?.getD rootBnd)) root).1) :
+    (final,
+        restrictBnd (([cond, thenA, elseA]).flatMap Atom.vars)
+          (((restrictBnd (([cond, thenA, elseA]).flatMap Atom.vars)
+              ((Bindings.merge [] rootBnd).head?.getD rootBnd)).merge
+              ([] : Bindings)).head?.getD [])) ∈
+      (mettaEval env (fuel + 1) st [] (Atom.expr [Atom.sym op, cond, thenA, elseA])).1 := by
+  let qvars := ([cond, thenA, elseA]).flatMap Atom.vars
+  unfold mettaEval
+  rw [instantiate_nil (Atom.expr [Atom.sym op, cond, thenA, elseA])]
+  simp only [hType, hMask, List.length_cons, List.length_nil, Nat.reduceAdd,
+    List.zip_cons_cons, List.zip_nil_right, List.foldl_cons, List.foldl_nil]
+  rw [hCond]
+  simp [restrictBnd_empty_merge_empty]
+  rw [Metta.instantiate_nil thenA]
+  rw [Metta.instantiate_nil elseA]
+  have hNoErr' :
+      List.find? (fun ho : Atom × Atom => ho.1.isError && ho.1 != ho.2)
+        [(cond', cond), (thenA, thenA), (elseA, elseA)] = none := by
+    simpa using hNoErr
+  rw [hNoErr']
+  let rootItem : Item :=
+    { stack := atomToStack (Atom.expr [Atom.sym "eval",
+        Atom.expr [Atom.sym op, cond', thenA, elseA]]) [],
+      bnd := [] }
+  cases hpairs : interpretFuel env (fuel + 1) stCond [rootItem] [] with
+  | mk pairs stRoot =>
+      have hRootPairs : (root, rootBnd) ∈ pairs := by
+        have hrootItem :
+            [rootItem] = [evalItemNil (Atom.expr [Atom.sym op, cond', thenA, elseA])] := by
+          simp [rootItem, evalItemNil]
+        rw [hrootItem] at hpairs
+        rw [hpairs] at hRoot
+        exact hRoot
+      have hfold :=
+        mettaEval_expr_root_evals_selected_readout_all_states
+          env fuel qvars (Atom.expr [Atom.sym op, cond', thenA, elseA]) []
+          (root, rootBnd) pairs stRoot final
+          hRootPairs hRootNotNotReducible hRootNotSelf hReturns (by
+            intro st0
+            simpa [qvars] using hFinal st0)
+      rw [show
+        (fun a2 p =>
+          if (p.1 == notReducibleA) = true ∨
+              (p.1 == Atom.expr [Atom.sym op, cond', thenA, elseA]) = true then
+            (a2.1 ++ [(Atom.expr [Atom.sym op, cond', thenA, elseA], [])], a2.2)
+          else if returnsAtom env (Atom.expr [Atom.sym op, cond', thenA, elseA]) = true ∧
+              isEmbeddedOp p.1 = false then
+            (a2.1 ++
+              [(p.1,
+                restrictBnd (cond.vars ++ (thenA.vars ++ elseA.vars))
+                  ((Bindings.merge [] p.2).head?.getD p.2))],
+              a2.2)
+          else
+            (a2.1 ++
+                (mettaEval env fuel a2.2
+                  (restrictBnd (cond.vars ++ (thenA.vars ++ elseA.vars))
+                    ((Bindings.merge [] p.2).head?.getD p.2)) p.1).1.map (fun m =>
+                    (m.1,
+                      restrictBnd (cond.vars ++ (thenA.vars ++ elseA.vars))
+                        ((Bindings.merge
+                          (restrictBnd (cond.vars ++ (thenA.vars ++ elseA.vars))
+                            ((Bindings.merge [] p.2).head?.getD p.2)) m.2).head?.getD m.2))),
+              (mettaEval env fuel a2.2
+                (restrictBnd (cond.vars ++ (thenA.vars ++ elseA.vars))
+                  ((Bindings.merge [] p.2).head?.getD p.2)) p.1).2)) =
+          mettaEvalExprRootFoldStep env fuel qvars
+            (Atom.expr [Atom.sym op, cond', thenA, elseA]) [] by
+        funext a2 p
+        simp [mettaEvalExprRootFoldStep, qvars]]
+      simpa [qvars] using hfold
+
+/-- Membership-shaped closed four-argument expression fold for executable `mettaEval`.
+
+This is the arity-four sibling of
+`mettaEval_binary_expr_mem_of_arg_singletons_and_root_eval_mem`.  It is the scheduler lift needed
+for embedded `(unify atom pattern then else)`: the four arguments are evaluated left-to-right, the
+rebuilt root is interpreted once, and the selected root readout is recursively evaluated.  The
+theorem stays generic in the operator and root readout; it does not unfold a concrete `unify`
+trace. -/
+theorem mettaEval_quaternary_expr_mem_of_arg_singletons_and_root_eval_member
+    (env : MinEnv) (fuel : Nat) (st st₁ st₂ st₃ st₄ : St)
+    (op : String)
+    (w x y z w' x' y' z' root final : Atom) (rootBnd : Bindings)
+    (hwClosed : w.vars = []) (hxClosed : x.vars = [])
+    (hyClosed : y.vars = []) (hzClosed : z.vars = [])
+    (hw : mettaEval env fuel st [] w = ([(w', [])], st₁))
+    (hx : mettaEval env fuel st₁ [] x = ([(x', [])], st₂))
+    (hy : mettaEval env fuel st₂ [] y = ([(y', [])], st₃))
+    (hz : mettaEval env fuel st₃ [] z = ([(z', [])], st₄))
+    (hType : typeMismatch env st.world op [w, x, y, z] = none)
+    (hMask : argMask env op 4 = [true, true, true, true])
+    (hNoErr :
+      (([w', x', y', z'].zip [w, x, y, z]).find?
+        (fun ho => ho.1.isError && ho.1 != ho.2)) = none)
+    (hRoot : (root, rootBnd) ∈
+      (interpretFuel env (fuel + 1) st₄
+        [evalItemNil (Atom.expr [Atom.sym op, w', x', y', z'])] []).1)
+    (hRootNotNotReducible : (root == notReducibleA) = false)
+    (hRootNotSelf : (root == Atom.expr [Atom.sym op, w', x', y', z']) = false)
+    (hReturns : returnsAtom env (Atom.expr [Atom.sym op, w', x', y', z']) = false)
+    (hFinal : ∀ st0, (final, []) ∈ (mettaEval env fuel st0 [] root).1) :
+    (final, []) ∈
+      (mettaEval env (fuel + 1) st [] (Atom.expr [Atom.sym op, w, x, y, z])).1 := by
+  unfold mettaEval
+  rw [instantiate_nil (Atom.expr [Atom.sym op, w, x, y, z])]
+  simp only [hType, hMask, List.length_cons, List.length_nil, Nat.reduceAdd,
+    List.zip_cons_cons, List.zip_nil_right, List.foldl_cons, List.foldl_nil]
+  rw [hw]
+  simp [hwClosed, hxClosed, hyClosed, hzClosed, restrictBnd_nil_vars]
+  rw [hx]
+  simp
+  rw [hy]
+  simp
+  rw [hz]
+  simp only [List.map_cons, List.map_nil, List.foldl_cons, List.foldl_nil]
+  rw [hNoErr]
+  simp only [List.nil_append]
+  let rootItem : Item :=
+    { stack := atomToStack (Atom.expr [Atom.sym "eval",
+        Atom.expr [Atom.sym op, w', x', y', z']]) [],
+      bnd := [] }
+  cases hpairs : interpretFuel env (fuel + 1) st₄ [rootItem] [] with
+  | mk pairs stRoot =>
+      have hRootPairs : (root, rootBnd) ∈ pairs := by
+        have hrootItem :
+            [rootItem] = [evalItemNil (Atom.expr [Atom.sym op, w', x', y', z'])] := by
+          simp [rootItem, evalItemNil]
+        rw [hrootItem] at hpairs
+        rw [hpairs] at hRoot
+        exact hRoot
+      have hfold :=
+        mettaEval_expr_root_evals_selected_readout_all_states
+          env fuel [] (Atom.expr [Atom.sym op, w', x', y', z']) []
+          (root, rootBnd) pairs stRoot final
+          hRootPairs hRootNotNotReducible hRootNotSelf hReturns (by
+            intro st0
+            simpa [restrictBnd_nil_vars] using hFinal st0)
+      rw [show
+        (fun a2 p =>
+          if (p.1 == notReducibleA) = true ∨
+              (p.1 == Atom.expr [Atom.sym op, w', x', y', z']) = true then
+            (a2.1 ++ [(Atom.expr [Atom.sym op, w', x', y', z'], [])], a2.2)
+          else if returnsAtom env (Atom.expr [Atom.sym op, w', x', y', z']) = true ∧
+              isEmbeddedOp p.1 = false then
+            (a2.1 ++ [(p.1, [])], a2.2)
+          else
+            (a2.1 ++ (mettaEval env fuel a2.2 [] p.1).1.map (fun m => (m.1, [])),
+              (mettaEval env fuel a2.2 [] p.1).2)) =
+          mettaEvalExprRootFoldStep env fuel []
+            (Atom.expr [Atom.sym op, w', x', y', z']) [] by
+        funext a2 p
+        simp [mettaEvalExprRootFoldStep, restrictBnd_nil_vars]]
+      simpa [restrictBnd_nil_vars] using hfold
+
+/-- Exact-state closed four-argument expression fold for executable `mettaEval`.
+
+This is the state-specific sibling of
+`mettaEval_quaternary_expr_mem_of_arg_singletons_and_root_eval_member`.  It is useful when the
+selected root readout is known exactly, so the recursive evaluation premise only has to hold at the
+actual threaded root state rather than for every possible `World`. -/
+theorem mettaEval_quaternary_expr_mem_of_arg_singletons_and_root_eval_eq
+    (env : MinEnv) (fuel : Nat) (st st₁ st₂ st₃ st₄ stRoot : St)
+    (op : String)
+    (w x y z w' x' y' z' root final : Atom) (rootBnd : Bindings)
+    (hwClosed : w.vars = []) (hxClosed : x.vars = [])
+    (hyClosed : y.vars = []) (hzClosed : z.vars = [])
+    (hw : mettaEval env fuel st [] w = ([(w', [])], st₁))
+    (hx : mettaEval env fuel st₁ [] x = ([(x', [])], st₂))
+    (hy : mettaEval env fuel st₂ [] y = ([(y', [])], st₃))
+    (hz : mettaEval env fuel st₃ [] z = ([(z', [])], st₄))
+    (hType : typeMismatch env st.world op [w, x, y, z] = none)
+    (hMask : argMask env op 4 = [true, true, true, true])
+    (hNoErr :
+      (([w', x', y', z'].zip [w, x, y, z]).find?
+        (fun ho => ho.1.isError && ho.1 != ho.2)) = none)
+    (hRoot : interpretFuel env (fuel + 1) st₄
+        [evalItemNil (Atom.expr [Atom.sym op, w', x', y', z'])] [] =
+      ([(root, rootBnd)], stRoot))
+    (hRootNotNotReducible : (root == notReducibleA) = false)
+    (hRootNotSelf : (root == Atom.expr [Atom.sym op, w', x', y', z']) = false)
+    (hReturns : returnsAtom env (Atom.expr [Atom.sym op, w', x', y', z']) = false)
+    (hFinal : (final, []) ∈ (mettaEval env fuel stRoot [] root).1) :
+    (final, []) ∈
+      (mettaEval env (fuel + 1) st [] (Atom.expr [Atom.sym op, w, x, y, z])).1 := by
+  unfold mettaEval
+  rw [instantiate_nil (Atom.expr [Atom.sym op, w, x, y, z])]
+  simp only [hType, hMask, List.length_cons, List.length_nil, Nat.reduceAdd,
+    List.zip_cons_cons, List.zip_nil_right, List.foldl_cons, List.foldl_nil]
+  rw [hw]
+  simp [hwClosed, hxClosed, hyClosed, hzClosed, restrictBnd_nil_vars]
+  rw [hx]
+  simp
+  rw [hy]
+  simp
+  rw [hz]
+  simp only [List.map_cons, List.map_nil, List.foldl_cons, List.foldl_nil]
+  rw [hNoErr]
+  simp only [List.nil_append]
+  have hRoot' :
+      interpretFuel env (fuel + 1) st₄
+        [{ stack := atomToStack
+            (Atom.expr [Atom.sym "eval", Atom.expr [Atom.sym op, w', x', y', z']]) [] }] [] =
+      ([(root, rootBnd)], stRoot) := by
+    simpa [evalItemNil] using hRoot
+  rw [hRoot']
+  simp [hRootNotNotReducible, hRootNotSelf, hReturns]
+  exact ⟨[], hFinal⟩
+
 /-! ## Readout soundness packaging -/
 
 /-- Package a singleton executable readout as a relation-sound readout theorem.
@@ -2573,6 +5355,154 @@ theorem mettaEval_unary_expr_singleton_sound_of_arg_singleton_and_notReducible_e
     mettaEval_singleton_readout_sound env (fuel + 1) st []
       (Atom.expr [Atom.sym op, arg]) (Atom.expr [Atom.sym op, out])
       (restrictBnd arg.vars ((Bindings.merge [] []).head?.getD [])) stRoot R hEval hReach
+
+/-! ## Atom-typed unary expression fold -/
+
+/-- Membership-shaped unary fold for Atom-typed arguments whose root readout is evaluated.
+
+When `argMask env op 1 = [false]`, the executable `mettaEval` loop keeps the argument as an
+Atom, evaluates the rebuilt root `(op arg)`, and, if that root is neither `NotReducible` nor an
+Atom-valued final result, recursively evaluates the root readout. This is the unary analogue of
+`mettaEval_binary_expr_mem_of_arg_singletons_and_root_eval_mem` for operators such as `is-bad`. -/
+theorem mettaEval_unary_expr_mem_of_closed_atom_arg_and_root_eval_mem
+    (env : MinEnv) (fuel : Nat) (st stRoot : St)
+    (op : String) (arg root final : Atom) (rootBnd : Bindings)
+    (hArgClosed : arg.vars = [])
+    (hArgNoErr : arg.isError = false)
+    (hArgSelf : (arg != arg) = false)
+    (hType : typeMismatch env st.world op [arg] = none)
+    (hMask : argMask env op 1 = [false])
+    (hRoot : interpretFuel env (fuel + 1) st
+        [evalItemNil (Atom.expr [Atom.sym op, arg])] [] =
+      ([(root, rootBnd)], stRoot))
+    (hRootNotNotReducible : (root == notReducibleA) = false)
+    (hRootNotSelf : (root == Atom.expr [Atom.sym op, arg]) = false)
+    (hReturns : returnsAtom env (Atom.expr [Atom.sym op, arg]) = false)
+    (hFinal : (final, []) ∈ (mettaEval env fuel stRoot [] root).1) :
+    (final, []) ∈ (mettaEval env (fuel + 1) st [] (Atom.expr [Atom.sym op, arg])).1 := by
+  unfold mettaEval
+  rw [instantiate_nil (Atom.expr [Atom.sym op, arg])]
+  simp [hType, hMask, hArgClosed, hArgNoErr, hArgSelf, instantiate_nil]
+  have hRoot' :
+      interpretFuel env (fuel + 1) st
+        [{ stack := atomToStack
+            (Atom.expr [Atom.sym "eval", Atom.expr [Atom.sym op, arg]]) [], bnd := [] }] [] =
+      ([(root, rootBnd)], stRoot) := by
+    simpa [evalItemNil] using hRoot
+  rw [hRoot']
+  simp [hRootNotNotReducible, hRootNotSelf, hReturns, restrictBnd_nil_vars]
+  exact ⟨[], by simpa [restrictBnd_nil_vars] using hFinal⟩
+
+/-- Membership-shaped unary fold for Atom-typed arguments and selected root readouts.
+
+This is the root-membership companion to
+`mettaEval_unary_expr_mem_of_closed_atom_arg_and_root_eval_mem`: it is the right shape when the
+root equality-rule bridge supplies the runtime-freshened readout as a member rather than proving
+the whole root-readout list is a singleton. -/
+theorem mettaEval_unary_expr_mem_of_closed_atom_arg_and_root_eval_member
+    (env : MinEnv) (fuel : Nat) (st : St)
+    (op : String) (arg root final : Atom) (rootBnd : Bindings)
+    (hArgClosed : arg.vars = [])
+    (hArgNoErr : arg.isError = false)
+    (hArgSelf : (arg != arg) = false)
+    (hType : typeMismatch env st.world op [arg] = none)
+    (hMask : argMask env op 1 = [false])
+    (hRoot : (root, rootBnd) ∈ (interpretFuel env (fuel + 1) st
+        [evalItemNil (Atom.expr [Atom.sym op, arg])] []).1)
+    (hRootNotNotReducible : (root == notReducibleA) = false)
+    (hRootNotSelf : (root == Atom.expr [Atom.sym op, arg]) = false)
+    (hReturns : returnsAtom env (Atom.expr [Atom.sym op, arg]) = false)
+    (hFinal : ∀ st0, (final, []) ∈ (mettaEval env fuel st0 [] root).1) :
+    (final, []) ∈ (mettaEval env (fuel + 1) st [] (Atom.expr [Atom.sym op, arg])).1 := by
+  unfold mettaEval
+  rw [instantiate_nil (Atom.expr [Atom.sym op, arg])]
+  simp [hType, hMask, hArgClosed, hArgNoErr, hArgSelf, instantiate_nil]
+  let rootItem : Item :=
+    { stack := atomToStack (Atom.expr [Atom.sym "eval", Atom.expr [Atom.sym op, arg]]) [],
+      bnd := [] }
+  cases hpairs : interpretFuel env (fuel + 1) st [rootItem] [] with
+  | mk pairs stRoot =>
+      have hRootPairs : (root, rootBnd) ∈ pairs := by
+        have hrootItem : [rootItem] = [evalItemNil (Atom.expr [Atom.sym op, arg])] := by
+          simp [rootItem, evalItemNil]
+        rw [hrootItem] at hpairs
+        rw [hpairs] at hRoot
+        exact hRoot
+      have hfold :=
+        mettaEval_expr_root_evals_selected_readout_all_states
+          env fuel [] (Atom.expr [Atom.sym op, arg]) [] (root, rootBnd) pairs stRoot final
+          hRootPairs hRootNotNotReducible hRootNotSelf hReturns (by
+            intro st0
+            simpa [restrictBnd_nil_vars] using hFinal st0)
+      change (final, []) ∈
+        (List.foldl
+          (mettaEvalExprRootFoldStep env fuel [] (Atom.expr [Atom.sym op, arg]) [])
+          ([], stRoot) pairs).1
+      simpa [restrictBnd_nil_vars] using hfold
+
+/-- State-invariant version of
+`mettaEval_unary_expr_mem_of_closed_atom_arg_and_root_eval_member`.
+
+The recursive root readout may only be sound under a state invariant.  This theorem carries that
+invariant from the root `interpretFuel` result through the selected-readout fold. -/
+theorem mettaEval_unary_expr_mem_of_closed_atom_arg_and_root_eval_member_state_pred
+    (env : MinEnv) (fuel : Nat) (st : St)
+    (op : String) (arg root final : Atom) (rootBnd : Bindings)
+    (P : St → Prop)
+    (hArgClosed : arg.vars = [])
+    (hArgNoErr : arg.isError = false)
+    (hArgSelf : (arg != arg) = false)
+    (hType : typeMismatch env st.world op [arg] = none)
+    (hMask : argMask env op 1 = [false])
+    (hRoot : (root, rootBnd) ∈ (interpretFuel env (fuel + 1) st
+        [evalItemNil (Atom.expr [Atom.sym op, arg])] []).1)
+    (hRootState : P (interpretFuel env (fuel + 1) st
+        [evalItemNil (Atom.expr [Atom.sym op, arg])] []).2)
+    (hRootNotNotReducible : (root == notReducibleA) = false)
+    (hRootNotSelf : (root == Atom.expr [Atom.sym op, arg]) = false)
+    (hReturns : returnsAtom env (Atom.expr [Atom.sym op, arg]) = false)
+    (hstep :
+      ∀ (acc : List (Atom × Bindings) × St) (p : Atom × Bindings),
+        P acc.2 →
+          P (mettaEval env fuel acc.2
+            (restrictBnd ([] : List String) ((Bindings.merge [] p.2).head?.getD p.2)) p.1).2)
+    (hFinal : ∀ st0,
+      P st0 → (final, []) ∈ (mettaEval env fuel st0 [] root).1) :
+    (final, []) ∈ (mettaEval env (fuel + 1) st [] (Atom.expr [Atom.sym op, arg])).1 := by
+  unfold mettaEval
+  rw [instantiate_nil (Atom.expr [Atom.sym op, arg])]
+  simp [hType, hMask, hArgClosed, hArgNoErr, hArgSelf, instantiate_nil]
+  let rootItem : Item :=
+    { stack := atomToStack (Atom.expr [Atom.sym "eval", Atom.expr [Atom.sym op, arg]]) [],
+      bnd := [] }
+  cases hpairs : interpretFuel env (fuel + 1) st [rootItem] [] with
+  | mk pairs stRoot =>
+      have hRootPairs : (root, rootBnd) ∈ pairs := by
+        have hrootItem : [rootItem] = [evalItemNil (Atom.expr [Atom.sym op, arg])] := by
+          simp [rootItem, evalItemNil]
+        rw [hrootItem] at hpairs
+        rw [hpairs] at hRoot
+        exact hRoot
+      have hRootState' : P stRoot := by
+        have hrootItem : [rootItem] = [evalItemNil (Atom.expr [Atom.sym op, arg])] := by
+          simp [rootItem, evalItemNil]
+        rw [hrootItem] at hpairs
+        rw [hpairs] at hRootState
+        exact hRootState
+      have hfold :=
+        mettaEval_expr_root_evals_selected_readout_state_pred
+          env fuel [] (Atom.expr [Atom.sym op, arg]) [] P
+          (root, rootBnd) pairs stRoot final
+          hRootPairs hRootNotNotReducible hRootNotSelf hReturns hRootState'
+          hstep
+          (by
+            intro st0 hP
+            simpa [restrictBnd_nil_vars] using hFinal st0 hP)
+      change (final, []) ∈
+        (List.foldl
+          (mettaEvalExprRootFoldStep env fuel [] (Atom.expr [Atom.sym op, arg]) [])
+          ([], stRoot) pairs).1
+      simpa [restrictBnd_nil_vars] using hfold
 
 /-- Soundness package for a closed binary expression whose evaluator result is obtained by the
 generic binary fold.

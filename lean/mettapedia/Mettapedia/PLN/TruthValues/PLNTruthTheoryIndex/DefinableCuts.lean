@@ -2025,5 +2025,279 @@ abbrev definable_cut_implication_refuted_of_premise_certain_of_conclusion_refute
   ExtensionalDefinableCut.impCut_upper_eq_zero_of_lower_eq_one_of_upper_eq_zero
     (Base := Base) (Const := Const) (T := T)
 
+/-! ### Compact definable-cut tightness profile -/
+
+/-- Proof-carrying profile for the definable-cut tightness spine.  The profile
+keeps the reader-facing surface compact: generic endpoint tightness and width
+collapse, one Boolean-indicator representative, three representative numeric
+cut families (QFM counting, counting capacity, and Sugeno counting), and the
+certified-cut composition / modus-ponens consumers. -/
+structure DefinableCutTightnessProfile where
+  genericLowerEndpoint :
+    ∀ {Base : Type u} {Const : Ty Base → Type v}
+      {T : ClosedTheorySet (WithParams Const)}
+      (C : ExtensionalDefinableCut T)
+      (enum : ℕ → Body Const)
+      (henum : ∀ b : Body Const, ∃ n, enum n = b)
+      (hCons : T.Consistent)
+      (hT0 : ∀ ψ ∈ T, ∀ (σ : Ty Base) (k : ℕ),
+        NoConstOccurrence (param σ k) ψ)
+      (hEM : ∀ ψ ∈ EMSchema Const, ψ ∈ T),
+      (C.intervalOfConsistent enum henum hCons hT0 hEM).lower = 1 ↔
+        T.Provable C.formula
+  genericWidthCollapse :
+    ∀ {Base : Type u} {Const : Ty Base → Type v}
+      {T : ClosedTheorySet (WithParams Const)}
+      (C : ExtensionalDefinableCut T)
+      (enum : ℕ → Body Const)
+      (henum : ∀ b : Body Const, ∃ n, enum n = b)
+      (hCons : T.Consistent)
+      (hT0 : ∀ ψ ∈ T, ∀ (σ : Ty Base) (k : ℕ),
+        NoConstOccurrence (param σ k) ψ)
+      (hEM : ∀ ψ ∈ EMSchema Const, ψ ∈ T),
+      (C.intervalOfConsistent enum henum hCons hT0 hEM).width = 0 ↔
+        T.Provable C.formula ∨ T.Provable (Term.not C.formula)
+  formulaIndicatorPositiveThresholdWidth :
+    ∀ {Base : Type u} {Const : Ty Base → Type v}
+      {T : ClosedTheorySet (WithParams Const)}
+      (φ : ClosedFormula (WithParams Const))
+      (hφ0 : ∀ (σ : Ty Base) (k : ℕ), NoConstOccurrence (param σ k) φ)
+      (τ : ℝ) (hτpos : 0 < τ) (hτle : τ ≤ 1)
+      (enum : ℕ → Body Const)
+      (henum : ∀ b : Body Const, ∃ n, enum n = b)
+      (hCons : T.Consistent)
+      (hT0 : ∀ ψ ∈ T, ∀ (σ : Ty Base) (k : ℕ),
+        NoConstOccurrence (param σ k) ψ)
+      (hEM : ∀ ψ ∈ EMSchema Const, ψ ∈ T),
+      ((formulaIndicatorPositiveThresholdCut φ hφ0 τ hτpos hτle).intervalOfConsistent
+        enum henum hCons hT0 hEM).width = 0 ↔
+        T.Provable φ ∨ T.Provable (Term.not φ)
+  qfmCountingCardinalityWidth :
+    ∀ {Base : Type u} {Const : Ty Base → Type v}
+      {T : ClosedTheorySet (WithParams Const)}
+      (σ : Ty Base)
+      (params : Mettapedia.PLN.RuleFamilies.FirstOrder.Quantifiers.FuzzyQuantifierParams)
+      (p : Mettapedia.PLN.Bridges.HOL.PLNHigherOrderHOLInheritanceBridge.UnaryPredicate σ)
+      (χ : ClosedFormula (WithParams Const))
+      (hχ0 : ∀ (ρ : Ty Base) (i : ℕ), NoConstOccurrence (param ρ i) χ)
+      (hObj : ∀ M : Mettapedia.PLN.Bridges.HOL.PLNHigherOrderHOLCompletenessTightness.ExtensionalTheoryModel T,
+        Fintype (Mettapedia.PLN.Bridges.HOL.PLNHigherOrderHOLInheritanceBridge.PredicateObject M.1 σ))
+      (hMeasurable : ∀ M : Mettapedia.PLN.Bridges.HOL.PLNHigherOrderHOLCompletenessTightness.ExtensionalTheoryModel T,
+        MeasurableSpace
+          (Mettapedia.PLN.Bridges.HOL.PLNHigherOrderHOLInheritanceBridge.PredicateObject M.1 σ))
+      (hε0 : params.ε = 0)
+      (k N : ℕ) (hNpos : 0 < N) (hPCL : params.PCL = (k : ℝ) / (N : ℝ))
+      (hCardEq : ∀ M : Mettapedia.PLN.Bridges.HOL.PLNHigherOrderHOLCompletenessTightness.ExtensionalTheoryModel T,
+        Fintype.card
+          (Mettapedia.PLN.Bridges.HOL.PLNHigherOrderHOLInheritanceBridge.PredicateObject M.1 σ) = N)
+      (hχRep : ∀ M : Mettapedia.PLN.Bridges.HOL.PLNHigherOrderHOLCompletenessTightness.ExtensionalTheoryModel T,
+        HenkinModel.models M.1 χ ↔
+          k ≤ (Mettapedia.PLN.Bridges.HOL.PLNHigherOrderHOLQuantifierBridge.predicateExtension
+            M.1 σ p).ncard)
+      (enum : ℕ → Body Const)
+      (henum : ∀ b : Body Const, ∃ n, enum n = b)
+      (hCons : T.Consistent)
+      (hT0 : ∀ ψ ∈ T, ∀ (ρ : Ty Base) (i : ℕ),
+        NoConstOccurrence (param ρ i) ψ)
+      (hEM : ∀ ψ ∈ EMSchema Const, ψ ∈ T),
+      ((predicateFuzzyForAllCountingCardinalityThresholdCut
+        σ params p χ hχ0 hObj hMeasurable hε0 k N hNpos hPCL hCardEq hχRep).intervalOfConsistent
+          enum henum hCons hT0 hEM).width = 0 ↔
+        T.Provable χ ∨ T.Provable (Term.not χ)
+  qfmForAllAtLeastNBaseWidth :
+    ∀ {Base : Type u} {Const : Ty Base → Type v}
+      {T : ClosedTheorySet (WithParams Const)}
+      (b : Base)
+      (params : Mettapedia.PLN.RuleFamilies.FirstOrder.Quantifiers.FuzzyQuantifierParams)
+      (p : Mettapedia.PLN.Bridges.HOL.PLNHigherOrderHOLInheritanceBridge.UnaryPredicate (.base b))
+      (hp0 : ∀ (ρ : Ty Base) (i : ℕ), NoConstOccurrence (param ρ i) p)
+      (hObj : ∀ M : Mettapedia.PLN.Bridges.HOL.PLNHigherOrderHOLCompletenessTightness.ExtensionalTheoryModel T,
+        Fintype (Mettapedia.PLN.Bridges.HOL.PLNHigherOrderHOLInheritanceBridge.PredicateObject M.1 (.base b)))
+      (hMeasurable : ∀ M : Mettapedia.PLN.Bridges.HOL.PLNHigherOrderHOLCompletenessTightness.ExtensionalTheoryModel T,
+        MeasurableSpace
+          (Mettapedia.PLN.Bridges.HOL.PLNHigherOrderHOLInheritanceBridge.PredicateObject M.1 (.base b)))
+      (hε0 : params.ε = 0)
+      (k N : ℕ) (hNpos : 0 < N) (hPCL : params.PCL = (k : ℝ) / (N : ℝ))
+      (hCardEq : ∀ M : Mettapedia.PLN.Bridges.HOL.PLNHigherOrderHOLCompletenessTightness.ExtensionalTheoryModel T,
+        Fintype.card
+          (Mettapedia.PLN.Bridges.HOL.PLNHigherOrderHOLInheritanceBridge.PredicateObject M.1 (.base b)) = N)
+      (enum : ℕ → Body Const)
+      (henum : ∀ b : Body Const, ∃ n, enum n = b)
+      (hCons : T.Consistent)
+      (hT0 : ∀ ψ ∈ T, ∀ (ρ : Ty Base) (i : ℕ),
+        NoConstOccurrence (param ρ i) ψ)
+      (hEM : ∀ ψ ∈ EMSchema Const, ψ ∈ T),
+      ((predicateFuzzyForAllCountingAtLeastNBaseCut
+        b params p hp0 hObj hMeasurable hε0 k N hNpos hPCL hCardEq).intervalOfConsistent
+          enum henum hCons hT0 hEM).width = 0 ↔
+        T.Provable (predicateAtLeastNBaseFormula (Base := Base) (Const := WithParams Const) b p k) ∨
+        T.Provable (Term.not
+          (predicateAtLeastNBaseFormula (Base := Base) (Const := WithParams Const) b p k))
+  qfmThereExistsAtLeastNBaseWidth :
+    ∀ {Base : Type u} {Const : Ty Base → Type v}
+      {T : ClosedTheorySet (WithParams Const)}
+      (b : Base)
+      (params : Mettapedia.PLN.RuleFamilies.FirstOrder.Quantifiers.FuzzyQuantifierParams)
+      (p : Mettapedia.PLN.Bridges.HOL.PLNHigherOrderHOLInheritanceBridge.UnaryPredicate (.base b))
+      (hp0 : ∀ (ρ : Ty Base) (i : ℕ), NoConstOccurrence (param ρ i) p)
+      (hObj : ∀ M : Mettapedia.PLN.Bridges.HOL.PLNHigherOrderHOLCompletenessTightness.ExtensionalTheoryModel T,
+        Fintype (Mettapedia.PLN.Bridges.HOL.PLNHigherOrderHOLInheritanceBridge.PredicateObject M.1 (.base b)))
+      (hMeasurable : ∀ M : Mettapedia.PLN.Bridges.HOL.PLNHigherOrderHOLCompletenessTightness.ExtensionalTheoryModel T,
+        MeasurableSpace
+          (Mettapedia.PLN.Bridges.HOL.PLNHigherOrderHOLInheritanceBridge.PredicateObject M.1 (.base b)))
+      (hε0 : params.ε = 0)
+      (k N : ℕ) (hNpos : 0 < N) (hPCL : params.PCL = (k : ℝ) / (N : ℝ))
+      (hCardEq : ∀ M : Mettapedia.PLN.Bridges.HOL.PLNHigherOrderHOLCompletenessTightness.ExtensionalTheoryModel T,
+        Fintype.card
+          (Mettapedia.PLN.Bridges.HOL.PLNHigherOrderHOLInheritanceBridge.PredicateObject M.1 (.base b)) = N)
+      (enum : ℕ → Body Const)
+      (henum : ∀ b : Body Const, ∃ n, enum n = b)
+      (hCons : T.Consistent)
+      (hT0 : ∀ ψ ∈ T, ∀ (ρ : Ty Base) (i : ℕ),
+        NoConstOccurrence (param ρ i) ψ)
+      (hEM : ∀ ψ ∈ EMSchema Const, ψ ∈ T),
+      ((predicateFuzzyThereExistsCountingAtLeastNBaseCut
+        b params p hp0 hObj hMeasurable hε0 k N hNpos hPCL hCardEq).intervalOfConsistent
+          enum henum hCons hT0 hEM).width = 0 ↔
+        T.Provable (predicateAtLeastNBaseFormula (Base := Base) (Const := WithParams Const) b p k) ∨
+        T.Provable (Term.not
+          (predicateAtLeastNBaseFormula (Base := Base) (Const := WithParams Const) b p k))
+  countingCapacityCardinalityWidth :
+    ∀ {Base : Type u} {Const : Ty Base → Type v}
+      {T : ClosedTheorySet (WithParams Const)}
+      (τ : Ty Base)
+      (p : Mettapedia.PLN.Bridges.HOL.PLNHigherOrderHOLInheritanceBridge.UnaryPredicate τ)
+      (χ : ClosedFormula (WithParams Const))
+      (hχ0 : ∀ (ρ : Ty Base) (i : ℕ), NoConstOccurrence (param ρ i) χ)
+      (hObj : ∀ M : Mettapedia.PLN.Bridges.HOL.PLNHigherOrderHOLCompletenessTightness.ExtensionalTheoryModel T,
+        Fintype (Mettapedia.PLN.Bridges.HOL.PLNHigherOrderHOLInheritanceBridge.PredicateObject M.1 τ))
+      (hMeasurable : ∀ M : Mettapedia.PLN.Bridges.HOL.PLNHigherOrderHOLCompletenessTightness.ExtensionalTheoryModel T,
+        MeasurableSpace
+          (Mettapedia.PLN.Bridges.HOL.PLNHigherOrderHOLInheritanceBridge.PredicateObject M.1 τ))
+      (k N : ℕ) (hNpos : 0 < N)
+      (hCardEq : ∀ M : Mettapedia.PLN.Bridges.HOL.PLNHigherOrderHOLCompletenessTightness.ExtensionalTheoryModel T,
+        Fintype.card
+          (Mettapedia.PLN.Bridges.HOL.PLNHigherOrderHOLInheritanceBridge.PredicateObject M.1 τ) = N)
+      (hχRep : ∀ M : Mettapedia.PLN.Bridges.HOL.PLNHigherOrderHOLCompletenessTightness.ExtensionalTheoryModel T,
+        HenkinModel.models M.1 χ ↔
+          k ≤ (Mettapedia.PLN.Bridges.HOL.PLNHigherOrderHOLQuantifierBridge.predicateExtension
+            M.1 τ p).ncard)
+      (enum : ℕ → Body Const)
+      (henum : ∀ b : Body Const, ∃ n, enum n = b)
+      (hCons : T.Consistent)
+      (hT0 : ∀ ψ ∈ T, ∀ (σ : Ty Base) (i : ℕ),
+        NoConstOccurrence (param σ i) ψ)
+      (hEM : ∀ ψ ∈ EMSchema Const, ψ ∈ T),
+      ((predicateCountingCapacityCardinalityThresholdCut
+        τ p χ hχ0 hObj hMeasurable k N hNpos hCardEq hχRep).intervalOfConsistent
+          enum henum hCons hT0 hEM).width = 0 ↔
+        T.Provable χ ∨ T.Provable (Term.not χ)
+  countingCapacityAtLeastNBaseWidth :
+    ∀ {Base : Type u} {Const : Ty Base → Type v}
+      {T : ClosedTheorySet (WithParams Const)}
+      (b : Base)
+      (p : Mettapedia.PLN.Bridges.HOL.PLNHigherOrderHOLInheritanceBridge.UnaryPredicate (.base b))
+      (hp0 : ∀ (ρ : Ty Base) (i : ℕ), NoConstOccurrence (param ρ i) p)
+      (hObj : ∀ M : Mettapedia.PLN.Bridges.HOL.PLNHigherOrderHOLCompletenessTightness.ExtensionalTheoryModel T,
+        Fintype (Mettapedia.PLN.Bridges.HOL.PLNHigherOrderHOLInheritanceBridge.PredicateObject M.1 (.base b)))
+      (hMeasurable : ∀ M : Mettapedia.PLN.Bridges.HOL.PLNHigherOrderHOLCompletenessTightness.ExtensionalTheoryModel T,
+        MeasurableSpace
+          (Mettapedia.PLN.Bridges.HOL.PLNHigherOrderHOLInheritanceBridge.PredicateObject M.1 (.base b)))
+      (k N : ℕ) (hNpos : 0 < N)
+      (hCardEq : ∀ M : Mettapedia.PLN.Bridges.HOL.PLNHigherOrderHOLCompletenessTightness.ExtensionalTheoryModel T,
+        Fintype.card
+          (Mettapedia.PLN.Bridges.HOL.PLNHigherOrderHOLInheritanceBridge.PredicateObject M.1 (.base b)) = N)
+      (enum : ℕ → Body Const)
+      (henum : ∀ b : Body Const, ∃ n, enum n = b)
+      (hCons : T.Consistent)
+      (hT0 : ∀ ψ ∈ T, ∀ (ρ : Ty Base) (i : ℕ),
+        NoConstOccurrence (param ρ i) ψ)
+      (hEM : ∀ ψ ∈ EMSchema Const, ψ ∈ T),
+      ((predicateCountingCapacityAtLeastNBaseCut
+        b p hp0 hObj hMeasurable k N hNpos hCardEq).intervalOfConsistent
+          enum henum hCons hT0 hEM).width = 0 ↔
+        T.Provable (predicateAtLeastNBaseFormula (Base := Base) (Const := WithParams Const) b p k) ∨
+        T.Provable (Term.not
+          (predicateAtLeastNBaseFormula (Base := Base) (Const := WithParams Const) b p k))
+  sugenoCountingCardinalityWidth :
+    ∀ {Base : Type u} {Const : Ty Base → Type v}
+      {T : ClosedTheorySet (WithParams Const)}
+      (τ : Ty Base)
+      (p : Mettapedia.PLN.Bridges.HOL.PLNHigherOrderHOLInheritanceBridge.UnaryPredicate τ)
+      (χ : ClosedFormula (WithParams Const))
+      (hχ0 : ∀ (ρ : Ty Base) (i : ℕ), NoConstOccurrence (param ρ i) χ)
+      (hObj : ∀ M : Mettapedia.PLN.Bridges.HOL.PLNHigherOrderHOLCompletenessTightness.ExtensionalTheoryModel T,
+        Fintype (Mettapedia.PLN.Bridges.HOL.PLNHigherOrderHOLInheritanceBridge.PredicateObject M.1 τ))
+      (hMeasurable : ∀ M : Mettapedia.PLN.Bridges.HOL.PLNHigherOrderHOLCompletenessTightness.ExtensionalTheoryModel T,
+        MeasurableSpace
+          (Mettapedia.PLN.Bridges.HOL.PLNHigherOrderHOLInheritanceBridge.PredicateObject M.1 τ))
+      (k N : ℕ) (hNpos : 0 < N)
+      (hCardEq : ∀ M : Mettapedia.PLN.Bridges.HOL.PLNHigherOrderHOLCompletenessTightness.ExtensionalTheoryModel T,
+        Fintype.card
+          (Mettapedia.PLN.Bridges.HOL.PLNHigherOrderHOLInheritanceBridge.PredicateObject M.1 τ) = N)
+      (hχRep : ∀ M : Mettapedia.PLN.Bridges.HOL.PLNHigherOrderHOLCompletenessTightness.ExtensionalTheoryModel T,
+        HenkinModel.models M.1 χ ↔
+          k ≤ (Mettapedia.PLN.Bridges.HOL.PLNHigherOrderHOLQuantifierBridge.predicateExtension
+            M.1 τ p).ncard)
+      (enum : ℕ → Body Const)
+      (henum : ∀ b : Body Const, ∃ n, enum n = b)
+      (hCons : T.Consistent)
+      (hT0 : ∀ ψ ∈ T, ∀ (σ : Ty Base) (i : ℕ),
+        NoConstOccurrence (param σ i) ψ)
+      (hEM : ∀ ψ ∈ EMSchema Const, ψ ∈ T),
+      ((predicateSugenoCountingCardinalityThresholdCut
+        τ p χ hχ0 hObj hMeasurable k N hNpos hCardEq hχRep).intervalOfConsistent
+          enum henum hCons hT0 hEM).width = 0 ↔
+        T.Provable χ ∨ T.Provable (Term.not χ)
+  certifiedAndLowerEndpoint :
+    ∀ {Base : Type u} {Const : Ty Base → Type v}
+      {T : ClosedTheorySet (WithParams Const)}
+      (C D : ExtensionalDefinableCut T)
+      (enum : ℕ → Body Const)
+      (henum : ∀ b : Body Const, ∃ n, enum n = b)
+      (hCons : T.Consistent)
+      (hT0 : ∀ ψ ∈ T, ∀ (σ : Ty Base) (k : ℕ),
+        NoConstOccurrence (param σ k) ψ)
+      (hEM : ∀ ψ ∈ EMSchema Const, ψ ∈ T),
+      ((C.andCut D).intervalOfConsistent enum henum hCons hT0 hEM).lower = 1 ↔
+        ∀ M : Mettapedia.PLN.Bridges.HOL.PLNHigherOrderHOLCompletenessTightness.ExtensionalTheoryModel T,
+          C.threshold ≤ C.score M ∧ D.threshold ≤ D.score M
+  certifiedModusPonens :
+    ∀ {Base : Type u} {Const : Ty Base → Type v}
+      {T : ClosedTheorySet (WithParams Const)}
+      (C D : ExtensionalDefinableCut T)
+      (enum : ℕ → Body Const)
+      (henum : ∀ b : Body Const, ∃ n, enum n = b)
+      (hCons : T.Consistent)
+      (hT0 : ∀ ψ ∈ T, ∀ (σ : Ty Base) (k : ℕ),
+        NoConstOccurrence (param σ k) ψ)
+      (hEM : ∀ ψ ∈ EMSchema Const, ψ ∈ T),
+      ((C.impCut D).intervalOfConsistent enum henum hCons hT0 hEM).lower = 1 →
+        (C.intervalOfConsistent enum henum hCons hT0 hEM).lower = 1 →
+          (D.intervalOfConsistent enum henum hCons hT0 hEM).lower = 1
+
+/-- Compact proof-carrying handle for the current definable-cut tightness
+surface. -/
+def definableCutTightnessProfile : DefinableCutTightnessProfile where
+  genericLowerEndpoint := ExtensionalDefinableCut.lower_eq_one_iff_provable
+  genericWidthCollapse := ExtensionalDefinableCut.width_eq_zero_iff_decides
+  formulaIndicatorPositiveThresholdWidth :=
+    formulaIndicatorPositiveThresholdCut_width_eq_zero_iff_decides
+  qfmCountingCardinalityWidth :=
+    predicateFuzzyForAllCountingCardinalityThresholdCut_width_eq_zero_iff_decides
+  qfmForAllAtLeastNBaseWidth :=
+    predicateFuzzyForAllCountingAtLeastNBaseCut_width_eq_zero_iff_decides
+  qfmThereExistsAtLeastNBaseWidth :=
+    predicateFuzzyThereExistsCountingAtLeastNBaseCut_width_eq_zero_iff_decides
+  countingCapacityCardinalityWidth :=
+    predicateCountingCapacityCardinalityThresholdCut_width_eq_zero_iff_decides
+  countingCapacityAtLeastNBaseWidth :=
+    predicateCountingCapacityAtLeastNBaseCut_width_eq_zero_iff_decides
+  sugenoCountingCardinalityWidth :=
+    predicateSugenoCountingCardinalityThresholdCut_width_eq_zero_iff_decides
+  certifiedAndLowerEndpoint :=
+    ExtensionalDefinableCut.andCut_lower_eq_one_iff_forall_both_ge
+  certifiedModusPonens :=
+    ExtensionalDefinableCut.lower_eq_one_of_impCut_lower_eq_one_of_lower_eq_one
 
 end Mettapedia.PLN.TruthValues.PLNTruthTheoryIndex

@@ -1,4 +1,5 @@
 import Mettapedia.PLN.TruthValues.PLNTruthTheoryIndex.DesirableGambles
+import Mettapedia.PLN.ConceptGeometry.AssocPat.PLNTypedSemanticLayerConceptClosureBridge
 
 namespace Mettapedia.PLN.TruthValues.PLNTruthTheoryIndex
 
@@ -295,7 +296,8 @@ theorem assoc_pat_mixed_monotonicity_requires_extensional_monotonicity :
 /-- Proof-carrying profile for the current Chapter-12 ASSOC/PAT consumer
 surface. It packages exact-provenance positive cases, the finite-table and
 formed-concept source packages, the formed-concept semantic-layer ASSOC/PAT
-equality and monotonicity theorems, the formed-concept mixed boundary and
+equality and monotonicity theorems, the formed-concept lower/upper
+semantic-layer concept-closure bridge, the formed-concept mixed boundary and
 monotonicity theorems, the pattern-coded semantic-layer consumer, PAT-vs-ASSOC
 noncollapse, and mixed-channel side-condition guardrails. -/
 structure AssocPatChapter12ConsumerProfile where
@@ -329,6 +331,8 @@ structure AssocPatChapter12ConsumerProfile where
     Mettapedia.PLN.ConceptGeometry.AssocPat.PLNHigherOrderHOLEmpiricalAssocPatBridge.FormedConceptSemanticLayerAssocPatEqualityProfile.{0, 0, 0}
   formedConceptSemanticLayerAssocPatMonotonicity :
     Mettapedia.PLN.ConceptGeometry.AssocPat.PLNHigherOrderHOLEmpiricalAssocPatBridge.FormedConceptSemanticLayerAssocPatMonotonicityProfile.{0, 0, 0}
+  formedConceptSemanticLayerConceptClosure :
+    Mettapedia.PLN.ConceptGeometry.AssocPat.PLNIntensionalWorldModel.InheritanceQueryBuilder.SemanticLayerConceptClosureBridgeProfile
   formedConceptMixedSemanticLayerBoundary :
     Mettapedia.PLN.ConceptGeometry.AssocPat.PLNHigherOrderHOLEmpiricalAssocPatBridge.FormedConceptMixedSemanticLayerBoundaryProfile.{0, 0, 0}
   formedConceptMixedSemanticLayerMonotonicity :
@@ -343,6 +347,78 @@ structure AssocPatChapter12ConsumerProfile where
     Mettapedia.PLN.ConceptGeometry.AssocPat.PLNHigherOrderHOLEmpiricalAssocPatBridge.RichPatternCodedChapter12SourceProfile
   richPatternCodedSemanticLayerConsumer :
     Mettapedia.PLN.ConceptGeometry.AssocPat.PLNHigherOrderHOLEmpiricalAssocPatBridge.RichPatternCodedSemanticLayerConsumerProfile.{0, 0, 0}
+  concreteSemanticLayerAssocPatMixedCanary :
+    Mettapedia.PLN.ConceptGeometry.AssocPat.PLNIntensionalWorldModel.InheritanceQueryBuilder.semanticLayerEvidence
+        (State := Mettapedia.PLN.ConceptGeometry.AssocPat.AbstractInheritanceIntensionalDemo.DemoState)
+        (Atom := Mettapedia.KR.ConceptOntology.Examples.Concept)
+        (Query := Mettapedia.PLN.ConceptGeometry.AssocPat.AbstractInheritanceIntensionalDemo.DemoPairQuery)
+        .intensional .assoc 1
+        Mettapedia.PLN.ConceptGeometry.AssocPat.AbstractInheritanceIntensionalDemo.pairEnc
+        Mettapedia.KR.ConceptOntology.Examples.Concept.bird
+        Mettapedia.KR.ConceptOntology.Examples.Concept.bird ≤
+      Mettapedia.PLN.ConceptGeometry.AssocPat.PLNIntensionalWorldModel.InheritanceQueryBuilder.semanticLayerEvidence
+        (State := Mettapedia.PLN.ConceptGeometry.AssocPat.AbstractInheritanceIntensionalDemo.DemoState)
+        (Atom := Mettapedia.KR.ConceptOntology.Examples.Concept)
+        (Query := Mettapedia.PLN.ConceptGeometry.AssocPat.AbstractInheritanceIntensionalDemo.DemoPairQuery)
+        .intensional .assoc 1
+        Mettapedia.PLN.ConceptGeometry.AssocPat.AbstractInheritanceIntensionalDemo.pairEnc
+        Mettapedia.KR.ConceptOntology.Examples.Concept.penguin
+        Mettapedia.KR.ConceptOntology.Examples.Concept.bird
+      ∧
+      Mettapedia.PLN.ConceptGeometry.AssocPat.PLNIntensionalWorldModel.InheritanceQueryBuilder.semanticLayerEvidence
+        (State := Mettapedia.PLN.ConceptGeometry.AssocPat.AbstractInheritanceIntensionalDemo.DemoState)
+        (Atom := Mettapedia.KR.ConceptOntology.Examples.Concept)
+        (Query := Mettapedia.PLN.ConceptGeometry.AssocPat.AbstractInheritanceIntensionalDemo.DemoPairQuery)
+        .intensional .pat 1
+        Mettapedia.PLN.ConceptGeometry.AssocPat.AbstractInheritanceIntensionalDemo.pairEnc
+        Mettapedia.KR.ConceptOntology.Examples.Concept.bird
+        Mettapedia.KR.ConceptOntology.Examples.Concept.bird ≤
+      Mettapedia.PLN.ConceptGeometry.AssocPat.PLNIntensionalWorldModel.InheritanceQueryBuilder.semanticLayerEvidence
+        (State := Mettapedia.PLN.ConceptGeometry.AssocPat.AbstractInheritanceIntensionalDemo.DemoState)
+        (Atom := Mettapedia.KR.ConceptOntology.Examples.Concept)
+        (Query := Mettapedia.PLN.ConceptGeometry.AssocPat.AbstractInheritanceIntensionalDemo.DemoPairQuery)
+        .intensional .pat 1
+        Mettapedia.PLN.ConceptGeometry.AssocPat.AbstractInheritanceIntensionalDemo.pairEnc
+        Mettapedia.KR.ConceptOntology.Examples.Concept.penguin
+        Mettapedia.KR.ConceptOntology.Examples.Concept.bird
+      ∧
+      Mettapedia.PLN.ConceptGeometry.AssocPat.PLNIntensionalWorldModel.InheritanceQueryBuilder.semanticLayerEvidence
+        (State := Mettapedia.PLN.ConceptGeometry.AssocPat.AbstractInheritanceIntensionalDemo.DemoState)
+        (Atom := Mettapedia.KR.ConceptOntology.Examples.Concept)
+        (Query := Mettapedia.PLN.ConceptGeometry.AssocPat.AbstractInheritanceIntensionalDemo.DemoPairQuery)
+        .mixed .assoc 1
+        Mettapedia.PLN.ConceptGeometry.AssocPat.AbstractInheritanceIntensionalDemo.pairEnc
+        Mettapedia.KR.ConceptOntology.Examples.Concept.bird
+        Mettapedia.KR.ConceptOntology.Examples.Concept.bird ≤
+      Mettapedia.PLN.ConceptGeometry.AssocPat.PLNIntensionalWorldModel.InheritanceQueryBuilder.semanticLayerEvidence
+        (State := Mettapedia.PLN.ConceptGeometry.AssocPat.AbstractInheritanceIntensionalDemo.DemoState)
+        (Atom := Mettapedia.KR.ConceptOntology.Examples.Concept)
+        (Query := Mettapedia.PLN.ConceptGeometry.AssocPat.AbstractInheritanceIntensionalDemo.DemoPairQuery)
+        .mixed .assoc 1
+        Mettapedia.PLN.ConceptGeometry.AssocPat.AbstractInheritanceIntensionalDemo.pairEnc
+        Mettapedia.KR.ConceptOntology.Examples.Concept.penguin
+        Mettapedia.KR.ConceptOntology.Examples.Concept.bird
+      ∧
+      Mettapedia.PLN.ConceptGeometry.AssocPat.PLNIntensionalWorldModel.InheritanceQueryBuilder.semanticLayerEvidence
+        (State := Mettapedia.PLN.ConceptGeometry.AssocPat.AbstractInheritanceIntensionalDemo.DemoState)
+        (Atom := Mettapedia.KR.ConceptOntology.Examples.Concept)
+        (Query := Mettapedia.PLN.ConceptGeometry.AssocPat.AbstractInheritanceIntensionalDemo.DemoPairQuery)
+        .intensional .assoc 1
+        Mettapedia.PLN.ConceptGeometry.AssocPat.AbstractInheritanceIntensionalDemo.pairEnc
+        Mettapedia.KR.ConceptOntology.Examples.Concept.bird
+        Mettapedia.KR.ConceptOntology.Examples.Concept.bird ≠
+      Mettapedia.PLN.ConceptGeometry.AssocPat.PLNIntensionalWorldModel.InheritanceQueryBuilder.semanticLayerEvidence
+        (State := Mettapedia.PLN.ConceptGeometry.AssocPat.AbstractInheritanceIntensionalDemo.DemoState)
+        (Atom := Mettapedia.KR.ConceptOntology.Examples.Concept)
+        (Query := Mettapedia.PLN.ConceptGeometry.AssocPat.AbstractInheritanceIntensionalDemo.DemoPairQuery)
+        .intensional .pat 1
+        Mettapedia.PLN.ConceptGeometry.AssocPat.AbstractInheritanceIntensionalDemo.pairEnc
+        Mettapedia.KR.ConceptOntology.Examples.Concept.bird
+        Mettapedia.KR.ConceptOntology.Examples.Concept.bird
+      ∧
+      Mettapedia.KR.ConceptGeometry.AbstractInheritance.StampedBinaryEvidence.guardedRevise
+        Mettapedia.PLN.ConceptGeometry.AssocPat.AbstractInheritanceIntensionalDemo.penguinBirdStampedEvidence
+        Mettapedia.PLN.ConceptGeometry.AssocPat.AbstractInheritanceIntensionalDemo.birdBirdStampedEvidence = none
   baseScorePATStrictlyExtendsASSOC :
     Mettapedia.PLN.ConceptGeometry.AssocPat.AbstractInheritanceIntensionalDemo.assocBaseScore
         Mettapedia.KR.ConceptOntology.Examples.Concept.bird
@@ -400,6 +476,8 @@ def assocPatChapter12ConsumerProfile : AssocPatChapter12ConsumerProfile where
     Mettapedia.PLN.ConceptGeometry.AssocPat.PLNHigherOrderHOLEmpiricalAssocPatBridge.formedConceptSemanticLayerAssocPatEqualityProfile.{0, 0, 0}
   formedConceptSemanticLayerAssocPatMonotonicity :=
     Mettapedia.PLN.ConceptGeometry.AssocPat.PLNHigherOrderHOLEmpiricalAssocPatBridge.formedConceptSemanticLayerAssocPatMonotonicityProfile.{0, 0, 0}
+  formedConceptSemanticLayerConceptClosure :=
+    Mettapedia.PLN.ConceptGeometry.AssocPat.PLNIntensionalWorldModel.InheritanceQueryBuilder.semanticLayerConceptClosureBridgeProfile
   formedConceptMixedSemanticLayerBoundary :=
     Mettapedia.PLN.ConceptGeometry.AssocPat.PLNHigherOrderHOLEmpiricalAssocPatBridge.formedConceptMixedSemanticLayerBoundaryProfile.{0, 0, 0}
   formedConceptMixedSemanticLayerMonotonicity :=
@@ -414,6 +492,8 @@ def assocPatChapter12ConsumerProfile : AssocPatChapter12ConsumerProfile where
     Mettapedia.PLN.ConceptGeometry.AssocPat.PLNHigherOrderHOLEmpiricalAssocPatBridge.richPatternCodedChapter12SourceProfile
   richPatternCodedSemanticLayerConsumer :=
     Mettapedia.PLN.ConceptGeometry.AssocPat.PLNHigherOrderHOLEmpiricalAssocPatBridge.richPatternCodedSemanticLayerConsumerProfile.{0, 0, 0}
+  concreteSemanticLayerAssocPatMixedCanary :=
+    Mettapedia.PLN.ConceptGeometry.AssocPat.AbstractInheritanceIntensionalDemo.semanticLayer_assoc_pat_mixed_provenance_canary
   baseScorePATStrictlyExtendsASSOC :=
     assoc_pat_base_score_bird_bird_lt_pat_base_score_bird_bird
   evidenceChannelsDoNotCollapse :=

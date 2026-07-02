@@ -1,4 +1,14 @@
 import Mettapedia.PLN.TruthValues.PLNTruthTheoryIndex.ConfidenceCharacterization
+import Mettapedia.PLN.TruthValues.PLNTruthTheoryIndex.DefinableCuts
+import Mettapedia.PLN.Bridges.KR.ConceptFormationControlCanary
+import Mettapedia.PLN.Bridges.KR.ConceptFormationDeFinettiBridge
+import Mettapedia.PLN.Bridges.KR.ConceptFormationITVBridge
+import Mettapedia.PLN.Bridges.ProbabilityTheory.RevisionBayesianGrounding
+import Mettapedia.PLN.Bridges.ProbabilityTheory.RevisionCredalEnvelope
+import Mettapedia.PLN.Bridges.Languages.PLNContextGuardOSLFDescentBridge
+import Mettapedia.PLN.RuleFamilies.FirstOrder.PLNRevisionProfile
+import Mettapedia.PLN.RuleFamilies.FirstOrder.PLNInductionAbductionProfile
+import Mettapedia.PLN.RuleFamilies.HigherOrder.PLNContextGuardBridge
 
 namespace Mettapedia.PLN.TruthValues.PLNTruthTheoryIndex
 
@@ -36,6 +46,14 @@ structure TruthTheoryPackage where
   walleyCategorical : WalleyCategoricalProfile
   strengthProjection : StrengthProjectionProfile
   subjectiveLogicEvidenceBeta : SubjectiveLogicEvidenceBetaProfile
+  revisionRuleFamily :
+    Mettapedia.PLN.RuleFamilies.FirstOrder.PLNRevision.RevisionRuleFamilyProfile
+  revisionBayesianGrounding :
+    Mettapedia.PLN.Bridges.ProbabilityTheory.RevisionBayesianGrounding.RevisionBayesianGroundingProfile
+  revisionCredalEnvelope :
+    Mettapedia.PLN.Bridges.ProbabilityTheory.RevisionCredalEnvelope.RevisionCredalEnvelopeProfile
+  inductionAbductionRuleFamily :
+    Mettapedia.PLN.RuleFamilies.FirstOrder.InductionAbductionRuleFamilyProfile
   assocPatChapter12Consumer : AssocPatChapter12ConsumerProfile
   meanConcentration : MeanConcentrationProfile
   informationGeometry : InformationGeometryLiftProfile
@@ -46,6 +64,17 @@ structure TruthTheoryPackage where
   credalForcedQueries : CredalForcedQueryProfile
   credalProjectionTower : CredalProjectionTowerProfile
   naturalExtension : NaturalExtensionProfile
+  definableCutTightness : DefinableCutTightnessProfile.{0, 0}
+  conceptFormationITVBridge :
+    Mettapedia.PLN.Bridges.KR.ConceptFormationITVBridge.ConceptFormationITVBridgeProfile
+  conceptFormationControlCanary :
+    Mettapedia.PLN.Bridges.KR.ConceptFormationControlCanary.ConceptFormationControlCanaryProfile.{0}
+  conceptFormationDeFinettiPrefixBridge :
+    Mettapedia.PLN.Bridges.KR.ConceptFormationDeFinettiBridge.ConceptFormationDeFinettiPrefixBridgeProfile
+  contextGuardBridge :
+    Mettapedia.PLN.RuleFamilies.HigherOrder.PLNContextGuardBridge.ContextGuardBridgeProfile.{0, 0, 0, 0, 0, 0, 0}
+  contextGuardOSLFDescentBridge :
+    Mettapedia.PLN.Bridges.Languages.PLNContextGuardOSLFDescentBridge.ContextGuardOSLFDescentBridgeProfile
   projectiveCredal : Mettapedia.ProbabilityTheory.ImpreciseProbability.ProjectiveCredal.ProjectiveCredalProfile.{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
   infiniteMLNCredalBridge : Mettapedia.Logic.MarkovLogicInfiniteCredalBridge.InfiniteMLNCredalBridgeProfile.{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
   dlrQueryOutcomePLNBridge : Mettapedia.Logic.MarkovLogicPLNTruthBridge.DLRQueryOutcomePLNBridgeProfile.{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
@@ -72,6 +101,14 @@ noncomputable def plnTruthTheoryPackage : TruthTheoryPackage where
   walleyCategorical := walleyCategoricalProfile
   strengthProjection := strengthProjectionProfile
   subjectiveLogicEvidenceBeta := subjectiveLogicEvidenceBetaProfile
+  revisionRuleFamily :=
+    Mettapedia.PLN.RuleFamilies.FirstOrder.PLNRevision.revisionRuleFamilyProfile
+  revisionBayesianGrounding :=
+    Mettapedia.PLN.Bridges.ProbabilityTheory.RevisionBayesianGrounding.revisionBayesianGroundingProfile
+  revisionCredalEnvelope :=
+    Mettapedia.PLN.Bridges.ProbabilityTheory.RevisionCredalEnvelope.revisionCredalEnvelopeProfile
+  inductionAbductionRuleFamily :=
+    Mettapedia.PLN.RuleFamilies.FirstOrder.inductionAbductionRuleFamilyProfile
   assocPatChapter12Consumer := assocPatChapter12ConsumerProfile
   meanConcentration := meanConcentrationProfile
   informationGeometry := informationGeometryLiftProfile
@@ -82,6 +119,17 @@ noncomputable def plnTruthTheoryPackage : TruthTheoryPackage where
   credalForcedQueries := credalForcedQueryProfile
   credalProjectionTower := credalProjectionTowerProfile
   naturalExtension := naturalExtensionProfile
+  definableCutTightness := definableCutTightnessProfile
+  conceptFormationITVBridge :=
+    Mettapedia.PLN.Bridges.KR.ConceptFormationITVBridge.conceptFormationITVBridgeProfile
+  conceptFormationControlCanary :=
+    Mettapedia.PLN.Bridges.KR.ConceptFormationControlCanary.conceptFormationControlCanaryProfile
+  conceptFormationDeFinettiPrefixBridge :=
+    Mettapedia.PLN.Bridges.KR.ConceptFormationDeFinettiBridge.conceptFormationDeFinettiPrefixBridgeProfile
+  contextGuardBridge :=
+    Mettapedia.PLN.RuleFamilies.HigherOrder.PLNContextGuardBridge.contextGuardBridgeProfile
+  contextGuardOSLFDescentBridge :=
+    Mettapedia.PLN.Bridges.Languages.PLNContextGuardOSLFDescentBridge.contextGuardOSLFDescentBridgeProfile
   projectiveCredal :=
     Mettapedia.ProbabilityTheory.ImpreciseProbability.ProjectiveCredal.projectiveCredalProfile
   infiniteMLNCredalBridge :=

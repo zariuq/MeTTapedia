@@ -2,17 +2,17 @@
 # run_ocoherence_gate.sh — <>-Coherence / HM-Adequacy Shadow v1 mutation gate.
 #
 # ocoherence_hm_adequacy_v1.metta pins a bounded HM-adequacy shadow: OSLF
-# modalities <F>phi are tested against context bisimulation with adequacy
+# modalities <F>phi / [F]phi are tested against context bisimulation with adequacy
 # positives plus explicit separating witnesses for the listed ~/~ pairs.  This
 # gate proves the teeth BITE: each injected modal break (a modality that ignores
-# its action label; a vacuously-true diamond; a dropped conjunct) or ~ over-match
-# must turn the oracle red.  Throwaway repo-local copy only; literal (non-regex)
-# replacement keeps the edits exact.
+# its action label; a vacuously-true diamond; a dropped conjunct; a broken box;
+# a broken grade order) or ~ over-match must turn the oracle red.  Throwaway
+# repo-local copy only; literal (non-regex) replacement keeps the edits exact.
 set -u
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CETTA="/home/aimama/aihub/hyperon/CeTTa/cetta"
 ORACLE="$ROOT/ocoherence_hm_adequacy_v1.metta"
-EXPECTED_BASE=24
+EXPECTED_BASE=40
 TMP="$(mktemp -d "$ROOT/.ocoherence_mutation.XXXXXX")"
 trap 'rm -rf "$TMP"' EXIT
 
@@ -66,6 +66,20 @@ run_mut "M3 modal: FAnd drops second conjunct" \
 run_mut "M4 bisim: vacuous match (~ over-identifies)" \
   '(= (has-match $n $a $P1 LNil) False)' \
   '(= (has-match $n $a $P1 LNil) True)'
+# M5 box ignores a failing matching successor.
+run_mut "M5 modal: [a] ignores failing successor" \
+  '(= (box-check $n $a $phi (LCons (Tr $b $P1) $rest))
+   (if (== $a $b)
+       (if (sat $n $P1 $phi) (box-check $n $a $phi $rest) False)
+       (box-check $n $a $phi $rest)))' \
+  '(= (box-check $n $a $phi (LCons (Tr $b $P1) $rest))
+   (if (== $a $b)
+       (box-check $n $a $phi $rest)
+       (box-check $n $a $phi $rest)))'
+# M6 grade order over-approximates.
+run_mut "M6 grade: <= accepts excess demand" \
+  '(= (gleq (GS $m) GZ) False)' \
+  '(= (gleq (GS $m) GZ) True)'
 
 echo
 if [[ "$missed" -eq 0 ]]; then

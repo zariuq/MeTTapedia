@@ -159,6 +159,38 @@ theorem openWorldConcept_frontierOrder_nontrivial_with_gunkyFace
     isGunky_frontierOrder_of_openWorldConcept (Γ := Γ) (M := M) (A := A) hOpen⟩
 
 omit [Fintype Gate] [Nonempty Gate] in
+theorem hasStrictGlobalWidth_frontierOrder_nontrivial_with_gunkyFace
+    (Γ : Gate → EvidenceGate Q) (M : Obj → Attr → Q)
+    (A : Mettapedia.KR.ConceptGeometry.AbstractInheritance.DualConcept Obj Attr)
+    (hWidth : (gateCredalProjectiveSpec (Gate := Gate)).hasStrictGlobalWidth
+      (conceptFormationGamble Γ M A)) :
+    Nontrivial (conceptCredalFrontierOrder Γ M A) ∧
+      IsGunky (conceptCredalFrontierOrder Γ M A) := by
+  exact openWorldConcept_frontierOrder_nontrivial_with_gunkyFace
+    (Γ := Γ) (M := M) (A := A)
+    ((openWorldConcept_iff_hasStrictGlobalWidth
+      (Γ := Γ) (M := M) (A := A)).2 hWidth)
+
+omit [Fintype Gate] [Nonempty Gate] in
+theorem hasStrictGlobalWidth_iff_nontrivial_frontierOrder
+    (Γ : Gate → EvidenceGate Q) (M : Obj → Attr → Q)
+    (A : Mettapedia.KR.ConceptGeometry.AbstractInheritance.DualConcept Obj Attr) :
+    (gateCredalProjectiveSpec (Gate := Gate)).hasStrictGlobalWidth
+        (conceptFormationGamble Γ M A) ↔
+      Nontrivial (conceptCredalFrontierOrder Γ M A) := by
+  constructor
+  · intro hWidth
+    exact (hasStrictGlobalWidth_frontierOrder_nontrivial_with_gunkyFace
+      (Γ := Γ) (M := M) (A := A) hWidth).1
+  · intro hNontriv
+    have hOpen :
+        openWorldConcept (Obj := Obj) (Attr := Attr) (Q := Q) (Gate := Gate) Γ M A :=
+      (openWorldConcept_iff_nontrivial_frontierOrder
+        (Γ := Γ) (M := M) (A := A)).2 hNontriv
+    exact (openWorldConcept_iff_hasStrictGlobalWidth
+      (Γ := Γ) (M := M) (A := A)).1 hOpen
+
+omit [Fintype Gate] [Nonempty Gate] in
 theorem subsingleton_frontierOrder_of_thatsAllConcept
     (Γ : Gate → EvidenceGate Q) (M : Obj → Attr → Q)
     (A : Mettapedia.KR.ConceptGeometry.AbstractInheritance.DualConcept Obj Attr)
@@ -167,6 +199,48 @@ theorem subsingleton_frontierOrder_of_thatsAllConcept
   have hHeight : conceptCredalFrontierHeight Γ M A = 0 :=
     conceptCredalFrontierHeight_eq_zero_of_thatsAllConcept (Γ := Γ) (M := M) (A := A) hAll
   simpa [conceptCredalFrontierOrder, hHeight] using subsingleton_iic_zero_nnreal
+
+omit [Fintype Gate] [Nonempty Gate] in
+theorem determinesGlobalGamble_frontierOrder_subsingleton
+    (Γ : Gate → EvidenceGate Q) (M : Obj → Attr → Q)
+    (A : Mettapedia.KR.ConceptGeometry.AbstractInheritance.DualConcept Obj Attr)
+    (hDet : (gateCredalProjectiveSpec (Gate := Gate)).determinesGlobalGamble
+      (conceptFormationGamble Γ M A)) :
+    Subsingleton (conceptCredalFrontierOrder Γ M A) := by
+  exact subsingleton_frontierOrder_of_thatsAllConcept
+    (Γ := Γ) (M := M) (A := A)
+    ((thatsAllConcept_iff_determinesGlobalGamble
+      (Γ := Γ) (M := M) (A := A)).2 hDet)
+
+omit [Fintype Gate] [Nonempty Gate] in
+theorem determinesGlobalGamble_iff_subsingleton_frontierOrder
+    (Γ : Gate → EvidenceGate Q) (M : Obj → Attr → Q)
+    (A : Mettapedia.KR.ConceptGeometry.AbstractInheritance.DualConcept Obj Attr) :
+    (gateCredalProjectiveSpec (Gate := Gate)).determinesGlobalGamble
+        (conceptFormationGamble Γ M A) ↔
+      Subsingleton (conceptCredalFrontierOrder Γ M A) := by
+  constructor
+  · intro hDet
+    exact determinesGlobalGamble_frontierOrder_subsingleton
+      (Γ := Γ) (M := M) (A := A) hDet
+  · intro hSub
+    have hNotNontriv : ¬ Nontrivial (conceptCredalFrontierOrder Γ M A) := by
+      intro hNontriv
+      letI : Subsingleton (conceptCredalFrontierOrder Γ M A) := hSub
+      haveI : Nontrivial (conceptCredalFrontierOrder Γ M A) := hNontriv
+      obtain ⟨x, y, hxy⟩ := exists_pair_ne (conceptCredalFrontierOrder Γ M A)
+      exact hxy (Subsingleton.elim x y)
+    have hNotOpen :
+        ¬ openWorldConcept (Obj := Obj) (Attr := Attr) (Q := Q) (Gate := Gate) Γ M A := by
+      intro hOpen
+      exact hNotNontriv
+        ((openWorldConcept_iff_nontrivial_frontierOrder
+          (Γ := Γ) (M := M) (A := A)).1 hOpen)
+    have hAll :
+        thatsAllConcept (Obj := Obj) (Attr := Attr) (Q := Q) (Gate := Gate) Γ M A := by
+      simpa [thatsAllConcept, openWorldConcept] using hNotOpen
+    exact (thatsAllConcept_iff_determinesGlobalGamble
+      (Γ := Γ) (M := M) (A := A)).1 hAll
 
 -- A genuinely open-world frontier shadow cannot be finite: finite nontrivial
 -- carriers are never gunky, so any finite-stage frontier approximation
@@ -197,6 +271,32 @@ theorem thatsAllConcept_of_finite_frontierOrder
       ¬ openWorldConcept (Obj := Obj) (Attr := Attr) (Q := Q) (Gate := Gate) Γ M A :=
     not_openWorldConcept_of_finite_frontierOrder (Γ := Γ) (M := M) (A := A)
   simpa [thatsAllConcept, openWorldConcept] using hNotOpen
+
+omit [Fintype Gate] [Nonempty Gate] in
+theorem not_hasStrictGlobalWidth_of_finite_frontierOrder
+    (Γ : Gate → EvidenceGate Q) (M : Obj → Attr → Q)
+    (A : Mettapedia.KR.ConceptGeometry.AbstractInheritance.DualConcept Obj Attr)
+    [Finite (conceptCredalFrontierOrder Γ M A)] :
+    ¬ (gateCredalProjectiveSpec (Gate := Gate)).hasStrictGlobalWidth
+      (conceptFormationGamble Γ M A) := by
+  intro hWidth
+  have hOpen :
+      openWorldConcept (Obj := Obj) (Attr := Attr) (Q := Q) (Gate := Gate) Γ M A :=
+    (openWorldConcept_iff_hasStrictGlobalWidth
+      (Γ := Γ) (M := M) (A := A)).2 hWidth
+  exact not_openWorldConcept_of_finite_frontierOrder
+    (Γ := Γ) (M := M) (A := A) hOpen
+
+omit [Fintype Gate] [Nonempty Gate] in
+theorem determinesGlobalGamble_of_finite_frontierOrder
+    (Γ : Gate → EvidenceGate Q) (M : Obj → Attr → Q)
+    (A : Mettapedia.KR.ConceptGeometry.AbstractInheritance.DualConcept Obj Attr)
+    [Finite (conceptCredalFrontierOrder Γ M A)] :
+    (gateCredalProjectiveSpec (Gate := Gate)).determinesGlobalGamble
+      (conceptFormationGamble Γ M A) := by
+  exact (thatsAllConcept_iff_determinesGlobalGamble
+    (Γ := Γ) (M := M) (A := A)).1
+    (thatsAllConcept_of_finite_frontierOrder (Γ := Γ) (M := M) (A := A))
 
 end FrontierShadow
 

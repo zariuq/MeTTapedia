@@ -226,65 +226,6 @@ theorem genericWitnessImpliesFeatureCountTable_veWeight_trueWitness_eq_trueFeatu
       genericWitnessImpliesFeatureCountTable true true
       genericWitnessImpliesFeatureCountTable_trueWitness_support_eq_joint
 
-/-- Finite witness/feature table criterion specialized to the Chapter-12
-2x2 empirical bridge.
-
-If there are no witness-only cases, the witness marginal is exactly the
-feature-and-witness joint mass. This is the table-level source fact behind the
-formed-concept and empirical subset canaries; it is not a separate HO
-semantics. -/
-theorem finiteWitnessFeatureTable_veWeight_witness_eq_feature_witness_of_no_witnessOnly
-    (table : FiniteWitnessFeatureTable)
-    (hNoWitnessOnly : table.witnessOnly = 0) :
-    FiniteWitnessFeatureTable.veWeight table
-        [⟨MembershipConcept.witness, true⟩] =
-      FiniteWitnessFeatureTable.veWeight table
-        [⟨MembershipConcept.feature, true⟩,
-          ⟨MembershipConcept.witness, true⟩] := by
-  have hWitness :
-      FiniteWitnessFeatureTable.veWeight table
-          [⟨MembershipConcept.witness, true⟩] =
-        (FiniteWitnessFeatureTable.toMembershipCounts table).witnessSupport := by
-    simpa [FiniteWitnessFeatureTable.veWeight] using
-      MembershipCounts.veWeight_witness_true
-        (FiniteWitnessFeatureTable.toMembershipCounts table)
-  have hJoint :
-      FiniteWitnessFeatureTable.veWeight table
-          [⟨MembershipConcept.feature, true⟩, ⟨MembershipConcept.witness, true⟩] =
-        (FiniteWitnessFeatureTable.toMembershipCounts table).both := by
-    simpa [FiniteWitnessFeatureTable.veWeight] using
-      MembershipCounts.veWeight_feature_witness_true
-        (FiniteWitnessFeatureTable.toMembershipCounts table)
-  rw [hWitness, hJoint]
-  simp [FiniteWitnessFeatureTable.toMembershipCounts, MembershipCounts.witnessSupport,
-    hNoWitnessOnly]
-
-/-- The formed-concept inheritance table inherits the same no-witness-only VE
-criterion. This packages the source-side condition in the vocabulary used by
-Chapter-12 concept formation. -/
-theorem formedConceptInheritanceTable_veWeight_witness_eq_feature_witness_of_no_witnessOnly
-    {Obj Attr Q : Type*} [Preorder Q] [Fintype Obj] [Nonempty Obj] [Fintype Attr]
-    (G : Mettapedia.KR.ConceptOntology.EvidenceGate Q)
-    (Memb : Obj → Attr → Q)
-    (feature witness : Mettapedia.KR.ConceptGeometry.AbstractInheritance.FormedConcept G Memb)
-    (hNoWitnessOnly :
-      (Mettapedia.KR.ConceptGeometry.IntensionalInheritance.AbstractInheritance.formedConceptInheritanceTable
-        G Memb feature witness).witnessOnly = 0) :
-    FiniteWitnessFeatureTable.veWeight
-        (Mettapedia.KR.ConceptGeometry.IntensionalInheritance.AbstractInheritance.formedConceptInheritanceTable
-          G Memb feature witness)
-        [⟨MembershipConcept.witness, true⟩] =
-      FiniteWitnessFeatureTable.veWeight
-        (Mettapedia.KR.ConceptGeometry.IntensionalInheritance.AbstractInheritance.formedConceptInheritanceTable
-          G Memb feature witness)
-        [⟨MembershipConcept.feature, true⟩,
-          ⟨MembershipConcept.witness, true⟩] := by
-  exact
-    finiteWitnessFeatureTable_veWeight_witness_eq_feature_witness_of_no_witnessOnly
-      (Mettapedia.KR.ConceptGeometry.IntensionalInheritance.AbstractInheritance.formedConceptInheritanceTable
-        G Memb feature witness)
-      hNoWitnessOnly
-
 /-- Tiny nontrivial empirical table: there are no witness-only cases, so every
 witness is also a feature. -/
 def witnessImpliesFeatureCounts : MembershipCounts where
@@ -596,6 +537,54 @@ noncomputable def witnessFeatureFormedInheritanceTable :
     (witnessImpliesFeatureFormedConcept MembershipConcept.feature)
     (witnessImpliesFeatureFormedConcept MembershipConcept.witness)
 
+/-- The concrete formed-concept Chapter-12 source has no witness-only mass:
+formed `witness` inherits formed `feature`, so every witness extent object is
+also a feature extent object in the generated 2x2 table. -/
+theorem witnessFeatureFormedInheritanceTable_noWitnessOnly :
+    witnessFeatureFormedInheritanceTable.witnessOnly = 0 := by
+  simpa [witnessFeatureFormedInheritanceTable,
+    Mettapedia.KR.ConceptGeometry.IntensionalInheritance.AbstractInheritance.formedConceptInheritanceTable] using
+    Mettapedia.KR.ConceptGeometry.IntensionalInheritance.Interpretation.toFiniteWitnessFeatureTable_witnessOnly_eq_zero_of_inherits
+      (I := Mettapedia.KR.ConceptGeometry.AbstractInheritance.formedConceptInterpretation
+        Mettapedia.KR.ConceptOntology.EvidenceGate.positiveSupport
+        witnessImpliesFeatureMemberEvidence)
+      (feature := witnessImpliesFeatureFormedConcept MembershipConcept.feature)
+      (witness := witnessImpliesFeatureFormedConcept MembershipConcept.witness)
+      witness_formedConcept_inherits_feature_formedConcept_canary
+
+/-- The concrete formed-concept source table exposes the source inheritance as
+an exact finite-table VE readout: the witness marginal is the
+feature-and-witness joint. -/
+theorem witnessFeatureFormedInheritanceTable_veWeight_witness_eq_feature_witness :
+    FiniteWitnessFeatureTable.veWeight witnessFeatureFormedInheritanceTable
+        [⟨MembershipConcept.witness, true⟩] =
+      FiniteWitnessFeatureTable.veWeight witnessFeatureFormedInheritanceTable
+        [⟨MembershipConcept.feature, true⟩,
+          ⟨MembershipConcept.witness, true⟩] := by
+  simpa [witnessFeatureFormedInheritanceTable] using
+    Mettapedia.KR.ConceptGeometry.IntensionalInheritance.AbstractInheritance.formedConceptInheritanceTable_veWeight_witness_eq_feature_witness_of_inherits
+      (G := Mettapedia.KR.ConceptOntology.EvidenceGate.positiveSupport)
+      (M := witnessImpliesFeatureMemberEvidence)
+      (feature := witnessImpliesFeatureFormedConcept MembershipConcept.feature)
+      (witness := witnessImpliesFeatureFormedConcept MembershipConcept.witness)
+      witness_formedConcept_inherits_feature_formedConcept_canary
+
+/-- For the concrete formed-concept source, zero witness-only mass is not an
+extra assumption: it is exactly the extensional-inheritance source condition. -/
+theorem witnessFeatureFormedInheritanceTable_noWitnessOnly_iff_extensionalInherits :
+    witnessFeatureFormedInheritanceTable.witnessOnly = 0 ↔
+      (Mettapedia.KR.ConceptGeometry.AbstractInheritance.formedConceptInterpretation
+        Mettapedia.KR.ConceptOntology.EvidenceGate.positiveSupport
+        witnessImpliesFeatureMemberEvidence).ExtensionalInherits
+        (witnessImpliesFeatureFormedConcept MembershipConcept.witness)
+        (witnessImpliesFeatureFormedConcept MembershipConcept.feature) := by
+  simpa [witnessFeatureFormedInheritanceTable] using
+    Mettapedia.KR.ConceptGeometry.IntensionalInheritance.AbstractInheritance.formedConceptInheritanceTable_witnessOnly_eq_zero_iff_extensionalInherits
+      (G := Mettapedia.KR.ConceptOntology.EvidenceGate.positiveSupport)
+      (M := witnessImpliesFeatureMemberEvidence)
+      (feature := witnessImpliesFeatureFormedConcept MembershipConcept.feature)
+      (witness := witnessImpliesFeatureFormedConcept MembershipConcept.witness)
+
 /-- The formed-concept source used for the HO pair-subset bridge also has its
 ASSOC/log-ratio score generated by the exact finite-table VE query.
 
@@ -639,10 +628,11 @@ theorem witnessFeature_formedConcept_assocLogRatio_eq_veQueryScore :
 /-- Proof-carrying profile for the concrete formed-concept Chapter-12 source.
 
 The fields keep the semantic source together: actual formed concepts provide a
-pair-subset fact, an equivalent-source same-intent canary, and the ASSOC
-log-ratio readout through the finite-table VE bridge.  Downstream HO ASSOC/PAT
-theorems consume this profile through calibrated intent; this profile itself is
-not a separate PAT semantics. -/
+pair-subset fact, an equivalent-source same-intent canary, the source-table
+no-witness-only VE equality, and the ASSOC log-ratio readout through the
+finite-table VE bridge.  Downstream HO ASSOC/PAT theorems consume this profile
+through calibrated intent; this profile itself is not a separate PAT
+semantics. -/
 structure FormedConceptChapter12SourceProfile where
   witnessInheritsFeature :
     (Mettapedia.KR.ConceptGeometry.AbstractInheritance.formedConceptInterpretation
@@ -664,6 +654,19 @@ structure FormedConceptChapter12SourceProfile where
       (witnessImpliesFeatureFormedConcept MembershipConcept.feature)
       (witnessImpliesFeatureFormedConcept MembershipConcept.witness)
       (witnessImpliesFeatureFormedConcept MembershipConcept.feature)
+  noWitnessOnlyVEReadout :
+    FiniteWitnessFeatureTable.veWeight witnessFeatureFormedInheritanceTable
+        [⟨MembershipConcept.witness, true⟩] =
+      FiniteWitnessFeatureTable.veWeight witnessFeatureFormedInheritanceTable
+        [⟨MembershipConcept.feature, true⟩,
+          ⟨MembershipConcept.witness, true⟩]
+  noWitnessOnlyIffExtensionalInherits :
+    witnessFeatureFormedInheritanceTable.witnessOnly = 0 ↔
+      (Mettapedia.KR.ConceptGeometry.AbstractInheritance.formedConceptInterpretation
+        Mettapedia.KR.ConceptOntology.EvidenceGate.positiveSupport
+        witnessImpliesFeatureMemberEvidence).ExtensionalInherits
+        (witnessImpliesFeatureFormedConcept MembershipConcept.witness)
+        (witnessImpliesFeatureFormedConcept MembershipConcept.feature)
   assocLogRatioReadout :
     Mettapedia.KR.ConceptGeometry.IntensionalInheritance.Interpretation.finiteInheritanceLogRatioBits
         (Mettapedia.KR.ConceptGeometry.AbstractInheritance.formedConceptInterpretation
@@ -700,6 +703,10 @@ noncomputable def formedConceptChapter12SourceProfile :
     witnessEquivalentFeature_formedConcept_mutualInherits_canary
   witnessFeaturePairSubset :=
     witnessFeature_formedConcept_pairSubsetRel_canary
+  noWitnessOnlyVEReadout :=
+    witnessFeatureFormedInheritanceTable_veWeight_witness_eq_feature_witness
+  noWitnessOnlyIffExtensionalInherits :=
+    witnessFeatureFormedInheritanceTable_noWitnessOnly_iff_extensionalInherits
   assocLogRatioReadout :=
     witnessFeature_formedConcept_assocLogRatio_eq_veQueryScore
 
@@ -721,8 +728,20 @@ theorem witnessImpliesFeatureTable_veWeight_witness_eq_feature_witness :
       FiniteWitnessFeatureTable.veWeight witnessImpliesFeatureTable
         [⟨MembershipConcept.feature, true⟩, ⟨MembershipConcept.witness, true⟩] := by
   exact
-    finiteWitnessFeatureTable_veWeight_witness_eq_feature_witness_of_no_witnessOnly
+    FiniteWitnessFeatureTable.veWeight_witness_eq_feature_witness_of_no_witnessOnly
       witnessImpliesFeatureTable (by rfl)
+
+/-- The concrete finite-table canary has the same exact source criterion as the
+formed-concept source: no witness-only cases iff the witness concept is
+extensionally inherited by the feature concept in the table interpretation. -/
+theorem witnessImpliesFeatureTable_noWitnessOnly_iff_extensionalInherits :
+    witnessImpliesFeatureTable.witnessOnly = 0 ↔
+      (MembershipCounts.semanticInterpretation
+        (FiniteWitnessFeatureTable.toMembershipCounts witnessImpliesFeatureTable)).ExtensionalInherits
+        MembershipConcept.witness MembershipConcept.feature := by
+  simpa using
+    FiniteWitnessFeatureTable.witnessOnly_eq_zero_iff_extensionalInherits
+      witnessImpliesFeatureTable
 
 /-- The finite witness/feature table supplies the same pair-subset fact as the
 raw empirical-counts presentation. -/
@@ -768,11 +787,24 @@ theorem witnessOnlyCounterexampleTable_veWeight_witness_ne_feature_witness :
     MembershipCounts.witnessSupport,
     witnessOnlyCounterexampleTable]
 
+/-- Negative finite-table source canary: the same witness-only case that breaks
+the VE equality also breaks the extensional-inheritance source criterion. -/
+theorem witnessOnlyCounterexampleTable_not_extensionalInherits :
+    ¬ (MembershipCounts.semanticInterpretation
+        (FiniteWitnessFeatureTable.toMembershipCounts witnessOnlyCounterexampleTable)).ExtensionalInherits
+        MembershipConcept.witness MembershipConcept.feature := by
+  have hWitnessOnlyNonzero : witnessOnlyCounterexampleTable.witnessOnly ≠ 0 := by
+    norm_num [witnessOnlyCounterexampleTable]
+  intro hExt
+  exact hWitnessOnlyNonzero
+    ((FiniteWitnessFeatureTable.witnessOnly_eq_zero_iff_extensionalInherits
+      witnessOnlyCounterexampleTable).2 hExt)
+
 /-- Proof-carrying profile for the finite-table Chapter-12 source algebra.
 
 This packages the positive no-witness-only VE equality, the pair-subset source
-fact it supports, and the matching witness-only counterexample.  It is a source
-profile for the empirical/factor-graph side of ASSOC/PAT, not a new rule
+fact it supports, and the matching witness-only counterexamples.  It is a
+source profile for the empirical/factor-graph side of ASSOC/PAT, not a new rule
 semantics. -/
 structure FiniteTableChapter12SourceProfile where
   noWitnessOnlyVEReadout :
@@ -780,6 +812,11 @@ structure FiniteTableChapter12SourceProfile where
         [⟨MembershipConcept.witness, true⟩] =
       FiniteWitnessFeatureTable.veWeight witnessImpliesFeatureTable
         [⟨MembershipConcept.feature, true⟩, ⟨MembershipConcept.witness, true⟩]
+  noWitnessOnlyIffExtensionalInherits :
+    witnessImpliesFeatureTable.witnessOnly = 0 ↔
+      (MembershipCounts.semanticInterpretation
+        (FiniteWitnessFeatureTable.toMembershipCounts witnessImpliesFeatureTable)).ExtensionalInherits
+        MembershipConcept.witness MembershipConcept.feature
   pairSubset :
     (MembershipCounts.semanticInterpretation
       (FiniteWitnessFeatureTable.toMembershipCounts witnessImpliesFeatureTable)).PairSubsetRel
@@ -790,6 +827,10 @@ structure FiniteTableChapter12SourceProfile where
         [⟨MembershipConcept.witness, true⟩] ≠
       FiniteWitnessFeatureTable.veWeight witnessOnlyCounterexampleTable
         [⟨MembershipConcept.feature, true⟩, ⟨MembershipConcept.witness, true⟩]
+  witnessOnlyCounterexampleNotExtensionalInherits :
+    ¬ (MembershipCounts.semanticInterpretation
+        (FiniteWitnessFeatureTable.toMembershipCounts witnessOnlyCounterexampleTable)).ExtensionalInherits
+        MembershipConcept.witness MembershipConcept.feature
 
 /-- Concrete finite-table Chapter-12 source algebra package consumed by the
 public ASSOC/PAT theorem index. -/
@@ -797,10 +838,14 @@ noncomputable def finiteTableChapter12SourceProfile :
     FiniteTableChapter12SourceProfile where
   noWitnessOnlyVEReadout :=
     witnessImpliesFeatureTable_veWeight_witness_eq_feature_witness
+  noWitnessOnlyIffExtensionalInherits :=
+    witnessImpliesFeatureTable_noWitnessOnly_iff_extensionalInherits
   pairSubset :=
     witnessFeature_pairSubsetRel_table_canary
   witnessOnlyCounterexample :=
     witnessOnlyCounterexampleTable_veWeight_witness_ne_feature_witness
+  witnessOnlyCounterexampleNotExtensionalInherits :=
+    witnessOnlyCounterexampleTable_not_extensionalInherits
 
 /-! ## OSLF pattern-coded source surface -/
 

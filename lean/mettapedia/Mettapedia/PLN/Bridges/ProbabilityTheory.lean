@@ -15,6 +15,8 @@ import Mettapedia.PLN.Bridges.ProbabilityTheory.ModalProbabilityBridge
 import Mettapedia.PLN.Bridges.ProbabilityTheory.PLNProbabilityBridge
 import Mettapedia.PLN.Bridges.ProbabilityTheory.PLNSubjectiveLogicBridge
 import Mettapedia.PLN.Bridges.ProbabilityTheory.PLNXiCarrierScreening
+import Mettapedia.PLN.Bridges.ProbabilityTheory.RevisionBayesianGrounding
+import Mettapedia.PLN.Bridges.ProbabilityTheory.RevisionCredalEnvelope
 import Mettapedia.PLN.Bridges.ProbabilityTheory.BayesNet
 
 /-!

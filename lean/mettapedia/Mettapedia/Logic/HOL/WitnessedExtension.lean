@@ -175,11 +175,178 @@ theorem provable_imp_of_insert {T : ClosedTheorySet Const} {χ ψ : ClosedFormul
     · exact List.mem_cons_of_mem _ (List.mem_filter.mpr ⟨hξ, by simp [he]⟩)
   exact ⟨ΓT, fun ξ hξ => hΓT_subT ξ hξ, ExtDerivation.impI d'⟩
 
+/-- Converse direction of the theory-level deduction theorem. -/
+theorem provable_insert_of_imp {T : ClosedTheorySet Const} {χ ψ : ClosedFormula Const}
+    (h : ClosedTheorySet.Provable (Const := Const) T (Term.imp χ ψ)) :
+    ClosedTheorySet.Provable (Const := Const) (insert χ T) ψ := by
+  exact ClosedTheorySet.provable_mp
+    (ClosedTheorySet.provable_mono (Const := Const)
+      (T := T) (U := insert χ T)
+      (by intro ξ hξ; exact Set.mem_insert_of_mem χ hξ)
+      h)
+    (ClosedTheorySet.provable_of_mem (Const := Const) (Set.mem_insert χ T))
+
+/-- Theory-level deduction theorem for a single inserted hypothesis. -/
+theorem provable_insert_iff_imp {T : ClosedTheorySet Const} {χ ψ : ClosedFormula Const} :
+    ClosedTheorySet.Provable (Const := Const) (insert χ T) ψ ↔
+      ClosedTheorySet.Provable (Const := Const) T (Term.imp χ ψ) :=
+  ⟨provable_imp_of_insert, provable_insert_of_imp⟩
+
+/-- Disjunction elimination packaged for closed theory sets. -/
+theorem provable_or_elim {T : ClosedTheorySet Const}
+    {φ ψ θ : ClosedFormula Const}
+    (hOr : ClosedTheorySet.Provable (Const := Const) T (.or φ ψ))
+    (hφ : ClosedTheorySet.Provable (Const := Const) (insert φ T) θ)
+    (hψ : ClosedTheorySet.Provable (Const := Const) (insert ψ T) θ) :
+    ClosedTheorySet.Provable (Const := Const) T θ := by
+  rcases hOr with ⟨ΓOr, hΓOr, dOr⟩
+  have hφImp : ClosedTheorySet.Provable (Const := Const) T (.imp φ θ) :=
+    provable_imp_of_insert (Const := Const) hφ
+  have hψImp : ClosedTheorySet.Provable (Const := Const) T (.imp ψ θ) :=
+    provable_imp_of_insert (Const := Const) hψ
+  rcases hφImp with ⟨Γφ, hΓφ, dφ⟩
+  rcases hψImp with ⟨Γψ, hΓψ, dψ⟩
+  refine ⟨ΓOr ++ Γφ ++ Γψ, ?_, ?_⟩
+  · intro ξ hξ
+    simp only [List.mem_append] at hξ
+    rcases hξ with (hξOr | hξφ) | hξψ
+    · exact hΓOr ξ hξOr
+    · exact hΓφ ξ hξφ
+    · exact hΓψ ξ hξψ
+  · refine ExtDerivation.orE (φ := φ) (ψ := ψ) (χ := θ) ?_ ?_ ?_
+    · exact ExtDerivation.mono
+        (by intro ξ hξ; simp [hξ]) dOr
+    · exact ExtDerivation.impE
+        (ExtDerivation.mono
+          (by
+            intro ξ hξ
+            exact List.mem_cons_of_mem _ (by simp [hξ]))
+          dφ)
+        (ExtDerivation.hyp List.mem_cons_self)
+    · exact ExtDerivation.impE
+        (ExtDerivation.mono
+          (by
+            intro ξ hξ
+            exact List.mem_cons_of_mem _ (by simp [hξ]))
+          dψ)
+        (ExtDerivation.hyp List.mem_cons_self)
+
+/-- If `T ⊬ θ` but `T ⊢ φ ∨ ψ`, then at least one disjunct can be added while
+still omitting `θ`. -/
+theorem exists_or_branch_omitting
+    {T : ClosedTheorySet Const} {φ ψ θ : ClosedFormula Const}
+    (hNot : ¬ ClosedTheorySet.Provable (Const := Const) T θ)
+    (hOr : ClosedTheorySet.Provable (Const := Const) T (.or φ ψ)) :
+    (¬ ClosedTheorySet.Provable (Const := Const) (insert φ T) θ) ∨
+      (¬ ClosedTheorySet.Provable (Const := Const) (insert ψ T) θ) := by
+  classical
+  by_cases hφ : ClosedTheorySet.Provable (Const := Const) (insert φ T) θ
+  · right
+    intro hψ
+    exact hNot (provable_or_elim (Const := Const) hOr hφ hψ)
+  · exact Or.inl hφ
+
+/-- Existential elimination packaged for a closed theory: from `∃x. φ` and
+`∀x. (φ → θ)`, derive the closed conclusion `θ`. -/
+theorem provable_of_ex_and_all_imp {T : ClosedTheorySet Const}
+    {σ : Ty Base} {φ : Formula Const [σ]} {θ : ClosedFormula Const}
+    (hEx : ClosedTheorySet.Provable (Const := Const) T (.ex φ))
+    (hAll : ClosedTheorySet.Provable (Const := Const) T (.all (.imp φ (weaken θ)))) :
+    ClosedTheorySet.Provable (Const := Const) T θ := by
+  rcases hEx with ⟨ΓEx, hΓEx, dEx⟩
+  rcases hAll with ⟨ΓAll, hΓAll, dAll⟩
+  refine ⟨ΓEx ++ ΓAll, ?_, ?_⟩
+  · intro ξ hξ
+    rcases List.mem_append.mp hξ with hξEx | hξAll
+    · exact hΓEx ξ hξEx
+    · exact hΓAll ξ hξAll
+  · refine ExtDerivation.exE (φ := φ) (ψ := θ) ?_ ?_
+    · exact ExtDerivation.mono
+        (by intro ξ hξ; exact List.mem_append_left ΓAll hξ) dEx
+    · have hAllBody : ExtDerivation Const
+          (φ :: weakenHyps (Base := Base) (σ := σ) (ΓEx ++ ΓAll))
+          (.all (rename (Rename.lift (Base := Base) (σ := σ)
+            (Rename.weaken (Base := Base) (Γ := []) (σ := σ)))
+              (.imp φ (weaken (Base := Base) (σ := σ) θ)))) := by
+        have hRenamed : ExtDerivation Const
+            (weakenHyps (Base := Base) (σ := σ) ΓAll)
+            (.all (rename (Rename.lift (Base := Base) (σ := σ)
+              (Rename.weaken (Base := Base) (Γ := []) (σ := σ)))
+                (.imp φ (weaken (Base := Base) (σ := σ) θ)))) := by
+          have hRaw :=
+            (ExtDerivation.rename
+              (Rename.weaken (Base := Base) (Γ := []) (σ := σ)) dAll)
+          have hCtx :
+              ΓAll.map (rename (Rename.weaken (Base := Base) (Γ := []) (σ := σ))) =
+                weakenHyps (Base := Base) (σ := σ) ΓAll := by
+            simp [weakenHyps, weaken]
+          simpa [hCtx, weaken, rename] using hRaw
+        refine ExtDerivation.mono ?_ hRenamed
+        intro ξ hξ
+        simp only [weakenHyps, List.map_append] at hξ ⊢
+        exact List.mem_cons_of_mem _ (List.mem_append_right _ hξ)
+      have hImp : ExtDerivation Const
+          (φ :: weakenHyps (Base := Base) (σ := σ) (ΓEx ++ ΓAll))
+          (.imp φ (weaken (Base := Base) (σ := σ) θ)) := by
+        have hInst := ExtDerivation.allE (Base := Base) (.var .vz) hAllBody
+        simpa [instantiate_vz_rename_lift_weaken] using hInst
+      exact ExtDerivation.impE hImp (ExtDerivation.hyp List.mem_cons_self)
+
 /-- The Henkin witness axiom for body `φ` at witness constant `c`:
 `(∃x. φ) → φ[c]`. -/
 @[reducible] def witnessAxiom {σ : Ty Base} (c : Const σ) (φ : Formula Const [σ]) :
     ClosedFormula Const :=
   Term.imp (.ex φ) (instantiate (Base := Base) (.const c) φ)
+
+/-- If `∃x. φ` is already derivable on the left, adding a fresh instance `φ[c]`
+preserves omission of a fresh closed formula `θ`.  This is the one-step
+intuitionistic Henkin-pair move used for separating extensions. -/
+theorem not_provable_insert_fresh_instance_of_ex_provable
+    {T : ClosedTheorySet Const} {σ : Ty Base} {φ : Formula Const [σ]}
+    {θ : ClosedFormula Const} (c : Const σ)
+    (hNot : ¬ ClosedTheorySet.Provable (Const := Const) T θ)
+    (hEx : ClosedTheorySet.Provable (Const := Const) T (.ex φ))
+    (hT : ∀ ψ ∈ T, NoConstOccurrence c ψ)
+    (hφ : NoConstOccurrence c φ)
+    (hθ : NoConstOccurrence c θ) :
+    ¬ ClosedTheorySet.Provable (Const := Const)
+      (insert (instantiate (Base := Base) (.const c) φ) T) θ := by
+  intro hInst
+  have hImp : ClosedTheorySet.Provable (Const := Const) T
+      (.imp (instantiate (Base := Base) (.const c) φ) θ) :=
+    provable_imp_of_insert (Const := Const) hInst
+  have hBodyFresh : NoConstOccurrence c (.imp φ (weaken (Base := Base) (σ := σ) θ)) :=
+    NoConstOccurrence.imp hφ
+      (noConstOccurrence_rename Rename.weaken _ hθ)
+  have hAll : ClosedTheorySet.Provable (Const := Const) T (.all (.imp φ (weaken θ))) := by
+    refine ClosedTheorySet.provable_all_intro_fresh
+      (Const := Const) (T := T) (c := c) hT hBodyFresh ?_
+    convert hImp using 1
+    change Term.imp (instantiate (Base := Base) (.const c) φ)
+      (instantiate (Base := Base) (.const c) (weaken (Base := Base) (σ := σ) θ)) =
+        (instantiate (Base := Base) (.const c) φ).imp θ
+    rw [instantiate_weaken]
+  exact hNot
+    (provable_of_ex_and_all_imp
+      (Const := Const)
+      hEx
+      hAll)
+
+/-- Membership form of `not_provable_insert_fresh_instance_of_ex_provable`. -/
+theorem not_provable_insert_fresh_instance_of_ex_mem
+    {T : ClosedTheorySet Const} {σ : Ty Base} {φ : Formula Const [σ]}
+    {θ : ClosedFormula Const} (c : Const σ)
+    (hNot : ¬ ClosedTheorySet.Provable (Const := Const) T θ)
+    (hEx : (.ex φ : ClosedFormula Const) ∈ T)
+    (hT : ∀ ψ ∈ T, NoConstOccurrence c ψ)
+    (hφ : NoConstOccurrence c φ)
+    (hθ : NoConstOccurrence c θ) :
+    ¬ ClosedTheorySet.Provable (Const := Const)
+      (insert (instantiate (Base := Base) (.const c) φ) T) θ := by
+  exact not_provable_insert_fresh_instance_of_ex_provable
+    (Const := Const) c hNot
+    (ClosedTheorySet.provable_of_mem (Const := Const) hEx)
+    hT hφ hθ
 
 /-! ## Consistency of adding one Henkin witness axiom -/
 

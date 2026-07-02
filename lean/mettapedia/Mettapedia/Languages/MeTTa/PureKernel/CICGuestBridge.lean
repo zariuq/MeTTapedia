@@ -20,6 +20,16 @@ open Mettapedia.Languages.MeTTa.PureKernel.RecursorDecl
 open Mettapedia.Languages.MeTTa.PureKernel.CoreEmbedding
 open Mettapedia.Languages.MeTTa.ElaboratedCore
 
+/-- Two declaration reductions to a shared reduct determine declaration conversion. -/
+theorem convDecl_of_common_reduct
+    {E : DeclEnv} {n : Nat} {left right common : PureTm n}
+    (hLeft : RedStarDecl E left common)
+    (hRight : RedStarDecl E right common) :
+    ConvDecl E left right := by
+  exact Relation.EqvGen.trans _ _ _
+    (redStarDecl_implies_conv hLeft)
+    (Relation.EqvGen.symm _ _ (redStarDecl_implies_conv hRight))
+
 /-- Lean-side declaration names mirroring the covered Stage-3 cic.dk guest fragment.
 This is the target kernel interface after guest normalization, not the guest-side
 `max` / `lift` rewrite engine itself. -/
@@ -4571,6 +4581,18 @@ theorem normalization_joinable_via_declChurchRosser {specs : List DeclSpec}
     admission.church_rosser
     h₁
     h₂
+
+/-- Two declaration normalizations from the same source determine conversion
+between their reducts. -/
+theorem convDecl_of_normalizations {specs : List DeclSpec}
+    (admission : DIndGSRAdmissionMirror specs)
+    {t nf₁ nf₂ : PureTm 0}
+    (h₁ : RedStarDecl (envOfSpecs specs) t nf₁)
+    (h₂ : RedStarDecl (envOfSpecs specs) t nf₂) :
+    ConvDecl (envOfSpecs specs) nf₁ nf₂ := by
+  rcases normalization_joinable_via_declChurchRosser admission h₁ h₂ with
+    ⟨u, hLeft, hRight⟩
+  exact convDecl_of_common_reduct hLeft hRight
 
 end DIndGSRAdmissionMirror
 
@@ -10535,6 +10557,256 @@ def cicStage3RawArtifactSig : DIndGArtifactSig :=
     translatedSpecs := cicStage3Specs
     translatedContracts := [natRecContract] }
 
+def cicStage3RawCICProp : DIndGArtifactTerm :=
+  .con cicPropName
+
+def cicStage3RawCICUniv (s : DIndGArtifactTerm) : DIndGArtifactTerm :=
+  .app (.con cicUnivName) s
+
+def cicStage3RawCICTerm
+    (s a : DIndGArtifactTerm) : DIndGArtifactTerm :=
+  .app (.app (.con cicTermName) s) a
+
+def cicStage3RawPropToType0WitnessType : DIndGArtifactTerm :=
+  .pi (cicStage3RawCICUniv cicStage3RawCICProp)
+    (.pi (cicStage3RawCICTerm cicStage3RawCICProp (.var 0))
+      (cicStage3RawCICTerm cicStage3RawCICProp (.var 1)))
+
+def cicStage3RawIdentityWitness : DIndGArtifactTerm :=
+  .lam (.srt .type) (.lam (.srt .type) (.var 0))
+
+def cicStage3RawPropToType0WitnessDecl : DIndGArtifactDecl :=
+  .ddef cicStage3PropToType0WitnessName
+    cicStage3RawPropToType0WitnessType
+    cicStage3RawIdentityWitness
+
+def cicStage3RawCICWitnessTypeNameTranslates
+    (raw lean : DeclName) : Prop :=
+  (raw = cicPropName ∧ lean = cicPropName) ∨
+    (raw = cicUnivName ∧ lean = cicUnivName) ∨
+    (raw = cicTermName ∧ lean = cicTermName)
+
+def cicStage3RawNameTranslatesWithPropToType0Witness
+    (raw lean : DeclName) : Prop :=
+  cicStage3RawNameTranslates raw lean ∨
+    cicStage3RawCICWitnessTypeNameTranslates raw lean ∨
+      (raw = cicStage3PropToType0WitnessName ∧
+        lean = cicStage3PropToType0WitnessName)
+
+theorem cicStage3RawNameTranslatesWithPropToType0Witness_self :
+    cicStage3RawNameTranslatesWithPropToType0Witness
+      cicStage3PropToType0WitnessName
+      cicStage3PropToType0WitnessName := by
+  exact Or.inr (Or.inr ⟨rfl, rfl⟩)
+
+theorem cicStage3RawNameTranslatesWithPropToType0Witness_prop :
+    cicStage3RawNameTranslatesWithPropToType0Witness
+      cicPropName cicPropName := by
+  exact Or.inr (Or.inl (Or.inl ⟨rfl, rfl⟩))
+
+theorem cicStage3RawNameTranslatesWithPropToType0Witness_univ :
+    cicStage3RawNameTranslatesWithPropToType0Witness
+      cicUnivName cicUnivName := by
+  exact Or.inr (Or.inl (Or.inr (Or.inl ⟨rfl, rfl⟩)))
+
+theorem cicStage3RawNameTranslatesWithPropToType0Witness_term :
+    cicStage3RawNameTranslatesWithPropToType0Witness
+      cicTermName cicTermName := by
+  exact Or.inr (Or.inl (Or.inr (Or.inr ⟨rfl, rfl⟩)))
+
+theorem cicStage3RawNameTranslatesWithPropToType0Witness_nonwitness :
+    ¬ cicStage3RawNameTranslatesWithPropToType0Witness
+      `not_a_stage3_prop_to_type0_witness
+      cicStage3PropToType0WitnessName := by
+  intro h
+  rcases h with h | h
+  · rcases h with h | h | h | h
+    · exact (by decide :
+        (`not_a_stage3_prop_to_type0_witness : DeclName) ≠ `nat) h.1
+    · exact (by decide :
+        (`not_a_stage3_prop_to_type0_witness : DeclName) ≠ `nat.rec) h.1
+    · exact (by decide :
+        (`not_a_stage3_prop_to_type0_witness : DeclName) ≠ `z) h.1
+    · exact (by decide :
+        (`not_a_stage3_prop_to_type0_witness : DeclName) ≠ `s) h.1
+  · rcases h with h | h
+    · rcases h with h | h | h
+      · exact (by decide :
+          (`not_a_stage3_prop_to_type0_witness : DeclName) ≠ cicPropName) h.1
+      · exact (by decide :
+          (`not_a_stage3_prop_to_type0_witness : DeclName) ≠ cicUnivName) h.1
+      · exact (by decide :
+          (`not_a_stage3_prop_to_type0_witness : DeclName) ≠ cicTermName) h.1
+    · rcases h with ⟨hraw, _hlean⟩
+      exact (by decide :
+        (`not_a_stage3_prop_to_type0_witness : DeclName) ≠
+          cicStage3PropToType0WitnessName) hraw
+
+theorem cicStage3RawCICProp_translates {n : Nat} :
+    DIndGArtifactTermTranslates
+      cicStage3RawNameTranslatesWithPropToType0Witness n
+      cicStage3RawCICProp
+      (cicPropTm : PureTm n) := by
+  unfold cicStage3RawCICProp cicPropTm
+  exact DIndGArtifactTermTranslates.con
+    cicStage3RawNameTranslatesWithPropToType0Witness_prop
+
+theorem cicStage3RawCICUniv_translates {n : Nat}
+    {raw s : _}
+    (h :
+      DIndGArtifactTermTranslates
+        cicStage3RawNameTranslatesWithPropToType0Witness n raw s) :
+    DIndGArtifactTermTranslates
+      cicStage3RawNameTranslatesWithPropToType0Witness n
+      (cicStage3RawCICUniv raw)
+      (cicUniv s) := by
+  unfold cicStage3RawCICUniv cicUniv
+  exact DIndGArtifactTermTranslates.app
+    (DIndGArtifactTermTranslates.con
+      cicStage3RawNameTranslatesWithPropToType0Witness_univ)
+    h
+
+theorem cicStage3RawCICTerm_translates {n : Nat}
+    {rawS rawA : DIndGArtifactTerm} {s a : PureTm n}
+    (hS :
+      DIndGArtifactTermTranslates
+        cicStage3RawNameTranslatesWithPropToType0Witness n rawS s)
+    (hA :
+      DIndGArtifactTermTranslates
+        cicStage3RawNameTranslatesWithPropToType0Witness n rawA a) :
+    DIndGArtifactTermTranslates
+      cicStage3RawNameTranslatesWithPropToType0Witness n
+      (cicStage3RawCICTerm rawS rawA)
+      (cicTerm s a) := by
+  unfold cicStage3RawCICTerm cicTerm
+  exact DIndGArtifactTermTranslates.app
+    (DIndGArtifactTermTranslates.app
+      (DIndGArtifactTermTranslates.con
+        cicStage3RawNameTranslatesWithPropToType0Witness_term)
+      hS)
+    hA
+
+theorem cicStage3RawPropToType0WitnessType_translates :
+    DIndGArtifactTermTranslates
+      cicStage3RawNameTranslatesWithPropToType0Witness 0
+      cicStage3RawPropToType0WitnessType
+      cicStage3PropToType0Type := by
+  unfold cicStage3RawPropToType0WitnessType cicStage3PropToType0Type
+  refine DIndGArtifactTermTranslates.pi ?_ ?_
+  · exact cicStage3RawCICUniv_translates cicStage3RawCICProp_translates
+  · refine DIndGArtifactTermTranslates.pi ?_ ?_
+    · exact cicStage3RawCICTerm_translates
+        cicStage3RawCICProp_translates
+        (DIndGArtifactTermTranslates.var (by decide))
+    · exact cicStage3RawCICTerm_translates
+        cicStage3RawCICProp_translates
+        (DIndGArtifactTermTranslates.var (by decide))
+
+theorem cicStage3RawIdentityWitness_translates :
+    DIndGArtifactTermTranslates
+      cicStage3RawNameTranslatesWithPropToType0Witness 0
+      cicStage3RawIdentityWitness
+      cicStage3IdentityWitness := by
+  unfold cicStage3RawIdentityWitness cicStage3IdentityWitness
+  refine DIndGArtifactTermTranslates.lam (domain := (.u0 : PureTm 0)) ?_ ?_
+  · exact DIndGArtifactTermTranslates.srt_type
+  · refine DIndGArtifactTermTranslates.lam (domain := (.u0 : PureTm 1)) ?_ ?_
+    · exact DIndGArtifactTermTranslates.srt_type
+    · exact DIndGArtifactTermTranslates.var (by decide)
+
+theorem cicStage3RawPropToType0WitnessDefn_translates :
+    DIndGArtifactTermTranslates
+      cicStage3RawNameTranslatesWithPropToType0Witness 0
+      (.defn cicStage3PropToType0WitnessName)
+      (.const cicStage3PropToType0WitnessName : PureTm 0) := by
+  exact DIndGArtifactTermTranslates.defn
+    cicStage3RawNameTranslatesWithPropToType0Witness_self
+
+def cicStage3RawArtifactDeclsWithPropToType0Witness :
+    List DIndGArtifactDecl :=
+  cicStage3RawPropToType0WitnessDecl :: cicStage3RawArtifactDecls
+
+theorem cicStage3RawNatDecl_supports_natRecContract_withPropToType0Witness :
+    DIndGArtifactDecl.supportsContract
+      cicStage3RawNameTranslatesWithPropToType0Witness
+      cicStage3RawNatDecl
+      natRecContract := by
+  refine ⟨?_, ?_, ?_⟩
+  · exact Or.inl (Or.inl ⟨rfl, rfl⟩)
+  · exact ⟨`nat.rec, Or.inl (Or.inr (Or.inl ⟨rfl, rfl⟩))⟩
+  · intro pilot hpilot obligation hobligation
+    have hpilot :
+        pilot =
+          { contract := natRecContract
+            obligations := [natRecZeroIotaObligation, natRecSuccIotaObligation]
+            value? := none } := by
+      have hsome :
+          some pilot =
+            some
+              { contract := natRecContract
+                obligations := [natRecZeroIotaObligation, natRecSuccIotaObligation]
+                value? := none } := by
+        rw [← hpilot, generatedRecursorPilot_nat_obligations_no_value]
+      cases hsome
+      rfl
+    subst pilot
+    have hobligation :
+        obligation = natRecZeroIotaObligation ∨
+          obligation = natRecSuccIotaObligation := by
+      simpa using hobligation
+    rcases hobligation with hzero | hsucc
+    · subst obligation
+      refine ⟨cicStage3RawNatZeroCtor, ?_, ?_⟩
+      · simp
+      · exact Or.inl (Or.inr (Or.inr (Or.inl ⟨rfl, rfl⟩)))
+    · subst obligation
+      refine ⟨cicStage3RawNatSuccCtor, ?_, ?_⟩
+      · simp
+      · exact Or.inl (Or.inr (Or.inr (Or.inr ⟨rfl, rfl⟩)))
+
+theorem cicStage3RawArtifactContractSourcesWithPropToType0Witness :
+    ∀ contract, contract ∈ [natRecContract] →
+      ∃ decl, decl ∈ cicStage3RawArtifactDeclsWithPropToType0Witness ∧
+        DIndGArtifactDecl.supportsContract
+          cicStage3RawNameTranslatesWithPropToType0Witness decl contract := by
+  intro contract hmem
+  simp at hmem
+  subst contract
+  exact ⟨cicStage3RawNatDecl, by simp [cicStage3RawArtifactDeclsWithPropToType0Witness,
+      cicStage3RawArtifactDecls],
+    cicStage3RawNatDecl_supports_natRecContract_withPropToType0Witness⟩
+
+def cicStage3RawArtifactSigWithPropToType0Witness : DIndGArtifactSig :=
+  { decls := cicStage3RawArtifactDeclsWithPropToType0Witness
+    nameTranslates := cicStage3RawNameTranslatesWithPropToType0Witness
+    translatedSpecs := cicStage3PropToType0WitnessSpecs
+    translatedContracts := [natRecContract] }
+
+def cicStage3RawArtifactSignatureTranslationWithPropToType0Witness :
+    DIndGArtifactSignatureTranslation
+      cicStage3RawArtifactSigWithPropToType0Witness
+      cicStage3PropToType0WitnessSpecs
+      [natRecContract] where
+  specs_eq := rfl
+  contracts_eq := rfl
+  contract_sources := cicStage3RawArtifactContractSourcesWithPropToType0Witness
+
+def cicStage3RawArtifactGateSucceedsWithPropToType0Witness :
+    dindgRawArtifactGate.sigAdmittedWithElims
+      cicStage3RawArtifactSigWithPropToType0Witness :=
+  ⟨cicStage3PropToType0WitnessSignatureWellFormed,
+    cicStage3RawArtifactContractSourcesWithPropToType0Witness,
+    by
+      intro contract hmem
+      simp [cicStage3RawArtifactSigWithPropToType0Witness] at hmem
+      subst contract
+      exact natRecContract_admitted,
+    by
+      intro contract hmem
+      simp [cicStage3RawArtifactSigWithPropToType0Witness] at hmem
+      subst contract
+      exact cicStage3Type0Type0ResolvedFrontier⟩
+
 def cicStage3RawArtifactSignatureTranslation :
     DIndGArtifactSignatureTranslation
       cicStage3RawArtifactSig
@@ -10663,6 +10935,23 @@ theorem cicStage3_normalization_joinable_via_declChurchRosser
       cicStage3SRAdmissionMirror h₁' h₂' with ⟨u, hu₁, hu₂⟩
   exact ⟨u, by simpa [cicStage3DeclEnv] using hu₁,
     by simpa [cicStage3DeclEnv] using hu₂⟩
+
+/-- Concrete Stage-3 conversion readout for two normalization paths from the
+same source. -/
+theorem cicStage3_convDecl_of_normalizations
+    {t nf₁ nf₂ : PureTm 0}
+    (h₁ : RedStarDecl cicStage3DeclEnv t nf₁)
+    (h₂ : RedStarDecl cicStage3DeclEnv t nf₂) :
+    ConvDecl cicStage3DeclEnv nf₁ nf₂ := by
+  have h₁' : RedStarDecl (envOfSpecs cicStage3Specs) t nf₁ := by
+    simpa [cicStage3DeclEnv] using h₁
+  have h₂' : RedStarDecl (envOfSpecs cicStage3Specs) t nf₂ := by
+    simpa [cicStage3DeclEnv] using h₂
+  have hconv :
+      ConvDecl (envOfSpecs cicStage3Specs) nf₁ nf₂ :=
+    DIndGSRAdmissionMirror.convDecl_of_normalizations
+      cicStage3SRAdmissionMirror h₁' h₂'
+  simpa [cicStage3DeclEnv] using hconv
 
 /-- Concrete Stage-3 theorem matching the DIndG `sr-ok` admission gate:
 a generated-iota artifact witness under the active Stage-3 admission gate has
