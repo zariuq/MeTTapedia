@@ -14,6 +14,8 @@ import Mettapedia.PLN.Bridges.HOL.PLNHigherOrderHOLRegression
 import Mettapedia.PLN.Bridges.HOL.PLNHigherOrderHOLRules
 import Mettapedia.PLN.Bridges.HOL.PLNHigherOrderHOLSimilarityBridge
 import Mettapedia.PLN.Bridges.HOL.PLNHigherOrderHOLSoundness
+import Mettapedia.PLN.Bridges.HOL.PLNHeytingHOLWorldModelBridge
+import Mettapedia.PLN.Bridges.HOL.ProvenanceSemiringReadout
 import Mettapedia.PLN.Bridges.HOL.LogicalInductionWorldModelBridge
 import Mettapedia.PLN.Bridges.HOL.LogicalInduction
 import Mettapedia.PLN.Bridges.HOL.PLNWorldModelHOL

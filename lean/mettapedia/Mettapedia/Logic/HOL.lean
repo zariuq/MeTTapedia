@@ -27,6 +27,8 @@ import Mettapedia.Logic.HOL.Semantics.KripkeHenkinCountermodel
 import Mettapedia.Logic.HOL.Semantics.KripkeHenkinGeneral
 import Mettapedia.Logic.HOL.Semantics.KripkeHenkinCanonicalGeneral
 import Mettapedia.Logic.HOL.Semantics.HeytingGeneral
+import Mettapedia.Logic.HOL.Semantics.HeytingCompleteness
+import Mettapedia.Logic.HOL.Semantics.KripkeHenkinBridge
 import Mettapedia.Logic.HOL.TermModel.Domain
 import Mettapedia.Logic.HOL.TermModel.Truth
 import Mettapedia.Logic.HOL.TermModel.Realize

@@ -10642,6 +10642,52 @@ theorem cicStage3RawNameTranslatesWithPropToType0Witness_nonwitness :
         (`not_a_stage3_prop_to_type0_witness : DeclName) ≠
           cicStage3PropToType0WitnessName) hraw
 
+theorem cicStage3RawNameTranslatesWithPropToType0Witness_cases
+    {raw lean : DeclName}
+    (h :
+      cicStage3RawNameTranslatesWithPropToType0Witness raw lean) :
+    (raw = `nat ∧ lean = natRecContract.familyName) ∨
+      (raw = `nat.rec ∧ lean = natRecContract.recursorName) ∨
+      (raw = `z ∧ lean = natRecZeroIotaObligation.ctorName) ∨
+      (raw = `s ∧ lean = natRecSuccIotaObligation.ctorName) ∨
+      (raw = cicPropName ∧ lean = cicPropName) ∨
+      (raw = cicUnivName ∧ lean = cicUnivName) ∨
+      (raw = cicTermName ∧ lean = cicTermName) ∨
+      (raw = cicStage3PropToType0WitnessName ∧
+        lean = cicStage3PropToType0WitnessName) := by
+  rcases h with hBase | hExtra
+  · rcases hBase with hNat | hRec | hZero | hSucc
+    · exact Or.inl hNat
+    · exact Or.inr (Or.inl hRec)
+    · exact Or.inr (Or.inr (Or.inl hZero))
+    · exact Or.inr (Or.inr (Or.inr (Or.inl hSucc)))
+  · rcases hExtra with hCIC | hWitness
+    · rcases hCIC with hProp | hUniv | hTerm
+      · exact Or.inr (Or.inr (Or.inr (Or.inr (Or.inl hProp))))
+      · exact Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inl hUniv)))))
+      · exact Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inl hTerm))))))
+    · exact Or.inr
+        (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr hWitness))))))
+
+theorem cicStage3RawNameTranslatesWithPropToType0Witness_raw_cases
+    {raw lean : DeclName}
+    (h :
+      cicStage3RawNameTranslatesWithPropToType0Witness raw lean) :
+    raw = `nat ∨ raw = `nat.rec ∨ raw = `z ∨ raw = `s ∨
+      raw = cicPropName ∨ raw = cicUnivName ∨ raw = cicTermName ∨
+      raw = cicStage3PropToType0WitnessName := by
+  rcases cicStage3RawNameTranslatesWithPropToType0Witness_cases h with
+    hNat | hRec | hZero | hSucc | hProp | hUniv | hTerm | hWitness
+  · exact Or.inl hNat.1
+  · exact Or.inr (Or.inl hRec.1)
+  · exact Or.inr (Or.inr (Or.inl hZero.1))
+  · exact Or.inr (Or.inr (Or.inr (Or.inl hSucc.1)))
+  · exact Or.inr (Or.inr (Or.inr (Or.inr (Or.inl hProp.1))))
+  · exact Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inl hUniv.1)))))
+  · exact Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inl hTerm.1))))))
+  · exact Or.inr
+      (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr hWitness.1))))))
+
 theorem cicStage3RawCICProp_translates {n : Nat} :
     DIndGArtifactTermTranslates
       cicStage3RawNameTranslatesWithPropToType0Witness n
