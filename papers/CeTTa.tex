@@ -839,7 +839,7 @@ across runtimes whenever a row is presented as a clean cross-runtime
 benchmark.  So a reader can see
 precisely what is measured, each subsection below opens with the core of
 the program it runs; the full sources are linked inline and collected at
-\href{https://github.com/zariuq/CeTTa/tree/main/benchmarks/chaining_crossengine}{\code{benchmarks/chaining\_crossengine}}.
+\href{https://github.com/zariuq/CeTTa/tree/07928677c0237a19b2f3c32dffca28d7d2626723/benchmarks/chaining_crossengine}{\code{benchmarks/chaining\_crossengine}}.
 
 Most of the inference benchmarks are driven by one small dependent-typed
 \emph{backward chainer}.  To prove a goal \code{(: \$proof \$theorem)} it
@@ -899,7 +899,7 @@ Metamath proof search at depth~5 (2 axioms, proving $t = t$,
 base is Geisweiller's \code{demo0} (axiom \code{a1}: equality is
 right-Euclidean; \code{a2}: $0$ is a right identity; \code{mp}: modus
 ponens), and the goal is \code{t = t}
-(\href{https://github.com/zariuq/CeTTa/blob/main/benchmarks/chaining_crossengine/01_nilbc/nilbc_th1.metta}{\code{01\_nilbc/nilbc\_th1.metta}};
+(\href{https://github.com/zariuq/CeTTa/blob/07928677c0237a19b2f3c32dffca28d7d2626723/benchmarks/chaining_crossengine/01_nilbc/nilbc_th1.metta}{\code{01\_nilbc/nilbc\_th1.metta}};
 glyphs shown ASCII here):
 \begin{lstlisting}[language={},basicstyle=\ttfamily\scriptsize]
 (: a1 (-> (: $t term) (: $r term) (: $s term)
@@ -941,7 +941,7 @@ of modus ponens:
 !(count-atoms &ss)
 \end{lstlisting}
 The current \CeTTa{} rerun of
-\href{https://github.com/zariuq/CeTTa/blob/main/tests/nil_pc_fc_d4.metta}{\code{tests/nil\_pc\_fc\_d4.metta}}
+\href{https://github.com/zariuq/CeTTa/blob/07928677c0237a19b2f3c32dffca28d7d2626723/tests/nil_pc_fc_d4.metta}{\code{tests/nil\_pc\_fc\_d4.metta}}
 completes in 100.86\,s and reports 8.19M accumulated results after the
 four forward passes.  We do \emph{not} reuse the older
 ``11.7M generated pairs'' sentence as benchmark evidence, because the
@@ -964,7 +964,7 @@ converts \code{prog1} to nested \code{let} with fresh variables:
                    $__tr_result_1)))
 \end{lstlisting}
 The current source file
-\href{https://github.com/zariuq/CeTTa/blob/main/tests/bench_backchain_petta_native.metta}{\code{tests/bench\_backchain\_petta\_native.metta}}
+\href{https://github.com/zariuq/CeTTa/blob/07928677c0237a19b2f3c32dffca28d7d2626723/benchmarks/bench_backchain_petta_native.metta}{\code{benchmarks/bench\_backchain\_petta\_native.metta}}
 produces 30 proof-carrying witnesses on native \PeTTa{}, and the
 current translated artifact produces the same 30 witnesses on both
 \CeTTa{} and \HE{}:
@@ -1006,7 +1006,7 @@ The core arithmetic is ordinary MeTTa over numbers:
 \end{lstlisting}
 The benchmark is dialect-agnostic (shared MeTTa, no translation
 needed).  The portable
-\href{https://github.com/zariuq/CeTTa/tree/main/benchmarks/bio_pln}{\code{benchmarks/bio\_pln}}
+\href{https://github.com/zariuq/CeTTa/tree/07928677c0237a19b2f3c32dffca28d7d2626723/benchmarks/bio_pln}{\code{benchmarks/bio\_pln}}
 evidence-score drivers produce numerically identical
 183 scored pairs on \CeTTa{}, \PeTTa{}, and \HE{}:
 
@@ -1123,7 +1123,7 @@ Bridge base cases let \code{nilbc} consume untyped data atoms
 conversion pass over the 100K-atom KB\@.
 
 On the portable
-\href{https://github.com/zariuq/CeTTa/tree/main/benchmarks/mine_chain_focus}{\code{benchmarks/mine\_chain\_focus}}
+\href{https://github.com/zariuq/CeTTa/tree/07928677c0237a19b2f3c32dffca28d7d2626723/benchmarks/mine_chain_focus}{\code{benchmarks/mine\_chain\_focus}}
 focus-summary drivers,
 \CeTTa{} and \PeTTa{} agree exactly on the distinct direct and depth-2
 target genes for three representative query SNPs (the raw proof rows
@@ -1234,7 +1234,7 @@ Treutlein's \code{PeTTaChainer}
 and the \PeTTa{} engine and its PLN library
 (\href{https://github.com/patham9/PeTTa}{github.com/patham9/PeTTa}).
 The suite, generators, and driver are in the \CeTTa{} repository under
-\href{https://github.com/zariuq/CeTTa/tree/main/benchmarks/chaining_crossengine}{\code{benchmarks/chaining\_crossengine}}.
+\href{https://github.com/zariuq/CeTTa/tree/07928677c0237a19b2f3c32dffca28d7d2626723/benchmarks/chaining_crossengine}{\code{benchmarks/chaining\_crossengine}}.
 In this paper revision we use the suite as audited reproducibility
 material rather than as an extra source of unevaluated claims: the
 benchmark rows retained in the paper are only the subset rerun directly
@@ -1242,7 +1242,7 @@ in this audit.
 
 \paragraph{Multi-relational deep chaining.}
 The strongest current multi-relational row is the 17-phase snapshot
-\href{https://github.com/zariuq/CeTTa/blob/main/tests/bench_bio_bc_deep_snapshot_20260327.metta}{\code{tests/bench\_bio\_bc\_deep\_snapshot\_20260327.metta}}.
+\href{https://github.com/zariuq/CeTTa/blob/07928677c0237a19b2f3c32dffca28d7d2626723/tests/bench_bio_bc_deep_snapshot_20260327.metta}{\code{tests/bench\_bio\_bc\_deep\_snapshot\_20260327.metta}}.
 It extends the mined-pattern chainer with pathway membership,
 same-pathway transfer, disease associations, compound--disease
 treatment links, and compound--gene binding links.  The full
@@ -1306,7 +1306,7 @@ percentages on the current build.
 
 The 8-puzzle breadth-first search (BFS) remains a useful WAM-class
 stress test.  The patched \CeTTa{} port
-(\href{https://github.com/zariuq/CeTTa/blob/main/tests/test_tilepuzzle.metta}{\code{tests/test\_tilepuzzle.metta}})
+(\href{https://github.com/zariuq/CeTTa/blob/07928677c0237a19b2f3c32dffca28d7d2626723/benchmarks/test_tilepuzzle.metta}{\code{benchmarks/test\_tilepuzzle.metta}})
 returns the labeled result
 \code{(tilepuzzle-reachable-state-count including-start 181440)},
 which matches an independent BFS check of the solved 8-puzzle parity

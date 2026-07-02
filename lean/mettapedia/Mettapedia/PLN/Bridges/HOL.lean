@@ -18,6 +18,7 @@ import Mettapedia.PLN.Bridges.HOL.PLNHeytingHOLWorldModelBridge
 import Mettapedia.PLN.Bridges.HOL.EvidenceValuedModels
 import Mettapedia.PLN.Bridges.HOL.ProvenanceSemiringReadout
 import Mettapedia.PLN.Bridges.HOL.BinaryEvidenceReadout
+import Mettapedia.PLN.Bridges.HOL.Introspection
 import Mettapedia.PLN.Bridges.HOL.LogicalInductionWorldModelBridge
 import Mettapedia.PLN.Bridges.HOL.LogicalInduction
 import Mettapedia.PLN.Bridges.HOL.PLNWorldModelHOL
