@@ -66,11 +66,12 @@ The fundamental transformation between bounded confidence and unbounded weight.
     Properties:
     - w = 0 → c = 0
     - w = k → c = 0.5
-    - w → ∞ → c → 1
+    - w = ∞ → c = 1
 
     This is a saturation/sigmoid-like function.
 -/
-noncomputable def w2c (w k : ℝ≥0∞) : ℝ≥0∞ := w / (w + k)
+noncomputable def w2c (w k : ℝ≥0∞) : ℝ≥0∞ :=
+  if w = ⊤ then 1 else w / (w + k)
 
 /-- Confidence-to-Weight transformation (inverse of w2c).
     w = k × c / (1 - c)
@@ -88,6 +89,10 @@ theorem w2c_zero (k : ℝ≥0∞) : w2c 0 k = 0 := by
   unfold w2c
   simp
 
+/-- w2c at infinite weight is saturated confidence. -/
+theorem w2c_top (k : ℝ≥0∞) : w2c ⊤ k = 1 := by
+  simp [w2c]
+
 /-- c2w at 0 is 0 -/
 theorem c2w_zero (k : ℝ≥0∞) : c2w 0 k = 0 := by
   unfold c2w
@@ -96,9 +101,12 @@ theorem c2w_zero (k : ℝ≥0∞) : c2w 0 k = 0 := by
 /-- w2c is bounded by 1 (for positive k) -/
 theorem w2c_le_one (w k : ℝ≥0∞) (_hk : k ≠ 0) : w2c w k ≤ 1 := by
   unfold w2c
-  apply ENNReal.div_le_of_le_mul
-  simp only [one_mul]
-  exact le_add_right (le_refl w)
+  by_cases hw : w = ⊤
+  · simp [hw]
+  · simp [hw]
+    apply ENNReal.div_le_of_le_mul
+    simp only [one_mul]
+    exact le_add_right (le_refl w)
 
 
 /-! ## What Is Actually Required of a Confidence Coordinate
@@ -267,7 +275,6 @@ theorem count_reconstruction_of_leftInverseOnPositive
     lt_of_le_of_ne hNonneg (by
       intro hzero
       exact hTotal hzero.symm)
-  unfold CountReconstruction at *
   dsimp
   rw [h hPositive]
   ext

@@ -21,6 +21,7 @@ import Mettapedia.PLN.RuleFamilies.FirstOrder.PLNInferenceRules
 import Mettapedia.PLN.RuleFamilies.FirstOrder.PLNLinkCalculus
 import Mettapedia.PLN.RuleFamilies.FirstOrder.PLNLinkCalculusSoundness
 import Mettapedia.PLN.RuleFamilies.FirstOrder.PLNMultideductionResidual
+import Mettapedia.PLN.RuleFamilies.FirstOrder.PLNMultiPathFrechet
 import Mettapedia.PLN.RuleFamilies.FirstOrder.PLNNegation
 import Mettapedia.PLN.RuleFamilies.FirstOrder.PLNNoisyOr
 import Mettapedia.PLN.RuleFamilies.FirstOrder.RavenAbduction
