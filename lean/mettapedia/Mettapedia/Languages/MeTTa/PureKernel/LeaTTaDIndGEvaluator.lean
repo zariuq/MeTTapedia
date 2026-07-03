@@ -49769,6 +49769,18 @@ def ConvSoundWithPropToType0WitnessNfValueRuntimeExtraction : Prop :=
       out = termAtom rawNf ∧
       CicStage3ResolvedNfRuntimeOutput raw rawNf
 
+def ConvSoundWithPropToType0WitnessCanonicalNfValueRuntimeExtraction : Prop :=
+  ∀ {fuel : Nat} {st : St} {raw : DIndGArtifactTerm}
+      {term : PureTm 0} {out : Metta.Atom},
+    st.world = St.init.world →
+    DIndGArtifactTermTranslates
+      cicStage3RawArtifactSigWithPropToType0Witness.nameTranslates 0
+      raw term →
+    out ∈
+      (mettaEval kernelDefControlEnv fuel st []
+        (nfQuery cicStage3RawArtifactSigWithPropToType0Witness raw)).1.map (·.1) →
+    CicStage3CanonicalNfRuntimeReadout raw out
+
 def ConvSoundWithPropToType0WitnessTailRuntimeClassification : Prop :=
   ∀ (fuel : Nat) {rawLeft rawRight : DIndGArtifactTerm}
       {left right : PureTm 0}
@@ -49802,6 +49814,38 @@ def ConvSoundWithPropToType0WitnessTailRuntimeClassification : Prop :=
       CicStage3ResolvedNfRuntimeOutput rawRight rawRightNf) ∨
       left = right
 
+def ConvSoundWithPropToType0WitnessCanonicalFrontierTailAgreement : Prop :=
+  ∀ (fuel : Nat) {rawLeft rawRight : DIndGArtifactTerm}
+      {left right : PureTm 0}
+      {nx ny : Metta.Atom} {stBefore tailStBefore : St}
+      {tailValueEnv : Metta.Bindings},
+    4 ≤ fuel →
+    stBefore.world = St.init.world →
+    tailStBefore.world = St.init.world →
+    DIndGArtifactTermTranslates
+      cicStage3RawArtifactSigWithPropToType0Witness.nameTranslates 0
+      rawLeft left →
+    DIndGArtifactTermTranslates
+      cicStage3RawArtifactSigWithPropToType0Witness.nameTranslates 0
+      rawRight right →
+    let stNamed : St := { counter := St.init.counter + 1, world := St.init.world }
+    nx ∈
+      (mettaEval kernelDefControlEnv ((fuel + 2) + 2) stNamed []
+        (nfQuery cicStage3RawArtifactSigWithPropToType0Witness
+          rawLeft)).1.map (·.1) →
+    ny ∈
+      (mettaEval kernelDefControlEnv (fuel + 2) stBefore []
+        (nfQuery cicStage3RawArtifactSigWithPropToType0Witness
+          rawRight)).1.map (·.1) →
+    mBool true ∈
+      (mettaEval kernelDefControlEnv (fuel + 1) tailStBefore tailValueEnv
+        (convReadoutAfterNxNy nx ny)).1.map (·.1) →
+    CicStage3CanonicalNfRuntimeReadout rawLeft nx →
+    CicStage3CanonicalNfRuntimeReadout rawRight ny →
+    (CicStage3NfSoundnessFrontier rawLeft ∨
+      CicStage3NfSoundnessFrontier rawRight) →
+    left = right
+
 theorem convSoundWithPropToType0Witness_tail_runtime_classification_of_nf_value_runtime_extraction
     (hExtract : ConvSoundWithPropToType0WitnessNfValueRuntimeExtraction) :
     ConvSoundWithPropToType0WitnessTailRuntimeClassification := by
@@ -49825,6 +49869,51 @@ theorem convSoundWithPropToType0Witness_tail_runtime_classification_of_nf_value_
     ⟨rawRightNf, hNy, hRightOut⟩
   exact Or.inl
     ⟨rawLeftNf, rawRightNf, hNx, hNy, hLeftOut, hRightOut⟩
+
+theorem convSoundWithPropToType0Witness_tail_runtime_classification_of_canonical_nf_value_runtime_extraction
+    (hExtract :
+      ConvSoundWithPropToType0WitnessCanonicalNfValueRuntimeExtraction)
+    (hFrontier :
+      ConvSoundWithPropToType0WitnessCanonicalFrontierTailAgreement) :
+    ConvSoundWithPropToType0WitnessTailRuntimeClassification := by
+  intro fuel rawLeft rawRight left right nx ny stBefore tailStBefore
+    tailValueEnv hFuel hWorldBefore hWorldTailBefore hLeft hRight
+  dsimp
+  intro hLeftValue hRightValue hTailValue
+  have hLeftCanon :
+      CicStage3CanonicalNfRuntimeReadout rawLeft nx :=
+    hExtract
+      (fuel := (fuel + 2) + 2)
+      (st := { counter := St.init.counter + 1, world := St.init.world })
+      (raw := rawLeft) (term := left) (out := nx)
+      (by rfl) hLeft hLeftValue
+  have hRightCanon :
+      CicStage3CanonicalNfRuntimeReadout rawRight ny :=
+    hExtract
+      (fuel := fuel + 2)
+      (st := stBefore)
+      (raw := rawRight) (term := right) (out := ny)
+      hWorldBefore hRight hRightValue
+  rcases
+      CicStage3CanonicalNfRuntimeReadout_resolved_or_frontier
+        hLeftCanon with
+    hLeftResolved | hLeftFrontier
+  · rcases hLeftResolved with ⟨rawLeftNf, hNx, hLeftOut⟩
+    rcases
+        CicStage3CanonicalNfRuntimeReadout_resolved_or_frontier
+          hRightCanon with
+      hRightResolved | hRightFrontier
+    · rcases hRightResolved with ⟨rawRightNf, hNy, hRightOut⟩
+      exact Or.inl
+        ⟨rawLeftNf, rawRightNf, hNx, hNy, hLeftOut, hRightOut⟩
+    · exact Or.inr
+        (hFrontier fuel hFuel hWorldBefore hWorldTailBefore
+          hLeft hRight hLeftValue hRightValue hTailValue
+          hLeftCanon hRightCanon (Or.inr hRightFrontier))
+  · exact Or.inr
+      (hFrontier fuel hFuel hWorldBefore hWorldTailBefore
+        hLeft hRight hLeftValue hRightValue hTailValue
+        hLeftCanon hRightCanon (Or.inl hLeftFrontier))
 
 def ConvSoundWithPropToType0WitnessResolvedTailClosedRerun : Prop :=
   ∀ (fuel : Nat) {rawLeft rawRight rawLeftNf rawRightNf : DIndGArtifactTerm}
@@ -50604,6 +50693,54 @@ theorem evaluator_soundness_withPropToType0Witness_of_mid_fuel_false_obligations
       (conv_sound_withPropToType0Witness_of_mid_fuel_false_obligations_tail_values_with_keys_tail_classification
         hMidFalse hNamedObligations hTailValues hTailClass)
 
+theorem conv_sound_withPropToType0Witness_of_mid_fuel_false_obligations_tail_values_with_keys_canonical_frontier
+    (hMidFalse :
+      ConvSoundWithPropToType0WitnessNamedReadoutFuelTwoThroughEightFalse)
+    (hNamedObligations :
+      ConvSoundWithPropToType0WitnessNamedReadoutObligations)
+    (hTailValues :
+      ConvSoundWithPropToType0WitnessNamedReadoutTailValuesWithKeys)
+    (hExtract :
+      ConvSoundWithPropToType0WitnessCanonicalNfValueRuntimeExtraction)
+    (hFrontier :
+      ConvSoundWithPropToType0WitnessCanonicalFrontierTailAgreement) :
+    ∀ {rawLeft rawRight : DIndGArtifactTerm} {left right : PureTm 0},
+      evaluator.conv cicStage3RawArtifactSigWithPropToType0Witness
+        rawLeft rawRight →
+      DIndGArtifactTermTranslates
+        cicStage3RawArtifactSigWithPropToType0Witness.nameTranslates 0
+        rawLeft left →
+      DIndGArtifactTermTranslates
+        cicStage3RawArtifactSigWithPropToType0Witness.nameTranslates 0
+        rawRight right →
+      ConvDecl
+        (envOfSpecs
+          cicStage3RawArtifactSigWithPropToType0Witness.translatedSpecs)
+        left right := by
+  exact
+    conv_sound_withPropToType0Witness_of_mid_fuel_false_obligations_tail_values_with_keys_tail_classification
+      hMidFalse hNamedObligations hTailValues
+      (convSoundWithPropToType0Witness_tail_runtime_classification_of_canonical_nf_value_runtime_extraction
+        hExtract hFrontier)
+
+theorem evaluator_soundness_withPropToType0Witness_of_mid_fuel_false_obligations_tail_values_with_keys_canonical_frontier
+    (hMidFalse :
+      ConvSoundWithPropToType0WitnessNamedReadoutFuelTwoThroughEightFalse)
+    (hNamedObligations :
+      ConvSoundWithPropToType0WitnessNamedReadoutObligations)
+    (hTailValues :
+      ConvSoundWithPropToType0WitnessNamedReadoutTailValuesWithKeys)
+    (hExtract :
+      ConvSoundWithPropToType0WitnessCanonicalNfValueRuntimeExtraction)
+    (hFrontier :
+      ConvSoundWithPropToType0WitnessCanonicalFrontierTailAgreement) :
+    DIndGArtifactEvaluatorSoundness evaluator
+      cicStage3RawArtifactSigWithPropToType0Witness := by
+  exact
+    evaluator_soundness_withPropToType0Witness_of_conv_sound
+      (conv_sound_withPropToType0Witness_of_mid_fuel_false_obligations_tail_values_with_keys_canonical_frontier
+        hMidFalse hNamedObligations hTailValues hExtract hFrontier)
+
 theorem conv_sound_withPropToType0Witness_of_small_fuel_false_obligations_closed_rerun_classification
     (hSmallFalse :
       ConvSoundWithPropToType0WitnessNamedReadoutSmallFuelFalse)
@@ -50863,6 +51000,103 @@ theorem evaluator_soundness_withPropToType0Witness_of_mid_fuel_false_obligations
     evaluator_soundness_withPropToType0Witness_of_conv_sound
       (conv_sound_withPropToType0Witness_of_mid_fuel_false_obligations_nf_value_extraction_closed_rerun
         hMidFalse hNamedObligations hNfExtract hClosedRerun)
+
+theorem conv_sound_withPropToType0Witness_of_small_fuel_false_obligations_canonical_frontier_closed_rerun
+    (hSmallFalse :
+      ConvSoundWithPropToType0WitnessNamedReadoutSmallFuelFalse)
+    (hNamedObligations :
+      ConvSoundWithPropToType0WitnessNamedReadoutObligations)
+    (hExtract :
+      ConvSoundWithPropToType0WitnessCanonicalNfValueRuntimeExtraction)
+    (hFrontier :
+      ConvSoundWithPropToType0WitnessCanonicalFrontierTailAgreement)
+    (hClosedRerun :
+      ConvSoundWithPropToType0WitnessResolvedTailClosedRerun) :
+    ∀ {rawLeft rawRight : DIndGArtifactTerm} {left right : PureTm 0},
+      evaluator.conv cicStage3RawArtifactSigWithPropToType0Witness
+        rawLeft rawRight →
+      DIndGArtifactTermTranslates
+        cicStage3RawArtifactSigWithPropToType0Witness.nameTranslates 0
+        rawLeft left →
+      DIndGArtifactTermTranslates
+        cicStage3RawArtifactSigWithPropToType0Witness.nameTranslates 0
+        rawRight right →
+      ConvDecl
+        (envOfSpecs
+          cicStage3RawArtifactSigWithPropToType0Witness.translatedSpecs)
+        left right := by
+  exact
+    conv_sound_withPropToType0Witness_of_small_fuel_false_obligations_tail_classification_closed_rerun
+      hSmallFalse hNamedObligations
+      (convSoundWithPropToType0Witness_tail_runtime_classification_of_canonical_nf_value_runtime_extraction
+        hExtract hFrontier)
+      hClosedRerun
+
+theorem evaluator_soundness_withPropToType0Witness_of_small_fuel_false_obligations_canonical_frontier_closed_rerun
+    (hSmallFalse :
+      ConvSoundWithPropToType0WitnessNamedReadoutSmallFuelFalse)
+    (hNamedObligations :
+      ConvSoundWithPropToType0WitnessNamedReadoutObligations)
+    (hExtract :
+      ConvSoundWithPropToType0WitnessCanonicalNfValueRuntimeExtraction)
+    (hFrontier :
+      ConvSoundWithPropToType0WitnessCanonicalFrontierTailAgreement)
+    (hClosedRerun :
+      ConvSoundWithPropToType0WitnessResolvedTailClosedRerun) :
+    DIndGArtifactEvaluatorSoundness evaluator
+      cicStage3RawArtifactSigWithPropToType0Witness := by
+  exact
+    evaluator_soundness_withPropToType0Witness_of_conv_sound
+      (conv_sound_withPropToType0Witness_of_small_fuel_false_obligations_canonical_frontier_closed_rerun
+        hSmallFalse hNamedObligations hExtract hFrontier hClosedRerun)
+
+theorem conv_sound_withPropToType0Witness_of_mid_fuel_false_obligations_canonical_frontier_closed_rerun
+    (hMidFalse :
+      ConvSoundWithPropToType0WitnessNamedReadoutFuelTwoThroughEightFalse)
+    (hNamedObligations :
+      ConvSoundWithPropToType0WitnessNamedReadoutObligations)
+    (hExtract :
+      ConvSoundWithPropToType0WitnessCanonicalNfValueRuntimeExtraction)
+    (hFrontier :
+      ConvSoundWithPropToType0WitnessCanonicalFrontierTailAgreement)
+    (hClosedRerun :
+      ConvSoundWithPropToType0WitnessResolvedTailClosedRerun) :
+    ∀ {rawLeft rawRight : DIndGArtifactTerm} {left right : PureTm 0},
+      evaluator.conv cicStage3RawArtifactSigWithPropToType0Witness
+        rawLeft rawRight →
+      DIndGArtifactTermTranslates
+        cicStage3RawArtifactSigWithPropToType0Witness.nameTranslates 0
+        rawLeft left →
+      DIndGArtifactTermTranslates
+        cicStage3RawArtifactSigWithPropToType0Witness.nameTranslates 0
+        rawRight right →
+      ConvDecl
+        (envOfSpecs
+          cicStage3RawArtifactSigWithPropToType0Witness.translatedSpecs)
+        left right := by
+  exact
+    conv_sound_withPropToType0Witness_of_small_fuel_false_obligations_canonical_frontier_closed_rerun
+      (convSoundWithPropToType0Witness_namedReadoutSmallFuelFalse_of_two_through_eight
+        hMidFalse)
+      hNamedObligations hExtract hFrontier hClosedRerun
+
+theorem evaluator_soundness_withPropToType0Witness_of_mid_fuel_false_obligations_canonical_frontier_closed_rerun
+    (hMidFalse :
+      ConvSoundWithPropToType0WitnessNamedReadoutFuelTwoThroughEightFalse)
+    (hNamedObligations :
+      ConvSoundWithPropToType0WitnessNamedReadoutObligations)
+    (hExtract :
+      ConvSoundWithPropToType0WitnessCanonicalNfValueRuntimeExtraction)
+    (hFrontier :
+      ConvSoundWithPropToType0WitnessCanonicalFrontierTailAgreement)
+    (hClosedRerun :
+      ConvSoundWithPropToType0WitnessResolvedTailClosedRerun) :
+    DIndGArtifactEvaluatorSoundness evaluator
+      cicStage3RawArtifactSigWithPropToType0Witness := by
+  exact
+    evaluator_soundness_withPropToType0Witness_of_conv_sound
+      (conv_sound_withPropToType0Witness_of_mid_fuel_false_obligations_canonical_frontier_closed_rerun
+        hMidFalse hNamedObligations hExtract hFrontier hClosedRerun)
 
 /-- The `kernel_signature_lf_indexed_v0.metta` SRT rule
 `(= (infer $sig $ctx (Srt type)) (Srt kind))` matches the concrete Stage-3

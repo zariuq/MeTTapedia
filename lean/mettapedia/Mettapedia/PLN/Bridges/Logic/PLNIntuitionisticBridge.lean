@@ -1,21 +1,25 @@
 /-
 # PLN BinaryEvidence as a Model of Intuitionistic Propositional Logic
 
-This file establishes that PLN BinaryEvidence forms a proper model of intuitionistic
-propositional logic (IPL), by connecting to the Foundation library's proven
-soundness and completeness theorems.
+This file establishes that PLN BinaryEvidence forms a proper Heyting-valued
+model of intuitionistic propositional logic (IPL), with soundness inherited
+from the Foundation library and a separate completeness theorem for the class
+of all Heyting models.
 
 ## Main Results
 
 1. `Nontrivial BinaryEvidence` - BinaryEvidence has distinct bottom and top
 2. `PLNSemantics` - HeytingSemantics instance using BinaryEvidence
-3. `Sound` / `Complete` - Inherited from Foundation via Lindenbaum algebra
+3. `pln_soundness` - IPL derivability is valid in BinaryEvidence
+4. `pln_completeness_from_all_models` - Foundation completeness for all
+   Heyting models, not a BinaryEvidence-only completeness theorem
 
 ## Mathematical Content
 
-BinaryEvidence has an `Order.Frame` instance (complete Heyting algebra), which makes it
-a sound model for IPL. By instantiating Foundation's `HeytingSemantics` structure,
-we inherit proven soundness and can derive completeness via Lindenbaum algebras.
+BinaryEvidence has an `Order.Frame` instance (complete Heyting algebra), which
+makes it a sound model for IPL. Completeness is used in its standard
+all-Heyting-model form; a formula valid in BinaryEvidence alone need not be
+claimed IPL-provable here.
 
 ## References
 
@@ -57,8 +61,9 @@ theorem evidence_bot_ne_top : (⊥ : BinaryEvidence) ≠ ⊤ := by
 
 /-! ## HeytingSemantics Instance
 
-We instantiate Foundation's HeytingSemantics structure with BinaryEvidence as the algebra.
-This gives us soundness immediately and completeness via the Lindenbaum algebra.
+We instantiate Foundation's HeytingSemantics structure with BinaryEvidence as
+the algebra.  This gives a direct soundness route for formulas provable in the
+relevant Hilbert systems.
 -/
 
 /-- Propositional variables (using natural numbers) -/
@@ -213,21 +218,16 @@ theorem evidence_not_boolean : ¬∀ e : BinaryEvidence, e ⊔ eᶜ = ⊤ := by
   rw [hmax] at hpos_top
   exact ENNReal.one_ne_top hpos_top
 
-/-! ## Completeness via Foundation
+/-! ## Completeness via Foundation Models
 
 Foundation's completeness theorem states: if φ is valid in all Heyting algebra models
 satisfying the axiom set, then φ is provable. We show that PLNSemantics models are
 included in the relevant model class.
 
-### Strategy
-
-For full completeness (valid in BinaryEvidence ↔ provable in IPL), we need to show that
-BinaryEvidence is "sufficiently universal" - any formula that fails in some Heyting algebra
-also fails in some BinaryEvidence valuation.
-
-The Foundation library uses the Lindenbaum algebra for completeness. We show:
-1. PLNSemantics v ∈ mod(Int.axioms) for all valuations v
-2. Hence Foundation's completeness applies
+This is not a BinaryEvidence-only completeness theorem.  The Foundation library
+uses the Lindenbaum algebra for completeness; the theorem below exposes that
+all-model consequence route while the BinaryEvidence-specific direction remains
+only soundness.
 
 Note: `Int.axioms` is defined as `{Axioms.EFQ (.atom 0)}` - the minimal intuitionistic axiom.
 -/
@@ -375,14 +375,16 @@ This is because ℝ≥0∞ is a **linear order** (chain), so for any two element
 one is ≤ the other. This makes the Heyting implication in each component
 satisfy linearity.
 
-**Consequence**: PLN BinaryEvidence bisimulates **Gödel-Dummett logic (LC)**, not IPL!
+**Consequence**: PLN BinaryEvidence is a sound semantic model for
+**Gödel-Dummett logic (LC)**, not merely IPL.
 
 The hierarchy is: IPL ⊂ LC ⊂ Classical Logic
 - IPL: intuitionistic propositional logic
 - LC: IPL + Dummett's axiom (p → q) ∨ (q → p)
 - Classical: LC + LEM (p ∨ ¬p)
 
-BinaryEvidence validates LC but NOT classical logic (we proved LEM fails).
+Every LC theorem is valid in BinaryEvidence, but classical logic is not valid
+there: excluded middle fails.
 -/
 
 /-- In ℝ≥0∞ (a linear order), the Heyting implication satisfies:
@@ -422,6 +424,13 @@ theorem evidence_valid_dummett (v : PropVar → BinaryEvidence) (p q : PropVar) 
   simp only [valid, interpret, Formula.hVal]
   -- Goal: (v p ⇨ v q) ⊔ (v q ⇨ v p) = ⊤
   exact evidence_dummett (v p) (v q)
+
+/-- Dummett's axiom is valid for arbitrary formula instances in BinaryEvidence. -/
+theorem evidence_valid_dummett_formula (v : PropVar → BinaryEvidence)
+    (φ ψ : Formula PropVar) :
+    valid v ((φ ➝ ψ) ⋎ (ψ ➝ φ)) := by
+  simp only [valid, interpret, Formula.hVal]
+  exact evidence_dummett (φ.hVal v) (ψ.hVal v)
 
 /-- Dummett's axiom is NOT provable in IPL.
 
@@ -481,14 +490,23 @@ Therefore: ∃φ. (∀v. PLNSemantics v ⊧ φ) ∧ ¬(IPL ⊢ φ)
 This means BinaryEvidence validates strictly MORE than IPL proves.
 -/
 
-/-! ### BinaryEvidence = LC (Gödel-Dummett) for Propositional Logic
+/-! ### Diagonal Gödel-chain embedding
 
-The diagonal embedding d(x) = ⟨x, x⟩ shows BinaryEvidence contains a copy of any
-linear Heyting algebra. Therefore:
-- If φ fails in some linear algebra, it fails on diagonal BinaryEvidence valuations
-- Contrapositive: BinaryEvidence ⊧ φ → φ valid in all linear algebras → LC ⊢ φ
+The diagonal embedding `d(x) = ⟨x, x⟩` shows that BinaryEvidence contains the
+`ℝ≥0∞` Gödel chain as a Heyting subalgebra.  Thus a countervaluation in that
+single chain reflects to a BinaryEvidence countervaluation by composing atom
+values with `diagonal`, and `diagonal x = ⊤` exactly when `x = ⊤`.
 
-Combined with soundness (LC ⊢ φ → BinaryEvidence ⊧ φ), we get BinaryEvidence = LC exactly.
+What this does **not** by itself prove is the converse completeness statement
+`BinaryEvidence ⊧ φ → LC ⊢ φ`.  The available HOL Gödel-Dummett completeness
+surface is `provableLC_of_prelinearHeytingConsequence`, which quantifies over
+all prelinear Heyting-valued models.  The missing, not-declared bridge is
+`ennrealGodelUniversallyValid_implies_prelinearHeytingConsequence`: validity in
+the `ℝ≥0∞` Gödel chain would have to imply consequence over all prelinear
+Heyting models.  Until that theorem is available, the honest established result
+is LC soundness plus the exact reduction
+`universallyValid_iff_ennrealGodelUniversallyValid`: BinaryEvidence validity is
+equivalent to validity in the single `ℝ≥0∞` Gödel chain.
 -/
 
 /-- The diagonal embedding: ℝ≥0∞ → BinaryEvidence -/
@@ -499,6 +517,22 @@ theorem diagonal_bot : diagonal 0 = (⊥ : BinaryEvidence) := rfl
 
 /-- Diagonal preserves ⊤ -/
 theorem diagonal_top : diagonal ⊤ = (⊤ : BinaryEvidence) := rfl
+
+/-- Diagonal top-reflection: a diagonal BinaryEvidence value is top exactly
+when its source chain value is top. -/
+theorem diagonal_eq_top_iff {x : ℝ≥0∞} :
+    diagonal x = (⊤ : BinaryEvidence) ↔ x = ⊤ := by
+  constructor
+  · intro h
+    exact congrArg BinaryEvidence.pos h
+  · intro hx
+    rw [hx, diagonal_top]
+
+/-- Non-top chain values remain non-top after diagonal embedding. -/
+theorem diagonal_reflects_non_top {x : ℝ≥0∞} (hx : x ≠ ⊤) :
+    diagonal x ≠ (⊤ : BinaryEvidence) := by
+  intro h
+  exact hx (diagonal_eq_top_iff.mp h)
 
 /-- Diagonal preserves ≤ -/
 theorem diagonal_le {x y : ℝ≥0∞} : x ≤ y ↔ diagonal x ≤ diagonal y := by
@@ -516,19 +550,210 @@ theorem diagonal_sup (x y : ℝ≥0∞) : diagonal (x ⊔ y) = diagonal x ⊔ di
 theorem diagonal_himp (x y : ℝ≥0∞) :
     diagonal (if x ≤ y then ⊤ else y) = diagonal x ⇨ diagonal y := rfl
 
-/-- The diagonal embedding is a Heyting algebra homomorphism.
-
-This means any formula that fails in the standard Gödel algebra (ℝ≥0∞ with Gödel ops)
-also fails in BinaryEvidence (via diagonal valuations).
-
-Contrapositive: BinaryEvidence ⊧ φ → Gödel algebra ⊧ φ → LC ⊢ φ (by LC completeness).
-Combined with LC ⊢ φ → BinaryEvidence ⊧ φ (soundness), we get BinaryEvidence = LC. -/
+/-- The diagonal embedding is a Heyting-algebra homomorphism for meet, join,
+and the Gödel arrow on `ℝ≥0∞`.  Together with `diagonal_eq_top_iff`, this is
+the reflection part of the single-chain countermodel route; it is not the
+all-prelinear LC completeness theorem by itself. -/
 theorem diagonal_heyting_hom :
     ∀ x y : ℝ≥0∞,
       diagonal (x ⊓ y) = diagonal x ⊓ diagonal y ∧
       diagonal (x ⊔ y) = diagonal x ⊔ diagonal y ∧
       diagonal (if x ≤ y then ⊤ else y) = diagonal x ⇨ diagonal y :=
   fun x y => ⟨diagonal_inf x y, diagonal_sup x y, diagonal_himp x y⟩
+
+/-! ### Explicit ENNReal Gödel-chain semantics -/
+
+/-- Gödel implication on the single `ℝ≥0∞` chain. -/
+noncomputable def ennrealGodelImp (x y : ℝ≥0∞) : ℝ≥0∞ :=
+  if x ≤ y then ⊤ else y
+
+/-- Formula evaluation in the single `ℝ≥0∞` Gödel chain. -/
+noncomputable def ennrealGodelVal (v : PropVar → ℝ≥0∞) :
+    Formula PropVar → ℝ≥0∞
+  | .atom p => v p
+  | .falsum => 0
+  | .and φ ψ => ennrealGodelVal v φ ⊓ ennrealGodelVal v ψ
+  | .or φ ψ => ennrealGodelVal v φ ⊔ ennrealGodelVal v ψ
+  | .imp φ ψ => ennrealGodelImp (ennrealGodelVal v φ) (ennrealGodelVal v ψ)
+
+/-- A formula is valid under an `ℝ≥0∞` Gödel-chain valuation. -/
+def ennrealGodelValid (v : PropVar → ℝ≥0∞) (φ : Formula PropVar) : Prop :=
+  ennrealGodelVal v φ = ⊤
+
+/-- A formula is valid in the single `ℝ≥0∞` Gödel chain. -/
+def ennrealGodelUniversallyValid (φ : Formula PropVar) : Prop :=
+  ∀ v : PropVar → ℝ≥0∞, ennrealGodelValid v φ
+
+/-- Diagonal valuations commute with formula evaluation. -/
+theorem diagonal_ennrealGodelVal (v : PropVar → ℝ≥0∞) (φ : Formula PropVar) :
+    diagonal (ennrealGodelVal v φ) = interpret (fun p => diagonal (v p)) φ := by
+  induction φ with
+  | hatom p => rfl
+  | hfalsum => rfl
+  | hand φ ψ ihφ ihψ =>
+      simp only [ennrealGodelVal, interpret, Formula.hVal]
+      have ihφ' : diagonal (ennrealGodelVal v φ) =
+          Formula.hVal (fun p => diagonal (v p)) φ := by
+        simpa [interpret] using ihφ
+      have ihψ' : diagonal (ennrealGodelVal v ψ) =
+          Formula.hVal (fun p => diagonal (v p)) ψ := by
+        simpa [interpret] using ihψ
+      rw [← ihφ', ← ihψ']
+      exact diagonal_inf _ _
+  | hor φ ψ ihφ ihψ =>
+      simp only [ennrealGodelVal, interpret, Formula.hVal]
+      have ihφ' : diagonal (ennrealGodelVal v φ) =
+          Formula.hVal (fun p => diagonal (v p)) φ := by
+        simpa [interpret] using ihφ
+      have ihψ' : diagonal (ennrealGodelVal v ψ) =
+          Formula.hVal (fun p => diagonal (v p)) ψ := by
+        simpa [interpret] using ihψ
+      rw [← ihφ', ← ihψ']
+      exact diagonal_sup _ _
+  | himp φ ψ ihφ ihψ =>
+      simp only [ennrealGodelVal, ennrealGodelImp, interpret, Formula.hVal]
+      have ihφ' : diagonal (ennrealGodelVal v φ) =
+          Formula.hVal (fun p => diagonal (v p)) φ := by
+        simpa [interpret] using ihφ
+      have ihψ' : diagonal (ennrealGodelVal v ψ) =
+          Formula.hVal (fun p => diagonal (v p)) ψ := by
+        simpa [interpret] using ihψ
+      rw [← ihφ', ← ihψ']
+      exact diagonal_himp _ _
+
+/-- Positive projection of BinaryEvidence formula evaluation is the single-chain
+Gödel evaluation of the positive-coordinate valuation. -/
+theorem interpret_pos_eq_ennrealGodelVal
+    (v : PropVar → BinaryEvidence) (φ : Formula PropVar) :
+    (interpret v φ).pos = ennrealGodelVal (fun p => (v p).pos) φ := by
+  induction φ with
+  | hatom p => rfl
+  | hfalsum => rfl
+  | hand φ ψ ihφ ihψ =>
+      simp only [interpret, Formula.hVal, ennrealGodelVal]
+      have ihφ' : (Formula.hVal v φ).pos =
+          ennrealGodelVal (fun p => (v p).pos) φ := by
+        simpa [interpret] using ihφ
+      have ihψ' : (Formula.hVal v ψ).pos =
+          ennrealGodelVal (fun p => (v p).pos) ψ := by
+        simpa [interpret] using ihψ
+      change min (Formula.hVal v φ).pos (Formula.hVal v ψ).pos =
+        min (ennrealGodelVal (fun p => (v p).pos) φ)
+          (ennrealGodelVal (fun p => (v p).pos) ψ)
+      rw [ihφ', ihψ']
+  | hor φ ψ ihφ ihψ =>
+      simp only [interpret, Formula.hVal, ennrealGodelVal]
+      have ihφ' : (Formula.hVal v φ).pos =
+          ennrealGodelVal (fun p => (v p).pos) φ := by
+        simpa [interpret] using ihφ
+      have ihψ' : (Formula.hVal v ψ).pos =
+          ennrealGodelVal (fun p => (v p).pos) ψ := by
+        simpa [interpret] using ihψ
+      change max (Formula.hVal v φ).pos (Formula.hVal v ψ).pos =
+        max (ennrealGodelVal (fun p => (v p).pos) φ)
+          (ennrealGodelVal (fun p => (v p).pos) ψ)
+      rw [ihφ', ihψ']
+  | himp φ ψ ihφ ihψ =>
+      simp only [interpret, Formula.hVal, ennrealGodelVal, ennrealGodelImp]
+      have ihφ' : (Formula.hVal v φ).pos =
+          ennrealGodelVal (fun p => (v p).pos) φ := by
+        simpa [interpret] using ihφ
+      have ihψ' : (Formula.hVal v ψ).pos =
+          ennrealGodelVal (fun p => (v p).pos) ψ := by
+        simpa [interpret] using ihψ
+      change (if (Formula.hVal v φ).pos ≤ (Formula.hVal v ψ).pos
+          then ⊤ else (Formula.hVal v ψ).pos) =
+        if ennrealGodelVal (fun p => (v p).pos) φ ≤
+            ennrealGodelVal (fun p => (v p).pos) ψ
+          then ⊤ else ennrealGodelVal (fun p => (v p).pos) ψ
+      rw [ihφ', ihψ']
+
+/-- Negative projection of BinaryEvidence formula evaluation is the single-chain
+Gödel evaluation of the negative-coordinate valuation. -/
+theorem interpret_neg_eq_ennrealGodelVal
+    (v : PropVar → BinaryEvidence) (φ : Formula PropVar) :
+    (interpret v φ).neg = ennrealGodelVal (fun p => (v p).neg) φ := by
+  induction φ with
+  | hatom p => rfl
+  | hfalsum => rfl
+  | hand φ ψ ihφ ihψ =>
+      simp only [interpret, Formula.hVal, ennrealGodelVal]
+      have ihφ' : (Formula.hVal v φ).neg =
+          ennrealGodelVal (fun p => (v p).neg) φ := by
+        simpa [interpret] using ihφ
+      have ihψ' : (Formula.hVal v ψ).neg =
+          ennrealGodelVal (fun p => (v p).neg) ψ := by
+        simpa [interpret] using ihψ
+      change min (Formula.hVal v φ).neg (Formula.hVal v ψ).neg =
+        min (ennrealGodelVal (fun p => (v p).neg) φ)
+          (ennrealGodelVal (fun p => (v p).neg) ψ)
+      rw [ihφ', ihψ']
+  | hor φ ψ ihφ ihψ =>
+      simp only [interpret, Formula.hVal, ennrealGodelVal]
+      have ihφ' : (Formula.hVal v φ).neg =
+          ennrealGodelVal (fun p => (v p).neg) φ := by
+        simpa [interpret] using ihφ
+      have ihψ' : (Formula.hVal v ψ).neg =
+          ennrealGodelVal (fun p => (v p).neg) ψ := by
+        simpa [interpret] using ihψ
+      change max (Formula.hVal v φ).neg (Formula.hVal v ψ).neg =
+        max (ennrealGodelVal (fun p => (v p).neg) φ)
+          (ennrealGodelVal (fun p => (v p).neg) ψ)
+      rw [ihφ', ihψ']
+  | himp φ ψ ihφ ihψ =>
+      simp only [interpret, Formula.hVal, ennrealGodelVal, ennrealGodelImp]
+      have ihφ' : (Formula.hVal v φ).neg =
+          ennrealGodelVal (fun p => (v p).neg) φ := by
+        simpa [interpret] using ihφ
+      have ihψ' : (Formula.hVal v ψ).neg =
+          ennrealGodelVal (fun p => (v p).neg) ψ := by
+        simpa [interpret] using ihψ
+      change (if (Formula.hVal v φ).neg ≤ (Formula.hVal v ψ).neg
+          then ⊤ else (Formula.hVal v ψ).neg) =
+        if ennrealGodelVal (fun p => (v p).neg) φ ≤
+            ennrealGodelVal (fun p => (v p).neg) ψ
+          then ⊤ else ennrealGodelVal (fun p => (v p).neg) ψ
+      rw [ihφ', ihψ']
+
+/-- BinaryEvidence validity is coordinatewise single-chain validity. -/
+theorem valid_iff_ennrealGodel_coordinates
+    (v : PropVar → BinaryEvidence) (φ : Formula PropVar) :
+    valid v φ ↔
+      ennrealGodelValid (fun p => (v p).pos) φ ∧
+        ennrealGodelValid (fun p => (v p).neg) φ := by
+  constructor
+  · intro h
+    constructor
+    · exact (interpret_pos_eq_ennrealGodelVal v φ).symm.trans
+        (congrArg BinaryEvidence.pos h)
+    · exact (interpret_neg_eq_ennrealGodelVal v φ).symm.trans
+        (congrArg BinaryEvidence.neg h)
+  · intro h
+    apply BinaryEvidence.ext'
+    · exact (interpret_pos_eq_ennrealGodelVal v φ).trans h.1
+    · exact (interpret_neg_eq_ennrealGodelVal v φ).trans h.2
+
+/-- Universal BinaryEvidence validity is exactly validity in the single
+`ℝ≥0∞` Gödel chain. -/
+theorem universallyValid_iff_ennrealGodelUniversallyValid
+    (φ : Formula PropVar) :
+    universallyValid φ ↔ ennrealGodelUniversallyValid φ := by
+  constructor
+  · intro h v
+    have hv : valid (fun p => diagonal (v p)) φ := h _
+    exact (diagonal_eq_top_iff).mp ((diagonal_ennrealGodelVal v φ).trans hv)
+  · intro h v
+    exact (valid_iff_ennrealGodel_coordinates v φ).mpr
+      ⟨h (fun p => (v p).pos), h (fun p => (v p).neg)⟩
+
+/-- Excluded middle is not universally valid in BinaryEvidence. -/
+theorem lem_not_universallyValid :
+    ¬ universallyValid (((#0) ⋎ (∼(#0))) : Formula PropVar) := by
+  intro h
+  apply evidence_not_boolean
+  intro e
+  have hv := h (fun _ => e)
+  simpa [valid, interpret, Formula.neg_def] using hv
 
 /-! ### BinaryEvidence Strictly Stronger than IPL (Witness)
 
@@ -548,6 +773,104 @@ theorem evidence_stronger_than_ipl :
                Formula.hVal_or, Formula.hVal_imp]
     exact evidence_dummett (v 0) (v 1)
   · exact dummett_not_provable_in_ipl
+
+/-! ### LC soundness for BinaryEvidence -/
+
+/-- For any valuation `v`, `PLNSemantics v` validates all LC axiom instances.
+The extra LC axiom is Dummett prelinearity, already valid for arbitrary
+formula instances by `evidence_valid_dummett_formula`. -/
+theorem pln_in_lc_models (v : PropVar → BinaryEvidence) :
+    (PLNSemantics v) ⊧* LC.axioms.instances := by
+  constructor
+  intro φ hφ
+  simp only [Axiom.instances, Set.mem_setOf_eq] at hφ
+  obtain ⟨ψ, hψ_mem, s, hs⟩ := hφ
+  simp only [LC.axioms, Set.mem_insert_iff, Set.mem_singleton_iff] at hψ_mem
+  rcases hψ_mem with hψ_mem | hψ_mem
+  · rw [hψ_mem] at hs
+    simp only [Formula.subst] at hs
+    rw [hs]
+    simp only [HeytingSemantics.val_def']
+    simp only [HeytingSemantics.hVal, Formula.hVal_imp, Formula.hVal_falsum]
+    rw [eq_top_iff, le_himp_iff]
+    exact bot_le
+  · rw [hψ_mem] at hs
+    simp only [Formula.subst] at hs
+    rw [hs]
+    simp only [HeytingSemantics.val_def']
+    change (((s 0).hVal v ⇨ (s 1).hVal v) ⊔
+      ((s 1).hVal v ⇨ (s 0).hVal v)) = (⊤ : BinaryEvidence)
+    exact evidence_dummett ((s 0).hVal v) ((s 1).hVal v)
+
+/-- LC soundness for BinaryEvidence valuations. -/
+theorem pln_lc_soundness {φ : Formula PropVar}
+    (h : LO.Propositional.LC ⊢ φ) :
+    universallyValid φ := by
+  have hsem : ∀ v : PropVar → BinaryEvidence, (PLNSemantics v) ⊧ φ := by
+    intro v
+    induction h with
+    | @axm ψ s hψ =>
+      simp only [HeytingSemantics.val_def']
+      simp only [LC.axioms, Set.mem_insert_iff, Set.mem_singleton_iff] at hψ
+      rcases hψ with hEFQ | hDummett
+      · rw [hEFQ]
+        simp only [Formula.subst, HeytingSemantics.hVal, Formula.hVal_imp,
+          Formula.hVal_falsum]
+        rw [eq_top_iff, le_himp_iff]
+        exact bot_le
+      · rw [hDummett]
+        simp only [Formula.subst, HeytingSemantics.hVal, Formula.hVal_or,
+          Formula.hVal_imp]
+        exact evidence_dummett ((s 0).hVal v) ((s 1).hVal v)
+    | @mdp _ ψ _ _ ihpq ihp =>
+      simp only [HeytingSemantics.val_def'] at *
+      simp only [HeytingSemantics.hVal, Formula.hVal_imp] at ihpq
+      rw [eq_top_iff, le_himp_iff] at ihpq
+      rw [eq_top_iff]
+      simp only [HeytingSemantics.hVal] at ihp
+      rw [ihp, top_inf_eq] at ihpq
+      exact ihpq
+    | verum =>
+      simp only [HeytingSemantics.val_def', HeytingSemantics.hVal_verum]
+    | implyS =>
+      simp only [HeytingSemantics.val_def', HeytingSemantics.hVal, Formula.hVal_imp]
+      rw [eq_top_iff, le_himp_iff, le_himp_iff, top_inf_eq]
+      exact inf_le_left
+    | implyK =>
+      simp only [HeytingSemantics.val_def', HeytingSemantics.hVal, Formula.hVal_imp]
+      rw [eq_top_iff, le_himp_iff, le_himp_iff, le_himp_iff, top_inf_eq]
+      exact himp_himp_inf_himp_inf_le _ _ _
+    | andElimL =>
+      simp only [HeytingSemantics.val_def', HeytingSemantics.hVal, Formula.hVal_imp,
+        Formula.hVal_and]
+      rw [eq_top_iff, le_himp_iff, top_inf_eq]
+      exact inf_le_left
+    | andElimR =>
+      simp only [HeytingSemantics.val_def', HeytingSemantics.hVal, Formula.hVal_imp,
+        Formula.hVal_and]
+      rw [eq_top_iff, le_himp_iff, top_inf_eq]
+      exact inf_le_right
+    | andIntro =>
+      simp only [HeytingSemantics.val_def', HeytingSemantics.hVal, Formula.hVal_imp,
+        Formula.hVal_and]
+      rw [eq_top_iff, le_himp_iff, le_himp_iff, top_inf_eq, inf_comm]
+    | orIntroL =>
+      simp only [HeytingSemantics.val_def', HeytingSemantics.hVal, Formula.hVal_imp,
+        Formula.hVal_or]
+      rw [eq_top_iff, le_himp_iff, top_inf_eq]
+      exact le_sup_left
+    | orIntroR =>
+      simp only [HeytingSemantics.val_def', HeytingSemantics.hVal, Formula.hVal_imp,
+        Formula.hVal_or]
+      rw [eq_top_iff, le_himp_iff, top_inf_eq]
+      exact le_sup_right
+    | orElim =>
+      simp only [HeytingSemantics.val_def', HeytingSemantics.hVal, Formula.hVal_imp,
+        Formula.hVal_or]
+      rw [eq_top_iff, le_himp_iff, le_himp_iff, le_himp_iff, top_inf_eq]
+      exact himp_inf_himp_inf_sup_le _ _ _
+  intro v
+  exact hsem v
 
 /-! ### Classical Logic Simulation via Glivenko's Theorem
 
@@ -584,15 +907,18 @@ theorem lem_double_negation_valid (v : PropVar → BinaryEvidence) (p : PropVar)
 
 We have established:
 
-### Core Results (All Proven)
-1. ✅ `Nontrivial BinaryEvidence` - ⊥ ≠ ⊤
-2. ✅ `PLNSemantics` - HeytingSemantics instance for Foundation
-3. ✅ `pln_soundness` - IPL ⊢ φ → BinaryEvidence ⊧ φ
-4. ✅ `evidence_not_boolean` - LEM fails (BinaryEvidence ⊭ p ∨ ¬p)
-5. ✅ `evidence_dummett` - Dummett valid: (p→q)∨(q→p) is VALID in BinaryEvidence
-6. ✅ `evidence_stronger_than_ipl` - BinaryEvidence validates formulas IPL cannot prove
-7. ✅ `classical_simulation` - Classical ⊢ φ → BinaryEvidence ⊧ ¬¬φ (via Glivenko)
-8. ✅ `diagonal_heyting_hom` - Diagonal embedding is a Heyting homomorphism
+### Core Results
+1. `Nontrivial BinaryEvidence` - ⊥ ≠ ⊤
+2. `PLNSemantics` - HeytingSemantics instance for Foundation
+3. `pln_soundness` - IPL ⊢ φ → BinaryEvidence ⊧ φ
+4. `evidence_not_boolean` - LEM fails (BinaryEvidence ⊭ p ∨ ¬p)
+5. `evidence_dummett` - Dummett valid: (p→q)∨(q→p) is valid in BinaryEvidence
+6. `evidence_stronger_than_ipl` - BinaryEvidence validates formulas IPL cannot prove
+7. `classical_simulation` - Classical ⊢ φ → BinaryEvidence ⊧ ¬¬φ (via Glivenko)
+8. `diagonal_heyting_hom` - Diagonal embedding is a Heyting homomorphism
+9. `pln_lc_soundness` - LC ⊢ φ → BinaryEvidence ⊧ φ
+10. `universallyValid_iff_ennrealGodelUniversallyValid` - BinaryEvidence validity
+    is exactly single-chain `ℝ≥0∞` Gödel validity
 
 ### BinaryEvidence is a Semantic Model for LC (Gödel-Dummett Logic)
 
@@ -603,14 +929,22 @@ The relationship to standard logics is:
 - **LC/IPL**: Have both SYNTAX (proof systems) and SEMANTICS (Heyting algebras)
 - **PLN BinaryEvidence**: Is a particular SEMANTIC model (the Heyting algebra ℝ≥0∞ × ℝ≥0∞)
 
-**Proven (Soundness)**: LC ⊢ φ → BinaryEvidence ⊧ φ
+**Proven (LC soundness)**: LC ⊢ φ → BinaryEvidence ⊧ φ
 - LC = IPL + Dummett's axiom
-- `pln_soundness` gives IPL ⊢ φ → BinaryEvidence ⊧ φ
-- `evidence_dummett` shows Dummett's axiom is valid in BinaryEvidence
-- Therefore: LC ⊢ φ → BinaryEvidence ⊧ φ
+- `pln_in_lc_models` shows every BinaryEvidence valuation validates LC axiom instances
+- `pln_lc_soundness` applies Foundation's Heyting soundness theorem
 
-**Completeness**: BinaryEvidence ⊧ φ → LC ⊢ φ
-- **NOT PROVEN** - would require connecting to LC algebraic completeness in Foundation
+**Exact semantic reduction**:
+- `universallyValid_iff_ennrealGodelUniversallyValid` shows
+  BinaryEvidence ⊧ φ iff the single `ℝ≥0∞` Gödel chain validates φ
+
+**Remaining LC exactness bridge**: the current HOL/LO surface proves completeness
+for all-prelinear Heyting consequence via
+`provableLC_of_prelinearHeytingConsequence`; it does not currently provide
+single-chain completeness.  The missing bridge is
+`ennrealGodelUniversallyValid_implies_prelinearHeytingConsequence`, which would
+turn validity in the single `ℝ≥0∞` Gödel chain into all-prelinear consequence,
+and then LC provability.
 
 ### Logic Hierarchy (Propositional)
 ```

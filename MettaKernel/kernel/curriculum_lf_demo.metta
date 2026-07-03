@@ -3,10 +3,15 @@
 ;  ONE lambda-Pi-modulo kernel  x  THREE paradigm signatures  x  easy curriculum
 ;  theorems from each -- the unified-waist thesis, made runnable.
 ;
-;  Kernel core = Claude Web's mettakernel + Codex's CeTTa-safe repair
-;  (Bad-propagation; infer-app/infer-lam helper factoring; lambda-domain must be a
-;   proper type).  Object logics are SIGNATURES over this one checker, never
-;   changes to it -- HOL/STT, DTT (inductive data + identity), HOTG (sets + axioms).
+;  Kernel core: a lambda-Pi (LF) type checker -- the logical-framework calculus
+;  of Harper, Honsell & Plotkin, "A Framework for Defining Logics" (JACM 1993);
+;  recursors that compute follow the lambda-Pi-modulo style (Cousineau & Dowek,
+;  TLCA 2007; Dedukti -- Assaf, Burel et al.).  Implementation notes:
+;  Bad-propagation; infer-app/infer-lam helper factoring; lambda-domain must be
+;  a proper type.  Object logics are SIGNATURES over this one checker, never
+;  changes to it -- HOL/STT, DTT (inductive data + identity), HOTG (sets +
+;  axioms) -- the standard LF/Dedukti methodology of encoding logics as
+;  signatures rather than extending the kernel.
 ;
 ;  Each paradigm shows POSITIVES (a real typed/sealed proof term checks) and a
 ;  NEGATIVE (a wrong proof is rejected).  Run (cetta = a CeTTa binary on your PATH):
@@ -70,14 +75,14 @@
 ; ---- HOL / simple type theory (ICL10-12, HOL06) ----
 (= (sigT o)    (Srt type))
 (= (sigT prf)  (Pi (Con o) (Srt type)))
-(= (sigT imp)  (Pi (Con o) (Pi (Con o) (Con o))))
-(= (sigT impI)
+(= (sigT ⇒)  (Pi (Con o) (Pi (Con o) (Con o))))
+(= (sigT ⇒I)
    (Pi (Con o) (Pi (Con o)
      (Pi (Pi (App (Con prf) (Var 1)) (App (Con prf) (Var 1)))
-         (App (Con prf) (App (App (Con imp) (Var 2)) (Var 1)))))))
-(= (sigT impE)
+         (App (Con prf) (App (App (Con ⇒) (Var 2)) (Var 1)))))))
+(= (sigT ⇒E)
    (Pi (Con o) (Pi (Con o)
-     (Pi (App (Con prf) (App (App (Con imp) (Var 1)) (Var 0)))
+     (Pi (App (Con prf) (App (App (Con ⇒) (Var 1)) (Var 0)))
        (Pi (App (Con prf) (Var 2)) (App (Con prf) (Var 2)))))))
 (= (sigT A) (Con o))
 (= (sigT B) (Con o))
@@ -98,7 +103,7 @@
 (= (sigT b)   (Con set))
 (= (sigT axMem) (App (Con prf) (App (App (Con In) (Con a)) (Con b))))   ; AXIOM: prf (In a b)
 (= (sigT axSym)                                                        ; AXIOM: prf (In a b => In b a)
-   (App (Con prf) (App (App (Con imp) (App (App (Con In) (Con a)) (Con b)))
+   (App (Con prf) (App (App (Con ⇒) (App (App (Con In) (Con a)) (Con b)))
                                       (App (App (Con In) (Con b)) (Con a)))))
 
 ; ================================= TESTS ====================================
@@ -128,10 +133,10 @@
 ; =========================== HOTG paradigm =================================
 ; the ledgered axiom inhabits its stated proposition:  axMem : prf (In a b)
 !(assertEqual (check CtxNil (Con axMem) (App (Con prf) (App (App (Con In) (Con a)) (Con b)))) True)
-; axioms compose through the HOL rule impE:  In b a  from  (In a b => In b a) and (In a b)
+; axioms compose through the HOL rule ⇒E:  In b a  from  (In a b => In b a) and (In a b)
 !(assertEqual
    (check CtxNil
-     (App (App (App (App (Con impE) (App (App (Con In) (Con a)) (Con b)))
+     (App (App (App (App (Con ⇒E) (App (App (Con In) (Con a)) (Con b)))
                                     (App (App (Con In) (Con b)) (Con a)))
                (Con axSym)) (Con axMem))
      (App (Con prf) (App (App (Con In) (Con b)) (Con a))))
@@ -140,26 +145,26 @@
 !(assertEqual (check CtxNil (Con axMem) (App (Con prf) (App (App (Con In) (Con b)) (Con a)))) False)
 
 ; ========================= HOL / STT paradigm ==============================
-; A => A   by   impI A A (\h:prf A. h)
+; A => A   by   ⇒I A A (\h:prf A. h)
 !(assertEqual
    (check CtxNil
-     (App (App (App (Con impI) (Con A)) (Con A)) (Lam (App (Con prf) (Con A)) (Var 0)))
-     (App (Con prf) (App (App (Con imp) (Con A)) (Con A))))
+     (App (App (App (Con ⇒I) (Con A)) (Con A)) (Lam (App (Con prf) (Con A)) (Var 0)))
+     (App (Con prf) (App (App (Con ⇒) (Con A)) (Con A))))
    True)
-; K : A => B => A   by   impI A (B=>A) (\h. impI B A (\g. h))
+; K : A => B => A   by   ⇒I A (B=>A) (\h. ⇒I B A (\g. h))
 !(assertEqual
    (check CtxNil
-     (App (App (App (Con impI) (Con A)) (App (App (Con imp) (Con B)) (Con A)))
+     (App (App (App (Con ⇒I) (Con A)) (App (App (Con ⇒) (Con B)) (Con A)))
           (Lam (App (Con prf) (Con A))
-               (App (App (App (Con impI) (Con B)) (Con A))
+               (App (App (App (Con ⇒I) (Con B)) (Con A))
                     (Lam (App (Con prf) (Con B)) (Var 1)))))
-     (App (Con prf) (App (App (Con imp) (Con A)) (App (App (Con imp) (Con B)) (Con A)))))
+     (App (Con prf) (App (App (Con ⇒) (Con A)) (App (App (Con ⇒) (Con B)) (Con A)))))
    True)
 ; NEGATIVE: the A=>A proof does not prove  A => B
 !(assertEqual
    (check CtxNil
-     (App (App (App (Con impI) (Con A)) (Con A)) (Lam (App (Con prf) (Con A)) (Var 0)))
-     (App (Con prf) (App (App (Con imp) (Con A)) (Con B))))
+     (App (App (App (Con ⇒I) (Con A)) (Con A)) (Lam (App (Con prf) (Con A)) (Var 0)))
+     (App (Con prf) (App (App (Con ⇒) (Con A)) (Con B))))
    False)
 
 ; ==================== MODULO: conversion = rewriting =======================

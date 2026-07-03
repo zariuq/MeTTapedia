@@ -1327,6 +1327,126 @@ theorem provable_iff_consequence_param_free_supported_of_upgrade
     (Base := Base) (Const := Const) P
     (U.toLocalMembershipClauses (Base := Base)) hT0 hθ0
 
+/-! ## Intuitionistic HOL supported completeness surface -/
+
+/-- Positive supported example: EM-free derivability is valid in every
+supported canonical membership world. -/
+theorem intuitionisticHOL_supported_soundness
+    {T : ClosedTheorySet (WithParams Const)}
+    {θ : ClosedFormula (WithParams Const)}
+    (hθ : ClosedTheorySet.Provable (Const := WithParams Const) T θ) :
+    SupportedMembershipConsequence (Base := Base) (Const := Const) T θ :=
+  supportedMembershipConsequence_of_provable
+    (Base := Base) (Const := Const) hθ
+
+/-- Negative supported example: the raw alternating construction supplies a
+counterworld for every fixed-bound non-derivation. -/
+theorem intuitionisticHOL_supported_countermodel_at_bound
+    (P : SchedulerProvider (Base := Base) Const)
+    {m : Nat} {T : ClosedTheorySet (WithParams Const)}
+    {θ : ClosedFormula (WithParams Const)}
+    (hLayer : ClosedTheorySet.AvoidsParamLayersFrom
+      (Base := Base) (Const := Const) (m + 1) T)
+    (hStage : ClosedTheorySet.AvoidsParamStagesFrom
+      (Base := Base) (Const := Const) m 0 T)
+    (hθStage : ClosedTheorySet.FormulaAvoidsParamStagesFrom
+      (Base := Base) (Const := Const) m 0 θ)
+    (hNot : ¬ ClosedTheorySet.Provable (Const := WithParams Const) T θ) :
+    ¬ SupportedMembershipConsequence (Base := Base) (Const := Const) T θ :=
+  not_supportedMembershipConsequence_of_supported_countermodel_at_bound
+    (Base := Base) (Const := Const) P hLayer hStage hθStage hNot
+
+/-- Fixed-bound completeness for the supported canonical membership semantics. -/
+theorem intuitionisticHOL_supported_completeness_at_bound
+    (P : SchedulerProvider (Base := Base) Const)
+    {m : Nat} {T : ClosedTheorySet (WithParams Const)}
+    {θ : ClosedFormula (WithParams Const)}
+    (hLayer : ClosedTheorySet.AvoidsParamLayersFrom
+      (Base := Base) (Const := Const) (m + 1) T)
+    (hStage : ClosedTheorySet.AvoidsParamStagesFrom
+      (Base := Base) (Const := Const) m 0 T)
+    (hθStage : ClosedTheorySet.FormulaAvoidsParamStagesFrom
+      (Base := Base) (Const := Const) m 0 θ) :
+    ClosedTheorySet.Provable (Const := WithParams Const) T θ ↔
+      SupportedMembershipConsequence (Base := Base) (Const := Const) T θ :=
+  provable_iff_supportedMembershipConsequence_supported_at_bound
+    (Base := Base) (Const := Const) P hLayer hStage hθStage
+
+/-- Param-free completeness for the supported canonical membership semantics. -/
+theorem intuitionisticHOL_supported_completeness_param_free
+    (P : SchedulerProvider (Base := Base) Const)
+    {T : ClosedTheorySet (WithParams Const)}
+    {θ : ClosedFormula (WithParams Const)}
+    (hT0 : ∀ ψ ∈ T, ∀ (σ : Ty Base) (k : Nat),
+      NoConstOccurrence (param σ k : WithParams Const σ) ψ)
+    (hθ0 : ∀ (σ : Ty Base) (k : Nat),
+      NoConstOccurrence (param σ k : WithParams Const σ) θ) :
+    ClosedTheorySet.Provable (Const := WithParams Const) T θ ↔
+      SupportedMembershipConsequence (Base := Base) (Const := Const) T θ :=
+  provable_iff_supportedMembershipConsequence_param_free_supported
+    (Base := Base) (Const := Const) P hT0 hθ0
+
+/-- Negative level-canonical example: the supported counterworld also refutes
+the level-respecting canonical `KripkeHenkin` package. -/
+theorem intuitionisticHOL_level_kripke_countermodel_at_bound
+    (P : SchedulerProvider (Base := Base) Const)
+    (L : LevelLocalMembershipClauses (Base := Base) Const)
+    {m : Nat} {T : ClosedTheorySet (WithParams Const)}
+    {θ : ClosedFormula (WithParams Const)}
+    (hLayer : ClosedTheorySet.AvoidsParamLayersFrom
+      (Base := Base) (Const := Const) (m + 1) T)
+    (hStage : ClosedTheorySet.AvoidsParamStagesFrom
+      (Base := Base) (Const := Const) m 0 T)
+    (hθStage : ClosedTheorySet.FormulaAvoidsParamStagesFrom
+      (Base := Base) (Const := Const) m 0 θ)
+    (hNot : ¬ ClosedTheorySet.Provable (Const := WithParams Const) T θ) :
+    ¬ ∀ W : ClosedTheorySet.SupportedPresentedIntuitionisticWorld (Base := Base) Const,
+        (∀ {ψ : ClosedFormula (WithParams Const)}, ψ ∈ T →
+          (canonicalLevelKripkeHenkin (Base := Base) (Const := Const) P L).forces W ψ) →
+            (canonicalLevelKripkeHenkin (Base := Base) (Const := Const) P L).forces W θ := by
+  intro hSem
+  have hMem :
+      SupportedMembershipConsequence (Base := Base) (Const := Const) T θ :=
+    (supportedMembershipConsequence_iff_canonicalLevelKripkeHenkin
+      (Base := Base) (Const := Const) P L).mpr hSem
+  exact (not_supportedMembershipConsequence_of_supported_countermodel_at_bound
+    (Base := Base) (Const := Const) P hLayer hStage hθStage hNot) hMem
+
+/-- Param-free completeness stated on the level-respecting canonical
+`KripkeHenkin` package. -/
+theorem intuitionisticHOL_level_kripke_completeness_param_free
+    (P : SchedulerProvider (Base := Base) Const)
+    (L : LevelLocalMembershipClauses (Base := Base) Const)
+    {T : ClosedTheorySet (WithParams Const)}
+    {θ : ClosedFormula (WithParams Const)}
+    (hT0 : ∀ ψ ∈ T, ∀ (σ : Ty Base) (k : Nat),
+      NoConstOccurrence (param σ k : WithParams Const σ) ψ)
+    (hθ0 : ∀ (σ : Ty Base) (k : Nat),
+      NoConstOccurrence (param σ k : WithParams Const σ) θ) :
+    ClosedTheorySet.Provable (Const := WithParams Const) T θ ↔
+      ∀ W : ClosedTheorySet.SupportedPresentedIntuitionisticWorld (Base := Base) Const,
+        (∀ {ψ : ClosedFormula (WithParams Const)}, ψ ∈ T →
+          (canonicalLevelKripkeHenkin (Base := Base) (Const := Const) P L).forces W ψ) →
+            (canonicalLevelKripkeHenkin (Base := Base) (Const := Const) P L).forces W θ :=
+  provable_iff_canonicalLevelKripkeHenkin_param_free_supported
+    (Base := Base) (Const := Const) P L hT0 hθ0
+
+/-- Param-free completeness for independent `KripkeHenkin` consequence remains
+conditional on the explicit full-presented upgrade. -/
+theorem intuitionisticHOL_full_kripke_completeness_param_free_of_upgrade
+    (P : SchedulerProvider (Base := Base) Const)
+    (U : FullPresentedUpgrade (Base := Base) Const)
+    {T : ClosedTheorySet (WithParams Const)}
+    {θ : ClosedFormula (WithParams Const)}
+    (hT0 : ∀ ψ ∈ T, ∀ (σ : Ty Base) (k : Nat),
+      NoConstOccurrence (param σ k : WithParams Const σ) ψ)
+    (hθ0 : ∀ (σ : Ty Base) (k : Nat),
+      NoConstOccurrence (param σ k : WithParams Const σ) θ) :
+    ClosedTheorySet.Provable (Const := WithParams Const) T θ ↔
+      Consequence.{u, v, max u v} (Base := Base) (Const := WithParams Const) T θ :=
+  provable_iff_consequence_param_free_supported_of_upgrade
+    (Base := Base) (Const := Const) P U hT0 hθ0
+
 end SupportedCanonicalFrame
 
 end KripkeHenkin

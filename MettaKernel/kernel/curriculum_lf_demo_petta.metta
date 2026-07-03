@@ -74,14 +74,14 @@
 ; ---- HOL / simple type theory (ICL10_12, HOL06) ----
 (= (sigT o)    (Srt type))
 (= (sigT prf)  (Pi (Con o) (Srt type)))
-(= (sigT imp)  (Pi (Con o) (Pi (Con o) (Con o))))
-(= (sigT impI)
+(= (sigT ⇒)  (Pi (Con o) (Pi (Con o) (Con o))))
+(= (sigT ⇒I)
    (Pi (Con o) (Pi (Con o)
      (Pi (Pi (App (Con prf) (Var 1)) (App (Con prf) (Var 1)))
-         (App (Con prf) (App (App (Con imp) (Var 2)) (Var 1)))))))
-(= (sigT impE)
+         (App (Con prf) (App (App (Con ⇒) (Var 2)) (Var 1)))))))
+(= (sigT ⇒E)
    (Pi (Con o) (Pi (Con o)
-     (Pi (App (Con prf) (App (App (Con imp) (Var 1)) (Var 0)))
+     (Pi (App (Con prf) (App (App (Con ⇒) (Var 1)) (Var 0)))
        (Pi (App (Con prf) (Var 2)) (App (Con prf) (Var 2)))))))
 (= (sigT A) (Con o))
 (= (sigT B) (Con o))
@@ -102,7 +102,7 @@
 (= (sigT b)   (Con set))
 (= (sigT axMem) (App (Con prf) (App (App (Con In) (Con a)) (Con b))))   ; AXIOM: prf (In a b)
 (= (sigT axSym)                                                        ; AXIOM: prf (In a b => In b a)
-   (App (Con prf) (App (App (Con imp) (App (App (Con In) (Con a)) (Con b)))
+   (App (Con prf) (App (App (Con ⇒) (App (App (Con In) (Con a)) (Con b)))
                                       (App (App (Con In) (Con b)) (Con a)))))
 
 ; ================================= TESTS ====================================
@@ -132,10 +132,10 @@
 ; =========================== HOTG paradigm =================================
 ; the ledgered axiom inhabits its stated proposition:  axMem : prf (In a b)
 !(test (check CtxNil (Con axMem) (App (Con prf) (App (App (Con In) (Con a)) (Con b)))) True)
-; axioms compose through the HOL rule impE:  In b a  from  (In a b => In b a) and (In a b)
+; axioms compose through the HOL rule ⇒E:  In b a  from  (In a b => In b a) and (In a b)
 !(test
    (check CtxNil
-     (App (App (App (App (Con impE) (App (App (Con In) (Con a)) (Con b)))
+     (App (App (App (App (Con ⇒E) (App (App (Con In) (Con a)) (Con b)))
                                     (App (App (Con In) (Con b)) (Con a)))
                (Con axSym)) (Con axMem))
      (App (Con prf) (App (App (Con In) (Con b)) (Con a))))
@@ -144,26 +144,26 @@
 !(test (check CtxNil (Con axMem) (App (Con prf) (App (App (Con In) (Con b)) (Con a)))) False)
 
 ; ========================= HOL / STT paradigm ==============================
-; A => A   by   impI A A (\h:prf A. h)
+; A => A   by   ⇒I A A (\h:prf A. h)
 !(test
    (check CtxNil
-     (App (App (App (Con impI) (Con A)) (Con A)) (Lam (App (Con prf) (Con A)) (Var 0)))
-     (App (Con prf) (App (App (Con imp) (Con A)) (Con A))))
+     (App (App (App (Con ⇒I) (Con A)) (Con A)) (Lam (App (Con prf) (Con A)) (Var 0)))
+     (App (Con prf) (App (App (Con ⇒) (Con A)) (Con A))))
    True)
-; K : A => B => A   by   impI A (B=>A) (\h. impI B A (\g. h))
+; K : A => B => A   by   ⇒I A (B=>A) (\h. ⇒I B A (\g. h))
 !(test
    (check CtxNil
-     (App (App (App (Con impI) (Con A)) (App (App (Con imp) (Con B)) (Con A)))
+     (App (App (App (Con ⇒I) (Con A)) (App (App (Con ⇒) (Con B)) (Con A)))
           (Lam (App (Con prf) (Con A))
-               (App (App (App (Con impI) (Con B)) (Con A))
+               (App (App (App (Con ⇒I) (Con B)) (Con A))
                     (Lam (App (Con prf) (Con B)) (Var 1)))))
-     (App (Con prf) (App (App (Con imp) (Con A)) (App (App (Con imp) (Con B)) (Con A)))))
+     (App (Con prf) (App (App (Con ⇒) (Con A)) (App (App (Con ⇒) (Con B)) (Con A)))))
    True)
 ; NEGATIVE: the A=>A proof does not prove  A => B
 !(test
    (check CtxNil
-     (App (App (App (Con impI) (Con A)) (Con A)) (Lam (App (Con prf) (Con A)) (Var 0)))
-     (App (Con prf) (App (App (Con imp) (Con A)) (Con B))))
+     (App (App (App (Con ⇒I) (Con A)) (Con A)) (Lam (App (Con prf) (Con A)) (Var 0)))
+     (App (Con prf) (App (App (Con ⇒) (Con A)) (Con B))))
    False)
 
 ; ==================== MODULO: conversion = rewriting =======================

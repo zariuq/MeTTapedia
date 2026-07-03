@@ -14,6 +14,7 @@ import Mettapedia.Logic.LP.SLDCompletenessKit
 import Mettapedia.Logic.LP.SLDCompletenessCanaries
 import Mettapedia.Logic.LP.PropositionalChainer
 import Mettapedia.Logic.LP.BackwardViaForward
+import Mettapedia.Logic.LP.BackwardViaForwardMP
 import Mettapedia.Logic.LP.PropositionalConnectionChainer
 import Mettapedia.Logic.LP.FirstOrderConnectionTrace
 import Mettapedia.Logic.LP.FunctionFree

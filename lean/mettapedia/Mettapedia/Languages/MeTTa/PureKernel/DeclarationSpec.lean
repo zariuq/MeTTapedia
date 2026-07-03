@@ -79,13 +79,13 @@ theorem usesOnlyDeclNamesFrom_mono
   intro t hUses
   induction t with
   | var i =>
-      simpa [UsesOnlyDeclNamesFrom]
+      simp [UsesOnlyDeclNamesFrom]
   | const c =>
       exact hmono c hUses
   | u0 =>
-      simpa [UsesOnlyDeclNamesFrom]
+      simp [UsesOnlyDeclNamesFrom]
   | u1 =>
-      simpa [UsesOnlyDeclNamesFrom]
+      simp [UsesOnlyDeclNamesFrom]
   | pi A B ihA ihB =>
       simpa [UsesOnlyDeclNamesFrom] using ⟨ihA hUses.1, ihB hUses.2⟩
   | sigma A B ihA ihB =>
@@ -111,13 +111,13 @@ theorem usesOnlyDeclNamesFrom_rename
     UsesOnlyDeclNamesFrom allowed (rename ρ t) := by
   induction t generalizing m with
   | var i =>
-      simpa [UsesOnlyDeclNamesFrom, rename]
+      simp [UsesOnlyDeclNamesFrom, rename]
   | const c =>
       simpa [UsesOnlyDeclNamesFrom, rename] using hUses
   | u0 =>
-      simpa [UsesOnlyDeclNamesFrom, rename]
+      simp [UsesOnlyDeclNamesFrom, rename]
   | u1 =>
-      simpa [UsesOnlyDeclNamesFrom, rename]
+      simp [UsesOnlyDeclNamesFrom, rename]
   | pi A B ihA ihB =>
       simpa [UsesOnlyDeclNamesFrom, rename] using
         ⟨ihA (ρ := ρ) hUses.1, ihB (ρ := liftRen ρ) hUses.2⟩
@@ -155,14 +155,14 @@ theorem usesOnlyDeclNamesFrom_subst
   | const c =>
       simpa [UsesOnlyDeclNamesFrom, subst] using hUses
   | u0 =>
-      simpa [UsesOnlyDeclNamesFrom, subst]
+      simp [UsesOnlyDeclNamesFrom, subst]
   | u1 =>
-      simpa [UsesOnlyDeclNamesFrom, subst]
+      simp [UsesOnlyDeclNamesFrom, subst]
   | pi A B ihA ihB =>
       have hσlift : ∀ i : Fin (_ + 1), UsesOnlyDeclNamesFrom allowed (liftSub σ i) := by
         intro i
         refine Fin.cases ?_ ?_ i
-        · simpa [liftSub, UsesOnlyDeclNamesFrom]
+        · simp [liftSub, UsesOnlyDeclNamesFrom]
         · intro j
           simpa [liftSub] using usesOnlyDeclNamesFrom_rename (ρ := wk) (hUses := hσ j)
       simpa [UsesOnlyDeclNamesFrom, subst] using
@@ -171,7 +171,7 @@ theorem usesOnlyDeclNamesFrom_subst
       have hσlift : ∀ i : Fin (_ + 1), UsesOnlyDeclNamesFrom allowed (liftSub σ i) := by
         intro i
         refine Fin.cases ?_ ?_ i
-        · simpa [liftSub, UsesOnlyDeclNamesFrom]
+        · simp [liftSub, UsesOnlyDeclNamesFrom]
         · intro j
           simpa [liftSub] using usesOnlyDeclNamesFrom_rename (ρ := wk) (hUses := hσ j)
       simpa [UsesOnlyDeclNamesFrom, subst] using
@@ -183,7 +183,7 @@ theorem usesOnlyDeclNamesFrom_subst
       have hσlift : ∀ i : Fin (_ + 1), UsesOnlyDeclNamesFrom allowed (liftSub σ i) := by
         intro i
         refine Fin.cases ?_ ?_ i
-        · simpa [liftSub, UsesOnlyDeclNamesFrom]
+        · simp [liftSub, UsesOnlyDeclNamesFrom]
         · intro j
           simpa [liftSub] using usesOnlyDeclNamesFrom_rename (ρ := wk) (hUses := hσ j)
       simpa [UsesOnlyDeclNamesFrom, subst] using ih hσlift hUses
@@ -208,7 +208,7 @@ theorem usesOnlyDeclNamesFrom_inst0
     refine Fin.cases ?_ ?_ i
     · simpa [subst0] using ha
     · intro j
-      simpa [subst0, UsesOnlyDeclNamesFrom]
+      simp [subst0, UsesOnlyDeclNamesFrom]
   simpa [inst0] using usesOnlyDeclNamesFrom_subst hσ hb
 
 def prefixNames (pre : List DeclSpec) : List DeclName :=

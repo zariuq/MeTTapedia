@@ -58,7 +58,7 @@ deriving DecidableEq
 
 namespace DemandAtom
 
-instance [Fintype α] [DecidableEq α] : Fintype (DemandAtom α) :=
+instance : Fintype (DemandAtom α) :=
   { elems :=
       ((Finset.univ.product (Finset.univ : Finset α)).image
         (fun p : α × α => DemandAtom.need p.1 p.2)) ∪
