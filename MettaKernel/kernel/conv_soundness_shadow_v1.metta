@@ -32,6 +32,11 @@
 ;   (iii) NO FALSE ID        no conv-equal pair is ~-distinct  (the unsoundness probe)
 ; run_conv_soundness_gate.sh injects unsound conv coarsenings / ~ over-matches and
 ; confirms property (i)/(iii) turns red -- the binding-mutation-gate pattern.
+;
+; Source anchors: Meredith knot-rho / knotted-topoi context-bisimulation and the
+; existing CONV-* ledger rows.  DIVERGES: this file is a bounded finite shadow
+; of the coinductive theory; it is intentionally not a complete rho calculus or
+; a global decision procedure for bisimulation.
 ; =============================================================================
 
 ; ---------- process syntax (CCS/rho equivariant fragment) --------------------

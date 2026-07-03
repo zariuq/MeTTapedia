@@ -9,6 +9,10 @@
 ; Frontends may keep their own untrusted search/parsing/evidence layers, but
 ; they should lower exported witnesses through the helpers here instead of
 ; rebuilding LF proof-term assembly in parallel.
+;
+; Source anchors: HHP LF proof-as-inhabitation and Dedukti-style kernel
+; checking; this ABI is a transport boundary for already source-backed frontend
+; rows.  DIVERGES: it provides finite witness plumbing, not a new calculus rule.
 ; ============================================================================
 
 !(import! &self ../Curriculum/Notation/03_lf_concrete_syntax_hook.metta)

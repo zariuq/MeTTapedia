@@ -9,6 +9,10 @@
 ;   * parser-produced LF concrete syntax lowering from the notation lane
 ;
 ; The only acceptance verdict comes from the real imported `kernel-check`.
+;
+; Source anchors: HHP/Dedukti LF signature checking for the kernel-facing
+; witness, with parser/chainer producers kept outside the trusted proof
+; boundary.  DIVERGES: frontend metadata is advisory; only kernel-check accepts.
 ; ============================================================================
 
 !(import! &self kernel_signature_lf_frontend_bridge_lib_v0.metta)

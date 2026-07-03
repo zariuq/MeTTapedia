@@ -3,6 +3,15 @@
 ;
 ; Minimal performant binding waist v1.
 ;
+; Source anchors: de Bruijn shift/substitution and capture-avoidance are
+; calibrated to the existing BIND-* shelf (POPLmark, Chargueraud locally
+; nameless, Autosubst, Gabbay-Pitts) and to PFPL/ABT presentations for binding
+; declarations.  This file cross-references those ledger rows rather than
+; duplicating their literature trail.
+;
+; Implementation notes, not source claims: a small import-free arity table and
+; evaluator-stable fast path for the active LF/DIndG/NatRec term constructors.
+;
 ; Import-free ABT/de-Bruijn binding core: owns the current binding arity table
 ; and generic capture-avoiding shift/subst traversal.  It deliberately contains
 ; no checker, normalizer, conversion, signature lookup, iota, or DIndG typing

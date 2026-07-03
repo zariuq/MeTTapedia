@@ -49781,6 +49781,159 @@ def ConvSoundWithPropToType0WitnessCanonicalNfValueRuntimeExtraction : Prop :=
         (nfQuery cicStage3RawArtifactSigWithPropToType0Witness raw)).1.map (·.1) →
     CicStage3CanonicalNfRuntimeReadout raw out
 
+def ConvSoundWithPropToType0WitnessCanonicalNfValueRuntimeExtractionGeThree :
+    Prop :=
+  ∀ {fuel : Nat} {st : St} {raw : DIndGArtifactTerm}
+      {term : PureTm 0} {out : Metta.Atom},
+    3 ≤ fuel →
+    st.world = St.init.world →
+    DIndGArtifactTermTranslates
+      cicStage3RawArtifactSigWithPropToType0Witness.nameTranslates 0
+      raw term →
+    out ∈
+      (mettaEval kernelDefControlEnv fuel st []
+        (nfQuery cicStage3RawArtifactSigWithPropToType0Witness raw)).1.map (·.1) →
+    CicStage3CanonicalNfRuntimeReadout raw out
+
+theorem convSoundWithPropToType0Witness_canonical_nf_value_runtime_extraction_geThree
+    (hExtract :
+      ConvSoundWithPropToType0WitnessCanonicalNfValueRuntimeExtraction) :
+    ConvSoundWithPropToType0WitnessCanonicalNfValueRuntimeExtractionGeThree := by
+  intro fuel st raw term out _hFuel hWorld hTrans hOut
+  exact hExtract hWorld hTrans hOut
+
+theorem convSoundWithPropToType0Witness_canonical_nf_value_runtime_extraction_geThree_var
+    {fuel : Nat} {st : St} {index : Nat} {term : PureTm 0}
+    {out : Metta.Atom}
+    (_hFuel : 3 ≤ fuel)
+    (_hWorld : st.world = St.init.world)
+    (hTrans :
+      DIndGArtifactTermTranslates
+        cicStage3RawArtifactSigWithPropToType0Witness.nameTranslates 0
+        (.var index) term)
+    (_hOut :
+      out ∈
+        (mettaEval kernelDefControlEnv fuel st []
+          (nfQuery cicStage3RawArtifactSigWithPropToType0Witness
+            (.var index))).1.map (·.1)) :
+    CicStage3CanonicalNfRuntimeReadout (.var index) out := by
+  cases hTrans with
+  | var hIndex =>
+      exact False.elim (Nat.not_lt_zero _ hIndex)
+
+theorem convSoundWithPropToType0Witness_canonical_nf_value_runtime_extraction_geThree_srt
+    {fuel : Nat} {st : St} {sort : DIndGArtifactSort} {term : PureTm 0}
+    {out : Metta.Atom}
+    (hFuel : 3 ≤ fuel)
+    (hWorld : st.world = St.init.world)
+    (_hTrans :
+      DIndGArtifactTermTranslates
+        cicStage3RawArtifactSigWithPropToType0Witness.nameTranslates 0
+        (.srt sort) term)
+    (hOut :
+      out ∈
+        (mettaEval kernelDefControlEnv fuel st []
+          (nfQuery cicStage3RawArtifactSigWithPropToType0Witness
+            (.srt sort))).1.map (·.1)) :
+    CicStage3CanonicalNfRuntimeReadout (.srt sort) out := by
+  rcases Nat.exists_eq_add_of_le hFuel with ⟨fuelBase, hFuelEq⟩
+  have hFuelEq' : fuel = fuelBase + 3 := by omega
+  have hStatic : st.world.selfExtra = [] := by
+    rw [hWorld]
+    rfl
+  rw [hFuelEq'] at hOut
+  rw [mettaEval_kernelDefControlEnv_nf_srt_body_eq_state
+    fuelBase st cicStage3RawArtifactSigWithPropToType0Witness sort hStatic] at hOut
+  have hOutEq : out = termAtom (.srt sort) := by
+    simpa using hOut
+  subst out
+  exact
+    CicStage3CanonicalNfRuntimeReadout.resolved
+      (CicStage3ResolvedNfRuntimeOutput.srt sort)
+
+theorem convSoundWithPropToType0Witness_canonical_nf_value_runtime_extraction_geThree_con
+    {fuel : Nat} {st : St} {name : DeclName} {term : PureTm 0}
+    {out : Metta.Atom}
+    (hFuel : 3 ≤ fuel)
+    (hWorld : st.world = St.init.world)
+    (hTrans :
+      DIndGArtifactTermTranslates
+        cicStage3RawArtifactSigWithPropToType0Witness.nameTranslates 0
+        (.con name) term)
+    (hOut :
+      out ∈
+        (mettaEval kernelDefControlEnv fuel st []
+          (nfQuery cicStage3RawArtifactSigWithPropToType0Witness
+            (.con name))).1.map (·.1)) :
+    CicStage3CanonicalNfRuntimeReadout (.con name) out := by
+  cases hTrans with
+  | con hName =>
+      rcases Nat.exists_eq_add_of_le hFuel with ⟨fuelBase, hFuelEq⟩
+      have hFuelEq' : fuel = fuelBase + 3 := by omega
+      have hStatic : st.world.selfExtra = [] := by
+        rw [hWorld]
+        rfl
+      have hBound :
+          cicStage3RawNameWithPropToType0WitnessBounded name :=
+        cicStage3RawNameTranslatesWithPropToType0Witness_bounded hName
+      rw [hFuelEq'] at hOut
+      rw [mettaEval_kernelDefControlEnv_nf_con_body_eq_state
+        fuelBase st cicStage3RawArtifactSigWithPropToType0Witness name hStatic
+        (cicStage3RawNameWithPropToType0WitnessBounded_runtimeSafe hBound)] at hOut
+      have hOutEq : out = termAtom (.con name) := by
+        simpa using hOut
+      subst out
+      exact
+        CicStage3CanonicalNfRuntimeReadout.resolved
+          (CicStage3ResolvedNfRuntimeOutput.con hBound)
+
+theorem convSoundWithPropToType0Witness_canonical_nf_value_runtime_extraction_geThree_bad
+    {fuel : Nat} {st : St} {reason : String} {term : PureTm 0}
+    {out : Metta.Atom}
+    (_hFuel : 3 ≤ fuel)
+    (_hWorld : st.world = St.init.world)
+    (hTrans :
+      DIndGArtifactTermTranslates
+        cicStage3RawArtifactSigWithPropToType0Witness.nameTranslates 0
+        (.bad reason) term)
+    (_hOut :
+      out ∈
+        (mettaEval kernelDefControlEnv fuel st []
+          (nfQuery cicStage3RawArtifactSigWithPropToType0Witness
+            (.bad reason))).1.map (·.1)) :
+    CicStage3CanonicalNfRuntimeReadout (.bad reason) out := by
+  cases hTrans
+
+theorem convSoundWithPropToType0Witness_canonical_nf_value_runtime_extraction_defn_witness_geEleven
+    {fuel : Nat} {st : St} {term : PureTm 0} {out : Metta.Atom}
+    (hFuel : 11 ≤ fuel)
+    (hWorld : st.world = St.init.world)
+    (_hTrans :
+      DIndGArtifactTermTranslates
+        cicStage3RawArtifactSigWithPropToType0Witness.nameTranslates 0
+        (.defn cicStage3PropToType0WitnessName) term)
+    (hOut :
+      out ∈
+        (mettaEval kernelDefControlEnv fuel st []
+          (nfQuery cicStage3RawArtifactSigWithPropToType0Witness
+            (.defn cicStage3PropToType0WitnessName))).1.map (·.1)) :
+    CicStage3CanonicalNfRuntimeReadout
+      (.defn cicStage3PropToType0WitnessName) out := by
+  rcases Nat.exists_eq_add_of_le hFuel with ⟨fuelBase, hFuelEq⟩
+  have hFuelEq' : fuel = fuelBase + 11 := by omega
+  rw [hFuelEq'] at hOut
+  rcases
+      mettaEval_kernelDefControlEnv_propToType0Witness_nf_def_body_eq_state_exists
+        fuelBase st hWorld with
+    ⟨stOut, hExact, _hWorldOut⟩
+  rw [hExact] at hOut
+  have hOutEq : out = termAtom cicStage3RawIdentityWitness := by
+    simpa using hOut
+  subst out
+  exact
+    CicStage3CanonicalNfRuntimeReadout.resolved
+      CicStage3ResolvedNfRuntimeOutput.witnessDefn
+
 def ConvSoundWithPropToType0WitnessTailRuntimeClassification : Prop :=
   ∀ (fuel : Nat) {rawLeft rawRight : DIndGArtifactTerm}
       {left right : PureTm 0}
@@ -49894,6 +50047,51 @@ theorem convSoundWithPropToType0Witness_tail_runtime_classification_of_canonical
       (st := stBefore)
       (raw := rawRight) (term := right) (out := ny)
       hWorldBefore hRight hRightValue
+  rcases
+      CicStage3CanonicalNfRuntimeReadout_resolved_or_frontier
+        hLeftCanon with
+    hLeftResolved | hLeftFrontier
+  · rcases hLeftResolved with ⟨rawLeftNf, hNx, hLeftOut⟩
+    rcases
+        CicStage3CanonicalNfRuntimeReadout_resolved_or_frontier
+          hRightCanon with
+      hRightResolved | hRightFrontier
+    · rcases hRightResolved with ⟨rawRightNf, hNy, hRightOut⟩
+      exact Or.inl
+        ⟨rawLeftNf, rawRightNf, hNx, hNy, hLeftOut, hRightOut⟩
+    · exact Or.inr
+        (hFrontier fuel hFuel hWorldBefore hWorldTailBefore
+          hLeft hRight hLeftValue hRightValue hTailValue
+          hLeftCanon hRightCanon (Or.inr hRightFrontier))
+  · exact Or.inr
+      (hFrontier fuel hFuel hWorldBefore hWorldTailBefore
+        hLeft hRight hLeftValue hRightValue hTailValue
+        hLeftCanon hRightCanon (Or.inl hLeftFrontier))
+
+theorem convSoundWithPropToType0Witness_tail_runtime_classification_of_canonical_nf_value_runtime_extraction_geThree
+    (hExtract :
+      ConvSoundWithPropToType0WitnessCanonicalNfValueRuntimeExtractionGeThree)
+    (hFrontier :
+      ConvSoundWithPropToType0WitnessCanonicalFrontierTailAgreement) :
+    ConvSoundWithPropToType0WitnessTailRuntimeClassification := by
+  intro fuel rawLeft rawRight left right nx ny stBefore tailStBefore
+    tailValueEnv hFuel hWorldBefore hWorldTailBefore hLeft hRight
+  dsimp
+  intro hLeftValue hRightValue hTailValue
+  have hLeftCanon :
+      CicStage3CanonicalNfRuntimeReadout rawLeft nx :=
+    hExtract
+      (fuel := (fuel + 2) + 2)
+      (st := { counter := St.init.counter + 1, world := St.init.world })
+      (raw := rawLeft) (term := left) (out := nx)
+      (by omega) (by rfl) hLeft hLeftValue
+  have hRightCanon :
+      CicStage3CanonicalNfRuntimeReadout rawRight ny :=
+    hExtract
+      (fuel := fuel + 2)
+      (st := stBefore)
+      (raw := rawRight) (term := right) (out := ny)
+      (by omega) hWorldBefore hRight hRightValue
   rcases
       CicStage3CanonicalNfRuntimeReadout_resolved_or_frontier
         hLeftCanon with
@@ -51096,6 +51294,103 @@ theorem evaluator_soundness_withPropToType0Witness_of_mid_fuel_false_obligations
   exact
     evaluator_soundness_withPropToType0Witness_of_conv_sound
       (conv_sound_withPropToType0Witness_of_mid_fuel_false_obligations_canonical_frontier_closed_rerun
+        hMidFalse hNamedObligations hExtract hFrontier hClosedRerun)
+
+theorem conv_sound_withPropToType0Witness_of_small_fuel_false_obligations_canonical_frontier_geThree_closed_rerun
+    (hSmallFalse :
+      ConvSoundWithPropToType0WitnessNamedReadoutSmallFuelFalse)
+    (hNamedObligations :
+      ConvSoundWithPropToType0WitnessNamedReadoutObligations)
+    (hExtract :
+      ConvSoundWithPropToType0WitnessCanonicalNfValueRuntimeExtractionGeThree)
+    (hFrontier :
+      ConvSoundWithPropToType0WitnessCanonicalFrontierTailAgreement)
+    (hClosedRerun :
+      ConvSoundWithPropToType0WitnessResolvedTailClosedRerun) :
+    ∀ {rawLeft rawRight : DIndGArtifactTerm} {left right : PureTm 0},
+      evaluator.conv cicStage3RawArtifactSigWithPropToType0Witness
+        rawLeft rawRight →
+      DIndGArtifactTermTranslates
+        cicStage3RawArtifactSigWithPropToType0Witness.nameTranslates 0
+        rawLeft left →
+      DIndGArtifactTermTranslates
+        cicStage3RawArtifactSigWithPropToType0Witness.nameTranslates 0
+        rawRight right →
+      ConvDecl
+        (envOfSpecs
+          cicStage3RawArtifactSigWithPropToType0Witness.translatedSpecs)
+        left right := by
+  exact
+    conv_sound_withPropToType0Witness_of_small_fuel_false_obligations_tail_classification_closed_rerun
+      hSmallFalse hNamedObligations
+      (convSoundWithPropToType0Witness_tail_runtime_classification_of_canonical_nf_value_runtime_extraction_geThree
+        hExtract hFrontier)
+      hClosedRerun
+
+theorem evaluator_soundness_withPropToType0Witness_of_small_fuel_false_obligations_canonical_frontier_geThree_closed_rerun
+    (hSmallFalse :
+      ConvSoundWithPropToType0WitnessNamedReadoutSmallFuelFalse)
+    (hNamedObligations :
+      ConvSoundWithPropToType0WitnessNamedReadoutObligations)
+    (hExtract :
+      ConvSoundWithPropToType0WitnessCanonicalNfValueRuntimeExtractionGeThree)
+    (hFrontier :
+      ConvSoundWithPropToType0WitnessCanonicalFrontierTailAgreement)
+    (hClosedRerun :
+      ConvSoundWithPropToType0WitnessResolvedTailClosedRerun) :
+    DIndGArtifactEvaluatorSoundness evaluator
+      cicStage3RawArtifactSigWithPropToType0Witness := by
+  exact
+    evaluator_soundness_withPropToType0Witness_of_conv_sound
+      (conv_sound_withPropToType0Witness_of_small_fuel_false_obligations_canonical_frontier_geThree_closed_rerun
+        hSmallFalse hNamedObligations hExtract hFrontier hClosedRerun)
+
+theorem conv_sound_withPropToType0Witness_of_mid_fuel_false_obligations_canonical_frontier_geThree_closed_rerun
+    (hMidFalse :
+      ConvSoundWithPropToType0WitnessNamedReadoutFuelTwoThroughEightFalse)
+    (hNamedObligations :
+      ConvSoundWithPropToType0WitnessNamedReadoutObligations)
+    (hExtract :
+      ConvSoundWithPropToType0WitnessCanonicalNfValueRuntimeExtractionGeThree)
+    (hFrontier :
+      ConvSoundWithPropToType0WitnessCanonicalFrontierTailAgreement)
+    (hClosedRerun :
+      ConvSoundWithPropToType0WitnessResolvedTailClosedRerun) :
+    ∀ {rawLeft rawRight : DIndGArtifactTerm} {left right : PureTm 0},
+      evaluator.conv cicStage3RawArtifactSigWithPropToType0Witness
+        rawLeft rawRight →
+      DIndGArtifactTermTranslates
+        cicStage3RawArtifactSigWithPropToType0Witness.nameTranslates 0
+        rawLeft left →
+      DIndGArtifactTermTranslates
+        cicStage3RawArtifactSigWithPropToType0Witness.nameTranslates 0
+        rawRight right →
+      ConvDecl
+        (envOfSpecs
+          cicStage3RawArtifactSigWithPropToType0Witness.translatedSpecs)
+        left right := by
+  exact
+    conv_sound_withPropToType0Witness_of_small_fuel_false_obligations_canonical_frontier_geThree_closed_rerun
+      (convSoundWithPropToType0Witness_namedReadoutSmallFuelFalse_of_two_through_eight
+        hMidFalse)
+      hNamedObligations hExtract hFrontier hClosedRerun
+
+theorem evaluator_soundness_withPropToType0Witness_of_mid_fuel_false_obligations_canonical_frontier_geThree_closed_rerun
+    (hMidFalse :
+      ConvSoundWithPropToType0WitnessNamedReadoutFuelTwoThroughEightFalse)
+    (hNamedObligations :
+      ConvSoundWithPropToType0WitnessNamedReadoutObligations)
+    (hExtract :
+      ConvSoundWithPropToType0WitnessCanonicalNfValueRuntimeExtractionGeThree)
+    (hFrontier :
+      ConvSoundWithPropToType0WitnessCanonicalFrontierTailAgreement)
+    (hClosedRerun :
+      ConvSoundWithPropToType0WitnessResolvedTailClosedRerun) :
+    DIndGArtifactEvaluatorSoundness evaluator
+      cicStage3RawArtifactSigWithPropToType0Witness := by
+  exact
+    evaluator_soundness_withPropToType0Witness_of_conv_sound
+      (conv_sound_withPropToType0Witness_of_mid_fuel_false_obligations_canonical_frontier_geThree_closed_rerun
         hMidFalse hNamedObligations hExtract hFrontier hClosedRerun)
 
 /-- The `kernel_signature_lf_indexed_v0.metta` SRT rule

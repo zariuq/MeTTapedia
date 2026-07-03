@@ -10,6 +10,10 @@
 ; duplicate binding answers or trigger deep imported-assertion fragility.  Indexed
 ; routing is proven by `run_binding_mutation_gate.sh`, which rewrites the indexed
 ; import to a mutated waist and requires the indexed suite to go red.
+;
+; Source anchors: the imported waist is justified by KERN-BINDING-WAIST and the
+; BIND-* rows (POPLmark, Chargueraud, Autosubst, PFPL, ABTs).  DIVERGES: this
+; file is only a compatibility wrapper; it introduces no new binding rule.
 ; =============================================================================
 
 !(import! &self kernel_binding_waist_v1)

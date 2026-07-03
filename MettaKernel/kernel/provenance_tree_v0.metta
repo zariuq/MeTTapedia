@@ -7,6 +7,10 @@
 ;
 ; This file deliberately does NOT mint theoremhood.  Provenance projections are
 ; evidence about an already checked proof trace, never a replacement for checking.
+;
+; Source anchors: LCF/HOL proof-trace discipline and the project's WM/PLN
+; provenance readout rows.  DIVERGES: truth-value projection is evidential
+; metadata only; it is not a proof rule and cannot create theoremhood.
 ; =============================================================================
 
 (= (memb $x Nil) False)

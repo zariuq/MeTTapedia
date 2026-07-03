@@ -21,6 +21,11 @@
 ;       result / under-generation, the original bug);
 ;   (2) negative — a malformed domain must still be rejected as `Bad`, so a fix
 ;       to (1) must not make `infer` spuriously produce results (over-generation).
+;
+; Source anchors: the LF infer/Pi/Bad clauses are the same HHP/Barendregt core
+; cited by KERN-LF-CORE, with binding delegated to KERN-BINDING-WAIST.  DIVERGES:
+; this file is an engine conformance probe against the specified operational
+; result, not an independent logical rule.
 ; =============================================================================
 
 !(import! &self kernel_binding_waist_v1)

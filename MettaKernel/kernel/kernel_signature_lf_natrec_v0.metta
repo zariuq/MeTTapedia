@@ -4,6 +4,11 @@
 ; A finite-admitted-signature lambda-Pi-modulo kernel seed with the first real
 ; DTT eliminator: dependent natural-number recursion plus its iota rules.
 ;
+; Source anchors: HHP/Barendregt for the lambda-Pi core and PTS rule,
+; Dedukti/lambda-Pi-modulo for conversion, and Paulin-Mohring/Martin-Lof for
+; dependent NatRec and its constructor-headed iota equations.  DIVERGES:
+; explicit Bad values, finite first-match lookup, and bounded executable tests.
+;
 ; This merges the two previous good halves:
 ;   * lambda-Pi dependent checking from curriculum_lf_demo.metta
 ;   * finite prefix admission + axiom provenance from kernel_signature_v0.metta

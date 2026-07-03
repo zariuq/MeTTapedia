@@ -6,6 +6,12 @@
 ;
 ;  Each !(assertEqual ... True) below documents a CURRENTLY-ACCEPTED unsoundness.
 ;  Run:  /home/aimama/aihub/hyperon/CeTTa/cetta break_probes.metta
+;
+;  Source anchors: the copied lambda-Pi checker fragment is the same
+;  HHP/Barendregt/Dedukti LF core cited by KERN-LF-CORE and KERN-CONV-WHNF.
+;  DIVERGES: these probes intentionally exercise raw ambient signature holes;
+;  the accepted BREAK cases are findings about unchecked declarations, not
+;  source-backed kernel rules.
 ; =============================================================================
 
 !(import! &self kernel_binding_waist_v1)

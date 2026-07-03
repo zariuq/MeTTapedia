@@ -7,6 +7,10 @@
 ; keep importing kernel_binding_waist_v1 directly; notation/LanguageDef concrete syntax forms
 ; import this file when they need declared binding shapes such as dependent Pi,
 ; forall/exists binders, comprehensions, or proof-context binders.
+;
+; Source anchors: PFPL and Sterling-Morrison ABT binding declarations, plus the
+; BIND-* rows' de Bruijn/Autosubst sources.  DIVERGES: missing or duplicate
+; field declarations fail closed through executable table checks.
 ; =============================================================================
 
 !(import! &self kernel_binding_waist_v1)

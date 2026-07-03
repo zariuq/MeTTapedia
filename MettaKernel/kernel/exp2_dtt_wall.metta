@@ -14,6 +14,11 @@
 ;
 ; Run:
 ;   /home/aimama/aihub/hyperon/CeTTa/cetta exp2_dtt_wall.metta
+;
+; Source anchors: HHP/Barendregt for the lambda-Pi core, Dedukti
+; lambda-Pi-modulo for beta/delta conversion, and Martin-Lof/Paulin-Mohring for
+; the absent recursor/J wall that later DIndG/NatRec files address.  DIVERGES:
+; the wall is deliberately documented rather than filled by an ad hoc rule.
 ; =============================================================================
 
 !(import! &self kernel_binding_waist_v1)

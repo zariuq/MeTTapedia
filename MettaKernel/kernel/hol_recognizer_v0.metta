@@ -4,6 +4,14 @@
 ; Runnable twin of the Lean HOL/STT `hol-core-g` recognizer
 ; (Mettapedia/GSLT/LanguageDef/HOL.lean).
 ;
+; Source anchors: HOL/STT terms are hosted as LF signatures in the HHP style and
+; follow the Assaf-Burel HOL-to-Dedukti translation boundary: surface parsing
+; lowers to LF constants/terms, then the LF kernel checks the result.  Binding
+; and lambda lowering cross-reference the BIND-* rows.
+;
+; Implementation notes, not source claims: fuel-bounded finite grammar,
+; fail-closed parser/elaborator, and covered HOL-core-g connectives only.
+;
 ; A total, fail-closed, fuel-bounded recursive-descent recognizer for the
 ; `hol-core-g` surface grammar:
 ;   Term -> Bind | Iff

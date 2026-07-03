@@ -3,6 +3,20 @@
 ;
 ; PHASES 1+2+3+4 plus v3/v4 convergence of the general indexed-inductive
 ; "telescope IR" engine.
+;
+; Source anchors: base LF/lambda-Pi typing follows Harper-Honsell-Plotkin
+; (1993) and Barendregt's PTS/lambda-Pi presentation; conversion and generated
+; iota rules follow lambda-Pi-modulo/Dedukti practice (Cousineau-Dowek;
+; Assaf-Burel et al.; rewriting modulo beta).  The DIndG telescope,
+; constructor, eliminator, and branch typing layer is calibrated to Dybjer's
+; inductive families, Paulin-Mohring-style recursors, and Martin-Lof identity
+; elimination.  Signature admission is HHP/Dedukti-style finite declaration
+; discipline.
+;
+; Implementation notes, not source claims: explicit Bad values, bounded
+; executable SR/iota admission certificates, first-match finite lookup, and
+; fail-closed mutation probes.
+;
 ; Introduces ONE declaration form `DIndG` beside the existing slices, with an
 ; explicit telescope IR, and implements:
 ;   * the family-kind generator        (Pi Delta. Pi Xi. Type)

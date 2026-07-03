@@ -9,6 +9,11 @@
 ; theorem handles, definitions checked against declared types, duplicate names
 ; rejected, forward references rejected, and axioms tracked as provenance.
 ;
+; Source anchors: HHP-style finite signatures and LCF/HOL certificate discipline
+; for primitive proof rules and axiom provenance.  DIVERGES: this is a simple
+; GSLT sequent seed, not the dependent lambda-Pi kernel; explicit axioms are
+; tracked rather than consistency-checked.
+;
 ; Run:
 ;   /home/aimama/aihub/hyperon/CeTTa/cetta kernel_signature_v0.metta
 ; =============================================================================

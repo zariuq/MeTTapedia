@@ -3,6 +3,14 @@
 ;
 ; HOL/STT `hol-core-g` surface -> verified recognizer twin -> LF kernel-check.
 ;
+; Source anchors: HOL is an object logic encoded as an LF signature in the HHP
+; methodology, with Assaf-Burel HOL-to-Dedukti as the translation comparison.
+; The checked fragment is classical/STT-shaped only at the signature layer; the
+; trusted verdict remains the imported lambda-Pi kernel-check.
+;
+; Implementation notes, not source claims: finite corpus proof elaboration,
+; explicit parser/elaborator Err values, and no parser-success-as-proof shortcut.
+;
 ; The parser/lowerer is the trusted front end because it mirrors the Lean M2
 ; recognizer (`Mettapedia/GSLT/LanguageDef/HOL.lean`) and is differentially
 ; checked here on the finite corpus.  The proof-fragment elaborator only inserts

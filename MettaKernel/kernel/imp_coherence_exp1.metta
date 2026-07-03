@@ -15,6 +15,12 @@
 ;  MP cut-universe U = atoms ++ hypotheses (saturated for this fragment/size).
 ;  This is a BOUNDED stand-in for OSLF ◇ (true OSLF coherence = Experiment 4,
 ;  awaits Lean unfreeze).  Run: cetta imp_coherence_exp1.metta
+;
+;  Source anchors: implication-introduction/elimination is the ordinary natural
+;  deduction / LF object-logic fragment used throughout the HHP-style signature
+;  rows; graded-depth readout is tracked by GRDMOD-BRIDGE-DEPTH.  DIVERGES:
+;  bounded search/fuel and finite formula universes are executable probes, not
+;  a completeness theorem for all OSLF.
 ; =============================================================================
 
 ; ---------------- booleans + hyp lists --------------------------------------

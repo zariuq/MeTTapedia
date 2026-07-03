@@ -29,6 +29,11 @@
 ;   (Codex's RhoCompiler/rhometta + the extended rho profile); v1 is the bounded,
 ;   channel-level correspondence.  run_mettarho_opcorr_gate.sh injects desugaring
 ;   breaks (channel collision; wrong location; dropped re-emit) and confirms red.
+;
+; Source anchors: Meredith knot-rho/knotted-topoi operational-correspondence
+; claims and the OCOH/CONV rows' finite LTS discipline.  DIVERGES: this is a
+; bounded channel-level shadow over Peano-add GSLT, not the full persistent rho
+; execution semantics.
 ; =============================================================================
 
 ; ---------- list utility (transitions Tx; redexes Rx; channels Cx) ------------

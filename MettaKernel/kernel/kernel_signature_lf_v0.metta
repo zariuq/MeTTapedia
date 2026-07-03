@@ -3,9 +3,15 @@
 ;
 ; A finite-admitted-signature lambda-Pi-modulo kernel seed.
 ;
-; This merges the two previous good halves:
-;   * lambda-Pi dependent checking from curriculum_lf_demo.metta
-;   * finite prefix admission + axiom provenance from kernel_signature_v0.metta
+; Source anchors: LF/lambda-Pi typing follows Harper, Honsell, and
+; Plotkin's Edinburgh LF calculus (JACM 1993) and the PTS/lambda-cube view in
+; Barendregt's "Lambda Calculi with Types".  Conversion is beta/delta whnf in
+; the lambda-Pi-modulo tradition of Cousineau-Dowek and Dedukti
+; (Assaf-Burel et al.).  Signature admission follows HHP finite signatures and
+; Dedukti module discipline.
+;
+; Implementation notes, not source claims: explicit Bad propagation, finite-list
+; first-match lookup, and fail-closed checked definitions/axiom provenance.
 ;
 ; The checker does NOT trust ambient sigT / defBody equations.  Constants,
 ; definitions, and axioms live in an explicit finite signature.  Definitions are

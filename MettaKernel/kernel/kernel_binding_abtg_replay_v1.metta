@@ -8,6 +8,10 @@
 ; `bind-subst` traversal on every current term/container shape.  Direct import is
 ; intentional: LeaTTa does not treat wrapper imports as re-exports, and indexed
 ; routing is now proven separately by `run_binding_mutation_gate.sh`.
+;
+; Source anchors: BIND-* and KERN-BINDING-WAIST cover the de Bruijn/ABT
+; traversal rules; PLFA-style examples calibrate lookup/substitution behavior.
+; DIVERGES: these are bounded executable replays, not universal ABT metatheory.
 ; =============================================================================
 
 !(import! &self kernel_binding_waist_v1)

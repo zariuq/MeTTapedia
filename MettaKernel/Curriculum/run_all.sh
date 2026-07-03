@@ -18,6 +18,8 @@ CETTA="${CETTA:-/home/aimama/aihub/hyperon/CeTTa/cetta}"
 CETTA_EXTRA_ARGS="${CETTA_EXTRA_ARGS---eval-hashcons}"
 CETTA_AS_LIMIT_BYTES="${CETTA_AS_LIMIT_BYTES:-25769803776}"
 CETTA_TIMEOUT_SECONDS="${CETTA_TIMEOUT_SECONDS:-240}"
+DED_DK_REPO="${DED_DK_REPO:-/home/aimama/aihub/repos/dedukti}"
+DED_DK="${DED_DK:-$DED_DK_REPO/_build/default/commands/main.exe}"
 read -r -a CETTA_EXTRA_ARGV <<< "$CETTA_EXTRA_ARGS"
 export CETTA
 export CETTA_EXTRA_ARGS
@@ -41,6 +43,23 @@ meg_args() {  # echo "-I <preamble>" from a sidecar "<file>.pre" (a leading comm
 run_cetta_capped() {
   local file="$1"
   timeout "$CETTA_TIMEOUT_SECONDS" prlimit --as="$CETTA_AS_LIMIT_BYTES" -- "$CETTA" "${CETTA_EXTRA_ARGV[@]}" "$file"
+}
+
+ensure_dedukti_checker() {
+  if [ -x "$DED_DK" ]; then
+    return 0
+  fi
+  (
+    cd "$DED_DK_REPO" &&
+    eval "$(opam env 2>/dev/null)" 2>/dev/null || true
+    dune build --only-package dedukti @install
+  )
+}
+
+run_dedukti_check() {
+  local file="$1"
+  ensure_dedukti_checker &&
+    timeout "$CETTA_TIMEOUT_SECONDS" "$DED_DK" check --coc "$file"
 }
 
 echo "================= COQ (DTT, ICL + feature mirrors) ================="
@@ -125,6 +144,25 @@ if [ -x Notation/mutation_check.sh ]; then
 fi
 
 echo "================= DEDUKTI/LAMBDAPI AS GUEST (CeTTa) ================="
+for f in DeduktiLambdapi/[0-9]*.dk; do [ -e "$f" ] || continue
+  if run_dedukti_check "$f" >"$log" 2>&1; then
+    echo "  [dk] $(basename "$f")  OK"
+    pass=$((pass+1))
+  else
+    echo "  [dk] $(basename "$f")  FAIL"
+    tail -8 "$log" | sed 's/^/        /'
+    pfail=$((pfail+1))
+  fi
+done
+for f in DeduktiLambdapi/neg_*.dk; do [ -e "$f" ] || continue
+  if run_dedukti_check "$f" >"$log" 2>&1; then
+    echo "  [dk-neg] $(basename "$f")  NOT CAUGHT  X"
+    missed=$((missed+1))
+  else
+    echo "  [dk-neg] $(basename "$f")  caught"
+    caught=$((caught+1))
+  fi
+done
 for f in DeduktiLambdapi/[0-9]*.metta; do [ -e "$f" ] || continue
   if run_cetta_capped "$f" >"$log" 2>&1; then
     tc=$(grep -c '^!(assertEqual' "$f")

@@ -21,6 +21,11 @@
 ;   * The dT label set is ONE object read two ways: the action `a` in a transition
 ;     (Tr a P') (Firing) IS the index `a` in a modality (FDia a phi) (Witnessing).
 ; run_ocoherence_gate.sh injects modal/~ breaks and confirms adequacy/witness reddens.
+;
+; Source anchors: Hennessy-Milner modal characterization plus Meredith
+; knotted-topoi/knot-rho rows cited by OCOH-* and GRDMOD-* ledger entries.
+; DIVERGES: bounded modal depth, finite process set, and StepCountQ are
+; executable shadows rather than a complete modal-mu-calculus theorem.
 ; =============================================================================
 
 ; ---------- process syntax + LTS (verbatim from conv_soundness_shadow_v1) ------

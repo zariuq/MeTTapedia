@@ -3,6 +3,12 @@
 ;
 ; PHASES 1+2+3+4 plus v3/v4 convergence of the general indexed-inductive
 ; "telescope IR" engine.
+;
+; Source anchors: same DIndG provenance as kernel_signature_lf_indexed_v0.metta
+; (HHP/Barendregt/Dedukti plus Dybjer, Paulin-Mohring, and Martin-Lof).  This
+; probe exists to make the SR admission checks exact.  DIVERGES: it is a
+; mutation/admission probe, not an additional theory slice.
+;
 ; Introduces ONE declaration form `DIndG` beside the existing slices, with an
 ; explicit telescope IR, and implements:
 ;   * the family-kind generator        (Pi Delta. Pi Xi. Type)

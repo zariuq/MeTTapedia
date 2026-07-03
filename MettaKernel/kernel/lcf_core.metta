@@ -20,6 +20,11 @@
 ; Thm, and (b) each rule being sound -- which is why the trusted core is tiny +
 ; audited (a separate Lean reference spec will PROVE the rules sound).
 ;
+; Source anchors: LCF/HOL primitive-rule discipline and standard equality/
+; implication rules; this file is a runnable seed for the corresponding
+; curriculum HOL/LCF rows.  DIVERGES: untyped MeTTa cannot enforce theorem
+; abstraction, so the trust boundary is documented rather than hidden.
+;
 ; Run:  /home/aimama/aihub/hyperon/CeTTa/cetta lcf_core.metta
 ; ============================================================================
 

@@ -3,6 +3,14 @@
 ;
 ; The verified parse -> kernel bridge for kernel_signature_lf_v0.
 ;
+; Source anchors: HHP LF terms and Dedukti/Lambdapi concrete conventions supply
+; the parser vocabulary; the final proof verdict is the finite lambda-Pi kernel
+; check in kernel_signature_lf_v0.  The trust split follows logical-framework
+; front-end methodology: recognized syntax is still checked by the kernel.
+;
+; Implementation notes, not source claims: parser failures are explicit Err
+; values and never reach kernel-check.
+;
 ; The recognizer itself lives in `lf_recognizer_v0.metta` (self-contained, runs
 ; identically on CeTTa and the Lean-verified LeaTTa engine); this file only wires
 ; its output into the imported `kernel-check`.

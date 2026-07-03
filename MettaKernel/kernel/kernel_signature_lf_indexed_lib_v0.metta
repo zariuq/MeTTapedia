@@ -3,6 +3,13 @@
 ;
 ; PHASES 1+2+3+4 plus v3/v4 convergence of the general indexed-inductive
 ; "telescope IR" engine.
+;
+; Source anchors: same as kernel_signature_lf_indexed_v0.metta: HHP and
+; Barendregt for LF/lambda-Pi typing, Dedukti/lambda-Pi-modulo for conversion,
+; Dybjer/Paulin-Mohring/Martin-Lof for DIndG families, recursors, and Id/J.
+; DIVERGES: executable SR/iota certificates and Bad values are implementation
+; guards, not a global confluence or termination proof.
+;
 ; Introduces ONE declaration form `DIndG` beside the existing slices, with an
 ; explicit telescope IR, and implements:
 ;   * the family-kind generator        (Pi Delta. Pi Xi. Type)

@@ -16,6 +16,11 @@
 ;
 ; Run:
 ;   /home/aimama/aihub/hyperon/CeTTa/cetta exp3_hotg_both_ways.metta
+;
+; Source anchors: HHP LF object-logic signatures, Assaf-Burel HOL-to-Dedukti
+; translation discipline, and Brown/Egal/Megalodon HOTG references cited by
+; KERN-OBJECT-SIGNATURES.  DIVERGES: this is a tiny explicit-axiom fragment,
+; not native Megalodon/HOTG semantics.
 ; =============================================================================
 
 !(import! &self kernel_binding_waist_v1)

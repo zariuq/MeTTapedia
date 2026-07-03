@@ -7,6 +7,14 @@
 ; the invariant the correspondence theorem `recognize ts = <lf-recognize> ts`
 ; rests on.  The kernel-check wiring lives in the bridge that imports this file.
 ;
+; Source anchors: LF surface syntax and lambda-Pi terms are the HHP/Dedukti
+; logical-framework vocabulary; arrow lowers to non-dependent Pi by the Dedukti
+; convention.  Name resolution lowers binders to de Bruijn indices using the
+; same binding sources cross-referenced by the BIND-* rows.
+;
+; Implementation notes, not source claims: total fuel, fail-closed parse errors,
+; and a finite recursive-descent grammar for the covered LF surface.
+;
 ; A total, fail-closed recursive-descent recognizer for the standard-LF (Lambdapi)
 ; surface, lowering a token stream to the kernel's de Bruijn AST
 ; (Con / Var / Lam / Pi / App / Srt) with named→de-Bruijn scope resolution.

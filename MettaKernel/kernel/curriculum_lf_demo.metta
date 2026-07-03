@@ -12,6 +12,8 @@
 ;  changes to it -- HOL/STT, DTT (inductive data + identity), HOTG (sets +
 ;  axioms) -- the standard LF/Dedukti methodology of encoding logics as
 ;  signatures rather than extending the kernel.
+;  Source anchors are recorded at rule granularity in KERN-LF-CORE,
+;  KERN-CONV-WHNF, KERN-BINDING-WAIST, and KERN-OBJECT-SIGNATURES.
 ;
 ;  Each paradigm shows POSITIVES (a real typed/sealed proof term checks) and a
 ;  NEGATIVE (a wrong proof is rejected).  Run (cetta = a CeTTa binary on your PATH):
