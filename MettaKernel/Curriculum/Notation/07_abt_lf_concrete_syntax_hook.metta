@@ -23,18 +23,18 @@
 
 ; ---------- LanguageDef table: concrete form + ABT binding shape -------------
 (= (alf-tbl)
-   (Cons (AlfNote LamF (LamForm lp lam colon dot rp) (Bind1 body))
+   (Cons (AlfNote LamF (LamForm lp λ colon dot rp) (Bind1 body))
     (Cons (AlfNote AppF (AppForm lp app rp) Bind0)
      (Cons (AlfNote RflF (RflForm lp rfl rp) Bind0) Nil))))
 
 (= (alf-bad-bind-tbl)
-   (Cons (AlfNote LamF (LamForm lp lam colon dot rp) Bind0)
+   (Cons (AlfNote LamF (LamForm lp λ colon dot rp) Bind0)
     (Cons (AlfNote AppF (AppForm lp app rp) Bind0)
      (Cons (AlfNote RflF (RflForm lp rfl rp) Bind0) Nil))))
 
 (= (alf-bad-dup-tbl)
-   (Cons (AlfNote LamF (LamForm lp lam colon dot rp) (Bind1 body))
-    (Cons (AlfNote Lam2F (LamForm lp lam colon dot rp) (Bind1 body)) Nil)))
+   (Cons (AlfNote LamF (LamForm lp λ colon dot rp) (Bind1 body))
+    (Cons (AlfNote Lam2F (LamForm lp λ colon dot rp) (Bind1 body)) Nil)))
 
 (= (alf-note-form (AlfNote $c $f $b)) $f)
 (= (alf-note-bind (AlfNote $c $f $b)) $b)
@@ -154,7 +154,7 @@
 ; ---------- representative concrete syntax forms --------------------------------
 (= (alf-lam-concrete-syntax $nm $A_toks $body_toks)
    (alf-append
-     (Cons lp (Cons lam (Cons $nm (Cons colon Nil))))
+     (Cons lp (Cons λ (Cons $nm (Cons colon Nil))))
      (alf-append $A_toks
        (alf-append (Cons dot Nil)
          (alf-append $body_toks (Cons rp Nil))))))

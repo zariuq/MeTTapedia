@@ -9935,6 +9935,49 @@ theorem cicStage3_resolved_nf_runtime_output_resolved
   | lam hDomain hBody ihDomain ihBody =>
       exact CicStage3ResolvedNfTerm.lam ihDomain ihBody
 
+theorem cicStage3_resolved_nf_term_visible_bounded
+    {raw : DIndGArtifactTerm}
+    (h : CicStage3ResolvedNfTerm raw) :
+    CicStage3RawTermTranslationVisibleNamesBounded raw := by
+  induction h with
+  | var k =>
+      exact CicStage3RawTermTranslationVisibleNamesBounded.var k
+  | srt sort =>
+      exact CicStage3RawTermTranslationVisibleNamesBounded.srt sort
+  | con hName =>
+      exact CicStage3RawTermTranslationVisibleNamesBounded.con hName
+  | witnessDefn =>
+      exact CicStage3RawTermTranslationVisibleNamesBounded.defn (by
+        simp [cicStage3RawNameWithPropToType0WitnessBounded])
+  | bad reason =>
+      exact CicStage3RawTermTranslationVisibleNamesBounded.bad reason
+  | pi hDomain hBody ihDomain ihBody =>
+      exact CicStage3RawTermTranslationVisibleNamesBounded.pi ihDomain ihBody
+  | lam hDomain hBody ihDomain ihBody =>
+      exact CicStage3RawTermTranslationVisibleNamesBounded.lam ihDomain ihBody
+
+theorem cicStage3_nf_soundness_frontier_visible_bounded
+    {raw : DIndGArtifactTerm}
+    (h : CicStage3NfSoundnessFrontier raw) :
+    CicStage3RawTermTranslationVisibleNamesBounded raw := by
+  induction h with
+  | defn hName _hNotWitness =>
+      exact CicStage3RawTermTranslationVisibleNamesBounded.defn hName
+  | app hFn hArg =>
+      exact CicStage3RawTermTranslationVisibleNamesBounded.app hFn hArg
+  | indG hFamily =>
+      exact CicStage3RawTermTranslationVisibleNamesBounded.indG hFamily
+  | piDomain _hDomain hBody ihDomain =>
+      exact CicStage3RawTermTranslationVisibleNamesBounded.pi ihDomain hBody
+  | piBody hDomain _hBody ihBody =>
+      exact CicStage3RawTermTranslationVisibleNamesBounded.pi
+        (cicStage3_resolved_nf_term_visible_bounded hDomain) ihBody
+  | lamDomain _hDomain hBody ihDomain =>
+      exact CicStage3RawTermTranslationVisibleNamesBounded.lam ihDomain hBody
+  | lamBody hDomain _hBody ihBody =>
+      exact CicStage3RawTermTranslationVisibleNamesBounded.lam
+        (cicStage3_resolved_nf_term_visible_bounded hDomain) ihBody
+
 /-- The executable `nf` readout shape after the resolved/frontier split.
 
 Resolved leaves return encoded artifact terms. Frontier leaves remain inert
@@ -10213,6 +10256,25 @@ theorem CicStage3CanonicalNfRuntimeReadout_not_var
     CicStage3NfRuntimeReadout_not_var
       (CicStage3CanonicalNfRuntimeReadout.toRuntimeReadout h)
 
+theorem CicStage3CanonicalNfRuntimeReadout_visible_bounded
+    {raw : DIndGArtifactTerm} {out : Metta.Atom}
+    (h : CicStage3CanonicalNfRuntimeReadout raw out) :
+    CicStage3RawTermTranslationVisibleNamesBounded raw := by
+  induction h with
+  | resolved hOut =>
+      exact cicStage3_resolved_nf_term_visible_bounded
+        (cicStage3_resolved_nf_runtime_output_input_resolved hOut)
+  | defnStuck hName _hNotWitness =>
+      exact CicStage3RawTermTranslationVisibleNamesBounded.defn hName
+  | appStuck hFn hArg =>
+      exact CicStage3RawTermTranslationVisibleNamesBounded.app hFn hArg
+  | indGStuck hFamily =>
+      exact CicStage3RawTermTranslationVisibleNamesBounded.indG hFamily
+  | pi _hDomain _hBody ihDomain ihBody =>
+      exact CicStage3RawTermTranslationVisibleNamesBounded.pi ihDomain ihBody
+  | lam _hDomain _hBody ihDomain ihBody =>
+      exact CicStage3RawTermTranslationVisibleNamesBounded.lam ihDomain ihBody
+
 theorem cicStage3_canonical_nf_runtime_readout_exists_of_visible_bounded
     {raw : DIndGArtifactTerm}
     (h : CicStage3RawTermTranslationVisibleNamesBounded raw) :
@@ -10259,6 +10321,64 @@ theorem cicStage3_canonical_nf_runtime_readout_exists_of_visible_bounded
       exact ⟨termAtom (.bad reason),
         CicStage3CanonicalNfRuntimeReadout.resolved
           (CicStage3ResolvedNfRuntimeOutput.bad reason)⟩
+
+theorem CicStage3CanonicalNfRuntimeReadout_resolved_or_frontier
+    {raw : DIndGArtifactTerm} {out : Metta.Atom}
+    (h : CicStage3CanonicalNfRuntimeReadout raw out) :
+    (∃ rawNf,
+      out = termAtom rawNf ∧
+        CicStage3ResolvedNfRuntimeOutput raw rawNf) ∨
+      CicStage3NfSoundnessFrontier raw := by
+  induction h with
+  | resolved hOut =>
+      exact Or.inl ⟨_, rfl, hOut⟩
+  | defnStuck hName hNotWitness =>
+      exact Or.inr (CicStage3NfSoundnessFrontier.defn hName hNotWitness)
+  | appStuck hFn hArg =>
+      exact Or.inr (CicStage3NfSoundnessFrontier.app hFn hArg)
+  | indGStuck hFamily =>
+      exact Or.inr (CicStage3NfSoundnessFrontier.indG hFamily)
+  | pi hDomain hBody ihDomain ihBody =>
+      rcases ihDomain with hDomainResolved | hDomainFrontier
+      · rcases hDomainResolved with ⟨domainNf, hDomainOut, hDomainRun⟩
+        rcases ihBody with hBodyResolved | hBodyFrontier
+        · rcases hBodyResolved with ⟨bodyNf, hBodyOut, hBodyRun⟩
+          subst_vars
+          exact Or.inl
+            ⟨.pi domainNf bodyNf, by simp [termAtom],
+              CicStage3ResolvedNfRuntimeOutput.pi hDomainRun hBodyRun⟩
+        · exact Or.inr
+            (CicStage3NfSoundnessFrontier.piBody
+              (cicStage3_resolved_nf_runtime_output_input_resolved
+                hDomainRun)
+              hBodyFrontier)
+      · exact Or.inr
+          (CicStage3NfSoundnessFrontier.piDomain hDomainFrontier
+            (CicStage3CanonicalNfRuntimeReadout_visible_bounded hBody))
+  | lam hDomain hBody ihDomain ihBody =>
+      rcases ihDomain with hDomainResolved | hDomainFrontier
+      · rcases hDomainResolved with ⟨domainNf, hDomainOut, hDomainRun⟩
+        rcases ihBody with hBodyResolved | hBodyFrontier
+        · rcases hBodyResolved with ⟨bodyNf, hBodyOut, hBodyRun⟩
+          subst_vars
+          exact Or.inl
+            ⟨.lam domainNf bodyNf, by simp [termAtom],
+              CicStage3ResolvedNfRuntimeOutput.lam hDomainRun hBodyRun⟩
+        · exact Or.inr
+            (CicStage3NfSoundnessFrontier.lamBody
+              (cicStage3_resolved_nf_runtime_output_input_resolved
+                hDomainRun)
+              hBodyFrontier)
+      · exact Or.inr
+          (CicStage3NfSoundnessFrontier.lamDomain hDomainFrontier
+            (CicStage3CanonicalNfRuntimeReadout_visible_bounded hBody))
+
+def CicStage3CanonicalNfRuntimeReadoutAllResolved : Prop :=
+  ∀ {raw : DIndGArtifactTerm} {out : Metta.Atom},
+    CicStage3CanonicalNfRuntimeReadout raw out →
+    ∃ rawNf,
+      out = termAtom rawNf ∧
+        CicStage3ResolvedNfRuntimeOutput raw rawNf
 
 theorem cicStage3_nonWitness_defn_stuck_readout_beq_true_name_eq
     {leftName rightName : DeclName}
@@ -49413,7 +49533,7 @@ def ConvSoundWithPropToType0WitnessNamedReadoutObligations : Prop :=
     ConvReadoutNamedNfExtractionObligations
         (fuel + 2) stNamed nxBinder nyBinder
         cicStage3RawArtifactSigWithPropToType0Witness rawLeft rawRight ∧
-      ConvReadoutNamedNfExtractionWorldObligations
+    ConvReadoutNamedNfExtractionWorldObligations
         (fuel + 2) stNamed nxBinder nyBinder
         cicStage3RawArtifactSigWithPropToType0Witness rawLeft rawRight
 
@@ -50981,17 +51101,36 @@ This is the concrete repair boundary for the universal `conv_sound` field:
 frontier equality for a stuck `IndG` readout cannot safely conclude
 declaration reflexivity until the `IndG` translation readout carries enough
 target information, or the field is restricted away from these raw terms. -/
-theorem cicStage3_indG_translation_nonfunctional_withPropToType0Witness :
-    ∃ raw : DIndGArtifactTerm,
-      DIndGArtifactTermTranslates
-        cicStage3RawArtifactSigWithPropToType0Witness.nameTranslates 0
-        raw (.u0 : PureTm 0) ∧
-      DIndGArtifactTermTranslates
-        cicStage3RawArtifactSigWithPropToType0Witness.nameTranslates 0
-        raw (.u1 : PureTm 0) ∧
-      (.u0 : PureTm 0) ≠ .u1 := by
-  let raw : DIndGArtifactTerm :=
-    .indG `nat [] (.srt .type) [] [] (.con `z)
+private def cicStage3IndGNonfunctionalRaw : DIndGArtifactTerm :=
+  .indG `nat [] (.srt .type) [] [] (.con `z)
+
+theorem not_cicStage3_canonical_nf_runtime_readout_all_resolved :
+    ¬ CicStage3CanonicalNfRuntimeReadoutAllResolved := by
+  intro hAll
+  have hFamily : cicStage3RawNameWithPropToType0WitnessBounded `nat := by
+    simp [cicStage3RawNameWithPropToType0WitnessBounded]
+  have hReadout :
+      CicStage3CanonicalNfRuntimeReadout
+        cicStage3IndGNonfunctionalRaw
+        (nfQuery cicStage3RawArtifactSigWithPropToType0Witness
+          cicStage3IndGNonfunctionalRaw) := by
+    simpa [cicStage3IndGNonfunctionalRaw] using
+      (CicStage3CanonicalNfRuntimeReadout.indGStuck
+        (familyName := `nat) (params := []) (motive := (.srt .type))
+        (cases := []) (indices := []) (scrutinee := (.con `z)) hFamily)
+  rcases hAll hReadout with ⟨rawNf, hEq, _hOut⟩
+  cases rawNf <;>
+    simp [cicStage3IndGNonfunctionalRaw, nfQuery, termAtom, mExpr, mSym]
+      at hEq
+
+private theorem cicStage3_indG_nonfunctional_raw_translates_u0_u1 :
+    DIndGArtifactTermTranslates
+      cicStage3RawArtifactSigWithPropToType0Witness.nameTranslates 0
+      cicStage3IndGNonfunctionalRaw (.u0 : PureTm 0) ∧
+    DIndGArtifactTermTranslates
+      cicStage3RawArtifactSigWithPropToType0Witness.nameTranslates 0
+      cicStage3IndGNonfunctionalRaw (.u1 : PureTm 0) ∧
+    (.u0 : PureTm 0) ≠ .u1 := by
   let natContract :=
     Mettapedia.Languages.MeTTa.PureKernel.RecursorDecl.natRecContract
   let zeroObligation :=
@@ -51031,11 +51170,168 @@ theorem cicStage3_indG_translation_nonfunctional_withPropToType0Witness :
       family_translates := hFamily
       contract_family := rfl
       pilot_generated := hPilot }
-  refine ⟨raw, ?_, ?_, ?_⟩
-  · exact DIndGArtifactTermTranslates.indG hReadoutU0
-  · exact DIndGArtifactTermTranslates.indG hReadoutU1
+  refine ⟨?_, ?_, ?_⟩
+  · simpa [cicStage3IndGNonfunctionalRaw] using
+      DIndGArtifactTermTranslates.indG hReadoutU0
+  · simpa [cicStage3IndGNonfunctionalRaw] using
+      DIndGArtifactTermTranslates.indG hReadoutU1
   · intro h
     cases h
+
+theorem cicStage3_indG_translation_nonfunctional_withPropToType0Witness :
+    ∃ raw : DIndGArtifactTerm,
+      DIndGArtifactTermTranslates
+        cicStage3RawArtifactSigWithPropToType0Witness.nameTranslates 0
+        raw (.u0 : PureTm 0) ∧
+      DIndGArtifactTermTranslates
+        cicStage3RawArtifactSigWithPropToType0Witness.nameTranslates 0
+        raw (.u1 : PureTm 0) ∧
+      (.u0 : PureTm 0) ≠ .u1 := by
+  exact ⟨cicStage3IndGNonfunctionalRaw,
+    cicStage3_indG_nonfunctional_raw_translates_u0_u1⟩
+
+def CicStage3IndGTranslationFunctionalWithPropToType0Witness : Prop :=
+  ∀ {n : Nat} {familyName : DeclName}
+      {params : List DIndGArtifactTerm}
+      {motive : DIndGArtifactTerm}
+      {cases : List (DeclName × DIndGArtifactTerm)}
+      {indices : List DIndGArtifactTerm}
+      {scrutinee : DIndGArtifactTerm}
+      {left right : PureTm n},
+    DIndGArtifactTermTranslates
+      cicStage3RawArtifactSigWithPropToType0Witness.nameTranslates n
+      (.indG familyName params motive cases indices scrutinee) left →
+    DIndGArtifactTermTranslates
+      cicStage3RawArtifactSigWithPropToType0Witness.nameTranslates n
+      (.indG familyName params motive cases indices scrutinee) right →
+    left = right
+
+theorem not_cicStage3_indG_translation_functional_withPropToType0Witness :
+    ¬ CicStage3IndGTranslationFunctionalWithPropToType0Witness := by
+  intro hFunctional
+  rcases cicStage3_indG_nonfunctional_raw_translates_u0_u1 with
+    ⟨hU0, hU1, hNe⟩
+  exact hNe (hFunctional hU0 hU1)
+
+def CicStage3RawEqualityFrontierFunctionalWithPropToType0Witness : Prop :=
+  ∀ {n : Nat} {raw : DIndGArtifactTerm} {left right : PureTm n},
+    DIndGArtifactTermTranslates
+      cicStage3RawArtifactSigWithPropToType0Witness.nameTranslates n
+      raw left →
+    DIndGArtifactTermTranslates
+      cicStage3RawArtifactSigWithPropToType0Witness.nameTranslates n
+      raw right →
+    left = right
+
+theorem not_cicStage3_raw_equality_frontier_functional_withPropToType0Witness :
+    ¬ CicStage3RawEqualityFrontierFunctionalWithPropToType0Witness := by
+  intro hFunctional
+  rcases cicStage3_indG_nonfunctional_raw_translates_u0_u1 with
+    ⟨hU0, hU1, hNe⟩
+  exact hNe (hFunctional hU0 hU1)
+
+theorem dindg_translate_unique_on_visible_bounded_withPropToType0Witness_of_indG_functional
+    (hIndG :
+      CicStage3IndGTranslationFunctionalWithPropToType0Witness)
+    {n : Nat} {raw : DIndGArtifactTerm} {left right : PureTm n}
+    (hBounded : CicStage3RawTermTranslationVisibleNamesBounded raw)
+    (hLeft :
+      DIndGArtifactTermTranslates
+        cicStage3RawArtifactSigWithPropToType0Witness.nameTranslates n
+        raw left)
+    (hRight :
+      DIndGArtifactTermTranslates
+        cicStage3RawArtifactSigWithPropToType0Witness.nameTranslates n
+        raw right) :
+    left = right := by
+  induction hBounded generalizing n left right with
+  | var index =>
+      cases hLeft with
+      | var hLeftIndex =>
+          cases hRight with
+          | var hRightIndex =>
+              simp
+  | srt sort =>
+      cases sort <;> cases hLeft <;> cases hRight <;> rfl
+  | con hName =>
+      cases hLeft with
+      | con hLeftName =>
+          cases hRight with
+          | con hRightName =>
+              exact congrArg PureTm.const
+                (cicStage3RawNameTranslatesWithPropToType0Witness_unique
+                  hLeftName hRightName)
+  | defn hName =>
+      cases hLeft with
+      | defn hLeftName =>
+          cases hRight with
+          | defn hRightName =>
+              exact congrArg PureTm.const
+                (cicStage3RawNameTranslatesWithPropToType0Witness_unique
+                  hLeftName hRightName)
+  | pi hDomain hBody ihDomain ihBody =>
+      cases hLeft with
+      | pi hLeftDomain hLeftBody =>
+          cases hRight with
+          | pi hRightDomain hRightBody =>
+              have hDomainEq := ihDomain hLeftDomain hRightDomain
+              have hBodyEq := ihBody hLeftBody hRightBody
+              simp [hDomainEq, hBodyEq]
+  | lam hDomain hBody ihDomain ihBody =>
+      cases hLeft with
+      | lam hLeftDomain hLeftBody =>
+          cases hRight with
+          | lam hRightDomain hRightBody =>
+              have hBodyEq := ihBody hLeftBody hRightBody
+              exact congrArg PureTm.lam hBodyEq
+  | app hFn hArg ihFn ihArg =>
+      cases hLeft with
+      | app hLeftFn hLeftArg =>
+          cases hRight with
+          | app hRightFn hRightArg =>
+              have hFnEq := ihFn hLeftFn hRightFn
+              have hArgEq := ihArg hLeftArg hRightArg
+              simp [hFnEq, hArgEq]
+  | indG hFamily =>
+      exact hIndG hLeft hRight
+  | bad reason =>
+      cases hLeft
+
+theorem dindg_translate_unique_withPropToType0Witness_of_indG_functional
+    (hIndG :
+      CicStage3IndGTranslationFunctionalWithPropToType0Witness)
+    {n : Nat} {raw : DIndGArtifactTerm} {left right : PureTm n}
+    (hLeft :
+      DIndGArtifactTermTranslates
+        cicStage3RawArtifactSigWithPropToType0Witness.nameTranslates n
+        raw left)
+    (hRight :
+      DIndGArtifactTermTranslates
+        cicStage3RawArtifactSigWithPropToType0Witness.nameTranslates n
+        raw right) :
+    left = right := by
+  exact
+    dindg_translate_unique_on_visible_bounded_withPropToType0Witness_of_indG_functional
+      hIndG
+      (cicStage3RawTermTranslatesWithPropToType0Witness_visible_names_bounded
+        hLeft)
+      hLeft hRight
+
+theorem evaluator_soundness_withPropToType0Witness_indG_reflexive_runtime_obligation
+    (hSound :
+      DIndGArtifactEvaluatorSoundness evaluator
+        cicStage3RawArtifactSigWithPropToType0Witness) :
+    ∃ raw : DIndGArtifactTerm,
+      (evaluator.conv cicStage3RawArtifactSigWithPropToType0Witness
+          raw raw →
+        ConvDecl
+          (envOfSpecs
+            cicStage3RawArtifactSigWithPropToType0Witness.translatedSpecs)
+          (.u0 : PureTm 0) (.u1 : PureTm 0)) ∧
+      (.u0 : PureTm 0) ≠ .u1 := by
+  rcases cicStage3_indG_translation_nonfunctional_withPropToType0Witness with
+    ⟨raw, hLeft, hRight, hNe⟩
+  exact ⟨raw, (fun hconv => hSound.conv_sound hconv hLeft hRight), hNe⟩
 
 /-- Declaration-calculus App case. Once the runtime readout has been absorbed
 into the declarative `MettaCall` relation, the recursive `infer` hypotheses for

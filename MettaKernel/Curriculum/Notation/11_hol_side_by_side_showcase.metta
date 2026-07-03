@@ -1,14 +1,14 @@
 ; ============================================================================
 ; HOL side-by-side showcase: HOL4 kernel facts and MIK checked certificates.
 ;
-; Run the source HOL side:
-;   cd /home/aimama/aihub/Mettapedia/MettaKernel/Curriculum/HOL
+; Run the source HOL side (from the repo root):
+;   cd MettaKernel/Curriculum/HOL
 ;   Holmake HOL06_lcf_kernelTheory.uo
 ;
-; Run the MIK side:
-;   cd /home/aimama/aihub/Mettapedia/MettaKernel/Curriculum/Notation
-;   /home/aimama/aihub/hyperon/CeTTa/cetta --eval-hashcons 09_hol_light_eq_kernel.metta
-;   /home/aimama/aihub/hyperon/CeTTa/cetta --eval-hashcons 11_hol_side_by_side_showcase.metta
+; Run the MIK side (cetta = a CeTTa binary on your PATH):
+;   cd MettaKernel/Curriculum/Notation
+;   cetta --eval-hashcons 09_hol_light_eq_kernel.metta
+;   cetta --eval-hashcons 11_hol_side_by_side_showcase.metta
 ;
 ; This is an untrusted concrete-syntax frontend.  Parser success never proves a
 ; theorem; each readable MIK form below must map to a certificate shard checked

@@ -9,8 +9,8 @@
 ;   changes to it -- HOL/STT, DTT (inductive data + identity), HOTG (sets + axioms).
 ;
 ;  Each paradigm shows POSITIVES (a real typed/sealed proof term checks) and a
-;  NEGATIVE (a wrong proof is rejected).  Run:
-;    /home/aimama/aihub/hyperon/CeTTa/cetta curriculum_lf_demo.metta
+;  NEGATIVE (a wrong proof is rejected).  Run (cetta = a CeTTa binary on your PATH):
+;    cetta curriculum_lf_demo.metta
 ; =============================================================================
 
 !(import! &self kernel_binding_waist_v1)

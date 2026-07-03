@@ -21,7 +21,7 @@
 ; Forms are table data.  The parser below reads the literal tokens through these
 ; accessors rather than hard-coding every spelling in the parsing equations.
 (= (lfn-tbl)
-   (Cons (LfnNote LamF (LamForm lp lam colon dot rp))
+   (Cons (LfnNote LamF (LamForm lp λ colon dot rp))
     (Cons (LfnNote AppF (AppForm lp app rp))
      (Cons (LfnNote RflF (RflForm lp rfl rp)) Nil))))
 
@@ -48,7 +48,7 @@
 ; ---------- parser: LF concrete syntax -> imported LF kernel AST ------------
 ; Concrete syntax fragment:
 ;   x                         variable/constant
-;   (lam x : A . t)           Lam A t
+;   (λ x : A . t)           Lam A t
 ;   (app f a)                 App f a
 ;   (rfl t)                   App rfl t
 (= (lfn-prsT $toks)
@@ -100,7 +100,7 @@
 
 ; ---------- representative concrete syntax forms ------------------------------------------
 (= (lfn-idnat-concrete-syntax)
-   (Cons lp (Cons lam (Cons x (Cons colon (Cons nat (Cons dot (Cons x (Cons rp Nil)))))))))
+   (Cons lp (Cons λ (Cons x (Cons colon (Cons nat (Cons dot (Cons x (Cons rp Nil)))))))))
 
 (= (lfn-idnat-app-z-concrete-syntax)
    (Cons lp (Cons app

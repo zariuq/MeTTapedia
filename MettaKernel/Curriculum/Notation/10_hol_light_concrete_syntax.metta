@@ -22,9 +22,9 @@
 (= (hls-A) (Cons A Nil))
 (= (hls-B) (Cons B Nil))
 (= (hls-T) (Cons T Nil))
-(= (hls-imp-syn $P $Q) (hls-paren (hls-append $P (Cons himp $Q))))
-(= (hls-and-syn $P $Q) (hls-paren (hls-append $P (Cons hand $Q))))
-(= (hls-eq-syn $P $Q) (hls-paren (hls-append $P (Cons heq $Q))))
+(= (hls-imp-syn $P $Q) (hls-paren (hls-append $P (Cons ==> $Q))))
+(= (hls-and-syn $P $Q) (hls-paren (hls-append $P (Cons /\ $Q))))
+(= (hls-eq-syn $P $Q) (hls-paren (hls-append $P (Cons = $Q))))
 
 ; Tiny HOL-ish theorem statements.  These are concrete token streams, not proof
 ; objects.  The parser maps them to abstract statement/certificate tags.

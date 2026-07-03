@@ -28,29 +28,29 @@
 ; Forms are table data; binding shape is declared beside syntax.
 (= (hol-tbl)
    (Cons (HolNote ArrF (ArrForm lp arr rp) Bind0)
-   (Cons (HolNote ImpF (ImpForm lp himp rp) Bind0)
+   (Cons (HolNote ImpF (ImpForm lp ⇒ rp) Bind0)
    (Cons (HolNote IntroF (IntroForm lp intro colon arrow dot rp) (Bind1 body))
    (Cons (HolNote AssumeF (AssumeForm lp assume rp) Bind0)
    (Cons (HolNote DischF (DischForm lp disch colon arrow dot rp) (Bind1 body))
    (Cons (HolNote MPF (MPForm lp hmp rp) Bind0)
    (Cons (HolNote ReflF (ReflForm lp hrefl rp) Bind0)
-   (Cons (HolNote EqF (EqForm lp heq rp) Bind0)
+   (Cons (HolNote EqF (EqForm lp = rp) Bind0)
          Nil)))))))))
 
 (= (hol-bad-bind-tbl)
    (Cons (HolNote ArrF (ArrForm lp arr rp) Bind0)
-   (Cons (HolNote ImpF (ImpForm lp himp rp) Bind0)
+   (Cons (HolNote ImpF (ImpForm lp ⇒ rp) Bind0)
    (Cons (HolNote IntroF (IntroForm lp intro colon arrow dot rp) Bind0)
    (Cons (HolNote AssumeF (AssumeForm lp assume rp) Bind0)
    (Cons (HolNote DischF (DischForm lp disch colon arrow dot rp) Bind0)
    (Cons (HolNote MPF (MPForm lp hmp rp) Bind0)
    (Cons (HolNote ReflF (ReflForm lp hrefl rp) Bind0)
-   (Cons (HolNote EqF (EqForm lp heq rp) Bind0)
+   (Cons (HolNote EqF (EqForm lp = rp) Bind0)
          Nil)))))))))
 
 (= (hol-bad-dup-tbl)
-   (Cons (HolNote ImpF (ImpForm lp himp rp) Bind0)
-   (Cons (HolNote Imp2F (ImpForm lp himp rp) Bind0) Nil)))
+   (Cons (HolNote ImpF (ImpForm lp ⇒ rp) Bind0)
+   (Cons (HolNote Imp2F (ImpForm lp ⇒ rp) Bind0) Nil)))
 
 (= (hol-note-form (HolNote $c $f $b)) $f)
 (= (hol-note-bind (HolNote $c $f $b)) $b)
@@ -317,7 +317,7 @@
 ; ---------- representative concrete syntax forms -----------------------------------------
 (= (hol-atom-prop-concrete-syntax $p) (Cons $p Nil))
 (= (hol-imp-prop-concrete-syntax $A-toks $B-toks)
-   (Cons lp (Cons himp
+   (Cons lp (Cons ⇒
      (hol-append $A-toks (hol-append $B-toks (Cons rp Nil))))))
 (= (hol-assume-concrete-syntax $nm)
    (Cons lp (Cons assume (Cons $nm (Cons rp Nil)))))
