@@ -51,9 +51,8 @@ a direct C implementation of the \HE{} MeTTa evaluator that passes a
 535-test MeTTa regression suite (a 539-row manifest): 405 passed /
 0 failed on the default build and 401 passed / 0 failed on the
 MORK-bridge build, plus a heavy-golden lane at 17 passed / 0 failed
-(suite snapshot 2026-07-02, commit 9237afd), backed by a 333-case
-rule-indexed conformance catalog against upstream \HE{}~v0.2.10
-covering 24/24 specification rule capacities (catalog dated 2026-06).
+(suite snapshot 2026-07-02, commit 9237afd), backed by a 23-case
+\HE{} I/O semantic conformance gate against upstream \HE{}~v0.2.10.
 On cross-runtime benchmarks---genomic-inference rows re-receipted
 2026-07-02 on commit 9237afd, branching-search rows measured
 2026-06-27---\CeTTa{} is fastest on startup-dominated shallow inference
@@ -134,10 +133,10 @@ Three implementations exist:
   profile tests, validated against upstream \HE{} v0.2.10 as oracle.
 \item An explicit profile family (\code{he-compat} / \code{he} /
   \code{he-extended} / \code{he-prime}) with per-case recorded
-  divergences and a fail-by-default conformance harness: a 333-case
-  rule-indexed catalog (all agree, 24/24 spec-rule capacities) and a
-  378-example broad corpus with every difference classified
-  (Section~\ref{sec:specdriven}).
+  divergences and a fail-by-default conformance harness: the current
+  per-build gate replays 23 \HE{} I/O semantic fixtures against the
+  \HE{}~v0.2.10 baseline, while broader generated catalogs remain audit
+  material rather than headline claims (Section~\ref{sec:specdriven}).
 \item A reflective modal LTS surface over the evaluator's one-step
   reduction relation---successor set, $\Box$/$\Diamond$,
   normal-form tests---with runtime De~Morgan self-tests mirroring the
@@ -232,8 +231,8 @@ profile-surface splits, and extension surfaces.  Two further lanes are
 fail-by-default: \code{make test-step-rules} disables individual
 rule-table entries and \emph{requires} the witnesses to fail
 (Section~\ref{sec:specdriven}), and the semantic conformance suite
-re-runs a 23-case subset of the curated oracle corpus live against
-upstream \HE{} (Section~\ref{sec:conformance}).
+re-runs 23 curated \HE{} I/O fixtures live against upstream \HE{}
+(Section~\ref{sec:conformance}).
 
 %% ────────────────────────────────────────────────────────────────────
 \section{Specification-Driven Semantics: Profiles, Conformance, and the
@@ -262,7 +261,8 @@ layers---never as visibility masks over one shared universe:
   reproducing its library set; library availability is out of scope
   for conformance.
 \item[\code{he}] The principled line.  Spec-faithful where the written
-  specification speaks; where \HE{}'s implementation and its
+  MeTTa \href{https://trueagi-io.github.io/hyperon-experimental/metta/}{specification}
+  speaks; where \HE{}'s implementation and its
   specification diverge, the divergence is adjudicated and recorded
   per-case.  Carries exact arbitrary-precision rationals, true
   division for \code{/}, floor division \code{//}, Euclidean
@@ -298,23 +298,19 @@ differences cannot masquerade as semantic agreement, and duplicate
 results (which are semantically real in MeTTa) are counted.
 
 \begin{description}
-\item[Curated catalog.] 333 cases, every one oracle-validated and in
-  agreement, each mapped to the specification rules it exercises:
-  24/24 spec-rule capacities are covered, and every capacity is
-  classified into one of three lanes---\emph{reduction-span} (the
-  one-step semantics the modal layer consumes),
-  \emph{supporting-surface} (match, unify, grounded dispatch
-  plumbing), and \emph{spatial-policy} (module import, inventory,
-  space policy).  The lane split keeps policy surfaces out of the
-  reduction relation.  This full rule-indexed sweep is a periodically
-  refreshed artifact (2026-06); the per-build oracle gate
-  (\code{make test-he-compat-semantic-suite}) re-runs a 23-case subset
-  of it live against upstream \HE{} on every build.
-\item[Broad corpus.] 378 upstream examples: 302 agree, 59 classified
-  differences (library availability, which is out of conformance
-  scope; path-import capabilities upstream rejects; environment and
-  rendering differences; and adjudicated upstream drift), 7 timeouts,
-  10 not runnable upstream.  No difference is left unclassified.
+\item[Current \HE{} I/O semantic gate.] The per-build oracle gate
+  (\code{make test-he-compat-semantic-suite}) replays 23 curated
+  \HE{} I/O fixtures against the upstream \HE{}~v0.2.10 baseline.  The
+  July~2 receipt reports 23/23 \CeTTa{} passes, 0 failures, and a
+  passing baseline check.  Six of those fixtures are core anchors into
+  the Lean-side HE I/O conformance file.  This is the current
+  conformance claim used by the paper.
+\item[Archived catalog material.] Earlier generated rule-capacity and
+  broad-corpus catalogs remain useful triage artifacts, but they are not
+  treated as current paper evidence unless their driver emits the claimed
+  counts on the audited tree.  In particular, this revision does not
+  carry a 24-capacity maturity table or a broad-corpus count as a live
+  conformance result.
 \item[Adjudicated divergences.] Where \CeTTa{} deliberately diverges
   from upstream, each case carries independent grounds.  Three
   examples: upstream's post-0.2.10 \code{function}/\code{NoReturn}
@@ -327,7 +323,7 @@ results (which are semantically real in MeTTa) are counted.
   instruction-layer reading, in opposite directions.
 \end{description}
 
-The catalog carries an explicit
+The conformance material carries an explicit
 \code{no\_runtime\_trace\_or\_certificate\_surface} flag, enforced by
 the suite: conformance is \emph{testing}, and the specification is
 what gets \emph{proven about} in Lean.  \CeTTa{} does not emit
@@ -822,21 +818,26 @@ resource accounting once and for all~\cite{costendofunctor}. We return to it in 
 \section{Cross-Runtime Benchmarks}
 \label{sec:benchmark-programs}
 
-All benchmarks use dialect-agnostic MeTTa (shared syntax) unless noted.
-Timing rows in this section were measured on 2026-06-27 (the pre-GC
-tree), except the grounded genomic-inference rows (PLN evidence core,
-full WM-PLN raw-loader, mine$\to$chain focus, and deep genomic
-backward chaining), which were re-receipted on 2026-07-02 on commit
-9237afd; rows explicitly described as excluded, methodological, or
-unresolved carry their own status.  The two heavy genomic rows (full
-WM-PLN raw-loader and deep genomic backward chaining) were re-measured
-on a quiescent host with the same binary at commit 9237afd; because the
-two engines are always compared within one session, the cross-engine
-ratios are the load-bearing claims.  For rows whose single-run wall time is
-below 0.1\,s, we report averaged full-process wall time over repeated
-invocations to avoid timer quantization.  Output is verified identical
-across runtimes whenever a row is presented as a clean cross-runtime
-benchmark.  So a reader can see
+Benchmark artifacts are labeled by dialect route.  A row may be
+\emph{shared} (one dialect-agnostic source), \emph{\PeTTa{}-native},
+\emph{\HE{}/\CeTTa{}-native}, mechanically translated, or hand-normalized
+after translation to expose the same algorithmic contract in both
+dialects.  \HE{} and \PeTTa{} are different MeTTa dialects, so a real
+comparison is not ``whatever file happens to run''; it is a named pair of
+artifacts plus a stated output contract.  Timing rows in this section
+were measured on 2026-06-27 (the pre-GC tree), except the grounded
+genomic-inference rows (PLN evidence core, full WM-PLN raw-loader,
+mine$\to$chain focus, and deep genomic backward chaining), which were
+re-receipted on 2026-07-02 on commit 9237afd; rows explicitly described
+as excluded, methodological, or unresolved carry their own status.  The
+two heavy genomic rows (full WM-PLN raw-loader and deep genomic backward
+chaining) were re-measured on a quiescent host with the same binary at
+commit 9237afd; because the two engines are always compared within one
+session, the cross-engine ratios are the load-bearing claims.  For rows
+whose single-run wall time is below 0.1\,s, we report averaged
+full-process wall time over repeated invocations to avoid timer
+quantization.  Output is verified identical across runtimes whenever a
+row is presented as a clean cross-runtime benchmark.  So a reader can see
 precisely what is measured, each subsection below opens with the core of
 the program it runs; the full sources are linked inline and collected at
 \href{https://github.com/zariuq/CeTTa/tree/07928677c0237a19b2f3c32dffca28d7d2626723/benchmarks/chaining_crossengine}{\code{benchmarks/chaining\_crossengine}}.
@@ -1190,7 +1191,7 @@ Translator (\code{prog1}) & 30 proof witnesses & 3.7\,ms avg & 44.8\,ms avg & 31
 PLN evidence core & 183 scored pairs & 10.9\,ms avg & 58.1\,ms avg & 7.56\,s \\
 Full WM-PLN raw-loader & 1{,}399{,}997 lines, 34 proofs / 8 hyps & 16.4\,s & 44.5\,s & import block \\
 Mine$\to$chain focus & 3 query SNPs, 5 novel genes & 0.13\,s & 4.27\,s & --- \\
-Deep 17-phase genomic BC & 1{,}411{,}430 hypotheses & 34.0\,s & 58.1\,s & --- \\
+Deep 17-phase genomic BC & 1{,}411{,}430 hypotheses & 46.33\,s & 64.05\,s & --- \\
 8-Queens (direct shared lane) & 92 solutions & 8.22\,s & 0.05\,s & 2:08.77 \\
 Deep proof search & 85{,}013 proofs & 36.42\,s & 7.60\,s & $>$120\,s \\
 \bottomrule
@@ -1200,21 +1201,19 @@ Deep proof search & 85{,}013 proofs & 36.42\,s & 7.60\,s & $>$120\,s \\
 \noindent\emph{Peak resident memory on the two heavy rows.}  On the full
 WM-PLN raw-loader, \CeTTa{} uses 2.10\,GiB against \PeTTa{}'s 4.75\,GiB
 (\CeTTa{} lower).  On the deep 17-phase genomic BC the direction
-reverses: \CeTTa{} uses 15.6\,GiB against \PeTTa{}'s 4.86\,GiB---about
-3.2$\times$ \PeTTa{}'s footprint, the memory-multiplicity cost of
+reverses: \CeTTa{} uses 14.5\,GiB against \PeTTa{}'s 4.85\,GiB---about
+3.0$\times$ \PeTTa{}'s footprint, the memory-multiplicity cost of
 \CeTTa{}'s answer materialization on the high-fan-out row.
 
 \CeTTa{} still wins on several real inference rows, but the revised
 ladder is intentionally smaller than earlier drafts.  In the 2026-06-27
 audit we excluded the
 historical cross-engine miner speed table, the old full-1.4M WM-PLN
-scaling table, BTree, and the full tilepuzzle row from this cross-engine
-ladder because at that point the tree either lacked a
-stable current cross-runtime driver for them or exposed a
-correctness/comparability issue.  (The tilepuzzle regression has since
-been closed as a single-runtime capacity result by the evaluation-arena
-garbage collector, Section~\ref{sec:tilepuzzle-gc}; a cross-engine
-tilepuzzle row has not yet been rerun on the post-GC tree.)  The
+scaling table, and BTree from this cross-engine ladder because at that
+point the tree either lacked a stable current cross-runtime driver for
+them or exposed a correctness/comparability issue.  The tilepuzzle row
+has since been rerun and is reported separately as a search benchmark
+and GC capacity result in Section~\ref{sec:tilepuzzle-gc}.  The
 benchmark rows shown here are only those rerun directly in that audit.
 
 \subsection{Cross-Engine Chaining Suite}
@@ -1256,13 +1255,42 @@ variant-to-drug row is still a typed backward-chaining program:
                  (drug-hypothesis $snp $compound $disease $gene)))
 \end{lstlisting}
 The current rerun produces exactly \textbf{1{,}411{,}430 hypotheses}
-across 17 query phases, with the same totals on both runtimes.  The
-largest buckets are 613{,}978 \code{pw-target} hypotheses and
-796{,}964 \code{deep-pw} hypotheses; the smaller focused buckets are
-11~binding hypotheses, 11~disease hypotheses, 210~drug hypotheses,
-240~deep-drug hypotheses, and 16~pathway-reach hypotheses.  The current
-timings are \textbf{34.0\,s on \CeTTa{}} versus 58.1\,s on
-\PeTTa{} (about 1.7$\times$ faster).
+across 17 query phases, identical on both runtimes, with the bucket
+breakdown:
+
+\begin{center}
+\begin{tabular}{lr}
+\toprule
+Hypothesis bucket & Count \\
+\midrule
+\code{pw-target} & 613{,}978 \\
+\code{deep-pw} & 796{,}964 \\
+binding & 11 \\
+disease & 11 \\
+drug & 210 \\
+deep-drug & 240 \\
+pathway-reach & 16 \\
+\midrule
+Total (17 phases) & 1{,}411{,}430 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\begin{center}
+\begin{tabular}{lrrrl}
+\toprule
+Runtime & Wall time & Peak RSS & vs.\ \PeTTa{} & Output contract \\
+\midrule
+\CeTTa{} & 46.33\,s & 14.5\,GiB & 1.38$\times$ faster & 1{,}411{,}430 hypotheses \\
+\PeTTa{} & 64.05\,s & 4.85\,GiB & 1$\times$ & 1{,}411{,}430 hypotheses \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\noindent The current timings still favor \CeTTa{}, but the table makes
+the memory tradeoff explicit: this high-fan-out row is one where
+\CeTTa{} materializes many answers and pays roughly 3$\times$ \PeTTa{}'s
+peak footprint.
 The textbook chain
 rs10000544 $\to$ PDE5A $\to$ hypertension $\leftarrow$ Sildenafil
 composes three independent data sources (GTEx, Hetionet, DrugBank) by
@@ -1301,51 +1329,102 @@ before emitting a nonempty callgrind output.  We therefore report fresh
 Massif measurements here, but continue to withhold exact Callgrind
 percentages on the current build.
 
-\subsection{Tilepuzzle: regression closed by the evaluation-arena garbage collector}
+\subsection{Tilepuzzle: PeTTa comparison and GC capacity repair}
 \label{sec:tilepuzzle-gc}
 
 The 8-puzzle breadth-first search (BFS) remains a useful WAM-class
-stress test.  The patched \CeTTa{} port
-(\href{https://github.com/zariuq/CeTTa/blob/07928677c0237a19b2f3c32dffca28d7d2626723/benchmarks/test_tilepuzzle.metta}{\code{benchmarks/test\_tilepuzzle.metta}})
-returns the labeled result
-\code{(tilepuzzle-reachable-state-count including-start 181440)},
-which matches an independent BFS check of the solved 8-puzzle parity
-class.  The current
-\PeTTa{} reference example
+stress test.  The normalized mathematical contract is the size of the
+solvable parity class reachable from the solved board, including the
+start state: $9!/2 = 181{,}440$ board configurations.  The \CeTTa{} port
+(\href{https://github.com/zariuq/CeTTa/blob/9237afd/benchmarks/test_tilepuzzle.metta}{\code{benchmarks/test\_tilepuzzle.metta}})
+is a hand-normalized \HE{}/\CeTTa{} counterpart of the \PeTTa{} example.
+The algorithmic contract is the same BFS over the solvable parity class,
+but the supporting surfaces differ: \PeTTa{} uses its
+\code{lib\_datastructures} queue and \code{add-unique-or-fail}
+visited-set idiom, while \CeTTa{} uses queue-space, hash-space, and the
+\HE{}-portable zero-results idiom \code{case(collapse(match))}.  It now
+returns the labeled board-count result
+\code{(tilepuzzle-reachable-state-count including-start 181440)}.  The
+\PeTTa{} native example
 (\href{https://github.com/patham9/PeTTa/blob/main/examples/tilepuzzle.metta}{\code{examples/tilepuzzle.metta}})
-self-checks 181{,}441 states, so that older reference lane is off by
-one under the clarified contract.
+retains its historical self-check of 181{,}441 as its native observable.
+The comparison below separates that observable from the normalized
+board-count contract; it does not claim an extra reachable board.
 
-The whole search runs as a single top-level form, and each BFS step
+\begin{center}
+\small
+\begin{tabular}{@{}lllrr@{}}
+\toprule
+Artifact & Native observable & Contract & Time & RSS \\
+\midrule
+\CeTTa{} pre-GC port & \code{[181440]} & 181{,}440 boards & 26.41\,s & 5.86\,GiB \\
+\CeTTa{} post-GC port & \code{including-start 181440} & 181{,}440 boards & 8.80\,s & 233\,MiB \\
+\PeTTa{} native & \code{test ... 181441} & 181{,}440 parity class & 1.40\,s & 121\,MiB \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+This row should therefore be read in two ways.  As a cross-runtime
+search benchmark, \PeTTa{} still wins decisively: the Prolog/WAM lane is
+about 6.3$\times$ faster than post-GC \CeTTa{} on the native example and
+uses about half the peak memory.  As a \CeTTa{} capacity regression,
+however, the row is repaired: the full board-count contract now
+completes in single-digit seconds instead of exhausting the old
+evaluation-arena envelope.
+
+The \CeTTa{} search runs as a single top-level form, and each BFS step
 builds a fresh evaluation environment.  Before the fix, those per-step
 environments were never reclaimed inside the evaluation arena, so memory
-grew linearly in the number of visited states and the full run outgrew
-its time and memory envelope.  The fix is a tail-safe garbage collector
-for the evaluation arena, on by default.  It (i)~skips environment
-merging for \emph{closed} queries---queries with no free variables
-escaping to the caller---and (ii)~at tail-call-safe points evacuates the
-live root set (the current term, its environment, and its evaluation
-type) into a small survivor arena, then resets the evaluation arena to a
-per-call anchor; the survivor arena is itself reset at each top-level
-form boundary.  Because only the roots that outlive a step are copied
-forward, the transient per-step environments are freed in bulk instead
-of accumulating.
+grew linearly in the number of visited states.  The fix is a tail-safe
+garbage collector for the evaluation arena, on by default.  It
+(i)~skips environment merging for \emph{closed} queries---queries with
+no free variables escaping to the caller---and (ii)~at tail-call-safe
+points evacuates the live root set (the current term, its environment,
+and its evaluation type) into a small survivor arena, then resets the
+evaluation arena to a per-call anchor; the survivor arena is itself
+reset at each top-level form boundary.  Because only the roots that
+outlive a step are copied forward, the transient per-step environments
+are freed in bulk instead of accumulating.
 
-With the collector on (commit 9237afd), the full run visits all
-181{,}440 states in 8.80\,s at 233\,MiB peak resident memory.  Over that
-run it reclaims 5{,}704{,}882{,}536 bytes (about 5.3\,GiB) of transient
-evaluation-arena memory, while the survivor arena peaks at only
-135{,}432 bytes (about 132\,KiB) and is reset once.  The result is
-independent of the collection budget: at a 1\,MB collection budget the
-run returns the identical 181{,}440-state payload as at the default
-budget, with peak resident memory even lower at the tighter budget
-(178\,MiB vs.\ 233\,MiB)---evidence that the collector preserves the
-computed result rather than changing it.  The collector is
-differentially validated, not verified: a collector-on versus
-collector-off comparison over the fast regression corpus agrees on all
-406 cases, and the same comparison under ASan/UBSan with provenance
-assertions agrees on all 404 cases it runs (2 further cases skipped only
-because the collector-off reference exceeded its bounded time limit).
+With the collector on (commit 9237afd), the full 8-puzzle BFS completes
+well within its envelope, and the reclaimed memory is stable under the
+collection-budget spot checks:
+
+\begin{center}
+\begin{tabular}{lr}
+\toprule
+Full run, collector on (commit 9237afd) & Value \\
+\midrule
+States visited & 181{,}440 \\
+Wall time & 8.80\,s \\
+Peak resident memory, default budget & 233\,MiB \\
+Peak resident memory, 1\,MB budget & 178\,MiB \\
+Eval-arena memory reclaimed & 5{,}704{,}882{,}536\,B ($\approx$5.3\,GiB) \\
+Survivor-arena peak & 135{,}432\,B ($\approx$132\,KiB) \\
+Survivor resets & 1 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+At the 1\,MB budget the run returns the identical 181{,}440-state
+payload as at the default budget (with even lower peak memory), so the
+collector preserves the computed result rather than changing it.  It is
+differentially validated, not verified---a collector-on versus
+collector-off comparison that requires identical outputs on every case:
+
+\begin{center}
+\begin{tabular}{lrr}
+\toprule
+Collector-on vs.\ collector-off & Cases & Agree \\
+\midrule
+Fast regression corpus & 406 & 406 \\
+ASan/UBSan $+$ provenance asserts & 404 & 404 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\noindent Two further ASan/UBSan cases are skipped only because the
+collector-off reference exceeded its bounded time limit.
 
 \subsection{Structured Space Kinds}
 
@@ -1366,11 +1445,12 @@ Kind & Discipline & Use case \\
 These are created via \code{(new-space queue)}, \code{(new-space hash)},
 etc., and support universal pattern matching through the standard
 \code{match} API\@.  The tilepuzzle uses queue-space for its BFS
-frontier and hash-space for visited-set deduplication.  Peak memory
-fell from 6.3\,GB with a plain atomspace to 4.68\,GB with the queue and
-hash spaces (pre-GC), and then to 233\,MiB once the tail-safe
-evaluation-arena garbage collector also reclaims the transient per-step
-environments (commit 9237afd; Section~\ref{sec:tilepuzzle-gc}).
+frontier and hash-space for visited-set deduplication.  The current
+paper claim for that workload is the post-GC capacity baseline:
+181{,}440 reachable boards in 8.80\,s at 233\,MiB peak RSS
+(Section~\ref{sec:tilepuzzle-gc}).  Older plain-atomspace versus
+queue/hash memory comparisons are kept as historical diagnostics rather
+than current benchmark evidence.
 
 \subsection{Architecture: Three Machines}
 
@@ -1505,7 +1585,10 @@ representation.
 \code{let*}, \code{match}, \code{if}, \code{case}, \code{bind!},
 \code{add-atom}, \code{new-space}).  These run identically on all three
 runtimes without translation.  The Metamath proof search benchmark is
-dialect-agnostic.
+dialect-agnostic.  This shared fragment is essentially the core of the
+upstream MeTTa
+\href{https://trueagi-io.github.io/hyperon-experimental/metta/}{specification},
+of which \HE{}, \PeTTa{}, and \CeTTa{} are three implementations.
 
 \subsection{Translated Constructs}
 
@@ -1757,8 +1840,8 @@ excluded from the revised
 benchmark ladder rather than carried forward on trust.  Throughout,
 \CeTTa{} maintains
 oracle-verified correctness across a 535-test MeTTa regression suite and a
-333-case rule-indexed conformance catalog (24/24 spec-rule capacities,
-all agree) against upstream \HE{}~v0.2.10.
+23-case \HE{} I/O semantic conformance gate against upstream
+\HE{}~v0.2.10.
 The sorry-free Lean proof of \HE{}$\leftrightarrow$\PeTTa{} semantic
 correspondence (5{,}400+ lines, 0~sorries), including import
 commutativity and operational bridges for state and space allocation,
@@ -1785,16 +1868,17 @@ The congruence bug that motivated this weld---an argument-congruence
 rule silently missing from the one-step relation on three branches at
 once---is exactly the drift class this architecture eliminates.
 
-Tilepuzzle is settled capacity evidence again.  The clarified contract
-counts 181{,}440 reachable boards including the start state, and the
-older \PeTTa{} example's 181{,}441 self-check is understood as an
-off-by-one reference expectation.  The performance regression that had
-made the full run outgrow its envelope was root-caused to unbounded
-evaluation-arena growth and closed by a tail-safe evaluation-arena
-garbage collector: the full search now completes in 8.80\,s at 233\,MiB
-(Section~\ref{sec:tilepuzzle-gc}).  Trail-style rollback, bindings
-builders, and arena mark/reset remain candidates for further improving
-search-heavy workloads without converting \CeTTa{} into a Prolog engine.
+Tilepuzzle is settled capacity evidence again, but not a \CeTTa{} speed
+win.  The normalized contract counts 181{,}440 reachable boards
+including the start state; the \PeTTa{} native example's 181{,}441
+self-check is a counter-convention difference, not an extra board.  The
+\PeTTa{} native rerun remains much faster (1.40\,s, 121\,MiB), while the
+\CeTTa{} result is the repaired capacity row: the full board-count search
+now completes in 8.80\,s at 233\,MiB after the tail-safe
+evaluation-arena garbage collector (Section~\ref{sec:tilepuzzle-gc}).
+Trail-style rollback, bindings builders, and arena mark/reset remain
+candidates for further improving search-heavy workloads without
+converting \CeTTa{} into a Prolog engine.
 The guiding principle: \emph{backtracking should be rare, local, and
 hidden---not global, ambient, or user-visible.}
 
@@ -1838,16 +1922,19 @@ hidden---not global, ambient, or user-visible.}
   \code{.mm2} files import via \code{include}/\code{import!}.  MeTTa can
   pattern-match over MM2 code to analyze or transform programs---the
   meta-language relationship is native.
-\item \textbf{morkl: expert \PathMap{} algebra (future):}  Direct access to
-  \PathMap{}'s zipper navigation (5{,}800 lines of Rust), product-zipper
-  Cartesian joins (2{,}000 lines), and lattice operations
-  (\code{pjoin}/\code{pmeet}/\code{psubtract}/\code{prestrict}, 1{,}600
-  lines).  MORK's kernel already implements 15+ sink types (count, sum, head,
-  hash, and, Z3, WASM) and source types (BTM, ACT, equality/inequality
-  constraints).  The Lean formalization (46 files, 19K+ lines) proves the
-  three-phase execution protocol, fold-level aggregation, and \PathMap{}
-  lattice correspondence.  The gap is FFI exposure and MeTTa surface: the
-  Rust substrate exists, \code{lib/morkl.metta} does not yet.
+\item \textbf{\PathMap{} algebra (working):}  \CeTTa{} already exposes MORK's
+  \PathMap{} substrate through the \code{mork:} surface: the lattice
+  operations \code{mork:join}, \code{mork:meet}, \code{mork:subtract}, and
+  \code{mork:prefix-restrict}; read-only zipper navigation; product-zipper
+  Cartesian joins over two to four spaces; and overlay-zipper cursors.
+  Underneath, the Rust substrate is substantial---zipper navigation
+  (5{,}800 lines), product-zipper joins (2{,}000 lines), and the lattice
+  operations (1{,}600 lines)---and a Lean formalization (46 files, 19K+ lines)
+  proves the three-phase execution protocol, fold-level aggregation, and
+  \PathMap{} lattice correspondence.  What remains future is surfacing MORK's
+  aggregating sink types (count, sum, head, hash, and, Z3, WASM) and source
+  types (BTM, ACT, equality/inequality constraints) at the MeTTa level: the
+  kernel implements them, but the \code{mork:} API does not yet expose them.
 \item \textbf{HO search engine:} Lash-inspired SAT-driven proof
   search for PLN and type-directed synthesis.  PicoSAT as
   embedded SAT solver.  Separate from the evaluator.
@@ -1864,7 +1951,6 @@ hidden---not global, ambient, or user-visible.}
 
 \appendix
 
-%% ════════════════════════════════════════════════════════════════════
 \section{\LeaTTa{} Cross-Check Appendix}
 \label{app:leatta}
 
@@ -1989,9 +2075,10 @@ does run: a 100-step witness reaches 171 visited states in 18.47\,s,
 while the 500-step version did not finish under a 30\,s cap.  For
 reference, the clarified native contract counts
 181{,}440 reachable states including the start board, while the older
-\PeTTa{} example's 181{,}441 self-check is now understood as an
-off-by-one reference expectation.  A fresh full native \CeTTa{} run now
-completes with the tail-safe evaluation-arena garbage collector:
+\PeTTa{} example's 181{,}441 self-check is a counter-convention
+difference, not evidence for an extra reachable board.  A fresh full
+native \CeTTa{} run now completes with the tail-safe evaluation-arena
+garbage collector:
 181{,}440 states in 8.80\,s at 233\,MiB (Section~\ref{sec:tilepuzzle-gc}).
 So this bounded \LeaTTa{} adaptation is only evidence that the surface
 idea transfers, while the full native \CeTTa{} row is settled capacity
