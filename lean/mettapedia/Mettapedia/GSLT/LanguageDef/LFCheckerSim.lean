@@ -1393,6 +1393,123 @@ theorem isnormal_sexp2_tc (l : Label) (a b : AST)
   rw [hb]
   simp only [oneStepList, ha, hbarg, Option.map_none]
 
+theorem isnormal_con0_tc (x : String) : IsNormal pTC (con0 x) := by
+  simp [IsNormal, oneStep, oneStepList, baseReducts, applyBaseRewrite, Presentation.rewrites,
+    AST.matchPat, AST.matchPatList, Mettapedia.GSLT.LanguageDef.LFEnc.rw,
+    pTC, pLF, checkerRules, arithmeticRules, internRules, sigRules, termOpsRules, nfRules,
+    checkerRulesCore, parserRules, resolveRules, ctxidxRules, shiftRules, ltRules,
+    con0, pv, ltT, shift, shiftVar, Var, Mettapedia.GSLT.LanguageDef.LFEnc.Con, Srt,
+    Pi, Lam, App, S, Z, Nil, NF, Idx,
+    ctxidx, ctxK, resolve, resolveK, tPI, tLAM, tARR, tCOLON, tDOT, tLP, tRP, tTYPE,
+    tId, Pp, PErr, Ok, Err, tm, ar, ap, apm, at', tmPi1, tmPi2, tmLam1, tmLam2,
+    arK, arK2, apK, apmK, atLPk, recK, lfrec, peano, extraToks,
+    typeS, kindS, iName, nProp, nNat, nA, nB, nZ, nPrf, nImp, nEqn, nRfl, nHImpAB,
+    nHA, nMpAB, iPropT, iNatT, iA, iB, iZ, iPrf, iImp, iEqn, iImpAB, checkBad,
+    someT, ttrue, ffalse, checkOk, checkErr, addN, predN, liftT, liftVarT, substT,
+    substVarLT, nfT, nfPi1, nfPi2, nfLam1, nfLam2, nfApp1, nfApp2, nfAppT, convT,
+    convA, convB, eqT, sigTCall, retT, ctxLookupAuxT, ctxLookupT, inferT, inferPi1,
+    inferPi2, inferLam1, inferLam2, inferApp1, inferApp2, checkT, checkK, verdict,
+    internTerm, internPi1, internPi2, internLam1, internLam2, internApp1, internApp2,
+    lfcheckK, lfcheckI, lfcheck, checkerFuelA]
+
+theorem hcong_Ok_tc : ∀ s s', oneStep pTC s = some s' ->
+    oneStep pTC (Ok s) = some (Ok s') := by
+  intro s s' h
+  have hb : baseReducts pTC (Ok s) = [] := by
+    rfl
+  change (match baseReducts pTC (Ok s) with
+    | r :: _ => some r
+    | [] => Option.map (fun args' => AST.sexp (.id "Ok") args') (oneStepList pTC [s])) =
+      some (Ok s')
+  rw [hb]
+  simp only [oneStepList, h, Option.map_some, Ok]
+
+theorem hcong_Err_tc : ∀ s s', oneStep pTC s = some s' ->
+    oneStep pTC (Err s) = some (Err s') := by
+  intro s s' h
+  have hb : baseReducts pTC (Err s) = [] := by
+    rfl
+  change (match baseReducts pTC (Err s) with
+    | r :: _ => some r
+    | [] => Option.map (fun args' => AST.sexp (.id "Err") args') (oneStepList pTC [s])) =
+      some (Err s')
+  rw [hb]
+  simp only [oneStepList, h, Option.map_some, Err]
+
+theorem hnone_Err_tc {s : AST} (h : oneStep pTC s = none) :
+    oneStep pTC (Err s) = none := by
+  have hb : baseReducts pTC (Err s) = [] := by
+    rfl
+  change (match baseReducts pTC (Err s) with
+    | r :: _ => some r
+    | [] => Option.map (fun args' => AST.sexp (.id "Err") args') (oneStepList pTC [s])) =
+      none
+  rw [hb]
+  simp only [oneStepList, h, Option.map_none]
+
+theorem eval_checkErr_shape_tc : ∀ (N : Nat) (e : AST), ∃ e',
+    eval pTC N (checkErr e) = checkErr e'
+  | 0, e => ⟨e, rfl⟩
+  | n + 1, e => by
+      cases hstep : oneStep pTC e with
+      | none =>
+          refine ⟨e, ?_⟩
+          simp only [eval, checkErr, hnone_Err_tc hstep]
+      | some e' =>
+          obtain ⟨e'', htail⟩ := eval_checkErr_shape_tc n e'
+          refine ⟨e'', ?_⟩
+          have hwrap : oneStep pTC (checkErr e) = some (checkErr e') := by
+            simpa only [checkErr] using hcong_Err_tc e e' hstep
+          simp only [eval, hwrap]
+          exact htail
+
+theorem checkOk_ne_checkErr (e : AST) : checkOk ≠ checkErr e := by
+  intro h
+  unfold checkOk checkErr Ok Err at h
+  injection h with hlabel _
+  injection hlabel with hs
+  nomatch hs
+
+theorem checkErr_ne_checkOk (e : AST) : checkErr e ≠ checkOk := by
+  intro h
+  exact checkOk_ne_checkErr e h.symm
+
+theorem eval_checkErr_ne_checkOk_tc (N : Nat) (e : AST) :
+    eval pTC N (checkErr e) ≠ checkOk := by
+  obtain ⟨e', hshape⟩ := eval_checkErr_shape_tc N e
+  intro h
+  rw [hshape] at h
+  exact checkErr_ne_checkOk e' h
+
+theorem eval_reject_accept_false_tc {start e : AST} {Naccept Nreject : Nat}
+    (haccept : eval pTC Naccept start = checkOk)
+    (hreject : eval pTC Nreject start = checkErr e) : False := by
+  by_cases hle : Nreject ≤ Naccept
+  · let K := Naccept - Nreject
+    have htotal : eval pTC Naccept start = eval pTC K (checkErr e) := by
+      have h := eval_trans_tc Nreject K start (checkErr e)
+        (eval pTC K (checkErr e)) hreject rfl
+      have hsum : Nreject + K = Naccept := Nat.add_sub_of_le hle
+      simpa [K, hsum] using h
+    have hbad : eval pTC K (checkErr e) = checkOk := by
+      rw [← htotal]
+      exact haccept
+    exact eval_checkErr_ne_checkOk_tc K e hbad
+  · have hlt : Naccept < Nreject := Nat.lt_of_not_ge hle
+    let K := Nreject - Naccept
+    have htotal : eval pTC Nreject start = checkOk := by
+      have h := eval_trans_tc Naccept K start checkOk
+        (eval pTC K checkOk) haccept rfl
+      have hsum : Naccept + K = Nreject :=
+        Nat.add_sub_of_le (Nat.le_of_lt hlt)
+      have hstable : eval pTC K checkOk = checkOk :=
+        eval_stable_tc isnormal_checkOk_tc K
+      simpa [K, hsum, hstable] using h
+    have hbad : checkErr e = checkOk := by
+      rw [← hreject]
+      exact htotal
+    exact checkErr_ne_checkOk e hbad
+
 theorem isnormal_peano_tc : ∀ n, IsNormal pTC (peano n)
   | 0 => rfl
   | n + 1 => isnormal_sexp1_tc (.id "S") (peano n) rfl (isnormal_peano_tc n)
@@ -3208,6 +3325,21 @@ theorem isnormal_App_tc (f a : AST) (hf : IsNormal pTC f) (ha : IsNormal pTC a) 
     IsNormal pTC (App f a) :=
   isnormal_sexp2_tc (.id "App") f a rfl hf ha
 
+theorem isnormal_encTerm_raw_tc : ∀ t : LF.Term, IsNormal pTC (encTerm t)
+  | .srt s => by
+      cases s <;> exact isnormal_Srt_tc _ (isnormal_con0_tc _)
+  | .con x => isnormal_Con_tc (con0 x) (isnormal_con0_tc x)
+  | .var k => isnormal_Var_tc (peano k) (isnormal_peano_tc k)
+  | .pi A B =>
+      isnormal_Pi_tc (encTerm A) (encTerm B)
+        (isnormal_encTerm_raw_tc A) (isnormal_encTerm_raw_tc B)
+  | .lam A b =>
+      isnormal_Lam_tc (encTerm A) (encTerm b)
+        (isnormal_encTerm_raw_tc A) (isnormal_encTerm_raw_tc b)
+  | .app f a =>
+      isnormal_App_tc (encTerm f) (encTerm a)
+        (isnormal_encTerm_raw_tc f) (isnormal_encTerm_raw_tc a)
+
 theorem isnormal_encTyCore?_tc : ∀ (t : LF.Term) (u : AST),
     encTyCore? t = some u -> IsNormal pTC u := by
   intro t
@@ -3215,8 +3347,8 @@ theorem isnormal_encTyCore?_tc : ∀ (t : LF.Term) (u : AST),
   | srt s =>
       intro u h
       cases s <;> cases h
-      · exact isnormal_Srt_tc typeS rfl
-      · exact isnormal_Srt_tc kindS rfl
+      · exact isnormal_Srt_tc typeS (isnormal_con0_tc "type")
+      · exact isnormal_Srt_tc kindS (isnormal_con0_tc "kind")
   | var k =>
       intro u h
       cases h
@@ -9176,40 +9308,40 @@ theorem isnormal_raw_con_success_tc {x : String} {u : AST}
     IsNormal pTC (Con (con0 x)) := by
   by_cases h0 : x = "prop"
   · subst x
-    exact isnormal_Con_tc (con0 "prop") rfl
+    exact isnormal_Con_tc (con0 "prop") (isnormal_con0_tc "prop")
   by_cases h1 : x = "nat"
   · subst x
-    exact isnormal_Con_tc (con0 "nat") rfl
+    exact isnormal_Con_tc (con0 "nat") (isnormal_con0_tc "nat")
   by_cases h2 : x = "A"
   · subst x
-    exact isnormal_Con_tc (con0 "A") rfl
+    exact isnormal_Con_tc (con0 "A") (isnormal_con0_tc "A")
   by_cases h3 : x = "B"
   · subst x
-    exact isnormal_Con_tc (con0 "B") rfl
+    exact isnormal_Con_tc (con0 "B") (isnormal_con0_tc "B")
   by_cases h4 : x = "z"
   · subst x
-    exact isnormal_Con_tc (con0 "z") rfl
+    exact isnormal_Con_tc (con0 "z") (isnormal_con0_tc "z")
   by_cases h5 : x = "prf"
   · subst x
-    exact isnormal_Con_tc (con0 "prf") rfl
+    exact isnormal_Con_tc (con0 "prf") (isnormal_con0_tc "prf")
   by_cases h6 : x = "imp"
   · subst x
-    exact isnormal_Con_tc (con0 "imp") rfl
+    exact isnormal_Con_tc (con0 "imp") (isnormal_con0_tc "imp")
   by_cases h7 : x = "eqn"
   · subst x
-    exact isnormal_Con_tc (con0 "eqn") rfl
+    exact isnormal_Con_tc (con0 "eqn") (isnormal_con0_tc "eqn")
   by_cases h8 : x = "rfl"
   · subst x
-    exact isnormal_Con_tc (con0 "rfl") rfl
+    exact isnormal_Con_tc (con0 "rfl") (isnormal_con0_tc "rfl")
   by_cases h9 : x = "hImpAB"
   · subst x
-    exact isnormal_Con_tc (con0 "hImpAB") rfl
+    exact isnormal_Con_tc (con0 "hImpAB") (isnormal_con0_tc "hImpAB")
   by_cases h10 : x = "hA"
   · subst x
-    exact isnormal_Con_tc (con0 "hA") rfl
+    exact isnormal_Con_tc (con0 "hA") (isnormal_con0_tc "hA")
   by_cases h11 : x = "mpAB"
   · subst x
-    exact isnormal_Con_tc (con0 "mpAB") rfl
+    exact isnormal_Con_tc (con0 "mpAB") (isnormal_con0_tc "mpAB")
   simp [encTyCore?, encName?, Mettapedia.GSLT.InternedNames.Table.intern?,
     Mettapedia.GSLT.InternedNames.Table.internAux, lfNameTable,
     h0, h1, h2, h3, h4, h5, h6, h7, h8, h9, h10, h11] at h
@@ -9220,7 +9352,7 @@ theorem isnormal_encTerm_success_tc : ∀ (t : LF.Term) (u : AST),
   induction t with
   | srt s =>
       intro _ _
-      cases s <;> exact isnormal_Srt_tc _ rfl
+      cases s <;> exact isnormal_Srt_tc _ (isnormal_con0_tc _)
   | var k =>
       intro _ _
       exact isnormal_Var_tc (peano k) (isnormal_peano_tc k)
@@ -9934,6 +10066,118 @@ def LFRecParserTCInterface : Prop :=
         LFCheckKChildOpenShape
           (eval pTC k (lfrec (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks)))
 
+def LFRecRawParserTCInterface : Prop :=
+  ∀ toks, ∃ N,
+    (match LF.pTerm 64 [] toks with
+    | none =>
+        ∃ e, eval pTC N
+          (lfrec (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks)) = Err e
+    | some (t, rest) =>
+        match rest with
+        | [] =>
+            ∃ raw,
+              Mettapedia.GSLT.LanguageDef.LFParserSim.ShiftablePayload raw t ∧
+                eval pTC N
+                  (lfrec (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks)) = Ok raw
+        | _ :: _ =>
+            ∃ e, eval pTC N
+              (lfrec (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks)) = Err e) ∧
+      ∀ k, k < N ->
+        LFCheckKChildOpenShape
+          (eval pTC k (lfrec (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks)))
+
+def FirstActiveMatchesParseShiftableTC (r : Option (LF.Term × List LF.Tok))
+    (call : AST) : Prop :=
+  ∃ N,
+    Mettapedia.GSLT.LanguageDef.LFParserSim.MatchesParseShiftable r (eval pTC N call) ∧
+      ∀ k, k < N ->
+        Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape (eval pTC k call)
+
+def LFParserTermFirstActiveShiftableTCInterface : Prop :=
+  ∀ toks,
+    FirstActiveMatchesParseShiftableTC (LF.pTerm 64 [] toks)
+      (tm (peano 64) Nil (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks))
+
+theorem lfrec_raw_parser_tc_of_first_active_shiftable_tc
+    (hparser : LFParserTermFirstActiveShiftableTCInterface) :
+    LFRecRawParserTCInterface := by
+  intro toks
+  let toksAst := Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks
+  let call := tm (peano 64) Nil toksAst
+  obtain ⟨Nchild, hchild, hchildGuard⟩ := hparser toks
+  obtain ⟨Mctx, hMctx, hMguard⟩ :=
+    cong_eval_recK_active_with_guard Nchild (s := call) (v := eval pTC Nchild call)
+      rfl hchildGuard
+  have hlfstep : eval pTC 1 (lfrec toksAst) = recK call := by
+    rfl
+  have hlfGuard :
+      ∀ k, k < 1 + (Mctx + 1) ->
+        LFCheckKChildOpenShape (eval pTC k (lfrec toksAst)) := by
+    intro k hk
+    cases k with
+    | zero =>
+        simpa only [eval] using LFCheckKChildOpenShape.recCall toksAst
+    | succ k =>
+        have hkBound : k < Mctx + 1 := by
+          exact Nat.succ_lt_succ_iff.mp (by simpa only [Nat.one_add] using hk)
+        have hshift : eval pTC (Nat.succ k) (lfrec toksAst) =
+            eval pTC k (recK call) := by
+          have h := eval_trans_tc 1 k (lfrec toksAst) (recK call)
+            (eval pTC k (recK call)) hlfstep rfl
+          simpa [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using h
+        rw [hshift]
+        by_cases hkM : k < Mctx
+        · exact hMguard k hkM
+        · have hge : Mctx ≤ k := Nat.le_of_not_gt hkM
+          have hle : k ≤ Mctx := Nat.le_of_lt_succ hkBound
+          have hkEq : k = Mctx := Nat.le_antisymm hle hge
+          subst k
+          rw [hMctx]
+          exact LFCheckKChildOpenShape.recKCall (eval pTC Nchild call)
+  cases hterm : LF.pTerm 64 [] toks with
+  | none =>
+      simp [Mettapedia.GSLT.LanguageDef.LFParserSim.MatchesParseShiftable, hterm] at hchild
+      obtain ⟨e, hv⟩ := hchild
+      refine ⟨1 + (Mctx + 1), ?_, hlfGuard⟩
+      refine ⟨e, ?_⟩
+      have hend : eval pTC 1 (recK (eval pTC Nchild call)) = Err e := by
+        rw [hv]
+        rfl
+      have hrecK :
+          eval pTC (Mctx + 1) (recK call) = Err e :=
+        eval_trans_tc Mctx 1 _ _ _ hMctx hend
+      exact eval_trans_tc 1 (Mctx + 1) _ _ _ hlfstep hrecK
+  | some pr =>
+      rcases pr with ⟨t, rest⟩
+      cases rest with
+      | nil =>
+          simp [Mettapedia.GSLT.LanguageDef.LFParserSim.MatchesParseShiftable, hterm] at hchild
+          obtain ⟨raw, hv, hraw⟩ := hchild
+          refine ⟨1 + (Mctx + 1), ?_, hlfGuard⟩
+          refine ⟨raw, hraw, ?_⟩
+          have hend : eval pTC 1 (recK (eval pTC Nchild call)) = Ok raw := by
+            rw [hv]
+            rfl
+          have hrecK :
+              eval pTC (Mctx + 1) (recK call) = Ok raw :=
+            eval_trans_tc Mctx 1 _ _ _ hMctx hend
+          exact eval_trans_tc 1 (Mctx + 1) _ _ _ hlfstep hrecK
+      | cons tok restTail =>
+          simp [Mettapedia.GSLT.LanguageDef.LFParserSim.MatchesParseShiftable, hterm] at hchild
+          obtain ⟨raw, hv, _hraw⟩ := hchild
+          let err := extraToks
+            (Cons (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encTok tok)
+              (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks restTail))
+          refine ⟨1 + (Mctx + 1), ?_, hlfGuard⟩
+          refine ⟨err, ?_⟩
+          have hend : eval pTC 1 (recK (eval pTC Nchild call)) = Err err := by
+            rw [hv]
+            rfl
+          have hrecK :
+              eval pTC (Mctx + 1) (recK call) = Err err :=
+            eval_trans_tc Mctx 1 _ _ _ hMctx hend
+          exact eval_trans_tc 1 (Mctx + 1) _ _ _ hlfstep hrecK
+
 def LFCheckKParserContextInterface : Prop :=
   ∀ toks A, IsNormal pTC A -> ∃ N,
     match LF.recognize 64 toks with
@@ -9945,6 +10189,27 @@ def LFCheckKParserContextInterface : Prop :=
         eval pTC N
           (lfcheckK A (lfrec (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks))) =
             lfcheckK A (Ok (encTerm t))
+
+def LFCheckKRawParserContextInterface : Prop :=
+  ∀ toks A, IsNormal pTC A -> ∃ N,
+    match LF.pTerm 64 [] toks with
+    | none =>
+        ∃ e, eval pTC N
+          (lfcheckK A (lfrec (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks))) =
+            lfcheckK A (Err e)
+    | some (t, rest) =>
+        match rest with
+        | [] =>
+            ∃ raw,
+              Mettapedia.GSLT.LanguageDef.LFParserSim.ShiftablePayload raw t ∧
+                eval pTC N
+                  (lfcheckK A
+                    (lfrec (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks))) =
+                  lfcheckK A (Ok raw)
+        | _ :: _ =>
+            ∃ e, eval pTC N
+              (lfcheckK A (lfrec (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks))) =
+                lfcheckK A (Err e)
 
 theorem lfcheckK_parser_context_of_lfrec_tc
     (hrec : LFRecParserTCInterface) : LFCheckKParserContextInterface := by
@@ -9967,10 +10232,73 @@ theorem lfcheckK_parser_context_of_lfrec_tc
       simp
       exact hM
 
+theorem lfcheckK_raw_parser_context_of_lfrec_raw_tc
+    (hrec : LFRecRawParserTCInterface) : LFCheckKRawParserContextInterface := by
+  intro toks A hA
+  obtain ⟨Nrec, hrecMatch, hrecGuard⟩ := hrec toks
+  cases hterm : LF.pTerm 64 [] toks with
+  | none =>
+      simp [hterm] at hrecMatch
+      obtain ⟨e, hrecEval⟩ := hrecMatch
+      obtain ⟨M, hM⟩ :=
+        cong_eval_lfcheckK_child_open_with_guard A hA Nrec hrecEval hrecGuard
+      refine ⟨M, ?_⟩
+      simp
+      exact ⟨e, hM⟩
+  | some pr =>
+      rcases pr with ⟨t, rest⟩
+      cases rest with
+      | nil =>
+          simp [hterm] at hrecMatch
+          obtain ⟨raw, hraw, hrecEval⟩ := hrecMatch
+          obtain ⟨M, hM⟩ :=
+            cong_eval_lfcheckK_child_open_with_guard A hA Nrec hrecEval hrecGuard
+          refine ⟨M, ?_⟩
+          simp
+          exact ⟨raw, hraw, hM⟩
+      | cons tok restTail =>
+          simp [hterm] at hrecMatch
+          obtain ⟨e, hrecEval⟩ := hrecMatch
+          obtain ⟨M, hM⟩ :=
+            cong_eval_lfcheckK_child_open_with_guard A hA Nrec hrecEval hrecGuard
+          refine ⟨M, ?_⟩
+          simp
+          exact ⟨e, hM⟩
+
 def LFCheckKSuccessInterface : Prop :=
   ∀ t A_spec, ∃ N,
     MatchesCheckVerdict (some (LFTyping.check checkerFuel LFTyping.corpusSig [] t A_spec))
       (eval pTC N (lfcheckK (encTy A_spec) (Ok (encTerm t))))
+
+def LFCheckKRawSuccessInterface : Prop :=
+  ∀ t A_spec raw,
+    Mettapedia.GSLT.LanguageDef.LFParserSim.ShiftablePayload raw t ->
+      ∃ N,
+        MatchesCheckVerdict (some (LFTyping.check checkerFuel LFTyping.corpusSig [] t A_spec))
+          (eval pTC N (lfcheckK (encTy A_spec) (Ok raw)))
+
+def LFCheckIRawSuccessInterface : Prop :=
+  ∀ t A_spec raw,
+    Mettapedia.GSLT.LanguageDef.LFParserSim.ShiftablePayload raw t ->
+      ∃ N,
+        MatchesCheckVerdict (some (LFTyping.check checkerFuel LFTyping.corpusSig [] t A_spec))
+          (eval pTC N (lfcheckI (encTy A_spec) (internTerm raw)))
+
+theorem lfcheckK_raw_success_of_lfcheckI_raw_success
+    (hcheckI : LFCheckIRawSuccessInterface) : LFCheckKRawSuccessInterface := by
+  intro t A_spec raw hraw
+  obtain ⟨N, hN⟩ := hcheckI t A_spec raw hraw
+  refine ⟨1 + N, ?_⟩
+  have hstep :
+      eval pTC 1 (lfcheckK (encTy A_spec) (Ok raw)) =
+        lfcheckI (encTy A_spec) (internTerm raw) := by
+    rfl
+  have htotal :
+      eval pTC (1 + N) (lfcheckK (encTy A_spec) (Ok raw)) =
+        eval pTC N (lfcheckI (encTy A_spec) (internTerm raw)) := by
+    exact eval_trans_tc 1 N _ _ _ hstep rfl
+  rw [htotal]
+  exact hN
 
 theorem lfcheckK_pipeline_interface_of_parser_and_checker
     (hparser : LFCheckKParserContextInterface)
@@ -10009,6 +10337,63 @@ theorem lfcheckK_pipeline_interface_of_parser_and_checker
       rw [htotal]
       exact hcheckN
 
+theorem lfcheckK_pipeline_interface_of_raw_parser_and_checker
+    (hparser : LFCheckKRawParserContextInterface)
+    (hcheck : LFCheckKRawSuccessInterface) : LFCheckKPipelineInterface := by
+  intro toks A_spec
+  obtain ⟨Nparser, hparserN⟩ := hparser toks (encTy A_spec) (isnormal_encTy_tc A_spec)
+  cases hterm : LF.pTerm 64 [] toks with
+  | none =>
+      simp [hterm] at hparserN
+      obtain ⟨e, hparserEval⟩ := hparserN
+      refine ⟨Nparser + 1, ?_⟩
+      have herr :
+          eval pTC 1 (lfcheckK (encTy A_spec) (Err e)) = checkErr e := by
+        rfl
+      have htotal :
+          eval pTC (Nparser + 1)
+              (lfcheckK (encTy A_spec)
+                (lfrec (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks))) =
+            checkErr e := by
+        exact eval_trans_tc Nparser 1 _ _ _ hparserEval herr
+      unfold referencePipeline
+      simp [LF.recognize, hterm, htotal]
+      exact MatchesCheckVerdict.rejectParse rfl
+  | some pr =>
+      rcases pr with ⟨t, rest⟩
+      cases rest with
+      | nil =>
+          simp [hterm] at hparserN
+          obtain ⟨raw, hraw, hparserEval⟩ := hparserN
+          obtain ⟨Ncheck, hcheckN⟩ := hcheck t A_spec raw hraw
+          refine ⟨Nparser + Ncheck, ?_⟩
+          have htotal :
+              eval pTC (Nparser + Ncheck)
+                  (lfcheckK (encTy A_spec)
+                    (lfrec (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks))) =
+                eval pTC Ncheck (lfcheckK (encTy A_spec) (Ok raw)) := by
+            exact eval_trans_tc Nparser Ncheck _ _ _ hparserEval rfl
+          unfold referencePipeline
+          simp [LF.recognize, hterm]
+          rw [htotal]
+          exact hcheckN
+      | cons tok restTail =>
+          simp [hterm] at hparserN
+          obtain ⟨e, hparserEval⟩ := hparserN
+          refine ⟨Nparser + 1, ?_⟩
+          have herr :
+              eval pTC 1 (lfcheckK (encTy A_spec) (Err e)) = checkErr e := by
+            rfl
+          have htotal :
+              eval pTC (Nparser + 1)
+                  (lfcheckK (encTy A_spec)
+                    (lfrec (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks))) =
+                checkErr e := by
+            exact eval_trans_tc Nparser 1 _ _ _ hparserEval herr
+          unfold referencePipeline
+          simp [LF.recognize, hterm, htotal]
+          exact MatchesCheckVerdict.rejectParse rfl
+
 theorem pipeline_sim_from_lfcheckK_interface
     (hK : LFCheckKPipelineInterface) : PipelineSimStatement := by
   intro toks A_spec
@@ -10036,12 +10421,67 @@ theorem pipeline_sim_from_parser_and_checker_interfaces
   pipeline_sim_from_lfcheckK_interface
     (lfcheckK_pipeline_interface_of_parser_and_checker hparser hcheck)
 
+theorem pipeline_sim_from_raw_parser_and_checker_interfaces
+    (hparser : LFCheckKRawParserContextInterface)
+    (hcheck : LFCheckKRawSuccessInterface) : PipelineSimStatement :=
+  pipeline_sim_from_lfcheckK_interface
+    (lfcheckK_pipeline_interface_of_raw_parser_and_checker hparser hcheck)
+
+theorem pipeline_sim_from_raw_parser_and_lfcheckI_interfaces
+    (hparser : LFCheckKRawParserContextInterface)
+    (hcheckI : LFCheckIRawSuccessInterface) : PipelineSimStatement :=
+  pipeline_sim_from_raw_parser_and_checker_interfaces hparser
+    (lfcheckK_raw_success_of_lfcheckI_raw_success hcheckI)
+
+theorem pipeline_sim_from_lfrec_raw_and_lfcheckI_interfaces
+    (hrec : LFRecRawParserTCInterface)
+    (hcheckI : LFCheckIRawSuccessInterface) : PipelineSimStatement :=
+  pipeline_sim_from_raw_parser_and_lfcheckI_interfaces
+    (lfcheckK_raw_parser_context_of_lfrec_raw_tc hrec) hcheckI
+
+theorem pipeline_sim_from_parser_first_active_and_lfcheckI_interfaces
+    (hparser : LFParserTermFirstActiveShiftableTCInterface)
+    (hcheckI : LFCheckIRawSuccessInterface) : PipelineSimStatement :=
+  pipeline_sim_from_lfrec_raw_and_lfcheckI_interfaces
+    (lfrec_raw_parser_tc_of_first_active_shiftable_tc hparser) hcheckI
+
+theorem pipeline_sim
+    (hparser : LFParserTermFirstActiveShiftableTCInterface)
+    (hcheckI : LFCheckIRawSuccessInterface) :
+    ∀ toks A_spec, ∃ N,
+      MatchesCheckVerdict (referencePipeline toks A_spec)
+        (eval pTC N
+          (lfcheck (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks) (encTy A_spec))) :=
+  pipeline_sim_from_parser_first_active_and_lfcheckI_interfaces hparser hcheckI
+
 def AcceptedIsDerivableStatement : Prop :=
   ∀ toks A_spec, EngineAccepts toks A_spec ->
     ∃ t, LFTyping.HasType LFTyping.corpusSig [] t A_spec
 
 def EngineAcceptsReferenceSound : Prop :=
   ∀ toks A_spec, EngineAccepts toks A_spec -> referencePipeline toks A_spec = some true
+
+theorem engine_accepts_reference_sound_from_pipeline
+    (hpipeline : PipelineSimStatement) : EngineAcceptsReferenceSound := by
+  intro toks A_spec hacc
+  cases hacc with
+  | intro haccept =>
+      obtain ⟨_, hpipe⟩ := hpipeline toks A_spec
+      cases href : referencePipeline toks A_spec with
+      | none =>
+          rw [href] at hpipe
+          cases hpipe with
+          | rejectParse hreject =>
+              exact False.elim (eval_reject_accept_false_tc haccept hreject)
+      | some b =>
+          cases b with
+          | false =>
+              rw [href] at hpipe
+              cases hpipe with
+              | rejectFalse hreject =>
+                  exact False.elim (eval_reject_accept_false_tc haccept hreject)
+          | true =>
+              rfl
 
 theorem accepted_is_derivable_from_reference_sound
     (hsound : EngineAcceptsReferenceSound) : AcceptedIsDerivableStatement := by
@@ -10054,6 +10494,18 @@ theorem accepted_is_derivable_from_reference_sound
   | some t =>
       simp [hrec] at href
       exact ⟨t, LFTyping.S1 (fuel := checkerFuel) href⟩
+
+theorem accepted_is_derivable_from_pipeline
+    (hpipeline : PipelineSimStatement) : AcceptedIsDerivableStatement :=
+  accepted_is_derivable_from_reference_sound
+    (engine_accepts_reference_sound_from_pipeline hpipeline)
+
+theorem accepted_is_derivable
+    (hparser : LFParserTermFirstActiveShiftableTCInterface)
+    (hcheckI : LFCheckIRawSuccessInterface) :
+    ∀ toks A_spec, EngineAccepts toks A_spec ->
+      ∃ t, LFTyping.HasType LFTyping.corpusSig [] t A_spec :=
+  accepted_is_derivable_from_pipeline (pipeline_sim hparser hcheckI)
 
 /-! ## Positive and negative corpus instances through the composed pipeline. -/
 
@@ -10169,11 +10621,26 @@ theorem regression_beta_discard_accepted_is_derivable :
   exact ⟨.srt .type, LFTyping.S1 (fuel := checkerFuel) (by rfl)⟩
 
 #print axioms pipeline_sim_from_lfcheckK_interface
+#print axioms hcong_Ok_tc
+#print axioms isnormal_encTerm_raw_tc
+#print axioms cong_eval_recK_active_with_guard
 #print axioms cong_eval_lfcheckK_child_open_with_guard
+#print axioms lfrec_raw_parser_tc_of_first_active_shiftable_tc
 #print axioms lfcheckK_parser_context_of_lfrec_tc
+#print axioms lfcheckK_raw_parser_context_of_lfrec_raw_tc
 #print axioms lfcheckK_pipeline_interface_of_parser_and_checker
 #print axioms pipeline_sim_from_parser_and_checker_interfaces
+#print axioms lfcheckK_raw_success_of_lfcheckI_raw_success
+#print axioms lfcheckK_pipeline_interface_of_raw_parser_and_checker
+#print axioms pipeline_sim_from_raw_parser_and_checker_interfaces
+#print axioms pipeline_sim_from_raw_parser_and_lfcheckI_interfaces
+#print axioms pipeline_sim_from_lfrec_raw_and_lfcheckI_interfaces
+#print axioms pipeline_sim_from_parser_first_active_and_lfcheckI_interfaces
+#print axioms pipeline_sim
+#print axioms engine_accepts_reference_sound_from_pipeline
 #print axioms accepted_is_derivable_from_reference_sound
+#print axioms accepted_is_derivable_from_pipeline
+#print axioms accepted_is_derivable
 #print axioms corpus_mp_pipeline_matches
 #print axioms regression_reference_accepts_beta_discard_unknown
 #print axioms regression_engine_accepts_beta_discard_unknown

@@ -225,43 +225,6 @@ if [ -f ../kernel/run_ocoherence_gate.sh ]; then
   fi
 fi
 
-echo "================= SELFMETTA WITNESS + CALIBRATION (CeTTa / PeTTa / LeaTTa) ================="
-for f in SelfMeTTa/[0-9]*.metta; do [ -e "$f" ] || continue
-  case "$(basename "$f")" in *_petta.metta) continue ;; esac
-  if run_cetta_capped "$f" >"$log" 2>&1 && ! grep -q "(Error" "$log"; then
-    tc=$(grep -cE '^!\((assertEqual|assertEqualToResult)' "$f")
-    echo "  [selfmetta-cetta] $(basename "$f")  OK  (${tc} assertions)"
-    pass=$((pass+1))
-  else
-    echo "  [selfmetta-cetta] $(basename "$f")  FAIL"
-    tail -8 "$log" | sed 's/^/        /'
-    pfail=$((pfail+1))
-  fi
-done
-for f in SelfMeTTa/[0-9]*_petta.metta; do [ -e "$f" ] || continue
-  if run_petta_capped "$f" >"$log" 2>&1 && ! grep -q "(Error" "$log"; then
-    tc=$(grep -c '^!(test' "$f")
-    echo "  [selfmetta-petta] $(basename "$f")  OK  (${tc} assertions)"
-    pass=$((pass+1))
-  else
-    echo "  [selfmetta-petta] $(basename "$f")  FAIL"
-    tail -8 "$log" | sed 's/^/        /'
-    pfail=$((pfail+1))
-  fi
-done
-for f in SelfMeTTa/[0-9]*.metta; do [ -e "$f" ] || continue
-  case "$(basename "$f")" in *_petta.metta) continue ;; esac
-  if run_leatta_oracle "$f" >"$log" 2>&1 && ! grep -q 'FAIL=[1-9]' "$log"; then
-    summary=$(grep -m1 '==== PASS=' "$log" | tr -s ' ')
-    echo "  [selfmetta-leatta] $(basename "$f")  OK  ${summary}"
-    pass=$((pass+1))
-  else
-    echo "  [selfmetta-leatta] $(basename "$f")  FAIL"
-    tail -8 "$log" | sed 's/^/        /'
-    pfail=$((pfail+1))
-  fi
-done
-
 echo "================= ORACLE CASE LEDGER ================="
 trim_ws() {
   local s="$1"

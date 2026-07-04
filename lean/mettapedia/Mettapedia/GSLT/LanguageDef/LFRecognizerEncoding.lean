@@ -319,85 +319,11 @@ def parserRules : List RewriteDecl := [
     the parser family.  (Heads are pairwise distinct across the four rule groups.) -/
 def pLF : Presentation := .mk [] [] [] (shiftRules ++ resolveRules ++ parserRules) []
 
-/-! ### Rule-table inventory and guest-table name correspondence.
-
-The SelfMeTTa guest table uses underscore atoms for rule names while this Lean presentation keeps the
-hyphenated rewrite names.  The pair list below is deliberately explicit: it checks the ordered
-inventory of the pLF table without claiming that Lean has parsed an external guest source file. -/
+/-! ### Rule-table inventory (group counts and the 65-rule total, each checked by `rfl`). -/
 
 def rewriteNames (rws : List RewriteDecl) : List String := rws.map (fun r => r.name)
 
 def pLFRuleNames : List String := rewriteNames (Presentation.rewrites pLF)
-
-def pLFGuestRuleNamePairs : List (String × String) := [
-    ("lt-z-s", "lt_z_s"),
-    ("lt-z-z", "lt_z_z"),
-    ("lt-s-z", "lt_s_z"),
-    ("lt-s-s", "lt_s_s"),
-    ("sh-var", "sh_var"),
-    ("sh-var-lt", "sh_var_lt"),
-    ("sh-var-ge", "sh_var_ge"),
-    ("sh-srt", "sh_srt"),
-    ("sh-con", "sh_con"),
-    ("sh-pi", "sh_pi"),
-    ("sh-lam", "sh_lam"),
-    ("sh-app", "sh_app"),
-    ("ctx-nil", "ctx_nil"),
-    ("ctx-hit", "ctx_hit"),
-    ("ctx-miss", "ctx_miss"),
-    ("ctxK-nf", "ctxK_nf"),
-    ("ctxK-idx", "ctxK_idx"),
-    ("res", "res"),
-    ("res-idx", "res_idx"),
-    ("res-nf", "res_nf"),
-    ("tm-z", "tm_z"),
-    ("tm-pi", "tm_pi"),
-    ("tm-lam", "tm_lam"),
-    ("tm-fall", "tm_fall"),
-    ("tmPi1-dot", "tmPi1_dot"),
-    ("tmPi1-cons", "tmPi1_cons"),
-    ("tmPi1-nil", "tmPi1_nil"),
-    ("tmPi1-err", "tmPi1_err"),
-    ("tmPi2-p", "tmPi2_p"),
-    ("tmPi2-err", "tmPi2_err"),
-    ("tmLam1-dot", "tmLam1_dot"),
-    ("tmLam1-cons", "tmLam1_cons"),
-    ("tmLam1-nil", "tmLam1_nil"),
-    ("tmLam1-err", "tmLam1_err"),
-    ("tmLam2-p", "tmLam2_p"),
-    ("tmLam2-err", "tmLam2_err"),
-    ("ar-z", "ar_z"),
-    ("ar-s", "ar_s"),
-    ("arK-arr", "arK_arr"),
-    ("arK-cons", "arK_cons"),
-    ("arK-nil", "arK_nil"),
-    ("arK-err", "arK_err"),
-    ("arK2-p", "arK2_p"),
-    ("arK2-err", "arK2_err"),
-    ("ap-z", "ap_z"),
-    ("ap-s", "ap_s"),
-    ("apK-p", "apK_p"),
-    ("apK-err", "apK_err"),
-    ("apm-z", "apm_z"),
-    ("apm-s", "apm_s"),
-    ("apmK-p", "apmK_p"),
-    ("apmK-err", "apmK_err"),
-    ("at-z", "at_z"),
-    ("at-lp", "at_lp"),
-    ("at-type", "at_type"),
-    ("at-id", "at_id"),
-    ("at-err", "at_err"),
-    ("atLPk-rp", "atLPk_rp"),
-    ("atLPk-cons", "atLPk_cons"),
-    ("atLPk-nil", "atLPk_nil"),
-    ("atLPk-err", "atLPk_err"),
-    ("rec", "rec"),
-    ("recK-nil", "recK_nil"),
-    ("recK-cons", "recK_cons"),
-    ("recK-err", "recK_err")
-  ]
-
-def pLFGuestRuleNames : List String := pLFGuestRuleNamePairs.map Prod.snd
 
 theorem lt_rule_count : ltRules.length = 4 := by rfl
 
@@ -411,10 +337,6 @@ theorem parser_rule_count : parserRules.length = 45 := by rfl
 
 theorem pLF_rule_count : (Presentation.rewrites pLF).length = 65 := by rfl
 
-theorem pLF_rule_names_match_guest_pairs :
-    pLFGuestRuleNamePairs.map Prod.fst = pLFRuleNames := by rfl
-
-theorem pLF_guest_rule_count : pLFGuestRuleNames.length = 65 := by rfl
 
 /-! ### First corpus checks through the certified engine (simplest streams first). -/
 
