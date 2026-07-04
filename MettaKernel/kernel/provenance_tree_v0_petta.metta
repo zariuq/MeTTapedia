@@ -1,4 +1,8 @@
 !(import! &self /home/aimama/aihub/hyperon/PeTTa/lib/lib_he)
+; Source anchors: provenance_tree_v0.metta and Curriculum/oracle_cases.tsv
+; KERN-SIG-ADMISSION, KERN-OBJECT-SIGNATURES.
+; DIVERGES: evidence projection plus PeTTa lexical companion; provenance is not
+; theoremhood.
 
 ; =============================================================================
 ; provenance_tree_v0.metta

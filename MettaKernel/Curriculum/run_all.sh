@@ -15,15 +15,21 @@ COQC="$(command -v coqc || echo "$HOME/.opam/default/bin/coqc")"
 LEAN="$(command -v lean  || echo "$HOME/.elan/bin/lean")"
 MEG="/home/aimama/aihub/repos/megalodon-1.13/bin/megalodon"
 CETTA="${CETTA:-/home/aimama/aihub/hyperon/CeTTa/cetta}"
+PETTA="${PETTA:-/home/aimama/aihub/hyperon/PeTTa/run.sh}"
+LEATTA="${LEATTA:-/home/aimama/aihub/Mettapedia/lean/externals/LeaTTa/.lake/build/bin/LeaTTa}"
 CETTA_EXTRA_ARGS="${CETTA_EXTRA_ARGS---eval-hashcons}"
 CETTA_AS_LIMIT_BYTES="${CETTA_AS_LIMIT_BYTES:-25769803776}"
+PETTA_AS_LIMIT_BYTES="${PETTA_AS_LIMIT_BYTES:-25769803776}"
 CETTA_TIMEOUT_SECONDS="${CETTA_TIMEOUT_SECONDS:-240}"
 DED_DK_REPO="${DED_DK_REPO:-/home/aimama/aihub/repos/dedukti}"
 DED_DK="${DED_DK:-$DED_DK_REPO/_build/default/commands/main.exe}"
 read -r -a CETTA_EXTRA_ARGV <<< "$CETTA_EXTRA_ARGS"
 export CETTA
+export PETTA
+export LEATTA
 export CETTA_EXTRA_ARGS
 export CETTA_AS_LIMIT_BYTES
+export PETTA_AS_LIMIT_BYTES
 export CETTA_TIMEOUT_SECONDS
 PRE_DIR="/home/aimama/aihub/repos/megalodon-1.13/examples/egal"
 log=/tmp/_runall.$$.log
@@ -43,6 +49,16 @@ meg_args() {  # echo "-I <preamble>" from a sidecar "<file>.pre" (a leading comm
 run_cetta_capped() {
   local file="$1"
   timeout "$CETTA_TIMEOUT_SECONDS" prlimit --as="$CETTA_AS_LIMIT_BYTES" -- "$CETTA" "${CETTA_EXTRA_ARGV[@]}" "$file"
+}
+
+run_petta_capped() {
+  local file="$1"
+  timeout "$CETTA_TIMEOUT_SECONDS" prlimit --as="$PETTA_AS_LIMIT_BYTES" -- "$PETTA" "$file"
+}
+
+run_leatta_oracle() {
+  local file="$1"
+  timeout "$CETTA_TIMEOUT_SECONDS" "$LEATTA" --oracle "$file"
 }
 
 ensure_dedukti_checker() {
@@ -209,14 +225,38 @@ if [ -f ../kernel/run_ocoherence_gate.sh ]; then
   fi
 fi
 
-echo "================= SELFMETTA WITNESS SEEDS (CeTTa) ================="
+echo "================= SELFMETTA WITNESS + CALIBRATION (CeTTa / PeTTa / LeaTTa) ================="
 for f in SelfMeTTa/[0-9]*.metta; do [ -e "$f" ] || continue
-  if run_cetta_capped "$f" >"$log" 2>&1; then
-    tc=$(grep -c '^!(assertEqual' "$f")
-    echo "  [selfmetta] $(basename "$f")  OK  (${tc} assertions)"
+  case "$(basename "$f")" in *_petta.metta) continue ;; esac
+  if run_cetta_capped "$f" >"$log" 2>&1 && ! grep -q "(Error" "$log"; then
+    tc=$(grep -cE '^!\((assertEqual|assertEqualToResult)' "$f")
+    echo "  [selfmetta-cetta] $(basename "$f")  OK  (${tc} assertions)"
     pass=$((pass+1))
   else
-    echo "  [selfmetta] $(basename "$f")  FAIL"
+    echo "  [selfmetta-cetta] $(basename "$f")  FAIL"
+    tail -8 "$log" | sed 's/^/        /'
+    pfail=$((pfail+1))
+  fi
+done
+for f in SelfMeTTa/[0-9]*_petta.metta; do [ -e "$f" ] || continue
+  if run_petta_capped "$f" >"$log" 2>&1 && ! grep -q "(Error" "$log"; then
+    tc=$(grep -c '^!(test' "$f")
+    echo "  [selfmetta-petta] $(basename "$f")  OK  (${tc} assertions)"
+    pass=$((pass+1))
+  else
+    echo "  [selfmetta-petta] $(basename "$f")  FAIL"
+    tail -8 "$log" | sed 's/^/        /'
+    pfail=$((pfail+1))
+  fi
+done
+for f in SelfMeTTa/[0-9]*.metta; do [ -e "$f" ] || continue
+  case "$(basename "$f")" in *_petta.metta) continue ;; esac
+  if run_leatta_oracle "$f" >"$log" 2>&1 && ! grep -q 'FAIL=[1-9]' "$log"; then
+    summary=$(grep -m1 '==== PASS=' "$log" | tr -s ' ')
+    echo "  [selfmetta-leatta] $(basename "$f")  OK  ${summary}"
+    pass=$((pass+1))
+  else
+    echo "  [selfmetta-leatta] $(basename "$f")  FAIL"
     tail -8 "$log" | sed 's/^/        /'
     pfail=$((pfail+1))
   fi

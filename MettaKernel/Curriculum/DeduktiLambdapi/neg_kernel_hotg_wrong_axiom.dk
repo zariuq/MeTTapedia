@@ -1,0 +1,11 @@
+(; Negative differential: axMem : In a b does not prove In b a. ;)
+
+o : Type.
+prf : o -> Type.
+set : Type.
+In : set -> set -> o.
+a : set.
+b : set.
+axMem : prf (In a b).
+
+def bad_axmem : prf (In b a) := axMem.

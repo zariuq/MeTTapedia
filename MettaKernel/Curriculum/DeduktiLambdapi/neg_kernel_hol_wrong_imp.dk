@@ -1,0 +1,10 @@
+(; Negative differential: the A=>A proof does not inhabit A=>B. ;)
+
+o : Type.
+prf : o -> Type.
+imp : o -> o -> o.
+A : o.
+B : o.
+impI : A0:o -> B0:o -> (prf A0 -> prf B0) -> prf (imp A0 B0).
+
+def bad_hol : prf (imp A B) := impI A A (h:prf A => h).

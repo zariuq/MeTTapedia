@@ -1,0 +1,9 @@
+(; Negative differential: rfl z does not prove eqn z (s z). ;)
+
+nat : Type.
+z : nat.
+s : nat -> nat.
+eqn : nat -> nat -> Type.
+rfl : x:nat -> eqn x x.
+
+def bad_rfl : eqn z (s z) := rfl z.

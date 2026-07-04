@@ -5,6 +5,7 @@ import Mettapedia.Examples.PLN.BioIncrementalHyperseed
 import Mettapedia.Examples.PLN.BotnickMultiAgentEvidence
 import Mettapedia.Examples.PLN.ClassicExamples
 import Mettapedia.Examples.PLN.DerivationTrackingDemoPropositional
+import Mettapedia.Examples.PLN.DependenceAwareChainComposition
 import Mettapedia.Examples.PLN.DiseaseAbductionCurriculum
 import Mettapedia.Examples.PLN.EstimatorEnvelopeCurriculum
 import Mettapedia.Examples.PLN.GJPForecastDemo

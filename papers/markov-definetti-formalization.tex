@@ -52,20 +52,20 @@
 \maketitle
 
 \begin{abstract}
-We present a complete Lean~4 formalization of the Markov de~Finetti theorem
-(Diaconis--Freedman 1980): every Markov-exchangeable, recurrent prefix measure
-on a finite alphabet is a mixture of time-homogeneous Markov chains. The
-formalization comprises 26,665 lines of Lean code with zero unproved
-assumptions (\texttt{sorry}), building on a 43,683-line formalization of the
-classical (i.i.d.) de~Finetti theorem. Key innovations include a directing
-measure uniqueness lemma that transfers de~Finetti structure across measure
-restrictions, and a carrier transport bijection that establishes start-state
-invariance via trajectory segment swapping. The proof architecture decomposes
-into successor-matrix partial exchangeability, per-row de~Finetti factorization,
-and cross-row coherence induction. This formalization provides a verified
-foundation for structured universal mixtures in the style of Solomonoff
-induction, where Markov models replace i.i.d.\ hypotheses for tractable
-sequential prediction.
+We present a Lean~4 formalization of the Markov de~Finetti theorem
+(Diaconis--Freedman 1980): every Markov-exchangeable prefix measure on a
+finite alphabet with a strongly recurrent probability extension is a mixture
+of time-homogeneous Markov chains. The public endpoint is the unconditional
+constructor \texttt{MarkovMixture.of\_markovExchangeable\_strongRecurrence};
+Lean reports its axiom footprint as exactly
+\texttt{[propext, Classical.choice, Quot.sound]}. The active
+\texttt{MarkovDeFinetti*.lean} corpus comprises 42,405 lines across 28 files.
+Key innovations include a directing measure uniqueness lemma that transfers
+de~Finetti structure across measure restrictions, and successor-matrix partial
+exchangeability machinery that preserves the initial-state coupling needed by
+the cylinder identities. This formalization provides a verified foundation for
+structured universal mixtures in the style of Solomonoff induction, where
+Markov models replace i.i.d.\ hypotheses for tractable sequential prediction.
 \end{abstract}
 
 \tableofcontents
@@ -98,9 +98,9 @@ have the same \emph{Markov evidence}: the starting state and transition-count ma
 
 \begin{theorem}[Diaconis--Freedman 1980]\label{thm:df80}
 Let $\mu$ be a Markov-exchangeable prefix measure on a finite alphabet $A$.
-If $\mu$ satisfies a recurrence condition (the trajectory returns to its
-starting state infinitely often, almost surely under any extension), then
-there exists a probability measure $\pi$ on the space of Markov parameters
+If $\mu$ has a probability extension $P$ whose trajectories satisfy the
+formal strong-recurrence condition, then there exists a probability measure
+$\pi$ on the space of Markov parameters
 $\Theta_k = \Delta_k \times \Delta_k^k$ such that for all finite words $xs$:
 \[
 \mu(xs) = \int_{\Theta_k} \mathrm{wordProb}_\theta(xs) \, d\pi(\theta)
@@ -132,10 +132,13 @@ certainty that the intricate decomposition is correct.
 
 We present:
 \begin{enumerate}
-\item A complete formalization of Theorem~\ref{thm:df80} in Lean~4 with Mathlib:
-  \textbf{26,665 lines}, \textbf{0 sorry}, \textbf{33 files}.
-\item Reuse of a 43,683-line formalization of the classical de~Finetti theorem
-  (three independent proofs: martingale, $L^2$, ergodic).
+\item A formalization of Theorem~\ref{thm:df80} in Lean~4 with Mathlib,
+  exposed through \texttt{MarkovMixture.of\_markovExchangeable\_strongRecurrence}
+  and audited by the axiom footprint
+  \texttt{[propext, Classical.choice, Quot.sound]}.
+\item An active \texttt{MarkovDeFinetti*.lean} corpus of
+  \textbf{42,405 lines} across \textbf{28 files}, plus reuse of the local
+  \texttt{exchangeability} package for the classical de~Finetti layer.
 \item Key innovations:
   \begin{itemize}
   \item \emph{Directing measure uniqueness}: If $\nu \leq C \cdot \mu$ for
@@ -219,20 +222,23 @@ is Markov-exchangeable (trivially---equivalence classes are singletons) but
 not a mixture of recurrent Markov chains.
 
 \begin{definition}
-A prefix measure $\mu$ is \emph{recurrent} if it admits an extension $P$ to
-infinite sequences where the trajectory returns to its starting state
-infinitely often, $P$-almost surely.
+A prefix measure $\mu$ is \emph{strongly recurrent} in the formal theorem
+surface if it admits an extension $P$ to infinite sequences satisfying
+\texttt{StrongRecurrence}. This is the recurrence hypothesis used by the
+public constructor.
 \end{definition}
 
 \begin{lstlisting}
-def recurrentEvent : Set (Nat -> Fin k) :=
-  { omega | forall N, exists n >= N, omega n = omega 0 }
+def StrongRecurrence (P : Measure (Nat -> Fin k)) : Prop :=
+  forall i : Fin k, forall-ae omega w.r.t. P,
+    (exists t : Nat, omega t = i) ->
+      forall n : Nat, nthVisitTimeExists omega i n
 
-def MarkovRecurrentPrefixMeasure (mu : PrefixMeasure (Fin k)) : Prop :=
+def StrongRecurrentExtension (mu : PrefixMeasure (Fin k)) : Prop :=
   exists (P : Measure (Nat -> Fin k)),
     IsProbabilityMeasure P /\
     (forall xs, mu xs = P (cylinder xs)) /\
-    P recurrentEvent = 1
+    StrongRecurrence P
 \end{lstlisting}
 
 \section{The Formal Statement}
@@ -282,18 +288,42 @@ theorem fortiniSuccessorMatrixInvarianceTheoremInternal_proved :
 
 \subsection{The Crown Theorem}
 
-The full theorem derives the row-kernel crux data from Markov exchangeability
-and recurrence alone.
+The full public theorem derives the Markov-mixture representation from Markov
+exchangeability plus a strongly recurrent extension. The endpoint theorem is:
 
 \begin{lstlisting}
-abbrev FortiniCanonicalRepresentationTheorem (k : Nat) : Prop :=
+theorem markovDeFinetti_strongRecurrence (k : Nat) :
+    FortiniSuccessorMatrixInvarianceTheoremStrongRecurrence k
+\end{lstlisting}
+
+It is exposed to downstream code through the unconditional public constructor:
+
+\begin{lstlisting}
+noncomputable def MarkovMixture.of_markovExchangeable_strongRecurrence
+    (hmu : MarkovExchangeablePrefixMeasure mu)
+    (P : Measure (Nat -> Fin k)) [IsProbabilityMeasure P]
+    (hExt : forall xs, mu xs = P (cylinder xs))
+    (hStrRec : StrongRecurrence P) :
+    MarkovMixture k mu
+\end{lstlisting}
+
+The corresponding theorem surface is:
+
+\begin{lstlisting}
+def FortiniSuccessorMatrixInvarianceTheoremStrongRecurrence
+    (k : Nat) : Prop :=
   forall mu : PrefixMeasure (Fin k),
     MarkovExchangeablePrefixMeasure mu ->
-    MarkovRecurrentPrefixMeasure mu ->
+    StrongRecurrentExtension mu ->
       exists (pi : Measure (MarkovParam k)),
         IsProbabilityMeasure pi /\
         forall xs, mu xs = integral theta, wordProb theta xs dpi
 \end{lstlisting}
+
+The Lean audit for the public constructor reports exactly the standard axiom
+footprint \texttt{[propext, Classical.choice, Quot.sound]}; no project-local
+axiom or proof placeholder appears in the crown theorem's dependency
+footprint.
 
 \section{Proof Architecture}
 
@@ -501,34 +531,25 @@ theorem carrierTransportEquivAdjacent {N : Nat}
 
 \section{File Inventory}
 
-All files are in \texttt{Mettapedia/Logic/} within the Mettapedia Lean project.
+The active Markov de~Finetti core counted here consists of the
+\texttt{MarkovDeFinetti*.lean} files in
+\texttt{Mettapedia/ProbabilityTheory/Exchangeability/}. The count is obtained
+from the current source tree after the public constructor was added.
 
 \begin{table}[h]
 \centering
 \begin{tabular}{llr}
 \toprule
-\textbf{Layer} & \textbf{File} & \textbf{Lines} \\
+\textbf{Layer} & \textbf{Files} & \textbf{Lines} \\
 \midrule
-Fiber bridge & MarkovDeFinettiFiberEventBridge.lean & 9,324 \\
-Crux pipeline & MarkovDeFinettiFortiniBridgeCrux.lean & 2,853 \\
-PE bridge & MarkovDeFinettiPEBridge.lean & 2,250 \\
-Bridge core & MarkovDeFinettiFortiniBridgeCore.lean & 2,130 \\
-Carrier transport & MarkovDeFinettiCarrierTransport.lean & 1,374 \\
-Counterexample & MarkovDeFinettiFortiniCrossAnchorCounterexample.lean & 1,010 \\
-Kernel uniqueness & MarkovDeFinettiKernelUniqueness.lean & 922 \\
-Euler trails & MarkovDeFinettiHard*.lean (6 files) & 1,948 \\
-Evidence basis & MarkovDeFinettiEvidenceBasis.lean & 305 \\
-Moment problem & MarkovDeFinettiMomentProblem.lean & 287 \\
-Higher-order Markov & MarkovDeFinettiHigherOrder.lean & 1,219 \\
-Hidden Markov models & FiniteHiddenMarkovModel.lean & 668 \\
-Higher-order Giry bridge & DeFinettiHigherOrderGiryBridge.lean & 175 \\
-HMM de Finetti bridge & FiniteHiddenMarkovDeFinettiBridge.lean & 339 \\
-Higher-order WM bridge & WMHigherOrderMarkov.lean & 365 \\
-Controlled HMM/POMDP bridge & ControlledFiniteHiddenMarkovModel.lean, ControlledFiniteHiddenMarkovObservedInference.lean, ControlledFiniteHiddenMarkovBridge.lean & 827 \\
-Controlled Solomonoff bridge & ControlledPrefixMeasure.lean, ControlledSolomonoffBridge.lean, ControlledFiniteHiddenMarkovUniversalPredictionBridge.lean & 446 \\
-Other & (11 files) & 1,496 \\
+Endpoint and public API & 2 files & 6,605 \\
+Successor-matrix PE & 3 files & 5,970 \\
+Crux and fiber payload & 5 files & 21,354 \\
+Carrier transport and evidence basis & 4 files & 2,067 \\
+Euler trail support & 6 files & 1,948 \\
+Surface and extension helpers & 8 files & 4,461 \\
 \midrule
-\textbf{Total} & \textbf{36 files} & \textbf{27,938} \\
+\textbf{Total} & \textbf{28 files} & \textbf{42,405} \\
 \bottomrule
 \end{tabular}
 \caption{Markov de Finetti formalization file inventory}
@@ -536,9 +557,8 @@ Other & (11 files) & 1,496 \\
 
 \subsection{External Dependencies}
 
-The formalization builds on the classical de~Finetti theorem, formalized in
-\texttt{Mettapedia/external/exchangeability/} (43,683 lines, 0 sorry). This
-provides three independent proofs:
+The formalization builds on the local \texttt{exchangeability} Lake package,
+which provides the classical de~Finetti layer:
 
 \begin{enumerate}
 \item \textbf{Via reverse martingale convergence} (default, follows Kallenberg 2005)
@@ -841,10 +861,12 @@ structure MarkovMixture (k : Nat) (mu : PrefixMeasure (Fin k)) where
   represents : forall xs, mu xs = integral theta, wordProb theta xs dmixingLaw
 \end{lstlisting}
 
-Multiple constructors build \texttt{MarkovMixture} objects from different
-theorem surfaces: \texttt{of\_extension\_strongRecurrence} uses the direct
-extension route, while \texttt{of\_successorMatrixPE\_minimal} uses the
-minimal PE payload. For class-restricted settings,
+The main constructor is
+\texttt{of\_markovExchangeable\_strongRecurrence}, which discharges the closed
+Fortini endpoint and returns a \texttt{MarkovMixture} directly from the public
+Markov-exchangeability, extension, and strong-recurrence hypotheses. More
+specialized constructors expose internal theorem surfaces for callers that
+already have successor-matrix PE payloads. For class-restricted settings,
 \texttt{ClassRestrictedMarkovMixtureSurface} provides the analogous object
 with honest scope for rows in the class.
 
@@ -1344,9 +1366,12 @@ File: \texttt{WMHigherOrderMarkov.lean} (365 lines, 0~\texttt{sorry}).
 
 \section{Conclusion}
 
-We have presented a complete Lean~4 formalization of the Markov de~Finetti
-theorem (Diaconis--Freedman 1980), comprising 26,665 lines with zero unproven
-assumptions. Key innovations include:
+We have presented a Lean~4 formalization of the Markov de~Finetti theorem
+(Diaconis--Freedman 1980), with the public constructor
+\texttt{MarkovMixture.of\_markovExchangeable\_strongRecurrence} audited at
+the axiom footprint \texttt{[propext, Classical.choice, Quot.sound]}. The
+active \texttt{MarkovDeFinetti*.lean} corpus comprises 42,405 lines across
+28 files. Key innovations include:
 
 \begin{itemize}
 \item A directing measure uniqueness lemma that transfers de~Finetti structure
@@ -1367,9 +1392,9 @@ with formal correctness guarantees.
   identified three bugs in the proof architecture that had been masked by
   assumption interfaces. Explicit theorem statements (not \texttt{def}s)
   prevent this.
-\item \textbf{Reuse existing formalizations}: The 43,683-line de~Finetti
-  infrastructure was essential. Building row kernels from the directing
-  measure machinery avoided reimplementing measure-theoretic foundations.
+\item \textbf{Reuse existing formalizations}: The local \texttt{exchangeability}
+  package was essential. Building row kernels from the directing measure
+  machinery avoided reimplementing measure-theoretic foundations.
 \item \textbf{Uniqueness lemmas are load-bearing}: The directing measure
   uniqueness lemma (\S5.1) is small (100 lines) but enables the entire
   start-restricted factorization argument.

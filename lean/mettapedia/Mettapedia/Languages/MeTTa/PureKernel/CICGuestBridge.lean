@@ -5302,6 +5302,76 @@ inductive DIndGArtifactTerm where
       (scrutinee : DIndGArtifactTerm)
   | bad (reason : String)
 
+/-- Deterministic raw-numeral readout used by the current generated `Nat.rec`
+open-iota target. This is deliberately smaller than full term translation:
+it only recognizes constructor-built Nat scrutinees, exactly the argument shape
+needed to instantiate `GeneratedUnaryOpenIotaRule.target`. -/
+inductive DIndGArtifactNatValueReadout
+    (nameTranslates : DeclName → DeclName → Prop) :
+    DIndGArtifactTerm → PureTm 0 → Prop where
+  | zero {rawZero : DeclName}
+      (hZero : nameTranslates rawZero natRecZeroIotaObligation.ctorName) :
+      DIndGArtifactNatValueReadout nameTranslates
+        (.con rawZero) natZeroTerm
+  | succ {rawSucc : DeclName} {rawPred : DIndGArtifactTerm}
+      {pred : PureTm 0}
+      (hSucc : nameTranslates rawSucc natRecSuccIotaObligation.ctorName)
+      (hPred : DIndGArtifactNatValueReadout nameTranslates rawPred pred) :
+      DIndGArtifactNatValueReadout nameTranslates
+        (.app (.con rawSucc) rawPred) (.app natSuccTerm pred)
+
+theorem DIndGArtifactNatValueReadout.functional
+    {nameTranslates : DeclName → DeclName → Prop}
+    {raw : DIndGArtifactTerm} {left right : PureTm 0}
+    (hLeft : DIndGArtifactNatValueReadout nameTranslates raw left)
+    (hRight : DIndGArtifactNatValueReadout nameTranslates raw right) :
+    left = right := by
+  induction hLeft generalizing right with
+  | zero hZero =>
+      cases hRight with
+      | zero hZeroRight =>
+          rfl
+  | succ hSucc hPred ih =>
+      cases hRight with
+      | succ hSuccRight hPredRight =>
+          have hPredEq := ih hPredRight
+          simp [hPredEq]
+
+/-- Generated-iota target readout for raw artifact `IndG` terms.
+
+The target is no longer arbitrary: closed rules use their
+`GeneratedClosedIotaRule.target`, and the current unary-open frontier uses
+`GeneratedUnaryOpenIotaRule.target` instantiated by the constructor-built Nat
+predecessor readout above. -/
+inductive DIndGArtifactIndGTermTargetReadout
+    (nameTranslates : DeclName → DeclName → Prop)
+    (n : Nat)
+    (familyName : DeclName)
+    (_params : List DIndGArtifactTerm)
+    (_motive : DIndGArtifactTerm)
+    (_cases : List (DeclName × DIndGArtifactTerm))
+    (_indices : List DIndGArtifactTerm)
+    (scrutinee : DIndGArtifactTerm)
+    (_contract : FamilyRecursorDeclContract)
+    (pilot : GeneratedRecursorPilot) :
+    PureTm n → Prop where
+  | closed {rawCtor : DeclName} {rule : GeneratedClosedIotaRule}
+      (hScrutinee : scrutinee = .con rawCtor)
+      (hRule : rule ∈ generatedClosedIotaRules pilot)
+      (hCtor : nameTranslates rawCtor rule.obligation.ctorName) :
+      DIndGArtifactIndGTermTargetReadout
+        nameTranslates n familyName _params _motive _cases _indices scrutinee
+        _contract pilot (liftClosed rule.target)
+  | unaryOpen {rawCtor : DeclName} {rawPred : DIndGArtifactTerm}
+      {pred : PureTm 0} {rule : GeneratedUnaryOpenIotaRule}
+      (hScrutinee : scrutinee = .app (.con rawCtor) rawPred)
+      (hRule : rule ∈ generatedUnaryOpenIotaRules pilot)
+      (hCtor : nameTranslates rawCtor rule.obligation.ctorName)
+      (hPred : DIndGArtifactNatValueReadout nameTranslates rawPred pred) :
+      DIndGArtifactIndGTermTargetReadout
+        nameTranslates n familyName _params _motive _cases _indices scrutinee
+        _contract pilot (liftClosed (Substitution.inst0 pred rule.target))
+
 /-- Readout used when a raw artifact `IndG` term is lowered to the current
 Lean generated-recursor representation. The subterm plumbing is intentionally
 left to the canonical artifact extractor; this record only pins the family to a
@@ -5328,6 +5398,10 @@ structure DIndGArtifactIndGTermReadout
     contract.familyName = leanFamily
   pilot_generated :
     generatedRecursorPilot contract = some pilot
+  target_agrees :
+    DIndGArtifactIndGTermTargetReadout
+      nameTranslates n familyName _params _motive _cases _indices _scrutinee
+      contract pilot _target
 
 /-- Raw runtime artifact terms translated into the Lean declaration calculus.
 Most constructors map structurally. `IndG` maps only through an explicit

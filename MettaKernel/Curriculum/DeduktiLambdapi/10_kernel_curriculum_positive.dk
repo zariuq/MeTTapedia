@@ -1,0 +1,54 @@
+(; Positive Dedukti differential for the live MeTTaKernel LF curriculum.
+   This is a checker artifact, not a kernel behavior change. ;)
+
+o : Type.
+prf : o -> Type.
+imp : o -> o -> o.
+A : o.
+B : o.
+
+impI : A0:o -> B0:o -> (prf A0 -> prf B0) -> prf (imp A0 B0).
+impE : A0:o -> B0:o -> prf (imp A0 B0) -> prf A0 -> prf B0.
+
+def hol_self_imp : prf (imp A A) := impI A A (h:prf A => h).
+def hol_k : prf (imp A (imp B A)) :=
+  impI A (imp B A) (h:prf A => impI B A (g:prf B => h)).
+
+nat : Type.
+z : nat.
+s : nat -> nat.
+eqn : nat -> nat -> Type.
+rfl : x:nat -> eqn x x.
+
+def two : nat := s (s z).
+def rfl_z : eqn z z := rfl z.
+def id_o : o -> o := x:o => x.
+
+def NatRec : P:(nat -> Type) -> P z -> (n:nat -> P n -> P (s n)) -> n:nat -> P n.
+[P,zcase,scase] NatRec P zcase scase z --> zcase.
+[P,zcase,scase,n] NatRec P zcase scase (s n) --> scase n (NatRec P zcase scase n).
+
+def plus : nat -> nat -> nat :=
+  n:nat => m:nat => NatRec (x:nat => nat) m (k:nat => rec:nat => s rec) n.
+
+def plus_z_z : eqn (plus z z) z := rfl z.
+def natrec_z : eqn (NatRec (x:nat => nat) z (k:nat => rec:nat => s rec) z) z := rfl z.
+
+Id : A0:Type -> A0 -> A0 -> Type.
+refl : A0:Type -> x:A0 -> Id A0 x x.
+def J : A0:Type -> x:A0 -> P:(y:A0 -> Id A0 x y -> Type) ->
+  P x (refl A0 x) -> y:A0 -> p:Id A0 x y -> P y p.
+[A0,x,P,pr] J A0 x P pr x (refl A0 x) --> pr.
+
+def j_refl_z : Id nat z z :=
+  J nat z (y:nat => p:Id nat z y => Id nat z y) (refl nat z) z (refl nat z).
+
+set : Type.
+In : set -> set -> o.
+a : set.
+b : set.
+axMem : prf (In a b).
+axSym : prf (imp (In a b) (In b a)).
+
+def hotg_mem : prf (In a b) := axMem.
+def hotg_sym_from_axioms : prf (In b a) := impE (In a b) (In b a) axSym axMem.

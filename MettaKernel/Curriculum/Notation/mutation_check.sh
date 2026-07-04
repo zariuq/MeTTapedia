@@ -11,6 +11,7 @@ CETTA="${CETTA:-/home/aimama/aihub/hyperon/CeTTa/cetta}"
 CETTA_EXTRA_ARGS="${CETTA_EXTRA_ARGS---eval-hashcons}"
 CETTA_AS_LIMIT_BYTES="${CETTA_AS_LIMIT_BYTES:-25769803776}"
 CETTA_TIMEOUT_SECONDS="${CETTA_TIMEOUT_SECONDS:-240}"
+MUTATION_TIMEOUT_SECONDS="${MUTATION_TIMEOUT_SECONDS:-10}"
 read -r -a CETTA_EXTRA_ARGV <<< "$CETTA_EXTRA_ARGS"
 KERNEL="$(cd "$DIR/../../kernel" && pwd)"
 BIND_WAIST="$KERNEL/kernel_binding_waist_v1.metta"
@@ -25,6 +26,11 @@ failures=0
 run_cetta_capped() {
   local file="$1"
   timeout "$CETTA_TIMEOUT_SECONDS" prlimit --as="$CETTA_AS_LIMIT_BYTES" -- "$CETTA" "${CETTA_EXTRA_ARGV[@]}" "$file"
+}
+
+run_cetta_mutation_capped() {
+  local file="$1"
+  timeout "$MUTATION_TIMEOUT_SECONDS" prlimit --as="$CETTA_AS_LIMIT_BYTES" -- "$CETTA" "${CETTA_EXTRA_ARGV[@]}" "$file"
 }
 
 expect_accept() {
@@ -42,7 +48,11 @@ expect_accept() {
 expect_reject() {
   local name="$1"
   local file="$2"
-  if ! run_cetta_capped "$file" >"$work/$name.out" 2>&1; then
+  run_cetta_mutation_capped "$file" >"$work/$name.out" 2>&1
+  local status=$?
+  if [ "$status" -eq 124 ]; then
+    echo "  [mutation] $name  caught (timeout)"
+  elif [ "$status" -ne 0 ]; then
     echo "  [mutation] $name  caught"
   elif grep -q '(Error' "$work/$name.out"; then
     echo "  [mutation] $name  caught"

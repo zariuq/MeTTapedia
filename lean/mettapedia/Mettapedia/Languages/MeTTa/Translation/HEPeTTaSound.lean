@@ -238,25 +238,55 @@ The proof relies on a match correspondence lemma connecting HE's `simpleMatch`
 This lemma is stated below and is the key Phase 2 infrastructure. -/
 
 /-- Extract the original equation from `queryEquations` membership.
-    If `queryEquations` returns `(rhs', b)`, then there exists an original equation
-    `(= lhs_orig rhs_orig)` in `space.atoms` from which it was derived via freshening. -/
+    If `queryEquations` returns `(rhs', b)`, then there exists an indexed raw
+    equation `(= lhs_orig rhs_orig)` in `space.atoms` from which it was derived. -/
 theorem queryEquations_source (space : Space) (atom : Atom) (fuel : Nat)
     (rhs' : Atom) (qb : Bindings)
     (h : (rhs', qb) ∈ Mettapedia.Languages.MeTTa.HE.queryEquations space atom fuel) :
     ∃ lhs_orig rhs_orig idx,
-      (Atom.expression [.symbol "=", lhs_orig, rhs_orig], idx) ∈ space.atoms.zipIdx ∧
-      let (lhs_f, rhs_f) := Mettapedia.Languages.MeTTa.HE.freshenEquation idx lhs_orig rhs_orig fuel
-      rhs' = rhs_f ∧
-      Mettapedia.Languages.MeTTa.HE.simpleMatch lhs_f atom Bindings.empty fuel = some qb := by
-  simp only [Mettapedia.Languages.MeTTa.HE.queryEquations] at h
-  rw [List.mem_filterMap] at h
-  obtain ⟨⟨eq, idx⟩, hmem, hsome⟩ := h
-  simp only at hsome
-  split at hsome <;> simp_all
-  rename_i lhs_orig rhs_orig
-  split at hsome <;> simp_all
-  rename_i b' hmatch_eq
-  exact ⟨lhs_orig, rhs_orig, idx, hmem, hsome.1.symm, hmatch_eq⟩
+      (Atom.expression [.symbol "=", lhs_orig, rhs_orig], idx) ∈ space.atoms.zipIdx := by
+  cases fuel with
+  | zero =>
+      simp [Mettapedia.Languages.MeTTa.HE.queryEquations] at h
+  | succ n =>
+      rcases List.mem_flatMap.mp h with ⟨eqidx, heqidx, hout⟩
+      rcases eqidx with ⟨eq, idx⟩
+      cases eq with
+      | symbol s =>
+          simp at hout
+      | var v =>
+          simp at hout
+      | grounded g =>
+          simp at hout
+      | expression es =>
+          cases es with
+          | nil =>
+              simp at hout
+          | cons hd tl =>
+              cases hd with
+              | symbol s =>
+                  by_cases hs : s = "="
+                  · subst hs
+                    cases tl with
+                    | nil =>
+                        simp at hout
+                    | cons lhs_orig tl1 =>
+                        cases tl1 with
+                        | nil =>
+                            simp at hout
+                        | cons rhs_orig tl2 =>
+                            cases tl2 with
+                            | nil =>
+                                exact ⟨lhs_orig, rhs_orig, idx, by simpa using heqidx⟩
+                            | cons extra tl3 =>
+                                simp at hout
+                  · simp [hs] at hout
+              | var v =>
+                  simp at hout
+              | grounded g =>
+                  simp at hout
+              | expression es' =>
+                  simp at hout
 
 /-- **MettaCall equation step soundness**: If HE's `equation_match` fires
     (finding an equation in space whose LHS matches the atom), then there exists
@@ -282,7 +312,7 @@ theorem mettaCall_equation_step_sound
           ∃ pl pr, atomToPattern lhs_orig = some pl ∧
             atomToPattern rhs_orig = some pr ∧
             r.left = pl ∧ r.right = pr) := by
-  obtain ⟨lhs_orig, rhs_orig, idx, hmem, _, _⟩ := queryEquations_source space atom fuel rhs' queryBindings h_query
+  obtain ⟨lhs_orig, rhs_orig, idx, hmem⟩ := queryEquations_source space atom fuel rhs' queryBindings h_query
   have hmem_atoms : .expression [.symbol "=", lhs_orig, rhs_orig] ∈ space.atoms := by
     have ⟨_, hlt, heq⟩ := List.mem_zipIdx hmem
     simp at hlt

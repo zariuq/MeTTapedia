@@ -1,6 +1,11 @@
 ; =============================================================================
 ; kernel_signature_v0_petta.metta
 ;
+; Source anchors: kernel_signature_v0.metta and Curriculum/oracle_cases.tsv
+; KERN-SIG-ADMISSION, KERN-OBJECT-SIGNATURES, KERN-DEDUKTI-DIFFERENTIAL.
+; DIVERGES: hand-maintained PeTTa edition; underscore names avoid host predicate
+; collisions, but the signature discipline is unchanged.
+;
 ; A stricter GSLT-style kernel seed:
 ;   raw finite signatures -> admission check -> certificate checking.
 ;

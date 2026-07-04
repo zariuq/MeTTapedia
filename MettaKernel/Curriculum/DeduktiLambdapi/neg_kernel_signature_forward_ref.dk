@@ -1,0 +1,3 @@
+(; Negative differential: unchecked forward reference is rejected. ;)
+
+def bad_forward_ref : Missing.

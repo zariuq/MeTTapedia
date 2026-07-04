@@ -1,5 +1,10 @@
 ; ============================================================================
 ; LCFCore (PeTTa edition) -- a tiny LCF/HOL proof kernel as a MeTTa GSLT.
+; Source anchors: lcf_core.metta and Curriculum/oracle_cases.tsv
+; KERN-OBJECT-SIGNATURES plus HOL-side-by-side-showcase rows.
+; DIVERGES: hand-maintained PeTTa edition with collision-avoiding names; theorem
+; literal forgery remains an explicit trust-boundary warning.
+;
 ; Identical logic to lcf_core.metta, but every helper is given an underscore
 ; m_-prefixed name (m_union/m_remove/m_subst) so it does NOT collide with a
 ; SWI-Prolog builtin predicate -- in particular `union` collides with the static
