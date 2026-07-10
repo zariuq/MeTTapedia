@@ -51,6 +51,26 @@ def ErrorCode.toAtom : ErrorCode → Atom
 def mkError (source : Atom) (code : ErrorCode) : Atom :=
   Atom.error source code.toAtom
 
+/-- Construct an `(Error source message)` atom with a textual message payload.
+    Hyperon Experimental uses this surface for malformed minimal-instruction
+    parser errors such as bad-arity `unify`. -/
+def mkErrorMessage (source : Atom) (message : String) : Atom :=
+  Atom.error source (.symbol message)
+
+/-- Reference malformed-`unify` message from hyperon-experimental's
+    minimal-instruction parser. -/
+def unifyBadArityMessage : Atom → String
+  | .expression [.symbol "unify", .symbol a, .symbol p, .symbol t] =>
+      "expected: (unify <atom> <pattern> <then> <else>), found: " ++
+        "(unify " ++ a ++ " " ++ p ++ " " ++ t ++ ")"
+  | source =>
+      "expected: (unify <atom> <pattern> <then> <else>), found: " ++
+        toString source
+
+/-- Reference HE error for malformed primitive `unify` surfaces. -/
+def mkUnifyBadArityError (source : Atom) : Atom :=
+  mkErrorMessage source (unifyBadArityMessage source)
+
 /-! ## Bindings
 
 The HE spec (metta.md lines 562-576) defines bindings as a set of two kinds
@@ -140,6 +160,141 @@ def apply (b : Bindings) (a : Atom) (fuel : Nat) : Atom :=
 def applyDefault (b : Bindings) (a : Atom) : Atom :=
   b.apply a 100
 
+/-! ### Equality-aware resolution (G3b)
+
+The English spec treats a binding set as ORDER-FREE relations where `$x = $y`
+means the variables have equal-or-matchable values (metta.md line 393), and
+extracts query answers as "the value of the `$X` variable" from the full
+binding set.  Upstream (`hyperon-atom/src/matcher.rs`, `resolve_internal`)
+resolves a variable through its binding GROUP: a group carrying no value
+resolves to the group's representative variable.  `resolve`/`apply` above
+consult assignments only — the functions below add the equality-class layer.
+On equality-free bindings they agree with `resolve`/`apply`
+(`resolveFull_no_equalities`, `applyFull_no_equalities`). -/
+
+/-- One saturation pass of the symmetric equality closure: extend `acc` by
+    every variable one equality hop away from a member. -/
+def eqStep (eqs : List (String × String)) (acc : List String) : List String :=
+  eqs.foldl (fun acc p =>
+    let acc := if acc.contains p.1 && !acc.contains p.2 then acc ++ [p.2] else acc
+    if acc.contains p.2 && !acc.contains p.1 then acc ++ [p.1] else acc) acc
+
+/-- Iterated saturation for the equality closure. -/
+def eqClassAux (eqs : List (String × String)) : Nat → List String → List String
+  | 0, acc => acc
+  | n + 1, acc => eqClassAux eqs n (eqStep eqs acc)
+
+/-- Equality class of `v`: the symmetric-transitive closure of `equalities`
+    reachable from `v` (always contains `v`).  `2·|equalities| + 1` passes
+    saturate, since each productive pass adds a member and a class has at most
+    `2·|equalities| + 1` members. -/
+def eqClass (b : Bindings) (v : String) : List String :=
+  eqClassAux b.equalities (2 * b.equalities.length + 1) [v]
+
+/-- Every variable occurring in `equalities`, in first-appearance order.  This
+    is the insertion order upstream uses to pick a binding group's
+    representative (match orientation inserts the query-side variable first). -/
+def eqVarsInOrder (b : Bindings) : List String :=
+  b.equalities.foldl (fun acc p =>
+    let acc := if acc.contains p.1 then acc else acc ++ [p.1]
+    if acc.contains p.2 then acc else acc ++ [p.2]) []
+
+/-- Members of `v`'s equality class in insertion order (`[v]` when the class is
+    trivial).  Canonical: any two members of one class get the same list. -/
+def eqClassOrdered (b : Bindings) (v : String) : List String :=
+  match (b.eqVarsInOrder).filter (fun w => (b.eqClass v).contains w) with
+  | [] => [v]
+  | ordered => ordered
+
+/-- Upstream-style class representative: the earliest-inserted member of `v`'s
+    equality class (`v` itself when the class is trivial). -/
+def eqRepresentative (b : Bindings) (v : String) : String :=
+  (b.eqClassOrdered v).headD v
+
+/-- Equality-aware resolution: value lookup consults `v`'s whole equality
+    class; a valueless nontrivial class resolves to its representative
+    variable; a valueless trivial class stays unresolved. -/
+def resolveFull (b : Bindings) (v : String) (fuel : Nat) : Option Atom :=
+  match fuel with
+  | 0 => none
+  | n + 1 =>
+    match (b.eqClassOrdered v).findSome? b.lookup with
+    | some (.var w) => b.resolveFull w n
+    | some a => some a
+    | none =>
+      if b.eqClassOrdered v = [v] then none
+      else some (.var (b.eqRepresentative v))
+
+/-- Equality-aware `apply`: substitutes via `resolveFull`. -/
+def applyFull (b : Bindings) (a : Atom) (fuel : Nat) : Atom :=
+  match fuel with
+  | 0 => a
+  | n + 1 =>
+    match a with
+    | .var v =>
+      match b.resolveFull v n with
+      | some val => val
+      | none => a
+    | .expression es => .expression (es.map (b.applyFull · n))
+    | other => other
+
+/-- Equality-free bindings have trivial classes. -/
+theorem eqClassOrdered_no_equalities {b : Bindings} (h : b.equalities = [])
+    (v : String) : b.eqClassOrdered v = [v] := by
+  simp [eqClassOrdered, eqVarsInOrder, h]
+
+/-- On equality-free bindings, `resolveFull` is `resolve`. -/
+theorem resolveFull_no_equalities {b : Bindings} (h : b.equalities = []) :
+    ∀ (fuel : Nat) (v : String), b.resolveFull v fuel = b.resolve v fuel := by
+  intro fuel
+  induction fuel with
+  | zero => intro v; rfl
+  | succ n ih =>
+    intro v
+    rw [resolveFull, resolve, eqClassOrdered_no_equalities h]
+    cases hl : b.lookup v with
+    | none => simp [List.findSome?, hl]
+    | some a =>
+      cases a with
+      | var w => simp [List.findSome?, hl, ih]
+      | symbol s => simp [List.findSome?, hl]
+      | grounded g => simp [List.findSome?, hl]
+      | expression es => simp [List.findSome?, hl]
+
+/-- On equality-free bindings, `applyFull` is `apply`. -/
+theorem applyFull_no_equalities {b : Bindings} (h : b.equalities = []) :
+    ∀ (fuel : Nat) (a : Atom), b.applyFull a fuel = b.apply a fuel := by
+  intro fuel
+  induction fuel with
+  | zero => intro a; rfl
+  | succ n ih =>
+    intro a
+    cases a with
+    | var v =>
+        rw [applyFull, apply, resolveFull_no_equalities h]
+    | expression es =>
+        rw [applyFull, apply]
+        exact congrArg Atom.expression (List.map_congr_left fun a _ => ih a)
+    | symbol s => rfl
+    | grounded g => rfl
+
+/-- POSITIVE: a valueless equality class resolves every member to the shared
+    representative — the nonlinear-query case where assignment-only `apply`
+    diverges from upstream.  Here `{q = p, q = p2}` sends `(f $p $p2)` to
+    `(f $q $q)`. -/
+example :
+    ((Bindings.empty.addEquality "q" "p").addEquality "q" "p2").applyFull
+      (.expression [.symbol "f", .var "p", .var "p2"]) 10 =
+    .expression [.symbol "f", .var "q", .var "q"] := by decide
+
+/-- NEGATIVE (conservativity witness): on assignment-only bindings `applyFull`
+    changes nothing relative to `apply`. -/
+example :
+    (Bindings.empty.assign "x" (.symbol "a")).applyFull
+      (.expression [.symbol "f", .var "x", .var "y"]) 10 =
+    (Bindings.empty.assign "x" (.symbol "a")).apply
+      (.expression [.symbol "f", .var "x", .var "y"]) 10 := by decide
+
 /-- Check if bindings contain a variable loop.
     Ref: metta.md line 616 "filter(lambda $b: <$b doesn't have variable loops>)". -/
 def hasLoop (b : Bindings) : Bool :=
@@ -217,13 +372,13 @@ private theorem filterMap_decode_encode_assignments (xs : List (String × Atom))
     (xs.map encodeAssignment).filterMap decodeAssignment? = xs := by
   induction xs with
   | nil => rfl
-  | cons x xs ih => cases x; simp [List.map, encodeAssignment, decodeAssignment?, ih]
+  | cons x xs ih => cases x; simp [encodeAssignment, decodeAssignment?]
 
 private theorem filterMap_decode_encode_equalities (xs : List (String × String)) :
     (xs.map encodeEquality).filterMap decodeEquality? = xs := by
   induction xs with
   | nil => rfl
-  | cons x xs ih => cases x; simp [List.map, encodeEquality, decodeEquality?, ih]
+  | cons x xs ih => cases x; simp [encodeEquality, decodeEquality?]
 
 theorem ofAtom_toAtom (b : Bindings) : ofAtom? (toAtom b) = some b := by
   simp only [toAtom, ofAtom?]

@@ -17,6 +17,15 @@ rows=(
   "Admitted signature kernel|PeTTa|kernel_signature_v0_petta.metta|same claims; PeTTa adapter names/assertions"
   "Admitted lambda-Pi kernel|CeTTa|kernel_signature_lf_v0.metta|finite admitted signatures; checked definitions; dependent proof terms; axiom provenance; client of kernel_binding_waist_v1 with local de Bruijn replay teeth for index decrement/capture avoidance/binder-depth/shadowing"
   "Admitted lambda-Pi kernel|PeTTa|kernel_signature_lf_v0_petta.metta|same claims; PeTTa adapter names/assertions"
+  "Generated MeTTaAdd signature|CeTTa|kernel_signature_metta_add_generated_v0.metta|Lean-rendered table-to-kernel signature equals the proof-term fixture signature; generated rules/admission/metadata omissions checked"
+  "Generated MeTTaAdd signature|PeTTa|kernel_signature_metta_add_generated_v0_petta.metta|same generated signature sentinels and admission; full structural equality is CeTTa-side to avoid PeTTa whole-signature normalization blowup"
+  "Generated MeTTaRev signature|CeTTa|kernel_signature_metta_rev_generated_v0.metta|Lean-rendered reverse table-to-kernel signature; generated append/rev rules, generic congruence, admission, and metadata omissions checked"
+  "Generated MeTTaRev signature|PeTTa|kernel_signature_metta_rev_generated_v0_petta.metta|same generated reverse signature sentinels and admission under the PeTTa lexical adapter"
+  "MeTTaRev proof terms|CeTTa|kernel_signature_metta_rev_v0.metta|kernel-checked proof terms over the generated reverse signature: append [0] [1], rev [0], rev(rev [0]), EvalEq wrapper, and rejection teeth"
+  "MeTTaRev proof terms|PeTTa|kernel_signature_metta_rev_v0_petta.metta|same proof-term fixture under the PeTTa lexical adapter"
+  # The full rev(rev [0,1,2]) proof is kept as an optional slow fixture in
+  # kernel_signature_metta_rev_involution_slow_v0.metta.  It is kernel-checked
+  # separately with a larger timeout, not as part of this 240s parity gate.
   "Lambda-Pi natrec kernel|CeTTa|kernel_signature_lf_natrec_v0.metta|dependent NatRec; zero/successor iota; plus computes; rfl proves concrete plus-zero; client of kernel_binding_waist_v1, including NatRecF four-child non-binding traversal replay"
   "Lambda-Pi natrec kernel|PeTTa|kernel_signature_lf_natrec_v0_petta.metta|same claims; PeTTa adapter names/assertions"
   # RETIRED v3: the equality kernel (GEq/GRfl/GTransp/Transp + cong-s + plus-O-r) is SUBSUMED

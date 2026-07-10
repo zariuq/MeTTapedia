@@ -4204,6 +4204,47 @@ theorem mettaEval_binary_expr_mem_of_arg_singletons_and_root_eval_mem
   simp [hRootNotNotReducible, hRootNotSelf, hReturns]
   exact ⟨[], hFinal⟩
 
+/-- Closed binary expression fold when the root minimal interpreter reports
+`NotReducible`.
+
+After both closed arguments evaluate to singleton empty-binding readouts, a
+root `NotReducible` result means the full `mettaEval` loop keeps the evaluated
+expression itself.  This is the binary counterpart of the unary/part-fold
+`NotReducible` plumbing used by the verified examples. -/
+theorem mettaEval_binary_expr_eq_of_arg_singletons_and_root_notReducible
+    (env : MinEnv) (fuel : Nat) (st st₁ st₂ stRoot : St)
+    (op : String) (x y x' y' : Atom) (rootBnd : Bindings)
+    (hxClosed : x.vars = []) (hyClosed : y.vars = [])
+    (hx : mettaEval env fuel st [] x = ([(x', [])], st₁))
+    (hy : mettaEval env fuel st₁ [] y = ([(y', [])], st₂))
+    (hType : typeMismatch env st.world op [x, y] = none)
+    (hMask : argMask env op 2 = [true, true])
+    (hNoErr : (([x', y'].zip [x, y]).find?
+      (fun ho => ho.1.isError && ho.1 != ho.2)) = none)
+    (hRoot : interpretFuel env (fuel + 1) st₂
+        [evalItemNil (Atom.expr [Atom.sym op, x', y'])] [] =
+      ([(notReducibleA, rootBnd)], stRoot)) :
+    mettaEval env (fuel + 1) st [] (Atom.expr [Atom.sym op, x, y]) =
+      ([(Atom.expr [Atom.sym op, x', y'], [])], stRoot) := by
+  unfold mettaEval
+  rw [instantiate_nil (Atom.expr [Atom.sym op, x, y])]
+  simp only [hType, hMask, List.length_cons, List.length_nil, Nat.reduceAdd,
+    List.zip_cons_cons, List.zip_nil_right, List.foldl_cons, List.foldl_nil]
+  rw [hx]
+  simp [hxClosed, hyClosed, restrictBnd_nil_vars]
+  rw [hy]
+  simp only [List.map_cons, List.map_nil, List.foldl_cons, List.foldl_nil]
+  rw [hNoErr]
+  have hRoot' :
+      interpretFuel env (fuel + 1) st₂
+        [{ stack := atomToStack
+            (Atom.expr [Atom.sym "eval", Atom.expr [Atom.sym op, x', y']]) [], bnd := [] }] [] =
+      ([(notReducibleA, rootBnd)], stRoot) := by
+    simpa [evalItemNil] using hRoot
+  rw [hRoot']
+  have hnr : (notReducibleA == notReducibleA) = true := rfl
+  simp [hnr]
+
 /-! ## Closed quaternary expression fold -/
 
 /-- Four-argument expression fold where all argument evaluators return empty bindings, but the
@@ -4869,9 +4910,9 @@ theorem mettaEval_ternary_expr_mem_of_quoted_eval_quoted_and_root_eval_member_st
     parts0.map (fun part0 => (part0.1 ++ [instantiate part0.2 templ], part0.2))
   let part : List Atom × Bindings := ([p, atom', templ], [])
   have hArg1 : (mettaEval env fuel st [] atom).1 = argPairs := by
-    simpa [hArg] using congrArg Prod.fst hArg
+    simp [hArg]
   have hArg2 : (mettaEval env fuel st [] atom).2 = stArg := by
-    simpa [hArg] using congrArg Prod.snd hArg
+    simp [hArg]
   have hpart : part ∈ parts := by
     refine List.mem_map.mpr ?_
     refine ⟨([p, atom'], []), ?_, by simp [part, Metta.instantiate_nil]⟩
@@ -4914,10 +4955,10 @@ theorem mettaEval_ternary_expr_mem_of_quoted_eval_quoted_and_root_eval_member_st
     simpa [parts] using hprepGen [] parts0
   have hprep1 :
       (List.foldl appendTempl ([], stArg) parts0).1 = parts := by
-    simpa [hprep] using congrArg Prod.fst hprep
+    simp [hprep]
   have hprep2 :
       (List.foldl appendTempl ([], stArg) parts0).2 = stArg := by
-    simpa [hprep] using congrArg Prod.snd hprep
+    simp [hprep]
   unfold mettaEval
   rw [instantiate_nil (Atom.expr [Atom.sym op, p, atom, templ])]
   simp only [hType, hMask, List.length_cons, List.length_nil, Nat.reduceAdd,

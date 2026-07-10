@@ -4,7 +4,7 @@ import Mettapedia.Languages.MeTTa.HE.EvalSpec
 # HE MeTTa Total Evaluator
 
 Computable evaluator implementing the 6 mutual inductive relations from
-`EvalSpec.lean`. Fuel-indexed for totality; zero `partial def`, zero `sorry`.
+`EvalSpec.lean`. Fuel-indexed for totality; no `partial def` or placeholder proof commands.
 
 ## Architecture
 - 6 mutual functions mirroring the 6 EvalSpec relations
@@ -191,7 +191,7 @@ def mettaCall (space : Space) (dispatch : GroundedDispatch)
       let results := unifySuccessResults target pattern thenBranch b n
       if results.isEmpty then [(elseBranch, b)] else results
     | .expression (.symbol "unify" :: _) =>
-      [(mkError atom .incorrectNumberOfArguments, b)]
+      [(mkUnifyBadArityError atom, b)]
     | .expression [.symbol "switch-minimal", scrut, .expression branches] =>
       switchMinimalResults scrut branches b n
     | .expression (.symbol "switch-minimal" :: _) =>
@@ -332,9 +332,8 @@ example : mettaCall Space.empty GroundedDispatch.none
 example : mettaCall Space.empty GroundedDispatch.none
     (.expression [.symbol "unify", .symbol "A", .symbol "B", .symbol "yes"])
     Atom.undefinedType Bindings.empty 10 =
-    [(mkError
-        (.expression [.symbol "unify", .symbol "A", .symbol "B", .symbol "yes"])
-        .incorrectNumberOfArguments,
+    [(mkUnifyBadArityError
+        (.expression [.symbol "unify", .symbol "A", .symbol "B", .symbol "yes"]),
       Bindings.empty)] := rfl
 
 example : evalAtom unifyTypedSpace GroundedDispatch.none
@@ -346,7 +345,7 @@ example : evalAtom unifyTypedSpace GroundedDispatch.none
         .grounded (.int 0)])
     Atom.undefinedType Bindings.empty 12 =
     [(.expression [.symbol "+", .grounded (.int 1), .grounded (.int 2)],
-      Bindings.empty)] := by native_decide
+      Bindings.empty)] := rfl
 
 example : (mettaCall Space.empty GroundedDispatch.none
     (.expression

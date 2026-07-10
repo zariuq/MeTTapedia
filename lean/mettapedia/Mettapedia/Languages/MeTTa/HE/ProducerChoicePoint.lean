@@ -71,7 +71,7 @@ end ChoicePoint
 /-- **Theorem 1**: Save then rollback with no intermediate changes = identity. -/
 theorem save_rollback_identity (ss : SearchState α) :
     (ChoicePoint.save ss).rollback ss = ss := by
-  simp [ChoicePoint.save, ChoicePoint.rollback, Nat.sub_self]
+  simp [ChoicePoint.save, ChoicePoint.rollback]
 
 /-- **Theorem 2**: Bindings added after mark are discarded by rollback. -/
 theorem rollback_discards_new_bindings (ss : SearchState α) (v : String) (a : Atom) :

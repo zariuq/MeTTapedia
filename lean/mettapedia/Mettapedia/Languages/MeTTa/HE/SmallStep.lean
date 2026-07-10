@@ -119,6 +119,18 @@ def EquationRedex (space : Space) (d : GroundedDispatch) (fuel : Nat)
   HeadNotExecutable d a ∧
   ∃ p ∈ queryEquations space a fuel, p.2.hasLoop = false
 
+/-- Avoid-aware equation redex surface. This is the repaired companion to
+`EquationRedex` for runtimes that standardize equation-local variables apart
+from variables already visible in the queried atom before matching. It uses the
+same faithful `matchAtoms`/`mergeBindings` matcher as `queryEquations`, but
+with the stronger freshness discipline of `queryEquationsAgainstVisible`. -/
+def EquationRedexAgainstVisible (space : Space) (d : GroundedDispatch)
+    (fuel : Nat) (a : Atom) : Prop :=
+  (∃ es, a = .expression es) ∧
+  ¬ SpecialFormHead a ∧
+  HeadNotExecutable d a ∧
+  ∃ p ∈ queryEquationsAgainstVisible space a fuel, p.2.hasLoop = false
+
 /-! ## Steppability (positive polarity)
 
 `HESmallStep`'s leftmost-congruence rule needs "earlier siblings cannot
@@ -362,6 +374,48 @@ inductive HESmallStep (space : Space) (d : GroundedDispatch) (fuel : Nat) :
       (h_step : HESmallStep space d fuel a a') :
       HESmallStep space d fuel (.expression (pre ++ a :: post))
                                (.expression (pre ++ a' :: post))
+
+/-- Repaired equation-root step surface using `queryEquationsAgainstVisible`.
+
+This is intentionally a companion relation rather than an immediate replacement
+for `HESmallStep`: the existing coarse small-step development has many
+consumers that are still stated against `queryEquations`. New LeaTTa/HE bridge
+theorems can target this relation while the wider small-step migration proceeds
+deliberately. -/
+inductive HEEquationStepAgainstVisible
+    (space : Space) (d : GroundedDispatch) (fuel : Nat) :
+    Atom → Atom → Prop where
+  | equation_match {es : List Atom} {rhs : Atom} {qb : Bindings}
+      (h_not_special : ¬ SpecialFormHead (.expression es))
+      (h_not_grounded : HeadNotExecutable d (.expression es))
+      (h_query : (rhs, qb) ∈
+        queryEquationsAgainstVisible space (.expression es) fuel)
+      (h_no_loop : qb.hasLoop = false) :
+      HEEquationStepAgainstVisible space d fuel
+        (.expression es) (qb.apply rhs fuel)
+
+/-- Every repaired visible-avoid equation step exposes an avoid-aware equation
+redex. -/
+theorem heEquationStepAgainstVisible_to_redex
+    {space : Space} {d : GroundedDispatch} {fuel : Nat} {a b : Atom}
+    (h : HEEquationStepAgainstVisible space d fuel a b) :
+    EquationRedexAgainstVisible space d fuel a := by
+  cases h with
+  | equation_match h_not_special h_not_grounded h_query h_no_loop =>
+      exact ⟨⟨_, rfl⟩, h_not_special, h_not_grounded,
+        ⟨_, h_query, h_no_loop⟩⟩
+
+/-- Every avoid-aware equation redex has a repaired visible-avoid equation
+step. -/
+theorem equationRedexAgainstVisible_exists_step
+    {space : Space} {d : GroundedDispatch} {fuel : Nat} {a : Atom}
+    (h : EquationRedexAgainstVisible space d fuel a) :
+    ∃ b, HEEquationStepAgainstVisible space d fuel a b := by
+  rcases h with ⟨⟨es, rfl⟩, h_not_special, h_not_grounded,
+    ⟨⟨rhs, qb⟩, h_query, h_no_loop⟩⟩
+  exact ⟨qb.apply rhs fuel,
+    HEEquationStepAgainstVisible.equation_match
+      h_not_special h_not_grounded h_query h_no_loop⟩
 
 /-! ## Soundness of the steppability predicate -/
 

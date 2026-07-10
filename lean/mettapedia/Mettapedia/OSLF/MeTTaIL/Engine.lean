@@ -596,6 +596,103 @@ def fullRewriteToNormalFormWithPremises (lang : LanguageDef) (term : Pattern)
     (fuel : Nat := 1000) : Pattern :=
   fullRewriteToNormalFormWithPremisesUsing RelationEnv.empty lang term fuel
 
+/-! ## Generic Proof-Article Checking
+
+The reduction engine can also validate a finite proof article: every node names
+the rule witness to reduce, the resulting judgment, the theorem-shaped payload
+exported for parent nodes, and recursively checked child nodes.  This is an
+executable checker path over `LanguageDef.rewrites` plus a `RelationEnv`; it is
+not a metatheorem that the rewrite system is adequate for an external logic.
+-/
+
+def patternContainsWithFuel (fuel : Nat) (needle haystack : Pattern) : Bool :=
+  match fuel with
+  | 0 => false
+  | fuel + 1 =>
+      if haystack = needle then
+        true
+      else
+        match haystack with
+        | .bvar _ => false
+        | .fvar _ => false
+        | .apply _ args => args.any (patternContainsWithFuel fuel needle)
+        | .lambda _ body => patternContainsWithFuel fuel needle body
+        | .multiLambda _ _ body => patternContainsWithFuel fuel needle body
+        | .subst body repl =>
+            patternContainsWithFuel fuel needle body ||
+              patternContainsWithFuel fuel needle repl
+        | .collection _ elems _ => elems.any (patternContainsWithFuel fuel needle)
+
+def patternContains (needle haystack : Pattern) : Bool :=
+  patternContainsWithFuel 10000 needle haystack
+
+structure ProofArticle where
+  witness : Pattern
+  exported : Pattern
+  result : Pattern
+  children : List ProofArticle
+deriving Repr
+
+def checkProofArticleWithEnv (relEnv : RelationEnv) (lang : LanguageDef)
+    (fuel : Nat) : ProofArticle → Bool
+  | article =>
+      match fuel with
+      | 0 => false
+      | fuel + 1 =>
+          let localOk :=
+            (rewriteWithContextWithPremisesUsing relEnv lang article.witness).contains article.result
+          let exportOk :=
+            patternContains article.exported article.result
+          let childrenOk :=
+            article.children.all fun child =>
+              checkProofArticleWithEnv relEnv lang fuel child &&
+                patternContains child.exported article.witness
+          localOk && exportOk && childrenOk
+
+def checkProofArticle (lang : LanguageDef) (fuel : Nat) (article : ProofArticle) :
+    Bool :=
+  checkProofArticleWithEnv RelationEnv.empty lang fuel article
+
+/-- Prop-level contract for the executable proof-article checker.  A checked
+    node must be a valid local reduction, export the payload it claims, and
+    consume the exported payloads of its checked children in its own witness. -/
+def ProofArticleAcceptedWithEnv (relEnv : RelationEnv) (lang : LanguageDef) :
+    Nat → ProofArticle → Prop
+  | 0, _ => False
+  | fuel + 1, article =>
+      (article.result ∈ rewriteWithContextWithPremisesUsing relEnv lang article.witness ∧
+        patternContains article.exported article.result = true) ∧
+          ∀ child ∈ article.children,
+            ProofArticleAcceptedWithEnv relEnv lang fuel child ∧
+              patternContains child.exported article.witness = true
+
+/-- The Boolean checker is exact for its Prop-level contract.  This proves the
+    internal checking invariant; it does not identify the encoded rules with an
+    external HOL kernel. -/
+theorem checkProofArticleWithEnv_eq_true_iff_accepted
+    (relEnv : RelationEnv) (lang : LanguageDef) :
+    ∀ (fuel : Nat) (article : ProofArticle),
+      checkProofArticleWithEnv relEnv lang fuel article = true ↔
+        ProofArticleAcceptedWithEnv relEnv lang fuel article := by
+  intro fuel
+  induction fuel with
+  | zero =>
+      intro article
+      simp [checkProofArticleWithEnv, ProofArticleAcceptedWithEnv]
+  | succ fuel ih =>
+      intro article
+      cases article with
+      | mk witness exported result children =>
+          simp [checkProofArticleWithEnv, ProofArticleAcceptedWithEnv,
+            Bool.and_eq_true, List.all_eq_true, ih]
+
+theorem checkProofArticle_eq_true_iff_accepted (lang : LanguageDef) :
+    ∀ (fuel : Nat) (article : ProofArticle),
+      checkProofArticle lang fuel article = true ↔
+        ProofArticleAcceptedWithEnv RelationEnv.empty lang fuel article := by
+  intro fuel article
+  exact checkProofArticleWithEnv_eq_true_iff_accepted RelationEnv.empty lang fuel article
+
 /-! ## Executable Tests: Generic Engine on rhoCalc -/
 
 -- Helper: create common patterns (same as in RhoCalculus/Engine.lean)

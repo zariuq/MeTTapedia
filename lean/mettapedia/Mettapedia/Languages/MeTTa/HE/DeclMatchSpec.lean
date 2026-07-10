@@ -122,10 +122,63 @@ The first is the **keystone**: the simplified `simpleMatch` produces an oriented
 faithful spec requires the equality relation. This is the divergence the equation-query path must fix. -/
 
 /-- KEYSTONE: var/var oriented-assignment (what `simpleMatch` emits) is NOT a faithful match. -/
-example : ¬ MatchRel (.var "x") (.var "y") (Bindings.empty.assign "x" (.var "y")) := by
+theorem varVar_orientedAssignment_not_matchRel (a b : String) :
+    ¬ MatchRel (.var a) (.var b) (Bindings.empty.assign a (.var b)) := by
   intro h
   have hb := matchRel_varVar_inv h
   simp [Bindings.empty, Bindings.assign] at hb
+
+/-- The retired one-way matcher succeeds on an open/open query, but its oriented
+assignment output fails the faithful HE `match_atoms` relation. -/
+theorem simpleMatch_varVar_not_sound_for_matchRel :
+    ∃ out,
+      simpleMatch (.var "x") (.var "y") Bindings.empty 10 = some out ∧
+        ¬ MatchRel (.var "x") (.var "y") out := by
+  refine ⟨Bindings.empty.assign "x" (.var "y"), ?_, ?_⟩
+  · simp [simpleMatch, Bindings.lookup, Bindings.empty]
+  · exact varVar_orientedAssignment_not_matchRel "x" "y"
+
+/-- Query-orientation form of the keystone failure: the retired query path
+matches the equation LHS against the query atom, but the faithful public query
+surface is specified by `MatchRel query lhs _`.  On two variables, the retired
+oriented assignment therefore cannot be a faithful HE query match. -/
+theorem varVar_simpleMatchAssignment_not_queryMatchRel (pattern query : String) :
+    ¬ MatchRel (.var query) (.var pattern)
+        (Bindings.empty.assign pattern (.var query)) := by
+  intro h
+  have hb := matchRel_varVar_inv h
+  simp [Bindings.empty, Bindings.assign] at hb
+
+/-- One hit of the retired one-sided equation-query path, abstracted away from
+space scanning and freshening so the matcher bug is isolated. -/
+def RetiredSimpleMatchQueryHit
+    (query lhs rhs : Atom) (fuel : Nat) (hit : Atom × Bindings) : Prop :=
+  ∃ b, simpleMatch lhs query Bindings.empty fuel = some b ∧ hit = (rhs, b)
+
+/-- Faithfulness property the retired one-sided query path would need in order
+to implement HE's public equation-query matcher. -/
+def RetiredSimpleMatchQueryPathFaithfulOn
+    (query lhs rhs : Atom) (fuel : Nat) : Prop :=
+  ∀ hit, RetiredSimpleMatchQueryHit query lhs rhs fuel hit →
+    MatchRel query lhs hit.2
+
+/-- DONE-clause regression: the retired simpleMatch query path provably fails
+the faithful HE query matcher contract on the open/open query case.  It
+produces an oriented value assignment, while HE `match_atoms` requires a
+variable equality. -/
+theorem retiredSimpleMatch_varVar_query_path_fails_faithfulness :
+    ¬ RetiredSimpleMatchQueryPathFaithfulOn
+        (.var "y") (.var "x") (.symbol "rhs") 10 := by
+  intro hfaithful
+  let hit : Atom × Bindings :=
+    (.symbol "rhs", Bindings.empty.assign "x" (.var "y"))
+  have hhit : RetiredSimpleMatchQueryHit
+      (.var "y") (.var "x") (.symbol "rhs") 10 hit := by
+    refine ⟨Bindings.empty.assign "x" (.var "y"), ?_, rfl⟩
+    simp [simpleMatch, Bindings.lookup, Bindings.empty]
+  exact
+    varVar_simpleMatchAssignment_not_queryMatchRel "x" "y"
+      (hfaithful hit hhit)
 
 /-- Different symbols do not match under any binding. `[:410]` -/
 example {bb : Bindings} : ¬ MatchRel (.symbol "f") (.symbol "g") bb := by
@@ -644,6 +697,112 @@ private theorem AssignmentValuesNonVar.noVar {b : Bindings}
     lookup_some_mem_assignments hlookup
   simpa [Atom.isVarB] using hvals hmem
 
+/-- Structural key invariant: HE assignment lists do not contain duplicate
+    assignment keys. This mirrors the invariant documented on `Bindings`. -/
+private def AssignmentKeysNodup (b : Bindings) : Prop :=
+  (b.assignments.map Prod.fst).Nodup
+
+private theorem AssignmentKeysNodup.empty :
+    AssignmentKeysNodup Bindings.empty := by
+  simp [AssignmentKeysNodup, Bindings.empty]
+
+private theorem lookup_none_not_mem_assignment_keys {xs : List (String × Atom)}
+    {v : String} (h : List.lookup v xs = none) :
+    v ∉ xs.map Prod.fst := by
+  intro hmem
+  induction xs with
+  | nil =>
+      simp at hmem
+  | cons hd tl ih =>
+      rcases hd with ⟨k, a⟩
+      simp at hmem
+      by_cases hk : v == k
+      · simp [List.lookup_cons, hk] at h
+      · have htl : List.lookup v tl = none := by
+          simpa [List.lookup_cons, hk] using h
+        cases hmem with
+        | inl hvk =>
+            apply hk
+            simp [hvk]
+        | inr hmemtl =>
+            have hmemtl' : v ∈ tl.map Prod.fst := by
+              simpa using hmemtl
+            exact ih htl hmemtl'
+
+private theorem assignmentKeysNodup_filter
+    {xs : List (String × Atom)} {pred : (String × Atom) → Bool}
+    (hkeys : (xs.map Prod.fst).Nodup) :
+    ((xs.filter pred).map Prod.fst).Nodup := by
+  induction xs with
+  | nil =>
+      simp
+  | cons pair xs ih =>
+      rcases pair with ⟨k, a⟩
+      have hnotmem : k ∉ xs.map Prod.fst := by
+        simpa using (List.nodup_cons.mp hkeys).1
+      have hkeys' : (xs.map Prod.fst).Nodup := by
+        simpa using (List.nodup_cons.mp hkeys).2
+      by_cases hpred : pred (k, a)
+      · have hnotmem' : k ∉ (xs.filter pred).map Prod.fst := by
+          intro hkmem
+          rcases List.mem_map.mp hkmem with ⟨p, hp, hpk⟩
+          have hp' : p ∈ xs := List.mem_of_mem_filter hp
+          rcases p with ⟨k', a'⟩
+          simp at hpk
+          subst k'
+          exact hnotmem (List.mem_map.mpr ⟨(k, a'), hp', rfl⟩)
+        simpa [List.filter_cons, hpred] using
+          List.Nodup.cons hnotmem' (ih hkeys')
+      · simpa [List.filter_cons, hpred] using ih hkeys'
+
+private theorem AssignmentKeysNodup.assign
+    {b : Bindings} {v : String} {val : Atom}
+    (hkeys : AssignmentKeysNodup b) :
+    AssignmentKeysNodup (b.assign v val) := by
+  unfold AssignmentKeysNodup at hkeys ⊢
+  by_cases hbound : b.isBound v
+  · have hmap :
+        List.map (Prod.fst ∘ fun x => if x.1 = v then (x.1, val) else x) b.assignments =
+          List.map Prod.fst b.assignments := by
+      induction b.assignments with
+      | nil =>
+          rfl
+      | cons x xs ih =>
+          rcases x with ⟨k, a⟩
+          by_cases hk : k = v
+          · simp [hk, ih]
+          · simp [hk, ih]
+    simp [Bindings.assign, hbound]
+    rw [hmap]
+    exact hkeys
+  · have hlookup_none : b.lookup v = none := by
+      unfold Bindings.isBound at hbound
+      cases hlook : b.lookup v <;> simp [hlook] at hbound
+      case none =>
+        exact rfl
+    have hnotmem : v ∉ b.assignments.map Prod.fst :=
+      lookup_none_not_mem_assignment_keys hlookup_none
+    simp [Bindings.assign, hbound]
+    rw [← List.concat_eq_append]
+    exact List.Nodup.concat hnotmem hkeys
+
+private theorem AssignmentKeysNodup.removeAssignment
+    {b : Bindings} (hkeys : AssignmentKeysNodup b) (v : String) :
+    AssignmentKeysNodup (b.removeAssignment v) := by
+  unfold AssignmentKeysNodup at hkeys ⊢
+  simpa [Bindings.removeAssignment] using
+    (assignmentKeysNodup_filter
+      (xs := b.assignments) (pred := fun p => p.1 != v) hkeys)
+
+private theorem AssignmentKeysNodup.addEquality
+    {b : Bindings} (hkeys : AssignmentKeysNodup b) (a c : String) :
+    AssignmentKeysNodup (b.addEquality a c) := hkeys
+
+private theorem assignmentKeysNodup_of_singleton_assign
+    {v : String} {val : Atom} :
+    AssignmentKeysNodup (Bindings.empty.assign v val) :=
+  AssignmentKeysNodup.assign AssignmentKeysNodup.empty
+
 /-- Structural non-variable-valuedness is preserved by the executable HE
     matcher family. This is the real semantic invariant behind later
     loop-freedom: successful matcher/merge outputs never introduce a direct
@@ -940,6 +1099,274 @@ private theorem mergeBindings_assignmentsNonVar
     AssignmentValuesNonVar out :=
   (matcherAssignmentsNonVar fuel).2.2.1 h hleft hright
 
+/-- Assignment-key uniqueness is preserved by the same executable HE matcher
+    family. This is independent of groundness and of LeaTTa's binding order. -/
+private theorem matcherAssignmentsNodup :
+    ∀ fuel,
+      (∀ {l r : Atom} {b : Bindings},
+          b ∈ matchAtoms l r fuel →
+            AssignmentKeysNodup b) ∧
+      (∀ {ls rs : List Atom} {acc : List Bindings} {b : Bindings},
+          b ∈ matchAtomsList ls rs acc fuel →
+            (∀ seed ∈ acc, AssignmentKeysNodup seed) →
+            AssignmentKeysNodup b) ∧
+      (∀ {left right out : Bindings},
+          out ∈ mergeBindings left right fuel →
+            AssignmentKeysNodup left →
+            AssignmentKeysNodup right →
+            AssignmentKeysNodup out) ∧
+      (∀ {b : Bindings} {v : String} {val : Atom} {out : Bindings},
+          out ∈ addVarBinding b v val fuel →
+            AssignmentKeysNodup b →
+            AssignmentKeysNodup out) ∧
+      (∀ {b : Bindings} {a c : String} {out : Bindings},
+          out ∈ addVarEquality b a c fuel →
+            AssignmentKeysNodup b →
+            AssignmentKeysNodup out) := by
+  intro fuel
+  induction fuel with
+  | zero =>
+      refine ⟨?_, ?_, ?_, ?_, ?_⟩
+      · intro l r b h
+        simp [matchAtoms] at h
+      · intro ls rs acc b h
+        simp [matchAtomsList] at h
+      · intro left right out h
+        simp [mergeBindings] at h
+      · intro b v val out h
+        simp [addVarBinding] at h
+      · intro b a c out h
+        simp [addVarEquality] at h
+  | succ n ih =>
+      obtain ⟨ihAtoms, ihLists, ihMerge, ihBind, ihEq⟩ := ih
+      refine ⟨?_, ?_, ?_, ?_, ?_⟩
+      · intro l r b h
+        cases l with
+        | symbol s =>
+            cases r with
+            | symbol t =>
+                by_cases hst : s = t
+                · subst hst
+                  simp [matchAtoms, getMetaType, Atom.symbolType] at h
+                  have hb : b = Bindings.empty := by
+                    simpa using h.1
+                  subst hb
+                  exact AssignmentKeysNodup.empty
+                · simp [matchAtoms, getMetaType, Atom.symbolType, hst] at h
+            | var v =>
+                simp [matchAtoms, getMetaType, Atom.symbolType, Atom.variableType] at h
+                have hb : b = Bindings.empty.assign v (.symbol s) := by
+                  simpa using h.1
+                subst hb
+                exact assignmentKeysNodup_of_singleton_assign
+            | grounded g =>
+                simp [matchAtoms, getMetaType, Atom.symbolType, Atom.groundedType] at h
+            | expression es =>
+                simp [matchAtoms, getMetaType, Atom.symbolType, Atom.expressionType] at h
+        | var v =>
+            cases r with
+            | symbol s =>
+                simp [matchAtoms, getMetaType, Atom.symbolType, Atom.variableType] at h
+                have hb : b = Bindings.empty.assign v (.symbol s) := by
+                  simpa using h.1
+                subst hb
+                exact assignmentKeysNodup_of_singleton_assign
+            | var w =>
+                simp [matchAtoms, getMetaType, Atom.variableType] at h
+                have hb : b = Bindings.empty.addEquality v w := by
+                  simpa using h.1
+                subst hb
+                exact AssignmentKeysNodup.empty
+            | grounded g =>
+                simp [matchAtoms, getMetaType, Atom.variableType, Atom.groundedType] at h
+                have hb : b = Bindings.empty.assign v (.grounded g) := by
+                  simpa using h.1
+                subst hb
+                exact assignmentKeysNodup_of_singleton_assign
+            | expression es =>
+                simp [matchAtoms, getMetaType, Atom.variableType, Atom.expressionType] at h
+                have hb : b = Bindings.empty.assign v (.expression es) := by
+                  simpa using h.1
+                subst hb
+                exact assignmentKeysNodup_of_singleton_assign
+        | grounded g =>
+            cases r with
+            | symbol s =>
+                simp [matchAtoms, getMetaType, Atom.symbolType, Atom.groundedType] at h
+            | var v =>
+                simp [matchAtoms, getMetaType, Atom.variableType, Atom.groundedType] at h
+                have hb : b = Bindings.empty.assign v (.grounded g) := by
+                  simpa using h.1
+                subst hb
+                exact assignmentKeysNodup_of_singleton_assign
+            | grounded g' =>
+                by_cases hgg : g = g'
+                · subst hgg
+                  simp [matchAtoms, getMetaType, Atom.groundedType] at h
+                  have hb : b = Bindings.empty := by
+                    simpa using h.1
+                  subst hb
+                  exact AssignmentKeysNodup.empty
+                · simp [matchAtoms, getMetaType, Atom.groundedType, hgg] at h
+            | expression es =>
+                simp [matchAtoms, getMetaType, Atom.expressionType, Atom.groundedType] at h
+        | expression ls =>
+            cases r with
+            | symbol s =>
+                simp [matchAtoms, getMetaType, Atom.symbolType, Atom.expressionType] at h
+            | var v =>
+                simp [matchAtoms, getMetaType, Atom.variableType, Atom.expressionType] at h
+                have hb : b = Bindings.empty.assign v (.expression ls) := by
+                  simpa using h.1
+                subst hb
+                exact assignmentKeysNodup_of_singleton_assign
+            | grounded g =>
+                simp [matchAtoms, getMetaType, Atom.expressionType, Atom.groundedType] at h
+            | expression rs =>
+                by_cases hlen : ls.length = rs.length
+                · simp [matchAtoms, getMetaType, Atom.expressionType, hlen] at h
+                  rcases h with ⟨hList, _⟩
+                  exact ihLists hList (by
+                    intro seed hseed
+                    simp at hseed
+                    subst seed
+                    exact AssignmentKeysNodup.empty)
+                · simp [matchAtoms, getMetaType, Atom.expressionType, hlen] at h
+      · intro ls rs acc b h hacc
+        cases ls with
+        | nil =>
+            cases rs with
+            | nil =>
+                simp [matchAtomsList] at h
+                exact hacc _ h
+            | cons r rs =>
+                simp [matchAtomsList] at h
+        | cons l ls =>
+            cases rs with
+            | nil =>
+                simp [matchAtomsList] at h
+            | cons r rs =>
+                simp [matchAtomsList] at h
+                have hnext :
+                    ∀ seed ∈
+                      acc.flatMap
+                        (fun a =>
+                          (matchAtoms l r n).flatMap
+                            (fun mb => mergeBindings a mb n)),
+                      AssignmentKeysNodup seed := by
+                  intro seed hseed
+                  rcases List.mem_flatMap.mp hseed with ⟨a, ha, hseed⟩
+                  rcases List.mem_flatMap.mp hseed with ⟨mb, hmb, hmerge⟩
+                  exact ihMerge hmerge (hacc a ha) (ihAtoms hmb)
+                exact ihLists h hnext
+      · intro left right out h hleft _hright
+        simp only [mergeBindings] at h
+        have hAssignFold :
+            ∀ (assigns : List (String × Atom)) {acc out},
+              out ∈ List.foldl
+                (fun (acc : List Bindings) (v, val) =>
+                  List.flatMap (fun b => addVarBinding b v val n) acc) acc assigns →
+              (∀ b ∈ acc, AssignmentKeysNodup b) →
+              AssignmentKeysNodup out := by
+          intro assigns
+          induction assigns with
+          | nil =>
+              intro acc out hout hacc
+              exact hacc out hout
+          | cons p ps ihPs =>
+              intro acc out hout hacc
+              rcases p with ⟨v, val⟩
+              simp only [List.foldl_cons] at hout
+              have hnext :
+                  ∀ b ∈ acc.flatMap (fun bd => addVarBinding bd v val n),
+                    AssignmentKeysNodup b := by
+                intro b hb
+                rcases List.mem_flatMap.mp hb with ⟨seed, hseed, hadd⟩
+                exact ihBind hadd (hacc seed hseed)
+              exact ihPs hout hnext
+        have hEqFold :
+            ∀ (eqs : List (String × String)) {acc : List Bindings} {out : Bindings},
+              out ∈ List.foldl
+                (fun (acc : List Bindings) (a, c) =>
+                  List.flatMap (fun bd => addVarEquality bd a c n) acc) acc eqs →
+              (∀ b ∈ acc, AssignmentKeysNodup b) →
+              AssignmentKeysNodup out := by
+          intro eqs
+          induction eqs with
+          | nil =>
+              intro acc out hout hacc
+              exact hacc out hout
+          | cons p ps ihPs =>
+              intro acc out hout hacc
+              rcases p with ⟨a, c⟩
+              simp only [List.foldl_cons] at hout
+              have hnext :
+                  ∀ b ∈ acc.flatMap (fun bd => addVarEquality bd a c n),
+                    AssignmentKeysNodup b := by
+                intro b hb
+                rcases List.mem_flatMap.mp hb with ⟨seed, hseed, hadd⟩
+                exact ihEq hadd (hacc seed hseed)
+              exact ihPs hout hnext
+        have hafter :
+            ∀ b ∈ right.assignments.foldl
+              (fun acc (v, val) =>
+                acc.flatMap fun bd => addVarBinding bd v val n) [left],
+              AssignmentKeysNodup b := by
+          intro b hb
+          exact
+            hAssignFold right.assignments hb
+              (by
+                intro b hb
+                simp at hb
+                subst b
+                exact hleft)
+        exact hEqFold right.equalities h hafter
+      · intro b v val out h hb
+        cases hlookup : b.lookup v with
+        | none =>
+            simp [addVarBinding, hlookup] at h
+            subst out
+            exact AssignmentKeysNodup.assign hb
+        | some prev =>
+            by_cases hpeq : prev = val
+            · simp [addVarBinding, hlookup, hpeq] at h
+              subst out
+              exact hb
+            · simp [addVarBinding, hlookup, hpeq] at h
+              rcases h with ⟨mb, hmb, hmerge⟩
+              exact ihMerge hmerge hb (ihAtoms hmb)
+      · intro b a c out h hb
+        cases hA : b.lookup a <;> cases hC : b.lookup c <;>
+          simp [addVarEquality, hA, hC] at h
+        · subst out
+          exact
+            AssignmentKeysNodup.addEquality
+              (AssignmentKeysNodup.removeAssignment hb c) a c
+        · subst out
+          exact
+            AssignmentKeysNodup.addEquality
+              (AssignmentKeysNodup.removeAssignment hb c) a c
+        · subst out
+          exact
+            AssignmentKeysNodup.addEquality
+              (AssignmentKeysNodup.removeAssignment hb c) a c
+        · rename_i av cv
+          by_cases hEq : av = cv
+          · simp [hEq] at h
+            subst out
+            exact
+              AssignmentKeysNodup.addEquality
+                (AssignmentKeysNodup.removeAssignment hb c) a c
+          · simp [hEq] at h
+            rcases h with ⟨mb, hmb, hmerge⟩
+            exact ihMerge hmerge hb (ihAtoms hmb)
+
+private theorem matchAtoms_assignmentKeysNodup
+    {l r : Atom} {b : Bindings} {fuel : Nat}
+    (h : b ∈ matchAtoms l r fuel) :
+    AssignmentKeysNodup b :=
+  (matcherAssignmentsNodup fuel).1 h
+
 mutual
 
 private theorem MatchRel.assignmentsNonVar
@@ -1200,6 +1627,22 @@ theorem matchAtomsList_complete {ls rs : List Atom} {b : Bindings}
     (h : MatchListRel ls rs b) :
     ∃ fuel, b ∈ matchAtomsList ls rs [Bindings.empty] fuel :=
   matchListAcc_completeWitness h AssignmentValuesNonVar.empty
+
+/-- Executable `matchAtoms` never emits a value assignment whose payload is a
+bare variable. Variable-variable matches are represented by equality relations,
+not assignment values. -/
+theorem matchAtoms_noVarAssignmentValues {l r : Atom} {b : Bindings} {fuel : Nat}
+    (h : b ∈ matchAtoms l r fuel) :
+    ∀ ⦃v x⦄, b.lookup v = some (.var x) → False :=
+  MatchRel.noVar (matchAtoms_sound h)
+
+/-- Executable `matchAtoms` preserves HE's documented assignment-key
+uniqueness invariant. Equality constraints live in the equality relation and do
+not duplicate assignment keys. -/
+theorem matchAtoms_assignmentsNodup {l r : Atom} {b : Bindings} {fuel : Nat}
+    (h : b ∈ matchAtoms l r fuel) :
+    (b.assignments.map Prod.fst).Nodup :=
+  matchAtoms_assignmentKeysNodup h
 
 /-- Fuel monotonicity for the executable matcher: once a binding appears at some
     fuel budget, it remains present at any larger budget obtained by adding

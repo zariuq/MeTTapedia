@@ -108,6 +108,10 @@ import Mettapedia.CategoryTheory.GeneralizedOpenMaps
 
 -- Information theory (combinatorial bounds)
 import Mettapedia.InformationTheory.BinomialEntropy
+
+-- Machine learning
+import Mettapedia.MachineLearning
+
 -- Computability
 import Mettapedia.Computability.KolmogorovComplexity.Basic
 -- import Mettapedia.Computability.KolmogorovComplexity.Prefix  -- WIP (Phase 2)
@@ -357,3 +361,4 @@ import Mettapedia.GSLT.Meredith.InteractiveCostBridge
 import Mettapedia.GSLT.Life.AssemblyTheory
 -- Replication fixed-point (depends on `RhoCalculus/DerivedRepNu`, repaired above).
 import Mettapedia.GSLT.Life.ReplicationFixedPoint
+import Mettapedia.GSLT.LanguageDef.HOLKernelProfiles

@@ -4245,7 +4245,7 @@ private theorem evalAtom_let_head_typed
       Atom.symbolType, Atom.undefinedType, Atom.variableType]
   · rw [typeCast, h_types]
     have hmatch : matchAtoms letFunctionType letFunctionType 10 = [Bindings.empty] := by
-      native_decide
+      decide
     have hmerge : mergeBindings Bindings.empty Bindings.empty 10 = [Bindings.empty] := by
       simpa using mergeBindings_empty_right Bindings.empty 9
     have hflat :
@@ -4258,7 +4258,7 @@ private theorem evalAtom_let_head_typed
       have hcond :
           (letFunctionType == Atom.undefinedType || letFunctionType == Atom.atomType ||
               letFunctionType == Atom.undefinedType || letFunctionType == Atom.atomType) = false := by
-        native_decide
+        decide
       simp [hcond, hflat]
     rw [typeCast.typeCastLoop, hmt]
     simp
@@ -4278,7 +4278,7 @@ private theorem evalAtom_let_head_typed_seeded
       Atom.symbolType, Atom.undefinedType, Atom.variableType]
   · rw [typeCast, h_types]
     have hmatch : matchAtoms letFunctionType letFunctionType 10 = [Bindings.empty] := by
-      native_decide
+      decide
     have hmerge : mergeBindings seed Bindings.empty 10 = [seed] := by
       simpa using mergeBindings_empty_right seed 9
     have hflat :
@@ -4291,7 +4291,7 @@ private theorem evalAtom_let_head_typed_seeded
       have hcond :
           (letFunctionType == Atom.undefinedType || letFunctionType == Atom.atomType ||
               letFunctionType == Atom.undefinedType || letFunctionType == Atom.atomType) = false := by
-        native_decide
+        decide
       simp [hcond, hflat]
     rw [typeCast.typeCastLoop, hmt]
     simp
@@ -4318,7 +4318,7 @@ private theorem evalAtom_unify_head_typed_seeded
       Atom.symbolType, Atom.undefinedType, Atom.variableType]
   · rw [typeCast, h_types]
     have hmatch : matchAtoms unifyFunctionType unifyFunctionType 10 = [Bindings.empty] := by
-      native_decide
+      decide
     have hmerge : mergeBindings seed Bindings.empty 10 = [seed] := by
       simpa using mergeBindings_empty_right seed 9
     have hflat :
@@ -4331,7 +4331,7 @@ private theorem evalAtom_unify_head_typed_seeded
       have hcond :
           (unifyFunctionType == Atom.undefinedType || unifyFunctionType == Atom.atomType ||
               unifyFunctionType == Atom.undefinedType || unifyFunctionType == Atom.atomType) = false := by
-        native_decide
+        decide
       simp [hcond, hflat]
     rw [typeCast.typeCastLoop, hmt]
     simp
@@ -4594,7 +4594,7 @@ theorem evalAtom_realizes_let_subst_ground_seeded_typed
       Atom.undefinedType seed
       (merged.applyDefault body, merged) := by
   have h_empty_nerr : Atom.empty ≠ Atom.symbol "Error" := by
-    native_decide
+    decide
   simpa [unifyExpr] using
     evalAtom_realizes_unify_match_ground_seeded_typed
       (space := space) (d := d) (seed := seed) (mb := mb) (merged := merged)
@@ -5475,23 +5475,23 @@ theorem selectSwitchTemplateCoarse_of_prefix_match
         exact h_earlier branch (by simp [hmem]) pt' template' hshape
       cases h_head : head with
       | symbol s =>
-          simp [selectSwitchTemplateCoarse, selectSwitchResultPair?, h_head]
+          simp [selectSwitchTemplateCoarse, selectSwitchResultPair?]
           exact ih h_rest
       | var v =>
-          simp [selectSwitchTemplateCoarse, selectSwitchResultPair?, h_head]
+          simp [selectSwitchTemplateCoarse, selectSwitchResultPair?]
           exact ih h_rest
       | grounded g =>
-          simp [selectSwitchTemplateCoarse, selectSwitchResultPair?, h_head]
+          simp [selectSwitchTemplateCoarse, selectSwitchResultPair?]
           exact ih h_rest
       | expression hs =>
           cases hs with
           | nil =>
-              simp [selectSwitchTemplateCoarse, selectSwitchResultPair?, h_head]
+              simp [selectSwitchTemplateCoarse, selectSwitchResultPair?]
               exact ih h_rest
           | cons a hs1 =>
               cases hs1 with
               | nil =>
-                  simp [selectSwitchTemplateCoarse, selectSwitchResultPair?, h_head]
+                  simp [selectSwitchTemplateCoarse, selectSwitchResultPair?]
                   exact ih h_rest
               | cons b hs2 =>
                   cases hs2 with
@@ -5502,7 +5502,7 @@ theorem selectSwitchTemplateCoarse_of_prefix_match
                       simp [selectSwitchTemplateCoarse, selectSwitchResultPair?, h_fail]
                       exact ih h_rest
                   | cons c hs3 =>
-                      simp [selectSwitchTemplateCoarse, selectSwitchResultPair?, h_head]
+                      simp [selectSwitchTemplateCoarse, selectSwitchResultPair?]
                       exact ih h_rest
 
 /-- Indexed companion to `selectSwitchTemplateCoarse_of_prefix_match`.
@@ -5584,23 +5584,23 @@ theorem selectSwitchTemplateCoarse_notReducible_of_all_fail
         exact h_all_fail branch (by simp [hmem]) pt template hshape
       cases h_head : head with
       | symbol s =>
-          simp [selectSwitchTemplateCoarse, selectSwitchResultPair?, h_head]
+          simp [selectSwitchTemplateCoarse, selectSwitchResultPair?]
           exact ih h_rest
       | var v =>
-          simp [selectSwitchTemplateCoarse, selectSwitchResultPair?, h_head]
+          simp [selectSwitchTemplateCoarse, selectSwitchResultPair?]
           exact ih h_rest
       | grounded g =>
-          simp [selectSwitchTemplateCoarse, selectSwitchResultPair?, h_head]
+          simp [selectSwitchTemplateCoarse, selectSwitchResultPair?]
           exact ih h_rest
       | expression hs =>
           cases hs with
           | nil =>
-              simp [selectSwitchTemplateCoarse, selectSwitchResultPair?, h_head]
+              simp [selectSwitchTemplateCoarse, selectSwitchResultPair?]
               exact ih h_rest
           | cons a hs1 =>
               cases hs1 with
               | nil =>
-                  simp [selectSwitchTemplateCoarse, selectSwitchResultPair?, h_head]
+                  simp [selectSwitchTemplateCoarse, selectSwitchResultPair?]
                   exact ih h_rest
               | cons b hs2 =>
                   cases hs2 with
@@ -5612,7 +5612,7 @@ theorem selectSwitchTemplateCoarse_notReducible_of_all_fail
                       simp [selectSwitchTemplateCoarse, selectSwitchResultPair?, h_head_fail]
                       exact ih h_rest
                   | cons c hs3 =>
-                      simp [selectSwitchTemplateCoarse, selectSwitchResultPair?, h_head]
+                      simp [selectSwitchTemplateCoarse, selectSwitchResultPair?]
                       exact ih h_rest
 
 /-- Indexed companion to `selectSwitchTemplateCoarse_notReducible_of_all_fail`.
@@ -6030,7 +6030,7 @@ private theorem evalAtom_switchMinimal_head_typed
   · simp [switchBinaryFunctionType, getMetaType, Atom.atomType,
       Atom.symbolType, Atom.variableType]
   · rw [typeCast, h_types]
-    native_decide
+    decide
 
 /-- If the space presents `switch-internal` with exactly its stdlib function
 type, then the official type-cast path evaluates the head symbol to itself at
@@ -6044,7 +6044,7 @@ private theorem evalAtom_switchInternal_head_typed
   · simp [switchBinaryFunctionType, getMetaType, Atom.atomType,
       Atom.symbolType, Atom.variableType]
   · rw [typeCast, h_types]
-    native_decide
+    decide
 
 /-- Any non-empty, non-error-headed expression can be evaluated against the
 expected type `Expression`, producing itself with unchanged bindings. -/
@@ -6224,7 +6224,7 @@ theorem evalAtom_absorbs_switchMinimal_shell
       (switchMinimalExpr scrut (headBranch :: tail), Bindings.empty) final fuel
       rfl h_op_type ?_ succs h_check h_check_b ?_ h_interp h_call
     · rfl
-    · native_decide
+    · decide
 
 /-- Honest direct outer shell for exact-shape `switch-minimal`: once the
 typed function-path checks have admitted the surface form, any executable
@@ -6345,7 +6345,7 @@ theorem evalAtom_absorbs_switchInternal_shell
       (switchInternalExpr scrut headBranch tail, Bindings.empty) final fuel
       rfl h_op_type ?_ succs h_check h_check_b ?_ h_interp h_call
     · rfl
-    · native_decide
+    · decide
 
 /-! ## F2b: `switch-internal` Evaluator Boundary
 

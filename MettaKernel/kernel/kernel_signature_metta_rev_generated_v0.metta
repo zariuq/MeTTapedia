@@ -1,0 +1,75 @@
+; =============================================================================
+; kernel_signature_metta_rev_generated_v0.metta
+;
+; Classification: derived/generated.
+;
+; Generated from revDeclsKernelReachabilitySig via the generic LF-signature
+; renderer.  This is the reverse-table side of the one-table bridge: the
+; self-interpreter table, LanguageDef adapter, and kernel reachability
+; signature share the same source declarations.  This file does not define a
+; checker and does not validate traces.
+; =============================================================================
+
+!(import! &self kernel_signature_lf_v0)
+
+(= (mr-generated-metta-rev-sig)
+(SCons (DConst __ldName (Srt type))
+(SCons (DConst __ldIndex (Srt type))
+(SCons (DConst __ldPattern (Srt type))
+(SCons (DConst __ldPatternList (Srt type))
+(SCons (DConst __ldNameList (Srt type))
+(SCons (DConst __ldColl (Srt type))
+(SCons (DConst __ldNoName (Con __ldName))
+(SCons (DConst __ldNameNil (Con __ldNameList))
+(SCons (DConst __ldNameCons (Pi (Con __ldName) (Pi (Con __ldNameList) (Con __ldNameList))))
+(SCons (DConst __ldPNil (Con __ldPatternList))
+(SCons (DConst __ldPCons (Pi (Con __ldPattern) (Pi (Con __ldPatternList) (Con __ldPatternList))))
+(SCons (DConst __ldPBVar (Pi (Con __ldIndex) (Con __ldPattern)))
+(SCons (DConst __ldPFVar (Pi (Con __ldName) (Con __ldPattern)))
+(SCons (DConst __ldPApply (Pi (Con __ldName) (Pi (Con __ldPatternList) (Con __ldPattern))))
+(SCons (DConst __ldPLambda (Pi (Con __ldName) (Pi (Con __ldPattern) (Con __ldPattern))))
+(SCons (DConst __ldPMultiLambda (Pi (Con __ldIndex) (Pi (Con __ldNameList) (Pi (Con __ldPattern) (Con __ldPattern)))))
+(SCons (DConst __ldPSubst (Pi (Con __ldPattern) (Pi (Con __ldPattern) (Con __ldPattern))))
+(SCons (DConst __ldPCollection (Pi (Con __ldColl) (Pi (Con __ldPatternList) (Pi (Con __ldName) (Con __ldPattern)))))
+(SCons (DConst __ldCollVec (Con __ldColl))
+(SCons (DConst __ldCollHashBag (Con __ldColl))
+(SCons (DConst __ldCollHashSet (Con __ldColl))
+(SCons (DConst __ldEquationRule (Pi (Con __ldPattern) (Pi (Con __ldPattern) (Srt type))))
+(SCons (DConst __ldRewriteRule (Pi (Con __ldPattern) (Pi (Con __ldPattern) (Srt type))))
+(SCons (DConst MTerm (Srt type))
+(SCons (DConst name:Z (Con __ldName))
+(SCons (DConst name:S (Con __ldName))
+(SCons (DConst name:listAppend (Con __ldName))
+(SCons (DConst name:Nil (Con __ldName))
+(SCons (DConst name:ys (Con __ldName))
+(SCons (DConst name:Cons (Con __ldName))
+(SCons (DConst name:x (Con __ldName))
+(SCons (DConst name:xs (Con __ldName))
+(SCons (DConst name:rev (Con __ldName))
+(SCons (DConst rewrite:append-nil (App (App (Con __ldRewriteRule) (App (App (Con __ldPApply) (Con name:listAppend)) (App (App (Con __ldPCons) (App (App (Con __ldPApply) (Con name:Nil)) (Con __ldPNil))) (App (App (Con __ldPCons) (App (Con __ldPFVar) (Con name:ys))) (Con __ldPNil))))) (App (Con __ldPFVar) (Con name:ys))))
+(SCons (DConst rewrite:append-cons (App (App (Con __ldRewriteRule) (App (App (Con __ldPApply) (Con name:listAppend)) (App (App (Con __ldPCons) (App (App (Con __ldPApply) (Con name:Cons)) (App (App (Con __ldPCons) (App (Con __ldPFVar) (Con name:x))) (App (App (Con __ldPCons) (App (Con __ldPFVar) (Con name:xs))) (Con __ldPNil))))) (App (App (Con __ldPCons) (App (Con __ldPFVar) (Con name:ys))) (Con __ldPNil))))) (App (App (Con __ldPApply) (Con name:Cons)) (App (App (Con __ldPCons) (App (Con __ldPFVar) (Con name:x))) (App (App (Con __ldPCons) (App (App (Con __ldPApply) (Con name:listAppend)) (App (App (Con __ldPCons) (App (Con __ldPFVar) (Con name:xs))) (App (App (Con __ldPCons) (App (Con __ldPFVar) (Con name:ys))) (Con __ldPNil))))) (Con __ldPNil))))))
+(SCons (DConst rewrite:rev-nil (App (App (Con __ldRewriteRule) (App (App (Con __ldPApply) (Con name:rev)) (App (App (Con __ldPCons) (App (App (Con __ldPApply) (Con name:Nil)) (Con __ldPNil))) (Con __ldPNil)))) (App (App (Con __ldPApply) (Con name:Nil)) (Con __ldPNil))))
+(SCons (DConst rewrite:rev-cons (App (App (Con __ldRewriteRule) (App (App (Con __ldPApply) (Con name:rev)) (App (App (Con __ldPCons) (App (App (Con __ldPApply) (Con name:Cons)) (App (App (Con __ldPCons) (App (Con __ldPFVar) (Con name:x))) (App (App (Con __ldPCons) (App (Con __ldPFVar) (Con name:xs))) (Con __ldPNil))))) (Con __ldPNil)))) (App (App (Con __ldPApply) (Con name:listAppend)) (App (App (Con __ldPCons) (App (App (Con __ldPApply) (Con name:rev)) (App (App (Con __ldPCons) (App (Con __ldPFVar) (Con name:xs))) (Con __ldPNil)))) (App (App (Con __ldPCons) (App (App (Con __ldPApply) (Con name:Cons)) (App (App (Con __ldPCons) (App (Con __ldPFVar) (Con name:x))) (App (App (Con __ldPCons) (App (App (Con __ldPApply) (Con name:Nil)) (Con __ldPNil))) (Con __ldPNil))))) (Con __ldPNil))))))
+(SCons (DConst MeTTaRev:Reduces (Pi (Con __ldPattern) (Pi (Con __ldPattern) (Srt type))))
+(SCons (DConst MeTTaRev:EvalEq (Pi (Con __ldPattern) (Pi (Con __ldPattern) (Srt type))))
+(SCons (DConst MeTTaRev:reduces-refl (Pi (Con __ldPattern) (App (App (Con MeTTaRev:Reduces) (Var 0)) (Var 0))))
+(SCons (DConst MeTTaRev:reduces-trans (Pi (Con __ldPattern) (Pi (Con __ldPattern) (Pi (Con __ldPattern) (Pi (App (App (Con MeTTaRev:Reduces) (Var 2)) (Var 1)) (Pi (App (App (Con MeTTaRev:Reduces) (Var 2)) (Var 1)) (App (App (Con MeTTaRev:Reduces) (Var 4)) (Var 2))))))))
+(SCons (DConst MeTTaRev:eval-eq-intro (Pi (Con __ldPattern) (Pi (Con __ldPattern) (Pi (App (App (Con MeTTaRev:Reduces) (Var 1)) (Var 0)) (App (App (Con MeTTaRev:EvalEq) (Var 2)) (Var 1))))))
+(SCons (DConst MeTTaRev:reduces-apply-head (Pi (Con __ldName) (Pi (Con __ldPattern) (Pi (Con __ldPattern) (Pi (Con __ldPatternList) (Pi (App (App (Con MeTTaRev:Reduces) (Var 2)) (Var 1)) (App (App (Con MeTTaRev:Reduces) (App (App (Con __ldPApply) (Var 4)) (App (App (Con __ldPCons) (Var 3)) (Var 1)))) (App (App (Con __ldPApply) (Var 4)) (App (App (Con __ldPCons) (Var 2)) (Var 1))))))))))
+(SCons (DConst MeTTaRev:reduces-apply-second (Pi (Con __ldName) (Pi (Con __ldPattern) (Pi (Con __ldPattern) (Pi (Con __ldPattern) (Pi (App (App (Con MeTTaRev:Reduces) (Var 1)) (Var 0)) (App (App (Con MeTTaRev:Reduces) (App (App (Con __ldPApply) (Var 4)) (App (App (Con __ldPCons) (Var 3)) (App (App (Con __ldPCons) (Var 2)) (Con __ldPNil))))) (App (App (Con __ldPApply) (Var 4)) (App (App (Con __ldPCons) (Var 3)) (App (App (Con __ldPCons) (Var 1)) (Con __ldPNil)))))))))))
+(SCons (DConst MeTTaRev:rewrite:append-nil (Pi (Con __ldPattern) (App (App (Con MeTTaRev:Reduces) (App (App (Con __ldPApply) (Con name:listAppend)) (App (App (Con __ldPCons) (App (App (Con __ldPApply) (Con name:Nil)) (Con __ldPNil))) (App (App (Con __ldPCons) (Var 0)) (Con __ldPNil))))) (Var 0))))
+(SCons (DConst MeTTaRev:rewrite:append-cons (Pi (Con __ldPattern) (Pi (Con __ldPattern) (Pi (Con __ldPattern) (App (App (Con MeTTaRev:Reduces) (App (App (Con __ldPApply) (Con name:listAppend)) (App (App (Con __ldPCons) (App (App (Con __ldPApply) (Con name:Cons)) (App (App (Con __ldPCons) (Var 2)) (App (App (Con __ldPCons) (Var 1)) (Con __ldPNil))))) (App (App (Con __ldPCons) (Var 0)) (Con __ldPNil))))) (App (App (Con __ldPApply) (Con name:Cons)) (App (App (Con __ldPCons) (Var 2)) (App (App (Con __ldPCons) (App (App (Con __ldPApply) (Con name:listAppend)) (App (App (Con __ldPCons) (Var 1)) (App (App (Con __ldPCons) (Var 0)) (Con __ldPNil))))) (Con __ldPNil)))))))))
+(SCons (DConst MeTTaRev:rewrite:rev-nil (App (App (Con MeTTaRev:Reduces) (App (App (Con __ldPApply) (Con name:rev)) (App (App (Con __ldPCons) (App (App (Con __ldPApply) (Con name:Nil)) (Con __ldPNil))) (Con __ldPNil)))) (App (App (Con __ldPApply) (Con name:Nil)) (Con __ldPNil))))
+(SCons (DConst MeTTaRev:rewrite:rev-cons (Pi (Con __ldPattern) (Pi (Con __ldPattern) (App (App (Con MeTTaRev:Reduces) (App (App (Con __ldPApply) (Con name:rev)) (App (App (Con __ldPCons) (App (App (Con __ldPApply) (Con name:Cons)) (App (App (Con __ldPCons) (Var 1)) (App (App (Con __ldPCons) (Var 0)) (Con __ldPNil))))) (Con __ldPNil)))) (App (App (Con __ldPApply) (Con name:listAppend)) (App (App (Con __ldPCons) (App (App (Con __ldPApply) (Con name:rev)) (App (App (Con __ldPCons) (Var 0)) (Con __ldPNil)))) (App (App (Con __ldPCons) (App (App (Con __ldPApply) (Con name:Cons)) (App (App (Con __ldPCons) (Var 1)) (App (App (Con __ldPCons) (App (App (Con __ldPApply) (Con name:Nil)) (Con __ldPNil))) (Con __ldPNil))))) (Con __ldPNil))))))))
+SNil)))))))))))))))))))))))))))))))))))))))))))))))))
+
+!(assertEqual (sig-has-name MeTTaRev:rewrite:append-nil (mr-generated-metta-rev-sig)) True)
+!(assertEqual (sig-has-name MeTTaRev:rewrite:append-cons (mr-generated-metta-rev-sig)) True)
+!(assertEqual (sig-has-name MeTTaRev:rewrite:rev-nil (mr-generated-metta-rev-sig)) True)
+!(assertEqual (sig-has-name MeTTaRev:rewrite:rev-cons (mr-generated-metta-rev-sig)) True)
+!(assertEqual (sig-has-name MeTTaRev:reduces-apply-head (mr-generated-metta-rev-sig)) True)
+!(assertEqual (sig-has-name MeTTaRev:reduces-apply-second (mr-generated-metta-rev-sig)) True)
+!(assertEqual (sig-has-name name:Z (mr-generated-metta-rev-sig)) True)
+!(assertEqual (sig-has-name name:S (mr-generated-metta-rev-sig)) True)
+!(assertEqual (sig-has-name __ldMultiBinder (mr-generated-metta-rev-sig)) False)
+!(assertEqual (sig-admitted (mr-generated-metta-rev-sig)) True)

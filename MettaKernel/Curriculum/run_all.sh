@@ -11,8 +11,10 @@
 set -u
 cd "$(dirname "$0")"
 eval "$(opam env 2>/dev/null)" 2>/dev/null || true
+OCAMLRUNPARAM="${OCAMLRUNPARAM:-s=4M}"
 COQC="$(command -v coqc || echo "$HOME/.opam/default/bin/coqc")"
 LEAN="$(command -v lean  || echo "$HOME/.elan/bin/lean")"
+LAKE="$(command -v lake  || echo "$HOME/.elan/bin/lake")"
 MEG="/home/aimama/aihub/repos/megalodon-1.13/bin/megalodon"
 CETTA="${CETTA:-/home/aimama/aihub/hyperon/CeTTa/cetta}"
 PETTA="${PETTA:-/home/aimama/aihub/hyperon/PeTTa/run.sh}"
@@ -23,6 +25,7 @@ PETTA_AS_LIMIT_BYTES="${PETTA_AS_LIMIT_BYTES:-25769803776}"
 CETTA_TIMEOUT_SECONDS="${CETTA_TIMEOUT_SECONDS:-240}"
 DED_DK_REPO="${DED_DK_REPO:-/home/aimama/aihub/repos/dedukti}"
 DED_DK="${DED_DK:-$DED_DK_REPO/_build/default/commands/main.exe}"
+HOLLIGHT_DIR="${HOLLIGHT_DIR:-/home/aimama/aihub/repos/itp-curriculum-sources/hol_light}"
 read -r -a CETTA_EXTRA_ARGV <<< "$CETTA_EXTRA_ARGS"
 export CETTA
 export PETTA
@@ -31,6 +34,8 @@ export CETTA_EXTRA_ARGS
 export CETTA_AS_LIMIT_BYTES
 export PETTA_AS_LIMIT_BYTES
 export CETTA_TIMEOUT_SECONDS
+export HOLLIGHT_DIR
+export OCAMLRUNPARAM
 PRE_DIR="/home/aimama/aihub/repos/megalodon-1.13/examples/egal"
 log=/tmp/_runall.$$.log
 pass=0; pfail=0; caught=0; missed=0; thms=0
@@ -78,6 +83,22 @@ run_dedukti_check() {
     timeout "$CETTA_TIMEOUT_SECONDS" "$DED_DK" check --coc "$file"
 }
 
+run_hol_light_self_imp_smoke() {
+  local file="$1"
+  (
+    eval "$(opam env 2>/dev/null)" 2>/dev/null || true
+    cd "$HOLLIGHT_DIR" &&
+      make default >/dev/null &&
+      grep -Eq '^[[:space:]]*let DISCH[[:space:]]*=' bool.ml &&
+      ! grep -Eq '^[[:space:]]*val DISCH[[:space:]]*:' fusion.ml &&
+      HOLLIGHT_DIR="$PWD" timeout "$CETTA_TIMEOUT_SECONDS" ./ocaml-hol \
+        -I "$(ocamlfind query pcre2)" pcre2.cma \
+        -I "$(ocamlfind query camlp-streams)" camlp_streams.cma \
+        -I "$(camlp5 -where)" camlp5o.cma \
+        -init hol.ml -safe-string -I . < "$file"
+  )
+}
+
 echo "================= COQ (DTT, ICL + feature mirrors) ================="
 for f in Coq/*.v; do [ -e "$f" ] || continue
   if "$COQC" "$f" >"$log" 2>&1; then
@@ -123,6 +144,38 @@ if [ -d HOL ] && ( . /home/aimama/aihub/CakeML/env.sh >/dev/null 2>&1; timeout 3
     if ls HOL/neg/.hol/objs/${t}Theory.uo >/dev/null 2>&1; then echo "  [neg] HOL/neg/${t}  NOT CAUGHT  X"; missed=$((missed+1)); else echo "  [neg] HOL/neg/${t}  caught"; caught=$((caught+1)); fi
   done
 else echo "  [toolchain-down] HOL ladder: Holmake unavailable on this host"; fi
+
+echo "================= HOL KERNEL PROFILES (GSLT/OSLF witnesses -- Lean) ================="
+HOL_PROFILE_LEAN="/home/aimama/aihub/Mettapedia/MettaKernel/Curriculum/HOL/HOLKernelProfilesWitness.lean"
+HOL_PROFILE_LEAN_ROOT="/home/aimama/aihub/Mettapedia/lean/mettapedia"
+if [ -f "$HOL_PROFILE_LEAN" ]; then
+  if ( cd "$HOL_PROFILE_LEAN_ROOT" && "$LAKE" env "$LEAN" -j1 "$HOL_PROFILE_LEAN" ) >"$log" 2>&1; then
+    echo "  [profile] HOLKernelProfilesWitness.lean  OK  (HOL4 DISCH/MP + HOL Light REFL/SELF_IMP proof articles + Datalog closure bridge)"
+    pass=$((pass+1))
+  else
+    echo "  [profile] HOLKernelProfilesWitness.lean  FAIL"
+    tail -12 "$log" | sed 's/^/        /'
+    pfail=$((pfail+1))
+  fi
+else
+  echo "  [profile] HOLKernelProfilesWitness.lean missing"
+  pfail=$((pfail+1))
+fi
+
+echo "================= HOL LIGHT (actual equality-kernel calibration) ================="
+HOL_LIGHT_SMOKE="/home/aimama/aihub/Mettapedia/MettaKernel/Curriculum/HOL/HOLLightSelfImpSmoke.ml"
+if [ -f "$HOL_LIGHT_SMOKE" ] && [ -d "$HOLLIGHT_DIR" ]; then
+  if run_hol_light_self_imp_smoke "$HOL_LIGHT_SMOKE" >"$log" 2>&1 && grep -q "HOL_LIGHT_SELF_IMP_SMOKE_OK" "$log"; then
+    echo "  [hol-light] HOLLightSelfImpSmoke.ml  OK  (SELF_IMP via HOL Light DISCH/ASSUME; DISCH source-checked as derived)"
+    pass=$((pass+1))
+  else
+    echo "  [hol-light] HOLLightSelfImpSmoke.ml  FAIL"
+    tail -12 "$log" | sed 's/^/        /'
+    pfail=$((pfail+1))
+  fi
+else
+  echo "  [toolchain-down] HOL Light smoke: source checkout or smoke file unavailable"
+fi
 
 echo "================= CROSS-SYSTEM SMOKE (same theorems, 3 systems) ================="
 if [ -f CrossSmoke/smoke.v ]; then
@@ -284,6 +337,39 @@ else
 fi
 
 echo "================= PROGRAM VERIFICATION (4th pillar) ================="
+echo "================= VERIFIED METTA (LeaTTa corpus + engines) ================="
+for f in VerifiedMeTTa/[0-9]*.metta; do [ -e "$f" ] || continue
+  if run_leatta_oracle "$f" >"$log" 2>&1 &&
+     run_cetta_capped "$f" >>"$log" 2>&1 &&
+     run_petta_capped "$f" >>"$log" 2>&1; then
+    tc=$(grep -c '^!(assertEqual' "$f")
+    echo "  [engines] $(basename "$f")  OK  (${tc} assertions x LeaTTa/CeTTa/PeTTa)"
+    pass=$((pass+1))
+  else
+    echo "  [engines] $(basename "$f")  FAIL"
+    tail -12 "$log" | sed 's/^/        /'
+    pfail=$((pfail+1))
+  fi
+done
+METTAPEDIA_LEAN="/home/aimama/aihub/Mettapedia/lean/mettapedia"
+METTAPEDIA_AUDIT="/home/aimama/aihub/Mettapedia/MettaKernel/Curriculum/VerifiedMeTTa/axiom_audit.lean"
+audit_count=$(grep -c '^#print axioms' "$METTAPEDIA_AUDIT")
+if ( cd "$METTAPEDIA_LEAN" && "$LAKE" env "$LEAN" -j1 "$METTAPEDIA_AUDIT" ) >"$log" 2>&1; then
+  if grep -vE "^(Failed to create stream fd: No such file or directory|info: .*|'.*' does not depend on any axioms|'.*' depends on axioms: \[\]|'.*' depends on axioms: \[propext\]|'.*' depends on axioms: \[propext, Quot.sound\]|'.*' depends on axioms: \[propext,|'.*' depends on axioms: \[propext, Classical.choice, Quot.sound\]| Classical.choice,| Quot.sound\])$" "$log" | grep -q .; then
+    echo "  [lean] VerifiedMeTTa axiom audit FAIL"
+    cat "$log" | sed 's/^/        /'
+    pfail=$((pfail+1))
+  else
+    echo "  [lean] VerifiedMeTTa corpus OK  (${audit_count} theorem axiom audits)"
+    thms=$((thms+audit_count))
+    pass=$((pass+1))
+  fi
+else
+  echo "  [lean] VerifiedMeTTa corpus FAIL"
+  tail -12 "$log" | sed 's/^/        /'
+  pfail=$((pfail+1))
+fi
+
 # CoqPLF (proved by coqc)
 for f in ProgramVerification/CoqPLF/*.v; do [ -e "$f" ] || continue
   if "$COQC" "$f" >"$log" 2>&1; then tc=$(ccount "$f"); thms=$((thms+tc)); echo "  [proved] CoqPLF/$(basename "$f")  OK  (${tc} thms)"; pass=$((pass+1))

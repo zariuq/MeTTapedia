@@ -37,11 +37,13 @@ trap 'rm -f "$tmp"' EXIT
   # :a;...;ta loops the substitution so multi-hyphen names (decl-type-of) fully convert.
   # The pattern requires alphanumerics on BOTH sides of '-', so the arithmetic minus
   # operator "(- $k 1)" (spaces around it) is left untouched.
-  sed -E ':a; s/([A-Za-z0-9])-([A-Za-z0-9])/\1_\2/g; ta; s/\bassertEqual\b/test/g; s/(!\(import! &self kernel_binding_waist_v1)\)/\1_petta)/g; s/(!\(import! &self kernel_binding_decl_v1)\)/\1_petta)/g' "$src" |
+  sed -E ':a; s/([A-Za-z0-9])-([A-Za-z0-9])/\1_\2/g; ta; s/\bassertEqual\b/test/g; s/(!\(import! &self kernel_binding_waist_v1)\)/\1_petta)/g; s/(!\(import! &self kernel_binding_decl_v1)\)/\1_petta)/g; s/(!\(import! &self kernel_signature_lf_v0)\)/\1_petta)/g; s/(!\(import! &self kernel_signature_metta_add_v0)\)/\1_petta)/g; s/(!\(import! &self kernel_signature_metta_rev_generated_v0)\)/\1_petta)/g; s/(!\(import! &self kernel_signature_metta_rev_v0)\)/\1_petta)/g' "$src" |
     awk '
-      { lines[NR] = $0; if ($0 == "!(import! &self kernel_binding_decl_v1_petta)") has_decl = 1 }
+      /^; petta_skip_next$/ { skip_next = 1; next }
+      skip_next { skip_next = 0; next }
+      { out_n++; lines[out_n] = $0; if ($0 == "!(import! &self kernel_binding_decl_v1_petta)") has_decl = 1 }
       END {
-        for (i = 1; i <= NR; i++) {
+        for (i = 1; i <= out_n; i++) {
           if (has_decl && lines[i] == "!(import! &self kernel_binding_waist_v1_petta)") continue
           print lines[i]
         }

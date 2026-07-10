@@ -390,14 +390,14 @@ inductive MettaCall (space : Space) (dispatch : GroundedDispatch) :
       (h_not_error : isErrorAtom atom = false)
       (h_empty : unifySuccessResults target pattern thenBranch b fuel = []) :
       MettaCall space dispatch atom type_ b (elseBranch, b)
-  /-- Primitive `unify`: wrong arity is surfaced as
-      `IncorrectNumberOfArguments`. -/
+  /-- Primitive `unify`: wrong arity is surfaced as the
+      hyperon-experimental minimal-instruction parser message. -/
   | unify_bad_arity (atom type_ : Atom) (b : Bindings)
       (tail : List Atom)
       (h_shape : atom = .expression (.symbol "unify" :: tail))
       (h_arity : tail.length ≠ 4)
       (h_not_error : isErrorAtom atom = false) :
-      MettaCall space dispatch atom type_ b (mkError atom .incorrectNumberOfArguments, b)
+      MettaCall space dispatch atom type_ b (mkUnifyBadArityError atom, b)
   /-- `switch-minimal`: exact-shape direct result lane.
       This packages the observable behavior of the stdlib helper:
       first viable branch wins, the selected raw template is returned with its

@@ -456,7 +456,7 @@ private theorem allSound : ∀ fuel, AllSound fuel := by
                             (by
                               intro h
                               rcases h with ⟨scrut', branches, htail⟩
-                              simp [h_cases] at htail)
+                              simp at htail)
                             h_ef
                       | var v =>
                           have h_expr_not_error :
@@ -474,7 +474,7 @@ private theorem allSound : ∀ fuel, AllSound fuel := by
                             (by
                               intro h
                               rcases h with ⟨scrut', branches, htail⟩
-                              simp [h_cases] at htail)
+                              simp at htail)
                             h_ef
                       | grounded g =>
                           have h_expr_not_error :
@@ -492,10 +492,10 @@ private theorem allSound : ∀ fuel, AllSound fuel := by
                             (by
                               intro h
                               rcases h with ⟨scrut', branches, htail⟩
-                              simp [h_cases] at htail)
+                              simp at htail)
                             h_ef
                       | expression branches =>
-                          simp [mettaCall, h_ef, h_cases] at hr
+                          simp [mettaCall, h_cases] at hr
                           exact MettaCall.switch_minimal_result _ type_ b
                             scrut branches r n rfl h_ef hr
                   | cons extra rest =>
@@ -588,7 +588,7 @@ private theorem allSound : ∀ fuel, AllSound fuel := by
                                 (by
                                   intro h
                                   rcases h with ⟨scrut', branches, htail⟩
-                                  simp [h_cases] at htail)
+                                  simp at htail)
                                 h_ef
                           | var v =>
                               have h_expr_not_error :
@@ -606,7 +606,7 @@ private theorem allSound : ∀ fuel, AllSound fuel := by
                                 (by
                                   intro h
                                   rcases h with ⟨scrut', branches, htail⟩
-                                  simp [h_cases] at htail)
+                                  simp at htail)
                                 h_ef
                           | grounded g =>
                               have h_expr_not_error :
@@ -624,10 +624,10 @@ private theorem allSound : ∀ fuel, AllSound fuel := by
                                 (by
                                   intro h
                                   rcases h with ⟨scrut', branches, htail⟩
-                                  simp [h_cases] at htail)
+                                  simp at htail)
                                 h_ef
                           | expression branches =>
-                              simp [mettaCall, h_ef, h_cases] at hr
+                              simp [mettaCall, h_cases] at hr
                               exact MettaCall.switch_minimal_result _ type_ b
                                 scrut branches r n rfl h_ef hr
                       | cons extra rest =>
@@ -997,7 +997,7 @@ theorem evalAtom_filtered_sound (space : Space) (dispatch : GroundedDispatch)
               -- r' ∈ interpretExpression ... n. Show isErrorAtom r'.1 = true.
               -- The success filter is empty, so no element has !isErrorAtom = true.
               by_contra h_not_err_r'
-              push_neg at h_succ_empty
+              push Not at h_succ_empty
               -- h_succ_empty says the success filter is empty
               -- Convert: ¬(!(filter ...).isEmpty) = true means (filter ...).isEmpty = true
               have h_filt_empty : (List.filter (fun x => !isErrorAtom x.1)
@@ -1020,7 +1020,7 @@ theorem evalAtom_filtered_sound (space : Space) (dispatch : GroundedDispatch)
             rename_i h_not_expr
             simp [getMetaType, Atom.expressionType] at h_not_expr
   · -- Case 1: not a proper expression → interpretExpression returns []
-    push_neg at h_proper
+    push Not at h_proper
     rw [interpretExpression_nil_of_not_expr _ _ _ _ _ _ h_proper] at h_r'_mem
     simp at h_r'_mem
 
@@ -1246,7 +1246,7 @@ private inductive MettaCallSync (space : Space) (dispatch : GroundedDispatch) :
       (h_arity : tail.length ≠ 4)
       (h_not_error : isErrorAtom atom = false) :
       MettaCallSync space dispatch (n + 1) atom type_ b
-        (mkError atom .incorrectNumberOfArguments, b)
+        (mkUnifyBadArityError atom, b)
   | switch_minimal_result (n : Nat) (atom type_ : Atom) (b : Bindings)
       (scrut : Atom) (branches : List Atom)
       (finalResult : ResultPair)
@@ -1971,17 +1971,17 @@ private theorem mettaCall_sync_to_eval_step
                       have h_expr_not_error :
                           isErrorAtom (.expression [.symbol "switch-minimal", scrut, .symbol s]) = false := by
                         simpa [h_cases] using h_not_error
-                      simpa [mettaCall, h_cases, h_expr_not_error]
+                      simp [mettaCall, h_expr_not_error]
                   | var v =>
                       have h_expr_not_error :
                           isErrorAtom (.expression [.symbol "switch-minimal", scrut, .var v]) = false := by
                         simpa [h_cases] using h_not_error
-                      simpa [mettaCall, h_cases, h_expr_not_error]
+                      simp [mettaCall, h_expr_not_error]
                   | grounded g =>
                       have h_expr_not_error :
                           isErrorAtom (.expression [.symbol "switch-minimal", scrut, .grounded g]) = false := by
                         simpa [h_cases] using h_not_error
-                      simpa [mettaCall, h_cases, h_expr_not_error]
+                      simp [mettaCall, h_expr_not_error]
                   | expression branches =>
                       exfalso
                       exact h_noncanonical ⟨scrut, branches, by simp [h_cases]⟩
@@ -3101,7 +3101,7 @@ private theorem mettaCall_eval_to_sync_step
                                 (by
                                   intro h
                                   rcases h with ⟨scrut', branches, htail⟩
-                                  simp [h_cases] at htail)
+                                  simp at htail)
                                 h_ef
                           | var v =>
                               have h_expr_not_error :
@@ -3120,7 +3120,7 @@ private theorem mettaCall_eval_to_sync_step
                                 (by
                                   intro h
                                   rcases h with ⟨scrut', branches, htail⟩
-                                  simp [h_cases] at htail)
+                                  simp at htail)
                                 h_ef
                           | grounded g =>
                               have h_expr_not_error :
@@ -3139,10 +3139,10 @@ private theorem mettaCall_eval_to_sync_step
                                 (by
                                   intro h
                                   rcases h with ⟨scrut', branches, htail⟩
-                                  simp [h_cases] at htail)
+                                  simp at htail)
                                 h_ef
                           | expression branches =>
-                              simp [mettaCall, h_ef, h_cases] at hr
+                              simp [mettaCall, h_cases] at hr
                               exact MettaCallSync.switch_minimal_result n
                                 (.expression [.symbol "switch-minimal", scrut, .expression branches])
                                 type_ b scrut branches r rfl h_ef hr
@@ -3862,7 +3862,7 @@ private inductive MettaCallAligned (space : Space) (dispatch : GroundedDispatch)
       (h_arity : tail.length ≠ 4)
       (h_not_error : isErrorAtom atom = false) :
       MettaCallAligned space dispatch atom type_ b
-        (mkError atom .incorrectNumberOfArguments, b)
+        (mkUnifyBadArityError atom, b)
   | switch_minimal_result (atom type_ : Atom) (b : Bindings)
       (scrut : Atom) (branches : List Atom)
       (finalResult : ResultPair)

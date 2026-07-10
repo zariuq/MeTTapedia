@@ -1,9 +1,9 @@
 /-
-# HOL/STT languageDef — `hol-core-g` as a scoped GSLT surface
+# HOL/STT syntax recognizer — `hol-core-g` parser lane
 
 This module verifies a recursive-descent recognizer for the `hol-core-g` parser-lane grammar.
 It reuses the LF kernel term carrier (`Srt` / `Con` / `Var` / `Pi` / `Lam` / `App`) so the
-recognized HOL/STT surface lowers directly to the imported kernel AST shape used by
+recognized HOL/STT syntax lowers directly to the imported kernel AST shape used by
 `kernel_signature_lf_v0.metta`.
 
 Grounding:
@@ -37,9 +37,9 @@ theorem shift {t : Term} {n : Nat} (h : WellScoped n t) :
 
 end WellScoped
 
-/-! ## Surface tokens and kernel-AST lowering choices -/
+/-! ## Concrete tokens and kernel-AST lowering choices -/
 
-/-- Surface tokens of `hol-core-g`. -/
+/-- Concrete tokens of `hol-core-g`. -/
 inductive Tok where
   | hall | hex | hlam | hdot | hiff | himp | hor | hand | heq | hnot | lpar | rpar
   | id : String → Tok

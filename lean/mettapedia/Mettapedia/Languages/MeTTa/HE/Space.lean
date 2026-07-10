@@ -207,6 +207,12 @@ private def chooseFreshNameLoop (base : String) (avoid : List String) : Nat → 
 def chooseFreshName (base : String) (avoid : List String) (counter : Nat) : String × Nat :=
   chooseFreshNameLoop base avoid avoid.eraseDups.length counter
 
+/-- With no visible names to avoid, the fresh-name chooser uses the current
+counter immediately. -/
+theorem chooseFreshName_nil (base : String) (counter : Nat) :
+    chooseFreshName base [] counter = (s!"{base}#{counter}", counter + 1) := by
+  simp [chooseFreshName, chooseFreshNameLoop]
+
 /-- Fresh-variable mapping that avoids an external visible-name set while still
     producing runtime-style `base#n` names. Previously generated fresh names
     are also included in the avoid set so distinct source variables cannot
@@ -670,6 +676,53 @@ def queryEquations (space : Space) (atom : Atom) (fuel : Nat := 100) : List (Ato
             if merged.hasLoop then none else some (rhs', merged)
       | _ => []
 
+/-- Every public equation-query hit comes from a concrete equation in the
+space whose freshened left-hand side matched the query through the faithful
+two-sided HE `matchAtoms` matcher.  The extra replay of the empty incoming seed
+inside `queryEquations` is definitionally transparent here; this theorem is
+the small audit hook that prevents the retired one-sided query path from
+re-entering the public surface. -/
+theorem queryEquations_matchAtoms_witness
+    {space : Space} {atom : Atom} {fuel : Nat} {rhs : Atom} {qb : Bindings}
+    (h : (rhs, qb) ∈ queryEquations space atom fuel) :
+    ∃ lhs rhs0 idx,
+      (.expression [.symbol "=", lhs, rhs0], idx) ∈ space.atoms.zipIdx ∧
+      rhs = (freshenEquation idx lhs rhs0 fuel).2 ∧
+      qb ∈ matchAtoms atom (freshenEquation idx lhs rhs0 fuel).1 fuel := by
+  cases fuel with
+  | zero =>
+      simp [queryEquations] at h
+  | succ n =>
+      simp [queryEquations] at h
+      rcases h with ⟨eq, idx, hmem, hhit⟩
+      cases eq with
+      | symbol s => simp at hhit
+      | var v => simp at hhit
+      | grounded g => simp at hhit
+      | expression es =>
+          cases es with
+          | nil => simp at hhit
+          | cons a rest =>
+              cases a <;> try simp at hhit
+              next s =>
+                by_cases hs : s = "="
+                · subst hs
+                  cases rest with
+                  | nil => simp at hhit
+                  | cons lhs rest2 =>
+                      cases rest2 with
+                      | nil => simp at hhit
+                      | cons rhs0 rest3 =>
+                          cases rest3 with
+                          | nil =>
+                              simp at hhit
+                              rcases hhit with ⟨mb, hmb, hmerge⟩
+                              simp [mergeBindings, Bindings.empty] at hmerge
+                              rcases hmerge with ⟨rfl, _hloop, hrhs⟩
+                              exact ⟨lhs, rhs0, idx, by simpa using hmem, hrhs.symm, hmb⟩
+                          | cons extra rest4 => simp at hhit
+                · simp [hs] at hhit
+
 /-- Variant of `queryEquations` that standardizes equation-local variables apart
     from the query atom's currently visible variables before matching. This is a
     closer executable model of the concrete runtime's stronger freshness
@@ -702,6 +755,53 @@ def queryEquationsAgainstVisible
           (mergeBindings qb Bindings.empty fuel).filterMap fun merged =>
             if merged.hasLoop then none else some (rhs', merged)
       | _ => []
+
+/-- Visible-avoid analogue of `queryEquations_matchAtoms_witness`: every hit of
+the repaired visible query surface is backed by the faithful HE matcher on the
+freshened equation left-hand side, where freshening avoids the query atom's
+currently visible variables. -/
+theorem queryEquationsAgainstVisible_matchAtoms_witness
+    {space : Space} {atom : Atom} {fuel : Nat} {rhs : Atom} {qb : Bindings}
+    (h : (rhs, qb) ∈ queryEquationsAgainstVisible space atom fuel) :
+    ∃ lhs rhs0 idx,
+      (.expression [.symbol "=", lhs, rhs0], idx) ∈ space.atoms.zipIdx ∧
+      rhs =
+        (freshenEquationAgainst (collectVars atom fuel).eraseDups idx lhs rhs0 fuel).2 ∧
+      qb ∈ matchAtoms atom
+        (freshenEquationAgainst (collectVars atom fuel).eraseDups idx lhs rhs0 fuel).1 fuel := by
+  cases fuel with
+  | zero =>
+      simp [queryEquationsAgainstVisible] at h
+  | succ n =>
+      simp [queryEquationsAgainstVisible] at h
+      rcases h with ⟨eq, idx, hmem, hhit⟩
+      cases eq with
+      | symbol s => simp at hhit
+      | var v => simp at hhit
+      | grounded g => simp at hhit
+      | expression es =>
+          cases es with
+          | nil => simp at hhit
+          | cons a rest =>
+              cases a <;> try simp at hhit
+              next s =>
+                by_cases hs : s = "="
+                · subst hs
+                  cases rest with
+                  | nil => simp at hhit
+                  | cons lhs rest2 =>
+                      cases rest2 with
+                      | nil => simp at hhit
+                      | cons rhs0 rest3 =>
+                          cases rest3 with
+                          | nil =>
+                              simp at hhit
+                              rcases hhit with ⟨mb, hmb, hmerge⟩
+                              simp [mergeBindings, Bindings.empty] at hmerge
+                              rcases hmerge with ⟨rfl, _hloop, hrhs⟩
+                              exact ⟨lhs, rhs0, idx, by simpa using hmem, hrhs.symm, hmb⟩
+                          | cons extra rest4 => simp at hhit
+                · simp [hs] at hhit
 
 /-! ## Grounded Dispatch
 
