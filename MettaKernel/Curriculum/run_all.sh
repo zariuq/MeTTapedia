@@ -10,22 +10,23 @@
 # ============================================================================
 set -u
 cd "$(dirname "$0")"
+AIHUB="${AIHUB:-$(cd "$(dirname "$0")/../../.." && pwd)}"
 eval "$(opam env 2>/dev/null)" 2>/dev/null || true
 OCAMLRUNPARAM="${OCAMLRUNPARAM:-s=4M}"
 COQC="$(command -v coqc || echo "$HOME/.opam/default/bin/coqc")"
 LEAN="$(command -v lean  || echo "$HOME/.elan/bin/lean")"
 LAKE="$(command -v lake  || echo "$HOME/.elan/bin/lake")"
-MEG="/home/aimama/aihub/repos/megalodon-1.13/bin/megalodon"
-CETTA="${CETTA:-/home/aimama/aihub/hyperon/CeTTa/cetta}"
-PETTA="${PETTA:-/home/aimama/aihub/hyperon/PeTTa/run.sh}"
-LEATTA="${LEATTA:-/home/aimama/aihub/Mettapedia/lean/externals/LeaTTa/.lake/build/bin/LeaTTa}"
+MEG="$AIHUB/repos/megalodon-1.13/bin/megalodon"
+CETTA="${CETTA:-$AIHUB/hyperon/CeTTa/cetta}"
+PETTA="${PETTA:-$AIHUB/hyperon/PeTTa/run.sh}"
+LEATTA="${LEATTA:-$AIHUB/Mettapedia/lean/externals/LeaTTa/.lake/build/bin/LeaTTa}"
 CETTA_EXTRA_ARGS="${CETTA_EXTRA_ARGS---eval-hashcons}"
 CETTA_AS_LIMIT_BYTES="${CETTA_AS_LIMIT_BYTES:-25769803776}"
 PETTA_AS_LIMIT_BYTES="${PETTA_AS_LIMIT_BYTES:-25769803776}"
 CETTA_TIMEOUT_SECONDS="${CETTA_TIMEOUT_SECONDS:-240}"
-DED_DK_REPO="${DED_DK_REPO:-/home/aimama/aihub/repos/dedukti}"
+DED_DK_REPO="${DED_DK_REPO:-$AIHUB/repos/dedukti}"
 DED_DK="${DED_DK:-$DED_DK_REPO/_build/default/commands/main.exe}"
-HOLLIGHT_DIR="${HOLLIGHT_DIR:-/home/aimama/aihub/repos/itp-curriculum-sources/hol_light}"
+HOLLIGHT_DIR="${HOLLIGHT_DIR:-$AIHUB/repos/itp-curriculum-sources/hol_light}"
 read -r -a CETTA_EXTRA_ARGV <<< "$CETTA_EXTRA_ARGS"
 export CETTA
 export PETTA
@@ -36,7 +37,7 @@ export PETTA_AS_LIMIT_BYTES
 export CETTA_TIMEOUT_SECONDS
 export HOLLIGHT_DIR
 export OCAMLRUNPARAM
-PRE_DIR="/home/aimama/aihub/repos/megalodon-1.13/examples/egal"
+PRE_DIR="$AIHUB/repos/megalodon-1.13/examples/egal"
 log=/tmp/_runall.$$.log
 pass=0; pfail=0; caught=0; missed=0; thms=0
 
@@ -131,8 +132,8 @@ for f in Megalodon/neg_*.mg; do [ -e "$f" ] || continue
 done
 
 echo "================= HOL (classical higher-order logic / LCF -- HOL4) ================="
-if [ -d HOL ] && ( . /home/aimama/aihub/CakeML/env.sh >/dev/null 2>&1; timeout 30 Holmake --help >/dev/null 2>&1 ); then
-  ( . /home/aimama/aihub/CakeML/env.sh >/dev/null 2>&1; cd HOL && timeout 590 Holmake HOLDIR="$HOLDIR" POLY="$CAKEML_HOME/polyml-local/bin/poly" >"$log" 2>&1 )
+if [ -d HOL ] && ( . $AIHUB/CakeML/env.sh >/dev/null 2>&1; timeout 30 Holmake --help >/dev/null 2>&1 ); then
+  ( . $AIHUB/CakeML/env.sh >/dev/null 2>&1; cd HOL && timeout 590 Holmake HOLDIR="$HOLDIR" POLY="$CAKEML_HOME/polyml-local/bin/poly" >"$log" 2>&1 )
   for t in HOL01_logic HOL02_induction HOL03_definitions HOL04_higher_order HOL05_classical HOL06_lcf_kernel; do
     [ -f HOL/${t}Script.sml ] || continue
     if ls HOL/.hol/objs/${t}Theory.uo >/dev/null 2>&1; then tc=$(grep -cE '^Theorem ' HOL/${t}Script.sml); thms=$((thms+tc)); echo "  [proved] HOL/${t}  OK  (${tc} thms)"; pass=$((pass+1))
@@ -140,14 +141,14 @@ if [ -d HOL ] && ( . /home/aimama/aihub/CakeML/env.sh >/dev/null 2>&1; timeout 3
   done
   for t in neg_typeerror neg_unprovable; do
     [ -f HOL/neg/${t}Script.sml ] || continue
-    ( . /home/aimama/aihub/CakeML/env.sh >/dev/null 2>&1; cd HOL/neg && rm -f .hol/objs/${t}Theory.* 2>/dev/null; timeout 200 Holmake HOLDIR="$HOLDIR" POLY="$CAKEML_HOME/polyml-local/bin/poly" ${t}Theory.uo >/dev/null 2>&1 )
+    ( . $AIHUB/CakeML/env.sh >/dev/null 2>&1; cd HOL/neg && rm -f .hol/objs/${t}Theory.* 2>/dev/null; timeout 200 Holmake HOLDIR="$HOLDIR" POLY="$CAKEML_HOME/polyml-local/bin/poly" ${t}Theory.uo >/dev/null 2>&1 )
     if ls HOL/neg/.hol/objs/${t}Theory.uo >/dev/null 2>&1; then echo "  [neg] HOL/neg/${t}  NOT CAUGHT  X"; missed=$((missed+1)); else echo "  [neg] HOL/neg/${t}  caught"; caught=$((caught+1)); fi
   done
 else echo "  [toolchain-down] HOL ladder: Holmake unavailable on this host"; fi
 
 echo "================= HOL KERNEL PROFILES (GSLT/OSLF witnesses -- Lean) ================="
-HOL_PROFILE_LEAN="/home/aimama/aihub/Mettapedia/MettaKernel/Curriculum/HOL/HOLKernelProfilesWitness.lean"
-HOL_PROFILE_LEAN_ROOT="/home/aimama/aihub/Mettapedia/lean/mettapedia"
+HOL_PROFILE_LEAN="$AIHUB/Mettapedia/MettaKernel/Curriculum/HOL/HOLKernelProfilesWitness.lean"
+HOL_PROFILE_LEAN_ROOT="$AIHUB/Mettapedia/lean/mettapedia"
 if [ -f "$HOL_PROFILE_LEAN" ]; then
   if ( cd "$HOL_PROFILE_LEAN_ROOT" && "$LAKE" env "$LEAN" -j1 "$HOL_PROFILE_LEAN" ) >"$log" 2>&1; then
     echo "  [profile] HOLKernelProfilesWitness.lean  OK  (HOL4 DISCH/MP + HOL Light REFL/SELF_IMP proof articles + Datalog closure bridge)"
@@ -163,7 +164,7 @@ else
 fi
 
 echo "================= HOL LIGHT (actual equality-kernel calibration) ================="
-HOL_LIGHT_SMOKE="/home/aimama/aihub/Mettapedia/MettaKernel/Curriculum/HOL/HOLLightSelfImpSmoke.ml"
+HOL_LIGHT_SMOKE="$AIHUB/Mettapedia/MettaKernel/Curriculum/HOL/HOLLightSelfImpSmoke.ml"
 if [ -f "$HOL_LIGHT_SMOKE" ] && [ -d "$HOLLIGHT_DIR" ]; then
   if run_hol_light_self_imp_smoke "$HOL_LIGHT_SMOKE" >"$log" 2>&1 && grep -q "HOL_LIGHT_SELF_IMP_SMOKE_OK" "$log"; then
     echo "  [hol-light] HOLLightSelfImpSmoke.ml  OK  (SELF_IMP via HOL Light DISCH/ASSUME; DISCH source-checked as derived)"
@@ -287,7 +288,7 @@ trim_ws() {
 }
 case_path_exists() {
   local p="$1"
-  [ -e "$p" ] || [ -e "./$p" ] || [ -e "/home/aimama/aihub/Mettapedia/MettaKernel/$p" ] || [ -e "/home/aimama/aihub/$p" ]
+  [ -e "$p" ] || [ -e "./$p" ] || [ -e "$AIHUB/Mettapedia/MettaKernel/$p" ] || [ -e "$AIHUB/$p" ]
 }
 ledger_fail=0
 if [ -f oracle_cases.tsv ]; then
@@ -351,8 +352,8 @@ for f in VerifiedMeTTa/[0-9]*.metta; do [ -e "$f" ] || continue
     pfail=$((pfail+1))
   fi
 done
-METTAPEDIA_LEAN="/home/aimama/aihub/Mettapedia/lean/mettapedia"
-METTAPEDIA_AUDIT="/home/aimama/aihub/Mettapedia/MettaKernel/Curriculum/VerifiedMeTTa/axiom_audit.lean"
+METTAPEDIA_LEAN="$AIHUB/Mettapedia/lean/mettapedia"
+METTAPEDIA_AUDIT="$AIHUB/Mettapedia/MettaKernel/Curriculum/VerifiedMeTTa/axiom_audit.lean"
 audit_count=$(grep -c '^#print axioms' "$METTAPEDIA_AUDIT")
 if ( cd "$METTAPEDIA_LEAN" && "$LAKE" env "$LEAN" -j1 "$METTAPEDIA_AUDIT" ) >"$log" 2>&1; then
   if grep -vE "^(Failed to create stream fd: No such file or directory|info: .*|'.*' does not depend on any axioms|'.*' depends on axioms: \[\]|'.*' depends on axioms: \[propext\]|'.*' depends on axioms: \[propext, Quot.sound\]|'.*' depends on axioms: \[propext,|'.*' depends on axioms: \[propext, Classical.choice, Quot.sound\]| Classical.choice,| Quot.sound\])$" "$log" | grep -q .; then
@@ -384,25 +385,25 @@ for f in ProgramVerification/Lean/*.lean; do [ -e "$f" ] || continue
   esac
 done
 # MeTTaM1 — delegate to the existing metta-ref dev (proved+tested ledger)
-MR=/home/aimama/aihub/Mettapedia/cakeml/metta-ref
+MR=$AIHUB/Mettapedia/cakeml/metta-ref
 if [ -d "$MR" ]; then
   if make -C "$MR" check-coverage >"$log" 2>&1; then echo "  [ledger-checked] MeTTaM1 (metta-ref): $(grep -m1 'coverage matrix checked' "$log") -- this gate runs ONLY check-coverage (ledger validation); to re-verify the heavier proofs/oracle run ProgramVerification/MeTTaM1/verify.sh test-hol  and  verify.sh test-oracle"; pass=$((pass+1))
   else echo "  [proved+tested] MeTTaM1 (metta-ref) check-coverage FAIL"; tail -4 "$log" | sed 's/^/        /'; pfail=$((pfail+1)); fi
 else echo "  [m1] metta-ref not found (skipped)"; fi
 # HOL4CakeML — smoke script present; guarded because Holmake is currently broken on this host
 if ls ProgramVerification/HOL4CakeML/*Script.sml >/dev/null 2>&1; then
-  if ( . /home/aimama/aihub/CakeML/env.sh >/dev/null 2>&1; timeout 30 Holmake --help >/dev/null 2>&1 ); then
-    ( . /home/aimama/aihub/CakeML/env.sh >/dev/null 2>&1; cd ProgramVerification/HOL4CakeML && timeout 590 Holmake HOLDIR="$HOLDIR" POLY="$CAKEML_HOME/polyml-local/bin/poly" >/tmp/_hol.$$ 2>&1 )
+  if ( . $AIHUB/CakeML/env.sh >/dev/null 2>&1; timeout 30 Holmake --help >/dev/null 2>&1 ); then
+    ( . $AIHUB/CakeML/env.sh >/dev/null 2>&1; cd ProgramVerification/HOL4CakeML && timeout 590 Holmake HOLDIR="$HOLDIR" POLY="$CAKEML_HOME/polyml-local/bin/poly" >/tmp/_hol.$$ 2>&1 )
     if ls ProgramVerification/HOL4CakeML/.hol/objs/smokeTheory.uo >/dev/null 2>&1 || ls ProgramVerification/HOL4CakeML/smokeTheory.uo >/dev/null 2>&1; then echo "  [executed] HOL4CakeML/smokeScript.sml built (HOL4 verified: dbl + dbl_two + dbl_add)"; pass=$((pass+1));
     else echo "  [toolchain-warming] HOL4CakeML: 'Holmake --help' OK but the smoke build is not yet succeeding (HOL4 rebuild in progress) -- reported, NOT gating the curriculum"; fi
     # CakeML translation of the verified function (translator + basis heap)
     if ls ProgramVerification/HOL4CakeML/cake_translation/*Script.sml >/dev/null 2>&1; then
-      ( . /home/aimama/aihub/CakeML/env.sh >/dev/null 2>&1; cd ProgramVerification/HOL4CakeML/cake_translation && timeout 590 Holmake HOLDIR="$HOLDIR" CAKEMLDIR="$CAKEMLDIR" POLY="$CAKEML_HOME/polyml-local/bin/poly" >/tmp/_tr.$$ 2>&1 )
+      ( . $AIHUB/CakeML/env.sh >/dev/null 2>&1; cd ProgramVerification/HOL4CakeML/cake_translation && timeout 590 Holmake HOLDIR="$HOLDIR" CAKEMLDIR="$CAKEMLDIR" POLY="$CAKEML_HOME/polyml-local/bin/poly" >/tmp/_tr.$$ 2>&1 )
       if ls ProgramVerification/HOL4CakeML/cake_translation/.hol/objs/dbl_cakeTheory.uo >/dev/null 2>&1; then echo "  [executed] HOL4CakeML cake_translation: dbl translated to CakeML (translator-verified)"; pass=$((pass+1)); else echo "  [toolchain-warming] CakeML translation build pending"; fi
     fi
     # HOL4CakeML negative (expected-fail)
     if ls ProgramVerification/HOL4CakeML/neg/*Script.sml >/dev/null 2>&1; then
-      ( . /home/aimama/aihub/CakeML/env.sh >/dev/null 2>&1; cd ProgramVerification/HOL4CakeML/neg && rm -f .hol/objs/neg_typeerrorTheory.* 2>/dev/null; timeout 200 Holmake HOLDIR="$HOLDIR" POLY="$CAKEML_HOME/polyml-local/bin/poly" neg_typeerrorTheory.uo >/dev/null 2>&1 )
+      ( . $AIHUB/CakeML/env.sh >/dev/null 2>&1; cd ProgramVerification/HOL4CakeML/neg && rm -f .hol/objs/neg_typeerrorTheory.* 2>/dev/null; timeout 200 Holmake HOLDIR="$HOLDIR" POLY="$CAKEML_HOME/polyml-local/bin/poly" neg_typeerrorTheory.uo >/dev/null 2>&1 )
       if ls ProgramVerification/HOL4CakeML/neg/.hol/objs/neg_typeerrorTheory.uo >/dev/null 2>&1; then echo "  [neg] HOL4CakeML/neg/neg_typeerror  NOT CAUGHT  X"; missed=$((missed+1)); else echo "  [neg] HOL4CakeML/neg/neg_typeerror  caught"; caught=$((caught+1)); fi
     fi
   else

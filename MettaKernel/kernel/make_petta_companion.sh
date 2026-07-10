@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+AIHUB="${AIHUB:-$(cd "$(dirname "$0")/../../.." && pwd)}"
 # make_petta_companion.sh — generate a PeTTa-runnable companion from a core-MeTTa kernel file.
 #
 # This is a LEXICAL transform, deliberately NOT the semantic he_to_petta.pl translator
@@ -14,7 +15,7 @@
 #
 # Usage: make_petta_companion.sh <input.metta> [output.metta]
 set -euo pipefail
-LIB_HE='/home/aimama/aihub/hyperon/PeTTa/lib/lib_he'
+LIB_HE="$AIHUB/hyperon/PeTTa/lib/lib_he"
 
 src="${1:?usage: make_petta_companion.sh <input.metta> [output.metta]}"
 [ -f "$src" ] || { echo "error: no such file: $src" >&2; exit 2; }

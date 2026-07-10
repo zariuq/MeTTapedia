@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
+AIHUB="${AIHUB:-$(cd "$(dirname "$0")/../../.." && pwd)}"
 set -u
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-CETTA="${CETTA:-/home/aimama/aihub/hyperon/CeTTa/cetta}"
-PETTA="${PETTA:-/home/aimama/aihub/hyperon/PeTTa/run.sh}"
+CETTA="${CETTA:-$AIHUB/hyperon/CeTTa/cetta}"
+PETTA="${PETTA:-$AIHUB/hyperon/PeTTa/run.sh}"
 RUN_TIMEOUT_SECONDS="${RUN_TIMEOUT_SECONDS:-240}"
 CETTA_AS_LIMIT_BYTES="${CETTA_AS_LIMIT_BYTES:-17179869184}"
 PETTA_AS_LIMIT_BYTES="${PETTA_AS_LIMIT_BYTES:-17179869184}"
