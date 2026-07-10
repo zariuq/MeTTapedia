@@ -465,6 +465,90 @@ private theorem valueBindings_filter_eq_only_empty
       ValueBindings.val hrest => by
       simpa using valueBindings_filter_eq_only_empty p hrest
 
+theorem valueBindings_append :
+    ∀ {a b : Metta.Bindings}, ValueBindings a → ValueBindings b →
+      ValueBindings (a ++ b)
+  | [], b, ValueBindings.nil, hb => by
+      simpa using hb
+  | Metta.BindingRel.val _x _atom :: rest, b,
+      ValueBindings.val hrest, hb => by
+      exact ValueBindings.val (valueBindings_append hrest hb)
+
+theorem valueBindings_reverse :
+    ∀ {b : Metta.Bindings}, ValueBindings b → ValueBindings b.reverse
+  | [], ValueBindings.nil => by
+      exact ValueBindings.nil
+  | Metta.BindingRel.val _x _atom :: rest, ValueBindings.val hrest => by
+      simpa using
+        valueBindings_append (valueBindings_reverse hrest)
+          (ValueBindings.val ValueBindings.nil)
+
+private theorem valueBindings_filterMap_restrict
+    (vars : List Metta.VarName) (b : Metta.Bindings) :
+    ValueBindings
+      (vars.filterMap
+        (fun v =>
+          have val := resolveAtom b (b.length + 1) (Metta.Atom.var v)
+          if (val == Metta.Atom.var v) = true then
+            none
+          else
+            some (Metta.BindingRel.val v val))) := by
+  induction vars with
+  | nil =>
+      simp
+      exact ValueBindings.nil
+  | cons v vs ih =>
+      simp only [List.filterMap_cons]
+      by_cases hbeq :
+          (resolveAtom b (b.length + 1) (Metta.Atom.var v) ==
+            Metta.Atom.var v) = true
+      · simp [hbeq]
+        exact ih
+      · have hfalse :
+            (resolveAtom b (b.length + 1) (Metta.Atom.var v) ==
+              Metta.Atom.var v) = false := by
+          cases h :
+              (resolveAtom b (b.length + 1) (Metta.Atom.var v) ==
+                Metta.Atom.var v) <;> simp [h] at hbeq ⊢
+        simp [hfalse]
+        exact ValueBindings.val ih
+
+theorem valueBindings_restrictBnd
+    {vars : List Metta.VarName} {b : Metta.Bindings}
+    (hvalue : ValueBindings b) :
+    ValueBindings (restrictBnd vars b) := by
+  unfold restrictBnd
+  change
+    ValueBindings
+      (List.filterMap
+          (fun x =>
+            have v := resolveAtom b (List.length b + 1) (Metta.Atom.var x)
+            if (v == Metta.Atom.var x) = true then
+              none
+            else
+              some (Metta.BindingRel.val x v))
+          vars ++
+        List.filter
+          (fun r =>
+            match r with
+            | Metta.BindingRel.eq x y =>
+                vars.contains x && vars.contains y
+            | _ => false)
+          b)
+  have hsolved := valueBindings_filterMap_restrict vars b
+  have heqs :
+      List.filter
+          (fun r =>
+            match r with
+            | Metta.BindingRel.eq x y =>
+                vars.contains x && vars.contains y
+            | _ => false)
+          b = [] :=
+    valueBindings_filter_eq_only_empty
+      (fun x y => vars.contains x && vars.contains y) hvalue
+  rw [heqs, List.append_nil]
+  exact hsolved
+
 theorem closedValueBindings_restrictBnd
     {vars : List Metta.VarName} {b : Metta.Bindings}
     (hclosed : ClosedValueBindings b) :
@@ -555,6 +639,39 @@ theorem valueBindings_merge_empty_head_getD_of_value
       have houtValue : ValueBindings out :=
         merge_value_value_mem ValueBindings.nil hvalue hout
       simpa [hmerge] using houtValue
+
+theorem valueBindings_of_merge_singleton_val_eq
+    {b rootBnd : Metta.Bindings} {binder : String} {value : Metta.Atom}
+    (hvalue : ValueBindings b)
+    (hmerge :
+      Metta.Bindings.merge b [Metta.BindingRel.val binder value] =
+        [rootBnd]) :
+    ValueBindings rootBnd := by
+  have hmem :
+      rootBnd ∈
+        Metta.Bindings.merge b [Metta.BindingRel.val binder value] := by
+    rw [hmerge]
+    simp
+  exact
+    merge_value_value_mem hvalue
+      (ValueBindings.val ValueBindings.nil) hmem
+
+theorem closedValueBindings_of_merge_singleton_val_eq
+    {b rootBnd : Metta.Bindings} {binder : String} {value : Metta.Atom}
+    (hclosed : ClosedValueBindings b)
+    (hValueClosed : value.vars = [])
+    (hmerge :
+      Metta.Bindings.merge b [Metta.BindingRel.val binder value] =
+        [rootBnd]) :
+    ClosedValueBindings rootBnd := by
+  have hmem :
+      rootBnd ∈
+        Metta.Bindings.merge b [Metta.BindingRel.val binder value] := by
+    rw [hmerge]
+    simp
+  exact
+    merge_closed_closed_mem hclosed
+      (ClosedValueBindings.val hValueClosed ClosedValueBindings.nil) hmem
 
 theorem closedValueBindings_merge_empty_head_getD_of_closed
     {b : Metta.Bindings} (hclosed : ClosedValueBindings b) :
@@ -1396,6 +1513,25 @@ theorem callGrounded_eq_true_implies_beq_true
     Metta.GroundingTable.lookup, mBool, hA, hB] at h
   exact h
 
+theorem callGrounded_eq_true_implies_no_errors
+    (a b : Metta.Atom)
+    (h : Metta.callGrounded Metta.Minimal.stdGroundings "==" [a, b] =
+      Metta.ReduceResult.ok [mBool true]) :
+    a.isError = false ∧ b.isError = false := by
+  cases ha : a.isError <;> cases hb : b.isError <;>
+    simp [Metta.Minimal.stdGroundings, Metta.Builtins.table,
+      Metta.Builtins.mathTable, Metta.Builtins.eqAtom, Metta.callGrounded,
+      Metta.GroundingTable.lookup, mBool, ha, hb] at h ⊢
+  case false.true =>
+    rw [h] at hb
+    contradiction
+  case true.false =>
+    rw [h] at ha
+    contradiction
+  case true.true =>
+    rw [h] at ha
+    contradiction
+
 theorem callGrounded_eq_false_of_beq_false
     (a b : Metta.Atom)
     (hA : a.isError = false) (hB : b.isError = false)
@@ -1530,6 +1666,70 @@ theorem counterSuffix_et_ne_initial_ny
     simp [counterSuffix] at hlist
   · have hlist := congrArg String.toList h
     simp [counterSuffix] at hlist
+
+theorem tail_unify_restrictBnd_keyed_ambient_initial_ny_of_closed_merge_empty
+    (ny template : Metta.Atom) (b : Metta.Bindings) (st : St)
+    (hclosed : ClosedValueBindings b)
+    (hNy : ny.vars = [])
+    (hTemplate :
+      ∀ x, x ∈ template.vars → x = counterSuffix St.init.counter "ny") :
+    ∃ binder',
+      ClosedValueBindings
+        (restrictBnd
+          (([ny, mVar (counterSuffix St.init.counter "ny"), template,
+            mSym "Empty"]).flatMap Metta.Atom.vars)
+          ((Metta.Bindings.merge [] b).head?.getD b)) ∧
+      (∀ x,
+        x ∈
+          bindingValueKeys
+            (restrictBnd
+              (([ny, mVar (counterSuffix St.init.counter "ny"), template,
+                mSym "Empty"]).flatMap Metta.Atom.vars)
+              ((Metta.Bindings.merge [] b).head?.getD b)) →
+        x = binder') ∧
+      (∀ {v : String}, v = "e" ∨ v = "t" →
+        counterSuffix (st.counter + 2) v ≠ binder') := by
+  exact
+    tail_unify_restrictBnd_keyed_ambient_of_closed_merge_empty
+      (counterSuffix St.init.counter "ny") ny template b st
+      hclosed hNy hTemplate
+      (fun hv => counterSuffix_et_ne_initial_ny (st.counter + 2) hv)
+
+theorem tail_unify_restrictBnd_keyed_ambient_initial_ny_of_value_merge_empty
+    (ny template : Metta.Atom) (b : Metta.Bindings) (st : St)
+    (hvalue : ValueBindings b)
+    (hNy : ny.vars = [])
+    (hTemplate :
+      ∀ x, x ∈ template.vars → x = counterSuffix St.init.counter "ny")
+    (hResolveBinder :
+      (resolveAtom ((Metta.Bindings.merge [] b).head?.getD b)
+          (((Metta.Bindings.merge [] b).head?.getD b).length + 1)
+          (Metta.Atom.var (counterSuffix St.init.counter "ny")) ==
+        Metta.Atom.var (counterSuffix St.init.counter "ny")) = false →
+        (resolveAtom ((Metta.Bindings.merge [] b).head?.getD b)
+          (((Metta.Bindings.merge [] b).head?.getD b).length + 1)
+          (Metta.Atom.var (counterSuffix St.init.counter "ny"))).vars = []) :
+    ∃ binder',
+      ClosedValueBindings
+        (restrictBnd
+          (([ny, mVar (counterSuffix St.init.counter "ny"), template,
+            mSym "Empty"]).flatMap Metta.Atom.vars)
+          ((Metta.Bindings.merge [] b).head?.getD b)) ∧
+      (∀ x,
+        x ∈
+          bindingValueKeys
+            (restrictBnd
+              (([ny, mVar (counterSuffix St.init.counter "ny"), template,
+                mSym "Empty"]).flatMap Metta.Atom.vars)
+              ((Metta.Bindings.merge [] b).head?.getD b)) →
+        x = binder') ∧
+      (∀ {v : String}, v = "e" ∨ v = "t" →
+        counterSuffix (st.counter + 2) v ≠ binder') := by
+  exact
+    tail_unify_restrictBnd_keyed_ambient_of_value_merge_empty
+      (counterSuffix St.init.counter "ny") ny template b st
+      hvalue hNy hTemplate hResolveBinder
+      (fun hv => counterSuffix_et_ne_initial_ny (st.counter + 2) hv)
 
 theorem convReadoutAfterNxNy_termAtom_mvar_instantiate_vars_only
     (raw : DIndGArtifactTerm) (binder : String) {b : Metta.Bindings}
@@ -2998,6 +3198,21 @@ private def letRuleBindings
   [ Metta.BindingRel.val "template" template
   , Metta.BindingRel.val "atom" atom
   , Metta.BindingRel.val "pattern" (mVar binder) ]
+
+private theorem valueBindings_letRuleBindings
+    (binder : String) (atom template : Metta.Atom) :
+    ValueBindings (letRuleBindings binder atom template) := by
+  exact ValueBindings.val (ValueBindings.val (ValueBindings.val ValueBindings.nil))
+
+private theorem valueBindings_renamed_letRuleBindings_reverse
+    (f : Metta.VarName → Metta.VarName)
+    (binder : String) (atom template : Metta.Atom) :
+    ValueBindings
+      ((renameBindings f (letRuleBindings binder atom template)).reverse) := by
+  exact
+    valueBindings_reverse
+      (ValueBindings.rename
+        (valueBindings_letRuleBindings binder atom template))
 
 private theorem fresh_let_rule_match
     (counter : Nat) (binder : String) (atom template : Metta.Atom)
@@ -18138,6 +18353,49 @@ theorem mettaEval_kernelDefControlEnv_termAtom_srt_eq_state
             interpretFuel_kernelDefControlEnv_eval_Srt_notReducible_eq_state
               (fuel + 1) st .kind hExtra))
 
+private theorem mettaEval_kernelDefControlEnv_termAtom_srt_output_isError_fuel_one
+    {st : St} {sort : DIndGArtifactSort}
+    {out : Metta.Atom} {outBnd : Metta.Bindings}
+    (hOut :
+      (out, outBnd) ∈
+        (mettaEval kernelDefControlEnv 1 st [] (termAtom (.srt sort))).1) :
+    out.isError = true := by
+  unfold mettaEval at hOut
+  rw [Metta.instantiate_nil (termAtom (.srt sort))] at hOut
+  cases sort
+  · simp only [termAtom, sortAtom, mExpr, mSym] at hOut
+    have hType :
+        typeMismatch kernelDefControlEnv st.world "Srt" [Metta.Atom.sym "type"] =
+          none := by
+      simpa [sortAtom, mSym] using
+        kernelDefControlEnv_Srt_typeMismatch st .type
+    rw [hType] at hOut
+    have hErrNe :
+        (Metta.Atom.expr
+          [ Metta.Atom.sym "Error"
+          , Metta.Atom.sym "type"
+          , Metta.Atom.sym "StackOverflow" ] != Metta.Atom.sym "type") = true := by
+      rfl
+    simp [kernelDefControlEnv_Srt_argMask, Metta.Minimal.mettaEval.eq_1,
+      Metta.instantiate_nil, Metta.Atom.isError, hErrNe] at hOut
+    exact hOut.1.symm ▸ rfl
+  · simp only [termAtom, sortAtom, mExpr, mSym] at hOut
+    have hType :
+        typeMismatch kernelDefControlEnv st.world "Srt" [Metta.Atom.sym "kind"] =
+          none := by
+      simpa [sortAtom, mSym] using
+        kernelDefControlEnv_Srt_typeMismatch st .kind
+    rw [hType] at hOut
+    have hErrNe :
+        (Metta.Atom.expr
+          [ Metta.Atom.sym "Error"
+          , Metta.Atom.sym "kind"
+          , Metta.Atom.sym "StackOverflow" ] != Metta.Atom.sym "kind") = true := by
+      rfl
+    simp [kernelDefControlEnv_Srt_argMask, Metta.Minimal.mettaEval.eq_1,
+      Metta.instantiate_nil, Metta.Atom.isError, hErrNe] at hOut
+    exact hOut.1.symm ▸ rfl
+
 theorem kernelDefControlEnv_callGrounded_Var
     (st : St) (k : Nat) :
     callGrounded kernelDefControlEnv.gt "Var"
@@ -18221,6 +18479,32 @@ theorem mettaEval_kernelDefControlEnv_termAtom_var_eq_state
           simpa [evalItemNil, termAtom, mExpr, mSym, mNat] using
             interpretFuel_kernelDefControlEnv_eval_Var_notReducible_eq_state
               (fuel + 1) st k hExtra))
+
+private theorem mettaEval_kernelDefControlEnv_termAtom_var_output_isError_fuel_one
+    {st : St} {k : Nat}
+    {out : Metta.Atom} {outBnd : Metta.Bindings}
+    (hOut :
+      (out, outBnd) ∈
+        (mettaEval kernelDefControlEnv 1 st [] (termAtom (.var k))).1) :
+    out.isError = true := by
+  unfold mettaEval at hOut
+  rw [Metta.instantiate_nil (termAtom (.var k))] at hOut
+  simp only [termAtom, mExpr, mSym, mNat] at hOut
+  have hType :
+      typeMismatch kernelDefControlEnv st.world "Var"
+        [Metta.Atom.gnd (Metta.Ground.int (Int.ofNat k))] = none := by
+    simpa [mNat] using kernelDefControlEnv_Var_typeMismatch st k
+  rw [hType] at hOut
+  have hErrNe :
+      (Metta.Atom.expr
+        [ Metta.Atom.sym "Error"
+        , Metta.Atom.gnd (Metta.Ground.int (↑k : Int))
+        , Metta.Atom.sym "StackOverflow" ] !=
+          Metta.Atom.gnd (Metta.Ground.int (↑k : Int))) = true := by
+    rfl
+  simp [kernelDefControlEnv_Var_argMask, Metta.Minimal.mettaEval.eq_1,
+    Metta.instantiate_nil, Metta.Atom.isError, hErrNe] at hOut
+  exact hOut.1.symm ▸ rfl
 
 theorem kernelDefControlEnv_declNameAtom_candidates_state
     (st : St) (name : Mettapedia.Languages.MeTTa.PureKernel.Syntax.DeclName)
@@ -18397,6 +18681,34 @@ theorem mettaEval_kernelDefControlEnv_termAtom_con_eq_state
         simpa [evalItemNil, termAtom, declNameAtom, mExpr, mSym] using
           interpretFuel_kernelDefControlEnv_eval_Con_notReducible_eq_state
             (fuel + 1) st name hExtra))
+
+private theorem mettaEval_kernelDefControlEnv_termAtom_con_output_isError_fuel_one
+    {st : St}
+    {name : Mettapedia.Languages.MeTTa.PureKernel.Syntax.DeclName}
+    {out : Metta.Atom} {outBnd : Metta.Bindings}
+    (hOut :
+      (out, outBnd) ∈
+        (mettaEval kernelDefControlEnv 1 st [] (termAtom (.con name))).1) :
+    out.isError = true := by
+  unfold mettaEval at hOut
+  rw [Metta.instantiate_nil (termAtom (.con name))] at hOut
+  simp only [termAtom, declNameAtom, mExpr, mSym] at hOut
+  have hType :
+      typeMismatch kernelDefControlEnv st.world "Con"
+        [Metta.Atom.sym (Lean.Name.toString name false)] = none := by
+    simpa [declNameAtom, mSym] using
+      kernelDefControlEnv_Con_typeMismatch st name
+  rw [hType] at hOut
+  have hErrNe :
+      (Metta.Atom.expr
+        [ Metta.Atom.sym "Error"
+        , Metta.Atom.sym (Lean.Name.toString name false)
+        , Metta.Atom.sym "StackOverflow" ] !=
+          Metta.Atom.sym (Lean.Name.toString name false)) = true := by
+    rfl
+  simp [kernelDefControlEnv_Con_argMask, Metta.Minimal.mettaEval.eq_1,
+    Metta.instantiate_nil, Metta.Atom.isError, hErrNe] at hOut
+  exact hOut.1.symm ▸ rfl
 
 theorem mettaEval_binary_expr_eq_of_arg_singletons_and_notReducible_eq
     (env : MinEnv) (fuel : Nat) (st st₁ st₂ stRoot : St)
@@ -20720,6 +21032,49 @@ theorem mettaEval_binary_expr_eq_of_quoted_args_and_root_eval_eq
   rw [hFinal']
   exact ⟨⟨[], rfl, rfl⟩, rfl⟩
 
+private theorem mettaEval_binary_expr_state_pred_of_quoted_args_and_root_eval
+    (env : MinEnv) (fuel : Nat) (st stRoot : St)
+    (op : String)
+    (x y root : Metta.Atom) (rootBnd : Metta.Bindings)
+    (P : St → Prop)
+    (hType : typeMismatch env st.world op [x, y] = none)
+    (hMask : argMask env op 2 = [false, false])
+    (hNoErr :
+      (([x, y].zip [x, y]).find?
+        (fun ho => ho.1.isError && ho.1 != ho.2)) = none)
+    (hRoot : interpretFuel env (fuel + 1) st
+        [evalItemNil (Metta.Atom.expr [Metta.Atom.sym op, x, y])] [] =
+      ([(root, rootBnd)], stRoot))
+    (hRootNotNotReducible : (root == notReducibleA) = false)
+    (hRootNotSelf : (root == Metta.Atom.expr [Metta.Atom.sym op, x, y]) = false)
+    (hReturns : returnsAtom env (Metta.Atom.expr [Metta.Atom.sym op, x, y]) = false)
+    (hFinal :
+      P (mettaEval env fuel stRoot
+          (restrictBnd (([x, y]).flatMap Metta.Atom.vars)
+            ((Metta.Bindings.merge [] rootBnd).head?.getD rootBnd)) root).2) :
+    P (mettaEval env (fuel + 1) st []
+        (Metta.Atom.expr [Metta.Atom.sym op, x, y])).2 := by
+  unfold mettaEval
+  rw [Metta.instantiate_nil (Metta.Atom.expr [Metta.Atom.sym op, x, y])]
+  simp only [hType, hMask, List.length_cons, List.length_nil, Nat.reduceAdd,
+    List.zip_cons_cons, List.zip_nil_right, List.foldl_cons, List.foldl_nil]
+  simp [Metta.instantiate_nil]
+  have hNoErr' :
+      List.find? (fun ho : Metta.Atom × Metta.Atom => ho.1.isError && ho.1 != ho.2)
+        [(x, x), (y, y)] = none := by
+    simpa using hNoErr
+  rw [hNoErr']
+  have hRoot' :
+      interpretFuel env (fuel + 1) st
+        [{ stack := atomToStack
+            (Metta.Atom.expr [Metta.Atom.sym "eval",
+              Metta.Atom.expr [Metta.Atom.sym op, x, y]]) [] }] [] =
+      ([(root, rootBnd)], stRoot) := by
+    simpa [evalItemNil] using hRoot
+  rw [hRoot']
+  simp [hRootNotNotReducible, hRootNotSelf, hReturns]
+  simpa [List.flatMap, mSym] using hFinal
+
 theorem mettaEval_binary_expr_eq_of_quoted_args_and_notReducible_eq
     (env : MinEnv) (fuel : Nat) (st stRoot : St)
     (op : String) (x y : Metta.Atom)
@@ -21998,7 +22353,7 @@ private theorem mettaEvalExprRootFold_true_pair_implies_acc_or_recursive_bnd_loc
             p.1).1 := by
   induction pairs generalizing acc with
   | nil =>
-      simpa using hmem
+      exact Or.inl hmem
   | cons p ps ih =>
       have htail :=
         ih (acc := mettaEvalExprRootFoldStep env fuel queryVars w partBnd acc p)
@@ -22079,6 +22434,326 @@ private theorem mettaEvalExprRootFold_true_pair_implies_acc_or_recursive_bnd_loc
         exact Or.inr
           ⟨pTail, by simp [hpTail], stBefore, recBnd, hPBefore,
             hnotNR, hnotSelf, hrecMem⟩
+
+private theorem mettaEvalExprRootFoldStep_pair_implies_acc_or_self_or_recursive_bnd_local
+    (env : MinEnv) (fuel : Nat) (queryVars : List String)
+    (w : Metta.Atom) (partBnd : Metta.Bindings)
+    (acc : List (Metta.Atom × Metta.Bindings) × St)
+    (p : Metta.Atom × Metta.Bindings)
+    (out : Metta.Atom) (outBnd : Metta.Bindings)
+    (hReturns : returnsAtom env w = false)
+    (hmem :
+      (out, outBnd) ∈
+        (mettaEvalExprRootFoldStep env fuel queryVars w partBnd acc p).1) :
+    (out, outBnd) ∈ acc.1 ∨
+      out = w ∨
+      ∃ recBnd,
+        (p.1 == notReducibleA) = false ∧
+        (p.1 == w) = false ∧
+        (out, recBnd) ∈
+          (mettaEval env fuel acc.2
+            (restrictBnd queryVars
+              ((Metta.Bindings.merge partBnd p.2).head?.getD p.2))
+            p.1).1 := by
+  unfold mettaEvalExprRootFoldStep at hmem
+  by_cases hfirst : (p.1 == notReducibleA) = true ∨ (p.1 == w) = true
+  · simp [hfirst] at hmem
+    rcases hmem with hacc | htail
+    · exact Or.inl hacc
+    · exact Or.inr (Or.inl htail.1)
+  · have hretFalse :
+        ¬ (returnsAtom env w = true ∧ isEmbeddedOp p.1 = false) := by
+      intro hret
+      rw [hReturns] at hret
+      cases hret.1
+    simp [hfirst, hretFalse] at hmem
+    rcases hmem with hacc | htail
+    · exact Or.inl hacc
+    · rcases htail with ⟨recBnd, hrec, _hout⟩
+      have hnotNR : (p.1 == notReducibleA) = false := by
+        cases hnr : (p.1 == notReducibleA) <;> simp [hnr] at hfirst ⊢
+      have hnotSelf : (p.1 == w) = false := by
+        cases hself : (p.1 == w) <;> simp [hself] at hfirst ⊢
+      exact Or.inr (Or.inr ⟨recBnd, hnotNR, hnotSelf, hrec⟩)
+
+private theorem mettaEvalExprRootFold_pair_implies_acc_or_self_or_recursive_bnd_local
+    (env : MinEnv) (fuel : Nat) (queryVars : List String)
+    (w : Metta.Atom) (partBnd : Metta.Bindings)
+    (pairs : List (Metta.Atom × Metta.Bindings))
+    (acc : List (Metta.Atom × Metta.Bindings) × St)
+    (out : Metta.Atom) (outBnd : Metta.Bindings)
+    (hReturns : returnsAtom env w = false)
+    (hmem :
+      (out, outBnd) ∈
+        (pairs.foldl (mettaEvalExprRootFoldStep env fuel queryVars w partBnd) acc).1) :
+    (out, outBnd) ∈ acc.1 ∨
+      out = w ∨
+      ∃ p ∈ pairs, ∃ stBefore recBnd,
+        (p.1 == notReducibleA) = false ∧
+        (p.1 == w) = false ∧
+        (out, recBnd) ∈
+          (mettaEval env fuel stBefore
+            (restrictBnd queryVars
+              ((Metta.Bindings.merge partBnd p.2).head?.getD p.2))
+            p.1).1 := by
+  induction pairs generalizing acc with
+  | nil =>
+      exact Or.inl hmem
+  | cons p ps ih =>
+      have htail :=
+        ih (acc := mettaEvalExprRootFoldStep env fuel queryVars w partBnd acc p)
+          hmem
+      rcases htail with hstep | htail
+      · rcases
+          mettaEvalExprRootFoldStep_pair_implies_acc_or_self_or_recursive_bnd_local
+            env fuel queryVars w partBnd acc p out outBnd hReturns hstep with
+          hacc | hself | hrec
+        · exact Or.inl hacc
+        · exact Or.inr (Or.inl hself)
+        · rcases hrec with ⟨recBnd, hnotNR, hnotSelf, hrecMem⟩
+          exact Or.inr (Or.inr
+            ⟨p, by simp, acc.2, recBnd, hnotNR, hnotSelf, hrecMem⟩)
+      · rcases htail with hself | hrec
+        · exact Or.inr (Or.inl hself)
+        · rcases hrec with
+            ⟨pTail, hpTail, stBefore, recBnd, hnotNR, hnotSelf, hrecMem⟩
+          exact Or.inr (Or.inr
+            ⟨pTail, by simp [hpTail], stBefore, recBnd,
+              hnotNR, hnotSelf, hrecMem⟩)
+
+private theorem mettaEvalExprPartFoldStep_pair_nonError_implies_acc_or_self_or_recursive_bnd_any_local
+    (env : MinEnv) (fuel : Nat) (queryVars : List String)
+    (op : String) (args : List Metta.Atom) (bnd : Metta.Bindings)
+    (acc : List (Metta.Atom × Metta.Bindings) × St)
+    (part : List Metta.Atom × Metta.Bindings)
+    (out : Metta.Atom) (outBnd : Metta.Bindings)
+    (hOutNoErr : out.isError = false)
+    (hReturns :
+      returnsAtom env (Metta.Atom.expr (Metta.Atom.sym op :: part.1)) = false)
+    (hmem :
+      (out, outBnd) ∈
+        (mettaEvalExprPartFoldStep env fuel queryVars op args bnd acc part).1) :
+    (out, outBnd) ∈ acc.1 ∨
+      ∃ pairs stRoot,
+        (part.1.zip args).find?
+            (fun ho : Metta.Atom × Metta.Atom => ho.1.isError && ho.1 != ho.2) =
+          none ∧
+        interpretFuel env (fuel + 1) acc.2
+            [{ stack := atomToStack (Metta.Atom.expr [Metta.Atom.sym "eval",
+                Metta.Atom.expr (Metta.Atom.sym op :: part.1)]) [], bnd := bnd }] [] =
+          (pairs, stRoot) ∧
+        (out = Metta.Atom.expr (Metta.Atom.sym op :: part.1) ∨
+          ∃ root rootBnd stBefore recBnd,
+            (root, rootBnd) ∈ pairs ∧
+            (root == notReducibleA) = false ∧
+            (root == Metta.Atom.expr (Metta.Atom.sym op :: part.1)) = false ∧
+            (out, recBnd) ∈
+              (mettaEval env fuel stBefore
+                (restrictBnd queryVars
+                  ((Metta.Bindings.merge part.2 rootBnd).head?.getD rootBnd))
+                root).1) := by
+  cases hfind :
+      (part.1.zip args).find?
+        (fun ho : Metta.Atom × Metta.Atom => ho.1.isError && ho.1 != ho.2) with
+  | some found =>
+      unfold mettaEvalExprPartFoldStep at hmem
+      rw [hfind] at hmem
+      rcases List.mem_append.mp hmem with hacc | htail
+      · exact Or.inl hacc
+      · have hErrFound : found.1.isError = true := by
+          have hpred :=
+            List.find?_some
+              (p := fun ho : Metta.Atom × Metta.Atom => ho.1.isError && ho.1 != ho.2)
+              hfind
+          cases herr : found.1.isError <;> simp [herr] at hpred ⊢
+        rcases found with ⟨err, orig⟩
+        simp only [List.mem_singleton] at htail
+        cases htail
+        rw [hOutNoErr] at hErrFound
+        cases hErrFound
+  | none =>
+      unfold mettaEvalExprPartFoldStep at hmem
+      rw [hfind] at hmem
+      simp only at hmem
+      let rootItem : Item :=
+        { stack := atomToStack (Metta.Atom.expr [Metta.Atom.sym "eval",
+            Metta.Atom.expr (Metta.Atom.sym op :: part.1)]) [], bnd := bnd }
+      cases hpairs : interpretFuel env (fuel + 1) acc.2 [rootItem] [] with
+      | mk pairs stRoot =>
+          have hmem' :
+              (out, outBnd) ∈
+                (acc.1 ++
+                  (pairs.foldl
+                    (mettaEvalExprRootFoldStep env fuel queryVars
+                      (Metta.Atom.expr (Metta.Atom.sym op :: part.1)) part.2)
+                    ([], stRoot)).1) := by
+            simpa [rootItem, hpairs] using hmem
+          rcases List.mem_append.mp hmem' with hacc | hrootFold
+          · exact Or.inl hacc
+          · have hrootInv :=
+              mettaEvalExprRootFold_pair_implies_acc_or_self_or_recursive_bnd_local
+                env fuel queryVars
+                (Metta.Atom.expr (Metta.Atom.sym op :: part.1)) part.2
+                pairs ([], stRoot) out outBnd hReturns hrootFold
+            rcases hrootInv with hempty | hself | hrec
+            · cases hempty
+            · exact Or.inr
+                ⟨pairs, stRoot, rfl, rfl, Or.inl hself⟩
+            · rcases hrec with
+                ⟨rootPair, hrootPair, stBefore, recBnd, hnotNR, hnotSelf,
+                  hrecMem⟩
+              rcases rootPair with ⟨root, rootBnd⟩
+              exact Or.inr
+                ⟨pairs, stRoot, rfl, rfl,
+                  Or.inr ⟨root, rootBnd, stBefore, recBnd, hrootPair,
+                    hnotNR, hnotSelf, by simpa using hrecMem⟩⟩
+
+private theorem mettaEvalExprPartFold_pair_nonError_implies_acc_or_self_or_recursive_bnd_any_local
+    (env : MinEnv) (fuel : Nat) (queryVars : List String)
+    (op : String) (args : List Metta.Atom) (bnd : Metta.Bindings)
+    (parts : List (List Metta.Atom × Metta.Bindings))
+    (acc : List (Metta.Atom × Metta.Bindings) × St)
+    (out : Metta.Atom) (outBnd : Metta.Bindings)
+    (hOutNoErr : out.isError = false)
+    (hReturns :
+      ∀ part ∈ parts,
+        returnsAtom env (Metta.Atom.expr (Metta.Atom.sym op :: part.1)) = false)
+    (hmem :
+      (out, outBnd) ∈
+        (parts.foldl
+          (mettaEvalExprPartFoldStep env fuel queryVars op args bnd) acc).1) :
+    (out, outBnd) ∈ acc.1 ∨
+      ∃ part ∈ parts,
+      ∃ accBefore : List (Metta.Atom × Metta.Bindings) × St,
+      ∃ pairs stRoot,
+        (part.1.zip args).find?
+            (fun ho : Metta.Atom × Metta.Atom => ho.1.isError && ho.1 != ho.2) =
+          none ∧
+        interpretFuel env (fuel + 1) accBefore.2
+            [{ stack := atomToStack (Metta.Atom.expr [Metta.Atom.sym "eval",
+                Metta.Atom.expr (Metta.Atom.sym op :: part.1)]) [], bnd := bnd }] [] =
+          (pairs, stRoot) ∧
+        (out = Metta.Atom.expr (Metta.Atom.sym op :: part.1) ∨
+          ∃ root rootBnd stBefore recBnd,
+            (root, rootBnd) ∈ pairs ∧
+            (root == notReducibleA) = false ∧
+            (root == Metta.Atom.expr (Metta.Atom.sym op :: part.1)) = false ∧
+            (out, recBnd) ∈
+              (mettaEval env fuel stBefore
+                (restrictBnd queryVars
+                  ((Metta.Bindings.merge part.2 rootBnd).head?.getD rootBnd))
+                root).1) := by
+  induction parts generalizing acc with
+  | nil =>
+      exact Or.inl hmem
+  | cons part parts ih =>
+      have htail :=
+        ih
+          (acc := mettaEvalExprPartFoldStep env fuel queryVars op args bnd acc part)
+          (by
+            intro p hp
+            exact hReturns p (by simp [hp]))
+          hmem
+      rcases htail with hstep | hparts
+      · rcases
+          mettaEvalExprPartFoldStep_pair_nonError_implies_acc_or_self_or_recursive_bnd_any_local
+            env fuel queryVars op args bnd acc part out outBnd hOutNoErr
+            (hReturns part (by simp)) hstep with
+          hacc | hpart
+        · exact Or.inl hacc
+        · rcases hpart with ⟨pairs, stRoot, hfind, hroot, hcase⟩
+          exact Or.inr
+            ⟨part, by simp, acc, pairs, stRoot, hfind, hroot, hcase⟩
+      · rcases hparts with
+          ⟨partTail, hpTail, accBefore, pairs, stRoot, hfind, hroot, hcase⟩
+        exact Or.inr
+          ⟨partTail, by simp [hpTail], accBefore, pairs, stRoot, hfind, hroot, hcase⟩
+
+private theorem mettaEvalExprRootFoldStep_self_pair_implies_acc_or_partBnd_or_recursive_bnd_local
+    (env : MinEnv) (fuel : Nat) (queryVars : List String)
+    (w : Metta.Atom) (partBnd : Metta.Bindings)
+    (acc : List (Metta.Atom × Metta.Bindings) × St)
+    (p : Metta.Atom × Metta.Bindings)
+    (outBnd : Metta.Bindings)
+    (hReturns : returnsAtom env w = false)
+    (hmem :
+      (w, outBnd) ∈
+        (mettaEvalExprRootFoldStep env fuel queryVars w partBnd acc p).1) :
+    (w, outBnd) ∈ acc.1 ∨
+      outBnd = partBnd ∨
+      ∃ recBnd,
+        (p.1 == notReducibleA) = false ∧
+        (p.1 == w) = false ∧
+        (w, recBnd) ∈
+          (mettaEval env fuel acc.2
+            (restrictBnd queryVars
+              ((Metta.Bindings.merge partBnd p.2).head?.getD p.2))
+            p.1).1 := by
+  unfold mettaEvalExprRootFoldStep at hmem
+  by_cases hfirst : (p.1 == notReducibleA) = true ∨ (p.1 == w) = true
+  · simp [hfirst] at hmem
+    rcases hmem with hacc | htail
+    · exact Or.inl hacc
+    · exact Or.inr (Or.inl htail)
+  · have hretFalse :
+        ¬ (returnsAtom env w = true ∧ isEmbeddedOp p.1 = false) := by
+      intro hret
+      rw [hReturns] at hret
+      cases hret.1
+    simp [hfirst, hretFalse] at hmem
+    rcases hmem with hacc | htail
+    · exact Or.inl hacc
+    · rcases htail with ⟨recBnd, hrec, _hout⟩
+      have hnotNR : (p.1 == notReducibleA) = false := by
+        cases hnr : (p.1 == notReducibleA) <;> simp [hnr] at hfirst ⊢
+      have hnotSelf : (p.1 == w) = false := by
+        cases hself : (p.1 == w) <;> simp [hself] at hfirst ⊢
+      exact Or.inr (Or.inr ⟨recBnd, hnotNR, hnotSelf, hrec⟩)
+
+private theorem mettaEvalExprRootFold_self_pair_implies_acc_or_partBnd_or_recursive_bnd_local
+    (env : MinEnv) (fuel : Nat) (queryVars : List String)
+    (w : Metta.Atom) (partBnd : Metta.Bindings)
+    (pairs : List (Metta.Atom × Metta.Bindings))
+    (acc : List (Metta.Atom × Metta.Bindings) × St)
+    (outBnd : Metta.Bindings)
+    (hReturns : returnsAtom env w = false)
+    (hmem :
+      (w, outBnd) ∈
+        (pairs.foldl (mettaEvalExprRootFoldStep env fuel queryVars w partBnd) acc).1) :
+    (w, outBnd) ∈ acc.1 ∨
+      outBnd = partBnd ∨
+      ∃ p ∈ pairs, ∃ stBefore recBnd,
+        (p.1 == notReducibleA) = false ∧
+        (p.1 == w) = false ∧
+        (w, recBnd) ∈
+          (mettaEval env fuel stBefore
+            (restrictBnd queryVars
+              ((Metta.Bindings.merge partBnd p.2).head?.getD p.2))
+            p.1).1 := by
+  induction pairs generalizing acc with
+  | nil =>
+      exact Or.inl hmem
+  | cons p ps ih =>
+      have htail :=
+        ih (acc := mettaEvalExprRootFoldStep env fuel queryVars w partBnd acc p)
+          hmem
+      rcases htail with hstep | htail
+      · rcases
+          mettaEvalExprRootFoldStep_self_pair_implies_acc_or_partBnd_or_recursive_bnd_local
+            env fuel queryVars w partBnd acc p outBnd hReturns hstep with
+          hacc | hbnd | hrec
+        · exact Or.inl hacc
+        · exact Or.inr (Or.inl hbnd)
+        · rcases hrec with ⟨recBnd, hnotNR, hnotSelf, hrecMem⟩
+          exact Or.inr (Or.inr
+            ⟨p, by simp, acc.2, recBnd, hnotNR, hnotSelf, hrecMem⟩)
+      · rcases htail with hbnd | hrec
+        · exact Or.inr (Or.inl hbnd)
+        · rcases hrec with
+            ⟨pTail, hpTail, stBefore, recBnd, hnotNR, hnotSelf, hrecMem⟩
+          exact Or.inr (Or.inr
+            ⟨pTail, by simp [hpTail], stBefore, recBnd,
+              hnotNR, hnotSelf, hrecMem⟩)
 
 private theorem mettaEvalExprPartFoldStep_true_pair_implies_acc_or_recursive_bnd_local
     (env : MinEnv) (fuel : Nat) (queryVars : List String)
@@ -22295,6 +22970,78 @@ private theorem mettaEvalExprPartFoldStep_true_pair_implies_acc_or_recursive_bnd
             hfind
         simp [herrEq, mBool, Metta.Atom.isError] at hpred
 
+private theorem mettaEvalExprPartFoldStep_true_pair_implies_acc_or_recursive_bnd_any_local_with_noerr_state_pred
+    (env : MinEnv) (fuel : Nat) (queryVars : List String)
+    (op : String) (args : List Metta.Atom) (bnd : Metta.Bindings)
+    (acc : List (Metta.Atom × Metta.Bindings) × St)
+    (part : List Metta.Atom × Metta.Bindings)
+    (outBnd : Metta.Bindings)
+    (P : St → Prop)
+    (hrootState :
+      P (interpretFuel env (fuel + 1) acc.2
+        [{ stack := atomToStack (Metta.Atom.expr [Metta.Atom.sym "eval",
+            Metta.Atom.expr (Metta.Atom.sym op :: part.1)]) [], bnd := bnd }] []).2)
+    (hrecState :
+      ∀ (acc0 : List (Metta.Atom × Metta.Bindings) × St)
+        (p : Metta.Atom × Metta.Bindings),
+        P acc0.2 →
+          P (mettaEval env fuel acc0.2
+            (restrictBnd queryVars
+              ((Metta.Bindings.merge part.2 p.2).head?.getD p.2))
+            p.1).2)
+    (hRootNotTrue :
+      Metta.Atom.expr (Metta.Atom.sym op :: part.1) ≠ mBool true)
+    (hReturns :
+      returnsAtom env (Metta.Atom.expr (Metta.Atom.sym op :: part.1)) = false)
+    (hmem :
+      (mBool true, outBnd) ∈
+        (mettaEvalExprPartFoldStep env fuel queryVars op args bnd acc part).1) :
+    (mBool true, outBnd) ∈ acc.1 ∨
+      ∃ pairs stRoot root rootBnd stBefore recBnd,
+        (part.1.zip args).find? (fun ho => ho.1.isError && ho.1 != ho.2) = none ∧
+        P stBefore ∧
+        interpretFuel env (fuel + 1) acc.2
+            [{ stack := atomToStack (Metta.Atom.expr [Metta.Atom.sym "eval",
+                Metta.Atom.expr (Metta.Atom.sym op :: part.1)]) [], bnd := bnd }] [] =
+          (pairs, stRoot) ∧
+        (root, rootBnd) ∈ pairs ∧
+        (root == notReducibleA) = false ∧
+        (root == Metta.Atom.expr (Metta.Atom.sym op :: part.1)) = false ∧
+        (mBool true, recBnd) ∈
+          (mettaEval env fuel stBefore
+            (restrictBnd queryVars
+              ((Metta.Bindings.merge part.2 rootBnd).head?.getD rootBnd))
+            root).1 := by
+  cases hfind :
+      (part.1.zip args).find? (fun ho => ho.1.isError && ho.1 != ho.2) with
+  | none =>
+      rcases
+          mettaEvalExprPartFoldStep_true_pair_implies_acc_or_recursive_bnd_local_state_pred
+            env fuel queryVars op args bnd acc part outBnd P
+            hrootState hrecState hfind hRootNotTrue hReturns hmem with
+        hacc | hrec
+      · exact Or.inl hacc
+      · rcases hrec with
+          ⟨pairs, stRoot, root, rootBnd, stBefore, recBnd, hPBefore,
+            hrootEq, hrootMem, hnotNR, hnotSelf, hrecMem⟩
+        exact Or.inr
+          ⟨pairs, stRoot, root, rootBnd, stBefore, recBnd,
+            rfl, hPBefore, hrootEq, hrootMem, hnotNR, hnotSelf, hrecMem⟩
+  | some found =>
+      unfold mettaEvalExprPartFoldStep at hmem
+      rw [hfind] at hmem
+      rcases List.mem_append.mp hmem with hacc | htail
+      · exact Or.inl hacc
+      · rcases found with ⟨err, orig⟩
+        simp only [List.mem_singleton] at htail
+        have herrEq : err = mBool true := by
+          exact (congrArg Prod.fst htail).symm
+        have hpred :=
+          List.find?_some
+            (p := fun ho : Metta.Atom × Metta.Atom => ho.1.isError && ho.1 != ho.2)
+            hfind
+        simp [herrEq, mBool, Metta.Atom.isError] at hpred
+
 private theorem mettaEvalExprPartFoldStep_true_pair_implies_acc_or_recursive_bnd_any_local
     (env : MinEnv) (fuel : Nat) (queryVars : List String)
     (op : String) (args : List Metta.Atom) (bnd : Metta.Bindings)
@@ -22329,6 +23076,64 @@ private theorem mettaEvalExprPartFoldStep_true_pair_implies_acc_or_recursive_bnd
         mettaEvalExprPartFoldStep_true_pair_implies_acc_or_recursive_bnd_local
           env fuel queryVars op args bnd acc part outBnd
           hfind hRootNotTrue hReturns hmem
+  | some found =>
+      unfold mettaEvalExprPartFoldStep at hmem
+      rw [hfind] at hmem
+      rcases List.mem_append.mp hmem with hacc | htail
+      · exact Or.inl hacc
+      · rcases found with ⟨err, orig⟩
+        simp only [List.mem_singleton] at htail
+        have herrEq : err = mBool true := by
+          exact (congrArg Prod.fst htail).symm
+        have hpred :=
+          List.find?_some
+            (p := fun ho : Metta.Atom × Metta.Atom => ho.1.isError && ho.1 != ho.2)
+            hfind
+        simp [herrEq, mBool, Metta.Atom.isError] at hpred
+
+private theorem mettaEvalExprPartFoldStep_true_pair_implies_acc_or_recursive_bnd_any_local_with_noerr
+    (env : MinEnv) (fuel : Nat) (queryVars : List String)
+    (op : String) (args : List Metta.Atom) (bnd : Metta.Bindings)
+    (acc : List (Metta.Atom × Metta.Bindings) × St)
+    (part : List Metta.Atom × Metta.Bindings)
+    (outBnd : Metta.Bindings)
+    (hRootNotTrue :
+      Metta.Atom.expr (Metta.Atom.sym op :: part.1) ≠ mBool true)
+    (hReturns :
+      returnsAtom env (Metta.Atom.expr (Metta.Atom.sym op :: part.1)) = false)
+    (hmem :
+      (mBool true, outBnd) ∈
+        (mettaEvalExprPartFoldStep env fuel queryVars op args bnd acc part).1) :
+    (mBool true, outBnd) ∈ acc.1 ∨
+      ∃ pairs stRoot root rootBnd stBefore recBnd,
+        (part.1.zip args).find? (fun ho => ho.1.isError && ho.1 != ho.2) = none ∧
+        interpretFuel env (fuel + 1) acc.2
+            [{ stack := atomToStack (Metta.Atom.expr [Metta.Atom.sym "eval",
+                Metta.Atom.expr (Metta.Atom.sym op :: part.1)]) [], bnd := bnd }] [] =
+          (pairs, stRoot) ∧
+        (root, rootBnd) ∈ pairs ∧
+        (root == notReducibleA) = false ∧
+        (root == Metta.Atom.expr (Metta.Atom.sym op :: part.1)) = false ∧
+        (mBool true, recBnd) ∈
+          (mettaEval env fuel stBefore
+            (restrictBnd queryVars
+              ((Metta.Bindings.merge part.2 rootBnd).head?.getD rootBnd))
+            root).1 := by
+  cases hfind :
+      (part.1.zip args).find? (fun ho => ho.1.isError && ho.1 != ho.2) with
+  | none =>
+      rcases
+          mettaEvalExprPartFoldStep_true_pair_implies_acc_or_recursive_bnd_local
+            env fuel queryVars op args bnd acc part outBnd
+            hfind hRootNotTrue hReturns hmem with
+        hacc | hrec
+      · exact Or.inl hacc
+      · rcases hrec with
+          ⟨pairs, stRoot, root, rootBnd, stBefore, recBnd,
+            hrootEq, hrootMem, hnotNR, hnotSelf, hrecMem⟩
+        exact Or.inr
+          ⟨pairs, stRoot, root, rootBnd, stBefore, recBnd,
+            rfl, hrootEq, hrootMem, hnotNR, hnotSelf, hrecMem⟩
   | some found =>
       unfold mettaEvalExprPartFoldStep at hmem
       rw [hfind] at hmem
@@ -22477,6 +23282,166 @@ private theorem mettaEvalExprPartFold_true_pair_implies_acc_or_recursive_bnd_any
         exact Or.inr
           ⟨part', by simp [hpart'], stPart, pairs, stRoot, root, rootBnd, stBefore, recBnd,
             hrootEq, hrootMem, hnotNR, hnotSelf, hrecMem⟩
+
+private theorem mettaEvalExprPartFold_true_pair_implies_acc_or_recursive_bnd_any_local_with_noerr
+    (env : MinEnv) (fuel : Nat) (queryVars : List String)
+    (op : String) (args : List Metta.Atom) (bnd : Metta.Bindings)
+    (parts : List (List Metta.Atom × Metta.Bindings))
+    (acc : List (Metta.Atom × Metta.Bindings) × St)
+    (outBnd : Metta.Bindings)
+    (hRootNotTrue :
+      ∀ part ∈ parts,
+        Metta.Atom.expr (Metta.Atom.sym op :: part.1) ≠ mBool true)
+    (hReturns :
+      ∀ part ∈ parts,
+        returnsAtom env (Metta.Atom.expr (Metta.Atom.sym op :: part.1)) = false)
+    (hmem :
+      (mBool true, outBnd) ∈
+        (parts.foldl (mettaEvalExprPartFoldStep env fuel queryVars op args bnd) acc).1) :
+    (mBool true, outBnd) ∈ acc.1 ∨
+      ∃ part ∈ parts, ∃ stPart pairs stRoot root rootBnd stBefore recBnd,
+        (part.1.zip args).find? (fun ho => ho.1.isError && ho.1 != ho.2) = none ∧
+        interpretFuel env (fuel + 1) stPart
+            [{ stack := atomToStack (Metta.Atom.expr [Metta.Atom.sym "eval",
+                Metta.Atom.expr (Metta.Atom.sym op :: part.1)]) [], bnd := bnd }] [] =
+          (pairs, stRoot) ∧
+        (root, rootBnd) ∈ pairs ∧
+        (root == notReducibleA) = false ∧
+        (root == Metta.Atom.expr (Metta.Atom.sym op :: part.1)) = false ∧
+        (mBool true, recBnd) ∈
+          (mettaEval env fuel stBefore
+            (restrictBnd queryVars
+              ((Metta.Bindings.merge part.2 rootBnd).head?.getD rootBnd))
+            root).1 := by
+  induction parts generalizing acc with
+  | nil =>
+      simpa using hmem
+  | cons part rest ih =>
+      have htail :=
+        ih
+          (acc := mettaEvalExprPartFoldStep env fuel queryVars op args bnd acc part)
+          (by
+            intro part' hpart'
+            exact hRootNotTrue part' (by simp [hpart']))
+          (by
+            intro part' hpart'
+            exact hReturns part' (by simp [hpart']))
+          hmem
+      rcases htail with hstep | hrest
+      · rcases
+          mettaEvalExprPartFoldStep_true_pair_implies_acc_or_recursive_bnd_any_local_with_noerr
+            env fuel queryVars op args bnd acc part outBnd
+            (hRootNotTrue part (by simp))
+            (hReturns part (by simp)) hstep with
+          hacc | hrec
+        · exact Or.inl hacc
+        · rcases hrec with
+            ⟨pairs, stRoot, root, rootBnd, stBefore, recBnd,
+              hNoErr, hrootEq, hrootMem, hnotNR, hnotSelf, hrecMem⟩
+          exact Or.inr
+            ⟨part, by simp, acc.2, pairs, stRoot, root, rootBnd, stBefore,
+              recBnd, hNoErr, hrootEq, hrootMem, hnotNR, hnotSelf, hrecMem⟩
+      · rcases hrest with
+          ⟨part', hpart', stPart, pairs, stRoot, root, rootBnd, stBefore,
+            recBnd, hNoErr, hrootEq, hrootMem, hnotNR, hnotSelf, hrecMem⟩
+        exact Or.inr
+          ⟨part', by simp [hpart'], stPart, pairs, stRoot, root, rootBnd,
+            stBefore, recBnd, hNoErr, hrootEq, hrootMem, hnotNR, hnotSelf,
+            hrecMem⟩
+
+private theorem mettaEvalExprPartFold_true_pair_implies_acc_or_recursive_bnd_any_local_with_noerr_state_pred
+    (env : MinEnv) (fuel : Nat) (queryVars : List String)
+    (op : String) (args : List Metta.Atom) (bnd : Metta.Bindings)
+    (parts : List (List Metta.Atom × Metta.Bindings))
+    (acc : List (Metta.Atom × Metta.Bindings) × St)
+    (outBnd : Metta.Bindings)
+    (P : St → Prop)
+    (hinit : P acc.2)
+    (hstepState :
+      ∀ (acc0 : List (Metta.Atom × Metta.Bindings) × St)
+        (part : List Metta.Atom × Metta.Bindings),
+        part ∈ parts →
+          P acc0.2 →
+            P (mettaEvalExprPartFoldStep env fuel queryVars op args bnd
+              acc0 part).2)
+    (hRootNotTrue :
+      ∀ part ∈ parts,
+        Metta.Atom.expr (Metta.Atom.sym op :: part.1) ≠ mBool true)
+    (hReturns :
+      ∀ part ∈ parts,
+        returnsAtom env (Metta.Atom.expr (Metta.Atom.sym op :: part.1)) = false)
+    (hmem :
+      (mBool true, outBnd) ∈
+        (parts.foldl (mettaEvalExprPartFoldStep env fuel queryVars op args bnd) acc).1) :
+    (mBool true, outBnd) ∈ acc.1 ∨
+      ∃ part ∈ parts, ∃ stPart pairs stRoot root rootBnd stBefore recBnd,
+        (part.1.zip args).find? (fun ho => ho.1.isError && ho.1 != ho.2) = none ∧
+        P stPart ∧
+        interpretFuel env (fuel + 1) stPart
+            [{ stack := atomToStack (Metta.Atom.expr [Metta.Atom.sym "eval",
+                Metta.Atom.expr (Metta.Atom.sym op :: part.1)]) [], bnd := bnd }] [] =
+          (pairs, stRoot) ∧
+        (root, rootBnd) ∈ pairs ∧
+        (root == notReducibleA) = false ∧
+        (root == Metta.Atom.expr (Metta.Atom.sym op :: part.1)) = false ∧
+        (mBool true, recBnd) ∈
+          (mettaEval env fuel stBefore
+            (restrictBnd queryVars
+              ((Metta.Bindings.merge part.2 rootBnd).head?.getD rootBnd))
+            root).1 := by
+  induction parts generalizing acc with
+  | nil =>
+      simpa using hmem
+  | cons part rest ih =>
+      have hstepStateRest :
+          ∀ (acc0 : List (Metta.Atom × Metta.Bindings) × St)
+            (part' : List Metta.Atom × Metta.Bindings),
+            part' ∈ rest →
+              P acc0.2 →
+                P (mettaEvalExprPartFoldStep env fuel queryVars op args bnd
+                  acc0 part').2 := by
+        intro acc0 part' hpart' hP
+        exact hstepState acc0 part' (by simp [hpart']) hP
+      have hRootNotTrueRest :
+          ∀ part' ∈ rest,
+            Metta.Atom.expr (Metta.Atom.sym op :: part'.1) ≠ mBool true := by
+        intro part' hpart'
+        exact hRootNotTrue part' (by simp [hpart'])
+      have hReturnsRest :
+          ∀ part' ∈ rest,
+            returnsAtom env (Metta.Atom.expr (Metta.Atom.sym op :: part'.1)) = false := by
+        intro part' hpart'
+        exact hReturns part' (by simp [hpart'])
+      have hinitRest :
+          P (mettaEvalExprPartFoldStep env fuel queryVars op args bnd acc part).2 :=
+        hstepState acc part (by simp) hinit
+      have htail :=
+        ih
+          (acc := mettaEvalExprPartFoldStep env fuel queryVars op args bnd acc part)
+          hinitRest hstepStateRest hRootNotTrueRest hReturnsRest hmem
+      rcases htail with hstep | hrest
+      · rcases
+          mettaEvalExprPartFoldStep_true_pair_implies_acc_or_recursive_bnd_any_local_with_noerr
+            env fuel queryVars op args bnd acc part outBnd
+            (hRootNotTrue part (by simp))
+            (hReturns part (by simp)) hstep with
+          hacc | hrec
+        · exact Or.inl hacc
+        · rcases hrec with
+            ⟨pairs, stRoot, root, rootBnd, stBefore, recBnd,
+              hNoErr, hrootEq, hrootMem, hnotNR, hnotSelf, hrecMem⟩
+          exact Or.inr
+            ⟨part, by simp, acc.2, pairs, stRoot, root, rootBnd, stBefore,
+              recBnd, hNoErr, hinit, hrootEq, hrootMem, hnotNR, hnotSelf,
+              hrecMem⟩
+      · rcases hrest with
+          ⟨part', hpart', stPart, pairs, stRoot, root, rootBnd, stBefore,
+            recBnd, hNoErr, hPPart, hrootEq, hrootMem, hnotNR, hnotSelf,
+            hrecMem⟩
+        exact Or.inr
+          ⟨part', by simp [hpart'], stPart, pairs, stRoot, root, rootBnd,
+            stBefore, recBnd, hNoErr, hPPart, hrootEq, hrootMem, hnotNR,
+            hnotSelf, hrecMem⟩
 
 private theorem mettaEvalExprPartFold_true_pair_implies_acc_or_recursive_bnd_any_local_state_pred
     (env : MinEnv) (fuel : Nat) (queryVars : List String)
@@ -22699,6 +23664,138 @@ private theorem mettaEvalExprPartFold_true_pair_implies_acc_or_recursive_bnd_any
         exact Or.inr
           ⟨part', by simp [hpart'], stPart, pairs, stRoot, root, rootBnd,
             stBefore, recBnd, hPPart, hPBefore, hrootEq, hrootMem,
+            hnotNR, hnotSelf, hrecMem⟩
+
+private theorem mettaEvalExprPartFold_true_pair_implies_acc_or_recursive_bnd_any_local_with_noerr_state_pred_before
+    (env : MinEnv) (fuel : Nat) (queryVars : List String)
+    (op : String) (args : List Metta.Atom) (bnd : Metta.Bindings)
+    (parts : List (List Metta.Atom × Metta.Bindings))
+    (acc : List (Metta.Atom × Metta.Bindings) × St)
+    (outBnd : Metta.Bindings)
+    (P : St → Prop)
+    (hinit : P acc.2)
+    (hstepState :
+      ∀ (acc0 : List (Metta.Atom × Metta.Bindings) × St)
+        (part : List Metta.Atom × Metta.Bindings),
+        part ∈ parts →
+          P acc0.2 →
+            P (mettaEvalExprPartFoldStep env fuel queryVars op args bnd
+              acc0 part).2)
+    (hrootState :
+      ∀ (acc0 : List (Metta.Atom × Metta.Bindings) × St)
+        (part : List Metta.Atom × Metta.Bindings),
+        part ∈ parts →
+          P acc0.2 →
+            P (interpretFuel env (fuel + 1) acc0.2
+              [{ stack := atomToStack (Metta.Atom.expr [Metta.Atom.sym "eval",
+                  Metta.Atom.expr (Metta.Atom.sym op :: part.1)]) [],
+                 bnd := bnd }] []).2)
+    (hrecState :
+      ∀ (partBnd : Metta.Bindings)
+        (acc0 : List (Metta.Atom × Metta.Bindings) × St)
+        (p : Metta.Atom × Metta.Bindings),
+        P acc0.2 →
+          P (mettaEval env fuel acc0.2
+            (restrictBnd queryVars
+              ((Metta.Bindings.merge partBnd p.2).head?.getD p.2))
+            p.1).2)
+    (hRootNotTrue :
+      ∀ part ∈ parts,
+        Metta.Atom.expr (Metta.Atom.sym op :: part.1) ≠ mBool true)
+    (hReturns :
+      ∀ part ∈ parts,
+        returnsAtom env (Metta.Atom.expr (Metta.Atom.sym op :: part.1)) = false)
+    (hmem :
+      (mBool true, outBnd) ∈
+        (parts.foldl (mettaEvalExprPartFoldStep env fuel queryVars op args bnd) acc).1) :
+    (mBool true, outBnd) ∈ acc.1 ∨
+      ∃ part ∈ parts, ∃ stPart pairs stRoot root rootBnd stBefore recBnd,
+        (part.1.zip args).find? (fun ho => ho.1.isError && ho.1 != ho.2) = none ∧
+        P stPart ∧
+        P stBefore ∧
+        interpretFuel env (fuel + 1) stPart
+            [{ stack := atomToStack (Metta.Atom.expr [Metta.Atom.sym "eval",
+                Metta.Atom.expr (Metta.Atom.sym op :: part.1)]) [], bnd := bnd }] [] =
+          (pairs, stRoot) ∧
+        (root, rootBnd) ∈ pairs ∧
+        (root == notReducibleA) = false ∧
+        (root == Metta.Atom.expr (Metta.Atom.sym op :: part.1)) = false ∧
+        (mBool true, recBnd) ∈
+          (mettaEval env fuel stBefore
+            (restrictBnd queryVars
+              ((Metta.Bindings.merge part.2 rootBnd).head?.getD rootBnd))
+            root).1 := by
+  induction parts generalizing acc with
+  | nil =>
+      simpa using hmem
+  | cons part rest ih =>
+      have hstepStateRest :
+          ∀ (acc0 : List (Metta.Atom × Metta.Bindings) × St)
+            (part' : List Metta.Atom × Metta.Bindings),
+            part' ∈ rest →
+              P acc0.2 →
+                P (mettaEvalExprPartFoldStep env fuel queryVars op args bnd
+                  acc0 part').2 := by
+        intro acc0 part' hpart' hP
+        exact hstepState acc0 part' (by simp [hpart']) hP
+      have hrootStateRest :
+          ∀ (acc0 : List (Metta.Atom × Metta.Bindings) × St)
+            (part' : List Metta.Atom × Metta.Bindings),
+            part' ∈ rest →
+              P acc0.2 →
+                P (interpretFuel env (fuel + 1) acc0.2
+                  [{ stack := atomToStack (Metta.Atom.expr [Metta.Atom.sym "eval",
+                      Metta.Atom.expr (Metta.Atom.sym op :: part'.1)]) [],
+                     bnd := bnd }] []).2 := by
+        intro acc0 part' hpart' hP
+        exact hrootState acc0 part' (by simp [hpart']) hP
+      have hRootNotTrueRest :
+          ∀ part' ∈ rest,
+            Metta.Atom.expr (Metta.Atom.sym op :: part'.1) ≠ mBool true := by
+        intro part' hpart'
+        exact hRootNotTrue part' (by simp [hpart'])
+      have hReturnsRest :
+          ∀ part' ∈ rest,
+            returnsAtom env (Metta.Atom.expr (Metta.Atom.sym op :: part'.1)) = false := by
+        intro part' hpart'
+        exact hReturns part' (by simp [hpart'])
+      have hinitRest :
+          P (mettaEvalExprPartFoldStep env fuel queryVars op args bnd acc part).2 :=
+        hstepState acc part (by simp) hinit
+      have htail :=
+        ih
+          (acc := mettaEvalExprPartFoldStep env fuel queryVars op args bnd acc part)
+          hinitRest hstepStateRest hrootStateRest
+          hRootNotTrueRest hReturnsRest hmem
+      rcases htail with hstep | hrest
+      · have hrootCurrent :
+            P (interpretFuel env (fuel + 1) acc.2
+              [{ stack := atomToStack (Metta.Atom.expr [Metta.Atom.sym "eval",
+                  Metta.Atom.expr (Metta.Atom.sym op :: part.1)]) [],
+                 bnd := bnd }] []).2 :=
+          hrootState acc part (by simp) hinit
+        rcases
+          mettaEvalExprPartFoldStep_true_pair_implies_acc_or_recursive_bnd_any_local_with_noerr_state_pred
+            env fuel queryVars op args bnd acc part outBnd P
+            hrootCurrent (fun acc0 p hP => hrecState part.2 acc0 p hP)
+            (hRootNotTrue part (by simp))
+            (hReturns part (by simp)) hstep with
+          hacc | hrec
+        · exact Or.inl hacc
+        · rcases hrec with
+            ⟨pairs, stRoot, root, rootBnd, stBefore, recBnd,
+              hNoErr, hPBefore, hrootEq, hrootMem, hnotNR, hnotSelf, hrecMem⟩
+          exact Or.inr
+            ⟨part, by simp, acc.2, pairs, stRoot, root, rootBnd,
+              stBefore, recBnd, hNoErr, hinit, hPBefore, hrootEq, hrootMem,
+              hnotNR, hnotSelf, hrecMem⟩
+      · rcases hrest with
+          ⟨part', hpart', stPart, pairs, stRoot, root, rootBnd,
+            stBefore, recBnd, hNoErr, hPPart, hPBefore, hrootEq, hrootMem,
+            hnotNR, hnotSelf, hrecMem⟩
+        exact Or.inr
+          ⟨part', by simp [hpart'], stPart, pairs, stRoot, root, rootBnd,
+            stBefore, recBnd, hNoErr, hPPart, hPBefore, hrootEq, hrootMem,
             hnotNR, hnotSelf, hrecMem⟩
 
 private theorem mettaEval_kernelDefControlEnv_convReadoutNamed_true_pair_implies_left_nf_pair_exists
@@ -23172,6 +24269,609 @@ private theorem mettaEval_kernelDefControlEnv_convReadoutNamed_true_pair_implies
             restrictBnd qvars ((Metta.Bindings.merge [] q.2).head?.getD q.2),
             stPart, pairs, stRoot, root, rootBnd, stBefore, recBnd,
             ?_, rfl, ?_, ?_, ?_, ?_, ?_⟩
+        · have hArg1 :
+              (mettaEval kernelDefControlEnv fuel st [] bodyQuery).1 =
+                argPairs := by
+            simp [hArg]
+          simpa [bodyQuery, hArg1] using hqMem
+        · simpa [pattern, bodyQuery, template, qvars, mExpr, mSym] using hrootEq
+        · exact hrootMem
+        · exact hnotNR
+        · simpa [pattern, bodyQuery, template, qvars, mExpr, mSym] using hnotSelf
+        · simpa [pattern, bodyQuery, template, qvars, mExpr, mSym] using hrecMem
+
+private theorem mettaEval_kernelDefControlEnv_convReadoutNamed_true_pair_implies_left_nf_and_recursive_root_pair_exists_with_noerr
+    (fuel : Nat) (st : St)
+    (nxBinder nyBinder : String)
+    (sig : DIndGArtifactSig) (rawLeft rawRight : DIndGArtifactTerm)
+    (outBnd : Metta.Bindings)
+    (hmem :
+      (mBool true, outBnd) ∈
+        (mettaEval kernelDefControlEnv (fuel + 1) st []
+          (convReadoutNamed nxBinder nyBinder sig rawLeft rawRight)).1) :
+    ∃ nx nxBnd partBnd stPart pairs stRoot root rootBnd stBefore recBnd,
+      (nx, nxBnd) ∈
+        (mettaEval kernelDefControlEnv fuel st []
+          (nfQuery sig rawLeft)).1 ∧
+      partBnd =
+        restrictBnd
+          (([mVar nxBinder, nfQuery sig rawLeft,
+              convReadoutAfterNxNamed nyBinder sig rawRight (mVar nxBinder)]).flatMap
+            Metta.Atom.vars)
+          ((Metta.Bindings.merge [] nxBnd).head?.getD nxBnd) ∧
+      (([mVar nxBinder, nx,
+            Metta.instantiate partBnd
+              (convReadoutAfterNxNamed nyBinder sig rawRight
+                (mVar nxBinder))].zip
+          [mVar nxBinder, nfQuery sig rawLeft,
+            convReadoutAfterNxNamed nyBinder sig rawRight
+              (mVar nxBinder)]).find?
+          (fun ho : Metta.Atom × Metta.Atom =>
+            ho.1.isError && ho.1 != ho.2)) = none ∧
+      interpretFuel kernelDefControlEnv (fuel + 1) stPart
+          [{ stack := atomToStack
+              (Metta.Atom.expr
+                [ Metta.Atom.sym "eval"
+                , Metta.Atom.expr
+                    (Metta.Atom.sym "let" ::
+                      [ mVar nxBinder
+                      , nx
+                      , Metta.instantiate partBnd
+                          (convReadoutAfterNxNamed nyBinder sig rawRight
+                            (mVar nxBinder)) ]) ]) [],
+             bnd := [] }] [] =
+        (pairs, stRoot) ∧
+      (root, rootBnd) ∈ pairs ∧
+      (root == notReducibleA) = false ∧
+      (root ==
+          Metta.Atom.expr
+            (Metta.Atom.sym "let" ::
+              [ mVar nxBinder
+              , nx
+              , Metta.instantiate partBnd
+                  (convReadoutAfterNxNamed nyBinder sig rawRight
+                    (mVar nxBinder)) ])) = false ∧
+      (mBool true, recBnd) ∈
+        (mettaEval kernelDefControlEnv fuel stBefore
+          (restrictBnd
+            (([mVar nxBinder, nfQuery sig rawLeft,
+                convReadoutAfterNxNamed nyBinder sig rawRight (mVar nxBinder)]).flatMap
+              Metta.Atom.vars)
+            ((Metta.Bindings.merge partBnd rootBnd).head?.getD rootBnd))
+          root).1 := by
+  let pattern := mVar nxBinder
+  let bodyQuery := nfQuery sig rawLeft
+  let template :=
+    convReadoutAfterNxNamed nyBinder sig rawRight (mVar nxBinder)
+  let qvars := ([pattern, bodyQuery, template]).flatMap Metta.Atom.vars
+  cases hArg :
+      mettaEval kernelDefControlEnv fuel st [] bodyQuery with
+  | mk argPairs stArg =>
+      let parts0 : List (List Metta.Atom × Metta.Bindings) :=
+        argPairs.map (fun q : Metta.Atom × Metta.Bindings =>
+          ([pattern, q.1],
+            restrictBnd qvars ((Metta.Bindings.merge [] q.2).head?.getD q.2)))
+      let appendTempl :=
+        fun acc : List (List Metta.Atom × Metta.Bindings) × St =>
+          fun part0 : List Metta.Atom × Metta.Bindings =>
+            (acc.1 ++
+              [(part0.1 ++ [Metta.instantiate part0.2 template], part0.2)],
+              acc.2)
+      let parts : List (List Metta.Atom × Metta.Bindings) :=
+        parts0.map
+          (fun part0 =>
+            (part0.1 ++ [Metta.instantiate part0.2 template], part0.2))
+      have hprep :
+          List.foldl appendTempl ([], stArg) parts0 = (parts, stArg) := by
+        have hprepGen :
+            ∀ (pref : List (List Metta.Atom × Metta.Bindings))
+              (ps : List (List Metta.Atom × Metta.Bindings)),
+              List.foldl appendTempl (pref, stArg) ps =
+                (pref ++
+                    ps.map
+                      (fun part0 =>
+                        (part0.1 ++ [Metta.instantiate part0.2 template],
+                          part0.2)),
+                  stArg) := by
+          intro pref ps
+          induction ps generalizing pref with
+          | nil =>
+              simp [appendTempl]
+          | cons x xs ih =>
+              simp [appendTempl, ih, List.append_assoc]
+        simpa [parts] using hprepGen [] parts0
+      have hType :
+          typeMismatch kernelDefControlEnv st.world "let"
+            [pattern, bodyQuery, template] = none := by
+        exact kernelDefControlEnv_let_typeMismatch st pattern bodyQuery template
+      have hmemParts :
+          (mBool true, outBnd) ∈
+            (parts.foldl
+              (mettaEvalExprPartFoldStep kernelDefControlEnv fuel qvars
+                "let" [pattern, bodyQuery, template] [])
+              ([], stArg)).1 := by
+        change
+          (mBool true, outBnd) ∈
+            (mettaEval kernelDefControlEnv (fuel + 1) st []
+              (Metta.Atom.expr
+                [Metta.Atom.sym "let", pattern, bodyQuery, template])).1
+          at hmem
+        unfold mettaEval at hmem
+        rw [Metta.instantiate_nil
+          (Metta.Atom.expr
+            [Metta.Atom.sym "let", pattern, bodyQuery, template])] at hmem
+        simp only [hType, kernelDefControlEnv_let_argMask, List.length_cons,
+          List.length_nil, Nat.reduceAdd, List.zip_cons_cons,
+          List.zip_nil_right, Bool.false_eq_true, if_false, if_true,
+          List.foldl_cons, List.foldl_nil] at hmem
+        simp [Metta.instantiate_nil] at hmem
+        have hArg1 :
+            (mettaEval kernelDefControlEnv fuel st [] bodyQuery).1 =
+              argPairs := by
+          simp [hArg]
+        have hArg2 :
+            (mettaEval kernelDefControlEnv fuel st [] bodyQuery).2 =
+              stArg := by
+          simp [hArg]
+        rw [hArg1, hArg2] at hmem
+        have hprepInline :
+            List.foldl
+                (fun acc2 part =>
+                  (acc2.1 ++
+                    [(part.1 ++ [Metta.instantiate part.2 template], part.2)],
+                    acc2.2))
+                ([], stArg)
+                (argPairs.map
+                  (fun p =>
+                    ([pattern, p.1],
+                      restrictBnd
+                        (pattern.vars ++ (bodyQuery.vars ++ template.vars))
+                        ((Metta.Bindings.merge [] p.2).head?.getD p.2)))) =
+              (parts, stArg) := by
+          simpa [appendTempl, parts0, qvars] using hprep
+        rw [hprepInline] at hmem
+        have hstepEq :
+            mettaEvalExprPartFoldStep kernelDefControlEnv fuel qvars
+                "let" [pattern, bodyQuery, template] [] =
+              (fun acc part =>
+                match
+                    List.find?
+                      (fun ho : Metta.Atom × Metta.Atom =>
+                        ho.1.isError && ho.1 != ho.2)
+                      (part.1.zip [pattern, bodyQuery, template]) with
+                | some (err, _) => (acc.1 ++ [(err, part.2)], acc.2)
+                | none =>
+                    let w := Metta.Atom.expr (Metta.Atom.sym "let" :: part.1)
+                    let rootEval :=
+                      interpretFuel kernelDefControlEnv (fuel + 1) acc.2
+                        [{ stack :=
+                            atomToStack
+                              (Metta.Atom.expr [Metta.Atom.sym "eval", w]) [],
+                           bnd := [] }] []
+                    let folded :=
+                      rootEval.1.foldl
+                        (mettaEvalExprRootFoldStep kernelDefControlEnv fuel qvars
+                          w part.2)
+                        ([], rootEval.2)
+                    (acc.1 ++ folded.1, folded.2)) := by
+          funext acc part
+          unfold mettaEvalExprPartFoldStep
+          cases hfind :
+              (part.1.zip [pattern, bodyQuery, template]).find?
+                (fun ho : Metta.Atom × Metta.Atom =>
+                  ho.1.isError && ho.1 != ho.2) with
+          | none =>
+              simp
+          | some found =>
+              rcases found with ⟨err, orig⟩
+              simp
+        rw [hstepEq]
+        dsimp
+        have hrootEq :
+            ∀ part : List Metta.Atom × Metta.Bindings,
+              mettaEvalExprRootFoldStep kernelDefControlEnv fuel
+                  (List.flatMap Metta.Atom.vars [pattern, bodyQuery, template])
+                  (Metta.Atom.expr (Metta.Atom.sym "let" :: part.1)) part.2 =
+                (fun a2 p =>
+                  if (p.1 == notReducibleA) = true ∨
+                      (p.1 == Metta.Atom.expr (Metta.Atom.sym "let" :: part.1)) = true then
+                    (a2.1 ++
+                      [(Metta.Atom.expr (Metta.Atom.sym "let" :: part.1), part.2)],
+                      a2.2)
+                  else if
+                      returnsAtom kernelDefControlEnv
+                          (Metta.Atom.expr (Metta.Atom.sym "let" :: part.1)) = true ∧
+                        isEmbeddedOp p.1 = false then
+                    (a2.1 ++
+                      [(p.1,
+                        restrictBnd (pattern.vars ++ (bodyQuery.vars ++ template.vars))
+                          ((Metta.Bindings.merge part.2 p.2).head?.getD p.2))],
+                      a2.2)
+                  else
+                    (a2.1 ++
+                        (mettaEval kernelDefControlEnv fuel a2.2
+                          (restrictBnd (pattern.vars ++ (bodyQuery.vars ++ template.vars))
+                            ((Metta.Bindings.merge part.2 p.2).head?.getD p.2))
+                          p.1).1.map
+                          (fun m =>
+                            (m.1,
+                              restrictBnd (pattern.vars ++ (bodyQuery.vars ++ template.vars))
+                                ((Metta.Bindings.merge
+                                  (restrictBnd
+                                    (pattern.vars ++ (bodyQuery.vars ++ template.vars))
+                                    ((Metta.Bindings.merge part.2 p.2).head?.getD p.2))
+                                  m.2).head?.getD m.2))),
+                      (mettaEval kernelDefControlEnv fuel a2.2
+                        (restrictBnd (pattern.vars ++ (bodyQuery.vars ++ template.vars))
+                          ((Metta.Bindings.merge part.2 p.2).head?.getD p.2))
+                        p.1).2)) := by
+          intro part
+          funext a2 p
+          simp [mettaEvalExprRootFoldStep]
+        simp only [qvars]
+        simp_rw [hrootEq]
+        exact hmem
+      have hRootNotTrue :
+          ∀ part ∈ parts,
+            Metta.Atom.expr (Metta.Atom.sym "let" :: part.1) ≠ mBool true := by
+        intro part _hpart
+        simp [mBool]
+      have hReturns :
+          ∀ part ∈ parts,
+            returnsAtom kernelDefControlEnv
+              (Metta.Atom.expr (Metta.Atom.sym "let" :: part.1)) = false := by
+        intro part _hpart
+        simpa [mExpr, mSym, returnsAtom, headKey] using
+          kernelDefControlEnv_let_returnsAtom pattern bodyQuery template
+      rcases
+          mettaEvalExprPartFold_true_pair_implies_acc_or_recursive_bnd_any_local_with_noerr
+            kernelDefControlEnv fuel qvars "let"
+            [pattern, bodyQuery, template] [] parts ([], stArg) outBnd
+            hRootNotTrue hReturns hmemParts with
+        hinit | hpart
+      · cases hinit
+      · rcases hpart with
+          ⟨part, hpartMem, stPart, pairs, stRoot, root, rootBnd,
+            stBefore, recBnd, hNoErr, hrootEq, hrootMem, hnotNR,
+            hnotSelf, hrecMem⟩
+        rcases List.mem_map.mp hpartMem with ⟨part0, hpart0Mem, hpartEq⟩
+        rcases List.mem_map.mp hpart0Mem with ⟨q, hqMem, hqEq⟩
+        cases hpartEq
+        cases hqEq
+        refine
+          ⟨q.1, q.2,
+            restrictBnd qvars ((Metta.Bindings.merge [] q.2).head?.getD q.2),
+            stPart, pairs, stRoot, root, rootBnd, stBefore, recBnd,
+            ?_, rfl, ?_, ?_, ?_, ?_, ?_, ?_⟩
+        · have hArg1 :
+              (mettaEval kernelDefControlEnv fuel st [] bodyQuery).1 =
+                argPairs := by
+            simp [hArg]
+          simpa [bodyQuery, hArg1] using hqMem
+        · simpa [pattern, bodyQuery, template, qvars, mExpr, mSym] using hNoErr
+        · simpa [pattern, bodyQuery, template, qvars, mExpr, mSym] using hrootEq
+        · exact hrootMem
+        · exact hnotNR
+        · simpa [pattern, bodyQuery, template, qvars, mExpr, mSym] using hnotSelf
+        · simpa [pattern, bodyQuery, template, qvars, mExpr, mSym] using hrecMem
+
+private theorem mettaEval_kernelDefControlEnv_convReadoutNamed_true_pair_implies_left_nf_and_recursive_root_pair_exists_with_noerr_state_pred
+    (fuel : Nat) (st : St)
+    (nxBinder nyBinder : String)
+    (sig : DIndGArtifactSig) (rawLeft rawRight : DIndGArtifactTerm)
+    (outBnd : Metta.Bindings)
+    (P : St → Prop)
+    (hArgState :
+      P (mettaEval kernelDefControlEnv fuel st []
+        (nfQuery sig rawLeft)).2)
+    (hPartStepState :
+      let pattern := mVar nxBinder
+      let bodyQuery := nfQuery sig rawLeft
+      let template :=
+        convReadoutAfterNxNamed nyBinder sig rawRight (mVar nxBinder)
+      let qvars := ([pattern, bodyQuery, template]).flatMap Metta.Atom.vars
+      let argPairs :=
+        (mettaEval kernelDefControlEnv fuel st [] bodyQuery).1
+      let parts0 : List (List Metta.Atom × Metta.Bindings) :=
+        argPairs.map (fun q : Metta.Atom × Metta.Bindings =>
+          ([pattern, q.1],
+            restrictBnd qvars ((Metta.Bindings.merge [] q.2).head?.getD q.2)))
+      let parts : List (List Metta.Atom × Metta.Bindings) :=
+        parts0.map
+          (fun part0 =>
+            (part0.1 ++ [Metta.instantiate part0.2 template], part0.2))
+      ∀ (acc0 : List (Metta.Atom × Metta.Bindings) × St)
+        (part : List Metta.Atom × Metta.Bindings),
+        part ∈ parts →
+          P acc0.2 →
+            P (mettaEvalExprPartFoldStep kernelDefControlEnv fuel qvars
+              "let" [pattern, bodyQuery, template] [] acc0 part).2)
+    (hmem :
+      (mBool true, outBnd) ∈
+        (mettaEval kernelDefControlEnv (fuel + 1) st []
+          (convReadoutNamed nxBinder nyBinder sig rawLeft rawRight)).1) :
+    ∃ nx nxBnd partBnd stPart pairs stRoot root rootBnd stBefore recBnd,
+      (([mVar nxBinder, nx,
+            Metta.instantiate partBnd
+              (convReadoutAfterNxNamed nyBinder sig rawRight
+                (mVar nxBinder))].zip
+          [mVar nxBinder, nfQuery sig rawLeft,
+            convReadoutAfterNxNamed nyBinder sig rawRight
+              (mVar nxBinder)]).find?
+          (fun ho : Metta.Atom × Metta.Atom =>
+            ho.1.isError && ho.1 != ho.2)) = none ∧
+      P stPart ∧
+      (nx, nxBnd) ∈
+        (mettaEval kernelDefControlEnv fuel st []
+          (nfQuery sig rawLeft)).1 ∧
+      partBnd =
+        restrictBnd
+          (([mVar nxBinder, nfQuery sig rawLeft,
+              convReadoutAfterNxNamed nyBinder sig rawRight (mVar nxBinder)]).flatMap
+            Metta.Atom.vars)
+          ((Metta.Bindings.merge [] nxBnd).head?.getD nxBnd) ∧
+      interpretFuel kernelDefControlEnv (fuel + 1) stPart
+          [{ stack := atomToStack
+              (Metta.Atom.expr
+                [ Metta.Atom.sym "eval"
+                , Metta.Atom.expr
+                    (Metta.Atom.sym "let" ::
+                      [ mVar nxBinder
+                      , nx
+                      , Metta.instantiate partBnd
+                          (convReadoutAfterNxNamed nyBinder sig rawRight
+                            (mVar nxBinder)) ]) ]) [],
+             bnd := [] }] [] =
+        (pairs, stRoot) ∧
+      (root, rootBnd) ∈ pairs ∧
+      (root == notReducibleA) = false ∧
+      (root ==
+          Metta.Atom.expr
+            (Metta.Atom.sym "let" ::
+              [ mVar nxBinder
+              , nx
+              , Metta.instantiate partBnd
+                  (convReadoutAfterNxNamed nyBinder sig rawRight
+                    (mVar nxBinder)) ])) = false ∧
+      (mBool true, recBnd) ∈
+        (mettaEval kernelDefControlEnv fuel stBefore
+          (restrictBnd
+            (([mVar nxBinder, nfQuery sig rawLeft,
+                convReadoutAfterNxNamed nyBinder sig rawRight (mVar nxBinder)]).flatMap
+              Metta.Atom.vars)
+            ((Metta.Bindings.merge partBnd rootBnd).head?.getD rootBnd))
+          root).1 := by
+  let pattern := mVar nxBinder
+  let bodyQuery := nfQuery sig rawLeft
+  let template :=
+    convReadoutAfterNxNamed nyBinder sig rawRight (mVar nxBinder)
+  let qvars := ([pattern, bodyQuery, template]).flatMap Metta.Atom.vars
+  cases hArg :
+      mettaEval kernelDefControlEnv fuel st [] bodyQuery with
+  | mk argPairs stArg =>
+      let parts0 : List (List Metta.Atom × Metta.Bindings) :=
+        argPairs.map (fun q : Metta.Atom × Metta.Bindings =>
+          ([pattern, q.1],
+            restrictBnd qvars ((Metta.Bindings.merge [] q.2).head?.getD q.2)))
+      let appendTempl :=
+        fun acc : List (List Metta.Atom × Metta.Bindings) × St =>
+          fun part0 : List Metta.Atom × Metta.Bindings =>
+            (acc.1 ++
+              [(part0.1 ++ [Metta.instantiate part0.2 template], part0.2)],
+              acc.2)
+      let parts : List (List Metta.Atom × Metta.Bindings) :=
+        parts0.map
+          (fun part0 =>
+            (part0.1 ++ [Metta.instantiate part0.2 template], part0.2))
+      have hprep :
+          List.foldl appendTempl ([], stArg) parts0 = (parts, stArg) := by
+        have hprepGen :
+            ∀ (pref : List (List Metta.Atom × Metta.Bindings))
+              (ps : List (List Metta.Atom × Metta.Bindings)),
+              List.foldl appendTempl (pref, stArg) ps =
+                (pref ++
+                    ps.map
+                      (fun part0 =>
+                        (part0.1 ++ [Metta.instantiate part0.2 template],
+                          part0.2)),
+                  stArg) := by
+          intro pref ps
+          induction ps generalizing pref with
+          | nil =>
+              simp [appendTempl]
+          | cons x xs ih =>
+              simp [appendTempl, ih, List.append_assoc]
+        simpa [parts] using hprepGen [] parts0
+      have hType :
+          typeMismatch kernelDefControlEnv st.world "let"
+            [pattern, bodyQuery, template] = none := by
+        exact kernelDefControlEnv_let_typeMismatch st pattern bodyQuery template
+      have hmemParts :
+          (mBool true, outBnd) ∈
+            (parts.foldl
+              (mettaEvalExprPartFoldStep kernelDefControlEnv fuel qvars
+                "let" [pattern, bodyQuery, template] [])
+              ([], stArg)).1 := by
+        change
+          (mBool true, outBnd) ∈
+            (mettaEval kernelDefControlEnv (fuel + 1) st []
+              (Metta.Atom.expr
+                [Metta.Atom.sym "let", pattern, bodyQuery, template])).1
+          at hmem
+        unfold mettaEval at hmem
+        rw [Metta.instantiate_nil
+          (Metta.Atom.expr
+            [Metta.Atom.sym "let", pattern, bodyQuery, template])] at hmem
+        simp only [hType, kernelDefControlEnv_let_argMask, List.length_cons,
+          List.length_nil, Nat.reduceAdd, List.zip_cons_cons,
+          List.zip_nil_right, Bool.false_eq_true, if_false, if_true,
+          List.foldl_cons, List.foldl_nil] at hmem
+        simp [Metta.instantiate_nil] at hmem
+        have hArg1 :
+            (mettaEval kernelDefControlEnv fuel st [] bodyQuery).1 =
+              argPairs := by
+          simp [hArg]
+        have hArg2 :
+            (mettaEval kernelDefControlEnv fuel st [] bodyQuery).2 =
+              stArg := by
+          simp [hArg]
+        rw [hArg1, hArg2] at hmem
+        have hprepInline :
+            List.foldl
+                (fun acc2 part =>
+                  (acc2.1 ++
+                    [(part.1 ++ [Metta.instantiate part.2 template], part.2)],
+                    acc2.2))
+                ([], stArg)
+                (argPairs.map
+                  (fun p =>
+                    ([pattern, p.1],
+                      restrictBnd
+                        (pattern.vars ++ (bodyQuery.vars ++ template.vars))
+                        ((Metta.Bindings.merge [] p.2).head?.getD p.2)))) =
+              (parts, stArg) := by
+          simpa [appendTempl, parts0, qvars] using hprep
+        rw [hprepInline] at hmem
+        have hstepEq :
+            mettaEvalExprPartFoldStep kernelDefControlEnv fuel qvars
+                "let" [pattern, bodyQuery, template] [] =
+              (fun acc part =>
+                match
+                    List.find?
+                      (fun ho : Metta.Atom × Metta.Atom =>
+                        ho.1.isError && ho.1 != ho.2)
+                      (part.1.zip [pattern, bodyQuery, template]) with
+                | some (err, _) => (acc.1 ++ [(err, part.2)], acc.2)
+                | none =>
+                    let w := Metta.Atom.expr (Metta.Atom.sym "let" :: part.1)
+                    let rootEval :=
+                      interpretFuel kernelDefControlEnv (fuel + 1) acc.2
+                        [{ stack :=
+                            atomToStack
+                              (Metta.Atom.expr [Metta.Atom.sym "eval", w]) [],
+                           bnd := [] }] []
+                    let folded :=
+                      rootEval.1.foldl
+                        (mettaEvalExprRootFoldStep kernelDefControlEnv fuel qvars
+                          w part.2)
+                        ([], rootEval.2)
+                    (acc.1 ++ folded.1, folded.2)) := by
+          funext acc part
+          unfold mettaEvalExprPartFoldStep
+          cases hfind :
+              (part.1.zip [pattern, bodyQuery, template]).find?
+                (fun ho : Metta.Atom × Metta.Atom =>
+                  ho.1.isError && ho.1 != ho.2) with
+          | none =>
+              simp
+          | some found =>
+              rcases found with ⟨err, orig⟩
+              simp
+        rw [hstepEq]
+        dsimp
+        have hrootEq :
+            ∀ part : List Metta.Atom × Metta.Bindings,
+              mettaEvalExprRootFoldStep kernelDefControlEnv fuel
+                  (List.flatMap Metta.Atom.vars [pattern, bodyQuery, template])
+                  (Metta.Atom.expr (Metta.Atom.sym "let" :: part.1)) part.2 =
+                (fun a2 p =>
+                  if (p.1 == notReducibleA) = true ∨
+                      (p.1 == Metta.Atom.expr (Metta.Atom.sym "let" :: part.1)) = true then
+                    (a2.1 ++
+                      [(Metta.Atom.expr (Metta.Atom.sym "let" :: part.1), part.2)],
+                      a2.2)
+                  else if
+                      returnsAtom kernelDefControlEnv
+                          (Metta.Atom.expr (Metta.Atom.sym "let" :: part.1)) = true ∧
+                        isEmbeddedOp p.1 = false then
+                    (a2.1 ++
+                      [(p.1,
+                        restrictBnd (pattern.vars ++ (bodyQuery.vars ++ template.vars))
+                          ((Metta.Bindings.merge part.2 p.2).head?.getD p.2))],
+                      a2.2)
+                  else
+                    (a2.1 ++
+                        (mettaEval kernelDefControlEnv fuel a2.2
+                          (restrictBnd (pattern.vars ++ (bodyQuery.vars ++ template.vars))
+                            ((Metta.Bindings.merge part.2 p.2).head?.getD p.2))
+                          p.1).1.map
+                          (fun m =>
+                            (m.1,
+                              restrictBnd (pattern.vars ++ (bodyQuery.vars ++ template.vars))
+                                ((Metta.Bindings.merge
+                                  (restrictBnd
+                                    (pattern.vars ++ (bodyQuery.vars ++ template.vars))
+                                    ((Metta.Bindings.merge part.2 p.2).head?.getD p.2))
+                                  m.2).head?.getD m.2))),
+                      (mettaEval kernelDefControlEnv fuel a2.2
+                        (restrictBnd (pattern.vars ++ (bodyQuery.vars ++ template.vars))
+                          ((Metta.Bindings.merge part.2 p.2).head?.getD p.2))
+                        p.1).2)) := by
+          intro part
+          funext a2 p
+          simp [mettaEvalExprRootFoldStep]
+        simp only [qvars]
+        simp_rw [hrootEq]
+        exact hmem
+      have hRootNotTrue :
+          ∀ part ∈ parts,
+            Metta.Atom.expr (Metta.Atom.sym "let" :: part.1) ≠ mBool true := by
+        intro part _hpart
+        simp [mBool]
+      have hReturns :
+          ∀ part ∈ parts,
+            returnsAtom kernelDefControlEnv
+              (Metta.Atom.expr (Metta.Atom.sym "let" :: part.1)) = false := by
+        intro part _hpart
+        simpa [mExpr, mSym, returnsAtom, headKey] using
+          kernelDefControlEnv_let_returnsAtom pattern bodyQuery template
+      have hArgStateLocal : P stArg := by
+        have hArg2 :
+            (mettaEval kernelDefControlEnv fuel st [] bodyQuery).2 =
+              stArg := by
+          simp [hArg]
+        simpa [bodyQuery, hArg2] using hArgState
+      have hPartStepStateLocal :
+          ∀ (acc0 : List (Metta.Atom × Metta.Bindings) × St)
+            (part : List Metta.Atom × Metta.Bindings),
+            part ∈ parts →
+              P acc0.2 →
+                P (mettaEvalExprPartFoldStep kernelDefControlEnv fuel qvars
+                  "let" [pattern, bodyQuery, template] [] acc0 part).2 := by
+        intro acc0 part hpart hP
+        have hArg1 :
+            (mettaEval kernelDefControlEnv fuel st [] bodyQuery).1 =
+              argPairs := by
+          simp [hArg]
+        have hstep :=
+          hPartStepState acc0 part
+            (by
+              simpa [pattern, bodyQuery, template, qvars, parts0, parts,
+                hArg1] using hpart)
+            hP
+        simpa [pattern, bodyQuery, template, qvars, hArg1] using hstep
+      rcases
+          mettaEvalExprPartFold_true_pair_implies_acc_or_recursive_bnd_any_local_with_noerr_state_pred
+            kernelDefControlEnv fuel qvars "let"
+            [pattern, bodyQuery, template] [] parts ([], stArg) outBnd P
+            hArgStateLocal hPartStepStateLocal
+            hRootNotTrue hReturns hmemParts with
+        hinit | hpart
+      · cases hinit
+      · rcases hpart with
+          ⟨part, hpartMem, stPart, pairs, stRoot, root, rootBnd,
+            stBefore, recBnd, hNoErr, hPPart, hrootEq, hrootMem,
+            hnotNR, hnotSelf, hrecMem⟩
+        rcases List.mem_map.mp hpartMem with ⟨part0, hpart0Mem, hpartEq⟩
+        rcases List.mem_map.mp hpart0Mem with ⟨q, hqMem, hqEq⟩
+        cases hpartEq
+        cases hqEq
+        refine
+          ⟨q.1, q.2,
+            restrictBnd qvars ((Metta.Bindings.merge [] q.2).head?.getD q.2),
+            stPart, pairs, stRoot, root, rootBnd, stBefore, recBnd,
+            ?_, hPPart, ?_, rfl, ?_, ?_, ?_, ?_, ?_⟩
+        · simpa [pattern, bodyQuery, template, qvars, mExpr, mSym] using hNoErr
         · have hArg1 :
               (mettaEval kernelDefControlEnv fuel st [] bodyQuery).1 =
                 argPairs := by
@@ -23923,6 +25623,405 @@ private theorem mettaEval_kernelDefControlEnv_convReadoutNamed_true_pair_implies
             restrictBnd qvars ((Metta.Bindings.merge [] q.2).head?.getD q.2),
             stPart, pairs, stRoot, root, rootBnd, stBefore, recBnd,
             hPPart, hPBefore, ?_, rfl, ?_, ?_, ?_, ?_, ?_⟩
+        · have hArg1 :
+              (mettaEval kernelDefControlEnv fuel st [] bodyQuery).1 =
+                argPairs := by
+            simp [hArg]
+          simpa [bodyQuery, hArg1] using hqMem
+        · simpa [pattern, bodyQuery, template, qvars, mExpr, mSym] using hrootEq
+        · exact hrootMem
+        · exact hnotNR
+        · simpa [pattern, bodyQuery, template, qvars, mExpr, mSym] using hnotSelf
+        · simpa [pattern, bodyQuery, template, qvars, mExpr, mSym] using hrecMem
+
+private theorem mettaEval_kernelDefControlEnv_convReadoutNamed_true_pair_implies_left_nf_and_recursive_root_pair_exists_with_noerr_state_pred_before
+    (fuel : Nat) (st : St)
+    (nxBinder nyBinder : String)
+    (sig : DIndGArtifactSig) (rawLeft rawRight : DIndGArtifactTerm)
+    (outBnd : Metta.Bindings)
+    (P : St → Prop)
+    (hArgState :
+      P (mettaEval kernelDefControlEnv fuel st []
+        (nfQuery sig rawLeft)).2)
+    (hPartStepState :
+      let pattern := mVar nxBinder
+      let bodyQuery := nfQuery sig rawLeft
+      let template :=
+        convReadoutAfterNxNamed nyBinder sig rawRight (mVar nxBinder)
+      let qvars := ([pattern, bodyQuery, template]).flatMap Metta.Atom.vars
+      let argPairs :=
+        (mettaEval kernelDefControlEnv fuel st [] bodyQuery).1
+      let parts0 : List (List Metta.Atom × Metta.Bindings) :=
+        argPairs.map (fun q : Metta.Atom × Metta.Bindings =>
+          ([pattern, q.1],
+            restrictBnd qvars ((Metta.Bindings.merge [] q.2).head?.getD q.2)))
+      let parts : List (List Metta.Atom × Metta.Bindings) :=
+        parts0.map
+          (fun part0 =>
+            (part0.1 ++ [Metta.instantiate part0.2 template], part0.2))
+      ∀ (acc0 : List (Metta.Atom × Metta.Bindings) × St)
+        (part : List Metta.Atom × Metta.Bindings),
+        part ∈ parts →
+          P acc0.2 →
+            P (mettaEvalExprPartFoldStep kernelDefControlEnv fuel qvars
+              "let" [pattern, bodyQuery, template] [] acc0 part).2)
+    (hRootState :
+      let pattern := mVar nxBinder
+      let bodyQuery := nfQuery sig rawLeft
+      let template :=
+        convReadoutAfterNxNamed nyBinder sig rawRight (mVar nxBinder)
+      let qvars := ([pattern, bodyQuery, template]).flatMap Metta.Atom.vars
+      let argPairs :=
+        (mettaEval kernelDefControlEnv fuel st [] bodyQuery).1
+      let parts0 : List (List Metta.Atom × Metta.Bindings) :=
+        argPairs.map (fun q : Metta.Atom × Metta.Bindings =>
+          ([pattern, q.1],
+            restrictBnd qvars ((Metta.Bindings.merge [] q.2).head?.getD q.2)))
+      let parts : List (List Metta.Atom × Metta.Bindings) :=
+        parts0.map
+          (fun part0 =>
+            (part0.1 ++ [Metta.instantiate part0.2 template], part0.2))
+      ∀ (acc0 : List (Metta.Atom × Metta.Bindings) × St)
+        (part : List Metta.Atom × Metta.Bindings),
+        part ∈ parts →
+          P acc0.2 →
+            P (interpretFuel kernelDefControlEnv (fuel + 1) acc0.2
+              [{ stack := atomToStack (Metta.Atom.expr [Metta.Atom.sym "eval",
+                  Metta.Atom.expr (Metta.Atom.sym "let" :: part.1)]) [],
+                 bnd := [] }] []).2)
+    (hRecState :
+      let pattern := mVar nxBinder
+      let bodyQuery := nfQuery sig rawLeft
+      let template :=
+        convReadoutAfterNxNamed nyBinder sig rawRight (mVar nxBinder)
+      let qvars := ([pattern, bodyQuery, template]).flatMap Metta.Atom.vars
+      ∀ (partBnd : Metta.Bindings)
+        (acc0 : List (Metta.Atom × Metta.Bindings) × St)
+        (p : Metta.Atom × Metta.Bindings),
+        P acc0.2 →
+          P (mettaEval kernelDefControlEnv fuel acc0.2
+            (restrictBnd qvars
+              ((Metta.Bindings.merge partBnd p.2).head?.getD p.2))
+            p.1).2)
+    (hmem :
+      (mBool true, outBnd) ∈
+        (mettaEval kernelDefControlEnv (fuel + 1) st []
+          (convReadoutNamed nxBinder nyBinder sig rawLeft rawRight)).1) :
+    ∃ nx nxBnd partBnd stPart pairs stRoot root rootBnd stBefore recBnd,
+      (([mVar nxBinder, nx,
+            Metta.instantiate partBnd
+              (convReadoutAfterNxNamed nyBinder sig rawRight
+                (mVar nxBinder))].zip
+          [mVar nxBinder, nfQuery sig rawLeft,
+            convReadoutAfterNxNamed nyBinder sig rawRight
+              (mVar nxBinder)]).find?
+          (fun ho : Metta.Atom × Metta.Atom =>
+            ho.1.isError && ho.1 != ho.2)) = none ∧
+      P stPart ∧
+      P stBefore ∧
+      (nx, nxBnd) ∈
+        (mettaEval kernelDefControlEnv fuel st []
+          (nfQuery sig rawLeft)).1 ∧
+      partBnd =
+        restrictBnd
+          (([mVar nxBinder, nfQuery sig rawLeft,
+              convReadoutAfterNxNamed nyBinder sig rawRight (mVar nxBinder)]).flatMap
+            Metta.Atom.vars)
+          ((Metta.Bindings.merge [] nxBnd).head?.getD nxBnd) ∧
+      interpretFuel kernelDefControlEnv (fuel + 1) stPart
+          [{ stack := atomToStack
+              (Metta.Atom.expr
+                [ Metta.Atom.sym "eval"
+                , Metta.Atom.expr
+                    (Metta.Atom.sym "let" ::
+                      [ mVar nxBinder
+                      , nx
+                      , Metta.instantiate partBnd
+                          (convReadoutAfterNxNamed nyBinder sig rawRight
+                            (mVar nxBinder)) ]) ]) [],
+             bnd := [] }] [] =
+        (pairs, stRoot) ∧
+      (root, rootBnd) ∈ pairs ∧
+      (root == notReducibleA) = false ∧
+      (root ==
+          Metta.Atom.expr
+            (Metta.Atom.sym "let" ::
+              [ mVar nxBinder
+              , nx
+              , Metta.instantiate partBnd
+                  (convReadoutAfterNxNamed nyBinder sig rawRight
+                    (mVar nxBinder)) ])) = false ∧
+      (mBool true, recBnd) ∈
+        (mettaEval kernelDefControlEnv fuel stBefore
+          (restrictBnd
+            (([mVar nxBinder, nfQuery sig rawLeft,
+                convReadoutAfterNxNamed nyBinder sig rawRight (mVar nxBinder)]).flatMap
+              Metta.Atom.vars)
+            ((Metta.Bindings.merge partBnd rootBnd).head?.getD rootBnd))
+          root).1 := by
+  let pattern := mVar nxBinder
+  let bodyQuery := nfQuery sig rawLeft
+  let template :=
+    convReadoutAfterNxNamed nyBinder sig rawRight (mVar nxBinder)
+  let qvars := ([pattern, bodyQuery, template]).flatMap Metta.Atom.vars
+  cases hArg :
+      mettaEval kernelDefControlEnv fuel st [] bodyQuery with
+  | mk argPairs stArg =>
+      let parts0 : List (List Metta.Atom × Metta.Bindings) :=
+        argPairs.map (fun q : Metta.Atom × Metta.Bindings =>
+          ([pattern, q.1],
+            restrictBnd qvars ((Metta.Bindings.merge [] q.2).head?.getD q.2)))
+      let appendTempl :=
+        fun acc : List (List Metta.Atom × Metta.Bindings) × St =>
+          fun part0 : List Metta.Atom × Metta.Bindings =>
+            (acc.1 ++
+              [(part0.1 ++ [Metta.instantiate part0.2 template], part0.2)],
+              acc.2)
+      let parts : List (List Metta.Atom × Metta.Bindings) :=
+        parts0.map
+          (fun part0 =>
+            (part0.1 ++ [Metta.instantiate part0.2 template], part0.2))
+      have hprep :
+          List.foldl appendTempl ([], stArg) parts0 = (parts, stArg) := by
+        have hprepGen :
+            ∀ (pref : List (List Metta.Atom × Metta.Bindings))
+              (ps : List (List Metta.Atom × Metta.Bindings)),
+              List.foldl appendTempl (pref, stArg) ps =
+                (pref ++
+                    ps.map
+                      (fun part0 =>
+                        (part0.1 ++ [Metta.instantiate part0.2 template],
+                          part0.2)),
+                  stArg) := by
+          intro pref ps
+          induction ps generalizing pref with
+          | nil =>
+              simp [appendTempl]
+          | cons x xs ih =>
+              simp [appendTempl, ih, List.append_assoc]
+        simpa [parts] using hprepGen [] parts0
+      have hType :
+          typeMismatch kernelDefControlEnv st.world "let"
+            [pattern, bodyQuery, template] = none := by
+        exact kernelDefControlEnv_let_typeMismatch st pattern bodyQuery template
+      have hmemParts :
+          (mBool true, outBnd) ∈
+            (parts.foldl
+              (mettaEvalExprPartFoldStep kernelDefControlEnv fuel qvars
+                "let" [pattern, bodyQuery, template] [])
+              ([], stArg)).1 := by
+        change
+          (mBool true, outBnd) ∈
+            (mettaEval kernelDefControlEnv (fuel + 1) st []
+              (Metta.Atom.expr
+                [Metta.Atom.sym "let", pattern, bodyQuery, template])).1
+          at hmem
+        unfold mettaEval at hmem
+        rw [Metta.instantiate_nil
+          (Metta.Atom.expr
+            [Metta.Atom.sym "let", pattern, bodyQuery, template])] at hmem
+        simp only [hType, kernelDefControlEnv_let_argMask, List.length_cons,
+          List.length_nil, Nat.reduceAdd, List.zip_cons_cons,
+          List.zip_nil_right, Bool.false_eq_true, if_false, if_true,
+          List.foldl_cons, List.foldl_nil] at hmem
+        simp [Metta.instantiate_nil] at hmem
+        have hArg1 :
+            (mettaEval kernelDefControlEnv fuel st [] bodyQuery).1 =
+              argPairs := by
+          simp [hArg]
+        have hArg2 :
+            (mettaEval kernelDefControlEnv fuel st [] bodyQuery).2 =
+              stArg := by
+          simp [hArg]
+        rw [hArg1, hArg2] at hmem
+        have hprepInline :
+            List.foldl
+                (fun acc2 part =>
+                  (acc2.1 ++
+                    [(part.1 ++ [Metta.instantiate part.2 template], part.2)],
+                    acc2.2))
+                ([], stArg)
+                (argPairs.map
+                  (fun p =>
+                    ([pattern, p.1],
+                      restrictBnd
+                        (pattern.vars ++ (bodyQuery.vars ++ template.vars))
+                        ((Metta.Bindings.merge [] p.2).head?.getD p.2)))) =
+              (parts, stArg) := by
+          simpa [appendTempl, parts0, qvars] using hprep
+        rw [hprepInline] at hmem
+        have hstepEq :
+            mettaEvalExprPartFoldStep kernelDefControlEnv fuel qvars
+                "let" [pattern, bodyQuery, template] [] =
+              (fun acc part =>
+                match
+                    List.find?
+                      (fun ho : Metta.Atom × Metta.Atom =>
+                        ho.1.isError && ho.1 != ho.2)
+                      (part.1.zip [pattern, bodyQuery, template]) with
+                | some (err, _) => (acc.1 ++ [(err, part.2)], acc.2)
+                | none =>
+                    let w := Metta.Atom.expr (Metta.Atom.sym "let" :: part.1)
+                    let rootEval :=
+                      interpretFuel kernelDefControlEnv (fuel + 1) acc.2
+                        [{ stack :=
+                            atomToStack
+                              (Metta.Atom.expr [Metta.Atom.sym "eval", w]) [],
+                           bnd := [] }] []
+                    let folded :=
+                      rootEval.1.foldl
+                        (mettaEvalExprRootFoldStep kernelDefControlEnv fuel qvars
+                          w part.2)
+                        ([], rootEval.2)
+                    (acc.1 ++ folded.1, folded.2)) := by
+          funext acc part
+          unfold mettaEvalExprPartFoldStep
+          cases hfind :
+              (part.1.zip [pattern, bodyQuery, template]).find?
+                (fun ho : Metta.Atom × Metta.Atom =>
+                  ho.1.isError && ho.1 != ho.2) with
+          | none =>
+              simp
+          | some found =>
+              rcases found with ⟨err, orig⟩
+              simp
+        rw [hstepEq]
+        have hrootEq :
+            ∀ part : List Metta.Atom × Metta.Bindings,
+              mettaEvalExprRootFoldStep kernelDefControlEnv fuel
+                  (List.flatMap Metta.Atom.vars [pattern, bodyQuery, template])
+                  (Metta.Atom.expr (Metta.Atom.sym "let" :: part.1)) part.2 =
+                (fun a2 p =>
+                  if (p.1 == notReducibleA) = true ∨
+                      (p.1 == Metta.Atom.expr (Metta.Atom.sym "let" :: part.1)) = true then
+                    (a2.1 ++
+                      [(Metta.Atom.expr (Metta.Atom.sym "let" :: part.1), part.2)],
+                      a2.2)
+                  else if
+                      returnsAtom kernelDefControlEnv
+                          (Metta.Atom.expr (Metta.Atom.sym "let" :: part.1)) = true ∧
+                        isEmbeddedOp p.1 = false then
+                    (a2.1 ++
+                      [(p.1,
+                        restrictBnd (pattern.vars ++ (bodyQuery.vars ++ template.vars))
+                          ((Metta.Bindings.merge part.2 p.2).head?.getD p.2))],
+                      a2.2)
+                  else
+                    (a2.1 ++
+                        (mettaEval kernelDefControlEnv fuel a2.2
+                          (restrictBnd (pattern.vars ++ (bodyQuery.vars ++ template.vars))
+                            ((Metta.Bindings.merge part.2 p.2).head?.getD p.2))
+                          p.1).1.map
+                          (fun m =>
+                            (m.1,
+                              restrictBnd (pattern.vars ++ (bodyQuery.vars ++ template.vars))
+                                ((Metta.Bindings.merge
+                                  (restrictBnd
+                                    (pattern.vars ++ (bodyQuery.vars ++ template.vars))
+                                    ((Metta.Bindings.merge part.2 p.2).head?.getD p.2))
+                                  m.2).head?.getD m.2))),
+                      (mettaEval kernelDefControlEnv fuel a2.2
+                        (restrictBnd (pattern.vars ++ (bodyQuery.vars ++ template.vars))
+                          ((Metta.Bindings.merge part.2 p.2).head?.getD p.2))
+                        p.1).2)) := by
+          intro part
+          funext a2 p
+          simp [mettaEvalExprRootFoldStep]
+        simp only [qvars]
+        simp_rw [hrootEq]
+        exact hmem
+      have hRootNotTrue :
+          ∀ part ∈ parts,
+            Metta.Atom.expr (Metta.Atom.sym "let" :: part.1) ≠ mBool true := by
+        intro part _hpart
+        simp [mBool]
+      have hReturns :
+          ∀ part ∈ parts,
+            returnsAtom kernelDefControlEnv
+              (Metta.Atom.expr (Metta.Atom.sym "let" :: part.1)) = false := by
+        intro part _hpart
+        simpa [mExpr, mSym, returnsAtom, headKey] using
+          kernelDefControlEnv_let_returnsAtom pattern bodyQuery template
+      have hArgStateLocal : P stArg := by
+        have hArg2 :
+            (mettaEval kernelDefControlEnv fuel st [] bodyQuery).2 =
+              stArg := by
+          simp [hArg]
+        simpa [bodyQuery, hArg2] using hArgState
+      have hPartStepStateLocal :
+          ∀ (acc0 : List (Metta.Atom × Metta.Bindings) × St)
+            (part : List Metta.Atom × Metta.Bindings),
+            part ∈ parts →
+              P acc0.2 →
+                P (mettaEvalExprPartFoldStep kernelDefControlEnv fuel qvars
+                  "let" [pattern, bodyQuery, template] [] acc0 part).2 := by
+        intro acc0 part hpart hP
+        have hArg1 :
+            (mettaEval kernelDefControlEnv fuel st [] bodyQuery).1 =
+              argPairs := by
+          simp [hArg]
+        have hstep :=
+          hPartStepState acc0 part
+            (by
+              simpa [pattern, bodyQuery, template, qvars, parts0, parts,
+                hArg1] using hpart)
+            hP
+        simpa [pattern, bodyQuery, template, qvars, hArg1] using hstep
+      have hRootStateLocal :
+          ∀ (acc0 : List (Metta.Atom × Metta.Bindings) × St)
+            (part : List Metta.Atom × Metta.Bindings),
+            part ∈ parts →
+              P acc0.2 →
+                P (interpretFuel kernelDefControlEnv (fuel + 1) acc0.2
+                  [{ stack := atomToStack (Metta.Atom.expr [Metta.Atom.sym "eval",
+                      Metta.Atom.expr (Metta.Atom.sym "let" :: part.1)]) [],
+                     bnd := [] }] []).2 := by
+        intro acc0 part hpart hP
+        have hArg1 :
+            (mettaEval kernelDefControlEnv fuel st [] bodyQuery).1 =
+              argPairs := by
+          simp [hArg]
+        have hroot :=
+          hRootState acc0 part
+            (by
+              simpa [pattern, bodyQuery, template, qvars, parts0, parts,
+                hArg1] using hpart)
+            hP
+        simpa [pattern, bodyQuery, template, qvars, hArg1] using hroot
+      have hRecStateLocal :
+          ∀ (partBnd : Metta.Bindings)
+            (acc0 : List (Metta.Atom × Metta.Bindings) × St)
+            (p : Metta.Atom × Metta.Bindings),
+            P acc0.2 →
+              P (mettaEval kernelDefControlEnv fuel acc0.2
+                (restrictBnd qvars
+                  ((Metta.Bindings.merge partBnd p.2).head?.getD p.2))
+                p.1).2 := by
+        intro partBnd acc0 p hP
+        have hrec := hRecState partBnd acc0 p hP
+        simpa [pattern, bodyQuery, template, qvars] using hrec
+      rcases
+          mettaEvalExprPartFold_true_pair_implies_acc_or_recursive_bnd_any_local_with_noerr_state_pred_before
+            kernelDefControlEnv fuel qvars "let"
+            [pattern, bodyQuery, template] [] parts ([], stArg) outBnd P
+            hArgStateLocal hPartStepStateLocal hRootStateLocal hRecStateLocal
+            hRootNotTrue hReturns hmemParts with
+        hinit | hpart
+      · cases hinit
+      · rcases hpart with
+          ⟨part, hpartMem, stPart, pairs, stRoot, root, rootBnd,
+            stBefore, recBnd, hNoErr, hPPart, hPBefore, hrootEq, hrootMem,
+            hnotNR, hnotSelf, hrecMem⟩
+        rcases List.mem_map.mp hpartMem with ⟨part0, hpart0Mem, hpartEq⟩
+        rcases List.mem_map.mp hpart0Mem with ⟨q, hqMem, hqEq⟩
+        cases hpartEq
+        cases hqEq
+        refine
+          ⟨q.1, q.2,
+            restrictBnd qvars ((Metta.Bindings.merge [] q.2).head?.getD q.2),
+            stPart, pairs, stRoot, root, rootBnd, stBefore, recBnd,
+            ?_, hPPart, hPBefore, ?_, rfl, ?_, ?_, ?_, ?_, ?_⟩
+        · simpa [pattern, bodyQuery, template, qvars, mExpr, mSym] using hNoErr
         · have hArg1 :
               (mettaEval kernelDefControlEnv fuel st [] bodyQuery).1 =
                 argPairs := by
@@ -25110,6 +27209,67 @@ private theorem mettaEval_kernelDefControlEnv_convReadoutAfterNxNamed_true_pair_
       hRootMem, hNotNR, by
         simpa [template] using hNotSelf, by
         simpa [template] using hRec⟩
+
+private theorem mettaEval_kernelDefControlEnv_convReadoutAfterNxNamed_true_pair_fuel_one_false_bnd
+    (st : St) (bnd : Metta.Bindings)
+    (nyBinder : String)
+    (sig : DIndGArtifactSig) (rawRight : DIndGArtifactTerm)
+    (nx : Metta.Atom) {outBnd : Metta.Bindings}
+    (hinst :
+      Metta.instantiate bnd (convReadoutAfterNxNamed nyBinder sig rawRight nx) =
+        convReadoutAfterNxNamed nyBinder sig rawRight nx)
+    (hmem :
+      (mBool true, outBnd) ∈
+        (mettaEval kernelDefControlEnv 1 st bnd
+          (convReadoutAfterNxNamed nyBinder sig rawRight nx)).1) :
+    False := by
+  rcases
+      mettaEval_kernelDefControlEnv_convReadoutAfterNxNamed_true_pair_implies_right_nf_and_tail_root_pair_exists_bnd
+        (fuel := 0) (st := st) (bnd := bnd)
+        (nyBinder := nyBinder) (sig := sig) (rawRight := rawRight)
+        (nx := nx) (outBnd := outBnd) hinst
+        (by simpa using hmem) with
+    ⟨_ny, _nyBnd, _partBnd, _stPart, _pairs, _stRoot,
+      _root, _rootBnd, _stBefore, _recBnd, _hRight,
+      _hPartBnd, _hTrace, _hRootMem, _hNotNR, _hNotSelf, hRec⟩
+  rw [Metta.Minimal.mettaEval.eq_1] at hRec
+  simp [mBool] at hRec
+
+private theorem mettaEval_kernelDefControlEnv_convReadoutAfterNxNamed_true_value_fuel_one_false_bnd
+    (st : St) (bnd : Metta.Bindings)
+    (nyBinder : String)
+    (sig : DIndGArtifactSig) (rawRight : DIndGArtifactTerm)
+    (nx : Metta.Atom)
+    (hinst :
+      Metta.instantiate bnd (convReadoutAfterNxNamed nyBinder sig rawRight nx) =
+        convReadoutAfterNxNamed nyBinder sig rawRight nx)
+    (hmem :
+      mBool true ∈
+        (mettaEval kernelDefControlEnv 1 st bnd
+          (convReadoutAfterNxNamed nyBinder sig rawRight nx)).1.map (·.1)) :
+    False := by
+  rcases List.mem_map.mp hmem with ⟨⟨a, outBnd⟩, hPair, ha⟩
+  dsimp at ha
+  subst a
+  exact
+    mettaEval_kernelDefControlEnv_convReadoutAfterNxNamed_true_pair_fuel_one_false_bnd
+      st bnd nyBinder sig rawRight nx hinst hPair
+
+private theorem mettaEval_kernelDefControlEnv_convReadoutAfterNxNamed_true_pair_fuel_one_false
+    (st : St)
+    (nyBinder : String)
+    (sig : DIndGArtifactSig) (rawRight : DIndGArtifactTerm)
+    (nx : Metta.Atom) {outBnd : Metta.Bindings}
+    (hmem :
+      (mBool true, outBnd) ∈
+        (mettaEval kernelDefControlEnv 1 st []
+          (convReadoutAfterNxNamed nyBinder sig rawRight nx)).1) :
+    False := by
+  exact
+    mettaEval_kernelDefControlEnv_convReadoutAfterNxNamed_true_pair_fuel_one_false_bnd
+      st [] nyBinder sig rawRight nx
+      (by rw [Metta.instantiate_nil])
+      hmem
 
 private theorem mettaEval_kernelDefControlEnv_convReadoutAfterNxNamed_true_pair_implies_right_nf_and_tail_root_pair_exists_bnd_state_pred_before
     (fuel : Nat) (st : St) (bnd : Metta.Bindings)
@@ -26673,6 +28833,1493 @@ private theorem mettaEvalExprPartFoldStep_preserves_state_pred_of_root_local
             pairs ([], stRoot) hrootState
         simpa [hpairs] using hfold
 
+private theorem mettaEvalExprPartFoldStep_preserves_state_pred_of_root_point
+    (env : MinEnv) (fuel : Nat) (queryVars : List String)
+    (op : String) (args : List Metta.Atom) (bnd : Metta.Bindings)
+    (P : St → Prop)
+    (part : List Metta.Atom × Metta.Bindings)
+    (hroot :
+      ∀ (acc : List (Metta.Atom × Metta.Bindings) × St),
+        P acc.2 →
+          P (interpretFuel env (fuel + 1) acc.2
+            [{ stack := atomToStack (Metta.Atom.expr [Metta.Atom.sym "eval",
+                Metta.Atom.expr (Metta.Atom.sym op :: part.1)]) [], bnd := bnd }] []).2)
+    (hrec :
+      ∀ (partBnd : Metta.Bindings)
+        (acc : List (Metta.Atom × Metta.Bindings) × St)
+        (p : Metta.Atom × Metta.Bindings),
+        P acc.2 →
+          P (mettaEval env fuel acc.2
+            (restrictBnd queryVars
+              ((Metta.Bindings.merge partBnd p.2).head?.getD p.2))
+            p.1).2)
+    (acc : List (Metta.Atom × Metta.Bindings) × St)
+    (hacc : P acc.2) :
+    P (mettaEvalExprPartFoldStep env fuel queryVars op args bnd acc part).2 := by
+  unfold mettaEvalExprPartFoldStep
+  split
+  · exact hacc
+  · cases hpairs : interpretFuel env (fuel + 1) acc.2
+      [{ stack := atomToStack (Metta.Atom.expr [Metta.Atom.sym "eval",
+          Metta.Atom.expr (Metta.Atom.sym op :: part.1)]) [], bnd := bnd }] [] with
+    | mk pairs stRoot =>
+        have hrootState : P stRoot := by
+          have h := hroot acc hacc
+          rw [hpairs] at h
+          simpa using h
+        have hfold :
+            P
+              (pairs.foldl
+                (mettaEvalExprRootFoldStep env fuel queryVars
+                  (Metta.Atom.expr (Metta.Atom.sym op :: part.1)) part.2)
+                ([], stRoot)).2 :=
+          mettaEvalExprRootFold_preserves_state_pred_local
+            env fuel queryVars
+            (Metta.Atom.expr (Metta.Atom.sym op :: part.1)) part.2 P
+            (fun acc p hP => hrec part.2 acc p hP)
+            pairs ([], stRoot) hrootState
+        simpa [hpairs] using hfold
+
+private theorem mettaEvalExprPartFoldStep_preserves_state_pred_of_notReducible_root
+    (env : MinEnv) (fuel : Nat) (queryVars : List String)
+    (op : String) (args : List Metta.Atom) (bnd : Metta.Bindings)
+    (P : St → Prop)
+    (acc : List (Metta.Atom × Metta.Bindings) × St)
+    (part : List Metta.Atom × Metta.Bindings)
+    (hacc : P acc.2)
+    (hRoot :
+      interpretFuel env (fuel + 1) acc.2
+        [{ stack := atomToStack (Metta.Atom.expr [Metta.Atom.sym "eval",
+            Metta.Atom.expr (Metta.Atom.sym op :: part.1)]) [],
+           bnd := bnd }] [] =
+        ([(notReducibleA, [])], acc.2)) :
+    P (mettaEvalExprPartFoldStep env fuel queryVars op args bnd acc part).2 := by
+  cases hfind :
+      (part.1.zip args).find?
+        (fun ho : Metta.Atom × Metta.Atom =>
+          ho.1.isError && ho.1 != ho.2)
+  · have hNR : (notReducibleA == notReducibleA) = true := rfl
+    simpa [mettaEvalExprPartFoldStep, hfind, hRoot,
+      mettaEvalExprRootFoldStep, hNR] using hacc
+  · simpa [mettaEvalExprPartFoldStep, hfind] using hacc
+
+private theorem mettaEvalExprPartFold_preserves_state_pred_of_notReducible_root
+    (env : MinEnv) (fuel : Nat) (queryVars : List String)
+    (op : String) (args : List Metta.Atom) (bnd : Metta.Bindings)
+    (P : St → Prop)
+    (parts : List (List Metta.Atom × Metta.Bindings))
+    (acc : List (Metta.Atom × Metta.Bindings) × St)
+    (hinit : P acc.2)
+    (hRoot :
+      ∀ (acc0 : List (Metta.Atom × Metta.Bindings) × St)
+        (part : List Metta.Atom × Metta.Bindings),
+        part ∈ parts →
+          P acc0.2 →
+            interpretFuel env (fuel + 1) acc0.2
+              [{ stack := atomToStack (Metta.Atom.expr [Metta.Atom.sym "eval",
+                  Metta.Atom.expr (Metta.Atom.sym op :: part.1)]) [],
+                 bnd := bnd }] [] =
+              ([(notReducibleA, [])], acc0.2)) :
+    P (parts.foldl
+      (mettaEvalExprPartFoldStep env fuel queryVars op args bnd) acc).2 := by
+  induction parts generalizing acc with
+  | nil =>
+      simpa using hinit
+  | cons part rest ih =>
+      have hRootRest :
+          ∀ (acc0 : List (Metta.Atom × Metta.Bindings) × St)
+            (part' : List Metta.Atom × Metta.Bindings),
+            part' ∈ rest →
+              P acc0.2 →
+                interpretFuel env (fuel + 1) acc0.2
+                  [{ stack := atomToStack (Metta.Atom.expr
+                      [Metta.Atom.sym "eval",
+                       Metta.Atom.expr (Metta.Atom.sym op :: part'.1)]) [],
+                     bnd := bnd }] [] =
+                  ([(notReducibleA, [])], acc0.2) := by
+        intro acc0 part' hpart' hP
+        exact hRoot acc0 part' (by simp [hpart']) hP
+      have hStep :
+          P (mettaEvalExprPartFoldStep env fuel queryVars op args bnd
+            acc part).2 :=
+        mettaEvalExprPartFoldStep_preserves_state_pred_of_notReducible_root
+          env fuel queryVars op args bnd P acc part hinit
+          (hRoot acc part (by simp) hinit)
+      exact ih
+        (acc := mettaEvalExprPartFoldStep env fuel queryVars op args bnd
+          acc part)
+        hStep hRootRest
+
+private theorem mettaEvalExprRootFoldStep_pair_nonError_state_pred_local
+    (env : MinEnv) (fuel : Nat) (queryVars : List String)
+    (w : Metta.Atom) (partBnd : Metta.Bindings)
+    (acc : List (Metta.Atom × Metta.Bindings) × St)
+    (p : Metta.Atom × Metta.Bindings)
+    (out : Metta.Atom) (outBnd : Metta.Bindings)
+    (P : St → Prop)
+    (haccP : P acc.2)
+    (_hrec :
+      ∀ (acc0 : List (Metta.Atom × Metta.Bindings) × St)
+        (p0 : Metta.Atom × Metta.Bindings),
+        P acc0.2 →
+          P (mettaEval env fuel acc0.2
+            (restrictBnd queryVars
+              ((Metta.Bindings.merge partBnd p0.2).head?.getD p0.2))
+            p0.1).2)
+    (hReturns : returnsAtom env w = false)
+    (hmem :
+      (out, outBnd) ∈
+        (mettaEvalExprRootFoldStep env fuel queryVars w partBnd acc p).1) :
+    (out, outBnd) ∈ acc.1 ∨
+      out = w ∨
+      ∃ recBnd,
+        P acc.2 ∧
+        (p.1 == notReducibleA) = false ∧
+        (p.1 == w) = false ∧
+        (out, recBnd) ∈
+          (mettaEval env fuel acc.2
+            (restrictBnd queryVars
+              ((Metta.Bindings.merge partBnd p.2).head?.getD p.2))
+            p.1).1 := by
+  unfold mettaEvalExprRootFoldStep at hmem
+  by_cases hfirst : (p.1 == notReducibleA) = true ∨ (p.1 == w) = true
+  · simp [hfirst] at hmem
+    rcases hmem with hacc | htail
+    · exact Or.inl hacc
+    · exact Or.inr (Or.inl htail.1)
+  · have hretFalse :
+        ¬ (returnsAtom env w = true ∧ isEmbeddedOp p.1 = false) := by
+      intro hret
+      rw [hReturns] at hret
+      cases hret.1
+    simp [hfirst, hretFalse] at hmem
+    rcases hmem with hacc | htail
+    · exact Or.inl hacc
+    · rcases htail with ⟨recBnd, hrecMem, _hout⟩
+      have hnotNR : (p.1 == notReducibleA) = false := by
+        cases hnr : (p.1 == notReducibleA) <;> simp [hnr] at hfirst ⊢
+      have hnotSelf : (p.1 == w) = false := by
+        cases hself : (p.1 == w) <;> simp [hself] at hfirst ⊢
+      exact Or.inr
+        (Or.inr ⟨recBnd, haccP, hnotNR, hnotSelf, hrecMem⟩)
+
+private theorem mettaEvalExprRootFold_pair_nonError_state_pred_local
+    (env : MinEnv) (fuel : Nat) (queryVars : List String)
+    (w : Metta.Atom) (partBnd : Metta.Bindings)
+    (pairs : List (Metta.Atom × Metta.Bindings))
+    (acc : List (Metta.Atom × Metta.Bindings) × St)
+    (out : Metta.Atom) (outBnd : Metta.Bindings)
+    (P : St → Prop)
+    (haccP : P acc.2)
+    (hrec :
+      ∀ (acc0 : List (Metta.Atom × Metta.Bindings) × St)
+        (p0 : Metta.Atom × Metta.Bindings),
+        P acc0.2 →
+          P (mettaEval env fuel acc0.2
+            (restrictBnd queryVars
+              ((Metta.Bindings.merge partBnd p0.2).head?.getD p0.2))
+            p0.1).2)
+    (hReturns : returnsAtom env w = false)
+    (hmem :
+      (out, outBnd) ∈
+        (pairs.foldl
+          (mettaEvalExprRootFoldStep env fuel queryVars w partBnd)
+          acc).1) :
+    (out, outBnd) ∈ acc.1 ∨
+      out = w ∨
+      ∃ p ∈ pairs, ∃ stBefore recBnd,
+        P stBefore ∧
+        (p.1 == notReducibleA) = false ∧
+        (p.1 == w) = false ∧
+        (out, recBnd) ∈
+          (mettaEval env fuel stBefore
+            (restrictBnd queryVars
+              ((Metta.Bindings.merge partBnd p.2).head?.getD p.2))
+            p.1).1 := by
+  induction pairs generalizing acc with
+  | nil =>
+      exact Or.inl hmem
+  | cons p ps ih =>
+      have hstepP :
+          P
+            (mettaEvalExprRootFoldStep env fuel queryVars w partBnd
+              acc p).2 :=
+        mettaEvalExprRootFoldStep_preserves_state_pred_local
+          env fuel queryVars w partBnd P hrec p acc haccP
+      have htail :=
+        ih
+          (acc := mettaEvalExprRootFoldStep env fuel queryVars w partBnd
+            acc p)
+          hstepP hmem
+      rcases htail with hstep | hself | hrecTail
+      · rcases
+          mettaEvalExprRootFoldStep_pair_nonError_state_pred_local
+            env fuel queryVars w partBnd acc p out outBnd P haccP hrec
+            hReturns hstep with
+          hacc | hself | hrecHere
+        · exact Or.inl hacc
+        · exact Or.inr (Or.inl hself)
+        · rcases hrecHere with
+            ⟨recBnd, hPBefore, hnotNR, hnotSelf, hrecMem⟩
+          exact Or.inr (Or.inr
+            ⟨p, by simp, acc.2, recBnd, hPBefore,
+              hnotNR, hnotSelf, hrecMem⟩)
+      · exact Or.inr (Or.inl hself)
+      · rcases hrecTail with
+          ⟨pTail, hpTail, stBefore, recBnd, hPBefore, hnotNR, hnotSelf,
+            hrecMem⟩
+        exact Or.inr (Or.inr
+          ⟨pTail, by simp [hpTail], stBefore, recBnd, hPBefore,
+            hnotNR, hnotSelf, hrecMem⟩)
+
+private theorem mettaEvalExprPartFoldStep_pair_nonError_state_pred_before
+    (env : MinEnv) (fuel : Nat) (queryVars : List String)
+    (op : String) (args : List Metta.Atom) (bnd : Metta.Bindings)
+    (acc : List (Metta.Atom × Metta.Bindings) × St)
+    (part : List Metta.Atom × Metta.Bindings)
+    (out : Metta.Atom) (outBnd : Metta.Bindings)
+    (P : St → Prop)
+    (hOutNoErr : out.isError = false)
+    (haccP : P acc.2)
+    (hrootState :
+      P (interpretFuel env (fuel + 1) acc.2
+        [{ stack := atomToStack (Metta.Atom.expr [Metta.Atom.sym "eval",
+            Metta.Atom.expr (Metta.Atom.sym op :: part.1)]) [], bnd := bnd }] []).2)
+    (hrecState :
+      ∀ (partBnd : Metta.Bindings)
+        (acc0 : List (Metta.Atom × Metta.Bindings) × St)
+        (p : Metta.Atom × Metta.Bindings),
+        P acc0.2 →
+          P (mettaEval env fuel acc0.2
+            (restrictBnd queryVars
+              ((Metta.Bindings.merge partBnd p.2).head?.getD p.2))
+            p.1).2)
+    (hReturns :
+      returnsAtom env (Metta.Atom.expr (Metta.Atom.sym op :: part.1)) =
+        false)
+    (hmem :
+      (out, outBnd) ∈
+        (mettaEvalExprPartFoldStep env fuel queryVars op args bnd acc part).1) :
+    (out, outBnd) ∈ acc.1 ∨
+      ∃ pairs stRoot,
+        (part.1.zip args).find?
+            (fun ho : Metta.Atom × Metta.Atom =>
+              ho.1.isError && ho.1 != ho.2) = none ∧
+        P acc.2 ∧
+        interpretFuel env (fuel + 1) acc.2
+            [{ stack := atomToStack (Metta.Atom.expr [Metta.Atom.sym "eval",
+                Metta.Atom.expr (Metta.Atom.sym op :: part.1)]) [],
+               bnd := bnd }] [] =
+          (pairs, stRoot) ∧
+        (out = Metta.Atom.expr (Metta.Atom.sym op :: part.1) ∨
+          ∃ root rootBnd stBefore recBnd,
+            P stBefore ∧
+            (root, rootBnd) ∈ pairs ∧
+            (root == notReducibleA) = false ∧
+            (root == Metta.Atom.expr (Metta.Atom.sym op :: part.1)) = false ∧
+            (out, recBnd) ∈
+              (mettaEval env fuel stBefore
+                (restrictBnd queryVars
+                  ((Metta.Bindings.merge part.2 rootBnd).head?.getD rootBnd))
+                root).1) := by
+  cases hfind :
+      (part.1.zip args).find?
+        (fun ho : Metta.Atom × Metta.Atom =>
+          ho.1.isError && ho.1 != ho.2) with
+  | some found =>
+      unfold mettaEvalExprPartFoldStep at hmem
+      rw [hfind] at hmem
+      rcases List.mem_append.mp hmem with hacc | htail
+      · exact Or.inl hacc
+      · have hErrFound : found.1.isError = true := by
+          have hpred :=
+            List.find?_some
+              (p := fun ho : Metta.Atom × Metta.Atom =>
+                ho.1.isError && ho.1 != ho.2)
+              hfind
+          cases herr : found.1.isError <;> simp [herr] at hpred ⊢
+        rcases found with ⟨err, orig⟩
+        simp only [List.mem_singleton] at htail
+        cases htail
+        rw [hOutNoErr] at hErrFound
+        cases hErrFound
+  | none =>
+      unfold mettaEvalExprPartFoldStep at hmem
+      rw [hfind] at hmem
+      simp only at hmem
+      let rootItem : Item :=
+        { stack := atomToStack (Metta.Atom.expr [Metta.Atom.sym "eval",
+            Metta.Atom.expr (Metta.Atom.sym op :: part.1)]) [],
+          bnd := bnd }
+      cases hpairs : interpretFuel env (fuel + 1) acc.2 [rootItem] [] with
+      | mk pairs stRoot =>
+          have hmem' :
+              (out, outBnd) ∈
+                (acc.1 ++
+                  (pairs.foldl
+                    (mettaEvalExprRootFoldStep env fuel queryVars
+                      (Metta.Atom.expr (Metta.Atom.sym op :: part.1))
+                      part.2)
+                    ([], stRoot)).1) := by
+            simpa [rootItem, hpairs] using hmem
+          rcases List.mem_append.mp hmem' with hacc | hrootFold
+          · exact Or.inl hacc
+          · have hPStRoot : P stRoot := by
+              have h := hrootState
+              rw [hpairs] at h
+              simpa [rootItem] using h
+            have hrootInv :=
+              mettaEvalExprRootFold_pair_nonError_state_pred_local
+                env fuel queryVars
+                (Metta.Atom.expr (Metta.Atom.sym op :: part.1)) part.2
+                pairs ([], stRoot) out outBnd P hPStRoot
+                (fun acc0 p hP => hrecState part.2 acc0 p hP)
+                hReturns hrootFold
+            rcases hrootInv with hempty | hself | hrec
+            · cases hempty
+            · exact Or.inr
+                ⟨pairs, stRoot, rfl, haccP, rfl, Or.inl hself⟩
+            · rcases hrec with
+                ⟨rootPair, hrootPair, stBefore, recBnd, hPBefore,
+                  hnotNR, hnotSelf, hrecMem⟩
+              rcases rootPair with ⟨root, rootBnd⟩
+              exact Or.inr
+                ⟨pairs, stRoot, rfl, haccP, rfl,
+                  Or.inr ⟨root, rootBnd, stBefore, recBnd, hPBefore,
+                    hrootPair, hnotNR, hnotSelf, by simpa using hrecMem⟩⟩
+
+private theorem mettaEvalExprPartFoldStep_pair_nonError_notReducible_state_pred_before
+    (env : MinEnv) (fuel : Nat) (queryVars : List String)
+    (op : String) (args : List Metta.Atom) (bnd : Metta.Bindings)
+    (acc : List (Metta.Atom × Metta.Bindings) × St)
+    (part : List Metta.Atom × Metta.Bindings)
+    (out : Metta.Atom) (outBnd : Metta.Bindings)
+    (P : St → Prop)
+    (hOutNoErr : out.isError = false)
+    (haccP : P acc.2)
+    (hRoot :
+      interpretFuel env (fuel + 1) acc.2
+          [{ stack := atomToStack (Metta.Atom.expr [Metta.Atom.sym "eval",
+              Metta.Atom.expr (Metta.Atom.sym op :: part.1)]) [],
+             bnd := bnd }] [] =
+        ([(notReducibleA, [])], acc.2))
+    (hmem :
+      (out, outBnd) ∈
+        (mettaEvalExprPartFoldStep env fuel queryVars op args bnd acc part).1) :
+    (out, outBnd) ∈ acc.1 ∨
+      (part.1.zip args).find?
+          (fun ho : Metta.Atom × Metta.Atom =>
+            ho.1.isError && ho.1 != ho.2) = none ∧
+        P acc.2 ∧
+        out = Metta.Atom.expr (Metta.Atom.sym op :: part.1) ∧
+        outBnd = part.2 := by
+  cases hfind :
+      (part.1.zip args).find?
+        (fun ho : Metta.Atom × Metta.Atom =>
+          ho.1.isError && ho.1 != ho.2) with
+  | some found =>
+      unfold mettaEvalExprPartFoldStep at hmem
+      rw [hfind] at hmem
+      rcases List.mem_append.mp hmem with hacc | htail
+      · exact Or.inl hacc
+      · have hErrFound : found.1.isError = true := by
+          have hpred :=
+            List.find?_some
+              (p := fun ho : Metta.Atom × Metta.Atom =>
+                ho.1.isError && ho.1 != ho.2)
+              hfind
+          cases herr : found.1.isError <;> simp [herr] at hpred ⊢
+        rcases found with ⟨err, orig⟩
+        simp only [List.mem_singleton] at htail
+        cases htail
+        rw [hOutNoErr] at hErrFound
+        cases hErrFound
+  | none =>
+      unfold mettaEvalExprPartFoldStep at hmem
+      rw [hfind] at hmem
+      have hNR : (notReducibleA == notReducibleA) = true := rfl
+      simp [hRoot, mettaEvalExprRootFoldStep, hNR] at hmem
+      rcases hmem with hacc | htail
+      · exact Or.inl hacc
+      · have htail' :
+            (out, outBnd) =
+              (Metta.Atom.expr (Metta.Atom.sym op :: part.1), part.2) := by
+          simpa [hNR] using htail
+        cases htail'
+        exact Or.inr ⟨rfl, haccP, rfl, rfl⟩
+
+private theorem mettaEvalExprPartFold_pair_nonError_notReducible_state_pred_before
+    (env : MinEnv) (fuel : Nat) (queryVars : List String)
+    (op : String) (args : List Metta.Atom) (bnd : Metta.Bindings)
+    (parts : List (List Metta.Atom × Metta.Bindings))
+    (acc : List (Metta.Atom × Metta.Bindings) × St)
+    (out : Metta.Atom) (outBnd : Metta.Bindings)
+    (P : St → Prop)
+    (hOutNoErr : out.isError = false)
+    (hinit : P acc.2)
+    (hRoot :
+      ∀ (acc0 : List (Metta.Atom × Metta.Bindings) × St)
+        (part : List Metta.Atom × Metta.Bindings),
+        part ∈ parts →
+          P acc0.2 →
+            interpretFuel env (fuel + 1) acc0.2
+              [{ stack := atomToStack (Metta.Atom.expr [Metta.Atom.sym "eval",
+                  Metta.Atom.expr (Metta.Atom.sym op :: part.1)]) [],
+                 bnd := bnd }] [] =
+              ([(notReducibleA, [])], acc0.2))
+    (hmem :
+      (out, outBnd) ∈
+        (parts.foldl
+          (mettaEvalExprPartFoldStep env fuel queryVars op args bnd)
+          acc).1) :
+    (out, outBnd) ∈ acc.1 ∨
+      ∃ part ∈ parts, ∃ stBefore,
+        P stBefore ∧
+        (part.1.zip args).find?
+            (fun ho : Metta.Atom × Metta.Atom =>
+              ho.1.isError && ho.1 != ho.2) = none ∧
+        out = Metta.Atom.expr (Metta.Atom.sym op :: part.1) ∧
+        outBnd = part.2 := by
+  induction parts generalizing acc with
+  | nil =>
+      exact Or.inl hmem
+  | cons part rest ih =>
+      have hRootRest :
+          ∀ (acc0 : List (Metta.Atom × Metta.Bindings) × St)
+            (part' : List Metta.Atom × Metta.Bindings),
+            part' ∈ rest →
+              P acc0.2 →
+                interpretFuel env (fuel + 1) acc0.2
+                  [{ stack := atomToStack (Metta.Atom.expr
+                      [Metta.Atom.sym "eval",
+                       Metta.Atom.expr (Metta.Atom.sym op :: part'.1)]) [],
+                     bnd := bnd }] [] =
+                  ([(notReducibleA, [])], acc0.2) := by
+        intro acc0 part' hpart' hP
+        exact hRoot acc0 part' (by simp [hpart']) hP
+      have hStepP :
+          P (mettaEvalExprPartFoldStep env fuel queryVars op args bnd
+            acc part).2 := by
+        cases hfind :
+            (part.1.zip args).find?
+              (fun ho : Metta.Atom × Metta.Atom =>
+                ho.1.isError && ho.1 != ho.2)
+        · have hRootPart := hRoot acc part (by simp) hinit
+          have hNR : (notReducibleA == notReducibleA) = true := rfl
+          simpa [mettaEvalExprPartFoldStep, hfind, hRootPart,
+            mettaEvalExprRootFoldStep, hNR] using hinit
+        · simpa [mettaEvalExprPartFoldStep, hfind] using hinit
+      have htail :=
+        ih
+          (acc := mettaEvalExprPartFoldStep env fuel queryVars op args bnd
+            acc part)
+          hStepP hRootRest hmem
+      rcases htail with hstep | hrest
+      · rcases
+          mettaEvalExprPartFoldStep_pair_nonError_notReducible_state_pred_before
+            env fuel queryVars op args bnd acc part out outBnd P
+            hOutNoErr hinit (hRoot acc part (by simp) hinit) hstep with
+        hacc | hpart
+        · exact Or.inl hacc
+        · rcases hpart with ⟨hFind, hPBefore, hOutEq, hBndEq⟩
+          exact Or.inr
+            ⟨part, by simp, acc.2, hPBefore, hFind, hOutEq, hBndEq⟩
+      · rcases hrest with
+          ⟨part', hpart', stBefore, hPBefore, hFind, hOutEq, hBndEq⟩
+        exact Or.inr
+          ⟨part', by simp [hpart'], stBefore, hPBefore, hFind,
+            hOutEq, hBndEq⟩
+
+private theorem mettaEvalExprPartFold_pair_nonError_state_pred_before
+    (env : MinEnv) (fuel : Nat) (queryVars : List String)
+    (op : String) (args : List Metta.Atom) (bnd : Metta.Bindings)
+    (parts : List (List Metta.Atom × Metta.Bindings))
+    (acc : List (Metta.Atom × Metta.Bindings) × St)
+    (out : Metta.Atom) (outBnd : Metta.Bindings)
+    (P : St → Prop)
+    (hOutNoErr : out.isError = false)
+    (hinit : P acc.2)
+    (hstepState :
+      ∀ (acc0 : List (Metta.Atom × Metta.Bindings) × St)
+        (part : List Metta.Atom × Metta.Bindings),
+        part ∈ parts →
+          P acc0.2 →
+            P (mettaEvalExprPartFoldStep env fuel queryVars op args bnd
+              acc0 part).2)
+    (hrootState :
+      ∀ (acc0 : List (Metta.Atom × Metta.Bindings) × St)
+        (part : List Metta.Atom × Metta.Bindings),
+        part ∈ parts →
+          P acc0.2 →
+            P (interpretFuel env (fuel + 1) acc0.2
+              [{ stack := atomToStack (Metta.Atom.expr [Metta.Atom.sym "eval",
+                  Metta.Atom.expr (Metta.Atom.sym op :: part.1)]) [],
+                 bnd := bnd }] []).2)
+    (hrecState :
+      ∀ (partBnd : Metta.Bindings)
+        (acc0 : List (Metta.Atom × Metta.Bindings) × St)
+        (p : Metta.Atom × Metta.Bindings),
+        P acc0.2 →
+          P (mettaEval env fuel acc0.2
+            (restrictBnd queryVars
+              ((Metta.Bindings.merge partBnd p.2).head?.getD p.2))
+            p.1).2)
+    (hReturns :
+      ∀ part ∈ parts,
+        returnsAtom env (Metta.Atom.expr (Metta.Atom.sym op :: part.1)) =
+          false)
+    (hmem :
+      (out, outBnd) ∈
+        (parts.foldl
+          (mettaEvalExprPartFoldStep env fuel queryVars op args bnd)
+          acc).1) :
+    (out, outBnd) ∈ acc.1 ∨
+      ∃ part ∈ parts, ∃ stPart pairs stRoot,
+        (part.1.zip args).find?
+            (fun ho : Metta.Atom × Metta.Atom =>
+              ho.1.isError && ho.1 != ho.2) = none ∧
+        P stPart ∧
+        interpretFuel env (fuel + 1) stPart
+            [{ stack := atomToStack (Metta.Atom.expr [Metta.Atom.sym "eval",
+                Metta.Atom.expr (Metta.Atom.sym op :: part.1)]) [],
+               bnd := bnd }] [] =
+          (pairs, stRoot) ∧
+        (out = Metta.Atom.expr (Metta.Atom.sym op :: part.1) ∨
+          ∃ root rootBnd stBefore recBnd,
+            P stBefore ∧
+            (root, rootBnd) ∈ pairs ∧
+            (root == notReducibleA) = false ∧
+            (root == Metta.Atom.expr (Metta.Atom.sym op :: part.1)) = false ∧
+            (out, recBnd) ∈
+              (mettaEval env fuel stBefore
+                (restrictBnd queryVars
+                  ((Metta.Bindings.merge part.2 rootBnd).head?.getD rootBnd))
+                root).1) := by
+  induction parts generalizing acc with
+  | nil =>
+      exact Or.inl hmem
+  | cons part rest ih =>
+      have hstepStateRest :
+          ∀ (acc0 : List (Metta.Atom × Metta.Bindings) × St)
+            (part' : List Metta.Atom × Metta.Bindings),
+            part' ∈ rest →
+              P acc0.2 →
+                P (mettaEvalExprPartFoldStep env fuel queryVars op args bnd
+                  acc0 part').2 := by
+        intro acc0 part' hpart' hP
+        exact hstepState acc0 part' (by simp [hpart']) hP
+      have hrootStateRest :
+          ∀ (acc0 : List (Metta.Atom × Metta.Bindings) × St)
+            (part' : List Metta.Atom × Metta.Bindings),
+            part' ∈ rest →
+              P acc0.2 →
+                P (interpretFuel env (fuel + 1) acc0.2
+                  [{ stack := atomToStack (Metta.Atom.expr [Metta.Atom.sym "eval",
+                      Metta.Atom.expr (Metta.Atom.sym op :: part'.1)]) [],
+                     bnd := bnd }] []).2 := by
+        intro acc0 part' hpart' hP
+        exact hrootState acc0 part' (by simp [hpart']) hP
+      have hReturnsRest :
+          ∀ part' ∈ rest,
+            returnsAtom env (Metta.Atom.expr (Metta.Atom.sym op :: part'.1)) =
+              false := by
+        intro part' hpart'
+        exact hReturns part' (by simp [hpart'])
+      have hinitRest :
+          P (mettaEvalExprPartFoldStep env fuel queryVars op args bnd
+            acc part).2 :=
+        hstepState acc part (by simp) hinit
+      have htail :=
+        ih
+          (acc := mettaEvalExprPartFoldStep env fuel queryVars op args bnd
+            acc part)
+          hinitRest hstepStateRest hrootStateRest hReturnsRest hmem
+      rcases htail with hstep | hrest
+      · have hrootCurrent :
+            P (interpretFuel env (fuel + 1) acc.2
+              [{ stack := atomToStack (Metta.Atom.expr [Metta.Atom.sym "eval",
+                  Metta.Atom.expr (Metta.Atom.sym op :: part.1)]) [],
+                 bnd := bnd }] []).2 :=
+          hrootState acc part (by simp) hinit
+        rcases
+          mettaEvalExprPartFoldStep_pair_nonError_state_pred_before
+            env fuel queryVars op args bnd acc part out outBnd P
+            hOutNoErr hinit hrootCurrent hrecState
+            (hReturns part (by simp)) hstep with
+          hacc | hpart
+        · exact Or.inl hacc
+        · rcases hpart with
+            ⟨pairs, stRoot, hNoErr, hPPart, hrootEq, hcase⟩
+          exact Or.inr
+            ⟨part, by simp, acc.2, pairs, stRoot,
+              hNoErr, hPPart, hrootEq, hcase⟩
+      · rcases hrest with
+          ⟨part', hpart', stPart, pairs, stRoot, hNoErr, hPPart,
+            hrootEq, hcase⟩
+        exact Or.inr
+          ⟨part', by simp [hpart'], stPart, pairs, stRoot,
+            hNoErr, hPPart, hrootEq, hcase⟩
+
+private theorem mettaEval_binary_second_arg_fold_pair_state_pred_before
+    (env : MinEnv) (fuel : Nat) (qvars : List String)
+    (y : Metta.Atom)
+    (parts : List (List Metta.Atom × Metta.Bindings))
+    (acc : List (List Metta.Atom × Metta.Bindings) × St)
+    (partOut : List Metta.Atom) (outBnd : Metta.Bindings)
+    (P : St → Prop)
+    (hinit : P acc.2)
+    (hstepState :
+      ∀ (acc0 : List (List Metta.Atom × Metta.Bindings) × St)
+        (part : List Metta.Atom × Metta.Bindings),
+        part ∈ parts →
+          P acc0.2 →
+            P (mettaEval env fuel acc0.2 part.2 y).2)
+    (hmem :
+      (partOut, outBnd) ∈
+        (parts.foldl
+          (fun (acc2 : List (List Metta.Atom × Metta.Bindings) × St)
+              (part : List Metta.Atom × Metta.Bindings) =>
+            (acc2.1 ++
+              (mettaEval env fuel acc2.2 part.2 y).1.map
+                (fun p =>
+                  (part.1 ++ [p.1],
+                    restrictBnd qvars
+                      ((Metta.Bindings.merge part.2 p.2).head?.getD p.2))),
+             (mettaEval env fuel acc2.2 part.2 y).2))
+          acc).1) :
+    (partOut, outBnd) ∈ acc.1 ∨
+      ∃ part ∈ parts, ∃ stBefore yOut yBnd,
+        P stBefore ∧
+        (yOut, yBnd) ∈
+          (mettaEval env fuel stBefore part.2 y).1 ∧
+        (partOut, outBnd) =
+          (part.1 ++ [yOut],
+            restrictBnd qvars
+              ((Metta.Bindings.merge part.2 yBnd).head?.getD yBnd)) := by
+  induction parts generalizing acc with
+  | nil =>
+      exact Or.inl hmem
+  | cons part rest ih =>
+      have hstepStateRest :
+          ∀ (acc0 : List (List Metta.Atom × Metta.Bindings) × St)
+            (part' : List Metta.Atom × Metta.Bindings),
+            part' ∈ rest →
+              P acc0.2 →
+                P (mettaEval env fuel acc0.2 part'.2 y).2 := by
+        intro acc0 part' hpart' hP
+        exact hstepState acc0 part' (by simp [hpart']) hP
+      have hinitRest :
+          P (mettaEval env fuel acc.2 part.2 y).2 :=
+        hstepState acc part (by simp) hinit
+      have htail :=
+        ih
+          (acc :=
+            (acc.1 ++
+              (mettaEval env fuel acc.2 part.2 y).1.map
+                (fun p =>
+                  (part.1 ++ [p.1],
+                    restrictBnd qvars
+                      ((Metta.Bindings.merge part.2 p.2).head?.getD p.2))),
+             (mettaEval env fuel acc.2 part.2 y).2))
+          hinitRest hstepStateRest hmem
+      rcases htail with hstep | hrest
+      · rcases List.mem_append.mp hstep with hacc | hmap
+        · exact Or.inl hacc
+        · rcases List.mem_map.mp hmap with
+            ⟨p, hp, hpEq⟩
+          rcases p with ⟨yOut, yBnd⟩
+          exact Or.inr
+            ⟨part, by simp, acc.2, yOut, yBnd, hinit, hp,
+              by simpa using hpEq.symm⟩
+      · rcases hrest with
+          ⟨part', hpart', stBefore, yOut, yBnd, hPBefore,
+            hy, hEq⟩
+        exact Or.inr
+          ⟨part', by simp [hpart'], stBefore, yOut, yBnd,
+            hPBefore, hy, hEq⟩
+
+private theorem mettaEval_binary_second_arg_fold_preserves_state_pred
+    (env : MinEnv) (fuel : Nat) (qvars : List String)
+    (y : Metta.Atom)
+    (parts : List (List Metta.Atom × Metta.Bindings))
+    (acc : List (List Metta.Atom × Metta.Bindings) × St)
+    (P : St → Prop)
+    (hinit : P acc.2)
+    (hstepState :
+      ∀ (acc0 : List (List Metta.Atom × Metta.Bindings) × St)
+        (part : List Metta.Atom × Metta.Bindings),
+        part ∈ parts →
+          P acc0.2 →
+            P (mettaEval env fuel acc0.2 part.2 y).2) :
+    P
+      ((parts.foldl
+        (fun (acc2 : List (List Metta.Atom × Metta.Bindings) × St)
+            (part : List Metta.Atom × Metta.Bindings) =>
+          (acc2.1 ++
+            (mettaEval env fuel acc2.2 part.2 y).1.map
+              (fun p =>
+                (part.1 ++ [p.1],
+                  restrictBnd qvars
+                    ((Metta.Bindings.merge part.2 p.2).head?.getD p.2))),
+           (mettaEval env fuel acc2.2 part.2 y).2))
+        acc).2) := by
+  induction parts generalizing acc with
+  | nil =>
+      simpa using hinit
+  | cons part rest ih =>
+      have hstepStateRest :
+          ∀ (acc0 : List (List Metta.Atom × Metta.Bindings) × St)
+            (part' : List Metta.Atom × Metta.Bindings),
+            part' ∈ rest →
+              P acc0.2 →
+                P (mettaEval env fuel acc0.2 part'.2 y).2 := by
+        intro acc0 part' hpart' hP
+        exact hstepState acc0 part' (by simp [hpart']) hP
+      have hinitRest :
+          P (mettaEval env fuel acc.2 part.2 y).2 :=
+        hstepState acc part (by simp) hinit
+      exact
+        ih
+          (acc :=
+            (acc.1 ++
+              (mettaEval env fuel acc.2 part.2 y).1.map
+                (fun p =>
+                  (part.1 ++ [p.1],
+                    restrictBnd qvars
+                      ((Metta.Bindings.merge part.2 p.2).head?.getD p.2))),
+             (mettaEval env fuel acc.2 part.2 y).2))
+          hinitRest hstepStateRest
+
+private theorem mettaEval_binary_first_arg_parts_mem
+    (env : MinEnv) (fuel : Nat) (qvars : List String)
+    (st : St) (x : Metta.Atom)
+    (part : List Metta.Atom × Metta.Bindings)
+    (hmem :
+      part ∈
+        (mettaEval env fuel st [] x).1.map
+          (fun p =>
+            ([p.1],
+              restrictBnd qvars
+                ((Metta.Bindings.merge [] p.2).head?.getD p.2)))) :
+    ∃ xOut xBnd,
+      (xOut, xBnd) ∈ (mettaEval env fuel st [] x).1 ∧
+        part =
+          ([xOut],
+            restrictBnd qvars
+              ((Metta.Bindings.merge [] xBnd).head?.getD xBnd)) := by
+  rcases List.mem_map.mp hmem with ⟨p, hp, hpEq⟩
+  rcases p with ⟨xOut, xBnd⟩
+  exact ⟨xOut, xBnd, hp, hpEq.symm⟩
+
+private theorem mettaEval_binary_expr_state_pred_of_eval_args_and_notReducible_root_closed
+    (env : MinEnv) (fuel : Nat) (st : St)
+    (op : String) (x y : Metta.Atom)
+    (P : St → Prop)
+    (hxClosed : x.vars = []) (hyClosed : y.vars = [])
+    (hType : typeMismatch env st.world op [x, y] = none)
+    (hMask : argMask env op 2 = [true, true])
+    (hFirstState : P (mettaEval env fuel st [] x).2)
+    (hSecondState :
+      ∀ (acc0 : List (List Metta.Atom × Metta.Bindings) × St)
+        (part : List Metta.Atom × Metta.Bindings),
+        part ∈
+          (mettaEval env fuel st [] x).1.map
+            (fun p =>
+              ([p.1],
+                restrictBnd ([] : List String)
+                  ((Metta.Bindings.merge [] p.2).head?.getD p.2))) →
+          P acc0.2 →
+            P (mettaEval env fuel acc0.2 part.2 y).2)
+    (hRoot :
+      ∀ (acc0 : List (Metta.Atom × Metta.Bindings) × St)
+        (xOut yOut : Metta.Atom),
+        P acc0.2 →
+          interpretFuel env (fuel + 1) acc0.2
+            [evalItemNil (Metta.Atom.expr [Metta.Atom.sym op, xOut, yOut])]
+            [] =
+          ([(notReducibleA, [])], acc0.2)) :
+    P (mettaEval env (fuel + 1) st []
+      (Metta.Atom.expr [Metta.Atom.sym op, x, y])).2 := by
+  let firstParts : List (List Metta.Atom × Metta.Bindings) :=
+    (mettaEval env fuel st [] x).1.map
+      (fun p =>
+        ([p.1],
+          restrictBnd ([] : List String)
+            ((Metta.Bindings.merge [] p.2).head?.getD p.2)))
+  let firstState : St := (mettaEval env fuel st [] x).2
+  let secondFold : List (List Metta.Atom × Metta.Bindings) × St :=
+    firstParts.foldl
+      (fun (acc2 : List (List Metta.Atom × Metta.Bindings) × St)
+          (part : List Metta.Atom × Metta.Bindings) =>
+        (acc2.1 ++
+          (mettaEval env fuel acc2.2 part.2 y).1.map
+            (fun p =>
+              (part.1 ++ [p.1],
+                restrictBnd ([] : List String)
+                  ((Metta.Bindings.merge part.2 p.2).head?.getD p.2))),
+         (mettaEval env fuel acc2.2 part.2 y).2))
+      (([] : List (List Metta.Atom × Metta.Bindings)), firstState)
+  have hQvars : List.flatMap Metta.Atom.vars [x, y] = [] := by
+    simp [List.flatMap, hxClosed, hyClosed]
+  have hFirstState' : P firstState := by
+    simpa [firstState] using hFirstState
+  have hSecondState' :
+      ∀ (acc0 : List (List Metta.Atom × Metta.Bindings) × St)
+        (part : List Metta.Atom × Metta.Bindings),
+        part ∈ firstParts →
+          P acc0.2 →
+            P (mettaEval env fuel acc0.2 part.2 y).2 := by
+    intro acc0 part hpart hP
+    exact hSecondState acc0 part (by simpa [firstParts] using hpart) hP
+  have hSecondFoldP : P secondFold.2 := by
+    simpa [secondFold, firstParts, firstState] using
+      mettaEval_binary_second_arg_fold_preserves_state_pred
+        env fuel ([] : List String) y firstParts
+        (([] : List (List Metta.Atom × Metta.Bindings)), firstState)
+        P hFirstState' hSecondState'
+  have hPartFoldP :
+      P
+        (secondFold.1.foldl
+          (mettaEvalExprPartFoldStep env fuel ([] : List String) op [x, y] [])
+          (([] : List (Metta.Atom × Metta.Bindings)), secondFold.2)).2 := by
+    refine
+      mettaEvalExprPartFold_preserves_state_pred_of_notReducible_root
+        env fuel ([] : List String) op [x, y] [] P secondFold.1
+        (([] : List (Metta.Atom × Metta.Bindings)), secondFold.2)
+        hSecondFoldP ?_
+    intro acc0 part hpart hP
+    have hPartLen : part.1.length = 2 := by
+      rcases
+          mettaEval_binary_second_arg_fold_pair_state_pred_before
+            env fuel ([] : List String) y firstParts
+            (([] : List (List Metta.Atom × Metta.Bindings)), firstState)
+            part.1 part.2 P hFirstState' hSecondState'
+            (by simpa [secondFold] using hpart) with hnil | hselected
+      · cases hnil
+      · rcases hselected with
+          ⟨firstPart, hFirstPart, _stBeforeY, yOut, yBnd,
+            _hPY, _hY, hPartEq⟩
+        have hfirstRaw : firstPart ∈ firstParts := hFirstPart
+        rcases
+            mettaEval_binary_first_arg_parts_mem
+              env fuel ([] : List String) st x firstPart
+              (by simpa [firstParts] using hfirstRaw) with
+          ⟨xOut, _xBnd, _hxMem, hFirstEq⟩
+        cases hFirstEq
+        have hArgs : part.1 = [xOut, yOut] := by
+          have hFst := congrArg Prod.fst hPartEq
+          simpa [restrictBnd_nil_vars] using hFst
+        rw [hArgs]
+        rfl
+    rcases part with ⟨args, partBnd⟩
+    cases args with
+    | nil =>
+        simp at hPartLen
+    | cons xOut rest =>
+        cases rest with
+        | nil =>
+            simp at hPartLen
+        | cons yOut rest2 =>
+            cases rest2 with
+            | nil =>
+                simpa [evalItemNil, mExpr, mSym] using
+                  hRoot acc0 xOut yOut hP
+            | cons z zs =>
+                simp at hPartLen
+  unfold mettaEval
+  rw [Metta.instantiate_nil
+      (Metta.Atom.expr [Metta.Atom.sym op, x, y])]
+  simp only [hType, hMask, List.length_cons, List.length_nil,
+    Nat.reduceAdd, List.zip_cons_cons, List.zip_nil_right,
+    if_true, List.foldl_cons, List.foldl_nil]
+  simp [hQvars]
+  change
+    P
+      (secondFold.1.foldl
+        (mettaEvalExprPartFoldStep env fuel ([] : List String) op [x, y] [])
+        (([] : List (Metta.Atom × Metta.Bindings)), secondFold.2)).2
+  exact hPartFoldP
+
+private theorem mettaEval_binary_eval_args_part_fold_pair_nonError_state_pred_before
+    (env : MinEnv) (fuel : Nat) (qvars : List String)
+    (op : String) (args : List Metta.Atom) (bnd : Metta.Bindings)
+    (y : Metta.Atom)
+    (firstParts : List (List Metta.Atom × Metta.Bindings))
+    (firstState : St)
+    (out : Metta.Atom) (outBnd : Metta.Bindings)
+    (P : St → Prop)
+    (hOutNoErr : out.isError = false)
+    (hFirstState : P firstState)
+    (hSecondState :
+      ∀ (acc0 : List (List Metta.Atom × Metta.Bindings) × St)
+        (part : List Metta.Atom × Metta.Bindings),
+        part ∈ firstParts →
+          P acc0.2 →
+            P (mettaEval env fuel acc0.2 part.2 y).2)
+    (hRootState :
+      ∀ (acc0 : List (Metta.Atom × Metta.Bindings) × St)
+        (part : List Metta.Atom × Metta.Bindings),
+        part ∈
+          ((firstParts.foldl
+            (fun (acc2 : List (List Metta.Atom × Metta.Bindings) × St)
+                (part : List Metta.Atom × Metta.Bindings) =>
+              (acc2.1 ++
+                (mettaEval env fuel acc2.2 part.2 y).1.map
+                  (fun p =>
+                    (part.1 ++ [p.1],
+                      restrictBnd qvars
+                        ((Metta.Bindings.merge part.2 p.2).head?.getD p.2))),
+               (mettaEval env fuel acc2.2 part.2 y).2))
+            (([] : List (List Metta.Atom × Metta.Bindings)), firstState)).1) →
+          P acc0.2 →
+            P (interpretFuel env (fuel + 1) acc0.2
+              [{ stack := atomToStack (Metta.Atom.expr [Metta.Atom.sym "eval",
+                  Metta.Atom.expr (Metta.Atom.sym op :: part.1)]) [],
+                 bnd := bnd }] []).2)
+    (hRecState :
+      ∀ (partBnd : Metta.Bindings)
+        (acc0 : List (Metta.Atom × Metta.Bindings) × St)
+        (p : Metta.Atom × Metta.Bindings),
+        P acc0.2 →
+          P (mettaEval env fuel acc0.2
+            (restrictBnd qvars
+              ((Metta.Bindings.merge partBnd p.2).head?.getD p.2))
+            p.1).2)
+    (hReturns :
+      ∀ part ∈
+          ((firstParts.foldl
+            (fun (acc2 : List (List Metta.Atom × Metta.Bindings) × St)
+                (part : List Metta.Atom × Metta.Bindings) =>
+              (acc2.1 ++
+                (mettaEval env fuel acc2.2 part.2 y).1.map
+                  (fun p =>
+                    (part.1 ++ [p.1],
+                      restrictBnd qvars
+                        ((Metta.Bindings.merge part.2 p.2).head?.getD p.2))),
+               (mettaEval env fuel acc2.2 part.2 y).2))
+            (([] : List (List Metta.Atom × Metta.Bindings)), firstState)).1),
+        returnsAtom env (Metta.Atom.expr (Metta.Atom.sym op :: part.1)) =
+          false)
+    (hmem :
+      (out, outBnd) ∈
+        (((firstParts.foldl
+          (fun (acc2 : List (List Metta.Atom × Metta.Bindings) × St)
+              (part : List Metta.Atom × Metta.Bindings) =>
+            (acc2.1 ++
+              (mettaEval env fuel acc2.2 part.2 y).1.map
+                (fun p =>
+                  (part.1 ++ [p.1],
+                    restrictBnd qvars
+                      ((Metta.Bindings.merge part.2 p.2).head?.getD p.2))),
+             (mettaEval env fuel acc2.2 part.2 y).2))
+          (([] : List (List Metta.Atom × Metta.Bindings)), firstState)).1).foldl
+            (mettaEvalExprPartFoldStep env fuel qvars op args bnd)
+            (([] : List (Metta.Atom × Metta.Bindings)),
+              (firstParts.foldl
+                (fun (acc2 : List (List Metta.Atom × Metta.Bindings) × St)
+                    (part : List Metta.Atom × Metta.Bindings) =>
+                  (acc2.1 ++
+                    (mettaEval env fuel acc2.2 part.2 y).1.map
+                      (fun p =>
+                        (part.1 ++ [p.1],
+                          restrictBnd qvars
+                            ((Metta.Bindings.merge part.2 p.2).head?.getD p.2))),
+                   (mettaEval env fuel acc2.2 part.2 y).2))
+                (([] : List (List Metta.Atom × Metta.Bindings)),
+                  firstState)).2)).1) :
+    ∃ firstPart ∈ firstParts,
+      ∃ stBeforeY yOut yBnd selectedBnd stPart pairs stRoot,
+        P stBeforeY ∧
+        (yOut, yBnd) ∈
+          (mettaEval env fuel stBeforeY firstPart.2 y).1 ∧
+        selectedBnd =
+          restrictBnd qvars
+            ((Metta.Bindings.merge firstPart.2 yBnd).head?.getD yBnd) ∧
+        ((firstPart.1 ++ [yOut]).zip args).find?
+            (fun ho : Metta.Atom × Metta.Atom =>
+              ho.1.isError && ho.1 != ho.2) = none ∧
+        P stPart ∧
+        interpretFuel env (fuel + 1) stPart
+            [{ stack := atomToStack (Metta.Atom.expr [Metta.Atom.sym "eval",
+                Metta.Atom.expr (Metta.Atom.sym op ::
+                  (firstPart.1 ++ [yOut]))]) [],
+               bnd := bnd }] [] =
+          (pairs, stRoot) ∧
+        (out =
+            Metta.Atom.expr (Metta.Atom.sym op :: (firstPart.1 ++ [yOut])) ∨
+          ∃ root rootBnd stBefore recBnd,
+            P stBefore ∧
+            (root, rootBnd) ∈ pairs ∧
+            (root == notReducibleA) = false ∧
+            (root ==
+              Metta.Atom.expr (Metta.Atom.sym op ::
+                (firstPart.1 ++ [yOut]))) = false ∧
+            (out, recBnd) ∈
+              (mettaEval env fuel stBefore
+                (restrictBnd qvars
+                  ((Metta.Bindings.merge selectedBnd rootBnd).head?.getD
+                    rootBnd))
+                root).1) := by
+  let secondFold : List (List Metta.Atom × Metta.Bindings) × St :=
+    firstParts.foldl
+      (fun (acc2 : List (List Metta.Atom × Metta.Bindings) × St)
+          (part : List Metta.Atom × Metta.Bindings) =>
+        (acc2.1 ++
+          (mettaEval env fuel acc2.2 part.2 y).1.map
+            (fun p =>
+              (part.1 ++ [p.1],
+                restrictBnd qvars
+                  ((Metta.Bindings.merge part.2 p.2).head?.getD p.2))),
+         (mettaEval env fuel acc2.2 part.2 y).2))
+      (([] : List (List Metta.Atom × Metta.Bindings)), firstState)
+  have hSecondFoldP : P secondFold.2 := by
+    simpa [secondFold] using
+      mettaEval_binary_second_arg_fold_preserves_state_pred
+        env fuel qvars y firstParts
+        (([] : List (List Metta.Atom × Metta.Bindings)), firstState)
+        P hFirstState hSecondState
+  have hPartStepState :
+      ∀ (acc0 : List (Metta.Atom × Metta.Bindings) × St)
+        (part : List Metta.Atom × Metta.Bindings),
+        part ∈ secondFold.1 →
+          P acc0.2 →
+            P (mettaEvalExprPartFoldStep env fuel qvars op args bnd
+              acc0 part).2 := by
+    intro acc0 part hpart hP
+    exact
+      mettaEvalExprPartFoldStep_preserves_state_pred_of_root_point
+        env fuel qvars op args bnd P part
+        (fun acc1 hP1 => by
+          simpa [secondFold] using hRootState acc1 part hpart hP1)
+        hRecState acc0 hP
+  have hPartInv :=
+    mettaEvalExprPartFold_pair_nonError_state_pred_before
+      env fuel qvars op args bnd secondFold.1
+      (([] : List (Metta.Atom × Metta.Bindings)), secondFold.2)
+      out outBnd P hOutNoErr hSecondFoldP hPartStepState
+      (by
+        intro acc0 part hpart hP
+        simpa [secondFold] using hRootState acc0 part hpart hP)
+      hRecState
+      (by
+        intro part hpart
+        simpa [secondFold] using hReturns part hpart)
+      (by simpa [secondFold] using hmem)
+  rcases hPartInv with hnil | hpart
+  · cases hnil
+  · rcases hpart with
+      ⟨selectedPart, hSelectedMem, stPart, pairs, stRoot,
+        hNoErr, hPPart, hRootEq, hcase⟩
+    rcases selectedPart with ⟨selectedArgs, selectedBnd0⟩
+    have hSelectedInv :=
+      mettaEval_binary_second_arg_fold_pair_state_pred_before
+        env fuel qvars y firstParts
+        (([] : List (List Metta.Atom × Metta.Bindings)), firstState)
+        selectedArgs selectedBnd0 P hFirstState hSecondState
+        (by simpa [secondFold] using hSelectedMem)
+    rcases hSelectedInv with hnilSelected | hselected
+    · cases hnilSelected
+    · rcases hselected with
+        ⟨firstPart, hFirstPart, stBeforeY, yOut, yBnd,
+          hPY, hY, hSelectedEq⟩
+      cases hSelectedEq
+      exact
+        ⟨firstPart, hFirstPart, stBeforeY, yOut, yBnd,
+          restrictBnd qvars
+            ((Metta.Bindings.merge firstPart.2 yBnd).head?.getD yBnd),
+          stPart, pairs, stRoot,
+          hPY, hY, rfl, hNoErr, hPPart, hRootEq, hcase⟩
+
+private theorem mettaEval_binary_eval_args_pair_nonError_state_pred_before_closed
+    (env : MinEnv) (fuel : Nat) (st : St)
+    (op : String) (x y : Metta.Atom)
+    (out : Metta.Atom) (outBnd : Metta.Bindings)
+    (P : St → Prop)
+    (hxClosed : x.vars = []) (hyClosed : y.vars = [])
+    (hType : typeMismatch env st.world op [x, y] = none)
+    (hMask : argMask env op 2 = [true, true])
+    (hOutNoErr : out.isError = false)
+    (hFirstState : P (mettaEval env fuel st [] x).2)
+    (hSecondState :
+      ∀ (acc0 : List (List Metta.Atom × Metta.Bindings) × St)
+        (xOut : Metta.Atom) (xBnd : Metta.Bindings),
+        (xOut, xBnd) ∈ (mettaEval env fuel st [] x).1 →
+          P acc0.2 →
+            P (mettaEval env fuel acc0.2 [] y).2)
+    (hRootState :
+      ∀ (acc0 : List (Metta.Atom × Metta.Bindings) × St)
+        (argsOut : List Metta.Atom),
+        P acc0.2 →
+          P (interpretFuel env (fuel + 1) acc0.2
+            [{ stack := atomToStack (Metta.Atom.expr [Metta.Atom.sym "eval",
+                Metta.Atom.expr (Metta.Atom.sym op :: argsOut)]) [],
+               bnd := [] }] []).2)
+    (hRecState :
+      ∀ (acc0 : List (Metta.Atom × Metta.Bindings) × St)
+        (p : Metta.Atom × Metta.Bindings),
+        P acc0.2 →
+          P (mettaEval env fuel acc0.2 [] p.1).2)
+    (hReturns :
+      ∀ argsOut : List Metta.Atom,
+        returnsAtom env
+          (Metta.Atom.expr (Metta.Atom.sym op :: argsOut)) = false)
+    (hmem :
+      (out, outBnd) ∈
+        (mettaEval env (fuel + 1) st []
+          (Metta.Atom.expr [Metta.Atom.sym op, x, y])).1) :
+    ∃ xOut xBnd,
+      (xOut, xBnd) ∈ (mettaEval env fuel st [] x).1 ∧
+      ∃ stBeforeY yOut yBnd stPart pairs stRoot,
+        P stBeforeY ∧
+        (yOut, yBnd) ∈ (mettaEval env fuel stBeforeY [] y).1 ∧
+        (([xOut, yOut].zip [x, y]).find?
+          (fun ho : Metta.Atom × Metta.Atom =>
+            ho.1.isError && ho.1 != ho.2)) = none ∧
+        P stPart ∧
+        interpretFuel env (fuel + 1) stPart
+            [{ stack := atomToStack (Metta.Atom.expr [Metta.Atom.sym "eval",
+                Metta.Atom.expr [Metta.Atom.sym op, xOut, yOut]]) [],
+               bnd := [] }] [] =
+          (pairs, stRoot) ∧
+        (out = Metta.Atom.expr [Metta.Atom.sym op, xOut, yOut] ∨
+          ∃ root rootBnd stBefore recBnd,
+            P stBefore ∧
+            (root, rootBnd) ∈ pairs ∧
+            (root == notReducibleA) = false ∧
+            (root ==
+              Metta.Atom.expr [Metta.Atom.sym op, xOut, yOut]) = false ∧
+            (out, recBnd) ∈
+              (mettaEval env fuel stBefore [] root).1) := by
+  let firstParts : List (List Metta.Atom × Metta.Bindings) :=
+    (mettaEval env fuel st [] x).1.map
+      (fun p => ([p.1], ([] : Metta.Bindings)))
+  let firstState : St := (mettaEval env fuel st [] x).2
+  have hQvars : List.flatMap Metta.Atom.vars [x, y] = [] := by
+    simp [List.flatMap, hxClosed, hyClosed]
+  have hSecondState' :
+      ∀ (acc0 : List (List Metta.Atom × Metta.Bindings) × St)
+        (part : List Metta.Atom × Metta.Bindings),
+        part ∈ firstParts →
+          P acc0.2 →
+            P (mettaEval env fuel acc0.2 part.2 y).2 := by
+    intro acc0 part hpart hP
+    have hpartRaw :
+        part ∈
+          (mettaEval env fuel st [] x).1.map
+            (fun p =>
+              ([p.1],
+                restrictBnd ([] : List String)
+                  ((Metta.Bindings.merge [] p.2).head?.getD p.2))) := by
+      simpa [firstParts, restrictBnd_nil_vars] using hpart
+    rcases
+        mettaEval_binary_first_arg_parts_mem
+          env fuel ([] : List String) st x part hpartRaw with
+      ⟨xOut, xBnd, hxMem, hpartEq⟩
+    cases hpartEq
+    simpa [restrictBnd_nil_vars] using
+      hSecondState acc0 xOut xBnd hxMem hP
+  have hRootState' :
+      ∀ (acc0 : List (Metta.Atom × Metta.Bindings) × St)
+        (part : List Metta.Atom × Metta.Bindings),
+        part ∈
+          ((firstParts.foldl
+            (fun (acc2 : List (List Metta.Atom × Metta.Bindings) × St)
+                (part : List Metta.Atom × Metta.Bindings) =>
+              (acc2.1 ++
+                (mettaEval env fuel acc2.2 part.2 y).1.map
+                  (fun p =>
+                    (part.1 ++ [p.1],
+                      restrictBnd ([] : List String)
+                        ((Metta.Bindings.merge part.2 p.2).head?.getD p.2))),
+               (mettaEval env fuel acc2.2 part.2 y).2))
+            (([] : List (List Metta.Atom × Metta.Bindings)), firstState)).1) →
+          P acc0.2 →
+            P (interpretFuel env (fuel + 1) acc0.2
+              [{ stack := atomToStack (Metta.Atom.expr [Metta.Atom.sym "eval",
+                  Metta.Atom.expr (Metta.Atom.sym op :: part.1)]) [],
+                 bnd := [] }] []).2 := by
+    intro acc0 part _hpart hP
+    exact hRootState acc0 part.1 hP
+  have hRecState' :
+      ∀ (partBnd : Metta.Bindings)
+        (acc0 : List (Metta.Atom × Metta.Bindings) × St)
+        (p : Metta.Atom × Metta.Bindings),
+        P acc0.2 →
+          P (mettaEval env fuel acc0.2
+            (restrictBnd ([] : List String)
+              ((Metta.Bindings.merge partBnd p.2).head?.getD p.2))
+            p.1).2 := by
+    intro partBnd acc0 p hP
+    simpa [restrictBnd_nil_vars] using hRecState acc0 p hP
+  have hReturns' :
+      ∀ part ∈
+          ((firstParts.foldl
+            (fun (acc2 : List (List Metta.Atom × Metta.Bindings) × St)
+                (part : List Metta.Atom × Metta.Bindings) =>
+              (acc2.1 ++
+                (mettaEval env fuel acc2.2 part.2 y).1.map
+                  (fun p =>
+                    (part.1 ++ [p.1],
+                      restrictBnd ([] : List String)
+                        ((Metta.Bindings.merge part.2 p.2).head?.getD p.2))),
+               (mettaEval env fuel acc2.2 part.2 y).2))
+            (([] : List (List Metta.Atom × Metta.Bindings)), firstState)).1),
+        returnsAtom env (Metta.Atom.expr (Metta.Atom.sym op :: part.1)) =
+          false := by
+    intro part _hpart
+    exact hReturns part.1
+  have hmemPart :
+      (out, outBnd) ∈
+        (((firstParts.foldl
+          (fun (acc2 : List (List Metta.Atom × Metta.Bindings) × St)
+              (part : List Metta.Atom × Metta.Bindings) =>
+            (acc2.1 ++
+              (mettaEval env fuel acc2.2 part.2 y).1.map
+                (fun p =>
+                  (part.1 ++ [p.1],
+                    restrictBnd ([] : List String)
+                      ((Metta.Bindings.merge part.2 p.2).head?.getD p.2))),
+             (mettaEval env fuel acc2.2 part.2 y).2))
+          (([] : List (List Metta.Atom × Metta.Bindings)), firstState)).1).foldl
+            (mettaEvalExprPartFoldStep env fuel ([] : List String) op [x, y] [])
+            (([] : List (Metta.Atom × Metta.Bindings)),
+              (firstParts.foldl
+                (fun (acc2 : List (List Metta.Atom × Metta.Bindings) × St)
+                    (part : List Metta.Atom × Metta.Bindings) =>
+                  (acc2.1 ++
+                    (mettaEval env fuel acc2.2 part.2 y).1.map
+                      (fun p =>
+                        (part.1 ++ [p.1],
+                          restrictBnd ([] : List String)
+                            ((Metta.Bindings.merge part.2 p.2).head?.getD p.2))),
+                   (mettaEval env fuel acc2.2 part.2 y).2))
+                (([] : List (List Metta.Atom × Metta.Bindings)),
+                  firstState)).2)).1 := by
+    unfold mettaEval at hmem
+    rw [Metta.instantiate_nil
+        (Metta.Atom.expr [Metta.Atom.sym op, x, y])] at hmem
+    simp only [hType, hMask, List.length_cons, List.length_nil,
+      Nat.reduceAdd, List.zip_cons_cons, List.zip_nil_right,
+      if_true, List.foldl_cons, List.foldl_nil] at hmem
+    simp [hQvars, restrictBnd_nil_vars] at hmem
+    unfold mettaEvalExprPartFoldStep mettaEvalExprRootFoldStep
+    convert hmem using 1
+    · simp [firstParts, firstState, restrictBnd_nil_vars]
+      rfl
+  rcases
+      mettaEval_binary_eval_args_part_fold_pair_nonError_state_pred_before
+        env fuel ([] : List String) op [x, y] [] y firstParts firstState
+        out outBnd P hOutNoErr hFirstState hSecondState'
+        hRootState' hRecState' hReturns' hmemPart with
+    ⟨firstPart, hFirstPart, stBeforeY, yOut, yBnd, selectedBnd,
+      stPart, pairs, stRoot, hPY, hY, hSelectedBnd, hNoErr,
+      hPPart, hRootEq, hcase⟩
+  have hfirstRaw :
+      firstPart ∈
+        (mettaEval env fuel st [] x).1.map
+          (fun p =>
+            ([p.1],
+              restrictBnd ([] : List String)
+                ((Metta.Bindings.merge [] p.2).head?.getD p.2))) := by
+    simpa [firstParts, restrictBnd_nil_vars] using hFirstPart
+  rcases
+      mettaEval_binary_first_arg_parts_mem
+        env fuel ([] : List String) st x firstPart hfirstRaw with
+    ⟨xOut, xBnd, hxMem, hFirstEq⟩
+  cases hFirstEq
+  have hSelectedNil : selectedBnd = [] := by
+    simpa [restrictBnd_nil_vars] using hSelectedBnd
+  subst selectedBnd
+  refine ⟨xOut, xBnd, hxMem, stBeforeY, yOut, yBnd,
+    stPart, pairs, stRoot, hPY, ?_, ?_, hPPart, ?_, ?_⟩
+  · simpa [restrictBnd_nil_vars] using hY
+  · simpa using hNoErr
+  · simpa [mExpr, mSym] using hRootEq
+  · simpa [mExpr, mSym, restrictBnd_nil_vars] using hcase
+
+private theorem mettaEval_binary_eval_args_pair_nonError_notReducible_state_pred_before_closed
+    (env : MinEnv) (fuel : Nat) (st : St)
+    (op : String) (x y : Metta.Atom)
+    (out : Metta.Atom) (outBnd : Metta.Bindings)
+    (P : St → Prop)
+    (hxClosed : x.vars = []) (hyClosed : y.vars = [])
+    (hType : typeMismatch env st.world op [x, y] = none)
+    (hMask : argMask env op 2 = [true, true])
+    (hOutNoErr : out.isError = false)
+    (hFirstState : P (mettaEval env fuel st [] x).2)
+    (hSecondState :
+      ∀ (acc0 : List (List Metta.Atom × Metta.Bindings) × St)
+        (xOut : Metta.Atom) (xBnd : Metta.Bindings),
+        (xOut, xBnd) ∈ (mettaEval env fuel st [] x).1 →
+          P acc0.2 →
+            P (mettaEval env fuel acc0.2 [] y).2)
+    (hRoot :
+      ∀ (acc0 : List (Metta.Atom × Metta.Bindings) × St)
+        (xOut yOut : Metta.Atom),
+        P acc0.2 →
+          interpretFuel env (fuel + 1) acc0.2
+            [evalItemNil (Metta.Atom.expr [Metta.Atom.sym op, xOut, yOut])]
+            [] =
+          ([(notReducibleA, [])], acc0.2))
+    (hmem :
+      (out, outBnd) ∈
+        (mettaEval env (fuel + 1) st []
+          (Metta.Atom.expr [Metta.Atom.sym op, x, y])).1) :
+    ∃ xOut xBnd,
+      (xOut, xBnd) ∈ (mettaEval env fuel st [] x).1 ∧
+      ∃ stBeforeY yOut yBnd,
+        P stBeforeY ∧
+        (yOut, yBnd) ∈ (mettaEval env fuel stBeforeY [] y).1 ∧
+        (([xOut, yOut].zip [x, y]).find?
+          (fun ho : Metta.Atom × Metta.Atom =>
+            ho.1.isError && ho.1 != ho.2)) = none ∧
+        out = Metta.Atom.expr [Metta.Atom.sym op, xOut, yOut] := by
+  let firstParts : List (List Metta.Atom × Metta.Bindings) :=
+    (mettaEval env fuel st [] x).1.map
+      (fun p => ([p.1], ([] : Metta.Bindings)))
+  let firstState : St := (mettaEval env fuel st [] x).2
+  let secondFold : List (List Metta.Atom × Metta.Bindings) × St :=
+    firstParts.foldl
+      (fun (acc2 : List (List Metta.Atom × Metta.Bindings) × St)
+          (part : List Metta.Atom × Metta.Bindings) =>
+        (acc2.1 ++
+          (mettaEval env fuel acc2.2 part.2 y).1.map
+            (fun p =>
+              (part.1 ++ [p.1],
+                restrictBnd ([] : List String)
+                  ((Metta.Bindings.merge part.2 p.2).head?.getD p.2))),
+         (mettaEval env fuel acc2.2 part.2 y).2))
+      (([] : List (List Metta.Atom × Metta.Bindings)), firstState)
+  have hQvars : List.flatMap Metta.Atom.vars [x, y] = [] := by
+    simp [List.flatMap, hxClosed, hyClosed]
+  have hSecondState' :
+      ∀ (acc0 : List (List Metta.Atom × Metta.Bindings) × St)
+        (part : List Metta.Atom × Metta.Bindings),
+        part ∈ firstParts →
+          P acc0.2 →
+            P (mettaEval env fuel acc0.2 part.2 y).2 := by
+    intro acc0 part hpart hP
+    have hpartRaw :
+        part ∈
+          (mettaEval env fuel st [] x).1.map
+            (fun p =>
+              ([p.1],
+                restrictBnd ([] : List String)
+                  ((Metta.Bindings.merge [] p.2).head?.getD p.2))) := by
+      simpa [firstParts, restrictBnd_nil_vars] using hpart
+    rcases
+        mettaEval_binary_first_arg_parts_mem
+          env fuel ([] : List String) st x part hpartRaw with
+      ⟨xOut, xBnd, hxMem, hpartEq⟩
+    cases hpartEq
+    simpa [restrictBnd_nil_vars] using
+      hSecondState acc0 xOut xBnd hxMem hP
+  have hSecondFoldP : P secondFold.2 := by
+    simpa [secondFold, firstParts, firstState] using
+      mettaEval_binary_second_arg_fold_preserves_state_pred
+        env fuel ([] : List String) y firstParts
+        (([] : List (List Metta.Atom × Metta.Bindings)), firstState)
+        P hFirstState hSecondState'
+  have hRootParts :
+      ∀ (acc0 : List (Metta.Atom × Metta.Bindings) × St)
+        (part : List Metta.Atom × Metta.Bindings),
+        part ∈ secondFold.1 →
+          P acc0.2 →
+            interpretFuel env (fuel + 1) acc0.2
+              [{ stack := atomToStack (Metta.Atom.expr [Metta.Atom.sym "eval",
+                  Metta.Atom.expr (Metta.Atom.sym op :: part.1)]) [],
+                 bnd := [] }] [] =
+              ([(notReducibleA, [])], acc0.2) := by
+    intro acc0 part hpart hP
+    have hSelectedInv :=
+      mettaEval_binary_second_arg_fold_pair_state_pred_before
+        env fuel ([] : List String) y firstParts
+        (([] : List (List Metta.Atom × Metta.Bindings)), firstState)
+        part.1 part.2 P hFirstState hSecondState'
+        (by simpa [secondFold] using hpart)
+    rcases hSelectedInv with hnil | hselected
+    · cases hnil
+    · rcases hselected with
+        ⟨firstPart, hFirstPart, _stBeforeY, yOut, yBnd,
+          _hPY, _hY, hPartEq⟩
+      have hfirstRaw :
+          firstPart ∈
+            (mettaEval env fuel st [] x).1.map
+              (fun p =>
+                ([p.1],
+                  restrictBnd ([] : List String)
+                    ((Metta.Bindings.merge [] p.2).head?.getD p.2))) := by
+        simpa [firstParts, restrictBnd_nil_vars] using hFirstPart
+      rcases
+          mettaEval_binary_first_arg_parts_mem
+            env fuel ([] : List String) st x firstPart hfirstRaw with
+        ⟨xOut, xBnd, _hxMem, hFirstEq⟩
+      cases hFirstEq
+      have hPartArgs : part.1 = [xOut, yOut] := by
+        have hFst := congrArg Prod.fst hPartEq
+        simpa [restrictBnd_nil_vars] using hFst
+      rw [hPartArgs]
+      simpa [evalItemNil, mExpr, mSym] using hRoot acc0 xOut yOut hP
+  have hmemPart :
+      (out, outBnd) ∈
+        (secondFold.1.foldl
+          (mettaEvalExprPartFoldStep env fuel ([] : List String) op [x, y] [])
+          (([] : List (Metta.Atom × Metta.Bindings)), secondFold.2)).1 := by
+    unfold mettaEval at hmem
+    rw [Metta.instantiate_nil
+        (Metta.Atom.expr [Metta.Atom.sym op, x, y])] at hmem
+    simp only [hType, hMask, List.length_cons, List.length_nil,
+      Nat.reduceAdd, List.zip_cons_cons, List.zip_nil_right,
+      if_true, List.foldl_cons, List.foldl_nil] at hmem
+    simp [hQvars, restrictBnd_nil_vars] at hmem
+    unfold mettaEvalExprPartFoldStep mettaEvalExprRootFoldStep
+    convert hmem using 1
+    · simp [secondFold, firstParts, firstState, restrictBnd_nil_vars]
+      rfl
+  rcases
+      mettaEvalExprPartFold_pair_nonError_notReducible_state_pred_before
+        env fuel ([] : List String) op [x, y] [] secondFold.1
+        (([] : List (Metta.Atom × Metta.Bindings)), secondFold.2)
+        out outBnd P hOutNoErr hSecondFoldP hRootParts hmemPart with
+    hnil | hpart
+  · cases hnil
+  · rcases hpart with
+      ⟨selectedPart, hSelectedMem, stBeforeRoot, _hPRoot, hFind,
+        hOutEq, _hBndEq⟩
+    rcases selectedPart with ⟨selectedArgs, selectedBnd0⟩
+    have hSelectedInv :=
+      mettaEval_binary_second_arg_fold_pair_state_pred_before
+        env fuel ([] : List String) y firstParts
+        (([] : List (List Metta.Atom × Metta.Bindings)), firstState)
+        selectedArgs selectedBnd0 P hFirstState hSecondState'
+        (by simpa [secondFold] using hSelectedMem)
+    rcases hSelectedInv with hnilSelected | hselected
+    · cases hnilSelected
+    · rcases hselected with
+        ⟨firstPart, hFirstPart, stBeforeY, yOut, yBnd,
+          hPY, hY, hSelectedEq⟩
+      have hfirstRaw :
+          firstPart ∈
+            (mettaEval env fuel st [] x).1.map
+              (fun p =>
+                ([p.1],
+                  restrictBnd ([] : List String)
+                    ((Metta.Bindings.merge [] p.2).head?.getD p.2))) := by
+        simpa [firstParts, restrictBnd_nil_vars] using hFirstPart
+      rcases
+          mettaEval_binary_first_arg_parts_mem
+            env fuel ([] : List String) st x firstPart hfirstRaw with
+        ⟨xOut, xBnd, hxMem, hFirstEq⟩
+      cases hFirstEq
+      have hSelectedArgs : selectedArgs = [xOut, yOut] := by
+        have hFst := congrArg Prod.fst hSelectedEq
+        simpa [restrictBnd_nil_vars] using hFst
+      rw [hSelectedArgs] at hFind hOutEq
+      refine ⟨xOut, xBnd, hxMem, stBeforeY, yOut, yBnd, hPY, ?_, ?_, ?_⟩
+      · simpa [restrictBnd_nil_vars] using hY
+      · simpa using hFind
+      · simpa [mExpr, mSym] using hOutEq
+
 theorem mettaEval_binary_expr_mem_of_quoted_args_and_open_root_eval_member_state_pred
     (env : MinEnv) (fuel : Nat) (st : St)
     (op : String)
@@ -27889,6 +31536,687 @@ theorem interpretFuel_kernelDefControlEnv_nf_def_root_eq
     simp [hrootStable]
   rw [interpretFuel, hstep]
   simp [interpretFuel, hfinal, hpair, root, m, f, coreB, counter, st']
+
+private theorem queryOp_kernelDefControlEnv_primary_def_body_of_eq
+    (st : St)
+    (name : Mettapedia.Languages.MeTTa.PureKernel.Syntax.DeclName)
+    (hStatic : st.world.selfExtra = []) :
+    queryOp kernelDefControlEnv st []
+        (defBodyOfQueryAtom (sigAtom cicStage3RawArtifactSig)
+          (declNameAtom name)) [] =
+      ( [finItem [] notReducibleA []]
+      , { counter := st.counter + 1, world := st.world }) := by
+  let target :=
+    defBodyOfQueryAtom (sigAtom cicStage3RawArtifactSig)
+      (declNameAtom name)
+  have hNotVarHead : isVariableHeaded target = false := by
+    simp [target, defBodyOfQueryAtom, sigAtom, declNameAtom, isVariableHeaded,
+      mExpr, mSym]
+  have hCand :
+      candidatesW kernelDefControlEnv st.world target =
+        [] ++ defBodyOfDDefRulePair :: [] := by
+    rw [candidatesW_eq_candidates_of_no_selfExtra
+      kernelDefControlEnv st.world target hStatic]
+    have hcandidateEq :
+        kernelDefControlEnv.candidates target =
+          kernelEnv.candidates target := by
+      simp [target, MinEnv.candidates, kernelDefControlEnv]
+    rw [hcandidateEq]
+    simp [target, MinEnv.candidates, kernelEnv, kernelControlSignatureDecls,
+      kernelControlRules, kernelNfDefBodyRootRules, kernelCoreRules,
+      runtimeDecls, cicStage3RawArtifactSig, cicStage3RawArtifactDecls,
+      cicStage3RawNatDecl, defBodyOfQueryAtom, sigAtom, declAtom,
+      declNameAtom, ruleDefBodyOfDDef, defBodyOfDDefRulePair,
+      defBodyOfDDefRuleLhs, defBodyOfDDefRuleRhs, nfDefRuleLhs,
+      nfDefRuleRhs, ruleNfDef, ruleIfTrue, ruleIfFalse, ruleLet,
+      ifTrueRulePair, ifFalseRulePair, letRulePair, ruleIsBad, ruleNfVar,
+      ruleNfSrt, ruleNfCon, ruleNfPi, ruleNfLam, ruleNfBad,
+      ruleNfIndGZeroIota, ruleInferSrtType, ruleInferSrtKind,
+      ruleInferBad, ruleConv, mTypeDecl, mExpr, mSym, mVar, mBool,
+      headKey, Metta.ruleIndex_getD, Metta.ofAtomsGT_varRules, extractRules]
+  have hDDef :
+      queryOpItemsOfRule [] target [] st.counter defBodyOfDDefRulePair = [] := by
+    let f := counterSuffix st.counter
+    have hFresh :
+        freshenRule st.counter defBodyOfDDefRulePair.1
+            defBodyOfDDefRulePair.2 =
+          (defBodyOfQueryAtom
+              (mExpr "SCons"
+                [ mExpr "DDef"
+                    [mVar (f "c"), mVar (f "T"), mVar (f "body")]
+                , mVar (f "rest") ])
+              (mVar (f "x")),
+            mExpr "if"
+              [ mExpr "==" [mVar (f "x"), mVar (f "c")]
+              , mVar (f "body")
+              , defBodyOfQueryAtom (mVar (f "rest")) (mVar (f "x")) ]) := by
+      rw [freshenRule_eq_renBy]
+      simp [f, defBodyOfDDefRulePair, defBodyOfDDefRuleLhs,
+        defBodyOfDDefRuleRhs, defBodyOfQueryAtom, mExpr, mSym, mVar,
+        Mettapedia.Languages.MeTTa.HE.CanonAbsorbsFreshening.renBy]
+    have hMatch :
+        Metta.matchAtoms
+            (defBodyOfQueryAtom
+              (mExpr "SCons"
+                [ mExpr "DDef"
+                    [mVar (f "c"), mVar (f "T"), mVar (f "body")]
+                , mVar (f "rest") ])
+              (mVar (f "x")))
+            target = [] := by
+      simp [target, cicStage3RawArtifactSig, cicStage3RawArtifactDecls,
+        cicStage3RawNatDecl, defBodyOfQueryAtom, sigAtom, declAtom,
+        declNameAtom, Metta.matchAtoms, Metta.matchAtomsWith, Metta.matchAll,
+        Metta.Bindings.merge, Metta.Bindings.mergeOne,
+        Metta.Bindings.addVarBinding, Metta.Bindings.addValRaw,
+        Metta.Bindings.removeVal, mExpr, mSym, mVar]
+    exact queryOpItemsOfRule_eq_nil_of_fresh_match_nil
+      st.counter target
+      (defBodyOfQueryAtom
+        (mExpr "SCons"
+          [ mExpr "DDef"
+              [mVar (f "c"), mVar (f "T"), mVar (f "body")]
+          , mVar (f "rest") ])
+        (mVar (f "x")))
+      (mExpr "if"
+        [ mExpr "==" [mVar (f "x"), mVar (f "c")]
+        , mVar (f "body")
+        , defBodyOfQueryAtom (mVar (f "rest")) (mVar (f "x")) ])
+      defBodyOfDDefRulePair hFresh hMatch
+  have hDDefItems := hDDef
+  unfold queryOpItemsOfRule at hDDefItems
+  dsimp [target] at hDDefItems
+  unfold queryOp
+  rw [hNotVarHead]
+  simp only [Bool.false_eq_true, ↓reduceIte]
+  rw [hCand]
+  simp only [List.nil_append, List.foldl_cons, List.foldl_nil]
+  rw [hDDefItems]
+  simp
+
+theorem interpretFuel_kernelDefControlEnv_primary_def_body_of_root_eq
+    {fuel : Nat} {st : St}
+    (name : Mettapedia.Languages.MeTTa.PureKernel.Syntax.DeclName)
+    (hStatic : st.world.selfExtra = []) :
+    interpretFuel kernelDefControlEnv (fuel + 1) st
+        [evalItemNil
+          (defBodyOfQueryAtom (sigAtom cicStage3RawArtifactSig)
+            (declNameAtom name))] [] =
+      ( [(notReducibleA, [])]
+      , { counter := st.counter + 1, world := st.world }) := by
+  let target :=
+    defBodyOfQueryAtom (sigAtom cicStage3RawArtifactSig)
+      (declNameAtom name)
+  let st' : St := { counter := st.counter + 1, world := st.world }
+  have hstep :
+      interpretStack1 kernelDefControlEnv fuel st (evalItemNil target) =
+        ([finItem [] notReducibleA []], st') := by
+    change interpretStack1 kernelDefControlEnv fuel st
+        { stack := { atom := Metta.Atom.expr [Metta.Atom.sym "eval", target] } :: [],
+          bnd := [] } =
+      ([finItem [] notReducibleA []], st')
+    rw [interpretStack1_eval_queryOp_of_instantiated_noReduce
+      kernelDefControlEnv fuel st [] target [] "def-body-of"
+        [sigAtom cicStage3RawArtifactSig, declNameAtom name]]
+    · simpa [target, st', defBodyOfQueryAtom, mExpr, mSym] using
+        queryOp_kernelDefControlEnv_primary_def_body_of_eq st name hStatic
+    · simp [target, defBodyOfQueryAtom, mExpr, mSym, Metta.instantiate_nil]
+    · exact kernelDefControlEnv_callGrounded_def_body_of
+        ([sigAtom cicStage3RawArtifactSig, declNameAtom name].map
+          (fun a => resolveStates st.world (subTokens st.world a)))
+    · simp [isEmbeddedOp]
+  rw [interpretFuel, hstep]
+  simp [interpretFuel, finItem, finalPair, isFinal, notReducibleA,
+    Metta.instantiate_nil, st']
+
+theorem mettaEval_kernelDefControlEnv_primary_def_body_of_eq_state
+    (fuel : Nat) (st : St)
+    (name : Mettapedia.Languages.MeTTa.PureKernel.Syntax.DeclName)
+    (hStatic : st.world.selfExtra = []) :
+    mettaEval kernelDefControlEnv (fuel + 2) st []
+        (defBodyOfQueryAtom (sigAtom cicStage3RawArtifactSig)
+          (declNameAtom name)) =
+      ([(defBodyOfQueryAtom (sigAtom cicStage3RawArtifactSig)
+          (declNameAtom name), [])],
+        { counter := st.counter + 1, world := st.world }) := by
+  let stRoot : St := { counter := st.counter + 1, world := st.world }
+  have hRoot :
+      interpretFuel kernelDefControlEnv (fuel + 1 + 1) st
+          [evalItemNil
+            (defBodyOfQueryAtom (sigAtom cicStage3RawArtifactSig)
+              (declNameAtom name))] [] =
+        ([(notReducibleA, [])], stRoot) := by
+    simpa [stRoot, Nat.add_assoc] using
+      interpretFuel_kernelDefControlEnv_primary_def_body_of_root_eq
+        (fuel := fuel + 1) (st := st) name hStatic
+  have hNoErr :
+      (([sigAtom cicStage3RawArtifactSig, declNameAtom name].zip
+        [sigAtom cicStage3RawArtifactSig, declNameAtom name]).find?
+        (fun ho : Metta.Atom × Metta.Atom => ho.1.isError && ho.1 != ho.2)) = none := by
+    simp [sigAtom_isError_false, declNameAtom_isError_false]
+  have hExact :=
+    mettaEval_binary_expr_eq_of_quoted_args_and_notReducible_eq
+      (env := kernelDefControlEnv) (fuel := fuel + 1)
+      (st := st) (stRoot := stRoot)
+      (op := "def-body-of") (x := sigAtom cicStage3RawArtifactSig)
+      (y := declNameAtom name)
+      (kernelDefControlEnv_def_body_of_typeMismatch st
+        (sigAtom cicStage3RawArtifactSig) (declNameAtom name))
+      kernelDefControlEnv_def_body_of_argMask hNoErr
+      (by simpa [defBodyOfQueryAtom, mExpr, mSym, stRoot, Nat.add_assoc]
+        using hRoot)
+  simpa [defBodyOfQueryAtom, mExpr, mSym, stRoot, Nat.add_assoc] using hExact
+
+private theorem kernelEnv_nf_def_body_of_candidates
+    (sig : DIndGArtifactSig)
+    (name : Mettapedia.Languages.MeTTa.PureKernel.Syntax.DeclName) :
+    candidatesW kernelEnv St.init.world
+        (mExpr "nf" [sigAtom sig,
+          defBodyOfQueryAtom (sigAtom sig) (declNameAtom name)]) =
+      nfDefCandidatePreWithIndGZeroIota ++ [nfDefRulePair] := by
+  simp [candidatesW, MinEnv.candidates, kernelEnv, kernelControlSignatureDecls,
+    kernelControlRules, kernelNfDefBodyRootRules, kernelCoreRules, runtimeDecls,
+    sigAtom, termAtom,
+    nfPiRuleLhs, nfPiRuleRhs, nfPiCandidatePre, nfLamCandidatePre,
+    nfDefCandidatePre, nfDefCandidatePreWithIndGZeroIota,
+    nfVarRulePair, nfSrtRulePair, nfConRulePair,
+    nfLamRulePair, nfLamRuleLhs, nfLamRuleRhs, nfBadRulePair,
+    nfIndGZeroIotaRulePair, nfIndGZeroIotaRuleLhs,
+    nfIndGZeroIotaRuleRhs, cicStage3IndGZeroRawRuntime,
+    nfDefRulePair, nfDefRuleLhs, nfDefRuleRhs,
+    ruleNfIndGZeroIota, ruleNfDef, ruleDefBodyOfDDef,
+    defBodyOfDDefRuleLhs, defBodyOfDDefRuleRhs, defBodyOfQueryAtom, mExpr,
+    mSym, mVar, headKey, St.init, World.empty, Metta.ruleIndex_getD,
+    Metta.ofAtomsGT_varRules, ruleIsBad, ruleNfVar, ruleNfSrt, ruleNfCon,
+    ruleNfPi, ruleNfLam, ruleNfBad, ruleInferSrtType, ruleInferSrtKind,
+    ruleInferBad, ruleConv, ruleIfTrue, ruleIfFalse, ruleLet, ifTrueRulePair,
+    ifFalseRulePair, letRulePair, mTypeDecl, mBool, extractRules]
+
+private theorem queryOpItems_nf_var_on_def_body_of_eq_nil
+    (counter : Nat) (sig : DIndGArtifactSig)
+    (name : Mettapedia.Languages.MeTTa.PureKernel.Syntax.DeclName) :
+    queryOpItemsOfRule []
+        (mExpr "nf" [sigAtom sig,
+          defBodyOfQueryAtom (sigAtom sig) (declNameAtom name)]) []
+        counter nfVarRulePair = [] := by
+  let f := counterSuffix counter
+  have hfresh :
+      freshenRule counter nfVarRulePair.1 nfVarRulePair.2 =
+        (mExpr "nf" [mVar (f "sig"), mExpr "Var" [mVar (f "k")]],
+          mExpr "Var" [mVar (f "k")]) := by
+    rw [freshenRule_eq_renBy]
+    simp [f, nfVarRulePair, mExpr, mSym, mVar,
+      Mettapedia.Languages.MeTTa.HE.CanonAbsorbsFreshening.renBy]
+  have hmatch :
+      Metta.matchAtoms
+          (mExpr "nf" [mVar (f "sig"), mExpr "Var" [mVar (f "k")]])
+          (mExpr "nf" [sigAtom sig,
+            defBodyOfQueryAtom (sigAtom sig) (declNameAtom name)]) = [] := by
+    simp only [Metta.matchAtoms, Metta.matchAtomsWith, defBodyOfQueryAtom,
+      mExpr, mSym, mVar]
+    unfold Metta.matchAll
+    simp [Metta.matchAtomsWith, Metta.Bindings.merge]
+    unfold Metta.matchAll
+    rw [match_var_nonvar_atom (f "sig") (sigAtom sig) (sigAtom_not_var sig)]
+    simp [Metta.Bindings.merge, Metta.Bindings.mergeOne,
+      Metta.Bindings.addVarBinding, Metta.Bindings.addValRaw,
+      Metta.Bindings.removeVal, Metta.Bindings.lookupVal]
+    unfold Metta.matchAll
+    rfl
+  unfold queryOpItemsOfRule
+  rw [hfresh]
+  simp [hmatch]
+
+private theorem queryOpItems_nf_srt_on_def_body_of_eq_nil
+    (counter : Nat) (sig : DIndGArtifactSig)
+    (name : Mettapedia.Languages.MeTTa.PureKernel.Syntax.DeclName) :
+    queryOpItemsOfRule []
+        (mExpr "nf" [sigAtom sig,
+          defBodyOfQueryAtom (sigAtom sig) (declNameAtom name)]) []
+        counter nfSrtRulePair = [] := by
+  let f := counterSuffix counter
+  have hfresh :
+      freshenRule counter nfSrtRulePair.1 nfSrtRulePair.2 =
+        (mExpr "nf" [mVar (f "sig"), mExpr "Srt" [mVar (f "s")]],
+          mExpr "Srt" [mVar (f "s")]) := by
+    rw [freshenRule_eq_renBy]
+    simp [f, nfSrtRulePair, mExpr, mSym, mVar,
+      Mettapedia.Languages.MeTTa.HE.CanonAbsorbsFreshening.renBy]
+  have hmatch :
+      Metta.matchAtoms
+          (mExpr "nf" [mVar (f "sig"), mExpr "Srt" [mVar (f "s")]])
+          (mExpr "nf" [sigAtom sig,
+            defBodyOfQueryAtom (sigAtom sig) (declNameAtom name)]) = [] := by
+    simp only [Metta.matchAtoms, Metta.matchAtomsWith, defBodyOfQueryAtom,
+      mExpr, mSym, mVar]
+    unfold Metta.matchAll
+    simp [Metta.matchAtomsWith, Metta.Bindings.merge]
+    unfold Metta.matchAll
+    rw [match_var_nonvar_atom (f "sig") (sigAtom sig) (sigAtom_not_var sig)]
+    simp [Metta.Bindings.merge, Metta.Bindings.mergeOne,
+      Metta.Bindings.addVarBinding, Metta.Bindings.addValRaw,
+      Metta.Bindings.removeVal, Metta.Bindings.lookupVal]
+    unfold Metta.matchAll
+    rfl
+  unfold queryOpItemsOfRule
+  rw [hfresh]
+  simp [hmatch]
+
+private theorem queryOpItems_nf_con_on_def_body_of_eq_nil
+    (counter : Nat) (sig : DIndGArtifactSig)
+    (name : Mettapedia.Languages.MeTTa.PureKernel.Syntax.DeclName) :
+    queryOpItemsOfRule []
+        (mExpr "nf" [sigAtom sig,
+          defBodyOfQueryAtom (sigAtom sig) (declNameAtom name)]) []
+        counter nfConRulePair = [] := by
+  let f := counterSuffix counter
+  have hfresh :
+      freshenRule counter nfConRulePair.1 nfConRulePair.2 =
+        (mExpr "nf" [mVar (f "sig"), mExpr "Con" [mVar (f "x")]],
+          mExpr "Con" [mVar (f "x")]) := by
+    rw [freshenRule_eq_renBy]
+    simp [f, nfConRulePair, mExpr, mSym, mVar,
+      Mettapedia.Languages.MeTTa.HE.CanonAbsorbsFreshening.renBy]
+  have hmatch :
+      Metta.matchAtoms
+          (mExpr "nf" [mVar (f "sig"), mExpr "Con" [mVar (f "x")]])
+          (mExpr "nf" [sigAtom sig,
+            defBodyOfQueryAtom (sigAtom sig) (declNameAtom name)]) = [] := by
+    simp only [Metta.matchAtoms, Metta.matchAtomsWith, defBodyOfQueryAtom,
+      mExpr, mSym, mVar]
+    unfold Metta.matchAll
+    simp [Metta.matchAtomsWith, Metta.Bindings.merge]
+    unfold Metta.matchAll
+    rw [match_var_nonvar_atom (f "sig") (sigAtom sig) (sigAtom_not_var sig)]
+    simp [Metta.Bindings.merge, Metta.Bindings.mergeOne,
+      Metta.Bindings.addVarBinding, Metta.Bindings.addValRaw,
+      Metta.Bindings.removeVal, Metta.Bindings.lookupVal]
+    unfold Metta.matchAll
+    rfl
+  unfold queryOpItemsOfRule
+  rw [hfresh]
+  simp [hmatch]
+
+private theorem queryOpItems_nf_pi_on_def_body_of_eq_nil
+    (counter : Nat) (sig : DIndGArtifactSig)
+    (name : Mettapedia.Languages.MeTTa.PureKernel.Syntax.DeclName) :
+    queryOpItemsOfRule []
+        (mExpr "nf" [sigAtom sig,
+          defBodyOfQueryAtom (sigAtom sig) (declNameAtom name)]) []
+        counter (nfPiRuleLhs, nfPiRuleRhs) = [] := by
+  let f := counterSuffix counter
+  have hfresh :
+      freshenRule counter nfPiRuleLhs nfPiRuleRhs =
+        (mExpr "nf" [mVar (f "sig"),
+            mExpr "Pi" [mVar (f "A"), mVar (f "B")]],
+          mExpr "Pi"
+            [mExpr "nf" [mVar (f "sig"), mVar (f "A")],
+             mExpr "nf" [mVar (f "sig"), mVar (f "B")]]) := by
+    rw [freshenRule_eq_renBy]
+    simp [f, nfPiRuleLhs, nfPiRuleRhs, mExpr, mSym, mVar,
+      Mettapedia.Languages.MeTTa.HE.CanonAbsorbsFreshening.renBy]
+  have hmatch :
+      Metta.matchAtoms
+          (mExpr "nf" [mVar (f "sig"),
+            mExpr "Pi" [mVar (f "A"), mVar (f "B")]])
+          (mExpr "nf" [sigAtom sig,
+            defBodyOfQueryAtom (sigAtom sig) (declNameAtom name)]) = [] := by
+    simp only [Metta.matchAtoms, Metta.matchAtomsWith, defBodyOfQueryAtom,
+      mExpr, mSym, mVar]
+    unfold Metta.matchAll
+    simp [Metta.matchAtomsWith, Metta.Bindings.merge]
+    unfold Metta.matchAll
+    rw [match_var_nonvar_atom (f "sig") (sigAtom sig) (sigAtom_not_var sig)]
+    simp [Metta.Bindings.merge, Metta.Bindings.mergeOne,
+      Metta.Bindings.addVarBinding, Metta.Bindings.addValRaw,
+      Metta.Bindings.removeVal, Metta.Bindings.lookupVal]
+    unfold Metta.matchAll
+    rfl
+  unfold queryOpItemsOfRule
+  rw [hfresh]
+  simp [hmatch]
+
+private theorem queryOpItems_nf_lam_on_def_body_of_eq_nil
+    (counter : Nat) (sig : DIndGArtifactSig)
+    (name : Mettapedia.Languages.MeTTa.PureKernel.Syntax.DeclName) :
+    queryOpItemsOfRule []
+        (mExpr "nf" [sigAtom sig,
+          defBodyOfQueryAtom (sigAtom sig) (declNameAtom name)]) []
+        counter nfLamRulePair = [] := by
+  let f := counterSuffix counter
+  have hfresh :
+      freshenRule counter nfLamRulePair.1 nfLamRulePair.2 =
+        (mExpr "nf" [mVar (f "sig"),
+            mExpr "Lam" [mVar (f "A"), mVar (f "b")]],
+          mExpr "Lam"
+            [mExpr "nf" [mVar (f "sig"), mVar (f "A")],
+             mExpr "nf" [mVar (f "sig"), mVar (f "b")]]) := by
+    rw [freshenRule_eq_renBy]
+    simp [f, nfLamRulePair, nfLamRuleLhs, nfLamRuleRhs, mExpr, mSym, mVar,
+      Mettapedia.Languages.MeTTa.HE.CanonAbsorbsFreshening.renBy]
+  have hmatch :
+      Metta.matchAtoms
+          (mExpr "nf" [mVar (f "sig"),
+            mExpr "Lam" [mVar (f "A"), mVar (f "b")]])
+          (mExpr "nf" [sigAtom sig,
+            defBodyOfQueryAtom (sigAtom sig) (declNameAtom name)]) = [] := by
+    simp only [Metta.matchAtoms, Metta.matchAtomsWith, defBodyOfQueryAtom,
+      mExpr, mSym, mVar]
+    unfold Metta.matchAll
+    simp [Metta.matchAtomsWith, Metta.Bindings.merge]
+    unfold Metta.matchAll
+    rw [match_var_nonvar_atom (f "sig") (sigAtom sig) (sigAtom_not_var sig)]
+    simp [Metta.Bindings.merge, Metta.Bindings.mergeOne,
+      Metta.Bindings.addVarBinding, Metta.Bindings.addValRaw,
+      Metta.Bindings.removeVal, Metta.Bindings.lookupVal]
+    unfold Metta.matchAll
+    rfl
+  unfold queryOpItemsOfRule
+  rw [hfresh]
+  simp [hmatch]
+
+private theorem queryOpItems_nf_bad_on_def_body_of_eq_nil
+    (counter : Nat) (sig : DIndGArtifactSig)
+    (name : Mettapedia.Languages.MeTTa.PureKernel.Syntax.DeclName) :
+    queryOpItemsOfRule []
+        (mExpr "nf" [sigAtom sig,
+          defBodyOfQueryAtom (sigAtom sig) (declNameAtom name)]) []
+        counter nfBadRulePair = [] := by
+  let f := counterSuffix counter
+  have hfresh :
+      freshenRule counter nfBadRulePair.1 nfBadRulePair.2 =
+        (mExpr "nf" [mVar (f "sig"), mExpr "Bad" [mVar (f "e")]],
+          mExpr "Bad" [mVar (f "e")]) := by
+    rw [freshenRule_eq_renBy]
+    simp [f, nfBadRulePair, mExpr, mSym, mVar,
+      Mettapedia.Languages.MeTTa.HE.CanonAbsorbsFreshening.renBy]
+  have hmatch :
+      Metta.matchAtoms
+          (mExpr "nf" [mVar (f "sig"), mExpr "Bad" [mVar (f "e")]])
+          (mExpr "nf" [sigAtom sig,
+            defBodyOfQueryAtom (sigAtom sig) (declNameAtom name)]) = [] := by
+    simp only [Metta.matchAtoms, Metta.matchAtomsWith, defBodyOfQueryAtom,
+      mExpr, mSym, mVar]
+    unfold Metta.matchAll
+    simp [Metta.matchAtomsWith, Metta.Bindings.merge]
+    unfold Metta.matchAll
+    rw [match_var_nonvar_atom (f "sig") (sigAtom sig) (sigAtom_not_var sig)]
+    simp [Metta.Bindings.merge, Metta.Bindings.mergeOne,
+      Metta.Bindings.addVarBinding, Metta.Bindings.addValRaw,
+      Metta.Bindings.removeVal, Metta.Bindings.lookupVal]
+    unfold Metta.matchAll
+    rfl
+  unfold queryOpItemsOfRule
+  rw [hfresh]
+  simp [hmatch]
+
+private theorem queryOpItems_nf_indG_zero_iota_on_def_body_of_eq_nil
+    (counter : Nat) (sig : DIndGArtifactSig)
+    (name : Mettapedia.Languages.MeTTa.PureKernel.Syntax.DeclName) :
+    queryOpItemsOfRule []
+        (mExpr "nf" [sigAtom sig,
+          defBodyOfQueryAtom (sigAtom sig) (declNameAtom name)]) []
+        counter nfIndGZeroIotaRulePair = [] := by
+  let f := counterSuffix counter
+  have hfresh :
+      freshenRule counter nfIndGZeroIotaRulePair.1 nfIndGZeroIotaRulePair.2 =
+        (mExpr "nf" [mVar (f "sig"), termAtom cicStage3IndGZeroRawRuntime],
+          nfIndGZeroIotaRuleRhs) := by
+    rw [freshenRule_eq_renBy]
+    simp [f, nfIndGZeroIotaRulePair, nfIndGZeroIotaRuleLhs,
+      nfIndGZeroIotaRuleRhs, cicStage3IndGZeroRawRuntime, termAtom, argsAtom,
+      casesAtom, sortAtom, declNameAtom, mExpr, mSym, mVar,
+      Mettapedia.Languages.MeTTa.HE.CanonAbsorbsFreshening.renBy]
+  have hmatch :
+      Metta.matchAtoms
+          (mExpr "nf" [mVar (f "sig"), termAtom cicStage3IndGZeroRawRuntime])
+          (mExpr "nf" [sigAtom sig,
+            defBodyOfQueryAtom (sigAtom sig) (declNameAtom name)]) = [] := by
+    simp only [Metta.matchAtoms, Metta.matchAtomsWith, defBodyOfQueryAtom,
+      termAtom, cicStage3IndGZeroRawRuntime, argsAtom, casesAtom, sortAtom,
+      declNameAtom, mExpr, mSym, mVar]
+    unfold Metta.matchAll
+    simp [Metta.matchAtomsWith, Metta.Bindings.merge]
+    unfold Metta.matchAll
+    rw [match_var_nonvar_atom (f "sig") (sigAtom sig) (sigAtom_not_var sig)]
+    simp [Metta.Bindings.merge, Metta.Bindings.mergeOne,
+      Metta.Bindings.addVarBinding, Metta.Bindings.addValRaw,
+      Metta.Bindings.removeVal, Metta.Bindings.lookupVal]
+    unfold Metta.matchAll
+    rfl
+  unfold queryOpItemsOfRule
+  rw [hfresh]
+  simp [hmatch]
+
+private theorem queryOpItems_nf_def_on_def_body_of_eq_nil
+    (counter : Nat) (sig : DIndGArtifactSig)
+    (name : Mettapedia.Languages.MeTTa.PureKernel.Syntax.DeclName) :
+    queryOpItemsOfRule []
+        (mExpr "nf" [sigAtom sig,
+          defBodyOfQueryAtom (sigAtom sig) (declNameAtom name)]) []
+        counter nfDefRulePair = [] := by
+  let f := counterSuffix counter
+  have hfresh :
+      freshenRule counter nfDefRulePair.1 nfDefRulePair.2 =
+        (mExpr "nf" [mVar (f "sig"), mExpr "Def" [mVar (f "x")]],
+          mExpr "let"
+            [ mVar (f "body")
+            , mExpr "def-body-of" [mVar (f "sig"), mVar (f "x")]
+            , mExpr "if"
+                [ mExpr "is-bad" [mVar (f "body")]
+                , mExpr "Bad" [mSym "unknown-definition"]
+                , mExpr "nf" [mVar (f "sig"), mVar (f "body")] ] ]) := by
+    rw [freshenRule_eq_renBy]
+    simp [f, nfDefRulePair, nfDefRuleLhs, nfDefRuleRhs, mExpr, mSym, mVar,
+      Mettapedia.Languages.MeTTa.HE.CanonAbsorbsFreshening.renBy]
+  have hmatch :
+      Metta.matchAtoms
+          (mExpr "nf" [mVar (f "sig"), mExpr "Def" [mVar (f "x")]])
+          (mExpr "nf" [sigAtom sig,
+            defBodyOfQueryAtom (sigAtom sig) (declNameAtom name)]) = [] := by
+    simp only [Metta.matchAtoms, Metta.matchAtomsWith, defBodyOfQueryAtom,
+      mExpr, mSym, mVar]
+    unfold Metta.matchAll
+    simp [Metta.matchAtomsWith, Metta.Bindings.merge]
+    unfold Metta.matchAll
+    rw [match_var_nonvar_atom (f "sig") (sigAtom sig) (sigAtom_not_var sig)]
+    simp [Metta.Bindings.merge, Metta.Bindings.mergeOne,
+      Metta.Bindings.addVarBinding, Metta.Bindings.addValRaw,
+      Metta.Bindings.removeVal, Metta.Bindings.lookupVal]
+    unfold Metta.matchAll
+    rfl
+  unfold queryOpItemsOfRule
+  rw [hfresh]
+  simp [hmatch]
+
+private theorem queryOpFold_nf_def_body_of_pre_eq
+    (st : St) (sig : DIndGArtifactSig)
+    (name : Mettapedia.Languages.MeTTa.PureKernel.Syntax.DeclName) :
+    List.foldl (queryOpFoldStep []
+        (mExpr "nf" [sigAtom sig,
+          defBodyOfQueryAtom (sigAtom sig) (declNameAtom name)]) [])
+        ([], st) nfDefCandidatePreWithIndGZeroIota =
+      (([] : List Item),
+        { counter := st.counter + nfDefCandidatePreWithIndGZeroIota.length,
+          world := st.world }) := by
+  simp [nfDefCandidatePreWithIndGZeroIota, nfDefCandidatePre,
+    nfLamCandidatePre, nfPiCandidatePre,
+    queryOpFoldStep, queryOpItems_nf_var_on_def_body_of_eq_nil,
+    queryOpItems_nf_srt_on_def_body_of_eq_nil,
+    queryOpItems_nf_con_on_def_body_of_eq_nil,
+    queryOpItems_nf_pi_on_def_body_of_eq_nil,
+    queryOpItems_nf_lam_on_def_body_of_eq_nil,
+    queryOpItems_nf_bad_on_def_body_of_eq_nil,
+    queryOpItems_nf_indG_zero_iota_on_def_body_of_eq_nil]
+
+private theorem queryOp_kernelDefControlEnv_nf_def_body_of_eq
+    (st : St) (sig : DIndGArtifactSig)
+    (name : Mettapedia.Languages.MeTTa.PureKernel.Syntax.DeclName)
+    (hStatic : st.world.selfExtra = []) :
+    queryOp kernelDefControlEnv st []
+        (mExpr "nf" [sigAtom sig,
+          defBodyOfQueryAtom (sigAtom sig) (declNameAtom name)]) [] =
+      ( [finItem [] notReducibleA []]
+      , { counter := st.counter + nfDefCandidatePreWithIndGZeroIota.length + 1,
+          world := st.world }) := by
+  let target :=
+    mExpr "nf" [sigAtom sig,
+      defBodyOfQueryAtom (sigAtom sig) (declNameAtom name)]
+  have hNotVarHead : isVariableHeaded target = false := by
+    simp [target, isVariableHeaded, mExpr, mSym]
+  have hCand :
+      candidatesW kernelDefControlEnv st.world target =
+        nfDefCandidatePreWithIndGZeroIota ++ [nfDefRulePair] := by
+    rw [candidatesW_eq_candidates_of_no_selfExtra
+      kernelDefControlEnv st.world target hStatic]
+    have hcandidateEq :
+        kernelDefControlEnv.candidates target =
+          kernelEnv.candidates target := by
+      simp [target, MinEnv.candidates, kernelDefControlEnv]
+    rw [hcandidateEq]
+    have hcand := kernelEnv_nf_def_body_of_candidates sig name
+    have hstaticInit := candidatesW_init_eq_candidates kernelEnv target
+    rw [hstaticInit] at hcand
+    simpa [target] using hcand
+  have hpre :
+      List.foldl (queryOpFoldStep [] target []) ([], st)
+          nfDefCandidatePreWithIndGZeroIota =
+        (([] : List Item),
+          { counter := st.counter + nfDefCandidatePreWithIndGZeroIota.length,
+            world := st.world }) := by
+    simpa [target] using queryOpFold_nf_def_body_of_pre_eq st sig name
+  have hDef :
+      queryOpItemsOfRule [] target []
+          (st.counter + nfDefCandidatePreWithIndGZeroIota.length)
+          nfDefRulePair = [] := by
+    simpa [target] using
+      queryOpItems_nf_def_on_def_body_of_eq_nil
+        (st.counter + nfDefCandidatePreWithIndGZeroIota.length) sig name
+  unfold queryOp
+  rw [hNotVarHead]
+  simp only [Bool.false_eq_true, ↓reduceIte]
+  rw [hCand]
+  rw [List.foldl_append]
+  change
+    (if (List.foldl (queryOpFoldStep [] target [])
+          (List.foldl (queryOpFoldStep [] target []) ([], st)
+            nfDefCandidatePreWithIndGZeroIota)
+          [nfDefRulePair]).1.isEmpty = true then
+        ([finItem [] notReducibleA []],
+          (List.foldl (queryOpFoldStep [] target [])
+            (List.foldl (queryOpFoldStep [] target []) ([], st)
+              nfDefCandidatePreWithIndGZeroIota)
+            [nfDefRulePair]).2)
+      else
+        List.foldl (queryOpFoldStep [] target [])
+          (List.foldl (queryOpFoldStep [] target []) ([], st)
+            nfDefCandidatePreWithIndGZeroIota)
+          [nfDefRulePair]) =
+      ([finItem [] notReducibleA []],
+        { counter := st.counter + nfDefCandidatePreWithIndGZeroIota.length + 1,
+          world := st.world })
+  rw [hpre]
+  simp only [List.foldl_cons, List.foldl_nil, queryOpFoldStep]
+  rw [hDef]
+  simp
+
+theorem kernelDefControlEnv_callGrounded_nf_atoms
+    (st : St) (x y : Metta.Atom) :
+    callGrounded kernelDefControlEnv.gt "nf"
+        ([x, y].map (fun a => resolveStates st.world (subTokens st.world a))) =
+      ReduceResult.noReduce := by
+  change callGrounded stdGroundings "nf"
+      ([x, y].map (fun a => resolveStates st.world (subTokens st.world a))) =
+    ReduceResult.noReduce
+  simp [callGrounded, GroundingTable.lookup,
+    stdGroundings, Metta.Builtins.table, Metta.Builtins.mathTable]
+
+theorem kernelDefControlEnv_nf_typeMismatch_atoms
+    (st : St) (x y : Metta.Atom) :
+    typeMismatch kernelDefControlEnv st.world "nf" [x, y] = none := by
+  rw [typeMismatch, kernelDefControlEnv_nf_sigs]
+  exact typeCheckArgs_two_atom kernelDefControlEnv st.world x y
+
+theorem interpretFuel_kernelDefControlEnv_nf_def_body_of_root_eq
+    {fuel : Nat} {st : St} (sig : DIndGArtifactSig)
+    (name : Mettapedia.Languages.MeTTa.PureKernel.Syntax.DeclName)
+    (hStatic : st.world.selfExtra = []) :
+    interpretFuel kernelDefControlEnv (fuel + 1) st
+        [evalItemNil
+          (mExpr "nf" [sigAtom sig,
+            defBodyOfQueryAtom (sigAtom sig) (declNameAtom name)])] [] =
+      ( [(notReducibleA, [])]
+      , { counter := st.counter + nfDefCandidatePreWithIndGZeroIota.length + 1,
+          world := st.world }) := by
+  let target :=
+    mExpr "nf" [sigAtom sig,
+      defBodyOfQueryAtom (sigAtom sig) (declNameAtom name)]
+  let st' : St :=
+    { counter := st.counter + nfDefCandidatePreWithIndGZeroIota.length + 1,
+      world := st.world }
+  have hstep :
+      interpretStack1 kernelDefControlEnv fuel st (evalItemNil target) =
+        ([finItem [] notReducibleA []], st') := by
+    change interpretStack1 kernelDefControlEnv fuel st
+        { stack := { atom := Metta.Atom.expr [Metta.Atom.sym "eval", target] } :: [],
+          bnd := [] } =
+      ([finItem [] notReducibleA []], st')
+    rw [interpretStack1_eval_queryOp_of_instantiated_noReduce
+      kernelDefControlEnv fuel st [] target [] "nf"
+        [sigAtom sig, defBodyOfQueryAtom (sigAtom sig) (declNameAtom name)]]
+    · simpa [target, st', mExpr, mSym] using
+        queryOp_kernelDefControlEnv_nf_def_body_of_eq st sig name hStatic
+    · simp [target, mExpr, mSym, Metta.instantiate_nil]
+    · simpa [target] using
+        kernelDefControlEnv_callGrounded_nf_atoms st (sigAtom sig)
+          (defBodyOfQueryAtom (sigAtom sig) (declNameAtom name))
+    · simp [isEmbeddedOp]
+  rw [interpretFuel, hstep]
+  simp [interpretFuel, finItem, finalPair, isFinal, notReducibleA,
+    Metta.instantiate_nil, st']
+
+theorem mettaEval_kernelDefControlEnv_nf_def_body_of_eq_state
+    (fuel : Nat) (st : St) (sig : DIndGArtifactSig)
+    (name : Mettapedia.Languages.MeTTa.PureKernel.Syntax.DeclName)
+    (hStatic : st.world.selfExtra = []) :
+    mettaEval kernelDefControlEnv (fuel + 2) st []
+        (mExpr "nf" [sigAtom sig,
+          defBodyOfQueryAtom (sigAtom sig) (declNameAtom name)]) =
+      ([(mExpr "nf" [sigAtom sig,
+          defBodyOfQueryAtom (sigAtom sig) (declNameAtom name)], [])],
+        { counter := st.counter + nfDefCandidatePreWithIndGZeroIota.length + 1,
+          world := st.world }) := by
+  let target :=
+    mExpr "nf" [sigAtom sig,
+      defBodyOfQueryAtom (sigAtom sig) (declNameAtom name)]
+  let stRoot : St :=
+    { counter := st.counter + nfDefCandidatePreWithIndGZeroIota.length + 1,
+      world := st.world }
+  have hRoot :
+      interpretFuel kernelDefControlEnv (fuel + 1 + 1) st
+          [evalItemNil target] [] =
+        ([(notReducibleA, [])], stRoot) := by
+    simpa [target, stRoot, Nat.add_assoc] using
+      interpretFuel_kernelDefControlEnv_nf_def_body_of_root_eq
+        (fuel := fuel + 1) (st := st) sig name hStatic
+  have hNoErr :
+      (([sigAtom sig, defBodyOfQueryAtom (sigAtom sig) (declNameAtom name)].zip
+        [sigAtom sig, defBodyOfQueryAtom (sigAtom sig) (declNameAtom name)]).find?
+        (fun ho : Metta.Atom × Metta.Atom => ho.1.isError && ho.1 != ho.2)) = none := by
+    have hBody :
+        (defBodyOfQueryAtom (sigAtom sig) (declNameAtom name)).isError = false := by
+      simp [defBodyOfQueryAtom, mExpr, mSym, Metta.Atom.isError]
+    simp [sigAtom_isError_false, hBody]
+  have hExact :=
+    mettaEval_binary_expr_eq_of_quoted_args_and_notReducible_eq
+      (env := kernelDefControlEnv) (fuel := fuel + 1)
+      (st := st) (stRoot := stRoot)
+      (op := "nf") (x := sigAtom sig)
+      (y := defBodyOfQueryAtom (sigAtom sig) (declNameAtom name))
+      (kernelDefControlEnv_nf_typeMismatch_atoms st (sigAtom sig)
+        (defBodyOfQueryAtom (sigAtom sig) (declNameAtom name)))
+      kernelDefControlEnv_nf_argMask hNoErr
+      (by simpa [target, mExpr, mSym, stRoot, Nat.add_assoc] using hRoot)
+  simpa [target, mExpr, mSym, stRoot, Nat.add_assoc] using hExact
 
 private theorem queryOp_kernelDefControlEnv_nf_app_eq
     (st : St) (sig : DIndGArtifactSig)
@@ -30610,6 +34938,32 @@ private theorem renamedValueKeysFreshForValues_letRuleBindings_convReadoutAfterN
   · rcases hmem with ⟨rfl, rfl⟩
     simp [mVar, Metta.Atom.vars, hKeyNx]
 
+private theorem renamedValueKeysFreshForValues_letRuleBindings_convReadoutAfterNxNy
+    (st : St) (nyBinder : String) (nx ny : Metta.Atom)
+    (hNxClosed : nx.vars = [])
+    (hNyClosed : ny.vars = [])
+    (hFreshNy :
+      ∀ {v : String}, v = "template" ∨ v = "atom" ∨ v = "pattern" →
+        counterSuffix st.counter v ≠ nyBinder) :
+    RenamedValueKeysFreshForValues (counterSuffix st.counter)
+      (letRuleBindings nyBinder ny
+        (convReadoutAfterNxNy nx (mVar nyBinder))) := by
+  intro key hkey x a hmem
+  simp [letRuleBindings, bindingValueKeys] at hkey hmem
+  have hKeyNy : counterSuffix st.counter key ≠ nyBinder := by
+    rcases hkey with rfl | rfl | rfl
+    · exact hFreshNy (Or.inl rfl)
+    · exact hFreshNy (Or.inr (Or.inl rfl))
+    · exact hFreshNy (Or.inr (Or.inr rfl))
+  rcases hmem with hmem | hmem | hmem
+  · rcases hmem with ⟨rfl, rfl⟩
+    simp [convReadoutAfterNxNy, hNxClosed, mExpr, mSym, mVar,
+      mBool, Metta.Atom.vars, hKeyNy]
+  · rcases hmem with ⟨rfl, rfl⟩
+    simp [hNyClosed]
+  · rcases hmem with ⟨rfl, rfl⟩
+    simp [mVar, Metta.Atom.vars, hKeyNy]
+
 private theorem renamedValueKeysFreshForValues_letRuleBindings_convReadoutAfterBinderNamed
     (st : St) (nxBinder nyBinder : String)
     (sig : DIndGArtifactSig) (rawRight : DIndGArtifactTerm)
@@ -32094,6 +36448,7 @@ private theorem mettaEval_kernelDefControlEnv_convReadoutNamed_true_pair_implies
       (nx, nxBnd) ∈
         (mettaEval kernelDefControlEnv (fuel + 2) st []
           (nfQuery sig rawLeft)).1 ∧
+      nx.isError = false ∧
       (ny, nyBnd) ∈
         (mettaEval kernelDefControlEnv fuel stBefore []
           (nfQuery sig rawRight)).1 ∧
@@ -32209,7 +36564,7 @@ private theorem mettaEval_kernelDefControlEnv_convReadoutNamed_true_pair_implies
       tailPartBnd, tailStPart, tailPairs, tailStRoot,
       tailRoot, tailRootBnd, tailStBefore, tailRecBnd,
       hWorldBefore, hWorldTailBefore, by
-        simpa [qvars, template] using hNf, by
+        simpa [qvars, template] using hNf, hNxNoErr, by
         simpa [template] using hRight, by
         simpa [template] using hTailPartBnd, by
         simpa [qvars, recB, template] using hTailTrace,
@@ -32414,7 +36769,7 @@ theorem mettaEval_kernelDefControlEnv_convReadoutNamed_true_pair_implies_left_ri
     ⟨nx, nxBnd, ny, nyBnd, stBefore, tailTemplateEnv,
       tailPartBnd, tailStPart, tailPairs, tailStRoot, tailRoot,
       tailRootBnd, tailStBefore, tailRecBnd, hWorldBefore,
-      hWorldTailBefore, hLeft, hRight, hTailPartBnd, hTailTrace,
+      hWorldTailBefore, hLeft, _hNxNoErr, hRight, hTailPartBnd, hTailTrace,
       hTailRootMem, _hTailNotNR, _hTailNotSelf, hTailRec⟩
   let tailTemplate :=
     Metta.instantiate tailPartBnd
@@ -32493,6 +36848,416 @@ theorem mettaEval_kernelDefControlEnv_convReadoutNamed_true_pair_implies_left_ri
     ⟨nx, nxBnd, ny, nyBnd, stBefore, tailStBefore, tailValueEnv,
       hWorldBefore, hWorldTailBefore, hLeft, hRight, hTailValue⟩
 
+theorem mettaEval_kernelDefControlEnv_convReadoutNamed_true_pair_implies_left_right_nf_and_tail_value_exists_of_world_obligations_with_no_errors
+    (fuel : Nat) (st : St)
+    (nxBinder nyBinder : String)
+    (sig : DIndGArtifactSig) (rawLeft rawRight : DIndGArtifactTerm)
+    (outBnd : Metta.Bindings)
+    (hStatic :
+      ConvReadoutNamedNfExtractionObligations
+        (fuel + 2) st nxBinder nyBinder sig rawLeft rawRight)
+    (hWorld :
+      ConvReadoutNamedNfExtractionWorldObligations
+        (fuel + 2) st nxBinder nyBinder sig rawLeft rawRight)
+    (hmem :
+      (mBool true, outBnd) ∈
+        (mettaEval kernelDefControlEnv (((fuel + 2) + 2) + 1) st []
+          (convReadoutNamed nxBinder nyBinder sig rawLeft rawRight)).1) :
+    ∃ nx nxBnd ny nyBnd stBefore tailStBefore tailValueEnv,
+      stBefore.world = St.init.world ∧
+      tailStBefore.world = St.init.world ∧
+      (nx, nxBnd) ∈
+        (mettaEval kernelDefControlEnv ((fuel + 2) + 2) st []
+          (nfQuery sig rawLeft)).1 ∧
+      nx.isError = false ∧
+      (ny, nyBnd) ∈
+        (mettaEval kernelDefControlEnv (fuel + 2) stBefore []
+          (nfQuery sig rawRight)).1 ∧
+      ny.isError = false ∧
+      mBool true ∈
+        (mettaEval kernelDefControlEnv (fuel + 1) tailStBefore tailValueEnv
+          (convReadoutAfterNxNy nx ny)).1.map (·.1) := by
+  rcases
+      mettaEval_kernelDefControlEnv_convReadoutNamed_true_pair_implies_left_right_nf_and_tail_root_pair_exists_of_world_obligations
+        (fuel := fuel + 2) (st := st)
+        (nxBinder := nxBinder) (nyBinder := nyBinder)
+        (sig := sig) (rawLeft := rawLeft) (rawRight := rawRight)
+        (outBnd := outBnd) hStatic hWorld hmem with
+    ⟨nx, nxBnd, ny, nyBnd, stBefore, tailTemplateEnv,
+      tailPartBnd, tailStPart, tailPairs, tailStRoot, tailRoot,
+      tailRootBnd, tailStBefore, tailRecBnd, hWorldBefore,
+      hWorldTailBefore, hLeft, hNxNoErr, hRight, hTailPartBnd,
+      hTailTrace, hTailRootMem, _hTailNotNR, _hTailNotSelf,
+      hTailRec⟩
+  let tailTemplate :=
+    Metta.instantiate tailPartBnd
+      (convReadoutAfterNxNy nx (mVar nyBinder))
+  let tailValueEnv :=
+    restrictBnd (([ny, mVar nyBinder, tailTemplate, mSym "Empty"]).flatMap
+        Metta.Atom.vars)
+      ((Metta.Bindings.merge [] tailRootBnd).head?.getD tailRootBnd)
+  have hTailTrace' :
+      interpretFuel kernelDefControlEnv ((fuel + 2) + 1) tailStPart
+          [{ stack := atomToStack
+              (Metta.Atom.expr
+                [ Metta.Atom.sym "eval"
+                , Metta.Atom.expr
+                    (Metta.Atom.sym "let" ::
+                      [ mVar nyBinder
+                      , ny
+                      , tailTemplate ]) ]) [],
+             bnd := tailTemplateEnv }] [] =
+        (tailPairs, tailStRoot) := by
+    simpa [tailTemplate] using hTailTrace
+  rcases
+      hStatic.tailRootObligations nx ny tailTemplateEnv
+        (restrictBnd (([mVar nyBinder, nfQuery sig rawRight,
+          convReadoutAfterNxNy nx (mVar nyBinder)]).flatMap Metta.Atom.vars)
+          ((Metta.Bindings.merge tailPartBnd tailRootBnd).head?.getD
+            tailRootBnd))
+        tailPartBnd tailStPart tailPairs tailStRoot tailRoot tailRootBnd
+        tailStBefore tailRecBnd hTailTrace' hTailRootMem hTailRec with
+    ⟨hNyNonVar, hNyNoErr, hTailTemplateNoErr, hTailRootEq, hTailInst,
+      hTailMerge, hTailLoop, hTailTemplateEq⟩
+  have hTailTemplateEq' :
+      Metta.instantiate tailRootBnd (Metta.instantiate tailRootBnd tailTemplate) =
+        convReadoutAfterNxNy nx ny := by
+    simpa [tailTemplate] using hTailTemplateEq
+  have hRootNotNotReducible :
+      (Metta.instantiate tailRootBnd (Metta.instantiate tailRootBnd tailTemplate) ==
+        notReducibleA) = false := by
+    rw [hTailTemplateEq']
+    rfl
+  have hRootNotSelf :
+      (Metta.instantiate tailRootBnd (Metta.instantiate tailRootBnd tailTemplate) ==
+        mExpr "unify" [ny, mVar nyBinder, tailTemplate, mSym "Empty"]) = false := by
+    rw [hTailTemplateEq']
+    rfl
+  have hTailRecValue :
+      mBool true ∈
+        (mettaEval kernelDefControlEnv (fuel + 2) tailStBefore
+          (restrictBnd (([mVar nyBinder, nfQuery sig rawRight,
+            convReadoutAfterNxNy nx (mVar nyBinder)]).flatMap Metta.Atom.vars)
+            ((Metta.Bindings.merge tailPartBnd tailRootBnd).head?.getD
+              tailRootBnd))
+          tailRoot).1.map (·.1) :=
+    List.mem_map.mpr ⟨(mBool true, tailRecBnd), by
+      simpa using hTailRec, rfl⟩
+  have hTailValue :
+      mBool true ∈
+        (mettaEval kernelDefControlEnv (fuel + 1) tailStBefore
+          tailValueEnv (convReadoutAfterNxNy nx ny)).1.map (·.1) := by
+    have hTemplateValue :=
+      mettaEval_kernelDefControlEnv_recursive_unify_var_success_true_value_implies_template_value_bnd
+        (fuel := fuel) (st := tailStBefore)
+        (b :=
+          restrictBnd (([mVar nyBinder, nfQuery sig rawRight,
+            convReadoutAfterNxNy nx (mVar nyBinder)]).flatMap Metta.Atom.vars)
+            ((Metta.Bindings.merge tailPartBnd tailRootBnd).head?.getD
+              tailRootBnd))
+        (rootBnd := tailRootBnd)
+        (root := tailRoot) (nx := ny) (nxBinder := nyBinder)
+        (template := tailTemplate)
+        hTailRootEq hNyNonVar hNyNoErr hTailTemplateNoErr
+        hTailInst hTailMerge hTailLoop hRootNotNotReducible
+        hRootNotSelf hTailRecValue
+    simpa [tailValueEnv, hTailTemplateEq'] using hTemplateValue
+  exact
+    ⟨nx, nxBnd, ny, nyBnd, stBefore, tailStBefore, tailValueEnv,
+      hWorldBefore, hWorldTailBefore, hLeft, hNxNoErr, hRight,
+      hNyNoErr, hTailValue⟩
+
+theorem mettaEval_kernelDefControlEnv_convReadoutNamed_true_pair_implies_left_right_nf_and_tail_value_shape_exists_of_world_obligations_with_no_errors
+    (fuel : Nat) (st : St)
+    (nxBinder nyBinder : String)
+    (sig : DIndGArtifactSig) (rawLeft rawRight : DIndGArtifactTerm)
+    (outBnd : Metta.Bindings)
+    (hStatic :
+      ConvReadoutNamedNfExtractionObligations
+        (fuel + 2) st nxBinder nyBinder sig rawLeft rawRight)
+    (hWorld :
+      ConvReadoutNamedNfExtractionWorldObligations
+        (fuel + 2) st nxBinder nyBinder sig rawLeft rawRight)
+    (hmem :
+      (mBool true, outBnd) ∈
+        (mettaEval kernelDefControlEnv (((fuel + 2) + 2) + 1) st []
+          (convReadoutNamed nxBinder nyBinder sig rawLeft rawRight)).1) :
+    ∃ nx nxBnd ny nyBnd stBefore tailStBefore tailValueEnv
+        tailPartBnd tailRootBnd,
+      let tailTemplate :=
+        Metta.instantiate tailPartBnd
+          (convReadoutAfterNxNy nx (mVar nyBinder))
+      stBefore.world = St.init.world ∧
+      tailStBefore.world = St.init.world ∧
+      (nx, nxBnd) ∈
+        (mettaEval kernelDefControlEnv ((fuel + 2) + 2) st []
+          (nfQuery sig rawLeft)).1 ∧
+      nx.isError = false ∧
+      (ny, nyBnd) ∈
+        (mettaEval kernelDefControlEnv (fuel + 2) stBefore []
+          (nfQuery sig rawRight)).1 ∧
+      ny.isError = false ∧
+      tailValueEnv =
+        restrictBnd (([ny, mVar nyBinder, tailTemplate,
+            mSym "Empty"]).flatMap Metta.Atom.vars)
+          ((Metta.Bindings.merge [] tailRootBnd).head?.getD tailRootBnd) ∧
+      mBool true ∈
+        (mettaEval kernelDefControlEnv (fuel + 1) tailStBefore
+          tailValueEnv (convReadoutAfterNxNy nx ny)).1.map (·.1) := by
+  rcases
+      mettaEval_kernelDefControlEnv_convReadoutNamed_true_pair_implies_left_right_nf_and_tail_root_pair_exists_of_world_obligations
+        (fuel := fuel + 2) (st := st)
+        (nxBinder := nxBinder) (nyBinder := nyBinder)
+        (sig := sig) (rawLeft := rawLeft) (rawRight := rawRight)
+        (outBnd := outBnd) hStatic hWorld hmem with
+    ⟨nx, nxBnd, ny, nyBnd, stBefore, tailTemplateEnv,
+      tailPartBnd, tailStPart, tailPairs, tailStRoot, tailRoot,
+      tailRootBnd, tailStBefore, tailRecBnd, hWorldBefore,
+      hWorldTailBefore, hLeft, hNxNoErr, hRight, hTailPartBnd,
+      hTailTrace, hTailRootMem, _hTailNotNR, _hTailNotSelf,
+      hTailRec⟩
+  let tailTemplate :=
+    Metta.instantiate tailPartBnd
+      (convReadoutAfterNxNy nx (mVar nyBinder))
+  let tailValueEnv :=
+    restrictBnd (([ny, mVar nyBinder, tailTemplate, mSym "Empty"]).flatMap
+        Metta.Atom.vars)
+      ((Metta.Bindings.merge [] tailRootBnd).head?.getD tailRootBnd)
+  have hTailTrace' :
+      interpretFuel kernelDefControlEnv ((fuel + 2) + 1) tailStPart
+          [{ stack := atomToStack
+              (Metta.Atom.expr
+                [ Metta.Atom.sym "eval"
+                , Metta.Atom.expr
+                    (Metta.Atom.sym "let" ::
+                      [ mVar nyBinder
+                      , ny
+                      , tailTemplate ]) ]) [],
+             bnd := tailTemplateEnv }] [] =
+        (tailPairs, tailStRoot) := by
+    simpa [tailTemplate] using hTailTrace
+  rcases
+      hStatic.tailRootObligations nx ny tailTemplateEnv
+        (restrictBnd (([mVar nyBinder, nfQuery sig rawRight,
+          convReadoutAfterNxNy nx (mVar nyBinder)]).flatMap Metta.Atom.vars)
+          ((Metta.Bindings.merge tailPartBnd tailRootBnd).head?.getD
+            tailRootBnd))
+        tailPartBnd tailStPart tailPairs tailStRoot tailRoot tailRootBnd
+        tailStBefore tailRecBnd hTailTrace' hTailRootMem hTailRec with
+    ⟨hNyNonVar, hNyNoErr, hTailTemplateNoErr, hTailRootEq, hTailInst,
+      hTailMerge, hTailLoop, hTailTemplateEq⟩
+  have hTailTemplateEq' :
+      Metta.instantiate tailRootBnd (Metta.instantiate tailRootBnd tailTemplate) =
+        convReadoutAfterNxNy nx ny := by
+    simpa [tailTemplate] using hTailTemplateEq
+  have hRootNotNotReducible :
+      (Metta.instantiate tailRootBnd (Metta.instantiate tailRootBnd tailTemplate) ==
+        notReducibleA) = false := by
+    rw [hTailTemplateEq']
+    rfl
+  have hRootNotSelf :
+      (Metta.instantiate tailRootBnd (Metta.instantiate tailRootBnd tailTemplate) ==
+        mExpr "unify" [ny, mVar nyBinder, tailTemplate, mSym "Empty"]) = false := by
+    rw [hTailTemplateEq']
+    rfl
+  have hTailRecValue :
+      mBool true ∈
+        (mettaEval kernelDefControlEnv (fuel + 2) tailStBefore
+          (restrictBnd (([mVar nyBinder, nfQuery sig rawRight,
+            convReadoutAfterNxNy nx (mVar nyBinder)]).flatMap Metta.Atom.vars)
+            ((Metta.Bindings.merge tailPartBnd tailRootBnd).head?.getD
+              tailRootBnd))
+          tailRoot).1.map (·.1) :=
+    List.mem_map.mpr ⟨(mBool true, tailRecBnd), by
+      simpa using hTailRec, rfl⟩
+  have hTailValue :
+      mBool true ∈
+        (mettaEval kernelDefControlEnv (fuel + 1) tailStBefore
+          tailValueEnv (convReadoutAfterNxNy nx ny)).1.map (·.1) := by
+    have hTemplateValue :=
+      mettaEval_kernelDefControlEnv_recursive_unify_var_success_true_value_implies_template_value_bnd
+        (fuel := fuel) (st := tailStBefore)
+        (b :=
+          restrictBnd (([mVar nyBinder, nfQuery sig rawRight,
+            convReadoutAfterNxNy nx (mVar nyBinder)]).flatMap Metta.Atom.vars)
+            ((Metta.Bindings.merge tailPartBnd tailRootBnd).head?.getD
+              tailRootBnd))
+        (rootBnd := tailRootBnd)
+        (root := tailRoot) (nx := ny) (nxBinder := nyBinder)
+        (template := tailTemplate)
+        hTailRootEq hNyNonVar hNyNoErr hTailTemplateNoErr
+        hTailInst hTailMerge hTailLoop hRootNotNotReducible
+        hRootNotSelf hTailRecValue
+    simpa [tailValueEnv, hTailTemplateEq'] using hTemplateValue
+  exact
+    ⟨nx, nxBnd, ny, nyBnd, stBefore, tailStBefore, tailValueEnv,
+      tailPartBnd, tailRootBnd, hWorldBefore, hWorldTailBefore,
+      hLeft, hNxNoErr, hRight, hNyNoErr, rfl, hTailValue⟩
+
+theorem mettaEval_kernelDefControlEnv_convReadoutNamed_true_pair_implies_left_right_nf_and_tail_value_shape_root_exists_of_world_obligations_with_no_errors
+    (fuel : Nat) (st : St)
+    (nxBinder nyBinder : String)
+    (sig : DIndGArtifactSig) (rawLeft rawRight : DIndGArtifactTerm)
+    (outBnd : Metta.Bindings)
+    (hStatic :
+      ConvReadoutNamedNfExtractionObligations
+        (fuel + 2) st nxBinder nyBinder sig rawLeft rawRight)
+    (hWorld :
+      ConvReadoutNamedNfExtractionWorldObligations
+        (fuel + 2) st nxBinder nyBinder sig rawLeft rawRight)
+    (hmem :
+      (mBool true, outBnd) ∈
+        (mettaEval kernelDefControlEnv (((fuel + 2) + 2) + 1) st []
+          (convReadoutNamed nxBinder nyBinder sig rawLeft rawRight)).1) :
+    ∃ nx nxBnd ny nyBnd stBefore tailStBefore tailValueEnv
+        tailTemplateEnv tailPartBnd tailStPart tailPairs tailStRoot
+        tailRoot tailRootBnd tailRecBnd,
+      let tailTemplate :=
+        Metta.instantiate tailPartBnd
+          (convReadoutAfterNxNy nx (mVar nyBinder))
+      let tailRecursiveEnv :=
+        restrictBnd (([mVar nyBinder, nfQuery sig rawRight,
+          convReadoutAfterNxNy nx (mVar nyBinder)]).flatMap
+          Metta.Atom.vars)
+          ((Metta.Bindings.merge tailPartBnd tailRootBnd).head?.getD
+            tailRootBnd)
+      stBefore.world = St.init.world ∧
+      tailStBefore.world = St.init.world ∧
+      (nx, nxBnd) ∈
+        (mettaEval kernelDefControlEnv ((fuel + 2) + 2) st []
+          (nfQuery sig rawLeft)).1 ∧
+      nx.isError = false ∧
+      (ny, nyBnd) ∈
+        (mettaEval kernelDefControlEnv (fuel + 2) stBefore []
+          (nfQuery sig rawRight)).1 ∧
+      ny.isError = false ∧
+      tailValueEnv =
+        restrictBnd (([ny, mVar nyBinder, tailTemplate,
+            mSym "Empty"]).flatMap Metta.Atom.vars)
+          ((Metta.Bindings.merge [] tailRootBnd).head?.getD tailRootBnd) ∧
+      tailPartBnd =
+        restrictBnd (([mVar nyBinder, nfQuery sig rawRight,
+          convReadoutAfterNxNy nx (mVar nyBinder)]).flatMap
+          Metta.Atom.vars)
+          ((Metta.Bindings.merge [] nyBnd).head?.getD nyBnd) ∧
+      interpretFuel kernelDefControlEnv ((fuel + 2) + 1) tailStPart
+          [{ stack := atomToStack
+              (Metta.Atom.expr
+                [ Metta.Atom.sym "eval"
+                , Metta.Atom.expr
+                    (Metta.Atom.sym "let" ::
+                      [ mVar nyBinder
+                      , ny
+                      , tailTemplate ]) ]) [],
+             bnd := tailTemplateEnv }] [] =
+        (tailPairs, tailStRoot) ∧
+      (tailRoot, tailRootBnd) ∈ tailPairs ∧
+      tailRoot =
+        mExpr "unify" [ny, mVar nyBinder, tailTemplate, mSym "Empty"] ∧
+      Metta.instantiate tailRecursiveEnv
+          (mExpr "unify" [ny, mVar nyBinder, tailTemplate, mSym "Empty"]) =
+        mExpr "unify" [ny, mVar nyBinder, tailTemplate, mSym "Empty"] ∧
+      Metta.Bindings.merge tailRecursiveEnv
+          [Metta.BindingRel.val nyBinder ny] =
+        [tailRootBnd] ∧
+      Metta.Bindings.hasLoop tailRootBnd = false ∧
+      Metta.instantiate tailRootBnd (Metta.instantiate tailRootBnd tailTemplate) =
+        convReadoutAfterNxNy nx ny ∧
+      (mBool true, tailRecBnd) ∈
+        (mettaEval kernelDefControlEnv (fuel + 2) tailStBefore
+          tailRecursiveEnv tailRoot).1 ∧
+      mBool true ∈
+        (mettaEval kernelDefControlEnv (fuel + 1) tailStBefore
+          tailValueEnv (convReadoutAfterNxNy nx ny)).1.map (·.1) := by
+  rcases
+      mettaEval_kernelDefControlEnv_convReadoutNamed_true_pair_implies_left_right_nf_and_tail_root_pair_exists_of_world_obligations
+        (fuel := fuel + 2) (st := st)
+        (nxBinder := nxBinder) (nyBinder := nyBinder)
+        (sig := sig) (rawLeft := rawLeft) (rawRight := rawRight)
+        (outBnd := outBnd) hStatic hWorld hmem with
+    ⟨nx, nxBnd, ny, nyBnd, stBefore, tailTemplateEnv,
+      tailPartBnd, tailStPart, tailPairs, tailStRoot, tailRoot,
+      tailRootBnd, tailStBefore, tailRecBnd, hWorldBefore,
+      hWorldTailBefore, hLeft, hNxNoErr, hRight, hTailPartBnd,
+      hTailTrace, hTailRootMem, _hTailNotNR, _hTailNotSelf,
+      hTailRec⟩
+  let tailTemplate :=
+    Metta.instantiate tailPartBnd
+      (convReadoutAfterNxNy nx (mVar nyBinder))
+  let tailRecursiveEnv :=
+    restrictBnd (([mVar nyBinder, nfQuery sig rawRight,
+      convReadoutAfterNxNy nx (mVar nyBinder)]).flatMap Metta.Atom.vars)
+      ((Metta.Bindings.merge tailPartBnd tailRootBnd).head?.getD
+        tailRootBnd)
+  let tailValueEnv :=
+    restrictBnd (([ny, mVar nyBinder, tailTemplate, mSym "Empty"]).flatMap
+        Metta.Atom.vars)
+      ((Metta.Bindings.merge [] tailRootBnd).head?.getD tailRootBnd)
+  have hTailTrace' :
+      interpretFuel kernelDefControlEnv ((fuel + 2) + 1) tailStPart
+          [{ stack := atomToStack
+              (Metta.Atom.expr
+                [ Metta.Atom.sym "eval"
+                , Metta.Atom.expr
+                    (Metta.Atom.sym "let" ::
+                      [ mVar nyBinder
+                      , ny
+                      , tailTemplate ]) ]) [],
+             bnd := tailTemplateEnv }] [] =
+        (tailPairs, tailStRoot) := by
+    simpa [tailTemplate] using hTailTrace
+  rcases
+      hStatic.tailRootObligations nx ny tailTemplateEnv tailRecursiveEnv
+        tailPartBnd tailStPart tailPairs tailStRoot tailRoot tailRootBnd
+        tailStBefore tailRecBnd hTailTrace' hTailRootMem
+        (by simpa [tailRecursiveEnv] using hTailRec) with
+    ⟨hNyNonVar, hNyNoErr, hTailTemplateNoErr, hTailRootEq, hTailInst,
+      hTailMerge, hTailLoop, hTailTemplateEq⟩
+  have hTailTemplateEq' :
+      Metta.instantiate tailRootBnd (Metta.instantiate tailRootBnd tailTemplate) =
+        convReadoutAfterNxNy nx ny := by
+    simpa [tailTemplate] using hTailTemplateEq
+  have hRootNotNotReducible :
+      (Metta.instantiate tailRootBnd (Metta.instantiate tailRootBnd tailTemplate) ==
+        notReducibleA) = false := by
+    rw [hTailTemplateEq']
+    rfl
+  have hRootNotSelf :
+      (Metta.instantiate tailRootBnd (Metta.instantiate tailRootBnd tailTemplate) ==
+        mExpr "unify" [ny, mVar nyBinder, tailTemplate, mSym "Empty"]) = false := by
+    rw [hTailTemplateEq']
+    rfl
+  have hTailRecValue :
+      mBool true ∈
+        (mettaEval kernelDefControlEnv (fuel + 2) tailStBefore
+          tailRecursiveEnv tailRoot).1.map (·.1) :=
+    List.mem_map.mpr ⟨(mBool true, tailRecBnd), by
+      simpa [tailRecursiveEnv] using hTailRec, rfl⟩
+  have hTailValue :
+      mBool true ∈
+        (mettaEval kernelDefControlEnv (fuel + 1) tailStBefore
+          tailValueEnv (convReadoutAfterNxNy nx ny)).1.map (·.1) := by
+    have hTemplateValue :=
+      mettaEval_kernelDefControlEnv_recursive_unify_var_success_true_value_implies_template_value_bnd
+        (fuel := fuel) (st := tailStBefore)
+        (b := tailRecursiveEnv)
+        (rootBnd := tailRootBnd)
+        (root := tailRoot) (nx := ny) (nxBinder := nyBinder)
+        (template := tailTemplate)
+        hTailRootEq hNyNonVar hNyNoErr hTailTemplateNoErr
+        hTailInst hTailMerge hTailLoop hRootNotNotReducible
+        hRootNotSelf hTailRecValue
+    simpa [tailValueEnv, hTailTemplateEq'] using hTemplateValue
+  exact
+    ⟨nx, nxBnd, ny, nyBnd, stBefore, tailStBefore, tailValueEnv,
+      tailTemplateEnv, tailPartBnd, tailStPart, tailPairs, tailStRoot,
+      tailRoot, tailRootBnd, tailRecBnd,
+      hWorldBefore, hWorldTailBefore, hLeft, hNxNoErr, hRight, hNyNoErr,
+      rfl, by simpa [tailRecursiveEnv] using hTailPartBnd,
+      hTailTrace', hTailRootMem, hTailRootEq, hTailInst, hTailMerge,
+      hTailLoop, hTailTemplateEq',
+      by simpa [tailRecursiveEnv] using hTailRec, hTailValue⟩
+
 theorem mettaEval_kernelDefControlEnv_convReadoutNamed_true_value_implies_left_right_nf_values_and_tail_value_exists_of_world_obligations
     (fuel : Nat) (st : St)
     (nxBinder nyBinder : String)
@@ -32535,6 +37300,53 @@ theorem mettaEval_kernelDefControlEnv_convReadoutNamed_true_value_implies_left_r
       hWorldBefore, hWorldTailBefore,
       List.mem_map.mpr ⟨(nx, nxBnd), hLeft, rfl⟩,
       List.mem_map.mpr ⟨(ny, nyBnd), hRight, rfl⟩,
+      hTailValue⟩
+
+theorem mettaEval_kernelDefControlEnv_convReadoutNamed_true_value_implies_left_right_nf_values_and_tail_value_exists_of_world_obligations_with_no_errors
+    (fuel : Nat) (st : St)
+    (nxBinder nyBinder : String)
+    (sig : DIndGArtifactSig) (rawLeft rawRight : DIndGArtifactTerm)
+    (hStatic :
+      ConvReadoutNamedNfExtractionObligations
+        (fuel + 2) st nxBinder nyBinder sig rawLeft rawRight)
+    (hWorld :
+      ConvReadoutNamedNfExtractionWorldObligations
+        (fuel + 2) st nxBinder nyBinder sig rawLeft rawRight)
+    (hmem :
+      mBool true ∈
+        (mettaEval kernelDefControlEnv (((fuel + 2) + 2) + 1) st []
+          (convReadoutNamed nxBinder nyBinder sig rawLeft rawRight)).1.map (·.1)) :
+    ∃ nx ny stBefore tailStBefore tailValueEnv,
+      stBefore.world = St.init.world ∧
+      tailStBefore.world = St.init.world ∧
+      nx ∈
+        (mettaEval kernelDefControlEnv ((fuel + 2) + 2) st []
+          (nfQuery sig rawLeft)).1.map (·.1) ∧
+      nx.isError = false ∧
+      ny ∈
+        (mettaEval kernelDefControlEnv (fuel + 2) stBefore []
+          (nfQuery sig rawRight)).1.map (·.1) ∧
+      ny.isError = false ∧
+      mBool true ∈
+        (mettaEval kernelDefControlEnv (fuel + 1) tailStBefore tailValueEnv
+          (convReadoutAfterNxNy nx ny)).1.map (·.1) := by
+  rcases List.mem_map.mp hmem with ⟨⟨a, outBnd⟩, hpair, ha⟩
+  dsimp at ha
+  subst a
+  rcases
+      mettaEval_kernelDefControlEnv_convReadoutNamed_true_pair_implies_left_right_nf_and_tail_value_exists_of_world_obligations_with_no_errors
+        (fuel := fuel) (st := st)
+        (nxBinder := nxBinder) (nyBinder := nyBinder)
+        (sig := sig) (rawLeft := rawLeft) (rawRight := rawRight)
+        (outBnd := outBnd) hStatic hWorld hpair with
+    ⟨nx, nxBnd, ny, nyBnd, stBefore, tailStBefore, tailValueEnv,
+      hWorldBefore, hWorldTailBefore, hLeft, hNxNoErr, hRight,
+      hNyNoErr, hTailValue⟩
+  exact
+    ⟨nx, ny, stBefore, tailStBefore, tailValueEnv,
+      hWorldBefore, hWorldTailBefore,
+      List.mem_map.mpr ⟨(nx, nxBnd), hLeft, rfl⟩, hNxNoErr,
+      List.mem_map.mpr ⟨(ny, nyBnd), hRight, rfl⟩, hNyNoErr,
       hTailValue⟩
 
 theorem mettaEval_kernelDefControlEnv_convReadoutNamed_true_value_implies_left_right_nf_values_and_tail_value_exists_of_obligations
@@ -39696,8 +44508,6 @@ theorem mettaEval_kernelDefControlEnv_nonWitness_body_if_false_nf_mem_with_ambie
     simp [hCondClosed, hThenClosed, hElseClosed]
   have hInstTarget : Metta.instantiate ambient target = target := by
     exact instantiate_eq_self_of_vars_nil ambient hTargetClosed
-  have hInstTarget : Metta.instantiate ambient target = target := by
-    exact instantiate_eq_self_of_vars_nil ambient hTargetClosed
   have hCond :
       mettaEval kernelDefControlEnv (fuel + 3) st [] cond =
         ([(mBool false, [])], stCond) := by
@@ -44896,6 +49706,364 @@ private theorem mettaEval_value_mem_of_pair_mem
     a ∈ (mettaEval env fuel st bnd0 expr).1.map (·.1) := by
   exact List.mem_map.mpr ⟨(a, bnd), h, rfl⟩
 
+private theorem foldl_state_world_eq
+    {α β : Type} (f : β × St → α → β × St)
+    (hstep : ∀ (acc : β × St) (a : α),
+      (f acc a).2.world = acc.2.world)
+    (xs : List α) (acc : β × St) :
+    (xs.foldl f acc).2.world = acc.2.world := by
+  induction xs generalizing acc with
+  | nil =>
+      rfl
+  | cons x xs ih =>
+      exact (ih (f acc x)).trans (hstep acc x)
+
+private theorem evalOp_world
+    (env : MinEnv) (st : St) (prev : Stack)
+    (x : Metta.Atom) (b : Metta.Bindings) :
+    (evalOp env st prev x b).2.world = st.world := by
+  dsimp [evalOp]
+  generalize hx : Metta.instantiate b x = x'
+  cases x' with
+  | sym s =>
+      by_cases hEmbedded : isEmbeddedOp (Metta.Atom.sym s) = true
+      · simp [hEmbedded]
+      · simp [hEmbedded, queryOp_world]
+  | var v =>
+      by_cases hEmbedded : isEmbeddedOp (Metta.Atom.var v) = true
+      · simp [hEmbedded]
+      · simp [hEmbedded, queryOp_world]
+  | gnd g =>
+      by_cases hEmbedded : isEmbeddedOp (Metta.Atom.gnd g) = true
+      · simp [hEmbedded]
+      · simp [hEmbedded, queryOp_world]
+  | expr xs =>
+      cases xs with
+      | nil =>
+          by_cases hEmbedded : isEmbeddedOp (Metta.Atom.expr []) = true
+          · simp [hEmbedded]
+          · simp [hEmbedded, queryOp_world]
+      | cons head tail =>
+          cases head with
+          | sym op =>
+              cases hCall :
+                  callGrounded env.gt op
+                    (tail.map
+                      (fun a => resolveStates st.world (subTokens st.world a))) with
+              | ok results =>
+                  simp [hCall]
+              | runtimeError msg =>
+                  simp [hCall]
+              | incorrectArgument msg =>
+                  simp [hCall]
+              | noReduce =>
+                  by_cases hEmbedded :
+                      isEmbeddedOp (Metta.Atom.expr (Metta.Atom.sym op :: tail)) = true
+                  · simp [hCall, hEmbedded]
+                  · simp [hCall, hEmbedded, queryOp_world]
+          | var v =>
+              by_cases hEmbedded :
+                  isEmbeddedOp (Metta.Atom.expr (Metta.Atom.var v :: tail)) = true
+              · simp [hEmbedded]
+              · simp [hEmbedded, queryOp_world]
+          | gnd g =>
+              by_cases hEmbedded :
+                  isEmbeddedOp (Metta.Atom.expr (Metta.Atom.gnd g :: tail)) = true
+              · simp [hEmbedded]
+              · simp [hEmbedded, queryOp_world]
+          | expr ys =>
+              by_cases hEmbedded :
+                  isEmbeddedOp (Metta.Atom.expr (Metta.Atom.expr ys :: tail)) = true
+              · simp [hEmbedded]
+              · simp [hEmbedded, queryOp_world]
+
+private theorem interpretStack1_eval_world
+    (env : MinEnv) (fuel : Nat) (st : St) (prev : Stack)
+    (x : Metta.Atom) (b : Metta.Bindings) :
+    (interpretStack1 env fuel st
+      { stack := atomToStack (Metta.Atom.expr [Metta.Atom.sym "eval", x]) prev,
+        bnd := b }).2.world = st.world := by
+  simp [atomToStack, interpretStack1, evalOp_world]
+
+private theorem interpretFuel_zero_world
+    (env : MinEnv) (st : St) (work : List Item)
+    (done : List (Metta.Atom × Metta.Bindings)) :
+    (interpretFuel env 0 st work done).2.world = st.world := by
+  rw [Metta.Minimal.interpretFuel.eq_def]
+  cases work <;> rfl
+
+private theorem interpretFuel_one_eval_world
+    (env : MinEnv) (st : St) (x : Metta.Atom) (b : Metta.Bindings) :
+    (interpretFuel env 1 st
+      [{ stack := atomToStack (Metta.Atom.expr [Metta.Atom.sym "eval", x]) [],
+         bnd := b }] []).2.world = st.world := by
+  rw [Metta.Minimal.interpretFuel.eq_def]
+  simp [interpretFuel_zero_world, interpretStack1_eval_world]
+
+private theorem mettaEval_zero_world
+    (env : MinEnv) (st : St) (bnd0 : Metta.Bindings) (expr : Metta.Atom) :
+    (mettaEval env 0 st bnd0 expr).2.world = st.world := by
+  rw [Metta.Minimal.mettaEval.eq_1]
+
+private theorem mettaEval_expr_arg_fold_zero_world
+    (env : MinEnv) (st : St) (op : String) (args : List Metta.Atom) :
+    (List.foldl
+        (fun (acc : List (List Metta.Atom × Metta.Bindings) × St)
+            (ae : Metta.Atom × Bool) =>
+          List.foldl
+            (fun (acc2 : List (List Metta.Atom × Metta.Bindings) × St)
+                (part : List Metta.Atom × Metta.Bindings) =>
+              if ae.2 = true then
+                match mettaEval env 0 acc2.2 part.2 ae.1 with
+                | (ps, st') =>
+                    (acc2.1 ++
+                        ps.map
+                          (fun p =>
+                            (part.1 ++ [p.1],
+                              restrictBnd (args.flatMap Metta.Atom.vars)
+                                ((Metta.Bindings.merge part.2 p.2).head?.getD p.2))),
+                      st')
+              else
+                (acc2.1 ++
+                    [(part.1 ++ [Metta.instantiate part.2 ae.1], part.2)],
+                  acc2.2))
+            ([], acc.2) acc.1)
+        ([([], [])], st) (args.zip (argMask env op args.length))).2.world =
+      st.world := by
+  apply foldl_state_world_eq
+  intro acc ae
+  apply foldl_state_world_eq
+  intro acc2 part
+  by_cases hArgEval : ae.2 = true
+  · simp [hArgEval, mettaEval_zero_world]
+  · simp [hArgEval]
+
+private theorem mettaEval_expr_part_fold_zero_world
+    (env : MinEnv) (queryVars : List String)
+    (op : String) (args : List Metta.Atom) (bnd : Metta.Bindings)
+    (parts : List (List Metta.Atom × Metta.Bindings))
+    (acc : List (Metta.Atom × Metta.Bindings) × St) :
+    (parts.foldl (mettaEvalExprPartFoldStep env 0 queryVars op args bnd) acc).2.world =
+      acc.2.world := by
+  apply foldl_state_world_eq
+  intro acc0 part
+  let P : St → Prop := fun st' => st'.world = acc0.2.world
+  have hroot :
+      ∀ (acc1 : List (Metta.Atom × Metta.Bindings) × St)
+        (part1 : List Metta.Atom × Metta.Bindings),
+        P acc1.2 →
+          P (interpretFuel env (0 + 1) acc1.2
+            [{ stack := atomToStack (Metta.Atom.expr [Metta.Atom.sym "eval",
+                Metta.Atom.expr (Metta.Atom.sym op :: part1.1)]) [], bnd := bnd }] []).2 := by
+    intro acc1 part1 hP
+    exact
+      (interpretFuel_one_eval_world env acc1.2
+        (Metta.Atom.expr (Metta.Atom.sym op :: part1.1)) bnd).trans hP
+  have hrec :
+      ∀ (partBnd : Metta.Bindings)
+        (acc1 : List (Metta.Atom × Metta.Bindings) × St)
+        (p : Metta.Atom × Metta.Bindings),
+        P acc1.2 →
+          P (mettaEval env 0 acc1.2
+            (restrictBnd queryVars
+              ((Metta.Bindings.merge partBnd p.2).head?.getD p.2))
+            p.1).2 := by
+    intro partBnd acc1 p hP
+    exact
+      (mettaEval_zero_world env acc1.2
+        (restrictBnd queryVars
+          ((Metta.Bindings.merge partBnd p.2).head?.getD p.2))
+        p.1).trans hP
+  exact
+    mettaEvalExprPartFoldStep_preserves_state_pred_of_root_local
+      env 0 queryVars op args bnd P hroot hrec acc0 part rfl
+
+private theorem mettaEval_bare_root_fold_zero_world
+    (env : MinEnv) (w : Metta.Atom) (bnd0 : Metta.Bindings)
+    (pairs : List (Metta.Atom × Metta.Bindings))
+    (acc : List (Metta.Atom × Metta.Bindings) × St) :
+    (pairs.foldl
+        (fun (a2 : List (Metta.Atom × Metta.Bindings) × St)
+            (p : Metta.Atom × Metta.Bindings) =>
+          if (p.1 == notReducibleA || p.1 == w) = true then
+            (a2.1 ++ [(w, bnd0)], a2.2)
+          else if (returnsAtom env w && !isEmbeddedOp p.1) = true then
+            (a2.1 ++ [p], a2.2)
+          else
+            match mettaEval env 0 a2.2 p.2 p.1 with
+            | (more, st3) => (a2.1 ++ more, st3))
+        acc).2.world = acc.2.world := by
+  apply foldl_state_world_eq
+  intro a2 p
+  by_cases hFirst : (p.1 == notReducibleA || p.1 == w) = true
+  · simp [hFirst]
+  ·
+    by_cases hReturns : (returnsAtom env w && !isEmbeddedOp p.1) = true
+    · simp [hFirst, hReturns]
+    · simp [hFirst, hReturns, mettaEval_zero_world]
+
+private theorem mettaEval_tuple_fold_zero_world
+    (env : MinEnv) (whole : Metta.Atom)
+    (pairs : List (Metta.Atom × Metta.Bindings))
+    (acc : List (Metta.Atom × Metta.Bindings) × St) :
+    (pairs.foldl
+        (fun (a2 : List (Metta.Atom × Metta.Bindings) × St)
+            (p : Metta.Atom × Metta.Bindings) =>
+          if (p.1 == whole) = true then
+            (a2.1 ++ [p], a2.2)
+          else
+            match mettaEval env 0 a2.2 p.2 p.1 with
+            | (more, st') => (a2.1 ++ more, st'))
+        acc).2.world = acc.2.world := by
+  apply foldl_state_world_eq
+  intro a2 p
+  by_cases hSelf : (p.1 == whole) = true
+  · simp [hSelf]
+  · simp [hSelf, mettaEval_zero_world]
+
+private theorem mettaEval_recursive_fold_zero_world
+    (env : MinEnv) (pairs : List (Metta.Atom × Metta.Bindings))
+    (acc : List (Metta.Atom × Metta.Bindings) × St) :
+    (pairs.foldl
+        (fun (a2 : List (Metta.Atom × Metta.Bindings) × St)
+            (p : Metta.Atom × Metta.Bindings) =>
+          match mettaEval env 0 a2.2 p.2 p.1 with
+          | (more, st') => (a2.1 ++ more, st'))
+        acc).2.world = acc.2.world := by
+  apply foldl_state_world_eq
+  intro a2 p
+  simp [mettaEval_zero_world]
+
+private theorem mettaEval_fuel_one_world
+    (env : MinEnv) (st : St) (bnd0 : Metta.Bindings) (expr : Metta.Atom) :
+    (mettaEval env 1 st bnd0 expr).2.world = st.world := by
+  rw [Metta.Minimal.mettaEval.eq_2]
+  split
+  · rename_i _ op args _
+    cases hType : typeMismatch env st.world op args with
+    | some mismatch =>
+        rcases mismatch with ⟨pos, expected, actual⟩
+        rfl
+    | none =>
+        let queryVars := args.flatMap Metta.Atom.vars
+        let argFold : List (List Metta.Atom × Metta.Bindings) × St :=
+          List.foldl
+            (fun (acc : List (List Metta.Atom × Metta.Bindings) × St)
+                (ae : Metta.Atom × Bool) =>
+              List.foldl
+                (fun (acc2 : List (List Metta.Atom × Metta.Bindings) × St)
+                    (part : List Metta.Atom × Metta.Bindings) =>
+                  if ae.2 = true then
+                    match mettaEval env 0 acc2.2 part.2 ae.1 with
+                    | (ps, st') =>
+                        (acc2.1 ++
+                            ps.map
+                              (fun p =>
+                                (part.1 ++ [p.1],
+                                  restrictBnd queryVars
+                                    ((Metta.Bindings.merge part.2 p.2).head?.getD p.2))),
+                          st')
+                  else
+                    (acc2.1 ++
+                        [(part.1 ++ [Metta.instantiate part.2 ae.1], part.2)],
+                      acc2.2))
+                ([], acc.2) acc.1)
+            ([([], [])], st) (args.zip (argMask env op args.length))
+        have hArgWorld : argFold.2.world = st.world := by
+          simpa [argFold, queryVars] using
+            mettaEval_expr_arg_fold_zero_world env st op args
+        have hPartWorld :
+            (argFold.1.foldl
+              (mettaEvalExprPartFoldStep env 0 queryVars op args bnd0)
+              ([], argFold.2)).2.world = argFold.2.world :=
+          mettaEval_expr_part_fold_zero_world
+            env queryVars op args bnd0 argFold.1 ([], argFold.2)
+        simp
+        change
+          (argFold.1.foldl
+            (mettaEvalExprPartFoldStep env 0 queryVars op args bnd0)
+            ([], argFold.2)).2.world = st.world
+        exact hPartWorld.trans hArgWorld
+  · rename_i _ f args _ _
+    let whole := Metta.Atom.expr (f :: args)
+    cases hRoot :
+        interpretFuel env 1 st
+          [{ stack := atomToStack (Metta.Atom.expr [Metta.Atom.sym "eval", whole]) [],
+             bnd := bnd0 }] [] with
+    | mk ruleRes st1 =>
+        have hRootWorld : st1.world = st.world := by
+          have h := interpretFuel_one_eval_world env st whole bnd0
+          rw [hRoot] at h
+          exact h
+        let reduced :=
+          ruleRes.filter (fun p => p.1 != whole && p.1 != notReducibleA)
+        by_cases hEmpty : reduced.isEmpty = true
+        · cases hTuple :
+            interpretFuel env 1 st1
+              [{ stack :=
+                  atomToStack
+                    (Metta.Atom.expr
+                      [Metta.Atom.sym "eval",
+                        Metta.Atom.expr
+                          [Metta.Atom.sym "interpret-tuple", whole, Metta.Atom.sym "&self"]])
+                    [],
+                 bnd := bnd0 }] [] with
+          | mk tupleRes st2 =>
+              have hTupleWorld : st2.world = st1.world := by
+                have h := interpretFuel_one_eval_world env st1
+                  (Metta.Atom.expr
+                    [Metta.Atom.sym "interpret-tuple", whole, Metta.Atom.sym "&self"])
+                  bnd0
+                rw [hTuple] at h
+                exact h
+              have hFoldWorld :
+                  (tupleRes.foldl
+                    (fun (a2 : List (Metta.Atom × Metta.Bindings) × St)
+                        (p : Metta.Atom × Metta.Bindings) =>
+                      if (p.1 == whole) = true then
+                        (a2.1 ++ [p], a2.2)
+                      else
+                        match mettaEval env 0 a2.2 p.2 p.1 with
+                        | (more, st') => (a2.1 ++ more, st'))
+                    ([], st2)).2.world = st2.world :=
+                mettaEval_tuple_fold_zero_world env whole tupleRes ([], st2)
+              simpa [whole, hRoot, reduced, hEmpty, hTuple] using
+                (hFoldWorld.trans (hTupleWorld.trans hRootWorld))
+        · have hFoldWorld :
+              (reduced.foldl
+                (fun (a2 : List (Metta.Atom × Metta.Bindings) × St)
+                    (p : Metta.Atom × Metta.Bindings) =>
+                  match mettaEval env 0 a2.2 p.2 p.1 with
+                  | (more, st') => (a2.1 ++ more, st'))
+                ([], st1)).2.world = st1.world :=
+            mettaEval_recursive_fold_zero_world env reduced ([], st1)
+          simpa [whole, hRoot, reduced, hEmpty] using
+            (hFoldWorld.trans hRootWorld)
+  · let w := Metta.instantiate bnd0 expr
+    cases hRoot :
+        interpretFuel env 1 st
+          [{ stack := atomToStack (Metta.Atom.expr [Metta.Atom.sym "eval", w]) [],
+             bnd := bnd0 }] [] with
+    | mk pairs st1 =>
+        have hRootWorld : st1.world = st.world := by
+          have h := interpretFuel_one_eval_world env st w bnd0
+          rw [hRoot] at h
+          exact h
+        have hFoldWorld :
+            (pairs.foldl
+              (fun (a2 : List (Metta.Atom × Metta.Bindings) × St)
+                  (p : Metta.Atom × Metta.Bindings) =>
+                if (p.1 == notReducibleA || p.1 == w) = true then
+                  (a2.1 ++ [(w, bnd0)], a2.2)
+                else if (returnsAtom env w && !isEmbeddedOp p.1) = true then
+                  (a2.1 ++ [p], a2.2)
+                else
+                  match mettaEval env 0 a2.2 p.2 p.1 with
+                  | (more, st3) => (a2.1 ++ more, st3))
+              ([], st1)).2.world = st1.world :=
+            mettaEval_bare_root_fold_zero_world env w bnd0 pairs ([], st1)
+        simpa [w, hRoot] using hFoldWorld.trans hRootWorld
+
 private theorem mettaEval_zero_true_pair_false
     {env : MinEnv} {st : St} {bnd0 : Metta.Bindings}
     {expr : Metta.Atom} {outBnd : Metta.Bindings}
@@ -44903,6 +50071,561 @@ private theorem mettaEval_zero_true_pair_false
     False := by
   rw [Metta.Minimal.mettaEval.eq_1] at h
   simp [mBool] at h
+
+private theorem mettaEval_zero_output_isError
+    {env : MinEnv} {st : St} {bnd0 : Metta.Bindings}
+    {expr out : Metta.Atom}
+    (h : out ∈ (mettaEval env 0 st bnd0 expr).1.map (·.1)) :
+    out.isError = true := by
+  rw [Metta.Minimal.mettaEval.eq_1] at h
+  simp only [List.map_cons, List.map_nil, List.mem_singleton] at h
+  subst out
+  rfl
+
+private theorem mettaEvalExprRootFold_bnd_nil_of_queryVars_nil
+    (env : MinEnv) (fuel : Nat) (w : Metta.Atom)
+    (pairs : List (Metta.Atom × Metta.Bindings))
+    (acc : List (Metta.Atom × Metta.Bindings) × St)
+    {out : Metta.Atom} {outBnd : Metta.Bindings}
+    (hAcc : ∀ p ∈ acc.1, p.2 = [])
+    (hmem :
+      (out, outBnd) ∈
+        (pairs.foldl
+          (fun a2 p =>
+            if (p.1 == notReducibleA) = true ∨ (p.1 == w) = true then
+              (a2.1 ++ [(w, [])], a2.2)
+            else if returnsAtom env w = true ∧ isEmbeddedOp p.1 = false then
+              (a2.1 ++ [(p.1, [])], a2.2)
+            else
+              (a2.1 ++
+                  (mettaEval env fuel a2.2 [] p.1).1.map
+                    (fun m => (m.1, ([] : Metta.Bindings))),
+                (mettaEval env fuel a2.2 [] p.1).2))
+          acc).1) :
+    outBnd = [] := by
+  induction pairs generalizing acc with
+  | nil =>
+      exact hAcc (out, outBnd) hmem
+  | cons p ps ih =>
+      exact
+        ih
+          (acc :=
+            if (p.1 == notReducibleA) = true ∨ (p.1 == w) = true then
+              (acc.1 ++ [(w, [])], acc.2)
+            else if returnsAtom env w = true ∧ isEmbeddedOp p.1 = false then
+              (acc.1 ++ [(p.1, [])], acc.2)
+            else
+              (acc.1 ++
+                  (mettaEval env fuel acc.2 [] p.1).1.map
+                    (fun m => (m.1, ([] : Metta.Bindings))),
+                (mettaEval env fuel acc.2 [] p.1).2))
+          (by
+            intro q hq
+            by_cases hfirst :
+                (p.1 == notReducibleA) = true ∨ (p.1 == w) = true
+            · simp [hfirst] at hq
+              rcases hq with hq | hq
+              · exact hAcc q hq
+              · rcases hq with rfl
+                rfl
+            · simp [hfirst] at hq
+              by_cases hret :
+                  returnsAtom env w = true ∧ isEmbeddedOp p.1 = false
+              · simp [hret] at hq
+                rcases hq with hq | hq
+                · exact hAcc q hq
+                · rcases hq with rfl
+                  rfl
+              · simp [hret] at hq
+                rcases hq with hq | hq
+                · exact hAcc q hq
+                · rcases hq with ⟨m, _hm, hqEq⟩
+                  cases hqEq
+                  rfl)
+          hmem
+
+private theorem mettaEval_kernelDefControlEnv_nfQuery_pair_bnd_nil
+    (fuel : Nat) (st : St) (sig : DIndGArtifactSig)
+    (raw : DIndGArtifactTerm) {out : Metta.Atom}
+    {outBnd : Metta.Bindings}
+    (hmem :
+      (out, outBnd) ∈
+        (mettaEval kernelDefControlEnv fuel st []
+          (nfQuery sig raw)).1) :
+    outBnd = [] := by
+  cases fuel with
+  | zero =>
+      rw [Metta.Minimal.mettaEval.eq_1] at hmem
+      simp at hmem
+      exact hmem.2
+  | succ fuel =>
+      let w := nfQuery sig raw
+      let qvars := ([sigAtom sig, termAtom raw]).flatMap Metta.Atom.vars
+      unfold mettaEval at hmem
+      rw [Metta.instantiate_nil (nfQuery sig raw)] at hmem
+      simp only [nfQuery, mExpr, mSym] at hmem
+      rw [kernelDefControlEnv_nf_typeMismatch st sig raw] at hmem
+      simp [kernelDefControlEnv_nf_argMask, Metta.instantiate_nil,
+        sigAtom_isError_false, termAtom_isError_false] at hmem
+      let rootItem : Item :=
+        { stack := atomToStack (Metta.Atom.expr [Metta.Atom.sym "eval", w]) []
+          bnd := [] }
+      cases hpairs : interpretFuel kernelDefControlEnv (fuel + 1) st [rootItem] [] with
+      | mk pairs stRoot =>
+          have hpairsLit :
+              interpretFuel kernelDefControlEnv (fuel + 1) st
+                  [{ stack := atomToStack
+                      (Metta.Atom.expr
+                        [ Metta.Atom.sym "eval"
+                        , Metta.Atom.expr
+                            [Metta.Atom.sym "nf", sigAtom sig, termAtom raw] ]) []
+                     bnd := [] }] [] =
+                (pairs, stRoot) := by
+            simpa [rootItem, w, nfQuery, mExpr, mSym] using hpairs
+          rw [hpairsLit] at hmem
+          have hqvars :
+              (sigAtom sig).vars ++ (termAtom raw).vars = [] := by
+            simp [sigAtom_vars_nil sig, termAtom_vars_nil raw]
+          rw [hqvars] at hmem
+          simp [restrictBnd_nil_vars] at hmem
+          exact
+            mettaEvalExprRootFold_bnd_nil_of_queryVars_nil
+              kernelDefControlEnv fuel w pairs ([], stRoot)
+              (by intro p hp; cases hp)
+              (by simpa [w, nfQuery, mExpr, mSym] using hmem)
+
+private theorem mettaEval_kernelDefControlEnv_nfQuery_fuel_one_output_isError_or_self
+    (st : St) (sig : DIndGArtifactSig) (raw : DIndGArtifactTerm)
+    {out : Metta.Atom} {outBnd : Metta.Bindings}
+    (hmem :
+      (out, outBnd) ∈
+        (mettaEval kernelDefControlEnv 1 st [] (nfQuery sig raw)).1) :
+    out.isError = true ∨ out = nfQuery sig raw := by
+  let w := nfQuery sig raw
+  let qvars := ([sigAtom sig, termAtom raw]).flatMap Metta.Atom.vars
+  unfold mettaEval at hmem
+  rw [Metta.instantiate_nil (nfQuery sig raw)] at hmem
+  simp only [nfQuery, mExpr, mSym] at hmem
+  rw [kernelDefControlEnv_nf_typeMismatch st sig raw] at hmem
+  simp [kernelDefControlEnv_nf_argMask, Metta.instantiate_nil,
+    sigAtom_isError_false, termAtom_isError_false] at hmem
+  let rootItem : Item :=
+    { stack := atomToStack (Metta.Atom.expr [Metta.Atom.sym "eval", w]) []
+      bnd := [] }
+  cases hpairs : interpretFuel kernelDefControlEnv 1 st [rootItem] [] with
+  | mk pairs stRoot =>
+      have hfold :
+          (out, outBnd) ∈
+            (pairs.foldl
+              (mettaEvalExprRootFoldStep kernelDefControlEnv 0 qvars w [])
+              ([], stRoot)).1 := by
+        have hpairsLit :
+            interpretFuel kernelDefControlEnv 1 st
+                [{ stack := atomToStack
+                    (Metta.Atom.expr
+                      [ Metta.Atom.sym "eval"
+                      , Metta.Atom.expr
+                          [Metta.Atom.sym "nf", sigAtom sig, termAtom raw] ]) []
+                   bnd := [] }] [] =
+              (pairs, stRoot) := by
+          simpa [rootItem, w, nfQuery, mExpr, mSym] using hpairs
+        rw [hpairsLit] at hmem
+        have hrootEq :
+            mettaEvalExprRootFoldStep kernelDefControlEnv 0 qvars w [] =
+              (fun a2 p =>
+                if (p.1 == notReducibleA) = true ∨
+                    (p.1 == w) = true then
+                  (a2.1 ++ [(w, [])], a2.2)
+                else if
+                    returnsAtom kernelDefControlEnv w = true ∧
+                      isEmbeddedOp p.1 = false then
+                  (a2.1 ++
+                    [(p.1,
+                      restrictBnd qvars
+                        ((Metta.Bindings.merge [] p.2).head?.getD p.2))],
+                    a2.2)
+                else
+                  (a2.1 ++
+                      (mettaEval kernelDefControlEnv 0 a2.2
+                        (restrictBnd qvars
+                          ((Metta.Bindings.merge [] p.2).head?.getD p.2))
+                        p.1).1.map
+                        (fun m =>
+                          (m.1,
+                            restrictBnd qvars
+                              ((Metta.Bindings.merge
+                                (restrictBnd qvars
+                                  ((Metta.Bindings.merge [] p.2).head?.getD p.2))
+                                m.2).head?.getD m.2))),
+                    (mettaEval kernelDefControlEnv 0 a2.2
+                      (restrictBnd qvars
+                        ((Metta.Bindings.merge [] p.2).head?.getD p.2))
+                      p.1).2)) := by
+          funext a2 p
+          simp [mettaEvalExprRootFoldStep]
+        rw [hrootEq]
+        simpa [w, qvars, nfQuery, mExpr, mSym] using hmem
+      have hReturns : returnsAtom kernelDefControlEnv w = false := by
+        simpa [w] using kernelDefControlEnv_nf_returnsAtom sig raw
+      rcases
+          mettaEvalExprRootFold_pair_implies_acc_or_self_or_recursive_bnd_local
+            kernelDefControlEnv 0 qvars w [] pairs ([], stRoot)
+            out outBnd hReturns hfold with
+        hinit | hself | hrec
+      · cases hinit
+      · exact Or.inr hself
+      · rcases hrec with
+          ⟨rootPair, _hRootMem, stBefore, recBnd, _hNotNR, _hNotSelf,
+            hRecMem⟩
+        exact Or.inl
+          (mettaEval_zero_output_isError
+            (mettaEval_value_mem_of_pair_mem hRecMem))
+
+private theorem mettaEval_kernelDefControlEnv_nfQuery_fuel_one_self_pair_bnd_nil
+    (st : St) (sig : DIndGArtifactSig) (raw : DIndGArtifactTerm)
+    {outBnd : Metta.Bindings}
+    (hmem :
+      (nfQuery sig raw, outBnd) ∈
+        (mettaEval kernelDefControlEnv 1 st [] (nfQuery sig raw)).1) :
+    outBnd = [] := by
+  let w := nfQuery sig raw
+  let qvars := ([sigAtom sig, termAtom raw]).flatMap Metta.Atom.vars
+  unfold mettaEval at hmem
+  rw [Metta.instantiate_nil (nfQuery sig raw)] at hmem
+  simp only [nfQuery, mExpr, mSym] at hmem
+  rw [kernelDefControlEnv_nf_typeMismatch st sig raw] at hmem
+  simp [kernelDefControlEnv_nf_argMask, Metta.instantiate_nil,
+    sigAtom_isError_false, termAtom_isError_false] at hmem
+  let rootItem : Item :=
+    { stack := atomToStack (Metta.Atom.expr [Metta.Atom.sym "eval", w]) []
+      bnd := [] }
+  cases hpairs : interpretFuel kernelDefControlEnv 1 st [rootItem] [] with
+  | mk pairs stRoot =>
+      have hfold :
+          (w, outBnd) ∈
+            (pairs.foldl
+              (mettaEvalExprRootFoldStep kernelDefControlEnv 0 qvars w [])
+              ([], stRoot)).1 := by
+        have hpairsLit :
+            interpretFuel kernelDefControlEnv 1 st
+                [{ stack := atomToStack
+                    (Metta.Atom.expr
+                      [ Metta.Atom.sym "eval"
+                      , Metta.Atom.expr
+                          [Metta.Atom.sym "nf", sigAtom sig, termAtom raw] ]) []
+                   bnd := [] }] [] =
+              (pairs, stRoot) := by
+          simpa [rootItem, w, nfQuery, mExpr, mSym] using hpairs
+        rw [hpairsLit] at hmem
+        have hrootEq :
+            mettaEvalExprRootFoldStep kernelDefControlEnv 0 qvars w [] =
+              (fun a2 p =>
+                if (p.1 == notReducibleA) = true ∨
+                    (p.1 == w) = true then
+                  (a2.1 ++ [(w, [])], a2.2)
+                else if
+                    returnsAtom kernelDefControlEnv w = true ∧
+                      isEmbeddedOp p.1 = false then
+                  (a2.1 ++
+                    [(p.1,
+                      restrictBnd qvars
+                        ((Metta.Bindings.merge [] p.2).head?.getD p.2))],
+                    a2.2)
+                else
+                  (a2.1 ++
+                      (mettaEval kernelDefControlEnv 0 a2.2
+                        (restrictBnd qvars
+                          ((Metta.Bindings.merge [] p.2).head?.getD p.2))
+                        p.1).1.map
+                        (fun m =>
+                          (m.1,
+                            restrictBnd qvars
+                              ((Metta.Bindings.merge
+                                (restrictBnd qvars
+                                  ((Metta.Bindings.merge [] p.2).head?.getD p.2))
+                                m.2).head?.getD m.2))),
+                    (mettaEval kernelDefControlEnv 0 a2.2
+                      (restrictBnd qvars
+                        ((Metta.Bindings.merge [] p.2).head?.getD p.2))
+                      p.1).2)) := by
+          funext a2 p
+          simp [mettaEvalExprRootFoldStep]
+        rw [hrootEq]
+        simpa [w, qvars, nfQuery, mExpr, mSym] using hmem
+      have hReturns : returnsAtom kernelDefControlEnv w = false := by
+        simpa [w] using kernelDefControlEnv_nf_returnsAtom sig raw
+      rcases
+          mettaEvalExprRootFold_self_pair_implies_acc_or_partBnd_or_recursive_bnd_local
+            kernelDefControlEnv 0 qvars w [] pairs ([], stRoot) outBnd
+            hReturns hfold with
+        hinit | hbnd | hrec
+      · cases hinit
+      · exact hbnd
+      · rcases hrec with
+          ⟨rootPair, _hRootMem, stBefore, recBnd, _hNotNR, _hNotSelf,
+            hRecMem⟩
+        have hErr :
+            w.isError = true :=
+          mettaEval_zero_output_isError
+            (mettaEval_value_mem_of_pair_mem hRecMem)
+        have hNoErr : w.isError = false := by
+          simpa [w] using nfQuery_isError_false sig raw
+        rw [hNoErr] at hErr
+        cases hErr
+
+private theorem mettaEval_kernelDefControlEnv_nfQuery_true_pair_fuel_one_false
+    (st : St) (sig : DIndGArtifactSig) (raw : DIndGArtifactTerm)
+    {outBnd : Metta.Bindings}
+    (hmem :
+      (mBool true, outBnd) ∈
+        (mettaEval kernelDefControlEnv 1 st [] (nfQuery sig raw)).1) :
+    False := by
+  let w := nfQuery sig raw
+  let qvars := ([sigAtom sig, termAtom raw]).flatMap Metta.Atom.vars
+  unfold mettaEval at hmem
+  rw [Metta.instantiate_nil (nfQuery sig raw)] at hmem
+  simp only [nfQuery, mExpr, mSym] at hmem
+  rw [kernelDefControlEnv_nf_typeMismatch st sig raw] at hmem
+  simp [kernelDefControlEnv_nf_argMask, Metta.instantiate_nil, sigAtom_isError_false,
+    termAtom_isError_false] at hmem
+  let rootItem : Item :=
+    { stack := atomToStack (Metta.Atom.expr [Metta.Atom.sym "eval", w]) []
+      bnd := [] }
+  cases hpairs : interpretFuel kernelDefControlEnv 1 st [rootItem] [] with
+  | mk pairs stRoot =>
+      have hfold :
+          (mBool true, outBnd) ∈
+            (pairs.foldl
+              (mettaEvalExprRootFoldStep kernelDefControlEnv 0 qvars w [])
+              ([], stRoot)).1 := by
+        have hpairsLit :
+            interpretFuel kernelDefControlEnv 1 st
+                [{ stack := atomToStack
+                    (Metta.Atom.expr
+                      [ Metta.Atom.sym "eval"
+                      , Metta.Atom.expr
+                          [Metta.Atom.sym "nf", sigAtom sig, termAtom raw] ]) []
+                   bnd := [] }] [] =
+              (pairs, stRoot) := by
+          simpa [rootItem, w, nfQuery, mExpr, mSym] using hpairs
+        rw [hpairsLit] at hmem
+        have hrootEq :
+            mettaEvalExprRootFoldStep kernelDefControlEnv 0 qvars w [] =
+              (fun a2 p =>
+                if (p.1 == notReducibleA) = true ∨
+                    (p.1 == w) = true then
+                  (a2.1 ++ [(w, [])], a2.2)
+                else if
+                    returnsAtom kernelDefControlEnv w = true ∧
+                      isEmbeddedOp p.1 = false then
+                  (a2.1 ++
+                    [(p.1,
+                      restrictBnd qvars
+                        ((Metta.Bindings.merge [] p.2).head?.getD p.2))],
+                    a2.2)
+                else
+                  (a2.1 ++
+                      (mettaEval kernelDefControlEnv 0 a2.2
+                        (restrictBnd qvars
+                          ((Metta.Bindings.merge [] p.2).head?.getD p.2))
+                        p.1).1.map
+                        (fun m =>
+                          (m.1,
+                            restrictBnd qvars
+                              ((Metta.Bindings.merge
+                                (restrictBnd qvars
+                                  ((Metta.Bindings.merge [] p.2).head?.getD p.2))
+                                m.2).head?.getD m.2))),
+                    (mettaEval kernelDefControlEnv 0 a2.2
+                      (restrictBnd qvars
+                        ((Metta.Bindings.merge [] p.2).head?.getD p.2))
+                      p.1).2)) := by
+          funext a2 p
+          simp [mettaEvalExprRootFoldStep]
+        rw [hrootEq]
+        simpa [w, qvars, nfQuery, mExpr, mSym] using hmem
+      have hWNotTrue : w ≠ mBool true := by
+        simp [w, nfQuery, mExpr, mSym, mBool]
+      have hReturns : returnsAtom kernelDefControlEnv w = false := by
+        simpa [w] using kernelDefControlEnv_nf_returnsAtom sig raw
+      rcases
+          mettaEvalExprRootFold_true_pair_implies_acc_or_recursive_bnd_local
+            kernelDefControlEnv 0 qvars w [] pairs ([], stRoot) outBnd
+            hWNotTrue hReturns hfold with
+        hinit | hrec
+      · cases hinit
+      · rcases hrec with
+          ⟨rootPair, _hRootMem, stBefore, recBnd, _hNotNR, _hNotSelf,
+            hRecMem⟩
+        exact mettaEval_zero_true_pair_false hRecMem
+
+private theorem mettaEval_kernelDefControlEnv_unify_true_pair_fuel_one_false
+    (st : St) (b : Metta.Bindings)
+    (atom pattern template elseAtom : Metta.Atom)
+    {outBnd : Metta.Bindings}
+    (hmem :
+      (mBool true, outBnd) ∈
+        (mettaEval kernelDefControlEnv 1 st b
+          (mExpr "unify" [atom, pattern, template, elseAtom])).1) :
+    False := by
+  let args :=
+    [ Metta.instantiate b atom
+    , Metta.instantiate b pattern
+    , Metta.instantiate b template
+    , Metta.instantiate b elseAtom ]
+  let w := mExpr "unify" args
+  let qvars := args.flatMap Metta.Atom.vars
+  unfold mettaEval at hmem
+  rw [show
+      Metta.instantiate b (mExpr "unify" [atom, pattern, template, elseAtom]) =
+        w by
+      simp [w, args, mExpr, mSym, Metta.instantiate,
+        Metta.bindingsToSubst, Metta.Subst.apply]] at hmem
+  simp only [w, mExpr, mSym] at hmem
+  have hType :
+      typeMismatch kernelDefControlEnv st.world "unify" args = none := by
+    simpa [args] using
+      kernelDefControlEnv_unify_typeMismatch st
+        (Metta.instantiate b atom) (Metta.instantiate b pattern)
+        (Metta.instantiate b template) (Metta.instantiate b elseAtom)
+  rw [hType] at hmem
+  simp [args, kernelDefControlEnv_unify_argMask, Metta.instantiate_nil] at hmem
+  cases hfind :
+      ( [ (Metta.instantiate b atom, Metta.instantiate b atom)
+        , (Metta.instantiate b pattern, Metta.instantiate b pattern)
+        , (Metta.instantiate b template, Metta.instantiate b template)
+        , (Metta.instantiate b elseAtom, Metta.instantiate b elseAtom) ]).find?
+        (fun ho : Metta.Atom × Metta.Atom => ho.1.isError && ho.1 != ho.2) with
+  | some found =>
+      rcases found with ⟨err, orig⟩
+      rw [hfind] at hmem
+      simp only [List.mem_singleton] at hmem
+      have herr : err = mBool true := (congrArg Prod.fst hmem).symm
+      have hpred :=
+        List.find?_some
+          (p := fun ho : Metta.Atom × Metta.Atom => ho.1.isError && ho.1 != ho.2)
+          hfind
+      simp [herr, mBool, Metta.Atom.isError] at hpred
+  | none =>
+      rw [hfind] at hmem
+      let rootItem : Item :=
+        { stack := atomToStack
+            (Metta.Atom.expr [Metta.Atom.sym "eval", w]) []
+          bnd := b }
+      cases hpairs : interpretFuel kernelDefControlEnv 1 st [rootItem] [] with
+      | mk pairs stRoot =>
+          have hfold :
+              (mBool true, outBnd) ∈
+                (pairs.foldl
+                  (mettaEvalExprRootFoldStep kernelDefControlEnv 0 qvars w [])
+                  ([], stRoot)).1 := by
+            have hpairsLit :
+                interpretFuel kernelDefControlEnv 1 st
+                    [{ stack := atomToStack
+                        (Metta.Atom.expr
+                          [ Metta.Atom.sym "eval"
+                          , Metta.Atom.expr
+                              [ Metta.Atom.sym "unify"
+                              , Metta.instantiate b atom
+                              , Metta.instantiate b pattern
+                              , Metta.instantiate b template
+                              , Metta.instantiate b elseAtom ]]) []
+                       bnd := b }] [] =
+                  (pairs, stRoot) := by
+              simpa [rootItem, w, args, mExpr, mSym] using hpairs
+            rw [hpairsLit] at hmem
+            have hrootEq :
+                mettaEvalExprRootFoldStep kernelDefControlEnv 0 qvars w [] =
+                  (fun a2 p =>
+                    if (p.1 == notReducibleA) = true ∨
+                        (p.1 == w) = true then
+                      (a2.1 ++ [(w, [])], a2.2)
+                    else if
+                        returnsAtom kernelDefControlEnv w = true ∧
+                          isEmbeddedOp p.1 = false then
+                      (a2.1 ++
+                        [(p.1,
+                          restrictBnd qvars
+                            ((Metta.Bindings.merge [] p.2).head?.getD p.2))],
+                        a2.2)
+                    else
+                      (a2.1 ++
+                          (mettaEval kernelDefControlEnv 0 a2.2
+                            (restrictBnd qvars
+                              ((Metta.Bindings.merge [] p.2).head?.getD p.2))
+                            p.1).1.map
+                            (fun m =>
+                              (m.1,
+                                restrictBnd qvars
+                                  ((Metta.Bindings.merge
+                                    (restrictBnd qvars
+                                      ((Metta.Bindings.merge [] p.2).head?.getD p.2))
+                                    m.2).head?.getD m.2))),
+                          (mettaEval kernelDefControlEnv 0 a2.2
+                            (restrictBnd qvars
+                              ((Metta.Bindings.merge [] p.2).head?.getD p.2))
+                            p.1).2)) := by
+              funext a2 p
+              simp [mettaEvalExprRootFoldStep]
+            rw [hrootEq]
+            simpa [args, qvars, w, mExpr, mSym] using hmem
+          have hWNotTrue : w ≠ mBool true := by
+            simp [w, args, mExpr, mSym, mBool]
+          have hReturns :
+              returnsAtom kernelDefControlEnv w = false := by
+            simpa [w, args, mExpr, mSym] using
+              kernelDefControlEnv_unify_returnsAtom
+                (Metta.instantiate b atom) (Metta.instantiate b pattern)
+                (Metta.instantiate b template) (Metta.instantiate b elseAtom)
+          rcases
+              mettaEvalExprRootFold_true_pair_implies_acc_or_recursive_bnd_local
+                kernelDefControlEnv 0 qvars w [] pairs ([], stRoot) outBnd
+                hWNotTrue hReturns hfold with
+            hinit | hrec
+          · cases hinit
+          · rcases hrec with
+              ⟨rootPair, _hRootMem, stBefore, recBnd, _hNotNR, _hNotSelf,
+                hRecMem⟩
+            exact mettaEval_zero_true_pair_false hRecMem
+
+private theorem mettaEval_kernelDefControlEnv_unify_true_pair_fuel_one_false_instantiated
+    (st : St) (b : Metta.Bindings)
+    (atom pattern template elseAtom : Metta.Atom)
+    {outBnd : Metta.Bindings}
+    (hmem :
+      (mBool true, outBnd) ∈
+        (mettaEval kernelDefControlEnv 1 st b
+          (mExpr "unify" [atom, pattern, template, elseAtom])).1) :
+    False := by
+  exact
+    mettaEval_kernelDefControlEnv_unify_true_pair_fuel_one_false
+      st b atom pattern template elseAtom hmem
+
+private theorem counterSuffix_let_key_ne_initial_nx
+    (counter : Nat) {v : String}
+    (hv : v = "template" ∨ v = "atom" ∨ v = "pattern") :
+    counterSuffix counter v ≠ counterSuffix St.init.counter "nx" := by
+  intro h
+  rcases hv with rfl | rfl | rfl
+  · have hlist := congrArg String.toList h
+    simp [counterSuffix] at hlist
+  · have hlist := congrArg String.toList h
+    simp [counterSuffix] at hlist
+  · have hlist := congrArg String.toList h
+    simp [counterSuffix] at hlist
+
+private theorem counterSuffix_let_key_ne_initial_ny
+    (counter : Nat) {v : String}
+    (hv : v = "template" ∨ v = "atom" ∨ v = "pattern") :
+    counterSuffix counter v ≠ counterSuffix St.init.counter "ny" := by
+  intro h
+  rcases hv with rfl | rfl | rfl
+  · have hlist := congrArg String.toList h
+    simp [counterSuffix] at hlist
+  · have hlist := congrArg String.toList h
+    simp [counterSuffix] at hlist
+  · have hlist := congrArg String.toList h
+    simp [counterSuffix] at hlist
 
 private theorem mettaEval_any_true_of_pair_mem
     {env : MinEnv} {fuel : Nat} {st : St} {bnd0 : Metta.Bindings}
@@ -45297,6 +51020,53 @@ theorem evaluator_conv_named_readout_true_value_implies_left_right_nf_values_and
   dsimp at hStatic hWorld hmem ⊢
   exact
     mettaEval_kernelDefControlEnv_convReadoutNamed_true_value_implies_left_right_nf_values_and_tail_value_exists_of_world_obligations
+      (fuel := fuel)
+      (st := { counter := St.init.counter + 1, world := St.init.world })
+      (nxBinder := counterSuffix St.init.counter "nx")
+      (nyBinder := counterSuffix St.init.counter "ny")
+      (sig := sig) (rawLeft := rawLeft) (rawRight := rawRight)
+      hStatic hWorld hmem
+
+theorem evaluator_conv_named_readout_true_value_implies_left_right_nf_values_and_tail_value_exists_of_world_obligations_with_no_errors
+    (fuel : Nat)
+    {sig : DIndGArtifactSig} {rawLeft rawRight : DIndGArtifactTerm}
+    (hStatic :
+      let nxBinder := counterSuffix St.init.counter "nx"
+      let nyBinder := counterSuffix St.init.counter "ny"
+      let stNamed : St := { counter := St.init.counter + 1, world := St.init.world }
+      ConvReadoutNamedNfExtractionObligations
+        (fuel + 2) stNamed nxBinder nyBinder sig rawLeft rawRight)
+    (hWorld :
+      let nxBinder := counterSuffix St.init.counter "nx"
+      let nyBinder := counterSuffix St.init.counter "ny"
+      let stNamed : St := { counter := St.init.counter + 1, world := St.init.world }
+      ConvReadoutNamedNfExtractionWorldObligations
+        (fuel + 2) stNamed nxBinder nyBinder sig rawLeft rawRight)
+    (hmem :
+      let nxBinder := counterSuffix St.init.counter "nx"
+      let nyBinder := counterSuffix St.init.counter "ny"
+      let stNamed : St := { counter := St.init.counter + 1, world := St.init.world }
+      mBool true ∈
+        (mettaEval kernelDefControlEnv (((fuel + 2) + 2) + 1) stNamed []
+          (convReadoutNamed nxBinder nyBinder sig rawLeft rawRight)).1.map (·.1)) :
+    ∃ nx ny stBefore tailStBefore tailValueEnv,
+      let stNamed : St := { counter := St.init.counter + 1, world := St.init.world }
+      stBefore.world = St.init.world ∧
+      tailStBefore.world = St.init.world ∧
+      nx ∈
+        (mettaEval kernelDefControlEnv ((fuel + 2) + 2) stNamed []
+          (nfQuery sig rawLeft)).1.map (·.1) ∧
+      nx.isError = false ∧
+      ny ∈
+        (mettaEval kernelDefControlEnv (fuel + 2) stBefore []
+          (nfQuery sig rawRight)).1.map (·.1) ∧
+      ny.isError = false ∧
+      mBool true ∈
+        (mettaEval kernelDefControlEnv (fuel + 1) tailStBefore tailValueEnv
+          (convReadoutAfterNxNy nx ny)).1.map (·.1) := by
+  dsimp at hStatic hWorld hmem ⊢
+  exact
+    mettaEval_kernelDefControlEnv_convReadoutNamed_true_value_implies_left_right_nf_values_and_tail_value_exists_of_world_obligations_with_no_errors
       (fuel := fuel)
       (st := { counter := St.init.counter + 1, world := St.init.world })
       (nxBinder := counterSuffix St.init.counter "nx")
@@ -46521,7 +52291,7 @@ private theorem mettaEval_kernelDefControlEnv_propToType0Witness_convReadoutAfte
     simpa [mExpr, mSym] using hReturns
   simp [hRootNotNR, hRootNotSelf', hReturns']
   refine ⟨finalBnd, ?_⟩
-  simpa [List.flatMap] using hFinal
+  simpa [List.flatMap, mSym] using hFinal
 
 private theorem mettaEval_kernelDefControlEnv_propToType0Witness_convReadoutAfterNx_nx_ambient_true_value
     (fuel : Nat) (st : St)
@@ -60375,6 +66145,26 @@ theorem cicStage3RawArtifactSig_indG_zero_runtime_iota_nonreflexive_nf_demo :
     cicStage3_natRec_zero_iota_generated_conv_nonreflexive.2,
     Relation.EqvGen.refl natZeroTerm⟩
 
+-- Regression guard: naked low-fuel Def NF can overflow; tail-success arguments
+-- are responsible for ruling this out in `conv` proofs.
+#guard (((mettaEval kernelDefControlEnv 3 St.init []
+    (nfQuery cicStage3RawArtifactSig (.defn `z))).1.map (fun p => p.1)).any
+    (fun a => a.isError))
+
+-- Regression guard: with enough fuel the same primary Def reaches its canonical
+-- stuck readout rather than an error.
+#guard !(((mettaEval kernelDefControlEnv 7 St.init []
+    (nfQuery cicStage3RawArtifactSig (.defn `z))).1.map (fun p => p.1)).any
+    (fun a => a.isError))
+
+-- Regression guard: the high-fuel primary Def readout has the exact canonical
+-- stuck shape consumed by `CicStage3RawArtifactSigPrimaryNfRuntimeReadout.defnStuck`.
+#guard (((mettaEval kernelDefControlEnv 7 St.init []
+    (nfQuery cicStage3RawArtifactSig (.defn `z))).1.map (fun p => p.1)).any
+    (fun a =>
+      a == cicStage3CanonicalDefnStuckReadoutForSig
+        cicStage3RawArtifactSig `z))
+
 theorem cicStage3RawArtifactSig_indG_zero_runtime_iota_nonreflexive_witness_pair :
     ∃ rawRedex rawContractum targetRedex targetContractum,
       rawRedex = cicStage3IndGZeroRaw ∧
@@ -60956,6 +66746,218 @@ theorem convSoundCicStage3RawArtifactSig_namedReadoutTailValues :
       (sig := cicStage3RawArtifactSig)
       (rawLeft := rawLeft) (rawRight := rawRight)
       hStatic hWorld hNamedTrue
+
+def ConvSoundCicStage3RawArtifactSigNamedReadoutTailValuesAndNoErrors :
+    Prop :=
+  ∀ (fuel : Nat) {rawLeft rawRight : DIndGArtifactTerm}
+      {left right : PureTm 0},
+    4 ≤ fuel →
+    DIndGArtifactTermTranslates
+      cicStage3RawArtifactSig.nameTranslates 0 rawLeft left →
+    DIndGArtifactTermTranslates
+      cicStage3RawArtifactSig.nameTranslates 0 rawRight right →
+    let nxBinder := counterSuffix St.init.counter "nx"
+    let nyBinder := counterSuffix St.init.counter "ny"
+    let stNamed : St := { counter := St.init.counter + 1, world := St.init.world }
+    ConvReadoutNamedNfExtractionObligations
+        (fuel + 2) stNamed nxBinder nyBinder
+        cicStage3RawArtifactSig rawLeft rawRight →
+    ConvReadoutNamedNfExtractionWorldObligations
+        (fuel + 2) stNamed nxBinder nyBinder
+        cicStage3RawArtifactSig rawLeft rawRight →
+    mBool true ∈
+      (mettaEval kernelDefControlEnv (((fuel + 2) + 2) + 1) stNamed []
+        (convReadoutNamed nxBinder nyBinder
+          cicStage3RawArtifactSig rawLeft rawRight)).1.map (·.1) →
+    ∃ nx ny stBefore tailStBefore tailValueEnv,
+      stBefore.world = St.init.world ∧
+      tailStBefore.world = St.init.world ∧
+      nx ∈
+        (mettaEval kernelDefControlEnv ((fuel + 2) + 2) stNamed []
+          (nfQuery cicStage3RawArtifactSig rawLeft)).1.map (·.1) ∧
+      nx.isError = false ∧
+      ny ∈
+        (mettaEval kernelDefControlEnv (fuel + 2) stBefore []
+          (nfQuery cicStage3RawArtifactSig rawRight)).1.map (·.1) ∧
+      ny.isError = false ∧
+      mBool true ∈
+        (mettaEval kernelDefControlEnv (fuel + 1) tailStBefore tailValueEnv
+          (convReadoutAfterNxNy nx ny)).1.map (·.1)
+
+theorem convSoundCicStage3RawArtifactSig_namedReadoutTailValuesAndNoErrors :
+    ConvSoundCicStage3RawArtifactSigNamedReadoutTailValuesAndNoErrors := by
+  intro fuel rawLeft rawRight left right _hFuel _hLeft _hRight
+  dsimp
+  intro hStatic hWorld hNamedTrue
+  exact
+    evaluator_conv_named_readout_true_value_implies_left_right_nf_values_and_tail_value_exists_of_world_obligations_with_no_errors
+      (fuel := fuel)
+      (sig := cicStage3RawArtifactSig)
+      (rawLeft := rawLeft) (rawRight := rawRight)
+      hStatic hWorld hNamedTrue
+
+def ConvSoundCicStage3RawArtifactSigNamedReadoutTailValueShapeAndNoErrors :
+    Prop :=
+  ∀ (fuel : Nat) {rawLeft rawRight : DIndGArtifactTerm}
+      {left right : PureTm 0},
+    4 ≤ fuel →
+    DIndGArtifactTermTranslates
+      cicStage3RawArtifactSig.nameTranslates 0 rawLeft left →
+    DIndGArtifactTermTranslates
+      cicStage3RawArtifactSig.nameTranslates 0 rawRight right →
+    let nxBinder := counterSuffix St.init.counter "nx"
+    let nyBinder := counterSuffix St.init.counter "ny"
+    let stNamed : St := { counter := St.init.counter + 1, world := St.init.world }
+    ConvReadoutNamedNfExtractionObligations
+        (fuel + 2) stNamed nxBinder nyBinder
+        cicStage3RawArtifactSig rawLeft rawRight →
+    ConvReadoutNamedNfExtractionWorldObligations
+        (fuel + 2) stNamed nxBinder nyBinder
+        cicStage3RawArtifactSig rawLeft rawRight →
+    mBool true ∈
+      (mettaEval kernelDefControlEnv (((fuel + 2) + 2) + 1) stNamed []
+        (convReadoutNamed nxBinder nyBinder
+          cicStage3RawArtifactSig rawLeft rawRight)).1.map (·.1) →
+    ∃ nx ny stBefore tailStBefore tailValueEnv tailPartBnd tailRootBnd,
+      let tailTemplate :=
+        Metta.instantiate tailPartBnd
+          (convReadoutAfterNxNy nx (mVar nyBinder))
+      stBefore.world = St.init.world ∧
+      tailStBefore.world = St.init.world ∧
+      nx ∈
+        (mettaEval kernelDefControlEnv ((fuel + 2) + 2) stNamed []
+          (nfQuery cicStage3RawArtifactSig rawLeft)).1.map (·.1) ∧
+      nx.isError = false ∧
+      ny ∈
+        (mettaEval kernelDefControlEnv (fuel + 2) stBefore []
+          (nfQuery cicStage3RawArtifactSig rawRight)).1.map (·.1) ∧
+      ny.isError = false ∧
+      tailValueEnv =
+        restrictBnd (([ny, mVar nyBinder, tailTemplate,
+            mSym "Empty"]).flatMap Metta.Atom.vars)
+          ((Metta.Bindings.merge [] tailRootBnd).head?.getD tailRootBnd) ∧
+      mBool true ∈
+        (mettaEval kernelDefControlEnv (fuel + 1) tailStBefore tailValueEnv
+          (convReadoutAfterNxNy nx ny)).1.map (·.1)
+
+theorem convSoundCicStage3RawArtifactSig_namedReadoutTailValueShapeAndNoErrors :
+    ConvSoundCicStage3RawArtifactSigNamedReadoutTailValueShapeAndNoErrors := by
+  intro fuel rawLeft rawRight left right _hFuel _hLeft _hRight
+  dsimp
+  intro hStatic hWorld hNamedTrue
+  rcases List.mem_map.mp hNamedTrue with ⟨⟨a, outBnd⟩, hPair, ha⟩
+  dsimp at ha
+  subst a
+  rcases
+      mettaEval_kernelDefControlEnv_convReadoutNamed_true_pair_implies_left_right_nf_and_tail_value_shape_exists_of_world_obligations_with_no_errors
+        (fuel := fuel)
+        (st := { counter := St.init.counter + 1, world := St.init.world })
+        (nxBinder := counterSuffix St.init.counter "nx")
+        (nyBinder := counterSuffix St.init.counter "ny")
+        (sig := cicStage3RawArtifactSig)
+        (rawLeft := rawLeft) (rawRight := rawRight)
+        (outBnd := outBnd) hStatic hWorld hPair with
+    ⟨nx, nxBnd, ny, nyBnd, stBefore, tailStBefore, tailValueEnv,
+      tailPartBnd, tailRootBnd, hWorldBefore, hWorldTailBefore,
+      hLeft, hNxNoErr, hRight, hNyNoErr, hTailShape, hTailValue⟩
+  exact
+    ⟨nx, ny, stBefore, tailStBefore, tailValueEnv, tailPartBnd,
+      tailRootBnd, hWorldBefore, hWorldTailBefore,
+      List.mem_map.mpr ⟨(nx, nxBnd), hLeft, rfl⟩, hNxNoErr,
+      List.mem_map.mpr ⟨(ny, nyBnd), hRight, rfl⟩, hNyNoErr,
+      hTailShape, hTailValue⟩
+
+def ConvSoundCicStage3RawArtifactSigNamedReadoutTailShapeRootAndNoErrors :
+    Prop :=
+  ∀ (fuel : Nat) {rawLeft rawRight : DIndGArtifactTerm}
+      {left right : PureTm 0},
+    4 ≤ fuel →
+    DIndGArtifactTermTranslates
+      cicStage3RawArtifactSig.nameTranslates 0 rawLeft left →
+    DIndGArtifactTermTranslates
+      cicStage3RawArtifactSig.nameTranslates 0 rawRight right →
+    let nxBinder := counterSuffix St.init.counter "nx"
+    let nyBinder := counterSuffix St.init.counter "ny"
+    let stNamed : St := { counter := St.init.counter + 1, world := St.init.world }
+    ConvReadoutNamedNfExtractionObligations
+        (fuel + 2) stNamed nxBinder nyBinder
+        cicStage3RawArtifactSig rawLeft rawRight →
+    ConvReadoutNamedNfExtractionWorldObligations
+        (fuel + 2) stNamed nxBinder nyBinder
+        cicStage3RawArtifactSig rawLeft rawRight →
+    mBool true ∈
+      (mettaEval kernelDefControlEnv (((fuel + 2) + 2) + 1) stNamed []
+        (convReadoutNamed nxBinder nyBinder
+          cicStage3RawArtifactSig rawLeft rawRight)).1.map (·.1) →
+    ∃ nx nxBnd ny nyBnd stBefore tailStBefore tailValueEnv
+        tailPartBnd tailRootBnd,
+      let tailTemplate :=
+        Metta.instantiate tailPartBnd
+          (convReadoutAfterNxNy nx (mVar nyBinder))
+      let tailRecursiveEnv :=
+        restrictBnd (([mVar nyBinder, nfQuery cicStage3RawArtifactSig rawRight,
+          convReadoutAfterNxNy nx (mVar nyBinder)]).flatMap
+          Metta.Atom.vars)
+          ((Metta.Bindings.merge tailPartBnd tailRootBnd).head?.getD
+            tailRootBnd)
+      stBefore.world = St.init.world ∧
+      tailStBefore.world = St.init.world ∧
+      (nx, nxBnd) ∈
+        (mettaEval kernelDefControlEnv ((fuel + 2) + 2) stNamed []
+          (nfQuery cicStage3RawArtifactSig rawLeft)).1 ∧
+      nx.isError = false ∧
+      (ny, nyBnd) ∈
+        (mettaEval kernelDefControlEnv (fuel + 2) stBefore []
+          (nfQuery cicStage3RawArtifactSig rawRight)).1 ∧
+      ny.isError = false ∧
+      tailValueEnv =
+        restrictBnd (([ny, mVar nyBinder, tailTemplate,
+            mSym "Empty"]).flatMap Metta.Atom.vars)
+          ((Metta.Bindings.merge [] tailRootBnd).head?.getD tailRootBnd) ∧
+      tailPartBnd =
+        restrictBnd (([mVar nyBinder, nfQuery cicStage3RawArtifactSig rawRight,
+          convReadoutAfterNxNy nx (mVar nyBinder)]).flatMap
+          Metta.Atom.vars)
+          ((Metta.Bindings.merge [] nyBnd).head?.getD nyBnd) ∧
+      Metta.Bindings.merge tailRecursiveEnv
+          [Metta.BindingRel.val nyBinder ny] =
+        [tailRootBnd] ∧
+      Metta.Bindings.hasLoop tailRootBnd = false ∧
+      Metta.instantiate tailRootBnd (Metta.instantiate tailRootBnd tailTemplate) =
+        convReadoutAfterNxNy nx ny ∧
+      mBool true ∈
+        (mettaEval kernelDefControlEnv (fuel + 1) tailStBefore tailValueEnv
+          (convReadoutAfterNxNy nx ny)).1.map (·.1)
+
+theorem convSoundCicStage3RawArtifactSig_namedReadoutTailShapeRootAndNoErrors :
+    ConvSoundCicStage3RawArtifactSigNamedReadoutTailShapeRootAndNoErrors := by
+  intro fuel rawLeft rawRight left right _hFuel _hLeft _hRight
+  dsimp
+  intro hStatic hWorld hNamedTrue
+  rcases List.mem_map.mp hNamedTrue with ⟨⟨a, outBnd⟩, hPair, ha⟩
+  dsimp at ha
+  subst a
+  rcases
+      mettaEval_kernelDefControlEnv_convReadoutNamed_true_pair_implies_left_right_nf_and_tail_value_shape_root_exists_of_world_obligations_with_no_errors
+        (fuel := fuel)
+        (st := { counter := St.init.counter + 1, world := St.init.world })
+        (nxBinder := counterSuffix St.init.counter "nx")
+        (nyBinder := counterSuffix St.init.counter "ny")
+        (sig := cicStage3RawArtifactSig)
+        (rawLeft := rawLeft) (rawRight := rawRight)
+        (outBnd := outBnd) hStatic hWorld hPair with
+    ⟨nx, nxBnd, ny, nyBnd, stBefore, tailStBefore, tailValueEnv,
+      _tailTemplateEnv, tailPartBnd, _tailStPart, _tailPairs, _tailStRoot,
+      _tailRoot, tailRootBnd, _tailRecBnd,
+      hWorldBefore, hWorldTailBefore, hLeft, hNxNoErr, hRight, hNyNoErr,
+      hTailShape, hTailPartBnd, _hTailTrace, _hTailRootMem, _hTailRootEq,
+      _hTailInst, hTailMerge, hTailLoop, hTailTemplateEq,
+      _hTailRec, hTailValue⟩
+  exact
+    ⟨nx, nxBnd, ny, nyBnd, stBefore, tailStBefore, tailValueEnv,
+      tailPartBnd, tailRootBnd, hWorldBefore, hWorldTailBefore,
+      hLeft, hNxNoErr, hRight, hNyNoErr, hTailShape, hTailPartBnd,
+      hTailMerge, hTailLoop, hTailTemplateEq, hTailValue⟩
 
 theorem cicStage3RawArtifactSig_conv_tail_true_canonicalForSig_beq_true_keyed_ambient
     (fuel : Nat) {rawLeft rawRight : DIndGArtifactTerm}
@@ -62628,6 +68630,2532 @@ theorem CicStage3RawArtifactSigPrimaryNfRuntimeReadout_resolveStates_init_world
       exact ⟨by simpa [St.init, World.empty] using ihDomain,
         by simpa [St.init, World.empty] using ihBody⟩
 
+theorem mettaEval_kernelDefControlEnv_nf_binary_readout_eq_state_of_primary_domain_body_eq_state
+    (fuel : Nat) (st stDomain stBody : St)
+    (head : String) (sig : DIndGArtifactSig)
+    (rawDomain rawBody : DIndGArtifactTerm)
+    (domainOut bodyOut : Metta.Atom)
+    (hDomainReadout :
+      CicStage3RawArtifactSigPrimaryNfRuntimeReadout rawDomain domainOut)
+    (hBodyReadout :
+      CicStage3RawArtifactSigPrimaryNfRuntimeReadout rawBody bodyOut)
+    (hType :
+      typeMismatch kernelDefControlEnv st.world head
+        [nfQuery sig rawDomain, nfQuery sig rawBody] = none)
+    (hMask : argMask kernelDefControlEnv head 2 = [true, true])
+    (hRoot :
+      interpretFuel kernelDefControlEnv (fuel + 1) stBody
+        [evalItemNil (mExpr head [domainOut, bodyOut])] [] =
+        ([(notReducibleA, [])], stBody))
+    (hDomain :
+      mettaEval kernelDefControlEnv fuel st []
+        (nfQuery sig rawDomain) =
+        ([(domainOut, [])], stDomain))
+    (hBody :
+      mettaEval kernelDefControlEnv fuel stDomain []
+        (nfQuery sig rawBody) =
+        ([(bodyOut, [])], stBody)) :
+    mettaEval kernelDefControlEnv (fuel + 1) st []
+      (mExpr head [nfQuery sig rawDomain, nfQuery sig rawBody]) =
+      ([(mExpr head [domainOut, bodyOut], [])], stBody) := by
+  have hDomainClosed : (nfQuery sig rawDomain).vars = [] := by
+    simp [nfQuery, sigAtom_vars_nil sig, termAtom_vars_nil rawDomain,
+      mExpr, mSym, Metta.Atom.vars]
+  have hBodyClosed : (nfQuery sig rawBody).vars = [] := by
+    simp [nfQuery, sigAtom_vars_nil sig, termAtom_vars_nil rawBody,
+      mExpr, mSym, Metta.Atom.vars]
+  have hDomainNoErr : domainOut.isError = false :=
+    CicStage3RawArtifactSigPrimaryNfRuntimeReadout_isError_false
+      hDomainReadout
+  have hBodyNoErr : bodyOut.isError = false :=
+    CicStage3RawArtifactSigPrimaryNfRuntimeReadout_isError_false
+      hBodyReadout
+  have hNoErr :
+      (([domainOut, bodyOut].zip
+          [nfQuery sig rawDomain, nfQuery sig rawBody]).find?
+        (fun ho : Metta.Atom × Metta.Atom =>
+          ho.1.isError && ho.1 != ho.2)) = none := by
+    simp [hDomainNoErr, hBodyNoErr]
+  have hExact :=
+    mettaEval_binary_expr_eq_of_arg_singletons_and_notReducible_eq
+      kernelDefControlEnv fuel st stDomain stBody stBody
+      head (nfQuery sig rawDomain) (nfQuery sig rawBody)
+      domainOut bodyOut
+      hDomainClosed hBodyClosed hDomain hBody hType hMask
+      hNoErr (by simpa [mExpr, mSym] using hRoot)
+  simpa [mExpr, mSym] using hExact
+
+theorem mettaEval_kernelDefControlEnv_nfPiReadout_eq_state_of_primary_domain_body_eq_state
+    (fuel : Nat) (st stDomain stBody : St)
+    (rawDomain rawBody : DIndGArtifactTerm)
+    (domainOut bodyOut : Metta.Atom)
+    (hDomainReadout :
+      CicStage3RawArtifactSigPrimaryNfRuntimeReadout rawDomain domainOut)
+    (hBodyReadout :
+      CicStage3RawArtifactSigPrimaryNfRuntimeReadout rawBody bodyOut)
+    (hStaticBody : stBody.world.selfExtra = [])
+    (hDomain :
+      mettaEval kernelDefControlEnv fuel st []
+        (nfQuery cicStage3RawArtifactSig rawDomain) =
+        ([(domainOut, [])], stDomain))
+    (hBody :
+      mettaEval kernelDefControlEnv fuel stDomain []
+        (nfQuery cicStage3RawArtifactSig rawBody) =
+        ([(bodyOut, [])], stBody)) :
+    mettaEval kernelDefControlEnv (fuel + 1) st []
+      (nfPiReadout cicStage3RawArtifactSig rawDomain rawBody) =
+      ([(mExpr "Pi" [domainOut, bodyOut], [])], stBody) := by
+  have hType :
+      typeMismatch kernelDefControlEnv st.world "Pi"
+        [nfQuery cicStage3RawArtifactSig rawDomain,
+          nfQuery cicStage3RawArtifactSig rawBody] = none := by
+    rw [typeMismatch, kernelDefControlEnv_Pi_sigs_none]
+  have hRoot :
+      interpretFuel kernelDefControlEnv (fuel + 1) stBody
+        [evalItemNil (mExpr "Pi" [domainOut, bodyOut])] [] =
+        ([(notReducibleA, [])], stBody) :=
+    interpretFuel_kernelDefControlEnv_eval_Pi_atoms_notReducible_eq_state
+      fuel stBody domainOut bodyOut hStaticBody
+  simpa [nfPiReadout, nfQuery, mExpr, mSym] using
+    mettaEval_kernelDefControlEnv_nf_binary_readout_eq_state_of_primary_domain_body_eq_state
+      fuel st stDomain stBody "Pi" cicStage3RawArtifactSig
+      rawDomain rawBody domainOut bodyOut
+      hDomainReadout hBodyReadout hType kernelDefControlEnv_Pi_argMask
+      hRoot hDomain hBody
+
+theorem mettaEval_kernelDefControlEnv_nfLamReadout_eq_state_of_primary_domain_body_eq_state
+    (fuel : Nat) (st stDomain stBody : St)
+    (rawDomain rawBody : DIndGArtifactTerm)
+    (domainOut bodyOut : Metta.Atom)
+    (hDomainReadout :
+      CicStage3RawArtifactSigPrimaryNfRuntimeReadout rawDomain domainOut)
+    (hBodyReadout :
+      CicStage3RawArtifactSigPrimaryNfRuntimeReadout rawBody bodyOut)
+    (hStaticBody : stBody.world.selfExtra = [])
+    (hDomain :
+      mettaEval kernelDefControlEnv fuel st []
+        (nfQuery cicStage3RawArtifactSig rawDomain) =
+        ([(domainOut, [])], stDomain))
+    (hBody :
+      mettaEval kernelDefControlEnv fuel stDomain []
+        (nfQuery cicStage3RawArtifactSig rawBody) =
+        ([(bodyOut, [])], stBody)) :
+    mettaEval kernelDefControlEnv (fuel + 1) st []
+      (nfLamReadout cicStage3RawArtifactSig rawDomain rawBody) =
+      ([(mExpr "Lam" [domainOut, bodyOut], [])], stBody) := by
+  have hType :
+      typeMismatch kernelDefControlEnv st.world "Lam"
+        [nfQuery cicStage3RawArtifactSig rawDomain,
+          nfQuery cicStage3RawArtifactSig rawBody] = none := by
+    rw [typeMismatch, kernelDefControlEnv_Lam_sigs_none]
+  have hRoot :
+      interpretFuel kernelDefControlEnv (fuel + 1) stBody
+        [evalItemNil (mExpr "Lam" [domainOut, bodyOut])] [] =
+        ([(notReducibleA, [])], stBody) :=
+    interpretFuel_kernelDefControlEnv_eval_Lam_atoms_notReducible_eq_state
+      fuel stBody domainOut bodyOut hStaticBody
+  simpa [nfLamReadout, nfQuery, mExpr, mSym] using
+    mettaEval_kernelDefControlEnv_nf_binary_readout_eq_state_of_primary_domain_body_eq_state
+      fuel st stDomain stBody "Lam" cicStage3RawArtifactSig
+      rawDomain rawBody domainOut bodyOut
+      hDomainReadout hBodyReadout hType kernelDefControlEnv_Lam_argMask
+      hRoot hDomain hBody
+
+theorem mettaEval_kernelDefControlEnv_nfPiQuery_eq_state_of_primary_domain_body_eq_state
+    (fuel : Nat) (st stDomain stBody : St)
+    (rawDomain rawBody : DIndGArtifactTerm)
+    (domainOut bodyOut : Metta.Atom)
+    (hDomainReadout :
+      CicStage3RawArtifactSigPrimaryNfRuntimeReadout rawDomain domainOut)
+    (hBodyReadout :
+      CicStage3RawArtifactSigPrimaryNfRuntimeReadout rawBody bodyOut)
+    (hStatic : st.world.selfExtra = [])
+    (hBodyWorld : stBody.world = St.init.world)
+    (hDomain :
+      mettaEval kernelDefControlEnv fuel
+        { counter := st.counter + nfPiCandidatePre.length + 5,
+          world := st.world } []
+        (nfQuery cicStage3RawArtifactSig rawDomain) =
+        ([(domainOut, [])], stDomain))
+    (hBody :
+      mettaEval kernelDefControlEnv fuel stDomain []
+        (nfQuery cicStage3RawArtifactSig rawBody) =
+        ([(bodyOut, [])], stBody)) :
+    mettaEval kernelDefControlEnv (fuel + 2) st []
+      (nfQuery cicStage3RawArtifactSig (.pi rawDomain rawBody)) =
+      ([(mExpr "Pi" [domainOut, bodyOut], [])], stBody) := by
+  let root := nfPiReadout cicStage3RawArtifactSig rawDomain rawBody
+  let rootBnd :=
+    (renameBindings (counterSuffix (st.counter + nfPiCandidatePre.length))
+      (nfPiRuleBindings cicStage3RawArtifactSig rawDomain rawBody)).reverse
+  let stRoot : St :=
+    { counter := st.counter + nfPiCandidatePre.length + 5,
+      world := st.world }
+  have hRoot :
+      interpretFuel kernelDefControlEnv (fuel + 1 + 1) st
+          [evalItemNil
+            (nfQuery cicStage3RawArtifactSig (.pi rawDomain rawBody))] [] =
+        ([(root, rootBnd)], stRoot) := by
+    simpa [root, rootBnd, stRoot, Nat.add_assoc] using
+      interpretFuel_kernelDefControlEnv_nf_pi_root_eq
+        (fuel := fuel + 1) (st := st)
+        cicStage3RawArtifactSig rawDomain rawBody hStatic
+  have hOuterBndNil :
+      restrictBnd
+          (([sigAtom cicStage3RawArtifactSig,
+              termAtom (.pi rawDomain rawBody)]).flatMap Metta.Atom.vars)
+          ((Metta.Bindings.merge [] rootBnd).head?.getD rootBnd) = [] := by
+    simpa [List.flatMap,
+      sigAtom_vars_nil cicStage3RawArtifactSig,
+      termAtom_vars_nil (.pi rawDomain rawBody)] using
+      restrictBnd_nil_vars
+        ((Metta.Bindings.merge [] rootBnd).head?.getD rootBnd)
+  have hFinal :
+      mettaEval kernelDefControlEnv (fuel + 1) stRoot
+          (restrictBnd
+            (([sigAtom cicStage3RawArtifactSig,
+                termAtom (.pi rawDomain rawBody)]).flatMap Metta.Atom.vars)
+            ((Metta.Bindings.merge [] rootBnd).head?.getD rootBnd))
+          root =
+        ([(mExpr "Pi" [domainOut, bodyOut], [])], stBody) := by
+    rw [hOuterBndNil]
+    have hStaticBody : stBody.world.selfExtra = [] := by
+      rw [hBodyWorld]
+      rfl
+    simpa [root, stRoot] using
+      mettaEval_kernelDefControlEnv_nfPiReadout_eq_state_of_primary_domain_body_eq_state
+        fuel stRoot stDomain stBody rawDomain rawBody domainOut bodyOut
+        hDomainReadout hBodyReadout hStaticBody
+        (by simpa [stRoot] using hDomain) hBody
+  have hNoErr :
+      (([sigAtom cicStage3RawArtifactSig,
+          termAtom (.pi rawDomain rawBody)].zip
+        [sigAtom cicStage3RawArtifactSig,
+          termAtom (.pi rawDomain rawBody)]).find?
+        (fun ho : Metta.Atom × Metta.Atom => ho.1.isError && ho.1 != ho.2)) = none := by
+    simp [sigAtom_isError_false, termAtom_isError_false]
+  have hRootNotNR : (root == notReducibleA) = false := by
+    simp [root, nfPiReadout, notReducibleA, mExpr, mSym]
+    rfl
+  have hRootNotSelf :
+      (root == nfQuery cicStage3RawArtifactSig (.pi rawDomain rawBody)) =
+        false := by
+    simp [root, nfPiReadout, nfQuery, termAtom, mExpr, mSym]
+    rfl
+  have hExact :=
+    mettaEval_binary_expr_eq_of_quoted_args_and_root_eval_eq
+      (env := kernelDefControlEnv) (fuel := fuel + 1)
+      (st := st) (stRoot := stRoot) (stOut := stBody)
+      (op := "nf") (x := sigAtom cicStage3RawArtifactSig)
+      (y := termAtom (.pi rawDomain rawBody))
+      (root := root) (final := mExpr "Pi" [domainOut, bodyOut])
+      (rootBnd := rootBnd)
+      (kernelDefControlEnv_nf_typeMismatch st
+        cicStage3RawArtifactSig (.pi rawDomain rawBody))
+      kernelDefControlEnv_nf_argMask hNoErr
+      (by simpa [nfQuery, mExpr, mSym, root, rootBnd, stRoot,
+          Nat.add_assoc] using hRoot)
+      hRootNotNR
+      (by simpa [nfQuery, mExpr, mSym] using hRootNotSelf)
+      (by simpa [nfQuery, mExpr, mSym] using
+        (kernelDefControlEnv_nf_returnsAtom
+          cicStage3RawArtifactSig (.pi rawDomain rawBody)))
+      hFinal
+  simpa [nfQuery, mExpr, mSym, root, rootBnd, stRoot,
+    restrictBnd_nil_vars, List.flatMap,
+    sigAtom_vars_nil cicStage3RawArtifactSig,
+    termAtom_vars_nil (.pi rawDomain rawBody), Nat.add_assoc] using hExact
+
+theorem mettaEval_kernelDefControlEnv_nfLamQuery_eq_state_of_primary_domain_body_eq_state
+    (fuel : Nat) (st stDomain stBody : St)
+    (rawDomain rawBody : DIndGArtifactTerm)
+    (domainOut bodyOut : Metta.Atom)
+    (hDomainReadout :
+      CicStage3RawArtifactSigPrimaryNfRuntimeReadout rawDomain domainOut)
+    (hBodyReadout :
+      CicStage3RawArtifactSigPrimaryNfRuntimeReadout rawBody bodyOut)
+    (hStatic : st.world.selfExtra = [])
+    (hBodyWorld : stBody.world = St.init.world)
+    (hDomain :
+      mettaEval kernelDefControlEnv fuel
+        { counter := st.counter + nfLamCandidatePre.length + 4,
+          world := st.world } []
+        (nfQuery cicStage3RawArtifactSig rawDomain) =
+        ([(domainOut, [])], stDomain))
+    (hBody :
+      mettaEval kernelDefControlEnv fuel stDomain []
+        (nfQuery cicStage3RawArtifactSig rawBody) =
+        ([(bodyOut, [])], stBody)) :
+    mettaEval kernelDefControlEnv (fuel + 2) st []
+      (nfQuery cicStage3RawArtifactSig (.lam rawDomain rawBody)) =
+      ([(mExpr "Lam" [domainOut, bodyOut], [])], stBody) := by
+  let root := nfLamReadout cicStage3RawArtifactSig rawDomain rawBody
+  let rootBnd :=
+    (renameBindings (counterSuffix (st.counter + nfLamCandidatePre.length))
+      (nfLamRuleBindings cicStage3RawArtifactSig rawDomain rawBody)).reverse
+  let stRoot : St :=
+    { counter := st.counter + nfLamCandidatePre.length + 4,
+      world := st.world }
+  have hRoot :
+      interpretFuel kernelDefControlEnv (fuel + 1 + 1) st
+          [evalItemNil
+            (nfQuery cicStage3RawArtifactSig (.lam rawDomain rawBody))] [] =
+        ([(root, rootBnd)], stRoot) := by
+    simpa [root, rootBnd, stRoot, Nat.add_assoc] using
+      interpretFuel_kernelDefControlEnv_nf_lam_root_eq
+        (fuel := fuel + 1) (st := st)
+        cicStage3RawArtifactSig rawDomain rawBody hStatic
+  have hOuterBndNil :
+      restrictBnd
+          (([sigAtom cicStage3RawArtifactSig,
+              termAtom (.lam rawDomain rawBody)]).flatMap Metta.Atom.vars)
+          ((Metta.Bindings.merge [] rootBnd).head?.getD rootBnd) = [] := by
+    simpa [List.flatMap,
+      sigAtom_vars_nil cicStage3RawArtifactSig,
+      termAtom_vars_nil (.lam rawDomain rawBody)] using
+      restrictBnd_nil_vars
+        ((Metta.Bindings.merge [] rootBnd).head?.getD rootBnd)
+  have hFinal :
+      mettaEval kernelDefControlEnv (fuel + 1) stRoot
+          (restrictBnd
+            (([sigAtom cicStage3RawArtifactSig,
+                termAtom (.lam rawDomain rawBody)]).flatMap Metta.Atom.vars)
+            ((Metta.Bindings.merge [] rootBnd).head?.getD rootBnd))
+          root =
+        ([(mExpr "Lam" [domainOut, bodyOut], [])], stBody) := by
+    rw [hOuterBndNil]
+    have hStaticBody : stBody.world.selfExtra = [] := by
+      rw [hBodyWorld]
+      rfl
+    simpa [root, stRoot] using
+      mettaEval_kernelDefControlEnv_nfLamReadout_eq_state_of_primary_domain_body_eq_state
+        fuel stRoot stDomain stBody rawDomain rawBody domainOut bodyOut
+        hDomainReadout hBodyReadout hStaticBody
+        (by simpa [stRoot] using hDomain) hBody
+  have hNoErr :
+      (([sigAtom cicStage3RawArtifactSig,
+          termAtom (.lam rawDomain rawBody)].zip
+        [sigAtom cicStage3RawArtifactSig,
+          termAtom (.lam rawDomain rawBody)]).find?
+        (fun ho : Metta.Atom × Metta.Atom => ho.1.isError && ho.1 != ho.2)) = none := by
+    simp [sigAtom_isError_false, termAtom_isError_false]
+  have hRootNotNR : (root == notReducibleA) = false := by
+    simp [root, nfLamReadout, notReducibleA, mExpr, mSym]
+    rfl
+  have hRootNotSelf :
+      (root == nfQuery cicStage3RawArtifactSig (.lam rawDomain rawBody)) =
+        false := by
+    simp [root, nfLamReadout, nfQuery, termAtom, mExpr, mSym]
+    rfl
+  have hExact :=
+    mettaEval_binary_expr_eq_of_quoted_args_and_root_eval_eq
+      (env := kernelDefControlEnv) (fuel := fuel + 1)
+      (st := st) (stRoot := stRoot) (stOut := stBody)
+      (op := "nf") (x := sigAtom cicStage3RawArtifactSig)
+      (y := termAtom (.lam rawDomain rawBody))
+      (root := root) (final := mExpr "Lam" [domainOut, bodyOut])
+      (rootBnd := rootBnd)
+      (kernelDefControlEnv_nf_typeMismatch st
+        cicStage3RawArtifactSig (.lam rawDomain rawBody))
+      kernelDefControlEnv_nf_argMask hNoErr
+      (by simpa [nfQuery, mExpr, mSym, root, rootBnd, stRoot,
+          Nat.add_assoc] using hRoot)
+      hRootNotNR
+      (by simpa [nfQuery, mExpr, mSym] using hRootNotSelf)
+      (by simpa [nfQuery, mExpr, mSym] using
+        (kernelDefControlEnv_nf_returnsAtom
+          cicStage3RawArtifactSig (.lam rawDomain rawBody)))
+      hFinal
+  simpa [nfQuery, mExpr, mSym, root, rootBnd, stRoot,
+    restrictBnd_nil_vars, List.flatMap,
+    sigAtom_vars_nil cicStage3RawArtifactSig,
+    termAtom_vars_nil (.lam rawDomain rawBody), Nat.add_assoc] using hExact
+
+theorem cicStage3RawArtifactSig_primary_nf_value_runtime_extraction_pi_of_domain_body_eq_state
+    {fuel : Nat} {st stDomain stBody : St}
+    {rawDomain rawBody : DIndGArtifactTerm}
+    {domainOut bodyOut out : Metta.Atom}
+    (hDomainReadout :
+      CicStage3RawArtifactSigPrimaryNfRuntimeReadout rawDomain domainOut)
+    (hBodyReadout :
+      CicStage3RawArtifactSigPrimaryNfRuntimeReadout rawBody bodyOut)
+    (hBodyWorld : stBody.world = St.init.world)
+    (hDomain :
+      mettaEval kernelDefControlEnv fuel st []
+        (nfQuery cicStage3RawArtifactSig rawDomain) =
+        ([(domainOut, [])], stDomain))
+    (hBody :
+      mettaEval kernelDefControlEnv fuel stDomain []
+        (nfQuery cicStage3RawArtifactSig rawBody) =
+        ([(bodyOut, [])], stBody))
+    (hOut :
+      out ∈
+        (mettaEval kernelDefControlEnv (fuel + 1) st []
+          (nfPiReadout cicStage3RawArtifactSig
+            rawDomain rawBody)).1.map (·.1)) :
+    CicStage3RawArtifactSigPrimaryNfRuntimeReadout
+      (.pi rawDomain rawBody) out := by
+  have hStaticBody : stBody.world.selfExtra = [] := by
+    rw [hBodyWorld]
+    rfl
+  rw [mettaEval_kernelDefControlEnv_nfPiReadout_eq_state_of_primary_domain_body_eq_state
+    fuel st stDomain stBody rawDomain rawBody domainOut bodyOut
+      hDomainReadout hBodyReadout hStaticBody hDomain hBody] at hOut
+  have hOutEq : out = mExpr "Pi" [domainOut, bodyOut] := by
+    simpa using hOut
+  subst out
+  exact
+    CicStage3RawArtifactSigPrimaryNfRuntimeReadout.pi
+      hDomainReadout hBodyReadout
+
+theorem cicStage3RawArtifactSig_primary_nf_value_runtime_extraction_lam_of_domain_body_eq_state
+    {fuel : Nat} {st stDomain stBody : St}
+    {rawDomain rawBody : DIndGArtifactTerm}
+    {domainOut bodyOut out : Metta.Atom}
+    (hDomainReadout :
+      CicStage3RawArtifactSigPrimaryNfRuntimeReadout rawDomain domainOut)
+    (hBodyReadout :
+      CicStage3RawArtifactSigPrimaryNfRuntimeReadout rawBody bodyOut)
+    (hBodyWorld : stBody.world = St.init.world)
+    (hDomain :
+      mettaEval kernelDefControlEnv fuel st []
+        (nfQuery cicStage3RawArtifactSig rawDomain) =
+        ([(domainOut, [])], stDomain))
+    (hBody :
+      mettaEval kernelDefControlEnv fuel stDomain []
+        (nfQuery cicStage3RawArtifactSig rawBody) =
+        ([(bodyOut, [])], stBody))
+    (hOut :
+      out ∈
+        (mettaEval kernelDefControlEnv (fuel + 1) st []
+          (nfLamReadout cicStage3RawArtifactSig
+            rawDomain rawBody)).1.map (·.1)) :
+    CicStage3RawArtifactSigPrimaryNfRuntimeReadout
+      (.lam rawDomain rawBody) out := by
+  have hStaticBody : stBody.world.selfExtra = [] := by
+    rw [hBodyWorld]
+    rfl
+  rw [mettaEval_kernelDefControlEnv_nfLamReadout_eq_state_of_primary_domain_body_eq_state
+    fuel st stDomain stBody rawDomain rawBody domainOut bodyOut
+      hDomainReadout hBodyReadout hStaticBody hDomain hBody] at hOut
+  have hOutEq : out = mExpr "Lam" [domainOut, bodyOut] := by
+    simpa using hOut
+  subst out
+  exact
+    CicStage3RawArtifactSigPrimaryNfRuntimeReadout.lam
+      hDomainReadout hBodyReadout
+
+theorem cicStage3RawArtifactSig_primary_nf_query_value_runtime_extraction_pi_of_domain_body_eq_state
+    {fuel : Nat} {st stDomain stBody : St}
+    {rawDomain rawBody : DIndGArtifactTerm}
+    {domainOut bodyOut out : Metta.Atom}
+    (hDomainReadout :
+      CicStage3RawArtifactSigPrimaryNfRuntimeReadout rawDomain domainOut)
+    (hBodyReadout :
+      CicStage3RawArtifactSigPrimaryNfRuntimeReadout rawBody bodyOut)
+    (hStatic : st.world.selfExtra = [])
+    (hBodyWorld : stBody.world = St.init.world)
+    (hDomain :
+      mettaEval kernelDefControlEnv fuel
+        { counter := st.counter + nfPiCandidatePre.length + 5,
+          world := st.world } []
+        (nfQuery cicStage3RawArtifactSig rawDomain) =
+        ([(domainOut, [])], stDomain))
+    (hBody :
+      mettaEval kernelDefControlEnv fuel stDomain []
+        (nfQuery cicStage3RawArtifactSig rawBody) =
+        ([(bodyOut, [])], stBody))
+    (hOut :
+      out ∈
+        (mettaEval kernelDefControlEnv (fuel + 2) st []
+          (nfQuery cicStage3RawArtifactSig
+            (.pi rawDomain rawBody))).1.map (·.1)) :
+    CicStage3RawArtifactSigPrimaryNfRuntimeReadout
+      (.pi rawDomain rawBody) out := by
+  rw [mettaEval_kernelDefControlEnv_nfPiQuery_eq_state_of_primary_domain_body_eq_state
+    fuel st stDomain stBody rawDomain rawBody domainOut bodyOut
+      hDomainReadout hBodyReadout hStatic hBodyWorld hDomain hBody] at hOut
+  have hOutEq : out = mExpr "Pi" [domainOut, bodyOut] := by
+    simpa using hOut
+  subst out
+  exact
+    CicStage3RawArtifactSigPrimaryNfRuntimeReadout.pi
+      hDomainReadout hBodyReadout
+
+theorem cicStage3RawArtifactSig_primary_nf_query_value_runtime_extraction_lam_of_domain_body_eq_state
+    {fuel : Nat} {st stDomain stBody : St}
+    {rawDomain rawBody : DIndGArtifactTerm}
+    {domainOut bodyOut out : Metta.Atom}
+    (hDomainReadout :
+      CicStage3RawArtifactSigPrimaryNfRuntimeReadout rawDomain domainOut)
+    (hBodyReadout :
+      CicStage3RawArtifactSigPrimaryNfRuntimeReadout rawBody bodyOut)
+    (hStatic : st.world.selfExtra = [])
+    (hBodyWorld : stBody.world = St.init.world)
+    (hDomain :
+      mettaEval kernelDefControlEnv fuel
+        { counter := st.counter + nfLamCandidatePre.length + 4,
+          world := st.world } []
+        (nfQuery cicStage3RawArtifactSig rawDomain) =
+        ([(domainOut, [])], stDomain))
+    (hBody :
+      mettaEval kernelDefControlEnv fuel stDomain []
+        (nfQuery cicStage3RawArtifactSig rawBody) =
+        ([(bodyOut, [])], stBody))
+    (hOut :
+      out ∈
+        (mettaEval kernelDefControlEnv (fuel + 2) st []
+          (nfQuery cicStage3RawArtifactSig
+            (.lam rawDomain rawBody))).1.map (·.1)) :
+    CicStage3RawArtifactSigPrimaryNfRuntimeReadout
+      (.lam rawDomain rawBody) out := by
+  rw [mettaEval_kernelDefControlEnv_nfLamQuery_eq_state_of_primary_domain_body_eq_state
+    fuel st stDomain stBody rawDomain rawBody domainOut bodyOut
+      hDomainReadout hBodyReadout hStatic hBodyWorld hDomain hBody] at hOut
+  have hOutEq : out = mExpr "Lam" [domainOut, bodyOut] := by
+    simpa using hOut
+  subst out
+  exact
+    CicStage3RawArtifactSigPrimaryNfRuntimeReadout.lam
+      hDomainReadout hBodyReadout
+
+theorem cicStage3RawArtifactSig_primary_nf_value_runtime_extraction_geThree_indG_zero_iota
+    {n fuel : Nat} {st : St} {term : PureTm n} {out : Metta.Atom}
+    (hFuel : 3 ≤ fuel)
+    (hWorld : st.world = St.init.world)
+    (_hTrans :
+      DIndGArtifactTermTranslates
+        cicStage3RawArtifactSig.nameTranslates n
+        cicStage3IndGZeroRaw term)
+    (hOut :
+      out ∈
+        (mettaEval kernelDefControlEnv fuel st []
+          (nfQuery cicStage3RawArtifactSig
+            cicStage3IndGZeroRaw)).1.map (·.1)) :
+    CicStage3RawArtifactSigPrimaryNfRuntimeReadout
+      cicStage3IndGZeroRaw out := by
+  rcases Nat.exists_eq_add_of_le hFuel with ⟨fuelBase, hFuelEq⟩
+  have hFuelEq' : fuel = fuelBase + 3 := by omega
+  have hStatic : st.world.selfExtra = [] := by
+    rw [hWorld]
+    rfl
+  rw [hFuelEq'] at hOut
+  rw [show
+      nfQuery cicStage3RawArtifactSig cicStage3IndGZeroRaw =
+        nfQuery cicStage3RawArtifactSig cicStage3IndGZeroRawRuntime by
+      rfl] at hOut
+  rw [mettaEval_kernelDefControlEnv_nf_indG_zero_iota_body_eq_state
+    fuelBase st cicStage3RawArtifactSig hStatic] at hOut
+  have hOutEq : out = termAtom (.con `z) := by
+    simpa [nfIndGZeroIotaReadout] using hOut
+  subst out
+  exact CicStage3RawArtifactSigPrimaryNfRuntimeReadout.indGZeroIota
+
+theorem cicStage3RawArtifactSig_primary_nf_value_runtime_extraction_geThree_var
+    {fuel : Nat} {st : St} {index : Nat} {term : PureTm 0}
+    {out : Metta.Atom}
+    (_hFuel : 3 ≤ fuel)
+    (_hWorld : st.world = St.init.world)
+    (hTrans :
+      DIndGArtifactTermTranslates
+        cicStage3RawArtifactSig.nameTranslates 0
+        (.var index) term)
+    (_hOut :
+      out ∈
+        (mettaEval kernelDefControlEnv fuel st []
+          (nfQuery cicStage3RawArtifactSig (.var index))).1.map (·.1)) :
+    CicStage3RawArtifactSigPrimaryNfRuntimeReadout (.var index) out := by
+  cases hTrans with
+  | var hIndex =>
+      exact False.elim (Nat.not_lt_zero _ hIndex)
+
+theorem cicStage3RawArtifactSig_primary_nf_value_runtime_extraction_geThree_srt
+    {fuel : Nat} {st : St} {sort : DIndGArtifactSort}
+    {term : PureTm 0} {out : Metta.Atom}
+    (hFuel : 3 ≤ fuel)
+    (hWorld : st.world = St.init.world)
+    (_hTrans :
+      DIndGArtifactTermTranslates
+        cicStage3RawArtifactSig.nameTranslates 0
+        (.srt sort) term)
+    (hOut :
+      out ∈
+        (mettaEval kernelDefControlEnv fuel st []
+          (nfQuery cicStage3RawArtifactSig (.srt sort))).1.map (·.1)) :
+    CicStage3RawArtifactSigPrimaryNfRuntimeReadout (.srt sort) out := by
+  rcases Nat.exists_eq_add_of_le hFuel with ⟨fuelBase, hFuelEq⟩
+  have hFuelEq' : fuel = fuelBase + 3 := by omega
+  have hStatic : st.world.selfExtra = [] := by
+    rw [hWorld]
+    rfl
+  rw [hFuelEq'] at hOut
+  rw [mettaEval_kernelDefControlEnv_nf_srt_body_eq_state
+    fuelBase st cicStage3RawArtifactSig sort hStatic] at hOut
+  have hOutEq : out = termAtom (.srt sort) := by
+    simpa using hOut
+  subst out
+  exact
+    CicStage3RawArtifactSigPrimaryNfRuntimeReadout.resolved
+      (CicStage3ResolvedNfRuntimeOutput.srt sort)
+
+theorem cicStage3RawArtifactSig_primary_nf_value_runtime_extraction_geThree_con
+    {fuel : Nat} {st : St} {name : DeclName}
+    {term : PureTm 0} {out : Metta.Atom}
+    (hFuel : 3 ≤ fuel)
+    (hWorld : st.world = St.init.world)
+    (hTrans :
+      DIndGArtifactTermTranslates
+        cicStage3RawArtifactSig.nameTranslates 0
+        (.con name) term)
+    (hOut :
+      out ∈
+        (mettaEval kernelDefControlEnv fuel st []
+          (nfQuery cicStage3RawArtifactSig (.con name))).1.map (·.1)) :
+    CicStage3RawArtifactSigPrimaryNfRuntimeReadout (.con name) out := by
+  cases hTrans with
+  | con hName =>
+      rcases Nat.exists_eq_add_of_le hFuel with ⟨fuelBase, hFuelEq⟩
+      have hFuelEq' : fuel = fuelBase + 3 := by omega
+      have hStatic : st.world.selfExtra = [] := by
+        rw [hWorld]
+        rfl
+      have hNameWith :
+          cicStage3RawNameTranslatesWithPropToType0Witness name _ :=
+        Or.inl hName
+      have hBound :
+          cicStage3RawNameWithPropToType0WitnessBounded name :=
+        cicStage3RawNameTranslatesWithPropToType0Witness_bounded hNameWith
+      rw [hFuelEq'] at hOut
+      rw [mettaEval_kernelDefControlEnv_nf_con_body_eq_state
+        fuelBase st cicStage3RawArtifactSig name hStatic
+        (cicStage3RawNameWithPropToType0WitnessBounded_runtimeSafe hBound)] at hOut
+      have hOutEq : out = termAtom (.con name) := by
+        simpa using hOut
+      subst out
+      exact
+        CicStage3RawArtifactSigPrimaryNfRuntimeReadout.resolved
+          (CicStage3ResolvedNfRuntimeOutput.con hBound)
+
+theorem cicStage3RawArtifactSig_primary_nf_value_runtime_extraction_geThree_bad
+    {fuel : Nat} {st : St} {reason : String}
+    {term : PureTm 0} {out : Metta.Atom}
+    (_hFuel : 3 ≤ fuel)
+    (_hWorld : st.world = St.init.world)
+    (hTrans :
+      DIndGArtifactTermTranslates
+        cicStage3RawArtifactSig.nameTranslates 0
+        (.bad reason) term)
+    (_hOut :
+      out ∈
+        (mettaEval kernelDefControlEnv fuel st []
+          (nfQuery cicStage3RawArtifactSig (.bad reason))).1.map (·.1)) :
+    CicStage3RawArtifactSigPrimaryNfRuntimeReadout (.bad reason) out := by
+  cases hTrans
+
+theorem cicStage3RawArtifactSig_primary_nf_value_runtime_extraction_geThree_app
+    {fuel : Nat} {st : St} {rawFn rawArg : DIndGArtifactTerm}
+    {term : PureTm 0} {out : Metta.Atom}
+    (hFuel : 3 ≤ fuel)
+    (hWorld : st.world = St.init.world)
+    (hTrans :
+      DIndGArtifactTermTranslates
+        cicStage3RawArtifactSig.nameTranslates 0
+        (.app rawFn rawArg) term)
+    (hOut :
+      out ∈
+        (mettaEval kernelDefControlEnv fuel st []
+          (nfQuery cicStage3RawArtifactSig (.app rawFn rawArg))).1.map (·.1)) :
+    CicStage3RawArtifactSigPrimaryNfRuntimeReadout
+      (.app rawFn rawArg) out := by
+  cases hTrans with
+  | app hFn hArg =>
+      rcases Nat.exists_eq_add_of_le hFuel with ⟨fuelBase, hFuelEq⟩
+      have hFuelEq' : fuel = fuelBase + 3 := by omega
+      have hStatic : st.world.selfExtra = [] := by
+        rw [hWorld]
+        rfl
+      rw [hFuelEq'] at hOut
+      rw [mettaEval_kernelDefControlEnv_nf_app_body_eq_state
+        (fuelBase + 1) st cicStage3RawArtifactSig rawFn rawArg hStatic] at hOut
+      have hOutEq :
+          out = nfQuery cicStage3RawArtifactSig (.app rawFn rawArg) := by
+        simpa using hOut
+      subst out
+      exact
+        CicStage3RawArtifactSigPrimaryNfRuntimeReadout.appStuck
+          (cicStage3RawTermTranslatesWithPropToType0Witness_visible_names_bounded
+            (dindg_translate_to_withPropToType0Witness hFn))
+          (cicStage3RawTermTranslatesWithPropToType0Witness_visible_names_bounded
+            (dindg_translate_to_withPropToType0Witness hArg))
+
+theorem cicStage3RawArtifactSig_primary_nf_value_runtime_extraction_geThree_indG_stuck
+    {n fuel : Nat} {st : St} {familyName : DeclName}
+    {params : List DIndGArtifactTerm}
+    {motive : DIndGArtifactTerm}
+    {cases : List (DeclName × DIndGArtifactTerm)}
+    {indices : List DIndGArtifactTerm}
+    {scrutinee : DIndGArtifactTerm}
+    {term : PureTm n} {out : Metta.Atom}
+    (hFuel : 3 ≤ fuel)
+    (hWorld : st.world = St.init.world)
+    (hTrans :
+      DIndGArtifactTermTranslates
+        cicStage3RawArtifactSig.nameTranslates n
+        (.indG familyName params motive cases indices scrutinee) term)
+    (hIotaMiss :
+      Metta.matchAtoms (termAtom cicStage3IndGZeroRawRuntime)
+        (termAtom (.indG familyName params motive cases indices scrutinee)) = [])
+    (hOut :
+      out ∈
+        (mettaEval kernelDefControlEnv fuel st []
+          (nfQuery cicStage3RawArtifactSig
+            (.indG familyName params motive cases indices scrutinee))).1.map (·.1)) :
+    CicStage3RawArtifactSigPrimaryNfRuntimeReadout
+      (.indG familyName params motive cases indices scrutinee) out := by
+  cases hTrans with
+  | indG readout =>
+      rcases Nat.exists_eq_add_of_le hFuel with ⟨fuelBase, hFuelEq⟩
+      have hFuelEq' : fuel = fuelBase + 3 := by omega
+      have hStatic : st.world.selfExtra = [] := by
+        rw [hWorld]
+        rfl
+      rw [hFuelEq'] at hOut
+      rw [mettaEval_kernelDefControlEnv_nf_indG_body_eq_state
+        (fuelBase + 1) st cicStage3RawArtifactSig
+        familyName params motive cases indices scrutinee hIotaMiss hStatic] at hOut
+      have hOutEq :
+          out =
+            nfQuery cicStage3RawArtifactSig
+              (.indG familyName params motive cases indices scrutinee) := by
+        simpa using hOut
+      subst out
+      have hBounded :
+          CicStage3RawTermTranslationVisibleNamesBounded
+            (.indG familyName params motive cases indices scrutinee) :=
+        cicStage3RawTermTranslatesWithPropToType0Witness_visible_names_bounded
+          (dindg_translate_to_withPropToType0Witness
+            (DIndGArtifactTermTranslates.indG readout))
+      cases hBounded with
+      | indG hFamily =>
+          exact CicStage3RawArtifactSigPrimaryNfRuntimeReadout.indGStuck hFamily
+
+theorem cicStage3RawArtifactSig_primary_nf_value_runtime_extraction_geEleven_indG_zero_iota
+    {fuel : Nat} {st : St} {term : PureTm 0} {out : Metta.Atom}
+    (hFuel : 11 ≤ fuel)
+    (hWorld : st.world = St.init.world)
+    (hTrans :
+      DIndGArtifactTermTranslates
+        cicStage3RawArtifactSig.nameTranslates 0
+        cicStage3IndGZeroRaw term)
+    (hOut :
+      out ∈
+        (mettaEval kernelDefControlEnv fuel st []
+          (nfQuery cicStage3RawArtifactSig
+            cicStage3IndGZeroRaw)).1.map (·.1)) :
+    CicStage3RawArtifactSigPrimaryNfRuntimeReadout
+      cicStage3IndGZeroRaw out := by
+  exact
+    cicStage3RawArtifactSig_primary_nf_value_runtime_extraction_geThree_indG_zero_iota
+      (by omega) hWorld hTrans hOut
+
+theorem cicStage3RawArtifactSig_primary_nf_value_runtime_extraction_geEleven_var
+    {fuel : Nat} {st : St} {index : Nat} {term : PureTm 0}
+    {out : Metta.Atom}
+    (hFuel : 11 ≤ fuel)
+    (hWorld : st.world = St.init.world)
+    (hTrans :
+      DIndGArtifactTermTranslates
+        cicStage3RawArtifactSig.nameTranslates 0
+        (.var index) term)
+    (hOut :
+      out ∈
+        (mettaEval kernelDefControlEnv fuel st []
+          (nfQuery cicStage3RawArtifactSig (.var index))).1.map (·.1)) :
+    CicStage3RawArtifactSigPrimaryNfRuntimeReadout (.var index) out := by
+  exact
+    cicStage3RawArtifactSig_primary_nf_value_runtime_extraction_geThree_var
+      (by omega) hWorld hTrans hOut
+
+theorem cicStage3RawArtifactSig_primary_nf_value_runtime_extraction_geEleven_srt
+    {fuel : Nat} {st : St} {sort : DIndGArtifactSort}
+    {term : PureTm 0} {out : Metta.Atom}
+    (hFuel : 11 ≤ fuel)
+    (hWorld : st.world = St.init.world)
+    (hTrans :
+      DIndGArtifactTermTranslates
+        cicStage3RawArtifactSig.nameTranslates 0
+        (.srt sort) term)
+    (hOut :
+      out ∈
+        (mettaEval kernelDefControlEnv fuel st []
+          (nfQuery cicStage3RawArtifactSig (.srt sort))).1.map (·.1)) :
+    CicStage3RawArtifactSigPrimaryNfRuntimeReadout (.srt sort) out := by
+  exact
+    cicStage3RawArtifactSig_primary_nf_value_runtime_extraction_geThree_srt
+      (by omega) hWorld hTrans hOut
+
+theorem cicStage3RawArtifactSig_primary_nf_value_runtime_extraction_geEleven_con
+    {fuel : Nat} {st : St} {name : DeclName}
+    {term : PureTm 0} {out : Metta.Atom}
+    (hFuel : 11 ≤ fuel)
+    (hWorld : st.world = St.init.world)
+    (hTrans :
+      DIndGArtifactTermTranslates
+        cicStage3RawArtifactSig.nameTranslates 0
+        (.con name) term)
+    (hOut :
+      out ∈
+        (mettaEval kernelDefControlEnv fuel st []
+          (nfQuery cicStage3RawArtifactSig (.con name))).1.map (·.1)) :
+    CicStage3RawArtifactSigPrimaryNfRuntimeReadout (.con name) out := by
+  exact
+    cicStage3RawArtifactSig_primary_nf_value_runtime_extraction_geThree_con
+      (by omega) hWorld hTrans hOut
+
+theorem cicStage3RawArtifactSig_primary_nf_value_runtime_extraction_geEleven_bad
+    {fuel : Nat} {st : St} {reason : String}
+    {term : PureTm 0} {out : Metta.Atom}
+    (hFuel : 11 ≤ fuel)
+    (hWorld : st.world = St.init.world)
+    (hTrans :
+      DIndGArtifactTermTranslates
+        cicStage3RawArtifactSig.nameTranslates 0
+        (.bad reason) term)
+    (hOut :
+      out ∈
+        (mettaEval kernelDefControlEnv fuel st []
+          (nfQuery cicStage3RawArtifactSig (.bad reason))).1.map (·.1)) :
+    CicStage3RawArtifactSigPrimaryNfRuntimeReadout (.bad reason) out := by
+  exact
+    cicStage3RawArtifactSig_primary_nf_value_runtime_extraction_geThree_bad
+      (by omega) hWorld hTrans hOut
+
+private def leattaDefControlPrimaryNfDefFreshRootNamed
+    (name : DeclName) (binder : String) : Metta.Atom :=
+  mExpr "let"
+    [ mVar binder
+    , defBodyOfQueryAtom
+        (sigAtom cicStage3RawArtifactSig)
+        (declNameAtom name)
+    , mExpr "if"
+        [ mExpr "is-bad" [mVar binder]
+        , mExpr "Bad" [mSym "unknown-definition"]
+        , mExpr "nf"
+            [sigAtom cicStage3RawArtifactSig, mVar binder] ] ]
+
+private theorem leattaDefControlPrimary_nfDefFreshRoot_named_eq
+    (counter : Nat) (name : DeclName) :
+    Metta.instantiate
+        (renameBindings (counterSuffix counter)
+          (nfDefRuleBindings cicStage3RawArtifactSig name)).reverse
+        (freshenRule counter nfDefRuleLhs nfDefRuleRhs).2 =
+      leattaDefControlPrimaryNfDefFreshRootNamed name
+        (counterSuffix counter "body") := by
+  rw [freshenRule_eq_renBy]
+  simp [leattaDefControlPrimaryNfDefFreshRootNamed,
+    nfDefRuleBindings, nfDefRuleRhs, renameBindings, counterSuffix,
+    Metta.instantiate, Metta.bindingsToSubst, Metta.Subst.apply,
+    Metta.Subst.lookup,
+    Mettapedia.Languages.MeTTa.HE.CanonAbsorbsFreshening.renBy,
+    defBodyOfQueryAtom, mExpr, mSym, mVar]
+
+private theorem leattaDefControlPrimary_nfDefIfTemplate_instantiated_eq_named
+    (name : DeclName) (binder : String) :
+    let bodyAtom :=
+      defBodyOfQueryAtom
+        (sigAtom cicStage3RawArtifactSig)
+        (declNameAtom name)
+    let template :=
+      mExpr "if"
+        [ mExpr "is-bad" [mVar binder]
+        , mExpr "Bad" [mSym "unknown-definition"]
+        , mExpr "nf" [sigAtom cicStage3RawArtifactSig, mVar binder] ]
+    Metta.instantiate [Metta.BindingRel.val binder bodyAtom]
+        (Metta.instantiate [Metta.BindingRel.val binder bodyAtom] template) =
+      mExpr "if"
+        [ mExpr "is-bad" [bodyAtom]
+        , mExpr "Bad" [mSym "unknown-definition"]
+        , cicStage3CanonicalDefnStuckReadoutForSig
+            cicStage3RawArtifactSig name ] := by
+  dsimp
+  have hSigSubst :
+      Metta.Subst.apply
+          [(binder,
+            defBodyOfQueryAtom
+              (sigAtom cicStage3RawArtifactSig)
+              (declNameAtom name))]
+          (sigAtom cicStage3RawArtifactSig) =
+        sigAtom cicStage3RawArtifactSig := by
+    exact Metta.Subst.apply_of_closed _
+      (sigAtom cicStage3RawArtifactSig)
+      (sigAtom_vars_nil cicStage3RawArtifactSig)
+  have hBodySubst :
+      Metta.Subst.apply
+          [(binder,
+            defBodyOfQueryAtom
+              (sigAtom cicStage3RawArtifactSig)
+              (declNameAtom name))]
+          (defBodyOfQueryAtom
+            (sigAtom cicStage3RawArtifactSig)
+            (declNameAtom name)) =
+        defBodyOfQueryAtom
+          (sigAtom cicStage3RawArtifactSig)
+          (declNameAtom name) := by
+    exact Metta.Subst.apply_of_closed _ _
+      (by simp [defBodyOfQueryAtom, sigAtom_vars_nil,
+        declNameAtom_vars_nil, mExpr, mSym, Metta.Atom.vars])
+  simp [hSigSubst, hBodySubst, cicStage3CanonicalDefnStuckReadoutForSig,
+    mExpr, mSym, mVar, Metta.instantiate, Metta.bindingsToSubst,
+    Metta.Subst.apply, Metta.Subst.lookup]
+
+private theorem mettaEval_kernelDefControlEnv_primary_defn_stuck_body_if_false_nf_eq_with_ambient_named
+    (fuel : Nat) (st : St) (name : DeclName) (binder : String)
+    (ambient : Metta.Bindings)
+    (hWorld : st.world = St.init.world)
+    (hAmbientClosed : ClosedValueBindings ambient)
+    (hAmbientKeys : ∀ x, x ∈ bindingValueKeys ambient → x = binder)
+    (hFreshET :
+      ∀ {v : String}, v = "e" ∨ v = "t" →
+        counterSuffix (st.counter + 2) v ≠ binder) :
+    let bodyAtom :=
+      defBodyOfQueryAtom
+        (sigAtom cicStage3RawArtifactSig)
+        (declNameAtom name)
+    let elseA :=
+      cicStage3CanonicalDefnStuckReadoutForSig
+        cicStage3RawArtifactSig name
+    let stRoot : St := { counter := st.counter + 3, world := st.world }
+    mettaEval kernelDefControlEnv (fuel + 8) st ambient
+        (mExpr "if"
+          [ mExpr "is-bad" [bodyAtom]
+          , mExpr "Bad" [mSym "unknown-definition"]
+          , elseA ]) =
+      ([(elseA, [])],
+        { counter := stRoot.counter + nfDefCandidatePreWithIndGZeroIota.length + 1,
+          world := stRoot.world }) := by
+  dsimp
+  let bodyAtom :=
+    defBodyOfQueryAtom
+      (sigAtom cicStage3RawArtifactSig)
+      (declNameAtom name)
+  let cond := mExpr "is-bad" [bodyAtom]
+  let thenA := mExpr "Bad" [mSym "unknown-definition"]
+  let elseA :=
+    cicStage3CanonicalDefnStuckReadoutForSig
+      cicStage3RawArtifactSig name
+  let target := mExpr "if" [cond, thenA, elseA]
+  let stCond : St := { counter := st.counter + 1, world := st.world }
+  let stRoot : St := { counter := st.counter + 3, world := st.world }
+  let rootBnd : Metta.Bindings :=
+    (renameBindings (counterSuffix (st.counter + 2))
+      [Metta.BindingRel.val "e" elseA,
+       Metta.BindingRel.val "t" thenA]).reverse ++ ambient
+  have hStatic : st.world.selfExtra = [] := by
+    simpa [hWorld] using (show St.init.world.selfExtra = [] by rfl)
+  have hBodyClosed : bodyAtom.vars = [] := by
+    simp [bodyAtom, defBodyOfQueryAtom, sigAtom_vars_nil,
+      declNameAtom_vars_nil, mExpr, mSym, Metta.Atom.vars]
+  have hElseClosed : elseA.vars = [] := by
+    simp [elseA, cicStage3CanonicalDefnStuckReadoutForSig,
+      defBodyOfQueryAtom, sigAtom_vars_nil, declNameAtom_vars_nil,
+      mExpr, mSym, Metta.Atom.vars]
+  have hCondClosed : cond.vars = [] := by
+    simp [cond, hBodyClosed, mExpr, mSym, Metta.Atom.vars]
+  have hThenClosed : thenA.vars = [] := by
+    simp [thenA, mExpr, mSym, Metta.Atom.vars]
+  have hTargetClosed : target.vars = [] := by
+    simp [target, cond, thenA, elseA, hElseClosed, hBodyClosed,
+      mExpr, mSym, Metta.Atom.vars]
+  have hQvars : cond.vars ++ (thenA.vars ++ elseA.vars) = [] := by
+    simp [hCondClosed, hThenClosed, hElseClosed]
+  have hInstTarget : Metta.instantiate ambient target = target := by
+    exact instantiate_eq_self_of_vars_nil ambient hTargetClosed
+  have hCond :
+      mettaEval kernelDefControlEnv (fuel + 7) st [] cond =
+        ([(mBool false, [])], stCond) := by
+    have hBodyErr : bodyAtom.isError = false := by
+      simp [bodyAtom, defBodyOfQueryAtom, mExpr, mSym, Metta.Atom.isError]
+    have hBodyBeq : (bodyAtom == bodyAtom) = true := by
+      have hSig := sigAtom_beq_self_true cicStage3RawArtifactSig
+      have hName := declNameAtom_beq_self_true name
+      have hSig' :
+          (sigAtom cicStage3RawArtifactSig).beq
+              (sigAtom cicStage3RawArtifactSig) = true := by
+        change (sigAtom cicStage3RawArtifactSig ==
+          sigAtom cicStage3RawArtifactSig) = true
+        exact hSig
+      have hName' :
+          (declNameAtom name).beq (declNameAtom name) = true := by
+        change (declNameAtom name == declNameAtom name) = true
+        exact hName
+      change Metta.Atom.beq bodyAtom bodyAtom = true
+      simpa [bodyAtom, defBodyOfQueryAtom, mExpr, mSym, Metta.Atom.beq,
+        Metta.Atom.beqList] using And.intro hSig' hName'
+    have hBodyNonVar : ∀ w, bodyAtom ≠ Metta.Atom.var w := by
+      intro w
+      simp [bodyAtom, defBodyOfQueryAtom, mExpr, mSym]
+    have hmatch :
+        Metta.matchAtoms bodyAtom
+          (mExpr "Bad" [mVar (counterSuffix st.counter "e")]) = [] := by
+      simp [bodyAtom, defBodyOfQueryAtom, mExpr, mSym, mVar,
+        Metta.matchAtoms, Metta.matchAtomsWith, Metta.matchAll]
+    simpa [cond, bodyAtom, stCond, Nat.add_assoc] using
+      mettaEval_kernelDefControlEnv_is_bad_false_eq
+        (fuel := fuel + 4) (st := st) (a := bodyAtom)
+        hStatic hBodyClosed hBodyErr hBodyBeq hBodyNonVar hmatch
+  have hType :
+      typeMismatch kernelDefControlEnv st.world "if" [cond, thenA, elseA] = none := by
+    simpa [cond, bodyAtom, hWorld] using
+      kernelDefControlEnv_if_typeMismatch_is_bad_init bodyAtom thenA elseA
+  have hNoErr :
+      (([mBool false, thenA, elseA].zip [cond, thenA, elseA]).find?
+        (fun ho : Metta.Atom × Metta.Atom => ho.1.isError && ho.1 != ho.2)) = none := by
+    simp [cond, thenA, elseA, bodyAtom, cicStage3CanonicalDefnStuckReadoutForSig,
+      defBodyOfQueryAtom, mBool, mExpr, mSym, Metta.Atom.isError]
+  have hRoot :
+      interpretFuel kernelDefControlEnv (fuel + 7 + 1) stCond
+          [{ stack := atomToStack
+              (Metta.Atom.expr [Metta.Atom.sym "eval",
+                mExpr "if" [mBool false, thenA, elseA]]) [],
+             bnd := ambient }] [] =
+        ([(elseA, rootBnd)], stRoot) := by
+    have hStaticCond : stCond.world.selfExtra = [] := by
+      simpa [stCond] using hStatic
+    have hElseNonVar : ∀ w, elseA ≠ Metta.Atom.var w := by
+      intro w
+      simp [elseA, cicStage3CanonicalDefnStuckReadoutForSig, mExpr, mSym]
+    have hElseNotFunction : isFunctionResult elseA = false := by
+      simp [elseA, cicStage3CanonicalDefnStuckReadoutForSig,
+        isFunctionResult, mExpr, mSym]
+    have hFresh :
+        ∀ {v : String}, v = "e" ∨ v = "t" →
+          counterSuffix (stCond.counter + 1) v ≠ binder := by
+      intro v hv
+      simpa [stCond, Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using
+        hFreshET (v := v) hv
+    simpa [stCond, stRoot, rootBnd, thenA, elseA,
+      Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using
+      interpretFuel_kernelDefControlEnv_if_false_root_eq_with_keyed_ambient
+        (fuel := fuel + 7) (st := stCond)
+        binder elseA ambient hStaticCond hElseClosed hElseNonVar
+        hElseNotFunction hAmbientClosed hAmbientKeys hFresh
+  have hRootNotNR : (elseA == notReducibleA) = false := by
+    rfl
+  have hRootNotSelf :
+      (elseA == mExpr "if" [mBool false, thenA, elseA]) = false := by
+    simp [elseA, cicStage3CanonicalDefnStuckReadoutForSig,
+      mExpr, mSym]
+    rfl
+  have hFinal :
+      mettaEval kernelDefControlEnv (fuel + 7) stRoot
+          (restrictBnd (([cond, thenA, elseA]).flatMap Metta.Atom.vars)
+            ((Metta.Bindings.merge [] rootBnd).head?.getD rootBnd)) elseA =
+        ([(elseA, [])],
+          { counter := stRoot.counter + nfDefCandidatePreWithIndGZeroIota.length + 1,
+            world := stRoot.world }) := by
+    have hBndNil :
+        restrictBnd (([cond, thenA, elseA]).flatMap Metta.Atom.vars)
+            ((Metta.Bindings.merge [] rootBnd).head?.getD rootBnd) = [] := by
+      simpa [List.flatMap, hQvars] using
+        restrictBnd_nil_vars ((Metta.Bindings.merge [] rootBnd).head?.getD rootBnd)
+    rw [hBndNil]
+    have hStaticRoot : stRoot.world.selfExtra = [] := by
+      simpa [stRoot] using hStatic
+    simpa [elseA, bodyAtom, cicStage3CanonicalDefnStuckReadoutForSig,
+      Nat.add_assoc] using
+      mettaEval_kernelDefControlEnv_nf_def_body_of_eq_state
+        (fuel + 5) stRoot cicStage3RawArtifactSig name hStaticRoot
+  rw [Metta.Minimal.mettaEval.eq_2]
+  rw [hInstTarget]
+  simp only [target, mExpr, mSym]
+  rw [hType]
+  simp only [kernelDefControlEnv_if_argMask, List.length_cons, List.length_nil,
+    Nat.reduceAdd, List.zip_cons_cons, List.zip_nil_right,
+    Bool.false_eq_true, if_false, if_true, List.foldl_cons, List.foldl_nil]
+  rw [hCond]
+  simp [hQvars, restrictBnd_nil_vars]
+  rw [Metta.instantiate_nil thenA]
+  rw [Metta.instantiate_nil elseA]
+  have hNoErr' :
+      List.find? (fun ho : Metta.Atom × Metta.Atom => ho.1.isError && ho.1 != ho.2)
+        [(mBool false, cond), (thenA, thenA), (elseA, elseA)] = none := by
+    simpa using hNoErr
+  rw [hNoErr']
+  have hRoot' :
+      interpretFuel kernelDefControlEnv (fuel + 7 + 1) stCond
+          [{ stack := atomToStack
+              (Metta.Atom.expr [Metta.Atom.sym "eval",
+                Metta.Atom.expr [Metta.Atom.sym "if", mBool false, thenA, elseA]]) [],
+             bnd := ambient }] [] =
+        ([(elseA, rootBnd)], stRoot) := by
+    simpa [mExpr, mSym, bodyAtom] using hRoot
+  rw [hRoot']
+  have hRootNotSelf' :
+      (elseA == Metta.Atom.expr [Metta.Atom.sym "if", mBool false, thenA, elseA]) = false := by
+    simpa [mExpr, mSym] using hRootNotSelf
+  have hReturns' :
+      returnsAtom kernelDefControlEnv
+        (Metta.Atom.expr [Metta.Atom.sym "if", mBool false, thenA, elseA]) = false := by
+    simpa [mExpr, mSym] using
+      kernelDefControlEnv_if_returnsAtom (mBool false) thenA elseA
+  simp [hRootNotNR, hRootNotSelf', hReturns']
+  have hFinalNil :
+      mettaEval kernelDefControlEnv (fuel + 7) stRoot [] elseA =
+        ([(elseA, [])],
+          { counter := stRoot.counter + nfDefCandidatePreWithIndGZeroIota.length + 1,
+            world := stRoot.world }) := by
+    have hNil :
+        restrictBnd [] ((Metta.Bindings.merge [] rootBnd).head?.getD rootBnd) = [] := by
+      simpa using restrictBnd_nil_vars ((Metta.Bindings.merge [] rootBnd).head?.getD rootBnd)
+    simpa [List.flatMap, hQvars, hNil] using hFinal
+  rw [hFinalNil]
+  simp [elseA, stRoot]
+
+private theorem mettaEval_kernelDefControlEnv_primary_defn_stuck_body_if_false_nf_eq_with_ambient_named_geFour
+    (fuel : Nat) (st : St) (name : DeclName) (binder : String)
+    (ambient : Metta.Bindings)
+    (hWorld : st.world = St.init.world)
+    (hAmbientClosed : ClosedValueBindings ambient)
+    (hAmbientKeys : ∀ x, x ∈ bindingValueKeys ambient → x = binder)
+    (hFreshET :
+      ∀ {v : String}, v = "e" ∨ v = "t" →
+        counterSuffix (st.counter + 2) v ≠ binder) :
+    let bodyAtom :=
+      defBodyOfQueryAtom
+        (sigAtom cicStage3RawArtifactSig)
+        (declNameAtom name)
+    let elseA :=
+      cicStage3CanonicalDefnStuckReadoutForSig
+        cicStage3RawArtifactSig name
+    let stRoot : St := { counter := st.counter + 3, world := st.world }
+    mettaEval kernelDefControlEnv (fuel + 4) st ambient
+        (mExpr "if"
+          [ mExpr "is-bad" [bodyAtom]
+          , mExpr "Bad" [mSym "unknown-definition"]
+          , elseA ]) =
+      ([(elseA, [])],
+        { counter := stRoot.counter + nfDefCandidatePreWithIndGZeroIota.length + 1,
+          world := stRoot.world }) := by
+  dsimp
+  let bodyAtom :=
+    defBodyOfQueryAtom
+      (sigAtom cicStage3RawArtifactSig)
+      (declNameAtom name)
+  let cond := mExpr "is-bad" [bodyAtom]
+  let thenA := mExpr "Bad" [mSym "unknown-definition"]
+  let elseA :=
+    cicStage3CanonicalDefnStuckReadoutForSig
+      cicStage3RawArtifactSig name
+  let target := mExpr "if" [cond, thenA, elseA]
+  let stCond : St := { counter := st.counter + 1, world := st.world }
+  let stRoot : St := { counter := st.counter + 3, world := st.world }
+  let rootBnd : Metta.Bindings :=
+    (renameBindings (counterSuffix (st.counter + 2))
+      [Metta.BindingRel.val "e" elseA,
+       Metta.BindingRel.val "t" thenA]).reverse ++ ambient
+  let stOut : St :=
+    { counter := stRoot.counter + nfDefCandidatePreWithIndGZeroIota.length + 1,
+      world := stRoot.world }
+  have hStatic : st.world.selfExtra = [] := by
+    simpa [hWorld] using (show St.init.world.selfExtra = [] by rfl)
+  have hBodyClosed : bodyAtom.vars = [] := by
+    simp [bodyAtom, defBodyOfQueryAtom, sigAtom_vars_nil,
+      declNameAtom_vars_nil, mExpr, mSym, Metta.Atom.vars]
+  have hElseClosed : elseA.vars = [] := by
+    simp [elseA, cicStage3CanonicalDefnStuckReadoutForSig,
+      defBodyOfQueryAtom, sigAtom_vars_nil, declNameAtom_vars_nil,
+      mExpr, mSym, Metta.Atom.vars]
+  have hCondClosed : cond.vars = [] := by
+    simp [cond, hBodyClosed, mExpr, mSym, Metta.Atom.vars]
+  have hThenClosed : thenA.vars = [] := by
+    simp [thenA, mExpr, mSym, Metta.Atom.vars]
+  have hQvars : cond.vars ++ (thenA.vars ++ elseA.vars) = [] := by
+    simp [hCondClosed, hThenClosed, hElseClosed]
+  have hTargetClosed : target.vars = [] := by
+    simp [target, cond, thenA, elseA, hBodyClosed,
+      hElseClosed, mExpr, mSym, Metta.Atom.vars]
+  have hInstTarget : Metta.instantiate ambient target = target := by
+    exact instantiate_eq_self_of_vars_nil ambient hTargetClosed
+  have hCond :
+      mettaEval kernelDefControlEnv (fuel + 3) st [] cond =
+        ([(mBool false, [])], stCond) := by
+    have hBodyErr : bodyAtom.isError = false := by
+      simp [bodyAtom, defBodyOfQueryAtom, mExpr, mSym, Metta.Atom.isError]
+    have hBodyBeq : (bodyAtom == bodyAtom) = true := by
+      have hSig := sigAtom_beq_self_true cicStage3RawArtifactSig
+      have hName := declNameAtom_beq_self_true name
+      have hSig' :
+          (sigAtom cicStage3RawArtifactSig).beq
+              (sigAtom cicStage3RawArtifactSig) = true := by
+        change (sigAtom cicStage3RawArtifactSig ==
+          sigAtom cicStage3RawArtifactSig) = true
+        exact hSig
+      have hName' :
+          (declNameAtom name).beq (declNameAtom name) = true := by
+        change (declNameAtom name == declNameAtom name) = true
+        exact hName
+      change Metta.Atom.beq bodyAtom bodyAtom = true
+      simpa [bodyAtom, defBodyOfQueryAtom, mExpr, mSym, Metta.Atom.beq,
+        Metta.Atom.beqList] using And.intro hSig' hName'
+    have hBodyNonVar : ∀ w, bodyAtom ≠ Metta.Atom.var w := by
+      intro w
+      simp [bodyAtom, defBodyOfQueryAtom, mExpr, mSym]
+    have hmatch :
+        Metta.matchAtoms bodyAtom
+          (mExpr "Bad" [mVar (counterSuffix st.counter "e")]) = [] := by
+      simp [bodyAtom, defBodyOfQueryAtom, mExpr, mSym, mVar,
+        Metta.matchAtoms, Metta.matchAtomsWith, Metta.matchAll]
+    simpa [cond, bodyAtom, stCond, Nat.add_assoc] using
+      mettaEval_kernelDefControlEnv_is_bad_false_eq
+        (fuel := fuel) (st := st) (a := bodyAtom)
+        hStatic hBodyClosed hBodyErr hBodyBeq hBodyNonVar hmatch
+  have hType :
+      typeMismatch kernelDefControlEnv st.world "if" [cond, thenA, elseA] = none := by
+    simpa [cond, bodyAtom, hWorld] using
+      kernelDefControlEnv_if_typeMismatch_is_bad_init bodyAtom thenA elseA
+  have hNoErr :
+      (([mBool false, thenA, elseA].zip [cond, thenA, elseA]).find?
+        (fun ho : Metta.Atom × Metta.Atom => ho.1.isError && ho.1 != ho.2)) = none := by
+    simp [cond, thenA, elseA, bodyAtom, cicStage3CanonicalDefnStuckReadoutForSig,
+      defBodyOfQueryAtom, mBool, mExpr, mSym, Metta.Atom.isError]
+  have hRoot :
+      interpretFuel kernelDefControlEnv (fuel + 3 + 1) stCond
+          [{ stack := atomToStack
+              (Metta.Atom.expr [Metta.Atom.sym "eval",
+                mExpr "if" [mBool false, thenA, elseA]]) [],
+             bnd := ambient }] [] =
+        ([(elseA, rootBnd)], stRoot) := by
+    have hStaticCond : stCond.world.selfExtra = [] := by
+      simpa [stCond] using hStatic
+    have hElseNonVar : ∀ w, elseA ≠ Metta.Atom.var w := by
+      intro w
+      simp [elseA, cicStage3CanonicalDefnStuckReadoutForSig, mExpr, mSym]
+    have hElseNotFunction : isFunctionResult elseA = false := by
+      simp [elseA, cicStage3CanonicalDefnStuckReadoutForSig,
+        isFunctionResult, mExpr, mSym]
+    have hFresh :
+        ∀ {v : String}, v = "e" ∨ v = "t" →
+          counterSuffix (stCond.counter + 1) v ≠ binder := by
+      intro v hv
+      simpa [stCond, Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using
+        hFreshET (v := v) hv
+    simpa [stCond, stRoot, rootBnd, thenA, elseA,
+      Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using
+      interpretFuel_kernelDefControlEnv_if_false_root_eq_with_keyed_ambient
+        (fuel := fuel + 3) (st := stCond)
+        binder elseA ambient hStaticCond hElseClosed hElseNonVar
+        hElseNotFunction hAmbientClosed hAmbientKeys hFresh
+  have hRootNotNR : (elseA == notReducibleA) = false := by
+    rfl
+  have hRootNotSelf :
+      (elseA == mExpr "if" [mBool false, thenA, elseA]) = false := by
+    simp [elseA, cicStage3CanonicalDefnStuckReadoutForSig,
+      mExpr, mSym]
+    rfl
+  have hFinal :
+      mettaEval kernelDefControlEnv (fuel + 3) stRoot
+          (restrictBnd (([cond, thenA, elseA]).flatMap Metta.Atom.vars)
+            ((Metta.Bindings.merge [] rootBnd).head?.getD rootBnd)) elseA =
+        ([(elseA, [])], stOut) := by
+    have hBndNil :
+        restrictBnd (([cond, thenA, elseA]).flatMap Metta.Atom.vars)
+            ((Metta.Bindings.merge [] rootBnd).head?.getD rootBnd) = [] := by
+      simpa [List.flatMap, hQvars] using
+        restrictBnd_nil_vars ((Metta.Bindings.merge [] rootBnd).head?.getD rootBnd)
+    rw [hBndNil]
+    have hStaticRoot : stRoot.world.selfExtra = [] := by
+      simpa [stRoot] using hStatic
+    simpa [elseA, bodyAtom, cicStage3CanonicalDefnStuckReadoutForSig,
+      stOut, Nat.add_assoc] using
+      mettaEval_kernelDefControlEnv_nf_def_body_of_eq_state
+        (fuel + 1) stRoot cicStage3RawArtifactSig name hStaticRoot
+  rw [Metta.Minimal.mettaEval.eq_2]
+  rw [hInstTarget]
+  simp only [target, mExpr, mSym]
+  rw [hType]
+  simp only [kernelDefControlEnv_if_argMask, List.length_cons, List.length_nil,
+    Nat.reduceAdd, List.zip_cons_cons, List.zip_nil_right,
+    Bool.false_eq_true, if_false, if_true, List.foldl_cons, List.foldl_nil]
+  rw [hCond]
+  simp [hQvars, restrictBnd_nil_vars]
+  rw [Metta.instantiate_nil thenA]
+  rw [Metta.instantiate_nil elseA]
+  have hNoErr' :
+      List.find? (fun ho : Metta.Atom × Metta.Atom => ho.1.isError && ho.1 != ho.2)
+        [(mBool false, cond), (thenA, thenA), (elseA, elseA)] = none := by
+    simpa using hNoErr
+  rw [hNoErr']
+  have hRoot' :
+      interpretFuel kernelDefControlEnv (fuel + 3 + 1) stCond
+          [{ stack := atomToStack
+              (Metta.Atom.expr [Metta.Atom.sym "eval",
+                Metta.Atom.expr [Metta.Atom.sym "if", mBool false, thenA, elseA]]) [],
+             bnd := ambient }] [] =
+        ([(elseA, rootBnd)], stRoot) := by
+    simpa [mExpr, mSym, bodyAtom] using hRoot
+  rw [hRoot']
+  have hRootNotSelf' :
+      (elseA == Metta.Atom.expr [Metta.Atom.sym "if", mBool false, thenA, elseA]) = false := by
+    simpa [mExpr, mSym] using hRootNotSelf
+  have hReturns' :
+      returnsAtom kernelDefControlEnv
+        (Metta.Atom.expr [Metta.Atom.sym "if", mBool false, thenA, elseA]) = false := by
+    simpa [mExpr, mSym] using
+      kernelDefControlEnv_if_returnsAtom (mBool false) thenA elseA
+  simp [hRootNotNR, hRootNotSelf', hReturns']
+  have hFinalNil :
+      mettaEval kernelDefControlEnv (fuel + 3) stRoot [] elseA =
+        ([(elseA, [])], stOut) := by
+    have hNil :
+        restrictBnd [] ((Metta.Bindings.merge [] rootBnd).head?.getD rootBnd) = [] := by
+      simpa using restrictBnd_nil_vars ((Metta.Bindings.merge [] rootBnd).head?.getD rootBnd)
+    simpa [List.flatMap, hQvars, hNil, stOut] using hFinal
+  rw [hFinalNil]
+  simp [elseA, stRoot, stOut]
+
+private theorem mettaEval_kernelDefControlEnv_primary_defn_stuck_body_if_false_nf_eq_unify_bnd_named
+    (fuel : Nat) (st : St) (name : DeclName) (binder : String)
+    (hWorld : st.world = St.init.world)
+    (hFreshET :
+      ∀ {v : String}, v = "e" ∨ v = "t" →
+        counterSuffix (st.counter + 2) v ≠ binder) :
+    let bodyAtom :=
+      defBodyOfQueryAtom
+        (sigAtom cicStage3RawArtifactSig)
+        (declNameAtom name)
+    let template :=
+      mExpr "if"
+        [ mExpr "is-bad" [mVar binder]
+        , mExpr "Bad" [mSym "unknown-definition"]
+        , mExpr "nf"
+            [sigAtom cicStage3RawArtifactSig, mVar binder] ]
+    let elseA :=
+      cicStage3CanonicalDefnStuckReadoutForSig
+        cicStage3RawArtifactSig name
+    let stRoot : St := { counter := st.counter + 3, world := st.world }
+    mettaEval kernelDefControlEnv (fuel + 8) st
+        (restrictBnd (([bodyAtom, mVar binder, template, mSym "Empty"]).flatMap Atom.vars)
+          ((Metta.Bindings.merge [] [Metta.BindingRel.val binder bodyAtom]).head?.getD
+            [Metta.BindingRel.val binder bodyAtom]))
+        (Metta.instantiate [Metta.BindingRel.val binder bodyAtom]
+          (Metta.instantiate [Metta.BindingRel.val binder bodyAtom] template)) =
+      ([(elseA, [])],
+        { counter := stRoot.counter + nfDefCandidatePreWithIndGZeroIota.length + 1,
+          world := stRoot.world }) := by
+  dsimp
+  let bodyAtom :=
+    defBodyOfQueryAtom
+      (sigAtom cicStage3RawArtifactSig)
+      (declNameAtom name)
+  let template :=
+    mExpr "if"
+      [ mExpr "is-bad" [mVar binder]
+      , mExpr "Bad" [mSym "unknown-definition"]
+      , mExpr "nf"
+          [sigAtom cicStage3RawArtifactSig, mVar binder] ]
+  have htmpl :=
+    leattaDefControlPrimary_nfDefIfTemplate_instantiated_eq_named
+      name binder
+  dsimp at htmpl
+  rw [htmpl]
+  let ambient : Metta.Bindings :=
+    restrictBnd
+      (([bodyAtom, mVar binder, template, mSym "Empty"]).flatMap Atom.vars)
+      ((Metta.Bindings.merge [] [Metta.BindingRel.val binder bodyAtom]).head?.getD
+        [Metta.BindingRel.val binder bodyAtom])
+  have hClosedBody : bodyAtom.vars = [] := by
+    simp [bodyAtom, defBodyOfQueryAtom, sigAtom_vars_nil,
+      declNameAtom_vars_nil, mExpr, mSym, Metta.Atom.vars]
+  have hBaseClosed :
+      ClosedValueBindings [Metta.BindingRel.val binder bodyAtom] := by
+    exact ClosedValueBindings.val hClosedBody ClosedValueBindings.nil
+  have hAmbientClosed : ClosedValueBindings ambient := by
+    exact closedValueBindings_restrictBnd
+      (closedValueBindings_merge_empty_head_getD_of_closed hBaseClosed)
+  have hTemplateKeys :
+      ∀ x, x ∈ template.vars → x = binder := by
+    intro x hx
+    simp [template, sigAtom_vars_nil, mExpr, mSym, mVar,
+      Metta.Atom.vars] at hx
+    exact hx
+  have hAmbientKeys : ∀ x, x ∈ bindingValueKeys ambient → x = binder := by
+    simpa [ambient, bodyAtom, template] using
+      bindingValueKeys_tail_unify_restrictBnd_keys_of_template_vars
+        binder bodyAtom template
+        ((Metta.Bindings.merge [] [Metta.BindingRel.val binder bodyAtom]).head?.getD
+          [Metta.BindingRel.val binder bodyAtom])
+        hClosedBody hTemplateKeys
+  let stRoot : St := { counter := st.counter + 3, world := st.world }
+  simpa [ambient, bodyAtom, stRoot] using
+    mettaEval_kernelDefControlEnv_primary_defn_stuck_body_if_false_nf_eq_with_ambient_named
+      fuel st name binder ambient hWorld hAmbientClosed hAmbientKeys hFreshET
+
+private theorem mettaEval_kernelDefControlEnv_primary_defn_stuck_body_if_false_nf_eq_unify_bnd_named_geFour
+    (fuel : Nat) (st : St) (name : DeclName) (binder : String)
+    (hWorld : st.world = St.init.world)
+    (hFreshET :
+      ∀ {v : String}, v = "e" ∨ v = "t" →
+        counterSuffix (st.counter + 2) v ≠ binder) :
+    let bodyAtom :=
+      defBodyOfQueryAtom
+        (sigAtom cicStage3RawArtifactSig)
+        (declNameAtom name)
+    let template :=
+      mExpr "if"
+        [ mExpr "is-bad" [mVar binder]
+        , mExpr "Bad" [mSym "unknown-definition"]
+        , mExpr "nf"
+            [sigAtom cicStage3RawArtifactSig, mVar binder] ]
+    let elseA :=
+      cicStage3CanonicalDefnStuckReadoutForSig
+        cicStage3RawArtifactSig name
+    let stRoot : St := { counter := st.counter + 3, world := st.world }
+    mettaEval kernelDefControlEnv (fuel + 4) st
+        (restrictBnd (([bodyAtom, mVar binder, template, mSym "Empty"]).flatMap Atom.vars)
+          ((Metta.Bindings.merge [] [Metta.BindingRel.val binder bodyAtom]).head?.getD
+            [Metta.BindingRel.val binder bodyAtom]))
+        (Metta.instantiate [Metta.BindingRel.val binder bodyAtom]
+          (Metta.instantiate [Metta.BindingRel.val binder bodyAtom] template)) =
+      ([(elseA, [])],
+        { counter := stRoot.counter + nfDefCandidatePreWithIndGZeroIota.length + 1,
+          world := stRoot.world }) := by
+  dsimp
+  let bodyAtom :=
+    defBodyOfQueryAtom
+      (sigAtom cicStage3RawArtifactSig)
+      (declNameAtom name)
+  let template :=
+    mExpr "if"
+      [ mExpr "is-bad" [mVar binder]
+      , mExpr "Bad" [mSym "unknown-definition"]
+      , mExpr "nf"
+          [sigAtom cicStage3RawArtifactSig, mVar binder] ]
+  have htmpl :=
+    leattaDefControlPrimary_nfDefIfTemplate_instantiated_eq_named
+      name binder
+  dsimp at htmpl
+  rw [htmpl]
+  let ambient : Metta.Bindings :=
+    restrictBnd
+      (([bodyAtom, mVar binder, template, mSym "Empty"]).flatMap Atom.vars)
+      ((Metta.Bindings.merge [] [Metta.BindingRel.val binder bodyAtom]).head?.getD
+        [Metta.BindingRel.val binder bodyAtom])
+  have hClosedBody : bodyAtom.vars = [] := by
+    simp [bodyAtom, defBodyOfQueryAtom, sigAtom_vars_nil,
+      declNameAtom_vars_nil, mExpr, mSym, Metta.Atom.vars]
+  have hBaseClosed :
+      ClosedValueBindings [Metta.BindingRel.val binder bodyAtom] := by
+    exact ClosedValueBindings.val hClosedBody ClosedValueBindings.nil
+  have hAmbientClosed : ClosedValueBindings ambient := by
+    exact closedValueBindings_restrictBnd
+      (closedValueBindings_merge_empty_head_getD_of_closed hBaseClosed)
+  have hTemplateKeys :
+      ∀ x, x ∈ template.vars → x = binder := by
+    intro x hx
+    simp [template, sigAtom_vars_nil, mExpr, mSym, mVar,
+      Metta.Atom.vars] at hx
+    exact hx
+  have hAmbientKeys : ∀ x, x ∈ bindingValueKeys ambient → x = binder := by
+    simpa [ambient, bodyAtom, template] using
+      bindingValueKeys_tail_unify_restrictBnd_keys_of_template_vars
+        binder bodyAtom template
+        ((Metta.Bindings.merge [] [Metta.BindingRel.val binder bodyAtom]).head?.getD
+          [Metta.BindingRel.val binder bodyAtom])
+        hClosedBody hTemplateKeys
+  let stRoot : St := { counter := st.counter + 3, world := st.world }
+  simpa [ambient, bodyAtom, stRoot] using
+    mettaEval_kernelDefControlEnv_primary_defn_stuck_body_if_false_nf_eq_with_ambient_named_geFour
+      fuel st name binder ambient hWorld hAmbientClosed hAmbientKeys hFreshET
+
+private theorem mettaEval_kernelDefControlEnv_primary_nf_def_unify_body_eq_named
+    (fuel : Nat) (st : St) (name : DeclName) (binder : String)
+    (hWorld : st.world = St.init.world)
+    (hFreshET :
+      ∀ {v : String}, v = "e" ∨ v = "t" →
+        counterSuffix (st.counter + 2) v ≠ binder) :
+    let bodyAtom :=
+      defBodyOfQueryAtom
+        (sigAtom cicStage3RawArtifactSig)
+        (declNameAtom name)
+    let template :=
+      mExpr "if"
+        [ mExpr "is-bad" [mVar binder]
+        , mExpr "Bad" [mSym "unknown-definition"]
+        , mExpr "nf"
+            [sigAtom cicStage3RawArtifactSig, mVar binder] ]
+    let elseA :=
+      cicStage3CanonicalDefnStuckReadoutForSig
+        cicStage3RawArtifactSig name
+    let finalBnd :=
+      restrictBnd (([bodyAtom, mVar binder, template, mSym "Empty"]).flatMap Atom.vars)
+        (((restrictBnd (([bodyAtom, mVar binder, template, mSym "Empty"]).flatMap Atom.vars)
+            ((Metta.Bindings.merge [] [Metta.BindingRel.val binder bodyAtom]).head?.getD
+              [Metta.BindingRel.val binder bodyAtom])).merge
+            ([] : Metta.Bindings)).head?.getD [])
+    let stOut : St :=
+      { counter :=
+          ({ counter := st.counter + 3, world := st.world } : St).counter +
+            nfDefCandidatePreWithIndGZeroIota.length + 1,
+        world := ({ counter := st.counter + 3, world := st.world } : St).world }
+    mettaEval kernelDefControlEnv (fuel + 9) st []
+        (mExpr "unify" [bodyAtom, mVar binder, template, mSym "Empty"]) =
+      ([(elseA, finalBnd)], stOut) := by
+  dsimp
+  let bodyAtom :=
+    defBodyOfQueryAtom
+      (sigAtom cicStage3RawArtifactSig)
+      (declNameAtom name)
+  let template :=
+    mExpr "if"
+      [ mExpr "is-bad" [mVar binder]
+      , mExpr "Bad" [mSym "unknown-definition"]
+      , mExpr "nf"
+          [sigAtom cicStage3RawArtifactSig, mVar binder] ]
+  let elseA :=
+    cicStage3CanonicalDefnStuckReadoutForSig
+      cicStage3RawArtifactSig name
+  have hNoErr :
+      (([bodyAtom, mVar binder, template, mSym "Empty"].zip
+          [bodyAtom, mVar binder, template, mSym "Empty"]).find?
+        (fun ho : Metta.Atom × Metta.Atom => ho.1.isError && ho.1 != ho.2)) = none := by
+    have hBodyNoErr : bodyAtom.isError = false := by
+      simp [bodyAtom, defBodyOfQueryAtom, mExpr, mSym, Metta.Atom.isError]
+    have hVarNoErr : (mVar binder).isError = false := by
+      rfl
+    have hTemplateNoErr : template.isError = false := by
+      simp [template, mExpr, mSym, Metta.Atom.isError]
+    have hEmptyNoErr : (mSym "Empty").isError = false := by
+      rfl
+    simp [List.find?, hBodyNoErr, hVarNoErr, hTemplateNoErr, hEmptyNoErr]
+  have hAtomNonVar : ∀ w, bodyAtom ≠ Metta.Atom.var w := by
+    intro w
+    simp [bodyAtom, defBodyOfQueryAtom, mExpr, mSym]
+  have hNoLoop : binder ∉ bodyAtom.vars := by
+    simp [bodyAtom, defBodyOfQueryAtom, sigAtom_vars_nil,
+      declNameAtom_vars_nil, mExpr, mSym, Metta.Atom.vars]
+  have htmpl :=
+    leattaDefControlPrimary_nfDefIfTemplate_instantiated_eq_named
+      name binder
+  dsimp at htmpl
+  have hRootNotNR :
+      (Metta.instantiate [Metta.BindingRel.val binder bodyAtom]
+        (Metta.instantiate [Metta.BindingRel.val binder bodyAtom] template) ==
+          notReducibleA) = false := by
+    rw [htmpl]
+    rfl
+  have hRootNotSelf :
+      (Metta.instantiate [Metta.BindingRel.val binder bodyAtom]
+        (Metta.instantiate [Metta.BindingRel.val binder bodyAtom] template) ==
+          mExpr "unify" [bodyAtom, mVar binder, template, mSym "Empty"]) = false := by
+    rw [htmpl]
+    rfl
+  let stOut : St :=
+    { counter :=
+        ({ counter := st.counter + 3, world := st.world } : St).counter +
+          nfDefCandidatePreWithIndGZeroIota.length + 1,
+      world := ({ counter := st.counter + 3, world := st.world } : St).world }
+  have hFinal :
+      mettaEval kernelDefControlEnv (fuel + 8) st
+          (restrictBnd (([bodyAtom, mVar binder, template, mSym "Empty"]).flatMap Atom.vars)
+            ((Metta.Bindings.merge [] [Metta.BindingRel.val binder bodyAtom]).head?.getD
+              [Metta.BindingRel.val binder bodyAtom]))
+          (Metta.instantiate [Metta.BindingRel.val binder bodyAtom]
+            (Metta.instantiate [Metta.BindingRel.val binder bodyAtom] template)) =
+        ([(elseA, [])], stOut) := by
+    simpa [bodyAtom, template, elseA, stOut] using
+      mettaEval_kernelDefControlEnv_primary_defn_stuck_body_if_false_nf_eq_unify_bnd_named
+        fuel st name binder hWorld hFreshET
+  simpa [bodyAtom, template, elseA, stOut, Nat.add_assoc] using
+    mettaEval_kernelDefControlEnv_embedded_unify_var_success_of_quoted_args_eq_bnd
+      (fuel := fuel + 7) (st := st) (binder := binder)
+      (atom := bodyAtom) (template := template) (final := elseA)
+      (finalBnd := []) (stOut := stOut)
+      hNoErr hAtomNonVar hNoLoop hRootNotNR hRootNotSelf hFinal
+
+private theorem mettaEval_kernelDefControlEnv_primary_nf_def_unify_body_eq_named_geFive
+    (fuel : Nat) (st : St) (name : DeclName) (binder : String)
+    (hWorld : st.world = St.init.world)
+    (hFreshET :
+      ∀ {v : String}, v = "e" ∨ v = "t" →
+        counterSuffix (st.counter + 2) v ≠ binder) :
+    let bodyAtom :=
+      defBodyOfQueryAtom
+        (sigAtom cicStage3RawArtifactSig)
+        (declNameAtom name)
+    let template :=
+      mExpr "if"
+        [ mExpr "is-bad" [mVar binder]
+        , mExpr "Bad" [mSym "unknown-definition"]
+        , mExpr "nf"
+            [sigAtom cicStage3RawArtifactSig, mVar binder] ]
+    let elseA :=
+      cicStage3CanonicalDefnStuckReadoutForSig
+        cicStage3RawArtifactSig name
+    let finalBnd :=
+      restrictBnd (([bodyAtom, mVar binder, template, mSym "Empty"]).flatMap Atom.vars)
+        (((restrictBnd (([bodyAtom, mVar binder, template, mSym "Empty"]).flatMap Atom.vars)
+            ((Metta.Bindings.merge [] [Metta.BindingRel.val binder bodyAtom]).head?.getD
+              [Metta.BindingRel.val binder bodyAtom])).merge
+            ([] : Metta.Bindings)).head?.getD [])
+    let stOut : St :=
+      { counter :=
+          ({ counter := st.counter + 3, world := st.world } : St).counter +
+            nfDefCandidatePreWithIndGZeroIota.length + 1,
+        world := ({ counter := st.counter + 3, world := st.world } : St).world }
+    mettaEval kernelDefControlEnv (fuel + 5) st []
+        (mExpr "unify" [bodyAtom, mVar binder, template, mSym "Empty"]) =
+      ([(elseA, finalBnd)], stOut) := by
+  dsimp
+  let bodyAtom :=
+    defBodyOfQueryAtom
+      (sigAtom cicStage3RawArtifactSig)
+      (declNameAtom name)
+  let template :=
+    mExpr "if"
+      [ mExpr "is-bad" [mVar binder]
+      , mExpr "Bad" [mSym "unknown-definition"]
+      , mExpr "nf"
+          [sigAtom cicStage3RawArtifactSig, mVar binder] ]
+  let elseA :=
+    cicStage3CanonicalDefnStuckReadoutForSig
+      cicStage3RawArtifactSig name
+  have hNoErr :
+      (([bodyAtom, mVar binder, template, mSym "Empty"].zip
+          [bodyAtom, mVar binder, template, mSym "Empty"]).find?
+        (fun ho : Metta.Atom × Metta.Atom => ho.1.isError && ho.1 != ho.2)) = none := by
+    have hBodyNoErr : bodyAtom.isError = false := by
+      simp [bodyAtom, defBodyOfQueryAtom, mExpr, mSym, Metta.Atom.isError]
+    have hVarNoErr : (mVar binder).isError = false := by
+      rfl
+    have hTemplateNoErr : template.isError = false := by
+      simp [template, mExpr, mSym, Metta.Atom.isError]
+    have hEmptyNoErr : (mSym "Empty").isError = false := by
+      rfl
+    simp [List.find?, hBodyNoErr, hVarNoErr, hTemplateNoErr, hEmptyNoErr]
+  have hAtomNonVar : ∀ w, bodyAtom ≠ Metta.Atom.var w := by
+    intro w
+    simp [bodyAtom, defBodyOfQueryAtom, mExpr, mSym]
+  have hNoLoop : binder ∉ bodyAtom.vars := by
+    simp [bodyAtom, defBodyOfQueryAtom, sigAtom_vars_nil,
+      declNameAtom_vars_nil, mExpr, mSym, Metta.Atom.vars]
+  have htmpl :=
+    leattaDefControlPrimary_nfDefIfTemplate_instantiated_eq_named
+      name binder
+  dsimp at htmpl
+  have hRootNotNR :
+      (Metta.instantiate [Metta.BindingRel.val binder bodyAtom]
+        (Metta.instantiate [Metta.BindingRel.val binder bodyAtom] template) ==
+          notReducibleA) = false := by
+    rw [htmpl]
+    rfl
+  have hRootNotSelf :
+      (Metta.instantiate [Metta.BindingRel.val binder bodyAtom]
+        (Metta.instantiate [Metta.BindingRel.val binder bodyAtom] template) ==
+          mExpr "unify" [bodyAtom, mVar binder, template, mSym "Empty"]) = false := by
+    rw [htmpl]
+    rfl
+  let stOut : St :=
+    { counter :=
+        ({ counter := st.counter + 3, world := st.world } : St).counter +
+          nfDefCandidatePreWithIndGZeroIota.length + 1,
+      world := ({ counter := st.counter + 3, world := st.world } : St).world }
+  have hFinal :
+      mettaEval kernelDefControlEnv (fuel + 4) st
+          (restrictBnd (([bodyAtom, mVar binder, template, mSym "Empty"]).flatMap Atom.vars)
+            ((Metta.Bindings.merge [] [Metta.BindingRel.val binder bodyAtom]).head?.getD
+              [Metta.BindingRel.val binder bodyAtom]))
+          (Metta.instantiate [Metta.BindingRel.val binder bodyAtom]
+            (Metta.instantiate [Metta.BindingRel.val binder bodyAtom] template)) =
+        ([(elseA, [])], stOut) := by
+    simpa [bodyAtom, template, elseA, stOut] using
+      mettaEval_kernelDefControlEnv_primary_defn_stuck_body_if_false_nf_eq_unify_bnd_named_geFour
+        fuel st name binder hWorld hFreshET
+  simpa [bodyAtom, template, elseA, stOut, Nat.add_assoc] using
+    mettaEval_kernelDefControlEnv_embedded_unify_var_success_of_quoted_args_eq_bnd
+      (fuel := fuel + 3) (st := st) (binder := binder)
+      (atom := bodyAtom) (template := template) (final := elseA)
+      (finalBnd := []) (stOut := stOut)
+      hNoErr hAtomNonVar hNoLoop hRootNotNR hRootNotSelf hFinal
+
+private theorem mettaEval_kernelDefControlEnv_primary_nf_def_let_body_eq_named
+    (fuel : Nat) (st : St) (name : DeclName) (binder : String)
+    (hWorld : st.world = St.init.world)
+    (hFreshLet :
+      ∀ {v : String}, v = "pattern" ∨ v = "atom" ∨ v = "template" →
+        counterSuffix (st.counter + 1) v ≠ binder)
+    (hFreshET :
+      ∀ {v : String}, v = "e" ∨ v = "t" →
+        counterSuffix (st.counter + 4) v ≠ binder) :
+    let bodyAtom :=
+      defBodyOfQueryAtom
+        (sigAtom cicStage3RawArtifactSig)
+        (declNameAtom name)
+    let bodyQuery := bodyAtom
+    let template :=
+      mExpr "if"
+        [ mExpr "is-bad" [mVar binder]
+        , mExpr "Bad" [mSym "unknown-definition"]
+        , mExpr "nf"
+            [sigAtom cicStage3RawArtifactSig, mVar binder] ]
+    let elseA :=
+      cicStage3CanonicalDefnStuckReadoutForSig
+        cicStage3RawArtifactSig name
+    let stAtom : St := { counter := st.counter + 1, world := st.world }
+    let rootBnd :=
+      (renameBindings (counterSuffix stAtom.counter)
+        (letRuleBindings binder bodyAtom template)).reverse
+    let finalBnd :=
+      restrictBnd (([bodyAtom, mVar binder, template, mSym "Empty"]).flatMap Atom.vars)
+        (((restrictBnd (([bodyAtom, mVar binder, template, mSym "Empty"]).flatMap Atom.vars)
+            ((Metta.Bindings.merge [] [Metta.BindingRel.val binder bodyAtom]).head?.getD
+              [Metta.BindingRel.val binder bodyAtom])).merge
+            ([] : Metta.Bindings)).head?.getD [])
+    let outBnd :=
+      restrictBnd (([mVar binder, bodyQuery, template]).flatMap Atom.vars)
+        ((Metta.Bindings.merge
+          (restrictBnd (([mVar binder, bodyQuery, template]).flatMap Atom.vars)
+            ((Metta.Bindings.merge [] rootBnd).head?.getD rootBnd))
+          finalBnd).head?.getD finalBnd)
+    let stRoot : St := { counter := stAtom.counter + 1, world := stAtom.world }
+    let stOut : St :=
+      { counter :=
+          ({ counter := stRoot.counter + 3, world := stRoot.world } : St).counter +
+            nfDefCandidatePreWithIndGZeroIota.length + 1,
+        world := ({ counter := stRoot.counter + 3, world := stRoot.world } : St).world }
+    mettaEval kernelDefControlEnv (fuel + 10) st []
+        (leattaDefControlPrimaryNfDefFreshRootNamed name binder) =
+      ([(elseA, outBnd)], stOut) := by
+  dsimp
+  let bodyAtom :=
+    defBodyOfQueryAtom
+      (sigAtom cicStage3RawArtifactSig)
+      (declNameAtom name)
+  let bodyQuery := bodyAtom
+  let template :=
+    mExpr "if"
+      [ mExpr "is-bad" [mVar binder]
+      , mExpr "Bad" [mSym "unknown-definition"]
+      , mExpr "nf"
+          [sigAtom cicStage3RawArtifactSig, mVar binder] ]
+  let elseA :=
+    cicStage3CanonicalDefnStuckReadoutForSig
+      cicStage3RawArtifactSig name
+  let stAtom : St := { counter := st.counter + 1, world := st.world }
+  let stRoot : St := { counter := stAtom.counter + 1, world := stAtom.world }
+  let rootBnd :=
+    (renameBindings (counterSuffix stAtom.counter)
+      (letRuleBindings binder bodyAtom template)).reverse
+  let root := mExpr "unify" [bodyAtom, mVar binder, template, mSym "Empty"]
+  let finalBnd :=
+    restrictBnd (([bodyAtom, mVar binder, template, mSym "Empty"]).flatMap Atom.vars)
+      (((restrictBnd (([bodyAtom, mVar binder, template, mSym "Empty"]).flatMap Atom.vars)
+          ((Metta.Bindings.merge [] [Metta.BindingRel.val binder bodyAtom]).head?.getD
+            [Metta.BindingRel.val binder bodyAtom])).merge
+          ([] : Metta.Bindings)).head?.getD [])
+  have hStatic : st.world.selfExtra = [] := by
+    simpa [hWorld] using (show St.init.world.selfExtra = [] by rfl)
+  have hAtom :
+      mettaEval kernelDefControlEnv (fuel + 9) st [] bodyQuery =
+        ([(bodyAtom, [])], stAtom) := by
+    simpa [bodyQuery, bodyAtom, stAtom, Nat.add_assoc] using
+      mettaEval_kernelDefControlEnv_primary_def_body_of_eq_state
+        (fuel + 7) st name hStatic
+  have hType :
+      typeMismatch kernelDefControlEnv st.world "let"
+        [mVar binder, bodyQuery, template] = none := by
+    exact kernelDefControlEnv_let_typeMismatch st (mVar binder) bodyQuery template
+  have hNoErr :
+      (([mVar binder, bodyAtom, template].zip
+          [mVar binder, bodyQuery, template]).find?
+        (fun ho : Metta.Atom × Metta.Atom => ho.1.isError && ho.1 != ho.2)) = none := by
+    have hBodyNoErr : bodyAtom.isError = false := by
+      simp [bodyAtom, defBodyOfQueryAtom, mExpr, mSym, Metta.Atom.isError]
+    have hVarNoErr : (mVar binder).isError = false := by
+      rfl
+    have hTemplateNoErr : template.isError = false := by
+      simp [template, mExpr, mSym, Metta.Atom.isError]
+    simp [List.find?, hBodyNoErr, hVarNoErr, hTemplateNoErr]
+  have hBodyNonVar : ∀ w, bodyAtom ≠ Metta.Atom.var w := by
+    intro w
+    simp [bodyAtom, defBodyOfQueryAtom, mExpr, mSym]
+  have hTemplateNonVar : ∀ w, template ≠ Metta.Atom.var w := by
+    intro w
+    simp [template, mExpr, mSym]
+  have hPatternNe : counterSuffix stAtom.counter "pattern" ≠ binder := by
+    simpa [stAtom] using hFreshLet (v := "pattern") (Or.inl rfl)
+  have hAtomNe : counterSuffix stAtom.counter "atom" ≠ binder := by
+    simpa [stAtom] using hFreshLet (v := "atom") (Or.inr (Or.inl rfl))
+  have hTemplateNe : counterSuffix stAtom.counter "template" ≠ binder := by
+    simpa [stAtom] using hFreshLet (v := "template") (Or.inr (Or.inr rfl))
+  have hFresh :
+      RenamedValueKeysFreshForValues (counterSuffix stAtom.counter)
+        (letRuleBindings binder bodyAtom template) := by
+    intro key hkey x a hmem
+    simp [letRuleBindings, bindingValueKeys] at hkey hmem
+    have hKeyNe : counterSuffix stAtom.counter key ≠ binder := by
+      rcases hkey with rfl | rfl | rfl
+      · exact hTemplateNe
+      · exact hAtomNe
+      · exact hPatternNe
+    rcases hmem with hmem | hmem | hmem
+    · rcases hmem with ⟨rfl, rfl⟩
+      simp [template, sigAtom_vars_nil, mExpr, mSym, mVar,
+        Metta.Atom.vars, hKeyNe]
+    · rcases hmem with ⟨rfl, rfl⟩
+      simp [bodyAtom, defBodyOfQueryAtom, sigAtom_vars_nil,
+        declNameAtom_vars_nil, mExpr, mSym, Metta.Atom.vars]
+    · rcases hmem with ⟨rfl, rfl⟩
+      simp [mVar, Metta.Atom.vars, hKeyNe]
+  have hRoot :
+      interpretFuel kernelDefControlEnv (fuel + 9 + 1) stAtom
+          [evalItemNil (mExpr "let" [mVar binder, bodyAtom, template])] [] =
+        ([(root, rootBnd)], stRoot) := by
+    have hStaticAtom : stAtom.world.selfExtra = [] := by
+      simpa [stAtom] using hStatic
+    simpa [root, rootBnd, stAtom, stRoot, Nat.add_assoc] using
+      interpretFuel_kernelDefControlEnv_let_root_eq
+        (fuel := fuel + 9) (st := stAtom)
+        binder bodyAtom template hStaticAtom hBodyNonVar hTemplateNonVar hFresh
+  have hRootNotNR : (root == notReducibleA) = false := by
+    rfl
+  have hRootNotSelf :
+      (root == mExpr "let" [mVar binder, bodyAtom, template]) = false := by
+    rfl
+  have hBinderPatternNe : binder ≠ counterSuffix stAtom.counter "pattern" :=
+    hPatternNe.symm
+  have hBinderAtomNe : binder ≠ counterSuffix stAtom.counter "atom" :=
+    hAtomNe.symm
+  have hBinderTemplateNe : binder ≠ counterSuffix stAtom.counter "template" :=
+    hTemplateNe.symm
+  have hTemplateAtom :
+      counterSuffix stAtom.counter "template" ≠ counterSuffix stAtom.counter "atom" := by
+    intro h
+    have h' : "template" = "atom" := (counterSuffix_injective stAtom.counter) h
+    contradiction
+  have hTemplatePattern :
+      counterSuffix stAtom.counter "template" ≠ counterSuffix stAtom.counter "pattern" := by
+    intro h
+    have h' : "template" = "pattern" := (counterSuffix_injective stAtom.counter) h
+    contradiction
+  have hAtomTemplate :
+      counterSuffix stAtom.counter "atom" ≠ counterSuffix stAtom.counter "template" := by
+    intro h
+    exact hTemplateAtom h.symm
+  have hAtomPattern :
+      counterSuffix stAtom.counter "atom" ≠ counterSuffix stAtom.counter "pattern" := by
+    intro h
+    have h' : "atom" = "pattern" := (counterSuffix_injective stAtom.counter) h
+    contradiction
+  have hPatternTemplate :
+      counterSuffix stAtom.counter "pattern" ≠ counterSuffix stAtom.counter "template" := by
+    intro h
+    exact hTemplatePattern h.symm
+  have hPatternAtom :
+      counterSuffix stAtom.counter "pattern" ≠ counterSuffix stAtom.counter "atom" := by
+    intro h
+    exact hAtomPattern h.symm
+  have hLetBndNil :
+      restrictBnd (([mVar binder, bodyQuery, template]).flatMap Atom.vars)
+          ((Metta.Bindings.merge [] rootBnd).head?.getD rootBnd) = [] := by
+    simp [rootBnd, letRuleBindings, renameBindings, bodyAtom, bodyQuery, template,
+      defBodyOfQueryAtom, sigAtom_vars_nil, declNameAtom_vars_nil,
+      mExpr, mSym, mVar, Metta.Atom.vars,
+      Metta.Bindings.merge, Metta.Bindings.mergeOne,
+      Metta.Bindings.addVarBinding, Metta.Bindings.addValRaw,
+      Metta.Bindings.removeVal, Metta.Bindings.lookupVal,
+      restrictBnd, resolveAtom, Metta.instantiate, Metta.bindingsToSubst,
+      Metta.Subst.apply, Metta.Subst.lookup, atom_var_beq_self_true,
+      hBinderPatternNe, hBinderAtomNe, hBinderTemplateNe,
+      hTemplateAtom, hTemplatePattern,
+      hAtomTemplate, hAtomPattern, hPatternTemplate, hPatternAtom]
+  let stOut : St :=
+    { counter :=
+        ({ counter := stRoot.counter + 3, world := stRoot.world } : St).counter +
+          nfDefCandidatePreWithIndGZeroIota.length + 1,
+      world := ({ counter := stRoot.counter + 3, world := stRoot.world } : St).world }
+  have hFinal :
+      mettaEval kernelDefControlEnv (fuel + 9) stRoot
+          (restrictBnd (([mVar binder, bodyQuery, template]).flatMap Atom.vars)
+            ((Metta.Bindings.merge [] rootBnd).head?.getD rootBnd))
+          root =
+        ([(elseA, finalBnd)], stOut) := by
+    rw [hLetBndNil]
+    have hWorldRoot : stRoot.world = St.init.world := by
+      simpa [stRoot, stAtom] using hWorld
+    have hFreshETRoot :
+        ∀ {v : String}, v = "e" ∨ v = "t" →
+          counterSuffix (stRoot.counter + 2) v ≠ binder := by
+      intro v hv
+      simpa [stRoot, stAtom, Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using
+        hFreshET (v := v) hv
+    simpa [root, finalBnd, bodyAtom, template, elseA, stOut,
+      Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using
+      mettaEval_kernelDefControlEnv_primary_nf_def_unify_body_eq_named
+        fuel stRoot name binder hWorldRoot hFreshETRoot
+  simpa [leattaDefControlPrimaryNfDefFreshRootNamed, bodyQuery,
+    template, root, mExpr, mSym, mVar, rootBnd, finalBnd, bodyAtom, elseA,
+    stOut, stAtom, stRoot, Nat.add_assoc] using
+    mettaEval_ternary_expr_eq_of_quoted_eval_quoted_and_root_eval_bnd
+      (env := kernelDefControlEnv) (fuel := fuel + 9)
+      (st := st) (stAtom := stAtom) (stRoot := stRoot) (stOut := stOut)
+      (op := "let") (pattern := mVar binder) (atom := bodyQuery)
+      (template := template) (atom' := bodyAtom) (root := root)
+      (final := elseA) (rootBnd := rootBnd) (finalBnd := finalBnd)
+      hAtom hType kernelDefControlEnv_let_argMask hNoErr hRoot
+      hRootNotNR hRootNotSelf
+      (kernelDefControlEnv_let_returnsAtom (mVar binder) bodyAtom template)
+      hFinal
+
+private theorem mettaEval_kernelDefControlEnv_primary_nf_def_let_body_eq_named_geSix
+    (fuel : Nat) (st : St) (name : DeclName) (binder : String)
+    (hWorld : st.world = St.init.world)
+    (hFreshLet :
+      ∀ {v : String}, v = "pattern" ∨ v = "atom" ∨ v = "template" →
+        counterSuffix (st.counter + 1) v ≠ binder)
+    (hFreshET :
+      ∀ {v : String}, v = "e" ∨ v = "t" →
+        counterSuffix (st.counter + 4) v ≠ binder) :
+    let bodyAtom :=
+      defBodyOfQueryAtom
+        (sigAtom cicStage3RawArtifactSig)
+        (declNameAtom name)
+    let bodyQuery := bodyAtom
+    let template :=
+      mExpr "if"
+        [ mExpr "is-bad" [mVar binder]
+        , mExpr "Bad" [mSym "unknown-definition"]
+        , mExpr "nf"
+            [sigAtom cicStage3RawArtifactSig, mVar binder] ]
+    let elseA :=
+      cicStage3CanonicalDefnStuckReadoutForSig
+        cicStage3RawArtifactSig name
+    let stAtom : St := { counter := st.counter + 1, world := st.world }
+    let rootBnd :=
+      (renameBindings (counterSuffix stAtom.counter)
+        (letRuleBindings binder bodyAtom template)).reverse
+    let finalBnd :=
+      restrictBnd (([bodyAtom, mVar binder, template, mSym "Empty"]).flatMap Atom.vars)
+        (((restrictBnd (([bodyAtom, mVar binder, template, mSym "Empty"]).flatMap Atom.vars)
+            ((Metta.Bindings.merge [] [Metta.BindingRel.val binder bodyAtom]).head?.getD
+              [Metta.BindingRel.val binder bodyAtom])).merge
+            ([] : Metta.Bindings)).head?.getD [])
+    let outBnd :=
+      restrictBnd (([mVar binder, bodyQuery, template]).flatMap Atom.vars)
+        ((Metta.Bindings.merge
+          (restrictBnd (([mVar binder, bodyQuery, template]).flatMap Atom.vars)
+            ((Metta.Bindings.merge [] rootBnd).head?.getD rootBnd))
+          finalBnd).head?.getD finalBnd)
+    let stRoot : St := { counter := stAtom.counter + 1, world := stAtom.world }
+    let stOut : St :=
+      { counter :=
+          ({ counter := stRoot.counter + 3, world := stRoot.world } : St).counter +
+            nfDefCandidatePreWithIndGZeroIota.length + 1,
+        world := ({ counter := stRoot.counter + 3, world := stRoot.world } : St).world }
+    mettaEval kernelDefControlEnv (fuel + 6) st []
+        (leattaDefControlPrimaryNfDefFreshRootNamed name binder) =
+      ([(elseA, outBnd)], stOut) := by
+  dsimp
+  let bodyAtom :=
+    defBodyOfQueryAtom
+      (sigAtom cicStage3RawArtifactSig)
+      (declNameAtom name)
+  let bodyQuery := bodyAtom
+  let template :=
+    mExpr "if"
+      [ mExpr "is-bad" [mVar binder]
+      , mExpr "Bad" [mSym "unknown-definition"]
+      , mExpr "nf"
+          [sigAtom cicStage3RawArtifactSig, mVar binder] ]
+  let elseA :=
+    cicStage3CanonicalDefnStuckReadoutForSig
+      cicStage3RawArtifactSig name
+  let stAtom : St := { counter := st.counter + 1, world := st.world }
+  let stRoot : St := { counter := stAtom.counter + 1, world := stAtom.world }
+  let rootBnd :=
+    (renameBindings (counterSuffix stAtom.counter)
+      (letRuleBindings binder bodyAtom template)).reverse
+  let root := mExpr "unify" [bodyAtom, mVar binder, template, mSym "Empty"]
+  let finalBnd :=
+    restrictBnd (([bodyAtom, mVar binder, template, mSym "Empty"]).flatMap Atom.vars)
+      (((restrictBnd (([bodyAtom, mVar binder, template, mSym "Empty"]).flatMap Atom.vars)
+          ((Metta.Bindings.merge [] [Metta.BindingRel.val binder bodyAtom]).head?.getD
+            [Metta.BindingRel.val binder bodyAtom])).merge
+          ([] : Metta.Bindings)).head?.getD [])
+  have hStatic : st.world.selfExtra = [] := by
+    simpa [hWorld] using (show St.init.world.selfExtra = [] by rfl)
+  have hAtom :
+      mettaEval kernelDefControlEnv (fuel + 5) st [] bodyQuery =
+        ([(bodyAtom, [])], stAtom) := by
+    simpa [bodyQuery, bodyAtom, stAtom, Nat.add_assoc] using
+      mettaEval_kernelDefControlEnv_primary_def_body_of_eq_state
+        (fuel + 3) st name hStatic
+  have hType :
+      typeMismatch kernelDefControlEnv st.world "let"
+        [mVar binder, bodyQuery, template] = none := by
+    exact kernelDefControlEnv_let_typeMismatch st (mVar binder) bodyQuery template
+  have hNoErr :
+      (([mVar binder, bodyAtom, template].zip
+          [mVar binder, bodyQuery, template]).find?
+        (fun ho : Metta.Atom × Metta.Atom => ho.1.isError && ho.1 != ho.2)) = none := by
+    have hBodyNoErr : bodyAtom.isError = false := by
+      simp [bodyAtom, defBodyOfQueryAtom, mExpr, mSym, Metta.Atom.isError]
+    have hVarNoErr : (mVar binder).isError = false := by
+      rfl
+    have hTemplateNoErr : template.isError = false := by
+      simp [template, mExpr, mSym, Metta.Atom.isError]
+    simp [List.find?, hBodyNoErr, hVarNoErr, hTemplateNoErr]
+  have hBodyNonVar : ∀ w, bodyAtom ≠ Metta.Atom.var w := by
+    intro w
+    simp [bodyAtom, defBodyOfQueryAtom, mExpr, mSym]
+  have hTemplateNonVar : ∀ w, template ≠ Metta.Atom.var w := by
+    intro w
+    simp [template, mExpr, mSym]
+  have hPatternNe : counterSuffix stAtom.counter "pattern" ≠ binder := by
+    simpa [stAtom] using hFreshLet (v := "pattern") (Or.inl rfl)
+  have hAtomNe : counterSuffix stAtom.counter "atom" ≠ binder := by
+    simpa [stAtom] using hFreshLet (v := "atom") (Or.inr (Or.inl rfl))
+  have hTemplateNe : counterSuffix stAtom.counter "template" ≠ binder := by
+    simpa [stAtom] using hFreshLet (v := "template") (Or.inr (Or.inr rfl))
+  have hFresh :
+      RenamedValueKeysFreshForValues (counterSuffix stAtom.counter)
+        (letRuleBindings binder bodyAtom template) := by
+    intro key hkey x a hmem
+    simp [letRuleBindings, bindingValueKeys] at hkey hmem
+    have hKeyNe : counterSuffix stAtom.counter key ≠ binder := by
+      rcases hkey with rfl | rfl | rfl
+      · exact hTemplateNe
+      · exact hAtomNe
+      · exact hPatternNe
+    rcases hmem with hmem | hmem | hmem
+    · rcases hmem with ⟨rfl, rfl⟩
+      simp [template, sigAtom_vars_nil, mExpr, mSym, mVar,
+        Metta.Atom.vars, hKeyNe]
+    · rcases hmem with ⟨rfl, rfl⟩
+      simp [bodyAtom, defBodyOfQueryAtom, sigAtom_vars_nil,
+        declNameAtom_vars_nil, mExpr, mSym, Metta.Atom.vars]
+    · rcases hmem with ⟨rfl, rfl⟩
+      simp [mVar, Metta.Atom.vars, hKeyNe]
+  have hRoot :
+      interpretFuel kernelDefControlEnv (fuel + 5 + 1) stAtom
+          [evalItemNil (mExpr "let" [mVar binder, bodyAtom, template])] [] =
+        ([(root, rootBnd)], stRoot) := by
+    have hStaticAtom : stAtom.world.selfExtra = [] := by
+      simpa [stAtom] using hStatic
+    simpa [root, rootBnd, stAtom, stRoot, Nat.add_assoc] using
+      interpretFuel_kernelDefControlEnv_let_root_eq
+        (fuel := fuel + 5) (st := stAtom)
+        binder bodyAtom template hStaticAtom hBodyNonVar hTemplateNonVar hFresh
+  have hRootNotNR : (root == notReducibleA) = false := by
+    rfl
+  have hRootNotSelf :
+      (root == mExpr "let" [mVar binder, bodyAtom, template]) = false := by
+    rfl
+  have hBinderPatternNe : binder ≠ counterSuffix stAtom.counter "pattern" :=
+    hPatternNe.symm
+  have hBinderAtomNe : binder ≠ counterSuffix stAtom.counter "atom" :=
+    hAtomNe.symm
+  have hBinderTemplateNe : binder ≠ counterSuffix stAtom.counter "template" :=
+    hTemplateNe.symm
+  have hTemplateAtom :
+      counterSuffix stAtom.counter "template" ≠ counterSuffix stAtom.counter "atom" := by
+    intro h
+    have h' : "template" = "atom" := (counterSuffix_injective stAtom.counter) h
+    contradiction
+  have hTemplatePattern :
+      counterSuffix stAtom.counter "template" ≠ counterSuffix stAtom.counter "pattern" := by
+    intro h
+    have h' : "template" = "pattern" := (counterSuffix_injective stAtom.counter) h
+    contradiction
+  have hAtomTemplate :
+      counterSuffix stAtom.counter "atom" ≠ counterSuffix stAtom.counter "template" := by
+    intro h
+    exact hTemplateAtom h.symm
+  have hAtomPattern :
+      counterSuffix stAtom.counter "atom" ≠ counterSuffix stAtom.counter "pattern" := by
+    intro h
+    have h' : "atom" = "pattern" := (counterSuffix_injective stAtom.counter) h
+    contradiction
+  have hPatternTemplate :
+      counterSuffix stAtom.counter "pattern" ≠ counterSuffix stAtom.counter "template" := by
+    intro h
+    exact hTemplatePattern h.symm
+  have hPatternAtom :
+      counterSuffix stAtom.counter "pattern" ≠ counterSuffix stAtom.counter "atom" := by
+    intro h
+    exact hAtomPattern h.symm
+  have hLetBndNil :
+      restrictBnd (([mVar binder, bodyQuery, template]).flatMap Atom.vars)
+          ((Metta.Bindings.merge [] rootBnd).head?.getD rootBnd) = [] := by
+    simp [rootBnd, letRuleBindings, renameBindings, bodyAtom, bodyQuery, template,
+      defBodyOfQueryAtom, sigAtom_vars_nil, declNameAtom_vars_nil,
+      mExpr, mSym, mVar, Metta.Atom.vars,
+      Metta.Bindings.merge, Metta.Bindings.mergeOne,
+      Metta.Bindings.addVarBinding, Metta.Bindings.addValRaw,
+      Metta.Bindings.removeVal, Metta.Bindings.lookupVal,
+      restrictBnd, resolveAtom, Metta.instantiate, Metta.bindingsToSubst,
+      Metta.Subst.apply, Metta.Subst.lookup, atom_var_beq_self_true,
+      hBinderPatternNe, hBinderAtomNe, hBinderTemplateNe,
+      hTemplateAtom, hTemplatePattern,
+      hAtomTemplate, hAtomPattern, hPatternTemplate, hPatternAtom]
+  let stOut : St :=
+    { counter :=
+        ({ counter := stRoot.counter + 3, world := stRoot.world } : St).counter +
+          nfDefCandidatePreWithIndGZeroIota.length + 1,
+      world := ({ counter := stRoot.counter + 3, world := stRoot.world } : St).world }
+  have hFinal :
+      mettaEval kernelDefControlEnv (fuel + 5) stRoot
+          (restrictBnd (([mVar binder, bodyQuery, template]).flatMap Atom.vars)
+            ((Metta.Bindings.merge [] rootBnd).head?.getD rootBnd))
+          root =
+        ([(elseA, finalBnd)], stOut) := by
+    rw [hLetBndNil]
+    have hWorldRoot : stRoot.world = St.init.world := by
+      simpa [stRoot, stAtom] using hWorld
+    have hFreshETRoot :
+        ∀ {v : String}, v = "e" ∨ v = "t" →
+          counterSuffix (stRoot.counter + 2) v ≠ binder := by
+      intro v hv
+      simpa [stRoot, stAtom, Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using
+        hFreshET (v := v) hv
+    simpa [root, finalBnd, bodyAtom, template, elseA, stOut,
+      Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using
+      mettaEval_kernelDefControlEnv_primary_nf_def_unify_body_eq_named_geFive
+        fuel stRoot name binder hWorldRoot hFreshETRoot
+  simpa [leattaDefControlPrimaryNfDefFreshRootNamed, bodyQuery,
+    template, root, mExpr, mSym, mVar, rootBnd, finalBnd, bodyAtom, elseA,
+    stOut, stAtom, stRoot, Nat.add_assoc] using
+    mettaEval_ternary_expr_eq_of_quoted_eval_quoted_and_root_eval_bnd
+      (env := kernelDefControlEnv) (fuel := fuel + 5)
+      (st := st) (stAtom := stAtom) (stRoot := stRoot) (stOut := stOut)
+      (op := "let") (pattern := mVar binder) (atom := bodyQuery)
+      (template := template) (atom' := bodyAtom) (root := root)
+      (final := elseA) (rootBnd := rootBnd) (finalBnd := finalBnd)
+      hAtom hType kernelDefControlEnv_let_argMask hNoErr hRoot
+      hRootNotNR hRootNotSelf
+      (kernelDefControlEnv_let_returnsAtom (mVar binder) bodyAtom template)
+      hFinal
+
+private theorem mettaEval_kernelDefControlEnv_primary_nf_def_body_eq_state_exists
+    (fuel : Nat) (st : St) (name : DeclName)
+    (hWorld : st.world = St.init.world) :
+    ∃ stOut,
+      mettaEval kernelDefControlEnv (fuel + 11) st []
+          (nfQuery cicStage3RawArtifactSig (.defn name)) =
+        ([(cicStage3CanonicalDefnStuckReadoutForSig
+            cicStage3RawArtifactSig name, [])], stOut) ∧
+      stOut.world = St.init.world := by
+  let bodyAtom :=
+    defBodyOfQueryAtom
+      (sigAtom cicStage3RawArtifactSig)
+      (declNameAtom name)
+  let elseA :=
+    cicStage3CanonicalDefnStuckReadoutForSig
+      cicStage3RawArtifactSig name
+  let counter := st.counter + nfDefCandidatePreWithIndGZeroIota.length
+  let binder := counterSuffix counter "body"
+  let rootBnd : Metta.Bindings :=
+    (renameBindings (counterSuffix counter)
+      (nfDefRuleBindings cicStage3RawArtifactSig name)).reverse
+  let root : Metta.Atom :=
+    Metta.instantiate rootBnd
+      (freshenRule counter nfDefRuleLhs nfDefRuleRhs).2
+  let stRoot : St :=
+    { counter := st.counter + nfDefCandidatePreWithIndGZeroIota.length + 1,
+      world := st.world }
+  have hStatic : st.world.selfExtra = [] := by
+    simpa [hWorld] using (show St.init.world.selfExtra = [] by rfl)
+  have hRootEq :
+      root = leattaDefControlPrimaryNfDefFreshRootNamed name binder := by
+    simpa [root, rootBnd, binder, counter] using
+      leattaDefControlPrimary_nfDefFreshRoot_named_eq counter name
+  have hRoot :
+      interpretFuel kernelDefControlEnv (fuel + 10 + 1) st
+          [evalItemNil (nfQuery cicStage3RawArtifactSig (.defn name))] [] =
+        ([(root, rootBnd)], stRoot) := by
+    simpa [root, rootBnd, stRoot, counter, Nat.add_assoc] using
+      interpretFuel_kernelDefControlEnv_nf_def_root_eq
+        (fuel := fuel + 10) (st := st)
+        cicStage3RawArtifactSig name hStatic
+  have hNoErr :
+      (([sigAtom cicStage3RawArtifactSig,
+          termAtom (.defn name)].zip
+        [sigAtom cicStage3RawArtifactSig,
+          termAtom (.defn name)]).find?
+        (fun ho : Metta.Atom × Metta.Atom => ho.1.isError && ho.1 != ho.2)) = none := by
+    simp [sigAtom_isError_false, termAtom_isError_false]
+  have hOuterBndNil :
+      restrictBnd
+          (([sigAtom cicStage3RawArtifactSig,
+              termAtom (.defn name)]).flatMap Metta.Atom.vars)
+          ((Metta.Bindings.merge [] rootBnd).head?.getD rootBnd) = [] := by
+    simpa [List.flatMap,
+      sigAtom_vars_nil cicStage3RawArtifactSig,
+      termAtom_vars_nil (.defn name)] using
+      restrictBnd_nil_vars ((Metta.Bindings.merge [] rootBnd).head?.getD rootBnd)
+  have hRootNotNR : (root == notReducibleA) = false := by
+    rw [hRootEq]
+    rfl
+  have hRootNotSelf :
+      (root == nfQuery cicStage3RawArtifactSig (.defn name)) = false := by
+    rw [hRootEq]
+    rfl
+  let stLetAtom : St := { counter := stRoot.counter + 1, world := stRoot.world }
+  let stLetRoot : St := { counter := stLetAtom.counter + 1, world := stLetAtom.world }
+  let stOut : St :=
+    { counter :=
+        ({ counter := stLetRoot.counter + 3, world := stLetRoot.world } : St).counter +
+          nfDefCandidatePreWithIndGZeroIota.length + 1,
+      world := ({ counter := stLetRoot.counter + 3, world := stLetRoot.world } : St).world }
+  have hEval :=
+    mettaEval_binary_expr_eq_of_quoted_args_and_root_eval_bnd
+      (env := kernelDefControlEnv) (fuel := fuel + 10)
+      (st := st) (stRoot := stRoot) (stOut := stOut)
+      (op := "nf")
+      (x := sigAtom cicStage3RawArtifactSig)
+      (y := termAtom (.defn name))
+      (root := root) (final := elseA) (rootBnd := rootBnd)
+      (hType := kernelDefControlEnv_nf_typeMismatch st
+        cicStage3RawArtifactSig (.defn name))
+      (hMask := kernelDefControlEnv_nf_argMask)
+      (hNoErr := hNoErr)
+      (hRoot := by simpa [nfQuery, mExpr, mSym, Nat.add_assoc] using hRoot)
+      (hRootNotNotReducible := hRootNotNR)
+      (hRootNotSelf := by simpa [nfQuery, mExpr, mSym] using hRootNotSelf)
+      (hReturns := by
+        simpa [nfQuery, mExpr, mSym] using
+          kernelDefControlEnv_nf_returnsAtom
+            cicStage3RawArtifactSig (.defn name))
+      (hFinal := by
+        rw [hOuterBndNil, hRootEq]
+        have hWorldRoot : stRoot.world = St.init.world := by
+          simpa [stRoot] using hWorld
+        have hFreshLet :
+            ∀ {v : String},
+              v = "pattern" ∨ v = "atom" ∨ v = "template" →
+                counterSuffix (stRoot.counter + 1) v ≠ binder := by
+          intro v hv h
+          rcases hv with rfl | rfl | rfl
+          · have hc := congrArg String.toList h
+            simp [binder, counter, counterSuffix] at hc
+          · have hc := congrArg String.toList h
+            simp [binder, counter, counterSuffix] at hc
+          · have hc := congrArg String.toList h
+            simp [binder, counter, counterSuffix] at hc
+        have hFreshET :
+            ∀ {v : String}, v = "e" ∨ v = "t" →
+              counterSuffix (stRoot.counter + 4) v ≠ binder := by
+          intro v hv h
+          rcases hv with rfl | rfl
+          · have hc := congrArg String.toList h
+            simp [binder, counter, counterSuffix] at hc
+          · have hc := congrArg String.toList h
+            simp [binder, counter, counterSuffix] at hc
+        simpa [bodyAtom, elseA, stRoot, binder, stLetAtom, stLetRoot, stOut,
+          Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using
+          mettaEval_kernelDefControlEnv_primary_nf_def_let_body_eq_named
+            fuel stRoot name binder hWorldRoot hFreshLet hFreshET)
+  refine ⟨stOut, ?_, ?_⟩
+  · simpa [elseA, nfQuery, mExpr, mSym, restrictBnd_nil_vars, List.flatMap,
+      sigAtom_vars_nil cicStage3RawArtifactSig,
+      termAtom_vars_nil (.defn name),
+      stOut, stLetAtom, stLetRoot, Nat.add_assoc] using hEval
+  · simpa [stOut, stLetAtom, stLetRoot, stRoot] using hWorld
+
+private theorem mettaEval_kernelDefControlEnv_primary_nf_def_body_eq_state_exists_geSeven
+    (fuel : Nat) (st : St) (name : DeclName)
+    (hWorld : st.world = St.init.world) :
+    ∃ stOut,
+      mettaEval kernelDefControlEnv (fuel + 7) st []
+          (nfQuery cicStage3RawArtifactSig (.defn name)) =
+        ([(cicStage3CanonicalDefnStuckReadoutForSig
+            cicStage3RawArtifactSig name, [])], stOut) ∧
+      stOut.world = St.init.world := by
+  let bodyAtom :=
+    defBodyOfQueryAtom
+      (sigAtom cicStage3RawArtifactSig)
+      (declNameAtom name)
+  let elseA :=
+    cicStage3CanonicalDefnStuckReadoutForSig
+      cicStage3RawArtifactSig name
+  let counter := st.counter + nfDefCandidatePreWithIndGZeroIota.length
+  let binder := counterSuffix counter "body"
+  let rootBnd : Metta.Bindings :=
+    (renameBindings (counterSuffix counter)
+      (nfDefRuleBindings cicStage3RawArtifactSig name)).reverse
+  let root : Metta.Atom :=
+    Metta.instantiate rootBnd
+      (freshenRule counter nfDefRuleLhs nfDefRuleRhs).2
+  let stRoot : St :=
+    { counter := st.counter + nfDefCandidatePreWithIndGZeroIota.length + 1,
+      world := st.world }
+  have hStatic : st.world.selfExtra = [] := by
+    simpa [hWorld] using (show St.init.world.selfExtra = [] by rfl)
+  have hRootEq :
+      root = leattaDefControlPrimaryNfDefFreshRootNamed name binder := by
+    simpa [root, rootBnd, binder, counter] using
+      leattaDefControlPrimary_nfDefFreshRoot_named_eq counter name
+  have hRoot :
+      interpretFuel kernelDefControlEnv (fuel + 6 + 1) st
+          [evalItemNil (nfQuery cicStage3RawArtifactSig (.defn name))] [] =
+        ([(root, rootBnd)], stRoot) := by
+    simpa [root, rootBnd, stRoot, counter, Nat.add_assoc] using
+      interpretFuel_kernelDefControlEnv_nf_def_root_eq
+        (fuel := fuel + 6) (st := st)
+        cicStage3RawArtifactSig name hStatic
+  have hNoErr :
+      (([sigAtom cicStage3RawArtifactSig,
+          termAtom (.defn name)].zip
+        [sigAtom cicStage3RawArtifactSig,
+          termAtom (.defn name)]).find?
+        (fun ho : Metta.Atom × Metta.Atom => ho.1.isError && ho.1 != ho.2)) = none := by
+    simp [sigAtom_isError_false, termAtom_isError_false]
+  have hOuterBndNil :
+      restrictBnd
+          (([sigAtom cicStage3RawArtifactSig,
+              termAtom (.defn name)]).flatMap Metta.Atom.vars)
+          ((Metta.Bindings.merge [] rootBnd).head?.getD rootBnd) = [] := by
+    simpa [List.flatMap,
+      sigAtom_vars_nil cicStage3RawArtifactSig,
+      termAtom_vars_nil (.defn name)] using
+      restrictBnd_nil_vars ((Metta.Bindings.merge [] rootBnd).head?.getD rootBnd)
+  have hRootNotNR : (root == notReducibleA) = false := by
+    rw [hRootEq]
+    rfl
+  have hRootNotSelf :
+      (root == nfQuery cicStage3RawArtifactSig (.defn name)) = false := by
+    rw [hRootEq]
+    rfl
+  let stLetAtom : St := { counter := stRoot.counter + 1, world := stRoot.world }
+  let stLetRoot : St := { counter := stLetAtom.counter + 1, world := stLetAtom.world }
+  let stOut : St :=
+    { counter :=
+        ({ counter := stLetRoot.counter + 3, world := stLetRoot.world } : St).counter +
+          nfDefCandidatePreWithIndGZeroIota.length + 1,
+      world := ({ counter := stLetRoot.counter + 3, world := stLetRoot.world } : St).world }
+  have hEval :=
+    mettaEval_binary_expr_eq_of_quoted_args_and_root_eval_bnd
+      (env := kernelDefControlEnv) (fuel := fuel + 6)
+      (st := st) (stRoot := stRoot) (stOut := stOut)
+      (op := "nf")
+      (x := sigAtom cicStage3RawArtifactSig)
+      (y := termAtom (.defn name))
+      (root := root) (final := elseA) (rootBnd := rootBnd)
+      (hType := kernelDefControlEnv_nf_typeMismatch st
+        cicStage3RawArtifactSig (.defn name))
+      (hMask := kernelDefControlEnv_nf_argMask)
+      (hNoErr := hNoErr)
+      (hRoot := by simpa [nfQuery, mExpr, mSym, Nat.add_assoc] using hRoot)
+      (hRootNotNotReducible := hRootNotNR)
+      (hRootNotSelf := by simpa [nfQuery, mExpr, mSym] using hRootNotSelf)
+      (hReturns := by
+        simpa [nfQuery, mExpr, mSym] using
+          kernelDefControlEnv_nf_returnsAtom
+            cicStage3RawArtifactSig (.defn name))
+      (hFinal := by
+        rw [hOuterBndNil, hRootEq]
+        have hWorldRoot : stRoot.world = St.init.world := by
+          simpa [stRoot] using hWorld
+        have hFreshLet :
+            ∀ {v : String},
+              v = "pattern" ∨ v = "atom" ∨ v = "template" →
+                counterSuffix (stRoot.counter + 1) v ≠ binder := by
+          intro v hv h
+          rcases hv with rfl | rfl | rfl
+          · have hc := congrArg String.toList h
+            simp [binder, counter, counterSuffix] at hc
+          · have hc := congrArg String.toList h
+            simp [binder, counter, counterSuffix] at hc
+          · have hc := congrArg String.toList h
+            simp [binder, counter, counterSuffix] at hc
+        have hFreshET :
+            ∀ {v : String}, v = "e" ∨ v = "t" →
+              counterSuffix (stRoot.counter + 4) v ≠ binder := by
+          intro v hv h
+          rcases hv with rfl | rfl
+          · have hc := congrArg String.toList h
+            simp [binder, counter, counterSuffix] at hc
+          · have hc := congrArg String.toList h
+            simp [binder, counter, counterSuffix] at hc
+        simpa [bodyAtom, elseA, stRoot, binder, stLetAtom, stLetRoot, stOut,
+          Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using
+          mettaEval_kernelDefControlEnv_primary_nf_def_let_body_eq_named_geSix
+            fuel stRoot name binder hWorldRoot hFreshLet hFreshET)
+  refine ⟨stOut, ?_, ?_⟩
+  · simpa [elseA, nfQuery, mExpr, mSym, restrictBnd_nil_vars, List.flatMap,
+      sigAtom_vars_nil cicStage3RawArtifactSig,
+      termAtom_vars_nil (.defn name),
+      stOut, stLetAtom, stLetRoot, Nat.add_assoc] using hEval
+  · simpa [stOut, stLetAtom, stLetRoot, stRoot] using hWorld
+
+theorem cicStage3RawArtifactSig_primary_nf_defn_runtime_output_eq_geEleven
+    {fuel : Nat} {st : St} {name : DeclName} {out : Metta.Atom}
+    (hFuel : 11 ≤ fuel)
+    (hWorld : st.world = St.init.world)
+    (hOut :
+      out ∈
+        (mettaEval kernelDefControlEnv fuel st []
+          (nfQuery cicStage3RawArtifactSig (.defn name))).1.map (·.1)) :
+    out =
+      cicStage3CanonicalDefnStuckReadoutForSig
+        cicStage3RawArtifactSig name := by
+  rcases Nat.exists_eq_add_of_le hFuel with ⟨fuelBase, _hFuelEq⟩
+  have hFuelEq' : fuel = fuelBase + 11 := by omega
+  rw [hFuelEq'] at hOut
+  rcases
+      mettaEval_kernelDefControlEnv_primary_nf_def_body_eq_state_exists
+        fuelBase st name hWorld with
+    ⟨_stOut, hExact, _hWorldOut⟩
+  rw [hExact] at hOut
+  simpa [cicStage3CanonicalDefnStuckReadoutForSig] using hOut
+
+theorem cicStage3RawArtifactSig_primary_nf_defn_runtime_output_eq_geSeven
+    {fuel : Nat} {st : St} {name : DeclName} {out : Metta.Atom}
+    (hFuel : 7 ≤ fuel)
+    (hWorld : st.world = St.init.world)
+    (hOut :
+      out ∈
+        (mettaEval kernelDefControlEnv fuel st []
+          (nfQuery cicStage3RawArtifactSig (.defn name))).1.map (·.1)) :
+    out =
+      cicStage3CanonicalDefnStuckReadoutForSig
+        cicStage3RawArtifactSig name := by
+  rcases Nat.exists_eq_add_of_le hFuel with ⟨fuelBase, _hFuelEq⟩
+  have hFuelEq' : fuel = fuelBase + 7 := by omega
+  rw [hFuelEq'] at hOut
+  rcases
+      mettaEval_kernelDefControlEnv_primary_nf_def_body_eq_state_exists_geSeven
+        fuelBase st name hWorld with
+    ⟨_stOut, hExact, _hWorldOut⟩
+  rw [hExact] at hOut
+  simpa [cicStage3CanonicalDefnStuckReadoutForSig] using hOut
+
+theorem cicStage3RawArtifactSig_primary_nf_value_runtime_extraction_geEleven_defn
+    {fuel : Nat} {st : St} {name : DeclName}
+    {term : PureTm 0} {out : Metta.Atom}
+    (hFuel : 11 ≤ fuel)
+    (hWorld : st.world = St.init.world)
+    (hTrans :
+      DIndGArtifactTermTranslates
+        cicStage3RawArtifactSig.nameTranslates 0
+        (.defn name) term)
+    (hOut :
+      out ∈
+        (mettaEval kernelDefControlEnv fuel st []
+          (nfQuery cicStage3RawArtifactSig (.defn name))).1.map (·.1)) :
+    CicStage3RawArtifactSigPrimaryNfRuntimeReadout (.defn name) out := by
+  cases hTrans with
+  | defn hName =>
+      have hNameWith :
+          cicStage3RawNameTranslatesWithPropToType0Witness name _ :=
+        Or.inl hName
+      have hBound :
+          cicStage3RawNameWithPropToType0WitnessBounded name :=
+        cicStage3RawNameTranslatesWithPropToType0Witness_bounded hNameWith
+      have hNotWitness : name ≠ cicStage3PropToType0WitnessName := by
+        intro hEq
+        rcases hName with ⟨rfl, _⟩ | ⟨rfl, _⟩ | ⟨rfl, _⟩ | ⟨rfl, _⟩
+        · exact (by decide : (`nat : DeclName) ≠
+            cicStage3PropToType0WitnessName) hEq
+        · exact (by decide : (`nat.rec : DeclName) ≠
+            cicStage3PropToType0WitnessName) hEq
+        · exact (by decide : (`z : DeclName) ≠
+            cicStage3PropToType0WitnessName) hEq
+        · exact (by decide : (`s : DeclName) ≠
+            cicStage3PropToType0WitnessName) hEq
+      have hOutEq :=
+        cicStage3RawArtifactSig_primary_nf_defn_runtime_output_eq_geEleven
+          hFuel hWorld hOut
+      subst out
+      exact CicStage3RawArtifactSigPrimaryNfRuntimeReadout.defnStuck
+        hBound hNotWitness
+
+theorem cicStage3RawArtifactSig_primary_nf_value_runtime_extraction_geSeven_defn
+    {fuel : Nat} {st : St} {name : DeclName}
+    {term : PureTm 0} {out : Metta.Atom}
+    (hFuel : 7 ≤ fuel)
+    (hWorld : st.world = St.init.world)
+    (hTrans :
+      DIndGArtifactTermTranslates
+        cicStage3RawArtifactSig.nameTranslates 0
+        (.defn name) term)
+    (hOut :
+      out ∈
+        (mettaEval kernelDefControlEnv fuel st []
+          (nfQuery cicStage3RawArtifactSig (.defn name))).1.map (·.1)) :
+    CicStage3RawArtifactSigPrimaryNfRuntimeReadout (.defn name) out := by
+  cases hTrans with
+  | defn hName =>
+      have hNameWith :
+          cicStage3RawNameTranslatesWithPropToType0Witness name _ :=
+        Or.inl hName
+      have hBound :
+          cicStage3RawNameWithPropToType0WitnessBounded name :=
+        cicStage3RawNameTranslatesWithPropToType0Witness_bounded hNameWith
+      have hNotWitness : name ≠ cicStage3PropToType0WitnessName := by
+        intro hEq
+        rcases hName with ⟨rfl, _⟩ | ⟨rfl, _⟩ | ⟨rfl, _⟩ | ⟨rfl, _⟩
+        · exact (by decide : (`nat : DeclName) ≠
+            cicStage3PropToType0WitnessName) hEq
+        · exact (by decide : (`nat.rec : DeclName) ≠
+            cicStage3PropToType0WitnessName) hEq
+        · exact (by decide : (`z : DeclName) ≠
+            cicStage3PropToType0WitnessName) hEq
+        · exact (by decide : (`s : DeclName) ≠
+            cicStage3PropToType0WitnessName) hEq
+      have hOutEq :=
+        cicStage3RawArtifactSig_primary_nf_defn_runtime_output_eq_geSeven
+          hFuel hWorld hOut
+      subst out
+      exact CicStage3RawArtifactSigPrimaryNfRuntimeReadout.defnStuck
+        hBound hNotWitness
+
+theorem cicStage3RawArtifactSig_primary_nf_value_runtime_extraction_geEleven_app
+    {fuel : Nat} {st : St} {rawFn rawArg : DIndGArtifactTerm}
+    {term : PureTm 0} {out : Metta.Atom}
+    (hFuel : 11 ≤ fuel)
+    (hWorld : st.world = St.init.world)
+    (hTrans :
+      DIndGArtifactTermTranslates
+        cicStage3RawArtifactSig.nameTranslates 0
+        (.app rawFn rawArg) term)
+    (hOut :
+      out ∈
+        (mettaEval kernelDefControlEnv fuel st []
+          (nfQuery cicStage3RawArtifactSig (.app rawFn rawArg))).1.map (·.1)) :
+    CicStage3RawArtifactSigPrimaryNfRuntimeReadout
+      (.app rawFn rawArg) out := by
+  exact
+    cicStage3RawArtifactSig_primary_nf_value_runtime_extraction_geThree_app
+      (by omega) hWorld hTrans hOut
+
+theorem cicStage3RawArtifactSig_primary_nf_value_runtime_extraction_geEleven_indG_stuck
+    {fuel : Nat} {st : St} {familyName : DeclName}
+    {params : List DIndGArtifactTerm}
+    {motive : DIndGArtifactTerm}
+    {cases : List (DeclName × DIndGArtifactTerm)}
+    {indices : List DIndGArtifactTerm}
+    {scrutinee : DIndGArtifactTerm}
+    {term : PureTm 0} {out : Metta.Atom}
+    (hFuel : 11 ≤ fuel)
+    (hWorld : st.world = St.init.world)
+    (hTrans :
+      DIndGArtifactTermTranslates
+        cicStage3RawArtifactSig.nameTranslates 0
+        (.indG familyName params motive cases indices scrutinee) term)
+    (hIotaMiss :
+      Metta.matchAtoms (termAtom cicStage3IndGZeroRawRuntime)
+        (termAtom (.indG familyName params motive cases indices scrutinee)) = [])
+    (hOut :
+      out ∈
+        (mettaEval kernelDefControlEnv fuel st []
+          (nfQuery cicStage3RawArtifactSig
+            (.indG familyName params motive cases indices scrutinee))).1.map (·.1)) :
+    CicStage3RawArtifactSigPrimaryNfRuntimeReadout
+      (.indG familyName params motive cases indices scrutinee) out := by
+  exact
+    cicStage3RawArtifactSig_primary_nf_value_runtime_extraction_geThree_indG_stuck
+      (by omega) hWorld hTrans hIotaMiss hOut
+
 theorem cicStage3RawArtifactSig_conv_tail_true_primaryReadout_beq_true_keyed_ambient
     (fuel : Nat) {rawLeft rawRight : DIndGArtifactTerm}
     {left right : PureTm 0}
@@ -62906,25 +71434,20 @@ private theorem cicStage3RawArtifactSig_primaryReadout_beq_indG_zero_iota_convDe
           simpa [termAtom, declNameAtom, mExpr, mSym] using hBeq)
           (by decide))
 
-private theorem metta_atom_beq_true_comm {a b : Metta.Atom}
-    (h : (a == b) = true) : (b == a) = true := by
-  have hEq : a = b := beq_iff_eq.mp h
-  subst b
-  exact beq_self_eq_true a
-
 private theorem cicStage3RawArtifactSig_resolved_self_beq_primaryReadout_convDecl_any_depth
-    {n : Nat} {rawLeft rawRight : DIndGArtifactTerm}
+    {n : Nat} {rawLeft rawLeftOut rawRight : DIndGArtifactTerm}
     {outRight : Metta.Atom} {left right : PureTm n}
-    (hLeftSelf : CicStage3ResolvedNfRuntimeOutput rawLeft rawLeft)
+    (hLeftSelf : CicStage3ResolvedNfRuntimeOutput rawLeft rawLeftOut)
+    (hSelf : rawLeftOut = rawLeft)
     (hRightReadout :
       CicStage3RawArtifactSigPrimaryNfRuntimeReadout rawRight outRight)
     (hLeft :
       DIndGArtifactTermTranslates
-        cicStage3RawArtifactSig.nameTranslates n rawLeft left)
+        cicStage3RawArtifactSig.nameTranslates n rawLeftOut left)
     (hRight :
       DIndGArtifactTermTranslates
         cicStage3RawArtifactSig.nameTranslates n rawRight right)
-    (hBeq : (termAtom rawLeft == outRight) = true) :
+    (hBeq : (termAtom rawLeftOut == outRight) = true) :
     ConvDecl
       (envOfSpecs cicStage3RawArtifactSig.translatedSpecs)
       left right := by
@@ -62963,7 +71486,8 @@ private theorem cicStage3RawArtifactSig_resolved_self_beq_primaryReadout_convDec
           exact
             cicStage3RawArtifactSig_primaryReadout_beq_indG_zero_iota_convDecl_any_depth
               (CicStage3RawArtifactSigPrimaryNfRuntimeReadout.resolved
-                (CicStage3ResolvedNfRuntimeOutput.var k))
+                (cicStage3_resolved_nf_runtime_output_self
+                  (CicStage3ResolvedNfRuntimeOutput.var k)))
               hLeft hRight hBeq
       | pi hDomain hBody =>
           exact False.elim
@@ -63009,7 +71533,8 @@ private theorem cicStage3RawArtifactSig_resolved_self_beq_primaryReadout_convDec
           exact
             cicStage3RawArtifactSig_primaryReadout_beq_indG_zero_iota_convDecl_any_depth
               (CicStage3RawArtifactSigPrimaryNfRuntimeReadout.resolved
-                (CicStage3ResolvedNfRuntimeOutput.srt sort))
+                (cicStage3_resolved_nf_runtime_output_self
+                  (CicStage3ResolvedNfRuntimeOutput.srt sort)))
               hLeft hRight hBeq
       | pi hDomain hBody =>
           cases sort <;>
@@ -63057,7 +71582,8 @@ private theorem cicStage3RawArtifactSig_resolved_self_beq_primaryReadout_convDec
           exact
             cicStage3RawArtifactSig_primaryReadout_beq_indG_zero_iota_convDecl_any_depth
               (CicStage3RawArtifactSigPrimaryNfRuntimeReadout.resolved
-                (CicStage3ResolvedNfRuntimeOutput.con hName))
+                (cicStage3_resolved_nf_runtime_output_self
+                  (CicStage3ResolvedNfRuntimeOutput.con hName)))
               hLeft hRight hBeq
       | pi hDomain hBody =>
           exact False.elim
@@ -63070,10 +71596,11 @@ private theorem cicStage3RawArtifactSig_resolved_self_beq_primaryReadout_convDec
               simpa [termAtom, declNameAtom, mExpr, mSym] using hBeq)
               (by decide))
   | witnessDefn =>
-      cases hLeft
+      cases hSelf
   | bad reason =>
       cases hLeft
   | pi hDomainSelf hBodySelf ihDomain ihBody =>
+      cases hSelf
       cases hRightReadout with
       | resolved hRightOut =>
           exact
@@ -63107,7 +71634,8 @@ private theorem cicStage3RawArtifactSig_resolved_self_beq_primaryReadout_convDec
           exact
             cicStage3RawArtifactSig_primaryReadout_beq_indG_zero_iota_convDecl_any_depth
               (CicStage3RawArtifactSigPrimaryNfRuntimeReadout.resolved
-                (CicStage3ResolvedNfRuntimeOutput.pi hDomainSelf hBodySelf))
+                (cicStage3_resolved_nf_runtime_output_self
+                  (CicStage3ResolvedNfRuntimeOutput.pi hDomainSelf hBodySelf)))
               hLeft hRight hBeq
       | pi hRightDomain hRightBody =>
           cases hLeft with
@@ -63123,9 +71651,9 @@ private theorem cicStage3RawArtifactSig_resolved_self_beq_primaryReadout_convDec
                       simpa [termAtom, mExpr, mSym] using hBeq)
                   exact
                     convDecl_cong_pi_local
-                      (ihDomain hRightDomain hLeftDomain
+                      (ihDomain rfl hRightDomain hLeftDomain
                         hRightDomainTr hPayload.1)
-                      (ihBody hRightBody hLeftBody
+                      (ihBody rfl hRightBody hLeftBody
                         hRightBodyTr hPayload.2)
       | lam hRightDomain hRightBody =>
           exact False.elim
@@ -63133,6 +71661,7 @@ private theorem cicStage3RawArtifactSig_resolved_self_beq_primaryReadout_convDec
               simpa [termAtom, mExpr, mSym] using hBeq)
               (by decide))
   | lam hDomainSelf hBodySelf ihDomain ihBody =>
+      cases hSelf
       cases hRightReadout with
       | resolved hRightOut =>
           exact
@@ -63166,7 +71695,8 @@ private theorem cicStage3RawArtifactSig_resolved_self_beq_primaryReadout_convDec
           exact
             cicStage3RawArtifactSig_primaryReadout_beq_indG_zero_iota_convDecl_any_depth
               (CicStage3RawArtifactSigPrimaryNfRuntimeReadout.resolved
-                (CicStage3ResolvedNfRuntimeOutput.lam hDomainSelf hBodySelf))
+                (cicStage3_resolved_nf_runtime_output_self
+                  (CicStage3ResolvedNfRuntimeOutput.lam hDomainSelf hBodySelf)))
               hLeft hRight hBeq
       | pi hRightDomain hRightBody =>
           exact False.elim
@@ -63187,7 +71717,7 @@ private theorem cicStage3RawArtifactSig_resolved_self_beq_primaryReadout_convDec
                       simpa [termAtom, mExpr, mSym] using hBeq)
                   exact
                     convDecl_cong_lam_local
-                      (ihBody hRightBody hLeftBody
+                      (ihBody rfl hRightBody hLeftBody
                         hRightBodyTr hPayload.2)
 
 private theorem cicStage3RawArtifactSig_primaryReadout_beq_true_convDecl_any_depth
@@ -63221,7 +71751,7 @@ private theorem cicStage3RawArtifactSig_primaryReadout_beq_true_convDecl_any_dep
             (envOfSpecs cicStage3RawArtifactSig.translatedSpecs)
             leftNf right :=
         cicStage3RawArtifactSig_resolved_self_beq_primaryReadout_convDecl_any_depth
-          hLeftSelf hRightReadout hLeftNf hRight (by simpa using hBeq)
+          hLeftSelf rfl hRightReadout hLeftNf hRight (by simpa using hBeq)
       exact
         Relation.EqvGen.trans _ _ _
           (redStarDecl_implies_conv hLeftRed) hNfRight
@@ -63391,10 +71921,67 @@ private theorem cicStage3RawArtifactSig_primaryReadout_beq_true_convDecl_any_dep
   | pi hLeftDomainReadout hLeftBodyReadout ihDomain ihBody =>
       cases hRightReadout with
       | resolved hRightOut =>
-          exact False.elim
-            (mExpr_beq_head_mismatch_false (by
-              simpa [termAtom, mExpr, mSym] using hBeq)
-              (by decide))
+          rcases
+              cicStage3_resolved_nf_runtime_output_decl_reduction_exists_primary
+                hRightOut hRight with
+            ⟨rightNf, hRightNf, hRightRed⟩
+          have hRightSelf :
+              CicStage3ResolvedNfRuntimeOutput _ _ :=
+            cicStage3_resolved_nf_runtime_output_self hRightOut
+          have hLeftNf :
+              ConvDecl
+                (envOfSpecs cicStage3RawArtifactSig.translatedSpecs)
+                left rightNf := by
+            cases hRightSelf with
+            | var k =>
+                exact False.elim
+                  (mExpr_beq_head_mismatch_false (by
+                    simpa [termAtom, mExpr, mSym, mNat] using hBeq)
+                    (by decide))
+            | srt sort =>
+                cases sort <;>
+                  exact False.elim
+                    (mExpr_beq_head_mismatch_false (by
+                      simpa [termAtom, sortAtom, mExpr, mSym] using hBeq)
+                      (by decide))
+            | con hName =>
+                exact False.elim
+                  (mExpr_beq_head_mismatch_false (by
+                    simpa [termAtom, declNameAtom, mExpr, mSym] using hBeq)
+                    (by decide))
+            | bad reason =>
+                cases hRightNf
+            | pi hRightDomainSelf hRightBodySelf =>
+                cases hLeft with
+                | pi hLeftDomain hLeftBody =>
+                    cases hRightNf with
+                    | pi hRightDomain hRightBody =>
+                        have hPayload := atom_beq_expr_binary_payload_true
+                          (tag := "Pi")
+                          (a := _) (b := _) (c := _) (d := _)
+                          (by
+                            change Metta.Atom.beq _ _ = true at hBeq
+                            simpa [termAtom, mExpr, mSym] using hBeq)
+                        exact
+                          convDecl_cong_pi_local
+                            (ihDomain
+                              (CicStage3RawArtifactSigPrimaryNfRuntimeReadout.resolved
+                                hRightDomainSelf)
+                              hLeftDomain hRightDomain hPayload.1)
+                            (ihBody
+                              (CicStage3RawArtifactSigPrimaryNfRuntimeReadout.resolved
+                                hRightBodySelf)
+                              hLeftBody hRightBody hPayload.2)
+            | lam hRightDomainSelf hRightBodySelf =>
+                exact False.elim
+                  (mExpr_beq_head_mismatch_false (by
+                    simpa [termAtom, mExpr, mSym] using hBeq)
+                    (by decide))
+          exact
+            Relation.EqvGen.trans _ _ _
+              hLeftNf
+              (Relation.EqvGen.symm _ _
+                (redStarDecl_implies_conv hRightRed))
       | defnStuck hName hNotWitness =>
           exact False.elim
             (mExpr_beq_head_mismatch_false (by
@@ -63425,6 +72012,7 @@ private theorem cicStage3RawArtifactSig_primaryReadout_beq_true_convDecl_any_dep
                     (tag := "Pi")
                     (a := _) (b := _) (c := _) (d := _)
                     (by
+                      change Metta.Atom.beq _ _ = true at hBeq
                       simpa [mExpr, mSym] using hBeq)
                   exact
                     convDecl_cong_pi_local
@@ -63440,10 +72028,63 @@ private theorem cicStage3RawArtifactSig_primaryReadout_beq_true_convDecl_any_dep
   | lam hLeftDomainReadout hLeftBodyReadout ihDomain ihBody =>
       cases hRightReadout with
       | resolved hRightOut =>
-          exact False.elim
-            (mExpr_beq_head_mismatch_false (by
-              simpa [termAtom, mExpr, mSym] using hBeq)
-              (by decide))
+          rcases
+              cicStage3_resolved_nf_runtime_output_decl_reduction_exists_primary
+                hRightOut hRight with
+            ⟨rightNf, hRightNf, hRightRed⟩
+          have hRightSelf :
+              CicStage3ResolvedNfRuntimeOutput _ _ :=
+            cicStage3_resolved_nf_runtime_output_self hRightOut
+          have hLeftNf :
+              ConvDecl
+                (envOfSpecs cicStage3RawArtifactSig.translatedSpecs)
+                left rightNf := by
+            cases hRightSelf with
+            | var k =>
+                exact False.elim
+                  (mExpr_beq_head_mismatch_false (by
+                    simpa [termAtom, mExpr, mSym, mNat] using hBeq)
+                    (by decide))
+            | srt sort =>
+                cases sort <;>
+                  exact False.elim
+                    (mExpr_beq_head_mismatch_false (by
+                      simpa [termAtom, sortAtom, mExpr, mSym] using hBeq)
+                      (by decide))
+            | con hName =>
+                exact False.elim
+                  (mExpr_beq_head_mismatch_false (by
+                    simpa [termAtom, declNameAtom, mExpr, mSym] using hBeq)
+                    (by decide))
+            | bad reason =>
+                cases hRightNf
+            | pi hRightDomainSelf hRightBodySelf =>
+                exact False.elim
+                  (mExpr_beq_head_mismatch_false (by
+                    simpa [termAtom, mExpr, mSym] using hBeq)
+                    (by decide))
+            | lam hRightDomainSelf hRightBodySelf =>
+                cases hLeft with
+                | lam hLeftDomain hLeftBody =>
+                    cases hRightNf with
+                    | lam hRightDomain hRightBody =>
+                        have hPayload := atom_beq_expr_binary_payload_true
+                          (tag := "Lam")
+                          (a := _) (b := _) (c := _) (d := _)
+                          (by
+                            change Metta.Atom.beq _ _ = true at hBeq
+                            simpa [termAtom, mExpr, mSym] using hBeq)
+                        exact
+                          convDecl_cong_lam_local
+                            (ihBody
+                              (CicStage3RawArtifactSigPrimaryNfRuntimeReadout.resolved
+                                hRightBodySelf)
+                              hLeftBody hRightBody hPayload.2)
+          exact
+            Relation.EqvGen.trans _ _ _
+              hLeftNf
+              (Relation.EqvGen.symm _ _
+                (redStarDecl_implies_conv hRightRed))
       | defnStuck hName hNotWitness =>
           exact False.elim
             (mExpr_beq_head_mismatch_false (by
@@ -63479,6 +72120,7 @@ private theorem cicStage3RawArtifactSig_primaryReadout_beq_true_convDecl_any_dep
                     (tag := "Lam")
                     (a := _) (b := _) (c := _) (d := _)
                     (by
+                      change Metta.Atom.beq _ _ = true at hBeq
                       simpa [mExpr, mSym] using hBeq)
                   exact
                     convDecl_cong_lam_local
@@ -63514,6 +72156,36 @@ def ConvSoundCicStage3RawArtifactSigNamedReadoutFuelLowerBound : Prop :=
           cicStage3RawArtifactSig rawLeft rawRight)).1 →
     9 ≤ runFuel
 
+def ConvSoundCicStage3RawArtifactSigNamedReadoutFuelFourteenLowerBound :
+    Prop :=
+  ∀ {runFuel : Nat} {rawLeft rawRight : DIndGArtifactTerm}
+      {outBnd : Metta.Bindings},
+    let nxBinder := counterSuffix St.init.counter "nx"
+    let nyBinder := counterSuffix St.init.counter "ny"
+    let stNamed : St := { counter := St.init.counter + 1, world := St.init.world }
+    (mBool true, outBnd) ∈
+      (mettaEval kernelDefControlEnv runFuel stNamed []
+        (convReadoutNamed nxBinder nyBinder
+          cicStage3RawArtifactSig rawLeft rawRight)).1 →
+    14 ≤ runFuel
+
+def ConvSoundCicStage3RawArtifactSigNamedReadoutFuelGeNine : Prop :=
+  ∀ {rawLeft rawRight : DIndGArtifactTerm} {left right : PureTm 0},
+    evaluator.conv cicStage3RawArtifactSig rawLeft rawRight →
+    DIndGArtifactTermTranslates
+      cicStage3RawArtifactSig.nameTranslates 0 rawLeft left →
+    DIndGArtifactTermTranslates
+      cicStage3RawArtifactSig.nameTranslates 0 rawRight right →
+    ∃ fuel,
+      let nxBinder := counterSuffix St.init.counter "nx"
+      let nyBinder := counterSuffix St.init.counter "ny"
+      let stNamed : St := { counter := St.init.counter + 1, world := St.init.world }
+      9 ≤ fuel ∧
+      mBool true ∈
+        (mettaEval kernelDefControlEnv (((fuel + 2) + 2) + 1) stNamed []
+          (convReadoutNamed nxBinder nyBinder
+            cicStage3RawArtifactSig rawLeft rawRight)).1.map (·.1)
+
 def ConvSoundCicStage3RawArtifactSigNamedReadoutSmallFuelFalse : Prop :=
   ∀ {runFuel : Nat} {rawLeft rawRight : DIndGArtifactTerm}
       {outBnd : Metta.Bindings},
@@ -63541,6 +72213,511 @@ def ConvSoundCicStage3RawArtifactSigNamedReadoutFuelTwoThroughEightFalse :
         (convReadoutNamed nxBinder nyBinder
           cicStage3RawArtifactSig rawLeft rawRight)).1 →
     False
+
+def ConvSoundCicStage3RawArtifactSigNamedReadoutFuelFalseAt
+    (runFuel : Nat) : Prop :=
+  ∀ {rawLeft rawRight : DIndGArtifactTerm} {outBnd : Metta.Bindings},
+    let nxBinder := counterSuffix St.init.counter "nx"
+    let nyBinder := counterSuffix St.init.counter "ny"
+    let stNamed : St := { counter := St.init.counter + 1, world := St.init.world }
+    (mBool true, outBnd) ∈
+      (mettaEval kernelDefControlEnv runFuel stNamed []
+        (convReadoutNamed nxBinder nyBinder
+          cicStage3RawArtifactSig rawLeft rawRight)).1 →
+    False
+
+private theorem atom_isError_false_of_beq_nfQuery_true
+    (sig : DIndGArtifactSig) (raw : DIndGArtifactTerm) (a : Metta.Atom)
+    (hBeq : (a == nfQuery sig raw) = true) :
+    a.isError = false := by
+  change Metta.Atom.beq a (nfQuery sig raw) = true at hBeq
+  cases a with
+  | sym s =>
+      simp [nfQuery, mExpr, mSym, Metta.Atom.beq] at hBeq
+  | var v =>
+      simp [nfQuery, mExpr, mSym, Metta.Atom.beq] at hBeq
+  | gnd g =>
+      cases g <;> simp [nfQuery, mExpr, mSym, Metta.Atom.beq] at hBeq ⊢
+  | expr xs =>
+      cases xs with
+      | nil =>
+          simp [nfQuery, mExpr, mSym, Metta.Atom.beq,
+            Metta.Atom.beqList] at hBeq
+      | cons head tail =>
+          cases head with
+          | sym s =>
+              simp [nfQuery, mExpr, mSym, Metta.Atom.beq,
+                Metta.Atom.beqList] at hBeq
+              rcases hBeq with ⟨hs, _htail⟩
+              simp [Metta.Atom.isError, hs]
+          | var v =>
+              simp [nfQuery, mExpr, mSym, Metta.Atom.beq,
+                Metta.Atom.beqList] at hBeq
+          | gnd g =>
+              cases g <;> simp [nfQuery, mExpr, mSym, Metta.Atom.beq,
+                Metta.Atom.beqList] at hBeq
+          | expr ys =>
+              simp [nfQuery, mExpr, mSym, Metta.Atom.beq,
+                Metta.Atom.beqList] at hBeq
+
+private theorem convReadoutNamed_left_branch_noerr_middle_not_error
+    (nxBinder nyBinder : String)
+    (sig : DIndGArtifactSig) (rawLeft rawRight : DIndGArtifactTerm)
+    (nx : Metta.Atom) (partBnd : Metta.Bindings)
+    (hNoErr :
+      (([mVar nxBinder, nx,
+            Metta.instantiate partBnd
+              (convReadoutAfterNxNamed nyBinder sig rawRight
+                (mVar nxBinder))].zip
+          [mVar nxBinder, nfQuery sig rawLeft,
+            convReadoutAfterNxNamed nyBinder sig rawRight
+              (mVar nxBinder)]).find?
+          (fun ho : Metta.Atom × Metta.Atom =>
+            ho.1.isError && ho.1 != ho.2)) = none)
+    (hErr : nx.isError = true) :
+    False := by
+  have hBeqFalse : (nx == nfQuery sig rawLeft) = false := by
+    cases hBeq : (nx == nfQuery sig rawLeft) <;> simp
+    have hNxNoErr :=
+      atom_isError_false_of_beq_nfQuery_true sig rawLeft nx hBeq
+    rw [hNxNoErr] at hErr
+    cases hErr
+  have hBne : (nx != nfQuery sig rawLeft) = true := by
+    simp [bne, hBeqFalse]
+  simp only [List.find?, List.zip_cons_cons, List.zip_nil_right] at hNoErr
+  rw [hErr, hBne] at hNoErr
+  simp [mVar, Metta.Atom.isError] at hNoErr
+
+private theorem convReadoutNamed_left_branch_noerr_middle_isError_false
+    (nxBinder nyBinder : String)
+    (sig : DIndGArtifactSig) (rawLeft rawRight : DIndGArtifactTerm)
+    (nx : Metta.Atom) (partBnd : Metta.Bindings)
+    (hNoErr :
+      (([mVar nxBinder, nx,
+            Metta.instantiate partBnd
+              (convReadoutAfterNxNamed nyBinder sig rawRight
+                (mVar nxBinder))].zip
+          [mVar nxBinder, nfQuery sig rawLeft,
+            convReadoutAfterNxNamed nyBinder sig rawRight
+              (mVar nxBinder)]).find?
+          (fun ho : Metta.Atom × Metta.Atom =>
+            ho.1.isError && ho.1 != ho.2)) = none) :
+    nx.isError = false := by
+  by_cases hErr : nx.isError = true
+  · exact False.elim
+      (convReadoutNamed_left_branch_noerr_middle_not_error
+        nxBinder nyBinder sig rawLeft rawRight nx partBnd hNoErr hErr)
+  · cases hNx : nx.isError <;> simp [hNx] at hErr ⊢
+
+private theorem nf_binary_readout_arg_find_none_left_noerr
+    (sig : DIndGArtifactSig)
+    (rawDomain rawBody : DIndGArtifactTerm)
+    (domainOut bodyOut : Metta.Atom)
+    (hNoErr :
+      (([domainOut, bodyOut].zip
+          [nfQuery sig rawDomain, nfQuery sig rawBody]).find?
+        (fun ho : Metta.Atom × Metta.Atom =>
+          ho.1.isError && ho.1 != ho.2)) = none) :
+    domainOut.isError = false := by
+  by_cases hErr : domainOut.isError = true
+  · have hBeqFalse : (domainOut == nfQuery sig rawDomain) = false := by
+      cases hBeq : (domainOut == nfQuery sig rawDomain) <;> simp
+      have hDomainNoErr :=
+        atom_isError_false_of_beq_nfQuery_true sig rawDomain domainOut hBeq
+      rw [hDomainNoErr] at hErr
+      cases hErr
+    have hBne : (domainOut != nfQuery sig rawDomain) = true := by
+      simp [bne, hBeqFalse]
+    simp only [List.find?, List.zip_cons_cons, List.zip_nil_right] at hNoErr
+    rw [hErr, hBne] at hNoErr
+    simp at hNoErr
+  · cases hDomain : domainOut.isError <;> simp [hDomain] at hErr ⊢
+
+private theorem nf_binary_readout_arg_find_none_right_noerr
+    (sig : DIndGArtifactSig)
+    (rawDomain rawBody : DIndGArtifactTerm)
+    (domainOut bodyOut : Metta.Atom)
+    (hNoErr :
+      (([domainOut, bodyOut].zip
+          [nfQuery sig rawDomain, nfQuery sig rawBody]).find?
+        (fun ho : Metta.Atom × Metta.Atom =>
+          ho.1.isError && ho.1 != ho.2)) = none) :
+    bodyOut.isError = false := by
+  by_cases hErr : bodyOut.isError = true
+  · have hBeqFalse : (bodyOut == nfQuery sig rawBody) = false := by
+      cases hBeq : (bodyOut == nfQuery sig rawBody) <;> simp
+      have hBodyNoErr :=
+        atom_isError_false_of_beq_nfQuery_true sig rawBody bodyOut hBeq
+      rw [hBodyNoErr] at hErr
+      cases hErr
+    have hBne : (bodyOut != nfQuery sig rawBody) = true := by
+      simp [bne, hBeqFalse]
+    simp only [List.find?, List.zip_cons_cons, List.zip_nil_right] at hNoErr
+    rw [hErr, hBne] at hNoErr
+    cases hLeft :
+        (domainOut.isError && domainOut != nfQuery sig rawDomain) <;>
+      simp [hLeft] at hNoErr
+  · cases hBody : bodyOut.isError <;> simp [hBody] at hErr ⊢
+
+private theorem nf_binary_readout_arg_find_none_noerr
+    (sig : DIndGArtifactSig)
+    (rawDomain rawBody : DIndGArtifactTerm)
+    (domainOut bodyOut : Metta.Atom)
+    (hNoErr :
+      (([domainOut, bodyOut].zip
+          [nfQuery sig rawDomain, nfQuery sig rawBody]).find?
+        (fun ho : Metta.Atom × Metta.Atom =>
+          ho.1.isError && ho.1 != ho.2)) = none) :
+    domainOut.isError = false ∧ bodyOut.isError = false :=
+  ⟨nf_binary_readout_arg_find_none_left_noerr
+      sig rawDomain rawBody domainOut bodyOut hNoErr,
+    nf_binary_readout_arg_find_none_right_noerr
+      sig rawDomain rawBody domainOut bodyOut hNoErr⟩
+
+private theorem convSoundCicStage3RawArtifactSig_namedReadoutFuelFalseAt_two :
+    ConvSoundCicStage3RawArtifactSigNamedReadoutFuelFalseAt 2 := by
+  intro rawLeft rawRight outBnd
+  dsimp [ConvSoundCicStage3RawArtifactSigNamedReadoutFuelFalseAt]
+  intro hRun
+  let nxBinder := counterSuffix St.init.counter "nx"
+  let nyBinder := counterSuffix St.init.counter "ny"
+  let stNamed : St := { counter := St.init.counter + 1, world := St.init.world }
+  let P : St → Prop := fun st => st.world.selfExtra = []
+  have hArgState :
+      P (mettaEval kernelDefControlEnv 1 stNamed []
+        (nfQuery cicStage3RawArtifactSig rawLeft)).2 := by
+    have hw :=
+      mettaEval_fuel_one_world kernelDefControlEnv stNamed []
+        (nfQuery cicStage3RawArtifactSig rawLeft)
+    change
+      (mettaEval kernelDefControlEnv 1 stNamed []
+        (nfQuery cicStage3RawArtifactSig rawLeft)).2.world.selfExtra = []
+    rw [hw]
+    rfl
+  have hRootState :
+      let pattern := mVar nxBinder
+      let bodyQuery := nfQuery cicStage3RawArtifactSig rawLeft
+      let template :=
+        convReadoutAfterNxNamed nyBinder cicStage3RawArtifactSig rawRight
+          (mVar nxBinder)
+      let qvars := ([pattern, bodyQuery, template]).flatMap Metta.Atom.vars
+      let argPairs :=
+        (mettaEval kernelDefControlEnv 1 stNamed [] bodyQuery).1
+      let parts0 : List (List Metta.Atom × Metta.Bindings) :=
+        argPairs.map (fun q : Metta.Atom × Metta.Bindings =>
+          ([pattern, q.1],
+            restrictBnd qvars ((Metta.Bindings.merge [] q.2).head?.getD q.2)))
+      let parts : List (List Metta.Atom × Metta.Bindings) :=
+        parts0.map
+          (fun part0 =>
+            (part0.1 ++ [Metta.instantiate part0.2 template], part0.2))
+      ∀ (acc0 : List (Metta.Atom × Metta.Bindings) × St)
+        (part : List Metta.Atom × Metta.Bindings),
+        part ∈ parts →
+          P acc0.2 →
+            P (interpretFuel kernelDefControlEnv (1 + 1) acc0.2
+              [{ stack := atomToStack (Metta.Atom.expr [Metta.Atom.sym "eval",
+                  Metta.Atom.expr (Metta.Atom.sym "let" :: part.1)]) [],
+                 bnd := [] }] []).2 := by
+    dsimp
+    intro acc0 part hpart hP
+    rcases List.mem_map.mp hpart with ⟨part0, hpart0, hpartEq⟩
+    rcases List.mem_map.mp hpart0 with ⟨q, _hqMem, hqEq⟩
+    cases hqEq
+    cases hpartEq
+    simpa [P, nxBinder, nyBinder, stNamed, evalItemNil, mExpr, mSym] using
+      interpretFuel_kernelDefControlEnv_let_root_selfExtra
+        (fuel := 1) (st := acc0.2) (binder := nxBinder)
+        (atom := q.1)
+        (template :=
+          Metta.instantiate
+            (restrictBnd
+              (([mVar nxBinder, nfQuery cicStage3RawArtifactSig rawLeft,
+                convReadoutAfterNxNamed nyBinder cicStage3RawArtifactSig rawRight
+                  (mVar nxBinder)]).flatMap Metta.Atom.vars)
+              ((Metta.Bindings.merge [] q.2).head?.getD q.2))
+            (convReadoutAfterNxNamed nyBinder cicStage3RawArtifactSig rawRight
+              (mVar nxBinder)))
+        hP
+  have hRecState :
+      let pattern := mVar nxBinder
+      let bodyQuery := nfQuery cicStage3RawArtifactSig rawLeft
+      let template :=
+        convReadoutAfterNxNamed nyBinder cicStage3RawArtifactSig rawRight
+          (mVar nxBinder)
+      let qvars := ([pattern, bodyQuery, template]).flatMap Metta.Atom.vars
+      ∀ (partBnd : Metta.Bindings)
+        (acc0 : List (Metta.Atom × Metta.Bindings) × St)
+        (p : Metta.Atom × Metta.Bindings),
+        P acc0.2 →
+          P (mettaEval kernelDefControlEnv 1 acc0.2
+            (restrictBnd qvars
+              ((Metta.Bindings.merge partBnd p.2).head?.getD p.2))
+            p.1).2 := by
+    dsimp
+    intro partBnd acc0 p hP
+    have hw :=
+      mettaEval_fuel_one_world kernelDefControlEnv acc0.2
+        (restrictBnd
+          (([mVar nxBinder, nfQuery cicStage3RawArtifactSig rawLeft,
+            convReadoutAfterNxNamed nyBinder cicStage3RawArtifactSig rawRight
+              (mVar nxBinder)]).flatMap Metta.Atom.vars)
+          ((Metta.Bindings.merge partBnd p.2).head?.getD p.2))
+        p.1
+    change
+      (mettaEval kernelDefControlEnv 1 acc0.2
+        (restrictBnd
+          (([mVar nxBinder, nfQuery cicStage3RawArtifactSig rawLeft,
+            convReadoutAfterNxNamed nyBinder cicStage3RawArtifactSig rawRight
+              (mVar nxBinder)]).flatMap Metta.Atom.vars)
+          ((Metta.Bindings.merge partBnd p.2).head?.getD p.2))
+        p.1).2.world.selfExtra = []
+    rw [hw]
+    exact hP
+  have hPartStepState :
+      let pattern := mVar nxBinder
+      let bodyQuery := nfQuery cicStage3RawArtifactSig rawLeft
+      let template :=
+        convReadoutAfterNxNamed nyBinder cicStage3RawArtifactSig rawRight
+          (mVar nxBinder)
+      let qvars := ([pattern, bodyQuery, template]).flatMap Metta.Atom.vars
+      let argPairs :=
+        (mettaEval kernelDefControlEnv 1 stNamed [] bodyQuery).1
+      let parts0 : List (List Metta.Atom × Metta.Bindings) :=
+        argPairs.map (fun q : Metta.Atom × Metta.Bindings =>
+          ([pattern, q.1],
+            restrictBnd qvars ((Metta.Bindings.merge [] q.2).head?.getD q.2)))
+      let parts : List (List Metta.Atom × Metta.Bindings) :=
+        parts0.map
+          (fun part0 =>
+            (part0.1 ++ [Metta.instantiate part0.2 template], part0.2))
+      ∀ (acc0 : List (Metta.Atom × Metta.Bindings) × St)
+        (part : List Metta.Atom × Metta.Bindings),
+        part ∈ parts →
+          P acc0.2 →
+            P (mettaEvalExprPartFoldStep kernelDefControlEnv 1 qvars
+              "let" [pattern, bodyQuery, template] [] acc0 part).2 := by
+    dsimp
+    intro acc0 part hpart hP
+    exact
+      mettaEvalExprPartFoldStep_preserves_state_pred_of_root_point
+        kernelDefControlEnv 1
+        (([mVar nxBinder, nfQuery cicStage3RawArtifactSig rawLeft,
+          convReadoutAfterNxNamed nyBinder cicStage3RawArtifactSig rawRight
+            (mVar nxBinder)]).flatMap Metta.Atom.vars)
+        "let"
+        [mVar nxBinder, nfQuery cicStage3RawArtifactSig rawLeft,
+          convReadoutAfterNxNamed nyBinder cicStage3RawArtifactSig rawRight
+            (mVar nxBinder)]
+        [] P part
+        (fun acc hacc => hRootState acc part hpart hacc)
+        hRecState acc0 hP
+  rcases
+      mettaEval_kernelDefControlEnv_convReadoutNamed_true_pair_implies_left_nf_and_recursive_root_pair_exists_with_noerr_state_pred_before
+        (fuel := 1) (st := stNamed) (nxBinder := nxBinder)
+        (nyBinder := nyBinder) (sig := cicStage3RawArtifactSig)
+        (rawLeft := rawLeft) (rawRight := rawRight) (outBnd := outBnd)
+        (P := P)
+        hArgState hPartStepState hRootState hRecState hRun with
+    ⟨nx, nxBnd, partBnd, stPart, pairs, stRoot, root, rootBnd,
+      stBefore, recBnd, hNoErr, hPPart, _hPBefore, hNf, hPartBnd,
+      hRoot, hRootMem, _hNotNR, _hNotSelf, hRec⟩
+  rcases
+      mettaEval_kernelDefControlEnv_nfQuery_fuel_one_output_isError_or_self
+        stNamed cicStage3RawArtifactSig rawLeft hNf with
+    hNxErr | hNxSelf
+  · exact
+      convReadoutNamed_left_branch_noerr_middle_not_error
+        nxBinder nyBinder cicStage3RawArtifactSig rawLeft rawRight
+        nx partBnd hNoErr hNxErr
+  · subst nx
+    have hNxBndNil : nxBnd = [] :=
+      mettaEval_kernelDefControlEnv_nfQuery_fuel_one_self_pair_bnd_nil
+        stNamed cicStage3RawArtifactSig rawLeft (by simpa using hNf)
+    subst nxBnd
+    have hPartBndNil : partBnd = [] := by
+      rw [hPartBnd]
+      exact restrictBnd_empty_merge_empty _
+    rw [hPartBndNil] at hRoot hRec hNoErr _hNotSelf
+    have hFresh :
+        RenamedValueKeysFreshForValues (counterSuffix stPart.counter)
+          (letRuleBindings nxBinder (nfQuery cicStage3RawArtifactSig rawLeft)
+            (Metta.instantiate []
+              (convReadoutAfterNxNamed nyBinder cicStage3RawArtifactSig rawRight
+                (mVar nxBinder)))) := by
+      simpa [nxBinder, nyBinder, Metta.instantiate_nil] using
+        renamedValueKeysFreshForValues_letRuleBindings_convReadoutAfterBinderNamed
+          stPart nxBinder nyBinder cicStage3RawArtifactSig rawRight
+          (nfQuery cicStage3RawArtifactSig rawLeft)
+          (nfQuery_vars_nil cicStage3RawArtifactSig rawLeft)
+          (counterSuffix_let_key_ne_initial_nx stPart.counter)
+          (counterSuffix_let_key_ne_initial_ny stPart.counter)
+    rcases
+        interpretFuel_kernelDefControlEnv_convReadoutNamed_instantiated_binder_left_root_pair_eq
+          (fuel := 1) (st := stPart)
+          (nxBinder := nxBinder) (nyBinder := nyBinder)
+          (sig := cicStage3RawArtifactSig) (rawRight := rawRight)
+          (nx := nfQuery cicStage3RawArtifactSig rawLeft)
+          (root := root) (partBnd := []) (rootBnd := rootBnd)
+          (pairs := pairs) (stRoot := stRoot)
+          hPPart
+          (nfQuery_not_var cicStage3RawArtifactSig rawLeft)
+          hFresh
+          (by simpa [evalItemNil, mExpr, mSym, Metta.instantiate_nil] using hRoot)
+          hRootMem with
+      ⟨hRootEq, _hRootBndEq, _hStRootEq⟩
+    exact
+      mettaEval_kernelDefControlEnv_unify_true_pair_fuel_one_false
+      stBefore
+      (restrictBnd
+        (([mVar nxBinder, nfQuery cicStage3RawArtifactSig rawLeft,
+          convReadoutAfterNxNamed nyBinder cicStage3RawArtifactSig rawRight
+            (mVar nxBinder)]).flatMap Metta.Atom.vars)
+        ((Metta.Bindings.merge [] rootBnd).head?.getD rootBnd))
+      (nfQuery cicStage3RawArtifactSig rawLeft)
+      (mVar nxBinder)
+      (Metta.instantiate []
+        (convReadoutAfterNxNamed nyBinder cicStage3RawArtifactSig rawRight
+          (mVar nxBinder)))
+      (mSym "Empty")
+      (by simpa [hRootEq, Metta.instantiate_nil] using hRec)
+
+private theorem interpretFuel_kernelDefControlEnv_nf_bad_root_contains
+    {fuel : Nat} {st : St} {sig : DIndGArtifactSig}
+    {reason : String}
+    (hstatic : st.world.selfExtra = []) :
+    (termAtom (.bad reason),
+      (renameBindings
+        (counterSuffix (st.counter + (nfLamCandidatePre ++ [nfLamRulePair]).length))
+        (nfBadRuleBindings sig reason)).reverse) ∈
+      (interpretFuel kernelDefControlEnv (fuel + 1) st
+        [evalItemNil (nfQuery sig (.bad reason))] []).1 := by
+  let coreB : Metta.Bindings := nfBadRuleBindings sig reason
+  let lhs : Metta.Atom := nfBadRulePair.1
+  let rhs : Metta.Atom := nfBadRulePair.2
+  let pre : List (Metta.Atom × Metta.Atom) :=
+    nfLamCandidatePre ++ [nfLamRulePair]
+  have hclosedB : ClosedValueBindings coreB := by
+    exact ClosedValueBindings.val (by simp [mSym, Metta.Atom.vars])
+      (ClosedValueBindings.val (sigAtom_vars_nil sig) ClosedValueBindings.nil)
+  have hnodup : (bindingValueKeys coreB).Nodup := by
+    dsimp [coreB, nfBadRuleBindings, bindingValueKeys]
+    decide
+  have hsplit :
+      kernelDefControlEnv.candidates (nfQuery sig (.bad reason)) =
+        pre ++ (lhs, rhs) :: [nfIndGZeroIotaRulePair, nfDefRulePair] := by
+    have hcandidateEq :
+        kernelDefControlEnv.candidates (nfQuery sig (.bad reason)) =
+          kernelEnv.candidates (nfQuery sig (.bad reason)) := by
+      simp [MinEnv.candidates, kernelDefControlEnv]
+    have hcand := kernelEnv_nf_bad_candidates sig reason
+    have hstaticInit :=
+      candidatesW_init_eq_candidates kernelEnv (nfQuery sig (.bad reason))
+    rw [hstaticInit] at hcand
+    rw [hcandidateEq]
+    simpa [lhs, rhs, pre, nfBadRulePair] using hcand
+  have hmatchCore : coreB ∈ Metta.matchAtoms lhs (nfQuery sig (.bad reason)) := by
+    simpa [coreB, lhs, nfBadRulePair] using
+      (by
+        rw [nf_bad_rule_match]
+        simp [nfBadRuleBindings] :
+          nfBadRuleBindings sig reason ∈
+            Metta.matchAtoms
+              (mExpr "nf" [mVar "sig", mExpr "Bad" [mVar "e"]])
+              (nfQuery sig (.bad reason)))
+  have hnotFunction :
+      isFunctionResult
+        (Metta.instantiate
+          (renameBindings (counterSuffix (st.counter + pre.length)) coreB).reverse
+          (freshenRule (st.counter + pre.length) lhs rhs).2) = false := by
+    rw [freshenRule_eq_renBy]
+    simp [coreB, rhs, nfBadRuleBindings, nfBadRulePair, pre,
+      nfLamCandidatePre, nfPiCandidatePre, renameBindings, counterSuffix,
+      Metta.instantiate, Metta.bindingsToSubst, Metta.Subst.apply,
+      Metta.Subst.lookup,
+      Mettapedia.Languages.MeTTa.HE.CanonAbsorbsFreshening.renBy,
+      mExpr, mSym, mVar, isFunctionResult]
+  have hmem :=
+    interpretFuel_kernelDefControlEnv_nf_selected_rule_contains
+      (fuel := fuel) (st := st) (sig := sig) (raw := (.bad reason))
+      (lhs := lhs) (rhs := rhs) (coreB := coreB)
+      (pre := pre) (post := [nfIndGZeroIotaRulePair, nfDefRulePair])
+      hstatic hclosedB hnodup hsplit hmatchCore hnotFunction
+  have hreadout :
+      Metta.instantiate
+          (renameBindings (counterSuffix (st.counter + pre.length))
+            (nfBadRuleBindings sig reason)).reverse
+          (freshenRule (st.counter + pre.length)
+            nfBadRulePair.1 nfBadRulePair.2).2 =
+        termAtom (.bad reason) := by
+    rw [freshenRule_eq_renBy]
+    simp [nfBadRuleBindings, nfBadRulePair, termAtom, pre,
+      nfLamCandidatePre, nfPiCandidatePre, renameBindings, counterSuffix,
+      Metta.instantiate, Metta.bindingsToSubst, Metta.Subst.apply,
+      Metta.Subst.lookup,
+      Mettapedia.Languages.MeTTa.HE.CanonAbsorbsFreshening.renBy, mExpr, mSym,
+      mVar]
+  simpa [coreB, lhs, rhs, pre] using (hreadout ▸ hmem)
+
+private theorem convSoundCicStage3RawArtifactSig_namedReadoutFuelFalseAt_three_of_static_obligations
+    (hStatic0 :
+      ∀ (rawLeft rawRight : DIndGArtifactTerm),
+        let nxBinder := counterSuffix St.init.counter "nx"
+        let nyBinder := counterSuffix St.init.counter "ny"
+        let stNamed : St :=
+          { counter := St.init.counter + 1, world := St.init.world }
+        ConvReadoutNamedNfExtractionObligations
+          0 stNamed nxBinder nyBinder
+          cicStage3RawArtifactSig rawLeft rawRight) :
+    ConvSoundCicStage3RawArtifactSigNamedReadoutFuelFalseAt 3 := by
+  intro rawLeft rawRight outBnd
+  dsimp [ConvSoundCicStage3RawArtifactSigNamedReadoutFuelFalseAt]
+  intro hRun
+  let nxBinder := counterSuffix St.init.counter "nx"
+  let nyBinder := counterSuffix St.init.counter "ny"
+  let stNamed : St := { counter := St.init.counter + 1, world := St.init.world }
+  rcases
+      mettaEval_kernelDefControlEnv_convReadoutNamed_true_pair_implies_left_right_nf_and_tail_root_pair_exists_of_obligations
+        (fuel := 0) (st := stNamed)
+        (nxBinder := nxBinder) (nyBinder := nyBinder)
+        (sig := cicStage3RawArtifactSig)
+        (rawLeft := rawLeft) (rawRight := rawRight)
+        (outBnd := outBnd)
+        (by simpa [nxBinder, nyBinder, stNamed] using
+          hStatic0 rawLeft rawRight)
+        (by simpa [nxBinder, nyBinder, stNamed, Nat.add_assoc] using hRun) with
+    ⟨_nx, _nxBnd, _ny, _nyBnd, _stBefore, _tailTemplateEnv,
+      _tailRecursiveEnv, _tailPartBnd, _tailStPart, _tailPairs,
+      _tailStRoot, _tailRoot, _tailRootBnd, _tailStBefore, _tailRecBnd,
+      _hLeft, _hRight, _hTailTrace, _hTailRootMem, _hTailNotNR,
+      _hTailNotSelf, hTailRec⟩
+  exact mettaEval_zero_true_pair_false hTailRec
+
+theorem convSoundCicStage3RawArtifactSig_namedReadoutFuelTwoThroughEightFalse_of_exact_fuels
+    (h2 : ConvSoundCicStage3RawArtifactSigNamedReadoutFuelFalseAt 2)
+    (h3 : ConvSoundCicStage3RawArtifactSigNamedReadoutFuelFalseAt 3)
+    (h4 : ConvSoundCicStage3RawArtifactSigNamedReadoutFuelFalseAt 4)
+    (h5 : ConvSoundCicStage3RawArtifactSigNamedReadoutFuelFalseAt 5)
+    (h6 : ConvSoundCicStage3RawArtifactSigNamedReadoutFuelFalseAt 6)
+    (h7 : ConvSoundCicStage3RawArtifactSigNamedReadoutFuelFalseAt 7)
+    (h8 : ConvSoundCicStage3RawArtifactSigNamedReadoutFuelFalseAt 8) :
+    ConvSoundCicStage3RawArtifactSigNamedReadoutFuelTwoThroughEightFalse := by
+  intro runFuel rawLeft rawRight outBnd
+  dsimp [ConvSoundCicStage3RawArtifactSigNamedReadoutFuelFalseAt]
+  intro hGe2 hLt9 hRun
+  have hCases :
+      runFuel = 2 ∨ runFuel = 3 ∨ runFuel = 4 ∨ runFuel = 5 ∨
+        runFuel = 6 ∨ runFuel = 7 ∨ runFuel = 8 := by
+    omega
+  rcases hCases with
+    rfl | rfl | rfl | rfl | rfl | rfl | rfl
+  · exact h2 hRun
+  · exact h3 hRun
+  · exact h4 hRun
+  · exact h5 hRun
+  · exact h6 hRun
+  · exact h7 hRun
+  · exact h8 hRun
 
 theorem convSoundCicStage3RawArtifactSig_namedReadoutSmallFuelFalse_of_two_through_eight
     (hMidFalse :
@@ -63593,6 +72770,26 @@ theorem convSoundCicStage3RawArtifactSig_namedReadoutFuel_of_lowerBound
     omega
   simpa [hRunFuelEq'] using hValue
 
+theorem convSoundCicStage3RawArtifactSig_namedReadoutFuelGeNine_of_fourteen_lowerBound
+    (hLowerBound :
+      ConvSoundCicStage3RawArtifactSigNamedReadoutFuelFourteenLowerBound) :
+    ConvSoundCicStage3RawArtifactSigNamedReadoutFuelGeNine := by
+  intro rawLeft rawRight left right hconv _hLeft _hRight
+  rcases
+      evaluator_conv_true_named_readout_pair_exists
+        (sig := cicStage3RawArtifactSig)
+        (rawLeft := rawLeft) (rawRight := rawRight) hconv with
+    ⟨runFuel, outBnd, hRun⟩
+  have hRunLower : 14 ≤ runFuel := hLowerBound hRun
+  rcases Nat.exists_eq_add_of_le hRunLower with
+    ⟨fuelExtra, hRunFuelEq⟩
+  refine ⟨fuelExtra + 9, by omega, ?_⟩
+  dsimp at hRun ⊢
+  have hValue := mettaEval_value_mem_of_pair_mem hRun
+  have hRunFuelEq' : fuelExtra + 9 + 2 + 2 + 1 = runFuel := by
+    omega
+  simpa [hRunFuelEq'] using hValue
+
 theorem convSoundCicStage3RawArtifactSig_namedReadoutFuel_of_small_false
     (hSmallFalse :
       ConvSoundCicStage3RawArtifactSigNamedReadoutSmallFuelFalse) :
@@ -63601,6 +72798,107 @@ theorem convSoundCicStage3RawArtifactSig_namedReadoutFuel_of_small_false
     convSoundCicStage3RawArtifactSig_namedReadoutFuel_of_lowerBound
       (convSoundCicStage3RawArtifactSig_namedReadoutFuelLowerBound_of_small_false
         hSmallFalse)
+
+def ConvSoundCicStage3RawArtifactSigNamedReadoutUseSiteSmallFuelFalse : Prop :=
+  ∀ {runFuel : Nat} {rawLeft rawRight : DIndGArtifactTerm}
+      {left right : PureTm 0} {outBnd : Metta.Bindings},
+    evaluator.conv cicStage3RawArtifactSig rawLeft rawRight →
+    DIndGArtifactTermTranslates
+      cicStage3RawArtifactSig.nameTranslates 0 rawLeft left →
+    DIndGArtifactTermTranslates
+      cicStage3RawArtifactSig.nameTranslates 0 rawRight right →
+    let nxBinder := counterSuffix St.init.counter "nx"
+    let nyBinder := counterSuffix St.init.counter "ny"
+    let stNamed : St := { counter := St.init.counter + 1, world := St.init.world }
+    runFuel < 9 →
+    (mBool true, outBnd) ∈
+      (mettaEval kernelDefControlEnv runFuel stNamed []
+      (convReadoutNamed nxBinder nyBinder
+        cicStage3RawArtifactSig rawLeft rawRight)).1 →
+    False
+
+def ConvSoundCicStage3RawArtifactSigNamedReadoutUseSiteFuelFalseAt
+    (runFuel : Nat) : Prop :=
+  ∀ {rawLeft rawRight : DIndGArtifactTerm} {left right : PureTm 0}
+      {outBnd : Metta.Bindings},
+    evaluator.conv cicStage3RawArtifactSig rawLeft rawRight →
+    DIndGArtifactTermTranslates
+      cicStage3RawArtifactSig.nameTranslates 0 rawLeft left →
+    DIndGArtifactTermTranslates
+      cicStage3RawArtifactSig.nameTranslates 0 rawRight right →
+    let nxBinder := counterSuffix St.init.counter "nx"
+    let nyBinder := counterSuffix St.init.counter "ny"
+    let stNamed : St := { counter := St.init.counter + 1, world := St.init.world }
+    (mBool true, outBnd) ∈
+      (mettaEval kernelDefControlEnv runFuel stNamed []
+        (convReadoutNamed nxBinder nyBinder
+          cicStage3RawArtifactSig rawLeft rawRight)).1 →
+    False
+
+private theorem convSoundCicStage3RawArtifactSig_namedReadoutUseSiteFuelFalseAt_three_of_static_obligations
+    (hStatic0 :
+      ∀ {rawLeft rawRight : DIndGArtifactTerm} {left right : PureTm 0},
+        DIndGArtifactTermTranslates
+          cicStage3RawArtifactSig.nameTranslates 0 rawLeft left →
+        DIndGArtifactTermTranslates
+          cicStage3RawArtifactSig.nameTranslates 0 rawRight right →
+        let nxBinder := counterSuffix St.init.counter "nx"
+        let nyBinder := counterSuffix St.init.counter "ny"
+        let stNamed : St :=
+          { counter := St.init.counter + 1, world := St.init.world }
+        ConvReadoutNamedNfExtractionObligations
+          0 stNamed nxBinder nyBinder
+          cicStage3RawArtifactSig rawLeft rawRight) :
+    ConvSoundCicStage3RawArtifactSigNamedReadoutUseSiteFuelFalseAt 3 := by
+  intro rawLeft rawRight left right outBnd _hconv hLeft hRight
+  dsimp [ConvSoundCicStage3RawArtifactSigNamedReadoutUseSiteFuelFalseAt]
+  intro hRun
+  let nxBinder := counterSuffix St.init.counter "nx"
+  let nyBinder := counterSuffix St.init.counter "ny"
+  let stNamed : St := { counter := St.init.counter + 1, world := St.init.world }
+  rcases
+      mettaEval_kernelDefControlEnv_convReadoutNamed_true_pair_implies_left_right_nf_and_tail_root_pair_exists_of_obligations
+        (fuel := 0) (st := stNamed)
+        (nxBinder := nxBinder) (nyBinder := nyBinder)
+        (sig := cicStage3RawArtifactSig)
+        (rawLeft := rawLeft) (rawRight := rawRight)
+        (outBnd := outBnd)
+        (by
+          simpa [nxBinder, nyBinder, stNamed] using
+            hStatic0 hLeft hRight)
+        (by simpa [nxBinder, nyBinder, stNamed, Nat.add_assoc] using hRun) with
+    ⟨_nx, _nxBnd, _ny, _nyBnd, _stBefore, _tailTemplateEnv,
+      _tailRecursiveEnv, _tailPartBnd, _tailStPart, _tailPairs,
+      _tailStRoot, _tailRoot, _tailRootBnd, _tailStBefore, _tailRecBnd,
+      _hLeft, _hRight, _hTailTrace, _hTailRootMem, _hTailNotNR,
+      _hTailNotSelf, hTailRec⟩
+  exact mettaEval_zero_true_pair_false hTailRec
+
+theorem convSoundCicStage3RawArtifactSig_namedReadoutFuel_of_useSite_small_false
+    (hUseSiteSmallFalse :
+      ConvSoundCicStage3RawArtifactSigNamedReadoutUseSiteSmallFuelFalse) :
+    ConvSoundCicStage3RawArtifactSigNamedReadoutFuel := by
+  intro rawLeft rawRight left right hconv hLeft hRight
+  rcases
+      evaluator_conv_true_named_readout_pair_exists
+        (sig := cicStage3RawArtifactSig)
+        (rawLeft := rawLeft) (rawRight := rawRight) hconv with
+    ⟨runFuel, outBnd, hRun⟩
+  have hRunLower : 9 ≤ runFuel := by
+    by_contra hNotLe
+    exact
+      hUseSiteSmallFalse
+        (runFuel := runFuel) (rawLeft := rawLeft) (rawRight := rawRight)
+        (left := left) (right := right) (outBnd := outBnd)
+        hconv hLeft hRight (Nat.lt_of_not_ge hNotLe) hRun
+  rcases Nat.exists_eq_add_of_le hRunLower with
+    ⟨fuelExtra, hRunFuelEq⟩
+  refine ⟨fuelExtra + 4, by omega, ?_⟩
+  dsimp at hRun ⊢
+  have hValue := mettaEval_value_mem_of_pair_mem hRun
+  have hRunFuelEq' : fuelExtra + 4 + 2 + 2 + 1 = runFuel := by
+    omega
+  simpa [hRunFuelEq'] using hValue
 
 def ConvSoundCicStage3RawArtifactSigNamedReadoutObligations : Prop :=
   ∀ (fuel : Nat) {rawLeft rawRight : DIndGArtifactTerm}
@@ -63654,9 +72952,318 @@ def ConvSoundCicStage3RawArtifactSigNamedReadoutTailValuesWithKeys : Prop :=
           (convReadoutAfterNxNy nx ny)).1.map (·.1) ∧
       (∃ binder,
         ClosedValueBindings tailValueEnv ∧
+      (∀ x, x ∈ bindingValueKeys tailValueEnv → x = binder) ∧
+      (∀ {v : String}, v = "e" ∨ v = "t" →
+        counterSuffix (tailStBefore.counter + 2) v ≠ binder))
+
+def ConvSoundCicStage3RawArtifactSigNamedReadoutTailValuesWithKeysAndNoErrors :
+    Prop :=
+  ∀ (fuel : Nat) {rawLeft rawRight : DIndGArtifactTerm}
+      {left right : PureTm 0},
+    4 ≤ fuel →
+    DIndGArtifactTermTranslates
+      cicStage3RawArtifactSig.nameTranslates 0 rawLeft left →
+    DIndGArtifactTermTranslates
+      cicStage3RawArtifactSig.nameTranslates 0 rawRight right →
+    let nxBinder := counterSuffix St.init.counter "nx"
+    let nyBinder := counterSuffix St.init.counter "ny"
+    let stNamed : St := { counter := St.init.counter + 1, world := St.init.world }
+    ConvReadoutNamedNfExtractionObligations
+        (fuel + 2) stNamed nxBinder nyBinder
+        cicStage3RawArtifactSig rawLeft rawRight →
+    ConvReadoutNamedNfExtractionWorldObligations
+        (fuel + 2) stNamed nxBinder nyBinder
+        cicStage3RawArtifactSig rawLeft rawRight →
+    mBool true ∈
+      (mettaEval kernelDefControlEnv (((fuel + 2) + 2) + 1) stNamed []
+        (convReadoutNamed nxBinder nyBinder
+          cicStage3RawArtifactSig rawLeft rawRight)).1.map (·.1) →
+    ∃ nx ny stBefore tailStBefore tailValueEnv,
+      stBefore.world = St.init.world ∧
+      tailStBefore.world = St.init.world ∧
+      nx ∈
+        (mettaEval kernelDefControlEnv ((fuel + 2) + 2) stNamed []
+          (nfQuery cicStage3RawArtifactSig rawLeft)).1.map (·.1) ∧
+      nx.isError = false ∧
+      ny ∈
+        (mettaEval kernelDefControlEnv (fuel + 2) stBefore []
+          (nfQuery cicStage3RawArtifactSig rawRight)).1.map (·.1) ∧
+      ny.isError = false ∧
+      mBool true ∈
+        (mettaEval kernelDefControlEnv (fuel + 1) tailStBefore tailValueEnv
+          (convReadoutAfterNxNy nx ny)).1.map (·.1) ∧
+      (∃ binder,
+        ClosedValueBindings tailValueEnv ∧
         (∀ x, x ∈ bindingValueKeys tailValueEnv → x = binder) ∧
         (∀ {v : String}, v = "e" ∨ v = "t" →
           counterSuffix (tailStBefore.counter + 2) v ≠ binder))
+
+theorem convSoundCicStage3RawArtifactSig_namedReadoutTailValuesWithKeys_of_with_no_errors
+    (hTailValues :
+      ConvSoundCicStage3RawArtifactSigNamedReadoutTailValuesWithKeysAndNoErrors) :
+    ConvSoundCicStage3RawArtifactSigNamedReadoutTailValuesWithKeys := by
+  intro fuel rawLeft rawRight left right hFuel hLeft hRight
+  dsimp
+  intro hStatic hWorld hNamedTrue
+  rcases
+      hTailValues fuel hFuel hLeft hRight hStatic hWorld hNamedTrue with
+    ⟨nx, ny, stBefore, tailStBefore, tailValueEnv,
+      hWorldBefore, hWorldTailBefore, hLeftValue, _hLeftNoErr,
+      hRightValue, _hRightNoErr, hTailValue, hTailKeys⟩
+  exact
+    ⟨nx, ny, stBefore, tailStBefore, tailValueEnv,
+      hWorldBefore, hWorldTailBefore, hLeftValue, hRightValue,
+      hTailValue, hTailKeys⟩
+
+private theorem convSoundCicStage3RawArtifactSig_tailValueEnv_keyed_ambient_of_closed_root_and_part
+    {rawLeft rawRight : DIndGArtifactTerm}
+    {nx ny : Metta.Atom}
+    {tailPartBnd tailRootBnd tailValueEnv : Metta.Bindings}
+    {tailStBefore : St}
+    (hLeftReadout :
+      CicStage3RawArtifactSigPrimaryNfRuntimeReadout rawLeft nx)
+    (hRightReadout :
+      CicStage3RawArtifactSigPrimaryNfRuntimeReadout rawRight ny)
+    (hPartClosed : ClosedValueBindings tailPartBnd)
+    (hRootClosed : ClosedValueBindings tailRootBnd)
+    (hTailShape :
+      tailValueEnv =
+        restrictBnd (([ny, mVar (counterSuffix St.init.counter "ny"),
+          Metta.instantiate tailPartBnd
+            (convReadoutAfterNxNy nx
+              (mVar (counterSuffix St.init.counter "ny"))),
+          mSym "Empty"]).flatMap Metta.Atom.vars)
+          ((Metta.Bindings.merge [] tailRootBnd).head?.getD tailRootBnd)) :
+    ∃ binder,
+      ClosedValueBindings tailValueEnv ∧
+      (∀ x, x ∈ bindingValueKeys tailValueEnv → x = binder) ∧
+      (∀ {v : String}, v = "e" ∨ v = "t" →
+        counterSuffix (tailStBefore.counter + 2) v ≠ binder) := by
+  let nyBinder := counterSuffix St.init.counter "ny"
+  let tailTemplate :=
+    Metta.instantiate tailPartBnd
+      (convReadoutAfterNxNy nx (mVar nyBinder))
+  have hNxVars : nx.vars = [] :=
+    CicStage3RawArtifactSigPrimaryNfRuntimeReadout_vars_nil hLeftReadout
+  have hNyVars : ny.vars = [] :=
+    CicStage3RawArtifactSigPrimaryNfRuntimeReadout_vars_nil hRightReadout
+  have hTemplateVars :
+      ∀ x, x ∈ tailTemplate.vars → x = nyBinder := by
+    simpa [tailTemplate, nyBinder] using
+      (convReadoutAfterNxNy_mvar_instantiate_vars_only
+        (nx := nx) hNxVars nyBinder (b := tailPartBnd) hPartClosed)
+  have hKeyed :=
+    tail_unify_restrictBnd_keyed_ambient_initial_ny_of_closed_merge_empty
+      ny tailTemplate tailRootBnd tailStBefore hRootClosed hNyVars
+      (by simpa [nyBinder] using hTemplateVars)
+  simpa [tailTemplate, nyBinder, hTailShape] using hKeyed
+
+private theorem convSoundCicStage3RawArtifactSig_tailPartBnd_closed_of_nf_pair
+    {fuel : Nat} {stBefore : St} {rawRight : DIndGArtifactTerm}
+    {nx ny : Metta.Atom}
+    {nyBnd tailPartBnd : Metta.Bindings}
+    (hRightPair :
+      (ny, nyBnd) ∈
+        (mettaEval kernelDefControlEnv fuel stBefore []
+          (nfQuery cicStage3RawArtifactSig rawRight)).1)
+    (hTailPartBnd :
+      tailPartBnd =
+        restrictBnd (([mVar (counterSuffix St.init.counter "ny"),
+          nfQuery cicStage3RawArtifactSig rawRight,
+          convReadoutAfterNxNy nx
+            (mVar (counterSuffix St.init.counter "ny"))]).flatMap
+          Metta.Atom.vars)
+          ((Metta.Bindings.merge [] nyBnd).head?.getD nyBnd)) :
+    ClosedValueBindings tailPartBnd := by
+  have hNyBndNil : nyBnd = [] :=
+    mettaEval_kernelDefControlEnv_nfQuery_pair_bnd_nil
+      fuel stBefore cicStage3RawArtifactSig rawRight hRightPair
+  subst nyBnd
+  rw [hTailPartBnd]
+  exact
+    closedValueBindings_restrictBnd
+      (closedValueBindings_merge_empty_head_getD_of_closed
+        (ClosedValueBindings.nil : ClosedValueBindings ([] : Metta.Bindings)))
+
+def ConvSoundCicStage3RawArtifactSigCanonicalNfValueRuntimeExtractionGeThreeNonError :
+    Prop :=
+  ∀ {fuel : Nat} {st : St} {raw : DIndGArtifactTerm}
+      {term : PureTm 0} {out : Metta.Atom},
+    3 ≤ fuel →
+    st.world = St.init.world →
+    DIndGArtifactTermTranslates
+      cicStage3RawArtifactSig.nameTranslates 0 raw term →
+    out ∈
+      (mettaEval kernelDefControlEnv fuel st []
+      (nfQuery cicStage3RawArtifactSig raw)).1.map (·.1) →
+    out.isError = false →
+    CicStage3RawArtifactSigPrimaryNfRuntimeReadout raw out
+
+def ConvSoundCicStage3RawArtifactSigCanonicalNfValueRuntimeExtractionGeOneNonError :
+    Prop :=
+  ∀ {fuel : Nat} {st : St} {raw : DIndGArtifactTerm}
+      {term : PureTm 0} {out : Metta.Atom},
+    1 ≤ fuel →
+    st.world = St.init.world →
+    DIndGArtifactTermTranslates
+      cicStage3RawArtifactSig.nameTranslates 0 raw term →
+    out ∈
+      (mettaEval kernelDefControlEnv fuel st []
+        (nfQuery cicStage3RawArtifactSig raw)).1.map (·.1) →
+    out.isError = false →
+    CicStage3RawArtifactSigPrimaryNfRuntimeReadout raw out
+
+def ConvSoundCicStage3RawArtifactSigNamedReadoutTailPrimaryReadoutsAndRoot :
+    Prop :=
+  ∀ (fuel : Nat) {rawLeft rawRight : DIndGArtifactTerm}
+      {left right : PureTm 0},
+    4 ≤ fuel →
+    DIndGArtifactTermTranslates
+      cicStage3RawArtifactSig.nameTranslates 0 rawLeft left →
+    DIndGArtifactTermTranslates
+      cicStage3RawArtifactSig.nameTranslates 0 rawRight right →
+    let nxBinder := counterSuffix St.init.counter "nx"
+    let nyBinder := counterSuffix St.init.counter "ny"
+    let stNamed : St := { counter := St.init.counter + 1, world := St.init.world }
+    ConvReadoutNamedNfExtractionObligations
+        (fuel + 2) stNamed nxBinder nyBinder
+        cicStage3RawArtifactSig rawLeft rawRight →
+    ConvReadoutNamedNfExtractionWorldObligations
+        (fuel + 2) stNamed nxBinder nyBinder
+        cicStage3RawArtifactSig rawLeft rawRight →
+    mBool true ∈
+      (mettaEval kernelDefControlEnv (((fuel + 2) + 2) + 1) stNamed []
+        (convReadoutNamed nxBinder nyBinder
+          cicStage3RawArtifactSig rawLeft rawRight)).1.map (·.1) →
+    ∃ nx nxBnd ny nyBnd stBefore tailStBefore tailValueEnv
+        tailPartBnd tailRootBnd,
+      let tailTemplate :=
+        Metta.instantiate tailPartBnd
+          (convReadoutAfterNxNy nx (mVar nyBinder))
+      let tailRecursiveEnv :=
+        restrictBnd (([mVar nyBinder, nfQuery cicStage3RawArtifactSig rawRight,
+          convReadoutAfterNxNy nx (mVar nyBinder)]).flatMap
+          Metta.Atom.vars)
+          ((Metta.Bindings.merge tailPartBnd tailRootBnd).head?.getD
+            tailRootBnd)
+      stBefore.world = St.init.world ∧
+      tailStBefore.world = St.init.world ∧
+      (nx, nxBnd) ∈
+        (mettaEval kernelDefControlEnv ((fuel + 2) + 2) stNamed []
+          (nfQuery cicStage3RawArtifactSig rawLeft)).1 ∧
+      CicStage3RawArtifactSigPrimaryNfRuntimeReadout rawLeft nx ∧
+      (ny, nyBnd) ∈
+        (mettaEval kernelDefControlEnv (fuel + 2) stBefore []
+          (nfQuery cicStage3RawArtifactSig rawRight)).1 ∧
+      CicStage3RawArtifactSigPrimaryNfRuntimeReadout rawRight ny ∧
+      tailValueEnv =
+        restrictBnd (([ny, mVar nyBinder, tailTemplate,
+            mSym "Empty"]).flatMap Metta.Atom.vars)
+          ((Metta.Bindings.merge [] tailRootBnd).head?.getD tailRootBnd) ∧
+      tailPartBnd =
+        restrictBnd (([mVar nyBinder, nfQuery cicStage3RawArtifactSig rawRight,
+          convReadoutAfterNxNy nx (mVar nyBinder)]).flatMap
+          Metta.Atom.vars)
+          ((Metta.Bindings.merge [] nyBnd).head?.getD nyBnd) ∧
+      Metta.Bindings.merge tailRecursiveEnv
+          [Metta.BindingRel.val nyBinder ny] =
+        [tailRootBnd] ∧
+      Metta.Bindings.hasLoop tailRootBnd = false ∧
+      Metta.instantiate tailRootBnd (Metta.instantiate tailRootBnd tailTemplate) =
+        convReadoutAfterNxNy nx ny ∧
+      mBool true ∈
+        (mettaEval kernelDefControlEnv (fuel + 1) tailStBefore tailValueEnv
+          (convReadoutAfterNxNy nx ny)).1.map (·.1)
+
+theorem convSoundCicStage3RawArtifactSig_namedReadoutTailPrimaryReadoutsAndRoot_of_shape_root_extract
+    (hShapeRoot :
+      ConvSoundCicStage3RawArtifactSigNamedReadoutTailShapeRootAndNoErrors)
+    (hExtract :
+      ConvSoundCicStage3RawArtifactSigCanonicalNfValueRuntimeExtractionGeThreeNonError) :
+    ConvSoundCicStage3RawArtifactSigNamedReadoutTailPrimaryReadoutsAndRoot := by
+  intro fuel rawLeft rawRight left right hFuel hLeft hRight
+  dsimp
+  intro hStatic hWorld hNamedTrue
+  rcases
+      hShapeRoot fuel hFuel hLeft hRight hStatic hWorld hNamedTrue with
+    ⟨nx, nxBnd, ny, nyBnd, stBefore, tailStBefore, tailValueEnv,
+      tailPartBnd, tailRootBnd, hWorldBefore, hWorldTailBefore,
+      hLeftPair, hLeftNoErr, hRightPair, hRightNoErr,
+      hTailShape, hTailPartBnd, hTailMerge, hTailLoop,
+      hTailTemplateEq, hTailValue⟩
+  have hLeftValue :
+      nx ∈
+        (mettaEval kernelDefControlEnv ((fuel + 2) + 2)
+          { counter := St.init.counter + 1, world := St.init.world } []
+          (nfQuery cicStage3RawArtifactSig rawLeft)).1.map (·.1) :=
+    List.mem_map.mpr ⟨(nx, nxBnd), hLeftPair, rfl⟩
+  have hRightValue :
+      ny ∈
+        (mettaEval kernelDefControlEnv (fuel + 2) stBefore []
+          (nfQuery cicStage3RawArtifactSig rawRight)).1.map (·.1) :=
+    List.mem_map.mpr ⟨(ny, nyBnd), hRightPair, rfl⟩
+  have hLeftReadout :
+      CicStage3RawArtifactSigPrimaryNfRuntimeReadout rawLeft nx :=
+    hExtract (fuel := ((fuel + 2) + 2))
+      (st := { counter := St.init.counter + 1, world := St.init.world })
+      (raw := rawLeft) (term := left) (out := nx)
+      (by omega) (by rfl) hLeft hLeftValue hLeftNoErr
+  have hRightReadout :
+      CicStage3RawArtifactSigPrimaryNfRuntimeReadout rawRight ny :=
+    hExtract (fuel := fuel + 2) (st := stBefore)
+      (raw := rawRight) (term := right) (out := ny)
+      (by omega) hWorldBefore hRight hRightValue hRightNoErr
+  exact
+    ⟨nx, nxBnd, ny, nyBnd, stBefore, tailStBefore, tailValueEnv,
+      tailPartBnd, tailRootBnd, hWorldBefore, hWorldTailBefore,
+      hLeftPair, hLeftReadout, hRightPair, hRightReadout,
+      hTailShape, hTailPartBnd, hTailMerge, hTailLoop,
+      hTailTemplateEq, hTailValue⟩
+
+theorem convSoundCicStage3RawArtifactSig_namedReadoutTailPrimaryReadoutsAndRoot_of_shape_root_extract_geOne
+    (hShapeRoot :
+      ConvSoundCicStage3RawArtifactSigNamedReadoutTailShapeRootAndNoErrors)
+    (hExtract :
+      ConvSoundCicStage3RawArtifactSigCanonicalNfValueRuntimeExtractionGeOneNonError) :
+    ConvSoundCicStage3RawArtifactSigNamedReadoutTailPrimaryReadoutsAndRoot := by
+  intro fuel rawLeft rawRight left right hFuel hLeft hRight
+  dsimp
+  intro hStatic hWorld hNamedTrue
+  rcases
+      hShapeRoot fuel hFuel hLeft hRight hStatic hWorld hNamedTrue with
+    ⟨nx, nxBnd, ny, nyBnd, stBefore, tailStBefore, tailValueEnv,
+      tailPartBnd, tailRootBnd, hWorldBefore, hWorldTailBefore,
+      hLeftPair, hLeftNoErr, hRightPair, hRightNoErr,
+      hTailShape, hTailPartBnd, hTailMerge, hTailLoop,
+      hTailTemplateEq, hTailValue⟩
+  have hLeftValue :
+      nx ∈
+        (mettaEval kernelDefControlEnv ((fuel + 2) + 2)
+          { counter := St.init.counter + 1, world := St.init.world } []
+          (nfQuery cicStage3RawArtifactSig rawLeft)).1.map (·.1) :=
+    List.mem_map.mpr ⟨(nx, nxBnd), hLeftPair, rfl⟩
+  have hRightValue :
+      ny ∈
+        (mettaEval kernelDefControlEnv (fuel + 2) stBefore []
+          (nfQuery cicStage3RawArtifactSig rawRight)).1.map (·.1) :=
+    List.mem_map.mpr ⟨(ny, nyBnd), hRightPair, rfl⟩
+  have hLeftReadout :
+      CicStage3RawArtifactSigPrimaryNfRuntimeReadout rawLeft nx :=
+    hExtract (fuel := ((fuel + 2) + 2))
+      (st := { counter := St.init.counter + 1, world := St.init.world })
+      (raw := rawLeft) (term := left) (out := nx)
+      (by omega) (by rfl) hLeft hLeftValue hLeftNoErr
+  have hRightReadout :
+      CicStage3RawArtifactSigPrimaryNfRuntimeReadout rawRight ny :=
+    hExtract (fuel := fuel + 2) (st := stBefore)
+      (raw := rawRight) (term := right) (out := ny)
+      (by omega) hWorldBefore hRight hRightValue hRightNoErr
+  exact
+    ⟨nx, nxBnd, ny, nyBnd, stBefore, tailStBefore, tailValueEnv,
+      tailPartBnd, tailRootBnd, hWorldBefore, hWorldTailBefore,
+      hLeftPair, hLeftReadout, hRightPair, hRightReadout,
+      hTailShape, hTailPartBnd, hTailMerge, hTailLoop,
+      hTailTemplateEq, hTailValue⟩
 
 def ConvSoundCicStage3RawArtifactSigExtractedTailRuntimeConvDeclSplit : Prop :=
   ∀ (fuel : Nat) {rawLeft rawRight : DIndGArtifactTerm}
@@ -63701,19 +73308,156 @@ def ConvSoundCicStage3RawArtifactSigExtractedTailRuntimeConvDeclSplit : Prop :=
         (envOfSpecs cicStage3RawArtifactSig.translatedSpecs)
         left right
 
-def ConvSoundCicStage3RawArtifactSigCanonicalNfValueRuntimeExtractionGeThree :
+def ConvSoundCicStage3RawArtifactSigExtractedTailRuntimeConvDeclSplitNonError :
     Prop :=
-  ∀ {fuel : Nat} {st : St} {raw : DIndGArtifactTerm}
-      {term : PureTm 0} {out : Metta.Atom},
-    3 ≤ fuel →
-    st.world = St.init.world →
+  ∀ (fuel : Nat) {rawLeft rawRight : DIndGArtifactTerm}
+      {left right : PureTm 0}
+      {nx ny : Metta.Atom} {stBefore tailStBefore : St}
+      {tailValueEnv : Metta.Bindings},
+    4 ≤ fuel →
+    stBefore.world = St.init.world →
+    tailStBefore.world = St.init.world →
     DIndGArtifactTermTranslates
-      cicStage3RawArtifactSig.nameTranslates 0 raw term →
-    out ∈
-      (mettaEval kernelDefControlEnv fuel st []
-        (nfQuery cicStage3RawArtifactSig raw)).1.map (·.1) →
-    CicStage3CanonicalNfRuntimeReadoutForSig
-      cicStage3RawArtifactSig raw out
+      cicStage3RawArtifactSig.nameTranslates 0 rawLeft left →
+    DIndGArtifactTermTranslates
+      cicStage3RawArtifactSig.nameTranslates 0 rawRight right →
+    let stNamed : St := { counter := St.init.counter + 1, world := St.init.world }
+    nx ∈
+      (mettaEval kernelDefControlEnv ((fuel + 2) + 2) stNamed []
+        (nfQuery cicStage3RawArtifactSig rawLeft)).1.map (·.1) →
+    nx.isError = false →
+    ny ∈
+      (mettaEval kernelDefControlEnv (fuel + 2) stBefore []
+        (nfQuery cicStage3RawArtifactSig rawRight)).1.map (·.1) →
+    ny.isError = false →
+    mBool true ∈
+      (mettaEval kernelDefControlEnv (fuel + 1) tailStBefore tailValueEnv
+        (convReadoutAfterNxNy nx ny)).1.map (·.1) →
+    (∃ binder,
+      ClosedValueBindings tailValueEnv ∧
+      (∀ x, x ∈ bindingValueKeys tailValueEnv → x = binder) ∧
+      (∀ {v : String}, v = "e" ∨ v = "t" →
+        counterSuffix (tailStBefore.counter + 2) v ≠ binder)) →
+    (∃ rawLeftNf rawRightNf fuelBase st binder ambient,
+      st.world = St.init.world ∧
+      ClosedValueBindings ambient ∧
+      (∀ x, x ∈ bindingValueKeys ambient → x = binder) ∧
+      (∀ {v : String}, v = "e" ∨ v = "t" →
+        counterSuffix (st.counter + 2) v ≠ binder) ∧
+      CicStage3ResolvedNfRuntimeOutput rawLeft rawLeftNf ∧
+      CicStage3ResolvedNfRuntimeOutput rawRight rawRightNf ∧
+      mBool true ∈
+        (mettaEval kernelDefControlEnv (fuelBase + 5) st ambient
+          (convReadoutAfterNxNy
+            (termAtom rawLeftNf) (termAtom rawRightNf))).1.map (·.1)) ∨
+      ConvDecl
+        (envOfSpecs cicStage3RawArtifactSig.translatedSpecs)
+        left right
+
+def ConvSoundCicStage3RawArtifactSigExtractedTailRuntimeConvDeclSplitGeNine :
+    Prop :=
+  ∀ (fuel : Nat) {rawLeft rawRight : DIndGArtifactTerm}
+      {left right : PureTm 0}
+      {nx ny : Metta.Atom} {stBefore tailStBefore : St}
+      {tailValueEnv : Metta.Bindings},
+    9 ≤ fuel →
+    stBefore.world = St.init.world →
+    tailStBefore.world = St.init.world →
+    DIndGArtifactTermTranslates
+      cicStage3RawArtifactSig.nameTranslates 0 rawLeft left →
+    DIndGArtifactTermTranslates
+      cicStage3RawArtifactSig.nameTranslates 0 rawRight right →
+    let stNamed : St := { counter := St.init.counter + 1, world := St.init.world }
+    nx ∈
+      (mettaEval kernelDefControlEnv ((fuel + 2) + 2) stNamed []
+        (nfQuery cicStage3RawArtifactSig rawLeft)).1.map (·.1) →
+    ny ∈
+      (mettaEval kernelDefControlEnv (fuel + 2) stBefore []
+        (nfQuery cicStage3RawArtifactSig rawRight)).1.map (·.1) →
+    mBool true ∈
+      (mettaEval kernelDefControlEnv (fuel + 1) tailStBefore tailValueEnv
+        (convReadoutAfterNxNy nx ny)).1.map (·.1) →
+    (∃ binder,
+      ClosedValueBindings tailValueEnv ∧
+      (∀ x, x ∈ bindingValueKeys tailValueEnv → x = binder) ∧
+      (∀ {v : String}, v = "e" ∨ v = "t" →
+        counterSuffix (tailStBefore.counter + 2) v ≠ binder)) →
+    (∃ rawLeftNf rawRightNf fuelBase st binder ambient,
+      st.world = St.init.world ∧
+      ClosedValueBindings ambient ∧
+      (∀ x, x ∈ bindingValueKeys ambient → x = binder) ∧
+      (∀ {v : String}, v = "e" ∨ v = "t" →
+        counterSuffix (st.counter + 2) v ≠ binder) ∧
+      CicStage3ResolvedNfRuntimeOutput rawLeft rawLeftNf ∧
+      CicStage3ResolvedNfRuntimeOutput rawRight rawRightNf ∧
+      mBool true ∈
+        (mettaEval kernelDefControlEnv (fuelBase + 5) st ambient
+          (convReadoutAfterNxNy
+            (termAtom rawLeftNf) (termAtom rawRightNf))).1.map (·.1)) ∨
+      ConvDecl
+        (envOfSpecs cicStage3RawArtifactSig.translatedSpecs)
+        left right
+
+theorem cicStage3RawArtifactSig_primary_nf_value_runtime_extraction_geThree_var_any_depth
+    {fuel : Nat} {st : St} {index : Nat} {out : Metta.Atom}
+    (hFuel : 3 ≤ fuel)
+    (hWorld : st.world = St.init.world)
+    (hOut :
+      out ∈
+        (mettaEval kernelDefControlEnv fuel st []
+          (nfQuery cicStage3RawArtifactSig (.var index))).1.map (·.1)) :
+    CicStage3RawArtifactSigPrimaryNfRuntimeReadout (.var index) out := by
+  rcases Nat.exists_eq_add_of_le hFuel with ⟨fuelBase, hFuelEq⟩
+  have hFuelEq' : fuel = fuelBase + 3 := by omega
+  have hStatic : st.world.selfExtra = [] := by
+    rw [hWorld]
+    rfl
+  rw [hFuelEq'] at hOut
+  rw [mettaEval_kernelDefControlEnv_nf_var_body_eq_state
+    fuelBase st cicStage3RawArtifactSig index hStatic] at hOut
+  have hOutEq : out = termAtom (.var index) := by
+    simpa using hOut
+  subst out
+  exact
+    CicStage3RawArtifactSigPrimaryNfRuntimeReadout.resolved
+      (CicStage3ResolvedNfRuntimeOutput.var index)
+
+private def cicStage3RawArtifactSig_nestedDefnPiFuelStressRaw :
+    DIndGArtifactTerm :=
+  .pi (.pi (.pi (.defn `nat) (.srt .type)) (.srt .type)) (.srt .type)
+
+private def cicStage3RawArtifactSig_nestedDefnPiFuelStressTerm :
+    PureTm 0 :=
+  .pi (.pi (.pi (.const natRecContract.familyName) .u0) .u0) .u0
+
+private theorem cicStage3RawArtifactSig_nestedDefnPiFuelStress_translates :
+    DIndGArtifactTermTranslates
+      cicStage3RawArtifactSig.nameTranslates 0
+      cicStage3RawArtifactSig_nestedDefnPiFuelStressRaw
+      cicStage3RawArtifactSig_nestedDefnPiFuelStressTerm := by
+  unfold cicStage3RawArtifactSig_nestedDefnPiFuelStressRaw
+    cicStage3RawArtifactSig_nestedDefnPiFuelStressTerm
+  exact
+    DIndGArtifactTermTranslates.pi
+      (DIndGArtifactTermTranslates.pi
+        (DIndGArtifactTermTranslates.pi
+          (DIndGArtifactTermTranslates.defn (Or.inl ⟨rfl, rfl⟩))
+          DIndGArtifactTermTranslates.srt_type)
+        DIndGArtifactTermTranslates.srt_type)
+      DIndGArtifactTermTranslates.srt_type
+
+-- Regression guard: a fixed fuel-11 extractor is not enough for every nested
+-- primary Pi/Def shape; the extraction route must account for recursive fuel.
+#guard (((mettaEval kernelDefControlEnv 11 St.init []
+    (nfQuery cicStage3RawArtifactSig
+      cicStage3RawArtifactSig_nestedDefnPiFuelStressRaw)).1.map
+    (fun p => p.1)).any (fun a => a.isError))
+
+-- The same stress shape has enough fuel by 17 to reach a non-error readout.
+#guard !(((mettaEval kernelDefControlEnv 17 St.init []
+    (nfQuery cicStage3RawArtifactSig
+      cicStage3RawArtifactSig_nestedDefnPiFuelStressRaw)).1.map
+    (fun p => p.1)).any (fun a => a.isError))
 
 def ConvSoundCicStage3RawArtifactSigCanonicalFrontierTailConvDeclAgreementWithKeys :
     Prop :=
@@ -63743,70 +73487,124 @@ def ConvSoundCicStage3RawArtifactSigCanonicalFrontierTailConvDeclAgreementWithKe
       (∀ x, x ∈ bindingValueKeys tailValueEnv → x = binder) ∧
       (∀ {v : String}, v = "e" ∨ v = "t" →
         counterSuffix (tailStBefore.counter + 2) v ≠ binder)) →
-    CicStage3CanonicalNfRuntimeReadoutForSig
-      cicStage3RawArtifactSig rawLeft nx →
-    CicStage3CanonicalNfRuntimeReadoutForSig
-      cicStage3RawArtifactSig rawRight ny →
+    CicStage3RawArtifactSigPrimaryNfRuntimeReadout rawLeft nx →
+    CicStage3RawArtifactSigPrimaryNfRuntimeReadout rawRight ny →
     (CicStage3NfSoundnessFrontier rawLeft ∨
       CicStage3NfSoundnessFrontier rawRight) →
     ConvDecl
       (envOfSpecs cicStage3RawArtifactSig.translatedSpecs)
       left right
 
+def ConvSoundCicStage3RawArtifactSigTailRuntimeConvDeclClassification :
+    Prop :=
+  ∀ (fuel : Nat) {rawLeft rawRight : DIndGArtifactTerm}
+      {left right : PureTm 0}
+      {nx ny : Metta.Atom} {stBefore tailStBefore : St}
+      {tailValueEnv : Metta.Bindings},
+    4 ≤ fuel →
+    stBefore.world = St.init.world →
+    tailStBefore.world = St.init.world →
+    DIndGArtifactTermTranslates
+      cicStage3RawArtifactSig.nameTranslates 0 rawLeft left →
+    DIndGArtifactTermTranslates
+      cicStage3RawArtifactSig.nameTranslates 0 rawRight right →
+    let stNamed : St := { counter := St.init.counter + 1, world := St.init.world }
+    nx ∈
+      (mettaEval kernelDefControlEnv ((fuel + 2) + 2) stNamed []
+        (nfQuery cicStage3RawArtifactSig rawLeft)).1.map (·.1) →
+    ny ∈
+      (mettaEval kernelDefControlEnv (fuel + 2) stBefore []
+        (nfQuery cicStage3RawArtifactSig rawRight)).1.map (·.1) →
+    mBool true ∈
+      (mettaEval kernelDefControlEnv (fuel + 1) tailStBefore tailValueEnv
+        (convReadoutAfterNxNy nx ny)).1.map (·.1) →
+    (∃ rawLeftNf rawRightNf,
+      nx = termAtom rawLeftNf ∧
+      ny = termAtom rawRightNf ∧
+      CicStage3ResolvedNfRuntimeOutput rawLeft rawLeftNf ∧
+      CicStage3ResolvedNfRuntimeOutput rawRight rawRightNf) ∨
+      ConvDecl
+        (envOfSpecs cicStage3RawArtifactSig.translatedSpecs)
+        left right
+
 theorem convSoundCicStage3RawArtifactSig_canonical_frontier_tail_convDecl_agreement_with_keys :
     ConvSoundCicStage3RawArtifactSigCanonicalFrontierTailConvDeclAgreementWithKeys := by
   intro fuel rawLeft rawRight left right nx ny stBefore tailStBefore
     tailValueEnv hFuel _hWorldBefore hWorldTailBefore hLeft hRight
   dsimp
-  intro _hLeftValue _hRightValue hTailValue hTailKeys hLeftCanon hRightCanon
+  intro _hLeftValue _hRightValue hTailValue hTailKeys hLeftReadout hRightReadout
     _hFrontierSide
   have hBeq :
       (nx == ny) = true := by
     exact
-      cicStage3RawArtifactSig_conv_tail_true_canonicalForSig_beq_true_keyed_ambient
+      cicStage3RawArtifactSig_conv_tail_true_primaryReadout_beq_true_keyed_ambient
         (fuel := fuel) (rawLeft := rawLeft) (rawRight := rawRight)
         (left := left) (right := right) (nx := nx) (ny := ny)
         (tailStBefore := tailStBefore) (tailValueEnv := tailValueEnv)
-        hFuel hWorldTailBefore hLeft hRight hLeftCanon hRightCanon
+        hFuel hWorldTailBefore hLeft hRight hLeftReadout hRightReadout
         hTailValue hTailKeys
   exact
-    cicStage3RawArtifactSig_canonicalForSig_beq_true_convDecl_any_depth
-      hLeftCanon hRightCanon hLeft hRight hBeq
+    cicStage3RawArtifactSig_primaryReadout_beq_true_convDecl_any_depth
+      hLeftReadout hRightReadout hLeft hRight hBeq
 
-theorem convSoundCicStage3RawArtifactSig_tail_convDecl_split_of_canonical_nf_value_runtime_extraction_geThree_with_keys
-    (hExtract :
-      ConvSoundCicStage3RawArtifactSigCanonicalNfValueRuntimeExtractionGeThree)
-    (hFrontier :
-      ConvSoundCicStage3RawArtifactSigCanonicalFrontierTailConvDeclAgreementWithKeys) :
+theorem convSoundCicStage3RawArtifactSig_tail_convDecl_split_of_runtime_classification
+    (hClass :
+      ConvSoundCicStage3RawArtifactSigTailRuntimeConvDeclClassification) :
     ConvSoundCicStage3RawArtifactSigExtractedTailRuntimeConvDeclSplit := by
   intro fuel rawLeft rawRight left right nx ny stBefore tailStBefore
     tailValueEnv hFuel hWorldBefore hWorldTailBefore hLeft hRight
   dsimp
   intro hLeftValue hRightValue hTailValue hTailKeys
-  have hLeftCanon :
-      CicStage3CanonicalNfRuntimeReadoutForSig
-        cicStage3RawArtifactSig rawLeft nx :=
+  rcases
+      hClass fuel hFuel hWorldBefore hWorldTailBefore hLeft hRight
+        hLeftValue hRightValue hTailValue with
+    hResolved | hConvDecl
+  · rcases hResolved with
+      ⟨rawLeftNf, rawRightNf, hNx, hNy, hLeftOut, hRightOut⟩
+    subst nx
+    subst ny
+    rcases hTailKeys with ⟨binder, hClosed, hKeys, hFresh⟩
+    rcases Nat.exists_eq_add_of_le hFuel with ⟨fuelBase, hFuelEq⟩
+    refine Or.inl ?_
+    refine
+      ⟨rawLeftNf, rawRightNf, fuelBase, tailStBefore, binder, tailValueEnv,
+        hWorldTailBefore, hClosed, hKeys, hFresh, hLeftOut, hRightOut, ?_⟩
+    simpa [hFuelEq, Nat.add_assoc, Nat.add_comm, Nat.add_left_comm]
+      using hTailValue
+  · exact Or.inr hConvDecl
+
+theorem convSoundCicStage3RawArtifactSig_tail_convDecl_split_of_canonical_nf_value_runtime_extraction_geThree_nonError_with_keys
+    (hExtract :
+      ConvSoundCicStage3RawArtifactSigCanonicalNfValueRuntimeExtractionGeThreeNonError)
+    (hFrontier :
+      ConvSoundCicStage3RawArtifactSigCanonicalFrontierTailConvDeclAgreementWithKeys) :
+    ConvSoundCicStage3RawArtifactSigExtractedTailRuntimeConvDeclSplitNonError := by
+  intro fuel rawLeft rawRight left right nx ny stBefore tailStBefore
+    tailValueEnv hFuel hWorldBefore hWorldTailBefore hLeft hRight
+  dsimp
+  intro hLeftValue hLeftNoErr hRightValue hRightNoErr hTailValue hTailKeys
+  have hLeftReadout :
+      CicStage3RawArtifactSigPrimaryNfRuntimeReadout rawLeft nx :=
     hExtract
       (fuel := (fuel + 2) + 2)
       (st := { counter := St.init.counter + 1, world := St.init.world })
       (raw := rawLeft) (term := left) (out := nx)
-      (by omega) (by rfl) hLeft hLeftValue
-  have hRightCanon :
-      CicStage3CanonicalNfRuntimeReadoutForSig
-        cicStage3RawArtifactSig rawRight ny :=
+      (by omega) (by rfl) hLeft hLeftValue hLeftNoErr
+  have hRightReadout :
+      CicStage3RawArtifactSigPrimaryNfRuntimeReadout rawRight ny :=
     hExtract
       (fuel := fuel + 2)
       (st := stBefore)
       (raw := rawRight) (term := right) (out := ny)
-      (by omega) hWorldBefore hRight hRightValue
+      (by omega) hWorldBefore hRight hRightValue hRightNoErr
   rcases
-      CicStage3CanonicalNfRuntimeReadoutForSig_resolved_or_frontier
-        hLeftCanon with
+      CicStage3RawArtifactSigPrimaryNfRuntimeReadout_resolved_or_frontier
+        hLeftReadout with
     hLeftResolved | hLeftFrontier
   · rcases hLeftResolved with ⟨rawLeftNf, hNx, hLeftOut⟩
     rcases
-        CicStage3CanonicalNfRuntimeReadoutForSig_resolved_or_frontier
-          hRightCanon with
+        CicStage3RawArtifactSigPrimaryNfRuntimeReadout_resolved_or_frontier
+          hRightReadout with
       hRightResolved | hRightFrontier
     · rcases hRightResolved with ⟨rawRightNf, hNy, hRightOut⟩
       subst nx
@@ -63823,11 +73621,65 @@ theorem convSoundCicStage3RawArtifactSig_tail_convDecl_split_of_canonical_nf_val
     · exact Or.inr
         (hFrontier fuel hFuel hWorldBefore hWorldTailBefore
           hLeft hRight hLeftValue hRightValue hTailValue hTailKeys
-          hLeftCanon hRightCanon (Or.inr hRightFrontier))
+          hLeftReadout hRightReadout (Or.inr hRightFrontier))
   · exact Or.inr
       (hFrontier fuel hFuel hWorldBefore hWorldTailBefore
         hLeft hRight hLeftValue hRightValue hTailValue hTailKeys
-        hLeftCanon hRightCanon (Or.inl hLeftFrontier))
+        hLeftReadout hRightReadout (Or.inl hLeftFrontier))
+
+theorem convSoundCicStage3RawArtifactSig_tail_convDecl_split_of_canonical_nf_value_runtime_extraction_geOne_nonError_with_keys
+    (hExtract :
+      ConvSoundCicStage3RawArtifactSigCanonicalNfValueRuntimeExtractionGeOneNonError)
+    (hFrontier :
+      ConvSoundCicStage3RawArtifactSigCanonicalFrontierTailConvDeclAgreementWithKeys) :
+    ConvSoundCicStage3RawArtifactSigExtractedTailRuntimeConvDeclSplitNonError := by
+  intro fuel rawLeft rawRight left right nx ny stBefore tailStBefore
+    tailValueEnv hFuel hWorldBefore hWorldTailBefore hLeft hRight
+  dsimp
+  intro hLeftValue hLeftNoErr hRightValue hRightNoErr hTailValue hTailKeys
+  have hLeftReadout :
+      CicStage3RawArtifactSigPrimaryNfRuntimeReadout rawLeft nx :=
+    hExtract
+      (fuel := (fuel + 2) + 2)
+      (st := { counter := St.init.counter + 1, world := St.init.world })
+      (raw := rawLeft) (term := left) (out := nx)
+      (by omega) (by rfl) hLeft hLeftValue hLeftNoErr
+  have hRightReadout :
+      CicStage3RawArtifactSigPrimaryNfRuntimeReadout rawRight ny :=
+    hExtract
+      (fuel := fuel + 2)
+      (st := stBefore)
+      (raw := rawRight) (term := right) (out := ny)
+      (by omega) hWorldBefore hRight hRightValue hRightNoErr
+  rcases
+      CicStage3RawArtifactSigPrimaryNfRuntimeReadout_resolved_or_frontier
+        hLeftReadout with
+    hLeftResolved | hLeftFrontier
+  · rcases hLeftResolved with ⟨rawLeftNf, hNx, hLeftOut⟩
+    rcases
+        CicStage3RawArtifactSigPrimaryNfRuntimeReadout_resolved_or_frontier
+          hRightReadout with
+      hRightResolved | hRightFrontier
+    · rcases hRightResolved with ⟨rawRightNf, hNy, hRightOut⟩
+      subst nx
+      subst ny
+      rcases hTailKeys with ⟨binder, hClosed, hKeys, hFresh⟩
+      rcases Nat.exists_eq_add_of_le hFuel with ⟨fuelBase, hFuelEq⟩
+      refine Or.inl ?_
+      refine
+        ⟨rawLeftNf, rawRightNf, fuelBase, tailStBefore, binder,
+          tailValueEnv, hWorldTailBefore, hClosed, hKeys, hFresh,
+          hLeftOut, hRightOut, ?_⟩
+      simpa [hFuelEq, Nat.add_assoc, Nat.add_comm, Nat.add_left_comm]
+        using hTailValue
+    · exact Or.inr
+        (hFrontier fuel hFuel hWorldBefore hWorldTailBefore
+          hLeft hRight hLeftValue hRightValue hTailValue hTailKeys
+          hLeftReadout hRightReadout (Or.inr hRightFrontier))
+  · exact Or.inr
+      (hFrontier fuel hFuel hWorldBefore hWorldTailBefore
+        hLeft hRight hLeftValue hRightValue hTailValue hTailKeys
+        hLeftReadout hRightReadout (Or.inl hLeftFrontier))
 
 theorem conv_sound_cicStage3RawArtifactSig_of_small_fuel_false_obligations_tail_values_with_keys_convDecl_split
     (hSmallFalse :
@@ -63867,15 +73719,112 @@ theorem conv_sound_cicStage3RawArtifactSig_of_small_fuel_false_obligations_tail_
         hconv hLeft hRight hResolved
   · exact hFrontierConv
 
-theorem conv_sound_cicStage3RawArtifactSig_of_small_fuel_false_obligations_tail_values_with_keys_canonical_frontier_convDecl_geThree
+theorem conv_sound_cicStage3RawArtifactSig_of_small_fuel_false_obligations_tail_values_with_keys_and_no_errors_convDecl_split_nonError
+    (hSmallFalse :
+      ConvSoundCicStage3RawArtifactSigNamedReadoutSmallFuelFalse)
+    (hNamedObligations :
+      ConvSoundCicStage3RawArtifactSigNamedReadoutObligations)
+    (hTailValues :
+      ConvSoundCicStage3RawArtifactSigNamedReadoutTailValuesWithKeysAndNoErrors)
+    (hTailSplit :
+      ConvSoundCicStage3RawArtifactSigExtractedTailRuntimeConvDeclSplitNonError) :
+    ∀ {rawLeft rawRight : DIndGArtifactTerm} {left right : PureTm 0},
+      evaluator.conv cicStage3RawArtifactSig rawLeft rawRight →
+      DIndGArtifactTermTranslates
+        cicStage3RawArtifactSig.nameTranslates 0 rawLeft left →
+      DIndGArtifactTermTranslates
+        cicStage3RawArtifactSig.nameTranslates 0 rawRight right →
+      ConvDecl (envOfSpecs cicStage3RawArtifactSig.translatedSpecs)
+        left right := by
+  intro rawLeft rawRight left right hconv hLeft hRight
+  rcases
+      convSoundCicStage3RawArtifactSig_namedReadoutFuel_of_small_false
+        hSmallFalse hconv hLeft hRight with
+    ⟨fuel, hFuel, hNamedTrue⟩
+  rcases hNamedObligations fuel hLeft hRight with
+    ⟨hStatic, hWorld⟩
+  rcases
+      hTailValues fuel hFuel hLeft hRight hStatic hWorld hNamedTrue with
+    ⟨nx, ny, stBefore, tailStBefore, tailValueEnv,
+      hWorldBefore, hWorldTailBefore, hLeftValue, hLeftNoErr,
+      hRightValue, hRightNoErr, hTailValue, hTailKeys⟩
+  rcases
+      hTailSplit fuel hFuel hWorldBefore hWorldTailBefore hLeft hRight
+        hLeftValue hLeftNoErr hRightValue hRightNoErr hTailValue hTailKeys with
+    hResolved | hFrontierConv
+  · exact
+      cicStage3RawArtifactSig_conv_sound_of_runtime_outputs_tail_value_keyed_ambient
+        hconv hLeft hRight hResolved
+  · exact hFrontierConv
+
+theorem conv_sound_cicStage3RawArtifactSig_of_namedReadoutFuel_obligations_tail_values_with_keys_and_no_errors_convDecl_split_nonError
+    (hNamedReadoutFuel :
+      ConvSoundCicStage3RawArtifactSigNamedReadoutFuel)
+    (hNamedObligations :
+      ConvSoundCicStage3RawArtifactSigNamedReadoutObligations)
+    (hTailValues :
+      ConvSoundCicStage3RawArtifactSigNamedReadoutTailValuesWithKeysAndNoErrors)
+    (hTailSplit :
+      ConvSoundCicStage3RawArtifactSigExtractedTailRuntimeConvDeclSplitNonError) :
+    ∀ {rawLeft rawRight : DIndGArtifactTerm} {left right : PureTm 0},
+      evaluator.conv cicStage3RawArtifactSig rawLeft rawRight →
+      DIndGArtifactTermTranslates
+        cicStage3RawArtifactSig.nameTranslates 0 rawLeft left →
+      DIndGArtifactTermTranslates
+        cicStage3RawArtifactSig.nameTranslates 0 rawRight right →
+      ConvDecl (envOfSpecs cicStage3RawArtifactSig.translatedSpecs)
+        left right := by
+  intro rawLeft rawRight left right hconv hLeft hRight
+  rcases hNamedReadoutFuel hconv hLeft hRight with
+    ⟨fuel, hFuel, hNamedTrue⟩
+  rcases hNamedObligations fuel hLeft hRight with
+    ⟨hStatic, hWorld⟩
+  rcases
+      hTailValues fuel hFuel hLeft hRight hStatic hWorld hNamedTrue with
+    ⟨nx, ny, stBefore, tailStBefore, tailValueEnv,
+      hWorldBefore, hWorldTailBefore, hLeftValue, hLeftNoErr,
+      hRightValue, hRightNoErr, hTailValue, hTailKeys⟩
+  rcases
+      hTailSplit fuel hFuel hWorldBefore hWorldTailBefore hLeft hRight
+        hLeftValue hLeftNoErr hRightValue hRightNoErr hTailValue hTailKeys with
+    hResolved | hFrontierConv
+  · exact
+      cicStage3RawArtifactSig_conv_sound_of_runtime_outputs_tail_value_keyed_ambient
+        hconv hLeft hRight hResolved
+  · exact hFrontierConv
+
+theorem conv_sound_cicStage3RawArtifactSig_of_useSite_small_fuel_false_obligations_tail_values_with_keys_and_no_errors_convDecl_split_nonError
+    (hUseSiteSmallFalse :
+      ConvSoundCicStage3RawArtifactSigNamedReadoutUseSiteSmallFuelFalse)
+    (hNamedObligations :
+      ConvSoundCicStage3RawArtifactSigNamedReadoutObligations)
+    (hTailValues :
+      ConvSoundCicStage3RawArtifactSigNamedReadoutTailValuesWithKeysAndNoErrors)
+    (hTailSplit :
+      ConvSoundCicStage3RawArtifactSigExtractedTailRuntimeConvDeclSplitNonError) :
+    ∀ {rawLeft rawRight : DIndGArtifactTerm} {left right : PureTm 0},
+      evaluator.conv cicStage3RawArtifactSig rawLeft rawRight →
+      DIndGArtifactTermTranslates
+        cicStage3RawArtifactSig.nameTranslates 0 rawLeft left →
+      DIndGArtifactTermTranslates
+        cicStage3RawArtifactSig.nameTranslates 0 rawRight right →
+      ConvDecl (envOfSpecs cicStage3RawArtifactSig.translatedSpecs)
+        left right := by
+  exact
+    conv_sound_cicStage3RawArtifactSig_of_namedReadoutFuel_obligations_tail_values_with_keys_and_no_errors_convDecl_split_nonError
+      (convSoundCicStage3RawArtifactSig_namedReadoutFuel_of_useSite_small_false
+        hUseSiteSmallFalse)
+      hNamedObligations hTailValues hTailSplit
+
+theorem conv_sound_cicStage3RawArtifactSig_of_small_fuel_false_obligations_tail_values_with_keys_tail_classification
     (hSmallFalse :
       ConvSoundCicStage3RawArtifactSigNamedReadoutSmallFuelFalse)
     (hNamedObligations :
       ConvSoundCicStage3RawArtifactSigNamedReadoutObligations)
     (hTailValues :
       ConvSoundCicStage3RawArtifactSigNamedReadoutTailValuesWithKeys)
-    (hExtract :
-      ConvSoundCicStage3RawArtifactSigCanonicalNfValueRuntimeExtractionGeThree) :
+    (hTailClass :
+      ConvSoundCicStage3RawArtifactSigTailRuntimeConvDeclClassification) :
     ∀ {rawLeft rawRight : DIndGArtifactTerm} {left right : PureTm 0},
       evaluator.conv cicStage3RawArtifactSig rawLeft rawRight →
       DIndGArtifactTermTranslates
@@ -63887,19 +73836,18 @@ theorem conv_sound_cicStage3RawArtifactSig_of_small_fuel_false_obligations_tail_
   exact
     conv_sound_cicStage3RawArtifactSig_of_small_fuel_false_obligations_tail_values_with_keys_convDecl_split
       hSmallFalse hNamedObligations hTailValues
-      (convSoundCicStage3RawArtifactSig_tail_convDecl_split_of_canonical_nf_value_runtime_extraction_geThree_with_keys
-        hExtract
-        convSoundCicStage3RawArtifactSig_canonical_frontier_tail_convDecl_agreement_with_keys)
+      (convSoundCicStage3RawArtifactSig_tail_convDecl_split_of_runtime_classification
+        hTailClass)
 
-theorem conv_sound_cicStage3RawArtifactSig_of_mid_fuel_false_obligations_tail_values_with_keys_canonical_frontier_convDecl_geThree
+theorem conv_sound_cicStage3RawArtifactSig_of_mid_fuel_false_obligations_tail_values_with_keys_tail_classification
     (hMidFalse :
       ConvSoundCicStage3RawArtifactSigNamedReadoutFuelTwoThroughEightFalse)
     (hNamedObligations :
       ConvSoundCicStage3RawArtifactSigNamedReadoutObligations)
     (hTailValues :
       ConvSoundCicStage3RawArtifactSigNamedReadoutTailValuesWithKeys)
-    (hExtract :
-      ConvSoundCicStage3RawArtifactSigCanonicalNfValueRuntimeExtractionGeThree) :
+    (hTailClass :
+      ConvSoundCicStage3RawArtifactSigTailRuntimeConvDeclClassification) :
     ∀ {rawLeft rawRight : DIndGArtifactTerm} {left right : PureTm 0},
       evaluator.conv cicStage3RawArtifactSig rawLeft rawRight →
       DIndGArtifactTermTranslates
@@ -63909,7 +73857,161 @@ theorem conv_sound_cicStage3RawArtifactSig_of_mid_fuel_false_obligations_tail_va
       ConvDecl (envOfSpecs cicStage3RawArtifactSig.translatedSpecs)
         left right := by
   exact
-    conv_sound_cicStage3RawArtifactSig_of_small_fuel_false_obligations_tail_values_with_keys_canonical_frontier_convDecl_geThree
+    conv_sound_cicStage3RawArtifactSig_of_small_fuel_false_obligations_tail_values_with_keys_tail_classification
+      (convSoundCicStage3RawArtifactSig_namedReadoutSmallFuelFalse_of_two_through_eight
+        hMidFalse)
+      hNamedObligations hTailValues hTailClass
+
+theorem conv_sound_cicStage3RawArtifactSig_of_geNine_named_obligations_tail_values_with_keys_convDecl_split
+    (hNamedReadoutFuel :
+      ConvSoundCicStage3RawArtifactSigNamedReadoutFuelGeNine)
+    (hNamedObligations :
+      ConvSoundCicStage3RawArtifactSigNamedReadoutObligations)
+    (hTailValues :
+      ConvSoundCicStage3RawArtifactSigNamedReadoutTailValuesWithKeys)
+    (hTailSplit :
+      ConvSoundCicStage3RawArtifactSigExtractedTailRuntimeConvDeclSplitGeNine) :
+    ∀ {rawLeft rawRight : DIndGArtifactTerm} {left right : PureTm 0},
+      evaluator.conv cicStage3RawArtifactSig rawLeft rawRight →
+      DIndGArtifactTermTranslates
+        cicStage3RawArtifactSig.nameTranslates 0 rawLeft left →
+      DIndGArtifactTermTranslates
+        cicStage3RawArtifactSig.nameTranslates 0 rawRight right →
+      ConvDecl (envOfSpecs cicStage3RawArtifactSig.translatedSpecs)
+        left right := by
+  intro rawLeft rawRight left right hconv hLeft hRight
+  rcases hNamedReadoutFuel hconv hLeft hRight with
+    ⟨fuel, hFuel, hNamedTrue⟩
+  rcases hNamedObligations fuel hLeft hRight with
+    ⟨hStatic, hWorld⟩
+  rcases
+      hTailValues fuel (by omega) hLeft hRight hStatic hWorld hNamedTrue with
+    ⟨nx, ny, stBefore, tailStBefore, tailValueEnv,
+      hWorldBefore, hWorldTailBefore, hLeftValue, hRightValue,
+      hTailValue, hTailKeys⟩
+  rcases
+      hTailSplit fuel hFuel hWorldBefore hWorldTailBefore hLeft hRight
+        hLeftValue hRightValue hTailValue hTailKeys with
+    hResolved | hFrontierConv
+  · exact
+      cicStage3RawArtifactSig_conv_sound_of_runtime_outputs_tail_value_keyed_ambient
+        hconv hLeft hRight hResolved
+  · exact hFrontierConv
+
+theorem conv_sound_cicStage3RawArtifactSig_of_small_fuel_false_obligations_tail_values_with_keys_and_no_errors_canonical_frontier_convDecl_geThree_nonError
+    (hSmallFalse :
+      ConvSoundCicStage3RawArtifactSigNamedReadoutSmallFuelFalse)
+    (hNamedObligations :
+      ConvSoundCicStage3RawArtifactSigNamedReadoutObligations)
+    (hTailValues :
+      ConvSoundCicStage3RawArtifactSigNamedReadoutTailValuesWithKeysAndNoErrors)
+    (hExtract :
+      ConvSoundCicStage3RawArtifactSigCanonicalNfValueRuntimeExtractionGeThreeNonError) :
+    ∀ {rawLeft rawRight : DIndGArtifactTerm} {left right : PureTm 0},
+      evaluator.conv cicStage3RawArtifactSig rawLeft rawRight →
+      DIndGArtifactTermTranslates
+        cicStage3RawArtifactSig.nameTranslates 0 rawLeft left →
+      DIndGArtifactTermTranslates
+        cicStage3RawArtifactSig.nameTranslates 0 rawRight right →
+      ConvDecl (envOfSpecs cicStage3RawArtifactSig.translatedSpecs)
+        left right := by
+  exact
+    conv_sound_cicStage3RawArtifactSig_of_small_fuel_false_obligations_tail_values_with_keys_and_no_errors_convDecl_split_nonError
+      hSmallFalse hNamedObligations hTailValues
+      (convSoundCicStage3RawArtifactSig_tail_convDecl_split_of_canonical_nf_value_runtime_extraction_geThree_nonError_with_keys
+        hExtract
+        convSoundCicStage3RawArtifactSig_canonical_frontier_tail_convDecl_agreement_with_keys)
+
+theorem conv_sound_cicStage3RawArtifactSig_of_small_fuel_false_obligations_tail_values_with_keys_and_no_errors_canonical_frontier_convDecl_geOne_nonError
+    (hSmallFalse :
+      ConvSoundCicStage3RawArtifactSigNamedReadoutSmallFuelFalse)
+    (hNamedObligations :
+      ConvSoundCicStage3RawArtifactSigNamedReadoutObligations)
+    (hTailValues :
+      ConvSoundCicStage3RawArtifactSigNamedReadoutTailValuesWithKeysAndNoErrors)
+    (hExtract :
+      ConvSoundCicStage3RawArtifactSigCanonicalNfValueRuntimeExtractionGeOneNonError) :
+    ∀ {rawLeft rawRight : DIndGArtifactTerm} {left right : PureTm 0},
+      evaluator.conv cicStage3RawArtifactSig rawLeft rawRight →
+      DIndGArtifactTermTranslates
+        cicStage3RawArtifactSig.nameTranslates 0 rawLeft left →
+      DIndGArtifactTermTranslates
+        cicStage3RawArtifactSig.nameTranslates 0 rawRight right →
+      ConvDecl (envOfSpecs cicStage3RawArtifactSig.translatedSpecs)
+        left right := by
+  exact
+    conv_sound_cicStage3RawArtifactSig_of_small_fuel_false_obligations_tail_values_with_keys_and_no_errors_convDecl_split_nonError
+      hSmallFalse hNamedObligations hTailValues
+      (convSoundCicStage3RawArtifactSig_tail_convDecl_split_of_canonical_nf_value_runtime_extraction_geOne_nonError_with_keys
+        hExtract
+        convSoundCicStage3RawArtifactSig_canonical_frontier_tail_convDecl_agreement_with_keys)
+
+theorem conv_sound_cicStage3RawArtifactSig_of_useSite_small_fuel_false_obligations_tail_values_with_keys_and_no_errors_canonical_frontier_convDecl_geOne_nonError
+    (hUseSiteSmallFalse :
+      ConvSoundCicStage3RawArtifactSigNamedReadoutUseSiteSmallFuelFalse)
+    (hNamedObligations :
+      ConvSoundCicStage3RawArtifactSigNamedReadoutObligations)
+    (hTailValues :
+      ConvSoundCicStage3RawArtifactSigNamedReadoutTailValuesWithKeysAndNoErrors)
+    (hExtract :
+      ConvSoundCicStage3RawArtifactSigCanonicalNfValueRuntimeExtractionGeOneNonError) :
+    ∀ {rawLeft rawRight : DIndGArtifactTerm} {left right : PureTm 0},
+      evaluator.conv cicStage3RawArtifactSig rawLeft rawRight →
+      DIndGArtifactTermTranslates
+        cicStage3RawArtifactSig.nameTranslates 0 rawLeft left →
+      DIndGArtifactTermTranslates
+        cicStage3RawArtifactSig.nameTranslates 0 rawRight right →
+      ConvDecl (envOfSpecs cicStage3RawArtifactSig.translatedSpecs)
+        left right := by
+  exact
+    conv_sound_cicStage3RawArtifactSig_of_useSite_small_fuel_false_obligations_tail_values_with_keys_and_no_errors_convDecl_split_nonError
+      hUseSiteSmallFalse hNamedObligations hTailValues
+      (convSoundCicStage3RawArtifactSig_tail_convDecl_split_of_canonical_nf_value_runtime_extraction_geOne_nonError_with_keys
+        hExtract
+        convSoundCicStage3RawArtifactSig_canonical_frontier_tail_convDecl_agreement_with_keys)
+
+theorem conv_sound_cicStage3RawArtifactSig_of_mid_fuel_false_obligations_tail_values_with_keys_and_no_errors_canonical_frontier_convDecl_geThree_nonError
+    (hMidFalse :
+      ConvSoundCicStage3RawArtifactSigNamedReadoutFuelTwoThroughEightFalse)
+    (hNamedObligations :
+      ConvSoundCicStage3RawArtifactSigNamedReadoutObligations)
+    (hTailValues :
+      ConvSoundCicStage3RawArtifactSigNamedReadoutTailValuesWithKeysAndNoErrors)
+    (hExtract :
+      ConvSoundCicStage3RawArtifactSigCanonicalNfValueRuntimeExtractionGeThreeNonError) :
+    ∀ {rawLeft rawRight : DIndGArtifactTerm} {left right : PureTm 0},
+      evaluator.conv cicStage3RawArtifactSig rawLeft rawRight →
+      DIndGArtifactTermTranslates
+        cicStage3RawArtifactSig.nameTranslates 0 rawLeft left →
+      DIndGArtifactTermTranslates
+        cicStage3RawArtifactSig.nameTranslates 0 rawRight right →
+      ConvDecl (envOfSpecs cicStage3RawArtifactSig.translatedSpecs)
+        left right := by
+  exact
+    conv_sound_cicStage3RawArtifactSig_of_small_fuel_false_obligations_tail_values_with_keys_and_no_errors_canonical_frontier_convDecl_geThree_nonError
+      (convSoundCicStage3RawArtifactSig_namedReadoutSmallFuelFalse_of_two_through_eight
+        hMidFalse)
+      hNamedObligations hTailValues hExtract
+
+theorem conv_sound_cicStage3RawArtifactSig_of_mid_fuel_false_obligations_tail_values_with_keys_and_no_errors_canonical_frontier_convDecl_geOne_nonError
+    (hMidFalse :
+      ConvSoundCicStage3RawArtifactSigNamedReadoutFuelTwoThroughEightFalse)
+    (hNamedObligations :
+      ConvSoundCicStage3RawArtifactSigNamedReadoutObligations)
+    (hTailValues :
+      ConvSoundCicStage3RawArtifactSigNamedReadoutTailValuesWithKeysAndNoErrors)
+    (hExtract :
+      ConvSoundCicStage3RawArtifactSigCanonicalNfValueRuntimeExtractionGeOneNonError) :
+    ∀ {rawLeft rawRight : DIndGArtifactTerm} {left right : PureTm 0},
+      evaluator.conv cicStage3RawArtifactSig rawLeft rawRight →
+      DIndGArtifactTermTranslates
+        cicStage3RawArtifactSig.nameTranslates 0 rawLeft left →
+      DIndGArtifactTermTranslates
+        cicStage3RawArtifactSig.nameTranslates 0 rawRight right →
+      ConvDecl (envOfSpecs cicStage3RawArtifactSig.translatedSpecs)
+        left right := by
+  exact
+    conv_sound_cicStage3RawArtifactSig_of_small_fuel_false_obligations_tail_values_with_keys_and_no_errors_canonical_frontier_convDecl_geOne_nonError
       (convSoundCicStage3RawArtifactSig_namedReadoutSmallFuelFalse_of_two_through_eight
         hMidFalse)
       hNamedObligations hTailValues hExtract
@@ -65018,34 +75120,109 @@ theorem evaluator_soundness_cicStage3RawArtifactSig_of_small_fuel_false_obligati
       (conv_sound_cicStage3RawArtifactSig_of_small_fuel_false_obligations_tail_values_with_keys_convDecl_split
         hSmallFalse hNamedObligations hTailValues hTailSplit)
 
-theorem evaluator_soundness_cicStage3RawArtifactSig_of_small_fuel_false_obligations_tail_values_with_keys_canonical_frontier_convDecl_geThree
+theorem evaluator_soundness_cicStage3RawArtifactSig_of_small_fuel_false_obligations_tail_values_with_keys_tail_classification
     (hSmallFalse :
       ConvSoundCicStage3RawArtifactSigNamedReadoutSmallFuelFalse)
     (hNamedObligations :
       ConvSoundCicStage3RawArtifactSigNamedReadoutObligations)
     (hTailValues :
       ConvSoundCicStage3RawArtifactSigNamedReadoutTailValuesWithKeys)
-    (hExtract :
-      ConvSoundCicStage3RawArtifactSigCanonicalNfValueRuntimeExtractionGeThree) :
+    (hTailClass :
+      ConvSoundCicStage3RawArtifactSigTailRuntimeConvDeclClassification) :
     DIndGArtifactEvaluatorSoundness evaluator cicStage3RawArtifactSig := by
   exact
     evaluator_soundness_cicStage3RawArtifactSig_of_conv_sound
-      (conv_sound_cicStage3RawArtifactSig_of_small_fuel_false_obligations_tail_values_with_keys_canonical_frontier_convDecl_geThree
-        hSmallFalse hNamedObligations hTailValues hExtract)
+      (conv_sound_cicStage3RawArtifactSig_of_small_fuel_false_obligations_tail_values_with_keys_tail_classification
+        hSmallFalse hNamedObligations hTailValues hTailClass)
 
-theorem evaluator_soundness_cicStage3RawArtifactSig_of_mid_fuel_false_obligations_tail_values_with_keys_canonical_frontier_convDecl_geThree
+theorem evaluator_soundness_cicStage3RawArtifactSig_of_mid_fuel_false_obligations_tail_values_with_keys_tail_classification
     (hMidFalse :
       ConvSoundCicStage3RawArtifactSigNamedReadoutFuelTwoThroughEightFalse)
     (hNamedObligations :
       ConvSoundCicStage3RawArtifactSigNamedReadoutObligations)
     (hTailValues :
       ConvSoundCicStage3RawArtifactSigNamedReadoutTailValuesWithKeys)
-    (hExtract :
-      ConvSoundCicStage3RawArtifactSigCanonicalNfValueRuntimeExtractionGeThree) :
+    (hTailClass :
+      ConvSoundCicStage3RawArtifactSigTailRuntimeConvDeclClassification) :
     DIndGArtifactEvaluatorSoundness evaluator cicStage3RawArtifactSig := by
   exact
     evaluator_soundness_cicStage3RawArtifactSig_of_conv_sound
-      (conv_sound_cicStage3RawArtifactSig_of_mid_fuel_false_obligations_tail_values_with_keys_canonical_frontier_convDecl_geThree
+      (conv_sound_cicStage3RawArtifactSig_of_mid_fuel_false_obligations_tail_values_with_keys_tail_classification
+        hMidFalse hNamedObligations hTailValues hTailClass)
+
+theorem evaluator_soundness_cicStage3RawArtifactSig_of_geNine_named_obligations_tail_values_with_keys_convDecl_split
+    (hNamedReadoutFuel :
+      ConvSoundCicStage3RawArtifactSigNamedReadoutFuelGeNine)
+    (hNamedObligations :
+      ConvSoundCicStage3RawArtifactSigNamedReadoutObligations)
+    (hTailValues :
+      ConvSoundCicStage3RawArtifactSigNamedReadoutTailValuesWithKeys)
+    (hTailSplit :
+      ConvSoundCicStage3RawArtifactSigExtractedTailRuntimeConvDeclSplitGeNine) :
+    DIndGArtifactEvaluatorSoundness evaluator cicStage3RawArtifactSig := by
+  exact
+    evaluator_soundness_cicStage3RawArtifactSig_of_conv_sound
+      (conv_sound_cicStage3RawArtifactSig_of_geNine_named_obligations_tail_values_with_keys_convDecl_split
+        hNamedReadoutFuel hNamedObligations hTailValues hTailSplit)
+
+theorem evaluator_soundness_cicStage3RawArtifactSig_of_small_fuel_false_obligations_tail_values_with_keys_and_no_errors_canonical_frontier_convDecl_geThree_nonError
+    (hSmallFalse :
+      ConvSoundCicStage3RawArtifactSigNamedReadoutSmallFuelFalse)
+    (hNamedObligations :
+      ConvSoundCicStage3RawArtifactSigNamedReadoutObligations)
+    (hTailValues :
+      ConvSoundCicStage3RawArtifactSigNamedReadoutTailValuesWithKeysAndNoErrors)
+    (hExtract :
+      ConvSoundCicStage3RawArtifactSigCanonicalNfValueRuntimeExtractionGeThreeNonError) :
+    DIndGArtifactEvaluatorSoundness evaluator cicStage3RawArtifactSig := by
+  exact
+    evaluator_soundness_cicStage3RawArtifactSig_of_conv_sound
+      (conv_sound_cicStage3RawArtifactSig_of_small_fuel_false_obligations_tail_values_with_keys_and_no_errors_canonical_frontier_convDecl_geThree_nonError
+        hSmallFalse hNamedObligations hTailValues hExtract)
+
+theorem evaluator_soundness_cicStage3RawArtifactSig_of_small_fuel_false_obligations_tail_values_with_keys_and_no_errors_canonical_frontier_convDecl_geOne_nonError
+    (hSmallFalse :
+      ConvSoundCicStage3RawArtifactSigNamedReadoutSmallFuelFalse)
+    (hNamedObligations :
+      ConvSoundCicStage3RawArtifactSigNamedReadoutObligations)
+    (hTailValues :
+      ConvSoundCicStage3RawArtifactSigNamedReadoutTailValuesWithKeysAndNoErrors)
+    (hExtract :
+      ConvSoundCicStage3RawArtifactSigCanonicalNfValueRuntimeExtractionGeOneNonError) :
+    DIndGArtifactEvaluatorSoundness evaluator cicStage3RawArtifactSig := by
+  exact
+    evaluator_soundness_cicStage3RawArtifactSig_of_conv_sound
+      (conv_sound_cicStage3RawArtifactSig_of_small_fuel_false_obligations_tail_values_with_keys_and_no_errors_canonical_frontier_convDecl_geOne_nonError
+        hSmallFalse hNamedObligations hTailValues hExtract)
+
+theorem evaluator_soundness_cicStage3RawArtifactSig_of_mid_fuel_false_obligations_tail_values_with_keys_and_no_errors_canonical_frontier_convDecl_geThree_nonError
+    (hMidFalse :
+      ConvSoundCicStage3RawArtifactSigNamedReadoutFuelTwoThroughEightFalse)
+    (hNamedObligations :
+      ConvSoundCicStage3RawArtifactSigNamedReadoutObligations)
+    (hTailValues :
+      ConvSoundCicStage3RawArtifactSigNamedReadoutTailValuesWithKeysAndNoErrors)
+    (hExtract :
+      ConvSoundCicStage3RawArtifactSigCanonicalNfValueRuntimeExtractionGeThreeNonError) :
+    DIndGArtifactEvaluatorSoundness evaluator cicStage3RawArtifactSig := by
+  exact
+    evaluator_soundness_cicStage3RawArtifactSig_of_conv_sound
+      (conv_sound_cicStage3RawArtifactSig_of_mid_fuel_false_obligations_tail_values_with_keys_and_no_errors_canonical_frontier_convDecl_geThree_nonError
+        hMidFalse hNamedObligations hTailValues hExtract)
+
+theorem evaluator_soundness_cicStage3RawArtifactSig_of_mid_fuel_false_obligations_tail_values_with_keys_and_no_errors_canonical_frontier_convDecl_geOne_nonError
+    (hMidFalse :
+      ConvSoundCicStage3RawArtifactSigNamedReadoutFuelTwoThroughEightFalse)
+    (hNamedObligations :
+      ConvSoundCicStage3RawArtifactSigNamedReadoutObligations)
+    (hTailValues :
+      ConvSoundCicStage3RawArtifactSigNamedReadoutTailValuesWithKeysAndNoErrors)
+    (hExtract :
+      ConvSoundCicStage3RawArtifactSigCanonicalNfValueRuntimeExtractionGeOneNonError) :
+    DIndGArtifactEvaluatorSoundness evaluator cicStage3RawArtifactSig := by
+  exact
+    evaluator_soundness_cicStage3RawArtifactSig_of_conv_sound
+      (conv_sound_cicStage3RawArtifactSig_of_mid_fuel_false_obligations_tail_values_with_keys_and_no_errors_canonical_frontier_convDecl_geOne_nonError
         hMidFalse hNamedObligations hTailValues hExtract)
 
 /-- Declaration-calculus App case. Once the runtime readout has been absorbed
@@ -65117,6 +75294,7441 @@ theorem infer_srt_type_core_eval_sound :
     exact infer_sound_srt hinfer
       DIndGArtifactTermTranslates.srt_type
       DIndGArtifactTermTranslates.srt_kind
+
+private theorem cicStage3RawArtifactSig_primary_nf_defn_output_mem_implies_fresh_root_output_mem
+    {fuel : Nat} {st : St} {name : DeclName} {out : Metta.Atom}
+    (hWorld : st.world = St.init.world)
+    (hOut :
+      out ∈
+        (mettaEval kernelDefControlEnv (fuel + 1) st []
+          (nfQuery cicStage3RawArtifactSig (.defn name))).1.map (·.1)) :
+    let counter := st.counter + nfDefCandidatePreWithIndGZeroIota.length
+    let binder := counterSuffix counter "body"
+    let stRoot : St :=
+      { counter := st.counter + nfDefCandidatePreWithIndGZeroIota.length + 1,
+        world := st.world }
+    ∃ outBnd,
+      (out, outBnd) ∈
+        (mettaEval kernelDefControlEnv fuel stRoot []
+          (leattaDefControlPrimaryNfDefFreshRootNamed name binder)).1 := by
+  dsimp
+  let counter := st.counter + nfDefCandidatePreWithIndGZeroIota.length
+  let binder := counterSuffix counter "body"
+  let rootBnd : Metta.Bindings :=
+    (renameBindings (counterSuffix counter)
+      (nfDefRuleBindings cicStage3RawArtifactSig name)).reverse
+  let root : Metta.Atom :=
+    Metta.instantiate rootBnd
+      (freshenRule counter nfDefRuleLhs nfDefRuleRhs).2
+  let stRoot : St :=
+    { counter := st.counter + nfDefCandidatePreWithIndGZeroIota.length + 1,
+      world := st.world }
+  have hStatic : st.world.selfExtra = [] := by
+    rw [hWorld]
+    rfl
+  have hRootEq :
+      root = leattaDefControlPrimaryNfDefFreshRootNamed name binder := by
+    simpa [root, rootBnd, binder, counter] using
+      leattaDefControlPrimary_nfDefFreshRoot_named_eq counter name
+  have hRoot :
+      interpretFuel kernelDefControlEnv (fuel + 1) st
+          [evalItemNil (nfQuery cicStage3RawArtifactSig (.defn name))] [] =
+        ([(root, rootBnd)], stRoot) := by
+    simpa [root, rootBnd, stRoot, counter] using
+      interpretFuel_kernelDefControlEnv_nf_def_root_eq
+        (fuel := fuel) (st := st)
+        cicStage3RawArtifactSig name hStatic
+  have hNoErr :
+      (([sigAtom cicStage3RawArtifactSig,
+          termAtom (.defn name)].zip
+        [sigAtom cicStage3RawArtifactSig,
+          termAtom (.defn name)]).find?
+        (fun ho : Metta.Atom × Metta.Atom => ho.1.isError && ho.1 != ho.2)) = none := by
+    simp [sigAtom_isError_false, termAtom_isError_false]
+  have hRootNotNR : (root == notReducibleA) = false := by
+    rw [hRootEq]
+    rfl
+  have hRootNotSelf :
+      (root == nfQuery cicStage3RawArtifactSig (.defn name)) = false := by
+    rw [hRootEq]
+    rfl
+  rcases List.mem_map.mp hOut with ⟨⟨actual, outBnd⟩, hPair, hActual⟩
+  dsimp at hActual
+  subst actual
+  rcases
+      mettaEval_binary_expr_pair_mem_implies_root_eval_mem_of_quoted_args_and_root_eval_eq_bnd
+        (env := kernelDefControlEnv) (fuel := fuel) (st := st)
+        (stRoot := stRoot) (op := "nf")
+        (x := sigAtom cicStage3RawArtifactSig)
+        (y := termAtom (.defn name))
+        (root := root) (final := out) (rootBnd := rootBnd)
+        (outBnd := outBnd)
+        (hType := kernelDefControlEnv_nf_typeMismatch st
+          cicStage3RawArtifactSig (.defn name))
+        (hMask := kernelDefControlEnv_nf_argMask)
+        (hNoErr := hNoErr)
+        (hRoot := by simpa [nfQuery, mExpr, mSym] using hRoot)
+        (hRootNotNotReducible := hRootNotNR)
+        (hRootNotSelf := by simpa [nfQuery, mExpr, mSym] using hRootNotSelf)
+        (hReturns := by
+          simpa [nfQuery, mExpr, mSym] using
+            kernelDefControlEnv_nf_returnsAtom
+              cicStage3RawArtifactSig (.defn name))
+        (hmem := by simpa [nfQuery, mExpr, mSym] using hPair) with
+    ⟨finalBnd, hFinal⟩
+  have hOuterBndNil :
+      restrictBnd
+          (([sigAtom cicStage3RawArtifactSig,
+              termAtom (.defn name)]).flatMap Metta.Atom.vars)
+          ((Metta.Bindings.merge [] rootBnd).head?.getD rootBnd) = [] := by
+    simpa [List.flatMap,
+      sigAtom_vars_nil cicStage3RawArtifactSig,
+      termAtom_vars_nil (.defn name)] using
+      restrictBnd_nil_vars
+        ((Metta.Bindings.merge [] rootBnd).head?.getD rootBnd)
+  refine ⟨finalBnd, ?_⟩
+  rw [hOuterBndNil] at hFinal
+  rw [hRootEq] at hFinal
+  simpa [stRoot, binder, counter] using hFinal
+
+private theorem interpretFuel_kernelDefControlEnv_unify_fuel_one_eq_error
+    (st : St) (atom pattern template elseAtom : Metta.Atom) :
+    interpretFuel kernelDefControlEnv 1 st
+        [evalItemNil (mExpr "unify" [atom, pattern, template, elseAtom])] [] =
+      ([(errAtom (mExpr "unify" [atom, pattern, template, elseAtom])
+          "StackOverflow", [])],
+        st) := by
+  let target := mExpr "unify" [atom, pattern, template, elseAtom]
+  let embedded : Item :=
+    { stack := atomToStack target [], bnd := [] }
+  have hstep :
+      interpretStack1 kernelDefControlEnv 0 st (evalItemNil target) =
+        ([embedded], st) := by
+    simpa [target, embedded] using
+      interpretStack1_eval_embedded_unify_open_of_gt
+        kernelDefControlEnv 0 st atom pattern template elseAtom (by rfl)
+  have hEmbeddedNotFinal : isFinal embedded = false := by
+    simp [embedded, target, isFinal, atomToStack, mExpr, mSym]
+  rw [interpretFuel]
+  rw [hstep]
+  change
+    interpretFuel kernelDefControlEnv 0 st
+        (List.filter (fun r => !isFinal r) [embedded] ++ [])
+        ((List.map finalPair (List.filter isFinal [embedded])).reverse ++ []) =
+      ([(errAtom target "StackOverflow", [])], st)
+  rw [show List.filter (fun r => !isFinal r) [embedded] = [embedded] by
+    simp [embedded, target, isFinal, atomToStack, mExpr, mSym]]
+  rw [show (List.map finalPair (List.filter isFinal [embedded])).reverse = [] by
+    simp [embedded, target, isFinal, atomToStack, mExpr, mSym]]
+  simp [interpretFuel, embedded, target, errAtom, exhaustedPair,
+    atomToStack, Metta.instantiate, Metta.bindingsToSubst,
+    Metta.Subst.apply_nil, mExpr, mSym]
+  intro hfin
+  have hfinFalse :
+      isFinal
+          ({ stack :=
+              [{ atom :=
+                  Metta.Atom.expr
+                    [Metta.Atom.sym "unify", atom, pattern, template, elseAtom] }],
+             bnd := ([] : Metta.Bindings) } : Item) = false := by
+    rfl
+  rw [hfinFalse] at hfin
+  cases hfin
+
+private theorem mettaEval_kernelDefControlEnv_unify_output_isError_fuel_one_of_no_arg_error
+    {st : St} {atom pattern template elseAtom out : Metta.Atom}
+    {outBnd : Metta.Bindings}
+    (hNoErr :
+      (([atom, pattern, template, elseAtom].zip
+          [atom, pattern, template, elseAtom]).find?
+        (fun ho : Metta.Atom × Metta.Atom => ho.1.isError && ho.1 != ho.2)) = none)
+    (hOut :
+      (out, outBnd) ∈
+        (mettaEval kernelDefControlEnv 1 st []
+          (mExpr "unify" [atom, pattern, template, elseAtom])).1) :
+    out.isError = true := by
+  let target := mExpr "unify" [atom, pattern, template, elseAtom]
+  unfold mettaEval at hOut
+  rw [Metta.instantiate_nil target] at hOut
+  simp only [target, mExpr, mSym] at hOut
+  rw [kernelDefControlEnv_unify_typeMismatch st atom pattern template elseAtom]
+    at hOut
+  simp [kernelDefControlEnv_unify_argMask, Metta.instantiate_nil] at hOut
+  have hNoErr' :
+      List.find? (fun ho : Metta.Atom × Metta.Atom => ho.1.isError && ho.1 != ho.2)
+        [(atom, atom), (pattern, pattern), (template, template), (elseAtom, elseAtom)] =
+          none := by
+    simpa using hNoErr
+  rw [hNoErr'] at hOut
+  have hRoot :=
+    interpretFuel_kernelDefControlEnv_unify_fuel_one_eq_error
+      st atom pattern template elseAtom
+  have hRootLit :
+      interpretFuel kernelDefControlEnv 1 st
+          [{ stack :=
+              atomToStack
+                (Metta.Atom.expr
+                  [ Metta.Atom.sym "eval"
+                  , Metta.Atom.expr
+                      [Metta.Atom.sym "unify", atom, pattern, template, elseAtom] ])
+                []
+           , bnd := [] }] [] =
+        ([(errAtom target "StackOverflow", [])], st) := by
+    simpa [target, evalItemNil, mExpr, mSym] using hRoot
+  rw [hRootLit] at hOut
+  let rootErr := errAtom target "StackOverflow"
+  have hReturns :
+      returnsAtom kernelDefControlEnv target = false := by
+    simpa [target] using
+      kernelDefControlEnv_unify_returnsAtom atom pattern template elseAtom
+  have hErrNotNR :
+      (errAtom (mExpr "unify" [atom, pattern, template, elseAtom])
+          "StackOverflow" == notReducibleA) = false := by
+    change
+      Metta.Atom.beq
+        (Metta.Atom.expr
+          [ Metta.Atom.sym "Error"
+          , Metta.Atom.expr
+              [Metta.Atom.sym "unify", atom, pattern, template, elseAtom]
+          , Metta.Atom.sym "StackOverflow" ])
+        (Metta.Atom.sym "NotReducible") = false
+    rfl
+  have hErrNotSelf :
+      (errAtom (mExpr "unify" [atom, pattern, template, elseAtom])
+          "StackOverflow" ==
+        Metta.Atom.expr
+          [Metta.Atom.sym "unify", atom, pattern, template, elseAtom]) =
+        false := by
+    change
+      Metta.Atom.beq
+        (Metta.Atom.expr
+          [ Metta.Atom.sym "Error"
+          , Metta.Atom.expr
+              [Metta.Atom.sym "unify", atom, pattern, template, elseAtom]
+          , Metta.Atom.sym "StackOverflow" ])
+        (Metta.Atom.expr
+          [Metta.Atom.sym "unify", atom, pattern, template, elseAtom]) = false
+    rfl
+  have hReturnsLit :
+      returnsAtom kernelDefControlEnv
+          (Metta.Atom.expr
+            [Metta.Atom.sym "unify", atom, pattern, template, elseAtom]) =
+        false := by
+    simpa [target, mExpr, mSym] using hReturns
+  simp [target, hErrNotNR, hErrNotSelf, hReturnsLit] at hOut
+  rcases hOut with ⟨bnd, hRec, _hBnd⟩
+  exact mettaEval_zero_output_isError (mettaEval_value_mem_of_pair_mem hRec)
+
+private theorem mettaEval_kernelDefControlEnv_unify_fuel_one_eq_error_of_no_arg_error
+    (st : St) (atom pattern template elseAtom : Metta.Atom)
+    (hNoErr :
+      (([atom, pattern, template, elseAtom].zip
+          [atom, pattern, template, elseAtom]).find?
+        (fun ho : Metta.Atom × Metta.Atom => ho.1.isError && ho.1 != ho.2)) = none) :
+    let target := mExpr "unify" [atom, pattern, template, elseAtom]
+    mettaEval kernelDefControlEnv 1 st [] target =
+      ([(errAtom (errAtom target "StackOverflow") "StackOverflow", [])], st) := by
+  dsimp
+  let target := mExpr "unify" [atom, pattern, template, elseAtom]
+  unfold mettaEval
+  rw [Metta.instantiate_nil target]
+  simp only [target, mExpr, mSym]
+  rw [kernelDefControlEnv_unify_typeMismatch st atom pattern template elseAtom]
+  simp [kernelDefControlEnv_unify_argMask, Metta.instantiate_nil]
+  have hNoErr' :
+      List.find? (fun ho : Metta.Atom × Metta.Atom => ho.1.isError && ho.1 != ho.2)
+        [(atom, atom), (pattern, pattern), (template, template), (elseAtom, elseAtom)] =
+          none := by
+    simpa using hNoErr
+  rw [hNoErr']
+  have hRoot :=
+    interpretFuel_kernelDefControlEnv_unify_fuel_one_eq_error
+      st atom pattern template elseAtom
+  have hRootLit :
+      interpretFuel kernelDefControlEnv 1 st
+          [{ stack :=
+              atomToStack
+                (Metta.Atom.expr
+                  [ Metta.Atom.sym "eval"
+                  , Metta.Atom.expr
+                      [Metta.Atom.sym "unify", atom, pattern, template, elseAtom] ])
+                []
+           , bnd := [] }] [] =
+        ([(errAtom target "StackOverflow", [])], st) := by
+    simpa [target, evalItemNil, mExpr, mSym] using hRoot
+  rw [hRootLit]
+  have hReturns :
+      returnsAtom kernelDefControlEnv target = false := by
+    simpa [target] using
+      kernelDefControlEnv_unify_returnsAtom atom pattern template elseAtom
+  have hErrNotNR :
+      (errAtom (mExpr "unify" [atom, pattern, template, elseAtom])
+          "StackOverflow" == notReducibleA) = false := by
+    change
+      Metta.Atom.beq
+        (Metta.Atom.expr
+          [ Metta.Atom.sym "Error"
+          , Metta.Atom.expr
+              [Metta.Atom.sym "unify", atom, pattern, template, elseAtom]
+          , Metta.Atom.sym "StackOverflow" ])
+        (Metta.Atom.sym "NotReducible") = false
+    rfl
+  have hErrNotSelf :
+      (errAtom (mExpr "unify" [atom, pattern, template, elseAtom])
+          "StackOverflow" ==
+        Metta.Atom.expr
+          [Metta.Atom.sym "unify", atom, pattern, template, elseAtom]) =
+        false := by
+    change
+      Metta.Atom.beq
+        (Metta.Atom.expr
+          [ Metta.Atom.sym "Error"
+          , Metta.Atom.expr
+              [Metta.Atom.sym "unify", atom, pattern, template, elseAtom]
+          , Metta.Atom.sym "StackOverflow" ])
+        (Metta.Atom.expr
+          [Metta.Atom.sym "unify", atom, pattern, template, elseAtom]) = false
+    rfl
+  have hReturnsLit :
+      returnsAtom kernelDefControlEnv
+          (Metta.Atom.expr
+            [Metta.Atom.sym "unify", atom, pattern, template, elseAtom]) =
+        false := by
+    simpa [target, mExpr, mSym] using hReturns
+  have hBind :
+      restrictBnd (atom.vars ++ (pattern.vars ++ (template.vars ++ elseAtom.vars)))
+          ((Metta.Bindings.merge [] ([] : Metta.Bindings)).head?.getD []) = [] :=
+    restrictBnd_empty_merge_empty _
+  simp [target, hErrNotNR, hErrNotSelf, hReturnsLit,
+    hBind, Metta.Minimal.mettaEval.eq_1]
+  rw [Metta.instantiate_nil
+    (errAtom (mExpr "unify" [atom, pattern, template, elseAtom])
+      "StackOverflow")]
+  rfl
+
+private theorem mettaEval_kernelDefControlEnv_primary_def_body_of_eq_state_fuel_one
+    (st : St) (name : DeclName)
+    (hStatic : st.world.selfExtra = []) :
+    mettaEval kernelDefControlEnv 1 st []
+        (defBodyOfQueryAtom (sigAtom cicStage3RawArtifactSig)
+          (declNameAtom name)) =
+      ([(defBodyOfQueryAtom (sigAtom cicStage3RawArtifactSig)
+          (declNameAtom name), [])],
+        { counter := st.counter + 1, world := st.world }) := by
+  let stRoot : St := { counter := st.counter + 1, world := st.world }
+  have hRoot :
+      interpretFuel kernelDefControlEnv (0 + 1) st
+          [evalItemNil
+            (defBodyOfQueryAtom (sigAtom cicStage3RawArtifactSig)
+              (declNameAtom name))] [] =
+        ([(notReducibleA, [])], stRoot) := by
+    simpa [stRoot] using
+      interpretFuel_kernelDefControlEnv_primary_def_body_of_root_eq
+        (fuel := 0) (st := st) name hStatic
+  have hNoErr :
+      (([sigAtom cicStage3RawArtifactSig, declNameAtom name].zip
+        [sigAtom cicStage3RawArtifactSig, declNameAtom name]).find?
+        (fun ho : Metta.Atom × Metta.Atom => ho.1.isError && ho.1 != ho.2)) = none := by
+    simp [sigAtom_isError_false, declNameAtom_isError_false]
+  have hExact :=
+    mettaEval_binary_expr_eq_of_quoted_args_and_notReducible_eq
+      (env := kernelDefControlEnv) (fuel := 0)
+      (st := st) (stRoot := stRoot)
+      (op := "def-body-of") (x := sigAtom cicStage3RawArtifactSig)
+      (y := declNameAtom name)
+      (kernelDefControlEnv_def_body_of_typeMismatch st
+        (sigAtom cicStage3RawArtifactSig) (declNameAtom name))
+      kernelDefControlEnv_def_body_of_argMask hNoErr
+      (by simpa [defBodyOfQueryAtom, mExpr, mSym, stRoot] using hRoot)
+  simpa [defBodyOfQueryAtom, mExpr, mSym, stRoot] using hExact
+
+private theorem mettaEval_kernelDefControlEnv_if_is_bad_output_isError_fuel_one
+    {st : St} {a thenA elseA out : Metta.Atom}
+    {bnd outBnd : Metta.Bindings}
+    (hWorld : st.world = St.init.world)
+    (hOut :
+      (out, outBnd) ∈
+        (mettaEval kernelDefControlEnv 1 st bnd
+          (mExpr "if" [mExpr "is-bad" [a], thenA, elseA])).1) :
+    out.isError = true := by
+  let cond := mExpr "is-bad" [a]
+  let condInst := mExpr "is-bad" [Metta.instantiate bnd a]
+  let thenInst := Metta.instantiate bnd thenA
+  let elseInst := Metta.instantiate bnd elseA
+  have hTargetInst :
+      Metta.instantiate bnd
+          (mExpr "if" [cond, thenA, elseA]) =
+        mExpr "if" [condInst, thenInst, elseInst] := by
+    simp [cond, condInst, thenInst, elseInst, mExpr, mSym,
+      Metta.instantiate, Metta.bindingsToSubst, Metta.Subst.apply]
+  have hCondZero :
+      mettaEval kernelDefControlEnv 0 st [] condInst =
+        ([(errAtom condInst "StackOverflow", [])], st) := by
+    rw [Metta.Minimal.mettaEval.eq_1]
+    rw [Metta.instantiate_nil condInst]
+    simp [condInst, errAtom]
+  unfold mettaEval at hOut
+  rw [hTargetInst] at hOut
+  simp only [condInst, mExpr, mSym] at hOut
+  rw [hWorld] at hOut
+  have hType :
+      typeMismatch kernelDefControlEnv St.init.world "if"
+          [Metta.Atom.expr [Metta.Atom.sym "is-bad", Metta.instantiate bnd a],
+            thenInst, elseInst] =
+        none := by
+    simpa [mExpr, mSym] using
+      kernelDefControlEnv_if_typeMismatch_is_bad_init
+        (Metta.instantiate bnd a) thenInst elseInst
+  rw [hType] at hOut
+  simp only [kernelDefControlEnv_if_argMask, List.length_cons, List.length_nil,
+    Nat.reduceAdd, List.zip_cons_cons, List.zip_nil_right,
+    Bool.false_eq_true, if_false, if_true, List.foldl_cons, List.foldl_nil]
+    at hOut
+  have hCondZeroLit :
+      mettaEval kernelDefControlEnv 0 st []
+          (Metta.Atom.expr
+            [Metta.Atom.sym "is-bad", Metta.instantiate bnd a]) =
+        ([(errAtom
+            (Metta.Atom.expr
+              [Metta.Atom.sym "is-bad", Metta.instantiate bnd a])
+            "StackOverflow", [])], st) := by
+    simpa [condInst, mExpr, mSym] using hCondZero
+  rw [hCondZeroLit] at hOut
+  have hErrNeLit :
+      (Metta.Atom.expr
+          [ Metta.Atom.sym "Error"
+          , Metta.Atom.expr
+              [Metta.Atom.sym "is-bad", Metta.instantiate bnd a]
+          , Metta.Atom.sym "StackOverflow" ] !=
+        Metta.Atom.expr
+          [Metta.Atom.sym "is-bad", Metta.instantiate bnd a]) = true := by
+    rfl
+  simp [errAtom, Metta.Atom.isError, hErrNeLit] at hOut
+  rcases hOut with ⟨hOut, _hOutBnd⟩
+  subst out
+  rfl
+
+private theorem mettaEval_kernelDefControlEnv_is_bad_closed_non_error_fuel_one_eq
+    (st : St) (a : Metta.Atom)
+    (hStatic : st.world.selfExtra = [])
+    (hClosed : a.vars = [])
+    (hErr : a.isError = false)
+    (hNonVar : ∀ w, a ≠ Metta.Atom.var w) :
+    let root :=
+      mExpr "unify"
+        [a, mExpr "Bad" [mVar (counterSuffix st.counter "e")],
+          mBool true, mBool false]
+    mettaEval kernelDefControlEnv 1 st [] (mExpr "is-bad" [a]) =
+      ([(errAtom root "StackOverflow", [])],
+        { counter := st.counter + 1, world := st.world }) := by
+  dsimp
+  let root :=
+    mExpr "unify"
+      [a, mExpr "Bad" [mVar (counterSuffix st.counter "e")],
+        mBool true, mBool false]
+  let rootBnd : Metta.Bindings :=
+    (renameBindings (counterSuffix st.counter)
+      [Metta.BindingRel.val "x" a]).reverse
+  let stRoot : St := { counter := st.counter + 1, world := st.world }
+  unfold mettaEval
+  rw [Metta.instantiate_nil (mExpr "is-bad" [a])]
+  have hNoErrIf :
+      (if a.isError = true ∧ (a != a) = true then some (a, a) else none) = none := by
+    cases ha : a.isError <;> simp [ha] at hErr ⊢
+  simp [kernelDefControlEnv_is_bad_typeMismatch st a,
+    kernelDefControlEnv_is_bad_argMask, mExpr, mSym]
+  have hNoErrIfInst :
+      (if (Metta.instantiate [] a).isError = true ∧ (Metta.instantiate [] a != a) = true then
+          some (Metta.instantiate [] a, a)
+        else none) = none := by
+    simpa [Metta.instantiate_nil] using hNoErrIf
+  rw [hNoErrIfInst]
+  have hRoot :=
+    interpretFuel_kernelDefControlEnv_is_bad_root_eq
+      (fuel := 0) st a hStatic hClosed hNonVar
+  have hRootLit :
+      interpretFuel kernelDefControlEnv 1 st
+          [{ stack := atomToStack
+              (Metta.Atom.expr
+                [Metta.Atom.sym "eval",
+                  Metta.Atom.expr [Metta.Atom.sym "is-bad", Metta.instantiate [] a]]) [],
+             bnd := [] }] [] =
+        ([(root, rootBnd)], stRoot) := by
+    simpa [root, rootBnd, stRoot, evalItemNil, mExpr, mSym,
+      Metta.instantiate_nil] using hRoot
+  rw [hRootLit]
+  have hCondClosed :
+      (Metta.Atom.expr [Metta.Atom.sym "is-bad", Metta.instantiate [] a]).vars = [] := by
+    simpa [mExpr, mSym, Metta.instantiate_nil] using
+      (by simp [hClosed, mExpr, mSym, Metta.Atom.vars] :
+        (mExpr "is-bad" [a]).vars = [])
+  have hBind :
+      restrictBnd ((Metta.Atom.expr
+          [Metta.Atom.sym "is-bad", Metta.instantiate [] a]).vars)
+        ((Metta.Bindings.merge [] rootBnd).head?.getD rootBnd) = [] := by
+    simpa [hCondClosed] using
+      restrictBnd_nil_vars
+        ((Metta.Bindings.merge [] rootBnd).head?.getD rootBnd)
+  have hRootNotNR : (root == notReducibleA) = false := by
+    rfl
+  have hRootNotSelf :
+      (root ==
+        Metta.Atom.expr [Metta.Atom.sym "is-bad", Metta.instantiate [] a]) =
+        false := by
+    change
+      Metta.Atom.beq
+        (Metta.Atom.expr
+          [ Metta.Atom.sym "unify"
+          , a
+          , Metta.Atom.expr
+              [Metta.Atom.sym "Bad", Metta.Atom.var (counterSuffix st.counter "e")]
+          , Metta.Atom.gnd (Metta.Ground.bool true)
+          , Metta.Atom.gnd (Metta.Ground.bool false) ])
+        (Metta.Atom.expr [Metta.Atom.sym "is-bad", a]) = false
+    rfl
+  have hReturns :
+      returnsAtom kernelDefControlEnv
+          (Metta.Atom.expr [Metta.Atom.sym "is-bad", Metta.instantiate [] a]) =
+        false := by
+    simpa [mExpr, mSym] using
+      kernelDefControlEnv_is_bad_returnsAtom (Metta.instantiate [] a)
+  have hBindA :
+      restrictBnd a.vars ((Metta.Bindings.merge [] rootBnd).head?.getD rootBnd) =
+        [] := by
+    simpa [hClosed] using
+      restrictBnd_nil_vars ((Metta.Bindings.merge [] rootBnd).head?.getD rootBnd)
+  simp [root, stRoot, hBindA, hRootNotNR, hRootNotSelf, hReturns,
+    Metta.Minimal.mettaEval.eq_1]
+  rw [Metta.instantiate_nil
+    (mExpr "unify"
+      [a, mExpr "Bad" [mVar (counterSuffix st.counter "e")],
+        mBool true, mBool false])]
+  constructor
+  · rfl
+  · exact restrictBnd_empty_merge_empty a.vars
+
+private theorem mettaEval_kernelDefControlEnv_is_bad_closed_non_error_fuel_two_eq
+    (st : St) (a : Metta.Atom)
+    (hStatic : st.world.selfExtra = [])
+    (hClosed : a.vars = [])
+    (hErr : a.isError = false)
+    (hNonVar : ∀ w, a ≠ Metta.Atom.var w) :
+    let root :=
+      mExpr "unify"
+        [a, mExpr "Bad" [mVar (counterSuffix st.counter "e")],
+          mBool true, mBool false]
+    mettaEval kernelDefControlEnv 2 st [] (mExpr "is-bad" [a]) =
+      ([(errAtom (errAtom root "StackOverflow") "StackOverflow", [])],
+        { counter := st.counter + 1, world := st.world }) := by
+  dsimp
+  let root :=
+    mExpr "unify"
+      [a, mExpr "Bad" [mVar (counterSuffix st.counter "e")],
+        mBool true, mBool false]
+  let rootBnd : Metta.Bindings :=
+    (renameBindings (counterSuffix st.counter)
+      [Metta.BindingRel.val "x" a]).reverse
+  let stRoot : St := { counter := st.counter + 1, world := st.world }
+  unfold mettaEval
+  rw [Metta.instantiate_nil (mExpr "is-bad" [a])]
+  have hNoErrIf :
+      (if a.isError = true ∧ (a != a) = true then some (a, a) else none) = none := by
+    cases ha : a.isError <;> simp [ha] at hErr ⊢
+  simp [kernelDefControlEnv_is_bad_typeMismatch st a,
+    kernelDefControlEnv_is_bad_argMask, mExpr, mSym]
+  have hNoErrIfInst :
+      (if (Metta.instantiate [] a).isError = true ∧ (Metta.instantiate [] a != a) = true then
+          some (Metta.instantiate [] a, a)
+        else none) = none := by
+    simpa [Metta.instantiate_nil] using hNoErrIf
+  rw [hNoErrIfInst]
+  have hRoot :=
+    interpretFuel_kernelDefControlEnv_is_bad_root_eq
+      (fuel := 1) st a hStatic hClosed hNonVar
+  have hRootLit :
+      interpretFuel kernelDefControlEnv 2 st
+          [{ stack := atomToStack
+              (Metta.Atom.expr
+                [Metta.Atom.sym "eval",
+                  Metta.Atom.expr [Metta.Atom.sym "is-bad", Metta.instantiate [] a]]) [],
+             bnd := [] }] [] =
+        ([(root, rootBnd)], stRoot) := by
+    simpa [root, rootBnd, stRoot, evalItemNil, mExpr, mSym,
+      Metta.instantiate_nil] using hRoot
+  rw [hRootLit]
+  have hCondClosed :
+      (Metta.Atom.expr [Metta.Atom.sym "is-bad", Metta.instantiate [] a]).vars = [] := by
+    simpa [mExpr, mSym, Metta.instantiate_nil] using
+      (by simp [hClosed, mExpr, mSym, Metta.Atom.vars] :
+        (mExpr "is-bad" [a]).vars = [])
+  have hBind :
+      restrictBnd ((Metta.Atom.expr
+          [Metta.Atom.sym "is-bad", Metta.instantiate [] a]).vars)
+        ((Metta.Bindings.merge [] rootBnd).head?.getD rootBnd) = [] := by
+    simpa [hCondClosed] using
+      restrictBnd_nil_vars
+        ((Metta.Bindings.merge [] rootBnd).head?.getD rootBnd)
+  have hRootNotNR : (root == notReducibleA) = false := by
+    rfl
+  have hRootNotSelf :
+      (root ==
+        Metta.Atom.expr [Metta.Atom.sym "is-bad", Metta.instantiate [] a]) =
+        false := by
+    change
+      Metta.Atom.beq
+        (Metta.Atom.expr
+          [ Metta.Atom.sym "unify"
+          , a
+          , Metta.Atom.expr
+              [Metta.Atom.sym "Bad", Metta.Atom.var (counterSuffix st.counter "e")]
+          , Metta.Atom.gnd (Metta.Ground.bool true)
+          , Metta.Atom.gnd (Metta.Ground.bool false) ])
+        (Metta.Atom.expr [Metta.Atom.sym "is-bad", a]) = false
+    rfl
+  have hReturns :
+      returnsAtom kernelDefControlEnv
+          (Metta.Atom.expr [Metta.Atom.sym "is-bad", Metta.instantiate [] a]) =
+        false := by
+    simpa [mExpr, mSym] using
+      kernelDefControlEnv_is_bad_returnsAtom (Metta.instantiate [] a)
+  have hUnifyNoErr :
+      (([a, mExpr "Bad" [mVar (counterSuffix st.counter "e")],
+          mBool true, mBool false].zip
+        [a, mExpr "Bad" [mVar (counterSuffix st.counter "e")],
+          mBool true, mBool false]).find?
+        (fun ho : Metta.Atom × Metta.Atom => ho.1.isError && ho.1 != ho.2)) =
+        none := by
+    change
+      List.find? (fun ho : Metta.Atom × Metta.Atom => ho.1.isError && ho.1 != ho.2)
+        [(a, a),
+          (mExpr "Bad" [mVar (counterSuffix st.counter "e")],
+            mExpr "Bad" [mVar (counterSuffix st.counter "e")]),
+          (mBool true, mBool true), (mBool false, mBool false)] = none
+    simp [List.find?, hErr, mExpr, mSym, mVar, mBool]
+    simp [Metta.Atom.isError]
+  have hRootEval :
+      mettaEval kernelDefControlEnv 1 stRoot [] root =
+        ([(errAtom (errAtom root "StackOverflow") "StackOverflow", [])],
+          stRoot) := by
+    simpa [root] using
+      mettaEval_kernelDefControlEnv_unify_fuel_one_eq_error_of_no_arg_error
+        stRoot a (mExpr "Bad" [mVar (counterSuffix st.counter "e")])
+        (mBool true) (mBool false) hUnifyNoErr
+  have hBindA :
+      restrictBnd a.vars ((Metta.Bindings.merge [] rootBnd).head?.getD rootBnd) =
+        [] := by
+    simpa [hClosed] using
+      restrictBnd_nil_vars ((Metta.Bindings.merge [] rootBnd).head?.getD rootBnd)
+  simp [root, stRoot, hBindA, hRootNotNR, hRootNotSelf, hReturns]
+  rw [hRootEval]
+  constructor
+  · refine ⟨[], ?_, ?_⟩
+    · rfl
+    · exact restrictBnd_empty_merge_empty a.vars
+  · rfl
+
+private theorem mettaEval_kernelDefControlEnv_if_is_bad_closed_output_isError_fuel_two
+    {st : St} {a thenA elseA out : Metta.Atom}
+    {bnd outBnd : Metta.Bindings}
+    (hWorld : st.world = St.init.world)
+    (hClosed : a.vars = [])
+    (hThenClosed : thenA.vars = [])
+    (hElseClosed : elseA.vars = [])
+    (hErr : a.isError = false)
+    (hNonVar : ∀ w, a ≠ Metta.Atom.var w)
+    (hOut :
+      (out, outBnd) ∈
+        (mettaEval kernelDefControlEnv 2 st bnd
+          (mExpr "if" [mExpr "is-bad" [a], thenA, elseA])).1) :
+    out.isError = true := by
+  let cond := mExpr "is-bad" [a]
+  let target := mExpr "if" [cond, thenA, elseA]
+  let root :=
+    mExpr "unify"
+      [a, mExpr "Bad" [mVar (counterSuffix st.counter "e")],
+        mBool true, mBool false]
+  have hTargetClosed : target.vars = [] := by
+    simp [target, cond, hClosed, hThenClosed, hElseClosed,
+      mExpr, mSym, Metta.Atom.vars]
+  have hTargetInst : Metta.instantiate bnd target = target := by
+    exact instantiate_eq_self_of_vars_nil bnd hTargetClosed
+  have hStatic : st.world.selfExtra = [] := by
+    simpa [hWorld] using (show St.init.world.selfExtra = [] by rfl)
+  have hCond :
+      mettaEval kernelDefControlEnv 1 st [] cond =
+        ([(errAtom root "StackOverflow", [])],
+          { counter := st.counter + 1, world := st.world }) := by
+    simpa [cond, root] using
+      mettaEval_kernelDefControlEnv_is_bad_closed_non_error_fuel_one_eq
+        st a hStatic hClosed hErr hNonVar
+  unfold mettaEval at hOut
+  rw [hTargetInst] at hOut
+  simp only [target, cond, mExpr, mSym] at hOut
+  have hType :
+      typeMismatch kernelDefControlEnv st.world "if" [cond, thenA, elseA] = none := by
+    simpa [cond, hWorld] using
+      kernelDefControlEnv_if_typeMismatch_is_bad_init a thenA elseA
+  have hTypeLit :
+      typeMismatch kernelDefControlEnv st.world "if"
+        [Metta.Atom.expr [Metta.Atom.sym "is-bad", a], thenA, elseA] = none := by
+    simpa [cond, mExpr, mSym] using hType
+  rw [hTypeLit] at hOut
+  simp only [kernelDefControlEnv_if_argMask, List.length_cons, List.length_nil,
+    Nat.reduceAdd, List.zip_cons_cons, List.zip_nil_right, Bool.false_eq_true,
+    if_false, if_true, List.foldl_cons, List.foldl_nil] at hOut
+  have hCondLit :
+      mettaEval kernelDefControlEnv 1 st []
+          (Metta.Atom.expr [Metta.Atom.sym "is-bad", a]) =
+        ([(errAtom root "StackOverflow", [])],
+          { counter := st.counter + 1, world := st.world }) := by
+    simpa [cond, mExpr, mSym] using hCond
+  rw [hCondLit] at hOut
+  have hErrNeCond :
+      (errAtom root "StackOverflow" != cond) = true := by
+    rfl
+  have hErrNeCondLit :
+      (Metta.Atom.expr
+        [ Metta.Atom.sym "Error"
+        , mExpr "unify"
+            [a, mExpr "Bad" [mVar (counterSuffix st.counter "e")],
+              mBool true, mBool false]
+        , Metta.Atom.sym "StackOverflow" ] !=
+        Metta.Atom.expr [Metta.Atom.sym "is-bad", a]) = true := by
+    rfl
+  simp [root, errAtom, Metta.Atom.isError,
+    restrictBnd_empty_merge_empty, hClosed, hThenClosed, hElseClosed,
+    mExpr, mSym, Metta.Atom.vars] at hOut
+  have hFind :
+      List.find?
+          (fun ho : Metta.Atom × Metta.Atom =>
+            (match ho.1 with
+              | Metta.Atom.expr [Metta.Atom.sym "Error", _, _] => true
+              | Metta.Atom.gnd (Metta.Ground.error _) => true
+              | _ => false) && ho.1 != ho.2)
+          [ (Metta.Atom.expr
+                [ Metta.Atom.sym "Error"
+                , Metta.Atom.expr
+                    [ Metta.Atom.sym "unify"
+                    , a
+                    , Metta.Atom.expr
+                        [Metta.Atom.sym "Bad", mVar (counterSuffix st.counter "e")]
+                    , mBool true
+                    , mBool false ]
+                , Metta.Atom.sym "StackOverflow" ],
+              Metta.Atom.expr [Metta.Atom.sym "is-bad", a])
+          , (thenA, thenA)
+          , (elseA, elseA) ] =
+        some
+          (Metta.Atom.expr
+              [ Metta.Atom.sym "Error"
+              , Metta.Atom.expr
+                  [ Metta.Atom.sym "unify"
+                  , a
+                  , Metta.Atom.expr
+                      [Metta.Atom.sym "Bad", mVar (counterSuffix st.counter "e")]
+                  , mBool true
+                  , mBool false ]
+              , Metta.Atom.sym "StackOverflow" ],
+            Metta.Atom.expr [Metta.Atom.sym "is-bad", a]) := by
+    rfl
+  simp only [Metta.instantiate_nil] at hOut
+  change (out, outBnd) ∈
+      ([(Metta.Atom.expr
+            [ Metta.Atom.sym "Error"
+            , Metta.Atom.expr
+                [ Metta.Atom.sym "unify"
+                , a
+                , Metta.Atom.expr
+                    [Metta.Atom.sym "Bad", mVar (counterSuffix st.counter "e")]
+                , mBool true
+                , mBool false ]
+            , Metta.Atom.sym "StackOverflow" ],
+          [])] : List (Metta.Atom × Metta.Bindings)) at hOut
+  rcases List.mem_singleton.mp hOut with hPair
+  cases hPair
+  rfl
+
+private theorem mettaEval_kernelDefControlEnv_if_is_bad_closed_output_isError_fuel_three
+    {st : St} {a thenA elseA out : Metta.Atom}
+    {bnd outBnd : Metta.Bindings}
+    (hWorld : st.world = St.init.world)
+    (hClosed : a.vars = [])
+    (hThenClosed : thenA.vars = [])
+    (hElseClosed : elseA.vars = [])
+    (hErr : a.isError = false)
+    (hNonVar : ∀ w, a ≠ Metta.Atom.var w)
+    (hOut :
+      (out, outBnd) ∈
+        (mettaEval kernelDefControlEnv 3 st bnd
+          (mExpr "if" [mExpr "is-bad" [a], thenA, elseA])).1) :
+    out.isError = true := by
+  let cond := mExpr "is-bad" [a]
+  let target := mExpr "if" [cond, thenA, elseA]
+  let root :=
+    mExpr "unify"
+      [a, mExpr "Bad" [mVar (counterSuffix st.counter "e")],
+        mBool true, mBool false]
+  let condErr := errAtom (errAtom root "StackOverflow") "StackOverflow"
+  have hTargetClosed : target.vars = [] := by
+    simp [target, cond, hClosed, hThenClosed, hElseClosed,
+      mExpr, mSym, Metta.Atom.vars]
+  have hTargetInst : Metta.instantiate bnd target = target := by
+    exact instantiate_eq_self_of_vars_nil bnd hTargetClosed
+  have hStatic : st.world.selfExtra = [] := by
+    simpa [hWorld] using (show St.init.world.selfExtra = [] by rfl)
+  have hCond :
+      mettaEval kernelDefControlEnv 2 st [] cond =
+        ([(condErr, [])],
+          { counter := st.counter + 1, world := st.world }) := by
+    simpa [cond, root, condErr] using
+      mettaEval_kernelDefControlEnv_is_bad_closed_non_error_fuel_two_eq
+        st a hStatic hClosed hErr hNonVar
+  unfold mettaEval at hOut
+  rw [hTargetInst] at hOut
+  simp only [target, cond, mExpr, mSym] at hOut
+  have hType :
+      typeMismatch kernelDefControlEnv st.world "if" [cond, thenA, elseA] = none := by
+    simpa [cond, hWorld] using
+      kernelDefControlEnv_if_typeMismatch_is_bad_init a thenA elseA
+  have hTypeLit :
+      typeMismatch kernelDefControlEnv st.world "if"
+        [Metta.Atom.expr [Metta.Atom.sym "is-bad", a], thenA, elseA] = none := by
+    simpa [cond, mExpr, mSym] using hType
+  rw [hTypeLit] at hOut
+  simp only [kernelDefControlEnv_if_argMask, List.length_cons, List.length_nil,
+    Nat.reduceAdd, List.zip_cons_cons, List.zip_nil_right, Bool.false_eq_true,
+    if_false, if_true, List.foldl_cons, List.foldl_nil] at hOut
+  have hCondLit :
+      mettaEval kernelDefControlEnv 2 st []
+          (Metta.Atom.expr [Metta.Atom.sym "is-bad", a]) =
+        ([(condErr, [])],
+          { counter := st.counter + 1, world := st.world }) := by
+    simpa [cond, mExpr, mSym] using hCond
+  rw [hCondLit] at hOut
+  have hErrNeCond : (condErr != cond) = true := by
+    rfl
+  have hErrNeCondLit :
+      (Metta.Atom.expr
+        [ Metta.Atom.sym "Error"
+        , Metta.Atom.expr
+            [ Metta.Atom.sym "Error"
+            , mExpr "unify"
+                [a, mExpr "Bad" [mVar (counterSuffix st.counter "e")],
+                  mBool true, mBool false]
+            , Metta.Atom.sym "StackOverflow" ]
+        , Metta.Atom.sym "StackOverflow" ] !=
+        Metta.Atom.expr [Metta.Atom.sym "is-bad", a]) = true := by
+    rfl
+  simp [condErr, root, errAtom, Metta.Atom.isError,
+    restrictBnd_empty_merge_empty, hClosed, hThenClosed, hElseClosed,
+    mExpr, mSym, Metta.Atom.vars] at hOut
+  have hFind :
+      List.find?
+          (fun ho : Metta.Atom × Metta.Atom =>
+            (match ho.1 with
+              | Metta.Atom.expr [Metta.Atom.sym "Error", _, _] => true
+              | Metta.Atom.gnd (Metta.Ground.error _) => true
+              | _ => false) && ho.1 != ho.2)
+          [ (Metta.Atom.expr
+                [ Metta.Atom.sym "Error"
+                , Metta.Atom.expr
+                    [ Metta.Atom.sym "Error"
+                    , Metta.Atom.expr
+                        [ Metta.Atom.sym "unify"
+                        , a
+                        , Metta.Atom.expr
+                            [Metta.Atom.sym "Bad", mVar (counterSuffix st.counter "e")]
+                        , mBool true
+                        , mBool false ]
+                    , Metta.Atom.sym "StackOverflow" ]
+                , Metta.Atom.sym "StackOverflow" ],
+              Metta.Atom.expr [Metta.Atom.sym "is-bad", a])
+          , (thenA, thenA)
+          , (elseA, elseA) ] =
+        some
+          (Metta.Atom.expr
+              [ Metta.Atom.sym "Error"
+              , Metta.Atom.expr
+                  [ Metta.Atom.sym "Error"
+                  , Metta.Atom.expr
+                      [ Metta.Atom.sym "unify"
+                      , a
+                      , Metta.Atom.expr
+                          [Metta.Atom.sym "Bad", mVar (counterSuffix st.counter "e")]
+                      , mBool true
+                      , mBool false ]
+                  , Metta.Atom.sym "StackOverflow" ]
+              , Metta.Atom.sym "StackOverflow" ],
+            Metta.Atom.expr [Metta.Atom.sym "is-bad", a]) := by
+    rfl
+  simp only [Metta.instantiate_nil] at hOut
+  change (out, outBnd) ∈
+      ([(Metta.Atom.expr
+            [ Metta.Atom.sym "Error"
+            , Metta.Atom.expr
+                [ Metta.Atom.sym "Error"
+                , Metta.Atom.expr
+                    [ Metta.Atom.sym "unify"
+                    , a
+                    , Metta.Atom.expr
+                        [Metta.Atom.sym "Bad", mVar (counterSuffix st.counter "e")]
+                    , mBool true
+                    , mBool false ]
+                , Metta.Atom.sym "StackOverflow" ]
+            , Metta.Atom.sym "StackOverflow" ],
+          [])] : List (Metta.Atom × Metta.Bindings)) at hOut
+  rcases List.mem_singleton.mp hOut with hPair
+  cases hPair
+  rfl
+
+private theorem mettaEval_kernelDefControlEnv_conv_tail_true_pair_fuel_lt_five_false_keyed_ambient
+    {fuel : Nat} {st : St} {binder : String}
+    {ambient : Metta.Bindings} {nx ny : Metta.Atom}
+    {outBnd : Metta.Bindings}
+    (hFuel : fuel < 5)
+    (hWorld : st.world = St.init.world)
+    (hAmbientClosed : ClosedValueBindings ambient)
+    (hAmbientKeys :
+      ∀ x, x ∈ bindingValueKeys ambient → x = binder)
+    (hFreshET :
+      ∀ {v : String}, v = "e" ∨ v = "t" →
+        counterSuffix (st.counter + 2) v ≠ binder)
+    (hNxVars : nx.vars = [])
+    (hNyVars : ny.vars = [])
+    (hNxNoErr : nx.isError = false)
+    (hNyNoErr : ny.isError = false)
+    (hNxSelf : (nx == nx) = true)
+    (hNxNotVar : ∀ w, nx ≠ Metta.Atom.var w)
+    (hNyNotVar : ∀ w, ny ≠ Metta.Atom.var w)
+    (hNxNotBad :
+      ∀ badVar, Metta.matchAtoms nx (mExpr "Bad" [mVar badVar]) = [])
+    (hmem :
+      (mBool true, outBnd) ∈
+        (mettaEval kernelDefControlEnv fuel st ambient
+          (convReadoutAfterNxNy nx ny)).1) :
+    False := by
+  let cond1 := mExpr "is-bad" [nx]
+  let cond2 := mExpr "is-bad" [ny]
+  let eqA := mExpr "==" [nx, ny]
+  let else1 := mExpr "if" [cond2, mBool false, eqA]
+  have hElse1Closed : else1.vars = [] := by
+    simp [else1, cond2, eqA, hNxVars, hNyVars, mExpr, mSym,
+      mBool, Metta.Atom.vars]
+  have hEqAClosed : eqA.vars = [] := by
+    simp [eqA, hNxVars, hNyVars, mExpr, mSym, Metta.Atom.vars]
+  have hCases :
+      fuel = 0 ∨ fuel = 1 ∨ fuel = 2 ∨ fuel = 3 ∨ fuel = 4 := by
+    omega
+  rcases hCases with rfl | rfl | rfl | rfl | rfl
+  · exact mettaEval_zero_true_pair_false hmem
+  · have hErr :=
+      mettaEval_kernelDefControlEnv_if_is_bad_output_isError_fuel_one
+        (st := st) (a := nx) (thenA := mBool false) (elseA := else1)
+        (out := mBool true) (bnd := ambient) (outBnd := outBnd)
+        hWorld
+        (by
+          simpa [convReadoutAfterNxNy, cond1, cond2, else1, eqA]
+            using hmem)
+    simp [mBool, Metta.Atom.isError] at hErr
+  · have hErr :=
+      mettaEval_kernelDefControlEnv_if_is_bad_closed_output_isError_fuel_two
+        (st := st) (a := nx) (thenA := mBool false) (elseA := else1)
+        (out := mBool true) (bnd := ambient) (outBnd := outBnd)
+        hWorld hNxVars (by simp [mBool, Metta.Atom.vars])
+        hElse1Closed hNxNoErr hNxNotVar
+        (by
+          simpa [convReadoutAfterNxNy, cond1, cond2, else1, eqA]
+            using hmem)
+    simp [mBool, Metta.Atom.isError] at hErr
+  · have hErr :=
+      mettaEval_kernelDefControlEnv_if_is_bad_closed_output_isError_fuel_three
+        (st := st) (a := nx) (thenA := mBool false) (elseA := else1)
+        (out := mBool true) (bnd := ambient) (outBnd := outBnd)
+        hWorld hNxVars (by simp [mBool, Metta.Atom.vars])
+        hElse1Closed hNxNoErr hNxNotVar
+        (by
+          simpa [convReadoutAfterNxNy, cond1, cond2, else1, eqA]
+            using hmem)
+    simp [mBool, Metta.Atom.isError] at hErr
+  · let stCond1 : St := { counter := st.counter + 1, world := st.world }
+    let stRoot1 : St := { counter := st.counter + 3, world := st.world }
+    let rootBnd1 : Metta.Bindings :=
+      (renameBindings (counterSuffix (st.counter + 2))
+        [Metta.BindingRel.val "e" else1,
+         Metta.BindingRel.val "t" (mBool false)]).reverse ++ ambient
+    have hStatic : st.world.selfExtra = [] := by
+      simpa [hWorld] using (show St.init.world.selfExtra = [] by rfl)
+    have hTargetClosed :
+        (convReadoutAfterNxNy nx ny).vars = [] := by
+      simp [convReadoutAfterNxNy, hNxVars, hNyVars, mExpr, mSym,
+        mBool, Metta.Atom.vars]
+    have hInstTarget :
+        Metta.instantiate ambient (convReadoutAfterNxNy nx ny) =
+          convReadoutAfterNxNy nx ny := by
+      exact instantiate_eq_self_of_vars_nil ambient hTargetClosed
+    have hCond1 :
+        mettaEval kernelDefControlEnv 3 st [] cond1 =
+          ([(mBool false, [])], stCond1) := by
+      have hmatch :
+          Metta.matchAtoms nx
+            (mExpr "Bad" [mVar (counterSuffix st.counter "e")]) = [] :=
+        hNxNotBad (counterSuffix st.counter "e")
+      simpa [cond1, stCond1, Nat.add_assoc] using
+        mettaEval_kernelDefControlEnv_is_bad_false_eq
+          (fuel := 0) (st := st) (a := nx)
+          hStatic hNxVars hNxNoErr hNxSelf hNxNotVar hmatch
+    have hRoot1 :
+        interpretFuel kernelDefControlEnv (3 + 1) stCond1
+            [{ stack := atomToStack
+                (Metta.Atom.expr
+                  [ Metta.Atom.sym "eval"
+                  , mExpr "if" [mBool false, mBool false, else1] ]) [],
+               bnd := ambient }] [] =
+          ([(else1, rootBnd1)], stRoot1) := by
+      have hStaticCond : stCond1.world.selfExtra = [] := by
+        simpa [stCond1] using hStatic
+      have hElseNonVar : ∀ w, else1 ≠ Metta.Atom.var w := by
+        intro w
+        simp [else1, mExpr, mSym]
+      have hElseNotFunction : isFunctionResult else1 = false := by
+        simp [else1, cond2, eqA, isFunctionResult, mExpr, mSym]
+      have hFreshETCond :
+          ∀ {v : String}, v = "e" ∨ v = "t" →
+            counterSuffix (stCond1.counter + 1) v ≠ binder := by
+        intro v hv
+        simpa [stCond1, Nat.add_assoc] using hFreshET (v := v) hv
+      simpa [stCond1, stRoot1, rootBnd1, else1, cond2, eqA,
+        Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using
+        interpretFuel_kernelDefControlEnv_if_false_bool_root_eq_with_keyed_ambient
+          (fuel := 3) (st := stCond1)
+          binder else1 ambient hStaticCond hElse1Closed hElseNonVar
+          hElseNotFunction hAmbientClosed hAmbientKeys hFreshETCond
+    have hType1 :
+        typeMismatch kernelDefControlEnv st.world "if"
+          [cond1, mBool false, else1] = none := by
+      simpa [cond1, cond2, else1, eqA, hWorld] using
+        kernelDefControlEnv_if_typeMismatch_is_bad_init nx (mBool false) else1
+    have hNoErr1 :
+        (([mBool false, mBool false, else1].zip
+            [cond1, mBool false, else1]).find?
+          (fun ho : Metta.Atom × Metta.Atom =>
+            ho.1.isError && ho.1 != ho.2)) = none := by
+      simp [cond1, cond2, else1, eqA, mExpr, mSym, mBool,
+        Metta.Atom.isError]
+    have hRootNotNR1 : (else1 == notReducibleA) = false := by
+      change Metta.Atom.beq else1 notReducibleA = false
+      simp [else1, cond2, eqA, notReducibleA, mExpr, mSym, mBool,
+        Metta.Atom.beq]
+    have hRootNotSelf1 :
+        (else1 == mExpr "if" [mBool false, mBool false, else1]) = false := by
+      change Metta.Atom.beq else1
+        (mExpr "if" [mBool false, mBool false, else1]) = false
+      simp [else1, cond2, eqA, mExpr, mSym, mBool,
+        Metta.Atom.beq, Metta.Atom.beqList]
+    rcases
+        mettaEval_ternary_expr_pair_mem_implies_root_eval_mem_of_instantiated_eval_quoted_quoted_and_root_eval_eq_bnd
+          (env := kernelDefControlEnv) (fuel := 3)
+          (st := st) (stCond := stCond1) (stRoot := stRoot1)
+          (bnd := ambient) (op := "if")
+          (cond := cond1) (thenA := mBool false) (elseA := else1)
+          (cond' := cond1) (thenA' := mBool false) (elseA' := else1)
+          (condEval := mBool false) (root := else1) (final := mBool true)
+          (rootBnd := rootBnd1) (outBnd := outBnd)
+          (by
+            simpa [convReadoutAfterNxNy, cond1, cond2, else1, eqA,
+              mExpr, mSym] using hInstTarget)
+          hCond1 hType1 kernelDefControlEnv_if_argMask hNoErr1
+          (by
+            simpa [evalItemNil, mExpr, mSym] using hRoot1)
+          hRootNotNR1 hRootNotSelf1
+          (kernelDefControlEnv_if_returnsAtom (mBool false) (mBool false) else1)
+          (by
+            simpa [convReadoutAfterNxNy, cond1, cond2, else1, eqA,
+              mExpr, mSym]
+              using hmem) with
+      ⟨midBnd, hMid⟩
+    have hQvars1 :
+        (([cond1, mBool false, else1]).flatMap Metta.Atom.vars) = [] := by
+      simp [cond1, cond2, else1, eqA, hNxVars, hNyVars,
+        mExpr, mSym, mBool, Metta.Atom.vars]
+    have hRestrict1 :
+        restrictBnd (([cond1, mBool false, else1]).flatMap Metta.Atom.vars)
+            ((Metta.Bindings.merge [] rootBnd1).head?.getD rootBnd1) = [] := by
+      simpa [hQvars1] using
+        restrictBnd_nil_vars
+          ((Metta.Bindings.merge [] rootBnd1).head?.getD rootBnd1)
+    have hMidNil :
+        (mBool true, midBnd) ∈
+          (mettaEval kernelDefControlEnv 3 stRoot1 [] else1).1 := by
+      rw [hRestrict1] at hMid
+      exact hMid
+    have hWorldRoot1 : stRoot1.world = St.init.world := by
+      simpa [stRoot1] using hWorld
+    have hErr :=
+      mettaEval_kernelDefControlEnv_if_is_bad_closed_output_isError_fuel_three
+        (st := stRoot1) (a := ny) (thenA := mBool false)
+        (elseA := eqA) (out := mBool true) (bnd := [])
+        (outBnd := midBnd)
+        hWorldRoot1 hNyVars (by simp [mBool, Metta.Atom.vars])
+        hEqAClosed hNyNoErr hNyNotVar
+        (by simpa [else1, cond2, eqA] using hMidNil)
+    simp [mBool, Metta.Atom.isError] at hErr
+
+private theorem mettaEval_kernelDefControlEnv_conv_tail_true_pair_fuel_lt_four_false
+    {fuel : Nat} {st : St}
+    {ambient : Metta.Bindings} {nx ny : Metta.Atom}
+    {outBnd : Metta.Bindings}
+    (hFuel : fuel < 4)
+    (hWorld : st.world = St.init.world)
+    (hNxVars : nx.vars = [])
+    (hNyVars : ny.vars = [])
+    (hNxNoErr : nx.isError = false)
+    (hNxNotVar : ∀ w, nx ≠ Metta.Atom.var w)
+    (hmem :
+      (mBool true, outBnd) ∈
+        (mettaEval kernelDefControlEnv fuel st ambient
+          (convReadoutAfterNxNy nx ny)).1) :
+    False := by
+  let cond1 := mExpr "is-bad" [nx]
+  let cond2 := mExpr "is-bad" [ny]
+  let eqA := mExpr "==" [nx, ny]
+  let else1 := mExpr "if" [cond2, mBool false, eqA]
+  have hElse1Closed : else1.vars = [] := by
+    simp [else1, cond2, eqA, hNxVars, hNyVars, mExpr, mSym,
+      mBool, Metta.Atom.vars]
+  have hCases :
+      fuel = 0 ∨ fuel = 1 ∨ fuel = 2 ∨ fuel = 3 := by
+    omega
+  rcases hCases with rfl | rfl | rfl | rfl
+  · exact mettaEval_zero_true_pair_false hmem
+  · have hErr :=
+      mettaEval_kernelDefControlEnv_if_is_bad_output_isError_fuel_one
+        (st := st) (a := nx) (thenA := mBool false) (elseA := else1)
+        (out := mBool true) (bnd := ambient) (outBnd := outBnd)
+        hWorld
+        (by
+          simpa [convReadoutAfterNxNy, cond1, cond2, else1, eqA]
+            using hmem)
+    simp [mBool, Metta.Atom.isError] at hErr
+  · have hErr :=
+      mettaEval_kernelDefControlEnv_if_is_bad_closed_output_isError_fuel_two
+        (st := st) (a := nx) (thenA := mBool false) (elseA := else1)
+        (out := mBool true) (bnd := ambient) (outBnd := outBnd)
+        hWorld hNxVars (by simp [mBool, Metta.Atom.vars])
+        hElse1Closed hNxNoErr hNxNotVar
+        (by
+          simpa [convReadoutAfterNxNy, cond1, cond2, else1, eqA]
+            using hmem)
+    simp [mBool, Metta.Atom.isError] at hErr
+  · have hErr :=
+      mettaEval_kernelDefControlEnv_if_is_bad_closed_output_isError_fuel_three
+        (st := st) (a := nx) (thenA := mBool false) (elseA := else1)
+        (out := mBool true) (bnd := ambient) (outBnd := outBnd)
+        hWorld hNxVars (by simp [mBool, Metta.Atom.vars])
+        hElse1Closed hNxNoErr hNxNotVar
+        (by
+          simpa [convReadoutAfterNxNy, cond1, cond2, else1, eqA]
+            using hmem)
+    simp [mBool, Metta.Atom.isError] at hErr
+
+private theorem mettaEval_kernelDefControlEnv_conv_tail_true_pair_fuel_lt_two_false
+    {fuel : Nat} {st : St}
+    {ambient : Metta.Bindings} {nx ny : Metta.Atom}
+    {outBnd : Metta.Bindings}
+    (hFuel : fuel < 2)
+    (hWorld : st.world = St.init.world)
+    (hmem :
+      (mBool true, outBnd) ∈
+        (mettaEval kernelDefControlEnv fuel st ambient
+          (convReadoutAfterNxNy nx ny)).1) :
+    False := by
+  let cond1 := mExpr "is-bad" [nx]
+  let cond2 := mExpr "is-bad" [ny]
+  let eqA := mExpr "==" [nx, ny]
+  let else1 := mExpr "if" [cond2, mBool false, eqA]
+  have hCases : fuel = 0 ∨ fuel = 1 := by
+    omega
+  rcases hCases with rfl | rfl
+  · exact mettaEval_zero_true_pair_false hmem
+  · have hErr :=
+      mettaEval_kernelDefControlEnv_if_is_bad_output_isError_fuel_one
+        (st := st) (a := nx) (thenA := mBool false) (elseA := else1)
+        (out := mBool true) (bnd := ambient) (outBnd := outBnd)
+        hWorld
+        (by
+          simpa [convReadoutAfterNxNy, cond1, cond2, else1, eqA]
+            using hmem)
+    simp [mBool, Metta.Atom.isError] at hErr
+
+private theorem convSoundCicStage3RawArtifactSig_namedReadout_runFuel_five_to_seven_false_of_obligations_geOne
+    (hNamedObligations :
+      ConvSoundCicStage3RawArtifactSigNamedReadoutObligations)
+    (hExtract :
+      ConvSoundCicStage3RawArtifactSigCanonicalNfValueRuntimeExtractionGeOneNonError)
+    {runFuel : Nat} {rawLeft rawRight : DIndGArtifactTerm}
+    {left right : PureTm 0} {outBnd : Metta.Bindings}
+    (hGe5 : 5 ≤ runFuel)
+    (hLt8 : runFuel < 8)
+    (hLeft :
+      DIndGArtifactTermTranslates
+        cicStage3RawArtifactSig.nameTranslates 0 rawLeft left)
+    (hRight :
+      DIndGArtifactTermTranslates
+        cicStage3RawArtifactSig.nameTranslates 0 rawRight right)
+    (hRun :
+      let nxBinder := counterSuffix St.init.counter "nx"
+      let nyBinder := counterSuffix St.init.counter "ny"
+      let stNamed : St := { counter := St.init.counter + 1, world := St.init.world }
+      (mBool true, outBnd) ∈
+        (mettaEval kernelDefControlEnv runFuel stNamed []
+          (convReadoutNamed nxBinder nyBinder
+            cicStage3RawArtifactSig rawLeft rawRight)).1) :
+    False := by
+  let nxBinder := counterSuffix St.init.counter "nx"
+  let nyBinder := counterSuffix St.init.counter "ny"
+  let stNamed : St := { counter := St.init.counter + 1, world := St.init.world }
+  have hCases : runFuel = 5 ∨ runFuel = 6 ∨ runFuel = 7 := by
+    omega
+  rcases hCases with rfl | rfl | rfl
+  · rcases hNamedObligations 0 hLeft hRight with ⟨hStatic, hWorld⟩
+    rcases
+        mettaEval_kernelDefControlEnv_convReadoutNamed_true_pair_implies_left_right_nf_and_tail_value_shape_root_exists_of_world_obligations_with_no_errors
+          (fuel := 0) (st := stNamed)
+          (nxBinder := nxBinder) (nyBinder := nyBinder)
+          (sig := cicStage3RawArtifactSig)
+          (rawLeft := rawLeft) (rawRight := rawRight)
+          (outBnd := outBnd) hStatic hWorld
+          (by
+            simpa [nxBinder, nyBinder, stNamed, Nat.add_assoc] using hRun) with
+      ⟨nx, _nxBnd, ny, _nyBnd, _stBefore, tailStBefore,
+        tailValueEnv, _tailTemplateEnv, _tailPartBnd, _tailStPart,
+        _tailPairs, _tailStRoot, _tailRoot, _tailRootBnd, _tailRecBnd,
+        _hWorldBefore, hWorldTailBefore, _hLeftValue, _hNxNoErr,
+        _hRightValue, _hNyNoErr, _hTailShape, _hTailPartBnd,
+        _hTailTrace, _hTailRootMem, _hTailRootEq, _hTailInst,
+        _hTailMerge, _hTailLoop, _hTailTemplateEq, _hTailRec,
+        hTailValue⟩
+    rcases List.mem_map.mp hTailValue with ⟨⟨a, tailBnd⟩, hTailPair, ha⟩
+    dsimp at ha
+    subst a
+    exact
+      mettaEval_kernelDefControlEnv_conv_tail_true_pair_fuel_lt_two_false
+        (fuel := 1) (st := tailStBefore) (ambient := tailValueEnv)
+        (nx := nx) (ny := ny) (outBnd := tailBnd)
+        (by omega) hWorldTailBefore
+        (by simpa using hTailPair)
+  · rcases hNamedObligations 1 hLeft hRight with ⟨hStatic, hWorld⟩
+    rcases
+        mettaEval_kernelDefControlEnv_convReadoutNamed_true_pair_implies_left_right_nf_and_tail_value_shape_root_exists_of_world_obligations_with_no_errors
+          (fuel := 1) (st := stNamed)
+          (nxBinder := nxBinder) (nyBinder := nyBinder)
+          (sig := cicStage3RawArtifactSig)
+          (rawLeft := rawLeft) (rawRight := rawRight)
+          (outBnd := outBnd) hStatic hWorld
+          (by
+            simpa [nxBinder, nyBinder, stNamed, Nat.add_assoc] using hRun) with
+      ⟨nx, _nxBnd, ny, _nyBnd, stBefore, tailStBefore,
+        tailValueEnv, _tailTemplateEnv, _tailPartBnd, _tailStPart,
+        _tailPairs, _tailStRoot, _tailRoot, _tailRootBnd, _tailRecBnd,
+        _hWorldBefore, hWorldTailBefore, hLeftValue, hNxNoErr,
+        hRightValue, hNyNoErr, _hTailShape, _hTailPartBnd,
+        _hTailTrace, _hTailRootMem, _hTailRootEq, _hTailInst,
+        _hTailMerge, _hTailLoop, _hTailTemplateEq, _hTailRec,
+        hTailValue⟩
+    have hLeftReadout :
+        CicStage3RawArtifactSigPrimaryNfRuntimeReadout rawLeft nx :=
+      hExtract
+        (fuel := ((1 + 2) + 2)) (st := stNamed)
+        (raw := rawLeft) (term := left) (out := nx)
+        (by omega) (by simp [stNamed]) hLeft
+        (mettaEval_value_mem_of_pair_mem hLeftValue) hNxNoErr
+    have hRightReadout :
+        CicStage3RawArtifactSigPrimaryNfRuntimeReadout rawRight ny :=
+      hExtract
+        (fuel := (1 + 2)) (st := stBefore)
+        (raw := rawRight) (term := right) (out := ny)
+        (by omega) (by simpa using _hWorldBefore) hRight
+        (mettaEval_value_mem_of_pair_mem hRightValue) hNyNoErr
+    rcases List.mem_map.mp hTailValue with ⟨⟨a, tailBnd⟩, hTailPair, ha⟩
+    dsimp at ha
+    subst a
+    exact
+      mettaEval_kernelDefControlEnv_conv_tail_true_pair_fuel_lt_four_false
+        (fuel := 2) (st := tailStBefore) (ambient := tailValueEnv)
+        (nx := nx) (ny := ny) (outBnd := tailBnd)
+        (by omega) hWorldTailBefore
+        (CicStage3RawArtifactSigPrimaryNfRuntimeReadout_vars_nil
+          hLeftReadout)
+        (CicStage3RawArtifactSigPrimaryNfRuntimeReadout_vars_nil
+          hRightReadout)
+        (CicStage3RawArtifactSigPrimaryNfRuntimeReadout_isError_false
+          hLeftReadout)
+        (CicStage3RawArtifactSigPrimaryNfRuntimeReadout_not_var
+          hLeftReadout)
+        (by simpa using hTailPair)
+  · rcases hNamedObligations 2 hLeft hRight with ⟨hStatic, hWorld⟩
+    rcases
+        mettaEval_kernelDefControlEnv_convReadoutNamed_true_pair_implies_left_right_nf_and_tail_value_shape_root_exists_of_world_obligations_with_no_errors
+          (fuel := 2) (st := stNamed)
+          (nxBinder := nxBinder) (nyBinder := nyBinder)
+          (sig := cicStage3RawArtifactSig)
+          (rawLeft := rawLeft) (rawRight := rawRight)
+          (outBnd := outBnd) hStatic hWorld
+          (by
+            simpa [nxBinder, nyBinder, stNamed, Nat.add_assoc] using hRun) with
+      ⟨nx, _nxBnd, ny, _nyBnd, stBefore, tailStBefore,
+        tailValueEnv, _tailTemplateEnv, _tailPartBnd, _tailStPart,
+        _tailPairs, _tailStRoot, _tailRoot, _tailRootBnd, _tailRecBnd,
+        _hWorldBefore, hWorldTailBefore, hLeftValue, hNxNoErr,
+        hRightValue, hNyNoErr, _hTailShape, _hTailPartBnd,
+        _hTailTrace, _hTailRootMem, _hTailRootEq, _hTailInst,
+        _hTailMerge, _hTailLoop, _hTailTemplateEq, _hTailRec,
+        hTailValue⟩
+    have hLeftReadout :
+        CicStage3RawArtifactSigPrimaryNfRuntimeReadout rawLeft nx :=
+      hExtract
+        (fuel := ((2 + 2) + 2)) (st := stNamed)
+        (raw := rawLeft) (term := left) (out := nx)
+        (by omega) (by simp [stNamed]) hLeft
+        (mettaEval_value_mem_of_pair_mem hLeftValue) hNxNoErr
+    have hRightReadout :
+        CicStage3RawArtifactSigPrimaryNfRuntimeReadout rawRight ny :=
+      hExtract
+        (fuel := (2 + 2)) (st := stBefore)
+        (raw := rawRight) (term := right) (out := ny)
+        (by omega) (by simpa using _hWorldBefore) hRight
+        (mettaEval_value_mem_of_pair_mem hRightValue) hNyNoErr
+    rcases List.mem_map.mp hTailValue with ⟨⟨a, tailBnd⟩, hTailPair, ha⟩
+    dsimp at ha
+    subst a
+    exact
+      mettaEval_kernelDefControlEnv_conv_tail_true_pair_fuel_lt_four_false
+        (fuel := 3) (st := tailStBefore) (ambient := tailValueEnv)
+        (nx := nx) (ny := ny) (outBnd := tailBnd)
+        (by omega) hWorldTailBefore
+        (CicStage3RawArtifactSigPrimaryNfRuntimeReadout_vars_nil
+          hLeftReadout)
+        (CicStage3RawArtifactSigPrimaryNfRuntimeReadout_vars_nil
+          hRightReadout)
+        (CicStage3RawArtifactSigPrimaryNfRuntimeReadout_isError_false
+          hLeftReadout)
+        (CicStage3RawArtifactSigPrimaryNfRuntimeReadout_not_var
+          hLeftReadout)
+        (by simpa using hTailPair)
+
+private theorem mettaEval_kernelDefControlEnv_embedded_unify_var_success_pair_implies_template_pair
+    (fuel : Nat) (st : St)
+    (binder : String) (atom template out : Metta.Atom)
+    {outBnd : Metta.Bindings}
+    (hNoErr :
+      (([atom, mVar binder, template, mSym "Empty"].zip
+          [atom, mVar binder, template, mSym "Empty"]).find?
+        (fun ho => ho.1.isError && ho.1 != ho.2)) = none)
+    (hAtomNonVar : ∀ w, atom ≠ Metta.Atom.var w)
+    (hNoLoop : binder ∉ atom.vars)
+    (hRootNotNotReducible :
+      (Metta.instantiate [Metta.BindingRel.val binder atom]
+        (Metta.instantiate [Metta.BindingRel.val binder atom] template) == notReducibleA) = false)
+    (hRootNotSelf :
+      (Metta.instantiate [Metta.BindingRel.val binder atom]
+        (Metta.instantiate [Metta.BindingRel.val binder atom] template) ==
+          mExpr "unify" [atom, mVar binder, template, mSym "Empty"]) = false)
+    (hmem :
+      (out, outBnd) ∈
+        (mettaEval kernelDefControlEnv (fuel + 2) st []
+          (mExpr "unify" [atom, mVar binder, template, mSym "Empty"])).1) :
+    ∃ templateBnd,
+      (out, templateBnd) ∈
+        (mettaEval kernelDefControlEnv (fuel + 1) st
+          (restrictBnd (([atom, mVar binder, template, mSym "Empty"]).flatMap Atom.vars)
+            ((Metta.Bindings.merge [] [Metta.BindingRel.val binder atom]).head?.getD
+              [Metta.BindingRel.val binder atom]))
+          (Metta.instantiate [Metta.BindingRel.val binder atom]
+            (Metta.instantiate [Metta.BindingRel.val binder atom] template))).1 := by
+  unfold mettaEval at hmem
+  rw [instantiate_nil (mExpr "unify" [atom, mVar binder, template, mSym "Empty"])] at hmem
+  simp only [mExpr, mSym] at hmem
+  rw [kernelDefControlEnv_unify_typeMismatch st atom (mVar binder) template (Atom.sym "Empty")]
+    at hmem
+  simp [kernelDefControlEnv_unify_argMask] at hmem
+  have hNoErrInst :
+      List.find? (fun ho : Atom × Atom => ho.1.isError && ho.1 != ho.2)
+        [(Metta.instantiate [] atom, atom),
+          (Metta.instantiate [] (mVar binder), mVar binder),
+          (Metta.instantiate [] template, template),
+          (Metta.instantiate [] (Atom.sym "Empty"), Atom.sym "Empty")] = none := by
+    simpa [mSym, Metta.instantiate_nil] using hNoErr
+  rw [hNoErrInst] at hmem
+  have hRoot :
+      interpretFuel kernelDefControlEnv (fuel + 1 + 1) st
+          [{ stack := atomToStack
+              (Atom.expr [Atom.sym "eval",
+                Atom.expr [Atom.sym "unify", Metta.instantiate [] atom,
+                  Metta.instantiate [] (mVar binder), Metta.instantiate [] template,
+                  Metta.instantiate [] (Atom.sym "Empty")]]) [],
+             bnd := [] }] [] =
+        ([(Metta.instantiate [Metta.BindingRel.val binder atom]
+            (Metta.instantiate [Metta.BindingRel.val binder atom] template),
+            [Metta.BindingRel.val binder atom])],
+          st) := by
+    simpa [evalItemNil, mExpr, mSym, Metta.instantiate_nil, Nat.add_assoc] using
+      interpretFuel_eval_embedded_unify_var_success_eq_of_gt
+        (env := kernelDefControlEnv) (fuel := fuel) (st := st)
+        (binder := binder) (atom := atom) (template := template)
+        (by rfl) hAtomNonVar hNoLoop
+  rw [hRoot] at hmem
+  have hReturns :
+      returnsAtom kernelDefControlEnv
+        (Atom.expr [Atom.sym "unify", Metta.instantiate [] atom,
+          Metta.instantiate [] (mVar binder), Metta.instantiate [] template,
+          Metta.instantiate [] (Atom.sym "Empty")]) = false := by
+    simpa [mExpr, mSym, Metta.instantiate_nil] using
+      kernelDefControlEnv_unify_returnsAtom atom (mVar binder) template (mSym "Empty")
+  have hRootNotSelf' :
+      (Metta.instantiate [Metta.BindingRel.val binder atom]
+          (Metta.instantiate [Metta.BindingRel.val binder atom] template) ==
+        Atom.expr [Atom.sym "unify", Metta.instantiate [] atom,
+          Metta.instantiate [] (mVar binder), Metta.instantiate [] template,
+          Metta.instantiate [] (Atom.sym "Empty")]) = false := by
+    simpa [mExpr, mSym, Metta.instantiate_nil] using hRootNotSelf
+  simp [hRootNotNotReducible, hRootNotSelf', hReturns] at hmem
+  rcases hmem with ⟨templateBnd, hTemplate, _hOut⟩
+  exact ⟨templateBnd, by simpa [List.flatMap, mSym] using hTemplate⟩
+
+private theorem mettaEval_kernelDefControlEnv_primary_nf_def_unify_body_output_isError_fuel_two
+    {st : St} {name : DeclName} {binder : String}
+    {out : Metta.Atom} {outBnd : Metta.Bindings}
+    (hWorld : st.world = St.init.world)
+    (hOut :
+      (out, outBnd) ∈
+        (mettaEval kernelDefControlEnv 2 st []
+          (mExpr "unify"
+            [ defBodyOfQueryAtom
+                (sigAtom cicStage3RawArtifactSig)
+                (declNameAtom name)
+            , mVar binder
+            , mExpr "if"
+                [ mExpr "is-bad" [mVar binder]
+                , mExpr "Bad" [mSym "unknown-definition"]
+                , mExpr "nf" [sigAtom cicStage3RawArtifactSig, mVar binder] ]
+            , mSym "Empty" ])).1) :
+    out.isError = true := by
+  let bodyAtom :=
+    defBodyOfQueryAtom
+      (sigAtom cicStage3RawArtifactSig)
+      (declNameAtom name)
+  let template :=
+    mExpr "if"
+      [ mExpr "is-bad" [mVar binder]
+      , mExpr "Bad" [mSym "unknown-definition"]
+      , mExpr "nf" [sigAtom cicStage3RawArtifactSig, mVar binder] ]
+  let thenA := mExpr "Bad" [mSym "unknown-definition"]
+  let elseA :=
+    cicStage3CanonicalDefnStuckReadoutForSig
+      cicStage3RawArtifactSig name
+  have hNoErr :
+      (([bodyAtom, mVar binder, template, mSym "Empty"].zip
+          [bodyAtom, mVar binder, template, mSym "Empty"]).find?
+        (fun ho : Metta.Atom × Metta.Atom => ho.1.isError && ho.1 != ho.2)) = none := by
+    have hBodyNoErr : bodyAtom.isError = false := by
+      simp [bodyAtom, defBodyOfQueryAtom, mExpr, mSym, Metta.Atom.isError]
+    have hVarNoErr : (mVar binder).isError = false := by
+      rfl
+    have hTemplateNoErr : template.isError = false := by
+      simp [template, mExpr, mSym, Metta.Atom.isError]
+    have hEmptyNoErr : (mSym "Empty").isError = false := by
+      rfl
+    simp [List.find?, hBodyNoErr, hVarNoErr, hTemplateNoErr, hEmptyNoErr]
+  have hAtomNonVar : ∀ w, bodyAtom ≠ Metta.Atom.var w := by
+    intro w
+    simp [bodyAtom, defBodyOfQueryAtom, mExpr, mSym]
+  have hNoLoop : binder ∉ bodyAtom.vars := by
+    simp [bodyAtom, defBodyOfQueryAtom, sigAtom_vars_nil,
+      declNameAtom_vars_nil, mExpr, mSym, Metta.Atom.vars]
+  have htmpl :=
+    leattaDefControlPrimary_nfDefIfTemplate_instantiated_eq_named
+      name binder
+  dsimp at htmpl
+  have hRootNotNR :
+      (Metta.instantiate [Metta.BindingRel.val binder bodyAtom]
+        (Metta.instantiate [Metta.BindingRel.val binder bodyAtom] template) ==
+          notReducibleA) = false := by
+    rw [htmpl]
+    rfl
+  have hRootNotSelf :
+      (Metta.instantiate [Metta.BindingRel.val binder bodyAtom]
+        (Metta.instantiate [Metta.BindingRel.val binder bodyAtom] template) ==
+          mExpr "unify" [bodyAtom, mVar binder, template, mSym "Empty"]) = false := by
+    rw [htmpl]
+    rfl
+  rcases
+      mettaEval_kernelDefControlEnv_embedded_unify_var_success_pair_implies_template_pair
+        (fuel := 0) (st := st) (binder := binder)
+        (atom := bodyAtom) (template := template) (out := out)
+        (outBnd := outBnd)
+        hNoErr hAtomNonVar hNoLoop hRootNotNR hRootNotSelf
+        (by
+          simpa [bodyAtom, template, mExpr, mSym, mVar] using hOut) with
+    ⟨templateBnd, hTemplate⟩
+  rw [htmpl] at hTemplate
+  exact
+    mettaEval_kernelDefControlEnv_if_is_bad_output_isError_fuel_one
+      (st := st) (a := bodyAtom) (thenA := thenA) (elseA := elseA)
+      (out := out) (outBnd := templateBnd) hWorld
+      (by simpa [thenA, elseA, bodyAtom, template, mExpr, mSym] using hTemplate)
+
+private theorem mettaEval_kernelDefControlEnv_primary_nf_def_unify_body_output_isError_fuel_three
+    {st : St} {name : DeclName} {binder : String}
+    {out : Metta.Atom} {outBnd : Metta.Bindings}
+    (hWorld : st.world = St.init.world)
+    (hOut :
+      (out, outBnd) ∈
+        (mettaEval kernelDefControlEnv 3 st []
+          (mExpr "unify"
+            [ defBodyOfQueryAtom
+                (sigAtom cicStage3RawArtifactSig)
+                (declNameAtom name)
+            , mVar binder
+            , mExpr "if"
+                [ mExpr "is-bad" [mVar binder]
+                , mExpr "Bad" [mSym "unknown-definition"]
+                , mExpr "nf" [sigAtom cicStage3RawArtifactSig, mVar binder] ]
+            , mSym "Empty" ])).1) :
+    out.isError = true := by
+  let bodyAtom :=
+    defBodyOfQueryAtom
+      (sigAtom cicStage3RawArtifactSig)
+      (declNameAtom name)
+  let template :=
+    mExpr "if"
+      [ mExpr "is-bad" [mVar binder]
+      , mExpr "Bad" [mSym "unknown-definition"]
+      , mExpr "nf" [sigAtom cicStage3RawArtifactSig, mVar binder] ]
+  let thenA := mExpr "Bad" [mSym "unknown-definition"]
+  let elseA :=
+    cicStage3CanonicalDefnStuckReadoutForSig
+      cicStage3RawArtifactSig name
+  have hNoErr :
+      (([bodyAtom, mVar binder, template, mSym "Empty"].zip
+          [bodyAtom, mVar binder, template, mSym "Empty"]).find?
+        (fun ho : Metta.Atom × Metta.Atom => ho.1.isError && ho.1 != ho.2)) = none := by
+    have hBodyNoErr : bodyAtom.isError = false := by
+      simp [bodyAtom, defBodyOfQueryAtom, mExpr, mSym, Metta.Atom.isError]
+    have hVarNoErr : (mVar binder).isError = false := by
+      rfl
+    have hTemplateNoErr : template.isError = false := by
+      simp [template, mExpr, mSym, Metta.Atom.isError]
+    have hEmptyNoErr : (mSym "Empty").isError = false := by
+      rfl
+    simp [List.find?, hBodyNoErr, hVarNoErr, hTemplateNoErr, hEmptyNoErr]
+  have hAtomNonVar : ∀ w, bodyAtom ≠ Metta.Atom.var w := by
+    intro w
+    simp [bodyAtom, defBodyOfQueryAtom, mExpr, mSym]
+  have hNoLoop : binder ∉ bodyAtom.vars := by
+    simp [bodyAtom, defBodyOfQueryAtom, sigAtom_vars_nil,
+      declNameAtom_vars_nil, mExpr, mSym, Metta.Atom.vars]
+  have htmpl :=
+    leattaDefControlPrimary_nfDefIfTemplate_instantiated_eq_named
+      name binder
+  dsimp at htmpl
+  have hRootNotNR :
+      (Metta.instantiate [Metta.BindingRel.val binder bodyAtom]
+        (Metta.instantiate [Metta.BindingRel.val binder bodyAtom] template) ==
+          notReducibleA) = false := by
+    rw [htmpl]
+    rfl
+  have hRootNotSelf :
+      (Metta.instantiate [Metta.BindingRel.val binder bodyAtom]
+        (Metta.instantiate [Metta.BindingRel.val binder bodyAtom] template) ==
+          mExpr "unify" [bodyAtom, mVar binder, template, mSym "Empty"]) = false := by
+    rw [htmpl]
+    rfl
+  rcases
+      mettaEval_kernelDefControlEnv_embedded_unify_var_success_pair_implies_template_pair
+        (fuel := 1) (st := st) (binder := binder)
+        (atom := bodyAtom) (template := template) (out := out)
+        (outBnd := outBnd)
+        hNoErr hAtomNonVar hNoLoop hRootNotNR hRootNotSelf
+        (by
+          simpa [bodyAtom, template, mExpr, mSym, mVar] using hOut) with
+    ⟨templateBnd, hTemplate⟩
+  rw [htmpl] at hTemplate
+  have hBodyClosed : bodyAtom.vars = [] := by
+    simp [bodyAtom, defBodyOfQueryAtom, sigAtom_vars_nil,
+      declNameAtom_vars_nil, mExpr, mSym, Metta.Atom.vars]
+  have hThenClosed : thenA.vars = [] := by
+    simp [thenA, mExpr, mSym, Metta.Atom.vars]
+  have hElseClosed : elseA.vars = [] := by
+    simp [elseA, cicStage3CanonicalDefnStuckReadoutForSig,
+      defBodyOfQueryAtom, sigAtom_vars_nil, declNameAtom_vars_nil,
+      mExpr, mSym, Metta.Atom.vars]
+  have hBodyErr : bodyAtom.isError = false := by
+    simp [bodyAtom, defBodyOfQueryAtom, mExpr, mSym, Metta.Atom.isError]
+  exact
+    mettaEval_kernelDefControlEnv_if_is_bad_closed_output_isError_fuel_two
+      (st := st) (a := bodyAtom) (thenA := thenA) (elseA := elseA)
+      (out := out) (outBnd := templateBnd) hWorld
+      hBodyClosed hThenClosed hElseClosed hBodyErr hAtomNonVar
+      (by simpa [thenA, elseA, bodyAtom, template, mExpr, mSym] using hTemplate)
+
+private theorem mettaEval_kernelDefControlEnv_primary_nf_def_unify_body_output_isError_fuel_four
+    {st : St} {name : DeclName} {binder : String}
+    {out : Metta.Atom} {outBnd : Metta.Bindings}
+    (hWorld : st.world = St.init.world)
+    (hOut :
+      (out, outBnd) ∈
+        (mettaEval kernelDefControlEnv 4 st []
+          (mExpr "unify"
+            [ defBodyOfQueryAtom
+                (sigAtom cicStage3RawArtifactSig)
+                (declNameAtom name)
+            , mVar binder
+            , mExpr "if"
+                [ mExpr "is-bad" [mVar binder]
+                , mExpr "Bad" [mSym "unknown-definition"]
+                , mExpr "nf" [sigAtom cicStage3RawArtifactSig, mVar binder] ]
+            , mSym "Empty" ])).1) :
+    out.isError = true := by
+  let bodyAtom :=
+    defBodyOfQueryAtom
+      (sigAtom cicStage3RawArtifactSig)
+      (declNameAtom name)
+  let template :=
+    mExpr "if"
+      [ mExpr "is-bad" [mVar binder]
+      , mExpr "Bad" [mSym "unknown-definition"]
+      , mExpr "nf" [sigAtom cicStage3RawArtifactSig, mVar binder] ]
+  let thenA := mExpr "Bad" [mSym "unknown-definition"]
+  let elseA :=
+    cicStage3CanonicalDefnStuckReadoutForSig
+      cicStage3RawArtifactSig name
+  have hNoErr :
+      (([bodyAtom, mVar binder, template, mSym "Empty"].zip
+          [bodyAtom, mVar binder, template, mSym "Empty"]).find?
+        (fun ho : Metta.Atom × Metta.Atom => ho.1.isError && ho.1 != ho.2)) = none := by
+    have hBodyNoErr : bodyAtom.isError = false := by
+      simp [bodyAtom, defBodyOfQueryAtom, mExpr, mSym, Metta.Atom.isError]
+    have hVarNoErr : (mVar binder).isError = false := by
+      rfl
+    have hTemplateNoErr : template.isError = false := by
+      simp [template, mExpr, mSym, Metta.Atom.isError]
+    have hEmptyNoErr : (mSym "Empty").isError = false := by
+      rfl
+    simp [List.find?, hBodyNoErr, hVarNoErr, hTemplateNoErr, hEmptyNoErr]
+  have hAtomNonVar : ∀ w, bodyAtom ≠ Metta.Atom.var w := by
+    intro w
+    simp [bodyAtom, defBodyOfQueryAtom, mExpr, mSym]
+  have hNoLoop : binder ∉ bodyAtom.vars := by
+    simp [bodyAtom, defBodyOfQueryAtom, sigAtom_vars_nil,
+      declNameAtom_vars_nil, mExpr, mSym, Metta.Atom.vars]
+  have htmpl :=
+    leattaDefControlPrimary_nfDefIfTemplate_instantiated_eq_named
+      name binder
+  dsimp at htmpl
+  have hRootNotNR :
+      (Metta.instantiate [Metta.BindingRel.val binder bodyAtom]
+        (Metta.instantiate [Metta.BindingRel.val binder bodyAtom] template) ==
+          notReducibleA) = false := by
+    rw [htmpl]
+    rfl
+  have hRootNotSelf :
+      (Metta.instantiate [Metta.BindingRel.val binder bodyAtom]
+        (Metta.instantiate [Metta.BindingRel.val binder bodyAtom] template) ==
+          mExpr "unify" [bodyAtom, mVar binder, template, mSym "Empty"]) = false := by
+    rw [htmpl]
+    rfl
+  rcases
+      mettaEval_kernelDefControlEnv_embedded_unify_var_success_pair_implies_template_pair
+        (fuel := 2) (st := st) (binder := binder)
+        (atom := bodyAtom) (template := template) (out := out)
+        (outBnd := outBnd)
+        hNoErr hAtomNonVar hNoLoop hRootNotNR hRootNotSelf
+        (by
+          simpa [bodyAtom, template, mExpr, mSym, mVar] using hOut) with
+    ⟨templateBnd, hTemplate⟩
+  rw [htmpl] at hTemplate
+  have hBodyClosed : bodyAtom.vars = [] := by
+    simp [bodyAtom, defBodyOfQueryAtom, sigAtom_vars_nil,
+      declNameAtom_vars_nil, mExpr, mSym, Metta.Atom.vars]
+  have hThenClosed : thenA.vars = [] := by
+    simp [thenA, mExpr, mSym, Metta.Atom.vars]
+  have hElseClosed : elseA.vars = [] := by
+    simp [elseA, cicStage3CanonicalDefnStuckReadoutForSig,
+      defBodyOfQueryAtom, sigAtom_vars_nil, declNameAtom_vars_nil,
+      mExpr, mSym, Metta.Atom.vars]
+  have hBodyErr : bodyAtom.isError = false := by
+    simp [bodyAtom, defBodyOfQueryAtom, mExpr, mSym, Metta.Atom.isError]
+  exact
+    mettaEval_kernelDefControlEnv_if_is_bad_closed_output_isError_fuel_three
+      (st := st) (a := bodyAtom) (thenA := thenA) (elseA := elseA)
+      (out := out) (outBnd := templateBnd) hWorld
+      hBodyClosed hThenClosed hElseClosed hBodyErr hAtomNonVar
+      (by simpa [thenA, elseA, bodyAtom, template, mExpr, mSym] using hTemplate)
+
+private theorem cicStage3RawArtifactSig_primary_nf_defn_fresh_root_output_isError_fuel_one
+    {st : St} {name : DeclName} {binder : String}
+    {out : Metta.Atom} {outBnd : Metta.Bindings}
+    (hOut :
+      (out, outBnd) ∈
+        (mettaEval kernelDefControlEnv 1 st []
+          (leattaDefControlPrimaryNfDefFreshRootNamed name binder)).1) :
+    out.isError = true := by
+  let bodyAtom :=
+    defBodyOfQueryAtom
+      (sigAtom cicStage3RawArtifactSig)
+      (declNameAtom name)
+  let template :=
+    mExpr "if"
+      [ mExpr "is-bad" [mVar binder]
+      , mExpr "Bad" [mSym "unknown-definition"]
+      , mExpr "nf" [sigAtom cicStage3RawArtifactSig, mVar binder] ]
+  unfold mettaEval at hOut
+  rw [Metta.instantiate_nil
+    (leattaDefControlPrimaryNfDefFreshRootNamed name binder)] at hOut
+  simp only [leattaDefControlPrimaryNfDefFreshRootNamed, mExpr, mSym, mVar]
+    at hOut
+  have hType :
+      typeMismatch kernelDefControlEnv st.world "let"
+        [ Metta.Atom.var binder
+        , defBodyOfQueryAtom
+            (sigAtom cicStage3RawArtifactSig)
+            (declNameAtom name)
+        , Metta.Atom.expr
+            [ Metta.Atom.sym "if"
+            , Metta.Atom.expr [Metta.Atom.sym "is-bad", Metta.Atom.var binder]
+            , Metta.Atom.expr [Metta.Atom.sym "Bad", Metta.Atom.sym "unknown-definition"]
+            , Metta.Atom.expr
+                [Metta.Atom.sym "nf", sigAtom cicStage3RawArtifactSig,
+                  Metta.Atom.var binder] ] ] = none := by
+    simpa [bodyAtom, template, mExpr, mSym, mVar] using
+      kernelDefControlEnv_let_typeMismatch st (mVar binder) bodyAtom template
+  rw [hType] at hOut
+  have hErrNe :
+      (Metta.Atom.expr
+          [ Metta.Atom.sym "Error"
+          , defBodyOfQueryAtom
+              (sigAtom cicStage3RawArtifactSig)
+              (declNameAtom name)
+          , Metta.Atom.sym "StackOverflow" ] !=
+        defBodyOfQueryAtom
+          (sigAtom cicStage3RawArtifactSig)
+          (declNameAtom name)) = true := by
+    rfl
+  simp [kernelDefControlEnv_let_argMask, Metta.Minimal.mettaEval.eq_1,
+    Metta.instantiate_nil, Metta.Atom.isError, hErrNe, Metta.Atom.vars]
+    at hOut
+  exact hOut.1.symm ▸ rfl
+
+private theorem cicStage3RawArtifactSig_primary_nf_defn_fresh_root_output_isError_fuel_two
+    {st : St} {name : DeclName} {binder : String}
+    {out : Metta.Atom} {outBnd : Metta.Bindings}
+    (hStatic : st.world.selfExtra = [])
+    (hFreshLet :
+      ∀ {v : String},
+        v = "pattern" ∨ v = "atom" ∨ v = "template" →
+          counterSuffix (st.counter + 1) v ≠ binder)
+    (hOut :
+      (out, outBnd) ∈
+        (mettaEval kernelDefControlEnv 2 st []
+          (leattaDefControlPrimaryNfDefFreshRootNamed name binder)).1) :
+    out.isError = true := by
+  let bodyAtom :=
+    defBodyOfQueryAtom
+      (sigAtom cicStage3RawArtifactSig)
+      (declNameAtom name)
+  let bodyQuery := bodyAtom
+  let template :=
+    mExpr "if"
+      [ mExpr "is-bad" [mVar binder]
+      , mExpr "Bad" [mSym "unknown-definition"]
+      , mExpr "nf" [sigAtom cicStage3RawArtifactSig, mVar binder] ]
+  let stAtom : St := { counter := st.counter + 1, world := st.world }
+  let stRoot : St := { counter := stAtom.counter + 1, world := stAtom.world }
+  let rootBnd :=
+    (renameBindings (counterSuffix stAtom.counter)
+      (letRuleBindings binder bodyAtom template)).reverse
+  let root := mExpr "unify" [bodyAtom, mVar binder, template, mSym "Empty"]
+  have hAtom :
+      mettaEval kernelDefControlEnv 1 st [] bodyQuery =
+        ([(bodyAtom, [])], stAtom) := by
+    simpa [bodyQuery, bodyAtom, stAtom] using
+      mettaEval_kernelDefControlEnv_primary_def_body_of_eq_state_fuel_one
+        st name hStatic
+  have hType :
+      typeMismatch kernelDefControlEnv st.world "let"
+        [mVar binder, bodyQuery, template] = none := by
+    exact kernelDefControlEnv_let_typeMismatch st (mVar binder) bodyQuery template
+  have hNoErr :
+      (([mVar binder, bodyAtom, template].zip
+          [mVar binder, bodyQuery, template]).find?
+        (fun ho : Metta.Atom × Metta.Atom => ho.1.isError && ho.1 != ho.2)) = none := by
+    have hBodyNoErr : bodyAtom.isError = false := by
+      simp [bodyAtom, defBodyOfQueryAtom, mExpr, mSym, Metta.Atom.isError]
+    have hVarNoErr : (mVar binder).isError = false := by
+      rfl
+    have hTemplateNoErr : template.isError = false := by
+      simp [template, mExpr, mSym, Metta.Atom.isError]
+    simp [List.find?, hBodyNoErr, hVarNoErr, hTemplateNoErr]
+  have hBodyNonVar : ∀ w, bodyAtom ≠ Metta.Atom.var w := by
+    intro w
+    simp [bodyAtom, defBodyOfQueryAtom, mExpr, mSym]
+  have hTemplateNonVar : ∀ w, template ≠ Metta.Atom.var w := by
+    intro w
+    simp [template, mExpr, mSym]
+  have hPatternNe : counterSuffix stAtom.counter "pattern" ≠ binder := by
+    simpa [stAtom] using hFreshLet (v := "pattern") (Or.inl rfl)
+  have hAtomNe : counterSuffix stAtom.counter "atom" ≠ binder := by
+    simpa [stAtom] using hFreshLet (v := "atom") (Or.inr (Or.inl rfl))
+  have hTemplateNe : counterSuffix stAtom.counter "template" ≠ binder := by
+    simpa [stAtom] using hFreshLet (v := "template") (Or.inr (Or.inr rfl))
+  have hFresh :
+      RenamedValueKeysFreshForValues (counterSuffix stAtom.counter)
+        (letRuleBindings binder bodyAtom template) := by
+    intro key hkey x a hmem
+    simp [letRuleBindings, bindingValueKeys] at hkey hmem
+    have hKeyNe : counterSuffix stAtom.counter key ≠ binder := by
+      rcases hkey with rfl | rfl | rfl
+      · exact hTemplateNe
+      · exact hAtomNe
+      · exact hPatternNe
+    rcases hmem with hmem | hmem | hmem
+    · rcases hmem with ⟨rfl, rfl⟩
+      simp [template, sigAtom_vars_nil, mExpr, mSym, mVar,
+        Metta.Atom.vars, hKeyNe]
+    · rcases hmem with ⟨rfl, rfl⟩
+      simp [bodyAtom, defBodyOfQueryAtom, sigAtom_vars_nil,
+        declNameAtom_vars_nil, mExpr, mSym, Metta.Atom.vars]
+    · rcases hmem with ⟨rfl, rfl⟩
+      simp [mVar, Metta.Atom.vars, hKeyNe]
+  have hRoot :
+      interpretFuel kernelDefControlEnv (1 + 1) stAtom
+          [evalItemNil (mExpr "let" [mVar binder, bodyAtom, template])] [] =
+        ([(root, rootBnd)], stRoot) := by
+    have hStaticAtom : stAtom.world.selfExtra = [] := by
+      simpa [stAtom] using hStatic
+    simpa [root, rootBnd, stAtom, stRoot] using
+      interpretFuel_kernelDefControlEnv_let_root_eq
+        1 stAtom binder bodyAtom template hStaticAtom hBodyNonVar
+        hTemplateNonVar hFresh
+  have hRootNotNR : (root == notReducibleA) = false := by
+    rfl
+  have hRootNotSelf :
+      (root == mExpr "let" [mVar binder, bodyAtom, template]) = false := by
+    rfl
+  rcases
+      mettaEval_ternary_expr_pair_mem_implies_root_eval_mem_of_quoted_eval_quoted_and_root_eval_eq_bnd
+        (env := kernelDefControlEnv) (fuel := 1) (st := st)
+        (stAtom := stAtom) (stRoot := stRoot)
+        (op := "let") (pattern := mVar binder) (atom := bodyQuery)
+        (template := template) (atom' := bodyAtom) (root := root)
+        (final := out) (rootBnd := rootBnd) (outBnd := outBnd)
+        hAtom hType kernelDefControlEnv_let_argMask hNoErr
+        (by simpa [root, rootBnd, stRoot, mExpr, mSym, mVar] using hRoot)
+        hRootNotNR hRootNotSelf
+        (kernelDefControlEnv_let_returnsAtom (mVar binder) bodyAtom template)
+        (by
+          simpa [leattaDefControlPrimaryNfDefFreshRootNamed, bodyQuery,
+            bodyAtom, template, mExpr, mSym, mVar] using hOut) with
+    ⟨finalBnd, hFinal⟩
+  have hBinderPatternNe : binder ≠ counterSuffix stAtom.counter "pattern" :=
+    hPatternNe.symm
+  have hBinderAtomNe : binder ≠ counterSuffix stAtom.counter "atom" :=
+    hAtomNe.symm
+  have hBinderTemplateNe : binder ≠ counterSuffix stAtom.counter "template" :=
+    hTemplateNe.symm
+  have hTemplateAtom :
+      counterSuffix stAtom.counter "template" ≠ counterSuffix stAtom.counter "atom" := by
+    intro h
+    have h' : "template" = "atom" := (counterSuffix_injective stAtom.counter) h
+    contradiction
+  have hTemplatePattern :
+      counterSuffix stAtom.counter "template" ≠ counterSuffix stAtom.counter "pattern" := by
+    intro h
+    have h' : "template" = "pattern" := (counterSuffix_injective stAtom.counter) h
+    contradiction
+  have hAtomTemplate :
+      counterSuffix stAtom.counter "atom" ≠ counterSuffix stAtom.counter "template" := by
+    intro h
+    exact hTemplateAtom h.symm
+  have hAtomPattern :
+      counterSuffix stAtom.counter "atom" ≠ counterSuffix stAtom.counter "pattern" := by
+    intro h
+    have h' : "atom" = "pattern" := (counterSuffix_injective stAtom.counter) h
+    contradiction
+  have hPatternTemplate :
+      counterSuffix stAtom.counter "pattern" ≠ counterSuffix stAtom.counter "template" := by
+    intro h
+    exact hTemplatePattern h.symm
+  have hPatternAtom :
+      counterSuffix stAtom.counter "pattern" ≠ counterSuffix stAtom.counter "atom" := by
+    intro h
+    exact hAtomPattern h.symm
+  have hLetBndNil :
+      restrictBnd (([mVar binder, bodyQuery, template]).flatMap Atom.vars)
+          ((Metta.Bindings.merge [] rootBnd).head?.getD rootBnd) = [] := by
+    simp [rootBnd, letRuleBindings, renameBindings, bodyAtom, bodyQuery, template,
+      defBodyOfQueryAtom, sigAtom_vars_nil, declNameAtom_vars_nil,
+      mExpr, mSym, mVar, Metta.Atom.vars,
+      Metta.Bindings.merge, Metta.Bindings.mergeOne,
+      Metta.Bindings.addVarBinding, Metta.Bindings.addValRaw,
+      Metta.Bindings.removeVal, Metta.Bindings.lookupVal,
+      restrictBnd, resolveAtom, Metta.instantiate, Metta.bindingsToSubst,
+      Metta.Subst.apply, Metta.Subst.lookup, atom_var_beq_self_true,
+      hBinderPatternNe, hBinderAtomNe, hBinderTemplateNe,
+      hTemplateAtom, hTemplatePattern,
+      hAtomTemplate, hAtomPattern, hPatternTemplate, hPatternAtom]
+  rw [hLetBndNil] at hFinal
+  have hUnifyNoErr :
+      (([bodyAtom, mVar binder, template, mSym "Empty"].zip
+          [bodyAtom, mVar binder, template, mSym "Empty"]).find?
+        (fun ho : Metta.Atom × Metta.Atom => ho.1.isError && ho.1 != ho.2)) = none := by
+    have hBodyNoErr : bodyAtom.isError = false := by
+      simp [bodyAtom, defBodyOfQueryAtom, mExpr, mSym, Metta.Atom.isError]
+    have hVarNoErr : (mVar binder).isError = false := by
+      rfl
+    have hTemplateNoErr : template.isError = false := by
+      simp [template, mExpr, mSym, Metta.Atom.isError]
+    have hEmptyNoErr : (mSym "Empty").isError = false := by
+      rfl
+    simp [List.find?, hBodyNoErr, hVarNoErr, hTemplateNoErr, hEmptyNoErr]
+  exact
+    mettaEval_kernelDefControlEnv_unify_output_isError_fuel_one_of_no_arg_error
+      (hNoErr := hUnifyNoErr)
+      (hOut := by simpa [root] using hFinal)
+
+private theorem cicStage3RawArtifactSig_primary_nf_defn_fresh_root_output_isError_fuel_three
+    {st : St} {name : DeclName} {binder : String}
+    {out : Metta.Atom} {outBnd : Metta.Bindings}
+    (hWorld : st.world = St.init.world)
+    (hFreshLet :
+      ∀ {v : String},
+        v = "pattern" ∨ v = "atom" ∨ v = "template" →
+          counterSuffix (st.counter + 1) v ≠ binder)
+    (hOut :
+      (out, outBnd) ∈
+        (mettaEval kernelDefControlEnv 3 st []
+          (leattaDefControlPrimaryNfDefFreshRootNamed name binder)).1) :
+    out.isError = true := by
+  let bodyAtom :=
+    defBodyOfQueryAtom
+      (sigAtom cicStage3RawArtifactSig)
+      (declNameAtom name)
+  let bodyQuery := bodyAtom
+  let template :=
+    mExpr "if"
+      [ mExpr "is-bad" [mVar binder]
+      , mExpr "Bad" [mSym "unknown-definition"]
+      , mExpr "nf" [sigAtom cicStage3RawArtifactSig, mVar binder] ]
+  let stAtom : St := { counter := st.counter + 1, world := st.world }
+  let stRoot : St := { counter := stAtom.counter + 1, world := stAtom.world }
+  let rootBnd :=
+    (renameBindings (counterSuffix stAtom.counter)
+      (letRuleBindings binder bodyAtom template)).reverse
+  let root := mExpr "unify" [bodyAtom, mVar binder, template, mSym "Empty"]
+  have hStatic : st.world.selfExtra = [] := by
+    simpa [hWorld] using (show St.init.world.selfExtra = [] by rfl)
+  have hAtom :
+      mettaEval kernelDefControlEnv 2 st [] bodyQuery =
+        ([(bodyAtom, [])], stAtom) := by
+    simpa [bodyQuery, bodyAtom, stAtom] using
+      mettaEval_kernelDefControlEnv_primary_def_body_of_eq_state
+        0 st name hStatic
+  have hType :
+      typeMismatch kernelDefControlEnv st.world "let"
+        [mVar binder, bodyQuery, template] = none := by
+    exact kernelDefControlEnv_let_typeMismatch st (mVar binder) bodyQuery template
+  have hNoErr :
+      (([mVar binder, bodyAtom, template].zip
+          [mVar binder, bodyQuery, template]).find?
+        (fun ho : Metta.Atom × Metta.Atom => ho.1.isError && ho.1 != ho.2)) = none := by
+    have hBodyNoErr : bodyAtom.isError = false := by
+      simp [bodyAtom, defBodyOfQueryAtom, mExpr, mSym, Metta.Atom.isError]
+    have hVarNoErr : (mVar binder).isError = false := by
+      rfl
+    have hTemplateNoErr : template.isError = false := by
+      simp [template, mExpr, mSym, Metta.Atom.isError]
+    simp [List.find?, hBodyNoErr, hVarNoErr, hTemplateNoErr]
+  have hBodyNonVar : ∀ w, bodyAtom ≠ Metta.Atom.var w := by
+    intro w
+    simp [bodyAtom, defBodyOfQueryAtom, mExpr, mSym]
+  have hTemplateNonVar : ∀ w, template ≠ Metta.Atom.var w := by
+    intro w
+    simp [template, mExpr, mSym]
+  have hPatternNe : counterSuffix stAtom.counter "pattern" ≠ binder := by
+    simpa [stAtom] using hFreshLet (v := "pattern") (Or.inl rfl)
+  have hAtomNe : counterSuffix stAtom.counter "atom" ≠ binder := by
+    simpa [stAtom] using hFreshLet (v := "atom") (Or.inr (Or.inl rfl))
+  have hTemplateNe : counterSuffix stAtom.counter "template" ≠ binder := by
+    simpa [stAtom] using hFreshLet (v := "template") (Or.inr (Or.inr rfl))
+  have hFresh :
+      RenamedValueKeysFreshForValues (counterSuffix stAtom.counter)
+        (letRuleBindings binder bodyAtom template) := by
+    intro key hkey x a hmem
+    simp [letRuleBindings, bindingValueKeys] at hkey hmem
+    have hKeyNe : counterSuffix stAtom.counter key ≠ binder := by
+      rcases hkey with rfl | rfl | rfl
+      · exact hTemplateNe
+      · exact hAtomNe
+      · exact hPatternNe
+    rcases hmem with hmem | hmem | hmem
+    · rcases hmem with ⟨rfl, rfl⟩
+      simp [template, sigAtom_vars_nil, mExpr, mSym, mVar,
+        Metta.Atom.vars, hKeyNe]
+    · rcases hmem with ⟨rfl, rfl⟩
+      simp [bodyAtom, defBodyOfQueryAtom, sigAtom_vars_nil,
+        declNameAtom_vars_nil, mExpr, mSym, Metta.Atom.vars]
+    · rcases hmem with ⟨rfl, rfl⟩
+      simp [mVar, Metta.Atom.vars, hKeyNe]
+  have hRoot :
+      interpretFuel kernelDefControlEnv (2 + 1) stAtom
+          [evalItemNil (mExpr "let" [mVar binder, bodyAtom, template])] [] =
+        ([(root, rootBnd)], stRoot) := by
+    have hStaticAtom : stAtom.world.selfExtra = [] := by
+      simpa [stAtom] using hStatic
+    simpa [root, rootBnd, stAtom, stRoot] using
+      interpretFuel_kernelDefControlEnv_let_root_eq
+        2 stAtom binder bodyAtom template hStaticAtom hBodyNonVar
+        hTemplateNonVar hFresh
+  have hRootNotNR : (root == notReducibleA) = false := by
+    rfl
+  have hRootNotSelf :
+      (root == mExpr "let" [mVar binder, bodyAtom, template]) = false := by
+    rfl
+  rcases
+      mettaEval_ternary_expr_pair_mem_implies_root_eval_mem_of_quoted_eval_quoted_and_root_eval_eq_bnd
+        (env := kernelDefControlEnv) (fuel := 2) (st := st)
+        (stAtom := stAtom) (stRoot := stRoot)
+        (op := "let") (pattern := mVar binder) (atom := bodyQuery)
+        (template := template) (atom' := bodyAtom) (root := root)
+        (final := out) (rootBnd := rootBnd) (outBnd := outBnd)
+        hAtom hType kernelDefControlEnv_let_argMask hNoErr
+        (by simpa [root, rootBnd, stRoot, mExpr, mSym, mVar] using hRoot)
+        hRootNotNR hRootNotSelf
+        (kernelDefControlEnv_let_returnsAtom (mVar binder) bodyAtom template)
+        (by
+          simpa [leattaDefControlPrimaryNfDefFreshRootNamed, bodyQuery,
+            bodyAtom, template, mExpr, mSym, mVar] using hOut) with
+    ⟨finalBnd, hFinal⟩
+  have hBinderPatternNe : binder ≠ counterSuffix stAtom.counter "pattern" :=
+    hPatternNe.symm
+  have hBinderAtomNe : binder ≠ counterSuffix stAtom.counter "atom" :=
+    hAtomNe.symm
+  have hBinderTemplateNe : binder ≠ counterSuffix stAtom.counter "template" :=
+    hTemplateNe.symm
+  have hTemplateAtom :
+      counterSuffix stAtom.counter "template" ≠ counterSuffix stAtom.counter "atom" := by
+    intro h
+    have h' : "template" = "atom" := (counterSuffix_injective stAtom.counter) h
+    contradiction
+  have hTemplatePattern :
+      counterSuffix stAtom.counter "template" ≠ counterSuffix stAtom.counter "pattern" := by
+    intro h
+    have h' : "template" = "pattern" := (counterSuffix_injective stAtom.counter) h
+    contradiction
+  have hAtomTemplate :
+      counterSuffix stAtom.counter "atom" ≠ counterSuffix stAtom.counter "template" := by
+    intro h
+    exact hTemplateAtom h.symm
+  have hAtomPattern :
+      counterSuffix stAtom.counter "atom" ≠ counterSuffix stAtom.counter "pattern" := by
+    intro h
+    have h' : "atom" = "pattern" := (counterSuffix_injective stAtom.counter) h
+    contradiction
+  have hPatternTemplate :
+      counterSuffix stAtom.counter "pattern" ≠ counterSuffix stAtom.counter "template" := by
+    intro h
+    exact hTemplatePattern h.symm
+  have hPatternAtom :
+      counterSuffix stAtom.counter "pattern" ≠ counterSuffix stAtom.counter "atom" := by
+    intro h
+    exact hAtomPattern h.symm
+  have hLetBndNil :
+      restrictBnd (([mVar binder, bodyQuery, template]).flatMap Atom.vars)
+          ((Metta.Bindings.merge [] rootBnd).head?.getD rootBnd) = [] := by
+    simp [rootBnd, letRuleBindings, renameBindings, bodyAtom, bodyQuery, template,
+      defBodyOfQueryAtom, sigAtom_vars_nil, declNameAtom_vars_nil,
+      mExpr, mSym, mVar, Metta.Atom.vars,
+      Metta.Bindings.merge, Metta.Bindings.mergeOne,
+      Metta.Bindings.addVarBinding, Metta.Bindings.addValRaw,
+      Metta.Bindings.removeVal, Metta.Bindings.lookupVal,
+      restrictBnd, resolveAtom, Metta.instantiate, Metta.bindingsToSubst,
+      Metta.Subst.apply, Metta.Subst.lookup, atom_var_beq_self_true,
+      hBinderPatternNe, hBinderAtomNe, hBinderTemplateNe,
+      hTemplateAtom, hTemplatePattern,
+      hAtomTemplate, hAtomPattern, hPatternTemplate, hPatternAtom]
+  rw [hLetBndNil] at hFinal
+  have hWorldRoot : stRoot.world = St.init.world := by
+    simpa [stRoot, stAtom] using hWorld
+  exact
+    mettaEval_kernelDefControlEnv_primary_nf_def_unify_body_output_isError_fuel_two
+      (st := stRoot) (name := name) (binder := binder)
+      (out := out) (outBnd := finalBnd) hWorldRoot
+      (by simpa [root, bodyAtom, template, mExpr, mSym, mVar] using hFinal)
+
+private theorem cicStage3RawArtifactSig_primary_nf_defn_fresh_root_output_isError_of_unify_output_isError
+    (fuelBase : Nat)
+    {st : St} {name : DeclName} {binder : String}
+    {out : Metta.Atom} {outBnd : Metta.Bindings}
+    (hWorld : st.world = St.init.world)
+    (hFreshLet :
+      ∀ {v : String},
+        v = "pattern" ∨ v = "atom" ∨ v = "template" →
+          counterSuffix (st.counter + 1) v ≠ binder) :
+    let bodyAtom :=
+      defBodyOfQueryAtom
+        (sigAtom cicStage3RawArtifactSig)
+        (declNameAtom name)
+    let template :=
+      mExpr "if"
+        [ mExpr "is-bad" [mVar binder]
+        , mExpr "Bad" [mSym "unknown-definition"]
+        , mExpr "nf" [sigAtom cicStage3RawArtifactSig, mVar binder] ]
+    let stAtom : St := { counter := st.counter + 1, world := st.world }
+    let stRoot : St := { counter := stAtom.counter + 1, world := stAtom.world }
+    let root := mExpr "unify" [bodyAtom, mVar binder, template, mSym "Empty"]
+    (∀ {out : Metta.Atom} {finalBnd : Metta.Bindings},
+      (out, finalBnd) ∈
+        (mettaEval kernelDefControlEnv (fuelBase + 2) stRoot [] root).1 →
+      out.isError = true) →
+    (out, outBnd) ∈
+      (mettaEval kernelDefControlEnv (fuelBase + 3) st []
+        (leattaDefControlPrimaryNfDefFreshRootNamed name binder)).1 →
+    out.isError = true := by
+  dsimp
+  intro hUnifyError hOut
+  let bodyAtom :=
+    defBodyOfQueryAtom
+      (sigAtom cicStage3RawArtifactSig)
+      (declNameAtom name)
+  let bodyQuery := bodyAtom
+  let template :=
+    mExpr "if"
+      [ mExpr "is-bad" [mVar binder]
+      , mExpr "Bad" [mSym "unknown-definition"]
+      , mExpr "nf" [sigAtom cicStage3RawArtifactSig, mVar binder] ]
+  let stAtom : St := { counter := st.counter + 1, world := st.world }
+  let stRoot : St := { counter := stAtom.counter + 1, world := stAtom.world }
+  let rootBnd :=
+    (renameBindings (counterSuffix stAtom.counter)
+      (letRuleBindings binder bodyAtom template)).reverse
+  let root := mExpr "unify" [bodyAtom, mVar binder, template, mSym "Empty"]
+  have hStatic : st.world.selfExtra = [] := by
+    simpa [hWorld] using (show St.init.world.selfExtra = [] by rfl)
+  have hAtom :
+      mettaEval kernelDefControlEnv (fuelBase + 2) st [] bodyQuery =
+        ([(bodyAtom, [])], stAtom) := by
+    simpa [bodyQuery, bodyAtom, stAtom] using
+      mettaEval_kernelDefControlEnv_primary_def_body_of_eq_state
+        fuelBase st name hStatic
+  have hType :
+      typeMismatch kernelDefControlEnv st.world "let"
+        [mVar binder, bodyQuery, template] = none := by
+    exact kernelDefControlEnv_let_typeMismatch st (mVar binder) bodyQuery template
+  have hNoErr :
+      (([mVar binder, bodyAtom, template].zip
+          [mVar binder, bodyQuery, template]).find?
+        (fun ho : Metta.Atom × Metta.Atom => ho.1.isError && ho.1 != ho.2)) = none := by
+    have hBodyNoErr : bodyAtom.isError = false := by
+      simp [bodyAtom, defBodyOfQueryAtom, mExpr, mSym, Metta.Atom.isError]
+    have hVarNoErr : (mVar binder).isError = false := by
+      rfl
+    have hTemplateNoErr : template.isError = false := by
+      simp [template, mExpr, mSym, Metta.Atom.isError]
+    simp [List.find?, hBodyNoErr, hVarNoErr, hTemplateNoErr]
+  have hBodyNonVar : ∀ w, bodyAtom ≠ Metta.Atom.var w := by
+    intro w
+    simp [bodyAtom, defBodyOfQueryAtom, mExpr, mSym]
+  have hTemplateNonVar : ∀ w, template ≠ Metta.Atom.var w := by
+    intro w
+    simp [template, mExpr, mSym]
+  have hPatternNe : counterSuffix stAtom.counter "pattern" ≠ binder := by
+    simpa [stAtom] using hFreshLet (v := "pattern") (Or.inl rfl)
+  have hAtomNe : counterSuffix stAtom.counter "atom" ≠ binder := by
+    simpa [stAtom] using hFreshLet (v := "atom") (Or.inr (Or.inl rfl))
+  have hTemplateNe : counterSuffix stAtom.counter "template" ≠ binder := by
+    simpa [stAtom] using hFreshLet (v := "template") (Or.inr (Or.inr rfl))
+  have hFresh :
+      RenamedValueKeysFreshForValues (counterSuffix stAtom.counter)
+        (letRuleBindings binder bodyAtom template) := by
+    intro key hkey x a hmem
+    simp [letRuleBindings, bindingValueKeys] at hkey hmem
+    have hKeyNe : counterSuffix stAtom.counter key ≠ binder := by
+      rcases hkey with rfl | rfl | rfl
+      · exact hTemplateNe
+      · exact hAtomNe
+      · exact hPatternNe
+    rcases hmem with hmem | hmem | hmem
+    · rcases hmem with ⟨rfl, rfl⟩
+      simp [template, sigAtom_vars_nil, mExpr, mSym, mVar,
+        Metta.Atom.vars, hKeyNe]
+    · rcases hmem with ⟨rfl, rfl⟩
+      simp [bodyAtom, defBodyOfQueryAtom, sigAtom_vars_nil,
+        declNameAtom_vars_nil, mExpr, mSym, Metta.Atom.vars]
+    · rcases hmem with ⟨rfl, rfl⟩
+      simp [mVar, Metta.Atom.vars, hKeyNe]
+  have hRoot :
+      interpretFuel kernelDefControlEnv (fuelBase + 2 + 1) stAtom
+          [evalItemNil (mExpr "let" [mVar binder, bodyAtom, template])] [] =
+        ([(root, rootBnd)], stRoot) := by
+    have hStaticAtom : stAtom.world.selfExtra = [] := by
+      simpa [stAtom] using hStatic
+    simpa [root, rootBnd, stAtom, stRoot, Nat.add_assoc] using
+      interpretFuel_kernelDefControlEnv_let_root_eq
+        (fuelBase + 2) stAtom binder bodyAtom template hStaticAtom hBodyNonVar
+        hTemplateNonVar hFresh
+  have hRootNotNR : (root == notReducibleA) = false := by
+    rfl
+  have hRootNotSelf :
+      (root == mExpr "let" [mVar binder, bodyAtom, template]) = false := by
+    rfl
+  rcases
+      mettaEval_ternary_expr_pair_mem_implies_root_eval_mem_of_quoted_eval_quoted_and_root_eval_eq_bnd
+        (env := kernelDefControlEnv) (fuel := fuelBase + 2) (st := st)
+        (stAtom := stAtom) (stRoot := stRoot)
+        (op := "let") (pattern := mVar binder) (atom := bodyQuery)
+        (template := template) (atom' := bodyAtom) (root := root)
+        (final := out) (rootBnd := rootBnd) (outBnd := outBnd)
+        hAtom hType kernelDefControlEnv_let_argMask hNoErr
+        (by simpa [root, rootBnd, stRoot, mExpr, mSym, mVar, Nat.add_assoc] using hRoot)
+        hRootNotNR hRootNotSelf
+        (kernelDefControlEnv_let_returnsAtom (mVar binder) bodyAtom template)
+        (by
+          simpa [leattaDefControlPrimaryNfDefFreshRootNamed, bodyQuery,
+            bodyAtom, template, mExpr, mSym, mVar, Nat.add_assoc] using hOut) with
+    ⟨finalBnd, hFinal⟩
+  have hBinderPatternNe : binder ≠ counterSuffix stAtom.counter "pattern" :=
+    hPatternNe.symm
+  have hBinderAtomNe : binder ≠ counterSuffix stAtom.counter "atom" :=
+    hAtomNe.symm
+  have hBinderTemplateNe : binder ≠ counterSuffix stAtom.counter "template" :=
+    hTemplateNe.symm
+  have hTemplateAtom :
+      counterSuffix stAtom.counter "template" ≠ counterSuffix stAtom.counter "atom" := by
+    intro h
+    have h' : "template" = "atom" := (counterSuffix_injective stAtom.counter) h
+    contradiction
+  have hTemplatePattern :
+      counterSuffix stAtom.counter "template" ≠ counterSuffix stAtom.counter "pattern" := by
+    intro h
+    have h' : "template" = "pattern" := (counterSuffix_injective stAtom.counter) h
+    contradiction
+  have hAtomTemplate :
+      counterSuffix stAtom.counter "atom" ≠ counterSuffix stAtom.counter "template" := by
+    intro h
+    exact hTemplateAtom h.symm
+  have hAtomPattern :
+      counterSuffix stAtom.counter "atom" ≠ counterSuffix stAtom.counter "pattern" := by
+    intro h
+    have h' : "atom" = "pattern" := (counterSuffix_injective stAtom.counter) h
+    contradiction
+  have hPatternTemplate :
+      counterSuffix stAtom.counter "pattern" ≠ counterSuffix stAtom.counter "template" := by
+    intro h
+    exact hTemplatePattern h.symm
+  have hPatternAtom :
+      counterSuffix stAtom.counter "pattern" ≠ counterSuffix stAtom.counter "atom" := by
+    intro h
+    exact hAtomPattern h.symm
+  have hLetBndNil :
+      restrictBnd (([mVar binder, bodyQuery, template]).flatMap Atom.vars)
+          ((Metta.Bindings.merge [] rootBnd).head?.getD rootBnd) = [] := by
+    simp [rootBnd, letRuleBindings, renameBindings, bodyAtom, bodyQuery, template,
+      defBodyOfQueryAtom, sigAtom_vars_nil, declNameAtom_vars_nil,
+      mExpr, mSym, mVar, Metta.Atom.vars,
+      Metta.Bindings.merge, Metta.Bindings.mergeOne,
+      Metta.Bindings.addVarBinding, Metta.Bindings.addValRaw,
+      Metta.Bindings.removeVal, Metta.Bindings.lookupVal,
+      restrictBnd, resolveAtom, Metta.instantiate, Metta.bindingsToSubst,
+      Metta.Subst.apply, Metta.Subst.lookup, atom_var_beq_self_true,
+      hBinderPatternNe, hBinderAtomNe, hBinderTemplateNe,
+      hTemplateAtom, hTemplatePattern,
+      hAtomTemplate, hAtomPattern, hPatternTemplate, hPatternAtom]
+  rw [hLetBndNil] at hFinal
+  exact hUnifyError (by
+    simpa [root, bodyAtom, template, mExpr, mSym, mVar] using hFinal)
+
+private theorem cicStage3RawArtifactSig_primary_nf_defn_fresh_root_output_isError_fuel_four
+    {st : St} {name : DeclName} {binder : String}
+    {out : Metta.Atom} {outBnd : Metta.Bindings}
+    (hWorld : st.world = St.init.world)
+    (hFreshLet :
+      ∀ {v : String},
+        v = "pattern" ∨ v = "atom" ∨ v = "template" →
+          counterSuffix (st.counter + 1) v ≠ binder)
+    (hOut :
+      (out, outBnd) ∈
+        (mettaEval kernelDefControlEnv 4 st []
+          (leattaDefControlPrimaryNfDefFreshRootNamed name binder)).1) :
+    out.isError = true := by
+  let stAtom : St := { counter := st.counter + 1, world := st.world }
+  let stRoot : St := { counter := stAtom.counter + 1, world := stAtom.world }
+  exact
+    cicStage3RawArtifactSig_primary_nf_defn_fresh_root_output_isError_of_unify_output_isError
+      (fuelBase := 1) (st := st) (name := name) (binder := binder)
+      (out := out) (outBnd := outBnd) hWorld hFreshLet
+      (by
+        intro out finalBnd hFinal
+        exact
+          mettaEval_kernelDefControlEnv_primary_nf_def_unify_body_output_isError_fuel_three
+            (st := stRoot)
+            (name := name) (binder := binder)
+            (out := out) (outBnd := finalBnd)
+            (by simpa [stRoot, stAtom] using hWorld)
+            (by simpa [stRoot, stAtom] using hFinal))
+      (by simpa using hOut)
+
+private theorem cicStage3RawArtifactSig_primary_nf_defn_fresh_root_output_isError_fuel_five
+    {st : St} {name : DeclName} {binder : String}
+    {out : Metta.Atom} {outBnd : Metta.Bindings}
+    (hWorld : st.world = St.init.world)
+    (hFreshLet :
+      ∀ {v : String},
+        v = "pattern" ∨ v = "atom" ∨ v = "template" →
+          counterSuffix (st.counter + 1) v ≠ binder)
+    (hOut :
+      (out, outBnd) ∈
+        (mettaEval kernelDefControlEnv 5 st []
+          (leattaDefControlPrimaryNfDefFreshRootNamed name binder)).1) :
+    out.isError = true := by
+  let stAtom : St := { counter := st.counter + 1, world := st.world }
+  let stRoot : St := { counter := stAtom.counter + 1, world := stAtom.world }
+  exact
+    cicStage3RawArtifactSig_primary_nf_defn_fresh_root_output_isError_of_unify_output_isError
+      (fuelBase := 2) (st := st) (name := name) (binder := binder)
+      (out := out) (outBnd := outBnd) hWorld hFreshLet
+      (by
+        intro out finalBnd hFinal
+        exact
+          mettaEval_kernelDefControlEnv_primary_nf_def_unify_body_output_isError_fuel_four
+            (st := stRoot)
+            (name := name) (binder := binder)
+            (out := out) (outBnd := finalBnd)
+            (by simpa [stRoot, stAtom] using hWorld)
+            (by simpa [stRoot, stAtom] using hFinal))
+      (by simpa using hOut)
+
+private theorem cicStage3RawArtifactSig_primary_nf_defn_runtime_output_isError_fuel_one
+    {st : St} {name : DeclName} {out : Metta.Atom}
+    (hWorld : st.world = St.init.world)
+    (hOut :
+      out ∈
+        (mettaEval kernelDefControlEnv 1 st []
+          (nfQuery cicStage3RawArtifactSig (.defn name))).1.map (·.1)) :
+    out.isError = true := by
+  let counter := st.counter + nfDefCandidatePreWithIndGZeroIota.length
+  let binder := counterSuffix counter "body"
+  let stRoot : St :=
+    { counter := st.counter + nfDefCandidatePreWithIndGZeroIota.length + 1,
+      world := st.world }
+  rcases
+      cicStage3RawArtifactSig_primary_nf_defn_output_mem_implies_fresh_root_output_mem
+        (fuel := 0) (st := st) (name := name) (out := out)
+        hWorld hOut with
+    ⟨outBnd, hFreshOut⟩
+  have hValue :
+      out ∈
+        (mettaEval kernelDefControlEnv 0 stRoot []
+          (leattaDefControlPrimaryNfDefFreshRootNamed name binder)).1.map
+            (·.1) := by
+    exact List.mem_map.mpr ⟨(out, outBnd),
+      by simpa [stRoot, binder, counter] using hFreshOut, rfl⟩
+  exact mettaEval_zero_output_isError hValue
+
+private theorem cicStage3RawArtifactSig_primary_nf_defn_runtime_output_isError_fuel_two
+    {st : St} {name : DeclName} {out : Metta.Atom}
+    (hWorld : st.world = St.init.world)
+    (hOut :
+      out ∈
+        (mettaEval kernelDefControlEnv 2 st []
+          (nfQuery cicStage3RawArtifactSig (.defn name))).1.map (·.1)) :
+    out.isError = true := by
+  let counter := st.counter + nfDefCandidatePreWithIndGZeroIota.length
+  let binder := counterSuffix counter "body"
+  let stRoot : St :=
+    { counter := st.counter + nfDefCandidatePreWithIndGZeroIota.length + 1,
+      world := st.world }
+  rcases
+      cicStage3RawArtifactSig_primary_nf_defn_output_mem_implies_fresh_root_output_mem
+        (fuel := 1) (st := st) (name := name) (out := out)
+        hWorld hOut with
+    ⟨outBnd, hFreshOut⟩
+  exact
+    cicStage3RawArtifactSig_primary_nf_defn_fresh_root_output_isError_fuel_one
+      (st := stRoot) (name := name) (binder := binder)
+      (out := out) (outBnd := outBnd)
+      (by simpa [stRoot, binder, counter] using hFreshOut)
+
+private theorem cicStage3RawArtifactSig_primary_nf_defn_runtime_output_isError_fuel_three
+    {st : St} {name : DeclName} {out : Metta.Atom}
+    (hWorld : st.world = St.init.world)
+    (hOut :
+      out ∈
+        (mettaEval kernelDefControlEnv 3 st []
+          (nfQuery cicStage3RawArtifactSig (.defn name))).1.map (·.1)) :
+    out.isError = true := by
+  let counter := st.counter + nfDefCandidatePreWithIndGZeroIota.length
+  let binder := counterSuffix counter "body"
+  let stRoot : St :=
+    { counter := st.counter + nfDefCandidatePreWithIndGZeroIota.length + 1,
+      world := st.world }
+  rcases
+      cicStage3RawArtifactSig_primary_nf_defn_output_mem_implies_fresh_root_output_mem
+        (fuel := 2) (st := st) (name := name) (out := out)
+        hWorld hOut with
+    ⟨outBnd, hFreshOut⟩
+  have hStaticRoot : stRoot.world.selfExtra = [] := by
+    simpa [stRoot, hWorld] using (show St.init.world.selfExtra = [] by rfl)
+  have hFreshLet :
+      ∀ {v : String},
+        v = "pattern" ∨ v = "atom" ∨ v = "template" →
+          counterSuffix (stRoot.counter + 1) v ≠ binder := by
+    intro v hv h
+    rcases hv with rfl | rfl | rfl
+    · have hc := congrArg String.toList h
+      simp [binder, counter, stRoot, counterSuffix] at hc
+    · have hc := congrArg String.toList h
+      simp [binder, counter, stRoot, counterSuffix] at hc
+    · have hc := congrArg String.toList h
+      simp [binder, counter, stRoot, counterSuffix] at hc
+  exact
+    cicStage3RawArtifactSig_primary_nf_defn_fresh_root_output_isError_fuel_two
+      (st := stRoot) (name := name) (binder := binder)
+      (out := out) (outBnd := outBnd)
+      hStaticRoot hFreshLet
+      (by simpa [stRoot, binder, counter] using hFreshOut)
+
+private theorem cicStage3RawArtifactSig_primary_nf_defn_runtime_output_isError_fuel_four
+    {st : St} {name : DeclName} {out : Metta.Atom}
+    (hWorld : st.world = St.init.world)
+    (hOut :
+      out ∈
+        (mettaEval kernelDefControlEnv 4 st []
+          (nfQuery cicStage3RawArtifactSig (.defn name))).1.map (·.1)) :
+    out.isError = true := by
+  let counter := st.counter + nfDefCandidatePreWithIndGZeroIota.length
+  let binder := counterSuffix counter "body"
+  let stRoot : St :=
+    { counter := st.counter + nfDefCandidatePreWithIndGZeroIota.length + 1,
+      world := st.world }
+  rcases
+      cicStage3RawArtifactSig_primary_nf_defn_output_mem_implies_fresh_root_output_mem
+        (fuel := 3) (st := st) (name := name) (out := out)
+        hWorld hOut with
+    ⟨outBnd, hFreshOut⟩
+  have hWorldRoot : stRoot.world = St.init.world := by
+    simpa [stRoot] using hWorld
+  have hFreshLet :
+      ∀ {v : String},
+        v = "pattern" ∨ v = "atom" ∨ v = "template" →
+          counterSuffix (stRoot.counter + 1) v ≠ binder := by
+    intro v hv h
+    rcases hv with rfl | rfl | rfl
+    · have hc := congrArg String.toList h
+      simp [binder, counter, stRoot, counterSuffix] at hc
+    · have hc := congrArg String.toList h
+      simp [binder, counter, stRoot, counterSuffix] at hc
+    · have hc := congrArg String.toList h
+      simp [binder, counter, stRoot, counterSuffix] at hc
+  exact
+    cicStage3RawArtifactSig_primary_nf_defn_fresh_root_output_isError_fuel_three
+      (st := stRoot) (name := name) (binder := binder)
+      (out := out) (outBnd := outBnd)
+      hWorldRoot hFreshLet
+      (by simpa [stRoot, binder, counter] using hFreshOut)
+
+private theorem cicStage3RawArtifactSig_primary_nf_defn_runtime_output_isError_fuel_five
+    {st : St} {name : DeclName} {out : Metta.Atom}
+    (hWorld : st.world = St.init.world)
+    (hOut :
+      out ∈
+        (mettaEval kernelDefControlEnv 5 st []
+          (nfQuery cicStage3RawArtifactSig (.defn name))).1.map (·.1)) :
+    out.isError = true := by
+  let counter := st.counter + nfDefCandidatePreWithIndGZeroIota.length
+  let binder := counterSuffix counter "body"
+  let stRoot : St :=
+    { counter := st.counter + nfDefCandidatePreWithIndGZeroIota.length + 1,
+      world := st.world }
+  rcases
+      cicStage3RawArtifactSig_primary_nf_defn_output_mem_implies_fresh_root_output_mem
+        (fuel := 4) (st := st) (name := name) (out := out)
+        hWorld hOut with
+    ⟨outBnd, hFreshOut⟩
+  have hWorldRoot : stRoot.world = St.init.world := by
+    simpa [stRoot] using hWorld
+  have hFreshLet :
+      ∀ {v : String},
+        v = "pattern" ∨ v = "atom" ∨ v = "template" →
+          counterSuffix (stRoot.counter + 1) v ≠ binder := by
+    intro v hv h
+    rcases hv with rfl | rfl | rfl
+    · have hc := congrArg String.toList h
+      simp [binder, counter, stRoot, counterSuffix] at hc
+    · have hc := congrArg String.toList h
+      simp [binder, counter, stRoot, counterSuffix] at hc
+    · have hc := congrArg String.toList h
+      simp [binder, counter, stRoot, counterSuffix] at hc
+  exact
+    cicStage3RawArtifactSig_primary_nf_defn_fresh_root_output_isError_fuel_four
+      (st := stRoot) (name := name) (binder := binder)
+      (out := out) (outBnd := outBnd)
+      hWorldRoot hFreshLet
+      (by simpa [stRoot, binder, counter] using hFreshOut)
+
+private theorem cicStage3RawArtifactSig_primary_nf_defn_runtime_output_isError_fuel_six
+    {st : St} {name : DeclName} {out : Metta.Atom}
+    (hWorld : st.world = St.init.world)
+    (hOut :
+      out ∈
+        (mettaEval kernelDefControlEnv 6 st []
+          (nfQuery cicStage3RawArtifactSig (.defn name))).1.map (·.1)) :
+    out.isError = true := by
+  let counter := st.counter + nfDefCandidatePreWithIndGZeroIota.length
+  let binder := counterSuffix counter "body"
+  let stRoot : St :=
+    { counter := st.counter + nfDefCandidatePreWithIndGZeroIota.length + 1,
+      world := st.world }
+  rcases
+      cicStage3RawArtifactSig_primary_nf_defn_output_mem_implies_fresh_root_output_mem
+        (fuel := 5) (st := st) (name := name) (out := out)
+        hWorld hOut with
+    ⟨outBnd, hFreshOut⟩
+  have hWorldRoot : stRoot.world = St.init.world := by
+    simpa [stRoot] using hWorld
+  have hFreshLet :
+      ∀ {v : String},
+        v = "pattern" ∨ v = "atom" ∨ v = "template" →
+          counterSuffix (stRoot.counter + 1) v ≠ binder := by
+    intro v hv h
+    rcases hv with rfl | rfl | rfl
+    · have hc := congrArg String.toList h
+      simp [binder, counter, stRoot, counterSuffix] at hc
+    · have hc := congrArg String.toList h
+      simp [binder, counter, stRoot, counterSuffix] at hc
+    · have hc := congrArg String.toList h
+      simp [binder, counter, stRoot, counterSuffix] at hc
+  exact
+    cicStage3RawArtifactSig_primary_nf_defn_fresh_root_output_isError_fuel_five
+      (st := stRoot) (name := name) (binder := binder)
+      (out := out) (outBnd := outBnd)
+      hWorldRoot hFreshLet
+      (by simpa [stRoot, binder, counter] using hFreshOut)
+
+private theorem cicStage3RawArtifactSig_primary_nf_defn_runtime_output_isError_of_three_le_lt_seven
+    {fuel : Nat} {st : St} {name : DeclName} {out : Metta.Atom}
+    (hFuel : 3 ≤ fuel)
+    (hLtSeven : fuel < 7)
+    (hWorld : st.world = St.init.world)
+    (hOut :
+      out ∈
+        (mettaEval kernelDefControlEnv fuel st []
+          (nfQuery cicStage3RawArtifactSig (.defn name))).1.map (·.1)) :
+    out.isError = true := by
+  have hCases : fuel = 3 ∨ fuel = 4 ∨ fuel = 5 ∨ fuel = 6 := by
+    omega
+  rcases hCases with rfl | rfl | rfl | rfl
+  · exact
+      cicStage3RawArtifactSig_primary_nf_defn_runtime_output_isError_fuel_three
+        hWorld hOut
+  · exact
+      cicStage3RawArtifactSig_primary_nf_defn_runtime_output_isError_fuel_four
+        hWorld hOut
+  · exact
+      cicStage3RawArtifactSig_primary_nf_defn_runtime_output_isError_fuel_five
+        hWorld hOut
+  · exact
+      cicStage3RawArtifactSig_primary_nf_defn_runtime_output_isError_fuel_six
+        hWorld hOut
+
+private theorem cicStage3RawArtifactSig_primary_nf_defn_runtime_output_isError_of_one_le_lt_three
+    {fuel : Nat} {st : St} {name : DeclName} {out : Metta.Atom}
+    (hFuel : 1 ≤ fuel)
+    (hLtThree : fuel < 3)
+    (hWorld : st.world = St.init.world)
+    (hOut :
+      out ∈
+        (mettaEval kernelDefControlEnv fuel st []
+          (nfQuery cicStage3RawArtifactSig (.defn name))).1.map (·.1)) :
+    out.isError = true := by
+  have hCases : fuel = 1 ∨ fuel = 2 := by omega
+  rcases hCases with rfl | rfl
+  · exact
+      cicStage3RawArtifactSig_primary_nf_defn_runtime_output_isError_fuel_one
+        hWorld hOut
+  · exact
+      cicStage3RawArtifactSig_primary_nf_defn_runtime_output_isError_fuel_two
+        hWorld hOut
+
+theorem cicStage3RawArtifactSig_primary_nf_value_runtime_extraction_geSeven_nonError_defn
+    {fuel : Nat} {st : St} {name : DeclName}
+    {term : PureTm 0} {out : Metta.Atom}
+    (hFuel : 7 ≤ fuel)
+    (hWorld : st.world = St.init.world)
+    (hTrans :
+      DIndGArtifactTermTranslates
+        cicStage3RawArtifactSig.nameTranslates 0
+        (.defn name) term)
+    (hOut :
+      out ∈
+        (mettaEval kernelDefControlEnv fuel st []
+          (nfQuery cicStage3RawArtifactSig (.defn name))).1.map (·.1))
+    (_hNoErr : out.isError = false) :
+    CicStage3RawArtifactSigPrimaryNfRuntimeReadout (.defn name) out := by
+  exact
+    cicStage3RawArtifactSig_primary_nf_value_runtime_extraction_geSeven_defn
+      hFuel hWorld hTrans hOut
+
+theorem cicStage3RawArtifactSig_primary_nf_value_runtime_extraction_geThree_nonError_defn_of_ltSeven_outputs_error
+    (hLowFuelError :
+      ∀ {fuel : Nat} {st : St} {name : DeclName} {out : Metta.Atom},
+        3 ≤ fuel →
+        fuel < 7 →
+        st.world = St.init.world →
+        out ∈
+          (mettaEval kernelDefControlEnv fuel st []
+            (nfQuery cicStage3RawArtifactSig (.defn name))).1.map (·.1) →
+        out.isError = true)
+    {fuel : Nat} {st : St} {name : DeclName}
+    {term : PureTm 0} {out : Metta.Atom}
+    (hFuel : 3 ≤ fuel)
+    (hWorld : st.world = St.init.world)
+    (hTrans :
+      DIndGArtifactTermTranslates
+        cicStage3RawArtifactSig.nameTranslates 0
+        (.defn name) term)
+    (hOut :
+      out ∈
+        (mettaEval kernelDefControlEnv fuel st []
+          (nfQuery cicStage3RawArtifactSig (.defn name))).1.map (·.1))
+    (hNoErr : out.isError = false) :
+    CicStage3RawArtifactSigPrimaryNfRuntimeReadout (.defn name) out := by
+  by_cases hLtSeven : fuel < 7
+  · have hErr :=
+      hLowFuelError hFuel hLtSeven hWorld hOut
+    rw [hNoErr] at hErr
+    cases hErr
+  · exact
+      cicStage3RawArtifactSig_primary_nf_value_runtime_extraction_geSeven_nonError_defn
+        (by omega) hWorld hTrans hOut hNoErr
+
+theorem cicStage3RawArtifactSig_primary_nf_value_runtime_extraction_geThree_nonError_defn
+    {fuel : Nat} {st : St} {name : DeclName}
+    {term : PureTm 0} {out : Metta.Atom}
+    (hFuel : 3 ≤ fuel)
+    (hWorld : st.world = St.init.world)
+    (hTrans :
+      DIndGArtifactTermTranslates
+        cicStage3RawArtifactSig.nameTranslates 0
+        (.defn name) term)
+    (hOut :
+      out ∈
+        (mettaEval kernelDefControlEnv fuel st []
+          (nfQuery cicStage3RawArtifactSig (.defn name))).1.map (·.1))
+    (hNoErr : out.isError = false) :
+    CicStage3RawArtifactSigPrimaryNfRuntimeReadout (.defn name) out := by
+  exact
+    cicStage3RawArtifactSig_primary_nf_value_runtime_extraction_geThree_nonError_defn_of_ltSeven_outputs_error
+      cicStage3RawArtifactSig_primary_nf_defn_runtime_output_isError_of_three_le_lt_seven
+      hFuel hWorld hTrans hOut hNoErr
+
+private theorem cicStage3RawArtifactSig_primary_nf_value_runtime_extraction_geOne_nonError_defn_any_depth
+    {fuel : Nat} {st : St} {name : DeclName}
+    {term : PureTm 0} {out : Metta.Atom}
+    (hFuel : 1 ≤ fuel)
+    (hWorld : st.world = St.init.world)
+    (hTrans :
+      DIndGArtifactTermTranslates
+        cicStage3RawArtifactSig.nameTranslates 0
+        (.defn name) term)
+    (hOut :
+      out ∈
+        (mettaEval kernelDefControlEnv fuel st []
+          (nfQuery cicStage3RawArtifactSig (.defn name))).1.map (·.1))
+    (hNoErr : out.isError = false) :
+    CicStage3RawArtifactSigPrimaryNfRuntimeReadout (.defn name) out := by
+  by_cases hLtThree : fuel < 3
+  · have hErr :=
+      cicStage3RawArtifactSig_primary_nf_defn_runtime_output_isError_of_one_le_lt_three
+        hFuel hLtThree hWorld hOut
+    rw [hNoErr] at hErr
+    cases hErr
+  · exact
+      cicStage3RawArtifactSig_primary_nf_value_runtime_extraction_geThree_nonError_defn
+        (by omega) hWorld hTrans hOut hNoErr
+
+theorem cicStage3RawArtifactSig_primary_nf_value_runtime_extraction_geThree_srt_any_depth
+    {n fuel : Nat} {st : St} {sort : DIndGArtifactSort}
+    {term : PureTm n} {out : Metta.Atom}
+    (hFuel : 3 ≤ fuel)
+    (hWorld : st.world = St.init.world)
+    (_hTrans :
+      DIndGArtifactTermTranslates
+        cicStage3RawArtifactSig.nameTranslates n
+        (.srt sort) term)
+    (hOut :
+      out ∈
+        (mettaEval kernelDefControlEnv fuel st []
+          (nfQuery cicStage3RawArtifactSig (.srt sort))).1.map (·.1)) :
+    CicStage3RawArtifactSigPrimaryNfRuntimeReadout (.srt sort) out := by
+  rcases Nat.exists_eq_add_of_le hFuel with ⟨fuelBase, hFuelEq⟩
+  have hFuelEq' : fuel = fuelBase + 3 := by omega
+  have hStatic : st.world.selfExtra = [] := by
+    rw [hWorld]
+    rfl
+  rw [hFuelEq'] at hOut
+  rw [mettaEval_kernelDefControlEnv_nf_srt_body_eq_state
+    fuelBase st cicStage3RawArtifactSig sort hStatic] at hOut
+  have hOutEq : out = termAtom (.srt sort) := by
+    simpa using hOut
+  subst out
+  exact
+    CicStage3RawArtifactSigPrimaryNfRuntimeReadout.resolved
+      (CicStage3ResolvedNfRuntimeOutput.srt sort)
+
+theorem cicStage3RawArtifactSig_primary_nf_value_runtime_extraction_geThree_con_any_depth
+    {n fuel : Nat} {st : St} {name : DeclName}
+    {term : PureTm n} {out : Metta.Atom}
+    (hFuel : 3 ≤ fuel)
+    (hWorld : st.world = St.init.world)
+    (hTrans :
+      DIndGArtifactTermTranslates
+        cicStage3RawArtifactSig.nameTranslates n
+        (.con name) term)
+    (hOut :
+      out ∈
+        (mettaEval kernelDefControlEnv fuel st []
+          (nfQuery cicStage3RawArtifactSig (.con name))).1.map (·.1)) :
+    CicStage3RawArtifactSigPrimaryNfRuntimeReadout (.con name) out := by
+  cases hTrans with
+  | con hName =>
+      rcases Nat.exists_eq_add_of_le hFuel with ⟨fuelBase, hFuelEq⟩
+      have hFuelEq' : fuel = fuelBase + 3 := by omega
+      have hStatic : st.world.selfExtra = [] := by
+        rw [hWorld]
+        rfl
+      have hNameWith :
+          cicStage3RawNameTranslatesWithPropToType0Witness name _ :=
+        Or.inl hName
+      have hBound :
+          cicStage3RawNameWithPropToType0WitnessBounded name :=
+        cicStage3RawNameTranslatesWithPropToType0Witness_bounded hNameWith
+      rw [hFuelEq'] at hOut
+      rw [mettaEval_kernelDefControlEnv_nf_con_body_eq_state
+        fuelBase st cicStage3RawArtifactSig name hStatic
+        (cicStage3RawNameWithPropToType0WitnessBounded_runtimeSafe hBound)] at hOut
+      have hOutEq : out = termAtom (.con name) := by
+        simpa using hOut
+      subst out
+      exact
+        CicStage3RawArtifactSigPrimaryNfRuntimeReadout.resolved
+          (CicStage3ResolvedNfRuntimeOutput.con hBound)
+
+private theorem cicStage3RawArtifactSig_primary_nf_srt_runtime_output_isError_of_one_le_lt_three
+    {fuel : Nat} {st : St} {sort : DIndGArtifactSort} {out : Metta.Atom}
+    (hFuel : 1 ≤ fuel)
+    (hLtThree : fuel < 3)
+    (hWorld : st.world = St.init.world)
+    (hOut :
+      out ∈
+        (mettaEval kernelDefControlEnv fuel st []
+          (nfQuery cicStage3RawArtifactSig (.srt sort))).1.map (·.1)) :
+    out.isError = true := by
+  have hCases : fuel = 1 ∨ fuel = 2 := by omega
+  rcases hCases with rfl | rfl
+  · rcases List.mem_map.mp hOut with ⟨⟨actual, outBnd⟩, hPair, hActual⟩
+    dsimp at hActual
+    subst actual
+    have hStatic : st.world.selfExtra = [] := by
+      rw [hWorld]
+      rfl
+    let root := termAtom (.srt sort)
+    let rootBnd :=
+      (renameBindings (counterSuffix (st.counter + 1))
+        (nfSrtRuleBindings cicStage3RawArtifactSig sort)).reverse
+    let stRoot : St := { counter := st.counter + 8, world := st.world }
+    have hRoot :
+        interpretFuel kernelDefControlEnv (0 + 1) st
+            [evalItemNil (nfQuery cicStage3RawArtifactSig (.srt sort))] [] =
+          ([(root, rootBnd)], stRoot) := by
+      simpa [root, rootBnd, stRoot] using
+        interpretFuel_kernelDefControlEnv_nf_srt_root_eq
+          (fuel := 0) (st := st) cicStage3RawArtifactSig sort hStatic
+    have hNoErr :
+        (([sigAtom cicStage3RawArtifactSig,
+            termAtom (.srt sort)].zip
+          [sigAtom cicStage3RawArtifactSig,
+            termAtom (.srt sort)]).find?
+          (fun ho : Metta.Atom × Metta.Atom => ho.1.isError && ho.1 != ho.2)) =
+          none := by
+      simp [sigAtom_isError_false, termAtom_isError_false]
+    have hRootNotNR : (root == notReducibleA) = false := by
+      simpa [root] using termAtom_beq_notReducible_false (.srt sort)
+    have hRootNotSelf :
+        (root == nfQuery cicStage3RawArtifactSig (.srt sort)) = false := by
+      cases sort <;> simp [root, nfQuery, termAtom, sortAtom, mExpr, mSym] <;> rfl
+    rcases
+        mettaEval_binary_expr_pair_mem_implies_root_eval_mem_of_quoted_args_and_root_eval_eq_bnd
+          (env := kernelDefControlEnv) (fuel := 0)
+          (st := st) (stRoot := stRoot) (op := "nf")
+          (x := sigAtom cicStage3RawArtifactSig)
+          (y := termAtom (.srt sort))
+          (root := root) (final := out) (rootBnd := rootBnd)
+          (outBnd := outBnd)
+          (hType := kernelDefControlEnv_nf_typeMismatch st
+            cicStage3RawArtifactSig (.srt sort))
+          (hMask := kernelDefControlEnv_nf_argMask)
+          (hNoErr := hNoErr)
+          (hRoot := by simpa [root, rootBnd, stRoot, nfQuery, mExpr, mSym] using hRoot)
+          (hRootNotNotReducible := hRootNotNR)
+          (hRootNotSelf := by simpa [nfQuery, mExpr, mSym] using hRootNotSelf)
+          (hReturns := by
+            simpa [nfQuery, mExpr, mSym] using
+              kernelDefControlEnv_nf_returnsAtom
+                cicStage3RawArtifactSig (.srt sort))
+          (hmem := by simpa [nfQuery, mExpr, mSym] using hPair) with
+      ⟨finalBnd, hFinal⟩
+    have hValue :
+        out ∈
+          (mettaEval kernelDefControlEnv 0 stRoot [] root).1.map (·.1) := by
+      have hBndNil :
+          restrictBnd
+              (([sigAtom cicStage3RawArtifactSig,
+                  termAtom (.srt sort)]).flatMap Metta.Atom.vars)
+              ((Metta.Bindings.merge [] rootBnd).head?.getD rootBnd) = [] := by
+        simpa [List.flatMap,
+          sigAtom_vars_nil cicStage3RawArtifactSig,
+          termAtom_vars_nil (.srt sort)] using
+          restrictBnd_nil_vars
+            ((Metta.Bindings.merge [] rootBnd).head?.getD rootBnd)
+      rw [hBndNil] at hFinal
+      exact List.mem_map.mpr ⟨(out, finalBnd), hFinal, rfl⟩
+    exact mettaEval_zero_output_isError hValue
+  · rcases List.mem_map.mp hOut with ⟨⟨actual, outBnd⟩, hPair, hActual⟩
+    dsimp at hActual
+    subst actual
+    have hStatic : st.world.selfExtra = [] := by
+      rw [hWorld]
+      rfl
+    let root := termAtom (.srt sort)
+    let rootBnd :=
+      (renameBindings (counterSuffix (st.counter + 1))
+        (nfSrtRuleBindings cicStage3RawArtifactSig sort)).reverse
+    let stRoot : St := { counter := st.counter + 8, world := st.world }
+    have hRoot :
+        interpretFuel kernelDefControlEnv (1 + 1) st
+            [evalItemNil (nfQuery cicStage3RawArtifactSig (.srt sort))] [] =
+          ([(root, rootBnd)], stRoot) := by
+      simpa [root, rootBnd, stRoot] using
+        interpretFuel_kernelDefControlEnv_nf_srt_root_eq
+          (fuel := 1) (st := st) cicStage3RawArtifactSig sort hStatic
+    have hNoErr :
+        (([sigAtom cicStage3RawArtifactSig,
+            termAtom (.srt sort)].zip
+          [sigAtom cicStage3RawArtifactSig,
+            termAtom (.srt sort)]).find?
+          (fun ho : Metta.Atom × Metta.Atom => ho.1.isError && ho.1 != ho.2)) =
+          none := by
+      simp [sigAtom_isError_false, termAtom_isError_false]
+    have hRootNotNR : (root == notReducibleA) = false := by
+      simpa [root] using termAtom_beq_notReducible_false (.srt sort)
+    have hRootNotSelf :
+        (root == nfQuery cicStage3RawArtifactSig (.srt sort)) = false := by
+      cases sort <;> simp [root, nfQuery, termAtom, sortAtom, mExpr, mSym] <;> rfl
+    rcases
+        mettaEval_binary_expr_pair_mem_implies_root_eval_mem_of_quoted_args_and_root_eval_eq_bnd
+          (env := kernelDefControlEnv) (fuel := 1)
+          (st := st) (stRoot := stRoot) (op := "nf")
+          (x := sigAtom cicStage3RawArtifactSig)
+          (y := termAtom (.srt sort))
+          (root := root) (final := out) (rootBnd := rootBnd)
+          (outBnd := outBnd)
+          (hType := kernelDefControlEnv_nf_typeMismatch st
+            cicStage3RawArtifactSig (.srt sort))
+          (hMask := kernelDefControlEnv_nf_argMask)
+          (hNoErr := hNoErr)
+          (hRoot := by simpa [root, rootBnd, stRoot, nfQuery, mExpr, mSym] using hRoot)
+          (hRootNotNotReducible := hRootNotNR)
+          (hRootNotSelf := by simpa [nfQuery, mExpr, mSym] using hRootNotSelf)
+          (hReturns := by
+            simpa [nfQuery, mExpr, mSym] using
+              kernelDefControlEnv_nf_returnsAtom
+                cicStage3RawArtifactSig (.srt sort))
+          (hmem := by simpa [nfQuery, mExpr, mSym] using hPair) with
+      ⟨finalBnd, hFinal⟩
+    have hBndNil :
+        restrictBnd
+            (([sigAtom cicStage3RawArtifactSig,
+                termAtom (.srt sort)]).flatMap Metta.Atom.vars)
+            ((Metta.Bindings.merge [] rootBnd).head?.getD rootBnd) = [] := by
+      simpa [List.flatMap,
+        sigAtom_vars_nil cicStage3RawArtifactSig,
+        termAtom_vars_nil (.srt sort)] using
+        restrictBnd_nil_vars
+          ((Metta.Bindings.merge [] rootBnd).head?.getD rootBnd)
+    rw [hBndNil] at hFinal
+    exact
+      mettaEval_kernelDefControlEnv_termAtom_srt_output_isError_fuel_one
+        (by simpa [root] using hFinal)
+
+private theorem cicStage3RawArtifactSig_primary_nf_var_runtime_output_isError_of_one_le_lt_three
+    {fuel : Nat} {st : St} {index : Nat} {out : Metta.Atom}
+    (hFuel : 1 ≤ fuel)
+    (hLtThree : fuel < 3)
+    (hWorld : st.world = St.init.world)
+    (hOut :
+      out ∈
+        (mettaEval kernelDefControlEnv fuel st []
+          (nfQuery cicStage3RawArtifactSig (.var index))).1.map (·.1)) :
+    out.isError = true := by
+  have hCases : fuel = 1 ∨ fuel = 2 := by omega
+  rcases hCases with rfl | rfl
+  · rcases List.mem_map.mp hOut with ⟨⟨actual, outBnd⟩, hPair, hActual⟩
+    dsimp at hActual
+    subst actual
+    have hStatic : st.world.selfExtra = [] := by
+      rw [hWorld]
+      rfl
+    let root := termAtom (.var index)
+    let rootBnd :=
+      (renameBindings (counterSuffix st.counter)
+        (nfVarRuleBindings cicStage3RawArtifactSig index)).reverse
+    let stRoot : St := { counter := st.counter + 8, world := st.world }
+    have hRoot :
+        interpretFuel kernelDefControlEnv (0 + 1) st
+            [evalItemNil (nfQuery cicStage3RawArtifactSig (.var index))] [] =
+          ([(root, rootBnd)], stRoot) := by
+      simpa [root, rootBnd, stRoot] using
+        interpretFuel_kernelDefControlEnv_nf_var_root_eq
+          (fuel := 0) (st := st) cicStage3RawArtifactSig index hStatic
+    have hNoErr :
+        (([sigAtom cicStage3RawArtifactSig,
+            termAtom (.var index)].zip
+          [sigAtom cicStage3RawArtifactSig,
+            termAtom (.var index)]).find?
+          (fun ho : Metta.Atom × Metta.Atom => ho.1.isError && ho.1 != ho.2)) =
+          none := by
+      simp [sigAtom_isError_false, termAtom_isError_false]
+    have hRootNotNR : (root == notReducibleA) = false := by
+      simpa [root] using termAtom_beq_notReducible_false (.var index)
+    have hRootNotSelf :
+        (root == nfQuery cicStage3RawArtifactSig (.var index)) = false := by
+      simp [root, nfQuery, termAtom, mExpr, mSym, mNat]
+      rfl
+    rcases
+        mettaEval_binary_expr_pair_mem_implies_root_eval_mem_of_quoted_args_and_root_eval_eq_bnd
+          (env := kernelDefControlEnv) (fuel := 0)
+          (st := st) (stRoot := stRoot) (op := "nf")
+          (x := sigAtom cicStage3RawArtifactSig)
+          (y := termAtom (.var index))
+          (root := root) (final := out) (rootBnd := rootBnd)
+          (outBnd := outBnd)
+          (hType := kernelDefControlEnv_nf_typeMismatch st
+            cicStage3RawArtifactSig (.var index))
+          (hMask := kernelDefControlEnv_nf_argMask)
+          (hNoErr := hNoErr)
+          (hRoot := by simpa [root, rootBnd, stRoot, nfQuery, mExpr, mSym] using hRoot)
+          (hRootNotNotReducible := hRootNotNR)
+          (hRootNotSelf := by simpa [nfQuery, mExpr, mSym] using hRootNotSelf)
+          (hReturns := by
+            simpa [nfQuery, mExpr, mSym] using
+              kernelDefControlEnv_nf_returnsAtom
+                cicStage3RawArtifactSig (.var index))
+          (hmem := by simpa [nfQuery, mExpr, mSym] using hPair) with
+      ⟨finalBnd, hFinal⟩
+    have hValue :
+        out ∈
+          (mettaEval kernelDefControlEnv 0 stRoot [] root).1.map (·.1) := by
+      have hBndNil :
+          restrictBnd
+              (([sigAtom cicStage3RawArtifactSig,
+                  termAtom (.var index)]).flatMap Metta.Atom.vars)
+              ((Metta.Bindings.merge [] rootBnd).head?.getD rootBnd) = [] := by
+        simpa [List.flatMap,
+          sigAtom_vars_nil cicStage3RawArtifactSig,
+          termAtom_vars_nil (.var index)] using
+          restrictBnd_nil_vars
+            ((Metta.Bindings.merge [] rootBnd).head?.getD rootBnd)
+      rw [hBndNil] at hFinal
+      exact List.mem_map.mpr ⟨(out, finalBnd), hFinal, rfl⟩
+    exact mettaEval_zero_output_isError hValue
+  · rcases List.mem_map.mp hOut with ⟨⟨actual, outBnd⟩, hPair, hActual⟩
+    dsimp at hActual
+    subst actual
+    have hStatic : st.world.selfExtra = [] := by
+      rw [hWorld]
+      rfl
+    let root := termAtom (.var index)
+    let rootBnd :=
+      (renameBindings (counterSuffix st.counter)
+        (nfVarRuleBindings cicStage3RawArtifactSig index)).reverse
+    let stRoot : St := { counter := st.counter + 8, world := st.world }
+    have hRoot :
+        interpretFuel kernelDefControlEnv (1 + 1) st
+            [evalItemNil (nfQuery cicStage3RawArtifactSig (.var index))] [] =
+          ([(root, rootBnd)], stRoot) := by
+      simpa [root, rootBnd, stRoot] using
+        interpretFuel_kernelDefControlEnv_nf_var_root_eq
+          (fuel := 1) (st := st) cicStage3RawArtifactSig index hStatic
+    have hNoErr :
+        (([sigAtom cicStage3RawArtifactSig,
+            termAtom (.var index)].zip
+          [sigAtom cicStage3RawArtifactSig,
+            termAtom (.var index)]).find?
+          (fun ho : Metta.Atom × Metta.Atom => ho.1.isError && ho.1 != ho.2)) =
+          none := by
+      simp [sigAtom_isError_false, termAtom_isError_false]
+    have hRootNotNR : (root == notReducibleA) = false := by
+      simpa [root] using termAtom_beq_notReducible_false (.var index)
+    have hRootNotSelf :
+        (root == nfQuery cicStage3RawArtifactSig (.var index)) = false := by
+      simp [root, nfQuery, termAtom, mExpr, mSym, mNat]
+      rfl
+    rcases
+        mettaEval_binary_expr_pair_mem_implies_root_eval_mem_of_quoted_args_and_root_eval_eq_bnd
+          (env := kernelDefControlEnv) (fuel := 1)
+          (st := st) (stRoot := stRoot) (op := "nf")
+          (x := sigAtom cicStage3RawArtifactSig)
+          (y := termAtom (.var index))
+          (root := root) (final := out) (rootBnd := rootBnd)
+          (outBnd := outBnd)
+          (hType := kernelDefControlEnv_nf_typeMismatch st
+            cicStage3RawArtifactSig (.var index))
+          (hMask := kernelDefControlEnv_nf_argMask)
+          (hNoErr := hNoErr)
+          (hRoot := by simpa [root, rootBnd, stRoot, nfQuery, mExpr, mSym] using hRoot)
+          (hRootNotNotReducible := hRootNotNR)
+          (hRootNotSelf := by simpa [nfQuery, mExpr, mSym] using hRootNotSelf)
+          (hReturns := by
+            simpa [nfQuery, mExpr, mSym] using
+              kernelDefControlEnv_nf_returnsAtom
+                cicStage3RawArtifactSig (.var index))
+          (hmem := by simpa [nfQuery, mExpr, mSym] using hPair) with
+      ⟨finalBnd, hFinal⟩
+    have hBndNil :
+        restrictBnd
+            (([sigAtom cicStage3RawArtifactSig,
+                termAtom (.var index)]).flatMap Metta.Atom.vars)
+            ((Metta.Bindings.merge [] rootBnd).head?.getD rootBnd) = [] := by
+      simpa [List.flatMap,
+        sigAtom_vars_nil cicStage3RawArtifactSig,
+        termAtom_vars_nil (.var index)] using
+        restrictBnd_nil_vars
+          ((Metta.Bindings.merge [] rootBnd).head?.getD rootBnd)
+    rw [hBndNil] at hFinal
+    exact
+      mettaEval_kernelDefControlEnv_termAtom_var_output_isError_fuel_one
+        (by simpa [root] using hFinal)
+
+private theorem cicStage3RawArtifactSig_primary_nf_con_runtime_output_isError_of_one_le_lt_three
+    {fuel : Nat} {st : St} {name : DeclName} {out : Metta.Atom}
+    (hFuel : 1 ≤ fuel)
+    (hLtThree : fuel < 3)
+    (hWorld : st.world = St.init.world)
+    (hOut :
+      out ∈
+        (mettaEval kernelDefControlEnv fuel st []
+          (nfQuery cicStage3RawArtifactSig (.con name))).1.map (·.1)) :
+    out.isError = true := by
+  have hCases : fuel = 1 ∨ fuel = 2 := by omega
+  rcases hCases with rfl | rfl
+  · rcases List.mem_map.mp hOut with ⟨⟨actual, outBnd⟩, hPair, hActual⟩
+    dsimp at hActual
+    subst actual
+    have hStatic : st.world.selfExtra = [] := by
+      rw [hWorld]
+      rfl
+    let root := termAtom (.con name)
+    let rootBnd :=
+      (renameBindings (counterSuffix (st.counter + 2))
+        (nfConRuleBindings cicStage3RawArtifactSig name)).reverse
+    let stRoot : St := { counter := st.counter + 8, world := st.world }
+    have hRoot :
+        interpretFuel kernelDefControlEnv (0 + 1) st
+            [evalItemNil (nfQuery cicStage3RawArtifactSig (.con name))] [] =
+          ([(root, rootBnd)], stRoot) := by
+      simpa [root, rootBnd, stRoot] using
+        interpretFuel_kernelDefControlEnv_nf_con_root_eq
+          (fuel := 0) (st := st) cicStage3RawArtifactSig name hStatic
+    have hNoErr :
+        (([sigAtom cicStage3RawArtifactSig,
+            termAtom (.con name)].zip
+          [sigAtom cicStage3RawArtifactSig,
+            termAtom (.con name)]).find?
+          (fun ho : Metta.Atom × Metta.Atom => ho.1.isError && ho.1 != ho.2)) =
+          none := by
+      simp [sigAtom_isError_false, termAtom_isError_false]
+    have hRootNotNR : (root == notReducibleA) = false := by
+      simpa [root] using termAtom_beq_notReducible_false (.con name)
+    have hRootNotSelf :
+        (root == nfQuery cicStage3RawArtifactSig (.con name)) = false := by
+      simp [root, nfQuery, termAtom, declNameAtom, mExpr, mSym]
+      rfl
+    rcases
+        mettaEval_binary_expr_pair_mem_implies_root_eval_mem_of_quoted_args_and_root_eval_eq_bnd
+          (env := kernelDefControlEnv) (fuel := 0)
+          (st := st) (stRoot := stRoot) (op := "nf")
+          (x := sigAtom cicStage3RawArtifactSig)
+          (y := termAtom (.con name))
+          (root := root) (final := out) (rootBnd := rootBnd)
+          (outBnd := outBnd)
+          (hType := kernelDefControlEnv_nf_typeMismatch st
+            cicStage3RawArtifactSig (.con name))
+          (hMask := kernelDefControlEnv_nf_argMask)
+          (hNoErr := hNoErr)
+          (hRoot := by simpa [root, rootBnd, stRoot, nfQuery, mExpr, mSym] using hRoot)
+          (hRootNotNotReducible := hRootNotNR)
+          (hRootNotSelf := by simpa [nfQuery, mExpr, mSym] using hRootNotSelf)
+          (hReturns := by
+            simpa [nfQuery, mExpr, mSym] using
+              kernelDefControlEnv_nf_returnsAtom
+                cicStage3RawArtifactSig (.con name))
+          (hmem := by simpa [nfQuery, mExpr, mSym] using hPair) with
+      ⟨finalBnd, hFinal⟩
+    have hValue :
+        out ∈
+          (mettaEval kernelDefControlEnv 0 stRoot [] root).1.map (·.1) := by
+      have hBndNil :
+          restrictBnd
+              (([sigAtom cicStage3RawArtifactSig,
+                  termAtom (.con name)]).flatMap Metta.Atom.vars)
+              ((Metta.Bindings.merge [] rootBnd).head?.getD rootBnd) = [] := by
+        simpa [List.flatMap,
+          sigAtom_vars_nil cicStage3RawArtifactSig,
+          termAtom_vars_nil (.con name)] using
+          restrictBnd_nil_vars
+            ((Metta.Bindings.merge [] rootBnd).head?.getD rootBnd)
+      rw [hBndNil] at hFinal
+      exact List.mem_map.mpr ⟨(out, finalBnd), hFinal, rfl⟩
+    exact mettaEval_zero_output_isError hValue
+  · rcases List.mem_map.mp hOut with ⟨⟨actual, outBnd⟩, hPair, hActual⟩
+    dsimp at hActual
+    subst actual
+    have hStatic : st.world.selfExtra = [] := by
+      rw [hWorld]
+      rfl
+    let root := termAtom (.con name)
+    let rootBnd :=
+      (renameBindings (counterSuffix (st.counter + 2))
+        (nfConRuleBindings cicStage3RawArtifactSig name)).reverse
+    let stRoot : St := { counter := st.counter + 8, world := st.world }
+    have hRoot :
+        interpretFuel kernelDefControlEnv (1 + 1) st
+            [evalItemNil (nfQuery cicStage3RawArtifactSig (.con name))] [] =
+          ([(root, rootBnd)], stRoot) := by
+      simpa [root, rootBnd, stRoot] using
+        interpretFuel_kernelDefControlEnv_nf_con_root_eq
+          (fuel := 1) (st := st) cicStage3RawArtifactSig name hStatic
+    have hNoErr :
+        (([sigAtom cicStage3RawArtifactSig,
+            termAtom (.con name)].zip
+          [sigAtom cicStage3RawArtifactSig,
+            termAtom (.con name)]).find?
+          (fun ho : Metta.Atom × Metta.Atom => ho.1.isError && ho.1 != ho.2)) =
+          none := by
+      simp [sigAtom_isError_false, termAtom_isError_false]
+    have hRootNotNR : (root == notReducibleA) = false := by
+      simpa [root] using termAtom_beq_notReducible_false (.con name)
+    have hRootNotSelf :
+        (root == nfQuery cicStage3RawArtifactSig (.con name)) = false := by
+      simp [root, nfQuery, termAtom, declNameAtom, mExpr, mSym]
+      rfl
+    rcases
+        mettaEval_binary_expr_pair_mem_implies_root_eval_mem_of_quoted_args_and_root_eval_eq_bnd
+          (env := kernelDefControlEnv) (fuel := 1)
+          (st := st) (stRoot := stRoot) (op := "nf")
+          (x := sigAtom cicStage3RawArtifactSig)
+          (y := termAtom (.con name))
+          (root := root) (final := out) (rootBnd := rootBnd)
+          (outBnd := outBnd)
+          (hType := kernelDefControlEnv_nf_typeMismatch st
+            cicStage3RawArtifactSig (.con name))
+          (hMask := kernelDefControlEnv_nf_argMask)
+          (hNoErr := hNoErr)
+          (hRoot := by simpa [root, rootBnd, stRoot, nfQuery, mExpr, mSym] using hRoot)
+          (hRootNotNotReducible := hRootNotNR)
+          (hRootNotSelf := by simpa [nfQuery, mExpr, mSym] using hRootNotSelf)
+          (hReturns := by
+            simpa [nfQuery, mExpr, mSym] using
+              kernelDefControlEnv_nf_returnsAtom
+                cicStage3RawArtifactSig (.con name))
+          (hmem := by simpa [nfQuery, mExpr, mSym] using hPair) with
+      ⟨finalBnd, hFinal⟩
+    have hBndNil :
+        restrictBnd
+            (([sigAtom cicStage3RawArtifactSig,
+                termAtom (.con name)]).flatMap Metta.Atom.vars)
+            ((Metta.Bindings.merge [] rootBnd).head?.getD rootBnd) = [] := by
+      simpa [List.flatMap,
+        sigAtom_vars_nil cicStage3RawArtifactSig,
+        termAtom_vars_nil (.con name)] using
+        restrictBnd_nil_vars
+          ((Metta.Bindings.merge [] rootBnd).head?.getD rootBnd)
+    rw [hBndNil] at hFinal
+    exact
+      mettaEval_kernelDefControlEnv_termAtom_con_output_isError_fuel_one
+        (by simpa [root] using hFinal)
+
+private theorem cicStage3RawArtifactSig_primary_nf_value_runtime_extraction_geOne_nonError_var_any_depth
+    {n fuel : Nat} {st : St} {index : Nat}
+    {term : PureTm n} {out : Metta.Atom}
+    (hFuel : 1 ≤ fuel)
+    (hWorld : st.world = St.init.world)
+    (_hTrans :
+      DIndGArtifactTermTranslates
+        cicStage3RawArtifactSig.nameTranslates n
+        (.var index) term)
+    (hOut :
+      out ∈
+        (mettaEval kernelDefControlEnv fuel st []
+          (nfQuery cicStage3RawArtifactSig (.var index))).1.map (·.1))
+    (hNoErr : out.isError = false) :
+    CicStage3RawArtifactSigPrimaryNfRuntimeReadout (.var index) out := by
+  by_cases hLtThree : fuel < 3
+  · have hErr :=
+      cicStage3RawArtifactSig_primary_nf_var_runtime_output_isError_of_one_le_lt_three
+        hFuel hLtThree hWorld hOut
+    rw [hNoErr] at hErr
+    cases hErr
+  · exact
+      cicStage3RawArtifactSig_primary_nf_value_runtime_extraction_geThree_var_any_depth
+        (by omega) hWorld hOut
+
+private theorem cicStage3RawArtifactSig_primary_nf_value_runtime_extraction_geOne_nonError_srt_any_depth
+    {n fuel : Nat} {st : St} {sort : DIndGArtifactSort}
+    {term : PureTm n} {out : Metta.Atom}
+    (hFuel : 1 ≤ fuel)
+    (hWorld : st.world = St.init.world)
+    (hTrans :
+      DIndGArtifactTermTranslates
+        cicStage3RawArtifactSig.nameTranslates n
+        (.srt sort) term)
+    (hOut :
+      out ∈
+        (mettaEval kernelDefControlEnv fuel st []
+          (nfQuery cicStage3RawArtifactSig (.srt sort))).1.map (·.1))
+    (hNoErr : out.isError = false) :
+    CicStage3RawArtifactSigPrimaryNfRuntimeReadout (.srt sort) out := by
+  by_cases hLtThree : fuel < 3
+  · have hErr :=
+      cicStage3RawArtifactSig_primary_nf_srt_runtime_output_isError_of_one_le_lt_three
+        hFuel hLtThree hWorld hOut
+    rw [hNoErr] at hErr
+    cases hErr
+  · exact
+      cicStage3RawArtifactSig_primary_nf_value_runtime_extraction_geThree_srt_any_depth
+        (by omega) hWorld hTrans hOut
+
+private theorem cicStage3RawArtifactSig_primary_nf_value_runtime_extraction_geOne_nonError_con_any_depth
+    {n fuel : Nat} {st : St} {name : DeclName}
+    {term : PureTm n} {out : Metta.Atom}
+    (hFuel : 1 ≤ fuel)
+    (hWorld : st.world = St.init.world)
+    (hTrans :
+      DIndGArtifactTermTranslates
+        cicStage3RawArtifactSig.nameTranslates n
+        (.con name) term)
+    (hOut :
+      out ∈
+        (mettaEval kernelDefControlEnv fuel st []
+          (nfQuery cicStage3RawArtifactSig (.con name))).1.map (·.1))
+    (hNoErr : out.isError = false) :
+    CicStage3RawArtifactSigPrimaryNfRuntimeReadout (.con name) out := by
+  by_cases hLtThree : fuel < 3
+  · have hErr :=
+      cicStage3RawArtifactSig_primary_nf_con_runtime_output_isError_of_one_le_lt_three
+        hFuel hLtThree hWorld hOut
+    rw [hNoErr] at hErr
+    cases hErr
+  · exact
+      cicStage3RawArtifactSig_primary_nf_value_runtime_extraction_geThree_con_any_depth
+        (by omega) hWorld hTrans hOut
+
+theorem cicStage3RawArtifactSig_primary_nf_value_runtime_extraction_geThree_bad_any_depth
+    {n fuel : Nat} {st : St} {reason : String}
+    {term : PureTm n} {out : Metta.Atom}
+    (_hFuel : 3 ≤ fuel)
+    (_hWorld : st.world = St.init.world)
+    (hTrans :
+      DIndGArtifactTermTranslates
+        cicStage3RawArtifactSig.nameTranslates n
+        (.bad reason) term)
+    (_hOut :
+      out ∈
+        (mettaEval kernelDefControlEnv fuel st []
+          (nfQuery cicStage3RawArtifactSig (.bad reason))).1.map (·.1)) :
+    CicStage3RawArtifactSigPrimaryNfRuntimeReadout (.bad reason) out := by
+  cases hTrans
+
+theorem cicStage3RawArtifactSig_primary_nf_value_runtime_extraction_geThree_app_any_depth
+    {n fuel : Nat} {st : St} {rawFn rawArg : DIndGArtifactTerm}
+    {term : PureTm n} {out : Metta.Atom}
+    (hFuel : 3 ≤ fuel)
+    (hWorld : st.world = St.init.world)
+    (hTrans :
+      DIndGArtifactTermTranslates
+        cicStage3RawArtifactSig.nameTranslates n
+        (.app rawFn rawArg) term)
+    (hOut :
+      out ∈
+        (mettaEval kernelDefControlEnv fuel st []
+          (nfQuery cicStage3RawArtifactSig (.app rawFn rawArg))).1.map (·.1)) :
+    CicStage3RawArtifactSigPrimaryNfRuntimeReadout
+      (.app rawFn rawArg) out := by
+  cases hTrans with
+  | app hFn hArg =>
+      rcases Nat.exists_eq_add_of_le hFuel with ⟨fuelBase, hFuelEq⟩
+      have hFuelEq' : fuel = fuelBase + 3 := by omega
+      have hStatic : st.world.selfExtra = [] := by
+        rw [hWorld]
+        rfl
+      rw [hFuelEq'] at hOut
+      rw [mettaEval_kernelDefControlEnv_nf_app_body_eq_state
+        (fuelBase + 1) st cicStage3RawArtifactSig rawFn rawArg hStatic] at hOut
+      have hOutEq :
+          out = nfQuery cicStage3RawArtifactSig (.app rawFn rawArg) := by
+        simpa using hOut
+      subst out
+      exact
+        CicStage3RawArtifactSigPrimaryNfRuntimeReadout.appStuck
+          (cicStage3RawTermTranslatesWithPropToType0Witness_visible_names_bounded
+            (dindg_translate_to_withPropToType0Witness hFn))
+          (cicStage3RawTermTranslatesWithPropToType0Witness_visible_names_bounded
+            (dindg_translate_to_withPropToType0Witness hArg))
+
+theorem cicStage3RawArtifactSig_primary_nf_value_runtime_extraction_geOne_nonError_app_any_depth
+    {n fuel : Nat} {st : St} {rawFn rawArg : DIndGArtifactTerm}
+    {term : PureTm n} {out : Metta.Atom}
+    (hFuel : 1 ≤ fuel)
+    (hWorld : st.world = St.init.world)
+    (hTrans :
+      DIndGArtifactTermTranslates
+        cicStage3RawArtifactSig.nameTranslates n
+        (.app rawFn rawArg) term)
+    (hOut :
+      out ∈
+        (mettaEval kernelDefControlEnv fuel st []
+          (nfQuery cicStage3RawArtifactSig (.app rawFn rawArg))).1.map (·.1))
+    (hNoErr : out.isError = false) :
+    CicStage3RawArtifactSigPrimaryNfRuntimeReadout
+      (.app rawFn rawArg) out := by
+  cases hTrans with
+  | app hFn hArg =>
+      have hFnBounded :
+          CicStage3RawTermTranslationVisibleNamesBounded rawFn :=
+        cicStage3RawTermTranslatesWithPropToType0Witness_visible_names_bounded
+          (dindg_translate_to_withPropToType0Witness hFn)
+      have hArgBounded :
+          CicStage3RawTermTranslationVisibleNamesBounded rawArg :=
+        cicStage3RawTermTranslatesWithPropToType0Witness_visible_names_bounded
+          (dindg_translate_to_withPropToType0Witness hArg)
+      by_cases hLtTwo : fuel < 2
+      · have hFuelEq : fuel = 1 := by omega
+        subst fuel
+        rcases List.mem_map.mp hOut with ⟨⟨actual, outBnd⟩, hPair, hActual⟩
+        dsimp at hActual
+        subst actual
+        rcases
+            mettaEval_kernelDefControlEnv_nfQuery_fuel_one_output_isError_or_self
+              st cicStage3RawArtifactSig (.app rawFn rawArg) hPair with
+          hErr | hSelf
+        · rw [hNoErr] at hErr
+          cases hErr
+        · subst out
+          exact
+            CicStage3RawArtifactSigPrimaryNfRuntimeReadout.appStuck
+              hFnBounded hArgBounded
+      · rcases Nat.exists_eq_add_of_le (show 2 ≤ fuel by omega) with
+          ⟨fuelBase, hFuelEq⟩
+        have hFuelEq' : fuel = fuelBase + 2 := by omega
+        have hStatic : st.world.selfExtra = [] := by
+          rw [hWorld]
+          rfl
+        rw [hFuelEq'] at hOut
+        rw [mettaEval_kernelDefControlEnv_nf_app_body_eq_state
+          fuelBase st cicStage3RawArtifactSig rawFn rawArg hStatic] at hOut
+        have hOutEq :
+            out = nfQuery cicStage3RawArtifactSig (.app rawFn rawArg) := by
+          simpa using hOut
+        subst out
+        exact
+          CicStage3RawArtifactSigPrimaryNfRuntimeReadout.appStuck
+            hFnBounded hArgBounded
+
+private theorem cicStage3RawArtifactSig_primary_nf_self_app_any_depth
+    {n : Nat} {rawFn rawArg : DIndGArtifactTerm}
+    {term : PureTm n}
+    (hTrans :
+      DIndGArtifactTermTranslates
+        cicStage3RawArtifactSig.nameTranslates n
+        (.app rawFn rawArg) term) :
+    CicStage3RawArtifactSigPrimaryNfRuntimeReadout
+      (.app rawFn rawArg)
+      (nfQuery cicStage3RawArtifactSig (.app rawFn rawArg)) := by
+  cases hTrans with
+  | app hFn hArg =>
+      exact
+        CicStage3RawArtifactSigPrimaryNfRuntimeReadout.appStuck
+          (cicStage3RawTermTranslatesWithPropToType0Witness_visible_names_bounded
+            (dindg_translate_to_withPropToType0Witness hFn))
+          (cicStage3RawTermTranslatesWithPropToType0Witness_visible_names_bounded
+            (dindg_translate_to_withPropToType0Witness hArg))
+
+private theorem cicStage3RawArtifactSig_primary_nf_self_indG_any_depth
+    {n : Nat} {familyName : DeclName}
+    {params : List DIndGArtifactTerm}
+    {motive : DIndGArtifactTerm}
+    {caseBranches : List (DeclName × DIndGArtifactTerm)}
+    {indices : List DIndGArtifactTerm}
+    {scrutinee : DIndGArtifactTerm}
+    {term : PureTm n}
+    (hTrans :
+      DIndGArtifactTermTranslates
+        cicStage3RawArtifactSig.nameTranslates n
+        (.indG familyName params motive caseBranches indices scrutinee)
+        term) :
+    CicStage3RawArtifactSigPrimaryNfRuntimeReadout
+      (.indG familyName params motive caseBranches indices scrutinee)
+      (nfQuery cicStage3RawArtifactSig
+        (.indG familyName params motive caseBranches indices scrutinee)) := by
+  cases hTrans with
+  | indG readout =>
+      have hBounded :
+          CicStage3RawTermTranslationVisibleNamesBounded
+            (.indG familyName params motive caseBranches indices scrutinee) :=
+        cicStage3RawTermTranslatesWithPropToType0Witness_visible_names_bounded
+          (dindg_translate_to_withPropToType0Witness
+            (DIndGArtifactTermTranslates.indG readout))
+      cases hBounded with
+      | indG hFamily =>
+          exact CicStage3RawArtifactSigPrimaryNfRuntimeReadout.indGStuck hFamily
+
+private theorem cicStage3RawArtifactSig_primary_nf_value_runtime_extraction_fuel_one_nonError_indG_any_depth
+    {n : Nat} {st : St} {familyName : DeclName}
+    {params : List DIndGArtifactTerm}
+    {motive : DIndGArtifactTerm}
+    {caseBranches : List (DeclName × DIndGArtifactTerm)}
+    {indices : List DIndGArtifactTerm}
+    {scrutinee : DIndGArtifactTerm}
+    {term : PureTm n} {out : Metta.Atom}
+    (hTrans :
+      DIndGArtifactTermTranslates
+        cicStage3RawArtifactSig.nameTranslates n
+        (.indG familyName params motive caseBranches indices scrutinee)
+        term)
+    (hOut :
+      out ∈
+        (mettaEval kernelDefControlEnv 1 st []
+          (nfQuery cicStage3RawArtifactSig
+            (.indG familyName params motive caseBranches indices
+              scrutinee))).1.map (·.1))
+    (hNoErr : out.isError = false) :
+    CicStage3RawArtifactSigPrimaryNfRuntimeReadout
+      (.indG familyName params motive caseBranches indices scrutinee)
+      out := by
+  rcases List.mem_map.mp hOut with ⟨⟨actual, outBnd⟩, hPair, hActual⟩
+  dsimp at hActual
+  subst actual
+  rcases
+      mettaEval_kernelDefControlEnv_nfQuery_fuel_one_output_isError_or_self
+        st cicStage3RawArtifactSig
+        (.indG familyName params motive caseBranches indices scrutinee)
+        hPair with
+    hErr | hSelf
+  · rw [hNoErr] at hErr
+    cases hErr
+  · subst out
+    exact
+      cicStage3RawArtifactSig_primary_nf_self_indG_any_depth hTrans
+
+private theorem cicStage3RawArtifactSig_primary_nf_value_runtime_extraction_fuel_two_nonError_indG_stuck_any_depth
+    {n : Nat} {st : St} {familyName : DeclName}
+    {params : List DIndGArtifactTerm}
+    {motive : DIndGArtifactTerm}
+    {caseBranches : List (DeclName × DIndGArtifactTerm)}
+    {indices : List DIndGArtifactTerm}
+    {scrutinee : DIndGArtifactTerm}
+    {term : PureTm n} {out : Metta.Atom}
+    (hWorld : st.world = St.init.world)
+    (hTrans :
+      DIndGArtifactTermTranslates
+        cicStage3RawArtifactSig.nameTranslates n
+        (.indG familyName params motive caseBranches indices scrutinee)
+        term)
+    (hIotaMiss :
+      Metta.matchAtoms (termAtom cicStage3IndGZeroRawRuntime)
+        (termAtom
+          (.indG familyName params motive caseBranches indices scrutinee)) =
+        [])
+    (hOut :
+      out ∈
+        (mettaEval kernelDefControlEnv 2 st []
+          (nfQuery cicStage3RawArtifactSig
+            (.indG familyName params motive caseBranches indices
+              scrutinee))).1.map (·.1))
+    (_hNoErr : out.isError = false) :
+    CicStage3RawArtifactSigPrimaryNfRuntimeReadout
+      (.indG familyName params motive caseBranches indices scrutinee)
+      out := by
+  have hStatic : st.world.selfExtra = [] := by
+    rw [hWorld]
+    rfl
+  rw [show (2 : Nat) = 0 + 2 by rfl] at hOut
+  rw [mettaEval_kernelDefControlEnv_nf_indG_body_eq_state
+    0 st cicStage3RawArtifactSig familyName params motive caseBranches
+    indices scrutinee hIotaMiss hStatic] at hOut
+  have hOutEq :
+      out =
+        nfQuery cicStage3RawArtifactSig
+          (.indG familyName params motive caseBranches indices scrutinee) := by
+    simpa using hOut
+  subst out
+  exact
+    cicStage3RawArtifactSig_primary_nf_self_indG_any_depth hTrans
+
+private theorem cicStage3RawArtifactSig_primary_nf_indG_zero_iota_runtime_output_isError_fuel_two
+    {st : St} {out : Metta.Atom}
+    (hWorld : st.world = St.init.world)
+    (hOut :
+      out ∈
+        (mettaEval kernelDefControlEnv 2 st []
+          (nfQuery cicStage3RawArtifactSig
+            cicStage3IndGZeroRawRuntime)).1.map (·.1)) :
+    out.isError = true := by
+  rcases List.mem_map.mp hOut with ⟨⟨actual, outBnd⟩, hPair, hActual⟩
+  dsimp at hActual
+  subst actual
+  have hStatic : st.world.selfExtra = [] := by
+    rw [hWorld]
+    rfl
+  let root := nfIndGZeroIotaReadout
+  let rootBnd :=
+    (renameBindings (counterSuffix (st.counter + 6))
+      (nfIndGZeroIotaRuleBindings cicStage3RawArtifactSig)).reverse
+  let stRoot : St :=
+    { counter := st.counter + nfDefCandidatePreWithIndGZeroIota.length + 1,
+      world := st.world }
+  have hRoot :
+      interpretFuel kernelDefControlEnv (1 + 1) st
+          [evalItemNil
+            (nfQuery cicStage3RawArtifactSig
+              cicStage3IndGZeroRawRuntime)] [] =
+        ([(root, rootBnd)], stRoot) := by
+    simpa [root, rootBnd, stRoot, Nat.add_assoc] using
+      interpretFuel_kernelDefControlEnv_nf_indG_zero_iota_root_eq
+        (fuel := 1) (st := st) cicStage3RawArtifactSig hStatic
+  have hNoErr :
+      (([sigAtom cicStage3RawArtifactSig,
+          termAtom cicStage3IndGZeroRawRuntime].zip
+        [sigAtom cicStage3RawArtifactSig,
+          termAtom cicStage3IndGZeroRawRuntime]).find?
+        (fun ho : Metta.Atom × Metta.Atom => ho.1.isError && ho.1 != ho.2)) =
+        none := by
+    simp [sigAtom_isError_false, termAtom_isError_false]
+  have hRootNotNR : (root == notReducibleA) = false := by
+    simpa [root, nfIndGZeroIotaReadout] using
+      termAtom_beq_notReducible_false (.con `z)
+  have hRootNotSelf :
+      (root ==
+        nfQuery cicStage3RawArtifactSig cicStage3IndGZeroRawRuntime) =
+        false := by
+    change Metta.Atom.beq (termAtom (.con `z))
+      (nfQuery cicStage3RawArtifactSig cicStage3IndGZeroRawRuntime) =
+        false
+    simp only [nfQuery, cicStage3IndGZeroRawRuntime, termAtom, argsAtom,
+      casesAtom, sortAtom, declNameAtom, mExpr, mSym, Metta.Atom.beq]
+    change
+      (Metta.Atom.beq (mSym "Con") (mSym "nf") &&
+        Metta.Atom.beqList [declNameAtom `z]
+          [sigAtom cicStage3RawArtifactSig,
+            termAtom cicStage3IndGZeroRawRuntime]) = false
+    rfl
+  rcases
+      mettaEval_binary_expr_pair_mem_implies_root_eval_mem_of_quoted_args_and_root_eval_eq_bnd
+        (env := kernelDefControlEnv) (fuel := 1)
+        (st := st) (stRoot := stRoot) (op := "nf")
+        (x := sigAtom cicStage3RawArtifactSig)
+        (y := termAtom cicStage3IndGZeroRawRuntime)
+        (root := root) (final := out) (rootBnd := rootBnd)
+        (outBnd := outBnd)
+        (hType := kernelDefControlEnv_nf_typeMismatch st
+          cicStage3RawArtifactSig cicStage3IndGZeroRawRuntime)
+        (hMask := kernelDefControlEnv_nf_argMask)
+        (hNoErr := hNoErr)
+        (hRoot := by simpa [root, rootBnd, stRoot, nfQuery, mExpr, mSym] using hRoot)
+        (hRootNotNotReducible := hRootNotNR)
+        (hRootNotSelf := by simpa [nfQuery, mExpr, mSym] using hRootNotSelf)
+        (hReturns := by
+          simpa [nfQuery, mExpr, mSym] using
+            kernelDefControlEnv_nf_returnsAtom
+              cicStage3RawArtifactSig cicStage3IndGZeroRawRuntime)
+        (hmem := by simpa [nfQuery, mExpr, mSym] using hPair) with
+    ⟨finalBnd, hFinal⟩
+  have hRootClosed : root.vars = [] := by
+    simpa [root, nfIndGZeroIotaReadout] using termAtom_vars_nil (.con `z)
+  have hBndNil :
+      restrictBnd
+          (([sigAtom cicStage3RawArtifactSig,
+              termAtom cicStage3IndGZeroRawRuntime]).flatMap
+            Metta.Atom.vars)
+          ((Metta.Bindings.merge [] rootBnd).head?.getD rootBnd) = [] := by
+    simpa [List.flatMap,
+      sigAtom_vars_nil cicStage3RawArtifactSig,
+      termAtom_vars_nil cicStage3IndGZeroRawRuntime] using
+      restrictBnd_nil_vars
+        ((Metta.Bindings.merge [] rootBnd).head?.getD rootBnd)
+  rw [hBndNil] at hFinal
+  exact
+    mettaEval_kernelDefControlEnv_termAtom_con_output_isError_fuel_one
+      (by simpa [root, nfIndGZeroIotaReadout] using hFinal)
+
+theorem cicStage3RawArtifactSig_primary_nf_value_runtime_extraction_geSeven_defn_any_depth
+    {n fuel : Nat} {st : St} {name : DeclName}
+    {term : PureTm n} {out : Metta.Atom}
+    (hFuel : 7 ≤ fuel)
+    (hWorld : st.world = St.init.world)
+    (hTrans :
+      DIndGArtifactTermTranslates
+        cicStage3RawArtifactSig.nameTranslates n
+        (.defn name) term)
+    (hOut :
+      out ∈
+        (mettaEval kernelDefControlEnv fuel st []
+          (nfQuery cicStage3RawArtifactSig (.defn name))).1.map (·.1)) :
+    CicStage3RawArtifactSigPrimaryNfRuntimeReadout (.defn name) out := by
+  cases hTrans with
+  | defn hName =>
+      have hNameWith :
+          cicStage3RawNameTranslatesWithPropToType0Witness name _ :=
+        Or.inl hName
+      have hBound :
+          cicStage3RawNameWithPropToType0WitnessBounded name :=
+        cicStage3RawNameTranslatesWithPropToType0Witness_bounded hNameWith
+      have hNotWitness : name ≠ cicStage3PropToType0WitnessName := by
+        intro hEq
+        rcases hName with ⟨rfl, _⟩ | ⟨rfl, _⟩ | ⟨rfl, _⟩ | ⟨rfl, _⟩
+        · exact (by decide : (`nat : DeclName) ≠
+            cicStage3PropToType0WitnessName) hEq
+        · exact (by decide : (`nat.rec : DeclName) ≠
+            cicStage3PropToType0WitnessName) hEq
+        · exact (by decide : (`z : DeclName) ≠
+            cicStage3PropToType0WitnessName) hEq
+        · exact (by decide : (`s : DeclName) ≠
+            cicStage3PropToType0WitnessName) hEq
+      have hOutEq :=
+        cicStage3RawArtifactSig_primary_nf_defn_runtime_output_eq_geSeven
+          hFuel hWorld hOut
+      subst out
+      exact CicStage3RawArtifactSigPrimaryNfRuntimeReadout.defnStuck
+        hBound hNotWitness
+
+theorem cicStage3RawArtifactSig_primary_nf_value_runtime_extraction_geThree_nonError_defn_any_depth
+    {n fuel : Nat} {st : St} {name : DeclName}
+    {term : PureTm n} {out : Metta.Atom}
+    (hFuel : 3 ≤ fuel)
+    (hWorld : st.world = St.init.world)
+    (hTrans :
+      DIndGArtifactTermTranslates
+        cicStage3RawArtifactSig.nameTranslates n
+        (.defn name) term)
+    (hOut :
+      out ∈
+        (mettaEval kernelDefControlEnv fuel st []
+          (nfQuery cicStage3RawArtifactSig (.defn name))).1.map (·.1))
+    (hNoErr : out.isError = false) :
+    CicStage3RawArtifactSigPrimaryNfRuntimeReadout (.defn name) out := by
+  by_cases hLtSeven : fuel < 7
+  · have hErr :=
+      cicStage3RawArtifactSig_primary_nf_defn_runtime_output_isError_of_three_le_lt_seven
+        hFuel hLtSeven hWorld hOut
+    rw [hNoErr] at hErr
+    cases hErr
+  · exact
+      cicStage3RawArtifactSig_primary_nf_value_runtime_extraction_geSeven_defn_any_depth
+        (by omega) hWorld hTrans hOut
+
+private theorem cicStage3RawArtifactSig_primary_nf_value_runtime_extraction_geOne_nonError_defn_all_depths
+    {n fuel : Nat} {st : St} {name : DeclName}
+    {term : PureTm n} {out : Metta.Atom}
+    (hFuel : 1 ≤ fuel)
+    (hWorld : st.world = St.init.world)
+    (hTrans :
+      DIndGArtifactTermTranslates
+        cicStage3RawArtifactSig.nameTranslates n
+        (.defn name) term)
+    (hOut :
+      out ∈
+        (mettaEval kernelDefControlEnv fuel st []
+          (nfQuery cicStage3RawArtifactSig (.defn name))).1.map (·.1))
+    (hNoErr : out.isError = false) :
+    CicStage3RawArtifactSigPrimaryNfRuntimeReadout (.defn name) out := by
+  by_cases hLtThree : fuel < 3
+  · have hErr :=
+      cicStage3RawArtifactSig_primary_nf_defn_runtime_output_isError_of_one_le_lt_three
+        hFuel hLtThree hWorld hOut
+    rw [hNoErr] at hErr
+    cases hErr
+  · exact
+      cicStage3RawArtifactSig_primary_nf_value_runtime_extraction_geThree_nonError_defn_any_depth
+        (by omega) hWorld hTrans hOut hNoErr
+
+private theorem cicStage3RawNameTranslates_primary_bounded
+    {raw lean : DeclName}
+    (h : cicStage3RawNameTranslates raw lean) :
+    cicStage3RawNameWithPropToType0WitnessBounded raw := by
+  rcases h with
+    hNat | hRec | hZero | hSucc
+  · exact Or.inl hNat.1
+  · exact Or.inr (Or.inl hRec.1)
+  · exact Or.inr (Or.inr (Or.inl hZero.1))
+  · exact Or.inr (Or.inr (Or.inr (Or.inl hSucc.1)))
+
+private theorem list_flatMap_const_nil {α β : Type} (xs : List α) :
+    List.flatMap (fun _ => ([] : List β)) xs = [] := by
+  induction xs with
+  | nil => rfl
+  | cons _ xs ih => simp [List.flatMap_cons, ih]
+
+private theorem cicStage3IndGZeroRawRuntime_match_indG_params_cons_eq_nil
+    {p : DIndGArtifactTerm} {ps : List DIndGArtifactTerm}
+    {motive : DIndGArtifactTerm}
+    {caseBranches : List (DeclName × DIndGArtifactTerm)}
+    {indices : List DIndGArtifactTerm} {scrutinee : DIndGArtifactTerm} :
+    Metta.matchAtoms (termAtom cicStage3IndGZeroRawRuntime)
+      (termAtom (.indG `nat (p :: ps) motive caseBranches indices
+        scrutinee)) = [] := by
+  have hArgs :
+      (Metta.Atom.sym "ArgsNil" ==
+        Metta.Atom.expr [Metta.Atom.sym "ArgsCons", termAtom p,
+          argsAtom ps]) = false := by
+    rfl
+  simp only [cicStage3IndGZeroRawRuntime, termAtom, argsAtom, casesAtom,
+    sortAtom, declNameAtom, mExpr, mSym, Metta.matchAtoms,
+    Metta.matchAtomsWith, Metta.matchAll]
+  rw [hArgs]
+  rfl
+
+private theorem cicStage3IndGZeroRawRuntime_match_indG_motive_ne_type_eq_nil
+    {motive : DIndGArtifactTerm}
+    {caseBranches : List (DeclName × DIndGArtifactTerm)}
+    {indices : List DIndGArtifactTerm} {scrutinee : DIndGArtifactTerm}
+    (hMotive : motive ≠ .srt .type) :
+    Metta.matchAtoms (termAtom cicStage3IndGZeroRawRuntime)
+      (termAtom (.indG `nat [] motive caseBranches indices scrutinee)) =
+        [] := by
+  cases motive with
+  | var k =>
+      have hHead : (("Srt" : String) == "Var") = false := by rfl
+      simp only [cicStage3IndGZeroRawRuntime, termAtom, argsAtom,
+        casesAtom, sortAtom, declNameAtom, mExpr, mSym, mNat,
+        Metta.matchAtoms, Metta.matchAtomsWith, Metta.matchAll]
+      rw [hHead]
+      rfl
+  | srt sort =>
+      cases sort with
+      | type => exact False.elim (hMotive rfl)
+      | kind =>
+          have hSort : (("type" : String) == "kind") = false := by rfl
+          simp only [cicStage3IndGZeroRawRuntime, termAtom, argsAtom,
+            casesAtom, sortAtom, declNameAtom, mExpr, mSym,
+            Metta.matchAtoms, Metta.matchAtomsWith, Metta.matchAll]
+          rw [hSort]
+          rfl
+  | con name =>
+      have hHead : (("Srt" : String) == "Con") = false := by rfl
+      simp only [cicStage3IndGZeroRawRuntime, termAtom, argsAtom,
+        casesAtom, sortAtom, declNameAtom, mExpr, mSym, Metta.matchAtoms,
+        Metta.matchAtomsWith, Metta.matchAll]
+      rw [hHead]
+      rfl
+  | defn name =>
+      have hHead : (("Srt" : String) == "Def") = false := by rfl
+      simp only [cicStage3IndGZeroRawRuntime, termAtom, argsAtom,
+        casesAtom, sortAtom, declNameAtom, mExpr, mSym, Metta.matchAtoms,
+        Metta.matchAtomsWith, Metta.matchAll]
+      rw [hHead]
+      rfl
+  | pi domain body =>
+      simp only [cicStage3IndGZeroRawRuntime, termAtom, argsAtom,
+        casesAtom, sortAtom, declNameAtom, mExpr, mSym, Metta.matchAtoms,
+        Metta.matchAtomsWith, Metta.matchAll]
+      simp only [List.flatMap_nil]
+      rw [list_flatMap_const_nil]
+      rfl
+  | lam domain body =>
+      simp only [cicStage3IndGZeroRawRuntime, termAtom, argsAtom,
+        casesAtom, sortAtom, declNameAtom, mExpr, mSym, Metta.matchAtoms,
+        Metta.matchAtomsWith, Metta.matchAll]
+      simp only [List.flatMap_nil]
+      rw [list_flatMap_const_nil]
+      rfl
+  | app fn arg =>
+      simp only [cicStage3IndGZeroRawRuntime, termAtom, argsAtom,
+        casesAtom, sortAtom, declNameAtom, mExpr, mSym, Metta.matchAtoms,
+        Metta.matchAtomsWith, Metta.matchAll]
+      simp only [List.flatMap_nil]
+      rw [list_flatMap_const_nil]
+      rfl
+  | indG familyName params motive caseBranches indices scrutinee =>
+      simp only [cicStage3IndGZeroRawRuntime, termAtom, argsAtom,
+        casesAtom, sortAtom, declNameAtom, mExpr, mSym, Metta.matchAtoms,
+        Metta.matchAtomsWith, Metta.matchAll]
+      simp only [List.flatMap_nil]
+      rw [list_flatMap_const_nil]
+      rfl
+  | bad reason =>
+      have hHead : (("Srt" : String) == "Bad") = false := by rfl
+      simp only [cicStage3IndGZeroRawRuntime, termAtom, argsAtom,
+        casesAtom, sortAtom, declNameAtom, mExpr, mSym, Metta.matchAtoms,
+        Metta.matchAtomsWith, Metta.matchAll]
+      rw [hHead]
+      rfl
+
+private theorem cicStage3IndGZeroRawRuntime_match_indG_family_nat_rec_eq_nil
+    {params : List DIndGArtifactTerm} {motive : DIndGArtifactTerm}
+    {caseBranches : List (DeclName × DIndGArtifactTerm)}
+    {indices : List DIndGArtifactTerm} {scrutinee : DIndGArtifactTerm} :
+    Metta.matchAtoms (termAtom cicStage3IndGZeroRawRuntime)
+      (termAtom (.indG `nat.rec params motive caseBranches indices
+        scrutinee)) = [] := by
+  have hFamily :
+      ((Lean.Name.toString (`nat : Lean.Name) false) ==
+        (Lean.Name.toString (`nat.rec : Lean.Name) false)) = false := by
+    rfl
+  simp only [cicStage3IndGZeroRawRuntime, termAtom, argsAtom, casesAtom,
+    sortAtom, declNameAtom, mExpr, mSym, Metta.matchAtoms,
+    Metta.matchAtomsWith, Metta.matchAll]
+  rw [hFamily]
+  rfl
+
+private theorem cicStage3IndGZeroRawRuntime_match_indG_family_z_eq_nil
+    {params : List DIndGArtifactTerm} {motive : DIndGArtifactTerm}
+    {caseBranches : List (DeclName × DIndGArtifactTerm)}
+    {indices : List DIndGArtifactTerm} {scrutinee : DIndGArtifactTerm} :
+    Metta.matchAtoms (termAtom cicStage3IndGZeroRawRuntime)
+      (termAtom (.indG `z params motive caseBranches indices scrutinee)) =
+        [] := by
+  have hFamily :
+      ((Lean.Name.toString (`nat : Lean.Name) false) ==
+        (Lean.Name.toString (`z : Lean.Name) false)) = false := by
+    rfl
+  simp only [cicStage3IndGZeroRawRuntime, termAtom, argsAtom, casesAtom,
+    sortAtom, declNameAtom, mExpr, mSym, Metta.matchAtoms,
+    Metta.matchAtomsWith, Metta.matchAll]
+  rw [hFamily]
+  rfl
+
+private theorem cicStage3IndGZeroRawRuntime_match_indG_family_s_eq_nil
+    {params : List DIndGArtifactTerm} {motive : DIndGArtifactTerm}
+    {caseBranches : List (DeclName × DIndGArtifactTerm)}
+    {indices : List DIndGArtifactTerm} {scrutinee : DIndGArtifactTerm} :
+    Metta.matchAtoms (termAtom cicStage3IndGZeroRawRuntime)
+      (termAtom (.indG `s params motive caseBranches indices scrutinee)) =
+        [] := by
+  have hFamily :
+      ((Lean.Name.toString (`nat : Lean.Name) false) ==
+        (Lean.Name.toString (`s : Lean.Name) false)) = false := by
+    rfl
+  simp only [cicStage3IndGZeroRawRuntime, termAtom, argsAtom, casesAtom,
+    sortAtom, declNameAtom, mExpr, mSym, Metta.matchAtoms,
+    Metta.matchAtomsWith, Metta.matchAll]
+  rw [hFamily]
+  rfl
+
+private theorem cicStage3IndGZeroRawRuntime_match_indG_cases_cons_eq_nil
+    {c : DeclName × DIndGArtifactTerm}
+    {cs : List (DeclName × DIndGArtifactTerm)}
+    {indices : List DIndGArtifactTerm} {scrutinee : DIndGArtifactTerm} :
+    Metta.matchAtoms (termAtom cicStage3IndGZeroRawRuntime)
+      (termAtom (.indG `nat [] (.srt .type) (c :: cs) indices
+        scrutinee)) = [] := by
+  have hCases :
+      (Metta.Atom.sym "CasesNil" ==
+        Metta.Atom.expr [Metta.Atom.sym "Cases", caseAtom c,
+          casesAtom cs]) = false := by
+    rfl
+  simp only [cicStage3IndGZeroRawRuntime, termAtom, argsAtom, casesAtom,
+    sortAtom, declNameAtom, mExpr, mSym, Metta.matchAtoms,
+    Metta.matchAtomsWith, Metta.matchAll]
+  rw [hCases]
+  rfl
+
+private theorem cicStage3IndGZeroRawRuntime_match_indG_indices_cons_eq_nil
+    {i : DIndGArtifactTerm} {is : List DIndGArtifactTerm}
+    {scrutinee : DIndGArtifactTerm} :
+    Metta.matchAtoms (termAtom cicStage3IndGZeroRawRuntime)
+      (termAtom (.indG `nat [] (.srt .type) [] (i :: is)
+        scrutinee)) = [] := by
+  have hIndices :
+      (Metta.Atom.sym "ArgsNil" ==
+        Metta.Atom.expr [Metta.Atom.sym "ArgsCons", termAtom i,
+          argsAtom is]) = false := by
+    rfl
+  simp only [cicStage3IndGZeroRawRuntime, termAtom, argsAtom, casesAtom,
+    sortAtom, declNameAtom, mExpr, mSym, Metta.matchAtoms,
+    Metta.matchAtomsWith, Metta.matchAll]
+  rw [hIndices]
+  rfl
+
+private theorem cicStage3IndGZeroRawRuntime_match_indG_scrutinee_app_eq_nil
+    {rawCtor : DeclName} {rawPred : DIndGArtifactTerm} :
+    Metta.matchAtoms (termAtom cicStage3IndGZeroRawRuntime)
+      (termAtom (.indG `nat [] (.srt .type) [] []
+        (.app (.con rawCtor) rawPred))) = [] := by
+  simp [cicStage3IndGZeroRawRuntime, termAtom, argsAtom, casesAtom,
+    sortAtom, declNameAtom, mExpr, mSym, Metta.matchAtoms,
+    Metta.matchAtomsWith, Metta.matchAll, Metta.Bindings.merge]
+
+private theorem cicStage3IndGZeroRawRuntime_match_indG_scrutinee_con_eq_nil_or_zero
+    {rawCtor leanCtor : DeclName}
+    (hCtor : cicStage3RawNameTranslates rawCtor leanCtor) :
+    Metta.matchAtoms (termAtom cicStage3IndGZeroRawRuntime)
+        (termAtom (.indG `nat [] (.srt .type) [] [] (.con rawCtor))) =
+          [] ∨
+      (.indG `nat [] (.srt .type) [] [] (.con rawCtor)) =
+        cicStage3IndGZeroRawRuntime := by
+  rcases hCtor with hNat | hRec | hZero | hSucc
+  · rcases hNat with ⟨rfl, _hLean⟩
+    left
+    have hCtor :
+        ((Lean.Name.toString (`z : Lean.Name) false) ==
+          (Lean.Name.toString (`nat : Lean.Name) false)) = false := by
+      rfl
+    simp only [cicStage3IndGZeroRawRuntime, termAtom, argsAtom, casesAtom,
+      sortAtom, declNameAtom, mExpr, mSym, Metta.matchAtoms,
+      Metta.matchAtomsWith, Metta.matchAll]
+    rw [hCtor]
+    rfl
+  · rcases hRec with ⟨rfl, _hLean⟩
+    left
+    have hCtor :
+        ((Lean.Name.toString (`z : Lean.Name) false) ==
+          (Lean.Name.toString (`nat.rec : Lean.Name) false)) = false := by
+      rfl
+    simp only [cicStage3IndGZeroRawRuntime, termAtom, argsAtom, casesAtom,
+      sortAtom, declNameAtom, mExpr, mSym, Metta.matchAtoms,
+      Metta.matchAtomsWith, Metta.matchAll]
+    rw [hCtor]
+    rfl
+  · rcases hZero with ⟨rfl, _hLean⟩
+    exact Or.inr rfl
+  · rcases hSucc with ⟨rfl, _hLean⟩
+    left
+    have hCtor :
+        ((Lean.Name.toString (`z : Lean.Name) false) ==
+          (Lean.Name.toString (`s : Lean.Name) false)) = false := by
+      rfl
+    simp only [cicStage3IndGZeroRawRuntime, termAtom, argsAtom, casesAtom,
+      sortAtom, declNameAtom, mExpr, mSym, Metta.matchAtoms,
+      Metta.matchAtomsWith, Metta.matchAll]
+    rw [hCtor]
+    rfl
+
+private theorem cicStage3IndGZeroRawRuntime_match_translated_indG_eq_nil_or_zero
+    {n : Nat} {familyName : DeclName}
+    {params : List DIndGArtifactTerm}
+    {motive : DIndGArtifactTerm}
+    {caseBranches : List (DeclName × DIndGArtifactTerm)}
+    {indices : List DIndGArtifactTerm}
+    {scrutinee : DIndGArtifactTerm}
+    {term : PureTm n}
+    (hTrans :
+      DIndGArtifactTermTranslates
+        cicStage3RawArtifactSig.nameTranslates n
+        (.indG familyName params motive caseBranches indices scrutinee)
+        term) :
+    Metta.matchAtoms (termAtom cicStage3IndGZeroRawRuntime)
+        (termAtom
+          (.indG familyName params motive caseBranches indices scrutinee)) =
+        [] ∨
+      (.indG familyName params motive caseBranches indices scrutinee) =
+        cicStage3IndGZeroRawRuntime := by
+  cases hTrans with
+  | indG readout =>
+      cases readout.target_agrees with
+      | closed hScrutinee hRule hCtor =>
+          subst scrutinee
+          rcases readout.family_translates with hNat | hRec | hZero | hSucc
+          · rcases hNat with ⟨rfl, _hLeanFamily⟩
+            cases params with
+            | cons p ps =>
+                exact Or.inl
+                  cicStage3IndGZeroRawRuntime_match_indG_params_cons_eq_nil
+            | nil =>
+                by_cases hMotive : motive = .srt .type
+                · subst motive
+                  cases caseBranches with
+                  | cons c cs =>
+                      exact Or.inl
+                        cicStage3IndGZeroRawRuntime_match_indG_cases_cons_eq_nil
+                  | nil =>
+                      cases indices with
+                      | cons i is =>
+                          exact Or.inl
+                            cicStage3IndGZeroRawRuntime_match_indG_indices_cons_eq_nil
+                      | nil =>
+                          exact
+                            cicStage3IndGZeroRawRuntime_match_indG_scrutinee_con_eq_nil_or_zero
+                              hCtor
+                · exact Or.inl
+                    (cicStage3IndGZeroRawRuntime_match_indG_motive_ne_type_eq_nil
+                      hMotive)
+          · rcases hRec with ⟨rfl, _hLeanFamily⟩
+            exact Or.inl
+              cicStage3IndGZeroRawRuntime_match_indG_family_nat_rec_eq_nil
+          · rcases hZero with ⟨rfl, _hLeanFamily⟩
+            exact Or.inl
+              cicStage3IndGZeroRawRuntime_match_indG_family_z_eq_nil
+          · rcases hSucc with ⟨rfl, _hLeanFamily⟩
+            exact Or.inl
+              cicStage3IndGZeroRawRuntime_match_indG_family_s_eq_nil
+      | unaryOpen hScrutinee hRule hCtor hPred =>
+          subst scrutinee
+          rcases readout.family_translates with hNat | hRec | hZero | hSucc
+          · rcases hNat with ⟨rfl, _hLeanFamily⟩
+            cases params with
+            | cons p ps =>
+                exact Or.inl
+                  cicStage3IndGZeroRawRuntime_match_indG_params_cons_eq_nil
+            | nil =>
+                by_cases hMotive : motive = .srt .type
+                · subst motive
+                  cases caseBranches with
+                  | cons c cs =>
+                      exact Or.inl
+                        cicStage3IndGZeroRawRuntime_match_indG_cases_cons_eq_nil
+                  | nil =>
+                      cases indices with
+                      | cons i is =>
+                          exact Or.inl
+                            cicStage3IndGZeroRawRuntime_match_indG_indices_cons_eq_nil
+                      | nil =>
+                          exact Or.inl
+                            cicStage3IndGZeroRawRuntime_match_indG_scrutinee_app_eq_nil
+                · exact Or.inl
+                    (cicStage3IndGZeroRawRuntime_match_indG_motive_ne_type_eq_nil
+                      hMotive)
+          · rcases hRec with ⟨rfl, _hLeanFamily⟩
+            exact Or.inl
+              cicStage3IndGZeroRawRuntime_match_indG_family_nat_rec_eq_nil
+          · rcases hZero with ⟨rfl, _hLeanFamily⟩
+            exact Or.inl
+              cicStage3IndGZeroRawRuntime_match_indG_family_z_eq_nil
+          · rcases hSucc with ⟨rfl, _hLeanFamily⟩
+            exact Or.inl
+              cicStage3IndGZeroRawRuntime_match_indG_family_s_eq_nil
+
+theorem cicStage3RawArtifactSig_primary_nf_value_runtime_extraction_geThree_nonError_indG
+    {n fuel : Nat} {st : St} {familyName : DeclName}
+    {params : List DIndGArtifactTerm}
+    {motive : DIndGArtifactTerm}
+    {caseBranches : List (DeclName × DIndGArtifactTerm)}
+    {indices : List DIndGArtifactTerm}
+    {scrutinee : DIndGArtifactTerm}
+    {term : PureTm n} {out : Metta.Atom}
+    (hFuel : 3 ≤ fuel)
+    (hWorld : st.world = St.init.world)
+    (hTrans :
+      DIndGArtifactTermTranslates
+        cicStage3RawArtifactSig.nameTranslates n
+        (.indG familyName params motive caseBranches indices scrutinee)
+        term)
+    (hOut :
+      out ∈
+        (mettaEval kernelDefControlEnv fuel st []
+          (nfQuery cicStage3RawArtifactSig
+            (.indG familyName params motive caseBranches indices
+              scrutinee))).1.map (·.1))
+    (_hNoErr : out.isError = false) :
+    CicStage3RawArtifactSigPrimaryNfRuntimeReadout
+      (.indG familyName params motive caseBranches indices scrutinee)
+      out := by
+  cases hTrans with
+  | indG readout =>
+      let raw : DIndGArtifactTerm :=
+        (.indG familyName params motive caseBranches indices scrutinee)
+      have hTrans' :
+          DIndGArtifactTermTranslates
+            cicStage3RawArtifactSig.nameTranslates n raw term :=
+        DIndGArtifactTermTranslates.indG readout
+      cases readout.target_agrees with
+      | closed hScrutinee hRule hCtor =>
+          subst scrutinee
+          rcases readout.family_translates with hNat | hRec | hZero | hSucc
+          · rcases hNat with ⟨rfl, _hLeanFamily⟩
+            cases params with
+            | cons p ps =>
+                exact
+                  cicStage3RawArtifactSig_primary_nf_value_runtime_extraction_geThree_indG_stuck
+                    hFuel hWorld hTrans'
+                    cicStage3IndGZeroRawRuntime_match_indG_params_cons_eq_nil
+                    hOut
+            | nil =>
+                by_cases hMotive : motive = .srt .type
+                · subst motive
+                  cases caseBranches with
+                  | cons c cs =>
+                      exact
+                        cicStage3RawArtifactSig_primary_nf_value_runtime_extraction_geThree_indG_stuck
+                          hFuel hWorld hTrans'
+                          cicStage3IndGZeroRawRuntime_match_indG_cases_cons_eq_nil
+                          hOut
+                  | nil =>
+                      cases indices with
+                      | cons i is =>
+                          exact
+                            cicStage3RawArtifactSig_primary_nf_value_runtime_extraction_geThree_indG_stuck
+                              hFuel hWorld hTrans'
+                              cicStage3IndGZeroRawRuntime_match_indG_indices_cons_eq_nil
+                              hOut
+                      | nil =>
+                          rcases
+                              cicStage3IndGZeroRawRuntime_match_indG_scrutinee_con_eq_nil_or_zero
+                                hCtor with
+                            hMiss | hZero
+                          · exact
+                              cicStage3RawArtifactSig_primary_nf_value_runtime_extraction_geThree_indG_stuck
+                                hFuel hWorld hTrans' hMiss hOut
+                          · cases hZero
+                            exact
+                              cicStage3RawArtifactSig_primary_nf_value_runtime_extraction_geThree_indG_zero_iota
+                                hFuel hWorld
+                                (by
+                                  simpa [raw, cicStage3IndGZeroRaw,
+                                    cicStage3IndGZeroRawRuntime] using hTrans')
+                                (by
+                                  simpa [raw, cicStage3IndGZeroRaw,
+                                    cicStage3IndGZeroRawRuntime] using hOut)
+                · exact
+                    cicStage3RawArtifactSig_primary_nf_value_runtime_extraction_geThree_indG_stuck
+                      hFuel hWorld hTrans'
+                      (cicStage3IndGZeroRawRuntime_match_indG_motive_ne_type_eq_nil
+                        hMotive)
+                      hOut
+          · rcases hRec with ⟨rfl, _hLeanFamily⟩
+            exact
+              cicStage3RawArtifactSig_primary_nf_value_runtime_extraction_geThree_indG_stuck
+                hFuel hWorld hTrans'
+                cicStage3IndGZeroRawRuntime_match_indG_family_nat_rec_eq_nil
+                hOut
+          · rcases hZero with ⟨rfl, _hLeanFamily⟩
+            exact
+              cicStage3RawArtifactSig_primary_nf_value_runtime_extraction_geThree_indG_stuck
+                hFuel hWorld hTrans'
+                cicStage3IndGZeroRawRuntime_match_indG_family_z_eq_nil
+                hOut
+          · rcases hSucc with ⟨rfl, _hLeanFamily⟩
+            exact
+              cicStage3RawArtifactSig_primary_nf_value_runtime_extraction_geThree_indG_stuck
+                hFuel hWorld hTrans'
+                cicStage3IndGZeroRawRuntime_match_indG_family_s_eq_nil
+                hOut
+      | unaryOpen hScrutinee hRule hCtor hPred =>
+          subst scrutinee
+          rcases readout.family_translates with hNat | hRec | hZero | hSucc
+          · rcases hNat with ⟨rfl, _hLeanFamily⟩
+            cases params with
+            | cons p ps =>
+                exact
+                  cicStage3RawArtifactSig_primary_nf_value_runtime_extraction_geThree_indG_stuck
+                    hFuel hWorld hTrans'
+                    cicStage3IndGZeroRawRuntime_match_indG_params_cons_eq_nil
+                    hOut
+            | nil =>
+                by_cases hMotive : motive = .srt .type
+                · subst motive
+                  cases caseBranches with
+                  | cons c cs =>
+                      exact
+                        cicStage3RawArtifactSig_primary_nf_value_runtime_extraction_geThree_indG_stuck
+                          hFuel hWorld hTrans'
+                          cicStage3IndGZeroRawRuntime_match_indG_cases_cons_eq_nil
+                          hOut
+                  | nil =>
+                      cases indices with
+                      | cons i is =>
+                          exact
+                            cicStage3RawArtifactSig_primary_nf_value_runtime_extraction_geThree_indG_stuck
+                              hFuel hWorld hTrans'
+                              cicStage3IndGZeroRawRuntime_match_indG_indices_cons_eq_nil
+                              hOut
+                      | nil =>
+                          exact
+                            cicStage3RawArtifactSig_primary_nf_value_runtime_extraction_geThree_indG_stuck
+                              hFuel hWorld hTrans'
+                              cicStage3IndGZeroRawRuntime_match_indG_scrutinee_app_eq_nil
+                              hOut
+                · exact
+                    cicStage3RawArtifactSig_primary_nf_value_runtime_extraction_geThree_indG_stuck
+                      hFuel hWorld hTrans'
+                      (cicStage3IndGZeroRawRuntime_match_indG_motive_ne_type_eq_nil
+                        hMotive)
+                      hOut
+          · rcases hRec with ⟨rfl, _hLeanFamily⟩
+            exact
+              cicStage3RawArtifactSig_primary_nf_value_runtime_extraction_geThree_indG_stuck
+                hFuel hWorld hTrans'
+                cicStage3IndGZeroRawRuntime_match_indG_family_nat_rec_eq_nil
+                hOut
+          · rcases hZero with ⟨rfl, _hLeanFamily⟩
+            exact
+              cicStage3RawArtifactSig_primary_nf_value_runtime_extraction_geThree_indG_stuck
+                hFuel hWorld hTrans'
+                cicStage3IndGZeroRawRuntime_match_indG_family_z_eq_nil
+                hOut
+          · rcases hSucc with ⟨rfl, _hLeanFamily⟩
+            exact
+              cicStage3RawArtifactSig_primary_nf_value_runtime_extraction_geThree_indG_stuck
+                              hFuel hWorld hTrans'
+                              cicStage3IndGZeroRawRuntime_match_indG_family_s_eq_nil
+                              hOut
+
+private theorem cicStage3RawArtifactSig_primary_nf_value_runtime_extraction_geOne_nonError_indG_any_depth
+    {n fuel : Nat} {st : St} {familyName : DeclName}
+    {params : List DIndGArtifactTerm}
+    {motive : DIndGArtifactTerm}
+    {caseBranches : List (DeclName × DIndGArtifactTerm)}
+    {indices : List DIndGArtifactTerm}
+    {scrutinee : DIndGArtifactTerm}
+    {term : PureTm n} {out : Metta.Atom}
+    (hFuel : 1 ≤ fuel)
+    (hWorld : st.world = St.init.world)
+    (hTrans :
+      DIndGArtifactTermTranslates
+        cicStage3RawArtifactSig.nameTranslates n
+        (.indG familyName params motive caseBranches indices scrutinee)
+        term)
+    (hOut :
+      out ∈
+        (mettaEval kernelDefControlEnv fuel st []
+          (nfQuery cicStage3RawArtifactSig
+            (.indG familyName params motive caseBranches indices
+              scrutinee))).1.map (·.1))
+    (hNoErr : out.isError = false) :
+    CicStage3RawArtifactSigPrimaryNfRuntimeReadout
+      (.indG familyName params motive caseBranches indices scrutinee)
+      out := by
+  by_cases hLtThree : fuel < 3
+  · have hCases : fuel = 1 ∨ fuel = 2 := by omega
+    rcases hCases with rfl | rfl
+    · exact
+        cicStage3RawArtifactSig_primary_nf_value_runtime_extraction_fuel_one_nonError_indG_any_depth
+          hTrans hOut hNoErr
+    · rcases
+        cicStage3IndGZeroRawRuntime_match_translated_indG_eq_nil_or_zero
+          hTrans with
+      hMiss | hZero
+      · exact
+          cicStage3RawArtifactSig_primary_nf_value_runtime_extraction_fuel_two_nonError_indG_stuck_any_depth
+            hWorld hTrans hMiss hOut hNoErr
+      · have hOutZero :
+            out ∈
+              (mettaEval kernelDefControlEnv 2 st []
+                (nfQuery cicStage3RawArtifactSig
+                  cicStage3IndGZeroRawRuntime)).1.map (·.1) := by
+          simpa [hZero] using hOut
+        have hErr :=
+          cicStage3RawArtifactSig_primary_nf_indG_zero_iota_runtime_output_isError_fuel_two
+            hWorld hOutZero
+        rw [hNoErr] at hErr
+        cases hErr
+  · exact
+      cicStage3RawArtifactSig_primary_nf_value_runtime_extraction_geThree_nonError_indG
+        (by omega) hWorld hTrans hOut hNoErr
+
+private theorem cicStage3RawArtifactSig_primary_nf_pi_runtime_nonError_false_of_one_le_lt_three
+    {fuel : Nat} {st : St}
+    {rawDomain rawBody : DIndGArtifactTerm} {out : Metta.Atom}
+    (hFuel : 1 ≤ fuel)
+    (hLtThree : fuel < 3)
+    (hWorld : st.world = St.init.world)
+    (hOut :
+      out ∈
+        (mettaEval kernelDefControlEnv fuel st []
+          (nfQuery cicStage3RawArtifactSig
+            (.pi rawDomain rawBody))).1.map (·.1))
+    (hNoErr : out.isError = false) :
+    False := by
+  have hCases : fuel = 1 ∨ fuel = 2 := by omega
+  rcases hCases with rfl | rfl
+  · rcases List.mem_map.mp hOut with ⟨⟨actual, outBnd⟩, hPair, hActual⟩
+    dsimp at hActual
+    subst actual
+    let root := nfPiReadout cicStage3RawArtifactSig rawDomain rawBody
+    let rootBnd :=
+      (renameBindings (counterSuffix (st.counter + nfPiCandidatePre.length))
+        (nfPiRuleBindings cicStage3RawArtifactSig rawDomain rawBody)).reverse
+    let stRoot : St :=
+      { counter := st.counter + nfPiCandidatePre.length + 5,
+        world := st.world }
+    have hStatic : st.world.selfExtra = [] := by
+      rw [hWorld]
+      rfl
+    have hRoot :
+        interpretFuel kernelDefControlEnv (0 + 1) st
+            [evalItemNil
+              (nfQuery cicStage3RawArtifactSig
+                (.pi rawDomain rawBody))] [] =
+          ([(root, rootBnd)], stRoot) := by
+      simpa [root, rootBnd, stRoot] using
+        interpretFuel_kernelDefControlEnv_nf_pi_root_eq
+          (fuel := 0) (st := st)
+          cicStage3RawArtifactSig rawDomain rawBody hStatic
+    have hOuterNoErr :
+        (([sigAtom cicStage3RawArtifactSig,
+            termAtom (.pi rawDomain rawBody)].zip
+          [sigAtom cicStage3RawArtifactSig,
+            termAtom (.pi rawDomain rawBody)]).find?
+          (fun ho : Metta.Atom × Metta.Atom =>
+            ho.1.isError && ho.1 != ho.2)) = none := by
+      simp [sigAtom_isError_false, termAtom_isError_false]
+    have hRootNotNR : (root == notReducibleA) = false := by
+      simp [root, nfPiReadout, notReducibleA, mExpr, mSym]
+      rfl
+    have hRootNotSelf :
+        (root == nfQuery cicStage3RawArtifactSig
+          (.pi rawDomain rawBody)) = false := by
+      simp [root, nfPiReadout, nfQuery, termAtom, mExpr, mSym]
+      rfl
+    rcases
+        mettaEval_binary_expr_pair_mem_implies_root_eval_mem_of_quoted_args_and_root_eval_eq_bnd
+          (env := kernelDefControlEnv) (fuel := 0)
+          (st := st) (stRoot := stRoot) (op := "nf")
+          (x := sigAtom cicStage3RawArtifactSig)
+          (y := termAtom (.pi rawDomain rawBody))
+          (root := root) (final := out) (rootBnd := rootBnd)
+          (outBnd := outBnd)
+          (hType := kernelDefControlEnv_nf_typeMismatch st
+            cicStage3RawArtifactSig (.pi rawDomain rawBody))
+          (hMask := kernelDefControlEnv_nf_argMask)
+          (hNoErr := hOuterNoErr)
+          (hRoot := by simpa [root, rootBnd, stRoot, nfQuery, mExpr, mSym] using hRoot)
+          (hRootNotNotReducible := hRootNotNR)
+          (hRootNotSelf := by simpa [nfQuery, mExpr, mSym] using hRootNotSelf)
+          (hReturns := by
+            simpa [nfQuery, mExpr, mSym] using
+              kernelDefControlEnv_nf_returnsAtom
+                cicStage3RawArtifactSig (.pi rawDomain rawBody))
+          (hmem := by simpa [nfQuery, mExpr, mSym] using hPair) with
+      ⟨finalBnd, hFinal⟩
+    have hBndNil :
+        restrictBnd
+            (([sigAtom cicStage3RawArtifactSig,
+                termAtom (.pi rawDomain rawBody)]).flatMap
+              Metta.Atom.vars)
+            ((Metta.Bindings.merge [] rootBnd).head?.getD rootBnd) = [] := by
+      simpa [List.flatMap,
+        sigAtom_vars_nil cicStage3RawArtifactSig,
+        termAtom_vars_nil (.pi rawDomain rawBody)] using
+        restrictBnd_nil_vars
+          ((Metta.Bindings.merge [] rootBnd).head?.getD rootBnd)
+    rw [hBndNil] at hFinal
+    have hValue :
+        out ∈
+          (mettaEval kernelDefControlEnv 0 stRoot [] root).1.map (·.1) :=
+      List.mem_map.mpr ⟨(out, finalBnd), hFinal, rfl⟩
+    have hErr := mettaEval_zero_output_isError hValue
+    rw [hNoErr] at hErr
+    cases hErr
+  · rcases List.mem_map.mp hOut with ⟨⟨actual, outBnd⟩, hPair, hActual⟩
+    dsimp at hActual
+    subst actual
+    let root := nfPiReadout cicStage3RawArtifactSig rawDomain rawBody
+    let rootBnd :=
+      (renameBindings (counterSuffix (st.counter + nfPiCandidatePre.length))
+        (nfPiRuleBindings cicStage3RawArtifactSig rawDomain rawBody)).reverse
+    let stRoot : St :=
+      { counter := st.counter + nfPiCandidatePre.length + 5,
+        world := st.world }
+    have hStatic : st.world.selfExtra = [] := by
+      rw [hWorld]
+      rfl
+    have hStRootWorld : stRoot.world = St.init.world := by
+      simpa [stRoot] using hWorld
+    have hRoot :
+        interpretFuel kernelDefControlEnv (1 + 1) st
+            [evalItemNil
+              (nfQuery cicStage3RawArtifactSig
+                (.pi rawDomain rawBody))] [] =
+          ([(root, rootBnd)], stRoot) := by
+      simpa [root, rootBnd, stRoot] using
+        interpretFuel_kernelDefControlEnv_nf_pi_root_eq
+          (fuel := 1) (st := st)
+          cicStage3RawArtifactSig rawDomain rawBody hStatic
+    have hOuterNoErr :
+        (([sigAtom cicStage3RawArtifactSig,
+            termAtom (.pi rawDomain rawBody)].zip
+          [sigAtom cicStage3RawArtifactSig,
+            termAtom (.pi rawDomain rawBody)]).find?
+          (fun ho : Metta.Atom × Metta.Atom =>
+            ho.1.isError && ho.1 != ho.2)) = none := by
+      simp [sigAtom_isError_false, termAtom_isError_false]
+    have hRootNotNR : (root == notReducibleA) = false := by
+      simp [root, nfPiReadout, notReducibleA, mExpr, mSym]
+      rfl
+    have hRootNotSelf :
+        (root == nfQuery cicStage3RawArtifactSig
+          (.pi rawDomain rawBody)) = false := by
+      simp [root, nfPiReadout, nfQuery, termAtom, mExpr, mSym]
+      rfl
+    rcases
+        mettaEval_binary_expr_pair_mem_implies_root_eval_mem_of_quoted_args_and_root_eval_eq_bnd
+          (env := kernelDefControlEnv) (fuel := 1)
+          (st := st) (stRoot := stRoot) (op := "nf")
+          (x := sigAtom cicStage3RawArtifactSig)
+          (y := termAtom (.pi rawDomain rawBody))
+          (root := root) (final := out) (rootBnd := rootBnd)
+          (outBnd := outBnd)
+          (hType := kernelDefControlEnv_nf_typeMismatch st
+            cicStage3RawArtifactSig (.pi rawDomain rawBody))
+          (hMask := kernelDefControlEnv_nf_argMask)
+          (hNoErr := hOuterNoErr)
+          (hRoot := by simpa [root, rootBnd, stRoot, nfQuery, mExpr, mSym] using hRoot)
+          (hRootNotNotReducible := hRootNotNR)
+          (hRootNotSelf := by simpa [nfQuery, mExpr, mSym] using hRootNotSelf)
+          (hReturns := by
+            simpa [nfQuery, mExpr, mSym] using
+              kernelDefControlEnv_nf_returnsAtom
+                cicStage3RawArtifactSig (.pi rawDomain rawBody))
+          (hmem := by simpa [nfQuery, mExpr, mSym] using hPair) with
+      ⟨finalBnd, hFinal⟩
+    have hBndNil :
+        restrictBnd
+            (([sigAtom cicStage3RawArtifactSig,
+                termAtom (.pi rawDomain rawBody)]).flatMap
+              Metta.Atom.vars)
+            ((Metta.Bindings.merge [] rootBnd).head?.getD rootBnd) = [] := by
+      simpa [List.flatMap,
+        sigAtom_vars_nil cicStage3RawArtifactSig,
+        termAtom_vars_nil (.pi rawDomain rawBody)] using
+        restrictBnd_nil_vars
+          ((Metta.Bindings.merge [] rootBnd).head?.getD rootBnd)
+    rw [hBndNil] at hFinal
+    rcases
+        mettaEval_binary_eval_args_pair_nonError_notReducible_state_pred_before_closed
+          kernelDefControlEnv 0 stRoot
+          "Pi"
+          (nfQuery cicStage3RawArtifactSig rawDomain)
+          (nfQuery cicStage3RawArtifactSig rawBody)
+          out finalBnd
+          (fun st0 => st0.world = St.init.world)
+          (nfQuery_vars_nil cicStage3RawArtifactSig rawDomain)
+          (nfQuery_vars_nil cicStage3RawArtifactSig rawBody)
+          (by
+            rw [typeMismatch, kernelDefControlEnv_Pi_sigs_none])
+          kernelDefControlEnv_Pi_argMask
+          hNoErr
+          (by
+            rw [mettaEval_zero_world]
+            exact hStRootWorld)
+          (by
+            intro acc0 _domainOut _domainBnd _hDomainMem hAccWorld
+            rw [mettaEval_zero_world]
+            exact hAccWorld)
+          (by
+            intro acc0 domainOut bodyOut hAccWorld
+            have hStaticAcc : acc0.2.world.selfExtra = [] := by
+              rw [hAccWorld]
+              rfl
+            simpa [evalItemNil, mExpr, mSym] using
+              interpretFuel_kernelDefControlEnv_eval_Pi_atoms_notReducible_eq_state
+                0 acc0.2 domainOut bodyOut hStaticAcc)
+          (by
+            simpa [root, nfPiReadout, nfQuery, mExpr, mSym] using hFinal) with
+      ⟨domainOut, domainBnd, hDomainMem, _stBeforeBody, bodyOut,
+        _bodyBnd, _hBeforeBodyWorld, _hBodyMem, hChildNoErr, _hOutEq⟩
+    have hChildNoErrs :=
+      nf_binary_readout_arg_find_none_noerr
+        cicStage3RawArtifactSig rawDomain rawBody
+        domainOut bodyOut hChildNoErr
+    have hDomainValue :
+        domainOut ∈
+          (mettaEval kernelDefControlEnv 0 stRoot []
+            (nfQuery cicStage3RawArtifactSig rawDomain)).1.map (·.1) :=
+      List.mem_map.mpr ⟨(domainOut, domainBnd), hDomainMem, rfl⟩
+    have hDomainErr := mettaEval_zero_output_isError hDomainValue
+    rw [hChildNoErrs.1] at hDomainErr
+    cases hDomainErr
+
+private theorem cicStage3RawArtifactSig_primary_nf_lam_runtime_nonError_false_of_one_le_lt_three
+    {fuel : Nat} {st : St}
+    {rawDomain rawBody : DIndGArtifactTerm} {out : Metta.Atom}
+    (hFuel : 1 ≤ fuel)
+    (hLtThree : fuel < 3)
+    (hWorld : st.world = St.init.world)
+    (hOut :
+      out ∈
+        (mettaEval kernelDefControlEnv fuel st []
+          (nfQuery cicStage3RawArtifactSig
+            (.lam rawDomain rawBody))).1.map (·.1))
+    (hNoErr : out.isError = false) :
+    False := by
+  have hCases : fuel = 1 ∨ fuel = 2 := by omega
+  rcases hCases with rfl | rfl
+  · rcases List.mem_map.mp hOut with ⟨⟨actual, outBnd⟩, hPair, hActual⟩
+    dsimp at hActual
+    subst actual
+    let root := nfLamReadout cicStage3RawArtifactSig rawDomain rawBody
+    let rootBnd :=
+      (renameBindings (counterSuffix (st.counter + nfLamCandidatePre.length))
+        (nfLamRuleBindings cicStage3RawArtifactSig rawDomain rawBody)).reverse
+    let stRoot : St :=
+      { counter := st.counter + nfLamCandidatePre.length + 4,
+        world := st.world }
+    have hStatic : st.world.selfExtra = [] := by
+      rw [hWorld]
+      rfl
+    have hRoot :
+        interpretFuel kernelDefControlEnv (0 + 1) st
+            [evalItemNil
+              (nfQuery cicStage3RawArtifactSig
+                (.lam rawDomain rawBody))] [] =
+          ([(root, rootBnd)], stRoot) := by
+      simpa [root, rootBnd, stRoot] using
+        interpretFuel_kernelDefControlEnv_nf_lam_root_eq
+          (fuel := 0) (st := st)
+          cicStage3RawArtifactSig rawDomain rawBody hStatic
+    have hOuterNoErr :
+        (([sigAtom cicStage3RawArtifactSig,
+            termAtom (.lam rawDomain rawBody)].zip
+          [sigAtom cicStage3RawArtifactSig,
+            termAtom (.lam rawDomain rawBody)]).find?
+          (fun ho : Metta.Atom × Metta.Atom =>
+            ho.1.isError && ho.1 != ho.2)) = none := by
+      simp [sigAtom_isError_false, termAtom_isError_false]
+    have hRootNotNR : (root == notReducibleA) = false := by
+      simp [root, nfLamReadout, notReducibleA, mExpr, mSym]
+      rfl
+    have hRootNotSelf :
+        (root == nfQuery cicStage3RawArtifactSig
+          (.lam rawDomain rawBody)) = false := by
+      simp [root, nfLamReadout, nfQuery, termAtom, mExpr, mSym]
+      rfl
+    rcases
+        mettaEval_binary_expr_pair_mem_implies_root_eval_mem_of_quoted_args_and_root_eval_eq_bnd
+          (env := kernelDefControlEnv) (fuel := 0)
+          (st := st) (stRoot := stRoot) (op := "nf")
+          (x := sigAtom cicStage3RawArtifactSig)
+          (y := termAtom (.lam rawDomain rawBody))
+          (root := root) (final := out) (rootBnd := rootBnd)
+          (outBnd := outBnd)
+          (hType := kernelDefControlEnv_nf_typeMismatch st
+            cicStage3RawArtifactSig (.lam rawDomain rawBody))
+          (hMask := kernelDefControlEnv_nf_argMask)
+          (hNoErr := hOuterNoErr)
+          (hRoot := by simpa [root, rootBnd, stRoot, nfQuery, mExpr, mSym] using hRoot)
+          (hRootNotNotReducible := hRootNotNR)
+          (hRootNotSelf := by simpa [nfQuery, mExpr, mSym] using hRootNotSelf)
+          (hReturns := by
+            simpa [nfQuery, mExpr, mSym] using
+              kernelDefControlEnv_nf_returnsAtom
+                cicStage3RawArtifactSig (.lam rawDomain rawBody))
+          (hmem := by simpa [nfQuery, mExpr, mSym] using hPair) with
+      ⟨finalBnd, hFinal⟩
+    have hBndNil :
+        restrictBnd
+            (([sigAtom cicStage3RawArtifactSig,
+                termAtom (.lam rawDomain rawBody)]).flatMap
+              Metta.Atom.vars)
+            ((Metta.Bindings.merge [] rootBnd).head?.getD rootBnd) = [] := by
+      simpa [List.flatMap,
+        sigAtom_vars_nil cicStage3RawArtifactSig,
+        termAtom_vars_nil (.lam rawDomain rawBody)] using
+        restrictBnd_nil_vars
+          ((Metta.Bindings.merge [] rootBnd).head?.getD rootBnd)
+    rw [hBndNil] at hFinal
+    have hValue :
+        out ∈
+          (mettaEval kernelDefControlEnv 0 stRoot [] root).1.map (·.1) :=
+      List.mem_map.mpr ⟨(out, finalBnd), hFinal, rfl⟩
+    have hErr := mettaEval_zero_output_isError hValue
+    rw [hNoErr] at hErr
+    cases hErr
+  · rcases List.mem_map.mp hOut with ⟨⟨actual, outBnd⟩, hPair, hActual⟩
+    dsimp at hActual
+    subst actual
+    let root := nfLamReadout cicStage3RawArtifactSig rawDomain rawBody
+    let rootBnd :=
+      (renameBindings (counterSuffix (st.counter + nfLamCandidatePre.length))
+        (nfLamRuleBindings cicStage3RawArtifactSig rawDomain rawBody)).reverse
+    let stRoot : St :=
+      { counter := st.counter + nfLamCandidatePre.length + 4,
+        world := st.world }
+    have hStatic : st.world.selfExtra = [] := by
+      rw [hWorld]
+      rfl
+    have hStRootWorld : stRoot.world = St.init.world := by
+      simpa [stRoot] using hWorld
+    have hRoot :
+        interpretFuel kernelDefControlEnv (1 + 1) st
+            [evalItemNil
+              (nfQuery cicStage3RawArtifactSig
+                (.lam rawDomain rawBody))] [] =
+          ([(root, rootBnd)], stRoot) := by
+      simpa [root, rootBnd, stRoot] using
+        interpretFuel_kernelDefControlEnv_nf_lam_root_eq
+          (fuel := 1) (st := st)
+          cicStage3RawArtifactSig rawDomain rawBody hStatic
+    have hOuterNoErr :
+        (([sigAtom cicStage3RawArtifactSig,
+            termAtom (.lam rawDomain rawBody)].zip
+          [sigAtom cicStage3RawArtifactSig,
+            termAtom (.lam rawDomain rawBody)]).find?
+          (fun ho : Metta.Atom × Metta.Atom =>
+            ho.1.isError && ho.1 != ho.2)) = none := by
+      simp [sigAtom_isError_false, termAtom_isError_false]
+    have hRootNotNR : (root == notReducibleA) = false := by
+      simp [root, nfLamReadout, notReducibleA, mExpr, mSym]
+      rfl
+    have hRootNotSelf :
+        (root == nfQuery cicStage3RawArtifactSig
+          (.lam rawDomain rawBody)) = false := by
+      simp [root, nfLamReadout, nfQuery, termAtom, mExpr, mSym]
+      rfl
+    rcases
+        mettaEval_binary_expr_pair_mem_implies_root_eval_mem_of_quoted_args_and_root_eval_eq_bnd
+          (env := kernelDefControlEnv) (fuel := 1)
+          (st := st) (stRoot := stRoot) (op := "nf")
+          (x := sigAtom cicStage3RawArtifactSig)
+          (y := termAtom (.lam rawDomain rawBody))
+          (root := root) (final := out) (rootBnd := rootBnd)
+          (outBnd := outBnd)
+          (hType := kernelDefControlEnv_nf_typeMismatch st
+            cicStage3RawArtifactSig (.lam rawDomain rawBody))
+          (hMask := kernelDefControlEnv_nf_argMask)
+          (hNoErr := hOuterNoErr)
+          (hRoot := by simpa [root, rootBnd, stRoot, nfQuery, mExpr, mSym] using hRoot)
+          (hRootNotNotReducible := hRootNotNR)
+          (hRootNotSelf := by simpa [nfQuery, mExpr, mSym] using hRootNotSelf)
+          (hReturns := by
+            simpa [nfQuery, mExpr, mSym] using
+              kernelDefControlEnv_nf_returnsAtom
+                cicStage3RawArtifactSig (.lam rawDomain rawBody))
+          (hmem := by simpa [nfQuery, mExpr, mSym] using hPair) with
+      ⟨finalBnd, hFinal⟩
+    have hBndNil :
+        restrictBnd
+            (([sigAtom cicStage3RawArtifactSig,
+                termAtom (.lam rawDomain rawBody)]).flatMap
+              Metta.Atom.vars)
+            ((Metta.Bindings.merge [] rootBnd).head?.getD rootBnd) = [] := by
+      simpa [List.flatMap,
+        sigAtom_vars_nil cicStage3RawArtifactSig,
+        termAtom_vars_nil (.lam rawDomain rawBody)] using
+        restrictBnd_nil_vars
+          ((Metta.Bindings.merge [] rootBnd).head?.getD rootBnd)
+    rw [hBndNil] at hFinal
+    rcases
+        mettaEval_binary_eval_args_pair_nonError_notReducible_state_pred_before_closed
+          kernelDefControlEnv 0 stRoot
+          "Lam"
+          (nfQuery cicStage3RawArtifactSig rawDomain)
+          (nfQuery cicStage3RawArtifactSig rawBody)
+          out finalBnd
+          (fun st0 => st0.world = St.init.world)
+          (nfQuery_vars_nil cicStage3RawArtifactSig rawDomain)
+          (nfQuery_vars_nil cicStage3RawArtifactSig rawBody)
+          (by
+            rw [typeMismatch, kernelDefControlEnv_Lam_sigs_none])
+          kernelDefControlEnv_Lam_argMask
+          hNoErr
+          (by
+            rw [mettaEval_zero_world]
+            exact hStRootWorld)
+          (by
+            intro acc0 _domainOut _domainBnd _hDomainMem hAccWorld
+            rw [mettaEval_zero_world]
+            exact hAccWorld)
+          (by
+            intro acc0 domainOut bodyOut hAccWorld
+            have hStaticAcc : acc0.2.world.selfExtra = [] := by
+              rw [hAccWorld]
+              rfl
+            simpa [evalItemNil, mExpr, mSym] using
+              interpretFuel_kernelDefControlEnv_eval_Lam_atoms_notReducible_eq_state
+                0 acc0.2 domainOut bodyOut hStaticAcc)
+          (by
+            simpa [root, nfLamReadout, nfQuery, mExpr, mSym] using hFinal) with
+      ⟨domainOut, domainBnd, hDomainMem, _stBeforeBody, bodyOut,
+        _bodyBnd, _hBeforeBodyWorld, _hBodyMem, hChildNoErr, _hOutEq⟩
+    have hChildNoErrs :=
+      nf_binary_readout_arg_find_none_noerr
+        cicStage3RawArtifactSig rawDomain rawBody
+        domainOut bodyOut hChildNoErr
+    have hDomainValue :
+        domainOut ∈
+          (mettaEval kernelDefControlEnv 0 stRoot []
+            (nfQuery cicStage3RawArtifactSig rawDomain)).1.map (·.1) :=
+      List.mem_map.mpr ⟨(domainOut, domainBnd), hDomainMem, rfl⟩
+    have hDomainErr := mettaEval_zero_output_isError hDomainValue
+    rw [hChildNoErrs.1] at hDomainErr
+    cases hDomainErr
+
+private theorem cicStage3RawArtifactSig_primary_nf_value_runtime_extraction_geThree_nonError_pi_of_positive_recursive
+    {rawDomain rawBody : DIndGArtifactTerm}
+    (hDomainExtract :
+      ∀ {n fuel : Nat} {st : St}
+          {term : PureTm n} {out : Metta.Atom},
+        1 ≤ fuel →
+        st.world = St.init.world →
+        DIndGArtifactTermTranslates
+          cicStage3RawArtifactSig.nameTranslates n rawDomain term →
+        out ∈
+          (mettaEval kernelDefControlEnv fuel st []
+            (nfQuery cicStage3RawArtifactSig rawDomain)).1.map (·.1) →
+        out.isError = false →
+        CicStage3RawArtifactSigPrimaryNfRuntimeReadout rawDomain out)
+    (hBodyExtract :
+      ∀ {n fuel : Nat} {st : St}
+          {term : PureTm n} {out : Metta.Atom},
+        1 ≤ fuel →
+        st.world = St.init.world →
+        DIndGArtifactTermTranslates
+          cicStage3RawArtifactSig.nameTranslates n rawBody term →
+        out ∈
+          (mettaEval kernelDefControlEnv fuel st []
+            (nfQuery cicStage3RawArtifactSig rawBody)).1.map (·.1) →
+        out.isError = false →
+        CicStage3RawArtifactSigPrimaryNfRuntimeReadout rawBody out)
+    (hDomainWorld :
+      ∀ {n fuel : Nat} {st : St} {term : PureTm n},
+        1 ≤ fuel →
+        st.world = St.init.world →
+        DIndGArtifactTermTranslates
+          cicStage3RawArtifactSig.nameTranslates n rawDomain term →
+        ((mettaEval kernelDefControlEnv fuel st []
+          (nfQuery cicStage3RawArtifactSig rawDomain)).2).world =
+          St.init.world)
+    (hBodyWorld :
+      ∀ {n fuel : Nat} {st : St} {term : PureTm n},
+        1 ≤ fuel →
+        st.world = St.init.world →
+        DIndGArtifactTermTranslates
+          cicStage3RawArtifactSig.nameTranslates n rawBody term →
+        ((mettaEval kernelDefControlEnv fuel st []
+          (nfQuery cicStage3RawArtifactSig rawBody)).2).world =
+          St.init.world)
+    {n fuel : Nat} {st : St}
+    {term : PureTm n} {out : Metta.Atom}
+    (hFuel : 3 ≤ fuel)
+    (hWorld : st.world = St.init.world)
+    (hTrans :
+      DIndGArtifactTermTranslates
+        cicStage3RawArtifactSig.nameTranslates n
+        (.pi rawDomain rawBody) term)
+    (hOut :
+      out ∈
+        (mettaEval kernelDefControlEnv fuel st []
+          (nfQuery cicStage3RawArtifactSig
+            (.pi rawDomain rawBody))).1.map (·.1))
+    (hNoErr : out.isError = false) :
+    CicStage3RawArtifactSigPrimaryNfRuntimeReadout
+      (.pi rawDomain rawBody) out := by
+  cases hTrans with
+  | pi hDomain hBody =>
+      rcases Nat.exists_eq_add_of_le (show 2 ≤ fuel by omega) with
+        ⟨innerFuel, hFuelEq⟩
+      have hFuelEq' : fuel = innerFuel + 2 := by omega
+      have hInnerFuel : 1 ≤ innerFuel := by omega
+      let root := nfPiReadout cicStage3RawArtifactSig rawDomain rawBody
+      let rootBnd :=
+        (renameBindings (counterSuffix (st.counter + nfPiCandidatePre.length))
+          (nfPiRuleBindings cicStage3RawArtifactSig rawDomain rawBody)).reverse
+      let stRoot : St :=
+        { counter := st.counter + nfPiCandidatePre.length + 5,
+          world := st.world }
+      have hStatic : st.world.selfExtra = [] := by
+        rw [hWorld]
+        rfl
+      have hStRootWorld : stRoot.world = St.init.world := by
+        simpa [stRoot] using hWorld
+      have hRoot :
+          interpretFuel kernelDefControlEnv (innerFuel + 1 + 1) st
+              [evalItemNil
+                (nfQuery cicStage3RawArtifactSig
+                  (.pi rawDomain rawBody))] [] =
+            ([(root, rootBnd)], stRoot) := by
+        simpa [root, rootBnd, stRoot, Nat.add_assoc] using
+          interpretFuel_kernelDefControlEnv_nf_pi_root_eq
+            (fuel := innerFuel + 1) (st := st)
+            cicStage3RawArtifactSig rawDomain rawBody hStatic
+      have hOuterNoErr :
+          (([sigAtom cicStage3RawArtifactSig,
+              termAtom (.pi rawDomain rawBody)].zip
+            [sigAtom cicStage3RawArtifactSig,
+              termAtom (.pi rawDomain rawBody)]).find?
+            (fun ho : Metta.Atom × Metta.Atom =>
+              ho.1.isError && ho.1 != ho.2)) = none := by
+        simp [sigAtom_isError_false, termAtom_isError_false]
+      have hRootNotNR : (root == notReducibleA) = false := by
+        simp [root, nfPiReadout, notReducibleA, mExpr, mSym]
+        rfl
+      have hRootNotSelf :
+          (root == nfQuery cicStage3RawArtifactSig
+            (.pi rawDomain rawBody)) = false := by
+        simp [root, nfPiReadout, nfQuery, termAtom, mExpr, mSym]
+        rfl
+      rcases List.mem_map.mp hOut with ⟨⟨actual, outBnd⟩, hPair, hActual⟩
+      dsimp at hActual
+      subst actual
+      rw [hFuelEq'] at hPair
+      rcases
+          mettaEval_binary_expr_pair_mem_implies_root_eval_mem_of_quoted_args_and_root_eval_eq_bnd
+            (env := kernelDefControlEnv) (fuel := innerFuel + 1)
+            (st := st) (stRoot := stRoot) (op := "nf")
+            (x := sigAtom cicStage3RawArtifactSig)
+            (y := termAtom (.pi rawDomain rawBody))
+            (root := root) (final := out) (rootBnd := rootBnd)
+            (outBnd := outBnd)
+            (hType := kernelDefControlEnv_nf_typeMismatch st
+              cicStage3RawArtifactSig (.pi rawDomain rawBody))
+            (hMask := kernelDefControlEnv_nf_argMask)
+            (hNoErr := hOuterNoErr)
+            (hRoot := by simpa [nfQuery, mExpr, mSym, Nat.add_assoc] using hRoot)
+            (hRootNotNotReducible := hRootNotNR)
+            (hRootNotSelf := by simpa [nfQuery, mExpr, mSym] using hRootNotSelf)
+            (hReturns := by
+              simpa [nfQuery, mExpr, mSym] using
+                kernelDefControlEnv_nf_returnsAtom
+                  cicStage3RawArtifactSig (.pi rawDomain rawBody))
+            (hmem := by simpa [nfQuery, mExpr, mSym, Nat.add_assoc] using hPair) with
+        ⟨finalBnd, hFinal⟩
+      have hOuterBndNil :
+          restrictBnd
+              (([sigAtom cicStage3RawArtifactSig,
+                  termAtom (.pi rawDomain rawBody)]).flatMap
+                Metta.Atom.vars)
+              ((Metta.Bindings.merge [] rootBnd).head?.getD rootBnd) = [] := by
+        simpa [List.flatMap,
+          sigAtom_vars_nil cicStage3RawArtifactSig,
+          termAtom_vars_nil (.pi rawDomain rawBody)] using
+          restrictBnd_nil_vars
+            ((Metta.Bindings.merge [] rootBnd).head?.getD rootBnd)
+      rw [hOuterBndNil] at hFinal
+      rcases
+          mettaEval_binary_eval_args_pair_nonError_notReducible_state_pred_before_closed
+            kernelDefControlEnv innerFuel stRoot
+            "Pi"
+            (nfQuery cicStage3RawArtifactSig rawDomain)
+            (nfQuery cicStage3RawArtifactSig rawBody)
+            out finalBnd
+            (fun st0 => st0.world = St.init.world)
+            (nfQuery_vars_nil cicStage3RawArtifactSig rawDomain)
+            (nfQuery_vars_nil cicStage3RawArtifactSig rawBody)
+            (by
+              rw [typeMismatch, kernelDefControlEnv_Pi_sigs_none])
+            kernelDefControlEnv_Pi_argMask
+            hNoErr
+            (hDomainWorld hInnerFuel hStRootWorld hDomain)
+            (by
+              intro acc0 _domainOut _domainBnd _hDomainMem hAccWorld
+              exact hBodyWorld hInnerFuel hAccWorld hBody)
+            (by
+              intro acc0 domainOut bodyOut hAccWorld
+              have hStaticAcc : acc0.2.world.selfExtra = [] := by
+                rw [hAccWorld]
+                rfl
+              simpa [evalItemNil, mExpr, mSym] using
+                interpretFuel_kernelDefControlEnv_eval_Pi_atoms_notReducible_eq_state
+                  innerFuel acc0.2 domainOut bodyOut hStaticAcc)
+            (by
+              simpa [root, nfPiReadout, nfQuery, mExpr, mSym] using hFinal) with
+        ⟨domainOut, domainBnd, hDomainMem, stBeforeBody, bodyOut,
+          bodyBnd, hBeforeBodyWorld, hBodyMem, hChildNoErr, hOutEq⟩
+      have hChildNoErrs :=
+        nf_binary_readout_arg_find_none_noerr
+          cicStage3RawArtifactSig rawDomain rawBody
+          domainOut bodyOut hChildNoErr
+      have hDomainValue :
+          domainOut ∈
+            (mettaEval kernelDefControlEnv innerFuel stRoot []
+              (nfQuery cicStage3RawArtifactSig rawDomain)).1.map (·.1) :=
+        List.mem_map.mpr ⟨(domainOut, domainBnd), hDomainMem, rfl⟩
+      have hBodyValue :
+          bodyOut ∈
+            (mettaEval kernelDefControlEnv innerFuel stBeforeBody []
+              (nfQuery cicStage3RawArtifactSig rawBody)).1.map (·.1) :=
+        List.mem_map.mpr ⟨(bodyOut, bodyBnd), hBodyMem, rfl⟩
+      have hDomainReadout :
+          CicStage3RawArtifactSigPrimaryNfRuntimeReadout
+            rawDomain domainOut :=
+        hDomainExtract hInnerFuel hStRootWorld hDomain
+          hDomainValue hChildNoErrs.1
+      have hBodyReadout :
+          CicStage3RawArtifactSigPrimaryNfRuntimeReadout rawBody bodyOut :=
+        hBodyExtract hInnerFuel hBeforeBodyWorld hBody
+          hBodyValue hChildNoErrs.2
+      subst out
+      exact CicStage3RawArtifactSigPrimaryNfRuntimeReadout.pi
+        hDomainReadout hBodyReadout
+
+private theorem cicStage3RawArtifactSig_primary_nf_value_runtime_extraction_geThree_nonError_lam_of_positive_recursive
+    {rawDomain rawBody : DIndGArtifactTerm}
+    (hDomainExtract :
+      ∀ {n fuel : Nat} {st : St}
+          {term : PureTm n} {out : Metta.Atom},
+        1 ≤ fuel →
+        st.world = St.init.world →
+        DIndGArtifactTermTranslates
+          cicStage3RawArtifactSig.nameTranslates n rawDomain term →
+        out ∈
+          (mettaEval kernelDefControlEnv fuel st []
+            (nfQuery cicStage3RawArtifactSig rawDomain)).1.map (·.1) →
+        out.isError = false →
+        CicStage3RawArtifactSigPrimaryNfRuntimeReadout rawDomain out)
+    (hBodyExtract :
+      ∀ {n fuel : Nat} {st : St}
+          {term : PureTm n} {out : Metta.Atom},
+        1 ≤ fuel →
+        st.world = St.init.world →
+        DIndGArtifactTermTranslates
+          cicStage3RawArtifactSig.nameTranslates n rawBody term →
+        out ∈
+          (mettaEval kernelDefControlEnv fuel st []
+            (nfQuery cicStage3RawArtifactSig rawBody)).1.map (·.1) →
+        out.isError = false →
+        CicStage3RawArtifactSigPrimaryNfRuntimeReadout rawBody out)
+    (hDomainWorld :
+      ∀ {n fuel : Nat} {st : St} {term : PureTm n},
+        1 ≤ fuel →
+        st.world = St.init.world →
+        DIndGArtifactTermTranslates
+          cicStage3RawArtifactSig.nameTranslates n rawDomain term →
+        ((mettaEval kernelDefControlEnv fuel st []
+          (nfQuery cicStage3RawArtifactSig rawDomain)).2).world =
+          St.init.world)
+    (hBodyWorld :
+      ∀ {n fuel : Nat} {st : St} {term : PureTm n},
+        1 ≤ fuel →
+        st.world = St.init.world →
+        DIndGArtifactTermTranslates
+          cicStage3RawArtifactSig.nameTranslates n rawBody term →
+        ((mettaEval kernelDefControlEnv fuel st []
+          (nfQuery cicStage3RawArtifactSig rawBody)).2).world =
+          St.init.world)
+    {n fuel : Nat} {st : St}
+    {term : PureTm n} {out : Metta.Atom}
+    (hFuel : 3 ≤ fuel)
+    (hWorld : st.world = St.init.world)
+    (hTrans :
+      DIndGArtifactTermTranslates
+        cicStage3RawArtifactSig.nameTranslates n
+        (.lam rawDomain rawBody) term)
+    (hOut :
+      out ∈
+        (mettaEval kernelDefControlEnv fuel st []
+          (nfQuery cicStage3RawArtifactSig
+            (.lam rawDomain rawBody))).1.map (·.1))
+    (hNoErr : out.isError = false) :
+    CicStage3RawArtifactSigPrimaryNfRuntimeReadout
+      (.lam rawDomain rawBody) out := by
+  cases hTrans with
+  | lam hDomain hBody =>
+      rcases Nat.exists_eq_add_of_le (show 2 ≤ fuel by omega) with
+        ⟨innerFuel, hFuelEq⟩
+      have hFuelEq' : fuel = innerFuel + 2 := by omega
+      have hInnerFuel : 1 ≤ innerFuel := by omega
+      let root := nfLamReadout cicStage3RawArtifactSig rawDomain rawBody
+      let rootBnd :=
+        (renameBindings (counterSuffix (st.counter + nfLamCandidatePre.length))
+          (nfLamRuleBindings cicStage3RawArtifactSig rawDomain rawBody)).reverse
+      let stRoot : St :=
+        { counter := st.counter + nfLamCandidatePre.length + 4,
+          world := st.world }
+      have hStatic : st.world.selfExtra = [] := by
+        rw [hWorld]
+        rfl
+      have hStRootWorld : stRoot.world = St.init.world := by
+        simpa [stRoot] using hWorld
+      have hRoot :
+          interpretFuel kernelDefControlEnv (innerFuel + 1 + 1) st
+              [evalItemNil
+                (nfQuery cicStage3RawArtifactSig
+                  (.lam rawDomain rawBody))] [] =
+            ([(root, rootBnd)], stRoot) := by
+        simpa [root, rootBnd, stRoot, Nat.add_assoc] using
+          interpretFuel_kernelDefControlEnv_nf_lam_root_eq
+            (fuel := innerFuel + 1) (st := st)
+            cicStage3RawArtifactSig rawDomain rawBody hStatic
+      have hOuterNoErr :
+          (([sigAtom cicStage3RawArtifactSig,
+              termAtom (.lam rawDomain rawBody)].zip
+            [sigAtom cicStage3RawArtifactSig,
+              termAtom (.lam rawDomain rawBody)]).find?
+            (fun ho : Metta.Atom × Metta.Atom =>
+              ho.1.isError && ho.1 != ho.2)) = none := by
+        simp [sigAtom_isError_false, termAtom_isError_false]
+      have hRootNotNR : (root == notReducibleA) = false := by
+        simp [root, nfLamReadout, notReducibleA, mExpr, mSym]
+        rfl
+      have hRootNotSelf :
+          (root == nfQuery cicStage3RawArtifactSig
+            (.lam rawDomain rawBody)) = false := by
+        simp [root, nfLamReadout, nfQuery, termAtom, mExpr, mSym]
+        rfl
+      rcases List.mem_map.mp hOut with ⟨⟨actual, outBnd⟩, hPair, hActual⟩
+      dsimp at hActual
+      subst actual
+      rw [hFuelEq'] at hPair
+      rcases
+          mettaEval_binary_expr_pair_mem_implies_root_eval_mem_of_quoted_args_and_root_eval_eq_bnd
+            (env := kernelDefControlEnv) (fuel := innerFuel + 1)
+            (st := st) (stRoot := stRoot) (op := "nf")
+            (x := sigAtom cicStage3RawArtifactSig)
+            (y := termAtom (.lam rawDomain rawBody))
+            (root := root) (final := out) (rootBnd := rootBnd)
+            (outBnd := outBnd)
+            (hType := kernelDefControlEnv_nf_typeMismatch st
+              cicStage3RawArtifactSig (.lam rawDomain rawBody))
+            (hMask := kernelDefControlEnv_nf_argMask)
+            (hNoErr := hOuterNoErr)
+            (hRoot := by simpa [nfQuery, mExpr, mSym, Nat.add_assoc] using hRoot)
+            (hRootNotNotReducible := hRootNotNR)
+            (hRootNotSelf := by simpa [nfQuery, mExpr, mSym] using hRootNotSelf)
+            (hReturns := by
+              simpa [nfQuery, mExpr, mSym] using
+                kernelDefControlEnv_nf_returnsAtom
+                  cicStage3RawArtifactSig (.lam rawDomain rawBody))
+            (hmem := by simpa [nfQuery, mExpr, mSym, Nat.add_assoc] using hPair) with
+        ⟨finalBnd, hFinal⟩
+      have hOuterBndNil :
+          restrictBnd
+              (([sigAtom cicStage3RawArtifactSig,
+                  termAtom (.lam rawDomain rawBody)]).flatMap
+                Metta.Atom.vars)
+              ((Metta.Bindings.merge [] rootBnd).head?.getD rootBnd) = [] := by
+        simpa [List.flatMap,
+          sigAtom_vars_nil cicStage3RawArtifactSig,
+          termAtom_vars_nil (.lam rawDomain rawBody)] using
+          restrictBnd_nil_vars
+            ((Metta.Bindings.merge [] rootBnd).head?.getD rootBnd)
+      rw [hOuterBndNil] at hFinal
+      rcases
+          mettaEval_binary_eval_args_pair_nonError_notReducible_state_pred_before_closed
+            kernelDefControlEnv innerFuel stRoot
+            "Lam"
+            (nfQuery cicStage3RawArtifactSig rawDomain)
+            (nfQuery cicStage3RawArtifactSig rawBody)
+            out finalBnd
+            (fun st0 => st0.world = St.init.world)
+            (nfQuery_vars_nil cicStage3RawArtifactSig rawDomain)
+            (nfQuery_vars_nil cicStage3RawArtifactSig rawBody)
+            (by
+              rw [typeMismatch, kernelDefControlEnv_Lam_sigs_none])
+            kernelDefControlEnv_Lam_argMask
+            hNoErr
+            (hDomainWorld hInnerFuel hStRootWorld hDomain)
+            (by
+              intro acc0 _domainOut _domainBnd _hDomainMem hAccWorld
+              exact hBodyWorld hInnerFuel hAccWorld hBody)
+            (by
+              intro acc0 domainOut bodyOut hAccWorld
+              have hStaticAcc : acc0.2.world.selfExtra = [] := by
+                rw [hAccWorld]
+                rfl
+              simpa [evalItemNil, mExpr, mSym] using
+                interpretFuel_kernelDefControlEnv_eval_Lam_atoms_notReducible_eq_state
+                  innerFuel acc0.2 domainOut bodyOut hStaticAcc)
+            (by
+              simpa [root, nfLamReadout, nfQuery, mExpr, mSym] using hFinal) with
+        ⟨domainOut, domainBnd, hDomainMem, stBeforeBody, bodyOut,
+          bodyBnd, hBeforeBodyWorld, hBodyMem, hChildNoErr, hOutEq⟩
+      have hChildNoErrs :=
+        nf_binary_readout_arg_find_none_noerr
+          cicStage3RawArtifactSig rawDomain rawBody
+          domainOut bodyOut hChildNoErr
+      have hDomainValue :
+          domainOut ∈
+            (mettaEval kernelDefControlEnv innerFuel stRoot []
+              (nfQuery cicStage3RawArtifactSig rawDomain)).1.map (·.1) :=
+        List.mem_map.mpr ⟨(domainOut, domainBnd), hDomainMem, rfl⟩
+      have hBodyValue :
+          bodyOut ∈
+            (mettaEval kernelDefControlEnv innerFuel stBeforeBody []
+              (nfQuery cicStage3RawArtifactSig rawBody)).1.map (·.1) :=
+        List.mem_map.mpr ⟨(bodyOut, bodyBnd), hBodyMem, rfl⟩
+      have hDomainReadout :
+          CicStage3RawArtifactSigPrimaryNfRuntimeReadout
+            rawDomain domainOut :=
+        hDomainExtract hInnerFuel hStRootWorld hDomain
+          hDomainValue hChildNoErrs.1
+      have hBodyReadout :
+          CicStage3RawArtifactSigPrimaryNfRuntimeReadout rawBody bodyOut :=
+        hBodyExtract hInnerFuel hBeforeBodyWorld hBody
+          hBodyValue hChildNoErrs.2
+      subst out
+      exact CicStage3RawArtifactSigPrimaryNfRuntimeReadout.lam
+        hDomainReadout hBodyReadout
+
+private theorem cicStage3RawArtifactSig_primary_nf_value_runtime_extraction_geOne_nonError_pi_of_positive_recursive
+    {rawDomain rawBody : DIndGArtifactTerm}
+    (hDomainExtract :
+      ∀ {n fuel : Nat} {st : St}
+          {term : PureTm n} {out : Metta.Atom},
+        1 ≤ fuel →
+        st.world = St.init.world →
+        DIndGArtifactTermTranslates
+          cicStage3RawArtifactSig.nameTranslates n rawDomain term →
+        out ∈
+          (mettaEval kernelDefControlEnv fuel st []
+            (nfQuery cicStage3RawArtifactSig rawDomain)).1.map (·.1) →
+        out.isError = false →
+        CicStage3RawArtifactSigPrimaryNfRuntimeReadout rawDomain out)
+    (hBodyExtract :
+      ∀ {n fuel : Nat} {st : St}
+          {term : PureTm n} {out : Metta.Atom},
+        1 ≤ fuel →
+        st.world = St.init.world →
+        DIndGArtifactTermTranslates
+          cicStage3RawArtifactSig.nameTranslates n rawBody term →
+        out ∈
+          (mettaEval kernelDefControlEnv fuel st []
+            (nfQuery cicStage3RawArtifactSig rawBody)).1.map (·.1) →
+        out.isError = false →
+        CicStage3RawArtifactSigPrimaryNfRuntimeReadout rawBody out)
+    (hDomainWorld :
+      ∀ {n fuel : Nat} {st : St} {term : PureTm n},
+        1 ≤ fuel →
+        st.world = St.init.world →
+        DIndGArtifactTermTranslates
+          cicStage3RawArtifactSig.nameTranslates n rawDomain term →
+        ((mettaEval kernelDefControlEnv fuel st []
+          (nfQuery cicStage3RawArtifactSig rawDomain)).2).world =
+          St.init.world)
+    (hBodyWorld :
+      ∀ {n fuel : Nat} {st : St} {term : PureTm n},
+        1 ≤ fuel →
+        st.world = St.init.world →
+        DIndGArtifactTermTranslates
+          cicStage3RawArtifactSig.nameTranslates n rawBody term →
+        ((mettaEval kernelDefControlEnv fuel st []
+          (nfQuery cicStage3RawArtifactSig rawBody)).2).world =
+          St.init.world)
+    {n fuel : Nat} {st : St}
+    {term : PureTm n} {out : Metta.Atom}
+    (hFuel : 1 ≤ fuel)
+    (hWorld : st.world = St.init.world)
+    (hTrans :
+      DIndGArtifactTermTranslates
+        cicStage3RawArtifactSig.nameTranslates n
+        (.pi rawDomain rawBody) term)
+    (hOut :
+      out ∈
+        (mettaEval kernelDefControlEnv fuel st []
+          (nfQuery cicStage3RawArtifactSig
+            (.pi rawDomain rawBody))).1.map (·.1))
+    (hNoErr : out.isError = false) :
+    CicStage3RawArtifactSigPrimaryNfRuntimeReadout
+      (.pi rawDomain rawBody) out := by
+  by_cases hLtThree : fuel < 3
+  · exact False.elim
+      (cicStage3RawArtifactSig_primary_nf_pi_runtime_nonError_false_of_one_le_lt_three
+        hFuel hLtThree hWorld hOut hNoErr)
+  · exact
+      cicStage3RawArtifactSig_primary_nf_value_runtime_extraction_geThree_nonError_pi_of_positive_recursive
+        hDomainExtract hBodyExtract hDomainWorld hBodyWorld
+        (by omega) hWorld hTrans hOut hNoErr
+
+private theorem cicStage3RawArtifactSig_primary_nf_value_runtime_extraction_geOne_nonError_lam_of_positive_recursive
+    {rawDomain rawBody : DIndGArtifactTerm}
+    (hDomainExtract :
+      ∀ {n fuel : Nat} {st : St}
+          {term : PureTm n} {out : Metta.Atom},
+        1 ≤ fuel →
+        st.world = St.init.world →
+        DIndGArtifactTermTranslates
+          cicStage3RawArtifactSig.nameTranslates n rawDomain term →
+        out ∈
+          (mettaEval kernelDefControlEnv fuel st []
+            (nfQuery cicStage3RawArtifactSig rawDomain)).1.map (·.1) →
+        out.isError = false →
+        CicStage3RawArtifactSigPrimaryNfRuntimeReadout rawDomain out)
+    (hBodyExtract :
+      ∀ {n fuel : Nat} {st : St}
+          {term : PureTm n} {out : Metta.Atom},
+        1 ≤ fuel →
+        st.world = St.init.world →
+        DIndGArtifactTermTranslates
+          cicStage3RawArtifactSig.nameTranslates n rawBody term →
+        out ∈
+          (mettaEval kernelDefControlEnv fuel st []
+            (nfQuery cicStage3RawArtifactSig rawBody)).1.map (·.1) →
+        out.isError = false →
+        CicStage3RawArtifactSigPrimaryNfRuntimeReadout rawBody out)
+    (hDomainWorld :
+      ∀ {n fuel : Nat} {st : St} {term : PureTm n},
+        1 ≤ fuel →
+        st.world = St.init.world →
+        DIndGArtifactTermTranslates
+          cicStage3RawArtifactSig.nameTranslates n rawDomain term →
+        ((mettaEval kernelDefControlEnv fuel st []
+          (nfQuery cicStage3RawArtifactSig rawDomain)).2).world =
+          St.init.world)
+    (hBodyWorld :
+      ∀ {n fuel : Nat} {st : St} {term : PureTm n},
+        1 ≤ fuel →
+        st.world = St.init.world →
+        DIndGArtifactTermTranslates
+          cicStage3RawArtifactSig.nameTranslates n rawBody term →
+        ((mettaEval kernelDefControlEnv fuel st []
+          (nfQuery cicStage3RawArtifactSig rawBody)).2).world =
+          St.init.world)
+    {n fuel : Nat} {st : St}
+    {term : PureTm n} {out : Metta.Atom}
+    (hFuel : 1 ≤ fuel)
+    (hWorld : st.world = St.init.world)
+    (hTrans :
+      DIndGArtifactTermTranslates
+        cicStage3RawArtifactSig.nameTranslates n
+        (.lam rawDomain rawBody) term)
+    (hOut :
+      out ∈
+        (mettaEval kernelDefControlEnv fuel st []
+          (nfQuery cicStage3RawArtifactSig
+            (.lam rawDomain rawBody))).1.map (·.1))
+    (hNoErr : out.isError = false) :
+    CicStage3RawArtifactSigPrimaryNfRuntimeReadout
+      (.lam rawDomain rawBody) out := by
+  by_cases hLtThree : fuel < 3
+  · exact False.elim
+      (cicStage3RawArtifactSig_primary_nf_lam_runtime_nonError_false_of_one_le_lt_three
+        hFuel hLtThree hWorld hOut hNoErr)
+  · exact
+      cicStage3RawArtifactSig_primary_nf_value_runtime_extraction_geThree_nonError_lam_of_positive_recursive
+        hDomainExtract hBodyExtract hDomainWorld hBodyWorld
+        (by omega) hWorld hTrans hOut hNoErr
+
+private theorem cicStage3RawArtifactSig_primary_nf_query_world_geOne_pi_of_recursive
+    {rawDomain rawBody : DIndGArtifactTerm}
+    (hDomainWorld :
+      ∀ {n fuel : Nat} {st : St} {term : PureTm n},
+        1 ≤ fuel →
+        st.world = St.init.world →
+        DIndGArtifactTermTranslates
+          cicStage3RawArtifactSig.nameTranslates n rawDomain term →
+        ((mettaEval kernelDefControlEnv fuel st []
+          (nfQuery cicStage3RawArtifactSig rawDomain)).2).world =
+          St.init.world)
+    (hBodyWorld :
+      ∀ {n fuel : Nat} {st : St} {term : PureTm n},
+        1 ≤ fuel →
+        st.world = St.init.world →
+        DIndGArtifactTermTranslates
+          cicStage3RawArtifactSig.nameTranslates n rawBody term →
+        ((mettaEval kernelDefControlEnv fuel st []
+          (nfQuery cicStage3RawArtifactSig rawBody)).2).world =
+          St.init.world)
+    {n fuel : Nat} {st : St} {term : PureTm n}
+    (hFuel : 1 ≤ fuel)
+    (hWorld : st.world = St.init.world)
+    (hTrans :
+      DIndGArtifactTermTranslates
+        cicStage3RawArtifactSig.nameTranslates n
+        (.pi rawDomain rawBody) term) :
+    ((mettaEval kernelDefControlEnv fuel st []
+      (nfQuery cicStage3RawArtifactSig
+        (.pi rawDomain rawBody))).2).world =
+      St.init.world := by
+  cases hTrans with
+  | pi hDomain hBody =>
+      by_cases hFuelOne : fuel = 1
+      · subst fuel
+        rw [mettaEval_fuel_one_world]
+        exact hWorld
+      · rcases Nat.exists_eq_add_of_le (show 2 ≤ fuel by omega) with
+          ⟨fuelBase, hFuelEq⟩
+        have hFuelEq' : fuel = fuelBase + 2 := by omega
+        subst fuel
+        let root := nfPiReadout cicStage3RawArtifactSig rawDomain rawBody
+        let rootBnd :=
+          (renameBindings (counterSuffix (st.counter + nfPiCandidatePre.length))
+            (nfPiRuleBindings cicStage3RawArtifactSig rawDomain rawBody)).reverse
+        let stRoot : St :=
+          { counter := st.counter + nfPiCandidatePre.length + 5,
+            world := st.world }
+        have hStatic : st.world.selfExtra = [] := by
+          rw [hWorld]
+          rfl
+        have hStRootWorld : stRoot.world = St.init.world := by
+          simpa [stRoot] using hWorld
+        have hRoot :
+            interpretFuel kernelDefControlEnv (fuelBase + 1 + 1) st
+                [evalItemNil
+                  (nfQuery cicStage3RawArtifactSig
+                    (.pi rawDomain rawBody))] [] =
+              ([(root, rootBnd)], stRoot) := by
+          simpa [root, rootBnd, stRoot, Nat.add_assoc] using
+            interpretFuel_kernelDefControlEnv_nf_pi_root_eq
+              (fuel := fuelBase + 1) (st := st)
+              cicStage3RawArtifactSig rawDomain rawBody hStatic
+        have hOuterNoErr :
+            (([sigAtom cicStage3RawArtifactSig,
+                termAtom (.pi rawDomain rawBody)].zip
+              [sigAtom cicStage3RawArtifactSig,
+                termAtom (.pi rawDomain rawBody)]).find?
+              (fun ho : Metta.Atom × Metta.Atom =>
+                ho.1.isError && ho.1 != ho.2)) = none := by
+          simp [sigAtom_isError_false, termAtom_isError_false]
+        have hRootNotNR : (root == notReducibleA) = false := by
+          simp [root, nfPiReadout, notReducibleA, mExpr, mSym]
+          rfl
+        have hRootNotSelf :
+            (root == nfQuery cicStage3RawArtifactSig
+              (.pi rawDomain rawBody)) = false := by
+          simp [root, nfPiReadout, nfQuery, termAtom, mExpr, mSym]
+          rfl
+        have hOuterWorld := by
+          refine
+            mettaEval_binary_expr_state_pred_of_quoted_args_and_root_eval
+              kernelDefControlEnv (fuelBase + 1) st stRoot "nf"
+              (sigAtom cicStage3RawArtifactSig)
+              (termAtom (.pi rawDomain rawBody))
+              root rootBnd
+              (fun st0 => st0.world = St.init.world)
+              (kernelDefControlEnv_nf_typeMismatch st
+                cicStage3RawArtifactSig (.pi rawDomain rawBody))
+              kernelDefControlEnv_nf_argMask hOuterNoErr
+              (by simpa [root, rootBnd, stRoot, nfQuery, mExpr, mSym,
+                  Nat.add_assoc] using hRoot)
+              hRootNotNR
+              (by simpa [nfQuery, mExpr, mSym] using hRootNotSelf)
+              (by
+                simpa [nfQuery, mExpr, mSym] using
+                  kernelDefControlEnv_nf_returnsAtom
+                    cicStage3RawArtifactSig (.pi rawDomain rawBody))
+              ?_
+          have hOuterBndNil :
+              restrictBnd
+                  (([sigAtom cicStage3RawArtifactSig,
+                      termAtom (.pi rawDomain rawBody)]).flatMap
+                    Metta.Atom.vars)
+                  ((Metta.Bindings.merge [] rootBnd).head?.getD rootBnd) =
+                [] := by
+            simpa [List.flatMap,
+              sigAtom_vars_nil cicStage3RawArtifactSig,
+              termAtom_vars_nil (.pi rawDomain rawBody)] using
+              restrictBnd_nil_vars
+                ((Metta.Bindings.merge [] rootBnd).head?.getD rootBnd)
+          rw [hOuterBndNil]
+          by_cases hBaseZero : fuelBase = 0
+          · subst fuelBase
+            rw [mettaEval_fuel_one_world]
+            exact hStRootWorld
+          · have hInnerFuel : 1 ≤ fuelBase := by omega
+            simpa [root, nfPiReadout, nfQuery, mExpr, mSym] using
+              mettaEval_binary_expr_state_pred_of_eval_args_and_notReducible_root_closed
+                kernelDefControlEnv fuelBase stRoot
+                "Pi"
+                (nfQuery cicStage3RawArtifactSig rawDomain)
+                (nfQuery cicStage3RawArtifactSig rawBody)
+                (fun st0 => st0.world = St.init.world)
+                (nfQuery_vars_nil cicStage3RawArtifactSig rawDomain)
+                (nfQuery_vars_nil cicStage3RawArtifactSig rawBody)
+                (by
+                  rw [typeMismatch, kernelDefControlEnv_Pi_sigs_none])
+                kernelDefControlEnv_Pi_argMask
+                (hDomainWorld hInnerFuel hStRootWorld hDomain)
+                (by
+                  intro acc0 part hPart hAccWorld
+                  rcases
+                      mettaEval_binary_first_arg_parts_mem
+                        kernelDefControlEnv fuelBase ([] : List String)
+                        stRoot (nfQuery cicStage3RawArtifactSig rawDomain)
+                        part hPart with
+                    ⟨_domainOut, _domainBnd, _hDomainMem, hPartEq⟩
+                  cases hPartEq
+                  simpa [restrictBnd_nil_vars] using
+                    hBodyWorld hInnerFuel hAccWorld hBody)
+                (by
+                  intro acc0 domainOut bodyOut hAccWorld
+                  have hStaticAcc : acc0.2.world.selfExtra = [] := by
+                    rw [hAccWorld]
+                    rfl
+                  simpa [evalItemNil, mExpr, mSym] using
+                    interpretFuel_kernelDefControlEnv_eval_Pi_atoms_notReducible_eq_state
+                      fuelBase acc0.2 domainOut bodyOut hStaticAcc)
+        simpa [nfQuery, mExpr, mSym, Nat.add_assoc, Nat.add_comm,
+          Nat.add_left_comm] using hOuterWorld
+
+private theorem cicStage3RawArtifactSig_primary_nf_query_world_geOne_lam_of_recursive
+    {rawDomain rawBody : DIndGArtifactTerm}
+    (hDomainWorld :
+      ∀ {n fuel : Nat} {st : St} {term : PureTm n},
+        1 ≤ fuel →
+        st.world = St.init.world →
+        DIndGArtifactTermTranslates
+          cicStage3RawArtifactSig.nameTranslates n rawDomain term →
+        ((mettaEval kernelDefControlEnv fuel st []
+          (nfQuery cicStage3RawArtifactSig rawDomain)).2).world =
+          St.init.world)
+    (hBodyWorld :
+      ∀ {n fuel : Nat} {st : St} {term : PureTm n},
+        1 ≤ fuel →
+        st.world = St.init.world →
+        DIndGArtifactTermTranslates
+          cicStage3RawArtifactSig.nameTranslates n rawBody term →
+        ((mettaEval kernelDefControlEnv fuel st []
+          (nfQuery cicStage3RawArtifactSig rawBody)).2).world =
+          St.init.world)
+    {n fuel : Nat} {st : St} {term : PureTm n}
+    (hFuel : 1 ≤ fuel)
+    (hWorld : st.world = St.init.world)
+    (hTrans :
+      DIndGArtifactTermTranslates
+        cicStage3RawArtifactSig.nameTranslates n
+        (.lam rawDomain rawBody) term) :
+    ((mettaEval kernelDefControlEnv fuel st []
+      (nfQuery cicStage3RawArtifactSig
+        (.lam rawDomain rawBody))).2).world =
+      St.init.world := by
+  cases hTrans with
+  | lam hDomain hBody =>
+      by_cases hFuelOne : fuel = 1
+      · subst fuel
+        rw [mettaEval_fuel_one_world]
+        exact hWorld
+      · rcases Nat.exists_eq_add_of_le (show 2 ≤ fuel by omega) with
+          ⟨fuelBase, hFuelEq⟩
+        have hFuelEq' : fuel = fuelBase + 2 := by omega
+        subst fuel
+        let root := nfLamReadout cicStage3RawArtifactSig rawDomain rawBody
+        let rootBnd :=
+          (renameBindings (counterSuffix (st.counter + nfLamCandidatePre.length))
+            (nfLamRuleBindings cicStage3RawArtifactSig rawDomain rawBody)).reverse
+        let stRoot : St :=
+          { counter := st.counter + nfLamCandidatePre.length + 4,
+            world := st.world }
+        have hStatic : st.world.selfExtra = [] := by
+          rw [hWorld]
+          rfl
+        have hStRootWorld : stRoot.world = St.init.world := by
+          simpa [stRoot] using hWorld
+        have hRoot :
+            interpretFuel kernelDefControlEnv (fuelBase + 1 + 1) st
+                [evalItemNil
+                  (nfQuery cicStage3RawArtifactSig
+                    (.lam rawDomain rawBody))] [] =
+              ([(root, rootBnd)], stRoot) := by
+          simpa [root, rootBnd, stRoot, Nat.add_assoc] using
+            interpretFuel_kernelDefControlEnv_nf_lam_root_eq
+              (fuel := fuelBase + 1) (st := st)
+              cicStage3RawArtifactSig rawDomain rawBody hStatic
+        have hOuterNoErr :
+            (([sigAtom cicStage3RawArtifactSig,
+                termAtom (.lam rawDomain rawBody)].zip
+              [sigAtom cicStage3RawArtifactSig,
+                termAtom (.lam rawDomain rawBody)]).find?
+              (fun ho : Metta.Atom × Metta.Atom =>
+                ho.1.isError && ho.1 != ho.2)) = none := by
+          simp [sigAtom_isError_false, termAtom_isError_false]
+        have hRootNotNR : (root == notReducibleA) = false := by
+          simp [root, nfLamReadout, notReducibleA, mExpr, mSym]
+          rfl
+        have hRootNotSelf :
+            (root == nfQuery cicStage3RawArtifactSig
+              (.lam rawDomain rawBody)) = false := by
+          simp [root, nfLamReadout, nfQuery, termAtom, mExpr, mSym]
+          rfl
+        have hOuterWorld := by
+          refine
+            mettaEval_binary_expr_state_pred_of_quoted_args_and_root_eval
+              kernelDefControlEnv (fuelBase + 1) st stRoot "nf"
+              (sigAtom cicStage3RawArtifactSig)
+              (termAtom (.lam rawDomain rawBody))
+              root rootBnd
+              (fun st0 => st0.world = St.init.world)
+              (kernelDefControlEnv_nf_typeMismatch st
+                cicStage3RawArtifactSig (.lam rawDomain rawBody))
+              kernelDefControlEnv_nf_argMask hOuterNoErr
+              (by simpa [root, rootBnd, stRoot, nfQuery, mExpr, mSym,
+                  Nat.add_assoc] using hRoot)
+              hRootNotNR
+              (by simpa [nfQuery, mExpr, mSym] using hRootNotSelf)
+              (by
+                simpa [nfQuery, mExpr, mSym] using
+                  kernelDefControlEnv_nf_returnsAtom
+                    cicStage3RawArtifactSig (.lam rawDomain rawBody))
+              ?_
+          have hOuterBndNil :
+              restrictBnd
+                  (([sigAtom cicStage3RawArtifactSig,
+                      termAtom (.lam rawDomain rawBody)]).flatMap
+                    Metta.Atom.vars)
+                  ((Metta.Bindings.merge [] rootBnd).head?.getD rootBnd) =
+                [] := by
+            simpa [List.flatMap,
+              sigAtom_vars_nil cicStage3RawArtifactSig,
+              termAtom_vars_nil (.lam rawDomain rawBody)] using
+              restrictBnd_nil_vars
+                ((Metta.Bindings.merge [] rootBnd).head?.getD rootBnd)
+          rw [hOuterBndNil]
+          by_cases hBaseZero : fuelBase = 0
+          · subst fuelBase
+            rw [mettaEval_fuel_one_world]
+            exact hStRootWorld
+          · have hInnerFuel : 1 ≤ fuelBase := by omega
+            simpa [root, nfLamReadout, nfQuery, mExpr, mSym] using
+              mettaEval_binary_expr_state_pred_of_eval_args_and_notReducible_root_closed
+                kernelDefControlEnv fuelBase stRoot
+                "Lam"
+                (nfQuery cicStage3RawArtifactSig rawDomain)
+                (nfQuery cicStage3RawArtifactSig rawBody)
+                (fun st0 => st0.world = St.init.world)
+                (nfQuery_vars_nil cicStage3RawArtifactSig rawDomain)
+                (nfQuery_vars_nil cicStage3RawArtifactSig rawBody)
+                (by
+                  rw [typeMismatch, kernelDefControlEnv_Lam_sigs_none])
+                kernelDefControlEnv_Lam_argMask
+                (hDomainWorld hInnerFuel hStRootWorld hDomain)
+                (by
+                  intro acc0 part hPart hAccWorld
+                  rcases
+                      mettaEval_binary_first_arg_parts_mem
+                        kernelDefControlEnv fuelBase ([] : List String)
+                        stRoot (nfQuery cicStage3RawArtifactSig rawDomain)
+                        part hPart with
+                    ⟨_domainOut, _domainBnd, _hDomainMem, hPartEq⟩
+                  cases hPartEq
+                  simpa [restrictBnd_nil_vars] using
+                    hBodyWorld hInnerFuel hAccWorld hBody)
+                (by
+                  intro acc0 domainOut bodyOut hAccWorld
+                  have hStaticAcc : acc0.2.world.selfExtra = [] := by
+                    rw [hAccWorld]
+                    rfl
+                  simpa [evalItemNil, mExpr, mSym] using
+                    interpretFuel_kernelDefControlEnv_eval_Lam_atoms_notReducible_eq_state
+                      fuelBase acc0.2 domainOut bodyOut hStaticAcc)
+        simpa [nfQuery, mExpr, mSym, Nat.add_assoc, Nat.add_comm,
+          Nat.add_left_comm] using hOuterWorld
+
+private theorem cicStage3RawArtifactSig_primary_nf_query_world_geOne_app_any_depth
+    {rawFn rawArg : DIndGArtifactTerm}
+    {n fuel : Nat} {st : St} {term : PureTm n}
+    (hFuel : 1 ≤ fuel)
+    (hWorld : st.world = St.init.world)
+    (hTrans :
+      DIndGArtifactTermTranslates
+        cicStage3RawArtifactSig.nameTranslates n
+        (.app rawFn rawArg) term) :
+    ((mettaEval kernelDefControlEnv fuel st []
+      (nfQuery cicStage3RawArtifactSig
+        (.app rawFn rawArg))).2).world =
+      St.init.world := by
+  cases hTrans with
+  | app _hFn _hArg =>
+      by_cases hFuelOne : fuel = 1
+      · subst fuel
+        rw [mettaEval_fuel_one_world]
+        exact hWorld
+      · rcases Nat.exists_eq_add_of_le (show 2 ≤ fuel by omega) with
+          ⟨fuelBase, _hFuelEq⟩
+        have hFuelEq' : fuel = fuelBase + 2 := by omega
+        subst fuel
+        have hStatic : st.world.selfExtra = [] := by
+          rw [hWorld]
+          rfl
+        rw [hFuelEq']
+        rw [mettaEval_kernelDefControlEnv_nf_app_body_eq_state
+          fuelBase st cicStage3RawArtifactSig rawFn rawArg hStatic]
+        simpa using hWorld
+
+private theorem cicStage3RawArtifactSig_primary_nf_query_world_geOne_var_any_depth
+    {index : Nat}
+    {n fuel : Nat} {st : St} {term : PureTm n}
+    (hFuel : 1 ≤ fuel)
+    (hWorld : st.world = St.init.world)
+    (_hTrans :
+      DIndGArtifactTermTranslates
+        cicStage3RawArtifactSig.nameTranslates n
+        (.var index) term) :
+    ((mettaEval kernelDefControlEnv fuel st []
+      (nfQuery cicStage3RawArtifactSig
+        (.var index))).2).world =
+      St.init.world := by
+  by_cases hFuelOne : fuel = 1
+  · subst fuel
+    rw [mettaEval_fuel_one_world]
+    exact hWorld
+  · by_cases hFuelTwo : fuel = 2
+    · subst fuel
+      let root := termAtom (.var index)
+      let rootBnd :=
+        (renameBindings (counterSuffix st.counter)
+          (nfVarRuleBindings cicStage3RawArtifactSig index)).reverse
+      let stRoot : St := { counter := st.counter + 8, world := st.world }
+      have hStatic : st.world.selfExtra = [] := by
+        rw [hWorld]
+        rfl
+      have hStRootWorld : stRoot.world = St.init.world := by
+        simpa [stRoot] using hWorld
+      have hRoot :
+          interpretFuel kernelDefControlEnv (1 + 1) st
+              [evalItemNil
+                (nfQuery cicStage3RawArtifactSig (.var index))] [] =
+            ([(root, rootBnd)], stRoot) := by
+        simpa [root, rootBnd, stRoot] using
+          interpretFuel_kernelDefControlEnv_nf_var_root_eq
+            (fuel := 1) (st := st) cicStage3RawArtifactSig index hStatic
+      have hOuterNoErr :
+          (([sigAtom cicStage3RawArtifactSig,
+              termAtom (.var index)].zip
+            [sigAtom cicStage3RawArtifactSig,
+              termAtom (.var index)]).find?
+            (fun ho : Metta.Atom × Metta.Atom =>
+              ho.1.isError && ho.1 != ho.2)) = none := by
+        simp [sigAtom_isError_false, termAtom_isError_false]
+      have hRootNotNR : (root == notReducibleA) = false := by
+        simpa [root] using termAtom_beq_notReducible_false (.var index)
+      have hRootNotSelf :
+          (root == nfQuery cicStage3RawArtifactSig (.var index)) = false := by
+        simp [root, nfQuery, termAtom, mExpr, mSym, mNat]
+        rfl
+      have hOuterWorld := by
+        refine
+          mettaEval_binary_expr_state_pred_of_quoted_args_and_root_eval
+            kernelDefControlEnv 1 st stRoot "nf"
+            (sigAtom cicStage3RawArtifactSig)
+            (termAtom (.var index))
+            root rootBnd
+            (fun st0 => st0.world = St.init.world)
+            (kernelDefControlEnv_nf_typeMismatch st
+              cicStage3RawArtifactSig (.var index))
+            kernelDefControlEnv_nf_argMask hOuterNoErr
+            (by simpa [root, rootBnd, stRoot, nfQuery, mExpr, mSym] using
+              hRoot)
+            hRootNotNR
+            (by simpa [nfQuery, mExpr, mSym] using hRootNotSelf)
+            (by
+              simpa [nfQuery, mExpr, mSym] using
+                kernelDefControlEnv_nf_returnsAtom
+                  cicStage3RawArtifactSig (.var index))
+            ?_
+        have hOuterBndNil :
+            restrictBnd
+                (([sigAtom cicStage3RawArtifactSig,
+                    termAtom (.var index)]).flatMap Metta.Atom.vars)
+                ((Metta.Bindings.merge [] rootBnd).head?.getD rootBnd) =
+              [] := by
+          simpa [List.flatMap,
+            sigAtom_vars_nil cicStage3RawArtifactSig,
+            termAtom_vars_nil (.var index)] using
+            restrictBnd_nil_vars
+              ((Metta.Bindings.merge [] rootBnd).head?.getD rootBnd)
+        rw [hOuterBndNil]
+        rw [mettaEval_fuel_one_world]
+        exact hStRootWorld
+      simpa [nfQuery, mExpr, mSym] using hOuterWorld
+    · have hFuelGeThree : 3 ≤ fuel := by omega
+      rcases Nat.exists_eq_add_of_le hFuelGeThree with
+        ⟨fuelBase, _hFuelEq⟩
+      have hFuelEq' : fuel = fuelBase + 3 := by omega
+      have hStatic : st.world.selfExtra = [] := by
+        rw [hWorld]
+        rfl
+      rw [hFuelEq']
+      rw [mettaEval_kernelDefControlEnv_nf_var_body_eq_state
+        fuelBase st cicStage3RawArtifactSig index hStatic]
+      simpa using hWorld
+
+private theorem cicStage3RawArtifactSig_primary_nf_query_world_geOne_srt_any_depth
+    {sort : DIndGArtifactSort}
+    {n fuel : Nat} {st : St} {term : PureTm n}
+    (hFuel : 1 ≤ fuel)
+    (hWorld : st.world = St.init.world)
+    (_hTrans :
+      DIndGArtifactTermTranslates
+        cicStage3RawArtifactSig.nameTranslates n
+        (.srt sort) term) :
+    ((mettaEval kernelDefControlEnv fuel st []
+      (nfQuery cicStage3RawArtifactSig
+        (.srt sort))).2).world =
+      St.init.world := by
+  by_cases hFuelOne : fuel = 1
+  · subst fuel
+    rw [mettaEval_fuel_one_world]
+    exact hWorld
+  · by_cases hFuelTwo : fuel = 2
+    · subst fuel
+      let root := termAtom (.srt sort)
+      let rootBnd :=
+        (renameBindings (counterSuffix (st.counter + 1))
+          (nfSrtRuleBindings cicStage3RawArtifactSig sort)).reverse
+      let stRoot : St := { counter := st.counter + 8, world := st.world }
+      have hStatic : st.world.selfExtra = [] := by
+        rw [hWorld]
+        rfl
+      have hStRootWorld : stRoot.world = St.init.world := by
+        simpa [stRoot] using hWorld
+      have hRoot :
+          interpretFuel kernelDefControlEnv (1 + 1) st
+              [evalItemNil
+                (nfQuery cicStage3RawArtifactSig (.srt sort))] [] =
+            ([(root, rootBnd)], stRoot) := by
+        simpa [root, rootBnd, stRoot] using
+          interpretFuel_kernelDefControlEnv_nf_srt_root_eq
+            (fuel := 1) (st := st) cicStage3RawArtifactSig sort hStatic
+      have hOuterNoErr :
+          (([sigAtom cicStage3RawArtifactSig,
+              termAtom (.srt sort)].zip
+            [sigAtom cicStage3RawArtifactSig,
+              termAtom (.srt sort)]).find?
+            (fun ho : Metta.Atom × Metta.Atom =>
+              ho.1.isError && ho.1 != ho.2)) = none := by
+        simp [sigAtom_isError_false, termAtom_isError_false]
+      have hRootNotNR : (root == notReducibleA) = false := by
+        simpa [root] using termAtom_beq_notReducible_false (.srt sort)
+      have hRootNotSelf :
+          (root == nfQuery cicStage3RawArtifactSig (.srt sort)) = false := by
+        cases sort <;> simp [root, nfQuery, termAtom, sortAtom, mExpr, mSym] <;> rfl
+      have hOuterWorld := by
+        refine
+          mettaEval_binary_expr_state_pred_of_quoted_args_and_root_eval
+            kernelDefControlEnv 1 st stRoot "nf"
+            (sigAtom cicStage3RawArtifactSig)
+            (termAtom (.srt sort))
+            root rootBnd
+            (fun st0 => st0.world = St.init.world)
+            (kernelDefControlEnv_nf_typeMismatch st
+              cicStage3RawArtifactSig (.srt sort))
+            kernelDefControlEnv_nf_argMask hOuterNoErr
+            (by simpa [root, rootBnd, stRoot, nfQuery, mExpr, mSym] using
+              hRoot)
+            hRootNotNR
+            (by simpa [nfQuery, mExpr, mSym] using hRootNotSelf)
+            (by
+              simpa [nfQuery, mExpr, mSym] using
+                kernelDefControlEnv_nf_returnsAtom
+                  cicStage3RawArtifactSig (.srt sort))
+            ?_
+        have hOuterBndNil :
+            restrictBnd
+                (([sigAtom cicStage3RawArtifactSig,
+                    termAtom (.srt sort)]).flatMap Metta.Atom.vars)
+                ((Metta.Bindings.merge [] rootBnd).head?.getD rootBnd) =
+              [] := by
+          simpa [List.flatMap,
+            sigAtom_vars_nil cicStage3RawArtifactSig,
+            termAtom_vars_nil (.srt sort)] using
+            restrictBnd_nil_vars
+              ((Metta.Bindings.merge [] rootBnd).head?.getD rootBnd)
+        rw [hOuterBndNil]
+        rw [mettaEval_fuel_one_world]
+        exact hStRootWorld
+      simpa [nfQuery, mExpr, mSym] using hOuterWorld
+    · have hFuelGeThree : 3 ≤ fuel := by omega
+      rcases Nat.exists_eq_add_of_le hFuelGeThree with
+        ⟨fuelBase, _hFuelEq⟩
+      have hFuelEq' : fuel = fuelBase + 3 := by omega
+      have hStatic : st.world.selfExtra = [] := by
+        rw [hWorld]
+        rfl
+      rw [hFuelEq']
+      rw [mettaEval_kernelDefControlEnv_nf_srt_body_eq_state
+        fuelBase st cicStage3RawArtifactSig sort hStatic]
+      simpa using hWorld
+
+private theorem cicStage3RawArtifactSig_primary_nf_query_world_geOne_con_any_depth
+    {name : DeclName}
+    {n fuel : Nat} {st : St} {term : PureTm n}
+    (hFuel : 1 ≤ fuel)
+    (hWorld : st.world = St.init.world)
+    (hTrans :
+      DIndGArtifactTermTranslates
+        cicStage3RawArtifactSig.nameTranslates n
+        (.con name) term) :
+    ((mettaEval kernelDefControlEnv fuel st []
+      (nfQuery cicStage3RawArtifactSig
+        (.con name))).2).world =
+      St.init.world := by
+  cases hTrans with
+  | con hName =>
+      by_cases hFuelOne : fuel = 1
+      · subst fuel
+        rw [mettaEval_fuel_one_world]
+        exact hWorld
+      · by_cases hFuelTwo : fuel = 2
+        · subst fuel
+          let root := termAtom (.con name)
+          let rootBnd :=
+            (renameBindings (counterSuffix (st.counter + 2))
+              (nfConRuleBindings cicStage3RawArtifactSig name)).reverse
+          let stRoot : St := { counter := st.counter + 8, world := st.world }
+          have hStatic : st.world.selfExtra = [] := by
+            rw [hWorld]
+            rfl
+          have hStRootWorld : stRoot.world = St.init.world := by
+            simpa [stRoot] using hWorld
+          have hRoot :
+              interpretFuel kernelDefControlEnv (1 + 1) st
+                  [evalItemNil
+                    (nfQuery cicStage3RawArtifactSig (.con name))] [] =
+                ([(root, rootBnd)], stRoot) := by
+            simpa [root, rootBnd, stRoot] using
+              interpretFuel_kernelDefControlEnv_nf_con_root_eq
+                (fuel := 1) (st := st) cicStage3RawArtifactSig name hStatic
+          have hOuterNoErr :
+              (([sigAtom cicStage3RawArtifactSig,
+                  termAtom (.con name)].zip
+                [sigAtom cicStage3RawArtifactSig,
+                  termAtom (.con name)]).find?
+                (fun ho : Metta.Atom × Metta.Atom =>
+                  ho.1.isError && ho.1 != ho.2)) = none := by
+            simp [sigAtom_isError_false, termAtom_isError_false]
+          have hRootNotNR : (root == notReducibleA) = false := by
+            simpa [root] using termAtom_beq_notReducible_false (.con name)
+          have hRootNotSelf :
+              (root == nfQuery cicStage3RawArtifactSig (.con name)) =
+                false := by
+            simp [root, nfQuery, termAtom, declNameAtom, mExpr, mSym]
+            rfl
+          have hOuterWorld := by
+            refine
+              mettaEval_binary_expr_state_pred_of_quoted_args_and_root_eval
+                kernelDefControlEnv 1 st stRoot "nf"
+                (sigAtom cicStage3RawArtifactSig)
+                (termAtom (.con name))
+                root rootBnd
+                (fun st0 => st0.world = St.init.world)
+                (kernelDefControlEnv_nf_typeMismatch st
+                  cicStage3RawArtifactSig (.con name))
+                kernelDefControlEnv_nf_argMask hOuterNoErr
+                (by simpa [root, rootBnd, stRoot, nfQuery, mExpr, mSym] using
+                  hRoot)
+                hRootNotNR
+                (by simpa [nfQuery, mExpr, mSym] using hRootNotSelf)
+                (by
+                  simpa [nfQuery, mExpr, mSym] using
+                    kernelDefControlEnv_nf_returnsAtom
+                      cicStage3RawArtifactSig (.con name))
+                ?_
+            have hOuterBndNil :
+                restrictBnd
+                    (([sigAtom cicStage3RawArtifactSig,
+                        termAtom (.con name)]).flatMap Metta.Atom.vars)
+                    ((Metta.Bindings.merge [] rootBnd).head?.getD rootBnd) =
+                  [] := by
+              simpa [List.flatMap,
+                sigAtom_vars_nil cicStage3RawArtifactSig,
+                termAtom_vars_nil (.con name)] using
+                restrictBnd_nil_vars
+                  ((Metta.Bindings.merge [] rootBnd).head?.getD rootBnd)
+            rw [hOuterBndNil]
+            rw [mettaEval_fuel_one_world]
+            exact hStRootWorld
+          simpa [nfQuery, mExpr, mSym] using hOuterWorld
+        · have hFuelGeThree : 3 ≤ fuel := by omega
+          rcases Nat.exists_eq_add_of_le hFuelGeThree with
+            ⟨fuelBase, _hFuelEq⟩
+          have hFuelEq' : fuel = fuelBase + 3 := by omega
+          have hStatic : st.world.selfExtra = [] := by
+            rw [hWorld]
+            rfl
+          have hNameWith :
+              cicStage3RawNameTranslatesWithPropToType0Witness name _ :=
+            Or.inl hName
+          have hBound :
+              cicStage3RawNameWithPropToType0WitnessBounded name :=
+            cicStage3RawNameTranslatesWithPropToType0Witness_bounded
+              hNameWith
+          rw [hFuelEq']
+          rw [mettaEval_kernelDefControlEnv_nf_con_body_eq_state
+            fuelBase st cicStage3RawArtifactSig name hStatic
+            (cicStage3RawNameWithPropToType0WitnessBounded_runtimeSafe
+              hBound)]
+          simpa using hWorld
+
+private theorem cicStage3RawArtifactSig_primary_nf_query_world_geOne_indG_any_depth
+    {familyName : DeclName}
+    {params : List DIndGArtifactTerm}
+    {motive : DIndGArtifactTerm}
+    {caseBranches : List (DeclName × DIndGArtifactTerm)}
+    {indices : List DIndGArtifactTerm}
+    {scrutinee : DIndGArtifactTerm}
+    {n fuel : Nat} {st : St} {term : PureTm n}
+    (hFuel : 1 ≤ fuel)
+    (hWorld : st.world = St.init.world)
+    (hTrans :
+      DIndGArtifactTermTranslates
+        cicStage3RawArtifactSig.nameTranslates n
+        (.indG familyName params motive caseBranches indices scrutinee)
+        term) :
+    ((mettaEval kernelDefControlEnv fuel st []
+      (nfQuery cicStage3RawArtifactSig
+        (.indG familyName params motive caseBranches indices
+          scrutinee))).2).world =
+      St.init.world := by
+  by_cases hFuelOne : fuel = 1
+  · subst fuel
+    rw [mettaEval_fuel_one_world]
+    exact hWorld
+  · have hStatic : st.world.selfExtra = [] := by
+      rw [hWorld]
+      rfl
+    rcases
+        cicStage3IndGZeroRawRuntime_match_translated_indG_eq_nil_or_zero
+          hTrans with
+    hMiss | hZero
+    · rcases Nat.exists_eq_add_of_le (show 2 ≤ fuel by omega) with
+        ⟨fuelBase, _hFuelEq⟩
+      have hFuelEq' : fuel = fuelBase + 2 := by omega
+      rw [hFuelEq']
+      rw [mettaEval_kernelDefControlEnv_nf_indG_body_eq_state
+        fuelBase st cicStage3RawArtifactSig familyName params motive
+        caseBranches indices scrutinee hMiss hStatic]
+      simpa using hWorld
+    · cases hZero
+      by_cases hFuelTwo : fuel = 2
+      · subst fuel
+        let root := nfIndGZeroIotaReadout
+        let rootBnd :=
+          (renameBindings (counterSuffix (st.counter + 6))
+            (nfIndGZeroIotaRuleBindings cicStage3RawArtifactSig)).reverse
+        let stRoot : St :=
+          { counter := st.counter +
+              nfDefCandidatePreWithIndGZeroIota.length + 1,
+            world := st.world }
+        have hStRootWorld : stRoot.world = St.init.world := by
+          simpa [stRoot] using hWorld
+        have hRoot :
+            interpretFuel kernelDefControlEnv (1 + 1) st
+                [evalItemNil
+                  (nfQuery cicStage3RawArtifactSig
+                    cicStage3IndGZeroRawRuntime)] [] =
+              ([(root, rootBnd)], stRoot) := by
+          simpa [root, rootBnd, stRoot, Nat.add_assoc] using
+            interpretFuel_kernelDefControlEnv_nf_indG_zero_iota_root_eq
+              (fuel := 1) (st := st) cicStage3RawArtifactSig hStatic
+        have hOuterNoErr :
+            (([sigAtom cicStage3RawArtifactSig,
+                termAtom cicStage3IndGZeroRawRuntime].zip
+              [sigAtom cicStage3RawArtifactSig,
+                termAtom cicStage3IndGZeroRawRuntime]).find?
+              (fun ho : Metta.Atom × Metta.Atom =>
+                ho.1.isError && ho.1 != ho.2)) = none := by
+          simp [sigAtom_isError_false, termAtom_isError_false]
+        have hRootNotNR : (root == notReducibleA) = false := by
+          simpa [root, nfIndGZeroIotaReadout] using
+            termAtom_beq_notReducible_false (.con `z)
+        have hRootNotSelf :
+            (root ==
+              nfQuery cicStage3RawArtifactSig
+                cicStage3IndGZeroRawRuntime) = false := by
+          change Metta.Atom.beq (termAtom (.con `z))
+            (nfQuery cicStage3RawArtifactSig
+              cicStage3IndGZeroRawRuntime) = false
+          simp only [nfQuery, cicStage3IndGZeroRawRuntime, termAtom,
+            argsAtom, casesAtom, sortAtom, declNameAtom, mExpr, mSym,
+            Metta.Atom.beq]
+          change
+            (Metta.Atom.beq (mSym "Con") (mSym "nf") &&
+              Metta.Atom.beqList [declNameAtom `z]
+                [sigAtom cicStage3RawArtifactSig,
+                  termAtom cicStage3IndGZeroRawRuntime]) = false
+          rfl
+        have hOuterWorld := by
+          refine
+            mettaEval_binary_expr_state_pred_of_quoted_args_and_root_eval
+              kernelDefControlEnv 1 st stRoot "nf"
+              (sigAtom cicStage3RawArtifactSig)
+              (termAtom cicStage3IndGZeroRawRuntime)
+              root rootBnd
+              (fun st0 => st0.world = St.init.world)
+              (kernelDefControlEnv_nf_typeMismatch st
+                cicStage3RawArtifactSig cicStage3IndGZeroRawRuntime)
+              kernelDefControlEnv_nf_argMask hOuterNoErr
+              (by simpa [root, rootBnd, stRoot, nfQuery, mExpr, mSym,
+                  Nat.add_assoc] using hRoot)
+              hRootNotNR
+              hRootNotSelf
+              (by
+                simpa [nfQuery, mExpr, mSym] using
+                  kernelDefControlEnv_nf_returnsAtom
+                    cicStage3RawArtifactSig cicStage3IndGZeroRawRuntime)
+              ?_
+          have hOuterBndNil :
+              restrictBnd
+                  (([sigAtom cicStage3RawArtifactSig,
+                      termAtom cicStage3IndGZeroRawRuntime]).flatMap
+                    Metta.Atom.vars)
+                  ((Metta.Bindings.merge [] rootBnd).head?.getD rootBnd) =
+                [] := by
+            simpa [List.flatMap,
+              sigAtom_vars_nil cicStage3RawArtifactSig,
+              termAtom_vars_nil cicStage3IndGZeroRawRuntime] using
+              restrictBnd_nil_vars
+                ((Metta.Bindings.merge [] rootBnd).head?.getD rootBnd)
+          rw [hOuterBndNil]
+          rw [mettaEval_fuel_one_world]
+          exact hStRootWorld
+        simpa [cicStage3IndGZeroRawRuntime, nfQuery, mExpr, mSym] using
+          hOuterWorld
+      · have hFuelGeThree : 3 ≤ fuel := by omega
+        rcases Nat.exists_eq_add_of_le hFuelGeThree with
+          ⟨fuelBase, _hFuelEq⟩
+        have hFuelEq' : fuel = fuelBase + 3 := by omega
+        rw [hFuelEq']
+        change
+          ((mettaEval kernelDefControlEnv (fuelBase + 3) st []
+            (nfQuery cicStage3RawArtifactSig
+              cicStage3IndGZeroRawRuntime)).2).world =
+            St.init.world
+        rw [mettaEval_kernelDefControlEnv_nf_indG_zero_iota_body_eq_state
+          fuelBase st cicStage3RawArtifactSig hStatic]
+        simpa [cicStage3IndGZeroRawRuntime] using hWorld
+
+private theorem mettaEval_ternary_expr_state_pred_of_quoted_eval_quoted_and_root_eval
+    (env : MinEnv) (fuel : Nat) (st stAtom stRoot : St)
+    (op : String)
+    (pattern atom template atom' root : Metta.Atom)
+    (rootBnd : Metta.Bindings)
+    (P : St → Prop)
+    (hAtom : mettaEval env fuel st [] atom = ([(atom', [])], stAtom))
+    (hType : typeMismatch env st.world op [pattern, atom, template] = none)
+    (hMask : argMask env op 3 = [false, true, false])
+    (hNoErr :
+      (([pattern, atom', template].zip [pattern, atom, template]).find?
+        (fun ho => ho.1.isError && ho.1 != ho.2)) = none)
+    (hRoot : interpretFuel env (fuel + 1) stAtom
+        [evalItemNil (Metta.Atom.expr [Metta.Atom.sym op, pattern, atom', template])] [] =
+      ([(root, rootBnd)], stRoot))
+    (hRootNotNotReducible : (root == notReducibleA) = false)
+    (hRootNotSelf :
+      (root == Metta.Atom.expr [Metta.Atom.sym op, pattern, atom', template]) = false)
+    (hReturns :
+      returnsAtom env (Metta.Atom.expr [Metta.Atom.sym op, pattern, atom', template]) = false)
+    (hFinal :
+      P ((mettaEval env fuel stRoot
+          (restrictBnd (([pattern, atom, template]).flatMap Metta.Atom.vars)
+            ((Metta.Bindings.merge [] rootBnd).head?.getD rootBnd)) root).2)) :
+    P ((mettaEval env (fuel + 1) st []
+        (Metta.Atom.expr [Metta.Atom.sym op, pattern, atom, template])).2) := by
+  unfold mettaEval
+  rw [Metta.instantiate_nil
+    (Metta.Atom.expr [Metta.Atom.sym op, pattern, atom, template])]
+  simp only [hType, hMask, List.length_cons, List.length_nil,
+    Nat.reduceAdd, List.zip_cons_cons, List.zip_nil_right, List.foldl_cons,
+    List.foldl_nil]
+  simp [Metta.instantiate_nil]
+  rw [hAtom]
+  simp [restrictBnd_empty_merge_empty]
+  rw [Metta.instantiate_nil template]
+  have hNoErr' :
+      List.find? (fun ho : Metta.Atom × Metta.Atom =>
+          ho.1.isError && ho.1 != ho.2)
+        [(pattern, pattern), (atom', atom), (template, template)] = none := by
+    simpa using hNoErr
+  rw [hNoErr']
+  have hRoot' :
+      interpretFuel env (fuel + 1) stAtom
+        [{ stack := atomToStack
+            (Metta.Atom.expr [Metta.Atom.sym "eval",
+              Metta.Atom.expr [Metta.Atom.sym op, pattern, atom', template]]) [] }] [] =
+      ([(root, rootBnd)], stRoot) := by
+    simpa [evalItemNil] using hRoot
+  rw [hRoot']
+  simp [hRootNotNotReducible, hRootNotSelf, hReturns]
+  simpa [List.flatMap] using hFinal
+
+private theorem mettaEval_kernelDefControlEnv_embedded_unify_var_success_world_of_quoted_args
+    (fuel : Nat) (st : St)
+    (binder : String) (atom template : Metta.Atom)
+    (P : St → Prop)
+    (hNoErr :
+      (([atom, mVar binder, template, mSym "Empty"].zip
+          [atom, mVar binder, template, mSym "Empty"]).find?
+        (fun ho => ho.1.isError && ho.1 != ho.2)) = none)
+    (hAtomNonVar : ∀ w, atom ≠ Metta.Atom.var w)
+    (hNoLoop : binder ∉ atom.vars)
+    (hRootNotNotReducible :
+      (Metta.instantiate [Metta.BindingRel.val binder atom]
+        (Metta.instantiate [Metta.BindingRel.val binder atom] template) ==
+          notReducibleA) = false)
+    (hRootNotSelf :
+      (Metta.instantiate [Metta.BindingRel.val binder atom]
+        (Metta.instantiate [Metta.BindingRel.val binder atom] template) ==
+          mExpr "unify" [atom, mVar binder, template, mSym "Empty"]) = false)
+    (hFinal :
+      P ((mettaEval kernelDefControlEnv (fuel + 1) st
+          (restrictBnd (([atom, mVar binder, template, mSym "Empty"]).flatMap Atom.vars)
+            ((Bindings.merge [] [Metta.BindingRel.val binder atom]).head?.getD
+              [Metta.BindingRel.val binder atom]))
+          (Metta.instantiate [Metta.BindingRel.val binder atom]
+            (Metta.instantiate [Metta.BindingRel.val binder atom] template))).2)) :
+    P ((mettaEval kernelDefControlEnv (fuel + 2) st []
+        (mExpr "unify" [atom, mVar binder, template, mSym "Empty"])).2) := by
+  unfold mettaEval
+  rw [instantiate_nil
+    (mExpr "unify" [atom, mVar binder, template, mSym "Empty"])]
+  simp only [mExpr, mSym]
+  rw [kernelDefControlEnv_unify_typeMismatch st atom (mVar binder)
+    template (Atom.sym "Empty")]
+  simp [kernelDefControlEnv_unify_argMask]
+  have hNoErrInst :
+      List.find? (fun ho : Atom × Atom => ho.1.isError && ho.1 != ho.2)
+        [(Metta.instantiate [] atom, atom),
+          (Metta.instantiate [] (mVar binder), mVar binder),
+          (Metta.instantiate [] template, template),
+          (Metta.instantiate [] (Atom.sym "Empty"), Atom.sym "Empty")] = none := by
+    simpa [mSym, Metta.instantiate_nil] using hNoErr
+  rw [hNoErrInst]
+  have hRoot :
+      interpretFuel kernelDefControlEnv (fuel + 1 + 1) st
+          [{ stack := atomToStack
+              (Atom.expr [Atom.sym "eval",
+                Atom.expr [Atom.sym "unify", Metta.instantiate [] atom,
+                  Metta.instantiate [] (mVar binder), Metta.instantiate [] template,
+                  Metta.instantiate [] (Atom.sym "Empty")]]) [],
+             bnd := [] }] [] =
+        ([(Metta.instantiate [Metta.BindingRel.val binder atom]
+            (Metta.instantiate [Metta.BindingRel.val binder atom] template),
+            [Metta.BindingRel.val binder atom])],
+          st) := by
+    simpa [evalItemNil, mExpr, mSym, Metta.instantiate_nil, Nat.add_assoc] using
+      interpretFuel_eval_embedded_unify_var_success_eq_of_gt
+        (env := kernelDefControlEnv) (fuel := fuel) (st := st)
+        (binder := binder) (atom := atom) (template := template)
+        (by rfl) hAtomNonVar hNoLoop
+  rw [hRoot]
+  have hReturns :
+      returnsAtom kernelDefControlEnv
+        (Atom.expr [Atom.sym "unify", Metta.instantiate [] atom,
+          Metta.instantiate [] (mVar binder), Metta.instantiate [] template,
+          Metta.instantiate [] (Atom.sym "Empty")]) = false := by
+    simpa [mExpr, mSym, Metta.instantiate_nil] using
+      kernelDefControlEnv_unify_returnsAtom atom (mVar binder) template
+        (mSym "Empty")
+  have hRootNotSelf' :
+      (Metta.instantiate [Metta.BindingRel.val binder atom]
+          (Metta.instantiate [Metta.BindingRel.val binder atom] template) ==
+        Atom.expr [Atom.sym "unify", Metta.instantiate [] atom,
+          Metta.instantiate [] (mVar binder), Metta.instantiate [] template,
+          Metta.instantiate [] (Atom.sym "Empty")]) = false := by
+    simpa [mExpr, mSym, Metta.instantiate_nil] using hRootNotSelf
+  have hReturns' :
+      returnsAtom kernelDefControlEnv
+        (Atom.expr [Atom.sym "unify", Metta.instantiate [] atom,
+          Metta.instantiate [] (mVar binder), Metta.instantiate [] template,
+          Metta.instantiate [] (Atom.sym "Empty")]) = false := by
+    simpa [mExpr, mSym, Metta.instantiate_nil] using hReturns
+  simp [hRootNotNotReducible, hRootNotSelf', hReturns']
+  simpa [List.flatMap, mSym] using hFinal
+
+private theorem mettaEval_kernelDefControlEnv_if_is_bad_closed_world_fuel_two
+    {st : St} {a thenA elseA : Metta.Atom} {bnd : Metta.Bindings}
+    (hWorld : st.world = St.init.world)
+    (hClosed : a.vars = [])
+    (hThenClosed : thenA.vars = [])
+    (hElseClosed : elseA.vars = [])
+    (hErr : a.isError = false)
+    (hNonVar : ∀ w, a ≠ Metta.Atom.var w) :
+    ((mettaEval kernelDefControlEnv 2 st bnd
+      (mExpr "if" [mExpr "is-bad" [a], thenA, elseA])).2).world =
+      St.init.world := by
+  let cond := mExpr "is-bad" [a]
+  let target := mExpr "if" [cond, thenA, elseA]
+  let root :=
+    mExpr "unify"
+      [a, mExpr "Bad" [mVar (counterSuffix st.counter "e")],
+        mBool true, mBool false]
+  have hTargetClosed : target.vars = [] := by
+    simp [target, cond, hClosed, hThenClosed, hElseClosed,
+      mExpr, mSym, Metta.Atom.vars]
+  have hTargetInst : Metta.instantiate bnd target = target := by
+    exact instantiate_eq_self_of_vars_nil bnd hTargetClosed
+  have hStatic : st.world.selfExtra = [] := by
+    simpa [hWorld] using (show St.init.world.selfExtra = [] by rfl)
+  have hCond :
+      mettaEval kernelDefControlEnv 1 st [] cond =
+        ([(errAtom root "StackOverflow", [])],
+          { counter := st.counter + 1, world := st.world }) := by
+    simpa [cond, root] using
+      mettaEval_kernelDefControlEnv_is_bad_closed_non_error_fuel_one_eq
+        st a hStatic hClosed hErr hNonVar
+  unfold mettaEval
+  rw [hTargetInst]
+  simp only [target, cond, mExpr, mSym]
+  have hType :
+      typeMismatch kernelDefControlEnv st.world "if" [cond, thenA, elseA] =
+        none := by
+    simpa [cond, hWorld] using
+      kernelDefControlEnv_if_typeMismatch_is_bad_init a thenA elseA
+  have hTypeLit :
+      typeMismatch kernelDefControlEnv st.world "if"
+        [Metta.Atom.expr [Metta.Atom.sym "is-bad", a], thenA, elseA] =
+        none := by
+    simpa [cond, mExpr, mSym] using hType
+  rw [hTypeLit]
+  simp only [kernelDefControlEnv_if_argMask, List.length_cons,
+    List.length_nil, Nat.reduceAdd, List.zip_cons_cons, List.zip_nil_right,
+    Bool.false_eq_true, if_false, if_true, List.foldl_cons, List.foldl_nil]
+  have hCondLit :
+      mettaEval kernelDefControlEnv 1 st []
+          (Metta.Atom.expr [Metta.Atom.sym "is-bad", a]) =
+        ([(errAtom root "StackOverflow", [])],
+          { counter := st.counter + 1, world := st.world }) := by
+    simpa [cond, mExpr, mSym] using hCond
+  rw [hCondLit]
+  simp [root, errAtom, Metta.Atom.isError,
+    restrictBnd_empty_merge_empty, hClosed, hThenClosed, hElseClosed,
+    mExpr, mSym, Metta.Atom.vars]
+  exact hWorld
+
+private theorem mettaEval_kernelDefControlEnv_if_is_bad_closed_world_fuel_three
+    {st : St} {a thenA elseA : Metta.Atom} {bnd : Metta.Bindings}
+    (hWorld : st.world = St.init.world)
+    (hClosed : a.vars = [])
+    (hThenClosed : thenA.vars = [])
+    (hElseClosed : elseA.vars = [])
+    (hErr : a.isError = false)
+    (hNonVar : ∀ w, a ≠ Metta.Atom.var w) :
+    ((mettaEval kernelDefControlEnv 3 st bnd
+      (mExpr "if" [mExpr "is-bad" [a], thenA, elseA])).2).world =
+      St.init.world := by
+  let cond := mExpr "is-bad" [a]
+  let target := mExpr "if" [cond, thenA, elseA]
+  let root :=
+    mExpr "unify"
+      [a, mExpr "Bad" [mVar (counterSuffix st.counter "e")],
+        mBool true, mBool false]
+  let condErr := errAtom (errAtom root "StackOverflow") "StackOverflow"
+  have hTargetClosed : target.vars = [] := by
+    simp [target, cond, hClosed, hThenClosed, hElseClosed,
+      mExpr, mSym, Metta.Atom.vars]
+  have hTargetInst : Metta.instantiate bnd target = target := by
+    exact instantiate_eq_self_of_vars_nil bnd hTargetClosed
+  have hStatic : st.world.selfExtra = [] := by
+    simpa [hWorld] using (show St.init.world.selfExtra = [] by rfl)
+  have hCond :
+      mettaEval kernelDefControlEnv 2 st [] cond =
+        ([(condErr, [])],
+          { counter := st.counter + 1, world := st.world }) := by
+    simpa [cond, root, condErr] using
+      mettaEval_kernelDefControlEnv_is_bad_closed_non_error_fuel_two_eq
+        st a hStatic hClosed hErr hNonVar
+  unfold mettaEval
+  rw [hTargetInst]
+  simp only [target, cond, mExpr, mSym]
+  have hType :
+      typeMismatch kernelDefControlEnv st.world "if" [cond, thenA, elseA] =
+        none := by
+    simpa [cond, hWorld] using
+      kernelDefControlEnv_if_typeMismatch_is_bad_init a thenA elseA
+  have hTypeLit :
+      typeMismatch kernelDefControlEnv st.world "if"
+        [Metta.Atom.expr [Metta.Atom.sym "is-bad", a], thenA, elseA] =
+        none := by
+    simpa [cond, mExpr, mSym] using hType
+  rw [hTypeLit]
+  simp only [kernelDefControlEnv_if_argMask, List.length_cons,
+    List.length_nil, Nat.reduceAdd, List.zip_cons_cons, List.zip_nil_right,
+    Bool.false_eq_true, if_false, if_true, List.foldl_cons, List.foldl_nil]
+  have hCondLit :
+      mettaEval kernelDefControlEnv 2 st []
+          (Metta.Atom.expr [Metta.Atom.sym "is-bad", a]) =
+        ([(condErr, [])],
+          { counter := st.counter + 1, world := st.world }) := by
+    simpa [cond, mExpr, mSym] using hCond
+  rw [hCondLit]
+  simp [condErr, root, errAtom, Metta.Atom.isError,
+    restrictBnd_empty_merge_empty, hClosed, hThenClosed, hElseClosed,
+    mExpr, mSym, Metta.Atom.vars]
+  exact hWorld
+
+private theorem mettaEval_kernelDefControlEnv_primary_nf_def_unify_body_world_of_one_le_four
+    {fuel : Nat} {st : St} {name : DeclName} {binder : String}
+    (hFuel : 1 ≤ fuel)
+    (hLeFour : fuel ≤ 4)
+    (hWorld : st.world = St.init.world) :
+    ((mettaEval kernelDefControlEnv fuel st []
+      (mExpr "unify"
+        [ defBodyOfQueryAtom
+            (sigAtom cicStage3RawArtifactSig)
+            (declNameAtom name)
+        , mVar binder
+        , mExpr "if"
+            [ mExpr "is-bad" [mVar binder]
+            , mExpr "Bad" [mSym "unknown-definition"]
+            , mExpr "nf" [sigAtom cicStage3RawArtifactSig, mVar binder] ]
+        , mSym "Empty" ])).2).world =
+      St.init.world := by
+  let bodyAtom :=
+    defBodyOfQueryAtom
+      (sigAtom cicStage3RawArtifactSig)
+      (declNameAtom name)
+  let template :=
+    mExpr "if"
+      [ mExpr "is-bad" [mVar binder]
+      , mExpr "Bad" [mSym "unknown-definition"]
+      , mExpr "nf" [sigAtom cicStage3RawArtifactSig, mVar binder] ]
+  let thenA := mExpr "Bad" [mSym "unknown-definition"]
+  let elseA :=
+    cicStage3CanonicalDefnStuckReadoutForSig
+      cicStage3RawArtifactSig name
+  have hNoErr :
+      (([bodyAtom, mVar binder, template, mSym "Empty"].zip
+          [bodyAtom, mVar binder, template, mSym "Empty"]).find?
+        (fun ho : Metta.Atom × Metta.Atom => ho.1.isError && ho.1 != ho.2)) =
+        none := by
+    have hBodyNoErr : bodyAtom.isError = false := by
+      simp [bodyAtom, defBodyOfQueryAtom, mExpr, mSym, Metta.Atom.isError]
+    have hVarNoErr : (mVar binder).isError = false := by
+      rfl
+    have hTemplateNoErr : template.isError = false := by
+      simp [template, mExpr, mSym, Metta.Atom.isError]
+    have hEmptyNoErr : (mSym "Empty").isError = false := by
+      rfl
+    simp [List.find?, hBodyNoErr, hVarNoErr, hTemplateNoErr, hEmptyNoErr]
+  have hAtomNonVar : ∀ w, bodyAtom ≠ Metta.Atom.var w := by
+    intro w
+    simp [bodyAtom, defBodyOfQueryAtom, mExpr, mSym]
+  have hNoLoop : binder ∉ bodyAtom.vars := by
+    simp [bodyAtom, defBodyOfQueryAtom, sigAtom_vars_nil,
+      declNameAtom_vars_nil, mExpr, mSym, Metta.Atom.vars]
+  have htmpl :=
+    leattaDefControlPrimary_nfDefIfTemplate_instantiated_eq_named
+      name binder
+  dsimp at htmpl
+  have hRootNotNR :
+      (Metta.instantiate [Metta.BindingRel.val binder bodyAtom]
+        (Metta.instantiate [Metta.BindingRel.val binder bodyAtom] template) ==
+          notReducibleA) = false := by
+    rw [htmpl]
+    rfl
+  have hRootNotSelf :
+      (Metta.instantiate [Metta.BindingRel.val binder bodyAtom]
+        (Metta.instantiate [Metta.BindingRel.val binder bodyAtom] template) ==
+          mExpr "unify" [bodyAtom, mVar binder, template, mSym "Empty"]) =
+        false := by
+    rw [htmpl]
+    rfl
+  have hBodyClosed : bodyAtom.vars = [] := by
+    simp [bodyAtom, defBodyOfQueryAtom, sigAtom_vars_nil,
+      declNameAtom_vars_nil, mExpr, mSym, Metta.Atom.vars]
+  have hThenClosed : thenA.vars = [] := by
+    simp [thenA, mExpr, mSym, Metta.Atom.vars]
+  have hElseClosed : elseA.vars = [] := by
+    simp [elseA, cicStage3CanonicalDefnStuckReadoutForSig,
+      defBodyOfQueryAtom, sigAtom_vars_nil, declNameAtom_vars_nil,
+      mExpr, mSym, Metta.Atom.vars]
+  have hBodyErr : bodyAtom.isError = false := by
+    simp [bodyAtom, defBodyOfQueryAtom, mExpr, mSym, Metta.Atom.isError]
+  have hCases : fuel = 1 ∨ fuel = 2 ∨ fuel = 3 ∨ fuel = 4 := by
+    omega
+  rcases hCases with rfl | rfl | rfl | rfl
+  · have hExact :=
+      mettaEval_kernelDefControlEnv_unify_fuel_one_eq_error_of_no_arg_error
+        st bodyAtom (mVar binder) template (mSym "Empty") hNoErr
+    rw [show (1 : Nat) = 1 by rfl]
+    rw [hExact]
+    simpa [bodyAtom, template, mExpr, mSym] using hWorld
+  · simpa [bodyAtom, template, mExpr, mSym, mVar] using
+      mettaEval_kernelDefControlEnv_embedded_unify_var_success_world_of_quoted_args
+        0 st binder bodyAtom template
+        (fun st0 => st0.world = St.init.world)
+        hNoErr hAtomNonVar hNoLoop hRootNotNR hRootNotSelf
+        (by
+          rw [mettaEval_fuel_one_world]
+          exact hWorld)
+  · simpa [bodyAtom, template, thenA, elseA, mExpr, mSym, mVar] using
+      mettaEval_kernelDefControlEnv_embedded_unify_var_success_world_of_quoted_args
+        1 st binder bodyAtom template
+        (fun st0 => st0.world = St.init.world)
+        hNoErr hAtomNonVar hNoLoop hRootNotNR hRootNotSelf
+        (by
+          rw [htmpl]
+          exact
+            mettaEval_kernelDefControlEnv_if_is_bad_closed_world_fuel_two
+              (st := st) (a := bodyAtom) (thenA := thenA)
+              (elseA := elseA) hWorld hBodyClosed hThenClosed
+              hElseClosed hBodyErr hAtomNonVar)
+  · simpa [bodyAtom, template, thenA, elseA, mExpr, mSym, mVar] using
+      mettaEval_kernelDefControlEnv_embedded_unify_var_success_world_of_quoted_args
+        2 st binder bodyAtom template
+        (fun st0 => st0.world = St.init.world)
+        hNoErr hAtomNonVar hNoLoop hRootNotNR hRootNotSelf
+        (by
+          rw [htmpl]
+          exact
+            mettaEval_kernelDefControlEnv_if_is_bad_closed_world_fuel_three
+              (st := st) (a := bodyAtom) (thenA := thenA)
+              (elseA := elseA) hWorld hBodyClosed hThenClosed
+              hElseClosed hBodyErr hAtomNonVar)
+
+private theorem cicStage3RawArtifactSig_primary_nf_defn_fresh_root_world_of_two_through_five
+    (fuelBase : Nat) {st : St} {name : DeclName} {binder : String}
+    (hLeThree : fuelBase ≤ 3)
+    (hWorld : st.world = St.init.world)
+    (hFreshLet :
+      ∀ {v : String},
+        v = "pattern" ∨ v = "atom" ∨ v = "template" →
+          counterSuffix (st.counter + 1) v ≠ binder) :
+    ((mettaEval kernelDefControlEnv (fuelBase + 2) st []
+      (leattaDefControlPrimaryNfDefFreshRootNamed name binder)).2).world =
+      St.init.world := by
+  let bodyAtom :=
+    defBodyOfQueryAtom
+      (sigAtom cicStage3RawArtifactSig)
+      (declNameAtom name)
+  let bodyQuery := bodyAtom
+  let template :=
+    mExpr "if"
+      [ mExpr "is-bad" [mVar binder]
+      , mExpr "Bad" [mSym "unknown-definition"]
+      , mExpr "nf" [sigAtom cicStage3RawArtifactSig, mVar binder] ]
+  let stAtom : St := { counter := st.counter + 1, world := st.world }
+  let stRoot : St := { counter := stAtom.counter + 1, world := stAtom.world }
+  let rootBnd :=
+    (renameBindings (counterSuffix stAtom.counter)
+      (letRuleBindings binder bodyAtom template)).reverse
+  let root := mExpr "unify" [bodyAtom, mVar binder, template, mSym "Empty"]
+  have hStatic : st.world.selfExtra = [] := by
+    simpa [hWorld] using (show St.init.world.selfExtra = [] by rfl)
+  have hAtom :
+      mettaEval kernelDefControlEnv (fuelBase + 1) st [] bodyQuery =
+        ([(bodyAtom, [])], stAtom) := by
+    cases fuelBase with
+    | zero =>
+        simpa [bodyQuery, bodyAtom, stAtom] using
+          mettaEval_kernelDefControlEnv_primary_def_body_of_eq_state_fuel_one
+            st name hStatic
+    | succ fuelRest =>
+        simpa [bodyQuery, bodyAtom, stAtom, Nat.add_assoc] using
+          mettaEval_kernelDefControlEnv_primary_def_body_of_eq_state
+            fuelRest st name hStatic
+  have hType :
+      typeMismatch kernelDefControlEnv st.world "let"
+        [mVar binder, bodyQuery, template] = none := by
+    exact kernelDefControlEnv_let_typeMismatch st (mVar binder) bodyQuery template
+  have hNoErr :
+      (([mVar binder, bodyAtom, template].zip
+          [mVar binder, bodyQuery, template]).find?
+        (fun ho : Metta.Atom × Metta.Atom => ho.1.isError && ho.1 != ho.2)) =
+        none := by
+    have hBodyNoErr : bodyAtom.isError = false := by
+      simp [bodyAtom, defBodyOfQueryAtom, mExpr, mSym, Metta.Atom.isError]
+    have hVarNoErr : (mVar binder).isError = false := by
+      rfl
+    have hTemplateNoErr : template.isError = false := by
+      simp [template, mExpr, mSym, Metta.Atom.isError]
+    simp [List.find?, hBodyNoErr, hVarNoErr, hTemplateNoErr]
+  have hBodyNonVar : ∀ w, bodyAtom ≠ Metta.Atom.var w := by
+    intro w
+    simp [bodyAtom, defBodyOfQueryAtom, mExpr, mSym]
+  have hTemplateNonVar : ∀ w, template ≠ Metta.Atom.var w := by
+    intro w
+    simp [template, mExpr, mSym]
+  have hPatternNe : counterSuffix stAtom.counter "pattern" ≠ binder := by
+    simpa [stAtom] using hFreshLet (v := "pattern") (Or.inl rfl)
+  have hAtomNe : counterSuffix stAtom.counter "atom" ≠ binder := by
+    simpa [stAtom] using hFreshLet (v := "atom") (Or.inr (Or.inl rfl))
+  have hTemplateNe : counterSuffix stAtom.counter "template" ≠ binder := by
+    simpa [stAtom] using hFreshLet (v := "template") (Or.inr (Or.inr rfl))
+  have hFresh :
+      RenamedValueKeysFreshForValues (counterSuffix stAtom.counter)
+        (letRuleBindings binder bodyAtom template) := by
+    intro key hkey x a hmem
+    simp [letRuleBindings, bindingValueKeys] at hkey hmem
+    have hKeyNe : counterSuffix stAtom.counter key ≠ binder := by
+      rcases hkey with rfl | rfl | rfl
+      · exact hTemplateNe
+      · exact hAtomNe
+      · exact hPatternNe
+    rcases hmem with hmem | hmem | hmem
+    · rcases hmem with ⟨rfl, rfl⟩
+      simp [template, sigAtom_vars_nil, mExpr, mSym, mVar,
+        Metta.Atom.vars, hKeyNe]
+    · rcases hmem with ⟨rfl, rfl⟩
+      simp [bodyAtom, defBodyOfQueryAtom, sigAtom_vars_nil,
+        declNameAtom_vars_nil, mExpr, mSym, Metta.Atom.vars]
+    · rcases hmem with ⟨rfl, rfl⟩
+      simp [mVar, Metta.Atom.vars, hKeyNe]
+  have hRoot :
+      interpretFuel kernelDefControlEnv (fuelBase + 1 + 1) stAtom
+          [evalItemNil (mExpr "let" [mVar binder, bodyAtom, template])] [] =
+        ([(root, rootBnd)], stRoot) := by
+    have hStaticAtom : stAtom.world.selfExtra = [] := by
+      simpa [stAtom] using hStatic
+    simpa [root, rootBnd, stAtom, stRoot, Nat.add_assoc] using
+      interpretFuel_kernelDefControlEnv_let_root_eq
+        (fuel := fuelBase + 1) (st := stAtom)
+        binder bodyAtom template hStaticAtom hBodyNonVar
+        hTemplateNonVar hFresh
+  have hRootNotNR : (root == notReducibleA) = false := by
+    rfl
+  have hRootNotSelf :
+      (root == mExpr "let" [mVar binder, bodyAtom, template]) = false := by
+    rfl
+  have hBinderPatternNe : binder ≠ counterSuffix stAtom.counter "pattern" :=
+    hPatternNe.symm
+  have hBinderAtomNe : binder ≠ counterSuffix stAtom.counter "atom" :=
+    hAtomNe.symm
+  have hBinderTemplateNe : binder ≠ counterSuffix stAtom.counter "template" :=
+    hTemplateNe.symm
+  have hTemplateAtom :
+      counterSuffix stAtom.counter "template" ≠ counterSuffix stAtom.counter "atom" := by
+    intro h
+    have h' : "template" = "atom" := (counterSuffix_injective stAtom.counter) h
+    contradiction
+  have hTemplatePattern :
+      counterSuffix stAtom.counter "template" ≠ counterSuffix stAtom.counter "pattern" := by
+    intro h
+    have h' : "template" = "pattern" := (counterSuffix_injective stAtom.counter) h
+    contradiction
+  have hAtomTemplate :
+      counterSuffix stAtom.counter "atom" ≠ counterSuffix stAtom.counter "template" := by
+    intro h
+    exact hTemplateAtom h.symm
+  have hAtomPattern :
+      counterSuffix stAtom.counter "atom" ≠ counterSuffix stAtom.counter "pattern" := by
+    intro h
+    have h' : "atom" = "pattern" := (counterSuffix_injective stAtom.counter) h
+    contradiction
+  have hPatternTemplate :
+      counterSuffix stAtom.counter "pattern" ≠ counterSuffix stAtom.counter "template" := by
+    intro h
+    exact hTemplatePattern h.symm
+  have hPatternAtom :
+      counterSuffix stAtom.counter "pattern" ≠ counterSuffix stAtom.counter "atom" := by
+    intro h
+    exact hAtomPattern h.symm
+  have hLetBndNil :
+      restrictBnd (([mVar binder, bodyQuery, template]).flatMap Atom.vars)
+          ((Metta.Bindings.merge [] rootBnd).head?.getD rootBnd) = [] := by
+    simp [rootBnd, letRuleBindings, renameBindings, bodyAtom, bodyQuery, template,
+      defBodyOfQueryAtom, sigAtom_vars_nil, declNameAtom_vars_nil,
+      mExpr, mSym, mVar, Metta.Atom.vars,
+      Metta.Bindings.merge, Metta.Bindings.mergeOne,
+      Metta.Bindings.addVarBinding, Metta.Bindings.addValRaw,
+      Metta.Bindings.removeVal, Metta.Bindings.lookupVal,
+      restrictBnd, resolveAtom, Metta.instantiate, Metta.bindingsToSubst,
+      Metta.Subst.apply, Metta.Subst.lookup, atom_var_beq_self_true,
+      hBinderPatternNe, hBinderAtomNe, hBinderTemplateNe,
+      hTemplateAtom, hTemplatePattern,
+      hAtomTemplate, hAtomPattern, hPatternTemplate, hPatternAtom]
+  have hFinal :
+      ((mettaEval kernelDefControlEnv (fuelBase + 1) stRoot
+        (restrictBnd (([mVar binder, bodyQuery, template]).flatMap Atom.vars)
+          ((Metta.Bindings.merge [] rootBnd).head?.getD rootBnd))
+        root).2).world =
+        St.init.world := by
+    rw [hLetBndNil]
+    have hWorldRoot : stRoot.world = St.init.world := by
+      simpa [stRoot, stAtom] using hWorld
+    exact
+      mettaEval_kernelDefControlEnv_primary_nf_def_unify_body_world_of_one_le_four
+        (fuel := fuelBase + 1) (st := stRoot) (name := name)
+        (binder := binder)
+        (by omega) (by omega) hWorldRoot
+  simpa [leattaDefControlPrimaryNfDefFreshRootNamed, bodyQuery,
+    bodyAtom, template, root, mExpr, mSym, mVar, Nat.add_assoc] using
+    mettaEval_ternary_expr_state_pred_of_quoted_eval_quoted_and_root_eval
+      (env := kernelDefControlEnv) (fuel := fuelBase + 1)
+      (st := st) (stAtom := stAtom) (stRoot := stRoot)
+      (op := "let") (pattern := mVar binder) (atom := bodyQuery)
+      (template := template) (atom' := bodyAtom) (root := root)
+      (rootBnd := rootBnd)
+      (P := fun st0 => st0.world = St.init.world)
+      hAtom hType kernelDefControlEnv_let_argMask hNoErr
+      (by simpa [root, rootBnd, stRoot, mExpr, mSym, mVar,
+        Nat.add_assoc] using hRoot)
+      hRootNotNR hRootNotSelf
+      (kernelDefControlEnv_let_returnsAtom (mVar binder) bodyAtom template)
+      hFinal
+
+private theorem cicStage3RawArtifactSig_primary_nf_defn_fresh_root_world_of_one_le_five
+    {fuel : Nat} {st : St} {name : DeclName} {binder : String}
+    (hFuel : 1 ≤ fuel)
+    (hLeFive : fuel ≤ 5)
+    (hWorld : st.world = St.init.world)
+    (hFreshLet :
+      ∀ {v : String},
+        v = "pattern" ∨ v = "atom" ∨ v = "template" →
+          counterSuffix (st.counter + 1) v ≠ binder) :
+    ((mettaEval kernelDefControlEnv fuel st []
+      (leattaDefControlPrimaryNfDefFreshRootNamed name binder)).2).world =
+      St.init.world := by
+  by_cases hFuelOne : fuel = 1
+  · subst fuel
+    rw [mettaEval_fuel_one_world]
+    exact hWorld
+  · rcases Nat.exists_eq_add_of_le (show 2 ≤ fuel by omega) with
+      ⟨fuelBase, hFuelEq⟩
+    have hFuelEq' : fuel = fuelBase + 2 := by omega
+    subst fuel
+    simpa [Nat.add_comm] using
+      cicStage3RawArtifactSig_primary_nf_defn_fresh_root_world_of_two_through_five
+        fuelBase (by omega) hWorld hFreshLet
+
+private theorem cicStage3RawArtifactSig_primary_nf_defn_world_of_two_through_six
+    (fuelBase : Nat) {st : St} {name : DeclName}
+    (hLeFour : fuelBase ≤ 4)
+    (hWorld : st.world = St.init.world) :
+    ((mettaEval kernelDefControlEnv (fuelBase + 2) st []
+      (nfQuery cicStage3RawArtifactSig (.defn name))).2).world =
+      St.init.world := by
+  let counter := st.counter + nfDefCandidatePreWithIndGZeroIota.length
+  let binder := counterSuffix counter "body"
+  let rootBnd : Metta.Bindings :=
+    (renameBindings (counterSuffix counter)
+      (nfDefRuleBindings cicStage3RawArtifactSig name)).reverse
+  let root : Metta.Atom :=
+    Metta.instantiate rootBnd
+      (freshenRule counter nfDefRuleLhs nfDefRuleRhs).2
+  let stRoot : St :=
+    { counter := st.counter + nfDefCandidatePreWithIndGZeroIota.length + 1,
+      world := st.world }
+  have hStatic : st.world.selfExtra = [] := by
+    simpa [hWorld] using (show St.init.world.selfExtra = [] by rfl)
+  have hRootEq :
+      root = leattaDefControlPrimaryNfDefFreshRootNamed name binder := by
+    simpa [root, rootBnd, binder, counter] using
+      leattaDefControlPrimary_nfDefFreshRoot_named_eq counter name
+  have hRoot :
+      interpretFuel kernelDefControlEnv (fuelBase + 1 + 1) st
+          [evalItemNil (nfQuery cicStage3RawArtifactSig (.defn name))] [] =
+        ([(root, rootBnd)], stRoot) := by
+    simpa [root, rootBnd, stRoot, counter, Nat.add_assoc] using
+      interpretFuel_kernelDefControlEnv_nf_def_root_eq
+        (fuel := fuelBase + 1) (st := st)
+        cicStage3RawArtifactSig name hStatic
+  have hNoErr :
+      (([sigAtom cicStage3RawArtifactSig,
+          termAtom (.defn name)].zip
+        [sigAtom cicStage3RawArtifactSig,
+          termAtom (.defn name)]).find?
+        (fun ho : Metta.Atom × Metta.Atom => ho.1.isError && ho.1 != ho.2)) =
+        none := by
+    simp [sigAtom_isError_false, termAtom_isError_false]
+  have hOuterBndNil :
+      restrictBnd
+          (([sigAtom cicStage3RawArtifactSig,
+              termAtom (.defn name)]).flatMap Metta.Atom.vars)
+          ((Metta.Bindings.merge [] rootBnd).head?.getD rootBnd) = [] := by
+    simpa [List.flatMap,
+      sigAtom_vars_nil cicStage3RawArtifactSig,
+      termAtom_vars_nil (.defn name)] using
+      restrictBnd_nil_vars ((Metta.Bindings.merge [] rootBnd).head?.getD rootBnd)
+  have hRootNotNR : (root == notReducibleA) = false := by
+    rw [hRootEq]
+    rfl
+  have hRootNotSelf :
+      (root == nfQuery cicStage3RawArtifactSig (.defn name)) = false := by
+    rw [hRootEq]
+    rfl
+  have hFinal :
+      ((mettaEval kernelDefControlEnv (fuelBase + 1) stRoot
+        (restrictBnd
+          (([sigAtom cicStage3RawArtifactSig,
+              termAtom (.defn name)]).flatMap Metta.Atom.vars)
+          ((Metta.Bindings.merge [] rootBnd).head?.getD rootBnd))
+        root).2).world =
+        St.init.world := by
+    rw [hOuterBndNil, hRootEq]
+    have hWorldRoot : stRoot.world = St.init.world := by
+      simpa [stRoot] using hWorld
+    have hFreshLet :
+        ∀ {v : String},
+          v = "pattern" ∨ v = "atom" ∨ v = "template" →
+            counterSuffix (stRoot.counter + 1) v ≠ binder := by
+      intro v hv h
+      rcases hv with rfl | rfl | rfl
+      · have hc := congrArg String.toList h
+        simp [binder, counter, stRoot, counterSuffix] at hc
+      · have hc := congrArg String.toList h
+        simp [binder, counter, stRoot, counterSuffix] at hc
+      · have hc := congrArg String.toList h
+        simp [binder, counter, stRoot, counterSuffix] at hc
+    exact
+      cicStage3RawArtifactSig_primary_nf_defn_fresh_root_world_of_one_le_five
+        (fuel := fuelBase + 1) (st := stRoot) (name := name)
+        (binder := binder)
+        (by omega) (by omega) hWorldRoot hFreshLet
+  simpa [nfQuery, mExpr, mSym, Nat.add_assoc] using
+    mettaEval_binary_expr_state_pred_of_quoted_args_and_root_eval
+      (env := kernelDefControlEnv) (fuel := fuelBase + 1)
+      (st := st) (stRoot := stRoot)
+      (op := "nf")
+      (x := sigAtom cicStage3RawArtifactSig)
+      (y := termAtom (.defn name))
+      (root := root) (rootBnd := rootBnd)
+      (P := fun st0 => st0.world = St.init.world)
+      (kernelDefControlEnv_nf_typeMismatch st
+        cicStage3RawArtifactSig (.defn name))
+      kernelDefControlEnv_nf_argMask hNoErr
+      (by simpa [nfQuery, mExpr, mSym, Nat.add_assoc] using hRoot)
+      hRootNotNR
+      (by simpa [nfQuery, mExpr, mSym] using hRootNotSelf)
+      (by
+        simpa [nfQuery, mExpr, mSym] using
+          kernelDefControlEnv_nf_returnsAtom
+            cicStage3RawArtifactSig (.defn name))
+      hFinal
+
+private theorem cicStage3RawArtifactSig_primary_nf_query_world_geOne_defn_any_depth
+    {name : DeclName}
+    {n fuel : Nat} {st : St} {term : PureTm n}
+    (hFuel : 1 ≤ fuel)
+    (hWorld : st.world = St.init.world)
+    (_hTrans :
+      DIndGArtifactTermTranslates
+        cicStage3RawArtifactSig.nameTranslates n
+        (.defn name) term) :
+    ((mettaEval kernelDefControlEnv fuel st []
+      (nfQuery cicStage3RawArtifactSig
+        (.defn name))).2).world =
+      St.init.world := by
+  by_cases hFuelOne : fuel = 1
+  · subst fuel
+    rw [mettaEval_fuel_one_world]
+    exact hWorld
+  · by_cases hLtSeven : fuel < 7
+    · rcases Nat.exists_eq_add_of_le (show 2 ≤ fuel by omega) with
+        ⟨fuelBase, _hFuelEq⟩
+      have hFuelEq' : fuel = fuelBase + 2 := by omega
+      subst fuel
+      simpa [Nat.add_comm] using
+        cicStage3RawArtifactSig_primary_nf_defn_world_of_two_through_six
+          fuelBase (by omega) hWorld
+    · have hGeSeven : 7 ≤ fuel := by omega
+      rcases Nat.exists_eq_add_of_le hGeSeven with ⟨fuelBase, _hFuelEq⟩
+      have hFuelEq' : fuel = fuelBase + 7 := by omega
+      rw [hFuelEq']
+      rcases
+          mettaEval_kernelDefControlEnv_primary_nf_def_body_eq_state_exists_geSeven
+            fuelBase st name hWorld with
+        ⟨stOut, hExact, hWorldOut⟩
+      rw [hExact]
+      exact hWorldOut
+
+private theorem cicStage3RawArtifactSig_primary_nf_query_world_geOne_any_depth :
+    ∀ {n fuel : Nat} {st : St} {raw : DIndGArtifactTerm}
+        {term : PureTm n},
+      1 ≤ fuel →
+      st.world = St.init.world →
+      DIndGArtifactTermTranslates
+        cicStage3RawArtifactSig.nameTranslates n raw term →
+      ((mettaEval kernelDefControlEnv fuel st []
+        (nfQuery cicStage3RawArtifactSig raw)).2).world =
+        St.init.world := by
+  let World : DIndGArtifactTerm → Prop := fun raw =>
+    ∀ {n fuel : Nat} {st : St} {term : PureTm n},
+      1 ≤ fuel →
+      st.world = St.init.world →
+      DIndGArtifactTermTranslates
+        cicStage3RawArtifactSig.nameTranslates n raw term →
+      ((mettaEval kernelDefControlEnv fuel st []
+        (nfQuery cicStage3RawArtifactSig raw)).2).world =
+        St.init.world
+  have hWorldTerm : ∀ raw, World raw :=
+    DIndGArtifactTerm.rec
+      (motive_1 := World)
+      (motive_2 := fun _ => True)
+      (motive_3 := fun _ => True)
+      (motive_4 := fun _ => True)
+      (var := by
+        intro index
+        dsimp [World]
+        intro n fuel st term hFuel hWorld hTrans
+        exact
+          cicStage3RawArtifactSig_primary_nf_query_world_geOne_var_any_depth
+            hFuel hWorld hTrans)
+      (srt := by
+        intro sort
+        dsimp [World]
+        intro n fuel st term hFuel hWorld hTrans
+        exact
+          cicStage3RawArtifactSig_primary_nf_query_world_geOne_srt_any_depth
+            hFuel hWorld hTrans)
+      (con := by
+        intro name
+        dsimp [World]
+        intro n fuel st term hFuel hWorld hTrans
+        exact
+          cicStage3RawArtifactSig_primary_nf_query_world_geOne_con_any_depth
+            hFuel hWorld hTrans)
+      (defn := by
+        intro name
+        dsimp [World]
+        intro n fuel st term hFuel hWorld hTrans
+        exact
+          cicStage3RawArtifactSig_primary_nf_query_world_geOne_defn_any_depth
+            hFuel hWorld hTrans)
+      (pi := by
+        intro rawDomain rawBody ihDomain ihBody
+        dsimp [World] at ihDomain ihBody ⊢
+        intro n fuel st term hFuel hWorld hTrans
+        exact
+          cicStage3RawArtifactSig_primary_nf_query_world_geOne_pi_of_recursive
+            (hDomainWorld := by
+              intro n fuel st term hFuel hWorld hTrans
+              exact ihDomain hFuel hWorld hTrans)
+            (hBodyWorld := by
+              intro n fuel st term hFuel hWorld hTrans
+              exact ihBody hFuel hWorld hTrans)
+            hFuel hWorld hTrans)
+      (lam := by
+        intro rawDomain rawBody ihDomain ihBody
+        dsimp [World] at ihDomain ihBody ⊢
+        intro n fuel st term hFuel hWorld hTrans
+        exact
+          cicStage3RawArtifactSig_primary_nf_query_world_geOne_lam_of_recursive
+            (hDomainWorld := by
+              intro n fuel st term hFuel hWorld hTrans
+              exact ihDomain hFuel hWorld hTrans)
+            (hBodyWorld := by
+              intro n fuel st term hFuel hWorld hTrans
+              exact ihBody hFuel hWorld hTrans)
+            hFuel hWorld hTrans)
+      (app := by
+        intro rawFn rawArg _ihFn _ihArg
+        dsimp [World]
+        intro n fuel st term hFuel hWorld hTrans
+        exact
+          cicStage3RawArtifactSig_primary_nf_query_world_geOne_app_any_depth
+            hFuel hWorld hTrans)
+      (indG := by
+        intro familyName params motive caseBranches indices scrutinee
+          _ihParams _ihMotive _ihCases _ihIndices _ihScrutinee
+        dsimp [World]
+        intro n fuel st term hFuel hWorld hTrans
+        exact
+          cicStage3RawArtifactSig_primary_nf_query_world_geOne_indG_any_depth
+            hFuel hWorld hTrans)
+      (bad := by
+        intro reason
+        dsimp [World]
+        intro n fuel st term hFuel hWorld hTrans
+        cases hTrans)
+      (nil := trivial)
+      (cons := by
+        intro head tail _ihHead _ihTail
+        trivial)
+      trivial
+      (by
+        intro head tail _ihHead _ihTail
+        trivial)
+      (by
+        intro fst snd _ih
+        trivial)
+  intro n fuel st raw term hFuel hWorld hTrans
+  exact hWorldTerm raw hFuel hWorld hTrans
+
+private theorem cicStage3RawArtifactSig_primary_nf_value_runtime_extraction_geOne_nonError_any_depth_of_world
+    (hWorldAll :
+      ∀ {n fuel : Nat} {st : St} {raw : DIndGArtifactTerm}
+          {term : PureTm n},
+        1 ≤ fuel →
+        st.world = St.init.world →
+        DIndGArtifactTermTranslates
+          cicStage3RawArtifactSig.nameTranslates n raw term →
+        ((mettaEval kernelDefControlEnv fuel st []
+          (nfQuery cicStage3RawArtifactSig raw)).2).world =
+          St.init.world) :
+    ∀ {n fuel : Nat} {st : St} {raw : DIndGArtifactTerm}
+      {term : PureTm n} {out : Metta.Atom},
+      1 ≤ fuel →
+      st.world = St.init.world →
+      DIndGArtifactTermTranslates
+        cicStage3RawArtifactSig.nameTranslates n raw term →
+      out ∈
+        (mettaEval kernelDefControlEnv fuel st []
+          (nfQuery cicStage3RawArtifactSig raw)).1.map (·.1) →
+      out.isError = false →
+      CicStage3RawArtifactSigPrimaryNfRuntimeReadout raw out := by
+  let Extract : DIndGArtifactTerm → Prop := fun raw =>
+    ∀ {n fuel : Nat} {st : St} {term : PureTm n} {out : Metta.Atom},
+      1 ≤ fuel →
+      st.world = St.init.world →
+      DIndGArtifactTermTranslates
+        cicStage3RawArtifactSig.nameTranslates n raw term →
+      out ∈
+        (mettaEval kernelDefControlEnv fuel st []
+          (nfQuery cicStage3RawArtifactSig raw)).1.map (·.1) →
+      out.isError = false →
+      CicStage3RawArtifactSigPrimaryNfRuntimeReadout raw out
+  have hExtract : ∀ raw, Extract raw :=
+    DIndGArtifactTerm.rec
+      (motive_1 := Extract)
+      (motive_2 := fun _ => True)
+      (motive_3 := fun _ => True)
+      (motive_4 := fun _ => True)
+      (var := by
+        intro index
+        dsimp [Extract]
+        intro n fuel st term out hFuel hWorld hTrans hOut hNoErr
+        exact
+          cicStage3RawArtifactSig_primary_nf_value_runtime_extraction_geOne_nonError_var_any_depth
+            hFuel hWorld hTrans hOut hNoErr)
+      (srt := by
+        intro sort
+        dsimp [Extract]
+        intro n fuel st term out hFuel hWorld hTrans hOut hNoErr
+        exact
+          cicStage3RawArtifactSig_primary_nf_value_runtime_extraction_geOne_nonError_srt_any_depth
+            hFuel hWorld hTrans hOut hNoErr)
+      (con := by
+        intro name
+        dsimp [Extract]
+        intro n fuel st term out hFuel hWorld hTrans hOut hNoErr
+        exact
+          cicStage3RawArtifactSig_primary_nf_value_runtime_extraction_geOne_nonError_con_any_depth
+            hFuel hWorld hTrans hOut hNoErr)
+      (defn := by
+        intro name
+        dsimp [Extract]
+        intro n fuel st term out hFuel hWorld hTrans hOut hNoErr
+        exact
+          cicStage3RawArtifactSig_primary_nf_value_runtime_extraction_geOne_nonError_defn_all_depths
+            hFuel hWorld hTrans hOut hNoErr)
+      (pi := by
+        intro rawDomain rawBody ihDomain ihBody
+        dsimp [Extract] at ihDomain ihBody ⊢
+        intro n fuel st term out hFuel hWorld hTrans hOut hNoErr
+        exact
+          cicStage3RawArtifactSig_primary_nf_value_runtime_extraction_geOne_nonError_pi_of_positive_recursive
+            (hDomainExtract := by
+              intro n fuel st term out hFuel hWorld hTrans hOut hNoErr
+              exact ihDomain hFuel hWorld hTrans hOut hNoErr)
+            (hBodyExtract := by
+              intro n fuel st term out hFuel hWorld hTrans hOut hNoErr
+              exact ihBody hFuel hWorld hTrans hOut hNoErr)
+            (hDomainWorld := by
+              intro n fuel st term hFuel hWorld hTrans
+              exact hWorldAll (raw := rawDomain) hFuel hWorld hTrans)
+            (hBodyWorld := by
+              intro n fuel st term hFuel hWorld hTrans
+              exact hWorldAll (raw := rawBody) hFuel hWorld hTrans)
+            hFuel hWorld hTrans hOut hNoErr)
+      (lam := by
+        intro rawDomain rawBody ihDomain ihBody
+        dsimp [Extract] at ihDomain ihBody ⊢
+        intro n fuel st term out hFuel hWorld hTrans hOut hNoErr
+        exact
+          cicStage3RawArtifactSig_primary_nf_value_runtime_extraction_geOne_nonError_lam_of_positive_recursive
+            (hDomainExtract := by
+              intro n fuel st term out hFuel hWorld hTrans hOut hNoErr
+              exact ihDomain hFuel hWorld hTrans hOut hNoErr)
+            (hBodyExtract := by
+              intro n fuel st term out hFuel hWorld hTrans hOut hNoErr
+              exact ihBody hFuel hWorld hTrans hOut hNoErr)
+            (hDomainWorld := by
+              intro n fuel st term hFuel hWorld hTrans
+              exact hWorldAll (raw := rawDomain) hFuel hWorld hTrans)
+            (hBodyWorld := by
+              intro n fuel st term hFuel hWorld hTrans
+              exact hWorldAll (raw := rawBody) hFuel hWorld hTrans)
+            hFuel hWorld hTrans hOut hNoErr)
+      (app := by
+        intro rawFn rawArg _ihFn _ihArg
+        dsimp [Extract]
+        intro n fuel st term out hFuel hWorld hTrans hOut hNoErr
+        exact
+          cicStage3RawArtifactSig_primary_nf_value_runtime_extraction_geOne_nonError_app_any_depth
+            hFuel hWorld hTrans hOut hNoErr)
+      (indG := by
+        intro familyName params motive caseBranches indices scrutinee
+          _ihParams _ihMotive _ihCases _ihIndices _ihScrutinee
+        dsimp [Extract]
+        intro n fuel st term out hFuel hWorld hTrans hOut hNoErr
+        exact
+          cicStage3RawArtifactSig_primary_nf_value_runtime_extraction_geOne_nonError_indG_any_depth
+            hFuel hWorld hTrans hOut hNoErr)
+      (bad := by
+        intro reason
+        dsimp [Extract]
+        intro n fuel st term out hFuel hWorld hTrans hOut hNoErr
+        cases hTrans)
+      (nil := trivial)
+      (cons := by
+        intro head tail _ihHead _ihTail
+        trivial)
+      trivial
+      (by
+        intro head tail _ihHead _ihTail
+        trivial)
+      (by
+        intro fst snd _ih
+        trivial)
+  intro n fuel st raw term out hFuel hWorld hTrans hOut hNoErr
+  exact hExtract raw hFuel hWorld hTrans hOut hNoErr
+
+theorem cicStage3RawArtifactSig_primary_nf_value_runtime_extraction_geThree_nonError_any_depth_of_pi_lam_indG
+    (hPi :
+      ∀ {n fuel : Nat} {st : St}
+          {rawDomain rawBody : DIndGArtifactTerm}
+          {term : PureTm n} {out : Metta.Atom},
+        3 ≤ fuel →
+        st.world = St.init.world →
+        DIndGArtifactTermTranslates
+          cicStage3RawArtifactSig.nameTranslates n
+          (.pi rawDomain rawBody) term →
+        out ∈
+          (mettaEval kernelDefControlEnv fuel st []
+            (nfQuery cicStage3RawArtifactSig
+              (.pi rawDomain rawBody))).1.map (·.1) →
+        out.isError = false →
+        CicStage3RawArtifactSigPrimaryNfRuntimeReadout
+          (.pi rawDomain rawBody) out)
+    (hLam :
+      ∀ {n fuel : Nat} {st : St}
+          {rawDomain rawBody : DIndGArtifactTerm}
+          {term : PureTm n} {out : Metta.Atom},
+        3 ≤ fuel →
+        st.world = St.init.world →
+        DIndGArtifactTermTranslates
+          cicStage3RawArtifactSig.nameTranslates n
+          (.lam rawDomain rawBody) term →
+        out ∈
+          (mettaEval kernelDefControlEnv fuel st []
+            (nfQuery cicStage3RawArtifactSig
+              (.lam rawDomain rawBody))).1.map (·.1) →
+        out.isError = false →
+        CicStage3RawArtifactSigPrimaryNfRuntimeReadout
+          (.lam rawDomain rawBody) out)
+    (hIndG :
+      ∀ {n fuel : Nat} {st : St} {familyName : DeclName}
+          {params : List DIndGArtifactTerm}
+          {motive : DIndGArtifactTerm}
+          {caseBranches : List (DeclName × DIndGArtifactTerm)}
+          {indices : List DIndGArtifactTerm}
+          {scrutinee : DIndGArtifactTerm}
+          {term : PureTm n} {out : Metta.Atom},
+        3 ≤ fuel →
+        st.world = St.init.world →
+        DIndGArtifactTermTranslates
+          cicStage3RawArtifactSig.nameTranslates n
+          (.indG familyName params motive caseBranches indices scrutinee)
+          term →
+        out ∈
+          (mettaEval kernelDefControlEnv fuel st []
+            (nfQuery cicStage3RawArtifactSig
+              (.indG familyName params motive caseBranches indices
+                scrutinee))).1.map (·.1) →
+        out.isError = false →
+        CicStage3RawArtifactSigPrimaryNfRuntimeReadout
+          (.indG familyName params motive caseBranches indices scrutinee)
+          out) :
+    ∀ {n fuel : Nat} {st : St} {raw : DIndGArtifactTerm}
+      {term : PureTm n} {out : Metta.Atom},
+      3 ≤ fuel →
+      st.world = St.init.world →
+      DIndGArtifactTermTranslates
+        cicStage3RawArtifactSig.nameTranslates n raw term →
+      out ∈
+        (mettaEval kernelDefControlEnv fuel st []
+          (nfQuery cicStage3RawArtifactSig raw)).1.map (·.1) →
+      out.isError = false →
+      CicStage3RawArtifactSigPrimaryNfRuntimeReadout raw out := by
+  intro n fuel st raw term out hFuel hWorld hTrans hOut hNoErr
+  cases raw with
+  | var index =>
+      exact
+        cicStage3RawArtifactSig_primary_nf_value_runtime_extraction_geThree_var_any_depth
+          hFuel hWorld hOut
+  | srt sort =>
+      exact
+        cicStage3RawArtifactSig_primary_nf_value_runtime_extraction_geThree_srt_any_depth
+          hFuel hWorld hTrans hOut
+  | con name =>
+      exact
+        cicStage3RawArtifactSig_primary_nf_value_runtime_extraction_geThree_con_any_depth
+          hFuel hWorld hTrans hOut
+  | defn name =>
+      exact
+        cicStage3RawArtifactSig_primary_nf_value_runtime_extraction_geThree_nonError_defn_any_depth
+          hFuel hWorld hTrans hOut hNoErr
+  | pi rawDomain rawBody =>
+      exact hPi hFuel hWorld hTrans hOut hNoErr
+  | lam rawDomain rawBody =>
+      exact hLam hFuel hWorld hTrans hOut hNoErr
+  | app rawFn rawArg =>
+      exact
+        cicStage3RawArtifactSig_primary_nf_value_runtime_extraction_geThree_app_any_depth
+          hFuel hWorld hTrans hOut
+  | indG familyName params motive caseBranches indices scrutinee =>
+      exact hIndG hFuel hWorld hTrans hOut hNoErr
+  | bad reason =>
+      exact
+        cicStage3RawArtifactSig_primary_nf_value_runtime_extraction_geThree_bad_any_depth
+          hFuel hWorld hTrans hOut
+
+theorem convSoundCicStage3RawArtifactSig_canonical_nf_value_runtime_extraction_geThree_nonError_of_pi_lam_indG
+    (hPi :
+      ∀ {fuel : Nat} {st : St}
+          {rawDomain rawBody : DIndGArtifactTerm}
+          {term : PureTm 0} {out : Metta.Atom},
+        3 ≤ fuel →
+        st.world = St.init.world →
+        DIndGArtifactTermTranslates
+          cicStage3RawArtifactSig.nameTranslates 0
+          (.pi rawDomain rawBody) term →
+        out ∈
+          (mettaEval kernelDefControlEnv fuel st []
+            (nfQuery cicStage3RawArtifactSig
+              (.pi rawDomain rawBody))).1.map (·.1) →
+        out.isError = false →
+        CicStage3RawArtifactSigPrimaryNfRuntimeReadout
+          (.pi rawDomain rawBody) out)
+    (hLam :
+      ∀ {fuel : Nat} {st : St}
+          {rawDomain rawBody : DIndGArtifactTerm}
+          {term : PureTm 0} {out : Metta.Atom},
+        3 ≤ fuel →
+        st.world = St.init.world →
+        DIndGArtifactTermTranslates
+          cicStage3RawArtifactSig.nameTranslates 0
+          (.lam rawDomain rawBody) term →
+        out ∈
+          (mettaEval kernelDefControlEnv fuel st []
+            (nfQuery cicStage3RawArtifactSig
+              (.lam rawDomain rawBody))).1.map (·.1) →
+        out.isError = false →
+        CicStage3RawArtifactSigPrimaryNfRuntimeReadout
+          (.lam rawDomain rawBody) out)
+    (hIndG :
+      ∀ {fuel : Nat} {st : St} {familyName : DeclName}
+          {params : List DIndGArtifactTerm}
+          {motive : DIndGArtifactTerm}
+          {caseBranches : List (DeclName × DIndGArtifactTerm)}
+          {indices : List DIndGArtifactTerm}
+          {scrutinee : DIndGArtifactTerm}
+          {term : PureTm 0} {out : Metta.Atom},
+        3 ≤ fuel →
+        st.world = St.init.world →
+        DIndGArtifactTermTranslates
+          cicStage3RawArtifactSig.nameTranslates 0
+          (.indG familyName params motive caseBranches indices scrutinee)
+          term →
+        out ∈
+          (mettaEval kernelDefControlEnv fuel st []
+            (nfQuery cicStage3RawArtifactSig
+              (.indG familyName params motive caseBranches indices
+                scrutinee))).1.map (·.1) →
+        out.isError = false →
+        CicStage3RawArtifactSigPrimaryNfRuntimeReadout
+          (.indG familyName params motive caseBranches indices scrutinee)
+          out) :
+    ConvSoundCicStage3RawArtifactSigCanonicalNfValueRuntimeExtractionGeThreeNonError := by
+  intro fuel st raw term out hFuel hWorld hTrans hOut hNoErr
+  cases raw with
+  | var index =>
+      exact
+        cicStage3RawArtifactSig_primary_nf_value_runtime_extraction_geThree_var_any_depth
+          hFuel hWorld hOut
+  | srt sort =>
+      exact
+        cicStage3RawArtifactSig_primary_nf_value_runtime_extraction_geThree_srt
+          hFuel hWorld hTrans hOut
+  | con name =>
+      exact
+        cicStage3RawArtifactSig_primary_nf_value_runtime_extraction_geThree_con
+          hFuel hWorld hTrans hOut
+  | defn name =>
+      exact
+        cicStage3RawArtifactSig_primary_nf_value_runtime_extraction_geThree_nonError_defn
+          hFuel hWorld hTrans hOut hNoErr
+  | pi rawDomain rawBody =>
+      exact hPi hFuel hWorld hTrans hOut hNoErr
+  | lam rawDomain rawBody =>
+      exact hLam hFuel hWorld hTrans hOut hNoErr
+  | app rawFn rawArg =>
+      exact
+        cicStage3RawArtifactSig_primary_nf_value_runtime_extraction_geThree_app
+          hFuel hWorld hTrans hOut
+  | indG familyName params motive caseBranches indices scrutinee =>
+      exact hIndG hFuel hWorld hTrans hOut hNoErr
+  | bad reason =>
+      exact
+        cicStage3RawArtifactSig_primary_nf_value_runtime_extraction_geThree_bad
+          hFuel hWorld hTrans hOut
+
+theorem convSoundCicStage3RawArtifactSig_canonical_nf_value_runtime_extraction_geThree_nonError_of_pi_lam
+    (hPi :
+      ∀ {fuel : Nat} {st : St}
+          {rawDomain rawBody : DIndGArtifactTerm}
+          {term : PureTm 0} {out : Metta.Atom},
+        3 ≤ fuel →
+        st.world = St.init.world →
+        DIndGArtifactTermTranslates
+          cicStage3RawArtifactSig.nameTranslates 0
+          (.pi rawDomain rawBody) term →
+        out ∈
+          (mettaEval kernelDefControlEnv fuel st []
+            (nfQuery cicStage3RawArtifactSig
+              (.pi rawDomain rawBody))).1.map (·.1) →
+        out.isError = false →
+        CicStage3RawArtifactSigPrimaryNfRuntimeReadout
+          (.pi rawDomain rawBody) out)
+    (hLam :
+      ∀ {fuel : Nat} {st : St}
+          {rawDomain rawBody : DIndGArtifactTerm}
+          {term : PureTm 0} {out : Metta.Atom},
+        3 ≤ fuel →
+        st.world = St.init.world →
+        DIndGArtifactTermTranslates
+          cicStage3RawArtifactSig.nameTranslates 0
+          (.lam rawDomain rawBody) term →
+        out ∈
+          (mettaEval kernelDefControlEnv fuel st []
+            (nfQuery cicStage3RawArtifactSig
+              (.lam rawDomain rawBody))).1.map (·.1) →
+        out.isError = false →
+        CicStage3RawArtifactSigPrimaryNfRuntimeReadout
+          (.lam rawDomain rawBody) out) :
+    ConvSoundCicStage3RawArtifactSigCanonicalNfValueRuntimeExtractionGeThreeNonError := by
+  exact
+    convSoundCicStage3RawArtifactSig_canonical_nf_value_runtime_extraction_geThree_nonError_of_pi_lam_indG
+      hPi hLam
+      cicStage3RawArtifactSig_primary_nf_value_runtime_extraction_geThree_nonError_indG
+
+theorem convSoundCicStage3RawArtifactSig_canonical_nf_value_runtime_extraction_geThree_nonError_of_nfQuery_world
+    (hWorldAll :
+      ∀ {n fuel : Nat} {st : St} {raw : DIndGArtifactTerm}
+          {term : PureTm n},
+        1 ≤ fuel →
+        st.world = St.init.world →
+        DIndGArtifactTermTranslates
+          cicStage3RawArtifactSig.nameTranslates n raw term →
+        ((mettaEval kernelDefControlEnv fuel st []
+          (nfQuery cicStage3RawArtifactSig raw)).2).world =
+          St.init.world) :
+    ConvSoundCicStage3RawArtifactSigCanonicalNfValueRuntimeExtractionGeThreeNonError := by
+  refine
+    convSoundCicStage3RawArtifactSig_canonical_nf_value_runtime_extraction_geThree_nonError_of_pi_lam
+      ?_ ?_
+  · intro fuel st rawDomain rawBody term out hFuel hWorld hTrans hOut hNoErr
+    exact
+      cicStage3RawArtifactSig_primary_nf_value_runtime_extraction_geThree_nonError_pi_of_positive_recursive
+        (hDomainExtract := by
+          intro n fuel st term out hFuel hWorld hTrans hOut hNoErr
+          exact
+            cicStage3RawArtifactSig_primary_nf_value_runtime_extraction_geOne_nonError_any_depth_of_world
+              hWorldAll hFuel hWorld hTrans hOut hNoErr)
+        (hBodyExtract := by
+          intro n fuel st term out hFuel hWorld hTrans hOut hNoErr
+          exact
+            cicStage3RawArtifactSig_primary_nf_value_runtime_extraction_geOne_nonError_any_depth_of_world
+              hWorldAll hFuel hWorld hTrans hOut hNoErr)
+        (hDomainWorld := by
+          intro n fuel st term hFuel hWorld hTrans
+          exact hWorldAll (raw := rawDomain) hFuel hWorld hTrans)
+        (hBodyWorld := by
+          intro n fuel st term hFuel hWorld hTrans
+          exact hWorldAll (raw := rawBody) hFuel hWorld hTrans)
+        hFuel hWorld hTrans hOut hNoErr
+  · intro fuel st rawDomain rawBody term out hFuel hWorld hTrans hOut hNoErr
+    exact
+      cicStage3RawArtifactSig_primary_nf_value_runtime_extraction_geThree_nonError_lam_of_positive_recursive
+        (hDomainExtract := by
+          intro n fuel st term out hFuel hWorld hTrans hOut hNoErr
+          exact
+            cicStage3RawArtifactSig_primary_nf_value_runtime_extraction_geOne_nonError_any_depth_of_world
+              hWorldAll hFuel hWorld hTrans hOut hNoErr)
+        (hBodyExtract := by
+          intro n fuel st term out hFuel hWorld hTrans hOut hNoErr
+          exact
+            cicStage3RawArtifactSig_primary_nf_value_runtime_extraction_geOne_nonError_any_depth_of_world
+              hWorldAll hFuel hWorld hTrans hOut hNoErr)
+        (hDomainWorld := by
+          intro n fuel st term hFuel hWorld hTrans
+          exact hWorldAll (raw := rawDomain) hFuel hWorld hTrans)
+        (hBodyWorld := by
+          intro n fuel st term hFuel hWorld hTrans
+          exact hWorldAll (raw := rawBody) hFuel hWorld hTrans)
+        hFuel hWorld hTrans hOut hNoErr
+
+theorem convSoundCicStage3RawArtifactSig_canonical_nf_value_runtime_extraction_geThree_nonError :
+    ConvSoundCicStage3RawArtifactSigCanonicalNfValueRuntimeExtractionGeThreeNonError := by
+  exact
+    convSoundCicStage3RawArtifactSig_canonical_nf_value_runtime_extraction_geThree_nonError_of_nfQuery_world
+      cicStage3RawArtifactSig_primary_nf_query_world_geOne_any_depth
+
+theorem convSoundCicStage3RawArtifactSig_canonical_nf_value_runtime_extraction_geOne_nonError :
+    ConvSoundCicStage3RawArtifactSigCanonicalNfValueRuntimeExtractionGeOneNonError := by
+  intro fuel st raw term out hFuel hWorld hTrans hOut hNoErr
+  exact
+    cicStage3RawArtifactSig_primary_nf_value_runtime_extraction_geOne_nonError_any_depth_of_world
+      cicStage3RawArtifactSig_primary_nf_query_world_geOne_any_depth
+      hFuel hWorld hTrans hOut hNoErr
+
+
+theorem convSoundCicStage3RawArtifactSig_useSiteSmallFuelFalse_of_three_four_eight
+    (hNamedObligations :
+      ConvSoundCicStage3RawArtifactSigNamedReadoutObligations)
+    (hExtract :
+      ConvSoundCicStage3RawArtifactSigCanonicalNfValueRuntimeExtractionGeOneNonError)
+    (h3 : ConvSoundCicStage3RawArtifactSigNamedReadoutUseSiteFuelFalseAt 3)
+    (h4 : ConvSoundCicStage3RawArtifactSigNamedReadoutUseSiteFuelFalseAt 4)
+    (h8 : ConvSoundCicStage3RawArtifactSigNamedReadoutUseSiteFuelFalseAt 8) :
+    ConvSoundCicStage3RawArtifactSigNamedReadoutUseSiteSmallFuelFalse := by
+  intro runFuel rawLeft rawRight left right outBnd hconv hLeft hRight
+  dsimp
+  intro hLt9 hRun
+  by_cases hLt2 : runFuel < 2
+  · exact
+      mettaEval_kernelDefControlEnv_convReadoutNamed_true_pair_fuel_lt_two_false
+        runFuel
+        { counter := St.init.counter + 1, world := St.init.world }
+        (counterSuffix St.init.counter "nx")
+        (counterSuffix St.init.counter "ny")
+        cicStage3RawArtifactSig rawLeft rawRight hLt2 hRun
+  have hCases :
+      runFuel = 2 ∨ runFuel = 3 ∨ runFuel = 4 ∨
+        (5 ≤ runFuel ∧ runFuel < 8) ∨ runFuel = 8 := by
+    omega
+  rcases hCases with hFuel | hFuel | hFuel | hMid | hFuel
+  · subst runFuel
+    exact
+      convSoundCicStage3RawArtifactSig_namedReadoutFuelFalseAt_two
+        (rawLeft := rawLeft) (rawRight := rawRight) (outBnd := outBnd)
+        (by simpa using hRun)
+  · subst runFuel
+    exact h3 hconv hLeft hRight (by simpa using hRun)
+  · subst runFuel
+    exact h4 hconv hLeft hRight (by simpa using hRun)
+  · exact
+      convSoundCicStage3RawArtifactSig_namedReadout_runFuel_five_to_seven_false_of_obligations_geOne
+        hNamedObligations hExtract hMid.1 hMid.2 hLeft hRight
+        (by simpa using hRun)
+  · subst runFuel
+    exact h8 hconv hLeft hRight (by simpa using hRun)
+
+theorem conv_sound_cicStage3RawArtifactSig_of_small_fuel_false_obligations_tail_values_with_keys_and_no_errors_canonical_frontier_convDecl_geOne
+    (hSmallFalse :
+      ConvSoundCicStage3RawArtifactSigNamedReadoutSmallFuelFalse)
+    (hNamedObligations :
+      ConvSoundCicStage3RawArtifactSigNamedReadoutObligations)
+    (hTailValues :
+      ConvSoundCicStage3RawArtifactSigNamedReadoutTailValuesWithKeysAndNoErrors) :
+    ∀ {rawLeft rawRight : DIndGArtifactTerm} {left right : PureTm 0},
+      evaluator.conv cicStage3RawArtifactSig rawLeft rawRight →
+      DIndGArtifactTermTranslates
+        cicStage3RawArtifactSig.nameTranslates 0 rawLeft left →
+      DIndGArtifactTermTranslates
+        cicStage3RawArtifactSig.nameTranslates 0 rawRight right →
+      ConvDecl (envOfSpecs cicStage3RawArtifactSig.translatedSpecs)
+        left right := by
+  exact
+    conv_sound_cicStage3RawArtifactSig_of_small_fuel_false_obligations_tail_values_with_keys_and_no_errors_canonical_frontier_convDecl_geOne_nonError
+      hSmallFalse hNamedObligations hTailValues
+      convSoundCicStage3RawArtifactSig_canonical_nf_value_runtime_extraction_geOne_nonError
+
+theorem conv_sound_cicStage3RawArtifactSig_of_useSite_small_fuel_false_obligations_tail_values_with_keys_and_no_errors_canonical_frontier_convDecl_geOne
+    (hUseSiteSmallFalse :
+      ConvSoundCicStage3RawArtifactSigNamedReadoutUseSiteSmallFuelFalse)
+    (hNamedObligations :
+      ConvSoundCicStage3RawArtifactSigNamedReadoutObligations)
+    (hTailValues :
+      ConvSoundCicStage3RawArtifactSigNamedReadoutTailValuesWithKeysAndNoErrors) :
+    ∀ {rawLeft rawRight : DIndGArtifactTerm} {left right : PureTm 0},
+      evaluator.conv cicStage3RawArtifactSig rawLeft rawRight →
+      DIndGArtifactTermTranslates
+        cicStage3RawArtifactSig.nameTranslates 0 rawLeft left →
+      DIndGArtifactTermTranslates
+        cicStage3RawArtifactSig.nameTranslates 0 rawRight right →
+      ConvDecl (envOfSpecs cicStage3RawArtifactSig.translatedSpecs)
+        left right := by
+  exact
+    conv_sound_cicStage3RawArtifactSig_of_useSite_small_fuel_false_obligations_tail_values_with_keys_and_no_errors_canonical_frontier_convDecl_geOne_nonError
+      hUseSiteSmallFalse hNamedObligations hTailValues
+      convSoundCicStage3RawArtifactSig_canonical_nf_value_runtime_extraction_geOne_nonError
+
+theorem conv_sound_cicStage3RawArtifactSig_of_three_four_eight_obligations_tail_values_with_keys_and_no_errors_canonical_frontier_convDecl_geOne
+    (hNamedObligations :
+      ConvSoundCicStage3RawArtifactSigNamedReadoutObligations)
+    (hTailValues :
+      ConvSoundCicStage3RawArtifactSigNamedReadoutTailValuesWithKeysAndNoErrors)
+    (h3 : ConvSoundCicStage3RawArtifactSigNamedReadoutUseSiteFuelFalseAt 3)
+    (h4 : ConvSoundCicStage3RawArtifactSigNamedReadoutUseSiteFuelFalseAt 4)
+    (h8 : ConvSoundCicStage3RawArtifactSigNamedReadoutUseSiteFuelFalseAt 8) :
+    ∀ {rawLeft rawRight : DIndGArtifactTerm} {left right : PureTm 0},
+      evaluator.conv cicStage3RawArtifactSig rawLeft rawRight →
+      DIndGArtifactTermTranslates
+        cicStage3RawArtifactSig.nameTranslates 0 rawLeft left →
+      DIndGArtifactTermTranslates
+        cicStage3RawArtifactSig.nameTranslates 0 rawRight right →
+      ConvDecl (envOfSpecs cicStage3RawArtifactSig.translatedSpecs)
+        left right := by
+  exact
+    conv_sound_cicStage3RawArtifactSig_of_useSite_small_fuel_false_obligations_tail_values_with_keys_and_no_errors_canonical_frontier_convDecl_geOne
+      (convSoundCicStage3RawArtifactSig_useSiteSmallFuelFalse_of_three_four_eight
+        hNamedObligations
+        convSoundCicStage3RawArtifactSig_canonical_nf_value_runtime_extraction_geOne_nonError
+        h3 h4 h8)
+      hNamedObligations hTailValues
+
+theorem conv_sound_cicStage3RawArtifactSig_of_mid_fuel_false_obligations_tail_values_with_keys_and_no_errors_canonical_frontier_convDecl_geOne
+    (hMidFalse :
+      ConvSoundCicStage3RawArtifactSigNamedReadoutFuelTwoThroughEightFalse)
+    (hNamedObligations :
+      ConvSoundCicStage3RawArtifactSigNamedReadoutObligations)
+    (hTailValues :
+      ConvSoundCicStage3RawArtifactSigNamedReadoutTailValuesWithKeysAndNoErrors) :
+    ∀ {rawLeft rawRight : DIndGArtifactTerm} {left right : PureTm 0},
+      evaluator.conv cicStage3RawArtifactSig rawLeft rawRight →
+      DIndGArtifactTermTranslates
+        cicStage3RawArtifactSig.nameTranslates 0 rawLeft left →
+      DIndGArtifactTermTranslates
+        cicStage3RawArtifactSig.nameTranslates 0 rawRight right →
+      ConvDecl (envOfSpecs cicStage3RawArtifactSig.translatedSpecs)
+        left right := by
+  exact
+    conv_sound_cicStage3RawArtifactSig_of_mid_fuel_false_obligations_tail_values_with_keys_and_no_errors_canonical_frontier_convDecl_geOne_nonError
+      hMidFalse hNamedObligations hTailValues
+      convSoundCicStage3RawArtifactSig_canonical_nf_value_runtime_extraction_geOne_nonError
+
+theorem evaluator_soundness_cicStage3RawArtifactSig_of_small_fuel_false_obligations_tail_values_with_keys_and_no_errors_canonical_frontier_convDecl_geOne
+    (hSmallFalse :
+      ConvSoundCicStage3RawArtifactSigNamedReadoutSmallFuelFalse)
+    (hNamedObligations :
+      ConvSoundCicStage3RawArtifactSigNamedReadoutObligations)
+    (hTailValues :
+      ConvSoundCicStage3RawArtifactSigNamedReadoutTailValuesWithKeysAndNoErrors) :
+    DIndGArtifactEvaluatorSoundness evaluator cicStage3RawArtifactSig := by
+  exact
+    evaluator_soundness_cicStage3RawArtifactSig_of_conv_sound
+      (conv_sound_cicStage3RawArtifactSig_of_small_fuel_false_obligations_tail_values_with_keys_and_no_errors_canonical_frontier_convDecl_geOne
+        hSmallFalse hNamedObligations hTailValues)
+
+theorem evaluator_soundness_cicStage3RawArtifactSig_of_useSite_small_fuel_false_obligations_tail_values_with_keys_and_no_errors_canonical_frontier_convDecl_geOne
+    (hUseSiteSmallFalse :
+      ConvSoundCicStage3RawArtifactSigNamedReadoutUseSiteSmallFuelFalse)
+    (hNamedObligations :
+      ConvSoundCicStage3RawArtifactSigNamedReadoutObligations)
+    (hTailValues :
+      ConvSoundCicStage3RawArtifactSigNamedReadoutTailValuesWithKeysAndNoErrors) :
+    DIndGArtifactEvaluatorSoundness evaluator cicStage3RawArtifactSig := by
+  exact
+    evaluator_soundness_cicStage3RawArtifactSig_of_conv_sound
+      (conv_sound_cicStage3RawArtifactSig_of_useSite_small_fuel_false_obligations_tail_values_with_keys_and_no_errors_canonical_frontier_convDecl_geOne
+        hUseSiteSmallFalse hNamedObligations hTailValues)
+
+theorem evaluator_soundness_cicStage3RawArtifactSig_of_three_four_eight_obligations_tail_values_with_keys_and_no_errors_canonical_frontier_convDecl_geOne
+    (hNamedObligations :
+      ConvSoundCicStage3RawArtifactSigNamedReadoutObligations)
+    (hTailValues :
+      ConvSoundCicStage3RawArtifactSigNamedReadoutTailValuesWithKeysAndNoErrors)
+    (h3 : ConvSoundCicStage3RawArtifactSigNamedReadoutUseSiteFuelFalseAt 3)
+    (h4 : ConvSoundCicStage3RawArtifactSigNamedReadoutUseSiteFuelFalseAt 4)
+    (h8 : ConvSoundCicStage3RawArtifactSigNamedReadoutUseSiteFuelFalseAt 8) :
+    DIndGArtifactEvaluatorSoundness evaluator cicStage3RawArtifactSig := by
+  exact
+    evaluator_soundness_cicStage3RawArtifactSig_of_conv_sound
+      (conv_sound_cicStage3RawArtifactSig_of_three_four_eight_obligations_tail_values_with_keys_and_no_errors_canonical_frontier_convDecl_geOne
+        hNamedObligations hTailValues h3 h4 h8)
+
+theorem evaluator_soundness_cicStage3RawArtifactSig_of_mid_fuel_false_obligations_tail_values_with_keys_and_no_errors_canonical_frontier_convDecl_geOne
+    (hMidFalse :
+      ConvSoundCicStage3RawArtifactSigNamedReadoutFuelTwoThroughEightFalse)
+    (hNamedObligations :
+      ConvSoundCicStage3RawArtifactSigNamedReadoutObligations)
+    (hTailValues :
+      ConvSoundCicStage3RawArtifactSigNamedReadoutTailValuesWithKeysAndNoErrors) :
+    DIndGArtifactEvaluatorSoundness evaluator cicStage3RawArtifactSig := by
+  exact
+    evaluator_soundness_cicStage3RawArtifactSig_of_conv_sound
+      (conv_sound_cicStage3RawArtifactSig_of_mid_fuel_false_obligations_tail_values_with_keys_and_no_errors_canonical_frontier_convDecl_geOne
+        hMidFalse hNamedObligations hTailValues)
 
 end LeaTTaDIndG
 
