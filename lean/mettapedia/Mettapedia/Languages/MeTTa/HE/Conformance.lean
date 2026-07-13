@@ -333,6 +333,7 @@ theorem leatta_minimal_error_passthrough_mettaEval :
       (Metta.Atom.sym "x") (Metta.Atom.sym "e") ([] : Metta.Bindings)
       (by simp [Metta.Atom.vars]) (by simp [Metta.Atom.vars]) hx he
       (by simp [env, Metta.Minimal.typeMismatch, Metta.Minimal.MinEnv.ofAtomsGT])
+      (by simp [env, Metta.Minimal.arityMismatch, Metta.Minimal.MinEnv.ofAtomsGT])
       (by simp [env, Metta.Minimal.argMask, Metta.Minimal.MinEnv.ofAtomsGT])
       rfl hRoot)
 
@@ -1060,6 +1061,7 @@ theorem leatta_minimal_unify_bad_arity_eval_message :
     Metta.Minimal.St.init, Metta.Minimal.World.empty,
     leattaBadUnifyThreeArgs, leattaBadUnifyThreeArgsError,
     Metta.Minimal.errAtom, Metta.Minimal.unifyBadArityMessage]
+  exact ⟨[], rfl⟩
 
 /-- The malformed-`unify` minimal-interpreter message is not the HE reserved
 arity-error symbol. -/
@@ -2728,5 +2730,170 @@ example : (evalAtom fuelTestSpace GroundedDispatch.none
 example : (evalAtom fuelTestSpace GroundedDispatch.none
     fuelTestAtom Atom.undefinedType Bindings.empty 11).any
     (fun r => !isErrorAtom r.1) = true := by decide
+
+/-! ## 9. Connected Equality-Class Negative Oracle
+
+The two-edge case already distinguishes HE and LeaTTa at the binding readout,
+but its unary equation results remain alpha-equivalent.  A third edge makes the
+ordinary binary equation result alpha-distinct.  These executable equalities
+pin the current LeaTTa `addVarBinding` unifier-discard behavior without treating
+it as conformant. -/
+
+private def connectedClassLeaPattern : Metta.Atom :=
+  .expr [.sym "g", .var "p1", .var "p2", .var "p2"]
+
+private def connectedClassLeaQuery : Metta.Atom :=
+  .expr [.sym "g", .var "q1", .var "q1", .var "q2"]
+
+private def connectedClassLeaRhs : Metta.Atom :=
+  .expr [.sym "f", .var "p1", .var "p2"]
+
+private def connectedClassHEPattern : Atom :=
+  .expression [.symbol "g", .var "p1", .var "p2", .var "p2"]
+
+private def connectedClassHEQuery : Atom :=
+  .expression [.symbol "g", .var "q1", .var "q1", .var "q2"]
+
+private def connectedClassHERhs : Atom :=
+  .expression [.symbol "f", .var "p1", .var "p2"]
+
+/-- Current LeaTTa keeps only the final oriented value for `p2`; the successful
+`q1`/`q2` unifier is absent from the returned binding set. -/
+theorem leatta_connected_class_match_discards_rebind_unifier :
+    Metta.matchAtoms connectedClassLeaPattern connectedClassLeaQuery =
+      [[Metta.BindingRel.val "p2" (.var "q2"),
+        Metta.BindingRel.val "p1" (.var "q1")]] := by
+  simp [connectedClassLeaPattern, connectedClassLeaQuery,
+    Metta.matchAtoms, Metta.matchAtomsWith, Metta.matchAll,
+    Metta.Bindings.merge, Metta.Bindings.mergeOne,
+    Metta.Bindings.addVarBinding, Metta.Bindings.lookupVal,
+    Metta.Bindings.addValRaw, Metta.Bindings.removeVal,
+    Metta.Unify.unifyTop, Metta.Unify.unifyRounds,
+    Metta.Unify.decomposeAll, Metta.Unify.decomposeEq,
+    Metta.Subst.occurs, Metta.Subst.apply, Metta.Subst.extend,
+    Metta.Atom.size]
+  change ("q1" == "q2") = false
+  decide
+
+theorem leatta_connected_class_atom_output :
+    (Metta.matchAtoms connectedClassLeaPattern connectedClassLeaQuery).map
+        (fun b => Metta.instantiate b connectedClassLeaRhs) =
+      [.expr [.sym "f", .var "q1", .var "q2"]] := by
+  rw [leatta_connected_class_match_discards_rebind_unifier]
+  simp [connectedClassLeaRhs, Metta.instantiate,
+    Metta.bindingsToSubst, Metta.Subst.apply, Metta.Subst.lookup]
+
+/-- HE retains all three equality edges in one order-free binding class. -/
+theorem he_connected_class_match_preserves_equalities :
+    matchAtoms connectedClassHEQuery connectedClassHEPattern 20 =
+      [⟨[], [("q1", "p1"), ("q1", "p2"), ("q2", "p2")]⟩] := by
+  decide
+
+set_option maxRecDepth 10000 in
+theorem he_connected_class_atom_output :
+    (matchAtoms connectedClassHEQuery connectedClassHEPattern 20).map
+        (fun b => b.applyFull connectedClassHERhs 20) =
+      [.expression [.symbol "f", .var "q1", .var "q1"]] := by
+  decide
+
+/-- The three-edge LeaTTa and HE answers are observably different even modulo
+alpha-renaming. -/
+theorem connected_class_atom_outputs_not_alpha_equivalent :
+    ¬ Metta.AlphaEq
+      (.expr [.sym "f", .var "q1", .var "q2"])
+      (.expr [.sym "f", .var "q1", .var "q1"]) := by
+  unfold Metta.AlphaEq Metta.canonicalizeVars
+  simp [Metta.Atom.vars, Metta.distinctVarsAux, Metta.renameVars]
+
+private def bindingReadoutLeaPattern : Metta.Atom :=
+  .expr [.sym "g", .var "p", .var "p"]
+
+private def bindingReadoutLeaQuery : Metta.Atom :=
+  .expr [.sym "g", .var "q1", .var "q2"]
+
+private def bindingReadoutLeaRhs : Metta.Atom :=
+  .expr [.sym "f", .var "p"]
+
+private def bindingReadoutHEPattern : Atom :=
+  .expression [.symbol "g", .var "p", .var "p"]
+
+private def bindingReadoutHEQuery : Atom :=
+  .expression [.symbol "g", .var "q1", .var "q2"]
+
+private def bindingReadoutHERhs : Atom :=
+  .expression [.symbol "f", .var "p"]
+
+/-- Minimal two-edge LeaTTa binding: `q1` has disappeared entirely. -/
+theorem leatta_binding_readout_match_drops_q1 :
+    Metta.matchAtoms bindingReadoutLeaPattern bindingReadoutLeaQuery =
+      [[Metta.BindingRel.val "p" (.var "q2")]] := by
+  simp [bindingReadoutLeaPattern, bindingReadoutLeaQuery,
+    Metta.matchAtoms, Metta.matchAtomsWith, Metta.matchAll,
+    Metta.Bindings.merge, Metta.Bindings.mergeOne,
+    Metta.Bindings.addVarBinding, Metta.Bindings.lookupVal,
+    Metta.Bindings.addValRaw, Metta.Bindings.removeVal,
+    Metta.Unify.unifyTop, Metta.Unify.unifyRounds,
+    Metta.Unify.decomposeAll, Metta.Unify.decomposeEq,
+    Metta.Subst.occurs, Metta.Subst.apply, Metta.Subst.extend,
+    Metta.Atom.size]
+  change ("q1" == "q2") = false
+  decide
+
+theorem leatta_binding_readout_has_no_q1_value :
+    ∀ b ∈ Metta.matchAtoms bindingReadoutLeaPattern bindingReadoutLeaQuery,
+      Metta.Bindings.lookupVal b "q1" = none := by
+  rw [leatta_binding_readout_match_drops_q1]
+  simp [Metta.Bindings.lookupVal]
+
+/-- HE's corresponding two-edge match keeps both query variables in one class. -/
+theorem he_binding_readout_match_connects_q1_q2 :
+    matchAtoms bindingReadoutHEQuery bindingReadoutHEPattern 20 =
+      [⟨[], [("q1", "p"), ("q2", "p")]⟩] := by
+  decide
+
+/-- At the equation surface the two-edge answers differ only by their variable
+name, so this smaller case does not yet witness atom-level nonconformance. -/
+theorem binding_readout_equation_outputs :
+    (Metta.matchAtoms bindingReadoutLeaPattern bindingReadoutLeaQuery).map
+        (fun b => Metta.instantiate b bindingReadoutLeaRhs) =
+      [.expr [.sym "f", .var "q2"]] ∧
+    (matchAtoms bindingReadoutHEQuery bindingReadoutHEPattern 20).map
+        (fun b => b.applyFull bindingReadoutHERhs 20) =
+      [.expression [.symbol "f", .var "q1"]] := by
+  constructor
+  · rw [leatta_binding_readout_match_drops_q1]
+    simp [bindingReadoutLeaRhs, Metta.instantiate,
+      Metta.bindingsToSubst, Metta.Subst.apply, Metta.Subst.lookup]
+  · set_option maxRecDepth 10000 in decide
+
+theorem binding_readout_equation_outputs_alpha_equivalent :
+    Metta.AlphaEq
+      (.expr [.sym "f", .var "q2"])
+      (.expr [.sym "f", .var "q1"]) := by
+  unfold Metta.AlphaEq Metta.canonicalizeVars
+  simp [Metta.Atom.vars, Metta.distinctVarsAux, Metta.renameVars]
+
+set_option maxRecDepth 10000 in
+/-- Reading both query variables exposes the two-edge divergence directly:
+LeaTTa leaves two variables while HE resolves both through their shared class. -/
+theorem connected_class_binding_readouts :
+    (Metta.matchAtoms bindingReadoutLeaPattern bindingReadoutLeaQuery).map
+        (fun b => Metta.instantiate b (.expr [.var "q1", .var "q2"])) =
+      [.expr [.var "q1", .var "q2"]] ∧
+    (matchAtoms bindingReadoutHEQuery bindingReadoutHEPattern 20).map
+        (fun b => b.applyFull (.expression [.var "q1", .var "q2"]) 20) =
+      [.expression [.var "q1", .var "q1"]] := by
+  constructor
+  · rw [leatta_binding_readout_match_drops_q1]
+    simp [Metta.instantiate, Metta.bindingsToSubst,
+      Metta.Subst.apply, Metta.Subst.lookup]
+  · decide
+
+theorem connected_class_binding_readouts_not_alpha_equivalent :
+    ¬ Metta.AlphaEq
+      (.expr [.var "q1", .var "q2"])
+      (.expr [.var "q1", .var "q1"]) := by
+  unfold Metta.AlphaEq Metta.canonicalizeVars
+  simp [Metta.Atom.vars, Metta.distinctVarsAux, Metta.renameVars]
 
 end Mettapedia.Languages.MeTTa.HE.Conformance

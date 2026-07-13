@@ -5,8 +5,10 @@ import Mettapedia.Languages.Metamath.MMLean4Bridge
 /-!
 # Metamath in `languageDef!` Form (Grounded, Non-Opaque)
 
-This is the Lean twin of `mettail-rust/languages/src/metamath.rs`, authored in
-the unified DSL and intended to stay grounded to `mm-lean4` bridge semantics.
+Authored in the unified DSL; grounded to `mm-lean4` bridge semantics.
+(A `mettail-rust/languages/src/metamath.rs` twin existed historically but is no
+longer in the live tree; the `exportedRustSurface` gates below check the render
+surface itself, with no in-tree Rust consumer.)
 -/
 
 namespace Mettapedia.Languages.Metamath.LanguageDefDSL
@@ -56,6 +58,7 @@ def metamathCore : LanguageDef :=
       DbOne . stmt:Stmt |- stmt : Database;
 
       Block . body:Database |- "${" body "$}" : Stmt;
+      BlockEmpty . |- "${" "$}" : Stmt;
       ConstDecl . syms:MathString |- "$c" syms "$." : Stmt;
       VarDecl . syms:MathString |- "$v" syms "$." : Stmt;
       DjDecl . syms:MathString |- "$d" syms "$." : Stmt;
@@ -79,6 +82,8 @@ def metamathCore : LanguageDef :=
       ProofUncompressed . refs:ProofRefs |- refs : ProofString;
       ProofCompressed . openTok:ProofOpen, refs:ProofRefs, closeTok:ProofClose, block:ProofBlock
         |- openTok refs closeTok block : ProofString;
+      ProofCompressedNoRefs . openTok:ProofOpen, closeTok:ProofClose, block:ProofBlock
+        |- openTok closeTok block : ProofString;
 
       ProofOpenTok . |- "(" : ProofOpen;
       ProofCloseTok . |- ")" : ProofClose;
@@ -96,6 +101,7 @@ def metamathCore : LanguageDef :=
 
       FrontBlock . body:FrontDb
         |- "FrontBlock" "(" body ")" : FrontStmt;
+      FrontBlockEmpty . |- "FrontBlockEmpty" : FrontStmt;
       FrontConstDecl . syms:MathString
         |- "FrontConstDecl" "(" syms ")" : FrontStmt;
       FrontVarDecl . syms:MathString
@@ -123,6 +129,7 @@ def metamathCore : LanguageDef :=
 
       FrontEntryBlock . env:FrontEnv
         |- "FrontEntryBlock" "(" env ")" : FrontEntry;
+      FrontEntryBlockEmpty . |- "FrontEntryBlockEmpty" : FrontEntry;
       FrontEntryConstDecl . syms:MathString
         |- "FrontEntryConstDecl" "(" syms ")" : FrontEntry;
       FrontEntryVarDecl . syms:MathString
@@ -245,6 +252,7 @@ def metamathCore : LanguageDef :=
       LowerDbMore . |- (LowerDb (DbMore stmt rest) kont) ~> (LowerStmt stmt (KDbMore rest kont));
 
       LowerBlock . |- (LowerStmt (Block body) kont) ~> (LowerDb body (KWrapBlock kont));
+      LowerBlockEmpty . |- (LowerStmt BlockEmpty kont) ~> (ReturnStmt FrontBlockEmpty kont);
       LowerConstDecl . |- (LowerStmt (ConstDecl syms) kont) ~> (ReturnStmt (FrontConstDecl syms) kont);
       LowerVarDecl . |- (LowerStmt (VarDecl syms) kont) ~> (ReturnStmt (FrontVarDecl syms) kont);
       LowerDjDecl . |- (LowerStmt (DjDecl syms) kont) ~> (ReturnStmt (FrontDjDecl syms) kont);
@@ -266,6 +274,7 @@ def metamathCore : LanguageDef :=
       LoadEnvDbMore . |- (LoadEnvDb (FrontDbMore stmt rest) kont) ~> (LoadEnvStmt stmt (EnvKDbMore rest kont));
 
       LoadEnvFrontBlock . |- (LoadEnvStmt (FrontBlock body) kont) ~> (LoadEnvDb body (EnvKWrapBlock kont));
+      LoadEnvFrontBlockEmpty . |- (LoadEnvStmt FrontBlockEmpty kont) ~> (ReturnEnvStmt FrontEntryBlockEmpty kont);
       LoadEnvFrontConstDecl . |- (LoadEnvStmt (FrontConstDecl syms) kont) ~> (ReturnEnvStmt (FrontEntryConstDecl syms) kont);
       LoadEnvFrontVarDecl . |- (LoadEnvStmt (FrontVarDecl syms) kont) ~> (ReturnEnvStmt (FrontEntryVarDecl syms) kont);
       LoadEnvFrontDjDecl . |- (LoadEnvStmt (FrontDjDecl syms) kont) ~> (ReturnEnvStmt (FrontEntryDjDecl syms) kont);
@@ -287,6 +296,7 @@ def metamathCore : LanguageDef :=
       LinearizeEntriesMore . |- (LinearizeEntries (FrontEntriesMore entry tail) kont) ~> (LinearizeEntry entry (LinKEntriesMore tail kont));
 
       LinearizeFrontEntryBlock . |- (LinearizeEntry (FrontEntryBlock (FrontEnvNode entries)) kont) ~> (LinearizeEntries entries (LinKWrapBlock kont));
+      LinearizeFrontEntryBlockEmpty . |- (LinearizeEntry FrontEntryBlockEmpty kont) ~> (ReturnCore (CoreProgCat (CoreProgOne CoreEnterScope) (CoreProgOne CoreExitScope)) kont);
       LinearizeFrontEntryConstDecl . |- (LinearizeEntry (FrontEntryConstDecl syms) kont) ~> (ReturnCore (CoreProgOne (CoreConstDecl syms)) kont);
       LinearizeFrontEntryVarDecl . |- (LinearizeEntry (FrontEntryVarDecl syms) kont) ~> (ReturnCore (CoreProgOne (CoreVarDecl syms)) kont);
       LinearizeFrontEntryDjDecl . |- (LinearizeEntry (FrontEntryDjDecl syms) kont) ~> (ReturnCore (CoreProgOne (CoreDjDecl syms)) kont);
@@ -304,12 +314,11 @@ def metamathCore : LanguageDef :=
       BeginCompile . |- (Compile db) ~> (CompileAfterLower (Lower db));
 
       CompileLowerBegin . |- (CompileAfterLower (Lower db)) ~> (CompileAfterLower (LowerDb db KDone));
-      CompileLowerDbOneWithCons . |- (CompileAfterLower (LowerDb (DbOne cdb1c_stmt) (KDbCons cdb1c_head cdb1c_kont)))
-        ~> (CompileAfterLower (LowerStmt cdb1c_stmt (KDbLast (KDbCons cdb1c_head cdb1c_kont))));
       CompileLowerDbOne . |- (CompileAfterLower (LowerDb (DbOne cdb1_stmt) cdb1_kont)) ~> (CompileAfterLower (LowerStmt cdb1_stmt (KDbLast cdb1_kont)));
       CompileLowerDbMore . |- (CompileAfterLower (LowerDb (DbMore stmt rest) kont)) ~> (CompileAfterLower (LowerStmt stmt (KDbMore rest kont)));
 
       CompileLowerBlock . |- (CompileAfterLower (LowerStmt (Block body) kont)) ~> (CompileAfterLower (LowerDb body (KWrapBlock kont)));
+      CompileLowerBlockEmpty . |- (CompileAfterLower (LowerStmt BlockEmpty kont)) ~> (CompileAfterLower (ReturnStmt FrontBlockEmpty kont));
       CompileLowerConstDecl . |- (CompileAfterLower (LowerStmt (ConstDecl syms) kont)) ~> (CompileAfterLower (ReturnStmt (FrontConstDecl syms) kont));
       CompileLowerVarDecl . |- (CompileAfterLower (LowerStmt (VarDecl syms) kont)) ~> (CompileAfterLower (ReturnStmt (FrontVarDecl syms) kont));
       CompileLowerDjDecl . |- (CompileAfterLower (LowerStmt (DjDecl syms) kont)) ~> (CompileAfterLower (ReturnStmt (FrontDjDecl syms) kont));
@@ -332,6 +341,7 @@ def metamathCore : LanguageDef :=
       CompileLoadEnvDbMore . |- (CompileAfterEnv (LoadEnvDb (FrontDbMore stmt rest) kont)) ~> (CompileAfterEnv (LoadEnvStmt stmt (EnvKDbMore rest kont)));
 
       CompileLoadEnvFrontBlock . |- (CompileAfterEnv (LoadEnvStmt (FrontBlock body) kont)) ~> (CompileAfterEnv (LoadEnvDb body (EnvKWrapBlock kont)));
+      CompileLoadEnvFrontBlockEmpty . |- (CompileAfterEnv (LoadEnvStmt FrontBlockEmpty kont)) ~> (CompileAfterEnv (ReturnEnvStmt FrontEntryBlockEmpty kont));
       CompileLoadEnvFrontConstDecl . |- (CompileAfterEnv (LoadEnvStmt (FrontConstDecl syms) kont)) ~> (CompileAfterEnv (ReturnEnvStmt (FrontEntryConstDecl syms) kont));
       CompileLoadEnvFrontVarDecl . |- (CompileAfterEnv (LoadEnvStmt (FrontVarDecl syms) kont)) ~> (CompileAfterEnv (ReturnEnvStmt (FrontEntryVarDecl syms) kont));
       CompileLoadEnvFrontDjDecl . |- (CompileAfterEnv (LoadEnvStmt (FrontDjDecl syms) kont)) ~> (CompileAfterEnv (ReturnEnvStmt (FrontEntryDjDecl syms) kont));
@@ -354,6 +364,7 @@ def metamathCore : LanguageDef :=
       CompileLinearizeEntriesMore . |- (CompileAfterLinearize (LinearizeEntries (FrontEntriesMore entry tail) kont)) ~> (CompileAfterLinearize (LinearizeEntry entry (LinKEntriesMore tail kont)));
 
       CompileLinearizeFrontEntryBlock . |- (CompileAfterLinearize (LinearizeEntry (FrontEntryBlock (FrontEnvNode entries)) kont)) ~> (CompileAfterLinearize (LinearizeEntries entries (LinKWrapBlock kont)));
+      CompileLinearizeFrontEntryBlockEmpty . |- (CompileAfterLinearize (LinearizeEntry FrontEntryBlockEmpty kont)) ~> (CompileAfterLinearize (ReturnCore (CoreProgCat (CoreProgOne CoreEnterScope) (CoreProgOne CoreExitScope)) kont));
       CompileLinearizeFrontEntryConstDecl . |- (CompileAfterLinearize (LinearizeEntry (FrontEntryConstDecl syms) kont)) ~> (CompileAfterLinearize (ReturnCore (CoreProgOne (CoreConstDecl syms)) kont));
       CompileLinearizeFrontEntryVarDecl . |- (CompileAfterLinearize (LinearizeEntry (FrontEntryVarDecl syms) kont)) ~> (CompileAfterLinearize (ReturnCore (CoreProgOne (CoreVarDecl syms)) kont));
       CompileLinearizeFrontEntryDjDecl . |- (CompileAfterLinearize (LinearizeEntry (FrontEntryDjDecl syms) kont)) ~> (CompileAfterLinearize (ReturnCore (CoreProgOne (CoreDjDecl syms)) kont));
@@ -377,6 +388,55 @@ def metamathCore : LanguageDef :=
 
 abbrev metamathLanguageDef : LanguageDef := metamathCore
 
+/-! ## Lexical contract for the token carriers (spec §4.1)
+
+The `![label]/![raw]/![proofTok]/![path]` carriers above are lexical classes;
+these predicates pin their character-level meaning per the Metamath spec (the
+book §4.1; mmverify.py as algorithm reference). Two consequences the surface
+grammar silently relies on, stated here so they are checkable rather than
+folklore: math symbols never contain `$`, so `$.`/`$=`/`$}` are hard statement
+separators; labels never contain `(`, so `)` terminates a compressed-proof
+label block. Comments `$( … $)` are lexical (stripped before tokenization),
+never nest, and may not contain `$(`/`$)` even as substrings. -/
+
+/-- Label tokens: letters, digits, `.`, `-`, `_` (spec §4.1.1). -/
+def isLabelChar (c : Char) : Bool :=
+  c.isAlphanum || c == '.' || c == '-' || c == '_'
+
+def isLabelToken (s : String) : Bool :=
+  !s.isEmpty && s.all isLabelChar
+
+/-- Math-symbol tokens: printable ASCII except `$` (spec §4.1.1). -/
+def isMathSymChar (c : Char) : Bool :=
+  0x21 ≤ c.toNat && c.toNat ≤ 0x7e && c != '$'
+
+def isMathSymToken (s : String) : Bool :=
+  !s.isEmpty && s.all isMathSymChar
+
+/-- Compressed-proof body tokens: label-class tokens (the `( … )` refs), or
+chunks over `[A-Z?]` — the A–Z number/tag encoding with `?` (incomplete step)
+allowed MIXED into a chunk (`"AB?C"` is legal: whitespace between block
+characters is optional). Chunk boundaries carry no meaning — the radix
+accumulator crosses tokens. Note: mmverify.py is NOT a usable reference for
+`?`-in-compressed (its decoder has no `?` branch and corrupts the
+accumulator); use metamath.exe / mm-lean4's disposition. -/
+def isProofToken (s : String) : Bool :=
+  isLabelToken s ||
+    (!s.isEmpty && s.all (fun c => ('A' ≤ c && c ≤ 'Z') || c == '?'))
+
+/-- Include-path tokens: printable ASCII, no `$`, no whitespace. -/
+def isIncludePathToken (s : String) : Bool :=
+  isMathSymToken s
+
+-- Positive and negative examples (run-gates).
+#guard isLabelToken "th1" && isLabelToken "abs.2" && isLabelToken "id-1_x"
+#guard !(isLabelToken "th(1") && !(isLabelToken "") && !(isLabelToken "a b")
+#guard isMathSymToken "|-" && isMathSymToken "(" && isMathSymToken "->"
+#guard !(isMathSymToken "$.") && !(isMathSymToken "") && !(isMathSymToken "a b")
+#guard isProofToken "tt" && isProofToken "?" && isProofToken "ABZAB"
+#guard isProofToken "AB?C"   -- mixed chunk: legal in incomplete proofs
+#guard !(isProofToken "$.") && !(isProofToken "(")
+
 def exportedRustSurface : String :=
   renderLanguageWithUserSyntax metamathCore
 
@@ -390,34 +450,26 @@ def bridgeKeyOfTypeName : String → Option CarrierKey
   | "IncludePath" => some .includePath
   | _ => none
 
-example : LanguageDef.validate metamathCore = [] := by
-  native_decide
+-- Build-time RUN gate (not a theorem): `validate` does not kernel-reduce
+-- (well-founded recursion inside), so this is checked by evaluation, honestly.
+#guard (LanguageDef.validate metamathCore).isEmpty
 
-example : hasTypeCarrier "Label" .tokenLabel = true := by native_decide
-example : hasTypeCarrier "Sym" .tokenRaw = true := by native_decide
-example : hasTypeCarrier "ProofTok" .tokenProof = true := by native_decide
-example : hasTypeCarrier "IncludePath" .tokenPath = true := by native_decide
+example : hasTypeCarrier "Label" .tokenLabel = true := by decide
+example : hasTypeCarrier "Sym" .tokenRaw = true := by decide
+example : hasTypeCarrier "ProofTok" .tokenProof = true := by decide
+example : hasTypeCarrier "IncludePath" .tokenPath = true := by decide
 
 example : bridgeKeyOfTypeName "Label" = some .label := rfl
 example : bridgeKeyOfTypeName "Sym" = some .specSym := rfl
 example : bridgeKeyOfTypeName "ProofTok" = some .proofTok := rfl
 example : bridgeKeyOfTypeName "IncludePath" = some .includePath := rfl
 
-example :
-    hasSubstring "name: Metamath" exportedRustSurface = true := by
-  native_decide
-
-example :
-    hasSubstring "ConstDecl . syms:MathString |- \"$c\" syms \"$.\" : Stmt;" exportedRustSurface = true := by
-  native_decide
-
-example :
-    hasSubstring "BeginLower . |- (Lower db) ~> (LowerDb db KDone);" exportedRustSurface = true := by
-  native_decide
-
-example :
-    hasSubstring "CompileLinearizeDone . |- (CompileAfterLinearize (LinearizeDone prog)) ~> (CompileDone prog);" exportedRustSurface = true := by
-  native_decide
+-- Export-surface smoke checks: RUN gates over the rendered string (evaluation,
+-- not proof — the rendered surface is far too large for kernel reduction).
+#guard hasSubstring "name: Metamath" exportedRustSurface
+#guard hasSubstring "ConstDecl . syms:MathString |- \"$c\" syms \"$.\" : Stmt;" exportedRustSurface
+#guard hasSubstring "BeginLower . |- (Lower db) ~> (LowerDb db KDone);" exportedRustSurface
+#guard hasSubstring "CompileLinearizeDone . |- (CompileAfterLinearize (LinearizeDone prog)) ~> (CompileDone prog);" exportedRustSurface
 
 example
     (rt : RuntimeState) (sp : SpecState)

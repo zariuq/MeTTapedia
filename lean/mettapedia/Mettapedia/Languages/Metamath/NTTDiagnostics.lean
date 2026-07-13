@@ -143,4 +143,49 @@ theorem minimalCompile_begin_diamond :
     NTT: the full list of constructor-crossings (the native-type arrows). -/
 #eval unaryCrossings metamathCore
 
+/-! ## Multi-statement compile coverage oracle
+
+Nothing else drives the ≥2-statement compile path (`KDbCons` kont states only
+arise via `CompileReturnStmtDbMore`, which needs a `DbMore` database). This
+gate runs the deterministic driver end-to-end and demands the pipeline lands
+on `CompileDone` — the executable safety net under the flatten theorem and
+under any machine-rule cleanup. -/
+
+def twoStmtDb : Pattern :=
+  .apply "DbMore" [minimalAxiomStmt, .apply "DbOne" [minimalAxiomStmt]]
+
+def twoStmtCompileNF : Pattern :=
+  Mettapedia.OSLF.MeTTaIL.Match.rewriteToNormalForm metamathCore
+    (.apply "Compile" [twoStmtDb])
+
+/-! PERMANENT REGRESSION FIXTURE (do not weaken to a head-only check).
+History: until 2026-07-09 the `languageDef!` elaborator turned bare nullary
+constructor names in rewrite patterns into fvar WILDCARDS — `ReturnDbDone`'s
+`KDone` matched any kont and this very fixture compiled to statement-dropping
+garbage (with a head-only check passing!). Fixed generically by
+`LanguageDef.resolveNullaryPatterns` (applied by the macro); the content
+assertion below is the tripwire that keeps it fixed. -/
+#guard (match twoStmtCompileNF with
+        | .apply "CompileDone"
+            [.apply "CoreProgCat"
+              [.apply "CoreProgOne" [.apply "CoreAxiom" [a1, m1]],
+               .apply "CoreProgOne" [.apply "CoreAxiom" [a2, m2]]]] =>
+          decide (a1 = ax1Label) && decide (m1 = minimalMath) &&
+          decide (a2 = ax1Label) && decide (m2 = minimalMath)
+        | _ => false)
+
+/-! Empty-block (`${ $}`) coverage (bug B, complete): legal Metamath,
+previously unparseable; now compiles to the bare scope bracket — content
+asserted (post-resolution, nullary constructors are `apply`-form). -/
+def emptyBlockCompileNF : Pattern :=
+  Mettapedia.OSLF.MeTTaIL.Match.rewriteToNormalForm metamathCore
+    (.apply "Compile" [.apply "DbOne" [.apply "BlockEmpty" []]])
+
+#guard (match emptyBlockCompileNF with
+        | .apply "CompileDone"
+            [.apply "CoreProgCat"
+              [.apply "CoreProgOne" [.apply "CoreEnterScope" []],
+               .apply "CoreProgOne" [.apply "CoreExitScope" []]]] => true
+        | _ => false)
+
 end Mettapedia.Languages.Metamath.NTTDiagnostics

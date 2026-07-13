@@ -56,6 +56,10 @@ theorem os_lfcheckI_bad_type_tc (t : AST) :
     oneStep pTC (lfcheckI checkBad (someT t)) = some (checkErr (con0 "unknown-type-name")) := by
   rfl
 
+theorem os_lfcheckI_bad_term_checkBad_tc :
+    oneStep pTC (lfcheckI checkBad checkBad) = some (checkErr (con0 "unknown-term-name")) := by
+  rfl
+
 theorem os_verdict_true_tc :
     oneStep pTC (verdict ttrue) = some checkOk := by
   rfl
@@ -78,6 +82,452 @@ theorem os_recK_p_nil_tc (t : AST) :
 
 theorem os_recK_p_cons_tc (t h r : AST) :
     oneStep pTC (recK (Pp t (Cons h r))) = some (Err (extraToks (Cons h r))) := by
+  rfl
+
+theorem baseReducts_pTC_of_pLF_cons {t r : AST} {rs : List AST}
+    (h : baseReducts pLF t = r :: rs) :
+    ∃ tail, baseReducts pTC t = r :: tail := by
+  refine ⟨rs ++ List.filterMap (fun rd => applyBaseRewrite rd t) checkerRules, ?_⟩
+  unfold baseReducts at h ⊢
+  simp only [pTC, Presentation.rewrites, List.filterMap_append]
+  change List.filterMap (fun rd => applyBaseRewrite rd t) (Presentation.rewrites pLF) ++
+      List.filterMap (fun rd => applyBaseRewrite rd t) checkerRules =
+    r :: (rs ++ List.filterMap (fun rd => applyBaseRewrite rd t) checkerRules)
+  rw [h]
+  rfl
+
+theorem oneStep_pTC_of_baseReducts_pLF_cons {t r : AST} {rs : List AST}
+    (h : baseReducts pLF t = r :: rs) :
+    oneStep pTC t = some r := by
+  obtain ⟨tail, htc⟩ := baseReducts_pTC_of_pLF_cons h
+  cases t with
+  | var x =>
+      simp only [oneStep, htc]
+  | sexp l args =>
+      simp only [oneStep, htc]
+  | subst b s v =>
+      simp only [oneStep, htc]
+
+theorem os_parser_tm_z_tc (ctx toks : AST) :
+    oneStep pTC (tm Z ctx toks) = some (PErr (con0 "no-fuel")) := by
+  apply oneStep_pTC_of_baseReducts_pLF_cons
+  rfl
+
+theorem os_parser_ar_z_tc (ctx toks : AST) :
+    oneStep pTC (ar Z ctx toks) = some (PErr (con0 "no-fuel")) := by
+  apply oneStep_pTC_of_baseReducts_pLF_cons
+  rfl
+
+theorem os_parser_ap_z_tc (ctx toks : AST) :
+    oneStep pTC (ap Z ctx toks) = some (PErr (con0 "no-fuel")) := by
+  apply oneStep_pTC_of_baseReducts_pLF_cons
+  rfl
+
+theorem os_parser_apm_z_tc (ctx acc toks : AST) :
+    oneStep pTC (apm Z ctx acc toks) = some (Pp acc toks) := by
+  apply oneStep_pTC_of_baseReducts_pLF_cons
+  rfl
+
+theorem os_parser_at_z_tc (ctx toks : AST) :
+    oneStep pTC (at' Z ctx toks) = some (PErr (con0 "no-fuel")) := by
+  apply oneStep_pTC_of_baseReducts_pLF_cons
+  rfl
+
+theorem os_parser_tm_pi_tc (f ctx x rest : AST) :
+    oneStep pTC (tm (S f) ctx (Cons tPI (Cons (tId x) (Cons tCOLON rest)))) =
+      some (tmPi1 f ctx x (ap f ctx rest)) := by
+  apply oneStep_pTC_of_baseReducts_pLF_cons
+  rfl
+
+theorem os_parser_tm_lam_tc (f ctx x rest : AST) :
+    oneStep pTC (tm (S f) ctx (Cons tLAM (Cons (tId x) (Cons tCOLON rest)))) =
+      some (tmLam1 f ctx x (ap f ctx rest)) := by
+  apply oneStep_pTC_of_baseReducts_pLF_cons
+  rfl
+
+theorem os_parser_ar_s_tc (f ctx toks : AST) :
+    oneStep pTC (ar (S f) ctx toks) = some (arK f ctx (ap f ctx toks)) := by
+  apply oneStep_pTC_of_baseReducts_pLF_cons
+  rfl
+
+theorem os_parser_arK_arr_tc (f ctx a rest : AST) :
+    oneStep pTC (arK f ctx (Pp a (Cons tARR rest))) =
+      some (arK2 a (tm f ctx rest)) := by
+  apply oneStep_pTC_of_baseReducts_pLF_cons
+  rfl
+
+theorem os_parser_arK_pi_tc (f ctx a rest : AST) :
+    oneStep pTC (arK f ctx (Pp a (Cons tPI rest))) =
+      some (Pp a (Cons tPI rest)) := by
+  apply oneStep_pTC_of_baseReducts_pLF_cons
+  rfl
+
+theorem os_parser_arK_lam_tc (f ctx a rest : AST) :
+    oneStep pTC (arK f ctx (Pp a (Cons tLAM rest))) =
+      some (Pp a (Cons tLAM rest)) := by
+  apply oneStep_pTC_of_baseReducts_pLF_cons
+  rfl
+
+theorem os_parser_arK_colon_tc (f ctx a rest : AST) :
+    oneStep pTC (arK f ctx (Pp a (Cons tCOLON rest))) =
+      some (Pp a (Cons tCOLON rest)) := by
+  apply oneStep_pTC_of_baseReducts_pLF_cons
+  rfl
+
+theorem os_parser_arK_dot_tc (f ctx a rest : AST) :
+    oneStep pTC (arK f ctx (Pp a (Cons tDOT rest))) =
+      some (Pp a (Cons tDOT rest)) := by
+  apply oneStep_pTC_of_baseReducts_pLF_cons
+  rfl
+
+theorem os_parser_arK_lp_tc (f ctx a rest : AST) :
+    oneStep pTC (arK f ctx (Pp a (Cons tLP rest))) =
+      some (Pp a (Cons tLP rest)) := by
+  apply oneStep_pTC_of_baseReducts_pLF_cons
+  rfl
+
+theorem os_parser_arK_rp_tc (f ctx a rest : AST) :
+    oneStep pTC (arK f ctx (Pp a (Cons tRP rest))) =
+      some (Pp a (Cons tRP rest)) := by
+  apply oneStep_pTC_of_baseReducts_pLF_cons
+  rfl
+
+theorem os_parser_arK_type_tc (f ctx a rest : AST) :
+    oneStep pTC (arK f ctx (Pp a (Cons tTYPE rest))) =
+      some (Pp a (Cons tTYPE rest)) := by
+  apply oneStep_pTC_of_baseReducts_pLF_cons
+  rfl
+
+theorem os_parser_arK_id_tc (f ctx a s rest : AST) :
+    oneStep pTC (arK f ctx (Pp a (Cons (tId s) rest))) =
+      some (Pp a (Cons (tId s) rest)) := by
+  apply oneStep_pTC_of_baseReducts_pLF_cons
+  rfl
+
+theorem os_parser_arK_nil_tc (f ctx a : AST) :
+    oneStep pTC (arK f ctx (Pp a Nil)) = some (Pp a Nil) := by
+  apply oneStep_pTC_of_baseReducts_pLF_cons
+  rfl
+
+theorem os_parser_arK_err_tc (f ctx e : AST) :
+    oneStep pTC (arK f ctx (PErr e)) = some (PErr e) := by
+  apply oneStep_pTC_of_baseReducts_pLF_cons
+  rfl
+
+theorem os_parser_arK2_p_tc (a b rest : AST) :
+    oneStep pTC (arK2 a (Pp b rest)) = some (Pp (Pi a (shift Z b)) rest) := by
+  apply oneStep_pTC_of_baseReducts_pLF_cons
+  rfl
+
+theorem os_parser_arK2_err_tc (a e : AST) :
+    oneStep pTC (arK2 a (PErr e)) = some (PErr e) := by
+  apply oneStep_pTC_of_baseReducts_pLF_cons
+  rfl
+
+theorem os_parser_ap_s_tc (f ctx toks : AST) :
+    oneStep pTC (ap (S f) ctx toks) = some (apK f ctx (at' f ctx toks)) := by
+  apply oneStep_pTC_of_baseReducts_pLF_cons
+  rfl
+
+theorem os_parser_apm_s_tc (f ctx acc toks : AST) :
+    oneStep pTC (apm (S f) ctx acc toks) =
+      some (apmK f ctx acc toks (at' f ctx toks)) := by
+  apply oneStep_pTC_of_baseReducts_pLF_cons
+  rfl
+
+theorem os_parser_apK_p_tc (f ctx a rest : AST) :
+    oneStep pTC (apK f ctx (Pp a rest)) = some (apm f ctx a rest) := by
+  apply oneStep_pTC_of_baseReducts_pLF_cons
+  rfl
+
+theorem os_parser_apK_err_tc (f ctx e : AST) :
+    oneStep pTC (apK f ctx (PErr e)) = some (PErr e) := by
+  apply oneStep_pTC_of_baseReducts_pLF_cons
+  rfl
+
+theorem os_parser_apmK_p_tc (f ctx acc toks a rest : AST) :
+    oneStep pTC (apmK f ctx acc toks (Pp a rest)) =
+      some (apm f ctx (App acc a) rest) := by
+  apply oneStep_pTC_of_baseReducts_pLF_cons
+  rfl
+
+theorem os_parser_apmK_err_tc (f ctx acc toks e : AST) :
+    oneStep pTC (apmK f ctx acc toks (PErr e)) = some (Pp acc toks) := by
+  apply oneStep_pTC_of_baseReducts_pLF_cons
+  rfl
+
+theorem os_parser_at_type_tc (f ctx rest : AST) :
+    oneStep pTC (at' (S f) ctx (Cons tTYPE rest)) =
+      some (Pp (Srt (con0 "type")) rest) := by
+  apply oneStep_pTC_of_baseReducts_pLF_cons
+  rfl
+
+theorem os_parser_at_id_tc (f ctx s rest : AST) :
+    oneStep pTC (at' (S f) ctx (Cons (tId s) rest)) =
+      some (Pp (resolve ctx s) rest) := by
+  apply oneStep_pTC_of_baseReducts_pLF_cons
+  rfl
+
+theorem os_parser_at_lp_tc (f ctx rest : AST) :
+    oneStep pTC (at' (S f) ctx (Cons tLP rest)) =
+      some (atLPk f ctx (tm f ctx rest)) := by
+  apply oneStep_pTC_of_baseReducts_pLF_cons
+  rfl
+
+theorem os_parser_at_err_nil_tc (f ctx : AST) :
+    oneStep pTC (at' (S f) ctx Nil) = some (PErr (con0 "atom-expected")) := by
+  apply oneStep_pTC_of_baseReducts_pLF_cons
+  rfl
+
+theorem os_parser_at_err_pi_tc (f ctx rest : AST) :
+    oneStep pTC (at' (S f) ctx (Cons tPI rest)) =
+      some (PErr (con0 "atom-expected")) := by
+  apply oneStep_pTC_of_baseReducts_pLF_cons
+  rfl
+
+theorem os_parser_at_err_lam_tc (f ctx rest : AST) :
+    oneStep pTC (at' (S f) ctx (Cons tLAM rest)) =
+      some (PErr (con0 "atom-expected")) := by
+  apply oneStep_pTC_of_baseReducts_pLF_cons
+  rfl
+
+theorem os_parser_at_err_arr_tc (f ctx rest : AST) :
+    oneStep pTC (at' (S f) ctx (Cons tARR rest)) =
+      some (PErr (con0 "atom-expected")) := by
+  apply oneStep_pTC_of_baseReducts_pLF_cons
+  rfl
+
+theorem os_parser_at_err_colon_tc (f ctx rest : AST) :
+    oneStep pTC (at' (S f) ctx (Cons tCOLON rest)) =
+      some (PErr (con0 "atom-expected")) := by
+  apply oneStep_pTC_of_baseReducts_pLF_cons
+  rfl
+
+theorem os_parser_at_err_dot_tc (f ctx rest : AST) :
+    oneStep pTC (at' (S f) ctx (Cons tDOT rest)) =
+      some (PErr (con0 "atom-expected")) := by
+  apply oneStep_pTC_of_baseReducts_pLF_cons
+  rfl
+
+theorem os_parser_at_err_rp_tc (f ctx rest : AST) :
+    oneStep pTC (at' (S f) ctx (Cons tRP rest)) =
+      some (PErr (con0 "atom-expected")) := by
+  apply oneStep_pTC_of_baseReducts_pLF_cons
+  rfl
+
+theorem os_parser_atLPk_rp_tc (f ctx t rest : AST) :
+    oneStep pTC (atLPk f ctx (Pp t (Cons tRP rest))) = some (Pp t rest) := by
+  apply oneStep_pTC_of_baseReducts_pLF_cons
+  rfl
+
+theorem os_parser_atLPk_pi_tc (f ctx t rest : AST) :
+    oneStep pTC (atLPk f ctx (Pp t (Cons tPI rest))) =
+      some (PErr (con0 "paren-malformed")) := by
+  apply oneStep_pTC_of_baseReducts_pLF_cons
+  rfl
+
+theorem os_parser_atLPk_lam_tc (f ctx t rest : AST) :
+    oneStep pTC (atLPk f ctx (Pp t (Cons tLAM rest))) =
+      some (PErr (con0 "paren-malformed")) := by
+  apply oneStep_pTC_of_baseReducts_pLF_cons
+  rfl
+
+theorem os_parser_atLPk_arr_tc (f ctx t rest : AST) :
+    oneStep pTC (atLPk f ctx (Pp t (Cons tARR rest))) =
+      some (PErr (con0 "paren-malformed")) := by
+  apply oneStep_pTC_of_baseReducts_pLF_cons
+  rfl
+
+theorem os_parser_atLPk_colon_tc (f ctx t rest : AST) :
+    oneStep pTC (atLPk f ctx (Pp t (Cons tCOLON rest))) =
+      some (PErr (con0 "paren-malformed")) := by
+  apply oneStep_pTC_of_baseReducts_pLF_cons
+  rfl
+
+theorem os_parser_atLPk_dot_tc (f ctx t rest : AST) :
+    oneStep pTC (atLPk f ctx (Pp t (Cons tDOT rest))) =
+      some (PErr (con0 "paren-malformed")) := by
+  apply oneStep_pTC_of_baseReducts_pLF_cons
+  rfl
+
+theorem os_parser_atLPk_lp_tc (f ctx t rest : AST) :
+    oneStep pTC (atLPk f ctx (Pp t (Cons tLP rest))) =
+      some (PErr (con0 "paren-malformed")) := by
+  apply oneStep_pTC_of_baseReducts_pLF_cons
+  rfl
+
+theorem os_parser_atLPk_type_tc (f ctx t rest : AST) :
+    oneStep pTC (atLPk f ctx (Pp t (Cons tTYPE rest))) =
+      some (PErr (con0 "paren-malformed")) := by
+  apply oneStep_pTC_of_baseReducts_pLF_cons
+  rfl
+
+theorem os_parser_atLPk_id_tc (f ctx t s rest : AST) :
+    oneStep pTC (atLPk f ctx (Pp t (Cons (tId s) rest))) =
+      some (PErr (con0 "paren-malformed")) := by
+  apply oneStep_pTC_of_baseReducts_pLF_cons
+  rfl
+
+theorem os_parser_atLPk_nil_tc (f ctx t : AST) :
+    oneStep pTC (atLPk f ctx (Pp t Nil)) = some (PErr (con0 "paren-malformed")) := by
+  apply oneStep_pTC_of_baseReducts_pLF_cons
+  rfl
+
+theorem os_parser_atLPk_err_tc (f ctx e : AST) :
+    oneStep pTC (atLPk f ctx (PErr e)) = some (PErr (con0 "paren-malformed")) := by
+  apply oneStep_pTC_of_baseReducts_pLF_cons
+  rfl
+
+theorem os_parser_tmPi1_dot_tc (f ctx x A rest : AST) :
+    oneStep pTC (tmPi1 f ctx x (Pp A (Cons tDOT rest))) =
+      some (tmPi2 A (tm f (Cons x ctx) rest)) := by
+  apply oneStep_pTC_of_baseReducts_pLF_cons
+  rfl
+
+theorem os_parser_tmPi1_pi_tc (f ctx x A rest : AST) :
+    oneStep pTC (tmPi1 f ctx x (Pp A (Cons tPI rest))) =
+      some (PErr (con0 "pi-malformed")) := by
+  apply oneStep_pTC_of_baseReducts_pLF_cons
+  rfl
+
+theorem os_parser_tmPi1_lam_tc (f ctx x A rest : AST) :
+    oneStep pTC (tmPi1 f ctx x (Pp A (Cons tLAM rest))) =
+      some (PErr (con0 "pi-malformed")) := by
+  apply oneStep_pTC_of_baseReducts_pLF_cons
+  rfl
+
+theorem os_parser_tmPi1_arr_tc (f ctx x A rest : AST) :
+    oneStep pTC (tmPi1 f ctx x (Pp A (Cons tARR rest))) =
+      some (PErr (con0 "pi-malformed")) := by
+  apply oneStep_pTC_of_baseReducts_pLF_cons
+  rfl
+
+theorem os_parser_tmPi1_colon_tc (f ctx x A rest : AST) :
+    oneStep pTC (tmPi1 f ctx x (Pp A (Cons tCOLON rest))) =
+      some (PErr (con0 "pi-malformed")) := by
+  apply oneStep_pTC_of_baseReducts_pLF_cons
+  rfl
+
+theorem os_parser_tmPi1_lp_tc (f ctx x A rest : AST) :
+    oneStep pTC (tmPi1 f ctx x (Pp A (Cons tLP rest))) =
+      some (PErr (con0 "pi-malformed")) := by
+  apply oneStep_pTC_of_baseReducts_pLF_cons
+  rfl
+
+theorem os_parser_tmPi1_rp_tc (f ctx x A rest : AST) :
+    oneStep pTC (tmPi1 f ctx x (Pp A (Cons tRP rest))) =
+      some (PErr (con0 "pi-malformed")) := by
+  apply oneStep_pTC_of_baseReducts_pLF_cons
+  rfl
+
+theorem os_parser_tmPi1_type_tc (f ctx x A rest : AST) :
+    oneStep pTC (tmPi1 f ctx x (Pp A (Cons tTYPE rest))) =
+      some (PErr (con0 "pi-malformed")) := by
+  apply oneStep_pTC_of_baseReducts_pLF_cons
+  rfl
+
+theorem os_parser_tmPi1_id_tc (f ctx x A s rest : AST) :
+    oneStep pTC (tmPi1 f ctx x (Pp A (Cons (tId s) rest))) =
+      some (PErr (con0 "pi-malformed")) := by
+  apply oneStep_pTC_of_baseReducts_pLF_cons
+  rfl
+
+theorem os_parser_tmPi1_nil_tc (f ctx x A : AST) :
+    oneStep pTC (tmPi1 f ctx x (Pp A Nil)) =
+      some (PErr (con0 "pi-malformed")) := by
+  apply oneStep_pTC_of_baseReducts_pLF_cons
+  rfl
+
+theorem os_parser_tmPi1_err_tc (f ctx x e : AST) :
+    oneStep pTC (tmPi1 f ctx x (PErr e)) =
+      some (PErr (con0 "pi-malformed")) := by
+  apply oneStep_pTC_of_baseReducts_pLF_cons
+  rfl
+
+theorem os_parser_tmPi2_p_tc (A B rest : AST) :
+    oneStep pTC (tmPi2 A (Pp B rest)) = some (Pp (Pi A B) rest) := by
+  apply oneStep_pTC_of_baseReducts_pLF_cons
+  rfl
+
+theorem os_parser_tmPi2_err_tc (A e : AST) :
+    oneStep pTC (tmPi2 A (PErr e)) = some (PErr e) := by
+  apply oneStep_pTC_of_baseReducts_pLF_cons
+  rfl
+
+theorem os_parser_tmLam1_dot_tc (f ctx x A rest : AST) :
+    oneStep pTC (tmLam1 f ctx x (Pp A (Cons tDOT rest))) =
+      some (tmLam2 A (tm f (Cons x ctx) rest)) := by
+  apply oneStep_pTC_of_baseReducts_pLF_cons
+  rfl
+
+theorem os_parser_tmLam1_pi_tc (f ctx x A rest : AST) :
+    oneStep pTC (tmLam1 f ctx x (Pp A (Cons tPI rest))) =
+      some (PErr (con0 "lam-malformed")) := by
+  apply oneStep_pTC_of_baseReducts_pLF_cons
+  rfl
+
+theorem os_parser_tmLam1_lam_tc (f ctx x A rest : AST) :
+    oneStep pTC (tmLam1 f ctx x (Pp A (Cons tLAM rest))) =
+      some (PErr (con0 "lam-malformed")) := by
+  apply oneStep_pTC_of_baseReducts_pLF_cons
+  rfl
+
+theorem os_parser_tmLam1_arr_tc (f ctx x A rest : AST) :
+    oneStep pTC (tmLam1 f ctx x (Pp A (Cons tARR rest))) =
+      some (PErr (con0 "lam-malformed")) := by
+  apply oneStep_pTC_of_baseReducts_pLF_cons
+  rfl
+
+theorem os_parser_tmLam1_colon_tc (f ctx x A rest : AST) :
+    oneStep pTC (tmLam1 f ctx x (Pp A (Cons tCOLON rest))) =
+      some (PErr (con0 "lam-malformed")) := by
+  apply oneStep_pTC_of_baseReducts_pLF_cons
+  rfl
+
+theorem os_parser_tmLam1_lp_tc (f ctx x A rest : AST) :
+    oneStep pTC (tmLam1 f ctx x (Pp A (Cons tLP rest))) =
+      some (PErr (con0 "lam-malformed")) := by
+  apply oneStep_pTC_of_baseReducts_pLF_cons
+  rfl
+
+theorem os_parser_tmLam1_rp_tc (f ctx x A rest : AST) :
+    oneStep pTC (tmLam1 f ctx x (Pp A (Cons tRP rest))) =
+      some (PErr (con0 "lam-malformed")) := by
+  apply oneStep_pTC_of_baseReducts_pLF_cons
+  rfl
+
+theorem os_parser_tmLam1_type_tc (f ctx x A rest : AST) :
+    oneStep pTC (tmLam1 f ctx x (Pp A (Cons tTYPE rest))) =
+      some (PErr (con0 "lam-malformed")) := by
+  apply oneStep_pTC_of_baseReducts_pLF_cons
+  rfl
+
+theorem os_parser_tmLam1_id_tc (f ctx x A s rest : AST) :
+    oneStep pTC (tmLam1 f ctx x (Pp A (Cons (tId s) rest))) =
+      some (PErr (con0 "lam-malformed")) := by
+  apply oneStep_pTC_of_baseReducts_pLF_cons
+  rfl
+
+theorem os_parser_tmLam1_nil_tc (f ctx x A : AST) :
+    oneStep pTC (tmLam1 f ctx x (Pp A Nil)) =
+      some (PErr (con0 "lam-malformed")) := by
+  apply oneStep_pTC_of_baseReducts_pLF_cons
+  rfl
+
+theorem os_parser_tmLam1_err_tc (f ctx x e : AST) :
+    oneStep pTC (tmLam1 f ctx x (PErr e)) =
+      some (PErr (con0 "lam-malformed")) := by
+  apply oneStep_pTC_of_baseReducts_pLF_cons
+  rfl
+
+theorem os_parser_tmLam2_p_tc (A b rest : AST) :
+    oneStep pTC (tmLam2 A (Pp b rest)) = some (Pp (Lam A b) rest) := by
+  apply oneStep_pTC_of_baseReducts_pLF_cons
+  rfl
+
+theorem os_parser_tmLam2_err_tc (A e : AST) :
+    oneStep pTC (tmLam2 A (PErr e)) = some (PErr e) := by
+  apply oneStep_pTC_of_baseReducts_pLF_cons
   rfl
 
 theorem isnormal_checkOk_tc : IsNormal pTC checkOk := by
@@ -103,6 +553,47 @@ theorem verdict_matches_bool {b : Bool} {v : AST} (h : MatchesBool b v) :
       subst v
       exact verdict_false_matches
 
+def VerdictChildOpen (s : AST) : Prop :=
+  baseReducts pTC (verdict s) = []
+
+def CheckKChildOpen (fuel A s : AST) : Prop :=
+  baseReducts pTC (checkK fuel A s) = []
+
+def ConvAChildOpen (fuel B s : AST) : Prop :=
+  baseReducts pTC (convA fuel B s) = []
+
+def ConvBChildOpen (A s : AST) : Prop :=
+  baseReducts pTC (convB A s) = []
+
+theorem hcong_verdict_child_open_tc {s s' : AST}
+    (hopen : VerdictChildOpen s) (hstep : oneStep pTC s = some s') :
+    oneStep pTC (verdict s) = some (verdict s') := by
+  unfold VerdictChildOpen at hopen
+  change (match baseReducts pTC (verdict s) with
+    | r :: _ => some r
+    | [] => Option.map (fun args' => AST.sexp (.id "verdict") args') (oneStepList pTC [s])) =
+      some (verdict s')
+  rw [hopen]
+  simp only [oneStepList, hstep, Option.map_some, verdict]
+
+theorem verdict_child_open_checkK_tc (fuel A s : AST) :
+    VerdictChildOpen (checkK fuel A s) := by
+  rfl
+
+theorem hcong_checkK_child_open_tc {fuel A s s' : AST}
+    (hfuel : IsNormal pTC fuel) (hA : IsNormal pTC A)
+    (hopen : CheckKChildOpen fuel A s) (hstep : oneStep pTC s = some s') :
+    oneStep pTC (checkK fuel A s) = some (checkK fuel A s') := by
+  unfold CheckKChildOpen at hopen
+  simp only [IsNormal] at hfuel hA
+  change (match baseReducts pTC (checkK fuel A s) with
+    | r :: _ => some r
+    | [] => Option.map (fun args' => AST.sexp (.id "checkK") args')
+        (oneStepList pTC [fuel, A, s])) =
+      some (checkK fuel A s')
+  rw [hopen]
+  simp only [oneStepList, hfuel, hA, hstep, Option.map_some, checkK]
+
 theorem checkT_z_tc (ctx t A : AST) :
     eval pTC 1 (checkT Z ctx t A) = ffalse := by
   rfl
@@ -110,6 +601,11 @@ theorem checkT_z_tc (ctx t A : AST) :
 theorem checkT_s_tc (f ctx t A : AST) :
     eval pTC 1 (checkT (S f) ctx t A) = checkK f A (inferT f ctx t) := by
   rfl
+
+theorem checkT_checkerFuel_tc (ctx t A : AST) :
+    eval pTC 1 (checkT checkerFuelA ctx t A) =
+      checkK (peano 31) A (inferT (peano 31) ctx t) := by
+  simpa [checkerFuelA, checkerFuel, peano] using checkT_s_tc (peano 31) ctx t A
 
 theorem checkK_ok_tc (f A B : AST) :
     eval pTC 1 (checkK f A (someT B)) = convT f B A := by
@@ -380,8 +876,1247 @@ mutual
         rfl
 end
 
+theorem bool_and_eq_true_left_tc {a b : Bool} (h : (a && b) = true) : a = true := by
+  cases a with
+  | false =>
+      cases b <;> cases h
+  | true => rfl
+
+theorem bool_and_eq_true_right_tc {a b : Bool} (h : (a && b) = true) : b = true := by
+  cases b with
+  | false =>
+      cases a <;> cases h
+  | true => rfl
+
+theorem string_beq_true_eq_tc {a b : String} (h : (a == b) = true) : a = b := by
+  exact beq_iff_eq.mp h
+
+theorem dottedPath_beq_true_eq_tc : ∀ {a b : DottedPath}, (a == b) = true -> a = b
+  | .base s, .base t, h => by
+      change (s == t) = true at h
+      have hst := string_beq_true_eq_tc h
+      cases hst
+      rfl
+  | .base _, .qualified _ _, h => by
+      change false = true at h
+      cases h
+  | .qualified _ _, .base _, h => by
+      change false = true at h
+      cases h
+  | .qualified s rest, .qualified t rest2, h => by
+      change ((s == t) && (rest == rest2)) = true at h
+      have hs := string_beq_true_eq_tc (bool_and_eq_true_left_tc h)
+      have hrest := dottedPath_beq_true_eq_tc (bool_and_eq_true_right_tc h)
+      cases hs
+      cases hrest
+      rfl
+
+mutual
+  theorem cat_beq_true_eq_tc : ∀ {a b : Cat}, (a == b) = true -> a = b
+    | .idCat s, .idCat t, h => by
+        change (s == t) = true at h
+        have hst := string_beq_true_eq_tc h
+        cases hst
+        rfl
+    | .idCat _, .listOf _, h => by
+        change false = true at h
+        cases h
+    | .idCat _, .arrow _ _, h => by
+        change false = true at h
+        cases h
+    | .idCat _, .prod _, h => by
+        change false = true at h
+        cases h
+    | .listOf _, .idCat _, h => by
+        change false = true at h
+        cases h
+    | .listOf c, .listOf d, h => by
+        change (c == d) = true at h
+        have hcd := cat_beq_true_eq_tc h
+        cases hcd
+        rfl
+    | .listOf _, .arrow _ _, h => by
+        change false = true at h
+        cases h
+    | .listOf _, .prod _, h => by
+        change false = true at h
+        cases h
+    | .arrow _ _, .idCat _, h => by
+        change false = true at h
+        cases h
+    | .arrow _ _, .listOf _, h => by
+        change false = true at h
+        cases h
+    | .arrow a b, .arrow c d, h => by
+        change ((a == c) && (b == d)) = true at h
+        have hac := cat_beq_true_eq_tc (bool_and_eq_true_left_tc h)
+        have hbd := cat_beq_true_eq_tc (bool_and_eq_true_right_tc h)
+        cases hac
+        cases hbd
+        rfl
+    | .arrow _ _, .prod _, h => by
+        change false = true at h
+        cases h
+    | .prod _, .idCat _, h => by
+        change false = true at h
+        cases h
+    | .prod _, .listOf _, h => by
+        change false = true at h
+        cases h
+    | .prod _, .arrow _ _, h => by
+        change false = true at h
+        cases h
+    | .prod cs, .prod ds, h => by
+        change Cat.beqList cs ds = true at h
+        have hcs := cat_beqList_true_eq_tc h
+        cases hcs
+        rfl
+  theorem cat_beqList_true_eq_tc : ∀ {as bs : List Cat}, Cat.beqList as bs = true -> as = bs
+    | [], [], _ => rfl
+    | [], _ :: _, h => by
+        change false = true at h
+        cases h
+    | _ :: _, [], h => by
+        change false = true at h
+        cases h
+    | a :: as, b :: bs, h => by
+        change ((a == b) && Cat.beqList as bs) = true at h
+        have hab := cat_beq_true_eq_tc (bool_and_eq_true_left_tc h)
+        have has := cat_beqList_true_eq_tc (bool_and_eq_true_right_tc h)
+        cases hab
+        cases has
+        rfl
+end
+
+theorem label_beq_true_eq_tc : ∀ {a b : Label}, (a == b) = true -> a = b
+  | .id s, .id t, h => by
+      change (s == t) = true at h
+      have hst := string_beq_true_eq_tc h
+      cases hst
+      rfl
+  | .id _, .wild, h => by
+      change false = true at h
+      cases h
+  | .id _, .listE _, h => by
+      change false = true at h
+      cases h
+  | .id _, .listCons _, h => by
+      change false = true at h
+      cases h
+  | .id _, .listOne _, h => by
+      change false = true at h
+      cases h
+  | .wild, .id _, h => by
+      change false = true at h
+      cases h
+  | .wild, .wild, _ => rfl
+  | .wild, .listE _, h => by
+      change false = true at h
+      cases h
+  | .wild, .listCons _, h => by
+      change false = true at h
+      cases h
+  | .wild, .listOne _, h => by
+      change false = true at h
+      cases h
+  | .listE _, .id _, h => by
+      change false = true at h
+      cases h
+  | .listE _, .wild, h => by
+      change false = true at h
+      cases h
+  | .listE c, .listE d, h => by
+      change (c == d) = true at h
+      have hcd := cat_beq_true_eq_tc h
+      cases hcd
+      rfl
+  | .listE _, .listCons _, h => by
+      change false = true at h
+      cases h
+  | .listE _, .listOne _, h => by
+      change false = true at h
+      cases h
+  | .listCons _, .id _, h => by
+      change false = true at h
+      cases h
+  | .listCons _, .wild, h => by
+      change false = true at h
+      cases h
+  | .listCons _, .listE _, h => by
+      change false = true at h
+      cases h
+  | .listCons c, .listCons d, h => by
+      change (c == d) = true at h
+      have hcd := cat_beq_true_eq_tc h
+      cases hcd
+      rfl
+  | .listCons _, .listOne _, h => by
+      change false = true at h
+      cases h
+  | .listOne _, .id _, h => by
+      change false = true at h
+      cases h
+  | .listOne _, .wild, h => by
+      change false = true at h
+      cases h
+  | .listOne _, .listE _, h => by
+      change false = true at h
+      cases h
+  | .listOne _, .listCons _, h => by
+      change false = true at h
+      cases h
+  | .listOne c, .listOne d, h => by
+      change (c == d) = true at h
+      have hcd := cat_beq_true_eq_tc h
+      cases hcd
+      rfl
+
+mutual
+  theorem ast_beq_true_eq_tc : ∀ {a b : AST}, (a == b) = true -> a = b
+    | .var p, .var q, h => by
+        change (p == q) = true at h
+        have hpq := dottedPath_beq_true_eq_tc h
+        cases hpq
+        rfl
+    | .var _, .sexp _ _, h => by
+        change false = true at h
+        cases h
+    | .var _, .subst _ _ _, h => by
+        change false = true at h
+        cases h
+    | .sexp _ _, .var _, h => by
+        change false = true at h
+        cases h
+    | .sexp l args, .sexp m bs, h => by
+        change ((l == m) && AST.beqList args bs) = true at h
+        have hlm := label_beq_true_eq_tc (bool_and_eq_true_left_tc h)
+        have hargs := ast_beqList_true_eq_tc (bool_and_eq_true_right_tc h)
+        cases hlm
+        cases hargs
+        rfl
+    | .sexp _ _, .subst _ _ _, h => by
+        change false = true at h
+        cases h
+    | .subst _ _ _, .var _, h => by
+        change false = true at h
+        cases h
+    | .subst _ _ _, .sexp _ _, h => by
+        change false = true at h
+        cases h
+    | .subst b r v, .subst b2 r2 v2, h => by
+        change ((b == b2) && (r == r2) && (v == v2)) = true at h
+        have hleft := bool_and_eq_true_left_tc h
+        have hb := ast_beq_true_eq_tc (bool_and_eq_true_left_tc hleft)
+        have hr := ast_beq_true_eq_tc (bool_and_eq_true_right_tc hleft)
+        have hv := dottedPath_beq_true_eq_tc (bool_and_eq_true_right_tc h)
+        cases hb
+        cases hr
+        cases hv
+        rfl
+  theorem ast_beqList_true_eq_tc : ∀ {as bs : List AST}, AST.beqList as bs = true -> as = bs
+    | [], [], _ => rfl
+    | [], _ :: _, h => by
+        change false = true at h
+        cases h
+    | _ :: _, [], h => by
+        change false = true at h
+        cases h
+    | a :: as, b :: bs, h => by
+        change ((a == b) && AST.beqList as bs) = true at h
+        have hab := ast_beq_true_eq_tc (bool_and_eq_true_left_tc h)
+        have has := ast_beqList_true_eq_tc (bool_and_eq_true_right_tc h)
+        cases hab
+        cases has
+        rfl
+end
+
 theorem label_id_beq_tc (a b : String) :
     (Label.id a == Label.id b) = (a == b) := by
+  rfl
+
+theorem sexp_id_ne_of_ne_tc {a b : String} (h : a ≠ b) (as bs : List AST) :
+    AST.sexp (Label.id a) as ≠ AST.sexp (Label.id b) bs := by
+  intro hterm
+  injection hterm with hlabel _
+  injection hlabel with hstr
+  exact h hstr
+
+theorem encName?_some_cases_tc {x : String} {u : AST}
+    (h : encName? x = some u) :
+    (x = "prop" ∧ u = nProp) ∨
+    (x = "nat" ∧ u = nNat) ∨
+    (x = "A" ∧ u = nA) ∨
+    (x = "B" ∧ u = nB) ∨
+    (x = "z" ∧ u = nZ) ∨
+    (x = "prf" ∧ u = nPrf) ∨
+    (x = "imp" ∧ u = nImp) ∨
+    (x = "eqn" ∧ u = nEqn) ∨
+    (x = "rfl" ∧ u = nRfl) ∨
+    (x = "hImpAB" ∧ u = nHImpAB) ∨
+    (x = "hA" ∧ u = nHA) ∨
+    (x = "mpAB" ∧ u = nMpAB) := by
+  by_cases h0 : x = "prop"
+  · subst x
+    change some nProp = some u at h
+    cases h
+    exact Or.inl ⟨rfl, rfl⟩
+  by_cases h1 : x = "nat"
+  · subst x
+    change some nNat = some u at h
+    cases h
+    exact Or.inr (Or.inl ⟨rfl, rfl⟩)
+  by_cases h2 : x = "A"
+  · subst x
+    change some nA = some u at h
+    cases h
+    exact Or.inr (Or.inr (Or.inl ⟨rfl, rfl⟩))
+  by_cases h3 : x = "B"
+  · subst x
+    change some nB = some u at h
+    cases h
+    exact Or.inr (Or.inr (Or.inr (Or.inl ⟨rfl, rfl⟩)))
+  by_cases h4 : x = "z"
+  · subst x
+    change some nZ = some u at h
+    cases h
+    exact Or.inr (Or.inr (Or.inr (Or.inr (Or.inl ⟨rfl, rfl⟩))))
+  by_cases h5 : x = "prf"
+  · subst x
+    change some nPrf = some u at h
+    cases h
+    exact Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inl ⟨rfl, rfl⟩)))))
+  by_cases h6 : x = "imp"
+  · subst x
+    change some nImp = some u at h
+    cases h
+    exact Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inl ⟨rfl, rfl⟩))))))
+  by_cases h7 : x = "eqn"
+  · subst x
+    change some nEqn = some u at h
+    cases h
+    exact Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inl ⟨rfl, rfl⟩)))))))
+  by_cases h8 : x = "rfl"
+  · subst x
+    change some nRfl = some u at h
+    cases h
+    exact Or.inr
+      (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inl ⟨rfl, rfl⟩))))))))
+  by_cases h9 : x = "hImpAB"
+  · subst x
+    change some nHImpAB = some u at h
+    cases h
+    exact Or.inr
+      (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr
+        (Or.inr (Or.inr (Or.inr (Or.inl ⟨rfl, rfl⟩)))))))))
+  by_cases h10 : x = "hA"
+  · subst x
+    change some nHA = some u at h
+    cases h
+    exact Or.inr
+      (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr
+        (Or.inr (Or.inr (Or.inr (Or.inr (Or.inl ⟨rfl, rfl⟩))))))))))
+  by_cases h11 : x = "mpAB"
+  · subst x
+    change some nMpAB = some u at h
+    cases h
+    exact Or.inr
+      (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr
+        (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr ⟨rfl, rfl⟩))))))))))
+  · unfold encName? at h
+    simp [Mettapedia.GSLT.InternedNames.Table.intern?,
+      Mettapedia.GSLT.InternedNames.Table.internAux, lfNameTable,
+      h0, h1, h2, h3, h4, h5, h6, h7, h8, h9, h10, h11] at h
+
+theorem encName?_injective_tc {x y : String} {u : AST}
+    (hx : encName? x = some u) (hy : encName? y = some u) :
+    x = y := by
+  rcases encName?_some_cases_tc hx with
+    hcase | hcase | hcase | hcase | hcase | hcase |
+    hcase | hcase | hcase | hcase | hcase | hcase <;>
+  rcases encName?_some_cases_tc hy with
+    hcaseY | hcaseY | hcaseY | hcaseY | hcaseY | hcaseY |
+    hcaseY | hcaseY | hcaseY | hcaseY | hcaseY | hcaseY <;>
+  rcases hcase with ⟨hxName, hxU⟩ <;>
+  rcases hcaseY with ⟨hyName, hyU⟩ <;>
+  subst x <;> subst y <;> subst u <;>
+  first
+  | rfl
+  | exfalso
+    simp only [nProp, nNat, nA, nB, nZ, nPrf, nImp, nEqn, nRfl, nHImpAB, nHA,
+      nMpAB, iName] at hyU
+    have hk := peano_injective hyU
+    simp only [kProp, kNat, kA, kB, kZ, kPrf, kImp, kEqn, kRfl, kHImpAB, kHA,
+      kMpAB] at hk
+    omega
+
+theorem label_id_ne_of_string_ne_tc {a b : String}
+    (h : a ≠ b) : Label.id a ≠ Label.id b := by
+  intro hl
+  injection hl with hs
+  exact h hs
+
+theorem ast_id_sexp_ne_of_label_ne_tc {a b : String} {xs ys : List AST}
+    (h : a ≠ b) : AST.sexp (.id a) xs ≠ AST.sexp (.id b) ys := by
+  intro heq
+  injection heq with hl _
+  exact label_id_ne_of_string_ne_tc h hl
+
+theorem ast_Srt_injective_tc {a b : AST} (h : Srt a = Srt b) : a = b := by
+  unfold Srt at h
+  injection h with _ hargs
+  injection hargs
+
+theorem ast_Con_injective_tc {a b : AST}
+    (h : LFEnc.Con a = LFEnc.Con b) : a = b := by
+  unfold LFEnc.Con at h
+  injection h with _ hargs
+  injection hargs
+
+theorem ast_Var_injective_tc {a b : AST} (h : Var a = Var b) : a = b := by
+  unfold Var at h
+  injection h with _ hargs
+  injection hargs
+
+theorem ast_Pi_injective_tc {A B C D : AST}
+    (h : Pi A B = Pi C D) : A = C ∧ B = D := by
+  unfold Pi at h
+  injection h with _ hargs
+  injection hargs with hA htail
+  injection htail with hB _
+  exact ⟨hA, hB⟩
+
+theorem ast_Lam_injective_tc {A b C d : AST}
+    (h : Lam A b = Lam C d) : A = C ∧ b = d := by
+  unfold Lam at h
+  injection h with _ hargs
+  injection hargs with hA htail
+  injection htail with hb _
+  exact ⟨hA, hb⟩
+
+theorem ast_App_injective_tc {f a g b : AST}
+    (h : App f a = App g b) : f = g ∧ a = b := by
+  unfold App at h
+  injection h with _ hargs
+  injection hargs with hf htail
+  injection htail with ha _
+  exact ⟨hf, ha⟩
+
+theorem ast_Srt_type_ne_kind_tc : Srt typeS ≠ Srt kindS := by
+  intro h
+  have hs : typeS = kindS := ast_Srt_injective_tc h
+  unfold typeS kindS con0 at hs
+  injection hs with hlabel _
+  injection hlabel with hname
+  have hne : ("type" : String) ≠ "kind" := by decide
+  exact hne hname
+
+theorem encTyCore?_srt_type_inv_tc {s : LF.Term}
+    (h : encTyCore? s = some (Srt typeS)) : s = .srt .type := by
+  cases s with
+  | srt sort =>
+      cases sort <;> simp [encTyCore?] at h
+      · rfl
+      · exfalso
+        exact ast_Srt_type_ne_kind_tc h.symm
+  | con y =>
+      unfold encTyCore? at h
+      cases hy : encName? y with
+      | none => simp [hy] at h
+      | some w =>
+          simp [hy] at h
+          exfalso
+          unfold Srt LFEnc.Con at h
+          exact ast_id_sexp_ne_of_label_ne_tc (by decide) h.symm
+  | var k =>
+      change some (Var (peano k)) = some (Srt typeS) at h
+      injection h with heq
+      exfalso
+      unfold Srt Var at heq
+      exact ast_id_sexp_ne_of_label_ne_tc (by decide) heq.symm
+  | pi A B =>
+      unfold encTyCore? at h
+      cases hA : encTyCore? A with
+      | none => simp [hA] at h
+      | some Au =>
+          cases hB : encTyCore? B with
+          | none => simp [hA, hB] at h
+          | some Bu =>
+              simp [hA, hB] at h
+              exfalso
+              unfold Srt Pi at h
+              exact ast_id_sexp_ne_of_label_ne_tc (by decide) h.symm
+  | lam A b =>
+      unfold encTyCore? at h
+      cases hA : encTyCore? A with
+      | none => simp [hA] at h
+      | some Au =>
+          cases hb : encTyCore? b with
+          | none => simp [hA, hb] at h
+          | some bu =>
+              simp [hA, hb] at h
+              exfalso
+              unfold Srt Lam at h
+              exact ast_id_sexp_ne_of_label_ne_tc (by decide) h.symm
+  | app f a =>
+      unfold encTyCore? at h
+      cases hf : encTyCore? f with
+      | none => simp [hf] at h
+      | some fu =>
+          cases ha : encTyCore? a with
+          | none => simp [hf, ha] at h
+          | some au =>
+              simp [hf, ha] at h
+              exfalso
+              unfold Srt App at h
+              exact ast_id_sexp_ne_of_label_ne_tc (by decide) h.symm
+
+theorem encTyCore?_srt_kind_inv_tc {s : LF.Term}
+    (h : encTyCore? s = some (Srt kindS)) : s = .srt .kind := by
+  cases s with
+  | srt sort =>
+      cases sort <;> simp [encTyCore?] at h
+      · exfalso
+        exact ast_Srt_type_ne_kind_tc h
+      · rfl
+  | con y =>
+      unfold encTyCore? at h
+      cases hy : encName? y with
+      | none => simp [hy] at h
+      | some w =>
+          simp [hy] at h
+          exfalso
+          unfold Srt LFEnc.Con at h
+          exact ast_id_sexp_ne_of_label_ne_tc (by decide) h.symm
+  | var k =>
+      change some (Var (peano k)) = some (Srt kindS) at h
+      injection h with heq
+      exfalso
+      unfold Srt Var at heq
+      exact ast_id_sexp_ne_of_label_ne_tc (by decide) heq.symm
+  | pi A B =>
+      unfold encTyCore? at h
+      cases hA : encTyCore? A with
+      | none => simp [hA] at h
+      | some Au =>
+          cases hB : encTyCore? B with
+          | none => simp [hA, hB] at h
+          | some Bu =>
+              simp [hA, hB] at h
+              exfalso
+              unfold Srt Pi at h
+              exact ast_id_sexp_ne_of_label_ne_tc (by decide) h.symm
+  | lam A b =>
+      unfold encTyCore? at h
+      cases hA : encTyCore? A with
+      | none => simp [hA] at h
+      | some Au =>
+          cases hb : encTyCore? b with
+          | none => simp [hA, hb] at h
+          | some bu =>
+              simp [hA, hb] at h
+              exfalso
+              unfold Srt Lam at h
+              exact ast_id_sexp_ne_of_label_ne_tc (by decide) h.symm
+  | app f a =>
+      unfold encTyCore? at h
+      cases hf : encTyCore? f with
+      | none => simp [hf] at h
+      | some fu =>
+          cases ha : encTyCore? a with
+          | none => simp [hf, ha] at h
+          | some au =>
+              simp [hf, ha] at h
+              exfalso
+              unfold Srt App at h
+              exact ast_id_sexp_ne_of_label_ne_tc (by decide) h.symm
+
+theorem encTyCore?_var_inv_tc {s : LF.Term} {k : Nat}
+    (h : encTyCore? s = some (Var (peano k))) : s = .var k := by
+  cases s with
+  | srt sort =>
+      cases sort <;> simp [encTyCore?] at h
+      · exfalso
+        unfold Srt Var at h
+        exact ast_id_sexp_ne_of_label_ne_tc (by decide) h
+      · exfalso
+        unfold Srt Var at h
+        exact ast_id_sexp_ne_of_label_ne_tc (by decide) h
+  | con y =>
+      unfold encTyCore? at h
+      cases hy : encName? y with
+      | none => simp [hy] at h
+      | some w =>
+          simp [hy] at h
+          exfalso
+          unfold LFEnc.Con Var at h
+          exact ast_id_sexp_ne_of_label_ne_tc (by decide) h
+  | var j =>
+      change some (Var (peano j)) = some (Var (peano k)) at h
+      injection h with hvar
+      have hjk : j = k := peano_injective (ast_Var_injective_tc hvar)
+      subst k
+      rfl
+  | pi A B =>
+      unfold encTyCore? at h
+      cases hA : encTyCore? A with
+      | none => simp [hA] at h
+      | some Au =>
+          cases hB : encTyCore? B with
+          | none => simp [hA, hB] at h
+          | some Bu =>
+              simp [hA, hB] at h
+              exfalso
+              unfold Pi Var at h
+              exact ast_id_sexp_ne_of_label_ne_tc (by decide) h
+  | lam A b =>
+      unfold encTyCore? at h
+      cases hA : encTyCore? A with
+      | none => simp [hA] at h
+      | some Au =>
+          cases hb : encTyCore? b with
+          | none => simp [hA, hb] at h
+          | some bu =>
+              simp [hA, hb] at h
+              exfalso
+              unfold Lam Var at h
+              exact ast_id_sexp_ne_of_label_ne_tc (by decide) h
+  | app f a =>
+      unfold encTyCore? at h
+      cases hf : encTyCore? f with
+      | none => simp [hf] at h
+      | some fu =>
+          cases ha : encTyCore? a with
+          | none => simp [hf, ha] at h
+          | some au =>
+              simp [hf, ha] at h
+              exfalso
+              unfold App Var at h
+              exact ast_id_sexp_ne_of_label_ne_tc (by decide) h
+
+theorem encTyCore?_con_inv_tc {s : LF.Term} {x : String} {k : AST}
+    (hx : encName? x = some k)
+    (h : encTyCore? s = some (LFEnc.Con k)) : s = .con x := by
+  cases s with
+  | srt sort =>
+      cases sort <;> simp [encTyCore?] at h
+      · exfalso
+        unfold Srt LFEnc.Con at h
+        exact ast_id_sexp_ne_of_label_ne_tc (by decide) h
+      · exfalso
+        unfold Srt LFEnc.Con at h
+        exact ast_id_sexp_ne_of_label_ne_tc (by decide) h
+  | con y =>
+      unfold encTyCore? at h
+      cases hy : encName? y with
+      | none => simp [hy] at h
+      | some w =>
+          simp [hy] at h
+          have hwk : w = k := ast_Con_injective_tc h
+          have hxw : encName? x = some w := by
+            simpa [hwk] using hx
+          have hyx : y = x := encName?_injective_tc hy hxw
+          subst y
+          rfl
+  | var j =>
+      change some (Var (peano j)) = some (LFEnc.Con k) at h
+      injection h with hvar
+      exfalso
+      unfold Var LFEnc.Con at hvar
+      exact ast_id_sexp_ne_of_label_ne_tc (by decide) hvar
+  | pi A B =>
+      unfold encTyCore? at h
+      cases hA : encTyCore? A with
+      | none => simp [hA] at h
+      | some Au =>
+          cases hB : encTyCore? B with
+          | none => simp [hA, hB] at h
+          | some Bu =>
+              simp [hA, hB] at h
+              exfalso
+              unfold Pi LFEnc.Con at h
+              exact ast_id_sexp_ne_of_label_ne_tc (by decide) h
+  | lam A b =>
+      unfold encTyCore? at h
+      cases hA : encTyCore? A with
+      | none => simp [hA] at h
+      | some Au =>
+          cases hb : encTyCore? b with
+          | none => simp [hA, hb] at h
+          | some bu =>
+              simp [hA, hb] at h
+              exfalso
+              unfold Lam LFEnc.Con at h
+              exact ast_id_sexp_ne_of_label_ne_tc (by decide) h
+  | app f a =>
+      unfold encTyCore? at h
+      cases hf : encTyCore? f with
+      | none => simp [hf] at h
+      | some fu =>
+          cases ha : encTyCore? a with
+          | none => simp [hf, ha] at h
+          | some au =>
+              simp [hf, ha] at h
+              exfalso
+              unfold App LFEnc.Con at h
+              exact ast_id_sexp_ne_of_label_ne_tc (by decide) h
+
+theorem encTyCore?_pi_inv_components_tc {s : LF.Term} {Au Bu : AST}
+    (h : encTyCore? s = some (Pi Au Bu)) :
+    ∃ A B, s = .pi A B ∧ encTyCore? A = some Au ∧ encTyCore? B = some Bu := by
+  cases s with
+  | srt sort =>
+      cases sort <;> simp [encTyCore?] at h
+      · exfalso
+        unfold Srt Pi at h
+        exact ast_id_sexp_ne_of_label_ne_tc (by decide) h
+      · exfalso
+        unfold Srt Pi at h
+        exact ast_id_sexp_ne_of_label_ne_tc (by decide) h
+  | con y =>
+      unfold encTyCore? at h
+      cases hy : encName? y with
+      | none => simp [hy] at h
+      | some w =>
+          simp [hy] at h
+          exfalso
+          unfold LFEnc.Con Pi at h
+          exact ast_id_sexp_ne_of_label_ne_tc (by decide) h
+  | var j =>
+      change some (Var (peano j)) = some (Pi Au Bu) at h
+      injection h with hvar
+      exfalso
+      unfold Var Pi at hvar
+      exact ast_id_sexp_ne_of_label_ne_tc (by decide) hvar
+  | pi A B =>
+      unfold encTyCore? at h
+      cases hA : encTyCore? A with
+      | none => simp [hA] at h
+      | some Av =>
+          cases hB : encTyCore? B with
+          | none => simp [hA, hB] at h
+          | some Bv =>
+              simp [hA, hB] at h
+              have hparts := ast_Pi_injective_tc h
+              refine ⟨A, B, rfl, ?_, ?_⟩
+              · simpa [hparts.1] using hA
+              · simpa [hparts.2] using hB
+  | lam A b =>
+      unfold encTyCore? at h
+      cases hA : encTyCore? A with
+      | none => simp [hA] at h
+      | some Av =>
+          cases hb : encTyCore? b with
+          | none => simp [hA, hb] at h
+          | some bv =>
+              simp [hA, hb] at h
+              exfalso
+              unfold Lam Pi at h
+              exact ast_id_sexp_ne_of_label_ne_tc (by decide) h
+  | app f a =>
+      unfold encTyCore? at h
+      cases hf : encTyCore? f with
+      | none => simp [hf] at h
+      | some fv =>
+          cases ha : encTyCore? a with
+          | none => simp [hf, ha] at h
+          | some av =>
+              simp [hf, ha] at h
+              exfalso
+              unfold App Pi at h
+              exact ast_id_sexp_ne_of_label_ne_tc (by decide) h
+
+theorem encTyCore?_lam_inv_components_tc {s : LF.Term} {Au bu : AST}
+    (h : encTyCore? s = some (Lam Au bu)) :
+    ∃ A b, s = .lam A b ∧ encTyCore? A = some Au ∧ encTyCore? b = some bu := by
+  cases s with
+  | srt sort =>
+      cases sort <;> simp [encTyCore?] at h
+      · exfalso
+        unfold Srt Lam at h
+        exact ast_id_sexp_ne_of_label_ne_tc (by decide) h
+      · exfalso
+        unfold Srt Lam at h
+        exact ast_id_sexp_ne_of_label_ne_tc (by decide) h
+  | con y =>
+      unfold encTyCore? at h
+      cases hy : encName? y with
+      | none => simp [hy] at h
+      | some w =>
+          simp [hy] at h
+          exfalso
+          unfold LFEnc.Con Lam at h
+          exact ast_id_sexp_ne_of_label_ne_tc (by decide) h
+  | var j =>
+      change some (Var (peano j)) = some (Lam Au bu) at h
+      injection h with hvar
+      exfalso
+      unfold Var Lam at hvar
+      exact ast_id_sexp_ne_of_label_ne_tc (by decide) hvar
+  | pi A B =>
+      unfold encTyCore? at h
+      cases hA : encTyCore? A with
+      | none => simp [hA] at h
+      | some Av =>
+          cases hB : encTyCore? B with
+          | none => simp [hA, hB] at h
+          | some Bv =>
+              simp [hA, hB] at h
+              exfalso
+              unfold Pi Lam at h
+              exact ast_id_sexp_ne_of_label_ne_tc (by decide) h
+  | lam A b =>
+      unfold encTyCore? at h
+      cases hA : encTyCore? A with
+      | none => simp [hA] at h
+      | some Av =>
+          cases hb : encTyCore? b with
+          | none => simp [hA, hb] at h
+          | some bv =>
+              simp [hA, hb] at h
+              have hparts := ast_Lam_injective_tc h
+              refine ⟨A, b, rfl, ?_, ?_⟩
+              · simpa [hparts.1] using hA
+              · simpa [hparts.2] using hb
+  | app f a =>
+      unfold encTyCore? at h
+      cases hf : encTyCore? f with
+      | none => simp [hf] at h
+      | some fv =>
+          cases ha : encTyCore? a with
+          | none => simp [hf, ha] at h
+          | some av =>
+              simp [hf, ha] at h
+              exfalso
+              unfold App Lam at h
+              exact ast_id_sexp_ne_of_label_ne_tc (by decide) h
+
+theorem encTyCore?_app_inv_components_tc {s : LF.Term} {fu au : AST}
+    (h : encTyCore? s = some (App fu au)) :
+    ∃ f a, s = .app f a ∧ encTyCore? f = some fu ∧ encTyCore? a = some au := by
+  cases s with
+  | srt sort =>
+      cases sort <;> simp [encTyCore?] at h
+      · exfalso
+        unfold Srt App at h
+        exact ast_id_sexp_ne_of_label_ne_tc (by decide) h
+      · exfalso
+        unfold Srt App at h
+        exact ast_id_sexp_ne_of_label_ne_tc (by decide) h
+  | con y =>
+      unfold encTyCore? at h
+      cases hy : encName? y with
+      | none => simp [hy] at h
+      | some w =>
+          simp [hy] at h
+          exfalso
+          unfold LFEnc.Con App at h
+          exact ast_id_sexp_ne_of_label_ne_tc (by decide) h
+  | var j =>
+      change some (Var (peano j)) = some (App fu au) at h
+      injection h with hvar
+      exfalso
+      unfold Var App at hvar
+      exact ast_id_sexp_ne_of_label_ne_tc (by decide) hvar
+  | pi A B =>
+      unfold encTyCore? at h
+      cases hA : encTyCore? A with
+      | none => simp [hA] at h
+      | some Av =>
+          cases hB : encTyCore? B with
+          | none => simp [hA, hB] at h
+          | some Bv =>
+              simp [hA, hB] at h
+              exfalso
+              unfold Pi App at h
+              exact ast_id_sexp_ne_of_label_ne_tc (by decide) h
+  | lam A b =>
+      unfold encTyCore? at h
+      cases hA : encTyCore? A with
+      | none => simp [hA] at h
+      | some Av =>
+          cases hb : encTyCore? b with
+          | none => simp [hA, hb] at h
+          | some bv =>
+              simp [hA, hb] at h
+              exfalso
+              unfold Lam App at h
+              exact ast_id_sexp_ne_of_label_ne_tc (by decide) h
+  | app f a =>
+      unfold encTyCore? at h
+      cases hf : encTyCore? f with
+      | none => simp [hf] at h
+      | some fv =>
+          cases ha : encTyCore? a with
+          | none => simp [hf, ha] at h
+          | some av =>
+              simp [hf, ha] at h
+              have hparts := ast_App_injective_tc h
+              refine ⟨f, a, rfl, ?_, ?_⟩
+              · simpa [hparts.1] using hf
+              · simpa [hparts.2] using ha
+
+theorem encTyCore?_injective_tc {t s : LF.Term} {u : AST}
+    (ht : encTyCore? t = some u) (hs : encTyCore? s = some u) : t = s := by
+  induction t generalizing s u with
+  | srt sort =>
+      cases sort with
+      | type =>
+          change some (Srt typeS) = some u at ht
+          injection ht with hu
+          subst u
+          exact (encTyCore?_srt_type_inv_tc hs).symm
+      | kind =>
+          change some (Srt kindS) = some u at ht
+          injection ht with hu
+          subst u
+          exact (encTyCore?_srt_kind_inv_tc hs).symm
+  | con x =>
+      unfold encTyCore? at ht
+      cases hx : encName? x with
+      | none => simp [hx] at ht
+      | some k =>
+          simp [hx] at ht
+          subst u
+          exact (encTyCore?_con_inv_tc hx hs).symm
+  | var k =>
+      change some (Var (peano k)) = some u at ht
+      injection ht with hu
+      subst u
+      exact (encTyCore?_var_inv_tc hs).symm
+  | pi A B ihA ihB =>
+      unfold encTyCore? at ht
+      cases hA : encTyCore? A with
+      | none => simp [hA] at ht
+      | some Au =>
+          cases hB : encTyCore? B with
+          | none => simp [hA, hB] at ht
+          | some Bu =>
+              simp [hA, hB] at ht
+              subst u
+              obtain ⟨A2, B2, hsShape, hA2, hB2⟩ := encTyCore?_pi_inv_components_tc hs
+              subst s
+              have hAe : A = A2 := ihA hA hA2
+              have hBe : B = B2 := ihB hB hB2
+              subst A2
+              subst B2
+              rfl
+  | lam A b ihA ihb =>
+      unfold encTyCore? at ht
+      cases hA : encTyCore? A with
+      | none => simp [hA] at ht
+      | some Au =>
+          cases hb : encTyCore? b with
+          | none => simp [hA, hb] at ht
+          | some bu =>
+              simp [hA, hb] at ht
+              subst u
+              obtain ⟨A2, b2, hsShape, hA2, hb2⟩ := encTyCore?_lam_inv_components_tc hs
+              subst s
+              have hAe : A = A2 := ihA hA hA2
+              have hbe : b = b2 := ihb hb hb2
+              subst A2
+              subst b2
+              rfl
+  | app f a ihf iha =>
+      unfold encTyCore? at ht
+      cases hf : encTyCore? f with
+      | none => simp [hf] at ht
+      | some fu =>
+          cases ha : encTyCore? a with
+          | none => simp [hf, ha] at ht
+          | some au =>
+              simp [hf, ha] at ht
+              subst u
+              obtain ⟨f2, a2, hsShape, hf2, ha2⟩ := encTyCore?_app_inv_components_tc hs
+              subst s
+              have hfe : f = f2 := ihf hf hf2
+              have hae : a = a2 := iha ha ha2
+              subst f2
+              subst a2
+              rfl
+
+theorem eqT_hit_rewrite_tc (A : AST) :
+    applyBaseRewrite
+      (rw "eqT-hit" (eqT (pv "A") (pv "A")) ttrue)
+      (eqT A A) = some ttrue := by
+  have h_eqT : (("eqT" : String) == "eqT") = true := by decide
+  have h_A_A : (("A" : String) == "A") = true := by decide
+  simp only [applyBaseRewrite, Mettapedia.GSLT.LanguageDef.LFEnc.rw,
+    eqT, pv, AST.matchPat, AST.matchPatList,
+    Option.bind_some, Option.map_some, List.find?, label_id_beq_tc,
+    ast_beq_self_tc, h_eqT, h_A_A, if_true]
+  rfl
+
+theorem eqT_hit_rewrite_beq_true_tc {A B : AST} (hAB : (A == B) = true) :
+    applyBaseRewrite
+      (rw "eqT-hit" (eqT (pv "A") (pv "A")) ttrue)
+      (eqT A B) = some ttrue := by
+  have h_eqT : (("eqT" : String) == "eqT") = true := by decide
+  have h_A_A : (("A" : String) == "A") = true := by decide
+  simp only [applyBaseRewrite, Mettapedia.GSLT.LanguageDef.LFEnc.rw,
+    eqT, pv, AST.matchPat, AST.matchPatList,
+    Option.bind_some, List.find?, label_id_beq_tc,
+    h_eqT, h_A_A, if_true]
+  rw [hAB]
+  rfl
+
+theorem eqT_hit_rewrite_none_tc {A B : AST} (hAB : (A == B) = false) :
+    applyBaseRewrite
+      (rw "eqT-hit" (eqT (pv "A") (pv "A")) ttrue)
+      (eqT A B) = none := by
+  have h_eqT : (("eqT" : String) == "eqT") = true := by decide
+  have h_A_A : (("A" : String) == "A") = true := by decide
+  simp only [applyBaseRewrite, Mettapedia.GSLT.LanguageDef.LFEnc.rw,
+    eqT, pv, AST.matchPat, AST.matchPatList,
+    Option.bind_some, Option.bind_none, Option.map_none, List.find?, label_id_beq_tc,
+    hAB, h_eqT, h_A_A, Bool.false_eq_true, if_true, if_false]
+
+theorem eqT_miss_rewrite_tc (A B : AST) :
+    applyBaseRewrite
+      (rw "eqT-miss" (eqT (pv "A") (pv "B")) ffalse)
+      (eqT A B) = some ffalse := by
+  have h_eqT : (("eqT" : String) == "eqT") = true := by decide
+  have h_A_B : (("A" : String) == "B") = false := by decide
+  simp only [applyBaseRewrite, Mettapedia.GSLT.LanguageDef.LFEnc.rw,
+    eqT, pv, AST.matchPat, AST.matchPatList,
+    Option.bind_some, Option.map_some, List.find?, label_id_beq_tc,
+    h_eqT, h_A_B, if_true]
+  rfl
+
+theorem checkerCore_eqT_self_tc (A : AST) :
+    List.filterMap (fun rd => applyBaseRewrite rd (eqT A A)) checkerRulesCore =
+      [ttrue, ffalse] := by
+  simp only [checkerRulesCore, List.filterMap_cons, List.filterMap_nil,
+    eqT_hit_rewrite_tc, eqT_miss_rewrite_tc]
+  rfl
+
+theorem checkerCore_eqT_hit_tc {A B : AST} (hAB : (A == B) = true) :
+    List.filterMap (fun rd => applyBaseRewrite rd (eqT A B)) checkerRulesCore =
+      [ttrue, ffalse] := by
+  simp only [checkerRulesCore, List.filterMap_cons, List.filterMap_nil,
+    eqT_hit_rewrite_beq_true_tc hAB, eqT_miss_rewrite_tc]
+  rfl
+
+theorem checkerCore_eqT_miss_tc {A B : AST} (hAB : (A == B) = false) :
+    List.filterMap (fun rd => applyBaseRewrite rd (eqT A B)) checkerRulesCore =
+      [ffalse] := by
+  simp only [checkerRulesCore, List.filterMap_cons, List.filterMap_nil,
+    eqT_hit_rewrite_none_tc hAB, eqT_miss_rewrite_tc]
+  rfl
+
+theorem baseReducts_eqT_self_tc (A : AST) :
+    baseReducts pTC (eqT A A) = [ttrue, ffalse] := by
+  have hpLF :
+      List.filterMap (fun rd => applyBaseRewrite rd (eqT A A))
+        (Presentation.rewrites pLF) = [] := by
+    rfl
+  have harith :
+      List.filterMap (fun rd => applyBaseRewrite rd (eqT A A)) arithmeticRules = [] := by
+    rfl
+  have hintern :
+      List.filterMap (fun rd => applyBaseRewrite rd (eqT A A)) internRules = [] := by
+    rfl
+  have hsig :
+      List.filterMap (fun rd => applyBaseRewrite rd (eqT A A)) sigRules = [] := by
+    rfl
+  have htermOps :
+      List.filterMap (fun rd => applyBaseRewrite rd (eqT A A)) termOpsRules = [] := by
+    rfl
+  have hnf :
+      List.filterMap (fun rd => applyBaseRewrite rd (eqT A A)) nfRules = [] := by
+    rfl
+  have hcore := checkerCore_eqT_self_tc A
+  unfold baseReducts pTC checkerRules
+  change List.filterMap (fun rd => applyBaseRewrite rd (eqT A A))
+      (Presentation.rewrites pLF ++
+        (arithmeticRules ++ internRules ++ sigRules ++ termOpsRules ++ nfRules ++
+          checkerRulesCore)) =
+    [ttrue, ffalse]
+  simp only [List.filterMap_append]
+  rw [hpLF, harith, hintern, hsig, htermOps, hnf, hcore]
+  rfl
+
+theorem baseReducts_eqT_hit_tc {A B : AST} (hAB : (A == B) = true) :
+    baseReducts pTC (eqT A B) = [ttrue, ffalse] := by
+  have hpLF :
+      List.filterMap (fun rd => applyBaseRewrite rd (eqT A B))
+        (Presentation.rewrites pLF) = [] := by
+    rfl
+  have harith :
+      List.filterMap (fun rd => applyBaseRewrite rd (eqT A B)) arithmeticRules = [] := by
+    rfl
+  have hintern :
+      List.filterMap (fun rd => applyBaseRewrite rd (eqT A B)) internRules = [] := by
+    rfl
+  have hsig :
+      List.filterMap (fun rd => applyBaseRewrite rd (eqT A B)) sigRules = [] := by
+    rfl
+  have htermOps :
+      List.filterMap (fun rd => applyBaseRewrite rd (eqT A B)) termOpsRules = [] := by
+    rfl
+  have hnf :
+      List.filterMap (fun rd => applyBaseRewrite rd (eqT A B)) nfRules = [] := by
+    rfl
+  have hcore := checkerCore_eqT_hit_tc hAB
+  unfold baseReducts pTC checkerRules
+  change List.filterMap (fun rd => applyBaseRewrite rd (eqT A B))
+      (Presentation.rewrites pLF ++
+        (arithmeticRules ++ internRules ++ sigRules ++ termOpsRules ++ nfRules ++
+          checkerRulesCore)) =
+    [ttrue, ffalse]
+  simp only [List.filterMap_append]
+  rw [hpLF, harith, hintern, hsig, htermOps, hnf, hcore]
+  rfl
+
+theorem baseReducts_eqT_miss_tc {A B : AST} (hAB : (A == B) = false) :
+    baseReducts pTC (eqT A B) = [ffalse] := by
+  have hpLF :
+      List.filterMap (fun rd => applyBaseRewrite rd (eqT A B))
+        (Presentation.rewrites pLF) = [] := by
+    rfl
+  have harith :
+      List.filterMap (fun rd => applyBaseRewrite rd (eqT A B)) arithmeticRules = [] := by
+    rfl
+  have hintern :
+      List.filterMap (fun rd => applyBaseRewrite rd (eqT A B)) internRules = [] := by
+    rfl
+  have hsig :
+      List.filterMap (fun rd => applyBaseRewrite rd (eqT A B)) sigRules = [] := by
+    rfl
+  have htermOps :
+      List.filterMap (fun rd => applyBaseRewrite rd (eqT A B)) termOpsRules = [] := by
+    rfl
+  have hnf :
+      List.filterMap (fun rd => applyBaseRewrite rd (eqT A B)) nfRules = [] := by
+    rfl
+  have hcore := checkerCore_eqT_miss_tc hAB
+  unfold baseReducts pTC checkerRules
+  change List.filterMap (fun rd => applyBaseRewrite rd (eqT A B))
+      (Presentation.rewrites pLF ++
+        (arithmeticRules ++ internRules ++ sigRules ++ termOpsRules ++ nfRules ++
+          checkerRulesCore)) =
+    [ffalse]
+  simp only [List.filterMap_append]
+  rw [hpLF, harith, hintern, hsig, htermOps, hnf, hcore]
+  rfl
+
+theorem os_eqT_self_tc (A : AST) :
+    oneStep pTC (eqT A A) = some ttrue := by
+  change (match baseReducts pTC (eqT A A) with
+    | r :: _ => some r
+    | [] => Option.map (fun argsNew => AST.sexp (.id "eqT") argsNew)
+        (oneStepList pTC [A, A])) = some ttrue
+  rw [baseReducts_eqT_self_tc A]
+
+theorem os_eqT_hit_tc {A B : AST} (hAB : (A == B) = true) :
+    oneStep pTC (eqT A B) = some ttrue := by
+  change (match baseReducts pTC (eqT A B) with
+    | r :: _ => some r
+    | [] => Option.map (fun argsNew => AST.sexp (.id "eqT") argsNew)
+        (oneStepList pTC [A, B])) = some ttrue
+  rw [baseReducts_eqT_hit_tc hAB]
+
+theorem os_eqT_miss_tc {A B : AST} (hAB : (A == B) = false) :
+    oneStep pTC (eqT A B) = some ffalse := by
+  change (match baseReducts pTC (eqT A B) with
+    | r :: _ => some r
+    | [] => Option.map (fun argsNew => AST.sexp (.id "eqT") argsNew)
+        (oneStepList pTC [A, B])) = some ffalse
+  rw [baseReducts_eqT_miss_tc hAB]
+
+theorem eqT_self_tc (A : AST) :
+    eval pTC 1 (eqT A A) = ttrue := by
+  simp only [eval, os_eqT_self_tc]
+
+theorem eqT_hit_tc {A B : AST} (hAB : (A == B) = true) :
+    eval pTC 1 (eqT A B) = ttrue := by
+  simp only [eval, os_eqT_hit_tc hAB]
+
+theorem eqT_miss_tc {A B : AST} (hAB : (A == B) = false) :
+    eval pTC 1 (eqT A B) = ffalse := by
+  simp only [eval, os_eqT_miss_tc hAB]
+
+theorem verdict_child_open_eqT_tc (A B : AST) :
+    VerdictChildOpen (eqT A B) := by
+  rfl
+
+theorem eqT_self_bool_first_tc (A : AST) :
+    ∃ N v, MatchesBool true v ∧ eval pTC N (eqT A A) = v ∧
+      ∀ k, k < N -> VerdictChildOpen (eval pTC k (eqT A A)) := by
+  refine ⟨1, ttrue, MatchesBool.yes rfl, eqT_self_tc A, ?_⟩
+  intro k hk
+  have hk0 : k = 0 := Nat.eq_zero_of_le_zero (Nat.le_of_lt_succ hk)
+  subst k
+  exact verdict_child_open_eqT_tc A A
+
+theorem eqT_hit_bool_first_tc {A B : AST} (hAB : (A == B) = true) :
+    ∃ N v, MatchesBool true v ∧ eval pTC N (eqT A B) = v ∧
+      ∀ k, k < N -> VerdictChildOpen (eval pTC k (eqT A B)) := by
+  refine ⟨1, ttrue, MatchesBool.yes rfl, eqT_hit_tc hAB, ?_⟩
+  intro k hk
+  have hk0 : k = 0 := Nat.eq_zero_of_le_zero (Nat.le_of_lt_succ hk)
+  subst k
+  exact verdict_child_open_eqT_tc A B
+
+theorem eqT_miss_bool_first_tc {A B : AST} (hAB : (A == B) = false) :
+    ∃ N v, MatchesBool false v ∧ eval pTC N (eqT A B) = v ∧
+      ∀ k, k < N -> VerdictChildOpen (eval pTC k (eqT A B)) := by
+  refine ⟨1, ffalse, MatchesBool.no rfl, eqT_miss_tc hAB, ?_⟩
+  intro k hk
+  have hk0 : k = 0 := Nat.eq_zero_of_le_zero (Nat.le_of_lt_succ hk)
+  subst k
+  exact verdict_child_open_eqT_tc A B
+
+theorem convT_step_tc (fuel A B : AST) :
+    eval pTC 1 (convT fuel A B) = convA fuel B (nfT fuel A) := by
+  rfl
+
+theorem convA_some_tc (fuel B A : AST) :
+    eval pTC 1 (convA fuel B (someT A)) = convB A (nfT fuel B) := by
+  rfl
+
+theorem convB_some_tc (A B : AST) :
+    eval pTC 1 (convB A (someT B)) = eqT A B := by
+  rfl
+
+theorem hcong_convA_child_open_tc {fuel B s s' : AST}
+    (hfuel : IsNormal pTC fuel) (hB : IsNormal pTC B)
+    (hopen : ConvAChildOpen fuel B s) (hstep : oneStep pTC s = some s') :
+    oneStep pTC (convA fuel B s) = some (convA fuel B s') := by
+  unfold ConvAChildOpen at hopen
+  simp only [IsNormal] at hfuel hB
+  change (match baseReducts pTC (convA fuel B s) with
+    | r :: _ => some r
+    | [] => Option.map (fun argsNew => AST.sexp (.id "convA") argsNew)
+        (oneStepList pTC [fuel, B, s])) =
+      some (convA fuel B s')
+  rw [hopen]
+  simp only [oneStepList, hfuel, hB, hstep, Option.map_some, convA]
+
+theorem hcong_convB_child_open_tc {A s s' : AST}
+    (hA : IsNormal pTC A)
+    (hopen : ConvBChildOpen A s) (hstep : oneStep pTC s = some s') :
+    oneStep pTC (convB A s) = some (convB A s') := by
+  unfold ConvBChildOpen at hopen
+  simp only [IsNormal] at hA
+  change (match baseReducts pTC (convB A s) with
+    | r :: _ => some r
+    | [] => Option.map (fun argsNew => AST.sexp (.id "convB") argsNew)
+        (oneStepList pTC [A, s])) =
+      some (convB A s')
+  rw [hopen]
+  simp only [oneStepList, hA, hstep, Option.map_some, convB]
+
+theorem verdict_child_open_convT_tc (fuel A B : AST) :
+    VerdictChildOpen (convT fuel A B) := by
+  rfl
+
+theorem verdict_child_open_convA_tc (fuel B s : AST) :
+    VerdictChildOpen (convA fuel B s) := by
+  rfl
+
+theorem verdict_child_open_convB_tc (A s : AST) :
+    VerdictChildOpen (convB A s) := by
   rfl
 
 theorem peano_beq_false_of_ne {j k : Nat} (h : j ≠ k) :
@@ -712,6 +2447,27 @@ inductive NFActiveShape : AST -> Prop where
   | app2 (fuel f s : AST) : NFActiveShape (nfApp2 fuel f s)
   | appT (fuel f a : AST) : NFActiveShape (nfAppT fuel f a)
 
+theorem convA_child_open_nf_active_tc (fuel B s : AST)
+    (hs : NFActiveShape s) : ConvAChildOpen fuel B s := by
+  cases hs <;> rfl
+
+theorem convB_child_open_nf_active_tc (A s : AST)
+    (hs : NFActiveShape s) : ConvBChildOpen A s := by
+  cases hs <;> rfl
+
+theorem hcong_convB_left_nf_active_tc {A A' s : AST}
+    (hs : NFActiveShape s) (hstep : oneStep pTC A = some A') :
+    oneStep pTC (convB A s) = some (convB A' s) := by
+  have hopen : ConvBChildOpen A s := convB_child_open_nf_active_tc A s hs
+  unfold ConvBChildOpen at hopen
+  change (match baseReducts pTC (convB A s) with
+    | r :: _ => some r
+    | [] => Option.map (fun argsNew => AST.sexp (.id "convB") argsNew)
+        (oneStepList pTC [A, s])) =
+      some (convB A' s)
+  rw [hopen]
+  simp only [oneStepList, hstep, Option.map_some, convB]
+
 theorem hcong_nfPi1_active_tc (fuel B : AST)
     (hfuel : IsNormal pTC fuel) (hB : IsNormal pTC B) :
     ∀ s s', NFActiveShape s -> oneStep pTC s = some s' ->
@@ -810,6 +2566,16 @@ theorem hcong_someT_tc : ∀ s s', oneStep pTC s = some s' ->
       some (someT s')
   rw [hb]
   simp only [oneStepList, hstep, Option.map_some, someT]
+
+theorem isnormal_someT_tc {s : AST} (hs : IsNormal pTC s) : IsNormal pTC (someT s) := by
+  simp only [IsNormal] at hs ⊢
+  have hb : baseReducts pTC (someT s) = [] := rfl
+  change (match baseReducts pTC (someT s) with
+    | r :: _ => some r
+    | [] => Option.map (fun args' => AST.sexp (.id "SomeT") args') (oneStepList pTC [s])) =
+      none
+  rw [hb]
+  simp only [oneStepList, hs, Option.map_none]
 
 theorem hcong_nfPi2_arg_nfT_tc (fuel B : AST) : ∀ A A',
     oneStep pTC A = some A' ->
@@ -1125,6 +2891,26 @@ theorem eval_stable_tc {t : AST} (h : IsNormal pTC t) : ∀ N, eval pTC N t = t
       simp only [IsNormal] at h
       simp only [eval, h]
 
+theorem eval_normal_unique_tc {s u v : AST} {N M : Nat}
+    (hN : eval pTC N s = u) (hu : IsNormal pTC u)
+    (hM : eval pTC M s = v) (hv : IsNormal pTC v) : u = v := by
+  by_cases hle : N ≤ M
+  · have hdecomp : M = N + (M - N) := by omega
+    have hstable : eval pTC (M - N) u = u := eval_stable_tc hu (M - N)
+    have hM' : eval pTC M s = u := by
+      rw [hdecomp]
+      exact eval_trans_tc N (M - N) s u u hN hstable
+    rw [hM'] at hM
+    exact hM
+  · have hle' : M ≤ N := Nat.le_of_not_ge hle
+    have hdecomp : N = M + (N - M) := by omega
+    have hstable : eval pTC (N - M) v = v := eval_stable_tc hv (N - M)
+    have hN' : eval pTC N s = v := by
+      rw [hdecomp]
+      exact eval_trans_tc M (N - M) s v v hM hstable
+    rw [hN'] at hN
+    exact hN.symm
+
 theorem cong_eval_tc (F : AST -> AST)
     (hcong : ∀ s s', oneStep pTC s = some s' -> oneStep pTC (F s) = some (F s')) :
     ∀ (N : Nat) {s v : AST}, eval pTC N s = v -> IsNormal pTC v -> ∃ M, eval pTC M (F s) = F v := by
@@ -1372,6 +3158,288 @@ theorem cong_eval_lfcheckK_child_open_with_guard (A : AST) (hA : IsNormal pTC A)
           simp only [eval, hcong_lfcheckK_child_open_tc A hA hopen hstep]
           exact hM
 
+theorem cong_eval_verdict_child_open_with_guard :
+    ∀ (N : Nat) {s v : AST},
+      eval pTC N s = v ->
+      (∀ k, k < N -> VerdictChildOpen (eval pTC k s)) ->
+      ∃ M, eval pTC M (verdict s) = verdict v := by
+  intro N
+  induction N with
+  | zero =>
+      intro s v hs _
+      simp only [eval] at hs
+      subst v
+      exact ⟨0, rfl⟩
+  | succ n ih =>
+      intro s v hs hguard
+      simp only [eval] at hs
+      cases hstep : oneStep pTC s with
+      | none =>
+          rw [hstep] at hs
+          subst v
+          exact ⟨0, rfl⟩
+      | some s' =>
+          rw [hstep] at hs
+          have hopen : VerdictChildOpen s := by
+            simpa only [eval] using hguard 0 (Nat.zero_lt_succ n)
+          have hguardTail : ∀ k, k < n -> VerdictChildOpen (eval pTC k s') := by
+            intro k hk
+            have hkSucc : Nat.succ k < Nat.succ n := Nat.succ_lt_succ hk
+            have hone : eval pTC 1 s = s' := by
+              simp only [eval, hstep]
+            have hshift : eval pTC (Nat.succ k) s = eval pTC k s' := by
+              have h := eval_trans_tc 1 k s s' (eval pTC k s') hone rfl
+              simpa [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using h
+            rw [← hshift]
+            exact hguard (Nat.succ k) hkSucc
+          obtain ⟨M, hM⟩ := ih hs hguardTail
+          refine ⟨M + 1, ?_⟩
+          simp only [eval, hcong_verdict_child_open_tc hopen hstep]
+          exact hM
+
+theorem verdict_child_open_append_guard {s mid : AST} {N M : Nat}
+    (hN : eval pTC N s = mid)
+    (hPrefix : ∀ k, k < N -> VerdictChildOpen (eval pTC k s))
+    (hTail : ∀ k, k < M -> VerdictChildOpen (eval pTC k mid)) :
+    ∀ k, k < N + M -> VerdictChildOpen (eval pTC k s) := by
+  intro k hk
+  by_cases hkPrefix : k < N
+  · exact hPrefix k hkPrefix
+  · have hge : N ≤ k := Nat.le_of_not_gt hkPrefix
+    let j := k - N
+    have hjlt : j < M := by omega
+    have hkdecomp : k = N + j := by omega
+    subst j
+    rw [hkdecomp]
+    have hshift :
+        eval pTC (N + (k - N)) s = eval pTC (k - N) mid :=
+      eval_trans_tc N (k - N) _ _ _ hN rfl
+    rw [hshift]
+    exact hTail (k - N) hjlt
+
+theorem cong_eval_checkK_child_open_with_guard
+    (fuel A : AST) (hfuel : IsNormal pTC fuel) (hA : IsNormal pTC A) :
+    ∀ (N : Nat) {s v : AST},
+      eval pTC N s = v ->
+      (∀ k, k < N -> CheckKChildOpen fuel A (eval pTC k s)) ->
+      ∃ M,
+        eval pTC M (checkK fuel A s) = checkK fuel A v ∧
+          ∀ k, k < M -> VerdictChildOpen (eval pTC k (checkK fuel A s)) := by
+  intro N
+  induction N with
+  | zero =>
+      intro s v hs _
+      simp only [eval] at hs
+      subst v
+      exact ⟨0, rfl, fun k hk => False.elim (Nat.not_lt_zero k hk)⟩
+  | succ n ih =>
+      intro s v hs hguard
+      simp only [eval] at hs
+      cases hstep : oneStep pTC s with
+      | none =>
+          rw [hstep] at hs
+          subst v
+          exact ⟨0, rfl, fun k hk => False.elim (Nat.not_lt_zero k hk)⟩
+      | some s' =>
+          rw [hstep] at hs
+          have hopen : CheckKChildOpen fuel A s := by
+            simpa only [eval] using hguard 0 (Nat.zero_lt_succ n)
+          have hguardTail : ∀ k, k < n -> CheckKChildOpen fuel A (eval pTC k s') := by
+            intro k hk
+            have hkSucc : Nat.succ k < Nat.succ n := Nat.succ_lt_succ hk
+            have hone : eval pTC 1 s = s' := by
+              simp only [eval, hstep]
+            have hshift : eval pTC (Nat.succ k) s = eval pTC k s' := by
+              have h := eval_trans_tc 1 k s s' (eval pTC k s') hone rfl
+              simpa [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using h
+            rw [← hshift]
+            exact hguard (Nat.succ k) hkSucc
+          obtain ⟨M, hM, hMguard⟩ := ih hs hguardTail
+          refine ⟨M + 1, ?_, ?_⟩
+          · simp only [eval, hcong_checkK_child_open_tc hfuel hA hopen hstep]
+            exact hM
+          · intro k hk
+            cases k with
+            | zero =>
+                simpa only [eval] using verdict_child_open_checkK_tc fuel A s
+            | succ k =>
+                have hkM : k < M := by
+                  exact Nat.succ_lt_succ_iff.mp (by
+                    simpa only [Nat.add_one] using hk)
+                have hshift : eval pTC (Nat.succ k) (checkK fuel A s) =
+                    eval pTC k (checkK fuel A s') := by
+                  have hone : eval pTC 1 (checkK fuel A s) = checkK fuel A s' := by
+                    simp only [eval, hcong_checkK_child_open_tc hfuel hA hopen hstep]
+                  have h := eval_trans_tc 1 k (checkK fuel A s) (checkK fuel A s')
+                    (eval pTC k (checkK fuel A s')) hone rfl
+                  simpa [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using h
+                rw [hshift]
+                exact hMguard k hkM
+
+theorem cong_eval_convA_child_open_with_guard
+    (fuel B : AST) (hfuel : IsNormal pTC fuel) (hB : IsNormal pTC B) :
+    ∀ (N : Nat) {s v : AST},
+      eval pTC N s = v ->
+      (∀ k, k < N -> ConvAChildOpen fuel B (eval pTC k s)) ->
+      ∃ M,
+        eval pTC M (convA fuel B s) = convA fuel B v ∧
+          ∀ k, k < M -> VerdictChildOpen (eval pTC k (convA fuel B s)) := by
+  intro N
+  induction N with
+  | zero =>
+      intro s v hs _
+      simp only [eval] at hs
+      subst v
+      exact ⟨0, rfl, fun k hk => False.elim (Nat.not_lt_zero k hk)⟩
+  | succ n ih =>
+      intro s v hs hguard
+      simp only [eval] at hs
+      cases hstep : oneStep pTC s with
+      | none =>
+          rw [hstep] at hs
+          subst v
+          exact ⟨0, rfl, fun k hk => False.elim (Nat.not_lt_zero k hk)⟩
+      | some s' =>
+          rw [hstep] at hs
+          have hopen : ConvAChildOpen fuel B s := by
+            simpa only [eval] using hguard 0 (Nat.zero_lt_succ n)
+          have hguardTail : ∀ k, k < n -> ConvAChildOpen fuel B (eval pTC k s') := by
+            intro k hk
+            have hkSucc : Nat.succ k < Nat.succ n := Nat.succ_lt_succ hk
+            have hone : eval pTC 1 s = s' := by
+              simp only [eval, hstep]
+            have hshift : eval pTC (Nat.succ k) s = eval pTC k s' := by
+              have h := eval_trans_tc 1 k s s' (eval pTC k s') hone rfl
+              simpa [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using h
+            rw [← hshift]
+            exact hguard (Nat.succ k) hkSucc
+          obtain ⟨M, hM, hMguard⟩ := ih hs hguardTail
+          refine ⟨M + 1, ?_, ?_⟩
+          · simp only [eval, hcong_convA_child_open_tc hfuel hB hopen hstep]
+            exact hM
+          · intro k hk
+            cases k with
+            | zero =>
+                simpa only [eval] using verdict_child_open_convA_tc fuel B s
+            | succ k =>
+                have hkM : k < M := by
+                  exact Nat.succ_lt_succ_iff.mp (by
+                    simpa only [Nat.add_one] using hk)
+                have hshift : eval pTC (Nat.succ k) (convA fuel B s) =
+                    eval pTC k (convA fuel B s') := by
+                  have hone : eval pTC 1 (convA fuel B s) = convA fuel B s' := by
+                    simp only [eval, hcong_convA_child_open_tc hfuel hB hopen hstep]
+                  have h := eval_trans_tc 1 k (convA fuel B s) (convA fuel B s')
+                    (eval pTC k (convA fuel B s')) hone rfl
+                  simpa [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using h
+                rw [hshift]
+                exact hMguard k hkM
+
+theorem cong_eval_convB_child_open_with_guard
+    (A : AST) (hA : IsNormal pTC A) :
+    ∀ (N : Nat) {s v : AST},
+      eval pTC N s = v ->
+      (∀ k, k < N -> ConvBChildOpen A (eval pTC k s)) ->
+      ∃ M,
+        eval pTC M (convB A s) = convB A v ∧
+          ∀ k, k < M -> VerdictChildOpen (eval pTC k (convB A s)) := by
+  intro N
+  induction N with
+  | zero =>
+      intro s v hs _
+      simp only [eval] at hs
+      subst v
+      exact ⟨0, rfl, fun k hk => False.elim (Nat.not_lt_zero k hk)⟩
+  | succ n ih =>
+      intro s v hs hguard
+      simp only [eval] at hs
+      cases hstep : oneStep pTC s with
+      | none =>
+          rw [hstep] at hs
+          subst v
+          exact ⟨0, rfl, fun k hk => False.elim (Nat.not_lt_zero k hk)⟩
+      | some s' =>
+          rw [hstep] at hs
+          have hopen : ConvBChildOpen A s := by
+            simpa only [eval] using hguard 0 (Nat.zero_lt_succ n)
+          have hguardTail : ∀ k, k < n -> ConvBChildOpen A (eval pTC k s') := by
+            intro k hk
+            have hkSucc : Nat.succ k < Nat.succ n := Nat.succ_lt_succ hk
+            have hone : eval pTC 1 s = s' := by
+              simp only [eval, hstep]
+            have hshift : eval pTC (Nat.succ k) s = eval pTC k s' := by
+              have h := eval_trans_tc 1 k s s' (eval pTC k s') hone rfl
+              simpa [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using h
+            rw [← hshift]
+            exact hguard (Nat.succ k) hkSucc
+          obtain ⟨M, hM, hMguard⟩ := ih hs hguardTail
+          refine ⟨M + 1, ?_, ?_⟩
+          · simp only [eval, hcong_convB_child_open_tc hA hopen hstep]
+            exact hM
+          · intro k hk
+            cases k with
+            | zero =>
+                simpa only [eval] using verdict_child_open_convB_tc A s
+            | succ k =>
+                have hkM : k < M := by
+                  exact Nat.succ_lt_succ_iff.mp (by
+                    simpa only [Nat.add_one] using hk)
+                have hshift : eval pTC (Nat.succ k) (convB A s) =
+                    eval pTC k (convB A s') := by
+                  have hone : eval pTC 1 (convB A s) = convB A s' := by
+                    simp only [eval, hcong_convB_child_open_tc hA hopen hstep]
+                  have h := eval_trans_tc 1 k (convB A s) (convB A s')
+                    (eval pTC k (convB A s')) hone rfl
+                  simpa [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using h
+                rw [hshift]
+                exact hMguard k hkM
+
+theorem cong_eval_convB_left_nf_active_with_guard
+    (s : AST) (hs : NFActiveShape s) :
+    ∀ (N : Nat) {A A' : AST},
+      eval pTC N A = A' ->
+      ∃ M,
+        eval pTC M (convB A s) = convB A' s ∧
+          ∀ k, k < M -> VerdictChildOpen (eval pTC k (convB A s)) := by
+  intro N
+  induction N with
+  | zero =>
+      intro A A' hA
+      simp only [eval] at hA
+      subst A'
+      exact ⟨0, rfl, fun k hk => False.elim (Nat.not_lt_zero k hk)⟩
+  | succ n ih =>
+      intro A A' hA
+      simp only [eval] at hA
+      cases hstep : oneStep pTC A with
+      | none =>
+          rw [hstep] at hA
+          subst A'
+          exact ⟨0, rfl, fun k hk => False.elim (Nat.not_lt_zero k hk)⟩
+      | some A1 =>
+          rw [hstep] at hA
+          obtain ⟨M, hM, hMguard⟩ := ih hA
+          refine ⟨M + 1, ?_, ?_⟩
+          · simp only [eval, hcong_convB_left_nf_active_tc hs hstep]
+            exact hM
+          · intro k hk
+            cases k with
+            | zero =>
+                simpa only [eval] using verdict_child_open_convB_tc A s
+            | succ k =>
+                have hkM : k < M := by
+                  exact Nat.succ_lt_succ_iff.mp (by
+                    simpa only [Nat.add_one] using hk)
+                have hshift : eval pTC (Nat.succ k) (convB A s) =
+                    eval pTC k (convB A1 s) := by
+                  have hone : eval pTC 1 (convB A s) = convB A1 s := by
+                    simp only [eval, hcong_convB_left_nf_active_tc hs hstep]
+                  have h := eval_trans_tc 1 k (convB A s) (convB A1 s)
+                    (eval pTC k (convB A1 s)) hone rfl
+                  simpa [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using h
+                rw [hshift]
+                exact hMguard k hkM
+
 theorem isnormal_sexp1_tc (l : Label) (a : AST)
     (hb : baseReducts pTC (.sexp l [a]) = []) (ha : IsNormal pTC a) :
     IsNormal pTC (.sexp l [a]) := by
@@ -1411,6 +3479,485 @@ theorem isnormal_con0_tc (x : String) : IsNormal pTC (con0 x) := by
     inferPi2, inferLam1, inferLam2, inferApp1, inferApp2, checkT, checkK, verdict,
     internTerm, internPi1, internPi2, internLam1, internLam2, internApp1, internApp2,
     lfcheckK, lfcheckI, lfcheck, checkerFuelA]
+
+theorem isnormal_peano_tc : ∀ n, IsNormal pTC (peano n)
+  | 0 => rfl
+  | n + 1 => isnormal_sexp1_tc (.id "S") (peano n) rfl (isnormal_peano_tc n)
+
+abbrev ResolveGoodTC := Mettapedia.GSLT.LanguageDef.LFResolveSim.Good
+
+theorem os_ctx_nil_tc (s : AST) :
+    oneStep pTC (ctxidx Nil s) = some NF := by
+  apply oneStep_pTC_of_baseReducts_pLF_cons
+  rfl
+
+theorem os_ctxK_nf_tc :
+    oneStep pTC (ctxK NF) = some NF := by
+  apply oneStep_pTC_of_baseReducts_pLF_cons
+  rfl
+
+theorem os_ctxK_idx_tc (k : AST) :
+    oneStep pTC (ctxK (Idx k)) = some (Idx (S k)) := by
+  apply oneStep_pTC_of_baseReducts_pLF_cons
+  rfl
+
+theorem os_res_tc (ctx s : AST) :
+    oneStep pTC (resolve ctx s) = some (resolveK s (ctxidx ctx s)) := by
+  apply oneStep_pTC_of_baseReducts_pLF_cons
+  rfl
+
+theorem os_resK_idx_tc (s k : AST) :
+    oneStep pTC (resolveK s (Idx k)) = some (Var k) := by
+  apply oneStep_pTC_of_baseReducts_pLF_cons
+  rfl
+
+theorem os_resK_nf_tc (s : AST) :
+    oneStep pTC (resolveK s NF) = some (LFEnc.Con s) := by
+  apply oneStep_pTC_of_baseReducts_pLF_cons
+  rfl
+
+theorem os_ctx_hit_tc (s : String) (t : AST) :
+    oneStep pTC (ctxidx (Cons (con0 s) t) (con0 s)) = some (Idx Z) := by
+  have hlf : oneStep pLF (ctxidx (Cons (con0 s) t) (con0 s)) = some (Idx Z) := by
+    have e1 : (("lt" : String) == "ctxidx") = false := by decide
+    have e2 : (("shift" : String) == "ctxidx") = false := by decide
+    have e3 : (("shiftVar" : String) == "ctxidx") = false := by decide
+    have e4 : (("Nil" : String) == "Cons") = false := by decide
+    have e5 : (("t" : String) == "h") = false := by decide
+    have e6 : (("h" : String) == "t") = false := by decide
+    have e7 : (AST.sexp (Label.id s) [] == AST.sexp (Label.id s) []) = true := by
+      change ((Label.id s == Label.id s) && AST.beqList [] []) = true
+      rw [label_beq_self_tc]
+      rfl
+    simp only [oneStep, baseReducts, pLF, Presentation.rewrites, shiftRules, ltRules,
+      resolveRules, ctxidxRules, parserRules, applyBaseRewrite,
+      Mettapedia.GSLT.LanguageDef.LFEnc.rw, List.filterMap_cons, List.filterMap_nil,
+      List.nil_append, List.cons_append, Option.map_some, Option.map_none,
+      Option.bind_some, Option.bind_none, ctxidx, Cons, con0, Nil, NF, Idx, Z, S, Var,
+      LFEnc.Con, ltT, shift, shiftVar, pv, AST.matchPat, AST.matchPatList, AST.inst,
+      AST.instList, List.find?_cons, List.find?_nil, label_id_beq_tc,
+      string_beq_self_tc, reduceCtorEq, if_false, if_true,
+      e1, e2, e3, e4, e5, e6, e7]
+  unfold oneStep at hlf
+  cases hb : baseReducts pLF (ctxidx (Cons (con0 s) t) (con0 s)) with
+  | nil =>
+      have hb' :
+          baseReducts pLF
+            (AST.sexp (Label.id "ctxidx") [Cons (con0 s) t, con0 s]) = [] := by
+        simpa [ctxidx] using hb
+      simp only [ctxidx, hb'] at hlf
+      cases hargs : oneStepList pLF [Cons (con0 s) t, con0 s] with
+      | none =>
+          simp only [hargs, Option.map_none] at hlf
+          cases hlf
+      | some args =>
+          simp only [hargs, Option.map_some, Idx] at hlf
+          have hterm :
+              AST.sexp (Label.id "ctxidx") args = AST.sexp (Label.id "Idx") [Z] :=
+            Option.some.inj hlf
+          exact False.elim (sexp_id_ne_of_ne_tc (by decide) args [Z] hterm)
+  | cons r rs =>
+      have hb' :
+          baseReducts pLF
+            (AST.sexp (Label.id "ctxidx") [Cons (con0 s) t, con0 s]) = r :: rs := by
+        simpa [ctxidx] using hb
+      simp only [ctxidx, hb'] at hlf
+      injection hlf with hr
+      subst r
+      apply oneStep_pTC_of_baseReducts_pLF_cons
+      exact hb
+
+theorem os_ctx_miss_tc {x s : String} (xs : AST) (hxs : x ≠ s) :
+    oneStep pTC (ctxidx (Cons (con0 x) xs) (con0 s)) =
+      some (ctxK (ctxidx xs (con0 s))) := by
+  have hlf :
+      oneStep pLF (ctxidx (Cons (con0 x) xs) (con0 s)) =
+        some (ctxK (ctxidx xs (con0 s))) := by
+    have e1 : (("lt" : String) == "ctxidx") = false := by decide
+    have e2 : (("shift" : String) == "ctxidx") = false := by decide
+    have e3 : (("shiftVar" : String) == "ctxidx") = false := by decide
+    have e4 : (("Nil" : String) == "Cons") = false := by decide
+    have e5 : (("t" : String) == "h") = false := by decide
+    have e6 : (("h" : String) == "t") = false := by decide
+    have e8 : (("t" : String) == "s") = false := by decide
+    have e9 : (("h" : String) == "s") = false := by decide
+    have e10 : (("s" : String) == "t") = false := by decide
+    have hxsBeq : (x == s) = false := by
+      cases h : x == s with
+      | false => rfl
+      | true => exact False.elim (hxs (beq_iff_eq.mp h))
+    have e7 : (AST.sexp (Label.id x) [] == AST.sexp (Label.id s) []) = false := by
+      change ((Label.id x == Label.id s) && AST.beqList [] []) = false
+      rw [label_id_beq_tc, hxsBeq]
+      rfl
+    simp only [oneStep, baseReducts, pLF, Presentation.rewrites, shiftRules, ltRules,
+      resolveRules, ctxidxRules, parserRules, applyBaseRewrite,
+      Mettapedia.GSLT.LanguageDef.LFEnc.rw, List.filterMap_cons, List.filterMap_nil,
+      List.nil_append, List.cons_append, Option.map_some, Option.map_none,
+      Option.bind_some, Option.bind_none, ctxidx, Cons, con0, ctxK, Nil, NF, Idx, Z, S,
+      Var, LFEnc.Con, ltT, shift, shiftVar, pv, AST.matchPat, AST.matchPatList,
+      AST.inst, AST.instList, List.find?_cons, List.find?_nil, label_id_beq_tc,
+      string_beq_self_tc, reduceCtorEq, if_false, if_true,
+      e1, e2, e3, e4, e5, e6, e7, e8, e9, e10]
+  unfold oneStep at hlf
+  cases hb : baseReducts pLF (ctxidx (Cons (con0 x) xs) (con0 s)) with
+  | nil =>
+      have hb' :
+          baseReducts pLF
+            (AST.sexp (Label.id "ctxidx") [Cons (con0 x) xs, con0 s]) = [] := by
+        simpa [ctxidx] using hb
+      simp only [ctxidx, hb'] at hlf
+      cases hargs : oneStepList pLF [Cons (con0 x) xs, con0 s] with
+      | none =>
+          simp only [hargs, Option.map_none] at hlf
+          cases hlf
+      | some args =>
+          simp only [hargs, Option.map_some, ctxK] at hlf
+          have hterm :
+              AST.sexp (Label.id "ctxidx") args =
+                AST.sexp (Label.id "ctxK") [ctxidx xs (con0 s)] :=
+            Option.some.inj hlf
+          exact False.elim
+            (sexp_id_ne_of_ne_tc (by decide) args [ctxidx xs (con0 s)] hterm)
+  | cons r rs =>
+      have hb' :
+          baseReducts pLF
+            (AST.sexp (Label.id "ctxidx") [Cons (con0 x) xs, con0 s]) = r :: rs := by
+        simpa [ctxidx] using hb
+      simp only [ctxidx, hb'] at hlf
+      injection hlf with hr
+      subst r
+      apply oneStep_pTC_of_baseReducts_pLF_cons
+      exact hb
+
+theorem baseReducts_ctxK_ctxidx_tc (a q : AST) :
+    baseReducts pTC (ctxK (ctxidx a q)) = [] := by
+  rfl
+
+theorem baseReducts_ctxK_ctxK_tc (a : AST) :
+    baseReducts pTC (ctxK (ctxK a)) = [] := by
+  rfl
+
+theorem ctxK_step_tc {b b' : AST}
+    (hb : baseReducts pTC (ctxK b) = [])
+    (h : oneStep pTC b = some b') :
+    oneStep pTC (ctxK b) = some (ctxK b') := by
+  have hb' : baseReducts pTC (AST.sexp (Label.id "ctxK") [b]) = [] := hb
+  show oneStep pTC (AST.sexp (Label.id "ctxK") [b]) = _
+  simp only [oneStep, hb', oneStepList, h, Option.map_some, ctxK]
+
+theorem good_seed_reduces_tc (ctx : List String) (q : String) :
+    ∃ a',
+      oneStep pTC
+        (ctxidx (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx) (con0 q)) =
+          some a' := by
+  cases ctx with
+  | nil =>
+      exact ⟨NF, by
+        rw [show Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx [] = Nil from rfl,
+          os_ctx_nil_tc]⟩
+  | cons y ys =>
+      rw [show Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx (y :: ys) =
+        Cons (con0 y) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ys) from rfl]
+      cases hd : y == q with
+      | true =>
+          obtain rfl := eq_of_beq hd
+          exact ⟨Idx Z,
+            os_ctx_hit_tc y (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ys)⟩
+      | false =>
+          have hyq : y ≠ q := beq_eq_false_iff_ne.mp hd
+          exact ⟨ctxK
+              (ctxidx (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ys) (con0 q)),
+            os_ctx_miss_tc (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ys) hyq⟩
+
+theorem good_ctxK_reduces_tc :
+    ∀ {c : AST}, ResolveGoodTC c → ∃ a', oneStep pTC (ctxK c) = some a' := by
+  intro c hc
+  induction hc with
+  | seed ctx q =>
+      obtain ⟨b', hb'⟩ := good_seed_reduces_tc ctx q
+      exact ⟨ctxK b', ctxK_step_tc (baseReducts_ctxK_ctxidx_tc _ _) hb'⟩
+  | @ctxK d _ ih =>
+      obtain ⟨e, he⟩ := ih
+      exact ⟨ctxK e, ctxK_step_tc (baseReducts_ctxK_ctxK_tc d) he⟩
+  | nf =>
+      exact ⟨NF, os_ctxK_nf_tc⟩
+  | idx i =>
+      exact ⟨Idx (S (peano i)), os_ctxK_idx_tc (peano i)⟩
+
+theorem good_step_tc :
+    ∀ {a : AST}, ResolveGoodTC a → ∀ {a' : AST},
+      oneStep pTC a = some a' → ResolveGoodTC a' := by
+  intro a ha
+  induction ha with
+  | seed ctx q =>
+      intro a' h
+      cases ctx with
+      | nil =>
+          rw [show Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx [] = Nil from rfl,
+            os_ctx_nil_tc] at h
+          injection h with h
+          rw [← h]
+          exact Mettapedia.GSLT.LanguageDef.LFResolveSim.Good.nf
+      | cons y ys =>
+          rw [show Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx (y :: ys) =
+            Cons (con0 y) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ys) from rfl] at h
+          cases hd : y == q with
+          | true =>
+              obtain rfl := eq_of_beq hd
+              rw [os_ctx_hit_tc y (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ys)] at h
+              injection h with h
+              rw [← h]
+              exact Mettapedia.GSLT.LanguageDef.LFResolveSim.Good.idx 0
+          | false =>
+              have hyq : y ≠ q := beq_eq_false_iff_ne.mp hd
+              rw [os_ctx_miss_tc (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ys) hyq] at h
+              injection h with h
+              rw [← h]
+              exact Mettapedia.GSLT.LanguageDef.LFResolveSim.Good.ctxK
+                (Mettapedia.GSLT.LanguageDef.LFResolveSim.Good.seed ys q)
+  | @ctxK a0 bgood ih =>
+      intro a' h
+      cases bgood with
+      | nf =>
+          rw [os_ctxK_nf_tc] at h
+          injection h with h
+          rw [← h]
+          exact Mettapedia.GSLT.LanguageDef.LFResolveSim.Good.nf
+      | idx i =>
+          rw [os_ctxK_idx_tc (peano i)] at h
+          injection h with h
+          rw [← h]
+          exact Mettapedia.GSLT.LanguageDef.LFResolveSim.Good.idx (i + 1)
+      | seed ctx q =>
+          obtain ⟨b', hb'⟩ := good_seed_reduces_tc ctx q
+          rw [ctxK_step_tc (baseReducts_ctxK_ctxidx_tc _ _) hb'] at h
+          injection h with h
+          rw [← h]
+          exact Mettapedia.GSLT.LanguageDef.LFResolveSim.Good.ctxK (ih hb')
+      | @ctxK c cgood =>
+          obtain ⟨b', hb'⟩ := good_ctxK_reduces_tc cgood
+          rw [ctxK_step_tc (baseReducts_ctxK_ctxK_tc _) hb'] at h
+          injection h with h
+          rw [← h]
+          exact Mettapedia.GSLT.LanguageDef.LFResolveSim.Good.ctxK (ih hb')
+  | nf =>
+      intro a' h
+      have hn : oneStep pTC NF = none := isnormal_con0_tc "NF"
+      rw [hn] at h
+      exact absurd h (by simp)
+  | idx i =>
+      intro a' h
+      have hn : oneStep pTC (Idx (peano i)) = none :=
+        isnormal_sexp1_tc (.id "Idx") (peano i) rfl (isnormal_peano_tc i)
+      rw [hn] at h
+      exact absurd h (by simp)
+
+theorem isnormal_encIdx_tc (r : Option Nat) :
+    IsNormal pTC (Mettapedia.GSLT.LanguageDef.LFResolveSim.encIdx r) := by
+  cases r with
+  | none =>
+      exact isnormal_con0_tc "NF"
+  | some i =>
+      exact isnormal_sexp1_tc (.id "Idx") (peano i) rfl (isnormal_peano_tc i)
+
+theorem good_cong_eval_tc (F : AST → AST)
+    (hdesc : ∀ {a a' : AST}, ResolveGoodTC a →
+      oneStep pTC a = some a' → oneStep pTC (F a) = some (F a')) :
+    ∀ (N : Nat) {Y V : AST}, ResolveGoodTC Y → eval pTC N Y = V →
+      IsNormal pTC V → ∃ M, eval pTC M (F Y) = F V := by
+  intro N
+  induction N with
+  | zero =>
+      intro Y V _ hY _
+      simp only [eval] at hY
+      subst V
+      exact ⟨0, rfl⟩
+  | succ n ih =>
+      intro Y V hgood hY hV
+      simp only [eval] at hY
+      cases hstep : oneStep pTC Y with
+      | none =>
+          rw [hstep] at hY
+          subst V
+          exact ⟨0, rfl⟩
+      | some Y' =>
+          rw [hstep] at hY
+          obtain ⟨M, hM⟩ := ih (good_step_tc hgood hstep) hY hV
+          exact ⟨M + 1, by
+            simp only [eval, hdesc hgood hstep]
+            exact hM⟩
+
+theorem hdesc_ctxK_tc :
+    ∀ {a a' : AST}, ResolveGoodTC a →
+      oneStep pTC a = some a' → oneStep pTC (ctxK a) = some (ctxK a') := by
+  intro a a' hgood h
+  cases hgood with
+  | nf =>
+      rw [show oneStep pTC NF = none from isnormal_con0_tc "NF"] at h
+      simp at h
+  | idx i =>
+      rw [show oneStep pTC (Idx (peano i)) = none from
+        isnormal_sexp1_tc (.id "Idx") (peano i) rfl (isnormal_peano_tc i)] at h
+      simp at h
+  | seed ctx q =>
+      exact ctxK_step_tc (baseReducts_ctxK_ctxidx_tc _ _) h
+  | ctxK c =>
+      exact ctxK_step_tc (baseReducts_ctxK_ctxK_tc _) h
+
+theorem ctxK_collapse_tc :
+    ∀ (r : Option Nat),
+      eval pTC 1 (ctxK (Mettapedia.GSLT.LanguageDef.LFResolveSim.encIdx r)) =
+        Mettapedia.GSLT.LanguageDef.LFResolveSim.encIdx (r.map (· + 1))
+  | none => by
+      simp only [Mettapedia.GSLT.LanguageDef.LFResolveSim.encIdx, eval, os_ctxK_nf_tc,
+        Option.map_none]
+  | some i => by
+      simp only [Mettapedia.GSLT.LanguageDef.LFResolveSim.encIdx, eval, os_ctxK_idx_tc,
+        Option.map_some]
+      rfl
+
+theorem ctxidx_sim_tc :
+    ∀ (ctx : List String) (s : String),
+      ∃ N,
+        eval pTC N
+          (ctxidx (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx) (con0 s)) =
+          Mettapedia.GSLT.LanguageDef.LFResolveSim.encIdx (LF.ctxIdx ctx s) := by
+  intro ctx
+  induction ctx with
+  | nil =>
+      intro s
+      refine ⟨1, ?_⟩
+      rw [show Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx [] = Nil from rfl]
+      simp only [LF.ctxIdx, Mettapedia.GSLT.LanguageDef.LFResolveSim.encIdx, eval,
+        os_ctx_nil_tc]
+  | cons x xs ih =>
+      intro s
+      rw [show Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx (x :: xs) =
+        Cons (con0 x) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx xs) from rfl]
+      cases hd : x == s with
+      | true =>
+          obtain rfl := eq_of_beq hd
+          refine ⟨1, ?_⟩
+          rw [show LF.ctxIdx (x :: xs) x = some 0 from by simp [LF.ctxIdx]]
+          simp only [eval, os_ctx_hit_tc, Mettapedia.GSLT.LanguageDef.LFResolveSim.encIdx,
+            peano]
+      | false =>
+          have hxs : x ≠ s := beq_eq_false_iff_ne.mp hd
+          obtain ⟨N, hN⟩ := ih s
+          obtain ⟨M, hM⟩ :=
+            good_cong_eval_tc ctxK hdesc_ctxK_tc N
+              (Mettapedia.GSLT.LanguageDef.LFResolveSim.Good.seed xs s) hN
+              (isnormal_encIdx_tc _)
+          rw [show LF.ctxIdx (x :: xs) s = (LF.ctxIdx xs s).map (· + 1) from by
+            simp [LF.ctxIdx, hxs]]
+          refine ⟨1 + (M + 1), ?_⟩
+          have hstep1 :
+              eval pTC 1
+                (ctxidx
+                  (Cons (con0 x) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx xs))
+                  (con0 s)) =
+                ctxK
+                  (ctxidx (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx xs) (con0 s)) := by
+            simp only [eval,
+              os_ctx_miss_tc (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx xs) hxs]
+          refine eval_trans_tc 1 (M + 1) _ _ _ hstep1 ?_
+          refine eval_trans_tc M 1 _ _ _ hM ?_
+          exact ctxK_collapse_tc (LF.ctxIdx xs s)
+
+theorem baseReducts_resolveK_ctxidx_tc (s0 : String) (a q : AST) :
+    baseReducts pTC (resolveK (con0 s0) (ctxidx a q)) = [] := by
+  rfl
+
+theorem baseReducts_resolveK_ctxK_tc (s0 : String) (a : AST) :
+    baseReducts pTC (resolveK (con0 s0) (ctxK a)) = [] := by
+  rfl
+
+theorem resolveK_step_tc {s0 : String} {b b' : AST}
+    (hb : baseReducts pTC (resolveK (con0 s0) b) = [])
+    (h : oneStep pTC b = some b') :
+    oneStep pTC (resolveK (con0 s0) b) = some (resolveK (con0 s0) b') := by
+  have hb' : baseReducts pTC (AST.sexp (Label.id "resolveK") [con0 s0, b]) = [] := hb
+  have hs : oneStep pTC (con0 s0) = none := isnormal_con0_tc s0
+  show oneStep pTC (AST.sexp (Label.id "resolveK") [con0 s0, b]) = _
+  simp only [oneStep, hb', oneStepList, hs, h, Option.map_some, resolveK]
+
+theorem hdesc_resolveK_tc (s0 : String) :
+    ∀ {a a' : AST}, ResolveGoodTC a → oneStep pTC a = some a' →
+      oneStep pTC (resolveK (con0 s0) a) = some (resolveK (con0 s0) a') := by
+  intro a a' hgood h
+  cases hgood with
+  | nf =>
+      rw [show oneStep pTC NF = none from isnormal_con0_tc "NF"] at h
+      simp at h
+  | idx i =>
+      rw [show oneStep pTC (Idx (peano i)) = none from
+        isnormal_sexp1_tc (.id "Idx") (peano i) rfl (isnormal_peano_tc i)] at h
+      simp at h
+  | seed ctx q =>
+      exact resolveK_step_tc (baseReducts_resolveK_ctxidx_tc _ _ _) h
+  | ctxK c =>
+      exact resolveK_step_tc (baseReducts_resolveK_ctxK_tc _ _) h
+
+theorem resolve_sim_tc :
+    ∀ (ctx : List String) (s : String),
+      ∃ N,
+        eval pTC N
+          (resolve (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx) (con0 s)) =
+          encTerm (LF.resolve ctx s) := by
+  intro ctx s
+  obtain ⟨N, hN⟩ := ctxidx_sim_tc ctx s
+  obtain ⟨M, hM⟩ :=
+    good_cong_eval_tc (resolveK (con0 s)) (hdesc_resolveK_tc s) N
+      (Mettapedia.GSLT.LanguageDef.LFResolveSim.Good.seed ctx s) hN
+      (isnormal_encIdx_tc _)
+  refine ⟨1 + (M + 1), ?_⟩
+  have hstep1 :
+      eval pTC 1
+        (resolve (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx) (con0 s)) =
+        resolveK (con0 s)
+          (ctxidx (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx) (con0 s)) := by
+    simp only [eval, os_res_tc]
+  refine eval_trans_tc 1 (M + 1) _ _ _ hstep1 ?_
+  refine eval_trans_tc M 1 _ _ _ hM ?_
+  cases hr : LF.ctxIdx ctx s with
+  | none =>
+      rw [show LF.resolve ctx s = .con s from by simp [LF.resolve, hr]]
+      simp only [Mettapedia.GSLT.LanguageDef.LFResolveSim.encIdx, eval, os_resK_nf_tc,
+        encTerm]
+  | some i =>
+      rw [show LF.resolve ctx s = .var i from by simp [LF.resolve, hr]]
+      simp only [Mettapedia.GSLT.LanguageDef.LFResolveSim.encIdx, eval, os_resK_idx_tc,
+        encTerm]
+
+theorem isnormal_encTok_tc :
+    ∀ t : LF.Tok, IsNormal pTC (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encTok t)
+  | .pi => isnormal_con0_tc "PI"
+  | .lam => isnormal_con0_tc "LAM"
+  | .arr => isnormal_con0_tc "ARR"
+  | .colon => isnormal_con0_tc "COLON"
+  | .dot => isnormal_con0_tc "DOT"
+  | .lpar => isnormal_con0_tc "LP"
+  | .rpar => isnormal_con0_tc "RP"
+  | .type => isnormal_con0_tc "TYPE"
+  | .id s => isnormal_sexp1_tc (.id "Tid") (con0 s) rfl (isnormal_con0_tc s)
+
+theorem isnormal_encToks_tc :
+    ∀ ts : List LF.Tok, IsNormal pTC (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks ts)
+  | [] => isnormal_con0_tc "Nil"
+  | t :: ts =>
+      isnormal_sexp2_tc (.id "Cons")
+        (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encTok t)
+        (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks ts) rfl
+        (isnormal_encTok_tc t) (isnormal_encToks_tc ts)
+
+theorem isnormal_encCtx_tc :
+    ∀ ctx : List String, IsNormal pTC (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+  | [] => isnormal_con0_tc "Nil"
+  | x :: xs =>
+      isnormal_sexp2_tc (.id "Cons") (con0 x)
+        (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx xs) rfl
+        (isnormal_con0_tc x) (isnormal_encCtx_tc xs)
 
 theorem hcong_Ok_tc : ∀ s s', oneStep pTC s = some s' ->
     oneStep pTC (Ok s) = some (Ok s') := by
@@ -1509,10 +4056,6 @@ theorem eval_reject_accept_false_tc {start e : AST} {Naccept Nreject : Nat}
       rw [← hreject]
       exact htotal
     exact checkErr_ne_checkOk e hbad
-
-theorem isnormal_peano_tc : ∀ n, IsNormal pTC (peano n)
-  | 0 => rfl
-  | n + 1 => isnormal_sexp1_tc (.id "S") (peano n) rfl (isnormal_peano_tc n)
 
 theorem hcong_S_tc : ∀ s s', oneStep pTC s = some s' -> oneStep pTC (S s) = some (S s') := by
   intro s s' hstep
@@ -3931,6 +6474,48 @@ theorem FirstReplayNF.enc {t : LF.Term} {u call : AST}
   cases h with
   | @intro _ _ _ henc _ _ _ _ _ _ _ => exact henc
 
+inductive FirstStrongPayloadReplayNF (t : LF.Term) (u : AST) (call : AST) : Prop where
+  | intro {payload : AST} {N M : Nat} :
+      encTyCore? t = some u ->
+      eval pTC N call = someT payload ->
+      (∀ k, k < N -> NFActiveShape (eval pTC k call)) ->
+      LiftablePayload payload t ->
+      StackReplayablePayload payload t ->
+      LiftablePayload u t ->
+      eval pTC M payload = u ->
+      FirstStrongPayloadReplayNF t u call
+
+theorem FirstStrongPayloadReplayNF.toStrong {t : LF.Term} {u call : AST}
+    (h : FirstStrongPayloadReplayNF t u call) : FirstStrongNF t u call := by
+  cases h with
+  | @intro payload N M henc hmatch hguard hpayload _ hfinal heval =>
+      exact FirstStrongNF.intro (payload := payload) (N := N) (M := M)
+        henc hmatch hguard hpayload hfinal heval
+
+theorem FirstStrongPayloadReplayNF.payloadReplay {t : LF.Term} {u call : AST}
+    (h : FirstStrongPayloadReplayNF t u call) :
+    ∃ payload, StackReplayablePayload payload t ∧ ∃ N, eval pTC N call = someT payload := by
+  cases h with
+  | @intro payload N _ _ hmatch _ _ hpayloadReplay _ _ =>
+      exact ⟨payload, hpayloadReplay, N, hmatch⟩
+
+theorem FirstStrongPayloadReplayNF.finalLiftable {t : LF.Term} {u call : AST}
+    (h : FirstStrongPayloadReplayNF t u call) : LiftablePayload u t := by
+  cases h with
+  | @intro _ _ _ _ _ _ _ _ hfinal _ => exact hfinal
+
+theorem FirstStrongPayloadReplayNF.enc {t : LF.Term} {u call : AST}
+    (h : FirstStrongPayloadReplayNF t u call) : encTyCore? t = some u := by
+  cases h with
+  | @intro _ _ _ henc _ _ _ _ _ _ => exact henc
+
+theorem FirstReplayNF.toStrongPayloadReplay {t : LF.Term} {u call : AST}
+    (h : FirstReplayNF t u call) : FirstStrongPayloadReplayNF t u call := by
+  cases h with
+  | @intro payload N M henc hmatch hguard hpayload hpayloadReplay hfinal _ heval =>
+      exact FirstStrongPayloadReplayNF.intro (payload := payload) (N := N) (M := M)
+        henc hmatch hguard hpayload hpayloadReplay hfinal heval
+
 theorem FirstLiftableNF.toStrong {t : LF.Term} {u call : AST}
     (h : FirstLiftableNF t u call) : FirstStrongNF t u call := by
   cases h with
@@ -4019,6 +6604,56 @@ theorem first_replay_nf_prefix {t : LF.Term} {u call next : AST}
   | @intro payload N MP henc hmatch hguard hpayload hpayloadReplay hfinal hfinalReplay heval =>
       refine FirstReplayNF.intro (payload := payload) (N := M + N) (M := MP)
         henc ?_ ?_ hpayload hpayloadReplay hfinal hfinalReplay heval
+      · exact eval_trans_tc M N call next (someT payload) hctx hmatch
+      · intro k hk
+        by_cases hkM : k < M
+        · exact hctxGuard k hkM
+        · have hge : M ≤ k := Nat.le_of_not_gt hkM
+          have hkN : k - M < N := by omega
+          have hdecomp : k = M + (k - M) := by omega
+          rw [hdecomp]
+          have htotal : eval pTC (M + (k - M)) call =
+              eval pTC (k - M) next := by
+            exact eval_trans_tc M (k - M) call next
+              (eval pTC (k - M) next) hctx rfl
+          rw [htotal]
+          exact hguard (k - M) hkN
+
+theorem first_strong_payload_replay_nf_prepend {t : LF.Term} {u call next : AST}
+    (hstep : eval pTC 1 call = next) (hactive : NFActiveShape call)
+    (hnext : FirstStrongPayloadReplayNF t u next) :
+    FirstStrongPayloadReplayNF t u call := by
+  cases hnext with
+  | @intro payload N M henc hmatch hguard hpayload hpayloadReplay hfinal heval =>
+      refine FirstStrongPayloadReplayNF.intro (payload := payload) (N := 1 + N) (M := M)
+        henc ?_ ?_ hpayload hpayloadReplay hfinal heval
+      · have htotal : eval pTC (1 + N) call = eval pTC N next :=
+          eval_trans_tc 1 N call next (eval pTC N next) hstep rfl
+        rw [htotal]
+        exact hmatch
+      · intro k hk
+        cases k with
+        | zero =>
+            simpa only [eval] using hactive
+        | succ k =>
+            have hk' : Nat.succ k < Nat.succ N := by
+              simpa only [Nat.one_add] using hk
+            have hkN : k < N := Nat.succ_lt_succ_iff.mp hk'
+            have htotal : eval pTC (Nat.succ k) call = eval pTC k next := by
+              have h := eval_trans_tc 1 k call next (eval pTC k next) hstep rfl
+              simpa [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using h
+            rw [htotal]
+            exact hguard k hkN
+
+theorem first_strong_payload_replay_nf_prefix {t : LF.Term} {u call next : AST}
+    {M : Nat} (hctx : eval pTC M call = next)
+    (hctxGuard : ∀ k, k < M -> NFActiveShape (eval pTC k call))
+    (hnext : FirstStrongPayloadReplayNF t u next) :
+    FirstStrongPayloadReplayNF t u call := by
+  cases hnext with
+  | @intro payload N MP henc hmatch hguard hpayload hpayloadReplay hfinal heval =>
+      refine FirstStrongPayloadReplayNF.intro (payload := payload) (N := M + N) (M := MP)
+        henc ?_ ?_ hpayload hpayloadReplay hfinal heval
       · exact eval_trans_tc M N call next (someT payload) hctx hmatch
       · intro k hk
         by_cases hkM : k < M
@@ -7793,6 +10428,240 @@ theorem nfApp2_nfT_first_replay
                   rw [htotal]
                   exact hTailGuard (k - (MFctx + MActx + 1)) hjlt
 
+theorem nfApp2_nfT_first_strong_payload_replay
+    {aTerm resTerm : LF.Term} {aVal resVal fuel fPre fVal aAst : AST}
+    (hfuel : IsNormal pTC fuel) (hfnorm : IsNormal pTC fVal)
+    (hfpreEval : ∃ M, eval pTC M fPre = fVal)
+    (hA : FirstReplayNF aTerm aVal (nfT fuel aAst))
+    (hTail : ∀ {aPre : AST}, LiftablePayload aPre aTerm ->
+      (∃ M, eval pTC M aPre = aVal) -> StackReplayablePayload aPre aTerm ->
+        FirstStrongNF resTerm resVal (nfAppT fuel fVal aPre)) :
+    FirstStrongNF resTerm resVal (nfApp2 fuel fPre (nfT fuel aAst)) := by
+  obtain ⟨MF, hMF⟩ := hfpreEval
+  obtain ⟨MFctx, hMFctx, hMFguard⟩ :=
+    cong_eval_nf_wrapper_with_guard (fun f => nfApp2 fuel f (nfT fuel aAst))
+      (fun f => NFActiveShape.app2 fuel f (nfT fuel aAst))
+      (hcong_nfApp2_fun_nfT_tc fuel aAst hfuel) MF hMF hfnorm
+  cases hA with
+  | @intro aPre NA MA haenc hAmatch hAguard haLift haReplay _ _ haPayload =>
+      obtain ⟨MActx, hMActx, hMActxGuard⟩ :=
+        cong_eval_nf_active_with_guard (fun s => nfApp2 fuel fVal s)
+          (fun s _ => NFActiveShape.app2 fuel fVal s)
+          (hcong_nfApp2_active_tc fuel fVal hfuel hfnorm) NA hAmatch hAguard
+      have htail := hTail haLift ⟨MA, haPayload⟩ haReplay
+      cases htail with
+      | @intro payloadTail NTail MTail hTailEnc hTailMatch hTailGuard
+          hTailLift hTailFinal hTailPayload =>
+          refine FirstStrongNF.intro (payload := payloadTail)
+            (N := MFctx + (MActx + (1 + NTail))) (M := MTail)
+            hTailEnc ?_ ?_ hTailLift hTailFinal hTailPayload
+          · have hafterA : eval pTC (MFctx + MActx) (nfApp2 fuel fPre (nfT fuel aAst)) =
+                nfApp2 fuel fVal (someT aPre) := by
+              exact eval_trans_tc MFctx MActx _ _ _ hMFctx hMActx
+            have hroot : eval pTC 1 (nfApp2 fuel fVal (someT aPre)) = nfAppT fuel fVal aPre :=
+              nfApp2_ok_tc fuel fVal aPre
+            have hafterRoot := eval_trans_tc (MFctx + MActx) 1 _ _ _ hafterA hroot
+            have htotal := eval_trans_tc (MFctx + MActx + 1) NTail _ _ _ hafterRoot hTailMatch
+            simpa [Nat.add_assoc] using htotal
+          · intro k hk
+            by_cases hkF : k < MFctx
+            · exact hMFguard k hkF
+            · have hgeF : MFctx ≤ k := Nat.le_of_not_gt hkF
+              by_cases hkA : k < MFctx + MActx
+              · let j := k - MFctx
+                have hjlt : j < MActx := by
+                  exact Nat.sub_lt_left_of_lt_add hgeF hkA
+                have hkdecomp : k = MFctx + j := by
+                  exact (Nat.add_sub_of_le hgeF).symm
+                subst j
+                rw [hkdecomp]
+                have htotal : eval pTC (MFctx + (k - MFctx)) (nfApp2 fuel fPre (nfT fuel aAst)) =
+                    eval pTC (k - MFctx) (nfApp2 fuel fVal (nfT fuel aAst)) :=
+                  eval_trans_tc MFctx (k - MFctx) _ _ _ hMFctx rfl
+                rw [htotal]
+                exact hMActxGuard (k - MFctx) hjlt
+              · by_cases hkRoot : k = MFctx + MActx
+                · subst k
+                  have hafterA : eval pTC (MFctx + MActx) (nfApp2 fuel fPre (nfT fuel aAst)) =
+                      nfApp2 fuel fVal (someT aPre) := by
+                    exact eval_trans_tc MFctx MActx _ _ _ hMFctx hMActx
+                  rw [hafterA]
+                  exact NFActiveShape.app2 fuel fVal (someT aPre)
+                · let j := k - (MFctx + MActx + 1)
+                  have hjlt : j < NTail := by omega
+                  have hkdecomp : k = MFctx + MActx + 1 + j := by omega
+                  subst j
+                  rw [hkdecomp]
+                  have hafterA : eval pTC (MFctx + MActx) (nfApp2 fuel fPre (nfT fuel aAst)) =
+                      nfApp2 fuel fVal (someT aPre) := by
+                    exact eval_trans_tc MFctx MActx _ _ _ hMFctx hMActx
+                  have hroot : eval pTC 1 (nfApp2 fuel fVal (someT aPre)) = nfAppT fuel fVal aPre :=
+                    nfApp2_ok_tc fuel fVal aPre
+                  have hafterRoot := eval_trans_tc (MFctx + MActx) 1 _ _ _ hafterA hroot
+                  have htotal : eval pTC (MFctx + MActx + 1 + (k - (MFctx + MActx + 1)))
+                        (nfApp2 fuel fPre (nfT fuel aAst)) =
+                      eval pTC (k - (MFctx + MActx + 1)) (nfAppT fuel fVal aPre) :=
+                    eval_trans_tc (MFctx + MActx + 1) (k - (MFctx + MActx + 1))
+                      _ _ _ hafterRoot rfl
+                  rw [htotal]
+                  exact hTailGuard (k - (MFctx + MActx + 1)) hjlt
+
+theorem nfApp2_nfT_first_strong_payload_replay_nf
+    {aTerm resTerm : LF.Term} {aVal resVal fuel fPre fVal aAst : AST}
+    (hfuel : IsNormal pTC fuel) (hfnorm : IsNormal pTC fVal)
+    (hfpreEval : ∃ M, eval pTC M fPre = fVal)
+    (hA : FirstStrongPayloadReplayNF aTerm aVal (nfT fuel aAst))
+    (hTail : ∀ {aPre : AST}, LiftablePayload aPre aTerm ->
+      (∃ M, eval pTC M aPre = aVal) -> StackReplayablePayload aPre aTerm ->
+        FirstStrongPayloadReplayNF resTerm resVal (nfAppT fuel fVal aPre)) :
+    FirstStrongPayloadReplayNF resTerm resVal (nfApp2 fuel fPre (nfT fuel aAst)) := by
+  obtain ⟨MF, hMF⟩ := hfpreEval
+  obtain ⟨MFctx, hMFctx, hMFguard⟩ :=
+    cong_eval_nf_wrapper_with_guard (fun f => nfApp2 fuel f (nfT fuel aAst))
+      (fun f => NFActiveShape.app2 fuel f (nfT fuel aAst))
+      (hcong_nfApp2_fun_nfT_tc fuel aAst hfuel) MF hMF hfnorm
+  cases hA with
+  | @intro aPre NA MA haenc hAmatch hAguard haLift haReplay _ haPayload =>
+      obtain ⟨MActx, hMActx, hMActxGuard⟩ :=
+        cong_eval_nf_active_with_guard (fun s => nfApp2 fuel fVal s)
+          (fun s _ => NFActiveShape.app2 fuel fVal s)
+          (hcong_nfApp2_active_tc fuel fVal hfuel hfnorm) NA hAmatch hAguard
+      have htail := hTail haLift ⟨MA, haPayload⟩ haReplay
+      cases htail with
+      | @intro payloadTail NTail MTail hTailEnc hTailMatch hTailGuard
+          hTailLift hTailReplay hTailFinal hTailPayload =>
+          refine FirstStrongPayloadReplayNF.intro (payload := payloadTail)
+            (N := MFctx + (MActx + (1 + NTail))) (M := MTail)
+            hTailEnc ?_ ?_ hTailLift hTailReplay hTailFinal hTailPayload
+          · have hafterA : eval pTC (MFctx + MActx) (nfApp2 fuel fPre (nfT fuel aAst)) =
+                nfApp2 fuel fVal (someT aPre) := by
+              exact eval_trans_tc MFctx MActx _ _ _ hMFctx hMActx
+            have hroot : eval pTC 1 (nfApp2 fuel fVal (someT aPre)) = nfAppT fuel fVal aPre :=
+              nfApp2_ok_tc fuel fVal aPre
+            have hafterRoot := eval_trans_tc (MFctx + MActx) 1 _ _ _ hafterA hroot
+            have htotal := eval_trans_tc (MFctx + MActx + 1) NTail _ _ _ hafterRoot hTailMatch
+            simpa [Nat.add_assoc] using htotal
+          · intro k hk
+            by_cases hkF : k < MFctx
+            · exact hMFguard k hkF
+            · have hgeF : MFctx ≤ k := Nat.le_of_not_gt hkF
+              by_cases hkA : k < MFctx + MActx
+              · let j := k - MFctx
+                have hjlt : j < MActx := by
+                  exact Nat.sub_lt_left_of_lt_add hgeF hkA
+                have hkdecomp : k = MFctx + j := by
+                  exact (Nat.add_sub_of_le hgeF).symm
+                subst j
+                rw [hkdecomp]
+                have htotal : eval pTC (MFctx + (k - MFctx)) (nfApp2 fuel fPre (nfT fuel aAst)) =
+                    eval pTC (k - MFctx) (nfApp2 fuel fVal (nfT fuel aAst)) :=
+                  eval_trans_tc MFctx (k - MFctx) _ _ _ hMFctx rfl
+                rw [htotal]
+                exact hMActxGuard (k - MFctx) hjlt
+              · by_cases hkRoot : k = MFctx + MActx
+                · subst k
+                  have hafterA : eval pTC (MFctx + MActx) (nfApp2 fuel fPre (nfT fuel aAst)) =
+                      nfApp2 fuel fVal (someT aPre) := by
+                    exact eval_trans_tc MFctx MActx _ _ _ hMFctx hMActx
+                  rw [hafterA]
+                  exact NFActiveShape.app2 fuel fVal (someT aPre)
+                · let j := k - (MFctx + MActx + 1)
+                  have hjlt : j < NTail := by omega
+                  have hkdecomp : k = MFctx + MActx + 1 + j := by omega
+                  subst j
+                  rw [hkdecomp]
+                  have hafterA : eval pTC (MFctx + MActx) (nfApp2 fuel fPre (nfT fuel aAst)) =
+                      nfApp2 fuel fVal (someT aPre) := by
+                    exact eval_trans_tc MFctx MActx _ _ _ hMFctx hMActx
+                  have hroot : eval pTC 1 (nfApp2 fuel fVal (someT aPre)) = nfAppT fuel fVal aPre :=
+                    nfApp2_ok_tc fuel fVal aPre
+                  have hafterRoot := eval_trans_tc (MFctx + MActx) 1 _ _ _ hafterA hroot
+                  have htotal : eval pTC (MFctx + MActx + 1 + (k - (MFctx + MActx + 1)))
+                        (nfApp2 fuel fPre (nfT fuel aAst)) =
+                      eval pTC (k - (MFctx + MActx + 1)) (nfAppT fuel fVal aPre) :=
+                    eval_trans_tc (MFctx + MActx + 1) (k - (MFctx + MActx + 1))
+                      _ _ _ hafterRoot rfl
+                  rw [htotal]
+                  exact hTailGuard (k - (MFctx + MActx + 1)) hjlt
+
+theorem nfApp2_nfT_first_strong_of_payload_replay_nf
+    {aTerm resTerm : LF.Term} {aVal resVal fuel fPre fVal aAst : AST}
+    (hfuel : IsNormal pTC fuel) (hfnorm : IsNormal pTC fVal)
+    (hfpreEval : ∃ M, eval pTC M fPre = fVal)
+    (hA : FirstStrongPayloadReplayNF aTerm aVal (nfT fuel aAst))
+    (hTail : ∀ {aPre : AST}, LiftablePayload aPre aTerm ->
+      (∃ M, eval pTC M aPre = aVal) -> StackReplayablePayload aPre aTerm ->
+        FirstStrongNF resTerm resVal (nfAppT fuel fVal aPre)) :
+    FirstStrongNF resTerm resVal (nfApp2 fuel fPre (nfT fuel aAst)) := by
+  obtain ⟨MF, hMF⟩ := hfpreEval
+  obtain ⟨MFctx, hMFctx, hMFguard⟩ :=
+    cong_eval_nf_wrapper_with_guard (fun f => nfApp2 fuel f (nfT fuel aAst))
+      (fun f => NFActiveShape.app2 fuel f (nfT fuel aAst))
+      (hcong_nfApp2_fun_nfT_tc fuel aAst hfuel) MF hMF hfnorm
+  cases hA with
+  | @intro aPre NA MA haenc hAmatch hAguard haLift haReplay _ haPayload =>
+      obtain ⟨MActx, hMActx, hMActxGuard⟩ :=
+        cong_eval_nf_active_with_guard (fun s => nfApp2 fuel fVal s)
+          (fun s _ => NFActiveShape.app2 fuel fVal s)
+          (hcong_nfApp2_active_tc fuel fVal hfuel hfnorm) NA hAmatch hAguard
+      have htail := hTail haLift ⟨MA, haPayload⟩ haReplay
+      cases htail with
+      | @intro payloadTail NTail MTail hTailEnc hTailMatch hTailGuard
+          hTailLift hTailFinal hTailPayload =>
+          refine FirstStrongNF.intro (payload := payloadTail)
+            (N := MFctx + (MActx + (1 + NTail))) (M := MTail)
+            hTailEnc ?_ ?_ hTailLift hTailFinal hTailPayload
+          · have hafterA : eval pTC (MFctx + MActx) (nfApp2 fuel fPre (nfT fuel aAst)) =
+                nfApp2 fuel fVal (someT aPre) := by
+              exact eval_trans_tc MFctx MActx _ _ _ hMFctx hMActx
+            have hroot : eval pTC 1 (nfApp2 fuel fVal (someT aPre)) = nfAppT fuel fVal aPre :=
+              nfApp2_ok_tc fuel fVal aPre
+            have hafterRoot := eval_trans_tc (MFctx + MActx) 1 _ _ _ hafterA hroot
+            have htotal := eval_trans_tc (MFctx + MActx + 1) NTail _ _ _ hafterRoot hTailMatch
+            simpa [Nat.add_assoc] using htotal
+          · intro k hk
+            by_cases hkF : k < MFctx
+            · exact hMFguard k hkF
+            · have hgeF : MFctx ≤ k := Nat.le_of_not_gt hkF
+              by_cases hkA : k < MFctx + MActx
+              · let j := k - MFctx
+                have hjlt : j < MActx := by
+                  exact Nat.sub_lt_left_of_lt_add hgeF hkA
+                have hkdecomp : k = MFctx + j := by
+                  exact (Nat.add_sub_of_le hgeF).symm
+                subst j
+                rw [hkdecomp]
+                have htotal : eval pTC (MFctx + (k - MFctx)) (nfApp2 fuel fPre (nfT fuel aAst)) =
+                    eval pTC (k - MFctx) (nfApp2 fuel fVal (nfT fuel aAst)) :=
+                  eval_trans_tc MFctx (k - MFctx) _ _ _ hMFctx rfl
+                rw [htotal]
+                exact hMActxGuard (k - MFctx) hjlt
+              · by_cases hkRoot : k = MFctx + MActx
+                · subst k
+                  have hafterA : eval pTC (MFctx + MActx) (nfApp2 fuel fPre (nfT fuel aAst)) =
+                      nfApp2 fuel fVal (someT aPre) := by
+                    exact eval_trans_tc MFctx MActx _ _ _ hMFctx hMActx
+                  rw [hafterA]
+                  exact NFActiveShape.app2 fuel fVal (someT aPre)
+                · let j := k - (MFctx + MActx + 1)
+                  have hjlt : j < NTail := by omega
+                  have hkdecomp : k = MFctx + MActx + 1 + j := by omega
+                  subst j
+                  rw [hkdecomp]
+                  have hafterA : eval pTC (MFctx + MActx) (nfApp2 fuel fPre (nfT fuel aAst)) =
+                      nfApp2 fuel fVal (someT aPre) := by
+                    exact eval_trans_tc MFctx MActx _ _ _ hMFctx hMActx
+                  have hroot : eval pTC 1 (nfApp2 fuel fVal (someT aPre)) = nfAppT fuel fVal aPre :=
+                    nfApp2_ok_tc fuel fVal aPre
+                  have hafterRoot := eval_trans_tc (MFctx + MActx) 1 _ _ _ hafterA hroot
+                  have htotal : eval pTC (MFctx + MActx + 1 + (k - (MFctx + MActx + 1)))
+                        (nfApp2 fuel fPre (nfT fuel aAst)) =
+                      eval pTC (k - (MFctx + MActx + 1)) (nfAppT fuel fVal aPre) :=
+                    eval_trans_tc (MFctx + MActx + 1) (k - (MFctx + MActx + 1))
+                      _ _ _ hafterRoot rfl
+                  rw [htotal]
+                  exact hTailGuard (k - (MFctx + MActx + 1)) hjlt
+
 theorem nfApp1_nfT_first_liftable
     {fTerm resTerm : LF.Term} {fVal resVal fuel aAst fCall : AST}
     (hfuel : IsNormal pTC fuel) (haRaw : IsNormal pTC aAst)
@@ -7812,6 +10681,153 @@ theorem nfApp1_nfT_first_liftable
       | @intro payloadTail NTail MTail hTailEnc hTailMatch hTailGuard hTailLift hTailPayload =>
           refine FirstLiftableNF.intro (payload := payloadTail)
             (N := MFctx + (1 + NTail)) (M := MTail) hTailEnc ?_ ?_ hTailLift hTailPayload
+          · have hroot : eval pTC 1 (nfApp1 fuel aAst (someT fPre)) =
+                nfApp2 fuel fPre (nfT fuel aAst) :=
+              nfApp1_ok_tc fuel aAst fPre
+            have hafterRoot := eval_trans_tc MFctx 1 _ _ _ hMFctx hroot
+            have htotal := eval_trans_tc (MFctx + 1) NTail _ _ _ hafterRoot hTailMatch
+            simpa [Nat.add_assoc] using htotal
+          · intro k hk
+            by_cases hkF : k < MFctx
+            · exact hMFctxGuard k hkF
+            · by_cases hkRoot : k = MFctx
+              · subst k
+                rw [hMFctx]
+                exact NFActiveShape.app1 fuel aAst (someT fPre)
+              · let j := k - (MFctx + 1)
+                have hjlt : j < NTail := by omega
+                have hkdecomp : k = MFctx + 1 + j := by omega
+                subst j
+                rw [hkdecomp]
+                have hroot : eval pTC 1 (nfApp1 fuel aAst (someT fPre)) =
+                    nfApp2 fuel fPre (nfT fuel aAst) :=
+                  nfApp1_ok_tc fuel aAst fPre
+                have hafterRoot := eval_trans_tc MFctx 1 _ _ _ hMFctx hroot
+                have htotal : eval pTC (MFctx + 1 + (k - (MFctx + 1))) (nfApp1 fuel aAst fCall) =
+                    eval pTC (k - (MFctx + 1)) (nfApp2 fuel fPre (nfT fuel aAst)) :=
+                  eval_trans_tc (MFctx + 1) (k - (MFctx + 1)) _ _ _ hafterRoot rfl
+                rw [htotal]
+                exact hTailGuard (k - (MFctx + 1)) hjlt
+
+theorem nfApp1_nfT_first_strong_payload_replay
+    {fTerm resTerm : LF.Term} {fVal resVal fuel aAst fCall : AST}
+    (hfuel : IsNormal pTC fuel) (haRaw : IsNormal pTC aAst)
+    (hF : FirstReplayNF fTerm fVal fCall)
+    (hTail : ∀ {fPre : AST}, LiftablePayload fPre fTerm ->
+      (∃ M, eval pTC M fPre = fVal) -> StackReplayablePayload fPre fTerm ->
+        FirstStrongNF resTerm resVal (nfApp2 fuel fPre (nfT fuel aAst))) :
+    FirstStrongNF resTerm resVal (nfApp1 fuel aAst fCall) := by
+  cases hF with
+  | @intro fPre NF MF hfenc hFmatch hFguard hfLift hfReplay _ _ hfPayload =>
+      obtain ⟨MFctx, hMFctx, hMFctxGuard⟩ :=
+        cong_eval_nf_active_with_guard (fun s => nfApp1 fuel aAst s)
+          (fun s _ => NFActiveShape.app1 fuel aAst s)
+          (hcong_nfApp1_active_tc fuel aAst hfuel haRaw) NF hFmatch hFguard
+      have htail := hTail hfLift ⟨MF, hfPayload⟩ hfReplay
+      cases htail with
+      | @intro payloadTail NTail MTail hTailEnc hTailMatch hTailGuard
+          hTailLift hTailFinal hTailPayload =>
+          refine FirstStrongNF.intro (payload := payloadTail)
+            (N := MFctx + (1 + NTail)) (M := MTail)
+            hTailEnc ?_ ?_ hTailLift hTailFinal hTailPayload
+          · have hroot : eval pTC 1 (nfApp1 fuel aAst (someT fPre)) =
+                nfApp2 fuel fPre (nfT fuel aAst) :=
+              nfApp1_ok_tc fuel aAst fPre
+            have hafterRoot := eval_trans_tc MFctx 1 _ _ _ hMFctx hroot
+            have htotal := eval_trans_tc (MFctx + 1) NTail _ _ _ hafterRoot hTailMatch
+            simpa [Nat.add_assoc] using htotal
+          · intro k hk
+            by_cases hkF : k < MFctx
+            · exact hMFctxGuard k hkF
+            · by_cases hkRoot : k = MFctx
+              · subst k
+                rw [hMFctx]
+                exact NFActiveShape.app1 fuel aAst (someT fPre)
+              · let j := k - (MFctx + 1)
+                have hjlt : j < NTail := by omega
+                have hkdecomp : k = MFctx + 1 + j := by omega
+                subst j
+                rw [hkdecomp]
+                have hroot : eval pTC 1 (nfApp1 fuel aAst (someT fPre)) =
+                    nfApp2 fuel fPre (nfT fuel aAst) :=
+                  nfApp1_ok_tc fuel aAst fPre
+                have hafterRoot := eval_trans_tc MFctx 1 _ _ _ hMFctx hroot
+                have htotal : eval pTC (MFctx + 1 + (k - (MFctx + 1))) (nfApp1 fuel aAst fCall) =
+                    eval pTC (k - (MFctx + 1)) (nfApp2 fuel fPre (nfT fuel aAst)) :=
+                  eval_trans_tc (MFctx + 1) (k - (MFctx + 1)) _ _ _ hafterRoot rfl
+                rw [htotal]
+                exact hTailGuard (k - (MFctx + 1)) hjlt
+
+theorem nfApp1_nfT_first_strong_payload_replay_nf
+    {fTerm resTerm : LF.Term} {fVal resVal fuel aAst fCall : AST}
+    (hfuel : IsNormal pTC fuel) (haRaw : IsNormal pTC aAst)
+    (hF : FirstStrongPayloadReplayNF fTerm fVal fCall)
+    (hTail : ∀ {fPre : AST}, LiftablePayload fPre fTerm ->
+      (∃ M, eval pTC M fPre = fVal) -> StackReplayablePayload fPre fTerm ->
+        FirstStrongPayloadReplayNF resTerm resVal (nfApp2 fuel fPre (nfT fuel aAst))) :
+    FirstStrongPayloadReplayNF resTerm resVal (nfApp1 fuel aAst fCall) := by
+  cases hF with
+  | @intro fPre NF MF hfenc hFmatch hFguard hfLift hfReplay _ hfPayload =>
+      obtain ⟨MFctx, hMFctx, hMFctxGuard⟩ :=
+        cong_eval_nf_active_with_guard (fun s => nfApp1 fuel aAst s)
+          (fun s _ => NFActiveShape.app1 fuel aAst s)
+          (hcong_nfApp1_active_tc fuel aAst hfuel haRaw) NF hFmatch hFguard
+      have htail := hTail hfLift ⟨MF, hfPayload⟩ hfReplay
+      cases htail with
+      | @intro payloadTail NTail MTail hTailEnc hTailMatch hTailGuard
+          hTailLift hTailReplay hTailFinal hTailPayload =>
+          refine FirstStrongPayloadReplayNF.intro (payload := payloadTail)
+            (N := MFctx + (1 + NTail)) (M := MTail)
+            hTailEnc ?_ ?_ hTailLift hTailReplay hTailFinal hTailPayload
+          · have hroot : eval pTC 1 (nfApp1 fuel aAst (someT fPre)) =
+                nfApp2 fuel fPre (nfT fuel aAst) :=
+              nfApp1_ok_tc fuel aAst fPre
+            have hafterRoot := eval_trans_tc MFctx 1 _ _ _ hMFctx hroot
+            have htotal := eval_trans_tc (MFctx + 1) NTail _ _ _ hafterRoot hTailMatch
+            simpa [Nat.add_assoc] using htotal
+          · intro k hk
+            by_cases hkF : k < MFctx
+            · exact hMFctxGuard k hkF
+            · by_cases hkRoot : k = MFctx
+              · subst k
+                rw [hMFctx]
+                exact NFActiveShape.app1 fuel aAst (someT fPre)
+              · let j := k - (MFctx + 1)
+                have hjlt : j < NTail := by omega
+                have hkdecomp : k = MFctx + 1 + j := by omega
+                subst j
+                rw [hkdecomp]
+                have hroot : eval pTC 1 (nfApp1 fuel aAst (someT fPre)) =
+                    nfApp2 fuel fPre (nfT fuel aAst) :=
+                  nfApp1_ok_tc fuel aAst fPre
+                have hafterRoot := eval_trans_tc MFctx 1 _ _ _ hMFctx hroot
+                have htotal : eval pTC (MFctx + 1 + (k - (MFctx + 1))) (nfApp1 fuel aAst fCall) =
+                    eval pTC (k - (MFctx + 1)) (nfApp2 fuel fPre (nfT fuel aAst)) :=
+                  eval_trans_tc (MFctx + 1) (k - (MFctx + 1)) _ _ _ hafterRoot rfl
+                rw [htotal]
+                exact hTailGuard (k - (MFctx + 1)) hjlt
+
+theorem nfApp1_nfT_first_strong_of_payload_replay_nf
+    {fTerm resTerm : LF.Term} {fVal resVal fuel aAst fCall : AST}
+    (hfuel : IsNormal pTC fuel) (haRaw : IsNormal pTC aAst)
+    (hF : FirstStrongPayloadReplayNF fTerm fVal fCall)
+    (hTail : ∀ {fPre : AST}, LiftablePayload fPre fTerm ->
+      (∃ M, eval pTC M fPre = fVal) -> StackReplayablePayload fPre fTerm ->
+        FirstStrongNF resTerm resVal (nfApp2 fuel fPre (nfT fuel aAst))) :
+    FirstStrongNF resTerm resVal (nfApp1 fuel aAst fCall) := by
+  cases hF with
+  | @intro fPre NF MF hfenc hFmatch hFguard hfLift hfReplay _ hfPayload =>
+      obtain ⟨MFctx, hMFctx, hMFctxGuard⟩ :=
+        cong_eval_nf_active_with_guard (fun s => nfApp1 fuel aAst s)
+          (fun s _ => NFActiveShape.app1 fuel aAst s)
+          (hcong_nfApp1_active_tc fuel aAst hfuel haRaw) NF hFmatch hFguard
+      have htail := hTail hfLift ⟨MF, hfPayload⟩ hfReplay
+      cases htail with
+      | @intro payloadTail NTail MTail hTailEnc hTailMatch hTailGuard
+          hTailLift hTailFinal hTailPayload =>
+          refine FirstStrongNF.intro (payload := payloadTail)
+            (N := MFctx + (1 + NTail)) (M := MTail)
+            hTailEnc ?_ ?_ hTailLift hTailFinal hTailPayload
           · have hroot : eval pTC 1 (nfApp1 fuel aAst (someT fPre)) =
                 nfApp2 fuel fPre (nfT fuel aAst) :=
               nfApp1_ok_tc fuel aAst fPre
@@ -7976,6 +10992,60 @@ theorem nfT_app_first_replay
         exact nfApp2_nfT_first_replay (aTerm := aTerm) (resTerm := resTerm)
           (aVal := aVal) (resVal := resVal) (fuel := fuel) (fPre := fPre)
           (fVal := fVal) (aAst := aAst) hfuel hfnorm hfEval hA
+          (by
+            intro aPre haLift haEval haReplay
+            exact hTail hfLift hfEval hfReplay haLift haEval haReplay)))
+
+theorem nfT_app_first_strong_payload_replay_nf
+    {fTerm aTerm resTerm : LF.Term} {fVal aVal resVal fuel fAst aAst : AST}
+    (hfuel : IsNormal pTC fuel) (haRaw : IsNormal pTC aAst)
+    (hfnorm : IsNormal pTC fVal)
+    (hF : FirstStrongPayloadReplayNF fTerm fVal (nfT fuel fAst))
+    (hA : FirstStrongPayloadReplayNF aTerm aVal (nfT fuel aAst))
+    (hTail : ∀ {fPre aPre : AST}, LiftablePayload fPre fTerm ->
+      (∃ M, eval pTC M fPre = fVal) -> StackReplayablePayload fPre fTerm ->
+        LiftablePayload aPre aTerm -> (∃ M, eval pTC M aPre = aVal) ->
+          StackReplayablePayload aPre aTerm ->
+            FirstStrongPayloadReplayNF resTerm resVal (nfAppT fuel fVal aPre)) :
+    FirstStrongPayloadReplayNF resTerm resVal (nfT (S fuel) (App fAst aAst)) := by
+  exact first_strong_payload_replay_nf_prepend (nfT_app_tc fuel fAst aAst)
+    (NFActiveShape.nf (S fuel) (App fAst aAst))
+    (nfApp1_nfT_first_strong_payload_replay_nf (fTerm := fTerm) (resTerm := resTerm)
+      (fVal := fVal) (resVal := resVal) (fuel := fuel) (aAst := aAst)
+      (fCall := nfT fuel fAst) hfuel haRaw hF
+      (by
+        intro fPre hfLift hfEval hfReplay
+        exact nfApp2_nfT_first_strong_payload_replay_nf (aTerm := aTerm)
+          (resTerm := resTerm) (aVal := aVal) (resVal := resVal)
+          (fuel := fuel) (fPre := fPre) (fVal := fVal) (aAst := aAst)
+          hfuel hfnorm hfEval hA
+          (by
+            intro aPre haLift haEval haReplay
+            exact hTail hfLift hfEval hfReplay haLift haEval haReplay)))
+
+theorem nfT_app_first_strong_of_payload_replay_nf
+    {fTerm aTerm resTerm : LF.Term} {fVal aVal resVal fuel fAst aAst : AST}
+    (hfuel : IsNormal pTC fuel) (haRaw : IsNormal pTC aAst)
+    (hfnorm : IsNormal pTC fVal)
+    (hF : FirstStrongPayloadReplayNF fTerm fVal (nfT fuel fAst))
+    (hA : FirstStrongPayloadReplayNF aTerm aVal (nfT fuel aAst))
+    (hTail : ∀ {fPre aPre : AST}, LiftablePayload fPre fTerm ->
+      (∃ M, eval pTC M fPre = fVal) -> StackReplayablePayload fPre fTerm ->
+        LiftablePayload aPre aTerm -> (∃ M, eval pTC M aPre = aVal) ->
+          StackReplayablePayload aPre aTerm ->
+            FirstStrongNF resTerm resVal (nfAppT fuel fVal aPre)) :
+    FirstStrongNF resTerm resVal (nfT (S fuel) (App fAst aAst)) := by
+  exact first_strong_nf_prepend (nfT_app_tc fuel fAst aAst)
+    (NFActiveShape.nf (S fuel) (App fAst aAst))
+    (nfApp1_nfT_first_strong_of_payload_replay_nf (fTerm := fTerm) (resTerm := resTerm)
+      (fVal := fVal) (resVal := resVal) (fuel := fuel) (aAst := aAst)
+      (fCall := nfT fuel fAst) hfuel haRaw hF
+      (by
+        intro fPre hfLift hfEval hfReplay
+        exact nfApp2_nfT_first_strong_of_payload_replay_nf (aTerm := aTerm)
+          (resTerm := resTerm) (aVal := aVal) (resVal := resVal)
+          (fuel := fuel) (fPre := fPre) (fVal := fVal) (aAst := aAst)
+          hfuel hfnorm hfEval hA
           (by
             intro aPre haLift haEval haReplay
             exact hTail hfLift hfEval hfReplay haLift haEval haReplay)))
@@ -8266,6 +11336,54 @@ theorem nfT_lam_raw_body_first_replay_split
   exact first_replay_nf_prepend (nfT_lam_tc fuel Araw braw)
     (NFActiveShape.nf (S fuel) (Lam Araw braw)) htail
 
+theorem nfT_substT_pi_raw_second_first_strong
+    {ATerm BTerm : LF.Term} {Aval Bval fuel j sAst A B Benc : AST}
+    (hfuel : IsNormal pTC fuel)
+    (hBenc : encTyCore? BTerm = some Benc)
+    (hBeval : ∃ M, eval pTC M (substT (S j) (liftT (S Z) Z sAst) B) = Benc)
+    (hA : FirstStrongNF ATerm Aval (nfT fuel (substT j sAst A)))
+    (hB : FirstStrongNF BTerm Bval (nfT fuel Benc)) :
+    FirstStrongNF (.pi ATerm BTerm) (Pi Aval Bval)
+      (nfT (S fuel) (substT j sAst (Pi A B))) := by
+  have hstep : eval pTC 1 (nfT (S fuel) (substT j sAst (Pi A B))) =
+      nfT (S fuel)
+        (Pi (substT j sAst A) (substT (S j) (liftT (S Z) Z sAst) B)) := by
+    simp only [eval,
+      hcong_nfT_s_substT_arg_tc fuel j sAst (Pi A B)
+        (Pi (substT j sAst A) (substT (S j) (liftT (S Z) Z sAst) B))
+        hfuel rfl]
+  exact first_strong_nf_prepend hstep
+    (NFActiveShape.nf (S fuel) (substT j sAst (Pi A B)))
+    (nfT_pi_raw_second_first_strong (ATerm := ATerm) (BTerm := BTerm)
+      (Aval := Aval) (Bval := Bval) (fuel := fuel)
+      (Araw := substT j sAst A)
+      (Braw := substT (S j) (liftT (S Z) Z sAst) B)
+      (Benc := Benc) hfuel hBenc hBeval hA hB)
+
+theorem nfT_substT_pi_raw_second_first_strong_split
+    {ATerm BRawTerm BNormTerm : LF.Term} {Aval Bval fuel j sAst A B Benc : AST}
+    (hfuel : IsNormal pTC fuel)
+    (hBrawEnc : encTyCore? BRawTerm = some Benc)
+    (hBeval : ∃ M, eval pTC M (substT (S j) (liftT (S Z) Z sAst) B) = Benc)
+    (hA : FirstStrongNF ATerm Aval (nfT fuel (substT j sAst A)))
+    (hB : FirstStrongNF BNormTerm Bval (nfT fuel Benc)) :
+    FirstStrongNF (.pi ATerm BNormTerm) (Pi Aval Bval)
+      (nfT (S fuel) (substT j sAst (Pi A B))) := by
+  have hstep : eval pTC 1 (nfT (S fuel) (substT j sAst (Pi A B))) =
+      nfT (S fuel)
+        (Pi (substT j sAst A) (substT (S j) (liftT (S Z) Z sAst) B)) := by
+    simp only [eval,
+      hcong_nfT_s_substT_arg_tc fuel j sAst (Pi A B)
+        (Pi (substT j sAst A) (substT (S j) (liftT (S Z) Z sAst) B))
+        hfuel rfl]
+  exact first_strong_nf_prepend hstep
+    (NFActiveShape.nf (S fuel) (substT j sAst (Pi A B)))
+    (nfT_pi_raw_second_first_strong_split (ATerm := ATerm) (BRawTerm := BRawTerm)
+      (BNormTerm := BNormTerm) (Aval := Aval) (Bval := Bval) (fuel := fuel)
+      (Araw := substT j sAst A)
+      (Braw := substT (S j) (liftT (S Z) Z sAst) B)
+      (Benc := Benc) hfuel hBrawEnc hBeval hA hB)
+
 theorem nfT_substT_pi_raw_second_first_replay
     {ATerm BTerm : LF.Term} {Aval Bval fuel j sAst A B Benc : AST}
     (hfuel : IsNormal pTC fuel)
@@ -8378,6 +11496,54 @@ theorem nfT_substT_lam_raw_body_first_replay_split
       (braw := substT (S j) (liftT (S Z) Z sAst) b)
       (benc := benc) hfuel hbrawEnc hbeval hA hb hPayloadReplay hFinalReplay)
 
+theorem nfT_substT_lam_raw_body_first_strong
+    {ATerm bTerm : LF.Term} {Aval bval fuel j sAst A b benc : AST}
+    (hfuel : IsNormal pTC fuel)
+    (hbenc : encTyCore? bTerm = some benc)
+    (hbeval : ∃ M, eval pTC M (substT (S j) (liftT (S Z) Z sAst) b) = benc)
+    (hA : FirstStrongNF ATerm Aval (nfT fuel (substT j sAst A)))
+    (hb : FirstStrongNF bTerm bval (nfT fuel benc)) :
+    FirstStrongNF (.lam ATerm bTerm) (Lam Aval bval)
+      (nfT (S fuel) (substT j sAst (Lam A b))) := by
+  have hstep : eval pTC 1 (nfT (S fuel) (substT j sAst (Lam A b))) =
+      nfT (S fuel)
+        (Lam (substT j sAst A) (substT (S j) (liftT (S Z) Z sAst) b)) := by
+    simp only [eval,
+      hcong_nfT_s_substT_arg_tc fuel j sAst (Lam A b)
+        (Lam (substT j sAst A) (substT (S j) (liftT (S Z) Z sAst) b))
+        hfuel rfl]
+  exact first_strong_nf_prepend hstep
+    (NFActiveShape.nf (S fuel) (substT j sAst (Lam A b)))
+    (nfT_lam_raw_body_first_strong (ATerm := ATerm) (bTerm := bTerm)
+      (Aval := Aval) (bval := bval) (fuel := fuel)
+      (Araw := substT j sAst A)
+      (braw := substT (S j) (liftT (S Z) Z sAst) b)
+      (benc := benc) hfuel hbenc hbeval hA hb)
+
+theorem nfT_substT_lam_raw_body_first_strong_split
+    {ATerm bRawTerm bNormTerm : LF.Term} {Aval bval fuel j sAst A b benc : AST}
+    (hfuel : IsNormal pTC fuel)
+    (hbrawEnc : encTyCore? bRawTerm = some benc)
+    (hbeval : ∃ M, eval pTC M (substT (S j) (liftT (S Z) Z sAst) b) = benc)
+    (hA : FirstStrongNF ATerm Aval (nfT fuel (substT j sAst A)))
+    (hb : FirstStrongNF bNormTerm bval (nfT fuel benc)) :
+    FirstStrongNF (.lam ATerm bNormTerm) (Lam Aval bval)
+      (nfT (S fuel) (substT j sAst (Lam A b))) := by
+  have hstep : eval pTC 1 (nfT (S fuel) (substT j sAst (Lam A b))) =
+      nfT (S fuel)
+        (Lam (substT j sAst A) (substT (S j) (liftT (S Z) Z sAst) b)) := by
+    simp only [eval,
+      hcong_nfT_s_substT_arg_tc fuel j sAst (Lam A b)
+        (Lam (substT j sAst A) (substT (S j) (liftT (S Z) Z sAst) b))
+        hfuel rfl]
+  exact first_strong_nf_prepend hstep
+    (NFActiveShape.nf (S fuel) (substT j sAst (Lam A b)))
+    (nfT_lam_raw_body_first_strong_split (ATerm := ATerm) (bRawTerm := bRawTerm)
+      (bNormTerm := bNormTerm) (Aval := Aval) (bval := bval) (fuel := fuel)
+      (Araw := substT j sAst A)
+      (braw := substT (S j) (liftT (S Z) Z sAst) b)
+      (benc := benc) hfuel hbrawEnc hbeval hA hb)
+
 theorem nfT_app_raw_arg_first_strong
     {fTerm aTerm resTerm : LF.Term} {fVal aVal resVal fuel fraw araw aenc : AST}
     (hfuel : IsNormal pTC fuel)
@@ -8478,6 +11644,47 @@ theorem nfT_app_raw_arg_first_strong_replay
     (by
       intro fPre aPre hfLift hfEval haLift haEval
       exact hTail hfLift hfEval haLift haEval (hAReplay haLift haEval))
+
+theorem nfT_app_raw_arg_first_strong_of_arg_payload_replay_split
+    {fTerm aRawTerm aNormTerm resTerm : LF.Term} {fVal aVal resVal fuel fraw araw aenc : AST}
+    (hfuel : IsNormal pTC fuel)
+    (haRawEnc : encTyCore? aRawTerm = some aenc)
+    (haeval : ∃ M, eval pTC M araw = aenc)
+    (hfnorm : IsNormal pTC fVal)
+    (hF : FirstStrongNF fTerm fVal (nfT fuel fraw))
+    (hA : FirstStrongPayloadReplayNF aNormTerm aVal (nfT fuel aenc))
+    (hTail : ∀ {fPre aPre : AST}, LiftablePayload fPre fTerm ->
+      (∃ M, eval pTC M fPre = fVal) ->
+        LiftablePayload aPre aNormTerm -> (∃ M, eval pTC M aPre = aVal) ->
+          StackReplayablePayload aPre aNormTerm ->
+            FirstStrongNF resTerm resVal (nfAppT fuel fVal aPre)) :
+    FirstStrongNF resTerm resVal (nfT (S fuel) (App fraw araw)) := by
+  have hanorm : IsNormal pTC aenc := isnormal_encTyCore?_tc aRawTerm aenc haRawEnc
+  obtain ⟨MA, hMA⟩ := haeval
+  obtain ⟨Mctx, hMctx, hMguard⟩ :=
+    cong_eval_nf_wrapper_with_guard
+      (fun a => nfApp1 fuel a (nfT fuel fraw))
+      (fun a => NFActiveShape.app1 fuel a (nfT fuel fraw))
+      (fun a a' hstep => hcong_nfApp1_raw_nfT_arg_tc fuel a fraw hfuel a' hstep)
+      MA hMA hanorm
+  have hnext : FirstStrongNF resTerm resVal (nfApp1 fuel aenc (nfT fuel fraw)) := by
+    exact FirstLiftableNF.toStrong
+      (nfApp1_nfT_first_liftable (fTerm := fTerm) (resTerm := resTerm)
+        (fVal := fVal) (resVal := resVal) (fuel := fuel) (aAst := aenc)
+        (fCall := nfT fuel fraw) hfuel hanorm (FirstStrongNF.toFirstLiftable hF)
+        (by
+          intro fPre hfLift hfEval
+          exact FirstStrongNF.toFirstLiftable
+            (nfApp2_nfT_first_strong_of_payload_replay_nf (aTerm := aNormTerm)
+              (resTerm := resTerm) (aVal := aVal) (resVal := resVal)
+              (fuel := fuel) (fPre := fPre) (fVal := fVal) (aAst := aenc)
+              hfuel hfnorm hfEval hA
+              (by
+                intro aPre haLift haEval haReplay
+                exact hTail hfLift hfEval haLift haEval haReplay))))
+  have htail := first_strong_nf_prefix hMctx hMguard hnext
+  exact first_strong_nf_prepend (nfT_app_tc fuel fraw araw)
+    (NFActiveShape.nf (S fuel) (App fraw araw)) htail
 
 theorem nfT_app_raw_arg_first_replay
     {fTerm aTerm resTerm : LF.Term} {fVal aVal resVal fuel fraw araw aenc : AST}
@@ -8608,6 +11815,34 @@ theorem nfT_substT_app_raw_arg_first_replay_split
     (nfT_app_raw_arg_first_replay_split (fTerm := fTerm) (aRawTerm := aRawTerm)
       (aNormTerm := aNormTerm) (resTerm := resTerm)
       (fVal := fVal) (aVal := aVal) (resVal := resVal)
+      (fuel := fuel) (fraw := substT j sAst f) (araw := substT j sAst a)
+      (aenc := aenc) hfuel haRawEnc haeval hfnorm hF hA hTail)
+
+theorem nfT_substT_app_raw_arg_first_strong_of_arg_payload_replay_split
+    {fTerm aRawTerm aNormTerm resTerm : LF.Term} {fVal aVal resVal fuel j sAst f a aenc : AST}
+    (hfuel : IsNormal pTC fuel)
+    (haRawEnc : encTyCore? aRawTerm = some aenc)
+    (haeval : ∃ M, eval pTC M (substT j sAst a) = aenc)
+    (hfnorm : IsNormal pTC fVal)
+    (hF : FirstStrongNF fTerm fVal (nfT fuel (substT j sAst f)))
+    (hA : FirstStrongPayloadReplayNF aNormTerm aVal (nfT fuel aenc))
+    (hTail : ∀ {fPre aPre : AST}, LiftablePayload fPre fTerm ->
+      (∃ M, eval pTC M fPre = fVal) ->
+        LiftablePayload aPre aNormTerm -> (∃ M, eval pTC M aPre = aVal) ->
+          StackReplayablePayload aPre aNormTerm ->
+            FirstStrongNF resTerm resVal (nfAppT fuel fVal aPre)) :
+    FirstStrongNF resTerm resVal
+      (nfT (S fuel) (substT j sAst (App f a))) := by
+  have hstep : eval pTC 1 (nfT (S fuel) (substT j sAst (App f a))) =
+      nfT (S fuel) (App (substT j sAst f) (substT j sAst a)) := by
+    simp only [eval,
+      hcong_nfT_s_substT_arg_tc fuel j sAst (App f a)
+        (App (substT j sAst f) (substT j sAst a)) hfuel rfl]
+  exact first_strong_nf_prepend hstep
+    (NFActiveShape.nf (S fuel) (substT j sAst (App f a)))
+    (nfT_app_raw_arg_first_strong_of_arg_payload_replay_split
+      (fTerm := fTerm) (aRawTerm := aRawTerm) (aNormTerm := aNormTerm)
+      (resTerm := resTerm) (fVal := fVal) (aVal := aVal) (resVal := resVal)
       (fuel := fuel) (fraw := substT j sAst f) (araw := substT j sAst a)
       (aenc := aenc) hfuel haRawEnc haeval hfnorm hF hA hTail)
 
@@ -8931,6 +12166,156 @@ theorem nfAppT_nfApp_first_replay
                       (fTerm := LF.Term.app f a) (aTerm := aNF) (aVal := aVal)
                       hfenc' hflift haenc halift haeval hPayloadReplay hFinalReplay)
 
+theorem nfAppT_nfApp_first_strong_payload_replay_nf
+    (fuelNat : Nat) (fNF aNF : LF.Term) (fVal aPre aVal : AST)
+    (hfenc : encTyCore? fNF = some fVal)
+    (hflift : LiftablePayload fVal fNF)
+    (haenc : encTyCore? aNF = some aVal)
+    (halift : LiftablePayload aPre aNF)
+    (haeval : ∃ M, eval pTC M aPre = aVal)
+    (haReplay : StackReplayablePayload aPre aNF)
+    (hWrapReplay : ∀ {fTerm : LF.Term} {fAst : AST},
+      encTyCore? fTerm = some fAst ->
+        StackReplayablePayload (App fAst aPre) (.app fTerm aNF) ∧
+          StackReplayablePayload (App fAst aVal) (.app fTerm aNF))
+    (hBeta : ∀ {fuelPred : Nat} {A body : LF.Term} {AAst bodyAst : AST},
+      fuelNat = fuelPred + 1 ->
+        fNF = .lam A body ->
+          encTyCore? A = some AAst ->
+            encTyCore? body = some bodyAst ->
+              StackReplayablePayload aPre aNF ->
+                ∃ resVal,
+                  FirstStrongPayloadReplayNF
+                    (LFTyping.nf LFTyping.corpusSig fuelPred (LFTyping.subst0 aNF body))
+                    resVal (nfT (peano fuelPred) (substT Z aPre bodyAst))) :
+    ∃ resVal,
+      FirstStrongPayloadReplayNF (LFTyping.nfApp LFTyping.corpusSig fuelNat fNF aNF)
+        resVal (nfAppT (peano fuelNat) fVal aPre) := by
+  cases fuelNat with
+  | zero =>
+      obtain ⟨hPayloadReplay, hFinalReplay⟩ := hWrapReplay hfenc
+      refine ⟨App fVal aVal, ?_⟩
+      exact FirstReplayNF.toStrongPayloadReplay <| by
+        simpa [peano, LFTyping.nfApp] using
+          (nfAppT_wrap_first_replay
+            (hroot := nfAppT_z_tc fVal aPre)
+            (fTerm := fNF) (aTerm := aNF) (aVal := aVal)
+            hfenc hflift haenc halift haeval hPayloadReplay hFinalReplay)
+  | succ fuelPred =>
+      cases fNF with
+      | srt s =>
+          cases s <;> simp [encTyCore?] at hfenc <;> subst fVal
+          · refine ⟨App (Srt typeS) aVal, ?_⟩
+            obtain ⟨hPayloadReplay, hFinalReplay⟩ :=
+              hWrapReplay (fTerm := LF.Term.srt .type) (fAst := Srt typeS) rfl
+            exact FirstReplayNF.toStrongPayloadReplay <| by
+              simpa [peano, LFTyping.nfApp] using
+                (nfAppT_wrap_first_replay
+                  (hroot := nfAppT_srt_fall_tc (peano fuelPred) typeS aPre)
+                  (fTerm := LF.Term.srt .type) (aTerm := aNF) (aVal := aVal)
+                  rfl hflift haenc halift haeval hPayloadReplay hFinalReplay)
+          · refine ⟨App (Srt kindS) aVal, ?_⟩
+            obtain ⟨hPayloadReplay, hFinalReplay⟩ :=
+              hWrapReplay (fTerm := LF.Term.srt .kind) (fAst := Srt kindS) rfl
+            exact FirstReplayNF.toStrongPayloadReplay <| by
+              simpa [peano, LFTyping.nfApp] using
+                (nfAppT_wrap_first_replay
+                  (hroot := nfAppT_srt_fall_tc (peano fuelPred) kindS aPre)
+                  (fTerm := LF.Term.srt .kind) (aTerm := aNF) (aVal := aVal)
+                  rfl hflift haenc halift haeval hPayloadReplay hFinalReplay)
+      | var k =>
+          simp [encTyCore?] at hfenc
+          subst fVal
+          refine ⟨App (Var (peano k)) aVal, ?_⟩
+          obtain ⟨hPayloadReplay, hFinalReplay⟩ :=
+            hWrapReplay (fTerm := LF.Term.var k) (fAst := Var (peano k)) rfl
+          exact FirstReplayNF.toStrongPayloadReplay <| by
+            simpa [peano, LFTyping.nfApp] using
+              (nfAppT_wrap_first_replay
+                (hroot := nfAppT_var_fall_tc (peano fuelPred) (peano k) aPre)
+                (fTerm := LF.Term.var k) (aTerm := aNF) (aVal := aVal)
+                rfl hflift haenc halift haeval hPayloadReplay hFinalReplay)
+      | con x =>
+          unfold encTyCore? at hfenc
+          cases hx : encName? x with
+          | none => simp [hx] at hfenc
+          | some k =>
+              simp [hx] at hfenc
+              subst fVal
+              refine ⟨App (Con k) aVal, ?_⟩
+              have hfenc' : encTyCore? (.con x) = some (Con k) := by
+                unfold encTyCore?
+                simp [hx]
+              obtain ⟨hPayloadReplay, hFinalReplay⟩ :=
+                hWrapReplay (fTerm := LF.Term.con x) (fAst := Con k) hfenc'
+              exact FirstReplayNF.toStrongPayloadReplay <| by
+                simpa [peano, LFTyping.nfApp] using
+                  (nfAppT_wrap_first_replay
+                    (hroot := nfAppT_con_fall_tc (peano fuelPred) k aPre)
+                    (fTerm := LF.Term.con x) (aTerm := aNF) (aVal := aVal)
+                    hfenc' hflift haenc halift haeval hPayloadReplay hFinalReplay)
+      | pi A B =>
+          simp [encTyCore?] at hfenc
+          cases hA : encTyCore? A with
+          | none => simp [hA] at hfenc
+          | some AAst =>
+              cases hB : encTyCore? B with
+              | none => simp [hA, hB] at hfenc
+              | some BAst =>
+                  simp [hA, hB] at hfenc
+                  subst fVal
+                  refine ⟨App (Pi AAst BAst) aVal, ?_⟩
+                  have hfenc' : encTyCore? (.pi A B) = some (Pi AAst BAst) := by
+                    simp [encTyCore?, hA, hB]
+                  obtain ⟨hPayloadReplay, hFinalReplay⟩ :=
+                    hWrapReplay (fTerm := LF.Term.pi A B) (fAst := Pi AAst BAst) hfenc'
+                  exact FirstReplayNF.toStrongPayloadReplay <| by
+                    simpa [peano, LFTyping.nfApp] using
+                      (nfAppT_wrap_first_replay
+                        (hroot := nfAppT_pi_fall_tc (peano fuelPred) AAst BAst aPre)
+                        (fTerm := LF.Term.pi A B) (aTerm := aNF) (aVal := aVal)
+                        hfenc' hflift haenc halift haeval hPayloadReplay hFinalReplay)
+      | lam A body =>
+          simp [encTyCore?] at hfenc
+          cases hA : encTyCore? A with
+          | none => simp [hA] at hfenc
+          | some AAst =>
+              cases hbody : encTyCore? body with
+              | none => simp [hA, hbody] at hfenc
+              | some bodyAst =>
+                  simp [hA, hbody] at hfenc
+                  subst fVal
+                  obtain ⟨resVal, hnext⟩ :=
+                    hBeta (fuelPred := fuelPred) (A := A) (body := body)
+                      (AAst := AAst) (bodyAst := bodyAst) rfl rfl hA hbody haReplay
+                  refine ⟨resVal, ?_⟩
+                  simpa [peano, LFTyping.nfApp, LFTyping.subst0] using
+                    (first_strong_payload_replay_nf_prepend
+                      (nfAppT_beta_tc (peano fuelPred) AAst bodyAst aPre)
+                      (NFActiveShape.appT (S (peano fuelPred)) (Lam AAst bodyAst) aPre)
+                      hnext)
+      | app f a =>
+          simp [encTyCore?] at hfenc
+          cases hf : encTyCore? f with
+          | none => simp [hf] at hfenc
+          | some fAst =>
+              cases ha : encTyCore? a with
+              | none => simp [hf, ha] at hfenc
+              | some aAst =>
+                  simp [hf, ha] at hfenc
+                  subst fVal
+                  refine ⟨App (App fAst aAst) aVal, ?_⟩
+                  have hfenc' : encTyCore? (.app f a) = some (App fAst aAst) := by
+                    simp [encTyCore?, hf, ha]
+                  obtain ⟨hPayloadReplay, hFinalReplay⟩ :=
+                    hWrapReplay (fTerm := LF.Term.app f a) (fAst := App fAst aAst) hfenc'
+                  exact FirstReplayNF.toStrongPayloadReplay <| by
+                    simpa [peano, LFTyping.nfApp] using
+                      (nfAppT_wrap_first_replay
+                        (hroot := nfAppT_app_fall_tc (peano fuelPred) fAst aAst aPre)
+                        (fTerm := LF.Term.app f a) (aTerm := aNF) (aVal := aVal)
+                        hfenc' hflift haenc halift haeval hPayloadReplay hFinalReplay)
+
 theorem substT_encTyCore_sim_tc :
     ∀ (body : LF.Term) (bodyAst : AST) (j : Nat) (sAst : AST) (sTerm : LF.Term),
       encTyCore? body = some bodyAst -> LiftablePayload sAst sTerm ->
@@ -9203,6 +12588,236 @@ theorem liftT_encTyCore_sim_tc :
                 have hleft := eval_trans_tc 1 MF _ _ _ hstep hMF
                 exact eval_trans_tc (1 + MF) MA _ _ _ hleft hMA
 
+def EncodableTerm (t : LF.Term) : Prop :=
+  ∃ u, encTyCore? t = some u
+
+theorem lfTerm_beq_true_eq {a b : LF.Term} : (a == b) = true -> a = b := by
+  intro h
+  induction a generalizing b <;> cases b <;> simp at h ⊢ <;> exact h
+
+theorem encTyCore?_some_of_lift {t : LF.Term} {u : AST}
+    (h : encTyCore? t = some u) (d c : Nat) :
+    ∃ v, encTyCore? (LFTyping.lift d c t) = some v := by
+  obtain ⟨v, _N, hv, _hEval⟩ := liftT_encTyCore_sim_tc t u d c h
+  exact ⟨v, hv⟩
+
+theorem encTyCore?_some_of_subst {body sTerm : LF.Term} {bodyAst sAst : AST}
+    (hbody : encTyCore? body = some bodyAst)
+    (hs : encTyCore? sTerm = some sAst) (j : Nat) :
+    ∃ v, encTyCore? (LFTyping.subst j sTerm body) = some v := by
+  obtain ⟨v, _N, hv, _hEval⟩ :=
+    substT_encTyCore_sim_tc body bodyAst j sAst sTerm hbody
+      (liftable_encTyCore?_tc sTerm sAst hs)
+  exact ⟨v, hv⟩
+
+theorem reduces_corpus_preserves_encodable {a b : LF.Term}
+    (hred : LFTyping.Reduces LFTyping.corpusSig a b) :
+    EncodableTerm a -> EncodableTerm b := by
+  induction hred with
+  | refl =>
+      intro h
+      exact h
+  | beta =>
+      rename_i A body a
+      intro h
+      rcases h with ⟨_u, hu⟩
+      simp [encTyCore?] at hu
+      cases hA : encTyCore? A with
+      | none => simp [hA] at hu
+      | some _Aast =>
+          cases hbody : encTyCore? body with
+          | none => simp [hA, hbody] at hu
+          | some _bodyAst =>
+              cases ha : encTyCore? a with
+              | none => simp [hA, hbody, ha] at hu
+              | some _aAst =>
+                  exact encTyCore?_some_of_subst hbody ha 0
+  | delta hlookup =>
+      intro _h
+      rw [lookupBody_corpusSig_none] at hlookup
+      cases hlookup
+  | app _hf _ha ihf iha =>
+      rename_i f _f' a _a'
+      intro h
+      rcases h with ⟨_u, hu⟩
+      simp [encTyCore?] at hu
+      cases hf : encTyCore? f with
+      | none => simp [hf] at hu
+      | some fAst =>
+          cases ha : encTyCore? a with
+          | none => simp [hf, ha] at hu
+          | some aAst =>
+              obtain ⟨fAst', hf'⟩ := ihf ⟨fAst, hf⟩
+              obtain ⟨aAst', ha'⟩ := iha ⟨aAst, ha⟩
+              exact ⟨App fAst' aAst', by simp [encTyCore?, hf', ha']⟩
+  | pi _hA _hB ihA ihB =>
+      rename_i A _A' B _B'
+      intro h
+      rcases h with ⟨_u, hu⟩
+      simp [encTyCore?] at hu
+      cases hA : encTyCore? A with
+      | none => simp [hA] at hu
+      | some AAst =>
+          cases hB : encTyCore? B with
+          | none => simp [hA, hB] at hu
+          | some BAst =>
+              obtain ⟨AAst', hA'⟩ := ihA ⟨AAst, hA⟩
+              obtain ⟨BAst', hB'⟩ := ihB ⟨BAst, hB⟩
+              exact ⟨Pi AAst' BAst', by simp [encTyCore?, hA', hB']⟩
+  | lam _hA _hb ihA ihb =>
+      rename_i A _A' b _b'
+      intro h
+      rcases h with ⟨_u, hu⟩
+      simp [encTyCore?] at hu
+      cases hA : encTyCore? A with
+      | none => simp [hA] at hu
+      | some AAst =>
+          cases hb : encTyCore? b with
+          | none => simp [hA, hb] at hu
+          | some bAst =>
+              obtain ⟨AAst', hA'⟩ := ihA ⟨AAst, hA⟩
+              obtain ⟨bAst', hb'⟩ := ihb ⟨bAst, hb⟩
+              exact ⟨Lam AAst' bAst', by simp [encTyCore?, hA', hb']⟩
+  | trans _hab _hbc ihab ihbc =>
+      intro h
+      exact ihbc (ihab h)
+
+theorem nf_nfApp_corpus_encodable : ∀ fuel : Nat,
+    (∀ t, EncodableTerm t -> EncodableTerm (LFTyping.nf LFTyping.corpusSig fuel t)) ∧
+    (∀ f a, EncodableTerm f -> EncodableTerm a ->
+      EncodableTerm (LFTyping.nfApp LFTyping.corpusSig fuel f a)) := by
+  intro fuel
+  induction fuel with
+  | zero =>
+      constructor
+      · intro t ht
+        simpa [LFTyping.nf] using ht
+      · intro f a hf ha
+        obtain ⟨fu, hfu⟩ := hf
+        obtain ⟨au, hau⟩ := ha
+        exact ⟨App fu au, by simp [LFTyping.nfApp, encTyCore?, hfu, hau]⟩
+  | succ fuel ih =>
+      constructor
+      · intro t ht
+        cases t with
+        | srt s =>
+            cases s <;> simp [LFTyping.nf, EncodableTerm, encTyCore?]
+        | var k =>
+            simp [LFTyping.nf, EncodableTerm, encTyCore?]
+        | con x =>
+            simpa [LFTyping.nf, lookupBody_corpusSig_none] using ht
+        | pi A B =>
+            obtain ⟨_, hu⟩ := ht
+            simp [encTyCore?] at hu
+            cases hA : encTyCore? A with
+            | none => simp [hA] at hu
+            | some Au =>
+                cases hB : encTyCore? B with
+                | none => simp [hA, hB] at hu
+                | some Bu =>
+                    obtain ⟨Anfu, hAnfu⟩ := ih.1 A ⟨Au, hA⟩
+                    obtain ⟨Bnfu, hBnfu⟩ := ih.1 B ⟨Bu, hB⟩
+                    exact ⟨Pi Anfu Bnfu, by simp [LFTyping.nf, encTyCore?, hAnfu, hBnfu]⟩
+        | lam A b =>
+            obtain ⟨_, hu⟩ := ht
+            simp [encTyCore?] at hu
+            cases hA : encTyCore? A with
+            | none => simp [hA] at hu
+            | some Au =>
+                cases hb : encTyCore? b with
+                | none => simp [hA, hb] at hu
+                | some bu =>
+                    obtain ⟨Anfu, hAnfu⟩ := ih.1 A ⟨Au, hA⟩
+                    obtain ⟨bnfu, hbnfu⟩ := ih.1 b ⟨bu, hb⟩
+                    exact ⟨Lam Anfu bnfu, by simp [LFTyping.nf, encTyCore?, hAnfu, hbnfu]⟩
+        | app f a =>
+            obtain ⟨_, hu⟩ := ht
+            simp [encTyCore?] at hu
+            cases hf : encTyCore? f with
+            | none => simp [hf] at hu
+            | some fu =>
+                cases ha : encTyCore? a with
+                | none => simp [hf, ha] at hu
+                | some au =>
+                    have hfnf := ih.1 f ⟨fu, hf⟩
+                    have hanf := ih.1 a ⟨au, ha⟩
+                    exact ih.2 (LFTyping.nf LFTyping.corpusSig fuel f)
+                      (LFTyping.nf LFTyping.corpusSig fuel a) hfnf hanf
+      · intro f a hf ha
+        cases f with
+        | srt s =>
+            obtain ⟨au, hau⟩ := ha
+            cases s with
+            | type =>
+                exact ⟨App (Srt typeS) au, by simp [LFTyping.nfApp, encTyCore?, hau]⟩
+            | kind =>
+                exact ⟨App (Srt kindS) au, by simp [LFTyping.nfApp, encTyCore?, hau]⟩
+        | var k =>
+            obtain ⟨fu, hfu⟩ := hf
+            obtain ⟨au, hau⟩ := ha
+            simp [encTyCore?] at hfu
+            subst fu
+            exact ⟨App (Var (peano k)) au, by simp [LFTyping.nfApp, encTyCore?, hau]⟩
+        | con x =>
+            obtain ⟨fu, hfu⟩ := hf
+            obtain ⟨au, hau⟩ := ha
+            unfold encTyCore? at hfu
+            cases hx : encName? x with
+            | none => simp [hx] at hfu
+            | some k =>
+                simp [hx] at hfu
+                subst fu
+                exact ⟨App (Con k) au, by simp [LFTyping.nfApp, encTyCore?, hx, hau]⟩
+        | pi A B =>
+            obtain ⟨fu, hfu⟩ := hf
+            obtain ⟨au, hau⟩ := ha
+            simp [encTyCore?] at hfu
+            cases hA : encTyCore? A with
+            | none => simp [hA] at hfu
+            | some Au =>
+                cases hB : encTyCore? B with
+                | none => simp [hA, hB] at hfu
+                | some Bu =>
+                    simp [hA, hB] at hfu
+                    subst fu
+                    exact ⟨App (Pi Au Bu) au, by simp [LFTyping.nfApp, encTyCore?, hA, hB, hau]⟩
+        | lam A body =>
+            obtain ⟨fu, hfu⟩ := hf
+            simp [encTyCore?] at hfu
+            cases hA : encTyCore? A with
+            | none => simp [hA] at hfu
+            | some _Au =>
+                cases hbody : encTyCore? body with
+                | none => simp [hA, hbody] at hfu
+                | some _bodyAst =>
+                    obtain ⟨aAst, haAst⟩ := ha
+                    have hsubst := encTyCore?_some_of_subst hbody haAst 0
+                    simpa [LFTyping.nfApp, LFTyping.subst0] using
+                      ih.1 (LFTyping.subst 0 a body) hsubst
+        | app g b =>
+            obtain ⟨fu, hfu⟩ := hf
+            obtain ⟨au, hau⟩ := ha
+            simp [encTyCore?] at hfu
+            cases hg : encTyCore? g with
+            | none => simp [hg] at hfu
+            | some gu =>
+                cases hb : encTyCore? b with
+                | none => simp [hg, hb] at hfu
+                | some bu =>
+                    simp [hg, hb] at hfu
+                    subst fu
+                    exact ⟨App (App gu bu) au, by simp [LFTyping.nfApp, encTyCore?, hg, hb, hau]⟩
+
+theorem nf_corpus_encodable {fuel : Nat} {t : LF.Term}
+    (h : EncodableTerm t) :
+    EncodableTerm (LFTyping.nf LFTyping.corpusSig fuel t) :=
+  (nf_nfApp_corpus_encodable fuel).1 t h
+
+theorem nfApp_corpus_encodable {fuel : Nat} {f a : LF.Term}
+    (hf : EncodableTerm f) (ha : EncodableTerm a) :
+    EncodableTerm (LFTyping.nfApp LFTyping.corpusSig fuel f a) :=
+  (nf_nfApp_corpus_encodable fuel).2 f a hf ha
+
 /-! ## Interning simulation leaves. -/
 
 inductive InternActiveShape : AST -> Prop where
@@ -9474,6 +13089,118 @@ theorem hcong_internApp2_active_tc (f : AST) (hf : IsNormal pTC f) :
   rw [hb]
   simp only [oneStepList, hf, hstep, Option.map_some, internApp2]
 
+theorem hcong_internPi1_left_active_child_tc (r : AST)
+    (hr : InternActiveShape r) :
+    ∀ B B', oneStep pTC B = some B' ->
+      oneStep pTC (internPi1 B r) = some (internPi1 B' r) := by
+  intro B B' hstep
+  have hb : baseReducts pTC (internPi1 B r) = [] := by
+    cases hr <;> rfl
+  change (match baseReducts pTC (internPi1 B r) with
+    | r0 :: _ => some r0
+    | [] => Option.map (fun args' => AST.sexp (.id "internPi1") args')
+        (oneStepList pTC [B, r])) =
+      some (internPi1 B' r)
+  rw [hb]
+  simp only [oneStepList, hstep, Option.map_some, internPi1]
+
+theorem hcong_internLam1_left_active_child_tc (r : AST)
+    (hr : InternActiveShape r) :
+    ∀ b b', oneStep pTC b = some b' ->
+      oneStep pTC (internLam1 b r) = some (internLam1 b' r) := by
+  intro b b' hstep
+  have hb : baseReducts pTC (internLam1 b r) = [] := by
+    cases hr <;> rfl
+  change (match baseReducts pTC (internLam1 b r) with
+    | r0 :: _ => some r0
+    | [] => Option.map (fun args' => AST.sexp (.id "internLam1") args')
+        (oneStepList pTC [b, r])) =
+      some (internLam1 b' r)
+  rw [hb]
+  simp only [oneStepList, hstep, Option.map_some, internLam1]
+
+theorem hcong_internApp1_left_active_child_tc (r : AST)
+    (hr : InternActiveShape r) :
+    ∀ a a', oneStep pTC a = some a' ->
+      oneStep pTC (internApp1 a r) = some (internApp1 a' r) := by
+  intro a a' hstep
+  have hb : baseReducts pTC (internApp1 a r) = [] := by
+    cases hr <;> rfl
+  change (match baseReducts pTC (internApp1 a r) with
+    | r0 :: _ => some r0
+    | [] => Option.map (fun args' => AST.sexp (.id "internApp1") args')
+        (oneStepList pTC [a, r])) =
+      some (internApp1 a' r)
+  rw [hb]
+  simp only [oneStepList, hstep, Option.map_some, internApp1]
+
+def InternTermChildOpen (s : AST) : Prop :=
+  baseReducts pTC (internTerm s) = []
+
+theorem hcong_internTerm_child_open_tc {s s' : AST}
+    (hopen : InternTermChildOpen s) (hstep : oneStep pTC s = some s') :
+    oneStep pTC (internTerm s) = some (internTerm s') := by
+  unfold InternTermChildOpen at hopen
+  change (match baseReducts pTC (internTerm s) with
+    | r :: _ => some r
+    | [] => Option.map (fun args' => AST.sexp (.id "internTerm") args')
+        (oneStepList pTC [s])) = some (internTerm s')
+  rw [hopen]
+  simp only [oneStepList, hstep, Option.map_some, internTerm]
+
+theorem cong_eval_internTerm_child_open_with_guard :
+    ∀ (N : Nat) {s v : AST},
+      eval pTC N s = v ->
+        (∀ k, k < N -> InternTermChildOpen (eval pTC k s)) ->
+          ∃ M,
+            eval pTC M (internTerm s) = internTerm v ∧
+              ∀ k, k < M -> InternActiveShape (eval pTC k (internTerm s)) := by
+  intro N
+  induction N with
+  | zero =>
+      intro s v h _
+      simp only [eval] at h
+      subst v
+      exact ⟨0, rfl, fun k hk => False.elim (Nat.not_lt_zero k hk)⟩
+  | succ n ih =>
+      intro s v h hguard
+      simp only [eval] at h
+      cases hstep : oneStep pTC s with
+      | none =>
+          rw [hstep] at h
+          subst v
+          exact ⟨0, rfl, fun k hk => False.elim (Nat.not_lt_zero k hk)⟩
+      | some s' =>
+          rw [hstep] at h
+          have hopen : InternTermChildOpen s := by
+            simpa only [eval] using hguard 0 (Nat.zero_lt_succ n)
+          have hguard' :
+              ∀ k, k < n -> InternTermChildOpen (eval pTC k s') := by
+            intro k hk
+            have hk' : Nat.succ k < Nat.succ n := Nat.succ_lt_succ hk
+            simpa only [eval, hstep] using hguard (Nat.succ k) hk'
+          obtain ⟨M, hM, hMguard⟩ := ih h hguard'
+          refine ⟨M + 1, ?_, ?_⟩
+          · simp only [eval, hcong_internTerm_child_open_tc hopen hstep]
+            exact hM
+          · intro k hk
+            cases k with
+            | zero =>
+                simpa only [eval] using InternActiveShape.term s
+            | succ k =>
+                have hkM : k < M := by
+                  exact Nat.succ_lt_succ_iff.mp (by
+                    simpa only [Nat.add_one] using hk)
+                have htotal : eval pTC (Nat.succ k) (internTerm s) =
+                    eval pTC k (internTerm s') := by
+                  have hone : eval pTC 1 (internTerm s) = internTerm s' := by
+                    simp only [eval, hcong_internTerm_child_open_tc hopen hstep]
+                  have h := eval_trans_tc 1 k (internTerm s) (internTerm s')
+                    (eval pTC k (internTerm s')) hone rfl
+                  simpa [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using h
+                rw [htotal]
+                exact hMguard k hkM
+
 theorem cong_eval_intern_active (F : AST -> AST)
     (hcong : ∀ s s', InternActiveShape s -> oneStep pTC s = some s' ->
       oneStep pTC (F s) = some (F s')) :
@@ -9507,6 +13234,96 @@ theorem cong_eval_intern_active (F : AST -> AST)
           refine ⟨M + 1, ?_⟩
           simp only [eval, hcong s s' hsactive hstep]
           exact hM
+
+theorem cong_eval_intern_wrapper_with_guard (F : AST -> AST)
+    (hwrap : ∀ s, InternActiveShape (F s))
+    (hcong : ∀ s s', oneStep pTC s = some s' ->
+      oneStep pTC (F s) = some (F s')) :
+    ∀ (N : Nat) {s v : AST}, eval pTC N s = v ->
+      ∃ M, eval pTC M (F s) = F v ∧
+        ∀ k, k < M -> InternActiveShape (eval pTC k (F s)) := by
+  intro N
+  induction N with
+  | zero =>
+      intro s v h
+      simp only [eval] at h
+      subst v
+      exact ⟨0, rfl, fun k hk => False.elim (Nat.not_lt_zero k hk)⟩
+  | succ n ih =>
+      intro s v h
+      simp only [eval] at h
+      cases hstep : oneStep pTC s with
+      | none =>
+          rw [hstep] at h
+          subst v
+          exact ⟨0, rfl, fun k hk => False.elim (Nat.not_lt_zero k hk)⟩
+      | some s' =>
+          rw [hstep] at h
+          obtain ⟨M, hM, hMguard⟩ := ih h
+          refine ⟨1 + M, ?_, ?_⟩
+          · have hstepWrap : eval pTC 1 (F s) = F s' := by
+              simp only [eval, hcong s s' hstep]
+            exact eval_trans_tc 1 M _ _ _ hstepWrap hM
+          · intro k hk
+            cases k with
+            | zero =>
+                simpa only [eval] using hwrap s
+            | succ k =>
+                have hkM : k < M := by
+                  simpa only [Nat.one_add, Nat.succ_lt_succ_iff] using hk
+                have hstepWrap : eval pTC 1 (F s) = F s' := by
+                  simp only [eval, hcong s s' hstep]
+                have hshift : eval pTC (Nat.succ k) (F s) = eval pTC k (F s') := by
+                  have h := eval_trans_tc 1 k (F s) (F s') (eval pTC k (F s'))
+                    hstepWrap rfl
+                  simpa [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using h
+                rw [hshift]
+                exact hMguard k hkM
+
+theorem good_cong_eval_intern_wrapper_with_guard (F : AST -> AST)
+    (hwrap : ∀ s, InternActiveShape (F s))
+    (hcong : ∀ {s s' : AST}, ResolveGoodTC s -> oneStep pTC s = some s' ->
+      oneStep pTC (F s) = some (F s')) :
+    ∀ (N : Nat) {s v : AST}, ResolveGoodTC s -> eval pTC N s = v ->
+      ∃ M, eval pTC M (F s) = F v ∧
+        ∀ k, k < M -> InternActiveShape (eval pTC k (F s)) := by
+  intro N
+  induction N with
+  | zero =>
+      intro s v _ h
+      simp only [eval] at h
+      subst v
+      exact ⟨0, rfl, fun k hk => False.elim (Nat.not_lt_zero k hk)⟩
+  | succ n ih =>
+      intro s v hgood h
+      simp only [eval] at h
+      cases hstep : oneStep pTC s with
+      | none =>
+          rw [hstep] at h
+          subst v
+          exact ⟨0, rfl, fun k hk => False.elim (Nat.not_lt_zero k hk)⟩
+      | some s' =>
+          rw [hstep] at h
+          obtain ⟨M, hM, hMguard⟩ := ih (good_step_tc hgood hstep) h
+          refine ⟨1 + M, ?_, ?_⟩
+          · have hstepWrap : eval pTC 1 (F s) = F s' := by
+              simp only [eval, hcong hgood hstep]
+            exact eval_trans_tc 1 M _ _ _ hstepWrap hM
+          · intro k hk
+            cases k with
+            | zero =>
+                simpa only [eval] using hwrap s
+            | succ k =>
+                have hkM : k < M := by
+                  simpa only [Nat.one_add, Nat.succ_lt_succ_iff] using hk
+                have hstepWrap : eval pTC 1 (F s) = F s' := by
+                  simp only [eval, hcong hgood hstep]
+                have hshift : eval pTC (Nat.succ k) (F s) = eval pTC k (F s') := by
+                  have h := eval_trans_tc 1 k (F s) (F s') (eval pTC k (F s'))
+                    hstepWrap rfl
+                  simpa [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using h
+                rw [hshift]
+                exact hMguard k hkM
 
 theorem cong_eval_intern_active_with_guard (F : AST -> AST)
     (hwrap : ∀ s, InternActiveShape s -> InternActiveShape (F s))
@@ -9555,6 +13372,32 @@ theorem cong_eval_intern_active_with_guard (F : AST -> AST)
                   simp only [eval, hcong s s' hsactive hstep]
                 rw [htotal]
                 exact hMguard k hkM
+
+theorem first_active_intern_prefix {r : Option AST} {call next : AST} {M : Nat}
+    (hstep : eval pTC M call = next)
+    (hguard : ∀ k, k < M -> InternActiveShape (eval pTC k call))
+    (hnext : FirstActiveIntern r next) : FirstActiveIntern r call := by
+  cases hnext with
+  | intro hmatch hnextGuard =>
+      rename_i N
+      refine FirstActiveIntern.intro (N := M + N) ?_ ?_
+      · have htotal : eval pTC (M + N) call = eval pTC N next :=
+          eval_trans_tc M N call next (eval pTC N next) hstep rfl
+        rw [htotal]
+        exact hmatch
+      · intro k hk
+        by_cases hkM : k < M
+        · exact hguard k hkM
+        · have hge : M ≤ k := Nat.le_of_not_gt hkM
+          let j := k - M
+          have hjlt : j < N := by omega
+          have hk_eq : k = M + j := by omega
+          have hshift : eval pTC k call = eval pTC j next := by
+            have htotal : eval pTC (M + j) call = eval pTC j next :=
+              eval_trans_tc M j call next (eval pTC j next) hstep rfl
+            simpa [hk_eq] using htotal
+          rw [hshift]
+          exact hnextGuard j hjlt
 
 theorem first_active_intern_prepend {r : Option AST} {call next : AST}
     (hstep : eval pTC 1 call = next) (hactive : InternActiveShape call)
@@ -9621,6 +13464,154 @@ theorem first_active_intern_bind_active {r q : Option AST} {call : AST}
               rw [htotal]
               exact hendGuard (k - Mctx) hjlt
 
+theorem first_active_internPi1_normalize_left {r : Option AST}
+    {Braw s : AST} {B : LF.Term}
+    (hs : InternActiveShape s)
+    (hB : ∃ N, eval pTC N Braw = encTerm B)
+    (hnext : FirstActiveIntern r (internPi1 (encTerm B) s)) :
+    FirstActiveIntern r (internPi1 Braw s) := by
+  rcases hB with ⟨NB, hNB⟩
+  obtain ⟨M, hM, hguard⟩ :=
+    cong_eval_intern_wrapper_with_guard
+      (fun b => internPi1 b s)
+      (fun b => InternActiveShape.pi1 b s)
+      (hcong_internPi1_left_active_child_tc s hs)
+      NB hNB
+  exact first_active_intern_prefix hM hguard hnext
+
+theorem first_active_internLam1_normalize_left {r : Option AST}
+    {braw s : AST} {b : LF.Term}
+    (hs : InternActiveShape s)
+    (hb : ∃ N, eval pTC N braw = encTerm b)
+    (hnext : FirstActiveIntern r (internLam1 (encTerm b) s)) :
+    FirstActiveIntern r (internLam1 braw s) := by
+  rcases hb with ⟨Nb, hNb⟩
+  obtain ⟨M, hM, hguard⟩ :=
+    cong_eval_intern_wrapper_with_guard
+      (fun b0 => internLam1 b0 s)
+      (fun b0 => InternActiveShape.lam1 b0 s)
+      (hcong_internLam1_left_active_child_tc s hs)
+      Nb hNb
+  exact first_active_intern_prefix hM hguard hnext
+
+theorem first_active_internApp1_normalize_left {r : Option AST}
+    {araw s : AST} {a : LF.Term}
+    (hs : InternActiveShape s)
+    (ha : ∃ N, eval pTC N araw = encTerm a)
+    (hnext : FirstActiveIntern r (internApp1 (encTerm a) s)) :
+    FirstActiveIntern r (internApp1 araw s) := by
+  rcases ha with ⟨Na, hNa⟩
+  obtain ⟨M, hM, hguard⟩ :=
+    cong_eval_intern_wrapper_with_guard
+      (fun a0 => internApp1 a0 s)
+      (fun a0 => InternActiveShape.app1 a0 s)
+      (hcong_internApp1_left_active_child_tc s hs)
+      Na hNa
+  exact first_active_intern_prefix hM hguard hnext
+
+theorem hdesc_internTerm_resolveK_tc (s0 : String) :
+    ∀ {a a' : AST}, ResolveGoodTC a -> oneStep pTC a = some a' ->
+      oneStep pTC (internTerm (resolveK (con0 s0) a)) =
+        some (internTerm (resolveK (con0 s0) a')) := by
+  intro a a' hgood hstep
+  have hopen : InternTermChildOpen (resolveK (con0 s0) a) := by
+    rfl
+  exact hcong_internTerm_child_open_tc hopen (hdesc_resolveK_tc s0 hgood hstep)
+
+theorem eval_internTerm_resolve_start_tc (ctx : List String) (s : String) :
+    eval pTC 1
+        (internTerm
+          (resolve (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx) (con0 s))) =
+      internTerm
+        (resolveK (con0 s)
+          (ctxidx (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx) (con0 s))) := by
+  have hopen : InternTermChildOpen
+      (resolve (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx) (con0 s)) := by
+    rfl
+  simp only [eval, hcong_internTerm_child_open_tc hopen (os_res_tc _ _)]
+
+theorem eval_internTerm_resolveK_final_tc (ctx : List String) (s : String) :
+    eval pTC 1
+        (internTerm
+          (resolveK (con0 s)
+            (Mettapedia.GSLT.LanguageDef.LFResolveSim.encIdx (LF.ctxIdx ctx s)))) =
+      internTerm (encTerm (LF.resolve ctx s)) := by
+  cases hr : LF.ctxIdx ctx s with
+  | none =>
+      have hopen : InternTermChildOpen
+          (resolveK (con0 s) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encIdx none)) := by
+        rfl
+      rw [show LF.resolve ctx s = .con s from by simp [LF.resolve, hr]]
+      have hstep : oneStep pTC
+          (internTerm
+            (resolveK (con0 s) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encIdx none))) =
+          some (internTerm (LFEnc.Con (con0 s))) := by
+        exact hcong_internTerm_child_open_tc hopen (by
+          simpa [Mettapedia.GSLT.LanguageDef.LFResolveSim.encIdx] using
+            os_resK_nf_tc (con0 s))
+      change (match oneStep pTC
+          (internTerm
+            (resolveK (con0 s) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encIdx none))) with
+        | some t' => t'
+        | none =>
+            internTerm
+              (resolveK (con0 s) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encIdx none))) =
+        internTerm (LFEnc.Con (con0 s))
+      rw [hstep]
+  | some i =>
+      have hopen : InternTermChildOpen
+          (resolveK (con0 s) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encIdx (some i))) := by
+        rfl
+      rw [show LF.resolve ctx s = .var i from by simp [LF.resolve, hr]]
+      have hstep : oneStep pTC
+          (internTerm
+            (resolveK (con0 s)
+              (Mettapedia.GSLT.LanguageDef.LFResolveSim.encIdx (some i)))) =
+          some (internTerm (Var (peano i))) := by
+        exact hcong_internTerm_child_open_tc hopen (by
+          simpa [Mettapedia.GSLT.LanguageDef.LFResolveSim.encIdx] using
+            os_resK_idx_tc (con0 s) (peano i))
+      change (match oneStep pTC
+          (internTerm
+            (resolveK (con0 s)
+              (Mettapedia.GSLT.LanguageDef.LFResolveSim.encIdx (some i)))) with
+        | some t' => t'
+        | none =>
+            internTerm
+              (resolveK (con0 s)
+                (Mettapedia.GSLT.LanguageDef.LFResolveSim.encIdx (some i)))) =
+        internTerm (Var (peano i))
+      rw [hstep]
+
+theorem first_active_intern_resolve_to_encTerm {r : Option AST}
+    (ctx : List String) (s : String)
+    (hcanon : FirstActiveIntern r (internTerm (encTerm (LF.resolve ctx s)))) :
+    FirstActiveIntern r
+      (internTerm
+        (resolve (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx) (con0 s))) := by
+  obtain ⟨Nctx, hctx⟩ := ctxidx_sim_tc ctx s
+  obtain ⟨Mctx, hMctx, hMguard⟩ :=
+    good_cong_eval_intern_wrapper_with_guard
+      (fun a => internTerm (resolveK (con0 s) a))
+      (fun a => InternActiveShape.term (resolveK (con0 s) a))
+      (hdesc_internTerm_resolveK_tc s)
+      Nctx (Mettapedia.GSLT.LanguageDef.LFResolveSim.Good.seed ctx s) hctx
+  have hfinal := first_active_intern_prepend
+    (eval_internTerm_resolveK_final_tc ctx s)
+    (InternActiveShape.term
+      (resolveK (con0 s)
+        (Mettapedia.GSLT.LanguageDef.LFResolveSim.encIdx (LF.ctxIdx ctx s))))
+    hcanon
+  have hctxPrefix : FirstActiveIntern r
+      (internTerm
+        (resolveK (con0 s)
+          (ctxidx (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx) (con0 s)))) :=
+    first_active_intern_prefix hMctx hMguard hfinal
+  exact first_active_intern_prepend (eval_internTerm_resolve_start_tc ctx s)
+    (InternActiveShape.term
+      (resolve (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx) (con0 s)))
+    hctxPrefix
+
 theorem first_active_intern_one_success {call u : AST}
     (hstep : eval pTC 1 call = someT u) (hactive : InternActiveShape call) :
     FirstActiveIntern (some u) call := by
@@ -9632,84 +13623,568 @@ theorem first_active_intern_one_success {call u : AST}
     subst k
     simpa only [eval] using hactive
 
+theorem first_active_intern_one_failure {call : AST}
+    (hstep : eval pTC 1 call = checkBad) (hactive : InternActiveShape call) :
+    FirstActiveIntern none call := by
+  refine FirstActiveIntern.intro (N := 1) ?_ ?_
+  · rw [hstep]
+    exact MatchesIntern.failure rfl
+  · intro k hk
+    have hk0 : k = 0 := Nat.eq_zero_of_le_zero (Nat.le_of_lt_succ hk)
+    subst k
+    simpa only [eval] using hactive
+
+theorem intern_pi_raw_success_first_active
+    {A B : LF.Term} {Araw Braw A' B' : AST}
+    (hBred : ∃ N, eval pTC N Braw = encTerm B)
+    (hAfirst : FirstActiveIntern (some A') (internTerm Araw))
+    (hBfirst : FirstActiveIntern (some B') (internTerm (encTerm B)))
+    (hAnorm : IsNormal pTC A') :
+    FirstActiveIntern (some (Pi A' B')) (internTerm (Pi Araw Braw)) := by
+  let _Aref := A
+  have htail : FirstActiveIntern (some (Pi A' B'))
+      (internPi1 Braw (internTerm Araw)) := by
+    refine first_active_internPi1_normalize_left
+      (r := some (Pi A' B')) (s := internTerm Araw) (Braw := Braw) (B := B)
+      (InternActiveShape.term Araw) hBred ?_
+    exact first_active_intern_bind_active
+      (fun s => internPi1 (encTerm B) s)
+      (fun s _ => InternActiveShape.pi1 (encTerm B) s)
+      (hcong_internPi1_active_tc (encTerm B) (isnormal_encTerm_raw_tc B))
+      hAfirst
+      (by
+        intro v hv
+        cases hv with
+        | success hv =>
+            subst v
+            have hwrappedB : FirstActiveIntern (some (Pi A' B'))
+                (internPi2 A' (internTerm (encTerm B))) :=
+              first_active_intern_bind_active
+                (fun s => internPi2 A' s)
+                (fun s _ => InternActiveShape.pi2 A' s)
+                (hcong_internPi2_active_tc A' hAnorm)
+                hBfirst
+                (by
+                  intro v hv
+                  cases hv with
+                  | success hv =>
+                      subst v
+                      exact first_active_intern_one_success rfl
+                        (InternActiveShape.pi2 A' (someT B')))
+            exact first_active_intern_prepend rfl
+              (InternActiveShape.pi1 (encTerm B) (someT A')) hwrappedB)
+  exact first_active_intern_prepend rfl
+    (InternActiveShape.term (Pi Araw Braw)) htail
+
+theorem intern_pi_raw_failure_left_first_active
+    {A B : LF.Term} {Araw Braw : AST}
+    (hBred : ∃ N, eval pTC N Braw = encTerm B)
+    (hAfirst : FirstActiveIntern none (internTerm Araw)) :
+    FirstActiveIntern none (internTerm (Pi Araw Braw)) := by
+  let _Aref := A
+  have htail : FirstActiveIntern none (internPi1 Braw (internTerm Araw)) := by
+    refine first_active_internPi1_normalize_left
+      (r := none) (s := internTerm Araw) (Braw := Braw) (B := B)
+      (InternActiveShape.term Araw) hBred ?_
+    exact first_active_intern_bind_active
+      (fun s => internPi1 (encTerm B) s)
+      (fun s _ => InternActiveShape.pi1 (encTerm B) s)
+      (hcong_internPi1_active_tc (encTerm B) (isnormal_encTerm_raw_tc B))
+      hAfirst
+      (by
+        intro v hv
+        cases hv with
+        | failure hv =>
+            subst v
+            exact first_active_intern_one_failure rfl
+              (InternActiveShape.pi1 (encTerm B) checkBad))
+  exact first_active_intern_prepend rfl
+    (InternActiveShape.term (Pi Araw Braw)) htail
+
+theorem intern_pi_raw_failure_right_first_active
+    {A B : LF.Term} {Araw Braw A' : AST}
+    (hBred : ∃ N, eval pTC N Braw = encTerm B)
+    (hAfirst : FirstActiveIntern (some A') (internTerm Araw))
+    (hBfirst : FirstActiveIntern none (internTerm (encTerm B)))
+    (hAnorm : IsNormal pTC A') :
+    FirstActiveIntern none (internTerm (Pi Araw Braw)) := by
+  let _Aref := A
+  have htail : FirstActiveIntern none (internPi1 Braw (internTerm Araw)) := by
+    refine first_active_internPi1_normalize_left
+      (r := none) (s := internTerm Araw) (Braw := Braw) (B := B)
+      (InternActiveShape.term Araw) hBred ?_
+    exact first_active_intern_bind_active
+      (fun s => internPi1 (encTerm B) s)
+      (fun s _ => InternActiveShape.pi1 (encTerm B) s)
+      (hcong_internPi1_active_tc (encTerm B) (isnormal_encTerm_raw_tc B))
+      hAfirst
+      (by
+        intro v hv
+        cases hv with
+        | success hv =>
+            subst v
+            have hwrappedB : FirstActiveIntern none
+                (internPi2 A' (internTerm (encTerm B))) :=
+              first_active_intern_bind_active
+                (fun s => internPi2 A' s)
+                (fun s _ => InternActiveShape.pi2 A' s)
+                (hcong_internPi2_active_tc A' hAnorm)
+                hBfirst
+                (by
+                  intro v hv
+                  cases hv with
+                  | failure hv =>
+                      subst v
+                      exact first_active_intern_one_failure rfl
+                        (InternActiveShape.pi2 A' checkBad))
+            exact first_active_intern_prepend rfl
+              (InternActiveShape.pi1 (encTerm B) (someT A')) hwrappedB)
+  exact first_active_intern_prepend rfl
+    (InternActiveShape.term (Pi Araw Braw)) htail
+
+theorem intern_lam_raw_success_first_active
+    {A b : LF.Term} {Araw braw A' b' : AST}
+    (hbred : ∃ N, eval pTC N braw = encTerm b)
+    (hAfirst : FirstActiveIntern (some A') (internTerm Araw))
+    (hbfirst : FirstActiveIntern (some b') (internTerm (encTerm b)))
+    (hAnorm : IsNormal pTC A') :
+    FirstActiveIntern (some (Lam A' b')) (internTerm (Lam Araw braw)) := by
+  let _Aref := A
+  have htail : FirstActiveIntern (some (Lam A' b'))
+      (internLam1 braw (internTerm Araw)) := by
+    refine first_active_internLam1_normalize_left
+      (r := some (Lam A' b')) (s := internTerm Araw) (braw := braw) (b := b)
+      (InternActiveShape.term Araw) hbred ?_
+    exact first_active_intern_bind_active
+      (fun s => internLam1 (encTerm b) s)
+      (fun s _ => InternActiveShape.lam1 (encTerm b) s)
+      (hcong_internLam1_active_tc (encTerm b) (isnormal_encTerm_raw_tc b))
+      hAfirst
+      (by
+        intro v hv
+        cases hv with
+        | success hv =>
+            subst v
+            have hwrappedb : FirstActiveIntern (some (Lam A' b'))
+                (internLam2 A' (internTerm (encTerm b))) :=
+              first_active_intern_bind_active
+                (fun s => internLam2 A' s)
+                (fun s _ => InternActiveShape.lam2 A' s)
+                (hcong_internLam2_active_tc A' hAnorm)
+                hbfirst
+                (by
+                  intro v hv
+                  cases hv with
+                  | success hv =>
+                      subst v
+                      exact first_active_intern_one_success rfl
+                        (InternActiveShape.lam2 A' (someT b')))
+            exact first_active_intern_prepend rfl
+              (InternActiveShape.lam1 (encTerm b) (someT A')) hwrappedb)
+  exact first_active_intern_prepend rfl
+    (InternActiveShape.term (Lam Araw braw)) htail
+
+theorem intern_lam_raw_failure_left_first_active
+    {A b : LF.Term} {Araw braw : AST}
+    (hbred : ∃ N, eval pTC N braw = encTerm b)
+    (hAfirst : FirstActiveIntern none (internTerm Araw)) :
+    FirstActiveIntern none (internTerm (Lam Araw braw)) := by
+  let _Aref := A
+  have htail : FirstActiveIntern none (internLam1 braw (internTerm Araw)) := by
+    refine first_active_internLam1_normalize_left
+      (r := none) (s := internTerm Araw) (braw := braw) (b := b)
+      (InternActiveShape.term Araw) hbred ?_
+    exact first_active_intern_bind_active
+      (fun s => internLam1 (encTerm b) s)
+      (fun s _ => InternActiveShape.lam1 (encTerm b) s)
+      (hcong_internLam1_active_tc (encTerm b) (isnormal_encTerm_raw_tc b))
+      hAfirst
+      (by
+        intro v hv
+        cases hv with
+        | failure hv =>
+            subst v
+            exact first_active_intern_one_failure rfl
+              (InternActiveShape.lam1 (encTerm b) checkBad))
+  exact first_active_intern_prepend rfl
+    (InternActiveShape.term (Lam Araw braw)) htail
+
+theorem intern_lam_raw_failure_right_first_active
+    {A b : LF.Term} {Araw braw A' : AST}
+    (hbred : ∃ N, eval pTC N braw = encTerm b)
+    (hAfirst : FirstActiveIntern (some A') (internTerm Araw))
+    (hbfirst : FirstActiveIntern none (internTerm (encTerm b)))
+    (hAnorm : IsNormal pTC A') :
+    FirstActiveIntern none (internTerm (Lam Araw braw)) := by
+  let _Aref := A
+  have htail : FirstActiveIntern none (internLam1 braw (internTerm Araw)) := by
+    refine first_active_internLam1_normalize_left
+      (r := none) (s := internTerm Araw) (braw := braw) (b := b)
+      (InternActiveShape.term Araw) hbred ?_
+    exact first_active_intern_bind_active
+      (fun s => internLam1 (encTerm b) s)
+      (fun s _ => InternActiveShape.lam1 (encTerm b) s)
+      (hcong_internLam1_active_tc (encTerm b) (isnormal_encTerm_raw_tc b))
+      hAfirst
+      (by
+        intro v hv
+        cases hv with
+        | success hv =>
+            subst v
+            have hwrappedb : FirstActiveIntern none
+                (internLam2 A' (internTerm (encTerm b))) :=
+              first_active_intern_bind_active
+                (fun s => internLam2 A' s)
+                (fun s _ => InternActiveShape.lam2 A' s)
+                (hcong_internLam2_active_tc A' hAnorm)
+                hbfirst
+                (by
+                  intro v hv
+                  cases hv with
+                  | failure hv =>
+                      subst v
+                      exact first_active_intern_one_failure rfl
+                        (InternActiveShape.lam2 A' checkBad))
+            exact first_active_intern_prepend rfl
+              (InternActiveShape.lam1 (encTerm b) (someT A')) hwrappedb)
+  exact first_active_intern_prepend rfl
+    (InternActiveShape.term (Lam Araw braw)) htail
+
+theorem intern_app_raw_success_first_active
+    {f a : LF.Term} {fraw araw f' a' : AST}
+    (hared : ∃ N, eval pTC N araw = encTerm a)
+    (hffirst : FirstActiveIntern (some f') (internTerm fraw))
+    (hafirst : FirstActiveIntern (some a') (internTerm (encTerm a)))
+    (hfnorm : IsNormal pTC f') :
+    FirstActiveIntern (some (App f' a')) (internTerm (App fraw araw)) := by
+  let _fref := f
+  have htail : FirstActiveIntern (some (App f' a'))
+      (internApp1 araw (internTerm fraw)) := by
+    refine first_active_internApp1_normalize_left
+      (r := some (App f' a')) (s := internTerm fraw) (araw := araw) (a := a)
+      (InternActiveShape.term fraw) hared ?_
+    exact first_active_intern_bind_active
+      (fun s => internApp1 (encTerm a) s)
+      (fun s _ => InternActiveShape.app1 (encTerm a) s)
+      (hcong_internApp1_active_tc (encTerm a) (isnormal_encTerm_raw_tc a))
+      hffirst
+      (by
+        intro v hv
+        cases hv with
+        | success hv =>
+            subst v
+            have hwrappeda : FirstActiveIntern (some (App f' a'))
+                (internApp2 f' (internTerm (encTerm a))) :=
+              first_active_intern_bind_active
+                (fun s => internApp2 f' s)
+                (fun s _ => InternActiveShape.app2 f' s)
+                (hcong_internApp2_active_tc f' hfnorm)
+                hafirst
+                (by
+                  intro v hv
+                  cases hv with
+                  | success hv =>
+                      subst v
+                      exact first_active_intern_one_success rfl
+                        (InternActiveShape.app2 f' (someT a')))
+            exact first_active_intern_prepend rfl
+              (InternActiveShape.app1 (encTerm a) (someT f')) hwrappeda)
+  exact first_active_intern_prepend rfl
+    (InternActiveShape.term (App fraw araw)) htail
+
+theorem intern_app_raw_failure_left_first_active
+    {f a : LF.Term} {fraw araw : AST}
+    (hared : ∃ N, eval pTC N araw = encTerm a)
+    (hffirst : FirstActiveIntern none (internTerm fraw)) :
+    FirstActiveIntern none (internTerm (App fraw araw)) := by
+  let _fref := f
+  have htail : FirstActiveIntern none (internApp1 araw (internTerm fraw)) := by
+    refine first_active_internApp1_normalize_left
+      (r := none) (s := internTerm fraw) (araw := araw) (a := a)
+      (InternActiveShape.term fraw) hared ?_
+    exact first_active_intern_bind_active
+      (fun s => internApp1 (encTerm a) s)
+      (fun s _ => InternActiveShape.app1 (encTerm a) s)
+      (hcong_internApp1_active_tc (encTerm a) (isnormal_encTerm_raw_tc a))
+      hffirst
+      (by
+        intro v hv
+        cases hv with
+        | failure hv =>
+            subst v
+            exact first_active_intern_one_failure rfl
+              (InternActiveShape.app1 (encTerm a) checkBad))
+  exact first_active_intern_prepend rfl
+    (InternActiveShape.term (App fraw araw)) htail
+
+theorem intern_app_raw_failure_right_first_active
+    {f a : LF.Term} {fraw araw f' : AST}
+    (hared : ∃ N, eval pTC N araw = encTerm a)
+    (hffirst : FirstActiveIntern (some f') (internTerm fraw))
+    (hafirst : FirstActiveIntern none (internTerm (encTerm a)))
+    (hfnorm : IsNormal pTC f') :
+    FirstActiveIntern none (internTerm (App fraw araw)) := by
+  let _fref := f
+  have htail : FirstActiveIntern none (internApp1 araw (internTerm fraw)) := by
+    refine first_active_internApp1_normalize_left
+      (r := none) (s := internTerm fraw) (araw := araw) (a := a)
+      (InternActiveShape.term fraw) hared ?_
+    exact first_active_intern_bind_active
+      (fun s => internApp1 (encTerm a) s)
+      (fun s _ => InternActiveShape.app1 (encTerm a) s)
+      (hcong_internApp1_active_tc (encTerm a) (isnormal_encTerm_raw_tc a))
+      hffirst
+      (by
+        intro v hv
+        cases hv with
+        | success hv =>
+            subst v
+            have hwrappeda : FirstActiveIntern none
+                (internApp2 f' (internTerm (encTerm a))) :=
+              first_active_intern_bind_active
+                (fun s => internApp2 f' s)
+                (fun s _ => InternActiveShape.app2 f' s)
+                (hcong_internApp2_active_tc f' hfnorm)
+                hafirst
+                (by
+                  intro v hv
+                  cases hv with
+                  | failure hv =>
+                      subst v
+                      exact first_active_intern_one_failure rfl
+                        (InternActiveShape.app2 f' checkBad))
+            exact first_active_intern_prepend rfl
+              (InternActiveShape.app1 (encTerm a) (someT f')) hwrappeda)
+  exact first_active_intern_prepend rfl
+    (InternActiveShape.term (App fraw araw)) htail
+
+theorem intern_con_bad_step_tc {x : String}
+    (h0 : x ≠ "prop") (h1 : x ≠ "nat") (h2 : x ≠ "A") (h3 : x ≠ "B")
+    (h4 : x ≠ "z") (h5 : x ≠ "prf") (h6 : x ≠ "imp") (h7 : x ≠ "eqn")
+    (h8 : x ≠ "rfl") (h9 : x ≠ "hImpAB") (h10 : x ≠ "hA")
+    (h11 : x ≠ "mpAB") :
+    oneStep pTC (internTerm (Con (con0 x))) = some checkBad := by
+  let target := internTerm (Con (con0 x))
+  have hpLF :
+      List.filterMap (fun rd => applyBaseRewrite rd target)
+        (Presentation.rewrites pLF) = [] := by
+    rfl
+  have harith :
+      List.filterMap (fun rd => applyBaseRewrite rd target) arithmeticRules = [] := by
+    rfl
+  have hsig :
+      List.filterMap (fun rd => applyBaseRewrite rd target) sigRules = [] := by
+    rfl
+  have htermOps :
+      List.filterMap (fun rd => applyBaseRewrite rd target) termOpsRules = [] := by
+    rfl
+  have hnf :
+      List.filterMap (fun rd => applyBaseRewrite rd target) nfRules = [] := by
+    rfl
+  have hcore :
+      List.filterMap (fun rd => applyBaseRewrite rd target) checkerRulesCore = [] := by
+    rfl
+  have e_prop : (("prop" : String) == x) = false :=
+    beq_eq_false_iff_ne.mpr (by intro hx; exact h0 hx.symm)
+  have e_nat : (("nat" : String) == x) = false :=
+    beq_eq_false_iff_ne.mpr (by intro hx; exact h1 hx.symm)
+  have e_A : (("A" : String) == x) = false :=
+    beq_eq_false_iff_ne.mpr (by intro hx; exact h2 hx.symm)
+  have e_B : (("B" : String) == x) = false :=
+    beq_eq_false_iff_ne.mpr (by intro hx; exact h3 hx.symm)
+  have e_z : (("z" : String) == x) = false :=
+    beq_eq_false_iff_ne.mpr (by intro hx; exact h4 hx.symm)
+  have e_prf : (("prf" : String) == x) = false :=
+    beq_eq_false_iff_ne.mpr (by intro hx; exact h5 hx.symm)
+  have e_imp : (("imp" : String) == x) = false :=
+    beq_eq_false_iff_ne.mpr (by intro hx; exact h6 hx.symm)
+  have e_eqn : (("eqn" : String) == x) = false :=
+    beq_eq_false_iff_ne.mpr (by intro hx; exact h7 hx.symm)
+  have e_rfl : (("rfl" : String) == x) = false :=
+    beq_eq_false_iff_ne.mpr (by intro hx; exact h8 hx.symm)
+  have e_hImpAB : (("hImpAB" : String) == x) = false :=
+    beq_eq_false_iff_ne.mpr (by intro hx; exact h9 hx.symm)
+  have e_hA : (("hA" : String) == x) = false :=
+    beq_eq_false_iff_ne.mpr (by intro hx; exact h10 hx.symm)
+  have e_mpAB : (("mpAB" : String) == x) = false :=
+    beq_eq_false_iff_ne.mpr (by intro hx; exact h11 hx.symm)
+  have e_Var_Con : (("Var" : String) == "Con") = false := by decide
+  have e_Srt_Con : (("Srt" : String) == "Con") = false := by decide
+  have e_Pi_Con : (("Pi" : String) == "Con") = false := by decide
+  have e_Lam_Con : (("Lam" : String) == "Con") = false := by decide
+  have e_App_Con : (("App" : String) == "Con") = false := by decide
+  have e_pi1 : (("internPi1" : String) == "internTerm") = false := by decide
+  have e_pi2 : (("internPi2" : String) == "internTerm") = false := by decide
+  have e_lam1 : (("internLam1" : String) == "internTerm") = false := by decide
+  have e_lam2 : (("internLam2" : String) == "internTerm") = false := by decide
+  have e_app1 : (("internApp1" : String) == "internTerm") = false := by decide
+  have e_app2 : (("internApp2" : String) == "internTerm") = false := by decide
+  have hintern :
+      List.filterMap (fun rd => applyBaseRewrite rd target) internRules = [checkBad] := by
+    subst target
+    simp only [internRules, applyBaseRewrite, Mettapedia.GSLT.LanguageDef.LFEnc.rw,
+      internTerm, internPi1, internPi2, internLam1, internLam2, internApp1, internApp2,
+      LFEnc.Con, Var, Srt, Pi, Lam, App, con0, AST.matchPat, AST.matchPatList,
+      AST.inst, AST.instList, Option.map_some, Option.map_none, Option.bind_some,
+      Option.bind_none, List.filterMap_cons, List.filterMap_nil, List.find?_nil,
+      Bool.false_eq_true, if_false, if_true, checkBad, someT, pv,
+      label_id_beq_tc, string_beq_self_tc,
+      e_prop, e_nat, e_A, e_B, e_z, e_prf, e_imp, e_eqn, e_rfl, e_hImpAB, e_hA,
+      e_mpAB, e_Var_Con, e_Srt_Con, e_Pi_Con, e_Lam_Con, e_App_Con, e_pi1, e_pi2,
+      e_lam1, e_lam2, e_app1, e_app2]
+  have hbase : baseReducts pTC target = [checkBad] := by
+    unfold baseReducts pTC checkerRules
+    change List.filterMap (fun rd => applyBaseRewrite rd target)
+        (Presentation.rewrites pLF ++
+          (arithmeticRules ++ internRules ++ sigRules ++ termOpsRules ++ nfRules ++
+            checkerRulesCore)) =
+      [checkBad]
+    simp only [List.filterMap_append]
+    rw [hpLF, harith, hintern, hsig, htermOps, hnf, hcore]
+    rfl
+  subst target
+  change (match baseReducts pTC (internTerm (Con (con0 x))) with
+    | r :: _ => some r
+    | [] =>
+        Option.map (fun args' => AST.sexp (.id "internTerm") args')
+          (oneStepList pTC [LFEnc.Con (con0 x)])) = some checkBad
+  rw [hbase]
+
 theorem intern_con_success_first_active {x : String} {u : AST}
     (h : encTyCore? (.con x) = some u) :
     FirstActiveIntern (some u) (internTerm (Con (con0 x))) := by
   by_cases h0 : x = "prop"
   · subst x
-    simp [encTyCore?, encName?, Mettapedia.GSLT.InternedNames.Table.intern?,
-      Mettapedia.GSLT.InternedNames.Table.internAux, lfNameTable] at h
+    change some iPropT = some u at h
+    injection h with h
     subst u
     exact first_active_intern_one_success rfl (InternActiveShape.term (Con (con0 "prop")))
   by_cases h1 : x = "nat"
   · subst x
-    simp [encTyCore?, encName?, Mettapedia.GSLT.InternedNames.Table.intern?,
-      Mettapedia.GSLT.InternedNames.Table.internAux, lfNameTable] at h
+    change some iNatT = some u at h
+    injection h with h
     subst u
     exact first_active_intern_one_success rfl (InternActiveShape.term (Con (con0 "nat")))
   by_cases h2 : x = "A"
   · subst x
-    simp [encTyCore?, encName?, Mettapedia.GSLT.InternedNames.Table.intern?,
-      Mettapedia.GSLT.InternedNames.Table.internAux, lfNameTable] at h
+    change some iA = some u at h
+    injection h with h
     subst u
     exact first_active_intern_one_success rfl (InternActiveShape.term (Con (con0 "A")))
   by_cases h3 : x = "B"
   · subst x
-    simp [encTyCore?, encName?, Mettapedia.GSLT.InternedNames.Table.intern?,
-      Mettapedia.GSLT.InternedNames.Table.internAux, lfNameTable] at h
+    change some iB = some u at h
+    injection h with h
     subst u
     exact first_active_intern_one_success rfl (InternActiveShape.term (Con (con0 "B")))
   by_cases h4 : x = "z"
   · subst x
-    simp [encTyCore?, encName?, Mettapedia.GSLT.InternedNames.Table.intern?,
-      Mettapedia.GSLT.InternedNames.Table.internAux, lfNameTable] at h
+    change some iZ = some u at h
+    injection h with h
     subst u
     exact first_active_intern_one_success rfl (InternActiveShape.term (Con (con0 "z")))
   by_cases h5 : x = "prf"
   · subst x
-    simp [encTyCore?, encName?, Mettapedia.GSLT.InternedNames.Table.intern?,
-      Mettapedia.GSLT.InternedNames.Table.internAux, lfNameTable] at h
+    change some (Con nPrf) = some u at h
+    injection h with h
     subst u
     exact first_active_intern_one_success rfl (InternActiveShape.term (Con (con0 "prf")))
   by_cases h6 : x = "imp"
   · subst x
-    simp [encTyCore?, encName?, Mettapedia.GSLT.InternedNames.Table.intern?,
-      Mettapedia.GSLT.InternedNames.Table.internAux, lfNameTable] at h
+    change some (Con nImp) = some u at h
+    injection h with h
     subst u
     exact first_active_intern_one_success rfl (InternActiveShape.term (Con (con0 "imp")))
   by_cases h7 : x = "eqn"
   · subst x
-    simp [encTyCore?, encName?, Mettapedia.GSLT.InternedNames.Table.intern?,
-      Mettapedia.GSLT.InternedNames.Table.internAux, lfNameTable] at h
+    change some (Con nEqn) = some u at h
+    injection h with h
     subst u
     exact first_active_intern_one_success rfl (InternActiveShape.term (Con (con0 "eqn")))
   by_cases h8 : x = "rfl"
   · subst x
-    simp [encTyCore?, encName?, Mettapedia.GSLT.InternedNames.Table.intern?,
-      Mettapedia.GSLT.InternedNames.Table.internAux, lfNameTable] at h
+    change some (Con nRfl) = some u at h
+    injection h with h
     subst u
     exact first_active_intern_one_success rfl (InternActiveShape.term (Con (con0 "rfl")))
   by_cases h9 : x = "hImpAB"
   · subst x
-    simp [encTyCore?, encName?, Mettapedia.GSLT.InternedNames.Table.intern?,
-      Mettapedia.GSLT.InternedNames.Table.internAux, lfNameTable] at h
+    change some (Con nHImpAB) = some u at h
+    injection h with h
     subst u
     exact first_active_intern_one_success rfl (InternActiveShape.term (Con (con0 "hImpAB")))
   by_cases h10 : x = "hA"
   · subst x
-    simp [encTyCore?, encName?, Mettapedia.GSLT.InternedNames.Table.intern?,
-      Mettapedia.GSLT.InternedNames.Table.internAux, lfNameTable] at h
+    change some (Con nHA) = some u at h
+    injection h with h
     subst u
     exact first_active_intern_one_success rfl (InternActiveShape.term (Con (con0 "hA")))
   by_cases h11 : x = "mpAB"
   · subst x
-    simp [encTyCore?, encName?, Mettapedia.GSLT.InternedNames.Table.intern?,
-      Mettapedia.GSLT.InternedNames.Table.internAux, lfNameTable] at h
+    change some (Con nMpAB) = some u at h
+    injection h with h
     subst u
     exact first_active_intern_one_success rfl (InternActiveShape.term (Con (con0 "mpAB")))
   simp [encTyCore?, encName?, Mettapedia.GSLT.InternedNames.Table.intern?,
     Mettapedia.GSLT.InternedNames.Table.internAux, lfNameTable,
     h0, h1, h2, h3, h4, h5, h6, h7, h8, h9, h10, h11] at h
+
+theorem intern_con_failure_first_active {x : String}
+    (h : encTyCore? (.con x) = none) :
+    FirstActiveIntern none (internTerm (Con (con0 x))) := by
+  by_cases h0 : x = "prop"
+  · subst x
+    change some iPropT = none at h
+    cases h
+  by_cases h1 : x = "nat"
+  · subst x
+    change some iNatT = none at h
+    cases h
+  by_cases h2 : x = "A"
+  · subst x
+    change some iA = none at h
+    cases h
+  by_cases h3 : x = "B"
+  · subst x
+    change some iB = none at h
+    cases h
+  by_cases h4 : x = "z"
+  · subst x
+    change some iZ = none at h
+    cases h
+  by_cases h5 : x = "prf"
+  · subst x
+    change some (Con nPrf) = none at h
+    cases h
+  by_cases h6 : x = "imp"
+  · subst x
+    change some (Con nImp) = none at h
+    cases h
+  by_cases h7 : x = "eqn"
+  · subst x
+    change some (Con nEqn) = none at h
+    cases h
+  by_cases h8 : x = "rfl"
+  · subst x
+    change some (Con nRfl) = none at h
+    cases h
+  by_cases h9 : x = "hImpAB"
+  · subst x
+    change some (Con nHImpAB) = none at h
+    cases h
+  by_cases h10 : x = "hA"
+  · subst x
+    change some (Con nHA) = none at h
+    cases h
+  by_cases h11 : x = "mpAB"
+  · subst x
+    change some (Con nMpAB) = none at h
+    cases h
+  have hstep0 : oneStep pTC (internTerm (Con (con0 x))) = some checkBad :=
+    intern_con_bad_step_tc h0 h1 h2 h3 h4 h5 h6 h7 h8 h9 h10 h11
+  have hstep : eval pTC 1 (internTerm (Con (con0 x))) = checkBad := by
+    simp [eval, hstep0]
+  exact first_active_intern_one_failure hstep (InternActiveShape.term (Con (con0 x)))
 
 theorem internTerm_success_first_active : ∀ (t : LF.Term) (u : AST),
     encTyCore? t = some u -> FirstActiveIntern (some u) (internTerm (encTerm t)) := by
@@ -9858,6 +14333,200 @@ theorem internTerm_success_first_active : ∀ (t : LF.Term) (u : AST),
                         exact first_active_intern_prepend rfl
                           (InternActiveShape.app1 (encTerm a) (someT f')) hwrappeda))
 
+theorem internTerm_failure_first_active : ∀ t : LF.Term,
+    encTyCore? t = none -> FirstActiveIntern none (internTerm (encTerm t)) := by
+  intro t
+  induction t with
+  | srt s =>
+      intro h
+      cases s <;> simp [encTyCore?] at h
+  | var k =>
+      intro h
+      simp [encTyCore?] at h
+  | con x =>
+      intro h
+      simpa [encTerm] using intern_con_failure_first_active h
+  | pi A B ihA ihB =>
+      intro h
+      simp [encTyCore?] at h
+      cases hA : encTyCore? A with
+      | none =>
+          have hfirstA := ihA hA
+          have hBraw : IsNormal pTC (encTerm B) := isnormal_encTerm_raw_tc B
+          exact first_active_intern_prepend
+            (call := internTerm (Pi (encTerm A) (encTerm B)))
+            (next := internPi1 (encTerm B) (internTerm (encTerm A)))
+            rfl (InternActiveShape.term (Pi (encTerm A) (encTerm B)))
+            (first_active_intern_bind_active
+              (fun s => internPi1 (encTerm B) s)
+              (fun s _ => InternActiveShape.pi1 (encTerm B) s)
+              (hcong_internPi1_active_tc (encTerm B) hBraw)
+              hfirstA
+              (by
+                intro v hv
+                cases hv with
+                | failure hv =>
+                    subst v
+                    exact first_active_intern_one_failure rfl
+                      (InternActiveShape.pi1 (encTerm B) checkBad)))
+      | some A' =>
+          cases hB : encTyCore? B with
+          | none =>
+              have hfirstA := internTerm_success_first_active A A' hA
+              have hfirstB := ihB hB
+              have hBraw : IsNormal pTC (encTerm B) := isnormal_encTerm_raw_tc B
+              have hAnorm : IsNormal pTC A' := isnormal_encTyCore?_tc A A' hA
+              exact first_active_intern_prepend
+                (call := internTerm (Pi (encTerm A) (encTerm B)))
+                (next := internPi1 (encTerm B) (internTerm (encTerm A)))
+                rfl (InternActiveShape.term (Pi (encTerm A) (encTerm B)))
+                (first_active_intern_bind_active
+                  (fun s => internPi1 (encTerm B) s)
+                  (fun s _ => InternActiveShape.pi1 (encTerm B) s)
+                  (hcong_internPi1_active_tc (encTerm B) hBraw)
+                  hfirstA
+                  (by
+                    intro v hv
+                    cases hv with
+                    | success hv =>
+                        subst v
+                        have hwrappedB := first_active_intern_bind_active
+                          (fun s => internPi2 A' s)
+                          (fun s _ => InternActiveShape.pi2 A' s)
+                          (hcong_internPi2_active_tc A' hAnorm)
+                          hfirstB
+                          (by
+                            intro v hv
+                            cases hv with
+                            | failure hv =>
+                                subst v
+                                exact first_active_intern_one_failure rfl
+                                  (InternActiveShape.pi2 A' checkBad))
+                        exact first_active_intern_prepend rfl
+                          (InternActiveShape.pi1 (encTerm B) (someT A')) hwrappedB))
+          | some B' =>
+              simp [hA, hB] at h
+  | lam A b ihA ihb =>
+      intro h
+      simp [encTyCore?] at h
+      cases hA : encTyCore? A with
+      | none =>
+          have hfirstA := ihA hA
+          have hbraw : IsNormal pTC (encTerm b) := isnormal_encTerm_raw_tc b
+          exact first_active_intern_prepend
+            (call := internTerm (Lam (encTerm A) (encTerm b)))
+            (next := internLam1 (encTerm b) (internTerm (encTerm A)))
+            rfl (InternActiveShape.term (Lam (encTerm A) (encTerm b)))
+            (first_active_intern_bind_active
+              (fun s => internLam1 (encTerm b) s)
+              (fun s _ => InternActiveShape.lam1 (encTerm b) s)
+              (hcong_internLam1_active_tc (encTerm b) hbraw)
+              hfirstA
+              (by
+                intro v hv
+                cases hv with
+                | failure hv =>
+                    subst v
+                    exact first_active_intern_one_failure rfl
+                      (InternActiveShape.lam1 (encTerm b) checkBad)))
+      | some A' =>
+          cases hb : encTyCore? b with
+          | none =>
+              have hfirstA := internTerm_success_first_active A A' hA
+              have hfirstb := ihb hb
+              have hbraw : IsNormal pTC (encTerm b) := isnormal_encTerm_raw_tc b
+              have hAnorm : IsNormal pTC A' := isnormal_encTyCore?_tc A A' hA
+              exact first_active_intern_prepend
+                (call := internTerm (Lam (encTerm A) (encTerm b)))
+                (next := internLam1 (encTerm b) (internTerm (encTerm A)))
+                rfl (InternActiveShape.term (Lam (encTerm A) (encTerm b)))
+                (first_active_intern_bind_active
+                  (fun s => internLam1 (encTerm b) s)
+                  (fun s _ => InternActiveShape.lam1 (encTerm b) s)
+                  (hcong_internLam1_active_tc (encTerm b) hbraw)
+                  hfirstA
+                  (by
+                    intro v hv
+                    cases hv with
+                    | success hv =>
+                        subst v
+                        have hwrappedb := first_active_intern_bind_active
+                          (fun s => internLam2 A' s)
+                          (fun s _ => InternActiveShape.lam2 A' s)
+                          (hcong_internLam2_active_tc A' hAnorm)
+                          hfirstb
+                          (by
+                            intro v hv
+                            cases hv with
+                            | failure hv =>
+                                subst v
+                                exact first_active_intern_one_failure rfl
+                                  (InternActiveShape.lam2 A' checkBad))
+                        exact first_active_intern_prepend rfl
+                          (InternActiveShape.lam1 (encTerm b) (someT A')) hwrappedb))
+          | some b' =>
+              simp [hA, hb] at h
+  | app f a ihf iha =>
+      intro h
+      simp [encTyCore?] at h
+      cases hf : encTyCore? f with
+      | none =>
+          have hfirstf := ihf hf
+          have haraw : IsNormal pTC (encTerm a) := isnormal_encTerm_raw_tc a
+          exact first_active_intern_prepend
+            (call := internTerm (App (encTerm f) (encTerm a)))
+            (next := internApp1 (encTerm a) (internTerm (encTerm f)))
+            rfl (InternActiveShape.term (App (encTerm f) (encTerm a)))
+            (first_active_intern_bind_active
+              (fun s => internApp1 (encTerm a) s)
+              (fun s _ => InternActiveShape.app1 (encTerm a) s)
+              (hcong_internApp1_active_tc (encTerm a) haraw)
+              hfirstf
+              (by
+                intro v hv
+                cases hv with
+                | failure hv =>
+                    subst v
+                    exact first_active_intern_one_failure rfl
+                      (InternActiveShape.app1 (encTerm a) checkBad)))
+      | some f' =>
+          cases ha : encTyCore? a with
+          | none =>
+              have hfirstf := internTerm_success_first_active f f' hf
+              have hfirsta := iha ha
+              have haraw : IsNormal pTC (encTerm a) := isnormal_encTerm_raw_tc a
+              have hfnorm : IsNormal pTC f' := isnormal_encTyCore?_tc f f' hf
+              exact first_active_intern_prepend
+                (call := internTerm (App (encTerm f) (encTerm a)))
+                (next := internApp1 (encTerm a) (internTerm (encTerm f)))
+                rfl (InternActiveShape.term (App (encTerm f) (encTerm a)))
+                (first_active_intern_bind_active
+                  (fun s => internApp1 (encTerm a) s)
+                  (fun s _ => InternActiveShape.app1 (encTerm a) s)
+                  (hcong_internApp1_active_tc (encTerm a) haraw)
+                  hfirstf
+                  (by
+                    intro v hv
+                    cases hv with
+                    | success hv =>
+                        subst v
+                        have hwrappeda := first_active_intern_bind_active
+                          (fun s => internApp2 f' s)
+                          (fun s _ => InternActiveShape.app2 f' s)
+                          (hcong_internApp2_active_tc f' hfnorm)
+                          hfirsta
+                          (by
+                            intro v hv
+                            cases hv with
+                            | failure hv =>
+                                subst v
+                                exact first_active_intern_one_failure rfl
+                                  (InternActiveShape.app2 f' checkBad))
+                        exact first_active_intern_prepend rfl
+                          (InternActiveShape.app1 (encTerm a) (someT f')) hwrappeda))
+          | some a' =>
+              simp [hf, ha] at h
+
 theorem internTerm_success_sim {t : LF.Term} {u : AST}
     (h : encTyCore? t = some u) :
     ∃ N, eval pTC N (internTerm (encTerm t)) = someT u := by
@@ -9868,6 +14537,26 @@ theorem internTerm_success_sim {t : LF.Term} {u : AST}
       refine ⟨N, ?_⟩
       cases hmatch with
       | success hv => exact hv
+
+theorem baseReducts_lfcheckI_checkBad_intern_active_tc (s : AST)
+    (hs : InternActiveShape s) :
+    baseReducts pTC (lfcheckI checkBad s) = [] := by
+  cases hs <;> rfl
+
+theorem hcong_lfcheckI_checkBad_intern_active_tc :
+    ∀ s s', InternActiveShape s -> oneStep pTC s = some s' ->
+      oneStep pTC (lfcheckI checkBad s) = some (lfcheckI checkBad s') := by
+  intro s s' hs hstep
+  have hb := baseReducts_lfcheckI_checkBad_intern_active_tc s hs
+  have hbad : IsNormal pTC checkBad := isnormal_con0_tc "CheckBad"
+  simp only [IsNormal] at hbad
+  change (match baseReducts pTC (lfcheckI checkBad s) with
+    | r :: _ => some r
+    | [] => Option.map (fun args' => AST.sexp (.id "lfcheckI") args')
+        (oneStepList pTC [checkBad, s])) =
+      some (lfcheckI checkBad s')
+  rw [hb]
+  simp only [oneStepList, hbad, hstep, Option.map_some, lfcheckI]
 
 theorem baseReducts_lfcheckI_enc_active_tc : ∀ (Araw : LF.Term) (A s : AST),
     encTyCore? Araw = some A -> InternActiveShape s ->
@@ -10002,6 +14691,65 @@ theorem lfcheckI_ok_enc_tc : ∀ (Araw : LF.Term) (A t : AST),
               subst A
               rfl
 
+theorem lfcheckI_bad_term_enc_tc : ∀ (Araw : LF.Term) (A : AST),
+    encTyCore? Araw = some A ->
+      eval pTC 1 (lfcheckI A checkBad) = checkErr (con0 "unknown-term-name") := by
+  intro Araw
+  induction Araw with
+  | srt sort =>
+      intro A h
+      cases sort <;> simp [encTyCore?] at h <;> subst A <;> rfl
+  | var k =>
+      intro A h
+      simp [encTyCore?] at h
+      subst A
+      rfl
+  | con x =>
+      intro A h
+      unfold encTyCore? encName? at h
+      cases hname : Mettapedia.GSLT.InternedNames.Table.intern? lfNameTable x with
+      | none => simp [hname] at h
+      | some k =>
+          simp [hname] at h
+          subst A
+          rfl
+  | pi T U ihT ihU =>
+      intro A h
+      simp [encTyCore?] at h
+      cases hT : encTyCore? T with
+      | none => simp [hT] at h
+      | some T' =>
+          cases hU : encTyCore? U with
+          | none => simp [hT, hU] at h
+          | some U' =>
+              simp [hT, hU] at h
+              subst A
+              rfl
+  | lam T b ihT ihb =>
+      intro A h
+      simp [encTyCore?] at h
+      cases hT : encTyCore? T with
+      | none => simp [hT] at h
+      | some T' =>
+          cases hb : encTyCore? b with
+          | none => simp [hT, hb] at h
+          | some b' =>
+              simp [hT, hb] at h
+              subst A
+              rfl
+  | app f a ihf iha =>
+      intro A h
+      simp [encTyCore?] at h
+      cases hf : encTyCore? f with
+      | none => simp [hf] at h
+      | some f' =>
+          cases ha : encTyCore? a with
+          | none => simp [hf, ha] at h
+          | some a' =>
+              simp [hf, ha] at h
+              subst A
+              rfl
+
 theorem lfcheckI_intern_success_to_checkT {Araw : LF.Term} {A raw t : AST}
     (hA : encTyCore? Araw = some A)
     (hfirst : FirstActiveIntern (some t) (internTerm raw)) :
@@ -10020,6 +14768,72 @@ theorem lfcheckI_intern_success_to_checkT {Araw : LF.Term} {A raw t : AST}
             lfcheckI_ok_enc_tc Araw A t hA
           refine ⟨Mctx + 1, ?_⟩
           exact eval_trans_tc Mctx 1 _ _ _ hMctx' hstep
+
+theorem lfcheckI_intern_failure_reject_of_enc_tc {Araw : LF.Term} {A raw : AST}
+    (hA : encTyCore? Araw = some A)
+    (hfirst : FirstActiveIntern none (internTerm raw)) :
+    ∃ N, MatchesCheckVerdict (some false)
+      (eval pTC N (lfcheckI A (internTerm raw))) := by
+  cases hfirst with
+  | intro hmatch hguard =>
+      rename_i Nchild
+      obtain ⟨Mctx, hMctx⟩ :=
+        cong_eval_intern_active (fun s => lfcheckI A s)
+          (hcong_lfcheckI_enc_active_tc hA) Nchild rfl hguard
+      cases hmatch with
+      | failure hv =>
+          have hMctx' : eval pTC Mctx (lfcheckI A (internTerm raw)) = lfcheckI A checkBad := by
+            rw [hMctx, hv]
+          have hstep : eval pTC 1 (lfcheckI A checkBad) =
+              checkErr (con0 "unknown-term-name") :=
+            lfcheckI_bad_term_enc_tc Araw A hA
+          refine ⟨Mctx + 1, ?_⟩
+          rw [eval_trans_tc Mctx 1 _ _ _ hMctx' hstep]
+          exact MatchesCheckVerdict.rejectFalse rfl
+
+theorem lfcheckI_checkBad_intern_failure_reject_tc {raw : AST}
+    (hfirst : FirstActiveIntern none (internTerm raw)) :
+    ∃ N, MatchesCheckVerdict (some false)
+      (eval pTC N (lfcheckI checkBad (internTerm raw))) := by
+  cases hfirst with
+  | intro hmatch hguard =>
+      rename_i Nchild
+      obtain ⟨Mctx, hMctx⟩ :=
+        cong_eval_intern_active (fun s => lfcheckI checkBad s)
+          hcong_lfcheckI_checkBad_intern_active_tc Nchild rfl hguard
+      cases hmatch with
+      | failure hv =>
+          have hMctx' :
+              eval pTC Mctx (lfcheckI checkBad (internTerm raw)) = lfcheckI checkBad checkBad := by
+            rw [hMctx, hv]
+          have hstep : eval pTC 1 (lfcheckI checkBad checkBad) =
+              checkErr (con0 "unknown-term-name") := by
+            rfl
+          refine ⟨Mctx + 1, ?_⟩
+          rw [eval_trans_tc Mctx 1 _ _ _ hMctx' hstep]
+          exact MatchesCheckVerdict.rejectFalse rfl
+
+theorem lfcheckI_bad_type_intern_success_reject_tc {raw t : AST}
+    (hfirst : FirstActiveIntern (some t) (internTerm raw)) :
+    ∃ N, MatchesCheckVerdict (some false)
+      (eval pTC N (lfcheckI checkBad (internTerm raw))) := by
+  cases hfirst with
+  | intro hmatch hguard =>
+      rename_i Nchild
+      obtain ⟨Mctx, hMctx⟩ :=
+        cong_eval_intern_active (fun s => lfcheckI checkBad s)
+          hcong_lfcheckI_checkBad_intern_active_tc Nchild rfl hguard
+      cases hmatch with
+      | success hv =>
+          have hMctx' :
+              eval pTC Mctx (lfcheckI checkBad (internTerm raw)) = lfcheckI checkBad (someT t) := by
+            rw [hMctx, hv]
+          have hstep : eval pTC 1 (lfcheckI checkBad (someT t)) =
+              checkErr (con0 "unknown-type-name") := by
+            rfl
+          refine ⟨Mctx + 1, ?_⟩
+          rw [eval_trans_tc Mctx 1 _ _ _ hMctx' hstep]
+          exact MatchesCheckVerdict.rejectFalse rfl
 
 theorem lfcheckI_encTerms_to_checkT {Araw traw : LF.Term} {A t : AST}
     (hA : encTyCore? Araw = some A) (ht : encTyCore? traw = some t) :
@@ -10093,10 +14907,4742 @@ def FirstActiveMatchesParseShiftableTC (r : Option (LF.Term × List LF.Tok))
       ∀ k, k < N ->
         Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape (eval pTC k call)
 
+theorem first_active_shiftable_zero_tc {r : Option (LF.Term × List LF.Tok)}
+    {call : AST}
+    (h : Mettapedia.GSLT.LanguageDef.LFParserSim.MatchesParseShiftable r call) :
+    FirstActiveMatchesParseShiftableTC r call := by
+  refine ⟨0, ?_, ?_⟩
+  · simpa only [eval] using h
+  · intro k hk
+    exact False.elim (Nat.not_lt_zero k hk)
+
+theorem first_active_shiftable_one_tc {r : Option (LF.Term × List LF.Tok)}
+    {call v : AST}
+    (hstep : eval pTC 1 call = v)
+    (h : Mettapedia.GSLT.LanguageDef.LFParserSim.MatchesParseShiftable r v)
+    (hactive : Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape call) :
+    FirstActiveMatchesParseShiftableTC r call := by
+  refine ⟨1, ?_, ?_⟩
+  · rw [hstep]
+    exact h
+  · intro k hk
+    have hk0 : k = 0 := Nat.eq_zero_of_le_zero (Nat.le_of_lt_succ hk)
+    subst k
+    simpa only [eval] using hactive
+
+theorem first_active_shiftable_prepend_tc {r : Option (LF.Term × List LF.Tok)}
+    {call next : AST}
+    (hstep : eval pTC 1 call = next)
+    (hactive : Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape call)
+    (hnext : FirstActiveMatchesParseShiftableTC r next) :
+    FirstActiveMatchesParseShiftableTC r call := by
+  rcases hnext with ⟨N, hN, hguard⟩
+  refine ⟨1 + N, ?_, ?_⟩
+  · have htotal : eval pTC (1 + N) call = eval pTC N next :=
+      eval_trans_tc 1 N call next (eval pTC N next) hstep rfl
+    rw [htotal]
+    exact hN
+  · intro k hk
+    cases k with
+    | zero =>
+        simpa only [eval] using hactive
+    | succ k =>
+        have hkN : k < N := Nat.succ_lt_succ_iff.mp (by
+          simpa only [Nat.one_add] using hk)
+        have htotal : eval pTC (Nat.succ k) call = eval pTC k next := by
+          have h := eval_trans_tc 1 k call next (eval pTC k next) hstep rfl
+          simpa [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using h
+        rw [htotal]
+        exact hguard k hkN
+
+theorem first_active_shiftable_prepend_eval_tc
+    {r : Option (LF.Term × List LF.Tok)} {call next : AST} {M : Nat}
+    (hstep : eval pTC M call = next)
+    (hguard : ∀ k, k < M ->
+      Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape (eval pTC k call))
+    (hnext : FirstActiveMatchesParseShiftableTC r next) :
+    FirstActiveMatchesParseShiftableTC r call := by
+  rcases hnext with ⟨N, hN, hNguard⟩
+  refine ⟨M + N, ?_, ?_⟩
+  · have htotal : eval pTC (M + N) call = eval pTC N next :=
+      eval_trans_tc M N call next (eval pTC N next) hstep rfl
+    rw [htotal]
+    exact hN
+  · intro k hk
+    by_cases hkM : k < M
+    · exact hguard k hkM
+    · have hge : M ≤ k := Nat.le_of_not_gt hkM
+      let j := k - M
+      have hjlt : j < N := by omega
+      have hk_eq : k = M + j := by omega
+      have hshift : eval pTC k call = eval pTC j next := by
+        have htotal : eval pTC (M + j) call = eval pTC j next :=
+          eval_trans_tc M j call next (eval pTC j next) hstep rfl
+        simpa [hk_eq] using htotal
+      rw [hshift]
+      exact hNguard j hjlt
+
+theorem cong_eval_parser_active_with_guard_tc (F : AST -> AST)
+    (hwrap : ∀ s,
+      Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape s ->
+        Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape (F s))
+    (hcong : ∀ s s',
+      Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape s ->
+        oneStep pTC s = some s' ->
+          oneStep pTC (F s) = some (F s')) :
+    ∀ (N : Nat) {s v : AST},
+      eval pTC N s = v ->
+      (∀ k, k < N ->
+        Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape (eval pTC k s)) ->
+        ∃ M, eval pTC M (F s) = F v ∧
+          ∀ k, k < M ->
+            Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape
+              (eval pTC k (F s)) := by
+  intro N
+  induction N with
+  | zero =>
+      intro s v hs _
+      simp only [eval] at hs
+      subst v
+      exact ⟨0, rfl, fun k hk => False.elim (Nat.not_lt_zero k hk)⟩
+  | succ n ih =>
+      intro s v hs hguard
+      simp only [eval] at hs
+      cases hstep : oneStep pTC s with
+      | none =>
+          rw [hstep] at hs
+          subst v
+          exact ⟨0, rfl, fun k hk => False.elim (Nat.not_lt_zero k hk)⟩
+      | some s' =>
+          rw [hstep] at hs
+          have hsactive : Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape s := by
+            simpa only [eval] using hguard 0 (Nat.zero_lt_succ n)
+          have hguardTail :
+              ∀ k, k < n ->
+                Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape
+                  (eval pTC k s') := by
+            intro k hk
+            have hkSucc : Nat.succ k < Nat.succ n := Nat.succ_lt_succ hk
+            have hone : eval pTC 1 s = s' := by
+              simp only [eval, hstep]
+            have hshift : eval pTC (Nat.succ k) s = eval pTC k s' := by
+              have h := eval_trans_tc 1 k s s' (eval pTC k s') hone rfl
+              simpa [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using h
+            rw [← hshift]
+            exact hguard (Nat.succ k) hkSucc
+          obtain ⟨M, hM, hMguard⟩ := ih hs hguardTail
+          refine ⟨1 + M, ?_, ?_⟩
+          · have hstepWrap : eval pTC 1 (F s) = F s' := by
+              simp only [eval, hcong s s' hsactive hstep]
+            exact eval_trans_tc 1 M _ _ _ hstepWrap hM
+          · intro k hk
+            cases k with
+            | zero =>
+                simpa only [eval] using hwrap s hsactive
+            | succ k =>
+                have hkM : k < M := by
+                  simpa only [Nat.one_add, Nat.succ_lt_succ_iff] using hk
+                have hstepWrap : eval pTC 1 (F s) = F s' := by
+                  simp only [eval, hcong s s' hsactive hstep]
+                have hshift : eval pTC (Nat.succ k) (F s) = eval pTC k (F s') := by
+                  have h := eval_trans_tc 1 k (F s) (F s') (eval pTC k (F s'))
+                    hstepWrap rfl
+                  simpa [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using h
+                rw [hshift]
+                exact hMguard k hkM
+
+theorem cong_eval_with_active_wrapper_tc (F : AST -> AST)
+    (hwrap : ∀ s,
+      Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape (F s))
+    (hcong : ∀ s s', oneStep pTC s = some s' ->
+      oneStep pTC (F s) = some (F s')) :
+    ∀ (N : Nat) {s v : AST}, eval pTC N s = v ->
+      ∃ M, eval pTC M (F s) = F v ∧
+        ∀ k, k < M ->
+          Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape
+            (eval pTC k (F s)) := by
+  intro N
+  induction N with
+  | zero =>
+      intro s v h
+      simp only [eval] at h
+      subst v
+      exact ⟨0, rfl, fun k hk => False.elim (Nat.not_lt_zero k hk)⟩
+  | succ n ih =>
+      intro s v h
+      simp only [eval] at h
+      cases hstep : oneStep pTC s with
+      | none =>
+          rw [hstep] at h
+          subst v
+          exact ⟨0, rfl, fun k hk => False.elim (Nat.not_lt_zero k hk)⟩
+      | some s' =>
+          rw [hstep] at h
+          obtain ⟨M, hM, hMguard⟩ := ih h
+          refine ⟨1 + M, ?_, ?_⟩
+          · have hstepWrap : eval pTC 1 (F s) = F s' := by
+              simp only [eval, hcong s s' hstep]
+            exact eval_trans_tc 1 M _ _ _ hstepWrap hM
+          · intro k hk
+            cases k with
+            | zero =>
+                simpa only [eval] using hwrap s
+            | succ k =>
+                have hkM : k < M := by
+                  simpa only [Nat.one_add, Nat.succ_lt_succ_iff] using hk
+                have hstepWrap : eval pTC 1 (F s) = F s' := by
+                  simp only [eval, hcong s s' hstep]
+                have hshift : eval pTC (Nat.succ k) (F s) = eval pTC k (F s') := by
+                  have h := eval_trans_tc 1 k (F s) (F s') (eval pTC k (F s'))
+                    hstepWrap rfl
+                  simpa [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using h
+                rw [hshift]
+                exact hMguard k hkM
+
+theorem first_active_shiftable_bind_active_tc
+    {r q : Option (LF.Term × List LF.Tok)} {call : AST}
+    (F : AST -> AST)
+    (hwrap : ∀ s,
+      Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape s ->
+        Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape (F s))
+    (hcong : ∀ s s',
+      Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape s ->
+        oneStep pTC s = some s' ->
+          oneStep pTC (F s) = some (F s'))
+    (hfirst : FirstActiveMatchesParseShiftableTC r call)
+    (hend : ∀ {v : AST},
+      Mettapedia.GSLT.LanguageDef.LFParserSim.MatchesParseShiftable r v ->
+        FirstActiveMatchesParseShiftableTC q (F v)) :
+    FirstActiveMatchesParseShiftableTC q (F call) := by
+  rcases hfirst with ⟨Nchild, hchild, hguard⟩
+  obtain ⟨Mctx, hMctx, hMguard⟩ :=
+    cong_eval_parser_active_with_guard_tc F hwrap hcong Nchild rfl hguard
+  rcases hend hchild with ⟨Nend, hendRaw, hendGuard⟩
+  refine ⟨Mctx + Nend, ?_, ?_⟩
+  · have htotal : eval pTC (Mctx + Nend) (F call) =
+        eval pTC Nend (F (eval pTC Nchild call)) :=
+      eval_trans_tc Mctx Nend _ _ _ hMctx rfl
+    rw [htotal]
+    exact hendRaw
+  · intro k hk
+    by_cases hkctx : k < Mctx
+    · exact hMguard k hkctx
+    · have hge : Mctx ≤ k := Nat.le_of_not_gt hkctx
+      let j := k - Mctx
+      have hjlt : j < Nend := by omega
+      have hk_eq : k = Mctx + j := by omega
+      have hshift : eval pTC k (F call) =
+          eval pTC j (F (eval pTC Nchild call)) := by
+        have htotal : eval pTC (Mctx + j) (F call) =
+            eval pTC j (F (eval pTC Nchild call)) :=
+          eval_trans_tc Mctx j _ _ _ hMctx rfl
+        simpa [hk_eq] using htotal
+      rw [hshift]
+      exact hendGuard j hjlt
+
+def ReducesToEncTermTC (u : AST) (t : LF.Term) : Prop :=
+  ∃ N, eval pTC N u = encTerm t
+
+abbrev shiftStackTC := Mettapedia.GSLT.LanguageDef.LFParserSim.shiftStack
+
+abbrev lfShiftStackTC := Mettapedia.GSLT.LanguageDef.LFParserSim.lfShiftStack
+
+def ShiftablePayloadTC (u : AST) (t : LF.Term) : Prop :=
+  ∀ cs : List Nat, ReducesToEncTermTC (shiftStackTC cs u) (lfShiftStackTC cs t)
+
+theorem ShiftablePayloadTC.reduces {u : AST} {t : LF.Term}
+    (h : ShiftablePayloadTC u t) : ReducesToEncTermTC u t := by
+  exact h []
+
+theorem ShiftablePayloadTC.shifted {u : AST} {t : LF.Term}
+    (h : ShiftablePayloadTC u t) (c : Nat) :
+    ShiftablePayloadTC (shift (peano c) u) (LF.shift c t) := by
+  intro cs
+  exact h (c :: cs)
+
+theorem ShiftablePayloadTC.shift_zero {u : AST} {t : LF.Term}
+    (h : ShiftablePayloadTC u t) :
+    ReducesToEncTermTC (shift Z u) (LF.shift 0 t) := by
+  simpa [shiftStackTC, lfShiftStackTC, peano,
+    Mettapedia.GSLT.LanguageDef.LFParserSim.shiftStack,
+    Mettapedia.GSLT.LanguageDef.LFParserSim.lfShiftStack] using h [0]
+
+theorem os_sh_var_tc (c k : AST) :
+    oneStep pTC (shift c (Var k)) = some (shiftVar c k (ltT k c)) := by
+  apply oneStep_pTC_of_baseReducts_pLF_cons
+  rfl
+
+theorem os_sh_con_tc (c x : AST) :
+    oneStep pTC (shift c (LFEnc.Con x)) = some (LFEnc.Con x) := by
+  apply oneStep_pTC_of_baseReducts_pLF_cons
+  rfl
+
+theorem os_sh_srt_tc (c s : AST) :
+    oneStep pTC (shift c (Srt s)) = some (Srt s) := by
+  apply oneStep_pTC_of_baseReducts_pLF_cons
+  rfl
+
+theorem os_sh_pi_tc (c A B : AST) :
+    oneStep pTC (shift c (Pi A B)) = some (Pi (shift c A) (shift (S c) B)) := by
+  apply oneStep_pTC_of_baseReducts_pLF_cons
+  rfl
+
+theorem os_sh_lam_tc (c A b : AST) :
+    oneStep pTC (shift c (Lam A b)) = some (Lam (shift c A) (shift (S c) b)) := by
+  apply oneStep_pTC_of_baseReducts_pLF_cons
+  rfl
+
+theorem os_sh_app_tc (c f a : AST) :
+    oneStep pTC (shift c (App f a)) = some (App (shift c f) (shift c a)) := by
+  apply oneStep_pTC_of_baseReducts_pLF_cons
+  rfl
+
+theorem os_shv_tt_tc (c k : AST) :
+    oneStep pTC (shiftVar c k (con0 "tt")) = some (Var k) := by
+  apply oneStep_pTC_of_baseReducts_pLF_cons
+  rfl
+
+theorem os_shv_ff_tc (c k : AST) :
+    oneStep pTC (shiftVar c k (con0 "ff")) = some (Var (S k)) := by
+  apply oneStep_pTC_of_baseReducts_pLF_cons
+  rfl
+
+theorem hcong_shift_arg_tc (c s : AST)
+    (hc : IsNormal pTC c) (hb : baseReducts pTC (shift c s) = []) :
+    ∀ s', oneStep pTC s = some s' ->
+      oneStep pTC (shift c s) = some (shift c s') := by
+  intro s' h
+  simp only [IsNormal] at hc
+  change (match baseReducts pTC (shift c s) with
+    | r :: _ => some r
+    | [] => Option.map (fun args' => AST.sexp (.id "shift") args')
+        (oneStepList pTC [c, s])) =
+      some (shift c s')
+  rw [hb]
+  simp only [oneStepList, hc, h, Option.map_some, shift]
+
+theorem shiftStack_descend_shift_step_tc (cs : List Nat) (c : Nat) {s s' : AST}
+    (h : oneStep pTC (shift (peano c) s) = some s') :
+    oneStep pTC (shiftStackTC cs (shift (peano c) s)) =
+      some (shiftStackTC cs s') := by
+  induction cs generalizing c s s' with
+  | nil => exact h
+  | cons d ds ih =>
+      change oneStep pTC (shiftStackTC ds (shift (peano d) (shift (peano c) s))) =
+        some (shiftStackTC ds (shift (peano d) s'))
+      have hinner : oneStep pTC (shift (peano d) (shift (peano c) s)) =
+          some (shift (peano d) s') := by
+        exact hcong_shift_arg_tc (peano d) (shift (peano c) s)
+          (isnormal_peano_tc d) rfl s' h
+      exact ih d hinner
+
+theorem os_shv_lt_ss_tc (c k x y : AST)
+    (hc : IsNormal pTC c) (hk : IsNormal pTC k) :
+    oneStep pTC (shiftVar c k (ltT (S x) (S y))) =
+      some (shiftVar c k (ltT x y)) := by
+  have hb : baseReducts pTC (shiftVar c k (ltT (S x) (S y))) = [] := rfl
+  simp only [IsNormal] at hc hk
+  change (match baseReducts pTC (shiftVar c k (ltT (S x) (S y))) with
+    | r :: _ => some r
+    | [] => Option.map (fun args' => AST.sexp (.id "shiftVar") args')
+        (oneStepList pTC [c, k, ltT (S x) (S y)])) =
+      some (shiftVar c k (ltT x y))
+  rw [hb]
+  simp only [oneStepList, hc, hk, os_lt_ss_tc, Option.map_some, shiftVar]
+
+theorem os_shv_lt_zs_tc (c k y : AST)
+    (hc : IsNormal pTC c) (hk : IsNormal pTC k) :
+    oneStep pTC (shiftVar c k (ltT Z (S y))) =
+      some (shiftVar c k (con0 "tt")) := by
+  have hb : baseReducts pTC (shiftVar c k (ltT Z (S y))) = [] := rfl
+  simp only [IsNormal] at hc hk
+  change (match baseReducts pTC (shiftVar c k (ltT Z (S y))) with
+    | r :: _ => some r
+    | [] => Option.map (fun args' => AST.sexp (.id "shiftVar") args')
+        (oneStepList pTC [c, k, ltT Z (S y)])) =
+      some (shiftVar c k (con0 "tt"))
+  rw [hb]
+  simp only [oneStepList, hc, hk, os_lt_zs_tc, Option.map_some, shiftVar]
+
+theorem os_shv_lt_zz_tc (c k : AST)
+    (hc : IsNormal pTC c) (hk : IsNormal pTC k) :
+    oneStep pTC (shiftVar c k (ltT Z Z)) =
+      some (shiftVar c k (con0 "ff")) := by
+  have hb : baseReducts pTC (shiftVar c k (ltT Z Z)) = [] := rfl
+  simp only [IsNormal] at hc hk
+  change (match baseReducts pTC (shiftVar c k (ltT Z Z)) with
+    | r :: _ => some r
+    | [] => Option.map (fun args' => AST.sexp (.id "shiftVar") args')
+        (oneStepList pTC [c, k, ltT Z Z])) =
+      some (shiftVar c k (con0 "ff"))
+  rw [hb]
+  simp only [oneStepList, hc, hk, os_lt_zz_tc, Option.map_some, shiftVar]
+
+theorem os_shv_lt_sz_tc (c k x : AST)
+    (hc : IsNormal pTC c) (hk : IsNormal pTC k) :
+    oneStep pTC (shiftVar c k (ltT (S x) Z)) =
+      some (shiftVar c k (con0 "ff")) := by
+  have hb : baseReducts pTC (shiftVar c k (ltT (S x) Z)) = [] := rfl
+  simp only [IsNormal] at hc hk
+  change (match baseReducts pTC (shiftVar c k (ltT (S x) Z)) with
+    | r :: _ => some r
+    | [] => Option.map (fun args' => AST.sexp (.id "shiftVar") args')
+        (oneStepList pTC [c, k, ltT (S x) Z])) =
+      some (shiftVar c k (con0 "ff"))
+  rw [hb]
+  simp only [oneStepList, hc, hk, os_lt_sz_tc, Option.map_some, shiftVar]
+
+theorem shiftStack_descend_shiftVar_step_tc (cs : List Nat) (c k b s' : AST)
+    (h : oneStep pTC (shiftVar c k b) = some s') :
+    oneStep pTC (shiftStackTC cs (shiftVar c k b)) =
+      some (shiftStackTC cs s') := by
+  induction cs with
+  | nil => exact h
+  | cons d ds _ =>
+      change oneStep pTC (shiftStackTC ds (shift (peano d) (shiftVar c k b))) =
+        some (shiftStackTC ds (shift (peano d) s'))
+      have hinner : oneStep pTC (shift (peano d) (shiftVar c k b)) =
+          some (shift (peano d) s') := by
+        exact hcong_shift_arg_tc (peano d) (shiftVar c k b)
+          (isnormal_peano_tc d) rfl s' h
+      exact shiftStack_descend_shift_step_tc ds d hinner
+
+theorem stack_shiftVar_lt_final_tc : ∀ (a b : Nat) (cs : List Nat) (c k : AST),
+    IsNormal pTC c -> IsNormal pTC k ->
+    ∃ N, eval pTC N (shiftStackTC cs (shiftVar c k (ltT (peano a) (peano b)))) =
+      shiftStackTC cs (if a < b then Var k else Var (S k)) := by
+  intro a
+  induction a with
+  | zero =>
+      intro b cs c k hc hk
+      cases b with
+      | zero =>
+          refine ⟨2, ?_⟩
+          have h1 := shiftStack_descend_shiftVar_step_tc cs c k (ltT Z Z)
+            (shiftVar c k (con0 "ff")) (os_shv_lt_zz_tc c k hc hk)
+          have h2 := shiftStack_descend_shiftVar_step_tc cs c k (con0 "ff")
+            (Var (S k)) (os_shv_ff_tc c k)
+          simp only [peano, eval, h1, h2]
+          rw [if_neg (Nat.not_lt_zero 0)]
+      | succ b' =>
+          refine ⟨2, ?_⟩
+          have h1 := shiftStack_descend_shiftVar_step_tc cs c k (ltT Z (S (peano b')))
+            (shiftVar c k (con0 "tt")) (os_shv_lt_zs_tc c k (peano b') hc hk)
+          have h2 := shiftStack_descend_shiftVar_step_tc cs c k (con0 "tt")
+            (Var k) (os_shv_tt_tc c k)
+          simp only [peano, eval, h1, h2]
+          rw [if_pos (Nat.zero_lt_succ b')]
+  | succ a' ih =>
+      intro b cs c k hc hk
+      cases b with
+      | zero =>
+          refine ⟨2, ?_⟩
+          have h1 := shiftStack_descend_shiftVar_step_tc cs c k (ltT (S (peano a')) Z)
+            (shiftVar c k (con0 "ff")) (os_shv_lt_sz_tc c k (peano a') hc hk)
+          have h2 := shiftStack_descend_shiftVar_step_tc cs c k (con0 "ff")
+            (Var (S k)) (os_shv_ff_tc c k)
+          simp only [peano, eval, h1, h2]
+          rw [if_neg (Nat.not_lt_zero (Nat.succ a'))]
+      | succ b' =>
+          obtain ⟨N, hN⟩ := ih b' cs c k hc hk
+          refine ⟨N + 1, ?_⟩
+          have h1 := shiftStack_descend_shiftVar_step_tc cs c k
+            (ltT (S (peano a')) (S (peano b')))
+            (shiftVar c k (ltT (peano a') (peano b')))
+            (os_shv_lt_ss_tc c k (peano a') (peano b') hc hk)
+          simp only [peano, eval, h1]
+          rw [hN]
+          cases Nat.decLt a' b' with
+          | isTrue hlt =>
+              have hsucc : Nat.succ a' < Nat.succ b' := Nat.succ_lt_succ hlt
+              rw [if_pos hlt, if_pos hsucc]
+          | isFalse hlt =>
+              have hsucc : ¬ Nat.succ a' < Nat.succ b' := by
+                intro h
+                exact hlt (Nat.lt_of_succ_lt_succ h)
+              rw [if_neg hlt, if_neg hsucc]
+
+theorem reducesToEncTerm_app_tc {u v : AST} {f a : LF.Term}
+    (hu : ReducesToEncTermTC u f) (hv : ReducesToEncTermTC v a) :
+    ReducesToEncTermTC (App u v) (.app f a) := by
+  rcases hu with ⟨NF, hF⟩
+  rcases hv with ⟨NA, hA⟩
+  have hFnorm : IsNormal pTC (encTerm f) := isnormal_encTerm_raw_tc f
+  have hAnorm : IsNormal pTC (encTerm a) := isnormal_encTerm_raw_tc a
+  obtain ⟨MF, hMF⟩ :=
+    cong_eval_tc (fun s => App s v) (hcong_App1_tc v) NF hF hFnorm
+  obtain ⟨MA, hMA⟩ :=
+    cong_eval_tc (fun s => App (encTerm f) s)
+      (hcong_App2_tc (encTerm f) hFnorm) NA hA hAnorm
+  refine ⟨MF + MA, ?_⟩
+  have htotal := eval_trans_tc MF MA _ _ _ hMF hMA
+  simpa [encTerm] using htotal
+
+theorem reducesToEncTerm_pi_tc {u v : AST} {A B : LF.Term}
+    (hu : ReducesToEncTermTC u A) (hv : ReducesToEncTermTC v B) :
+    ReducesToEncTermTC (Pi u v) (.pi A B) := by
+  rcases hu with ⟨NA, hA⟩
+  rcases hv with ⟨NB, hB⟩
+  have hAnorm : IsNormal pTC (encTerm A) := isnormal_encTerm_raw_tc A
+  have hBnorm : IsNormal pTC (encTerm B) := isnormal_encTerm_raw_tc B
+  obtain ⟨MA, hMA⟩ :=
+    cong_eval_tc (fun s => Pi s v) (hcong_Pi1_tc v) NA hA hAnorm
+  obtain ⟨MB, hMB⟩ :=
+    cong_eval_tc (fun s => Pi (encTerm A) s)
+      (hcong_Pi2_tc (encTerm A) hAnorm) NB hB hBnorm
+  refine ⟨MA + MB, ?_⟩
+  have htotal := eval_trans_tc MA MB _ _ _ hMA hMB
+  simpa [encTerm] using htotal
+
+theorem reducesToEncTerm_lam_tc {u v : AST} {A b : LF.Term}
+    (hu : ReducesToEncTermTC u A) (hv : ReducesToEncTermTC v b) :
+    ReducesToEncTermTC (Lam u v) (.lam A b) := by
+  rcases hu with ⟨NA, hA⟩
+  rcases hv with ⟨Nb, hb⟩
+  have hAnorm : IsNormal pTC (encTerm A) := isnormal_encTerm_raw_tc A
+  have hbnorm : IsNormal pTC (encTerm b) := isnormal_encTerm_raw_tc b
+  obtain ⟨MA, hMA⟩ :=
+    cong_eval_tc (fun s => Lam s v) (hcong_Lam1_tc v) NA hA hAnorm
+  obtain ⟨Mb, hMb⟩ :=
+    cong_eval_tc (fun s => Lam (encTerm A) s)
+      (hcong_Lam2_tc (encTerm A) hAnorm) Nb hb hbnorm
+  refine ⟨MA + Mb, ?_⟩
+  have htotal := eval_trans_tc MA Mb _ _ _ hMA hMb
+  simpa [encTerm] using htotal
+
+theorem shiftable_srt_tc (s : LF.Srt) :
+    ShiftablePayloadTC (Srt (match s with | .type => typeS | .kind => kindS)) (.srt s) := by
+  intro cs
+  induction cs with
+  | nil =>
+      cases s <;> exact ⟨0, rfl⟩
+  | cons c cs ih =>
+      cases s
+      · have hone := shiftStack_descend_shift_step_tc cs c
+            (os_sh_srt_tc (peano c) typeS)
+        have hstep : eval pTC 1 (shiftStackTC (c :: cs) (Srt typeS)) =
+            shiftStackTC cs (Srt typeS) := by
+          change eval pTC 1 (shiftStackTC cs (shift (peano c) (Srt typeS))) =
+            shiftStackTC cs (Srt typeS)
+          simp only [eval, hone]
+        rcases ih with ⟨N, hN⟩
+        refine ⟨1 + N, ?_⟩
+        refine eval_trans_tc 1 N _ _ _ hstep ?_
+        simpa [lfShiftStackTC, Mettapedia.GSLT.LanguageDef.LFParserSim.lfShiftStack,
+          LF.shift] using hN
+      · have hone := shiftStack_descend_shift_step_tc cs c
+            (os_sh_srt_tc (peano c) kindS)
+        have hstep : eval pTC 1 (shiftStackTC (c :: cs) (Srt kindS)) =
+            shiftStackTC cs (Srt kindS) := by
+          change eval pTC 1 (shiftStackTC cs (shift (peano c) (Srt kindS))) =
+            shiftStackTC cs (Srt kindS)
+          simp only [eval, hone]
+        rcases ih with ⟨N, hN⟩
+        refine ⟨1 + N, ?_⟩
+        refine eval_trans_tc 1 N _ _ _ hstep ?_
+        simpa [lfShiftStackTC, Mettapedia.GSLT.LanguageDef.LFParserSim.lfShiftStack,
+          LF.shift] using hN
+
+theorem shiftable_con_tc (x : String) :
+    ShiftablePayloadTC (LFEnc.Con (con0 x)) (.con x) := by
+  intro cs
+  induction cs with
+  | nil => exact ⟨0, rfl⟩
+  | cons c cs ih =>
+      have hone := shiftStack_descend_shift_step_tc cs c
+        (os_sh_con_tc (peano c) (con0 x))
+      have hstep : eval pTC 1 (shiftStackTC (c :: cs) (LFEnc.Con (con0 x))) =
+          shiftStackTC cs (LFEnc.Con (con0 x)) := by
+        change eval pTC 1 (shiftStackTC cs (shift (peano c) (LFEnc.Con (con0 x)))) =
+          shiftStackTC cs (LFEnc.Con (con0 x))
+        simp only [eval, hone]
+      rcases ih with ⟨N, hN⟩
+      refine ⟨1 + N, ?_⟩
+      refine eval_trans_tc 1 N _ _ _ hstep ?_
+      simpa [lfShiftStackTC, Mettapedia.GSLT.LanguageDef.LFParserSim.lfShiftStack,
+        LF.shift] using hN
+
+theorem shiftable_var_tc (k : Nat) :
+    ShiftablePayloadTC (Var (peano k)) (.var k) := by
+  intro cs
+  induction cs generalizing k with
+  | nil => exact ⟨0, rfl⟩
+  | cons c cs ih =>
+      have h0 : eval pTC 1 (shiftStackTC (c :: cs) (Var (peano k))) =
+          shiftStackTC cs (shiftVar (peano c) (peano k) (ltT (peano k) (peano c))) := by
+        have hone := shiftStack_descend_shift_step_tc cs c
+          (os_sh_var_tc (peano c) (peano k))
+        change eval pTC 1 (shiftStackTC cs (shift (peano c) (Var (peano k)))) =
+          shiftStackTC cs (shiftVar (peano c) (peano k) (ltT (peano k) (peano c)))
+        simp only [eval, hone]
+      obtain ⟨Nguard, hguard⟩ :=
+        stack_shiftVar_lt_final_tc k c cs (peano c) (peano k)
+          (isnormal_peano_tc c) (isnormal_peano_tc k)
+      have htail : ReducesToEncTermTC
+          (shiftStackTC cs (encTerm (LF.shift c (.var k))))
+          (lfShiftStackTC cs (LF.shift c (.var k))) :=
+        ih (if k < c then k else k + 1)
+      rcases htail with ⟨Ntail, htail⟩
+      refine ⟨1 + (Nguard + Ntail), ?_⟩
+      refine eval_trans_tc 1 (Nguard + Ntail) _ _ _ h0 ?_
+      have hguard' : eval pTC Nguard
+          (shiftStackTC cs (shiftVar (peano c) (peano k) (ltT (peano k) (peano c)))) =
+          shiftStackTC cs (encTerm (LF.shift c (.var k))) := by
+        rw [hguard]
+        cases Nat.decLt k c with
+        | isTrue hkc =>
+            simp [LF.shift, hkc, encTerm]
+        | isFalse hkc =>
+            simp [LF.shift, hkc, encTerm, peano]
+      exact eval_trans_tc Nguard Ntail _ _ _ hguard' htail
+
+theorem shiftable_app_stack_tc : ∀ (cs : List Nat) {u v : AST} {f a : LF.Term},
+    ShiftablePayloadTC u f -> ShiftablePayloadTC v a ->
+    ReducesToEncTermTC (shiftStackTC cs (App u v)) (lfShiftStackTC cs (.app f a)) := by
+  intro cs
+  induction cs with
+  | nil =>
+      intro u v f a hu hv
+      exact reducesToEncTerm_app_tc hu.reduces hv.reduces
+  | cons c cs ih =>
+      intro u v f a hu hv
+      have hone := shiftStack_descend_shift_step_tc cs c
+        (os_sh_app_tc (peano c) u v)
+      have hstep : eval pTC 1 (shiftStackTC (c :: cs) (App u v)) =
+          shiftStackTC cs (App (shift (peano c) u) (shift (peano c) v)) := by
+        change eval pTC 1 (shiftStackTC cs (shift (peano c) (App u v))) =
+          shiftStackTC cs (App (shift (peano c) u) (shift (peano c) v))
+        simp only [eval, hone]
+      have htail : ReducesToEncTermTC
+          (shiftStackTC cs (App (shift (peano c) u) (shift (peano c) v)))
+          (lfShiftStackTC cs (.app (LF.shift c f) (LF.shift c a))) :=
+        ih (hu.shifted c) (hv.shifted c)
+      rcases htail with ⟨N, hN⟩
+      refine ⟨1 + N, ?_⟩
+      exact eval_trans_tc 1 N _ _ _ hstep hN
+
+theorem shiftable_app_tc {u v : AST} {f a : LF.Term}
+    (hu : ShiftablePayloadTC u f) (hv : ShiftablePayloadTC v a) :
+    ShiftablePayloadTC (App u v) (.app f a) := by
+  intro cs
+  exact shiftable_app_stack_tc cs hu hv
+
+theorem shiftable_pi_stack_tc : ∀ (cs : List Nat) {u v : AST} {A B : LF.Term},
+    ShiftablePayloadTC u A -> ShiftablePayloadTC v B ->
+    ReducesToEncTermTC (shiftStackTC cs (Pi u v)) (lfShiftStackTC cs (.pi A B)) := by
+  intro cs
+  induction cs with
+  | nil =>
+      intro u v A B hu hv
+      exact reducesToEncTerm_pi_tc hu.reduces hv.reduces
+  | cons c cs ih =>
+      intro u v A B hu hv
+      have hone := shiftStack_descend_shift_step_tc cs c
+        (os_sh_pi_tc (peano c) u v)
+      have hstep : eval pTC 1 (shiftStackTC (c :: cs) (Pi u v)) =
+          shiftStackTC cs (Pi (shift (peano c) u) (shift (S (peano c)) v)) := by
+        change eval pTC 1 (shiftStackTC cs (shift (peano c) (Pi u v))) =
+          shiftStackTC cs (Pi (shift (peano c) u) (shift (S (peano c)) v))
+        simp only [eval, hone]
+      have htail : ReducesToEncTermTC
+          (shiftStackTC cs (Pi (shift (peano c) u) (shift (S (peano c)) v)))
+          (lfShiftStackTC cs (.pi (LF.shift c A) (LF.shift (c + 1) B))) := by
+        simpa [peano] using ih (hu.shifted c) (hv.shifted (c + 1))
+      rcases htail with ⟨N, hN⟩
+      refine ⟨1 + N, ?_⟩
+      exact eval_trans_tc 1 N _ _ _ hstep hN
+
+theorem shiftable_pi_tc {u v : AST} {A B : LF.Term}
+    (hu : ShiftablePayloadTC u A) (hv : ShiftablePayloadTC v B) :
+    ShiftablePayloadTC (Pi u v) (.pi A B) := by
+  intro cs
+  exact shiftable_pi_stack_tc cs hu hv
+
+theorem shiftable_lam_stack_tc : ∀ (cs : List Nat) {u v : AST} {A b : LF.Term},
+    ShiftablePayloadTC u A -> ShiftablePayloadTC v b ->
+    ReducesToEncTermTC (shiftStackTC cs (Lam u v)) (lfShiftStackTC cs (.lam A b)) := by
+  intro cs
+  induction cs with
+  | nil =>
+      intro u v A b hu hv
+      exact reducesToEncTerm_lam_tc hu.reduces hv.reduces
+  | cons c cs ih =>
+      intro u v A b hu hv
+      have hone := shiftStack_descend_shift_step_tc cs c
+        (os_sh_lam_tc (peano c) u v)
+      have hstep : eval pTC 1 (shiftStackTC (c :: cs) (Lam u v)) =
+          shiftStackTC cs (Lam (shift (peano c) u) (shift (S (peano c)) v)) := by
+        change eval pTC 1 (shiftStackTC cs (shift (peano c) (Lam u v))) =
+          shiftStackTC cs (Lam (shift (peano c) u) (shift (S (peano c)) v))
+        simp only [eval, hone]
+      have htail : ReducesToEncTermTC
+          (shiftStackTC cs (Lam (shift (peano c) u) (shift (S (peano c)) v)))
+          (lfShiftStackTC cs (.lam (LF.shift c A) (LF.shift (c + 1) b))) := by
+        simpa [peano] using ih (hu.shifted c) (hv.shifted (c + 1))
+      rcases htail with ⟨N, hN⟩
+      refine ⟨1 + N, ?_⟩
+      exact eval_trans_tc 1 N _ _ _ hstep hN
+
+theorem shiftable_lam_tc {u v : AST} {A b : LF.Term}
+    (hu : ShiftablePayloadTC u A) (hv : ShiftablePayloadTC v b) :
+    ShiftablePayloadTC (Lam u v) (.lam A b) := by
+  intro cs
+  exact shiftable_lam_stack_tc cs hu hv
+
+theorem shiftable_encTerm_tc (t : LF.Term) : ShiftablePayloadTC (encTerm t) t := by
+  induction t with
+  | srt s => exact shiftable_srt_tc s
+  | con x => exact shiftable_con_tc x
+  | var k => exact shiftable_var_tc k
+  | pi A B ihA ihB => exact shiftable_pi_tc ihA ihB
+  | lam A b ihA ihb => exact shiftable_lam_tc ihA ihb
+  | app f a ihf iha => exact shiftable_app_tc ihf iha
+
+theorem hdesc_shiftStack_shift_resolveK_tc (cs : List Nat) (c : Nat) (s0 : String) :
+    ∀ {a a' : AST}, ResolveGoodTC a -> oneStep pTC a = some a' ->
+      oneStep pTC (shiftStackTC cs (shift (peano c) (resolveK (con0 s0) a))) =
+        some (shiftStackTC cs (shift (peano c) (resolveK (con0 s0) a'))) := by
+  intro a a' hgood hstep
+  have hres := hdesc_resolveK_tc s0 hgood hstep
+  have hinner : oneStep pTC (shift (peano c) (resolveK (con0 s0) a)) =
+      some (shift (peano c) (resolveK (con0 s0) a')) := by
+    exact hcong_shift_arg_tc (peano c) (resolveK (con0 s0) a)
+      (isnormal_peano_tc c) rfl _ hres
+  exact shiftStack_descend_shift_step_tc cs c hinner
+
+theorem shiftStack_shift_resolve_step_tc (cs : List Nat) (c : Nat)
+    (ctx : List String) (s : String) :
+    eval pTC 1 (shiftStackTC cs (shift (peano c)
+        (resolve (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx) (con0 s)))) =
+      shiftStackTC cs (shift (peano c)
+        (resolveK (con0 s)
+          (ctxidx (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx) (con0 s)))) := by
+  have hinner : oneStep pTC (shift (peano c)
+        (resolve (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx) (con0 s))) =
+      some (shift (peano c)
+        (resolveK (con0 s)
+          (ctxidx (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx) (con0 s)))) := by
+    exact hcong_shift_arg_tc (peano c)
+      (resolve (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx) (con0 s))
+      (isnormal_peano_tc c) rfl _ (os_res_tc _ _)
+  have hone := shiftStack_descend_shift_step_tc cs c hinner
+  simp only [eval, hone]
+
+theorem shiftStack_shift_resolveK_nf_step_tc (cs : List Nat) (c : Nat) (s : String) :
+    eval pTC 1 (shiftStackTC cs (shift (peano c) (resolveK (con0 s) NF))) =
+      shiftStackTC cs (shift (peano c) (LFEnc.Con (con0 s))) := by
+  have hinner : oneStep pTC (shift (peano c) (resolveK (con0 s) NF)) =
+      some (shift (peano c) (LFEnc.Con (con0 s))) := by
+    exact hcong_shift_arg_tc (peano c) (resolveK (con0 s) NF)
+      (isnormal_peano_tc c) rfl _ (os_resK_nf_tc _)
+  have hone := shiftStack_descend_shift_step_tc cs c hinner
+  simp only [eval, hone]
+
+theorem shiftStack_shift_resolveK_idx_step_tc (cs : List Nat) (c i : Nat)
+    (s : String) :
+    eval pTC 1 (shiftStackTC cs
+        (shift (peano c) (resolveK (con0 s) (Idx (peano i))))) =
+      shiftStackTC cs (shift (peano c) (Var (peano i))) := by
+  have hinner : oneStep pTC
+      (shift (peano c) (resolveK (con0 s) (Idx (peano i)))) =
+      some (shift (peano c) (Var (peano i))) := by
+    exact hcong_shift_arg_tc (peano c) (resolveK (con0 s) (Idx (peano i)))
+      (isnormal_peano_tc c) rfl _ (os_resK_idx_tc _ _)
+  have hone := shiftStack_descend_shift_step_tc cs c hinner
+  simp only [eval, hone]
+
+theorem shiftable_resolve_tc (ctx : List String) (s : String) :
+    ShiftablePayloadTC
+      (resolve (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx) (con0 s))
+      (LF.resolve ctx s) := by
+  intro cs
+  cases cs with
+  | nil => exact resolve_sim_tc ctx s
+  | cons c cs =>
+      obtain ⟨Nctx, hctx⟩ := ctxidx_sim_tc ctx s
+      obtain ⟨Mctx, hMctx⟩ :=
+        good_cong_eval_tc
+          (fun r => shiftStackTC cs (shift (peano c) (resolveK (con0 s) r)))
+          (hdesc_shiftStack_shift_resolveK_tc cs c s)
+          Nctx (Mettapedia.GSLT.LanguageDef.LFResolveSim.Good.seed ctx s) hctx
+          (isnormal_encIdx_tc _)
+      have hstep0 : eval pTC 1
+          (shiftStackTC (c :: cs)
+            (resolve (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx) (con0 s))) =
+          shiftStackTC cs (shift (peano c)
+            (resolveK (con0 s)
+              (ctxidx (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx) (con0 s)))) := by
+        change eval pTC 1 (shiftStackTC cs (shift (peano c)
+            (resolve (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx) (con0 s)))) =
+          shiftStackTC cs (shift (peano c)
+            (resolveK (con0 s)
+              (ctxidx (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx) (con0 s))))
+        exact shiftStack_shift_resolve_step_tc cs c ctx s
+      cases hr : LF.ctxIdx ctx s with
+      | none =>
+          obtain ⟨K, hK⟩ := (shiftable_con_tc s) (c :: cs)
+          have hMctx' : eval pTC Mctx
+              (shiftStackTC cs (shift (peano c)
+                (resolveK (con0 s)
+                  (ctxidx (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx) (con0 s))))) =
+              shiftStackTC cs (shift (peano c)
+                (resolveK (con0 s) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encIdx none))) := by
+            simpa [hr] using hMctx
+          refine ⟨1 + (Mctx + (1 + K)), ?_⟩
+          refine eval_trans_tc 1 (Mctx + (1 + K)) _ _ _ hstep0 ?_
+          refine eval_trans_tc Mctx (1 + K) _ _ _ hMctx' ?_
+          have hcollapse : eval pTC 1
+              (shiftStackTC cs (shift (peano c)
+                (resolveK (con0 s) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encIdx none)))) =
+              shiftStackTC cs (shift (peano c) (LFEnc.Con (con0 s))) := by
+            simp only [Mettapedia.GSLT.LanguageDef.LFResolveSim.encIdx,
+              shiftStack_shift_resolveK_nf_step_tc]
+          refine eval_trans_tc 1 K _ _ _ hcollapse ?_
+          simpa [shiftStackTC, lfShiftStackTC,
+            Mettapedia.GSLT.LanguageDef.LFParserSim.shiftStack,
+            Mettapedia.GSLT.LanguageDef.LFParserSim.lfShiftStack,
+            LF.resolve, hr] using hK
+      | some i =>
+          obtain ⟨K, hK⟩ := (shiftable_var_tc i) (c :: cs)
+          have hMctx' : eval pTC Mctx
+              (shiftStackTC cs (shift (peano c)
+                (resolveK (con0 s)
+                  (ctxidx (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx) (con0 s))))) =
+              shiftStackTC cs (shift (peano c)
+                (resolveK (con0 s) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encIdx (some i)))) := by
+            simpa [hr] using hMctx
+          refine ⟨1 + (Mctx + (1 + K)), ?_⟩
+          refine eval_trans_tc 1 (Mctx + (1 + K)) _ _ _ hstep0 ?_
+          refine eval_trans_tc Mctx (1 + K) _ _ _ hMctx' ?_
+          have hcollapse : eval pTC 1
+              (shiftStackTC cs (shift (peano c)
+                (resolveK (con0 s)
+                  (Mettapedia.GSLT.LanguageDef.LFResolveSim.encIdx (some i))))) =
+              shiftStackTC cs (shift (peano c) (Var (peano i))) := by
+            simp only [Mettapedia.GSLT.LanguageDef.LFResolveSim.encIdx,
+              shiftStack_shift_resolveK_idx_step_tc]
+          refine eval_trans_tc 1 K _ _ _ hcollapse ?_
+          simpa [shiftStackTC, lfShiftStackTC,
+            Mettapedia.GSLT.LanguageDef.LFParserSim.shiftStack,
+            Mettapedia.GSLT.LanguageDef.LFParserSim.lfShiftStack,
+            LF.resolve, hr] using hK
+
+inductive RawShiftablePayloadTC : AST -> LF.Term -> Prop where
+  | srt (s : LF.Srt) :
+      RawShiftablePayloadTC (encTerm (.srt s)) (.srt s)
+  | con (x : String) :
+      RawShiftablePayloadTC (encTerm (.con x)) (.con x)
+  | var (k : Nat) :
+      RawShiftablePayloadTC (encTerm (.var k)) (.var k)
+  | resolve (ctx : List String) (s : String) :
+      RawShiftablePayloadTC
+        (resolve (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx) (con0 s))
+        (LF.resolve ctx s)
+  | app {u v : AST} {f a : LF.Term} :
+      RawShiftablePayloadTC u f -> RawShiftablePayloadTC v a ->
+        RawShiftablePayloadTC (App u v) (.app f a)
+  | pi {u v : AST} {A B : LF.Term} :
+      RawShiftablePayloadTC u A -> RawShiftablePayloadTC v B ->
+        RawShiftablePayloadTC (Pi u v) (.pi A B)
+  | lam {u v : AST} {A b : LF.Term} :
+      RawShiftablePayloadTC u A -> RawShiftablePayloadTC v b ->
+        RawShiftablePayloadTC (Lam u v) (.lam A b)
+  | shifted (c : Nat) {u : AST} {t : LF.Term} :
+      RawShiftablePayloadTC u t ->
+        RawShiftablePayloadTC (shift (peano c) u) (LF.shift c t)
+
+theorem RawShiftablePayloadTC.toParserShiftable
+    {u : AST} {t : LF.Term} (h : RawShiftablePayloadTC u t) :
+    Mettapedia.GSLT.LanguageDef.LFParserSim.ShiftablePayload u t := by
+  induction h with
+  | srt s =>
+      exact Mettapedia.GSLT.LanguageDef.LFParserSim.shiftable_encTerm (.srt s)
+  | con x =>
+      exact Mettapedia.GSLT.LanguageDef.LFParserSim.shiftable_encTerm (.con x)
+  | var k =>
+      exact Mettapedia.GSLT.LanguageDef.LFParserSim.shiftable_encTerm (.var k)
+  | resolve ctx s =>
+      exact Mettapedia.GSLT.LanguageDef.LFParserSim.shiftable_resolve ctx s
+  | app hu hv ihu ihv =>
+      exact Mettapedia.GSLT.LanguageDef.LFParserSim.shiftable_app ihu ihv
+  | pi hu hv ihu ihv =>
+      exact Mettapedia.GSLT.LanguageDef.LFParserSim.shiftable_pi ihu ihv
+  | lam hu hv ihu ihv =>
+      exact Mettapedia.GSLT.LanguageDef.LFParserSim.shiftable_lam ihu ihv
+  | shifted c h ih =>
+      exact Mettapedia.GSLT.LanguageDef.LFParserSim.shiftable_payload_shift c ih
+
+theorem RawShiftablePayloadTC.toShiftableTC
+    {u : AST} {t : LF.Term} (h : RawShiftablePayloadTC u t) :
+    ShiftablePayloadTC u t := by
+  induction h with
+  | srt s =>
+      exact shiftable_encTerm_tc (.srt s)
+  | con x =>
+      exact shiftable_encTerm_tc (.con x)
+  | var k =>
+      exact shiftable_encTerm_tc (.var k)
+  | resolve ctx s =>
+      exact shiftable_resolve_tc ctx s
+  | app hu hv ihu ihv =>
+      exact shiftable_app_tc ihu ihv
+  | pi hu hv ihu ihv =>
+      exact shiftable_pi_tc ihu ihv
+  | lam hu hv ihu ihv =>
+      exact shiftable_lam_tc ihu ihv
+  | shifted c h ih =>
+      exact ih.shifted c
+
+def MatchesParseShiftableRawTC :
+    Option (LF.Term × List LF.Tok) → AST → Prop
+  | some (t, rest), v =>
+      ∃ u, v = Pp u (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks rest) ∧
+        RawShiftablePayloadTC u t
+  | none, v => ∃ e, v = PErr e
+
+def FirstActiveMatchesParseShiftableRawTC (r : Option (LF.Term × List LF.Tok))
+    (call : AST) : Prop :=
+  ∃ N,
+    MatchesParseShiftableRawTC r (eval pTC N call) ∧
+      ∀ k, k < N ->
+        Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape (eval pTC k call)
+
+def LFRecRawParserRawTCInterface : Prop :=
+  ∀ toks, ∃ N,
+    (match LF.pTerm 64 [] toks with
+    | none =>
+        ∃ e, eval pTC N
+          (lfrec (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks)) = Err e
+    | some (t, rest) =>
+        match rest with
+        | [] =>
+            ∃ raw,
+              RawShiftablePayloadTC raw t ∧
+                eval pTC N
+                  (lfrec (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks)) = Ok raw
+        | _ :: _ =>
+            ∃ e, eval pTC N
+              (lfrec (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks)) = Err e) ∧
+      ∀ k, k < N ->
+        LFCheckKChildOpenShape
+          (eval pTC k (lfrec (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks)))
+
+theorem matches_parse_shiftable_of_raw_tc
+    {r : Option (LF.Term × List LF.Tok)} {v : AST}
+    (h : MatchesParseShiftableRawTC r v) :
+    Mettapedia.GSLT.LanguageDef.LFParserSim.MatchesParseShiftable r v := by
+  cases r with
+  | none =>
+      exact h
+  | some pr =>
+      rcases pr with ⟨t, rest⟩
+      rcases h with ⟨u, rfl, hu⟩
+      exact ⟨u, rfl, hu.toParserShiftable⟩
+
+theorem first_active_shiftable_of_raw_tc
+    {r : Option (LF.Term × List LF.Tok)} {call : AST}
+    (h : FirstActiveMatchesParseShiftableRawTC r call) :
+    FirstActiveMatchesParseShiftableTC r call := by
+  rcases h with ⟨N, hN, hguard⟩
+  exact ⟨N, matches_parse_shiftable_of_raw_tc hN, hguard⟩
+
+theorem raw_shiftable_payload_encTerm_tc (t : LF.Term) :
+    RawShiftablePayloadTC (encTerm t) t := by
+  induction t with
+  | var k =>
+      exact RawShiftablePayloadTC.var k
+  | srt s =>
+      exact RawShiftablePayloadTC.srt s
+  | con x =>
+      exact RawShiftablePayloadTC.con x
+  | pi A B ihA ihB =>
+      simpa [encTerm] using RawShiftablePayloadTC.pi ihA ihB
+  | lam A b ihA ihb =>
+      simpa [encTerm] using RawShiftablePayloadTC.lam ihA ihb
+  | app f a ihf iha =>
+      simpa [encTerm] using RawShiftablePayloadTC.app ihf iha
+
+theorem raw_shiftable_payload_resolve_tc (ctx : List String) (s : String) :
+    RawShiftablePayloadTC
+      (resolve (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx) (con0 s))
+      (LF.resolve ctx s) := by
+  exact RawShiftablePayloadTC.resolve ctx s
+
+theorem raw_shiftable_payload_app_tc {u v : AST} {f a : LF.Term}
+    (hu : RawShiftablePayloadTC u f) (hv : RawShiftablePayloadTC v a) :
+    RawShiftablePayloadTC (App u v) (.app f a) := by
+  exact RawShiftablePayloadTC.app hu hv
+
+theorem raw_shiftable_payload_pi_tc {u v : AST} {A B : LF.Term}
+    (hu : RawShiftablePayloadTC u A) (hv : RawShiftablePayloadTC v B) :
+    RawShiftablePayloadTC (Pi u v) (.pi A B) := by
+  exact RawShiftablePayloadTC.pi hu hv
+
+theorem raw_shiftable_payload_lam_tc {u v : AST} {A b : LF.Term}
+    (hu : RawShiftablePayloadTC u A) (hv : RawShiftablePayloadTC v b) :
+    RawShiftablePayloadTC (Lam u v) (.lam A b) := by
+  exact RawShiftablePayloadTC.lam hu hv
+
+theorem raw_shiftable_payload_shift_zero_tc {u : AST} {t : LF.Term}
+    (h : RawShiftablePayloadTC u t) :
+    RawShiftablePayloadTC (shift Z u) (LF.shift 0 t) := by
+  simpa [peano] using RawShiftablePayloadTC.shifted 0 h
+
+def binderShiftStackTC (cs : List Nat) : List Nat :=
+  cs.map Nat.succ
+
+theorem lfShiftStack_app_tc :
+    ∀ (cs : List Nat) (f a : LF.Term),
+      lfShiftStackTC cs (.app f a) =
+        .app (lfShiftStackTC cs f) (lfShiftStackTC cs a) := by
+  intro cs
+  induction cs with
+  | nil =>
+      intro f a
+      rfl
+  | cons c cs ih =>
+      intro f a
+      simp [lfShiftStackTC, Mettapedia.GSLT.LanguageDef.LFParserSim.lfShiftStack,
+        LF.shift, ih]
+
+theorem lfShiftStack_pi_tc :
+    ∀ (cs : List Nat) (A B : LF.Term),
+      lfShiftStackTC cs (.pi A B) =
+        .pi (lfShiftStackTC cs A) (lfShiftStackTC (binderShiftStackTC cs) B) := by
+  intro cs
+  induction cs with
+  | nil =>
+      intro A B
+      rfl
+  | cons c cs ih =>
+      intro A B
+      simp [lfShiftStackTC, Mettapedia.GSLT.LanguageDef.LFParserSim.lfShiftStack,
+        binderShiftStackTC, LF.shift, ih]
+
+theorem lfShiftStack_lam_tc :
+    ∀ (cs : List Nat) (A b : LF.Term),
+      lfShiftStackTC cs (.lam A b) =
+        .lam (lfShiftStackTC cs A) (lfShiftStackTC (binderShiftStackTC cs) b) := by
+  intro cs
+  induction cs with
+  | nil =>
+      intro A b
+      rfl
+  | cons c cs ih =>
+      intro A b
+      simp [lfShiftStackTC, Mettapedia.GSLT.LanguageDef.LFParserSim.lfShiftStack,
+        binderShiftStackTC, LF.shift, ih]
+
+theorem internTerm_child_open_shiftStack_cons_tc (c : Nat) (cs : List Nat) (s : AST) :
+    InternTermChildOpen (shiftStackTC (c :: cs) s) := by
+  induction cs generalizing c s with
+  | nil =>
+      rfl
+  | cons d ds ih =>
+      change InternTermChildOpen (shiftStackTC ds (shift (peano d) (shift (peano c) s)))
+      exact ih d (shift (peano c) s)
+
+theorem first_active_intern_of_child_open_eval {r : Option AST} {raw : AST} {t : LF.Term}
+    (hred : ∃ N, eval pTC N raw = encTerm t ∧
+      ∀ k, k < N -> InternTermChildOpen (eval pTC k raw))
+    (hcanon : FirstActiveIntern r (internTerm (encTerm t))) :
+    FirstActiveIntern r (internTerm raw) := by
+  rcases hred with ⟨N, hN, hguard⟩
+  obtain ⟨M, hM, hMguard⟩ :=
+    cong_eval_internTerm_child_open_with_guard N hN hguard
+  exact first_active_intern_prefix hM hMguard hcanon
+
+theorem internTerm_child_open_append_guard {s mid : AST} {N M : Nat}
+    (hEval : eval pTC N s = mid)
+    (hPrefix : ∀ k, k < N -> InternTermChildOpen (eval pTC k s))
+    (hTail : ∀ k, k < M -> InternTermChildOpen (eval pTC k mid)) :
+    ∀ k, k < N + M -> InternTermChildOpen (eval pTC k s) := by
+  intro k hk
+  by_cases hkN : k < N
+  · exact hPrefix k hkN
+  · have hge : N ≤ k := Nat.le_of_not_gt hkN
+    let j := k - N
+    have hjlt : j < M := by omega
+    have hk_eq : k = N + j := by omega
+    have hshift : eval pTC k s = eval pTC j mid := by
+      have htotal : eval pTC (N + j) s = eval pTC j mid :=
+        eval_trans_tc N j s mid (eval pTC j mid) hEval rfl
+      simpa [hk_eq] using htotal
+    rw [hshift]
+    exact hTail j hjlt
+
+theorem internTerm_child_open_shiftStack_shiftVar_tc
+    (cs : List Nat) (c k b : AST) :
+    InternTermChildOpen (shiftStackTC cs (shiftVar c k b)) := by
+  cases cs with
+  | nil =>
+      rfl
+  | cons d ds =>
+      exact internTerm_child_open_shiftStack_cons_tc d ds (shiftVar c k b)
+
+theorem stack_shiftVar_lt_final_child_open_tc :
+    ∀ (a b : Nat) (cs : List Nat) (c k : AST),
+      IsNormal pTC c -> IsNormal pTC k ->
+        ∃ N,
+          eval pTC N (shiftStackTC cs (shiftVar c k (ltT (peano a) (peano b)))) =
+            shiftStackTC cs (if a < b then Var k else Var (S k)) ∧
+          ∀ j, j < N ->
+            InternTermChildOpen
+              (eval pTC j (shiftStackTC cs (shiftVar c k (ltT (peano a) (peano b))))) := by
+  intro a
+  induction a with
+  | zero =>
+      intro b cs c k hc hk
+      cases b with
+      | zero =>
+          have h1 := shiftStack_descend_shiftVar_step_tc cs c k (ltT Z Z)
+            (shiftVar c k (con0 "ff")) (os_shv_lt_zz_tc c k hc hk)
+          have h2 := shiftStack_descend_shiftVar_step_tc cs c k (con0 "ff")
+            (Var (S k)) (os_shv_ff_tc c k)
+          refine ⟨2, ?_, ?_⟩
+          · simp only [peano, eval, h1, h2]
+            rw [if_neg (Nat.not_lt_zero 0)]
+          · intro j hj
+            have hjcases : j = 0 ∨ j = 1 := by omega
+            rcases hjcases with rfl | rfl
+            · simpa [peano, eval] using
+                internTerm_child_open_shiftStack_shiftVar_tc cs c k (ltT Z Z)
+            · simpa [peano, eval, h1] using
+                internTerm_child_open_shiftStack_shiftVar_tc cs c k (con0 "ff")
+      | succ b' =>
+          have h1 := shiftStack_descend_shiftVar_step_tc cs c k (ltT Z (S (peano b')))
+            (shiftVar c k (con0 "tt")) (os_shv_lt_zs_tc c k (peano b') hc hk)
+          have h2 := shiftStack_descend_shiftVar_step_tc cs c k (con0 "tt")
+            (Var k) (os_shv_tt_tc c k)
+          refine ⟨2, ?_, ?_⟩
+          · simp only [peano, eval, h1, h2]
+            rw [if_pos (Nat.zero_lt_succ b')]
+          · intro j hj
+            have hjcases : j = 0 ∨ j = 1 := by omega
+            rcases hjcases with rfl | rfl
+            · simpa [peano, eval] using
+                internTerm_child_open_shiftStack_shiftVar_tc cs c k (ltT Z (S (peano b')))
+            · simpa [peano, eval, h1] using
+                internTerm_child_open_shiftStack_shiftVar_tc cs c k (con0 "tt")
+  | succ a' ih =>
+      intro b cs c k hc hk
+      cases b with
+      | zero =>
+          have h1 := shiftStack_descend_shiftVar_step_tc cs c k (ltT (S (peano a')) Z)
+            (shiftVar c k (con0 "ff")) (os_shv_lt_sz_tc c k (peano a') hc hk)
+          have h2 := shiftStack_descend_shiftVar_step_tc cs c k (con0 "ff")
+            (Var (S k)) (os_shv_ff_tc c k)
+          refine ⟨2, ?_, ?_⟩
+          · simp only [peano, eval, h1, h2]
+            rw [if_neg (Nat.not_lt_zero (Nat.succ a'))]
+          · intro j hj
+            have hjcases : j = 0 ∨ j = 1 := by omega
+            rcases hjcases with rfl | rfl
+            · simpa [peano, eval] using
+                internTerm_child_open_shiftStack_shiftVar_tc cs c k (ltT (S (peano a')) Z)
+            · simpa [peano, eval, h1] using
+                internTerm_child_open_shiftStack_shiftVar_tc cs c k (con0 "ff")
+      | succ b' =>
+          obtain ⟨N, hN, hguard⟩ := ih b' cs c k hc hk
+          have h1 := shiftStack_descend_shiftVar_step_tc cs c k
+            (ltT (S (peano a')) (S (peano b')))
+            (shiftVar c k (ltT (peano a') (peano b')))
+            (os_shv_lt_ss_tc c k (peano a') (peano b') hc hk)
+          refine ⟨N + 1, ?_, ?_⟩
+          · simp only [peano, eval, h1]
+            rw [hN]
+            cases Nat.decLt a' b' with
+            | isTrue hlt =>
+                have hsucc : Nat.succ a' < Nat.succ b' := Nat.succ_lt_succ hlt
+                rw [if_pos hlt, if_pos hsucc]
+            | isFalse hlt =>
+                have hsucc : ¬ Nat.succ a' < Nat.succ b' := by
+                  intro h
+                  exact hlt (Nat.lt_of_succ_lt_succ h)
+                rw [if_neg hlt, if_neg hsucc]
+          · intro j hj
+            cases j with
+            | zero =>
+                simpa [peano, eval] using
+                  internTerm_child_open_shiftStack_shiftVar_tc cs c k
+                    (ltT (S (peano a')) (S (peano b')))
+            | succ j =>
+                have hjN : j < N := by
+                  simpa only [Nat.add_one, Nat.succ_lt_succ_iff] using hj
+                simpa [peano, eval, h1] using hguard j hjN
+
+theorem shiftStack_srt_child_open_eval_tc :
+    ∀ (cs : List Nat) (s : LF.Srt),
+      ∃ N,
+        eval pTC N (shiftStackTC cs (encTerm (.srt s))) =
+          encTerm (lfShiftStackTC cs (.srt s)) ∧
+        ∀ k, k < N ->
+          InternTermChildOpen (eval pTC k (shiftStackTC cs (encTerm (.srt s)))) := by
+  intro cs
+  induction cs with
+  | nil =>
+      intro s
+      refine ⟨0, ?_, ?_⟩
+      · rfl
+      · intro k hk
+        exact False.elim (Nat.not_lt_zero k hk)
+  | cons c cs ih =>
+      intro s
+      obtain ⟨N, hN, hguard⟩ := ih s
+      have hrawStep :
+          oneStep pTC (shiftStackTC (c :: cs) (encTerm (.srt s))) =
+            some (shiftStackTC cs (encTerm (.srt s))) := by
+        cases s
+        · exact shiftStack_descend_shift_step_tc cs c
+            (by
+              simpa [encTerm, Mettapedia.GSLT.LanguageDef.LFEngineCorr.encSrt,
+                typeS] using os_sh_srt_tc (peano c) typeS)
+        · exact shiftStack_descend_shift_step_tc cs c
+            (by
+              simpa [encTerm, Mettapedia.GSLT.LanguageDef.LFEngineCorr.encSrt,
+                kindS] using os_sh_srt_tc (peano c) kindS)
+      have hstep : eval pTC 1 (shiftStackTC (c :: cs) (encTerm (.srt s))) =
+          shiftStackTC cs (encTerm (.srt s)) := by
+        simp only [eval, hrawStep]
+      refine ⟨1 + N, ?_, ?_⟩
+      · refine eval_trans_tc 1 N _ _ _ hstep ?_
+        simpa [lfShiftStackTC, Mettapedia.GSLT.LanguageDef.LFParserSim.lfShiftStack,
+          LF.shift] using hN
+      · refine internTerm_child_open_append_guard hstep ?_ hguard
+        intro k hk
+        have hk0 : k = 0 := Nat.eq_zero_of_le_zero (Nat.le_of_lt_succ hk)
+        subst k
+        simpa only [eval] using
+          internTerm_child_open_shiftStack_cons_tc c cs (encTerm (.srt s))
+
+theorem shiftStack_con_child_open_eval_tc :
+    ∀ (cs : List Nat) (x : String),
+      ∃ N,
+        eval pTC N (shiftStackTC cs (encTerm (.con x))) =
+          encTerm (lfShiftStackTC cs (.con x)) ∧
+        ∀ k, k < N ->
+          InternTermChildOpen (eval pTC k (shiftStackTC cs (encTerm (.con x)))) := by
+  intro cs
+  induction cs with
+  | nil =>
+      intro x
+      refine ⟨0, ?_, ?_⟩
+      · rfl
+      · intro k hk
+        exact False.elim (Nat.not_lt_zero k hk)
+  | cons c cs ih =>
+      intro x
+      obtain ⟨N, hN, hguard⟩ := ih x
+      have hrawStep :
+          oneStep pTC (shiftStackTC (c :: cs) (encTerm (.con x))) =
+            some (shiftStackTC cs (encTerm (.con x))) := by
+        exact shiftStack_descend_shift_step_tc cs c
+          (by simpa [encTerm] using os_sh_con_tc (peano c) (con0 x))
+      have hstep : eval pTC 1 (shiftStackTC (c :: cs) (encTerm (.con x))) =
+          shiftStackTC cs (encTerm (.con x)) := by
+        simp only [eval, hrawStep]
+      refine ⟨1 + N, ?_, ?_⟩
+      · refine eval_trans_tc 1 N _ _ _ hstep ?_
+        simpa [lfShiftStackTC, Mettapedia.GSLT.LanguageDef.LFParserSim.lfShiftStack,
+          LF.shift] using hN
+      · refine internTerm_child_open_append_guard hstep ?_ hguard
+        intro k hk
+        have hk0 : k = 0 := Nat.eq_zero_of_le_zero (Nat.le_of_lt_succ hk)
+        subst k
+        simpa only [eval] using
+          internTerm_child_open_shiftStack_cons_tc c cs (encTerm (.con x))
+
+theorem shiftStack_var_child_open_eval_tc :
+    ∀ (cs : List Nat) (i : Nat),
+      ∃ N,
+        eval pTC N (shiftStackTC cs (encTerm (.var i))) =
+          encTerm (lfShiftStackTC cs (.var i)) ∧
+        ∀ k, k < N ->
+          InternTermChildOpen (eval pTC k (shiftStackTC cs (encTerm (.var i)))) := by
+  intro cs
+  induction cs with
+  | nil =>
+      intro i
+      refine ⟨0, ?_, ?_⟩
+      · rfl
+      · intro k hk
+        exact False.elim (Nat.not_lt_zero k hk)
+  | cons c cs ih =>
+      intro i
+      let i' := if i < c then i else i + 1
+      obtain ⟨Ntail, htail, htailGuard⟩ := ih i'
+      obtain ⟨Nshift, hshift, hshiftGuard⟩ :=
+        stack_shiftVar_lt_final_child_open_tc i c cs (peano c) (peano i)
+          (isnormal_peano_tc c) (isnormal_peano_tc i)
+      have hrawStep :
+          oneStep pTC (shiftStackTC (c :: cs) (encTerm (.var i))) =
+            some (shiftStackTC cs
+              (shiftVar (peano c) (peano i) (ltT (peano i) (peano c)))) := by
+        exact shiftStack_descend_shift_step_tc cs c
+          (by simpa [encTerm] using os_sh_var_tc (peano c) (peano i))
+      have hstep : eval pTC 1 (shiftStackTC (c :: cs) (encTerm (.var i))) =
+          shiftStackTC cs
+            (shiftVar (peano c) (peano i) (ltT (peano i) (peano c))) := by
+        simp only [eval, hrawStep]
+      have htailFromShift :
+          eval pTC Ntail
+            (shiftStackTC cs (if i < c then Var (peano i) else Var (S (peano i)))) =
+              encTerm (lfShiftStackTC cs (LF.shift c (.var i))) := by
+        by_cases hic : i < c
+        · have hi' : i' = i := by simp [i', hic]
+          simpa [i', hi', hic, LF.shift, encTerm, peano] using htail
+        · have hi' : i' = i + 1 := by simp [i', hic]
+          simpa [i', hi', hic, LF.shift, encTerm, peano] using htail
+      have htailGuardFromShift :
+          ∀ k, k < Ntail ->
+            InternTermChildOpen
+              (eval pTC k
+                (shiftStackTC cs (if i < c then Var (peano i) else Var (S (peano i))))) := by
+        intro k hk
+        by_cases hic : i < c
+        · have hi' : i' = i := by simp [i', hic]
+          simpa [i', hi', hic, encTerm, peano] using htailGuard k hk
+        · have hi' : i' = i + 1 := by simp [i', hic]
+          simpa [i', hi', hic, encTerm, peano] using htailGuard k hk
+      have hshiftTail :
+          eval pTC (Nshift + Ntail)
+            (shiftStackTC cs
+              (shiftVar (peano c) (peano i) (ltT (peano i) (peano c)))) =
+            encTerm (lfShiftStackTC cs (LF.shift c (.var i))) :=
+        eval_trans_tc Nshift Ntail _ _ _ hshift htailFromShift
+      have hshiftTailGuard :
+          ∀ k, k < Nshift + Ntail ->
+            InternTermChildOpen
+              (eval pTC k
+                (shiftStackTC cs
+                  (shiftVar (peano c) (peano i) (ltT (peano i) (peano c))))) :=
+        internTerm_child_open_append_guard hshift hshiftGuard htailGuardFromShift
+      refine ⟨1 + (Nshift + Ntail), ?_, ?_⟩
+      · refine eval_trans_tc 1 (Nshift + Ntail) _ _ _ hstep ?_
+        simpa [lfShiftStackTC, Mettapedia.GSLT.LanguageDef.LFParserSim.lfShiftStack,
+          LF.shift] using hshiftTail
+      · refine internTerm_child_open_append_guard hstep ?_ hshiftTailGuard
+        intro k hk
+        have hk0 : k = 0 := Nat.eq_zero_of_le_zero (Nat.le_of_lt_succ hk)
+        subst k
+        simpa only [eval] using
+          internTerm_child_open_shiftStack_cons_tc c cs (encTerm (.var i))
+
+theorem internTerm_child_open_shiftStack_shift_tc (cs : List Nat) (c : Nat) (s : AST) :
+    InternTermChildOpen (shiftStackTC cs (shift (peano c) s)) := by
+  cases cs with
+  | nil =>
+      rfl
+  | cons d ds =>
+      exact internTerm_child_open_shiftStack_cons_tc d ds (shift (peano c) s)
+
+theorem hdesc_internTerm_shiftStack_shift_resolveK_tc
+    (cs : List Nat) (c : Nat) (s0 : String) :
+    ∀ {a a' : AST}, ResolveGoodTC a -> oneStep pTC a = some a' ->
+      oneStep pTC
+        (internTerm (shiftStackTC cs (shift (peano c) (resolveK (con0 s0) a)))) =
+        some
+          (internTerm (shiftStackTC cs (shift (peano c) (resolveK (con0 s0) a')))) := by
+  intro a a' hgood hstep
+  exact hcong_internTerm_child_open_tc
+    (internTerm_child_open_shiftStack_shift_tc cs c (resolveK (con0 s0) a))
+    (hdesc_shiftStack_shift_resolveK_tc cs c s0 hgood hstep)
+
+theorem eval_internTerm_shiftStack_cons_resolve_start_tc
+    (c : Nat) (cs : List Nat) (ctx : List String) (s : String) :
+    eval pTC 1
+        (internTerm
+          (shiftStackTC (c :: cs)
+            (resolve (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx) (con0 s)))) =
+      internTerm
+        (shiftStackTC cs
+          (shift (peano c)
+            (resolveK (con0 s)
+              (ctxidx (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx) (con0 s))))) := by
+  have hinner : oneStep pTC (shift (peano c)
+        (resolve (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx) (con0 s))) =
+      some (shift (peano c)
+        (resolveK (con0 s)
+          (ctxidx (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx) (con0 s)))) := by
+    exact hcong_shift_arg_tc (peano c)
+      (resolve (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx) (con0 s))
+      (isnormal_peano_tc c) rfl _ (os_res_tc _ _)
+  have hrawStep :
+      oneStep pTC
+        (shiftStackTC (c :: cs)
+          (resolve (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx) (con0 s))) =
+      some
+        (shiftStackTC cs
+          (shift (peano c)
+            (resolveK (con0 s)
+              (ctxidx (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx) (con0 s))))) :=
+    shiftStack_descend_shift_step_tc cs c hinner
+  simp only [eval,
+    hcong_internTerm_child_open_tc
+      (internTerm_child_open_shiftStack_cons_tc c cs
+        (resolve (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx) (con0 s))) hrawStep]
+
+theorem eval_internTerm_shiftStack_shift_resolveK_nf_step_tc
+    (cs : List Nat) (c : Nat) (s : String) :
+    eval pTC 1
+        (internTerm (shiftStackTC cs (shift (peano c) (resolveK (con0 s) NF)))) =
+      internTerm (shiftStackTC cs (shift (peano c) (LFEnc.Con (con0 s)))) := by
+  have hinner : oneStep pTC (shift (peano c) (resolveK (con0 s) NF)) =
+      some (shift (peano c) (LFEnc.Con (con0 s))) := by
+    exact hcong_shift_arg_tc (peano c) (resolveK (con0 s) NF)
+      (isnormal_peano_tc c) rfl _ (os_resK_nf_tc _)
+  have hrawStep :
+      oneStep pTC (shiftStackTC cs (shift (peano c) (resolveK (con0 s) NF))) =
+        some (shiftStackTC cs (shift (peano c) (LFEnc.Con (con0 s)))) :=
+    shiftStack_descend_shift_step_tc cs c hinner
+  simp only [eval,
+    hcong_internTerm_child_open_tc
+      (internTerm_child_open_shiftStack_shift_tc cs c (resolveK (con0 s) NF)) hrawStep]
+
+theorem eval_internTerm_shiftStack_shift_resolveK_idx_step_tc
+    (cs : List Nat) (c i : Nat) (s : String) :
+    eval pTC 1
+        (internTerm
+          (shiftStackTC cs
+            (shift (peano c)
+              (resolveK (con0 s)
+                (Mettapedia.GSLT.LanguageDef.LFResolveSim.encIdx (some i)))))) =
+      internTerm (shiftStackTC cs (shift (peano c) (Var (peano i)))) := by
+  have hinner : oneStep pTC
+      (shift (peano c)
+        (resolveK (con0 s)
+          (Mettapedia.GSLT.LanguageDef.LFResolveSim.encIdx (some i)))) =
+      some (shift (peano c) (Var (peano i))) := by
+    exact hcong_shift_arg_tc (peano c)
+      (resolveK (con0 s) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encIdx (some i)))
+      (isnormal_peano_tc c) rfl _ (by
+        simpa [Mettapedia.GSLT.LanguageDef.LFResolveSim.encIdx] using
+          os_resK_idx_tc (con0 s) (peano i))
+  have hrawStep :
+      oneStep pTC
+        (shiftStackTC cs
+          (shift (peano c)
+            (resolveK (con0 s)
+              (Mettapedia.GSLT.LanguageDef.LFResolveSim.encIdx (some i))))) =
+        some (shiftStackTC cs (shift (peano c) (Var (peano i)))) :=
+    shiftStack_descend_shift_step_tc cs c hinner
+  simp only [eval,
+    hcong_internTerm_child_open_tc
+      (internTerm_child_open_shiftStack_shift_tc cs c
+        (resolveK (con0 s) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encIdx (some i))))
+      hrawStep]
+
+theorem first_active_intern_shiftStack_resolve_to_encTerm {r : Option AST} :
+    ∀ (cs : List Nat) (ctx : List String) (s : String),
+      FirstActiveIntern r
+        (internTerm (encTerm (lfShiftStackTC cs (LF.resolve ctx s)))) ->
+      FirstActiveIntern r
+        (internTerm
+          (shiftStackTC cs
+            (resolve (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx) (con0 s)))) := by
+  intro cs
+  cases cs with
+  | nil =>
+      intro ctx s hcanon
+      simpa [shiftStackTC, lfShiftStackTC,
+        Mettapedia.GSLT.LanguageDef.LFParserSim.shiftStack,
+        Mettapedia.GSLT.LanguageDef.LFParserSim.lfShiftStack] using
+        first_active_intern_resolve_to_encTerm ctx s hcanon
+  | cons c cs =>
+      intro ctx s hcanon
+      obtain ⟨Nctx, hctx⟩ := ctxidx_sim_tc ctx s
+      obtain ⟨Mctx, hMctx, hMguard⟩ :=
+        good_cong_eval_intern_wrapper_with_guard
+          (fun a => internTerm
+            (shiftStackTC cs (shift (peano c) (resolveK (con0 s) a))))
+          (fun a => InternActiveShape.term
+            (shiftStackTC cs (shift (peano c) (resolveK (con0 s) a))))
+          (hdesc_internTerm_shiftStack_shift_resolveK_tc cs c s)
+          Nctx (Mettapedia.GSLT.LanguageDef.LFResolveSim.Good.seed ctx s) hctx
+      have hstart :
+          FirstActiveIntern r
+              (internTerm
+                (shiftStackTC cs
+                  (shift (peano c)
+                    (resolveK (con0 s)
+                      (ctxidx
+                        (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+                        (con0 s)))))) ->
+            FirstActiveIntern r
+              (internTerm
+                (shiftStackTC (c :: cs)
+                  (resolve
+                    (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx) (con0 s)))) := by
+        intro htail
+        exact first_active_intern_prepend (r := r)
+          (eval_internTerm_shiftStack_cons_resolve_start_tc c cs ctx s)
+          (InternActiveShape.term
+            (shiftStackTC (c :: cs)
+              (resolve (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx) (con0 s))))
+          htail
+      cases hr : LF.ctxIdx ctx s with
+      | none =>
+          have hconFirst : FirstActiveIntern r
+              (internTerm (shiftStackTC cs (shift (peano c) (LFEnc.Con (con0 s))))) := by
+            have hred := shiftStack_con_child_open_eval_tc (c :: cs) s
+            have hcanon' : FirstActiveIntern r
+                (internTerm (encTerm (lfShiftStackTC (c :: cs) (.con s)))) := by
+              simpa [LF.resolve, hr] using hcanon
+            have hfirst := first_active_intern_of_child_open_eval hred hcanon'
+            simpa [shiftStackTC, Mettapedia.GSLT.LanguageDef.LFParserSim.shiftStack,
+              encTerm] using hfirst
+          have hfinal : FirstActiveIntern r
+              (internTerm
+                (shiftStackTC cs
+                  (shift (peano c)
+                    (resolveK (con0 s)
+                      (Mettapedia.GSLT.LanguageDef.LFResolveSim.encIdx none))))) := by
+            exact first_active_intern_prepend
+              (by
+                simpa [Mettapedia.GSLT.LanguageDef.LFResolveSim.encIdx] using
+                  eval_internTerm_shiftStack_shift_resolveK_nf_step_tc cs c s)
+              (InternActiveShape.term
+                (shiftStackTC cs
+                  (shift (peano c)
+                    (resolveK (con0 s)
+                      (Mettapedia.GSLT.LanguageDef.LFResolveSim.encIdx none)))))
+              hconFirst
+          have hctxPrefix : FirstActiveIntern r
+              (internTerm
+                (shiftStackTC cs
+                  (shift (peano c)
+                    (resolveK (con0 s)
+                      (ctxidx
+                        (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+                        (con0 s)))))) := by
+            have hMctx' : eval pTC Mctx
+                (internTerm
+                  (shiftStackTC cs
+                    (shift (peano c)
+                      (resolveK (con0 s)
+                        (ctxidx
+                          (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+                          (con0 s)))))) =
+                internTerm
+                  (shiftStackTC cs
+                    (shift (peano c)
+                      (resolveK (con0 s)
+                        (Mettapedia.GSLT.LanguageDef.LFResolveSim.encIdx none)))) := by
+              simpa [hr] using hMctx
+            exact first_active_intern_prefix hMctx' hMguard hfinal
+          exact hstart hctxPrefix
+      | some i =>
+          have hvarFirst : FirstActiveIntern r
+              (internTerm (shiftStackTC cs (shift (peano c) (Var (peano i))))) := by
+            have hred := shiftStack_var_child_open_eval_tc (c :: cs) i
+            have hcanon' : FirstActiveIntern r
+                (internTerm (encTerm (lfShiftStackTC (c :: cs) (.var i)))) := by
+              simpa [LF.resolve, hr] using hcanon
+            have hfirst := first_active_intern_of_child_open_eval hred hcanon'
+            simpa [shiftStackTC, Mettapedia.GSLT.LanguageDef.LFParserSim.shiftStack,
+              encTerm] using hfirst
+          have hfinal : FirstActiveIntern r
+              (internTerm
+                (shiftStackTC cs
+                  (shift (peano c)
+                    (resolveK (con0 s)
+                      (Mettapedia.GSLT.LanguageDef.LFResolveSim.encIdx (some i)))))) := by
+            exact first_active_intern_prepend
+              (eval_internTerm_shiftStack_shift_resolveK_idx_step_tc cs c i s)
+              (InternActiveShape.term
+                (shiftStackTC cs
+                  (shift (peano c)
+                    (resolveK (con0 s)
+                      (Mettapedia.GSLT.LanguageDef.LFResolveSim.encIdx (some i))))))
+              hvarFirst
+          have hctxPrefix : FirstActiveIntern r
+              (internTerm
+                (shiftStackTC cs
+                  (shift (peano c)
+                    (resolveK (con0 s)
+                      (ctxidx
+                        (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+                        (con0 s)))))) := by
+            have hMctx' : eval pTC Mctx
+                (internTerm
+                  (shiftStackTC cs
+                    (shift (peano c)
+                      (resolveK (con0 s)
+                        (ctxidx
+                          (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+                          (con0 s)))))) =
+                internTerm
+                  (shiftStackTC cs
+                    (shift (peano c)
+                      (resolveK (con0 s)
+                        (Mettapedia.GSLT.LanguageDef.LFResolveSim.encIdx (some i))))) := by
+              simpa [hr] using hMctx
+            exact first_active_intern_prefix hMctx' hMguard hfinal
+          exact hstart hctxPrefix
+
+theorem first_active_intern_expose_shiftStack_app_tc {r : Option AST} :
+    ∀ (cs : List Nat) (fraw araw : AST),
+      FirstActiveIntern r
+        (internTerm (App (shiftStackTC cs fraw) (shiftStackTC cs araw))) ->
+      FirstActiveIntern r (internTerm (shiftStackTC cs (App fraw araw))) := by
+  intro cs
+  induction cs with
+  | nil =>
+      intro fraw araw hnext
+      simpa [shiftStackTC, Mettapedia.GSLT.LanguageDef.LFParserSim.shiftStack] using hnext
+  | cons c cs ih =>
+      intro fraw araw hnext
+      have hrawStep :
+          oneStep pTC (shiftStackTC (c :: cs) (App fraw araw)) =
+            some (shiftStackTC cs (App (shift (peano c) fraw) (shift (peano c) araw))) := by
+        exact shiftStack_descend_shift_step_tc cs c (os_sh_app_tc (peano c) fraw araw)
+      have hstep :
+          eval pTC 1 (internTerm (shiftStackTC (c :: cs) (App fraw araw))) =
+            internTerm
+              (shiftStackTC cs (App (shift (peano c) fraw) (shift (peano c) araw))) := by
+        simp only [eval,
+          hcong_internTerm_child_open_tc
+            (internTerm_child_open_shiftStack_cons_tc c cs (App fraw araw)) hrawStep]
+      have htail : FirstActiveIntern r
+          (internTerm
+            (shiftStackTC cs (App (shift (peano c) fraw) (shift (peano c) araw)))) := by
+        exact ih (shift (peano c) fraw) (shift (peano c) araw) (by
+          simpa [shiftStackTC, Mettapedia.GSLT.LanguageDef.LFParserSim.shiftStack] using hnext)
+      exact first_active_intern_prepend hstep
+        (InternActiveShape.term (shiftStackTC (c :: cs) (App fraw araw))) htail
+
+theorem first_active_intern_expose_shiftStack_pi_tc {r : Option AST} :
+    ∀ (cs : List Nat) (Araw Braw : AST),
+      FirstActiveIntern r
+        (internTerm
+          (Pi (shiftStackTC cs Araw) (shiftStackTC (binderShiftStackTC cs) Braw))) ->
+      FirstActiveIntern r (internTerm (shiftStackTC cs (Pi Araw Braw))) := by
+  intro cs
+  induction cs with
+  | nil =>
+      intro Araw Braw hnext
+      simpa [shiftStackTC, binderShiftStackTC,
+        Mettapedia.GSLT.LanguageDef.LFParserSim.shiftStack] using hnext
+  | cons c cs ih =>
+      intro Araw Braw hnext
+      have hrawStep :
+          oneStep pTC (shiftStackTC (c :: cs) (Pi Araw Braw)) =
+            some (shiftStackTC cs
+              (Pi (shift (peano c) Araw) (shift (S (peano c)) Braw))) := by
+        exact shiftStack_descend_shift_step_tc cs c (os_sh_pi_tc (peano c) Araw Braw)
+      have hstep :
+          eval pTC 1 (internTerm (shiftStackTC (c :: cs) (Pi Araw Braw))) =
+            internTerm
+              (shiftStackTC cs
+                (Pi (shift (peano c) Araw) (shift (S (peano c)) Braw))) := by
+        simp only [eval,
+          hcong_internTerm_child_open_tc
+            (internTerm_child_open_shiftStack_cons_tc c cs (Pi Araw Braw)) hrawStep]
+      have htail : FirstActiveIntern r
+          (internTerm
+            (shiftStackTC cs
+              (Pi (shift (peano c) Araw) (shift (S (peano c)) Braw)))) := by
+        exact ih (shift (peano c) Araw) (shift (S (peano c)) Braw) (by
+          simpa [shiftStackTC, binderShiftStackTC,
+            Mettapedia.GSLT.LanguageDef.LFParserSim.shiftStack, peano] using hnext)
+      exact first_active_intern_prepend hstep
+        (InternActiveShape.term (shiftStackTC (c :: cs) (Pi Araw Braw))) htail
+
+theorem first_active_intern_expose_shiftStack_lam_tc {r : Option AST} :
+    ∀ (cs : List Nat) (Araw braw : AST),
+      FirstActiveIntern r
+        (internTerm
+          (Lam (shiftStackTC cs Araw) (shiftStackTC (binderShiftStackTC cs) braw))) ->
+      FirstActiveIntern r (internTerm (shiftStackTC cs (Lam Araw braw))) := by
+  intro cs
+  induction cs with
+  | nil =>
+      intro Araw braw hnext
+      simpa [shiftStackTC, binderShiftStackTC,
+        Mettapedia.GSLT.LanguageDef.LFParserSim.shiftStack] using hnext
+  | cons c cs ih =>
+      intro Araw braw hnext
+      have hrawStep :
+          oneStep pTC (shiftStackTC (c :: cs) (Lam Araw braw)) =
+            some (shiftStackTC cs
+              (Lam (shift (peano c) Araw) (shift (S (peano c)) braw))) := by
+        exact shiftStack_descend_shift_step_tc cs c (os_sh_lam_tc (peano c) Araw braw)
+      have hstep :
+          eval pTC 1 (internTerm (shiftStackTC (c :: cs) (Lam Araw braw))) =
+            internTerm
+              (shiftStackTC cs
+                (Lam (shift (peano c) Araw) (shift (S (peano c)) braw))) := by
+        simp only [eval,
+          hcong_internTerm_child_open_tc
+            (internTerm_child_open_shiftStack_cons_tc c cs (Lam Araw braw)) hrawStep]
+      have htail : FirstActiveIntern r
+          (internTerm
+            (shiftStackTC cs
+              (Lam (shift (peano c) Araw) (shift (S (peano c)) braw)))) := by
+        exact ih (shift (peano c) Araw) (shift (S (peano c)) braw) (by
+          simpa [shiftStackTC, binderShiftStackTC,
+            Mettapedia.GSLT.LanguageDef.LFParserSim.shiftStack, peano] using hnext)
+      exact first_active_intern_prepend hstep
+        (InternActiveShape.term (shiftStackTC (c :: cs) (Lam Araw braw))) htail
+
+theorem first_active_shiftable_raw_zero_tc
+    {r : Option (LF.Term × List LF.Tok)} {call : AST}
+    (h : MatchesParseShiftableRawTC r call) :
+    FirstActiveMatchesParseShiftableRawTC r call := by
+  refine ⟨0, ?_, ?_⟩
+  · simpa only [eval] using h
+  · intro k hk
+    exact False.elim (Nat.not_lt_zero k hk)
+
+theorem first_active_shiftable_raw_one_tc
+    {r : Option (LF.Term × List LF.Tok)} {call v : AST}
+    (hstep : eval pTC 1 call = v)
+    (h : MatchesParseShiftableRawTC r v)
+    (hactive : Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape call) :
+    FirstActiveMatchesParseShiftableRawTC r call := by
+  refine ⟨1, ?_, ?_⟩
+  · rw [hstep]
+    exact h
+  · intro k hk
+    have hk0 : k = 0 := Nat.eq_zero_of_le_zero (Nat.le_of_lt_succ hk)
+    subst k
+    simpa only [eval] using hactive
+
+theorem first_active_shiftable_raw_prepend_tc
+    {r : Option (LF.Term × List LF.Tok)} {call next : AST}
+    (hstep : eval pTC 1 call = next)
+    (hactive : Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape call)
+    (hnext : FirstActiveMatchesParseShiftableRawTC r next) :
+    FirstActiveMatchesParseShiftableRawTC r call := by
+  rcases hnext with ⟨N, hN, hguard⟩
+  refine ⟨1 + N, ?_, ?_⟩
+  · have htotal : eval pTC (1 + N) call = eval pTC N next :=
+      eval_trans_tc 1 N call next (eval pTC N next) hstep rfl
+    rw [htotal]
+    exact hN
+  · intro k hk
+    cases k with
+    | zero =>
+        simpa only [eval] using hactive
+    | succ k =>
+        have hkN : k < N := Nat.succ_lt_succ_iff.mp (by
+          simpa only [Nat.one_add] using hk)
+        have htotal : eval pTC (Nat.succ k) call = eval pTC k next := by
+          have h := eval_trans_tc 1 k call next (eval pTC k next) hstep rfl
+          simpa [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using h
+        rw [htotal]
+        exact hguard k hkN
+
+theorem first_active_shiftable_raw_prepend_eval_tc
+    {r : Option (LF.Term × List LF.Tok)} {call next : AST} {M : Nat}
+    (hstep : eval pTC M call = next)
+    (hguard : ∀ k, k < M ->
+      Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape (eval pTC k call))
+    (hnext : FirstActiveMatchesParseShiftableRawTC r next) :
+    FirstActiveMatchesParseShiftableRawTC r call := by
+  rcases hnext with ⟨N, hN, hNguard⟩
+  refine ⟨M + N, ?_, ?_⟩
+  · have htotal : eval pTC (M + N) call = eval pTC N next :=
+      eval_trans_tc M N call next (eval pTC N next) hstep rfl
+    rw [htotal]
+    exact hN
+  · intro k hk
+    by_cases hkM : k < M
+    · exact hguard k hkM
+    · have hge : M ≤ k := Nat.le_of_not_gt hkM
+      let j := k - M
+      have hjlt : j < N := by omega
+      have hk_eq : k = M + j := by omega
+      have hshift : eval pTC k call = eval pTC j next := by
+        have htotal : eval pTC (M + j) call = eval pTC j next :=
+          eval_trans_tc M j call next (eval pTC j next) hstep rfl
+        simpa [hk_eq] using htotal
+      rw [hshift]
+      exact hNguard j hjlt
+
+theorem first_active_shiftable_raw_bind_active_tc
+    {r q : Option (LF.Term × List LF.Tok)} {call : AST}
+    (F : AST -> AST)
+    (hwrap : ∀ s,
+      Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape s ->
+        Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape (F s))
+    (hcong : ∀ s s',
+      Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape s ->
+        oneStep pTC s = some s' ->
+          oneStep pTC (F s) = some (F s'))
+    (hfirst : FirstActiveMatchesParseShiftableRawTC r call)
+    (hend : ∀ {v : AST},
+      MatchesParseShiftableRawTC r v ->
+        FirstActiveMatchesParseShiftableRawTC q (F v)) :
+    FirstActiveMatchesParseShiftableRawTC q (F call) := by
+  rcases hfirst with ⟨Nchild, hchild, hguard⟩
+  obtain ⟨Mctx, hMctx, hMguard⟩ :=
+    cong_eval_parser_active_with_guard_tc F hwrap hcong Nchild rfl hguard
+  rcases hend hchild with ⟨Nend, hendRaw, hendGuard⟩
+  refine ⟨Mctx + Nend, ?_, ?_⟩
+  · have htotal : eval pTC (Mctx + Nend) (F call) =
+        eval pTC Nend (F (eval pTC Nchild call)) :=
+      eval_trans_tc Mctx Nend _ _ _ hMctx rfl
+    rw [htotal]
+    exact hendRaw
+  · intro k hk
+    by_cases hkctx : k < Mctx
+    · exact hMguard k hkctx
+    · have hge : Mctx ≤ k := Nat.le_of_not_gt hkctx
+      let j := k - Mctx
+      have hjlt : j < Nend := by omega
+      have hk_eq : k = Mctx + j := by omega
+      have hshift : eval pTC k (F call) =
+          eval pTC j (F (eval pTC Nchild call)) := by
+        have htotal : eval pTC (Mctx + j) (F call) =
+            eval pTC j (F (eval pTC Nchild call)) :=
+          eval_trans_tc Mctx j _ _ _ hMctx rfl
+        simpa [hk_eq] using htotal
+      rw [hshift]
+      exact hendGuard j hjlt
+
+theorem hcong_arK_arg_tc (f ctx s : AST)
+    (hf : IsNormal pTC f) (hctx : IsNormal pTC ctx)
+    (hb : baseReducts pTC (arK f ctx s) = []) :
+    ∀ s', oneStep pTC s = some s' ->
+      oneStep pTC (arK f ctx s) = some (arK f ctx s') := by
+  intro s' h
+  simp only [IsNormal] at hf hctx
+  change (match baseReducts pTC (arK f ctx s) with
+    | r :: _ => some r
+    | [] => Option.map (fun args' => AST.sexp (.id "arK") args')
+        (oneStepList pTC [f, ctx, s])) =
+      some (arK f ctx s')
+  rw [hb]
+  simp only [oneStepList, hf, hctx, h, Option.map_some, arK]
+
+theorem hcong_tmPi1_arg_tc (f ctx x s : AST)
+    (hf : IsNormal pTC f) (hctx : IsNormal pTC ctx) (hx : IsNormal pTC x)
+    (hb : baseReducts pTC (tmPi1 f ctx x s) = []) :
+    ∀ s', oneStep pTC s = some s' ->
+      oneStep pTC (tmPi1 f ctx x s) = some (tmPi1 f ctx x s') := by
+  intro s' h
+  simp only [IsNormal] at hf hctx hx
+  change (match baseReducts pTC (tmPi1 f ctx x s) with
+    | r :: _ => some r
+    | [] => Option.map (fun args' => AST.sexp (.id "tmPi1") args')
+        (oneStepList pTC [f, ctx, x, s])) =
+      some (tmPi1 f ctx x s')
+  rw [hb]
+  simp only [oneStepList, hf, hctx, hx, h, Option.map_some, tmPi1]
+
+theorem hcong_tmLam1_arg_tc (f ctx x s : AST)
+    (hf : IsNormal pTC f) (hctx : IsNormal pTC ctx) (hx : IsNormal pTC x)
+    (hb : baseReducts pTC (tmLam1 f ctx x s) = []) :
+    ∀ s', oneStep pTC s = some s' ->
+      oneStep pTC (tmLam1 f ctx x s) = some (tmLam1 f ctx x s') := by
+  intro s' h
+  simp only [IsNormal] at hf hctx hx
+  change (match baseReducts pTC (tmLam1 f ctx x s) with
+    | r :: _ => some r
+    | [] => Option.map (fun args' => AST.sexp (.id "tmLam1") args')
+        (oneStepList pTC [f, ctx, x, s])) =
+      some (tmLam1 f ctx x s')
+  rw [hb]
+  simp only [oneStepList, hf, hctx, hx, h, Option.map_some, tmLam1]
+
+theorem hcong_apK_arg_tc (f ctx s : AST)
+    (hf : IsNormal pTC f) (hctx : IsNormal pTC ctx)
+    (hb : baseReducts pTC (apK f ctx s) = []) :
+    ∀ s', oneStep pTC s = some s' ->
+      oneStep pTC (apK f ctx s) = some (apK f ctx s') := by
+  intro s' h
+  simp only [IsNormal] at hf hctx
+  change (match baseReducts pTC (apK f ctx s) with
+    | r :: _ => some r
+    | [] => Option.map (fun args' => AST.sexp (.id "apK") args')
+        (oneStepList pTC [f, ctx, s])) =
+      some (apK f ctx s')
+  rw [hb]
+  simp only [oneStepList, hf, hctx, h, Option.map_some, apK]
+
+theorem hcong_apmK_arg_tc (f ctx acc toks s : AST)
+    (hf : IsNormal pTC f) (hctx : IsNormal pTC ctx)
+    (hacc : IsNormal pTC acc) (htoks : IsNormal pTC toks)
+    (hb : baseReducts pTC (apmK f ctx acc toks s) = []) :
+    ∀ s', oneStep pTC s = some s' ->
+      oneStep pTC (apmK f ctx acc toks s) = some (apmK f ctx acc toks s') := by
+  intro s' h
+  simp only [IsNormal] at hf hctx hacc htoks
+  change (match baseReducts pTC (apmK f ctx acc toks s) with
+    | r :: _ => some r
+    | [] => Option.map (fun args' => AST.sexp (.id "apmK") args')
+        (oneStepList pTC [f, ctx, acc, toks, s])) =
+      some (apmK f ctx acc toks s')
+  rw [hb]
+  simp only [oneStepList, hf, hctx, hacc, htoks, h, Option.map_some, apmK]
+
+theorem hcong_apmK_acc_at_tc (f ctx toks g c t : AST)
+    (hf : IsNormal pTC f) (hctx : IsNormal pTC ctx) :
+    ∀ s s', oneStep pTC s = some s' ->
+      oneStep pTC (apmK f ctx s toks (at' g c t)) =
+        some (apmK f ctx s' toks (at' g c t)) := by
+  intro s s' h
+  simp only [IsNormal] at hf hctx
+  change (match baseReducts pTC (apmK f ctx s toks (at' g c t)) with
+    | r :: _ => some r
+    | [] => Option.map (fun args' => AST.sexp (.id "apmK") args')
+        (oneStepList pTC [f, ctx, s, toks, at' g c t])) =
+      some (apmK f ctx s' toks (at' g c t))
+  rw [show baseReducts pTC (apmK f ctx s toks (at' g c t)) = [] by rfl]
+  simp only [oneStepList, hf, hctx, h, Option.map_some, apmK]
+
+theorem hcong_atLPk_arg_tc (f ctx s : AST)
+    (hf : IsNormal pTC f) (hctx : IsNormal pTC ctx)
+    (hb : baseReducts pTC (atLPk f ctx s) = []) :
+    ∀ s', oneStep pTC s = some s' ->
+      oneStep pTC (atLPk f ctx s) = some (atLPk f ctx s') := by
+  intro s' h
+  simp only [IsNormal] at hf hctx
+  change (match baseReducts pTC (atLPk f ctx s) with
+    | r :: _ => some r
+    | [] => Option.map (fun args' => AST.sexp (.id "atLPk") args')
+        (oneStepList pTC [f, ctx, s])) =
+      some (atLPk f ctx s')
+  rw [hb]
+  simp only [oneStepList, hf, hctx, h, Option.map_some, atLPk]
+
+theorem hcong_arK_active_tc (f ctx : AST)
+    (hf : IsNormal pTC f) (hctx : IsNormal pTC ctx) :
+    ∀ s s',
+      Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape s ->
+        oneStep pTC s = some s' ->
+          oneStep pTC (arK f ctx s) = some (arK f ctx s') := by
+  intro s s' hactive hstep
+  cases hactive with
+  | tm g c toks =>
+      exact hcong_arK_arg_tc f ctx (tm g c toks) hf hctx rfl s' hstep
+  | ar g c toks =>
+      exact hcong_arK_arg_tc f ctx (ar g c toks) hf hctx rfl s' hstep
+  | ap g c toks =>
+      exact hcong_arK_arg_tc f ctx (ap g c toks) hf hctx rfl s' hstep
+  | apm g c acc toks =>
+      exact hcong_arK_arg_tc f ctx (apm g c acc toks) hf hctx rfl s' hstep
+  | atom g c toks =>
+      exact hcong_arK_arg_tc f ctx (at' g c toks) hf hctx rfl s' hstep
+  | tmPi1 g c x r =>
+      exact hcong_arK_arg_tc f ctx (tmPi1 g c x r) hf hctx rfl s' hstep
+  | tmPi2 A r =>
+      exact hcong_arK_arg_tc f ctx (tmPi2 A r) hf hctx rfl s' hstep
+  | tmLam1 g c x r =>
+      exact hcong_arK_arg_tc f ctx (tmLam1 g c x r) hf hctx rfl s' hstep
+  | tmLam2 A r =>
+      exact hcong_arK_arg_tc f ctx (tmLam2 A r) hf hctx rfl s' hstep
+  | arK g c r =>
+      exact hcong_arK_arg_tc f ctx (arK g c r) hf hctx rfl s' hstep
+  | arK2 a r =>
+      exact hcong_arK_arg_tc f ctx (arK2 a r) hf hctx rfl s' hstep
+  | apK g c r =>
+      exact hcong_arK_arg_tc f ctx (apK g c r) hf hctx rfl s' hstep
+  | apmK g c acc toks r =>
+      exact hcong_arK_arg_tc f ctx (apmK g c acc toks r) hf hctx rfl s' hstep
+  | atLPk g c r =>
+      exact hcong_arK_arg_tc f ctx (atLPk g c r) hf hctx rfl s' hstep
+
+theorem hcong_tmPi1_active_tc (f ctx x : AST)
+    (hf : IsNormal pTC f) (hctx : IsNormal pTC ctx) (hx : IsNormal pTC x) :
+    ∀ s s',
+      Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape s ->
+        oneStep pTC s = some s' ->
+          oneStep pTC (tmPi1 f ctx x s) = some (tmPi1 f ctx x s') := by
+  intro s s' hactive hstep
+  cases hactive with
+  | tm g c toks =>
+      exact hcong_tmPi1_arg_tc f ctx x (tm g c toks) hf hctx hx rfl s' hstep
+  | ar g c toks =>
+      exact hcong_tmPi1_arg_tc f ctx x (ar g c toks) hf hctx hx rfl s' hstep
+  | ap g c toks =>
+      exact hcong_tmPi1_arg_tc f ctx x (ap g c toks) hf hctx hx rfl s' hstep
+  | apm g c acc toks =>
+      exact hcong_tmPi1_arg_tc f ctx x (apm g c acc toks) hf hctx hx rfl s' hstep
+  | atom g c toks =>
+      exact hcong_tmPi1_arg_tc f ctx x (at' g c toks) hf hctx hx rfl s' hstep
+  | tmPi1 g c y r =>
+      exact hcong_tmPi1_arg_tc f ctx x (tmPi1 g c y r) hf hctx hx rfl s' hstep
+  | tmPi2 A r =>
+      exact hcong_tmPi1_arg_tc f ctx x (tmPi2 A r) hf hctx hx rfl s' hstep
+  | tmLam1 g c y r =>
+      exact hcong_tmPi1_arg_tc f ctx x (tmLam1 g c y r) hf hctx hx rfl s' hstep
+  | tmLam2 A r =>
+      exact hcong_tmPi1_arg_tc f ctx x (tmLam2 A r) hf hctx hx rfl s' hstep
+  | arK g c r =>
+      exact hcong_tmPi1_arg_tc f ctx x (arK g c r) hf hctx hx rfl s' hstep
+  | arK2 a r =>
+      exact hcong_tmPi1_arg_tc f ctx x (arK2 a r) hf hctx hx rfl s' hstep
+  | apK g c r =>
+      exact hcong_tmPi1_arg_tc f ctx x (apK g c r) hf hctx hx rfl s' hstep
+  | apmK g c acc toks r =>
+      exact hcong_tmPi1_arg_tc f ctx x (apmK g c acc toks r) hf hctx hx rfl s' hstep
+  | atLPk g c r =>
+      exact hcong_tmPi1_arg_tc f ctx x (atLPk g c r) hf hctx hx rfl s' hstep
+
+theorem hcong_tmLam1_active_tc (f ctx x : AST)
+    (hf : IsNormal pTC f) (hctx : IsNormal pTC ctx) (hx : IsNormal pTC x) :
+    ∀ s s',
+      Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape s ->
+        oneStep pTC s = some s' ->
+          oneStep pTC (tmLam1 f ctx x s) = some (tmLam1 f ctx x s') := by
+  intro s s' hactive hstep
+  cases hactive with
+  | tm g c toks =>
+      exact hcong_tmLam1_arg_tc f ctx x (tm g c toks) hf hctx hx rfl s' hstep
+  | ar g c toks =>
+      exact hcong_tmLam1_arg_tc f ctx x (ar g c toks) hf hctx hx rfl s' hstep
+  | ap g c toks =>
+      exact hcong_tmLam1_arg_tc f ctx x (ap g c toks) hf hctx hx rfl s' hstep
+  | apm g c acc toks =>
+      exact hcong_tmLam1_arg_tc f ctx x (apm g c acc toks) hf hctx hx rfl s' hstep
+  | atom g c toks =>
+      exact hcong_tmLam1_arg_tc f ctx x (at' g c toks) hf hctx hx rfl s' hstep
+  | tmPi1 g c y r =>
+      exact hcong_tmLam1_arg_tc f ctx x (tmPi1 g c y r) hf hctx hx rfl s' hstep
+  | tmPi2 A r =>
+      exact hcong_tmLam1_arg_tc f ctx x (tmPi2 A r) hf hctx hx rfl s' hstep
+  | tmLam1 g c y r =>
+      exact hcong_tmLam1_arg_tc f ctx x (tmLam1 g c y r) hf hctx hx rfl s' hstep
+  | tmLam2 A r =>
+      exact hcong_tmLam1_arg_tc f ctx x (tmLam2 A r) hf hctx hx rfl s' hstep
+  | arK g c r =>
+      exact hcong_tmLam1_arg_tc f ctx x (arK g c r) hf hctx hx rfl s' hstep
+  | arK2 a r =>
+      exact hcong_tmLam1_arg_tc f ctx x (arK2 a r) hf hctx hx rfl s' hstep
+  | apK g c r =>
+      exact hcong_tmLam1_arg_tc f ctx x (apK g c r) hf hctx hx rfl s' hstep
+  | apmK g c acc toks r =>
+      exact hcong_tmLam1_arg_tc f ctx x (apmK g c acc toks r) hf hctx hx rfl s' hstep
+  | atLPk g c r =>
+      exact hcong_tmLam1_arg_tc f ctx x (atLPk g c r) hf hctx hx rfl s' hstep
+
+theorem hcong_apK_active_tc (f ctx : AST)
+    (hf : IsNormal pTC f) (hctx : IsNormal pTC ctx) :
+    ∀ s s',
+      Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape s ->
+        oneStep pTC s = some s' ->
+          oneStep pTC (apK f ctx s) = some (apK f ctx s') := by
+  intro s s' hactive hstep
+  cases hactive with
+  | tm g c toks =>
+      exact hcong_apK_arg_tc f ctx (tm g c toks) hf hctx rfl s' hstep
+  | ar g c toks =>
+      exact hcong_apK_arg_tc f ctx (ar g c toks) hf hctx rfl s' hstep
+  | ap g c toks =>
+      exact hcong_apK_arg_tc f ctx (ap g c toks) hf hctx rfl s' hstep
+  | apm g c acc toks =>
+      exact hcong_apK_arg_tc f ctx (apm g c acc toks) hf hctx rfl s' hstep
+  | atom g c toks =>
+      exact hcong_apK_arg_tc f ctx (at' g c toks) hf hctx rfl s' hstep
+  | tmPi1 g c x r =>
+      exact hcong_apK_arg_tc f ctx (tmPi1 g c x r) hf hctx rfl s' hstep
+  | tmPi2 A r =>
+      exact hcong_apK_arg_tc f ctx (tmPi2 A r) hf hctx rfl s' hstep
+  | tmLam1 g c x r =>
+      exact hcong_apK_arg_tc f ctx (tmLam1 g c x r) hf hctx rfl s' hstep
+  | tmLam2 A r =>
+      exact hcong_apK_arg_tc f ctx (tmLam2 A r) hf hctx rfl s' hstep
+  | arK g c r =>
+      exact hcong_apK_arg_tc f ctx (arK g c r) hf hctx rfl s' hstep
+  | arK2 a r =>
+      exact hcong_apK_arg_tc f ctx (arK2 a r) hf hctx rfl s' hstep
+  | apK g c r =>
+      exact hcong_apK_arg_tc f ctx (apK g c r) hf hctx rfl s' hstep
+  | apmK g c acc toks r =>
+      exact hcong_apK_arg_tc f ctx (apmK g c acc toks r) hf hctx rfl s' hstep
+  | atLPk g c r =>
+      exact hcong_apK_arg_tc f ctx (atLPk g c r) hf hctx rfl s' hstep
+
+theorem hcong_apmK_active_tc (f ctx acc toks : AST)
+    (hf : IsNormal pTC f) (hctx : IsNormal pTC ctx)
+    (hacc : IsNormal pTC acc) (htoks : IsNormal pTC toks) :
+    ∀ s s',
+      Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape s ->
+        oneStep pTC s = some s' ->
+          oneStep pTC (apmK f ctx acc toks s) = some (apmK f ctx acc toks s') := by
+  intro s s' hactive hstep
+  cases hactive with
+  | tm g c toks' =>
+      exact hcong_apmK_arg_tc f ctx acc toks (tm g c toks') hf hctx hacc htoks rfl s' hstep
+  | ar g c toks' =>
+      exact hcong_apmK_arg_tc f ctx acc toks (ar g c toks') hf hctx hacc htoks rfl s' hstep
+  | ap g c toks' =>
+      exact hcong_apmK_arg_tc f ctx acc toks (ap g c toks') hf hctx hacc htoks rfl s' hstep
+  | apm g c acc' toks' =>
+      exact hcong_apmK_arg_tc f ctx acc toks (apm g c acc' toks') hf hctx hacc htoks rfl s' hstep
+  | atom g c toks' =>
+      exact hcong_apmK_arg_tc f ctx acc toks (at' g c toks') hf hctx hacc htoks rfl s' hstep
+  | tmPi1 g c x r =>
+      exact hcong_apmK_arg_tc f ctx acc toks (tmPi1 g c x r) hf hctx hacc htoks rfl s' hstep
+  | tmPi2 A r =>
+      exact hcong_apmK_arg_tc f ctx acc toks (tmPi2 A r) hf hctx hacc htoks rfl s' hstep
+  | tmLam1 g c x r =>
+      exact hcong_apmK_arg_tc f ctx acc toks (tmLam1 g c x r) hf hctx hacc htoks rfl s' hstep
+  | tmLam2 A r =>
+      exact hcong_apmK_arg_tc f ctx acc toks (tmLam2 A r) hf hctx hacc htoks rfl s' hstep
+  | arK g c r =>
+      exact hcong_apmK_arg_tc f ctx acc toks (arK g c r) hf hctx hacc htoks rfl s' hstep
+  | arK2 a r =>
+      exact hcong_apmK_arg_tc f ctx acc toks (arK2 a r) hf hctx hacc htoks rfl s' hstep
+  | apK g c r =>
+      exact hcong_apmK_arg_tc f ctx acc toks (apK g c r) hf hctx hacc htoks rfl s' hstep
+  | apmK g c acc' toks' r =>
+      exact hcong_apmK_arg_tc f ctx acc toks (apmK g c acc' toks' r) hf hctx hacc htoks rfl s' hstep
+  | atLPk g c r =>
+      exact hcong_apmK_arg_tc f ctx acc toks (atLPk g c r) hf hctx hacc htoks rfl s' hstep
+
+theorem hcong_atLPk_active_tc (f ctx : AST)
+    (hf : IsNormal pTC f) (hctx : IsNormal pTC ctx) :
+    ∀ s s',
+      Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape s ->
+        oneStep pTC s = some s' ->
+          oneStep pTC (atLPk f ctx s) = some (atLPk f ctx s') := by
+  intro s s' hactive hstep
+  cases hactive with
+  | tm g c toks =>
+      exact hcong_atLPk_arg_tc f ctx (tm g c toks) hf hctx rfl s' hstep
+  | ar g c toks =>
+      exact hcong_atLPk_arg_tc f ctx (ar g c toks) hf hctx rfl s' hstep
+  | ap g c toks =>
+      exact hcong_atLPk_arg_tc f ctx (ap g c toks) hf hctx rfl s' hstep
+  | apm g c acc toks =>
+      exact hcong_atLPk_arg_tc f ctx (apm g c acc toks) hf hctx rfl s' hstep
+  | atom g c toks =>
+      exact hcong_atLPk_arg_tc f ctx (at' g c toks) hf hctx rfl s' hstep
+  | tmPi1 g c x r =>
+      exact hcong_atLPk_arg_tc f ctx (tmPi1 g c x r) hf hctx rfl s' hstep
+  | tmPi2 A r =>
+      exact hcong_atLPk_arg_tc f ctx (tmPi2 A r) hf hctx rfl s' hstep
+  | tmLam1 g c x r =>
+      exact hcong_atLPk_arg_tc f ctx (tmLam1 g c x r) hf hctx rfl s' hstep
+  | tmLam2 A r =>
+      exact hcong_atLPk_arg_tc f ctx (tmLam2 A r) hf hctx rfl s' hstep
+  | arK g c r =>
+      exact hcong_atLPk_arg_tc f ctx (arK g c r) hf hctx rfl s' hstep
+  | arK2 a r =>
+      exact hcong_atLPk_arg_tc f ctx (arK2 a r) hf hctx rfl s' hstep
+  | apK g c r =>
+      exact hcong_atLPk_arg_tc f ctx (apK g c r) hf hctx rfl s' hstep
+  | apmK g c acc toks r =>
+      exact hcong_atLPk_arg_tc f ctx (apmK g c acc toks r) hf hctx rfl s' hstep
+  | atLPk g c r =>
+      exact hcong_atLPk_arg_tc f ctx (atLPk g c r) hf hctx rfl s' hstep
+
+theorem hcong_arK2_left_active_child_tc (r : AST)
+    (hr : Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape r) :
+    ∀ A A', oneStep pTC A = some A' ->
+      oneStep pTC (arK2 A r) = some (arK2 A' r) := by
+  intro A A' h
+  have hb : baseReducts pTC (arK2 A r) = [] := by
+    cases hr <;> rfl
+  change (match baseReducts pTC (arK2 A r) with
+    | r0 :: _ => some r0
+    | [] => Option.map (fun args' => AST.sexp (.id "arK2") args')
+        (oneStepList pTC [A, r])) =
+      some (arK2 A' r)
+  rw [hb]
+  simp only [oneStepList, h, Option.map_some, arK2]
+
+theorem hcong_arK2_right_active_tc (A : AST) (hA : IsNormal pTC A) :
+    ∀ r r',
+      Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape r ->
+        oneStep pTC r = some r' ->
+          oneStep pTC (arK2 A r) = some (arK2 A r') := by
+  intro r r' hr h
+  simp only [IsNormal] at hA
+  have hb : baseReducts pTC (arK2 A r) = [] := by
+    cases hr <;> rfl
+  change (match baseReducts pTC (arK2 A r) with
+    | r0 :: _ => some r0
+    | [] => Option.map (fun args' => AST.sexp (.id "arK2") args')
+        (oneStepList pTC [A, r])) =
+      some (arK2 A r')
+  rw [hb]
+  simp only [oneStepList, hA, h, Option.map_some, arK2]
+
+theorem hcong_tmPi2_left_active_child_tc (r : AST)
+    (hr : Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape r) :
+    ∀ A A', oneStep pTC A = some A' ->
+      oneStep pTC (tmPi2 A r) = some (tmPi2 A' r) := by
+  intro A A' h
+  have hb : baseReducts pTC (tmPi2 A r) = [] := by
+    cases hr <;> rfl
+  change (match baseReducts pTC (tmPi2 A r) with
+    | r0 :: _ => some r0
+    | [] => Option.map (fun args' => AST.sexp (.id "tmPi2") args')
+        (oneStepList pTC [A, r])) =
+      some (tmPi2 A' r)
+  rw [hb]
+  simp only [oneStepList, h, Option.map_some, tmPi2]
+
+theorem hcong_tmPi2_right_active_tc (A : AST) (hA : IsNormal pTC A) :
+    ∀ r r',
+      Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape r ->
+        oneStep pTC r = some r' ->
+          oneStep pTC (tmPi2 A r) = some (tmPi2 A r') := by
+  intro r r' hr h
+  simp only [IsNormal] at hA
+  have hb : baseReducts pTC (tmPi2 A r) = [] := by
+    cases hr <;> rfl
+  change (match baseReducts pTC (tmPi2 A r) with
+    | r0 :: _ => some r0
+    | [] => Option.map (fun args' => AST.sexp (.id "tmPi2") args')
+        (oneStepList pTC [A, r])) =
+      some (tmPi2 A r')
+  rw [hb]
+  simp only [oneStepList, hA, h, Option.map_some, tmPi2]
+
+theorem hcong_tmLam2_left_active_child_tc (r : AST)
+    (hr : Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape r) :
+    ∀ A A', oneStep pTC A = some A' ->
+      oneStep pTC (tmLam2 A r) = some (tmLam2 A' r) := by
+  intro A A' h
+  have hb : baseReducts pTC (tmLam2 A r) = [] := by
+    cases hr <;> rfl
+  change (match baseReducts pTC (tmLam2 A r) with
+    | r0 :: _ => some r0
+    | [] => Option.map (fun args' => AST.sexp (.id "tmLam2") args')
+        (oneStepList pTC [A, r])) =
+      some (tmLam2 A' r)
+  rw [hb]
+  simp only [oneStepList, h, Option.map_some, tmLam2]
+
+theorem hcong_tmLam2_right_active_tc (A : AST) (hA : IsNormal pTC A) :
+    ∀ r r',
+      Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape r ->
+        oneStep pTC r = some r' ->
+          oneStep pTC (tmLam2 A r) = some (tmLam2 A r') := by
+  intro r r' hr h
+  simp only [IsNormal] at hA
+  have hb : baseReducts pTC (tmLam2 A r) = [] := by
+    cases hr <;> rfl
+  change (match baseReducts pTC (tmLam2 A r) with
+    | r0 :: _ => some r0
+    | [] => Option.map (fun args' => AST.sexp (.id "tmLam2") args')
+        (oneStepList pTC [A, r])) =
+      some (tmLam2 A r')
+  rw [hb]
+  simp only [oneStepList, hA, h, Option.map_some, tmLam2]
+
+theorem tmPi2_matches_first_active_shiftable_raw_of_term_result_tc (fuel : Nat)
+    (ctx : List String) (A : LF.Term) (Araw : AST)
+    (hA : RawShiftablePayloadTC Araw A) (bodyToks : List LF.Tok) {v : AST}
+    (h : MatchesParseShiftableRawTC (LF.pTerm fuel ctx bodyToks) v) :
+    FirstActiveMatchesParseShiftableRawTC
+      (match LF.pTerm fuel ctx bodyToks with
+       | some (B, rest) => some (.pi A B, rest)
+       | none => none)
+      (tmPi2 Araw v) := by
+  cases hbody : LF.pTerm fuel ctx bodyToks with
+  | none =>
+      rw [hbody] at h
+      rcases h with ⟨e, rfl⟩
+      exact first_active_shiftable_raw_one_tc (by
+          simp only [eval, os_parser_tmPi2_err_tc])
+        ⟨e, rfl⟩
+        (Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape.tmPi2 Araw (PErr e))
+  | some pr =>
+      rcases pr with ⟨B, rest⟩
+      rw [hbody] at h
+      rcases h with ⟨Braw, rfl, hB⟩
+      exact first_active_shiftable_raw_one_tc (by
+          simp only [eval, os_parser_tmPi2_p_tc])
+        ⟨Pi Araw Braw, rfl, raw_shiftable_payload_pi_tc hA hB⟩
+        (Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape.tmPi2
+          Araw (Pp Braw (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks rest)))
+
+theorem tmPi2_matches_first_active_shiftable_raw_of_term_first_active_tc (fuel : Nat)
+    (ctx : List String) (A : LF.Term) (Araw : AST)
+    (hA : RawShiftablePayloadTC Araw A) (bodyToks : List LF.Tok)
+    (hfirst : FirstActiveMatchesParseShiftableRawTC (LF.pTerm fuel ctx bodyToks)
+      (tm (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+        (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks bodyToks))) :
+    FirstActiveMatchesParseShiftableRawTC
+      (match LF.pTerm fuel ctx bodyToks with
+       | some (B, rest) => some (.pi A B, rest)
+       | none => none)
+      (tmPi2 Araw
+        (tm (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+          (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks bodyToks))) := by
+  let child :=
+    tm (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+      (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks bodyToks)
+  have hchildActive :
+      Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape child :=
+    Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape.tm
+      (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+      (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks bodyToks)
+  rcases hA.toShiftableTC.reduces with ⟨NA, hNA⟩
+  obtain ⟨Mnorm, hMnorm, hNormGuard⟩ :=
+    cong_eval_with_active_wrapper_tc
+      (fun a => tmPi2 a child)
+      (fun a => Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape.tmPi2
+        a child)
+      (hcong_tmPi2_left_active_child_tc child hchildActive)
+      NA hNA
+  have htail : FirstActiveMatchesParseShiftableRawTC
+      (match LF.pTerm fuel ctx bodyToks with
+       | some (B, rest) => some (.pi A B, rest)
+       | none => none)
+      (tmPi2 (encTerm A) child) :=
+    first_active_shiftable_raw_bind_active_tc
+      (fun s => tmPi2 (encTerm A) s)
+      (fun s _ => Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape.tmPi2
+        (encTerm A) s)
+      (hcong_tmPi2_right_active_tc (encTerm A) (isnormal_encTerm_raw_tc A))
+      hfirst
+      (fun {v} hv =>
+        tmPi2_matches_first_active_shiftable_raw_of_term_result_tc fuel ctx A
+          (encTerm A) (raw_shiftable_payload_encTerm_tc A) bodyToks hv)
+  exact first_active_shiftable_raw_prepend_eval_tc hMnorm hNormGuard htail
+
+theorem tmLam2_matches_first_active_shiftable_raw_of_term_result_tc (fuel : Nat)
+    (ctx : List String) (A : LF.Term) (Araw : AST)
+    (hA : RawShiftablePayloadTC Araw A) (bodyToks : List LF.Tok) {v : AST}
+    (h : MatchesParseShiftableRawTC (LF.pTerm fuel ctx bodyToks) v) :
+    FirstActiveMatchesParseShiftableRawTC
+      (match LF.pTerm fuel ctx bodyToks with
+       | some (b, rest) => some (.lam A b, rest)
+       | none => none)
+      (tmLam2 Araw v) := by
+  cases hbody : LF.pTerm fuel ctx bodyToks with
+  | none =>
+      rw [hbody] at h
+      rcases h with ⟨e, rfl⟩
+      exact first_active_shiftable_raw_one_tc (by
+          simp only [eval, os_parser_tmLam2_err_tc])
+        ⟨e, rfl⟩
+        (Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape.tmLam2 Araw (PErr e))
+  | some pr =>
+      rcases pr with ⟨b, rest⟩
+      rw [hbody] at h
+      rcases h with ⟨braw, rfl, hb⟩
+      exact first_active_shiftable_raw_one_tc (by
+          simp only [eval, os_parser_tmLam2_p_tc])
+        ⟨Lam Araw braw, rfl, raw_shiftable_payload_lam_tc hA hb⟩
+        (Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape.tmLam2
+          Araw (Pp braw (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks rest)))
+
+theorem tmLam2_matches_first_active_shiftable_raw_of_term_first_active_tc (fuel : Nat)
+    (ctx : List String) (A : LF.Term) (Araw : AST)
+    (hA : RawShiftablePayloadTC Araw A) (bodyToks : List LF.Tok)
+    (hfirst : FirstActiveMatchesParseShiftableRawTC (LF.pTerm fuel ctx bodyToks)
+      (tm (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+        (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks bodyToks))) :
+    FirstActiveMatchesParseShiftableRawTC
+      (match LF.pTerm fuel ctx bodyToks with
+       | some (b, rest) => some (.lam A b, rest)
+       | none => none)
+      (tmLam2 Araw
+        (tm (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+          (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks bodyToks))) := by
+  let child :=
+    tm (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+      (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks bodyToks)
+  have hchildActive :
+      Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape child :=
+    Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape.tm
+      (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+      (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks bodyToks)
+  rcases hA.toShiftableTC.reduces with ⟨NA, hNA⟩
+  obtain ⟨Mnorm, hMnorm, hNormGuard⟩ :=
+    cong_eval_with_active_wrapper_tc
+      (fun a => tmLam2 a child)
+      (fun a => Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape.tmLam2
+        a child)
+      (hcong_tmLam2_left_active_child_tc child hchildActive)
+      NA hNA
+  have htail : FirstActiveMatchesParseShiftableRawTC
+      (match LF.pTerm fuel ctx bodyToks with
+       | some (b, rest) => some (.lam A b, rest)
+       | none => none)
+      (tmLam2 (encTerm A) child) :=
+    first_active_shiftable_raw_bind_active_tc
+      (fun s => tmLam2 (encTerm A) s)
+      (fun s _ => Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape.tmLam2
+        (encTerm A) s)
+      (hcong_tmLam2_right_active_tc (encTerm A) (isnormal_encTerm_raw_tc A))
+      hfirst
+      (fun {v} hv =>
+        tmLam2_matches_first_active_shiftable_raw_of_term_result_tc fuel ctx A
+          (encTerm A) (raw_shiftable_payload_encTerm_tc A) bodyToks hv)
+  exact first_active_shiftable_raw_prepend_eval_tc hMnorm hNormGuard htail
+
+theorem tmPi1_matches_first_active_shiftable_raw_of_app_result_tc (fuel : Nat)
+    (ctx : List String) (x : String) (argToks : List LF.Tok) {v : AST}
+    (h : MatchesParseShiftableRawTC (LF.pApp fuel ctx argToks) v)
+    (tail : ∀ (A : LF.Term) (bodyToks : List LF.Tok) (Araw : AST),
+      LF.pApp fuel ctx argToks = some (A, .dot :: bodyToks) ->
+        RawShiftablePayloadTC Araw A ->
+        FirstActiveMatchesParseShiftableRawTC
+          (match LF.pTerm fuel (x :: ctx) bodyToks with
+           | some (B, rest) => some (.pi A B, rest)
+           | none => none)
+          (tmPi2 Araw
+            (tm (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx (x :: ctx))
+              (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks bodyToks)))) :
+    FirstActiveMatchesParseShiftableRawTC
+      (LF.pTerm (fuel + 1) ctx (.pi :: .id x :: .colon :: argToks))
+      (tmPi1 (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+        (con0 x) v) := by
+  cases happ : LF.pApp fuel ctx argToks with
+  | none =>
+      rw [happ] at h
+      rcases h with ⟨e, rfl⟩
+      rw [show LF.pTerm (fuel + 1) ctx (.pi :: .id x :: .colon :: argToks) = none by
+        simp [LF.pTerm, happ]]
+      exact first_active_shiftable_raw_one_tc (by
+          simp only [eval, os_parser_tmPi1_err_tc])
+        ⟨con0 "pi-malformed", rfl⟩
+        (Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape.tmPi1
+          (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+          (con0 x) (PErr e))
+  | some pr =>
+      rcases pr with ⟨A, restAfterA⟩
+      rw [happ] at h
+      rcases h with ⟨Araw, rfl, hA⟩
+      cases restAfterA with
+      | nil =>
+          rw [show LF.pTerm (fuel + 1) ctx (.pi :: .id x :: .colon :: argToks) = none by
+            simp [LF.pTerm, happ]]
+          exact first_active_shiftable_raw_one_tc (by
+              simp only [eval, Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks,
+                os_parser_tmPi1_nil_tc])
+            ⟨con0 "pi-malformed", rfl⟩
+            (Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape.tmPi1
+              (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+              (con0 x) (Pp Araw Nil))
+      | cons tok bodyToks =>
+          cases tok with
+          | dot =>
+              obtain htail := tail A bodyToks Araw happ hA
+              have hstep : eval pTC 1
+                  (tmPi1 (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+                    (con0 x)
+                    (Pp Araw (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks
+                      (.dot :: bodyToks)))) =
+                  tmPi2 Araw
+                    (tm (peano fuel)
+                      (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx (x :: ctx))
+                      (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks bodyToks)) := by
+                rw [show Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx (x :: ctx) =
+                    Cons (con0 x) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx) from rfl]
+                simp only [eval, Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks,
+                  Mettapedia.GSLT.LanguageDef.LFEngineCorr.encTok,
+                  os_parser_tmPi1_dot_tc]
+              rw [show
+                LF.pTerm (fuel + 1) ctx (.pi :: .id x :: .colon :: argToks) =
+                    (match LF.pTerm fuel (x :: ctx) bodyToks with
+                     | some (B, rest) => some (.pi A B, rest)
+                     | none => none) by
+                simp [LF.pTerm, happ]
+                rfl]
+              exact first_active_shiftable_raw_prepend_tc hstep
+                (Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape.tmPi1
+                  (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+                  (con0 x)
+                  (Pp Araw (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks
+                    (.dot :: bodyToks)))) htail
+          | pi =>
+              rw [show LF.pTerm (fuel + 1) ctx (.pi :: .id x :: .colon :: argToks) = none by
+                simp [LF.pTerm, happ]]
+              exact first_active_shiftable_raw_one_tc (by
+                  simp only [eval, Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks,
+                    Mettapedia.GSLT.LanguageDef.LFEngineCorr.encTok,
+                    os_parser_tmPi1_pi_tc])
+                ⟨con0 "pi-malformed", rfl⟩
+                (Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape.tmPi1
+                  (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+                  (con0 x)
+                  (Pp Araw (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks
+                    (.pi :: bodyToks))))
+          | lam =>
+              rw [show LF.pTerm (fuel + 1) ctx (.pi :: .id x :: .colon :: argToks) = none by
+                simp [LF.pTerm, happ]]
+              exact first_active_shiftable_raw_one_tc (by
+                  simp only [eval, Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks,
+                    Mettapedia.GSLT.LanguageDef.LFEngineCorr.encTok,
+                    os_parser_tmPi1_lam_tc])
+                ⟨con0 "pi-malformed", rfl⟩
+                (Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape.tmPi1
+                  (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+                  (con0 x)
+                  (Pp Araw (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks
+                    (.lam :: bodyToks))))
+          | arr =>
+              rw [show LF.pTerm (fuel + 1) ctx (.pi :: .id x :: .colon :: argToks) = none by
+                simp [LF.pTerm, happ]]
+              exact first_active_shiftable_raw_one_tc (by
+                  simp only [eval, Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks,
+                    Mettapedia.GSLT.LanguageDef.LFEngineCorr.encTok,
+                    os_parser_tmPi1_arr_tc])
+                ⟨con0 "pi-malformed", rfl⟩
+                (Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape.tmPi1
+                  (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+                  (con0 x)
+                  (Pp Araw (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks
+                    (.arr :: bodyToks))))
+          | colon =>
+              rw [show LF.pTerm (fuel + 1) ctx (.pi :: .id x :: .colon :: argToks) = none by
+                simp [LF.pTerm, happ]]
+              exact first_active_shiftable_raw_one_tc (by
+                  simp only [eval, Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks,
+                    Mettapedia.GSLT.LanguageDef.LFEngineCorr.encTok,
+                    os_parser_tmPi1_colon_tc])
+                ⟨con0 "pi-malformed", rfl⟩
+                (Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape.tmPi1
+                  (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+                  (con0 x)
+                  (Pp Araw (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks
+                    (.colon :: bodyToks))))
+          | lpar =>
+              rw [show LF.pTerm (fuel + 1) ctx (.pi :: .id x :: .colon :: argToks) = none by
+                simp [LF.pTerm, happ]]
+              exact first_active_shiftable_raw_one_tc (by
+                  simp only [eval, Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks,
+                    Mettapedia.GSLT.LanguageDef.LFEngineCorr.encTok,
+                    os_parser_tmPi1_lp_tc])
+                ⟨con0 "pi-malformed", rfl⟩
+                (Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape.tmPi1
+                  (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+                  (con0 x)
+                  (Pp Araw (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks
+                    (.lpar :: bodyToks))))
+          | rpar =>
+              rw [show LF.pTerm (fuel + 1) ctx (.pi :: .id x :: .colon :: argToks) = none by
+                simp [LF.pTerm, happ]]
+              exact first_active_shiftable_raw_one_tc (by
+                  simp only [eval, Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks,
+                    Mettapedia.GSLT.LanguageDef.LFEngineCorr.encTok,
+                    os_parser_tmPi1_rp_tc])
+                ⟨con0 "pi-malformed", rfl⟩
+                (Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape.tmPi1
+                  (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+                  (con0 x)
+                  (Pp Araw (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks
+                    (.rpar :: bodyToks))))
+          | type =>
+              rw [show LF.pTerm (fuel + 1) ctx (.pi :: .id x :: .colon :: argToks) = none by
+                simp [LF.pTerm, happ]]
+              exact first_active_shiftable_raw_one_tc (by
+                  simp only [eval, Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks,
+                    Mettapedia.GSLT.LanguageDef.LFEngineCorr.encTok,
+                    os_parser_tmPi1_type_tc])
+                ⟨con0 "pi-malformed", rfl⟩
+                (Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape.tmPi1
+                  (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+                  (con0 x)
+                  (Pp Araw (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks
+                    (.type :: bodyToks))))
+          | id s =>
+              rw [show LF.pTerm (fuel + 1) ctx (.pi :: .id x :: .colon :: argToks) = none by
+                simp [LF.pTerm, happ]]
+              exact first_active_shiftable_raw_one_tc (by
+                  simp only [eval, Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks,
+                    Mettapedia.GSLT.LanguageDef.LFEngineCorr.encTok,
+                    os_parser_tmPi1_id_tc])
+                ⟨con0 "pi-malformed", rfl⟩
+                (Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape.tmPi1
+                  (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+                  (con0 x)
+                  (Pp Araw (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks
+                    (.id s :: bodyToks))))
+
+theorem tmPi1_matches_first_active_shiftable_raw_of_app_first_active_tc (fuel : Nat)
+    (ctx : List String) (x : String) (argToks : List LF.Tok)
+    (happ : FirstActiveMatchesParseShiftableRawTC (LF.pApp fuel ctx argToks)
+      (ap (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+        (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks argToks)))
+    (tail : ∀ (A : LF.Term) (bodyToks : List LF.Tok) (Araw : AST),
+      LF.pApp fuel ctx argToks = some (A, .dot :: bodyToks) ->
+        RawShiftablePayloadTC Araw A ->
+        FirstActiveMatchesParseShiftableRawTC
+          (match LF.pTerm fuel (x :: ctx) bodyToks with
+           | some (B, rest) => some (.pi A B, rest)
+           | none => none)
+          (tmPi2 Araw
+            (tm (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx (x :: ctx))
+              (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks bodyToks)))) :
+    FirstActiveMatchesParseShiftableRawTC
+      (LF.pTerm (fuel + 1) ctx (.pi :: .id x :: .colon :: argToks))
+      (tmPi1 (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+        (con0 x)
+        (ap (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+          (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks argToks))) := by
+  exact first_active_shiftable_raw_bind_active_tc
+    (fun s => tmPi1 (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+      (con0 x) s)
+    (fun s _ => Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape.tmPi1
+      (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+      (con0 x) s)
+    (hcong_tmPi1_active_tc (peano fuel)
+      (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx) (con0 x)
+      (isnormal_peano_tc fuel) (isnormal_encCtx_tc ctx) (isnormal_con0_tc x))
+    happ
+    (fun {v} hv =>
+      tmPi1_matches_first_active_shiftable_raw_of_app_result_tc fuel ctx x
+        argToks hv tail)
+
+theorem tmLam1_matches_first_active_shiftable_raw_of_app_result_tc (fuel : Nat)
+    (ctx : List String) (x : String) (argToks : List LF.Tok) {v : AST}
+    (h : MatchesParseShiftableRawTC (LF.pApp fuel ctx argToks) v)
+    (tail : ∀ (A : LF.Term) (bodyToks : List LF.Tok) (Araw : AST),
+      LF.pApp fuel ctx argToks = some (A, .dot :: bodyToks) ->
+        RawShiftablePayloadTC Araw A ->
+        FirstActiveMatchesParseShiftableRawTC
+          (match LF.pTerm fuel (x :: ctx) bodyToks with
+           | some (b, rest) => some (.lam A b, rest)
+           | none => none)
+          (tmLam2 Araw
+            (tm (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx (x :: ctx))
+              (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks bodyToks)))) :
+    FirstActiveMatchesParseShiftableRawTC
+      (LF.pTerm (fuel + 1) ctx (.lam :: .id x :: .colon :: argToks))
+      (tmLam1 (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+        (con0 x) v) := by
+  cases happ : LF.pApp fuel ctx argToks with
+  | none =>
+      rw [happ] at h
+      rcases h with ⟨e, rfl⟩
+      rw [show LF.pTerm (fuel + 1) ctx (.lam :: .id x :: .colon :: argToks) = none by
+        simp [LF.pTerm, happ]]
+      exact first_active_shiftable_raw_one_tc (by
+          simp only [eval, os_parser_tmLam1_err_tc])
+        ⟨con0 "lam-malformed", rfl⟩
+        (Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape.tmLam1
+          (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+          (con0 x) (PErr e))
+  | some pr =>
+      rcases pr with ⟨A, restAfterA⟩
+      rw [happ] at h
+      rcases h with ⟨Araw, rfl, hA⟩
+      cases restAfterA with
+      | nil =>
+          rw [show LF.pTerm (fuel + 1) ctx (.lam :: .id x :: .colon :: argToks) = none by
+            simp [LF.pTerm, happ]]
+          exact first_active_shiftable_raw_one_tc (by
+              simp only [eval, Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks,
+                os_parser_tmLam1_nil_tc])
+            ⟨con0 "lam-malformed", rfl⟩
+            (Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape.tmLam1
+              (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+              (con0 x) (Pp Araw Nil))
+      | cons tok bodyToks =>
+          cases tok with
+          | dot =>
+              obtain htail := tail A bodyToks Araw happ hA
+              have hstep : eval pTC 1
+                  (tmLam1 (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+                    (con0 x)
+                    (Pp Araw (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks
+                      (.dot :: bodyToks)))) =
+                  tmLam2 Araw
+                    (tm (peano fuel)
+                      (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx (x :: ctx))
+                      (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks bodyToks)) := by
+                rw [show Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx (x :: ctx) =
+                    Cons (con0 x) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx) from rfl]
+                simp only [eval, Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks,
+                  Mettapedia.GSLT.LanguageDef.LFEngineCorr.encTok,
+                  os_parser_tmLam1_dot_tc]
+              rw [show
+                LF.pTerm (fuel + 1) ctx (.lam :: .id x :: .colon :: argToks) =
+                    (match LF.pTerm fuel (x :: ctx) bodyToks with
+                     | some (b, rest) => some (.lam A b, rest)
+                     | none => none) by
+                simp [LF.pTerm, happ]
+                rfl]
+              exact first_active_shiftable_raw_prepend_tc hstep
+                (Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape.tmLam1
+                  (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+                  (con0 x)
+                  (Pp Araw (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks
+                    (.dot :: bodyToks)))) htail
+          | pi =>
+              rw [show LF.pTerm (fuel + 1) ctx (.lam :: .id x :: .colon :: argToks) = none by
+                simp [LF.pTerm, happ]]
+              exact first_active_shiftable_raw_one_tc (by
+                  simp only [eval, Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks,
+                    Mettapedia.GSLT.LanguageDef.LFEngineCorr.encTok,
+                    os_parser_tmLam1_pi_tc])
+                ⟨con0 "lam-malformed", rfl⟩
+                (Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape.tmLam1
+                  (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+                  (con0 x)
+                  (Pp Araw (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks
+                    (.pi :: bodyToks))))
+          | lam =>
+              rw [show LF.pTerm (fuel + 1) ctx (.lam :: .id x :: .colon :: argToks) = none by
+                simp [LF.pTerm, happ]]
+              exact first_active_shiftable_raw_one_tc (by
+                  simp only [eval, Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks,
+                    Mettapedia.GSLT.LanguageDef.LFEngineCorr.encTok,
+                    os_parser_tmLam1_lam_tc])
+                ⟨con0 "lam-malformed", rfl⟩
+                (Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape.tmLam1
+                  (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+                  (con0 x)
+                  (Pp Araw (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks
+                    (.lam :: bodyToks))))
+          | arr =>
+              rw [show LF.pTerm (fuel + 1) ctx (.lam :: .id x :: .colon :: argToks) = none by
+                simp [LF.pTerm, happ]]
+              exact first_active_shiftable_raw_one_tc (by
+                  simp only [eval, Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks,
+                    Mettapedia.GSLT.LanguageDef.LFEngineCorr.encTok,
+                    os_parser_tmLam1_arr_tc])
+                ⟨con0 "lam-malformed", rfl⟩
+                (Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape.tmLam1
+                  (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+                  (con0 x)
+                  (Pp Araw (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks
+                    (.arr :: bodyToks))))
+          | colon =>
+              rw [show LF.pTerm (fuel + 1) ctx (.lam :: .id x :: .colon :: argToks) = none by
+                simp [LF.pTerm, happ]]
+              exact first_active_shiftable_raw_one_tc (by
+                  simp only [eval, Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks,
+                    Mettapedia.GSLT.LanguageDef.LFEngineCorr.encTok,
+                    os_parser_tmLam1_colon_tc])
+                ⟨con0 "lam-malformed", rfl⟩
+                (Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape.tmLam1
+                  (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+                  (con0 x)
+                  (Pp Araw (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks
+                    (.colon :: bodyToks))))
+          | lpar =>
+              rw [show LF.pTerm (fuel + 1) ctx (.lam :: .id x :: .colon :: argToks) = none by
+                simp [LF.pTerm, happ]]
+              exact first_active_shiftable_raw_one_tc (by
+                  simp only [eval, Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks,
+                    Mettapedia.GSLT.LanguageDef.LFEngineCorr.encTok,
+                    os_parser_tmLam1_lp_tc])
+                ⟨con0 "lam-malformed", rfl⟩
+                (Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape.tmLam1
+                  (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+                  (con0 x)
+                  (Pp Araw (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks
+                    (.lpar :: bodyToks))))
+          | rpar =>
+              rw [show LF.pTerm (fuel + 1) ctx (.lam :: .id x :: .colon :: argToks) = none by
+                simp [LF.pTerm, happ]]
+              exact first_active_shiftable_raw_one_tc (by
+                  simp only [eval, Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks,
+                    Mettapedia.GSLT.LanguageDef.LFEngineCorr.encTok,
+                    os_parser_tmLam1_rp_tc])
+                ⟨con0 "lam-malformed", rfl⟩
+                (Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape.tmLam1
+                  (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+                  (con0 x)
+                  (Pp Araw (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks
+                    (.rpar :: bodyToks))))
+          | type =>
+              rw [show LF.pTerm (fuel + 1) ctx (.lam :: .id x :: .colon :: argToks) = none by
+                simp [LF.pTerm, happ]]
+              exact first_active_shiftable_raw_one_tc (by
+                  simp only [eval, Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks,
+                    Mettapedia.GSLT.LanguageDef.LFEngineCorr.encTok,
+                    os_parser_tmLam1_type_tc])
+                ⟨con0 "lam-malformed", rfl⟩
+                (Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape.tmLam1
+                  (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+                  (con0 x)
+                  (Pp Araw (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks
+                    (.type :: bodyToks))))
+          | id s =>
+              rw [show LF.pTerm (fuel + 1) ctx (.lam :: .id x :: .colon :: argToks) = none by
+                simp [LF.pTerm, happ]]
+              exact first_active_shiftable_raw_one_tc (by
+                  simp only [eval, Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks,
+                    Mettapedia.GSLT.LanguageDef.LFEngineCorr.encTok,
+                    os_parser_tmLam1_id_tc])
+                ⟨con0 "lam-malformed", rfl⟩
+                (Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape.tmLam1
+                  (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+                  (con0 x)
+                  (Pp Araw (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks
+                    (.id s :: bodyToks))))
+
+theorem tmLam1_matches_first_active_shiftable_raw_of_app_first_active_tc (fuel : Nat)
+    (ctx : List String) (x : String) (argToks : List LF.Tok)
+    (happ : FirstActiveMatchesParseShiftableRawTC (LF.pApp fuel ctx argToks)
+      (ap (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+        (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks argToks)))
+    (tail : ∀ (A : LF.Term) (bodyToks : List LF.Tok) (Araw : AST),
+      LF.pApp fuel ctx argToks = some (A, .dot :: bodyToks) ->
+        RawShiftablePayloadTC Araw A ->
+        FirstActiveMatchesParseShiftableRawTC
+          (match LF.pTerm fuel (x :: ctx) bodyToks with
+           | some (b, rest) => some (.lam A b, rest)
+           | none => none)
+          (tmLam2 Araw
+            (tm (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx (x :: ctx))
+              (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks bodyToks)))) :
+    FirstActiveMatchesParseShiftableRawTC
+      (LF.pTerm (fuel + 1) ctx (.lam :: .id x :: .colon :: argToks))
+      (tmLam1 (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+        (con0 x)
+        (ap (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+          (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks argToks))) := by
+  exact first_active_shiftable_raw_bind_active_tc
+    (fun s => tmLam1 (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+      (con0 x) s)
+    (fun s _ => Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape.tmLam1
+      (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+      (con0 x) s)
+    (hcong_tmLam1_active_tc (peano fuel)
+      (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx) (con0 x)
+      (isnormal_peano_tc fuel) (isnormal_encCtx_tc ctx) (isnormal_con0_tc x))
+    happ
+    (fun {v} hv =>
+      tmLam1_matches_first_active_shiftable_raw_of_app_result_tc fuel ctx x
+        argToks hv tail)
+
+theorem arK2_matches_first_active_shiftable_raw_of_term_result_tc (fuel : Nat)
+    (ctx : List String) (A : LF.Term) (Araw : AST)
+    (hA : RawShiftablePayloadTC Araw A) (bodyToks : List LF.Tok) {v : AST}
+    (h : MatchesParseShiftableRawTC (LF.pTerm fuel ctx bodyToks) v) :
+    FirstActiveMatchesParseShiftableRawTC
+      (match LF.pTerm fuel ctx bodyToks with
+       | some (B, rest) => some (.pi A (LF.shift 0 B), rest)
+       | none => none)
+      (arK2 Araw v) := by
+  cases hbody : LF.pTerm fuel ctx bodyToks with
+  | none =>
+      rw [hbody] at h
+      rcases h with ⟨e, rfl⟩
+      exact first_active_shiftable_raw_one_tc (by
+          simp only [eval, os_parser_arK2_err_tc])
+        ⟨e, rfl⟩
+        (Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape.arK2 Araw (PErr e))
+  | some pr =>
+      rcases pr with ⟨B, rest⟩
+      rw [hbody] at h
+      rcases h with ⟨Braw, rfl, hB⟩
+      exact first_active_shiftable_raw_one_tc (by
+          simp only [eval, os_parser_arK2_p_tc])
+        ⟨Pi Araw (shift Z Braw), rfl,
+          raw_shiftable_payload_pi_tc hA (raw_shiftable_payload_shift_zero_tc hB)⟩
+        (Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape.arK2
+          Araw (Pp Braw (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks rest)))
+
+theorem arK2_matches_first_active_shiftable_raw_of_term_first_active_tc (fuel : Nat)
+    (ctx : List String) (A : LF.Term) (Araw : AST)
+    (hA : RawShiftablePayloadTC Araw A) (bodyToks : List LF.Tok)
+    (hfirst : FirstActiveMatchesParseShiftableRawTC (LF.pTerm fuel ctx bodyToks)
+      (tm (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+        (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks bodyToks))) :
+    FirstActiveMatchesParseShiftableRawTC
+      (match LF.pTerm fuel ctx bodyToks with
+       | some (B, rest) => some (.pi A (LF.shift 0 B), rest)
+       | none => none)
+      (arK2 Araw
+        (tm (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+          (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks bodyToks))) := by
+  let child :=
+    tm (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+      (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks bodyToks)
+  have hchildActive :
+      Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape child :=
+    Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape.tm
+      (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+      (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks bodyToks)
+  rcases hA.toShiftableTC.reduces with ⟨NA, hNA⟩
+  obtain ⟨Mnorm, hMnorm, hNormGuard⟩ :=
+    cong_eval_with_active_wrapper_tc
+      (fun a => arK2 a child)
+      (fun a => Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape.arK2
+        a child)
+      (hcong_arK2_left_active_child_tc child hchildActive)
+      NA hNA
+  have htail : FirstActiveMatchesParseShiftableRawTC
+      (match LF.pTerm fuel ctx bodyToks with
+       | some (B, rest) => some (.pi A (LF.shift 0 B), rest)
+       | none => none)
+      (arK2 (encTerm A) child) :=
+    first_active_shiftable_raw_bind_active_tc
+      (fun s => arK2 (encTerm A) s)
+      (fun s _ => Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape.arK2
+        (encTerm A) s)
+      (hcong_arK2_right_active_tc (encTerm A) (isnormal_encTerm_raw_tc A))
+      hfirst
+      (fun {v} hv =>
+        arK2_matches_first_active_shiftable_raw_of_term_result_tc fuel ctx A
+          (encTerm A) (raw_shiftable_payload_encTerm_tc A) bodyToks hv)
+  exact first_active_shiftable_raw_prepend_eval_tc hMnorm hNormGuard htail
+
+theorem arK_matches_first_active_shiftable_raw_of_app_result_tc (fuel : Nat)
+    (ctx : List String) (toks : List LF.Tok) {v : AST}
+    (h : MatchesParseShiftableRawTC (LF.pApp fuel ctx toks) v)
+    (tail : ∀ (A : LF.Term) (bodyToks : List LF.Tok) (Araw : AST),
+      LF.pApp fuel ctx toks = some (A, .arr :: bodyToks) ->
+        RawShiftablePayloadTC Araw A ->
+          FirstActiveMatchesParseShiftableRawTC
+            (match LF.pTerm fuel ctx bodyToks with
+             | some (B, rest) => some (.pi A (LF.shift 0 B), rest)
+             | none => none)
+            (arK2 Araw
+              (tm (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+                (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks bodyToks)))) :
+    FirstActiveMatchesParseShiftableRawTC (LF.pArrow (fuel + 1) ctx toks)
+      (arK (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx) v) := by
+  cases happ : LF.pApp fuel ctx toks with
+  | none =>
+      rw [happ] at h
+      rcases h with ⟨e, rfl⟩
+      rw [show LF.pArrow (fuel + 1) ctx toks = none by simp [LF.pArrow, happ]]
+      exact first_active_shiftable_raw_one_tc (by
+          simp only [eval, os_parser_arK_err_tc])
+        ⟨e, rfl⟩
+        (Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape.arK
+          (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx) (PErr e))
+  | some pr =>
+      rcases pr with ⟨A, restAfterA⟩
+      rw [happ] at h
+      rcases h with ⟨Araw, rfl, hA⟩
+      cases restAfterA with
+      | nil =>
+          rw [show LF.pArrow (fuel + 1) ctx toks = some (A, []) by
+            simp [LF.pArrow, happ]]
+          exact first_active_shiftable_raw_one_tc (by
+              simp only [eval, Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks,
+                os_parser_arK_nil_tc])
+            ⟨Araw, rfl, hA⟩
+            (Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape.arK
+              (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+              (Pp Araw Nil))
+      | cons tok bodyToks =>
+          cases tok with
+          | arr =>
+              obtain htail := tail A bodyToks Araw happ hA
+              have hstep : eval pTC 1
+                  (arK (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+                    (Pp Araw (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks
+                      (.arr :: bodyToks)))) =
+                  arK2 Araw
+                    (tm (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+                      (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks bodyToks)) := by
+                simp only [eval, Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks,
+                  Mettapedia.GSLT.LanguageDef.LFEngineCorr.encTok,
+                  os_parser_arK_arr_tc]
+              rw [show
+                LF.pArrow (fuel + 1) ctx toks =
+                    (match LF.pTerm fuel ctx bodyToks with
+                     | some (B, rest) => some (.pi A (LF.shift 0 B), rest)
+                     | none => none) by
+                simp [LF.pArrow, happ]
+                rfl]
+              exact first_active_shiftable_raw_prepend_tc hstep
+                (Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape.arK
+                  (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+                  (Pp Araw (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks
+                    (.arr :: bodyToks)))) htail
+          | pi =>
+              rw [show LF.pArrow (fuel + 1) ctx toks = some (A, .pi :: bodyToks) by
+                simp [LF.pArrow, happ]]
+              exact first_active_shiftable_raw_one_tc (by
+                  simp only [eval, Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks,
+                    Mettapedia.GSLT.LanguageDef.LFEngineCorr.encTok,
+                    os_parser_arK_pi_tc])
+                ⟨Araw, rfl, hA⟩
+                (Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape.arK
+                  (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+                  (Pp Araw (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks
+                    (.pi :: bodyToks))))
+          | lam =>
+              rw [show LF.pArrow (fuel + 1) ctx toks = some (A, .lam :: bodyToks) by
+                simp [LF.pArrow, happ]]
+              exact first_active_shiftable_raw_one_tc (by
+                  simp only [eval, Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks,
+                    Mettapedia.GSLT.LanguageDef.LFEngineCorr.encTok,
+                    os_parser_arK_lam_tc])
+                ⟨Araw, rfl, hA⟩
+                (Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape.arK
+                  (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+                  (Pp Araw (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks
+                    (.lam :: bodyToks))))
+          | colon =>
+              rw [show LF.pArrow (fuel + 1) ctx toks = some (A, .colon :: bodyToks) by
+                simp [LF.pArrow, happ]]
+              exact first_active_shiftable_raw_one_tc (by
+                  simp only [eval, Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks,
+                    Mettapedia.GSLT.LanguageDef.LFEngineCorr.encTok,
+                    os_parser_arK_colon_tc])
+                ⟨Araw, rfl, hA⟩
+                (Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape.arK
+                  (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+                  (Pp Araw (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks
+                    (.colon :: bodyToks))))
+          | dot =>
+              rw [show LF.pArrow (fuel + 1) ctx toks = some (A, .dot :: bodyToks) by
+                simp [LF.pArrow, happ]]
+              exact first_active_shiftable_raw_one_tc (by
+                  simp only [eval, Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks,
+                    Mettapedia.GSLT.LanguageDef.LFEngineCorr.encTok,
+                    os_parser_arK_dot_tc])
+                ⟨Araw, rfl, hA⟩
+                (Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape.arK
+                  (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+                  (Pp Araw (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks
+                    (.dot :: bodyToks))))
+          | lpar =>
+              rw [show LF.pArrow (fuel + 1) ctx toks = some (A, .lpar :: bodyToks) by
+                simp [LF.pArrow, happ]]
+              exact first_active_shiftable_raw_one_tc (by
+                  simp only [eval, Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks,
+                    Mettapedia.GSLT.LanguageDef.LFEngineCorr.encTok,
+                    os_parser_arK_lp_tc])
+                ⟨Araw, rfl, hA⟩
+                (Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape.arK
+                  (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+                  (Pp Araw (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks
+                    (.lpar :: bodyToks))))
+          | rpar =>
+              rw [show LF.pArrow (fuel + 1) ctx toks = some (A, .rpar :: bodyToks) by
+                simp [LF.pArrow, happ]]
+              exact first_active_shiftable_raw_one_tc (by
+                  simp only [eval, Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks,
+                    Mettapedia.GSLT.LanguageDef.LFEngineCorr.encTok,
+                    os_parser_arK_rp_tc])
+                ⟨Araw, rfl, hA⟩
+                (Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape.arK
+                  (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+                  (Pp Araw (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks
+                    (.rpar :: bodyToks))))
+          | type =>
+              rw [show LF.pArrow (fuel + 1) ctx toks = some (A, .type :: bodyToks) by
+                simp [LF.pArrow, happ]]
+              exact first_active_shiftable_raw_one_tc (by
+                  simp only [eval, Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks,
+                    Mettapedia.GSLT.LanguageDef.LFEngineCorr.encTok,
+                    os_parser_arK_type_tc])
+                ⟨Araw, rfl, hA⟩
+                (Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape.arK
+                  (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+                  (Pp Araw (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks
+                    (.type :: bodyToks))))
+          | id s =>
+              rw [show LF.pArrow (fuel + 1) ctx toks = some (A, .id s :: bodyToks) by
+                simp [LF.pArrow, happ]]
+              exact first_active_shiftable_raw_one_tc (by
+                  simp only [eval, Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks,
+                    Mettapedia.GSLT.LanguageDef.LFEngineCorr.encTok,
+                    os_parser_arK_id_tc])
+                ⟨Araw, rfl, hA⟩
+                (Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape.arK
+                  (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+                  (Pp Araw (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks
+                    (.id s :: bodyToks))))
+
+theorem arrow_succ_first_active_shiftable_raw_of_app_term_tc (fuel : Nat)
+    (ctx : List String) (toks : List LF.Tok)
+    (happ : FirstActiveMatchesParseShiftableRawTC (LF.pApp fuel ctx toks)
+      (ap (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+        (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks)))
+    (tail : ∀ (A : LF.Term) (bodyToks : List LF.Tok) (Araw : AST),
+      LF.pApp fuel ctx toks = some (A, .arr :: bodyToks) ->
+        RawShiftablePayloadTC Araw A ->
+          FirstActiveMatchesParseShiftableRawTC
+            (match LF.pTerm fuel ctx bodyToks with
+             | some (B, rest) => some (.pi A (LF.shift 0 B), rest)
+             | none => none)
+            (arK2 Araw
+              (tm (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+                (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks bodyToks)))) :
+    FirstActiveMatchesParseShiftableRawTC (LF.pArrow (fuel + 1) ctx toks)
+      (ar (peano (fuel + 1)) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+        (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks)) := by
+  have hinner : FirstActiveMatchesParseShiftableRawTC (LF.pArrow (fuel + 1) ctx toks)
+      (arK (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+        (ap (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+          (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks))) :=
+    first_active_shiftable_raw_bind_active_tc
+      (fun s => arK (peano fuel)
+        (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx) s)
+      (fun s _ => Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape.arK
+        (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx) s)
+      (hcong_arK_active_tc (peano fuel)
+        (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+        (isnormal_peano_tc fuel) (isnormal_encCtx_tc ctx))
+      happ
+      (fun {v} hv => arK_matches_first_active_shiftable_raw_of_app_result_tc
+        fuel ctx toks hv tail)
+  have har : eval pTC 1
+      (ar (peano (fuel + 1)) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+        (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks)) =
+      arK (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+        (ap (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+          (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks)) := by
+    simp only [peano, eval, os_parser_ar_s_tc]
+  exact first_active_shiftable_raw_prepend_tc har
+    (Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape.ar
+      (peano (fuel + 1)) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+      (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks))
+    hinner
+
+theorem apmK_matches_first_active_shiftable_raw_of_atom_result_tc (fuel : Nat)
+    (ctx : List String) (acc : LF.Term) (toks : List LF.Tok) (accAst : AST)
+    (hacc : RawShiftablePayloadTC accAst acc)
+    {v : AST} (h : MatchesParseShiftableRawTC (LF.pAtom fuel ctx toks) v)
+    (tail : ∀ (a : LF.Term) (rest : List LF.Tok) (u : AST),
+      LF.pAtom fuel ctx toks = some (a, rest) → RawShiftablePayloadTC u a →
+        FirstActiveMatchesParseShiftableRawTC
+          (some (LF.pAppMore fuel ctx (.app acc a) rest))
+          (apm (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+            (App accAst u) (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks rest))) :
+    FirstActiveMatchesParseShiftableRawTC
+      (some (LF.pAppMore (fuel + 1) ctx acc toks))
+      (apmK (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+        accAst (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks) v) := by
+  cases hatom : LF.pAtom fuel ctx toks with
+  | none =>
+      rw [hatom] at h
+      rcases h with ⟨e, rfl⟩
+      rw [show LF.pAppMore (fuel + 1) ctx acc toks = (acc, toks) by
+        simp [LF.pAppMore, hatom]]
+      exact first_active_shiftable_raw_one_tc (by
+          simp only [eval, os_parser_apmK_err_tc])
+        (⟨accAst, rfl, hacc⟩)
+        (Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape.apmK
+          (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+          accAst (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks) (PErr e))
+  | some pr =>
+      rcases pr with ⟨a, rest⟩
+      rw [hatom] at h
+      rcases h with ⟨u, rfl, hu⟩
+      have hstep :
+          eval pTC 1
+            (apmK (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+              accAst (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks)
+              (Pp u (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks rest))) =
+            apm (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+              (App accAst u) (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks rest) := by
+        simp only [eval, os_parser_apmK_p_tc]
+      obtain htail := tail a rest u hatom hu
+      rw [show LF.pAppMore (fuel + 1) ctx acc toks =
+          LF.pAppMore fuel ctx (.app acc a) rest by
+        simp [LF.pAppMore, hatom]]
+      exact first_active_shiftable_raw_prepend_tc hstep
+        (Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape.apmK
+          (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+          accAst (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks)
+          (Pp u (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks rest))) htail
+
+theorem appmore_succ_first_active_shiftable_raw_of_atom_appmore_tc (fuel : Nat)
+    (ctx : List String) (acc : LF.Term) (toks : List LF.Tok) (accAst : AST)
+    (hacc : RawShiftablePayloadTC accAst acc)
+    (hatom : FirstActiveMatchesParseShiftableRawTC (LF.pAtom fuel ctx toks)
+      (at' (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+        (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks)))
+    (tail : ∀ (a : LF.Term) (rest : List LF.Tok) (u : AST),
+      LF.pAtom fuel ctx toks = some (a, rest) → RawShiftablePayloadTC u a →
+        FirstActiveMatchesParseShiftableRawTC
+          (some (LF.pAppMore fuel ctx (.app acc a) rest))
+          (apm (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+            (App (encTerm acc) u)
+            (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks rest))) :
+    FirstActiveMatchesParseShiftableRawTC
+      (some (LF.pAppMore (fuel + 1) ctx acc toks))
+      (apm (peano (fuel + 1)) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+        accAst (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks)) := by
+  let child :=
+    at' (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+      (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks)
+  rcases hacc.toShiftableTC.reduces with ⟨Nacc, hNacc⟩
+  obtain ⟨Mnorm, hMnorm, hNormGuard⟩ :=
+    cong_eval_with_active_wrapper_tc
+      (fun a => apmK (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+        a (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks) child)
+      (fun a => Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape.apmK
+        (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx) a
+        (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks) child)
+      (hcong_apmK_acc_at_tc (peano fuel)
+        (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+        (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks)
+        (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+        (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks)
+        (isnormal_peano_tc fuel) (isnormal_encCtx_tc ctx))
+      Nacc hNacc
+  have htail :
+      FirstActiveMatchesParseShiftableRawTC
+        (some (LF.pAppMore (fuel + 1) ctx acc toks))
+        (apmK (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+          (encTerm acc) (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks) child) :=
+    first_active_shiftable_raw_bind_active_tc
+      (fun s => apmK (peano fuel)
+        (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx) (encTerm acc)
+        (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks) s)
+      (fun s _ => Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape.apmK
+        (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+        (encTerm acc) (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks) s)
+      (hcong_apmK_active_tc (peano fuel)
+        (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx) (encTerm acc)
+        (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks)
+        (isnormal_peano_tc fuel) (isnormal_encCtx_tc ctx)
+        (isnormal_encTerm_raw_tc acc) (isnormal_encToks_tc toks))
+      hatom
+      (fun {v} hv =>
+        apmK_matches_first_active_shiftable_raw_of_atom_result_tc fuel ctx acc toks
+          (encTerm acc) (raw_shiftable_payload_encTerm_tc acc) hv tail)
+  have hafterNorm :
+      FirstActiveMatchesParseShiftableRawTC
+        (some (LF.pAppMore (fuel + 1) ctx acc toks))
+        (apmK (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+          accAst (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks) child) :=
+    first_active_shiftable_raw_prepend_eval_tc hMnorm hNormGuard htail
+  have hstep :
+      eval pTC 1
+        (apm (peano (fuel + 1)) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+          accAst (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks)) =
+        apmK (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+          accAst (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks) child := by
+    unfold child
+    simp only [peano, eval, os_parser_apm_s_tc]
+  exact first_active_shiftable_raw_prepend_tc hstep
+    (Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape.apm
+      (peano (fuel + 1)) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+      accAst (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks))
+    hafterNorm
+
+theorem apK_matches_first_active_shiftable_raw_of_atom_result_tc (fuel : Nat)
+    (ctx : List String) (toks : List LF.Tok)
+    {v : AST}
+    (h : MatchesParseShiftableRawTC (LF.pAtom fuel ctx toks) v)
+    (tail : ∀ (a : LF.Term) (rest : List LF.Tok) (u : AST),
+      LF.pAtom fuel ctx toks = some (a, rest) →
+        RawShiftablePayloadTC u a →
+          FirstActiveMatchesParseShiftableRawTC
+            (some (LF.pAppMore fuel ctx a rest))
+            (apm (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+              u (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks rest))) :
+    FirstActiveMatchesParseShiftableRawTC (LF.pApp (fuel + 1) ctx toks)
+      (apK (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx) v) := by
+  cases hatom : LF.pAtom fuel ctx toks with
+  | none =>
+      rw [hatom] at h
+      rcases h with ⟨e, rfl⟩
+      rw [show LF.pApp (fuel + 1) ctx toks = none by
+        simp [LF.pApp, hatom]]
+      exact first_active_shiftable_raw_one_tc (by
+          simp only [eval, os_parser_apK_err_tc])
+        ⟨e, rfl⟩
+        (Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape.apK
+          (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+          (PErr e))
+  | some pr =>
+      rcases pr with ⟨a, rest⟩
+      rw [hatom] at h
+      rcases h with ⟨u, rfl, hu⟩
+      have hstep :
+          eval pTC 1
+            (apK (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+              (Pp u (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks rest))) =
+            apm (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+              u (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks rest) := by
+        simp only [eval, os_parser_apK_p_tc]
+      obtain htail := tail a rest u hatom hu
+      rw [show LF.pApp (fuel + 1) ctx toks =
+          some (LF.pAppMore fuel ctx a rest) by
+        simp [LF.pApp, hatom]]
+      exact first_active_shiftable_raw_prepend_tc hstep
+        (Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape.apK
+          (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+          (Pp u (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks rest)))
+        htail
+
+theorem app_succ_first_active_shiftable_raw_of_atom_appmore_tc (fuel : Nat)
+    (ctx : List String) (toks : List LF.Tok)
+    (hatom : FirstActiveMatchesParseShiftableRawTC (LF.pAtom fuel ctx toks)
+      (at' (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+        (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks)))
+    (tail : ∀ (a : LF.Term) (rest : List LF.Tok) (u : AST),
+      LF.pAtom fuel ctx toks = some (a, rest) →
+        RawShiftablePayloadTC u a →
+          FirstActiveMatchesParseShiftableRawTC
+            (some (LF.pAppMore fuel ctx a rest))
+            (apm (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+              u (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks rest))) :
+    FirstActiveMatchesParseShiftableRawTC (LF.pApp (fuel + 1) ctx toks)
+      (ap (peano (fuel + 1)) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+        (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks)) := by
+  have hinner : FirstActiveMatchesParseShiftableRawTC (LF.pApp (fuel + 1) ctx toks)
+      (apK (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+        (at' (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+          (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks))) :=
+    first_active_shiftable_raw_bind_active_tc
+      (fun s => apK (peano fuel)
+        (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx) s)
+      (fun s _ => Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape.apK
+        (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx) s)
+      (hcong_apK_active_tc (peano fuel)
+        (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+        (isnormal_peano_tc fuel) (isnormal_encCtx_tc ctx))
+      hatom
+      (fun {v} hv =>
+        apK_matches_first_active_shiftable_raw_of_atom_result_tc fuel ctx toks hv tail)
+  have hap :
+      eval pTC 1
+        (ap (peano (fuel + 1)) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+          (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks)) =
+        apK (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+          (at' (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+            (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks)) := by
+    simp only [peano, eval, os_parser_ap_s_tc]
+  exact first_active_shiftable_raw_prepend_tc hap
+    (Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape.ap
+      (peano (fuel + 1)) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+      (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks))
+    hinner
+
+def ParserSimMutualShiftableRawTC (fuel : Nat) : Prop :=
+  (∀ ctx toks,
+    FirstActiveMatchesParseShiftableRawTC (LF.pTerm fuel ctx toks)
+      (tm (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+        (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks))) ∧
+  (∀ ctx toks,
+    FirstActiveMatchesParseShiftableRawTC (LF.pArrow fuel ctx toks)
+      (ar (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+        (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks))) ∧
+  (∀ ctx toks,
+    FirstActiveMatchesParseShiftableRawTC (LF.pApp fuel ctx toks)
+      (ap (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+        (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks))) ∧
+  (∀ ctx acc toks t rest accAst,
+    RawShiftablePayloadTC accAst acc ->
+      LF.pAppMore fuel ctx acc toks = (t, rest) ->
+        FirstActiveMatchesParseShiftableRawTC (some (t, rest))
+          (apm (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+            accAst (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks))) ∧
+  (∀ ctx toks,
+    FirstActiveMatchesParseShiftableRawTC (LF.pAtom fuel ctx toks)
+      (at' (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+        (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks)))
+
+theorem parser_sim_mutual_shiftable_raw_zero_tc : ParserSimMutualShiftableRawTC 0 := by
+  refine ⟨?_, ?_, ?_, ?_, ?_⟩
+  · intro ctx toks
+    exact first_active_shiftable_raw_one_tc (by
+        simp only [peano, eval,
+          os_parser_tm_z_tc (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+            (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks)])
+      ⟨con0 "no-fuel", rfl⟩
+      (Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape.tm Z
+        (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+        (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks))
+  · intro ctx toks
+    exact first_active_shiftable_raw_one_tc (by
+        simp only [peano, eval,
+          os_parser_ar_z_tc (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+            (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks)])
+      ⟨con0 "no-fuel", rfl⟩
+      (Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape.ar Z
+        (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+        (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks))
+  · intro ctx toks
+    exact first_active_shiftable_raw_one_tc (by
+        simp only [peano, eval,
+          os_parser_ap_z_tc (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+            (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks)])
+      ⟨con0 "no-fuel", rfl⟩
+      (Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape.ap Z
+        (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+        (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks))
+  · intro ctx acc toks t rest accAst hacc hparse
+    simp only [LF.pAppMore, Prod.mk.injEq] at hparse
+    rcases hparse with ⟨rfl, rfl⟩
+    exact first_active_shiftable_raw_one_tc (by
+        simp only [peano, eval,
+          os_parser_apm_z_tc (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+            accAst (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks)])
+      ⟨accAst, rfl, hacc⟩
+      (Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape.apm Z
+        (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx) accAst
+        (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks))
+  · intro ctx toks
+    exact first_active_shiftable_raw_one_tc (by
+        simp only [peano, eval,
+          os_parser_at_z_tc (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+            (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks)])
+      ⟨con0 "no-fuel", rfl⟩
+      (Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape.atom Z
+        (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+        (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks))
+
+theorem parser_sim_mutual_shiftable_raw_succ_app_tc (fuel : Nat)
+    (ih : ParserSimMutualShiftableRawTC fuel) :
+    ∀ ctx toks,
+      FirstActiveMatchesParseShiftableRawTC (LF.pApp (fuel + 1) ctx toks)
+        (ap (peano (fuel + 1)) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+          (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks)) := by
+  rcases ih with ⟨_, _, _, ihAppMore, ihAtom⟩
+  intro ctx toks
+  exact app_succ_first_active_shiftable_raw_of_atom_appmore_tc fuel ctx toks
+    (ihAtom ctx toks)
+    (fun a rest u _ hu => by
+      cases htail : LF.pAppMore fuel ctx a rest with
+      | mk t' rest' =>
+          exact ihAppMore ctx a rest t' rest' u hu htail)
+
+theorem parser_sim_mutual_shiftable_raw_succ_appmore_tc (fuel : Nat)
+    (ih : ParserSimMutualShiftableRawTC fuel) :
+    ∀ ctx acc toks t rest accAst,
+      RawShiftablePayloadTC accAst acc →
+        LF.pAppMore (fuel + 1) ctx acc toks = (t, rest) →
+          FirstActiveMatchesParseShiftableRawTC (some (t, rest))
+            (apm (peano (fuel + 1)) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+              accAst (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks)) := by
+  rcases ih with ⟨_, _, _, ihAppMore, ihAtom⟩
+  intro ctx acc toks t rest accAst hacc hparse
+  have hsim :
+      FirstActiveMatchesParseShiftableRawTC
+        (some (LF.pAppMore (fuel + 1) ctx acc toks))
+        (apm (peano (fuel + 1)) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+          accAst (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks)) :=
+    appmore_succ_first_active_shiftable_raw_of_atom_appmore_tc fuel ctx acc toks
+      accAst hacc (ihAtom ctx toks)
+      (fun a rest' u _ hu => by
+        cases htail : LF.pAppMore fuel ctx (.app acc a) rest' with
+        | mk t' rest'' =>
+            exact ihAppMore ctx (.app acc a) rest' t' rest''
+              (App (encTerm acc) u)
+              (raw_shiftable_payload_app_tc (raw_shiftable_payload_encTerm_tc acc) hu)
+              htail)
+  simpa [hparse] using hsim
+
+theorem atom_no_fuel_first_active_shiftable_raw_tc (ctx : List String)
+    (toks : List LF.Tok) :
+    FirstActiveMatchesParseShiftableRawTC (LF.pAtom 0 ctx toks)
+      (at' Z (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+        (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks)) := by
+  exact first_active_shiftable_raw_one_tc (by
+      simp only [eval,
+        os_parser_at_z_tc (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+          (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks)])
+    ⟨con0 "no-fuel", rfl⟩
+    (Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape.atom Z
+      (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+      (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks))
+
+theorem atom_non_lpar_first_active_shiftable_raw_tc (fuel : Nat) (ctx : List String)
+    (toks : List LF.Tok) (hnot : ∀ rest, toks ≠ .lpar :: rest) :
+    FirstActiveMatchesParseShiftableRawTC (LF.pAtom fuel ctx toks)
+      (at' (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+        (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks)) := by
+  cases fuel with
+  | zero =>
+      exact atom_no_fuel_first_active_shiftable_raw_tc ctx toks
+  | succ fuel =>
+      cases toks with
+      | nil =>
+          exact first_active_shiftable_raw_one_tc (by
+              simp only [peano, eval, Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks,
+                os_parser_at_err_nil_tc])
+            ⟨con0 "atom-expected", rfl⟩
+            (Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape.atom
+              (peano (fuel + 1)) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+              (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks []))
+      | cons tok rest =>
+          cases tok with
+          | pi =>
+              exact first_active_shiftable_raw_one_tc (by
+                  simp only [peano, eval, Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks,
+                    Mettapedia.GSLT.LanguageDef.LFEngineCorr.encTok, os_parser_at_err_pi_tc])
+                ⟨con0 "atom-expected", rfl⟩
+                (Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape.atom
+                  (peano (fuel + 1)) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+                  (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks (.pi :: rest)))
+          | lam =>
+              exact first_active_shiftable_raw_one_tc (by
+                  simp only [peano, eval, Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks,
+                    Mettapedia.GSLT.LanguageDef.LFEngineCorr.encTok, os_parser_at_err_lam_tc])
+                ⟨con0 "atom-expected", rfl⟩
+                (Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape.atom
+                  (peano (fuel + 1)) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+                  (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks (.lam :: rest)))
+          | arr =>
+              exact first_active_shiftable_raw_one_tc (by
+                  simp only [peano, eval, Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks,
+                    Mettapedia.GSLT.LanguageDef.LFEngineCorr.encTok, os_parser_at_err_arr_tc])
+                ⟨con0 "atom-expected", rfl⟩
+                (Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape.atom
+                  (peano (fuel + 1)) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+                  (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks (.arr :: rest)))
+          | colon =>
+              exact first_active_shiftable_raw_one_tc (by
+                  simp only [peano, eval, Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks,
+                    Mettapedia.GSLT.LanguageDef.LFEngineCorr.encTok, os_parser_at_err_colon_tc])
+                ⟨con0 "atom-expected", rfl⟩
+                (Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape.atom
+                  (peano (fuel + 1)) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+                  (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks (.colon :: rest)))
+          | dot =>
+              exact first_active_shiftable_raw_one_tc (by
+                  simp only [peano, eval, Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks,
+                    Mettapedia.GSLT.LanguageDef.LFEngineCorr.encTok, os_parser_at_err_dot_tc])
+                ⟨con0 "atom-expected", rfl⟩
+                (Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape.atom
+                  (peano (fuel + 1)) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+                  (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks (.dot :: rest)))
+          | lpar =>
+              exact False.elim (hnot rest rfl)
+          | rpar =>
+              exact first_active_shiftable_raw_one_tc (by
+                  simp only [peano, eval, Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks,
+                    Mettapedia.GSLT.LanguageDef.LFEngineCorr.encTok, os_parser_at_err_rp_tc])
+                ⟨con0 "atom-expected", rfl⟩
+                (Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape.atom
+                  (peano (fuel + 1)) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+                  (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks (.rpar :: rest)))
+          | type =>
+              have hraw : RawShiftablePayloadTC (Srt (con0 "type"))
+                  (LF.Term.srt LF.Srt.type) := by
+                simpa [encTerm, Mettapedia.GSLT.LanguageDef.LFEngineCorr.encSrt] using
+                  raw_shiftable_payload_encTerm_tc (LF.Term.srt LF.Srt.type)
+              exact first_active_shiftable_raw_one_tc (by
+                  simp only [peano, eval, Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks,
+                    Mettapedia.GSLT.LanguageDef.LFEngineCorr.encTok, os_parser_at_type_tc])
+                ⟨Srt (con0 "type"), rfl, hraw⟩
+                (Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape.atom
+                  (peano (fuel + 1)) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+                  (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks (.type :: rest)))
+          | id s =>
+              exact first_active_shiftable_raw_one_tc (by
+                  simp only [peano, eval, Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks,
+                    Mettapedia.GSLT.LanguageDef.LFEngineCorr.encTok, os_parser_at_id_tc])
+                ⟨resolve (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx) (con0 s),
+                  rfl, raw_shiftable_payload_resolve_tc ctx s⟩
+                (Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape.atom
+                  (peano (fuel + 1)) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+                  (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks (.id s :: rest)))
+
+theorem atLPk_matches_first_active_shiftable_raw_of_term_result_tc (fuel : Nat)
+    (ctx : List String) (rest : List LF.Tok) {v : AST}
+    (h : MatchesParseShiftableRawTC (LF.pTerm fuel ctx rest) v) :
+    FirstActiveMatchesParseShiftableRawTC (LF.pAtom (fuel + 1) ctx (.lpar :: rest))
+      (atLPk (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx) v) := by
+  cases hterm : LF.pTerm fuel ctx rest with
+  | none =>
+      rw [hterm] at h
+      rcases h with ⟨e, rfl⟩
+      rw [show LF.pAtom (fuel + 1) ctx (.lpar :: rest) = none by
+        simp [LF.pAtom, hterm]]
+      exact first_active_shiftable_raw_one_tc (by
+          simp only [eval, os_parser_atLPk_err_tc])
+        ⟨con0 "paren-malformed", rfl⟩
+        (Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape.atLPk
+          (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+          (PErr e))
+  | some pr =>
+      rcases pr with ⟨t, rest'⟩
+      rw [hterm] at h
+      rcases h with ⟨u, rfl, hu⟩
+      cases rest' with
+      | nil =>
+          rw [show LF.pAtom (fuel + 1) ctx (.lpar :: rest) = none by
+            simp [LF.pAtom, hterm]]
+          exact first_active_shiftable_raw_one_tc (by
+              simp only [eval, Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks,
+                os_parser_atLPk_nil_tc])
+            ⟨con0 "paren-malformed", rfl⟩
+            (Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape.atLPk
+              (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+              (Pp u Nil))
+      | cons tok rest2 =>
+          cases tok with
+          | rpar =>
+              rw [show LF.pAtom (fuel + 1) ctx (.lpar :: rest) = some (t, rest2) by
+                simp [LF.pAtom, hterm]]
+              exact first_active_shiftable_raw_one_tc (by
+                  simp only [eval, Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks,
+                    Mettapedia.GSLT.LanguageDef.LFEngineCorr.encTok,
+                    os_parser_atLPk_rp_tc])
+                ⟨u, rfl, hu⟩
+                (Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape.atLPk
+                  (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+                  (Pp u (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks
+                    (.rpar :: rest2))))
+          | pi =>
+              rw [show LF.pAtom (fuel + 1) ctx (.lpar :: rest) = none by
+                simp [LF.pAtom, hterm]]
+              exact first_active_shiftable_raw_one_tc (by
+                  simp only [eval, Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks,
+                    Mettapedia.GSLT.LanguageDef.LFEngineCorr.encTok,
+                    os_parser_atLPk_pi_tc])
+                ⟨con0 "paren-malformed", rfl⟩
+                (Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape.atLPk
+                  (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+                  (Pp u (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks
+                    (.pi :: rest2))))
+          | lam =>
+              rw [show LF.pAtom (fuel + 1) ctx (.lpar :: rest) = none by
+                simp [LF.pAtom, hterm]]
+              exact first_active_shiftable_raw_one_tc (by
+                  simp only [eval, Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks,
+                    Mettapedia.GSLT.LanguageDef.LFEngineCorr.encTok,
+                    os_parser_atLPk_lam_tc])
+                ⟨con0 "paren-malformed", rfl⟩
+                (Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape.atLPk
+                  (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+                  (Pp u (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks
+                    (.lam :: rest2))))
+          | arr =>
+              rw [show LF.pAtom (fuel + 1) ctx (.lpar :: rest) = none by
+                simp [LF.pAtom, hterm]]
+              exact first_active_shiftable_raw_one_tc (by
+                  simp only [eval, Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks,
+                    Mettapedia.GSLT.LanguageDef.LFEngineCorr.encTok,
+                    os_parser_atLPk_arr_tc])
+                ⟨con0 "paren-malformed", rfl⟩
+                (Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape.atLPk
+                  (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+                  (Pp u (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks
+                    (.arr :: rest2))))
+          | colon =>
+              rw [show LF.pAtom (fuel + 1) ctx (.lpar :: rest) = none by
+                simp [LF.pAtom, hterm]]
+              exact first_active_shiftable_raw_one_tc (by
+                  simp only [eval, Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks,
+                    Mettapedia.GSLT.LanguageDef.LFEngineCorr.encTok,
+                    os_parser_atLPk_colon_tc])
+                ⟨con0 "paren-malformed", rfl⟩
+                (Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape.atLPk
+                  (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+                  (Pp u (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks
+                    (.colon :: rest2))))
+          | dot =>
+              rw [show LF.pAtom (fuel + 1) ctx (.lpar :: rest) = none by
+                simp [LF.pAtom, hterm]]
+              exact first_active_shiftable_raw_one_tc (by
+                  simp only [eval, Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks,
+                    Mettapedia.GSLT.LanguageDef.LFEngineCorr.encTok,
+                    os_parser_atLPk_dot_tc])
+                ⟨con0 "paren-malformed", rfl⟩
+                (Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape.atLPk
+                  (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+                  (Pp u (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks
+                    (.dot :: rest2))))
+          | lpar =>
+              rw [show LF.pAtom (fuel + 1) ctx (.lpar :: rest) = none by
+                simp [LF.pAtom, hterm]]
+              exact first_active_shiftable_raw_one_tc (by
+                  simp only [eval, Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks,
+                    Mettapedia.GSLT.LanguageDef.LFEngineCorr.encTok,
+                    os_parser_atLPk_lp_tc])
+                ⟨con0 "paren-malformed", rfl⟩
+                (Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape.atLPk
+                  (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+                  (Pp u (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks
+                    (.lpar :: rest2))))
+          | type =>
+              rw [show LF.pAtom (fuel + 1) ctx (.lpar :: rest) = none by
+                simp [LF.pAtom, hterm]]
+              exact first_active_shiftable_raw_one_tc (by
+                  simp only [eval, Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks,
+                    Mettapedia.GSLT.LanguageDef.LFEngineCorr.encTok,
+                    os_parser_atLPk_type_tc])
+                ⟨con0 "paren-malformed", rfl⟩
+                (Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape.atLPk
+                  (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+                  (Pp u (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks
+                    (.type :: rest2))))
+          | id s =>
+              rw [show LF.pAtom (fuel + 1) ctx (.lpar :: rest) = none by
+                simp [LF.pAtom, hterm]]
+              exact first_active_shiftable_raw_one_tc (by
+                  simp only [eval, Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks,
+                    Mettapedia.GSLT.LanguageDef.LFEngineCorr.encTok,
+                    os_parser_atLPk_id_tc])
+                ⟨con0 "paren-malformed", rfl⟩
+                (Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape.atLPk
+                  (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+                  (Pp u (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks
+                    (.id s :: rest2))))
+
+theorem atLPk_matches_first_active_shiftable_raw_of_term_first_active_tc (fuel : Nat)
+    (ctx : List String) (rest : List LF.Tok)
+    (hfirst : FirstActiveMatchesParseShiftableRawTC (LF.pTerm fuel ctx rest)
+      (tm (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+        (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks rest))) :
+    FirstActiveMatchesParseShiftableRawTC (LF.pAtom (fuel + 1) ctx (.lpar :: rest))
+      (atLPk (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+        (tm (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+          (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks rest))) := by
+  exact first_active_shiftable_raw_bind_active_tc
+    (fun s => atLPk (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx) s)
+    (fun s _ => Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape.atLPk
+      (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx) s)
+    (hcong_atLPk_active_tc (peano fuel)
+      (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+      (isnormal_peano_tc fuel) (isnormal_encCtx_tc ctx))
+    hfirst
+    (fun {v} hv => atLPk_matches_first_active_shiftable_raw_of_term_result_tc fuel ctx rest hv)
+
+theorem atom_lpar_first_active_shiftable_raw_of_term_first_active_tc (fuel : Nat)
+    (ctx : List String) (rest : List LF.Tok)
+    (hfirst : FirstActiveMatchesParseShiftableRawTC (LF.pTerm fuel ctx rest)
+      (tm (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+        (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks rest))) :
+    FirstActiveMatchesParseShiftableRawTC (LF.pAtom (fuel + 1) ctx (.lpar :: rest))
+      (at' (peano (fuel + 1)) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+        (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks (.lpar :: rest))) := by
+  have htail :=
+    atLPk_matches_first_active_shiftable_raw_of_term_first_active_tc fuel ctx rest hfirst
+  have hstep :
+      eval pTC 1
+        (at' (peano (fuel + 1)) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+          (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks (.lpar :: rest))) =
+        atLPk (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+          (tm (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+            (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks rest)) := by
+    simp only [peano, eval, Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks,
+      Mettapedia.GSLT.LanguageDef.LFEngineCorr.encTok, os_parser_at_lp_tc]
+  exact first_active_shiftable_raw_prepend_tc hstep
+    (Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape.atom
+      (peano (fuel + 1)) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+      (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks (.lpar :: rest)))
+    htail
+
+theorem parser_sim_mutual_shiftable_raw_succ_atom_tc (fuel : Nat)
+    (ih : ParserSimMutualShiftableRawTC fuel) :
+    ∀ ctx toks,
+      FirstActiveMatchesParseShiftableRawTC (LF.pAtom (fuel + 1) ctx toks)
+        (at' (peano (fuel + 1)) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+          (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks)) := by
+  rcases ih with ⟨ihTerm, _, _, _, _⟩
+  intro ctx toks
+  cases toks with
+  | nil =>
+      exact atom_non_lpar_first_active_shiftable_raw_tc (fuel + 1) ctx []
+        (by intro rest h; cases h)
+  | cons tok rest =>
+      cases tok with
+      | lpar =>
+          exact atom_lpar_first_active_shiftable_raw_of_term_first_active_tc fuel ctx rest
+            (ihTerm ctx rest)
+      | pi =>
+          exact atom_non_lpar_first_active_shiftable_raw_tc (fuel + 1) ctx (.pi :: rest)
+            (by intro r h; cases h)
+      | lam =>
+          exact atom_non_lpar_first_active_shiftable_raw_tc (fuel + 1) ctx (.lam :: rest)
+            (by intro r h; cases h)
+      | arr =>
+          exact atom_non_lpar_first_active_shiftable_raw_tc (fuel + 1) ctx (.arr :: rest)
+            (by intro r h; cases h)
+      | colon =>
+          exact atom_non_lpar_first_active_shiftable_raw_tc (fuel + 1) ctx (.colon :: rest)
+            (by intro r h; cases h)
+      | dot =>
+          exact atom_non_lpar_first_active_shiftable_raw_tc (fuel + 1) ctx (.dot :: rest)
+            (by intro r h; cases h)
+      | rpar =>
+          exact atom_non_lpar_first_active_shiftable_raw_tc (fuel + 1) ctx (.rpar :: rest)
+            (by intro r h; cases h)
+      | type =>
+          exact atom_non_lpar_first_active_shiftable_raw_tc (fuel + 1) ctx (.type :: rest)
+            (by intro r h; cases h)
+      | id s =>
+          exact atom_non_lpar_first_active_shiftable_raw_tc (fuel + 1) ctx (.id s :: rest)
+            (by intro r h; cases h)
+
+theorem parser_sim_mutual_shiftable_raw_succ_term_tc (fuel : Nat)
+    (ih : ParserSimMutualShiftableRawTC fuel) :
+    ∀ ctx toks,
+      FirstActiveMatchesParseShiftableRawTC (LF.pTerm (fuel + 1) ctx toks)
+        (tm (peano (fuel + 1)) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+          (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks)) := by
+  rcases ih with ⟨ihTerm, ihArrow, ihApp, _, _⟩
+  intro ctx toks
+  have hfallback : ∀ toks,
+      eval pTC 1
+          (tm (peano (fuel + 1)) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+            (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks)) =
+        ar (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+          (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks) ->
+      LF.pTerm (fuel + 1) ctx toks = LF.pArrow fuel ctx toks ->
+      FirstActiveMatchesParseShiftableRawTC (LF.pTerm (fuel + 1) ctx toks)
+        (tm (peano (fuel + 1)) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+          (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks)) := by
+    intro toks hstep hparse
+    rw [hparse]
+    exact first_active_shiftable_raw_prepend_tc hstep
+      (Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape.tm
+        (peano (fuel + 1)) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+        (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks))
+      (ihArrow ctx toks)
+  have hpi : ∀ x rest,
+      FirstActiveMatchesParseShiftableRawTC
+        (LF.pTerm (fuel + 1) ctx (.pi :: .id x :: .colon :: rest))
+        (tm (peano (fuel + 1)) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+          (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks
+            (.pi :: .id x :: .colon :: rest))) := by
+    intro x rest
+    have hinner : FirstActiveMatchesParseShiftableRawTC
+        (LF.pTerm (fuel + 1) ctx (.pi :: .id x :: .colon :: rest))
+        (tmPi1 (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+          (con0 x)
+          (ap (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+            (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks rest))) :=
+      tmPi1_matches_first_active_shiftable_raw_of_app_first_active_tc fuel ctx x rest
+        (ihApp ctx rest)
+        (fun A bodyToks Araw _ hA =>
+          tmPi2_matches_first_active_shiftable_raw_of_term_first_active_tc fuel
+            (x :: ctx) A Araw hA bodyToks (ihTerm (x :: ctx) bodyToks))
+    have hstep : eval pTC 1
+        (tm (peano (fuel + 1)) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+          (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks
+            (.pi :: .id x :: .colon :: rest))) =
+        tmPi1 (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+          (con0 x)
+          (ap (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+            (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks rest)) := by
+      simp only [peano, Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks,
+        Mettapedia.GSLT.LanguageDef.LFEngineCorr.encTok, eval, os_parser_tm_pi_tc]
+    exact first_active_shiftable_raw_prepend_tc hstep
+      (Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape.tm
+        (peano (fuel + 1)) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+        (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks
+          (.pi :: .id x :: .colon :: rest))) hinner
+  have hlam : ∀ x rest,
+      FirstActiveMatchesParseShiftableRawTC
+        (LF.pTerm (fuel + 1) ctx (.lam :: .id x :: .colon :: rest))
+        (tm (peano (fuel + 1)) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+          (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks
+            (.lam :: .id x :: .colon :: rest))) := by
+    intro x rest
+    have hinner : FirstActiveMatchesParseShiftableRawTC
+        (LF.pTerm (fuel + 1) ctx (.lam :: .id x :: .colon :: rest))
+        (tmLam1 (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+          (con0 x)
+          (ap (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+            (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks rest))) :=
+      tmLam1_matches_first_active_shiftable_raw_of_app_first_active_tc fuel ctx x rest
+        (ihApp ctx rest)
+        (fun A bodyToks Araw _ hA =>
+          tmLam2_matches_first_active_shiftable_raw_of_term_first_active_tc fuel
+            (x :: ctx) A Araw hA bodyToks (ihTerm (x :: ctx) bodyToks))
+    have hstep : eval pTC 1
+        (tm (peano (fuel + 1)) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+          (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks
+            (.lam :: .id x :: .colon :: rest))) =
+        tmLam1 (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+          (con0 x)
+          (ap (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+            (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks rest)) := by
+      simp only [peano, Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks,
+        Mettapedia.GSLT.LanguageDef.LFEngineCorr.encTok, eval, os_parser_tm_lam_tc]
+    exact first_active_shiftable_raw_prepend_tc hstep
+      (Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape.tm
+        (peano (fuel + 1)) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+        (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks
+          (.lam :: .id x :: .colon :: rest))) hinner
+  cases toks with
+  | nil =>
+      exact hfallback [] (by
+        simp only [peano, Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks, eval]
+        rfl) (by rfl)
+  | cons tok rest =>
+      cases tok with
+      | pi =>
+          cases rest with
+          | nil =>
+              exact hfallback [.pi] (by
+                simp only [peano, Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks,
+                  Mettapedia.GSLT.LanguageDef.LFEngineCorr.encTok, eval]
+                rfl) (by rfl)
+          | cons tok2 rest2 =>
+              cases tok2 with
+              | id x =>
+                  cases rest2 with
+                  | nil =>
+                      exact hfallback [.pi, .id x] (by
+                        simp only [peano, Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks,
+                          Mettapedia.GSLT.LanguageDef.LFEngineCorr.encTok, eval]
+                        rfl) (by rfl)
+                  | cons tok3 rest3 =>
+                      cases tok3 with
+                      | colon => exact hpi x rest3
+                      | pi =>
+                          exact hfallback (.pi :: .id x :: .pi :: rest3) (by
+                            simp only [peano, Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks,
+                              Mettapedia.GSLT.LanguageDef.LFEngineCorr.encTok, eval]
+                            rfl) (by rfl)
+                      | lam =>
+                          exact hfallback (.pi :: .id x :: .lam :: rest3) (by
+                            simp only [peano, Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks,
+                              Mettapedia.GSLT.LanguageDef.LFEngineCorr.encTok, eval]
+                            rfl) (by rfl)
+                      | arr =>
+                          exact hfallback (.pi :: .id x :: .arr :: rest3) (by
+                            simp only [peano, Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks,
+                              Mettapedia.GSLT.LanguageDef.LFEngineCorr.encTok, eval]
+                            rfl) (by rfl)
+                      | dot =>
+                          exact hfallback (.pi :: .id x :: .dot :: rest3) (by
+                            simp only [peano, Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks,
+                              Mettapedia.GSLT.LanguageDef.LFEngineCorr.encTok, eval]
+                            rfl) (by rfl)
+                      | lpar =>
+                          exact hfallback (.pi :: .id x :: .lpar :: rest3) (by
+                            simp only [peano, Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks,
+                              Mettapedia.GSLT.LanguageDef.LFEngineCorr.encTok, eval]
+                            rfl) (by rfl)
+                      | rpar =>
+                          exact hfallback (.pi :: .id x :: .rpar :: rest3) (by
+                            simp only [peano, Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks,
+                              Mettapedia.GSLT.LanguageDef.LFEngineCorr.encTok, eval]
+                            rfl) (by rfl)
+                      | type =>
+                          exact hfallback (.pi :: .id x :: .type :: rest3) (by
+                            simp only [peano, Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks,
+                              Mettapedia.GSLT.LanguageDef.LFEngineCorr.encTok, eval]
+                            rfl) (by rfl)
+                      | id y =>
+                          exact hfallback (.pi :: .id x :: .id y :: rest3) (by
+                            simp only [peano, Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks,
+                              Mettapedia.GSLT.LanguageDef.LFEngineCorr.encTok, eval]
+                            rfl) (by rfl)
+              | pi =>
+                  exact hfallback (.pi :: .pi :: rest2) (by
+                    simp only [peano, Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks,
+                      Mettapedia.GSLT.LanguageDef.LFEngineCorr.encTok, eval]
+                    rfl) (by rfl)
+              | lam =>
+                  exact hfallback (.pi :: .lam :: rest2) (by
+                    simp only [peano, Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks,
+                      Mettapedia.GSLT.LanguageDef.LFEngineCorr.encTok, eval]
+                    rfl) (by rfl)
+              | arr =>
+                  exact hfallback (.pi :: .arr :: rest2) (by
+                    simp only [peano, Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks,
+                      Mettapedia.GSLT.LanguageDef.LFEngineCorr.encTok, eval]
+                    rfl) (by rfl)
+              | colon =>
+                  exact hfallback (.pi :: .colon :: rest2) (by
+                    simp only [peano, Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks,
+                      Mettapedia.GSLT.LanguageDef.LFEngineCorr.encTok, eval]
+                    rfl) (by rfl)
+              | dot =>
+                  exact hfallback (.pi :: .dot :: rest2) (by
+                    simp only [peano, Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks,
+                      Mettapedia.GSLT.LanguageDef.LFEngineCorr.encTok, eval]
+                    rfl) (by rfl)
+              | lpar =>
+                  exact hfallback (.pi :: .lpar :: rest2) (by
+                    simp only [peano, Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks,
+                      Mettapedia.GSLT.LanguageDef.LFEngineCorr.encTok, eval]
+                    rfl) (by rfl)
+              | rpar =>
+                  exact hfallback (.pi :: .rpar :: rest2) (by
+                    simp only [peano, Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks,
+                      Mettapedia.GSLT.LanguageDef.LFEngineCorr.encTok, eval]
+                    rfl) (by rfl)
+              | type =>
+                  exact hfallback (.pi :: .type :: rest2) (by
+                    simp only [peano, Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks,
+                      Mettapedia.GSLT.LanguageDef.LFEngineCorr.encTok, eval]
+                    rfl) (by rfl)
+      | lam =>
+          cases rest with
+          | nil =>
+              exact hfallback [.lam] (by
+                simp only [peano, Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks,
+                  Mettapedia.GSLT.LanguageDef.LFEngineCorr.encTok, eval]
+                rfl) (by rfl)
+          | cons tok2 rest2 =>
+              cases tok2 with
+              | id x =>
+                  cases rest2 with
+                  | nil =>
+                      exact hfallback [.lam, .id x] (by
+                        simp only [peano, Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks,
+                          Mettapedia.GSLT.LanguageDef.LFEngineCorr.encTok, eval]
+                        rfl) (by rfl)
+                  | cons tok3 rest3 =>
+                      cases tok3 with
+                      | colon => exact hlam x rest3
+                      | pi =>
+                          exact hfallback (.lam :: .id x :: .pi :: rest3) (by
+                            simp only [peano, Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks,
+                              Mettapedia.GSLT.LanguageDef.LFEngineCorr.encTok, eval]
+                            rfl) (by rfl)
+                      | lam =>
+                          exact hfallback (.lam :: .id x :: .lam :: rest3) (by
+                            simp only [peano, Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks,
+                              Mettapedia.GSLT.LanguageDef.LFEngineCorr.encTok, eval]
+                            rfl) (by rfl)
+                      | arr =>
+                          exact hfallback (.lam :: .id x :: .arr :: rest3) (by
+                            simp only [peano, Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks,
+                              Mettapedia.GSLT.LanguageDef.LFEngineCorr.encTok, eval]
+                            rfl) (by rfl)
+                      | dot =>
+                          exact hfallback (.lam :: .id x :: .dot :: rest3) (by
+                            simp only [peano, Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks,
+                              Mettapedia.GSLT.LanguageDef.LFEngineCorr.encTok, eval]
+                            rfl) (by rfl)
+                      | lpar =>
+                          exact hfallback (.lam :: .id x :: .lpar :: rest3) (by
+                            simp only [peano, Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks,
+                              Mettapedia.GSLT.LanguageDef.LFEngineCorr.encTok, eval]
+                            rfl) (by rfl)
+                      | rpar =>
+                          exact hfallback (.lam :: .id x :: .rpar :: rest3) (by
+                            simp only [peano, Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks,
+                              Mettapedia.GSLT.LanguageDef.LFEngineCorr.encTok, eval]
+                            rfl) (by rfl)
+                      | type =>
+                          exact hfallback (.lam :: .id x :: .type :: rest3) (by
+                            simp only [peano, Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks,
+                              Mettapedia.GSLT.LanguageDef.LFEngineCorr.encTok, eval]
+                            rfl) (by rfl)
+                      | id y =>
+                          exact hfallback (.lam :: .id x :: .id y :: rest3) (by
+                            simp only [peano, Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks,
+                              Mettapedia.GSLT.LanguageDef.LFEngineCorr.encTok, eval]
+                            rfl) (by rfl)
+              | pi =>
+                  exact hfallback (.lam :: .pi :: rest2) (by
+                    simp only [peano, Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks,
+                      Mettapedia.GSLT.LanguageDef.LFEngineCorr.encTok, eval]
+                    rfl) (by rfl)
+              | lam =>
+                  exact hfallback (.lam :: .lam :: rest2) (by
+                    simp only [peano, Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks,
+                      Mettapedia.GSLT.LanguageDef.LFEngineCorr.encTok, eval]
+                    rfl) (by rfl)
+              | arr =>
+                  exact hfallback (.lam :: .arr :: rest2) (by
+                    simp only [peano, Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks,
+                      Mettapedia.GSLT.LanguageDef.LFEngineCorr.encTok, eval]
+                    rfl) (by rfl)
+              | colon =>
+                  exact hfallback (.lam :: .colon :: rest2) (by
+                    simp only [peano, Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks,
+                      Mettapedia.GSLT.LanguageDef.LFEngineCorr.encTok, eval]
+                    rfl) (by rfl)
+              | dot =>
+                  exact hfallback (.lam :: .dot :: rest2) (by
+                    simp only [peano, Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks,
+                      Mettapedia.GSLT.LanguageDef.LFEngineCorr.encTok, eval]
+                    rfl) (by rfl)
+              | lpar =>
+                  exact hfallback (.lam :: .lpar :: rest2) (by
+                    simp only [peano, Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks,
+                      Mettapedia.GSLT.LanguageDef.LFEngineCorr.encTok, eval]
+                    rfl) (by rfl)
+              | rpar =>
+                  exact hfallback (.lam :: .rpar :: rest2) (by
+                    simp only [peano, Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks,
+                      Mettapedia.GSLT.LanguageDef.LFEngineCorr.encTok, eval]
+                    rfl) (by rfl)
+              | type =>
+                  exact hfallback (.lam :: .type :: rest2) (by
+                    simp only [peano, Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks,
+                      Mettapedia.GSLT.LanguageDef.LFEngineCorr.encTok, eval]
+                    rfl) (by rfl)
+      | arr =>
+          exact hfallback (.arr :: rest) (by
+            simp only [peano, Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks,
+              Mettapedia.GSLT.LanguageDef.LFEngineCorr.encTok, eval]
+            rfl) (by rfl)
+      | colon =>
+          exact hfallback (.colon :: rest) (by
+            simp only [peano, Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks,
+              Mettapedia.GSLT.LanguageDef.LFEngineCorr.encTok, eval]
+            rfl) (by rfl)
+      | dot =>
+          exact hfallback (.dot :: rest) (by
+            simp only [peano, Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks,
+              Mettapedia.GSLT.LanguageDef.LFEngineCorr.encTok, eval]
+            rfl) (by rfl)
+      | lpar =>
+          exact hfallback (.lpar :: rest) (by
+            simp only [peano, Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks,
+              Mettapedia.GSLT.LanguageDef.LFEngineCorr.encTok, eval]
+            rfl) (by rfl)
+      | rpar =>
+          exact hfallback (.rpar :: rest) (by
+            simp only [peano, Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks,
+              Mettapedia.GSLT.LanguageDef.LFEngineCorr.encTok, eval]
+            rfl) (by rfl)
+      | type =>
+          exact hfallback (.type :: rest) (by
+            simp only [peano, Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks,
+              Mettapedia.GSLT.LanguageDef.LFEngineCorr.encTok, eval]
+            rfl) (by rfl)
+      | id x =>
+          exact hfallback (.id x :: rest) (by
+            simp only [peano, Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks,
+              Mettapedia.GSLT.LanguageDef.LFEngineCorr.encTok, eval]
+            rfl) (by rfl)
+
+theorem parser_sim_mutual_shiftable_raw_succ_arrow_tc (fuel : Nat)
+    (ih : ParserSimMutualShiftableRawTC fuel) :
+    ∀ ctx toks,
+      FirstActiveMatchesParseShiftableRawTC (LF.pArrow (fuel + 1) ctx toks)
+        (ar (peano (fuel + 1)) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+          (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks)) := by
+  rcases ih with ⟨ihTerm, _, ihApp, _, _⟩
+  intro ctx toks
+  exact arrow_succ_first_active_shiftable_raw_of_app_term_tc fuel ctx toks
+    (ihApp ctx toks)
+    (fun A bodyToks Araw _ hA =>
+      arK2_matches_first_active_shiftable_raw_of_term_first_active_tc fuel ctx
+        A Araw hA bodyToks (ihTerm ctx bodyToks))
+
+theorem parser_sim_mutual_shiftable_raw_succ_tc (fuel : Nat)
+    (ih : ParserSimMutualShiftableRawTC fuel) :
+    ParserSimMutualShiftableRawTC (fuel + 1) := by
+  refine ⟨?_, ?_, ?_, ?_, ?_⟩
+  · exact parser_sim_mutual_shiftable_raw_succ_term_tc fuel ih
+  · exact parser_sim_mutual_shiftable_raw_succ_arrow_tc fuel ih
+  · exact parser_sim_mutual_shiftable_raw_succ_app_tc fuel ih
+  · exact parser_sim_mutual_shiftable_raw_succ_appmore_tc fuel ih
+  · exact parser_sim_mutual_shiftable_raw_succ_atom_tc fuel ih
+
+theorem parser_sim_mutual_shiftable_raw_tc :
+    ∀ fuel, ParserSimMutualShiftableRawTC fuel := by
+  intro fuel
+  induction fuel with
+  | zero => exact parser_sim_mutual_shiftable_raw_zero_tc
+  | succ fuel ih => exact parser_sim_mutual_shiftable_raw_succ_tc fuel ih
+
+def ParserSimMutualShiftableTC (fuel : Nat) : Prop :=
+  (∀ ctx toks,
+    FirstActiveMatchesParseShiftableTC (LF.pTerm fuel ctx toks)
+      (tm (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+        (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks))) ∧
+  (∀ ctx toks,
+    FirstActiveMatchesParseShiftableTC (LF.pArrow fuel ctx toks)
+      (ar (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+        (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks))) ∧
+  (∀ ctx toks,
+    FirstActiveMatchesParseShiftableTC (LF.pApp fuel ctx toks)
+      (ap (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+        (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks))) ∧
+  (∀ ctx acc toks t rest accAst,
+    Mettapedia.GSLT.LanguageDef.LFParserSim.ShiftablePayload accAst acc ->
+      LF.pAppMore fuel ctx acc toks = (t, rest) ->
+        FirstActiveMatchesParseShiftableTC (some (t, rest))
+          (apm (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+            accAst (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks))) ∧
+  (∀ ctx toks,
+    FirstActiveMatchesParseShiftableTC (LF.pAtom fuel ctx toks)
+      (at' (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+        (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks)))
+
+theorem parser_sim_mutual_shiftable_zero_tc : ParserSimMutualShiftableTC 0 := by
+  refine ⟨?_, ?_, ?_, ?_, ?_⟩
+  · intro ctx toks
+    exact first_active_shiftable_one_tc (by
+        simp only [peano, eval,
+          os_parser_tm_z_tc (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+            (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks)])
+      (Mettapedia.GSLT.LanguageDef.LFParserSim.matches_parse_shiftable_none
+        (con0 "no-fuel"))
+      (Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape.tm Z
+        (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+        (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks))
+  · intro ctx toks
+    exact first_active_shiftable_one_tc (by
+        simp only [peano, eval,
+          os_parser_ar_z_tc (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+            (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks)])
+      (Mettapedia.GSLT.LanguageDef.LFParserSim.matches_parse_shiftable_none
+        (con0 "no-fuel"))
+      (Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape.ar Z
+        (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+        (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks))
+  · intro ctx toks
+    exact first_active_shiftable_one_tc (by
+        simp only [peano, eval,
+          os_parser_ap_z_tc (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+            (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks)])
+      (Mettapedia.GSLT.LanguageDef.LFParserSim.matches_parse_shiftable_none
+        (con0 "no-fuel"))
+      (Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape.ap Z
+        (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+        (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks))
+  · intro ctx acc toks t rest accAst hacc hparse
+    simp only [LF.pAppMore, Prod.mk.injEq] at hparse
+    rcases hparse with ⟨rfl, rfl⟩
+    exact first_active_shiftable_one_tc (by
+        simp only [peano, eval,
+          os_parser_apm_z_tc (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+            accAst (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks)])
+      (Mettapedia.GSLT.LanguageDef.LFParserSim.matches_parse_shiftable_some_of_payload
+        hacc)
+      (Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape.apm Z
+        (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx) accAst
+        (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks))
+  · intro ctx toks
+    exact first_active_shiftable_one_tc (by
+        simp only [peano, eval,
+          os_parser_at_z_tc (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+            (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks)])
+      (Mettapedia.GSLT.LanguageDef.LFParserSim.matches_parse_shiftable_none
+        (con0 "no-fuel"))
+      (Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape.atom Z
+        (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+        (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks))
+
+theorem apK_matches_first_active_shiftable_of_atom_result_tc (fuel : Nat)
+    (ctx : List String) (toks : List LF.Tok)
+    {v : AST}
+    (h : Mettapedia.GSLT.LanguageDef.LFParserSim.MatchesParseShiftable
+      (LF.pAtom fuel ctx toks) v)
+    (tail : ∀ (a : LF.Term) (rest : List LF.Tok) (u : AST),
+      LF.pAtom fuel ctx toks = some (a, rest) →
+        Mettapedia.GSLT.LanguageDef.LFParserSim.ShiftablePayload u a →
+          FirstActiveMatchesParseShiftableTC
+            (some (LF.pAppMore fuel ctx a rest))
+            (apm (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+              u (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks rest))) :
+    FirstActiveMatchesParseShiftableTC (LF.pApp (fuel + 1) ctx toks)
+      (apK (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx) v) := by
+  cases hatom : LF.pAtom fuel ctx toks with
+  | none =>
+      rw [hatom] at h
+      rcases h with ⟨e, rfl⟩
+      rw [show LF.pApp (fuel + 1) ctx toks = none by
+        simp [LF.pApp, hatom]]
+      exact first_active_shiftable_one_tc (by
+          simp only [eval, os_parser_apK_err_tc])
+        (Mettapedia.GSLT.LanguageDef.LFParserSim.matches_parse_shiftable_none e)
+        (Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape.apK
+          (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+          (PErr e))
+  | some pr =>
+      rcases pr with ⟨a, rest⟩
+      rw [hatom] at h
+      rcases h with ⟨u, rfl, hu⟩
+      have hstep :
+          eval pTC 1
+            (apK (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+              (Pp u (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks rest))) =
+            apm (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+              u (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks rest) := by
+        simp only [eval, os_parser_apK_p_tc]
+      obtain htail := tail a rest u hatom hu
+      rw [show LF.pApp (fuel + 1) ctx toks =
+          some (LF.pAppMore fuel ctx a rest) by
+        simp [LF.pApp, hatom]]
+      exact first_active_shiftable_prepend_tc hstep
+        (Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape.apK
+          (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+          (Pp u (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks rest)))
+        htail
+
+theorem app_succ_first_active_shiftable_of_atom_appmore_tc (fuel : Nat)
+    (ctx : List String) (toks : List LF.Tok)
+    (hatom : FirstActiveMatchesParseShiftableTC (LF.pAtom fuel ctx toks)
+      (at' (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+        (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks)))
+    (tail : ∀ (a : LF.Term) (rest : List LF.Tok) (u : AST),
+      LF.pAtom fuel ctx toks = some (a, rest) →
+        Mettapedia.GSLT.LanguageDef.LFParserSim.ShiftablePayload u a →
+          FirstActiveMatchesParseShiftableTC
+            (some (LF.pAppMore fuel ctx a rest))
+            (apm (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+              u (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks rest))) :
+    FirstActiveMatchesParseShiftableTC (LF.pApp (fuel + 1) ctx toks)
+      (ap (peano (fuel + 1)) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+        (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks)) := by
+  have hinner : FirstActiveMatchesParseShiftableTC (LF.pApp (fuel + 1) ctx toks)
+      (apK (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+        (at' (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+          (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks))) :=
+    first_active_shiftable_bind_active_tc
+      (fun s => apK (peano fuel)
+        (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx) s)
+      (fun s _ => Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape.apK
+        (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx) s)
+      (hcong_apK_active_tc (peano fuel)
+        (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+        (isnormal_peano_tc fuel) (isnormal_encCtx_tc ctx))
+      hatom
+      (fun {v} hv =>
+        apK_matches_first_active_shiftable_of_atom_result_tc fuel ctx toks hv tail)
+  have hap :
+      eval pTC 1
+        (ap (peano (fuel + 1)) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+          (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks)) =
+        apK (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+          (at' (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+            (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks)) := by
+    simp only [peano, eval, os_parser_ap_s_tc]
+  exact first_active_shiftable_prepend_tc hap
+    (Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape.ap
+      (peano (fuel + 1)) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+      (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks))
+    hinner
+
+theorem parser_sim_mutual_shiftable_succ_app_tc (fuel : Nat)
+    (ih : ParserSimMutualShiftableTC fuel) :
+    ∀ ctx toks,
+      FirstActiveMatchesParseShiftableTC (LF.pApp (fuel + 1) ctx toks)
+        (ap (peano (fuel + 1)) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+          (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks)) := by
+  rcases ih with ⟨_, _, _, ihAppMore, ihAtom⟩
+  intro ctx toks
+  exact app_succ_first_active_shiftable_of_atom_appmore_tc fuel ctx toks
+    (ihAtom ctx toks)
+    (fun a rest u _ hu => by
+      cases htail : LF.pAppMore fuel ctx a rest with
+      | mk t' rest' =>
+          exact ihAppMore ctx a rest t' rest' u hu htail)
+
+theorem atom_no_fuel_first_active_shiftable_tc (ctx : List String)
+    (toks : List LF.Tok) :
+    FirstActiveMatchesParseShiftableTC (LF.pAtom 0 ctx toks)
+      (at' Z (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+        (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks)) := by
+  exact first_active_shiftable_one_tc (by
+      simp only [eval,
+        os_parser_at_z_tc (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+          (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks)])
+    (Mettapedia.GSLT.LanguageDef.LFParserSim.matches_parse_shiftable_none
+      (con0 "no-fuel"))
+    (Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape.atom Z
+      (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+      (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks))
+
+theorem atom_type_first_active_shiftable_tc (fuel : Nat) (ctx : List String)
+    (rest : List LF.Tok) :
+    FirstActiveMatchesParseShiftableTC (LF.pAtom (fuel + 1) ctx (.type :: rest))
+      (at' (peano (fuel + 1)) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+        (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks (.type :: rest))) := by
+  have hmatch :
+      Mettapedia.GSLT.LanguageDef.LFParserSim.MatchesParseShiftable
+        (some (LF.Term.srt LF.Srt.type, rest))
+        (Pp (Srt (con0 "type"))
+          (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks rest)) := by
+    simpa [Mettapedia.GSLT.LanguageDef.LFEngineCorr.encSrt] using
+      (Mettapedia.GSLT.LanguageDef.LFParserSim.matches_parse_shiftable_some_of_payload
+        (Mettapedia.GSLT.LanguageDef.LFParserSim.shiftable_srt LF.Srt.type))
+  exact first_active_shiftable_one_tc (by
+      simp only [peano, eval, Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks,
+        Mettapedia.GSLT.LanguageDef.LFEngineCorr.encTok, os_parser_at_type_tc])
+    hmatch
+    (Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape.atom
+      (peano (fuel + 1)) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+      (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks (.type :: rest)))
+
+theorem atom_id_first_active_shiftable_tc (fuel : Nat) (ctx : List String)
+    (s : String) (rest : List LF.Tok) :
+    FirstActiveMatchesParseShiftableTC (LF.pAtom (fuel + 1) ctx (.id s :: rest))
+      (at' (peano (fuel + 1)) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+        (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks (.id s :: rest))) := by
+  have hstep :
+      eval pTC 1
+        (at' (peano (fuel + 1)) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+          (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks (.id s :: rest))) =
+        Pp (resolve (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx) (con0 s))
+          (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks rest) := by
+    simp only [peano, eval, Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks,
+      Mettapedia.GSLT.LanguageDef.LFEngineCorr.encTok, os_parser_at_id_tc]
+  exact first_active_shiftable_one_tc hstep
+    (Mettapedia.GSLT.LanguageDef.LFParserSim.matches_parse_shiftable_some_of_payload
+      (Mettapedia.GSLT.LanguageDef.LFParserSim.shiftable_resolve ctx s))
+    (Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape.atom
+      (peano (fuel + 1)) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+      (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks (.id s :: rest)))
+
+theorem atom_empty_first_active_shiftable_tc (fuel : Nat) (ctx : List String) :
+    FirstActiveMatchesParseShiftableTC (LF.pAtom (fuel + 1) ctx [])
+      (at' (peano (fuel + 1)) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+        (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks [])) := by
+  exact first_active_shiftable_one_tc (by
+      simp only [peano, eval, Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks,
+        os_parser_at_err_nil_tc])
+    (Mettapedia.GSLT.LanguageDef.LFParserSim.matches_parse_shiftable_none
+      (con0 "atom-expected"))
+    (Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape.atom
+      (peano (fuel + 1)) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+      (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks []))
+
+theorem atom_pi_expected_first_active_shiftable_tc (fuel : Nat) (ctx : List String)
+    (rest : List LF.Tok) :
+    FirstActiveMatchesParseShiftableTC (LF.pAtom (fuel + 1) ctx (.pi :: rest))
+      (at' (peano (fuel + 1)) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+        (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks (.pi :: rest))) := by
+  exact first_active_shiftable_one_tc (by
+      simp only [peano, eval, Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks,
+        Mettapedia.GSLT.LanguageDef.LFEngineCorr.encTok, os_parser_at_err_pi_tc])
+    (Mettapedia.GSLT.LanguageDef.LFParserSim.matches_parse_shiftable_none
+      (con0 "atom-expected"))
+    (Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape.atom
+      (peano (fuel + 1)) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+      (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks (.pi :: rest)))
+
+theorem atom_lam_expected_first_active_shiftable_tc (fuel : Nat) (ctx : List String)
+    (rest : List LF.Tok) :
+    FirstActiveMatchesParseShiftableTC (LF.pAtom (fuel + 1) ctx (.lam :: rest))
+      (at' (peano (fuel + 1)) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+        (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks (.lam :: rest))) := by
+  exact first_active_shiftable_one_tc (by
+      simp only [peano, eval, Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks,
+        Mettapedia.GSLT.LanguageDef.LFEngineCorr.encTok, os_parser_at_err_lam_tc])
+    (Mettapedia.GSLT.LanguageDef.LFParserSim.matches_parse_shiftable_none
+      (con0 "atom-expected"))
+    (Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape.atom
+      (peano (fuel + 1)) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+      (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks (.lam :: rest)))
+
+theorem atom_arr_expected_first_active_shiftable_tc (fuel : Nat) (ctx : List String)
+    (rest : List LF.Tok) :
+    FirstActiveMatchesParseShiftableTC (LF.pAtom (fuel + 1) ctx (.arr :: rest))
+      (at' (peano (fuel + 1)) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+        (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks (.arr :: rest))) := by
+  exact first_active_shiftable_one_tc (by
+      simp only [peano, eval, Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks,
+        Mettapedia.GSLT.LanguageDef.LFEngineCorr.encTok, os_parser_at_err_arr_tc])
+    (Mettapedia.GSLT.LanguageDef.LFParserSim.matches_parse_shiftable_none
+      (con0 "atom-expected"))
+    (Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape.atom
+      (peano (fuel + 1)) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+      (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks (.arr :: rest)))
+
+theorem atom_colon_expected_first_active_shiftable_tc (fuel : Nat) (ctx : List String)
+    (rest : List LF.Tok) :
+    FirstActiveMatchesParseShiftableTC (LF.pAtom (fuel + 1) ctx (.colon :: rest))
+      (at' (peano (fuel + 1)) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+        (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks (.colon :: rest))) := by
+  exact first_active_shiftable_one_tc (by
+      simp only [peano, eval, Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks,
+        Mettapedia.GSLT.LanguageDef.LFEngineCorr.encTok, os_parser_at_err_colon_tc])
+    (Mettapedia.GSLT.LanguageDef.LFParserSim.matches_parse_shiftable_none
+      (con0 "atom-expected"))
+    (Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape.atom
+      (peano (fuel + 1)) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+      (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks (.colon :: rest)))
+
+theorem atom_dot_expected_first_active_shiftable_tc (fuel : Nat) (ctx : List String)
+    (rest : List LF.Tok) :
+    FirstActiveMatchesParseShiftableTC (LF.pAtom (fuel + 1) ctx (.dot :: rest))
+      (at' (peano (fuel + 1)) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+        (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks (.dot :: rest))) := by
+  exact first_active_shiftable_one_tc (by
+      simp only [peano, eval, Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks,
+        Mettapedia.GSLT.LanguageDef.LFEngineCorr.encTok, os_parser_at_err_dot_tc])
+    (Mettapedia.GSLT.LanguageDef.LFParserSim.matches_parse_shiftable_none
+      (con0 "atom-expected"))
+    (Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape.atom
+      (peano (fuel + 1)) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+      (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks (.dot :: rest)))
+
+theorem atom_rpar_expected_first_active_shiftable_tc (fuel : Nat) (ctx : List String)
+    (rest : List LF.Tok) :
+    FirstActiveMatchesParseShiftableTC (LF.pAtom (fuel + 1) ctx (.rpar :: rest))
+      (at' (peano (fuel + 1)) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+        (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks (.rpar :: rest))) := by
+  exact first_active_shiftable_one_tc (by
+      simp only [peano, eval, Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks,
+        Mettapedia.GSLT.LanguageDef.LFEngineCorr.encTok, os_parser_at_err_rp_tc])
+    (Mettapedia.GSLT.LanguageDef.LFParserSim.matches_parse_shiftable_none
+      (con0 "atom-expected"))
+    (Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape.atom
+      (peano (fuel + 1)) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+      (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks (.rpar :: rest)))
+
+theorem atom_non_lpar_first_active_shiftable_tc (fuel : Nat) (ctx : List String)
+    (toks : List LF.Tok) (hnot : ∀ rest, toks ≠ .lpar :: rest) :
+    FirstActiveMatchesParseShiftableTC (LF.pAtom fuel ctx toks)
+      (at' (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+        (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks)) := by
+  cases fuel with
+  | zero => exact atom_no_fuel_first_active_shiftable_tc ctx toks
+  | succ fuel =>
+      cases toks with
+      | nil => exact atom_empty_first_active_shiftable_tc fuel ctx
+      | cons tok rest =>
+          cases tok with
+          | pi => exact atom_pi_expected_first_active_shiftable_tc fuel ctx rest
+          | lam => exact atom_lam_expected_first_active_shiftable_tc fuel ctx rest
+          | arr => exact atom_arr_expected_first_active_shiftable_tc fuel ctx rest
+          | colon => exact atom_colon_expected_first_active_shiftable_tc fuel ctx rest
+          | dot => exact atom_dot_expected_first_active_shiftable_tc fuel ctx rest
+          | lpar => exact False.elim (hnot rest rfl)
+          | rpar => exact atom_rpar_expected_first_active_shiftable_tc fuel ctx rest
+          | type => exact atom_type_first_active_shiftable_tc fuel ctx rest
+          | id s => exact atom_id_first_active_shiftable_tc fuel ctx s rest
+
+theorem atLPk_matches_first_active_shiftable_of_term_result_tc (fuel : Nat)
+    (ctx : List String) (rest : List LF.Tok) {v : AST}
+    (h : Mettapedia.GSLT.LanguageDef.LFParserSim.MatchesParseShiftable
+      (LF.pTerm fuel ctx rest) v) :
+    FirstActiveMatchesParseShiftableTC (LF.pAtom (fuel + 1) ctx (.lpar :: rest))
+      (atLPk (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx) v) := by
+  cases hterm : LF.pTerm fuel ctx rest with
+  | none =>
+      rw [hterm] at h
+      rcases h with ⟨e, rfl⟩
+      rw [show LF.pAtom (fuel + 1) ctx (.lpar :: rest) = none by
+        simp [LF.pAtom, hterm]]
+      exact first_active_shiftable_one_tc (by
+          simp only [eval, os_parser_atLPk_err_tc])
+        (Mettapedia.GSLT.LanguageDef.LFParserSim.matches_parse_shiftable_none
+          (con0 "paren-malformed"))
+        (Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape.atLPk
+          (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+          (PErr e))
+  | some pr =>
+      rcases pr with ⟨t, rest'⟩
+      rw [hterm] at h
+      rcases h with ⟨u, rfl, hu⟩
+      cases rest' with
+      | nil =>
+          rw [show LF.pAtom (fuel + 1) ctx (.lpar :: rest) = none by
+            simp [LF.pAtom, hterm]]
+          exact first_active_shiftable_one_tc (by
+              simp only [eval, Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks,
+                os_parser_atLPk_nil_tc])
+            (Mettapedia.GSLT.LanguageDef.LFParserSim.matches_parse_shiftable_none
+              (con0 "paren-malformed"))
+            (Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape.atLPk
+              (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+              (Pp u Nil))
+      | cons tok rest2 =>
+          cases tok with
+          | rpar =>
+              rw [show LF.pAtom (fuel + 1) ctx (.lpar :: rest) = some (t, rest2) by
+                simp [LF.pAtom, hterm]]
+              exact first_active_shiftable_one_tc (by
+                  simp only [eval, Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks,
+                    Mettapedia.GSLT.LanguageDef.LFEngineCorr.encTok,
+                    os_parser_atLPk_rp_tc])
+                (Mettapedia.GSLT.LanguageDef.LFParserSim.matches_parse_shiftable_some_of_payload
+                  hu)
+                (Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape.atLPk
+                  (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+                  (Pp u (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks
+                    (.rpar :: rest2))))
+          | pi =>
+              rw [show LF.pAtom (fuel + 1) ctx (.lpar :: rest) = none by
+                simp [LF.pAtom, hterm]]
+              exact first_active_shiftable_one_tc (by
+                  simp only [eval, Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks,
+                    Mettapedia.GSLT.LanguageDef.LFEngineCorr.encTok,
+                    os_parser_atLPk_pi_tc])
+                (Mettapedia.GSLT.LanguageDef.LFParserSim.matches_parse_shiftable_none
+                  (con0 "paren-malformed"))
+                (Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape.atLPk
+                  (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+                  (Pp u (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks
+                    (.pi :: rest2))))
+          | lam =>
+              rw [show LF.pAtom (fuel + 1) ctx (.lpar :: rest) = none by
+                simp [LF.pAtom, hterm]]
+              exact first_active_shiftable_one_tc (by
+                  simp only [eval, Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks,
+                    Mettapedia.GSLT.LanguageDef.LFEngineCorr.encTok,
+                    os_parser_atLPk_lam_tc])
+                (Mettapedia.GSLT.LanguageDef.LFParserSim.matches_parse_shiftable_none
+                  (con0 "paren-malformed"))
+                (Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape.atLPk
+                  (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+                  (Pp u (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks
+                    (.lam :: rest2))))
+          | arr =>
+              rw [show LF.pAtom (fuel + 1) ctx (.lpar :: rest) = none by
+                simp [LF.pAtom, hterm]]
+              exact first_active_shiftable_one_tc (by
+                  simp only [eval, Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks,
+                    Mettapedia.GSLT.LanguageDef.LFEngineCorr.encTok,
+                    os_parser_atLPk_arr_tc])
+                (Mettapedia.GSLT.LanguageDef.LFParserSim.matches_parse_shiftable_none
+                  (con0 "paren-malformed"))
+                (Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape.atLPk
+                  (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+                  (Pp u (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks
+                    (.arr :: rest2))))
+          | colon =>
+              rw [show LF.pAtom (fuel + 1) ctx (.lpar :: rest) = none by
+                simp [LF.pAtom, hterm]]
+              exact first_active_shiftable_one_tc (by
+                  simp only [eval, Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks,
+                    Mettapedia.GSLT.LanguageDef.LFEngineCorr.encTok,
+                    os_parser_atLPk_colon_tc])
+                (Mettapedia.GSLT.LanguageDef.LFParserSim.matches_parse_shiftable_none
+                  (con0 "paren-malformed"))
+                (Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape.atLPk
+                  (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+                  (Pp u (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks
+                    (.colon :: rest2))))
+          | dot =>
+              rw [show LF.pAtom (fuel + 1) ctx (.lpar :: rest) = none by
+                simp [LF.pAtom, hterm]]
+              exact first_active_shiftable_one_tc (by
+                  simp only [eval, Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks,
+                    Mettapedia.GSLT.LanguageDef.LFEngineCorr.encTok,
+                    os_parser_atLPk_dot_tc])
+                (Mettapedia.GSLT.LanguageDef.LFParserSim.matches_parse_shiftable_none
+                  (con0 "paren-malformed"))
+                (Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape.atLPk
+                  (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+                  (Pp u (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks
+                    (.dot :: rest2))))
+          | lpar =>
+              rw [show LF.pAtom (fuel + 1) ctx (.lpar :: rest) = none by
+                simp [LF.pAtom, hterm]]
+              exact first_active_shiftable_one_tc (by
+                  simp only [eval, Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks,
+                    Mettapedia.GSLT.LanguageDef.LFEngineCorr.encTok,
+                    os_parser_atLPk_lp_tc])
+                (Mettapedia.GSLT.LanguageDef.LFParserSim.matches_parse_shiftable_none
+                  (con0 "paren-malformed"))
+                (Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape.atLPk
+                  (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+                  (Pp u (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks
+                    (.lpar :: rest2))))
+          | type =>
+              rw [show LF.pAtom (fuel + 1) ctx (.lpar :: rest) = none by
+                simp [LF.pAtom, hterm]]
+              exact first_active_shiftable_one_tc (by
+                  simp only [eval, Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks,
+                    Mettapedia.GSLT.LanguageDef.LFEngineCorr.encTok,
+                    os_parser_atLPk_type_tc])
+                (Mettapedia.GSLT.LanguageDef.LFParserSim.matches_parse_shiftable_none
+                  (con0 "paren-malformed"))
+                (Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape.atLPk
+                  (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+                  (Pp u (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks
+                    (.type :: rest2))))
+          | id s =>
+              rw [show LF.pAtom (fuel + 1) ctx (.lpar :: rest) = none by
+                simp [LF.pAtom, hterm]]
+              exact first_active_shiftable_one_tc (by
+                  simp only [eval, Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks,
+                    Mettapedia.GSLT.LanguageDef.LFEngineCorr.encTok,
+                    os_parser_atLPk_id_tc])
+                (Mettapedia.GSLT.LanguageDef.LFParserSim.matches_parse_shiftable_none
+                  (con0 "paren-malformed"))
+                (Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape.atLPk
+                  (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+                  (Pp u (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks
+                    (.id s :: rest2))))
+
+theorem atLPk_matches_first_active_shiftable_of_term_first_active_tc (fuel : Nat)
+    (ctx : List String) (rest : List LF.Tok)
+    (hfirst : FirstActiveMatchesParseShiftableTC (LF.pTerm fuel ctx rest)
+      (tm (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+        (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks rest))) :
+    FirstActiveMatchesParseShiftableTC (LF.pAtom (fuel + 1) ctx (.lpar :: rest))
+      (atLPk (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+        (tm (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+          (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks rest))) := by
+  exact first_active_shiftable_bind_active_tc
+    (fun s => atLPk (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx) s)
+    (fun s _ => Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape.atLPk
+      (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx) s)
+    (hcong_atLPk_active_tc (peano fuel)
+      (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+      (isnormal_peano_tc fuel) (isnormal_encCtx_tc ctx))
+    hfirst
+    (fun {v} hv => atLPk_matches_first_active_shiftable_of_term_result_tc fuel ctx rest hv)
+
+theorem atom_lpar_first_active_shiftable_of_term_first_active_tc (fuel : Nat)
+    (ctx : List String) (rest : List LF.Tok)
+    (hfirst : FirstActiveMatchesParseShiftableTC (LF.pTerm fuel ctx rest)
+      (tm (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+        (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks rest))) :
+    FirstActiveMatchesParseShiftableTC (LF.pAtom (fuel + 1) ctx (.lpar :: rest))
+      (at' (peano (fuel + 1)) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+        (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks (.lpar :: rest))) := by
+  have htail :=
+    atLPk_matches_first_active_shiftable_of_term_first_active_tc fuel ctx rest hfirst
+  have hstep :
+      eval pTC 1
+        (at' (peano (fuel + 1)) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+          (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks (.lpar :: rest))) =
+        atLPk (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+          (tm (peano fuel) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+            (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks rest)) := by
+    simp only [peano, eval, Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks,
+      Mettapedia.GSLT.LanguageDef.LFEngineCorr.encTok, os_parser_at_lp_tc]
+  exact first_active_shiftable_prepend_tc hstep
+    (Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape.atom
+      (peano (fuel + 1)) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+      (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks (.lpar :: rest)))
+    htail
+
+theorem parser_sim_mutual_shiftable_succ_atom_tc (fuel : Nat)
+    (ih : ParserSimMutualShiftableTC fuel) :
+    ∀ ctx toks,
+      FirstActiveMatchesParseShiftableTC (LF.pAtom (fuel + 1) ctx toks)
+        (at' (peano (fuel + 1)) (Mettapedia.GSLT.LanguageDef.LFResolveSim.encCtx ctx)
+          (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks)) := by
+  rcases ih with ⟨ihTerm, _, _, _, _⟩
+  intro ctx toks
+  cases toks with
+  | nil =>
+      exact atom_non_lpar_first_active_shiftable_tc (fuel + 1) ctx []
+        (by intro rest h; cases h)
+  | cons tok rest =>
+      cases tok with
+      | lpar =>
+          exact atom_lpar_first_active_shiftable_of_term_first_active_tc fuel ctx rest
+            (ihTerm ctx rest)
+      | pi =>
+          exact atom_non_lpar_first_active_shiftable_tc (fuel + 1) ctx (.pi :: rest)
+            (by intro r h; cases h)
+      | lam =>
+          exact atom_non_lpar_first_active_shiftable_tc (fuel + 1) ctx (.lam :: rest)
+            (by intro r h; cases h)
+      | arr =>
+          exact atom_non_lpar_first_active_shiftable_tc (fuel + 1) ctx (.arr :: rest)
+            (by intro r h; cases h)
+      | colon =>
+          exact atom_non_lpar_first_active_shiftable_tc (fuel + 1) ctx (.colon :: rest)
+            (by intro r h; cases h)
+      | dot =>
+          exact atom_non_lpar_first_active_shiftable_tc (fuel + 1) ctx (.dot :: rest)
+            (by intro r h; cases h)
+      | rpar =>
+          exact atom_non_lpar_first_active_shiftable_tc (fuel + 1) ctx (.rpar :: rest)
+            (by intro r h; cases h)
+      | type =>
+          exact atom_non_lpar_first_active_shiftable_tc (fuel + 1) ctx (.type :: rest)
+            (by intro r h; cases h)
+      | id s =>
+          exact atom_non_lpar_first_active_shiftable_tc (fuel + 1) ctx (.id s :: rest)
+            (by intro r h; cases h)
+
 def LFParserTermFirstActiveShiftableTCInterface : Prop :=
   ∀ toks,
     FirstActiveMatchesParseShiftableTC (LF.pTerm 64 [] toks)
       (tm (peano 64) Nil (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks))
+
+def LFParserTermFirstActiveRawShiftableTCInterface : Prop :=
+  ∀ toks,
+    FirstActiveMatchesParseShiftableRawTC (LF.pTerm 64 [] toks)
+      (tm (peano 64) Nil (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks))
+
+def ParserFirstActiveTransportInterface : Prop :=
+  ∀ r call,
+    Mettapedia.GSLT.LanguageDef.LFParserSim.FirstActiveMatchesParseShiftable r call ->
+      FirstActiveMatchesParseShiftableTC r call
+
+theorem lf_parser_term_first_active_raw_shiftable_tc :
+    LFParserTermFirstActiveRawShiftableTCInterface := by
+  intro toks
+  exact ((parser_sim_mutual_shiftable_raw_tc 64).1 [] toks)
+
+theorem lf_parser_term_first_active_shiftable_tc :
+    LFParserTermFirstActiveShiftableTCInterface := by
+  intro toks
+  exact first_active_shiftable_of_raw_tc
+    (lf_parser_term_first_active_raw_shiftable_tc toks)
+
+theorem lf_parser_term_first_active_shiftable_tc_of_transport
+    (htransport : ParserFirstActiveTransportInterface) :
+    LFParserTermFirstActiveShiftableTCInterface := by
+  intro toks
+  exact htransport (LF.pTerm 64 [] toks)
+    (tm (peano 64) Nil (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks))
+    ((Mettapedia.GSLT.LanguageDef.LFParserSim.parser_sim_mutual_shiftable 64).1 [] toks)
 
 theorem lfrec_raw_parser_tc_of_first_active_shiftable_tc
     (hparser : LFParserTermFirstActiveShiftableTCInterface) :
@@ -10178,6 +19724,92 @@ theorem lfrec_raw_parser_tc_of_first_active_shiftable_tc
             eval_trans_tc Mctx 1 _ _ _ hMctx hend
           exact eval_trans_tc 1 (Mctx + 1) _ _ _ hlfstep hrecK
 
+theorem lfrec_raw_parser_tc_of_parser_transport
+    (htransport : ParserFirstActiveTransportInterface) :
+    LFRecRawParserTCInterface :=
+  lfrec_raw_parser_tc_of_first_active_shiftable_tc
+    (lf_parser_term_first_active_shiftable_tc_of_transport htransport)
+
+theorem lfrec_raw_parser_raw_tc_of_first_active_raw_shiftable_tc
+    (hparser : LFParserTermFirstActiveRawShiftableTCInterface) :
+    LFRecRawParserRawTCInterface := by
+  intro toks
+  let toksAst := Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks
+  let call := tm (peano 64) Nil toksAst
+  obtain ⟨Nchild, hchild, hchildGuard⟩ := hparser toks
+  obtain ⟨Mctx, hMctx, hMguard⟩ :=
+    cong_eval_recK_active_with_guard Nchild (s := call) (v := eval pTC Nchild call)
+      rfl hchildGuard
+  have hlfstep : eval pTC 1 (lfrec toksAst) = recK call := by
+    rfl
+  have hlfGuard :
+      ∀ k, k < 1 + (Mctx + 1) ->
+        LFCheckKChildOpenShape (eval pTC k (lfrec toksAst)) := by
+    intro k hk
+    cases k with
+    | zero =>
+        simpa only [eval] using LFCheckKChildOpenShape.recCall toksAst
+    | succ k =>
+        have hkBound : k < Mctx + 1 := by
+          exact Nat.succ_lt_succ_iff.mp (by simpa only [Nat.one_add] using hk)
+        have hshift : eval pTC (Nat.succ k) (lfrec toksAst) =
+            eval pTC k (recK call) := by
+          have h := eval_trans_tc 1 k (lfrec toksAst) (recK call)
+            (eval pTC k (recK call)) hlfstep rfl
+          simpa [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using h
+        rw [hshift]
+        by_cases hkM : k < Mctx
+        · exact hMguard k hkM
+        · have hge : Mctx ≤ k := Nat.le_of_not_gt hkM
+          have hle : k ≤ Mctx := Nat.le_of_lt_succ hkBound
+          have hkEq : k = Mctx := Nat.le_antisymm hle hge
+          subst k
+          rw [hMctx]
+          exact LFCheckKChildOpenShape.recKCall (eval pTC Nchild call)
+  cases hterm : LF.pTerm 64 [] toks with
+  | none =>
+      simp [MatchesParseShiftableRawTC, hterm] at hchild
+      obtain ⟨e, hv⟩ := hchild
+      refine ⟨1 + (Mctx + 1), ?_, hlfGuard⟩
+      refine ⟨e, ?_⟩
+      have hend : eval pTC 1 (recK (eval pTC Nchild call)) = Err e := by
+        rw [hv]
+        rfl
+      have hrecK :
+          eval pTC (Mctx + 1) (recK call) = Err e :=
+        eval_trans_tc Mctx 1 _ _ _ hMctx hend
+      exact eval_trans_tc 1 (Mctx + 1) _ _ _ hlfstep hrecK
+  | some pr =>
+      rcases pr with ⟨t, rest⟩
+      cases rest with
+      | nil =>
+          simp [MatchesParseShiftableRawTC, hterm] at hchild
+          obtain ⟨raw, hv, hraw⟩ := hchild
+          refine ⟨1 + (Mctx + 1), ?_, hlfGuard⟩
+          refine ⟨raw, hraw, ?_⟩
+          have hend : eval pTC 1 (recK (eval pTC Nchild call)) = Ok raw := by
+            rw [hv]
+            rfl
+          have hrecK :
+              eval pTC (Mctx + 1) (recK call) = Ok raw :=
+            eval_trans_tc Mctx 1 _ _ _ hMctx hend
+          exact eval_trans_tc 1 (Mctx + 1) _ _ _ hlfstep hrecK
+      | cons tok restTail =>
+          simp [MatchesParseShiftableRawTC, hterm] at hchild
+          obtain ⟨raw, hv, _hraw⟩ := hchild
+          let err := extraToks
+            (Cons (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encTok tok)
+              (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks restTail))
+          refine ⟨1 + (Mctx + 1), ?_, hlfGuard⟩
+          refine ⟨err, ?_⟩
+          have hend : eval pTC 1 (recK (eval pTC Nchild call)) = Err err := by
+            rw [hv]
+            rfl
+          have hrecK :
+              eval pTC (Mctx + 1) (recK call) = Err err :=
+            eval_trans_tc Mctx 1 _ _ _ hMctx hend
+          exact eval_trans_tc 1 (Mctx + 1) _ _ _ hlfstep hrecK
+
 def LFCheckKParserContextInterface : Prop :=
   ∀ toks A, IsNormal pTC A -> ∃ N,
     match LF.recognize 64 toks with
@@ -10202,6 +19834,27 @@ def LFCheckKRawParserContextInterface : Prop :=
         | [] =>
             ∃ raw,
               Mettapedia.GSLT.LanguageDef.LFParserSim.ShiftablePayload raw t ∧
+                eval pTC N
+                  (lfcheckK A
+                    (lfrec (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks))) =
+                  lfcheckK A (Ok raw)
+        | _ :: _ =>
+            ∃ e, eval pTC N
+              (lfcheckK A (lfrec (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks))) =
+                lfcheckK A (Err e)
+
+def LFCheckKRawParserContextRawTCInterface : Prop :=
+  ∀ toks A, IsNormal pTC A -> ∃ N,
+    match LF.pTerm 64 [] toks with
+    | none =>
+        ∃ e, eval pTC N
+          (lfcheckK A (lfrec (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks))) =
+            lfcheckK A (Err e)
+    | some (t, rest) =>
+        match rest with
+        | [] =>
+            ∃ raw,
+              RawShiftablePayloadTC raw t ∧
                 eval pTC N
                   (lfcheckK A
                     (lfrec (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks))) =
@@ -10265,6 +19918,39 @@ theorem lfcheckK_raw_parser_context_of_lfrec_raw_tc
           simp
           exact ⟨e, hM⟩
 
+theorem lfcheckK_raw_parser_context_raw_tc_of_lfrec_raw_tc
+    (hrec : LFRecRawParserRawTCInterface) : LFCheckKRawParserContextRawTCInterface := by
+  intro toks A hA
+  obtain ⟨Nrec, hrecMatch, hrecGuard⟩ := hrec toks
+  cases hterm : LF.pTerm 64 [] toks with
+  | none =>
+      simp [hterm] at hrecMatch
+      obtain ⟨e, hrecEval⟩ := hrecMatch
+      obtain ⟨M, hM⟩ :=
+        cong_eval_lfcheckK_child_open_with_guard A hA Nrec hrecEval hrecGuard
+      refine ⟨M, ?_⟩
+      simp
+      exact ⟨e, hM⟩
+  | some pr =>
+      rcases pr with ⟨t, rest⟩
+      cases rest with
+      | nil =>
+          simp [hterm] at hrecMatch
+          obtain ⟨raw, hraw, hrecEval⟩ := hrecMatch
+          obtain ⟨M, hM⟩ :=
+            cong_eval_lfcheckK_child_open_with_guard A hA Nrec hrecEval hrecGuard
+          refine ⟨M, ?_⟩
+          simp
+          exact ⟨raw, hraw, hM⟩
+      | cons tok restTail =>
+          simp [hterm] at hrecMatch
+          obtain ⟨e, hrecEval⟩ := hrecMatch
+          obtain ⟨M, hM⟩ :=
+            cong_eval_lfcheckK_child_open_with_guard A hA Nrec hrecEval hrecGuard
+          refine ⟨M, ?_⟩
+          simp
+          exact ⟨e, hM⟩
+
 def LFCheckKSuccessInterface : Prop :=
   ∀ t A_spec, ∃ N,
     MatchesCheckVerdict (some (LFTyping.check checkerFuel LFTyping.corpusSig [] t A_spec))
@@ -10277,6 +19963,13 @@ def LFCheckKRawSuccessInterface : Prop :=
         MatchesCheckVerdict (some (LFTyping.check checkerFuel LFTyping.corpusSig [] t A_spec))
           (eval pTC N (lfcheckK (encTy A_spec) (Ok raw)))
 
+def LFCheckKRawTCSuccessInterface : Prop :=
+  ∀ t A_spec raw,
+    RawShiftablePayloadTC raw t ->
+      ∃ N,
+        MatchesCheckVerdict (some (LFTyping.check checkerFuel LFTyping.corpusSig [] t A_spec))
+          (eval pTC N (lfcheckK (encTy A_spec) (Ok raw)))
+
 def LFCheckIRawSuccessInterface : Prop :=
   ∀ t A_spec raw,
     Mettapedia.GSLT.LanguageDef.LFParserSim.ShiftablePayload raw t ->
@@ -10284,8 +19977,2491 @@ def LFCheckIRawSuccessInterface : Prop :=
         MatchesCheckVerdict (some (LFTyping.check checkerFuel LFTyping.corpusSig [] t A_spec))
           (eval pTC N (lfcheckI (encTy A_spec) (internTerm raw)))
 
+def LFCheckIRawTCSuccessInterface : Prop :=
+  ∀ t A_spec raw,
+    RawShiftablePayloadTC raw t ->
+      ∃ N,
+        MatchesCheckVerdict (some (LFTyping.check checkerFuel LFTyping.corpusSig [] t A_spec))
+          (eval pTC N (lfcheckI (encTy A_spec) (internTerm raw)))
+
+def RawInternSuccessInterface : Prop :=
+  ∀ t raw u,
+    Mettapedia.GSLT.LanguageDef.LFParserSim.ShiftablePayload raw t ->
+      encTyCore? t = some u ->
+        FirstActiveIntern (some u) (internTerm raw)
+
+def RawInternFailureInterface : Prop :=
+  ∀ t raw,
+    Mettapedia.GSLT.LanguageDef.LFParserSim.ShiftablePayload raw t ->
+      encTyCore? t = none ->
+        FirstActiveIntern none (internTerm raw)
+
+def RawInternSuccessTCInterface : Prop :=
+  ∀ t raw u,
+    RawShiftablePayloadTC raw t ->
+      encTyCore? t = some u ->
+        FirstActiveIntern (some u) (internTerm raw)
+
+def RawInternFailureTCInterface : Prop :=
+  ∀ t raw,
+    RawShiftablePayloadTC raw t ->
+      encTyCore? t = none ->
+        FirstActiveIntern none (internTerm raw)
+
+def RawInternShiftSuccessTCInterface : Prop :=
+  ∀ c t raw u,
+    RawShiftablePayloadTC raw t ->
+      encTyCore? (LF.shift c t) = some u ->
+        FirstActiveIntern (some u) (internTerm (shift (peano c) raw))
+
+def RawInternShiftFailureTCInterface : Prop :=
+  ∀ c t raw,
+    RawShiftablePayloadTC raw t ->
+      encTyCore? (LF.shift c t) = none ->
+        FirstActiveIntern none (internTerm (shift (peano c) raw))
+
+def RawInternStackSuccessTCInterface : Prop :=
+  ∀ cs t raw u,
+    RawShiftablePayloadTC raw t ->
+      encTyCore? (lfShiftStackTC cs t) = some u ->
+        FirstActiveIntern (some u) (internTerm (shiftStackTC cs raw))
+
+def RawInternStackFailureTCInterface : Prop :=
+  ∀ cs t raw,
+    RawShiftablePayloadTC raw t ->
+      encTyCore? (lfShiftStackTC cs t) = none ->
+        FirstActiveIntern none (internTerm (shiftStackTC cs raw))
+
+theorem raw_intern_stack_success_tc_interface :
+    RawInternStackSuccessTCInterface := by
+  intro cs t raw out hraw henc
+  induction hraw generalizing cs out with
+  | srt s =>
+      exact first_active_intern_of_child_open_eval
+        (shiftStack_srt_child_open_eval_tc cs s)
+        (internTerm_success_first_active (lfShiftStackTC cs (.srt s)) out henc)
+  | con x =>
+      exact first_active_intern_of_child_open_eval
+        (shiftStack_con_child_open_eval_tc cs x)
+        (internTerm_success_first_active (lfShiftStackTC cs (.con x)) out henc)
+  | var k =>
+      exact first_active_intern_of_child_open_eval
+        (shiftStack_var_child_open_eval_tc cs k)
+        (internTerm_success_first_active (lfShiftStackTC cs (.var k)) out henc)
+  | resolve ctx s =>
+      exact first_active_intern_shiftStack_resolve_to_encTerm cs ctx s
+        (internTerm_success_first_active (lfShiftStackTC cs (LF.resolve ctx s)) out henc)
+  | app hF hA ihF ihA =>
+      rename_i _ _ f a
+      rw [lfShiftStack_app_tc cs f a] at henc
+      simp [encTyCore?] at henc
+      cases hFenc : encTyCore? (lfShiftStackTC cs f) with
+      | none => simp [hFenc] at henc
+      | some fAst =>
+          cases hAenc : encTyCore? (lfShiftStackTC cs a) with
+          | none => simp [hFenc, hAenc] at henc
+          | some aAst =>
+              simp [hFenc, hAenc] at henc
+              subst out
+              rcases hA.toShiftableTC cs with ⟨NA, hNA⟩
+              exact first_active_intern_expose_shiftStack_app_tc cs _ _ <|
+                intern_app_raw_success_first_active
+                  (f := lfShiftStackTC cs f) (a := lfShiftStackTC cs a)
+                  ⟨NA, hNA⟩
+                  (ihF cs fAst hFenc)
+                  (internTerm_success_first_active (lfShiftStackTC cs a) aAst hAenc)
+                  (isnormal_encTyCore?_tc (lfShiftStackTC cs f) fAst hFenc)
+  | pi hA hB ihA ihB =>
+      rename_i _ _ A B
+      rw [lfShiftStack_pi_tc cs A B] at henc
+      simp [encTyCore?] at henc
+      cases hAenc : encTyCore? (lfShiftStackTC cs A) with
+      | none => simp [hAenc] at henc
+      | some AAst =>
+          cases hBenc : encTyCore? (lfShiftStackTC (binderShiftStackTC cs) B) with
+          | none => simp [hAenc, hBenc] at henc
+          | some BAst =>
+              simp [hAenc, hBenc] at henc
+              subst out
+              rcases hB.toShiftableTC (binderShiftStackTC cs) with ⟨NB, hNB⟩
+              exact first_active_intern_expose_shiftStack_pi_tc cs _ _ <|
+                intern_pi_raw_success_first_active
+                  (A := lfShiftStackTC cs A)
+                  (B := lfShiftStackTC (binderShiftStackTC cs) B)
+                  ⟨NB, hNB⟩
+                  (ihA cs AAst hAenc)
+                  (internTerm_success_first_active
+                    (lfShiftStackTC (binderShiftStackTC cs) B) BAst hBenc)
+                  (isnormal_encTyCore?_tc (lfShiftStackTC cs A) AAst hAenc)
+  | lam hA hb ihA ihb =>
+      rename_i _ _ A b
+      rw [lfShiftStack_lam_tc cs A b] at henc
+      simp [encTyCore?] at henc
+      cases hAenc : encTyCore? (lfShiftStackTC cs A) with
+      | none => simp [hAenc] at henc
+      | some AAst =>
+          cases hbenc : encTyCore? (lfShiftStackTC (binderShiftStackTC cs) b) with
+          | none => simp [hAenc, hbenc] at henc
+          | some bAst =>
+              simp [hAenc, hbenc] at henc
+              subst out
+              rcases hb.toShiftableTC (binderShiftStackTC cs) with ⟨Nb, hNb⟩
+              exact first_active_intern_expose_shiftStack_lam_tc cs _ _ <|
+                intern_lam_raw_success_first_active
+                  (A := lfShiftStackTC cs A)
+                  (b := lfShiftStackTC (binderShiftStackTC cs) b)
+                  ⟨Nb, hNb⟩
+                  (ihA cs AAst hAenc)
+                  (internTerm_success_first_active
+                    (lfShiftStackTC (binderShiftStackTC cs) b) bAst hbenc)
+                  (isnormal_encTyCore?_tc (lfShiftStackTC cs A) AAst hAenc)
+  | shifted c h ih =>
+      simpa [shiftStackTC, lfShiftStackTC,
+        Mettapedia.GSLT.LanguageDef.LFParserSim.shiftStack,
+        Mettapedia.GSLT.LanguageDef.LFParserSim.lfShiftStack] using
+        ih (c :: cs) out henc
+
+theorem raw_intern_stack_failure_tc_interface :
+    RawInternStackFailureTCInterface := by
+  intro cs t raw hraw henc
+  have hsuccess : RawInternStackSuccessTCInterface :=
+    raw_intern_stack_success_tc_interface
+  induction hraw generalizing cs with
+  | srt s =>
+      exact first_active_intern_of_child_open_eval
+        (shiftStack_srt_child_open_eval_tc cs s)
+        (internTerm_failure_first_active (lfShiftStackTC cs (.srt s)) henc)
+  | con x =>
+      exact first_active_intern_of_child_open_eval
+        (shiftStack_con_child_open_eval_tc cs x)
+        (internTerm_failure_first_active (lfShiftStackTC cs (.con x)) henc)
+  | var k =>
+      exact first_active_intern_of_child_open_eval
+        (shiftStack_var_child_open_eval_tc cs k)
+        (internTerm_failure_first_active (lfShiftStackTC cs (.var k)) henc)
+  | resolve ctx s =>
+      exact first_active_intern_shiftStack_resolve_to_encTerm cs ctx s
+        (internTerm_failure_first_active (lfShiftStackTC cs (LF.resolve ctx s)) henc)
+  | app hF hA ihF ihA =>
+      rename_i _ _ f a
+      rw [lfShiftStack_app_tc cs f a] at henc
+      simp [encTyCore?] at henc
+      cases hFenc : encTyCore? (lfShiftStackTC cs f) with
+      | none =>
+          rcases hA.toShiftableTC cs with ⟨NA, hNA⟩
+          exact first_active_intern_expose_shiftStack_app_tc cs _ _ <|
+            intern_app_raw_failure_left_first_active
+              (f := lfShiftStackTC cs f) (a := lfShiftStackTC cs a)
+              ⟨NA, hNA⟩ (ihF cs hFenc)
+      | some fAst =>
+          cases hAenc : encTyCore? (lfShiftStackTC cs a) with
+          | none =>
+              rcases hA.toShiftableTC cs with ⟨NA, hNA⟩
+              exact first_active_intern_expose_shiftStack_app_tc cs _ _ <|
+                intern_app_raw_failure_right_first_active
+                  (f := lfShiftStackTC cs f) (a := lfShiftStackTC cs a)
+                  ⟨NA, hNA⟩
+                  (hsuccess cs f _ fAst hF hFenc)
+                  (internTerm_failure_first_active (lfShiftStackTC cs a) hAenc)
+                  (isnormal_encTyCore?_tc (lfShiftStackTC cs f) fAst hFenc)
+          | some aAst =>
+              simp [hFenc, hAenc] at henc
+  | pi hA hB ihA ihB =>
+      rename_i _ _ A B
+      rw [lfShiftStack_pi_tc cs A B] at henc
+      simp [encTyCore?] at henc
+      cases hAenc : encTyCore? (lfShiftStackTC cs A) with
+      | none =>
+          rcases hB.toShiftableTC (binderShiftStackTC cs) with ⟨NB, hNB⟩
+          exact first_active_intern_expose_shiftStack_pi_tc cs _ _ <|
+            intern_pi_raw_failure_left_first_active
+              (A := lfShiftStackTC cs A)
+              (B := lfShiftStackTC (binderShiftStackTC cs) B)
+              ⟨NB, hNB⟩ (ihA cs hAenc)
+      | some AAst =>
+          cases hBenc : encTyCore? (lfShiftStackTC (binderShiftStackTC cs) B) with
+          | none =>
+              rcases hB.toShiftableTC (binderShiftStackTC cs) with ⟨NB, hNB⟩
+              exact first_active_intern_expose_shiftStack_pi_tc cs _ _ <|
+                intern_pi_raw_failure_right_first_active
+                  (A := lfShiftStackTC cs A)
+                  (B := lfShiftStackTC (binderShiftStackTC cs) B)
+                  ⟨NB, hNB⟩
+                  (hsuccess cs A _ AAst hA hAenc)
+                  (internTerm_failure_first_active
+                    (lfShiftStackTC (binderShiftStackTC cs) B) hBenc)
+                  (isnormal_encTyCore?_tc (lfShiftStackTC cs A) AAst hAenc)
+          | some BAst =>
+              simp [hAenc, hBenc] at henc
+  | lam hA hb ihA ihb =>
+      rename_i _ _ A b
+      rw [lfShiftStack_lam_tc cs A b] at henc
+      simp [encTyCore?] at henc
+      cases hAenc : encTyCore? (lfShiftStackTC cs A) with
+      | none =>
+          rcases hb.toShiftableTC (binderShiftStackTC cs) with ⟨Nb, hNb⟩
+          exact first_active_intern_expose_shiftStack_lam_tc cs _ _ <|
+            intern_lam_raw_failure_left_first_active
+              (A := lfShiftStackTC cs A)
+              (b := lfShiftStackTC (binderShiftStackTC cs) b)
+              ⟨Nb, hNb⟩ (ihA cs hAenc)
+      | some AAst =>
+          cases hbenc : encTyCore? (lfShiftStackTC (binderShiftStackTC cs) b) with
+          | none =>
+              rcases hb.toShiftableTC (binderShiftStackTC cs) with ⟨Nb, hNb⟩
+              exact first_active_intern_expose_shiftStack_lam_tc cs _ _ <|
+                intern_lam_raw_failure_right_first_active
+                  (A := lfShiftStackTC cs A)
+                  (b := lfShiftStackTC (binderShiftStackTC cs) b)
+                  ⟨Nb, hNb⟩
+                  (hsuccess cs A _ AAst hA hAenc)
+                  (internTerm_failure_first_active
+                    (lfShiftStackTC (binderShiftStackTC cs) b) hbenc)
+                  (isnormal_encTyCore?_tc (lfShiftStackTC cs A) AAst hAenc)
+          | some bAst =>
+              simp [hAenc, hbenc] at henc
+  | shifted c h ih =>
+      simpa [shiftStackTC, lfShiftStackTC,
+        Mettapedia.GSLT.LanguageDef.LFParserSim.shiftStack,
+        Mettapedia.GSLT.LanguageDef.LFParserSim.lfShiftStack] using
+        ih (c :: cs) henc
+
+theorem raw_intern_shift_success_tc_interface :
+    RawInternShiftSuccessTCInterface := by
+  intro c t raw u hraw henc
+  have hstack := raw_intern_stack_success_tc_interface [c] t raw u hraw
+    (by
+      simpa [lfShiftStackTC, Mettapedia.GSLT.LanguageDef.LFParserSim.lfShiftStack]
+        using henc)
+  simpa [shiftStackTC, Mettapedia.GSLT.LanguageDef.LFParserSim.shiftStack] using hstack
+
+theorem raw_intern_shift_failure_tc_interface :
+    RawInternShiftFailureTCInterface := by
+  intro c t raw hraw henc
+  have hstack := raw_intern_stack_failure_tc_interface [c] t raw hraw
+    (by
+      simpa [lfShiftStackTC, Mettapedia.GSLT.LanguageDef.LFParserSim.lfShiftStack]
+        using henc)
+  simpa [shiftStackTC, Mettapedia.GSLT.LanguageDef.LFParserSim.shiftStack] using hstack
+
+theorem raw_intern_success_tc_of_shift_interface
+    (hshift : RawInternShiftSuccessTCInterface) :
+    RawInternSuccessTCInterface := by
+  intro t raw out hraw henc
+  induction hraw generalizing out with
+  | srt s =>
+      simpa [encTerm] using internTerm_success_first_active (.srt s) out henc
+  | con x =>
+      simpa [encTerm] using internTerm_success_first_active (.con x) out henc
+  | var k =>
+      simpa [encTerm] using internTerm_success_first_active (.var k) out henc
+  | resolve ctx s =>
+      exact first_active_intern_resolve_to_encTerm ctx s
+        (internTerm_success_first_active (LF.resolve ctx s) out henc)
+  | app hF hA ihF ihA =>
+      rename_i _ _ f a
+      simp [encTyCore?] at henc
+      cases hFenc : encTyCore? f with
+      | none => simp [hFenc] at henc
+      | some fAst =>
+          cases hAenc : encTyCore? a with
+          | none => simp [hFenc, hAenc] at henc
+          | some aAst =>
+              simp [hFenc, hAenc] at henc
+              subst out
+              rcases hA.toShiftableTC.reduces with ⟨NA, hNA⟩
+              exact intern_app_raw_success_first_active
+                (f := f) (a := a)
+                ⟨NA, hNA⟩
+                (ihF fAst hFenc)
+                (internTerm_success_first_active a aAst hAenc)
+                (isnormal_encTyCore?_tc f fAst hFenc)
+  | pi hA hB ihA ihB =>
+      rename_i _ _ A B
+      simp [encTyCore?] at henc
+      cases hAenc : encTyCore? A with
+      | none => simp [hAenc] at henc
+      | some AAst =>
+          cases hBenc : encTyCore? B with
+          | none => simp [hAenc, hBenc] at henc
+          | some BAst =>
+              simp [hAenc, hBenc] at henc
+              subst out
+              rcases hB.toShiftableTC.reduces with ⟨NB, hNB⟩
+              exact intern_pi_raw_success_first_active
+                (A := A) (B := B)
+                ⟨NB, hNB⟩
+                (ihA AAst hAenc)
+                (internTerm_success_first_active B BAst hBenc)
+                (isnormal_encTyCore?_tc A AAst hAenc)
+  | lam hA hb ihA ihb =>
+      rename_i _ _ A b
+      simp [encTyCore?] at henc
+      cases hAenc : encTyCore? A with
+      | none => simp [hAenc] at henc
+      | some AAst =>
+          cases hbenc : encTyCore? b with
+          | none => simp [hAenc, hbenc] at henc
+          | some bAst =>
+              simp [hAenc, hbenc] at henc
+              subst out
+              rcases hb.toShiftableTC.reduces with ⟨Nb, hNb⟩
+              exact intern_lam_raw_success_first_active
+                (A := A) (b := b)
+                ⟨Nb, hNb⟩
+                (ihA AAst hAenc)
+                (internTerm_success_first_active b bAst hbenc)
+                (isnormal_encTyCore?_tc A AAst hAenc)
+  | shifted c h ih =>
+      exact hshift c _ _ out h henc
+
+theorem raw_intern_failure_tc_of_shift_interfaces
+    (hshiftSome : RawInternShiftSuccessTCInterface)
+    (hshiftNone : RawInternShiftFailureTCInterface) :
+    RawInternFailureTCInterface := by
+  intro t raw hraw henc
+  have hsuccess : RawInternSuccessTCInterface :=
+    raw_intern_success_tc_of_shift_interface hshiftSome
+  induction hraw with
+  | srt s =>
+      simpa [encTerm] using internTerm_failure_first_active (.srt s) henc
+  | con x =>
+      simpa [encTerm] using internTerm_failure_first_active (.con x) henc
+  | var k =>
+      simpa [encTerm] using internTerm_failure_first_active (.var k) henc
+  | resolve ctx s =>
+      exact first_active_intern_resolve_to_encTerm ctx s
+        (internTerm_failure_first_active (LF.resolve ctx s) henc)
+  | app hF hA ihF ihA =>
+      rename_i _ _ f a
+      simp [encTyCore?] at henc
+      cases hFenc : encTyCore? f with
+      | none =>
+          rcases hA.toShiftableTC.reduces with ⟨NA, hNA⟩
+          exact intern_app_raw_failure_left_first_active
+            (f := f) (a := a) ⟨NA, hNA⟩ (ihF hFenc)
+      | some fAst =>
+          cases hAenc : encTyCore? a with
+          | none =>
+              rcases hA.toShiftableTC.reduces with ⟨NA, hNA⟩
+              exact intern_app_raw_failure_right_first_active
+                (f := f) (a := a)
+                ⟨NA, hNA⟩
+                (hsuccess f _ fAst hF hFenc)
+                (internTerm_failure_first_active a hAenc)
+                (isnormal_encTyCore?_tc f fAst hFenc)
+          | some aAst =>
+              simp [hFenc, hAenc] at henc
+  | pi hA hB ihA ihB =>
+      rename_i _ _ A B
+      simp [encTyCore?] at henc
+      cases hAenc : encTyCore? A with
+      | none =>
+          rcases hB.toShiftableTC.reduces with ⟨NB, hNB⟩
+          exact intern_pi_raw_failure_left_first_active
+            (A := A) (B := B) ⟨NB, hNB⟩ (ihA hAenc)
+      | some AAst =>
+          cases hBenc : encTyCore? B with
+          | none =>
+              rcases hB.toShiftableTC.reduces with ⟨NB, hNB⟩
+              exact intern_pi_raw_failure_right_first_active
+                (A := A) (B := B)
+                ⟨NB, hNB⟩
+                (hsuccess A _ AAst hA hAenc)
+                (internTerm_failure_first_active B hBenc)
+                (isnormal_encTyCore?_tc A AAst hAenc)
+          | some BAst =>
+              simp [hAenc, hBenc] at henc
+  | lam hA hb ihA ihb =>
+      rename_i _ _ A b
+      simp [encTyCore?] at henc
+      cases hAenc : encTyCore? A with
+      | none =>
+          rcases hb.toShiftableTC.reduces with ⟨Nb, hNb⟩
+          exact intern_lam_raw_failure_left_first_active
+            (A := A) (b := b) ⟨Nb, hNb⟩ (ihA hAenc)
+      | some AAst =>
+          cases hbenc : encTyCore? b with
+          | none =>
+              rcases hb.toShiftableTC.reduces with ⟨Nb, hNb⟩
+              exact intern_lam_raw_failure_right_first_active
+                (A := A) (b := b)
+                ⟨Nb, hNb⟩
+                (hsuccess A _ AAst hA hAenc)
+                (internTerm_failure_first_active b hbenc)
+                (isnormal_encTyCore?_tc A AAst hAenc)
+          | some bAst =>
+              simp [hAenc, hbenc] at henc
+  | shifted c h ih =>
+      exact hshiftNone c _ _ h henc
+
+theorem raw_intern_success_tc_interface :
+    RawInternSuccessTCInterface :=
+  raw_intern_success_tc_of_shift_interface raw_intern_shift_success_tc_interface
+
+theorem raw_intern_failure_tc_interface :
+    RawInternFailureTCInterface :=
+  raw_intern_failure_tc_of_shift_interfaces
+    raw_intern_shift_success_tc_interface raw_intern_shift_failure_tc_interface
+
+def CheckTVerdictInterface : Prop :=
+  ∀ t A_spec tAst A,
+    encTyCore? t = some tAst ->
+      encTy? A_spec = some A ->
+        ∃ N,
+          MatchesCheckVerdict (some (LFTyping.check checkerFuel LFTyping.corpusSig [] t A_spec))
+            (eval pTC N (verdict (checkT checkerFuelA Nil tAst A)))
+
+def CheckTBoolFirstInterface : Prop :=
+  ∀ t A_spec tAst A,
+    encTyCore? t = some tAst ->
+      encTy? A_spec = some A ->
+        ∃ N v,
+          MatchesBool (LFTyping.check checkerFuel LFTyping.corpusSig [] t A_spec) v ∧
+            eval pTC N (checkT checkerFuelA Nil tAst A) = v ∧
+            ∀ k, k < N ->
+              VerdictChildOpen (eval pTC k (checkT checkerFuelA Nil tAst A))
+
+def CheckKBoolFirstInterface : Prop :=
+  ∀ t A_spec tAst A,
+    encTyCore? t = some tAst ->
+      encTy? A_spec = some A ->
+        ∃ N v,
+          MatchesBool (LFTyping.check checkerFuel LFTyping.corpusSig [] t A_spec) v ∧
+            eval pTC N (checkK (peano 31) A (inferT (peano 31) Nil tAst)) = v ∧
+            ∀ k, k < N ->
+              VerdictChildOpen
+                (eval pTC k (checkK (peano 31) A (inferT (peano 31) Nil tAst)))
+
+inductive MatchesInferResult : Option LF.Term -> AST -> Prop where
+  | success (B : LF.Term) (BAst v : AST) :
+      encTyCore? B = some BAst ->
+      v = someT BAst ->
+      MatchesInferResult (some B) v
+  | failure (v : AST) :
+      v = checkBad ->
+      MatchesInferResult none v
+
+def InferFirstForCheckKInterface : Prop :=
+  ∀ t A_spec tAst A,
+    encTyCore? t = some tAst ->
+      encTy? A_spec = some A ->
+        ∃ N v,
+          MatchesInferResult (LFTyping.infer 31 LFTyping.corpusSig [] t) v ∧
+            eval pTC N (inferT (peano 31) Nil tAst) = v ∧
+            ∀ k, k < N ->
+              CheckKChildOpen (peano 31) A (eval pTC k (inferT (peano 31) Nil tAst))
+
+def ConvBoolFirstInterface : Prop :=
+  ∀ B A_spec BAst A,
+    encTyCore? B = some BAst ->
+      encTy? A_spec = some A ->
+        ∃ N v,
+          MatchesBool (LFTyping.convBool LFTyping.corpusSig 31 B A_spec) v ∧
+            eval pTC N (convT (peano 31) BAst A) = v ∧
+            ∀ k, k < N ->
+              VerdictChildOpen (eval pTC k (convT (peano 31) BAst A))
+
+def ConvBoolPayloadInterface : Prop :=
+  ∀ B A_spec BAst A,
+    encTyCore? B = some BAst ->
+      encTy? A_spec = some A ->
+        ∃ Nleft Mleft Nright Bpre Bnf Apre,
+          MatchesBool (LFTyping.convBool LFTyping.corpusSig 31 B A_spec)
+            (if Bnf == Apre then ttrue else ffalse) ∧
+            eval pTC Nleft (nfT (peano 31) BAst) = someT Bpre ∧
+            (∀ k, k < Nleft -> NFActiveShape (eval pTC k (nfT (peano 31) BAst))) ∧
+            eval pTC Mleft Bpre = Bnf ∧
+            IsNormal pTC Bnf ∧
+            eval pTC Nright (nfT (peano 31) A) = someT Apre ∧
+            (∀ k, k < Nright -> NFActiveShape (eval pTC k (nfT (peano 31) A)))
+
+def NFStrongInterface : Prop :=
+  ∀ fuelNat t tAst,
+    encTyCore? t = some tAst ->
+      ∃ nfAst,
+        FirstStrongNF (LFTyping.nf LFTyping.corpusSig fuelNat t) nfAst
+          (nfT (peano fuelNat) tAst)
+
+def NFPayloadInterface : Prop :=
+  ∀ fuelNat t tAst,
+    encTyCore? t = some tAst ->
+      ∃ N M payload nfAst,
+        encTyCore? (LFTyping.nf LFTyping.corpusSig fuelNat t) = some nfAst ∧
+          eval pTC N (nfT (peano fuelNat) tAst) = someT payload ∧
+          (∀ k, k < N -> NFActiveShape (eval pTC k (nfT (peano fuelNat) tAst))) ∧
+          eval pTC M payload = nfAst ∧
+          IsNormal pTC nfAst
+
+def ReferenceTargetPayloadInterface : Prop :=
+  ∀ A_spec A,
+    encTy? A_spec = some A ->
+      ∃ N Apre,
+        encTyCore? (LFTyping.nf LFTyping.corpusSig 31 A_spec) = some Apre ∧
+          eval pTC N (nfT (peano 31) A) = someT Apre ∧
+          (∀ k, k < N -> NFActiveShape (eval pTC k (nfT (peano 31) A)))
+
+def targetFuelBoundaryTy : LF.Term := .srt .type
+
+def targetFuelBoundaryRedex : LF.Term :=
+  .app (.lam targetFuelBoundaryTy targetFuelBoundaryTy) targetFuelBoundaryTy
+
+def targetFuelBoundaryLam : Nat -> LF.Term -> LF.Term
+  | 0, t => t
+  | n + 1, t => .lam targetFuelBoundaryTy (targetFuelBoundaryLam n t)
+
+def targetFuelBoundarySpec : LF.Term :=
+  targetFuelBoundaryLam 30 targetFuelBoundaryRedex
+
+theorem target_fuel_boundary_nf_mismatch :
+    LFTyping.nf LFTyping.corpusSig 31 targetFuelBoundarySpec ≠
+      LFTyping.nf LFTyping.corpusSig checkerFuel targetFuelBoundarySpec := by
+  decide
+
+theorem target_fuel_boundary_encTy?_some :
+    (encTy? targetFuelBoundarySpec).isSome = true := by
+  decide
+
+theorem target_fuel_boundary_nf31_encTyCore?_some :
+    (encTyCore?
+      (LFTyping.nf LFTyping.corpusSig 31 targetFuelBoundarySpec)).isSome = true := by
+  decide
+
+theorem target_fuel_boundary_checkerFuel_encTyCore?_some :
+    (encTyCore?
+      (LFTyping.nf LFTyping.corpusSig checkerFuel targetFuelBoundarySpec)).isSome = true := by
+  decide
+
+theorem target_fuel_boundary_encTy?_eq_some_encTy :
+    encTy? targetFuelBoundarySpec = some (encTy targetFuelBoundarySpec) := by
+  rfl
+
+theorem target_fuel_boundary_checkerFuel_encTyCore?_eq_some_encTy :
+    encTyCore? (LFTyping.nf LFTyping.corpusSig checkerFuel targetFuelBoundarySpec) =
+      some (encTy targetFuelBoundarySpec) := by
+  rfl
+
+theorem replayablePayload_targetFuelBoundaryLam_type_tc :
+    ∀ n u,
+      encTyCore? (targetFuelBoundaryLam n targetFuelBoundaryTy) = some u ->
+        ReplayablePayload u (targetFuelBoundaryLam n targetFuelBoundaryTy) := by
+  intro n
+  induction n with
+  | zero =>
+      intro u h
+      simp [targetFuelBoundaryLam, targetFuelBoundaryTy, encTyCore?] at h
+      subst u
+      exact (stackReplayablePayload_srt_tc .type).replay
+  | succ n ih =>
+      intro u h
+      simp [targetFuelBoundaryLam, targetFuelBoundaryTy, encTyCore?] at h
+      cases hbody : encTyCore? (targetFuelBoundaryLam n (.srt .type)) with
+      | none =>
+          rw [hbody] at h
+          cases h
+      | some bodyAst =>
+          rw [hbody] at h
+          injection h with hu
+          subst u
+          have hbodyTy :
+              encTyCore? (targetFuelBoundaryLam n targetFuelBoundaryTy) = some bodyAst := by
+            simpa [targetFuelBoundaryTy] using hbody
+          have hA : ReplayablePayload (Srt typeS) targetFuelBoundaryTy :=
+            (stackReplayablePayload_srt_tc .type).replay
+          have hb :
+              ReplayablePayload bodyAst (targetFuelBoundaryLam n targetFuelBoundaryTy) :=
+            ih bodyAst hbodyTy
+          exact replayablePayload_lam_payload_tc hA hb.1 hbodyTy ⟨0, rfl⟩ hb
+
+theorem target_fuel_boundary_normal_replayable :
+    ReplayablePayload (encTy targetFuelBoundarySpec)
+      (LFTyping.nf LFTyping.corpusSig checkerFuel targetFuelBoundarySpec) := by
+  have h := replayablePayload_targetFuelBoundaryLam_type_tc 30
+    (encTy targetFuelBoundarySpec) (by rfl)
+  rw [show LFTyping.nf LFTyping.corpusSig checkerFuel targetFuelBoundarySpec =
+      targetFuelBoundaryLam 30 targetFuelBoundaryTy by rfl]
+  exact h
+
+theorem target_fuel_boundary_nf32_first_eval :
+    ∃ N,
+      eval pTC N (nfT (peano 31) (encTy targetFuelBoundarySpec)) =
+        someT (encTy targetFuelBoundarySpec) := by
+  obtain ⟨v, hfirst⟩ := target_fuel_boundary_normal_replayable.2 31
+  have hvenc :
+      encTyCore?
+        (LFTyping.nf LFTyping.corpusSig 31
+          (LFTyping.nf LFTyping.corpusSig checkerFuel targetFuelBoundarySpec)) = some v :=
+    hfirst.enc
+  have htargetEnc :
+      encTyCore?
+        (LFTyping.nf LFTyping.corpusSig 31
+          (LFTyping.nf LFTyping.corpusSig checkerFuel targetFuelBoundarySpec)) =
+          some (encTy targetFuelBoundarySpec) := by
+    rfl
+  have hv : v = encTy targetFuelBoundarySpec := by
+    rw [htargetEnc] at hvenc
+    injection hvenc with hv'
+    exact hv'.symm
+  obtain ⟨N, hN⟩ := hfirst.toFirstLiftable.toEval
+  exact ⟨N, by simpa [hv] using hN⟩
+
+theorem not_reference_target_payload_interface :
+    ¬ ReferenceTargetPayloadInterface := by
+  intro htarget
+  obtain ⟨N, Apre, hApreEnc, hEval, _hguard⟩ :=
+    htarget targetFuelBoundarySpec (encTy targetFuelBoundarySpec)
+      target_fuel_boundary_encTy?_eq_some_encTy
+  obtain ⟨M, hEvalTarget⟩ := target_fuel_boundary_nf32_first_eval
+  have hANorm : IsNormal pTC (encTy targetFuelBoundarySpec) :=
+    isnormal_encTy_tc targetFuelBoundarySpec
+  have hApreNorm : IsNormal pTC Apre :=
+    isnormal_encTyCore?_tc
+      (LFTyping.nf LFTyping.corpusSig 31 targetFuelBoundarySpec) Apre hApreEnc
+  have hSomeEq : someT (encTy targetFuelBoundarySpec) = someT Apre :=
+    eval_normal_unique_tc hEvalTarget (isnormal_someT_tc hANorm)
+      hEval (isnormal_someT_tc hApreNorm)
+  injection hSomeEq with _ hArgs
+  have hPayloadEq : encTy targetFuelBoundarySpec = Apre := by
+    simpa using hArgs
+  have hApreAsTarget :
+      encTyCore? (LFTyping.nf LFTyping.corpusSig 31 targetFuelBoundarySpec) =
+        some (encTy targetFuelBoundarySpec) := by
+    simpa [← hPayloadEq] using hApreEnc
+  have hTerms :
+      LFTyping.nf LFTyping.corpusSig 31 targetFuelBoundarySpec =
+        LFTyping.nf LFTyping.corpusSig checkerFuel targetFuelBoundarySpec :=
+    encTyCore?_injective_tc hApreAsTarget
+      target_fuel_boundary_checkerFuel_encTyCore?_eq_some_encTy
+  exact target_fuel_boundary_nf_mismatch hTerms
+
+def EncodedConvBoolAgreementInterface : Prop :=
+  ∀ B A_spec Bnf Apre,
+    encTyCore? (LFTyping.nf LFTyping.corpusSig 31 B) = some Bnf ->
+      encTyCore? (LFTyping.nf LFTyping.corpusSig 31 A_spec) = some Apre ->
+        MatchesBool (LFTyping.convBool LFTyping.corpusSig 31 B A_spec)
+          (if Bnf == Apre then ttrue else ffalse)
+
+theorem encoded_conv_bool_agreement_interface :
+    EncodedConvBoolAgreementInterface := by
+  intro B A_spec Bnf Apre hBnf hApre
+  unfold LFTyping.convBool
+  cases hAst : (Bnf == Apre) with
+  | false =>
+      have hTermFalse :
+          (LFTyping.nf LFTyping.corpusSig 31 B ==
+            LFTyping.nf LFTyping.corpusSig 31 A_spec) = false := by
+        cases hTerm :
+            (LFTyping.nf LFTyping.corpusSig 31 B ==
+              LFTyping.nf LFTyping.corpusSig 31 A_spec) with
+        | false => rfl
+        | true =>
+            have hTerms : LFTyping.nf LFTyping.corpusSig 31 B =
+                LFTyping.nf LFTyping.corpusSig 31 A_spec :=
+              lfTerm_beq_true_eq hTerm
+            have hApreAsBnf :
+                encTyCore? (LFTyping.nf LFTyping.corpusSig 31 A_spec) = some Bnf := by
+              simpa [hTerms] using hBnf
+            rw [hApre] at hApreAsBnf
+            injection hApreAsBnf with hEq
+            have hAstTrue : (Bnf == Apre) = true := by
+              subst Bnf
+              exact ast_beq_self_tc Apre
+            rw [hAst] at hAstTrue
+            cases hAstTrue
+      simpa [hTermFalse, hAst] using (MatchesBool.no rfl)
+  | true =>
+      have hAstEq : Bnf = Apre := ast_beq_true_eq_tc hAst
+      have hTerms : LFTyping.nf LFTyping.corpusSig 31 B =
+          LFTyping.nf LFTyping.corpusSig 31 A_spec :=
+        encTyCore?_injective_tc hBnf (by simpa [hAstEq] using hApre)
+      have hTermTrue :
+          (LFTyping.nf LFTyping.corpusSig 31 B ==
+            LFTyping.nf LFTyping.corpusSig 31 A_spec) = true :=
+        beq_iff_eq.mpr hTerms
+      simpa [hTermTrue, hAst] using (MatchesBool.yes rfl)
+
+theorem nf_payload_interface_of_strong_interface
+    (hnf : NFStrongInterface) :
+    NFPayloadInterface := by
+  intro fuelNat t tAst henc
+  obtain ⟨nfAst, hstrong⟩ := hnf fuelNat t tAst henc
+  cases hstrong with
+  | @intro payload N M hnfEnc hmatch hguard _ _ hpayloadEval =>
+      refine ⟨N, M, payload, nfAst, hnfEnc, hmatch, hguard, hpayloadEval, ?_⟩
+      exact isnormal_encTyCore?_tc _ _ hnfEnc
+
+theorem conv_bool_payload_interface_of_nf_payload_target_and_encoded_agreement
+    (hnf : NFPayloadInterface)
+    (htarget : ReferenceTargetPayloadInterface)
+    (hagree : EncodedConvBoolAgreementInterface) :
+    ConvBoolPayloadInterface := by
+  intro B A_spec BAst A hBenc hA
+  obtain ⟨Nleft, Mleft, Bpre, Bnf, hBnfEnc, hLeft, hLeftGuard,
+      hBpreEval, hBnfNorm⟩ :=
+    hnf 31 B BAst hBenc
+  obtain ⟨Nright, Apre, hApreEnc, hRight, hRightGuard⟩ :=
+    htarget A_spec A hA
+  refine ⟨Nleft, Mleft, Nright, Bpre, Bnf, Apre, ?_,
+    hLeft, hLeftGuard, hBpreEval, hBnfNorm, hRight, hRightGuard⟩
+  exact hagree B A_spec Bnf Apre hBnfEnc hApreEnc
+
+theorem conv_bool_payload_interface_of_nf_strong_target_and_encoded_agreement
+    (hnf : NFStrongInterface)
+    (htarget : ReferenceTargetPayloadInterface)
+    (hagree : EncodedConvBoolAgreementInterface) :
+    ConvBoolPayloadInterface :=
+  conv_bool_payload_interface_of_nf_payload_target_and_encoded_agreement
+    (nf_payload_interface_of_strong_interface hnf) htarget hagree
+
+theorem conv_bool_first_interface_of_payload_interface
+    (hpayload : ConvBoolPayloadInterface) :
+    ConvBoolFirstInterface := by
+  intro B A_spec BAst A hBenc hA
+  have hAnf : encTyCore? (LFTyping.nf LFTyping.corpusSig checkerFuel A_spec) = some A := by
+    simpa [encTy?] using hA
+  have hANorm : IsNormal pTC A :=
+    isnormal_encTyCore?_tc (LFTyping.nf LFTyping.corpusSig checkerFuel A_spec) A hAnf
+  obtain ⟨Nleft, Mleft, Nright, Bpre, Bnf, Apre,
+      hmatch, hLeft, hLeftGuard, hBpreEval, hBnfNorm, hRight, hRightGuard⟩ :=
+    hpayload B A_spec BAst A hBenc hA
+  have hLeftOpen :
+      ∀ k, k < Nleft ->
+        ConvAChildOpen (peano 31) A (eval pTC k (nfT (peano 31) BAst)) := by
+    intro k hk
+    exact convA_child_open_nf_active_tc (peano 31) A _
+      (hLeftGuard k hk)
+  obtain ⟨MconvA, hConvA, hConvAGuard⟩ :=
+    cong_eval_convA_child_open_with_guard (peano 31) A
+      (isnormal_peano_tc 31) hANorm Nleft hLeft hLeftOpen
+  have hRootConvT :
+      eval pTC 1 (convT (peano 31) BAst A) =
+        convA (peano 31) A (nfT (peano 31) BAst) :=
+    convT_step_tc (peano 31) BAst A
+  have hRootConvTGuard :
+      ∀ k, k < 1 -> VerdictChildOpen (eval pTC k (convT (peano 31) BAst A)) := by
+    intro k hk
+    have hk0 : k = 0 := Nat.eq_zero_of_le_zero (Nat.le_of_lt_succ hk)
+    subst k
+    exact verdict_child_open_convT_tc (peano 31) BAst A
+  have hPrefix1 :
+      eval pTC (1 + MconvA) (convT (peano 31) BAst A) =
+        convA (peano 31) A (someT Bpre) :=
+    eval_trans_tc 1 MconvA _ _ _ hRootConvT hConvA
+  have hGuard1 :
+      ∀ k, k < 1 + MconvA ->
+        VerdictChildOpen (eval pTC k (convT (peano 31) BAst A)) :=
+    verdict_child_open_append_guard hRootConvT hRootConvTGuard hConvAGuard
+  have hRootConvA :
+      eval pTC 1 (convA (peano 31) A (someT Bpre)) =
+        convB Bpre (nfT (peano 31) A) :=
+    convA_some_tc (peano 31) A Bpre
+  have hRootConvAGuard :
+      ∀ k, k < 1 -> VerdictChildOpen (eval pTC k (convA (peano 31) A (someT Bpre))) := by
+    intro k hk
+    have hk0 : k = 0 := Nat.eq_zero_of_le_zero (Nat.le_of_lt_succ hk)
+    subst k
+    exact verdict_child_open_convA_tc (peano 31) A (someT Bpre)
+  have hPrefix2 :
+      eval pTC ((1 + MconvA) + 1) (convT (peano 31) BAst A) =
+        convB Bpre (nfT (peano 31) A) :=
+    eval_trans_tc (1 + MconvA) 1 _ _ _ hPrefix1 hRootConvA
+  have hGuard2 :
+      ∀ k, k < (1 + MconvA) + 1 ->
+        VerdictChildOpen (eval pTC k (convT (peano 31) BAst A)) :=
+    verdict_child_open_append_guard hPrefix1 hGuard1 hRootConvAGuard
+  obtain ⟨MleftWrap, hLeftWrap, hLeftWrapGuard⟩ :=
+    cong_eval_convB_left_nf_active_with_guard (nfT (peano 31) A)
+      (NFActiveShape.nf (peano 31) A) Mleft hBpreEval
+  have hPrefix3 :
+      eval pTC (((1 + MconvA) + 1) + MleftWrap) (convT (peano 31) BAst A) =
+        convB Bnf (nfT (peano 31) A) :=
+    eval_trans_tc ((1 + MconvA) + 1) MleftWrap _ _ _ hPrefix2 hLeftWrap
+  have hGuard3 :
+      ∀ k, k < ((1 + MconvA) + 1) + MleftWrap ->
+        VerdictChildOpen (eval pTC k (convT (peano 31) BAst A)) :=
+    verdict_child_open_append_guard hPrefix2 hGuard2 hLeftWrapGuard
+  have hRightOpen :
+      ∀ k, k < Nright ->
+        ConvBChildOpen Bnf (eval pTC k (nfT (peano 31) A)) := by
+    intro k hk
+    exact convB_child_open_nf_active_tc Bnf _
+      (hRightGuard k hk)
+  obtain ⟨MrightWrap, hRightWrap, hRightWrapGuard⟩ :=
+    cong_eval_convB_child_open_with_guard Bnf hBnfNorm Nright hRight hRightOpen
+  have hPrefix4 :
+      eval pTC ((((1 + MconvA) + 1) + MleftWrap) + MrightWrap)
+          (convT (peano 31) BAst A) =
+        convB Bnf (someT Apre) :=
+    eval_trans_tc (((1 + MconvA) + 1) + MleftWrap) MrightWrap _ _ _
+      hPrefix3 hRightWrap
+  have hGuard4 :
+      ∀ k, k < (((1 + MconvA) + 1) + MleftWrap) + MrightWrap ->
+        VerdictChildOpen (eval pTC k (convT (peano 31) BAst A)) :=
+    verdict_child_open_append_guard hPrefix3 hGuard3 hRightWrapGuard
+  have hRootConvB :
+      eval pTC 1 (convB Bnf (someT Apre)) = eqT Bnf Apre :=
+    convB_some_tc Bnf Apre
+  have hRootConvBGuard :
+      ∀ k, k < 1 -> VerdictChildOpen (eval pTC k (convB Bnf (someT Apre))) := by
+    intro k hk
+    have hk0 : k = 0 := Nat.eq_zero_of_le_zero (Nat.le_of_lt_succ hk)
+    subst k
+    exact verdict_child_open_convB_tc Bnf (someT Apre)
+  have hPrefix5 :
+      eval pTC (((((1 + MconvA) + 1) + MleftWrap) + MrightWrap) + 1)
+          (convT (peano 31) BAst A) =
+        eqT Bnf Apre :=
+    eval_trans_tc ((((1 + MconvA) + 1) + MleftWrap) + MrightWrap) 1 _ _ _
+      hPrefix4 hRootConvB
+  have hGuard5 :
+      ∀ k, k < ((((1 + MconvA) + 1) + MleftWrap) + MrightWrap) + 1 ->
+        VerdictChildOpen (eval pTC k (convT (peano 31) BAst A)) :=
+    verdict_child_open_append_guard hPrefix4 hGuard4 hRootConvBGuard
+  cases hEq : (Bnf == Apre) with
+  | false =>
+      have hmatchFalse :
+          MatchesBool (LFTyping.convBool LFTyping.corpusSig 31 B A_spec) ffalse := by
+        simpa [hEq] using hmatch
+      have hEqGuard :
+          ∀ k, k < 1 -> VerdictChildOpen (eval pTC k (eqT Bnf Apre)) := by
+        intro k hk
+        have hk0 : k = 0 := Nat.eq_zero_of_le_zero (Nat.le_of_lt_succ hk)
+        subst k
+        exact verdict_child_open_eqT_tc Bnf Apre
+      refine ⟨(((((1 + MconvA) + 1) + MleftWrap) + MrightWrap) + 1) + 1,
+        ffalse, hmatchFalse, ?_, ?_⟩
+      · exact eval_trans_tc
+          (((((1 + MconvA) + 1) + MleftWrap) + MrightWrap) + 1)
+          1 _ _ _ hPrefix5 (eqT_miss_tc hEq)
+      · exact verdict_child_open_append_guard hPrefix5 hGuard5 hEqGuard
+  | true =>
+      have hmatchTrue :
+          MatchesBool (LFTyping.convBool LFTyping.corpusSig 31 B A_spec) ttrue := by
+        simpa [hEq] using hmatch
+      have hEqGuard :
+          ∀ k, k < 1 -> VerdictChildOpen (eval pTC k (eqT Bnf Apre)) := by
+        intro k hk
+        have hk0 : k = 0 := Nat.eq_zero_of_le_zero (Nat.le_of_lt_succ hk)
+        subst k
+        exact verdict_child_open_eqT_tc Bnf Apre
+      refine ⟨(((((1 + MconvA) + 1) + MleftWrap) + MrightWrap) + 1) + 1,
+        ttrue, hmatchTrue, ?_, ?_⟩
+      · exact eval_trans_tc
+          (((((1 + MconvA) + 1) + MleftWrap) + MrightWrap) + 1)
+          1 _ _ _ hPrefix5 (eqT_hit_tc hEq)
+      · exact verdict_child_open_append_guard hPrefix5 hGuard5 hEqGuard
+
+theorem conv_bool_first_interface_of_nf_payload_target_and_encoded_agreement
+    (hnf : NFPayloadInterface)
+    (htarget : ReferenceTargetPayloadInterface)
+    (hagree : EncodedConvBoolAgreementInterface) :
+    ConvBoolFirstInterface :=
+  conv_bool_first_interface_of_payload_interface
+    (conv_bool_payload_interface_of_nf_payload_target_and_encoded_agreement
+      hnf htarget hagree)
+
+theorem conv_bool_first_interface_of_nf_strong_target_and_encoded_agreement
+    (hnf : NFStrongInterface)
+    (htarget : ReferenceTargetPayloadInterface)
+    (hagree : EncodedConvBoolAgreementInterface) :
+    ConvBoolFirstInterface :=
+  conv_bool_first_interface_of_payload_interface
+    (conv_bool_payload_interface_of_nf_strong_target_and_encoded_agreement
+      hnf htarget hagree)
+
+theorem checkK_bool_first_interface_of_infer_and_conv_interfaces
+    (hinfer : InferFirstForCheckKInterface)
+    (hconv : ConvBoolFirstInterface) :
+    CheckKBoolFirstInterface := by
+  intro t A_spec tAst A ht hA
+  have hAnf : encTyCore? (LFTyping.nf LFTyping.corpusSig checkerFuel A_spec) = some A := by
+    simpa [encTy?] using hA
+  have hANormal : IsNormal pTC A :=
+    isnormal_encTyCore?_tc (LFTyping.nf LFTyping.corpusSig checkerFuel A_spec) A hAnf
+  obtain ⟨Ninfer, r, hinferMatch, hinferEval, hinferGuard⟩ :=
+    hinfer t A_spec tAst A ht hA
+  obtain ⟨Mwrap, hwrap, hwrapGuard⟩ :=
+    cong_eval_checkK_child_open_with_guard (peano 31) A
+      (isnormal_peano_tc 31) hANormal Ninfer hinferEval hinferGuard
+  cases hInf : LFTyping.infer 31 LFTyping.corpusSig [] t with
+  | none =>
+      rw [hInf] at hinferMatch
+      cases hinferMatch with
+      | failure vInf hr =>
+          subst r
+          refine ⟨Mwrap + 1, ffalse, ?_, ?_, ?_⟩
+          · have href :
+                LFTyping.check checkerFuel LFTyping.corpusSig [] t A_spec = false := by
+              simp [LFTyping.check, checkerFuel, hInf]
+            simpa [href] using (MatchesBool.no (v := ffalse) rfl)
+          · have hroot : eval pTC 1 (checkK (peano 31) A checkBad) = ffalse :=
+              checkK_bad_tc (peano 31) A
+            have hwrapBad :
+                eval pTC Mwrap (checkK (peano 31) A (inferT (peano 31) Nil tAst)) =
+                  checkK (peano 31) A checkBad := by
+              simpa [hr] using hwrap
+            exact eval_trans_tc Mwrap 1 _ _ _ hwrapBad hroot
+          · intro k hk
+            by_cases hkWrap : k < Mwrap
+            · exact hwrapGuard k hkWrap
+            · have hkEq : k = Mwrap := by omega
+              subst k
+              have hstate : eval pTC Mwrap
+                  (checkK (peano 31) A (inferT (peano 31) Nil tAst)) =
+                    checkK (peano 31) A checkBad := by
+                simpa [hr] using hwrap
+              rw [hstate]
+              exact verdict_child_open_checkK_tc (peano 31) A checkBad
+  | some B =>
+      rw [hInf] at hinferMatch
+      cases hinferMatch with
+      | success B' BAst vInf hBenc hr =>
+          subst r
+          obtain ⟨Nconv, v, hconvMatch, hconvEval, hconvGuard⟩ :=
+            hconv B A_spec BAst A hBenc hA
+          refine ⟨Mwrap + (1 + Nconv), v, ?_, ?_, ?_⟩
+          · simpa [LFTyping.check, checkerFuel, hInf] using hconvMatch
+          · have hroot :
+                eval pTC 1 (checkK (peano 31) A (someT BAst)) =
+                  convT (peano 31) BAst A :=
+              checkK_ok_tc (peano 31) A BAst
+            have htail := eval_trans_tc 1 Nconv _ _ _ hroot hconvEval
+            have hwrapSome :
+                eval pTC Mwrap (checkK (peano 31) A (inferT (peano 31) Nil tAst)) =
+                  checkK (peano 31) A (someT BAst) := by
+              simpa [hr] using hwrap
+            exact eval_trans_tc Mwrap (1 + Nconv) _ _ _ hwrapSome htail
+          · intro k hk
+            by_cases hkWrap : k < Mwrap
+            · exact hwrapGuard k hkWrap
+            · have hge : Mwrap ≤ k := Nat.le_of_not_gt hkWrap
+              by_cases hkRoot : k = Mwrap
+              · subst k
+                have hstate : eval pTC Mwrap
+                    (checkK (peano 31) A (inferT (peano 31) Nil tAst)) =
+                      checkK (peano 31) A (someT BAst) := by
+                  simpa [hr] using hwrap
+                rw [hstate]
+                exact verdict_child_open_checkK_tc (peano 31) A (someT BAst)
+              · let j := k - (Mwrap + 1)
+                have hjlt : j < Nconv := by omega
+                have hkdecomp : k = Mwrap + 1 + j := by omega
+                subst j
+                rw [hkdecomp]
+                have hroot :
+                    eval pTC 1 (checkK (peano 31) A (someT BAst)) =
+                      convT (peano 31) BAst A :=
+                  checkK_ok_tc (peano 31) A BAst
+                have hwrapSome :
+                    eval pTC Mwrap (checkK (peano 31) A (inferT (peano 31) Nil tAst)) =
+                      checkK (peano 31) A (someT BAst) := by
+                  simpa [hr] using hwrap
+                have hafterRoot := eval_trans_tc Mwrap 1 _ _ _ hwrapSome hroot
+                have hshift :
+                    eval pTC (Mwrap + 1 + (k - (Mwrap + 1)))
+                        (checkK (peano 31) A (inferT (peano 31) Nil tAst)) =
+                      eval pTC (k - (Mwrap + 1)) (convT (peano 31) BAst A) :=
+                  eval_trans_tc (Mwrap + 1) (k - (Mwrap + 1)) _ _ _ hafterRoot rfl
+                rw [hshift]
+                exact hconvGuard (k - (Mwrap + 1)) hjlt
+
+theorem checkT_bool_first_interface_of_checkK_bool_first_interface
+    (hcheck : CheckKBoolFirstInterface) :
+    CheckTBoolFirstInterface := by
+  intro t A_spec tAst A ht hA
+  obtain ⟨Ncheck, v, hmatch, hEval, hguard⟩ := hcheck t A_spec tAst A ht hA
+  refine ⟨1 + Ncheck, v, hmatch, ?_, ?_⟩
+  · exact eval_trans_tc 1 Ncheck _ _ _ (checkT_checkerFuel_tc Nil tAst A) hEval
+  · intro k hk
+    cases k with
+    | zero =>
+        rfl
+    | succ k =>
+        have hkCheck : k < Ncheck := by
+          exact Nat.succ_lt_succ_iff.mp (by simpa only [Nat.one_add] using hk)
+        have hshift :
+            eval pTC (Nat.succ k) (checkT checkerFuelA Nil tAst A) =
+              eval pTC k (checkK (peano 31) A (inferT (peano 31) Nil tAst)) := by
+          have h := eval_trans_tc 1 k (checkT checkerFuelA Nil tAst A)
+            (checkK (peano 31) A (inferT (peano 31) Nil tAst))
+            (eval pTC k (checkK (peano 31) A (inferT (peano 31) Nil tAst)))
+            (checkT_checkerFuel_tc Nil tAst A) rfl
+          simpa [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using h
+        rw [hshift]
+        exact hguard k hkCheck
+
+theorem checkT_verdict_interface_of_bool_first_interface
+    (hcheck : CheckTBoolFirstInterface) :
+    CheckTVerdictInterface := by
+  intro t A_spec tAst A ht hA
+  obtain ⟨Nbool, v, hmatch, hEval, hguard⟩ := hcheck t A_spec tAst A ht hA
+  obtain ⟨Mctx, hMctx⟩ :=
+    cong_eval_verdict_child_open_with_guard Nbool hEval hguard
+  refine ⟨Mctx + 1, ?_⟩
+  have htotal :
+      eval pTC (Mctx + 1) (verdict (checkT checkerFuelA Nil tAst A)) =
+        eval pTC 1 (verdict v) := by
+    exact eval_trans_tc Mctx 1 _ _ _ hMctx rfl
+  rw [htotal]
+  exact verdict_matches_bool hmatch
+
+def ReferenceRejectsBadTargetInterface : Prop :=
+  ∀ t A_spec,
+    encTy? A_spec = none ->
+      LFTyping.check checkerFuel LFTyping.corpusSig [] t A_spec = false
+
+def ReferenceRejectsBadTermInterface : Prop :=
+  ∀ t A_spec,
+    encTyCore? t = none ->
+      LFTyping.check checkerFuel LFTyping.corpusSig [] t A_spec = false
+
+theorem sigT_corpusSig_none_of_encName_none {x : String}
+    (h : encName? x = none) :
+    LFTyping.sigT LFTyping.corpusSig x = none := by
+  by_cases h0 : x = "prop"
+  · subst x
+    cases h
+  by_cases h1 : x = "nat"
+  · subst x
+    cases h
+  by_cases h2 : x = "A"
+  · subst x
+    cases h
+  by_cases h3 : x = "B"
+  · subst x
+    cases h
+  by_cases h4 : x = "z"
+  · subst x
+    cases h
+  by_cases h5 : x = "prf"
+  · subst x
+    cases h
+  by_cases h6 : x = "imp"
+  · subst x
+    cases h
+  by_cases h7 : x = "eqn"
+  · subst x
+    cases h
+  by_cases h8 : x = "rfl"
+  · subst x
+    cases h
+  by_cases h9 : x = "hImpAB"
+  · subst x
+    cases h
+  by_cases h10 : x = "hA"
+  · subst x
+    cases h
+  by_cases h11 : x = "mpAB"
+  · subst x
+    cases h
+  simp [LFTyping.sigT, LFTyping.lookupType, LFTyping.corpusSig,
+    h0, h1, h2, h3, h4, h5, h6, h7, h8, h9, h10, h11]
+
+def DeclTypeEncodable : LFTyping.Decl -> Prop
+  | .const _ A => EncodableTerm A
+  | .defn _ A _ => EncodableTerm A
+
+theorem lookupType_encodable_of_all : ∀ sig x B,
+    (∀ d, d ∈ sig -> DeclTypeEncodable d) ->
+      LFTyping.lookupType sig x = some B -> EncodableTerm B := by
+  intro sig
+  induction sig with
+  | nil =>
+      intro x B _hall hlookup
+      simp [LFTyping.lookupType] at hlookup
+  | cons d rest ih =>
+      intro x B hall hlookup
+      cases d with
+      | const n A =>
+          simp [LFTyping.lookupType] at hlookup
+          split at hlookup
+          · cases hlookup
+            simpa [DeclTypeEncodable] using hall (LFTyping.Decl.const n B) (by simp)
+          · exact ih x B (by intro d hd; exact hall d (by simp [hd])) hlookup
+      | defn n A body =>
+          simp [LFTyping.lookupType] at hlookup
+          split at hlookup
+          · cases hlookup
+            simpa [DeclTypeEncodable] using hall (LFTyping.Decl.defn n B body) (by simp)
+          · exact ih x B (by intro d hd; exact hall d (by simp [hd])) hlookup
+
+theorem corpusSig_decl_types_encodable :
+    ∀ d, d ∈ LFTyping.corpusSig -> DeclTypeEncodable d := by
+  intro d hd
+  simp [LFTyping.corpusSig] at hd
+  rcases hd with h | h | h | h | h | h | h | h | h | h | h | h <;> subst d
+  · exact ⟨Srt typeS, rfl⟩
+  · exact ⟨Srt typeS, rfl⟩
+  · exact ⟨Con nProp, rfl⟩
+  · exact ⟨Con nProp, rfl⟩
+  · exact ⟨Con nNat, rfl⟩
+  · exact ⟨Pi (Con nProp) (Srt typeS), rfl⟩
+  · exact ⟨Pi (Con nProp) (Pi (Con nProp) (Con nProp)), rfl⟩
+  · exact ⟨Pi (Con nNat) (Pi (Con nNat) (Srt typeS)), rfl⟩
+  · exact ⟨Pi (Con nNat) (App (App (Con nEqn) (Var Z)) (Var Z)), rfl⟩
+  · exact ⟨iPrf iImpAB, rfl⟩
+  · exact ⟨iPrf iA, rfl⟩
+  · exact ⟨Pi (iPrf iImpAB) (Pi (iPrf iA) (iPrf iB)), rfl⟩
+
+theorem sigT_corpusSig_some_encodable {x : String} {B : LF.Term}
+    (h : LFTyping.sigT LFTyping.corpusSig x = some B) :
+    EncodableTerm B := by
+  exact lookupType_encodable_of_all LFTyping.corpusSig x B
+    corpusSig_decl_types_encodable (by simpa [LFTyping.sigT] using h)
+
+theorem infer_check_corpus_bad_term : ∀ fuel : Nat,
+    (∀ Gamma t, encTyCore? t = none ->
+      LFTyping.infer fuel LFTyping.corpusSig Gamma t = none) ∧
+    (∀ Gamma t A, encTyCore? t = none ->
+      LFTyping.check fuel LFTyping.corpusSig Gamma t A = false) := by
+  intro fuel
+  induction fuel with
+  | zero =>
+      constructor
+      · intro Gamma t h
+        simp [LFTyping.infer]
+      · intro Gamma t A h
+        simp [LFTyping.check]
+  | succ fuel ih =>
+      constructor
+      · intro Gamma t h
+        cases t with
+        | srt s =>
+            cases s <;> simp [encTyCore?] at h
+        | var k =>
+            simp [encTyCore?] at h
+        | con x =>
+            unfold encTyCore? at h
+            cases hx : encName? x with
+            | none =>
+                have hsig := sigT_corpusSig_none_of_encName_none hx
+                simpa [LFTyping.infer, LFTyping.sigT] using hsig
+            | some k =>
+                simp [hx] at h
+        | pi A B =>
+            simp [encTyCore?] at h
+            cases hA : encTyCore? A with
+            | none =>
+                have hIA := ih.1 Gamma A hA
+                simp [LFTyping.infer, hIA]
+            | some Aenc =>
+                cases hB : encTyCore? B with
+                | none =>
+                    have hIB := ih.1 (A :: Gamma) B hB
+                    cases hInfA : LFTyping.infer fuel LFTyping.corpusSig Gamma A with
+                    | none =>
+                        simp [LFTyping.infer, hInfA]
+                    | some T =>
+                        cases T with
+                        | srt s =>
+                            cases s with
+                            | type => simp [LFTyping.infer, hInfA, hIB]
+                            | kind => simp [LFTyping.infer, hInfA]
+                        | var k => simp [LFTyping.infer, hInfA]
+                        | con x => simp [LFTyping.infer, hInfA]
+                        | pi T U => simp [LFTyping.infer, hInfA]
+                        | lam T b => simp [LFTyping.infer, hInfA]
+                        | app g a => simp [LFTyping.infer, hInfA]
+                | some Benc =>
+                    simp [hA, hB] at h
+        | lam A body =>
+            simp [encTyCore?] at h
+            cases hA : encTyCore? A with
+            | none =>
+                have hIA := ih.1 Gamma A hA
+                simp [LFTyping.infer, hIA]
+            | some Aenc =>
+                cases hb : encTyCore? body with
+                | none =>
+                    have hIb := ih.1 (A :: Gamma) body hb
+                    cases hInfA : LFTyping.infer fuel LFTyping.corpusSig Gamma A with
+                    | none =>
+                        simp [LFTyping.infer, hInfA]
+                    | some T =>
+                        cases T with
+                        | srt s =>
+                            cases s with
+                            | type => simp [LFTyping.infer, hInfA, hIb]
+                            | kind => simp [LFTyping.infer, hInfA]
+                        | var k => simp [LFTyping.infer, hInfA]
+                        | con x => simp [LFTyping.infer, hInfA]
+                        | pi T U => simp [LFTyping.infer, hInfA]
+                        | lam T b => simp [LFTyping.infer, hInfA]
+                        | app g a => simp [LFTyping.infer, hInfA]
+                | some benc =>
+                    simp [hA, hb] at h
+        | app f a =>
+            simp [encTyCore?] at h
+            cases hf : encTyCore? f with
+            | none =>
+                have hIf := ih.1 Gamma f hf
+                simp [LFTyping.infer, hIf]
+            | some fenc =>
+                cases ha : encTyCore? a with
+                | none =>
+                    cases hInfF : LFTyping.infer fuel LFTyping.corpusSig Gamma f with
+                    | none =>
+                        simp [LFTyping.infer, hInfF]
+                    | some T =>
+                        cases T with
+                        | pi A B =>
+                            have hCa := ih.2 Gamma a A ha
+                            simp [LFTyping.infer, hInfF, hCa]
+                        | srt s => simp [LFTyping.infer, hInfF]
+                        | var k => simp [LFTyping.infer, hInfF]
+                        | con x => simp [LFTyping.infer, hInfF]
+                        | lam T b => simp [LFTyping.infer, hInfF]
+                        | app g b => simp [LFTyping.infer, hInfF]
+                | some aenc =>
+                    simp [hf, ha] at h
+      · intro Gamma t A h
+        have hInf := ih.1 Gamma t h
+        simp [LFTyping.check, hInf]
+
+theorem reference_rejects_bad_term_interface : ReferenceRejectsBadTermInterface := by
+  intro t A h
+  exact (infer_check_corpus_bad_term checkerFuel).2 [] t A h
+
+theorem ctxLookupAux_encodable : ∀ depth Gamma i A,
+    (∀ T, T ∈ Gamma -> EncodableTerm T) ->
+      LFTyping.ctxLookupAux depth Gamma i = some A -> EncodableTerm A := by
+  intro depth Gamma
+  induction Gamma generalizing depth with
+  | nil =>
+      intro i A _hctx hlookup
+      simp [LFTyping.ctxLookupAux] at hlookup
+  | cons T rest ih =>
+      intro i A hctx hlookup
+      cases i with
+      | zero =>
+          simp [LFTyping.ctxLookupAux] at hlookup
+          subst A
+          obtain ⟨u, hu⟩ := hctx T (by simp)
+          exact encTyCore?_some_of_lift hu (depth + 1) 0
+      | succ i =>
+          simp [LFTyping.ctxLookupAux] at hlookup
+          exact ih (depth + 1) i A
+            (by
+              intro U hU
+              exact hctx U (by simp [hU])) hlookup
+
+theorem ctxLookup_encodable {Gamma : LFTyping.Ctx} {i : Nat} {A : LF.Term}
+    (hctx : ∀ T, T ∈ Gamma -> EncodableTerm T)
+    (hlookup : LFTyping.ctxLookup Gamma i = some A) :
+    EncodableTerm A := by
+  exact ctxLookupAux_encodable 0 Gamma i A hctx hlookup
+
+theorem infer_corpus_output_encodable : ∀ fuel Gamma t B,
+    (∀ T, T ∈ Gamma -> EncodableTerm T) ->
+      LFTyping.infer fuel LFTyping.corpusSig Gamma t = some B -> EncodableTerm B := by
+  intro fuel
+  induction fuel with
+  | zero =>
+      intro Gamma t B _hctx hInf
+      simp [LFTyping.infer] at hInf
+  | succ fuel ih =>
+      intro Gamma t B hctx hInf
+      cases t with
+      | srt s =>
+          cases s with
+          | type =>
+              simp [LFTyping.infer] at hInf
+              subst B
+              exact ⟨Srt kindS, rfl⟩
+          | kind =>
+              simp [LFTyping.infer] at hInf
+      | con x =>
+          exact sigT_corpusSig_some_encodable (by simpa [LFTyping.infer] using hInf)
+      | var i =>
+          exact ctxLookup_encodable hctx (by simpa [LFTyping.infer] using hInf)
+      | pi A body =>
+          cases hInfA : LFTyping.infer fuel LFTyping.corpusSig Gamma A with
+          | none => simp [LFTyping.infer, hInfA] at hInf
+          | some TA =>
+              cases TA with
+              | srt s =>
+                  cases s with
+                  | type =>
+                      cases hInfBody : LFTyping.infer fuel LFTyping.corpusSig (A :: Gamma) body with
+                      | none => simp [LFTyping.infer, hInfA, hInfBody] at hInf
+                      | some TB =>
+                          cases TB with
+                          | srt out =>
+                              simp [LFTyping.infer, hInfA, hInfBody] at hInf
+                              subst B
+                              cases out <;> simp [EncodableTerm, encTyCore?]
+                          | var k => simp [LFTyping.infer, hInfA, hInfBody] at hInf
+                          | con x => simp [LFTyping.infer, hInfA, hInfBody] at hInf
+                          | pi T U => simp [LFTyping.infer, hInfA, hInfBody] at hInf
+                          | lam T b => simp [LFTyping.infer, hInfA, hInfBody] at hInf
+                          | app f a => simp [LFTyping.infer, hInfA, hInfBody] at hInf
+                  | kind => simp [LFTyping.infer, hInfA] at hInf
+              | var k => simp [LFTyping.infer, hInfA] at hInf
+              | con x => simp [LFTyping.infer, hInfA] at hInf
+              | pi T U => simp [LFTyping.infer, hInfA] at hInf
+              | lam T b => simp [LFTyping.infer, hInfA] at hInf
+              | app f a => simp [LFTyping.infer, hInfA] at hInf
+      | lam A body =>
+          cases hInfA : LFTyping.infer fuel LFTyping.corpusSig Gamma A with
+          | none => simp [LFTyping.infer, hInfA] at hInf
+          | some TA =>
+              cases TA with
+              | srt s =>
+                  cases s with
+                  | type =>
+                      have hAenc : EncodableTerm A := by
+                        cases hAcore : encTyCore? A with
+                        | none =>
+                            have hbad := (infer_check_corpus_bad_term fuel).1 Gamma A hAcore
+                            rw [hInfA] at hbad
+                            cases hbad
+                        | some u => exact ⟨u, hAcore⟩
+                      cases hInfBody : LFTyping.infer fuel LFTyping.corpusSig (A :: Gamma) body with
+                      | none => simp [LFTyping.infer, hInfA, hInfBody] at hInf
+                      | some Bbody =>
+                          simp [LFTyping.infer, hInfA, hInfBody] at hInf
+                          subst B
+                          have hBenc := ih (A :: Gamma) body Bbody
+                            (by
+                              intro T hT
+                              simp at hT
+                              cases hT with
+                              | inl hEq =>
+                                  subst T
+                                  exact hAenc
+                              | inr hMem => exact hctx T hMem)
+                            hInfBody
+                          obtain ⟨Au, hAu⟩ := hAenc
+                          obtain ⟨Bu, hBu⟩ := hBenc
+                          exact ⟨Pi Au Bu, by simp [encTyCore?, hAu, hBu]⟩
+                  | kind => simp [LFTyping.infer, hInfA] at hInf
+              | var k => simp [LFTyping.infer, hInfA] at hInf
+              | con x => simp [LFTyping.infer, hInfA] at hInf
+              | pi T U => simp [LFTyping.infer, hInfA] at hInf
+              | lam T b => simp [LFTyping.infer, hInfA] at hInf
+              | app f a => simp [LFTyping.infer, hInfA] at hInf
+      | app f a =>
+          cases hInfF : LFTyping.infer fuel LFTyping.corpusSig Gamma f with
+          | none => simp [LFTyping.infer, hInfF] at hInf
+          | some TF =>
+              cases TF with
+              | pi A body =>
+                  cases hCheck : LFTyping.check fuel LFTyping.corpusSig Gamma a A with
+                  | false => simp [LFTyping.infer, hInfF, hCheck] at hInf
+                  | true =>
+                      simp [LFTyping.infer, hInfF, hCheck] at hInf
+                      subst B
+                      obtain ⟨_, hPiAst⟩ := ih Gamma f (.pi A body) hctx hInfF
+                      simp [encTyCore?] at hPiAst
+                      cases hAcore : encTyCore? A with
+                      | none => simp [hAcore] at hPiAst
+                      | some _Aast =>
+                          cases hBodyCore : encTyCore? body with
+                          | none => simp [hAcore, hBodyCore] at hPiAst
+                          | some _bodyAst =>
+                              cases hAarg : encTyCore? a with
+                              | none =>
+                                  have hbad := (infer_check_corpus_bad_term fuel).2 Gamma a A hAarg
+                                  rw [hCheck] at hbad
+                                  cases hbad
+                              | some _aAst => exact encTyCore?_some_of_subst hBodyCore hAarg 0
+              | srt s => simp [LFTyping.infer, hInfF] at hInf
+              | var k => simp [LFTyping.infer, hInfF] at hInf
+              | con x => simp [LFTyping.infer, hInfF] at hInf
+              | lam T b => simp [LFTyping.infer, hInfF] at hInf
+              | app g b => simp [LFTyping.infer, hInfF] at hInf
+
+theorem lf_lift_lift_same_cutoff (d e c : Nat) (t : LF.Term) :
+    LFTyping.lift d c (LFTyping.lift e c t) =
+      LFTyping.lift (e + d) c t := by
+  induction t generalizing c with
+  | srt s =>
+      cases s <;> simp [LFTyping.lift]
+  | con x =>
+      simp [LFTyping.lift]
+  | var n =>
+      simp only [LFTyping.lift]
+      by_cases hnc : n < c
+      · simp [hnc]
+      · have hnd : ¬ n + e < c := by omega
+        simp [hnc, hnd]
+        omega
+  | pi A B ihA ihB =>
+      simp [LFTyping.lift, ihA c, ihB (c + 1)]
+  | lam A b ihA ihb =>
+      simp [LFTyping.lift, ihA c, ihb (c + 1)]
+  | app f a ihf iha =>
+      simp [LFTyping.lift, ihf c, iha c]
+
+theorem lf_lift_lift_below_cutoff (d e c k : Nat) (t : LF.Term) :
+    LFTyping.lift d (c + k + e) (LFTyping.lift e k t) =
+      LFTyping.lift e k (LFTyping.lift d (c + k) t) := by
+  induction t generalizing c k with
+  | srt s =>
+      cases s <;> simp [LFTyping.lift]
+  | con x =>
+      simp [LFTyping.lift]
+  | var n =>
+      simp only [LFTyping.lift]
+      by_cases hnk : n < k
+      · have hnc : n < c + k := by omega
+        have hnce : n < c + k + e := by omega
+        simp [hnk, hnc, hnce]
+      · by_cases hnc : n < c + k
+        · have hnce : n + e < c + k + e := by omega
+          simp [hnk, hnc, hnce]
+        · have hnce : ¬ n + e < c + k + e := by omega
+          have hnd : ¬ n + d < k := by omega
+          simp [hnk, hnc, hnce, hnd]
+          omega
+  | pi A B ihA ihB =>
+      simp [LFTyping.lift, ihA c k]
+      exact by
+        simpa [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using ihB c (k + 1)
+  | lam A b ihA ihb =>
+      simp [LFTyping.lift, ihA c k]
+      exact by
+        simpa [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using ihb c (k + 1)
+  | app f a ihf iha =>
+      simp [LFTyping.lift, ihf c k, iha c k]
+
+theorem lf_lift_lift_one_below_cutoff (d c k : Nat) (t : LF.Term) :
+    LFTyping.lift d (c + k + 1) (LFTyping.lift 1 k t) =
+      LFTyping.lift 1 k (LFTyping.lift d (c + k) t) := by
+  simpa using lf_lift_lift_below_cutoff d 1 c k t
+
+theorem lf_lift_zero (c : Nat) (t : LF.Term) :
+    LFTyping.lift 0 c t = t := by
+  induction t generalizing c with
+  | srt s =>
+      cases s <;> simp [LFTyping.lift]
+  | con _x =>
+      simp [LFTyping.lift]
+  | var n =>
+      simp only [LFTyping.lift]
+      by_cases hnc : n < c <;> simp [hnc]
+  | pi A B ihA ihB =>
+      simp [LFTyping.lift, ihA c, ihB (c + 1)]
+  | lam A b ihA ihb =>
+      simp [LFTyping.lift, ihA c, ihb (c + 1)]
+  | app f a ihf iha =>
+      simp [LFTyping.lift, ihf c, iha c]
+
+theorem lf_lift_subst_binder (d c k : Nat) (s t : LF.Term) :
+    LFTyping.lift d (c + k) (LFTyping.subst k (LFTyping.lift k 0 s) t) =
+      LFTyping.subst k (LFTyping.lift k 0 (LFTyping.lift d c s))
+        (LFTyping.lift d (c + k + 1) t) := by
+  induction t generalizing c k with
+  | srt sort =>
+      cases sort <;> simp [LFTyping.lift, LFTyping.subst]
+  | con _x =>
+      simp [LFTyping.lift, LFTyping.subst]
+  | var n =>
+      simp only [LFTyping.subst, LFTyping.lift]
+      by_cases hnk : n = k
+      · subst n
+        have hcut : k < c + k + 1 := by omega
+        simp [hcut]
+        simpa [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using
+          (lf_lift_lift_below_cutoff d k c 0 s)
+      · by_cases hlt : k < n
+        · by_cases hcut : n < c + k + 1
+          · have hleft : n - 1 < c + k := by omega
+            simp [LFTyping.lift, hnk, hlt, hcut, hleft]
+          · have hleft : ¬ n - 1 < c + k := by omega
+            have hneq : n + d ≠ k := by omega
+            have hlt' : k < n + d := by omega
+            simp [LFTyping.lift, hnk, hlt, hcut, hleft, hneq, hlt']
+            omega
+        · have hcut1 : n < c + k := by omega
+          have hcut2 : n < c + k + 1 := by omega
+          simp [LFTyping.lift, hnk, hlt, hcut1, hcut2]
+  | pi A B ihA ihB =>
+      simp [LFTyping.subst, LFTyping.lift, ihA c k]
+      have hs1 : LFTyping.lift 1 0 (LFTyping.lift k 0 s) =
+          LFTyping.lift (k + 1) 0 s := by
+        simpa [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using
+          (lf_lift_lift_same_cutoff 1 k 0 s)
+      have hs2 : LFTyping.lift 1 0 (LFTyping.lift k 0 (LFTyping.lift d c s)) =
+          LFTyping.lift (k + 1) 0 (LFTyping.lift d c s) := by
+        simpa [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using
+          (lf_lift_lift_same_cutoff 1 k 0 (LFTyping.lift d c s))
+      rw [hs1, hs2]
+      simpa [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using ihB c (k + 1)
+  | lam A b ihA ihb =>
+      simp [LFTyping.subst, LFTyping.lift, ihA c k]
+      have hs1 : LFTyping.lift 1 0 (LFTyping.lift k 0 s) =
+          LFTyping.lift (k + 1) 0 s := by
+        simpa [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using
+          (lf_lift_lift_same_cutoff 1 k 0 s)
+      have hs2 : LFTyping.lift 1 0 (LFTyping.lift k 0 (LFTyping.lift d c s)) =
+          LFTyping.lift (k + 1) 0 (LFTyping.lift d c s) := by
+        simpa [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using
+          (lf_lift_lift_same_cutoff 1 k 0 (LFTyping.lift d c s))
+      rw [hs1, hs2]
+      simpa [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using ihb c (k + 1)
+  | app f a ihf iha =>
+      simp [LFTyping.subst, LFTyping.lift, ihf c k, iha c k]
+
+theorem lf_lift_subst0 (d c : Nat) (a body : LF.Term) :
+    LFTyping.lift d c (LFTyping.subst0 a body) =
+      LFTyping.subst0 (LFTyping.lift d c a) (LFTyping.lift d (c + 1) body) := by
+  unfold LFTyping.subst0
+  have h := lf_lift_subst_binder d c 0 a body
+  simpa [lf_lift_zero, Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using h
+
+theorem lf_subst_lift_shift_cutoff (d c j : Nat) (s t : LF.Term) :
+    LFTyping.subst (j + c + d)
+        (LFTyping.lift d c (LFTyping.lift c 0 s))
+        (LFTyping.lift d c t) =
+      LFTyping.lift d c
+        (LFTyping.subst (j + c) (LFTyping.lift c 0 s) t) := by
+  induction t generalizing d c j s with
+  | srt sort =>
+      cases sort <;> simp [LFTyping.subst, LFTyping.lift]
+  | con _x =>
+      simp [LFTyping.subst, LFTyping.lift]
+  | var n =>
+      simp only [LFTyping.subst, LFTyping.lift]
+      by_cases hnc : n < c
+      · have hidxNe : ¬ n = j + c := by omega
+        have hidxNotLt : ¬ j + c < n := by omega
+        have hshiftNe : ¬ n = j + c + d := by omega
+        have hshiftNotLt : ¬ j + c + d < n := by omega
+        simp [LFTyping.lift, hnc, hidxNe, hidxNotLt, hshiftNe, hshiftNotLt]
+      · by_cases hEq : n = j + c
+        · subst n
+          have hnot : ¬ j + c < c := by omega
+          simp [hnot]
+        · by_cases hlt : j + c < n
+          · have hshiftLt : j + c + d < n + d := by omega
+            have hpredNotLt : ¬ n - 1 < c := by omega
+            simp [hnc, hEq, hlt, hshiftLt]
+            have hnat : n + d - 1 = n - 1 + d := by omega
+            simp [LFTyping.lift, hpredNotLt, hnat]
+          · have hshiftNe : ¬ n + d = j + c + d := by omega
+            have hshiftNotLt : ¬ j + c + d < n + d := by omega
+            simp [hnc, hEq, hlt, hshiftNotLt]
+            simp [LFTyping.lift, hnc]
+  | pi A B ihA ihB =>
+      simp [LFTyping.subst, LFTyping.lift, ihA d c j s]
+      have hsucc :
+          LFTyping.lift 1 0 (LFTyping.lift c 0 s) =
+            LFTyping.lift (c + 1) 0 s := by
+        simpa [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using
+          (lf_lift_lift_same_cutoff 1 c 0 s)
+      have hsLift :
+          LFTyping.lift 1 0
+              (LFTyping.lift d c (LFTyping.lift c 0 s)) =
+            LFTyping.lift d (c + 1) (LFTyping.lift (c + 1) 0 s) := by
+        have hswap :
+            LFTyping.lift d (c + 1)
+                (LFTyping.lift 1 0 (LFTyping.lift c 0 s)) =
+              LFTyping.lift 1 0
+                (LFTyping.lift d c (LFTyping.lift c 0 s)) := by
+          simpa [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using
+            (lf_lift_lift_below_cutoff d 1 c 0 (LFTyping.lift c 0 s))
+        rw [← hswap, hsucc]
+      rw [hsLift, hsucc]
+      simpa [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using
+        ihB d (c + 1) j s
+  | lam A b ihA ihb =>
+      simp [LFTyping.subst, LFTyping.lift, ihA d c j s]
+      have hsucc :
+          LFTyping.lift 1 0 (LFTyping.lift c 0 s) =
+            LFTyping.lift (c + 1) 0 s := by
+        simpa [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using
+          (lf_lift_lift_same_cutoff 1 c 0 s)
+      have hsLift :
+          LFTyping.lift 1 0
+              (LFTyping.lift d c (LFTyping.lift c 0 s)) =
+            LFTyping.lift d (c + 1) (LFTyping.lift (c + 1) 0 s) := by
+        have hswap :
+            LFTyping.lift d (c + 1)
+                (LFTyping.lift 1 0 (LFTyping.lift c 0 s)) =
+              LFTyping.lift 1 0
+                (LFTyping.lift d c (LFTyping.lift c 0 s)) := by
+          simpa [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using
+            (lf_lift_lift_below_cutoff d 1 c 0 (LFTyping.lift c 0 s))
+        rw [← hswap, hsucc]
+      rw [hsLift, hsucc]
+      simpa [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using
+        ihb d (c + 1) j s
+  | app f a ihf iha =>
+      simp [LFTyping.subst, LFTyping.lift, ihf d c j s, iha d c j s]
+
+theorem lf_subst_lift_shift (k j : Nat) (s t : LF.Term) :
+    LFTyping.subst (j + k) (LFTyping.lift k 0 s)
+        (LFTyping.lift k 0 t) =
+      LFTyping.lift k 0 (LFTyping.subst j s t) := by
+  simpa [lf_lift_zero, Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using
+    (lf_subst_lift_shift_cutoff k 0 j s t)
+
+theorem lf_subst_lift_succ_cutoff (k c : Nat) (r t : LF.Term) :
+    LFTyping.subst (c + k) (LFTyping.lift c 0 r)
+        (LFTyping.lift (k + 1) c t) =
+      LFTyping.lift k c t := by
+  induction t generalizing k c r with
+  | srt sort =>
+      cases sort <;> simp [LFTyping.subst, LFTyping.lift]
+  | con _x =>
+      simp [LFTyping.subst, LFTyping.lift]
+  | var n =>
+      simp only [LFTyping.subst, LFTyping.lift]
+      by_cases hnc : n < c
+      · have hneq : ¬ n = c + k := by omega
+        have hnot : ¬ c + k < n := by omega
+        simp [hnc, hneq, hnot]
+      · have hneq : ¬ n + (k + 1) = c + k := by omega
+        have hlt : c + k < n + (k + 1) := by omega
+        simp [hnc, hneq, hlt]
+  | pi A B ihA ihB =>
+      simp [LFTyping.subst, LFTyping.lift, ihA k c r]
+      have hsucc :
+          LFTyping.lift 1 0 (LFTyping.lift c 0 r) =
+            LFTyping.lift (c + 1) 0 r := by
+        simpa [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using
+          (lf_lift_lift_same_cutoff 1 c 0 r)
+      rw [hsucc]
+      simpa [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using
+        ihB k (c + 1) r
+  | lam A b ihA ihb =>
+      simp [LFTyping.subst, LFTyping.lift, ihA k c r]
+      have hsucc :
+          LFTyping.lift 1 0 (LFTyping.lift c 0 r) =
+            LFTyping.lift (c + 1) 0 r := by
+        simpa [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using
+          (lf_lift_lift_same_cutoff 1 c 0 r)
+      rw [hsucc]
+      simpa [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using
+        ihb k (c + 1) r
+  | app f a ihf iha =>
+      simp [LFTyping.subst, LFTyping.lift, ihf k c r, iha k c r]
+
+theorem lf_subst_lift_succ_at (k : Nat) (r t : LF.Term) :
+    LFTyping.subst k r (LFTyping.lift (k + 1) 0 t) =
+      LFTyping.lift k 0 t := by
+  simpa [lf_lift_zero, Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using
+    (lf_subst_lift_succ_cutoff k 0 r t)
+
+theorem lf_subst_subst_binder (k j : Nat) (s a t : LF.Term) :
+    LFTyping.subst k (LFTyping.lift k 0 (LFTyping.subst j s a))
+        (LFTyping.subst (j + k + 1) (LFTyping.lift (k + 1) 0 s) t) =
+      LFTyping.subst (j + k) (LFTyping.lift k 0 s)
+        (LFTyping.subst k (LFTyping.lift k 0 a) t) := by
+  induction t generalizing k j s a with
+  | srt sort =>
+      cases sort <;> simp [LFTyping.subst]
+  | con _x =>
+      simp [LFTyping.subst]
+  | var n =>
+      simp only [LFTyping.subst]
+      by_cases hJ : n = j + k + 1
+      · subst n
+        have hkNe : ¬ j + k + 1 = k := by omega
+        have hkLt : k < j + k + 1 := by omega
+        have hpred : j + k + 1 - 1 = j + k := by omega
+        simp [LFTyping.subst, hkNe, hkLt, hpred, lf_subst_lift_succ_at]
+      · by_cases hk : n = k
+        · subst n
+          have hJNe : ¬ k = j + k + 1 := by omega
+          have hJNotLt : ¬ j + k + 1 < k := by omega
+          simp [LFTyping.subst, hJNe, hJNotLt]
+          rw [lf_subst_lift_shift]
+        · by_cases hkn : k < n
+          · by_cases hJn : j + k + 1 < n
+            · have hInnerK : k < n - 1 := by omega
+              have hInnerNe : ¬ n - 1 = k := by omega
+              have hOuter : j + k < n - 1 := by omega
+              have hOuterNe : ¬ n - 1 = j + k := by omega
+              have hnat : n - 1 - 1 = n - 2 := by omega
+              simp [LFTyping.subst, hJ, hk, hkn, hJn, hInnerK, hInnerNe,
+                hOuter, hOuterNe, hnat]
+            · have hJNotLt : ¬ j + k + 1 < n := hJn
+              have hOuterNe : ¬ n - 1 = j + k := by omega
+              have hOuterNotLt : ¬ j + k < n - 1 := by omega
+              simp [LFTyping.subst, hJ, hk, hkn, hJNotLt, hOuterNe, hOuterNotLt]
+          · have hJNotLt : ¬ j + k + 1 < n := by omega
+            have hkNotLt : ¬ k < n := hkn
+            have hOuterNe : ¬ n = j + k := by omega
+            have hOuterNotLt : ¬ j + k < n := by omega
+            simp [LFTyping.subst, hJ, hk, hkNotLt, hJNotLt, hOuterNe, hOuterNotLt]
+  | pi A B ihA ihB =>
+      simp [LFTyping.subst, ihA k j s a]
+      have hArg :
+          LFTyping.lift 1 0
+              (LFTyping.lift k 0 (LFTyping.subst j s a)) =
+            LFTyping.lift (k + 1) 0 (LFTyping.subst j s a) := by
+        simpa [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using
+          (lf_lift_lift_same_cutoff 1 k 0 (LFTyping.subst j s a))
+      have hs :
+          LFTyping.lift 1 0 (LFTyping.lift (k + 1) 0 s) =
+            LFTyping.lift (k + 1 + 1) 0 s := by
+        simpa [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using
+          (lf_lift_lift_same_cutoff 1 (k + 1) 0 s)
+      have hsOuter :
+          LFTyping.lift 1 0 (LFTyping.lift k 0 s) =
+            LFTyping.lift (k + 1) 0 s := by
+        simpa [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using
+          (lf_lift_lift_same_cutoff 1 k 0 s)
+      have ha :
+          LFTyping.lift 1 0 (LFTyping.lift k 0 a) =
+            LFTyping.lift (k + 1) 0 a := by
+        simpa [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using
+          (lf_lift_lift_same_cutoff 1 k 0 a)
+      rw [hArg, hs, hsOuter, ha]
+      simpa [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using
+        ihB (k + 1) j s a
+  | lam A b ihA ihb =>
+      simp [LFTyping.subst, ihA k j s a]
+      have hArg :
+          LFTyping.lift 1 0
+              (LFTyping.lift k 0 (LFTyping.subst j s a)) =
+            LFTyping.lift (k + 1) 0 (LFTyping.subst j s a) := by
+        simpa [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using
+          (lf_lift_lift_same_cutoff 1 k 0 (LFTyping.subst j s a))
+      have hs :
+          LFTyping.lift 1 0 (LFTyping.lift (k + 1) 0 s) =
+            LFTyping.lift (k + 1 + 1) 0 s := by
+        simpa [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using
+          (lf_lift_lift_same_cutoff 1 (k + 1) 0 s)
+      have hsOuter :
+          LFTyping.lift 1 0 (LFTyping.lift k 0 s) =
+            LFTyping.lift (k + 1) 0 s := by
+        simpa [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using
+          (lf_lift_lift_same_cutoff 1 k 0 s)
+      have ha :
+          LFTyping.lift 1 0 (LFTyping.lift k 0 a) =
+            LFTyping.lift (k + 1) 0 a := by
+        simpa [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using
+          (lf_lift_lift_same_cutoff 1 k 0 a)
+      rw [hArg, hs, hsOuter, ha]
+      simpa [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using
+        ihb (k + 1) j s a
+  | app f a ihf iha =>
+      simp [LFTyping.subst, ihf k j s a, iha k j s a]
+
+theorem lf_subst_subst0 (j : Nat) (s a body : LF.Term) :
+    LFTyping.subst0 (LFTyping.subst j s a)
+        (LFTyping.subst (j + 1) (LFTyping.lift 1 0 s) body) =
+      LFTyping.subst j s (LFTyping.subst0 a body) := by
+  unfold LFTyping.subst0
+  simpa [lf_lift_zero, Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using
+    (lf_subst_subst_binder 0 j s a body)
+
+theorem reduces_lift_corpus (d c : Nat) :
+    ∀ {t u : LF.Term}, LFTyping.Reduces LFTyping.corpusSig t u ->
+      LFTyping.Reduces LFTyping.corpusSig
+        (LFTyping.lift d c t) (LFTyping.lift d c u) := by
+  intro t u h
+  induction h generalizing c with
+  | refl =>
+      exact LFTyping.Reduces.refl
+  | beta =>
+      simp [LFTyping.lift]
+      rw [lf_lift_subst0]
+      exact LFTyping.Reduces.beta
+  | delta hlookup =>
+      rw [lookupBody_corpusSig_none] at hlookup
+      cases hlookup
+  | app _hf _ha ihf iha =>
+      simp [LFTyping.lift]
+      exact LFTyping.Reduces.app (ihf c) (iha c)
+  | pi _hA _hB ihA ihB =>
+      simp [LFTyping.lift]
+      exact LFTyping.Reduces.pi (ihA c) (ihB (c + 1))
+  | lam _hA _hb ihA ihb =>
+      simp [LFTyping.lift]
+      exact LFTyping.Reduces.lam (ihA c) (ihb (c + 1))
+  | trans _hab _hbc ihab ihbc =>
+      exact LFTyping.Reduces.trans (ihab c) (ihbc c)
+
+theorem reduces_subst_arg_corpus (j : Nat) {s s' : LF.Term}
+    (hs : LFTyping.Reduces LFTyping.corpusSig s s') :
+    ∀ t : LF.Term,
+      LFTyping.Reduces LFTyping.corpusSig
+        (LFTyping.subst j s t) (LFTyping.subst j s' t) := by
+  intro t
+  induction t generalizing j s s' with
+  | srt sort =>
+      cases sort <;> simp [LFTyping.subst] <;> exact LFTyping.Reduces.refl
+  | con _x =>
+      simp [LFTyping.subst]
+      exact LFTyping.Reduces.refl
+  | var k =>
+      simp only [LFTyping.subst]
+      by_cases hkj : k = j
+      · simp [hkj]
+        exact hs
+      · by_cases hlt : j < k
+        · simp [hkj, hlt]
+          exact LFTyping.Reduces.refl
+        · simp [hkj, hlt]
+          exact LFTyping.Reduces.refl
+  | pi A B ihA ihB =>
+      simp [LFTyping.subst]
+      exact LFTyping.Reduces.pi
+        (ihA j hs)
+        (ihB (j + 1) (reduces_lift_corpus 1 0 hs))
+  | lam A b ihA ihb =>
+      simp [LFTyping.subst]
+      exact LFTyping.Reduces.lam
+        (ihA j hs)
+        (ihb (j + 1) (reduces_lift_corpus 1 0 hs))
+  | app f a ihf iha =>
+      simp [LFTyping.subst]
+      exact LFTyping.Reduces.app (ihf j hs) (iha j hs)
+
+theorem reduces_subst_fixed_corpus (j : Nat) (s : LF.Term) :
+    ∀ {t u : LF.Term}, LFTyping.Reduces LFTyping.corpusSig t u ->
+      LFTyping.Reduces LFTyping.corpusSig
+        (LFTyping.subst j s t) (LFTyping.subst j s u) := by
+  intro t u h
+  induction h generalizing j s with
+  | refl =>
+      exact LFTyping.Reduces.refl
+  | beta =>
+      simp [LFTyping.subst]
+      rw [← lf_subst_subst0]
+      exact LFTyping.Reduces.beta
+  | delta hlookup =>
+      rw [lookupBody_corpusSig_none] at hlookup
+      cases hlookup
+  | app _hf _ha ihf iha =>
+      simp [LFTyping.subst]
+      exact LFTyping.Reduces.app (ihf j s) (iha j s)
+  | pi _hA _hB ihA ihB =>
+      simp [LFTyping.subst]
+      exact LFTyping.Reduces.pi
+        (ihA j s)
+        (ihB (j + 1) (LFTyping.lift 1 0 s))
+  | lam _hA _hb ihA ihb =>
+      simp [LFTyping.subst]
+      exact LFTyping.Reduces.lam
+        (ihA j s)
+        (ihb (j + 1) (LFTyping.lift 1 0 s))
+  | trans _hab _hbc ihab ihbc =>
+      exact LFTyping.Reduces.trans (ihab j s) (ihbc j s)
+
+theorem reduces_subst_corpus (j : Nat) {s s' t u : LF.Term}
+    (hs : LFTyping.Reduces LFTyping.corpusSig s s')
+    (ht : LFTyping.Reduces LFTyping.corpusSig t u) :
+    LFTyping.Reduces LFTyping.corpusSig
+      (LFTyping.subst j s t) (LFTyping.subst j s' u) := by
+  exact LFTyping.Reduces.trans
+    (reduces_subst_fixed_corpus j s ht)
+    (reduces_subst_arg_corpus j hs u)
+
+theorem reduces_lam_inv_general {sig : LFTyping.Sig} :
+    ∀ {x y : LF.Term}, LFTyping.Reduces sig x y ->
+      ∀ {A b : LF.Term}, x = .lam A b ->
+        ∃ A' b', y = .lam A' b' ∧
+          LFTyping.Reduces sig A A' ∧ LFTyping.Reduces sig b b' := by
+  intro x y h
+  induction h with
+  | refl =>
+      intro A b hx
+      cases hx
+      exact ⟨A, b, rfl, LFTyping.Reduces.refl, LFTyping.Reduces.refl⟩
+  | beta =>
+      intro A b hx
+      cases hx
+  | delta _hlookup =>
+      intro A b hx
+      cases hx
+  | app _hf _ha _ihf _iha =>
+      intro A b hx
+      cases hx
+  | pi _hA _hB _ihA _ihB =>
+      intro A b hx
+      cases hx
+  | lam hA hb =>
+      intro A0 b0 hx
+      cases hx
+      exact ⟨_, _, rfl, hA, hb⟩
+  | trans _hab _hbc ihab ihbc =>
+      intro A b hx
+      obtain ⟨A1, b1, hmid, hA1, hb1⟩ := ihab hx
+      obtain ⟨A2, b2, hend, hA2, hb2⟩ := ihbc hmid
+      exact ⟨A2, b2, hend,
+        LFTyping.Reduces.trans hA1 hA2,
+        LFTyping.Reduces.trans hb1 hb2⟩
+
+theorem reduces_lam_inv {sig : LFTyping.Sig} {A b y : LF.Term}
+    (h : LFTyping.Reduces sig (.lam A b) y) :
+    ∃ A' b', y = .lam A' b' ∧
+      LFTyping.Reduces sig A A' ∧ LFTyping.Reduces sig b b' :=
+  reduces_lam_inv_general h rfl
+
+theorem reduces_pi_inv_general {sig : LFTyping.Sig} :
+    ∀ {x y : LF.Term}, LFTyping.Reduces sig x y ->
+      ∀ {A B : LF.Term}, x = .pi A B ->
+        ∃ A' B', y = .pi A' B' ∧
+          LFTyping.Reduces sig A A' ∧ LFTyping.Reduces sig B B' := by
+  intro x y h
+  induction h with
+  | refl =>
+      intro A B hx
+      cases hx
+      exact ⟨A, B, rfl, LFTyping.Reduces.refl, LFTyping.Reduces.refl⟩
+  | beta =>
+      intro A B hx
+      cases hx
+  | delta _hlookup =>
+      intro A B hx
+      cases hx
+  | app _hf _ha _ihf _iha =>
+      intro A B hx
+      cases hx
+  | pi hA hB =>
+      intro A0 B0 hx
+      cases hx
+      exact ⟨_, _, rfl, hA, hB⟩
+  | lam _hA _hb _ihA _ihb =>
+      intro A B hx
+      cases hx
+  | trans _hab _hbc ihab ihbc =>
+      intro A B hx
+      obtain ⟨A1, B1, hmid, hA1, hB1⟩ := ihab hx
+      obtain ⟨A2, B2, hend, hA2, hB2⟩ := ihbc hmid
+      exact ⟨A2, B2, hend,
+        LFTyping.Reduces.trans hA1 hA2,
+        LFTyping.Reduces.trans hB1 hB2⟩
+
+theorem reduces_pi_inv {sig : LFTyping.Sig} {A B y : LF.Term}
+    (h : LFTyping.Reduces sig (.pi A B) y) :
+    ∃ A' B', y = .pi A' B' ∧
+      LFTyping.Reduces sig A A' ∧ LFTyping.Reduces sig B B' :=
+  reduces_pi_inv_general h rfl
+
+theorem reduces_srt_inv_general {sig : LFTyping.Sig} :
+    ∀ {x y : LF.Term}, LFTyping.Reduces sig x y ->
+      ∀ {s : LF.Srt}, x = .srt s -> y = .srt s := by
+  intro x y h
+  induction h with
+  | refl =>
+      intro s hx
+      cases hx
+      rfl
+  | beta =>
+      intro s hx
+      cases hx
+  | delta _hlookup =>
+      intro s hx
+      cases hx
+  | app _hf _ha _ihf _iha =>
+      intro s hx
+      cases hx
+  | pi _hA _hB _ihA _ihB =>
+      intro s hx
+      cases hx
+  | lam _hA _hb _ihA _ihb =>
+      intro s hx
+      cases hx
+  | trans _hab _hbc ihab ihbc =>
+      intro s hx
+      exact ihbc (ihab hx)
+
+theorem reduces_srt_inv {sig : LFTyping.Sig} {s : LF.Srt} {y : LF.Term}
+    (h : LFTyping.Reduces sig (.srt s) y) :
+    y = .srt s :=
+  reduces_srt_inv_general h rfl
+
+theorem reduces_var_inv_general {sig : LFTyping.Sig} :
+    ∀ {x y : LF.Term}, LFTyping.Reduces sig x y ->
+      ∀ {k : Nat}, x = .var k -> y = .var k := by
+  intro x y h
+  induction h with
+  | refl =>
+      intro k hx
+      cases hx
+      rfl
+  | beta =>
+      intro k hx
+      cases hx
+  | delta _hlookup =>
+      intro k hx
+      cases hx
+  | app _hf _ha _ihf _iha =>
+      intro k hx
+      cases hx
+  | pi _hA _hB _ihA _ihB =>
+      intro k hx
+      cases hx
+  | lam _hA _hb _ihA _ihb =>
+      intro k hx
+      cases hx
+  | trans _hab _hbc ihab ihbc =>
+      intro k hx
+      exact ihbc (ihab hx)
+
+theorem reduces_var_inv {sig : LFTyping.Sig} {k : Nat} {y : LF.Term}
+    (h : LFTyping.Reduces sig (.var k) y) :
+    y = .var k :=
+  reduces_var_inv_general h rfl
+
+theorem reduces_corpus_con_inv_general :
+    ∀ {x y : LF.Term}, LFTyping.Reduces LFTyping.corpusSig x y ->
+      ∀ {name : String}, x = .con name -> y = .con name := by
+  intro x y h
+  induction h with
+  | refl =>
+      intro name hx
+      cases hx
+      rfl
+  | beta =>
+      intro name hx
+      cases hx
+  | delta hlookup =>
+      intro name hx
+      cases hx
+      rw [lookupBody_corpusSig_none] at hlookup
+      cases hlookup
+  | app _hf _ha _ihf _iha =>
+      intro name hx
+      cases hx
+  | pi _hA _hB _ihA _ihB =>
+      intro name hx
+      cases hx
+  | lam _hA _hb _ihA _ihb =>
+      intro name hx
+      cases hx
+  | trans _hab _hbc ihab ihbc =>
+      intro name hx
+      exact ihbc (ihab hx)
+
+theorem reduces_corpus_con_inv {name : String} {y : LF.Term}
+    (h : LFTyping.Reduces LFTyping.corpusSig (.con name) y) :
+    y = .con name :=
+  reduces_corpus_con_inv_general h rfl
+
+def ReferenceTargetFuelBridge : Prop :=
+  ∀ A_spec,
+    EncodableTerm (LFTyping.nf LFTyping.corpusSig 31 A_spec) ->
+      EncodableTerm (LFTyping.nf LFTyping.corpusSig checkerFuel A_spec)
+
+theorem reference_target_fuel_bridge_of_nf_reduces
+    (hred : ∀ A_spec,
+      LFTyping.Reduces LFTyping.corpusSig
+        (LFTyping.nf LFTyping.corpusSig 31 A_spec)
+        (LFTyping.nf LFTyping.corpusSig checkerFuel A_spec)) :
+    ReferenceTargetFuelBridge := by
+  intro A_spec henc
+  exact reduces_corpus_preserves_encodable (hred A_spec) henc
+
+theorem nf_succ_reduces_of_nfApp_succ
+    (happ : ∀ fuel f a,
+      LFTyping.Reduces LFTyping.corpusSig
+        (LFTyping.nfApp LFTyping.corpusSig fuel
+          (LFTyping.nf LFTyping.corpusSig fuel f)
+          (LFTyping.nf LFTyping.corpusSig fuel a))
+        (LFTyping.nfApp LFTyping.corpusSig (fuel + 1)
+          (LFTyping.nf LFTyping.corpusSig (fuel + 1) f)
+          (LFTyping.nf LFTyping.corpusSig (fuel + 1) a))) :
+    ∀ fuel t,
+      LFTyping.Reduces LFTyping.corpusSig
+        (LFTyping.nf LFTyping.corpusSig fuel t)
+        (LFTyping.nf LFTyping.corpusSig (fuel + 1) t) := by
+  intro fuel
+  induction fuel with
+  | zero =>
+      intro t
+      simpa [LFTyping.nf] using LFTyping.nf_sound LFTyping.corpusSig 1 t
+  | succ fuel ih =>
+      intro t
+      cases t with
+      | srt s =>
+          cases s <;> simp [LFTyping.nf] <;> exact LFTyping.Reduces.refl
+      | var _k =>
+          simp [LFTyping.nf]
+          exact LFTyping.Reduces.refl
+      | con x =>
+          simp [LFTyping.nf, lookupBody_corpusSig_none]
+          exact LFTyping.Reduces.refl
+      | pi A B =>
+          simp [LFTyping.nf]
+          exact LFTyping.Reduces.pi (ih A) (ih B)
+      | lam A b =>
+          simp [LFTyping.nf]
+          exact LFTyping.Reduces.lam (ih A) (ih b)
+      | app f a =>
+          simpa [LFTyping.nf] using happ fuel f a
+
+theorem nfApp_zero_succ_reduces (f a : LF.Term) :
+    LFTyping.Reduces LFTyping.corpusSig
+      (LFTyping.nfApp LFTyping.corpusSig 0
+        (LFTyping.nf LFTyping.corpusSig 0 f)
+        (LFTyping.nf LFTyping.corpusSig 0 a))
+      (LFTyping.nfApp LFTyping.corpusSig 1
+        (LFTyping.nf LFTyping.corpusSig 1 f)
+        (LFTyping.nf LFTyping.corpusSig 1 a)) := by
+  have hf : LFTyping.Reduces LFTyping.corpusSig f
+      (LFTyping.nf LFTyping.corpusSig 1 f) :=
+    LFTyping.nf_sound LFTyping.corpusSig 1 f
+  have ha : LFTyping.Reduces LFTyping.corpusSig a
+      (LFTyping.nf LFTyping.corpusSig 1 a) :=
+    LFTyping.nf_sound LFTyping.corpusSig 1 a
+  have hmain : LFTyping.Reduces LFTyping.corpusSig (.app f a)
+      (LFTyping.nfApp LFTyping.corpusSig 1
+        (LFTyping.nf LFTyping.corpusSig 1 f)
+        (LFTyping.nf LFTyping.corpusSig 1 a)) := by
+    cases hfn : LFTyping.nf LFTyping.corpusSig 1 f with
+    | lam _A _body =>
+        rw [hfn] at hf
+        simp [LFTyping.nfApp]
+        exact LFTyping.Reduces.trans (LFTyping.Reduces.app hf ha) LFTyping.Reduces.beta
+    | srt _s =>
+        rw [hfn] at hf
+        simp [LFTyping.nfApp]
+        exact LFTyping.Reduces.app hf ha
+    | var _k =>
+        rw [hfn] at hf
+        simp [LFTyping.nfApp]
+        exact LFTyping.Reduces.app hf ha
+    | con _x =>
+        rw [hfn] at hf
+        simp [LFTyping.nfApp]
+        exact LFTyping.Reduces.app hf ha
+    | pi _A _B =>
+        rw [hfn] at hf
+        simp [LFTyping.nfApp]
+        exact LFTyping.Reduces.app hf ha
+    | app _g _b =>
+        rw [hfn] at hf
+        simp [LFTyping.nfApp]
+        exact LFTyping.Reduces.app hf ha
+  simpa [LFTyping.nf, LFTyping.nfApp] using hmain
+
+theorem nfApp_succ_reduces_of_positive
+    (hpos : ∀ fuel f a,
+      LFTyping.Reduces LFTyping.corpusSig
+        (LFTyping.nfApp LFTyping.corpusSig (fuel + 1)
+          (LFTyping.nf LFTyping.corpusSig (fuel + 1) f)
+          (LFTyping.nf LFTyping.corpusSig (fuel + 1) a))
+        (LFTyping.nfApp LFTyping.corpusSig (fuel + 1 + 1)
+          (LFTyping.nf LFTyping.corpusSig (fuel + 1 + 1) f)
+          (LFTyping.nf LFTyping.corpusSig (fuel + 1 + 1) a))) :
+    ∀ fuel f a,
+      LFTyping.Reduces LFTyping.corpusSig
+        (LFTyping.nfApp LFTyping.corpusSig fuel
+          (LFTyping.nf LFTyping.corpusSig fuel f)
+          (LFTyping.nf LFTyping.corpusSig fuel a))
+        (LFTyping.nfApp LFTyping.corpusSig (fuel + 1)
+          (LFTyping.nf LFTyping.corpusSig (fuel + 1) f)
+          (LFTyping.nf LFTyping.corpusSig (fuel + 1) a)) := by
+  intro fuel
+  cases fuel with
+  | zero =>
+      intro f a
+      exact nfApp_zero_succ_reduces f a
+  | succ fuel =>
+      intro f a
+      exact hpos fuel f a
+
+theorem reference_target_fuel_bridge_of_nfApp_succ
+    (happ : ∀ fuel f a,
+      LFTyping.Reduces LFTyping.corpusSig
+        (LFTyping.nfApp LFTyping.corpusSig fuel
+          (LFTyping.nf LFTyping.corpusSig fuel f)
+          (LFTyping.nf LFTyping.corpusSig fuel a))
+        (LFTyping.nfApp LFTyping.corpusSig (fuel + 1)
+          (LFTyping.nf LFTyping.corpusSig (fuel + 1) f)
+          (LFTyping.nf LFTyping.corpusSig (fuel + 1) a))) :
+    ReferenceTargetFuelBridge := by
+  apply reference_target_fuel_bridge_of_nf_reduces
+  intro A_spec
+  have hsucc := nf_succ_reduces_of_nfApp_succ happ 31 A_spec
+  simpa [checkerFuel] using hsucc
+
+theorem reference_target_fuel_bridge_of_nfApp_positive_succ
+    (hpos : ∀ fuel f a,
+      LFTyping.Reduces LFTyping.corpusSig
+        (LFTyping.nfApp LFTyping.corpusSig (fuel + 1)
+          (LFTyping.nf LFTyping.corpusSig (fuel + 1) f)
+          (LFTyping.nf LFTyping.corpusSig (fuel + 1) a))
+        (LFTyping.nfApp LFTyping.corpusSig (fuel + 1 + 1)
+          (LFTyping.nf LFTyping.corpusSig (fuel + 1 + 1) f)
+          (LFTyping.nf LFTyping.corpusSig (fuel + 1 + 1) a))) :
+    ReferenceTargetFuelBridge :=
+  reference_target_fuel_bridge_of_nfApp_succ
+    (nfApp_succ_reduces_of_positive hpos)
+
+theorem reference_rejects_bad_target_of_fuel_bridge
+    (hbridge : ReferenceTargetFuelBridge) :
+    ReferenceRejectsBadTargetInterface := by
+  intro t A_spec hbad
+  unfold encTy? at hbad
+  cases hInf : LFTyping.infer 31 LFTyping.corpusSig [] t with
+  | none =>
+      simp [LFTyping.check, checkerFuel, hInf]
+  | some B =>
+      cases hconv : LFTyping.convBool LFTyping.corpusSig 31 B A_spec with
+      | false =>
+          simp [LFTyping.check, checkerFuel, hInf, hconv]
+      | true =>
+          have heq : LFTyping.nf LFTyping.corpusSig 31 B =
+              LFTyping.nf LFTyping.corpusSig 31 A_spec := by
+            exact lfTerm_beq_true_eq (by simpa [LFTyping.convBool] using hconv)
+          have hBEnc : EncodableTerm B :=
+            infer_corpus_output_encodable 31 [] t B (by intro T hT; simp at hT) hInf
+          have hBnfEnc : EncodableTerm (LFTyping.nf LFTyping.corpusSig 31 B) :=
+            nf_corpus_encodable hBEnc
+          have hAnf31Enc : EncodableTerm (LFTyping.nf LFTyping.corpusSig 31 A_spec) := by
+            simpa [heq] using hBnfEnc
+          have hAnf32Enc : EncodableTerm (LFTyping.nf LFTyping.corpusSig checkerFuel A_spec) :=
+            hbridge A_spec hAnf31Enc
+          obtain ⟨u, hu⟩ := hAnf32Enc
+          rw [hu] at hbad
+          cases hbad
+
+theorem lfcheckK_success_of_checkT_and_bad_target_interfaces
+    (hcheckT : CheckTVerdictInterface)
+    (hbadTarget : ReferenceRejectsBadTargetInterface)
+    (hbadTerm : ReferenceRejectsBadTermInterface) :
+    LFCheckKSuccessInterface := by
+  intro t A_spec
+  have hKstep : eval pTC 1 (lfcheckK (encTy A_spec) (Ok (encTerm t))) =
+      lfcheckI (encTy A_spec) (internTerm (encTerm t)) := by
+    rfl
+  cases hA : encTy? A_spec with
+  | none =>
+      have href : LFTyping.check checkerFuel LFTyping.corpusSig [] t A_spec = false :=
+        hbadTarget t A_spec hA
+      cases ht : encTyCore? t with
+      | none =>
+          have hfirst := internTerm_failure_first_active t ht
+          obtain ⟨N, hN⟩ := lfcheckI_checkBad_intern_failure_reject_tc hfirst
+          refine ⟨1 + N, ?_⟩
+          have htotal :
+              eval pTC (1 + N) (lfcheckK (encTy A_spec) (Ok (encTerm t))) =
+                eval pTC N (lfcheckI (encTy A_spec) (internTerm (encTerm t))) := by
+            exact eval_trans_tc 1 N _ _ _ hKstep rfl
+          rw [htotal]
+          simpa [encTy, hA, href] using hN
+      | some tAst =>
+          have hfirst := internTerm_success_first_active t tAst ht
+          obtain ⟨N, hN⟩ := lfcheckI_bad_type_intern_success_reject_tc hfirst
+          refine ⟨1 + N, ?_⟩
+          have htotal :
+              eval pTC (1 + N) (lfcheckK (encTy A_spec) (Ok (encTerm t))) =
+                eval pTC N (lfcheckI checkBad (internTerm (encTerm t))) := by
+            simpa [encTy, hA] using eval_trans_tc 1 N _ _ _ hKstep rfl
+          rw [htotal]
+          simpa [href] using hN
+  | some A =>
+      have hAcore :
+          encTyCore? (LFTyping.nf LFTyping.corpusSig checkerFuel A_spec) = some A := by
+        simpa [encTy?] using hA
+      cases ht : encTyCore? t with
+      | none =>
+          have hfirst := internTerm_failure_first_active t ht
+          obtain ⟨N, hN⟩ := lfcheckI_intern_failure_reject_of_enc_tc hAcore hfirst
+          have href : LFTyping.check checkerFuel LFTyping.corpusSig [] t A_spec = false :=
+            hbadTerm t A_spec ht
+          refine ⟨1 + N, ?_⟩
+          have htotal :
+              eval pTC (1 + N) (lfcheckK (encTy A_spec) (Ok (encTerm t))) =
+                eval pTC N (lfcheckI A (internTerm (encTerm t))) := by
+            simpa [encTy, hA] using eval_trans_tc 1 N _ _ _ hKstep rfl
+          rw [htotal]
+          simpa [href] using hN
+      | some tAst =>
+          have hfirst := internTerm_success_first_active t tAst ht
+          obtain ⟨Nintern, hNintern⟩ := lfcheckI_intern_success_to_checkT hAcore hfirst
+          obtain ⟨Ncheck, hNcheck⟩ := hcheckT t A_spec tAst A ht hA
+          refine ⟨1 + (Nintern + Ncheck), ?_⟩
+          have hNintern' :
+              eval pTC Nintern (lfcheckI (encTy A_spec) (internTerm (encTerm t))) =
+                verdict (checkT checkerFuelA Nil tAst A) := by
+            simpa [encTy, hA] using hNintern
+          have htail :
+              eval pTC (Nintern + Ncheck)
+                  (lfcheckI (encTy A_spec) (internTerm (encTerm t))) =
+                eval pTC Ncheck (verdict (checkT checkerFuelA Nil tAst A)) := by
+            exact eval_trans_tc Nintern Ncheck _ _ _ hNintern' rfl
+          have htotal :
+              eval pTC (1 + (Nintern + Ncheck))
+                  (lfcheckK (encTy A_spec) (Ok (encTerm t))) =
+                eval pTC Ncheck (verdict (checkT checkerFuelA Nil tAst A)) := by
+            exact eval_trans_tc 1 (Nintern + Ncheck) _ _ _ hKstep htail
+          rw [htotal]
+          exact hNcheck
+
+theorem lfcheckK_success_of_checkT_and_bad_target_interface
+    (hcheckT : CheckTVerdictInterface)
+    (hbadTarget : ReferenceRejectsBadTargetInterface) :
+    LFCheckKSuccessInterface :=
+  lfcheckK_success_of_checkT_and_bad_target_interfaces
+    hcheckT hbadTarget reference_rejects_bad_term_interface
+
+theorem lfcheckK_success_of_checkT_and_fuel_bridge_interfaces
+    (hcheckT : CheckTVerdictInterface)
+    (hbridge : ReferenceTargetFuelBridge) :
+    LFCheckKSuccessInterface :=
+  lfcheckK_success_of_checkT_and_bad_target_interface
+    hcheckT (reference_rejects_bad_target_of_fuel_bridge hbridge)
+
+theorem lfcheckI_raw_success_of_intern_and_checkT_interfaces
+    (hinternSome : RawInternSuccessInterface)
+    (hinternNone : RawInternFailureInterface)
+    (hcheckT : CheckTVerdictInterface)
+    (hbadTarget : ReferenceRejectsBadTargetInterface)
+    (hbadTerm : ReferenceRejectsBadTermInterface) :
+    LFCheckIRawSuccessInterface := by
+  intro t A_spec raw hraw
+  cases hA : encTy? A_spec with
+  | none =>
+      have href : LFTyping.check checkerFuel LFTyping.corpusSig [] t A_spec = false :=
+        hbadTarget t A_spec hA
+      cases ht : encTyCore? t with
+      | none =>
+          have hfirst := hinternNone t raw hraw ht
+          obtain ⟨N, hN⟩ := lfcheckI_checkBad_intern_failure_reject_tc hfirst
+          refine ⟨N, ?_⟩
+          simpa [encTy, hA, href] using hN
+      | some tAst =>
+          have hfirst := hinternSome t raw tAst hraw ht
+          obtain ⟨N, hN⟩ := lfcheckI_bad_type_intern_success_reject_tc hfirst
+          refine ⟨N, ?_⟩
+          simpa [encTy, hA, href] using hN
+  | some A =>
+      have hAcore : encTyCore? (LFTyping.nf LFTyping.corpusSig checkerFuel A_spec) = some A := by
+        simpa [encTy?] using hA
+      cases ht : encTyCore? t with
+      | none =>
+          have hfirst := hinternNone t raw hraw ht
+          obtain ⟨N, hN⟩ := lfcheckI_intern_failure_reject_of_enc_tc hAcore hfirst
+          have href : LFTyping.check checkerFuel LFTyping.corpusSig [] t A_spec = false :=
+            hbadTerm t A_spec ht
+          refine ⟨N, ?_⟩
+          simpa [encTy, hA, href] using hN
+      | some tAst =>
+          have hfirst := hinternSome t raw tAst hraw ht
+          obtain ⟨Nintern, hNintern⟩ := lfcheckI_intern_success_to_checkT hAcore hfirst
+          obtain ⟨Ncheck, hNcheck⟩ := hcheckT t A_spec tAst A ht hA
+          refine ⟨Nintern + Ncheck, ?_⟩
+          have htotal :
+              eval pTC (Nintern + Ncheck) (lfcheckI A (internTerm raw)) =
+                eval pTC Ncheck (verdict (checkT checkerFuelA Nil tAst A)) :=
+            eval_trans_tc Nintern Ncheck _ _ _ hNintern rfl
+          simpa [encTy, hA, htotal] using hNcheck
+
+theorem lfcheckI_raw_tc_success_of_intern_and_checkT_interfaces
+    (hinternSome : RawInternSuccessTCInterface)
+    (hinternNone : RawInternFailureTCInterface)
+    (hcheckT : CheckTVerdictInterface)
+    (hbadTarget : ReferenceRejectsBadTargetInterface)
+    (hbadTerm : ReferenceRejectsBadTermInterface) :
+    LFCheckIRawTCSuccessInterface := by
+  intro t A_spec raw hraw
+  cases hA : encTy? A_spec with
+  | none =>
+      have href : LFTyping.check checkerFuel LFTyping.corpusSig [] t A_spec = false :=
+        hbadTarget t A_spec hA
+      cases ht : encTyCore? t with
+      | none =>
+          have hfirst := hinternNone t raw hraw ht
+          obtain ⟨N, hN⟩ := lfcheckI_checkBad_intern_failure_reject_tc hfirst
+          refine ⟨N, ?_⟩
+          simpa [encTy, hA, href] using hN
+      | some tAst =>
+          have hfirst := hinternSome t raw tAst hraw ht
+          obtain ⟨N, hN⟩ := lfcheckI_bad_type_intern_success_reject_tc hfirst
+          refine ⟨N, ?_⟩
+          simpa [encTy, hA, href] using hN
+  | some A =>
+      have hAcore : encTyCore? (LFTyping.nf LFTyping.corpusSig checkerFuel A_spec) = some A := by
+        simpa [encTy?] using hA
+      cases ht : encTyCore? t with
+      | none =>
+          have hfirst := hinternNone t raw hraw ht
+          obtain ⟨N, hN⟩ := lfcheckI_intern_failure_reject_of_enc_tc hAcore hfirst
+          have href : LFTyping.check checkerFuel LFTyping.corpusSig [] t A_spec = false :=
+            hbadTerm t A_spec ht
+          refine ⟨N, ?_⟩
+          simpa [encTy, hA, href] using hN
+      | some tAst =>
+          have hfirst := hinternSome t raw tAst hraw ht
+          obtain ⟨Nintern, hNintern⟩ := lfcheckI_intern_success_to_checkT hAcore hfirst
+          obtain ⟨Ncheck, hNcheck⟩ := hcheckT t A_spec tAst A ht hA
+          refine ⟨Nintern + Ncheck, ?_⟩
+          have htotal :
+              eval pTC (Nintern + Ncheck) (lfcheckI A (internTerm raw)) =
+                eval pTC Ncheck (verdict (checkT checkerFuelA Nil tAst A)) :=
+            eval_trans_tc Nintern Ncheck _ _ _ hNintern rfl
+          simpa [encTy, hA, htotal] using hNcheck
+
+theorem lfcheckI_raw_success_of_intern_checkT_and_bad_target_interfaces
+    (hinternSome : RawInternSuccessInterface)
+    (hinternNone : RawInternFailureInterface)
+    (hcheckT : CheckTVerdictInterface)
+    (hbadTarget : ReferenceRejectsBadTargetInterface) :
+    LFCheckIRawSuccessInterface :=
+  lfcheckI_raw_success_of_intern_and_checkT_interfaces
+    hinternSome hinternNone hcheckT hbadTarget reference_rejects_bad_term_interface
+
+theorem lfcheckI_raw_tc_success_of_intern_checkT_and_bad_target_interfaces
+    (hinternSome : RawInternSuccessTCInterface)
+    (hinternNone : RawInternFailureTCInterface)
+    (hcheckT : CheckTVerdictInterface)
+    (hbadTarget : ReferenceRejectsBadTargetInterface) :
+    LFCheckIRawTCSuccessInterface :=
+  lfcheckI_raw_tc_success_of_intern_and_checkT_interfaces
+    hinternSome hinternNone hcheckT hbadTarget reference_rejects_bad_term_interface
+
+theorem lfcheckI_raw_tc_success_of_checkT_and_bad_target_interfaces
+    (hcheckT : CheckTVerdictInterface)
+    (hbadTarget : ReferenceRejectsBadTargetInterface) :
+    LFCheckIRawTCSuccessInterface :=
+  lfcheckI_raw_tc_success_of_intern_checkT_and_bad_target_interfaces
+    raw_intern_success_tc_interface raw_intern_failure_tc_interface
+    hcheckT hbadTarget
+
+theorem lfcheckI_raw_success_of_intern_checkT_and_fuel_bridge_interfaces
+    (hinternSome : RawInternSuccessInterface)
+    (hinternNone : RawInternFailureInterface)
+    (hcheckT : CheckTVerdictInterface)
+    (hbridge : ReferenceTargetFuelBridge) :
+    LFCheckIRawSuccessInterface :=
+  lfcheckI_raw_success_of_intern_checkT_and_bad_target_interfaces
+    hinternSome hinternNone hcheckT
+      (reference_rejects_bad_target_of_fuel_bridge hbridge)
+
+theorem lfcheckI_raw_tc_success_of_intern_checkT_and_fuel_bridge_interfaces
+    (hinternSome : RawInternSuccessTCInterface)
+    (hinternNone : RawInternFailureTCInterface)
+    (hcheckT : CheckTVerdictInterface)
+    (hbridge : ReferenceTargetFuelBridge) :
+    LFCheckIRawTCSuccessInterface :=
+  lfcheckI_raw_tc_success_of_intern_checkT_and_bad_target_interfaces
+    hinternSome hinternNone hcheckT
+      (reference_rejects_bad_target_of_fuel_bridge hbridge)
+
+theorem lfcheckI_raw_tc_success_of_checkT_and_fuel_bridge_interfaces
+    (hcheckT : CheckTVerdictInterface)
+    (hbridge : ReferenceTargetFuelBridge) :
+    LFCheckIRawTCSuccessInterface :=
+  lfcheckI_raw_tc_success_of_checkT_and_bad_target_interfaces
+    hcheckT (reference_rejects_bad_target_of_fuel_bridge hbridge)
+
 theorem lfcheckK_raw_success_of_lfcheckI_raw_success
     (hcheckI : LFCheckIRawSuccessInterface) : LFCheckKRawSuccessInterface := by
+  intro t A_spec raw hraw
+  obtain ⟨N, hN⟩ := hcheckI t A_spec raw hraw
+  refine ⟨1 + N, ?_⟩
+  have hstep :
+      eval pTC 1 (lfcheckK (encTy A_spec) (Ok raw)) =
+        lfcheckI (encTy A_spec) (internTerm raw) := by
+    rfl
+  have htotal :
+      eval pTC (1 + N) (lfcheckK (encTy A_spec) (Ok raw)) =
+        eval pTC N (lfcheckI (encTy A_spec) (internTerm raw)) := by
+    exact eval_trans_tc 1 N _ _ _ hstep rfl
+  rw [htotal]
+  exact hN
+
+theorem lfcheckK_raw_tc_success_of_lfcheckI_raw_tc_success
+    (hcheckI : LFCheckIRawTCSuccessInterface) : LFCheckKRawTCSuccessInterface := by
   intro t A_spec raw hraw
   obtain ⟨N, hN⟩ := hcheckI t A_spec raw hraw
   refine ⟨1 + N, ?_⟩
@@ -10394,6 +22570,63 @@ theorem lfcheckK_pipeline_interface_of_raw_parser_and_checker
           simp [LF.recognize, hterm, htotal]
           exact MatchesCheckVerdict.rejectParse rfl
 
+theorem lfcheckK_pipeline_interface_of_raw_tc_parser_and_checker
+    (hparser : LFCheckKRawParserContextRawTCInterface)
+    (hcheck : LFCheckKRawTCSuccessInterface) : LFCheckKPipelineInterface := by
+  intro toks A_spec
+  obtain ⟨Nparser, hparserN⟩ := hparser toks (encTy A_spec) (isnormal_encTy_tc A_spec)
+  cases hterm : LF.pTerm 64 [] toks with
+  | none =>
+      simp [hterm] at hparserN
+      obtain ⟨e, hparserEval⟩ := hparserN
+      refine ⟨Nparser + 1, ?_⟩
+      have herr :
+          eval pTC 1 (lfcheckK (encTy A_spec) (Err e)) = checkErr e := by
+        rfl
+      have htotal :
+          eval pTC (Nparser + 1)
+              (lfcheckK (encTy A_spec)
+                (lfrec (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks))) =
+            checkErr e := by
+        exact eval_trans_tc Nparser 1 _ _ _ hparserEval herr
+      unfold referencePipeline
+      simp [LF.recognize, hterm, htotal]
+      exact MatchesCheckVerdict.rejectParse rfl
+  | some pr =>
+      rcases pr with ⟨t, rest⟩
+      cases rest with
+      | nil =>
+          simp [hterm] at hparserN
+          obtain ⟨raw, hraw, hparserEval⟩ := hparserN
+          obtain ⟨Ncheck, hcheckN⟩ := hcheck t A_spec raw hraw
+          refine ⟨Nparser + Ncheck, ?_⟩
+          have htotal :
+              eval pTC (Nparser + Ncheck)
+                  (lfcheckK (encTy A_spec)
+                    (lfrec (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks))) =
+                eval pTC Ncheck (lfcheckK (encTy A_spec) (Ok raw)) := by
+            exact eval_trans_tc Nparser Ncheck _ _ _ hparserEval rfl
+          unfold referencePipeline
+          simp [LF.recognize, hterm]
+          rw [htotal]
+          exact hcheckN
+      | cons tok restTail =>
+          simp [hterm] at hparserN
+          obtain ⟨e, hparserEval⟩ := hparserN
+          refine ⟨Nparser + 1, ?_⟩
+          have herr :
+              eval pTC 1 (lfcheckK (encTy A_spec) (Err e)) = checkErr e := by
+            rfl
+          have htotal :
+              eval pTC (Nparser + 1)
+                  (lfcheckK (encTy A_spec)
+                    (lfrec (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks))) =
+                checkErr e := by
+            exact eval_trans_tc Nparser 1 _ _ _ hparserEval herr
+          unfold referencePipeline
+          simp [LF.recognize, hterm, htotal]
+          exact MatchesCheckVerdict.rejectParse rfl
+
 theorem pipeline_sim_from_lfcheckK_interface
     (hK : LFCheckKPipelineInterface) : PipelineSimStatement := by
   intro toks A_spec
@@ -10421,6 +22654,98 @@ theorem pipeline_sim_from_parser_and_checker_interfaces
   pipeline_sim_from_lfcheckK_interface
     (lfcheckK_pipeline_interface_of_parser_and_checker hparser hcheck)
 
+theorem pipeline_sim_from_parser_checkT_and_bad_target_interfaces
+    (hparser : LFCheckKParserContextInterface)
+    (hcheckT : CheckTVerdictInterface)
+    (hbadTarget : ReferenceRejectsBadTargetInterface) : PipelineSimStatement :=
+  pipeline_sim_from_parser_and_checker_interfaces hparser
+    (lfcheckK_success_of_checkT_and_bad_target_interface hcheckT hbadTarget)
+
+theorem pipeline_sim_from_parser_checkT_and_fuel_bridge_interfaces
+    (hparser : LFCheckKParserContextInterface)
+    (hcheckT : CheckTVerdictInterface)
+    (hbridge : ReferenceTargetFuelBridge) : PipelineSimStatement :=
+  pipeline_sim_from_parser_and_checker_interfaces hparser
+    (lfcheckK_success_of_checkT_and_fuel_bridge_interfaces hcheckT hbridge)
+
+theorem pipeline_sim_from_lfrec_checkT_and_fuel_bridge_interfaces
+    (hrec : LFRecParserTCInterface)
+    (hcheckT : CheckTVerdictInterface)
+    (hbridge : ReferenceTargetFuelBridge) : PipelineSimStatement :=
+  pipeline_sim_from_parser_checkT_and_fuel_bridge_interfaces
+    (lfcheckK_parser_context_of_lfrec_tc hrec) hcheckT hbridge
+
+theorem pipeline_sim_from_lfrec_checkT_bool_first_and_fuel_bridge_interfaces
+    (hrec : LFRecParserTCInterface)
+    (hcheckT : CheckTBoolFirstInterface)
+    (hbridge : ReferenceTargetFuelBridge) : PipelineSimStatement :=
+  pipeline_sim_from_lfrec_checkT_and_fuel_bridge_interfaces hrec
+    (checkT_verdict_interface_of_bool_first_interface hcheckT) hbridge
+
+theorem pipeline_sim_from_lfrec_checkK_bool_first_and_fuel_bridge_interfaces
+    (hrec : LFRecParserTCInterface)
+    (hcheckK : CheckKBoolFirstInterface)
+    (hbridge : ReferenceTargetFuelBridge) : PipelineSimStatement :=
+  pipeline_sim_from_lfrec_checkT_bool_first_and_fuel_bridge_interfaces hrec
+    (checkT_bool_first_interface_of_checkK_bool_first_interface hcheckK) hbridge
+
+theorem pipeline_sim_from_lfrec_infer_conv_and_fuel_bridge_interfaces
+    (hrec : LFRecParserTCInterface)
+    (hinfer : InferFirstForCheckKInterface)
+    (hconv : ConvBoolFirstInterface)
+    (hbridge : ReferenceTargetFuelBridge) : PipelineSimStatement :=
+  pipeline_sim_from_lfrec_checkK_bool_first_and_fuel_bridge_interfaces hrec
+    (checkK_bool_first_interface_of_infer_and_conv_interfaces hinfer hconv) hbridge
+
+theorem pipeline_sim_from_lfrec_infer_payload_and_fuel_bridge_interfaces
+    (hrec : LFRecParserTCInterface)
+    (hinfer : InferFirstForCheckKInterface)
+    (hpayload : ConvBoolPayloadInterface)
+    (hbridge : ReferenceTargetFuelBridge) : PipelineSimStatement :=
+  pipeline_sim_from_lfrec_infer_conv_and_fuel_bridge_interfaces hrec hinfer
+    (conv_bool_first_interface_of_payload_interface hpayload) hbridge
+
+theorem pipeline_sim_from_lfrec_infer_nf_payload_target_agreement_and_fuel_bridge_interfaces
+    (hrec : LFRecParserTCInterface)
+    (hinfer : InferFirstForCheckKInterface)
+    (hnf : NFPayloadInterface)
+    (htarget : ReferenceTargetPayloadInterface)
+    (hagree : EncodedConvBoolAgreementInterface)
+    (hbridge : ReferenceTargetFuelBridge) : PipelineSimStatement :=
+  pipeline_sim_from_lfrec_infer_payload_and_fuel_bridge_interfaces hrec hinfer
+    (conv_bool_payload_interface_of_nf_payload_target_and_encoded_agreement
+      hnf htarget hagree)
+    hbridge
+
+theorem pipeline_sim_from_lfrec_infer_nf_payload_target_and_fuel_bridge_interfaces
+    (hrec : LFRecParserTCInterface)
+    (hinfer : InferFirstForCheckKInterface)
+    (hnf : NFPayloadInterface)
+    (htarget : ReferenceTargetPayloadInterface)
+    (hbridge : ReferenceTargetFuelBridge) : PipelineSimStatement :=
+  pipeline_sim_from_lfrec_infer_nf_payload_target_agreement_and_fuel_bridge_interfaces
+    hrec hinfer hnf htarget encoded_conv_bool_agreement_interface hbridge
+
+theorem pipeline_sim_from_lfrec_infer_nf_strong_target_agreement_and_fuel_bridge_interfaces
+    (hrec : LFRecParserTCInterface)
+    (hinfer : InferFirstForCheckKInterface)
+    (hnf : NFStrongInterface)
+    (htarget : ReferenceTargetPayloadInterface)
+    (hagree : EncodedConvBoolAgreementInterface)
+    (hbridge : ReferenceTargetFuelBridge) : PipelineSimStatement :=
+  pipeline_sim_from_lfrec_infer_nf_payload_target_agreement_and_fuel_bridge_interfaces
+    hrec hinfer (nf_payload_interface_of_strong_interface hnf)
+    htarget hagree hbridge
+
+theorem pipeline_sim_from_lfrec_infer_nf_strong_target_and_fuel_bridge_interfaces
+    (hrec : LFRecParserTCInterface)
+    (hinfer : InferFirstForCheckKInterface)
+    (hnf : NFStrongInterface)
+    (htarget : ReferenceTargetPayloadInterface)
+    (hbridge : ReferenceTargetFuelBridge) : PipelineSimStatement :=
+  pipeline_sim_from_lfrec_infer_nf_strong_target_agreement_and_fuel_bridge_interfaces
+    hrec hinfer hnf htarget encoded_conv_bool_agreement_interface hbridge
+
 theorem pipeline_sim_from_raw_parser_and_checker_interfaces
     (hparser : LFCheckKRawParserContextInterface)
     (hcheck : LFCheckKRawSuccessInterface) : PipelineSimStatement :=
@@ -10445,14 +22770,204 @@ theorem pipeline_sim_from_parser_first_active_and_lfcheckI_interfaces
   pipeline_sim_from_lfrec_raw_and_lfcheckI_interfaces
     (lfrec_raw_parser_tc_of_first_active_shiftable_tc hparser) hcheckI
 
-theorem pipeline_sim
+theorem pipeline_sim_from_parser_transport_and_lfcheckI_interfaces
+    (htransport : ParserFirstActiveTransportInterface)
+    (hcheckI : LFCheckIRawSuccessInterface) : PipelineSimStatement :=
+  pipeline_sim_from_lfrec_raw_and_lfcheckI_interfaces
+    (lfrec_raw_parser_tc_of_parser_transport htransport) hcheckI
+
+theorem pipeline_sim_from_lfrec_raw_tc_and_lfcheckI_tc_interfaces
+    (hrec : LFRecRawParserRawTCInterface)
+    (hcheckI : LFCheckIRawTCSuccessInterface) : PipelineSimStatement :=
+  pipeline_sim_from_lfcheckK_interface
+    (lfcheckK_pipeline_interface_of_raw_tc_parser_and_checker
+      (lfcheckK_raw_parser_context_raw_tc_of_lfrec_raw_tc hrec)
+      (lfcheckK_raw_tc_success_of_lfcheckI_raw_tc_success hcheckI))
+
+theorem pipeline_sim_from_parser_first_active_raw_and_lfcheckI_tc_interfaces
+    (hparser : LFParserTermFirstActiveRawShiftableTCInterface)
+    (hcheckI : LFCheckIRawTCSuccessInterface) : PipelineSimStatement :=
+  pipeline_sim_from_lfrec_raw_tc_and_lfcheckI_tc_interfaces
+    (lfrec_raw_parser_raw_tc_of_first_active_raw_shiftable_tc hparser) hcheckI
+
+theorem pipeline_sim_from_parser_first_active_raw_infer_nf_strong_target_and_fuel_bridge_interfaces
+    (hparser : LFParserTermFirstActiveRawShiftableTCInterface)
+    (hinfer : InferFirstForCheckKInterface)
+    (hnf : NFStrongInterface)
+    (htarget : ReferenceTargetPayloadInterface)
+    (hbridge : ReferenceTargetFuelBridge) :
+    PipelineSimStatement :=
+  pipeline_sim_from_parser_first_active_raw_and_lfcheckI_tc_interfaces hparser
+    (lfcheckI_raw_tc_success_of_checkT_and_fuel_bridge_interfaces
+      (checkT_verdict_interface_of_bool_first_interface
+        (checkT_bool_first_interface_of_checkK_bool_first_interface
+          (checkK_bool_first_interface_of_infer_and_conv_interfaces hinfer
+            (conv_bool_first_interface_of_nf_strong_target_and_encoded_agreement
+              hnf htarget encoded_conv_bool_agreement_interface))))
+      hbridge)
+
+theorem pipeline_sim_from_component_interfaces
     (hparser : LFParserTermFirstActiveShiftableTCInterface)
-    (hcheckI : LFCheckIRawSuccessInterface) :
+    (hinternSome : RawInternSuccessInterface)
+    (hinternNone : RawInternFailureInterface)
+    (hcheckT : CheckTVerdictInterface)
+    (hbadTarget : ReferenceRejectsBadTargetInterface)
+    (hbadTerm : ReferenceRejectsBadTermInterface) :
+    PipelineSimStatement :=
+  pipeline_sim_from_parser_first_active_and_lfcheckI_interfaces hparser
+    (lfcheckI_raw_success_of_intern_and_checkT_interfaces
+      hinternSome hinternNone hcheckT hbadTarget hbadTerm)
+
+theorem pipeline_sim_from_parser_transport_component_interfaces
+    (htransport : ParserFirstActiveTransportInterface)
+    (hinternSome : RawInternSuccessInterface)
+    (hinternNone : RawInternFailureInterface)
+    (hcheckT : CheckTVerdictInterface)
+    (hbadTarget : ReferenceRejectsBadTargetInterface)
+    (hbadTerm : ReferenceRejectsBadTermInterface) :
+    PipelineSimStatement :=
+  pipeline_sim_from_component_interfaces
+    (lf_parser_term_first_active_shiftable_tc_of_transport htransport)
+    hinternSome hinternNone hcheckT hbadTarget hbadTerm
+
+theorem pipeline_sim_from_remaining_component_interfaces
+    (hparser : LFParserTermFirstActiveShiftableTCInterface)
+    (hinternSome : RawInternSuccessInterface)
+    (hinternNone : RawInternFailureInterface)
+    (hcheckT : CheckTVerdictInterface)
+    (hbadTarget : ReferenceRejectsBadTargetInterface) :
+    PipelineSimStatement :=
+  pipeline_sim_from_parser_first_active_and_lfcheckI_interfaces hparser
+    (lfcheckI_raw_success_of_intern_checkT_and_bad_target_interfaces
+      hinternSome hinternNone hcheckT hbadTarget)
+
+theorem pipeline_sim_from_parser_transport_remaining_component_interfaces
+    (htransport : ParserFirstActiveTransportInterface)
+    (hinternSome : RawInternSuccessInterface)
+    (hinternNone : RawInternFailureInterface)
+    (hcheckT : CheckTVerdictInterface)
+    (hbadTarget : ReferenceRejectsBadTargetInterface) :
+    PipelineSimStatement :=
+  pipeline_sim_from_remaining_component_interfaces
+    (lf_parser_term_first_active_shiftable_tc_of_transport htransport)
+    hinternSome hinternNone hcheckT hbadTarget
+
+theorem pipeline_sim_from_fuel_bridge_component_interfaces
+    (hparser : LFParserTermFirstActiveShiftableTCInterface)
+    (hinternSome : RawInternSuccessInterface)
+    (hinternNone : RawInternFailureInterface)
+    (hcheckT : CheckTVerdictInterface)
+    (hbridge : ReferenceTargetFuelBridge) :
+    PipelineSimStatement :=
+  pipeline_sim_from_parser_first_active_and_lfcheckI_interfaces hparser
+    (lfcheckI_raw_success_of_intern_checkT_and_fuel_bridge_interfaces
+      hinternSome hinternNone hcheckT hbridge)
+
+theorem pipeline_sim_from_parser_transport_fuel_bridge_component_interfaces
+    (htransport : ParserFirstActiveTransportInterface)
+    (hinternSome : RawInternSuccessInterface)
+    (hinternNone : RawInternFailureInterface)
+    (hcheckT : CheckTVerdictInterface)
+    (hbridge : ReferenceTargetFuelBridge) :
+    PipelineSimStatement :=
+  pipeline_sim_from_fuel_bridge_component_interfaces
+    (lf_parser_term_first_active_shiftable_tc_of_transport htransport)
+    hinternSome hinternNone hcheckT hbridge
+
+theorem pipeline_sim_from_parser_first_active_infer_conv_and_fuel_bridge_interfaces
+    (hparser : LFParserTermFirstActiveShiftableTCInterface)
+    (hinternSome : RawInternSuccessInterface)
+    (hinternNone : RawInternFailureInterface)
+    (hinfer : InferFirstForCheckKInterface)
+    (hconv : ConvBoolFirstInterface)
+    (hbridge : ReferenceTargetFuelBridge) :
+    PipelineSimStatement :=
+  pipeline_sim_from_fuel_bridge_component_interfaces hparser
+    hinternSome hinternNone
+    (checkT_verdict_interface_of_bool_first_interface
+      (checkT_bool_first_interface_of_checkK_bool_first_interface
+        (checkK_bool_first_interface_of_infer_and_conv_interfaces hinfer hconv)))
+    hbridge
+
+theorem pipeline_sim_from_parser_transport_infer_conv_and_fuel_bridge_interfaces
+    (htransport : ParserFirstActiveTransportInterface)
+    (hinternSome : RawInternSuccessInterface)
+    (hinternNone : RawInternFailureInterface)
+    (hinfer : InferFirstForCheckKInterface)
+    (hconv : ConvBoolFirstInterface)
+    (hbridge : ReferenceTargetFuelBridge) :
+    PipelineSimStatement :=
+  pipeline_sim_from_parser_first_active_infer_conv_and_fuel_bridge_interfaces
+    (lf_parser_term_first_active_shiftable_tc_of_transport htransport)
+    hinternSome hinternNone hinfer hconv hbridge
+
+theorem pipeline_sim_from_parser_first_active_infer_nf_payload_target_and_fuel_bridge_interfaces
+    (hparser : LFParserTermFirstActiveShiftableTCInterface)
+    (hinternSome : RawInternSuccessInterface)
+    (hinternNone : RawInternFailureInterface)
+    (hinfer : InferFirstForCheckKInterface)
+    (hnf : NFPayloadInterface)
+    (htarget : ReferenceTargetPayloadInterface)
+    (hbridge : ReferenceTargetFuelBridge) :
+    PipelineSimStatement :=
+  pipeline_sim_from_parser_first_active_infer_conv_and_fuel_bridge_interfaces
+    hparser hinternSome hinternNone hinfer
+    (conv_bool_first_interface_of_payload_interface
+      (conv_bool_payload_interface_of_nf_payload_target_and_encoded_agreement
+        hnf htarget encoded_conv_bool_agreement_interface))
+    hbridge
+
+theorem pipeline_sim_from_parser_transport_infer_nf_payload_target_and_fuel_bridge_interfaces
+    (htransport : ParserFirstActiveTransportInterface)
+    (hinternSome : RawInternSuccessInterface)
+    (hinternNone : RawInternFailureInterface)
+    (hinfer : InferFirstForCheckKInterface)
+    (hnf : NFPayloadInterface)
+    (htarget : ReferenceTargetPayloadInterface)
+    (hbridge : ReferenceTargetFuelBridge) :
+    PipelineSimStatement :=
+  pipeline_sim_from_parser_first_active_infer_nf_payload_target_and_fuel_bridge_interfaces
+    (lf_parser_term_first_active_shiftable_tc_of_transport htransport)
+    hinternSome hinternNone hinfer hnf htarget hbridge
+
+theorem pipeline_sim_from_parser_first_active_infer_nf_strong_target_and_fuel_bridge_interfaces
+    (hparser : LFParserTermFirstActiveShiftableTCInterface)
+    (hinternSome : RawInternSuccessInterface)
+    (hinternNone : RawInternFailureInterface)
+    (hinfer : InferFirstForCheckKInterface)
+    (hnf : NFStrongInterface)
+    (htarget : ReferenceTargetPayloadInterface)
+    (hbridge : ReferenceTargetFuelBridge) :
+    PipelineSimStatement :=
+  pipeline_sim_from_parser_first_active_infer_nf_payload_target_and_fuel_bridge_interfaces
+    hparser hinternSome hinternNone hinfer
+    (nf_payload_interface_of_strong_interface hnf) htarget hbridge
+
+theorem pipeline_sim_from_parser_transport_infer_nf_strong_target_and_fuel_bridge_interfaces
+    (htransport : ParserFirstActiveTransportInterface)
+    (hinternSome : RawInternSuccessInterface)
+    (hinternNone : RawInternFailureInterface)
+    (hinfer : InferFirstForCheckKInterface)
+    (hnf : NFStrongInterface)
+    (htarget : ReferenceTargetPayloadInterface)
+    (hbridge : ReferenceTargetFuelBridge) :
+    PipelineSimStatement :=
+  pipeline_sim_from_parser_first_active_infer_nf_strong_target_and_fuel_bridge_interfaces
+    (lf_parser_term_first_active_shiftable_tc_of_transport htransport)
+    hinternSome hinternNone hinfer hnf htarget hbridge
+
+theorem pipeline_sim
+    (hinfer : InferFirstForCheckKInterface)
+    (hnf : NFStrongInterface)
+    (htarget : ReferenceTargetPayloadInterface)
+    (hbridge : ReferenceTargetFuelBridge) :
     ∀ toks A_spec, ∃ N,
       MatchesCheckVerdict (referencePipeline toks A_spec)
         (eval pTC N
           (lfcheck (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks) (encTy A_spec))) :=
-  pipeline_sim_from_parser_first_active_and_lfcheckI_interfaces hparser hcheckI
+  pipeline_sim_from_parser_first_active_raw_infer_nf_strong_target_and_fuel_bridge_interfaces
+    lf_parser_term_first_active_raw_shiftable_tc
+    hinfer hnf htarget hbridge
 
 def AcceptedIsDerivableStatement : Prop :=
   ∀ toks A_spec, EngineAccepts toks A_spec ->
@@ -10500,12 +23015,261 @@ theorem accepted_is_derivable_from_pipeline
   accepted_is_derivable_from_reference_sound
     (engine_accepts_reference_sound_from_pipeline hpipeline)
 
-theorem accepted_is_derivable
+theorem accepted_is_derivable_from_lfrec_checkT_and_fuel_bridge_interfaces
+    (hrec : LFRecParserTCInterface)
+    (hcheckT : CheckTVerdictInterface)
+    (hbridge : ReferenceTargetFuelBridge) :
+    AcceptedIsDerivableStatement :=
+  accepted_is_derivable_from_pipeline
+    (pipeline_sim_from_lfrec_checkT_and_fuel_bridge_interfaces hrec hcheckT hbridge)
+
+theorem accepted_is_derivable_from_lfrec_checkT_bool_first_and_fuel_bridge_interfaces
+    (hrec : LFRecParserTCInterface)
+    (hcheckT : CheckTBoolFirstInterface)
+    (hbridge : ReferenceTargetFuelBridge) :
+    AcceptedIsDerivableStatement :=
+  accepted_is_derivable_from_pipeline
+    (pipeline_sim_from_lfrec_checkT_bool_first_and_fuel_bridge_interfaces
+      hrec hcheckT hbridge)
+
+theorem accepted_is_derivable_from_lfrec_checkK_bool_first_and_fuel_bridge_interfaces
+    (hrec : LFRecParserTCInterface)
+    (hcheckK : CheckKBoolFirstInterface)
+    (hbridge : ReferenceTargetFuelBridge) :
+    AcceptedIsDerivableStatement :=
+  accepted_is_derivable_from_pipeline
+    (pipeline_sim_from_lfrec_checkK_bool_first_and_fuel_bridge_interfaces
+      hrec hcheckK hbridge)
+
+theorem accepted_is_derivable_from_lfrec_infer_conv_and_fuel_bridge_interfaces
+    (hrec : LFRecParserTCInterface)
+    (hinfer : InferFirstForCheckKInterface)
+    (hconv : ConvBoolFirstInterface)
+    (hbridge : ReferenceTargetFuelBridge) :
+    AcceptedIsDerivableStatement :=
+  accepted_is_derivable_from_pipeline
+    (pipeline_sim_from_lfrec_infer_conv_and_fuel_bridge_interfaces
+      hrec hinfer hconv hbridge)
+
+theorem accepted_is_derivable_from_lfrec_infer_payload_and_fuel_bridge_interfaces
+    (hrec : LFRecParserTCInterface)
+    (hinfer : InferFirstForCheckKInterface)
+    (hpayload : ConvBoolPayloadInterface)
+    (hbridge : ReferenceTargetFuelBridge) :
+    AcceptedIsDerivableStatement :=
+  accepted_is_derivable_from_pipeline
+    (pipeline_sim_from_lfrec_infer_payload_and_fuel_bridge_interfaces
+      hrec hinfer hpayload hbridge)
+
+theorem accepted_is_derivable_from_lfrec_infer_nf_payload_target_agreement_and_fuel_bridge_interfaces
+    (hrec : LFRecParserTCInterface)
+    (hinfer : InferFirstForCheckKInterface)
+    (hnf : NFPayloadInterface)
+    (htarget : ReferenceTargetPayloadInterface)
+    (hagree : EncodedConvBoolAgreementInterface)
+    (hbridge : ReferenceTargetFuelBridge) :
+    AcceptedIsDerivableStatement :=
+  accepted_is_derivable_from_pipeline
+    (pipeline_sim_from_lfrec_infer_nf_payload_target_agreement_and_fuel_bridge_interfaces
+      hrec hinfer hnf htarget hagree hbridge)
+
+theorem accepted_is_derivable_from_lfrec_infer_nf_payload_target_and_fuel_bridge_interfaces
+    (hrec : LFRecParserTCInterface)
+    (hinfer : InferFirstForCheckKInterface)
+    (hnf : NFPayloadInterface)
+    (htarget : ReferenceTargetPayloadInterface)
+    (hbridge : ReferenceTargetFuelBridge) :
+    AcceptedIsDerivableStatement :=
+  accepted_is_derivable_from_pipeline
+    (pipeline_sim_from_lfrec_infer_nf_payload_target_and_fuel_bridge_interfaces
+      hrec hinfer hnf htarget hbridge)
+
+theorem accepted_is_derivable_from_lfrec_infer_nf_strong_target_agreement_and_fuel_bridge_interfaces
+    (hrec : LFRecParserTCInterface)
+    (hinfer : InferFirstForCheckKInterface)
+    (hnf : NFStrongInterface)
+    (htarget : ReferenceTargetPayloadInterface)
+    (hagree : EncodedConvBoolAgreementInterface)
+    (hbridge : ReferenceTargetFuelBridge) :
+    AcceptedIsDerivableStatement :=
+  accepted_is_derivable_from_pipeline
+    (pipeline_sim_from_lfrec_infer_nf_strong_target_agreement_and_fuel_bridge_interfaces
+      hrec hinfer hnf htarget hagree hbridge)
+
+theorem accepted_is_derivable_from_lfrec_infer_nf_strong_target_and_fuel_bridge_interfaces
+    (hrec : LFRecParserTCInterface)
+    (hinfer : InferFirstForCheckKInterface)
+    (hnf : NFStrongInterface)
+    (htarget : ReferenceTargetPayloadInterface)
+    (hbridge : ReferenceTargetFuelBridge) :
+    AcceptedIsDerivableStatement :=
+  accepted_is_derivable_from_pipeline
+    (pipeline_sim_from_lfrec_infer_nf_strong_target_and_fuel_bridge_interfaces
+      hrec hinfer hnf htarget hbridge)
+
+theorem accepted_is_derivable_from_component_interfaces
     (hparser : LFParserTermFirstActiveShiftableTCInterface)
+    (hinternSome : RawInternSuccessInterface)
+    (hinternNone : RawInternFailureInterface)
+    (hcheckT : CheckTVerdictInterface)
+    (hbadTarget : ReferenceRejectsBadTargetInterface)
+    (hbadTerm : ReferenceRejectsBadTermInterface) :
+    AcceptedIsDerivableStatement :=
+  accepted_is_derivable_from_pipeline
+    (pipeline_sim_from_component_interfaces
+      hparser hinternSome hinternNone hcheckT hbadTarget hbadTerm)
+
+theorem accepted_is_derivable_from_remaining_component_interfaces
+    (hparser : LFParserTermFirstActiveShiftableTCInterface)
+    (hinternSome : RawInternSuccessInterface)
+    (hinternNone : RawInternFailureInterface)
+    (hcheckT : CheckTVerdictInterface)
+    (hbadTarget : ReferenceRejectsBadTargetInterface) :
+    AcceptedIsDerivableStatement :=
+  accepted_is_derivable_from_pipeline
+    (pipeline_sim_from_remaining_component_interfaces
+      hparser hinternSome hinternNone hcheckT hbadTarget)
+
+theorem accepted_is_derivable_from_fuel_bridge_component_interfaces
+    (hparser : LFParserTermFirstActiveShiftableTCInterface)
+    (hinternSome : RawInternSuccessInterface)
+    (hinternNone : RawInternFailureInterface)
+    (hcheckT : CheckTVerdictInterface)
+    (hbridge : ReferenceTargetFuelBridge) :
+    AcceptedIsDerivableStatement :=
+  accepted_is_derivable_from_pipeline
+    (pipeline_sim_from_fuel_bridge_component_interfaces
+      hparser hinternSome hinternNone hcheckT hbridge)
+
+theorem accepted_is_derivable_from_parser_first_active_infer_conv_and_fuel_bridge_interfaces
+    (hparser : LFParserTermFirstActiveShiftableTCInterface)
+    (hinternSome : RawInternSuccessInterface)
+    (hinternNone : RawInternFailureInterface)
+    (hinfer : InferFirstForCheckKInterface)
+    (hconv : ConvBoolFirstInterface)
+    (hbridge : ReferenceTargetFuelBridge) :
+    AcceptedIsDerivableStatement :=
+  accepted_is_derivable_from_pipeline
+    (pipeline_sim_from_parser_first_active_infer_conv_and_fuel_bridge_interfaces
+      hparser hinternSome hinternNone hinfer hconv hbridge)
+
+theorem accepted_is_derivable_from_parser_transport_and_lfcheckI_interfaces
+    (htransport : ParserFirstActiveTransportInterface)
     (hcheckI : LFCheckIRawSuccessInterface) :
+    AcceptedIsDerivableStatement :=
+  accepted_is_derivable_from_pipeline
+    (pipeline_sim_from_parser_transport_and_lfcheckI_interfaces
+      htransport hcheckI)
+
+theorem accepted_is_derivable_from_parser_transport_component_interfaces
+    (htransport : ParserFirstActiveTransportInterface)
+    (hinternSome : RawInternSuccessInterface)
+    (hinternNone : RawInternFailureInterface)
+    (hcheckT : CheckTVerdictInterface)
+    (hbadTarget : ReferenceRejectsBadTargetInterface)
+    (hbadTerm : ReferenceRejectsBadTermInterface) :
+    AcceptedIsDerivableStatement :=
+  accepted_is_derivable_from_pipeline
+    (pipeline_sim_from_parser_transport_component_interfaces
+      htransport hinternSome hinternNone hcheckT hbadTarget hbadTerm)
+
+theorem accepted_is_derivable_from_parser_transport_remaining_component_interfaces
+    (htransport : ParserFirstActiveTransportInterface)
+    (hinternSome : RawInternSuccessInterface)
+    (hinternNone : RawInternFailureInterface)
+    (hcheckT : CheckTVerdictInterface)
+    (hbadTarget : ReferenceRejectsBadTargetInterface) :
+    AcceptedIsDerivableStatement :=
+  accepted_is_derivable_from_pipeline
+    (pipeline_sim_from_parser_transport_remaining_component_interfaces
+      htransport hinternSome hinternNone hcheckT hbadTarget)
+
+theorem accepted_is_derivable_from_parser_transport_fuel_bridge_component_interfaces
+    (htransport : ParserFirstActiveTransportInterface)
+    (hinternSome : RawInternSuccessInterface)
+    (hinternNone : RawInternFailureInterface)
+    (hcheckT : CheckTVerdictInterface)
+    (hbridge : ReferenceTargetFuelBridge) :
+    AcceptedIsDerivableStatement :=
+  accepted_is_derivable_from_pipeline
+    (pipeline_sim_from_parser_transport_fuel_bridge_component_interfaces
+      htransport hinternSome hinternNone hcheckT hbridge)
+
+theorem accepted_is_derivable_from_parser_transport_infer_conv_and_fuel_bridge_interfaces
+    (htransport : ParserFirstActiveTransportInterface)
+    (hinternSome : RawInternSuccessInterface)
+    (hinternNone : RawInternFailureInterface)
+    (hinfer : InferFirstForCheckKInterface)
+    (hconv : ConvBoolFirstInterface)
+    (hbridge : ReferenceTargetFuelBridge) :
+    AcceptedIsDerivableStatement :=
+  accepted_is_derivable_from_pipeline
+    (pipeline_sim_from_parser_transport_infer_conv_and_fuel_bridge_interfaces
+      htransport hinternSome hinternNone hinfer hconv hbridge)
+
+theorem accepted_is_derivable_from_parser_first_active_infer_nf_payload_target_and_fuel_bridge_interfaces
+    (hparser : LFParserTermFirstActiveShiftableTCInterface)
+    (hinternSome : RawInternSuccessInterface)
+    (hinternNone : RawInternFailureInterface)
+    (hinfer : InferFirstForCheckKInterface)
+    (hnf : NFPayloadInterface)
+    (htarget : ReferenceTargetPayloadInterface)
+    (hbridge : ReferenceTargetFuelBridge) :
+    AcceptedIsDerivableStatement :=
+  accepted_is_derivable_from_pipeline
+    (pipeline_sim_from_parser_first_active_infer_nf_payload_target_and_fuel_bridge_interfaces
+      hparser hinternSome hinternNone hinfer hnf htarget hbridge)
+
+theorem accepted_is_derivable_from_parser_transport_infer_nf_payload_target_and_fuel_bridge_interfaces
+    (htransport : ParserFirstActiveTransportInterface)
+    (hinternSome : RawInternSuccessInterface)
+    (hinternNone : RawInternFailureInterface)
+    (hinfer : InferFirstForCheckKInterface)
+    (hnf : NFPayloadInterface)
+    (htarget : ReferenceTargetPayloadInterface)
+    (hbridge : ReferenceTargetFuelBridge) :
+    AcceptedIsDerivableStatement :=
+  accepted_is_derivable_from_pipeline
+    (pipeline_sim_from_parser_transport_infer_nf_payload_target_and_fuel_bridge_interfaces
+      htransport hinternSome hinternNone hinfer hnf htarget hbridge)
+
+theorem accepted_is_derivable_from_parser_first_active_infer_nf_strong_target_and_fuel_bridge_interfaces
+    (hparser : LFParserTermFirstActiveShiftableTCInterface)
+    (hinternSome : RawInternSuccessInterface)
+    (hinternNone : RawInternFailureInterface)
+    (hinfer : InferFirstForCheckKInterface)
+    (hnf : NFStrongInterface)
+    (htarget : ReferenceTargetPayloadInterface)
+    (hbridge : ReferenceTargetFuelBridge) :
+    AcceptedIsDerivableStatement :=
+  accepted_is_derivable_from_pipeline
+    (pipeline_sim_from_parser_first_active_infer_nf_strong_target_and_fuel_bridge_interfaces
+      hparser hinternSome hinternNone hinfer hnf htarget hbridge)
+
+theorem accepted_is_derivable_from_parser_transport_infer_nf_strong_target_and_fuel_bridge_interfaces
+    (htransport : ParserFirstActiveTransportInterface)
+    (hinternSome : RawInternSuccessInterface)
+    (hinternNone : RawInternFailureInterface)
+    (hinfer : InferFirstForCheckKInterface)
+    (hnf : NFStrongInterface)
+    (htarget : ReferenceTargetPayloadInterface)
+    (hbridge : ReferenceTargetFuelBridge) :
+    AcceptedIsDerivableStatement :=
+  accepted_is_derivable_from_pipeline
+    (pipeline_sim_from_parser_transport_infer_nf_strong_target_and_fuel_bridge_interfaces
+      htransport hinternSome hinternNone hinfer hnf htarget hbridge)
+
+theorem accepted_is_derivable
+    (hinfer : InferFirstForCheckKInterface)
+    (hnf : NFStrongInterface)
+    (htarget : ReferenceTargetPayloadInterface)
+    (hbridge : ReferenceTargetFuelBridge) :
     ∀ toks A_spec, EngineAccepts toks A_spec ->
       ∃ t, LFTyping.HasType LFTyping.corpusSig [] t A_spec :=
-  accepted_is_derivable_from_pipeline (pipeline_sim hparser hcheckI)
+  accepted_is_derivable_from_pipeline
+    (pipeline_sim_from_parser_first_active_raw_infer_nf_strong_target_and_fuel_bridge_interfaces
+      lf_parser_term_first_active_raw_shiftable_tc
+      hinfer hnf htarget hbridge)
 
 /-! ## Positive and negative corpus instances through the composed pipeline. -/
 
@@ -10621,25 +23385,341 @@ theorem regression_beta_discard_accepted_is_derivable :
   exact ⟨.srt .type, LFTyping.S1 (fuel := checkerFuel) (by rfl)⟩
 
 #print axioms pipeline_sim_from_lfcheckK_interface
+#print axioms baseReducts_pTC_of_pLF_cons
+#print axioms oneStep_pTC_of_baseReducts_pLF_cons
+#print axioms os_ctx_nil_tc
+#print axioms os_ctx_hit_tc
+#print axioms os_ctx_miss_tc
+#print axioms ctxidx_sim_tc
+#print axioms resolve_sim_tc
+#print axioms os_parser_tm_z_tc
+#print axioms os_parser_ar_z_tc
+#print axioms os_parser_ap_z_tc
+#print axioms os_parser_apm_z_tc
+#print axioms os_parser_at_z_tc
+#print axioms os_parser_tm_pi_tc
+#print axioms os_parser_tm_lam_tc
+#print axioms os_parser_ar_s_tc
+#print axioms os_parser_ap_s_tc
+#print axioms os_parser_apm_s_tc
+#print axioms os_parser_apK_p_tc
+#print axioms os_parser_apK_err_tc
+#print axioms os_parser_apmK_p_tc
+#print axioms os_parser_apmK_err_tc
+#print axioms os_parser_at_type_tc
+#print axioms os_parser_at_id_tc
+#print axioms os_parser_at_lp_tc
+#print axioms os_parser_at_err_nil_tc
+#print axioms os_parser_at_err_pi_tc
+#print axioms os_parser_at_err_lam_tc
+#print axioms os_parser_at_err_arr_tc
+#print axioms os_parser_at_err_colon_tc
+#print axioms os_parser_at_err_dot_tc
+#print axioms os_parser_at_err_rp_tc
+#print axioms os_parser_atLPk_rp_tc
+#print axioms os_parser_atLPk_pi_tc
+#print axioms os_parser_atLPk_lam_tc
+#print axioms os_parser_atLPk_arr_tc
+#print axioms os_parser_atLPk_colon_tc
+#print axioms os_parser_atLPk_dot_tc
+#print axioms os_parser_atLPk_lp_tc
+#print axioms os_parser_atLPk_type_tc
+#print axioms os_parser_atLPk_id_tc
+#print axioms os_parser_atLPk_nil_tc
+#print axioms os_parser_atLPk_err_tc
+#print axioms os_parser_tmPi1_dot_tc
+#print axioms os_parser_tmPi1_pi_tc
+#print axioms os_parser_tmPi1_lam_tc
+#print axioms os_parser_tmPi1_arr_tc
+#print axioms os_parser_tmPi1_colon_tc
+#print axioms os_parser_tmPi1_lp_tc
+#print axioms os_parser_tmPi1_rp_tc
+#print axioms os_parser_tmPi1_type_tc
+#print axioms os_parser_tmPi1_id_tc
+#print axioms os_parser_tmPi1_nil_tc
+#print axioms os_parser_tmPi1_err_tc
+#print axioms os_parser_tmPi2_p_tc
+#print axioms os_parser_tmPi2_err_tc
+#print axioms os_parser_tmLam1_dot_tc
+#print axioms os_parser_tmLam1_pi_tc
+#print axioms os_parser_tmLam1_lam_tc
+#print axioms os_parser_tmLam1_arr_tc
+#print axioms os_parser_tmLam1_colon_tc
+#print axioms os_parser_tmLam1_lp_tc
+#print axioms os_parser_tmLam1_rp_tc
+#print axioms os_parser_tmLam1_type_tc
+#print axioms os_parser_tmLam1_id_tc
+#print axioms os_parser_tmLam1_nil_tc
+#print axioms os_parser_tmLam1_err_tc
+#print axioms os_parser_tmLam2_p_tc
+#print axioms os_parser_tmLam2_err_tc
+#print axioms isnormal_encTok_tc
+#print axioms isnormal_encToks_tc
+#print axioms isnormal_encCtx_tc
+#print axioms parser_sim_mutual_shiftable_zero_tc
+#print axioms apK_matches_first_active_shiftable_of_atom_result_tc
+#print axioms app_succ_first_active_shiftable_of_atom_appmore_tc
+#print axioms parser_sim_mutual_shiftable_succ_app_tc
+#print axioms atom_no_fuel_first_active_shiftable_tc
+#print axioms atom_type_first_active_shiftable_tc
+#print axioms atom_id_first_active_shiftable_tc
+#print axioms atom_empty_first_active_shiftable_tc
+#print axioms atom_pi_expected_first_active_shiftable_tc
+#print axioms atom_lam_expected_first_active_shiftable_tc
+#print axioms atom_arr_expected_first_active_shiftable_tc
+#print axioms atom_colon_expected_first_active_shiftable_tc
+#print axioms atom_dot_expected_first_active_shiftable_tc
+#print axioms atom_rpar_expected_first_active_shiftable_tc
+#print axioms atom_non_lpar_first_active_shiftable_tc
+#print axioms atLPk_matches_first_active_shiftable_of_term_result_tc
+#print axioms atLPk_matches_first_active_shiftable_of_term_first_active_tc
+#print axioms atom_lpar_first_active_shiftable_of_term_first_active_tc
+#print axioms parser_sim_mutual_shiftable_succ_atom_tc
+#print axioms first_active_shiftable_zero_tc
+#print axioms first_active_shiftable_one_tc
+#print axioms first_active_shiftable_prepend_tc
+#print axioms first_active_shiftable_prepend_eval_tc
+#print axioms cong_eval_parser_active_with_guard_tc
+#print axioms cong_eval_with_active_wrapper_tc
+#print axioms first_active_shiftable_bind_active_tc
+#print axioms sexp_id_ne_of_ne_tc
+#print axioms matches_parse_shiftable_of_raw_tc
+#print axioms first_active_shiftable_of_raw_tc
+#print axioms raw_shiftable_payload_encTerm_tc
+#print axioms raw_shiftable_payload_resolve_tc
+#print axioms reducesToEncTerm_app_tc
+#print axioms raw_shiftable_payload_app_tc
+#print axioms reducesToEncTerm_pi_tc
+#print axioms reducesToEncTerm_lam_tc
+#print axioms raw_shiftable_payload_pi_tc
+#print axioms raw_shiftable_payload_lam_tc
+#print axioms first_active_shiftable_raw_zero_tc
+#print axioms first_active_shiftable_raw_one_tc
+#print axioms first_active_shiftable_raw_prepend_tc
+#print axioms first_active_shiftable_raw_prepend_eval_tc
+#print axioms first_active_shiftable_raw_bind_active_tc
+#print axioms hcong_arK_arg_tc
+#print axioms hcong_tmPi1_arg_tc
+#print axioms hcong_tmLam1_arg_tc
+#print axioms hcong_apK_arg_tc
+#print axioms hcong_apmK_arg_tc
+#print axioms hcong_apmK_acc_at_tc
+#print axioms hcong_atLPk_arg_tc
+#print axioms hcong_arK_active_tc
+#print axioms hcong_tmPi1_active_tc
+#print axioms hcong_tmLam1_active_tc
+#print axioms hcong_apK_active_tc
+#print axioms hcong_apmK_active_tc
+#print axioms hcong_atLPk_active_tc
+#print axioms hcong_tmPi2_left_active_child_tc
+#print axioms hcong_tmPi2_right_active_tc
+#print axioms hcong_tmLam2_left_active_child_tc
+#print axioms hcong_tmLam2_right_active_tc
+#print axioms tmPi2_matches_first_active_shiftable_raw_of_term_result_tc
+#print axioms tmPi2_matches_first_active_shiftable_raw_of_term_first_active_tc
+#print axioms tmLam2_matches_first_active_shiftable_raw_of_term_result_tc
+#print axioms tmLam2_matches_first_active_shiftable_raw_of_term_first_active_tc
+#print axioms tmPi1_matches_first_active_shiftable_raw_of_app_result_tc
+#print axioms tmPi1_matches_first_active_shiftable_raw_of_app_first_active_tc
+#print axioms tmLam1_matches_first_active_shiftable_raw_of_app_result_tc
+#print axioms tmLam1_matches_first_active_shiftable_raw_of_app_first_active_tc
+#print axioms apmK_matches_first_active_shiftable_raw_of_atom_result_tc
+#print axioms appmore_succ_first_active_shiftable_raw_of_atom_appmore_tc
+#print axioms apK_matches_first_active_shiftable_raw_of_atom_result_tc
+#print axioms app_succ_first_active_shiftable_raw_of_atom_appmore_tc
+#print axioms parser_sim_mutual_shiftable_raw_zero_tc
+#print axioms parser_sim_mutual_shiftable_raw_succ_app_tc
+#print axioms parser_sim_mutual_shiftable_raw_succ_appmore_tc
+#print axioms atom_no_fuel_first_active_shiftable_raw_tc
+#print axioms atom_non_lpar_first_active_shiftable_raw_tc
+#print axioms atLPk_matches_first_active_shiftable_raw_of_term_result_tc
+#print axioms atLPk_matches_first_active_shiftable_raw_of_term_first_active_tc
+#print axioms atom_lpar_first_active_shiftable_raw_of_term_first_active_tc
+#print axioms parser_sim_mutual_shiftable_raw_succ_atom_tc
+#print axioms parser_sim_mutual_shiftable_raw_succ_term_tc
+#print axioms intern_con_bad_step_tc
+#print axioms intern_con_failure_first_active
+#print axioms internTerm_failure_first_active
+#print axioms good_cong_eval_intern_wrapper_with_guard
+#print axioms first_active_intern_resolve_to_encTerm
+#print axioms intern_pi_raw_success_first_active
+#print axioms intern_pi_raw_failure_left_first_active
+#print axioms intern_pi_raw_failure_right_first_active
+#print axioms intern_lam_raw_success_first_active
+#print axioms intern_lam_raw_failure_left_first_active
+#print axioms intern_lam_raw_failure_right_first_active
+#print axioms intern_app_raw_success_first_active
+#print axioms intern_app_raw_failure_left_first_active
+#print axioms intern_app_raw_failure_right_first_active
+#print axioms reduces_corpus_preserves_encodable
+#print axioms encName?_some_cases_tc
+#print axioms encName?_injective_tc
+#print axioms ast_beq_true_eq_tc
+#print axioms encTyCore?_injective_tc
 #print axioms hcong_Ok_tc
+#print axioms hcong_someT_tc
+#print axioms isnormal_someT_tc
+#print axioms eval_normal_unique_tc
 #print axioms isnormal_encTerm_raw_tc
 #print axioms cong_eval_recK_active_with_guard
 #print axioms cong_eval_lfcheckK_child_open_with_guard
+#print axioms hcong_verdict_child_open_tc
+#print axioms cong_eval_verdict_child_open_with_guard
+#print axioms verdict_child_open_append_guard
+#print axioms hcong_checkK_child_open_tc
+#print axioms cong_eval_checkK_child_open_with_guard
+#print axioms checkT_checkerFuel_tc
+#print axioms eqT_self_bool_first_tc
+#print axioms eqT_hit_bool_first_tc
+#print axioms eqT_miss_bool_first_tc
+#print axioms convT_step_tc
+#print axioms convA_some_tc
+#print axioms convB_some_tc
+#print axioms hcong_convA_child_open_tc
+#print axioms hcong_convB_child_open_tc
+#print axioms cong_eval_convA_child_open_with_guard
+#print axioms cong_eval_convB_child_open_with_guard
+#print axioms hcong_convB_left_nf_active_tc
+#print axioms cong_eval_convB_left_nf_active_with_guard
+#print axioms encoded_conv_bool_agreement_interface
+#print axioms FirstStrongPayloadReplayNF.toStrong
+#print axioms FirstReplayNF.toStrongPayloadReplay
+#print axioms first_strong_payload_replay_nf_prepend
+#print axioms first_strong_payload_replay_nf_prefix
+#print axioms nfApp2_nfT_first_strong_payload_replay_nf
+#print axioms nfApp1_nfT_first_strong_payload_replay_nf
+#print axioms nfT_app_first_strong_payload_replay_nf
+#print axioms nfAppT_nfApp_first_strong_payload_replay_nf
+#print axioms nfApp2_nfT_first_strong_of_payload_replay_nf
+#print axioms nfApp1_nfT_first_strong_of_payload_replay_nf
+#print axioms nfT_app_first_strong_of_payload_replay_nf
+#print axioms nfT_substT_pi_raw_second_first_strong
+#print axioms nfT_substT_pi_raw_second_first_strong_split
+#print axioms nfT_substT_lam_raw_body_first_strong
+#print axioms nfT_substT_lam_raw_body_first_strong_split
+#print axioms nfT_app_raw_arg_first_strong_of_arg_payload_replay_split
+#print axioms nfT_substT_app_raw_arg_first_strong_of_arg_payload_replay_split
+#print axioms nf_payload_interface_of_strong_interface
+#print axioms conv_bool_payload_interface_of_nf_payload_target_and_encoded_agreement
+#print axioms conv_bool_payload_interface_of_nf_strong_target_and_encoded_agreement
+#print axioms conv_bool_first_interface_of_payload_interface
+#print axioms conv_bool_first_interface_of_nf_payload_target_and_encoded_agreement
+#print axioms conv_bool_first_interface_of_nf_strong_target_and_encoded_agreement
+#print axioms checkK_bool_first_interface_of_infer_and_conv_interfaces
+#print axioms checkT_bool_first_interface_of_checkK_bool_first_interface
+#print axioms checkT_verdict_interface_of_bool_first_interface
+#print axioms lf_parser_term_first_active_shiftable_tc_of_transport
 #print axioms lfrec_raw_parser_tc_of_first_active_shiftable_tc
+#print axioms lfrec_raw_parser_tc_of_parser_transport
 #print axioms lfcheckK_parser_context_of_lfrec_tc
 #print axioms lfcheckK_raw_parser_context_of_lfrec_raw_tc
 #print axioms lfcheckK_pipeline_interface_of_parser_and_checker
 #print axioms pipeline_sim_from_parser_and_checker_interfaces
+#print axioms lfcheckK_success_of_checkT_and_fuel_bridge_interfaces
+#print axioms pipeline_sim_from_parser_checkT_and_fuel_bridge_interfaces
+#print axioms pipeline_sim_from_lfrec_checkT_and_fuel_bridge_interfaces
+#print axioms pipeline_sim_from_lfrec_checkT_bool_first_and_fuel_bridge_interfaces
+#print axioms pipeline_sim_from_lfrec_checkK_bool_first_and_fuel_bridge_interfaces
+#print axioms pipeline_sim_from_lfrec_infer_conv_and_fuel_bridge_interfaces
+#print axioms pipeline_sim_from_lfrec_infer_payload_and_fuel_bridge_interfaces
+#print axioms pipeline_sim_from_lfrec_infer_nf_payload_target_agreement_and_fuel_bridge_interfaces
+#print axioms pipeline_sim_from_lfrec_infer_nf_payload_target_and_fuel_bridge_interfaces
+#print axioms pipeline_sim_from_lfrec_infer_nf_strong_target_agreement_and_fuel_bridge_interfaces
+#print axioms pipeline_sim_from_lfrec_infer_nf_strong_target_and_fuel_bridge_interfaces
 #print axioms lfcheckK_raw_success_of_lfcheckI_raw_success
+#print axioms reference_rejects_bad_term_interface
+#print axioms target_fuel_boundary_nf_mismatch
+#print axioms target_fuel_boundary_encTy?_some
+#print axioms target_fuel_boundary_nf31_encTyCore?_some
+#print axioms target_fuel_boundary_checkerFuel_encTyCore?_some
+#print axioms target_fuel_boundary_encTy?_eq_some_encTy
+#print axioms target_fuel_boundary_checkerFuel_encTyCore?_eq_some_encTy
+#print axioms replayablePayload_targetFuelBoundaryLam_type_tc
+#print axioms target_fuel_boundary_normal_replayable
+#print axioms target_fuel_boundary_nf32_first_eval
+#print axioms not_reference_target_payload_interface
+#print axioms lf_lift_lift_same_cutoff
+#print axioms lf_lift_lift_below_cutoff
+#print axioms lf_lift_lift_one_below_cutoff
+#print axioms lf_lift_zero
+#print axioms lf_lift_subst_binder
+#print axioms lf_lift_subst0
+#print axioms lf_subst_lift_shift_cutoff
+#print axioms lf_subst_lift_shift
+#print axioms lf_subst_lift_succ_cutoff
+#print axioms lf_subst_lift_succ_at
+#print axioms lf_subst_subst_binder
+#print axioms lf_subst_subst0
+#print axioms reduces_lift_corpus
+#print axioms reduces_subst_arg_corpus
+#print axioms reduces_subst_fixed_corpus
+#print axioms reduces_subst_corpus
+#print axioms reduces_lam_inv
+#print axioms reduces_pi_inv
+#print axioms reduces_srt_inv
+#print axioms reduces_var_inv
+#print axioms reduces_corpus_con_inv
+#print axioms reference_target_fuel_bridge_of_nf_reduces
+#print axioms nf_succ_reduces_of_nfApp_succ
+#print axioms nfApp_zero_succ_reduces
+#print axioms nfApp_succ_reduces_of_positive
+#print axioms reference_target_fuel_bridge_of_nfApp_succ
+#print axioms reference_target_fuel_bridge_of_nfApp_positive_succ
+#print axioms reference_rejects_bad_target_of_fuel_bridge
+#print axioms raw_intern_stack_success_tc_interface
+#print axioms raw_intern_stack_failure_tc_interface
+#print axioms raw_intern_shift_success_tc_interface
+#print axioms raw_intern_shift_failure_tc_interface
+#print axioms raw_intern_success_tc_interface
+#print axioms raw_intern_failure_tc_interface
+#print axioms lfcheckI_raw_success_of_intern_checkT_and_bad_target_interfaces
+#print axioms lfcheckI_raw_success_of_intern_checkT_and_fuel_bridge_interfaces
+#print axioms lfcheckI_raw_tc_success_of_checkT_and_bad_target_interfaces
+#print axioms lfcheckI_raw_tc_success_of_checkT_and_fuel_bridge_interfaces
 #print axioms lfcheckK_pipeline_interface_of_raw_parser_and_checker
 #print axioms pipeline_sim_from_raw_parser_and_checker_interfaces
 #print axioms pipeline_sim_from_raw_parser_and_lfcheckI_interfaces
 #print axioms pipeline_sim_from_lfrec_raw_and_lfcheckI_interfaces
 #print axioms pipeline_sim_from_parser_first_active_and_lfcheckI_interfaces
+#print axioms pipeline_sim_from_parser_transport_and_lfcheckI_interfaces
+#print axioms pipeline_sim_from_component_interfaces
+#print axioms pipeline_sim_from_parser_transport_component_interfaces
+#print axioms pipeline_sim_from_remaining_component_interfaces
+#print axioms pipeline_sim_from_parser_transport_remaining_component_interfaces
+#print axioms pipeline_sim_from_fuel_bridge_component_interfaces
+#print axioms pipeline_sim_from_parser_transport_fuel_bridge_component_interfaces
+#print axioms pipeline_sim_from_parser_first_active_infer_conv_and_fuel_bridge_interfaces
+#print axioms pipeline_sim_from_parser_transport_infer_conv_and_fuel_bridge_interfaces
+#print axioms pipeline_sim_from_parser_first_active_infer_nf_payload_target_and_fuel_bridge_interfaces
+#print axioms pipeline_sim_from_parser_transport_infer_nf_payload_target_and_fuel_bridge_interfaces
+#print axioms pipeline_sim_from_parser_first_active_infer_nf_strong_target_and_fuel_bridge_interfaces
+#print axioms pipeline_sim_from_parser_transport_infer_nf_strong_target_and_fuel_bridge_interfaces
 #print axioms pipeline_sim
 #print axioms engine_accepts_reference_sound_from_pipeline
 #print axioms accepted_is_derivable_from_reference_sound
 #print axioms accepted_is_derivable_from_pipeline
+#print axioms accepted_is_derivable_from_lfrec_checkT_and_fuel_bridge_interfaces
+#print axioms accepted_is_derivable_from_lfrec_checkT_bool_first_and_fuel_bridge_interfaces
+#print axioms accepted_is_derivable_from_lfrec_checkK_bool_first_and_fuel_bridge_interfaces
+#print axioms accepted_is_derivable_from_lfrec_infer_conv_and_fuel_bridge_interfaces
+#print axioms accepted_is_derivable_from_lfrec_infer_payload_and_fuel_bridge_interfaces
+#print axioms accepted_is_derivable_from_lfrec_infer_nf_payload_target_agreement_and_fuel_bridge_interfaces
+#print axioms accepted_is_derivable_from_lfrec_infer_nf_payload_target_and_fuel_bridge_interfaces
+#print axioms accepted_is_derivable_from_lfrec_infer_nf_strong_target_agreement_and_fuel_bridge_interfaces
+#print axioms accepted_is_derivable_from_lfrec_infer_nf_strong_target_and_fuel_bridge_interfaces
+#print axioms accepted_is_derivable_from_component_interfaces
+#print axioms accepted_is_derivable_from_remaining_component_interfaces
+#print axioms accepted_is_derivable_from_fuel_bridge_component_interfaces
+#print axioms accepted_is_derivable_from_parser_first_active_infer_conv_and_fuel_bridge_interfaces
+#print axioms accepted_is_derivable_from_parser_transport_and_lfcheckI_interfaces
+#print axioms accepted_is_derivable_from_parser_transport_component_interfaces
+#print axioms accepted_is_derivable_from_parser_transport_remaining_component_interfaces
+#print axioms accepted_is_derivable_from_parser_transport_fuel_bridge_component_interfaces
+#print axioms accepted_is_derivable_from_parser_transport_infer_conv_and_fuel_bridge_interfaces
+#print axioms accepted_is_derivable_from_parser_first_active_infer_nf_payload_target_and_fuel_bridge_interfaces
+#print axioms accepted_is_derivable_from_parser_transport_infer_nf_payload_target_and_fuel_bridge_interfaces
+#print axioms accepted_is_derivable_from_parser_first_active_infer_nf_strong_target_and_fuel_bridge_interfaces
+#print axioms accepted_is_derivable_from_parser_transport_infer_nf_strong_target_and_fuel_bridge_interfaces
 #print axioms accepted_is_derivable
 #print axioms corpus_mp_pipeline_matches
 #print axioms regression_reference_accepts_beta_discard_unknown

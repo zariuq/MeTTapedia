@@ -13,6 +13,7 @@ namespace Mettapedia.Languages.MeTTa.LeaTTa.Corpus.ReverseInvolution
 open Metta
 open Metta.Minimal
 open Mettapedia.Languages.MeTTa.LeaTTa.EvaluatorCorrectness.ContextualStep
+open Mettapedia.Languages.MeTTa.LeaTTa.EvaluatorCorrectness.QueryOpBridge
 
 open Mettapedia.Languages.MeTTa.LeaTTa.Corpus.ListAppendLength
 
@@ -86,27 +87,32 @@ private theorem appendReachesReverseRules (xs ys : List Nat) :
 
 /-! ## §2  Root reverse rules -/
 
-private theorem peano_not_var (n : Nat) (v : String) :
-    peano n ≠ Metta.Atom.var v := by
-  cases n <;> simp [peano, mSym, mE]
+private theorem peano_vars_nil (n : Nat) : (peano n).vars = [] := by
+  induction n with
+  | zero => simp [peano, mSym, Metta.Atom.vars]
+  | succ n ih => simp [peano, mE, Metta.Atom.vars, ih]
 
-private theorem listAtom_not_var (xs : List Nat) (v : String) :
-    listAtom xs ≠ Metta.Atom.var v := by
-  cases xs <;> simp [listAtom, mSym, mE]
+private theorem listAtom_vars_nil (xs : List Nat) : (listAtom xs).vars = [] := by
+  induction xs with
+  | nil => simp [listAtom, mSym, Metta.Atom.vars]
+  | cons x xs ih => simp [listAtom, mE, Metta.Atom.vars, peano_vars_nil, ih]
 
 private theorem match_var_nonvar_atom (v : String) (target : Metta.Atom)
-    (h : ∀ w, target ≠ Metta.Atom.var w) :
+    (hvars : target.vars = []) :
     Metta.matchAtomsWith none (Metta.Atom.var v) target =
       [[Metta.BindingRel.val v target]] := by
   cases target with
-  | var w => exact (h w rfl).elim
-  | sym _ => simp [Metta.matchAtomsWith]
-  | gnd _ => simp [Metta.matchAtomsWith]
-  | expr _ => simp [Metta.matchAtomsWith]
+  | var w => simp [Metta.Atom.vars] at hvars
+  | sym _ => simp [Metta.matchAtomsWith, Metta.Subst.occurs]
+  | gnd _ => simp [Metta.matchAtomsWith, Metta.Subst.occurs]
+  | expr ys =>
+      have hoccurs : Metta.Subst.occurs v (Metta.Atom.expr ys) = false :=
+        occurs_eq_false_of_not_mem_vars v (Metta.Atom.expr ys) (by rw [hvars]; simp)
+      simp [Metta.matchAtomsWith, hoccurs]
 
 private theorem match_cons_vars_raw (head tail : Metta.Atom)
-    (hHead : ∀ w, head ≠ Metta.Atom.var w)
-    (hTail : ∀ w, tail ≠ Metta.Atom.var w) :
+    (hHead : head.vars = [])
+    (hTail : tail.vars = []) :
     Metta.matchAtomsWith none
         (Metta.Atom.expr [Metta.Atom.sym "Cons", Metta.Atom.var "x", Metta.Atom.var "xs"])
         (Metta.Atom.expr [Metta.Atom.sym "Cons", head, tail]) =
@@ -167,7 +173,7 @@ private theorem rev_cons_mops_readout (x : Nat) (xs : List Nat) :
       simp [Metta.matchAtomsWith, Metta.Bindings.merge]
       unfold Metta.matchAll
       rw [match_cons_vars_raw (peano x) (listAtom xs)
-        (peano_not_var x) (listAtom_not_var xs)]
+        (peano_vars_nil x) (listAtom_vars_nil xs)]
       simp [Metta.Bindings.merge, Metta.Bindings.mergeOne, Metta.Bindings.addVarBinding,
         Metta.Bindings.addValRaw, Metta.Bindings.removeVal, Metta.Bindings.lookupVal]
       unfold Metta.matchAll

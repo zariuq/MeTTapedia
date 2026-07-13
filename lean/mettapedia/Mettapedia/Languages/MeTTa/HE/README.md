@@ -68,13 +68,8 @@ per-theorem `#print axioms` audit, so a theorem can still inherit a Mathlib axio
 transitively.
 
 **Trusted base — `native_decide`.** The clause-by-clause `Conformance.lean` theorems
-are kernel-checked (`rfl`/`decide`), but two files carry 12 `native_decide`
-invocations that compile-evaluate rather than kernel-check, so they enlarge the
-trusted base (they trust the Lean compiler) and are flagged for migration to kernel
-`decide`:
-
-- `MatcherBridge.lean` — 11
-- `Eval.lean` — 1
+are kernel-checked (`rfl`/`decide`). The HE `.lean` scope currently has no
+`native_decide` proof commands; keep the scan below as an audit gate.
 
 Reproduce from this directory — note the `sorry` regex is a *raw* scan that also
 matches prose in comments/strings, so the own-scope figure of 0 above is the
@@ -87,7 +82,7 @@ lake build Mettapedia.Languages.MeTTa.HE
 rg -n --glob '*.lean' '\bsorry\b' .
 # axiom declarations (prints nothing):
 rg -n --glob '*.lean' '^\s*(@\[[^]]*\]\s*)*axiom\s' .
-# native_decide occurrences (the 12 disclosed above):
+# native_decide occurrences (should print nothing):
 rg -n --glob '*.lean' 'native_decide' .
 ```
 

@@ -919,7 +919,8 @@ macro
     let logicDeclsTerm ← mkTermList logicDecls'
     let oracleDeclsTerm ← mkTermList oracleDecls'
     let collDeclsTerm ← mkTermList collDecls'
-    `(LanguageDef.mk
+    `(LanguageDef.resolveNullaryPatterns
+      (LanguageDef.mk
         $langName
         []  -- options (default empty; DSL options support is future work)
         $typeDeclsTerm
@@ -928,7 +929,7 @@ macro
         $rwDeclsTerm
         $collDeclsTerm
         $logicDeclsTerm
-        $oracleDeclsTerm)
+        $oracleDeclsTerm))
 
 macro_rules
   | `(T! $s:str) => `(SyntaxItem.terminal $s)
@@ -956,7 +957,7 @@ macro_rules
       oracles : $ors,
       congruenceCollections : $ccs
     }) =>
-      `(LanguageDef.mk $langName [] $tys $tmRules $eqns $rws $ccs $lgs $ors)
+      `(LanguageDef.resolveNullaryPatterns (LanguageDef.mk $langName [] $tys $tmRules $eqns $rws $ccs $lgs $ors))
 
 /-! ## Generic Builders -/
 

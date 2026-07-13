@@ -7,11 +7,10 @@
 ; proof certificates, lowered through named/ABT-style binding into the imported
 ; LF kernel AST, and then checked by the real kernel-check boundary.
 ;
-; Source anchor: HOL Light's LCF kernel exposes the primitive proof-rule shape
-; ASSUME/DISCH/MP/REFL (fusion.ml + Help/*.hlp), and proves propositional
-; tautologies with TAUT/ITAUT (e.g. `A ==> A`).  This v1 does not claim full
-; HOL-Light: it hosts the minimal implication/reflexivity certificate fragment
-; needed for genuine HOL-style theorems inside our kernel.
+; Source anchor: HOL4's FinalThm primitive block exposes ASSUME/DISCH/MP/REFL,
+; while HOL Light derives DISCH/MP through its equality kernel.  This v1 is a
+; regression-only HOL-shaped implication/reflexivity fragment over the LF kernel.
+; The faithful HOL-Light equality-kernel track is 09_hol_light_eq_kernel.metta.
 ; ============================================================================
 
 !(import! &self ../../kernel/kernel_signature_lf_v0.metta)
@@ -469,7 +468,7 @@
   (hol-lowerProofT (hol-mp-theorem-proof-concrete-syntax))
   (hol-mp-proof-expected))
 
-; HOL theorem: A ==> A, source-backed by HOL Light's TAUT/ITAUT family.
+; HOL-shaped regression theorem: A ==> A through this file's HDisch/HAssume path.
 !(assertEqual
   (hol-concrete-syntax-check (hol-self-imp-proof-concrete-syntax) (hol-self-imp-prop-concrete-syntax))
   (Ok (CheckedPrf ANil
@@ -477,7 +476,7 @@
      (Lam (App (Con prf) (Con A)) (Var 0)))
     (App (Con prf) (App (App (Con imp) (Con A)) (Con A))))))
 
-; HOL theorem: (A ==> B) ==> A ==> B, explicitly using MP.
+; HOL-shaped regression theorem: (A ==> B) ==> A ==> B using this file's HMP node.
 !(assertEqual
   (hol-concrete-syntax-check (hol-mp-theorem-proof-concrete-syntax) (hol-mp-theorem-prop-concrete-syntax))
   (Ok (CheckedPrf ANil

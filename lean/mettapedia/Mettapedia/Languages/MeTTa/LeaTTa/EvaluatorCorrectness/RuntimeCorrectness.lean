@@ -32,15 +32,16 @@ theorem interpretStack1_eval_eq (env : MinEnv) (fuel : Nat) (st : St)
   unfold interpretStack1
   rfl
 
-/-- A non-final top frame `(evalc x space)` is handled by the same `evalOp` call; the
-space argument is intentionally ignored by LeaTTa's minimal interpreter at this layer. -/
+/-- A non-final top frame `(evalc x space)` delegates to `evalOp` in the environment selected by
+the resolved space argument. -/
 theorem interpretStack1_evalc_eq (env : MinEnv) (fuel : Nat) (st : St)
-    (prev : Stack) (x space : Atom) (b : Bindings) :
+    (prev : Stack) (x space : Atom) (b : Bindings) (evalEnv : MinEnv)
+    (hspace : evalEnvForSpace env st.world (instantiate b space) = some evalEnv) :
     interpretStack1 env fuel st
         { stack := { atom := Atom.expr [Atom.sym "evalc", x, space] } :: prev, bnd := b } =
-      evalOp env st prev x b := by
+      evalOp evalEnv st prev x b := by
   unfold interpretStack1
-  rfl
+  simp [hspace]
 
 /-- Membership form of `interpretStack1_eval_eq`, useful when composing with item
 readout lemmas for `evalOp`. -/
@@ -53,11 +54,13 @@ theorem mem_interpretStack1_eval_iff (env : MinEnv) (fuel : Nat) (st : St)
 
 /-- Membership form of `interpretStack1_evalc_eq`. -/
 theorem mem_interpretStack1_evalc_iff (env : MinEnv) (fuel : Nat) (st : St)
-    (prev : Stack) (x space : Atom) (b : Bindings) (item : Item) :
+    (prev : Stack) (x space : Atom) (b : Bindings) (evalEnv : MinEnv)
+    (hspace : evalEnvForSpace env st.world (instantiate b space) = some evalEnv)
+    (item : Item) :
     item ∈ (interpretStack1 env fuel st
         { stack := { atom := Atom.expr [Atom.sym "evalc", x, space] } :: prev, bnd := b }).1 ↔
-      item ∈ (evalOp env st prev x b).1 := by
-  rw [interpretStack1_evalc_eq]
+      item ∈ (evalOp evalEnv st prev x b).1 := by
+  rw [interpretStack1_evalc_eq env fuel st prev x space b evalEnv hspace]
 
 /-! ## Scheduler control-flow boundary -/
 
@@ -979,6 +982,10 @@ theorem interpretStack1_eval_renamed_closed_coreBinding_reverse_alpha_of_match
 theorem instantiate_notReducibleA (b : Bindings) : instantiate b notReducibleA = notReducibleA := by
   simp [notReducibleA, instantiate, Metta.Subst.apply]
 
+/-- The scheduler's `NotReducible` marker survives v1.0.8's final `Empty` filtering. -/
+theorem notReducibleA_ne_empty : (notReducibleA != emptyA) = true := by
+  decide
+
 /-- Scheduler-level lift of the no-candidate `queryOp` branch: an `(eval x)` frame whose
 instantiated redex is symbol-headed, non-grounded, and has no candidates emits `NotReducible`.
 
@@ -1167,7 +1174,8 @@ theorem mem_interpretFuel_cons_final_of_mem_interpretStack1
     (env : MinEnv) (fuel : Nat) (st : St) (it out : Item) (rest : List Item)
     (done : List (Atom × Bindings))
     (hmem : out ∈ (interpretStack1 env fuel st it).1)
-    (hfinal : isFinal out = true) :
+    (hfinal : isFinal out = true)
+    (hnotEmpty : ((finalPair out).1 != emptyA) = true) :
     finalPair out ∈ (interpretFuel env (fuel + 1) st (it :: rest) done).1 := by
   rw [interpretFuel_cons_step_eq]
   cases hstep : interpretStack1 env fuel st it with
@@ -1179,9 +1187,14 @@ theorem mem_interpretFuel_cons_final_of_mem_interpretStack1
         exact ⟨hmem, hfinal⟩
       have houtFinals : finalPair out ∈ (results.filter isFinal).map finalPair :=
         List.mem_map.mpr ⟨out, houtFiltered, rfl⟩
-      rw [List.reverse_append, List.reverse_reverse, List.append_assoc]
-      exact List.mem_append.mpr
-        (Or.inr (List.mem_append.mpr (Or.inl houtFinals)))
+      apply List.mem_append.mpr
+      left
+      apply List.mem_filter.mpr
+      constructor
+      ·
+        rw [List.reverse_append, List.reverse_reverse]
+        exact List.mem_append.mpr (Or.inr houtFinals)
+      · exact hnotEmpty
 
 /-- Non-final scheduler successors are exactly the items that enter the recursive work-list. -/
 theorem mem_nonfinal_successors_of_mem_interpretStack1
@@ -1322,6 +1335,7 @@ theorem interpretFuel_eval_symbolic_rule_closed_contains_final
     (hembed : isEmbeddedOp (Atom.expr (Atom.sym op :: args)) = false)
     (hsplit : (MinEnv.ofAtomsGT atoms gt).candidates (Atom.expr (Atom.sym op :: args)) =
       pre ++ (lhs, rhs) :: post)
+    (hnotEmpty : (rhs != emptyA) = true)
     (heval : evalResult [] rhs [] = finItem [] rhs []) :
     (rhs, []) ∈
         (interpretFuel (MinEnv.ofAtomsGT atoms gt) (fuel + 1) st
@@ -1341,7 +1355,8 @@ theorem interpretFuel_eval_symbolic_rule_closed_contains_final
         (interpretFuel (MinEnv.ofAtomsGT atoms gt) (fuel + 1) st [it] []).1 :=
     mem_interpretFuel_cons_final_of_mem_interpretStack1
       (MinEnv.ofAtomsGT atoms gt) fuel st it out [] [] (by
-        simpa [it, out] using hstep.1) hfinal
+        simpa [it, out] using hstep.1) hfinal (by
+          simpa [out, heval, finItem, finalPair, Metta.instantiate_nil] using hnotEmpty)
   constructor
   · simpa [it, out, heval, finItem, finalPair, Metta.instantiate_nil] using hmemFuel
   · exact hstep.2
@@ -1362,13 +1377,14 @@ theorem interpretFuel_eval_symbolic_rule_closed_contains_nonFunction
     (hembed : isEmbeddedOp (Atom.expr (Atom.sym op :: args)) = false)
     (hsplit : (MinEnv.ofAtomsGT atoms gt).candidates (Atom.expr (Atom.sym op :: args)) =
       pre ++ (lhs, rhs) :: post)
+    (hnotEmpty : (rhs != emptyA) = true)
     (hnotFunction : isFunctionResult rhs = false) :
     (rhs, []) ∈
         (interpretFuel (MinEnv.ofAtomsGT atoms gt) (fuel + 1) st
           [{ stack := [{ atom := Atom.expr [Atom.sym "eval", x] }], bnd := [] }] []).1 ∧
       KernelStep atoms gt (Atom.expr (Atom.sym op :: args)) rhs :=
   interpretFuel_eval_symbolic_rule_closed_contains_final
-    hlhs hrhs hmatch hstatic hinst hcall hembed hsplit
+    hlhs hrhs hmatch hstatic hinst hcall hembed hsplit hnotEmpty
     (evalResult_nil_eq_finItem_of_not_function hnotFunction)
 
 /-- MOPS-facing form of `interpretFuel_eval_symbolic_rule_closed_contains_nonFunction`. -/
@@ -1386,6 +1402,7 @@ theorem interpretFuel_eval_symbolic_rule_closed_contains_mops
     (hembed : isEmbeddedOp (Atom.expr (Atom.sym op :: args)) = false)
     (hsplit : (MinEnv.ofAtomsGT atoms gt).candidates (Atom.expr (Atom.sym op :: args)) =
       pre ++ (lhs, rhs) :: post)
+    (hnotEmpty : (rhs != emptyA) = true)
     (hnotFunction : isFunctionResult rhs = false) :
     (rhs, []) ∈
         (interpretFuel (MinEnv.ofAtomsGT atoms gt) (fuel + 1) st
@@ -1395,7 +1412,7 @@ theorem interpretFuel_eval_symbolic_rule_closed_contains_mops
   rcases interpretFuel_eval_symbolic_rule_closed_contains_nonFunction
     (atoms := atoms) (gt := gt) (st := st) (fuel := fuel) (x := x)
     (lhs := lhs) (rhs := rhs) (op := op) (args := args) (pre := pre) (post := post)
-    hlhs hrhs hmatch hstatic hinst hcall hembed hsplit hnotFunction with
+    hlhs hrhs hmatch hstatic hinst hcall hembed hsplit hnotEmpty hnotFunction with
     ⟨hmem, hstep⟩
   exact ⟨hmem,
     exprCtxKernelChain_to_mops
@@ -1417,6 +1434,7 @@ theorem evalAtomMin_symbolic_rule_closed_contains_mops
     (hembed : isEmbeddedOp (Atom.expr (Atom.sym op :: args)) = false)
     (hsplit : (MinEnv.ofAtomsGT atoms gt).candidates (Atom.expr (Atom.sym op :: args)) =
       pre ++ (lhs, rhs) :: post)
+    (hnotEmpty : (rhs != emptyA) = true)
     (hnotFunction : isFunctionResult rhs = false) :
     rhs ∈ evalAtomMin (MinEnv.ofAtomsGT atoms gt) (fuel + 1) x ∧
       Relation.ReflTransGen (ExprCtxMopsStep atoms)
@@ -1424,7 +1442,7 @@ theorem evalAtomMin_symbolic_rule_closed_contains_mops
   rcases interpretFuel_eval_symbolic_rule_closed_contains_mops
     (atoms := atoms) (gt := gt) (st := St.init) (fuel := fuel) (x := x)
     (lhs := lhs) (rhs := rhs) (op := op) (args := args) (pre := pre) (post := post)
-    hlhs hrhs hmatch rfl hinst hcall hembed hsplit hnotFunction with
+    hlhs hrhs hmatch rfl hinst hcall hembed hsplit hnotEmpty hnotFunction with
     ⟨hmem, hreach⟩
   constructor
   · unfold evalAtomMin interpretAtom
@@ -1458,6 +1476,7 @@ theorem interpretFuel_eval_staticCandidateSplit_eqResult_contains_mops
     (hresult :
       instantiate m (freshenRule (st.counter + pre.length) lhs rhs).2 =
         instantiate coreB rhs)
+    (hnotEmpty : (instantiate coreB rhs != emptyA) = true)
     (hnotFunction : isFunctionResult (instantiate coreB rhs) = false)
     (hstable : instantiate m (instantiate coreB rhs) = instantiate coreB rhs) :
     (instantiate coreB rhs, m) ∈
@@ -1483,7 +1502,8 @@ theorem interpretFuel_eval_staticCandidateSplit_eqResult_contains_mops
         (interpretFuel (MinEnv.ofAtomsGT atoms gt) (fuel + 1) st [it] []).1 :=
     mem_interpretFuel_cons_final_of_mem_interpretStack1
       (MinEnv.ofAtomsGT atoms gt) fuel st it out [] [] (by
-        simpa [it, out] using hstep.1) hfinal
+        simpa [it, out] using hstep.1) hfinal (by
+          simpa [out, heval, finItem, finalPair, hstable] using hnotEmpty)
   constructor
   · simpa [it, out, heval, finItem, finalPair, hstable] using hmemFuel
   · exact hstep.2
@@ -1517,6 +1537,7 @@ theorem interpretFuel_eval_staticCandidateSplit_eqResult_contains_mops_of_closed
     (hresult :
       instantiate m (freshenRule (st.counter + pre.length) lhs rhs).2 =
         instantiate coreB rhs)
+    (hnotEmpty : (instantiate coreB rhs != emptyA) = true)
     (hnotFunction : isFunctionResult (instantiate coreB rhs) = false) :
     (instantiate coreB rhs, m) ∈
         (interpretFuel (MinEnv.ofAtomsGT atoms gt) (fuel + 1) st
@@ -1531,7 +1552,7 @@ theorem interpretFuel_eval_staticCandidateSplit_eqResult_contains_mops_of_closed
     (lhs := lhs) (rhs := rhs) (mb := mb) (m := m) (coreB := coreB)
     (op := op) (args := args) (pre := pre) (post := post)
     hstatic hinst hcall hembed hNotVarHead hhead hsplit hmatchFresh hmerge hloop
-    hmatchCore hresult hnotFunction hstable
+    hmatchCore hresult hnotEmpty hnotFunction hstable
 
 /-- Open-value version of the fuel-driver static-candidate crossing.
 
@@ -1561,6 +1582,7 @@ theorem interpretFuel_eval_renamed_value_coreBinding_reverse_contains_mops
         (Atom.expr (Atom.sym op :: args)))
     (hmatchCore : coreB ∈ matchAtoms lhs (Atom.expr (Atom.sym op :: args)))
     (hbound : ∀ v ∈ rhs.vars, ∃ t, Bindings.lookupVal coreB v = some t)
+    (hnotEmpty : (instantiate coreB rhs != emptyA) = true)
     (hnotFunction : isFunctionResult (instantiate coreB rhs) = false) :
     (instantiate coreB rhs,
         (renameBindings (counterSuffix (st.counter + pre.length)) coreB).reverse) ∈
@@ -1608,7 +1630,7 @@ theorem interpretFuel_eval_renamed_value_coreBinding_reverse_contains_mops
       (op := op) (args := args) (pre := pre) (post := post)
       hstatic hinst hcall hembed (by simp [isVariableHeaded]) (by simp [headKey])
       hsplit (by simpa [f] using hmatchFresh) (by simpa [f] using hmerge)
-      (by simpa [f] using hloop) hmatchCore hresult hnotFunction hstable with
+      (by simpa [f] using hloop) hmatchCore hresult hnotEmpty hnotFunction hstable with
     ⟨hmem, hstep⟩
   exact ⟨by simpa [f] using hmem, Relation.ReflTransGen.single hstep⟩
 
@@ -1637,6 +1659,7 @@ theorem interpretFuel_eval_renamed_value_coreBinding_reverse_contains_mops_of_le
       pre ++ (lhs, rhs) :: post)
     (hmatchCore : coreB ∈ matchAtoms lhs (Atom.expr (Atom.sym op :: args)))
     (hbound : ∀ v ∈ rhs.vars, ∃ t, Bindings.lookupVal coreB v = some t)
+    (hnotEmpty : (instantiate coreB rhs != emptyA) = true)
     (hnotFunction : isFunctionResult (instantiate coreB rhs) = false) :
     (instantiate coreB rhs,
         (renameBindings (counterSuffix (st.counter + pre.length)) coreB).reverse) ∈
@@ -1654,7 +1677,8 @@ theorem interpretFuel_eval_renamed_value_coreBinding_reverse_contains_mops_of_le
     (hvalB := hvalB) (hnodup := hnodup) (hfreshValues := hfreshValues)
     (hstatic := hstatic) (hinst := hinst) (hcall := hcall) (hembed := hembed)
     (hsplit := hsplit) (hmatchFresh := hmatchFresh)
-    (hmatchCore := hmatchCore) (hbound := hbound) (hnotFunction := hnotFunction)
+    (hmatchCore := hmatchCore) (hbound := hbound) (hnotEmpty := hnotEmpty)
+    (hnotFunction := hnotFunction)
 
 /-- Fuel-driver harvest of the generic renamed-core binding crossing when the emitted RHS is
 already final.
@@ -1683,6 +1707,9 @@ theorem interpretFuel_eval_renamed_closed_coreBinding_reverse_contains_final
         (Atom.expr (Atom.sym op :: args)))
     (hmatchCore : coreB ∈ matchAtoms lhs (Atom.expr (Atom.sym op :: args)))
     (hbound : ∀ v ∈ rhs.vars, ∃ t, Bindings.lookupVal coreB v = some t)
+    (hnotEmpty :
+      (instantiate (renameBindings (counterSuffix (st.counter + pre.length)) coreB).reverse
+        (instantiate coreB rhs) != emptyA) = true)
     (hnotFunction : isFunctionResult (instantiate coreB rhs) = false) :
     (instantiate (renameBindings (counterSuffix (st.counter + pre.length)) coreB).reverse
         (instantiate coreB rhs),
@@ -1710,7 +1737,8 @@ theorem interpretFuel_eval_renamed_closed_coreBinding_reverse_contains_final
         (interpretFuel (MinEnv.ofAtomsGT atoms gt) (fuel + 1) st [it] []).1 :=
     mem_interpretFuel_cons_final_of_mem_interpretStack1
       (MinEnv.ofAtomsGT atoms gt) fuel st it out [] [] (by
-        simpa [it, out, m] using hstep.1) hfinal
+        simpa [it, out, m] using hstep.1) hfinal (by
+          simpa [out, heval, finItem, finalPair, m] using hnotEmpty)
   constructor
   · simpa [it, out, heval, finItem, finalPair, m] using hmemFuel
   · exact Relation.ReflTransGen.single hstep.2
@@ -1739,6 +1767,9 @@ theorem interpretFuel_eval_renamed_closed_coreBinding_reverse_alpha_final
       matchAtoms (freshenRule (st.counter + pre.length) lhs rhs).1
         (Atom.expr (Atom.sym op :: args)))
     (hmatchCore : coreB ∈ matchAtoms lhs (Atom.expr (Atom.sym op :: args)))
+    (hnotEmpty :
+      (instantiate (renameBindings (counterSuffix (st.counter + pre.length)) coreB).reverse
+        (freshenRule (st.counter + pre.length) lhs rhs).2 != emptyA) = true)
     (hnotFunction :
       isFunctionResult
         (instantiate (renameBindings (counterSuffix (st.counter + pre.length)) coreB).reverse
@@ -1772,11 +1803,6 @@ theorem interpretFuel_eval_renamed_closed_coreBinding_reverse_alpha_final
         (a := actual) (b := m) (by simpa [actual, m] using hnotFunction))
   have hfinal : isFinal out = true := by
     simp [out, heval, finItem, isFinal]
-  have hmemFuel :
-      finalPair out ∈
-        (interpretFuel (MinEnv.ofAtomsGT atoms gt) (fuel + 1) st [it] []).1 :=
-    mem_interpretFuel_cons_final_of_mem_interpretStack1
-      (MinEnv.ofAtomsGT atoms gt) fuel st it out [] [] hmemStack hfinal
   have hclosedRen :
       ClosedValueBindings (renameBindings (counterSuffix (st.counter + pre.length)) coreB) :=
     ClosedValueBindings.rename hclosedB
@@ -1786,6 +1812,12 @@ theorem interpretFuel_eval_renamed_closed_coreBinding_reverse_alpha_final
     simpa [actual] using
       instantiate_closed_value_bindings_idempotent hclosedM
         (freshenRule (st.counter + pre.length) lhs rhs).2
+  have hmemFuel :
+      finalPair out ∈
+        (interpretFuel (MinEnv.ofAtomsGT atoms gt) (fuel + 1) st [it] []).1 :=
+    mem_interpretFuel_cons_final_of_mem_interpretStack1
+      (MinEnv.ofAtomsGT atoms gt) fuel st it out [] [] hmemStack hfinal (by
+        simpa [out, heval, finItem, finalPair, actual, m, hstable] using hnotEmpty)
   constructor
   · simpa [it, out, heval, finItem, finalPair, actual, m, hstable] using hmemFuel
   · exact ⟨Relation.ReflTransGen.single hstep.2.1,
@@ -1816,6 +1848,9 @@ theorem interpretFuel_eval_renamed_closed_coreBinding_reverse_alpha_final_mops
       matchAtoms (freshenRule (st.counter + pre.length) lhs rhs).1
         (Atom.expr (Atom.sym op :: args)))
     (hmatchCore : coreB ∈ matchAtoms lhs (Atom.expr (Atom.sym op :: args)))
+    (hnotEmpty :
+      (instantiate (renameBindings (counterSuffix (st.counter + pre.length)) coreB).reverse
+        (freshenRule (st.counter + pre.length) lhs rhs).2 != emptyA) = true)
     (hnotFunction :
       isFunctionResult
         (instantiate (renameBindings (counterSuffix (st.counter + pre.length)) coreB).reverse
@@ -1836,7 +1871,7 @@ theorem interpretFuel_eval_renamed_closed_coreBinding_reverse_alpha_final_mops
     (lhs := lhs) (rhs := rhs) (coreB := coreB) (op := op) (args := args)
     (pre := pre) (post := post)
     hclosedB hnodup hstatic hinst hcall hembed hsplit hmatchFresh hmatchCore
-    hnotFunction with
+    hnotEmpty hnotFunction with
     ⟨hmem, hkernel, halpha⟩
   exact
     ⟨hmem,
@@ -1862,6 +1897,9 @@ theorem interpretFuel_eval_renamed_closed_coreBinding_reverse_alpha_final_mops_o
     (hsplit : (MinEnv.ofAtomsGT atoms gt).candidates (Atom.expr (Atom.sym op :: args)) =
       pre ++ (lhs, rhs) :: post)
     (hmatchCore : coreB ∈ matchAtoms lhs (Atom.expr (Atom.sym op :: args)))
+    (hnotEmpty :
+      (instantiate (renameBindings (counterSuffix (st.counter + pre.length)) coreB).reverse
+        (freshenRule (st.counter + pre.length) lhs rhs).2 != emptyA) = true)
     (hnotFunction :
       isFunctionResult
         (instantiate (renameBindings (counterSuffix (st.counter + pre.length)) coreB).reverse
@@ -1887,7 +1925,7 @@ theorem interpretFuel_eval_renamed_closed_coreBinding_reverse_alpha_final_mops_o
     (lhs := lhs) (rhs := rhs) (coreB := coreB) (op := op) (args := args)
     (pre := pre) (post := post)
     hclosedB hnodup hstatic hinst hcall hembed hsplit hmatchFresh hmatchCore
-    hnotFunction
+    hnotEmpty hnotFunction
 
 /-- Closed-result convenience form of
 `interpretFuel_eval_renamed_closed_coreBinding_reverse_contains_final`. Variable-free certified
@@ -1913,6 +1951,7 @@ theorem interpretFuel_eval_renamed_closed_coreBinding_reverse_contains_closed
     (hmatchCore : coreB ∈ matchAtoms lhs (Atom.expr (Atom.sym op :: args)))
     (hbound : ∀ v ∈ rhs.vars, ∃ t, Bindings.lookupVal coreB v = some t)
     (hclosedResult : (instantiate coreB rhs).vars = [])
+    (hnotEmpty : (instantiate coreB rhs != emptyA) = true)
     (hnotFunction : isFunctionResult (instantiate coreB rhs) = false) :
     (instantiate coreB rhs,
         (renameBindings (counterSuffix (st.counter + pre.length)) coreB).reverse) ∈
@@ -1926,6 +1965,7 @@ theorem interpretFuel_eval_renamed_closed_coreBinding_reverse_contains_closed
       (lhs := lhs) (rhs := rhs) (coreB := coreB) (op := op) (args := args)
       (pre := pre) (post := post)
       hclosedB hnodup hstatic hinst hcall hembed hsplit hmatchFresh hmatchCore hbound
+      (by simpa [instantiate_eq_self_of_vars_nil _ hclosedResult] using hnotEmpty)
       hnotFunction
   simpa [instantiate_eq_self_of_vars_nil _ hclosedResult] using hbase
 
@@ -1951,6 +1991,7 @@ theorem interpretFuel_eval_renamed_closed_coreBinding_reverse_contains_closed_mo
     (hmatchCore : coreB ∈ matchAtoms lhs (Atom.expr (Atom.sym op :: args)))
     (hbound : ∀ v ∈ rhs.vars, ∃ t, Bindings.lookupVal coreB v = some t)
     (hclosedResult : (instantiate coreB rhs).vars = [])
+    (hnotEmpty : (instantiate coreB rhs != emptyA) = true)
     (hnotFunction : isFunctionResult (instantiate coreB rhs) = false) :
     (instantiate coreB rhs,
         (renameBindings (counterSuffix (st.counter + pre.length)) coreB).reverse) ∈
@@ -1963,7 +2004,7 @@ theorem interpretFuel_eval_renamed_closed_coreBinding_reverse_contains_closed_mo
     (lhs := lhs) (rhs := rhs) (coreB := coreB) (op := op) (args := args)
     (pre := pre) (post := post)
     hclosedB hnodup hstatic hinst hcall hembed hsplit hmatchFresh hmatchCore hbound
-    hclosedResult hnotFunction with
+    hclosedResult hnotEmpty hnotFunction with
     ⟨hmem, hreach⟩
   exact ⟨hmem,
     exprCtxKernelChain_to_mops (kernelChain_to_exprCtxKernelChain hreach)⟩
@@ -1988,6 +2029,7 @@ theorem interpretFuel_eval_renamed_closed_coreBinding_reverse_contains_closed_mo
     (hmatchCore : coreB ∈ matchAtoms lhs (Atom.expr (Atom.sym op :: args)))
     (hbound : ∀ v ∈ rhs.vars, ∃ t, Bindings.lookupVal coreB v = some t)
     (hclosedResult : (instantiate coreB rhs).vars = [])
+    (hnotEmpty : (instantiate coreB rhs != emptyA) = true)
     (hnotFunction : isFunctionResult (instantiate coreB rhs) = false) :
     (instantiate coreB rhs,
         (renameBindings (counterSuffix (st.counter + pre.length)) coreB).reverse) ∈
@@ -2005,7 +2047,7 @@ theorem interpretFuel_eval_renamed_closed_coreBinding_reverse_contains_closed_mo
     (lhs := lhs) (rhs := rhs) (coreB := coreB) (op := op) (args := args)
     (pre := pre) (post := post)
     hclosedB hnodup hstatic hinst hcall hembed hsplit hmatchFresh hmatchCore hbound
-    hclosedResult hnotFunction
+    hclosedResult hnotEmpty hnotFunction
 
 /-- Fuel-driver harvest for a static variable-LHS rule over a closed symbol-headed redex.
 
@@ -2027,6 +2069,8 @@ theorem interpretFuel_eval_var_lhs_closed_contains_mops
     (hboundVars : ∀ w ∈ rhs.vars, w = v)
     (hclosedResult :
       (instantiate [BindingRel.val v (Atom.expr (Atom.sym op :: args))] rhs).vars = [])
+    (hnotEmpty :
+      (instantiate [BindingRel.val v (Atom.expr (Atom.sym op :: args))] rhs != emptyA) = true)
     (hnotFunction :
       isFunctionResult (instantiate [BindingRel.val v (Atom.expr (Atom.sym op :: args))] rhs) =
         false) :
@@ -2067,6 +2111,7 @@ theorem interpretFuel_eval_var_lhs_closed_contains_mops
       (pre := pre) (post := post)
       hclosedB hnodup hstatic hinst hcall hembed hsplit hmatchFresh hmatchCore hbound
       (by simpa [coreB, target] using hclosedResult)
+      (by simpa [coreB, target] using hnotEmpty)
       (by simpa [coreB, target] using hnotFunction))
 
 /-- Fuel-driver harvest for a static variable-LHS rule over an open symbol-headed redex.
@@ -2090,6 +2135,8 @@ theorem interpretFuel_eval_var_lhs_open_contains_mops
     (hsplit : (MinEnv.ofAtomsGT atoms gt).candidates (Atom.expr (Atom.sym op :: args)) =
       pre ++ (Atom.var v, rhs) :: post)
     (hboundVars : ∀ w ∈ rhs.vars, w = v)
+    (hnotEmpty :
+      (instantiate [BindingRel.val v (Atom.expr (Atom.sym op :: args))] rhs != emptyA) = true)
     (hnotFunction :
       isFunctionResult (instantiate [BindingRel.val v (Atom.expr (Atom.sym op :: args))] rhs) =
         false) :
@@ -2145,6 +2192,7 @@ theorem interpretFuel_eval_var_lhs_open_contains_mops
     (coreB := coreB) (op := op) (args := args) (pre := pre) (post := post)
     hstatic hinst hcall hembed (by simp [isVariableHeaded]) (by simp [headKey])
     hsplit hmatchFresh hmerge hloop hmatchCore hresult
+    (by simpa [coreB, target] using hnotEmpty)
     (by simpa [coreB, target] using hnotFunction) hstable
   constructor
   · simpa [coreB, target, fresh] using hbase.1
@@ -2171,6 +2219,7 @@ theorem evalAtomMin_renamed_closed_coreBinding_reverse_contains_closed_mops
     (hmatchCore : coreB ∈ matchAtoms lhs (Atom.expr (Atom.sym op :: args)))
     (hbound : ∀ v ∈ rhs.vars, ∃ t, Bindings.lookupVal coreB v = some t)
     (hclosedResult : (instantiate coreB rhs).vars = [])
+    (hnotEmpty : (instantiate coreB rhs != emptyA) = true)
     (hnotFunction : isFunctionResult (instantiate coreB rhs) = false) :
     instantiate coreB rhs ∈ evalAtomMin (MinEnv.ofAtomsGT atoms gt) (fuel + 1) x ∧
       Relation.ReflTransGen (ExprCtxMopsStep atoms)
@@ -2180,7 +2229,7 @@ theorem evalAtomMin_renamed_closed_coreBinding_reverse_contains_closed_mops
     (lhs := lhs) (rhs := rhs) (coreB := coreB) (op := op) (args := args)
     (pre := pre) (post := post)
     hclosedB hnodup rfl hinst hcall hembed hsplit hmatchFresh hmatchCore hbound
-    hclosedResult hnotFunction with
+    hclosedResult hnotEmpty hnotFunction with
     ⟨hmem, hreach⟩
   constructor
   · unfold evalAtomMin interpretAtom
@@ -2214,6 +2263,9 @@ theorem evalAtomMin_renamed_closed_coreBinding_reverse_alpha_mops
       matchAtoms (freshenRule (St.init.counter + pre.length) lhs rhs).1
         (Atom.expr (Atom.sym op :: args)))
     (hmatchCore : coreB ∈ matchAtoms lhs (Atom.expr (Atom.sym op :: args)))
+    (hnotEmpty :
+      (instantiate (renameBindings (counterSuffix (St.init.counter + pre.length)) coreB).reverse
+        (freshenRule (St.init.counter + pre.length) lhs rhs).2 != emptyA) = true)
     (hnotFunction :
       isFunctionResult
         (instantiate (renameBindings (counterSuffix (St.init.counter + pre.length)) coreB).reverse
@@ -2232,7 +2284,7 @@ theorem evalAtomMin_renamed_closed_coreBinding_reverse_alpha_mops
     (lhs := lhs) (rhs := rhs) (coreB := coreB) (op := op) (args := args)
     (pre := pre) (post := post)
     hclosedB hnodup rfl hinst hcall hembed hsplit hmatchFresh hmatchCore
-    hnotFunction with
+    hnotEmpty hnotFunction with
     ⟨hmem, hreach, halpha⟩
   constructor
   · unfold evalAtomMin interpretAtom
@@ -2260,6 +2312,9 @@ theorem evalAtomMin_renamed_closed_coreBinding_reverse_alpha_mops_of_match
     (hsplit : (MinEnv.ofAtomsGT atoms gt).candidates (Atom.expr (Atom.sym op :: args)) =
       pre ++ (lhs, rhs) :: post)
     (hmatchCore : coreB ∈ matchAtoms lhs (Atom.expr (Atom.sym op :: args)))
+    (hnotEmpty :
+      (instantiate (renameBindings (counterSuffix (St.init.counter + pre.length)) coreB).reverse
+        (freshenRule (St.init.counter + pre.length) lhs rhs).2 != emptyA) = true)
     (hnotFunction :
       isFunctionResult
         (instantiate (renameBindings (counterSuffix (St.init.counter + pre.length)) coreB).reverse
@@ -2278,7 +2333,7 @@ theorem evalAtomMin_renamed_closed_coreBinding_reverse_alpha_mops_of_match
     (lhs := lhs) (rhs := rhs) (coreB := coreB) (op := op) (args := args)
     (pre := pre) (post := post)
     hclosedTarget hclosedB hnodup rfl hinst hcall hembed hsplit hmatchCore
-    hnotFunction with
+    hnotEmpty hnotFunction with
     ⟨hmem, hreach, halpha⟩
   constructor
   · unfold evalAtomMin interpretAtom
@@ -2323,10 +2378,10 @@ theorem interpretFuel_sound_by_invariant
       cases work with
       | nil =>
           simp only [interpretFuel] at hp
-          exact hdone p (List.mem_reverse.mp hp)
+          exact hdone p (List.mem_reverse.mp (List.mem_filter.mp hp).1)
       | cons it rest =>
           simp only [interpretFuel] at hp
-          rcases List.mem_append.mp hp with hdoneRev | hworkOut
+          rcases List.mem_append.mp (List.mem_filter.mp hp).1 with hdoneRev | hworkOut
           · exact hdone p (List.mem_reverse.mp hdoneRev)
           · rcases List.mem_map.mp hworkOut with ⟨it', hit', rfl⟩
             exact hExhausted it' (hwork it' hit')
@@ -2335,7 +2390,7 @@ theorem interpretFuel_sound_by_invariant
       cases work with
       | nil =>
           simp only [interpretFuel] at hp
-          exact hdone p (List.mem_reverse.mp hp)
+          exact hdone p (List.mem_reverse.mp (List.mem_filter.mp hp).1)
       | cons it rest =>
           cases hstep : interpretStack1 env fuel st it with
           | mk results st' =>
@@ -2400,10 +2455,10 @@ theorem interpretFuel_sound_by_state_invariant
       cases work with
       | nil =>
           simp only [interpretFuel] at hp
-          exact hdone p (List.mem_reverse.mp hp)
+          exact hdone p (List.mem_reverse.mp (List.mem_filter.mp hp).1)
       | cons it rest =>
           simp only [interpretFuel] at hp
-          rcases List.mem_append.mp hp with hdoneRev | hworkOut
+          rcases List.mem_append.mp (List.mem_filter.mp hp).1 with hdoneRev | hworkOut
           · exact hdone p (List.mem_reverse.mp hdoneRev)
           · rcases List.mem_map.mp hworkOut with ⟨it', hit', rfl⟩
             exact hExhausted st it' (hwork it' hit')
@@ -2412,7 +2467,7 @@ theorem interpretFuel_sound_by_state_invariant
       cases work with
       | nil =>
           simp only [interpretFuel] at hp
-          exact hdone p (List.mem_reverse.mp hp)
+          exact hdone p (List.mem_reverse.mp (List.mem_filter.mp hp).1)
       | cons it rest =>
           cases hstep : interpretStack1 env fuel st it with
           | mk results st' =>
@@ -2508,10 +2563,10 @@ theorem interpretFuel_sound_by_fuel_state_invariant
       cases work with
       | nil =>
           simp only [interpretFuel] at hp
-          exact hdone p (List.mem_reverse.mp hp)
+          exact hdone p (List.mem_reverse.mp (List.mem_filter.mp hp).1)
       | cons it rest =>
           simp only [interpretFuel] at hp
-          rcases List.mem_append.mp hp with hdoneRev | hworkOut
+          rcases List.mem_append.mp (List.mem_filter.mp hp).1 with hdoneRev | hworkOut
           · exact hdone p (List.mem_reverse.mp hdoneRev)
           · rcases List.mem_map.mp hworkOut with ⟨it', hit', rfl⟩
             exact hExhausted st it' (hwork it' hit')
@@ -2520,7 +2575,7 @@ theorem interpretFuel_sound_by_fuel_state_invariant
       cases work with
       | nil =>
           simp only [interpretFuel] at hp
-          exact hdone p (List.mem_reverse.mp hp)
+          exact hdone p (List.mem_reverse.mp (List.mem_filter.mp hp).1)
       | cons it rest =>
           cases hstep : interpretStack1 env fuel st it with
           | mk results st' =>
@@ -2890,7 +2945,8 @@ concrete execution trace. -/
 theorem mem_interpretFuel_single_of_mem_interpretStack1_final
     (env : MinEnv) (fuel : Nat) (st : St) (it out : Item)
     (hmem : out ∈ (interpretStack1 env fuel st it).1)
-    (hfinal : isFinal out = true) :
+    (hfinal : isFinal out = true)
+    (hnotEmpty : ((finalPair out).1 != emptyA) = true) :
     finalPair out ∈ (interpretFuel env (fuel + 1) st [it] []).1 := by
   cases hstep : interpretStack1 env fuel st it with
   | mk results st' =>
@@ -2901,7 +2957,7 @@ theorem mem_interpretFuel_single_of_mem_interpretStack1_final
         exact ⟨by simpa [hstep] using hmem, hfinal⟩
       have houtFinals : finalPair out ∈ (results.filter isFinal).map finalPair := by
         exact List.mem_map.mpr ⟨out, houtFiltered, rfl⟩
-      simp [houtFinals]
+      simp [houtFinals, hnotEmpty]
 
 /-- Fuel-driver harvest of `interpretStack1_eval_notReducible_of_no_candidates`.
 
@@ -2931,7 +2987,8 @@ theorem interpretFuel_eval_notReducible_of_no_candidates
   have hfinal : isFinal out = true := by
     simp [out, finItem, isFinal]
   have hharvest :=
-    mem_interpretFuel_single_of_mem_interpretStack1_final env fuel st it out hmem hfinal
+    mem_interpretFuel_single_of_mem_interpretStack1_final env fuel st it out hmem hfinal (by
+      simpa [out, finItem, finalPair, instantiate_notReducibleA] using notReducibleA_ne_empty)
   simpa [it, out, finItem, finalPair, instantiate_notReducibleA] using hharvest
 
 /-- Exact fuel-driver form of `interpretFuel_eval_notReducible_of_no_candidates`: the structural
@@ -2951,7 +3008,8 @@ theorem interpretFuel_eval_notReducible_of_no_candidates_eq
       ([(notReducibleA, b)], st) := by
   have hstep := interpretStack1_eval_notReducible_of_no_candidates_eq
     env st fuel [] x b op args hinst hcall hembed hNotVarHead hnone
-  simp [interpretFuel, hstep, finItem, isFinal, finalPair, instantiate_notReducibleA]
+  simp [interpretFuel, hstep, finItem, isFinal, finalPair, instantiate_notReducibleA,
+    notReducibleA_ne_empty]
 
 /-- Fuel-driver harvest of
 `interpretStack1_eval_symbol_notReducible_of_no_candidates`. This is the executable root-evaluator
@@ -2973,7 +3031,8 @@ theorem interpretFuel_eval_symbol_notReducible_of_no_candidates
   have hfinal : isFinal out = true := by
     simp [out, finItem, isFinal]
   have hharvest :=
-    mem_interpretFuel_single_of_mem_interpretStack1_final env fuel st it out hmem hfinal
+    mem_interpretFuel_single_of_mem_interpretStack1_final env fuel st it out hmem hfinal (by
+      simpa [out, finItem, finalPair, instantiate_notReducibleA] using notReducibleA_ne_empty)
   simpa [it, out, finItem, finalPair, instantiate_notReducibleA] using hharvest
 
 /-- Exact fuel-driver form for bare-symbol no-candidate evaluation. -/
@@ -2987,7 +3046,8 @@ theorem interpretFuel_eval_symbol_notReducible_of_no_candidates_eq
       ([(notReducibleA, b)], st) := by
   have hstep := interpretStack1_eval_symbol_notReducible_of_no_candidates_eq
     env st fuel [] x b op hinst hembed hnone
-  simp [interpretFuel, hstep, finItem, isFinal, finalPair, instantiate_notReducibleA]
+  simp [interpretFuel, hstep, finItem, isFinal, finalPair, instantiate_notReducibleA,
+    notReducibleA_ne_empty]
 
 /-- Fuel-driver harvest of
 `interpretStack1_eval_ground_notReducible_of_no_candidates`. This is the executable root-evaluator
@@ -3009,7 +3069,8 @@ theorem interpretFuel_eval_ground_notReducible_of_no_candidates
   have hfinal : isFinal out = true := by
     simp [out, finItem, isFinal]
   have hharvest :=
-    mem_interpretFuel_single_of_mem_interpretStack1_final env fuel st it out hmem hfinal
+    mem_interpretFuel_single_of_mem_interpretStack1_final env fuel st it out hmem hfinal (by
+      simpa [out, finItem, finalPair, instantiate_notReducibleA] using notReducibleA_ne_empty)
   simpa [it, out, finItem, finalPair, instantiate_notReducibleA] using hharvest
 
 /-- Exact fuel-driver form for bare-grounded no-candidate evaluation. -/
@@ -3023,7 +3084,8 @@ theorem interpretFuel_eval_ground_notReducible_of_no_candidates_eq
       ([(notReducibleA, b)], st) := by
   have hstep := interpretStack1_eval_ground_notReducible_of_no_candidates_eq
     env st fuel [] x b g hinst hembed hnone
-  simp [interpretFuel, hstep, finItem, isFinal, finalPair, instantiate_notReducibleA]
+  simp [interpretFuel, hstep, finItem, isFinal, finalPair, instantiate_notReducibleA,
+    notReducibleA_ne_empty]
 
 /-- Fuel-driver harvest of `interpretStack1_eval_var_notReducible`. -/
 theorem interpretFuel_eval_var_notReducible
@@ -3041,7 +3103,8 @@ theorem interpretFuel_eval_var_notReducible
   have hfinal : isFinal out = true := by
     simp [out, finItem, isFinal]
   have hharvest :=
-    mem_interpretFuel_single_of_mem_interpretStack1_final env fuel st it out hmem hfinal
+    mem_interpretFuel_single_of_mem_interpretStack1_final env fuel st it out hmem hfinal (by
+      simpa [out, finItem, finalPair, instantiate_notReducibleA] using notReducibleA_ne_empty)
   simpa [it, out, finItem, finalPair, instantiate_notReducibleA] using hharvest
 
 /-- Exact fuel-driver form for bare-variable evaluation. -/
@@ -3054,7 +3117,8 @@ theorem interpretFuel_eval_var_notReducible_eq
       ([(notReducibleA, b)], st) := by
   have hstep := interpretStack1_eval_var_notReducible_eq
     env st fuel [] x b v hinst hembed
-  simp [interpretFuel, hstep, finItem, isFinal, finalPair, instantiate_notReducibleA]
+  simp [interpretFuel, hstep, finItem, isFinal, finalPair, instantiate_notReducibleA,
+    notReducibleA_ne_empty]
 
 /-! ## Full `mettaEval` consumption of `NotReducible` root readouts -/
 
@@ -3063,7 +3127,7 @@ private def mettaEvalBareFoldStep (env : MinEnv) (fuel : Nat) (w : Atom) (bnd : 
   fun a2 p =>
     if (p.1 == notReducibleA) = true ∨ (p.1 == w) = true then
       (a2.1 ++ [(w, bnd)], a2.2)
-    else if returnsAtom env w = true ∧ isEmbeddedOp p.1 = false then
+    else if returnsAtom env w = true then
       (a2.1 ++ [p], a2.2)
     else
       (a2.1 ++ (mettaEval env fuel a2.2 p.2 p.1).1,
@@ -3224,7 +3288,7 @@ def mettaEvalExprRootFoldStep
     let pb := restrictBnd queryVars ((Bindings.merge partBnd p.2).head?.getD p.2)
     if (p.1 == notReducibleA) = true ∨ (p.1 == w) = true then
       (a2.1 ++ [(w, partBnd)], a2.2)
-    else if returnsAtom env w = true ∧ isEmbeddedOp p.1 = false then
+    else if returnsAtom env w = true then
       (a2.1 ++ [(p.1, pb)], a2.2)
     else
       let (more, st3) := mettaEval env fuel a2.2 pb p.1
@@ -3348,7 +3412,6 @@ private theorem mettaEvalExprRootFoldStep_hits_returnsAtom
     (w : Atom) (partBnd : Bindings) (acc : List (Atom × Bindings) × St)
     (p : Atom × Bindings)
     (hReturns : returnsAtom env w = true)
-    (hembed : isEmbeddedOp p.1 = false)
     (hnotNR : (p.1 == notReducibleA) = false)
     (hnotSelf : (p.1 == w) = false) :
     (p.1, restrictBnd queryVars ((Bindings.merge partBnd p.2).head?.getD p.2)) ∈
@@ -3364,7 +3427,7 @@ private theorem mettaEvalExprRootFoldStep_hits_returnsAtom
     | inr hself =>
         rw [hnotSelf] at hself
         cases hself
-  simp [hfirst, hReturns, hembed]
+  simp [hfirst, hReturns]
 
 /-- The expression-root fold keeps any selected Atom-returning root readout.
 
@@ -3377,7 +3440,6 @@ theorem mettaEval_expr_root_keeps_of_returnsAtom_readout
     (p : Atom × Bindings) (pairs : List (Atom × Bindings)) (st : St)
     (hmem : p ∈ pairs)
     (hReturns : returnsAtom env w = true)
-    (hembed : isEmbeddedOp p.1 = false)
     (hnotNR : (p.1 == notReducibleA) = false)
     (hnotSelf : (p.1 == w) = false) :
     (p.1, restrictBnd queryVars ((Bindings.merge partBnd p.2).head?.getD p.2)) ∈
@@ -3387,7 +3449,7 @@ theorem mettaEval_expr_root_keeps_of_returnsAtom_readout
   simp only [List.foldl_cons]
   exact mettaEvalExprRootFold_preserves_target_mem env fuel queryVars w partBnd post _
     (mettaEvalExprRootFoldStep_hits_returnsAtom
-      env fuel queryVars w partBnd _ p hReturns hembed hnotNR hnotSelf)
+      env fuel queryVars w partBnd _ p hReturns hnotNR hnotSelf)
 
 /-- One root-fold step recursively evaluates a selected root readout. -/
 private theorem mettaEvalExprRootFoldStep_hits_recursive_eval
@@ -3420,7 +3482,7 @@ private theorem mettaEvalExprRootFoldStep_hits_recursive_eval
     exact False.elim (hfirst hbranch)
   · split
     · rename_i hbranch
-      have hret : returnsAtom env w = true := hbranch.1
+      have hret : returnsAtom env w = true := hbranch
       rw [hReturns] at hret
       cases hret
     · exact List.mem_append.mpr
@@ -3827,6 +3889,7 @@ theorem mettaEval_unary_expr_keeps_of_arg_singleton_and_notReducible_readout
     (op : String) (arg out : Atom)
     (hArg : mettaEval env fuel st [] arg = ([(out, [])], stArg))
     (hType : typeMismatch env st.world op [arg] = none)
+    (hArity : arityMismatch env op [arg] = false)
     (hMask : argMask env op 1 = [true])
     (hNotError : out.isError = false)
     (hroot : (notReducibleA, []) ∈
@@ -3837,7 +3900,7 @@ theorem mettaEval_unary_expr_keeps_of_arg_singleton_and_notReducible_readout
       (mettaEval env (fuel + 1) st [] (Atom.expr [Atom.sym op, arg])).1 := by
   unfold mettaEval
   rw [instantiate_nil (Atom.expr [Atom.sym op, arg])]
-  simp [hType, hMask, hArg, hNotError]
+  simp [hArity, hType, hMask, hArg, hNotError]
   have hrootDirect : (notReducibleA, []) ∈
       (interpretFuel env (fuel + 1) stArg
         [({ stack := atomToStack (Atom.expr [Atom.sym "eval", Atom.expr [Atom.sym op, out]]) [] } :
@@ -3874,6 +3937,7 @@ theorem mettaEval_unary_expr_readout_sound_of_arg_singleton_and_notReducible_rea
     (R : Atom → Atom → Prop)
     (hArg : mettaEval env fuel st [] arg = ([(out, [])], stArg))
     (hType : typeMismatch env st.world op [arg] = none)
+    (hArity : arityMismatch env op [arg] = false)
     (hMask : argMask env op 1 = [true])
     (hNotError : out.isError = false)
     (hroot : (notReducibleA, []) ∈
@@ -3888,7 +3952,7 @@ theorem mettaEval_unary_expr_readout_sound_of_arg_singleton_and_notReducible_rea
   constructor
   · exact
       mettaEval_unary_expr_keeps_of_arg_singleton_and_notReducible_readout
-        env fuel st stArg op arg out hArg hType hMask hNotError hroot
+        env fuel st stArg op arg out hArg hType hArity hMask hNotError hroot
   · exact hReach
 
 /-- Unary constructor readout from a selected argument readout.
@@ -3903,6 +3967,7 @@ theorem mettaEval_unary_expr_keeps_of_arg_member_and_notReducible_all_states
     (hArg : mettaEval env fuel st [] arg = (argPairs, stArg))
     (hmemArg : (out, []) ∈ argPairs)
     (hType : typeMismatch env st.world op [arg] = none)
+    (hArity : arityMismatch env op [arg] = false)
     (hMask : argMask env op 1 = [true])
     (hNotError : out.isError = false)
     (hroot :
@@ -3933,7 +3998,7 @@ theorem mettaEval_unary_expr_keeps_of_arg_member_and_notReducible_all_states
     simpa [part, evalItemNil] using hroot acc.2
   unfold mettaEval
   rw [instantiate_nil (Atom.expr [Atom.sym op, arg])]
-  simp only [hType, hMask, List.length_cons, List.length_nil, Nat.reduceAdd,
+  simp only [hArity, hType, hMask, List.length_cons, List.length_nil, Nat.reduceAdd,
     List.zip_cons_cons, List.zip_nil_right, List.foldl_cons, List.foldl_nil]
   rw [hArg]
   simp
@@ -3959,6 +4024,7 @@ theorem mettaEval_unary_expr_keeps_of_arg_member_and_notReducible_state_pred
     (hArg : mettaEval env fuel st [] arg = (argPairs, stArg))
     (hmemArg : (out, []) ∈ argPairs)
     (hType : typeMismatch env st.world op [arg] = none)
+    (hArity : arityMismatch env op [arg] = false)
     (hMask : argMask env op 1 = [true])
     (hNotError : out.isError = false)
     (hinit : P stArg)
@@ -3996,7 +4062,7 @@ theorem mettaEval_unary_expr_keeps_of_arg_member_and_notReducible_state_pred
     simpa [part, evalItemNil] using hroot acc.2 hP
   unfold mettaEval
   rw [instantiate_nil (Atom.expr [Atom.sym op, arg])]
-  simp only [hType, hMask, List.length_cons, List.length_nil, Nat.reduceAdd,
+  simp only [hArity, hType, hMask, List.length_cons, List.length_nil, Nat.reduceAdd,
     List.zip_cons_cons, List.zip_nil_right, List.foldl_cons, List.foldl_nil]
   rw [hArg]
   simp
@@ -4017,6 +4083,7 @@ theorem mettaEval_unary_expr_readout_sound_of_arg_member_and_notReducible_all_st
     (hArg : mettaEval env fuel st [] arg = (argPairs, stArg))
     (hmemArg : (out, []) ∈ argPairs)
     (hType : typeMismatch env st.world op [arg] = none)
+    (hArity : arityMismatch env op [arg] = false)
     (hMask : argMask env op 1 = [true])
     (hNotError : out.isError = false)
     (hroot :
@@ -4033,7 +4100,7 @@ theorem mettaEval_unary_expr_readout_sound_of_arg_member_and_notReducible_all_st
   constructor
   · exact
       mettaEval_unary_expr_keeps_of_arg_member_and_notReducible_all_states
-        env fuel st stArg op arg out argPairs hArg hmemArg hType hMask hNotError hroot
+        env fuel st stArg op arg out argPairs hArg hmemArg hType hArity hMask hNotError hroot
   · exact hReach
 
 /-- Relation-sound package for the invariant-aware selected-readout unary constructor theorem. -/
@@ -4044,6 +4111,7 @@ theorem mettaEval_unary_expr_readout_sound_of_arg_member_and_notReducible_state_
     (hArg : mettaEval env fuel st [] arg = (argPairs, stArg))
     (hmemArg : (out, []) ∈ argPairs)
     (hType : typeMismatch env st.world op [arg] = none)
+    (hArity : arityMismatch env op [arg] = false)
     (hMask : argMask env op 1 = [true])
     (hNotError : out.isError = false)
     (hinit : P stArg)
@@ -4066,7 +4134,7 @@ theorem mettaEval_unary_expr_readout_sound_of_arg_member_and_notReducible_state_
   constructor
   · exact
       mettaEval_unary_expr_keeps_of_arg_member_and_notReducible_state_pred
-        env fuel st stArg op arg out argPairs P hArg hmemArg hType hMask hNotError
+        env fuel st stArg op arg out argPairs P hArg hmemArg hType hArity hMask hNotError
         hinit hstep hroot
   · exact hReach
 
@@ -4080,6 +4148,7 @@ theorem mettaEval_unary_expr_eq_of_arg_singleton_and_notReducible_eq
     (op : String) (arg out : Atom)
     (hArg : mettaEval env fuel st [] arg = ([(out, [])], stArg))
     (hType : typeMismatch env st.world op [arg] = none)
+    (hArity : arityMismatch env op [arg] = false)
     (hMask : argMask env op 1 = [true])
     (hNotError : out.isError = false)
     (hroot : interpretFuel env (fuel + 1) stArg
@@ -4090,7 +4159,7 @@ theorem mettaEval_unary_expr_eq_of_arg_singleton_and_notReducible_eq
           restrictBnd arg.vars ((Bindings.merge [] []).head?.getD []))], stRoot) := by
   unfold mettaEval
   rw [instantiate_nil (Atom.expr [Atom.sym op, arg])]
-  simp [hType, hMask, hArg, hNotError]
+  simp [hArity, hType, hMask, hArg, hNotError]
   have hrootDirect :
       interpretFuel env (fuel + 1) stArg
         [({ stack := atomToStack (Atom.expr [Atom.sym "eval", Atom.expr [Atom.sym op, out]]) [] } :
@@ -4127,6 +4196,7 @@ theorem mettaEval_binary_expr_eq_of_arg_singletons_and_root_eval
     (hx : mettaEval env fuel st [] x = ([(x', [])], st₁))
     (hy : mettaEval env fuel st₁ [] y = ([(y', [])], st₂))
     (hType : typeMismatch env st.world op [x, y] = none)
+    (hArity : arityMismatch env op [x, y] = false)
     (hMask : argMask env op 2 = [true, true])
     (hNoErr : (([x', y'].zip [x, y]).find? (fun ho => ho.1.isError && ho.1 != ho.2)) = none)
     (hRoot : interpretFuel env (fuel + 1) st₂
@@ -4140,7 +4210,7 @@ theorem mettaEval_binary_expr_eq_of_arg_singletons_and_root_eval
       ([(final, [])], stOut) := by
   unfold mettaEval
   rw [instantiate_nil (Atom.expr [Atom.sym op, x, y])]
-  simp only [hType, hMask, List.length_cons, List.length_nil, Nat.reduceAdd,
+  simp only [hArity, hType, hMask, List.length_cons, List.length_nil, Nat.reduceAdd,
     List.zip_cons_cons, List.zip_nil_right, List.foldl_cons, List.foldl_nil]
   rw [hx]
   simp [hxClosed, hyClosed, restrictBnd_nil_vars]
@@ -4175,6 +4245,7 @@ theorem mettaEval_binary_expr_mem_of_arg_singletons_and_root_eval_mem
     (hx : mettaEval env fuel st [] x = ([(x', [])], st₁))
     (hy : mettaEval env fuel st₁ [] y = ([(y', [])], st₂))
     (hType : typeMismatch env st.world op [x, y] = none)
+    (hArity : arityMismatch env op [x, y] = false)
     (hMask : argMask env op 2 = [true, true])
     (hNoErr : (([x', y'].zip [x, y]).find? (fun ho => ho.1.isError && ho.1 != ho.2)) = none)
     (hRoot : interpretFuel env (fuel + 1) st₂
@@ -4187,7 +4258,7 @@ theorem mettaEval_binary_expr_mem_of_arg_singletons_and_root_eval_mem
     (final, []) ∈ (mettaEval env (fuel + 1) st [] (Atom.expr [Atom.sym op, x, y])).1 := by
   unfold mettaEval
   rw [instantiate_nil (Atom.expr [Atom.sym op, x, y])]
-  simp only [hType, hMask, List.length_cons, List.length_nil, Nat.reduceAdd,
+  simp only [hArity, hType, hMask, List.length_cons, List.length_nil, Nat.reduceAdd,
     List.zip_cons_cons, List.zip_nil_right, List.foldl_cons, List.foldl_nil]
   rw [hx]
   simp [hxClosed, hyClosed, restrictBnd_nil_vars]
@@ -4218,6 +4289,7 @@ theorem mettaEval_binary_expr_eq_of_arg_singletons_and_root_notReducible
     (hx : mettaEval env fuel st [] x = ([(x', [])], st₁))
     (hy : mettaEval env fuel st₁ [] y = ([(y', [])], st₂))
     (hType : typeMismatch env st.world op [x, y] = none)
+    (hArity : arityMismatch env op [x, y] = false)
     (hMask : argMask env op 2 = [true, true])
     (hNoErr : (([x', y'].zip [x, y]).find?
       (fun ho => ho.1.isError && ho.1 != ho.2)) = none)
@@ -4228,7 +4300,7 @@ theorem mettaEval_binary_expr_eq_of_arg_singletons_and_root_notReducible
       ([(Atom.expr [Atom.sym op, x', y'], [])], stRoot) := by
   unfold mettaEval
   rw [instantiate_nil (Atom.expr [Atom.sym op, x, y])]
-  simp only [hType, hMask, List.length_cons, List.length_nil, Nat.reduceAdd,
+  simp only [hArity, hType, hMask, List.length_cons, List.length_nil, Nat.reduceAdd,
     List.zip_cons_cons, List.zip_nil_right, List.foldl_cons, List.foldl_nil]
   rw [hx]
   simp [hxClosed, hyClosed, restrictBnd_nil_vars]
@@ -4263,6 +4335,7 @@ theorem mettaEval_quaternary_expr_mem_of_arg_singletons_and_empty_root_eval_memb
     (hy : mettaEval env fuel st₂ [] y = ([(y', [])], st₃))
     (hz : mettaEval env fuel st₃ [] z = ([(z', [])], st₄))
     (hType : typeMismatch env st.world op [w, x, y, z] = none)
+    (hArity : arityMismatch env op [w, x, y, z] = false)
     (hMask : argMask env op 4 = [true, true, true, true])
     (hNoErr :
       (([w', x', y', z'].zip [w, x, y, z]).find?
@@ -4279,7 +4352,7 @@ theorem mettaEval_quaternary_expr_mem_of_arg_singletons_and_empty_root_eval_memb
   let qvars := ([w, x, y, z]).flatMap Atom.vars
   unfold mettaEval
   rw [instantiate_nil (Atom.expr [Atom.sym op, w, x, y, z])]
-  simp only [hType, hMask, List.length_cons, List.length_nil, Nat.reduceAdd,
+  simp only [hArity, hType, hMask, List.length_cons, List.length_nil, Nat.reduceAdd,
     List.zip_cons_cons, List.zip_nil_right, List.foldl_cons, List.foldl_nil]
   rw [hw]
   simp [restrictBnd_empty_merge_empty]
@@ -4319,8 +4392,7 @@ theorem mettaEval_quaternary_expr_mem_of_arg_singletons_and_empty_root_eval_memb
           if (p.1 == notReducibleA) = true ∨
               (p.1 == Atom.expr [Atom.sym op, w', x', y', z']) = true then
             (a2.1 ++ [(Atom.expr [Atom.sym op, w', x', y', z'], [])], a2.2)
-          else if returnsAtom env (Atom.expr [Atom.sym op, w', x', y', z']) = true ∧
-              isEmbeddedOp p.1 = false then
+          else if returnsAtom env (Atom.expr [Atom.sym op, w', x', y', z']) = true then
             (a2.1 ++
               [(p.1,
                 restrictBnd (w.vars ++ (x.vars ++ (y.vars ++ z.vars)))
@@ -4363,6 +4435,7 @@ theorem mettaEval_quaternary_expr_mem_of_arg_singletons_and_open_root_eval_membe
     (hy : mettaEval env fuel st₂ [] y = ([(y', [])], st₃))
     (hz : mettaEval env fuel st₃ [] z = ([(z', [])], st₄))
     (hType : typeMismatch env st.world op [w, x, y, z] = none)
+    (hArity : arityMismatch env op [w, x, y, z] = false)
     (hMask : argMask env op 4 = [true, true, true, true])
     (hNoErr :
       (([w', x', y', z'].zip [w, x, y, z]).find?
@@ -4387,7 +4460,7 @@ theorem mettaEval_quaternary_expr_mem_of_arg_singletons_and_open_root_eval_membe
   let qvars := ([w, x, y, z]).flatMap Atom.vars
   unfold mettaEval
   rw [instantiate_nil (Atom.expr [Atom.sym op, w, x, y, z])]
-  simp only [hType, hMask, List.length_cons, List.length_nil, Nat.reduceAdd,
+  simp only [hArity, hType, hMask, List.length_cons, List.length_nil, Nat.reduceAdd,
     List.zip_cons_cons, List.zip_nil_right, List.foldl_cons, List.foldl_nil]
   rw [hw]
   simp [restrictBnd_empty_merge_empty]
@@ -4427,8 +4500,7 @@ theorem mettaEval_quaternary_expr_mem_of_arg_singletons_and_open_root_eval_membe
           if (p.1 == notReducibleA) = true ∨
               (p.1 == Atom.expr [Atom.sym op, w', x', y', z']) = true then
             (a2.1 ++ [(Atom.expr [Atom.sym op, w', x', y', z'], [])], a2.2)
-          else if returnsAtom env (Atom.expr [Atom.sym op, w', x', y', z']) = true ∧
-              isEmbeddedOp p.1 = false then
+          else if returnsAtom env (Atom.expr [Atom.sym op, w', x', y', z']) = true then
             (a2.1 ++
               [(p.1,
                 restrictBnd (w.vars ++ (x.vars ++ (y.vars ++ z.vars)))
@@ -4466,6 +4538,7 @@ theorem mettaEval_quaternary_expr_mem_of_quoted_args_and_open_root_eval_member
     (op : String)
     (w x y z root final : Atom) (rootBnd : Bindings)
     (hType : typeMismatch env st.world op [w, x, y, z] = none)
+    (hArity : arityMismatch env op [w, x, y, z] = false)
     (hMask : argMask env op 4 = [false, false, false, false])
     (hNoErr :
       (([w, x, y, z].zip [w, x, y, z]).find?
@@ -4490,7 +4563,7 @@ theorem mettaEval_quaternary_expr_mem_of_quoted_args_and_open_root_eval_member
   let qvars := ([w, x, y, z]).flatMap Atom.vars
   unfold mettaEval
   rw [instantiate_nil (Atom.expr [Atom.sym op, w, x, y, z])]
-  simp only [hType, hMask, List.length_cons, List.length_nil, Nat.reduceAdd,
+  simp only [hArity, hType, hMask, List.length_cons, List.length_nil, Nat.reduceAdd,
     List.zip_cons_cons, List.zip_nil_right, List.foldl_cons, List.foldl_nil]
   simp [Metta.instantiate_nil]
   have hNoErr' :
@@ -4523,8 +4596,7 @@ theorem mettaEval_quaternary_expr_mem_of_quoted_args_and_open_root_eval_member
           if (p.1 == notReducibleA) = true ∨
               (p.1 == Atom.expr [Atom.sym op, w, x, y, z]) = true then
             (a2.1 ++ [(Atom.expr [Atom.sym op, w, x, y, z], [])], a2.2)
-          else if returnsAtom env (Atom.expr [Atom.sym op, w, x, y, z]) = true ∧
-              isEmbeddedOp p.1 = false then
+          else if returnsAtom env (Atom.expr [Atom.sym op, w, x, y, z]) = true then
             (a2.1 ++
               [(p.1,
                 restrictBnd (w.vars ++ (x.vars ++ (y.vars ++ z.vars)))
@@ -4563,6 +4635,7 @@ theorem mettaEval_ternary_expr_mem_of_quoted_args_and_open_root_eval_member
     (op : String)
     (x y z root final : Atom) (rootBnd : Bindings)
     (hType : typeMismatch env st.world op [x, y, z] = none)
+    (hArity : arityMismatch env op [x, y, z] = false)
     (hMask : argMask env op 3 = [false, false, false])
     (hNoErr :
       (([x, y, z].zip [x, y, z]).find?
@@ -4587,7 +4660,7 @@ theorem mettaEval_ternary_expr_mem_of_quoted_args_and_open_root_eval_member
   let qvars := ([x, y, z]).flatMap Atom.vars
   unfold mettaEval
   rw [instantiate_nil (Atom.expr [Atom.sym op, x, y, z])]
-  simp only [hType, hMask, List.length_cons, List.length_nil, Nat.reduceAdd,
+  simp only [hArity, hType, hMask, List.length_cons, List.length_nil, Nat.reduceAdd,
     List.zip_cons_cons, List.zip_nil_right, List.foldl_cons, List.foldl_nil]
   simp [Metta.instantiate_nil]
   have hNoErr' :
@@ -4620,8 +4693,7 @@ theorem mettaEval_ternary_expr_mem_of_quoted_args_and_open_root_eval_member
           if (p.1 == notReducibleA) = true ∨
               (p.1 == Atom.expr [Atom.sym op, x, y, z]) = true then
             (a2.1 ++ [(Atom.expr [Atom.sym op, x, y, z], [])], a2.2)
-          else if returnsAtom env (Atom.expr [Atom.sym op, x, y, z]) = true ∧
-              isEmbeddedOp p.1 = false then
+          else if returnsAtom env (Atom.expr [Atom.sym op, x, y, z]) = true then
             (a2.1 ++
               [(p.1,
                 restrictBnd (x.vars ++ (y.vars ++ z.vars))
@@ -4658,6 +4730,7 @@ theorem mettaEval_unary_expr_mem_of_quoted_arg_and_open_root_eval_member
     (op : String)
     (x root final : Atom) (rootBnd : Bindings)
     (hType : typeMismatch env st.world op [x] = none)
+    (hArity : arityMismatch env op [x] = false)
     (hMask : argMask env op 1 = [false])
     (hNoErr :
       (([x].zip [x]).find?
@@ -4681,7 +4754,7 @@ theorem mettaEval_unary_expr_mem_of_quoted_arg_and_open_root_eval_member
   let qvars := x.vars
   unfold mettaEval
   rw [instantiate_nil (Atom.expr [Atom.sym op, x])]
-  simp only [hType, hMask, List.length_cons, List.length_nil, Nat.reduceAdd,
+  simp only [hArity, hType, hMask, List.length_cons, List.length_nil, Nat.reduceAdd,
     List.zip_cons_cons, List.zip_nil_right, List.foldl_cons, List.foldl_nil]
   simp [Metta.instantiate_nil]
   have hNoErr' :
@@ -4718,8 +4791,7 @@ theorem mettaEval_unary_expr_mem_of_quoted_arg_and_open_root_eval_member
           if (p.1 == notReducibleA) = true ∨
               (p.1 == Atom.expr [Atom.sym op, x]) = true then
             (a2.1 ++ [(Atom.expr [Atom.sym op, x], [])], a2.2)
-          else if returnsAtom env (Atom.expr [Atom.sym op, x]) = true ∧
-              isEmbeddedOp p.1 = false then
+          else if returnsAtom env (Atom.expr [Atom.sym op, x]) = true then
             (a2.1 ++
               [(p.1,
                 restrictBnd x.vars ((Bindings.merge [] p.2).head?.getD p.2))],
@@ -4756,6 +4828,7 @@ theorem mettaEval_ternary_expr_mem_of_quoted_eval_quoted_and_root_eval_member
     (p atom templ atom' root final : Atom) (rootBnd : Bindings)
     (hArg : mettaEval env fuel st [] atom = ([(atom', [])], stArg))
     (hType : typeMismatch env st.world op [p, atom, templ] = none)
+    (hArity : arityMismatch env op [p, atom, templ] = false)
     (hMask : argMask env op 3 = [false, true, false])
     (hNoErr :
       (([p, atom', templ].zip [p, atom, templ]).find?
@@ -4780,7 +4853,7 @@ theorem mettaEval_ternary_expr_mem_of_quoted_eval_quoted_and_root_eval_member
   let qvars := p.vars ++ (atom.vars ++ templ.vars)
   unfold mettaEval
   rw [instantiate_nil (Atom.expr [Atom.sym op, p, atom, templ])]
-  simp only [hType, hMask, List.length_cons, List.length_nil, Nat.reduceAdd,
+  simp only [hArity, hType, hMask, List.length_cons, List.length_nil, Nat.reduceAdd,
     List.zip_cons_cons, List.zip_nil_right, List.foldl_cons, List.foldl_nil]
   simp [Metta.instantiate_nil]
   rw [hArg]
@@ -4816,8 +4889,7 @@ theorem mettaEval_ternary_expr_mem_of_quoted_eval_quoted_and_root_eval_member
           if (p2.1 == notReducibleA) = true ∨
               (p2.1 == Atom.expr [Atom.sym op, p, atom', templ]) = true then
             (a2.1 ++ [(Atom.expr [Atom.sym op, p, atom', templ], [])], a2.2)
-          else if returnsAtom env (Atom.expr [Atom.sym op, p, atom', templ]) = true ∧
-              isEmbeddedOp p2.1 = false then
+          else if returnsAtom env (Atom.expr [Atom.sym op, p, atom', templ]) = true then
             (a2.1 ++
               [(p2.1,
                 restrictBnd (p.vars ++ (atom.vars ++ templ.vars))
@@ -4860,6 +4932,7 @@ theorem mettaEval_ternary_expr_mem_of_quoted_eval_quoted_and_root_eval_member_st
     (hArg : mettaEval env fuel st [] atom = (argPairs, stArg))
     (hmemArg : (atom', []) ∈ argPairs)
     (hType : typeMismatch env st.world op [p, atom, templ] = none)
+    (hArity : arityMismatch env op [p, atom, templ] = false)
     (hMask : argMask env op 3 = [false, true, false])
     (hNoErr :
       (([p, atom', templ].zip [p, atom, templ]).find?
@@ -4961,7 +5034,7 @@ theorem mettaEval_ternary_expr_mem_of_quoted_eval_quoted_and_root_eval_member_st
     simp [hprep]
   unfold mettaEval
   rw [instantiate_nil (Atom.expr [Atom.sym op, p, atom, templ])]
-  simp only [hType, hMask, List.length_cons, List.length_nil, Nat.reduceAdd,
+  simp only [hArity, hType, hMask, List.length_cons, List.length_nil, Nat.reduceAdd,
     List.zip_cons_cons, List.zip_nil_right, List.foldl_cons, List.foldl_nil]
   simp [Metta.instantiate_nil]
   rw [hArg1, hArg2]
@@ -4979,8 +5052,7 @@ theorem mettaEval_ternary_expr_mem_of_quoted_eval_quoted_and_root_eval_member_st
                             (p_1.1 == Atom.expr (Atom.sym op :: part.1)) = true then
                           (a2.1 ++ [(Atom.expr (Atom.sym op :: part.1), part.2)], a2.2)
                         else
-                          if returnsAtom env (Atom.expr (Atom.sym op :: part.1)) = true ∧
-                              isEmbeddedOp p_1.1 = false then
+                          if returnsAtom env (Atom.expr (Atom.sym op :: part.1)) = true then
                             (a2.1 ++
                                 [(p_1.1,
                                     restrictBnd (p.vars ++ (atom.vars ++ templ.vars))
@@ -5016,8 +5088,7 @@ theorem mettaEval_ternary_expr_mem_of_quoted_eval_quoted_and_root_eval_member_st
                           (p_1.1 == Atom.expr (Atom.sym op :: part.1)) = true then
                         (a2.1 ++ [(Atom.expr (Atom.sym op :: part.1), part.2)], a2.2)
                       else
-                        if returnsAtom env (Atom.expr (Atom.sym op :: part.1)) = true ∧
-                            isEmbeddedOp p_1.1 = false then
+                        if returnsAtom env (Atom.expr (Atom.sym op :: part.1)) = true then
                           (a2.1 ++
                               [(p_1.1,
                                   restrictBnd (p.vars ++ (atom.vars ++ templ.vars))
@@ -5057,8 +5128,7 @@ theorem mettaEval_ternary_expr_mem_of_quoted_eval_quoted_and_root_eval_member_st
                 (p_1.1 == Atom.expr (Atom.sym op :: part.1)) = true then
               (a2.1 ++ [(Atom.expr (Atom.sym op :: part.1), part.2)], a2.2)
             else
-              if returnsAtom env (Atom.expr (Atom.sym op :: part.1)) = true ∧
-                  isEmbeddedOp p_1.1 = false then
+              if returnsAtom env (Atom.expr (Atom.sym op :: part.1)) = true then
                 (a2.1 ++
                     [(p_1.1,
                         restrictBnd (p.vars ++ (atom.vars ++ templ.vars))
@@ -5122,6 +5192,7 @@ theorem mettaEval_ternary_expr_mem_of_eval_quoted_quoted_and_root_eval_member
     (cond thenA elseA cond' root final : Atom) (rootBnd : Bindings)
     (hCond : mettaEval env fuel st [] cond = ([(cond', [])], stCond))
     (hType : typeMismatch env st.world op [cond, thenA, elseA] = none)
+    (hArity : arityMismatch env op [cond, thenA, elseA] = false)
     (hMask : argMask env op 3 = [true, false, false])
     (hNoErr :
       (([cond', thenA, elseA].zip [cond, thenA, elseA]).find?
@@ -5146,7 +5217,7 @@ theorem mettaEval_ternary_expr_mem_of_eval_quoted_quoted_and_root_eval_member
   let qvars := ([cond, thenA, elseA]).flatMap Atom.vars
   unfold mettaEval
   rw [instantiate_nil (Atom.expr [Atom.sym op, cond, thenA, elseA])]
-  simp only [hType, hMask, List.length_cons, List.length_nil, Nat.reduceAdd,
+  simp only [hArity, hType, hMask, List.length_cons, List.length_nil, Nat.reduceAdd,
     List.zip_cons_cons, List.zip_nil_right, List.foldl_cons, List.foldl_nil]
   rw [hCond]
   simp [restrictBnd_empty_merge_empty]
@@ -5182,8 +5253,7 @@ theorem mettaEval_ternary_expr_mem_of_eval_quoted_quoted_and_root_eval_member
           if (p.1 == notReducibleA) = true ∨
               (p.1 == Atom.expr [Atom.sym op, cond', thenA, elseA]) = true then
             (a2.1 ++ [(Atom.expr [Atom.sym op, cond', thenA, elseA], [])], a2.2)
-          else if returnsAtom env (Atom.expr [Atom.sym op, cond', thenA, elseA]) = true ∧
-              isEmbeddedOp p.1 = false then
+          else if returnsAtom env (Atom.expr [Atom.sym op, cond', thenA, elseA]) = true then
             (a2.1 ++
               [(p.1,
                 restrictBnd (cond.vars ++ (thenA.vars ++ elseA.vars))
@@ -5227,6 +5297,7 @@ theorem mettaEval_quaternary_expr_mem_of_arg_singletons_and_root_eval_member
     (hy : mettaEval env fuel st₂ [] y = ([(y', [])], st₃))
     (hz : mettaEval env fuel st₃ [] z = ([(z', [])], st₄))
     (hType : typeMismatch env st.world op [w, x, y, z] = none)
+    (hArity : arityMismatch env op [w, x, y, z] = false)
     (hMask : argMask env op 4 = [true, true, true, true])
     (hNoErr :
       (([w', x', y', z'].zip [w, x, y, z]).find?
@@ -5242,7 +5313,7 @@ theorem mettaEval_quaternary_expr_mem_of_arg_singletons_and_root_eval_member
       (mettaEval env (fuel + 1) st [] (Atom.expr [Atom.sym op, w, x, y, z])).1 := by
   unfold mettaEval
   rw [instantiate_nil (Atom.expr [Atom.sym op, w, x, y, z])]
-  simp only [hType, hMask, List.length_cons, List.length_nil, Nat.reduceAdd,
+  simp only [hArity, hType, hMask, List.length_cons, List.length_nil, Nat.reduceAdd,
     List.zip_cons_cons, List.zip_nil_right, List.foldl_cons, List.foldl_nil]
   rw [hw]
   simp [hwClosed, hxClosed, hyClosed, hzClosed, restrictBnd_nil_vars]
@@ -5279,8 +5350,7 @@ theorem mettaEval_quaternary_expr_mem_of_arg_singletons_and_root_eval_member
           if (p.1 == notReducibleA) = true ∨
               (p.1 == Atom.expr [Atom.sym op, w', x', y', z']) = true then
             (a2.1 ++ [(Atom.expr [Atom.sym op, w', x', y', z'], [])], a2.2)
-          else if returnsAtom env (Atom.expr [Atom.sym op, w', x', y', z']) = true ∧
-              isEmbeddedOp p.1 = false then
+          else if returnsAtom env (Atom.expr [Atom.sym op, w', x', y', z']) = true then
             (a2.1 ++ [(p.1, [])], a2.2)
           else
             (a2.1 ++ (mettaEval env fuel a2.2 [] p.1).1.map (fun m => (m.1, [])),
@@ -5308,6 +5378,7 @@ theorem mettaEval_quaternary_expr_mem_of_arg_singletons_and_root_eval_eq
     (hy : mettaEval env fuel st₂ [] y = ([(y', [])], st₃))
     (hz : mettaEval env fuel st₃ [] z = ([(z', [])], st₄))
     (hType : typeMismatch env st.world op [w, x, y, z] = none)
+    (hArity : arityMismatch env op [w, x, y, z] = false)
     (hMask : argMask env op 4 = [true, true, true, true])
     (hNoErr :
       (([w', x', y', z'].zip [w, x, y, z]).find?
@@ -5323,7 +5394,7 @@ theorem mettaEval_quaternary_expr_mem_of_arg_singletons_and_root_eval_eq
       (mettaEval env (fuel + 1) st [] (Atom.expr [Atom.sym op, w, x, y, z])).1 := by
   unfold mettaEval
   rw [instantiate_nil (Atom.expr [Atom.sym op, w, x, y, z])]
-  simp only [hType, hMask, List.length_cons, List.length_nil, Nat.reduceAdd,
+  simp only [hArity, hType, hMask, List.length_cons, List.length_nil, Nat.reduceAdd,
     List.zip_cons_cons, List.zip_nil_right, List.foldl_cons, List.foldl_nil]
   rw [hw]
   simp [hwClosed, hxClosed, hyClosed, hzClosed, restrictBnd_nil_vars]
@@ -5378,6 +5449,7 @@ theorem mettaEval_unary_expr_singleton_sound_of_arg_singleton_and_notReducible_e
     (R : Atom → Atom → Prop)
     (hArg : mettaEval env fuel st [] arg = ([(out, [])], stArg))
     (hType : typeMismatch env st.world op [arg] = none)
+    (hArity : arityMismatch env op [arg] = false)
     (hMask : argMask env op 1 = [true])
     (hNotError : out.isError = false)
     (hroot : interpretFuel env (fuel + 1) stArg
@@ -5391,7 +5463,7 @@ theorem mettaEval_unary_expr_singleton_sound_of_arg_singleton_and_notReducible_e
           Relation.ReflTransGen R (Atom.expr [Atom.sym op, arg]) out' := by
   have hEval :=
     mettaEval_unary_expr_eq_of_arg_singleton_and_notReducible_eq
-      env fuel st stArg stRoot op arg out hArg hType hMask hNotError hroot
+      env fuel st stArg stRoot op arg out hArg hType hArity hMask hNotError hroot
   exact
     mettaEval_singleton_readout_sound env (fuel + 1) st []
       (Atom.expr [Atom.sym op, arg]) (Atom.expr [Atom.sym op, out])
@@ -5412,6 +5484,7 @@ theorem mettaEval_unary_expr_mem_of_closed_atom_arg_and_root_eval_mem
     (hArgNoErr : arg.isError = false)
     (hArgSelf : (arg != arg) = false)
     (hType : typeMismatch env st.world op [arg] = none)
+    (hArity : arityMismatch env op [arg] = false)
     (hMask : argMask env op 1 = [false])
     (hRoot : interpretFuel env (fuel + 1) st
         [evalItemNil (Atom.expr [Atom.sym op, arg])] [] =
@@ -5423,7 +5496,7 @@ theorem mettaEval_unary_expr_mem_of_closed_atom_arg_and_root_eval_mem
     (final, []) ∈ (mettaEval env (fuel + 1) st [] (Atom.expr [Atom.sym op, arg])).1 := by
   unfold mettaEval
   rw [instantiate_nil (Atom.expr [Atom.sym op, arg])]
-  simp [hType, hMask, hArgClosed, hArgNoErr, hArgSelf, instantiate_nil]
+  simp [hArity, hType, hMask, hArgClosed, hArgNoErr, hArgSelf, instantiate_nil]
   have hRoot' :
       interpretFuel env (fuel + 1) st
         [{ stack := atomToStack
@@ -5447,6 +5520,7 @@ theorem mettaEval_unary_expr_mem_of_closed_atom_arg_and_root_eval_member
     (hArgNoErr : arg.isError = false)
     (hArgSelf : (arg != arg) = false)
     (hType : typeMismatch env st.world op [arg] = none)
+    (hArity : arityMismatch env op [arg] = false)
     (hMask : argMask env op 1 = [false])
     (hRoot : (root, rootBnd) ∈ (interpretFuel env (fuel + 1) st
         [evalItemNil (Atom.expr [Atom.sym op, arg])] []).1)
@@ -5457,7 +5531,7 @@ theorem mettaEval_unary_expr_mem_of_closed_atom_arg_and_root_eval_member
     (final, []) ∈ (mettaEval env (fuel + 1) st [] (Atom.expr [Atom.sym op, arg])).1 := by
   unfold mettaEval
   rw [instantiate_nil (Atom.expr [Atom.sym op, arg])]
-  simp [hType, hMask, hArgClosed, hArgNoErr, hArgSelf, instantiate_nil]
+  simp [hArity, hType, hMask, hArgClosed, hArgNoErr, hArgSelf, instantiate_nil]
   let rootItem : Item :=
     { stack := atomToStack (Atom.expr [Atom.sym "eval", Atom.expr [Atom.sym op, arg]]) [],
       bnd := [] }
@@ -5494,6 +5568,7 @@ theorem mettaEval_unary_expr_mem_of_closed_atom_arg_and_root_eval_member_state_p
     (hArgNoErr : arg.isError = false)
     (hArgSelf : (arg != arg) = false)
     (hType : typeMismatch env st.world op [arg] = none)
+    (hArity : arityMismatch env op [arg] = false)
     (hMask : argMask env op 1 = [false])
     (hRoot : (root, rootBnd) ∈ (interpretFuel env (fuel + 1) st
         [evalItemNil (Atom.expr [Atom.sym op, arg])] []).1)
@@ -5512,7 +5587,7 @@ theorem mettaEval_unary_expr_mem_of_closed_atom_arg_and_root_eval_member_state_p
     (final, []) ∈ (mettaEval env (fuel + 1) st [] (Atom.expr [Atom.sym op, arg])).1 := by
   unfold mettaEval
   rw [instantiate_nil (Atom.expr [Atom.sym op, arg])]
-  simp [hType, hMask, hArgClosed, hArgNoErr, hArgSelf, instantiate_nil]
+  simp [hArity, hType, hMask, hArgClosed, hArgNoErr, hArgSelf, instantiate_nil]
   let rootItem : Item :=
     { stack := atomToStack (Atom.expr [Atom.sym "eval", Atom.expr [Atom.sym op, arg]]) [],
       bnd := [] }
@@ -5559,6 +5634,7 @@ theorem mettaEval_binary_expr_singleton_sound_of_arg_singletons_and_root_eval
     (hx : mettaEval env fuel st [] x = ([(x', [])], st₁))
     (hy : mettaEval env fuel st₁ [] y = ([(y', [])], st₂))
     (hType : typeMismatch env st.world op [x, y] = none)
+    (hArity : arityMismatch env op [x, y] = false)
     (hMask : argMask env op 2 = [true, true])
     (hNoErr : (([x', y'].zip [x, y]).find? (fun ho => ho.1.isError && ho.1 != ho.2)) = none)
     (hRoot : interpretFuel env (fuel + 1) st₂
@@ -5576,7 +5652,7 @@ theorem mettaEval_binary_expr_singleton_sound_of_arg_singletons_and_root_eval
   have hEval :=
     mettaEval_binary_expr_eq_of_arg_singletons_and_root_eval
       env fuel st st₁ st₂ stRoot stOut op x y x' y' root final rootBnd
-      hxClosed hyClosed hx hy hType hMask hNoErr hRoot hRootNotNotReducible
+      hxClosed hyClosed hx hy hType hArity hMask hNoErr hRoot hRootNotNotReducible
       hRootNotSelf hReturns hFinal
   exact
     mettaEval_singleton_readout_sound env (fuel + 1) st [] (Atom.expr [Atom.sym op, x, y])
@@ -5596,6 +5672,7 @@ theorem mettaEval_binary_expr_readout_sound_of_arg_singletons_and_root_eval_memb
     (hx : mettaEval env fuel st [] x = ([(x', [])], st₁))
     (hy : mettaEval env fuel st₁ [] y = ([(y', [])], st₂))
     (hType : typeMismatch env st.world op [x, y] = none)
+    (hArity : arityMismatch env op [x, y] = false)
     (hMask : argMask env op 2 = [true, true])
     (hNoErr : (([x', y'].zip [x, y]).find? (fun ho => ho.1.isError && ho.1 != ho.2)) = none)
     (hRoot : interpretFuel env (fuel + 1) st₂
@@ -5613,7 +5690,7 @@ theorem mettaEval_binary_expr_readout_sound_of_arg_singletons_and_root_eval_memb
   · exact
       mettaEval_binary_expr_mem_of_arg_singletons_and_root_eval_mem
         env fuel st st₁ st₂ stRoot op x y x' y' root final rootBnd
-        hxClosed hyClosed hx hy hType hMask hNoErr hRoot hRootNotNotReducible hRootNotSelf
+        hxClosed hyClosed hx hy hType hArity hMask hNoErr hRoot hRootNotNotReducible hRootNotSelf
         hReturns hFinal
   · exact hRootReach.trans hFinalReach
 
@@ -5629,6 +5706,7 @@ theorem mettaEval_binary_expr_readout_sound_of_arg_singletons_and_root_eval_mem
     (hx : mettaEval env fuel st [] x = ([(x', [])], st₁))
     (hy : mettaEval env fuel st₁ [] y = ([(y', [])], st₂))
     (hType : typeMismatch env st.world op [x, y] = none)
+    (hArity : arityMismatch env op [x, y] = false)
     (hMask : argMask env op 2 = [true, true])
     (hNoErr : (([x', y'].zip [x, y]).find? (fun ho => ho.1.isError && ho.1 != ho.2)) = none)
     (hRoot : interpretFuel env (fuel + 1) st₂
@@ -5646,7 +5724,7 @@ theorem mettaEval_binary_expr_readout_sound_of_arg_singletons_and_root_eval_mem
       Relation.ReflTransGen R (Atom.expr [Atom.sym op, x, y]) final :=
   mettaEval_binary_expr_readout_sound_of_arg_singletons_and_root_eval_member
     env fuel st st₁ st₂ stRoot op x y x' y' root final rootBnd R
-    hxClosed hyClosed hx hy hType hMask hNoErr hRoot hRootNotNotReducible hRootNotSelf
+    hxClosed hyClosed hx hy hType hArity hMask hNoErr hRoot hRootNotNotReducible hRootNotSelf
     hReturns hRootReach hFinal (hFinalSound final hFinal)
 
 /-- If one scheduler step returns exactly one non-final item, then one surrounding fuel-driver

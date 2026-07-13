@@ -1,6 +1,5 @@
 import Mettapedia.Languages.GF.GFCoreNTTDiagnostics
 import Mettapedia.Languages.Metamath.NTTDiagnostics
-import Mettapedia.Languages.Metamath.CrownJewelFixtures
 import Mettapedia.OSLF.Framework.TypeSynthesis
 
 /-!
@@ -29,12 +28,6 @@ open Mettapedia.OSLF.Framework.ConstructorCategory
 open Mettapedia.Languages.GF.GFCoreNTTDiagnostics
 open Mettapedia.Languages.GF.GeneratedBridgeConformance
 open Mettapedia.Languages.GF.GFCoreOSLFBridge
-open Mettapedia.Languages.Metamath.AcceptanceEquivalence
-open Mettapedia.Languages.Metamath.CrownJewelAPI
-open Mettapedia.Languages.Metamath.CrownJewelFixtures
-open Mettapedia.Languages.Metamath.Fixtures
-open Mettapedia.Languages.Metamath.GroundedSemantics
-open Mettapedia.Languages.Metamath.Simulation
 open Mettapedia.Languages.Metamath.NTTDiagnostics
 open Mettapedia.Languages.Metamath.LanguageDefDSL
 
@@ -70,24 +63,5 @@ theorem metamath_ntt_readout :
 theorem gf_vs_metamath_ntt_readout :
     GFRealNTTReadout ∧ MetamathNTTReadout := by
   exact ⟨gf_real_ntt_readout, metamath_ntt_readout⟩
-
-/-- Metamath readout side condition discharged through the preferred
-refined crown-jewel API on a real fixture.
-
-Positive example:
-- if `SpecAccepts minimalAxiomBytes f` holds, we get an explicit declarative
-  `LanguageDefAccepts` path from the preferred crown-jewel route.
-
-Negative example:
-- this theorem does not use the weak fallback bridge.
--/
-theorem metamath_minimalAxiom_spec_to_engine_path_via_preferred
-    (label : String) (f : Metamath.Verify.Formula)
-    (hDisjoint : RuntimeProvenanceDisjointFromAuthored minimalAxiomBytes)
-    (hSpec : SpecAccepts minimalAxiomBytes f) :
-    ∃ start finish, LanguageDefAccepts start finish := by
-  have hSuccess : (checkBytesDB minimalAxiomBytes).error? = none := by native_decide
-  exact preferred_crown_jewel_engine_path minimalAxiomBytes label f hSuccess
-    hDisjoint hSpec
 
 end Mettapedia.Languages.OSLFNTTReadout

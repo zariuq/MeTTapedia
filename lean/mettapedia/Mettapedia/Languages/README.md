@@ -61,27 +61,25 @@ and the OSLF instance — see [`MeTTa/README.md`](MeTTa/README.md).
 
 | Module | Files | What it is |
 |--------|-------|------------|
-| `Metamath/` | 11 | Metamath language: a `LanguageDef`, simulation/acceptance equivalence, and conformance fixtures |
+| `Metamath/` | source bridge + compiler modules | mm-lean4 bridge, file-lowering/grammar data, and conformance fixtures; legacy simulation/crown-jewel modules are excluded from the facade pending retirement |
 | `IMP/` | 5 | the classic IMP imperative language (states, big-/small-step semantics) |
 | `MinskyLite/` | 5 | a Minsky register-machine fragment |
 | `MM0.lean`, `MM0Lite.lean` | 2 | Metamath Zero (MM0) |
 | `GF.lean`, `MeTTa.lean`, `ProcessCalculi.lean`, `Metamath.lean` | 4 | facade modules re-exporting each sub-tree |
-| `OSLFNTTReadout.lean` | 1 | a compact theorem-level "what the NTT lens sees" readout over the live GF and Metamath lanes |
+| `OSLFNTTReadout.lean` | 1 | scoped behavioral/compiler-language readouts; it makes no Metamath source-proof adequacy claim |
 
 ## Formalization status
 
-This README's **own scope** (the glue facades plus `Metamath/`, `IMP/`, `MinskyLite/`, and
-the MM0 files — everything not under a sub-tree that has its own README) is **32 `.lean`
-files, all `sorry`-free**. There are no source-level `axiom` declarations in this scope
-(a source grep, not a per-theorem `#print axioms` audit, so a theorem can still inherit a
-standard Mathlib axiom transitively). The sub-trees report their own status:
-`GF/`, `MeTTa/`, and `ProcessCalculi/` are likewise `sorry`-free in their own READMEs.
+Status claims in this README are scoped to the named files and must be regenerated
+from the live tree before use.  A source grep is not a per-theorem axiom audit, and
+successful fixtures do not establish generic or source adequacy.  The obligations
+ledger records the current proof-kernel gaps.
 
-**Trusted base — `native_decide`.** The `Metamath/` lane discharges many of its conformance
-and acceptance-equivalence fixtures with `native_decide` (which *compile-evaluates* a
+**Policy violation inventory — `native_decide`.** Several legacy Metamath and
+conformance fixtures use `native_decide` (which *compile-evaluates* a
 Boolean rather than checking it in the kernel, and therefore trusts the Lean compiler and
-enlarges the trusted base). There are **67 `native_decide` invocations in this README's own
-scope**, all in fixture/diagnostic files:
+enlarges the trusted base).  The following counts are the 2026-07-09 snapshot and
+must not be read as current without regeneration:
 
 - `Metamath/AcceptanceEquivalence.lean` — 30
 - `Metamath/Fixtures.lean` — 12
@@ -92,8 +90,9 @@ scope**, all in fixture/diagnostic files:
 - `Metamath/BridgeConformance.lean` — 1
 - `OSLFNTTReadout.lean` — 1
 
-These are flagged for migration to kernel-checked `decide`; the structural Metamath results
-(the `LanguageDef`, the simulation relation) do not depend on them. (The `GF/`, `MeTTa/`,
+The legacy acceptance/simulation/crown-jewel modules are excluded from the
+facade and pending retirement, not migration. Other permitted fixtures must move
+to kernel-checked proofs before supporting trusted claims. (The `GF/`, `MeTTa/`,
 and `ProcessCalculi/` sub-trees carry their own `native_decide` invocations, disclosed in
 their respective READMEs.)
 

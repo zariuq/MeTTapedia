@@ -5,6 +5,7 @@ import Mettapedia.PLN.Bridges.Logic
 import Mettapedia.PLN.Bridges.CategoryTheory
 import Mettapedia.PLN.Bridges.GSLT
 import Mettapedia.PLN.Bridges.KR
+import Mettapedia.PLN.Bridges.PredictiveCoding
 
 /-!
 # PLN bridges

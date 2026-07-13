@@ -4,10 +4,6 @@ import Mettapedia.Languages.Metamath.LanguageDefDSL
 import Mettapedia.Languages.Metamath.BridgeConformance
 import Mettapedia.Languages.Metamath.Fixtures
 import Mettapedia.Languages.Metamath.CommentConformance
-import Mettapedia.Languages.Metamath.Simulation
-import Mettapedia.Languages.Metamath.AcceptanceEquivalence
-import Mettapedia.Languages.Metamath.CrownJewelAPI
-import Mettapedia.Languages.Metamath.CrownJewelFixtures
 import Mettapedia.Languages.Metamath.NTTDiagnostics
 
 /-!
@@ -18,5 +14,6 @@ Positive example:
   Metamath semantics in `mettapedia`
 
 Negative example:
-- this umbrella does not reintroduce the deleted opaque-hook `LanguageDef` lane
+- this umbrella does not expose the legacy file-lowering/source-proof
+  simulation and crown-jewel claim class
 -/

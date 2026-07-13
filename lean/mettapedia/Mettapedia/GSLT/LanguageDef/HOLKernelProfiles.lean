@@ -210,14 +210,14 @@ private def sideConditionLogic : List LogicDecl :=
 private def P := pvar "P"
 private def Q := pvar "Q"
 private def R := pvar "R"
-private def Fv := pvar "F"
-private def Gv := pvar "G"
-private def Xv := pvar "X"
-private def Yv := pvar "Y"
+private def Fv := pvar "Fv"
+private def Gv := pvar "Gv"
+private def Xv := pvar "Xv"
+private def Yv := pvar "Yv"
 private def H1v := pvar "H1"
 private def H2v := pvar "H2"
-private def ThetaV := pvar "Theta"
-private def SigmaV := pvar "Sigma"
+private def ThetaV := pvar "ThetaV"
+private def SigmaV := pvar "SigmaV"
 
 private def holLightRewrites : List RewriteRule :=
   [ rw "HL_REFL" []

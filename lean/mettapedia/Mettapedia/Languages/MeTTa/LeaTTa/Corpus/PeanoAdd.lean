@@ -54,6 +54,18 @@ def addRules : List Metta.Atom :=
 
 def addEnv : MinEnv := MinEnv.ofAtomsGT addRules stdGroundings
 
+/-- A world whose `&self` rule surface is exactly the pre-indexed static environment. -/
+def StaticWorld (w : World) : Prop :=
+  w.selfExtra = [] ∧ w.selfImports = []
+
+private theorem staticWorld_init : StaticWorld St.init.world :=
+  ⟨rfl, rfl⟩
+
+private theorem candidatesW_eq_candidates_of_static
+    (env : MinEnv) (w : World) (toEval : Metta.Atom) (hstatic : StaticWorld w) :
+    candidatesW env w toEval = env.candidates toEval :=
+  candidatesW_eq_candidates_of_no_selfRules env w toEval hstatic.1 hstatic.2
+
 /-- Peano numerals as atoms. -/
 def peano : Nat → Metta.Atom
   | 0 => mSym "Z"
@@ -61,23 +73,27 @@ def peano : Nat → Metta.Atom
 
 def addQuery (a b : Nat) : Metta.Atom := mE "add" [peano a, peano b]
 
-private theorem peano_not_var (n : Nat) (v : String) :
-    peano n ≠ Metta.Atom.var v := by
-  cases n <;> simp [peano, mSym, mE]
+private theorem peano_vars_nil (n : Nat) : (peano n).vars = [] := by
+  induction n with
+  | zero => simp [peano, mSym, Metta.Atom.vars]
+  | succ n ih => simp [peano, mE, Metta.Atom.vars, ih]
 
 private theorem match_var_nonvar_atom (v : String) (target : Metta.Atom)
-    (h : ∀ w, target ≠ Metta.Atom.var w) :
+    (hvars : target.vars = []) :
     Metta.matchAtomsWith none (Metta.Atom.var v) target =
       [[Metta.BindingRel.val v target]] := by
   cases target with
-  | var w => exact (h w rfl).elim
-  | sym _ => simp [Metta.matchAtomsWith]
-  | gnd _ => simp [Metta.matchAtomsWith]
-  | expr _ => simp [Metta.matchAtomsWith]
+  | var w => simp [Metta.Atom.vars] at hvars
+  | sym _ => simp [Metta.matchAtomsWith, Metta.Subst.occurs]
+  | gnd _ => simp [Metta.matchAtomsWith, Metta.Subst.occurs]
+  | expr xs =>
+      have hoccurs : Metta.Subst.occurs v (Metta.Atom.expr xs) = false :=
+        occurs_eq_false_of_not_mem_vars v (Metta.Atom.expr xs) (by rw [hvars]; simp)
+      simp [Metta.matchAtomsWith, hoccurs]
 
 private theorem match_unary_expr_var
     (head var : String) (target : Metta.Atom)
-    (h : ∀ w, target ≠ Metta.Atom.var w) :
+    (hvars : target.vars = []) :
     Metta.matchAtomsWith none
       (Metta.Atom.expr [Metta.Atom.sym head, Metta.Atom.var var])
       (Metta.Atom.expr [Metta.Atom.sym head, target]) =
@@ -86,7 +102,7 @@ private theorem match_unary_expr_var
   unfold Metta.matchAll
   simp [Metta.matchAtomsWith, Metta.Bindings.merge]
   unfold Metta.matchAll
-  rw [match_var_nonvar_atom var target h]
+  rw [match_var_nonvar_atom var target hvars]
   simp [Metta.Bindings.merge, Metta.Bindings.mergeOne, Metta.Bindings.addVarBinding,
     Metta.Bindings.addValRaw, Metta.Bindings.removeVal, Metta.Bindings.lookupVal]
   unfold Metta.matchAll
@@ -105,9 +121,6 @@ private theorem peano_symbolicClosed (n : Nat) : SymbolicClosed (peano n) := by
         · rcases ha with rfl | hnil
           · exact ih
           · cases hnil)
-
-private theorem peano_vars_nil (n : Nat) : (peano n).vars = [] :=
-  SymbolicClosed.vars_nil (peano_symbolicClosed n)
 
 private theorem addQuery_symbolicClosed (a b : Nat) : SymbolicClosed (addQuery a b) := by
   change SymbolicClosed (Metta.Atom.expr [Metta.Atom.sym "add", peano a, peano b])
@@ -171,6 +184,15 @@ private theorem peano_bne_self_false (n : Nat) : (peano n != peano n) = false :=
   rw [peano_beq_self_true n]
   rfl
 
+private theorem peano_bne_empty_true (n : Nat) : (peano n != emptyA) = true := by
+  cases n with
+  | zero => rfl
+  | succ n => rfl
+
+private theorem expr_bne_empty_true (xs : List Metta.Atom) :
+    (Metta.Atom.expr xs != emptyA) = true := by
+  rfl
+
 private theorem peano_beq_notReducible_false (n : Nat) :
     (peano n == notReducibleA) = false := by
   change Metta.Atom.beq (peano n) notReducibleA = false
@@ -194,6 +216,12 @@ private theorem callGrounded_add_noReduce (args : List Metta.Atom) :
 private theorem addEnv_add_sigs : addEnv.sigs.get? "add" = none := by
   simp only [addEnv, MinEnv.ofAtomsGT, addRules, mE, mSym, mVar]
   simp
+
+private theorem arityMismatch_add (args : List Metta.Atom) :
+    arityMismatch addEnv "add" args = false := by
+  have hop : ("add" == "get-type") = false := by decide
+  rw [arityMismatch, addEnv_add_sigs]
+  simp [hop]
 
 private theorem addEnv_Z_candidates : addEnv.candidates (mSym "Z") = [] := by
   simp [addEnv, addRules, mE, mSym, mVar, MinEnv.candidates, extractRules, headKey,
@@ -226,6 +254,12 @@ private theorem returnsAtom_add_expr (x y : Metta.Atom) :
 private theorem addEnv_S_sigs : addEnv.sigs.get? "S" = none := by
   simp only [addEnv, MinEnv.ofAtomsGT, addRules, mE, mSym, mVar]
   simp
+
+private theorem arityMismatch_S (args : List Metta.Atom) :
+    arityMismatch addEnv "S" args = false := by
+  have hop : ("S" == "get-type") = false := by decide
+  rw [arityMismatch, addEnv_S_sigs]
+  simp [hop]
 
 private theorem addEnv_S_candidates (a : Metta.Atom) :
     addEnv.candidates (mE "S" [a]) = [] := by
@@ -311,7 +345,7 @@ private theorem addZeroMatchCore (n : Nat) :
   change [Metta.BindingRel.val "n" (peano n)] ∈
     Metta.matchAll none [[]] [Metta.Atom.var "n"] [peano n]
   unfold Metta.matchAll
-  rw [match_var_nonvar_atom "n" (peano n) (peano_not_var n)]
+  rw [match_var_nonvar_atom "n" (peano n) (peano_vars_nil n)]
   simp [Metta.Bindings.merge, Metta.Bindings.mergeOne, Metta.Bindings.addVarBinding,
     Metta.Bindings.addValRaw, Metta.Bindings.removeVal, Metta.Bindings.lookupVal]
   unfold Metta.matchAll
@@ -334,7 +368,7 @@ private theorem addZeroMatchFresh (n : Nat) :
   unfold Metta.matchAll
   simp [Metta.matchAtomsWith]
   unfold Metta.matchAll
-  rw [match_var_nonvar_atom (counterSuffix 0 "n") (peano n) (peano_not_var n)]
+  rw [match_var_nonvar_atom (counterSuffix 0 "n") (peano n) (peano_vars_nil n)]
   simp [Metta.Bindings.merge, Metta.Bindings.mergeOne, Metta.Bindings.addVarBinding,
     Metta.Bindings.addValRaw, Metta.Bindings.removeVal, Metta.Bindings.lookupVal]
   unfold Metta.matchAll
@@ -357,7 +391,7 @@ private theorem addZeroMatchFreshAt (c n : Nat) :
   unfold Metta.matchAll
   simp [Metta.matchAtomsWith]
   unfold Metta.matchAll
-  rw [match_var_nonvar_atom (counterSuffix c "n") (peano n) (peano_not_var n)]
+  rw [match_var_nonvar_atom (counterSuffix c "n") (peano n) (peano_vars_nil n)]
   simp [Metta.Bindings.merge, Metta.Bindings.mergeOne, Metta.Bindings.addVarBinding,
     Metta.Bindings.addValRaw, Metta.Bindings.removeVal, Metta.Bindings.lookupVal]
   unfold Metta.matchAll
@@ -379,12 +413,12 @@ private theorem addZeroMatchFreshAt_eq (c n : Nat) :
   unfold Metta.matchAll
   simp [Metta.matchAtomsWith]
   unfold Metta.matchAll
-  cases n <;> simp [peano, mSym, mE, Metta.matchAtomsWith, Metta.Bindings.merge,
-    Metta.Bindings.mergeOne, Metta.Bindings.addVarBinding, Metta.Bindings.addValRaw,
+  rw [match_var_nonvar_atom (counterSuffix c "n") (peano n) (peano_vars_nil n)]
+  simp [Metta.Bindings.merge, Metta.Bindings.mergeOne, Metta.Bindings.addVarBinding,
+    Metta.Bindings.addValRaw,
     Metta.Bindings.removeVal, Metta.Bindings.lookupVal]
-  all_goals
-    unfold Metta.matchAll
-    simp
+  unfold Metta.matchAll
+  simp
 
 private theorem addSuccMatchCore (m n : Nat) :
     [Metta.BindingRel.val "n" (peano n), Metta.BindingRel.val "m" (peano m)] ∈
@@ -394,11 +428,11 @@ private theorem addSuccMatchCore (m n : Nat) :
   unfold Metta.matchAll
   simp [Metta.matchAtomsWith, Metta.Bindings.merge]
   unfold Metta.matchAll
-  rw [match_unary_expr_var "S" "m" (peano m) (peano_not_var m)]
+  rw [match_unary_expr_var "S" "m" (peano m) (peano_vars_nil m)]
   simp [Metta.Bindings.merge, Metta.Bindings.mergeOne, Metta.Bindings.addVarBinding,
     Metta.Bindings.addValRaw, Metta.Bindings.removeVal, Metta.Bindings.lookupVal]
   unfold Metta.matchAll
-  rw [match_var_nonvar_atom "n" (peano n) (peano_not_var n)]
+  rw [match_var_nonvar_atom "n" (peano n) (peano_vars_nil n)]
   simp [Metta.Bindings.merge, Metta.Bindings.mergeOne, Metta.Bindings.addVarBinding,
     Metta.Bindings.addValRaw, Metta.Bindings.removeVal, Metta.Bindings.lookupVal]
   unfold Metta.matchAll
@@ -426,11 +460,11 @@ private theorem addSuccMatchFresh (m n : Nat) :
   unfold Metta.matchAll
   simp [Metta.matchAtomsWith]
   unfold Metta.matchAll
-  rw [match_unary_expr_var "S" (counterSuffix 1 "m") (peano m) (peano_not_var m)]
+  rw [match_unary_expr_var "S" (counterSuffix 1 "m") (peano m) (peano_vars_nil m)]
   simp [Metta.Bindings.merge, Metta.Bindings.mergeOne, Metta.Bindings.addVarBinding,
     Metta.Bindings.addValRaw, Metta.Bindings.removeVal, Metta.Bindings.lookupVal]
   unfold Metta.matchAll
-  rw [match_var_nonvar_atom (counterSuffix 1 "n") (peano n) (peano_not_var n)]
+  rw [match_var_nonvar_atom (counterSuffix 1 "n") (peano n) (peano_vars_nil n)]
   have hnm : counterSuffix 1 "n" ≠ counterSuffix 1 "m" := by decide
   have hmn : counterSuffix 1 "m" ≠ counterSuffix 1 "n" := fun h => hnm h.symm
   simp [Metta.Bindings.merge, Metta.Bindings.mergeOne, Metta.Bindings.addVarBinding,
@@ -460,11 +494,11 @@ private theorem addSuccMatchFreshAt (c m n : Nat) :
   unfold Metta.matchAll
   simp [Metta.matchAtomsWith]
   unfold Metta.matchAll
-  rw [match_unary_expr_var "S" (counterSuffix c "m") (peano m) (peano_not_var m)]
+  rw [match_unary_expr_var "S" (counterSuffix c "m") (peano m) (peano_vars_nil m)]
   simp [Metta.Bindings.merge, Metta.Bindings.mergeOne, Metta.Bindings.addVarBinding,
     Metta.Bindings.addValRaw, Metta.Bindings.removeVal, Metta.Bindings.lookupVal]
   unfold Metta.matchAll
-  rw [match_var_nonvar_atom (counterSuffix c "n") (peano n) (peano_not_var n)]
+  rw [match_var_nonvar_atom (counterSuffix c "n") (peano n) (peano_vars_nil n)]
   have hnm : counterSuffix c "n" ≠ counterSuffix c "m" := by
     intro h
     have h' : "n".toList ++ ("#" ++ toString c).toList =
@@ -500,11 +534,11 @@ private theorem addSuccMatchFreshAt_eq (c m n : Nat) :
   unfold Metta.matchAll
   simp [Metta.matchAtomsWith]
   unfold Metta.matchAll
-  rw [match_unary_expr_var "S" (counterSuffix c "m") (peano m) (peano_not_var m)]
+  rw [match_unary_expr_var "S" (counterSuffix c "m") (peano m) (peano_vars_nil m)]
   simp [Metta.Bindings.merge, Metta.Bindings.mergeOne, Metta.Bindings.addVarBinding,
     Metta.Bindings.addValRaw, Metta.Bindings.removeVal, Metta.Bindings.lookupVal]
   unfold Metta.matchAll
-  rw [match_var_nonvar_atom (counterSuffix c "n") (peano n) (peano_not_var n)]
+  rw [match_var_nonvar_atom (counterSuffix c "n") (peano n) (peano_vars_nil n)]
   have hnm : counterSuffix c "n" ≠ counterSuffix c "m" := by
     intro h
     have h' : "n".toList ++ ("#" ++ toString c).toList =
@@ -529,8 +563,8 @@ private theorem addZeroMatchFreshAt_addSucc_eq (c m n : Nat) :
   simp [Metta.matchAtomsWith]
   unfold Metta.matchAll
   have h :
-      (Metta.Atom.sym "Z" ==
-        Metta.Atom.expr [Metta.Atom.sym "S", peano m]) = false := rfl
+      Metta.Atom.equiv (Metta.Atom.sym "Z")
+        (Metta.Atom.expr [Metta.Atom.sym "S", peano m]) = false := rfl
   simp [Metta.matchAtomsWith, h, Metta.Bindings.merge]
   unfold Metta.matchAll
   simp
@@ -550,8 +584,9 @@ private theorem addSuccMatchFreshAt_addZero_eq (c n : Nat) :
   simp [Metta.matchAtomsWith]
   unfold Metta.matchAll
   have h :
-      (Metta.Atom.expr [Metta.Atom.sym "S", Metta.Atom.var ("m#" ++ c.repr)] ==
-        Metta.Atom.sym "Z") = false := rfl
+      Metta.Atom.equiv
+        (Metta.Atom.expr [Metta.Atom.sym "S", Metta.Atom.var ("m#" ++ c.repr)])
+        (Metta.Atom.sym "Z") = false := rfl
   simp [Metta.matchAtomsWith, h, Metta.Bindings.merge]
   unfold Metta.matchAll
   simp
@@ -598,7 +633,7 @@ private theorem add_zero_mops_readout (n : Nat) :
       change [Metta.BindingRel.val "n" (peano n)] ∈
         Metta.matchAll none [[]] [Metta.Atom.var "n"] [peano n]
       unfold Metta.matchAll
-      rw [match_var_nonvar_atom "n" (peano n) (peano_not_var n)]
+      rw [match_var_nonvar_atom "n" (peano n) (peano_vars_nil n)]
       simp [Metta.Bindings.merge, Metta.Bindings.mergeOne, Metta.Bindings.addVarBinding,
         Metta.Bindings.addValRaw, Metta.Bindings.removeVal, Metta.Bindings.lookupVal]
       unfold Metta.matchAll
@@ -627,11 +662,11 @@ private theorem add_succ_mops_readout (m n : Nat) :
       unfold Metta.matchAll
       simp [Metta.matchAtomsWith, Metta.Bindings.merge]
       unfold Metta.matchAll
-      rw [match_unary_expr_var "S" "m" (peano m) (peano_not_var m)]
+      rw [match_unary_expr_var "S" "m" (peano m) (peano_vars_nil m)]
       simp [Metta.Bindings.merge, Metta.Bindings.mergeOne, Metta.Bindings.addVarBinding,
         Metta.Bindings.addValRaw, Metta.Bindings.removeVal, Metta.Bindings.lookupVal]
       unfold Metta.matchAll
-      rw [match_var_nonvar_atom "n" (peano n) (peano_not_var n)]
+      rw [match_var_nonvar_atom "n" (peano n) (peano_vars_nil n)]
       simp [Metta.Bindings.merge, Metta.Bindings.mergeOne, Metta.Bindings.addVarBinding,
         Metta.Bindings.addValRaw, Metta.Bindings.removeVal, Metta.Bindings.lookupVal]
       unfold Metta.matchAll
@@ -735,7 +770,10 @@ theorem interpretFuelAddZeroKernelReadout (fuel n : Nat) :
       (coreB := [Metta.BindingRel.val "n" (peano n)]) (op := "add")
       (args := [peano 0, peano n]) (pre := []) hclosedB hnodup rfl hinst
       (callGrounded_add_noReduce [peano 0, peano n]) rfl (addZeroCandidateSplit n)
-      (addZeroMatchFresh n) (addZeroMatchCore n) hbound hclosedResult hnotFunction
+      (addZeroMatchFresh n) (addZeroMatchCore n) hbound hclosedResult
+      (by simpa [mVar, Metta.instantiate, Metta.bindingsToSubst, Metta.Subst.apply,
+        Metta.Subst.lookup] using peano_bne_empty_true n)
+      hnotFunction
   simpa [addEnv, addQuery, mE, mSym, mVar, St.init, Metta.instantiate,
     Metta.bindingsToSubst, Metta.Subst.apply, Metta.Subst.lookup] using h
 
@@ -752,7 +790,7 @@ theorem interpretFuelAddZeroKernelReadoutStack (fuel n : Nat) :
 contributes the only item; the recursive rule's LHS does not match `(add Z n)`. The query scan
 still advances the fresh-name counter across both static candidates. -/
 theorem queryOpAddZeroEqOfStatic (n : Nat) (st : St)
-    (hstatic : st.world.selfExtra = []) :
+    (hstatic : StaticWorld st.world) :
     queryOp addEnv st [] (addQuery 0 n) [] =
       ([evalResult [] (peano n)
           (renameBindings (counterSuffix st.counter)
@@ -762,7 +800,7 @@ theorem queryOpAddZeroEqOfStatic (n : Nat) (st : St)
   have hvar : isVariableHeaded (addQuery 0 n) = false := by
     simp [addQuery, peano, mE, mSym, isVariableHeaded]
   rw [hvar]
-  rw [candidatesW_eq_candidates_of_no_selfExtra addEnv st.world (addQuery 0 n) hstatic]
+  rw [candidatesW_eq_candidates_of_static addEnv st.world (addQuery 0 n) hstatic]
   unfold addEnv
   rw [addZeroCandidateSplit n]
   have hloop :
@@ -799,7 +837,7 @@ theorem queryOpAddZeroEqOfStatic (n : Nat) (st : St)
 dispatch around `queryOpAddZeroEqOfStatic`; it is still a one-step symbolic rule boundary, not a
 full evaluator trace. -/
 theorem interpretStack1AddZeroKernelReadoutOfStaticEq (fuel n : Nat) (st : St)
-    (hstatic : st.world.selfExtra = []) :
+    (hstatic : StaticWorld st.world) :
     interpretStack1 addEnv fuel st
         { stack := atomToStack (Metta.Atom.expr [Metta.Atom.sym "eval", addQuery 0 n]) [],
           bnd := [] } =
@@ -831,7 +869,7 @@ theorem interpretStack1AddZeroKernelReadoutOfStaticEq (fuel n : Nat) (st : St)
 /-- Exact one-step fuel-driver harvest for the base Peano rule. The surrounding fuel driver
 harvests the final `evalResult` emitted by `interpretStack1AddZeroKernelReadoutOfStaticEq`. -/
 theorem interpretFuelAddZeroKernelReadoutOfStaticEq (fuel n : Nat) (st : St)
-    (hstatic : st.world.selfExtra = []) :
+    (hstatic : StaticWorld st.world) :
     interpretFuel addEnv (fuel + 1) st
         [{ stack := atomToStack (Metta.Atom.expr [Metta.Atom.sym "eval", addQuery 0 n]) [],
            bnd := [] }] [] =
@@ -854,12 +892,13 @@ theorem interpretFuelAddZeroKernelReadoutOfStaticEq (fuel n : Nat) (st : St)
           (peano n) =
         peano n :=
     instantiate_eq_self_of_vars_nil _ (peano_vars_nil n)
-  simp [interpretFuel, hstep, heval, finItem, isFinal, finalPair, hclosed]
+  simp [interpretFuel, hstep, heval, finItem, isFinal, finalPair, hclosed,
+    peano_bne_empty_true]
 
 /-- Exact executable query surface for the recursive Peano rule over a static world. The base rule
 misses `(add (S m) n)`, and the recursive rule contributes the only item. -/
 theorem queryOpAddSuccEqOfStatic (m n : Nat) (st : St)
-    (hstatic : st.world.selfExtra = []) :
+    (hstatic : StaticWorld st.world) :
     queryOp addEnv st [] (addQuery (m + 1) n) [] =
       ([evalResult [] (mE "S" [addQuery m n])
           (renameBindings (counterSuffix (st.counter + 1))
@@ -870,7 +909,7 @@ theorem queryOpAddSuccEqOfStatic (m n : Nat) (st : St)
   have hvar : isVariableHeaded (addQuery (m + 1) n) = false := by
     simp [addQuery, peano, mE, isVariableHeaded]
   rw [hvar]
-  rw [candidatesW_eq_candidates_of_no_selfExtra addEnv st.world (addQuery (m + 1) n) hstatic]
+  rw [candidatesW_eq_candidates_of_static addEnv st.world (addQuery (m + 1) n) hstatic]
   unfold addEnv
   rw [addSuccCandidateSplit m n]
   let coreB : Metta.Bindings :=
@@ -940,7 +979,7 @@ theorem queryOpAddSuccEqOfStatic (m n : Nat) (st : St)
 the base Peano rule composes with the same certified `KernelStep` at any state whose `&self`
 extension is empty. -/
 theorem interpretFuelAddZeroKernelReadoutOfStatic (fuel n : Nat) (st : St)
-    (hstatic : st.world.selfExtra = []) :
+    (hstatic : StaticWorld st.world) :
     (peano n, (renameBindings (counterSuffix st.counter)
         [Metta.BindingRel.val "n" (peano n)]).reverse) ∈
         (interpretFuel addEnv (fuel + 1) st
@@ -986,10 +1025,12 @@ theorem interpretFuelAddZeroKernelReadoutOfStatic (fuel n : Nat) (st : St)
       (atoms := addRules) (gt := stdGroundings) (st := st) (fuel := fuel)
       (x := addQuery 0 n) (lhs := mE "add" [mSym "Z", mVar "n"]) (rhs := mVar "n")
       (coreB := [Metta.BindingRel.val "n" (peano n)]) (op := "add")
-      (args := [peano 0, peano n]) (pre := []) hclosedB hnodup hstatic hinst
+      (args := [peano 0, peano n]) (pre := []) hclosedB hnodup hstatic.1 hinst
       (callGrounded_add_noReduce
         ([peano 0, peano n].map (fun a => resolveStates st.world (subTokens st.world a))))
       rfl (addZeroCandidateSplit n) hfresh (addZeroMatchCore n) hbound hclosedResult
+      (by simpa [mVar, Metta.instantiate, Metta.bindingsToSubst, Metta.Subst.apply,
+        Metta.Subst.lookup] using peano_bne_empty_true n)
       hnotFunction
   simpa [addEnv, addQuery, peano, mE, mSym, mVar, atomToStack_eval, Metta.instantiate,
     Metta.bindingsToSubst, Metta.Subst.apply, Metta.Subst.lookup] using h
@@ -1060,7 +1101,11 @@ theorem interpretFuelAddSuccKernelReadout (fuel m n : Nat) :
       (pre := [(mE "add" [mSym "Z", mVar "n"], mVar "n")])
       hclosedB hnodup rfl hinst (callGrounded_add_noReduce [peano (m + 1), peano n])
       rfl (addSuccCandidateSplit m n) (addSuccMatchFresh m n) (addSuccMatchCore m n)
-      hbound hclosedResult hnotFunction
+      hbound hclosedResult
+      (by simpa [mE, mSym, mVar, addQuery, Metta.instantiate, Metta.bindingsToSubst,
+        Metta.Subst.apply, Metta.Subst.lookup] using
+          expr_bne_empty_true [mSym "S", addQuery m n])
+      hnotFunction
   simpa [addEnv, addQuery, peano, mE, mSym, mVar, St.init, Metta.instantiate,
     Metta.bindingsToSubst, Metta.Subst.apply, Metta.Subst.lookup] using h
 
@@ -1078,7 +1123,7 @@ theorem interpretFuelAddSuccKernelReadoutStack (fuel m n : Nat) :
 the recursive Peano rule composes with the same certified `KernelStep` after previous pure
 argument evaluation has threaded the state. -/
 theorem interpretFuelAddSuccKernelReadoutOfStatic (fuel m n : Nat) (st : St)
-    (hstatic : st.world.selfExtra = []) :
+    (hstatic : StaticWorld st.world) :
     (mE "S" [addQuery m n], (renameBindings (counterSuffix (st.counter + 1))
         [Metta.BindingRel.val "n" (peano n), Metta.BindingRel.val "m" (peano m)]).reverse) ∈
         (interpretFuel addEnv (fuel + 1) st
@@ -1144,10 +1189,13 @@ theorem interpretFuelAddSuccKernelReadoutOfStatic (fuel m n : Nat) (st : St)
       (coreB := [Metta.BindingRel.val "n" (peano n), Metta.BindingRel.val "m" (peano m)])
       (op := "add") (args := [peano (m + 1), peano n])
       (pre := [(mE "add" [mSym "Z", mVar "n"], mVar "n")])
-      hclosedB hnodup hstatic hinst
+      hclosedB hnodup hstatic.1 hinst
       (callGrounded_add_noReduce
         ([peano (m + 1), peano n].map (fun a => resolveStates st.world (subTokens st.world a))))
       rfl (addSuccCandidateSplit m n) hfresh (addSuccMatchCore m n) hbound hclosedResult
+      (by simpa [mE, mSym, mVar, addQuery, Metta.instantiate, Metta.bindingsToSubst,
+        Metta.Subst.apply, Metta.Subst.lookup] using
+          expr_bne_empty_true [mSym "S", addQuery m n])
       hnotFunction
   simpa [addEnv, addQuery, peano, mE, mSym, mVar, atomToStack_eval, Metta.instantiate,
     Metta.bindingsToSubst, Metta.Subst.apply, Metta.Subst.lookup,
@@ -1156,7 +1204,7 @@ theorem interpretFuelAddSuccKernelReadoutOfStatic (fuel m n : Nat) (st : St)
 /-- Exact scheduler surface for the recursive Peano rule, using
 `queryOpAddSuccEqOfStatic` after the `evalOp → queryOp` dispatch. -/
 theorem interpretStack1AddSuccKernelReadoutOfStaticEq (fuel m n : Nat) (st : St)
-    (hstatic : st.world.selfExtra = []) :
+    (hstatic : StaticWorld st.world) :
     interpretStack1 addEnv fuel st
         { stack := atomToStack (Metta.Atom.expr [Metta.Atom.sym "eval", addQuery (m + 1) n]) [],
           bnd := [] } =
@@ -1190,7 +1238,7 @@ theorem interpretStack1AddSuccKernelReadoutOfStaticEq (fuel m n : Nat) (st : St)
 
 /-- Exact one-step fuel-driver harvest for the recursive Peano rule. -/
 theorem interpretFuelAddSuccKernelReadoutOfStaticEq (fuel m n : Nat) (st : St)
-    (hstatic : st.world.selfExtra = []) :
+    (hstatic : StaticWorld st.world) :
     interpretFuel addEnv (fuel + 1) st
         [{ stack := atomToStack (Metta.Atom.expr [Metta.Atom.sym "eval", addQuery (m + 1) n]) [],
            bnd := [] }] [] =
@@ -1219,7 +1267,11 @@ theorem interpretFuelAddSuccKernelReadoutOfStaticEq (fuel m n : Nat) (st : St)
           (mE "S" [addQuery m n]) =
         mE "S" [addQuery m n] :=
     instantiate_eq_self_of_vars_nil _ (succAddQuery_vars_nil m n)
-  simp [interpretFuel, hstep, heval, finItem, isFinal, finalPair, hclosed]
+  have hnotEmpty : (mE "S" [addQuery m n] != emptyA) = true := by
+    simpa [mE] using
+      expr_bne_empty_true [Metta.Atom.sym "S", addQuery m n]
+  simp [interpretFuel, hstep, heval, finItem, isFinal, finalPair, hclosed,
+    hnotEmpty]
 
 /-- After the recursive Peano rule fires, the already-proven sub-computation lifts under `S`.
 This is the decomposition point an evaluator bridge should hand to the induction hypothesis. -/
@@ -1317,7 +1369,8 @@ theorem evalAtomMinAddSuccExprKernelReadout (fuel m n : Nat) :
 theorem evalAtomMinAddZeroEq (fuel n : Nat) :
     evalAtomMin addEnv (fuel + 1) (addQuery 0 n) = [peano n] := by
   unfold evalAtomMin interpretAtom
-  have hroot := interpretFuelAddZeroKernelReadoutOfStaticEq fuel n St.init rfl
+  have hroot :=
+    interpretFuelAddZeroKernelReadoutOfStaticEq fuel n St.init staticWorld_init
   simpa [atomToStack_eval] using congrArg (fun p => p.1.map (·.1)) hroot
 
 /-- Exact root-minimal evaluator output for the recursive Peano rule. This is the runnable
@@ -1325,7 +1378,8 @@ counterpart of the certified one-step relation `addSuccStepKernelContext`. -/
 theorem evalAtomMinAddSuccEq (fuel m n : Nat) :
     evalAtomMin addEnv (fuel + 1) (addQuery (m + 1) n) = [mE "S" [addQuery m n]] := by
   unfold evalAtomMin interpretAtom
-  have hroot := interpretFuelAddSuccKernelReadoutOfStaticEq fuel m n St.init rfl
+  have hroot :=
+    interpretFuelAddSuccKernelReadoutOfStaticEq fuel m n St.init staticWorld_init
   simpa [atomToStack_eval] using congrArg (fun p => p.1.map (·.1)) hroot
 
 /-- Soundness of the running minimal evaluator's root Peano readout: every atom returned by
@@ -1407,7 +1461,8 @@ private theorem mettaEvalAddClosed_eq_of_arg_singletons_and_root_eval
       (env := addEnv) (fuel := fuel) (st := st) (st₁ := st₁) (st₂ := st₂)
       (stRoot := stRoot) (stOut := stOut) (op := "add") (x := x) (y := y)
       (x' := x') (y' := y') (root := root) (final := final) (rootBnd := rootBnd)
-      hxClosed hyClosed hx hy (typeMismatch_add_world st.world [x, y]) (argMask_add 2)
+      hxClosed hyClosed hx hy (typeMismatch_add_world st.world [x, y])
+      (arityMismatch_add [x, y]) (argMask_add 2)
       hNoErr (by simpa [mE] using hRoot) hRootNotNotReducible (by simpa [mE] using hRootNotSelf)
       (by simpa [mE] using returnsAtom_add_expr x' y') hFinal
 
@@ -1418,7 +1473,7 @@ has no grounded implementation and no equation-rule candidates. This is the root
 the full evaluator's constructor-congruence rung. -/
 theorem mettaEvalS_root_notReducible_static
     (fuel : Nat) (out : Metta.Atom) (stArg : St)
-    (hstatic : stArg.world.selfExtra = []) :
+    (hstatic : StaticWorld stArg.world) :
     (notReducibleA, []) ∈
       (interpretFuel addEnv (fuel + 1) stArg
         [evalItemNil (mE "S" [out])] []).1 := by
@@ -1429,13 +1484,13 @@ theorem mettaEvalS_root_notReducible_static
   · simp [isEmbeddedOp]
   · simp [isVariableHeaded]
   · change candidatesW addEnv stArg.world (mE "S" [out]) = []
-    rw [candidatesW_eq_candidates_of_no_selfExtra addEnv stArg.world (mE "S" [out]) hstatic]
+    rw [candidatesW_eq_candidates_of_static addEnv stArg.world (mE "S" [out]) hstatic]
     exact addEnv_S_candidates out
 
 /-- Exact static root-normal-form readout for Peano's `S` constructor. -/
 theorem mettaEvalS_root_notReducible_static_eq
     (fuel : Nat) (out : Metta.Atom) (stArg : St)
-    (hstatic : stArg.world.selfExtra = []) :
+    (hstatic : StaticWorld stArg.world) :
     interpretFuel addEnv (fuel + 1) stArg
         [evalItemNil (mE "S" [out])] [] =
       ([(notReducibleA, [])], stArg) := by
@@ -1446,7 +1501,7 @@ theorem mettaEvalS_root_notReducible_static_eq
   · simp [isEmbeddedOp]
   · simp [isVariableHeaded]
   · change candidatesW addEnv stArg.world (mE "S" [out]) = []
-    rw [candidatesW_eq_candidates_of_no_selfExtra addEnv stArg.world (mE "S" [out]) hstatic]
+    rw [candidatesW_eq_candidates_of_static addEnv stArg.world (mE "S" [out]) hstatic]
     exact addEnv_S_candidates out
 
 /-- Arity-polymorphic static root-normal-form readout for Peano's `S` constructor.
@@ -1455,7 +1510,7 @@ The outer evaluator fold is list-based, so its state-invariant proof needs the r
 partial argument list it may thread, not only the selected unary readout. -/
 theorem mettaEvalS_root_notReducible_static_eq_list
     (fuel : Nat) (args : List Metta.Atom) (stArg : St)
-    (hstatic : stArg.world.selfExtra = []) :
+    (hstatic : StaticWorld stArg.world) :
     interpretFuel addEnv (fuel + 1) stArg
         [evalItemNil (Metta.Atom.expr (mSym "S" :: args))] [] =
       ([(notReducibleA, [])], stArg) := by
@@ -1466,7 +1521,7 @@ theorem mettaEvalS_root_notReducible_static_eq_list
   · simp [isEmbeddedOp]
   · simp [isVariableHeaded]
   · change candidatesW addEnv stArg.world (Metta.Atom.expr (mSym "S" :: args)) = []
-    rw [candidatesW_eq_candidates_of_no_selfExtra addEnv stArg.world
+    rw [candidatesW_eq_candidates_of_static addEnv stArg.world
       (Metta.Atom.expr (mSym "S" :: args)) hstatic]
     exact addEnv_S_candidates_list args
 
@@ -1480,14 +1535,14 @@ theorem mettaEvalS_keeps_of_arg_singleton_static
     (fuel : Nat) (arg out : Metta.Atom) (stArg : St)
     (hArg : mettaEval addEnv fuel St.init [] arg = ([(out, [])], stArg))
     (hNotError : out.isError = false)
-    (hstatic : stArg.world.selfExtra = []) :
+    (hstatic : StaticWorld stArg.world) :
     (mE "S" [out], restrictBnd arg.vars ((Bindings.merge [] []).head?.getD [])) ∈
       (mettaEval addEnv (fuel + 1) St.init [] (mE "S" [arg])).1 := by
   have hroot := mettaEvalS_root_notReducible_static fuel out stArg hstatic
   simpa [mE] using
     mettaEval_unary_expr_keeps_of_arg_singleton_and_notReducible_readout
       addEnv fuel St.init stArg "S" arg out hArg (typeMismatch_S [arg])
-      (argMask_S 1) hNotError hroot
+      (arityMismatch_S [arg]) (argMask_S 1) hNotError hroot
 
 /-- State-parametric `S` constructor congruence for the full evaluator.
 
@@ -1497,21 +1552,21 @@ theorem mettaEvalS_keeps_of_arg_singleton_static_from
     (fuel : Nat) (st stArg : St) (arg out : Metta.Atom)
     (hArg : mettaEval addEnv fuel st [] arg = ([(out, [])], stArg))
     (hNotError : out.isError = false)
-    (hstatic : stArg.world.selfExtra = []) :
+    (hstatic : StaticWorld stArg.world) :
     (mE "S" [out], restrictBnd arg.vars ((Bindings.merge [] []).head?.getD [])) ∈
       (mettaEval addEnv (fuel + 1) st [] (mE "S" [arg])).1 := by
   have hroot := mettaEvalS_root_notReducible_static fuel out stArg hstatic
   simpa [mE] using
     mettaEval_unary_expr_keeps_of_arg_singleton_and_notReducible_readout
       addEnv fuel st stArg "S" arg out hArg (typeMismatch_S_world st.world [arg])
-      (argMask_S 1) hNotError hroot
+      (arityMismatch_S [arg]) (argMask_S 1) hNotError hroot
 
 /-- State-parametric exact `S` constructor congruence. -/
 theorem mettaEvalS_eq_of_arg_singleton_static_from
     (fuel : Nat) (st stArg : St) (arg out : Metta.Atom)
     (hArg : mettaEval addEnv fuel st [] arg = ([(out, [])], stArg))
     (hNotError : out.isError = false)
-    (hstatic : stArg.world.selfExtra = []) :
+    (hstatic : StaticWorld stArg.world) :
     mettaEval addEnv (fuel + 1) st [] (mE "S" [arg]) =
       ([(mE "S" [out], restrictBnd arg.vars ((Bindings.merge [] []).head?.getD []))],
         stArg) := by
@@ -1519,11 +1574,11 @@ theorem mettaEvalS_eq_of_arg_singleton_static_from
   simpa [mE] using
     mettaEval_unary_expr_eq_of_arg_singleton_and_notReducible_eq
       addEnv fuel st stArg stArg "S" arg out hArg (typeMismatch_S_world st.world [arg])
-      (argMask_S 1) hNotError hroot
+      (arityMismatch_S [arg]) (argMask_S 1) hNotError hroot
 
 /-- Peano zero self-evaluates from any static evaluator state and preserves that state. -/
 theorem mettaEvalZ_sufficient_static (fuel : Nat) (st : St)
-    (hstatic : st.world.selfExtra = []) :
+    (hstatic : StaticWorld st.world) :
     mettaEval addEnv (fuel + 1) st [] (mSym "Z") =
       ([(mSym "Z", [])], st) := by
   have hroot : interpretFuel addEnv (fuel + 1) st
@@ -1533,7 +1588,7 @@ theorem mettaEvalZ_sufficient_static (fuel : Nat) (st : St)
     · simpa [mSym] using (instantiate_nil (mSym "Z"))
     · simp [isEmbeddedOp]
     · change candidatesW addEnv st.world (mSym "Z") = []
-      rw [candidatesW_eq_candidates_of_no_selfExtra addEnv st.world (mSym "Z") hstatic]
+      rw [candidatesW_eq_candidates_of_static addEnv st.world (mSym "Z") hstatic]
       exact addEnv_Z_candidates
   simpa [mSym, evalItemNil] using
     mettaEval_symbol_eq_of_notReducible_eq addEnv fuel st [] "Z" hroot
@@ -1542,11 +1597,11 @@ theorem mettaEvalZ_sufficient_static (fuel : Nat) (st : St)
 theorem mettaEvalZ_sufficient (fuel : Nat) :
     mettaEval addEnv (fuel + 1) St.init [] (mSym "Z") =
       ([(mSym "Z", [])], St.init) := by
-  exact mettaEvalZ_sufficient_static fuel St.init rfl
+  exact mettaEvalZ_sufficient_static fuel St.init staticWorld_init
 
 /-- State-parametric sufficient-fuel self-evaluation for Peano numerals. -/
 theorem mettaEvalPeanoSelf_sufficient_static (n extra : Nat) (st : St)
-    (hstatic : st.world.selfExtra = []) :
+    (hstatic : StaticWorld st.world) :
     mettaEval addEnv (extra + n + 1) st [] (peano n) =
       ([(peano n, [])], st) := by
   induction n generalizing extra st with
@@ -1569,7 +1624,7 @@ theorem mettaEvalPeanoSelf_sufficient_static (n extra : Nat) (st : St)
 theorem mettaEvalPeanoSelf_sufficient (n extra : Nat) :
     mettaEval addEnv (extra + n + 1) St.init [] (peano n) =
       ([(peano n, [])], St.init) := by
-  exact mettaEvalPeanoSelf_sufficient_static n extra St.init rfl
+  exact mettaEvalPeanoSelf_sufficient_static n extra St.init staticWorld_init
 
 /-- Executable/certified `S`-congruence for one already-certified subterm readout.
 
@@ -1583,7 +1638,7 @@ theorem mettaEvalS_readout_sound_of_arg_singleton_static_from
     (hArgSound : Relation.ReflTransGen (ExprCtxKernelStep addRules stdGroundings) arg out)
     (hArgClosed : arg.vars = [])
     (hNotError : out.isError = false)
-    (hstatic : stArg.world.selfExtra = []) :
+    (hstatic : StaticWorld stArg.world) :
     (mE "S" [out], []) ∈ (mettaEval addEnv (fuel + 1) st [] (mE "S" [arg])).1 ∧
       Relation.ReflTransGen (ExprCtxKernelStep addRules stdGroundings)
         (mE "S" [arg]) (mE "S" [out]) := by
@@ -1606,7 +1661,8 @@ theorem mettaEvalS_readout_sound_of_arg_singleton_static_from
     mettaEval_unary_expr_readout_sound_of_arg_singleton_and_notReducible_readout
       addEnv fuel st stArg "S" arg out
       (ExprCtxKernelStep addRules stdGroundings)
-      hArg (typeMismatch_S_world st.world [arg]) (argMask_S 1) hNotError
+      hArg (typeMismatch_S_world st.world [arg]) (arityMismatch_S [arg])
+      (argMask_S 1) hNotError
       (mettaEvalS_root_notReducible_static fuel out stArg hstatic) hReach
   constructor
   · simpa [mE, mSym, hrestrict] using hsound.1
@@ -1621,7 +1677,7 @@ theorem mettaEvalS_readout_sound_of_addQuery_singleton_static_from
     (fuel : Nat) (st stArg : St) (m n : Nat)
     (hArg : mettaEval addEnv fuel st [] (addQuery m n) =
       ([(peano (m + n), [])], stArg))
-    (hstatic : stArg.world.selfExtra = []) :
+    (hstatic : StaticWorld stArg.world) :
     (mE "S" [peano (m + n)], []) ∈
         (mettaEval addEnv (fuel + 1) st [] (mE "S" [addQuery m n])).1 ∧
       Relation.ReflTransGen (ExprCtxKernelStep addRules stdGroundings)
@@ -1646,11 +1702,11 @@ theorem mettaEvalS_readout_sound_of_arg_member_static_from
     (hArgSound : Relation.ReflTransGen (ExprCtxKernelStep addRules stdGroundings) arg out)
     (hArgClosed : arg.vars = [])
     (hNotError : out.isError = false)
-    (hstatic : stArg.world.selfExtra = []) :
+    (hstatic : StaticWorld stArg.world) :
     (mE "S" [out], []) ∈ (mettaEval addEnv (fuel + 1) st [] (mE "S" [arg])).1 ∧
       Relation.ReflTransGen (ExprCtxKernelStep addRules stdGroundings)
         (mE "S" [arg]) (mE "S" [out]) := by
-  let P : St → Prop := fun st => st.world.selfExtra = []
+  let P : St → Prop := fun st => StaticWorld st.world
   have hstep :
       ∀ acc part,
         P acc.2 →
@@ -1694,7 +1750,8 @@ theorem mettaEvalS_readout_sound_of_arg_member_static_from
     mettaEval_unary_expr_readout_sound_of_arg_member_and_notReducible_state_pred
       addEnv fuel st stArg "S" arg out argPairs P
       (ExprCtxKernelStep addRules stdGroundings)
-      hArg hmemArg (typeMismatch_S_world st.world [arg]) (argMask_S 1) hNotError
+      hArg hmemArg (typeMismatch_S_world st.world [arg]) (arityMismatch_S [arg])
+      (argMask_S 1) hNotError
       hstatic hstep hroot hReach
   have hrestrict :
       restrictBnd arg.vars ((Bindings.merge [] []).head?.getD []) = [] := by
@@ -1709,7 +1766,7 @@ theorem mettaEvalS_readout_sound_of_addQuery_member_static_from
     (argPairs : List (Metta.Atom × Bindings))
     (hArg : mettaEval addEnv fuel st [] (addQuery m n) = (argPairs, stArg))
     (hmemArg : (peano (m + n), []) ∈ argPairs)
-    (hstatic : stArg.world.selfExtra = []) :
+    (hstatic : StaticWorld stArg.world) :
     (mE "S" [peano (m + n)], []) ∈
         (mettaEval addEnv (fuel + 1) st [] (mE "S" [addQuery m n])).1 ∧
       Relation.ReflTransGen (ExprCtxKernelStep addRules stdGroundings)
@@ -1738,7 +1795,7 @@ theorem mettaEvalAddSucc_readout_sound_of_recursive_member_static_from
       ([(mE "S" [addQuery m n], rootBnd)], stRoot))
     (hArg : mettaEval addEnv fuel stRoot [] (addQuery m n) = (argPairs, stArg))
     (hmemArg : (peano (m + n), []) ∈ argPairs)
-    (hstaticArg : stArg.world.selfExtra = []) :
+    (hstaticArg : StaticWorld stArg.world) :
     (mE "S" [peano (m + n)], []) ∈
         (mettaEval addEnv ((fuel + 1) + 1) st [] (addQuery (m + 1) n)).1 ∧
       Relation.ReflTransGen (ExprCtxKernelStep addRules stdGroundings)
@@ -1757,6 +1814,7 @@ theorem mettaEvalAddSucc_readout_sound_of_recursive_member_static_from
       rootBnd (ExprCtxKernelStep addRules stdGroundings)
       (peano_vars_nil (m + 1)) (peano_vars_nil n)
       hLeft hRight (typeMismatch_add_world st.world [peano (m + 1), peano n])
+      (arityMismatch_add [peano (m + 1), peano n])
       (argMask_add 2) (addArgs_errorGuard_none (m + 1) n)
       (by simpa [addQuery, mE] using hRoot)
       (by rfl) (by rfl) (by simpa [mE] using returnsAtom_add_expr (peano (m + 1)) (peano n))
@@ -1768,11 +1826,11 @@ theorem mettaEvalAddSucc_readout_sound_of_recursive_member_static_from
 The public theorem below hides the budget existentially. This helper is only the induction measure
 that lets the recursive rule reuse the generic closed-add fold and the `S` constructor congruence. -/
 private theorem mettaEvalAdd_eq_sufficient_static (a b extra : Nat) (st : St)
-    (hstatic : st.world.selfExtra = []) :
+    (hstatic : StaticWorld st.world) :
     ∃ stOut,
       mettaEval addEnv (extra + b + 2 * a + 3) st [] (addQuery a b) =
         ([(peano (a + b), [])], stOut) ∧
-        stOut.world.selfExtra = [] := by
+        StaticWorld stOut.world := by
   induction a generalizing extra st with
   | zero =>
       let stRoot : St := { st with counter := st.counter + 2 }
@@ -1793,7 +1851,7 @@ private theorem mettaEvalAdd_eq_sufficient_static (a b extra : Nat) (st : St)
               [Metta.BindingRel.val "n" (peano b)]).reverse)], stRoot) := by
         simpa [stRoot, evalItemNil] using
           interpretFuelAddZeroKernelReadoutOfStaticEq (extra + b + 2) b st hstatic
-      have hstaticRoot : stRoot.world.selfExtra = [] := by
+      have hstaticRoot : StaticWorld stRoot.world := by
         simpa [stRoot] using hstatic
       have hFinal :
           mettaEval addEnv (extra + b + 2) stRoot [] (peano b) =
@@ -1847,7 +1905,7 @@ private theorem mettaEvalAdd_eq_sufficient_static (a b extra : Nat) (st : St)
                   Metta.BindingRel.val "m" (peano a)]).reverse)], stRoot) := by
         simpa [stRoot, evalItemNil] using
           interpretFuelAddSuccKernelReadoutOfStaticEq (extra + b + 2 * a + 4) a b st hstatic
-      have hstaticRoot : stRoot.world.selfExtra = [] := by
+      have hstaticRoot : StaticWorld stRoot.world := by
         simpa [stRoot] using hstatic
       rcases ih extra stRoot hstaticRoot with ⟨stIH, hIH, hstaticIH⟩
       have hFinal :
@@ -1905,12 +1963,12 @@ private theorem mettaEvalAdd_eq_sufficient_static (a b extra : Nat) (st : St)
 
 /-- The executable evaluator computes Peano addition with some sufficient fuel. -/
 theorem mettaEvalAdd_exists_static (a b : Nat) (st : St)
-    (hstatic : st.world.selfExtra = []) :
+    (hstatic : StaticWorld st.world) :
     ∃ fuel stOut,
       mettaEval addEnv fuel st [] (addQuery a b) = ([(peano (a + b), [])], stOut) ∧
         stOut.world.selfExtra = [] := by
   rcases mettaEvalAdd_eq_sufficient_static a b 0 st hstatic with ⟨stOut, hEval, hStatic⟩
-  exact ⟨b + 2 * a + 3, stOut, by simpa [Nat.zero_add] using hEval, hStatic⟩
+  exact ⟨b + 2 * a + 3, stOut, by simpa [Nat.zero_add] using hEval, hStatic.1⟩
 
 /-- Initial-state executable Peano-addition theorem. -/
 theorem mettaEvalAdd_exists (a b : Nat) :
@@ -1918,7 +1976,7 @@ theorem mettaEvalAdd_exists (a b : Nat) :
       mettaEval addEnv fuel St.init [] (addQuery a b) =
         ([(peano (a + b), [])], stOut) ∧
         stOut.world.selfExtra = [] :=
-  mettaEvalAdd_exists_static a b St.init rfl
+  mettaEvalAdd_exists_static a b St.init staticWorld_init
 
 /-- The executable evaluator computes Peano addition, and every readout from the chosen sufficient
 fuel run is justified by the certified contextual `KernelStep` relation. -/

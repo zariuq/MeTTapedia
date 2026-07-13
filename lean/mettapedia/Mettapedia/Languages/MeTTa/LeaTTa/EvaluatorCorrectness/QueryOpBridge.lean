@@ -26,21 +26,21 @@ open Mettapedia.Languages.MeTTa.HE.CanonAbsorbsFreshening
 
 /-! ## Static candidate surface -/
 
-/-- On a static world with no runtime `&self` additions, the executable candidate surface
-`candidatesW` is exactly the pre-indexed static environment used by `KernelStep`. -/
-theorem candidatesW_eq_candidates_of_no_selfExtra
+/-- When neither mutable nor imported rules have been added to `&self`, the executable candidate
+surface `candidatesW` is exactly the pre-indexed static environment used by `KernelStep`. -/
+theorem candidatesW_eq_candidates_of_no_selfRules
     (env : MinEnv) (w : World) (toEval : Atom)
-    (hstatic : w.selfExtra = []) :
+    (hExtra : w.selfExtra = []) (hImports : w.selfImports = []) :
     candidatesW env w toEval = env.candidates toEval := by
   unfold candidatesW
-  rw [hstatic]
+  rw [hExtra, hImports]
   simp
 
 /-- Initial evaluation starts in a static world, so `candidatesW` and the certified static
 candidate index coincide. -/
 theorem candidatesW_init_eq_candidates (env : MinEnv) (toEval : Atom) :
     candidatesW env St.init.world toEval = env.candidates toEval := by
-  exact candidatesW_eq_candidates_of_no_selfExtra env St.init.world toEval rfl
+  exact candidatesW_eq_candidates_of_no_selfRules env St.init.world toEval rfl rfl
 
 /-! ## Executable `queryOp` fold surface -/
 
@@ -282,10 +282,19 @@ theorem queryOp_contains_instantiated_item_of_staticCandidateSplit
     (hloop : Bindings.hasLoop m = false) :
     evalResult prev (instantiate m (freshenRule (st.counter + pre.length) p.1 p.2).2) m ∈
       (queryOp env st prev toEval b).1 := by
-  apply queryOp_contains_instantiated_item_of_splitCandidate env st prev toEval b
-    hNotVarHead
-  · rw [candidatesW_eq_candidates_of_no_selfExtra env st.world toEval hstatic]
-    exact hsplit
+  let importedRules : List (Atom × Atom) := st.world.selfImports.filterMap fun x => match x with
+    | Atom.expr [Atom.sym "=", lhs, rhs] =>
+        match headKey lhs, headKey toEval with
+        | some k1, some k2 => if k1 == k2 then some (lhs, rhs) else none
+        | none, _ => some (lhs, rhs)
+        | _, _ => none
+    | _ => none
+  apply queryOp_contains_instantiated_item_of_splitCandidate
+    (pre := pre) (post := post ++ importedRules) env st prev toEval b hNotVarHead
+  · unfold candidatesW
+    rw [hstatic, hsplit]
+    simp only [List.nil_append, List.append_assoc, List.cons_append, importedRules]
+    rfl
   · exact hmatch
   · exact hmerge
   · exact hloop
@@ -309,6 +318,27 @@ theorem exists_staticCandidateSplit_of_candidate_mem
 
 /-! ## Matcher leaf facts for the freshening crossing -/
 
+/-- LeaTTa's executable occurs check agrees with absence from the proof-facing variable list. -/
+theorem occurs_eq_false_of_not_mem_vars (v : VarName) :
+    ∀ target : Atom, v ∉ target.vars → Subst.occurs v target = false := by
+  refine Metta.Atom.recAux ?_ ?_ ?_ ?_
+  · intro s _
+    simp [Subst.occurs]
+  · intro w hnot
+    simp [Atom.vars] at hnot
+    simp [Subst.occurs, hnot]
+  · intro g _
+    simp [Subst.occurs]
+  · intro xs ih hnot
+    simp only [Subst.occurs, List.any_eq_false]
+    intro a ha
+    have haNot : v ∉ a.1.vars := by
+      intro hv
+      apply hnot
+      simp only [Atom.vars, List.mem_flatten]
+      exact ⟨a.1.vars, List.mem_map.mpr ⟨a.1, a.2, rfl⟩, hv⟩
+    simp [ih a.1 a.2 haNot]
+
 /-- A variable pattern matches any closed target with the corresponding value binding. This is the
 leaf case of the freshened-matcher crossing used by the interpreter-correctness lift. -/
 theorem matchAtoms_var_closed_mem (v : String) (target : Atom)
@@ -316,11 +346,13 @@ theorem matchAtoms_var_closed_mem (v : String) (target : Atom)
     [BindingRel.val v target] ∈ matchAtoms (Atom.var v) target := by
   cases target with
   | var w => simp [Atom.vars] at hclosed
-  | sym s => simp [matchAtoms, matchAtomsWith]
-  | gnd g => simp [matchAtoms, matchAtomsWith]
+  | sym s => simp [matchAtoms, matchAtomsWith, Subst.occurs]
+  | gnd g => simp [matchAtoms, matchAtomsWith, Subst.occurs]
   | expr xs =>
-      simp [Atom.vars] at hclosed
-      simp [matchAtoms, matchAtomsWith]
+      have hnot : v ∉ (Atom.expr xs).vars := by rw [hclosed]; simp
+      have hocc : Subst.occurs v (Atom.expr xs) = false :=
+        occurs_eq_false_of_not_mem_vars v (Atom.expr xs) hnot
+      simp [matchAtoms, matchAtomsWith, hocc]
 
 /-- Open-target variant of `matchAtoms_var_closed_mem`: a variable pattern matches any target
 with the corresponding value binding, except the degenerate same-variable target, where LeaTTa's
@@ -334,11 +366,13 @@ theorem matchAtoms_var_not_mem (v : String) (target : Atom)
       have hvw : v ≠ w := hnot
       simp [matchAtoms, matchAtomsWith, hvw]
   | sym _ =>
-      simp [matchAtoms, matchAtomsWith]
+      simp [matchAtoms, matchAtomsWith, Subst.occurs]
   | gnd _ =>
-      simp [matchAtoms, matchAtomsWith]
-  | expr _ =>
-      simp [matchAtoms, matchAtomsWith]
+      simp [matchAtoms, matchAtomsWith, Subst.occurs]
+  | expr xs =>
+      have hocc : Subst.occurs v (Atom.expr xs) = false :=
+        occurs_eq_false_of_not_mem_vars v (Atom.expr xs) hnot
+      simp [matchAtoms, matchAtomsWith, hocc]
 
 /-- Instantiating a variable under its singleton value binding returns that value. -/
 theorem instantiate_singleton_val_var (v : String) (target : Atom) :
@@ -1043,15 +1077,17 @@ theorem matchAtoms_closed_value_mem :
     | var w =>
         simp [Atom.vars] at hclosed
     | sym s =>
-        simp [matchAtoms, matchAtomsWith] at hmem
+        simp [matchAtoms, matchAtomsWith, Subst.occurs] at hmem
         rcases hmem with rfl
         exact ClosedValueBindings.val (by simp [Atom.vars]) ClosedValueBindings.nil
     | gnd g =>
-        simp [matchAtoms, matchAtomsWith] at hmem
+        simp [matchAtoms, matchAtomsWith, Subst.occurs] at hmem
         rcases hmem with rfl
         exact ClosedValueBindings.val (by simp [Atom.vars]) ClosedValueBindings.nil
     | expr xs =>
-        simp [matchAtoms, matchAtomsWith] at hmem
+        have hocc : Subst.occurs v (Atom.expr xs) = false :=
+          occurs_eq_false_of_not_mem_vars v (Atom.expr xs) (by simp [hclosed])
+        simp [matchAtoms, matchAtomsWith, hocc] at hmem
         rcases hmem with rfl
         exact ClosedValueBindings.val hclosed ClosedValueBindings.nil
   · intro g target b hclosed hmem
@@ -1586,7 +1622,7 @@ mutual
   def LeftPatternShape (f : VarName → VarName) : Atom → Atom → Prop
     | Atom.var v, target => v ∉ target.vars ∧ f v ∉ target.vars
     | Atom.sym s, Atom.sym t => s = t
-    | Atom.gnd g, Atom.gnd h => (Atom.gnd g == Atom.gnd h) = true
+    | Atom.gnd g, Atom.gnd h => Atom.equiv (Atom.gnd g) (Atom.gnd h) = true
     | Atom.expr xs, Atom.expr ys => LeftPatternShapeList f xs ys
     | _, _ => False
 
@@ -1627,23 +1663,25 @@ theorem matchAtoms_leftPattern_value_mem (f : VarName → VarName) :
         rcases hmem with rfl
         exact ValueBindings.val ValueBindings.nil
     | sym _ =>
-        simp [matchAtoms, matchAtomsWith] at hmem
+        simp [matchAtoms, matchAtomsWith, Subst.occurs] at hmem
         rcases hmem with rfl
         exact ValueBindings.val ValueBindings.nil
     | gnd _ =>
-        simp [matchAtoms, matchAtomsWith] at hmem
+        simp [matchAtoms, matchAtomsWith, Subst.occurs] at hmem
         rcases hmem with rfl
         exact ValueBindings.val ValueBindings.nil
-    | expr _ =>
-        simp [matchAtoms, matchAtomsWith] at hmem
+    | expr xs =>
+        have hocc : Subst.occurs v (Atom.expr xs) = false :=
+          occurs_eq_false_of_not_mem_vars v (Atom.expr xs) hraw
+        simp [matchAtoms, matchAtomsWith, hocc] at hmem
         rcases hmem with rfl
         exact ValueBindings.val ValueBindings.nil
   · intro g target b hshape hmem
     cases target with
     | gnd h =>
-        have hbeq : (Atom.gnd g == Atom.gnd h) = true := by
+        have hequiv : Atom.equiv (Atom.gnd g) (Atom.gnd h) = true := by
           simpa [LeftPatternShape] using hshape
-        simp [matchAtoms, matchAtomsWith, hbeq] at hmem
+        simp [matchAtoms, matchAtomsWith, hequiv] at hmem
         rcases hmem with rfl
         exact ValueBindings.nil
     | var _ =>
@@ -1739,23 +1777,27 @@ theorem matchAtoms_renBy_leftPattern_mem (f : VarName → VarName) (hf : Functio
         rcases hmem with rfl
         rfl
     | sym _ =>
-        simp [matchAtoms, matchAtomsWith] at hmem ⊢
+        simp [matchAtoms, matchAtomsWith, Subst.occurs] at hmem ⊢
         rcases hmem with rfl
         rfl
     | gnd _ =>
-        simp [matchAtoms, matchAtomsWith] at hmem ⊢
+        simp [matchAtoms, matchAtomsWith, Subst.occurs] at hmem ⊢
         rcases hmem with rfl
         rfl
-    | expr _ =>
-        simp [matchAtoms, matchAtomsWith] at hmem ⊢
+    | expr xs =>
+        have hocc : Subst.occurs v (Atom.expr xs) = false :=
+          occurs_eq_false_of_not_mem_vars v (Atom.expr xs) hraw
+        have hfocc : Subst.occurs (f v) (Atom.expr xs) = false :=
+          occurs_eq_false_of_not_mem_vars (f v) (Atom.expr xs) hfresh
+        simp [matchAtoms, matchAtomsWith, hocc, hfocc] at hmem ⊢
         rcases hmem with rfl
         rfl
   · intro g target b hshape hmem
     cases target with
     | gnd h =>
-        have hbeq : (Atom.gnd g == Atom.gnd h) = true := by
+        have hequiv : Atom.equiv (Atom.gnd g) (Atom.gnd h) = true := by
           simpa [LeftPatternShape] using hshape
-        simp [matchAtoms, matchAtomsWith, renBy, hbeq] at hmem ⊢
+        simp [matchAtoms, matchAtomsWith, renBy, hequiv] at hmem ⊢
         rcases hmem with rfl
         rfl
     | var _ =>
@@ -1853,23 +1895,29 @@ theorem matchAtoms_renBy_closed_target_mem (f : VarName → VarName) (hf : Funct
     | var _ =>
         simp [Atom.vars] at hclosed
     | gnd _ =>
-        simp [matchAtoms, matchAtomsWith, BEq.beq, Atom.beq] at hmem
+        simp [matchAtoms, matchAtomsWith, Atom.equiv] at hmem
     | expr _ =>
-        simp [matchAtoms, matchAtomsWith, BEq.beq, Atom.beq] at hmem
+        simp [matchAtoms, matchAtomsWith, Atom.equiv] at hmem
   · intro v target b hclosed hmem
     cases target with
     | var _ =>
         simp [Atom.vars] at hclosed
     | sym _ =>
-        simp [matchAtoms, matchAtomsWith] at hmem ⊢
+        simp [matchAtoms, matchAtomsWith, Subst.occurs] at hmem ⊢
         rcases hmem with rfl
         rfl
     | gnd _ =>
-        simp [matchAtoms, matchAtomsWith] at hmem ⊢
+        simp [matchAtoms, matchAtomsWith, Subst.occurs] at hmem ⊢
         rcases hmem with rfl
         rfl
-    | expr _ =>
-        simp [matchAtoms, matchAtomsWith] at hmem ⊢
+    | expr xs =>
+        have hvNot : v ∉ (Atom.expr xs).vars := by simp [hclosed]
+        have hfvNot : f v ∉ (Atom.expr xs).vars := by simp [hclosed]
+        have hocc : Subst.occurs v (Atom.expr xs) = false :=
+          occurs_eq_false_of_not_mem_vars v (Atom.expr xs) hvNot
+        have hfocc : Subst.occurs (f v) (Atom.expr xs) = false :=
+          occurs_eq_false_of_not_mem_vars (f v) (Atom.expr xs) hfvNot
+        simp [matchAtoms, matchAtomsWith, hocc, hfocc] at hmem ⊢
         rcases hmem with rfl
         rfl
   · intro g target b hclosed hmem
@@ -1877,21 +1925,21 @@ theorem matchAtoms_renBy_closed_target_mem (f : VarName → VarName) (hf : Funct
     | var _ =>
         simp [Atom.vars] at hclosed
     | sym _ =>
-        simp [matchAtoms, matchAtomsWith, BEq.beq, Atom.beq] at hmem
+        simp [matchAtoms, matchAtomsWith, Atom.equiv] at hmem
     | gnd _ =>
         simp [matchAtoms, matchAtomsWith, renBy] at hmem ⊢
         rcases hmem with ⟨hgg, rfl⟩
         exact ⟨hgg, rfl⟩
     | expr _ =>
-        simp [matchAtoms, matchAtomsWith, BEq.beq, Atom.beq] at hmem
+        simp [matchAtoms, matchAtomsWith, Atom.equiv] at hmem
   · intro xs ih target b hclosed hmem
     cases target with
     | var _ =>
         simp [Atom.vars] at hclosed
     | sym _ =>
-        simp [matchAtoms, matchAtomsWith, BEq.beq, Atom.beq] at hmem
+        simp [matchAtoms, matchAtomsWith, Atom.equiv] at hmem
     | gnd _ =>
-        simp [matchAtoms, matchAtomsWith, BEq.beq, Atom.beq] at hmem
+        simp [matchAtoms, matchAtomsWith, Atom.equiv] at hmem
     | expr ys =>
         simp only [matchAtoms, matchAtomsWith, renBy_expr]
         simp only [matchAtoms, matchAtomsWith] at hmem

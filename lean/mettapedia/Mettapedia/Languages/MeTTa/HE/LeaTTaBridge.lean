@@ -34,6 +34,7 @@ What is intentionally deferred:
 namespace Mettapedia.Languages.MeTTa.HE.LeaTTaBridge
 
 open Mettapedia.Languages.MeTTa.OSLFCore
+open Mettapedia.Languages.MeTTa.LeaTTa.EvaluatorCorrectness.QueryOpBridge
 
 /-- Translate HE grounded payloads into LeaTTa grounded payloads.
 
@@ -78,6 +79,39 @@ def toLeaTTaAtoms : List Atom → List Metta.Atom
   | a :: as => toLeaTTaAtom a :: toLeaTTaAtoms as
 
 end
+
+@[simp] private theorem substOccurs_symbol (v s : String) :
+    Metta.Subst.occurs v (Metta.Atom.sym s) = false := by
+  simp [Metta.Subst.occurs]
+
+@[simp] private theorem substOccurs_grounded (v : String) (g : Metta.Ground) :
+    Metta.Subst.occurs v (Metta.Atom.gnd g) = false := by
+  simp [Metta.Subst.occurs]
+
+private theorem toLeaTTaGround_equiv_self (g : GroundedValue) :
+    Metta.Ground.equiv (toLeaTTaGround g) (toLeaTTaGround g) = true := by
+  cases g with
+  | int n =>
+      change (Metta.Ground.int n == Metta.Ground.int n) = true
+      change (n == n) = true
+      exact beq_self_eq_true n
+  | string s =>
+      change (Metta.Ground.str s == Metta.Ground.str s) = true
+      change (s == s) = true
+      exact beq_self_eq_true s
+  | bool b =>
+      change (Metta.Ground.bool b == Metta.Ground.bool b) = true
+      change (b == b) = true
+      exact beq_self_eq_true b
+  | custom typeName payload =>
+      change (Metta.Ground.external typeName payload ==
+        Metta.Ground.external typeName payload) = true
+      change ((typeName == typeName) && (payload == payload)) = true
+      simp
+
+private theorem toLeaTTaAtom_grounded_equiv_self (g : GroundedValue) :
+    Metta.Atom.equiv (toLeaTTaAtom (.grounded g)) (toLeaTTaAtom (.grounded g)) = true := by
+  simpa [toLeaTTaAtom, Metta.Atom.equiv] using toLeaTTaGround_equiv_self g
 
 /-- Translate an HE space into a LeaTTa space by translating its atom list. -/
 def toLeaTTaSpace (space : Space) : Metta.Space :=
@@ -1126,6 +1160,7 @@ private theorem simpleMatch_var_seeded_lookup_bridge_of_ne_self
     {target : Atom} {b qb : Bindings} {lb : Metta.Bindings} {v : String} {fuel : Nat}
     (_hkeys : AssignmentsNodup b) (hseed : LeaLookupExt b lb)
     (hnotself : target ≠ .var v)
+    (hoccurs : v ∉ (toLeaTTaAtom target).vars)
     (hmatch : simpleMatch (.var v) target b fuel = some qb) :
     ∃ lb',
       lb' ∈ (Metta.matchAtoms (.var v) (toLeaTTaAtom target)).flatMap
@@ -1135,6 +1170,8 @@ private theorem simpleMatch_var_seeded_lookup_bridge_of_ne_self
   | zero =>
       simp [simpleMatch] at hmatch
   | succ n =>
+      have hoccursEq : Metta.Subst.occurs v (toLeaTTaAtom target) = false :=
+        occurs_eq_false_of_not_mem_vars v (toLeaTTaAtom target) hoccurs
       cases hlook : b.lookup v with
       | none =>
           simp [simpleMatch, hlook] at hmatch
@@ -1175,12 +1212,15 @@ private theorem simpleMatch_var_seeded_lookup_bridge_of_ne_self
                   simp
               · exact LeaLookupExt.addValRaw_of_lookup_none hseed hlook
           | expression es =>
+              have hoccursExpr :
+                  Metta.Subst.occurs v (Metta.Atom.expr (toLeaTTaAtoms es)) = false := by
+                simpa [toLeaTTaAtom] using hoccursEq
               have hlbnone : Metta.Bindings.lookupVal lb v = none := by
                 simpa [hlook] using hseed v
               refine ⟨Metta.Bindings.addValRaw lb v (Metta.Atom.expr (toLeaTTaAtoms es)), ?_, ?_⟩
               · refine List.mem_flatMap.mpr ?_
                 refine ⟨[Metta.BindingRel.val v (Metta.Atom.expr (toLeaTTaAtoms es))], ?_, ?_⟩
-                · simp [Metta.matchAtoms, Metta.matchAtomsWith, toLeaTTaAtom]
+                · simp [Metta.matchAtoms, Metta.matchAtomsWith, toLeaTTaAtom, hoccursExpr]
                 · rw [merge_singleton_val_of_lookup_none_ext hlbnone]
                   simp
               · exact LeaLookupExt.addValRaw_of_lookup_none hseed hlook
@@ -1227,12 +1267,15 @@ private theorem simpleMatch_var_seeded_lookup_bridge_of_ne_self
                 · rw [merge_singleton_val_of_lookup_some_eq_ext hlb (toLeaTTaAtom_beq_self (.grounded g))]
                   simp
             | expression es =>
+                have hoccursExpr :
+                    Metta.Subst.occurs v (Metta.Atom.expr (toLeaTTaAtoms es)) = false := by
+                  simpa [toLeaTTaAtom] using hoccursEq
                 have hlb : Metta.Bindings.lookupVal lb v = some (Metta.Atom.expr (toLeaTTaAtoms es)) := by
                   simpa [hlook, toLeaTTaAtom] using hseed v
                 refine ⟨lb, ?_, hseed⟩
                 refine List.mem_flatMap.mpr ?_
                 refine ⟨[Metta.BindingRel.val v (Metta.Atom.expr (toLeaTTaAtoms es))], ?_, ?_⟩
-                · simp [Metta.matchAtoms, Metta.matchAtomsWith, toLeaTTaAtom]
+                · simp [Metta.matchAtoms, Metta.matchAtomsWith, toLeaTTaAtom, hoccursExpr]
                 · rw [merge_singleton_val_of_lookup_some_eq_ext hlb
                     (toLeaTTaAtom_beq_self (.expression es))]
                   simp
@@ -1293,8 +1336,9 @@ private theorem simpleMatch_grounded_seeded_lookup_bridge
             refine List.mem_flatMap.mpr ?_
             refine ⟨[], ?_, ?_⟩
             · have hself :
-                  (Metta.Atom.gnd (toLeaTTaGround g) == Metta.Atom.gnd (toLeaTTaGround g)) = true := by
-                  simpa [toLeaTTaAtom] using toLeaTTaAtom_beq_self (.grounded g)
+                  Metta.Atom.equiv (Metta.Atom.gnd (toLeaTTaGround g))
+                    (Metta.Atom.gnd (toLeaTTaGround g)) = true := by
+                  simpa [toLeaTTaAtom] using toLeaTTaAtom_grounded_equiv_self g
               simp [Metta.matchAtoms, Metta.matchAtomsWith, toLeaTTaAtom, hself]
             · rw [merge_empty_right]
               simp
@@ -1315,6 +1359,10 @@ private def AtomVarsDisjoint (pattern target : Atom) (fuel : Nat) : Prop :=
 
 private def ListVarsDisjoint (ps ts : List Atom) (fuel : Nat) : Prop :=
   ∀ v, v ∈ listVars ps fuel → v ∉ listVars ts fuel
+
+/-- The v1.0.8 matcher occurs-check boundary for a variable-shaped HE pattern. -/
+private def VarPatternTargetOccursFree (pattern target : Atom) : Prop :=
+  ∀ v, pattern = .var v → v ∉ (toLeaTTaAtom target).vars
 
 @[simp] private theorem listVars_nil (fuel : Nat) :
     listVars [] fuel = [] := rfl
@@ -1442,12 +1490,13 @@ private theorem simpleMatch_leaf_seeded_lookup_bridge_disjoint :
         LeaLookupExt b lb →
         (¬ ∃ ps, pattern = .expression ps) →
         AtomVarsDisjoint pattern target fuel →
+        VarPatternTargetOccursFree pattern target →
         simpleMatch pattern target b fuel = some qb →
           ∃ lb',
             lb' ∈ (Metta.matchAtoms (toLeaTTaAtom pattern) (toLeaTTaAtom target)).flatMap
               (fun mb => Metta.Bindings.merge lb mb) ∧
             LeaLookupExt qb lb' := by
-  intro fuel pattern target b qb lb hkeys hseed hnonexpr hdisj hmatch
+  intro fuel pattern target b qb lb hkeys hseed hnonexpr hdisj hoccurs hmatch
   cases pattern with
   | var v =>
       cases fuel with
@@ -1456,7 +1505,7 @@ private theorem simpleMatch_leaf_seeded_lookup_bridge_disjoint :
       | succ n =>
           exact
             simpleMatch_var_seeded_lookup_bridge_of_ne_self hkeys hseed
-              (atomVarsDisjoint_var_ne_self hdisj) hmatch
+              (atomVarsDisjoint_var_ne_self hdisj) (hoccurs v rfl) hmatch
   | symbol s =>
       exact simpleMatch_symbol_seeded_lookup_bridge hkeys hseed hmatch
   | grounded g =>
@@ -1475,17 +1524,20 @@ private theorem simpleMatch_leaf_seeded_exact_bridge_disjoint :
         AssignmentsNodup b →
         (¬ ∃ ps, pattern = .expression ps) →
         AtomVarsDisjoint pattern target fuel →
+        VarPatternTargetOccursFree pattern target →
         simpleMatch pattern target b fuel = some qb →
           toLeaTTaMatchBindings qb ∈
             (Metta.matchAtoms (toLeaTTaAtom pattern) (toLeaTTaAtom target)).flatMap
               (fun mb => Metta.Bindings.merge (toLeaTTaMatchBindings b) mb) := by
-  intro fuel pattern target b qb hkeys hnonexpr hdisj hmatch
+  intro fuel pattern target b qb hkeys hnonexpr hdisj hoccurs hmatch
   cases pattern with
   | var v =>
       cases fuel with
       | zero =>
           simp [simpleMatch] at hmatch
       | succ n =>
+          have hoccursEq : Metta.Subst.occurs v (toLeaTTaAtom target) = false :=
+            occurs_eq_false_of_not_mem_vars v (toLeaTTaAtom target) (hoccurs v rfl)
           cases hlook : b.lookup v with
           | none =>
               simp [simpleMatch, hlook] at hmatch
@@ -1534,9 +1586,12 @@ private theorem simpleMatch_leaf_seeded_exact_bridge_disjoint :
                             (b := b) (v := v) (val := .grounded g) hkeys hlook)]
                     simp
               | expression es =>
+                  have hoccursExpr :
+                      Metta.Subst.occurs v (Metta.Atom.expr (toLeaTTaAtoms es)) = false := by
+                    simpa [toLeaTTaAtom] using hoccursEq
                   refine List.mem_flatMap.mpr ?_
                   refine ⟨[Metta.BindingRel.val v (.expr (toLeaTTaAtoms es))], ?_, ?_⟩
-                  · simp [Metta.matchAtoms, Metta.matchAtomsWith, toLeaTTaAtom]
+                  · simp [Metta.matchAtoms, Metta.matchAtomsWith, toLeaTTaAtom, hoccursExpr]
                   · rw [show
                         Metta.Bindings.merge (toLeaTTaMatchBindings b)
                           [Metta.BindingRel.val v (.expr (toLeaTTaAtoms es))] =
@@ -1596,9 +1651,12 @@ private theorem simpleMatch_leaf_seeded_exact_bridge_disjoint :
                               (b := b) (v := v) (val := .grounded g) hkeys hlook)]
                       simp
                 | expression es =>
+                    have hoccursExpr :
+                        Metta.Subst.occurs v (Metta.Atom.expr (toLeaTTaAtoms es)) = false := by
+                      simpa [toLeaTTaAtom] using hoccursEq
                     refine List.mem_flatMap.mpr ?_
                     refine ⟨[Metta.BindingRel.val v (.expr (toLeaTTaAtoms es))], ?_, ?_⟩
-                    · simp [Metta.matchAtoms, Metta.matchAtomsWith, toLeaTTaAtom]
+                    · simp [Metta.matchAtoms, Metta.matchAtomsWith, toLeaTTaAtom, hoccursExpr]
                     · rw [show
                           Metta.Bindings.merge (toLeaTTaMatchBindings b)
                             [Metta.BindingRel.val v (.expr (toLeaTTaAtoms es))] =
@@ -1645,8 +1703,9 @@ private theorem simpleMatch_leaf_seeded_exact_bridge_disjoint :
                 refine List.mem_flatMap.mpr ?_
                 refine ⟨[], ?_, ?_⟩
                 · have hself :
-                    (Metta.Atom.gnd (toLeaTTaGround g) == Metta.Atom.gnd (toLeaTTaGround g)) = true := by
-                    simpa [toLeaTTaAtom] using toLeaTTaAtom_beq_self (.grounded g)
+                    Metta.Atom.equiv (Metta.Atom.gnd (toLeaTTaGround g))
+                      (Metta.Atom.gnd (toLeaTTaGround g)) = true := by
+                    simpa [toLeaTTaAtom] using toLeaTTaAtom_grounded_equiv_self g
                   simp [Metta.matchAtoms, Metta.matchAtomsWith, toLeaTTaAtom, hself]
                 · rw [merge_empty_right]
                   simp
@@ -1671,17 +1730,20 @@ private theorem simpleMatch_leaf_seeded_exact_bridge_noVar :
         AssignmentsNodup b →
         NoVarAssignmentValues qb →
         (¬ ∃ ps, pattern = .expression ps) →
+        VarPatternTargetOccursFree pattern target →
         simpleMatch pattern target b fuel = some qb →
           toLeaTTaMatchBindings qb ∈
             (Metta.matchAtoms (toLeaTTaAtom pattern) (toLeaTTaAtom target)).flatMap
               (fun mb => Metta.Bindings.merge (toLeaTTaMatchBindings b) mb) := by
-  intro fuel pattern target b qb hkeys hno hnonexpr hmatch
+  intro fuel pattern target b qb hkeys hno hnonexpr hoccurs hmatch
   cases pattern with
   | var v =>
       cases fuel with
       | zero =>
           simp [simpleMatch] at hmatch
       | succ n =>
+          have hoccursEq : Metta.Subst.occurs v (toLeaTTaAtom target) = false :=
+            occurs_eq_false_of_not_mem_vars v (toLeaTTaAtom target) (hoccurs v rfl)
           cases hlook : b.lookup v with
           | none =>
               simp [simpleMatch, hlook] at hmatch
@@ -1717,9 +1779,12 @@ private theorem simpleMatch_leaf_seeded_exact_bridge_noVar :
                             (b := b) (v := v) (val := .grounded g) hkeys hlook)]
                     simp
               | expression es =>
+                  have hoccursExpr :
+                      Metta.Subst.occurs v (Metta.Atom.expr (toLeaTTaAtoms es)) = false := by
+                    simpa [toLeaTTaAtom] using hoccursEq
                   refine List.mem_flatMap.mpr ?_
                   refine ⟨[Metta.BindingRel.val v (.expr (toLeaTTaAtoms es))], ?_, ?_⟩
-                  · simp [Metta.matchAtoms, Metta.matchAtomsWith, toLeaTTaAtom]
+                  · simp [Metta.matchAtoms, Metta.matchAtomsWith, toLeaTTaAtom, hoccursExpr]
                   · rw [show
                         Metta.Bindings.merge (toLeaTTaMatchBindings b)
                           [Metta.BindingRel.val v (.expr (toLeaTTaAtoms es))] =
@@ -1761,9 +1826,12 @@ private theorem simpleMatch_leaf_seeded_exact_bridge_noVar :
                               (b := b) (v := v) (val := .grounded g) hkeys hlook)]
                       simp
                 | expression es =>
+                    have hoccursExpr :
+                        Metta.Subst.occurs v (Metta.Atom.expr (toLeaTTaAtoms es)) = false := by
+                      simpa [toLeaTTaAtom] using hoccursEq
                     refine List.mem_flatMap.mpr ?_
                     refine ⟨[Metta.BindingRel.val v (.expr (toLeaTTaAtoms es))], ?_, ?_⟩
-                    · simp [Metta.matchAtoms, Metta.matchAtomsWith, toLeaTTaAtom]
+                    · simp [Metta.matchAtoms, Metta.matchAtomsWith, toLeaTTaAtom, hoccursExpr]
                     · rw [show
                           Metta.Bindings.merge (toLeaTTaMatchBindings b)
                             [Metta.BindingRel.val v (.expr (toLeaTTaAtoms es))] =
@@ -1810,8 +1878,9 @@ private theorem simpleMatch_leaf_seeded_exact_bridge_noVar :
                 refine List.mem_flatMap.mpr ?_
                 refine ⟨[], ?_, ?_⟩
                 · have hself :
-                    (Metta.Atom.gnd (toLeaTTaGround g) == Metta.Atom.gnd (toLeaTTaGround g)) = true := by
-                    simpa [toLeaTTaAtom] using toLeaTTaAtom_beq_self (.grounded g)
+                    Metta.Atom.equiv (Metta.Atom.gnd (toLeaTTaGround g))
+                      (Metta.Atom.gnd (toLeaTTaGround g)) = true := by
+                    simpa [toLeaTTaAtom] using toLeaTTaAtom_grounded_equiv_self g
                   simp [Metta.matchAtoms, Metta.matchAtomsWith, toLeaTTaAtom, hself]
                 · rw [merge_empty_right]
                   simp
@@ -1837,12 +1906,13 @@ private theorem simpleMatch_leaf_seeded_lookup_bridge_noVar :
         LeaLookupExt b lb →
         NoVarAssignmentValues qb →
         (¬ ∃ ps, pattern = .expression ps) →
+        VarPatternTargetOccursFree pattern target →
         simpleMatch pattern target b fuel = some qb →
           ∃ lb',
             lb' ∈ (Metta.matchAtoms (toLeaTTaAtom pattern) (toLeaTTaAtom target)).flatMap
               (fun mb => Metta.Bindings.merge lb mb) ∧
             LeaLookupExt qb lb' := by
-  intro fuel pattern target b qb lb hkeys hseed hno hnonexpr hmatch
+  intro fuel pattern target b qb lb hkeys hseed hno hnonexpr hoccurs hmatch
   cases pattern with
   | var v =>
       cases fuel with
@@ -1866,7 +1936,7 @@ private theorem simpleMatch_leaf_seeded_lookup_bridge_noVar :
                     simp [simpleMatch, hlook]
                   exact
                     simpleMatch_var_seeded_lookup_bridge_of_ne_self
-                      hkeys hseed (by simp) hmatch'
+                      hkeys hseed (by simp) (hoccurs v rfl) hmatch'
               | grounded g =>
                   have hmatch' :
                       simpleMatch (.var v) (.grounded g) b (Nat.succ n) =
@@ -1874,7 +1944,7 @@ private theorem simpleMatch_leaf_seeded_lookup_bridge_noVar :
                     simp [simpleMatch, hlook]
                   exact
                     simpleMatch_var_seeded_lookup_bridge_of_ne_self
-                      hkeys hseed (by simp) hmatch'
+                      hkeys hseed (by simp) (hoccurs v rfl) hmatch'
               | expression es =>
                   have hmatch' :
                       simpleMatch (.var v) (.expression es) b (Nat.succ n) =
@@ -1882,7 +1952,7 @@ private theorem simpleMatch_leaf_seeded_lookup_bridge_noVar :
                     simp [simpleMatch, hlook]
                   exact
                     simpleMatch_var_seeded_lookup_bridge_of_ne_self
-                      hkeys hseed (by simp) hmatch'
+                      hkeys hseed (by simp) (hoccurs v rfl) hmatch'
           | some existing =>
               by_cases hEq : existing = target
               · subst hEq
@@ -1897,21 +1967,21 @@ private theorem simpleMatch_leaf_seeded_lookup_bridge_noVar :
                       simp [simpleMatch, hlook]
                     exact
                       simpleMatch_var_seeded_lookup_bridge_of_ne_self
-                        hkeys hseed (by simp) hmatch'
+                        hkeys hseed (by simp) (hoccurs v rfl) hmatch'
                 | grounded g =>
                     have hmatch' :
                         simpleMatch (.var v) (.grounded g) b (Nat.succ n) = some b := by
                       simp [simpleMatch, hlook]
                     exact
                       simpleMatch_var_seeded_lookup_bridge_of_ne_self
-                        hkeys hseed (by simp) hmatch'
+                        hkeys hseed (by simp) (hoccurs v rfl) hmatch'
                 | expression es =>
                     have hmatch' :
                         simpleMatch (.var v) (.expression es) b (Nat.succ n) = some b := by
                       simp [simpleMatch, hlook]
                     exact
                       simpleMatch_var_seeded_lookup_bridge_of_ne_self
-                        hkeys hseed (by simp) hmatch'
+                        hkeys hseed (by simp) (hoccurs v rfl) hmatch'
               · simp [simpleMatch, hlook, hEq] at hmatch
   | symbol s =>
       exact simpleMatch_symbol_seeded_lookup_bridge hkeys hseed hmatch
@@ -3076,8 +3146,8 @@ private theorem simpleMatch_ground_empty_exact :
                   simp [simpleMatch] at hmatch
                   subst qb
                   refine ⟨rfl, ?_⟩
-                  simpa [Metta.Bindings.empty, Metta.matchAtoms, Metta.matchAtomsWith, toLeaTTaAtom] using
-                    (toLeaTTaAtom_beq_self (.grounded g))
+                  simpa [Metta.Bindings.empty, Metta.matchAtoms, Metta.matchAtomsWith,
+                    toLeaTTaAtom] using toLeaTTaAtom_grounded_equiv_self g
                 · simp [simpleMatch, hgh] at hmatch
             | var v =>
                 simp [simpleMatch] at hmatch
@@ -6403,6 +6473,10 @@ theorem leattaMatchAtoms_ground_var_exact
     {target : Atom} (v : String) (hground : GroundAtom target) :
     Metta.matchAtoms (toLeaTTaAtom target) (toLeaTTaAtom (.var v)) =
       [[Metta.BindingRel.val v (toLeaTTaAtom target)]] := by
+  have hoccurs : Metta.Subst.occurs v (toLeaTTaAtom target) = false :=
+    occurs_eq_false_of_not_mem_vars v (toLeaTTaAtom target) (by
+      rw [toLeaTTaAtom_vars_nil_of_ground hground]
+      simp)
   cases target with
   | var w =>
       exact (GroundAtom.not_var hground).elim
@@ -6411,7 +6485,10 @@ theorem leattaMatchAtoms_ground_var_exact
   | grounded g =>
       simp [Metta.matchAtoms, Metta.matchAtomsWith, toLeaTTaAtom]
   | expression es =>
-      simp [Metta.matchAtoms, Metta.matchAtomsWith, toLeaTTaAtom]
+      have hoccursExpr :
+          Metta.Subst.occurs v (Metta.Atom.expr (toLeaTTaAtoms es)) = false := by
+        simpa [toLeaTTaAtom] using hoccurs
+      simp [Metta.matchAtoms, Metta.matchAtomsWith, toLeaTTaAtom, hoccursExpr]
 
 /-- Primitive `unify` success on the ground-target/variable-pattern fragment:
 all HE and LeaTTa matcher/merge witnesses are derived from the official

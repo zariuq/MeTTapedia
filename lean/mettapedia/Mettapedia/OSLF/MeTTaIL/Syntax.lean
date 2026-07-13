@@ -1101,6 +1101,84 @@ private def validatePremises (ctx : String) (knownRelations : List String) (prem
       else
         [mkValidationError ctx s!"unknown relation `{rel}`"]
 
+/-- Free (unshadowed) fvar names of a pattern. -/
+private def patternFvarNames (bound : List String) : Pattern → List String
+  | .bvar _ => []
+  | .fvar n => if bound.contains n then [] else [n]
+  | .apply _ args => args.attach.flatMap (fun ⟨q, _⟩ => patternFvarNames bound q)
+  | .lambda b body =>
+      patternFvarNames (match b with | some n => n :: bound | none => bound) body
+  | .multiLambda _ bs body => patternFvarNames (bs ++ bound) body
+  | .subst a b => patternFvarNames bound a ++ patternFvarNames bound b
+  | .collection _ elems _ =>
+      elems.attach.flatMap (fun ⟨q, _⟩ => patternFvarNames bound q)
+
+/-- Binder names introduced anywhere in a pattern. -/
+private def patternBinderNames : Pattern → List String
+  | .bvar _ => []
+  | .fvar _ => []
+  | .apply _ args => args.attach.flatMap (fun ⟨q, _⟩ => patternBinderNames q)
+  | .lambda b body =>
+      (match b with | some n => [n] | none => []) ++ patternBinderNames body
+  | .multiLambda _ bs body => bs ++ patternBinderNames body
+  | .subst a b => patternBinderNames a ++ patternBinderNames b
+  | .collection _ elems _ =>
+      elems.attach.flatMap (fun ⟨q, _⟩ => patternBinderNames q)
+
+private def premisePatterns : Premise → List Pattern
+  | .freshness fc => [fc.term]
+  | .congruence l r => [l, r]
+  | .relationQuery _ args => args
+  | .forAll _ _ p => premisePatterns p
+
+private def premiseForAllParams : Premise → List String
+  | .forAll x _ p => x :: premiseForAllParams p
+  | _ => []
+
+/-- Anti-wildcard checks on one rule-shaped item (rewrite or equation):
+(f) a free pattern variable sharing a name with ANY declared constructor label
+    is a silent wildcard / arity misuse / typo — error;
+(b) a binder or forAll-param named like a declared label is ambiguous
+    authorship — error;
+(d) a typeContext name colliding with a declared label — error;
+(dangling) a right-hand-side variable bound neither on the left, by a premise
+    pattern, nor naming a constructor leaks into outputs as a free atom — error. -/
+private def validateRulePatterns
+    (ctx : String) (knownConstructors : List String)
+    (typeContext : List (String × TypeExpr)) (premises : List Premise)
+    (left right : Pattern) : List ValidationError :=
+  let premPats := premises.flatMap premisePatterns
+  let labelCollisions :=
+    ((patternFvarNames [] left ++ patternFvarNames [] right ++
+        premPats.flatMap (patternFvarNames [])).eraseDups).flatMap fun n =>
+      if knownConstructors.contains n then
+        [mkValidationError ctx
+          s!"pattern variable `{n}` collides with declared constructor label `{n}` (silent wildcard)"]
+      else []
+  let binderCollisions :=
+    ((patternBinderNames left ++ patternBinderNames right ++
+        premPats.flatMap patternBinderNames ++
+        premises.flatMap premiseForAllParams).eraseDups).flatMap fun n =>
+      if knownConstructors.contains n then
+        [mkValidationError ctx
+          s!"binder `{n}` shadows declared constructor label `{n}`"]
+      else []
+  let ctxCollisions :=
+    typeContext.filterMap fun (n, _) =>
+      if knownConstructors.contains n then
+        some (mkValidationError ctx
+          s!"typeContext declares `{n}` which is also a constructor label")
+      else none
+  let boundByLeftOrPremises :=
+    patternFvarNames [] left ++ premPats.flatMap (patternFvarNames [])
+  let dangling :=
+    ((patternFvarNames [] right).eraseDups).flatMap fun n =>
+      if boundByLeftOrPremises.contains n || knownConstructors.contains n then []
+      else
+        [mkValidationError ctx
+          s!"right-hand side variable `{n}` is bound neither on the left nor by a premise"]
+  labelCollisions ++ binderCollisions ++ ctxCollisions ++ dangling
+
 /-- Generic semantic validation for an authored `LanguageDef`.
     This complements macro-time parsing checks with cross-reference checks on
     types, constructor names, relation names, and syntax-parameter usage. -/
@@ -1146,7 +1224,11 @@ def validate (lang : LanguageDef) : List ValidationError :=
       let premiseErrs := validatePremises ctx knownRelations eqn.premises
       let lhsCtorErrs := validatePatternConstructors (ctx ++ " lhs") knownConstructors checkConstructors eqn.left
       let rhsCtorErrs := validatePatternConstructors (ctx ++ " rhs") knownConstructors checkConstructors eqn.right
-      ctxTypeErrs ++ premiseErrs ++ lhsCtorErrs ++ rhsCtorErrs
+      let wildcardErrs :=
+        if checkConstructors then
+          validateRulePatterns ctx knownConstructors eqn.typeContext eqn.premises eqn.left eqn.right
+        else []
+      ctxTypeErrs ++ premiseErrs ++ lhsCtorErrs ++ rhsCtorErrs ++ wildcardErrs
   let rewriteErrs :=
     lang.rewrites.flatMap fun rw =>
       let ctx := s!"rewrite {rw.name}"
@@ -1154,7 +1236,11 @@ def validate (lang : LanguageDef) : List ValidationError :=
       let premiseErrs := validatePremises ctx knownRelations rw.premises
       let lhsCtorErrs := validatePatternConstructors (ctx ++ " lhs") knownConstructors checkConstructors rw.left
       let rhsCtorErrs := validatePatternConstructors (ctx ++ " rhs") knownConstructors checkConstructors rw.right
-      ctxTypeErrs ++ premiseErrs ++ lhsCtorErrs ++ rhsCtorErrs
+      let wildcardErrs :=
+        if checkConstructors then
+          validateRulePatterns ctx knownConstructors rw.typeContext rw.premises rw.left rw.right
+        else []
+      ctxTypeErrs ++ premiseErrs ++ lhsCtorErrs ++ rhsCtorErrs ++ wildcardErrs
   let logicTypeErrs :=
     lang.logic.flatMap fun decl =>
       match decl with
@@ -1270,5 +1356,209 @@ def rhoCalcSetExt : LanguageDef :=
   { rhoCalc with
       name := "RhoCalcSetExt"
       congruenceCollections := [.hashBag, .hashSet] }
+
+/-! ## Nullary-constructor resolution in authored patterns
+
+The `languageDef!` surface lets rewrite/equation/premise patterns mention
+declared NULLARY constructors by bare name (`KDone`, `BlockEmpty`, …). The
+pattern elaborator, however, renders every bare identifier as `Pattern.fvar` —
+a match-anything pattern variable on a LHS, a free atom on a RHS. That
+silently turns every nullary-constructor mention into a wildcard
+(probe-verified on `metamathCore`, 2026-07-09: `ReturnDbDone`'s `KDone`
+matched every kont and the compile machine dropped statements). This pass
+restores the intended reading: an `.fvar n` whose name is the label of a
+declared zero-parameter grammar rule becomes the nullary application
+`.apply n []`, uniformly in rewrite rules (both sides), equations, and
+premise patterns. Names that are NOT nullary labels (tokens, genuine pattern
+variables) are untouched.
+
+The `languageDef!` macro applies this pass to every value it builds.
+Programmatically-constructed `LanguageDef`s (explicit `.apply` patterns) are
+unaffected by construction; the pass is idempotent (`resolveNullary_idem`). -/
+
+mutual
+
+def Pattern.resolveNullary (ls bound : List String) : Pattern → Pattern
+  | .bvar k => .bvar k
+  | .fvar n =>
+      if ls.contains n && !(bound.contains n) then .apply n [] else .fvar n
+  | .apply c args => .apply c (Pattern.resolveNullaryList ls bound args)
+  | .lambda b body =>
+      .lambda b (Pattern.resolveNullary ls
+        (match b with | some n => n :: bound | none => bound) body)
+  | .multiLambda k bs body =>
+      .multiLambda k bs (Pattern.resolveNullary ls (bs ++ bound) body)
+  | .subst a b =>
+      .subst (Pattern.resolveNullary ls bound a) (Pattern.resolveNullary ls bound b)
+  | .collection ct elems rest =>
+      .collection ct (Pattern.resolveNullaryList ls bound elems) rest
+
+def Pattern.resolveNullaryList (ls bound : List String) : List Pattern → List Pattern
+  | [] => []
+  | p :: r =>
+      Pattern.resolveNullary ls bound p :: Pattern.resolveNullaryList ls bound r
+
+end
+
+def Premise.resolveNullary (ls bound : List String) : Premise → Premise
+  | .freshness fc => .freshness fc
+  | .congruence l r =>
+      .congruence (l.resolveNullary ls bound) (r.resolveNullary ls bound)
+  | .relationQuery rel args =>
+      .relationQuery rel (Pattern.resolveNullaryList ls bound args)
+  | .forAll x s p => .forAll x s (Premise.resolveNullary ls (x :: bound) p)
+
+def RewriteRule.resolveNullary (ls : List String) (r : RewriteRule) : RewriteRule :=
+  { r with
+      premises := r.premises.map (Premise.resolveNullary ls [])
+      left := r.left.resolveNullary ls []
+      right := r.right.resolveNullary ls [] }
+
+def Equation.resolveNullary (ls : List String) (e : Equation) : Equation :=
+  { e with
+      premises := e.premises.map (Premise.resolveNullary ls [])
+      left := e.left.resolveNullary ls []
+      right := e.right.resolveNullary ls [] }
+
+namespace LanguageDef
+
+/-- Labels of declared zero-parameter constructors. -/
+def nullaryLabels (lang : LanguageDef) : List String :=
+  lang.terms.filterMap (fun r => if r.params.isEmpty then some r.label else none)
+
+/-- Worker with an explicit label set — indexed families sharing `terms`
+resolve with a FIXED set, so monotonicity lemmas survive resolution verbatim. -/
+def resolveNullaryWith (ls : List String) (lang : LanguageDef) : LanguageDef :=
+  { lang with
+      rewrites := lang.rewrites.map (RewriteRule.resolveNullary ls)
+      equations := lang.equations.map (Equation.resolveNullary ls) }
+
+/-- Resolve bare nullary-constructor names in all authored patterns.
+
+NAMED THEOREM TARGET (match-semantics correspondence — formulation pinned
+2026-07-09, dual-seat-confirmed, not yet proved): naked inclusion
+`DeclReduces (resolve L) ⊆ DeclReduces L` is FALSE — an RHS-only nullary
+mention changes the OUTPUT term. The confirmed package, with
+`resolveTerm := Pattern.resolveNullary (nullaryLabels L) []` and `p` called
+SATURATED when `resolveTerm p = p`:
+(backward) for saturated `p`, `DeclReduces (resolve L) p q →
+  ∃ q₀, DeclReduces L p q₀ ∧ resolveTerm q₀ = q`;
+(forward, intended instances) an `L`-step whose match and premise solutions
+  assign every nullary pseudo-variable its constant maps to a
+  `resolve L`-step between the resolved endpoints;
+(closure) `resolveTerm` is idempotent, so the saturated fragment is
+  `resolve L`-closed and `resolveTerm` is a functional bisimulation
+  (a P_ω-coalgebra homomorphism) between `L`-on-intended-matches and
+  `resolve L`. -/
+def resolveNullaryPatterns (lang : LanguageDef) : LanguageDef :=
+  resolveNullaryWith lang.nullaryLabels lang
+
+end LanguageDef
+
+/-- Diagnostic (sweep aid): the fvar names in authored rewrite/equation
+patterns that collide with nullary-constructor labels in resolvable (unshadowed)
+positions — exactly what `resolveNullaryPatterns` rewrites. -/
+def LanguageDef.nullaryFvarCollisions (lang : LanguageDef) : List String :=
+  let ls := lang.nullaryLabels
+  let rec patNames (bound : List String) : Pattern → List String
+    | .bvar _ => []
+    | .fvar n => if ls.contains n && !(bound.contains n) then [n] else []
+    | .apply _ args => args.attach.flatMap (fun ⟨p, _⟩ => patNames bound p)
+    | .lambda b body =>
+        patNames (match b with | some n => n :: bound | none => bound) body
+    | .multiLambda _ bs body => patNames (bs ++ bound) body
+    | .subst a b => patNames bound a ++ patNames bound b
+    | .collection _ elems _ => elems.attach.flatMap (fun ⟨p, _⟩ => patNames bound p)
+  ((lang.rewrites.flatMap (fun r => patNames [] r.left ++ patNames [] r.right)) ++
+    (lang.equations.flatMap (fun e => patNames [] e.left ++ patNames [] e.right))).eraseDups
+
+mutual
+
+theorem Pattern.resolveNullary_idem (ls bound : List String) (p : Pattern) :
+    Pattern.resolveNullary ls bound (Pattern.resolveNullary ls bound p)
+      = Pattern.resolveNullary ls bound p := by
+  cases p with
+  | bvar k => rfl
+  | fvar n =>
+      by_cases h : ls.contains n && !(bound.contains n)
+      · simp only [Pattern.resolveNullary, if_pos h, Pattern.resolveNullaryList]
+      · simp only [Pattern.resolveNullary, if_neg h]
+  | apply c args =>
+      simp [Pattern.resolveNullary, Pattern.resolveNullaryList_idem ls bound args]
+  | lambda b body =>
+      simp [Pattern.resolveNullary, Pattern.resolveNullary_idem ls _ body]
+  | multiLambda k bs body =>
+      simp [Pattern.resolveNullary, Pattern.resolveNullary_idem ls _ body]
+  | subst a b =>
+      simp [Pattern.resolveNullary, Pattern.resolveNullary_idem ls bound a,
+        Pattern.resolveNullary_idem ls bound b]
+  | collection ct elems rest =>
+      simp [Pattern.resolveNullary, Pattern.resolveNullaryList_idem ls bound elems]
+
+theorem Pattern.resolveNullaryList_idem (ls bound : List String) (ps : List Pattern) :
+    Pattern.resolveNullaryList ls bound (Pattern.resolveNullaryList ls bound ps)
+      = Pattern.resolveNullaryList ls bound ps := by
+  cases ps with
+  | nil => rfl
+  | cons p r =>
+      simp [Pattern.resolveNullaryList, Pattern.resolveNullary_idem ls bound p,
+        Pattern.resolveNullaryList_idem ls bound r]
+
+end
+
+/-! Shadow-set negative fixture (mandatory): a nullary constructor named `x`
+must NOT capture a binder-bound occurrence of `x` — the bound occurrence
+survives as `fvar` while an unshadowed occurrence resolves. -/
+section ResolveNullaryFixtures
+
+private def shadowToy : LanguageDef :=
+  { name := "ShadowToy"
+    types := [TypeDecl.plain "T"]
+    terms := [{ label := "x", category := "T", params := [],
+                syntaxPattern := [.terminal "x"] }]
+    equations := []
+    rewrites := [{ name := "r", typeContext := [], premises := []
+                   left := .lambda (some "x") (.fvar "x")
+                   right := .fvar "x" }] }
+
+-- bound occurrence under `^x.` survives; the RHS (unshadowed) occurrence resolves
+#guard decide ((shadowToy.resolveNullaryPatterns.rewrites.map (fun r => (r.left, r.right)))
+    = [(.lambda (some "x") (.fvar "x"), .apply "x" [])])
+
+-- idempotence, executably, on the fixture
+#guard decide
+    (shadowToy.resolveNullaryPatterns.resolveNullaryPatterns.rewrites.map
+        (fun r => (r.left, r.right))
+      = shadowToy.resolveNullaryPatterns.rewrites.map (fun r => (r.left, r.right)))
+
+-- validate-level negative fixtures: each anti-wildcard error class must fire
+private def wildToy (rw : RewriteRule) : LanguageDef :=
+  { name := "WildToy"
+    types := [TypeDecl.plain "T"]
+    terms := [{ label := "K", category := "T", params := [],
+                syntaxPattern := [.terminal "K"] },
+              { label := "F", category := "T",
+                params := [.simple "a" (.base "T")],
+                syntaxPattern := [.terminal "F", .nonTerminal "a"] }]
+    equations := []
+    rewrites := [rw] }
+
+-- (f) free pattern variable colliding with an arity-1 label F = silent wildcard
+#guard decide ((wildToy (RewriteRule.mk "r" [] []
+    (.apply "K" []) (.fvar "F"))).validate ≠ [])
+-- (b) binder shadowing a declared label
+#guard decide ((wildToy (RewriteRule.mk "r" [] []
+    (.lambda (some "K") (.bvar 0)) (.apply "K" []))).validate ≠ [])
+-- (d) typeContext colliding with a declared label
+#guard decide ((wildToy (RewriteRule.mk "r" [("K", .base "T")] []
+    (.apply "K" []) (.apply "K" []))).validate ≠ [])
+-- (dangling) RHS variable bound nowhere
+#guard decide ((wildToy (RewriteRule.mk "r" [] []
+    (.apply "K" []) (.fvar "ghost"))).validate ≠ [])
+-- and a fully-clean rule validates
+#guard decide ((wildToy (RewriteRule.mk "r" [] []
+    (.apply "F" [.fvar "x"]) (.fvar "x"))).validate = [])
+
+end ResolveNullaryFixtures
 
 end Mettapedia.OSLF.MeTTaIL.Syntax

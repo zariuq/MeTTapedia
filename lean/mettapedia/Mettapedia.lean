@@ -362,3 +362,8 @@ import Mettapedia.GSLT.Life.AssemblyTheory
 -- Replication fixed-point (depends on `RhoCalculus/DerivedRepNu`, repaired above).
 import Mettapedia.GSLT.Life.ReplicationFixedPoint
 import Mettapedia.GSLT.LanguageDef.HOLKernelProfiles
+import Mettapedia.Algebra.FootprintQuantale
+import Mettapedia.OSLF.Framework.GrammarDerives
+import Mettapedia.OSLF.MeTTaIL.ResolveNullaryIdentityGates
+import Mettapedia.Languages.Metamath.ExprDerive
+import Mettapedia.Languages.Metamath.Flatten

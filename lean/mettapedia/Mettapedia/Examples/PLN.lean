@@ -9,6 +9,7 @@ import Mettapedia.Examples.PLN.DependenceAwareChainComposition
 import Mettapedia.Examples.PLN.DiseaseAbductionCurriculum
 import Mettapedia.Examples.PLN.EstimatorEnvelopeCurriculum
 import Mettapedia.Examples.PLN.GJPForecastDemo
+import Mettapedia.Examples.PLN.GauthierSelectionCanary
 import Mettapedia.Examples.PLN.HOLExampleLadder
 import Mettapedia.Examples.PLN.HOLProbPLNExampleDemo
 import Mettapedia.Examples.PLN.KalmanSleepDemo
