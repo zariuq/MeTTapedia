@@ -282,7 +282,7 @@ inductive HESmallStep (space : Space) (d : GroundedDispatch) (fuel : Nat) :
       (h_not_grounded : HeadNotExecutable d (.expression es))
       (h_query : (rhs, qb) ∈ queryEquations space (.expression es) fuel)
       (h_no_loop : qb.hasLoop = false) :
-      HESmallStep space d fuel (.expression es) (qb.apply rhs fuel)
+      HESmallStep space d fuel (.expression es) (qb.applyFull rhs fuel)
   /-- `HES_LetStar`, empty-bindings case: `(let* () body)` steps to the body. -/
   | letStar_empty {es : List Atom} {body : Atom}
       (h_shape : es = [.symbol "let*", .expression [], body]) :
@@ -392,7 +392,7 @@ inductive HEEquationStepAgainstVisible
         queryEquationsAgainstVisible space (.expression es) fuel)
       (h_no_loop : qb.hasLoop = false) :
       HEEquationStepAgainstVisible space d fuel
-        (.expression es) (qb.apply rhs fuel)
+        (.expression es) (qb.applyFull rhs fuel)
 
 /-- Every repaired visible-avoid equation step exposes an avoid-aware equation
 redex. -/
@@ -413,7 +413,7 @@ theorem equationRedexAgainstVisible_exists_step
     ∃ b, HEEquationStepAgainstVisible space d fuel a b := by
   rcases h with ⟨⟨es, rfl⟩, h_not_special, h_not_grounded,
     ⟨⟨rhs, qb⟩, h_query, h_no_loop⟩⟩
-  exact ⟨qb.apply rhs fuel,
+  exact ⟨qb.applyFull rhs fuel,
     HEEquationStepAgainstVisible.equation_match
       h_not_special h_not_grounded h_query h_no_loop⟩
 
@@ -560,7 +560,7 @@ theorem exists_step_of_canStep {space : Space} {d : GroundedDispatch}
           exact ⟨r, ha ▸ HESmallStep.grounded_dispatch (ha ▸ hsf) h_exec h_run h_mem⟩
         · by_cases he : EquationRedex space d fuel a
           · obtain ⟨⟨es, rfl⟩, h_ns, h_not_grounded, ⟨rhs, qb⟩, h_mem, h_loop⟩ := he
-            exact ⟨qb.apply rhs fuel,
+            exact ⟨qb.applyFull rhs fuel,
                    HESmallStep.equation_match h_ns h_not_grounded h_mem h_loop⟩
           · cases h with
             | grounded _ hg' => exact absurd hg' hg

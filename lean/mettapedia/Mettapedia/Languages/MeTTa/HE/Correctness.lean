@@ -100,7 +100,7 @@ private theorem eqMatch_sound
                else (queryEquations space atom n).flatMap fun x =>
                  (mergeBindings x.2 b n).flatMap fun mb =>
                    if mb.hasLoop = true then []
-                   else evalAtom space dispatch (mb.apply x.1 n) type_ mb n)) :
+                   else evalAtom space dispatch (mb.applyFull x.1 n) type_ mb n)) :
     MettaCall space dispatch atom type_ b r := by
   split at hr
   · rename_i h_eqs
@@ -1326,7 +1326,7 @@ private inductive MettaCallSync (space : Space) (dispatch : GroundedDispatch) :
       (h_query : (rhs, queryBindings) ∈ queryEquations space atom n)
       (h_merge : merged ∈ mergeBindings queryBindings b n)
       (h_no_loop : merged.hasLoop = false)
-      (h_recurse : EvalAtomSync space dispatch n (merged.apply rhs n) type_ merged finalResult) :
+      (h_recurse : EvalAtomSync space dispatch n (merged.applyFull rhs n) type_ merged finalResult) :
       MettaCallSync space dispatch (n + 1) atom type_ b finalResult
   | no_match (n : Nat) (atom type_ : Atom) (b : Bindings)
       (h_not_error : isErrorAtom atom = false)
@@ -2903,7 +2903,7 @@ private theorem eqMatch_eval_to_sync
                else (queryEquations space atom n).flatMap fun x =>
                  (mergeBindings x.2 b n).flatMap fun mb =>
                    if mb.hasLoop = true then []
-                   else evalAtom space dispatch (mb.apply x.1 n) type_ mb n)) :
+                   else evalAtom space dispatch (mb.applyFull x.1 n) type_ mb n)) :
     MettaCallSync space dispatch (n + 1) atom type_ b r := by
   split at hr
   · rename_i h_eqs
@@ -3640,7 +3640,7 @@ private def MergeBindingsEventually (left right merged : Bindings) : Prop :=
   ∃ fuel0, ∀ fuel, fuel ≥ fuel0 → merged ∈ mergeBindings left right fuel
 
 private def ApplyStableEventually (b : Bindings) (rhs applied : Atom) : Prop :=
-  ∃ fuel0, ∀ fuel, fuel ≥ fuel0 → b.apply rhs fuel = applied
+  ∃ fuel0, ∀ fuel, fuel ≥ fuel0 → b.applyFull rhs fuel = applied
 
 private def CheckApplicableMemberEventually
     (space : Space) (expr funcType expectedType : Atom) (b b' : Bindings) : Prop :=
@@ -4432,7 +4432,7 @@ private theorem mettaCallAligned_eventually_to_sync_of_evalAtom_eventually
           have hn_eval : n ≥ fuelEval := by
             exact le_trans (Nat.le_max_right fuelApply fuelEval) <|
               le_trans (Nat.le_max_right (max fuelQuery fuelMerge) (max fuelApply fuelEval)) hn_fuel0
-          have h_apply_eq : merged.apply rhs n = applied := h_apply_stable n hn_apply
+          have h_apply_eq : merged.applyFull rhs n = applied := h_apply_stable n hn_apply
           exact MettaCallSync.equation_match n atom type_ b rhs queryBindings merged finalResult
             h_not_error h_not_grounded
             (h_query_eventual n hn_query)
@@ -5173,7 +5173,7 @@ private theorem mettaCallAligned_eventually_to_sync
           have hn_eval : n ≥ fuelEval := by
             exact le_trans (Nat.le_max_right fuelApply fuelEval) <|
               le_trans (Nat.le_max_right (max fuelQuery fuelMerge) (max fuelApply fuelEval)) hn_fuel0
-          have h_apply_eq : merged.apply rhs n = applied := h_apply_stable n hn_apply
+          have h_apply_eq : merged.applyFull rhs n = applied := h_apply_stable n hn_apply
           exact MettaCallSync.equation_match n atom type_ b rhs queryBindings merged finalResult
             h_not_error h_not_grounded
             (h_query_eventual n hn_query)
@@ -5483,7 +5483,7 @@ private theorem mettaCallAligned_to_MettaCall
       have h_merge : merged ∈ mergeBindings queryBindings b fuel0 := by
         exact h_merge_eventual fuel0 <|
           le_trans (Nat.le_max_right fuelQuery fuelMerge) (Nat.le_max_left (max fuelQuery fuelMerge) fuelApply)
-      have h_apply_eq : merged.apply rhs fuel0 = applied := by
+      have h_apply_eq : merged.applyFull rhs fuel0 = applied := by
         exact h_apply_stable fuel0 (Nat.le_max_right (max fuelQuery fuelMerge) fuelApply)
       exact .equation_match atom type_ b rhs queryBindings merged finalResult fuel0
         h_not_error h_not_grounded h_query h_merge h_no_loop

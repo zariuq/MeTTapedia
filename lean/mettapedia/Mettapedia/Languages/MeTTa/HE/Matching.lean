@@ -122,54 +122,56 @@ def mergeBindings (left right : Bindings) (fuel : Nat) : List Bindings :=
 /-- Add a variable binding to a binding set.
     Ref: metta.md lines 638-658 "Add variable binding (add_var_binding)".
 
-    If variable already has a value:
-    - If same value → keep unchanged
-    - If different → match old and new values, merge results -/
+    Every proposed value is checked against all values carried by the
+    variable's equality class; unequal but unifiable values retain every
+    reconciliation constraint. Matcher-produced variable/variable relations
+    reach this layer as explicit equalities, not assignments. -/
 def addVarBinding (b : Bindings) (v : String) (val : Atom) (fuel : Nat) : List Bindings :=
   match fuel with
   | 0 => []
   | n + 1 =>
-    match b.lookup v with
-    | none =>
-      -- Variable not bound → simple assignment
-      [b.assign v val]
-    | some prev =>
-      if prev == val then
-        -- Same value → no change
-        [b]
+    match b.classValues v with
+    | [] => [b.assign v val]
+    | first :: rest =>
+      if Bindings.valuesConsistent (first :: rest) then
+        if first == val then [b]
+        else
+          let matched := matchAtoms first val n
+          matched.flatMap fun mb => mergeBindings b mb n
       else
-        -- Different value → match old and new, merge results
-        let matched := matchAtoms prev val n
-        matched.flatMap fun mb =>
-          mergeBindings b mb n
+        let allValues := first :: rest ++ [val]
+        match allValues with
+        | [] => []
+        | representative :: others =>
+          let matched :=
+            matchAtomsList (List.replicate others.length representative) others
+              [Bindings.empty] n
+          matched.flatMap fun mb => mergeBindings b mb n
 
 /-- Add a variable equality to a binding set.
     Ref: metta.md lines 661-683 "Add variable equality (add_var_equality)".
 
-    If both variables have values:
-    - If same value → record equality
-    - If different → match values, merge results
-    If at most one has a value → record equality directly. -/
+    Existing values remain attached to the joined equality class. Every class
+    value is checked; unequal but unifiable values retain every reconciliation
+    constraint in the equality-bearing candidate. This is the record-model
+    counterpart of upstream's binding-group merge. -/
 def addVarEquality (b : Bindings) (a c : String) (fuel : Nat) : List Bindings :=
   match fuel with
   | 0 => []
   | n + 1 =>
-    let aVal := b.lookup a
-    let cVal := b.lookup c
-    match aVal, cVal with
-    | none, _ | _, none =>
-      -- At most one has a value → record equality
-      -- Remove c's binding if it exists, add equality a = c
-      [b.removeAssignment c |>.addEquality a c]
-    | some av, some cv =>
-      if av == cv then
-        -- Same value → record equality
-        [b.removeAssignment c |>.addEquality a c]
-      else
-        -- Different values → match them, merge results
-        let matched := matchAtoms av cv n
-        matched.flatMap fun mb =>
-          mergeBindings b mb n
+    let candidate := b.addEquality a c
+    let values := candidate.classValues a
+    if Bindings.valuesConsistent values then [candidate]
+    else
+      match values with
+      | [] => []
+      | first :: [second] =>
+        let matched := matchAtoms first second n
+        matched.flatMap fun mb => mergeBindings candidate mb n
+      | first :: rest =>
+        let matched := matchAtomsList (List.replicate rest.length first) rest
+          [Bindings.empty] n
+        matched.flatMap fun mb => mergeBindings candidate mb n
 
 end
 
@@ -342,6 +344,45 @@ example : matchAtoms (.var "x") (.symbol "a") 10 =
 -- matchAtoms with two variables → equality
 example : matchAtoms (.var "x") (.var "y") 10 =
     [Bindings.empty.addEquality "x" "y"] := rfl
+
+-- Equality merging retains a value already attached to one endpoint.
+example :
+    matchAtoms
+        (.expression [.symbol "g", .symbol "a", .var "q"])
+        (.expression [.symbol "g", .var "p", .var "p"]) 10 =
+      [{ assignments := [("p", .symbol "a")]
+       , equalities := [("q", "p")] }] := by
+  decide
+
+example :
+    ({ assignments := [("p", .symbol "a")]
+     , equalities := [("q", "p")] } : Bindings).applyFull (.var "p") 10 =
+      .symbol "a" := by
+  decide
+
+-- NEGATIVE: a later value cannot disagree with an already-valued alias.
+example :
+    matchAtoms
+        (.expression [.symbol "g", .var "q", .symbol "A", .var "q"])
+        (.expression [.symbol "g", .var "p", .var "p", .symbol "B"]) 40 = [] := by
+  decide
+
+-- NEGATIVE: equality checks values carried indirectly by both joined classes.
+set_option maxRecDepth 2000 in
+example :
+    addVarEquality
+        (((Bindings.empty.addEquality "x" "z").assign "z" (.symbol "A"))
+          |>.addEquality "y" "w" |>.assign "w" (.symbol "B"))
+        "x" "y" 3 = [] := by
+  decide
+
+-- POSITIVE: a consistent value can be reasserted through an alias.
+example :
+    addVarBinding
+        ((Bindings.empty.addEquality "x" "y").assign "x" (.symbol "A"))
+        "y" (.symbol "A") 10 =
+      [(Bindings.empty.addEquality "x" "y").assign "x" (.symbol "A")] := by
+  decide
 
 -- matchAtoms with expressions
 example : matchAtoms (.expression [.symbol "a", .symbol "b"])

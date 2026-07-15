@@ -473,14 +473,15 @@ private theorem seeded_var_head_ground_reifies_simpleMatch_exact
   cases hlook : seed.lookup v with
   | none =>
       have hout : out = seed.assign v target := by
-        simpa [mergeBindings_single_assign_fresh hlook fuel] using hmerge
+        simpa [mergeBindings_single_assign_fresh hlook hseed.2 fuel] using hmerge
       subst hout
       simp [simpleMatch, hlook]
   | some prev =>
       have hprev : GroundAtom prev := lookup_ground_local hseed hlook
       by_cases heq : prev = target
       · have hout : out = seed := by
-          simpa [mergeBindings_single_assign_same (heq.symm ▸ hlook) fuel] using hmerge
+          simpa [mergeBindings_single_assign_same (heq.symm ▸ hlook) hseed.2 fuel]
+            using hmerge
         subst hout
         simp [simpleMatch, hlook, heq]
       · have hsameFalse : ¬ (prev == target) := by
@@ -488,14 +489,15 @@ private theorem seeded_var_head_ground_reifies_simpleMatch_exact
           apply heq
           simpa using hbeq
         have hmergeNil : mergeBindings seed (Bindings.empty.assign v target) (fuel + 2) = [] := by
-          rw [mergeBindings_single_assign (b := seed) (v := v) (val := target) fuel]
+          rw [mergeBindings_single_assign (b := seed) (v := v) (val := target) fuel,
+            addVarBinding_no_equalities hseed.2 fuel]
           cases fuel with
           | zero =>
-              simp [addVarBinding, hlook, hsameFalse, matchAtoms]
+              simp [hlook, hsameFalse, matchAtoms]
           | succ k =>
               have hmatchNil : matchAtoms prev target (k + 1) = [] :=
                 matchAtoms_ground_ne_nil_local hprev htarget heq
-              simp [addVarBinding, hlook, hsameFalse, hmatchNil]
+              simp [hlook, hsameFalse, hmatchNil]
         rw [hmergeNil] at hmerge
         simp at hmerge
 
@@ -505,24 +507,16 @@ private theorem addVarBindingRel_ground_reifies_simpleMatch
     (hval : GroundAtom val)
     (h : DeclMergeSpec.AddVarBindingRel seed v val out) :
     ∃ fuel, simpleMatch (.var v) val seed fuel = some out := by
-  cases h with
-  | unbound hnone =>
-      refine ⟨1, ?_⟩
-      simp [simpleMatch, hnone, Bindings.assign]
-  | same hsame =>
-      refine ⟨1, ?_⟩
-      simp [simpleMatch, hsame]
-  | @conflict _ _ _ prev mB out hlookup hneq hm hmerge =>
-      have hprev : GroundAtom prev := lookup_ground_local hseed hlookup
-      obtain ⟨fuelMatch, hmatch⟩ := DeclMatchSpec.matchAtoms_complete hm
-      cases fuelMatch with
-      | zero =>
-          simp [matchAtoms] at hmatch
-      | succ n =>
-          have hrigid :=
-            matchAtoms_ground_rigid_exact hprev hval hmatch
-          rcases hrigid with ⟨_, hEq⟩
-          exact False.elim (hneq hEq)
+  obtain ⟨fuel, hmem⟩ := DeclMergeSpec.addVarBinding_complete h
+  cases fuel with
+  | zero =>
+      simp [addVarBinding] at hmem
+  | succ n =>
+      have hmerge :
+          out ∈ mergeBindings seed (Bindings.empty.assign v val) (n + 2) := by
+        rw [mergeBindings_single_assign]
+        exact hmem
+      exact ⟨n + 2, seeded_var_head_ground_reifies_simpleMatch_exact hseed hval hmerge⟩
 
 private theorem seeded_var_head_ground_reifies_simpleMatch
     {seed out : Bindings} {v : String} {target : Atom} {fuel : Nat}

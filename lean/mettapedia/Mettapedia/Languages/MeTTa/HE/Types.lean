@@ -107,6 +107,31 @@ def lookup (b : Bindings) (v : String) : Option Atom :=
 def isBound (b : Bindings) (v : String) : Bool :=
   (b.lookup v).isSome
 
+/-- Structural depth sufficient for total variable scans. -/
+private def atomScanFuel : Atom → Nat
+  | .expression es => atomListScanFuel es + 1
+  | _ => 1
+where
+  atomListScanFuel : List Atom → Nat
+    | [] => 0
+    | a :: as => max (atomScanFuel a) (atomListScanFuel as)
+
+/-- Fuelled scan for a variable with a direct assignment in `b`. -/
+def hasAssignedVarAux (b : Bindings) : Nat → Atom → Bool
+  | 0, _ => false
+  | Nat.succ _, .var v => b.isBound v
+  | n + 1, .expression es => es.any (b.hasAssignedVarAux n)
+  | Nat.succ _, _ => false
+
+/-- Whether an atom contains a variable with a direct assignment in `b`. -/
+def hasAssignedVar (b : Bindings) (a : Atom) : Bool :=
+  b.hasAssignedVarAux (atomScanFuel a) a
+
+private theorem hasAssignedVar_var_of_lookup_some {b : Bindings}
+    {v : String} {a : Atom} (h : b.lookup v = some a) :
+    b.hasAssignedVar (.var v) = true := by
+  simp [hasAssignedVar, atomScanFuel, hasAssignedVarAux, isBound, h]
+
 /-- Add or update a variable assignment. Replaces existing if present. -/
 def assign (b : Bindings) (v : String) (val : Atom) : Bindings :=
   let assignments' := if b.isBound v then
@@ -123,16 +148,32 @@ def addEquality (b : Bindings) (a c : String) : Bindings :=
 def removeAssignment (b : Bindings) (v : String) : Bindings :=
   { b with assignments := b.assignments.filter fun (k, _) => k != v }
 
-/-- Resolve a variable to its final value, following variable chains.
-    Uses explicit fuel to handle potential cycles in the trusted path. -/
+/-- Recursively resolve an atom through assignments. Unknown variables remain
+    variables inside compound values; revisiting a variable reports a cycle. -/
+def resolveAtomAux (b : Bindings) : Nat → List String → Atom → Option Atom
+  | 0, _, _ => none
+  | n + 1, visited, atom =>
+    match atom with
+    | .var v =>
+      if visited.contains v then none
+      else
+        match b.lookup v with
+        | none => some (.var v)
+        | some value =>
+          if b.hasAssignedVar value then b.resolveAtomAux n (v :: visited) value
+          else some value
+    | .expression es =>
+      match es.mapM (b.resolveAtomAux n visited) with
+      | some resolved => some (.expression resolved)
+      | none => none
+    | other => some other
+
+/-- Resolve a variable to its recursively instantiated assignment. `none`
+    means the variable is unbound, fuel was exhausted, or a cycle was found. -/
 def resolve (b : Bindings) (v : String) (fuel : Nat) : Option Atom :=
-  match fuel with
-  | 0 => none
-  | n + 1 =>
-    match b.lookup v with
-    | none => none
-    | some (.var w) => b.resolve w n
-    | some a => some a
+  match b.lookup v with
+  | none => none
+  | some _ => b.resolveAtomAux fuel [] (.var v)
 
 /-- Convenience wrapper for callers outside the trusted theorem boundary. -/
 def resolveDefault (b : Bindings) (v : String) : Option Atom :=
@@ -206,24 +247,75 @@ def eqClassOrdered (b : Bindings) (v : String) : List String :=
   | [] => [v]
   | ordered => ordered
 
+/-- Direct values carried by members of `v`'s whole equality class, in the
+    stable representative order used by `resolveFull`. -/
+def classValues (b : Bindings) (v : String) : List Atom :=
+  (b.eqClassOrdered v).filterMap b.lookup
+
+/-- Whether a nonempty list of class values is structurally constant. Empty
+    and singleton lists are consistent by construction. Unequal but unifiable
+    values are reconciled by the matcher rather than accepted here. -/
+def valuesConsistent : List Atom → Bool
+  | [] => true
+  | first :: rest => rest.all (fun value => value == first)
+
 /-- Upstream-style class representative: the earliest-inserted member of `v`'s
     equality class (`v` itself when the class is trivial). -/
 def eqRepresentative (b : Bindings) (v : String) : String :=
   (b.eqClassOrdered v).headD v
 
+/-- Fuelled scan for a variable whose equality class has a value or a
+    nontrivial representative. -/
+def hasResolvableVarAux (b : Bindings) : Nat → Atom → Bool
+  | 0, _ => false
+  | Nat.succ _, .var v => if b.eqClassOrdered v = [v] then b.isBound v else true
+  | n + 1, .expression es => es.any (b.hasResolvableVarAux n)
+  | Nat.succ _, _ => false
+
+/-- Whether an atom contains a variable whose equality class has a value or a
+    nontrivial representative. -/
+def hasResolvableVar (b : Bindings) (a : Atom) : Bool :=
+  b.hasResolvableVarAux (atomScanFuel a) a
+
+/-- Recursively resolve an atom through equality classes and class values.
+    Unknown variables remain variables inside compound values. Visiting any
+    member of a class already on the dependency path reports a cycle. -/
+def resolveAtomFullAux (b : Bindings) : Nat → List String → Atom → Option Atom
+  | 0, _, _ => none
+  | n + 1, visited, atom =>
+    match atom with
+    | .var v =>
+      let cls := b.eqClassOrdered v
+      if cls.any visited.contains then none
+      else
+        match cls.findSome? b.lookup with
+        | none =>
+          if cls = [v] then some (.var v)
+          else some (.var (b.eqRepresentative v))
+        | some (.var w) =>
+          if cls.contains w then
+            if cls.length = 1 then none
+            else some (.var (b.eqRepresentative v))
+          else if b.hasResolvableVar (.var w) then
+            b.resolveAtomFullAux n (cls ++ visited) (.var w)
+          else some (.var w)
+        | some value =>
+          if b.hasResolvableVar value then
+            b.resolveAtomFullAux n (cls ++ visited) value
+          else some value
+    | .expression es =>
+      match es.mapM (b.resolveAtomFullAux n visited) with
+      | some resolved => some (.expression resolved)
+      | none => none
+    | other => some other
+
 /-- Equality-aware resolution: value lookup consults `v`'s whole equality
-    class; a valueless nontrivial class resolves to its representative
-    variable; a valueless trivial class stays unresolved. -/
+    class, recursively resolves compound values, and sends a valueless
+    nontrivial class to its representative variable. -/
 def resolveFull (b : Bindings) (v : String) (fuel : Nat) : Option Atom :=
-  match fuel with
-  | 0 => none
-  | n + 1 =>
-    match (b.eqClassOrdered v).findSome? b.lookup with
-    | some (.var w) => b.resolveFull w n
-    | some a => some a
-    | none =>
-      if b.eqClassOrdered v = [v] then none
-      else some (.var (b.eqRepresentative v))
+  let cls := b.eqClassOrdered v
+  if cls = [v] && (cls.findSome? b.lookup).isNone then none
+  else b.resolveAtomFullAux fuel [] (.var v)
 
 /-- Equality-aware `apply`: substitutes via `resolveFull`. -/
 def applyFull (b : Bindings) (a : Atom) (fuel : Nat) : Atom :=
@@ -243,23 +335,101 @@ theorem eqClassOrdered_no_equalities {b : Bindings} (h : b.equalities = [])
     (v : String) : b.eqClassOrdered v = [v] := by
   simp [eqClassOrdered, eqVarsInOrder, h]
 
+/-- Equality-free class-value lookup is exactly direct assignment lookup. -/
+theorem classValues_no_equalities {b : Bindings} (h : b.equalities = [])
+    (v : String) : b.classValues v = (b.lookup v).toList := by
+  rw [classValues, eqClassOrdered_no_equalities h]
+  cases hlookup : b.lookup v <;> simp [hlookup]
+
+private theorem hasResolvableVar_no_equalities {b : Bindings}
+    (h : b.equalities = []) :
+    ∀ a : Atom, b.hasResolvableVar a = b.hasAssignedVar a := by
+  have haux : ∀ fuel a,
+      b.hasResolvableVarAux fuel a = b.hasAssignedVarAux fuel a := by
+    intro fuel
+    induction fuel with
+    | zero => intro a; rfl
+    | succ n ih =>
+        intro a
+        cases a with
+        | var v => simp [hasResolvableVarAux, hasAssignedVarAux,
+            eqClassOrdered_no_equalities h]
+        | expression es =>
+            simp only [hasResolvableVarAux, hasAssignedVarAux]
+            induction es with
+            | nil => rfl
+            | cons a as ihEs => simp [ih a, ihEs]
+        | symbol s => rfl
+        | grounded g => rfl
+  intro a
+  exact haux (atomScanFuel a) a
+
+private theorem resolveAtomAux_var_mem (b : Bindings) :
+    ∀ (fuel : Nat) (visited : List String) (v : String),
+      v ∈ visited → b.resolveAtomAux fuel visited (.var v) = none := by
+  intro fuel visited v hv
+  cases fuel with
+  | zero => rfl
+  | succ n => simp [resolveAtomAux, hv]
+
+private theorem resolveAtomFullAux_no_equalities {b : Bindings}
+    (h : b.equalities = []) :
+    ∀ (fuel : Nat) (visited : List String) (a : Atom),
+      b.resolveAtomFullAux fuel visited a = b.resolveAtomAux fuel visited a := by
+  intro fuel
+  induction fuel with
+  | zero => intro visited a; rfl
+  | succ n ih =>
+      intro visited a
+      cases a with
+      | var v =>
+          by_cases hv : v ∈ visited
+          · simp [resolveAtomFullAux, resolveAtomAux,
+              eqClassOrdered_no_equalities h, hv]
+          · cases hl : b.lookup v with
+            | none =>
+                simp [resolveAtomFullAux, resolveAtomAux,
+                  eqClassOrdered_no_equalities h, hv, hl]
+            | some value =>
+                cases value with
+                | var w =>
+                    by_cases hw : w = v
+                    · subst w
+                      simp [resolveAtomFullAux, resolveAtomAux,
+                        eqClassOrdered_no_equalities h, hv, hl,
+                        hasAssignedVar_var_of_lookup_some hl,
+                        resolveAtomAux_var_mem]
+                    · simp [resolveAtomFullAux, resolveAtomAux,
+                        eqClassOrdered_no_equalities h, hv, hl, hw, ih,
+                        hasResolvableVar_no_equalities h]
+                | symbol s =>
+                    simp [resolveAtomFullAux, resolveAtomAux,
+                      eqClassOrdered_no_equalities h, hv, hl, ih,
+                      hasResolvableVar_no_equalities h]
+                | grounded g =>
+                    simp [resolveAtomFullAux, resolveAtomAux,
+                      eqClassOrdered_no_equalities h, hv, hl, ih,
+                      hasResolvableVar_no_equalities h]
+                | expression es =>
+                    simp [resolveAtomFullAux, resolveAtomAux,
+                      eqClassOrdered_no_equalities h, hv, hl, ih,
+                      hasResolvableVar_no_equalities h]
+      | expression es =>
+          simp only [resolveAtomFullAux, resolveAtomAux]
+          have hfun : b.resolveAtomFullAux n visited =
+              b.resolveAtomAux n visited := funext (ih visited)
+          rw [hfun]
+      | symbol s => rfl
+      | grounded g => rfl
+
 /-- On equality-free bindings, `resolveFull` is `resolve`. -/
 theorem resolveFull_no_equalities {b : Bindings} (h : b.equalities = []) :
     ∀ (fuel : Nat) (v : String), b.resolveFull v fuel = b.resolve v fuel := by
-  intro fuel
-  induction fuel with
-  | zero => intro v; rfl
-  | succ n ih =>
-    intro v
-    rw [resolveFull, resolve, eqClassOrdered_no_equalities h]
-    cases hl : b.lookup v with
-    | none => simp [List.findSome?, hl]
-    | some a =>
-      cases a with
-      | var w => simp [List.findSome?, hl, ih]
-      | symbol s => simp [List.findSome?, hl]
-      | grounded g => simp [List.findSome?, hl]
-      | expression es => simp [List.findSome?, hl]
+  intro fuel v
+  unfold resolveFull resolve
+  rw [eqClassOrdered_no_equalities h]
+  simp [resolveAtomFullAux_no_equalities h]
+  cases b.lookup v <;> rfl
 
 /-- On equality-free bindings, `applyFull` is `apply`. -/
 theorem applyFull_no_equalities {b : Bindings} (h : b.equalities = []) :
@@ -294,6 +464,17 @@ example :
       (.expression [.symbol "f", .var "x", .var "y"]) 10 =
     (Bindings.empty.assign "x" (.symbol "a")).apply
       (.expression [.symbol "f", .var "x", .var "y"]) 10 := by decide
+
+/-- POSITIVE: resolution descends through variables nested in compound values. -/
+example :
+    ((Bindings.empty.assign "x" (.expression [.symbol "f", .var "y"])).assign
+      "y" (.symbol "A")).applyFull (.var "x") 10 =
+    .expression [.symbol "f", .symbol "A"] := by decide
+
+/-- NEGATIVE: a cycle through a compound value fails resolution. -/
+example :
+    ((Bindings.empty.assign "x" (.expression [.symbol "f", .var "y"])).assign
+      "y" (.var "x")).resolveFull "x" 10 = none := by decide
 
 /-- Check if bindings contain a variable loop.
     Ref: metta.md line 616 "filter(lambda $b: <$b doesn't have variable loops>)". -/

@@ -980,7 +980,7 @@ theorem interpretStack1_eval_renamed_closed_coreBinding_reverse_alpha_of_match
 
 /-- Symbols are unaffected by instantiation under any binding set. -/
 theorem instantiate_notReducibleA (b : Bindings) : instantiate b notReducibleA = notReducibleA := by
-  simp [notReducibleA, instantiate, Metta.Subst.apply]
+  simp [notReducibleA, instantiate, Bindings.resolveAtom]
 
 /-- The scheduler's `NotReducible` marker survives v1.0.8's final `Empty` filtering. -/
 theorem notReducibleA_ne_empty : (notReducibleA != emptyA) = true := by
@@ -1245,29 +1245,8 @@ theorem evalResult_nil_eq_finItem_of_not_function {a : Atom} {b : Bindings}
 stability side condition in the common closed-result fragment. -/
 theorem instantiate_eq_self_of_vars_nil (b : Bindings) :
     ∀ {a : Atom}, a.vars = [] → instantiate b a = a := by
-  intro a
-  refine Metta.Atom.recAux ?_ ?_ ?_ ?_ a
-  · intro s _
-    simp [instantiate, Metta.Subst.apply]
-  · intro v hvars
-    simp [Atom.vars] at hvars
-  · intro g _
-    simp [instantiate, Metta.Subst.apply]
-  · intro xs ih hvars
-    simp only [instantiate, Metta.Subst.apply]
-    congr 1
-    rw [← List.map_id xs]
-    conv_lhs => rw [List.map_id]
-    apply List.map_congr_left
-    intro child hchild
-    simpa [instantiate] using ih child hchild (by
-      apply List.eq_nil_iff_forall_not_mem.mpr
-      intro v hv
-      have hvExpr : v ∈ (Atom.expr xs).vars := by
-        simp only [Atom.vars, List.mem_flatten, List.mem_map]
-        exact ⟨child.vars, ⟨child, hchild, rfl⟩, hv⟩
-      rw [hvars] at hvExpr
-      cases hvExpr)
+  intro a hclosed
+  exact instantiate_of_closed b a hclosed
 
 /-- With no query variables to retain, LeaTTa's binding-retention pass drops every binding. This is
 the argument-evaluation simplification used by closed programs such as Peano `add`: evaluated
@@ -1554,6 +1533,9 @@ theorem interpretFuel_eval_staticCandidateSplit_eqResult_contains_mops_of_closed
     hstatic hinst hcall hembed hNotVarHead hhead hsplit hmatchFresh hmerge hloop
     hmatchCore hresult hnotEmpty hnotFunction hstable
 
+/-
+The legacy open exact-list runtime crossings are false after equality-class repair. Variable-valued
+relations normalize to `eq` during merge, and origin-blind renaming does not transport those classes.
 /-- Open-value version of the fuel-driver static-candidate crossing.
 
 This is the reusable fuel-level surface for open matcher values: the binding set need not be closed,
@@ -1679,6 +1661,8 @@ theorem interpretFuel_eval_renamed_value_coreBinding_reverse_contains_mops_of_le
     (hsplit := hsplit) (hmatchFresh := hmatchFresh)
     (hmatchCore := hmatchCore) (hbound := hbound) (hnotEmpty := hnotEmpty)
     (hnotFunction := hnotFunction)
+
+-/
 
 /-- Fuel-driver harvest of the generic renamed-core binding crossing when the emitted RHS is
 already final.
@@ -2151,16 +2135,19 @@ theorem interpretFuel_eval_var_lhs_open_contains_mops
   let target := Atom.expr (Atom.sym op :: args)
   let fresh := counterSuffix (st.counter + pre.length) v
   let coreB : Bindings := [BindingRel.val v target]
+  have htargetNotVar : ∀ w, target ≠ Atom.var w := by
+    intro w
+    simp [target]
   have hmatchFresh : [BindingRel.val fresh target] ∈
       matchAtoms (freshenRule (st.counter + pre.length) (Atom.var v) rhs).1 target := by
     have hfr := freshenRule_eq_renBy (st.counter + pre.length) (Atom.var v) rhs
     rw [hfr]
     simp [fresh, target]
     exact matchAtoms_var_not_mem (counterSuffix (st.counter + pre.length) v)
-      (Atom.expr (Atom.sym op :: args)) hfresh
+      (Atom.expr (Atom.sym op :: args)) hfresh (by intro w; simp)
   have hmerge : [BindingRel.val fresh target] ∈
       Bindings.merge [] [BindingRel.val fresh target] := by
-    exact singleton_val_mem_merge_empty_left fresh target
+    exact singleton_val_mem_merge_empty_left fresh target htargetNotVar
   have hloop : Bindings.hasLoop [BindingRel.val fresh target] = false := by
     exact hasLoop_singleton_val_not_false fresh target (by simpa [fresh, target] using hfresh)
   have hmatchCore : coreB ∈ matchAtoms (Atom.var v) target := by
@@ -2177,13 +2164,18 @@ theorem interpretFuel_eval_var_lhs_open_contains_mops
         instantiate coreB rhs := by
     simpa [coreB, fresh, target, renameBindings] using
       (instantiate_freshenRule_rhs_of_renamed_bindings
-        (st.counter + pre.length) (Atom.var v) rhs coreB hbound)
+        (st.counter + pre.length) (Atom.var v) rhs coreB
+        (by exact ValueBindings.val ValueBindings.nil)
+        (by simpa [coreB, target] using singleton_valueKeysFreshForValues hraw)
+        (by simpa [coreB, target, fresh] using
+          singleton_renamedValueKeysFreshForValues (counterSuffix (st.counter + pre.length)) hfresh)
+        hbound)
   have hstable :
       instantiate [BindingRel.val fresh target] (instantiate coreB rhs) = instantiate coreB rhs := by
     simpa [coreB, fresh, target] using
       (instantiate_singleton_val_stable_after_singleton_subst
         (counterSuffix (st.counter + pre.length) v) v (Atom.expr (Atom.sym op :: args))
-        hfresh (rhs := rhs) hboundVars)
+        hfresh hraw (rhs := rhs) hboundVars)
   have hbase := interpretFuel_eval_staticCandidateSplit_eqResult_contains_mops
     (atoms := atoms) (gt := gt) (st := st) (fuel := fuel) (x := x)
     (lhs := Atom.var v) (rhs := rhs)
@@ -3185,7 +3177,7 @@ theorem mettaEval_symbol_keeps_of_notReducible_readout
         [{ stack := atomToStack (Atom.expr [Atom.sym "eval", Atom.sym op]) [], bnd := bnd }] []).1) :
     (Atom.sym op, bnd) ∈ (mettaEval env (fuel + 1) st bnd (Atom.sym op)).1 := by
   unfold mettaEval
-  simp [Metta.instantiate, Metta.Subst.apply]
+  simp [Metta.instantiate, Metta.Bindings.resolveAtom]
   cases hpairs : interpretFuel env (fuel + 1) st
         [{ stack := atomToStack (Atom.expr [Atom.sym "eval", Atom.sym op]) [], bnd := bnd }] [] with
   | mk pairs st' =>
@@ -3203,7 +3195,7 @@ theorem mettaEval_symbol_eq_of_notReducible_eq
       ([(notReducibleA, bnd)], st)) :
     mettaEval env (fuel + 1) st bnd (Atom.sym op) = ([(Atom.sym op, bnd)], st) := by
   unfold mettaEval
-  simp [Metta.instantiate, Metta.Subst.apply]
+  simp [Metta.instantiate, Metta.Bindings.resolveAtom]
   rw [hreadout]
   have hnr : (notReducibleA == notReducibleA) = true := rfl
   simp [hnr]
@@ -3218,7 +3210,7 @@ theorem mettaEval_ground_keeps_of_notReducible_readout
         [{ stack := atomToStack (Atom.expr [Atom.sym "eval", Atom.gnd g]) [], bnd := bnd }] []).1) :
     (Atom.gnd g, bnd) ∈ (mettaEval env (fuel + 1) st bnd (Atom.gnd g)).1 := by
   unfold mettaEval
-  simp [Metta.instantiate, Metta.Subst.apply]
+  simp [Metta.instantiate, Metta.Bindings.resolveAtom]
   cases hpairs : interpretFuel env (fuel + 1) st
         [{ stack := atomToStack (Atom.expr [Atom.sym "eval", Atom.gnd g]) [], bnd := bnd }] [] with
   | mk pairs st' =>
@@ -3234,7 +3226,7 @@ theorem mettaEval_ground_eq_of_notReducible_eq
       ([(notReducibleA, bnd)], st)) :
     mettaEval env (fuel + 1) st bnd (Atom.gnd g) = ([(Atom.gnd g, bnd)], st) := by
   unfold mettaEval
-  simp [Metta.instantiate, Metta.Subst.apply]
+  simp [Metta.instantiate, Metta.Bindings.resolveAtom]
   rw [hreadout]
   have hnr : (notReducibleA == notReducibleA) = true := rfl
   simp [hnr]

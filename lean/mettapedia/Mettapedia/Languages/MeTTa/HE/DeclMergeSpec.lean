@@ -35,8 +35,9 @@ namespace Mettapedia.Languages.MeTTa.HE.DeclMergeSpec
 
 open Mettapedia.Languages.MeTTa.HE
 open Mettapedia.Languages.MeTTa.HE.DeclMatchSpec
-  (MatchRel matchRel_symSym_inv matchAtoms_sound matchAtoms_complete
-   matchAtoms_mono mergeBindings_mono)
+  (MatchRel MatchListRel matchRel_symSym_inv matchAtoms_sound matchAtoms_complete
+   matchAtomsList_sound matchAtomsList_complete matchAtoms_mono matchAtomsList_mono
+   mergeBindings_mono)
 open Mettapedia.Languages.MeTTa.OSLFCore (Atom)
 
 /-! ## §1  The declarative merge relations (faithful to `:436-492`)
@@ -49,25 +50,44 @@ mutual
 
 /-- Add one value relation `$v <- val` to `b`. `[:452-471]` -/
 inductive AddVarBindingRel : Bindings → String → Atom → Bindings → Prop where
-  /-- `$v` is unbound → record the assignment. -/
-  | unbound {b v val} : b.lookup v = none → AddVarBindingRel b v val (b.assign v val)
-  /-- `$v` already holds exactly `val` → no change. -/
-  | same {b v val} : b.lookup v = some val → AddVarBindingRel b v val b
-  /-- `$v` holds a different `prev` → **unify and merge back** (no overwrite). `[:468-471]` -/
-  | conflict {b v val prev mB out} :
-      b.lookup v = some prev → prev ≠ val →
-      MatchRel prev val mB → MergeRel b mB out → AddVarBindingRel b v val out
+  /-- The equality class carries no value → record the assignment. -/
+  | fresh {b v val} :
+      b.classValues v = [] → AddVarBindingRel b v val (b.assign v val)
+  /-- The class carries one consistent value, equal to `val` → no change. -/
+  | same {b v val first rest} :
+      b.classValues v = first :: rest →
+      Bindings.valuesConsistent (first :: rest) = true → first = val →
+      AddVarBindingRel b v val b
+  /-- A consistent class carries a different value → **unify and merge back**. `[:468-471]` -/
+  | conflict {b v val first rest mB out} :
+      b.classValues v = first :: rest →
+      Bindings.valuesConsistent (first :: rest) = true → first ≠ val →
+      MatchRel first val mB → MergeRel b mB out → AddVarBindingRel b v val out
+  /-- An already-inconsistent class must reconcile every stored value and the new value. -/
+  | reconcile {b v val first rest mB out} :
+      b.classValues v = first :: rest →
+      Bindings.valuesConsistent (first :: rest) = false →
+      MatchListRel (List.replicate (rest.length + 1) first) (rest ++ [val]) mB →
+      MergeRel b mB out → AddVarBindingRel b v val out
 
 /-- Add one equality relation `$a = $c` to `b`. `[:472-492]` -/
 inductive AddVarEqualityRel : Bindings → String → String → Bindings → Prop where
-  /-- At most one side valued (or equal values) → drop `$c`'s assignment, record `$a = $c`. `[:485-486]` -/
-  | recordEq {b a c} :
-      (b.lookup a = none ∨ b.lookup c = none ∨ b.lookup a = b.lookup c) →
-      AddVarEqualityRel b a c ((b.removeAssignment c).addEquality a c)
-  /-- Both sides valued and distinct → **unify and merge back**. `[:489-491]` -/
-  | conflict {b a c av cv mB out} :
-      b.lookup a = some av → b.lookup c = some cv → av ≠ cv →
-      MatchRel av cv mB → MergeRel b mB out → AddVarEqualityRel b a c out
+  /-- Join the classes when all values in the joined class agree. -/
+  | consistent {b a c} :
+      Bindings.valuesConsistent ((b.addEquality a c).classValues a) = true →
+      AddVarEqualityRel b a c (b.addEquality a c)
+  /-- Exactly two disagreeing class values are unified through the direct matcher path. -/
+  | pairConflict {b a c first second mB out} :
+      (b.addEquality a c).classValues a = [first, second] →
+      Bindings.valuesConsistent [first, second] = false →
+      MatchRel first second mB → MergeRel (b.addEquality a c) mB out →
+      AddVarEqualityRel b a c out
+  /-- Three or more disagreeing class values are reconciled together. -/
+  | classConflict {b a c first second third rest mB out} :
+      (b.addEquality a c).classValues a = first :: second :: third :: rest →
+      Bindings.valuesConsistent (first :: second :: third :: rest) = false →
+      MatchListRel (List.replicate (rest.length + 2) first) (second :: third :: rest) mB →
+      MergeRel (b.addEquality a c) mB out → AddVarEqualityRel b a c out
 
 /-- Fold a list of value relations into the accumulator. `[:446-448]` -/
 inductive MergeAssignsRel : Bindings → List (String × Atom) → Bindings → Prop where
@@ -183,17 +203,29 @@ private theorem addVarBinding_mono_step
       simp [addVarBinding] at h
   | succ n =>
       intro out h
-      cases hlookup : b.lookup v with
-      | none =>
-          simp [addVarBinding, hlookup] at h ⊢
+      simp only [addVarBinding] at h ⊢
+      cases hvalues : b.classValues v with
+      | nil =>
+          simp [hvalues] at h ⊢
           exact h
-      | some prev =>
-          by_cases hEq : prev = val
-          · simp [addVarBinding, hlookup, hEq] at h ⊢
-            exact h
-          · simp [addVarBinding, hlookup, hEq] at h ⊢
-            rcases h with ⟨mb, hmb, hmerge⟩
-            exact ⟨mb, matchAtoms_mono prev val n 1 hmb, mergeBindings_mono b mb n 1 hmerge⟩
+      | cons first rest =>
+          simp only [hvalues, Bindings.valuesConsistent] at h ⊢
+          by_cases hclass : rest.all (fun value => value == first) = true
+          · rw [if_pos hclass] at h ⊢
+            by_cases hsame : first = val
+            · have hbeq : (first == val) = true := by simp [hsame]
+              rw [if_pos hbeq] at h ⊢
+              exact h
+            · have hbeq : ¬ (first == val) = true := by simpa using hsame
+              rw [if_neg hbeq] at h ⊢
+              rcases List.mem_flatMap.mp h with ⟨mb, hmb, hmerge⟩
+              exact List.mem_flatMap.mpr ⟨mb, matchAtoms_mono first val n 1 hmb,
+                mergeBindings_mono b mb n 1 hmerge⟩
+          · rw [if_neg hclass] at h ⊢
+            rcases List.mem_flatMap.mp h with ⟨mb, hmb, hmerge⟩
+            exact List.mem_flatMap.mpr ⟨mb,
+              matchAtomsList_mono _ _ [Bindings.empty] n 1 hmb,
+              mergeBindings_mono b mb n 1 hmerge⟩
 
 private theorem addVarBinding_mono
     (b : Bindings) (v : String) (val : Atom) (fuel extra : Nat) :
@@ -216,18 +248,30 @@ private theorem addVarEquality_mono_step
       simp [addVarEquality] at h
   | succ n =>
       intro out h
-      cases hA : b.lookup a <;> cases hC : b.lookup c <;>
-        simp [addVarEquality, hA, hC] at h ⊢
-      · exact h
-      · exact h
-      · exact h
-      · rename_i av cv
-        by_cases hEq : av = cv
-        · simp [hEq] at h ⊢
+      simp only [addVarEquality] at h ⊢
+      cases hvalues : (b.addEquality a c).classValues a with
+      | nil =>
+          simp [hvalues] at h ⊢
           exact h
-        · simp [hEq] at h ⊢
-          rcases h with ⟨mb, hmb, hmerge⟩
-          exact ⟨mb, matchAtoms_mono av cv n 1 hmb, mergeBindings_mono b mb n 1 hmerge⟩
+      | cons first rest =>
+          simp only [hvalues, Bindings.valuesConsistent] at h ⊢
+          by_cases hclass : rest.all (fun value => value == first) = true
+          · rw [if_pos hclass] at h ⊢
+            exact h
+          · rw [if_neg hclass] at h ⊢
+            cases rest with
+            | nil => simp at hclass
+            | cons second tail =>
+              cases tail with
+              | nil =>
+                rcases List.mem_flatMap.mp h with ⟨mb, hmb, hmerge⟩
+                exact List.mem_flatMap.mpr ⟨mb, matchAtoms_mono first second n 1 hmb,
+                  mergeBindings_mono (b.addEquality a c) mb n 1 hmerge⟩
+              | cons third tail =>
+                rcases List.mem_flatMap.mp h with ⟨mb, hmb, hmerge⟩
+                exact List.mem_flatMap.mpr ⟨mb,
+                  matchAtomsList_mono _ _ [Bindings.empty] n 1 hmb,
+                  mergeBindings_mono (b.addEquality a c) mb n 1 hmerge⟩
 
 private theorem addVarEquality_mono
     (b : Bindings) (a c : String) (fuel extra : Nat) :
@@ -324,39 +368,69 @@ private theorem mergeSoundFamily : ∀ fuel,
       obtain ⟨ihBind, ihEq, ihMerge⟩ := ih
       refine ⟨?_, ?_, ?_⟩
       · intro b v val out h
-        cases hlookup : b.lookup v with
-        | none =>
-            simp [addVarBinding, hlookup] at h
+        simp only [addVarBinding] at h
+        cases hvalues : b.classValues v with
+        | nil =>
+            simp [hvalues] at h
             subst out
-            exact .unbound hlookup
-        | some prev =>
-            by_cases hEqv : prev = val
-            · simp [addVarBinding, hlookup, hEqv] at h
-              subst out
-              exact .same (by simpa [hEqv] using hlookup)
-            · simp [addVarBinding, hlookup, hEqv] at h
-              rcases h with ⟨mb, hmb, hmerge⟩
-              exact .conflict hlookup hEqv (matchAtoms_sound hmb) (ihMerge hmerge)
-      · intro b a c out h
-        cases hA : b.lookup a with
-        | none =>
-            simp [addVarEquality, hA] at h
-            subst out
-            exact .recordEq (Or.inl hA)
-        | some av =>
-            cases hC : b.lookup c with
-            | none =>
-                simp [addVarEquality, hA, hC] at h
+            exact .fresh hvalues
+        | cons first rest =>
+            simp only [hvalues, Bindings.valuesConsistent] at h
+            by_cases hclass : rest.all (fun value => value == first) = true
+            · rw [if_pos hclass] at h
+              by_cases hsame : first = val
+              · have hbeq : (first == val) = true := by simp [hsame]
+                rw [if_pos hbeq] at h
+                simp at h
                 subst out
-                exact .recordEq (Or.inr (Or.inl hC))
-            | some cv =>
-                by_cases hEqv : av = cv
-                · simp [addVarEquality, hA, hC, hEqv] at h
-                  subst out
-                  exact .recordEq (Or.inr (Or.inr (by simp [hA, hC, hEqv])))
-                · simp [addVarEquality, hA, hC, hEqv] at h
-                  rcases h with ⟨mb, hmb, hmerge⟩
-                  exact .conflict hA hC hEqv (matchAtoms_sound hmb) (ihMerge hmerge)
+                exact .same hvalues (by simp [Bindings.valuesConsistent, hclass]) hsame
+              · have hbeq : ¬ (first == val) = true := by simpa using hsame
+                rw [if_neg hbeq] at h
+                rcases List.mem_flatMap.mp h with ⟨mb, hmb, hmerge⟩
+                exact .conflict hvalues (by simp [Bindings.valuesConsistent, hclass]) hsame
+                  (matchAtoms_sound hmb) (ihMerge hmerge)
+            · rw [if_neg hclass] at h
+              rcases List.mem_flatMap.mp h with ⟨mb, hmb, hmerge⟩
+              rcases matchAtomsList_sound hmb with ⟨seed, hseed, hrel⟩
+              simp at hseed
+              subst seed
+              have hrel' :
+                  MatchListRel (List.replicate (rest.length + 1) first)
+                    (rest ++ [val]) mb := by
+                simpa [List.length_append] using hrel
+              exact .reconcile hvalues (by simp [Bindings.valuesConsistent, hclass])
+                hrel' (ihMerge hmerge)
+      · intro b a c out h
+        simp only [addVarEquality] at h
+        cases hvalues : (b.addEquality a c).classValues a with
+        | nil =>
+            simp [hvalues] at h
+            rcases h with ⟨_, rfl⟩
+            exact .consistent (by simp [hvalues, Bindings.valuesConsistent])
+        | cons first rest =>
+            simp only [hvalues, Bindings.valuesConsistent] at h
+            by_cases hclass : rest.all (fun value => value == first) = true
+            · rw [if_pos hclass] at h
+              simp at h
+              subst out
+              exact .consistent (by simp [hvalues, Bindings.valuesConsistent, hclass])
+            · rw [if_neg hclass] at h
+              cases rest with
+              | nil => simp at hclass
+              | cons second tail =>
+                cases tail with
+                | nil =>
+                  rcases List.mem_flatMap.mp h with ⟨mb, hmb, hmerge⟩
+                  exact .pairConflict hvalues
+                    (by simp [Bindings.valuesConsistent, hclass])
+                    (matchAtoms_sound hmb) (ihMerge hmerge)
+                | cons third tail =>
+                  rcases List.mem_flatMap.mp h with ⟨mb, hmb, hmerge⟩
+                  rcases matchAtomsList_sound hmb with ⟨seed, hseed, hrel⟩
+                  simp at hseed
+                  subst seed
+                  exact .classConflict hvalues
+                    (by simp [Bindings.valuesConsistent, hclass]) hrel (ihMerge hmerge)
       · intro left right out h
         change out ∈ execEqFold (execAssignFold [left] right.assignments n) right.equalities n at h
         have hAssignFold :
@@ -439,6 +513,29 @@ private theorem flatMap_of_match_merge
   have hmatch' : mB ∈ matchAtoms lhs rhs fuel := by
     simpa [Nat.add_sub_of_le hMatchLe] using
       (matchAtoms_mono lhs rhs fuelMatch (fuel - fuelMatch) hmatch)
+  have hmerge' : out ∈ mergeBindings seed mB fuel := by
+    simpa [Nat.add_sub_of_le hMergeLe] using
+      (mergeBindings_mono seed mB fuelMerge (fuel - fuelMerge) hmerge)
+  exact ⟨fuel, List.mem_flatMap.mpr ⟨mB, hmatch', hmerge'⟩⟩
+
+private theorem flatMap_of_list_match_merge
+    {ls rs : List Atom} {seed mB out : Bindings} {fuelMatch fuelMerge : Nat}
+    (hmatch : mB ∈ matchAtomsList ls rs [Bindings.empty] fuelMatch)
+    (hmerge : out ∈ mergeBindings seed mB fuelMerge) :
+    ∃ fuel,
+      out ∈ (matchAtomsList ls rs [Bindings.empty] fuel).flatMap
+        (fun mb => mergeBindings seed mb fuel) := by
+  let fuel := max fuelMatch fuelMerge
+  have hMatchLe : fuelMatch ≤ fuel := by
+    dsimp [fuel]
+    exact Nat.le_max_left _ _
+  have hMergeLe : fuelMerge ≤ fuel := by
+    dsimp [fuel]
+    exact Nat.le_max_right _ _
+  have hmatch' : mB ∈ matchAtomsList ls rs [Bindings.empty] fuel := by
+    simpa [Nat.add_sub_of_le hMatchLe] using
+      (matchAtomsList_mono ls rs [Bindings.empty] fuelMatch
+        (fuel - fuelMatch) hmatch)
   have hmerge' : out ∈ mergeBindings seed mB fuel := by
     simpa [Nat.add_sub_of_le hMergeLe] using
       (mergeBindings_mono seed mB fuelMerge (fuel - fuelMerge) hmerge)
@@ -540,62 +637,97 @@ private theorem completePack : MergeCompletePack := by
     fun left right out _ => ∃ fuel, out ∈ mergeBindings left right fuel
   let c1 :
       ∀ {b : Bindings} {v : String} {val : Atom}
-        (hnone : b.lookup v = none),
-        m1 b v val (b.assign v val) (.unbound hnone) := by
-    intro b v val hnone
+        (hvalues : b.classValues v = []),
+        m1 b v val (b.assign v val) (.fresh hvalues) := by
+    intro b v val hvalues
     refine ⟨1, ?_⟩
-    simp [addVarBinding, hnone]
+    simp [addVarBinding, hvalues]
   let c2 :
-      ∀ {b : Bindings} {v : String} {val : Atom}
-        (hsame : b.lookup v = some val),
-        m1 b v val b (.same hsame) := by
-    intro b v val hsame
+      ∀ {b : Bindings} {v : String} {val first : Atom} {rest : List Atom}
+        (hvalues : b.classValues v = first :: rest)
+        (hconsistent : Bindings.valuesConsistent (first :: rest) = true)
+        (hsame : first = val),
+        m1 b v val b (.same hvalues hconsistent hsame) := by
+    intro b v val first rest hvalues hconsistent hsame
     refine ⟨1, ?_⟩
-    simp [addVarBinding, hsame]
+    subst val
+    simp [addVarBinding, hvalues, hconsistent]
   let c3 :
-      ∀ {b : Bindings} {v : String} {val prev : Atom} {mB out : Bindings}
-        (hlookup : b.lookup v = some prev) (hneq : prev ≠ val)
-        (hm : MatchRel prev val mB) (hmerge : MergeRel b mB out),
-        m5 b mB out hmerge → m1 b v val out (.conflict hlookup hneq hm hmerge) := by
-    intro b v val prev mB out hlookup hneq hm hmerge ihMerge
+      ∀ {b : Bindings} {v : String} {val first : Atom} {rest : List Atom}
+        {mB out : Bindings}
+        (hvalues : b.classValues v = first :: rest)
+        (hconsistent : Bindings.valuesConsistent (first :: rest) = true)
+        (hneq : first ≠ val) (hm : MatchRel first val mB)
+        (hmerge : MergeRel b mB out),
+        m5 b mB out hmerge →
+          m1 b v val out (.conflict hvalues hconsistent hneq hm hmerge) := by
+    intro b v val first rest mB out hvalues hconsistent hneq hm hmerge ihMerge
     obtain ⟨fuelMatch, hmatch⟩ := matchAtoms_complete hm
     obtain ⟨fuelMerge, hmergeMem⟩ := ihMerge
     obtain ⟨fuel, hflat⟩ := flatMap_of_match_merge hmatch hmergeMem
     refine ⟨fuel + 1, ?_⟩
-    simpa [addVarBinding, hlookup, hneq] using hflat
+    simpa [addVarBinding, hvalues, hconsistent, hneq] using hflat
   let c4 :
-      ∀ {b : Bindings} {a c : String}
-        (hcond : b.lookup a = none ∨ b.lookup c = none ∨ b.lookup a = b.lookup c),
-        m2 b a c ((b.removeAssignment c).addEquality a c) (.recordEq hcond) := by
-    intro b a c hcond
-    refine ⟨1, ?_⟩
-    rcases hcond with hA | hC | hEq
-    · cases hC' : b.lookup c <;> simp [addVarEquality, hA, hC']
-    · cases hA' : b.lookup a <;> simp [addVarEquality, hA', hC]
-    · cases hA' : b.lookup a <;> cases hC' : b.lookup c
-      · simp [addVarEquality, hA', hC']
-      · simp [hA', hC'] at hEq
-      · simp [hA', hC'] at hEq
-      · rename_i av cv
-        have havcv : av = cv := by simpa [hA', hC'] using hEq
-        simp [addVarEquality, hA', hC', havcv]
+      ∀ {b : Bindings} {v : String} {val first : Atom} {rest : List Atom}
+        {mB out : Bindings}
+        (hvalues : b.classValues v = first :: rest)
+        (hinconsistent : Bindings.valuesConsistent (first :: rest) = false)
+        (hm : MatchListRel (List.replicate (rest.length + 1) first)
+          (rest ++ [val]) mB) (hmerge : MergeRel b mB out),
+        m5 b mB out hmerge →
+          m1 b v val out (.reconcile hvalues hinconsistent hm hmerge) := by
+    intro b v val first rest mB out hvalues hinconsistent hm hmerge ihMerge
+    obtain ⟨fuelMatch, hmatch⟩ := matchAtomsList_complete hm
+    obtain ⟨fuelMerge, hmergeMem⟩ := ihMerge
+    obtain ⟨fuel, hflat⟩ := flatMap_of_list_match_merge hmatch hmergeMem
+    refine ⟨fuel + 1, ?_⟩
+    simpa [addVarBinding, hvalues, hinconsistent] using hflat
   let c5 :
-      ∀ {b : Bindings} {a c : String} {av cv : Atom} {mB out : Bindings}
-        (hA : b.lookup a = some av) (hC : b.lookup c = some cv) (hneq : av ≠ cv)
-        (hm : MatchRel av cv mB) (hmerge : MergeRel b mB out),
-        m5 b mB out hmerge → m2 b a c out (.conflict hA hC hneq hm hmerge) := by
-    intro b a c av cv mB out hA hC hneq hm hmerge ihMerge
+      ∀ {b : Bindings} {a c : String}
+        (hconsistent :
+          Bindings.valuesConsistent ((b.addEquality a c).classValues a) = true),
+        m2 b a c (b.addEquality a c) (.consistent hconsistent) := by
+    intro b a c hconsistent
+    refine ⟨1, ?_⟩
+    simp [addVarEquality, hconsistent]
+  let c6 :
+      ∀ {b : Bindings} {a c : String} {first second : Atom} {mB out : Bindings}
+        (hvalues : (b.addEquality a c).classValues a = [first, second])
+        (hinconsistent : Bindings.valuesConsistent [first, second] = false)
+        (hm : MatchRel first second mB)
+        (hmerge : MergeRel (b.addEquality a c) mB out),
+        m5 (b.addEquality a c) mB out hmerge →
+          m2 b a c out (.pairConflict hvalues hinconsistent hm hmerge) := by
+    intro b a c first second mB out hvalues hinconsistent hm hmerge ihMerge
     obtain ⟨fuelMatch, hmatch⟩ := matchAtoms_complete hm
     obtain ⟨fuelMerge, hmergeMem⟩ := ihMerge
     obtain ⟨fuel, hflat⟩ := flatMap_of_match_merge hmatch hmergeMem
     refine ⟨fuel + 1, ?_⟩
-    simpa [addVarEquality, hA, hC, hneq] using hflat
-  let c6 :
+    simpa [addVarEquality, hvalues, hinconsistent] using hflat
+  let c7 :
+      ∀ {b : Bindings} {a c : String} {first second third : Atom}
+        {rest : List Atom} {mB out : Bindings}
+        (hvalues :
+          (b.addEquality a c).classValues a = first :: second :: third :: rest)
+        (hinconsistent :
+          Bindings.valuesConsistent (first :: second :: third :: rest) = false)
+        (hm : MatchListRel (List.replicate (rest.length + 2) first)
+          (second :: third :: rest) mB)
+        (hmerge : MergeRel (b.addEquality a c) mB out),
+        m5 (b.addEquality a c) mB out hmerge →
+          m2 b a c out (.classConflict hvalues hinconsistent hm hmerge) := by
+    intro b a c first second third rest mB out hvalues hinconsistent hm hmerge ihMerge
+    obtain ⟨fuelMatch, hmatch⟩ := matchAtomsList_complete hm
+    obtain ⟨fuelMerge, hmergeMem⟩ := ihMerge
+    obtain ⟨fuel, hflat⟩ := flatMap_of_list_match_merge hmatch hmergeMem
+    refine ⟨fuel + 1, ?_⟩
+    simpa [addVarEquality, hvalues, hinconsistent] using hflat
+  let c8 :
       ∀ {acc : Bindings}, m3 acc [] acc (.nil) := by
     intro acc
     refine ⟨0, ?_⟩
     simp [execAssignFold]
-  let c7 :
+  let c9 :
       ∀ {acc : Bindings} {v : String} {val : Atom} {rest : List (String × Atom)} {acc' out : Bindings}
         (hHead : AddVarBindingRel acc v val acc') (hTail : MergeAssignsRel acc' rest out),
         m1 acc v val acc' hHead → m3 acc' rest out hTail →
@@ -604,12 +736,12 @@ private theorem completePack : MergeCompletePack := by
     obtain ⟨fuelHead, hHeadMem⟩ := ihHead
     obtain ⟨fuelTail, hTailMem⟩ := ihTail
     exact execAssignFold_cons_of_head_tail hHeadMem hTailMem
-  let c8 :
+  let c10 :
       ∀ {acc : Bindings}, m4 acc [] acc (.nil) := by
     intro acc
     refine ⟨0, ?_⟩
     simp [execEqFold]
-  let c9 :
+  let c11 :
       ∀ {acc : Bindings} {a c : String} {rest : List (String × String)} {acc' out : Bindings}
         (hHead : AddVarEqualityRel acc a c acc') (hTail : MergeEqsRel acc' rest out),
         m2 acc a c acc' hHead → m4 acc' rest out hTail →
@@ -618,7 +750,7 @@ private theorem completePack : MergeCompletePack := by
     obtain ⟨fuelHead, hHeadMem⟩ := ihHead
     obtain ⟨fuelTail, hTailMem⟩ := ihTail
     exact execEqFold_cons_of_head_tail hHeadMem hTailMem
-  let c10 :
+  let c12 :
       ∀ {left right mid out : Bindings}
         (hAssigns : MergeAssignsRel left right.assignments mid)
         (hEqs : MergeEqsRel mid right.equalities out),
@@ -658,27 +790,27 @@ private theorem completePack : MergeCompletePack := by
     exact
       AddVarBindingRel.rec
         (motive_1 := m1) (motive_2 := m2) (motive_3 := m3) (motive_4 := m4) (motive_5 := m5)
-        c1 c2 c3 c4 c5 c6 c7 c8 c9 c10 h
+        c1 c2 c3 c4 c5 c6 c7 c8 c9 c10 c11 c12 h
   · intro b a c out h
     exact
       AddVarEqualityRel.rec
         (motive_1 := m1) (motive_2 := m2) (motive_3 := m3) (motive_4 := m4) (motive_5 := m5)
-        c1 c2 c3 c4 c5 c6 c7 c8 c9 c10 h
+        c1 c2 c3 c4 c5 c6 c7 c8 c9 c10 c11 c12 h
   · intro seed assigns out h
     exact
       MergeAssignsRel.rec
         (motive_1 := m1) (motive_2 := m2) (motive_3 := m3) (motive_4 := m4) (motive_5 := m5)
-        c1 c2 c3 c4 c5 c6 c7 c8 c9 c10 h
+        c1 c2 c3 c4 c5 c6 c7 c8 c9 c10 c11 c12 h
   · intro seed eqs out h
     exact
       MergeEqsRel.rec
         (motive_1 := m1) (motive_2 := m2) (motive_3 := m3) (motive_4 := m4) (motive_5 := m5)
-        c1 c2 c3 c4 c5 c6 c7 c8 c9 c10 h
+        c1 c2 c3 c4 c5 c6 c7 c8 c9 c10 c11 c12 h
   · intro left right out h
     exact
       MergeRel.rec
         (motive_1 := m1) (motive_2 := m2) (motive_3 := m3) (motive_4 := m4) (motive_5 := m5)
-        c1 c2 c3 c4 c5 c6 c7 c8 c9 c10 h
+        c1 c2 c3 c4 c5 c6 c7 c8 c9 c10 c11 c12 h
 
 /-- Completeness of the executable `addVarBinding` helper. -/
 theorem addVarBinding_complete
@@ -706,14 +838,14 @@ theorem mergeBindings_complete
 /-- Merging two disjoint assignments accumulates both. -/
 example : MergeRel ⟨[("x", .symbol "a")], []⟩ ⟨[("y", .symbol "b")], []⟩
     ⟨[("x", .symbol "a"), ("y", .symbol "b")], []⟩ :=
-  .mk (.cons (.unbound rfl) .nil) .nil
+  .mk (.cons (.fresh rfl) .nil) .nil
 
 /-- Merging an empty right binding is the identity. -/
 example {b : Bindings} : MergeRel b ⟨[], []⟩ b := .mk .nil .nil
 
 /-- Re-adding an already-present binding is a no-op (the `same` case). -/
 example : MergeRel ⟨[("x", .symbol "a")], []⟩ ⟨[("x", .symbol "a")], []⟩ ⟨[("x", .symbol "a")], []⟩ :=
-  .mk (.cons (.same rfl) .nil) .nil
+  .mk (.cons (.same rfl rfl rfl) .nil) .nil
 
 /-! ## §3  Keystone negative — incompatible values cannot merge
 
@@ -726,11 +858,23 @@ example {out : Bindings} :
     ¬ AddVarBindingRel ⟨[("x", .symbol "a")], []⟩ "x" (.symbol "b") out := by
   intro h
   cases h with
-  | unbound hl => simp [Bindings.lookup] at hl
-  | same hl => simp [Bindings.lookup] at hl
-  | conflict hl _ hm _ =>
-      simp [Bindings.lookup] at hl
-      subst hl
+  | fresh hvalues =>
+      simp [Bindings.classValues, Bindings.eqClassOrdered, Bindings.eqVarsInOrder,
+        Bindings.eqClass, Bindings.eqClassAux, Bindings.lookup] at hvalues
+  | same hvalues _ hsame =>
+      simp [Bindings.classValues, Bindings.eqClassOrdered, Bindings.eqVarsInOrder,
+        Bindings.eqClass, Bindings.eqClassAux, Bindings.lookup] at hvalues
+      rcases hvalues with ⟨rfl, rfl⟩
+      simp at hsame
+  | conflict hvalues _ _ hm _ =>
+      simp [Bindings.classValues, Bindings.eqClassOrdered, Bindings.eqVarsInOrder,
+        Bindings.eqClass, Bindings.eqClassAux, Bindings.lookup] at hvalues
+      rcases hvalues with ⟨rfl, rfl⟩
       exact absurd (matchRel_symSym_inv hm).1 (by decide)
+  | reconcile hvalues hinconsistent _ _ =>
+      simp [Bindings.classValues, Bindings.eqClassOrdered, Bindings.eqVarsInOrder,
+        Bindings.eqClass, Bindings.eqClassAux, Bindings.lookup] at hvalues
+      rcases hvalues with ⟨rfl, rfl⟩
+      simp [Bindings.valuesConsistent] at hinconsistent
 
 end Mettapedia.Languages.MeTTa.HE.DeclMergeSpec

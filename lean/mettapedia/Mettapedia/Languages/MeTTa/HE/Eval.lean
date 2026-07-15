@@ -216,7 +216,7 @@ def mettaCall (space : Space) (dispatch : GroundedDispatch)
           eqs.flatMap fun (rhs, qb) =>
             (mergeBindings qb b n).flatMap fun mb =>
               if mb.hasLoop then []
-              else evalAtom space dispatch (mb.apply rhs n) type_ mb n
+              else evalAtom space dispatch (mb.applyFull rhs n) type_ mb n
     | _ =>
       let eqs := queryEquations space atom n
       if eqs.isEmpty then [(atom, b)]
@@ -224,7 +224,7 @@ def mettaCall (space : Space) (dispatch : GroundedDispatch)
         eqs.flatMap fun (rhs, qb) =>
           (mergeBindings qb b n).flatMap fun mb =>
             if mb.hasLoop then []
-            else evalAtom space dispatch (mb.apply rhs n) type_ mb n
+            else evalAtom space dispatch (mb.applyFull rhs n) type_ mb n
 
 end
 

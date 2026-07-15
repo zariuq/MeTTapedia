@@ -431,8 +431,8 @@ inductive FragStep (space : Space) (d : GroundedDispatch) (fuel : Nat) :
       (h_query : (rhs, qb) ∈ queryEquations space
         (.expression (op :: e2 :: rest)) fuel)
       (h_no_loop : qb.hasLoop = false)
-      (h_applied_q : SelfEvalQuiescent space d fuel (qb.apply rhs fuel)) :
-      FragStep space d fuel (.expression (op :: e2 :: rest)) (qb.apply rhs fuel)
+      (h_applied_q : SelfEvalQuiescent space d fuel (qb.applyFull rhs fuel)) :
+      FragStep space d fuel (.expression (op :: e2 :: rest)) (qb.applyFull rhs fuel)
   /-- Congruence at a non-head position with a constructor-like head and
   Q-domain spectators.  (In the fragment the head is never steppable, so
   leftmost coarse congruence is always at position ≥ 1.) -/
@@ -538,9 +538,9 @@ theorem evalAtom_absorbs_fragStep {space : Space} {d : GroundedDispatch}
               h_last h_nes
           have h_call : MettaCall space d (.expression (op :: e2 :: rest))
               Atom.undefinedType Bindings.empty
-              (qb.apply rhs (n + 1), qb) :=
+              (qb.applyFull rhs (n + 1), qb) :=
             MettaCall.equation_match _ _ _ rhs qb qb
-              (qb.apply rhs (n + 1), qb) (n + 1)
+              (qb.applyFull rhs (n + 1), qb) (n + 1)
               (isErrorAtom_expr_false _ (h_nes op (by simp)))
               ⟨h_not_exec, h_not_unify, h_not_switch⟩ h_query
               (by rw [mergeBindings_empty_right]; exact List.mem_singleton.mpr rfl)
@@ -554,7 +554,7 @@ theorem evalAtom_absorbs_fragStep {space : Space} {d : GroundedDispatch}
             (by intro h_unit; simp [Atom.unit] at h_unit)
             (InterpretExpression.tuple_path _ _ _
               (.expression (op :: e2 :: rest), Bindings.empty)
-              (qb.apply rhs (n + 1), qb)
+              (qb.applyFull rhs (n + 1), qb)
               (by simpa using h_op_has)
               h_tuple h_call)
             ?_⟩

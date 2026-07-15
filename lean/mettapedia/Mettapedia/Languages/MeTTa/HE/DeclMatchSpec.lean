@@ -469,34 +469,47 @@ private theorem matcher_mono_local : ∀ n : Nat,
           (fun acc acc' p h => flatMap_bsub h (fun bd _ => ihB bd p.1 p.2))
           (hsubRefl [a])
       · intro b v val x hx
-        cases hlook : b.lookup v with
-        | none =>
-            simp only [addVarBinding, hlook] at hx ⊢
+        simp only [addVarBinding] at hx ⊢
+        cases hvalues : b.classValues v with
+        | nil =>
+            simp [hvalues] at hx ⊢
             exact hx
-        | some prev =>
-            simp only [addVarBinding, hlook] at hx ⊢
-            split at hx <;> rename_i heq
-            · rw [if_pos heq]
-              exact hx
-            · rw [if_neg heq]
-              exact flatMap_bsub (ihA _ _) (fun mb _ => ihM b mb) x hx
-      · intro b a c x hx
-        cases hA : b.lookup a with
-        | none =>
-            simp only [addVarEquality, hA] at hx ⊢
-            exact hx
-        | some av =>
-            cases hC : b.lookup c with
-            | none =>
-                simp only [addVarEquality, hA, hC] at hx ⊢
+        | cons first rest =>
+            simp only [hvalues, Bindings.valuesConsistent] at hx ⊢
+            by_cases hclass : rest.all (fun value => value == first) = true
+            · rw [if_pos hclass] at hx ⊢
+              by_cases hsame : first = val
+              · have hbeq : (first == val) = true := by simp [hsame]
+                rw [if_pos hbeq] at hx ⊢
                 exact hx
-            | some cv =>
-                simp only [addVarEquality, hA, hC] at hx ⊢
-                split at hx <;> rename_i heq
-                · rw [if_pos heq]
-                  exact hx
-                · rw [if_neg heq]
-                  exact flatMap_bsub (ihA _ _) (fun mb _ => ihM b mb) x hx
+              · have hbeq : ¬ (first == val) = true := by simpa using hsame
+                rw [if_neg hbeq] at hx ⊢
+                exact flatMap_bsub (ihA first val) (fun mb _ => ihM b mb) x hx
+            · rw [if_neg hclass] at hx ⊢
+              exact flatMap_bsub (ihL _ _ _ _ (hsubRefl _))
+                (fun mb _ => ihM b mb) x hx
+      · intro b a c x hx
+        simp only [addVarEquality] at hx ⊢
+        cases hvalues : (b.addEquality a c).classValues a with
+        | nil =>
+            simp [hvalues] at hx ⊢
+            exact hx
+        | cons first rest =>
+            simp only [hvalues, Bindings.valuesConsistent] at hx ⊢
+            by_cases hall : rest.all (fun value => value == first) = true
+            · rw [if_pos hall] at hx ⊢
+              exact hx
+            · rw [if_neg hall] at hx ⊢
+              cases rest with
+              | nil => simp at hall
+              | cons second tail =>
+                  cases tail with
+                  | nil =>
+                      exact flatMap_bsub (ihA first second)
+                        (fun mb _ => ihM (b.addEquality a c) mb) x hx
+                  | cons third tail =>
+                      exact flatMap_bsub (ihL _ _ _ _ (hsubRefl _))
+                        (fun mb _ => ihM (b.addEquality a c) mb) x hx
 
 private theorem matchAtoms_mono_add
     (l r : Atom) (fuel extra : Nat) :
@@ -629,6 +642,29 @@ private theorem AssignmentValuesNonVar.assign_of_lookup_none
   · exact hvals hmem
   · rcases hmem with ⟨rfl, rfl⟩
     exact hval
+
+private theorem AssignmentValuesNonVar.assign
+    {b : Bindings} (hvals : AssignmentValuesNonVar b)
+    {v : String} {val : Atom} (hval : Atom.isVarB val = false) :
+    AssignmentValuesNonVar (b.assign v val) := by
+  intro w a hmem
+  by_cases hbound : b.isBound v
+  · unfold Bindings.assign at hmem
+    simp only [hbound, if_true] at hmem
+    rcases List.mem_map.mp hmem with ⟨⟨k, old⟩, hold, hmap⟩
+    by_cases hk : k = v
+    · simp [hk] at hmap
+      rcases hmap with ⟨rfl, rfl⟩
+      exact hval
+    · simp [hk] at hmap
+      rcases hmap with ⟨rfl, rfl⟩
+      exact hvals hold
+  · unfold Bindings.assign at hmem
+    simp [hbound] at hmem
+    rcases hmem with hmem | hmem
+    · exact hvals hmem
+    · rcases hmem with ⟨rfl, rfl⟩
+      exact hval
 
 private theorem AssignmentValuesNonVar.removeAssignment
     {b : Bindings} (hvals : AssignmentValuesNonVar b) (v : String) :
@@ -1037,46 +1073,63 @@ private theorem matcherAssignmentsNonVar :
                 exact hright hp)
         exact hEqFold right.equalities h hafter
       · intro b v val out h hb hval
-        cases hlookup : b.lookup v with
-        | none =>
-            simp [addVarBinding, hlookup] at h
+        simp only [addVarBinding] at h
+        cases hvalues : b.classValues v with
+        | nil =>
+            simp [hvalues] at h
             subst out
-            exact
-              AssignmentValuesNonVar.assign_of_lookup_none
-                hb hlookup hval
-        | some prev =>
-            by_cases hpeq : prev = val
-            · simp [addVarBinding, hlookup, hpeq] at h
-              subst out
-              exact hb
-            · simp [addVarBinding, hlookup, hpeq] at h
-              rcases h with ⟨mb, hmb, hmerge⟩
-              exact ihMerge hmerge hb (ihAtoms hmb)
+            exact AssignmentValuesNonVar.assign hb hval
+        | cons first rest =>
+            simp only [hvalues, Bindings.valuesConsistent] at h
+            by_cases hclass : rest.all (fun value => value == first) = true
+            · rw [if_pos hclass] at h
+              split at h
+              · simp at h
+                subst out
+                exact hb
+              · rcases List.mem_flatMap.mp h with ⟨mb, hmb, hmerge⟩
+                exact ihMerge hmerge hb (ihAtoms hmb)
+            · rw [if_neg hclass] at h
+              rcases List.mem_flatMap.mp h with ⟨mb, hmb, hmerge⟩
+              exact ihMerge hmerge hb
+                (ihLists hmb (by
+                  intro seed hseed
+                  simp at hseed
+                  subst seed
+                  exact AssignmentValuesNonVar.empty))
       · intro b a c out h hb
-        cases hA : b.lookup a <;> cases hC : b.lookup c <;>
-          simp [addVarEquality, hA, hC] at h
-        · subst out
-          exact
-            AssignmentValuesNonVar.addEquality
-              (AssignmentValuesNonVar.removeAssignment hb c) a c
-        · subst out
-          exact
-            AssignmentValuesNonVar.addEquality
-              (AssignmentValuesNonVar.removeAssignment hb c) a c
-        · subst out
-          exact
-            AssignmentValuesNonVar.addEquality
-              (AssignmentValuesNonVar.removeAssignment hb c) a c
-        · rename_i av cv
-          by_cases hEq : av = cv
-          · simp [hEq] at h
-            subst out
-            exact
-              AssignmentValuesNonVar.addEquality
-                (AssignmentValuesNonVar.removeAssignment hb c) a c
-          · simp [hEq] at h
-            rcases h with ⟨mb, hmb, hmerge⟩
-            exact ihMerge hmerge hb (ihAtoms hmb)
+        simp only [addVarEquality] at h
+        let candidate := b.addEquality a c
+        have hcandidate : AssignmentValuesNonVar candidate :=
+          AssignmentValuesNonVar.addEquality hb a c
+        cases hvalues : candidate.classValues a with
+        | nil =>
+            simp [candidate, hvalues] at h
+            rcases h with ⟨_, rfl⟩
+            exact hcandidate
+        | cons first rest =>
+            simp only [candidate, hvalues, Bindings.valuesConsistent] at h
+            by_cases hclass : rest.all (fun value => value == first) = true
+            · rw [if_pos hclass] at h
+              simp at h
+              subst out
+              exact hcandidate
+            · rw [if_neg hclass] at h
+              cases rest with
+              | nil => simp at hclass
+              | cons second tail =>
+                  cases tail with
+                  | nil =>
+                      rcases List.mem_flatMap.mp h with ⟨mb, hmb, hmerge⟩
+                      exact ihMerge hmerge hcandidate (ihAtoms hmb)
+                  | cons third tail =>
+                      rcases List.mem_flatMap.mp h with ⟨mb, hmb, hmerge⟩
+                      exact ihMerge hmerge hcandidate
+                        (ihLists hmb (by
+                          intro seed hseed
+                          simp at hseed
+                          subst seed
+                          exact AssignmentValuesNonVar.empty))
 
 private theorem matchAtoms_assignmentsNonVar
     {l r : Atom} {b : Bindings} {fuel : Nat}
@@ -1322,44 +1375,63 @@ private theorem matcherAssignmentsNodup :
                 exact hleft)
         exact hEqFold right.equalities h hafter
       · intro b v val out h hb
-        cases hlookup : b.lookup v with
-        | none =>
-            simp [addVarBinding, hlookup] at h
+        simp only [addVarBinding] at h
+        cases hvalues : b.classValues v with
+        | nil =>
+            simp [hvalues] at h
             subst out
             exact AssignmentKeysNodup.assign hb
-        | some prev =>
-            by_cases hpeq : prev = val
-            · simp [addVarBinding, hlookup, hpeq] at h
-              subst out
-              exact hb
-            · simp [addVarBinding, hlookup, hpeq] at h
-              rcases h with ⟨mb, hmb, hmerge⟩
-              exact ihMerge hmerge hb (ihAtoms hmb)
+        | cons first rest =>
+            simp only [hvalues, Bindings.valuesConsistent] at h
+            by_cases hclass : rest.all (fun value => value == first) = true
+            · rw [if_pos hclass] at h
+              split at h
+              · simp at h
+                subst out
+                exact hb
+              · rcases List.mem_flatMap.mp h with ⟨mb, hmb, hmerge⟩
+                exact ihMerge hmerge hb (ihAtoms hmb)
+            · rw [if_neg hclass] at h
+              rcases List.mem_flatMap.mp h with ⟨mb, hmb, hmerge⟩
+              exact ihMerge hmerge hb
+                (ihLists hmb (by
+                  intro seed hseed
+                  simp at hseed
+                  subst seed
+                  exact AssignmentKeysNodup.empty))
       · intro b a c out h hb
-        cases hA : b.lookup a <;> cases hC : b.lookup c <;>
-          simp [addVarEquality, hA, hC] at h
-        · subst out
-          exact
-            AssignmentKeysNodup.addEquality
-              (AssignmentKeysNodup.removeAssignment hb c) a c
-        · subst out
-          exact
-            AssignmentKeysNodup.addEquality
-              (AssignmentKeysNodup.removeAssignment hb c) a c
-        · subst out
-          exact
-            AssignmentKeysNodup.addEquality
-              (AssignmentKeysNodup.removeAssignment hb c) a c
-        · rename_i av cv
-          by_cases hEq : av = cv
-          · simp [hEq] at h
-            subst out
-            exact
-              AssignmentKeysNodup.addEquality
-                (AssignmentKeysNodup.removeAssignment hb c) a c
-          · simp [hEq] at h
-            rcases h with ⟨mb, hmb, hmerge⟩
-            exact ihMerge hmerge hb (ihAtoms hmb)
+        simp only [addVarEquality] at h
+        let candidate := b.addEquality a c
+        have hcandidate : AssignmentKeysNodup candidate :=
+          AssignmentKeysNodup.addEquality hb a c
+        cases hvalues : candidate.classValues a with
+        | nil =>
+            simp [candidate, hvalues] at h
+            rcases h with ⟨_, rfl⟩
+            exact hcandidate
+        | cons first rest =>
+            simp only [candidate, hvalues, Bindings.valuesConsistent] at h
+            by_cases hclass : rest.all (fun value => value == first) = true
+            · rw [if_pos hclass] at h
+              simp at h
+              subst out
+              exact hcandidate
+            · rw [if_neg hclass] at h
+              cases rest with
+              | nil => simp at hclass
+              | cons second tail =>
+                  cases tail with
+                  | nil =>
+                      rcases List.mem_flatMap.mp h with ⟨mb, hmb, hmerge⟩
+                      exact ihMerge hmerge hcandidate (ihAtoms hmb)
+                  | cons third tail =>
+                      rcases List.mem_flatMap.mp h with ⟨mb, hmb, hmerge⟩
+                      exact ihMerge hmerge hcandidate
+                        (ihLists hmb (by
+                          intro seed hseed
+                          simp at hseed
+                          subst seed
+                          exact AssignmentKeysNodup.empty))
 
 private theorem matchAtoms_assignmentKeysNodup
     {l r : Atom} {b : Bindings} {fuel : Nat}
@@ -1432,6 +1504,17 @@ private theorem MatchListAccRel.noVar
     (hseed : AssignmentValuesNonVar seed) :
     NoVarAssignmentValues out :=
   AssignmentValuesNonVar.noVar (MatchListAccRel.assignmentsNonVar h hseed)
+
+/-- Matcher-origin list results store only non-variable assignment payloads.
+This public member-facing form is the invariant consumed by the declarative
+merge/reconciliation bridge. -/
+theorem matchListRel_assignmentValue_isVarB_false
+    {left right : List Atom} {out : Bindings}
+    (h : MatchListRel left right out)
+    {key : String} {value : Atom}
+    (hmem : (key, value) ∈ out.assignments) :
+    Atom.isVarB value = false :=
+  MatchListAccRel.assignmentsNonVar h AssignmentValuesNonVar.empty hmem
 
 /-- On the no-variable-values fragment, HE bindings are loop-free: every
     successful lookup terminates immediately at a non-variable payload, so

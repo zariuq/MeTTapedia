@@ -26,15 +26,30 @@ open Mettapedia.Languages.MeTTa.OSLFCore (Atom GroundedValue)
 
 /-- Fresh-variable `addVarBinding` is plain assignment. -/
 theorem addVarBinding_fresh {b : Bindings} {v : String} {val : Atom}
-    (h : b.lookup v = none) (n : Nat) :
+    (h : b.lookup v = none) (hEq : b.equalities = []) (n : Nat) :
     addVarBinding b v val (n + 1) = [b.assign v val] := by
-  simp [addVarBinding, h]
+  simp [addVarBinding, Bindings.classValues_no_equalities hEq, h]
 
 /-- Bound-to-the-same-value `addVarBinding` is the identity. -/
 theorem addVarBinding_same {b : Bindings} {v : String} {val : Atom}
-    (h : b.lookup v = some val) (n : Nat) :
+    (h : b.lookup v = some val) (hEq : b.equalities = []) (n : Nat) :
     addVarBinding b v val (n + 1) = [b] := by
-  simp [addVarBinding, h]
+  simp [addVarBinding, Bindings.classValues_no_equalities hEq, h,
+    Bindings.valuesConsistent]
+
+/-- On equality-free bindings, class-wide addition is exactly the original
+direct-lookup algorithm. -/
+theorem addVarBinding_no_equalities {b : Bindings} {v : String} {val : Atom}
+    (hEq : b.equalities = []) (n : Nat) :
+    addVarBinding b v val (n + 1) =
+      match b.lookup v with
+      | none => [b.assign v val]
+      | some prev =>
+          if prev == val then [b]
+          else (matchAtoms prev val n).flatMap fun mb => mergeBindings b mb n := by
+  cases hlook : b.lookup v <;>
+    simp [addVarBinding, Bindings.classValues_no_equalities hEq, hlook,
+      Bindings.valuesConsistent]
 
 /-- Merging a single fresh assignment: the same case split as
 `simpleMatch`'s variable case (fresh → extend; bound-same → unchanged). -/
@@ -47,17 +62,17 @@ theorem mergeBindings_single_assign {b : Bindings} {v : String} {val : Atom}
 
 /-- Fresh single-assignment merge is just the expected assignment. -/
 theorem mergeBindings_single_assign_fresh {b : Bindings} {v : String} {val : Atom}
-    (h : b.lookup v = none) (n : Nat) :
+    (h : b.lookup v = none) (hEq : b.equalities = []) (n : Nat) :
     mergeBindings b (Bindings.empty.assign v val) (n + 2) = [b.assign v val] := by
   rw [mergeBindings_single_assign]
-  exact addVarBinding_fresh h n
+  exact addVarBinding_fresh h hEq n
 
 /-- Re-merging the same single assignment is the identity. -/
 theorem mergeBindings_single_assign_same {b : Bindings} {v : String} {val : Atom}
-    (h : b.lookup v = some val) (n : Nat) :
+    (h : b.lookup v = some val) (hEq : b.equalities = []) (n : Nat) :
     mergeBindings b (Bindings.empty.assign v val) (n + 2) = [b] := by
   rw [mergeBindings_single_assign]
-  exact addVarBinding_same h n
+  exact addVarBinding_same h hEq n
 
 /-- Empty bindings merged with a single assignment reproduce that assignment
 once enough fuel is available for the inner `addVarBinding`. -/
@@ -65,16 +80,35 @@ theorem mergeBindings_empty_single_assign {v : String} {val : Atom} (n : Nat) :
     mergeBindings Bindings.empty (Bindings.empty.assign v val) (n + 2) =
       [Bindings.empty.assign v val] := by
   rw [mergeBindings_single_assign]
-  exact addVarBinding_fresh (by simp [Bindings.empty, Bindings.lookup]) n
+  exact addVarBinding_fresh (by simp [Bindings.empty, Bindings.lookup]) rfl n
 
 /-- At fuel 1, `addVarBinding` is a deterministic single-step compatibility
 check: fresh extends, same-value keeps, different-value fails. -/
-theorem addVarBinding_fuel1 (b : Bindings) (v : String) (val : Atom) :
+theorem addVarBinding_fuel1 (b : Bindings) (v : String) (val : Atom)
+    (hEq : b.equalities = []) :
     addVarBinding b v val 1 =
       match b.lookup v with
       | none => [b.assign v val]
       | some prev => if prev == val then [b] else [] := by
-  cases hlook : b.lookup v <;> simp [addVarBinding, hlook, matchAtoms]
+  rw [addVarBinding_no_equalities hEq 0]
+  cases b.lookup v <;> simp [matchAtoms]
+
+private theorem addVarBinding_fuel1_no_equalities
+    {b result : Bindings} {v : String} {val : Atom}
+    (hEq : b.equalities = []) (hmem : result ∈ addVarBinding b v val 1) :
+    result.equalities = [] := by
+  rw [addVarBinding_fuel1 b v val hEq] at hmem
+  cases hlook : b.lookup v with
+  | none =>
+      simp [hlook] at hmem
+      subst result
+      simpa [Bindings.assign] using hEq
+  | some prev =>
+      by_cases hsame : prev == val
+      · simp [hlook, hsame] at hmem
+        subst result
+        exact hEq
+      · simp [hlook, hsame] at hmem
 
 /-- One deterministic ground-merge fold step: thread a list of candidate
 bindings through one assignment, failing on incompatible rebinding. -/
@@ -99,10 +133,33 @@ private def mergeGroundAssignments? (b : Bindings) :
           else
             none
 
+/-- Deterministic assignment merging never changes the equality component. -/
+private theorem mergeGroundAssignments_equalities
+    {b out : Bindings} {assigns : List (String × Atom)}
+    (h : mergeGroundAssignments? b assigns = some out) :
+    out.equalities = b.equalities := by
+  induction assigns generalizing b with
+  | nil =>
+      simp [mergeGroundAssignments?] at h
+      subst out
+      rfl
+  | cons pair rest ih =>
+      rcases pair with ⟨v, val⟩
+      cases hlook : b.lookup v with
+      | none =>
+          apply (ih (b := b.assign v val) (by
+            simpa [mergeGroundAssignments?, hlook] using h)).trans
+          rfl
+      | some prev =>
+          by_cases hsame : prev == val
+          · exact ih (by simpa [mergeGroundAssignments?, hlook, hsame] using h)
+          · simp [mergeGroundAssignments?, hlook, hsame] at h
+
 /-- The fuel-1 `addVarBinding` fold is definitionally the deterministic
 lookup/compare fold used by `mergeGroundAssignments?`. -/
 private theorem fold_addVarBinding_fuel1_eq
-    (acc : List Bindings) (assigns : List (String × Atom)) :
+    (acc : List Bindings) (assigns : List (String × Atom))
+    (haccEq : ∀ b ∈ acc, b.equalities = []) :
     List.foldl
       (fun acc x => acc.flatMap fun b => addVarBinding b x.1 x.2 1)
       acc assigns =
@@ -111,14 +168,30 @@ private theorem fold_addVarBinding_fuel1_eq
   | nil => rfl
   | cons pair assigns ih =>
       rcases pair with ⟨v, val⟩
-      simpa [List.foldl, addVarBinding_fuel1, detfoldStep] using
-        ih
-          (List.flatMap
-            (fun b =>
-              match b.lookup v with
-              | none => [b.assign v val]
-              | some prev => if prev == val then [b] else [])
-            acc)
+      simp only [List.foldl_cons]
+      have hstep :
+          acc.flatMap (fun b => addVarBinding b v val 1) =
+            detfoldStep acc (v, val) := by
+        unfold detfoldStep
+        apply List.flatMap_congr
+        intro b hb
+        exact addVarBinding_fuel1 b v val (haccEq b hb)
+      rw [hstep]
+      apply ih
+      intro out hout
+      rcases List.mem_flatMap.mp hout with ⟨b, hb, hout⟩
+      have hbEq := haccEq b hb
+      cases hlook : b.lookup v with
+      | none =>
+          simp [hlook] at hout
+          subst out
+          simp [Bindings.assign, hbEq]
+      | some prev =>
+          by_cases hsame : prev == val
+          · simp [hlook, hsame] at hout
+            subst out
+            exact hbEq
+          · simp [hlook, hsame] at hout
 
 /-- Once the deterministic ground-merge fold has no candidate bindings left,
 it stays empty. -/
@@ -752,38 +825,46 @@ private theorem mergeGround_concat
 /-- On the no-equalities fragment, `mergeGround?` exactly reproduces
 `mergeBindings` at fuel 2. -/
 private theorem mergeGround_toList_eq_mergeBindings_two
-    (left right : Bindings) (hEq : right.equalities = []) :
+    (left right : Bindings) (hLeftEq : left.equalities = [])
+    (hEq : right.equalities = []) :
     (mergeGround? left right).toList = mergeBindings left right 2 := by
   cases right with
   | mk assignments equalities =>
       cases hEq
-      simp [mergeGround?, mergeBindings, mergeGroundAssignments_toList_eq_detfold,
-        fold_addVarBinding_fuel1_eq]
+      simp only [mergeGround?, mergeBindings, List.foldl_nil]
+      rw [mergeGroundAssignments_toList_eq_detfold]
+      exact (fold_addVarBinding_fuel1_eq [left] assignments (by simp [hLeftEq])).symm
 
 /-- At fuel 2, merging a concatenated ground/no-equalities fragment is the
 same as merging the first fragment, then the second. -/
 private theorem mergeBindings_two_concat
     (left mid right : Bindings)
-    (hmid : mid.equalities = []) (hright : right.equalities = []) :
+    (hleft : left.equalities = []) (hmid : mid.equalities = [])
+    (hright : right.equalities = []) :
     mergeBindings left { assignments := mid.assignments ++ right.assignments, equalities := [] } 2 =
       (mergeBindings left mid 2).flatMap fun leftmid =>
         mergeBindings leftmid right 2 := by
   rw [← mergeGround_toList_eq_mergeBindings_two left
-      { assignments := mid.assignments ++ right.assignments, equalities := [] } rfl]
+      { assignments := mid.assignments ++ right.assignments, equalities := [] } hleft rfl]
   rw [mergeGround_concat left mid right hmid hright]
-  rw [← mergeGround_toList_eq_mergeBindings_two left mid hmid]
+  rw [← mergeGround_toList_eq_mergeBindings_two left mid hleft hmid]
   cases hmerge : mergeGround? left mid with
   | none =>
       simp
   | some leftmid =>
-      simp [mergeGround_toList_eq_mergeBindings_two leftmid right hright]
+      have hleftmid : leftmid.equalities = [] := by
+        have hmga : mergeGroundAssignments? left mid.assignments = some leftmid := by
+          simpa [mergeGround?, hmid] using hmerge
+        exact (mergeGroundAssignments_equalities hmga).trans hleft
+      simp [mergeGround_toList_eq_mergeBindings_two leftmid right hleftmid hright]
 
 /-- On the no-equalities fragment, membership in `mergeBindings ... 2` is
 equivalent to the deterministic ground-merge helper returning that result. -/
 private theorem mem_mergeBindings_two_iff
-    {left right result : Bindings} (hEq : right.equalities = []) :
+    {left right result : Bindings} (hLeftEq : left.equalities = [])
+    (hEq : right.equalities = []) :
     result ∈ mergeBindings left right 2 ↔ mergeGround? left right = some result := by
-  rw [← mergeGround_toList_eq_mergeBindings_two left right hEq]
+  rw [← mergeGround_toList_eq_mergeBindings_two left right hLeftEq hEq]
   cases hmerge : mergeGround? left right with
   | none =>
       simp
@@ -963,33 +1044,48 @@ theorem matcher_mono : ∀ n : Nat,
           (subRefl [a])
       · -- addVarBinding
         intro b v val x hx
-        cases hlook : b.lookup v with
-        | none =>
-            simp only [addVarBinding, hlook] at hx ⊢
+        simp only [addVarBinding] at hx ⊢
+        cases hvalues : b.classValues v with
+        | nil =>
+            simp [hvalues] at hx ⊢
             exact hx
-        | some prev =>
-            simp only [addVarBinding, hlook] at hx ⊢
-            split at hx <;> rename_i heq
-            · rw [if_pos heq]; exact hx
-            · rw [if_neg heq]
-              exact flatMap_sub (ihA _ _) (fun mb _ => ihM b mb) x hx
+        | cons first rest =>
+            simp only [hvalues, Bindings.valuesConsistent] at hx ⊢
+            by_cases hclass : rest.all (fun value => value == first) = true
+            · rw [if_pos hclass] at hx ⊢
+              by_cases hsame : first = val
+              · have hbeq : (first == val) = true := by simp [hsame]
+                rw [if_pos hbeq] at hx ⊢
+                exact hx
+              · have hbeq : ¬ (first == val) = true := by simpa using hsame
+                rw [if_neg hbeq] at hx ⊢
+                exact flatMap_sub (ihA first val) (fun mb _ => ihM b mb) x hx
+            · rw [if_neg hclass] at hx ⊢
+              exact flatMap_sub (ihL _ _ _ _ (subRefl _))
+                (fun mb _ => ihM b mb) x hx
       · -- addVarEquality
         intro b a c x hx
-        cases hA : b.lookup a with
-        | none =>
-            simp only [addVarEquality, hA] at hx ⊢
+        simp only [addVarEquality] at hx ⊢
+        cases hvalues : (b.addEquality a c).classValues a with
+        | nil =>
+            simp [hvalues] at hx ⊢
             exact hx
-        | some av =>
-            cases hC : b.lookup c with
-            | none =>
-                simp only [addVarEquality, hA, hC] at hx ⊢
-                exact hx
-            | some cv =>
-                simp only [addVarEquality, hA, hC] at hx ⊢
-                split at hx <;> rename_i heq
-                · rw [if_pos heq]; exact hx
-                · rw [if_neg heq]
-                  exact flatMap_sub (ihA _ _) (fun mb _ => ihM b mb) x hx
+        | cons first rest =>
+            simp only [hvalues, Bindings.valuesConsistent] at hx ⊢
+            by_cases hall : rest.all (fun value => value == first) = true
+            · rw [if_pos hall] at hx ⊢
+              exact hx
+            · rw [if_neg hall] at hx ⊢
+              cases rest with
+              | nil => simp at hall
+              | cons second tail =>
+                  cases tail with
+                  | nil =>
+                      exact flatMap_sub (ihA first second)
+                        (fun mb _ => ihM (b.addEquality a c) mb) x hx
+                  | cons third tail =>
+                      exact flatMap_sub (ihL _ _ _ _ (subRefl _))
+                        (fun mb _ => ihM (b.addEquality a c) mb) x hx
 
 /-- `matchAtoms` is monotone in fuel. -/
 private theorem matchAtoms_mono_add
@@ -1283,7 +1379,7 @@ the same bindings as a singleton result. -/
 private theorem mergeBindings_empty_left_two_of_canon
     {b : Bindings} (hb : GroundBindingsCanon b) :
     mergeBindings Bindings.empty b 2 = [b] := by
-  rw [← mergeGround_toList_eq_mergeBindings_two Bindings.empty b hb.1.2]
+  rw [← mergeGround_toList_eq_mergeBindings_two Bindings.empty b rfl hb.1.2]
   simp [mergeGround_empty_left_of_canon hb]
 
 /-- Canonical ground bindings survive re-merging into the empty seed at any
@@ -1417,6 +1513,62 @@ private theorem collectVars_expr_eq_aux (es : List Atom) (fuel : Nat) :
     collectVars (.expression es) (fuel + 1) = collectVarsListAux es fuel := by
   simp [collectVars, collectVarsList_eq_aux]
 
+private theorem hasAssignedVarAux_false_of_ground :
+    ∀ (fuel : Nat) {a : Atom}, GroundAtom a →
+      ∀ b : Bindings, b.hasAssignedVarAux fuel a = false := by
+  intro fuel
+  induction fuel with
+  | zero => intro a ha b; rfl
+  | succ n ih =>
+      intro a ha b
+      cases a with
+      | var v => exact (GroundAtom.not_var ha).elim
+      | symbol s => rfl
+      | grounded g => rfl
+      | expression es =>
+          simp only [Bindings.hasAssignedVarAux]
+          rw [List.any_eq_false]
+          intro e he
+          simp [ih (GroundAtom.elem ha he) b]
+
+private theorem hasAssignedVar_false_of_ground {a : Atom}
+    (ha : GroundAtom a) (b : Bindings) : b.hasAssignedVar a = false := by
+  unfold Bindings.hasAssignedVar
+  exact hasAssignedVarAux_false_of_ground _ ha b
+
+private theorem resolveAtomAux_eq_of_ground :
+    ∀ (fuel : Nat) (a : Atom), GroundAtom a →
+      ∀ (visited : List String) (b₁ b₂ : Bindings),
+        b₁.resolveAtomAux fuel visited a = b₂.resolveAtomAux fuel visited a := by
+  intro fuel
+  induction fuel with
+  | zero => intro a ha visited b₁ b₂; rfl
+  | succ n ih =>
+      intro a ha visited b₁ b₂
+      cases a with
+      | var v => exact (GroundAtom.not_var ha).elim
+      | symbol s => rfl
+      | grounded g => rfl
+      | expression es =>
+          have hground : ∀ e ∈ es, GroundAtom e := by
+            cases ha with
+            | expression h => exact h
+          clear ha
+          have hmap :
+              es.mapM (b₁.resolveAtomAux n visited) =
+                es.mapM (b₂.resolveAtomAux n visited) := by
+            induction es with
+            | nil => rfl
+            | cons e es ihEs =>
+                have he : GroundAtom e := hground e (by simp)
+                have hes : ∀ a ∈ es, GroundAtom a := by
+                  intro a ha
+                  exact hground a (by simp [ha])
+                simp only [List.mapM_cons]
+                rw [ih e he visited b₁ b₂, ihEs hes]
+          simp only [Bindings.resolveAtomAux]
+          rw [hmap]
+
 /-- On ground matcher bindings, `Bindings.apply` depends only on the lookups
 of variables that syntactically occur in the atom being substituted.
 
@@ -1469,37 +1621,21 @@ private theorem apply_eq_of_lookup_eq_on_collectVars :
                 have h₂ : b₂.lookup v = none := by
                   rw [h₁] at hlookEq
                   exact hlookEq
-                cases n with
-                | zero =>
-                    simp [Bindings.apply, Bindings.resolve]
-                | succ m =>
-                    simp [Bindings.apply, Bindings.resolve, h₁, h₂]
+                simp [Bindings.apply, Bindings.resolve, h₁, h₂]
             | some val =>
                 have h₂ : b₂.lookup v = some val := by
                   rw [h₁] at hlookEq
                   exact hlookEq
                 have hground : GroundAtom val := lookup_ground hb h₁
-                cases val with
-                | var w =>
-                    exact (GroundAtom.not_var hground).elim
-                | symbol s =>
-                    cases n with
-                    | zero =>
-                        simp [Bindings.apply, Bindings.resolve]
-                    | succ m =>
-                        simp [Bindings.apply, Bindings.resolve, h₁, h₂]
-                | grounded g =>
-                    cases n with
-                    | zero =>
-                        simp [Bindings.apply, Bindings.resolve]
-                    | succ m =>
-                        simp [Bindings.apply, Bindings.resolve, h₁, h₂]
-                | expression es =>
-                    cases n with
-                    | zero =>
-                        simp [Bindings.apply, Bindings.resolve]
-                    | succ m =>
-                        simp [Bindings.apply, Bindings.resolve, h₁, h₂]
+                cases n with
+                | zero =>
+                    simp [Bindings.apply, Bindings.resolve,
+                      Bindings.resolveAtomAux, h₁, h₂]
+                | succ m =>
+                    have hstable₁ := hasAssignedVar_false_of_ground hground b₁
+                    have hstable₂ := hasAssignedVar_false_of_ground hground b₂
+                    simp [Bindings.apply, Bindings.resolve,
+                      Bindings.resolveAtomAux, h₁, h₂, hstable₁, hstable₂]
         | expression es =>
             have hvars :
                 ∀ v, v ∈ collectVarsListAux es n → b₂.lookup v = b₁.lookup v := by
@@ -1742,13 +1878,14 @@ theorem matcher_ground : ∀ n : Nat,
             exact hleft)
           hmem
       · intro b v val result hb hval hmem
+        rw [addVarBinding_no_equalities hb.2 n] at hmem
         cases hlook : b.lookup v with
         | none =>
-            simp [addVarBinding, hlook] at hmem
+            simp [hlook] at hmem
             rcases hmem with rfl
             exact GroundBindings.assign hb hval
         | some prev =>
-            simp only [addVarBinding, hlook] at hmem
+            simp only [hlook] at hmem
             split at hmem <;> rename_i hsame
             · simp at hmem
               rcases hmem with rfl
@@ -2018,15 +2155,16 @@ private theorem addVarBinding_canon
   | zero =>
       simp [addVarBinding] at hres
   | succ n =>
+      rw [addVarBinding_no_equalities hb.1.2 n] at hres
       cases hlook : b.lookup v with
       | none =>
-          simp [addVarBinding, hlook] at hres
+          simp [hlook] at hres
           rcases hres with rfl
           exact GroundBindingsCanon.assign hb hval
       | some prev =>
           have hprev : GroundAtom prev := lookup_ground hb.1 hlook
           by_cases hsame : prev == val
-          · simp [addVarBinding, hlook, hsame] at hres
+          · simp [hlook, hsame] at hres
             rcases hres with rfl
             exact hb
           · have hneq : prev ≠ val := by
@@ -2034,11 +2172,11 @@ private theorem addVarBinding_canon
               exact hsame (by simp [heq])
             cases n with
             | zero =>
-                simp [addVarBinding, hlook, hsame, matchAtoms] at hres
+                simp [hlook, hsame, matchAtoms] at hres
             | succ k =>
                 have hmatchNil : matchAtoms prev val (k + 1) = [] :=
                   matchAtoms_ground_ne_nil hprev hval hneq
-                simp [addVarBinding, hlook, hsame, hmatchNil] at hres
+                simp [hlook, hsame, hmatchNil] at hres
 
 /-- Folding `addVarBinding` over a canonical accumulator and a ground
 assignment list preserves canonicality. -/
@@ -2238,12 +2376,14 @@ private theorem addVarBinding_fuel1_extends_prefix
     {pref b result : Bindings} {v : String} {val a : Atom} {x : String}
     (hlookup_none : pref.lookup v = none)
     (hext : pref.Extends b)
+    (hbEq : b.equalities = [])
     (hres : result ∈ addVarBinding b v val 1)
     (hx : (pref.assign v val).lookup x = some a) :
     result.lookup x = some a := by
+  rw [addVarBinding_fuel1 b v val hbEq] at hres
   cases hlook : b.lookup v with
   | none =>
-      simp [addVarBinding, hlook] at hres
+      simp [hlook] at hres
       rcases hres with rfl
       by_cases hxeq : x = v
       · subst hxeq
@@ -2258,7 +2398,7 @@ private theorem addVarBinding_fuel1_extends_prefix
         simpa [assign_lookup_ne b v val x hxeq hlook] using hb
   | some prev =>
       by_cases hsame : prev == val
-      · simp [addVarBinding, hlook, hsame] at hres
+      · simp [hlook, hsame] at hres
         rcases hres with rfl
         by_cases hxeq : x = v
         · subst hxeq
@@ -2270,7 +2410,7 @@ private theorem addVarBinding_fuel1_extends_prefix
         · have hpref : pref.lookup x = some a := by
             simpa [assign_lookup_ne pref v val x hxeq hlookup_none] using hx
           exact hext x a hpref
-      · simp [addVarBinding, hlook, hsame, matchAtoms] at hres
+      · simp [hlook, hsame] at hres
 
 /-- Folding fuel-1 `addVarBinding` over a list of fresh assignments preserves
 the whole accumulated right-hand fragment in every surviving result. -/
@@ -2280,7 +2420,8 @@ private theorem fold_addVarBinding_fuel1_extends_prefix
     (hkeys : Bindings.KeysNodup pref)
     (hrestKeys : (rest.map Prod.fst).Nodup)
     (hfresh : ∀ v, v ∈ rest.map Prod.fst → pref.lookup v = none)
-    (hacc : ∀ b ∈ acc, pref.Extends b) :
+    (hacc : ∀ b ∈ acc, pref.Extends b)
+    (haccEq : ∀ b ∈ acc, b.equalities = []) :
     ∀ result ∈ List.foldl
         (fun acc x => acc.flatMap fun b => addVarBinding b x.1 x.2 1)
         acc rest,
@@ -2313,12 +2454,19 @@ private theorem fold_addVarBinding_fuel1_extends_prefix
       have hacc' : ∀ b ∈ acc.flatMap (fun b => addVarBinding b v val 1), (pref.assign v val).Extends b := by
         intro b hb x a hx
         rcases List.mem_flatMap.mp hb with ⟨b0, hb0, hstep⟩
-        exact addVarBinding_fuel1_extends_prefix hlookup (hacc b0 hb0) hstep hx
+        exact addVarBinding_fuel1_extends_prefix hlookup (hacc b0 hb0)
+          (haccEq b0 hb0) hstep hx
+      have haccEq' :
+          ∀ b ∈ acc.flatMap (fun b => addVarBinding b v val 1), b.equalities = [] := by
+        intro b hb
+        rcases List.mem_flatMap.mp hb with ⟨b0, hb0, hstep⟩
+        exact addVarBinding_fuel1_no_equalities (haccEq b0 hb0) hstep
       intro result hresult
       simp only [List.foldl_cons] at hresult
       have htail :=
         ih (acc.flatMap fun b => addVarBinding b v val 1) (pref.assign v val)
           hEq' (Bindings.KeysNodup.assign hkeys) hkeysRest hfresh' hacc'
+          haccEq'
           result hresult
       simpa [Bindings.assign, hnotbound, List.append_assoc] using htail
 
@@ -2327,6 +2475,7 @@ that entire fragment inside the result.  This is the honest pointwise form of
 "seeded official matching still contains the official fragment". -/
 private theorem mergeBindings_two_extends_right_of_canon
     {left right result : Bindings}
+    (hleftEq : left.equalities = [])
     (hright : GroundBindingsCanon right)
     (hres : result ∈ mergeBindings left right 2) :
     right.Extends result := by
@@ -2349,6 +2498,10 @@ private theorem mergeBindings_two_extends_right_of_canon
           rcases List.mem_singleton.mp hb with rfl
           intro x a hx
           simp [Bindings.empty, Bindings.lookup] at hx)
+        (by
+          intro b hb
+          rcases List.mem_singleton.mp hb with rfl
+          exact hleftEq)
         result hres')
   have hright : ({ assignments := right.assignments, equalities := [] } : Bindings) = right := by
     rw [← hground.2]
@@ -2359,25 +2512,28 @@ private theorem mergeBindings_two_extends_right_of_canon
 present in the seed bindings. -/
 private theorem addVarBinding_fuel1_extends_seed
     {seed result : Bindings} {v : String} {val : Atom}
+    (hSeedEq : seed.equalities = [])
     (hres : result ∈ addVarBinding seed v val 1) :
     seed.Extends result := by
+  rw [addVarBinding_fuel1 seed v val hSeedEq] at hres
   cases hlook : seed.lookup v with
   | none =>
-      simp [addVarBinding, hlook] at hres
+      simp [hlook] at hres
       rcases hres with rfl
       exact extends_assign_of_lookup_none seed v val hlook
   | some prev =>
       by_cases hsame : prev == val
-      · simp [addVarBinding, hlook, hsame] at hres
+      · simp [hlook, hsame] at hres
         rcases hres with rfl
         exact fun _ _ h => h
-      · simp [addVarBinding, hlook, hsame, matchAtoms] at hres
+      · simp [hlook, hsame] at hres
 
 /-- Folding fuel-1 `addVarBinding` over any assignment list preserves the
 original seed through every surviving result. -/
 private theorem fold_addVarBinding_fuel1_extends_seed
     (seed : Bindings) (acc : List Bindings) (assigns : List (String × Atom))
-    (hacc : ∀ b ∈ acc, seed.Extends b) :
+    (hacc : ∀ b ∈ acc, seed.Extends b)
+    (haccEq : ∀ b ∈ acc, b.equalities = []) :
     ∀ result ∈ List.foldl
         (fun acc x => acc.flatMap fun b => addVarBinding b x.1 x.2 1)
         acc assigns,
@@ -2392,15 +2548,22 @@ private theorem fold_addVarBinding_fuel1_extends_seed
           ∀ b ∈ acc.flatMap (fun b => addVarBinding b v val 1), seed.Extends b := by
         intro b hb
         rcases List.mem_flatMap.mp hb with ⟨b0, hb0, hstep⟩
-        exact Bindings.extends_trans (hacc b0 hb0) (addVarBinding_fuel1_extends_seed hstep)
+        exact Bindings.extends_trans (hacc b0 hb0)
+          (addVarBinding_fuel1_extends_seed (haccEq b0 hb0) hstep)
+      have haccEq' :
+          ∀ b ∈ acc.flatMap (fun b => addVarBinding b v val 1), b.equalities = [] := by
+        intro b hb
+        rcases List.mem_flatMap.mp hb with ⟨b0, hb0, hstep⟩
+        exact addVarBinding_fuel1_no_equalities (haccEq b0 hb0) hstep
       intro result hresult
       simp only [List.foldl_cons] at hresult
-      exact ih _ hacc' result hresult
+      exact ih _ hacc' haccEq' result hresult
 
 /-- Any successful fuel-2 merge preserves every lookup already present in the
 left seed bindings on the ground/no-equalities fragment. -/
 private theorem mergeBindings_two_extends_left
     {left right result : Bindings}
+    (hleftEq : left.equalities = [])
     (hright : GroundBindings right)
     (hres : result ∈ mergeBindings left right 2) :
     left.Extends result := by
@@ -2417,6 +2580,10 @@ private theorem mergeBindings_two_extends_left
           intro b hb
           rcases List.mem_singleton.mp hb with rfl
           exact fun _ _ h => h)
+        (by
+          intro b hb
+          rcases List.mem_singleton.mp hb with rfl
+          exact hleftEq)
         result hres'
   exact hseed x a hx
 
@@ -2427,27 +2594,27 @@ deeper matcher call because two different ground atoms never match. -/
     {b : Bindings} {v : String} {val : Atom} (fuel : Nat)
     (hb : GroundBindings b) (hval : GroundAtom val) :
     addVarBinding b v val (fuel + 1) = addVarBinding b v val 1 := by
+  rw [addVarBinding_no_equalities hb.2 fuel,
+    addVarBinding_no_equalities hb.2 0]
   cases hlook : b.lookup v with
   | none =>
-      simp [addVarBinding, hlook]
+      rfl
   | some prev =>
       have hprev : GroundAtom prev := lookup_ground hb hlook
       by_cases hsame : prev == val
-      · simp [addVarBinding, hlook, hsame]
+      · simp [hsame]
       · have hneq : prev ≠ val := by
           intro heq
           exact hsame (by simp [heq])
         cases fuel with
         | zero =>
-            simp [addVarBinding, hlook, hsame]
+            rfl
         | succ n =>
             have hmatchNil : matchAtoms prev val (n + 1) = [] :=
               matchAtoms_ground_ne_nil hprev hval hneq
-            have hlhs : addVarBinding b v val (n + 2) = [] := by
-              simp [addVarBinding, hlook, hsame, hmatchNil]
-            have hrhs : addVarBinding b v val 1 = [] := by
-              simp [addVarBinding, hlook, hsame, matchAtoms]
-            rw [hlhs, hrhs]
+            simp only [hsame]
+            rw [hmatchNil]
+            simp [matchAtoms]
 
 /-- On a ground accumulator and a ground value, one positive-fuel
 `addVarBinding` step is exactly the deterministic ground-merge step. -/
@@ -2464,7 +2631,7 @@ private theorem flatMap_addVarBinding_ground_eq_detfold
         intro b' hb'
         exact hacc b' (by simp [hb'])
       simp [detfoldStep, addVarBinding_ground_eq_fuel1 fuel hb hval,
-        addVarBinding_fuel1, ih hacc']
+        addVarBinding_fuel1 b v val hb.2, ih hacc']
 
 /-- Deterministic ground-merge preserves the ground-bindings invariant. -/
 private theorem detfoldStep_ground
@@ -3192,6 +3359,7 @@ is witnessed by the official matcher plus a merge of the produced singleton
 binding into the seed. -/
 theorem simpleMatch_ground_var_bridge
     {target : Atom} {b qb : Bindings} {v : String} {fuel : Nat}
+    (hb : GroundBindings b)
     (hground : GroundAtom target)
     (hmatch : simpleMatch (.var v) target b fuel = some qb) :
     ∃ fuel',
@@ -3208,7 +3376,7 @@ theorem simpleMatch_ground_var_bridge
           refine ⟨2, ?_, ?_⟩
           · rw [matchAtoms_ground_var_exact target v 1 hground]
             simp
-          · rw [mergeBindings_single_assign_fresh hlook 0]
+          · rw [mergeBindings_single_assign_fresh hlook hb.2 0]
             simp
       | some prev =>
           simp only [simpleMatch, hlook] at hmatch
@@ -3219,7 +3387,7 @@ theorem simpleMatch_ground_var_bridge
             refine ⟨2, ?_, ?_⟩
             · rw [matchAtoms_ground_var_exact target v 1 hground]
               simp
-            · rw [mergeBindings_single_assign_same (hprev.symm ▸ hlook) 0]
+            · rw [mergeBindings_single_assign_same (hprev.symm ▸ hlook) hb.2 0]
               simp
           · simp at hmatch
 
@@ -3446,11 +3614,13 @@ private theorem simpleMatch_ground_var_no_match
                   rw [mergeBindings_single_assign (b := b) (v := v) (val := target) k]
                   cases k with
                   | zero =>
-                      simp [addVarBinding, hlook, hsame, matchAtoms]
+                      rw [addVarBinding_no_equalities hb.2 0]
+                      simp [hlook, hsame, matchAtoms]
                   | succ m =>
                       have hmatchNil : matchAtoms prev target (m + 1) = [] :=
                         matchAtoms_ground_ne_nil hprev hground hneq
-                      simp [addVarBinding, hlook, hsame, hmatchNil]
+                      rw [addVarBinding_no_equalities hb.2 (m + 1)]
+                      simp [hlook, hsame, hmatchNil]
                 simpa using hmerge
 
 /-- Failure leaf: on a ground target, a symbol-pattern mismatch has no
@@ -3565,7 +3735,7 @@ private theorem simpleMatch_ground_official_of_factor
         intro p t b qb hb hground hmatch
         cases p with
         | var v =>
-            obtain ⟨fuel', hmb, hmerge⟩ := simpleMatch_ground_var_bridge hground hmatch
+            obtain ⟨fuel', hmb, hmerge⟩ := simpleMatch_ground_var_bridge hb hground hmatch
             refine ⟨fuel', ?_⟩
             exact List.mem_flatMap.mpr ⟨Bindings.empty.assign v t, hmb, hmerge⟩
         | symbol s =>
@@ -4850,7 +5020,7 @@ theorem mettaCall_absorbs_let_equation
     (h_query : (rhs, qb) ∈ queryEquations space (letExpr pt value body) fuel)
     (h_merge : merged ∈ mergeBindings qb Bindings.empty fuel)
     (h_no_loop : merged.hasLoop = false)
-    (h_eval : EvalAtom space d (merged.apply rhs fuel)
+    (h_eval : EvalAtom space d (merged.applyFull rhs fuel)
       Atom.undefinedType merged final) :
     MettaCall space d (letExpr pt value body) Atom.undefinedType
       Bindings.empty final :=
@@ -4874,7 +5044,7 @@ theorem mettaCall_absorbs_let_equation_seeded
     (h_query : (rhs, qb) ∈ queryEquations space (letExpr pt value body) fuel)
     (h_merge : merged ∈ mergeBindings qb seed fuel)
     (h_no_loop : merged.hasLoop = false)
-    (h_eval : EvalAtom space d (merged.apply rhs fuel)
+    (h_eval : EvalAtom space d (merged.applyFull rhs fuel)
       Atom.undefinedType merged final) :
     MettaCall space d (letExpr pt value body) Atom.undefinedType
       seed final :=
@@ -5249,7 +5419,7 @@ theorem evalAtom_absorbs_let_subst_ground_shell
     (h_query : (rhs, qb) ∈ queryEquations space (letExpr pt value body) fuelQuery)
     (h_query_merge : qb ∈ mergeBindings qb Bindings.empty fuelQuery)
     (h_query_no_loop : qb.hasLoop = false)
-    (h_rhs : qb.apply rhs fuelQuery = letUnifyRhs pt value body)
+    (h_rhs : qb.applyFull rhs fuelQuery = letUnifyRhs pt value body)
     (hqbEq : qb.equalities = [])
     (hqbKeys : (qb.assignments.map Prod.fst).Nodup)
     (hbody_irrel : ∀ v, v ∈ collectVars body 100 → qb.lookup v = none)
@@ -5271,7 +5441,7 @@ theorem evalAtom_absorbs_let_subst_ground_shell
   have h_body_eq : merged.applyDefault body = mb.applyDefault body := by
     exact apply_eq_of_mergeGround_irrel hmbGround hqbEq hqbKeys hmerge_det hbody_irrel
   have h_eval_rhs :
-      EvalAtom space d (qb.apply rhs fuelQuery)
+      EvalAtom space d (qb.applyFull rhs fuelQuery)
         Atom.undefinedType qb
         (mb.applyDefault body, merged) := by
     rw [h_rhs]
@@ -5406,7 +5576,7 @@ theorem evalAtom_absorbs_let_subst_ground_rule
     (h_query : (rhs, qb) ∈ queryEquations space (letExpr pt value body) fuelQuery)
     (h_query_merge : qb ∈ mergeBindings qb Bindings.empty fuelQuery)
     (h_query_no_loop : qb.hasLoop = false)
-    (h_rhs : qb.apply rhs fuelQuery = letUnifyRhs pt value body)
+    (h_rhs : qb.applyFull rhs fuelQuery = letUnifyRhs pt value body)
     (hqbEq : qb.equalities = [])
     (hqbKeys : (qb.assignments.map Prod.fst).Nodup)
     (hbody_irrel : ∀ v, v ∈ collectVars body 100 → qb.lookup v = none)
@@ -6180,7 +6350,7 @@ theorem mettaCall_absorbs_switchInternal_equation
       (switchInternalExpr scrut headBranch tail) fuel)
     (h_merge : merged ∈ mergeBindings qb Bindings.empty fuel)
     (h_no_loop : merged.hasLoop = false)
-    (h_eval : EvalAtom space d (merged.apply rhs fuel) type_ merged final) :
+    (h_eval : EvalAtom space d (merged.applyFull rhs fuel) type_ merged final) :
     MettaCall space d (switchInternalExpr scrut headBranch tail) type_
       Bindings.empty final :=
   MettaCall.equation_match _ _ _ rhs qb merged final fuel
@@ -6918,7 +7088,7 @@ theorem evalAtom_absorbs_switchInternal_raw_body_shell
       (switchInternalExpr scrut headBranch tail) fuelQuery)
     (h_query_merge : qb ∈ mergeBindings qb Bindings.empty fuelQuery)
     (h_query_no_loop : qb.hasLoop = false)
-    (h_rhs : qb.apply rhs fuelQuery = body)
+    (h_rhs : qb.applyFull rhs fuelQuery = body)
     (h_body_ok : isEmptyOrError body = false) :
     EvalAtom space d
       (switchInternalExpr scrut headBranch tail)
@@ -6930,7 +7100,7 @@ theorem evalAtom_absorbs_switchInternal_raw_body_shell
         (switchInternalExpr scrut headBranch tail, Bindings.empty) :=
     interpretFunction_switchInternal_self h_types h_scrut_nerr h_head_nerr
   have h_eval_rhs :
-      EvalAtom space d (qb.apply rhs fuelQuery)
+      EvalAtom space d (qb.applyFull rhs fuelQuery)
         Atom.atomType qb
         (body, qb) := by
     rw [h_rhs]

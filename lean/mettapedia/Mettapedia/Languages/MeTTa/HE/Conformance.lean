@@ -4,8 +4,12 @@ import Mettapedia.Languages.MeTTa.HE.Certification
 import Mettapedia.Languages.MeTTa.HE.CoreFragment
 import Mettapedia.Languages.MeTTa.HE.DeclMatchSpec
 import Mettapedia.Languages.MeTTa.HE.LeaTTaBridge
+import Mettapedia.Languages.MeTTa.HE.LeaTTaBindingTransport
+import Mettapedia.Languages.MeTTa.HE.MatchSolutionTheory
+import Mettapedia.Languages.MeTTa.HE.LeaTTaMatcherCongruence
 import Mettapedia.Languages.MeTTa.LeaTTa.Corpus.SelfInterp
 import Mettapedia.OSLF.MeTTaIL.Match
+import MettaHyperonFull.Proofs.BindingLaws
 
 /-!
 # HE MeTTa Conformance
@@ -29,6 +33,7 @@ namespace Mettapedia.Languages.MeTTa.HE.Conformance
 open Mettapedia.Languages.MeTTa.OSLFCore (Atom GroundedValue)
 open Mettapedia.Languages.MeTTa.HE
 open Mettapedia.Languages.MeTTa.LeaTTa.EvaluatorCorrectness.RuntimeCorrectness
+open Mettapedia.Languages.MeTTa.LeaTTa.EvaluatorCorrectness.QueryOpBridge
 
 /-! ## Test Infrastructure -/
 
@@ -299,7 +304,7 @@ theorem leatta_minimal_error_passthrough_mettaEval :
         simpa [env, atomToStack_eval] using
           (interpretFuel_eval_symbol_notReducible_of_no_candidates_eq
             env Metta.Minimal.St.init 2 (Metta.Atom.sym "x") [] "x"
-            (by simp [Metta.instantiate, Metta.Subst.apply]) rfl
+            (by simp [Metta.instantiate]) rfl
             (by simpa [env] using empty_minimal_symbol_candidates "x")))
   have he :
       Metta.Minimal.mettaEval env 3 Metta.Minimal.St.init []
@@ -311,7 +316,7 @@ theorem leatta_minimal_error_passthrough_mettaEval :
         simpa [env, atomToStack_eval] using
           (interpretFuel_eval_symbol_notReducible_of_no_candidates_eq
             env Metta.Minimal.St.init 2 (Metta.Atom.sym "e") [] "e"
-            (by simp [Metta.instantiate, Metta.Subst.apply]) rfl
+            (by simp [Metta.instantiate]) rfl
             (by simpa [env] using empty_minimal_symbol_candidates "e")))
   have hRoot :
       Metta.Minimal.interpretFuel env 4 Metta.Minimal.St.init
@@ -321,7 +326,7 @@ theorem leatta_minimal_error_passthrough_mettaEval :
       (interpretFuel_eval_notReducible_of_no_candidates_eq
         env Metta.Minimal.St.init 3 leattaErrorPassthroughAtom [] "Error"
         [Metta.Atom.sym "x", Metta.Atom.sym "e"]
-        (by simp [leattaErrorPassthroughAtom, Metta.instantiate, Metta.Subst.apply])
+        (by simp [leattaErrorPassthroughAtom, Metta.instantiate])
         rfl rfl rfl
         (by
           simpa [env, leattaErrorPassthroughAtom] using
@@ -351,7 +356,7 @@ theorem leatta_minimal_error_passthrough_matches_HE_mettaCall_surface :
 
 /-- Equation match: `(= (f a) result)` in space, calling `(f a)`.
     Spec lines 376-382: query equations, merge bindings, recurse.
-    Note: RHS is ground (`.symbol "result"`), so `merged.apply rhs fuel = rhs`. -/
+    Note: RHS is ground (`.symbol "result"`), so `merged.applyFull rhs fuel = rhs`. -/
 theorem mettaCall_equation_match :
     let space := Space.ofList [
       .expression [.symbol "=", .expression [.symbol "f", .symbol "a"], .symbol "result"]]
@@ -413,7 +418,7 @@ theorem mettaCall_symbol_rhs :
 
 The equation `(= (id $x) $x)` with input `(id hello)` must produce `hello`,
 not the raw freshened variable `$x#0`. This is the key regression test for
-the `merged.apply rhs fuel` fix in `MettaCall.equation_match`. -/
+the `merged.applyFull rhs fuel` fix in `MettaCall.equation_match`. -/
 
 /-- Verify queryEquations returns freshened variable as RHS. -/
 theorem queryEquations_id_pattern :
@@ -424,7 +429,7 @@ theorem queryEquations_id_pattern :
 
 /-- Equation `(= (id $x) $x)` with input `(id hello)` produces `hello`.
     After merging, `merged = { x#0 → hello }`, so `merged.apply (.var "x#0") fuel = hello`.
-    This would FAIL without the `merged.apply rhs fuel` fix. -/
+    This would FAIL without the `merged.applyFull rhs fuel` fix. -/
 theorem mettaCall_equation_rhs_substitution :
     let space := Space.ofList [
       .expression [.symbol "=", .expression [.symbol "id", .var "x"], .var "x"]]
@@ -452,7 +457,7 @@ theorem mettaCall_equation_rhs_substitution :
 /-! ## 6b. Equation RHS Fuel Drift Regression
 
 The coarse declarative `MettaCall.equation_match` constructor can recurse on a
-low-fuel `merged.apply rhs fuel` result that has not stabilized yet. This is
+low-fuel `merged.applyFull rhs fuel` result that has not stabilized yet. This is
 exactly why the aligned completeness bridge in `Correctness.lean` uses the
 stronger `ApplyStableEventually` witness instead of naively mirroring the
 public constructor one-for-one.
@@ -1021,6 +1026,7 @@ theorem emptySpace_unifyVarSymbol_queryUnifyFragment_models_mettaCall :
       Atom.undefinedType Bindings.empty
       (.symbol "a", Bindings.empty.assign "x" (.symbol "a")) := by
   simpa [Bindings.applyDefault, Bindings.apply, Bindings.resolve,
+    Bindings.resolveAtomAux, Bindings.hasAssignedVar, Bindings.hasAssignedVarAux,
     Bindings.empty, Bindings.assign, Bindings.isBound, Bindings.lookup] using
     groundTarget_unifyVar_queryUnifyFragment_models_mettaCall
       (space := Space.empty) (d := GroundedDispatch.none)
@@ -1057,7 +1063,7 @@ theorem leatta_minimal_unify_bad_arity_eval_message :
     Metta.Minimal.isFinal, Metta.Minimal.finalPair,
     Metta.Minimal.MinEnv.ofAtomsGT, Metta.Minimal.extractRules,
     Metta.callGrounded, Metta.GroundingTable.lookup,
-    Metta.instantiate, Metta.Subst.apply,
+    Metta.instantiate,
     Metta.Minimal.St.init, Metta.Minimal.World.empty,
     leattaBadUnifyThreeArgs, leattaBadUnifyThreeArgsError,
     Metta.Minimal.errAtom, Metta.Minimal.unifyBadArityMessage]
@@ -1228,7 +1234,7 @@ theorem leattaVisibleEquationObservation_models_mettaCall
     (h_merge : merged ∈ mergeBindings queryBindings inputBindings fuel)
     (h_no_loop : merged.hasLoop = false)
     (h_recurse :
-      EvalAtom space d (merged.apply rhs fuel) type_ merged
+      EvalAtom space d (merged.applyFull rhs fuel) type_ merged
         (dst, outputBindings)) :
     MettaCall space d src type_ inputBindings (dst, outputBindings) := by
   exact
@@ -1272,10 +1278,10 @@ theorem leattaTransportAgainstVisible_models_mettaCall
     (htransport : LeaTTaBridge.EquationMatchVisibleItemTransportAgainst
       space (.expression es) rhs qb fuel gt prev counter)
     (h_recurse :
-      EvalAtom space d (qb.apply rhs fuel) type_ qb
-        (qb.apply rhs fuel, outputBindings)) :
+      EvalAtom space d (qb.applyFull rhs fuel) type_ qb
+        (qb.applyFull rhs fuel, outputBindings)) :
   MettaCall space d (.expression es) type_ Bindings.empty
-      (qb.apply rhs fuel, outputBindings) := by
+      (qb.applyFull rhs fuel, outputBindings) := by
   exact
     LeaTTaBridge.leattaEquationMettaCallStep_sound
       (LeaTTaBridge.leattaEquationMettaCallStep_of_transport_againstVisible_empty_input
@@ -1319,10 +1325,10 @@ theorem leattaTransportAgainstVisibleWithMerge_models_mettaCall
     (h_merge : merged ∈ mergeBindings qb inputBindings fuel)
     (h_no_loop : merged.hasLoop = false)
     (h_recurse :
-      EvalAtom space d (merged.apply rhs fuel) type_ merged
-        (qb.apply rhs fuel, outputBindings)) :
+      EvalAtom space d (merged.applyFull rhs fuel) type_ merged
+        (qb.applyFull rhs fuel, outputBindings)) :
   MettaCall space d (.expression es) type_ inputBindings
-      (qb.apply rhs fuel, outputBindings) := by
+      (qb.applyFull rhs fuel, outputBindings) := by
   exact
     LeaTTaBridge.leattaEquationMettaCallStep_sound
       (LeaTTaBridge.leattaEquationMettaCallStep_of_transport_againstVisible_with_merge
@@ -1362,7 +1368,7 @@ theorem leattaVisibleEquationObservation_models_mettaCall_final
     (h_merge : merged ∈ mergeBindings queryBindings inputBindings fuel)
     (h_no_loop : merged.hasLoop = false)
     (h_recurse :
-      EvalAtom space d (merged.apply rhs fuel) type_ merged finalResult) :
+      EvalAtom space d (merged.applyFull rhs fuel) type_ merged finalResult) :
   MettaCall space d src type_ inputBindings finalResult := by
   exact
     LeaTTaBridge.leattaEquationMettaCallStep_sound
@@ -1408,7 +1414,7 @@ theorem leattaTransportAgainstVisibleWithMerge_models_mettaCall_final
     (h_merge : merged ∈ mergeBindings qb inputBindings fuel)
     (h_no_loop : merged.hasLoop = false)
     (h_recurse :
-      EvalAtom space d (merged.apply rhs fuel) type_ merged finalResult) :
+      EvalAtom space d (merged.applyFull rhs fuel) type_ merged finalResult) :
   MettaCall space d (.expression es) type_ inputBindings finalResult := by
   exact
     LeaTTaBridge.leattaEquationMettaCallStep_sound
@@ -1449,11 +1455,11 @@ theorem leattaQueryOpHitAgainstVisibleWithMerge_models_mettaCall_final
       queryEquations space (.expression es) fuel)
     (hhit :
       LeaTTaBridge.LeaTTaEquationQueryOpHit
-        space fuel (.expression es) (qb.apply rhs fuel) gt prev counter)
+        space fuel (.expression es) (qb.applyFull rhs fuel) gt prev counter)
     (h_merge : merged ∈ mergeBindings qb inputBindings fuel)
     (h_no_loop : merged.hasLoop = false)
     (h_recurse :
-      EvalAtom space d (merged.apply rhs fuel) type_ merged finalResult) :
+      EvalAtom space d (merged.applyFull rhs fuel) type_ merged finalResult) :
   MettaCall space d (.expression es) type_ inputBindings finalResult := by
   exact
     LeaTTaBridge.leattaEquationMettaCallStep_sound
@@ -1494,11 +1500,11 @@ theorem leattaQueryOpHitAgainstVisibleWithMerge_models_mettaCall_final_with_quer
       queryEquations space (.expression es) fuel)
     (hhit :
       LeaTTaBridge.LeaTTaEquationQueryOpHit
-        space fuel (.expression es) (qb.apply rhs fuel) gt prev counter)
+        space fuel (.expression es) (qb.applyFull rhs fuel) gt prev counter)
     (h_merge : merged ∈ mergeBindings qb inputBindings fuel)
     (h_no_loop : merged.hasLoop = false)
     (h_recurse :
-      EvalAtom space d (merged.apply rhs fuel) type_ merged finalResult) :
+      EvalAtom space d (merged.applyFull rhs fuel) type_ merged finalResult) :
     MettaCall space d (.expression es) type_ inputBindings finalResult ∧
     (∃ lhs rhs0 idx,
       (.expression [.symbol "=", lhs, rhs0], idx) ∈ space.atoms.zipIdx ∧
@@ -1576,7 +1582,7 @@ structure HEVisibleEquationQueryEvidence
   merge : merged ∈ mergeBindings qb inputBindings fuel
   no_loop : merged.hasLoop = false
   recurse :
-    EvalAtom space d (merged.apply rhs fuel) type_ merged finalResult
+    EvalAtom space d (merged.applyFull rhs fuel) type_ merged finalResult
 
 def visibleEquationQueryEvidence_of_repaired_query_premises
     {space : Space} {d : GroundedDispatch} {fuel : Nat}
@@ -1591,7 +1597,7 @@ def visibleEquationQueryEvidence_of_repaired_query_premises
     (h_merge : merged ∈ mergeBindings qb inputBindings fuel)
     (h_no_loop : merged.hasLoop = false)
     (h_recurse :
-      EvalAtom space d (merged.apply rhs fuel) type_ merged finalResult) :
+      EvalAtom space d (merged.applyFull rhs fuel) type_ merged finalResult) :
     HEVisibleEquationQueryEvidence
       space d fuel es type_ inputBindings finalResult where
   rhs := rhs
@@ -1620,7 +1626,7 @@ structure LeaTTaVisibleEquationQueryEvidence
   he : HEVisibleEquationQueryEvidence
     space d fuel es type_ inputBindings finalResult
   hit : LeaTTaBridge.LeaTTaEquationQueryOpHit
-    space fuel (.expression es) (he.qb.apply he.rhs fuel) gt prev counter
+    space fuel (.expression es) (he.qb.applyFull he.rhs fuel) gt prev counter
 
 def leattaVisibleEquationQueryEvidence_of_queryOp_hit
     {space : Space} {d : GroundedDispatch} {fuel : Nat}
@@ -1636,11 +1642,11 @@ def leattaVisibleEquationQueryEvidence_of_queryOp_hit
       queryEquations space (.expression es) fuel)
     (hhit :
       LeaTTaBridge.LeaTTaEquationQueryOpHit
-        space fuel (.expression es) (qb.apply rhs fuel) gt prev counter)
+        space fuel (.expression es) (qb.applyFull rhs fuel) gt prev counter)
     (h_merge : merged ∈ mergeBindings qb inputBindings fuel)
     (h_no_loop : merged.hasLoop = false)
     (h_recurse :
-      EvalAtom space d (merged.apply rhs fuel) type_ merged finalResult) :
+      EvalAtom space d (merged.applyFull rhs fuel) type_ merged finalResult) :
     LeaTTaVisibleEquationQueryEvidence
       space d fuel es type_ inputBindings finalResult gt prev counter where
   he :=
@@ -1751,10 +1757,10 @@ def LeaTTaVisibleEquationQueryOpMettaCallStep
     (rhs, qb) ∈ queryEquationsAgainstVisible space (.expression es) fuel ∧
     (rhs, qb) ∈ queryEquations space (.expression es) fuel ∧
     LeaTTaBridge.LeaTTaEquationQueryOpHit
-      space fuel (.expression es) (qb.apply rhs fuel) gt prev counter ∧
+      space fuel (.expression es) (qb.applyFull rhs fuel) gt prev counter ∧
     merged ∈ mergeBindings qb inputBindings fuel ∧
     merged.hasLoop = false ∧
-    EvalAtom space d (merged.apply rhs fuel) type_ merged finalResult
+    EvalAtom space d (merged.applyFull rhs fuel) type_ merged finalResult
 
 theorem leattaVisibleEquationQueryOpMettaCallStep_sound
     {space : Space} {d : GroundedDispatch} {fuel : Nat}
@@ -2232,7 +2238,7 @@ theorem chainResolveBoundary_badArityFragment_models_mettaCall_counter0 :
       GroundedDispatch.none
       (.expression [.symbol "f", .var "y#1", .symbol "a"])
       Atom.undefinedType Bindings.empty
-      (.var "x#0",
+      (.symbol "a",
         ({ assignments := [("y#1", .symbol "a")]
          , equalities := [("y#1", "x#0")] } : Bindings)) :=
   leattaRepairedQueryUnifyExtBadArityFragmentEngine_models_declarative_he.mettaCall_models
@@ -2244,7 +2250,7 @@ theorem chainResolveBoundary_badArityFragment_models_mettaCall_counter0 :
     GroundedDispatch.none
     (.expression [.symbol "f", .var "y#1", .symbol "a"])
     Atom.undefinedType Bindings.empty 10
-    (.var "x#0",
+    (.symbol "a",
       ({ assignments := [("y#1", .symbol "a")]
        , equalities := [("y#1", "x#0")] } : Bindings))
     (leattaEquationStep_subsumed_by_badArityFragment
@@ -2295,7 +2301,7 @@ theorem leattaTransportAgainstVisibleWithMerge_models_mettaCall_final_via_queryO
     (h_merge : merged ∈ mergeBindings qb inputBindings fuel)
     (h_no_loop : merged.hasLoop = false)
     (h_recurse :
-      EvalAtom space d (merged.apply rhs fuel) type_ merged finalResult) :
+      EvalAtom space d (merged.applyFull rhs fuel) type_ merged finalResult) :
     MettaCall space d (.expression es) type_ inputBindings finalResult := by
   exact
     leattaRepairedQueryUnifyExtBadArityFragmentEngine_models_declarative_he.mettaCall_models
@@ -2344,7 +2350,7 @@ theorem leattaFreshenedItemTransportAgainstVisibleWithMerge_models_mettaCall_fin
     (h_merge : merged ∈ mergeBindings qb inputBindings fuel)
     (h_no_loop : merged.hasLoop = false)
     (h_recurse :
-      EvalAtom space d (merged.apply rhs fuel) type_ merged finalResult) :
+      EvalAtom space d (merged.applyFull rhs fuel) type_ merged finalResult) :
     MettaCall space d (.expression es) type_ inputBindings finalResult := by
   exact
     leattaRepairedQueryUnifyExtBadArityFragmentEngine_models_declarative_he.mettaCall_models
@@ -2393,7 +2399,7 @@ theorem leattaFreshenedVariableItemTransportAgainstVisibleWithMerge_models_metta
     (h_merge : merged ∈ mergeBindings qb inputBindings fuel)
     (h_no_loop : merged.hasLoop = false)
     (h_recurse :
-      EvalAtom space d (merged.apply rhs fuel) type_ merged finalResult) :
+      EvalAtom space d (merged.applyFull rhs fuel) type_ merged finalResult) :
     MettaCall space d (.expression es) type_ inputBindings finalResult := by
   exact
     leattaRepairedQueryUnifyExtBadArityFragmentEngine_models_declarative_he.mettaCall_models
@@ -2431,7 +2437,7 @@ theorem chainResolveBoundary_equationFragment_models_mettaCall_counter0 :
       GroundedDispatch.none
       (.expression [.symbol "f", .var "y#1", .symbol "a"])
       Atom.undefinedType Bindings.empty
-      (.var "x#0",
+      (.symbol "a",
         ({ assignments := [("y#1", .symbol "a")]
          , equalities := [("y#1", "x#0")] } : Bindings)) :=
   chainResolveBoundary_badArityFragment_models_mettaCall_counter0
@@ -2474,6 +2480,8 @@ theorem leattaInstantiatedEquationFragment_models_mettaCall
       queryEquationsAgainstVisible space (.expression es) (n + 1))
     (h_query_public : (rhs, qb) ∈
       queryEquations space (.expression es) (n + 1))
+    (heq : qb.equalities = [])
+    (hfresh : ValueKeysFreshForValues (LeaTTaBridge.toLeaTTaMatchBindings qb))
     (hdepth : LeaTTaBridge.atomDepth rhs + 2 ≤ n + 1)
     (hitem :
       Metta.Minimal.evalResult prev
@@ -2487,14 +2495,14 @@ theorem leattaInstantiatedEquationFragment_models_mettaCall
           prev (LeaTTaBridge.toLeaTTaAtom (.expression es))
           Metta.Bindings.empty).1)
     (h_recurse :
-      EvalAtom space d (qb.apply rhs (n + 1)) type_ qb
-        (qb.apply rhs (n + 1), outputBindings)) :
+      EvalAtom space d (qb.applyFull rhs (n + 1)) type_ qb
+        (qb.applyFull rhs (n + 1), outputBindings)) :
     MettaCall space d (.expression es) type_ Bindings.empty
-      (qb.apply rhs (n + 1), outputBindings) := by
+      (qb.applyFull rhs (n + 1), outputBindings) := by
   exact
     leattaRepairedQueryUnifyExtBadArityFragmentEngine_models_declarative_he.mettaCall_models
       space d (.expression es) type_ Bindings.empty (n + 1)
-      (qb.apply rhs (n + 1), outputBindings)
+      (qb.applyFull rhs (n + 1), outputBindings)
       (leattaEquationStep_subsumed_by_badArityFragment
         (LeaTTaBridge.leattaEquationMettaCallStep_of_instantiated_item_againstVisible_empty_input
           (space := space) (d := d) (n := n) (es := es)
@@ -2502,7 +2510,7 @@ theorem leattaInstantiatedEquationFragment_models_mettaCall
           (outputBindings := outputBindings) (gt := gt) (prev := prev)
           (counter := counter)
           h_not_special h_not_error h_not_grounded h_query_visible
-          h_query_public
+          h_query_public heq hfresh
           hdepth hitem h_recurse))
 
 /-- Conformance-facing positive fixture for the LeaTTa equation-call fragment:
@@ -2522,9 +2530,19 @@ theorem leattaUnaryIdentityFragment_models_mettaCall
     MettaCall (LeaTTaBridge.unaryIdentitySpace head var) GroundedDispatch.none
       (.expression [.symbol head, .symbol value]) Atom.undefinedType
       Bindings.empty (.symbol value, LeaTTaBridge.unaryIdentityBindings var value) := by
-  simpa [Bindings.apply, Bindings.resolve, LeaTTaBridge.unaryIdentityBindings,
+  have heq :
+      (LeaTTaBridge.unaryIdentityBindings var value).equalities = [] := by
+    simp [LeaTTaBridge.unaryIdentityBindings, Bindings.assign, Bindings.empty]
+  have hfull :
+      (LeaTTaBridge.unaryIdentityBindings var value).applyFull
+          (.var (LeaTTaBridge.unaryIdentityFresh0 var)) 10 =
+        .symbol value := by
+    rw [Bindings.applyFull_no_equalities heq]
+    simp [Bindings.apply, Bindings.resolve, Bindings.resolveAtomAux,
+      Bindings.hasAssignedVar, LeaTTaBridge.unaryIdentityBindings,
       LeaTTaBridge.unaryIdentityFresh0, Bindings.assign, Bindings.isBound,
-      Bindings.empty, Bindings.lookup] using
+      Bindings.empty, Bindings.lookup]
+  simpa [hfull] using
     (leattaInstantiatedEquationFragment_models_mettaCall
       (space := LeaTTaBridge.unaryIdentitySpace head var)
       (d := GroundedDispatch.none)
@@ -2552,14 +2570,28 @@ theorem leattaUnaryIdentityFragment_models_mettaCall
         head var value)
       (LeaTTaBridge.queryEquations_unaryIdentity_counter0_mem
         head var value)
+      heq
+      (by
+        have htranslated :
+            LeaTTaBridge.toLeaTTaMatchBindings
+                (LeaTTaBridge.unaryIdentityBindings var value) =
+              [Metta.BindingRel.val
+                (LeaTTaBridge.unaryIdentityFresh0 var) (Metta.Atom.sym value)] := by
+          simp [LeaTTaBridge.toLeaTTaMatchBindings,
+            LeaTTaBridge.toLeaTTaMatchSubst,
+            LeaTTaBridge.unaryIdentityBindings,
+            LeaTTaBridge.unaryIdentityFresh0, Bindings.assign,
+            Bindings.isBound, Bindings.lookup, Bindings.empty,
+            LeaTTaBridge.toLeaTTaAtom, Metta.Bindings.ofSubst]
+        rw [htranslated]
+        exact ClosedValueBindings.valueKeysFreshForValues
+          (ClosedValueBindings.val (by simp [Metta.Atom.vars])
+            ClosedValueBindings.nil))
       (by simp [LeaTTaBridge.atomDepth])
       (LeaTTaBridge.unaryIdentity_instantiated_queryOp_item_counter0
         head var value (default : Metta.GroundingTable))
       (by
-        simpa [Bindings.apply, Bindings.resolve,
-          LeaTTaBridge.unaryIdentityBindings,
-          LeaTTaBridge.unaryIdentityFresh0, Bindings.assign,
-          Bindings.isBound, Bindings.empty, Bindings.lookup] using h_recurse))
+        simpa [hfull] using h_recurse))
 
 /-- Stable reachability through the concrete fuel evaluator gives the public
     implementation-refined HE certification boundary. -/
@@ -2731,13 +2763,11 @@ example : (evalAtom fuelTestSpace GroundedDispatch.none
     fuelTestAtom Atom.undefinedType Bindings.empty 11).any
     (fun r => !isErrorAtom r.1) = true := by decide
 
-/-! ## 9. Connected Equality-Class Negative Oracle
+/-! ## 9. Connected Equality-Class Conformance Oracles
 
-The two-edge case already distinguishes HE and LeaTTa at the binding readout,
-but its unary equation results remain alpha-equivalent.  A third edge makes the
-ordinary binary equation result alpha-distinct.  These executable equalities
-pin the current LeaTTa `addVarBinding` unifier-discard behavior without treating
-it as conformant. -/
+The nonlinear three-edge case checks the atom-level observable, while the
+smaller two-edge case checks the binding readout directly.  LeaTTa and HE now
+preserve the same connected variable classes at both surfaces. -/
 
 private def connectedClassLeaPattern : Metta.Atom :=
   .expr [.sym "g", .var "p1", .var "p2", .var "p2"]
@@ -2757,32 +2787,26 @@ private def connectedClassHEQuery : Atom :=
 private def connectedClassHERhs : Atom :=
   .expression [.symbol "f", .var "p1", .var "p2"]
 
-/-- Current LeaTTa keeps only the final oriented value for `p2`; the successful
-`q1`/`q2` unifier is absent from the returned binding set. -/
-theorem leatta_connected_class_match_discards_rebind_unifier :
+/-- LeaTTa preserves all three variable equalities in the nonlinear match. -/
+theorem leatta_connected_class_match_preserves_equalities :
     Metta.matchAtoms connectedClassLeaPattern connectedClassLeaQuery =
-      [[Metta.BindingRel.val "p2" (.var "q2"),
-        Metta.BindingRel.val "p1" (.var "q1")]] := by
-  simp [connectedClassLeaPattern, connectedClassLeaQuery,
-    Metta.matchAtoms, Metta.matchAtomsWith, Metta.matchAll,
-    Metta.Bindings.merge, Metta.Bindings.mergeOne,
-    Metta.Bindings.addVarBinding, Metta.Bindings.lookupVal,
-    Metta.Bindings.addValRaw, Metta.Bindings.removeVal,
-    Metta.Unify.unifyTop, Metta.Unify.unifyRounds,
-    Metta.Unify.decomposeAll, Metta.Unify.decomposeEq,
-    Metta.Subst.occurs, Metta.Subst.apply, Metta.Subst.extend,
-    Metta.Atom.size]
-  change ("q1" == "q2") = false
-  decide
+      [[Metta.BindingRel.eq "p2" "q2",
+        Metta.BindingRel.eq "p2" "q1",
+        Metta.BindingRel.eq "p1" "q1"]] := by
+  simpa [connectedClassLeaPattern, connectedClassLeaQuery,
+    Metta.connectedClassPattern, Metta.connectedClassQuery,
+    Metta.connectedClassBindings] using Metta.connectedClass_match
 
 theorem leatta_connected_class_atom_output :
     (Metta.matchAtoms connectedClassLeaPattern connectedClassLeaQuery).map
         (fun b => Metta.instantiate b connectedClassLeaRhs) =
-      [.expr [.sym "f", .var "q1", .var "q2"]] := by
-  rw [leatta_connected_class_match_discards_rebind_unifier]
-  simp [connectedClassLeaRhs, Metta.instantiate,
-    Metta.bindingsToSubst, Metta.Subst.apply, Metta.Subst.lookup]
+      [.expr [.sym "f", .var "q1", .var "q1"]] := by
+  rw [leatta_connected_class_match_preserves_equalities]
+  simp only [List.map_singleton]
+  simpa [connectedClassLeaRhs, Metta.connectedClassBindings] using
+    Metta.connectedClass_instantiation
 
+set_option maxRecDepth 10000 in
 /-- HE retains all three equality edges in one order-free binding class. -/
 theorem he_connected_class_match_preserves_equalities :
     matchAtoms connectedClassHEQuery connectedClassHEPattern 20 =
@@ -2796,14 +2820,21 @@ theorem he_connected_class_atom_output :
       [.expression [.symbol "f", .var "q1", .var "q1"]] := by
   decide
 
-/-- The three-edge LeaTTa and HE answers are observably different even modulo
-alpha-renaming. -/
-theorem connected_class_atom_outputs_not_alpha_equivalent :
-    ¬ Metta.AlphaEq
-      (.expr [.sym "f", .var "q1", .var "q2"])
+/-- The healed three-edge LeaTTa and HE atom outputs coincide modulo alpha. -/
+theorem connected_class_atom_outputs_alpha_equivalent :
+    Metta.AlphaEq
+      (.expr [.sym "f", .var "q1", .var "q1"])
       (.expr [.sym "f", .var "q1", .var "q1"]) := by
-  unfold Metta.AlphaEq Metta.canonicalizeVars
-  simp [Metta.Atom.vars, Metta.distinctVarsAux, Metta.renameVars]
+  rfl
+
+/-- Negative law: equality classes carrying incompatible ground values are
+rejected rather than silently choosing one value. -/
+theorem leatta_connected_class_rejects_incompatible_ground_values :
+    Metta.Bindings.addVarEquality
+      [Metta.BindingRel.val "x" (.sym "A"),
+        Metta.BindingRel.val "y" (.sym "B")]
+      "x" "y" = [] := by
+  exact Metta.incompatibleClassValues_rejected
 
 private def bindingReadoutLeaPattern : Metta.Atom :=
   .expr [.sym "g", .var "p", .var "p"]
@@ -2823,27 +2854,34 @@ private def bindingReadoutHEQuery : Atom :=
 private def bindingReadoutHERhs : Atom :=
   .expression [.symbol "f", .var "p"]
 
-/-- Minimal two-edge LeaTTa binding: `q1` has disappeared entirely. -/
-theorem leatta_binding_readout_match_drops_q1 :
+/-- Minimal two-edge LeaTTa match: both query variables remain connected to
+the repeated pattern variable by explicit equality relations. -/
+theorem leatta_binding_readout_match_connects_q1_q2 :
     Metta.matchAtoms bindingReadoutLeaPattern bindingReadoutLeaQuery =
-      [[Metta.BindingRel.val "p" (.var "q2")]] := by
-  simp [bindingReadoutLeaPattern, bindingReadoutLeaQuery,
-    Metta.matchAtoms, Metta.matchAtomsWith, Metta.matchAll,
-    Metta.Bindings.merge, Metta.Bindings.mergeOne,
-    Metta.Bindings.addVarBinding, Metta.Bindings.lookupVal,
-    Metta.Bindings.addValRaw, Metta.Bindings.removeVal,
-    Metta.Unify.unifyTop, Metta.Unify.unifyRounds,
-    Metta.Unify.decomposeAll, Metta.Unify.decomposeEq,
-    Metta.Subst.occurs, Metta.Subst.apply, Metta.Subst.extend,
-    Metta.Atom.size]
-  change ("q1" == "q2") = false
-  decide
+      [[Metta.BindingRel.eq "p" "q2",
+        Metta.BindingRel.eq "p" "q1"]] := by
+  rfl
 
-theorem leatta_binding_readout_has_no_q1_value :
+/-- Equality-only matches have no direct value readout; clients must resolve
+the equality class rather than treating direct lookup as the observable. -/
+theorem leatta_binding_readout_is_equality_only :
     ∀ b ∈ Metta.matchAtoms bindingReadoutLeaPattern bindingReadoutLeaQuery,
-      Metta.Bindings.lookupVal b "q1" = none := by
-  rw [leatta_binding_readout_match_drops_q1]
+      Metta.Bindings.lookupVal b "q1" = none ∧
+        Metta.Bindings.lookupVal b "q2" = none := by
+  rw [leatta_binding_readout_match_connects_q1_q2]
   simp [Metta.Bindings.lookupVal]
+
+/-- Full LeaTTa binding readout resolves both query variables to the stable
+representative of their shared equality class. -/
+theorem leatta_binding_readout_resolves_shared_class :
+    (Metta.matchAtoms bindingReadoutLeaPattern bindingReadoutLeaQuery).map
+        (fun b => Metta.instantiate b (.expr [.var "q1", .var "q2"])) =
+      [.expr [.var "q1", .var "q1"]] := by
+  rw [leatta_binding_readout_match_connects_q1_q2]
+  change [Metta.instantiate
+    [Metta.BindingRel.eq "p" "q2", Metta.BindingRel.eq "p" "q1"]
+    (.expr [.var "q1", .var "q2"])] = _
+  rw [LeaTTaBridge.connectedClass_lea_instantiate_oracles.1]
 
 /-- HE's corresponding two-edge match keeps both query variables in one class. -/
 theorem he_binding_readout_match_connects_q1_q2 :
@@ -2851,49 +2889,47 @@ theorem he_binding_readout_match_connects_q1_q2 :
       [⟨[], [("q1", "p"), ("q2", "p")]⟩] := by
   decide
 
-/-- At the equation surface the two-edge answers differ only by their variable
-name, so this smaller case does not yet witness atom-level nonconformance. -/
+/-- Both runtimes instantiate the repeated pattern variable to the same stable
+query representative. -/
 theorem binding_readout_equation_outputs :
     (Metta.matchAtoms bindingReadoutLeaPattern bindingReadoutLeaQuery).map
         (fun b => Metta.instantiate b bindingReadoutLeaRhs) =
-      [.expr [.sym "f", .var "q2"]] ∧
+      [.expr [.sym "f", .var "q1"]] ∧
     (matchAtoms bindingReadoutHEQuery bindingReadoutHEPattern 20).map
         (fun b => b.applyFull bindingReadoutHERhs 20) =
       [.expression [.symbol "f", .var "q1"]] := by
   constructor
-  · rw [leatta_binding_readout_match_drops_q1]
-    simp [bindingReadoutLeaRhs, Metta.instantiate,
-      Metta.bindingsToSubst, Metta.Subst.apply, Metta.Subst.lookup]
+  · rw [leatta_binding_readout_match_connects_q1_q2]
+    change [Metta.instantiate
+      [Metta.BindingRel.eq "p" "q2", Metta.BindingRel.eq "p" "q1"]
+      (.expr [.sym "f", .var "p"])] = _
+    rw [LeaTTaBridge.connectedClass_lea_instantiate_oracles.2]
   · set_option maxRecDepth 10000 in decide
 
 theorem binding_readout_equation_outputs_alpha_equivalent :
     Metta.AlphaEq
-      (.expr [.sym "f", .var "q2"])
+      (.expr [.sym "f", .var "q1"])
       (.expr [.sym "f", .var "q1"]) := by
-  unfold Metta.AlphaEq Metta.canonicalizeVars
-  simp [Metta.Atom.vars, Metta.distinctVarsAux, Metta.renameVars]
+  rfl
 
 set_option maxRecDepth 10000 in
-/-- Reading both query variables exposes the two-edge divergence directly:
-LeaTTa leaves two variables while HE resolves both through their shared class. -/
+/-- Reading both query variables exposes the shared equality class directly in
+both runtimes. -/
 theorem connected_class_binding_readouts :
     (Metta.matchAtoms bindingReadoutLeaPattern bindingReadoutLeaQuery).map
         (fun b => Metta.instantiate b (.expr [.var "q1", .var "q2"])) =
-      [.expr [.var "q1", .var "q2"]] ∧
+      [.expr [.var "q1", .var "q1"]] ∧
     (matchAtoms bindingReadoutHEQuery bindingReadoutHEPattern 20).map
         (fun b => b.applyFull (.expression [.var "q1", .var "q2"]) 20) =
       [.expression [.var "q1", .var "q1"]] := by
   constructor
-  · rw [leatta_binding_readout_match_drops_q1]
-    simp [Metta.instantiate, Metta.bindingsToSubst,
-      Metta.Subst.apply, Metta.Subst.lookup]
+  · exact leatta_binding_readout_resolves_shared_class
   · decide
 
-theorem connected_class_binding_readouts_not_alpha_equivalent :
-    ¬ Metta.AlphaEq
-      (.expr [.var "q1", .var "q2"])
+theorem connected_class_binding_readouts_alpha_equivalent :
+    Metta.AlphaEq
+      (.expr [.var "q1", .var "q1"])
       (.expr [.var "q1", .var "q1"]) := by
-  unfold Metta.AlphaEq Metta.canonicalizeVars
-  simp [Metta.Atom.vars, Metta.distinctVarsAux, Metta.renameVars]
+  rfl
 
 end Mettapedia.Languages.MeTTa.HE.Conformance

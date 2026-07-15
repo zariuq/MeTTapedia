@@ -526,7 +526,7 @@ inductive MettaCall (space : Space) (dispatch : GroundedDispatch) :
       (h_query : (rhs, queryBindings) ∈ queryEquations space atom fuel)
       (h_merge : merged ∈ mergeBindings queryBindings b fuel)
       (h_no_loop : merged.hasLoop = false)
-      (h_recurse : EvalAtom space dispatch (merged.apply rhs fuel) type_ merged finalResult) :
+      (h_recurse : EvalAtom space dispatch (merged.applyFull rhs fuel) type_ merged finalResult) :
       MettaCall space dispatch atom type_ b finalResult
   /-- Spec lines 383-384: Non-grounded, no equation matches → return unchanged.
       ```
