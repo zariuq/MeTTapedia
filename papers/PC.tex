@@ -20,12 +20,43 @@
 \usepackage{float}
 \usepackage{longtable}
 \usepackage{array}
+\usepackage{fvextra}
+\usepackage{newunicodechar}
+\usepackage{needspace}
 \setlength{\emergencystretch}{3em}
+
+\newunicodechar{ℝ}{\ensuremath{\mathbb{R}}}
+\newunicodechar{ℕ}{\ensuremath{\mathbb{N}}}
+\newunicodechar{ℂ}{\ensuremath{\mathbb{C}}}
+\newunicodechar{∀}{\ensuremath{\forall}}
+\newunicodechar{∃}{\ensuremath{\exists}}
+\newunicodechar{∧}{\ensuremath{\land}}
+\newunicodechar{∨}{\ensuremath{\lor}}
+\newunicodechar{↔}{\ensuremath{\leftrightarrow}}
+\newunicodechar{≤}{\ensuremath{\leq}}
+\newunicodechar{≠}{\ensuremath{\neq}}
+\newunicodechar{∑}{\ensuremath{\sum}}
+\newunicodechar{∫}{\ensuremath{\int}}
+\newunicodechar{∂}{\ensuremath{\partial}}
+\newunicodechar{𝓝}{\ensuremath{\mathcal{N}}}
+\newunicodechar{ᶠ}{\ensuremath{^{\mathrm f}}}
+\newunicodechar{⁻}{\ensuremath{^{-}}}
+\newunicodechar{ₗ}{\ensuremath{_{l}}}
 
 \newtheorem{theorem}{Theorem}[section]
 \newtheorem{corollary}[theorem]{Corollary}
 \newcommand{\leanname}[1]{{\scriptsize\ttfamily
   \def\_{\textunderscore\allowbreak}#1}}
+\newcommand{\leancommit}{647168959fc57cfe97526d9525d33e63681b8e2f}
+\newcommand{\leansource}[3]{%
+  \href{https://github.com/zariuq/MeTTapedia/blob/\leancommit/#1\#L#2}{\leanname{#3}}}
+\newcommand{\leansignaturelink}[2]{%
+  \par\Needspace{0.3\textheight}\smallskip\noindent
+  \href{https://github.com/zariuq/MeTTapedia/blob/\leancommit/#1\#L#2}{%
+    \scriptsize\itshape Lean 4 signature and complete proof}\par\nobreak}
+\DefineVerbatimEnvironment{leansignature}{Verbatim}{%
+  fontsize=\scriptsize,breaklines=true,breakanywhere=true,
+  frame=single,framesep=1.5mm,xleftmargin=0.5em,xrightmargin=0.5em}
 
 \title{Predictive Coding: What Is Exact,\\ What Is Not, and What It Costs}
 \author{Oru\v{z}i\thanks{Oru\v{z}i names the AI research collaborators who carried out
@@ -92,9 +123,11 @@ schedule}, \emph{at what depth}, and \emph{at what cost}. This note answers thos
 questions with theorems, in models small enough that every hypothesis is explicit and
 every boundary carries a counterexample: linear chains, finite DAGs, scalar paths,
 finite categorical priors. Each is machine-checked in Lean~4 and axiom-clean, using only
-\leanname{propext}, \leanname{Classical.choice} and \leanname{Quot.sound}. To keep the
-statements readable we give them here as ordinary mathematics; Table~\ref{tab:index}
-maps each one to the name you can look up and check.
+\leanname{propext}, \leanname{Classical.choice} and \leanname{Quot.sound}. Selected
+crown results display their source-exact Lean theorem headers in place, with proof
+bodies omitted; each caption links to the complete declaration and proof in an
+immutable source snapshot. Table~\ref{tab:index} links every supporting statement and
+boundary fixture in the same snapshot.
 
 Two of the answers surprised us. The natural conjecture about which graphs admit exact
 scheduling is false in an instructive direction (Section~\ref{sec:schedule}), and the
@@ -150,6 +183,15 @@ and the following coincide: $u$ is an energy equilibrium; $u$ is the unique ener
 minimizer; and $u$ is the conditional multivariate-Gaussian posterior mean. Any clamped
 state other than the posterior mean is provably not an equilibrium.
 \end{theorem}
+
+\leansignaturelink{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/%
+PredictiveCoding/LinearGaussianOperator.lean}{254}
+\begin{leansignature}
+theorem LinearGaussianOperatorModel.equilibrium_iff_eq_conditionalPosteriorMean
+    (model : LinearGaussianOperatorModel Latent Residual)
+    (u : LinearGaussianOperatorSpace Latent) :
+    model.Equilibrium u ↔ u = ∫ v, v ∂model.posterior
+\end{leansignature}
 
 So ``settling performs Bayesian inference'' is a theorem, not a slogan: the relaxed
 latents \emph{are} the posterior mean given the evidence. Scalar chains and
@@ -220,6 +262,14 @@ is $z^\star = (1,\tfrac32,2)$. Then
 The root cause is $z^\star_1 = \tfrac32 \neq 1 = a_1$.
 \end{theorem}
 
+\leansignaturelink{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/%
+PredictiveCoding/BackpropExactness.lean}{101}
+\begin{leansignature}
+theorem equilibriumGradient_ne_backpropGradient_example :
+    pcGainPartial unitDepth2Links depth2EquilibriumState 0 ≠
+      scalarSquaredErrorBackpropPartial 1 1 1
+\end{leansignature}
+
 Both gradients use the correct error; they evaluate it against different source
 activations. Backprop multiplies by the forward activation $a_1$; PC multiplies by the
 relaxed latent $z^\star_1$, which conditioning has already moved toward the answer. On
@@ -276,6 +326,18 @@ schedule can therefore be exact while being inadmissible, and that happens preci
 when some node's missed contributions cancel.
 \end{theorem}
 
+\leansignaturelink{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/%
+PredictiveCoding/DAGScheduleExactness.lean}{218}
+\begin{leansignature}
+theorem dagScheduleExactAtEveryNode_iff_each_admissible_or_cancellation
+    (G : SharedLatentDAG Node Edge) (parentError : Node → ℝ)
+    (arrival : Edge → ℕ) (nodeTime : Node → ℕ) :
+    dagScheduleExactAtEveryNode G parentError arrival nodeTime ↔
+      ∀ v,
+        dagScheduleAdmissible G arrival (nodeTime v) v ∨
+          dagMissedContributionsCancel G parentError arrival (nodeTime v) v
+\end{leansignature}
+
 Cancellation is not hypothetical: a node missing contributions $+1$ and $-1$ is
 inadmissible and numerically exact at once. So ``exact'' and ``waited for everything''
 are genuinely different properties, and only the second is structural.
@@ -297,6 +359,17 @@ Then the first-arrival schedule is exact at every node if and only if
 \]
 That is: exactly when no node's outgoing edges mix target ranks.
 \end{theorem}
+
+\leansignaturelink{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/%
+PredictiveCoding/DAGScheduleExactness.lean}{727}
+\begin{leansignature}
+theorem dagFirstArrivalScheduleExact_iff_uniformOutgoingTargetRanks
+    (G : SharedLatentDAG Node Edge) (parentError : Node → ℝ)
+    (headRank : ℕ) (hhead : ∀ n, G.rank n ≤ headRank)
+    (hpositive : ∀ e, 0 < dagParentContribution G parentError e) :
+    dagFirstArrivalScheduleExact G parentError headRank ↔
+      HasUniformOutgoingTargetRanks G
+\end{leansignature}
 
 Unit levelizability implies the criterion trivially --- all targets sit at
 $\mathrm{rank}(v)+1$ --- but the converse fails, and we exhibit the witness: a graph with
@@ -393,6 +466,16 @@ The spectral gap obeys $0 \le 1 - \cos(\pi/n) \le \pi^2/(2n^2)$, and
 $\cos(\pi/n) \to 1$ as $n \to \infty$.
 \end{theorem}
 
+\leansignaturelink{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/%
+PredictiveCoding/DepthPathology.lean}{106}
+\begin{leansignature}
+theorem pathSlowMode_iterate_exact
+    (segments : ℕ) (hsegments : 0 < segments) :
+    ∀ t n, n ≤ segments →
+      pathJacobiIterate segments (pathSlowMode segments) t n =
+        pathRelaxationRate segments ^ t * pathSlowMode segments n
+\end{leansignature}
+
 So the slowest mode decays by exactly $\cos(\pi/n)$ per sweep and the gap closes
 quadratically in depth: doubling depth quarters the progress per settling step. This is
 the mathematical spine under the engineering literature devoted to escaping it
@@ -433,6 +516,16 @@ then the global modal gap again obeys the backbone bound
 $1-\rho\le\pi^2/(2B^2)$.
 \end{theorem}
 
+\leansignaturelink{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/%
+PredictiveCoding/FrozenAdapterRestriction.lean}{233}
+\begin{leansignature}
+theorem isFrozenAdapterSlowModeRate_iff
+    (backboneSegments adapterSegments : ℕ)
+    (hadapter : 1 < adapterSegments) (rate : ℝ) :
+    IsFrozenAdapterSlowModeRate backboneSegments adapterSegments rate ↔
+      rate = pathRelaxationRate adapterSegments
+\end{leansignature}
+
 The independence is derived from restricting the coupled operator, rather than stored
 in an adapter definition.  It is also sharp about the idealization: a depth-three
 backbone with a depth-two adapter has frozen adapter rate $0$, but modal radius $1/2$
@@ -457,6 +550,28 @@ all $P_i$ forces every used rate to equal one, because the output's empty produc
 Moreover, for $0<\lambda<1$, multiplying by any fixed polynomial in depth still tends to
 zero; exact cancellation requires the exponential reciprocal $\lambda^{-(L-i)}$.
 \end{theorem}
+
+\leansignaturelink{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/%
+PredictiveCoding/MuPCDepthCredit.lean}{366}
+\begin{leansignature}
+theorem muPCDepthScaling_cannot_cancel_contractingDepthCredit
+    (width depth : ℕ) (inferenceRate : ℝ)
+    (hwidth : 0 < width) (hdepth : 0 < depth)
+    (hrateNonzero : inferenceRate ≠ 0) (hrateContractive : |inferenceRate| < 1) :
+    depthMuPAdamLearningRateScale width depth *
+        depthMuPHiddenMultiplier width depth = 1 ∧
+      (∀ distance,
+        depthMuPAdamLearningRateScale width depth *
+            depthMuPHiddenMultiplier width depth *
+              inferenceRate ^ distance = inferenceRate ^ distance) ∧
+      (∀ learningRate distance,
+        learningRate * inferenceRate ^ distance = 1 ↔
+          learningRate = (inferenceRate ^ distance)⁻¹) ∧
+      (∀ coefficient degree,
+        ∀ᶠ distance : ℕ in atTop,
+          polynomialDepthCompensation coefficient degree distance *
+              inferenceRate ^ distance ≠ 1)
+\end{leansignature}
 
 The Depth-$\mu$P multiplier and its prescribed Adam learning-rate factor cancel each
 other algebraically, but neither changes the inference rate.  Thus they repair a width
@@ -518,6 +633,16 @@ normed algebra, $\rho(D) < 1$ if and only if $D^n \to 0$; hence the precondition
 residual iterate converges to zero exactly when $\rho(I-P) < 1$. No diagonalizability is
 assumed, so nonnormal operators are covered.
 \end{theorem}
+
+\leansignaturelink{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/%
+PredictiveCoding/OperatorStability.lean}{22}
+\begin{leansignature}
+theorem spectralRadius_lt_one_iff_pow_tendsto_zero
+    {A : Type*} [NormedRing A] [NormedAlgebra ℂ A] [CompleteSpace A]
+    [NormOneClass A] [Nontrivial A] (a : A) :
+    spectralRadius ℂ a < 1 ↔
+      Tendsto (fun n : ℕ => a ^ n) atTop (𝓝 0)
+\end{leansignature}
 
 So $P = I$ is the \emph{one-step optimum}, not the requirement. Asymptotically an entire
 open region works, and one may sit far from the identity on every mode and still
@@ -612,6 +737,20 @@ Thus $(1,0)$ is a genuine saddle with explicit descending and ascending approach
 but it is not strict.
 \end{theorem}
 
+\leansignaturelink{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/%
+PredictiveCoding/EquilibratedEnergySaddles.lean}{319}
+\begin{leansignature}
+theorem orthogonalDataset_universalStrictSaddleConjecture_counterexample :
+    IsCriticalPoint orthogonalDatasetEquilibratedEnergy (1, 0) ∧
+      HasTwoSidedSaddleCurves orthogonalDatasetEquilibratedEnergy (1, 0)
+        (fun step => (1 - step, step))
+        (fun step => (1 + step, step)) ∧
+      (∀ direction,
+        HasSecondDirectionalCurvatureAt orthogonalDatasetEquilibratedEnergy
+          (1, 0) direction 0) ∧
+      ¬ HasStrictSaddleCertificate orthogonalDatasetEquilibratedEnergy (1, 0)
+\end{leansignature}
+
 So the universal conjecture is false without a nondegeneracy hypothesis. This does not
 contradict the published strictification theorem: the counterexample lies outside its
 covered class. It identifies the missing issue more sharply --- a cubic-order saddle can
@@ -692,6 +831,24 @@ finite vector width; an all-one seed gives turnover in every coordinate, while a
 all-zero seed stays uniform.
 \end{theorem}
 
+\leansignaturelink{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/%
+PredictiveCoding/TrainedNonlinearTurnover.lean}{432}
+\begin{leansignature}
+theorem trainedNonlinearEntropyTurnover_crown :
+    (¬ ∃ L : ℝ →ₗ[ℝ] ℝ, ∀ x, L x = centeredSigmoidActivation x) ∧
+      trainedCenteredSigmoidProblem.loss 1 = 0 ∧
+      (∀ weight, trainedCenteredSigmoidProblem.loss 1 ≤
+        trainedCenteredSigmoidProblem.loss weight) ∧
+      Real.binEntropy trainedCenteredSigmoidTargetProbability <
+        trainedCenteredSigmoidProblem.entropy 1 0 ∧
+      trainedCenteredSigmoidProblem.entropy 1 1 =
+        Real.binEntropy trainedCenteredSigmoidTargetProbability ∧
+      Real.binEntropy trainedCenteredSigmoidTargetProbability <
+        trainedCenteredSigmoidProblem.entropy 1 2 ∧
+      (¬ ∃ seed : ℝ, centeredSigmoidSettling.activation seed = 1) ∧
+      0 < trainedCenteredSigmoidRobustRadius
+\end{leansignature}
+
 This separates three notions that ``contractive nonlinear PC'' can obscure. Contraction
 controls sensitivity, training certifies the chosen target, and the one-edge delay causes
 turnover. None implies the others: the same centered sigmoid is contractive but its range
@@ -722,6 +879,17 @@ every budget $B > 0$ their expected yields are strictly ordered:
 \tfrac{B}{4} \;<\; \tfrac{3B}{4}.
 \]
 \end{theorem}
+
+\leansignaturelink{lean/mettapedia/Mettapedia/MachineLearning/SearchGuidance/%
+DecisivenessYield.lean}{242}
+\begin{leansignature}
+theorem equal_crossEntropy_strictly_ordered_expectedYield :
+    softHalfTargetCrossEntropy lowTargetMassPrior =
+        softHalfTargetCrossEntropy highTargetMassPrior ∧
+      ∀ budget : ℕ, 0 < budget →
+        iidExpectedTargetHits lowTargetMassPrior budget 1 <
+          iidExpectedTargetHits highTargetMassPrior budget 1
+\end{leansignature}
 
 Two models, identical loss, threefold difference in search performance. Cross-entropy is
 symmetric under swapping mass between outcomes; yield is not, because only one outcome is
@@ -958,6 +1126,21 @@ E^{do}_{Y\to X}(x,y)=\frac{y^2}{2v_Y},
 and some intervention separates them if and only if $c\ne0$.
 \end{theorem}
 
+\leansignaturelink{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/%
+PredictiveCoding/CausalDirectionIdentifiability.lean}{866}
+\begin{leansignature}
+theorem observationally_blind_intervention_certificate
+    {Sample : Type*} [Fintype Sample]
+    (covariance : PositiveBivariateCovariance)
+    (hcorrelated : covariance.covXY ≠ 0) (x y : Sample → ℝ) :
+    covariance.forwardResidualMatrix ≠ covariance.reverseResidualMatrix ∧
+      (forwardNodeResidualModel covariance).residualMatrix ≠
+        (reverseNodeResidualModel covariance).residualMatrix ∧
+      (∑ sample, covariance.forwardGaussianPCEnergy (x sample) (y sample)) =
+        ∑ sample, covariance.reverseGaussianPCEnergy (x sample) (y sample) ∧
+      covariance.SeparatesDirectionsByInterventionalEnergy
+\end{leansignature}
+
 At the concrete covariance $\left(\begin{smallmatrix}1&1\\1&2\end{smallmatrix}\right)$
 and $x=y=1$, both half-normalized observational energies equal $1/2$, while the
 interventional energies are respectively $0$ and $1/4$.  The negative fixture is just
@@ -987,6 +1170,17 @@ For any finite design with $\sum_s x_s^2>0$, both orientation-specific objective
 their minima.  The minimized forward energy is strictly lower than the minimized reverse
 energy if and only if $c\ne0$.
 \end{theorem}
+
+\leansignaturelink{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/%
+PredictiveCoding/CausalDirectionSelection.lean}{316}
+\begin{leansignature}
+theorem forwardOrientationWinsByMinimizedInterventionalEnergy_iff
+    {Sample : Type*} [Fintype Sample]
+    (covariance : PositiveBivariateCovariance) (x : Sample → ℝ)
+    (hexcited : 0 < ∑ sample, x sample ^ 2) :
+    covariance.ForwardOrientationWinsByMinimizedInterventionalEnergy x ↔
+      covariance.covXY ≠ 0
+\end{leansignature}
 
 Indeed, $\beta=c/v_X$ gives forward minimum zero, while every $\gamma$ minimizes the
 reverse objective at the displayed positive value exactly when $c\ne0$.  At independent
@@ -1043,186 +1237,186 @@ in \leanname{NeuralNetworks/PredictiveCoding/} unless marked otherwise.
 \midrule
 \endhead
 Thm~\ref{thm:bayes}
-  & \leanname{LinearGaussianOperatorModel.equilibrium\_iff\_eq\_posteriorMean}
+  & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/PredictiveCoding/LinearGaussianOperator.lean}{219}{LinearGaussianOperatorModel.equilibrium\_iff\_eq\_posteriorMean}
   & LinearGaussian\-Operator \\
-  & \leanname{matrixPCEquilibrium\_iff\_eq\_conditionalPosteriorMean} & MatrixGaussian\-Chain \\
-  & \leanname{matrixPC\_not\_equilibrium\_of\_ne\_posteriorMean} & (negative fixture) \\
-  & \leanname{pcConditionalPosteriorMean\_equilibrium} & LinearGaussian\-Chain (scalar) \\
+  & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/PredictiveCoding/MatrixGaussianChain.lean}{452}{matrixPCEquilibrium\_iff\_eq\_conditionalPosteriorMean} & MatrixGaussian\-Chain \\
+  & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/PredictiveCoding/MatrixGaussianChain.lean}{500}{matrixPC\_not\_equilibrium\_of\_ne\_posteriorMean} & (negative fixture) \\
+  & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/PredictiveCoding/LinearGaussianChain.lean}{1070}{pcConditionalPosteriorMean\_equilibrium} & LinearGaussian\-Chain (scalar) \\
 Thm~\ref{thm:errrec}
-  & \leanname{equilibriumError\_satisfies\_backpropRecursion} & BackpropExactness \\
-  & \leanname{tiedEquilibriumError\_satisfies\_bpttRecursion} & (weight tying) \\
+  & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/PredictiveCoding/BackpropExactness.lean}{28}{equilibriumError\_satisfies\_backpropRecursion} & BackpropExactness \\
+  & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/PredictiveCoding/BackpropExactness.lean}{124}{tiedEquilibriumError\_satisfies\_bpttRecursion} & (weight tying) \\
 Thm~\ref{thm:dagrec}
-  & \leanname{sharedDAGEquilibriumError\_satisfies\_parentAggregationRecursion}
+  & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/PredictiveCoding/SharedLatentDAG.lean}{223}{sharedDAGEquilibriumError\_satisfies\_parentAggregationRecursion}
   & SharedLatentDAG \\
-  & \leanname{dagMultiParent\_parentAggregate\_counts\_both\_slots} & (positive fixture) \\
-  & \leanname{dagMultiParent\_single\_slot\_is\_incorrect\_negative\_example}
+  & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/PredictiveCoding/SharedLatentDAG.lean}{324}{dagMultiParent\_parentAggregate\_counts\_both\_slots} & (positive fixture) \\
+  & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/PredictiveCoding/SharedLatentDAG.lean}{333}{dagMultiParent\_single\_slot\_is\_incorrect\_negative\_example}
   & (negative fixture) \\
 Thm~\ref{thm:gradne}
-  & \leanname{equilibriumGradient\_ne\_backpropGradient\_example} & BackpropExactness \\
-  & \leanname{equilibrium\_state\_ne\_forward\_state\_example} & (root cause) \\
+  & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/PredictiveCoding/BackpropExactness.lean}{101}{equilibriumGradient\_ne\_backpropGradient\_example} & BackpropExactness \\
+  & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/PredictiveCoding/BackpropExactness.lean}{89}{equilibrium\_state\_ne\_forward\_state\_example} & (root cause) \\
 Thm~\ref{thm:zil}
-  & \leanname{zilScheduledGainGradient\_eq\_backpropGradient} & ZILExactness \\
-  & \leanname{zilChainResidual\_at\_schedule\_eq\_backpropError} & (front lemma) \\
-  & \leanname{zilOffSchedule\_freeEquilibriumGradient\_failure} & (negative) \\
-  & \leanname{residualSkip\_naiveFirstArrivalGradient\_failure\_example} & (negative) \\
+  & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/PredictiveCoding/ZILExactness.lean}{190}{zilScheduledGainGradient\_eq\_backpropGradient} & ZILExactness \\
+  & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/PredictiveCoding/ZILExactness.lean}{158}{zilChainResidual\_at\_schedule\_eq\_backpropError} & (front lemma) \\
+  & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/PredictiveCoding/ZILExactness.lean}{230}{zilOffSchedule\_freeEquilibriumGradient\_failure} & (negative) \\
+  & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/PredictiveCoding/ZILExactness.lean}{251}{residualSkip\_naiveFirstArrivalGradient\_failure\_example} & (negative) \\
 Thm~\ref{thm:signed}
-  & \leanname{dagScheduleExactAtEveryNode\_iff\_all\_missed\_eq\_zero}
+  & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/PredictiveCoding/DAGScheduleExactness.lean}{204}{dagScheduleExactAtEveryNode\_iff\_all\_missed\_eq\_zero}
   & DAGSchedule\-Exactness \\
-  & \leanname{dagScheduleExactAtEveryNode\_iff\_each\_admissible\_or\_cancellation} & \\
-  & \leanname{dagSchedule\_exact\_not\_admissible\_iff\_hasMissedCancellation} & \\
-  & \leanname{dagScheduleExactAtEveryNode\_iff\_admissible\_of\_noCancellation}
+  & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/PredictiveCoding/DAGScheduleExactness.lean}{218}{dagScheduleExactAtEveryNode\_iff\_each\_admissible\_or\_cancellation} & \\
+  & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/PredictiveCoding/DAGScheduleExactness.lean}{233}{dagSchedule\_exact\_not\_admissible\_iff\_hasMissedCancellation} & \\
+  & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/PredictiveCoding/DAGScheduleExactness.lean}{275}{dagScheduleExactAtEveryNode\_iff\_admissible\_of\_noCancellation}
   & (fusion under no cancellation) \\
 Thm~\ref{thm:structsigned}
-  & \leanname{dagScheduleUniversallyExactAtEveryNode\_iff\_targetGain\_zero}
+  & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/PredictiveCoding/DAGScheduleExactness.lean}{411}{dagScheduleUniversallyExactAtEveryNode\_iff\_targetGain\_zero}
   & DAGSchedule\-Exactness \\
-  & \leanname{dagFirstArrivalScheduleUniversallyExact\_iff\_targetGain\_zero} & \\
-  & \leanname{moduleScheduleUniversallyExactAtNode\_iff\_targetGain\_zero}
+  & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/PredictiveCoding/DAGScheduleExactness.lean}{609}{dagFirstArrivalScheduleUniversallyExact\_iff\_targetGain\_zero} & \\
+  & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/PredictiveCoding/ModuleScheduleExactness.lean}{134}{moduleScheduleUniversallyExactAtNode\_iff\_targetGain\_zero}
   & ModuleSchedule\-Exactness \\
-  & \leanname{moduleSignedCancellation\_universallyExact\_positive\_example}
+  & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/PredictiveCoding/ModuleScheduleExactness.lean}{167}{moduleSignedCancellation\_universallyExact\_positive\_example}
   & (positive fixture) \\
-  & \leanname{moduleSingleMissedEdge\_not\_universallyExact\_negative\_example}
+  & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/PredictiveCoding/ModuleScheduleExactness.lean}{179}{moduleSingleMissedEdge\_not\_universallyExact\_negative\_example}
   & (negative fixture) \\
 Thm~\ref{thm:sched}
-  & \leanname{dagFirstArrivalScheduleExact\_iff\_uniformOutgoingTargetRanks}
+  & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/PredictiveCoding/DAGScheduleExactness.lean}{727}{dagFirstArrivalScheduleExact\_iff\_uniformOutgoingTargetRanks}
   & DAGSchedule\-Exactness \\
-  & \leanname{uniformLongSkipGraph\_firstArrival\_exact} & (witness) \\
-  & \leanname{uniformLongSkipGraph\_not\_unitLevelized} & (witness) \\
+  & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/PredictiveCoding/DAGScheduleExactness.lean}{873}{uniformLongSkipGraph\_firstArrival\_exact} & (witness) \\
+  & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/PredictiveCoding/DAGScheduleExactness.lean}{849}{uniformLongSkipGraph\_not\_unitLevelized} & (witness) \\
 Thm~\ref{thm:epc}
-  & \leanname{spcErrorStream\_epcStateStream} & ErrorState\-Reparameterization \\
-  & \leanname{epcStateStream\_spcErrorStream} & \\
-  & \leanname{epcPrefixEnergy\_eq\_spcPrefixEnergy} & \\
-  & \leanname{epcCriticalDifferential\_iff\_spcCriticalDifferential} & \\
-  & \leanname{epcLocalParameterUpdate\_eq\_spcLocalParameterUpdate} & \\
+  & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/PredictiveCoding/ErrorStateReparameterization.lean}{40}{spcErrorStream\_epcStateStream} & ErrorState\-Reparameterization \\
+  & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/PredictiveCoding/ErrorStateReparameterization.lean}{48}{epcStateStream\_spcErrorStream} & \\
+  & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/PredictiveCoding/ErrorStateReparameterization.lean}{82}{epcPrefixEnergy\_eq\_spcPrefixEnergy} & \\
+  & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/PredictiveCoding/ErrorStateReparameterization.lean}{138}{epcCriticalDifferential\_iff\_spcCriticalDifferential} & \\
+  & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/PredictiveCoding/ErrorStateReparameterization.lean}{240}{epcLocalParameterUpdate\_eq\_spcLocalParameterUpdate} & \\
 Thm~\ref{thm:wave}
-  & \leanname{spcFirstArrivalSignal\_layer\_closedForm}
+  & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/PredictiveCoding/ErrorStateReparameterization.lean}{171}{spcFirstArrivalSignal\_layer\_closedForm}
   & ErrorState\-Reparameterization \\
-  & \leanname{spcWavefront\_eventually\_below\_tolerance} & \\
-  & \leanname{spcWavefront\_nonzero\_but\_below\_tolerance\_example} & (positive) \\
-  & \leanname{spcWavefront\_unitRate\_not\_below\_small\_tolerance} & (boundary) \\
-  & \leanname{epcOneStepParameterUpdate\_unitRate\_eq\_backprop} & \\
+  & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/PredictiveCoding/ErrorStateReparameterization.lean}{185}{spcWavefront\_eventually\_below\_tolerance} & \\
+  & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/PredictiveCoding/ErrorStateReparameterization.lean}{209}{spcWavefront\_nonzero\_but\_below\_tolerance\_example} & (positive) \\
+  & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/PredictiveCoding/ErrorStateReparameterization.lean}{218}{spcWavefront\_unitRate\_not\_below\_small\_tolerance} & (boundary) \\
+  & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/PredictiveCoding/ErrorStateReparameterization.lean}{260}{epcOneStepParameterUpdate\_unitRate\_eq\_backprop} & \\
 Thm~\ref{thm:mupcdepth}
-  & \leanname{spcFirstArrivalParameterUpdate\_eq\_depthCreditBackprop}
+  & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/PredictiveCoding/MuPCDepthCredit.lean}{54}{spcFirstArrivalParameterUpdate\_eq\_depthCreditBackprop}
   & MuPCDepthCredit \\
-  & \leanname{chainLinkLoss\_after\_uniformDepthCredit\_exact} & \\
-  & \leanname{inferenceRateEqualization\_forces\_unitBackpropBoundary} & \\
-  & \leanname{muPCDepthScaling\_cannot\_cancel\_contractingDepthCredit} & \\
-  & \leanname{uniformPrecision\_equilibrium\_sub\_forward\_exact} & \\
+  & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/PredictiveCoding/MuPCDepthCredit.lean}{77}{chainLinkLoss\_after\_uniformDepthCredit\_exact} & \\
+  & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/PredictiveCoding/MuPCDepthCredit.lean}{255}{inferenceRateEqualization\_forces\_unitBackpropBoundary} & \\
+  & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/PredictiveCoding/MuPCDepthCredit.lean}{366}{muPCDepthScaling\_cannot\_cancel\_contractingDepthCredit} & \\
+  & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/PredictiveCoding/MuPCDepthCredit.lean}{604}{uniformPrecision\_equilibrium\_sub\_forward\_exact} & \\
 Thm~\ref{thm:depth}
-  & \leanname{pathSlowMode\_eigenrelation} & DepthPathology \\
-  & \leanname{pathSlowMode\_iterate\_exact} & \\
-  & \leanname{pathRelaxationRate\_gap\_bound} & \\
-  & \leanname{pathRelaxationRate\_tendsto\_one} & \\
+  & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/PredictiveCoding/DepthPathology.lean}{85}{pathSlowMode\_eigenrelation} & DepthPathology \\
+  & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/PredictiveCoding/DepthPathology.lean}{106}{pathSlowMode\_iterate\_exact} & \\
+  & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/PredictiveCoding/DepthPathology.lean}{139}{pathRelaxationRate\_gap\_bound} & \\
+  & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/PredictiveCoding/DepthPathology.lean}{152}{pathRelaxationRate\_tendsto\_one} & \\
 Thm~\ref{thm:het}
-  & \leanname{HeterogeneousDepthBlockFamily.modalSpectralRadius\_lt\_one\_iff}
+  & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/PredictiveCoding/HeterogeneousDepthBlocks.lean}{114}{HeterogeneousDepthBlockFamily.modalSpectralRadius\_lt\_one\_iff}
   & Heterogeneous\-DepthBlocks \\
-  & \leanname{HeterogeneousDepthBlockFamily.modalSpectralGap\_le\_depth\_bound} & \\
+  & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/PredictiveCoding/HeterogeneousDepthBlocks.lean}{152}{HeterogeneousDepthBlockFamily.modalSpectralGap\_le\_depth\_bound} & \\
 Thm~\ref{cor:adapter}
-  & \leanname{coupledBackboneAdapterStep\_not\_blockDiagonal}
+  & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/PredictiveCoding/FrozenAdapterRestriction.lean}{67}{coupledBackboneAdapterStep\_not\_blockDiagonal}
   & FrozenAdapter\-Restriction \\
-  & \leanname{frozenAdapterRestriction\_eq\_blockPathJacobiStep\_clamped} & \\
-  & \leanname{frozenAdapterRestriction\_eq\_blockPathJacobiStep\_of\_boundary\_clamped} & \\
-  & \leanname{isFrozenAdapterSlowModeRate\_iff} & \\
-  & \leanname{frozenAdapterRestriction\_gap\_bound} & \\
-  & \leanname{activeBackboneAdapter\_backbone\_gap\_bound} & \\
-  & \leanname{partialFreezing\_reimports\_backbone\_negative\_fixture} & \\
+  & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/PredictiveCoding/FrozenAdapterRestriction.lean}{152}{frozenAdapterRestriction\_eq\_blockPathJacobiStep\_clamped} & \\
+  & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/PredictiveCoding/FrozenAdapterRestriction.lean}{189}{frozenAdapterRestriction\_eq\_blockPathJacobiStep\_of\_boundary\_clamped} & \\
+  & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/PredictiveCoding/FrozenAdapterRestriction.lean}{233}{isFrozenAdapterSlowModeRate\_iff} & \\
+  & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/PredictiveCoding/FrozenAdapterRestriction.lean}{281}{frozenAdapterRestriction\_gap\_bound} & \\
+  & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/PredictiveCoding/FrozenAdapterRestriction.lean}{336}{activeBackboneAdapter\_backbone\_gap\_bound} & \\
+  & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/PredictiveCoding/FrozenAdapterRestriction.lean}{394}{partialFreezing\_reimports\_backbone\_negative\_fixture} & \\
 Thm~\ref{thm:precond}
-  & \leanname{chainLinkLoss\_preconditionedUpdate\_exact} & Preconditioned\-Learning \\
-  & \leanname{chainLinkResidual\_preconditionedUpdate\_exact} & \\
-  & \leanname{chainLink\_zeroLoss\_afterUpdate\_iff\_identity} & \\
-  & \leanname{chainLink\_preconditionedUpdate\_strictDescent\_iff} & \\
-  & \leanname{chainLink\_lossDecrease\_gap\_from\_identity\_exact} & \\
-  & \leanname{chainLink\_lossDescent\_strictly\_degrades\_with\_squaredDeparture} & \\
-  & \leanname{unitChain\_large\_preconditioner\_increases\_loss\_negative\_example} & \\
+  & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/PredictiveCoding/PreconditionedLearning.lean}{99}{chainLinkLoss\_preconditionedUpdate\_exact} & Preconditioned\-Learning \\
+  & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/PredictiveCoding/PreconditionedLearning.lean}{81}{chainLinkResidual\_preconditionedUpdate\_exact} & \\
+  & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/PredictiveCoding/PreconditionedLearning.lean}{196}{chainLink\_zeroLoss\_afterUpdate\_iff\_identity} & \\
+  & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/PredictiveCoding/PreconditionedLearning.lean}{166}{chainLink\_preconditionedUpdate\_strictDescent\_iff} & \\
+  & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/PredictiveCoding/PreconditionedLearning.lean}{123}{chainLink\_lossDecrease\_gap\_from\_identity\_exact} & \\
+  & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/PredictiveCoding/PreconditionedLearning.lean}{148}{chainLink\_lossDescent\_strictly\_degrades\_with\_squaredDeparture} & \\
+  & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/PredictiveCoding/PreconditionedLearning.lean}{242}{unitChain\_large\_preconditioner\_increases\_loss\_negative\_example} & \\
 Thm~\ref{thm:spectral}
-  & \leanname{spectralRadius\_lt\_one\_iff\_pow\_tendsto\_zero} & Operator\-Stability \\
-  & \leanname{complexMatrixPreconditioner\_fullSpectrum\_convergence} & \\
-  & \leanname{nonnormalTransientMatrix\_fullSpectrum\_stable} & (nonnormal witness) \\
-  & \leanname{nonnormalTransientMatrix\_not\_normal} & \\
+  & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/PredictiveCoding/OperatorStability.lean}{22}{spectralRadius\_lt\_one\_iff\_pow\_tendsto\_zero} & Operator\-Stability \\
+  & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/PredictiveCoding/OperatorStability.lean}{233}{complexMatrixPreconditioner\_fullSpectrum\_convergence} & \\
+  & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/PredictiveCoding/OperatorStability.lean}{416}{nonnormalTransientMatrix\_fullSpectrum\_stable} & (nonnormal witness) \\
+  & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/PredictiveCoding/OperatorStability.lean}{404}{nonnormalTransientMatrix\_not\_normal} & \\
 Thm~\ref{thm:envelope}
-  & \leanname{operatorPowNorm\_geometricEnvelope} & Operator\-Stability \\
-  & \leanname{operatorResidualIterate\_norm\_geometricEnvelope} & \\
+  & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/PredictiveCoding/OperatorStability.lean}{79}{operatorPowNorm\_geometricEnvelope} & Operator\-Stability \\
+  & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/PredictiveCoding/OperatorStability.lean}{141}{operatorResidualIterate\_norm\_geometricEnvelope} & \\
 Thm~\ref{thm:jordan}
-  & \leanname{jordanTransientMatrix\_pow\_exact} & Operator\-Stability \\
-  & \leanname{jordanTransientMatrix\_spectrum} & \\
-  & \leanname{jordanTransientMatrix\_not\_normal} & \\
-  & \leanname{spectralRadius\_zero\_allows\_arbitrary\_transientAmplification}
+  & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/PredictiveCoding/OperatorStability.lean}{255}{jordanTransientMatrix\_pow\_exact} & Operator\-Stability \\
+  & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/PredictiveCoding/OperatorStability.lean}{280}{jordanTransientMatrix\_spectrum} & \\
+  & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/PredictiveCoding/OperatorStability.lean}{304}{jordanTransientMatrix\_not\_normal} & \\
+  & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/PredictiveCoding/OperatorStability.lean}{364}{spectralRadius\_zero\_allows\_arbitrary\_transientAmplification}
   & (negative boundary) \\
 Thm~\ref{thm:mode}
-  & \leanname{matrixPreconditionedResidual\_loss\_perMode\_exact}
+  & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/PredictiveCoding/PreconditionedLearning.lean}{380}{matrixPreconditionedResidual\_loss\_perMode\_exact}
   & Preconditioned\-Learning \\
-  & \leanname{mixedModePreconditioner\_helps\_one\_hurts\_another\_fixture} & \\
+  & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/PredictiveCoding/PreconditionedLearning.lean}{542}{mixedModePreconditioner\_helps\_one\_hurts\_another\_fixture} & \\
 Thm~\ref{thm:armijo}
-  & \leanname{armijoBacktracking\_terminates} & Backtracking\-Descent \\
-  & \leanname{armijoCondition\_energy\_nonincreasing} & \\
-  & \leanname{pcEnergyDepth2\_armijoBacktracking\_terminates\_with\_descent} & \\
+  & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/PredictiveCoding/BacktrackingDescent.lean}{65}{armijoBacktracking\_terminates} & Backtracking\-Descent \\
+  & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/PredictiveCoding/BacktrackingDescent.lean}{78}{armijoCondition\_energy\_nonincreasing} & \\
+  & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/PredictiveCoding/BacktrackingDescent.lean}{150}{pcEnergyDepth2\_armijoBacktracking\_terminates\_with\_descent} & \\
 Thm~\ref{thm:saddles}
-  & \leanname{orthogonalDataset\_outputDirection\_curvature}
+  & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/PredictiveCoding/EquilibratedEnergySaddles.lean}{167}{orthogonalDataset\_outputDirection\_curvature}
   & EquilibratedEnergy\-Saddles \\
-  & \leanname{orthogonalDataset\_innerStrip\_hasStrictSaddleCertificate} & \\
-  & \leanname{orthogonalDataset\_counterexamplePoint\_all\_curvatures\_zero} & \\
-  & \leanname{orthogonalDataset\_counterexamplePoint\_twoSidedSaddleCurves} & \\
-  & \leanname{orthogonalDataset\_universalStrictSaddleConjecture\_counterexample}
+  & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/PredictiveCoding/EquilibratedEnergySaddles.lean}{236}{orthogonalDataset\_innerStrip\_hasStrictSaddleCertificate} & \\
+  & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/PredictiveCoding/EquilibratedEnergySaddles.lean}{247}{orthogonalDataset\_counterexamplePoint\_all\_curvatures\_zero} & \\
+  & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/PredictiveCoding/EquilibratedEnergySaddles.lean}{282}{orthogonalDataset\_counterexamplePoint\_twoSidedSaddleCurves} & \\
+  & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/PredictiveCoding/EquilibratedEnergySaddles.lean}{319}{orthogonalDataset\_universalStrictSaddleConjecture\_counterexample}
   & (negative boundary) \\
 Thm~\ref{thm:coupled}
-  & \leanname{coupledTwoTimescale\_multipliers\_stable\_iff} & CoupledDynamics \\
-  & \leanname{coupledTwoTimescale\_converges\_below\_threshold} & \\
-  & \leanname{coupledTwoTimescale\_diverges\_above\_learning\_threshold} & \\
+  & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/PredictiveCoding/CoupledDynamics.lean}{198}{coupledTwoTimescale\_multipliers\_stable\_iff} & CoupledDynamics \\
+  & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/PredictiveCoding/CoupledDynamics.lean}{288}{coupledTwoTimescale\_converges\_below\_threshold} & \\
+  & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/PredictiveCoding/CoupledDynamics.lean}{325}{coupledTwoTimescale\_diverges\_above\_learning\_threshold} & \\
 Thm~\ref{thm:turnover}
-  & \leanname{arbitraryDepthLinearEntropyTurnover\_general} & EntropyTurnover \\
-  & \leanname{arbitraryDepthTurnoverEntropy\_nonmonotone\_iff} & \\
+  & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/PredictiveCoding/EntropyTurnover.lean}{280}{arbitraryDepthLinearEntropyTurnover\_general} & EntropyTurnover \\
+  & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/PredictiveCoding/EntropyTurnover.lean}{232}{arbitraryDepthTurnoverEntropy\_nonmonotone\_iff} & \\
 Thm~\ref{thm:nonlin}
-  & \leanname{monotoneContractiveNonlinearEntropyTurnover\_sufficient} & EntropyTurnover \\
-  & \leanname{MonotoneContractiveSettling.iterate\_abs\_le} & (contraction bound) \\
-  & \leanname{monotoneContractiveNonlinearEntropyTurnover\_uniform\_boundary} & (boundary) \\
+  & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/PredictiveCoding/EntropyTurnover.lean}{630}{monotoneContractiveNonlinearEntropyTurnover\_sufficient} & EntropyTurnover \\
+  & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/PredictiveCoding/EntropyTurnover.lean}{550}{MonotoneContractiveSettling.iterate\_abs\_le} & (contraction bound) \\
+  & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/PredictiveCoding/EntropyTurnover.lean}{678}{monotoneContractiveNonlinearEntropyTurnover\_uniform\_boundary} & (boundary) \\
 Thm~\ref{thm:trainednonlin}
-  & \leanname{trainedCenteredSigmoidWeight\_is\_unique\_global\_minimizer}
+  & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/PredictiveCoding/TrainedNonlinearTurnover.lean}{208}{trainedCenteredSigmoidWeight\_is\_unique\_global\_minimizer}
   & TrainedNonlinear\-Turnover \\
-  & \leanname{trainedCenteredSigmoidEntropyTurnover} & \\
-  & \leanname{approximateTraining\_preservesCenteredSigmoidTurnoverMargin} & \\
-  & \leanname{centeredSigmoidContraction\_does\_not\_reach\_logit\_one} & (boundary) \\
-  & \leanname{trainedCenteredSigmoidVectorTurnover} & (vector lift) \\
-  & \leanname{centeredSigmoidVectorZeroSeed\_uniform} & (negative fixture) \\
+  & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/PredictiveCoding/TrainedNonlinearTurnover.lean}{241}{trainedCenteredSigmoidEntropyTurnover} & \\
+  & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/PredictiveCoding/TrainedNonlinearTurnover.lean}{312}{approximateTraining\_preservesCenteredSigmoidTurnoverMargin} & \\
+  & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/PredictiveCoding/TrainedNonlinearTurnover.lean}{270}{centeredSigmoidContraction\_does\_not\_reach\_logit\_one} & (boundary) \\
+  & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/PredictiveCoding/TrainedNonlinearTurnover.lean}{395}{trainedCenteredSigmoidVectorTurnover} & (vector lift) \\
+  & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/PredictiveCoding/TrainedNonlinearTurnover.lean}{416}{centeredSigmoidVectorZeroSeed\_uniform} & (negative fixture) \\
 Appendix
-  & \leanname{PositiveBivariateCovariance.\allowbreak distinct\_orientations\_same\_observational\_batchEnergy}
+  & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/PredictiveCoding/CausalDirectionIdentifiability.lean}{210}{PositiveBivariateCovariance.\allowbreak distinct\_orientations\_same\_observational\_batchEnergy}
   & CausalDirection\-Identifiability \\
-  & \leanname{PositiveBivariateCovariance.\allowbreak clamp\_is\_conditioning\_and\_direction\_blind} & \\
-  & \leanname{PositiveBivariateCovariance.\allowbreak interventionalEquilibria\_separate\_iff} & \\
-  & \leanname{PositiveBivariateCovariance.\allowbreak observationally\_blind\_intervention\_certificate} & \\
-  & \leanname{PositiveBivariateCovariance.\allowbreak TwoNodeQuadraticResidualModel.\allowbreak batchEnergy\_eq\_trace\_quadraticForm\_mul\_empiricalSecondMoment} & \\
+  & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/PredictiveCoding/CausalDirectionIdentifiability.lean}{683}{PositiveBivariateCovariance.\allowbreak clamp\_is\_conditioning\_and\_direction\_blind} & \\
+  & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/PredictiveCoding/CausalDirectionIdentifiability.lean}{759}{PositiveBivariateCovariance.\allowbreak interventionalEquilibria\_separate\_iff} & \\
+  & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/PredictiveCoding/CausalDirectionIdentifiability.lean}{866}{PositiveBivariateCovariance.\allowbreak observationally\_blind\_intervention\_certificate} & \\
+  & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/PredictiveCoding/CausalDirectionIdentifiability.lean}{976}{PositiveBivariateCovariance.\allowbreak TwoNodeQuadraticResidualModel.\allowbreak batchEnergy\_eq\_trace\_quadraticForm\_mul\_empiricalSecondMoment} & \\
 Thm~\ref{thm:intervention}
-  & \leanname{PositiveBivariateCovariance.\allowbreak separatesDirectionsByInterventionalEnergy\_iff}
+  & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/PredictiveCoding/CausalDirectionIdentifiability.lean}{853}{PositiveBivariateCovariance.\allowbreak separatesDirectionsByInterventionalEnergy\_iff}
   & CausalDirection\-Identifiability \\
-  & \leanname{PositiveBivariateCovariance.\allowbreak unitNoiseForwardCovariance\_observation\_tied\_intervention\_separates}
+  & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/PredictiveCoding/CausalDirectionIdentifiability.lean}{907}{PositiveBivariateCovariance.\allowbreak unitNoiseForwardCovariance\_observation\_tied\_intervention\_separates}
   & (positive fixture) \\
-  & \leanname{PositiveBivariateCovariance.\allowbreak independentEqualVarianceCovariance\_interventionalEnergy\_fixture}
+  & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/PredictiveCoding/CausalDirectionIdentifiability.lean}{921}{PositiveBivariateCovariance.\allowbreak independentEqualVarianceCovariance\_interventionalEnergy\_fixture}
   & (negative fixture) \\
 Thm~\ref{thm:causalselection}
-  & \leanname{PositiveBivariateCovariance.\allowbreak forwardOrientationWinsByMinimizedInterventionalEnergy\_iff}
+  & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/PredictiveCoding/CausalDirectionSelection.lean}{316}{PositiveBivariateCovariance.\allowbreak forwardOrientationWinsByMinimizedInterventionalEnergy\_iff}
   & CausalDirection\-Selection \\
-  & \leanname{PositiveBivariateCovariance.\allowbreak isMinimizedForwardInterventionalBatchEnergy\_iff}
+  & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/PredictiveCoding/CausalDirectionSelection.lean}{222}{PositiveBivariateCovariance.\allowbreak isMinimizedForwardInterventionalBatchEnergy\_iff}
   & (unique forward fit) \\
-  & \leanname{PositiveBivariateCovariance.\allowbreak reverseCandidates\_distinct\_but\_intervention\_deletes\_parameter}
+  & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/PredictiveCoding/CausalDirectionSelection.lean}{282}{PositiveBivariateCovariance.\allowbreak reverseCandidates\_distinct\_but\_intervention\_deletes\_parameter}
   & (anti-vacuity) \\
-  & \leanname{PositiveBivariateCovariance.\allowbreak unitNoiseForwardCovariance\_minimizedIntervention\_selects\_forward}
+  & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/PredictiveCoding/CausalDirectionSelection.lean}{365}{PositiveBivariateCovariance.\allowbreak unitNoiseForwardCovariance\_minimizedIntervention\_selects\_forward}
   & (positive fixture) \\
-  & \leanname{PositiveBivariateCovariance.\allowbreak independentEqualVariance\_minimizedIntervention\_tied}
+  & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/PredictiveCoding/CausalDirectionSelection.lean}{375}{PositiveBivariateCovariance.\allowbreak independentEqualVariance\_minimizedIntervention\_tied}
   & (negative fixture) \\
 Appendix
-  & \leanname{sequentialTwoTaskUpdate\_sub\_additive\_exact}
+  & \leansource{lean/mettapedia/Mettapedia/MachineLearning/ContinualLearning/QuadraticTwoTask.lean}{46}{sequentialTwoTaskUpdate\_sub\_additive\_exact}
   & ContinualLearning/ QuadraticTwoTask \\
-  & \leanname{centered\_sequential\_order\_defect\_eq\_commutator} & \\
-  & \leanname{linearTwoTask\_causalCoding\_separation\_crown} & \\
-  & \leanname{GaussianEvidence.reused\_contribution\_exact\_excess}
+  & \leansource{lean/mettapedia/Mettapedia/MachineLearning/ContinualLearning/QuadraticTwoTask.lean}{80}{centered\_sequential\_order\_defect\_eq\_commutator} & \\
+  & \leansource{lean/mettapedia/Mettapedia/MachineLearning/ContinualLearning/QuadraticTwoTask.lean}{214}{linearTwoTask\_causalCoding\_separation\_crown} & \\
+  & \leansource{lean/mettapedia/Mettapedia/MachineLearning/ContinualLearning/EvidenceLedger.lean}{74}{GaussianEvidence.reused\_contribution\_exact\_excess}
   & ContinualLearning/ EvidenceLedger \\
-  & \leanname{linearCausalCodingBridge\_crown} & \\
-  & \leanname{generalCausalCodingCorrespondence\_requires\_interventionalClamp}
+  & \leansource{lean/mettapedia/Mettapedia/MachineLearning/ContinualLearning/EvidenceLedger.lean}{156}{linearCausalCodingBridge\_crown} & \\
+  & \leansource{lean/mettapedia/Mettapedia/MachineLearning/ContinualLearning/EvidenceLedger.lean}{149}{generalCausalCodingCorrespondence\_requires\_interventionalClamp}
   & (scope marker) \\
 Thm~\ref{thm:yield}
-  & \leanname{iidExpectedTargetHits\_eq\_budget\_mul\_targetMass}
+  & \leansource{lean/mettapedia/Mettapedia/MachineLearning/SearchGuidance/DecisivenessYield.lean}{88}{iidExpectedTargetHits\_eq\_budget\_mul\_targetMass}
   & SearchGuidance/ \mbox{DecisivenessYield} \\
-  & \leanname{iidExpectedTargetHits\_strictMono\_targetMass} & \\
+  & \leansource{lean/mettapedia/Mettapedia/MachineLearning/SearchGuidance/DecisivenessYield.lean}{176}{iidExpectedTargetHits\_strictMono\_targetMass} & \\
 Thm~\ref{thm:sep}
-  & \leanname{equal\_crossEntropy\_strictly\_ordered\_expectedYield}
+  & \leansource{lean/mettapedia/Mettapedia/MachineLearning/SearchGuidance/DecisivenessYield.lean}{242}{equal\_crossEntropy\_strictly\_ordered\_expectedYield}
   & SearchGuidance/ \mbox{DecisivenessYield} \\
 \bottomrule
 \end{longtable}
