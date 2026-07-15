@@ -1790,11 +1790,117 @@ negative examples:
   the same domain as a plain atom, proving the semantics are distinct.
 \end{itemize}
 
-\CeTTa{} implements HE$'$ as an opt-in profile (\code{he\_prime}),
+\CeTTa{} implements HE$'$ as an opt-in profile (\code{he-prime}),
 gated by a single flag (\code{enable\_dependent\_telescope}).  The
 implementation mirrors the Lean formalization: \code{split\_dependent\_domain},
 \code{function\_domain\_type}, \code{bind\_domain\_binder}, and
 \code{infer\_dependent\_application\_types} in \code{eval.c}.
+
+\subsection{Experimental: Typed Search over Dependent Codomains}
+\label{sec:heprime-typed-search}
+
+The telescope elaboration above is the kernel-backed part of HE$'$:
+one interpretation function, mirrored in Lean.  The \code{he-prime}
+profile additionally carries a larger \emph{experimental} typing module
+(\code{src/he\_typing.c}): consistency analysis, checked type-level
+computation, and proof search by type inhabitation.  Its evidence is
+executable --- a blessed adversarial regression suite
+(\code{tests/profile\_he\_prime\_dtt\_adversarial.metta}) and a
+reproduced end-to-end demonstration --- and deliberately \emph{not} a
+soundness theorem: no Lean correspondence exists for this module yet,
+and its final proof check reuses the same C implementation it
+validates.  The two authority levels are distinct and should not be
+conflated.
+
+\paragraph{The judgment.}  The module implements three-valued
+\emph{success typing} over declared types.  \code{check-typing}
+accepts a term against an expected type when \emph{some} declared type
+is consistent with it, rejects when \emph{every} declared type is a
+proven mismatch, and otherwise answers \code{unknown} with a reason
+(fuel exhaustion, ambiguous computation, inadmissible computation).  A
+rejection is proven; an acceptance is not a promise.  Consistency is
+licensed per edge by exactly one named reason --- \code{exact},
+\code{structural}, \code{dynamic} (\code{\%Undefined\%} on either
+side), \code{top} (\code{Atom} as the expected type), or
+\code{meta-staging} --- and composite types combine children by
+\emph{weakest license}: a single dynamic child keeps the whole edge
+dynamic at any nesting depth, so a value cannot be laundered from one
+base type to another through \code{\%Undefined\%} by wrapping it in a
+constructor.
+
+\paragraph{Type-level computation.}  Dependent codomains may contain
+computation, so conversion is capability-gated: grounded operations
+reduce inside types only from an explicit list of deterministic,
+effect-free operations, and anything effectful (space mutation, I/O,
+foreign calls) is refused with
+\code{(he-reject (type-computation-inadmissible))} and never executes.
+The typing operations' declared types stage their term and type
+arguments (\code{Atom} parameters), so argument evaluation cannot run
+an effect before the checker rules on it.  User functions marked
+\code{type-level-function} evaluate against a fuel-bounded snapshot
+whose space effects are discarded --- a scoped experimental policy,
+stated as such, not a purity judgment.
+
+\paragraph{Search as inhabitation.}  \code{type-inhabit-first}
+performs Curry--Howard backward chaining: rules are arrow-typed
+declarations marked \code{chaining-rule}, goals are types, and answers
+are terms returned together with a re-check of their type.  Only
+proof-grade edges (exact or structural all the way down) admit a
+candidate: a witness whose type merely gradually matches the goal ---
+through a dynamic or top license --- can pass \code{check-typing} but
+never stands as an inhabitant.  Forward chaining
+(\code{type-forward-closure}) reports \code{complete} only on a
+reached fixpoint, and otherwise \code{resource-incomplete} or
+\code{rounds-exhausted}, under one aggregate fuel budget.
+
+\paragraph{Dependent-typed PLN, running.}  The payoff is the standard
+PLN idiom with truth-value formulas in rule codomains --- the
+capability Geisweiller's DTL chainers had to leave disabled pending a
+type checker that runs functions inside types.  Under \code{he-prime}
+the rules run as written (a derived encoding of the DTL constructor
+types, not an unchanged execution of the original source tree):
+
+\begin{lstlisting}[language={},basicstyle=\ttfamily\scriptsize,escapechar=|]
+(: Deduction
+   (-> (|$\doteq$| $p $ptv) (|$\doteq$| $q $qtv) (|$\doteq$| $r $rtv)
+       (|$\doteq$| (|$\to$| $p $q) $pqtv)
+       (|$\doteq$| (|$\to$| $q $r) $qrtv)
+       (|$\doteq$| (|$\to$| $p $r)                      ; codomain COMPUTES the
+          (deduction-formula $ptv $qtv $rtv $pqtv $qrtv))))  ; conclusion TV
+(chaining-rule Deduction)
+
+(: pP  (|$\doteq$| P (STV 0.8 0.9)))            ; evidence facts (pQ, pR,
+(: pPQ (|$\doteq$| (|$\to$| P Q) (STV 0.75 0.8)))     ;  pQR analogous)
+
+!(type-of &self (quote (Deduction pP pQ pR pPQ pQR)))
+; => (type-set (|$\doteq$| (|$\to$| P R) (STV 0.6333333333333334 0.7)))
+
+!(type-inhabit-first &self (|$\doteq$| (|$\to$| P R) (deduction-formula ...)) 2 500000)
+; => (he-accept (: (Deduction pP pQ pR pPQ pQR)
+;                  (|$\doteq$| (|$\to$| P R) (STV 0.6333333333333334 0.7))))
+\end{lstlisting}
+
+\noindent
+The deduction truth value is computed \emph{inside the type} during
+inference, and backward search returns the proof term with that
+computed type.  Modus ponens and recursive evidence-counting rules run
+the same way.  (The artifact writes the annotation constructor with the
+glyph U+225E, rendered $\doteq$ here.)
+
+\paragraph{Checked refinements.}  \code{validate-type-properties} runs
+declared per-index refinements: with a natural-index property declared
+for \code{VecN}, \code{(VecN String 2)} is accepted and
+\code{(VecN String -1)} is rejected with
+\code{(type-property-failed -1)} --- an underflow that unrefined HE
+typing happily derives.  The operation validates declared properties
+only; it is \emph{not} a well-formedness judgment (no universes, no
+binder-domain formation, no positivity).
+
+\paragraph{Open.}  A C$\leftrightarrow$Lean correspondence for this
+module; $\Sigma$/Id/$\iota$ formers and universe discipline (the module
+does dependent \emph{elimination} plus checked refinements, not full
+dependent type theory); certificate generation; backward search over
+computed codomains whose truth values still contain free variables.
 
 %% ────────────────────────────────────────────────────────────────────
 \section{Related Work}
