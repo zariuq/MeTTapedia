@@ -269,4 +269,283 @@ theorem equal_crossEntropy_does_not_force_equalYield_negative_example :
     change (4 : ℝ) * (1 / 4) ≠ 4 * (3 / 4)
     norm_num
 
+/-! ## At-least-one success for multiple targets -/
+
+/-- Total prior mass assigned to a finite collection of target outcomes. -/
+def targetSetMass {k : ℕ}
+    (θ : ProbSimplex k) (targets : Finset (Fin k)) : ℝ :=
+  ∑ a : Fin k, if a ∈ targets then (θ : Fin k → ℝ) a else 0
+
+/-- A categorical word contains at least one outcome from `targets`. -/
+def wordHitsTargetSet {k n : ℕ}
+    (xs : Fin n → Fin k) (targets : Finset (Fin k)) : Prop :=
+  ∃ i, xs i ∈ targets
+
+theorem wordHitsTargetSet_cons {k n : ℕ}
+    (head : Fin k) (tail : Fin n → Fin k) (targets : Finset (Fin k)) :
+    wordHitsTargetSet (Fin.cons head tail) targets ↔
+      head ∈ targets ∨ wordHitsTargetSet tail targets := by
+  constructor
+  · rintro ⟨i, hi⟩
+    induction i using Fin.cases with
+    | zero =>
+        left
+        simpa using hi
+    | succ j =>
+        right
+        exact ⟨j, by simpa using hi⟩
+  · rintro (hhead | ⟨i, hi⟩)
+    · exact ⟨0, by simpa using hhead⟩
+    · exact ⟨Fin.succ i, by simpa using hi⟩
+
+/-- Probability mass of words containing no requested target. -/
+noncomputable def iidNoTargetSuccess {k : ℕ}
+    (θ : ProbSimplex k) (budget : ℕ) (targets : Finset (Fin k)) : ℝ := by
+  classical
+  exact ∑ xs : Fin budget → Fin k,
+    if wordHitsTargetSet xs targets then 0
+    else categoricalProductPMF (θ : Fin k → ℝ) xs
+
+/-- Probability mass of words containing at least one requested target. -/
+noncomputable def iidAtLeastOneTargetSuccess {k : ℕ}
+    (θ : ProbSimplex k) (budget : ℕ) (targets : Finset (Fin k)) : ℝ := by
+  classical
+  exact ∑ xs : Fin budget → Fin k,
+    if wordHitsTargetSet xs targets
+    then categoricalProductPMF (θ : Fin k → ℝ) xs
+    else 0
+
+theorem targetSetMass_add_avoidingMass {k : ℕ}
+    (θ : ProbSimplex k) (targets : Finset (Fin k)) :
+    targetSetMass θ targets +
+        (∑ a : Fin k, if a ∈ targets then 0 else (θ : Fin k → ℝ) a) = 1 := by
+  classical
+  rw [← probSimplex_sum_one θ]
+  unfold targetSetMass
+  rw [← Finset.sum_add_distrib]
+  apply Finset.sum_congr rfl
+  intro a _ha
+  by_cases h : a ∈ targets <;> simp [h]
+
+theorem avoidingMass_eq_one_sub_targetSetMass {k : ℕ}
+    (θ : ProbSimplex k) (targets : Finset (Fin k)) :
+    (∑ a : Fin k, if a ∈ targets then 0 else (θ : Fin k → ℝ) a) =
+      1 - targetSetMass θ targets := by
+  classical
+  linarith [targetSetMass_add_avoidingMass θ targets]
+
+theorem targetSetMass_nonneg {k : ℕ}
+    (θ : ProbSimplex k) (targets : Finset (Fin k)) :
+    0 ≤ targetSetMass θ targets := by
+  classical
+  unfold targetSetMass
+  exact Finset.sum_nonneg fun a _ha => by
+    split
+    · exact probSimplex_nonneg θ a
+    · exact le_rfl
+
+theorem targetSetMass_le_one {k : ℕ}
+    (θ : ProbSimplex k) (targets : Finset (Fin k)) :
+    targetSetMass θ targets ≤ 1 := by
+  classical
+  have havoid :
+      0 ≤ ∑ a : Fin k, if a ∈ targets then 0 else (θ : Fin k → ℝ) a :=
+    Finset.sum_nonneg fun a _ha => by
+      split
+      · exact le_rfl
+      · exact probSimplex_nonneg θ a
+  linarith [targetSetMass_add_avoidingMass θ targets]
+
+/-- The probability of avoiding every target is the independent one-step
+avoidance mass raised to the sampling budget. -/
+theorem iidNoTargetSuccess_eq_pow {k : ℕ}
+    (θ : ProbSimplex k) (targets : Finset (Fin k)) :
+    ∀ budget : ℕ,
+      iidNoTargetSuccess θ budget targets =
+        (1 - targetSetMass θ targets) ^ budget := by
+  classical
+  intro budget
+  induction budget with
+  | zero =>
+      simp [iidNoTargetSuccess, wordHitsTargetSet, categoricalProductPMF]
+  | succ n ih =>
+      unfold iidNoTargetSuccess
+      have hdecomp :
+          (∑ xs : Fin (n + 1) → Fin k,
+              if wordHitsTargetSet xs targets then 0
+              else categoricalProductPMF (θ : Fin k → ℝ) xs) =
+            ∑ p : Fin k × (Fin n → Fin k),
+              if wordHitsTargetSet (Fin.cons p.1 p.2) targets then 0
+              else categoricalProductPMF (θ : Fin k → ℝ) (Fin.cons p.1 p.2) := by
+        simpa using
+          (Fintype.sum_equiv
+            (Fin.consEquiv (n := n) (α := fun _ : Fin (n + 1) => Fin k))
+            (fun p =>
+              if wordHitsTargetSet (Fin.cons p.1 p.2) targets then 0
+              else categoricalProductPMF (θ : Fin k → ℝ) (Fin.cons p.1 p.2))
+            (fun xs =>
+              if wordHitsTargetSet xs targets then 0
+              else categoricalProductPMF (θ : Fin k → ℝ) xs)
+            (fun _p => rfl)).symm
+      rw [hdecomp, Fintype.sum_prod_type]
+      have hbranch (a : Fin k) :
+          (∑ xs : Fin n → Fin k,
+              if wordHitsTargetSet (Fin.cons a xs) targets then 0
+              else categoricalProductPMF (θ : Fin k → ℝ) (Fin.cons a xs)) =
+            if a ∈ targets then 0
+            else (θ : Fin k → ℝ) a * iidNoTargetSuccess θ n targets := by
+        by_cases ha : a ∈ targets
+        · simp [wordHitsTargetSet_cons, ha]
+        · rw [if_neg ha]
+          simp only [wordHitsTargetSet_cons, ha, false_or,
+            categoricalProductPMF_cons]
+          calc
+            (∑ xs : Fin n → Fin k,
+                if wordHitsTargetSet xs targets then 0
+                else (θ : Fin k → ℝ) a *
+                  categoricalProductPMF (θ : Fin k → ℝ) xs) =
+              ∑ xs : Fin n → Fin k,
+                (θ : Fin k → ℝ) a *
+                  (if wordHitsTargetSet xs targets then 0
+                  else categoricalProductPMF (θ : Fin k → ℝ) xs) := by
+                    apply Finset.sum_congr rfl
+                    intro xs _hxs
+                    by_cases h : wordHitsTargetSet xs targets <;> simp [h]
+            _ = (θ : Fin k → ℝ) a *
+                (∑ xs : Fin n → Fin k,
+                  if wordHitsTargetSet xs targets then 0
+                  else categoricalProductPMF (θ : Fin k → ℝ) xs) := by
+                    rw [Finset.mul_sum]
+            _ = (θ : Fin k → ℝ) a * iidNoTargetSuccess θ n targets := by
+                    rfl
+      simp_rw [hbranch]
+      calc
+        (∑ a : Fin k,
+            if a ∈ targets then 0
+            else (θ : Fin k → ℝ) a * iidNoTargetSuccess θ n targets) =
+            (∑ a : Fin k,
+              if a ∈ targets then 0 else (θ : Fin k → ℝ) a) *
+              iidNoTargetSuccess θ n targets := by
+                rw [Finset.sum_mul]
+                apply Finset.sum_congr rfl
+                intro a _ha
+                by_cases ha : a ∈ targets <;> simp [ha]
+        _ = (1 - targetSetMass θ targets) *
+              iidNoTargetSuccess θ n targets := by
+                rw [avoidingMass_eq_one_sub_targetSetMass]
+        _ = (1 - targetSetMass θ targets) ^ (n + 1) := by
+                rw [ih, pow_succ]
+                ring
+
+theorem iidAtLeastOne_add_noTargetSuccess {k : ℕ}
+    (θ : ProbSimplex k) (budget : ℕ) (targets : Finset (Fin k)) :
+    iidAtLeastOneTargetSuccess θ budget targets +
+      iidNoTargetSuccess θ budget targets = 1 := by
+  classical
+  rw [← sum_categoricalProductPMF_eq_one θ budget]
+  unfold iidAtLeastOneTargetSuccess iidNoTargetSuccess
+  rw [← Finset.sum_add_distrib]
+  apply Finset.sum_congr rfl
+  intro xs _hxs
+  by_cases h : wordHitsTargetSet xs targets <;> simp [h]
+
+/-- At-least-one success has the exact complement-of-independent-failures
+formula for any finite collection of targets. -/
+theorem iidAtLeastOneTargetSuccess_eq_one_sub_pow {k : ℕ}
+    (θ : ProbSimplex k) (budget : ℕ) (targets : Finset (Fin k)) :
+    iidAtLeastOneTargetSuccess θ budget targets =
+      1 - (1 - targetSetMass θ targets) ^ budget := by
+  have hsum := iidAtLeastOne_add_noTargetSuccess θ budget targets
+  rw [iidNoTargetSuccess_eq_pow] at hsum
+  linarith
+
+/-- A positive sampling budget makes at-least-one success strictly monotone
+in the total prior mass assigned to the requested targets. -/
+theorem iidAtLeastOneTargetSuccess_strictMono_targetSetMass {k : ℕ}
+    (θ₁ θ₂ : ProbSimplex k) (targets₁ targets₂ : Finset (Fin k))
+    (budget : ℕ) (hbudget : 0 < budget)
+    (hmass : targetSetMass θ₁ targets₁ < targetSetMass θ₂ targets₂) :
+    iidAtLeastOneTargetSuccess θ₁ budget targets₁ <
+      iidAtLeastOneTargetSuccess θ₂ budget targets₂ := by
+  rw [iidAtLeastOneTargetSuccess_eq_one_sub_pow,
+    iidAtLeastOneTargetSuccess_eq_one_sub_pow]
+  have hbase :
+      1 - targetSetMass θ₂ targets₂ < 1 - targetSetMass θ₁ targets₁ := by
+    linarith
+  have hnonneg : 0 ≤ 1 - targetSetMass θ₂ targets₂ :=
+    sub_nonneg.mpr (targetSetMass_le_one θ₂ targets₂)
+  have hpow := pow_lt_pow_left₀ hbase hnonneg (Nat.ne_of_gt hbudget)
+  linarith
+
+theorem targetSetMass_singleton {k : ℕ}
+    (θ : ProbSimplex k) (target : Fin k) :
+    targetSetMass θ {target} = (θ : Fin k → ℝ) target := by
+  classical
+  simp [targetSetMass]
+
+theorem iidAtLeastOne_singleton_eq {k : ℕ}
+    (θ : ProbSimplex k) (budget : ℕ) (target : Fin k) :
+    iidAtLeastOneTargetSuccess θ budget {target} =
+      1 - (1 - (θ : Fin k → ℝ) target) ^ budget := by
+  rw [iidAtLeastOneTargetSuccess_eq_one_sub_pow, targetSetMass_singleton]
+
+theorem low_high_prior_atLeastOneSuccess_strict
+    (budget : ℕ) (hbudget : 0 < budget) :
+    iidAtLeastOneTargetSuccess lowTargetMassPrior budget {1} <
+      iidAtLeastOneTargetSuccess highTargetMassPrior budget {1} := by
+  apply iidAtLeastOneTargetSuccess_strictMono_targetSetMass
+  · exact hbudget
+  · rw [targetSetMass_singleton, targetSetMass_singleton]
+    change (1 / 4 : ℝ) < 3 / 4
+    norm_num
+
+/-- The equal-cross-entropy fixture remains strictly ordered when yield means
+at least one success rather than expected hit count. -/
+theorem equal_crossEntropy_strictly_ordered_atLeastOneSuccess :
+    softHalfTargetCrossEntropy lowTargetMassPrior =
+        softHalfTargetCrossEntropy highTargetMassPrior ∧
+      ∀ budget : ℕ, 0 < budget →
+        iidAtLeastOneTargetSuccess lowTargetMassPrior budget {1} <
+          iidAtLeastOneTargetSuccess highTargetMassPrior budget {1} := by
+  exact ⟨low_high_prior_crossEntropy_eq, low_high_prior_atLeastOneSuccess_strict⟩
+
+noncomputable def uniformThreePrior : ProbSimplex 3 :=
+  ⟨fun _ => (1 / 3 : ℝ), by
+    constructor
+    · intro _a
+      norm_num
+    · norm_num [Fin.sum_univ_succ]⟩
+
+theorem uniformThree_twoTargets_mass :
+    targetSetMass uniformThreePrior {0, 2} = 2 / 3 := by
+  unfold targetSetMass
+  rw [Fin.sum_univ_succ, Fin.sum_univ_succ, Fin.sum_univ_succ]
+  have hcoord (a : Fin 3) :
+      (uniformThreePrior : Fin 3 → ℝ) a = 1 / 3 := by
+    rfl
+  rw [hcoord, hcoord, hcoord]
+  have h12 : (1 : Fin 3) ≠ 2 := by decide
+  simp [h12]
+  norm_num
+
+theorem uniformThree_twoTargets_twoSamples_positive_example :
+    iidAtLeastOneTargetSuccess uniformThreePrior 2 {0, 2} = 8 / 9 := by
+  rw [iidAtLeastOneTargetSuccess_eq_one_sub_pow,
+    uniformThree_twoTargets_mass]
+  norm_num
+
+theorem emptyTargetSet_has_zero_success_negative_example {k : ℕ}
+    (θ : ProbSimplex k) (budget : ℕ) :
+    iidAtLeastOneTargetSuccess θ budget ∅ = 0 := by
+  rw [iidAtLeastOneTargetSuccess_eq_one_sub_pow]
+  simp [targetSetMass]
+
+theorem equal_crossEntropy_does_not_force_equal_atLeastOneSuccess_negative_example :
+    softHalfTargetCrossEntropy lowTargetMassPrior =
+        softHalfTargetCrossEntropy highTargetMassPrior ∧
+      iidAtLeastOneTargetSuccess lowTargetMassPrior 4 {1} ≠
+        iidAtLeastOneTargetSuccess highTargetMassPrior 4 {1} := by
+  exact ⟨low_high_prior_crossEntropy_eq,
+    ne_of_lt (low_high_prior_atLeastOneSuccess_strict 4 (by norm_num))⟩
+
 end Mettapedia.MachineLearning.SearchGuidance

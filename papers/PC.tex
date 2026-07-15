@@ -1,0 +1,1288 @@
+%% Predictive Coding: What Is Exact, What Is Not, and What It Costs
+%%
+%% Machine-checked theory of predictive-coding dynamics (Lean 4, Mettapedia
+%% library), with the experimental verdict it explains.
+%% Companion empirical report: AlienCoding.tex.
+%%
+%% Build: pdflatex PC.tex
+
+\documentclass[11pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage{geometry}
+\geometry{margin=1in}
+\usepackage{hyperref}
+\usepackage{booktabs}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{float}
+\usepackage{longtable}
+\usepackage{array}
+\setlength{\emergencystretch}{3em}
+
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{corollary}[theorem]{Corollary}
+\newcommand{\leanname}[1]{{\scriptsize\ttfamily
+  \def\_{\textunderscore\allowbreak}#1}}
+
+\title{Predictive Coding: What Is Exact,\\ What Is Not, and What It Costs}
+\author{Oru\v{z}i\thanks{Oru\v{z}i names the AI research collaborators who carried out
+this work: Anthropic Claude (Opus~4 and Fable~5) and OpenAI Codex (GPT-5.6-Sol) ---
+formalization, implementation, experiments, and drafting. Research direction and
+oversight: Zar Goertzel.}}
+\date{July 2026 --- working note}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+We prove what predictive coding (PC) does and does not compute, and test the
+consequences. Settling any finite linear-Gaussian residual model is exactly conditional
+Bayesian inference --- the unique energy equilibrium \emph{is} the posterior mean, at
+arbitrary width, depth, and correlated precision. The equilibrium error recursion is
+exactly backpropagation's, but the equilibrium weight gradient is not, and we give the
+counterexample. Exact backprop-equivalent scheduling is characterized completely: a
+schedule is exact iff the contributions it misses sum to zero, so when contributions
+cannot cancel it reduces to a structural criterion --- every node's outgoing edges land
+on a single rank --- strictly weaker than the levelizability one expects. Error-based PC
+is an exact nonlinear change of coordinates from state-based PC, with equal energy and
+local parameter updates; its first-arrival signal carries exactly the claimed
+$\lambda^{L-i}$ factor. Composing that factor with the local update and loss laws
+proves a depth-credit no-go: inference rates equalize every layer only at the unit-rate
+backprop boundary, while polynomial Depth-$\mu$P scaling cannot cancel exponential
+attenuation. Settling on a depth-$n$ path contracts at exactly
+$\cos(\pi/n)$.  For a genuinely joined backbone--adapter path, restricting the
+coupled operator to a frozen backbone yields exactly the adapter-only first-mode rate;
+leaving the backbone active re-imports its depth bound.  A preconditioned PC step
+multiplies the loss by $(P-1)^2$: descent holds exactly on $0<P<2$, only $P=1$ reaches
+zero in one step, and asymptotically all that is required is $\rho(I-P)<1$ --- which a
+nonnormal Jordan family shows can coexist with arbitrarily large finite transients.
+The unrestricted conjecture that every saddle of equilibrated PC energy is strict is
+false: we give a critical cubic-order saddle with zero curvature in every direction.
+A separately trained centered-sigmoid PC model has exact and robust entropy turnover,
+while also proving contraction alone insufficient for reachability. Quadratic PC energy
+cannot orient even a two-node edge from any observational dataset; ordinary clamping is
+conditioning in both directions. A uniform intervention --- clamp a node and delete its
+own residual term --- separates the directions exactly when their covariance is nonzero.
+On any excited finite two-node intervention design, after both orientations minimize
+over their own structural coefficient, the true orientation has strictly lower energy
+if and only if that covariance is nonzero.
+Finally, two priors with \emph{equal}
+cross-entropy can have strictly ordered expected search yields: fit does not imply
+guidance. All statements are machine-checked in Lean~4. Experimentally, PC never
+overtook backpropagation in any regime we measured: every from-scratch arm failed its
+registered bar, and the one ignition that reproduced across seeds had to start from a
+backprop-equivalent anchor.
+\end{abstract}
+
+\section{Introduction}
+
+Predictive coding networks train by relaxing latent activities against local prediction
+errors, then applying purely local weight updates. The hope is a biologically plausible
+--- and practically competitive --- alternative to backpropagation, and the literature
+supplies equivalence results in the settling limit together with a growing engineering
+effort to make deep PC trainable at all
+\cite{whittington2017,song2020,millidge2020,salvatori2022,goemaere2025}.
+
+Those equivalence results are stated informally, and they are sloppiest exactly where
+the hypotheses matter: \emph{which} quantity matches backpropagation, \emph{under what
+schedule}, \emph{at what depth}, and \emph{at what cost}. This note answers those four
+questions with theorems, in models small enough that every hypothesis is explicit and
+every boundary carries a counterexample: linear chains, finite DAGs, scalar paths,
+finite categorical priors. Each is machine-checked in Lean~4 and axiom-clean, using only
+\leanname{propext}, \leanname{Classical.choice} and \leanname{Quot.sound}. To keep the
+statements readable we give them here as ordinary mathematics; Table~\ref{tab:index}
+maps each one to the name you can look up and check.
+
+Two of the answers surprised us. The natural conjecture about which graphs admit exact
+scheduling is false in an instructive direction (Section~\ref{sec:schedule}), and the
+question every PC-versus-BP comparison reports on --- training loss --- provably fails
+to determine the thing those comparisons care about (Section~\ref{sec:yield}).
+
+Section~\ref{sec:experiments} reports the experiments the theory explains. Every arm
+fixed its acceptance criteria before running; failed arms are reported as failures with
+their measured failure modes. The companion report \emph{AlienCoding} carries the full
+empirical account.
+
+\section{The model}
+
+A predictive-coding network attaches to each node $i$ of a computation graph a latent
+state $z_i$, a prediction $f_i(z_{\mathrm{pa}(i)};w)$ from its parents, and a precision
+$\lambda_i > 0$. The energy is
+\[
+E(z,w) \;=\; \sum_i \lambda_i\,\bigl(z_i - f_i(z_{\mathrm{pa}(i)};w)\bigr)^2 .
+\]
+\emph{Settling} clamps the inputs (and, in supervised mode, the outputs) and descends
+$E$ in $z$; the \emph{weight update} is the local gradient $-\partial E/\partial w$
+evaluated at the settled state. Backpropagation instead differentiates the supervised
+loss through the forward activations $a$. Every equivalence claim in the field is,
+underneath, a claim about the relationship between the settled state $z^\star$ and the
+forward state $a$.
+
+Our running instance is the scalar chain of depth $d$: latents $z_0,\dots,z_d$, links
+$i < d$ with gain $w_i$ and precision $\lambda_i$, residuals and energy
+\[
+r_i \;=\; z_{i+1} - w_i z_i, \qquad E(z,w) \;=\; \sum_{i<d} \lambda_i r_i^2 ,
+\]
+clamped at $z_0 = x$ and $z_d = y$. We carry no factor of $\tfrac12$, so the weight
+gradient is $\partial E/\partial w_i = -2\,e_i\,z_i$ where
+\[
+e_i \;:=\; \lambda_i r_i
+\]
+is the precision-weighted error at link $i$. The quantity $e_i$ is the one that will
+turn out to be exact.
+
+\section{Settling is Bayesian inference}
+
+Read the chain as a linear-Gaussian generative model: each $z_{i+1}$ is $w_i z_i$ plus
+noise of precision $\lambda_i$. Clamping $z_0$ and $z_d$ conditions on the two ends.
+
+The right level for this is not the chain. Take any finite \emph{affine residual model}:
+latents $u$, residual $r(u) = Au + c$ with $A$ injective, and an arbitrary
+positive-definite residual precision $\Lambda$ --- so residuals may be correlated, and
+$A$ need not be square. The energy is $r(u)^\top \Lambda\, r(u)$.
+
+\begin{theorem}[Settling computes the posterior mean]\label{thm:bayes}
+For any such model the posterior precision $Q = A^\top \Lambda A$ is positive definite,
+and the following coincide: $u$ is an energy equilibrium; $u$ is the unique energy
+minimizer; and $u$ is the conditional multivariate-Gaussian posterior mean. Any clamped
+state other than the posterior mean is provably not an equilibrium.
+\end{theorem}
+
+So ``settling performs Bayesian inference'' is a theorem, not a slogan: the relaxed
+latents \emph{are} the posterior mean given the evidence. Scalar chains and
+vector-valued chains --- arbitrary width, arbitrary depth, arbitrary positive-definite
+(hence correlated) residual precision --- are corollaries, obtained by exhibiting the
+chain's residual map as such an $A$ and checking injectivity; no chain-specific
+completion-of-squares argument is repeated. At depth two the scalar case recovers the
+Kalman update and the two-source Gaussian fusion rule, which is where the PC
+literature's Bayesian intuition comes from.
+
+This is also the cleanest way to see the trouble in the next section. The posterior mean
+given a clamped output is precisely \emph{not} the forward pass --- conditioning on the
+answer moves the latents. That is the point of PC, and it is also why its weight gradient
+is not backpropagation's.
+
+\section{What matches backpropagation, and what does not}
+
+\subsection{The error recursion is exact}
+
+\begin{theorem}[Equilibrium errors obey backprop's recursion]\label{thm:errrec}
+At any clamped equilibrium of the scalar chain, for every $i$ with $i+1 < d$,
+\[
+e_i \;=\; w_{i+1}\, e_{i+1}.
+\]
+\end{theorem}
+
+This is backpropagation's backward recursion, exactly, with no limit and no
+approximation: errors travel from the output end to the input end multiplied by the
+intervening gains. Weight tying preserves it, which is the credit-assignment certificate
+for recurrent PC.
+
+The same statement survives the move to the graphs real implementations use. Hash-consed
+evaluation DAGs share subexpressions, and the design question is whether a shared node
+gets one latent or one per use.
+
+\begin{theorem}[Shared-node aggregation]\label{thm:dagrec}
+Let $G$ be a finite DAG with one latent per node, edge gains $w_e$, node precisions
+$\lambda_v$, and errors $e_v = \lambda_v r_v$. At any equilibrium, every unclamped node
+$v$ satisfies
+\[
+e_v \;=\; \sum_{e\,:\,\mathrm{src}(e) = v} w_e\, e_{\mathrm{tgt}(e)} .
+\]
+\end{theorem}
+
+That is reverse-mode accumulation: a shared node's settled error is the gain-weighted
+sum of the errors of everything it feeds, which is what differentiation does when it
+sums gradients over the unfolded tree. The negative fixture is the one that matters to
+implementors: on a graph where node~$0$ feeds node~$1$ through two edges, the correct
+settled error at node~$0$ is $2$, whereas an implementation retaining a single parent
+slot records~$1$ --- half the true value. One latent per shared node, all slots summed,
+is forced. Our C implementation of PC for the tree network (Section~\ref{sec:tree}) is
+built this way, and its numerical oracles test these shapes.
+
+\subsection{The gradient identity is false}
+
+The frequently repeated stronger claim is that the equilibrium \emph{weight gradient}
+equals the backprop gradient. It does not, and linearity does not save it.
+
+\begin{theorem}[Counterexample]\label{thm:gradne}
+Take the depth-2 chain with $w_0 = w_1 = 1$, $\lambda_0 = \lambda_1 = 1$, input $x=1$
+and clamped target $y=2$. The forward state is $a = (1,1,1)$ and the clamped equilibrium
+is $z^\star = (1,\tfrac32,2)$. Then
+\[
+\frac{\partial E}{\partial w_0}\Big|_{z^\star} = -1
+\qquad\text{while}\qquad
+\text{backprop's gradient for } w_0 = -2 .
+\]
+The root cause is $z^\star_1 = \tfrac32 \neq 1 = a_1$.
+\end{theorem}
+
+Both gradients use the correct error; they evaluate it against different source
+activations. Backprop multiplies by the forward activation $a_1$; PC multiplies by the
+relaxed latent $z^\star_1$, which conditioning has already moved toward the answer. On
+this fixture the two differ by a factor of two, and nothing about the linear case
+prevents it --- by Theorem~\ref{thm:bayes} the displacement $z^\star \neq a$ is exactly
+the Bayesian content of settling.
+
+The consequence for the field is a naming discipline. What PC gets for free is the error
+recursion. The gradient identity has to be bought, and the price is a schedule.
+
+\section{Exact gradients live on a schedule --- and only on some graphs}
+\label{sec:schedule}
+
+\subsection{The schedule}
+
+Song et al.'s Z-IL result \cite{song2020} recovers the exact gradient by timing rather
+than by settling. Index layers by distance from the output, so that forward consistency
+reads $w_i a_{i+1} = a_i$, let $\rho$ be the output residual, and let backprop's errors
+be $\delta_0 = \rho$, $\delta_{i+1} = w_i \delta_i$, so that backprop's gradient for
+$w_i$ is $\delta_i a_{i+1}$.
+
+\begin{theorem}[Exactness on schedule]\label{thm:zil}
+If layer $i$'s weights are read at inference step $t = i$ --- the step at which the error
+front first reaches layer $i$, while its source latent still equals the forward
+activation $a_{i+1}$ --- then the scheduled PC update for $w_i$ equals $\delta_i a_{i+1}$
+exactly, for every $i < d$.
+\end{theorem}
+
+The hypothesis is doing all the work. Read the same parameter at free equilibrium
+instead and you are back at Theorem~\ref{thm:gradne}. The identity is a property of
+\emph{when} you look, not of the fixed point.
+
+\subsection{Which graphs admit one}
+
+Since exactness depends on reading each parameter exactly when its error arrives, the
+question becomes: on which graphs does ``the first arrival'' carry the \emph{whole}
+error? Give each node a rank, let $R$ be the head rank, and let the contribution
+travelling along edge $e$ arrive at time $R - \mathrm{rank}(\mathrm{tgt}(e))$. Node $v$'s
+first arrival is $\tau(v) = \min_{e\,:\,\mathrm{src}(e)=v}\bigl(R -
+\mathrm{rank}(\mathrm{tgt}(e))\bigr)$. Call the schedule \emph{exact at $v$} when the
+contributions that have arrived by $\tau(v)$ already sum to the full aggregate.
+
+It pays to separate two things the literature runs together: whether a schedule
+\emph{numerically} gets the right number, and whether it \emph{structurally} waited for
+everything. Call a node \emph{admissible} at time $t$ when every contribution it needs
+has arrived by $t$, and let the \emph{missed aggregate} be the signed sum of the
+contributions that have not.
+
+\begin{theorem}[Exactness, classified]\label{thm:signed}
+For any ranked DAG, any arrival map and any per-node read time, the schedule is exact at
+every node if and only if every node's missed aggregate is zero --- equivalently, iff
+every node is either admissible or has its missed contributions exactly cancel. A
+schedule can therefore be exact while being inadmissible, and that happens precisely
+when some node's missed contributions cancel.
+\end{theorem}
+
+Cancellation is not hypothetical: a node missing contributions $+1$ and $-1$ is
+inadmissible and numerically exact at once. So ``exact'' and ``waited for everything''
+are genuinely different properties, and only the second is structural.
+
+They fuse exactly when cancellation is impossible --- which is the regime the PC
+literature actually works in, since parent contributions there are strictly positive.
+Under that hypothesis exactness reduces to admissibility, and admissibility is decidable
+by rank alone. The natural conjecture at that point is unit levelizability: every edge
+steps one rank, $\mathrm{rank}(\mathrm{tgt}(e)) = \mathrm{rank}(\mathrm{src}(e)) + 1$, so
+everything arrives in lockstep. That is sufficient. It is not necessary, and the true
+criterion is weaker and more useful.
+
+\begin{theorem}[Exact schedules, characterized]\label{thm:sched}
+Let $G$ be a finite ranked DAG in which every parent contribution is strictly positive.
+Then the first-arrival schedule is exact at every node if and only if
+\[
+\forall v,\ \forall e_1, e_2 \text{ with } \mathrm{src}(e_1)=\mathrm{src}(e_2)=v:\quad
+\mathrm{rank}(\mathrm{tgt}(e_1)) = \mathrm{rank}(\mathrm{tgt}(e_2)).
+\]
+That is: exactly when no node's outgoing edges mix target ranks.
+\end{theorem}
+
+Unit levelizability implies the criterion trivially --- all targets sit at
+$\mathrm{rank}(v)+1$ --- but the converse fails, and we exhibit the witness: a graph with
+uniform long skips is \emph{not} unit-levelized and \emph{is} exactly schedulable. Skips
+are not the problem; \emph{ragged} skips are. A residual connection in which a parameter
+feeds both a one-edge shortcut and a three-edge main path violates the criterion and is
+proven inexact, which is the mechanism behind Salvatori et al.'s observation that the
+construction is brittle on non-chain topologies \cite{salvatori2022}.
+
+There is also a value-independent signed classification. Group every missed edge by its
+target $u$, and let $g_{v,u}^{\rm miss}$ be the sum of its gains.
+
+\begin{theorem}[Structural signed exactness]\label{thm:structsigned}
+A schedule is exact for \emph{every} parent-error assignment if and only if
+$g_{v,u}^{\rm miss}=0$ for every source $v$ and target $u$. The same theorem holds for
+messages in any faithful real module. Thus signed skips may cancel structurally, but
+only within a target group; with target-injective nonzero gains, or common-sign gains,
+universal exactness reduces to admissibility.
+\end{theorem}
+
+The cancellation witness is therefore not a lucky choice of error values: two missed
+edges to the same target, with gains $+1$ and $-1$, are universally exact. A single
+missed nonzero edge is universally inexact. The scalar and vector-valued fixtures prove
+both sides.
+
+Read constructively, Theorem~\ref{thm:sched} is an architecture design rule:
+
+\begin{quote}
+Skip connections are compatible with exact backprop-equivalent PC scheduling precisely
+when they do not mix target ranks. Uniform long skips are fine; rank-mixing residuals
+are not.
+\end{quote}
+
+This is the one place where our theory tells an architect what to build rather than what
+to avoid, and it says the space of exactly-schedulable graphs is strictly larger than
+the field assumed.
+
+\section{Error coordinates: what ePC preserves}
+\label{sec:epc}
+
+Goemaere et al.'s ePC \cite{goemaere2025} replaces latent states by prediction errors.
+For arbitrary nonlinear scalar layers $f_i$, fixed input $x$, and errors $e_i$, define
+recursively
+\[
+z_0=x,\qquad z_{i+1}=f_i(z_i)+e_i.
+\]
+Conversely, any input-clamped state stream gives
+$e_i=z_{i+1}-f_i(z_i)$.
+
+\begin{theorem}[Exact state/error reparameterization]\label{thm:epc}
+These constructions are mutually inverse. On every finite prefix the ePC energy equals
+the sPC energy after state reconstruction, and the corresponding local parameter update
+is identical. At the differential level,
+\[
+d(E_{\rm sPC}\!\circ z)_e=(dE_{\rm sPC})_{z(e)}\circ dz_e.
+\]
+If $dz_e$ has a continuous-linear right inverse, ePC and sPC have exactly the same
+critical-point condition.
+\end{theorem}
+
+This is a coordinate equivalence, not a blanket claim that every finite-step algorithm
+has the same trajectory. The initialization rate still controls how far a signal has
+travelled and how large it is when it arrives.
+
+\begin{theorem}[First-arrival attenuation]\label{thm:wave}
+For the one-edge-per-step recurrence $s_0=g$ and $s_{k+1}=\lambda s_k$,
+\[
+s_{L-i}=\lambda^{L-i}g.
+\]
+If $|\lambda|<1$, then for every positive tolerance the exact real signal eventually
+falls below it. It need not equal zero: a machine-checked fixture is nonzero while below
+tolerance. At $\lambda=1$, a unit signal never falls below any tolerance at most one.
+A one-step ePC local update is $\lambda$ times the backprop product, and is exactly that
+product at unit rate.
+\end{theorem}
+
+The tolerance statement is deliberately not called floating-point underflow. It is an
+exact real-number decay theorem plus an explicit external detection policy.
+
+\section{The cost of depth}
+\label{sec:depth}
+
+Settling is relaxation, and relaxation on a long clamped chain is slow. This is folklore;
+here is the exact rate. On a path of $n$ segments with both ends clamped, Jacobi settling
+is $(Jv)_k = \tfrac12(v_{k-1}+v_{k+1})$ at interior nodes and $0$ at the ends.
+
+\begin{theorem}[Exact relaxation rate]\label{thm:depth}
+The mode $s_k = \sin(k\pi/n)$ satisfies $Js = \cos(\pi/n)\, s$, hence
+\[
+(J^t s)_k \;=\; \cos(\pi/n)^t \, \sin(k\pi/n)
+\qquad\text{for all } t .
+\]
+The spectral gap obeys $0 \le 1 - \cos(\pi/n) \le \pi^2/(2n^2)$, and
+$\cos(\pi/n) \to 1$ as $n \to \infty$.
+\end{theorem}
+
+So the slowest mode decays by exactly $\cos(\pi/n)$ per sweep and the gap closes
+quadratically in depth: doubling depth quarters the progress per settling step. This is
+the mathematical spine under the engineering literature devoted to escaping it
+\cite{goemaere2025}.
+
+Real networks are not uniform, so the natural worry is whether one deep block poisons an
+otherwise shallow architecture. It does.
+
+\begin{theorem}[Heterogeneous blocks]\label{thm:het}
+For a finite family of blocks, each with its own depth $n_i$, coupling eigenvalue $c_i$
+and resulting exact mode rate, the family's modal spectral radius $\rho$ satisfies
+$\rho < 1$ if and only if every block's rate is contractive; and if any block $i$ has
+unit coupling, then
+\[
+1 - \rho \;\le\; \frac{\pi^2}{2\,n_i^{\,2}} .
+\]
+\end{theorem}
+
+The bound is the pessimistic one: the family's spectral gap is capped by the
+\emph{deepest} unit-coupled block, no matter how shallow everything else is. Stability
+is a conjunction over blocks; speed is a minimum over blocks.
+
+The corresponding escape is real, but only at an exact operator boundary.
+
+\begin{theorem}[Frozen-backbone restriction boundary]\label{cor:adapter}
+Join a backbone path of depth $B>0$ to an adapter path of depth $A>1$.  The resulting
+length-$(B+A)$ block Jacobi operator is provably not block diagonal at the attachment.
+Now freeze by embedding an adapter state into that full operator, applying the full
+step, and projecting while deleting the clamped attachment row.  The restricted
+operator is exactly the depth-$A$ adapter Jacobi operator, and a scalar $r$ is its
+first-sine-mode multiplier if and only if
+\[
+r=\cos(\pi/A).
+\]
+Consequently its first-mode gap is independent of $B$ and obeys
+$1-r\le\pi^2/(2A^2)$.  If the backbone instead remains active as a unit-coupled block,
+then the global modal gap again obeys the backbone bound
+$1-\rho\le\pi^2/(2B^2)$.
+\end{theorem}
+
+The independence is derived from restricting the coupled operator, rather than stored
+in an adapter definition.  It is also sharp about the idealization: a depth-three
+backbone with a depth-two adapter has frozen adapter rate $0$, but modal radius $1/2$
+when both unit-coupled paths remain active.  Thus shallow adapters escape only when
+freezing really deletes the backbone coordinates from settling; partial freezing or a
+shared active relaxation can re-import the backbone depth.
+
+The same first-arrival theorem also prices the imbalance that Depth-$\mu$P was designed
+to mitigate \cite{innocentimupc2025}.  Let layer $i$ be $L-i$ links from the output and
+let every inference link transmit at rate $\lambda$.  Composing the sealed signal,
+one-step-update, and loss theorems gives the following result.
+
+\begin{theorem}[Depth-credit boundary]\label{thm:mupcdepth}
+The effective per-layer preconditioner is
+\[
+P_i=\lambda^{L-i},
+\qquad
+\ell_i^+=(1-\lambda^{L-i})^2\ell_i.
+\]
+For heterogeneous rates it is the suffix product $P_i=\prod_{j>i}\lambda_j$.  Equalizing
+all $P_i$ forces every used rate to equal one, because the output's empty product is one.
+Moreover, for $0<\lambda<1$, multiplying by any fixed polynomial in depth still tends to
+zero; exact cancellation requires the exponential reciprocal $\lambda^{-(L-i)}$.
+\end{theorem}
+
+The Depth-$\mu$P multiplier and its prescribed Adam learning-rate factor cancel each
+other algebraically, but neither changes the inference rate.  Thus they repair a width
+parameterization, not this exponential credit factor; indeed the reported $\mu$PC
+experiments omit that Adam rescaling because it was empirically untrainable
+\cite{innocentimupc2025}.  This is a scoped result, not a claim that $\mu$PC has no value:
+it identifies exactly which instability its parameterization cannot remove.  The same
+module also resolves a nearby verbal dispute about whether equilibrated activities
+``barely move'': in a uniform-precision unit chain, node $k$ moves by exactly
+$(k/L)(y-x)$.  Early fixed nodes move little as depth grows, while nodes near the output
+need not.
+
+\section{What a preconditioner can buy}
+\label{sec:precond}
+
+The standard response to slow or misbehaving settling is to rescale the update ---
+precision scaling, natural-gradient-style metrics, or a line search. In the exactly
+solvable case, what rescaling buys is a single number, and the answer is unexpectedly
+sharp.
+
+Take one chain link: source activation $s$, downstream gain $g$, weight $w$, prediction
+$g w s$, target $y$, residual $r(w) = gws - y$ and loss $\ell(w) = \tfrac12 r(w)^2$.
+Write $\gamma = gs$ for the effective gain and assume $\gamma \neq 0$. A PC update
+preconditioned by $P$ moves along the normalized backprop direction,
+$w^+ = w - P\,\ell'(w)/\gamma^2$.
+
+\begin{theorem}[The $(P-1)^2$ law]\label{thm:precond}
+$r(w^+) = (1-P)\,r(w)$, and therefore
+\[
+\ell(w^+) \;=\; (P-1)^2\, \ell(w).
+\]
+Consequently, for $r(w) \neq 0$:
+\begin{enumerate}
+\item $\ell(w^+) = 0$ \emph{if and only if} $P = 1$;
+\item $\ell(w^+) < \ell(w)$ \emph{if and only if} $0 < P < 2$;
+\item the shortfall against the ideal step is exactly
+  $\Delta\ell(1) - \Delta\ell(P) = (P-1)^2\,\ell(w)$;
+\item descent degrades strictly monotonically in the squared departure $(P-1)^2$.
+\end{enumerate}
+\end{theorem}
+
+Every arm of our ignition ladder is a point on this parabola. An update in the correct
+direction at $0.5\%$ magnitude is $P \approx 0.005$: it descends --- it is inside
+$(0,2)$ --- while retaining $(0.995)^2 \approx 99\%$ of the loss per step. That is not a
+tuning failure, it is the law. And overcorrecting is worse than useless: $P = 3$ lies
+outside the descent window and \emph{quadruples} the loss, which is what our
+precision-scaled arm did before it diverged. The window is $0 < P < 2$ and the target is
+$P = 1$, with quadratic penalty for missing.
+
+The vector case is where the one-step picture must not be over-read. If the residual is
+an eigenvector of the preconditioner with eigenvalue $\mu$, the one-step law applies with
+$\mu$ in place of $P$: $\ell \mapsto (\mu-1)^2 \ell$. It is tempting to conclude that a
+preconditioner is correct only where its spectrum sits at $1$. That reading is wrong, and
+the asymptotic truth is more permissive.
+
+\begin{theorem}[Convergence is a spectral-radius condition]\label{thm:spectral}
+Write $D = I - P$ for the preconditioner's departure from the identity. In any complete
+normed algebra, $\rho(D) < 1$ if and only if $D^n \to 0$; hence the preconditioned
+residual iterate converges to zero exactly when $\rho(I-P) < 1$. No diagonalizability is
+assumed, so nonnormal operators are covered.
+\end{theorem}
+
+So $P = I$ is the \emph{one-step optimum}, not the requirement. Asymptotically an entire
+open region works, and one may sit far from the identity on every mode and still
+converge. For a scalar this is the familiar $|1-P| < 1$ --- the window $0 < P < 2$ of
+Theorem~\ref{thm:precond} --- and the spectral form is what survives to matrices.
+
+Finite-time behavior needs its own theorem.
+
+\begin{theorem}[Geometric envelope]\label{thm:envelope}
+If $\rho(D)<q<1$, then there is a finite $C\geq1$ such that
+\[
+\|D^n\|\leq Cq^n\quad\text{and}\quad
+\|D^nr\|\leq Cq^n\|r\|\qquad(n\geq0).
+\]
+The constant absorbs the finite nonnormal transient; it cannot in general be determined
+from the spectral radius alone.
+\end{theorem}
+
+The obstruction is exact for the Jordan family
+\[
+D_{\lambda,c}=\begin{pmatrix}\lambda&c\\0&\lambda\end{pmatrix},\qquad
+D_{\lambda,c}^{,n}=
+\begin{pmatrix}
+\lambda^n&nc\lambda^{n-1}\\0&\lambda^n
+\end{pmatrix}.
+\]
+
+\begin{theorem}[Arbitrarily large stable transients]\label{thm:jordan}
+$D_{\lambda,c}$ has spectrum $\{\lambda\}$, and is nonnormal whenever $c\ne0$.
+For $\lambda=0$ it satisfies $D^2=0$, yet a unit residual is amplified on the first
+step by exactly $|c|$. Consequently, for every proposed bound $B\geq0$ there is a
+nonnormal operator with spectral radius zero, exact two-step convergence, and first-step
+amplification greater than $B$.
+\end{theorem}
+
+The earlier witness $c=2$ is therefore one point in an unbounded family, not a curiosity.
+Asymptotic stability, geometric rate, transient size, and step-wise descent are four
+different claims. A nonnormal preconditioner may honour the first two while violating
+the fourth, with the third controlled only by additional operator information.
+
+What no amount of spectral latitude buys is a single global knob.
+
+\begin{theorem}[One preconditioner cannot serve two modes]\label{thm:mode}
+There is a two-mode fixture and a single diagonal preconditioner
+$\mathrm{diag}(\tfrac12, 3)$ that strictly \emph{decreases} the loss on one eigenmode and
+strictly \emph{increases} it on the other, from equal starting losses.
+\end{theorem}
+
+This is the no-go for scaling one's way out: a metric that is merely large, or merely
+uniform, buys nothing, because its eigenvalues are wrong in both directions at once. The
+bar is spectral rather than magnitudinal --- but by Theorem~\ref{thm:spectral} it is a bar
+of membership, $\rho(I-P)<1$, not of identity. Information-geometric preconditioning
+therefore keeps an honest target that is not merely ``be a second-order method''.
+
+Line search fares better, because it targets $P$ adaptively rather than fixing it.
+
+\begin{theorem}[Backtracking descends]\label{thm:armijo}
+Under an explicit smoothness bound, Armijo backtracking terminates --- some
+$P = P_0\sigma^n$ satisfies the Armijo condition --- and every accepted step is
+non-increasing in energy. This instantiates with the exact smoothness constant of the
+depth-2 PC energy.
+\end{theorem}
+
+This is the correctness certificate for the settling procedure used by the surviving
+experimental arms, whose logged energies were monotone in every accepted run.
+
+\section{Not every equilibrated-energy saddle is strict}
+\label{sec:saddles}
+
+Innocenti et al.\ prove strictness for important classes of deep-linear equilibrated PC
+energy and conjecture that every remaining saddle is strict \cite{innocenti2025}. A
+strict saddle is a critical point with a direction of negative second curvature. The
+unrestricted conjecture has a covariance-degenerate boundary that the partial theorem
+does not cover.
+
+Take a scalar two-layer model and the two examples with inputs $(1,1)$ and targets
+$(1,-1)$. Its exact equilibrated energy at weights $(a,b)$ is
+\[
+F(a,b)=\frac{1+a^2b^2}{2(1+b^2)}.
+\]
+This formula is derived in Lean from the rescaled batch residual objective, rather than
+postulated. Every $(a,0)$ is critical because the input--target covariance vanishes.
+
+\begin{theorem}[Strict region and non-strict boundary]\label{thm:saddles}
+At $(a,0)$, the output-weight direction has second curvature $a^2-1$. Hence every
+$a^2<1$ has a strict-saddle certificate, including the published origin case. But at
+$(1,0)$ every directional second curvature is zero, while for every $0<t<1$,
+\[
+F(1-t,t)<F(1,0)<F(1+t,t).
+\]
+Thus $(1,0)$ is a genuine saddle with explicit descending and ascending approach curves,
+but it is not strict.
+\end{theorem}
+
+So the universal conjecture is false without a nondegeneracy hypothesis. This does not
+contradict the published strictification theorem: the counterexample lies outside its
+covered class. It identifies the missing issue more sharply --- a cubic-order saddle can
+survive exactly where the quadratic curvature vanishes.
+
+\section{The coupled system}
+
+Settling and learning run together, and their interaction has its own stability region.
+Write the two-timescale linear system with settling precision $\lambda$ and learning rate
+$\eta$: the settled error is multiplied by $1-\lambda$ per step, and the weight by
+$1-\eta\lambda$.
+
+\begin{theorem}[Stability region]\label{thm:coupled}
+Both multipliers are contractive if and only if
+\[
+0 < \lambda < 2 \qquad\text{and}\qquad 0 < \eta\lambda < 2 ,
+\]
+in which case the coupled iteration converges to zero from every initial state.
+If $\eta\lambda > 2$, the learning eigenmode diverges in norm.
+\end{theorem}
+
+Note the shape: $0 < \eta\lambda < 2$ is the same window as $0 < P < 2$ in
+Theorem~\ref{thm:precond}, which is not a coincidence --- both are the condition for a
+one-step affine contraction. It is also the formal account of the late-run divergence one
+of our arms exhibited: the product $\eta\lambda$, not either factor, is what must stay
+inside the window.
+
+The second dynamical fact concerns what settling does to the \emph{shape} of the output
+distribution, and it is the one our experiments measured directly.
+
+\begin{theorem}[Entropy turnover]\label{thm:turnover}
+For a linear signal of any depth $d > 0$ and any soft target $p \in (0,1)$ with
+$p \neq \tfrac12$, the settled output's entropy $H(s)$ after $s$ settling steps satisfies
+\[
+H(0) > H_b(p), \qquad H(d) = H_b(p), \qquad H(d+1) > H_b(p),
+\]
+where $H_b$ is binary entropy. Hence $H$ is neither monotone nor antitone; and it is
+non-monotone \emph{if and only if} the target is non-uniform. A gradient-trained
+comparator provably lands strictly below the target entropy.
+\end{theorem}
+
+Under-settle and the output is diffuse; settle exactly and you hit the target; over-settle
+and it re-diffuses past it. Settling depth is therefore not a ``more is better'' knob:
+there is an interior optimum, and it is at the signal depth. Our tree-network campaign
+observed this curve --- including the turnover --- before we proved it.
+
+The turnover is not an artifact of linearity. Let the settling map be any monotone
+contraction fixing zero, with rate $q < 1$ --- a class that includes the saturating
+nonlinearities PC implementations actually use.
+
+\begin{theorem}[Nonlinear turnover, sufficient conditions]\label{thm:nonlin}
+Fix such a settling map, a depth $d>0$, and a non-uniform target $p \in (0,1)$,
+$p \neq \tfrac12$. If the depth-$d$ iterate reaches the target logit from the seed, then
+the same three regimes hold --- entropy above target before arrival, equal at depth,
+above again afterwards --- and the entropy is neither monotone nor antitone. Moreover
+contraction bounds the reachable set: $|\operatorname{logit}(p)| \le q^{\,d}\,|\text{seed}|$.
+\end{theorem}
+
+The reachability hypothesis is doing real work and we flag it rather than bury it: this is
+a theorem about a class of nonlinear settling dynamics that \emph{can} hit their target,
+not a theorem about arbitrary trained nonlinear PC networks. The contraction bound is the
+honest sting --- it says which targets a given depth can reach at all. We therefore build
+and train one concrete nonlinear model rather than assume reachability.
+
+Let $\phi(x)=\sigma(x)-\tfrac12$. This centered sigmoid fixes zero, is strictly
+increasing and globally $\tfrac14$-Lipschitz, and is proved not to agree pointwise with
+any real-linear map. Put a parameter $w$ one edge upstream, read
+$p_w=\sigma(\phi(w))$ after one settling step, choose $p_1$ as the training target, and
+train with $L(w)=(p_w-p_1)^2$.
+
+\begin{theorem}[Trained nonlinear turnover]\label{thm:trainednonlin}
+$w=1$ is the unique zero-loss parameter and a global minimizer. At that trained weight,
+the output probabilities at settling depths $0,1,2$ are
+$\tfrac12,p_1,\tfrac12$, with $p_1>\tfrac12$, so entropy strictly decreases and then
+increases. The middle entropy remains strictly below uniform throughout an explicit
+open probability neighborhood of $p_1$. The dynamics lift coordinatewise to every
+finite vector width; an all-one seed gives turnover in every coordinate, while an
+all-zero seed stays uniform.
+\end{theorem}
+
+This separates three notions that ``contractive nonlinear PC'' can obscure. Contraction
+controls sensitivity, training certifies the chosen target, and the one-edge delay causes
+turnover. None implies the others: the same centered sigmoid is contractive but its range
+is $(-\tfrac12,\tfrac12)$, so no seed can reach logit $1$.
+
+\section{Fit does not imply guidance}
+\label{sec:yield}
+
+The last result is not about PC at all. It is about what PC-versus-BP comparisons
+measure, and it is the reason our empirical verdict is stated in the currency it is.
+
+A search-guidance prior $\theta$ over $k$ program tokens is sampled i.i.d.\ within a
+budget $B$; a \emph{hit} is a draw of the target.
+
+\begin{theorem}[Yield is target mass]\label{thm:yield}
+The expected number of target hits is exactly $B\,\theta_{\mathrm{target}}$, and is
+strictly increasing in $\theta_{\mathrm{target}}$.
+\end{theorem}
+
+That is unsurprising, and it is the setup for the separation.
+
+\begin{theorem}[Equal loss, ordered yield]\label{thm:sep}
+Let $\theta^{\mathrm{lo}} = (\tfrac34,\tfrac14)$ and
+$\theta^{\mathrm{hi}} = (\tfrac14,\tfrac34)$, with outcome $1$ the target. Against the
+soft target $(\tfrac12,\tfrac12)$ these priors have \emph{equal} cross-entropy, yet for
+every budget $B > 0$ their expected yields are strictly ordered:
+\[
+\tfrac{B}{4} \;<\; \tfrac{3B}{4}.
+\]
+\end{theorem}
+
+Two models, identical loss, threefold difference in search performance. Cross-entropy is
+symmetric under swapping mass between outcomes; yield is not, because only one outcome is
+the target. So training loss --- the quantity every PC-versus-BP comparison in the
+literature reports, including ours --- provably does not determine search performance.
+
+What does determine it, in this model, is the mass the prior puts on the target: its
+\emph{decisiveness}. This is why Section~\ref{sec:tree} reports prior entropy alongside
+loss, and why the entropies are the numbers that moved with performance.
+
+\section{The experiments}
+\label{sec:experiments}
+
+\subsection{Paired self-learning campaign on the tree network}
+\label{sec:tree}
+
+We reproduced Gauthier's OEIS program-synthesis pipeline byte-faithfully (Standard ML,
+HOL4, tree neural network in C) and implanted PC \emph{in place} in the C training code,
+guarded by numerical oracles (analytic golden vectors to $10^{-9}$--$10^{-16}$; the BP
+path byte-identical when PC is off). The learning rule is the only variable.
+
+Single-generation results establish the mechanism. PC's yield climbs with settling depth
+--- $63\%, 67\%, 83\%, 93\%$ of BP's newly solved sequences at $4, 8, 16, 32$ settling
+steps --- at roughly linear cost, up to $\sim$10$\times$ BP's training time at 32 steps,
+and then \emph{turns over} at 64 steps. Throughout, the entropy of the search-guidance
+prior tracked yield at every point, including the turnover, while training loss did not:
+PC fit the training objective as well as or better than BP while guiding search worse.
+Measured prior entropies: BP $0.671$; PC $1.479 \to 0.975$ over steps $4 \to 32$,
+re-diffusing to $1.154$ at step 64. Theorem~\ref{thm:turnover} is the shape of that
+curve and Theorem~\ref{thm:sep} is why loss failed to see it.
+
+The multi-generation campaign makes the causal comparison real: three paired seed-worlds,
+one frozen random generation-0 each, both arms grown for five self-training generations
+under identical budgets. Cumulative solved OEIS sequences:
+
+\begin{center}
+\begin{tabular}{lrrrrr}
+\toprule
+ & gen-1 & gen-2 & gen-3 & gen-4 & gen-5 \\
+\midrule
+BP, world 1 & 8{,}752 & 11{,}709 & 13{,}224 & 14{,}566 & 15{,}852 \\
+BP, world 2 & 8{,}361 & 11{,}291 & 13{,}250 & 15{,}054 & 16{,}081 \\
+BP, world 3 & 8{,}627 & 11{,}510 & 13{,}267 & 14{,}793 & \emph{in progress} \\
+PC, world 1 & 6{,}465 & 6{,}914 & 9{,}067 & 9{,}486 & 10{,}211 \\
+PC, world 2 & 6{,}093 & 8{,}031 & 8{,}359 & 9{,}195 & 9{,}411 \\
+PC, world 3 & 7{,}548 & 7{,}548 & 8{,}820 & 10{,}111 & \emph{in progress} \\
+\midrule
+PC/BP ratio & 78\% & 65\% & 66\% & 65\% & 61.4\% (w1--w2) \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+BP compounds metronomically: per-generation deltas agree across worlds within $\pm1.3\%$
+at generation~2, endpoints within $\sim$3\%. PC ignites but advances in erratic bursts
+--- including one genuine zero-progress generation (world~3, generation~2, byte-identical
+solution set) --- and settles between $58\%$ and $65\%$ of BP's frontier (world~1
+$64.4\%$, world~2 $58.5\%$ at generation~5). The final three-world verdict follows the
+pre-registered analysis when world~3's generation-5 runs seal.
+
+\subsection{The seq2seq ignition ladder}
+\label{sec:ladder}
+
+On a faithful reimplementation of the alien-coding NMT baseline \cite{gauthier2023}
+(14-token program language, 512-unit bidirectional-LSTM encoder--decoder with scaled-Luong
+attention; the trained reference solves 1{,}860 new OEIS sequences on seed 1, with 222
+target-associated hits against a randomized-association null of 6), we ran a seven-arm
+overfit-32 ignition ladder for PC variants. The registered composite bar: final loss
+$\le 0.05$; at least 30/32 exact greedy decodes; monotone settling energies; and
+\emph{distinctness} --- the final updates must differ measurably from BP's, median
+parameter cosine $< 0.95$ --- so that a pass cannot be secretly backpropagation. The BP
+anchor passes at loss $0.026$, 32/32.
+
+\begin{center}
+\small
+\begin{tabular}{llll}
+\toprule
+arm & result & loss / exact & measured failure mode \\
+\midrule
+fixed-rate ePC & FAIL & 105.4 / 0 & settling divergence \\
+backtracking, 16-step & FAIL (time) & --- & exceeded registered wall-clock \\
+backtracking, 5-step & FAIL & 11.2 / 1 & BP-direction updates at 0.5\% magnitude \\
+precision-scaled & FAIL & 21.4 / 0 & late-run divergence \\
+staged BP$\to$PC, 4000 & FAIL & 0.075 / 32 & loss bar only; distinctness passed \\
+staged BP$\to$PC, 4500 & FAIL & 0.044 / 32 & distinctness only; updates BP-like \\
+staged, deepened inference & \textbf{PASS} & 0.037 / 32 & all bars; median cosine 0.80 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Three of these failures are theorems. The 5-step arm is $P \approx 0.005$ in
+Theorem~\ref{thm:precond}: correct direction, $99\%$ of the loss retained per step. The
+precision-scaled arm left the $0 < \eta\lambda < 2$ window of
+Theorem~\ref{thm:coupled}. The fixed-rate arm is the same failure without the line search
+that Theorem~\ref{thm:armijo} certifies.
+
+The joint reading of the two staged arms is the sharpest empirical fact in this note: the
+staged schedule that starts at provable BP-equivalence and walks toward PC \emph{learns
+to the bar exactly as far as its updates remain BP-like}, and retains PC-distinctness
+exactly when it misses the bar. The seventh arm broke the tension: continuing the staged
+run with deepened inference passed every registered bar at once --- loss $0.0366$, 32/32
+exact decodes, monotone settling, genuinely PC-distinct updates (median parameter cosine
+$0.80$, 13/18 tensors below $0.95$).
+
+That pass was seed~0 and judged at one terminal snapshot, so a protocol weakness had to be
+settled before it could be believed: the terminal cosine statistic turns out to swing
+\emph{within a single fixed stage} --- measured medians $0.929, 0.952, 0.322, 0.787,
+0.801$ at updates $4501$ through $4700$ --- so no one endpoint is a robust mechanism
+criterion. The replication was therefore pre-registered on an independent seed and on a
+prospectively fixed five-checkpoint window instead, with the bars unchanged.
+
+It passes. On seed~1, the complete staged schedule (3000 BP-equivalent one-step anchor
+updates, then fixed transitions to five-step inference, 4700 updates in total) meets every
+registered bar: final loss $0.0014$, 32/32 exact decodes, all 96 logged inference records
+monotone, and mechanism distinctness at \emph{all five} checkpoints --- median of the
+checkpoint medians $0.228$, against a required cutoff of $0.95$. The updates are thus far
+\emph{more} PC-distinct than seed~0's terminal $0.80$, and distinct throughout the window
+rather than at a chosen point. Staged ePC ignition reproduces.
+
+Two scope limits are registered with it and remain: the schedule begins from a
+BP-equivalent anchor, so this is not learning from random initialization; and it is
+overfit-32 scale, not full-scale NMT performance.
+
+\section{Verdict}
+\label{sec:verdict}
+
+\textbf{Dead, on the evidence:} predictive coding as a drop-in replacement for
+backpropagation on synchronous digital hardware, for training program-synthesis models
+from scratch. At small scale it is dominated at equal epochs and vastly dominated at
+equal wall-clock; at medium multi-generation scale it holds a stable two-thirds frontier
+deficit with erratic self-training dynamics; on the recurrent architecture, seven
+registered arms produced exactly one passing design, and it is staged from a
+BP-equivalent anchor rather than trained from random initialization.
+
+\textbf{Surviving, with formal or measured support:}
+\begin{enumerate}
+\item \emph{Shallow PC adapters under an exact frozen restriction.} The depth pathology
+  depends only on the adapter after the coupled operator is genuinely restricted
+  (Theorem~\ref{cor:adapter}), and the empirical verdict independently points at this
+  regime.  The theorem does not cover a shared active normalization or partial freezing:
+  its negative half proves that an active unit-coupled backbone re-imports the backbone
+  depth bound.
+\item \emph{BP-train, PC-fine-tune.} The staged homotopy arms were the only ones to reach
+  32/32 exact decodes; the deepened-inference continuation passed every bar on seed~0, and
+  the pre-registered independent-seed replication passed on seed~1 with distinctness at
+  every checkpoint of a fixed window. This is the one place PC ignited reproducibly under
+  criteria fixed in advance. Buying PC's properties \emph{after} BP's learning is the
+  empirically supported direction.
+\item \emph{Second-order geometry, with the bar set by Theorem~\ref{thm:mode}.} The
+  preconditioning failures are exactly characterized, so the cure is exactly specified:
+  a metric whose departure from the identity is a contraction, $\rho(I-P)<1$, on the modes
+  that matter --- a membership condition, not identity with backprop. Merely large, or
+  merely uniform, is proven not to work.
+\item \emph{Rank-uniform skip architectures.} Theorem~\ref{thm:sched} says exact PC
+  scheduling survives skip connections that do not mix target ranks --- a strictly larger
+  design space than levelizability, and untested.
+\item \emph{Asynchronous and neuromorphic settings.} Untested here; nothing in this note
+  bears on them, except that the decisiveness instrument of Section~\ref{sec:yield}
+  travels to any setting where a learned prior guides search.
+\end{enumerate}
+
+\section{Limitations and open problems}
+
+The models are exact and, where it matters, small: scalar paths, finite priors, expected
+rather than at-least-one hit counts. Theorem~\ref{thm:sched} assumes strictly positive
+parent contributions; Theorem~\ref{thm:signed} now covers the signed case, so what remains
+open there is not the classification --- Theorem~\ref{thm:structsigned} supplies that ---
+but an architecture-level criterion for useful cancellations under realistic learned
+gains. Theorem~\ref{thm:nonlin} still needs reachability in its general form;
+Theorem~\ref{thm:trainednonlin} discharges it for one trained centered-sigmoid model, not
+for arbitrary coupled multivariate training. Theorem~\ref{thm:envelope} gives finite-time
+nonnormal bounds but its constant is existential; sharp computable constants require more
+operator structure. Theorem~\ref{thm:saddles} refutes universal strictness and classifies
+one critical line, not every equilibrated-energy critical manifold. The ePC equivalence
+is mathematical over exact reals; implementation-level rounding behavior remains a
+separate question. The ignition ladder is overfit-32 scale: its purpose is
+correctness-gated variant triage, not benchmark performance. The distinctness criterion's
+placement at the registered final step is a design choice whose alternatives remain
+untested. All ``dead'' verdicts are scoped to the regimes actually measured.
+
+\appendix
+
+\section{The causal boundary: clamping is not intervention}
+
+\subsection{Observation is direction-blind}
+
+Take centered variables with positive-definite covariance
+\[
+\Sigma=\begin{pmatrix}v_X&c\\c&v_Y\end{pmatrix},
+\qquad \Delta=v_Xv_Y-c^2>0.
+\]
+The fitted $X\to Y$ quadratic PC model has coefficient $c/v_X$ and residual variance
+$\Delta/v_X$; the reverse model has coefficient $c/v_Y$ and residual variance
+$\Delta/v_Y$.  Their residual operators are provably distinct.  Nevertheless, direct
+algebra reduces both full energies, pointwise for every real pair $(x,y)$, to
+\[
+\frac{v_Yx^2-2cxy+v_Xy^2}{\Delta}.
+\]
+The equality therefore lifts to every finite batch of \emph{arbitrary} observations.
+There is no Gaussian data hypothesis: ``Gaussian'' names the quadratic energy.  More
+generally, the formal batch theorem is
+\[
+\sum_s E(z_s)=\operatorname{tr}(Q\widehat\Sigma),
+\qquad
+Q=A^\top\Lambda A,
+\quad
+\widehat\Sigma=\sum_s z_s z_s^\top .
+\]
+Changing the data distribution while retaining this energy cannot expose higher-order
+orientation information.  A non-quadratic residual log-density would change the model's
+architecture, not merely its environment.
+
+Ordinary PC clamping does not help.  Clamp $X=x$ but retain every residual term and
+minimize over $Y$.  In both orientations the unique equilibrium is
+$Y=(c/v_X)x$, the ordinary conditional mean.  PC clamping is conditioning, and
+conditioning is direction-blind.
+
+\subsection{One uniform severing operation}
+
+Pearl's intervention replaces the intervened structural mechanism rather than
+conditioning on its output \cite{pearl2012,halpern2000}.  At the PC energy level this is
+one orientation-independent operation: clamp a node and delete the residual term owned
+by that node.  Residual rows are indexed by their owning node, so the operation itself
+never inspects edge direction.
+
+\begin{theorem}[Intervention certificate]\label{thm:intervention}
+Under $do(X=x)$, the $X\to Y$ equilibrium remains $(c/v_X)x$, whereas the $Y\to X$
+equilibrium is $0$.  They differ if and only if $c\ne0$ and $x\ne0$.  The two
+interventional energy functions are
+\[
+E^{do}_{X\to Y}(x,y)=\frac{(y-(c/v_X)x)^2}{2(\Delta/v_X)},
+\qquad
+E^{do}_{Y\to X}(x,y)=\frac{y^2}{2v_Y},
+\]
+and some intervention separates them if and only if $c\ne0$.
+\end{theorem}
+
+At the concrete covariance $\left(\begin{smallmatrix}1&1\\1&2\end{smallmatrix}\right)$
+and $x=y=1$, both half-normalized observational energies equal $1/2$, while the
+interventional energies are respectively $0$ and $1/4$.  The negative fixture is just
+as important: independent equal-variance variables give $y^2/2$ in both orientations,
+so intervention does not orient an absent edge.  This certificate supplies one bit about
+one edge; it is not a general causal-discovery theorem.
+
+An energy difference at a selected state is not yet a learning theorem, so we also let
+both orientations fit.  On a finite intervention design $(x_s)_s$, take responses from
+the true forward mechanism, $y_s=(c/v_X)x_s$.  A forward candidate fits its own
+coefficient $\beta$ and a reverse candidate fits its own coefficient $\gamma$; both are
+scored by the same severing operation.  Their batch objectives reduce to
+\[
+L_{X\to Y}(\beta)
+ = \frac{(c/v_X-\beta)^2}{2(\Delta/v_X)}\sum_s x_s^2,
+\qquad
+L_{Y\to X}(\gamma)
+ = \frac{(c/v_X)^2}{2v_Y}\sum_s x_s^2.
+\]
+The reverse candidates are structurally distinct as $\gamma$ varies, but their fitted
+row is precisely the row deleted by $do(X)$; the second objective's independence from
+$\gamma$ is therefore a theorem about the uniform intervention, not a restriction of
+the competitor.
+
+\begin{theorem}[Fitted two-node causal selection]\label{thm:causalselection}
+For any finite design with $\sum_s x_s^2>0$, both orientation-specific objectives attain
+their minima.  The minimized forward energy is strictly lower than the minimized reverse
+energy if and only if $c\ne0$.
+\end{theorem}
+
+Indeed, $\beta=c/v_X$ gives forward minimum zero, while every $\gamma$ minimizes the
+reverse objective at the displayed positive value exactly when $c\ne0$.  At independent
+equal variance both minima are zero, so selection fails.  The conclusion is strictly
+two-node and assumes interventional responses from the forward linear mechanism,
+positive residual scales, and an excited finite design; it is not a graph-discovery
+claim.
+
+\subsection{A separate continual-learning bridge}
+
+Another causal-coding proposal turns on whether learning one thing and then another
+is the same as learning both. It is not, and the defect is exactly computable in the
+quadratic case. For two quadratic tasks with curvatures $A_1, A_2$, step size $\eta$, and
+gradient $g_1$:
+\[
+\theta_{1\to2} - \theta_{\mathrm{add}} \;=\; \eta^2 A_2\, g_1(\theta),
+\qquad
+\theta_{1\to2} - \theta_{2\to1} \;=\; \eta^2 [A_1, A_2]\, \theta ,
+\]
+the second for centred tasks. So sequential learning departs from additive learning by the
+second task's curvature acting on the first task's gradient, and the order in which you
+learn matters exactly to the extent that the curvatures fail to commute.
+
+These are two different phenomena, and we separate them rather than let one stand in for
+the other. A fixture with oblique tasks has a non-zero commutator and is order-dependent.
+A fixture in which one task is repeated has a \emph{zero} commutator --- no order
+interference is possible --- and is still non-additive, because the same cause is counted
+twice. On the evidence side that double counting is exact: re-applying a Gaussian
+contribution yields the correct once-each ledger plus precisely one extra copy of that
+contribution.
+
+We state the scope plainly, and the formalization enforces it: what is proven is linear
+and quadratic. The general correspondence between predictive coding and causal coding
+remains explicitly conjectural beyond these instances, and its status now records that a
+causal use requires an interventional clamp.  No theorem promotes the general
+correspondence.
+
+\section*{Where to find these}
+
+All statements are machine-checked in Lean~4, in the Mettapedia library under the
+namespace \leanname{Mettapedia.MachineLearning}. Each is axiom-clean, depending only on
+\leanname{propext}, \leanname{Classical.choice} and \leanname{Quot.sound}. Files below sit
+in \leanname{NeuralNetworks/PredictiveCoding/} unless marked otherwise.
+
+{\small
+\begin{longtable}{@{}l>{\raggedright\arraybackslash}p{0.61\textwidth}>{\raggedright\arraybackslash}p{0.205\textwidth}@{}}
+\caption{Index of formal statements.}\label{tab:index}\\
+\toprule
+& Lean name & File \\
+\midrule
+\endfirsthead
+\toprule
+& Lean name & File \\
+\midrule
+\endhead
+Thm~\ref{thm:bayes}
+  & \leanname{LinearGaussianOperatorModel.equilibrium\_iff\_eq\_posteriorMean}
+  & LinearGaussian\-Operator \\
+  & \leanname{matrixPCEquilibrium\_iff\_eq\_conditionalPosteriorMean} & MatrixGaussian\-Chain \\
+  & \leanname{matrixPC\_not\_equilibrium\_of\_ne\_posteriorMean} & (negative fixture) \\
+  & \leanname{pcConditionalPosteriorMean\_equilibrium} & LinearGaussian\-Chain (scalar) \\
+Thm~\ref{thm:errrec}
+  & \leanname{equilibriumError\_satisfies\_backpropRecursion} & BackpropExactness \\
+  & \leanname{tiedEquilibriumError\_satisfies\_bpttRecursion} & (weight tying) \\
+Thm~\ref{thm:dagrec}
+  & \leanname{sharedDAGEquilibriumError\_satisfies\_parentAggregationRecursion}
+  & SharedLatentDAG \\
+  & \leanname{dagMultiParent\_parentAggregate\_counts\_both\_slots} & (positive fixture) \\
+  & \leanname{dagMultiParent\_single\_slot\_is\_incorrect\_negative\_example}
+  & (negative fixture) \\
+Thm~\ref{thm:gradne}
+  & \leanname{equilibriumGradient\_ne\_backpropGradient\_example} & BackpropExactness \\
+  & \leanname{equilibrium\_state\_ne\_forward\_state\_example} & (root cause) \\
+Thm~\ref{thm:zil}
+  & \leanname{zilScheduledGainGradient\_eq\_backpropGradient} & ZILExactness \\
+  & \leanname{zilChainResidual\_at\_schedule\_eq\_backpropError} & (front lemma) \\
+  & \leanname{zilOffSchedule\_freeEquilibriumGradient\_failure} & (negative) \\
+  & \leanname{residualSkip\_naiveFirstArrivalGradient\_failure\_example} & (negative) \\
+Thm~\ref{thm:signed}
+  & \leanname{dagScheduleExactAtEveryNode\_iff\_all\_missed\_eq\_zero}
+  & DAGSchedule\-Exactness \\
+  & \leanname{dagScheduleExactAtEveryNode\_iff\_each\_admissible\_or\_cancellation} & \\
+  & \leanname{dagSchedule\_exact\_not\_admissible\_iff\_hasMissedCancellation} & \\
+  & \leanname{dagScheduleExactAtEveryNode\_iff\_admissible\_of\_noCancellation}
+  & (fusion under no cancellation) \\
+Thm~\ref{thm:structsigned}
+  & \leanname{dagScheduleUniversallyExactAtEveryNode\_iff\_targetGain\_zero}
+  & DAGSchedule\-Exactness \\
+  & \leanname{dagFirstArrivalScheduleUniversallyExact\_iff\_targetGain\_zero} & \\
+  & \leanname{moduleScheduleUniversallyExactAtNode\_iff\_targetGain\_zero}
+  & ModuleSchedule\-Exactness \\
+  & \leanname{moduleSignedCancellation\_universallyExact\_positive\_example}
+  & (positive fixture) \\
+  & \leanname{moduleSingleMissedEdge\_not\_universallyExact\_negative\_example}
+  & (negative fixture) \\
+Thm~\ref{thm:sched}
+  & \leanname{dagFirstArrivalScheduleExact\_iff\_uniformOutgoingTargetRanks}
+  & DAGSchedule\-Exactness \\
+  & \leanname{uniformLongSkipGraph\_firstArrival\_exact} & (witness) \\
+  & \leanname{uniformLongSkipGraph\_not\_unitLevelized} & (witness) \\
+Thm~\ref{thm:epc}
+  & \leanname{spcErrorStream\_epcStateStream} & ErrorState\-Reparameterization \\
+  & \leanname{epcStateStream\_spcErrorStream} & \\
+  & \leanname{epcPrefixEnergy\_eq\_spcPrefixEnergy} & \\
+  & \leanname{epcCriticalDifferential\_iff\_spcCriticalDifferential} & \\
+  & \leanname{epcLocalParameterUpdate\_eq\_spcLocalParameterUpdate} & \\
+Thm~\ref{thm:wave}
+  & \leanname{spcFirstArrivalSignal\_layer\_closedForm}
+  & ErrorState\-Reparameterization \\
+  & \leanname{spcWavefront\_eventually\_below\_tolerance} & \\
+  & \leanname{spcWavefront\_nonzero\_but\_below\_tolerance\_example} & (positive) \\
+  & \leanname{spcWavefront\_unitRate\_not\_below\_small\_tolerance} & (boundary) \\
+  & \leanname{epcOneStepParameterUpdate\_unitRate\_eq\_backprop} & \\
+Thm~\ref{thm:mupcdepth}
+  & \leanname{spcFirstArrivalParameterUpdate\_eq\_depthCreditBackprop}
+  & MuPCDepthCredit \\
+  & \leanname{chainLinkLoss\_after\_uniformDepthCredit\_exact} & \\
+  & \leanname{inferenceRateEqualization\_forces\_unitBackpropBoundary} & \\
+  & \leanname{muPCDepthScaling\_cannot\_cancel\_contractingDepthCredit} & \\
+  & \leanname{uniformPrecision\_equilibrium\_sub\_forward\_exact} & \\
+Thm~\ref{thm:depth}
+  & \leanname{pathSlowMode\_eigenrelation} & DepthPathology \\
+  & \leanname{pathSlowMode\_iterate\_exact} & \\
+  & \leanname{pathRelaxationRate\_gap\_bound} & \\
+  & \leanname{pathRelaxationRate\_tendsto\_one} & \\
+Thm~\ref{thm:het}
+  & \leanname{HeterogeneousDepthBlockFamily.modalSpectralRadius\_lt\_one\_iff}
+  & Heterogeneous\-DepthBlocks \\
+  & \leanname{HeterogeneousDepthBlockFamily.modalSpectralGap\_le\_depth\_bound} & \\
+Thm~\ref{cor:adapter}
+  & \leanname{coupledBackboneAdapterStep\_not\_blockDiagonal}
+  & FrozenAdapter\-Restriction \\
+  & \leanname{frozenAdapterRestriction\_eq\_blockPathJacobiStep\_clamped} & \\
+  & \leanname{frozenAdapterRestriction\_eq\_blockPathJacobiStep\_of\_boundary\_clamped} & \\
+  & \leanname{isFrozenAdapterSlowModeRate\_iff} & \\
+  & \leanname{frozenAdapterRestriction\_gap\_bound} & \\
+  & \leanname{activeBackboneAdapter\_backbone\_gap\_bound} & \\
+  & \leanname{partialFreezing\_reimports\_backbone\_negative\_fixture} & \\
+Thm~\ref{thm:precond}
+  & \leanname{chainLinkLoss\_preconditionedUpdate\_exact} & Preconditioned\-Learning \\
+  & \leanname{chainLinkResidual\_preconditionedUpdate\_exact} & \\
+  & \leanname{chainLink\_zeroLoss\_afterUpdate\_iff\_identity} & \\
+  & \leanname{chainLink\_preconditionedUpdate\_strictDescent\_iff} & \\
+  & \leanname{chainLink\_lossDecrease\_gap\_from\_identity\_exact} & \\
+  & \leanname{chainLink\_lossDescent\_strictly\_degrades\_with\_squaredDeparture} & \\
+  & \leanname{unitChain\_large\_preconditioner\_increases\_loss\_negative\_example} & \\
+Thm~\ref{thm:spectral}
+  & \leanname{spectralRadius\_lt\_one\_iff\_pow\_tendsto\_zero} & Operator\-Stability \\
+  & \leanname{complexMatrixPreconditioner\_fullSpectrum\_convergence} & \\
+  & \leanname{nonnormalTransientMatrix\_fullSpectrum\_stable} & (nonnormal witness) \\
+  & \leanname{nonnormalTransientMatrix\_not\_normal} & \\
+Thm~\ref{thm:envelope}
+  & \leanname{operatorPowNorm\_geometricEnvelope} & Operator\-Stability \\
+  & \leanname{operatorResidualIterate\_norm\_geometricEnvelope} & \\
+Thm~\ref{thm:jordan}
+  & \leanname{jordanTransientMatrix\_pow\_exact} & Operator\-Stability \\
+  & \leanname{jordanTransientMatrix\_spectrum} & \\
+  & \leanname{jordanTransientMatrix\_not\_normal} & \\
+  & \leanname{spectralRadius\_zero\_allows\_arbitrary\_transientAmplification}
+  & (negative boundary) \\
+Thm~\ref{thm:mode}
+  & \leanname{matrixPreconditionedResidual\_loss\_perMode\_exact}
+  & Preconditioned\-Learning \\
+  & \leanname{mixedModePreconditioner\_helps\_one\_hurts\_another\_fixture} & \\
+Thm~\ref{thm:armijo}
+  & \leanname{armijoBacktracking\_terminates} & Backtracking\-Descent \\
+  & \leanname{armijoCondition\_energy\_nonincreasing} & \\
+  & \leanname{pcEnergyDepth2\_armijoBacktracking\_terminates\_with\_descent} & \\
+Thm~\ref{thm:saddles}
+  & \leanname{orthogonalDataset\_outputDirection\_curvature}
+  & EquilibratedEnergy\-Saddles \\
+  & \leanname{orthogonalDataset\_innerStrip\_hasStrictSaddleCertificate} & \\
+  & \leanname{orthogonalDataset\_counterexamplePoint\_all\_curvatures\_zero} & \\
+  & \leanname{orthogonalDataset\_counterexamplePoint\_twoSidedSaddleCurves} & \\
+  & \leanname{orthogonalDataset\_universalStrictSaddleConjecture\_counterexample}
+  & (negative boundary) \\
+Thm~\ref{thm:coupled}
+  & \leanname{coupledTwoTimescale\_multipliers\_stable\_iff} & CoupledDynamics \\
+  & \leanname{coupledTwoTimescale\_converges\_below\_threshold} & \\
+  & \leanname{coupledTwoTimescale\_diverges\_above\_learning\_threshold} & \\
+Thm~\ref{thm:turnover}
+  & \leanname{arbitraryDepthLinearEntropyTurnover\_general} & EntropyTurnover \\
+  & \leanname{arbitraryDepthTurnoverEntropy\_nonmonotone\_iff} & \\
+Thm~\ref{thm:nonlin}
+  & \leanname{monotoneContractiveNonlinearEntropyTurnover\_sufficient} & EntropyTurnover \\
+  & \leanname{MonotoneContractiveSettling.iterate\_abs\_le} & (contraction bound) \\
+  & \leanname{monotoneContractiveNonlinearEntropyTurnover\_uniform\_boundary} & (boundary) \\
+Thm~\ref{thm:trainednonlin}
+  & \leanname{trainedCenteredSigmoidWeight\_is\_unique\_global\_minimizer}
+  & TrainedNonlinear\-Turnover \\
+  & \leanname{trainedCenteredSigmoidEntropyTurnover} & \\
+  & \leanname{approximateTraining\_preservesCenteredSigmoidTurnoverMargin} & \\
+  & \leanname{centeredSigmoidContraction\_does\_not\_reach\_logit\_one} & (boundary) \\
+  & \leanname{trainedCenteredSigmoidVectorTurnover} & (vector lift) \\
+  & \leanname{centeredSigmoidVectorZeroSeed\_uniform} & (negative fixture) \\
+Appendix
+  & \leanname{PositiveBivariateCovariance.\allowbreak distinct\_orientations\_same\_observational\_batchEnergy}
+  & CausalDirection\-Identifiability \\
+  & \leanname{PositiveBivariateCovariance.\allowbreak clamp\_is\_conditioning\_and\_direction\_blind} & \\
+  & \leanname{PositiveBivariateCovariance.\allowbreak interventionalEquilibria\_separate\_iff} & \\
+  & \leanname{PositiveBivariateCovariance.\allowbreak observationally\_blind\_intervention\_certificate} & \\
+  & \leanname{PositiveBivariateCovariance.\allowbreak TwoNodeQuadraticResidualModel.\allowbreak batchEnergy\_eq\_trace\_quadraticForm\_mul\_empiricalSecondMoment} & \\
+Thm~\ref{thm:intervention}
+  & \leanname{PositiveBivariateCovariance.\allowbreak separatesDirectionsByInterventionalEnergy\_iff}
+  & CausalDirection\-Identifiability \\
+  & \leanname{PositiveBivariateCovariance.\allowbreak unitNoiseForwardCovariance\_observation\_tied\_intervention\_separates}
+  & (positive fixture) \\
+  & \leanname{PositiveBivariateCovariance.\allowbreak independentEqualVarianceCovariance\_interventionalEnergy\_fixture}
+  & (negative fixture) \\
+Thm~\ref{thm:causalselection}
+  & \leanname{PositiveBivariateCovariance.\allowbreak forwardOrientationWinsByMinimizedInterventionalEnergy\_iff}
+  & CausalDirection\-Selection \\
+  & \leanname{PositiveBivariateCovariance.\allowbreak isMinimizedForwardInterventionalBatchEnergy\_iff}
+  & (unique forward fit) \\
+  & \leanname{PositiveBivariateCovariance.\allowbreak reverseCandidates\_distinct\_but\_intervention\_deletes\_parameter}
+  & (anti-vacuity) \\
+  & \leanname{PositiveBivariateCovariance.\allowbreak unitNoiseForwardCovariance\_minimizedIntervention\_selects\_forward}
+  & (positive fixture) \\
+  & \leanname{PositiveBivariateCovariance.\allowbreak independentEqualVariance\_minimizedIntervention\_tied}
+  & (negative fixture) \\
+Appendix
+  & \leanname{sequentialTwoTaskUpdate\_sub\_additive\_exact}
+  & ContinualLearning/ QuadraticTwoTask \\
+  & \leanname{centered\_sequential\_order\_defect\_eq\_commutator} & \\
+  & \leanname{linearTwoTask\_causalCoding\_separation\_crown} & \\
+  & \leanname{GaussianEvidence.reused\_contribution\_exact\_excess}
+  & ContinualLearning/ EvidenceLedger \\
+  & \leanname{linearCausalCodingBridge\_crown} & \\
+  & \leanname{generalCausalCodingCorrespondence\_requires\_interventionalClamp}
+  & (scope marker) \\
+Thm~\ref{thm:yield}
+  & \leanname{iidExpectedTargetHits\_eq\_budget\_mul\_targetMass}
+  & SearchGuidance/ \mbox{DecisivenessYield} \\
+  & \leanname{iidExpectedTargetHits\_strictMono\_targetMass} & \\
+Thm~\ref{thm:sep}
+  & \leanname{equal\_crossEntropy\_strictly\_ordered\_expectedYield}
+  & SearchGuidance/ \mbox{DecisivenessYield} \\
+\bottomrule
+\end{longtable}
+}
+
+\section*{Related work}
+
+Equivalence-in-the-limit results and their scope: \cite{whittington2017} (MLPs),
+\cite{millidge2020} (arbitrary graphs, including LSTMs at small scale), \cite{song2020}
+(exact scheduling), \cite{salvatori2022} (topological limits). Engineering of deep PC:
+\cite{goemaere2025}, whose diagnosis that naive settling misbehaves in digital simulation
+Theorems~\ref{thm:depth} and~\ref{thm:precond} corroborate from the analytic side.
+Equilibrated-energy landscape results and the universal strict-saddle conjecture are due
+to \cite{innocenti2025}; Section~\ref{sec:saddles} proves a degenerate boundary outside
+their covered class. The
+program-synthesis substrate is Gauthier's OEIS self-learning system and its NMT variant
+\cite{gauthier2023}. Our companion report \emph{AlienCoding} documents the replication
+methodology, the full campaign, and the reference numbers.
+
+\begin{thebibliography}{9}
+
+\bibitem{whittington2017} J.~Whittington and R.~Bogacz.
+An approximation of the error backpropagation algorithm in a predictive coding network
+with local Hebbian synaptic plasticity. \emph{Neural Computation}, 29(5), 2017.
+
+\bibitem{song2020} Y.~Song, T.~Lukasiewicz, Z.~Xu, and R.~Bogacz.
+Can the brain do backpropagation? Exact implementation of backpropagation in predictive
+coding networks. \emph{NeurIPS}, 2020.
+
+\bibitem{millidge2020} B.~Millidge, A.~Tschantz, and C.~Buckley.
+Predictive coding approximates backprop along arbitrary computation graphs.
+arXiv:2006.04182, 2020.
+
+\bibitem{salvatori2022} T.~Salvatori et al.
+Learning on arbitrary graph topologies via predictive coding. \emph{NeurIPS}, 2022.
+
+\bibitem{goemaere2025} C.~Goemaere, G.~Oliviers, R.~Bogacz, and T.~Demeester.
+ePC: Fast and deep predictive coding in digital simulation. arXiv:2505.20137, 2025.
+
+\bibitem{innocenti2025} F.~Innocenti, E.~M.~Achour, R.~Singh, and C.~L.~Buckley.
+Only strict saddles in the energy landscape of predictive coding networks?
+\emph{Journal of Statistical Mechanics: Theory and Experiment}, 2025.
+doi:10.1088/1742-5468/ade2eb.
+
+\bibitem{innocentimupc2025} F.~Innocenti, E.~M.~Achour, and C.~L.~Buckley.
+$\mu$PC: Scaling predictive coding to 100+ layer networks.
+arXiv:2505.13124v2, 2025.
+
+\bibitem{pearl2012} J.~Pearl.
+The do-calculus revisited.
+In \emph{Proceedings of the Twenty-Eighth Conference on Uncertainty in Artificial
+Intelligence}, 2012.
+
+\bibitem{halpern2000} J.~Y.~Halpern.
+Axiomatizing causal reasoning.
+\emph{Journal of Artificial Intelligence Research}, 12:317--337, 2000.
+
+\bibitem{gauthier2023} T.~Gauthier, M.~Ol\v{s}\'ak, and J.~Urban.
+Alien coding. arXiv:2301.11479, 2023.
+
+\end{thebibliography}
+
+\end{document}

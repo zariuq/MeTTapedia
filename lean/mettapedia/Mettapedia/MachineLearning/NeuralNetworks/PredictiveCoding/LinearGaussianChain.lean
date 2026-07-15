@@ -1,3 +1,5 @@
+import Mettapedia.MachineLearning.NeuralNetworks.PredictiveCoding.GaussianFusion
+import Mettapedia.MachineLearning.NeuralNetworks.PredictiveCoding.LinearGaussianOperator
 import Mathlib.Tactic
 
 /-!
@@ -634,6 +636,482 @@ theorem pcEquilibrium_unique {depth : ℕ} (links : Fin depth → PCLink)
   rw [hδi]
   ring
 
+/-! ## Bayesian semantics of an arbitrary finite chain -/
+
+open MeasureTheory ProbabilityTheory
+
+/-- Euclidean coordinates for the `interior` unclamped nodes of a chain with
+`interior + 1` links. -/
+abbrev PCInteriorSpace (interior : ℕ) := EuclideanSpace ℝ (Fin interior)
+
+/-- Insert interior coordinates into a zero-endpoint chain perturbation. -/
+noncomputable def pcInteriorPerturbation (interior : ℕ)
+    (u : PCInteriorSpace interior) : PCState (interior + 1) :=
+  fun node =>
+    if hzero : node.val = 0 then 0
+    else if hlast : node.val = interior + 1 then 0
+    else u ⟨node.val - 1, by omega⟩
+
+@[simp] theorem pcInteriorPerturbation_zero (interior : ℕ)
+    (u : PCInteriorSpace interior) :
+    pcInteriorPerturbation interior u 0 = 0 := by
+  simp [pcInteriorPerturbation]
+
+@[simp] theorem pcInteriorPerturbation_last (interior : ℕ)
+    (u : PCInteriorSpace interior) :
+    pcInteriorPerturbation interior u (Fin.last (interior + 1)) = 0 := by
+  simp [pcInteriorPerturbation]
+
+@[simp] theorem pcInteriorPerturbation_interior (interior : ℕ)
+    (u : PCInteriorSpace interior) (i : Fin interior) :
+    pcInteriorPerturbation interior u ⟨i.val + 1, by omega⟩ = u i := by
+  simp [pcInteriorPerturbation]
+  omega
+
+/-- Residual formation restricted to zero-endpoint interior perturbations. -/
+noncomputable def pcInteriorResidualLinearMap {interior : ℕ}
+    (links : Fin (interior + 1) → PCLink) :
+    PCInteriorSpace interior →ₗ[ℝ] (Fin (interior + 1) → ℝ) where
+  toFun u := fun edge => pcResidual links (pcInteriorPerturbation interior u) edge
+  map_add' u v := by
+    funext edge
+    simp only [pcResidual, pcInteriorPerturbation, Pi.add_apply]
+    split_ifs <;> simp <;> ring
+  map_smul' r u := by
+    funext edge
+    simp only [pcResidual, pcInteriorPerturbation, Pi.smul_apply, smul_eq_mul]
+    split_ifs <;> simp <;> ring
+
+@[simp] theorem pcInteriorResidualLinearMap_apply {interior : ℕ}
+    (links : Fin (interior + 1) → PCLink) (u : PCInteriorSpace interior)
+    (edge : Fin (interior + 1)) :
+    pcInteriorResidualLinearMap links u edge =
+      pcResidual links (pcInteriorPerturbation interior u) edge := rfl
+
+theorem pcInteriorResidualLinearMap_injective {interior : ℕ}
+    (links : Fin (interior + 1) → PCLink) :
+    Function.Injective (pcInteriorResidualLinearMap links) := by
+  intro u v huv
+  have hmapzero : pcInteriorResidualLinearMap links (u - v) = 0 := by
+    rw [map_sub, huv, sub_self]
+  let δ := pcInteriorPerturbation interior (u - v)
+  have hδzero : pcZeroEndpointPerturbation δ := by
+    constructor <;> simp [δ]
+  have hres : ∀ edge : Fin (interior + 1), pcResidual links δ edge = 0 := by
+    intro edge
+    have hedge := congrFun hmapzero edge
+    simpa [δ] using hedge
+  have hδ : δ = fun _ => 0 :=
+    pcZeroEndpoint_eq_zero_of_zero_residuals links δ hδzero hres
+  apply sub_eq_zero.mp
+  apply PiLp.ext
+  intro i
+  have hnode := congrFun hδ (⟨i.val + 1, by omega⟩ : Fin (interior + 2))
+  simpa [δ] using hnode
+
+/-- Matrix of the injective residual-incidence map in the standard bases. -/
+noncomputable def pcInteriorIncidenceMatrix {interior : ℕ}
+    (links : Fin (interior + 1) → PCLink) :
+    Matrix (Fin (interior + 1)) (Fin interior) ℝ :=
+  LinearMap.toMatrix (EuclideanSpace.basisFun (Fin interior) ℝ).toBasis
+    (Pi.basisFun ℝ (Fin (interior + 1))) (pcInteriorResidualLinearMap links)
+
+theorem pcInteriorIncidenceMatrix_mulVec {interior : ℕ}
+    (links : Fin (interior + 1) → PCLink) (u : PCInteriorSpace interior) :
+    (pcInteriorIncidenceMatrix links).mulVec (fun i => u i) =
+      pcInteriorResidualLinearMap links u := by
+  have h := LinearMap.toMatrix_mulVec_repr
+    (EuclideanSpace.basisFun (Fin interior) ℝ).toBasis
+    (Pi.basisFun ℝ (Fin (interior + 1)))
+    (pcInteriorResidualLinearMap links) u
+  have hdomain :
+      ⇑((EuclideanSpace.basisFun (Fin interior) ℝ).toBasis.repr u) =
+        (fun i => u i) := by
+    funext i
+    exact EuclideanSpace.basisFun_repr (Fin interior) ℝ u i
+  have hcodomain :
+      ⇑((Pi.basisFun ℝ (Fin (interior + 1))).repr
+        (pcInteriorResidualLinearMap links u)) =
+        pcInteriorResidualLinearMap links u := by
+    funext edge
+    exact Pi.basisFun_repr ℝ (Fin (interior + 1)) _ edge
+  rw [hdomain, hcodomain] at h
+  exact h
+
+theorem pcInteriorIncidenceMatrix_mulVec_injective {interior : ℕ}
+    (links : Fin (interior + 1) → PCLink) :
+    Function.Injective (pcInteriorIncidenceMatrix links).mulVec := by
+  intro u v huv
+  let u' : PCInteriorSpace interior := WithLp.toLp 2 u
+  let v' : PCInteriorSpace interior := WithLp.toLp 2 v
+  have hlinear : pcInteriorResidualLinearMap links u' =
+      pcInteriorResidualLinearMap links v' := by
+    rw [← pcInteriorIncidenceMatrix_mulVec links u',
+      ← pcInteriorIncidenceMatrix_mulVec links v']
+    simpa [u', v'] using huv
+  have huv' := pcInteriorResidualLinearMap_injective links hlinear
+  funext i
+  exact congrArg (fun w : PCInteriorSpace interior => w i) huv'
+
+/-- Diagonal edge-precision matrix of the conditioned chain. -/
+noncomputable def pcEdgePrecisionMatrix {interior : ℕ}
+    (links : Fin (interior + 1) → PCLink) :
+    Matrix (Fin (interior + 1)) (Fin (interior + 1)) ℝ :=
+  Matrix.diagonal fun edge => (links edge).precision
+
+/-- Interior posterior precision `Aᵀ Λ A`. -/
+noncomputable def pcInteriorPrecisionMatrix {interior : ℕ}
+    (links : Fin (interior + 1) → PCLink) :
+    Matrix (Fin interior) (Fin interior) ℝ :=
+  (pcInteriorIncidenceMatrix links).transpose * pcEdgePrecisionMatrix links *
+    pcInteriorIncidenceMatrix links
+
+theorem pcEdgePrecisionMatrix_posDef {interior : ℕ}
+    (links : Fin (interior + 1) → PCLink) :
+    (pcEdgePrecisionMatrix links).PosDef := by
+  unfold pcEdgePrecisionMatrix
+  exact Matrix.PosDef.diagonal fun edge => (links edge).precision_pos
+
+/-- The conditioned interior precision is positive definite for every finite
+chain with positive edge precisions, including the zero-interior base case. -/
+theorem pcInteriorPrecisionMatrix_posDef {interior : ℕ}
+    (links : Fin (interior + 1) → PCLink) :
+    (pcInteriorPrecisionMatrix links).PosDef := by
+  have h := (pcEdgePrecisionMatrix_posDef links).conjTranspose_mul_mul_same
+    (pcInteriorIncidenceMatrix_mulVec_injective links)
+  simpa [pcInteriorPrecisionMatrix] using h
+
+/-- State containing only the two clamped endpoint observations. -/
+noncomputable def pcEndpointState (interior : ℕ) (x y : ℝ) :
+    PCState (interior + 1) :=
+  fun node =>
+    if node.val = 0 then x
+    else if node.val = interior + 1 then y
+    else 0
+
+/-- Full chain state assembled from clamped endpoints and interior coordinates. -/
+noncomputable def pcStateOfInterior (interior : ℕ) (x y : ℝ)
+    (u : PCInteriorSpace interior) : PCState (interior + 1) :=
+  pcAddState (pcEndpointState interior x y) (pcInteriorPerturbation interior u)
+
+@[simp] theorem pcStateOfInterior_zero (interior : ℕ) (x y : ℝ)
+    (u : PCInteriorSpace interior) :
+    pcStateOfInterior interior x y u 0 = x := by
+  simp [pcStateOfInterior, pcAddState, pcEndpointState]
+
+@[simp] theorem pcStateOfInterior_last (interior : ℕ) (x y : ℝ)
+    (u : PCInteriorSpace interior) :
+    pcStateOfInterior interior x y u (Fin.last (interior + 1)) = y := by
+  simp [pcStateOfInterior, pcAddState, pcEndpointState]
+
+@[simp] theorem pcStateOfInterior_interior (interior : ℕ) (x y : ℝ)
+    (u : PCInteriorSpace interior) (i : Fin interior) :
+    pcStateOfInterior interior x y u ⟨i.val + 1, by omega⟩ = u i := by
+  simp [pcStateOfInterior, pcAddState, pcEndpointState]
+  omega
+
+theorem pcStateOfInterior_mem_clamped (interior : ℕ) (x y : ℝ)
+    (u : PCInteriorSpace interior) :
+    pcStateOfInterior interior x y u ∈ clampedStateSet x y :=
+  ⟨pcStateOfInterior_zero interior x y u, pcStateOfInterior_last interior x y u⟩
+
+/-- Extract the interior coordinates of a full chain state. -/
+noncomputable def pcInteriorCoordinates (interior : ℕ)
+    (z : PCState (interior + 1)) : PCInteriorSpace interior :=
+  WithLp.toLp 2 fun i => z ⟨i.val + 1, by omega⟩
+
+@[simp] theorem pcInteriorCoordinates_stateOfInterior (interior : ℕ)
+    (x y : ℝ) (u : PCInteriorSpace interior) :
+    pcInteriorCoordinates interior (pcStateOfInterior interior x y u) = u := by
+  apply PiLp.ext
+  intro i
+  simp [pcInteriorCoordinates]
+
+theorem pcStateOfInterior_coordinates_of_clamped (interior : ℕ)
+    (x y : ℝ) (z : PCState (interior + 1))
+    (hz : z ∈ clampedStateSet x y) :
+    pcStateOfInterior interior x y (pcInteriorCoordinates interior z) = z := by
+  funext node
+  by_cases hzero : node.val = 0
+  · have hnode : node = 0 := Fin.ext hzero
+    subst node
+    simpa using hz.1.symm
+  by_cases hlast : node.val = interior + 1
+  · have hnode : node = Fin.last (interior + 1) := by
+      apply Fin.ext
+      simpa using hlast
+    subst node
+    simpa using hz.2.symm
+  · have hpos : 0 < node.val := Nat.pos_of_ne_zero hzero
+    have hidx : node.val - 1 < interior := by omega
+    let i : Fin interior := ⟨node.val - 1, hidx⟩
+    have hnode : (⟨i.val + 1, by omega⟩ : Fin (interior + 2)) = node := by
+      apply Fin.ext
+      simp [i]
+      omega
+    rw [← hnode, pcStateOfInterior_interior]
+    simp [pcInteriorCoordinates, i, hnode]
+
+/-- Residual vector contributed solely by the clamped endpoints. -/
+noncomputable def pcEndpointResidualVector {interior : ℕ}
+    (links : Fin (interior + 1) → PCLink) (x y : ℝ) :
+    Fin (interior + 1) → ℝ :=
+  fun edge => pcResidual links (pcEndpointState interior x y) edge
+
+/-- The scalar chain as an instance of the operator-level affine
+linear-Gaussian residual model. -/
+noncomputable def pcLinearGaussianOperatorModel {interior : ℕ}
+    (links : Fin (interior + 1) → PCLink) (x y : ℝ) :
+    LinearGaussianOperatorModel (Fin interior) (Fin (interior + 1)) where
+  residualMatrix := pcInteriorIncidenceMatrix links
+  residualPrecision := pcEdgePrecisionMatrix links
+  residualOffset := pcEndpointResidualVector links x y
+  residualMatrix_injective := pcInteriorIncidenceMatrix_mulVec_injective links
+  residualPrecision_posDef := pcEdgePrecisionMatrix_posDef links
+
+@[simp] theorem pcLinearGaussianOperatorModel_posteriorPrecision {interior : ℕ}
+    (links : Fin (interior + 1) → PCLink) (x y : ℝ) :
+    (pcLinearGaussianOperatorModel links x y).posteriorPrecision =
+      pcInteriorPrecisionMatrix links := rfl
+
+/-- Canonical affine residual vector `A u + c` after conditioning endpoints. -/
+noncomputable def pcConditionalResidualVector {interior : ℕ}
+    (links : Fin (interior + 1) → PCLink) (x y : ℝ)
+    (u : PCInteriorSpace interior) : Fin (interior + 1) → ℝ :=
+  (pcInteriorIncidenceMatrix links).mulVec (fun i => u i) +
+    pcEndpointResidualVector links x y
+
+theorem pcConditionalResidualVector_eq_pcResidual {interior : ℕ}
+    (links : Fin (interior + 1) → PCLink) (x y : ℝ)
+    (u : PCInteriorSpace interior) :
+    pcConditionalResidualVector links x y u =
+      fun edge => pcResidual links (pcStateOfInterior interior x y u) edge := by
+  funext edge
+  rw [pcStateOfInterior, pcResidual_add]
+  simp [pcConditionalResidualVector, pcEndpointResidualVector,
+    pcInteriorIncidenceMatrix_mulVec]
+  ring
+
+/-- Natural parameter `-Aᵀ Λ c` of the endpoint-conditioned Gaussian. -/
+noncomputable def pcConditionalNaturalParameter {interior : ℕ}
+    (links : Fin (interior + 1) → PCLink) (x y : ℝ) : Fin interior → ℝ :=
+  -((pcInteriorIncidenceMatrix links).transpose.mulVec
+    ((pcEdgePrecisionMatrix links).mulVec (pcEndpointResidualVector links x y)))
+
+/-- Conditional posterior mean in canonical Gaussian coordinates, `Q⁻¹ b`. -/
+noncomputable def pcConditionalPosteriorMean {interior : ℕ}
+    (links : Fin (interior + 1) → PCLink) (x y : ℝ) :
+    PCInteriorSpace interior :=
+  WithLp.toLp 2 ((pcInteriorPrecisionMatrix links)⁻¹.mulVec
+    (pcConditionalNaturalParameter links x y))
+
+/-- The endpoint-conditioned multivariate Gaussian posterior.  Its precision
+and natural parameter are obtained directly from the chain residual energy. -/
+noncomputable def pcConditionalPosterior {interior : ℕ}
+    (links : Fin (interior + 1) → PCLink) (x y : ℝ) :
+    Measure (PCInteriorSpace interior) :=
+  multivariateGaussian (pcConditionalPosteriorMean links x y)
+    (pcInteriorPrecisionMatrix links)⁻¹
+
+@[simp] theorem pcLinearGaussianOperatorModel_naturalParameter {interior : ℕ}
+    (links : Fin (interior + 1) → PCLink) (x y : ℝ) :
+    (pcLinearGaussianOperatorModel links x y).naturalParameter =
+      pcConditionalNaturalParameter links x y := rfl
+
+@[simp] theorem pcLinearGaussianOperatorModel_posteriorMean {interior : ℕ}
+    (links : Fin (interior + 1) → PCLink) (x y : ℝ) :
+    (pcLinearGaussianOperatorModel links x y).posteriorMean =
+      pcConditionalPosteriorMean links x y := rfl
+
+@[simp] theorem pcLinearGaussianOperatorModel_posterior {interior : ℕ}
+    (links : Fin (interior + 1) → PCLink) (x y : ℝ) :
+    (pcLinearGaussianOperatorModel links x y).posterior =
+      pcConditionalPosterior links x y := rfl
+
+theorem pcConditionalPosterior_covariance_posDef {interior : ℕ}
+    (links : Fin (interior + 1) → PCLink) :
+    ((pcInteriorPrecisionMatrix links)⁻¹).PosDef :=
+  (pcLinearGaussianOperatorModel links 0 0).posterior_covariance_posDef
+
+/-- The probabilistic mean of the conditioned Gaussian is its independently
+defined canonical solution `Q⁻¹ b`. -/
+theorem pcConditionalPosterior_integral_id {interior : ℕ}
+    (links : Fin (interior + 1) → PCLink) (x y : ℝ) :
+    ∫ u, u ∂pcConditionalPosterior links x y =
+      pcConditionalPosteriorMean links x y := by
+  exact (pcLinearGaussianOperatorModel links x y).posterior_integral_id
+
+theorem pcInteriorPrecision_mul_posteriorMean {interior : ℕ}
+    (links : Fin (interior + 1) → PCLink) (x y : ℝ) :
+    (pcInteriorPrecisionMatrix links).mulVec
+        (fun i => pcConditionalPosteriorMean links x y i) =
+      pcConditionalNaturalParameter links x y := by
+  exact (pcLinearGaussianOperatorModel links x y).precision_mul_posteriorMean
+
+/-- The posterior mean makes the conditioned residual force stationary. -/
+theorem pcConditionalResidual_stationary {interior : ℕ}
+    (links : Fin (interior + 1) → PCLink) (x y : ℝ) :
+    (pcInteriorIncidenceMatrix links).transpose.mulVec
+        ((pcEdgePrecisionMatrix links).mulVec
+          (pcConditionalResidualVector links x y
+            (pcConditionalPosteriorMean links x y))) = 0 := by
+  exact (pcLinearGaussianOperatorModel links x y).posteriorMean_stationary
+
+/-- Canonical quadratic energy of the endpoint-conditioned Gaussian. -/
+noncomputable def pcConditionalCanonicalEnergy {interior : ℕ}
+    (links : Fin (interior + 1) → PCLink) (x y : ℝ)
+    (u : PCInteriorSpace interior) : ℝ :=
+  pcConditionalResidualVector links x y u ⬝ᵥ
+    (pcEdgePrecisionMatrix links).mulVec
+      (pcConditionalResidualVector links x y u)
+
+@[simp] theorem pcLinearGaussianOperatorModel_energy {interior : ℕ}
+    (links : Fin (interior + 1) → PCLink) (x y : ℝ)
+    (u : PCInteriorSpace interior) :
+    (pcLinearGaussianOperatorModel links x y).energy u =
+      pcConditionalCanonicalEnergy links x y u := rfl
+
+theorem pcEnergy_stateOfInterior_eq_canonical {interior : ℕ}
+    (links : Fin (interior + 1) → PCLink) (x y : ℝ)
+    (u : PCInteriorSpace interior) :
+    pcEnergy links (pcStateOfInterior interior x y u) =
+      pcConditionalCanonicalEnergy links x y u := by
+  rw [pcConditionalCanonicalEnergy]
+  rw [pcConditionalResidualVector_eq_pcResidual]
+  unfold pcEnergy dotProduct pcEdgePrecisionMatrix
+  apply Finset.sum_congr rfl
+  intro edge _hedge
+  rw [Matrix.mulVec_diagonal]
+  ring
+
+theorem pcEdgePrecision_dot_swap {interior : ℕ}
+    (links : Fin (interior + 1) → PCLink)
+    (a b : Fin (interior + 1) → ℝ) :
+    a ⬝ᵥ (pcEdgePrecisionMatrix links).mulVec b =
+      b ⬝ᵥ (pcEdgePrecisionMatrix links).mulVec a := by
+  exact (pcLinearGaussianOperatorModel links 0 0).precision_dot_swap a b
+
+theorem pcInteriorPrecision_quadratic {interior : ℕ}
+    (links : Fin (interior + 1) → PCLink) (d : Fin interior → ℝ) :
+    d ⬝ᵥ (pcInteriorPrecisionMatrix links).mulVec d =
+      (pcInteriorIncidenceMatrix links).mulVec d ⬝ᵥ
+        (pcEdgePrecisionMatrix links).mulVec
+          ((pcInteriorIncidenceMatrix links).mulVec d) := by
+  exact (pcLinearGaussianOperatorModel links 0 0).posteriorPrecision_quadratic d
+
+/-- Exact completion of the conditioned chain energy around the posterior mean. -/
+theorem pcConditionalCanonicalEnergy_sub_mean {interior : ℕ}
+    (links : Fin (interior + 1) → PCLink) (x y : ℝ)
+    (u : PCInteriorSpace interior) :
+    pcConditionalCanonicalEnergy links x y u -
+        pcConditionalCanonicalEnergy links x y
+          (pcConditionalPosteriorMean links x y) =
+      (fun i => u i - pcConditionalPosteriorMean links x y i) ⬝ᵥ
+        (pcInteriorPrecisionMatrix links).mulVec
+          (fun i => u i - pcConditionalPosteriorMean links x y i) := by
+  exact (pcLinearGaussianOperatorModel links x y).energy_sub_posteriorMean u
+
+/-- The chain energy is minimized at the canonical conditional posterior mean. -/
+theorem pcConditionalPosteriorMean_isMinOn {interior : ℕ}
+    (links : Fin (interior + 1) → PCLink) (x y : ℝ) :
+    IsMinOn (fun u => pcEnergy links (pcStateOfInterior interior x y u)) Set.univ
+      (pcConditionalPosteriorMean links x y) := by
+  rw [isMinOn_univ_iff]
+  intro u
+  rw [pcEnergy_stateOfInterior_eq_canonical,
+    pcEnergy_stateOfInterior_eq_canonical]
+  exact (isMinOn_univ_iff.mp
+    (pcLinearGaussianOperatorModel links x y).posteriorMean_isMinOn) u
+
+/-- Clamped scalar-chain equilibria are exactly operator-model equilibria in
+interior coordinates.  This is the adapter through which the scalar Bayesian
+crown inherits the operator theorem. -/
+theorem pcEquilibrium_iff_operatorEquilibrium {interior : ℕ}
+    (links : Fin (interior + 1) → PCLink) (x y : ℝ)
+    (z : PCState (interior + 1)) :
+    pcEquilibrium links x y z ↔
+      z ∈ clampedStateSet x y ∧
+        (pcLinearGaussianOperatorModel links x y).Equilibrium
+          (pcInteriorCoordinates interior z) := by
+  constructor
+  · intro hz
+    refine ⟨hz.1, ?_⟩
+    change IsMinOn (pcLinearGaussianOperatorModel links x y).energy Set.univ
+      (pcInteriorCoordinates interior z)
+    rw [isMinOn_univ_iff]
+    intro u
+    change pcConditionalCanonicalEnergy links x y
+        (pcInteriorCoordinates interior z) ≤
+      pcConditionalCanonicalEnergy links x y u
+    rw [← pcEnergy_stateOfInterior_eq_canonical,
+      ← pcEnergy_stateOfInterior_eq_canonical,
+      pcStateOfInterior_coordinates_of_clamped interior x y z hz.1]
+    exact (isMinOn_iff.mp hz.2) _
+      (pcStateOfInterior_mem_clamped interior x y u)
+  · rintro ⟨hzclamp, hzoperator⟩
+    refine ⟨hzclamp, ?_⟩
+    rw [isMinOn_iff]
+    intro w hw
+    change IsMinOn (pcLinearGaussianOperatorModel links x y).energy Set.univ
+      (pcInteriorCoordinates interior z) at hzoperator
+    have hle := (isMinOn_univ_iff.mp hzoperator)
+      (pcInteriorCoordinates interior w)
+    change pcConditionalCanonicalEnergy links x y
+        (pcInteriorCoordinates interior z) ≤
+      pcConditionalCanonicalEnergy links x y
+        (pcInteriorCoordinates interior w) at hle
+    rw [← pcEnergy_stateOfInterior_eq_canonical,
+      ← pcEnergy_stateOfInterior_eq_canonical,
+      pcStateOfInterior_coordinates_of_clamped interior x y z hzclamp,
+      pcStateOfInterior_coordinates_of_clamped interior x y w hw] at hle
+    exact hle
+
+/-- The state assembled from the conditional posterior mean is a PC equilibrium. -/
+theorem pcConditionalPosteriorMean_equilibrium {interior : ℕ}
+    (links : Fin (interior + 1) → PCLink) (x y : ℝ) :
+    pcEquilibrium links x y
+      (pcStateOfInterior interior x y (pcConditionalPosteriorMean links x y)) := by
+  refine ⟨pcStateOfInterior_mem_clamped interior x y _, ?_⟩
+  have hmin : ∀ u : PCInteriorSpace interior,
+      pcEnergy links
+          (pcStateOfInterior interior x y (pcConditionalPosteriorMean links x y)) ≤
+        pcEnergy links (pcStateOfInterior interior x y u) := by
+    simpa [IsMinOn, IsMinFilter] using
+      (pcConditionalPosteriorMean_isMinOn links x y)
+  intro z hz
+  rw [← pcStateOfInterior_coordinates_of_clamped interior x y z hz]
+  exact hmin _
+
+/-- Arbitrary-length Bayesian semantics crown: a clamped PC state is an
+equilibrium exactly when it is the conditional Gaussian posterior mean. -/
+theorem pcEquilibrium_iff_eq_conditionalPosteriorMean {interior : ℕ}
+    (links : Fin (interior + 1) → PCLink) (x y : ℝ)
+    (z : PCState (interior + 1)) :
+    pcEquilibrium links x y z ↔
+      z = pcStateOfInterior interior x y
+        (∫ u, u ∂pcConditionalPosterior links x y) := by
+  constructor
+  · intro hz
+    have hadapter := (pcEquilibrium_iff_operatorEquilibrium links x y z).mp hz
+    have hcoordinates : pcInteriorCoordinates interior z =
+        ∫ u, u ∂pcConditionalPosterior links x y := by
+      exact ((pcLinearGaussianOperatorModel links x y)
+        |>.equilibrium_iff_eq_conditionalPosteriorMean
+          (pcInteriorCoordinates interior z)).mp hadapter.2
+    calc
+      z = pcStateOfInterior interior x y
+          (pcInteriorCoordinates interior z) :=
+        (pcStateOfInterior_coordinates_of_clamped interior x y z hadapter.1).symm
+      _ = pcStateOfInterior interior x y
+          (∫ u, u ∂pcConditionalPosterior links x y) := by rw [hcoordinates]
+  · intro hz
+    subst z
+    apply (pcEquilibrium_iff_operatorEquilibrium links x y _).mpr
+    refine ⟨pcStateOfInterior_mem_clamped interior x y _, ?_⟩
+    rw [pcInteriorCoordinates_stateOfInterior]
+    exact ((pcLinearGaussianOperatorModel links x y)
+      |>.equilibrium_iff_eq_conditionalPosteriorMean _).mpr rfl
+
 /-- The one-interior-node depth-2 chain energy. -/
 noncomputable def pcDepth2Energy (x y gain₀ gain₁ precision₀ precision₁ z₁ : ℝ) : ℝ :=
   precision₀ * (z₁ - gain₀ * x)^2 + precision₁ * (y - gain₁ * z₁)^2
@@ -704,6 +1182,120 @@ theorem pcDepth2NormalEquation_iff_eq_map
     subst z₁
     field_simp [hden]
     ring
+
+/-! ### Scalar Kalman correspondence -/
+
+/-- The two links of a chain with one latent interior node. -/
+noncomputable def pcDepthTwoLinks
+    (gain₀ gain₁ precision₀ precision₁ : ℝ)
+    (hprecision₀ : 0 < precision₀) (hprecision₁ : 0 < precision₁) :
+    Fin 2 → PCLink :=
+  fun edge =>
+    if edge.val = 0 then
+      { gain := gain₀, precision := precision₀, precision_pos := hprecision₀ }
+    else
+      { gain := gain₁, precision := precision₁, precision_pos := hprecision₁ }
+
+/-- The arbitrary-chain posterior mean specializes to the closed-form
+one-interior-node MAP value. -/
+theorem pcConditionalPosteriorMean_depthTwo_eq_map
+    (x y gain₀ gain₁ precision₀ precision₁ : ℝ)
+    (hprecision₀ : 0 < precision₀) (hprecision₁ : 0 < precision₁) :
+    pcConditionalPosteriorMean
+        (pcDepthTwoLinks gain₀ gain₁ precision₀ precision₁ hprecision₀ hprecision₁)
+        x y 0 =
+      pcDepth2MAP x y gain₀ gain₁ precision₀ precision₁ := by
+  let links := pcDepthTwoLinks gain₀ gain₁ precision₀ precision₁
+    hprecision₀ hprecision₁
+  let m := pcConditionalPosteriorMean links x y
+  have heq := pcConditionalPosteriorMean_equilibrium links x y
+  have hnorm := (pcEquilibrium_iff_normalEquations links x y
+    (pcStateOfInterior 1 x y m)).mp heq |>.2
+  have hnode := hnorm (⟨1, by omega⟩ : Fin 3)
+  have hnormal :
+      pcDepth2NormalEquation x y gain₀ gain₁ precision₀ precision₁ (m 0) := by
+    have hstate1 : pcStateOfInterior 1 x y m (1 : Fin 3) = m 0 := by
+      simpa using pcStateOfInterior_interior 1 x y m (0 : Fin 1)
+    have hstate2 : pcStateOfInterior 1 x y m (2 : Fin 3) = y := by
+      simpa using pcStateOfInterior_last 1 x y m
+    simpa [pcLocalNormalEquationAt, links, pcDepthTwoLinks, pcResidual,
+      hstate1, hstate2, pcDepth2NormalEquation] using hnode
+  exact (pcDepth2NormalEquation_iff_eq_map x y gain₀ gain₁ precision₀ precision₁
+    (m 0) hprecision₀ hprecision₁).mp hnormal
+
+/-- Scalar Kalman gain for observation model `y = observationGain * latent + noise`. -/
+noncomputable def scalarKalmanGain
+    (observationGain priorPrecision observationPrecision : ℝ) : ℝ :=
+  observationPrecision * observationGain /
+    (priorPrecision + observationPrecision * observationGain ^ 2)
+
+/-- Scalar Kalman posterior update from a prior mean and one observation. -/
+noncomputable def scalarKalmanUpdate
+    (priorMean observation observationGain priorPrecision observationPrecision : ℝ) : ℝ :=
+  priorMean + scalarKalmanGain observationGain priorPrecision observationPrecision *
+    (observation - observationGain * priorMean)
+
+theorem pcDepth2MAP_eq_scalarKalmanUpdate
+    (x y gain₀ gain₁ precision₀ precision₁ : ℝ)
+    (hprecision₀ : 0 < precision₀) (hprecision₁ : 0 < precision₁) :
+    pcDepth2MAP x y gain₀ gain₁ precision₀ precision₁ =
+      scalarKalmanUpdate (gain₀ * x) y gain₁ precision₀ precision₁ := by
+  have hden := ne_of_gt
+    (pcDepth2_den_pos gain₁ precision₀ precision₁ hprecision₀ hprecision₁)
+  unfold pcDepth2MAP scalarKalmanUpdate scalarKalmanGain
+  field_simp [hden]
+  ring
+
+/-- Scalar Kalman crown: the probabilistic mean of the conditioned chain is
+exactly the Kalman posterior update. -/
+theorem pcConditionalPosteriorMean_depthTwo_eq_scalarKalmanUpdate
+    (x y gain₀ gain₁ precision₀ precision₁ : ℝ)
+    (hprecision₀ : 0 < precision₀) (hprecision₁ : 0 < precision₁) :
+    pcConditionalPosteriorMean
+        (pcDepthTwoLinks gain₀ gain₁ precision₀ precision₁ hprecision₀ hprecision₁)
+        x y 0 =
+      scalarKalmanUpdate (gain₀ * x) y gain₁ precision₀ precision₁ := by
+  rw [pcConditionalPosteriorMean_depthTwo_eq_map x y gain₀ gain₁ precision₀ precision₁
+    hprecision₀ hprecision₁]
+  exact pcDepth2MAP_eq_scalarKalmanUpdate x y gain₀ gain₁ precision₀ precision₁
+    hprecision₀ hprecision₁
+
+/-- With unit observation gain, the one-interior-node posterior is exactly
+the two-source Gaussian fusion primitive. -/
+theorem pcDepth2MAP_eq_gaussianFusion_unitObservation
+    (x y gain₀ precision₀ precision₁ : ℝ) :
+    pcDepth2MAP x y gain₀ 1 precision₀ precision₁ =
+      gaussianFusion (gain₀ * x) y precision₀ precision₁ := by
+  unfold pcDepth2MAP gaussianFusion
+  ring
+
+/-- `GaussianFusion` is the one-interior-node, unit-observation base case of
+the arbitrary-length conditional-posterior theorem. -/
+theorem pcConditionalPosteriorMean_depthTwo_eq_gaussianFusion
+    (x y gain₀ precision₀ precision₁ : ℝ)
+    (hprecision₀ : 0 < precision₀) (hprecision₁ : 0 < precision₁) :
+    pcConditionalPosteriorMean
+        (pcDepthTwoLinks gain₀ 1 precision₀ precision₁ hprecision₀ hprecision₁)
+        x y 0 =
+      gaussianFusion (gain₀ * x) y precision₀ precision₁ := by
+  rw [pcConditionalPosteriorMean_depthTwo_eq_map x y gain₀ 1 precision₀ precision₁
+    hprecision₀ hprecision₁]
+  exact pcDepth2MAP_eq_gaussianFusion_unitObservation x y gain₀ precision₀ precision₁
+
+theorem pcConditionalPosteriorMean_depthTwo_positive_fixture :
+    pcConditionalPosteriorMean
+        (pcDepthTwoLinks 1 1 1 1 (by norm_num) (by norm_num)) 1 2 0 =
+      3 / 2 := by
+  rw [pcConditionalPosteriorMean_depthTwo_eq_map]
+  norm_num [pcDepth2MAP]
+
+/-- Negative fixture: conditioning blends finite-precision evidence rather
+than replacing the latent state by the observation. -/
+theorem pcConditionalPosteriorMean_depthTwo_ne_observation_fixture :
+    pcConditionalPosteriorMean
+        (pcDepthTwoLinks 1 1 1 1 (by norm_num) (by norm_num)) 1 2 0 ≠ 2 := by
+  rw [pcConditionalPosteriorMean_depthTwo_positive_fixture]
+  norm_num
 
 /-- Depth-2 scaffold: the single local normal equation is equivalent to MAP. -/
 theorem pcDepth2Equilibrium_iff_normalEquation
