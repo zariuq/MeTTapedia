@@ -1,0 +1,87 @@
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.Costed.BudgetedCoverBridge
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.Costed.BudgetedDifferential
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.Costed.BudgetedPrefixPathRefinement
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.Costed.NormalizerContract
+
+/-!
+# Cost-rho theorem dependency audit
+
+This module is a rerunnable audit of the principal runtime correspondence,
+conservation, and budgeted-enumeration results.
+-/
+
+namespace Mettapedia.Languages.ProcessCalculi.RhoCalculus.Costed
+
+#print axioms costStep_sound_runtime
+#print axioms runtimeCostFrontier_sound
+#print axioms runtimeCostCandidatesFromConfig_frameExact
+#print axioms located_forcing_locality
+#print axioms costStep_complete_runtime_up_to_struct
+#print axioms runtimeCostCandidates_complete_up_to_struct
+#print axioms RawCostConfig.purse_indices_nodup
+#print axioms LocatedTokenCover.selected_tail_surface
+#print axioms LocatedTokenCover.wrong_location_not_selected
+#print axioms LocatedTokenCover.funding_contributions_eq_selected_heads
+#print axioms LocatedTokenCover.funding_contributions_card
+#print axioms LocatedTokenCover.no_ambient_funding
+#print axioms RawCostTerm.normalizeConfig_canonical
+#print axioms RawCostTerm.normalize_idempotent
+#print axioms RawCostTerm.normalize_structurallyEquivalent
+#print axioms RawCostTerm.normalize_eq_implies_structurallyEquivalent
+
+#print axioms CostPath.receipt_rawMeasure_eq_emitted_spend
+#print axioms CostPath.trace_account_eq_totalCost
+#print axioms CostPath.trace_multiplicativeAccount_eq_totalCost
+#print axioms CostPath.prefixAccepted_iff_orderedAccount
+#print axioms CostPath.PrefixAccepted.final_cost_le
+#print axioms CostPath.receipt_remainingBudget_eq_pathRemainingBudget
+#print axioms CostPath.final_budget_conservation
+#print axioms CostPath.PrefixAccepted.prefix_remaining_nonnegative
+#print axioms CostPath.per_location_restriction_account_conservation
+#print axioms CostPath.local_accounts_glue_to_global
+#print axioms CostPath.additive_local_accounts_glue_to_global
+#print axioms CostPath.multiplicative_local_accounts_glue_to_global
+#print axioms CostPath.emitted_receipt_valid
+#print axioms CostPath.emission_linearizes
+#print axioms CausalReceipt.causalPartialOrder
+
+#print axioms CoverCursor.advance_denote
+#print axioms CoverCursor.advance_work
+#print axioms CoverCursor.runBudget_partition
+#print axioms CoverCursor.runBudget_resume_partition
+#print axioms CoverCursor.runBudget_complete_of_work_le
+#print axioms CoverCursor.runBudget_work_eq_denote
+#print axioms CoverCursor.runBudget_initial_sound
+#print axioms CoverCursor.runBudget_initial_spend_sound
+#print axioms exactPurseCovers_nodup
+#print axioms CoverCursor.runBudget_initial_nodup_of_indices
+#print axioms CoverCursor.seek_found_partition
+#print axioms CoverCursor.seek_noCover_denote_empty
+#print axioms CoverCursor.seekMetered_noCover_denote_empty
+#print axioms CoverCursor.seek_initial_found_sound
+#print axioms CoverCursor.seek_initial_noCover
+
+#print axioms CoverCursor.runBudget_matching_sound
+#print axioms RawCostConfig.matchingPurses_nodup
+#print axioms RawCostConfig.runBudget_matching_nodup
+#print axioms RawCostConfig.runBudget_matching_resume_nodup
+
+#print axioms seekRuntimeTasks_found_sound
+#print axioms seekRuntimeTasks_noCandidate_denote_empty
+#print axioms seekRuntimeTasks_remaining_le
+#print axioms runtimeCandidateTasks_denote
+#print axioms budgetedFirstRuntimeCandidate_found_sound
+#print axioms budgetedFirstRuntimeCandidate_noCandidate
+#print axioms budgetedFirstRuntimeCandidate_remaining_le
+#print axioms BudgetedPrefixPathRefinement
+#print axioms boundedBudgetedCausalPrefix_pathRefinement
+#print axioms boundedBudgetedCausalPrefix_eq_refined_run
+#print axioms boundedBudgetedCausalPrefix_refinesPath
+#print axioms boundedBudgetedCausalPrefix_receipt_valid
+#print axioms boundedBudgetedCausalPrefix_emission_linearizes
+
+#print axioms RawCostConfig.canonicalCheck_true_iff
+#print axioms RawCostConfig.encodingCanonicalCheck_true_iff
+#print axioms runtimePreconditionChecks_all_true_iff
+
+end Mettapedia.Languages.ProcessCalculi.RhoCalculus.Costed
