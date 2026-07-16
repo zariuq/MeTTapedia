@@ -14,7 +14,7 @@
 ;  control); formula size S = 3; context size H = 1; depth D = 3 (adequacy vs 4);
 ;  MP cut-universe U = atoms ++ hypotheses (saturated for this fragment/size).
 ;  This is a BOUNDED stand-in for OSLF ◇ (true OSLF coherence = Experiment 4,
-;  awaits Lean unfreeze).  Run: cetta imp_coherence_exp1.metta
+;  awaits its Lean theorem).  Run: cetta imp_coherence_exp1.metta
 ;
 ;  Source anchors: implication-introduction/elimination is the ordinary natural
 ;  deduction / LF object-logic fragment used throughout the HHP-style signature

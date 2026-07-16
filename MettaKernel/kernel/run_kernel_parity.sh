@@ -6,8 +6,6 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CETTA="${CETTA:-$AIHUB/hyperon/CeTTa/cetta}"
 PETTA="${PETTA:-$AIHUB/hyperon/PeTTa/run.sh}"
 RUN_TIMEOUT_SECONDS="${RUN_TIMEOUT_SECONDS:-240}"
-CETTA_AS_LIMIT_BYTES="${CETTA_AS_LIMIT_BYTES:-17179869184}"
-PETTA_AS_LIMIT_BYTES="${PETTA_AS_LIMIT_BYTES:-17179869184}"
 LOGDIR="$ROOT/parity_logs"
 mkdir -p "$LOGDIR"
 
@@ -97,9 +95,9 @@ run_one() {
   local status="PASS"
 
   if [[ "$engine" == "CeTTa" ]]; then
-    timeout "$RUN_TIMEOUT_SECONDS" prlimit --as="$CETTA_AS_LIMIT_BYTES" -- "$CETTA" "$src" >"$log" 2>&1
+    timeout "$RUN_TIMEOUT_SECONDS" "$CETTA" "$src" >"$log" 2>&1
   else
-    timeout "$RUN_TIMEOUT_SECONDS" prlimit --as="$PETTA_AS_LIMIT_BYTES" -- "$PETTA" "$src" >"$log" 2>&1
+    timeout "$RUN_TIMEOUT_SECONDS" "$PETTA" "$src" >"$log" 2>&1
   fi
 
   local code=$?

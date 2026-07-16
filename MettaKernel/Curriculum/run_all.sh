@@ -9,8 +9,9 @@
 # Usage:  bash run_all.sh
 # ============================================================================
 set -u
-cd "$(dirname "$0")"
-AIHUB="${AIHUB:-$(cd "$(dirname "$0")/../../.." && pwd)}"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+cd "$SCRIPT_DIR"
+AIHUB="${AIHUB:-$(cd "$SCRIPT_DIR/../../.." && pwd)}"
 eval "$(opam env 2>/dev/null)" 2>/dev/null || true
 OCAMLRUNPARAM="${OCAMLRUNPARAM:-s=4M}"
 COQC="$(command -v coqc || echo "$HOME/.opam/default/bin/coqc")"
@@ -21,8 +22,6 @@ CETTA="${CETTA:-$AIHUB/hyperon/CeTTa/cetta}"
 PETTA="${PETTA:-$AIHUB/hyperon/PeTTa/run.sh}"
 LEATTA="${LEATTA:-$AIHUB/Mettapedia/lean/externals/LeaTTa/.lake/build/bin/LeaTTa}"
 CETTA_EXTRA_ARGS="${CETTA_EXTRA_ARGS---eval-hashcons}"
-CETTA_AS_LIMIT_BYTES="${CETTA_AS_LIMIT_BYTES:-25769803776}"
-PETTA_AS_LIMIT_BYTES="${PETTA_AS_LIMIT_BYTES:-25769803776}"
 CETTA_TIMEOUT_SECONDS="${CETTA_TIMEOUT_SECONDS:-240}"
 DED_DK_REPO="${DED_DK_REPO:-$AIHUB/repos/dedukti}"
 DED_DK="${DED_DK:-$DED_DK_REPO/_build/default/commands/main.exe}"
@@ -32,8 +31,6 @@ export CETTA
 export PETTA
 export LEATTA
 export CETTA_EXTRA_ARGS
-export CETTA_AS_LIMIT_BYTES
-export PETTA_AS_LIMIT_BYTES
 export CETTA_TIMEOUT_SECONDS
 export HOLLIGHT_DIR
 export OCAMLRUNPARAM
@@ -52,14 +49,14 @@ meg_args() {  # echo "-I <preamble>" from a sidecar "<file>.pre" (a leading comm
   [ -n "$pre" ] && printf -- '-I\n%s\n' "$PRE_DIR/$pre"
 }
 
-run_cetta_capped() {
+run_cetta() {
   local file="$1"
-  timeout "$CETTA_TIMEOUT_SECONDS" prlimit --as="$CETTA_AS_LIMIT_BYTES" -- "$CETTA" "${CETTA_EXTRA_ARGV[@]}" "$file"
+  timeout "$CETTA_TIMEOUT_SECONDS" "$CETTA" "${CETTA_EXTRA_ARGV[@]}" "$file"
 }
 
-run_petta_capped() {
+run_petta() {
   local file="$1"
-  timeout "$CETTA_TIMEOUT_SECONDS" prlimit --as="$PETTA_AS_LIMIT_BYTES" -- "$PETTA" "$file"
+  timeout "$CETTA_TIMEOUT_SECONDS" "$PETTA" "$file"
 }
 
 run_leatta_oracle() {
@@ -118,6 +115,23 @@ for f in Lean/neg_*.lean; do [ -e "$f" ] || continue
   if "$LEAN" "$f" >"$log" 2>&1; then echo "  [neg] $(basename "$f")  NOT CAUGHT  X"; missed=$((missed+1))
   else echo "  [neg] $(basename "$f")  caught: $(grep -m1 -i error "$log" | cut -c1-58)"; caught=$((caught+1)); fi
 done
+
+echo "================= DTTBENCH (external inhabitation oracle) ================="
+DTTBENCH_GATE="$SCRIPT_DIR/DTTBench/run_dttbench_gate.sh"
+DTTBENCH_SOURCE="${DTTBENCH_DIR:-$AIHUB/repos/Canonical-min}"
+if [ ! -x "$DTTBENCH_GATE" ]; then
+  echo "  [dttbench] gate missing"
+  pfail=$((pfail+1))
+elif [ ! -d "$DTTBENCH_SOURCE/.git" ]; then
+  echo "  [toolchain-down] DTTBench source checkout unavailable"
+elif DTTBENCH_DIR="$DTTBENCH_SOURCE" "$DTTBENCH_GATE" >"$log" 2>&1; then
+  echo "  [dttbench] 31 generated terms replayed through Lean  OK  (axiom-free; negative caught)"
+  thms=$((thms+31)); caught=$((caught+1)); pass=$((pass+1))
+else
+  echo "  [dttbench] replay gate FAIL"
+  tail -16 "$log" | sed 's/^/        /'
+  pfail=$((pfail+1))
+fi
 
 echo "================= MEGALODON (HO-Set / HOTG) ================="
 for f in Megalodon/[0-9]*.mg; do [ -e "$f" ] || continue
@@ -190,9 +204,25 @@ if [ -f CrossSmoke/smoke.mg ]; then
   if "$MEG" CrossSmoke/smoke.mg >"$log" 2>&1; then tc=$(mcount CrossSmoke/smoke.mg); thms=$((thms+tc)); echo "  [pos] smoke.mg   OK  (${tc} thms)"; pass=$((pass+1)); else echo "  [pos] smoke.mg FAIL"; tail -4 "$log"|sed 's/^/        /'; pfail=$((pfail+1)); fi
 fi
 
+echo "================= GSLT RUNTIME SOURCE ADMISSION (CeTTa) ================="
+GSLT_SOURCE_GATE="$AIHUB/Mettapedia/MettaKernel/kernel/run_gslt_checked_source_v1_gate.sh"
+if [ -x "$GSLT_SOURCE_GATE" ]; then
+  if "$GSLT_SOURCE_GATE" >"$log" 2>&1; then
+    echo "  [source-admission] GSLT source package V1  OK  (23 assertions)"
+    pass=$((pass+1))
+  else
+    echo "  [source-admission] GSLT source package V1  FAIL"
+    tail -12 "$log" | sed 's/^/        /'
+    pfail=$((pfail+1))
+  fi
+else
+  echo "  [source-admission] GSLT source package V1 gate missing"
+  pfail=$((pfail+1))
+fi
+
 echo "================= NOTATION / LANGUAGEDEF L0 ADEQUACY (CeTTa) ================="
 for f in Notation/*.metta; do [ -e "$f" ] || continue
-  if run_cetta_capped "$f" >"$log" 2>&1; then
+  if run_cetta "$f" >"$log" 2>&1; then
     tc=$(grep -c '^!(assertEqual' "$f")
     echo "  [oracle] $(basename "$f")  OK  (${tc} assertions)"
     pass=$((pass+1))
@@ -234,7 +264,7 @@ for f in DeduktiLambdapi/neg_*.dk; do [ -e "$f" ] || continue
   fi
 done
 for f in DeduktiLambdapi/[0-9]*.metta; do [ -e "$f" ] || continue
-  if run_cetta_capped "$f" >"$log" 2>&1; then
+  if run_cetta "$f" >"$log" 2>&1; then
     tc=$(grep -c '^!(assertEqual' "$f")
     echo "  [guest] $(basename "$f")  OK  (${tc} assertions)"
     pass=$((pass+1))
@@ -258,7 +288,7 @@ fi
 echo "================= GRADED MODAL / BRIDGE SEEDS (CeTTa) ================="
 graded_modal_files=(../kernel/ocoherence_hm_adequacy_v1.metta ../kernel/imp_coherence_exp1.metta)
 for f in "${graded_modal_files[@]}"; do [ -e "$f" ] || continue
-  if run_cetta_capped "$f" >"$log" 2>&1; then
+  if run_cetta "$f" >"$log" 2>&1; then
     tc=$(grep -c '^!(assertEqual' "$f")
     echo "  [graded] $(basename "$f")  OK  (${tc} assertions)"
     pass=$((pass+1))
@@ -341,8 +371,8 @@ echo "================= PROGRAM VERIFICATION (4th pillar) ================="
 echo "================= VERIFIED METTA (LeaTTa corpus + engines) ================="
 for f in VerifiedMeTTa/[0-9]*.metta; do [ -e "$f" ] || continue
   if run_leatta_oracle "$f" >"$log" 2>&1 &&
-     run_cetta_capped "$f" >>"$log" 2>&1 &&
-     run_petta_capped "$f" >>"$log" 2>&1; then
+     run_cetta "$f" >>"$log" 2>&1 &&
+     run_petta "$f" >>"$log" 2>&1; then
     tc=$(grep -c '^!(assertEqual' "$f")
     echo "  [engines] $(basename "$f")  OK  (${tc} assertions x LeaTTa/CeTTa/PeTTa)"
     pass=$((pass+1))

@@ -1,0 +1,2 @@
+repository	revision	lean_toolchain	corpus_files	declarations	curriculum_role	he_prime_frontier
+https://github.com/chasenorman/Canonical-min.git	f893c756591b3a9aa086feb3f2754e6af12df747	leanprover/lean4:v4.28.0	5	31	external inhabitation oracle; generated suggestions must be replayed through Lean without admits	telescope introduction followed by dependent motive synthesis and pattern unification

@@ -9,7 +9,6 @@ set -u
 DIR="$(cd "$(dirname "$0")" && pwd)"
 CETTA="${CETTA:-/home/aimama/aihub/hyperon/CeTTa/cetta}"
 CETTA_EXTRA_ARGS="${CETTA_EXTRA_ARGS---eval-hashcons}"
-CETTA_AS_LIMIT_BYTES="${CETTA_AS_LIMIT_BYTES:-25769803776}"
 CETTA_TIMEOUT_SECONDS="${CETTA_TIMEOUT_SECONDS:-240}"
 MUTATION_TIMEOUT_SECONDS="${MUTATION_TIMEOUT_SECONDS:-10}"
 read -r -a CETTA_EXTRA_ARGV <<< "$CETTA_EXTRA_ARGS"
@@ -23,20 +22,20 @@ trap 'rm -rf "$work"' EXIT
 
 failures=0
 
-run_cetta_capped() {
+run_cetta() {
   local file="$1"
-  timeout "$CETTA_TIMEOUT_SECONDS" prlimit --as="$CETTA_AS_LIMIT_BYTES" -- "$CETTA" "${CETTA_EXTRA_ARGV[@]}" "$file"
+  timeout "$CETTA_TIMEOUT_SECONDS" "$CETTA" "${CETTA_EXTRA_ARGV[@]}" "$file"
 }
 
-run_cetta_mutation_capped() {
+run_cetta_mutation() {
   local file="$1"
-  timeout "$MUTATION_TIMEOUT_SECONDS" prlimit --as="$CETTA_AS_LIMIT_BYTES" -- "$CETTA" "${CETTA_EXTRA_ARGV[@]}" "$file"
+  timeout "$MUTATION_TIMEOUT_SECONDS" "$CETTA" "${CETTA_EXTRA_ARGV[@]}" "$file"
 }
 
 expect_accept() {
   local name="$1"
   local file="$2"
-  if run_cetta_capped "$file" >"$work/$name.out" 2>&1 && ! grep -q '(Error' "$work/$name.out"; then
+  if run_cetta "$file" >"$work/$name.out" 2>&1 && ! grep -q '(Error' "$work/$name.out"; then
     echo "  [baseline] $name  passed"
   else
     echo "  [baseline] $name  FAILED (mutation setup is invalid)"
@@ -48,7 +47,7 @@ expect_accept() {
 expect_reject() {
   local name="$1"
   local file="$2"
-  run_cetta_mutation_capped "$file" >"$work/$name.out" 2>&1
+  run_cetta_mutation "$file" >"$work/$name.out" 2>&1
   local status=$?
   if [ "$status" -eq 124 ]; then
     echo "  [mutation] $name  caught (timeout)"
@@ -250,12 +249,12 @@ expect_reject "metta-self-broken-resugar" "$work/metta_self_broken_resugar.metta
 
 cp "$DIR/06_metta_self_concrete_syntax.metta" "$work/metta_self_noninjective_admission.metta"
 mutate_file_exact "$work/metta_self_noninjective_admission.metta" \
-  '(if (ms-token-member? (ms-token $n) $r)
+  '(if (ms-is-token-member (ms-token $n) $r)
      False
-     (if (ms-head-member? (ms-head $n) $r) False (ms-admit $r)))' \
+     (if (ms-is-head-member (ms-head $n) $r) False (ms-admit $r)))' \
   '(if False
      False
-     (if (ms-head-member? (ms-head $n) $r) False (ms-admit $r)))'
+     (if (ms-is-head-member (ms-head $n) $r) False (ms-admit $r)))'
 expect_reject "metta-self-noninjective-admission" "$work/metta_self_noninjective_admission.metta"
 
 cp "$DIR/06_metta_self_concrete_syntax.metta" "$work/metta_self_parser_trust_bypass.metta"

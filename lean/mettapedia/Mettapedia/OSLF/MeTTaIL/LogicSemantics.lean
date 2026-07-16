@@ -1581,7 +1581,16 @@ theorem unsafeVariableFactLang_not_safe :
 
 theorem unsafeVariableFactLang_validate_rejects :
     LanguageDef.validate unsafeVariableFactLang ≠ [] := by
-  decide
+  apply List.ne_nil_of_mem (a :=
+    ({ context := "UnsafeVariableFact",
+       message := "unsafe Datalog clause unsafe-variable-fact: head variable not in body" } :
+      ValidationError))
+  simp [LanguageDef.validate, LanguageDef.empty, LanguageDef.typeNames,
+    unsafeVariableFactLang, unsafeVariableFactClause, DatalogClause.isSafe]
+  right
+  constructor
+  · exact ⟨"X", by simp [DatalogAtom.vars]⟩
+  · rfl
 
 theorem unsafeVariableFactAtom_in_leastModel :
     unsafeVariableFactAtom ∈

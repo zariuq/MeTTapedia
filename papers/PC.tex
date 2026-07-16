@@ -932,22 +932,61 @@ under identical budgets. Cumulative solved OEIS sequences:
 \midrule
 BP, world 1 & 8{,}752 & 11{,}709 & 13{,}224 & 14{,}566 & 15{,}852 \\
 BP, world 2 & 8{,}361 & 11{,}291 & 13{,}250 & 15{,}054 & 16{,}081 \\
-BP, world 3 & 8{,}627 & 11{,}510 & 13{,}267 & 14{,}793 & \emph{in progress} \\
+BP, world 3 & 8{,}627 & 11{,}510 & 13{,}267 & 14{,}793 & 15{,}843 \\
 PC, world 1 & 6{,}465 & 6{,}914 & 9{,}067 & 9{,}486 & 10{,}211 \\
 PC, world 2 & 6{,}093 & 8{,}031 & 8{,}359 & 9{,}195 & 9{,}411 \\
-PC, world 3 & 7{,}548 & 7{,}548 & 8{,}820 & 10{,}111 & \emph{in progress} \\
+PC, world 3 & 7{,}548 & 7{,}548 & 8{,}820 & 10{,}111 & 10{,}296 \\
 \midrule
-PC/BP ratio & 78\% & 65\% & 66\% & 65\% & 61.4\% (w1--w2) \\
+PC/BP ratio & 78\% & 65\% & 66\% & 65\% & 62.6\% \\
 \bottomrule
 \end{tabular}
 \end{center}
 
-BP compounds metronomically: per-generation deltas agree across worlds within $\pm1.3\%$
-at generation~2, endpoints within $\sim$3\%. PC ignites but advances in erratic bursts
+BP compounds metronomically: the three endpoints land within $1.5\%$ of one another
+($15{,}843$--$16{,}081$). PC ignites but advances in erratic bursts
 --- including one genuine zero-progress generation (world~3, generation~2, byte-identical
-solution set) --- and settles between $58\%$ and $65\%$ of BP's frontier (world~1
-$64.4\%$, world~2 $58.5\%$ at generation~5). The final three-world verdict follows the
-pre-registered analysis when world~3's generation-5 runs seal.
+solution set) --- and finishes between $58.5\%$ and $65.0\%$ of BP's frontier (world~1
+$64.4\%$, world~2 $58.5\%$, world~3 $65.0\%$), $62.6\%$ in aggregate. Same frozen start,
+same search budget: the learning rule alone costs a third of the frontier, at
+$32$ settling steps' training overhead.
+
+\paragraph{Unique coverage: does PC find solutions BP does not?}
+Yes, and the answer has a shape. Per world, PC solves $242/277/286$ sequences its paired
+BP arm misses ($\approx 2.5\%$ of PC's own catalogue, against $\sim 6{,}000$ the other
+way). Pooling all three worlds, PC's union contributes $246$ sequences that \emph{no} BP
+world solved --- a combined catalogue of $19{,}280$ against BP's $19{,}034$. One case is
+reproducible rather than stochastic: a single sequence (\texttt{A087299}) solved by PC in
+all three independently evolved worlds, by BP in none, with the \emph{identical}
+$11$-token program each time --- an existence proof that the two rules steer search into
+genuinely different territory. The mechanism is visible in program lengths (first-listed
+program per solved sequence, pooled over worlds): the sequences only BP solved take
+median-$24$-token programs (mean $32.4$), the sequences only PC solved median $19$ (mean
+$20.7$), and at the generation-five frontier the gap widens --- BP's newly solved
+sequences run to median $40$ tokens (mean $47.3$) against PC's $25$ (mean $28.1$).
+Decisive guidance sustains long derivations; flatter guidance spreads mass across short
+ones and occasionally covers a short solution that confident-but-elsewhere mass walks
+past. The economics, however, are
+one-sided: adding a \emph{second BP world} contributed $2{,}241$ new sequences and a third
+$941$, so as a diversity source PC is dominated several-fold by re-running BP on a fresh
+seed --- on this topology. Whether richer topologies (residual adapters on a frozen
+backbone --- the one regime the depth theorems endorse --- or graph-structured models)
+change PC's standing is deliberately left open and would require a separately registered
+comparison.
+
+\paragraph{Campaign closure and provenance.}
+All thirty phase artifacts (three worlds $\times$ two arms $\times$ five guided
+generations) are sealed with per-file SHA-256 evidence manifests, and every number in
+this subsection was recomputed from those sealed artifacts before publication. The
+zero-progress generation is hash-verified: world~3's PC solution file carries the
+identical digest at generations one and two. Four operational amendments were filed
+during the run --- memory-floor recovery and driver-relaunch policy --- each sealed
+against the campaign seal and each recording \emph{protocol unchanged, science
+parameters unchanged}; the arms, the checker, and the validation path were never
+touched. The campaign halted at generation five, the pre-declared mandatory guided
+generation, by an operator decision recorded before the final arms completed; the
+protocol's adaptive stopping rule (earliest adaptive stop at generation seven, hard stop
+at ten) was consequently never evaluated, and no claim here rests on it. Extending the
+same frozen worlds toward the hard stop remains available as a pre-registered fork.
 
 \subsection{The seq2seq ignition ladder}
 \label{sec:ladder}

@@ -18,7 +18,7 @@
 (= (ms-hd $e) (car-atom $e))
 (= (ms-tl $e) (cdr-atom $e))
 (= (ms-cns $x $y) (cons-atom $x $y))
-(= (ms-expr? $e) (== (get-metatype $e) Expression))
+(= (ms-is-expr $e) (== (get-metatype $e) Expression))
 (= (ms-elen $e) (if (== $e ()) 0 (+ 1 (ms-elen (ms-tl $e)))))
 
 ; ---------- notation table ---------------------------------------------------
@@ -33,38 +33,38 @@
 (= (ms-head  (NNote $h $tok $fix)) $h)
 (= (ms-fix   (NNote $h $tok $fix)) $fix)
 
-(= (ms-token-member? $tok Nil) False)
-(= (ms-token-member? $tok (Cons $n $r))
-   (if (== $tok (ms-token $n)) True (ms-token-member? $tok $r)))
-(= (ms-head-member? $head Nil) False)
-(= (ms-head-member? $head (Cons $n $r))
-   (if (== $head (ms-head $n)) True (ms-head-member? $head $r)))
+(= (ms-is-token-member $tok Nil) False)
+(= (ms-is-token-member $tok (Cons $n $r))
+   (if (== $tok (ms-token $n)) True (ms-is-token-member $tok $r)))
+(= (ms-is-head-member $head Nil) False)
+(= (ms-is-head-member $head (Cons $n $r))
+   (if (== $head (ms-head $n)) True (ms-is-head-member $head $r)))
 
 (= (ms-admit Nil) True)
 (= (ms-admit (Cons $n $r))
-   (if (ms-token-member? (ms-token $n) $r)
+   (if (ms-is-token-member (ms-token $n) $r)
      False
-     (if (ms-head-member? (ms-head $n) $r) False (ms-admit $r))))
+     (if (ms-is-head-member (ms-head $n) $r) False (ms-admit $r))))
 
 (= (ms-bad-dup-token) (Cons (NNote plus plus infix) (Cons (NNote times plus infix) Nil)))
 (= (ms-bad-ambig-head) (Cons (NNote plus plus infix) (Cons (NNote plus plus prefix) Nil)))
 
-(= (ms-inf-head? $head Nil) False)
-(= (ms-inf-head? $head (Cons $n $r))
+(= (ms-is-inf-head $head Nil) False)
+(= (ms-is-inf-head $head (Cons $n $r))
    (if (== (ms-fix $n) infix)
-     (if (== $head (ms-head $n)) True (ms-inf-head? $head $r))
-     (ms-inf-head? $head $r)))
-(= (ms-inf-token? $tok Nil) False)
-(= (ms-inf-token? $tok (Cons $n $r))
+     (if (== $head (ms-head $n)) True (ms-is-inf-head $head $r))
+     (ms-is-inf-head $head $r)))
+(= (ms-is-inf-token $tok Nil) False)
+(= (ms-is-inf-token $tok (Cons $n $r))
    (if (== (ms-fix $n) infix)
-     (if (== $tok (ms-token $n)) True (ms-inf-token? $tok $r))
-     (ms-inf-token? $tok $r)))
-(= (ms-is-inf-head $h) (ms-inf-head? $h (ms-ntbl)))
-(= (ms-is-inf-token $t) (ms-inf-token? $t (ms-ntbl)))
+     (if (== $tok (ms-token $n)) True (ms-is-inf-token $tok $r))
+     (ms-is-inf-token $tok $r)))
+(= (ms-is-inf-head $h) (ms-is-inf-head $h (ms-ntbl)))
+(= (ms-is-inf-token $t) (ms-is-inf-token $t (ms-ntbl)))
 
 ; ---------- desugar / resugar ------------------------------------------------
 ; Desugar concrete syntax `(a plus b)` into canonical `(plus a b)` and recurse.
-(= (ms-desugar $e) (if (ms-expr? $e) (ms-desugar-e $e) $e))
+(= (ms-desugar $e) (if (ms-is-expr $e) (ms-desugar-e $e) $e))
 (= (ms-desugar-e $e) (if (== (ms-elen $e) 3) (ms-desugar-3 $e) (ms-map-de $e)))
 (= (ms-desugar-3 $e)
    (let $op (ms-hd (ms-tl $e))
@@ -77,7 +77,7 @@
    (if (== $e ()) () (ms-cns (ms-desugar (ms-hd $e)) (ms-map-de (ms-tl $e)))))
 
 ; Resugar canonical `(plus a b)` into concrete syntax `(a plus b)` and recurse.
-(= (ms-resugar $e) (if (ms-expr? $e) (ms-resugar-e $e) $e))
+(= (ms-resugar $e) (if (ms-is-expr $e) (ms-resugar-e $e) $e))
 (= (ms-resugar-e $e) (if (== (ms-elen $e) 3) (ms-resugar-3 $e) (ms-map-re $e)))
 (= (ms-resugar-3 $e)
    (let $op (ms-hd $e)
@@ -98,9 +98,9 @@
 ; parsing/desugaring may succeed, but only checked nat-plus terms evaluate.
 (= (ms-and True $y) $y)
 (= (ms-and False $y) False)
-(= (ms-nat? $e) (unify $e z True (unify $e (s $n) (ms-nat? $n) False)))
+(= (ms-is-nat $e) (unify $e z True (unify $e (s $n) (ms-is-nat $n) False)))
 (= (ms-check $e)
-   (unify $e (plus $a $b) (ms-and (ms-nat? $a) (ms-nat? $b)) False))
+   (unify $e (plus $a $b) (ms-and (ms-is-nat $a) (ms-is-nat $b)) False))
 (= (ms-eval $e) (if (ms-check $e) (ms-eval-ok $e) (Err check-failed)))
 (= (ms-eval-ok $e)
    (unify $e (plus z $b)

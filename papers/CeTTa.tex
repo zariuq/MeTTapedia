@@ -1829,17 +1829,23 @@ base type to another through \code{\%Undefined\%} by wrapping it in a
 constructor.
 
 \paragraph{Type-level computation.}  Dependent codomains may contain
-computation, so conversion is capability-gated: grounded operations
-reduce inside types only from an explicit list of deterministic,
-effect-free operations, and anything effectful (space mutation, I/O,
-foreign calls) is refused with
-\code{(he-reject (type-computation-inadmissible))} and never executes.
-The typing operations' declared types stage their term and type
-arguments (\code{Atom} parameters), so argument evaluation cannot run
-an effect before the checker rules on it.  User functions marked
-\code{type-level-function} evaluate against a fuel-bounded snapshot
-whose space effects are discarded --- a scoped experimental policy,
-stated as such, not a purity judgment.
+computation, so conversion is capability-gated at two levels with
+different strengths.  A \emph{direct} grounded operation reduces inside
+a type only if it lies on an explicit allowlist of deterministic,
+effect-free operations; any other direct grounded call --- space
+mutation, I/O, a foreign call --- is refused with
+\code{(he-reject (type-computation-inadmissible))} before dispatch and
+never executes.  The typing operations' declared types stage their term
+and type arguments (\code{Atom} parameters), so argument evaluation
+cannot run an effect before the checker rules on it.  A \emph{user}
+function marked \code{type-level-function} is a weaker boundary: it
+evaluates against a fuel-bounded snapshot clone, so its \emph{space}
+mutations are isolated and discarded, but external effects (for
+example I/O routed through the evaluator) are \emph{not}
+capability-contained.  That path is trusted and experimental; full
+effect exclusion would require evaluator-level effect capabilities or a
+separate pure type-reduction evaluator, not a marker plus a space
+clone.
 
 \paragraph{Search as inhabitation.}  \code{type-inhabit-first}
 performs Curry--Howard backward chaining: rules are arrow-typed
@@ -1852,6 +1858,30 @@ never stands as an inhabitant.  Forward chaining
 (\code{type-forward-closure}) reports \code{complete} only on a
 reached fixpoint, and otherwise \code{resource-incomplete} or
 \code{rounds-exhausted}, under one aggregate fuel budget.
+
+\paragraph{Multi-answer enumeration.}  \code{type-inhabit} generalizes
+the existential search to a lossless multi-answer interface built on an
+explicit choice-point machine rather than eager recursive vectors.
+Premise proofs are pulled on demand from immutable resumable
+continuations, so distinct witnesses of one premise stay distinct
+top-level proofs --- for a rule $A\to B\to C$ with two inhabitants of
+$A$, both proofs of $C$ are returned --- and the requested top-level
+answer count is never propagated into a child search.  A ranked work
+queue schedules the finite depth-bounded candidates fairly, so a
+recursive rule listed before a direct one cannot starve the shallower
+finite proof.  Answers are identified \emph{losslessly}: two derivations
+are the same answer only when their canonicalized proof term, the
+substitution of the original query variables, and the re-checked
+normalized type all coincide, so proofs that differ only in a computed
+truth value or evidence term remain distinct.  The interface is
+\emph{prefix-preserving} --- increasing the answer count or the fuel
+budget never removes or reorders an earlier answer; reaching the
+requested count with work still pending reports \code{more-possible},
+and exhausting fuel returns the answers already found under
+\code{resource-incomplete}.  This is an operational fairness guarantee
+over the bounded search space, not a general enumeration-completeness
+theorem: outside a certified-deterministic or completed-finite fragment
+the honest verdict remains \code{more-possible}.
 
 \paragraph{Dependent-typed PLN, running.}  The payoff is the standard
 PLN idiom with truth-value formulas in rule codomains --- the

@@ -15,7 +15,7 @@ EXACT_DEFS="$ROOT/kernel_signature_lf_indexed_sr_exact_defs_$$.metta"
 trap 'rm -rf "$TMP" "$MUT_INDEXED" "$EXACT_DEFS"' EXIT
 
 pass_count() {
-  timeout 180 prlimit --as=17179869184 -- "$CETTA" "$1" 2>/dev/null | grep -cE '\[\(\)\]'
+  timeout 180 "$CETTA" "$1" 2>/dev/null | grep -cE '\[\(\)\]'
 }
 
 lit_replace() {
@@ -43,7 +43,7 @@ run_exact() {
    (kernel-check (good-sig-G) (id-j-indg-typed) (Con nat))
    (Ok (CheckedPrf ANil (id-j-indg-typed) (Con nat))))' \
     '!(println! (kernel-check (good-sig-G) (id-j-indg-typed) (Con nat)))'
-  timeout 180 prlimit --as=17179869184 -- "$CETTA" "$EXACT_DEFS" >"$log" 2>&1
+  timeout 180 "$CETTA" "$EXACT_DEFS" >"$log" 2>&1
   local status verdict
   status="reason-missing"
   verdict="MISSED"

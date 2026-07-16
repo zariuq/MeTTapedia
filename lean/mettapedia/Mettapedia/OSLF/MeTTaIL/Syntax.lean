@@ -389,7 +389,10 @@ deriving Repr, DecidableEq
     - `.lambda binderName? body`: binder — `binderName?` preserves the authored name
       for export/diagnostics, BVar 0 = the bound variable
     - `.subst body repl`: substitute `repl` for BVar 0 in `body`
-    α-equivalent patterns are definitionally equal (binder name is metadata). -/
+    Binder names are retained metadata, so structural equality sees them.
+    Direct lambda matching ignores display names; repeated metavariable
+    consistency remains structural until a canonical-metadata profile is
+    admitted. -/
 inductive Pattern where
   | bvar : Nat → Pattern
   | fvar : String → Pattern
@@ -694,7 +697,7 @@ decreasing_by
 structure FreshnessCondition where
   varName : String
   term : Pattern
-deriving Repr
+deriving Repr, DecidableEq
 
 /-- Premises for rules -/
 inductive Premise where
@@ -702,7 +705,7 @@ inductive Premise where
   | congruence : Pattern → Pattern → Premise
   | relationQuery : String → List Pattern → Premise
   | forAll : String → String → Premise → Premise
-deriving Repr
+deriving Repr, DecidableEq
 
 def Premise.renderJson : Premise → String
   | .freshness fc =>
@@ -960,6 +963,34 @@ def render (err : ValidationError) : String :=
 
 end ValidationError
 
+/-! Relation modes are execution-profile data. They are deliberately separate
+from relation signatures until the Metamath and HOL anchors determine whether
+modes belong in the common presentation schema. -/
+
+inductive RelationArgMode where
+  | input
+  | output
+deriving Repr, DecidableEq, BEq
+
+structure RelationModeDecl where
+  relation : String
+  args : List RelationArgMode
+deriving Repr, DecidableEq
+
+abbrev RelationModeTable := List RelationModeDecl
+
+namespace RelationModeTable
+
+/-- Look up an unambiguous mode declaration at an exact arity. Missing and
+duplicate declarations both fail closed. -/
+def lookup? (table : RelationModeTable) (relation : String) (arity : Nat) :
+    Option (List RelationArgMode) :=
+  match table.filter fun decl => decl.relation == relation && decl.args.length == arity with
+  | [decl] => some decl.args
+  | _ => none
+
+end RelationModeTable
+
 namespace TypeExpr
 
 /-- Base type names referenced by a type expression. -/
@@ -973,24 +1004,118 @@ end TypeExpr
 
 namespace Pattern
 
-/-- Constructor references occurring in a pattern, paired with arity. -/
-partial def constructorRefs : Pattern → List (String × Nat)
+mutual
+  /-- Constructor references occurring in a pattern, paired with arity.
+  The three well-formed metasyntax applications are structural and therefore
+  do not count their outer heads as language constructors. -/
+  def constructorRefs : Pattern → List (String × Nat)
+    | .bvar _ => []
+    | .fvar _ => []
+    | .apply ctor args =>
+        let nested := constructorRefsList args
+        match ctor, args with
+        | "$zip", [_, _] => nested
+        | "$map", [_, .multiLambda _ _ _] => nested
+        | "$eval", [_, _] => nested
+        | _, _ => (ctor, args.length) :: nested
+    | .lambda _ body => constructorRefs body
+    | .multiLambda _ _ body => constructorRefs body
+    | .subst body repl => constructorRefs body ++ constructorRefs repl
+    | .collection _ elems _ => constructorRefsList elems
+
+  def constructorRefsList : List Pattern → List (String × Nat)
+    | [] => []
+    | pattern :: patterns =>
+        constructorRefs pattern ++ constructorRefsList patterns
+end
+
+/-- Named metavariable positions in a pattern. Lambda binder names are only
+export/diagnostic metadata in the locally nameless representation; actual
+bound occurrences are `.bvar` and therefore do not appear here. Collection
+rest names are metavariable positions and do appear. -/
+def freeFvarNames : Pattern → List String
   | .bvar _ => []
-  | .fvar _ => []
-  | pat@(.apply ctor args) =>
-      match Pattern.zipArgs? pat with
-      | some (first, second) => constructorRefs first ++ constructorRefs second
-      | none =>
-          match Pattern.mapArgs? pat with
-          | some (source, _, body) => constructorRefs source ++ constructorRefs body
-          | none =>
-              match Pattern.evalArgs? pat with
-              | some (scope, repl) => constructorRefs scope ++ constructorRefs repl
-              | none => (ctor, args.length) :: (args.flatMap constructorRefs)
-  | .lambda _ body => constructorRefs body
-  | .multiLambda _ _ body => constructorRefs body
-  | .subst body repl => constructorRefs body ++ constructorRefs repl
-  | .collection _ elems _ => elems.flatMap constructorRefs
+  | .fvar name => [name]
+  | .apply _ args => args.flatMap freeFvarNames
+  | .lambda _ body => freeFvarNames body
+  | .multiLambda _ _ body => freeFvarNames body
+  | .subst body replacement => freeFvarNames body ++ freeFvarNames replacement
+  | .collection _ elems rest =>
+      elems.flatMap freeFvarNames ++ rest.toList
+
+mutual
+
+/-- Locally closed, metavariable-free patterns at a binder depth.  A
+collection rest is a metavariable position.  A substitution body is checked
+under one additional de Bruijn binder because `subst body replacement`
+eliminates `body`'s index zero. -/
+def isGroundAt (depth : Nat) : Pattern → Bool
+  | .bvar index => decide (index < depth)
+  | .fvar _ => false
+  | .apply _ args => isGroundListAt depth args
+  | .lambda _ body => isGroundAt (depth + 1) body
+  | .multiLambda arity _ body => isGroundAt (depth + arity) body
+  | .subst body replacement =>
+      isGroundAt (depth + 1) body && isGroundAt depth replacement
+  | .collection _ elems rest =>
+      isGroundListAt depth elems && rest.isNone
+
+def isGroundListAt (depth : Nat) : List Pattern → Bool
+  | [] => true
+  | pattern :: rest => isGroundAt depth pattern && isGroundListAt depth rest
+
+end
+
+/-- Closed executable data: no free pattern metavariables, no unresolved
+collection rest, and every de Bruijn index is in scope. -/
+def isGround (pattern : Pattern) : Bool := pattern.isGroundAt 0
+
+mutual
+
+/-- Locally closed pattern schema at a binder depth.  Unlike `isGroundAt`,
+free metavariables and collection-rest metavariables are permitted; de Bruijn
+indices must still be in scope. -/
+def isWellScopedAt (depth : Nat) : Pattern → Bool
+  | .bvar index => decide (index < depth)
+  | .fvar _ => true
+  | .apply _ args => isWellScopedListAt depth args
+  | .lambda _ body => isWellScopedAt (depth + 1) body
+  | .multiLambda arity _ body => isWellScopedAt (depth + arity) body
+  | .subst body replacement =>
+      isWellScopedAt (depth + 1) body && isWellScopedAt depth replacement
+  | .collection _ elems _ => isWellScopedListAt depth elems
+
+def isWellScopedListAt (depth : Nat) : List Pattern → Bool
+  | [] => true
+  | pattern :: rest =>
+      isWellScopedAt depth pattern && isWellScopedListAt depth rest
+
+end
+
+/-- Locally closed pattern schema at top level. -/
+def isWellScoped (pattern : Pattern) : Bool := pattern.isWellScopedAt 0
+
+mutual
+
+/-- Canonical locally nameless metadata profile.  Verified matching can require
+this form so structural equality and α-equivalence coincide; display names may
+be retained outside that boundary for diagnostics/export. -/
+def hasCanonicalBinderMetadata : Pattern → Bool
+  | .bvar _ | .fvar _ => true
+  | .apply _ args => hasCanonicalBinderMetadataList args
+  | .lambda binder body => binder.isNone && hasCanonicalBinderMetadata body
+  | .multiLambda _ binders body =>
+      binders.isEmpty && hasCanonicalBinderMetadata body
+  | .subst body replacement =>
+      hasCanonicalBinderMetadata body && hasCanonicalBinderMetadata replacement
+  | .collection _ elems _ => hasCanonicalBinderMetadataList elems
+
+def hasCanonicalBinderMetadataList : List Pattern → Bool
+  | [] => true
+  | pattern :: rest =>
+      hasCanonicalBinderMetadata pattern && hasCanonicalBinderMetadataList rest
+
+end
 
 end Pattern
 
@@ -1003,6 +1128,14 @@ def relationRefs : Premise → List String
   | .relationQuery rel _ => [rel]
   | .forAll _ _ body => relationRefs body
 
+/-- Relation calls paired with their authored arity, including nested `forAll`
+bodies. -/
+def relationCalls : Premise → List (String × Nat)
+  | .freshness _ => []
+  | .congruence _ _ => []
+  | .relationQuery relation args => [(relation, args.length)]
+  | .forAll _ _ body => relationCalls body
+
 end Premise
 
 namespace LanguageDef
@@ -1010,17 +1143,44 @@ namespace LanguageDef
 private def mkValidationError (context message : String) : ValidationError :=
   { context, message }
 
-private def duplicateErrors (context what : String) (names : List String) : List ValidationError :=
-  let rec go (seen : List String) (remaining : List String) : List ValidationError :=
-    match remaining with
-    | [] => []
-    | x :: xs =>
-        let rest := go (x :: seen) xs
-        if x ∈ seen then
-          mkValidationError context s!"duplicate {what} `{x}`" :: rest
-        else
-          rest
-  go [] names
+def duplicateErrorsAux
+    (context what : String) (seen remaining : List String) : List ValidationError :=
+  match remaining with
+  | [] => []
+  | name :: rest =>
+      let tailErrors := duplicateErrorsAux context what (name :: seen) rest
+      if name ∈ seen then
+        mkValidationError context s!"duplicate {what} `{name}`" :: tailErrors
+      else
+        tailErrors
+termination_by remaining.length
+
+def duplicateErrors (context what : String) (names : List String) : List ValidationError :=
+  duplicateErrorsAux context what [] names
+
+private theorem duplicateErrorsAux_eq_nil_of_nodup
+    (context what : String) (seen remaining : List String)
+    (hnodup : remaining.Nodup)
+    (hfresh : ∀ name ∈ remaining, name ∉ seen) :
+    duplicateErrorsAux context what seen remaining = [] := by
+  induction remaining generalizing seen with
+  | nil => simp [duplicateErrorsAux]
+  | cons name rest ih =>
+      have hsplit := List.nodup_cons.mp hnodup
+      have hname : name ∉ seen := hfresh name (by simp)
+      have htail : ∀ other ∈ rest, other ∉ name :: seen := by
+        intro other hother hmember
+        rcases List.mem_cons.mp hmember with heq | hseen
+        · exact hsplit.1 (heq ▸ hother)
+        · exact hfresh other (by simp [hother]) hseen
+      simp [duplicateErrorsAux, hname, ih (seen := name :: seen) hsplit.2 htail]
+
+/-- A duplicate scan produces no errors for a duplicate-free name list. -/
+@[simp] theorem duplicateErrors_eq_nil_of_nodup
+    (context what : String) (names : List String) (hnodup : names.Nodup) :
+    duplicateErrors context what names = [] := by
+  apply duplicateErrorsAux_eq_nil_of_nodup context what [] names hnodup
+  simp
 
 private def validateTypeExpr (knownTypes : List String) (context : String) (ty : TypeExpr) :
     List ValidationError :=
@@ -1030,9 +1190,20 @@ private def validateTypeExpr (knownTypes : List String) (context : String) (ty :
     else
       [mkValidationError context s!"unknown type `{name}`"]
 
+/-- A type expression contributes no validation errors when all of its base
+type names are declared. -/
+@[simp] theorem validateTypeExpr_eq_nil_of_baseNames
+    (knownTypes : List String) (context : String) (ty : TypeExpr)
+    (hknown : ∀ name ∈ ty.baseNames, name ∈ knownTypes) :
+    validateTypeExpr knownTypes context ty = [] := by
+  unfold validateTypeExpr
+  rw [List.flatMap_eq_nil_iff]
+  intro name hname
+  simp [hknown name hname]
+
 mutual
 
-private partial def validateSyntaxPatternOp
+private def validateSyntaxPatternOp
     (ctx : String)
     (bound : List String)
     (op : SyntaxPatternOp) : List ValidationError :=
@@ -1051,8 +1222,12 @@ private partial def validateSyntaxPatternOp
       validateSyntaxPatternItems ctx (params ++ bound) body
   | .opt inner =>
       validateSyntaxPatternItems ctx bound inner
+termination_by sizeOf op
+decreasing_by
+  all_goals simp_wf
+  all_goals omega
 
-private partial def validateSyntaxPatternItem
+private def validateSyntaxPatternItem
     (ctx : String)
     (bound : List String)
     (item : SyntaxItem) : List ValidationError :=
@@ -1063,12 +1238,23 @@ private partial def validateSyntaxPatternItem
   | .separator _ => []
   | .delimiter _ _ => []
   | .op op => validateSyntaxPatternOp ctx bound op
+termination_by sizeOf item
+decreasing_by
+  all_goals simp_wf
 
-private partial def validateSyntaxPatternItems
+private def validateSyntaxPatternItems
     (ctx : String)
     (bound : List String)
     (items : List SyntaxItem) : List ValidationError :=
-  items.flatMap (validateSyntaxPatternItem ctx bound)
+  match items with
+  | [] => []
+  | item :: rest =>
+      validateSyntaxPatternItem ctx bound item ++
+        validateSyntaxPatternItems ctx bound rest
+termination_by sizeOf items
+decreasing_by
+  all_goals simp_wf
+  all_goals omega
 
 end
 
@@ -1078,43 +1264,154 @@ private def validateSyntaxPattern
     (items : List SyntaxItem) : List ValidationError :=
   validateSyntaxPatternItems ctx boundNames items
 
-private def validatePatternConstructors
-    (ctx : String)
-    (knownConstructors : List String)
-    (checkConstructors : Bool)
-    (pat : Pattern) : List ValidationError :=
-  if !checkConstructors then
-    []
-  else
-    (Pattern.constructorRefs pat).flatMap fun (ctor, arity) =>
-      if arity = 0 ∨ ctor ∈ knownConstructors then
-        []
-      else
-        [mkValidationError ctx s!"unknown constructor `{ctor}`"]
+/-- An omitted surface-syntax pattern contributes no validation errors.
 
-private def validatePremises (ctx : String) (knownRelations : List String) (premises : List Premise) :
+This public simp lemma keeps the recursive syntax validator encapsulated while
+allowing constructor-only language definitions to discharge `validate = []`
+by kernel reduction. -/
+@[simp] theorem validateSyntaxPattern_nil (ctx : String) (boundNames : List String) :
+    validateSyntaxPattern ctx boundNames [] = [] := by
+  simp [validateSyntaxPattern, validateSyntaxPatternItems]
+
+private theorem validateSyntaxPatternItems_nonTerminals
+    (ctx : String) (boundNames names : List String)
+    (hbound : ∀ name ∈ names, name ∈ boundNames) :
+    validateSyntaxPatternItems ctx boundNames (names.map SyntaxItem.nonTerminal) = [] := by
+  induction names with
+  | nil => simp [validateSyntaxPatternItems]
+  | cons name names ih =>
+      have hname : name ∈ boundNames := hbound name (by simp)
+      have hrest : ∀ other ∈ names, other ∈ boundNames := by
+        intro other hother
+        exact hbound other (by simp [hother])
+      simp [validateSyntaxPatternItems, validateSyntaxPatternItem, hname, ih hrest]
+
+/-- Parameter-only concrete syntax is valid when every referenced nonterminal
+is among the constructor's bound parameter names. -/
+@[simp] theorem validateSyntaxPattern_nonTerminals
+    (ctx : String) (boundNames names : List String)
+    (hbound : ∀ name ∈ names, name ∈ boundNames) :
+    validateSyntaxPattern ctx boundNames (names.map SyntaxItem.nonTerminal) = [] := by
+  simpa [validateSyntaxPattern] using
+    validateSyntaxPatternItems_nonTerminals ctx boundNames names hbound
+
+/-- A first-order concrete-syntax row made only of literal terminals and
+declared nonterminal parameters contributes no validation errors. -/
+@[simp] theorem validateSyntaxPattern_terminalsAndBoundNonTerminals
+    (ctx : String) (boundNames : List String) (items : List SyntaxItem)
+    (allowed : ∀ item ∈ items,
+      match item with
+      | .terminal _ => True
+      | .nonTerminal name => name ∈ boundNames
+      | .separator _ | .delimiter _ _ | .op _ => False) :
+    validateSyntaxPattern ctx boundNames items = [] := by
+  unfold validateSyntaxPattern
+  induction items with
+  | nil => simp [validateSyntaxPatternItems]
+  | cons item rest inductionHypothesis =>
+      have headAllowed := allowed item (by simp)
+      have restAllowed : ∀ candidate ∈ rest,
+          match candidate with
+          | .terminal _ => True
+          | .nonTerminal name => name ∈ boundNames
+          | .separator _ | .delimiter _ _ | .op _ => False := by
+        intro candidate membership
+        exact allowed candidate (by simp [membership])
+      cases item with
+      | terminal token =>
+          simp [validateSyntaxPatternItems, validateSyntaxPatternItem,
+            inductionHypothesis restAllowed]
+      | nonTerminal name =>
+          simp [validateSyntaxPatternItems, validateSyntaxPatternItem,
+            headAllowed, inductionHypothesis restAllowed]
+      | separator token => contradiction
+      | delimiter openToken closeToken => contradiction
+      | op operation => contradiction
+
+/-- The canonical parameter-only syntax generated from a constructor
+signature passes syntax validation, including parameters that carry authored
+binder metadata. -/
+@[simp] theorem validateSyntaxPattern_termParameters
+    (ctx : String) (params : List TermParam) :
+    validateSyntaxPattern ctx
+      (params.flatMap fun param =>
+        TermParam.bodyName param :: TermParam.binderNames param)
+      (params.map fun param =>
+        SyntaxItem.nonTerminal (TermParam.bodyName param)) = [] := by
+  have hbound : ∀ name ∈ params.map TermParam.bodyName,
+      name ∈ params.flatMap (fun param =>
+        TermParam.bodyName param :: TermParam.binderNames param) := by
+    intro name hname
+    simp only [List.mem_map] at hname
+    obtain ⟨param, hparam, rfl⟩ := hname
+    simp only [List.mem_flatMap]
+    exact ⟨param, hparam, by simp⟩
+  simpa [List.map_map, Function.comp_def] using
+    validateSyntaxPattern_nonTerminals ctx
+      (params.flatMap fun param =>
+        TermParam.bodyName param :: TermParam.binderNames param)
+      (params.map TermParam.bodyName) hbound
+
+section SyntaxPatternValidationRegression
+
+example : validateSyntaxPattern "fixture" ["x", "y"]
+    [.nonTerminal "x", .nonTerminal "y"] = [] := by
+  simp [validateSyntaxPattern, validateSyntaxPatternItems, validateSyntaxPatternItem]
+
+example : validateSyntaxPattern "fixture" ["xs"]
+    [.op (.map (.sep "xs" "," (some (.var "xs"))) ["x"]
+      [.nonTerminal "x", .op (.opt [.nonTerminal "x"])])] = [] := by
+  simp [validateSyntaxPattern, validateSyntaxPatternItems,
+    validateSyntaxPatternItem, validateSyntaxPatternOp]
+
+example : validateSyntaxPattern "fixture" ["xs"]
+    [.op (.map (.sep "unused" "," (some (.var "missingSource"))) ["x"]
+      [.op (.opt [.nonTerminal "missingBody"])])] =
+      [mkValidationError "fixture" s!"unknown syntax parameter `{"missingSource"}`",
+       mkValidationError "fixture" s!"unknown syntax parameter `{"missingBody"}`"] := by
+  simp [validateSyntaxPattern, validateSyntaxPatternItems,
+    validateSyntaxPatternItem, validateSyntaxPatternOp]
+
+example : validateSyntaxPattern "fixture" ["xs"]
+    [.op (.sep "missingCollection" "," none)] =
+      [mkValidationError "fixture" s!"unknown syntax parameter `{"missingCollection"}`"] := by
+  simp [validateSyntaxPattern, validateSyntaxPatternItems,
+    validateSyntaxPatternItem, validateSyntaxPatternOp]
+
+end SyntaxPatternValidationRegression
+
+def validatePatternConstructors
+    (ctx : String)
+    (constructors : List GrammarRule)
+    (pat : Pattern) : List ValidationError :=
+  (Pattern.constructorRefs pat).flatMap fun (ctor, arity) =>
+    match constructors.filter fun decl => decl.label == ctor with
+    | [] => [mkValidationError ctx s!"unknown constructor `{ctor}/{arity}`"]
+    | [decl] =>
+        if decl.params.length == arity then
+          []
+        else
+          [mkValidationError ctx
+            s!"constructor `{ctor}` expects arity {decl.params.length}, got {arity}"]
+    | _ => [mkValidationError ctx s!"ambiguous constructor `{ctor}/{arity}`"]
+
+def validatePremises
+    (ctx : String) (relations : List LogicRelationDecl) (premises : List Premise) :
     List ValidationError :=
   premises.flatMap fun prem =>
-    (Premise.relationRefs prem).flatMap fun rel =>
-      if rel ∈ knownRelations then
-        []
-      else
-        [mkValidationError ctx s!"unknown relation `{rel}`"]
+    prem.relationCalls.flatMap fun (relation, arity) =>
+      match relations.filter fun decl =>
+        decl.name == relation && decl.argTypes.length == arity with
+      | [_] => []
+      | [] => [mkValidationError ctx s!"unknown relation `{relation}/{arity}`"]
+      | _ => [mkValidationError ctx s!"ambiguous relation `{relation}/{arity}`"]
 
 /-- Free (unshadowed) fvar names of a pattern. -/
-private def patternFvarNames (bound : List String) : Pattern → List String
-  | .bvar _ => []
-  | .fvar n => if bound.contains n then [] else [n]
-  | .apply _ args => args.attach.flatMap (fun ⟨q, _⟩ => patternFvarNames bound q)
-  | .lambda b body =>
-      patternFvarNames (match b with | some n => n :: bound | none => bound) body
-  | .multiLambda _ bs body => patternFvarNames (bs ++ bound) body
-  | .subst a b => patternFvarNames bound a ++ patternFvarNames bound b
-  | .collection _ elems _ =>
-      elems.attach.flatMap (fun ⟨q, _⟩ => patternFvarNames bound q)
+def patternFvarNames (bound : List String) (pattern : Pattern) : List String :=
+  pattern.freeFvarNames.filter fun name => !(bound.contains name)
 
 /-- Binder names introduced anywhere in a pattern. -/
-private def patternBinderNames : Pattern → List String
+def patternBinderNames : Pattern → List String
   | .bvar _ => []
   | .fvar _ => []
   | .apply _ args => args.attach.flatMap (fun ⟨q, _⟩ => patternBinderNames q)
@@ -1125,14 +1422,32 @@ private def patternBinderNames : Pattern → List String
   | .collection _ elems _ =>
       elems.attach.flatMap (fun ⟨q, _⟩ => patternBinderNames q)
 
-private def premisePatterns : Premise → List Pattern
+def premisePatterns : Premise → List Pattern
   | .freshness fc => [fc.term]
   | .congruence l r => [l, r]
   | .relationQuery _ args => args
   | .forAll _ _ p => premisePatterns p
 
-private def premiseForAllParams : Premise → List String
-  | .forAll x _ p => x :: premiseForAllParams p
+/-- Free fvars in a premise, respecting the local parameter of `forAll`. -/
+def premiseFvarNames (bound : List String) : Premise → List String
+  | .freshness fc => patternFvarNames bound fc.term
+  | .congruence left right =>
+      patternFvarNames bound left ++ patternFvarNames bound right
+  | .relationQuery _ args => args.flatMap (patternFvarNames bound)
+  | .forAll _ param body => premiseFvarNames (param :: bound) body
+
+/-- Fvars that may escape a successfully evaluated premise as new bindings in
+the current generic premise semantics. Freshness is a check only; a `forAll`
+parameter and bindings local to its body do not escape. Congruence matches its
+target, and relation queries match their argument patterns against rows. -/
+def premiseProducedFvarNames (bound : List String) : Premise → List String
+  | .freshness _ => []
+  | .congruence _ target => patternFvarNames bound target
+  | .relationQuery _ args => args.flatMap (patternFvarNames bound)
+  | .forAll _ _ _ => []
+
+def premiseForAllParams : Premise → List String
+  | .forAll _ param p => param :: premiseForAllParams p
   | _ => []
 
 /-- Anti-wildcard checks on one rule-shaped item (rewrite or equation):
@@ -1141,16 +1456,21 @@ private def premiseForAllParams : Premise → List String
 (b) a binder or forAll-param named like a declared label is ambiguous
     authorship — error;
 (d) a typeContext name colliding with a declared label — error;
-(dangling) a right-hand-side variable bound neither on the left, by a premise
-    pattern, nor naming a constructor leaks into outputs as a free atom — error. -/
-private def validateRulePatterns
+(dangling) a right-hand-side variable bound neither on the left nor by an
+    output-capable premise position leaks into outputs as a free atom — error. -/
+def validateRulePatterns
     (ctx : String) (knownConstructors : List String)
     (typeContext : List (String × TypeExpr)) (premises : List Premise)
     (left right : Pattern) : List ValidationError :=
   let premPats := premises.flatMap premisePatterns
+  let scopeErrors :=
+    if ([left, right] ++ premPats).all Pattern.isWellScoped then
+      []
+    else
+      [mkValidationError ctx "rule contains an out-of-scope de Bruijn index"]
   let labelCollisions :=
     ((patternFvarNames [] left ++ patternFvarNames [] right ++
-        premPats.flatMap (patternFvarNames [])).eraseDups).flatMap fun n =>
+        premises.flatMap (premiseFvarNames [])).eraseDups).flatMap fun n =>
       if knownConstructors.contains n then
         [mkValidationError ctx
           s!"pattern variable `{n}` collides with declared constructor label `{n}` (silent wildcard)"]
@@ -1170,14 +1490,40 @@ private def validateRulePatterns
           s!"typeContext declares `{n}` which is also a constructor label")
       else none
   let boundByLeftOrPremises :=
-    patternFvarNames [] left ++ premPats.flatMap (patternFvarNames [])
+    patternFvarNames [] left ++ premises.flatMap (premiseProducedFvarNames [])
   let dangling :=
     ((patternFvarNames [] right).eraseDups).flatMap fun n =>
       if boundByLeftOrPremises.contains n || knownConstructors.contains n then []
       else
         [mkValidationError ctx
           s!"right-hand side variable `{n}` is bound neither on the left nor by a premise"]
-  labelCollisions ++ binderCollisions ++ ctxCollisions ++ dangling
+  scopeErrors ++ labelCollisions ++ binderCollisions ++ ctxCollisions ++ dangling
+
+/-- Validation errors contributed by one rewrite rule in a language.  This is
+the proof-facing decomposition of the corresponding `LanguageDef.validate`
+component; it uses the same constructor, relation, scope, and wildcard checks. -/
+def validateRewrite (lang : LanguageDef) (rewrite : RewriteRule) :
+    List ValidationError :=
+  let knownTypes := lang.typeNames
+  let knownConstructors := lang.terms.map (·.label)
+  let knownRelations := lang.logic.filterMap fun
+    | .relation signature => some signature
+    | .ruleText _ | .datalogClause _ => none
+  let ctx := s!"rewrite {rewrite.name}"
+  let ctxTypeErrs := rewrite.typeContext.flatMap fun (_, type) =>
+    validateTypeExpr knownTypes ctx type
+  let premiseErrs := validatePremises ctx knownRelations rewrite.premises
+  let lhsCtorErrs :=
+    validatePatternConstructors (ctx ++ " lhs") lang.terms rewrite.left
+  let rhsCtorErrs :=
+    validatePatternConstructors (ctx ++ " rhs") lang.terms rewrite.right
+  let premiseCtorErrs := (rewrite.premises.flatMap premisePatterns).flatMap
+    (validatePatternConstructors (ctx ++ " premise") lang.terms)
+  let wildcardErrs :=
+    validateRulePatterns ctx knownConstructors rewrite.typeContext
+      rewrite.premises rewrite.left rewrite.right
+  ctxTypeErrs ++ premiseErrs ++ lhsCtorErrs ++ rhsCtorErrs ++
+    premiseCtorErrs ++ wildcardErrs
 
 /-- Generic semantic validation for an authored `LanguageDef`.
     This complements macro-time parsing checks with cross-reference checks on
@@ -1185,17 +1531,13 @@ private def validateRulePatterns
 def validate (lang : LanguageDef) : List ValidationError :=
   let knownTypes := lang.typeNames
   let knownConstructors := lang.terms.map (·.label)
-  let knownRelations :=
-    lang.logic.foldl
-      (fun acc decl =>
-        match decl with
-        | .relation sig => sig.name :: acc
-        | .ruleText _ => acc
-        | .datalogClause _ => acc)
-      []
-  let checkConstructors := !knownConstructors.isEmpty
+  let knownRelations := lang.logic.filterMap fun
+    | .relation sig => some sig
+    | .ruleText _ | .datalogClause _ => none
   let typeDupErrs := duplicateErrors lang.name "type" knownTypes
   let ctorDupErrs := duplicateErrors lang.name "constructor" knownConstructors
+  let equationDupErrs := duplicateErrors lang.name "equation" (lang.equations.map (·.name))
+  let rewriteDupErrs := duplicateErrors lang.name "rewrite rule" (lang.rewrites.map (·.name))
   let logicDupErrs :=
     duplicateErrors lang.name "logic relation"
       (lang.logic.foldl
@@ -1222,25 +1564,15 @@ def validate (lang : LanguageDef) : List ValidationError :=
       let ctx := s!"equation {eqn.name}"
       let ctxTypeErrs := eqn.typeContext.flatMap fun (_, ty) => validateTypeExpr knownTypes ctx ty
       let premiseErrs := validatePremises ctx knownRelations eqn.premises
-      let lhsCtorErrs := validatePatternConstructors (ctx ++ " lhs") knownConstructors checkConstructors eqn.left
-      let rhsCtorErrs := validatePatternConstructors (ctx ++ " rhs") knownConstructors checkConstructors eqn.right
+      let lhsCtorErrs := validatePatternConstructors (ctx ++ " lhs") lang.terms eqn.left
+      let rhsCtorErrs := validatePatternConstructors (ctx ++ " rhs") lang.terms eqn.right
+      let premiseCtorErrs := (eqn.premises.flatMap premisePatterns).flatMap
+        (validatePatternConstructors (ctx ++ " premise") lang.terms)
       let wildcardErrs :=
-        if checkConstructors then
-          validateRulePatterns ctx knownConstructors eqn.typeContext eqn.premises eqn.left eqn.right
-        else []
-      ctxTypeErrs ++ premiseErrs ++ lhsCtorErrs ++ rhsCtorErrs ++ wildcardErrs
-  let rewriteErrs :=
-    lang.rewrites.flatMap fun rw =>
-      let ctx := s!"rewrite {rw.name}"
-      let ctxTypeErrs := rw.typeContext.flatMap fun (_, ty) => validateTypeExpr knownTypes ctx ty
-      let premiseErrs := validatePremises ctx knownRelations rw.premises
-      let lhsCtorErrs := validatePatternConstructors (ctx ++ " lhs") knownConstructors checkConstructors rw.left
-      let rhsCtorErrs := validatePatternConstructors (ctx ++ " rhs") knownConstructors checkConstructors rw.right
-      let wildcardErrs :=
-        if checkConstructors then
-          validateRulePatterns ctx knownConstructors rw.typeContext rw.premises rw.left rw.right
-        else []
-      ctxTypeErrs ++ premiseErrs ++ lhsCtorErrs ++ rhsCtorErrs ++ wildcardErrs
+        validateRulePatterns ctx knownConstructors eqn.typeContext eqn.premises eqn.left eqn.right
+      ctxTypeErrs ++ premiseErrs ++ lhsCtorErrs ++ rhsCtorErrs ++
+        premiseCtorErrs ++ wildcardErrs
+  let rewriteErrs := lang.rewrites.flatMap (validateRewrite lang)
   let logicTypeErrs :=
     lang.logic.flatMap fun decl =>
       match decl with
@@ -1256,8 +1588,214 @@ def validate (lang : LanguageDef) : List ValidationError :=
       let ctx := s!"oracle {oracle.name}"
       (oracle.argTypes.flatMap fun ty => validateTypeExpr knownTypes ctx ty) ++
       validateTypeExpr knownTypes ctx oracle.resultType
-  typeDupErrs ++ ctorDupErrs ++ logicDupErrs ++ oracleDupErrs ++
+  typeDupErrs ++ ctorDupErrs ++ equationDupErrs ++ rewriteDupErrs ++
+  logicDupErrs ++ oracleDupErrs ++
   termErrs ++ equationErrs ++ rewriteErrs ++ logicTypeErrs ++ oracleTypeErrs
+
+/-- Kernel-checkable sufficient conditions for a constructor-signature-only
+language to pass the full `LanguageDef.validate` gate. Surface syntax may be
+omitted or be the canonical parameter-only pattern; options and congruence
+declarations are immaterial to structural validation. -/
+theorem validate_eq_nil_of_constructorOnly
+    (lang : LanguageDef)
+    (hequations : lang.equations = [])
+    (hrewrites : lang.rewrites = [])
+    (hlogic : lang.logic = [])
+    (horacles : lang.oracles = [])
+    (htypes : lang.typeNames.Nodup)
+    (hconstructors : (lang.terms.map (·.label)).Nodup)
+    (hcategory : ∀ term ∈ lang.terms, term.category ∈ lang.typeNames)
+    (hparams : ∀ term ∈ lang.terms, ∀ param ∈ term.params,
+      ∀ typeName ∈ (TermParam.typeExpr param).baseNames,
+        typeName ∈ lang.typeNames)
+    (hsyntax : ∀ term ∈ lang.terms,
+      term.syntaxPattern = [] ∨
+      term.syntaxPattern = term.params.map (fun param =>
+        SyntaxItem.nonTerminal (TermParam.bodyName param))) :
+    lang.validate = [] := by
+  simp [validate, hequations, hrewrites, hlogic, horacles, htypes,
+    hconstructors]
+  intro term hterm
+  refine ⟨hcategory term hterm, ?_, ?_⟩
+  · intro param hparam
+    apply validateTypeExpr_eq_nil_of_baseNames
+    exact hparams term hterm param hparam
+  · rcases hsyntax term hterm with hnone | hcanonical
+    · rw [hnone]
+      exact validateSyntaxPattern_nil _ _
+    · rw [hcanonical]
+      exact validateSyntaxPattern_termParameters _ _
+
+/-- Kernel-checkable sufficient conditions for a language whose operational
+rules are rewrite declarations over an otherwise constructor-only signature.
+Each rewrite must pass the same per-rule checks used by `LanguageDef.validate`;
+this theorem only decomposes the aggregate gate into reusable obligations. -/
+theorem validate_eq_nil_of_constructorAndRewrites
+    (lang : LanguageDef)
+    (hequations : lang.equations = [])
+    (hlogic : lang.logic = [])
+    (horacles : lang.oracles = [])
+    (htypes : lang.typeNames.Nodup)
+    (hconstructors : (lang.terms.map (·.label)).Nodup)
+    (hrewrites : (lang.rewrites.map (·.name)).Nodup)
+    (hcategory : ∀ term ∈ lang.terms, term.category ∈ lang.typeNames)
+    (hparams : ∀ term ∈ lang.terms, ∀ param ∈ term.params,
+      ∀ typeName ∈ (TermParam.typeExpr param).baseNames,
+        typeName ∈ lang.typeNames)
+    (hsyntax : ∀ term ∈ lang.terms,
+      term.syntaxPattern = [] ∨
+      term.syntaxPattern = term.params.map (fun param =>
+        SyntaxItem.nonTerminal (TermParam.bodyName param)))
+    (hrewriteValid : ∀ rewrite ∈ lang.rewrites,
+      validateRewrite lang rewrite = []) :
+    lang.validate = [] := by
+  simp [validate, hequations, hlogic, horacles, htypes, hconstructors,
+    hrewrites]
+  constructor
+  · intro term hterm
+    refine ⟨hcategory term hterm, ?_, ?_⟩
+    · intro param hparam
+      apply validateTypeExpr_eq_nil_of_baseNames
+      exact hparams term hterm param hparam
+    · rcases hsyntax term hterm with hnone | hcanonical
+      · rw [hnone]
+        exact validateSyntaxPattern_nil _ _
+      · rw [hcanonical]
+        exact validateSyntaxPattern_termParameters _ _
+  · exact hrewriteValid
+
+/-! ## Ordered execution-flow admission
+
+`validate` checks the authored presentation structurally.  The following
+second gate checks whether premise execution can obtain every binding before
+it is consumed. Relation argument modes are supplied by the execution
+profile; they are not guessed from relation names. -/
+
+private structure FlowState where
+  termAvail : List String
+
+private def FlowState.addBindings (state : FlowState) (names : List String) : FlowState :=
+  let names := names.eraseDups
+  { termAvail := (names ++ state.termAvail).eraseDups }
+
+private def missingNames (available required : List String) : List String :=
+  required.eraseDups.filter fun name => !(available.contains name)
+
+private def availabilityErrors
+    (ctx role : String) (available required : List String) : List ValidationError :=
+  (missingNames available required).map fun name =>
+    mkValidationError ctx s!"{role} uses `{name}` before it is bound"
+
+/-- Cross-check supplied execution modes against declared relation signatures.
+Unused declared relations need no mode, but every supplied mode must name one
+unambiguous signature at the exact arity, and duplicate mode declarations fail
+closed. -/
+private def relationModeErrors
+    (lang : LanguageDef) (modes : RelationModeTable) : List ValidationError :=
+  let signatures := lang.logic.filterMap fun
+    | .relation sig => some sig
+    | .ruleText _ | .datalogClause _ => none
+  let duplicateModeErrors :=
+    duplicateErrors lang.name "relation mode"
+      (modes.map fun mode => s!"{mode.relation}/{mode.args.length}")
+  let signatureErrors := modes.flatMap fun mode =>
+    let matching := signatures.filter fun sig =>
+      sig.name == mode.relation && sig.argTypes.length == mode.args.length
+    match matching with
+    | [_] => []
+    | [] =>
+        [mkValidationError lang.name
+          s!"relation mode `{mode.relation}/{mode.args.length}` has no declared signature"]
+    | _ =>
+        [mkValidationError lang.name
+          s!"relation mode `{mode.relation}/{mode.args.length}` has an ambiguous signature"]
+  duplicateModeErrors ++ signatureErrors
+
+private def checkPremiseFlow
+    (modes : RelationModeTable) (ruleCtx : String) :
+    List Premise → Nat → FlowState → FlowState × List ValidationError
+  | [], _, state => (state, [])
+  | premise :: rest, index, state =>
+      let ctx := s!"{ruleCtx} premise {index}"
+      let (nextState, hereErrors) :=
+        match premise with
+        | .freshness fc =>
+            let subjectErrors := availabilityErrors ctx "freshness subject"
+              state.termAvail [fc.varName]
+            let termErrors := availabilityErrors ctx "freshness term"
+              state.termAvail fc.term.freeFvarNames
+            (state, subjectErrors ++ termErrors)
+        | .congruence source target =>
+            let sourceErrors := availabilityErrors ctx "congruence source"
+              state.termAvail source.freeFvarNames
+            (state.addBindings target.freeFvarNames, sourceErrors)
+        | .relationQuery relation args =>
+            match modes.lookup? relation args.length with
+            | none =>
+                (state, [mkValidationError ctx
+                  s!"missing or ambiguous relation mode for `{relation}/{args.length}`"])
+            | some argModes =>
+                let paired := args.zip argModes
+                let inputErrors := paired.zipIdx.flatMap fun (entry, argIndex) =>
+                  match entry.2 with
+                  | .input => availabilityErrors ctx
+                      s!"relation `{relation}` input {argIndex}" state.termAvail
+                      entry.1.freeFvarNames
+                  | .output => []
+                let outputs := paired.flatMap fun entry =>
+                  match entry.2 with
+                  | .input => []
+                  | .output => entry.1.freeFvarNames
+                (state.addBindings outputs, inputErrors)
+        | .forAll collection _ _ =>
+            (state, [mkValidationError ctx
+              s!"forAll over `{collection}` is unsupported by this execution-flow profile"])
+      let (finalState, laterErrors) :=
+        checkPremiseFlow modes ruleCtx rest (index + 1) nextState
+      (finalState, hereErrors ++ laterErrors)
+
+private def directedRuleFlowErrors
+    (modes : RelationModeTable) (ctx : String)
+    (premises : List Premise) (left right : Pattern) : List ValidationError :=
+  let leftFvars := left.freeFvarNames.eraseDups
+  let initial : FlowState :=
+    { termAvail := leftFvars }
+  let (finalState, premiseErrors) := checkPremiseFlow modes ctx premises 0 initial
+  premiseErrors ++ availabilityErrors ctx "right-hand side"
+    finalState.termAvail right.freeFvarNames
+
+/-- Ordered binding-flow errors for a selected execution profile. Rewrites
+are checked left-to-right; equations are checked in both orientations. -/
+def executionFlowErrors (lang : LanguageDef) (modes : RelationModeTable) :
+    List ValidationError :=
+  lang.rewrites.flatMap (fun rule =>
+    directedRuleFlowErrors modes s!"rewrite {rule.name}"
+      rule.premises rule.left rule.right) ++
+  lang.equations.flatMap (fun equation =>
+    directedRuleFlowErrors modes s!"equation {equation.name} (forward)"
+      equation.premises equation.left equation.right ++
+    directedRuleFlowErrors modes s!"equation {equation.name} (reverse)"
+      equation.premises equation.right equation.left)
+
+/-- Structural validation plus ordered, profile-indexed execution-flow
+admission. This does not claim source adequacy or proof-checker correctness. -/
+def executionAdmissionErrors (lang : LanguageDef) (modes : RelationModeTable) :
+    List ValidationError :=
+  lang.validate ++ relationModeErrors lang modes ++ lang.executionFlowErrors modes
+
+/-- A language paired with evidence that the executable structural and binding
+flow gates pass for a particular relation-mode table. -/
+structure FlowAdmitted (modes : RelationModeTable) where
+  lang : LanguageDef
+  admitted : lang.executionAdmissionErrors modes = []
+
+/-- Fail-closed constructor for the execution-flow wrapper. -/
+def admitExecutionFlow? (lang : LanguageDef) (modes : RelationModeTable) :
+    Option (FlowAdmitted modes) :=
+  if h : lang.executionAdmissionErrors modes = [] then
+    some ⟨lang, h⟩
+  else
+    none
 
 end LanguageDef
 
@@ -1383,11 +1921,9 @@ def Pattern.resolveNullary (ls bound : List String) : Pattern → Pattern
   | .fvar n =>
       if ls.contains n && !(bound.contains n) then .apply n [] else .fvar n
   | .apply c args => .apply c (Pattern.resolveNullaryList ls bound args)
-  | .lambda b body =>
-      .lambda b (Pattern.resolveNullary ls
-        (match b with | some n => n :: bound | none => bound) body)
+  | .lambda b body => .lambda b (Pattern.resolveNullary ls bound body)
   | .multiLambda k bs body =>
-      .multiLambda k bs (Pattern.resolveNullary ls (bs ++ bound) body)
+      .multiLambda k bs (Pattern.resolveNullary ls bound body)
   | .subst a b =>
       .subst (Pattern.resolveNullary ls bound a) (Pattern.resolveNullary ls bound b)
   | .collection ct elems rest =>
@@ -1401,12 +1937,45 @@ def Pattern.resolveNullaryList (ls bound : List String) : List Pattern → List 
 end
 
 def Premise.resolveNullary (ls bound : List String) : Premise → Premise
-  | .freshness fc => .freshness fc
+  | .freshness fc =>
+      .freshness { fc with term := fc.term.resolveNullary ls bound }
   | .congruence l r =>
       .congruence (l.resolveNullary ls bound) (r.resolveNullary ls bound)
   | .relationQuery rel args =>
       .relationQuery rel (Pattern.resolveNullaryList ls bound args)
-  | .forAll x s p => .forAll x s (Premise.resolveNullary ls (x :: bound) p)
+  | .forAll collection param p =>
+      .forAll collection param (Premise.resolveNullary ls (param :: bound) p)
+
+mutual
+
+/-- Structural condition saying that nullary resolution has no work to do in a
+pattern. Collection rest names are explicit metavariable positions and are not
+bare constructor occurrences. -/
+def Pattern.nullaryClean (ls bound : List String) : Pattern → Bool
+  | .bvar _ => true
+  | .fvar n => !(ls.contains n && !(bound.contains n))
+  | .apply _ args => Pattern.nullaryCleanList ls bound args
+  | .lambda _ body => Pattern.nullaryClean ls bound body
+  | .multiLambda _ _ body => Pattern.nullaryClean ls bound body
+  | .subst body replacement =>
+      Pattern.nullaryClean ls bound body && Pattern.nullaryClean ls bound replacement
+  | .collection _ elems _ => Pattern.nullaryCleanList ls bound elems
+
+def Pattern.nullaryCleanList (ls bound : List String) : List Pattern → Bool
+  | [] => true
+  | pattern :: rest =>
+      Pattern.nullaryClean ls bound pattern && Pattern.nullaryCleanList ls bound rest
+
+end
+
+/-- Structural cleanliness for every pattern position in a premise, respecting
+the parameter (the second `forAll` field) as the scoped name. -/
+def Premise.nullaryClean (ls bound : List String) : Premise → Bool
+  | .freshness fc => fc.term.nullaryClean ls bound
+  | .congruence left right =>
+      left.nullaryClean ls bound && right.nullaryClean ls bound
+  | .relationQuery _ args => Pattern.nullaryCleanList ls bound args
+  | .forAll _ param body => Premise.nullaryClean ls (param :: bound) body
 
 def RewriteRule.resolveNullary (ls : List String) (r : RewriteRule) : RewriteRule :=
   { r with
@@ -1414,11 +1983,19 @@ def RewriteRule.resolveNullary (ls : List String) (r : RewriteRule) : RewriteRul
       left := r.left.resolveNullary ls []
       right := r.right.resolveNullary ls [] }
 
+def RewriteRule.nullaryClean (ls : List String) (r : RewriteRule) : Bool :=
+  r.premises.all (Premise.nullaryClean ls []) &&
+    r.left.nullaryClean ls [] && r.right.nullaryClean ls []
+
 def Equation.resolveNullary (ls : List String) (e : Equation) : Equation :=
   { e with
       premises := e.premises.map (Premise.resolveNullary ls [])
       left := e.left.resolveNullary ls []
       right := e.right.resolveNullary ls [] }
+
+def Equation.nullaryClean (ls : List String) (e : Equation) : Bool :=
+  e.premises.all (Premise.nullaryClean ls []) &&
+    e.left.nullaryClean ls [] && e.right.nullaryClean ls []
 
 namespace LanguageDef
 
@@ -1453,6 +2030,12 @@ SATURATED when `resolveTerm p = p`:
 def resolveNullaryPatterns (lang : LanguageDef) : LanguageDef :=
   resolveNullaryWith lang.nullaryLabels lang
 
+/-- Executable, structural criterion for a definition on which the whole
+nullary-resolution pass is the identity. -/
+def resolveNullaryClean (lang : LanguageDef) : Bool :=
+  lang.rewrites.all (RewriteRule.nullaryClean lang.nullaryLabels) &&
+    lang.equations.all (Equation.nullaryClean lang.nullaryLabels)
+
 end LanguageDef
 
 /-- Diagnostic (sweep aid): the fvar names in authored rewrite/equation
@@ -1464,13 +2047,19 @@ def LanguageDef.nullaryFvarCollisions (lang : LanguageDef) : List String :=
     | .bvar _ => []
     | .fvar n => if ls.contains n && !(bound.contains n) then [n] else []
     | .apply _ args => args.attach.flatMap (fun ⟨p, _⟩ => patNames bound p)
-    | .lambda b body =>
-        patNames (match b with | some n => n :: bound | none => bound) body
-    | .multiLambda _ bs body => patNames (bs ++ bound) body
+    | .lambda _ body => patNames bound body
+    | .multiLambda _ _ body => patNames bound body
     | .subst a b => patNames bound a ++ patNames bound b
     | .collection _ elems _ => elems.attach.flatMap (fun ⟨p, _⟩ => patNames bound p)
-  ((lang.rewrites.flatMap (fun r => patNames [] r.left ++ patNames [] r.right)) ++
-    (lang.equations.flatMap (fun e => patNames [] e.left ++ patNames [] e.right))).eraseDups
+  let rec premiseNames (bound : List String) : Premise → List String
+    | .freshness fc => patNames bound fc.term
+    | .congruence left right => patNames bound left ++ patNames bound right
+    | .relationQuery _ args => args.flatMap (patNames bound)
+    | .forAll _ param body => premiseNames (param :: bound) body
+  ((lang.rewrites.flatMap (fun r =>
+      r.premises.flatMap (premiseNames []) ++ patNames [] r.left ++ patNames [] r.right)) ++
+    (lang.equations.flatMap (fun e =>
+      e.premises.flatMap (premiseNames []) ++ patNames [] e.left ++ patNames [] e.right))).eraseDups
 
 mutual
 
@@ -1506,30 +2095,256 @@ theorem Pattern.resolveNullaryList_idem (ls bound : List String) (ps : List Patt
 
 end
 
-/-! Shadow-set negative fixture (mandatory): a nullary constructor named `x`
-must NOT capture a binder-bound occurrence of `x` — the bound occurrence
-survives as `fvar` while an unshadowed occurrence resolves. -/
+mutual
+
+theorem Pattern.resolveNullary_eq_self_of_clean
+    (ls bound : List String) (pattern : Pattern)
+    (hclean : pattern.nullaryClean ls bound = true) :
+    pattern.resolveNullary ls bound = pattern := by
+  cases pattern with
+  | bvar index => rfl
+  | fvar name =>
+      simp [Pattern.nullaryClean] at hclean
+      simp [Pattern.resolveNullary]
+      intro hls
+      rcases hclean with hnot | hbound
+      · exact (hnot hls).elim
+      · exact hbound
+  | apply constructor args =>
+      simp only [Pattern.nullaryClean] at hclean
+      simp [Pattern.resolveNullary,
+        Pattern.resolveNullaryList_eq_self_of_clean ls bound args hclean]
+  | lambda binder body =>
+      simp only [Pattern.nullaryClean] at hclean
+      simp [Pattern.resolveNullary,
+        Pattern.resolveNullary_eq_self_of_clean ls _ body hclean]
+  | multiLambda arity binders body =>
+      simp only [Pattern.nullaryClean] at hclean
+      simp [Pattern.resolveNullary,
+        Pattern.resolveNullary_eq_self_of_clean ls _ body hclean]
+  | subst body replacement =>
+      simp only [Pattern.nullaryClean, Bool.and_eq_true] at hclean
+      simp [Pattern.resolveNullary,
+        Pattern.resolveNullary_eq_self_of_clean ls bound body hclean.1,
+        Pattern.resolveNullary_eq_self_of_clean ls bound replacement hclean.2]
+  | collection collectionType elems rest =>
+      simp only [Pattern.nullaryClean] at hclean
+      simp [Pattern.resolveNullary,
+        Pattern.resolveNullaryList_eq_self_of_clean ls bound elems hclean]
+
+theorem Pattern.resolveNullaryList_eq_self_of_clean
+    (ls bound : List String) (patterns : List Pattern)
+    (hclean : Pattern.nullaryCleanList ls bound patterns = true) :
+    Pattern.resolveNullaryList ls bound patterns = patterns := by
+  cases patterns with
+  | nil => rfl
+  | cons pattern rest =>
+      simp only [Pattern.nullaryCleanList, Bool.and_eq_true] at hclean
+      simp [Pattern.resolveNullaryList,
+        Pattern.resolveNullary_eq_self_of_clean ls bound pattern hclean.1,
+        Pattern.resolveNullaryList_eq_self_of_clean ls bound rest hclean.2]
+
+end
+
+
+theorem Premise.resolveNullary_eq_self_of_clean
+    (ls bound : List String) (premise : Premise)
+    (hclean : premise.nullaryClean ls bound = true) :
+    premise.resolveNullary ls bound = premise := by
+  induction premise generalizing bound with
+  | freshness fc =>
+      simp only [Premise.nullaryClean] at hclean
+      simp [Premise.resolveNullary,
+        Pattern.resolveNullary_eq_self_of_clean ls bound fc.term hclean]
+  | congruence left right =>
+      simp only [Premise.nullaryClean, Bool.and_eq_true] at hclean
+      simp [Premise.resolveNullary,
+        Pattern.resolveNullary_eq_self_of_clean ls bound left hclean.1,
+        Pattern.resolveNullary_eq_self_of_clean ls bound right hclean.2]
+  | relationQuery relation args =>
+      simp only [Premise.nullaryClean] at hclean
+      simp [Premise.resolveNullary,
+        Pattern.resolveNullaryList_eq_self_of_clean ls bound args hclean]
+  | forAll collection param body ih =>
+      simp only [Premise.nullaryClean] at hclean
+      simp [Premise.resolveNullary, ih (param :: bound) hclean]
+
+private theorem Premise.resolveNullary_map_eq_self_of_all_clean
+    (ls bound : List String) (premises : List Premise)
+    (hclean : premises.all (Premise.nullaryClean ls bound) = true) :
+    premises.map (Premise.resolveNullary ls bound) = premises := by
+  induction premises with
+  | nil => rfl
+  | cons premise rest ih =>
+      simp only [List.all_cons, Bool.and_eq_true] at hclean
+      simp [Premise.resolveNullary_eq_self_of_clean ls bound premise hclean.1,
+        ih hclean.2]
+
+theorem RewriteRule.resolveNullary_eq_self_of_clean
+    (ls : List String) (rule : RewriteRule)
+    (hclean : rule.nullaryClean ls = true) :
+    rule.resolveNullary ls = rule := by
+  cases rule with
+  | mk name typeContext premises left right =>
+      simp only [RewriteRule.nullaryClean, Bool.and_eq_true] at hclean
+      have hpremises := Premise.resolveNullary_map_eq_self_of_all_clean
+        ls [] premises hclean.1.1
+      simp [RewriteRule.resolveNullary, hpremises,
+        Pattern.resolveNullary_eq_self_of_clean ls [] left hclean.1.2,
+        Pattern.resolveNullary_eq_self_of_clean ls [] right hclean.2]
+
+theorem Equation.resolveNullary_eq_self_of_clean
+    (ls : List String) (equation : Equation)
+    (hclean : equation.nullaryClean ls = true) :
+    equation.resolveNullary ls = equation := by
+  cases equation with
+  | mk name typeContext premises left right =>
+      simp only [Equation.nullaryClean, Bool.and_eq_true] at hclean
+      have hpremises := Premise.resolveNullary_map_eq_self_of_all_clean
+        ls [] premises hclean.1.1
+      simp [Equation.resolveNullary, hpremises,
+        Pattern.resolveNullary_eq_self_of_clean ls [] left hclean.1.2,
+        Pattern.resolveNullary_eq_self_of_clean ls [] right hclean.2]
+
+private theorem RewriteRule.resolveNullary_map_eq_self_of_all_clean
+    (ls : List String) (rules : List RewriteRule)
+    (hclean : rules.all (RewriteRule.nullaryClean ls) = true) :
+    rules.map (RewriteRule.resolveNullary ls) = rules := by
+  induction rules with
+  | nil => rfl
+  | cons rule rest ih =>
+      simp only [List.all_cons, Bool.and_eq_true] at hclean
+      simp [RewriteRule.resolveNullary_eq_self_of_clean ls rule hclean.1,
+        ih hclean.2]
+
+private theorem Equation.resolveNullary_map_eq_self_of_all_clean
+    (ls : List String) (equations : List Equation)
+    (hclean : equations.all (Equation.nullaryClean ls) = true) :
+    equations.map (Equation.resolveNullary ls) = equations := by
+  induction equations with
+  | nil => rfl
+  | cons equation rest ih =>
+      simp only [List.all_cons, Bool.and_eq_true] at hclean
+      simp [Equation.resolveNullary_eq_self_of_clean ls equation hclean.1,
+        ih hclean.2]
+
+theorem LanguageDef.resolveNullaryPatterns_eq_self_of_clean
+    (lang : LanguageDef) (hclean : lang.resolveNullaryClean = true) :
+    lang.resolveNullaryPatterns = lang := by
+  simp only [LanguageDef.resolveNullaryClean, Bool.and_eq_true] at hclean
+  unfold LanguageDef.resolveNullaryPatterns LanguageDef.resolveNullaryWith
+  rw [RewriteRule.resolveNullary_map_eq_self_of_all_clean _ _ hclean.1]
+  rw [Equation.resolveNullary_map_eq_self_of_all_clean _ _ hclean.2]
+
+theorem Premise.resolveNullary_idem (ls bound : List String) (premise : Premise) :
+    Premise.resolveNullary ls bound (Premise.resolveNullary ls bound premise) =
+      Premise.resolveNullary ls bound premise := by
+  induction premise generalizing bound with
+  | freshness fc =>
+      simp [Premise.resolveNullary, Pattern.resolveNullary_idem]
+  | congruence left right =>
+      simp [Premise.resolveNullary, Pattern.resolveNullary_idem]
+  | relationQuery relation args =>
+      simp [Premise.resolveNullary, Pattern.resolveNullaryList_idem]
+  | forAll collection param body ih =>
+      simp [Premise.resolveNullary, ih]
+
+theorem RewriteRule.resolveNullary_idem (ls : List String) (rule : RewriteRule) :
+    RewriteRule.resolveNullary ls (RewriteRule.resolveNullary ls rule) =
+      RewriteRule.resolveNullary ls rule := by
+  cases rule
+  simp [RewriteRule.resolveNullary, Premise.resolveNullary_idem,
+    Pattern.resolveNullary_idem]
+
+theorem Equation.resolveNullary_idem (ls : List String) (equation : Equation) :
+    Equation.resolveNullary ls (Equation.resolveNullary ls equation) =
+      Equation.resolveNullary ls equation := by
+  cases equation
+  simp [Equation.resolveNullary, Premise.resolveNullary_idem,
+    Pattern.resolveNullary_idem]
+
+theorem LanguageDef.resolveNullaryWith_idem
+    (ls : List String) (lang : LanguageDef) :
+    LanguageDef.resolveNullaryWith ls (LanguageDef.resolveNullaryWith ls lang) =
+      LanguageDef.resolveNullaryWith ls lang := by
+  cases lang
+  simp [LanguageDef.resolveNullaryWith, RewriteRule.resolveNullary_idem,
+    Equation.resolveNullary_idem]
+
+@[simp] theorem LanguageDef.nullaryLabels_resolveNullaryWith
+    (ls : List String) (lang : LanguageDef) :
+    (LanguageDef.resolveNullaryWith ls lang).nullaryLabels = lang.nullaryLabels := by
+  rfl
+
+theorem LanguageDef.resolveNullaryPatterns_idem (lang : LanguageDef) :
+    lang.resolveNullaryPatterns.resolveNullaryPatterns = lang.resolveNullaryPatterns := by
+  simp [LanguageDef.resolveNullaryPatterns, LanguageDef.resolveNullaryWith_idem]
+
+/-! Scope fixtures: `forAll` parameters are named scoped variables, whereas
+lambda names are metadata and actual lambda-bound occurrences are `.bvar`. -/
 section ResolveNullaryFixtures
 
-private def shadowToy : LanguageDef :=
+-- Ground data use structural applications; `.fvar` remains a metavariable,
+-- even when its spelling happens to look like a source token.
+#guard (Pattern.apply "wff" []).isGround
+#guard !(Pattern.fvar "wff").isGround
+#guard (Pattern.lambda (some "x") (.bvar 0)).isGround
+#guard !(Pattern.bvar 0).isGround
+#guard !(Pattern.collection .hashBag [] (some "rest")).isGround
+#guard (Pattern.lambda none (.bvar 0)).hasCanonicalBinderMetadata
+#guard !(Pattern.lambda (some "x") (.bvar 0)).hasCanonicalBinderMetadata
+#guard (Pattern.multiLambda 2 [] (.bvar 1)).hasCanonicalBinderMetadata
+#guard !(Pattern.multiLambda 2 ["x", "y"] (.bvar 1)).hasCanonicalBinderMetadata
+
+private def forAllCapturePremise : Premise :=
+  .forAll "K" "x"
+    (.freshness
+      { varName := "v"
+        term := .apply "Pair" [.fvar "x", .fvar "K"] })
+
+-- `forAll` stores (collection, parameter, body): only the parameter shadows.
+-- Freshness terms are traversed, so the unshadowed nullary `K` resolves while
+-- the parameter occurrence `x` remains a variable even when `x` is a label.
+#guard decide
+    (forAllCapturePremise.resolveNullary ["K", "x"] [] =
+      .forAll "K" "x"
+        (.freshness
+          { varName := "v"
+            term := .apply "Pair" [.fvar "x", .apply "K" []] }))
+
+private def binderToy : LanguageDef :=
   { name := "ShadowToy"
     types := [TypeDecl.plain "T"]
     terms := [{ label := "x", category := "T", params := [],
                 syntaxPattern := [.terminal "x"] }]
     equations := []
     rewrites := [{ name := "r", typeContext := [], premises := []
-                   left := .lambda (some "x") (.fvar "x")
+                   left := .lambda (some "x") (.bvar 0)
                    right := .fvar "x" }] }
 
--- bound occurrence under `^x.` survives; the RHS (unshadowed) occurrence resolves
-#guard decide ((shadowToy.resolveNullaryPatterns.rewrites.map (fun r => (r.left, r.right)))
-    = [(.lambda (some "x") (.fvar "x"), .apply "x" [])])
+-- The actual bound occurrence survives; the free RHS occurrence resolves.
+#guard decide ((binderToy.resolveNullaryPatterns.rewrites.map (fun r => (r.left, r.right)))
+    = [(.lambda (some "x") (.bvar 0), .apply "x" [])])
+
+private def metadataFvarToy : LanguageDef :=
+  { binderToy with
+      name := "MetadataFvarToy"
+      rewrites := [{ name := "r", typeContext := [], premises := []
+                     left := .lambda (some "x") (.fvar "x")
+                     right := .apply "x" [] }] }
+
+-- A lambda's authored name is metadata, not a scope for `.fvar`; retaining
+-- this wildcard would be a false cleanliness result.
+#guard metadataFvarToy.resolveNullaryClean = false
+#guard decide ((metadataFvarToy.resolveNullaryPatterns.rewrites.map (fun r => r.left))
+    = [.lambda (some "x") (.apply "x" [])])
+#guard metadataFvarToy.resolveNullaryPatterns.resolveNullaryClean
 
 -- idempotence, executably, on the fixture
 #guard decide
-    (shadowToy.resolveNullaryPatterns.resolveNullaryPatterns.rewrites.map
+    (binderToy.resolveNullaryPatterns.resolveNullaryPatterns.rewrites.map
         (fun r => (r.left, r.right))
-      = shadowToy.resolveNullaryPatterns.rewrites.map (fun r => (r.left, r.right)))
+      = binderToy.resolveNullaryPatterns.rewrites.map (fun r => (r.left, r.right)))
 
 -- validate-level negative fixtures: each anti-wildcard error class must fire
 private def wildToy (rw : RewriteRule) : LanguageDef :=
@@ -1546,18 +2361,165 @@ private def wildToy (rw : RewriteRule) : LanguageDef :=
 -- (f) free pattern variable colliding with an arity-1 label F = silent wildcard
 #guard decide ((wildToy (RewriteRule.mk "r" [] []
     (.apply "K" []) (.fvar "F"))).validate ≠ [])
+-- unknown nullary applications are not implicitly accepted as data
+#guard decide ((wildToy (RewriteRule.mk "r" [] []
+    (.apply "Ghost" []) (.apply "K" []))).validate ≠ [])
+-- declared constructors must be used at their exact grammar arity
+#guard decide ((wildToy (RewriteRule.mk "r" [] []
+    (.apply "F" []) (.apply "K" []))).validate ≠ [])
+-- locally nameless schemas cannot contain an out-of-scope de Bruijn index
+#guard decide ((wildToy (RewriteRule.mk "r" [] []
+    (.bvar 0) (.apply "K" []))).validate ≠ [])
+-- constructor validation traverses premise patterns as well as endpoints
+#guard decide ((wildToy (RewriteRule.mk "r" []
+    [.freshness { varName := "x", term := .apply "Ghost" [] }]
+    (.apply "F" [.fvar "x"]) (.fvar "x"))).validate ≠ [])
+#guard decide ((wildToy (RewriteRule.mk "r" []
+    [.congruence (.apply "F" []) (.fvar "x")]
+    (.apply "K" []) (.fvar "x"))).validate ≠ [])
 -- (b) binder shadowing a declared label
 #guard decide ((wildToy (RewriteRule.mk "r" [] []
     (.lambda (some "K") (.bvar 0)) (.apply "K" []))).validate ≠ [])
+-- (b-forAll) the second field is the scoped parameter and must be checked
+#guard decide ((wildToy (RewriteRule.mk "r" []
+    [.forAll "items" "K" (.congruence (.fvar "K") (.fvar "K"))]
+    (.apply "K" []) (.apply "K" []))).validate ≠ [])
 -- (d) typeContext colliding with a declared label
 #guard decide ((wildToy (RewriteRule.mk "r" [("K", .base "T")] []
     (.apply "K" []) (.apply "K" []))).validate ≠ [])
 -- (dangling) RHS variable bound nowhere
 #guard decide ((wildToy (RewriteRule.mk "r" [] []
     (.apply "K" []) (.fvar "ghost"))).validate ≠ [])
+-- freshness checks do not manufacture bindings for variables in their terms
+#guard decide ((wildToy (RewriteRule.mk "r" []
+    [.freshness { varName := "v", term := .fvar "ghost" }]
+    (.apply "K" []) (.fvar "ghost"))).validate ≠ [])
+-- a `forAll` parameter is local to its body and cannot escape to the RHS
+#guard decide ((wildToy (RewriteRule.mk "r" []
+    [.forAll "items" "x" (.congruence (.fvar "x") (.fvar "x"))]
+    (.apply "K" []) (.fvar "x"))).validate ≠ [])
+-- congruence target matching may introduce a binding used by the RHS
+#guard decide ((wildToy (RewriteRule.mk "r" []
+    [.congruence (.fvar "x") (.fvar "y")]
+    (.apply "F" [.fvar "x"]) (.fvar "y"))).validate = [])
 -- and a fully-clean rule validates
 #guard decide ((wildToy (RewriteRule.mk "r" [] []
     (.apply "F" [.fvar "x"]) (.fvar "x"))).validate = [])
+
+private def ioRelationModes : RelationModeTable :=
+  [{ relation := "rel", args := [.input, .output] }]
+
+private def modeCheckedFlowToy : LanguageDef :=
+  { wildToy (RewriteRule.mk "flow" []
+      [.relationQuery "rel" [.fvar "source", .fvar "target"]]
+      (.apply "F" [.fvar "source"]) (.fvar "target")) with
+    logic := [.relation
+      { name := "rel", argTypes := [.base "T", .base "T"] }] }
+
+private def wrongRelationArityToy : LanguageDef :=
+  { modeCheckedFlowToy with
+    rewrites := [RewriteRule.mk "flow" []
+      [.relationQuery "rel" [.fvar "source"]]
+      (.apply "F" [.fvar "source"]) (.fvar "source")] }
+
+-- Supplied modes are checked against the declared signature, not inferred from
+-- the relation spelling.
+#guard modeCheckedFlowToy.validate.isEmpty
+#guard !wrongRelationArityToy.validate.isEmpty
+#guard (modeCheckedFlowToy.executionAdmissionErrors ioRelationModes).isEmpty
+#guard !(modeCheckedFlowToy.executionAdmissionErrors
+    (ioRelationModes ++ ioRelationModes)).isEmpty
+#guard !(modeCheckedFlowToy.executionAdmissionErrors
+    [{ relation := "rel", args := [.input] }]).isEmpty
+#guard !(modeCheckedFlowToy.executionAdmissionErrors
+    [{ relation := "undeclared", args := [.input, .output] }]).isEmpty
+
+private def duplicateRuleNameToy : LanguageDef :=
+  let rule := RewriteRule.mk "duplicate" [] []
+    (.apply "F" [.fvar "x"]) (.fvar "x")
+  { wildToy rule with rewrites := [rule, rule] }
+
+#guard !duplicateRuleNameToy.validate.isEmpty
+
+-- Freshness subjects and collection rests must be actual matcher bindings.
+#guard (wildToy (RewriteRule.mk "flow" []
+    [.freshness
+      { varName := "x"
+        term := .collection .hashBag [] (some "rest") }]
+    (.apply "Pair"
+      [.fvar "x", .collection .hashBag [] (some "rest")])
+    (.collection .hashBag [] (some "rest")))).executionFlowErrors [] |>.isEmpty
+
+-- Lambda display names are metadata ignored by matching, not binding evidence.
+#guard !((wildToy (RewriteRule.mk "flow" []
+    [.freshness
+      { varName := "x"
+        term := .collection .hashBag [] (some "rest") }]
+    (.apply "Pair"
+      [.lambda (some "x") (.bvar 0), .collection .hashBag [] (some "rest")])
+    (.collection .hashBag [] (some "rest")))).executionFlowErrors []).isEmpty
+
+-- Congruence consumes its source and produces bindings from its target.
+#guard (wildToy (RewriteRule.mk "flow" []
+    [.congruence (.fvar "source") (.fvar "target")]
+    (.apply "F" [.fvar "source"]) (.fvar "target"))).executionFlowErrors [] |>.isEmpty
+
+-- A mode-declared relation can produce a value that a later freshness check
+-- and the RHS consume.
+#guard (wildToy (RewriteRule.mk "flow" []
+    [.relationQuery "rel" [.fvar "source", .fvar "target"],
+     .freshness { varName := "target", term := .fvar "source" }]
+    (.apply "F" [.fvar "source"]) (.fvar "target"))).executionFlowErrors
+      ioRelationModes |>.isEmpty
+
+-- Freshness consumes no bindings and cannot use names that are wholly absent.
+#guard !((wildToy (RewriteRule.mk "flow" []
+    [.freshness { varName := "ghost", term := .fvar "missing" }]
+    (.apply "K" []) (.apply "K" []))).executionFlowErrors []).isEmpty
+
+-- Premise order matters: a later relation output cannot justify an earlier
+-- freshness check.
+#guard !((wildToy (RewriteRule.mk "flow" []
+    [.freshness { varName := "target", term := .fvar "source" },
+     .relationQuery "rel" [.fvar "source", .fvar "target"]]
+    (.apply "F" [.fvar "source"]) (.fvar "target"))).executionFlowErrors
+      ioRelationModes).isEmpty
+
+-- A congruence source must already be available.
+#guard !((wildToy (RewriteRule.mk "flow" []
+    [.congruence (.fvar "source") (.fvar "target")]
+    (.apply "K" []) (.fvar "target"))).executionFlowErrors []).isEmpty
+
+-- `forAll` remains an explicit unsupported capability in this flow profile.
+#guard !((wildToy (RewriteRule.mk "flow" []
+    [.forAll "items" "x" (.congruence (.fvar "x") (.fvar "x"))]
+    (.apply "K" []) (.apply "K" []))).executionFlowErrors []).isEmpty
+
+private def asymmetricFlowEquation : Equation :=
+  { name := "asymmetric"
+    typeContext := []
+    premises := [.relationQuery "rel" [.fvar "source", .fvar "target"]]
+    left := .apply "F" [.fvar "source"]
+    right := .apply "F" [.fvar "target"] }
+
+-- Equation admission checks both orientations; this mode assignment supports
+-- the forward direction but not the reverse one.
+#guard !(({ wildToy (RewriteRule.mk "noop" [] []
+      (.apply "K" []) (.apply "K" [])) with
+    rewrites := []
+    equations := [asymmetricFlowEquation] }).executionFlowErrors
+      ioRelationModes).isEmpty
+
+-- The wrapper is fail-closed but intentionally claims only structural and
+-- ordered-flow admission, not source adequacy.
+#guard ((wildToy (RewriteRule.mk "r" [] []
+    (.apply "F" [.fvar "x"]) (.fvar "x"))).admitExecutionFlow? []).isSome
+#guard ((wildToy (RewriteRule.mk "r" [] []
+    (.apply "K" []) (.fvar "ghost"))).admitExecutionFlow? []).isNone
+
+example : binderToy.resolveNullaryPatterns.resolveNullaryPatterns =
+    binderToy.resolveNullaryPatterns :=
+  LanguageDef.resolveNullaryPatterns_idem binderToy
 
 end ResolveNullaryFixtures
 

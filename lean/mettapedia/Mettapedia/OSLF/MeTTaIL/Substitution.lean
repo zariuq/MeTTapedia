@@ -65,6 +65,468 @@ def liftBVars (cutoff shift : Nat) : Pattern → Pattern
     .collection ct (elems.map (liftBVars cutoff shift)) rest
 termination_by p => sizeOf p
 
+/-! `openBVar` is the standard locally nameless opening operation: it replaces
+one index but does not remove an ambient de Bruijn level.  Executing an explicit
+`Pattern.subst`, by contrast, eliminates its bound level and therefore needs
+de Bruijn instantiation. -/
+
+/-- Eliminate the bound-variable level at `depth` from `body`, replacing its
+occurrences with `replacement`. Indices bound by inner binders are preserved;
+the replacement is lifted when inserted under them; indices outside the
+eliminated level are decremented. -/
+def instantiateBVarAt (depth : Nat) (replacement : Pattern) : Pattern → Pattern
+  | .bvar index =>
+      if index < depth then
+        .bvar index
+      else if index = depth then
+        liftBVars 0 depth replacement
+      else
+        .bvar (index - 1)
+  | .fvar name => .fvar name
+  | .apply constructor args =>
+      .apply constructor (args.map (instantiateBVarAt depth replacement))
+  | .lambda name body =>
+      .lambda name (instantiateBVarAt (depth + 1) replacement body)
+  | .multiLambda arity names body =>
+      .multiLambda arity names
+        (instantiateBVarAt (depth + arity) replacement body)
+  | .subst body nestedReplacement =>
+      .subst (instantiateBVarAt (depth + 1) replacement body)
+        (instantiateBVarAt depth replacement nestedReplacement)
+  | .collection collectionType elems rest =>
+      .collection collectionType
+        (elems.map (instantiateBVarAt depth replacement)) rest
+termination_by body => sizeOf body
+
+/-- Execute the binder-eliminating substitution represented by
+`Pattern.subst body replacement`. -/
+def instantiateBVar (replacement body : Pattern) : Pattern :=
+  instantiateBVarAt 0 replacement body
+
+section InstantiateBVarFixtures
+
+private def kData : Pattern := .apply "K" []
+
+#guard decide (instantiateBVar kData (.bvar 0) = kData)
+#guard decide (instantiateBVar kData (.bvar 1) = .bvar 0)
+#guard decide
+    (instantiateBVar (.bvar 0) (.lambda none (.bvar 1)) =
+      .lambda none (.bvar 1))
+#guard decide
+    (instantiateBVar kData (.lambda none (.bvar 0)) =
+      .lambda none (.bvar 0))
+
+end InstantiateBVarFixtures
+
+/-! ## Scope Preservation for Binder-Eliminating Substitution
+
+The traversal depth of `instantiateBVarAt` counts binders between the current
+node and the eliminated binder.  It is distinct from the ambient context depth
+in which the whole explicit substitution occurs.  Keeping both parameters in
+the statements below is what makes the results apply under `multiLambda` and
+nested explicit substitutions.
+-/
+
+private theorem isGroundListAt_mem {depth : Nat} {patterns : List Pattern}
+    {pattern : Pattern} (hall : Pattern.isGroundListAt depth patterns = true)
+    (hmem : pattern ∈ patterns) : pattern.isGroundAt depth = true := by
+  induction patterns with
+  | nil => cases hmem
+  | cons head tail ih =>
+      simp only [Pattern.isGroundListAt, Bool.and_eq_true] at hall
+      cases List.mem_cons.mp hmem with
+      | inl heq => simpa only [heq] using hall.1
+      | inr htail => exact ih hall.2 htail
+
+private theorem isGroundListAt_map_of_forall {depth : Nat}
+    {patterns : List Pattern} {f : Pattern → Pattern}
+    (hall : ∀ pattern ∈ patterns, (f pattern).isGroundAt depth = true) :
+    Pattern.isGroundListAt depth (patterns.map f) = true := by
+  induction patterns with
+  | nil => rfl
+  | cons head tail ih =>
+      simp only [List.map_cons, Pattern.isGroundListAt, Bool.and_eq_true]
+      exact ⟨hall head (List.mem_cons.mpr (Or.inl rfl)),
+        ih (fun pattern hmem => hall pattern (List.mem_cons.mpr (Or.inr hmem)))⟩
+
+private theorem isWellScopedListAt_mem {depth : Nat} {patterns : List Pattern}
+    {pattern : Pattern} (hall : Pattern.isWellScopedListAt depth patterns = true)
+    (hmem : pattern ∈ patterns) : pattern.isWellScopedAt depth = true := by
+  induction patterns with
+  | nil => cases hmem
+  | cons head tail ih =>
+      simp only [Pattern.isWellScopedListAt, Bool.and_eq_true] at hall
+      cases List.mem_cons.mp hmem with
+      | inl heq => simpa only [heq] using hall.1
+      | inr htail => exact ih hall.2 htail
+
+private theorem isWellScopedListAt_map_of_forall {depth : Nat}
+    {patterns : List Pattern} {f : Pattern → Pattern}
+    (hall : ∀ pattern ∈ patterns, (f pattern).isWellScopedAt depth = true) :
+    Pattern.isWellScopedListAt depth (patterns.map f) = true := by
+  induction patterns with
+  | nil => rfl
+  | cons head tail ih =>
+      simp only [List.map_cons, Pattern.isWellScopedListAt, Bool.and_eq_true]
+      exact ⟨hall head (List.mem_cons.mpr (Or.inl rfl)),
+        ih (fun pattern hmem => hall pattern (List.mem_cons.mpr (Or.inr hmem)))⟩
+
+/-- Groundness includes local closure: removing free metavariables and open
+collection tails strengthens, rather than replaces, the scope check. -/
+theorem isWellScopedAt_of_isGroundAt {depth : Nat} {pattern : Pattern}
+    (hground : pattern.isGroundAt depth = true) :
+    pattern.isWellScopedAt depth = true := by
+  induction pattern using Pattern.inductionOn generalizing depth with
+  | hbvar _ =>
+      simpa only [Pattern.isGroundAt, Pattern.isWellScopedAt] using hground
+  | hfvar _ => simp only [Pattern.isWellScopedAt]
+  | happly _ args ih =>
+      simp only [Pattern.isGroundAt] at hground
+      simp only [Pattern.isWellScopedAt]
+      simpa only [List.map_id, id_eq] using
+        (isWellScopedListAt_map_of_forall (depth := depth) (f := id)
+          (fun argument hmem =>
+            ih argument hmem (isGroundListAt_mem hground hmem)))
+  | hlambda _ body ih =>
+      simp only [Pattern.isGroundAt] at hground
+      simp only [Pattern.isWellScopedAt]
+      exact ih hground
+  | hmultiLambda _ _ body ih =>
+      simp only [Pattern.isGroundAt] at hground
+      simp only [Pattern.isWellScopedAt]
+      exact ih hground
+  | hsubst body replacement ihBody ihReplacement =>
+      simp only [Pattern.isGroundAt, Bool.and_eq_true] at hground
+      simp only [Pattern.isWellScopedAt, Bool.and_eq_true]
+      exact ⟨ihBody hground.1, ihReplacement hground.2⟩
+  | hcollection _ elements _ ih =>
+      simp only [Pattern.isGroundAt, Bool.and_eq_true] at hground
+      simp only [Pattern.isWellScopedAt]
+      simpa only [List.map_id, id_eq] using
+        (isWellScopedListAt_map_of_forall (depth := depth) (f := id)
+          (fun element hmem =>
+            ih element hmem (isGroundListAt_mem hground.1 hmem)))
+
+/-- Closed executable data is locally closed at top level. -/
+theorem isWellScoped_of_isGround {pattern : Pattern}
+    (hground : pattern.isGround = true) : pattern.isWellScoped = true :=
+  isWellScopedAt_of_isGroundAt hground
+
+/-- Lifting at `cutoff` preserves groundness while extending the portion of the
+context above that cutoff by `shift`. -/
+theorem liftBVars_isGroundAt {ambient cutoff shift : Nat} {pattern : Pattern}
+    (hground : pattern.isGroundAt (ambient + cutoff) = true) :
+    (liftBVars cutoff shift pattern).isGroundAt
+      (ambient + cutoff + shift) = true := by
+  induction pattern using Pattern.inductionOn generalizing ambient cutoff with
+  | hbvar index =>
+      simp only [Pattern.isGroundAt] at hground
+      have hindex : index < ambient + cutoff := of_decide_eq_true hground
+      simp only [liftBVars]
+      split
+      · simp only [Pattern.isGroundAt]
+        exact decide_eq_true (by omega)
+      · simp only [Pattern.isGroundAt]
+        exact decide_eq_true (by omega)
+  | hfvar _ =>
+      simpa only [liftBVars, Pattern.isGroundAt] using hground
+  | happly _ args ih =>
+      simp only [liftBVars, Pattern.isGroundAt] at hground ⊢
+      exact isGroundListAt_map_of_forall fun argument hmem =>
+        ih argument hmem (isGroundListAt_mem hground hmem)
+  | hlambda _ body ih =>
+      simp only [liftBVars, Pattern.isGroundAt] at hground ⊢
+      have h := ih (ambient := ambient) (cutoff := cutoff + 1)
+        (by simpa only [Nat.add_assoc] using hground)
+      simpa only [Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using h
+  | hmultiLambda arity _ body ih =>
+      simp only [liftBVars, Pattern.isGroundAt] at hground ⊢
+      have h := ih (ambient := ambient) (cutoff := cutoff + arity)
+        (by simpa only [Nat.add_assoc] using hground)
+      simpa only [Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using h
+  | hsubst body replacement ihBody ihReplacement =>
+      simp only [liftBVars, Pattern.isGroundAt, Bool.and_eq_true] at hground ⊢
+      have hBody := ihBody (ambient := ambient) (cutoff := cutoff + 1)
+        (by simpa only [Nat.add_assoc] using hground.1)
+      exact ⟨by
+          simpa only [Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using hBody,
+        ihReplacement (ambient := ambient) (cutoff := cutoff) hground.2⟩
+  | hcollection _ elements rest ih =>
+      simp only [liftBVars, Pattern.isGroundAt, Bool.and_eq_true] at hground ⊢
+      exact ⟨isGroundListAt_map_of_forall fun element hmem =>
+          ih element hmem (isGroundListAt_mem hground.1 hmem), hground.2⟩
+
+/-- Lifting preserves local closure under the corresponding context
+extension, while leaving free metavariables permitted. -/
+theorem liftBVars_isWellScopedAt {ambient cutoff shift : Nat} {pattern : Pattern}
+    (hscoped : pattern.isWellScopedAt (ambient + cutoff) = true) :
+    (liftBVars cutoff shift pattern).isWellScopedAt
+      (ambient + cutoff + shift) = true := by
+  induction pattern using Pattern.inductionOn generalizing ambient cutoff with
+  | hbvar index =>
+      simp only [Pattern.isWellScopedAt] at hscoped
+      have hindex : index < ambient + cutoff := of_decide_eq_true hscoped
+      simp only [liftBVars]
+      split
+      · simp only [Pattern.isWellScopedAt]
+        exact decide_eq_true (by omega)
+      · simp only [Pattern.isWellScopedAt]
+        exact decide_eq_true (by omega)
+  | hfvar _ => simp only [liftBVars, Pattern.isWellScopedAt]
+  | happly _ args ih =>
+      simp only [liftBVars, Pattern.isWellScopedAt] at hscoped ⊢
+      exact isWellScopedListAt_map_of_forall fun argument hmem =>
+        ih argument hmem (isWellScopedListAt_mem hscoped hmem)
+  | hlambda _ body ih =>
+      simp only [liftBVars, Pattern.isWellScopedAt] at hscoped ⊢
+      have h := ih (ambient := ambient) (cutoff := cutoff + 1)
+        (by simpa only [Nat.add_assoc] using hscoped)
+      simpa only [Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using h
+  | hmultiLambda arity _ body ih =>
+      simp only [liftBVars, Pattern.isWellScopedAt] at hscoped ⊢
+      have h := ih (ambient := ambient) (cutoff := cutoff + arity)
+        (by simpa only [Nat.add_assoc] using hscoped)
+      simpa only [Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using h
+  | hsubst body replacement ihBody ihReplacement =>
+      simp only [liftBVars, Pattern.isWellScopedAt, Bool.and_eq_true] at hscoped ⊢
+      have hBody := ihBody (ambient := ambient) (cutoff := cutoff + 1)
+        (by simpa only [Nat.add_assoc] using hscoped.1)
+      exact ⟨by
+          simpa only [Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using hBody,
+        ihReplacement (ambient := ambient) (cutoff := cutoff) hscoped.2⟩
+  | hcollection _ elements _ ih =>
+      simp only [liftBVars, Pattern.isWellScopedAt] at hscoped ⊢
+      exact isWellScopedListAt_map_of_forall fun element hmem =>
+        ih element hmem (isWellScopedListAt_mem hscoped hmem)
+
+/-- Binder-eliminating instantiation preserves groundness.  `ambient` is the
+context outside the eliminated binder and `depth` is the number of binders
+traversed inside its body. -/
+theorem instantiateBVarAt_isGroundAt {ambient depth : Nat}
+    {replacement body : Pattern}
+    (hbody : body.isGroundAt (ambient + depth + 1) = true)
+    (hreplacement : replacement.isGroundAt ambient = true) :
+    (instantiateBVarAt depth replacement body).isGroundAt
+      (ambient + depth) = true := by
+  induction body using Pattern.inductionOn generalizing depth with
+  | hbvar index =>
+      simp only [Pattern.isGroundAt] at hbody
+      have hindex : index < ambient + depth + 1 := of_decide_eq_true hbody
+      simp only [instantiateBVarAt]
+      split
+      · simp only [Pattern.isGroundAt]
+        exact decide_eq_true (by omega)
+      · split
+        · simpa only [Nat.add_zero] using
+            (liftBVars_isGroundAt (ambient := ambient) (cutoff := 0)
+              (shift := depth) hreplacement)
+        · simp only [Pattern.isGroundAt]
+          exact decide_eq_true (by omega)
+  | hfvar _ =>
+      simpa only [instantiateBVarAt, Pattern.isGroundAt] using hbody
+  | happly _ args ih =>
+      simp only [instantiateBVarAt, Pattern.isGroundAt] at hbody ⊢
+      exact isGroundListAt_map_of_forall fun argument hmem =>
+        ih argument hmem (depth := depth) (isGroundListAt_mem hbody hmem)
+  | hlambda _ innerBody ih =>
+      simp only [instantiateBVarAt, Pattern.isGroundAt] at hbody ⊢
+      have h := ih (depth := depth + 1)
+        (by simpa only [Nat.add_assoc] using hbody)
+      simpa only [Nat.add_assoc] using h
+  | hmultiLambda arity _ innerBody ih =>
+      simp only [instantiateBVarAt, Pattern.isGroundAt] at hbody ⊢
+      have h := ih (depth := depth + arity)
+        (by simpa only [Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using hbody)
+      simpa only [Nat.add_assoc] using h
+  | hsubst nestedBody nestedReplacement ihBody ihReplacement =>
+      simp only [instantiateBVarAt, Pattern.isGroundAt, Bool.and_eq_true] at hbody ⊢
+      have hNestedBody := ihBody (depth := depth + 1)
+        (by simpa only [Nat.add_assoc] using hbody.1)
+      exact ⟨by simpa only [Nat.add_assoc] using hNestedBody,
+        ihReplacement (depth := depth) hbody.2⟩
+  | hcollection _ elements rest ih =>
+      simp only [instantiateBVarAt, Pattern.isGroundAt, Bool.and_eq_true] at hbody ⊢
+      exact ⟨isGroundListAt_map_of_forall fun element hmem =>
+          ih element hmem (depth := depth) (isGroundListAt_mem hbody.1 hmem), hbody.2⟩
+
+/-- Binder-eliminating instantiation preserves local closure while permitting
+free metavariables. -/
+theorem instantiateBVarAt_isWellScopedAt {ambient depth : Nat}
+    {replacement body : Pattern}
+    (hbody : body.isWellScopedAt (ambient + depth + 1) = true)
+    (hreplacement : replacement.isWellScopedAt ambient = true) :
+    (instantiateBVarAt depth replacement body).isWellScopedAt
+      (ambient + depth) = true := by
+  induction body using Pattern.inductionOn generalizing depth with
+  | hbvar index =>
+      simp only [Pattern.isWellScopedAt] at hbody
+      have hindex : index < ambient + depth + 1 := of_decide_eq_true hbody
+      simp only [instantiateBVarAt]
+      split
+      · simp only [Pattern.isWellScopedAt]
+        exact decide_eq_true (by omega)
+      · split
+        · simpa only [Nat.add_zero] using
+            (liftBVars_isWellScopedAt (ambient := ambient) (cutoff := 0)
+              (shift := depth) hreplacement)
+        · simp only [Pattern.isWellScopedAt]
+          exact decide_eq_true (by omega)
+  | hfvar _ => simp only [instantiateBVarAt, Pattern.isWellScopedAt]
+  | happly _ args ih =>
+      simp only [instantiateBVarAt, Pattern.isWellScopedAt] at hbody ⊢
+      exact isWellScopedListAt_map_of_forall fun argument hmem =>
+        ih argument hmem (depth := depth) (isWellScopedListAt_mem hbody hmem)
+  | hlambda _ innerBody ih =>
+      simp only [instantiateBVarAt, Pattern.isWellScopedAt] at hbody ⊢
+      have h := ih (depth := depth + 1)
+        (by simpa only [Nat.add_assoc] using hbody)
+      simpa only [Nat.add_assoc] using h
+  | hmultiLambda arity _ innerBody ih =>
+      simp only [instantiateBVarAt, Pattern.isWellScopedAt] at hbody ⊢
+      have h := ih (depth := depth + arity)
+        (by simpa only [Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using hbody)
+      simpa only [Nat.add_assoc] using h
+  | hsubst nestedBody nestedReplacement ihBody ihReplacement =>
+      simp only [instantiateBVarAt, Pattern.isWellScopedAt, Bool.and_eq_true] at hbody ⊢
+      have hNestedBody := ihBody (depth := depth + 1)
+        (by simpa only [Nat.add_assoc] using hbody.1)
+      exact ⟨by simpa only [Nat.add_assoc] using hNestedBody,
+        ihReplacement (depth := depth) hbody.2⟩
+  | hcollection _ elements _ ih =>
+      simp only [instantiateBVarAt, Pattern.isWellScopedAt] at hbody ⊢
+      exact isWellScopedListAt_map_of_forall fun element hmem =>
+        ih element hmem (depth := depth) (isWellScopedListAt_mem hbody hmem)
+
+/-- Executing a well-scoped explicit substitution yields a well-scoped term. -/
+theorem instantiateBVar_isWellScoped {replacement body : Pattern}
+    (hbody : body.isWellScopedAt 1 = true)
+    (hreplacement : replacement.isWellScoped = true) :
+    (instantiateBVar replacement body).isWellScoped = true := by
+  exact instantiateBVarAt_isWellScopedAt (ambient := 0) (depth := 0)
+    (replacement := replacement) (body := body) hbody hreplacement
+
+/-- Executing a ground explicit substitution yields ground executable data. -/
+theorem instantiateBVar_isGround {replacement body : Pattern}
+    (hbody : body.isGroundAt 1 = true)
+    (hreplacement : replacement.isGround = true) :
+    (instantiateBVar replacement body).isGround = true := by
+  exact instantiateBVarAt_isGroundAt (ambient := 0) (depth := 0)
+    (replacement := replacement) (body := body) hbody hreplacement
+
+private theorem list_map_eq_self_scoped {α : Type*} {f : α → α} {values : List α}
+    (hall : ∀ value ∈ values, f value = value) : values.map f = values := by
+  induction values with
+  | nil => rfl
+  | cons head tail ih =>
+      simp only [List.map_cons]
+      rw [hall head (List.mem_cons.mpr (Or.inl rfl)),
+        ih (fun value hmem => hall value (List.mem_cons.mpr (Or.inr hmem)))]
+
+private theorem list_map_eq_map_scoped {α β : Type*} {f g : α → β}
+    {values : List α} (hall : ∀ value ∈ values, f value = g value) :
+    values.map f = values.map g := by
+  induction values with
+  | nil => rfl
+  | cons head tail ih =>
+      simp only [List.map_cons]
+      rw [hall head (List.mem_cons.mpr (Or.inl rfl)),
+        ih (fun value hmem => hall value (List.mem_cons.mpr (Or.inr hmem)))]
+
+/-- Lifting above every bound index of a well-scoped pattern is inert. -/
+theorem liftBVars_eq_self_of_isWellScopedAt {cutoff shift : Nat} {pattern : Pattern}
+    (hscoped : pattern.isWellScopedAt cutoff = true) :
+    liftBVars cutoff shift pattern = pattern := by
+  induction pattern using Pattern.inductionOn generalizing cutoff with
+  | hbvar index =>
+      simp only [Pattern.isWellScopedAt] at hscoped
+      have hindex : index < cutoff := of_decide_eq_true hscoped
+      simp only [liftBVars]
+      simp [Nat.not_le.mpr hindex]
+  | hfvar _ => simp only [liftBVars]
+  | happly _ arguments ih =>
+      simp only [Pattern.isWellScopedAt] at hscoped
+      simp only [liftBVars]
+      congr 1
+      exact list_map_eq_self_scoped fun argument hmem =>
+        ih argument hmem (isWellScopedListAt_mem hscoped hmem)
+  | hlambda _ body ih =>
+      simp only [Pattern.isWellScopedAt] at hscoped
+      simp only [liftBVars]
+      congr 1
+      exact ih hscoped
+  | hmultiLambda arity _ body ih =>
+      simp only [Pattern.isWellScopedAt] at hscoped
+      simp only [liftBVars]
+      congr 1
+      exact ih hscoped
+  | hsubst body replacement ihBody ihReplacement =>
+      simp only [Pattern.isWellScopedAt, Bool.and_eq_true] at hscoped
+      simp only [liftBVars]
+      congr 1
+      · exact ihBody hscoped.1
+      · exact ihReplacement hscoped.2
+  | hcollection _ elements _ ih =>
+      simp only [Pattern.isWellScopedAt] at hscoped
+      simp only [liftBVars]
+      congr 1
+      exact list_map_eq_self_scoped fun element hmem =>
+        ih element hmem (isWellScopedListAt_mem hscoped hmem)
+
+/-- On a body scoped beneath exactly the eliminated binder and a closed
+replacement, binder-eliminating instantiation agrees with ordinary opening. -/
+theorem instantiateBVarAt_eq_openBVar_of_isWellScoped {depth : Nat}
+    {replacement body : Pattern}
+    (hbody : body.isWellScopedAt (depth + 1) = true)
+    (hreplacement : replacement.isWellScoped = true) :
+    instantiateBVarAt depth replacement body = openBVar depth replacement body := by
+  induction body using Pattern.inductionOn generalizing depth with
+  | hbvar index =>
+      simp only [Pattern.isWellScopedAt] at hbody
+      have hindex : index < depth + 1 := of_decide_eq_true hbody
+      by_cases hlt : index < depth
+      · simp [instantiateBVarAt, openBVar, hlt, Nat.ne_of_lt hlt]
+      · have heq : index = depth := by omega
+        subst index
+        simp [instantiateBVarAt, openBVar,
+          liftBVars_eq_self_of_isWellScopedAt hreplacement]
+  | hfvar _ => simp only [instantiateBVarAt, openBVar]
+  | happly _ arguments ih =>
+      simp only [Pattern.isWellScopedAt] at hbody
+      simp only [instantiateBVarAt, openBVar]
+      congr 1
+      exact list_map_eq_map_scoped fun argument hmem =>
+        ih argument hmem (isWellScopedListAt_mem hbody hmem)
+  | hlambda _ body ih =>
+      simp only [Pattern.isWellScopedAt] at hbody
+      simp only [instantiateBVarAt, openBVar]
+      congr 1
+      exact ih (by simpa only [Nat.add_assoc] using hbody)
+  | hmultiLambda arity _ body ih =>
+      simp only [Pattern.isWellScopedAt] at hbody
+      simp only [instantiateBVarAt, openBVar]
+      congr 1
+      exact ih (by
+        simpa only [Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using hbody)
+  | hsubst nestedBody nestedReplacement ihBody ihReplacement =>
+      simp only [Pattern.isWellScopedAt, Bool.and_eq_true] at hbody
+      simp only [instantiateBVarAt, openBVar]
+      congr 1
+      · exact ihBody (by simpa only [Nat.add_assoc] using hbody.1)
+      · exact ihReplacement hbody.2
+  | hcollection _ elements _ ih =>
+      simp only [Pattern.isWellScopedAt] at hbody
+      simp only [instantiateBVarAt, openBVar]
+      congr 1
+      exact list_map_eq_map_scoped fun element hmem =>
+        ih element hmem (isWellScopedListAt_mem hbody hmem)
+
+/-- Closed specialization of binder-eliminating instantiation versus opening. -/
+theorem instantiateBVar_eq_openBVar_of_isWellScoped {replacement body : Pattern}
+    (hbody : body.isWellScopedAt 1 = true)
+    (hreplacement : replacement.isWellScoped = true) :
+    instantiateBVar replacement body = openBVar 0 replacement body := by
+  exact instantiateBVarAt_eq_openBVar_of_isWellScoped hbody hreplacement
+
 /-! ## Environment-Based Substitution
 
 Substitution environment for replacing free variables (metavariables)
@@ -106,13 +568,66 @@ def applySubst (env : SubstEnv) : Pattern → Pattern
   | .multiLambda n nms body =>
     .multiLambda n nms (applySubst env body)
   | .subst body replacement =>
-    -- Explicit substitution: apply env to both parts, then openBVar
+    -- Explicit substitution eliminates one de Bruijn level.
     let body' := applySubst env body
     let repl' := applySubst env replacement
-    openBVar 0 repl' body'
+    instantiateBVar repl' body'
   | .collection ct elements rest =>
     .collection ct (elements.map (applySubst env)) rest
 termination_by p => sizeOf p
+
+section BinderEliminationScopeFixtures
+
+private def scopeFixtureK : Pattern := .apply "K" []
+
+private def multiLambdaSubstBody : Pattern :=
+  .multiLambda 2 [] (.apply "Triple" [.bvar 2, .bvar 1, .bvar 0])
+
+private def multiLambdaSubstResult : Pattern :=
+  .multiLambda 2 [] (.apply "Triple" [scopeFixtureK, .bvar 1, .bvar 0])
+
+private def multiLambdaExplicitSubst : Pattern :=
+  .subst multiLambdaSubstBody scopeFixtureK
+
+#guard multiLambdaExplicitSubst.isGround
+#guard multiLambdaSubstResult.isGround
+#guard decide
+  (applySubst SubstEnv.empty multiLambdaExplicitSubst = multiLambdaSubstResult)
+
+-- An open replacement is lifted under both binders, but is still dangling
+-- after the explicit substitution eliminates its own binder.
+private def openMultiLambdaExplicitSubst : Pattern :=
+  .subst multiLambdaSubstBody (.bvar 0)
+
+#guard !openMultiLambdaExplicitSubst.isWellScoped
+#guard !(applySubst SubstEnv.empty openMultiLambdaExplicitSubst).isWellScoped
+#guard !(applySubst SubstEnv.empty openMultiLambdaExplicitSubst).isGround
+
+private def nestedExplicitSubst : Pattern :=
+  .subst
+    (.subst (.apply "Pair" [.bvar 1, .bvar 0]) (.bvar 0))
+    scopeFixtureK
+
+private def nestedExplicitSubstResult : Pattern :=
+  .apply "Pair" [scopeFixtureK, scopeFixtureK]
+
+#guard nestedExplicitSubst.isGround
+#guard decide
+  (applySubst SubstEnv.empty nestedExplicitSubst = nestedExplicitSubstResult)
+#guard (applySubst SubstEnv.empty nestedExplicitSubst).isGround
+
+-- Each nested substitution removes exactly one level.  Starting two levels
+-- out of scope therefore remains one level out of scope after both removals.
+private def danglingNestedExplicitSubst : Pattern :=
+  .subst (.subst (.bvar 2) (.bvar 0)) scopeFixtureK
+
+#guard !danglingNestedExplicitSubst.isWellScoped
+#guard decide
+  (applySubst SubstEnv.empty danglingNestedExplicitSubst = .bvar 0)
+#guard !(applySubst SubstEnv.empty danglingNestedExplicitSubst).isWellScoped
+#guard !(applySubst SubstEnv.empty danglingNestedExplicitSubst).isGround
+
+end BinderEliminationScopeFixtures
 
 /-! ## Freshness Checking -/
 
@@ -204,6 +719,40 @@ end
 def lc (p : Pattern) : Bool := lc_at 0 p
 
 /-! ## Theorems -/
+
+/-- The legacy local-closure checker and the canonical scope checker coincide. -/
+theorem isWellScopedAt_eq_lc_at (k : Nat) (pattern : Pattern) :
+    pattern.isWellScopedAt k = lc_at k pattern := by
+  induction pattern using Pattern.inductionOn generalizing k with
+  | hbvar _ => rfl
+  | hfvar _ => rfl
+  | happly _ arguments ih =>
+      simp only [Pattern.isWellScopedAt, lc_at]
+      induction arguments with
+      | nil => rfl
+      | cons head tail ihTail =>
+          simp only [Pattern.isWellScopedListAt, lc_at_list]
+          rw [ih head (List.mem_cons.mpr (Or.inl rfl)) k]
+          rw [ihTail (fun argument hmem =>
+            ih argument (List.mem_cons.mpr (Or.inr hmem)))]
+  | hlambda _ body ih =>
+      simp only [Pattern.isWellScopedAt, lc_at]
+      exact ih (k + 1)
+  | hmultiLambda arity _ body ih =>
+      simp only [Pattern.isWellScopedAt, lc_at]
+      exact ih (k + arity)
+  | hsubst body replacement ihBody ihReplacement =>
+      simp only [Pattern.isWellScopedAt, lc_at]
+      rw [ihBody (k + 1), ihReplacement k]
+  | hcollection _ elements _ ih =>
+      simp only [Pattern.isWellScopedAt, lc_at]
+      induction elements with
+      | nil => rfl
+      | cons head tail ihTail =>
+          simp only [Pattern.isWellScopedListAt, lc_at_list]
+          rw [ih head (List.mem_cons.mpr (Or.inl rfl)) k]
+          rw [ihTail (fun element hmem =>
+            ih element (List.mem_cons.mpr (Or.inr hmem)))]
 
 /-- Helper: if `f a = a` for all `a ∈ l`, then `l.map f = l`. -/
 private theorem list_map_eq_self {α : Type*} {f : α → α} {l : List α}
@@ -330,7 +879,7 @@ theorem close_open_id (k : Nat) (x : String) (p : Pattern)
     simp only [freeVars] at hfresh
     simp only [openBVar, closeFVar]; congr 1; exact ih (k + n) hfresh
   | hsubst body repl ihb ihr =>
-    simp only [freeVars, List.mem_append] at hfresh; push_neg at hfresh
+    simp only [freeVars, List.mem_append] at hfresh; push Not at hfresh
     simp only [openBVar, closeFVar]; congr 1
     · exact ihb (k + 1) hfresh.1
     · exact ihr k hfresh.2
@@ -490,8 +1039,9 @@ theorem isFresh_collection_mem {x : String} {ct : CollType} {ps : List Pattern} 
 
 /-- Substituting for a fresh variable is identity on subst-free patterns.
 
-    Requires `noExplicitSubst` because `applySubst` performs `openBVar` on
-    `.subst` nodes, changing the term structure even when the env has no effect. -/
+    Requires `noExplicitSubst` because `applySubst` executes `.subst` nodes via
+    binder-eliminating `instantiateBVar`, changing the term structure even when
+    the environment has no effect. -/
 theorem applySubst_fresh_single {x : String} {q : Pattern} {p : Pattern}
     (hfresh : isFresh x p = true) (hnes : noExplicitSubst p = true) :
     applySubst (SubstEnv.extend SubstEnv.empty x q) p = p := by

@@ -9,7 +9,6 @@ set -u
 DIR="$(cd "$(dirname "$0")" && pwd)"
 CETTA="${CETTA:-/home/aimama/aihub/hyperon/CeTTa/cetta}"
 CETTA_EXTRA_ARGS="${CETTA_EXTRA_ARGS---eval-hashcons}"
-CETTA_AS_LIMIT_BYTES="${CETTA_AS_LIMIT_BYTES:-8589934592}"
 CETTA_TIMEOUT_SECONDS="${CETTA_TIMEOUT_SECONDS:-120}"
 read -r -a CETTA_EXTRA_ARGV <<< "$CETTA_EXTRA_ARGS"
 work="$(mktemp -d "$DIR/.dedukti_mutation.XXXXXX")"
@@ -17,15 +16,15 @@ trap 'rm -rf "$work"' EXIT
 
 failures=0
 
-run_cetta_capped() {
+run_cetta() {
   local file="$1"
-  timeout "$CETTA_TIMEOUT_SECONDS" prlimit --as="$CETTA_AS_LIMIT_BYTES" -- "$CETTA" "${CETTA_EXTRA_ARGV[@]}" "$file"
+  timeout "$CETTA_TIMEOUT_SECONDS" "$CETTA" "${CETTA_EXTRA_ARGV[@]}" "$file"
 }
 
 expect_accept() {
   local name="$1"
   local file="$2"
-  if run_cetta_capped "$file" >"$work/$name.out" 2>&1 && ! grep -q '(Error' "$work/$name.out"; then
+  if run_cetta "$file" >"$work/$name.out" 2>&1 && ! grep -q '(Error' "$work/$name.out"; then
     echo "  [baseline] $name  passed"
   else
     echo "  [baseline] $name  FAILED (mutation setup is invalid)"
@@ -37,7 +36,7 @@ expect_accept() {
 expect_reject() {
   local name="$1"
   local file="$2"
-  if ! run_cetta_capped "$file" >"$work/$name.out" 2>&1; then
+  if ! run_cetta "$file" >"$work/$name.out" 2>&1; then
     echo "  [mutation] $name  caught"
   elif grep -q '(Error' "$work/$name.out"; then
     echo "  [mutation] $name  caught"

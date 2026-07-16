@@ -37,11 +37,12 @@ reducts : List Pattern
 - `rewriteWithContext` — also try rules on subterms (congruence)
 - `rewriteToNormalForm` — iterate to normal form
 
-## Validation
+## Executable Diagnostics
 
-The executable tests below demonstrate that `rewriteStep rhoCalc` produces
-the same results as the specialized `RhoCalculus.Engine.reduceStep` for
-all test cases.
+The executable examples below exercise this generic engine and compare a
+small rho-calculus corpus with `RhoCalculus.Engine.reduceStep`.  The comparison
+currently contains both agreements and disagreements; it is diagnostic output,
+not a validation or adequacy certificate for either engine.
 -/
 
 namespace Mettapedia.OSLF.MeTTaIL.Engine
@@ -626,6 +627,10 @@ def patternContainsWithFuel (fuel : Nat) (needle haystack : Pattern) : Bool :=
 def patternContains (needle haystack : Pattern) : Bool :=
   patternContainsWithFuel 10000 needle haystack
 
+/-- Legacy bounded article-consistency data.  The `children` list records only
+children that a producer chooses to supply; it is not indexed by a rule's
+ordered premise slots and may be empty.  Consequently this structure and its
+checker are not the generic proof-calculus evidence format. -/
 structure ProofArticle where
   witness : Pattern
   exported : Pattern
@@ -633,6 +638,8 @@ structure ProofArticle where
   children : List ProofArticle
 deriving Repr
 
+/-- Check local reduction/export consistency and every child that is supplied.
+This does not establish that all rule premises have exact proof provenance. -/
 def checkProofArticleWithEnv (relEnv : RelationEnv) (lang : LanguageDef)
     (fuel : Nat) : ProofArticle → Bool
   | article =>
@@ -653,9 +660,23 @@ def checkProofArticle (lang : LanguageDef) (fuel : Nat) (article : ProofArticle)
     Bool :=
   checkProofArticleWithEnv RelationEnv.empty lang fuel article
 
-/-- Prop-level contract for the executable proof-article checker.  A checked
+/-- Executable exposure of the legacy format's provenance gap: with no
+children, acceptance reduces to the local rewrite/export checks.  A later
+proof-calculus checker must instead require one exact proof per premise slot. -/
+theorem checkProofArticleWithEnv_empty_children
+    (relEnv : RelationEnv) (lang : LanguageDef) (fuel : Nat)
+    (witness exported result : Pattern) :
+    checkProofArticleWithEnv relEnv lang (fuel + 1)
+        { witness := witness, exported := exported, result := result,
+          children := [] } =
+      ((rewriteWithContextWithPremisesUsing relEnv lang witness).contains result &&
+        patternContains exported result) := by
+  simp [checkProofArticleWithEnv]
+
+/-- Prop-level contract for the executable article-consistency checker.  A checked
     node must be a valid local reduction, export the payload it claims, and
-    consume the exported payloads of its checked children in its own witness. -/
+    consume the exported payloads of its supplied checked children in its own
+    witness.  It does not require a child for each rule premise. -/
 def ProofArticleAcceptedWithEnv (relEnv : RelationEnv) (lang : LanguageDef) :
     Nat → ProofArticle → Prop
   | 0, _ => False
@@ -666,9 +687,9 @@ def ProofArticleAcceptedWithEnv (relEnv : RelationEnv) (lang : LanguageDef) :
             ProofArticleAcceptedWithEnv relEnv lang fuel child ∧
               patternContains child.exported article.witness = true
 
-/-- The Boolean checker is exact for its Prop-level contract.  This proves the
-    internal checking invariant; it does not identify the encoded rules with an
-    external HOL kernel. -/
+/-- The Boolean checker is exact for its deliberately weak Prop-level contract.
+It proves local article consistency only: it neither supplies exact premise
+provenance nor identifies encoded rules with an external HOL kernel. -/
 theorem checkProofArticleWithEnv_eq_true_iff_accepted
     (relEnv : RelationEnv) (lang : LanguageDef) :
     ∀ (fuel : Nat) (article : ProofArticle),
@@ -752,8 +773,7 @@ private def ppar (elems : List Pattern) : Pattern :=
   let result := fullRewriteToNormalForm rhoCalc term
   IO.println s!"  normal form: {result}"
 
--- Test 5: Comparison — show generic and specialized give same results
--- Comparison: generic rewriteStep vs specialized reduceStep
+-- Test 5: A positive comparison case for generic rewriteStep vs specialized reduceStep.
 #eval! do
   let x := Pattern.fvar "x"
   let term := ppar [poutput x pzero, pinput x (.bvar 0)]
@@ -808,16 +828,18 @@ private def extRelationEnv : RelationEnv where
   IO.println s!"  default env reducts ({noEnv.length}): {noEnv.map toString}"
   IO.println s!"  custom env reducts ({withEnv.length}): {withEnv.map toString}"
 
-/-! ## Agreement Tests: Generic vs Specialized
+/-! ## Comparison Diagnostics: Generic vs Specialized
 
 Systematic comparison of `rewriteStep rhoCalc` (generic) against
-`RhoCalculus.Engine.reduceStep` (specialized) on all test cases.
+`RhoCalculus.Engine.reduceStep` (specialized) on a small local corpus.
 The generic engine handles COMM and DROP at top level; the specialized
 engine also handles PAR (congruence). We compare `rewriteWithContext`
-(generic + congruence) against `reduceStep` (specialized). -/
+(generic + congruence) against `reduceStep` (specialized).  Equality is not
+assumed: every disagreement printed below is an open semantic-correlation
+obligation. -/
 
--- Agreement test: run both engines on a term and check equality
-private def checkAgreement (label : String) (term : Pattern) : IO Unit := do
+-- Run both engines on a term and report equality or the exact disagreement.
+private def reportComparison (label : String) (term : Pattern) : IO Unit := do
   let genericReducts := (rewriteWithContext rhoCalc term).map toString
   let specialReducts := (Mettapedia.Languages.ProcessCalculi.RhoCalculus.Engine.reduceStep term).map toString
   -- Sort for order-independent comparison
@@ -830,27 +852,27 @@ private def checkAgreement (label : String) (term : Pattern) : IO Unit := do
     IO.println s!"    generic: {gSorted}"
     IO.println s!"    special: {sSorted}"
 
--- Agreement suite
+-- Comparison corpus: intentionally retains both positive and negative cases.
 #eval! do
-  IO.println "=== Generic vs Specialized Agreement Suite ==="
+  IO.println "=== Generic vs Specialized Comparison Diagnostics ==="
   let x := Pattern.fvar "x"
   let y := Pattern.fvar "y"
   -- 1. Simple COMM
-  checkAgreement "COMM" (ppar [poutput x pzero, pinput x (.bvar 0)])
+  reportComparison "COMM" (ppar [poutput x pzero, pinput x (.bvar 0)])
   -- 2. Race (2 reducts)
-  checkAgreement "Race" (ppar [poutput x pzero, pinput x (.bvar 0),
+  reportComparison "Race" (ppar [poutput x pzero, pinput x (.bvar 0),
                                 pinput x (pdrop (.bvar 0))])
   -- 3. DROP (top-level)
-  checkAgreement "DROP" (pdrop (nquote pzero))
+  reportComparison "DROP" (pdrop (nquote pzero))
   -- 4. Normal form
-  checkAgreement "NormalForm" pzero
+  reportComparison "NormalForm" pzero
   -- 5. Nested PAR (DROP inside bag)
-  checkAgreement "NestedPAR" (ppar [pdrop (nquote pzero), poutput x pzero])
+  reportComparison "NestedPAR" (ppar [pdrop (nquote pzero), poutput x pzero])
   -- 6. Pure bag, no redex
-  checkAgreement "NoRedex" (ppar [poutput x pzero, poutput y pzero])
+  reportComparison "NoRedex" (ppar [poutput x pzero, poutput y pzero])
   -- 7. Empty bag
-  checkAgreement "EmptyBag" (ppar [])
+  reportComparison "EmptyBag" (ppar [])
   -- 8. Single element bag
-  checkAgreement "SingleBag" (ppar [pdrop (nquote pzero)])
+  reportComparison "SingleBag" (ppar [pdrop (nquote pzero)])
 
 end Mettapedia.OSLF.MeTTaIL.Engine
