@@ -709,8 +709,9 @@ reactions.
 A \emph{profile} names a variant of the reduction relation together with the grammar it
 accepts. \code{strict-core} is the pure asynchronous spine above: it admits only the six core
 constructors, and a non-core form is \emph{rejected} rather than left inert. The \code{cost}
-profile accepts a richer resource-annotated dialect and meters each reaction, charging a
-budget per \textsc{comm} (Section~\ref{sec:rho-cost}).
+profile accepts a richer resource-annotated dialect in which every reaction must be
+\emph{funded} from purses located on its channel, and every run emits a causal receipt of
+its spending (Section~\ref{sec:rho-cost}).
 
 \subsection{Certified reduction}
 \label{sec:rho-lean}
@@ -807,12 +808,187 @@ then rendezvouses their channel-gathered results into a single synthesis.
 \subsection{Cost-accounted reactions}
 \label{sec:rho-cost}
 
-Reactions are also the natural place to \emph{meter} computation: each \textsc{comm} is one
-unit of work, so a resource budget can be charged per reaction. \CeTTa{}'s \code{cost}
-profile does this directly --- it reduces an annotated $\rho$ dialect and reports the
-resource each reaction consumes. It is the executable end of an ongoing program to equip the
-$\rho$-calculus with a \emph{cost endofunctor}: a construction that wraps a calculus with
-resource accounting once and for all~\cite{costendofunctor}. We return to it in future work.
+A reaction is the natural unit of metering: each \textsc{comm} is one indivisible piece of
+work. The \code{cost} profile makes that intuition operational --- and it does so with money
+rather than a stopwatch. Processes are \emph{signed}, channels carry \emph{purses} of
+tokens, a reaction fires \emph{only if it is paid for}, and what a run returns is not a
+number but a \emph{receipt}: a causal, auditable record of every spend. The profile is the
+executable part of the programme to equip the $\rho$-calculus with compositional resource
+accounting~\cite{costendofunctor,rhocost-companion}. Its design commitments are locality of
+funding, causality from consumption, and an explicit separation between exact authority
+receipts and lossy numerical valuations.
+
+\paragraph{Purses and funded reactions.} In the \code{.rho} surface, \code{\{P\}alice} is
+the process \code{P} signed by \code{alice}, and \code{purse pay \{alice : ()\}} is a store
+on channel \code{pay} holding one token signed by \code{alice}. The funding rule is
+\emph{located}: a \textsc{comm} on \code{pay} consumes one token per participating endpoint
+signature, and those tokens must be found in purses \emph{on \code{pay} itself}. There is no
+ambient bank account, and raw process data never funds anything. The smallest funded program
+has two signed endpoints and two purses
+(\href{https://github.com/zariuq/CeTTa/blob/e23de3043462d80e27f9c9009bd0f1b955ed140c/tests/rhocalc_cost_run/split_tokens_basic.rho}{\code{tests/rhocalc\_cost\_run/split\_tokens\_basic.rho}}):
+
+\begin{lstlisting}
+{for ($m <- pay) {{0}cont}}alice | {pay!({0}payload)}bob
+  | purse pay {alice : ()} | purse pay {bob : ()}
+\end{lstlisting}
+
+\noindent
+which reduces to \code{purse pay \{()\} | purse pay \{()\} | \{0\}cont}: each signature paid
+for its own endpoint, and the two purses are left empty beside the continuation. Now delete
+\code{bob}'s purse
+(\href{https://github.com/zariuq/CeTTa/blob/e23de3043462d80e27f9c9009bd0f1b955ed140c/tests/rhocalc_cost_run/missing_token_quiescent.rho}{\code{missing\_token\_quiescent.rho}}) and
+the program is \emph{quiescent with the send and receive still facing each other}: the
+reaction is not slowed, it is \emph{disabled}. This is the first thing to internalize about
+the profile --- cost is not an observer bolted onto the side; an unfunded reaction cannot
+fire. Because channels are quoted processes, a purse's location follows the calculus's own
+name equivalence rather than spelling: a purse on \code{@\{*pay\}} funds a reaction on
+\code{pay}, since the two names denote the same channel
+(\href{https://github.com/zariuq/CeTTa/blob/e23de3043462d80e27f9c9009bd0f1b955ed140c/tests/rhocalc_cost_run/name_equivalence_quote_drop.rho}{\code{name\_equivalence\_quote\_drop.rho}}) ---
+aliases of a channel are the same account.
+
+\paragraph{Receipts are causal records, not counters.} A single number would forget who
+paid, what was consumed, and what depended on what --- and its intermediate readings would
+depend on which interleaving the scheduler happened to choose. Instead, every reaction emits
+an event record with four fields: a fresh event identifier; a \emph{cause list} --- the
+identifiers of the events that produced the exact occurrences this event consumed, with
+repetitions kept (consuming two outputs of event $0$ yields the cause list \code{(0 0)}); a
+nonempty list of \emph{funding} records naming the purse surface and head signature of each
+token spent; and the consumed signature itself. The two-reaction chain below (the first case
+of
+\href{https://github.com/zariuq/CeTTa/blob/e23de3043462d80e27f9c9009bd0f1b955ed140c/tests/test_lts_rho_cost_causal_trace.metta}{\code{tests/test\_lts\_rho\_cost\_causal\_trace.metta}})
+shows the shape --- event $1$ consumes both a continuation and a purse tail produced by
+event $0$, so its cause list holds two arcs to $0$:
+
+\begin{lstlisting}
+(lts:rho:cost:receipt
+  ((lts:rho:cost:event 0 ()
+     ((lts:rho:cost:funding chain spend)) spend)
+   (lts:rho:cost:event 1 (0 0)
+     ((lts:rho:cost:funding chain spend)) spend))
+  (rho:cost:par
+    (rho:cost:purse chain rho:cost:stack-empty)
+    (rho:cost:signed rho:nil done)))
+\end{lstlisting}
+
+The algebraic reading is the load-bearing one. A receipt is a \emph{located, measured
+pomset} of spend events: a partially ordered multiset whose order is generated purely by
+consumption --- event $e'$ follows $e$ exactly when $e'$ consumed something $e$ produced.
+The engine's emission order is just one linearization of that partial order; any two
+schedules of the same reactions yield the same pomset, so \emph{schedule-invariance holds by
+construction} rather than by a theorem about the scheduler (the Lean theorem
+\code{boundedBudgetedCausalPrefix\_emission\_linearizes} confirms the emitted sequence
+linearizes the causal order). Locations make purses \emph{fibers} over channels: funding
+never crosses a channel, and each per-location account is conserved
+(\code{CostPath.per\_location\_restriction\_account\_conservation}). Finally, the receipt
+itself carries no notion of ``the cost'': costs are \emph{valuations} --- monoid-valued maps
+out of the receipt (total spend, per-signature spend, critical-path depth) --- so the
+receipt is the free object and each accounting policy is a homomorphism out of it, with the
+lawful combination rules derived rather than posited, in the sense of Knuth and Skilling's
+measure-assignment axioms~\cite{knuthskilling}. Event identifiers are deliberately
+polymorphic in the same spirit: a local counter suffices in one process, and a hash-chained
+identifier can replace it at trust boundaries with the receipt algebra unchanged.
+
+\paragraph{Honest budgets.} Everything above is unbounded by default:
+\code{lts:rho:cost:steps} and \code{lts:rho:cost:causal-trace} enumerate exactly and never
+truncate silently. Bounded execution is strictly opt-in through
+\code{lts:rho:cost:causal-prefix}, which takes two separate allowances --- reaction fuel and
+exact-cover search work --- and returns a receipt together with a status that never lies:
+\code{quiescent} only after exhaustive search \emph{proves} the residual has no funded
+successor; \code{fuel-exhausted} when the firing allowance ends first;
+\code{search-exhausted} when cover search stops before finding a successor \emph{or proving
+absence}. Search exhaustion is never reported as quiescence: an out-of-fuel machine says ``I
+ran out,'' never ``there was nothing there.'' The distinction has teeth because funding
+search is a genuine exact-cover problem. A send whose signature product multiplies ten
+\code{coin}s, beside twenty unit purses on the same channel, admits
+$\binom{20}{10}=184{,}756$ distinct covers
+(\href{https://github.com/zariuq/CeTTa/blob/e23de3043462d80e27f9c9009bd0f1b955ed140c/tests/test_lts_rho_cost_search_budget.metta}{\code{tests/test\_lts\_rho\_cost\_search\_budget.metta}}):
+
+\begin{lstlisting}
+; Zero reduction fuel performs no exact-cover search, even when
+; the latent cover family has C(20,10) members.
+!(assertEqualToResult
+  (test:prefix-status
+    (lts:rho:cost:causal-prefix 0 0 (test:large-cover-state)))
+  (lts:rho:cost:fuel-exhausted))
+
+; The first exact occurrence cover is yielded without
+; materializing the other 184,755 covers.
+\end{lstlisting}
+
+\noindent
+At fuel $0$ the machine performs no search at all; with a small search allowance it yields
+the first cover lazily; and the unlimited frontier remains available and exact --- all
+$184{,}756$ successors, measured at about $11$\,s --- combinatorial by design and by
+request, never by accident. A budget-monotonicity gate (59 paired runs at increasing
+allowances) checks that raising an allowance never flips a determinate verdict and never
+removes a receipt event: more fuel can only extend what is known.
+
+\paragraph{Certified correspondence.} The declarative side lives in Lean (the
+\href{https://github.com/zariuq/MeTTapedia/tree/2e832da612270ffc5cb9db52e5d835ec94716f4d/lean/mettapedia/Mettapedia/Languages/ProcessCalculi/RhoCalculus/Costed}{\code{Costed/}}
+theory in the Mettapedia repository): cost steps, paths, receipts, valuations,
+conservation laws, and a budgeted executor, proven equal to one another where they meet.
+The capstone \code{BudgetedPrefixPathRefinement} states that every budgeted machine run
+\emph{is} a prefix of a declarative cost path with the same receipt and the correct status,
+and its corollaries pin each verdict separately: sufficient allowances yield an actual
+path; exhaustive candidate failure --- unlike bounded exhaustion --- certifies quiescence;
+zero fuel and zero search-work report their own exhaustion and make no negative claim. The
+machine frontier is proven sound and complete up to structural equivalence
+(\code{costStep\_sound\_runtime},
+\code{costStep\_complete\_runtime\_up\_to\_struct}).
+
+The pure-rho boundary is now theorem-backed as well.  The matcher and substitution are
+compiled from the one authored rho language definition and proved to agree with the
+established rho GSLT.  On the derived binder-safe fragment, initialization and funded
+reduction preserve scope; each declarative \code{CostStep} erases to one pure
+\textsc{comm}, and each declarative funded path erases to a rho rewrite path whose length is
+exactly its ordered demand-receipt length.  The equivalence used here is pure structural
+congruence: no executable free-Drop step is admitted.  The canonical configuration erasure
+is defined by quotient lifting rather than by a noncomputable representative choice.  A
+rerunnable Lean audit prints the axioms of the exported results; they use only Lean's
+standard quotient and classical infrastructure, with no project axiom and no unfinished
+proof.
+
+On the compiled side, 146 sequential/threaded prefix cases agree, and 308 compiled-C
+receipts replay as Lean derivations while two altered receipts are rejected.  The complete
+runtime suite passes in the ordinary, thread-sanitized, and address/undefined-behavior
+sanitized builds.  The differential harness
+(\href{https://github.com/zariuq/CeTTa/blob/e23de3043462d80e27f9c9009bd0f1b955ed140c/scripts/rhocalc_cost_differential.py}{\code{scripts/rhocalc\_cost\_differential.py}})
+drives the same terms through the C engine and the Lean executor, including fuel-$0$ and
+fuel-$1$ boundary cases, with an out-of-fragment case correctly rejected. This remains
+bounded differential evidence about the compiled engine, not a universal theorem about C.
+
+\paragraph{Parallel funded execution.} Compatible reactions execute in OS threads in
+waves.  Before a worker can fire, it atomically claims the exact endpoint occurrences and
+the exact funding-cover occurrences in a fixed resource order; a wave admits only pairwise
+disjoint claims.  The sequential semantics therefore remains the reference, while the
+threaded implementation is tested as a legal parallel refinement: both threaded CLI modes,
+six contention and disjointness stress families, and the sequential/threaded prefix gate
+exercise same-channel disjoint reactions, competing funding covers, duplicate-looking
+occurrences, and causal receipt linearization.  These gates, together with thread and memory
+sanitizers, are implementation evidence; the Lean step/path theorem above supplies the
+declarative semantic boundary.
+
+\paragraph{One root and the corrected algebra.} The profile implements funded rho, not a
+second rho calculus and not a Datalog architecture.  Its pure syntax and \textsc{comm} rule
+come from the same authored language definition as the matcher and GSLT bridge.  Other
+implementations are bounded encoding references, and their executable free-Drop rule is not
+part of this profile.
+
+The formalization also identifies why the original ordinary-monad faithfulness claim cannot
+be repaired by choosing a more cancellative signature monoid.  Joint injectivity of a monoid
+multiplication together with a two-sided unit forces the carrier to be a subsingleton; words,
+multisets, and numerical costs all forget some factorization.  The landed repair is an
+Atkey-style pre/post-indexed semantics~\cite{atkey}: a funded execution has complete source
+and target resource states, so incompatible funding transitions are untypeable.  Exact
+authority receipts compose without erasure; price and budget totals are explicit,
+generally non-injective observations of those receipts.  This is the resource-transition
+specialization of the wider graded and parameterized-effect account
+~\cite{katsumata,orchard-wadler-eades}.  The companion theory paper states the obstruction,
+the indexed laws, and the authority/observation factorization precisely
+~\cite{rhocost-companion}.  The public surface is
+\href{https://github.com/zariuq/CeTTa/blob/e23de3043462d80e27f9c9009bd0f1b955ed140c/lib/lts/rho/cost.metta}{\code{lib/lts/rho/cost.metta}};
+the engine is
+\href{https://github.com/zariuq/CeTTa/blob/e23de3043462d80e27f9c9009bd0f1b955ed140c/src/rhocalc_core.c}{\code{src/rhocalc\_core.c}}.
 
 %% ────────────────────────────────────────────────────────────────────
 \section{Cross-Runtime Benchmarks}
@@ -2496,6 +2672,32 @@ did not.}
   L.~G.~Meredith,
   ``Continued Interactive GSLTs and the Cost Endofunctor: Wrapping by
   Construction,'' Working paper, 2026.
+
+\bibitem{rhocost-companion}
+  Mettapedia,
+  ``Pure Rho and Cost: One Authored Calculus, Named Extensions, and Corrected
+  Hypotheses,'' Working paper, 2026.
+
+\bibitem{atkey}
+  R.~Atkey,
+  ``Parameterised Notions of Computation,''
+  \emph{Journal of Functional Programming}, vol.~19, no.~3--4,
+  pp.~335--376, 2009.
+
+\bibitem{katsumata}
+  S.~Katsumata,
+  ``Parametric Effect Monads and Semantics of Effect Systems,''
+  in \emph{Proc. POPL}, 2014.
+
+\bibitem{orchard-wadler-eades}
+  D.~Orchard, P.~Wadler, and H.~Eades~III,
+  ``Unifying Graded and Parameterised Monads,''
+  in \emph{Proc. MSFP}, 2020.
+
+\bibitem{knuthskilling}
+  K.~H.~Knuth and J.~Skilling,
+  ``Foundations of Inference,''
+  \emph{Axioms}, vol.~1, no.~1, pp.~38--73, 2012.
 \end{thebibliography}
 
 \end{document}

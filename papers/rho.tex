@@ -1,0 +1,495 @@
+%% Pure Rho and Cost: one authored calculus, named extensions, corrected hypotheses
+%%
+%% Build:
+%%   pdflatex rho.tex
+
+\documentclass[11pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage{geometry}
+\geometry{margin=1in}
+\usepackage{hyperref}
+\usepackage{booktabs}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning}
+\setlength{\emergencystretch}{3em}
+
+\newcommand{\code}[1]{\texttt{#1}}
+\newcommand{\formalized}{\textbf{[formalized]}}
+\newcommand{\open}{\textbf{[open]}}
+\newcommand{\refuted}{\textbf{[counterexample recorded]}}
+
+\title{Pure Rho and Cost:\\
+One Authored Calculus, Named Extensions, and Corrected Hypotheses}
+\author{Mettapedia}
+\date{July 2026 (working paper)}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+The rho-calculus is a process calculus in which every name is a quoted
+process. This paper fixes the exact calculus we formalize and implement: a
+\emph{pure core} whose only operational reduction is communication, with
+every engine convenience recorded as a named extension derived from that
+core, never mixed into it. On this base we state the cost construction ---
+wrapping terms and gating reductions by funding --- together with two
+corrections to its published hypotheses: the injectivity assumption behind
+\emph{quote-faithfulness} cannot hold for ordinary monad multiplication on
+any nontrivial signature monoid: joint injectivity of multiplication together
+with a two-sided unit forces the carrier to be a subsingleton.  The repair is
+not a stronger monoid hypothesis.  Funded execution instead forms an
+Atkey-style parameterized monad indexed by complete pre- and post-resource
+states.  Exact causal receipts are retained for authority decisions, while
+prices and budget totals factor through explicit, generally non-injective
+aggregation maps.  The obstruction, the parameterized monad laws, this
+authority/observation factorization, and a computable canonical section for
+pure structural congruence are formalized.  On the binder-safe funded fragment,
+initialization and reduction preserve scope, and every declarative funded path
+erases to a path of the established pure-rho GSLT with exactly one COMM step per
+funded event. Claims are marked as formalized or open; nothing here is asserted
+beyond its marker.
+\end{abstract}
+
+\section{Introduction}
+
+A calculus and its implementation drift apart unless the boundary between
+them is a maintained artifact. Reference implementations of the
+rho-calculus add conveniences --- direct execution of quoted processes,
+polyadic inputs, name extrusion --- that are individually reasonable and
+collectively fatal to the question ``what exactly has been proved?''
+Our answer is architectural:
+
+\begin{center}
+\begin{tikzpicture}[node distance=7mm and 12mm,
+  box/.style={draw, rounded corners, align=center, inner sep=5pt}]
+\node[box] (root) {authored definition of pure rho\\(one grammar-and-rules value)};
+\node[box, below left=of root] (pure) {pure calculus\\COMM only};
+\node[box, below right=of root] (ext) {named extensions\\each a delta over pure};
+\node[box, below=of pure] (cost) {cost construction\\instantiated from pure only};
+\draw[-{Stealth}] (root) -- (pure) node[midway,left,font=\small]{derive};
+\draw[-{Stealth}] (root) -- (ext) node[midway,right,font=\small]{derive $+$ delta};
+\draw[-{Stealth}] (pure) -- (cost);
+\end{tikzpicture}
+\end{center}
+
+One authored definition is the sole semantic root. The pure calculus and
+each extension are derived from it; extensions import the pure theory and
+add a delta, and the pure theory never imports an extension. The cost
+profile of the runtime is instantiated from the pure calculus alone. The
+direction of these imports is enforced structurally (by module
+dependencies and by theorems), not merely by convention.
+
+\section{The pure calculus}
+
+\paragraph{Syntax.} Processes $P$ and names $x$ are mutually defined:
+\[
+P \;::=\; 0 \;\mid\; \mathsf{for}(y \leftarrow x)\,P \;\mid\; x!(P)
+ \;\mid\; P \,|\, P \;\mid\; {*}x
+\qquad\qquad
+x \;::=\; @P .
+\]
+A name is a quoted process $@P$; the process ${*}x$ is the \emph{drop} of
+a name. Quotation and dropping are the calculus's reflection: processes
+can be passed as data and data can be run --- but, as we now make precise,
+only through communication.
+
+\paragraph{Two equivalences, kept separate.} The calculus has two
+distinct static equivalences, and sorting laws into the correct one is
+load-bearing:
+\begin{itemize}
+\item \emph{Name equivalence} contains the cancellation
+  $@({*}x) \equiv_N x$: quoting the drop of a name gives back the name.
+  This is an equation between \emph{names}.
+\item \emph{Process structural congruence} contains
+  alpha-equivalence and the commutative-monoid laws for parallel
+  composition ($P|Q \equiv Q|P$, $(P|Q)|R \equiv P|(Q|R)$, $P|0 \equiv P$).
+\end{itemize}
+Neither equivalence contains a rule that \emph{runs} anything.
+In particular, ${*}(@P) \to P$ is \emph{not} a law of the pure calculus,
+neither as an equation nor as a reduction.
+
+\paragraph{One reduction.} The only operational rule is communication:
+\[
+\mathsf{for}(y \leftarrow x)\,P \;\big|\; x!(Q)
+\;\longrightarrow\;
+P\{@Q/y\},
+\]
+where the substitution is semantic: when $P\{@Q/y\}$ replaces $y$ inside a
+drop, ${*}y$ becomes $Q$. Dequotation therefore happens \emph{only}
+through substitution after a communication --- you can run exactly the
+code you were sent.
+
+\paragraph{A positive and a negative example.}
+\[
+\underbrace{\mathsf{for}(y \leftarrow @0)\,({*}y)
+\;\big|\; @0!(x!(0))}_{\text{reducible}}
+\;\longrightarrow\; x!(0)
+\qquad\qquad
+\underbrace{{*}(@\,x!(0))}_{\text{stuck in pure rho}}
+\;\not\longrightarrow
+\]
+The left process communicates on the name $@0$ and the received quoted
+process runs via substitution. The right process is a free-standing drop
+of a quotation; in the pure calculus it is inert. \formalized{} for the
+concrete one-step relation (communication is its only constructor);
+the corresponding negative example is part of the extension test suite
+described in Section~\ref{sec:ext}.
+
+\section{Running quoted code without extending the calculus}
+\label{sec:runner}
+
+The convenience that tempts implementations to add a primitive
+${*}(@P) \to P$ step is already expressible, at the cost of one honest
+communication, by a two-process \emph{runner} idiom:
+\[
+\mathit{run}!(@P) \;\big|\; \mathsf{for}(y \leftarrow \mathit{run})\,({*}y)
+\;\longrightarrow\; P .
+\]
+The drop fires through substitution on a received name --- pure rho ---
+and the execution of a quoted process costs exactly one communication
+event, which the cost semantics of Section~\ref{sec:cost} meters
+honestly. Nothing about expressivity forces an execution primitive into
+the calculus; adding one changes the step relation, the stuck states,
+and every cost ledger, in exchange for saving a single COMM.
+
+\section{Extensions as named deltas}
+\label{sec:ext}
+
+Engine conveniences are legitimate --- as \emph{named} extensions.
+The discipline has three parts.
+
+\paragraph{Structure.} Each extension is a delta over the pure theory:
+the extension module imports the pure calculus and adds constructors,
+equations, or rules; the pure modules import no extension. Distinct
+conveniences are distinct deltas --- at minimum, a minimal
+\emph{execution} extension (pure rho plus ${*}(@P) \to P$) is kept
+separate from a \emph{reference-implementation profile} (polyadic input,
+replicated input, name extrusion, native data operations), because they
+change different parts of the theory and generate different cost events.
+In the formal library these deltas may be collected in one clearly
+labelled extended-rho namespace; the runtime's cost profile instantiates
+none of them.
+
+\paragraph{Theorems, not conventions.} Each delta carries a positive and
+a negative theorem: the free drop \emph{cannot} step in pure rho
+\formalized{}; the free drop \emph{does} step in the execution extension
+\formalized{}; and the cost profile is instantiated from the pure calculus
+specifically. The two reduction claims are proved for the declarative language
+definitions.  The runtime import/profile boundary remains a separate closure
+gate. A text search for stray constructors is useful supplementary evidence;
+the load-bearing boundary is the import graph and these theorems.
+
+\paragraph{The delta as a document.} A reference implementation's
+distance from the paper calculus is itself worth recording. The audit of
+the implementation we compare against (the \code{mettail} engine's rho
+language) yields exactly such a delta: an execution rewrite, polyadic and
+persistent communication, extrusion, and native data --- all useful, none
+of them part of the calculus whose metatheory we prove. Recording the
+delta turns ``the paper and the code disagree'' from folklore into data.
+
+\section{The cost construction: corrected hypotheses}
+\label{sec:cost}
+
+The cost construction wraps terms and gates reduction by funding: a
+wrapped redex fires only when the wrapper supplies a token drawn from a
+commutative monoid $(S, *, e)$ of \emph{signatures}, and each reduction
+consumes its funding and emits a receipt. Runtime aspects --- receipts,
+budgets, parallel execution --- are treated in the companion engine
+paper; here we state the mathematical hypotheses, two of which require
+correction.
+
+\subsection{The quote-faithfulness obstruction}
+
+Call a map \emph{quote-faithful} when it is injective on the signature
+keys reachable in a given theory. The published development uses
+per-argument injectivity of the signature operation. Three separate
+claims hide under this phrase, with three different fates.
+
+\paragraph{(a) Fixed-element level.} ``Multiplication by a fixed $s$ is
+injective'' ($s * a = s * b \Rightarrow a = b$) is exactly
+\emph{cancellativity} of the monoid --- and it \emph{fails} in general:
+\[
+\max(3, 1) = \max(3, 2)
+\qquad\qquad
+\infty + 1 = \infty + 2 .
+\]
+Idempotent (tropical) aggregation and saturating budgets are therefore
+outside the hypothesis. Free signatures --- finite multisets of
+generators --- are cancellative, so the intended examples survive
+\emph{at this fixed-element level once the hypothesis is stated}.
+\formalized{}
+
+\paragraph{(b) Multiplication level.} The monad multiplication
+$\mu : \mathrm{Cost}^2 \to \mathrm{Cost}$ flattens two layers of
+wrapping, combining an outer and an inner signature into one key.
+Cancellativity does \emph{not} make this flattening injective, because
+joint injectivity of $(a,b) \mapsto a * b$ is a unique-factorization
+property, not a cancellation property:
+\[
+1 + 2 \;=\; 0 + 3 \quad\text{in } (\mathbb{N}, +),
+\qquad\qquad
+\{a\} \uplus \{b, c\} \;=\; \{a, b\} \uplus \{c\}
+\quad\text{for free multisets.}
+\]
+Both monoids are cancellative; in both, distinct outer/inner
+factorizations flatten to the same key.  More generally, if a binary
+operation with a two-sided unit were jointly injective, then
+$(e,a)=(a,e)$ for every $a$, forcing every element to equal $e$.  Thus:
+\[
+  \operatorname{inj}\bigl((a,b)\mapsto a*b\bigr)
+  \quad\Longleftrightarrow\quad
+  S\text{ is a subsingleton}.
+\]
+No nontrivial monoid---including words, free multisets, or natural-number
+costs---can satisfy the published multiplication-level requirement.  This is
+an impossibility theorem, not a missing hypothesis. \formalized{}
+
+\paragraph{(c) Unit level.} The unit $\eta$ must not fabricate funding.
+In the corrected semantics, unit is the empty execution at a fixed resource
+state and carries the empty receipt.  Every nonempty funded execution advances
+the event counter; hence no nonempty execution can masquerade as an identity.
+The ordinary ``freely available unit token'' argument is withdrawn.
+\formalized{} for the concrete funded semantics.
+
+\subsection{The typed repair: pre/post indexed execution}
+
+Let $I$ be the type of complete funded states: event counter, live resource
+components, provenance, and the proofs required to continue safely.  For
+$i,j\in I$, let $T(i,j,X)$ be the type of funded executions from $i$ to $j$
+returning a value in $X$.  The operations are
+\[
+  \operatorname{pure}_i : X \to T(i,i,X),
+  \qquad
+  \operatorname{bind} :
+    T(i,j,X) \times (X \to T(j,k,Y)) \to T(i,k,Y).
+\]
+The shared middle index is part of the type.  An execution ending at $j$ cannot
+be composed with one beginning at a different resource state; invalid funding
+composition is therefore untypeable.  Empty execution supplies
+$\operatorname{pure}$, path concatenation supplies bind, and the two unit laws
+and associativity are proved from the corresponding path laws.
+\formalized{}
+
+This is an Atkey-style parameterized monad~\cite{atkey}.  It is also the
+pre/post-state specialization of the broader graded and parametric-effect
+perspective~\cite{katsumata,orchard-wadler-eades}: a
+monoid grade summarizes effects, while a category grade records which state
+transitions may compose.  The present formalization constructs the resource
+transition category and the parameterized monad instance; it does not claim a
+fully general category-graded monad for arbitrary result families.
+
+\subsection{Authority is exact; pricing is an observation}
+
+A causal receipt retains event occurrences, funding records, and their order.
+Sequential composition concatenates these exact receipts.  Budget totals,
+additive prices, multiplicative prices, and signature multisets are obtained
+only afterward by monoid homomorphisms:
+\[
+ \mathrm{Receipt}
+   \longrightarrow \mathrm{Aggregate}
+   \longrightarrow \mathrm{Price}.
+\]
+The first object is suitable for replay and authority decisions; the later
+objects intentionally forget information.  In particular, the raw account
+functor is proved to factor through the exact authority-receipt functor and an
+explicit aggregation homomorphism.  The aggregation is not injective, and no
+total reconstruction from it exists. \formalized{}
+
+\subsection{What stands}
+
+The concrete runtime already follows the corrected shape: it retains receipts,
+gates every firing by actual funding, and derives totals by folding.  Its
+receipt replay, sequential/threaded agreement, and sanitizer evidence do not
+depend on joint injectivity of signature multiplication.  What is withdrawn is
+the ordinary-monad faithfulness claim.  What replaces it is stronger where
+authority matters: exact indexed transitions and exact receipts, with every
+lossy view named as an observation.
+
+\section{Canonical forms and the computable section}
+\label{sec:canon}
+
+Signature keys, and every quotient used above, presuppose a
+\emph{computable canonical form} for the two static equivalences of the
+pure calculus. A canonicalizer $\mathsf{nf}$ must:
+\begin{itemize}
+\item normalize binders so that alpha-equivalent terms coincide
+  (locally nameless or de Bruijn representation);
+\item normalize processes and names mutually, with termination measured
+  by quote depth;
+\item orient the name cancellation $@({*}x) \equiv_N x$ as a directed
+  simplification;
+\item flatten parallel composition, remove $0$, normalize components
+  recursively, and sort them under a proved total order on terms;
+\item keep name equivalence and process congruence as \emph{separate}
+  sorted relations --- the canonical form respects both without merging
+  them into one relation over raw syntax.
+\end{itemize}
+The obligations are soundness ($\mathsf{nf}(P) \equiv P$), completeness on
+the pure carrier
+($P \equiv Q \Rightarrow \mathsf{nf}(P) = \mathsf{nf}(Q)$), and
+idempotence. \formalized{} The proved carrier consists of patterns without
+the optional finite-set extension.  Canonicalization preserves that subtype
+and descends by quotient lifting to a computable representative function; the
+representative is proved to belong to its original equivalence class.  The
+continued-cut presentation now stores this explicit representative carrier
+and embedding instead of selecting representatives with
+\code{Quotient.out}.
+
+The mathematical key is the canonical form itself. A runtime digest may later
+refine it under an explicitly assumed collision-resistance property, and the
+formalization never treats a concrete hash function as injective.
+
+\section{One authored presentation and semantic agreement}
+
+The pure syntax, equations, reflective constructors, and COMM rule are authored
+once in the rho language definition.  The derived well-sorted judgments supply
+the induction principles for names, processes, and parallel lists.  On that
+derived process carrier, reflective substitution compiled from the authored
+declaration is proved exactly equal to the independently developed semantic
+COMM substitution.  Therefore every well-sorted COMM contractum compiled from
+the authored rule is a step of the established rho GSLT. \formalized{}
+
+The restriction to the derived process judgment is essential.  The shared raw
+pattern type also contains ill-sorted terms, including quotations placed
+directly in process position; no global agreement theorem is claimed for those
+terms.  During the proof, this restriction exposed and led to the repair of an
+overlapping unary-pattern dispatcher that could descend beneath a quotation.
+A regression example now fixes that boundary.
+
+\section{Scoped funded execution refines pure rho}
+\label{sec:scoped-refinement}
+
+The raw de Bruijn representation is intentionally larger than the object
+language: it can express an index that is outside its enclosing binder, and it
+can retain such an index underneath a quotation.  These values are useful as
+negative tests, but they are not rho terms.  Following the standard
+scope-safe-syntax discipline~\cite{allais-scope-safe}, the funded syntax has a
+derived \emph{binder-safe} judgment.  A quotation seals the surrounding binder,
+so a term quoted inside a receiver body must already be closed with respect to
+that body.  The judgment is derived over the existing cost syntax; it neither
+adds a second syntax nor changes COMM.
+
+The refinement result has the usual initialization--preservation--simulation
+shape.  First, flattening a binder-safe source term into a funded configuration
+preserves binder safety.  Second, every declarative funded step maps a
+binder-safe configuration to a binder-safe configuration.  Third, cost
+substitution on this fragment agrees, up to the \emph{pure}
+\code{StructuralCongruence}, with the established semantic COMM substitution.
+The proof uses the pure canonical section and never an equivalence containing
+the executable free-Drop rule. \formalized{}
+
+Configuration erasure is defined by quotient lifting over permutation of
+funded components, never by selecting a representative with
+\code{Quotient.out}.  Each binder-safe \code{CostStep} then erases to one
+\code{rhoGSLT.Step}.  Induction over declarative paths gives a
+\code{rhoGSLT.RewritePath}; its length is exactly the number of funded events
+and exactly the length of the path's ordered demand receipt.  Thus erasure
+inserts neither administrative reductions nor executable-Drop reductions.
+\formalized{}
+
+This is a theorem about the declarative funded relation.  The compiled C engine
+is checked independently by differential execution and Lean receipt replay,
+including rejection of tampered receipts.  That evidence is deliberately not
+presented as a universal theorem about compiled C or about every value accepted
+by the low-level raw parser.
+
+\section{Provenance and status}
+
+The formalization pins the exact manuscript versions it implements ---
+title, date, and content digest recorded alongside the theory --- because
+a silently updated source would change the meaning of proved names. The
+operative sources are the reflective higher-order calculus paper of
+Meredith and Radestock; the graph-enriched Lawvere-theory account of
+operational semantics of Stay and Meredith; and the June 2026 versions of
+the continued-interactive-GSLT/cost and cost-accounted-rho manuscripts,
+whose earlier circulated revisions differ materially and are kept only as
+comparison history.
+
+\begin{center}
+\begin{tabular}{@{}lll@{}}
+\toprule
+Item & Section & Status \\
+\midrule
+COMM-only concrete one-step relation & \S2 & formalized \\
+Free drop inert in pure rho (negative theorem) & \S2, \S4 & formalized \\
+Runner idiom (one-COMM execution) & \S3 & stated; example-level \\
+Execution delta with positive/negative theorems & \S4 & formalized \\
+Fixed-element cancellation boundary & \S5(a) & formalized \\
+$\mu$ joint-injectivity impossibility & \S5(b) & formalized \\
+Parameterized monad laws on funded execution & \S5 & formalized \\
+Exact receipt / lossy aggregate factorization & \S5 & formalized \\
+Computable pure canonical form + section & \S6 & formalized \\
+Authored COMM compiler agreement with rho GSLT & \S7 & formalized \\
+Binder-safe initialization and preservation & \S8 & formalized \\
+Funded-step erasure to pure rho GSLT & \S8 & formalized \\
+Declarative funded paths to pure rewrite paths, exact length & \S8 &
+  formalized \\
+Pure/extended and cost-profile execution boundary & \S4 &
+  Lean theorems; C differential gate \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\begin{thebibliography}{9}
+
+\bibitem{meredith-radestock}
+L.~G. Meredith and M.~Radestock.
+\newblock A reflective higher-order calculus.
+\newblock \emph{Electronic Notes in Theoretical Computer Science},
+  141(3):49--67, 2005.
+
+\bibitem{stay-meredith}
+M.~Stay and L.~G. Meredith.
+\newblock Representing operational semantics with enriched Lawvere
+  theories.
+\newblock 2017.
+
+\bibitem{cost-manuscripts}
+L.~G. Meredith.
+\newblock Continued interactive GSLTs and the cost endofunctor: wrapping
+  by construction; and Cost accounting for the reflective higher-order
+  calculus.
+\newblock Manuscripts, June 2026 versions (pinned by digest in the
+  repository).
+
+\bibitem{mettail}
+F1R3FLY-io.
+\newblock \emph{mettail}: a reference implementation family for
+  rho-style calculi.
+\newblock Open-source repository; used here as a bounded encoding
+reference, with its implementation delta recorded in
+Section~\ref{sec:ext}.
+
+\bibitem{atkey}
+R.~Atkey.
+\newblock Parameterised notions of computation.
+\newblock \emph{Journal of Functional Programming}, 19(3--4):335--376,
+  2009.
+\newblock \url{https://bentnib.org/param-notions.html}
+
+\bibitem{katsumata}
+S.~Katsumata.
+\newblock Parametric effect monads and semantics of effect systems.
+\newblock In \emph{Proceedings of POPL}, 2014.
+\newblock \url{https://group-mmm.org/~s-katsumata/paper/ppl2014.pdf}
+
+\bibitem{orchard-wadler-eades}
+D.~Orchard, P.~Wadler, and H.~Eades~III.
+\newblock Unifying graded and parameterised monads.
+\newblock In \emph{Proceedings of MSFP}, 2020.
+\newblock \url{https://arxiv.org/abs/2001.10274}
+
+\bibitem{allais-scope-safe}
+G.~Allais, R.~Atkey, J.~Chapman, C.~McBride, and J.~McKinna.
+\newblock A type- and scope-safe universe of syntaxes with binding: their
+  semantics and proofs.
+\newblock 2021.
+\newblock \url{https://arxiv.org/abs/2001.11001}
+
+\end{thebibliography}
+
+\end{document}
