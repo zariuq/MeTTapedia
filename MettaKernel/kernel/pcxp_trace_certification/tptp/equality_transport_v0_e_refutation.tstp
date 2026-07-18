@@ -1,0 +1,14 @@
+% Canonical proof block emitted by E 3.3.3 for equality_transport_v0.p.
+% File annotations have been reduced to the public input basename.
+% SZS output start CNFRefutation
+fof(target, conjecture, p(b), file('equality_transport_v0.p', target)).
+fof(eq_ab, axiom, a=b, file('equality_transport_v0.p', eq_ab)).
+fof(p_a, axiom, p(a), file('equality_transport_v0.p', p_a)).
+fof(c_0_3, negated_conjecture, ~p(b), inference(fof_simplification,[status(thm)],[inference(assume_negation,[status(cth)],[target])])).
+fof(c_0_4, negated_conjecture, ~p(b), inference(fof_nnf,[status(thm)],[c_0_3])).
+cnf(c_0_5, negated_conjecture, (~p(b)), inference(split_conjunct,[status(thm)],[c_0_4])).
+cnf(c_0_6, plain, (a=b), inference(split_conjunct,[status(thm)],[eq_ab])).
+cnf(c_0_7, plain, (p(a)), inference(split_conjunct,[status(thm)],[p_a])).
+cnf(c_0_8, negated_conjecture, (~p(a)), inference(rw,[status(thm)],[c_0_5, c_0_6])).
+cnf(c_0_9, plain, ($false), inference(sr,[status(thm)],[c_0_7, c_0_8]), ['proof']).
+% SZS output end CNFRefutation

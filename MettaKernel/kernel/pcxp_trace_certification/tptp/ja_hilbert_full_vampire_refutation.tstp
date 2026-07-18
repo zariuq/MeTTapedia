@@ -1,0 +1,61 @@
+% Canonical proof block emitted by Vampire 5.0.1 for ja_hilbert_full.p.
+% The single-prover run disables random polarity flipping and AVATAR.
+% SZS output start Proof for ja_hilbert_full
+fof(f12,axiom,(
+  ! [X0,X1,X2] : (proved(imp(X0,X1)) => proved(imp(imp(X2,X0),imp(X2,X1))))),
+  file('ja_hilbert_full.p',rule_imim2i)).
+fof(f176,axiom,(
+  ! [X0,X1,X2] : ((proved(imp(X0,imp(X1,X2))) & proved(imp(neg(X1),X2))) => proved(imp(X0,X2)))),
+  file('ja_hilbert_full.p',rule_pm2_61d1)).
+fof(f182,axiom,(
+  proved(imp(neg(f_ph_183),f_ch_183))),
+  file('ja_hilbert_full.p',hypothesis_1)).
+fof(f183,axiom,(
+  proved(imp(f_ps_183,f_ch_183))),
+  file('ja_hilbert_full.p',hypothesis_2)).
+fof(f184,conjecture,(
+  proved(imp(imp(f_ph_183,f_ps_183),f_ch_183))),
+  file('ja_hilbert_full.p',target)).
+fof(f185,negated_conjecture,(
+  ~proved(imp(imp(f_ph_183,f_ps_183),f_ch_183))),
+  inference(negated_conjecture,[status(cth)],[f184])).
+fof(f186,plain,(
+  ~proved(imp(imp(f_ph_183,f_ps_183),f_ch_183))),
+  inference(flattening,[],[f185])).
+fof(f200,plain,(
+  ! [X0,X1,X2] : (proved(imp(imp(X2,X0),imp(X2,X1))) | ~proved(imp(X0,X1)))),
+  inference(ennf_transformation,[],[f12])).
+fof(f385,plain,(
+  ! [X0,X1,X2] : (proved(imp(X0,X2)) | (~proved(imp(X0,imp(X1,X2))) | ~proved(imp(neg(X1),X2))))),
+  inference(ennf_transformation,[],[f176])).
+fof(f386,plain,(
+  ! [X0,X1,X2] : (proved(imp(X0,X2)) | ~proved(imp(X0,imp(X1,X2))) | ~proved(imp(neg(X1),X2)))),
+  inference(flattening,[],[f385])).
+fof(f408,plain,(
+  ( ! [X2,X0,X1] : (proved(imp(imp(X2,X0),imp(X2,X1))) | ~proved(imp(X0,X1))) )),
+  inference(cnf_transformation,[],[f200])).
+fof(f572,plain,(
+  ( ! [X2,X0,X1] : (~proved(imp(X0,imp(X1,X2))) | proved(imp(X0,X2)) | ~proved(imp(neg(X1),X2))) )),
+  inference(cnf_transformation,[],[f386])).
+fof(f578,plain,(
+  proved(imp(neg(f_ph_183),f_ch_183))),
+  inference(cnf_transformation,[],[f182])).
+fof(f579,plain,(
+  proved(imp(f_ps_183,f_ch_183))),
+  inference(cnf_transformation,[],[f183])).
+fof(f580,plain,(
+  ~proved(imp(imp(f_ph_183,f_ps_183),f_ch_183))),
+  inference(cnf_transformation,[],[f186])).
+fof(f2613,plain,(
+  ( ! [X2,X0,X1] : (proved(imp(imp(X0,X1),X2)) | ~proved(imp(neg(X0),X2)) | ~proved(imp(X1,X2))) )),
+  inference(resolution,[],[f572,f408])).
+fof(f119155,plain,(
+  ~proved(imp(neg(f_ph_183),f_ch_183)) | ~proved(imp(f_ps_183,f_ch_183))),
+  inference(resolution,[],[f2613,f580])).
+fof(f119449,plain,(
+  ~proved(imp(f_ps_183,f_ch_183))),
+  inference(forward_subsumption_resolution,[],[f119155,f578])).
+fof(f119481,plain,(
+  $false),
+  inference(forward_subsumption_resolution,[],[f119449,f579])).
+% SZS output end Proof for ja_hilbert_full

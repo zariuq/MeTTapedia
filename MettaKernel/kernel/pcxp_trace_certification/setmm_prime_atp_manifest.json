@@ -1,0 +1,57 @@
+{
+  "fragment": {
+    "anchors": {
+      "181": "pm2.61nii",
+      "182": "pm2.61iii",
+      "183": "ja",
+      "2": "ax-mp",
+      "3": "ax-1",
+      "4": "ax-2",
+      "5": "ax-3",
+      "6": "mp2"
+    },
+    "assertion_count": 182,
+    "first_index": 2,
+    "last_index": 183
+  },
+  "schema": "setmm-prime-atp-manifest-v0",
+  "source": {
+    "kind": "CC0 set.mm",
+    "path_argument_basename": "setmm-47e6e06b.mm",
+    "revision": "47e6e06b87581cd630d210dc41cf83b02eea78ea",
+    "sha256": "3aecffcfcab6f6e114cce1d873a8300d7f41f24928648c04164aaa305b1f491a"
+  },
+  "targets": [
+    {
+      "index": 181,
+      "label": "pm2.61nii",
+      "premise_count": 3,
+      "prior_assertion_count": 179,
+      "reference_provability_labels": [
+        "pm2.61d1",
+        "pm2.61i"
+      ]
+    },
+    {
+      "index": 182,
+      "label": "pm2.61iii",
+      "premise_count": 4,
+      "prior_assertion_count": 180,
+      "reference_provability_labels": [
+        "a1d",
+        "pm2.61ii",
+        "pm2.61i"
+      ]
+    },
+    {
+      "index": 183,
+      "label": "ja",
+      "premise_count": 2,
+      "prior_assertion_count": 181,
+      "reference_provability_labels": [
+        "imim2i",
+        "pm2.61d1"
+      ]
+    }
+  ]
+}

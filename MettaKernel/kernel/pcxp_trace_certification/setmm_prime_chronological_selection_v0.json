@@ -1,0 +1,378 @@
+{
+  "schema": "setmm-prime-chronological-selection-v0",
+  "selector": {
+    "frequent": 5,
+    "recent": 6,
+    "relevance_depth": 1,
+    "root_width": 4,
+    "subgoal_width": 1
+  },
+  "source": {
+    "name": "set.mm",
+    "revision": "47e6e06b87581cd630d210dc41cf83b02eea78ea",
+    "sha256": "3aecffcfcab6f6e114cce1d873a8300d7f41f24928648c04164aaa305b1f491a"
+  },
+  "targets": [
+    {
+      "expansion": [
+        {
+          "candidates": [
+            {
+              "label": "pm2.61ii",
+              "premises": [
+                "(impl (neg (neg ph)) (impl (neg (neg ph)) ch))",
+                "(impl (neg ph) ch)",
+                "(impl (neg ph) ch)"
+              ],
+              "rank_key": [
+                1,
+                -2,
+                3,
+                0,
+                17,
+                -180
+              ],
+              "supported_premises": [
+                1,
+                2
+              ]
+            },
+            {
+              "label": "pm2.61i",
+              "premises": [
+                "(impl ph ch)",
+                "(impl (neg ph) ch)"
+              ],
+              "rank_key": [
+                1,
+                -1,
+                2,
+                0,
+                7,
+                -179
+              ],
+              "supported_premises": [
+                1
+              ]
+            }
+          ],
+          "goal": "ch",
+          "stage": 0
+        },
+        {
+          "candidates": [],
+          "goal": "(impl (neg (neg ph)) (impl (neg (neg ph)) ch))",
+          "stage": 1
+        },
+        {
+          "candidates": [
+            {
+              "label": "pm2.61d1",
+              "premises": [
+                "(impl ph (impl ps ch))",
+                "(impl (neg ps) ch)"
+              ],
+              "rank_key": [
+                0,
+                -2,
+                2,
+                0,
+                9,
+                -177
+              ],
+              "supported_premises": [
+                0,
+                1
+              ]
+            }
+          ],
+          "goal": "(impl ph ch)",
+          "stage": 1
+        }
+      ],
+      "index": 181,
+      "label": "pm2.61nii",
+      "seed_labels": [
+        "impt",
+        "pm2.61d",
+        "pm2.61d1",
+        "pm2.61d2",
+        "pm2.61i",
+        "pm2.61ii",
+        "id",
+        "a1i",
+        "com12",
+        "syl",
+        "a1d"
+      ],
+      "selected_count": 11,
+      "selected_labels": [
+        "a1i",
+        "syl",
+        "id",
+        "a1d",
+        "com12",
+        "impt",
+        "pm2.61d",
+        "pm2.61d1",
+        "pm2.61d2",
+        "pm2.61i",
+        "pm2.61ii"
+      ],
+      "training_prefix_last_index": 180
+    },
+    {
+      "expansion": [
+        {
+          "candidates": [
+            {
+              "label": "pm2.61ii",
+              "premises": [
+                "(impl (neg ph) (impl (neg ph) th))",
+                "(impl ph th)",
+                "(impl ph th)"
+              ],
+              "rank_key": [
+                1,
+                -2,
+                3,
+                0,
+                13,
+                -180
+              ],
+              "supported_premises": [
+                1,
+                2
+              ]
+            },
+            {
+              "label": "pm2.61i",
+              "premises": [
+                "(impl ph th)",
+                "(impl (neg ph) th)"
+              ],
+              "rank_key": [
+                1,
+                -1,
+                2,
+                0,
+                7,
+                -179
+              ],
+              "supported_premises": [
+                0
+              ]
+            },
+            {
+              "label": "pm2.61nii",
+              "premises": [
+                "(impl V0 (impl V1 th))",
+                "(impl (neg V0) th)",
+                "(impl (neg V0) th)"
+              ],
+              "rank_key": [
+                3,
+                0,
+                3,
+                4,
+                13,
+                -181
+              ],
+              "supported_premises": []
+            }
+          ],
+          "goal": "th",
+          "stage": 0
+        },
+        {
+          "candidates": [],
+          "goal": "(impl (neg ph) (impl (neg ph) th))",
+          "stage": 1
+        },
+        {
+          "candidates": [],
+          "goal": "(impl (neg ph) th)",
+          "stage": 1
+        }
+      ],
+      "index": 182,
+      "label": "pm2.61iii",
+      "seed_labels": [
+        "pm2.61d",
+        "pm2.61d1",
+        "pm2.61d2",
+        "pm2.61i",
+        "pm2.61ii",
+        "pm2.61nii",
+        "id",
+        "a1i",
+        "com12",
+        "syl",
+        "a1d"
+      ],
+      "selected_count": 11,
+      "selected_labels": [
+        "a1i",
+        "syl",
+        "id",
+        "a1d",
+        "com12",
+        "pm2.61d",
+        "pm2.61d1",
+        "pm2.61d2",
+        "pm2.61i",
+        "pm2.61ii",
+        "pm2.61nii"
+      ],
+      "training_prefix_last_index": 181
+    },
+    {
+      "expansion": [
+        {
+          "candidates": [
+            {
+              "label": "syl",
+              "premises": [
+                "(impl (impl ph ps) (neg ph))",
+                "(impl (neg ph) ch)"
+              ],
+              "rank_key": [
+                1,
+                -1,
+                2,
+                0,
+                10,
+                -14
+              ],
+              "supported_premises": [
+                1
+              ]
+            },
+            {
+              "label": "pm2.61d1",
+              "premises": [
+                "(impl (impl ph ps) (impl ph ch))",
+                "(impl (neg ph) ch)"
+              ],
+              "rank_key": [
+                1,
+                -1,
+                2,
+                0,
+                11,
+                -177
+              ],
+              "supported_premises": [
+                1
+              ]
+            },
+            {
+              "label": "pm2.61d2",
+              "premises": [
+                "(impl (impl ph ps) (impl (neg (neg ph)) ch))",
+                "(impl (neg ph) ch)"
+              ],
+              "rank_key": [
+                1,
+                -1,
+                2,
+                0,
+                13,
+                -178
+              ],
+              "supported_premises": [
+                1
+              ]
+            },
+            {
+              "label": "a1i",
+              "premises": [
+                "ch"
+              ],
+              "rank_key": [
+                1,
+                0,
+                1,
+                0,
+                1,
+                -8
+              ],
+              "supported_premises": []
+            }
+          ],
+          "goal": "(impl (impl ph ps) ch)",
+          "stage": 0
+        },
+        {
+          "candidates": [],
+          "goal": "(impl (impl ph ps) (neg ph))",
+          "stage": 1
+        },
+        {
+          "candidates": [
+            {
+              "label": "imim2i",
+              "premises": [
+                "(impl ps ch)"
+              ],
+              "rank_key": [
+                0,
+                -1,
+                1,
+                0,
+                3,
+                -13
+              ],
+              "supported_premises": [
+                0
+              ]
+            }
+          ],
+          "goal": "(impl (impl ph ps) (impl ph ch))",
+          "stage": 1
+        },
+        {
+          "candidates": [],
+          "goal": "(impl (impl ph ps) (impl (neg (neg ph)) ch))",
+          "stage": 1
+        },
+        {
+          "candidates": [],
+          "goal": "ch",
+          "stage": 1
+        }
+      ],
+      "index": 183,
+      "label": "ja",
+      "seed_labels": [
+        "pm2.61d1",
+        "pm2.61d2",
+        "pm2.61i",
+        "pm2.61ii",
+        "pm2.61nii",
+        "pm2.61iii",
+        "id",
+        "a1i",
+        "com12",
+        "syl",
+        "a1d"
+      ],
+      "selected_count": 12,
+      "selected_labels": [
+        "a1i",
+        "imim2i",
+        "syl",
+        "id",
+        "a1d",
+        "com12",
+        "pm2.61d1",
+        "pm2.61d2",
+        "pm2.61i",
+        "pm2.61ii",
+        "pm2.61nii",
+        "pm2.61iii"
+      ],
+      "training_prefix_last_index": 182
+    }
+  ]
+}

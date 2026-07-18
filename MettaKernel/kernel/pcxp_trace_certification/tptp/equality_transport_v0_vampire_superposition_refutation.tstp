@@ -1,0 +1,35 @@
+% Canonical proof block emitted by Vampire 5.0.1 for equality_transport_v0.p.
+% Demodulation and definition elimination were disabled so the proof exposes
+% the ordered-superposition inference explicitly.
+% SZS output start Proof for equality_transport_v0
+fof(f1,axiom,(
+  a = b),
+  file('equality_transport_v0.p',eq_ab)).
+fof(f2,axiom,(
+  p(a)),
+  file('equality_transport_v0.p',p_a)).
+fof(f3,conjecture,(
+  p(b)),
+  file('equality_transport_v0.p',target)).
+fof(f4,negated_conjecture,(
+  ~p(b)),
+  inference(negated_conjecture,[status(cth)],[f3])).
+fof(f5,plain,(
+  ~p(b)),
+  inference(flattening,[],[f4])).
+fof(f6,plain,(
+  a = b),
+  inference(cnf_transformation,[],[f1])).
+fof(f7,plain,(
+  p(a)),
+  inference(cnf_transformation,[],[f2])).
+fof(f8,plain,(
+  ~p(b)),
+  inference(cnf_transformation,[],[f5])).
+fof(f9,plain,(
+  ~p(a)),
+  inference(superposition,[],[f8,f6])).
+fof(f10,plain,(
+  $false),
+  inference(forward_subsumption_resolution,[],[f9,f7])).
+% SZS output end Proof for equality_transport_v0
