@@ -816,7 +816,7 @@ theorem non_inert_proc_reduces {p : Pattern} {φ : ProcPred}
       rw [isInertElement_par_iff] at hnotval
       have hnotval' : ¬ ps.all isInertElement = true := by simp [hnotval]
       simp only [List.all_eq_true] at hnotval'
-      push_neg at hnotval'
+      push Not at hnotval'
       obtain ⟨elem, helem, helemnotval⟩ := hnotval'
       have hmem := List.sizeOf_lt_of_mem helem
       have hsz : sizeOf elem < n := by
@@ -866,7 +866,7 @@ theorem progress_proc {p : Pattern} {φ : ProcPred} :
       rw [isInertElementList_eq_all] at hval
       have hval' : ¬ ps.all isInertElement = true := by simp [hval]
       simp only [List.all_eq_true] at hval'
-      push_neg at hval'
+      push Not at hval'
       obtain ⟨elem, helem, hnotval⟩ := hval'
       have htyped := hall elem helem
       have hnotval' : isInertElement elem = false := by

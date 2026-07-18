@@ -1,5 +1,6 @@
 import Mettapedia.PLN.RuleFamilies.HigherOrder.PLNContextGuardBridge
 import Mettapedia.OSLF.Framework.TypeSynthesis
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.LanguageDefDSL
 
 /-!
 # PLN Context Guards ↔ OSLF Context-Descent Policy
@@ -31,21 +32,21 @@ structure ContextGuardOSLFDescentBridgeProfile where
     ∀ q : Pattern,
       ¬ Mettapedia.OSLF.Framework.TypeSynthesis.langReduces
         Mettapedia.OSLF.MeTTaIL.Syntax.rhoCalc
-        Mettapedia.OSLF.Framework.TypeSynthesis.rhoSetDropWitness q
+        Mettapedia.Languages.ProcessCalculi.RhoCalculus.Extended.rhoSetCommWitness q
   extensionAllowsSetContextDescent :
     ∃ q : Pattern,
       Mettapedia.OSLF.Framework.TypeSynthesis.langReduces
-        Mettapedia.OSLF.MeTTaIL.Syntax.rhoCalcSetExt
-        Mettapedia.OSLF.Framework.TypeSynthesis.rhoSetDropWitness q
+        Mettapedia.Languages.ProcessCalculi.RhoCalculus.Extended.rhoCalcSetExt
+        Mettapedia.Languages.ProcessCalculi.RhoCalculus.Extended.rhoSetCommWitness q
   policyComparison :
     (∀ q : Pattern,
       ¬ Mettapedia.OSLF.Framework.TypeSynthesis.langReduces
         Mettapedia.OSLF.MeTTaIL.Syntax.rhoCalc
-        Mettapedia.OSLF.Framework.TypeSynthesis.rhoSetDropWitness q) ∧
+        Mettapedia.Languages.ProcessCalculi.RhoCalculus.Extended.rhoSetCommWitness q) ∧
       (∃ q : Pattern,
         Mettapedia.OSLF.Framework.TypeSynthesis.langReduces
-          Mettapedia.OSLF.MeTTaIL.Syntax.rhoCalcSetExt
-          Mettapedia.OSLF.Framework.TypeSynthesis.rhoSetDropWitness q)
+          Mettapedia.Languages.ProcessCalculi.RhoCalculus.Extended.rhoCalcSetExt
+          Mettapedia.Languages.ProcessCalculi.RhoCalculus.Extended.rhoSetCommWitness q)
   contextCompletePolicyBoundary :
     (⊢q[{demoEvidence}] demoEvidence ⇓ observed ↦ demoEvidence) ∧
       BinaryWorldModel.WMITVJudgmentCtx
@@ -57,26 +58,26 @@ structure ContextGuardOSLFDescentBridgeProfile where
       (∀ q : Pattern,
         ¬ Mettapedia.OSLF.Framework.TypeSynthesis.langReduces
           Mettapedia.OSLF.MeTTaIL.Syntax.rhoCalc
-          Mettapedia.OSLF.Framework.TypeSynthesis.rhoSetDropWitness q) ∧
+          Mettapedia.Languages.ProcessCalculi.RhoCalculus.Extended.rhoSetCommWitness q) ∧
       (∃ q : Pattern,
         Mettapedia.OSLF.Framework.TypeSynthesis.langReduces
-          Mettapedia.OSLF.MeTTaIL.Syntax.rhoCalcSetExt
-          Mettapedia.OSLF.Framework.TypeSynthesis.rhoSetDropWitness q)
+          Mettapedia.Languages.ProcessCalculi.RhoCalculus.Extended.rhoCalcSetExt
+          Mettapedia.Languages.ProcessCalculi.RhoCalculus.Extended.rhoSetCommWitness q)
   extensionSetNotVectorPolicy :
     (∃ q : Pattern,
       Mettapedia.OSLF.Framework.TypeSynthesis.langReduces
-        Mettapedia.OSLF.MeTTaIL.Syntax.rhoCalcSetExt
-        Mettapedia.OSLF.Framework.TypeSynthesis.rhoSetDropWitness q) ∧
+        Mettapedia.Languages.ProcessCalculi.RhoCalculus.Extended.rhoCalcSetExt
+        Mettapedia.Languages.ProcessCalculi.RhoCalculus.Extended.rhoSetCommWitness q) ∧
       (∀ q : Pattern,
         ¬ Mettapedia.OSLF.Framework.TypeSynthesis.langReduces
-          Mettapedia.OSLF.MeTTaIL.Syntax.rhoCalcSetExt
-          Mettapedia.OSLF.Framework.TypeSynthesis.rhoVecDropWitness q)
+          Mettapedia.Languages.ProcessCalculi.RhoCalculus.Extended.rhoCalcSetExt
+          Mettapedia.Languages.ProcessCalculi.RhoCalculus.Extended.rhoVecCommWitness q)
   extensionBlocksVectorCollectionDescent :
     Mettapedia.OSLF.MeTTaIL.Engine.rewriteInCollectionWithPremisesUsing
       Mettapedia.OSLF.MeTTaIL.Engine.RelationEnv.empty
-      Mettapedia.OSLF.MeTTaIL.Syntax.rhoCalcSetExt
+      Mettapedia.Languages.ProcessCalculi.RhoCalculus.Extended.rhoCalcSetExt
       .vec
-      [.apply "PDrop" [.apply "NQuote" [.apply "PZero" []]]] none = []
+      [Mettapedia.Languages.ProcessCalculi.RhoCalculus.Extended.rhoCommRedex] none = []
 
 /-- A complete WM-PLN context can coexist with a canonical OSLF language that
 blocks set-context descent; admitting the same syntactic descent is a language
@@ -92,16 +93,16 @@ theorem contextCompleteWM_coexistsWithOSLFSetDescentPolicyBoundary :
       (∀ q : Pattern,
         ¬ Mettapedia.OSLF.Framework.TypeSynthesis.langReduces
           Mettapedia.OSLF.MeTTaIL.Syntax.rhoCalc
-          Mettapedia.OSLF.Framework.TypeSynthesis.rhoSetDropWitness q) ∧
+          Mettapedia.Languages.ProcessCalculi.RhoCalculus.Extended.rhoSetCommWitness q) ∧
       (∃ q : Pattern,
         Mettapedia.OSLF.Framework.TypeSynthesis.langReduces
-          Mettapedia.OSLF.MeTTaIL.Syntax.rhoCalcSetExt
-          Mettapedia.OSLF.Framework.TypeSynthesis.rhoSetDropWitness q) := by
+          Mettapedia.Languages.ProcessCalculi.RhoCalculus.Extended.rhoCalcSetExt
+          Mettapedia.Languages.ProcessCalculi.RhoCalculus.Extended.rhoSetCommWitness q) := by
   exact
     ⟨contextComplete_query_exact_canary,
       contextComplete_applyITVCtx_canary,
-      Mettapedia.OSLF.Framework.TypeSynthesis.rhoSetDropWitness_no_langReduces_canonical,
-      Mettapedia.OSLF.Framework.TypeSynthesis.rhoSetDropWitness_exists_langReduces_setExt⟩
+      Mettapedia.Languages.ProcessCalculi.RhoCalculus.Extended.rhoSetCommWitness_no_langReduces_canonical,
+      Mettapedia.Languages.ProcessCalculi.RhoCalculus.Extended.rhoSetCommWitness_exists_langReduces_setExt⟩
 
 /-- Public bridge profile: WM-PLN context provenance plus the OSLF
 canonical-vs-extension set-context descent comparison. -/
@@ -109,16 +110,16 @@ def contextGuardOSLFDescentBridgeProfile :
     ContextGuardOSLFDescentBridgeProfile where
   contextGuard := contextGuardBridgeProfile
   canonicalBlocksSetContextDescent :=
-    Mettapedia.OSLF.Framework.TypeSynthesis.rhoSetDropWitness_no_langReduces_canonical
+    Mettapedia.Languages.ProcessCalculi.RhoCalculus.Extended.rhoSetCommWitness_no_langReduces_canonical
   extensionAllowsSetContextDescent :=
-    Mettapedia.OSLF.Framework.TypeSynthesis.rhoSetDropWitness_exists_langReduces_setExt
+    Mettapedia.Languages.ProcessCalculi.RhoCalculus.Extended.rhoSetCommWitness_exists_langReduces_setExt
   policyComparison :=
-    Mettapedia.OSLF.Framework.TypeSynthesis.rhoSetDropWitness_canonical_vs_setExt
+    Mettapedia.Languages.ProcessCalculi.RhoCalculus.Extended.rhoSetCommWitness_canonical_vs_setExt
   contextCompletePolicyBoundary :=
     contextCompleteWM_coexistsWithOSLFSetDescentPolicyBoundary
   extensionSetNotVectorPolicy :=
-    Mettapedia.OSLF.Framework.TypeSynthesis.rhoCalcSetExt_set_not_vec_context_policy
+    Mettapedia.Languages.ProcessCalculi.RhoCalculus.Extended.rhoCalcSetExt_set_not_vec_context_policy
   extensionBlocksVectorCollectionDescent :=
-    Mettapedia.OSLF.Framework.TypeSynthesis.rhoVecDropWitness_collectionDescent_nil_setExt
+    Mettapedia.Languages.ProcessCalculi.RhoCalculus.Extended.rhoVecCommWitness_collectionDescent_nil_setExt
 
 end Mettapedia.PLN.Bridges.Languages.PLNContextGuardOSLFDescentBridge

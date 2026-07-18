@@ -34,7 +34,7 @@ def writeLanguageFixtures : IO Unit := do
       Mettapedia.Languages.Metamath.LanguageDefDSL.metamathCore ++ "\n")
   IO.FS.writeFile rhocalcPath
     (Export.renderLanguage
-      Mettapedia.Languages.ProcessCalculi.RhoCalculus.LanguageDefDSL.rhoCalcProcessCore ++ "\n")
+      Mettapedia.Languages.ProcessCalculi.RhoCalculus.Extended.rhoCalcExtended ++ "\n")
   IO.FS.writeFile gfPaperPath
     (Export.renderLanguage gfPaperSyntaxLang ++ "\n")
   IO.FS.writeFile gfProjectCorePath

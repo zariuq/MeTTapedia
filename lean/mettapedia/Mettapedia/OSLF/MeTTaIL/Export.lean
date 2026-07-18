@@ -202,7 +202,6 @@ decreasing_by
     first
     | omega
     | (exact Nat.lt_trans (List.sizeOf_lt_of_mem ‹_›) (by omega))
-    | (exact Nat.lt_of_lt_of_le (List.sizeOf_lt_of_mem ‹_›) (by omega))
 
 private def renderFreshnessTarget (pat : Pattern) : String :=
   match pat.collectionRestName? with

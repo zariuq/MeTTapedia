@@ -1,6 +1,7 @@
 import Mettapedia.Languages.ProcessCalculi.PiCalculus.Main
 import Mettapedia.Languages.ProcessCalculi.PiCalculus.PiCalcInstance
 import Mettapedia.OSLF.Framework.TypeSynthesis
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.LanguageDefDSL
 import Mettapedia.OSLF.Framework.LanguageMorphism
 import Mettapedia.OSLF.Formula
 import Mettapedia.Logic.ModalMuCalculus
@@ -185,7 +186,7 @@ abbrev rhoCoreCanonicalRel : Pattern → Pattern → Prop :=
 HM-ready endpoint consumption. -/
 abbrev rhoDerivedCanonicalRel : Pattern → Pattern → Prop :=
   Mettapedia.OSLF.Framework.TypeSynthesis.langReduces
-    Mettapedia.OSLF.MeTTaIL.Syntax.rhoCalcSetExt
+    Mettapedia.Languages.ProcessCalculi.RhoCalculus.Extended.rhoCalcSetExt
 
 /-- Concrete image-finiteness for the canonical executable core relation. -/
 theorem imageFinite_rhoCoreCanonicalRel
@@ -200,7 +201,7 @@ theorem imageFinite_rhoDerivedCanonicalRel
     (p : Pattern) : Set.Finite {q : Pattern | rhoDerivedCanonicalRel p q} := by
   simpa [rhoDerivedCanonicalRel] using
     Mettapedia.OSLF.Framework.ImageFinite.imageFinite_langReduces
-      Mettapedia.OSLF.MeTTaIL.Syntax.rhoCalcSetExt p
+      Mettapedia.Languages.ProcessCalculi.RhoCalculus.Extended.rhoCalcSetExt p
 
 /-- `◇⊤` over core-star always holds (via reflexivity). -/
 theorem sem_diaTop_coreStar_refl {I : Mettapedia.OSLF.Formula.AtomSem} (p : Pattern) :

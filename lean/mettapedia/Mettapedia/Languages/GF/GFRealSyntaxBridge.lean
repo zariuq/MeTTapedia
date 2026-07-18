@@ -72,7 +72,7 @@ def gfFunsListToLanguageDef
     grammarName [] -- options
     ((allCats.eraseDups.map TypeDecl.plain) ++ extraTypes).eraseDups
     (termRules ++ extraTerms) eqRules rwRules
-    [.vec, .hashBag, .hashSet] [] []
+    [.vec, .hashBag, .hashSet] [] [] []
 
 /-- `LanguageDef` construction from a real GFCore `GrammarSig`. -/
 def gfSigToLanguageDef
@@ -89,7 +89,7 @@ def gfSigToLanguageDef
     sig.grammar [] -- options
     ((allCats.eraseDups.map TypeDecl.plain) ++ extraTypes).eraseDups
     (termRules ++ extraTerms) eqRules rwRules
-    [.vec, .hashBag, .hashSet] [] []
+    [.vec, .hashBag, .hashSet] [] [] []
 
 /-- Authoritative syntax-only `LanguageDef` from a literal GF function list. -/
 def gfSyntaxLanguageDefFromList

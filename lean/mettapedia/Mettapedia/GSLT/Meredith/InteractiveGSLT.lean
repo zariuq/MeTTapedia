@@ -5,6 +5,7 @@ import Mettapedia.GSLT.Dynamics.WeightCost
 import Mettapedia.GSLT.Meredith.RhoExample
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.MultiStep
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.SemanticSubstitution
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.PureCanonicalSection
 import Mathlib.Data.Multiset.Basic
 import Mathlib.Tactic
 
@@ -17,7 +18,7 @@ interactive GSLTs:
 - a `SymmetricCutPresentation S` over an existing `GSLT` `S`
 - an abstract contact constructor together with left/right introductions
 - a one-step contraction kernel
-- a generic section out of the quotient by structural equations
+- a computable section on an explicitly embedded interaction carrier
 
 The wrapping / cost endofunctor layer belongs on top of this presentation once
 cost-accounted terms themselves are formalized in Lean.
@@ -67,7 +68,20 @@ structure ContinuedCutPresentation (S : GSLT) where
   symmetricCut : SymmetricCutPresentation S
   Grade : Type
   Spent : Type
-  reprSection : Quotient S.equations → S.Term
+  /-- Terms on which this continued presentation claims a computable
+  representative.  This may be a strict subtype of the ambient GSLT carrier. -/
+  SectionCarrier : Type
+  /-- Inclusion of the section carrier into the ambient GSLT syntax. -/
+  sectionEmbedding : SectionCarrier ↪ S.Term
+  /-- Equations presented on the section carrier. -/
+  sectionEquations : Setoid SectionCarrier
+  /-- The section equations are exactly the ambient equations after embedding. -/
+  sectionEquations_iff :
+    ∀ left right,
+      sectionEquations.r left right ↔
+        S.equations.r (sectionEmbedding left) (sectionEmbedding right)
+  /-- A computable representative for each section-carrier equivalence class. -/
+  reprSection : Quotient sectionEquations → SectionCarrier
   reprSection_spec : ∀ q, Quotient.mk _ (reprSection q) = q
   contractWrapped :
     S.Term → S.Term →
@@ -82,16 +96,25 @@ structure ContinuedCutPresentation (S : GSLT) where
       (contractWrapped chan nm body payload).right.term =
         (symmetricCut.contract chan nm body.term payload.term).2
 
-/-- A generic computable section of the quotient by structural equations. -/
-noncomputable def equationsSection (S : GSLT) : Quotient S.equations → S.Term :=
-  Quotient.out
+namespace ContinuedCutPresentation
 
-/-- The generic section lands back in the same quotient class. -/
-theorem equationsSection_spec (S : GSLT)
-    (q : Quotient S.equations) :
-    Quotient.mk _ (equationsSection S q) = q := by
-  unfold equationsSection
-  exact Quotient.out_eq q
+/-- Embed a section-carrier quotient into the ambient equational quotient. -/
+def sectionQuotientEmbedding (C : ContinuedCutPresentation S) :
+    Quotient C.sectionEquations → Quotient S.equations :=
+  Quotient.lift
+    (fun term => Quotient.mk S.equations (C.sectionEmbedding term))
+    (fun _ _ equivalent =>
+      Quotient.sound ((C.sectionEquations_iff _ _).mp equivalent))
+
+/-- Computing a representative does not change its ambient equivalence class. -/
+theorem sectionQuotientEmbedding_reprSection
+    (C : ContinuedCutPresentation S) (equivalenceClass : Quotient C.sectionEquations) :
+    C.sectionQuotientEmbedding
+        (Quotient.mk C.sectionEquations (C.reprSection equivalenceClass)) =
+      C.sectionQuotientEmbedding equivalenceClass := by
+  rw [C.reprSection_spec]
+
+end ContinuedCutPresentation
 
 /-- Wrapped contraction erases to the underlying cut contraction. -/
 theorem contractWrapped_erases (C : ContinuedCutPresentation S)
@@ -2734,12 +2757,20 @@ from the actual COMM redex.
 This keeps the continued layer honest while the explicit cost-accounted term
 grammar is still being formalized separately.
 -/
-noncomputable def rhoContinuedCutPresentation : ContinuedCutPresentation rhoGSLT where
+def rhoContinuedCutPresentation : ContinuedCutPresentation rhoGSLT where
   symmetricCut := rhoSymmetricCutPresentation
   Grade := RhoLedger
   Spent := RhoLedger
-  reprSection := equationsSection rhoGSLT
-  reprSection_spec := equationsSection_spec rhoGSLT
+  SectionCarrier := PureCanonicalSection.PurePattern
+  sectionEmbedding :=
+    { toFun := Subtype.val
+      inj' := Subtype.val_injective }
+  sectionEquations := PureCanonicalSection.pureEquations
+  sectionEquations_iff := by
+    intro left right
+    rfl
+  reprSection := PureCanonicalSection.representative
+  reprSection_spec := PureCanonicalSection.representative_spec
   contractWrapped := fun chan _name body payload =>
     { left := { term := semanticCommSubst body.term payload.term, grade := body.grade }
       right := { term := rhoNil, grade := payload.grade }
@@ -2750,6 +2781,32 @@ noncomputable def rhoContinuedCutPresentation : ContinuedCutPresentation rhoGSLT
   contractWrapped_snd_term := by
     intro chan nm body payload
     rfl
+
+/-- The continued rho section embeds the proved pure carrier by subtype
+inclusion; extended finite-set syntax is not in its domain. -/
+@[simp]
+theorem rhoContinuedCutPresentation_sectionEmbedding
+    (pattern : PureCanonicalSection.PurePattern) :
+    rhoContinuedCutPresentation.sectionEmbedding pattern = pattern.1 :=
+  rfl
+
+/-- Pure-carrier equations are exactly the ambient rho equations after
+subtype inclusion. -/
+theorem rhoContinuedCutPresentation_sectionEquations_iff
+    (left right : PureCanonicalSection.PurePattern) :
+    PureCanonicalSection.pureEquations.r left right ↔
+      rhoGSLT.equations.r left.1 right.1 :=
+  Iff.rfl
+
+/-- Section evaluation on an explicit pure class computes rho's canonical
+representative. -/
+@[simp]
+theorem rhoContinuedCutPresentation_reprSection_mk
+    (pattern : PureCanonicalSection.PurePattern) :
+    rhoContinuedCutPresentation.reprSection
+        (Quotient.mk PureCanonicalSection.pureEquations pattern) =
+      pattern.canonicalize :=
+  rfl
 
 /-- The continued rho step records the intrinsic account extracted from the
 COMM redex itself. -/

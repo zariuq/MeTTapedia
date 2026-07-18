@@ -115,8 +115,8 @@ formalization. Serves as a traceability matrix for review.
 - Optional extension: `rhoCalcSetExt`
   (`congruenceCollections := [.hashBag, .hashSet]`)
 - Theorem-level comparison:
-  `rhoSetDropWitness_canonical_vs_setExt`
-  (`Framework/TypeSynthesis.lean:377`) proves set-context descent is blocked
+  `rhoSetCommWitness_canonical_vs_setExt`
+  (`RhoCalculus/LanguageDefDSL.lean`) proves set-context descent is blocked
   in canonical `rhoCalc` and enabled in `rhoCalcSetExt` for the same witness.
 
 ### Type Judgment (Locally Nameless)
@@ -228,7 +228,9 @@ formalization. Serves as a traceability matrix for review.
 - Lean: `rhoCalc` (MeTTaIL/Syntax.lean)
 - OSLF: `rhoOSLF` (Framework/RhoInstance.lean:90)
 - Galois: proven via `galois_connection` and `rho_mathlib_galois`
-- Canaries: 6 engine tests, 8 agreement tests (Engine.lean)
+- Diagnostics: 6 generic-engine examples and 8 generic-vs-specialized
+  comparisons (Engine.lean); the comparison corpus includes disagreements and
+  is not an adequacy certificate
 
 ### 2. Lambda Calculus (lambdaCalc)
 - Lean: `lambdaCalc` (Framework/LambdaInstance.lean)
@@ -260,7 +262,7 @@ formalization. Serves as a traceability matrix for review.
 | 12 | `progress` | Soundness.lean:683 | type soundness (progress) |
 | 13 | `check_sat_sound` | Formula.lean:290 | checker soundness |
 | 14 | `sem_dia_eq_langDiamond` | Formula.lean:135 | formula↔framework bridge |
-| 15 | `rhoSetDropWitness_canonical_vs_setExt` | TypeSynthesis.lean:377 | canonical bag-only vs set-extension one-step divergence |
+| 15 | `rhoSetCommWitness_canonical_vs_setExt` | RhoCalculus/LanguageDefDSL.lean | canonical bag-only vs set-extension one-step divergence |
 | 16 | `representable_commDi_patternPred_beckChevalley` | BeckChevalleyOSLF.lean | representable-fiber BC instantiated for COMM direct image |
 | 17 | `representable_commDi_bc_and_graphDiamond` | BeckChevalleyOSLF.lean | bundles COMM representable BC and graph-◇ witness characterization |
 | 18 | `checkLangUsingWithPred_sat_sound_graphObj_dia` / `..._box` | Formula.lean | checker-facing `.dia`/`.box` soundness over packaged premise-aware `ReductionGraphObj` |
@@ -292,7 +294,7 @@ Intentionally out of current theorem scope:
 - 0 `sorry` in `Mettapedia/OSLF/RhoCalculus/Reduction.lean`
 - 0 custom axioms introduced in this core OSLF slice
 - Canonical-vs-extension policy is theorem-checked by
-  `rhoSetDropWitness_canonical_vs_setExt`
+  `rhoSetCommWitness_canonical_vs_setExt`
 
 Outside this scope, the π→ρ correspondence layer is tracked separately from this
 core OSLF index.
@@ -465,7 +467,7 @@ open Mettapedia.OSLF
 #check @predFibrationSortApprox
 #check @oslf_fibrationSortApprox
 #check @predFibration_presheafSortApprox_agreement
-#check @Mettapedia.OSLF.Framework.TypeSynthesis.rhoSetDropWitness_canonical_vs_setExt
+#check @Mettapedia.Languages.ProcessCalculi.RhoCalculus.Extended.rhoSetCommWitness_canonical_vs_setExt
 #check @commDiPred
 #check @Mettapedia.OSLF.Framework.CategoryBridge.commDiWitnessLifting
 #check @Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred

@@ -1,5 +1,6 @@
 import Mettapedia.OSLF.Framework.TypeSynthesis
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.PresentMoment
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.LanguageDefDSL
 
 /-!
 # OSLF Paper Section 12 Worked Examples
@@ -20,13 +21,14 @@ open Mettapedia.Languages.ProcessCalculi.RhoCalculus
 open Mettapedia.Languages.ProcessCalculi.RhoCalculus.Reduction
 open Mettapedia.Languages.ProcessCalculi.RhoCalculus.Context
 open Mettapedia.Languages.ProcessCalculi.RhoCalculus.PresentMoment
+open Mettapedia.Languages.ProcessCalculi.RhoCalculus.Extended
 
 /-- OSLF paper §12.1 (compile-time firewall): the canonical policy blocks
 set-context descent while the extension policy admits it. -/
 theorem compile_time_firewall_worked_example :
-    (∀ q, ¬ langReduces rhoCalc rhoSetDropWitness q) ∧
-      (∃ q, langReduces rhoCalcSetExt rhoSetDropWitness q) := by
-  exact rhoSetDropWitness_canonical_vs_setExt
+    (∀ q, ¬ langReduces rhoCalc rhoSetCommWitness q) ∧
+      (∃ q, langReduces rhoCalcSetExt rhoSetCommWitness q) := by
+  exact rhoSetCommWitness_canonical_vs_setExt
 
 /-- Concrete race channel used in §12.2 worked example. -/
 def raceChan : Pattern := .fvar "x"
@@ -140,8 +142,8 @@ theorem secrecy_worked_example :
 
 /-- Canonical bundle for OSLF paper §12 worked examples. -/
 theorem section12_worked_examples_bundle :
-    ((∀ q, ¬ langReduces rhoCalc rhoSetDropWitness q) ∧
-      (∃ q, langReduces rhoCalcSetExt rhoSetDropWitness q)) ∧
+    ((∀ q, ¬ langReduces rhoCalc rhoSetCommWitness q) ∧
+      (∃ q, langReduces rhoCalcSetExt rhoSetCommWitness q)) ∧
     (∃ r₁ r₂,
       Nonempty (Reduces raceBag r₁) ∧
       Nonempty (Reduces raceBag r₂) ∧

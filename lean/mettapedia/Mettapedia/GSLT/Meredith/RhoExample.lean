@@ -15,12 +15,11 @@ lambda theory (Def 4.1), connecting to the formalization in
 - **Terms T**: MeTTaIL `Pattern` (covering processes and names)
 - **Equations E**: Structural congruence `StructuralCongruence` (a ≡ relation
   with refl/symm/trans + commutative monoid laws for parallel composition)
-- **Rewrites R**: Squashed `Reduces` (COMM + DROP + EQUIV), `Prop`-valued
+- **Rewrites R**: Squashed `Reduces` (COMM with structural/contextual closure), `Prop`-valued
 
 ## Key Rewrite Rules (§4.2)
 
 - **COMM**: `{n!(q) | for(<-n){p} | rest} ⇝ {p[@q/x] | rest}`
-- **DROP**: `*(@ p) ⇝ p`
 - **EQUIV**: rewriting modulo structural congruence
 
 ## Connection to Lambda Theory (Def 4.1)
@@ -29,7 +28,7 @@ The λ-theory Tρ has (paper §4.2):
 - Base types Pr, Nm
 - Operations: 0, |, @, *, outₖ, inₖ
 - Equations: (Pr, |, 0) commutative monoid + @(*n) = n
-- Rewrite proposition: (⇝) ↪ Pr × Pr with COMM and DROP as base rewrites
+- Rewrite proposition: (⇝) ↪ Pr × Pr with COMM as the only base rewrite
 - Rewrite operations: congruence for |
 
 ## References
@@ -108,7 +107,7 @@ theorem rhoRewrites_resp_right :
     Definition 2.1 (Meredith 2026): S = (T, E, R) where:
     - T = `Pattern` (MeTTaIL patterns: processes, names, and quoted processes)
     - E = `StructuralCongruence` (commutative monoid for |, plus @(*n) = n)
-    - R = `Nonempty (Reduces · ·)` (squashed COMM + DROP + EQUIV)
+    - R = `Nonempty (Reduces · ·)` (squashed COMM with structural/contextual closure)
 
     The coherence conditions `rewrites_resp_left` and `rewrites_resp_right`
     are proved above using the `Reduces.equiv` constructor.

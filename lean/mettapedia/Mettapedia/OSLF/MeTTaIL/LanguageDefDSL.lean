@@ -929,7 +929,8 @@ macro
         $rwDeclsTerm
         $collDeclsTerm
         $logicDeclsTerm
-        $oracleDeclsTerm))
+        $oracleDeclsTerm
+        []))
 
 macro_rules
   | `(T! $s:str) => `(SyntaxItem.terminal $s)
@@ -957,7 +958,7 @@ macro_rules
       oracles : $ors,
       congruenceCollections : $ccs
     }) =>
-      `(LanguageDef.resolveNullaryPatterns (LanguageDef.mk $langName [] $tys $tmRules $eqns $rws $ccs $lgs $ors))
+      `(LanguageDef.resolveNullaryPatterns (LanguageDef.mk $langName [] $tys $tmRules $eqns $rws $ccs $lgs $ors []))
 
 /-! ## Generic Builders -/
 
@@ -992,6 +993,7 @@ def mkLang
     eqRules
     rewriteRules
     congCollections
+    []
     []
     []
 

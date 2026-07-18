@@ -72,7 +72,7 @@ def tracker : List Milestone :=
   , { area := "Canonical vs Extension Policy"
       title := "rhoCalc blocks set-context descent; rhoCalcSetExt enables it"
       status := .done
-      codeRef := "Mettapedia/OSLF/Framework/TypeSynthesis.lean: rhoSetDropWitness_canonical_vs_setExt"
+      codeRef := "Mettapedia/Languages/ProcessCalculi/RhoCalculus/LanguageDefDSL.lean: rhoSetCommWitness_canonical_vs_setExt"
       note := "Policy is enforced at LanguageDef/langReduces via `congruenceCollections`; low-level `RhoCalculus.Reduction.Reduces` remains a shared superset relation." }
   , { area := "Category Lift"
       title := "Presheaf-primary default consumer path"
@@ -327,7 +327,7 @@ These checks tie tracker statements to concrete constants in the codebase.
 -/
 
 #check @Mettapedia.OSLF.Framework.TypeSynthesis.langOSLF
-#check @Mettapedia.OSLF.Framework.TypeSynthesis.rhoSetDropWitness_canonical_vs_setExt
+#check @Mettapedia.Languages.ProcessCalculi.RhoCalculus.Extended.rhoSetCommWitness_canonical_vs_setExt
 #check @Mettapedia.OSLF.MeTTaIL.DeclReducesPremises.engineWithPremisesUsing_sound
 #check @Mettapedia.OSLF.MeTTaIL.DeclReducesPremises.engineWithPremisesUsing_complete
 #check @Mettapedia.OSLF.Framework.CategoryBridge.SortCategoryInterface

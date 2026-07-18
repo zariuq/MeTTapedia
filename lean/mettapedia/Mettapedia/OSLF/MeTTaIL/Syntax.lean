@@ -744,6 +744,51 @@ structure RewriteRule where
   right : Pattern
 deriving Repr
 
+/-! ## Declarative reflective substitution -/
+
+/-- Serializable data for a reflective process/name presentation.
+
+The declaration identifies the two sorts and the constructors needed to
+compile paper-style name equality and communication substitution.  The
+`quoteDropEquation` field links the operational compiler to an equation that
+is already authored in the same `LanguageDef`; it does not silently add an
+equation. -/
+structure ReflectivePresentationDecl where
+  name : String
+  rewriteRule : String
+  processSort : String
+  nameSort : String
+  quoteConstructor : String
+  dropConstructor : String
+  inputConstructor : String
+  outputConstructor : String
+  parallelCollection : CollType
+  parallelUnitConstructor : String
+  quoteDropEquation : String
+deriving Repr, DecidableEq
+
+namespace ReflectivePresentationDecl
+
+/-- Stable data rendering for the authored reflective-semantics declaration. -/
+def renderJson (declaration : ReflectivePresentationDecl) : String :=
+  "{\"name\":" ++ jsonStrSyntax declaration.name ++
+    ",\"rewrite_rule\":" ++ jsonStrSyntax declaration.rewriteRule ++
+    ",\"process_sort\":" ++ jsonStrSyntax declaration.processSort ++
+    ",\"name_sort\":" ++ jsonStrSyntax declaration.nameSort ++
+    ",\"quote_constructor\":" ++ jsonStrSyntax declaration.quoteConstructor ++
+    ",\"drop_constructor\":" ++ jsonStrSyntax declaration.dropConstructor ++
+    ",\"input_constructor\":" ++ jsonStrSyntax declaration.inputConstructor ++
+    ",\"output_constructor\":" ++ jsonStrSyntax declaration.outputConstructor ++
+    ",\"parallel_collection\":" ++
+      jsonStrSyntax (match declaration.parallelCollection with
+        | .vec => "vec" | .hashBag => "hash_bag" | .hashSet => "hash_set") ++
+    ",\"parallel_unit_constructor\":" ++
+      jsonStrSyntax declaration.parallelUnitConstructor ++
+    ",\"quote_drop_equation\":" ++
+      jsonStrSyntax declaration.quoteDropEquation ++ "}"
+
+end ReflectivePresentationDecl
+
 /-! ## Complete Language Definition -/
 
 /-- Signature for a derived relation declaration in the logic layer. -/
@@ -875,6 +920,10 @@ structure LanguageDef where
   congruenceCollections : List CollType := []
   logic : List LogicDecl := []
   oracles : List OracleDecl := []
+  /-- Named, validated reflective-semantics declarations.  Rules opt in by
+      being named by a declaration; an empty list preserves ordinary
+      syntactic rewriting for every rule. -/
+  reflectivePresentations : List ReflectivePresentationDecl := []
 deriving Repr
 
 /-- Legacy compatibility wrapper.
@@ -1296,14 +1345,17 @@ is among the constructor's bound parameter names. -/
     validateSyntaxPatternItems_nonTerminals ctx boundNames names hbound
 
 /-- A first-order concrete-syntax row made only of literal terminals and
-declared nonterminal parameters contributes no validation errors. -/
+declared nonterminal parameters contributes no validation errors. Separators
+and delimiters are literal presentation data too, so they require no bound
+parameter. -/
 @[simp] theorem validateSyntaxPattern_terminalsAndBoundNonTerminals
     (ctx : String) (boundNames : List String) (items : List SyntaxItem)
     (allowed : ∀ item ∈ items,
       match item with
       | .terminal _ => True
       | .nonTerminal name => name ∈ boundNames
-      | .separator _ | .delimiter _ _ | .op _ => False) :
+      | .separator _ | .delimiter _ _ => True
+      | .op _ => False) :
     validateSyntaxPattern ctx boundNames items = [] := by
   unfold validateSyntaxPattern
   induction items with
@@ -1314,7 +1366,8 @@ declared nonterminal parameters contributes no validation errors. -/
           match candidate with
           | .terminal _ => True
           | .nonTerminal name => name ∈ boundNames
-          | .separator _ | .delimiter _ _ | .op _ => False := by
+          | .separator _ | .delimiter _ _ => True
+          | .op _ => False := by
         intro candidate membership
         exact allowed candidate (by simp [membership])
       cases item with
@@ -1324,8 +1377,12 @@ declared nonterminal parameters contributes no validation errors. -/
       | nonTerminal name =>
           simp [validateSyntaxPatternItems, validateSyntaxPatternItem,
             headAllowed, inductionHypothesis restAllowed]
-      | separator token => contradiction
-      | delimiter openToken closeToken => contradiction
+      | separator token =>
+          simp [validateSyntaxPatternItems, validateSyntaxPatternItem,
+            inductionHypothesis restAllowed]
+      | delimiter openToken closeToken =>
+          simp [validateSyntaxPatternItems, validateSyntaxPatternItem,
+            inductionHypothesis restAllowed]
       | op operation => contradiction
 
 /-- The canonical parameter-only syntax generated from a constructor
@@ -1525,6 +1582,151 @@ def validateRewrite (lang : LanguageDef) (rewrite : RewriteRule) :
   ctxTypeErrs ++ premiseErrs ++ lhsCtorErrs ++ rhsCtorErrs ++
     premiseCtorErrs ++ wildcardErrs
 
+private def reflectiveConstructorErrors
+    (lang : LanguageDef) (context role constructor resultSort argumentSort : String) :
+    List ValidationError :=
+  match lang.terms.filter fun term => term.label == constructor with
+  | [] => [mkValidationError context s!"unknown {role} constructor `{constructor}`"]
+  | [term] =>
+      match term.params with
+      | [.simple _ (.base actualArgument)] =>
+          (if term.category == resultSort then [] else
+            [mkValidationError context
+              s!"{role} constructor `{constructor}` returns `{term.category}`, expected `{resultSort}`"]) ++
+          (if actualArgument == argumentSort then [] else
+            [mkValidationError context
+              s!"{role} constructor `{constructor}` accepts `{actualArgument}`, expected `{argumentSort}`"])
+      | _ => [mkValidationError context
+          s!"{role} constructor `{constructor}` must have one simple `{argumentSort}` parameter"]
+  | _ => [mkValidationError context s!"ambiguous {role} constructor `{constructor}`"]
+
+private def reflectiveUnitErrors
+    (lang : LanguageDef) (context constructor processSort : String) :
+    List ValidationError :=
+  match lang.terms.filter fun term => term.label == constructor with
+  | [] => [mkValidationError context s!"unknown parallel unit constructor `{constructor}`"]
+  | [term] =>
+      (if term.params.isEmpty then [] else
+        [mkValidationError context
+          s!"parallel unit constructor `{constructor}` must be nullary"]) ++
+      (if term.category == processSort then [] else
+        [mkValidationError context
+          s!"parallel unit constructor `{constructor}` returns `{term.category}`, expected `{processSort}`"])
+  | _ => [mkValidationError context s!"ambiguous parallel unit constructor `{constructor}`"]
+
+private def reflectiveOutputErrors
+    (lang : LanguageDef) (context constructor processSort nameSort : String) :
+    List ValidationError :=
+  match lang.terms.filter fun term => term.label == constructor with
+  | [] => [mkValidationError context s!"unknown output constructor `{constructor}`"]
+  | [term] =>
+      (if term.category == processSort then [] else
+        [mkValidationError context
+          s!"output constructor `{constructor}` returns `{term.category}`, expected `{processSort}`"]) ++
+      (match term.params with
+      | [.simple _ (.base actualName), .simple _ (.base actualProcess)] =>
+          (if actualName == nameSort then [] else
+            [mkValidationError context
+              s!"output constructor `{constructor}` channel has sort `{actualName}`, expected `{nameSort}`"]) ++
+          (if actualProcess == processSort then [] else
+            [mkValidationError context
+              s!"output constructor `{constructor}` payload has sort `{actualProcess}`, expected `{processSort}`"])
+      | _ => [mkValidationError context
+          s!"output constructor `{constructor}` must have simple `{nameSort}`, `{processSort}` parameters"])
+  | _ => [mkValidationError context s!"ambiguous output constructor `{constructor}`"]
+
+private def reflectiveInputErrors
+    (lang : LanguageDef) (context constructor processSort nameSort : String) :
+    List ValidationError :=
+  match lang.terms.filter fun term => term.label == constructor with
+  | [] => [mkValidationError context s!"unknown input constructor `{constructor}`"]
+  | [term] =>
+      (if term.category == processSort then [] else
+        [mkValidationError context
+          s!"input constructor `{constructor}` returns `{term.category}`, expected `{processSort}`"]) ++
+      (match term.params with
+      | [.simple _ (.base actualName),
+          .abstraction _ (.arrow (.base binderSort) (.base bodySort))] =>
+          (if actualName == nameSort then [] else
+            [mkValidationError context
+              s!"input constructor `{constructor}` channel has sort `{actualName}`, expected `{nameSort}`"]) ++
+          (if binderSort == nameSort then [] else
+            [mkValidationError context
+              s!"input constructor `{constructor}` binds `{binderSort}`, expected `{nameSort}`"]) ++
+          (if bodySort == processSort then [] else
+            [mkValidationError context
+              s!"input constructor `{constructor}` body has sort `{bodySort}`, expected `{processSort}`"])
+      | _ => [mkValidationError context
+          s!"input constructor `{constructor}` must have a simple `{nameSort}` channel and `{nameSort} -> {processSort}` abstraction"])
+  | _ => [mkValidationError context s!"ambiguous input constructor `{constructor}`"]
+
+private def isQuoteDropEquation
+    (declaration : ReflectivePresentationDecl) (equation : Equation) : Bool :=
+  let forward :=
+    match equation.left, equation.right with
+    | .apply quote [.apply drop [.fvar leftName]], .fvar rightName =>
+        quote == declaration.quoteConstructor &&
+          drop == declaration.dropConstructor && leftName == rightName
+    | _, _ => false
+  let reverse :=
+    match equation.right, equation.left with
+    | .apply quote [.apply drop [.fvar rightName]], .fvar leftName =>
+        quote == declaration.quoteConstructor &&
+          drop == declaration.dropConstructor && leftName == rightName
+    | _, _ => false
+  forward || reverse
+
+/-- Cross-reference and signature checks for one authored reflective compiler
+declaration.  These checks make the declaration data fail closed before an
+engine may interpret it. -/
+def validateReflectivePresentation
+    (lang : LanguageDef) (declaration : ReflectivePresentationDecl) :
+    List ValidationError :=
+  let context := s!"reflective substitution {declaration.name}"
+  let sortErrors :=
+    (if declaration.processSort ∈ lang.typeNames then [] else
+      [mkValidationError context s!"unknown process sort `{declaration.processSort}`"]) ++
+    (if declaration.nameSort ∈ lang.typeNames then [] else
+      [mkValidationError context s!"unknown name sort `{declaration.nameSort}`"]) ++
+    (if declaration.processSort == declaration.nameSort then
+      [mkValidationError context "process and name sorts must be distinct"] else [])
+  let quoteErrors := reflectiveConstructorErrors lang context "quote"
+    declaration.quoteConstructor declaration.nameSort declaration.processSort
+  let dropErrors := reflectiveConstructorErrors lang context "drop"
+    declaration.dropConstructor declaration.processSort declaration.nameSort
+  let inputErrors := reflectiveInputErrors lang context declaration.inputConstructor
+    declaration.processSort declaration.nameSort
+  let outputErrors := reflectiveOutputErrors lang context declaration.outputConstructor
+    declaration.processSort declaration.nameSort
+  let unitErrors := reflectiveUnitErrors lang context
+    declaration.parallelUnitConstructor declaration.processSort
+  let collectionErrors :=
+    if declaration.parallelCollection ∈ lang.congruenceCollections then [] else
+      [mkValidationError context
+        "parallel collection is not admitted as a congruence context"]
+  let equationErrors :=
+    match lang.equations.filter fun equation =>
+        equation.name == declaration.quoteDropEquation with
+    | [] => [mkValidationError context
+        s!"unknown quote-drop equation `{declaration.quoteDropEquation}`"]
+    | [equation] =>
+        if isQuoteDropEquation declaration equation then [] else
+          [mkValidationError context
+            s!"equation `{declaration.quoteDropEquation}` does not have the declared quote-drop shape"]
+    | _ => [mkValidationError context
+        s!"ambiguous quote-drop equation `{declaration.quoteDropEquation}`"]
+  let referenceErrors :=
+    match lang.rewrites.filter fun rewrite =>
+        rewrite.name == declaration.rewriteRule with
+    | [_] => []
+    | [] => [mkValidationError context
+        s!"unknown selected rewrite rule `{declaration.rewriteRule}`"]
+    | _ => [mkValidationError context
+        s!"ambiguous selected rewrite rule `{declaration.rewriteRule}`"]
+  sortErrors ++ quoteErrors ++ dropErrors ++ inputErrors ++ outputErrors ++
+    unitErrors ++ collectionErrors ++
+    equationErrors ++ referenceErrors
+
 /-- Generic semantic validation for an authored `LanguageDef`.
     This complements macro-time parsing checks with cross-reference checks on
     types, constructor names, relation names, and syntax-parameter usage. -/
@@ -1538,6 +1740,8 @@ def validate (lang : LanguageDef) : List ValidationError :=
   let ctorDupErrs := duplicateErrors lang.name "constructor" knownConstructors
   let equationDupErrs := duplicateErrors lang.name "equation" (lang.equations.map (·.name))
   let rewriteDupErrs := duplicateErrors lang.name "rewrite rule" (lang.rewrites.map (·.name))
+  let reflectiveDupErrs := duplicateErrors lang.name "reflective substitution"
+    (lang.reflectivePresentations.map (·.name))
   let logicDupErrs :=
     duplicateErrors lang.name "logic relation"
       (lang.logic.foldl
@@ -1573,6 +1777,8 @@ def validate (lang : LanguageDef) : List ValidationError :=
       ctxTypeErrs ++ premiseErrs ++ lhsCtorErrs ++ rhsCtorErrs ++
         premiseCtorErrs ++ wildcardErrs
   let rewriteErrs := lang.rewrites.flatMap (validateRewrite lang)
+  let reflectiveErrs := lang.reflectivePresentations.flatMap
+    (validateReflectivePresentation lang)
   let logicTypeErrs :=
     lang.logic.flatMap fun decl =>
       match decl with
@@ -1588,9 +1794,10 @@ def validate (lang : LanguageDef) : List ValidationError :=
       let ctx := s!"oracle {oracle.name}"
       (oracle.argTypes.flatMap fun ty => validateTypeExpr knownTypes ctx ty) ++
       validateTypeExpr knownTypes ctx oracle.resultType
-  typeDupErrs ++ ctorDupErrs ++ equationDupErrs ++ rewriteDupErrs ++
+  typeDupErrs ++ ctorDupErrs ++ equationDupErrs ++ rewriteDupErrs ++ reflectiveDupErrs ++
   logicDupErrs ++ oracleDupErrs ++
-  termErrs ++ equationErrs ++ rewriteErrs ++ logicTypeErrs ++ oracleTypeErrs
+  termErrs ++ equationErrs ++ rewriteErrs ++ reflectiveErrs ++
+    logicTypeErrs ++ oracleTypeErrs
 
 /-- Kernel-checkable sufficient conditions for a constructor-signature-only
 language to pass the full `LanguageDef.validate` gate. Surface syntax may be
@@ -1602,6 +1809,7 @@ theorem validate_eq_nil_of_constructorOnly
     (hrewrites : lang.rewrites = [])
     (hlogic : lang.logic = [])
     (horacles : lang.oracles = [])
+    (hreflective : lang.reflectivePresentations = [])
     (htypes : lang.typeNames.Nodup)
     (hconstructors : (lang.terms.map (·.label)).Nodup)
     (hcategory : ∀ term ∈ lang.terms, term.category ∈ lang.typeNames)
@@ -1613,7 +1821,7 @@ theorem validate_eq_nil_of_constructorOnly
       term.syntaxPattern = term.params.map (fun param =>
         SyntaxItem.nonTerminal (TermParam.bodyName param))) :
     lang.validate = [] := by
-  simp [validate, hequations, hrewrites, hlogic, horacles, htypes,
+  simp [validate, hequations, hrewrites, hlogic, horacles, hreflective, htypes,
     hconstructors]
   intro term hterm
   refine ⟨hcategory term hterm, ?_, ?_⟩
@@ -1635,6 +1843,7 @@ theorem validate_eq_nil_of_constructorAndRewrites
     (hequations : lang.equations = [])
     (hlogic : lang.logic = [])
     (horacles : lang.oracles = [])
+    (hreflective : lang.reflectivePresentations = [])
     (htypes : lang.typeNames.Nodup)
     (hconstructors : (lang.terms.map (·.label)).Nodup)
     (hrewrites : (lang.rewrites.map (·.name)).Nodup)
@@ -1649,7 +1858,7 @@ theorem validate_eq_nil_of_constructorAndRewrites
     (hrewriteValid : ∀ rewrite ∈ lang.rewrites,
       validateRewrite lang rewrite = []) :
     lang.validate = [] := by
-  simp [validate, hequations, hlogic, horacles, htypes, hconstructors,
+  simp [validate, hequations, hlogic, horacles, hreflective, htypes, hconstructors,
     hrewrites]
   constructor
   · intro term hterm
@@ -1805,6 +2014,37 @@ In locally nameless, rule patterns use `.fvar` for metavariables and
 `.lambda body` (no binder name) for abstractions. The COMM rule's
 `.subst body repl` substitutes `repl` for BVar 0 in `body`. -/
 
+/-- The authored reflective substitution/static-congruence data selected by
+the rho COMM rule.  Both the generic compiler and rho adequacy theorems refer
+to this value; it is not duplicated in an engine callback. -/
+def rhoReflectivePresentation : ReflectivePresentationDecl where
+  name := "RhoCommSubstitution"
+  rewriteRule := "Comm"
+  processSort := "Proc"
+  nameSort := "Name"
+  quoteConstructor := "NQuote"
+  dropConstructor := "PDrop"
+  inputConstructor := "PInput"
+  outputConstructor := "POutput"
+  parallelCollection := .hashBag
+  parallelUnitConstructor := "PZero"
+  quoteDropEquation := "QuoteDrop"
+
+/-- The authored rho COMM rewrite.  Its explicit `.subst` node is interpreted
+by `rhoReflectivePresentation`; ordinary languages and rules keep syntactic
+substitution. -/
+def rhoCommRewrite : RewriteRule where
+  name := "Comm"
+  typeContext := [("n", TypeExpr.name), ("p", TypeExpr.proc), ("q", TypeExpr.proc)]
+  premises := []
+  left := .collection .hashBag [
+    .apply "PInput" [.fvar "n", .lambda none (.fvar "p")],
+    .apply "POutput" [.fvar "n", .fvar "q"]
+  ] (some "rest")
+  right := .collection .hashBag [
+    .subst (.fvar "p") (.apply "NQuote" [.fvar "q"])
+  ] (some "rest")
+
 /-- The ρ-calculus language definition -/
 def rhoCalc : LanguageDef := {
   name := "RhoCalc",
@@ -1814,6 +2054,7 @@ def rhoCalc : LanguageDef := {
   -- and "not strictly necessary ... we could simply use parallel composition
   -- to accumulate the states."
   congruenceCollections := [.hashBag],
+  reflectivePresentations := [rhoReflectivePresentation],
   terms := [
     -- PZero . |- "0" : Proc
     { label := "PZero", category := "Proc", params := [],
@@ -1858,23 +2099,7 @@ def rhoCalc : LanguageDef := {
     -- Comm: { n!(q) | for(<-n){p} | ...rest } ~> { p[@q] | ...rest }
     -- In LN: the input pattern is λ.body where BVar 0 is the received name.
     -- The subst node replaces BVar 0 in p with NQuote(q).
-    { name := "Comm",
-      typeContext := [("n", TypeExpr.name), ("p", TypeExpr.proc), ("q", TypeExpr.proc)],
-      premises := [],
-      left := .collection .hashBag [
-        .apply "PInput" [.fvar "n", .lambda none (.fvar "p")],
-        .apply "POutput" [.fvar "n", .fvar "q"]
-      ] (some "rest"),
-      right := .collection .hashBag [
-        .subst (.fvar "p") (.apply "NQuote" [.fvar "q"])
-      ] (some "rest") },
-
-    -- Drop: *(@p) ~> p
-    { name := "Drop",
-      typeContext := [("p", TypeExpr.proc)],
-      premises := [],
-      left := .apply "PDrop" [.apply "NQuote" [.fvar "p"]],
-      right := .fvar "p" },
+    rhoCommRewrite,
 
     -- ParCong: | S ~> T |- {S, ...rest} ~> {T, ...rest}
     { name := "ParCong",
@@ -1885,15 +2110,55 @@ def rhoCalc : LanguageDef := {
   ]
 }
 
-/-- Optional ρ extension with set-context congruence enabled.
+/-! ## Kernel-checked rho declaration admission -/
 
-    Canonical `rhoCalc` keeps bag-only process contexts.
-    This extension models the finite-set accumulation variant discussed
-    in `present-moment.pdf` (sets are useful but optional). -/
-def rhoCalcSetExt : LanguageDef :=
-  { rhoCalc with
-      name := "RhoCalcSetExt"
-      congruenceCollections := [.hashBag, .hashSet] }
+/-- The authored strict-core rho definition passes every structural and
+reflective cross-reference check. -/
+theorem rhoCalc_validate_eq_nil : rhoCalc.validate = [] := by
+  simp [LanguageDef.validate, rhoCalc, rhoCommRewrite,
+    rhoReflectivePresentation, LanguageDef.validateReflectivePresentation,
+    LanguageDef.duplicateErrors, LanguageDef.duplicateErrorsAux,
+    LanguageDef.validateTypeExpr, LanguageDef.validateSyntaxPattern,
+    LanguageDef.validateSyntaxPatternItems, LanguageDef.validateSyntaxPatternItem,
+    LanguageDef.validateRewrite,
+    LanguageDef.validatePatternConstructors, LanguageDef.validatePremises,
+    LanguageDef.validateRulePatterns, LanguageDef.reflectiveConstructorErrors,
+    LanguageDef.reflectiveInputErrors, LanguageDef.reflectiveOutputErrors,
+    LanguageDef.reflectiveUnitErrors, LanguageDef.isQuoteDropEquation,
+    LanguageDef.typeNames, TypeDecl.plain, TypeExpr.baseType, TypeExpr.proc,
+    TypeExpr.name, TypeExpr.funType, TypeExpr.bag, TypeExpr.baseNames,
+    TermParam.bodyName, TermParam.binderNames, TermParam.typeExpr,
+    LanguageDef.patternFvarNames, LanguageDef.patternBinderNames,
+    LanguageDef.premisePatterns, LanguageDef.premiseFvarNames,
+    LanguageDef.premiseProducedFvarNames, LanguageDef.premiseForAllParams,
+    Premise.relationCalls, Pattern.constructorRefs, Pattern.constructorRefsList,
+    Pattern.freeFvarNames, Pattern.isWellScoped, Pattern.isWellScopedAt,
+    Pattern.isWellScopedListAt]
+
+/-- A reflective declaration that names no authored rule fails validation. -/
+theorem rhoCalc_missing_reflective_rule_validate_ne_nil :
+    ({ rhoCalc with
+        reflectivePresentations :=
+          [{ rhoReflectivePresentation with rewriteRule := "MissingComm" }] }).validate ≠ [] := by
+  simp [LanguageDef.validate, rhoCalc, rhoCommRewrite,
+    rhoReflectivePresentation, LanguageDef.validateReflectivePresentation,
+    LanguageDef.duplicateErrors, LanguageDef.duplicateErrorsAux,
+    LanguageDef.validateTypeExpr, LanguageDef.validateSyntaxPattern,
+    LanguageDef.validateSyntaxPatternItems, LanguageDef.validateSyntaxPatternItem,
+    LanguageDef.validateRewrite,
+    LanguageDef.validatePatternConstructors, LanguageDef.validatePremises,
+    LanguageDef.validateRulePatterns, LanguageDef.reflectiveConstructorErrors,
+    LanguageDef.reflectiveInputErrors, LanguageDef.reflectiveOutputErrors,
+    LanguageDef.reflectiveUnitErrors, LanguageDef.isQuoteDropEquation,
+    LanguageDef.typeNames, TypeDecl.plain, TypeExpr.baseType, TypeExpr.proc,
+    TypeExpr.name, TypeExpr.funType, TypeExpr.bag, TypeExpr.baseNames,
+    TermParam.bodyName, TermParam.binderNames, TermParam.typeExpr,
+    LanguageDef.patternFvarNames, LanguageDef.patternBinderNames,
+    LanguageDef.premisePatterns, LanguageDef.premiseFvarNames,
+    LanguageDef.premiseProducedFvarNames, LanguageDef.premiseForAllParams,
+    Premise.relationCalls, Pattern.constructorRefs, Pattern.constructorRefsList,
+    Pattern.freeFvarNames, Pattern.isWellScoped, Pattern.isWellScopedAt,
+    Pattern.isWellScopedListAt]
 
 /-! ## Nullary-constructor resolution in authored patterns
 

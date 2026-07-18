@@ -365,7 +365,7 @@ def gfFunsListToLanguageDef
     grammarName [] -- options
     ((allCats.eraseDups.map TypeDecl.plain) ++ extraTypes).eraseDups
     (termRules ++ extraTerms) eqRules rwRules
-    [.vec, .hashBag, .hashSet] [] []
+    [.vec, .hashBag, .hashSet] [] [] []
 
 /-- Build an OSLF LanguageDef from a real GFCore GrammarSig.
     Categories are extracted from function declarations.
@@ -386,7 +386,7 @@ def gfSigToLanguageDef
     sig.grammar [] -- options
     ((allCats.eraseDups.map TypeDecl.plain) ++ extraTypes).eraseDups
     (termRules ++ extraTerms) eqRules rwRules
-    [.vec, .hashBag, .hashSet] [] []
+    [.vec, .hashBag, .hashSet] [] [] []
 
 /-- Authoritative syntax-only `LanguageDef` from a literal GF function list.
     This is the real GF surface in the MeTTaIL DSL: categories + constructors,
@@ -414,7 +414,7 @@ private def equationSupportedBySig (sig : GrammarSig) (eqn : Equation) : Bool :=
   let testLang := LanguageDef.mk
     baseLang.name baseLang.options baseLang.types baseLang.terms
     [eqn] baseLang.rewrites baseLang.congruenceCollections
-    baseLang.logic baseLang.oracles
+    baseLang.logic baseLang.oracles baseLang.reflectivePresentations
   LanguageDef.validate testLang = []
 
 private def rewriteSupportedBySig (sig : GrammarSig) (rw : RewriteRule) : Bool :=
@@ -422,7 +422,7 @@ private def rewriteSupportedBySig (sig : GrammarSig) (rw : RewriteRule) : Bool :
   let testLang := LanguageDef.mk
     baseLang.name baseLang.options baseLang.types baseLang.terms
     baseLang.equations [rw] baseLang.congruenceCollections
-    baseLang.logic baseLang.oracles
+    baseLang.logic baseLang.oracles baseLang.reflectivePresentations
   LanguageDef.validate testLang = []
 
 /-- Semantic equations supported by a concrete generated GF signature, after
@@ -465,7 +465,7 @@ private def equationSupportedByList
   let testLang := LanguageDef.mk
     baseLang.name baseLang.options baseLang.types baseLang.terms
     [eqn] baseLang.rewrites baseLang.congruenceCollections
-    baseLang.logic baseLang.oracles
+    baseLang.logic baseLang.oracles baseLang.reflectivePresentations
   LanguageDef.validate testLang = []
 
 private def rewriteSupportedByList
@@ -474,7 +474,7 @@ private def rewriteSupportedByList
   let testLang := LanguageDef.mk
     baseLang.name baseLang.options baseLang.types baseLang.terms
     baseLang.equations [rw] baseLang.congruenceCollections
-    baseLang.logic baseLang.oracles
+    baseLang.logic baseLang.oracles baseLang.reflectivePresentations
   LanguageDef.validate testLang = []
 
 /-- Kernel-reducible legacy authored semantic overlay from a literal function

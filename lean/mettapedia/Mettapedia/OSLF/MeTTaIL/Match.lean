@@ -148,6 +148,91 @@ def matchPattern (pat term : Pattern) : List Bindings :=
 termination_by sizeOf pat
 end
 
+/-! ## Matching with a declared binding equivalence
+
+Some calculi identify concrete values by an equational theory rather than by
+raw syntax.  Repeated metavariables must then be checked with that theory.
+These functions expose only that policy point: constructor matching, binder
+handling, and bag search remain the generic MeTTaIL algorithm above.
+
+The existing `matchPattern` remains the structural matcher.  Supplying a
+different equivalence is therefore explicit at the caller and does not change
+the behavior of existing languages.
+-/
+
+/-- Merge binding sets using `equivalent` when both sets bind the same
+metavariable. -/
+def mergeBindingsWith (equivalent : Pattern → Pattern → Bool)
+    (b1 b2 : Bindings) : Option Bindings :=
+  b2.foldlM (init := b1) fun acc (name, val) =>
+    match acc.find? (·.1 == name) with
+    | none => some ((name, val) :: acc)
+    | some (_, existing) => if equivalent existing val then some acc else none
+
+mutual
+  /-- Pairwise argument matching with a declared repeated-binding
+  equivalence. -/
+  def matchArgsWith (equivalent : Pattern → Pattern → Bool) :
+      List Pattern → List Pattern → List Bindings
+    | [], [] => [[]]
+    | p :: ps, t :: ts =>
+        (matchPatternWith equivalent p t).flatMap fun headBindings =>
+          (matchArgsWith equivalent ps ts).filterMap fun tailBindings =>
+            mergeBindingsWith equivalent headBindings tailBindings
+    | _, _ => []
+  termination_by patterns => sizeOf patterns
+
+  /-- Multiset matching with a declared repeated-binding equivalence. -/
+  def matchBagWith (equivalent : Pattern → Pattern → Bool) :
+      List Pattern → Option String → CollType → List Pattern → List Bindings
+    | [], restVariable, collectionType, termElements =>
+        match restVariable with
+        | none => if termElements.isEmpty then [[]] else []
+        | some name => [[(name, .collection collectionType termElements none)]]
+    | pattern :: patterns, restVariable, collectionType, termElements =>
+        termElements.zipIdx.flatMap fun (termElement, index) =>
+          (matchPatternWith equivalent pattern termElement).flatMap fun headBindings =>
+            let remaining := termElements.eraseIdx index
+            (matchBagWith equivalent patterns restVariable collectionType remaining).filterMap
+              fun tailBindings =>
+                mergeBindingsWith equivalent headBindings tailBindings
+  termination_by patterns => sizeOf patterns
+
+  /-- Match a concrete term while using `equivalent` only to validate values
+  assigned to repeated metavariables. -/
+  def matchPatternWith (equivalent : Pattern → Pattern → Bool)
+      (pattern term : Pattern) : List Bindings :=
+    match pattern, term with
+    | .fvar name, value => [[(name, value)]]
+    | .bvar left, .bvar right => if left == right then [[]] else []
+    | .apply leftConstructor leftArguments, .apply rightConstructor rightArguments =>
+        if leftConstructor == rightConstructor &&
+            leftArguments.length == rightArguments.length then
+          matchArgsWith equivalent leftArguments rightArguments
+        else
+          []
+    | .lambda _ leftBody, .lambda _ rightBody =>
+        matchPatternWith equivalent leftBody rightBody
+    | .multiLambda leftArity _ leftBody, .multiLambda rightArity _ rightBody =>
+        if leftArity == rightArity then
+          matchPatternWith equivalent leftBody rightBody
+        else
+          []
+    | .collection leftType leftElements leftRest,
+        .collection rightType rightElements _ =>
+        if leftType == rightType then
+          matchBagWith equivalent leftElements leftRest leftType rightElements
+        else
+          []
+    | .subst leftBody leftReplacement, .subst rightBody rightReplacement =>
+        (matchPatternWith equivalent leftBody rightBody).flatMap fun bodyBindings =>
+          (matchPatternWith equivalent leftReplacement rightReplacement).filterMap
+            fun replacementBindings =>
+              mergeBindingsWith equivalent bodyBindings replacementBindings
+    | _, _ => []
+  termination_by sizeOf pattern
+end
+
 /-! ## Applying Bindings to RHS -/
 
 /-- Apply variable bindings to a pattern (the RHS of a rule).

@@ -137,7 +137,7 @@ abbrev CommQuantaleHom (Q Q' : Type*) [CommMonoid Q] [CompleteLattice Q] [CommMo
 namespace WeightFunction
 
 /-- Push a weight function forward along a map. -/
-def map {Q Q' : Type*} [Fintype U] [Monoid Q] [Monoid Q'] (f : Q → Q') (wf : WeightFunction U Q) :
+def map {Q Q' : Type*} [Monoid Q] [Monoid Q'] (f : Q → Q') (wf : WeightFunction U Q) :
     WeightFunction U Q' :=
   ⟨fun u => f (wf.μ u)⟩
 

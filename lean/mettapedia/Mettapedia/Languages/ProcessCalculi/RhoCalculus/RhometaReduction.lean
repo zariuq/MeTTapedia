@@ -3,6 +3,7 @@ import Mettapedia.Algebra.QuantaleWeakness
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.MultiStep
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.RhoOpening
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.SemanticSubstitution
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.PureBoundary
 import Mettapedia.Languages.MeTTa.HE.ExecutableBoundary
 
 /-!
@@ -27,6 +28,7 @@ namespace Mettapedia.Languages.ProcessCalculi.RhoCalculus.RhometaReduction
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.Languages.ProcessCalculi.RhoCalculus
 open Reduction
+open PureBoundary
 open Mettapedia.Languages.MeTTa.HE
 open Mettapedia.Languages.MeTTa.OSLFCore
 
@@ -1073,7 +1075,6 @@ private theorem scHashBag_cons_cong2 {a b : Pattern} {rest rest' : List Pattern}
     (StructuralCongruence.trans _ _ _ (StructuralCongruence.symm _ _ hl) hcong) hr
 
 mutual
-
 /-- Patterns free of any `hashSet` collection — the fragment on which
 `stripSCWrappers` is structurally sound (it collapses `hashSet`s without an SC law). -/
 private def NoHashSet : Pattern → Prop
@@ -1089,7 +1090,36 @@ private def NoHashSet : Pattern → Prop
 private def NoHashSetList : List Pattern → Prop
   | [] => True
   | p :: ps => NoHashSet p ∧ NoHashSetList ps
+end
 
+mutual
+  /-- The Rhometa-local spelling is extensionally the canonical pure-carrier
+  predicate. -/
+  private theorem noHashSet_iff_hashSetFree :
+      ∀ pattern, NoHashSet pattern ↔ Canonical.HashSetFree pattern
+    | .bvar _ => Iff.rfl
+    | .fvar _ => Iff.rfl
+    | .apply _ arguments => noHashSetList_iff_hashSetFreeList arguments
+    | .lambda _ body => noHashSet_iff_hashSetFree body
+    | .multiLambda _ _ body => noHashSet_iff_hashSetFree body
+    | .subst body replacement => by
+        simp only [NoHashSet, Canonical.HashSetFree]
+        exact and_congr (noHashSet_iff_hashSetFree body)
+          (noHashSet_iff_hashSetFree replacement)
+    | .collection .hashSet _ _ => Iff.rfl
+    | .collection .hashBag elements _ =>
+        noHashSetList_iff_hashSetFreeList elements
+    | .collection .vec elements _ =>
+        noHashSetList_iff_hashSetFreeList elements
+
+  /-- List form of `noHashSet_iff_hashSetFree`. -/
+  private theorem noHashSetList_iff_hashSetFreeList :
+      ∀ patterns, NoHashSetList patterns ↔ Canonical.HashSetFreeList patterns
+    | [] => Iff.rfl
+    | pattern :: patterns => by
+        simp only [NoHashSetList, Canonical.HashSetFreeList]
+        exact and_congr (noHashSet_iff_hashSetFree pattern)
+          (noHashSetList_iff_hashSetFreeList patterns)
 end
 
 
@@ -9961,97 +9991,42 @@ only externally supplied content is the `replacementName`.  These mutual
 structural inductions feed the `par`/`par_any` classifier case, where the reduced
 parallel component must remain `hashSet`-free in order to recurse. -/
 
-mutual
-
 /-- `semanticNormalizeProc` preserves `NoHashSet`: every emitted `collection`
 reuses the source's collection type, so no `hashSet` can be introduced. -/
 private theorem noHashSet_semanticNormalizeProc :
     ∀ {p : Pattern}, NoHashSet p → NoHashSet (semanticNormalizeProc p)
-  | p, h => by
-      fun_cases semanticNormalizeProc p with
-      | case1 n => simpa [semanticNormalizeProc] using h
-      | case2 x => simpa [semanticNormalizeProc] using h
-      | case3 n q =>
-          simp only [NoHashSet, NoHashSetList] at h ⊢
-          exact ⟨noHashSet_semanticNormalizeName h.1,
-            noHashSet_semanticNormalizeProc h.2.1, trivial⟩
-      | case4 n body =>
-          simp only [NoHashSet, NoHashSetList] at h ⊢
-          exact ⟨noHashSet_semanticNormalizeName h.1,
-            noHashSet_semanticNormalizeProc h.2.1, trivial⟩
-      | case5 n =>
-          simp only [NoHashSet, NoHashSetList] at h ⊢
-          exact ⟨noHashSet_semanticNormalizeName h.1, trivial⟩
-      | case6 p =>
-          simp only [NoHashSet, NoHashSetList] at h ⊢
-          exact ⟨noHashSet_semanticNormalizeProc h.1, trivial⟩
-      | case7 nm body =>
-          simp only [NoHashSet] at h ⊢
-          exact noHashSet_semanticNormalizeProc h
-      | case8 n nms body =>
-          simp only [NoHashSet] at h ⊢
-          exact noHashSet_semanticNormalizeProc h
-      | case9 body repl =>
-          simp only [NoHashSet] at h ⊢
-          exact ⟨noHashSet_semanticNormalizeProc h.1,
-            noHashSet_semanticNormalizeProc h.2⟩
-      | case10 ct elems rest =>
-          cases ct with
-          | hashSet => exact absurd h (by simp [NoHashSet])
-          | hashBag =>
-              simp only [NoHashSet] at h ⊢
-              exact noHashSet_semanticNormalizeProcList h
-          | vec =>
-              simp only [NoHashSet] at h ⊢
-              exact noHashSet_semanticNormalizeProcList h
-      | case11 x _ _ _ _ _ _ _ _ _ =>
-          simpa [semanticNormalizeProc] using h
+  | p, free =>
+      (noHashSet_iff_hashSetFree (semanticNormalizeProc p)).mpr
+        (hashSetFree_semanticNormalizeProc
+          ((noHashSet_iff_hashSetFree p).mp free))
 
 /-- List variant for `semanticNormalizeProcList`. -/
 private theorem noHashSet_semanticNormalizeProcList :
     ∀ {xs : List Pattern}, NoHashSetList xs →
       NoHashSetList (semanticNormalizeProcList xs)
-  | [], _ => by simp [semanticNormalizeProcList, NoHashSetList]
-  | x :: xs, h => by
-      simp only [NoHashSetList] at h
-      rw [semanticNormalizeProcList]
-      simp only [NoHashSetList]
-      exact ⟨noHashSet_semanticNormalizeProc h.1,
-        noHashSet_semanticNormalizeProcList h.2⟩
+  | processes, free =>
+      (noHashSetList_iff_hashSetFreeList (semanticNormalizeProcList processes)).mpr
+        (hashSetFree_semanticNormalizeProcList
+          ((noHashSetList_iff_hashSetFreeList processes).mp free))
 
 /-- `semanticNormalizeName` preserves `NoHashSet`. -/
 private theorem noHashSet_semanticNormalizeName :
     ∀ {name : Pattern}, NoHashSet name → NoHashSet (semanticNormalizeName name)
-  | name, h => by
-      fun_cases semanticNormalizeName name with
-      | case1 n => simpa [semanticNormalizeName] using h
-      | case2 x => simpa [semanticNormalizeName] using h
-      | case3 n =>
-          -- NQuote [PDrop [n]] → semanticNormalizeName n
-          simp only [NoHashSet, NoHashSetList] at h ⊢
-          exact noHashSet_semanticNormalizeName h.1.1
-      | case4 p _ =>
-          -- NQuote [p] (p not PDrop) → NQuote [semanticNormalizeProc p]
-          simp only [NoHashSet, NoHashSetList] at h ⊢
-          exact ⟨noHashSet_semanticNormalizeProc h.1, trivial⟩
-      | case5 x _ _ _ =>
-          -- catch-all: name unchanged
-          simpa [semanticNormalizeName] using h
-
-end
+  | name, free =>
+      (noHashSet_iff_hashSetFree (semanticNormalizeName name)).mpr
+        (hashSetFree_semanticNormalizeName
+          ((noHashSet_iff_hashSetFree name).mp free))
 
 /-- `semanticSubstName` preserves `NoHashSet`: the result is either the
 `replacementName` (matched bound variable) or the normalized name. -/
 private theorem noHashSet_semanticSubstName
     {k : Nat} {repl name : Pattern}
     (hr : NoHashSet repl) (hn : NoHashSet name) :
-    NoHashSet (semanticSubstName k repl name) := by
-  have hnn := noHashSet_semanticNormalizeName hn
-  unfold semanticSubstName semanticSubstNameMark
-  dsimp only
-  split <;> (try split) <;> simp_all [NoHashSet]
-
-mutual
+    NoHashSet (semanticSubstName k repl name) :=
+  (noHashSet_iff_hashSetFree (semanticSubstName k repl name)).mpr
+    (hashSetFree_semanticSubstName (depth := k)
+      ((noHashSet_iff_hashSetFree repl).mp hr)
+      ((noHashSet_iff_hashSetFree name).mp hn))
 
 /-- `semanticSubstProc` preserves `NoHashSet`, given a `hashSet`-free
 `replacementName`.  The only externally supplied content is `replacementName`
@@ -10060,116 +10035,42 @@ and every emitted `collection` reuses the source's collection type. -/
 private theorem noHashSet_semanticSubstProc {repl : Pattern} (hr : NoHashSet repl) :
     ∀ {k : Nat} {p : Pattern}, NoHashSet p →
       NoHashSet (semanticSubstProc k repl p)
-  | k, p, h => by
-      fun_cases semanticSubstProc k repl p with
-      | case1 n => exact hr                          -- bvar matched → repl
-      | case2 n hne => exact h                       -- bvar non-matched → bvar n
-      | case3 x => exact h                           -- fvar
-      | case4 p => exact h                           -- NQuote [p] (opaque, unchanged)
-      | case5 name p' hmk =>
-          -- PDrop matched a quote: surface `p'` from `name' = NQuote [p']`.
-          have hname : NoHashSet name := by
-            simpa [NoHashSet, NoHashSetList] using h
-          have hname' : NoHashSet (semanticSubstName k repl name) :=
-            noHashSet_semanticSubstName hr hname
-          have heq : semanticSubstName k repl name = .apply "NQuote" [p'] := by
-            simp [semanticSubstName, hmk]
-          rw [heq] at hname'
-          simpa [NoHashSet, NoHashSetList] using hname'
-      | case6 name name' matched hmk hne =>
-          -- PDrop fallthrough → `PDrop [name']` where `name' = semanticSubstName ..`.
-          have hname : NoHashSet name := by
-            simpa [NoHashSet, NoHashSetList] using h
-          have hname' : NoHashSet (semanticSubstName k repl name) :=
-            noHashSet_semanticSubstName hr hname
-          have heq : name' = semanticSubstName k repl name := by
-            simp [semanticSubstName, hmk]
-          subst heq
-          simp only [NoHashSet, NoHashSetList]
-          exact ⟨hname', trivial⟩
-      | case7 n q =>
-          simp only [NoHashSet, NoHashSetList] at h ⊢
-          exact ⟨noHashSet_semanticSubstName hr h.1,
-            noHashSet_semanticSubstProc hr h.2.1, trivial⟩
-      | case8 n body =>
-          simp only [NoHashSet, NoHashSetList] at h ⊢
-          exact ⟨noHashSet_semanticSubstName hr h.1,
-            noHashSet_semanticSubstProc hr h.2.1, trivial⟩
-      | case9 nm body =>
-          simp only [NoHashSet] at h ⊢
-          exact noHashSet_semanticSubstProc hr h
-      | case10 n nms body =>
-          simp only [NoHashSet] at h ⊢
-          exact noHashSet_semanticSubstProc hr h
-      | case11 body rp =>
-          simp only [NoHashSet] at h ⊢
-          exact ⟨noHashSet_semanticSubstProc hr h.1,
-            noHashSet_semanticSubstProc hr h.2⟩
-      | case12 ct elems rest =>
-          cases ct with
-          | hashSet => exact absurd h (by simp [NoHashSet])
-          | hashBag =>
-              simp only [NoHashSet] at h ⊢
-              exact noHashSet_semanticSubstProcList hr h
-          | vec =>
-              simp only [NoHashSet] at h ⊢
-              exact noHashSet_semanticSubstProcList hr h
-      | case13 _ _ _ _ _ _ _ _ _ _ =>
-          -- catch-all apply: returned unchanged
-          exact h
+  | k, p, free =>
+      (noHashSet_iff_hashSetFree (semanticSubstProc k repl p)).mpr
+        (hashSetFree_semanticSubstProc
+          ((noHashSet_iff_hashSetFree repl).mp hr)
+          ((noHashSet_iff_hashSetFree p).mp free))
 
 /-- List variant for `semanticSubstProcList`. -/
 private theorem noHashSet_semanticSubstProcList {repl : Pattern} (hr : NoHashSet repl) :
     ∀ {k : Nat} {xs : List Pattern}, NoHashSetList xs →
       NoHashSetList (semanticSubstProcList k repl xs)
-  | _, [], _ => by simp [semanticSubstProcList, NoHashSetList]
-  | k, x :: xs, h => by
-      simp only [NoHashSetList] at h
-      rw [semanticSubstProcList]
-      simp only [NoHashSetList]
-      exact ⟨noHashSet_semanticSubstProc hr h.1,
-        noHashSet_semanticSubstProcList hr h.2⟩
-
-end
+  | k, processes, free =>
+      (noHashSetList_iff_hashSetFreeList
+        (semanticSubstProcList k repl processes)).mpr
+        (hashSetFree_semanticSubstProcList
+          ((noHashSet_iff_hashSetFree repl).mp hr)
+          ((noHashSetList_iff_hashSetFreeList processes).mp free))
 
 /-- The COMM substitution `semanticCommSubst body q` is `hashSet`-free when both
 the input body and the communicated process are. -/
 private theorem noHashSet_semanticCommSubst {body q : Pattern}
     (hbody : NoHashSet body) (hq : NoHashSet q) :
-    NoHashSet (semanticCommSubst body q) := by
-  unfold semanticCommSubst
-  refine noHashSet_semanticSubstProc ?_ hbody
-  simp only [NoHashSet, NoHashSetList]
-  exact ⟨noHashSet_semanticNormalizeProc hq, trivial⟩
+    NoHashSet (semanticCommSubst body q) :=
+  (noHashSet_iff_hashSetFree (semanticCommSubst body q)).mpr
+    (hashSetFree_semanticCommSubst
+      ((noHashSet_iff_hashSetFree body).mp hbody)
+      ((noHashSet_iff_hashSetFree q).mp hq))
 
 /-- `NoHashSet` is preserved by the core ρ-calculus reduction relation.  The
 only structure-introducing case is COMM, whose residual is a `semanticCommSubst`
 of `hashSet`-free constituents; every other rule reuses the source skeleton. -/
 private theorem noHashSet_of_reduces :
     ∀ {p q : Pattern}, Reduction.Reduces p q → NoHashSet p → NoHashSet q
-  | _, _, .comm, h => by
-      -- {POutput[n,q] | PInput[n, λ p] | rest} ⇝ {semanticCommSubst p q | rest}
-      simp only [NoHashSet, List.cons_append, List.nil_append, NoHashSetList] at h ⊢
-      refine ⟨?_, h.2.2⟩
-      have hqval : NoHashSet _ := h.1.2.1
-      have hbody : NoHashSet _ := h.2.1.2.1
-      exact noHashSet_semanticCommSubst hbody hqval
-  | _, _, .equiv hsc₁ hred hsc₂, h => by
-      have h' : NoHashSet _ := (noHashSet_iff_of_structuralCongruence hsc₁).mp h
-      exact (noHashSet_iff_of_structuralCongruence hsc₂).mp (noHashSet_of_reduces hred h')
-  | _, _, .par hred, h => by
-      simp only [NoHashSet, NoHashSetList] at h ⊢
-      exact ⟨noHashSet_of_reduces hred h.1, h.2⟩
-  | _, _, .par_any hred, h => by
-      simp only [NoHashSet] at h ⊢
-      rw [noHashSetList_append_iff] at h ⊢
-      refine ⟨?_, h.2⟩
-      rw [noHashSetList_append_iff] at h ⊢
-      refine ⟨h.1.1, ?_⟩
-      simp only [NoHashSetList] at h ⊢
-      exact ⟨noHashSet_of_reduces hred h.1.2.1, trivial⟩
-  | _, _, .par_set _, h => by simp only [NoHashSet] at h
-  | _, _, .par_set_any _, h => by simp only [NoHashSet] at h
+  | p, q, reduction, free =>
+      (noHashSet_iff_hashSetFree q).mpr
+        (hashSetFree_of_reduces reduction
+          ((noHashSet_iff_hashSetFree p).mp free))
 
 /-- **Lemma 1 — `NoHashSet` preservation under Rhometta reduction.**  Each of the
 substitution/normalization/core-reduction operators stays inside the

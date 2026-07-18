@@ -27,6 +27,7 @@ import Mettapedia.OSLF.Framework.MATTProvableNow
 import Mettapedia.OSLF.Framework.MATTClaimMap
 import Mettapedia.OSLF.Framework.FULLStatus
 import Mettapedia.OSLF.Framework.TypeSynthesis
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.LanguageDefDSL
 import Mettapedia.OSLF.Framework.GeneratedTyping
 import Mettapedia.OSLF.Framework.SynthesisBridge
 import Mettapedia.OSLF.Framework.ToposReduction
@@ -152,7 +153,13 @@ export Mettapedia.OSLF.MeTTaIL.Syntax (
   RewriteRule
   LanguageDef
   rhoCalc
+)
+
+export Mettapedia.Languages.ProcessCalculi.RhoCalculus.Extended (
+  rhoCalcExecExt
   rhoCalcSetExt
+  rhoCalcExtended
+  rhoCalcExtendedWithNativeFolds
 )
 
 export Mettapedia.OSLF.MeTTaIL.Semantics (

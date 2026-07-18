@@ -1,10 +1,16 @@
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.Types
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.Basic
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.StructuralCongruence
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.Canonical
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.PureCanonicalSection
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CanonicalMatch
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.RhoOpening
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.SubjectEquiv
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.SemanticSubstitution
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.LanguageDefAdequacy
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.Reduction
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.LanguageDefGSLTBridge
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.PureBoundary
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.BasicBridge
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.MultiStep
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.Outcomes

@@ -259,7 +259,11 @@ theorem semanticCommSubst_diverges_from_syntactic_open_on_quote_opacity_emptyBag
             [.apply "POutput" [.bvar 0, .collection .hashBag [] none]],
            .collection .hashBag [] none])
         (.collection .hashBag [] none) := by
-  native_decide
+  simp [semanticCommSubst, semanticSubstProc, semanticSubstProcList,
+    semanticSubstName, semanticSubstNameMark, semanticNormalizeName,
+    semanticNormalizeProc,
+    Mettapedia.OSLF.MeTTaIL.Substitution.commSubst,
+    Mettapedia.OSLF.MeTTaIL.Substitution.openBVar]
 
 private theorem procResidual_apply_cong_single {f : String} {p q : Pattern}
     (hpq : ProcResidualEquiv p q) :
@@ -292,7 +296,9 @@ theorem semanticCommSubst_bound_drop_differs_from_syntactic_open_on_emptyBag :
       Mettapedia.OSLF.MeTTaIL.Substitution.openBVar 0
         (.apply "NQuote" [.collection .hashBag [] none])
         (.apply "PDrop" [.bvar 0]) := by
-  native_decide
+  simp [semanticCommSubst, semanticSubstProc, semanticSubstNameMark,
+    semanticNormalizeName, semanticNormalizeProc,
+    Mettapedia.OSLF.MeTTaIL.Substitution.openBVar]
 
 theorem semanticNormalizeName_free_quote_drop_var (x : String) :
     semanticNormalizeName (.apply "NQuote" [.apply "PDrop" [.fvar x]]) = .fvar x := by
@@ -710,6 +716,69 @@ private theorem rhoOpenNameBVar_eq_self_of_rhoNameCoreShape_noBVar (k : Nat) (u 
       simp [rhoNameCoreShape] at hshape
   | .collection ct elems rest =>
       simp [rhoNameCoreShape] at hshape
+
+/-- A closed strict-core name cannot trigger the distinguished-name branch of
+COMM substitution.  This exposes the boolean fact needed by derived
+presentations without appealing to a particular name representation. -/
+theorem semanticSubstNameMark_matched_false_of_rhoNameCoreShape_noBVar
+    (k : Nat) (replacementName : Pattern) {n : Pattern}
+    (hshape : rhoNameCoreShape n = true)
+    (hnoB : noBVar k n = true) :
+    (semanticSubstNameMark k replacementName n).2 = false := by
+  match n with
+  | .bvar index =>
+      have hne : index ≠ k := by
+        simpa [noBVar, bne_iff_ne] using hnoB
+      simp [semanticSubstNameMark, semanticNormalizeName,
+        beq_eq_false_iff_ne.mpr hne]
+  | .fvar _ =>
+      rfl
+  | .apply "NQuote" [process] =>
+      by_cases hdrop : ∃ name, process = .apply "PDrop" [name]
+      · rcases hdrop with ⟨name, rfl⟩
+        have nameShape : rhoNameCoreShape name = true := by
+          simpa [rhoNameCoreShape, rhoProcCoreShape] using hshape
+        have nameNoB : noBVar k name = true := by
+          simpa [noBVar, noBVarList] using hnoB
+        simpa [semanticSubstNameMark, semanticNormalizeName] using
+          semanticSubstNameMark_matched_false_of_rhoNameCoreShape_noBVar
+            k replacementName nameShape nameNoB
+      · have notDrop : ∀ name, process = .apply "PDrop" [name] → False := by
+          intro name equality
+          exact hdrop ⟨name, equality⟩
+        simp [semanticSubstNameMark, semanticNormalizeName.eq_4 process notDrop]
+  | .apply constructor arguments =>
+      rcases rhoNameCoreShape_apply_inv hshape with
+        ⟨process, constructorEq, argumentsEq, processShape⟩
+      subst constructorEq
+      subst argumentsEq
+      by_cases hdrop : ∃ name, process = .apply "PDrop" [name]
+      · rcases hdrop with ⟨name, rfl⟩
+        have nameShape : rhoNameCoreShape name = true := by
+          simpa [rhoProcCoreShape] using processShape
+        have nameNoB : noBVar k name = true := by
+          simpa [noBVar, noBVarList] using hnoB
+        simpa [semanticSubstNameMark, semanticNormalizeName] using
+          semanticSubstNameMark_matched_false_of_rhoNameCoreShape_noBVar
+            k replacementName nameShape nameNoB
+      · have notDrop : ∀ name, process = .apply "PDrop" [name] → False := by
+          intro name equality
+          exact hdrop ⟨name, equality⟩
+        simp [semanticSubstNameMark, semanticNormalizeName.eq_4 process notDrop]
+  | .lambda binder body =>
+      simp [rhoNameCoreShape] at hshape
+  | .multiLambda arity binders body =>
+      simp [rhoNameCoreShape] at hshape
+  | .subst body replacement =>
+      simp [rhoNameCoreShape] at hshape
+  | .collection collectionType elements rest =>
+      simp [rhoNameCoreShape] at hshape
+termination_by 2 * sizeOf n + 1
+decreasing_by
+  all_goals
+    subst_vars
+    simp_wf
+    omega
 
 mutual
   theorem semanticSubstQuotedName_equiv_rhoOpenNameBVar_of_rhoProcCoreShape

@@ -2,6 +2,7 @@ import Mettapedia.OSLF.Framework.GeneratedTyping
 import Mettapedia.OSLF.Framework.RhoInstance
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.Soundness
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.Engine
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.LanguageDefAdequacy
 
 /-!
 # Synthesis Bridge: Generated ↔ Hand-Written Type Systems
@@ -19,25 +20,26 @@ This file bridges three layers of the OSLF formalization:
    - `rhoOSLF` : OSLFTypeSystem
 
 3. **Generated** (TypeSynthesis.lean, GeneratedTyping.lean):
-   - `langReduces rhoCalc` (via executable engine)
-   - `langDiamond` / `langBox` (derived from executable reduction)
+   - `langReduces rhoCalc` (the generic `LanguageDef` interpreter)
+   - `langDiamond` / `langBox` (derived from that generic relation)
    - `GenHasType rhoCalc` (generated typing judgment)
 
 ## Key Relationships
 
 ```
-Propositional Reduces (Reduction.lean)
-    ↑ reduceStep_sound                  ↑ completeness (partial)
-Executable reduceStep (Engine.lean)
-    ↓ rewriteStep agreement
-Generic rewriteWithContext (MeTTaIL/Engine.lean)
-    ↓ langReduces wraps rewriteWithContextWithPremises (default env)
-langDiamond / langBox (TypeSynthesis.lean)
+LanguageDef rhoCalc
+    ↓ declaration-compiled reflective COMM substitution
+langReduces / langDiamond / langBox
+
+Paper Reduces (semantic COMM substitution)
+    ↑ reduceStep_sound
+Specialized reduceStep
 ```
 
 The hand-written `possiblyProp`/`relyProp` use `Reduces` (propositional).
-The generated `langDiamond`/`langBox` use `langReduces` (executable).
-`reduceStep_sound` proves: executable ⊆ propositional.
+The generated `langDiamond`/`langBox` use the generic `langReduces` relation.
+`reduceStep_sound` proves only that the specialized executable engine is sound
+for `Reduces`.  It does not connect the generic interpreter to `Reduces`.
 
 ## References
 
@@ -77,27 +79,23 @@ The key gap: `rhoSpan` uses `Nonempty (Reduces p q)` while `langSpan rhoCalc`
 uses `langReduces rhoCalc p q = q ∈ rewriteWithContextWithPremises rhoCalc p`
 (i.e. premise-aware execution with `RelationEnv.empty`).
 
-These are connected via soundness of the executable engine. -/
+They are not yet connected unconditionally.  The generic interpreter now
+selects the validated reflective COMM declaration: a dropped received name
+exposes the quoted process, literal quotation is opaque, and free drop remains
+inert.  `LanguageDefAdequacy.lean` proves declaration selection, kernel-checked
+language admission, compiled-RHS shape, and the critical positive/negative
+agreement witnesses.  The remaining general theorem must restrict raw
+`Pattern`s to the derived rho syntax and make channel matching respect the
+authored static name equations. -/
 
--- Every executable reduction witnesses a propositional reduction.
--- This is the key soundness bridge: if the generic engine produces
--- a reduct, the propositional Reduces relation holds.
---
--- Note: `reduceStep_sound` from Engine.lean proves this for `reduceStep`.
--- The generic `rewriteWithContextWithPremises` wraps premise-aware rule application
--- which operates on the same `rhoCalc` rules.
---
--- The inclusion: langReduces rhoCalc p q → Nonempty (Reduces p q)
--- requires proving that `rewriteWithContextWithPremises rhoCalc` agrees with
--- `reduceStep` (proven executably in the agreement test suite) and then
--- using `reduceStep_sound`.
+-- The inclusion `langReduces rhoCalc p q → Nonempty (Reduces p q)` is an
+-- open adequacy obligation.  Reflective substitution no longer blocks it;
+-- derived sorting and static channel canonicalization are the remaining
+-- semantic boundary.
 
-/-- For rhoCalc: if the executable engine produces a reduct that is also
-    a valid propositional reduction, the generated diamond implies the
-    hand-written possibly.
-
-    The executable and specialized engines agree (proven executably via
-    the 8-test agreement suite in MeTTaIL/Engine.lean). -/
+/-- Conditional sound-direction bridge.  The `sound` argument is the still-open
+    adequacy theorem relating generic `LanguageDef` interpretation to paper
+    `Reduces`; this theorem does not manufacture that evidence. -/
 theorem langDiamond_implies_possibly_at (φ : Pattern → Prop) (p : Pattern)
     (h : langDiamond rhoCalc φ p)
     (sound : ∀ q, langReduces rhoCalc p q → Nonempty (Reduces p q)) :
@@ -183,11 +181,14 @@ possiblyProp φ p            -- Layer 1: hand-written (Reduction.lean)
 ```
 
 Layer 1 = Layer 2 is proven (`derived_diamond_eq_possiblyProp`).
-Layer 2 ↔ Layer 3 depends on the agreement between propositional and
-executable reduction, which is:
+Layer 2 ↔ Layer 3 depends on an adequacy theorem between the paper relation
+and the generic `LanguageDef` interpretation.  Currently:
 - Sound direction: `reduceStep_sound` (proven in Engine.lean)
-- Complete direction: requires showing all propositional reducts are found
-  (partially verified by the executable agreement test suite)
+- Complete direction for the specialized engine is available up to structural
+  congruence in `Engine.lean`
+- The generic interpreter compiles the authored reflective substitution and
+  agrees on the checked COMM boundary cases; a universal relation bridge still
+  requires derived sorting and static channel canonicalization
 
 Additionally, the **specialized engine bridges** (above) give unconditional
 connections from `reduceStep` to `possiblyProp`/`relyProp`, bypassing the
@@ -200,8 +201,8 @@ structurally identical rules. The only difference is:
 - `HasType` uses `possiblyProp`/`relyProp` (from propositional Reduces)
 - `GenHasType` uses `langDiamond`/`langBox` (from executable engine)
 
-When the two modal operators agree (which they do for rhoCalc),
-the two typing judgments coincide. -/
+If an adequacy theorem makes the two modal operators agree, the corresponding
+typing judgments can then be related.  That adequacy theorem is open. -/
 
 /-- Convert a hand-written NativeType to a generated GenNativeType.
 
@@ -284,15 +285,18 @@ The three-layer bridge demonstrates:
 4. **HasType ↔ GenHasType** (structurally):
    Same rules, different modal operators, agree when layers 2-3 agree
 
-5. **Executable validation**: 8-test agreement suite confirms the engines
-   produce identical results on all test cases
+5. **Executable diagnostics**: the eight-case corpus agrees after reflective
+   COMM compilation; it remains testing evidence, not universal adequacy
 
-The OSLF type synthesis pipeline is **complete**:
+The generic OSLF construction itself is available:
 - `LanguageDef` → `langOSLF` (automatic OSLFTypeSystem with Galois connection)
 - `GenHasType` provides a concrete typing judgment
 - The Galois connection `◇ ⊣ □` is proven automatically
-- The connection to hand-written systems is established
 - Specialized engine → propositional modalities is unconditional
+
+The connection from the authored rho `LanguageDef` to the paper `Reduces`
+relation remains open until the derived rho-syntax boundary and static channel
+canonicalization are included in the universal agreement theorem.
 -/
 
 end Mettapedia.OSLF.Framework.SynthesisBridge

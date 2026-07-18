@@ -19,6 +19,8 @@ open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.Substitution
 open Mettapedia.OSLF.MeTTaIL.Match
 open Mettapedia.OSLF.MeTTaIL.Engine
+open Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical
+open Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution
 
 /-! ## Declarative Reduction -/
 
@@ -31,10 +33,10 @@ inductive DeclReducesWithPremises (relEnv : RelationEnv) (lang : LanguageDef) :
       (r : RewriteRule) →
       r ∈ lang.rewrites →
       (bs0 : Bindings) →
-      bs0 ∈ matchPattern r.left p →
+      bs0 ∈ matchPatternForRule lang r p →
       (bs : Bindings) →
       bs ∈ applyPremisesWithEnv relEnv lang r.premises bs0 →
-      applyBindings bs r.right = q →
+      applyBindingsForRule lang r bs = q →
       DeclReducesWithPremises relEnv lang p q
   | congElem :
       {elems : List Pattern} →
@@ -46,11 +48,11 @@ inductive DeclReducesWithPremises (relEnv : RelationEnv) (lang : LanguageDef) :
       (r : RewriteRule) →
       r ∈ lang.rewrites →
       (bs0 : Bindings) →
-      bs0 ∈ matchPattern r.left elems[i] →
+      bs0 ∈ matchPatternForRule lang r elems[i] →
       (bs : Bindings) →
       bs ∈ applyPremisesWithEnv relEnv lang r.premises bs0 →
       {q' : Pattern} →
-      applyBindings bs r.right = q' →
+      applyBindingsForRule lang r bs = q' →
       DeclReducesWithPremises relEnv lang (.collection ct elems rest)
         (.collection ct (elems.set i q') rest)
 
@@ -162,9 +164,9 @@ theorem engineWithPremises_sound {lang : LanguageDef} {p q : Pattern}
 private theorem applyRuleWithPremisesUsing_of_topRule {relEnv : RelationEnv}
     {lang : LanguageDef} {r : RewriteRule}
     {p q : Pattern}
-    (bs0 : Bindings) (hbs0 : bs0 ∈ matchPattern r.left p)
+    (bs0 : Bindings) (hbs0 : bs0 ∈ matchPatternForRule lang r p)
     (bs : Bindings) (hprem : bs ∈ applyPremisesWithEnv relEnv lang r.premises bs0)
-    (hq : applyBindings bs r.right = q) :
+    (hq : applyBindingsForRule lang r bs = q) :
     q ∈ applyRuleWithPremisesUsing relEnv lang r p := by
   unfold applyRuleWithPremisesUsing
   rw [List.mem_flatMap]
@@ -175,9 +177,9 @@ private theorem applyRuleWithPremisesUsing_of_topRule {relEnv : RelationEnv}
 private theorem rewriteStepWithPremisesUsing_of_topRule' {relEnv : RelationEnv}
     {lang : LanguageDef} {p q : Pattern}
     (r : RewriteRule) (hr : r ∈ lang.rewrites)
-    (bs0 : Bindings) (hbs0 : bs0 ∈ matchPattern r.left p)
+    (bs0 : Bindings) (hbs0 : bs0 ∈ matchPatternForRule lang r p)
     (bs : Bindings) (hprem : bs ∈ applyPremisesWithEnv relEnv lang r.premises bs0)
-    (hq : applyBindings bs r.right = q) :
+    (hq : applyBindingsForRule lang r bs = q) :
     q ∈ rewriteStepWithPremisesUsing relEnv lang p := by
   unfold rewriteStepWithPremisesUsing
   rw [List.mem_flatMap]

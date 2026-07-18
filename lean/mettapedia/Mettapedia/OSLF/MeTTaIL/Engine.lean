@@ -1,4 +1,6 @@
 import Mettapedia.OSLF.MeTTaIL.Match
+import Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical
+import Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution
 import Mettapedia.OSLF.MeTTaIL.Substitution
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.Engine
 
@@ -49,6 +51,7 @@ namespace Mettapedia.OSLF.MeTTaIL.Engine
 
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.Match
+open Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution
 open Mettapedia.OSLF.MeTTaIL.Substitution
 open Mettapedia.Languages.ProcessCalculi.RhoCalculus.Engine (patternToString)
 
@@ -505,9 +508,9 @@ theorem applyPremisesWithEnv_mono_relEnv {lang : LanguageDef}
     pluggable relation environment. -/
 def applyRuleWithPremisesUsing (relEnv : RelationEnv) (lang : LanguageDef)
     (rule : RewriteRule) (term : Pattern) : List Pattern :=
-  (matchPattern rule.left term).flatMap fun bs =>
+  (ReflectiveCanonical.matchPatternForRule lang rule term).flatMap fun bs =>
     (applyPremisesWithEnv relEnv lang rule.premises bs).map fun bs' =>
-      applyBindings bs' rule.right
+      applyBindingsForRule lang rule bs'
 
 /-- Apply a single rule using premise-aware filtering on bindings. -/
 def applyRuleWithPremises (lang : LanguageDef) (rule : RewriteRule) (term : Pattern) : List Pattern :=
@@ -731,7 +734,7 @@ private def ppar (elems : List Pattern) : Pattern :=
 #eval! do
   let x := Pattern.fvar "x"
   let term := ppar [poutput x pzero, pinput x (.bvar 0)]
-  let reducts := rewriteStepNoPremises rhoCalc term
+  let reducts := rewriteStepWithPremises rhoCalc term
   IO.println s!"Generic COMM test: {term}"
   IO.println s!"  reducts ({reducts.length}):"
   for r in reducts do
@@ -742,7 +745,7 @@ private def ppar (elems : List Pattern) : Pattern :=
 #eval! do
   let term := ppar [pdrop (nquote pzero), poutput (.fvar "x") pzero]
   let topReducts := rewriteStepNoPremises rhoCalc term
-  let fullReducts := rewriteWithContext rhoCalc term
+  let fullReducts := rewriteWithContextWithPremises rhoCalc term
   IO.println s!"Generic nested test: {term}"
   IO.println s!"  top-level reducts ({topReducts.length}): {if topReducts.isEmpty then "none" else "unexpected"}"
   IO.println s!"  with congruence ({fullReducts.length}):"
@@ -758,7 +761,7 @@ private def ppar (elems : List Pattern) : Pattern :=
     pinput x (.bvar 0),
     pinput x (pdrop (.bvar 0))
   ]
-  let reducts := rewriteStepNoPremises rhoCalc term
+  let reducts := rewriteStepWithPremises rhoCalc term
   IO.println s!"Generic race test: {term}"
   IO.println s!"  reducts ({reducts.length}):"
   for r in reducts do
@@ -770,14 +773,14 @@ private def ppar (elems : List Pattern) : Pattern :=
   let x := Pattern.fvar "x"
   let term := ppar [poutput x (pdrop (nquote pzero)), pinput x (pdrop (.bvar 0))]
   IO.println s!"Generic multi-step test: {term}"
-  let result := fullRewriteToNormalForm rhoCalc term
+  let result := fullRewriteToNormalFormWithPremises rhoCalc term
   IO.println s!"  normal form: {result}"
 
 -- Test 5: A positive comparison case for generic rewriteStep vs specialized reduceStep.
 #eval! do
   let x := Pattern.fvar "x"
   let term := ppar [poutput x pzero, pinput x (.bvar 0)]
-  let genericReducts := rewriteStepNoPremises rhoCalc term
+  let genericReducts := rewriteStepWithPremises rhoCalc term
   let specialReducts := Mettapedia.Languages.ProcessCalculi.RhoCalculus.Engine.reduceStep term
   IO.println s!"Comparison test: {term}"
   IO.println s!"  generic  ({genericReducts.length}): {genericReducts.map toString}"
@@ -830,17 +833,17 @@ private def extRelationEnv : RelationEnv where
 
 /-! ## Comparison Diagnostics: Generic vs Specialized
 
-Systematic comparison of `rewriteStep rhoCalc` (generic) against
+Systematic comparison of the premise-aware `LanguageDef` engine against
 `RhoCalculus.Engine.reduceStep` (specialized) on a small local corpus.
-The generic engine handles COMM and DROP at top level; the specialized
-engine also handles PAR (congruence). We compare `rewriteWithContext`
-(generic + congruence) against `reduceStep` (specialized).  Equality is not
+We compare `rewriteWithContextWithPremises` (generic rule interpretation plus
+congruence) against `reduceStep` (specialized).  Equality is not
 assumed: every disagreement printed below is an open semantic-correlation
 obligation. -/
 
 -- Run both engines on a term and report equality or the exact disagreement.
 private def reportComparison (label : String) (term : Pattern) : IO Unit := do
-  let genericReducts := (rewriteWithContext rhoCalc term).map toString
+  let genericReducts :=
+    (rewriteWithContextWithPremises rhoCalc term).map toString
   let specialReducts := (Mettapedia.Languages.ProcessCalculi.RhoCalculus.Engine.reduceStep term).map toString
   -- Sort for order-independent comparison
   let gSorted := genericReducts.mergeSort (· < ·)

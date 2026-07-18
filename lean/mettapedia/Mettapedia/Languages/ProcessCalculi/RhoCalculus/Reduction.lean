@@ -47,9 +47,9 @@ open Mettapedia.CategoryTheory.LambdaTheories
     **Canonical vs Extension Policy (2026-02-13)**:
     This low-level relation intentionally keeps both bag and set congruence
     descent constructors. Canonical-vs-extension behavior is enforced at the
-    `LanguageDef`/`langReduces` layer (`rhoCalc` vs `rhoCalcSetExt`) via
-    `congruenceCollections`, with theorem-level comparison in
-    `Framework/TypeSynthesis.lean`.
+    `LanguageDef`/`langReduces` layer (`rhoCalc` vs the explicitly derived
+    `Extended.rhoCalcSetExt`) via `congruenceCollections`, with theorem-level
+    comparison in `RhoCalculus/LanguageDefDSL.lean`.
 
     **Paper-faithful core (2026-05-28)**:
     In Meredith-Radestock 2005, free drop is inert except under substitution.

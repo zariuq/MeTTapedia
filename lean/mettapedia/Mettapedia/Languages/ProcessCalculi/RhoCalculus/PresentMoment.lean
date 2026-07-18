@@ -190,7 +190,7 @@ theorem int_disjoint_env (a e : Pattern) :
     internalChannels a e ∩ freeNames e = ∅ := by
   unfold internalChannels
   ext x
-  simp only [Set.mem_inter_iff, Set.mem_setOf, Set.mem_diff, Set.mem_empty_iff_false]
+  simp only [Set.mem_inter_iff, Set.mem_setOf, Set.mem_sdiff, Set.mem_empty_iff_false]
   tauto
 
 
