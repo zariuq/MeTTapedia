@@ -349,6 +349,13 @@ inductive InterpretTuple (space : Space) (dispatch : GroundedDispatch) :
 /-- Call a MeTTa expression (grounded dispatch or equation matching).
     Ref: spec lines 348-389 "Call MeTTa expression (metta_call)".
 
+    Compatibility note: the `equation_match` branch below embeds the HE
+    executable `queryEquations` and `mergeBindings` functions as premises.
+    Consequently this relation is not the executable-independent target for
+    equation-query conformance.  `HumanEquationQueryStep` is the separate
+    human-specification relation at the one-step query boundary; recursive
+    evaluator/call conformance is a later, separately named layer.
+
     Input: atom, expected type, bindings.
     Output: one result pair. -/
 inductive MettaCall (space : Space) (dispatch : GroundedDispatch) :

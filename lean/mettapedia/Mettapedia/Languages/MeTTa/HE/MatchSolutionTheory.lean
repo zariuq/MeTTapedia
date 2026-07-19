@@ -89,7 +89,7 @@ theorem HEBindingSatisfied.eq_applyClassSolution_of_mem_classValues
     mem_of_lookup_eq_some hlookup
   exact (hsat.eq_of_mem_eqClass hclass).trans (hsat.1 w value hassign)
 
-private theorem isBound_eq_false_of_classValues_nil {b : Bindings} {v : String}
+theorem isBound_eq_false_of_classValues_nil {b : Bindings} {v : String}
     (h : b.classValues v = []) : b.isBound v = false := by
   by_contra habs
   have hbound : b.isBound v = true := by simpa using habs
@@ -104,7 +104,7 @@ private theorem isBound_eq_false_of_classValues_nil {b : Bindings} {v : String}
   rw [h] at hmem
   simp at hmem
 
-private theorem hesat_assign_of_not_isBound {b : Bindings} {v : String}
+theorem hesat_assign_of_not_isBound {b : Bindings} {v : String}
     {val : Atom} (hnb : b.isBound v = false) (μ : String → Metta.Atom) :
     HEBindingSatisfied μ (b.assign v val) ↔
       (HEBindingSatisfied μ b ∧
@@ -126,7 +126,7 @@ private theorem hesat_assign_of_not_isBound {b : Bindings} {v : String}
       rcases hx with ⟨rfl, rfl⟩
       exact hval
 
-private theorem hesat_addEquality {b : Bindings} {a c : String}
+theorem hesat_addEquality {b : Bindings} {a c : String}
     (μ : String → Metta.Atom) :
     HEBindingSatisfied μ (b.addEquality a c) ↔
       (HEBindingSatisfied μ b ∧ μ a = μ c) := by
@@ -147,29 +147,29 @@ private theorem hesat_addEquality {b : Bindings} {a c : String}
 
 /-! ## The translated equation, by constructor -/
 
-@[simp] private theorem applyToLea_symbol (μ : String → Metta.Atom)
+@[simp] theorem applyToLea_symbol (μ : String → Metta.Atom)
     (s : String) :
     applyClassSolution μ (toLeaTTaAtom (.symbol s)) = .sym s := by
   simp [toLeaTTaAtom, applyClassSolution]
 
-@[simp] private theorem applyToLea_var (μ : String → Metta.Atom)
+@[simp] theorem applyToLea_var (μ : String → Metta.Atom)
     (v : String) :
     applyClassSolution μ (toLeaTTaAtom (.var v)) = μ v := by
   simp [toLeaTTaAtom, applyClassSolution]
 
-@[simp] private theorem applyToLea_grounded (μ : String → Metta.Atom)
+@[simp] theorem applyToLea_grounded (μ : String → Metta.Atom)
     (g : GroundedValue) :
     applyClassSolution μ (toLeaTTaAtom (.grounded g)) =
       .gnd (toLeaTTaGround g) := by
   simp [toLeaTTaAtom, applyClassSolution]
 
-@[simp] private theorem applyToLea_expression (μ : String → Metta.Atom)
+@[simp] theorem applyToLea_expression (μ : String → Metta.Atom)
     (es : List Atom) :
     applyClassSolution μ (toLeaTTaAtom (.expression es)) =
       .expr ((toLeaTTaAtoms es).map (applyClassSolution μ)) := by
   simp [toLeaTTaAtom, applyClassSolution]
 
-private theorem toLeaTTaAtoms_eq_map (l : List Atom) :
+theorem solutionTheory_toLeaTTaAtoms_eq_map (l : List Atom) :
     toLeaTTaAtoms l = l.map toLeaTTaAtom := by
   induction l with
   | nil => rfl
@@ -185,7 +185,7 @@ private theorem toLeaTTaAtoms_replicate (k : Nat) (a : Atom) :
 /-- A constant list agrees with a mapped list exactly when every image is the
 constant.  This is the solution reading of the class-wide reconciliation
 worklists built by `addVarBinding`/`addVarEquality`. -/
-private theorem replicate_eq_map_iff (μ : String → Metta.Atom) (k : Atom) :
+theorem replicate_eq_map_iff (μ : String → Metta.Atom) (k : Atom) :
     ∀ l : List Atom,
       (List.replicate l.length (applyClassSolution μ (toLeaTTaAtom k)) =
         List.map (applyClassSolution μ ∘ toLeaTTaAtom) l) ↔
@@ -331,7 +331,8 @@ private theorem solutionPack :
                 subst hseed
                 intro μ
                 rw [ihC hmrg μ, hiffL μ]
-                simp only [hesat_empty_iff, true_and, toLeaTTaAtoms_eq_map,
+                simp only [hesat_empty_iff, true_and,
+                  solutionTheory_toLeaTTaAtoms_eq_map,
                   List.map_map, List.map_replicate, List.append_eq]
                 rw [replicate_eq_map_iff μ first (rest ++ [val])]
                 have hfirst : HEBindingSatisfied μ b →
@@ -403,7 +404,8 @@ private theorem solutionPack :
                 subst hseed
                 intro μ
                 rw [ihC hmrg μ, hiffL μ, hesat_addEquality μ]
-                simp only [hesat_empty_iff, true_and, toLeaTTaAtoms_eq_map,
+                simp only [hesat_empty_iff, true_and,
+                  solutionTheory_toLeaTTaAtoms_eq_map,
                   List.map_map, List.map_replicate]
                 rw [replicate_eq_map_iff μ first rest]
                 have hall : HEBindingSatisfied μ (b.addEquality a c) →

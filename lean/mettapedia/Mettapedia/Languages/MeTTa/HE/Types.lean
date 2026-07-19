@@ -610,14 +610,14 @@ def isFunctionType : Atom → Bool
     Returns all types except the last (which is the return type). -/
 def getFunctionArgTypes : Atom → Option (List Atom)
   | .expression (.symbol "->" :: rest) =>
-    if rest.length ≥ 2 then some (rest.dropLast)
+    if rest.length ≥ 1 then some (rest.dropLast)
     else none
   | _ => none
 
 /-- Extract the return type from a function type `(-> ... ret)`. -/
 def getFunctionRetType : Atom → Option Atom
   | .expression (.symbol "->" :: rest) =>
-    if rest.length ≥ 2 then rest.getLast?
+    if rest.length ≥ 1 then rest.getLast?
     else none
   | _ => none
 

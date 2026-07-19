@@ -113,7 +113,7 @@ theorem encodeReducesFF_inj {p q p' q' : Pattern}
 /-- `isFullyGround p` characterizes patterns for which `matchPattern p·` is
     determinate and `applyBindings bs p = p` for any `bs`:
     - No `.fvar` nodes (bindings would change them)
-    - No `.subst` nodes (`applyBindings` evaluates them via `openBVar`)
+    - No `.subst` nodes (`applyBindings` eliminates their explicit binder)
     - No `.collection` nodes (multiset matching `matchBag` is non-deterministic)
 
     The last restriction (no collection) is necessary for `matchPattern_ground_unique`. -/

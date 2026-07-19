@@ -8,7 +8,13 @@ import Mettapedia.GSLT.LanguageDef.Gauthier.Wrat
 import Mettapedia.GSLT.LanguageDef.Gauthier.CTree
 import Mettapedia.GSLT.LanguageDef.Gauthier.Embedding
 import Mettapedia.GSLT.LanguageDef.Gauthier.BigStepGSLT
+import Mettapedia.GSLT.LanguageDef.Gauthier.BigStepGSLTE2
 import Mettapedia.GSLT.LanguageDef.Gauthier.Properties
 import Mettapedia.GSLT.LanguageDef.Gauthier.ProbeRigidity
 import Mettapedia.GSLT.LanguageDef.Gauthier.QProve
 import Mettapedia.GSLT.LanguageDef.Gauthier.Prnn
+import Mettapedia.GSLT.LanguageDef.Gauthier.Skeleton
+import Mettapedia.GSLT.LanguageDef.Gauthier.SkeletonMask
+import Mettapedia.GSLT.LanguageDef.Gauthier.SkeletonTrace
+import Mettapedia.GSLT.LanguageDef.Gauthier.RefinementInstance
+import Mettapedia.GSLT.LanguageDef.Gauthier.AtomicRefinement

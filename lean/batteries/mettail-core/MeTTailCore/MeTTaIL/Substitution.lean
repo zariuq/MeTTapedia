@@ -57,6 +57,73 @@ def liftBVars (cutoff shift : Nat) : Pattern → Pattern
     .collection ct (elems.map (liftBVars cutoff shift)) rest
 termination_by p => sizeOf p
 
+/-! `openBVar` opens a locally nameless binder but does not remove an
+ambient de Bruijn level. Executing an explicit `Pattern.subst` does remove its
+bound level, so it uses the separate instantiation operation below. -/
+
+/-- Eliminate the bound-variable level at `depth` from `body`, replacing its
+occurrences with `replacement`. Inner-bound indices are preserved, the
+replacement is lifted beneath inner binders, and indices outside the removed
+level are decremented. -/
+def instantiateBVarAt (depth : Nat) (replacement : Pattern) : Pattern → Pattern
+  | .bvar index =>
+      if index < depth then
+        .bvar index
+      else if index = depth then
+        liftBVars 0 depth replacement
+      else
+        .bvar (index - 1)
+  | .fvar name => .fvar name
+  | .apply constructor args =>
+      .apply constructor (args.map (instantiateBVarAt depth replacement))
+  | .lambda body =>
+      .lambda (instantiateBVarAt (depth + 1) replacement body)
+  | .multiLambda arity body =>
+      .multiLambda arity (instantiateBVarAt (depth + arity) replacement body)
+  | .subst body nestedReplacement =>
+      .subst (instantiateBVarAt (depth + 1) replacement body)
+        (instantiateBVarAt depth replacement nestedReplacement)
+  | .collection collectionType elems rest =>
+      .collection collectionType
+        (elems.map (instantiateBVarAt depth replacement)) rest
+termination_by body => sizeOf body
+
+/-- Execute the binder-eliminating substitution represented by
+`Pattern.subst body replacement`. -/
+def instantiateBVar (replacement body : Pattern) : Pattern :=
+  instantiateBVarAt 0 replacement body
+
+section InstantiateBVarParityFixtures
+
+private def kData : Pattern := .apply "K" []
+
+-- Target replacement and removal of the surrounding de Bruijn level.
+#guard decide (instantiateBVar kData (.bvar 0) = kData)
+#guard decide (instantiateBVar kData (.bvar 1) = .bvar 0)
+
+-- Insertion beneath a binder lifts an ambient replacement, while an index
+-- owned by that inner binder remains unchanged.
+#guard decide
+    (instantiateBVar (.bvar 0) (.lambda (.bvar 1)) = .lambda (.bvar 1))
+#guard decide
+    (instantiateBVar kData (.lambda (.bvar 0)) = .lambda (.bvar 0))
+
+-- The same three index classes are handled across a two-binder scope.
+#guard decide
+    (instantiateBVar (.bvar 0)
+      (.multiLambda 2 (.apply "T" [.bvar 0, .bvar 1, .bvar 2, .bvar 3])) =
+      .multiLambda 2 (.apply "T" [.bvar 0, .bvar 1, .bvar 2, .bvar 2]))
+
+-- A nested explicit substitution contributes one binder only in its body.
+#guard decide
+    (instantiateBVar kData
+      (.subst (.apply "T" [.bvar 0, .bvar 1, .bvar 2])
+        (.apply "U" [.bvar 0, .bvar 1])) =
+      .subst (.apply "T" [.bvar 0, kData, .bvar 1])
+        (.apply "U" [kData, .bvar 0]))
+
+end InstantiateBVarParityFixtures
+
 /-- Apply substitution environment to a pattern. -/
 def applySubst (env : SubstEnv) : Pattern → Pattern
   | .bvar n => .bvar n
@@ -73,10 +140,28 @@ def applySubst (env : SubstEnv) : Pattern → Pattern
   | .subst body replacement =>
     let body' := applySubst env body
     let repl' := applySubst env replacement
-    openBVar 0 repl' body'
+    instantiateBVar repl' body'
   | .collection ct elements rest =>
     .collection ct (elements.map (applySubst env)) rest
 termination_by p => sizeOf p
+
+section ApplySubstExplicitBinderParityFixtures
+
+private def kReplacement : Pattern := .apply "K" []
+
+#guard decide
+    (applySubst SubstEnv.empty
+      (.lambda (.subst (.bvar 1) kReplacement)) = .lambda (.bvar 0))
+
+-- Eager evaluation eliminates the inner explicit binder before the outer one.
+#guard decide
+    (applySubst SubstEnv.empty
+      (.subst
+        (.subst (.apply "T" [.bvar 0, .bvar 1, .bvar 2]) (.bvar 0))
+        kReplacement) =
+      .apply "T" [kReplacement, kReplacement, .bvar 0])
+
+end ApplySubstExplicitBinderParityFixtures
 
 def freeVars : Pattern → List String
   | .bvar _ => []

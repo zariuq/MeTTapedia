@@ -86,8 +86,8 @@ def holKernelClaimList : List NTTClaim :=
       "run_all exercises the new GSLT/OSLF profile differentials and recursive proof articles through a Lean curriculum witness, separate from the older Notation/09 lambda-Pi bridge",
       "MettaKernel.Curriculum.HOL.HOLKernelProfilesWitness / oracle_cases.tsv HOL-GSLT-profile-differential",
       .partiallyFormalized⟩
-  , ⟨"HOL profile proof-article checker",
-      "Generic executable ProofArticle checker has a proved Boolean/Prop contract: accepted nodes perform a local reduction, export the claimed payload, and consume checked child payloads",
+  , ⟨"HOL profile article-consistency checker",
+      "The bounded ProofArticle checker has a proved Boolean/Prop contract for local reduction, export, and every supplied child; children may be omitted and are not matched to exact ordered rule-premise slots, so it is not a proof-calculus checker or complete premise-provenance certificate",
       "Mettapedia.OSLF.MeTTaIL.Engine.checkProofArticleWithEnv_eq_true_iff_accepted / HOLKernelProfiles.hol4SelfMPArticle / HOLKernelProfiles.holLightSelfImpArticle / oracle_cases.tsv HOL-GSLT-proof-article-checker",
       .partiallyFormalized⟩
   , ⟨"HOL logic Datalog-closure bridge",
@@ -112,7 +112,7 @@ def holKernelClaimList : List NTTClaim :=
       .notFormalized⟩
   , ⟨"O3 logic-to-checker",
       "Generic compilation of LanguageDef.logic declarations into a proof checker consumed by langOSLF/langRewriteSystem",
-      "open: finite Datalog closure is consumed through logicDatalogRelationEnv with support/trace theorems, nullary-constructor tuple preservation, atom-match grounding to tuple constants, body-premise grounding for final successful bindings at the arity-preserving LP GroundAtom level, and recursive executable-closure soundness into the arity-preserving LP least model; an unsafe variable fact counterexample proves unrestricted converse completeness is false; proof-article checker acceptance has an internal contract theorem; ruleText compilation, safe-program completeness, and external-kernel checker adequacy are not compiled yet",
+      "open: finite Datalog closure is consumed through logicDatalogRelationEnv with support/trace theorems, nullary-constructor tuple preservation, atom-match grounding to tuple constants, body-premise grounding for final successful bindings at the arity-preserving LP GroundAtom level, and recursive executable-closure soundness into the arity-preserving LP least model; an unsafe variable fact counterexample proves unrestricted converse completeness is false; the legacy article checker has only its weak internal consistency contract and does not require exact premise provenance; ruleText compilation, safe-program completeness, and external-kernel checker adequacy are not compiled yet",
       .notFormalized⟩
   , ⟨"HOL replay equivalence",
       "Machine-checked replay evidence that HOL Light and HOL4 prove the same theorem set for the shared HOL/STT fragment",

@@ -231,12 +231,12 @@ theorem deconsStep_head_tail {s : PeTTaSpace} {c : String} {hd : Pattern}
 The key lemma connecting locally-nameless beta reduction to named `SubstEnv`
 substitution. We prove the generalized version parameterized by level `k`.
 
-We use `applySubst` (from Substitution.lean) rather than `applyBindings` (from Match.lean)
-because `applySubst` preserves collection `rest` fields and `.subst` node structure,
-exactly matching the behavior of `closeFVar`/`openBVar`.
-
-`applyBindings` eagerly evaluates `.subst` nodes and drops collection `rest` fields,
-making it incompatible with the locally-nameless open/close operations. -/
+We use `applySubst` (from Substitution.lean) rather than `applyBindings` (from
+Match.lean) because singleton free-variable substitution leaves collection-rest
+names untouched, whereas gradual pattern binding may splice a matching rest
+binding. Both operations eliminate explicit `.subst` binders; the theorem below
+therefore assumes `noExplicitSubst` and concerns only the locally nameless
+open/close identity. -/
 
 /-- **betaReduce_correct_at** (generalized): opening with `arg` after closing `var`
     equals singleton `applySubst` substitution, for locally-closed, subst-free patterns.

@@ -155,7 +155,7 @@ private theorem sizeOf_tail_lt_cons (p : Pattern) (ps : List Pattern) :
     sizeOf ps < sizeOf (p :: ps) := by simp_wf
 
 private theorem sizeOf_pattern_pos (pat : Pattern) : 0 < sizeOf pat := by
-  cases pat <;> simp [sizeOf, Pattern._sizeOf_1]
+  cases pat <;> simp_wf
 
 private theorem sizeOf_list_pattern_pos (p : Pattern) (ps : List Pattern) :
     0 < sizeOf (p :: ps) := by
@@ -183,7 +183,7 @@ private theorem sound_all (n : Nat) :
         simp only [matchArgs, List.mem_singleton] at hmem; subst hmem; exact .nil
       | [], _ :: _ => simp [matchArgs] at hmem
       | _ :: _, [] => simp [matchArgs] at hmem
-      | p :: _, _ :: _ => exact absurd hle (by simp [sizeOf, List._sizeOf_1]; try omega)
+      | p :: _, _ :: _ => exact absurd hle (by simp_wf)
     · intro ppats rest ct telems bs hle hmem
       match ppats with
       | [] =>
@@ -199,7 +199,7 @@ private theorem sound_all (n : Nat) :
         | some rv =>
           simp only [List.mem_singleton] at hmem; subst hmem
           exact .nilRest
-      | p :: _ => exact absurd hle (by simp [sizeOf, List._sizeOf_1]; try omega)
+      | p :: _ => exact absurd hle (by simp_wf)
   | succ m ih =>
     obtain ⟨ih_pat, ih_args, ih_bag⟩ := ih
     refine ⟨?_, ?_, ?_⟩
@@ -367,12 +367,12 @@ private theorem complete_all (n : Nat) :
     · intro pargs targs bs hle h
       cases h with
       | nil => simp [matchArgs]
-      | cons => exact absurd hle (by simp [sizeOf, List._sizeOf_1]; try omega)
+      | cons => exact absurd hle (by simp_wf)
     · intro ppats rest ct telems bs hle h
       cases h with
       | nilNoRest => simp [matchBag, List.isEmpty]
       | nilRest => simp [matchBag]
-      | cons => exact absurd hle (by simp [sizeOf, List._sizeOf_1]; try omega)
+      | cons => exact absurd hle (by simp_wf)
   | succ m ih =>
     obtain ⟨ih_pat, ih_args, ih_bag⟩ := ih
     refine ⟨?_, ?_, ?_⟩
@@ -691,7 +691,7 @@ private theorem correct_all_strong (n : Nat) :
     · intro pargs _ _ hle _ h
       cases h with
       | nil => intro _ _; rfl
-      | cons => exact absurd hle (by simp [sizeOf, List._sizeOf_1]; try omega)
+      | cons => exact absurd hle (by simp_wf)
   | succ m ih =>
     obtain ⟨ih_pat, ih_args⟩ := ih
     refine ⟨?_, ?_⟩
@@ -809,4 +809,3 @@ theorem matchPattern_correct_false :
 -/
 
 end Mettapedia.OSLF.MeTTaIL.MatchSpec
-

@@ -1,1 +1,3 @@
 import Mettapedia.MachineLearning.NeuralNetworks.PredictiveCoding
+import Mettapedia.MachineLearning.NeuralNetworks.ForgettingGeometry
+import Mettapedia.MachineLearning.NeuralNetworks.WorkspaceDecoder

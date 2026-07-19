@@ -3,10 +3,22 @@ import Mettapedia.Languages.MeTTa.HE.Eval
 import Mettapedia.Languages.MeTTa.HE.Certification
 import Mettapedia.Languages.MeTTa.HE.CoreFragment
 import Mettapedia.Languages.MeTTa.HE.DeclMatchSpec
+import Mettapedia.Languages.MeTTa.HE.HumanMatchMergeSpec
+import Mettapedia.Languages.MeTTa.HE.HumanMatchSolutionTheory
 import Mettapedia.Languages.MeTTa.HE.LeaTTaBridge
 import Mettapedia.Languages.MeTTa.HE.LeaTTaBindingTransport
 import Mettapedia.Languages.MeTTa.HE.MatchSolutionTheory
 import Mettapedia.Languages.MeTTa.HE.LeaTTaMatcherCongruence
+import Mettapedia.Languages.MeTTa.HE.LeaTTaMergeExistence
+import Mettapedia.Languages.MeTTa.HE.LeaTTaHumanConformance
+import Mettapedia.Languages.MeTTa.HE.HumanMatchLPBridge
+import Mettapedia.Languages.MeTTa.HE.HumanMatchStructuralModel
+import Mettapedia.Languages.MeTTa.HE.HumanMatchCompleteness
+import Mettapedia.Languages.MeTTa.HE.LeaTTaHumanSoundness
+import Mettapedia.Languages.MeTTa.HE.LeaTTaQueryObservationalAnchor
+import Mettapedia.Languages.MeTTa.HE.LeaTTaHumanSeal
+import Mettapedia.Languages.MeTTa.HE.LeaTTaConcreteConformance
+import Mettapedia.Languages.MeTTa.HE.MatcherMergeCompleteness
 import Mettapedia.Languages.MeTTa.LeaTTa.Corpus.SelfInterp
 import Mettapedia.OSLF.MeTTaIL.Match
 import MettaHyperonFull.Proofs.BindingLaws
@@ -332,14 +344,24 @@ theorem leatta_minimal_error_passthrough_mettaEval :
           simpa [env, leattaErrorPassthroughAtom] using
             empty_minimal_error_passthrough_candidates))
   simpa [env, leattaErrorPassthroughAtom] using
-    (mettaEval_binary_expr_eq_of_arg_singletons_and_root_notReducible
+    (mettaEval_binary_expr_eq_of_tuple_fallback_and_root_notReducible
       env 3 Metta.Minimal.St.init Metta.Minimal.St.init Metta.Minimal.St.init
       Metta.Minimal.St.init "Error" (Metta.Atom.sym "x") (Metta.Atom.sym "e")
       (Metta.Atom.sym "x") (Metta.Atom.sym "e") ([] : Metta.Bindings)
       (by simp [Metta.Atom.vars]) (by simp [Metta.Atom.vars]) hx he
-      (by simp [env, Metta.Minimal.typeMismatch, Metta.Minimal.MinEnv.ofAtomsGT])
-      (by simp [env, Metta.Minimal.arityMismatch, Metta.Minimal.MinEnv.ofAtomsGT])
-      (by simp [env, Metta.Minimal.argMask, Metta.Minimal.MinEnv.ofAtomsGT])
+      (by
+        have hprep : Metta.Minimal.typePrep Metta.Minimal.St.init.world
+            (.sym "Error") = .sym "Error" := by
+          simp [Metta.Minimal.typePrep, Metta.Minimal.subTokens.eq_1,
+            Metta.Minimal.wrapStates.eq_3, Metta.Minimal.St.init,
+            Metta.Minimal.World.empty]
+        have htypes : Metta.Minimal.getTypes env (.sym "Error") =
+            [.sym "%Undefined%"] := by
+          rw [Metta.Minimal.getTypes.eq_8]
+          simp [env, Metta.Minimal.MinEnv.ofAtomsGT,
+            Std.HashMap.getD_emptyWithCapacity]
+        rw [Metta.Minimal.selectFunctionType, hprep, htypes]
+        rfl)
       rfl hRoot)
 
 theorem leatta_minimal_error_passthrough_matches_HE_mettaCall_surface :
@@ -2346,7 +2368,7 @@ theorem leattaFreshenedItemTransportAgainstVisibleWithMerge_models_mettaCall_fin
       queryEquations space (.expression es) fuel)
     (hitemTransport :
       LeaTTaBridge.FreshenedQueryOpItemTransportAgainstVisible
-        space (.expression es) rhs qb fuel gt counter)
+        space (.expression es) rhs qb fuel gt prev counter)
     (h_merge : merged ∈ mergeBindings qb inputBindings fuel)
     (h_no_loop : merged.hasLoop = false)
     (h_recurse :
@@ -2395,7 +2417,7 @@ theorem leattaFreshenedVariableItemTransportAgainstVisibleWithMerge_models_metta
       queryEquations space (.expression es) fuel)
     (hvarTransport :
       LeaTTaBridge.FreshenedVariableQueryOpItemTransportAgainstVisible
-        space (.expression es) rhs qb fuel gt counter)
+        space (.expression es) rhs qb fuel gt prev counter)
     (h_merge : merged ∈ mergeBindings qb inputBindings fuel)
     (h_no_loop : merged.hasLoop = false)
     (h_recurse :

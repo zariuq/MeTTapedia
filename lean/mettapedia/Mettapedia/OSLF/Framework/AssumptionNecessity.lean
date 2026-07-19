@@ -248,7 +248,7 @@ private theorem commRule_mem : commRule ∈ rhoCalc.rewrites := by
 
     Proof strategy: construct a `DeclReducesWithPremises.topRule` witness using
     the COMM rule, explicit matching bindings, and the fact that `applyBindings`
-    evaluates the `.subst` node via `openBVar`. -/
+    eliminates the explicit `.subst` binder via `instantiateBVar`. -/
 theorem commPredSourceGeneric_langReduces (channel : Pattern) :
     langReduces rhoCalc (commPredSourceGeneric channel) commPredTarget := by
   -- langReduces unfolds to DeclReducesWithPremises
@@ -286,7 +286,10 @@ theorem commPredSourceGeneric_langReduces (channel : Pattern) :
       (.collection .hashBag [
         .subst (.fvar "p") (.apply "NQuote" [.fvar "q"])
       ] (some "rest")) = commPredTarget
-    simp [commPredTarget, zeroPat, applyBindings, openBVar]
+    simp [commPredTarget, zeroPat, applyBindings,
+      Mettapedia.OSLF.MeTTaIL.Substitution.instantiateBVar,
+      Mettapedia.OSLF.MeTTaIL.Substitution.instantiateBVarAt,
+      Mettapedia.OSLF.MeTTaIL.Substitution.liftBVars]
 
 theorem commPredSource_langReduces (n : Nat) :
     langReduces rhoCalc (commPredSource n) commPredTarget :=

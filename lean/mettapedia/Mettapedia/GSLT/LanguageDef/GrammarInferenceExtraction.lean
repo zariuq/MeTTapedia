@@ -307,12 +307,14 @@ private def grammarRules (language : LanguageDef) : List RuleSchema :=
   language.terms.filterMap productionRule?
 
 private def rawPresentation (language : LanguageDef) (ledger : SourceLedger) : Presentation :=
-  { language := encodedLanguage language ledger
-    judgments :=
-      [{ head := boundaryJudgmentHead, arity := 2 },
-       { head := tokenSpanJudgmentHead, arity := 4 },
-       { head := derivesJudgmentHead, arity := 5 }]
-    rules := boundaryFactRules ledger ++ tokenFactRules ledger ++ grammarRules language }
+  { language :=
+      { encodedLanguage language ledger with
+        judgments :=
+          [{ head := boundaryJudgmentHead, arity := 2 },
+           { head := tokenSpanJudgmentHead, arity := 4 },
+           { head := derivesJudgmentHead, arity := 5 }]
+        inferenceRules :=
+          boundaryFactRules ledger ++ tokenFactRules ledger ++ grammarRules language } }
 
 /-- Generate the raw source-indexed presentation only for the exact supported
 grammar fragment and a syntactically valid source ledger. -/
@@ -1220,7 +1222,7 @@ private theorem production_application_meaning
       JudgmentMeaning language ledger premise) :
     JudgmentMeaning language ledger conclusion := by
   cases application with
-  | intro stored lookup argumentsValid premisesInstantiate conclusionInstantiates =>
+  | intro stored lookup argumentsValid sideConditionsValid premisesInstantiate conclusionInstantiates =>
       have storedEquality : stored = productionSchema rule built := by
         rw [selected] at lookup
         exact (Option.some.inj lookup).symm
@@ -1347,7 +1349,7 @@ private theorem groundConclusion_of_application
       instantiateSchemaAt? [] [] 0 schema.conclusion = some schema.conclusion) :
     conclusion = schema.conclusion := by
   cases application with
-  | intro stored lookup argumentsValid premisesInstantiate conclusionInstantiates =>
+  | intro stored lookup argumentsValid sideConditionsValid premisesInstantiate conclusionInstantiates =>
       have storedEquality : stored = schema := by
         rw [selected] at lookup
         exact (Option.some.inj lookup).symm
@@ -1414,7 +1416,7 @@ theorem generated_rule_application_meaning
       JudgmentMeaning language ledger premise) :
     JudgmentMeaning language ledger conclusion := by
   cases application with
-  | intro stored lookup argumentsValid premisesInstantiate conclusionInstantiates =>
+  | intro stored lookup argumentsValid sideConditionsValid premisesInstantiate conclusionInstantiates =>
       have storedMember :
           stored ∈ boundaryFactRules ledger ++ tokenFactRules ledger ++
             grammarRules language := by
@@ -1429,7 +1431,7 @@ theorem generated_rule_application_meaning
             ⟨index, within, storedEquality⟩
           subst stored
           exact boundaryFact_application_meaning language ledger valid index within
-            (.intro _ lookup argumentsValid premisesInstantiate
+            (.intro _ lookup argumentsValid sideConditionsValid premisesInstantiate
               conclusionInstantiates)
             lookup
         · rcases (tokenFactRules_mem_iff ledger stored).mp tokenMember with
@@ -1437,7 +1439,7 @@ theorem generated_rule_application_meaning
           subst stored
           exact tokenFact_application_meaning language ledger valid
             before after token source
-            (.intro _ lookup argumentsValid premisesInstantiate
+            (.intro _ lookup argumentsValid sideConditionsValid premisesInstantiate
               conclusionInstantiates)
             lookup
       · rcases (grammarRules_mem_iff language stored).mp grammarMember with
@@ -1447,7 +1449,7 @@ theorem generated_rule_application_meaning
         subst stored
         exact production_application_meaning language ledger valid
           rule ruleMember built buildEquality
-          (.intro _ lookup argumentsValid premisesInstantiate
+          (.intro _ lookup argumentsValid sideConditionsValid premisesInstantiate
             conclusionInstantiates)
           lookup premiseMeanings
 
@@ -1568,13 +1570,14 @@ private theorem dagGrammarRules_mem_iff
 
 private def rawDAGPresentation
     (language : LanguageDef) (ledger : SourceLedger) : Presentation :=
-  { language := encodedLanguage language ledger
-    judgments :=
-      [{ head := boundaryJudgmentHead, arity := 2 },
-       { head := tokenSpanJudgmentHead, arity := 4 },
-       { head := derivesNodeJudgmentHead, arity := 4 }]
-    rules := boundaryFactRules ledger ++ tokenFactRules ledger ++
-      dagGrammarRules language }
+  { language :=
+      { encodedLanguage language ledger with
+        judgments :=
+          [{ head := boundaryJudgmentHead, arity := 2 },
+           { head := tokenSpanJudgmentHead, arity := 4 },
+           { head := derivesNodeJudgmentHead, arity := 4 }]
+        inferenceRules := boundaryFactRules ledger ++ tokenFactRules ledger ++
+          dagGrammarRules language } }
 
 /-- Generate the shared proof-DAG presentation from the same grammar and
 source ledger as the direct tree presentation. -/
@@ -2084,7 +2087,7 @@ private theorem dagProduction_application_meaning
       DAGJudgmentMeaning language ledger premise) :
     DAGJudgmentMeaning language ledger conclusion := by
   cases application with
-  | intro stored lookup argumentsValid premisesInstantiate conclusionInstantiates =>
+  | intro stored lookup argumentsValid sideConditionsValid premisesInstantiate conclusionInstantiates =>
       have storedEquality : stored = dagProductionSchema rule built := by
         rw [selected] at lookup
         exact (Option.some.inj lookup).symm
@@ -2238,7 +2241,7 @@ theorem generated_dag_rule_application_meaning
       DAGJudgmentMeaning language ledger premise) :
     DAGJudgmentMeaning language ledger conclusion := by
   cases application with
-  | intro stored lookup argumentsValid premisesInstantiate conclusionInstantiates =>
+  | intro stored lookup argumentsValid sideConditionsValid premisesInstantiate conclusionInstantiates =>
       have storedMember :
           stored ∈ boundaryFactRules ledger ++ tokenFactRules ledger ++
             dagGrammarRules language := by
@@ -2253,7 +2256,7 @@ theorem generated_dag_rule_application_meaning
             ⟨index, within, storedEquality⟩
           subst stored
           exact dagBoundaryFact_application_meaning language ledger index within
-            (.intro _ lookup argumentsValid premisesInstantiate
+            (.intro _ lookup argumentsValid sideConditionsValid premisesInstantiate
               conclusionInstantiates)
             lookup
         · rcases (tokenFactRules_mem_iff ledger stored).mp tokenMember with
@@ -2261,7 +2264,7 @@ theorem generated_dag_rule_application_meaning
           subst stored
           exact dagTokenFact_application_meaning language ledger
             before after token source
-            (.intro _ lookup argumentsValid premisesInstantiate
+            (.intro _ lookup argumentsValid sideConditionsValid premisesInstantiate
               conclusionInstantiates)
             lookup
       · rcases (dagGrammarRules_mem_iff language stored).mp grammarMember with
@@ -2271,7 +2274,7 @@ theorem generated_dag_rule_application_meaning
         subst stored
         exact dagProduction_application_meaning language ledger
           rule ruleMember built buildEquality
-          (.intro _ lookup argumentsValid premisesInstantiate
+          (.intro _ lookup argumentsValid sideConditionsValid premisesInstantiate
             conclusionInstantiates)
           lookup premiseMeanings
 
@@ -2434,13 +2437,15 @@ private def lexicalFactRules
 private def rawLexicalDAGPresentation (language : LanguageDef)
     (declarations : List LexicalDeclaration)
     (source : ClassifiedSource) : Presentation :=
-  { language := encodedLanguage language source.ledger
-    judgments :=
-      [{ head := boundaryJudgmentHead, arity := 2 },
-       { head := tokenSpanJudgmentHead, arity := 4 },
-       { head := derivesNodeJudgmentHead, arity := 4 }]
-    rules := boundaryFactRules source.ledger ++ tokenFactRules source.ledger ++
-      lexicalFactRules declarations source ++ dagGrammarRules language }
+  { language :=
+      { encodedLanguage language source.ledger with
+        judgments :=
+          [{ head := boundaryJudgmentHead, arity := 2 },
+           { head := tokenSpanJudgmentHead, arity := 4 },
+           { head := derivesNodeJudgmentHead, arity := 4 }]
+        inferenceRules :=
+          boundaryFactRules source.ledger ++ tokenFactRules source.ledger ++
+            lexicalFactRules declarations source ++ dagGrammarRules language } }
 
 /-- Generate the compact presentation including deterministic `VarD`/`LexD`
 leaf rules. -/
@@ -2661,7 +2666,7 @@ theorem generated_lexical_dag_rule_application_meaning
     DAGJudgmentMeaning (lexicalizedLanguage language declarations source)
       source.ledger conclusion := by
   cases application with
-  | intro stored lookup argumentsValid premisesInstantiate conclusionInstantiates =>
+  | intro stored lookup argumentsValid sideConditionsValid premisesInstantiate conclusionInstantiates =>
       have storedMember :
           stored ∈
             ((boundaryFactRules source.ledger ++ tokenFactRules source.ledger) ++
@@ -2684,7 +2689,7 @@ theorem generated_lexical_dag_rule_application_meaning
             exact dagBoundaryFact_application_meaning
               (lexicalizedLanguage language declarations source) source.ledger
               index within
-              (.intro _ lookup argumentsValid premisesInstantiate
+              (.intro _ lookup argumentsValid sideConditionsValid premisesInstantiate
                 conclusionInstantiates)
               lookup
           · rcases (tokenFactRules_mem_iff source.ledger stored).mp
@@ -2694,7 +2699,7 @@ theorem generated_lexical_dag_rule_application_meaning
             exact dagTokenFact_application_meaning
               (lexicalizedLanguage language declarations source) source.ledger
               before after token tokenSource
-              (.intro _ lookup argumentsValid premisesInstantiate
+              (.intro _ lookup argumentsValid sideConditionsValid premisesInstantiate
                 conclusionInstantiates)
               lookup
         · rcases lexicalFactRules_mem declarations source stored lexicalMember with
@@ -2703,7 +2708,7 @@ theorem generated_lexical_dag_rule_application_meaning
           subst stored
           exact lexicalFact_application_meaning language declarations source
             before token after sort decomposition classified
-            (.intro _ lookup argumentsValid premisesInstantiate
+            (.intro _ lookup argumentsValid sideConditionsValid premisesInstantiate
               conclusionInstantiates)
             lookup
       · rcases (dagGrammarRules_mem_iff language stored).mp grammarMember with
@@ -2715,7 +2720,7 @@ theorem generated_lexical_dag_rule_application_meaning
           (lexicalizedLanguage language declarations source) source.ledger
           rule (baseRule_mem_lexicalizedLanguage baseRuleMember)
           built buildEquality
-          (.intro _ lookup argumentsValid premisesInstantiate
+          (.intro _ lookup argumentsValid sideConditionsValid premisesInstantiate
             conclusionInstantiates)
           lookup premiseMeanings
 
@@ -3004,7 +3009,7 @@ private theorem repr_zero : Nat.repr 0 = "0" := by decide
 private theorem repr_one : Nat.repr 1 = "1" := by decide
 
 private theorem zeroBoundaryRuleValidV1 (index : Nat) (hindex : index < 2) :
-    (boundaryFactRule zeroLedger index).isValidV1 = true := by
+    RuleSchema.isValidV1 (boundaryFactRule zeroLedger index) = true := by
   rcases index_lt_two index hindex with rfl | rfl <;>
     simp [boundaryFactRule, RuleSchema.isValidV1,
       RuleSchema.metavariableNames, RuleSchema.occurrences,
@@ -3018,7 +3023,7 @@ private theorem zeroBoundaryRuleValidV1 (index : Nat) (hindex : index < 2) :
       literalLabel, namespacedId, reservedPrefix]
 
 private theorem zeroTokenRuleValidV1 :
-    (tokenFactRule zeroLedger 0 "0").isValidV1 = true := by
+    RuleSchema.isValidV1 (tokenFactRule zeroLedger 0 "0") = true := by
   simp [tokenFactRule, RuleSchema.isValidV1,
     RuleSchema.metavariableNames, RuleSchema.occurrences,
     RuleSchema.patterns, patternMetavariableOccurrencesAt,
@@ -3033,7 +3038,8 @@ private theorem zeroTokenRuleValidV1 :
 private theorem zeroRulesValidV1 :
     (rawPresentation exprLanguage zeroLedger).rules.all
       RuleSchema.isValidV1 = true := by
-  simp only [rawPresentation, List.all_append, Bool.and_eq_true]
+  simp only [Presentation.rules, rawPresentation, List.all_append,
+    Bool.and_eq_true]
   constructor
   · constructor
     · change ([0, 1] : List Nat).all
@@ -3099,7 +3105,7 @@ private theorem zeroRulesValidIn :
       (RuleSchema.isValidIn (rawPresentation exprLanguage zeroLedger)) = true := by
   apply List.all_eq_true.mpr
   intro rule hrule
-  have hv1 : rule.isValidV1 = true :=
+  have hv1 : RuleSchema.isValidV1 rule = true :=
     (List.all_eq_true.mp zeroRulesValidV1) rule hrule
   simp [RuleSchema.isValidIn, hv1]
   simp [rawPresentation, boundaryFactRules, tokenFactRules,
@@ -3159,9 +3165,11 @@ private theorem zeroRawLanguageValidate :
 
 private theorem zeroPresentationValid :
     (rawPresentation exprLanguage zeroLedger).isValidV2 = true := by
-  simp [Presentation.isValidV2, Presentation.isValidV1,
-    zeroRawLanguageValidate, zeroRulesValidV1, zeroRuleIdsUnique,
+  unfold Presentation.isValidV2 Presentation.isValidV1
+  rw [zeroRawLanguageValidate, zeroRulesValidV1, zeroRuleIdsUnique,
     zeroJudgmentSignatureValid, zeroRulesValidIn]
+  simp [Presentation.conversionDeclarationValid, rawPresentation,
+    encodedLanguage, exprLanguage]
 
 example : (admit? exprLanguage zeroLedger).isSome = true := by
   have hgenerate : generate? exprLanguage zeroLedger =

@@ -3,16 +3,12 @@ import Mettapedia.Languages.ProcessCalculi.MORK.CollectionBridge
 /-!
 # Extended MORK ↔ MeTTaIL Bridge
 
-Extends the base `MeTTaILBridge` with theorems for rewrite rules whose RHS
-contains `.subst` nodes or collection rest-variables. These patterns are
-*eliminated* by `applyBindings` (which calls `openBVar` for `.subst` and
-splices rest-variable lookups), so the post-application result is always in
-the `morkTranslatable` fragment — as proven by `morkTranslatable_applyBindings`
-in `MeTTaILBridge.lean`.
-
-The exec-rule and source-rule fire witnesses use the ad-hoc
+The exec-rule and source-rule witnesses below use the ad-hoc
 `collectionReplaceRule` / `collectionReplaceSourceRule` from
-`CollectionBridge.lean`, which require only groundness of old/new atoms.
+`CollectionBridge.lean`, which require only groundness of old/new atoms. The
+proofs do not use the supplied match or RHS-binding evidence, and therefore do
+not establish generic translation of `.subst`, collection rests, or arbitrary
+MeTTaIL rewrite rules into MORK.
 -/
 
 namespace Mettapedia.Languages.ProcessCalculi.MORK.ExtendedBridge
@@ -29,12 +25,10 @@ private abbrev ilApplyBindings : ILBind → ILP → ILP :=
 private abbrev ilMatchPattern : ILP → ILP → List ILBind :=
   Mettapedia.OSLF.MeTTaIL.Match.matchPattern
 
-/-- **Extended exec-rule bridge**: a MeTTaIL rewrite step fires via an ad-hoc
-    `collectionReplaceRule`, even when the rule's RHS uses `.subst` or rest-vars.
-
-    Unlike `declReduces_topRule_fvar_mork_fire` (which requires `morkTranslatable r.right`),
-    this theorem has NO translatability requirement on `r.right` — it relies on
-    `applyBindings` normalizing the RHS, combined with the ad-hoc replace rule. -/
+/-- **Ad-hoc exec-rule calibration**: any two ground encoded atoms can be
+    related by a freshly constructed `collectionReplaceRule`. The match and
+    RHS-equality arguments retain the intended call shape but are not used by
+    this proof, so the result is not a rewrite-compilation theorem. -/
 theorem declReduces_extended_mork_fire (p q : ILP) (r : ILRRule)
     (bs : ILBind) (_hbs : bs ∈ ilMatchPattern r.left p)
     (_hrhs : ilApplyBindings bs r.right = q)

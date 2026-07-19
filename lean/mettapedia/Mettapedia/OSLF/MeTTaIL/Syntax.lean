@@ -744,6 +744,97 @@ structure RewriteRule where
   right : Pattern
 deriving Repr
 
+/-! ## Declarative reflective substitution -/
+
+/-- Serializable data for a reflective process/name presentation.
+
+The declaration identifies the two sorts and the constructors needed to
+compile paper-style name equality and communication substitution.  The
+`quoteDropEquation` field links the operational compiler to an equation that
+is already authored in the same `LanguageDef`; it does not silently add an
+equation. -/
+structure ReflectivePresentationDecl where
+  name : String
+  rewriteRule : String
+  processSort : String
+  nameSort : String
+  quoteConstructor : String
+  dropConstructor : String
+  inputConstructor : String
+  outputConstructor : String
+  parallelCollection : CollType
+  parallelUnitConstructor : String
+  quoteDropEquation : String
+deriving Repr, DecidableEq
+
+namespace ReflectivePresentationDecl
+
+/-- Stable data rendering for the authored reflective-semantics declaration. -/
+def renderJson (declaration : ReflectivePresentationDecl) : String :=
+  "{\"name\":" ++ jsonStrSyntax declaration.name ++
+    ",\"rewrite_rule\":" ++ jsonStrSyntax declaration.rewriteRule ++
+    ",\"process_sort\":" ++ jsonStrSyntax declaration.processSort ++
+    ",\"name_sort\":" ++ jsonStrSyntax declaration.nameSort ++
+    ",\"quote_constructor\":" ++ jsonStrSyntax declaration.quoteConstructor ++
+    ",\"drop_constructor\":" ++ jsonStrSyntax declaration.dropConstructor ++
+    ",\"input_constructor\":" ++ jsonStrSyntax declaration.inputConstructor ++
+    ",\"output_constructor\":" ++ jsonStrSyntax declaration.outputConstructor ++
+    ",\"parallel_collection\":" ++
+      jsonStrSyntax (match declaration.parallelCollection with
+        | .vec => "vec" | .hashBag => "hash_bag" | .hashSet => "hash_set") ++
+    ",\"parallel_unit_constructor\":" ++
+      jsonStrSyntax declaration.parallelUnitConstructor ++
+    ",\"quote_drop_equation\":" ++
+      jsonStrSyntax declaration.quoteDropEquation ++ "}"
+
+end ReflectivePresentationDecl
+
+/-! ## Proof-calculus declarations
+
+These declarations are part of the language definition itself.  Runtime and
+checker presentations may serialize or index them, but may not supply a
+second, independently authored rule table.
+-/
+
+/-- Stable external identifier for one inference rule. -/
+structure RuleId where
+  value : String
+deriving Repr, DecidableEq
+
+/-- Structural declaration of one proof-judgment form. -/
+structure JudgmentDecl where
+  head : String
+  arity : Nat
+deriving Repr, DecidableEq
+
+/-- Generic, decidable obligations attached to an inference-rule instance.
+Argument positions refer to the rule's ordered metavariable/argument vectors;
+the checker interprets each constructor without a language-specific branch. -/
+inductive RuleSideCondition where
+  /-- The result argument must be the binder-eliminating substitution of the
+  replacement argument into the body argument.  At ambient depth `d`, the body
+  is declared at `d + 1` and the replacement and result at `d`. -/
+  | explicitSubstitution
+      (ambientDepth bodyArgument replacementArgument resultArgument : Nat)
+deriving Repr, DecidableEq
+
+/-- One ordered inference-rule schema.  Each metavariable records its exact
+occurrence depth; premise order is proof-child order. -/
+structure RuleSchema where
+  id : RuleId
+  metavariables : List (String × Nat)
+  premises : List Pattern
+  conclusion : Pattern
+  sideConditions : List RuleSideCondition := []
+deriving Repr, DecidableEq
+
+/-- Rooted declaration of the binary judgment used for explicit conversion
+certificates.  Conversion steps themselves remain ordinary inference rules. -/
+structure ConversionDecl where
+  judgmentHead : String
+  version : String
+deriving Repr, DecidableEq
+
 /-! ## Complete Language Definition -/
 
 /-- Signature for a derived relation declaration in the logic layer. -/
@@ -875,6 +966,20 @@ structure LanguageDef where
   congruenceCollections : List CollType := []
   logic : List LogicDecl := []
   oracles : List OracleDecl := []
+  /-- Named, validated reflective-semantics declarations.  Rules opt in by
+      being named by a declaration; an empty list preserves ordinary
+      syntactic rewriting for every rule. -/
+  reflectivePresentations : List ReflectivePresentationDecl := []
+  /-- Proof-judgment signatures authored at the same root as the syntax and
+      operational rules. -/
+  judgments : List JudgmentDecl := []
+  /-- Ordered proof-calculus rules authored at the same root.  A checker-side
+      presentation is a derived view of these declarations, never a second
+      language-specific source. -/
+  inferenceRules : List RuleSchema := []
+  /-- Optional rooted conversion interface.  When present, it names a declared
+      binary judgment whose ordinary inference proofs are conversion edges. -/
+  conversion : Option ConversionDecl := none
 deriving Repr
 
 /-- Legacy compatibility wrapper.
@@ -888,6 +993,27 @@ namespace LanguageDef
 
 def empty (name : String) : LanguageDef :=
   { name, types := [], terms := [], equations := [], rewrites := [] }
+
+/-- Construct the original operational core while leaving every optional
+    extension at its declared default.  Keeping this wrapper stable prevents
+    additions to `LanguageDef` from shifting generated positional arguments. -/
+def ofCore
+    (name : String)
+    (types : List TypeDecl)
+    (terms : List GrammarRule)
+    (equations : List Equation)
+    (rewrites : List RewriteRule)
+    (congruenceCollections : List CollType := [])
+    (logic : List LogicDecl := [])
+    (oracles : List OracleDecl := []) : LanguageDef :=
+  { name
+    types
+    terms
+    equations
+    rewrites
+    congruenceCollections
+    logic
+    oracles }
 
 def addType (lang : LanguageDef) (typeName : String) : LanguageDef :=
   { lang with types := lang.types ++ [TypeDecl.plain typeName] }

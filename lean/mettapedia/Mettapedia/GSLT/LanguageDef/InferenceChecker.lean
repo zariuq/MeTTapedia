@@ -24,35 +24,27 @@ namespace Mettapedia.GSLT.LanguageDef.InferenceChecker
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.Substitution
 
-/-- Stable external rule identifier. -/
-structure RuleId where
-  value : String
-deriving Repr, DecidableEq
-
-/-- Structural declaration of one proof-judgment form.  V2 intentionally
-records only the outer head and arity; adding unchecked argument sorts here
-would be nominal decoration rather than a typing theorem. -/
-structure JudgmentDecl where
-  head : String
-  arity : Nat
-deriving Repr, DecidableEq
-
-/-- One ordered inference-rule schema.  Each metavariable records its exact
-schema occurrence depth; the list fixes rule-instance argument order, and
-`premises` fixes child-proof order. -/
-structure RuleSchema where
-  id : RuleId
-  metavariables : List (String × Nat)
-  premises : List Pattern
-  conclusion : Pattern
-deriving Repr
-
-/-- Raw inference presentation layered over the ordinary language definition. -/
+/-- A checker presentation is a derived view of the proof-calculus fields in
+the authoritative `LanguageDef`. -/
 structure Presentation where
   language : LanguageDef
-  judgments : List JudgmentDecl
-  rules : List RuleSchema
 deriving Repr
+
+@[simp] def Presentation.judgments (presentation : Presentation) : List JudgmentDecl :=
+  presentation.language.judgments
+
+@[simp] def Presentation.rules (presentation : Presentation) : List RuleSchema :=
+  presentation.language.inferenceRules
+
+/-- The base syntax/rewriting validator depends only on its original fields.
+Full GSLT admission is `Presentation.isValidV2` below, which additionally
+validates every rooted judgment and inference rule. -/
+@[simp] private theorem baseValidation_afterProofCalculus
+    (language : LanguageDef) (judgments : List JudgmentDecl)
+    (rules : List RuleSchema) :
+    ({ language with judgments, inferenceRules := rules } : LanguageDef).validate =
+      language.validate := by
+  rfl
 
 /-- Rule identifier plus arguments in the schema's declared order. -/
 structure RuleInstance where
@@ -122,22 +114,23 @@ def RuleSchema.metavariableNames (rule : RuleSchema) : List String :=
   rule.metavariables.map (fun formal => formal.1)
 
 def RuleSchema.occurrences (rule : RuleSchema) : List (String × Nat) :=
-  patternsMetavariableOccurrencesAt 0 rule.patterns
+  patternsMetavariableOccurrencesAt 0 (RuleSchema.patterns rule)
 
 /-- Schema validation is intentionally exact: identifiers and metavariable
 names are nonempty, names are unique, every declared formal occurs and every
 occurrence has exactly its declared depth, patterns are locally scoped,
 collection rests are absent, and binder metadata is canonical. -/
 def RuleSchema.isValidV1 (rule : RuleSchema) : Bool :=
-  let occurrences := rule.occurrences
+  let occurrences := RuleSchema.occurrences rule
   (rule.id.value != "") &&
-    rule.metavariableNames.all (fun name => name != "") &&
-    (rule.metavariableNames.eraseDups.length == rule.metavariableNames.length) &&
+    (RuleSchema.metavariableNames rule).all (fun name => name != "") &&
+    ((RuleSchema.metavariableNames rule).eraseDups.length ==
+      (RuleSchema.metavariableNames rule).length) &&
     occurrences.all (fun occurrence => rule.metavariables.contains occurrence) &&
     rule.metavariables.all (fun formal => occurrences.contains formal) &&
-    rule.patterns.all Pattern.isWellScoped &&
-    rule.patterns.all patternHasNoCollectionRest &&
-    rule.patterns.all Pattern.hasCanonicalBinderMetadata
+    (RuleSchema.patterns rule).all Pattern.isWellScoped &&
+    (RuleSchema.patterns rule).all patternHasNoCollectionRest &&
+    (RuleSchema.patterns rule).all Pattern.hasCanonicalBinderMetadata
 
 def Presentation.ruleIds (presentation : Presentation) : List RuleId :=
   presentation.rules.map (fun rule => rule.id)
@@ -152,7 +145,9 @@ theorem Presentation.lookupRule?_append_of_eq_some
     (presentation : Presentation) (extraRules : List RuleSchema)
     {id : RuleId} {rule : RuleSchema}
     (hlookup : presentation.lookupRule? id = some rule) :
-    ({ presentation with rules := presentation.rules ++ extraRules } :
+    ({ language :=
+        { presentation.language with
+          inferenceRules := presentation.rules ++ extraRules } } :
         Presentation).lookupRule? id = some rule := by
   unfold Presentation.lookupRule? at hlookup ⊢
   have preserve : ∀ rules : List RuleSchema,
@@ -249,8 +244,24 @@ def Presentation.judgmentSchemaValid (presentation : Presentation) : Pattern →
         fixedConstructorListsValid presentation.language arguments
   | _ => false
 
+/-- A generic side-condition declaration may only reference existing formal
+arguments at the exact depths required by its operation. -/
+def RuleSideCondition.isValidFor
+    (formals : List (String × Nat)) : RuleSideCondition → Bool
+  | .explicitSubstitution ambientDepth bodyArgument replacementArgument
+      resultArgument =>
+      match formals[bodyArgument]?, formals[replacementArgument]?,
+          formals[resultArgument]? with
+      | some (_, bodyDepth), some (_, replacementDepth), some (_, resultDepth) =>
+          bodyDepth == ambientDepth + 1 &&
+            replacementDepth == ambientDepth && resultDepth == ambientDepth
+      | _, _, _ => false
+
 def RuleSchema.isValidIn (presentation : Presentation) (rule : RuleSchema) : Bool :=
-  rule.isValidV1 && rule.patterns.all presentation.judgmentSchemaValid
+  RuleSchema.isValidV1 rule &&
+    ((RuleSchema.patterns rule).all presentation.judgmentSchemaValid &&
+      rule.sideConditions.all
+        (RuleSideCondition.isValidFor rule.metavariables))
 
 /-- The V2 signature itself is finite, unambiguous, and disjoint from the
 ordinary term-constructor namespace.  The three metasyntax heads are also
@@ -263,12 +274,25 @@ def Presentation.judgmentSignatureValid (presentation : Presentation) : Bool :=
       !(presentation.language.terms.any fun declaration => declaration.label == head) &&
         !([Pattern.zipHead, Pattern.mapHead, Pattern.evalHead].contains head))
 
+/-- A rooted conversion interface names a nonempty, versioned binary judgment
+in the same `LanguageDef`; absence means that the language declares no
+conversion-certificate interface. -/
+def Presentation.conversionDeclarationValid
+    (presentation : Presentation) : Bool :=
+  match presentation.language.conversion with
+  | none => true
+  | some declaration =>
+      declaration.judgmentHead != "" && declaration.version != "" &&
+        (presentation.lookupJudgment? declaration.judgmentHead 2).isSome
+
 /-- Contextual V2 admission.  V1 remains a useful local schema boundary; V2
-adds the presentation-dependent judgment and fixed-constructor checks. -/
+adds the presentation-dependent judgment, fixed-constructor, generic
+side-condition, and rooted-conversion checks. -/
 def Presentation.isValidV2 (presentation : Presentation) : Bool :=
   presentation.isValidV1 &&
     presentation.judgmentSignatureValid &&
-    presentation.rules.all (RuleSchema.isValidIn presentation)
+    presentation.rules.all (RuleSchema.isValidIn presentation) &&
+    presentation.conversionDeclarationValid
 
 /-- Proof-carrying validated presentation used by the checker. -/
 abbrev ValidatedPresentation :=
@@ -361,7 +385,7 @@ theorem lookupRule?_eq_some_of_mem
   have hunique :
       (presentation.1.rules.map RuleSchema.id).eraseDups.length =
         presentation.1.rules.length := by
-    simpa [Presentation.ruleIds] using hvalid.1.1.2
+    simpa [Presentation.ruleIds] using hvalid.1.1.1.2
   simpa [Presentation.lookupRule?] using
     find?_eq_some_of_mem_of_unique_keys
       RuleSchema.id presentation.1.rules rule hunique hmem
@@ -394,25 +418,25 @@ theorem Presentation.judgmentSchemaValid_iff
 schema checks. -/
 theorem rule_isValidIn_of_mem (presentation : ValidatedPresentation)
     {rule : RuleSchema} (hmem : rule ∈ presentation.1.rules) :
-    rule.isValidIn presentation.1 = true := by
+    RuleSchema.isValidIn presentation.1 rule = true := by
   have hvalid := presentation.2
   simp only [Presentation.isValidV2, Bool.and_eq_true] at hvalid
-  exact (List.all_eq_true.mp hvalid.2) rule hmem
+  exact (List.all_eq_true.mp hvalid.1.2) rule hmem
 
 /-- Successful rule lookup in a validated presentation recovers contextual
 V2 validity for that exact stored rule. -/
 theorem rule_isValidIn_of_lookup (presentation : ValidatedPresentation)
     {id : RuleId} {rule : RuleSchema}
     (hlookup : presentation.1.lookupRule? id = some rule) :
-    rule.isValidIn presentation.1 = true := by
+    RuleSchema.isValidIn presentation.1 rule = true := by
   exact rule_isValidIn_of_mem presentation
     (List.mem_of_find?_eq_some hlookup)
 
 /-- Local V1 validity exposes well-scopedness of the conclusion. -/
 theorem RuleSchema.conclusion_isWellScoped_of_validV1 {rule : RuleSchema}
-    (hvalid : rule.isValidV1 = true) :
+    (hvalid : RuleSchema.isValidV1 rule = true) :
     rule.conclusion.isWellScoped = true := by
-  have hall : rule.patterns.all Pattern.isWellScoped = true := by
+  have hall : (RuleSchema.patterns rule).all Pattern.isWellScoped = true := by
     simp only [RuleSchema.isValidV1, Bool.and_eq_true] at hvalid
     exact hvalid.1.1.2
   exact (List.all_eq_true.mp hall) rule.conclusion (by
@@ -420,9 +444,10 @@ theorem RuleSchema.conclusion_isWellScoped_of_validV1 {rule : RuleSchema}
 
 /-- Local V1 validity exposes canonical binder metadata of the conclusion. -/
 theorem RuleSchema.conclusion_hasCanonicalBinderMetadata_of_validV1
-    {rule : RuleSchema} (hvalid : rule.isValidV1 = true) :
+    {rule : RuleSchema} (hvalid : RuleSchema.isValidV1 rule = true) :
     rule.conclusion.hasCanonicalBinderMetadata = true := by
-  have hall : rule.patterns.all Pattern.hasCanonicalBinderMetadata = true := by
+  have hall :
+      (RuleSchema.patterns rule).all Pattern.hasCanonicalBinderMetadata = true := by
     simp only [RuleSchema.isValidV1, Bool.and_eq_true] at hvalid
     exact hvalid.2
   exact (List.all_eq_true.mp hall) rule.conclusion (by
@@ -431,12 +456,13 @@ theorem RuleSchema.conclusion_hasCanonicalBinderMetadata_of_validV1
 /-- Contextual V2 validity exposes the conclusion's authored judgment shape. -/
 theorem RuleSchema.conclusion_hasJudgmentShape_of_validIn
     {presentation : Presentation} {rule : RuleSchema}
-    (hvalid : rule.isValidIn presentation = true) :
+    (hvalid : RuleSchema.isValidIn presentation rule = true) :
     presentation.hasJudgmentShape rule.conclusion = true := by
-  have hall : rule.patterns.all presentation.judgmentSchemaValid = true :=
+  have hall :
+      (RuleSchema.patterns rule).all presentation.judgmentSchemaValid = true :=
     by
       simp only [RuleSchema.isValidIn, Bool.and_eq_true] at hvalid
-      exact hvalid.2
+      exact hvalid.2.1
   exact presentation.hasJudgmentShape_of_judgmentSchemaValid
     ((List.all_eq_true.mp hall) rule.conclusion (by
       simp [RuleSchema.patterns]))
@@ -457,6 +483,27 @@ def argumentsValidAt : List (String × Nat) → List Pattern → Bool
 def RuleInstance.argumentsValidFor (ruleInstance : RuleInstance)
     (formals : List (String × Nat)) : Bool :=
   argumentsValidAt formals ruleInstance.arguments
+
+/-- Execute one generic side condition over the rule instance's ordered
+argument vector.  Failure to resolve an argument position fails closed. -/
+@[simp] def RuleSideCondition.holds
+    (arguments : List Pattern) : RuleSideCondition → Bool
+  | .explicitSubstitution _ bodyArgument replacementArgument resultArgument =>
+      match arguments[bodyArgument]?, arguments[replacementArgument]?,
+          arguments[resultArgument]? with
+      | some body, some replacement, some result =>
+          decide (instantiateBVar replacement body = result)
+      | _, _, _ => false
+
+def RuleSchema.sideConditionsHold
+    (rule : RuleSchema) (arguments : List Pattern) : Bool :=
+  rule.sideConditions.all (RuleSideCondition.holds arguments)
+
+@[simp] theorem RuleSchema.sideConditionsHold_of_empty
+    (rule : RuleSchema) (arguments : List Pattern)
+    (hempty : rule.sideConditions = []) :
+    RuleSchema.sideConditionsHold rule arguments = true := by
+  simp [RuleSchema.sideConditionsHold, hempty]
 
 /-- At depth zero, relative argument validity degenerates to ordinary
 top-level groundness plus canonical binder metadata. -/
@@ -1031,6 +1078,8 @@ inductive RuleApplication (presentation : ValidatedPresentation)
       (lookup : presentation.1.lookupRule? ruleInstance.ruleId = some rule)
       (argumentsValid :
         argumentsValidAt rule.metavariables ruleInstance.arguments = true)
+      (sideConditionsValid :
+        RuleSchema.sideConditionsHold rule ruleInstance.arguments = true)
       (premisesInstantiate :
         InstantiatesList rule.metavariables ruleInstance.arguments rule.premises premises)
       (conclusionInstantiates :
@@ -1044,11 +1093,14 @@ def instantiateRule? (presentation : ValidatedPresentation)
   | none => none
   | some rule =>
       if argumentsValidAt rule.metavariables ruleInstance.arguments then do
-        let premises ←
-          instantiateSchemas? rule.metavariables ruleInstance.arguments rule.premises
-        let conclusion ←
-          instantiateSchema? rule.metavariables ruleInstance.arguments rule.conclusion
-        some (premises, conclusion)
+        if RuleSchema.sideConditionsHold rule ruleInstance.arguments then do
+          let premises ←
+            instantiateSchemas? rule.metavariables ruleInstance.arguments rule.premises
+          let conclusion ←
+            instantiateSchema? rule.metavariables ruleInstance.arguments rule.conclusion
+          some (premises, conclusion)
+        else
+          none
       else
         none
 
@@ -1068,30 +1120,39 @@ theorem instantiateRule?_eq_some_iff_application
         by_cases harguments :
             argumentsValidAt rule.metavariables ruleInstance.arguments = true
         · cases hpremises :
-              instantiateSchemas? rule.metavariables ruleInstance.arguments rule.premises with
-          | none => simp [hlookup, harguments, hpremises] at h
-          | some premiseResults =>
-              cases hconclusion :
-                  instantiateSchema? rule.metavariables ruleInstance.arguments
-                    rule.conclusion with
-              | none => simp [hlookup, harguments, hpremises, hconclusion] at h
-              | some conclusionResult =>
-                  have heq : (premiseResults, conclusionResult) =
-                      (premises, conclusion) := by
-                    simpa [hlookup, harguments, hpremises, hconclusion] using h
-                  cases heq
-                  exact .intro rule hlookup harguments
-                    (instantiateSchemasAt?_sound hpremises)
-                    (instantiateSchemaAt?_sound hconclusion)
+              RuleSchema.sideConditionsHold rule ruleInstance.arguments with
+          | false => simp [hlookup, harguments, hpremises] at h
+          | true =>
+              cases hpremisesInst :
+                  instantiateSchemas? rule.metavariables ruleInstance.arguments
+                    rule.premises with
+              | none => simp [hlookup, harguments, hpremises, hpremisesInst] at h
+              | some premiseResults =>
+                  cases hconclusion :
+                      instantiateSchema? rule.metavariables ruleInstance.arguments
+                        rule.conclusion with
+                  | none =>
+                      simp [hlookup, harguments, hpremises, hpremisesInst,
+                        hconclusion] at h
+                  | some conclusionResult =>
+                      have heq : (premiseResults, conclusionResult) =
+                          (premises, conclusion) := by
+                        simpa [hlookup, harguments, hpremises, hpremisesInst,
+                          hconclusion] using h
+                      cases heq
+                      exact .intro rule hlookup harguments hpremises
+                        (instantiateSchemasAt?_sound hpremisesInst)
+                        (instantiateSchemaAt?_sound hconclusion)
         · simp [hlookup, harguments] at h
-  · rintro ⟨rule, hlookup, harguments, hpremises, hconclusion⟩
+  · rintro ⟨rule, hlookup, harguments, hsideConditions, hpremises, hconclusion⟩
     have hpremises' :
         instantiateSchemas? rule.metavariables ruleInstance.arguments rule.premises =
           some premises := instantiateSchemasAt?_complete hpremises
     have hconclusion' :
         instantiateSchema? rule.metavariables ruleInstance.arguments rule.conclusion =
           some conclusion := instantiateSchemaAt?_complete hconclusion
-    simp [instantiateRule?, hlookup, harguments, hpremises', hconclusion']
+    simp [instantiateRule?, hlookup, harguments, hsideConditions,
+      hpremises', hconclusion']
 
 /-- Executable rule instantiation is equivalent to declarative rule
 application. -/
@@ -1129,7 +1190,7 @@ theorem RuleApplication.conclusion_hasJudgmentShape
     (happlication : RuleApplication presentation ruleInstance premises conclusion) :
     presentation.1.hasJudgmentShape conclusion = true := by
   cases happlication with
-  | intro rule hlookup _ _ hconclusion =>
+  | intro rule hlookup _ _ _ hconclusion =>
       have hvalid := rule_isValidIn_of_lookup presentation hlookup
       exact hconclusion.preservesJudgmentShape
         (RuleSchema.conclusion_hasJudgmentShape_of_validIn hvalid)
@@ -1143,9 +1204,9 @@ theorem RuleApplication.conclusion_safety
     conclusion.isGround = true ∧
       conclusion.hasCanonicalBinderMetadata = true := by
   cases happlication with
-  | intro rule hlookup harguments _ hconclusion =>
+  | intro rule hlookup harguments _ _ hconclusion =>
       have hvalidIn := rule_isValidIn_of_lookup presentation hlookup
-      have hvalidV1 : rule.isValidV1 = true := by
+      have hvalidV1 : RuleSchema.isValidV1 rule = true := by
         simp only [RuleSchema.isValidIn, Bool.and_eq_true] at hvalidIn
         exact hvalidIn.1
       have hsafety := instantiation_safety_contract harguments hconclusion
@@ -1329,9 +1390,9 @@ theorem RuleApplication.transport
       RuleApplication source ruleInstance premises conclusion) :
     RuleApplication target ruleInstance premises conclusion := by
   cases application with
-  | intro rule hlookup harguments hpremises hconclusion =>
+  | intro rule hlookup harguments hsideConditions hpremises hconclusion =>
       exact .intro rule (hrefines ruleInstance.ruleId rule hlookup)
-        harguments hpremises hconclusion
+        harguments hsideConditions hpremises hconclusion
 
 mutual
 
@@ -1702,10 +1763,11 @@ private def stepRule : RuleSchema :=
       judgmentPath (.fvar "theory") (.fvar "source") (.fvar "target") }
 
 private def corpusPresentation : Presentation :=
-  { language := LanguageDef.empty "generic-inference-corpus"
-    judgments :=
-      [judgmentDecl "Fact" 2, judgmentDecl "Edge" 3, judgmentDecl "Path" 3]
-    rules := [factRule, edgeRule, stepRule] }
+  { language :=
+      { LanguageDef.empty "generic-inference-corpus" with
+        judgments :=
+          [judgmentDecl "Fact" 2, judgmentDecl "Edge" 3, judgmentDecl "Path" 3]
+        inferenceRules := [factRule, edgeRule, stepRule] } }
 
 private theorem emptyLanguage_validate (name : String) :
     (LanguageDef.empty name).validate = [] := by
@@ -1727,7 +1789,8 @@ theorem corpusPresentation_valid : corpusPresentation.isValidV2 = true := by
     fixedConstructorListsValid,
     Pattern.zipHead, Pattern.mapHead, Pattern.evalHead,
     Pattern.isWellScoped, Pattern.isWellScopedAt, Pattern.isWellScopedListAt,
-    Pattern.hasCanonicalBinderMetadata, Pattern.hasCanonicalBinderMetadataList]
+    Pattern.hasCanonicalBinderMetadata, Pattern.hasCanonicalBinderMetadataList,
+    baseValidation_afterProofCalculus]
   decide
 
 private def corpus : ValidatedPresentation :=
@@ -1737,8 +1800,9 @@ private def extraFactRule : RuleSchema :=
   { factRule with id := ruleId "fact-extra" }
 
 private def extendedCorpusPresentation : Presentation :=
-  { corpusPresentation with
-    rules := corpusPresentation.rules ++ [extraFactRule] }
+  { language :=
+      { corpusPresentation.language with
+        inferenceRules := corpusPresentation.rules ++ [extraFactRule] } }
 
 private theorem extendedCorpusPresentation_valid :
     extendedCorpusPresentation.isValidV2 = true := by
@@ -1757,7 +1821,7 @@ private theorem extendedCorpusPresentation_valid :
     Pattern.zipHead, Pattern.mapHead, Pattern.evalHead,
     Pattern.isWellScoped, Pattern.isWellScopedAt,
     Pattern.isWellScopedListAt, Pattern.hasCanonicalBinderMetadata,
-    Pattern.hasCanonicalBinderMetadataList]
+    Pattern.hasCanonicalBinderMetadataList, baseValidation_afterProofCalculus]
   decide
 
 private def extendedCorpus : ValidatedPresentation :=
@@ -1771,7 +1835,7 @@ theorem corpus_refines_extendedCorpus :
   rfl
 
 private def emptyRuleCorpusPresentation : Presentation :=
-  { corpusPresentation with rules := [] }
+  { language := { corpusPresentation.language with inferenceRules := [] } }
 
 private theorem emptyRuleCorpusPresentation_valid :
     emptyRuleCorpusPresentation.isValidV2 = true := by
@@ -1779,7 +1843,8 @@ private theorem emptyRuleCorpusPresentation_valid :
     Presentation.isValidV2, Presentation.judgmentSignatureValid,
     Presentation.judgmentHeads, Presentation.isValidV1,
     Presentation.ruleIds, emptyLanguage_validate, judgmentDecl,
-    Pattern.zipHead, Pattern.mapHead, Pattern.evalHead]
+    Pattern.zipHead, Pattern.mapHead, Pattern.evalHead,
+    baseValidation_afterProofCalculus]
   decide
 
 private def emptyRuleCorpus : ValidatedPresentation :=
@@ -2000,12 +2065,14 @@ private def wrongDepthTwoRule : RuleSchema :=
     premises := []
     conclusion := .lambda none (.lambda none (.fvar "x")) }
 
-theorem wrongDepthZero_schema_reject : wrongDepthZeroRule.isValidV1 = false := by
+theorem wrongDepthZero_schema_reject :
+    RuleSchema.isValidV1 wrongDepthZeroRule = false := by
   simp [wrongDepthZeroRule, RuleSchema.isValidV1, RuleSchema.occurrences,
     RuleSchema.patterns, patternMetavariableOccurrencesAt,
     patternsMetavariableOccurrencesAt]
 
-theorem wrongDepthTwo_schema_reject : wrongDepthTwoRule.isValidV1 = false := by
+theorem wrongDepthTwo_schema_reject :
+    RuleSchema.isValidV1 wrongDepthTwoRule = false := by
   simp [wrongDepthTwoRule, RuleSchema.isValidV1, RuleSchema.occurrences,
     RuleSchema.patterns, patternMetavariableOccurrencesAt,
     patternsMetavariableOccurrencesAt]
@@ -2021,7 +2088,7 @@ private def literalMixedDepthRule : RuleSchema :=
       .apply "MixedDepth" [.fvar "x", .lambda none (.fvar "x")] }
 
 theorem literalMixedDepth_schema_reject :
-    literalMixedDepthRule.isValidV1 = false := by
+    RuleSchema.isValidV1 literalMixedDepthRule = false := by
   simp [literalMixedDepthRule, RuleSchema.isValidV1,
     RuleSchema.metavariableNames, RuleSchema.occurrences, RuleSchema.patterns,
     patternMetavariableOccurrencesAt, patternsMetavariableOccurrencesAt]
@@ -2051,7 +2118,8 @@ private def namedBinderRule : RuleSchema :=
     premises := []
     conclusion := .lambda (some "x") (.fvar "body") }
 
-theorem namedBinder_schema_reject : namedBinderRule.isValidV1 = false := by
+theorem namedBinder_schema_reject :
+    RuleSchema.isValidV1 namedBinderRule = false := by
   simp [namedBinderRule, RuleSchema.isValidV1,
     RuleSchema.metavariableNames, RuleSchema.occurrences, RuleSchema.patterns,
     patternMetavariableOccurrencesAt, patternsMetavariableOccurrencesAt,
@@ -2070,7 +2138,8 @@ private def collectionRestRule : RuleSchema :=
     premises := []
     conclusion := .collection .vec [] (some "rest") }
 
-theorem collectionRest_schema_reject : collectionRestRule.isValidV1 = false := by
+theorem collectionRest_schema_reject :
+    RuleSchema.isValidV1 collectionRestRule = false := by
   simp [collectionRestRule, RuleSchema.isValidV1, RuleSchema.occurrences,
     RuleSchema.patterns, patternMetavariableOccurrencesAt,
     patternsMetavariableOccurrencesAt]
@@ -2082,7 +2151,7 @@ private def duplicateMetavariableRule : RuleSchema :=
     conclusion := .fvar "x" }
 
 theorem duplicateMetavariable_schema_reject :
-    duplicateMetavariableRule.isValidV1 = false := by
+    RuleSchema.isValidV1 duplicateMetavariableRule = false := by
   decide
 
 /-! ### V2 judgment-signature gates -/
@@ -2113,9 +2182,10 @@ private def nestedConstructorRule : RuleSchema :=
       judgmentHolds (.apply "Pair" [.fvar "left", .fvar "right"]) }
 
 private def nestedConstructorPresentation : Presentation :=
-  { language := signatureFixtureLanguage
-    judgments := [judgmentDecl "Holds" 1]
-    rules := [nestedConstructorRule] }
+  { language :=
+      { signatureFixtureLanguage with
+        judgments := [judgmentDecl "Holds" 1]
+        inferenceRules := [nestedConstructorRule] } }
 
 theorem nestedConstructor_schema_accepts :
     (nestedConstructorPresentation.judgmentSchemaValid
@@ -2174,9 +2244,10 @@ private def binderJudgmentRule : RuleSchema :=
     conclusion := .apply "Scoped" [.lambda none (.fvar "body")] }
 
 private def binderJudgmentPresentation : Presentation :=
-  { language := LanguageDef.empty "binder-judgment-fixture"
-    judgments := [judgmentDecl "Scoped" 1]
-    rules := [binderJudgmentRule] }
+  { language :=
+      { LanguageDef.empty "binder-judgment-fixture" with
+        judgments := [judgmentDecl "Scoped" 1]
+        inferenceRules := [binderJudgmentRule] } }
 
 /-- V2 imposes no ad hoc ban on a binder-bearing judgment argument; V1's
 exact-depth, scope, and canonical-metadata gates remain authoritative. -/
@@ -2196,13 +2267,14 @@ theorem binderJudgment_presentation_accepts :
     Pattern.hasCanonicalBinderMetadata,
     Pattern.hasCanonicalBinderMetadataList,
     Pattern.zipHead, Pattern.mapHead, Pattern.evalHead,
-    emptyLanguage_validate]
+    emptyLanguage_validate, baseValidation_afterProofCalculus]
   decide
 
 private def constructorCollisionPresentation : Presentation :=
-  { language := signatureFixtureLanguage
-    judgments := [judgmentDecl "Pair" 2]
-    rules := [] }
+  { language :=
+      { signatureFixtureLanguage with
+        judgments := [judgmentDecl "Pair" 2]
+        inferenceRules := [] } }
 
 theorem constructorJudgmentCollision_reject :
     constructorCollisionPresentation.judgmentSignatureValid = false := by
@@ -2211,10 +2283,11 @@ theorem constructorJudgmentCollision_reject :
     judgmentDecl, signatureFixtureLanguage, pairConstructor]
 
 private def duplicateIdPresentation : Presentation :=
-  { language := LanguageDef.empty "duplicate-id"
-    judgments :=
-      [judgmentDecl "Fact" 2, judgmentDecl "Edge" 3, judgmentDecl "Path" 3]
-    rules := [factRule, factRule] }
+  { language :=
+      { LanguageDef.empty "duplicate-id" with
+        judgments :=
+          [judgmentDecl "Fact" 2, judgmentDecl "Edge" 3, judgmentDecl "Path" 3]
+        inferenceRules := [factRule, factRule] } }
 
 theorem duplicateId_presentation_reject :
     duplicateIdPresentation.isValidV2 = false := by

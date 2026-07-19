@@ -68,11 +68,12 @@ def gfFunsListToLanguageDef
     acc ++ d.argCats.toList ++ [d.resultCat]
   let termRules := funs.foldl (init := []) fun acc (_, d) =>
     gfFunDeclToGrammarRule d :: acc
-  LanguageDef.mk
-    grammarName [] -- options
-    ((allCats.eraseDups.map TypeDecl.plain) ++ extraTypes).eraseDups
-    (termRules ++ extraTerms) eqRules rwRules
-    [.vec, .hashBag, .hashSet] [] []
+  { name := grammarName
+    types := ((allCats.eraseDups.map TypeDecl.plain) ++ extraTypes).eraseDups
+    terms := termRules ++ extraTerms
+    equations := eqRules
+    rewrites := rwRules
+    congruenceCollections := [.vec, .hashBag, .hashSet] }
 
 /-- `LanguageDef` construction from a real GFCore `GrammarSig`. -/
 def gfSigToLanguageDef
@@ -85,11 +86,12 @@ def gfSigToLanguageDef
     acc ++ d.argCats.toList ++ [d.resultCat]
   let termRules := sig.funs.fold (init := []) fun acc _ d =>
     gfFunDeclToGrammarRule d :: acc
-  LanguageDef.mk
-    sig.grammar [] -- options
-    ((allCats.eraseDups.map TypeDecl.plain) ++ extraTypes).eraseDups
-    (termRules ++ extraTerms) eqRules rwRules
-    [.vec, .hashBag, .hashSet] [] []
+  { name := sig.grammar
+    types := ((allCats.eraseDups.map TypeDecl.plain) ++ extraTypes).eraseDups
+    terms := termRules ++ extraTerms
+    equations := eqRules
+    rewrites := rwRules
+    congruenceCollections := [.vec, .hashBag, .hashSet] }
 
 /-- Authoritative syntax-only `LanguageDef` from a literal GF function list. -/
 def gfSyntaxLanguageDefFromList
