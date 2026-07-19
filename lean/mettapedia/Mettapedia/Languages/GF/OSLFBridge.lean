@@ -361,11 +361,12 @@ def gfFunsListToLanguageDef
     acc ++ d.argCats.toList ++ [d.resultCat]
   let termRules := funs.foldl (init := []) fun acc (_, d) =>
       gfFunDeclToGrammarRule d :: acc
-  LanguageDef.mk
-    grammarName [] -- options
+  LanguageDef.ofCore
+    grammarName
     ((allCats.eraseDups.map TypeDecl.plain) ++ extraTypes).eraseDups
-    (termRules ++ extraTerms) eqRules rwRules
-    [] [] []
+    (termRules ++ extraTerms)
+    eqRules
+    rwRules
 
 /-- Build an OSLF LanguageDef from a real GFCore GrammarSig.
     Categories are extracted from function declarations.
@@ -382,11 +383,12 @@ def gfSigToLanguageDef
     acc ++ d.argCats.toList ++ [d.resultCat]
   let termRules := sig.funs.fold (init := []) fun acc _ d =>
       gfFunDeclToGrammarRule d :: acc
-  LanguageDef.mk
-    sig.grammar [] -- options
+  LanguageDef.ofCore
+    sig.grammar
     ((allCats.eraseDups.map TypeDecl.plain) ++ extraTypes).eraseDups
-    (termRules ++ extraTerms) eqRules rwRules
-    [] [] []
+    (termRules ++ extraTerms)
+    eqRules
+    rwRules
 
 /-- Authoritative syntax-only `LanguageDef` from a literal GF function list.
     This is the real GF surface in the MeTTaIL DSL: categories + constructors,
@@ -411,18 +413,12 @@ private def gfSemanticValidationSeedFromList
 
 private def equationSupportedBySig (sig : GrammarSig) (eqn : Equation) : Bool :=
   let baseLang := gfSemanticValidationSeed sig
-  let testLang := LanguageDef.mk
-    baseLang.name baseLang.options baseLang.types baseLang.terms
-    [eqn] baseLang.rewrites
-    baseLang.logic baseLang.oracles baseLang.reflectivePresentations
+  let testLang := baseLang.addEquation eqn
   LanguageDef.validate testLang = []
 
 private def rewriteSupportedBySig (sig : GrammarSig) (rw : RewriteRule) : Bool :=
   let baseLang := gfSemanticValidationSeed sig
-  let testLang := LanguageDef.mk
-    baseLang.name baseLang.options baseLang.types baseLang.terms
-    baseLang.equations [rw]
-    baseLang.logic baseLang.oracles baseLang.reflectivePresentations
+  let testLang := baseLang.addRewrite rw
   LanguageDef.validate testLang = []
 
 /-- Semantic equations supported by a concrete generated GF signature, after
@@ -462,19 +458,13 @@ provides a `funsList` alongside its `HashMap`. -/
 private def equationSupportedByList
     (grammarName : String) (funs : List (String × FunDecl)) (eqn : Equation) : Bool :=
   let baseLang := gfSemanticValidationSeedFromList grammarName funs
-  let testLang := LanguageDef.mk
-    baseLang.name baseLang.options baseLang.types baseLang.terms
-    [eqn] baseLang.rewrites
-    baseLang.logic baseLang.oracles baseLang.reflectivePresentations
+  let testLang := baseLang.addEquation eqn
   LanguageDef.validate testLang = []
 
 private def rewriteSupportedByList
     (grammarName : String) (funs : List (String × FunDecl)) (rw : RewriteRule) : Bool :=
   let baseLang := gfSemanticValidationSeedFromList grammarName funs
-  let testLang := LanguageDef.mk
-    baseLang.name baseLang.options baseLang.types baseLang.terms
-    baseLang.equations [rw]
-    baseLang.logic baseLang.oracles baseLang.reflectivePresentations
+  let testLang := baseLang.addRewrite rw
   LanguageDef.validate testLang = []
 
 /-- Kernel-reducible legacy authored semantic overlay from a literal function

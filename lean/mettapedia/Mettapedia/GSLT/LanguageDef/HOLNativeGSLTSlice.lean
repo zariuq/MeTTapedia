@@ -284,9 +284,10 @@ def hol4NativePresentation? : Option Presentation :=
 /-- A failed extraction must remain invalid at the ordinary presentation
 boundary; it must not silently turn into an admissible empty calculus. -/
 private def invalidExtractionPresentation (language : LanguageDef) : Presentation :=
-  { language
-    judgments := [{ head := "", arity := 0 }]
-    rules := [] }
+  { language :=
+      { language with
+        judgments := [{ head := "", arity := 0 }]
+        inferenceRules := [] } }
 
 def holLightNativePresentation : Presentation :=
   holLightNativePresentation?.getD
@@ -409,7 +410,7 @@ theorem holLightNativePresentation_valid :
     change holLightNativeSlice.validate.isEmpty = true
     rw [holLightNativeSlice_validate]
     rfl
-  refine ⟨⟨⟨⟨hlanguage, ?_⟩, ?_⟩, ?_⟩, ?_⟩
+  refine ⟨⟨⟨⟨⟨hlanguage, ?_⟩, ?_⟩, ?_⟩, ?_⟩, ?_⟩
   · rw [all_eq_mapped_all]
     have hmap :
         holLightNativePresentation.rules.map RuleSchema.isValidV1 =
@@ -493,6 +494,7 @@ theorem holLightNativePresentation_valid :
       decide
     rw [hmap]
     rfl
+  · decide
 
 set_option maxHeartbeats 8000000 in
 set_option maxRecDepth 100000 in
@@ -505,7 +507,7 @@ theorem hol4NativePresentation_valid :
     change hol4NativeSlice.validate.isEmpty = true
     rw [hol4NativeSlice_validate]
     rfl
-  refine ⟨⟨⟨⟨hlanguage, ?_⟩, ?_⟩, ?_⟩, ?_⟩
+  refine ⟨⟨⟨⟨⟨hlanguage, ?_⟩, ?_⟩, ?_⟩, ?_⟩, ?_⟩
   · rw [all_eq_mapped_all]
     have hmap :
         hol4NativePresentation.rules.map RuleSchema.isValidV1 =
@@ -586,6 +588,7 @@ theorem hol4NativePresentation_valid :
       decide
     rw [hmap]
     rfl
+  · decide
 
 private def proofProfilePayload : Pattern := app "ExactNativePremises"
 

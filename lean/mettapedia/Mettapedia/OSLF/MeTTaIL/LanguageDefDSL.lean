@@ -914,16 +914,14 @@ macro
     let logicDeclsTerm ← mkTermList logicDecls'
     let oracleDeclsTerm ← mkTermList oracleDecls'
     `(LanguageDef.resolveNullaryPatterns
-      (LanguageDef.mk
+      (LanguageDef.ofCore
         $langName
-        []  -- options (default empty; DSL options support is future work)
         $typeDeclsTerm
         $termDeclsTerm
         $eqDeclsTerm
         $rwDeclsTerm
         $logicDeclsTerm
-        $oracleDeclsTerm
-        []))
+        $oracleDeclsTerm))
 
 macro_rules
   | `(T! $s:str) => `(SyntaxItem.terminal $s)
@@ -950,7 +948,8 @@ macro_rules
       logic : $lgs,
       oracles : $ors
     }) =>
-      `(LanguageDef.resolveNullaryPatterns (LanguageDef.mk $langName [] $tys $tmRules $eqns $rws $lgs $ors []))
+      `(LanguageDef.resolveNullaryPatterns
+        (LanguageDef.ofCore $langName $tys $tmRules $eqns $rws $lgs $ors))
 
 /-! ## Generic Builders -/
 
@@ -976,15 +975,6 @@ def mkLang
     (termRules : List GrammarRule)
     (rewriteRules : List RewriteRule)
     (eqRules : List Equation := []) : LanguageDef :=
-  LanguageDef.mk
-    langName
-    []  -- options (default empty)
-    typeDecls
-    termRules
-    eqRules
-    rewriteRules
-    []
-    []
-    []
+  LanguageDef.ofCore langName typeDecls termRules eqRules rewriteRules
 
 end Mettapedia.OSLF.MeTTaIL.LanguageDefDSL

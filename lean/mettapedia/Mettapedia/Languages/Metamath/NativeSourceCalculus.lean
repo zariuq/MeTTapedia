@@ -193,13 +193,14 @@ def assertionRules (assertion : SourceAssertion) : List RuleSchema :=
       (provesPattern assertion.formula) ]
 
 def generatedPresentation : Presentation :=
-  { language := sourceLanguage
-    judgments :=
-      [{ head := "__metamath.SourceProves", arity := 2 },
-       { head := "__metamath.SubstitutionValid", arity := 3 },
-       { head := "__metamath.ContextValid", arity := 3 }]
-    rules := targetHypotheses.map hypothesisRule ++
-      assertionRules axiomSyllogism }
+  { language :=
+      { sourceLanguage with
+        judgments :=
+          [{ head := "__metamath.SourceProves", arity := 2 },
+           { head := "__metamath.SubstitutionValid", arity := 3 },
+           { head := "__metamath.ContextValid", arity := 3 }]
+        inferenceRules := targetHypotheses.map hypothesisRule ++
+          assertionRules axiomSyllogism } }
 
 theorem sourceLanguage_validate : sourceLanguage.validate = [] := by
   apply LanguageDef.validate_eq_nil_of_constructorOnly sourceLanguage <;>
@@ -209,10 +210,13 @@ theorem sourceLanguage_validate : sourceLanguage.validate = [] := by
       TypeExpr.baseNames]
 
 theorem generatedPresentation_valid : generatedPresentation.isValidV2 = true := by
+  have generatedLanguageValidate :
+      generatedPresentation.language.validate = [] := by
+    simpa [generatedPresentation] using sourceLanguage_validate
   unfold Presentation.isValidV2 Presentation.isValidV1
-  simp only [generatedPresentation]
-  rw [sourceLanguage_validate]
-  simp [sourceLanguage, staticConstructors, sourceVocabulary, sourceDigest,
+  rw [generatedLanguageValidate]
+  simp [generatedPresentation, sourceLanguage, staticConstructors,
+    sourceVocabulary, sourceDigest,
     sourceRevision, constructorRule, dataType, targetHypotheses,
     rFloat, sFloat, tFloat, theoremRSEssential, theoremSTEssential,
     hypothesisRule, assertionRules, axiomSyllogism, rsEssential,

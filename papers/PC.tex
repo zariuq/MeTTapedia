@@ -1257,6 +1257,81 @@ remains explicitly conjectural beyond these instances, and its status now record
 causal use requires an interventional clamp.  No theorem promotes the general
 correspondence.
 
+\subsection{Forgetting has a metric side and a connection side}
+\label{sec:forgetting-geometry}
+
+The two phenomena above are instances of a general decomposition that organizes a
+recent coupling/curvature synthesis of continual learning: forgetting is a sum of a
+\emph{metric} part (some directions receive the wrong effective weight) and a
+\emph{connection} part (task updates transported along a curriculum do not commute), plus
+a remainder. The metric side is already the subject of this paper---the localization
+inequality of the cost-of-depth section is a reach-versus-conditioning statement, and
+over-settling is a scheduling defect. We formalized the connection side to the same
+standard, and the exercise both confirmed the sound core of the synthesis and corrected
+two of its claims.
+
+Confirmed. For two rank-one task curvatures the interference is a clean trichotomy
+(\leanname{rankOne\_parallel\_orthogonal\_oblique\_trichotomy}): parallel tasks commute and
+any forgetting is pure double counting, a metric effect; orthogonal tasks do not interact;
+oblique tasks have a non-zero commutator, which is the irreducible curvature. The
+per-pair conflict is measured exactly by the diagonal of an interference Gram matrix built
+from commutators, and that diagonal vanishes if and only if the pair commutes
+(\leanname{pairwiseInterferenceEnergy\_eq\_zero\_iff\_commute}); adding a scalar multiple of the
+identity to a curvature leaves it unchanged, so absolute damping is invisible to it, as the
+synthesis predicts. On the transfer side, an invertible similarity conjugates the
+commutator and preserves its characteristic polynomial
+(\leanname{matrixCommutator\_charpoly\_unitConjugate}): interference \emph{spectra} are portable
+across a first-derivative-level equivalence of two systems, while pointwise agreement of
+values and gradients does not determine curvature at all
+(\leanname{pointwiseAgreement\_not\_determineHessian\_negativeExample})---behavioural similarity
+is not enough to trust a transferred forgetting measurement.
+
+Corrected. Two natural-looking claims are false as stated, and the counterexamples are
+machine-checked. First, ``the curriculum's rotational factor is trivial exactly when the
+tasks commute'' holds for two symmetric exponential factors
+(\leanname{twoSymmetricFactors\_trivialRotationProxy\_iff\_commute}) but \emph{not} in general:
+a palindromic product $A\,B\,A$ of symmetric matrices is symmetric even when $A$ and $B$ do
+not commute, so a trivial rotational proxy does not imply commutation for arbitrary
+curricula. Second, interference \emph{angles}---as opposed to the spectrum---are preserved
+only under \emph{orthogonal} change of coordinates, not arbitrary similarity: an explicit
+shear conjugates a symmetric operator to one with different rotational data
+(\leanname{nonorthogonalSimilarity\_not\_preserve\_trivialRotationProxy\_negativeExample}). The
+distinction matters in practice: a curriculum's interference eigenvalues transfer under a
+derivative-level equivalence, but its interference geometry transfers only under the
+stronger orthogonal one.
+
+The scope is again exactly linear and quadratic, and the localization inequality in
+particular remains a physical analogy with unpinned constants until analytic hypotheses are
+supplied; the formalization records that boundary rather than asserting past it
+(\leanname{sealedLocality\_requires\_distance\_le\_sweeps\_mul\_bandwidth}). What the connection
+side offers a synthesis loop is a diagnostic: the interference Gram of successive
+generations measures whether they commute, and hence whether the order in which a
+self-improving learner accumulates its own discoveries can matter---an empirical question
+these invariants make measurable. The same invariant does double duty on the architecture
+side: order-independence of a routed decoder's command phases holds exactly when the
+pairwise interference energy of their generators vanishes
+(\leanname{linearPhases\_orderIndependent\_iff\_interferenceEnergy\_zero}), so one Gram
+matrix certifies both a curriculum's right to be reordered and a command schedule's right
+to be treated as a set.
+
+\subsection{Predictive coding as a frozen-backbone residual cap}
+\label{sec:pc-adapter}
+
+A last practical question is whether predictive coding earns a place not as a whole-network
+learning rule---where the depth results above make it a rescaling of backpropagation with a
+rescaling's pathologies---but as a shallow, locally trained residual adapter between a
+frozen backbone and a symbolic action head, the one regime the depth theorems endorse. We
+tested this prospectively: a matched two-link residual adapter, trained by backpropagation
+versus by a local predictive-coding update, over \emph{both} a recurrent and a typed-workspace
+frozen backbone, three paired seeds, one cumulative generation of exact whole-corpus
+verification. The adapter's local update reproduced the backpropagation gradient at its
+settling limit to cosine $1.0000$ before the run, so the arms differ only by the rule. The
+registered result is neutral: pooled new verified sequences were $57$ versus $54$ on the
+recurrent backbone and $59$ versus $60$ on the workspace backbone, an interaction of $+4$
+carried entirely by one of three seeds. Shallow predictive coding as a frozen-backbone cap
+is thus neither the liability the full-network depth results warn against nor an advantage;
+it is, at this scale, dominated-in-simplicity by the backpropagation adapter it matches.
+
 \section*{Where to find these}
 
 All statements are machine-checked in Lean~4, in the Mettapedia library under the

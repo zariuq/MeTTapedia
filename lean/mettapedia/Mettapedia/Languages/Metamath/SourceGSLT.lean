@@ -3,10 +3,10 @@ import Mettapedia.GSLT.LanguageDef.GrammarInferenceExtraction
 /-!
 # Metamath source grammar as one GSLT root
 
-This module owns the declarative source grammar used to derive the runnable
-`mkGram` artifact and the generic grammar-inference presentation.  Lexical
-classification remains a separate, ordered declaration list because native
-grammar admission distinguishes productions from lexical leaves.
+This module owns the declarative source grammar used to derive runnable
+parser artifacts and generic grammar-inference presentations. Concrete
+lexical syntax must be represented through ordinary GSLT data rather than
+privileged fields on `LanguageDef`.
 -/
 
 namespace Mettapedia.Languages.Metamath.SourceGSLT
@@ -56,6 +56,11 @@ def sourceProductions : List GrammarRule :=
    production "proof_more" proofListSort
     [parameter "label" proofLabelTokenSort, parameter "rest" proofListSort]
     [.nonTerminal "label", .nonTerminal "rest"],
+   production "proof_unknown_one" proofListSort []
+    [.terminal "?"],
+   production "proof_unknown_more" proofListSort
+    [parameter "rest" proofListSort]
+    [.terminal "?", .nonTerminal "rest"],
    production "header_empty" proofHeaderListSort [] [],
    production "header_more" proofHeaderListSort
     [parameter "label" proofLabelTokenSort,
@@ -71,60 +76,52 @@ def sourceProductions : List GrammarRule :=
 
    production "statement_const" statementSort
     [parameter "symbols" symbolListSort]
-    [.terminal "MM_C", .nonTerminal "symbols", .terminal "MM_DOT"],
+    [.terminal "$c", .nonTerminal "symbols", .terminal "$."],
    production "statement_var" statementSort
     [parameter "symbols" symbolListSort]
-    [.terminal "MM_V", .nonTerminal "symbols", .terminal "MM_DOT"],
+    [.terminal "$v", .nonTerminal "symbols", .terminal "$."],
    production "statement_disjoint" statementSort
     [parameter "symbols" symbolListSort]
-    [.terminal "MM_D", .nonTerminal "symbols", .terminal "MM_DOT"],
+    [.terminal "$d", .nonTerminal "symbols", .terminal "$."],
    production "statement_float" statementSort
     [parameter "label" labelTokenSort,
      parameter "typecode" symbolTokenSort,
      parameter "variable" symbolTokenSort]
-    [.nonTerminal "label", .terminal "MM_F", .nonTerminal "typecode",
-     .nonTerminal "variable", .terminal "MM_DOT"],
+    [.nonTerminal "label", .terminal "$f", .nonTerminal "typecode",
+     .nonTerminal "variable", .terminal "$."],
    production "statement_essential" statementSort
     [parameter "label" labelTokenSort, parameter "formula" symbolListSort]
-    [.nonTerminal "label", .terminal "MM_E", .nonTerminal "formula",
-     .terminal "MM_DOT"],
+    [.nonTerminal "label", .terminal "$e", .nonTerminal "formula",
+     .terminal "$."],
    production "statement_axiom" statementSort
     [parameter "label" labelTokenSort, parameter "formula" symbolListSort]
-    [.nonTerminal "label", .terminal "MM_A", .nonTerminal "formula",
-     .terminal "MM_DOT"],
+    [.nonTerminal "label", .terminal "$a", .nonTerminal "formula",
+     .terminal "$."],
    production "statement_theorem_normal" statementSort
     [parameter "label" labelTokenSort,
      parameter "formula" symbolListSort,
      parameter "proof" proofListSort]
-    [.nonTerminal "label", .terminal "MM_P", .nonTerminal "formula",
-     .terminal "MM_EQPROOF", .nonTerminal "proof", .terminal "MM_DOT"],
+    [.nonTerminal "label", .terminal "$p", .nonTerminal "formula",
+     .terminal "$=", .nonTerminal "proof", .terminal "$."],
    production "statement_theorem_compressed" statementSort
     [parameter "label" labelTokenSort,
      parameter "formula" symbolListSort,
      parameter "header" proofHeaderListSort,
      parameter "body" compressedWordListSort]
-    [.nonTerminal "label", .terminal "MM_P", .nonTerminal "formula",
-     .terminal "MM_EQPROOF", .terminal "MM_LP", .nonTerminal "header",
-     .terminal "MM_RP", .nonTerminal "body", .terminal "MM_DOT"],
+    [.nonTerminal "label", .terminal "$p", .nonTerminal "formula",
+     .terminal "$=", .terminal "(", .nonTerminal "header",
+     .terminal ")", .nonTerminal "body", .terminal "$."],
    production "statement_include" statementSort
     [parameter "path" includePathTokenSort]
-    [.terminal "MM_INCLUDE_OPEN", .nonTerminal "path",
-     .terminal "MM_INCLUDE_CLOSE"],
+    [.terminal "$[", .nonTerminal "path", .terminal "$]"],
+   production "statement_block" statementSort
+    [parameter "inside" databaseSort]
+    [.terminal "${", .nonTerminal "inside", .terminal "$}"],
 
-   production "database_one" databaseSort
-    [parameter "statement" statementSort]
-    [.nonTerminal "statement"],
+   production "database_empty" databaseSort [] [],
    production "database_more" databaseSort
     [parameter "statement" statementSort, parameter "rest" databaseSort]
-    [.nonTerminal "statement", .nonTerminal "rest"],
-   production "database_block" databaseSort
-    [parameter "inside" databaseSort]
-    [.terminal "MM_SCOPE_OPEN", .nonTerminal "inside",
-     .terminal "MM_SCOPE_CLOSE"],
-   production "database_block_more" databaseSort
-    [parameter "inside" databaseSort, parameter "rest" databaseSort]
-    [.terminal "MM_SCOPE_OPEN", .nonTerminal "inside",
-     .terminal "MM_SCOPE_CLOSE", .nonTerminal "rest"]]
+    [.nonTerminal "statement", .nonTerminal "rest"]]
 
 def sourceGrammar : LanguageDef :=
   { name := "metamath-source-v0"
@@ -151,7 +148,7 @@ theorem sourceGrammar_supported :
   decide
 
 theorem sourceGrammar_has_all_productions :
-    sourceGrammar.terms.length = 21 := by
+    sourceGrammar.terms.length = 22 := by
   decide
 
 theorem sourceGrammar_has_all_lexical_classes :
@@ -163,9 +160,38 @@ theorem normalTheoremProduction_present :
       rule.label == "statement_theorem_normal") = true := by
   decide
 
-theorem unknownProduction_absent :
-    sourceProductions.any (fun rule => rule.label == "unknown") = false := by
+theorem normalProofUnknownProductions_present :
+    sourceProductions.any (fun rule => rule.label == "proof_unknown_one") = true ∧
+      sourceProductions.any (fun rule => rule.label == "proof_unknown_more") = true := by
   decide
+
+private def normalProofUnknownFixture : ClassifiedSource :=
+  { identity := "metamath-normal-proof-unknown"
+    tokens :=
+      [{ serialized := "th", literalName := none, className := "mm-label" },
+       { serialized := "$p", literalName := none, className := "" },
+       { serialized := "wff", literalName := none, className := "mm-symbol" },
+       { serialized := "$=", literalName := none, className := "" },
+       { serialized := "?", literalName := none, className := "" },
+       { serialized := "$.", literalName := none, className := "" }] }
+
+theorem normalProofUnknown_derives :
+    ∃ tree,
+      Derives
+        (lexicalizedLanguage sourceGrammar lexicalDeclarations
+          normalProofUnknownFixture)
+        databaseSort normalProofUnknownFixture.ledger.tokens tree := by
+  let language :=
+    lexicalizedLanguage sourceGrammar lexicalDeclarations
+      normalProofUnknownFixture
+  let tokens := normalProofUnknownFixture.ledger.tokens
+  have nonempty : (enumDerives language 8 databaseSort tokens).isEmpty = false := by
+    decide
+  cases derivations : enumDerives language 8 databaseSort tokens with
+  | nil => simp [derivations] at nonempty
+  | cons tree rest =>
+      exact ⟨tree, enumDerives_sound language 8 databaseSort tokens tree <|
+        by simp [derivations]⟩
 
 /-- Public source-adequacy boundary for the concrete Metamath grammar.
 Successful admission and compact generic checking reconstruct a derivation of

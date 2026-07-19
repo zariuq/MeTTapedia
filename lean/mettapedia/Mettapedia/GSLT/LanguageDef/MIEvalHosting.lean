@@ -56,8 +56,11 @@ def rewriteDeclToLanguageRewrite?
 def rewriteDeclsToLanguageDefWithTerms
     (langName : String) (termRules : List LDGrammarRule)
     (rws : List MeTTaIL.RewriteDecl) : LDLanguageDef :=
-  Mettapedia.OSLF.MeTTaIL.Syntax.LanguageDef.mk langName [] ["MTerm"]
-    termRules [] (rws.filterMap rewriteDeclToLanguageRewrite?) [] [] []
+  { name := langName
+    types := ["MTerm"]
+    terms := termRules
+    equations := []
+    rewrites := rws.filterMap rewriteDeclToLanguageRewrite? }
 
 def rewriteDeclsToLanguageDef
     (langName : String) (rws : List MeTTaIL.RewriteDecl) : LDLanguageDef :=

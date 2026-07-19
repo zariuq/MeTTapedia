@@ -79,11 +79,15 @@ def compileAfterLowerArrow : SortArrow metamathCore mmLowerStateSort mmCompileSt
 def compileLowerStagePath : SortPath metamathCore mmDatabaseSort mmCompileStateSort :=
   lowerArrow.toPath.comp compileAfterLowerArrow.toPath
 
-def wffSym : Pattern := .fvar "wff"
+/-! Fixture source tokens are ground data, not matcher metavariables.  The
+future source adapter must establish the corresponding representation theorem;
+these values only calibrate the existing compile machine. -/
 
-def phSym : Pattern := .fvar "ph"
+def wffSym : Pattern := .apply "wff" []
 
-def ax1Label : Pattern := .fvar "ax1"
+def phSym : Pattern := .apply "ph" []
+
+def ax1Label : Pattern := .apply "ax1" []
 
 def minimalMath : Pattern :=
   .apply "MathMore" [wffSym, .apply "MathOne" [phSym]]

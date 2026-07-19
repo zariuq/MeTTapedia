@@ -68,11 +68,12 @@ def gfFunsListToLanguageDef
     acc ++ d.argCats.toList ++ [d.resultCat]
   let termRules := funs.foldl (init := []) fun acc (_, d) =>
     gfFunDeclToGrammarRule d :: acc
-  LanguageDef.mk
-    grammarName [] -- options
+  LanguageDef.ofCore
+    grammarName
     ((allCats.eraseDups.map TypeDecl.plain) ++ extraTypes).eraseDups
-    (termRules ++ extraTerms) eqRules rwRules
-    [] [] []
+    (termRules ++ extraTerms)
+    eqRules
+    rwRules
 
 /-- `LanguageDef` construction from a real GFCore `GrammarSig`. -/
 def gfSigToLanguageDef
@@ -85,11 +86,12 @@ def gfSigToLanguageDef
     acc ++ d.argCats.toList ++ [d.resultCat]
   let termRules := sig.funs.fold (init := []) fun acc _ d =>
     gfFunDeclToGrammarRule d :: acc
-  LanguageDef.mk
-    sig.grammar [] -- options
+  LanguageDef.ofCore
+    sig.grammar
     ((allCats.eraseDups.map TypeDecl.plain) ++ extraTypes).eraseDups
-    (termRules ++ extraTerms) eqRules rwRules
-    [] [] []
+    (termRules ++ extraTerms)
+    eqRules
+    rwRules
 
 /-- Authoritative syntax-only `LanguageDef` from a literal GF function list. -/
 def gfSyntaxLanguageDefFromList

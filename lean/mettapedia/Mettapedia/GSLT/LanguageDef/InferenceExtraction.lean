@@ -109,7 +109,7 @@ def extractedSchema (profile : EvidenceProfile) (rule : RewriteRule)
       metavariables := []
       premises := evidencePremises ++ sidePremises
       conclusion }
-  let usedOccurrences := occurrenceEraseDups draft.occurrences
+  let usedOccurrences := occurrenceEraseDups (RuleSchema.occurrences draft)
   let authoredOccurrences :=
     occurrenceEraseDups
       (patternMetavariableOccurrencesAt 0 rule.left ++
@@ -319,11 +319,12 @@ def rawPresentation? (profile : EvidenceProfile)
     (language : LanguageDef) : Option Presentation := do
   let rules ← language.rewrites.mapM (extractRuleSchema? profile language)
   pure
-    { language
-      judgments :=
-        { head := profile.derivedHead, arity := 1 } ::
-          (relationJudgmentDecls profile language).eraseDups
-      rules := relationFactRules profile language ++ rules }
+    { language :=
+        { language with
+          judgments :=
+            { head := profile.derivedHead, arity := 1 } ::
+              (relationJudgmentDecls profile language).eraseDups
+          inferenceRules := relationFactRules profile language ++ rules } }
 
 /-- Structurally recursive specification of generated presentation assembly.
 It is convenient for kernel reasoning; `rawPresentation?` remains the
@@ -333,11 +334,12 @@ def rawPresentationStructural? (profile : EvidenceProfile)
   let rules ← language.rewrites.mapM'
     (extractRuleSchema? profile language)
   pure
-    { language
-      judgments :=
-        { head := profile.derivedHead, arity := 1 } ::
-          (relationJudgmentDecls profile language).eraseDups
-      rules := relationFactRules profile language ++ rules }
+    { language :=
+        { language with
+          judgments :=
+            { head := profile.derivedHead, arity := 1 } ::
+              (relationJudgmentDecls profile language).eraseDups
+          inferenceRules := relationFactRules profile language ++ rules } }
 
 /-- Executable and structurally recursive presentation assembly agree
 exactly. -/

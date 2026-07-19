@@ -24,3 +24,4 @@ import Mettapedia.MachineLearning.NeuralNetworks.PredictiveCoding.CausalDirectio
 import Mettapedia.MachineLearning.NeuralNetworks.PredictiveCoding.LocalityCeiling
 import Mettapedia.MachineLearning.NeuralNetworks.PredictiveCoding.LocalPreconditionedRate
 import Mettapedia.MachineLearning.NeuralNetworks.PredictiveCoding.HierarchicalEscape
+import Mettapedia.MachineLearning.NeuralNetworks.PredictiveCoding.Frontier

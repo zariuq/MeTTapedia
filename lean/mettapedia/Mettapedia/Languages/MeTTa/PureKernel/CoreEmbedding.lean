@@ -387,12 +387,12 @@ theorem pureOpStep_sound_pureProfileBaseStep_quoteClosed {t u : PureTm 0}
       let qbody : Pattern := closeFVar 0 (defaultBinderName 0) (.fvar (defaultBinderName 0))
       have hbase :
           PureProfileBaseStep (quoteClosedTm (.app (.lam (.var 0)) a))
-            (openBVar 0 (quoteClosedTm a) qbody) := by
+            (instantiateBVar (quoteClosedTm a) qbody) := by
         simpa [qbody, quoteClosedTm, quoteTm, quoteTmWith, emptyEnv, envCons, mkApp, mkLam] using
           (PureProfileBaseStep.betaPi qbody (quoteClosedTm a))
-      have hopen : openBVar 0 (quoteClosedTm a) qbody = quoteClosedTm a := by
-        simp [qbody, closeFVar, openBVar]
-      exact hopen ▸ hbase
+      have hinstantiate : instantiateBVar (quoteClosedTm a) qbody = quoteClosedTm a := by
+        simp [qbody, closeFVar, instantiateBVar, instantiateBVarAt, liftBVars_zero]
+      exact hinstantiate ▸ hbase
   | .betaSigmaFst a b =>
       simpa [quoteClosedTm, quoteTm, quoteTmWith, mkFst, mkPair] using
         (PureProfileBaseStep.betaSigmaFst (quoteClosedTm a) (quoteClosedTm b))
@@ -432,13 +432,15 @@ theorem pureTheoryStep_sound_pureProfileTheoryStep_quoteTmWith_assuming_inst0
       have hbase :
           PureProfileTheoryStep
             (quoteTmWith ν k ρ (.app (.lam body) a))
-            (openBVar 0 (quoteTmWith ν k ρ a)
+            (instantiateBVar (quoteTmWith ν k ρ a)
               (closeFVar 0 (ν k) (quoteTmWith ν (k + 1) (envCons (ν k) ρ) body))) := by
         exact .base (PureProfileBaseStep.betaPi
           (closeFVar 0 (ν k) (quoteTmWith ν (k + 1) (envCons (ν k) ρ) body))
           (quoteTmWith ν k ρ a))
       have hq := hinst0 k ρ a body hcompat
-      simpa [quoteTmWith, mkApp, mkLam, hq] using hbase
+      have hinstantiate := quoteTmWith_instantiate_close_eq_open ν k ρ a body
+      rw [hinstantiate, ← hq] at hbase
+      simpa [quoteTmWith, mkApp, mkLam] using hbase
   | @betaSigmaFst n a b =>
       simpa [quoteTmWith, mkFst, mkPair] using
         (PureProfileTheoryStep.base

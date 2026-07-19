@@ -1239,6 +1239,31 @@ theorem quoteTmWith_open_close_as_applySubst
   rw [hOpenClose] at hSubstIntro
   simpa using hSubstIntro.symm
 
+/-- Binder-eliminating instantiation and ordinary opening coincide on the
+locally closed body and argument produced by contextual quotation. -/
+theorem quoteTmWith_instantiate_close_eq_open
+    (ν : Nat → String) (k : Nat) (ρ : QuoteEnv n)
+    (a : PureTm n) (body : PureTm (n + 1)) :
+    instantiateBVar (quoteTmWith ν k ρ a)
+        (closeFVar 0 (ν k)
+          (quoteTmWith ν (k + 1) (envCons (ν k) ρ) body)) =
+      openBVar 0 (quoteTmWith ν k ρ a)
+        (closeFVar 0 (ν k)
+          (quoteTmWith ν (k + 1) (envCons (ν k) ρ) body)) := by
+  apply instantiateBVar_eq_openBVar_of_isWellScoped
+  · have hbody0 := lc_quoteTmWith ν (k + 1) (envCons (ν k) ρ) body
+    have hbody1 :
+        lc_at 1 (quoteTmWith ν (k + 1) (envCons (ν k) ρ) body) = true :=
+      lc_at_mono hbody0 (Nat.zero_le 1)
+    have hclosed :
+        lc_at 1 (closeFVar 0 (ν k)
+          (quoteTmWith ν (k + 1) (envCons (ν k) ρ) body)) = true :=
+      lc_at_closeFVar_of_lt (k := 1) (l := 0) (ν k)
+        (quoteTmWith ν (k + 1) (envCons (ν k) ρ) body) (by omega) hbody1
+    simpa only [isWellScopedAt_eq_lc_at] using hclosed
+  · have harg := lc_quoteTmWith ν k ρ a
+    simpa only [Pattern.isWellScoped, isWellScopedAt_eq_lc_at] using harg
+
 /-- Contextual quotation commutes with kernel `inst0` into LN opening form. -/
 theorem quoteTmWith_inst0_open
     (ν : Nat → String) (k : Nat) (ρ : QuoteEnv n)

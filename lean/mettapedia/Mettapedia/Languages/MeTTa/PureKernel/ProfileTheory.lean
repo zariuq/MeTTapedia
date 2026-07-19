@@ -33,7 +33,7 @@ abbrev PureProfileStepStar (p q : Pattern) : Prop :=
 exactly βΠ, βΣ-fst, βΣ-snd at the `Pattern` level. -/
 inductive PureProfileBaseStep : Pattern → Pattern → Prop where
   | betaPi (body a : Pattern) :
-      PureProfileBaseStep (mkApp (mkLam body) a) (openBVar 0 a body)
+      PureProfileBaseStep (mkApp (mkLam body) a) (instantiateBVar a body)
   | betaSigmaFst (a b : Pattern) :
       PureProfileBaseStep (mkFst (mkPair a b)) a
   | betaSigmaSnd (a b : Pattern) :

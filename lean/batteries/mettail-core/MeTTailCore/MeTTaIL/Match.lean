@@ -1,5 +1,6 @@
 import MeTTailCore.MeTTaIL.Syntax
 import MeTTailCore.MeTTaIL.Substitution
+import Init.Data.String.Lemmas
 
 namespace MeTTailCore.MeTTaIL.Match
 
@@ -135,15 +136,27 @@ theorem matchPatternMeTTa_dollar_head_application :
         (.apply "$pred" [.fvar "x"])
         (.apply "frog" [.apply "sam" []]) =
       [[("x", .apply "sam" []), ("pred", .apply "frog" [])]] := by
-  native_decide
+  have hcopy : ("$pred".drop 1).copy = "pred" := by
+    apply String.toList_inj.mp
+    simp [String.toList_copy_drop]
+  simp [matchPatternMeTTa, matchPattern, matchArgs, dollarVarName?, tupleElems,
+    mergeBindings, String.startsWith_string_iff, hcopy]
 
 theorem matchPatternMeTTa_nested_dollar_head_application :
     matchPatternMeTTa
         (.apply "Expr" [.apply "$f" [.apply "leaf2" []], .apply "leaf3" []])
         (.apply "Expr" [.apply "leaf1" [.apply "leaf2" []], .apply "leaf3" []]) =
       [[("f", .apply "leaf1" [])]] := by
-  native_decide
+  have hcopy : ("$f".drop 1).copy = "f" := by
+    apply String.toList_inj.mp
+    simp [String.toList_copy_drop]
+  simp [matchPatternMeTTa, matchPattern, matchArgs, dollarVarName?, tupleElems,
+    mergeBindings, String.startsWith_string_iff, hcopy]
 
+/-- Gradually apply bindings to a rule output. Unknown metavariables and
+unresolved collection rests remain explicit so later execution can resolve
+them; a rest is spliced only from a same-kind collection whose own rest field
+is closed. -/
 def applyBindings (bindings : Bindings) (rhs : Pattern) : Pattern :=
   match rhs with
   | .fvar x =>
@@ -171,17 +184,63 @@ def applyBindings (bindings : Bindings) (rhs : Pattern) : Pattern :=
   | .subst body repl =>
     let body' := applyBindings bindings body
     let repl' := applyBindings bindings repl
-    openBVar 0 repl' body'
+    instantiateBVar repl' body'
   | .collection ct elems rest =>
     let elems' := elems.map (applyBindings bindings)
-    let restElems := match rest with
+    let (restElems, unresolvedRest) := match rest with
       | some rv =>
         match bindings.find? (·.1 == rv) with
-        | some (_, .collection _ relems _) => relems
-        | _ => []
-      | none => []
-    .collection ct (elems' ++ restElems) none
+        | some (_, .collection boundCt relems none) =>
+            if boundCt == ct then (relems, none) else ([], some rv)
+        | _ => ([], some rv)
+      | none => ([], none)
+    .collection ct (elems' ++ restElems) unresolvedRest
 termination_by sizeOf rhs
+
+section CollectionRestParityFixtures
+
+private def authoredOpenRest : Pattern :=
+  .collection .hashBag [.apply "K" []] (some "rest")
+
+private def splicedClosedRest : Pattern :=
+  .collection .hashBag [.apply "K" [], .apply "V" []] none
+
+-- A same-kind collection whose own rest field is closed is complete here.
+#guard decide
+    (applyBindings
+      [("rest", .collection .hashBag [.apply "V" []] none)]
+      authoredOpenRest = splicedClosedRest)
+
+-- Missing and ill-shaped bindings preserve the authored open rest.
+#guard decide (applyBindings [] authoredOpenRest = authoredOpenRest)
+#guard decide
+    (applyBindings [("rest", .apply "V" [])] authoredOpenRest = authoredOpenRest)
+
+-- A different collection kind cannot discharge this rest obligation.
+#guard decide
+    (applyBindings
+      [("rest", .collection .vec [.apply "V" []] none)]
+      authoredOpenRest = authoredOpenRest)
+
+-- A collection whose own rest is still open is not spliced prematurely.
+#guard decide
+    (applyBindings
+      [("rest", .collection .hashBag [.apply "V" []] (some "tail"))]
+      authoredOpenRest = authoredOpenRest)
+
+end CollectionRestParityFixtures
+
+section ExplicitSubstParityFixture
+
+-- Eliminating an explicit substitution beneath an ambient binder lowers the
+-- surviving outer reference. `openBVar 0` incorrectly left index 1 dangling.
+private def ambientExplicitSubst : Pattern :=
+  .lambda (.subst (.bvar 1) (.apply "K" []))
+
+#guard decide
+    (applyBindings [] ambientExplicitSubst = .lambda (.bvar 0))
+
+end ExplicitSubstParityFixture
 
 mutual
 

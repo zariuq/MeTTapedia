@@ -324,12 +324,13 @@ private def fixtureCombine : RuleSchema :=
     conclusion := fixtureC }
 
 private def fixturePresentation : Presentation :=
-  { language := LanguageDef.empty "inference-dag-fixture"
-    judgments :=
-      [{ head := "DAGA", arity := 0 },
-       { head := "DAGB", arity := 0 },
-       { head := "DAGC", arity := 0 }]
-    rules := [fixtureAxA, fixtureAxB, fixtureCombine] }
+  { language :=
+      { LanguageDef.empty "inference-dag-fixture" with
+        judgments :=
+          [{ head := "DAGA", arity := 0 },
+           { head := "DAGB", arity := 0 },
+           { head := "DAGC", arity := 0 }]
+        inferenceRules := [fixtureAxA, fixtureAxB, fixtureCombine] } }
 
 private theorem fixture_emptyLanguage_validate :
     (LanguageDef.empty "inference-dag-fixture").validate = [] := by

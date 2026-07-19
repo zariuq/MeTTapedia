@@ -234,9 +234,10 @@ private def fixtureRule : RuleSchema :=
     conclusion := .apply "Holds" [] }
 
 private def fixturePresentation : Presentation :=
-  { language := LanguageDef.empty "checked-source-fixture"
-    judgments := [{ head := "Holds", arity := 0 }]
-    rules := [fixtureRule] }
+  { language :=
+      { LanguageDef.empty "checked-source-fixture" with
+        judgments := [{ head := "Holds", arity := 0 }]
+        inferenceRules := [fixtureRule] } }
 
 private def fixtureIdentity : SourceIdentity :=
   { systemId := "fixture-source"
@@ -313,13 +314,15 @@ example :
       some .missingProfile := by
   rfl
 
-/- Negative: replacing the admitted rule table with duplicate identifiers
+/- Negative: replacing the rooted inference rules with duplicate identifiers
 forces presentation revalidation and is rejected. -/
 #guard
   validationError
       ({ fixtureSource with
         presentation :=
-          { fixturePresentation with rules := [fixtureRule, fixtureRule] } }).validate ==
+          { language :=
+              { fixturePresentation.language with
+                inferenceRules := [fixtureRule, fixtureRule] } } }).validate ==
     some .invalidPresentation
 
 end Mettapedia.GSLT.LanguageDef.CheckedSource
